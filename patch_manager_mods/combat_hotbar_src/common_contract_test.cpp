@@ -13,6 +13,8 @@
 #include "SafeRead.h"
 #include "KpLog.h"
 #include "HudHost.h"
+#include "GuiKit.h"
+#include "CombatLogic.h"
 #include "check.h"
 #include "FakeKPatchApi.h"
 
@@ -82,6 +84,24 @@ int main() {
     HCHECK("client stays unconnected", !hud.connected);
     HEQ("hud() without hud-host = 0", hud.hud(), 0);
     HEQ("K2HudContext v1 size", int(sizeof(K2HudContext)), 40);
+
+    // 5. CH2/CH3b: probeWrite on a writable slot, winForeground host-callable, K2HUD_TARGET_MENU_POST registration, KeyEdge/pickInvokeEntry
+    HCHECK("probeWrite accepts a writable selection slot", saferead::probeWrite(0x6F60, arena + 0x24, 4));
+    HCHECK("probeWrite accepts an arrow flag dword", saferead::probeWrite(0x6F70, arena + 0x43C, 4));
+    uint32_t arrowFlags = 0xFF;
+    *reinterpret_cast<uint32_t*>(arena + 0x43C) = arrowFlags;
+    *reinterpret_cast<uint32_t*>(arena + 0x43C) &= ~2u;
+    HEQ("arrow hide clears only bit1", *reinterpret_cast<uint32_t*>(arena + 0x43C), 0xFDu);
+    HCHECK("beginScope re-arms the cache", (saferead::beginScope(), saferead::probeRead(0x6F50, arena, 4)));
+    // DLL build uses guikit::detail::winForeground() (GuiKit.h Win32 default, absent under GUIKIT_HOST); the host pin is the platform hook it installs.
+    HCHECK("GuiKit gameForeground hook is null under GUIKIT_HOST (Win32 default not installed)", guikit::g_gk.gameForeground == nullptr);
+    HCHECK("add() accepts the TARGET_MENU_POST callback", hud.add(K2HUD_TARGET_MENU_POST, 100, [](const K2HudContext*, void*) {}));
+    ch::KeyEdge ke;
+    HCHECK("KeyEdge fires on up->down", ke.update(true));
+    HCHECK("KeyEdge does not refire while held", !ke.update(true));
+    ch::GroupView gv; memset(&gv, 0, sizeof(gv)); gv.count = 1; gv.e[0].usable = true; gv.e[0].owner = 1;
+    HEQ("pickInvokeEntry picks a usable owned entry", ch::pickInvokeEntry(gv, 2), 0);
+    HEQ("pickInvokeEntry rejects 0xFF target", ch::pickInvokeEntry(gv, 0xFF), -1);
 
     munmap(arena, 0x10000);
     return ::kt::Report("common_contract_test (combat-hotbar)");

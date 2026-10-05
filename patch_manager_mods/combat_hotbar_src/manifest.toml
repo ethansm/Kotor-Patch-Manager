@@ -1,9 +1,9 @@
 [patch]
 id = "combat-hotbar"
 name = "Combat Action Hotbar"
-version = "0.2.0-probe"
+version = "0.3.0-dev"
 author = "local"
-description = "Diagnostic probe for Combat Action Hotbar (Mod 31, Phase 1). Consumer of hud-host (k2.hud@1, TARGET_MENU_PRE at CSWGuiTargetActionMenu::PopulateMenus 0x00743540; owns no hook itself) to safely probe and log the target menu groups (groups 0-2, meanings unverified), selected keys, target type, leader, and per-entry usability flags and owner fields when an enemy is targeted."
+description = "Combat Action Hotbar (Mod 31, 0.3.0-dev: CH2 invoke keys, Ctrl+Shift+F9..F11 by default, and CH3b optional hiding of the carousel arrows; configured by combat_hotbar.ini) on top of the diagnostic probe. Consumer of hud-host (k2.hud@1, TARGET_MENU_PRE at CSWGuiTargetActionMenu::PopulateMenus 0x00743540; owns no hook itself) to safely probe and log the target menu groups (groups 0-2, meanings unverified), selected keys, target type, leader, and per-entry usability flags and owner fields when an enemy is targeted."
 
 requires = ["hud-host"]
 requires_interfaces = ["k2.hud@1"]
