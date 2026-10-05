@@ -57,6 +57,10 @@
     3. Textured cross on a dark disc.
     4. Gold ring spins on the disc edge.
     5. `TAG member=2 raw=` line for the empty-tag investigation.
+- **0.5.0 first look 10-05 01:00 (screenshot) — RESUME HERE:** buttons + discs draw on both companions. User direction:
+  - Cross v3 (CS9b): a custom cross like the hotbar wrench/gear (pre-coloured mint->teal gradient, outline, rim light, shade, as in `gen_hotbar_textures.py` `make_edit_textures`), NOT a white body tinted bright green. Make it a bit smaller inside the circle. Use the UX scheme.
+  - CS11 not visible: no dark-green out-of-combat action bar with a Cancel button at the bottom, and none on the companion queues. queue-hud 0.2.0 is loaded (portrait-slots register line 16) but has no log file in `$G`. It draws only when the queue is non-empty, and it has no Cancel.
+  - Log so far (8 lines): only `WARN member=1/2 has an empty tag`, no USE/REFUSE yet; TAG probe line not visible at the current log level.
 - Build rows live in doc 24 (CS0-CS7, owner gate "selfheal").
 
 ## User decisions (10-04)
