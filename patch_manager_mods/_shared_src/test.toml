@@ -35,3 +35,6 @@ cxxflags = ["-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HO
 
 [actqueue_test]
 cxxflags = ["-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HOST", "-Werror"]
+
+[windowhook_test]
+cxxflags = ["-DWINDOWHOOK_HOST", "-Werror"]
