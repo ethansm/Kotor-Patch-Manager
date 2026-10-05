@@ -30,6 +30,7 @@
 #include "Party.h"
 #include "GuiKit.h"
 #include "GameAddr.h"
+#include "WindowHook.h"
 #include "FileWatch.h"
 #include "HotbarConfig.h"
 #include "HotbarLogic.h"
@@ -52,7 +53,7 @@ constexpr uintptr_t GetControlledCreature = gameaddr::GetControlledCreature; // 
 // Targeted item use ("@lowhp" probe), all from vanilla "use item on party member" 0x77C780 (Steam exe).
 constexpr uintptr_t ClientToServerObjectId = 0x0051C8B0;  // thiscall(objTable, clientItemId) RET 4 -> server object id
 constexpr uintptr_t GetItemByObjectId = 0x0051C0E0;       // thiscall(objTable, serverItemId) RET 4 -> item ptr (0 = none)
-constexpr uintptr_t GetBaseItem = 0x006D6E30;             // thiscall(itemPtr), no stack args -> baseitems row ptr
+constexpr uintptr_t GetBaseItem = gameaddr::GetBaseItem;      // thiscall(itemPtr), no stack args -> baseitems row ptr
 constexpr int BaseItem_Type = 0xAC;                       // byte: baseitems.2da itemtype
 constexpr uintptr_t CanUseItem = 0x005D2F80;              // thiscall(member SERVER creature; itemPtr, 0, 1) RET 0xC -> nonzero = usable (e.g. repair kits only on droids)
 constexpr uintptr_t PerformUseItem = 0x00775600;          // thiscall(controlled client creature (stored, unused); clientItemId, 0, targetClientId, float* pos) RET 0x10, void
@@ -1014,28 +1015,29 @@ bool wHit(const Widget& w, const POINT& pt) {
 
 // ---- in-game editor: Normal -> (toggle) Edit -> (slot click) Pick -> (cell / Clear) assign+save -> Edit; Esc backs out one level ----
 // ---- mouse wheel over the picker: subclass the game window like Mod 1 (DirectInput never sees the wheel). Chains to the old proc; DllMain restores it on detach if we are still the outermost proc.
-WNDPROC g_oldProc = nullptr; volatile LONG g_wheelAccum = 0; volatile LONG g_pickRect[4] = {0, 0, 0, 0}; int g_wheelLogs = 0;
+struct WheelTag {}; using WheelHook = kp::WindowHook<WheelTag>;
+volatile LONG g_wheelAccum = 0; volatile LONG g_pickRect[4] = {0, 0, 0, 0}; int g_wheelLogs = 0;
 LRESULT CALLBACK wheelProc(HWND h, UINT m, WPARAM w, LPARAM l) {
-    if (m == WM_MOUSEWHEEL && g_editOpen && g_pickRect[2] > 0 && GetTickCount() - g_hudTick < 300) {
+    if (WheelHook::active() && m == WM_MOUSEWHEEL && g_editOpen && g_pickRect[2] > 0 && GetTickCount() - g_hudTick < 300) {
         POINT pt = {(short)LOWORD(l), (short)HIWORD(l)};
         bool inside = ScreenToClient(h, &pt) && pt.x >= g_pickRect[0] && pt.x < g_pickRect[0] + g_pickRect[2] && pt.y >= g_pickRect[1] && pt.y < g_pickRect[1] + g_pickRect[3];
         if (g_wheelLogs < 40) { ++g_wheelLogs; KP_LOGV(chInput, KPLOG_DEBUG, "wheel: delta=%d client=(%ld,%ld) rect=[%ld,%ld,%ld,%ld] inside=%d", (int)(short)HIWORD(w), (long)pt.x, (long)pt.y, (long)g_pickRect[0], (long)g_pickRect[1], (long)g_pickRect[2], (long)g_pickRect[3], (int)inside); }
         if (inside) { InterlockedExchangeAdd(&g_wheelAccum, (short)HIWORD(w)); return 0; }
     }
-    return CallWindowProcA(g_oldProc, h, m, w, l);
+    return WheelHook::forward(h, m, w, l);
 }
 void ensureWheelHook() {
-    if (g_oldProc) return;
+    if (WheelHook::active()) return;
     if (!g_gameWnd || !IsWindow(g_gameWnd)) {
         static bool waitLogged = false;
         if (!waitLogged) { waitLogged = true; KP_LOGV(chInput, KPLOG_DEBUG, "wheel: waiting for the game window (g_gameWnd=%p IsWindow=%d), picker wheel scrolling unavailable", (void*)g_gameWnd, (int)(g_gameWnd && IsWindow(g_gameWnd))); }
         return;
     }
     static int attempts = 0; ++attempts;
-    g_oldProc = reinterpret_cast<WNDPROC>(SetWindowLongPtrA(g_gameWnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(wheelProc)));
-    unsigned long err = g_oldProc ? 0UL : (unsigned long)GetLastError();
-    if (g_oldProc) KP_LOG(chInput, "wheel: subclassed window %p, old proc %p (err=%lu)", (void*)g_gameWnd, (void*)g_oldProc, err);
-    else if (attempts <= 3) KP_LOGV(chInput, KPLOG_WARN, "wheel: subclassed window %p, old proc %p (err=%lu)", (void*)g_gameWnd, (void*)g_oldProc, err);   // old proc null = failed; retried next frame as before (map R6)
+    WheelHook::install(g_gameWnd, &wheelProc);
+    unsigned long err = WheelHook::old ? 0UL : (unsigned long)GetLastError();
+    if (WheelHook::old) KP_LOG(chInput, "wheel: subclassed window %p, old proc %p (err=%lu)", (void*)g_gameWnd, (void*)WheelHook::old, err);
+    else if (attempts <= 3) KP_LOGV(chInput, KPLOG_WARN, "wheel: subclassed window %p, old proc %p (err=%lu)", (void*)g_gameWnd, (void*)WheelHook::old, err);   // old proc null = failed; retried next frame as before (map R6)
     else KP_LOG_EVERY(chInput, 60000, "wheel: subclass still failing (attempts=%d err=%lu)", attempts, err);
 }
 // Group background + title: full size in Pick mode; in Edit mode a compact box (title only) hugging the bar. Sizes in units -> px via the
@@ -1860,9 +1862,6 @@ extern "C" void __cdecl HotbarHudTick(void* hudPtr) {
 }
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
-    if (reason == DLL_PROCESS_DETACH && g_oldProc && g_gameWnd && IsWindow(g_gameWnd) &&
-        reinterpret_cast<WNDPROC>(GetWindowLongPtrA(g_gameWnd, GWLP_WNDPROC)) == wheelProc) {
-        SetWindowLongPtrA(g_gameWnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(g_oldProc)); g_oldProc = nullptr;   // only if we are still on top (Mod 1/5 do the same)
-    }
+    if (reason == DLL_PROCESS_DETACH) WheelHook::uninstall(&wheelProc);   // restores only if we are still on top; otherwise stays chained but inert
     return TRUE;
 }
