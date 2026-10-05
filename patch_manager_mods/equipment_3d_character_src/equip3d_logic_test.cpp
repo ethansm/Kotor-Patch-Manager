@@ -274,6 +274,10 @@ static void testClamps() {
     { Cfg c; c.zoomMax = 0.1f; clampCfg(c); KT_CHECK(c.zoomMax == 0.6f); }                   // default zoomMin 0.6
     { Cfg c; c.zoomMin = 0.1f; c.zoomMax = 0.15f; clampCfg(c); KT_CHECK(c.zoomMin == 0.2f && c.zoomMax == 0.2f); }
     { Cfg c; c.zoomMax = -1.f; clampCfg(c); KT_CHECK(c.zoomMax == c.zoomMin); }
+    // F15: zoomMin is raised so fov / zoomMin never exceeds kMaxSceneFov (default fov keeps zoomMin 0.2)
+    { Cfg c; c.fov = 90.f; c.zoomMin = 0.2f; clampCfg(c); KT_CHECK(approx(c.zoomMin, 0.6f, 1e-4f)); KT_CHECK(c.zoomMax >= c.zoomMin); }
+    { Cfg c; c.fov = 90.f; c.zoomMin = 0.2f; c.zoomMax = 0.3f; clampCfg(c); KT_CHECK(c.zoomMax == c.zoomMin); }
+    { Cfg c; c.zoomMin = 0.2f; clampCfg(c); KT_CHECK(c.zoomMin == 0.2f); }
     // flMin >= 2, flMax >= flMin
     { Cfg c; c.flMin = 2.f; clampCfg(c); KT_CHECK(c.flMin == 2.f); }
     { Cfg c; c.flMin = 1.99f; clampCfg(c); KT_CHECK(c.flMin == 2.f); }
@@ -299,10 +303,13 @@ static void testClamps() {
     { Cfg c; c.screenW = -1920; c.screenH = 1080; clampCfg(c); KT_CHECK(c.screenW == 3840.f && c.screenH == 1600.f); }
     { Cfg c; c.screenW = 1920; c.screenH = 1080; clampCfg(c); KT_CHECK(c.screenW == 1920.f && c.screenH == 1080.f); }
     { Cfg c; c.screenW = 1e7f; c.screenH = 1e7f; clampCfg(c); KT_CHECK(c.screenW == 1e7f); }   // no upper bound
-    // CHARACTERIZATION: the reset leaves screenExplicit set, so syncScreen() keeps ignoring the real framebuffer size
-    // after a bad screen_w; and a lone screen_w=1920 leaves screenH at the 1600 default (explicit, never re-synced).
-    { Cfg c; applyLine(c, "screen_w=50"); clampCfg(c); KT_CHECK(c.screenExplicit && c.screenW == 3840.f && c.screenH == 1600.f); }
-    { Cfg c; applyLine(c, "screen_w=1920"); clampCfg(c); KT_CHECK(c.screenExplicit && c.screenW == 1920.f && c.screenH == 1600.f); }
+    // F14 fixed: a reset or a lone screen_w/screen_h clears screenExplicit so syncScreen() keeps tracking the real framebuffer;
+    // only a valid screen_w AND screen_h pair stays explicit.
+    { Cfg c; applyLine(c, "screen_w=50"); clampCfg(c); KT_CHECK(!c.screenExplicit && c.screenW == 3840.f && c.screenH == 1600.f); }
+    { Cfg c; applyLine(c, "screen_w=1920"); clampCfg(c); KT_CHECK(!c.screenExplicit && c.screenW == 3840.f && c.screenH == 1600.f); }
+    { Cfg c; applyLine(c, "screen_h=1080"); clampCfg(c); KT_CHECK(!c.screenExplicit && c.screenW == 3840.f && c.screenH == 1600.f); }
+    { Cfg c; applyLine(c, "screen_w=1920"); applyLine(c, "screen_h=50"); clampCfg(c); KT_CHECK(!c.screenExplicit && c.screenW == 3840.f && c.screenH == 1600.f); }
+    { Cfg c; applyLine(c, "screen_w=1920"); applyLine(c, "screen_h=1080"); clampCfg(c); KT_CHECK(c.screenExplicit && c.screenW == 1920.f && c.screenH == 1080.f); }
     // clamps never touch unrelated fields
     { Cfg c; c.stage = 9; Cfg d; clampCfg(c); KT_CHECK(c.fov == d.fov && c.helmet == d.helmet && c.screenW == d.screenW); }
 }
@@ -448,6 +455,7 @@ static void testIdle() {
     KT_CHECK_EQ(idleFor(1, 40), "neutral");
     KT_CHECK_EQ(idleFor(1, 59), "neutral");
     KT_CHECK_EQ(idleFor(1, 60), "good");
+    KT_CHECK_EQ(idleFor(1, kNeutralAlign), "neutral");   // F16: the fallback alignment when the stats block is unreadable
     KT_CHECK_EQ(idleFor(1, 100), "good");
     KT_CHECK_EQ(idleFor(1, -1), "evil");                   // Slot::align starts at -1
     KT_CHECK_EQ(idleFor(1, SHRT_MIN), "evil");
@@ -560,8 +568,9 @@ static void testYawZoomFov() {
     KT_CHECK(approx(fovForZoom(22.726f, 2.f), 11.363f));
     KT_CHECK(approx(fovForZoom(22.726f, 0.6f), 37.8767f, 1e-3f));
     KT_CHECK(approx(fovForZoom(22.726f, 2.5f), 9.0904f, 1e-3f));
-    // CHARACTERIZATION: nothing caps the product; fov_deg=90 with zoom_min=0.2 asks the camera for 450 degrees
-    KT_CHECK(approx(fovForZoom(90.f, 0.2f), 450.f, 1e-2f));
+    // F15 fixed: the scene fov is capped at kMaxSceneFov; fov_deg=90 with zoom 0.2 used to ask the camera for 450 degrees
+    KT_CHECK(approx(fovForZoom(90.f, 0.2f), 150.f, 1e-2f));
+    KT_CHECK(approx(fovForZoom(90.f, 0.6f), 150.f, 1e-2f));   // exactly at the cap
 
     float v[3];
     yawVec(0, v); KT_CHECK(approx(v[0], 1.f) && approx(v[1], 0.f) && v[2] == 0.f);

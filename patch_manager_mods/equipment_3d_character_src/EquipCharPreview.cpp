@@ -609,7 +609,7 @@ bool readApp(int real, unsigned char* out, short* align) {
     int app = 0, stats = 0;
     if (!readAt<int>(real, CreatureAppOff, &app) || !app || IsBadReadPtr(reinterpret_cast<void*>(app), AppCopyBytes)) return false;
     memcpy(out, reinterpret_cast<void*>(app), AppCopyBytes);
-    *align = 0;
+    *align = eq3d::kNeutralAlign;   // unreadable stats -> neutral idle, not evil
     if (readAt<int>(real, CreatureStatsOff, &stats) && stats) readAt<short>(stats, 0x80, align);
     return true;
 }

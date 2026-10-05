@@ -24,6 +24,7 @@ struct Cfg {
     int bevels = 1;
     float dragDegPx = 0.5f; int wheelZoom = 1; float wheelStep = 0.9f, zoomMin = 0.6f, zoomMax = 2.5f;
     int hitFlipY = 0; float screenW = 3840, screenH = 1600; bool screenExplicit = false;
+    int screenSet = 0;   // bit 1 = screen_w parsed, bit 2 = screen_h parsed; clampCfg keeps screenExplicit only when both are set
     int flourish = 1; float flMin = 12, flMax = 25, flFirst = 6, flQuiet = 3; int flOnEquip = 1;
     char flStance[512] = "";   // optional flourish list used while a weapon stance is on (empty = same list)
     char flList[512] = "shrug,nodyes,salute,bow,greeting,touchheart,point,rolleyes,scanning,victory,pausesh";
@@ -85,8 +86,8 @@ inline IniResult parseIniLine(Cfg& c, const char* k, const char* v) {
     else if (!strcmp(k, "zoom_min")) { good = parseFloats(v, a, 1); if (good) c.zoomMin = a[0]; }
     else if (!strcmp(k, "zoom_max")) { good = parseFloats(v, a, 1); if (good) c.zoomMax = a[0]; }
     else if (!strcmp(k, "hit_flip_y")) { good = parseFloats(v, a, 1); if (good) c.hitFlipY = (int)a[0]; }
-    else if (!strcmp(k, "screen_w")) { good = parseFloats(v, a, 1); if (good) { c.screenW = a[0]; c.screenExplicit = true; } }
-    else if (!strcmp(k, "screen_h")) { good = parseFloats(v, a, 1); if (good) { c.screenH = a[0]; c.screenExplicit = true; } }
+    else if (!strcmp(k, "screen_w")) { good = parseFloats(v, a, 1); if (good) { c.screenW = a[0]; c.screenExplicit = true; c.screenSet |= 1; } }
+    else if (!strcmp(k, "screen_h")) { good = parseFloats(v, a, 1); if (good) { c.screenH = a[0]; c.screenExplicit = true; c.screenSet |= 2; } }
     else if (!strcmp(k, "flourish")) { good = parseFloats(v, a, 1); if (good) c.flourish = (int)a[0]; }
     else if (!strcmp(k, "flourish_min_s")) { good = parseFloats(v, a, 1); if (good) c.flMin = a[0]; }
     else if (!strcmp(k, "flourish_max_s")) { good = parseFloats(v, a, 1); if (good) c.flMax = a[0]; }
@@ -107,6 +108,8 @@ inline IniResult parseIniLine(Cfg& c, const char* k, const char* v) {
     return good ? IniOk : IniBad;
 }
 
+constexpr float kMaxSceneFov = 150.f;   // ceiling for the camera fov after the zoom divide (fov_deg=90 / zoom_min=0.2 asked for 450)
+
 // Range clamps applied once after the whole file is read. Returns a bit mask of the two clamps that RESET to a default and
 // are logged by the caller: ClampFov ("INI fov_deg out of range, reset 22.726"), ClampWheelStep ("... wheel_step ... reset 0.9").
 enum { ClampFov = 1, ClampWheelStep = 2 };
@@ -117,11 +120,16 @@ inline int clampCfg(Cfg& c) {
     if (c.fov < 5 || c.fov > 90) { logged |= ClampFov; c.fov = 22.726f; }
     if (c.wheelStep < 0.5f || c.wheelStep > 0.99f) { logged |= ClampWheelStep; c.wheelStep = 0.9f; }
     if (c.zoomMin < 0.2f) c.zoomMin = 0.2f;
+    if (c.fov / c.zoomMin > kMaxSceneFov) c.zoomMin = c.fov / kMaxSceneFov;
     if (c.zoomMax < c.zoomMin) c.zoomMax = c.zoomMin;
     if (c.flMin < 2) c.flMin = 2;
     if (c.flMax < c.flMin) c.flMax = c.flMin;
     if (c.pollMs < 16) c.pollMs = 16;
-    if (c.screenW < 100 || c.screenH < 100) { c.screenW = 3840; c.screenH = 1600; }
+    // A bad size, or a lone screen_w/screen_h (only the INI path sets screenExplicit, so a programmatic Cfg is left alone),
+    // resets to the default and drops screenExplicit so syncScreen() tracks the real framebuffer again.
+    if (c.screenW < 100 || c.screenH < 100 || (c.screenExplicit && c.screenSet != 3)) {
+        c.screenW = 3840; c.screenH = 1600; c.screenExplicit = false;
+    }
     return logged;
 }
 
@@ -143,6 +151,7 @@ inline bool weaponModelName(int base, int var, char* out, size_t n, int* wield) 
 }
 
 // ---------------------------------------------------------------- idle / droids
+constexpr short kNeutralAlign = 50;   // fallback alignment when the creature stats block is unreadable (-> the neutral idle, not evil)
 inline bool isDroidRow(int r) { return r == 2 || r == 57 || r == 231 || r == 232 || r == 453 || r == 3 || r == 538 || r == 539; }
 // Idle name as 0077ec20 picks it (evil <40, neutral <60, else good; droids: pause1) - verified by the anim length probe.
 inline const char* idleFor(int appearanceRow, short align) {
@@ -172,7 +181,7 @@ inline float zoomStep(float zoom, long wheel, float wheelStep, float zoomMin, fl
     zoom *= powf(wheelStep, -wheel / 120.0f);
     return fminf(fmaxf(zoom, zoomMin), zoomMax);
 }
-inline float fovForZoom(float fov, float zoom) { return fov / zoom; }
+inline float fovForZoom(float fov, float zoom) { return fminf(fov / zoom, kMaxSceneFov); }
 inline void yawVec(float yawDeg, float v[3]) {
     float rad = yawDeg * 0.0174532925f;
     v[0] = cosf(rad); v[1] = sinf(rad); v[2] = 0.f;
