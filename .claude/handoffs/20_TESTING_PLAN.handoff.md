@@ -1,7 +1,7 @@
 # Session Handoff & Plan State: patch_manager_mods/20_TESTING_PLAN.md
 
 ## 0. Next-Phase Direction
-BD3 DONE 10-05 (MG2 shield + full KPM mirror; F34 open; install of MG6/MG7/MG2 DLLs pending user go). BD2 DONE 10-05 (MG7/MG6/MG2-buff source). BD1 DONE 10-05 (open decisions F17/F18/F20/F26/F3/F4/F13 carried out; see §7). Next: user reviews the F13 PR draft; then dispatch doc 32 MG6/MG7 (owner-gated)
+F34 DONE 10-05 (int-ratio drawVFill + featureOk wrappers; staged `stage_f34`, install pending user go). BD3 DONE 10-05 (MG2 shield + full KPM mirror; INSTALLED, play check pending). BD2 DONE 10-05 (MG7/MG6/MG2-buff source). BD1 DONE 10-05 (open decisions F17/F18/F20/F26/F3/F4/F13 carried out; see §7). Next: user reviews the F13 PR draft; then dispatch doc 32 MG6/MG7 (owner-gated)
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/20_TESTING_PLAN.md`
@@ -36,6 +36,7 @@ fd3b039 doc 20/20d: BF4 DONE (F28 design note e60de4a); next = user decisions
 - [x] **BF3 DONE 10-05 (60dd2eb):** BuffDurationHUD F25 hygiene (dead branch :238-244, arrowRawFor slot 0) - check buff/shield split session ownership.
 - [x] **BF4 DONE 10-05 (e60de4a, docs fd3b039):** design note `patch_manager_mods/20f_windowhook_design.md` (design A: per-DLL pass-through + module pin; B shared dispatcher rejected). `SubPass<N>` model in tests/wndproc_chain.
 - [x] **BF5 DONE 10-05 (7d41942, 7aca7fd; KPM d46a699, f03c258):** `_shared_src/WindowHook.h` + host test + KPM Common sync + GuiKit wheel on it; per-mod migration = doc 32 MG6 rows, owner-gated (TODO).
+- [x] **F34 DONE 10-05:** gui2d int vfill 52e6e81, ShieldBar 6d51383, BuffDurationHUD d516e1f; KPM 8618433, c4c02ec, ef15824; staged `stage_f34` (DIFF shield-bar + buff-duration-hud only), install pending go.
 - [x] **BD3 DONE 10-05:** MG2 shield df9fa9e + drift guards dropped f73d632; F34 (featureOk/fill not adopted: log text / rounding); KPM synced inv3d 272efc2, equip3d b0a5ac6, ranged-ai 8d46009, buff cb531a3+9ddf0b1, shield 444e26f. Install + play check pending user go. Next finding F35.
 - [x] **BD2 DONE 10-05:** probe edits c0df1d8; MG7/MG6/MG2-buff source done (c2be15c, 39d2921, a104576, 1af7130, c368b5e, 2ba0875, ec4f6b6..35e0146, 9134fe7); KPM mirrored for 6 mods; inv3d/equip3d/ranged-ai/BuffDurationHUD KPM dirs stale; install + play check (wheel zoom/scroll, unload order) pending user go.
 - [x] **BD1 DONE 10-05 (user decisions):** F17 note 60bc42e (styleFor already = engine UpdateWeaponClass; table pinned 34cb100), F18 integer math 34cb100, F26 StrFmt.h 84e9a7c (KPM d18015c), F3/F4 `[[adjacency]]` 4c5aaa3, F20 GameAddr names dca7bfc (KPM d6aaaec), F13 local draft `kpm-pr-test-source-filter` (branch `fix/create-patch-skip-test-sources`, 7830acc, PULL_REQUEST.md untracked; NOT pushed).
