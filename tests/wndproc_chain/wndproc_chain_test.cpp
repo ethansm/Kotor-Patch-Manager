@@ -167,6 +167,121 @@ static ScenarioOut runScenario(bool check, const std::array<int, 3>& ins, const 
     return out;
 }
 
+// ---- Design A model (test-only, finding F28): per-DLL pass-through + module pin ----
+// install:   same as Sub, plus ++pins (stands in for GetModuleHandleExA(FROM_ADDRESS | PIN): the DLL image can never unload,
+//            so a proc that stays chained never dangles).
+// proc:      handles the message only while !passthrough, then ALWAYS forwards to oldProc.
+// uninstall: top == ours -> restore oldProc and clear it; otherwise go pass-through and KEEP oldProc (stay chained, inert).
+template <int N>
+struct SubPass {
+    inline static Proc oldProc = nullptr;
+    inline static bool passthrough = false;
+    inline static int handled = 0;
+    inline static int handledAfterUnhook = 0;  // any handling after the DLL considered itself unhooked
+    inline static int pins = 0;
+    inline static bool unhooked = false;       // test bookkeeping
+
+    static intptr_t proc(HWND h, unsigned m, intptr_t w, intptr_t l) {
+        if (!passthrough) {
+            ++handled;
+            if (unhooked) ++handledAfterUnhook;
+        }
+        return FakeCallWindowProc(oldProc, h, m, w, l);
+    }
+    static void install() {
+        if (!oldProc) {
+            oldProc = FakeSetWindowLongPtr(kHwnd, &proc);
+            unhooked = false;
+            passthrough = false;
+            ++pins;
+        }
+    }
+    static void uninstall() {
+        if (oldProc && FakeIsWindow(kHwnd) && FakeGetWindowLongPtr(kHwnd) == &proc) {
+            FakeSetWindowLongPtr(kHwnd, oldProc);
+            oldProc = nullptr;
+        } else {
+            passthrough = true;  // not on top: stay chained, keep oldProc, stop handling
+        }
+        unhooked = true;
+    }
+    static void reset() { oldProc = nullptr; passthrough = false; handled = handledAfterUnhook = pins = 0; unhooked = false; }
+    static Proc procPtr() { return &proc; }
+};
+
+struct PassOps {
+    void (*install)();
+    void (*uninstall)();
+    void (*reset)();
+    int (*handled)();
+    int (*afterUnhook)();
+    int (*pins)();
+    bool (*passthrough)();
+    Proc (*procPtr)();
+};
+template <class S>
+PassOps passOpsFor() {
+    return {&S::install, &S::uninstall, &S::reset, [] { return S::handled; }, [] { return S::handledAfterUnhook; },
+            [] { return S::pins; }, [] { return S::passthrough; }, &S::procPtr};
+}
+static std::array<PassOps, 3> passOps() { return {passOpsFor<SubPass<0>>(), passOpsFor<SubPass<1>>(), passOpsFor<SubPass<2>>()}; }
+
+struct PassOut {
+    bool baseOnTop = false;       // window's top proc is BaseGameProc after every DLL unhooked
+    bool passChained = false;     // at least one pass-through proc is still chained (it kept its oldProc)
+};
+
+// One install order + unhook order with SubPass; two messages after every step; asserts the design-A invariants.
+static PassOut runPassScenario(const std::array<int, 3>& ins, const std::array<int, 3>& un) {
+    auto ops = passOps();
+    Reset();
+    for (auto& o : ops) o.reset();
+    bool live[3] = {false, false, false};
+    int liveMsgs[3] = {0, 0, 0};  // messages sent while that proc was installed and not yet unhooked
+    int sent = 0;
+    int step = 0;
+    auto verifyStep = [&](const char* what) {
+        ++step;
+        std::string t = tag(what, ins, un, step);
+        for (int rep = 0; rep < 2; ++rep) {
+            int before[3];
+            for (int i = 0; i < 3; ++i) before[i] = ops[i].handled();
+            int baseBefore = base().hits;
+            intptr_t r = FakeSendMessage(0x20A, 7, 41);
+            ++sent;
+            ::kt::Check((t + ": base proc received the message exactly once").c_str(), base().hits == baseBefore + 1 && r == 42);
+            for (int i = 0; i < 3; ++i) {
+                int d = ops[i].handled() - before[i];
+                ::kt::Check((t + ": no proc handled a message twice").c_str(), d <= 1);
+                if (live[i]) {
+                    ++liveMsgs[i];
+                    ::kt::Check((t + ": live proc handled the message").c_str(), d == 1);
+                } else {
+                    ::kt::Check((t + ": non-live proc did not handle the message").c_str(), d == 0);
+                }
+            }
+        }
+    };
+    for (int i : ins) {
+        ops[i].install();
+        live[i] = true;
+        ::kt::Check((tag("pass-install", ins, un, 0) + ": exactly one pin per proc after install").c_str(), ops[i].pins() == 1);
+        verifyStep("pass-after-install");
+    }
+    for (int i : un) { ops[i].uninstall(); live[i] = false; verifyStep("pass-after-unhook"); }
+    std::string ft = tag("pass-final", ins, un, 0);
+    ::kt::Check((ft + ": base proc got every message exactly once overall").c_str(), base().hits == sent);
+    PassOut out;
+    for (int i = 0; i < 3; ++i) {
+        ::kt::Check((ft + ": no handling after unhook").c_str(), ops[i].afterUnhook() == 0);
+        ::kt::Check((ft + ": handled <= messages sent while live").c_str(), ops[i].handled() <= liveMsgs[i]);
+        ::kt::Check((ft + ": pins still 1 at end").c_str(), ops[i].pins() == 1);
+        if (ops[i].passthrough()) out.passChained = true;
+    }
+    out.baseOnTop = FakeGetWindowLongPtr(kHwnd) == &BaseGameProc;
+    return out;
+}
+
 int main() {
     const std::array<std::array<int, 3>, 2> orders = {{{0, 1, 2}, {2, 0, 1}}};  // ABC, CAB
     int leakScenarios = 0, leakFree = 0, scenarios = 0;
@@ -254,6 +369,31 @@ int main() {
         int b0 = SB::hits;
         FakeSendMessage(0x20A, 0, 0);
         ::kt::Check("positive: checked A unhook leaves live B receiving messages", SB::hits == b0 + 1);
+    }
+
+    // ---- design A (per-DLL pass-through + module pin): same 2 install orders x 6 unhook orders ----
+    {
+        int passScenarios = 0, passLeaveChained = 0, passTopMismatch = 0;
+        for (const auto& ins : orders) {
+            std::array<int, 3> un = {0, 1, 2};
+            do {
+                ++passScenarios;
+                PassOut p = runPassScenario(ins, un);
+                std::array<int, 3> rev = {ins[2], ins[1], ins[0]};
+                if (un == rev) {
+                    ::kt::Check((tag("pass-final", ins, un, 0) + ": reverse-order unhook ends with BaseGameProc on top").c_str(), p.baseOnTop);
+                    ::kt::Check((tag("pass-final", ins, un, 0) + ": reverse-order unhook leaves no pass-through proc chained").c_str(), !p.passChained);
+                }
+                if (p.passChained) ++passLeaveChained;
+                if (p.passChained == p.baseOnTop) ++passTopMismatch;  // chained pass-through <=> base not on top
+            } while (std::next_permutation(un.begin(), un.end()));
+        }
+        KT_CHECK_EQ(passScenarios, 12);
+        KT_CHECK_EQ(passTopMismatch, 0);
+        // CHARACTERIZATION (F28, design A): pass-through makes a leftover proc inert (handledAfterUnhook == 0 above) and the
+        // module pin keeps it from dangling, but it does NOT unlink it: in every non-reverse order (10 of 12) at least one
+        // forwarding pass-through proc stays on the chain. Only exact reverse order ends with BaseGameProc on top.
+        ::kt::CheckEq("design A CHARACTERIZATION: scenarios that leave a pass-through proc chained", passLeaveChained, 10);
     }
 
     return kt::Report("wndproc_chain_test");
