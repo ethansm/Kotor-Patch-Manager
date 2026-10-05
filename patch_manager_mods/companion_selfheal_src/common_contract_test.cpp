@@ -181,11 +181,11 @@ int main() {
     HEQ("Slot_VitRect is +0x694 on Steam (the card vit rect read per frame)", (long long)k2addr::get()->Slot_VitRect, 0x694LL);
 
     using namespace shui;
-    Rect vit{ 3700, 100, 120, 36 };
-    const Rect none{ 0, 0, 0, 0 }, leaderVit{ 3700, 100, 60, 36 };
+    Rect vit{ 3671, 1285, 47, 96 };   // live small (companion) card vit, 3840x1600 (doc 08 probe 1)
+    const Rect none{ 0, 0, 0, 0 }, leaderVit{ 3511, 1386, 103, 208 };   // live leader vit
     Rect br = buttonRect(vit);
-    HCHECK("shui::buttonRect(vit 120x36) is a 16..24 px square left of the bar", br.w == br.h && br.w >= 16 && br.w <= 24 && br.x + br.w < vit.x);
-    HCHECK("shui::buttonRect of a leader-width bar (<70) is the empty rect", buttonRect(leaderVit) == none);
+    HCHECK("shui::buttonRect(live companion vit 47x96) is a 16..24 px square left of the bar", br.w == br.h && br.w >= 16 && br.w <= 24 && br.x + br.w < vit.x);
+    HCHECK("shui::buttonRect of the leader bar (w >= 70) is the empty rect; isLeaderVit splits 103 vs 47", buttonRect(leaderVit) == none && isLeaderVit(leaderVit) && !isLeaderVit(vit));
     HCHECK("shui::resolveState priority: hidden > full > noitem > pending > auto > normal", resolveState(true, false, 10, 10, true, false, false) == BtnState::FullHp && resolveState(true, false, 5, 10, false, false, false) == BtnState::NoItem && resolveState(true, false, 5, 10, true, true, true) == BtnState::Pending && resolveState(true, false, 5, 10, true, false, true) == BtnState::AutoOn && resolveState(true, true, 5, 10, true, false, false) == BtnState::Hidden);
     HCHECK("shui::clickAllowed false for Hidden/FullHp/Pending, true for NoItem (it logs) and Normal; clickMinCount is 1", !clickAllowed(BtnState::Pending) && !clickAllowed(BtnState::FullHp) && clickAllowed(BtnState::NoItem) && clickAllowed(BtnState::Normal) && clickMinCount(BtnState::AutoOn) == 1);
     PopLayout L = popoverLayout(br, 3840);

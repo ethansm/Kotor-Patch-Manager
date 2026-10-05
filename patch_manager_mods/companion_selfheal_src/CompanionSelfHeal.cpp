@@ -1,4 +1,4 @@
-// Companion Self-Heal 0.4.0-dev (doc 27, CS4 restyle + CS5). The HUD gets, from ONE hook (StopLoadFromLayout 0x0040F5A0, HUD vtable only), 12 runtime
+// Companion Self-Heal 0.4.1-dev (doc 27, CS4 restyle + CS5). The HUD gets, from ONE hook (StopLoadFromLayout 0x0040F5A0, HUD vtable only), 12 runtime
 // labels (2 cross-icon buttons, a popover background, 5 popover items, 2 value labels, 2 gold auto rings drawn on top; the cross + ring art are
 // embedded textures, see namespace tex; fallback = the text "+"). Per frame (K2PS_FRAME_BEGIN, only in gameplay HUD):
 // buttons follow the companion cards (slot+0x694 vit rect); LMB = use the picked healing item now (route A), RMB = popover
@@ -594,7 +594,7 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
         for (int j = 0; j < 4; ++j) ok = rd<int>((uintptr_t)slot, Slot_VitRect + 4 * j, &vr[j]) && ok;
         if (!ok) continue;
         shui::Rect vit{ vr[0], vr[1], vr[2], vr[3] };
-        bool isLeader = vit.w < 70;
+        bool isLeader = shui::isLeaderVit(vit);   // was `vit.w < 70` (inverted: live small-card vits are 47 wide, doc 30 finding)
         for (int mi = 1; mi <= 2; ++mi) {
             Card& c = g_card[mi];
             if (!c.have) continue;
@@ -771,7 +771,7 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     loadIni();
     loadCfg();
     filewatch::accept(g_cfgPoll, IniPath);
-    KP_LOG(chMain, "0.4.0-dev: probe call=%d CallKey=0x%02X cfg rows=%d", g_probeCall, g_callKey, (int)g_cfg.rows.size());
+    KP_LOG(chMain, "0.4.1-dev: probe call=%d CallKey=0x%02X cfg rows=%d", g_probeCall, g_callKey, (int)g_cfg.rows.size());
     g_ps.init(api, "companion-selfheal");
     g_ps.onConnect = onConnect;
     g_ps.add(K2PS_FRAME_BEGIN, 300, onFrameBegin);

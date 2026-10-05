@@ -8,21 +8,23 @@ static bool parse(const char* l, std::string& k, CompCfg& c) { return parseLine(
 
 int main() {
     // ---- buttonRect ----
-    { Rect r = buttonRect({100, 50, 200, 36}); KT_CHECK(r == (Rect{100 - 2 - 16, 50 + (36 - 16) / 2, 16, 16})); }   // s=9->16, gap 2
-    { Rect r = buttonRect({100, 50, 200, 64}); KT_CHECK_EQ(r.w, 16); KT_CHECK_EQ(r.h, 16); KT_CHECK_EQ(r.x, 100 - 4 - 16); KT_CHECK_EQ(r.y, 50 + 24); }   // gap round(3.56)=4
-    { Rect r = buttonRect({100, 50, 200, 96}); KT_CHECK_EQ(r.w, 24); KT_CHECK_EQ(r.h, 24); KT_CHECK_EQ(r.x, 100 - 5 - 24); KT_CHECK_EQ(r.y, 50 + 36); }   // gap round(5.33)=5
-    { Rect r = buttonRect({100, 0, 200, 200}); KT_CHECK_EQ(r.w, 24); KT_CHECK_EQ(r.x, 100 - 11 - 24); KT_CHECK_EQ(r.y, 88); }   // gap round(11.1)=11
-    { Rect r = buttonRect({100, 0, 70, 80}); KT_CHECK_EQ(r.w, 20); KT_CHECK_EQ(r.x, 100 - 4 - 20); }   // s=20 unclamped, gap round(4.44)=4
-    { Rect r = buttonRect({100, 0, 70, 82}); KT_CHECK_EQ(r.w, 21); }   // round(20.5)=21
-    { Rect r = buttonRect({100, 0, 70, 81}); KT_CHECK_EQ(r.w, 20); }   // round(20.25)=20
-    { Rect r = buttonRect({100, 0, 70, 400}); KT_CHECK_EQ(r.w, 24); KT_CHECK_EQ(r.x, 100 - 22 - 24); }   // h=400 allowed
-    { Rect z{0, 0, 0, 0}; KT_CHECK(buttonRect({100, 50, 69, 36}) == z); KT_CHECK(buttonRect({100, 50, 0, 36}) == z); }   // leader/narrow
-    { Rect z{0, 0, 0, 0}; KT_CHECK(buttonRect({100, 50, 200, 0}) == z); KT_CHECK(buttonRect({100, 50, 200, -5}) == z); KT_CHECK(buttonRect({100, 50, 200, 401}) == z); }
-    { Rect z{0, 0, 0, 0}; KT_CHECK(buttonRect({17, 50, 200, 36}) == z); KT_CHECK(!(buttonRect({18, 50, 200, 36}) == z)); }   // x = 18-2-16 = 0 ok; 17 -> -1
-    { Rect r = buttonRect({18, 50, 200, 36}); KT_CHECK_EQ(r.x, 0); }
-    { Rect r = buttonRect({100, 50, 200, 1}); KT_CHECK_EQ(r.w, 16); KT_CHECK_EQ(r.x, 100 - 2 - 16); }   // tiny h: gap floor 2
-    { Rect r = buttonRect({100, 50, 200, 18}); KT_CHECK_EQ(r.x, 100 - 2 - 16); }   // raw gap round(1.0)=1 -> floored to 2
-    { Rect r = buttonRect({100, 50, 200, 27}); KT_CHECK_EQ(r.x, 100 - 2 - 16); }   // raw gap 2 (round 1.5) -> 2
+    { Rect r = buttonRect({100, 50, 47, 36}); KT_CHECK(r == (Rect{100 - 2 - 16, 50 + (36 - 16) / 2, 16, 16})); }   // s=9->16, gap 2
+    { Rect r = buttonRect({100, 50, 47, 64}); KT_CHECK_EQ(r.w, 16); KT_CHECK_EQ(r.h, 16); KT_CHECK_EQ(r.x, 100 - 4 - 16); KT_CHECK_EQ(r.y, 50 + 24); }   // gap round(3.56)=4
+    { Rect r = buttonRect({100, 50, 47, 96}); KT_CHECK_EQ(r.w, 24); KT_CHECK_EQ(r.h, 24); KT_CHECK_EQ(r.x, 100 - 5 - 24); KT_CHECK_EQ(r.y, 50 + 36); }   // gap round(5.33)=5
+    { Rect r = buttonRect({100, 0, 47, 200}); KT_CHECK_EQ(r.w, 24); KT_CHECK_EQ(r.x, 100 - 11 - 24); KT_CHECK_EQ(r.y, 88); }   // gap round(11.1)=11
+    { Rect r = buttonRect({100, 0, 47, 80}); KT_CHECK_EQ(r.w, 20); KT_CHECK_EQ(r.x, 100 - 4 - 20); }   // s=20 unclamped, gap round(4.44)=4
+    { Rect r = buttonRect({100, 0, 47, 82}); KT_CHECK_EQ(r.w, 21); }   // round(20.5)=21
+    { Rect r = buttonRect({100, 0, 47, 81}); KT_CHECK_EQ(r.w, 20); }   // round(20.25)=20
+    { Rect r = buttonRect({100, 0, 47, 400}); KT_CHECK_EQ(r.w, 24); KT_CHECK_EQ(r.x, 100 - 22 - 24); }   // h=400 allowed
+    { Rect z{0, 0, 0, 0}; KT_CHECK(buttonRect({100, 50, 70, 36}) == z); KT_CHECK(buttonRect({100, 50, 103, 208}) == z); KT_CHECK(buttonRect({100, 50, 0, 36}) == z); KT_CHECK(!(buttonRect({100, 50, 69, 36}) == z)); }   // leader (w >= 70) / empty; 69 = small card
+    { Rect r = buttonRect({3671, 1285, 47, 96}); KT_CHECK(r == (Rect{3642, 1321, 24, 24})); }   // live small card, 3840x1600 (doc 08 probe 1)
+    { KT_CHECK(isLeaderVit({3511, 1386, 103, 208})); KT_CHECK(!isLeaderVit({3671, 1285, 47, 96})); }
+    { Rect z{0, 0, 0, 0}; KT_CHECK(buttonRect({100, 50, 47, 0}) == z); KT_CHECK(buttonRect({100, 50, 47, -5}) == z); KT_CHECK(buttonRect({100, 50, 47, 401}) == z); }
+    { Rect z{0, 0, 0, 0}; KT_CHECK(buttonRect({17, 50, 47, 36}) == z); KT_CHECK(!(buttonRect({18, 50, 47, 36}) == z)); }   // x = 18-2-16 = 0 ok; 17 -> -1
+    { Rect r = buttonRect({18, 50, 47, 36}); KT_CHECK_EQ(r.x, 0); }
+    { Rect r = buttonRect({100, 50, 47, 1}); KT_CHECK_EQ(r.w, 16); KT_CHECK_EQ(r.x, 100 - 2 - 16); }   // tiny h: gap floor 2
+    { Rect r = buttonRect({100, 50, 47, 18}); KT_CHECK_EQ(r.x, 100 - 2 - 16); }   // raw gap round(1.0)=1 -> floored to 2
+    { Rect r = buttonRect({100, 50, 47, 27}); KT_CHECK_EQ(r.x, 100 - 2 - 16); }   // raw gap 2 (round 1.5) -> 2
 
     // ---- resolveState priority ----
     // args: hasCreature,isLeader,cur,max,havePick,pending,autoOn

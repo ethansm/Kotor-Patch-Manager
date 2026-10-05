@@ -17,8 +17,10 @@ struct Rect {
 inline int clampi(int v, int lo, int hi) { return v < lo ? lo : (v > hi ? hi : v); }
 
 // Button sits left of the vitality bar, vertically centred. {0,0,0,0} = do not draw.
+// Small (companion) cards only: live vits are 47x96 small vs 103x208 leader at 3840x1600 (doc 08 probe 1); w >= 70 = leader.
+inline bool isLeaderVit(Rect vit) { return vit.w >= 70; }
 inline Rect buttonRect(Rect vit) {
-    if (vit.w < 70 || vit.h <= 0 || vit.h > 400) return Rect{0, 0, 0, 0};
+    if (vit.w <= 0 || isLeaderVit(vit) || vit.h <= 0 || vit.h > 400) return Rect{0, 0, 0, 0};
     double pxu = vit.h / 36.0;
     int s = clampi((int)std::lround(vit.h * 0.25), 16, 24);
     int gap = (int)std::lround(2 * pxu);
