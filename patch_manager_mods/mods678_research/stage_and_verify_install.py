@@ -84,6 +84,20 @@ def srcdir(path, i, dmap, extra=False):
     return next(iter(ds)) if len(ds) == 1 else "?"
 
 
+def copy_into(src, stage_dir, name=None):
+    """Copy src into stage_dir (as `name`, default basename); no-op when dst already is the same file (re-staging a staged dir)."""
+    dst = os.path.join(stage_dir, name or os.path.basename(src))
+    if os.path.exists(dst) and os.path.samefile(src, dst):
+        return dst
+    shutil.copy2(src, dst)
+    return dst
+
+
+def under(path, d):
+    d = os.path.realpath(d)
+    return os.path.realpath(path).startswith(d + os.sep)
+
+
 def stage(stage_dir, extras, allow_dirty=False):
     live = tomllib.load(open(G + "/patch_config.toml", "rb"))
     idx = kpatch_index()
@@ -101,6 +115,7 @@ def stage(stage_dir, extras, allow_dirty=False):
         lp = G + "/" + p["dll"] if p.get("dll") else None
         lm = hashlib.md5(open(lp, "rb").read()).hexdigest() if lp and os.path.exists(lp) else None
         cs = sorted(idx.get(i, []), reverse=True)
+        cs = [c for c in cs if not under(c[1], stage_dir)] or cs   # prefer sources outside the stage dir (re-run safety)
         match = [c for c in cs if lm and c[2] == lm]
         pick = (match or cs[:1])
         if not pick:
@@ -109,12 +124,12 @@ def stage(stage_dir, extras, allow_dirty=False):
         same = kpatch_hooks(z) == sorted(norm(h) for h in p.get("hooks", []))
         print(f"{i:32s} dll={'match' if match else ('none' if not lm else 'NO-MATCH')} hooks={'SAME' if same else 'DIFF'} <- {pick[0][1].replace(T, '')}")
         bad += (not same) or (lm is not None and not match)
-        shutil.copy2(pick[0][1], os.path.join(stage_dir, os.path.basename(pick[0][1]).replace(" ", "_")))
+        copy_into(pick[0][1], stage_dir, os.path.basename(pick[0][1]).replace(" ", "_"))
         ids.append(i)
         src[i] = srcdir(pick[0][1], i, dmap)
     for e in extras:
         i = kid(e)
-        shutil.copy2(e, stage_dir)
+        copy_into(e, stage_dir)
         src[i] = srcdir(e, i, dmap, True)
         if i not in ids:
             ids.append(i)

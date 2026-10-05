@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Stage the buff/shield split install set (doc 21 W5) without touching the game.
 
-Builds a patch_config.toml from the LIVE one: the buff-duration-hud [[patches]] block (v1.1.0, 7 hooks, or an already split set)
+Builds a patch_config.toml from the LIVE one: the buff-duration-hud [[patches]] block (the single-DLL build, or an already split set)
 is replaced by, in this order (provider first: KPatchInit runs in config order):
     portrait-slots   (always)
-    buff-duration-hud 2.0.0   (variants both, buff)
-    shield-bar 1.2.0          (variants both, shield)
+    buff-duration-hud   (variants both, buff)
+    shield-bar          (variants both, shield)
 Hook entries are generated from each patch's hooks.toml (addresses in decimal, as the installer writes them). Then it re-parses
 the result with tomllib and fails on any duplicate address or overlapping [address, address+len(original_bytes)) span.
 
@@ -28,6 +28,16 @@ PATCHES = {   # id -> (KPM folder, dll file name in the game's patches/)
 VARIANTS = {"both": ["portrait-slots", "buff-duration-hud", "shield-bar"], "buff": ["portrait-slots", "buff-duration-hud"],
             "shield": ["portrait-slots", "shield-bar"], "none": ["portrait-slots"]}
 OURS = set(PATCHES)
+
+
+def manifest_version(archive_path):
+    """`version` from the manifest.toml inside a kpatch (zip) archive, or None if unreadable/absent."""
+    try:
+        with zipfile.ZipFile(archive_path) as z:
+            v = tomllib.loads(z.read("manifest.toml").decode()).get("version")
+        return None if v is None else str(v)
+    except (OSError, KeyError, zipfile.BadZipFile, tomllib.TOMLDecodeError, UnicodeDecodeError):
+        return None
 
 
 def block_for(pid: str) -> str:
@@ -107,7 +117,7 @@ def main() -> int:
         kp = KPM / "split_build" / f"{folder}.kpatch"
         data = zipfile.ZipFile(kp).read("binaries/windows_x86.dll")
         (out / "patches" / dll).write_bytes(data)
-        info.append(f"{dll} {hashlib.md5(data).hexdigest()} (from {kp.name}, {kp.stat().st_mtime:.0f})")
+        info.append(f"{dll} {hashlib.md5(data).hexdigest()} version {manifest_version(kp) or '?'} (from {kp.name}, {kp.stat().st_mtime:.0f})")
     for repo in (REPO, KPM):
         info.append(f"{repo.name} HEAD {subprocess.run(['git', '-C', str(repo), 'rev-parse', '--short', 'HEAD'], capture_output=True, text=True).stdout.strip()}")
     (out / "STAGE_INFO.txt").write_text("\n".join(info) + "\n")
