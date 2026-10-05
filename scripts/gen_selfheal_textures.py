@@ -2,7 +2,7 @@
 """Generate the Companion Self-Heal 0.4.0 textures and embed them in the DLL source.
 
 Writes patch_manager_mods/companion_selfheal_src/SelfHealTextures.inc: one uncompressed 32-bit TGA byte array per texture.
-  csh_cross                32x32 plus-shaped cross v2: light->dark gradient, bevel, seeded noise, dark outline (engine tints it)
+  csh_cross                32x32 cross v3: wrench-family mint->teal shaded plus, ~22 px arm span, rounded ends (drawn untinted)
   csh_ring0 .. csh_ring7   48x48 busy-ring animation, 8 frames = one revolution: faint full ring + bright comet arc
                            (~70 deg, alpha 255 at the head fading to 0 along the tail) + soft sparkle dot at the head.
                            ANGLE CONVENTION: 0 deg = up (12 o'clock), increasing clockwise; the head of frame k is at
@@ -10,8 +10,7 @@ Writes patch_manager_mods/companion_selfheal_src/SelfHealTextures.inc: one uncom
   csh_disc                 48x48 backing disc (0,0,0,175) with 2 px (10,96,80) rim, radius = ring radius, drawn untinted (LAST entry)
 Deterministic: fixed-seed noise only, no timestamps. Re-run after changing the art, then rebuild the patch.
 
-The .inc uses the selfheal-private names SelfHealEmbeddedTexture / kSelfHealTextures / kSelfHealTextureCount so it can
-be included next to HotbarTextures.inc (which defines struct EmbeddedTexture) without a redefinition clash.
+The .inc uses embtex::Tex (EmbedTex.h) and the names kSelfHealTextures / kSelfHealTextureCount.
 
   --out-dir DIR   also write the .tga files to DIR (for inspection)
 """
@@ -29,54 +28,63 @@ RING = tuple(f"csh_ring{k}" for k in range(RING_FRAMES))
 DISC = "csh_disc"
 ALL_NAMES = (CROSS,) + RING + (DISC,)   # disc appended last so existing indices stay valid
 RING_SIZE, CROSS_SIZE = 48, 32
+CROSS_SPAN = 22   # tip-to-tip arm span of the cross glyph, px
 RING_RADIUS, RING_WIDTH = 21.0, 2.5
 ARC_DEG = 70.0
 DISC_RADIUS, DISC_RIM = RING_RADIUS, 2.0
 
 
-def _cross_mask(grow: float, S: int = 4):
-    """Coverage (0..1) per final pixel of the rounded plus shape grown by `grow` px (supersampled)."""
-    from PIL import Image, ImageDraw
-    N = CROSS_SIZE
-    im = Image.new("L", (N * S, N * S), 0)
-    d = ImageDraw.Draw(im)
-    c, arm = N / 2, N * 0.30 / 2   # arm width ~30% of the side
-    h, a, r = N / 2 - 1.5 + grow, arm + grow, 2.0 + grow
-    for box in ((c - h, c - a, c + h, c + a), (c - a, c - h, c + a, c + h)):
-        d.rounded_rectangle([box[0] * S, box[1] * S, box[2] * S - 1, box[3] * S - 1], radius=r * S, fill=255)
-    im = im.resize((N, N), Image.BOX)
-    px = im.load()
-    return [[px[x, y] / 255.0 for x in range(N)] for y in range(N)]
-
-
 def make_cross(out: Path) -> list[Path]:
-    """v2: vertical light->dark gradient body (255 -> ~170, engine tints it), 1 px bevel highlight (top-left) and shadow
-    (bottom-right), small seeded noise, dark (0,0,0,200) outline."""
-    import random
-    from PIL import Image
-    N = CROSS_SIZE
-    body, outl = _cross_mask(0.0), _cross_mask(1.5)
-    rng = random.Random(0x5E1F)
-    im = Image.new("RGBA", (N, N), (0, 0, 0, 0))
-    px = im.load()
-    y0, y1 = 1.5, N - 1.5   # body vertical extent
-    cov = lambda m, x, y: m[y][x] if 0 <= x < N and 0 <= y < N else 0.0
-    for y in range(N):
-        for x in range(N):
-            noise = rng.uniform(-4.0, 4.0)
-            ba, oa = body[y][x], outl[y][x] * 200.0 / 255.0
-            lum = 255.0 - 85.0 * min(1.0, max(0.0, (y + 0.5 - y0) / (y1 - y0)))
-            if ba > 0.5:
-                if cov(body, x - 1, y) < 0.5 or cov(body, x, y - 1) < 0.5:
-                    lum = min(255.0, lum + 18.0)    # top-left bevel highlight
-                elif cov(body, x + 1, y) < 0.5 or cov(body, x, y + 1) < 0.5:
-                    lum -= 38.0                     # bottom-right bevel shadow
-            lum = max(0.0, min(255.0, lum + noise))
-            a = ba + oa * (1.0 - ba)
-            if a <= 0:
-                continue
-            col = lum * ba / a   # outline colour is black, so it only darkens
-            px[x, y] = (int(round(col)),) * 3 + (int(round(a * 255.0)),)
+    """v3: wrench-family cross (recipe ported from gen_hotbar_textures.make_edit_textures): mint->teal gradient body, dark outline, soft glow,
+    lower-right shade, upper-left rim light, recessed centre channel along each arm (inner shadow + lip), specular glint. Rounded arm ends,
+    arm span CROSS_SPAN px, centred. Drawn untinted by the engine."""
+    from PIL import Image, ImageDraw, ImageFilter, ImageChops
+    S, N = 4, CROSS_SIZE
+    Z = (N * S, N * S)
+    c, half, wd = N / 2, CROSS_SPAN / 2, 8.0
+    def L(): return Image.new("L", Z, 0)
+    im = Image.new("RGBA", Z, (60, 210, 175, 0))
+    def put(col, mask):
+        nonlocal im
+        lay = Image.new("RGBA", Z, col + (255,))
+        lay.putalpha(mask)
+        im = Image.alpha_composite(im, lay)
+    def cap_line(dr, p0, p1, w, fill=255):
+        dr.line([(p0[0] * S, p0[1] * S), (p1[0] * S, p1[1] * S)], fill=fill, width=int(w * S))
+        for q in (p0, p1):
+            dr.ellipse([(q[0] - w / 2) * S, (q[1] - w / 2) * S, (q[0] + w / 2) * S, (q[1] + w / 2) * S], fill=fill)
+    def plus(w, reach):
+        m = L(); md = ImageDraw.Draw(m)
+        cap_line(md, (c - reach, c), (c + reach, c), w)
+        cap_line(md, (c, c - reach), (c, c + reach), w)
+        return m
+    m = plus(wd, half - wd / 2)
+    def vgrad(top, bot):
+        g = Image.new("RGBA", Z); gp = g.load()
+        y0, y1 = (c - half) * S, (c + half) * S
+        for y in range(Z[1]):
+            t = min(1.0, max(0.0, (y - y0) / (y1 - y0)))
+            col = tuple(int(top[i] + (bot[i] - top[i]) * t) for i in range(3)) + (255,)
+            for x in range(Z[0]): gp[x, y] = col
+        return g
+    edge = lambda mk, dx, dy: ImageChops.subtract(mk, ImageChops.offset(mk, int(dx * S), int(dy * S)))
+    outline = m.filter(ImageFilter.MaxFilter(2 * S + 1))
+    glow = m.filter(ImageFilter.MaxFilter(4 * S + 1)).filter(ImageFilter.GaussianBlur(S * 2.2)).point(lambda v: int(v * 0.55))
+    put((60, 210, 175), glow)
+    put((6, 60, 50), outline)
+    im.paste(vgrad((175, 252, 228), (28, 150, 122)), (0, 0), m)
+    put((10, 90, 74), edge(m, -2.4, -2.4).filter(ImageFilter.GaussianBlur(S * 0.7)))    # lower-right shade
+    put((235, 255, 246), edge(m, 2.2, 2.2).filter(ImageFilter.GaussianBlur(S * 0.6)))    # upper-left rim light
+    ch = plus(3.4, half - 4.5)   # recessed centre channel along each arm
+    im.paste(vgrad((52, 160, 134), (12, 92, 76)), (0, 0), ch)
+    put((5, 60, 50), edge(ch, 1.3, 1.3).filter(ImageFilter.GaussianBlur(S * 0.4)))       # inner shadow (top-left)
+    put((170, 244, 222), edge(ch, -1.1, -1.1).filter(ImageFilter.GaussianBlur(S * 0.4)))  # lower-right lip
+    hl = L(); hd = ImageDraw.Draw(hl)
+    hd.line([((c - half + 4) * S, (c - 3.4) * S), ((c - 4.5) * S, (c - 3.4) * S)], fill=190, width=int(1.1 * S))   # rim streak, left arm
+    gx, gy = c - 2.8, c - half + 3.5
+    hd.ellipse([(gx - 1.5) * S, (gy - 1.5) * S, (gx + 1.5) * S, (gy + 1.5) * S], fill=230)   # glint, top arm
+    put((245, 255, 250), ImageChops.multiply(hl, m).filter(ImageFilter.GaussianBlur(S * 0.5)))
+    im = im.resize((N, N), Image.BOX)
     p = out / f"{CROSS}.tga"
     im.save(p, format="TGA")
     return [p]
@@ -151,7 +159,7 @@ def make_all(out: Path) -> list[Path]:
 
 def render_inc(blobs) -> str:
     out = ["// GENERATED by scripts/gen_selfheal_textures.py -- do not edit. Uncompressed 32-bit TGA images served from memory by the DLL.",
-           "// Selfheal-private names (SelfHealEmbeddedTexture / kSelfHealTextures) so this can coexist with HotbarTextures.inc's EmbeddedTexture.",
+           "// Requires embtex::Tex { const char* resref; const unsigned char* data; unsigned size; } (EmbedTex.h).",
            ""]
     for name, data in blobs:
         out.append(f"static const unsigned char SHTex_{name}[{len(data)}] = {{")
@@ -159,8 +167,7 @@ def render_inc(blobs) -> str:
             out.append("    " + ",".join(f"0x{b:02x}" for b in data[i:i + 24]) + ",")
         out.append("};")
     out.append("")
-    out.append("struct SelfHealEmbeddedTexture { const char* resref; const unsigned char* data; unsigned size; };")
-    out.append("static const SelfHealEmbeddedTexture kSelfHealTextures[] = {")
+    out.append("static const embtex::Tex kSelfHealTextures[] = {")
     for name, data in blobs:
         out.append(f'    {{ "{name}", SHTex_{name}, {len(data)}u }},')
     out.append("};")

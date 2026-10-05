@@ -527,8 +527,8 @@ void testStripAvoidsSelfHeal() {
         Rect out[4];
         const int n = stripRects(cs.card, Rect{ cs.vit.x, cs.vit.y, cs.vit.w, cs.vit.h }, nIcons, c, out);
         KT_CHECK_EQ(n, nIcons);
-        // buttonRect() refuses vit.w < 70 (the real small-card vit is 47 wide); its x/y depend only on vit.x/y/h, so widen w to get the geometry.
-        const shui::Rect btn = shui::buttonRect(shui::Rect{ cs.vit.x, cs.vit.y, cs.vit.w < 70 ? 70 : cs.vit.w, cs.vit.h });
+        // buttonRect() refuses vit.w >= 70 (leader); the real small-card vit is 47 wide and its x/y depend only on vit.x/y/h, so use w = 47.
+        const shui::Rect btn = shui::buttonRect(shui::Rect{ cs.vit.x, cs.vit.y, 47, cs.vit.h });
         KT_CHECK(btn.w > 0);                                   // the case must exercise a real button
         const shui::Rect ring = shui::ringRect(btn);
         for (int i = 0; i < n; ++i) {
@@ -567,7 +567,7 @@ void testStripLeftLive() {
     }
     // the reserve covers the real selfheal button + ring at every bar height, and wastes at most 3 px beyond kStripGap
     for (int h = 8; h <= 400; ++h) {
-        const shui::Rect btn = shui::buttonRect(shui::Rect{ 1000, 100, 100, h });
+        const shui::Rect btn = shui::buttonRect(shui::Rect{ 1000, 100, 47, h });
         if (btn.w <= 0) continue;
         const shui::Rect ring = shui::ringRect(btn);
         const int need = 1000 - (btn.x < ring.x ? btn.x : ring.x);
@@ -577,6 +577,115 @@ void testStripLeftLive() {
     }
     KT_CHECK_EQ(stripRects(Rect{ 40, 0, 85, 85 }, Rect{ 10, 0, 47, 96 }, 2, c, out), 2);   // too close to the left edge: pinned to x = 0
     KT_CHECK_EQ(out[0].x, 0);
+}
+
+// ---- 0.3.0: kit frame + Cancel ----
+bool rectEq(Rect r, int x, int y, int w, int h) { return r.x == x && r.y == y && r.w == w && r.h == h; }
+bool ov(Rect a, Rect b) { return a.w > 0 && b.w > 0 && a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h; }
+
+void testKitConfig() {
+    Config c;
+    KT_CHECK(c.kit && c.cancel && c.frameAlpha == 0.9f);
+    KT_CHECK(slotStyle(c, 0, false).frameA == 0.9f);
+    KT_CHECK(slotStyle(c, 0, true).frameA == 0.9f * 0.6f);          // the dimmed head slot dims its frame too
+    KT_CHECK(slotStyle(c, 1, true).frameA == 0.9f);
+    c.waitingDim = false; KT_CHECK(slotStyle(c, 0, true).frameA == 0.9f);
+    Config d;
+    KT_CHECK(parseIniLine(d, "kit = 0") && !d.kit);
+    KT_CHECK(parseIniLine(d, "cancel=off") && !d.cancel);
+    KT_CHECK(parseIniLine(d, "frame_alpha = 0.5") && d.frameAlpha == 0.5f);
+    KT_CHECK(parseIniLine(d, "frame_alpha = 7") && d.frameAlpha == 1.0f);   // clamped
+    KT_CHECK(!parseIniLine(d, "frame_alpha = x") && d.frameAlpha == 1.0f);
+    KT_CHECK(!parseIniLine(d, "kit = maybe") && !d.kit);
+    Config e; parseIni(e, "kit=0\r\nframe_alpha=0.25\r\ncancel=0\r\nborder_px=3\r\n");
+    KT_CHECK(!e.kit && e.frameAlpha == 0.25f && !e.cancel && e.borderPx == 3);
+}
+
+void testInsetRect() {
+    KT_CHECK(rectEq(insetRect(Rect{ 432, 521, 40, 40 }), 438, 527, 28, 28));   // 15% of 40 = 6
+    KT_CHECK(rectEq(insetRect(Rect{ 378, 531, 20, 20 }), 381, 534, 14, 14));   // 3 px floor
+    KT_CHECK(rectEq(insetRect(Rect{ 10, 20, 6, 6 }), 10, 20, 6, 6));          // 15% of 6 floors to 0: unchanged
+    KT_CHECK(rectEq(insetRect(Rect{ 0, 0, 100, 60 }), 15, 9, 70, 42));        // each axis insets by its own size
+}
+
+void testCancelRect() {
+    // vanilla 800x600 design extents (R7 FINDINGS s4): QUEUE0 [432,521,40,40], QUEUE1 [378,531,20,20]
+    const Rect q0{ 432, 521, 40, 40 }, q1{ 378, 531, 20, 20 };
+    Rect r = cancelRect(q0, q1);
+    KT_CHECK(rectEq(r, 477, 531, 20, 20));                  // right of QUEUE0 (432+40) + gap 20/4, centred on QUEUE0 (521+10), side = q1.h
+    KT_CHECK_EQ(r.x - (q0.x + q0.w), q1.h / 4);
+    KT_CHECK_EQ(r.y + r.h / 2, q0.y + q0.h / 2);
+    KT_CHECK(!ov(r, q0) && !ov(r, q1));
+    // the same layout scaled x2 (live extents scale with the HUD): side 40, gap 10
+    r = cancelRect(Rect{ 864, 1042, 80, 80 }, Rect{ 756, 1062, 40, 40 });
+    KT_CHECK(rectEq(r, 954, 1062, 40, 40));
+    // side from q1.h only: an odd height keeps the integer centring (floor)
+    r = cancelRect(q0, Rect{ 378, 531, 21, 21 });
+    KT_CHECK(rectEq(r, 432 + 40 + 5, 521 + (40 - 21) / 2, 21, 21));
+    // unusable extents -> none
+    KT_CHECK(rectEq(cancelRect(Rect{ 432, 521, 0, 40 }, q1), 0, 0, 0, 0));
+    KT_CHECK(rectEq(cancelRect(Rect{ 432, 521, 40, 0 }, q1), 0, 0, 0, 0));
+    KT_CHECK(rectEq(cancelRect(q0, Rect{ 378, 531, 20, 0 }), 0, 0, 0, 0));
+    KT_CHECK(rectEq(cancelRect(q0, Rect{ 378, 531, 20, -4 }), 0, 0, 0, 0));
+}
+
+void testStripCancel() {
+    // live 3840x1600 companion 2 / 3 (doc 08 probe 1, as testStripLeftLive): 38 px icons centred on the 96 px bar
+    Config c;
+    const Rect vit2{ 3671, 1285, 47, 96 }, card2{ 3711, 1285, 85, 85 }, vit3{ 3671, 1181, 47, 96 }, card3{ 3711, 1181, 85, 85 };
+    const shui::Rect leaderVit{ 3511, 1386, 103, 208 }, leaderCard{ 3591, 1394, 191, 192 }, leaderForce{ 3762, 1386, 103, 208 };
+    const Rect* vits[] = { &vit2, &vit3 }; const Rect* cards[] = { &card2, &card3 };
+    for (int k = 0; k < 2; ++k) for (int n = 1; n <= 4; ++n) {
+        Rect icons[4];
+        KT_CHECK_EQ(stripRects(*cards[k], *vits[k], n, c, icons, 3840), n);
+        const Rect cr = stripCancelRect(icons, n, kSideLeft, 3840);
+        KT_CHECK_EQ(cr.w, 38); KT_CHECK_EQ(cr.h, 38); KT_CHECK_EQ(cr.y, icons[0].y);
+        KT_CHECK_EQ(icons[0].x - (cr.x + cr.w), 9);                  // gap = 38 / 4
+        for (int i = 0; i < n; ++i) KT_CHECK(!ov(cr, icons[i]));
+        // clear of the real selfheal button + ring, the bars and cards
+        const shui::Rect btn = shui::buttonRect(shui::Rect{ vits[k]->x, vits[k]->y, 47, vits[k]->h });
+        const shui::Rect ring = shui::ringRect(btn);
+        KT_CHECK(!ov(cr, Rect{ btn.x, btn.y, btn.w, btn.h })); KT_CHECK(!ov(cr, Rect{ ring.x, ring.y, ring.w, ring.h }));
+        KT_CHECK(!ov(cr, *vits[k])); KT_CHECK(!ov(cr, *cards[k]));
+        for (const Rect* o : { &vit2, &vit3, &card2, &card3 }) KT_CHECK(!ov(cr, *o));
+        for (const shui::Rect& o : { leaderVit, leaderCard, leaderForce }) KT_CHECK(!ov(cr, Rect{ o.x, o.y, o.w, o.h }));
+    }
+    { Rect icons[4]; stripRects(card2, vit2, 1, c, icons, 3840);
+      KT_CHECK(rectEq(stripCancelRect(icons, 1, kSideLeft, 3840), 3595 - 9 - 38, 1285 + 29, 38, 38)); }
+    // left: no room left of the row (x < 0) -> no cancel, never moved into the selfheal reserve
+    { const Rect icons[1] = { Rect{ 20, 100, 38, 38 } };
+      KT_CHECK(rectEq(stripCancelRect(icons, 1, kSideLeft, 3840), 0, 0, 0, 0)); }
+    // above / below: x < 0 falls back to just RIGHT of the last icon
+    { Rect icons[2] = { Rect{ 5, 100, 20, 20 }, Rect{ 27, 100, 20, 20 } };
+      KT_CHECK(rectEq(stripCancelRect(icons, 2, kSideAbove, 3840), 47 + 5, 100, 20, 20));
+      KT_CHECK(rectEq(stripCancelRect(icons, 2, kSideBelow, 3840), 47 + 5, 100, 20, 20)); }
+    // above / below with room: just left of the first icon
+    { const Rect icons[1] = { Rect{ 3711, 1370, 16, 16 } };
+      KT_CHECK(rectEq(stripCancelRect(icons, 1, kSideAbove, 3840), 3711 - 4 - 16, 1370, 16, 16)); }
+    // the min gap (kStripGap) for tiny icons
+    { const Rect icons[1] = { Rect{ 100, 50, 8, 8 } };
+      KT_CHECK(rectEq(stripCancelRect(icons, 1, kSideLeft, 0), 100 - 2 - 8, 50, 8, 8)); }
+    // a square past the right edge is refused (only reachable through the right-hand fallback)
+    { Rect icons[1] = { Rect{ 5, 100, 20, 20 } };
+      KT_CHECK(rectEq(stripCancelRect(icons, 1, kSideAbove, 40), 0, 0, 0, 0));
+      KT_CHECK(rectEq(stripCancelRect(icons, 1, kSideAbove, 55), 30, 100, 20, 20)); }
+    // null / empty / unusable
+    KT_CHECK(rectEq(stripCancelRect(nullptr, 1, kSideLeft), 0, 0, 0, 0));
+    { const Rect icons[1] = { Rect{ 100, 50, 20, 20 } };
+      KT_CHECK(rectEq(stripCancelRect(icons, 0, kSideLeft), 0, 0, 0, 0)); KT_CHECK(rectEq(stripCancelRect(icons, -1, kSideLeft), 0, 0, 0, 0)); }
+    { const Rect icons[1] = { Rect{ 100, 50, 0, 20 } };
+      KT_CHECK(rectEq(stripCancelRect(icons, 1, kSideLeft), 0, 0, 0, 0)); }
+}
+
+void testCancelVisible() {
+    KT_CHECK(cancelVisible(true, true, false, false, 0, 1));
+    KT_CHECK(cancelVisible(true, true, false, false, 249, 4));
+    KT_CHECK(!cancelVisible(true, true, false, false, 250, 1));   // stale capture
+    KT_CHECK(!cancelVisible(true, true, false, false, 0, 0));     // no queue shown -> no cancel
+    KT_CHECK(!cancelVisible(true, true, true, false, 0, 1));      // vanilla red combat bar owns combat
+    KT_CHECK(!cancelVisible(true, true, false, true, 0, 1));      // menu
+    KT_CHECK(!cancelVisible(false, true, false, false, 0, 1));
+    KT_CHECK(!cancelVisible(true, false, false, false, 0, 1));    // cancel = 0
 }
 
 }  // namespace
@@ -599,5 +708,10 @@ int main() {
     testStripGeometry();
     testStripAvoidsSelfHeal();
     testStripLeftLive();
+    testKitConfig();
+    testInsetRect();
+    testCancelRect();
+    testStripCancel();
+    testCancelVisible();
     return kt::Report("queue_hud_logic_test");
 }

@@ -298,6 +298,7 @@ inline bool pendingDone(const Pending& p, uint32_t now, int hp, int stack) {
 
 // ---- look: colour / alpha / spinner ring per state (CS4) ----
 constexpr int kRingFrames = 8;
+constexpr float kRingR = 1.00f, kRingG = 0.80f, kRingB = 0.25f;   // gold tint for the busy ring
 constexpr uint32_t kRingFrameMs = 90;   // 8 frames * 90 ms = ~0.7 s per revolution
 
 struct Look {
@@ -308,13 +309,12 @@ struct Look {
 
 // ringFrame is always computed (wraps with uint32 now, 0 only at frame boundaries); ring says whether to draw it.
 inline Look lookFor(BtnState st, bool autoOn, uint32_t now) {
-    Look l{0.30f, 0.95f, 0.40f, 1.0f, (int)((now / kRingFrameMs) % (uint32_t)kRingFrames), autoOn && st != BtnState::Hidden};
-    const bool gold = autoOn || st == BtnState::AutoOn;
-    if (gold) { l.r = 1.00f; l.g = 0.80f; l.b = 0.25f; }
+    Look l{1.0f, 1.0f, 1.0f, 1.0f, (int)((now / kRingFrameMs) % (uint32_t)kRingFrames), autoOn && st != BtnState::Hidden};
+    // The cross is a pre-shaded texture drawn untinted (white tint); auto mode is signalled by the gold ring (kRingR/G/B), not the cross.
     switch (st) {
         case BtnState::Hidden: l.alpha = 0.0f; break;
         case BtnState::FullHp:
-        case BtnState::NoItem: l.r = l.g = l.b = 0.60f; l.alpha = 0.40f; break;
+        case BtnState::NoItem: l.r = l.g = l.b = 0.55f; l.alpha = 0.40f; break;
         case BtnState::Pending: l.alpha = 0.65f; break;
         default: break;
     }

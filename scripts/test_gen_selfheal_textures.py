@@ -49,19 +49,25 @@ class GenSelfHealTextures(unittest.TestCase):
 
     def test_cross(self):
         im = img(dict(gen())["csh_cross"])
-        self.assertEqual(im.getpixel((16, 16))[3], 255)
-        self.assertGreater(min(im.getpixel((16, 16))[:3]), 150)   # bright body, engine tints it
+        r, g, b, a = im.getpixel((16, 16))
+        self.assertEqual(a, 255)
+        self.assertGreater(g, r)   # mint/teal, not white or grey
+        self.assertGreater(b, r)
         for xy in ((0, 0), (31, 0), (0, 31), (31, 31), (5, 5)):
-            self.assertEqual(im.getpixel(xy)[3], 0, xy)
-        self.assertGreater(im.getpixel((16, 2))[3], 0)   # arm reaches near the edge
+            self.assertLessEqual(im.getpixel(xy)[3], 12, xy)   # at most faint glow
 
-    def test_cross_v2(self):
+    def test_cross_v3(self):
         im = img(dict(gen())["csh_cross"])
         lum = lambda p: sum(p[:3]) / 3
-        self.assertGreater(lum(im.getpixel((16, 5))), lum(im.getpixel((16, 26))) + 40)   # gradient inside the body
-        o = im.getpixel((16, 0))   # outline-only pixel
-        self.assertLess(lum(o), 10)
-        self.assertLess(abs(o[3] - 200), 8)
+        self.assertGreater(lum(im.getpixel((16, 7))), lum(im.getpixel((16, 25))) + 20)   # top body row brighter than bottom (vertical gradient)
+        # a dark outline pixel near (6,60,50)
+        self.assertTrue(any(p[3] > 200 and all(abs(p[i] - t) <= 25 for i, t in enumerate((6, 60, 50)))
+                            for p in im.getdata()), "no outline-coloured pixel")
+        xs = [x for y in range(32) for x in range(32) if im.getpixel((x, y))[3] >= 250]
+        self.assertLessEqual(max(xs) - min(xs) + 1, 24)   # smaller inside the circle than v2 (~30)
+        self.assertGreaterEqual(max(xs) - min(xs) + 1, 20)
+        ys = [y for y in range(32) for x in range(32) if im.getpixel((x, y))[3] >= 250]
+        self.assertLessEqual(max(ys) - min(ys) + 1, 24)
 
     def test_disc(self):
         im = img(dict(gen())["csh_disc"])
@@ -113,7 +119,8 @@ class GenSelfHealTextures(unittest.TestCase):
     def test_private_names_in_inc(self):
         t = gt.INC.read_text()
         self.assertIn("kSelfHealTextures", t)
-        self.assertNotRegex(t, r"struct EmbeddedTexture\b")
+        self.assertIn("embtex::Tex", t)
+        self.assertNotRegex(t, r"struct \w*EmbeddedTexture\b")
 
     def test_committed_inc_is_fresh(self):
         self.assertEqual(gt.render_inc(gen()), gt.INC.read_text(),

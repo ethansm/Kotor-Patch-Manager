@@ -5,6 +5,9 @@
 #ifndef GUIKIT_HOST
 #define GUIKIT_HOST 1
 #endif
+#ifndef EMBTEX_HOST
+#define EMBTEX_HOST 1
+#endif
 #include "SafeRead.h"
 #include "KpLog.h"
 #include "K2Addr.h"
@@ -17,6 +20,7 @@
 #include "GuiTip.h"
 #include "FileWatch.h"
 #include "SelfHealUi.h"
+#include "EmbedTex.h"
 #include "check.h"
 #include <sys/mman.h>
 #include <string.h>
@@ -238,7 +242,7 @@ int main() {
     {
         Look g = lookFor(BtnState::Normal, true, 0), n = lookFor(BtnState::Normal, false, 0), d = lookFor(BtnState::FullHp, false, 0), h = lookFor(BtnState::Hidden, true, 0);
         HCHECK("shui::lookFor: ring only when autoOn and not Hidden; Hidden alpha 0; FullHp/NoItem grey+dim", g.ring && !n.ring && !h.ring && h.alpha == 0.0f && d.alpha < 1.0f && d.r == d.g && d.g == d.b);
-        HCHECK("shui::lookFor: gold (r>g>b) when auto, ringFrame in [0,kRingFrames) and advances every kRingFrameMs", g.r > g.g && g.g > g.b && lookFor(BtnState::Normal, true, 90 * 3 + 5).ringFrame == 3 && lookFor(BtnState::Normal, true, 0xFFFFFFF0u).ringFrame < kRingFrames);
+        HCHECK("shui::lookFor: cross untinted (1,1,1) when auto, gold kRingR>kRingG>kRingB, ringFrame in [0,kRingFrames) and advances every kRingFrameMs", g.r == 1.0f && g.g == 1.0f && g.b == 1.0f && kRingR > kRingG && kRingG > kRingB && lookFor(BtnState::Normal, true, 90 * 3 + 5).ringFrame == 3 && lookFor(BtnState::Normal, true, 0xFFFFFFF0u).ringFrame < kRingFrames);
         Rect rr = ringRect(br);
         HCHECK("shui::ringRect is a square larger than the button and centred on it; empty for h<=0", rr.w == rr.h && rr.w > br.w && rr.x + rr.w / 2 == br.x + br.w / 2 && ringRect(none) == none);
     }
@@ -260,6 +264,21 @@ int main() {
         HCHECK("filewatch::changed is throttled (1 s) and quiet when unchanged", !filewatch::changed(rp, path.c_str(), 5100) && !filewatch::changed(rp, path.c_str(), 7000));
         HCHECK("filewatch::atomicWrite again (bak exists) works; accept() makes our own write quiet", filewatch::atomicWrite(path.c_str(), "a=2\n", true) && (filewatch::accept(rp, path.c_str()), !filewatch::changed(rp, path.c_str(), 9000)));
         remove(path.c_str()); remove((path + ".bak").c_str());
+    }
+    {   // EmbedTex.h: the embedded cross + 8 ring frames + disc (CompanionSelfHeal.cpp namespace tex)
+        unsigned char tga[18 + 4] = {0}; tga[2] = 2; tga[12] = 1; tga[14] = 1; tga[16] = 32;   // 1x1 uncompressed 32-bit
+        embtex::TgaInfo ti;
+        HCHECK("EmbedTex.h tgaInspect accepts the generated uncompressed 32-bit TGA (18 byte header, w/h little endian)", embtex::tgaInspect(tga, sizeof tga, &ti) == embtex::TGA_OK && ti.w == 1 && ti.h == 1 && ti.off == 18 && ti.bytes == 4);
+        HCHECK("EmbedTex.h tgaInspect rejects a truncated pixel block", embtex::tgaInspect(tga, sizeof tga - 1, &ti) == embtex::TGA_TRUNCATED);
+        tga[16] = 24;
+        HCHECK("EmbedTex.h tgaInspect rejects non-32-bit TGAs", embtex::tgaInspect(tga, sizeof tga, &ti) == embtex::TGA_NOT_UNCOMPRESSED32);
+        HCHECK("EmbedTex.h slot table holds all 10 mod textures (cross + 8 ring + disc)", embtex::MaxTex >= 10);
+        HCHECK("EmbedTex.h CAurTextureBasic layout: object 0xF4, pixels +0x44, GL name +0x58, w +0x68, constructed +0xE4, missing +0xE5",
+               embtex::ObjSize == 0xF4 && embtex::Tex_Pixels == 0x44 && embtex::Tex_Uploaded == 0x58 && embtex::Tex_W == 0x68 && embtex::Tex_Constructed == 0xE4 && embtex::Tex_Missing == 0xE5);
+        const embtex::Tex set[1] = {{"csh_pin", tga, sizeof tga}};
+        k2addr::setForTest(nullptr); embtex::clearForTest();
+        HCHECK("EmbedTex.h ensure/heal are no-ops (no engine call) off the Steam exe", !embtex::supported() && !embtex::ensure(set, 1) && embtex::slotCount() == 0);
+        embtex::heal();
     }
     return kt::Report("common_contract_test (companion_selfheal)");
 }

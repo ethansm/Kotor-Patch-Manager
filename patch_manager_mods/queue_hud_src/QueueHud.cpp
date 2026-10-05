@@ -1,4 +1,4 @@
-// Queue HUD 0.2.0-dev (Steam Aspyr build 6A522E71...). A GREEN copy of the vanilla combat action-queue panel (up to 4 icons), drawn
+// Queue HUD 0.3.0-dev (Steam Aspyr build 6A522E71...). A GREEN copy of the vanilla combat action-queue panel (up to 4 icons), drawn
 // OUT of combat so a command given while paused (a use-item / cast-spell that waits for unpause) is visible.
 // Research: patch_manager_mods/30_queue_hud_evidence/RE.md (0x74DC80 panel filler, 0x74E0B0 icon resolver); logic: QueueHudLogic.h.
 //
@@ -7,13 +7,19 @@
 //            engine's own 0x74E0B0 (cached), and draws bg + border + icon over the hidden vanilla slots (hud+0x5F2C+i*0x148)
 //   0.2.0    companion strips: for party members 1-2 a row of small green queue icons left of their health bar
 //            (strip_side left | above | below the card; HUD slot table via portrait-slots; slot creature matched against the party member's client OR server pointer; per-creature round)
-// READ-ONLY toward engine state: no engine memory writes, every pointer deref goes through saferead (site ids 0x7100+, strips 0x7150+).
+//   0.3.0    kit look: the slots are the qh_frame image (icon inset 15%), flat rects only as the fallback when a kit texture is missing;
+//            a Cancel control (qh_cancel / qh_cancel_hi, a HUD label built in hud-host's K2HUD_BUILD phase, k2.hud@1) right of the leader's
+//            QUEUE0 and left of each companion strip; LMB calls CServerExoApp::ClearAllActions (0x51CB10, doc 30 R7) for that member.
+//            Out of combat only (the vanilla red Cancel Combat bar is untouched). No new hook: BUILD + FRAME_BEGIN are registry phases.
+// Every pointer deref goes through saferead (site ids 0x7100+, strips 0x7150+, cancel 0x7160+). The only engine write is the Cancel call.
 // Without portrait-slots (or an unknown exe) the mod is inert.
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdarg.h>
+#include <stddef.h>
 
 #include "KpLog.h"
 #include "SafeRead.h"
@@ -22,6 +28,10 @@
 #include "PortraitSlots.h"
 #include "Gui2D.h"
 #include "GuiKit.h"
+#include "GuiTip.h"
+#include "HudHost.h"
+#include "EmbedTex.h"
+#include "GameAddr.h"
 #include "QueueHudLogic.h"
 
 KP_LOG_PATCH("queue-hud");
@@ -32,9 +42,10 @@ KP_CHANNEL(chMain, "main");
 KP_CHANNEL(chCap, "cap");
 KP_CHANNEL(chIcon, "icon");
 KP_CHANNEL(chDraw, "draw");
+KP_CHANNEL(chCancel, "cancel");
 
 // saferead site ids (0x7100+)
-constexpr unsigned SiteCap = 0x7100, SiteHud = 0x7101, SiteQueue = 0x7110, SiteRound = 0x7120, SitePause = 0x7130, SiteRules = 0x7140, SiteStrip = 0x7150;
+constexpr unsigned SiteCap = 0x7100, SiteHud = 0x7101, SiteQueue = 0x7110, SiteRound = 0x7120, SitePause = 0x7130, SiteRules = 0x7140, SiteStrip = 0x7150, SiteCancel = 0x7160;
 
 // Steam Aspyr addresses / offsets (RE.md; the manifest supports the Steam exe only).
 constexpr uintptr_t AddrIconResolver = 0x0074E0B0;   // thiscall(hud ignored) 6 stack args, RET 0x18
@@ -45,9 +56,12 @@ constexpr int CrQueue = 0x100, CrRound = 0x10DC;
 constexpr int RdList = 0xB00, RdCur = 0xB18, RdAA8 = 0xAA8, RdAB8 = 0xAB8;
 constexpr int PauseInternal = 0x10078;               // byte [[[[AppGlobal]+8]+4]+0x10078] & 2 = player pause (0x51C720 / 0x538CD0)
 constexpr unsigned SpellRowStride = 0x1A8;
+constexpr int AppToServer = 8;                       // *(AppGlobal) + 8 = CServerExoApp (R7: ECX of ClearAllActions)
+constexpr int CrObjectId = 4;                        // server creature +4 = server object id (the ClearAllActions argument)
 
 qh::Config g_cfg;
 k2ps::Client g_ps;
+k2hud::Client g_hudc;
 
 // ---- capture state (written by the hook, read by the draw callback; same game thread) ----
 uintptr_t g_hud = 0;
@@ -238,23 +252,162 @@ bool gather(Snapshot& s) {
     return gatherFor(m ? party::serverCreature(m) : 0, s);
 }
 
-// ---- drawing ----
-void drawSlot(int x, int y, int w, int h, const qh::Style& st, void* img) {
-    int bp = st.borderPx;
-    if (bp > w / 2) bp = w / 2;
-    if (bp > h / 2) bp = h / 2;
-    gui2d::fillRect(x, y, w, h, st.bg, st.bgA);
-    if (bp >= 1) {
-        gui2d::fillRect(x, y, w, bp, st.border, st.borderA);
-        gui2d::fillRect(x, y + h - bp, w, bp, st.border, st.borderA);
-        gui2d::fillRect(x, y + bp, bp, h - 2 * bp, st.border, st.borderA);
-        gui2d::fillRect(x + w - bp, y + bp, bp, h - 2 * bp, st.border, st.borderA);
+// ---- kit textures (embedded TGAs; recipe copied from companion-selfheal) ----
+namespace tex {
+#include "QueueHudTextures.inc"
+enum { Frame = 0, FrameHi, Cancel, CancelHi };   // order of kQueueHudTextures
+static_assert(sizeof kQueueHudTextures / sizeof kQueueHudTextures[0] == 4, "qh_frame, qh_frame_hi, qh_cancel, qh_cancel_hi");
+bool g_init = false;
+void* g_img[4] = {};
+bool g_missLogged[4] = {};
+
+void logLine(const char* fmt, ...) {   // embtex::g_log sink
+    char buf[256]; va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
+    KP_LOG(chMain, "%s", buf);
+}
+void ensure() {   // once per process; the textures outlive every HUD (never freed)
+    if (g_init) return;
+    g_init = true;
+    embtex::g_log = logLine;
+    embtex::ensure(kQueueHudTextures, 4);   // create + fill + queue (idempotent); heal() refills after a GL reset
+}
+// A pooled GUI handle keeps the texture alive; looked up lazily (null until the texture exists), the miss is logged once per texture.
+void* image(int i) {
+    if (!g_img[i]) {
+        g_img[i] = guikit::imageFor(kQueueHudTextures[i].resref);
+        if (!g_img[i] && !g_missLogged[i]) { g_missLogged[i] = true; KP_LOGV(chMain, KPLOG_WARN, "texture %s unavailable: %s", kQueueHudTextures[i].resref, i <= FrameHi ? "flat fallback look" : "Cancel shows a text X"); }
     }
-    if (img) {
-        static const float white[3] = { 1.0f, 1.0f, 1.0f };
-        gui2d::drawImage(img, x, y, w, h, 0, white, st.iconA);
+    return g_img[i];
+}
+void heal() { embtex::heal(); }   // every frame (GL reset + missing rebuild, 20-refill give-up per texture)
+}  // namespace tex
+
+// ---- drawing ----
+// Kit look: the qh_frame image (white, alpha = style frameA) with the icon inset 15%; a missing frame texture (or kit = 0) falls back to the
+// 0.2.0 flat bg + border rects (logged once).
+void drawSlot(int x, int y, int w, int h, const qh::Style& st, void* img) {
+    static const float white[3] = { 1.0f, 1.0f, 1.0f };
+    void* frame = g_cfg.kit ? tex::image(tex::Frame) : nullptr;
+    qh::Rect ir{ x, y, w, h };
+    if (frame) {
+        gui2d::drawImage(frame, x, y, w, h, 0, white, st.frameA);
+        ir = qh::insetRect(ir);
+    } else {
+        int bp = st.borderPx;
+        if (bp > w / 2) bp = w / 2;
+        if (bp > h / 2) bp = h / 2;
+        gui2d::fillRect(x, y, w, h, st.bg, st.bgA);
+        if (bp >= 1) {
+            gui2d::fillRect(x, y, w, bp, st.border, st.borderA);
+            gui2d::fillRect(x, y + h - bp, w, bp, st.border, st.borderA);
+            gui2d::fillRect(x, y + bp, bp, h - 2 * bp, st.border, st.borderA);
+            gui2d::fillRect(x + w - bp, y + bp, bp, h - 2 * bp, st.border, st.borderA);
+        }
+    }
+    if (img) gui2d::drawImage(img, ir.x, ir.y, ir.w, ir.h, 0, white, st.iconA);
+}
+
+// ---- Cancel controls (0.3.0): 3 HUD labels (0 = leader, 1-2 = companions) built from LBL_QUEUE1 in hud-host's BUILD phase ----
+struct CW {
+    uintptr_t c = 0;
+    qh::Rect r{ 0, 0, 0, 0 };
+    bool rectSet = false;
+    int vis = -1;            // last visible / clickable state sent (-1 = unknown)
+    int fill = -1;           // 0 = qh_cancel, 1 = qh_cancel_hi, 2 = text fallback
+    bool hover = false, tipSet = false;
+};
+CW g_cw[3];
+struct CWant { bool show = false; qh::Rect r{ 0, 0, 0, 0 }; };
+CWant g_want[3];             // set by the draw callback each frame, applied at its end
+guikit::ClickEdge g_lmb;
+struct CPending { bool on = false; int n = 0; };
+CPending g_cpend[3];
+bool g_cancelMissLogged = false;
+
+void cwShow(CW& w, bool on) {   // clickable only while visible (a shown control swallows the click; hidden = click-through)
+    if (!w.c) return;
+    const int v = on ? 1 : 0;
+    if (w.vis == v) return;
+    guikit::setClickable(w.c, on);
+    guikit::setVisible(w.c, on);
+    w.vis = v;
+    if (!on) { w.hover = false; w.fill = -1; }
+}
+void cwHideAll() { for (CW& w : g_cw) cwShow(w, false); }
+
+// qh_cancel / qh_cancel_hi untinted; no texture or a refused fill -> a text "X" (once).
+void cwLook(CW& w) {
+    static const float white[3] = { 1.0f, 1.0f, 1.0f };
+    const int want = w.hover ? 1 : 0;
+    if (w.fill == want || w.fill == 2) return;
+    void* img = tex::image(want ? tex::CancelHi : tex::Cancel);
+    if (img && guikit::setFill(w.c, img, white)) { w.fill = want; return; }
+    guikit::setFont(w.c, "dialogfont10x10"); guikit::setAlign(w.c, 18); guikit::setText(w.c, "X");
+    w.fill = 2;
+    if (!g_cancelMissLogged) { g_cancelMissLogged = true; KP_LOGV(chCancel, KPLOG_WARN, "Cancel art %s: text fallback", img ? "fill refused" : "texture missing"); }
+}
+
+// End of every draw callback: place + show the wanted controls (change-gated), hide the rest.
+void cwApply() {
+    for (int k = 0; k < 3; ++k) {
+        CW& w = g_cw[k];
+        if (!w.c) continue;
+        const CWant& d = g_want[k];
+        if (!g_cfg.cancel || !d.show || d.r.w <= 0) { cwShow(w, false); continue; }
+        if (!w.rectSet || w.r.x != d.r.x || w.r.y != d.r.y || w.r.w != d.r.w || w.r.h != d.r.h) {
+            if (guikit::setRect(w.c, d.r.x, d.r.y, d.r.w, d.r.h)) { w.r = d.r; w.rectSet = true; }
+            else { cwShow(w, false); continue; }
+        }
+        cwLook(w);
+        cwShow(w, true);
     }
 }
+
+// RAII: ProjectionFlag cleared for the label binds, restored on EVERY path (selfheal's ProjGuard).
+struct ProjGuard {
+    int* flag; int saved = 0; bool cleared = false;
+    ProjGuard() : flag(reinterpret_cast<int*>(gameaddr::ProjectionFlag)) {
+        const bool readOk = saferead::probeRead(SiteCancel + 0x10, flag, 4);
+        saved = readOk ? *flag : 0;
+        if (saved) { if (saferead::probeWrite(SiteCancel + 0x11, flag, 4)) { *flag = 0; cleared = true; } else KP_LOGV(chCancel, KPLOG_WARN, "BUILD: projection flag not writable, labels bind with the aspect projection"); }
+    }
+    ~ProjGuard() { if (cleared) { if (saferead::probeWrite(SiteCancel + 0x12, flag, 4)) *flag = saved; else KP_LOGV(chCancel, KPLOG_WARN, "BUILD: projection flag restore failed (saved=%d)", saved); } }
+};
+
+// One hidden + click-through label from the LBL_QUEUE1 template; 0 on failure (only that Cancel is disabled).
+uintptr_t makeCancelLabel(uintptr_t panel, int* whyOut) {
+    int why = guikit::CF_None; uint32_t badVt = 0;
+    const uintptr_t c = guikit::createLabelFromTemplate(panel, "LBL_QUEUE1", &why, &badVt);
+    *whyOut = why;
+    if (!c) return 0;
+    guikit::setVisible(c, false);
+    guikit::setClickable(c, false);
+    if (!guikit::appendToPanel(panel, c)) {   // no destroy helper in GuiKit: the control stays hidden + click-through and unreferenced
+        *whyOut = guikit::CF_Count;
+        KP_LOGV(chCancel, KPLOG_WARN, "BUILD append failed, control %08x left hidden + click-through", (unsigned)c);
+        return 0;
+    }
+    return c;
+}
+
+void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
+    if (!ctx || ctx->struct_size < offsetof(K2HudContext, panel) + sizeof(ctx->panel)) return;
+    const uintptr_t panel = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->panel));
+    saferead::beginScope();
+    uint32_t vt = 0;
+    if (!panel || !rd(SiteCancel, panel, 0, &vt) || vt != gameaddr::HudVtable) return;
+    for (CW& w : g_cw) w = CW();
+    for (CWant& d : g_want) d = CWant();
+    for (CPending& p : g_cpend) p = CPending();
+    g_lmb = guikit::ClickEdge();
+    tex::ensure();
+    ProjGuard pg;
+    int n = 0, why[3] = {};
+    for (int k = 0; k < 3; ++k) { g_cw[k].c = makeCancelLabel(panel, &why[k]); if (g_cw[k].c) ++n; }
+    KP_LOGV(chCancel, n == 3 ? KPLOG_INFO : KPLOG_WARN, "BUILD panel=%08x cancel labels n=%d/3 why=%d,%d,%d", (unsigned)panel, n, why[0], why[1], why[2]);
+}
+
+void onHudConnect(bool ok, const char* why) { QLOGV(chMain, ok ? KPLOG_INFO : KPLOG_WARN, "hud-host: %s (%s)", ok ? "connected" : "NOT connected (no Cancel controls)", why ? why : ""); }
 
 // Edge log: shown / hidden transitions (never per frame).
 struct EdgeState { bool shown = false; uint32_t sig = 0; const char* reason = ""; bool primed = false; };
@@ -305,6 +458,14 @@ void drawLeader(uintptr_t hud, DWORD now, DWORD age, const K2PsContext* ctx) {
         QLOG(chDraw, "%s slots=%d drawn=%d entries=%d round=%d cur=%d waiting=%d paused=%d [%s] slot0=(%d,%d,%d,%d) hudScale=%.2f",
              g_edge.shown ? "changed" : "shown", n, nd, s.ne, s.nrn, s.haveCur ? 1 : 0, s.waiting ? 1 : 0, s.paused ? 1 : 0, types, d[0].x, d[0].y, d[0].w, d[0].h, gui2d::hudScale());
         g_edge.primed = true; g_edge.shown = true; g_edge.sig = sig; g_edge.reason = "";
+    }
+    // Cancel: right of the live QUEUE0 extent, sized by the live QUEUE1 height (read every frame; the HUD scale can change).
+    if (qh::cancelVisible(g_cfg.enabled, g_cfg.cancel, g_combat != 0, ctx->inMenu != 0, age, nd)) {
+        qh::Rect q0{}, q1{};
+        if (guikit::getExtent(hud + HudSlotBase, &q0.x, &q0.y, &q0.w, &q0.h) && guikit::getExtent(hud + HudSlotBase + HudSlotStride, &q1.x, &q1.y, &q1.w, &q1.h)) {
+            g_want[0].r = qh::cancelRect(q0, q1);
+            g_want[0].show = g_want[0].r.w > 0;
+        }
     }
     gui2d::CapGuard capGuard;
     for (int i = 0; i < nd; ++i) drawSlot(d[i].x, d[i].y, d[i].w, d[i].h, d[i].st, guikit::imageFor(d[i].rr));
@@ -390,13 +551,15 @@ void drawStrips(uintptr_t hud, DWORD now) {
         else stripNote(k, false, 0, "", qh::Rect{ 0, 0, 0, 0 }, 0);
     }
     if (!any) return;
+    if (g_cfg.cancel)
+        for (int k = 1; k <= 2; ++k)
+            if (d[k].have) { g_want[k].r = qh::stripCancelRect(d[k].r, d[k].n, g_cfg.stripSide, screenW); g_want[k].show = g_want[k].r.w > 0; }
     gui2d::CapGuard capGuard;
     for (int k = 1; k <= 2; ++k)
         for (int j = 0; d[k].have && j < d[k].n; ++j) drawSlot(d[k].r[j].x, d[k].r[j].y, d[k].r[j].w, d[k].r[j].h, d[k].st[j], guikit::imageFor(d[k].rr[j]));
 }
 
-void KPATCH_CALL onHudDraw(const K2PsContext* ctx, void*) {
-    if (!g_cfg.enabled || !ctx) return;
+void drawAll(const K2PsContext* ctx) {
     saferead::beginScope();
     const DWORD now = GetTickCount();
     const DWORD age = now - g_capTick;
@@ -412,6 +575,68 @@ void KPATCH_CALL onHudDraw(const K2PsContext* ctx, void*) {
     if (g_cfg.companions) drawStrips(hud, now);
 }
 
+// HUD_DRAW prio 400: the wanted Cancel rects are collected by drawLeader / drawStrips, then applied (every other path hides them).
+void KPATCH_CALL onHudDraw(const K2PsContext* ctx, void*) {
+    if (!g_cfg.enabled || !ctx) return;
+    for (CWant& d : g_want) d = CWant();
+    drawAll(ctx);
+    cwApply();
+}
+
+// ---- Cancel click (FRAME_BEGIN: the UI tick, outside the draw batch) ----
+// Queue entries of party member k (0 leader, 1-2 companions), -1 when the creature is unreadable.
+int queueCountOf(int k) {
+    party::Fail why = party::F_None;
+    const uintptr_t tbl = party::table(&why);
+    const uintptr_t m = tbl ? party::member(tbl, k) : 0;
+    Snapshot s;
+    return gatherFor(m ? party::serverCreature(m) : 0, s) ? s.ne : -1;
+}
+
+// Route per R7: CServerExoApp::ClearAllActions(serverObjectId), ECX = *(*AppGlobal + 8). Every pointer is saferead-probed first
+// (the codebase has no SEH call guard); nothing is called unless all of them resolve.
+void doCancel(int k) {
+    party::Fail why = party::F_None;
+    const uintptr_t tbl = party::table(&why);
+    const uintptr_t m = tbl ? party::member(tbl, k) : 0;
+    const uintptr_t srv = m ? party::serverCreature(m) : 0;
+    uint32_t id = 0, app = 0, server = 0;
+    const char* bad = nullptr;
+    if (!srv) bad = "no server creature";
+    else if (!rd(SiteCancel + 1, srv, CrObjectId, &id) || !id) bad = "server object id unreadable";
+    else if (!rd(SiteCancel + 2, party::appGlobalAddr(), 0, &app) || !app || !rd(SiteCancel + 3, app, AppToServer, &server) || !server) bad = "server app unreadable";
+    else if (GetTickCount() - g_capTick >= 250u) bad = "stale HUD capture";
+    if (bad) { KP_LOGV(chCancel, KPLOG_WARN, "CANCEL refused member=%d (%s)", k, bad); return; }
+    const int n = queueCountOf(k);
+    QLOG(chCancel, "CANCEL member=%d n=%d route=ServerClearAll", k, n);
+    reinterpret_cast<void(__thiscall*)(uintptr_t, uint32_t)>(gameaddr::ServerClearAllActions)(server, id);
+    g_cpend[k].on = true; g_cpend[k].n = n;
+}
+
+void KPATCH_CALL onFrameBegin(const K2PsContext* ctx, void*) {
+    if (!g_cfg.enabled || !ctx) return;
+    saferead::beginScope();
+    tex::ensure();
+    tex::heal();   // every frame, before any gate: a GL reset can happen in menus too
+    const bool ledge = guikit::clickEdge(g_lmb);   // polled every frame so a held press never fires on reopen
+    for (int k = 0; k < 3; ++k)
+        if (g_cpend[k].on) { g_cpend[k].on = false; QLOG(chCancel, "CANCEL done member=%d n=%d", k, queueCountOf(k)); }
+    const bool menuKnown = ctx->struct_size >= offsetof(K2PsContext, inMenu) + sizeof(int32_t);
+    if (!g_cfg.cancel || !menuKnown || ctx->inMenu != 0 || g_combat != 0) { cwHideAll(); return; }
+    for (CW& w : g_cw)   // the native tooltip, once per control (UI tick, not a draw callback)
+        if (w.c && !w.tipSet && guitip::nativeSupported() && guitip::setNative(w.c, "Cancel queued actions")) w.tipSet = true;
+    int cx = 0, cy = 0, on = -1;
+    if (!guikit::cursorEngine(&cx, &cy)) return;
+    for (int k = 0; k < 3; ++k) {
+        CW& w = g_cw[k];
+        const bool h = w.c && guikit::hit(w.c, cx, cy);   // hit() needs the visible flag: a hidden control never matches
+        if (h && !w.hover) guikit::playHoverSound();
+        w.hover = h;
+        if (h) on = k;
+    }
+    if (ledge && on >= 0) doCancel(on);
+}
+
 } // namespace
 
 extern "C" {
@@ -420,18 +645,24 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     loadIni();
     g_logOn = g_cfg.log;
-    KP_LOG(chMain, "0.2.0-dev: enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d", g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax);
+    KP_LOG(chMain, "0.3.0-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax);
     g_ps.init(api, "queue-hud");
     g_ps.onConnect = onConnect;
     g_ps.add(K2PS_HUD_DRAW, 400, onHudDraw);
+    g_ps.add(K2PS_FRAME_BEGIN, 300, onFrameBegin);
     g_ps.connect();
+    g_hudc.init(api, "queue-hud");
+    g_hudc.onConnect = onHudConnect;
+    g_hudc.add(K2HUD_BUILD, 300, onHudBuild);
+    g_hudc.connect();
 }
 
 // H8 0x0074C168: HUD Update, replaces `mov ecx,[ebp-0x16C]; mov edx,[ecx+0xA904]`. [ebp-0x16C] = hud (this of FUN_0074b3f0).
-// Hot path: one safe read + two stores; logs only when the HUD pointer changes.
+// Hot path: one safe read + two stores (+ a rare hud-host connect retry); logs only when the HUD pointer changes.
 void __cdecl QueueHudCapture(int hud) {
     saferead::beginScope();
     g_ps.poll();
+    g_hudc.poll();
     uint32_t flags = 0;
     g_combat = rd(SiteCap, static_cast<uintptr_t>(static_cast<uint32_t>(hud)), HudCombatFlags, &flags) ? static_cast<int>((flags >> 1) & 1u) : 1;   // unreadable = treat as combat (hidden)
     g_capTick = GetTickCount();

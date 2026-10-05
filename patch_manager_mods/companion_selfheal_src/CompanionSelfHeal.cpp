@@ -1,6 +1,6 @@
 // Companion Self-Heal 0.5.0-dev (doc 27, CS4 restyle + CS5 + CS8/CS9). The HUD gets, from hud-host's K2HUD_BUILD phase (k2.hud@1, source 0x0040F5A0, HUD panel only; the only own hook is the RMB camera swallow 0x7B3817), 14 runtime
 // labels (2 dark discs under the buttons, 2 cross-icon buttons, a popover background, 5 popover items, 2 value labels, 2 gold auto rings drawn on top; the cross, disc + ring art are
-// embedded textures, see namespace tex; fallback = the text "+"). Per frame (K2PS_FRAME_BEGIN, only in gameplay HUD):
+// embedded textures, see namespace tex / EmbedTex.h; fallback = the text "+"). Per frame (K2PS_FRAME_BEGIN, only in gameplay HUD):
 // buttons follow the companion cards (slot+0x694 vit rect); LMB = use the picked healing item now (route A), RMB = popover
 // (Auto on/off, use-below %, keep reserve; persisted to companion_selfheal.ini); Auto mode uses items by itself (HealItems.h rules).
 // Route A is reachable ONLY through useNow(): HUD gate + commandable (+0xEC) + CanUseItem + per-member 2 s debounce. The popover never calls it.
@@ -11,6 +11,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdarg.h>
 #include <string.h>
 #include <vector>
 #include <string>
@@ -28,6 +29,7 @@
 #include "GuiTip.h"
 #include "FileWatch.h"
 #include "SelfHealUi.h"
+#include "EmbedTex.h"
 
 KP_LOG_PATCH("companion-selfheal");
 
@@ -365,85 +367,27 @@ bool saveIni(const std::string& key, const shui::CompCfg& c) {
 // "constructed" set, so the engine never asks the resource manager for it; the texture tick uploads it and frees the buffer.
 namespace tex {
 #include "SelfHealTextures.inc"
-constexpr int TexBasicSize = 0xF4;
-constexpr int Tex_Pixels = 0x44, Tex_MipBytes = 0x5C, Tex_W = 0x68, Tex_H = 0x6C, Tex_Bpp = 0x74, Tex_Format = 0x78, Tex_Gl = 0x58;
-constexpr int Tex_Cube = 0xDF, Tex_Constructed = 0xE4, Tex_Missing = 0xE5, Tex_FromRes = 0xE7, Tex_Tpc = 0xE9;
-constexpr int MaxDim = 256;
 constexpr int DiscIdx = 1 + shui::kRingFrames;
 constexpr int Count = 2 + shui::kRingFrames;   // csh_cross, csh_ring0..7, csh_disc
-using NewFn = void*(__cdecl*)(unsigned);
-using PtrListAddFn = void(__thiscall*)(void*, void*);
-struct Emb { unsigned char* basic = nullptr; int w = 0, h = 0, heals = 0; };
-Emb g_tex[Count]; bool g_texInit = false;
+bool g_texInit = false;
 void* g_crossImg = nullptr; void* g_discImg = nullptr; void* g_ringImg[shui::kRingFrames] = {};
 static_assert(sizeof kSelfHealTextures / sizeof kSelfHealTextures[0] == Count, "csh_cross + csh_ring0..7 + csh_disc");
 
-int rdI(const unsigned char* b, int off) { int v = 0; return rd<int>(reinterpret_cast<uintptr_t>(b), off, &v) ? v : 0; }
-uint8_t rdB(const unsigned char* b, int off) { uint8_t v = 0; return rd<uint8_t>(reinterpret_cast<uintptr_t>(b), off, &v) ? v : 0; }
-uintptr_t rdP(const unsigned char* b, int off) { uintptr_t v = 0; return rd<uintptr_t>(reinterpret_cast<uintptr_t>(b), off, &v) ? v : 0; }
-
-// Minimal TGA check: uncompressed true-colour (type 2), 32 bpp, no colour map, w,h in 1..MaxDim, size >= 18 + idlen + w*h*4.
-bool tgaOk(const unsigned char* d, unsigned size, int* w, int* h, unsigned* off) {
-    if (size < 18 || d[1] != 0 || d[2] != 2 || d[16] != 32) return false;
-    int ww = d[12] | d[13] << 8, hh = d[14] | d[15] << 8; unsigned o = 18u + d[0];
-    if (ww <= 0 || hh <= 0 || ww > MaxDim || hh > MaxDim) return false;
-    if ((uint64_t)o + (uint64_t)ww * (uint64_t)hh * 4u > (uint64_t)size) return false;
-    *w = ww; *h = hh; *off = o;
-    return true;
-}
-
-bool fillTexture(int i, const char* why) {
-    const SelfHealEmbeddedTexture& src = kSelfHealTextures[i]; Emb& t = g_tex[i];
-    int w = 0, h = 0; unsigned off = 0;
-    if (!tgaOk(src.data, src.size, &w, &h, &off)) { KP_LOGV(chUi, KPLOG_WARN, "TEX %s: embedded TGA invalid (not 32-bit type 2, truncated or > %d px), skipped", src.resref, MaxDim); return false; }
-    unsigned n = (unsigned)(w * h * 4);
-    unsigned char* px = static_cast<unsigned char*>(reinterpret_cast<NewFn>(gameaddr::EngineNewArr)(n));
-    if (!px) { KP_LOGV(chUi, KPLOG_WARN, "TEX %s: engine new[](%u) failed", src.resref, n); return false; }
-    for (unsigned j = 0; j < n; j += 4) { px[j] = src.data[off + j + 2]; px[j + 1] = src.data[off + j + 1]; px[j + 2] = src.data[off + j]; px[j + 3] = src.data[off + j + 3]; }   // BGRA -> RGBA, rows as stored (bottom-up, = CResTGA)
-    unsigned char* b = t.basic;
-    *reinterpret_cast<unsigned char**>(b + Tex_Pixels) = px;
-    *reinterpret_cast<int*>(b + Tex_W) = w; *reinterpret_cast<int*>(b + Tex_H) = h; *reinterpret_cast<int*>(b + Tex_Bpp) = 4;
-    *reinterpret_cast<int*>(b + Tex_Format) = 0; *reinterpret_cast<int*>(b + Tex_MipBytes) = 0;
-    b[Tex_Cube] = 0; b[Tex_FromRes] = 0; b[Tex_Tpc] = 0; b[Tex_Missing] = 0; b[Tex_Constructed] = 1;
-    reinterpret_cast<PtrListAddFn>(gameaddr::TexListAdd)(reinterpret_cast<void*>(gameaddr::TexPendingList), b);
-    t.w = w; t.h = h;
-    KP_LOG(chUi, "TEX %s %s (%dx%d)", src.resref, why, w, h);
-    return true;
+void logLine(const char* fmt, ...) {   // embtex::g_log sink
+    char buf[256]; va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
+    KP_LOG(chUi, "%s", buf);
 }
 void ensureTextures() {   // once per process; the textures outlive every HUD (never freed)
     if (g_texInit) return;
     g_texInit = true;
+    embtex::g_log = logLine;
+    embtex::ensure(kSelfHealTextures, Count);   // create + fill + queue (idempotent); heal() below refills after a GL reset
     for (int i = 0; i < Count; ++i) {
-        unsigned char* b = static_cast<unsigned char*>(reinterpret_cast<NewFn>(gameaddr::New)(TexBasicSize));
-        if (!b) { KP_LOGV(chUi, KPLOG_WARN, "TEX %s: allocation failed", kSelfHealTextures[i].resref); continue; }
-        memset(b, 0, TexBasicSize);
-        reinterpret_cast<void*(__thiscall*)(void*, const char*, const char*)>(gameaddr::TexBasicCtor)(b, kSelfHealTextures[i].resref, kSelfHealTextures[i].resref);
-        g_tex[i].basic = b;
-        if (fillTexture(i, "queued")) {
-            void* im = guikit::imageFor(kSelfHealTextures[i].resref);   // a pooled GUI handle that is never released keeps the texture alive
-            if (i == 0) g_crossImg = im; else if (i == DiscIdx) g_discImg = im; else g_ringImg[i - 1] = im;
-        }
+        void* im = guikit::imageFor(kSelfHealTextures[i].resref);   // a pooled GUI handle that is never released keeps the texture alive
+        if (i == 0) g_crossImg = im; else if (i == DiscIdx) g_discImg = im; else g_ringImg[i - 1] = im;
     }
 }
-// A GL reset (texture ResetAll / SetMem) Resets every registered texture (+0xE4 = 0, pixels and GL names freed) and
-// re-queues all of them on the work list. If we see it first, refill (the duplicate list entry is a no-op: +0xE4 = 1, +0x44 = NULL after
-// the first build). If the engine rebuilt first, its resource lookup missed our name (+0xE5 = 1): Reset and refill. DB lesson 290.
-void healTextures() {
-    for (int i = 0; i < Count; ++i) {
-        Emb& t = g_tex[i]; unsigned char* b = t.basic;
-        if (!b) continue;
-        bool built = rdB(b, Tex_Constructed) != 0; uintptr_t px = rdP(b, Tex_Pixels); int w = rdI(b, Tex_W);
-        if (built && !px && !rdB(b, Tex_Missing) && rdI(b, Tex_Gl)) { t.heals = 0; continue; }   // uploaded: healthy
-        if (t.heals >= 20) continue;   // give up after 20 consecutive failed refills (art missing, labels still work)
-        if (!built && !px) { ++t.heals; fillTexture(i, "refilled"); }
-        else if (built && !px && (rdB(b, Tex_Missing) || w != t.w)) {
-            ++t.heals;
-            reinterpret_cast<void(__fastcall*)(void*)>(gameaddr::TexReset)(b);
-            fillTexture(i, "refilled");
-        }
-        if (t.heals == 20) KP_LOGV(chUi, KPLOG_WARN, "TEX %s giving up after 20 failed refills (built=%d missing=%d pixels=%08x); art missing, labels still work", kSelfHealTextures[i].resref, (int)rdB(b, Tex_Constructed), (int)rdB(b, Tex_Missing), (unsigned)rdP(b, Tex_Pixels));   // crossed once: the guard above skips at >= 20
-    }
-}
+void healTextures() { embtex::heal(); }   // every frame (GL reset + missing rebuild, 20-refill give-up per texture; DB lesson 290)
 }  // namespace tex
 
 // ---- widgets ----
@@ -492,7 +436,7 @@ bool wRing(W& w, const shui::Look& L) {
     if (!w.c) return false;
     void* img = tex::g_ringImg[L.ringFrame];
     if (!img) return false;
-    if (w.frame != L.ringFrame) { float rgb[3] = { L.r, L.g, L.b }; if (!guikit::setFill(w.c, img, rgb)) return false; w.frame = L.ringFrame; }
+    if (w.frame != L.ringFrame) { float rgb[3] = { shui::kRingR, shui::kRingG, shui::kRingB }; if (!guikit::setFill(w.c, img, rgb)) return false; w.frame = L.ringFrame; }
     return true;
 }
 // Disc backdrop: csh_disc untinted (change-gated). False = no image / fill refused (caller hides the disc).

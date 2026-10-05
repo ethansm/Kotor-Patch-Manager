@@ -139,18 +139,22 @@ struct Config {
     int stripIconPx = 0;          // 0 = auto (60% of the vit-rect height, min 12)
     int stripSide = 0;            // strip_side: kSideLeft (default) | kSideAbove | kSideBelow
     int stripMax = 4;             // 1..4 icons per strip
+    // 0.3.0: kit frames + Cancel controls. The flat bg/border keys above are only the fallback when a kit texture is missing.
+    bool kit = true;              // kit = 0 forces the flat fallback look
+    float frameAlpha = 0.9f;      // qh_frame alpha (scaled by waiting_alpha for the dimmed head slot)
+    bool cancel = true;           // the Cancel controls (leader + companion strips)
 };
 
-struct Style { float bg[3], bgA, border[3], borderA, iconA; int borderPx; };
+struct Style { float bg[3], bgA, border[3], borderA, iconA, frameA; int borderPx; };
 
 // Slot 0 while waiting (and waitingDim) is dimmed: icon, background and border alpha all scale by waitingAlpha.
 inline Style slotStyle(const Config& c, int slotIndex, bool waiting) {
     Style s;
     s.bg[0] = c.bg[0]; s.bg[1] = c.bg[1]; s.bg[2] = c.bg[2];
     s.border[0] = c.border[0]; s.border[1] = c.border[1]; s.border[2] = c.border[2];
-    s.bgA = c.bgAlpha; s.borderA = c.borderAlpha; s.iconA = 1.0f; s.borderPx = c.borderPx;
+    s.bgA = c.bgAlpha; s.borderA = c.borderAlpha; s.iconA = 1.0f; s.frameA = c.frameAlpha; s.borderPx = c.borderPx;
     if (slotIndex == 0 && waiting && c.waitingDim) {
-        s.iconA *= c.waitingAlpha; s.bgA *= c.waitingAlpha; s.borderA *= c.waitingAlpha;
+        s.iconA *= c.waitingAlpha; s.bgA *= c.waitingAlpha; s.borderA *= c.waitingAlpha; s.frameA *= c.waitingAlpha;
     }
     return s;
 }
@@ -210,6 +214,46 @@ inline int stripRects(Rect card, Rect vit, int n, const Config& c, Rect out[kMax
     }
     for (int i = 0; i < n; ++i) { out[i].x = x0 + i * (s + kStripGap); out[i].y = y; out[i].w = s; out[i].h = s; }
     return n;
+}
+
+// ---- 0.3.0: kit frame + Cancel geometry ----
+// The icon sits 15% inside the qh_frame art on every side (floor, so a 20 px slot insets 3 px and keeps a 14 px icon).
+inline Rect insetRect(Rect r) {
+    const int dx = r.w * 15 / 100, dy = r.h * 15 / 100;
+    return Rect{ r.x + dx, r.y + dy, r.w - 2 * dx, r.h - 2 * dy };
+}
+
+// Leader Cancel: a square of side = the live LBL_QUEUE1 height, RIGHT of QUEUE0 (the vanilla queue runs right to left, QUEUE0 is the
+// rightmost / current slot), gap = side / 4, vertically centred on QUEUE0. {0,0,0,0} for an unusable extent.
+inline Rect cancelRect(Rect q0, Rect q1) {
+    if (q0.w <= 0 || q0.h <= 0 || q1.h <= 0) return Rect{ 0, 0, 0, 0 };
+    const int side = q1.h, gap = side / 4;
+    return Rect{ q0.x + q0.w + gap, q0.y + (q0.h - side) / 2, side, side };
+}
+
+// Companion Cancel: a square of the strip icon size placed just LEFT of the strip's first icon (gap = max(icon / 4, kStripGap)).
+// strip_side left: the row already ends selfHealReserve() left of the vit bar, so the cancel square lies further left, clear of the
+// selfheal button + ring; when it would leave the screen (x < 0) there is no cancel (never move it into the reserve). above / below:
+// the row starts at the card's left edge, nothing of selfheal is there; at x < 0 it goes just RIGHT of the last icon instead. A square
+// that would pass screenW (> 0) is refused. {0,0,0,0} = none.
+inline Rect stripCancelRect(const Rect* icons, int n, int side, int screenW = 0) {
+    if (!icons || n <= 0 || icons[0].w <= 0 || icons[0].h <= 0) return Rect{ 0, 0, 0, 0 };
+    const int s = icons[0].w;
+    int gap = s / 4;
+    if (gap < kStripGap) gap = kStripGap;
+    Rect r{ icons[0].x - gap - s, icons[0].y, s, s };
+    if (r.x < 0) {
+        if (side == kSideLeft) return Rect{ 0, 0, 0, 0 };
+        const Rect& last = icons[n - 1];
+        r.x = last.x + last.w + gap;
+    }
+    if (screenW > 0 && r.x + r.w > screenW) return Rect{ 0, 0, 0, 0 };
+    return r;
+}
+
+// A Cancel control is shown exactly when its queue is (the same out-of-combat rule); `drawn` = icons actually drawn for that queue.
+inline bool cancelVisible(bool enabled, bool cancelOn, bool combat, bool inMenu, uint32_t ageMs, int drawn) {
+    return cancelOn && shouldShow(enabled, combat, inMenu, ageMs, drawn);
 }
 
 // ---- INI ----
@@ -300,6 +344,7 @@ inline bool parseSide(const char* b, const char* e, int* side) {
 //   enabled, waiting_dim, log (0/1/true/false/on/off/yes/no); bg_rgb / border_rgb ("r,g,b" floats, each clamped to 0..1);
 //   bg_alpha, border_alpha, waiting_alpha (float, clamped to 0..1); border_px (a single digit 1..6; anything else is a bad value).
 //   0.2.0: companions (bool), strip_icon_px (0 = auto, else 8..96), strip_side (left | above | below), strip_max (a single digit 1..4).
+//   0.3.0: kit (bool), frame_alpha (float 0..1), cancel (bool).
 // Unknown key, missing '=' or a bad value returns false and leaves the field unchanged.
 inline bool parseIniLine(Config& c, const char* line) {
     if (!line) return false;
@@ -327,6 +372,9 @@ inline bool parseIniLine(Config& c, const char* line) {
     if (detail::keyEq(kb, ke, "strip_icon_px")) return detail::parseStripPx(vb, ve, &c.stripIconPx);
     if (detail::keyEq(kb, ke, "strip_side")) return detail::parseSide(vb, ve, &c.stripSide);
     if (detail::keyEq(kb, ke, "strip_max")) return detail::parseStripMax(vb, ve, &c.stripMax);
+    if (detail::keyEq(kb, ke, "kit")) return detail::parseBool(vb, ve, &c.kit);
+    if (detail::keyEq(kb, ke, "frame_alpha")) return detail::parseUnit(vb, ve, &c.frameAlpha);
+    if (detail::keyEq(kb, ke, "cancel")) return detail::parseBool(vb, ve, &c.cancel);
     return false;
 }
 

@@ -1,5 +1,5 @@
 // common_contract_test.cpp -- Patches/Common + _shared_src CONTRACT test for queue-hud (doc 20 section 4.1).
-// Pins the semantics the (future) QueueHud.cpp relies on in SafeRead.h, KpLog.h, Party.h, PortraitSlots.h, Gui2D.h and GuiKit.h.
+// Pins the semantics QueueHud.cpp relies on in SafeRead.h, KpLog.h, Party.h, PortraitSlots.h, Gui2D.h, GuiKit.h, GuiTip.h, HudHost.h, EmbedTex.h and GameAddr.h.
 // Every message starts with "queue-hud relies on:" so a failure names the consumer and the reason. Built against ../_shared_src and
 // the KPM checkout's Patches/Common (see test.toml). Host-only, deterministic; expected values are independent literals.
 #ifndef GUIKIT_HOST
@@ -14,6 +14,10 @@
 #include "PortraitSlots.h"
 #include "Gui2D.h"
 #include "GuiKit.h"
+#include "GuiTip.h"
+#include "HudHost.h"
+#include "EmbedTex.h"
+#include "GameAddr.h"
 #include "check.h"
 #include <sys/mman.h>
 #include <stddef.h>
@@ -47,11 +51,22 @@ static int32_t KPATCH_CALL psCreature(int32_t) { return 0; }
 static int32_t KPATCH_CALL psSlotAt(int32_t i, int32_t* slot, int32_t* cr) { if (i != 2) return 0; *slot = 0x1234; *cr = 0x5678; return 1; }
 static uint32_t KPATCH_CALL psFrame() { return 9; }
 static K2PortraitSlotsApi g_psApi = { sizeof(K2PortraitSlotsApi), psRegister, psUnreg, psCreature, psSlotAt, psFrame };
+// ---- fake k2.hud provider (the registry call behind k2hud::Client)
+static int g_hudRegs; static int32_t g_hudPhase = -1, g_hudPrio = -1; static std::string g_hudOwner;
+static int32_t KPATCH_CALL huRegister(int32_t phase, int32_t prio, K2HudCallback fn, void*, const char* owner) { if (!fn) return 0; ++g_hudRegs; g_hudPhase = phase; g_hudPrio = prio; g_hudOwner = owner; return 1; }
+static void KPATCH_CALL huUnreg(int32_t) {}
+static int32_t KPATCH_CALL huHud() { return 0; }
+static uint32_t KPATCH_CALL huFrame() { return 3; }
+static K2HudApi g_huApi = { sizeof(K2HudApi), huRegister, huUnreg, huHud, huFrame };
 static std::string g_reqName; static uint32_t g_reqVer;
-static const void* KPATCH_CALL fRequire(const char* n, uint32_t v) { g_reqName = n; g_reqVer = v; return strcmp(n, "kpatch.log") == 0 ? (const void*)&g_log : (const void*)&g_psApi; }
+static const void* KPATCH_CALL fRequire(const char* n, uint32_t v) { g_reqName = n; g_reqVer = v; if (strcmp(n, K2HUD_IFACE) == 0) return &g_huApi;
+    return strcmp(n, "kpatch.log") == 0 ? (const void*)&g_log : (const void*)&g_psApi; }
 static KPatchApi g_api = { sizeof(KPatchApi), 1, nullptr, fRequire };
 
 static void KPATCH_CALL hudCb(const K2PsContext*, void*) {}
+static void KPATCH_CALL hudBuildCb(const K2HudContext*, void*) {}
+static constexpr int AppToServerForTest = 8;
+
 
 // ---- Gui2D fakes
 struct PushRec { int x, y, w, h; const void* color; int flag; float alpha; };
@@ -199,6 +214,50 @@ int main() {
     QCHECK("imageFor caches per resref (case-insensitive): second lookup does not reload", im2 == g_imgToken && !loaded && pool == 1 && g_loaded.size() == 1);
     QCHECK("imageFor(\"\") and imageFor(nullptr) return null", guikit::imageFor("") == nullptr && guikit::imageFor(nullptr) == nullptr);
     QEQ("GuiKit ImagePoolSize bounds the per-resref cache (blank/unique icons must not grow it unbounded)", guikit::ImagePoolSize, 256);
+
+    // ===== 7. 0.3.0 kit + Cancel: hud-host BUILD, EmbedTex, GuiKit label/click API, GuiTip, the Cancel route address
+    QEQ("K2HUD_BUILD is phase 3 (onHudBuild registration)", K2HUD_BUILD, 3);
+    QEQ("K2HudContext.panel is the last field (BUILD ctx->panel; struct_size gate offsetof+sizeof)", (long long)offsetof(K2HudContext, panel) + (long long)sizeof(((K2HudContext*)0)->panel), (long long)sizeof(K2HudContext));
+    QCHECK("the hud-host iface id is \"k2.hud\" v1 (manifest requires_interfaces k2.hud@1)", strcmp(K2HUD_IFACE, "k2.hud") == 0 && K2HUD_VERSION == 1);
+    { g_hudRegs = 0;
+      k2hud::Client hc; hc.init(&g_api, "queue-hud");
+      QCHECK("k2hud::Client::add() accepts a BUILD callback", hc.add(K2HUD_BUILD, 300, hudBuildCb));
+      QCHECK("k2hud::Client::connect() succeeds against a complete v1 K2HudApi", hc.connect());
+      QCHECK("it required \"k2.hud\" v1", g_reqName == K2HUD_IFACE && g_reqVer == (uint32_t)K2HUD_VERSION);
+      QCHECK("one BUILD registration at prio 300 under the manifest id", g_hudRegs == 1 && g_hudPhase == K2HUD_BUILD && g_hudPrio == 300 && g_hudOwner == "queue-hud");
+      k2hud::Client hn; hn.init(&g_api, "queue-hud");
+      QCHECK("k2hud::Client::poll() (the capture-hook retry) connects on its first call and registers nothing when nothing was added", (hn.poll(), hn.connected) && g_hudRegs == 1); }
+    QEQ("K2PS_FRAME_BEGIN is phase 2 (the Cancel click / texture heal tick)", K2PS_FRAME_BEGIN, 2);
+    QCHECK("embtex::ensure(const Tex*, int) -> bool and embtex::heal() keep their signatures", static_cast<bool(*)(const embtex::Tex*, int)>(&embtex::ensure) != nullptr && static_cast<void(*)()>(&embtex::heal) != nullptr);
+    QCHECK("embtex::Tex is {resref, data, size} (QueueHudTextures.inc initialisers)", offsetof(embtex::Tex, resref) == 0 && sizeof(embtex::Tex) == sizeof(void*) * 2 + sizeof(unsigned) + (sizeof(void*) == 8 ? 4 : 0));
+    QCHECK("embtex::g_log is a printf-style sink pointer (tex::logLine)", static_cast<void (**)(const char*, ...)>(&embtex::g_log) != nullptr);
+    QCHECK("guikit::createLabelFromTemplate(panel, template, int* why, uint32_t* badVt) -> uintptr_t", static_cast<uintptr_t(*)(uintptr_t, const char*, int*, uint32_t*)>(&guikit::createLabelFromTemplate) != nullptr);
+    QCHECK("guikit::appendToPanel(panel, ctl) -> bool", static_cast<bool(*)(uintptr_t, uintptr_t)>(&guikit::appendToPanel) != nullptr);
+    QCHECK("guikit::setRect / setVisible / setClickable / setFill / setText keep their signatures",
+           static_cast<bool(*)(uintptr_t, int, int, int, int)>(&guikit::setRect) != nullptr && static_cast<bool(*)(uintptr_t, bool)>(&guikit::setVisible) != nullptr &&
+           static_cast<bool(*)(uintptr_t, bool)>(&guikit::setClickable) != nullptr && static_cast<bool(*)(uintptr_t, void*, const float*)>(&guikit::setFill) != nullptr &&
+           static_cast<bool(*)(uintptr_t, const char*)>(&guikit::setText) != nullptr);
+    QCHECK("guikit::hit(ctl, x, y) / cursorEngine(int*, int*) / clickEdge(ClickEdge&) / playHoverSound() keep their signatures",
+           static_cast<bool(*)(uintptr_t, int, int)>(&guikit::hit) != nullptr && static_cast<bool(*)(int*, int*)>(&guikit::cursorEngine) != nullptr &&
+           static_cast<bool(*)(guikit::ClickEdge&)>(&guikit::clickEdge) != nullptr && static_cast<bool(*)()>(&guikit::playHoverSound) != nullptr);
+    { guikit::ClickEdge e; QCHECK("clickEdge is false without the host callbacks (no foreground / button source) and leaves e.prev false", !guikit::clickEdge(e) && !e.prev); }
+    { const uintptr_t lbl = A(0xD00);
+      QCHECK("setVisible / setClickable refuse a null control (a failed label build leaves w.c = 0)", !guikit::setVisible(0, true) && !guikit::setClickable(0, true));
+      QCHECK("hit(0, ...) is false for a missing control", !guikit::hit(0, 1, 1)); (void)lbl; }
+    QCHECK("guitip::setNative(ctl, text) -> bool and nativeSupported() -> bool", static_cast<bool(*)(uintptr_t, const char*)>(&guitip::setNative) != nullptr && static_cast<bool(*)()>(&guitip::nativeSupported) != nullptr);
+    QCHECK("guitip::setNative(0, text) refuses a null control", !guitip::setNative(0, "Cancel queued actions"));
+    QEQ("gameaddr::ServerClearAllActions is CServerExoApp::ClearAllActions 0x0051CB10 (doc 30 R7, verified B9)", (unsigned long long)gameaddr::ServerClearAllActions, 0x0051CB10ULL);
+    QEQ("gameaddr::HudVtable is the CSWGuiInGame vtable 0x0099DCC4 (BUILD panel check)", (unsigned long long)gameaddr::HudVtable, 0x0099DCC4ULL);
+    QCHECK("gameaddr::ProjectionFlag is 0x00A1B9F0 (the label-bind projection guard)", gameaddr::ProjectionFlag == 0x00A1B9F0u);
+    // the Cancel route reads: *(AppGlobal)+8 = server app, server creature +4 = object id (both saferead cells, planted here)
+    { party::g_appGlobal = A(0x1000);
+      put<uint32_t>(0x1000, (uint32_t)A(0x1100));          // *appGlobal = app
+      put<uint32_t>(0x1100 + 8, (uint32_t)A(0x1200));      // *(app+8) = CServerExoApp
+      put<uint32_t>(0x1300 + 4, 0x7F001234u);              // server creature +4 = object id
+      uint32_t app = 0, server = 0, id = 0;
+      QCHECK("readAt(*AppGlobal, +8) resolves the server app (ECX of ClearAllActions)", saferead::readAt(0x7160u, party::appGlobalAddr(), 0, &app) && app == (uint32_t)A(0x1100) && saferead::readAt(0x7161u, app, 8, &server) && server == (uint32_t)A(0x1200));
+      QCHECK("readAt(serverCreature, +4) resolves the server object id (the stack argument)", saferead::readAt(0x7162u, A(0x1300), 4, &id) && id == 0x7F001234u);
+      QCHECK("an empty app cell fails the chain instead of calling the engine", !saferead::readAt(0x7163u, 0, AppToServerForTest, &server)); }
 
     return kt::Report("common_contract_test (queue_hud)");
 }

@@ -3,4 +3,4 @@ cxxflags = ["-I../_shared_src", "-Werror"]
 
 # Per-test table: the Common contract test needs the shared headers, the KPM checkout's Patches/Common (KpLog.h, kpatch_api.h) and the host Win32 stub.
 [common_contract_test]
-cxxflags = ["-I../_shared_src", "-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common", "-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HOST", "-DGUI2D_HOST", "-Werror"]
+cxxflags = ["-I../_shared_src", "-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common", "-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HOST", "-DGUI2D_HOST", "-DEMBTEX_HOST", "-Werror"]

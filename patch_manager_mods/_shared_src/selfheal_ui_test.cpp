@@ -214,18 +214,19 @@ int main() {
     // ---- lookFor / ringRect ----
     {
         struct C { BtnState st; bool au; float r, g, b, a; bool ring; } cs[] = {
-            {BtnState::Normal, false, 0.30f, 0.95f, 0.40f, 1.0f, false}, {BtnState::Normal, true, 1.00f, 0.80f, 0.25f, 1.0f, true},
-            {BtnState::AutoOn, false, 1.00f, 0.80f, 0.25f, 1.0f, false}, {BtnState::AutoOn, true, 1.00f, 0.80f, 0.25f, 1.0f, true},
-            {BtnState::Pending, false, 0.30f, 0.95f, 0.40f, 0.65f, false}, {BtnState::Pending, true, 1.00f, 0.80f, 0.25f, 0.65f, true},
-            {BtnState::FullHp, false, 0.60f, 0.60f, 0.60f, 0.40f, false}, {BtnState::FullHp, true, 0.60f, 0.60f, 0.60f, 0.40f, true},
-            {BtnState::NoItem, false, 0.60f, 0.60f, 0.60f, 0.40f, false}, {BtnState::NoItem, true, 0.60f, 0.60f, 0.60f, 0.40f, true},
-            {BtnState::Hidden, false, 0.30f, 0.95f, 0.40f, 0.0f, false}, {BtnState::Hidden, true, 1.00f, 0.80f, 0.25f, 0.0f, false},
+            {BtnState::Normal, false, 1.0f, 1.0f, 1.0f, 1.0f, false}, {BtnState::Normal, true, 1.0f, 1.0f, 1.0f, 1.0f, true},
+            {BtnState::AutoOn, false, 1.0f, 1.0f, 1.0f, 1.0f, false}, {BtnState::AutoOn, true, 1.0f, 1.0f, 1.0f, 1.0f, true},
+            {BtnState::Pending, false, 1.0f, 1.0f, 1.0f, 0.65f, false}, {BtnState::Pending, true, 1.0f, 1.0f, 1.0f, 0.65f, true},
+            {BtnState::FullHp, false, 0.55f, 0.55f, 0.55f, 0.40f, false}, {BtnState::FullHp, true, 0.55f, 0.55f, 0.55f, 0.40f, true},
+            {BtnState::NoItem, false, 0.55f, 0.55f, 0.55f, 0.40f, false}, {BtnState::NoItem, true, 0.55f, 0.55f, 0.55f, 0.40f, true},
+            {BtnState::Hidden, false, 1.0f, 1.0f, 1.0f, 0.0f, false}, {BtnState::Hidden, true, 1.0f, 1.0f, 1.0f, 0.0f, false},
         };
         for (const C& c : cs) {
             Look l = lookFor(c.st, c.au, 0);
             KT_CHECK(l.r == c.r); KT_CHECK(l.g == c.g); KT_CHECK(l.b == c.b); KT_CHECK(l.alpha == c.a); KT_CHECK(l.ring == c.ring);
         }
     }
+    KT_CHECK(kRingR == 1.00f && kRingG == 0.80f && kRingB == 0.25f);   // ring stays gold
     KT_CHECK_EQ(kRingFrames, 8); KT_CHECK_EQ((int)kRingFrameMs, 90);
     KT_CHECK_EQ(lookFor(BtnState::Normal, true, 0).ringFrame, 0);
     KT_CHECK_EQ(lookFor(BtnState::Normal, true, 89).ringFrame, 0);
