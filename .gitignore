@@ -16,3 +16,6 @@ kdb_backup_*.db
 # Kept on purpose (evidence / fixtures), do NOT add patterns that match:
 #   patch_manager_mods/*_src/logs/*.txt, mods678_research/testdata/playlogs/,
 #   upstream_prs/*/build*/, research/companion_levelup/logs/live/
+
+# Handoff backup copy (regenerated each /plan-handoff)
+.claude/session_handoff.prev.md

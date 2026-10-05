@@ -1,20 +1,23 @@
 ---
 name: plan-handoff
-argument-hint: "[next-phase direction, e.g. 'B10 Steam DB batch, skip GOG']"
+argument-hint: "[doc <N> | <phase> | direction, e.g. '25 §12', 'T5e', '24:T6']"
 description: >-
-  Usage: /plan-handoff [next-phase direction]. Optional text after the command sets the goal of the new plan. Persists session context, active scratchpad, working hypotheses, dead ends, and git state to disk, then switches into built-in plan mode. Instructs Opus to decompose the new implementation plan for Sonnet subagents, designed for 'Clear context and approve (bypass mode)'. Use when the user says "plan handoff", "execute plan handoff", "persist context", "hand off and plan", "clear context", or "switch to plan mode and break down the plan".
+  Usage: /plan-handoff [shorthand | direction]. Accepts shorthand doc numbers ('25 §12', '24', '19e'), phase IDs ('T5e', 'T6'), or custom directions. Persists session context, active scratchpad, working hypotheses, dead ends, and git state to disk, then switches into built-in plan mode. Instructs Opus to decompose the new implementation plan for Sonnet subagents, designed for 'Clear context and approve (bypass mode)'. Use when the user says "plan handoff", "execute plan handoff", "persist context", "hand off and plan", "clear context", or "switch to plan mode and break down the plan".
 ---
 
 # Plan Handoff & Plan Mode Transition Skill
 
 Use this skill when running in bypass mode and context window bloat is reached, or when a course correction is needed.
 
-## 0. Next-Phase Direction (user arguments)
-User direction for the next phase: $ARGUMENTS
+## 0. Next-Phase Direction & Shorthand Controls
+User input: $ARGUMENTS
 
-- If direction text is present above, it is the goal of the new plan. It overrides your own guess about what comes next.
-- Copy it verbatim into the handoff file under `## 0. Next-Phase Direction`, and into plan Section 0 as **Next-Phase Direction**.
-- If it is empty, infer the next phase from the session and say in the plan that it was inferred.
+- **Shorthand Supported:**
+  - Doc + Section: `25 §12`, `doc 25 §12`, or `doc25:12` (auto-resolves `patch_manager_mods/25_pc_levelup_filter.md §12`).
+  - Phase ID: `T5e`, `T6`, `M0` (auto-resolves to that batch in doc 24 master plan).
+  - Doc Number: `25`, `24`, `19e` (auto-resolves to that master plan markdown file).
+- If text is present, it is passed directly to `scripts/plan_manager.py handoff "$ARGUMENTS"`.
+- If empty, infer the next phase from the active plan and session context.
 
 ## 1. Multi-Tier Model & Overhead Policy
 - **Opus (Lead Orchestrator)**: High-level synthesis, scratchpad archival, plan formulation, and task decomposition.

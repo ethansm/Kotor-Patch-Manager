@@ -27,6 +27,17 @@ HANDOFF_FILE = REPO_ROOT / ".claude" / "session_handoff.md"
 PREV_HANDOFF_FILE = REPO_ROOT / ".claude" / "session_handoff.prev.md"
 HANDOFFS_DIR = REPO_ROOT / ".claude" / "handoffs"
 
+PREFIX_LEGEND = {
+    "T": "Testing & Contracts",
+    "S": "Sync / Header Mirroring",
+    "L": "Library DLLs & Packaging",
+    "C": "Common Extraction",
+    "M": "Meta / Planning Setup",
+    "B": "Steam Address DB Batches",
+    "R": "Research & Probes",
+    "P": "Parity Verification",
+}
+
 PHASE_HEADER_RE = re.compile(r'^(?:#{2,3})\s+(?:(Phase\s+\d+|Chunk\s+[A-Za-z0-9]+|Step\s+\d+)[^:\n]*:?\s*(.*))$', re.MULTILINE)
 CHECKBOX_RE = re.compile(r'^\s*-\s*\[([ xX/])\]\s*(.*)$', re.MULTILINE)
 EXEC_LOG_RE = re.compile(r'^\s*-\s*(Phase\s+\d+|Chunk\s+[A-Za-z0-9]+|Step\s+\d+)[^:\n]*:\s*(.*)$', re.MULTILINE)
@@ -46,14 +57,49 @@ def get_git_info() -> dict:
     except Exception:
         return {"branch": "unknown", "dirty_count": 0, "dirty_preview": [], "head": "unknown"}
 
+def resolve_plan_shorthand(token: str) -> tuple[Path | None, str]:
+    token = token.strip()
+    if not token:
+        return None, ""
+    
+    # 1. Exact path match
+    p = Path(token)
+    if p.exists() and p.is_file():
+        return p.resolve(), ""
+    if (REPO_ROOT / p).exists() and (REPO_ROOT / p).is_file():
+        return (REPO_ROOT / p).resolve(), ""
+
+    # 2. Numbered doc shorthand: '25 §12', 'doc 25 §12', 'doc25:12', '19e', '24:T6', '25'
+    m = re.match(r'^(?:doc\s*)?([0-9]{1,2}[a-z]?)(?:[:\s§]+(.*))?$', token, re.IGNORECASE)
+    if m:
+        prefix = m.group(1).lower()
+        rest = (m.group(2) or "").strip()
+        pattern = f"{int(prefix[:2]):02d}" if prefix[:2].isdigit() and len(prefix) <= 2 else prefix
+        candidates = list(REPO_ROOT.glob(f"patch_manager_mods/{pattern}_*.md")) + list(REPO_ROOT.glob(f"patch_manager_mods/{prefix}_*.md")) + list(REPO_ROOT.glob(f"*{pattern}*.md"))
+        if candidates:
+            return candidates[0].resolve(), rest
+
+    # 3. Phase ID shorthand: 'T4', 'T5d', 'M0', 'R10'
+    m_phase = re.match(r'^([A-Za-z][0-9]{1,2}[a-z]?)(?:[:\s§]+(.*))?$', token)
+    if m_phase:
+        phase = m_phase.group(1)
+        rest = (m_phase.group(2) or "").strip()
+        for p_cand in [REPO_ROOT / "patch_manager_mods" / "24_master_plan_status.md"] + list(REPO_ROOT.glob("patch_manager_mods/*plan*.md")):
+            if p_cand.exists():
+                txt = p_cand.read_text(encoding="utf-8", errors="ignore")
+                pattern = re.compile(rf'\|\s*{re.escape(phase)}\s*\|', re.IGNORECASE)
+                if pattern.search(txt) or f"## {phase}" in txt:
+                    detail = f"Phase {phase}" + (f" - {rest}" if rest else "")
+                    return p_cand.resolve(), detail
+
+    return None, token
+
 def discover_active_plan(explicit_path: str = "") -> Path | None:
     if explicit_path:
-        p = Path(explicit_path)
-        if p.exists():
-            return p.resolve()
-        if (REPO_ROOT / p).exists():
-            return (REPO_ROOT / p).resolve()
-        sys.stderr.write(f"Error: Specified plan file not found: {explicit_path}\n")
+        p, _ = resolve_plan_shorthand(explicit_path)
+        if p:
+            return p
+        sys.stderr.write(f"Error: Specified plan file or shorthand not found: {explicit_path}\n")
         sys.exit(2)
 
     if ACTIVE_PLAN_FILE.exists():
@@ -215,12 +261,32 @@ def cmd_resume(plan: dict, git_info: dict, json_mode: bool = False):
         print(f"Done: {done_str}")
 
     if current:
-        print(f"\n>>> NEXT OBJECTIVE: {current['ident']} - {current['name']} <<<")
+        ident_prefix = current['ident'][0].upper() if current['ident'] else ""
+        category = PREFIX_LEGEND.get(ident_prefix, "")
+        badge = f"[{category}] " if category else ""
+        print(f"\n>>> NEXT OBJECTIVE: {badge}{current['ident']} — {current['name']} <<<")
         for t in current['tasks'][:5]:
             print(f"  {t}")
         print("\nAction: Implement this objective, then run 'python3 scripts/plan_manager.py mark-done <phase>'.")
     else:
         print("\n[ALL PHASES COMPLETE] Ready for final verification & PR submission.")
+
+def cmd_legend():
+    print("=== KOTOR II MASTER KEY & PLANNING LEGEND ===\n")
+    print("Phase Prefixes:")
+    for k, v in PREFIX_LEGEND.items():
+        print(f"  {k:<3} : {v}")
+    print("\nCommon Planning Documents:")
+    print("  Doc 24 : Master Plan Status (Patches/Common, Test Coverage, Shared DLLs)")
+    print("  Doc 25 : PC Level-Up Filter & Companion Level-Up")
+    print("  Doc 20 : Testing Plan & Harness Architecture")
+    print("  Doc 19 : KpLog Shared Logging Design & Adoption")
+    print("  Doc 21 : Portrait Slots & Library DLL Split")
+    print("  Doc 07 : Action Hotbar (formerly Force Power Hotbar)")
+    print("  Doc 08 : Level Up Override & Shield Bar")
+    print("  Doc 17 : Dialogue Letterbox & Word Wrap Fixes")
+    print("  Doc 10 : Engine Research & Perf-Lab Optimization")
+    print("\nFull Legend Guide: patch_manager_mods/MASTER_KEY.md\n")
 
 def cmd_next(plan: dict):
     remaining = [p for p in plan["phases"] if not p["done"]]
@@ -231,9 +297,10 @@ def cmd_next(plan: dict):
     print(f"## {cur['ident']}: {cur['name']}\n")
     print(cur['body'])
 
-def cmd_mark_done(plan: dict, target_str: str, commit_sha: str = "", notes: str = ""):
+def cmd_mark_done(plan: dict, target_str: str, commit_sha: str = "", notes: str = "", state: str = "DONE"):
     plan_path = plan["path"]
     text = plan_path.read_text(encoding="utf-8")
+    state_str = state.strip().upper() if state else "DONE"
     
     # 1. Try Markdown table update
     lines = text.split("\n")
@@ -265,18 +332,18 @@ def cmd_mark_done(plan: dict, target_str: str, commit_sha: str = "", notes: str 
             ident = cells[id_col_idx].strip()
             if ident.lower() == target_str.strip().lower() or target_str.strip().lower() in ident.lower():
                 raw_cells = line.split("|")
-                raw_cells[status_col_idx + 1] = " DONE "
+                raw_cells[status_col_idx + 1] = f" {state_str} "
                 if commit_sha and commit_col_idx is not None and len(raw_cells) > commit_col_idx + 1:
-                    raw_cells[commit_col_idx + 1] = f" {commit_sha} "
+                    raw_cells[commit_col_idx + 1] = f" {commit_sha.strip()} "
                 if notes and notes_col_idx is not None and len(raw_cells) > notes_col_idx + 1:
-                    raw_cells[notes_col_idx + 1] = f" {notes} "
+                    raw_cells[notes_col_idx + 1] = f" {notes.strip()} "
                 lines[idx] = "|".join(raw_cells)
                 table_updated = True
                 break
 
     if table_updated:
         plan_path.write_text("\n".join(lines), encoding="utf-8")
-        print(f"Marked table row '{target_str}' DONE in {plan_path.name}")
+        print(f"Marked table row '{target_str}' {state_str} in {plan_path.name}")
         return
 
     # 2. Try checkbox update
@@ -363,8 +430,8 @@ def cmd_handoff(plan: dict, git_info: dict, user_direction: str = ""):
 
 def main():
     parent_parser = argparse.ArgumentParser(add_help=False)
-    parent_parser.add_argument("--json", action="store_true", help="Output in JSON format")
-    parent_parser.add_argument("--plan", default="", help="Explicit master plan path (bypasses global active_plan.txt)")
+    parent_parser.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help="Output in JSON format")
+    parent_parser.add_argument("--plan", default=argparse.SUPPRESS, help="Explicit master plan path (bypasses global active_plan.txt)")
 
     parser = argparse.ArgumentParser(description="Deterministic Master Plan & Context Handoff Engine", parents=[parent_parser])
     subparsers = parser.add_subparsers(dest="cmd")
@@ -381,10 +448,14 @@ def main():
     p_set = subparsers.add_parser("set", parents=[parent_parser], help="Set active plan")
     p_set.add_argument("plan_path", help="Path to master plan markdown file")
 
-    p_mark = subparsers.add_parser("mark-done", parents=[parent_parser], help="Mark phase complete")
+    p_mark = subparsers.add_parser("mark-done", parents=[parent_parser], help="Mark phase complete or update state")
     p_mark.add_argument("phase", help="Phase or chunk name/substring to mark done")
+    p_mark.add_argument("--state", default="DONE", help="Target status to record in table (e.g. DONE, PARTIAL, BUILT, STAGED)")
     p_mark.add_argument("--commit", default="", help="Optional commit SHA to record in table")
     p_mark.add_argument("--notes", default="", help="Optional notes/verification result")
+
+    subparsers.add_parser("legend", help="Display the master key and phase prefix legend")
+    subparsers.add_parser("key", help="Display the master key and phase prefix legend")
 
     p_hand = subparsers.add_parser("handoff", parents=[parent_parser], help="Prepare session handoff file")
     p_hand.add_argument("direction", nargs="?", default="", help="Optional user instructions for next phase")
@@ -393,6 +464,10 @@ def main():
         sys.argv.append("resume")
 
     args = parser.parse_args()
+
+    if args.cmd in ("legend", "key"):
+        cmd_legend()
+        sys.exit(0)
 
     if args.cmd == "set":
         p = Path(args.plan_path).resolve()
@@ -414,13 +489,21 @@ def main():
     git_info = get_git_info()
 
     if args.cmd in ("resume", "status"):
-        cmd_resume(plan, git_info, json_mode=args.json)
+        cmd_resume(plan, git_info, json_mode=getattr(args, "json", False))
     elif args.cmd == "next":
         cmd_next(plan)
     elif args.cmd == "mark-done":
-        cmd_mark_done(plan, args.phase, commit_sha=args.commit, notes=args.notes)
+        cmd_mark_done(plan, args.phase, commit_sha=args.commit, notes=args.notes, state=args.state)
     elif args.cmd == "handoff":
-        cmd_handoff(plan, git_info, user_direction=args.direction)
+        user_dir = args.direction
+        plan_from_dir, rest = resolve_plan_shorthand(user_dir)
+        if plan_from_dir and not explicit_plan:
+            plan = parse_plan(plan_from_dir)
+            if rest:
+                user_dir = f"Execute §{rest} in {plan_from_dir.name}" if rest.isdigit() else f"Execute {rest} in {plan_from_dir.name}"
+            else:
+                user_dir = f"Continue {plan_from_dir.name}"
+        cmd_handoff(plan, git_info, user_direction=user_dir)
 
 if __name__ == "__main__":
     main()
