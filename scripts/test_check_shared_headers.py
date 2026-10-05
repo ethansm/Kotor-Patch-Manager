@@ -51,6 +51,7 @@ class TestCheckSharedHeaders(unittest.TestCase):
             with patch.object(csh, "KPM", fake_kpm), \
                  patch.object(csh, "CANONICAL", fake_canonical), \
                  patch.object(csh, "FOREIGN", []), \
+                 patch.object(csh, "EXTRA", []), \
                  patch("sys.argv", ["check_shared_headers.py"]), \
                  patch("sys.stdout", new_callable=io.StringIO) as mock_stdout:
                 ret = csh.main()
@@ -74,6 +75,7 @@ class TestCheckSharedHeaders(unittest.TestCase):
             with patch.object(csh, "KPM", fake_kpm), \
                  patch.object(csh, "CANONICAL", fake_canonical), \
                  patch.object(csh, "FOREIGN", []), \
+                 patch.object(csh, "EXTRA", []), \
                  patch("sys.argv", ["check_shared_headers.py", "--sync"]), \
                  patch("sys.stdout", new_callable=io.StringIO):
                 ret = csh.main()
@@ -87,10 +89,40 @@ class TestCheckSharedHeaders(unittest.TestCase):
             with patch.object(csh, "KPM", fake_kpm), \
                  patch.object(csh, "CANONICAL", fake_canonical), \
                  patch.object(csh, "FOREIGN", []), \
+                 patch.object(csh, "EXTRA", []), \
                  patch("sys.argv", ["check_shared_headers.py"]), \
                  patch("sys.stdout", new_callable=io.StringIO):
                 ret2 = csh.main()
                 self.assertEqual(ret2, 0)
+
+    def test_extra_copy_synced_without_forwarder(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            fake_kpm = Path(tmpdir) / "kpm"
+            common = fake_kpm / "Patches" / "Common"
+            shims = fake_kpm / "Patches" / "_shared"
+            common.mkdir(parents=True)
+            shims.mkdir(parents=True)
+            fake_canonical = Path(tmpdir) / "canonical"
+            fake_canonical.mkdir()
+            extra = Path(tmpdir) / "Harness.h"
+            extra.write_text("// harness v1\n")
+
+            def run(*argv):
+                with patch.object(csh, "KPM", fake_kpm), \
+                     patch.object(csh, "CANONICAL", fake_canonical), \
+                     patch.object(csh, "FOREIGN", []), \
+                     patch.object(csh, "EXTRA", [(extra, "test/Harness.h")]), \
+                     patch("sys.argv", ["check_shared_headers.py", *argv]), \
+                     patch("sys.stdout", new_callable=io.StringIO):
+                    return csh.main()
+
+            self.assertEqual(run(), 1)  # missing copy is drift
+            self.assertEqual(run("--sync"), 0)
+            self.assertEqual((common / "test" / "Harness.h").read_text(), "// harness v1\n")
+            self.assertFalse((shims / "Harness.h").exists())  # copy only, no forwarder
+            self.assertEqual(run(), 0)
+            extra.write_text("// harness v2\n")
+            self.assertEqual(run(), 1)  # canonical edit without sync drifts
 
 
 if __name__ == "__main__":

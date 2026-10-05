@@ -4,7 +4,8 @@
 Edit the headers in patch_manager_mods/_shared_src/ (canonical). The framework fork must carry
 byte-identical copies in Patches/Common/ (on every patch's include path), and Patches/_shared/<h>
 must be a forwarding header to ../Common/<h> so the existing "../_shared/<h>" includes keep
-building. Other copies (the level-up parity stub) are reported but not fixed: their owners sync them.
+building. EXTRA headers live elsewhere in the repo and are copied (no forwarder) to Patches/Common/<rel>
+(tests/include/TestHarness.h -> Patches/Common/test/TestHarness.h, doc 24 T9b). Other copies (the level-up parity stub) are reported but not fixed: their owners sync them.
 
   check_shared_headers.py           report; exit 1 on any drift
   check_shared_headers.py --sync    copy canonical -> Patches/Common and rewrite the forwarding headers
@@ -21,6 +22,8 @@ CANONICAL = REPO / "patch_manager_mods" / "_shared_src"
 KPM = Path(os.environ.get("KPM_DIR", Path.home() / "Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager"))
 # Copies owned by other work; drift is reported, never overwritten.
 FOREIGN = [REPO / "research/companion_levelup/tools/parity/stub/_shared"]
+# (canonical file, path under Patches/Common): byte-identical copy only, no _shared forwarder.
+EXTRA = [(REPO / "tests/include/TestHarness.h", "test/TestHarness.h")]
 
 
 def forwarder(name: str) -> str:
@@ -42,11 +45,13 @@ def main() -> int:
         return 2
     # .inc = generated tables included by a shared header (EffectIcons.h -> EffectIconTable.inc / DebuffIconTable.inc)
     headers = sorted(list(CANONICAL.glob("*.h")) + list(CANONICAL.glob("*.inc")))
+    targets = [(src, ((common / src.name, "copy"), (shims / src.name, "forwarder"))) for src in headers]
+    targets += [(src, ((common / rel, "copy"),)) for src, rel in EXTRA]
     drift = 0
-    for src in headers:
+    for src, dests in targets:
         want = src.read_bytes()
-        for path, expect, label in ((common / src.name, want, "copy"),
-                                    (shims / src.name, forwarder(src.name).encode(), "forwarder")):
+        for path, label in dests:
+            expect = want if label == "copy" else forwarder(src.name).encode()
             ok = path.is_file() and path.read_bytes() == expect
             if not ok and args.sync:
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -57,7 +62,7 @@ def main() -> int:
                 print(f"DRIFT   {label:9} {path}" + ("" if path.exists() else " (missing)"))
             else:
                 print(f"OK      {label:9} {path}")
-        for d in FOREIGN:
+        for d in FOREIGN if src.parent == CANONICAL else ():
             other = d / src.name
             if other.is_file() and other.read_bytes() != want:
                 print(f"WARN    foreign   {other} differs (owner syncs it)")
@@ -66,7 +71,7 @@ def main() -> int:
         if not (CANONICAL / path.name).is_file():
             drift += 1
             print(f"DRIFT   orphan    {path} has no canonical copy in {CANONICAL}")
-    print(f"{len(headers)} shared headers, {drift} drifted")
+    print(f"{len(targets)} shared headers, {drift} drifted")
     return 1 if drift else 0
 
 
