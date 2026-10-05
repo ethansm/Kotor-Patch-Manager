@@ -78,12 +78,15 @@ bool foreground() {
     return pid == GetCurrentProcessId();
 }
 
+// ".\\" prefix: GetPrivateProfile*A with a bare file name looks in the Windows directory, not the game dir (CWD).
+const char* const IniPath = ".\\companion_selfheal.ini";
+
 void loadIni() {
     g_logOn = GetPrivateProfileIntA("General", "Log", 1, "companion_selfheal.ini") != 0;
-    g_probeKey = GetPrivateProfileIntA("General", "ProbeKey", 0x48, "companion_selfheal.ini");
+    g_probeKey = GetPrivateProfileIntA("General", "ProbeKey", 0x48, IniPath);
     if (g_probeKey <= 0 || g_probeKey > 0xFF) g_probeKey = 0x48;
     g_probeCall = GetPrivateProfileIntA("probe", "call", 0, "companion_selfheal.ini") != 0;
-    g_callKey = GetPrivateProfileIntA("probe", "CallKey", 0x4A, "companion_selfheal.ini");
+    g_callKey = GetPrivateProfileIntA("probe", "CallKey", 0x4A, IniPath);
     if (g_callKey <= 0 || g_callKey > 0xFF) g_callKey = 0x4A;
 }
 
@@ -319,7 +322,6 @@ void doPost(DWORD now) {
 }
 
 // ---- INI (companion_selfheal.ini): [defaults] / [companions] via SelfHealUi.h; everything else preserved ----
-const char* const IniPath = "companion_selfheal.ini";
 shui::CfgTable g_cfg;
 std::string g_cfgText;
 filewatch::ReloadPoll g_cfgPoll;
@@ -443,7 +445,7 @@ void refreshCache(const K2PsContext* ctx, DWORD now) {
             uint32_t cmd = 0;
             bool haveCmd = rd<uint32_t>(c.m.server, Server_Commandable, &cmd);
             bool alive = c.m.ok && c.m.cur > 0;
-            if (heal::shouldAutoUse(ac, c.m.cur, c.m.max, alive, haveCmd && cmd != 0, true, g_auto[i], now)) {
+            if (heal::shouldAutoUse(ac, c.m.cur, c.m.max, alive, haveCmd && cmd != 0, g_card[i].seen, g_auto[i], now)) {
                 KP_LOG(chCall, "AUTO member=%d hp=%d/%d pick=\"%s\" keep=%d", i, c.m.cur, c.m.max, c.apk.name.c_str(), c.cfg.keep);
                 if (!useNow(ctx, now, i, c.cfg.keep + 1, "auto")) g_auto[i].lastUseMs = now;   // refused: back off one cooldown, no log spam
             }
@@ -611,7 +613,11 @@ uintptr_t makeLabel(uintptr_t panel, const char* tmpl, const char* text, bool fo
     if (text) guikit::setText(c, text);
     guikit::setVisible(c, false);
     guikit::setClickable(c, false);
-    if (!guikit::appendToPanel(panel, c)) { *whyOut = guikit::CF_Count; return 0; }
+    if (!guikit::appendToPanel(panel, c)) {   // no destroy helper in GuiKit: the control stays hidden + click-through and unreferenced
+        *whyOut = guikit::CF_Count;
+        KP_LOGV(chHud, KPLOG_WARN, "BUILD append failed, control %08x left hidden + click-through", (unsigned)c);
+        return 0;
+    }
     return c;
 }
 
