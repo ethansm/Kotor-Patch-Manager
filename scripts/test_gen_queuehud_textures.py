@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Tests for scripts/gen_queuehud_textures.py: names, sizes, frame colours/alpha, X glyph, determinism, committed .inc fresh."""
 import io
+import os
 import re
 import sys
 import tempfile
@@ -8,6 +9,14 @@ import unittest
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+try:
+    import PIL  # noqa: F401
+except ImportError:
+    _venv = HERE.parent / ".venv" / "bin" / "python"
+    if _venv.exists() and not os.environ.get("_GQT_REEXEC"):
+        os.environ["_GQT_REEXEC"] = "1"
+        os.execv(str(_venv), [str(_venv)] + sys.argv)
+    raise
 from PIL import Image  # noqa: E402
 sys.path.insert(0, str(HERE))
 import gen_queuehud_textures as gt  # noqa: E402
