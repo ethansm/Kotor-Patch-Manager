@@ -64,7 +64,8 @@
 //     build_hide (= build_dim for now) | combat | force. Tags: r10_tags.ini in the directory of table=. Off with mode=off.
 //     Batch 3a: the PC's filter page (character screen) saves a `pc=r10|r10=1|pcfilter=..|ffilter=..|pfilter=..` line in levelup_playthroughs.ini;
 //     when the current GUID section has one it wins over these r10* keys (they stay a dev override for playthroughs without a pc line).
-//   ui.icon=lbl_icn_opt2 (default)  texture of the small settings icon in the 3D view's top-right corner (research/companion_levelup/r10/ui_icon)
+//   ui.icon=luo_gear (default)  texture of the small settings icon in the 3D view's top-right corner (research/companion_levelup/r10/ui_icon).
+//     luo_gear is embedded in the DLL (LuoTextures.inc, scripts/gen_luo_textures.py, EmbedTex.h); any other resref loads from the game's resources.
 // Config levelup_playthroughs.ini (game dir, mtime-reloaded like the above; written by ptApply/ptRemove via .tmp + MoveFileExA; format in
 // Playthrough.h): sections [g<8 hex guid>], lines <tag>=<preset id>|instant=0|1|hold=0|1. Precedence in tagConfig: if the current GUID has a
 // section there, ONLY that section applies (a tag missing from it is unconfigured = vanilla, even if a dev key names it); otherwise the dev keys.
@@ -78,6 +79,8 @@
 #include "../_shared/SafeRead.h"
 #include "../_shared/GuiKit.h"
 #include "../_shared/GuiTip.h"
+#include "../_shared/EmbedTex.h"
+#include "LuoTextures.inc"   // kLuoTex: the embedded settings gear (luo_gear, luo_gear_hi)
 #include "Playthrough.h"
 #include "R10Probe.h"
 #include "R10Filter.h"
@@ -90,7 +93,7 @@ namespace {
 using saferead::readAt;
 using saferead::probeRead;
 
-constexpr const char* Version = "1.2.0-dev";
+constexpr const char* Version = "1.4.0-dev";
 constexpr bool ApplyEnabled = true;    // build-level switch; runtime switches are mode=rewrite + apply=1
 
 // ---- engine layout (doc 08 "Struct offsets" + "Phase 1b results" O5) ------------------------------------
@@ -199,7 +202,7 @@ struct Config {
     bool r10 = false;        // r10=1: R10 dim on the PC's feats/powers level-up panels (batch 2a); default off
     char r10Profile[48] = "";
     r10f::Mode r10Feats = r10f::All, r10Powers = r10f::All;
-    char uiIcon[17] = "lbl_icn_opt2";   // ui.icon=<resref>: the settings icon texture (16-char resref)
+    char uiIcon[17] = "luo_gear";       // ui.icon=<resref>: the settings icon texture (16-char resref; luo_gear = embedded)
     bool dev = false;    // dev=1: read the dev keys (preset./instant./hold./pause.<tag>=, legacy tags=)
     char table[MAX_PATH] = "levelup_paths.ini";
     TagCfg tags[MaxTagCfg] = {};

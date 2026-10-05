@@ -94,7 +94,15 @@ static void fFont(void*, const char*) {}
 static void fAlign(void*, unsigned) {}
 static void fColor(void*, float* v) { ++nColor; memcpy(lastColor, v, 12); }
 static void fList(void* list, void* v) { ++nList; uintptr_t l = reinterpret_cast<uintptr_t>(list); uint32_t arr = at<uint32_t>(l, 0); int cnt = at<int>(l, 4); at<uint32_t>(arr, cnt * 4) = (uint32_t)reinterpret_cast<uintptr_t>(v); at<int>(l, 4) = cnt + 1; }
-static void* fLoadImage(const char*) { return reinterpret_cast<void*>(0x5000); }
+static std::map<std::string, void*> g_img;   // resref -> image handle (absent: 0x5000; nullptr = does not load). imageFor pools: set before the first load
+static void* fLoadImage(const char* n) { auto it = g_img.find(n); return it == g_img.end() ? reinterpret_cast<void*>(0x5000) : it->second; }
+// ---- fake engine: EmbedTex (batch 3c; installed in section 7 only, so earlier panels take the lbl_icn_opt2 fallback) ----
+static int eNew = 0, eCtor = 0, eAdd = 0;
+static void* efNew(unsigned n) { ++eNew; return reinterpret_cast<void*>(arenaAlloc(n)); }
+static void* efNewArr(unsigned n) { return reinterpret_cast<void*>(arenaAlloc(n)); }
+static void* efCtor(void* t, const char*, const char*) { ++eCtor; return t; }
+static void efAdd(void*, void*) { ++eAdd; }
+static void efReset(void*) {}
 static void fSound(void*, char) { ++nSound; }
 static void fSetRect(uint32_t, uintptr_t ctl, int* r) { ++nSetRect; for (int k = 0; k < 4; ++k) at<int>(ctl, Ctl_X + 4 * k) = r[k]; }
 static uintptr_t g_tipCell = 0, g_tipMgr = 0;
@@ -300,12 +308,13 @@ int main(int argc, char** argv) {
     const uintptr_t liveTbl = intl + 0x100FC;
     (void)liveTbl;
 
+    g_missingTag["LBL_EFX_BACK"] = 1;   // Mod 14 absent unless a case says otherwise (batch 3c: the page back is then the 3-stack)
     // 1. panel ctor: creates (addToList 0), does not append; once per panel
     setIni("mode=rewrite", table);
     clearLog();
     uintptr_t pA = makePanel();
     LuoUiPanelCtor((int)pA);
-    CHECK(rec(pA) && rec(pA)->nCreated == C_N && nCtor == C_N && nInit == C_N, "ctor created %d (nCtor %d nInit %d)", rec(pA) ? rec(pA)->nCreated : -1, nCtor, nInit);
+    CHECK(rec(pA) && rec(pA)->nCreated == C_N && nCtor == C_N + 1 && nInit == C_N + 1, "(+1: the LBL_EFX_BACK window try) ctor created %d (nCtor %d nInit %d)", rec(pA) ? rec(pA)->nCreated : -1, nCtor, nInit);
     CHECK(nInitFramed == 20 && nInitPlain == 5, "templates framed %d plain %d (want 20/5)", nInitFramed, nInitPlain);
     CHECK(g_addToListSeen == 0, "InitControl addToList must be 0");
     CHECK(at<int>(pA, Panel_CtlCount) == 70 && nList == 0, "ctor must not append (count %d, listAdd %d)", at<int>(pA, Panel_CtlCount), nList);
@@ -354,7 +363,7 @@ int main(int argc, char** argv) {
     const int ctorsBefore = nCtor, listBefore = nList;
     uintptr_t pB = makePanel();
     LuoUiPanelCtor((int)pB);
-    CHECK(nCtor == ctorsBefore + C_N && rec(pB) && rec(pB) != rec(pA), "new panel creates anew");
+    CHECK(nCtor == ctorsBefore + C_N + 1 && rec(pB) && rec(pB) != rec(pA), "new panel creates anew");
     CHECK(nList == listBefore, "ctor of the second panel does not append");
     tick(pB, atton, 0);
     CHECK(nList == listBefore + C_N && at<int>(pB, Panel_CtlCount) == 70 + C_N && at<int>(pA, Panel_CtlCount) == 70 + C_N, "second panel appended once, first untouched");
@@ -375,7 +384,7 @@ int main(int argc, char** argv) {
     const int plainBefore = nInitPlain;
     LuoUiPanelCtor((int)pF);
     CHECK(rec(pF) && rec(pF)->nCreated == C_N && nInitPlain == plainBefore + C_N, "framed -> plain fallback (%d created)", rec(pF) ? rec(pF)->nCreated : -1);
-    g_missingTag.clear();
+    g_missingTag.erase("LBL_XP_BACK");
     // mode=off hides everything
     uintptr_t pG = makePanel();
     LuoUiPanelCtor((int)pG);
@@ -995,6 +1004,84 @@ int main(int argc, char** argv) {
             tick(pN, attonLo, 0); g_stubTick = t1 + 5000; tick(pN, attonLo, 0);
             CHECK(!boxShown(pN), "sticky: no custom box on other controls either");
         }
+    }
+
+    // 7. batch 3c: square icon, embedded gear + hover swap, fallbacks, one framed window, lvlbtn sampled a tick late
+    {
+        const guikit::Scale ws = {4.8f, 2.667f, 100.f, 50.f, 362, 325, true};   // wide screen: sx != sy
+        int x, y, w, h;
+        uiIconRect(ws, &x, &y, &w, &h);
+        CHECK(w == h && w == (int)lroundf(28 * 2.667f) && x + w == unitX(ws, 520.f) && y == unitY(ws, 172.f), "icon rect %d,%d,%d,%d not square / not pinned at unit 520", x, y, w, h);
+        static UiPanel tmpR;
+        const guitip::Rect q = uiRectUnits(&tmpR, C_ICON, &ws), q0 = uiRectUnits(&tmpR, C_ICON);
+        CHECK(q.x + q.w == 520 && q.w == (int)lroundf(28 * 2.667f / 4.8f) && q.y == 172 && q.h == 28, "tip anchor units %d,%d,%d,%d", q.x, q.y, q.w, q.h);
+        CHECK(q0.x == 492 && q0.w == 28, "no scale: spec rect");
+
+        // placed on a panel whose BTN_LEVELUP gives sx 2.298 / sy 2 (aspect 2.7, accepted): square, right edge = unitX(520)
+        embtex::g_et = {efNew, efNewArr, efCtor, efAdd, efReset, arenaAlloc(16)};
+        g_img["luo_gear"] = reinterpret_cast<void*>(0x5200); g_img["luo_gear_hi"] = reinterpret_cast<void*>(0x5100);
+        uintptr_t pI = makePanel(216, 80);
+        LuoUiPanelCtor((int)pI);
+        clearLog();
+        tick(pI, atton, 0);
+        const uintptr_t ic = ctl(pI, C_ICON);
+        getExtent(ic, &x, &y, &w, &h);
+        CHECK(w == h && w == 56 && x + w == 724 + (int)lroundf((520 - 362) * (216.f / 94.f)), "placed icon %d,%d,%d,%d", x, y, w, h);
+        CHECK(logHas("tex luo_gear: created") && logHas("tex luo_gear_hi: created") && eCtor == 2 && eAdd == 2, "embedded textures created (ctor %d add %d):\n%s", eCtor, eAdd, readLog().c_str());
+        CHECK(logHas("UI icon fill=luo_gear ok=1") && logHas("UI icon emb=1 hi=1 style=1"), "gear fill log:\n%s", readLog().c_str());
+        CHECK(at<uint32_t>(ic, Label_Border + Border_Fill) == 0x5200 && (at<uint32_t>(ic, Label_Border + Border_FillStyle) & 3) == 2, "gear fill / stretch style");
+        // hover: the gold fill once, back on leave
+        curX = x + w / 2; curY = y + h / 2; tick(pI, atton, 0);
+        CHECK(at<uint32_t>(ic, Label_Border + Border_Fill) == 0x5100, "hover -> luo_gear_hi");
+        at<uint32_t>(ic, Label_Border + Border_Fill) = 0xDEAD; tick(pI, atton, 0);
+        CHECK(at<uint32_t>(ic, Label_Border + Border_Fill) == 0xDEAD, "hover fill written only on a change");
+        curX = 0; curY = 0; tick(pI, atton, 0);
+        CHECK(at<uint32_t>(ic, Label_Border + Border_Fill) == 0x5200, "leave -> luo_gear");
+        tick(pI, atton, 0);
+        CHECK(eCtor == 2 && eAdd == 2, "heal: healthy textures are not refilled (add %d)", eAdd);
+
+        // a second panel reuses the created textures (ensure is idempotent)
+        uintptr_t pI2 = makePanel(); LuoUiPanelCtor((int)pI2); clearLog(); tick(pI2, atton, 0);
+        CHECK(eCtor == 2 && logHas("UI icon emb=1 hi=1 style=1"), "second panel: no new textures");
+        // embedded fill fails (engine table unusable) -> lbl_icn_opt2, no hover swap
+        const embtex::Engine saved = embtex::g_et; embtex::g_et.ctorFn = nullptr;
+        uintptr_t pJ = makePanel(); LuoUiPanelCtor((int)pJ); clearLog(); tick(pJ, atton, 0);
+        CHECK(logHas("UI icon fill=lbl_icn_opt2 ok=1") && logHas("UI icon emb=0 hi=0 style=1"), "embedded failure falls back:\n%s", readLog().c_str());
+        embtex::g_et = saved;
+        // ui.icon= names a resref that does not load -> lbl_icn_opt2
+        g_img["zz_noicon"] = nullptr;
+        setIni("mode=rewrite\nui.icon=zz_noicon", table);
+        tick(pI, atton, 0);   // the ini reloads in the gate, after a new panel's first-tick uiAppend: load it on an existing panel first
+        uintptr_t pK = makePanel(); LuoUiPanelCtor((int)pK); clearLog(); tick(pK, atton, 0);
+        CHECK(logHas("UI icon fill=lbl_icn_opt2 ok=1") && logHas("UI icon emb=0 hi=0"), "missing ui.icon falls back:\n%s", readLog().c_str());
+        setIni("mode=rewrite", table);
+
+        // Mod 14's LBL_EFX_BACK present: one window (its own fill kept, alpha 1), BG1/BG2 hidden
+        g_missingTag.erase("LBL_EFX_BACK");
+        clearLog();
+        uintptr_t pX = makePanel(); LuoUiPanelCtor((int)pX);
+        CHECK(rec(pX) && rec(pX)->win && logHas("UI page window=efx"), "window template used");
+        tick(pX, atton, 0);
+        CHECK(logHas("UI page window back alpha ok=1") && !logHas("UI page back0"), "window: no fill swap:\n%s", readLog().c_str());
+        clickCtl(pX, atton, 0, C_CFG);
+        CHECK(rec(pX)->open && vis(pX, C_BG0) && !vis(pX, C_BG1) && !vis(pX, C_BG2), "one window: bg0 %d bg1 %d bg2 %d", vis(pX, C_BG0), vis(pX, C_BG1), vis(pX, C_BG2));
+        CHECK(at<uint32_t>(ctl(pX, C_BG0), Label_Border + Border_Fill) == 0 && at<float>(ctl(pX, C_BG0), Label_Border + Border_Alpha) == 1.0f, "window keeps its fill, alpha 1");
+        getExtent(ctl(pX, C_BG0), &x, &y, &w, &h);
+        CHECK(x == 108 && y == 268 && w == 492 && h == 672, "window rect %d,%d,%d,%d (stats column, x <= unit 300)", x, y, w, h);
+        clickCtl(pX, atton, 0, C_CANCEL);
+        CHECK(!rec(pX)->open && !vis(pX, C_BG0), "cancel hides the window");
+        g_missingTag["LBL_EFX_BACK"] = 1;
+        uintptr_t pS = makePanel(); clearLog(); LuoUiPanelCtor((int)pS);
+        CHECK(rec(pS) && !rec(pS)->win && logHas("UI page window=stack"), "no template: the 3-stack");
+
+        // UI lvlbtn: logged on the tick AFTER the change (the engine writes BTN_LEVELUP bit1 after the hook)
+        clearLog();
+        tick(pS, atton, 1);
+        CHECK(!logHas("UI lvlbtn shown="), "not on the change tick:\n%s", readLog().c_str());
+        tick(pS, atton, 1);
+        CHECK(logCount("UI lvlbtn shown=") == 1 && logCount(" isVisible=") == 1, "next tick:\n%s", readLog().c_str());
+        tick(pS, atton, 1);
+        CHECK(logCount("UI lvlbtn shown=") == 1, "once per change");
     }
 
     printf("ui_test checks %d failures %d\n", g_checks, g_fail);

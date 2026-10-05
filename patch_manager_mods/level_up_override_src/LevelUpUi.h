@@ -11,6 +11,8 @@
 //   top-right corner of the 3D view, research/companion_levelup/r10/ui_icon) opens the same page. The PC (empty tag) gets the R10 filter page
 //   (R10Page.h) in the same controls (bg, title, rows, Apply, Cancel), saved as the playthrough's `pc` line (ptSetPc).
 // Templates: plain LBL_EXPERIENCE_STAT (green text, unit rect 60,449,108,18), framed LBL_XP_BACK (framed fill, 54,431,223,39).
+// Batch 3c: the icon is the embedded gear (EmbedTex.h + LuoTextures.inc; gold luo_gear_hi on hover), square in engine px (uiIconRect); the page
+//   back is ONE opaque framed window from Mod 14's LBL_EFX_BACK when its layout has it (r->win), else the three stacked LBL_XP_BACK clones.
 // "Character screen is the active panel" = this tick runs: SetStats is called from CSWGuiInGameCharacter::Update 0x84FBB0 (the function Mod 14
 // ticks on, CharEffectsPanel.cpp CharEffectsTick ~1162 + its hooks.toml), so a click is only evaluated while the panel is being updated, and
 // guikit::clickEdge adds the foreground-window check (the same two conditions Mod 14's tickInput 969-973 uses: its tick + GetForegroundWindow).
@@ -66,6 +68,9 @@ const char* const kUiName[C_N] = {"cfg", "status", "bg0", "bg1", "bg2", "title",
 const char* const kLossyText = "levelup_playthroughs.ini too large - edit by hand";   // F6: shown instead of the generic failure / status text when the file parse was lossy
 const char* const kTplPlain = "LBL_EXPERIENCE_STAT";
 const char* const kTplFramed = "LBL_XP_BACK";
+const char* const kTplWindow = "LBL_EFX_BACK";   // Mod 14 (live character_p.gui override): opaque frame uibit_brdr_16wc/16we, fill uibit_fill_2bt, FILLSTYLE 0
+const char* const kIconFallback = "lbl_icn_opt2";   // vanilla icon used when the embedded gear (or the ui.icon= resref) does not load
+constexpr int kIconRight = 520, kIconTop = 172, kIconSide = 28;   // = kUiSpec[C_ICON]: right edge, top, side in layout units (the side follows sy)
 const char* const kPageBackFill = "uibit_fill_2bt";   // opaque black (Mod 14 LBL_EFX_BACK); LBL_XP_BACK's own fill uibit_fill_2wt is see-through
 constexpr int kPlainRect[4] = {60, 449, 108, 18}, kFramedRect[4] = {54, 431, 223, 39};   // the templates' own unit rects (fallback scale)
 
@@ -87,6 +92,11 @@ struct UiPanel {
     bool tipPc = false;          // kind the native tip strings are currently set for (uiTipKind)
     int lvlLogged = -1;          // last logged level-up-buttons-shown state (UI lvlbtn line)
     bool iconTried = false, iconOk = false;
+    void* iconIm = nullptr;      // the icon's normal fill; iconHiIm = the hover fill (embedded gear only, else null = no swap)
+    void* iconHiIm = nullptr;
+    bool iconHot = false;        // the hover fill is the one set
+    bool win = false;            // batch 3c: C_BG0 was created from kTplWindow (one framed window; BG1/BG2 stay hidden)
+    int lvlPending = -1;         // UI lvlbtn line due on the next tick (the engine writes BTN_LEVELUP's bit1 after our hook)
     // options page
     bool open = false;
     char pageTag[32] = {};
@@ -128,18 +138,21 @@ void uiPanelCtor(uintptr_t panel) {
     for (int i = 0; i < C_N; ++i) {
         const bool framed = kUiSpec[i].framed;
         bool usedFramed = framed;
-        uintptr_t c = guikit::createLabelFromTemplate(panel, framed ? kTplFramed : kTplPlain);
+        uintptr_t c = 0;
+        if (i == C_BG0 && (c = guikit::createLabelFromTemplate(panel, kTplWindow)) != 0) r->win = true;   // Mod 14's opaque window, when its layout has it
+        if (!c) c = guikit::createLabelFromTemplate(panel, framed ? kTplFramed : kTplPlain);
         if (!c) { usedFramed = !framed; c = guikit::createLabelFromTemplate(panel, framed ? kTplPlain : kTplFramed); }   // missing tag: use the other template
         r->c[i] = c;
         if (!c) continue;
         ++r->nCreated;
         int x, y, w, h;
-        if (!r->fb.ok && guikit::getExtent(c, &x, &y, &w, &h) && w > 0 && h > 0) {   // ctor-time extent = the template's rect in engine px
+        if (!r->fb.ok && !(i == C_BG0 && r->win) && guikit::getExtent(c, &x, &y, &w, &h) && w > 0 && h > 0) {   // (the window template's rect is not ours)   // ctor-time extent = the template's rect in engine px
             const int* u = usedFramed ? kFramedRect : kPlainRect;
             r->fb = {static_cast<float>(w) / u[2], static_cast<float>(h) / u[3], static_cast<float>(x), static_cast<float>(y), u[0], u[1], true};
         }
     }
     logLine("UI ctor panel=%08x created=%d/%d fallbackScale=%d", (unsigned)panel, r->nCreated, (int)C_N, r->fb.ok);
+    logLine("UI page window=%s", r->win ? "efx" : "stack");
 }
 
 
@@ -189,8 +202,9 @@ void uiAppend(UiPanel* r) {
         if (guikit::appendToPanel(r->panel, r->c[i])) ++ok; else r->c[i] = 0;   // a failed control stays hidden and unused
     }
     r->appended = true;
+    if (r->win && r->c[C_BG0]) logLine("UI page window back alpha ok=%d", guikit::setAlpha(r->c[C_BG0], 1.0f));   // keeps its own frame / fill / FILLSTYLE
     for (int b = 0; b < NumBg; ++b) {   // opaque background: swap the framed template's translucent fill for black, full alpha (3 stacked = opaque)
-        if (!r->c[C_BG0 + b]) continue;
+        if (!r->c[C_BG0 + b] || r->win) continue;
         const bool f = guikit::setFill(r->c[C_BG0 + b], guikit::imageFor(kPageBackFill));
         const bool a = guikit::setAlpha(r->c[C_BG0 + b], 1.0f);
         logLine("UI page back%d fill=%s ok=%d alpha ok=%d", b, kPageBackFill, f, a);
@@ -209,11 +223,21 @@ void uiAppend(UiPanel* r) {
         for (int i = 0; i < C_N; ++i) if (r->c[i] && uiTipText(i) && guitip::setNative(r->c[i], uiTipText(i))) ++nat;
         logLine("UI tips native=%d", nat);
     }
-    if (r->c[C_ICON]) {   // settings icon texture (ui.icon=); the text "LU" stays as the fallback when the image does not load
-        void* im = guikit::imageFor(g_cfg.uiIcon);
+    if (r->c[C_ICON]) {   // settings icon texture (ui.icon=, default the embedded gear); then kIconFallback; the text "LU" stays as the last fallback
+        const char* name = g_cfg.uiIcon;
+        const bool emb = !_stricmp(name, kLuoTex[0].resref);
+        embtex::g_log = logLine;
+        bool embOk = emb && embtex::ensure(kLuoTex, static_cast<int>(kLuoTexCount));
+        if (emb && !embOk) name = kIconFallback;
+        void* im = guikit::imageFor(name);
+        if (!im && strcmp(name, kIconFallback)) { name = kIconFallback; embOk = false; im = guikit::imageFor(name); }
         r->iconOk = im && guikit::setFill(r->c[C_ICON], im) && guikit::setAlpha(r->c[C_ICON], 1.0f);
+        r->iconIm = im;
+        r->iconHiIm = r->iconOk && embOk ? guikit::imageFor(kLuoTex[1].resref) : nullptr;
+        const bool st = r->iconOk && guikit::setFillStyle(r->c[C_ICON], 2);   // stretch the image over the (square) control
         r->iconTried = true;
-        logLine("UI icon fill=%s ok=%d", g_cfg.uiIcon, r->iconOk);
+        logLine("UI icon fill=%s ok=%d", name, r->iconOk);
+        logLine("UI icon emb=%d hi=%d style=%d", embOk, r->iconHiIm != nullptr, st);
     }
     unsigned mask = 0;
     for (int i = 0; i < C_N; ++i) if (r->c[i] && guikit::detail::textObjOk(r->c[i])) mask |= 1u << i;
@@ -246,21 +270,40 @@ void uiSlots(UiPanel* r) {
     int k = 0;
     for (int row = 0; row < NumRows; ++row) r->rowSlot[row] = (r->open && (r->pcPage || opt::shown(r->os, row))) ? k++ : -1;
 }
+// Settings icon rect in engine px: square on any screen (sx != sy on a wide one): side = kIconSide units of HEIGHT, right edge pinned at unit
+// x kIconRight, top at unit y kIconTop.
+void uiIconRect(const guikit::Scale& s, int* x, int* y, int* w, int* h) {
+    const int side = static_cast<int>(lroundf(kIconSide * s.sy)), right = guikit::unitX(s, static_cast<float>(kIconRight));
+    if (x) *x = right - side;
+    if (y) *y = guikit::unitY(s, static_cast<float>(kIconTop));
+    if (w) *w = side;
+    if (h) *h = side;
+}
 void uiPlace(UiPanel* r, const guikit::Scale& s) {
     for (int i = 0; i < C_TIPBG; ++i) {   // the tooltip controls are placed per hover by uiTipTick
         if (!r->c[i]) continue;
         int y = kUiSpec[i].y;
         if (i >= C_ROW0 && i < C_ROW0 + NumRows) y = kRowY0 + kRowStep * (r->rowSlot[i - C_ROW0] >= 0 ? r->rowSlot[i - C_ROW0] : 0);
         int x, py, w, h, ex, ey, ew, eh;
-        guikit::unitRect(s, kUiSpec[i].x, y, kUiSpec[i].w, kUiSpec[i].h, &x, &py, &w, &h);
+        if (i == C_ICON) uiIconRect(s, &x, &py, &w, &h);
+        else guikit::unitRect(s, kUiSpec[i].x, y, kUiSpec[i].w, kUiSpec[i].h, &x, &py, &w, &h);
         if (!guikit::getExtent(r->c[i], &ex, &ey, &ew, &eh) || ex != x || ey != py || ew != w || eh != h) guikit::setRect(r->c[i], x, py, w, h);
     }
+}
+// Hover fill of the gear (only on a change; no-op without a hover image).
+void uiIconHover(UiPanel* r, bool hot) {
+    if (!r->iconHiIm || !r->c[C_ICON] || hot == r->iconHot) return;
+    if (guikit::setFill(r->c[C_ICON], hot ? r->iconHiIm : r->iconIm)) r->iconHot = hot;
 }
 
 // ---- small setters ------------------------------------------------------------------------------------------------------
 void uiShow(UiPanel* r, int i, bool vis) {
     if (vis) r->shownMask |= 1u << i; else r->shownMask &= ~(1u << i);
     if (r->c[i]) guikit::setVisible(r->c[i], vis);
+}
+// Page back: one window (r->win) or the three stacked labels.
+void uiShowBack(UiPanel* r, bool vis) {
+    for (int b = 0; b < NumBg; ++b) uiShow(r, C_BG0 + b, vis && (b == 0 || !r->win));
 }
 void uiSetText(UiPanel* r, int i, const char* t) {
     if (!r->c[i] || !strcmp(r->text[i], t)) return;
@@ -424,7 +467,7 @@ void uiRenderPage(UiPanel* r, const char* tag) {
     const bool configured = cfg && cfg->preset >= 0 && g_tableOk;
     char buf[UiText];
     uiSlots(r);
-    for (int b = 0; b < NumBg; ++b) uiShow(r, C_BG0 + b, true);
+    uiShowBack(r, true);
     if (r->failed) uiSetText(r, C_TITLE, g_ptDoc.lossy ? kLossyText : "Could not save - see log");
     else { snprintf(buf, sizeof buf, "%s - %s", P.name[0] ? P.name : tag, P.recommended ? "recommended build" : "level-up path"); uiSetText(r, C_TITLE, buf); }
     uiShow(r, C_TITLE, true);
@@ -472,7 +515,7 @@ void uiOpenR10(UiPanel* r) {
 void uiRenderR10(UiPanel* r) {
     char buf[UiText];
     uiSlots(r);
-    for (int b = 0; b < NumBg; ++b) uiShow(r, C_BG0 + b, true);
+    uiShowBack(r, true);
     uiSetText(r, C_TITLE, r->failed ? (g_ptDoc.lossy ? kLossyText : "Could not save - see log") : "Level-up filter");
     uiShow(r, C_TITLE, true);
     for (int row = 0; row < NumRows; ++row) {
@@ -539,9 +582,10 @@ constexpr guitip::Region kTipRegionPage = {54, 134, 300, 470};   // stats column
 constexpr guitip::Region kTipRegionCfg = {54, 134, 300, 372};    // page closed: the box goes left of / above the Configure button (y 372)
 constexpr guitip::Region kTipRegionIcon = {350, 134, 525, 255};   // icon: inside the 3D view right of SLD_ALIGN (x 346), above BTN_AUTO (y 260)
 
-// Rect of control i in layout units as uiPlace places it.
-guitip::Rect uiRectUnits(const UiPanel* r, int i) {
+// Rect of control i in layout units as uiPlace places it (sc: the icon's square width in units; null = its spec rect).
+guitip::Rect uiRectUnits(const UiPanel* r, int i, const guikit::Scale* sc = nullptr) {
     guitip::Rect q = {kUiSpec[i].x, kUiSpec[i].y, kUiSpec[i].w, kUiSpec[i].h};
+    if (i == C_ICON && sc && sc->sx > 0.f) { q.w = static_cast<int>(lroundf(kIconSide * sc->sy / sc->sx)); q.x = kIconRight - q.w; }
     if (i >= C_ROW0 && i < C_ROW0 + NumRows) q.y = kRowY0 + kRowStep * (r->rowSlot[i - C_ROW0] >= 0 ? r->rowSlot[i - C_ROW0] : 0);
     return q;
 }
@@ -577,7 +621,7 @@ void uiTipTick(UiPanel* r, const guikit::Scale& sc, int hov, bool clicked) {
     const char* t = uiTipText(hov, r->tipPc);
     int lines = 0, maxLen = 0;
     guitip::measure(t, &lines, &maxLen);
-    const guitip::Rect b = guitip::layout(lines, maxLen, kTipMetrics, uiRectUnits(r, hov), r->open ? kTipRegionPage : hov == C_ICON ? kTipRegionIcon : kTipRegionCfg, kTipGap);
+    const guitip::Rect b = guitip::layout(lines, maxLen, kTipMetrics, uiRectUnits(r, hov, &sc), r->open ? kTipRegionPage : hov == C_ICON ? kTipRegionIcon : kTipRegionCfg, kTipGap);
     uiPlaceUnits(r, C_TIPBG, sc, b);
     uiPlaceUnits(r, C_TIP, sc, {b.x + kTipMetrics.padX, b.y + kTipMetrics.padY, b.w - 2 * kTipMetrics.padX, b.h - 2 * kTipMetrics.padY});
     uiSetText(r, C_TIP, t);
@@ -654,6 +698,7 @@ void uiTick(uintptr_t panel, uintptr_t stats, int realCan, int heldResult) {
     { uint8_t ids[4] = {}, lv[4] = {}; int n = 0, total = 0; r->curLevel = readClasses(stats, ids, lv, &n, &total) ? total : -1; }   // refreshed before input: uiClick only touches UI state
     const bool click = guikit::clickEdge(r->edge);   // sampled every tick so a press that began elsewhere never fires
     if (!r->appended) uiAppend(r);
+    embtex::heal();   // refill the embedded gear after an engine texture reset
     if (!gateActive()) { uiHideAll(r); return; }
     char tag[32];
     const int kind = uiReadTag(stats, tag, sizeof tag);
@@ -663,7 +708,8 @@ void uiTick(uintptr_t panel, uintptr_t stats, int realCan, int heldResult) {
     if (r->tipPc != pc) { uiTipReset(r); uiTipKind(r, pc); }
     if (r->open && !r->pcPage && (_stricmp(r->pageTag, tag) || r->pageTable != g_tableStamp)) uiClosePage(r);
     const bool lvl = heldResult != 0;   // the engine shows BTN_LEVELUP/BTN_AUTO exactly when SetStats' CanLevelUp (held) result is nonzero
-    if (static_cast<int>(lvl) != r->lvlLogged) { r->lvlLogged = lvl; logLine("UI lvlbtn shown=%d isVisible=%d", lvl, uiLvlBtnVisible(r)); }
+    if (r->lvlPending >= 0) { logLine("UI lvlbtn shown=%d isVisible=%d", r->lvlPending, uiLvlBtnVisible(r)); r->lvlPending = -1; }   // sampled a tick late: the engine sets bit1 after this hook
+    if (static_cast<int>(lvl) != r->lvlLogged) { r->lvlLogged = lvl; r->lvlPending = lvl; }
     guikit::Scale sc;
     if (!uiScale(r, &sc)) {
         if (!g_uiNoScaleLogged) { g_uiNoScaleLogged = true; logLine("UI no usable scale (BTN_LEVELUP missing, no fallback) - controls hidden"); }
@@ -678,6 +724,7 @@ void uiTick(uintptr_t panel, uintptr_t stats, int realCan, int heldResult) {
     const bool hovered = clickable && hit == r->hover;   // the cursor was already over this control on the previous tick (guards clicks meant for a GUI on top)
     if (clickable && hit != r->hover) guikit::playHoverSound();
     r->hover = clickable ? hit : -1;
+    uiIconHover(r, r->hover == C_ICON);
     if (click && hovered) uiClick(r, tag, hit);
 
     uiSlots(r);
