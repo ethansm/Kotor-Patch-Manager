@@ -1,4 +1,5 @@
-# span_exceptions.toml - documented exe-byte overlaps between two patches that scripts/check_hook_spans.py accepts.
+# span_exceptions.toml - documented exe-byte overlaps ([[exception]]) and near-misses ([[adjacency]]) between two patches that
+# scripts/check_hook_spans.py accepts.
 #
 # Normally two patches may not touch the same exe bytes (FAIL). An exception is allowed only for two code patches (DLLs
 # that write bytes themselves, code_patches.toml sidecar) that both verify the original bytes before writing: whichever
@@ -11,6 +12,12 @@
 #   tests    ids of the tests that prove each writer refuses foreign bytes, as run_tests.py prints them
 #            (`wine:<smoke>[<mode>]`, checked against perf_lab_src/harness/smokes.toml); must not be empty
 #
+# [[adjacency]] (a gap of <= 8 bytes, no overlap, which would otherwise WARN; reported as INFO "documented adjacency")
+#   address  end address (exclusive, int) of the LOWER of the two spans
+#   patches  patch ids of the two spans; the gap pair must be exactly these ids (either order)
+#   reason   disassembly evidence that each span starts and ends on an instruction boundary and that no relocated bytes or
+#            return address of either patch reaches into the other span
+#
 # check_hook_spans.py reports FAIL when: an exception applies to a hook (not a code patch) or to a code patch with
 # verifies_original = false; an exception matches no overlap in any scope (stale); `tests` is empty or names a smoke
 # mode that smokes.toml does not define.
@@ -22,3 +29,34 @@ reason = """Both write the 7 bytes at BuildAndStoreTexture's tail (orig 0F B6 C8
 TextureMemoryRelease.cpp apply() :69-71 refuses with REFUSED(bytes ...), PerfLab.cpp writeCode() :446-456 returns -1 (tx=REFUSED(bytes)). \
 Mutually exclusive whichever loads first; PerfLab's tx is also off by default (tx=0, needs perflab_debug.txt)."""
 tests = ["wine:texmem[foreign]", "wine:perflab3[txforeign]"]
+
+# --- adjacencies (disassembled with scripts/disasm_va.py steam <addr> --before 16 --len 48) ---
+
+# F3: load-hang-probe detour HangProbeSynthPost 0x0040D692-0x0040D698 (orig 6A 00 6A 00 6A 1C: push 0 / push 0 / push 0x1c) vs
+# activation-fix code_patch movie_post 0x0040D69E-0x0040D6A4 (FF 15 6C 64 98 00: call [PostMessageA]).
+[[adjacency]]
+address = 0x0040D698
+patches = ["load-hang-probe", "k2-activation-fix"]
+reason = """Gap 0x40D698-0x40D69E is `mov eax,[0xA1B484]` (A1, 5 bytes) + `push eax` (50). Span 1 is three whole 2-byte pushes ending on the \
+mov boundary; span 2 is one whole 6-byte indirect call ending on the next instruction (0x40D6A4 mov ecx,[ebp-8]). The detour's 6 \
+relocated bytes are position-independent pushes and it returns to 0x40D698, so neither reaches 0x40D69E. ActivationFix.cpp \
+rewrites only 0x40D69E-0x40D6A3 (E8 rel32 90) and never touches the gap."""
+
+# F4: perf-lab detour PerfLabNetOvfTest 0x007040E0-0x007040E9 (mov ecx,[ebp-0x20] / mov edx,[ecx+0x2000C]) vs robustness
+# code_patch netovf_b 0x007040EF-0x007040F4 (05 00 00 01 00: add eax,0x10000).
+[[adjacency]]
+address = 0x007040E9
+patches = ["perf-lab", "k2-robustness-fixes"]
+reason = """Gap 0x7040E9-0x7040EF is `mov eax,[edx+0x20000]` (8B 82, 6 bytes). Span 1 is mov (3) + mov (6) ending on that boundary, with \
+no relative operand, and the detour returns to 0x7040E9. Span 2 is the whole `add eax,0x10000` (5 bytes, next insn cmp [ebp-0x14],eax \
+at 0x7040F4); RobustnessFixes.cpp applyNetovf() rewrites it in place as `mov eax,0x20000` (B8, 5 bytes), no jump into span 1."""
+
+# vmlk (robustness) 0x00669A27-0x00669A32 vs perf-lab detour PerfLabAdcHandoff 0x00669A32-0x00669A39 (0-byte gap; the check
+# reports the pair in the order of the lower span).
+[[adjacency]]
+address = 0x00669A32
+patches = ["k2-robustness-fixes", "perf-lab"]
+reason = """Span 1 is movzx ecx,[0x99447F] (7) + cmp eax,ecx (2) + jne 0x669A3E (2) ending on 0x669A32; span 2 is mov edx,[ebp-0xC] (3) + \
+push edx (1) + mov ecx,[ebp-8] (3) ending on `call 0x5E1340` at 0x669A39 (the rel32 call is outside the detour's relocated bytes). \
+vmlk's cave deliberately ends with `jmp 0x669A32` (RobustnessFixes.cpp VmlkSuccess, comment :50) so the success path enters the \
+perf-lab detour at its first instruction; the fall-through of the replaced jne reaches the same address."""

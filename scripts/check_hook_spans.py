@@ -12,13 +12,17 @@ code patch (the per-mod code_patches.toml sidecar: bytes a DLL writes itself). T
 For each scope:
   FAIL  two different patches overlap in at least one byte
   FAIL  two spans of one patch overlap
-  WARN  two different patches are <= 8 bytes apart (adjacent or nearly so)
+  WARN  two different patches are <= 8 bytes apart (adjacent or nearly so), unless the pair is a documented adjacency (INFO)
 Once:
   WARN  an installed id's source hook addresses differ from its live-config hooks (a staged build is normal)
 Exceptions (tests/static/span_exceptions.toml, schema in that file): an overlap between exactly the listed patches at the
 listed address is accepted (INFO) only if both overlapping spans are code patches with verifies_original = true (the second
 writer sees the first one's bytes and refuses); otherwise FAIL. An exception used in no scope is FAIL (stale), as is a
 `tests` entry `wine:<smoke>[<mode>]` that smokes.toml does not define.
+Adjacencies (`[[adjacency]]` in the same file): a gap pair (no overlap) of exactly the listed two patches whose lower span
+ends at the listed address is a documented adjacency (INFO "documented adjacency") instead of a WARN. The entry records that
+both spans were verified by disassembly to start and end on instruction boundaries with no relocated bytes or return
+address reaching into the neighbour. An adjacency used in no scope is FAIL (stale). It never excuses an overlap.
 Exit 1 on any FAIL. Read-only: the live config is only parsed.
 """
 import argparse
@@ -73,6 +77,24 @@ def load_exceptions(src):
     return out
 
 
+def load_adjacencies(src):
+    """[{address, patches, reason}] from the [[adjacency]] tables of a span_exceptions.toml path, or a list of dicts."""
+    if src is None:
+        return []
+    if not isinstance(src, (str, Path)):
+        return [dict(e) for e in src]
+    p = Path(src)
+    if not p.is_file():
+        return []
+    out = []
+    for i, e in enumerate(tomllib.loads(p.read_text(encoding="utf-8")).get("adjacency", [])):
+        for key in ("address", "patches"):
+            if key not in e:
+                raise ValueError(f"{p}: adjacency[{i}] lacks '{key}'")
+        out.append({"address": e["address"], "patches": list(e["patches"]), "reason": e.get("reason", "")})
+    return out
+
+
 def _overlap(a, b):
     return a.start < b.end and b.start < a.end
 
@@ -90,14 +112,21 @@ def _match_exception(exc, a, b):
     return ""
 
 
-def check_scope(spans, exceptions, only=None, declared=frozenset()):
-    """Pairwise checks for one scope -> ([(key, sev, check, msg)], used exception indexes).
+def _match_adjacency(adj, a, b):
+    """True if the non-overlapping spans a, b are exactly the adjacency's two patches and the lower one ends at its address."""
+    lower = a if a.end <= b.start else b
+    return lower.end == adj["address"] and {a.patch, b.patch} == set(adj["patches"])
+
+
+def check_scope(spans, exceptions, only=None, declared=frozenset(), adjacencies=()):
+    """Pairwise checks for one scope -> ([(key, sev, check, msg)], used exception indexes, used adjacency indexes).
 
     only: set of patch ids; when given, pairs not involving one of them are skipped.
     declared: set of frozenset({id_a, id_b}) pairs a manifest lists in `conflicts` (KPM refuses to install both), so their
               overlaps are INFO, not FAIL (e.g. a library that takes over another mod's hooks before that mod migrates).
+    adjacencies: [{address, patches, reason}] documented near-misses; a matching gap is INFO, not WARN.
     """
-    recs, used = [], set()
+    recs, used, used_adj = [], set(), set()
     ordered = sorted(spans, key=lambda s: (s.start, s.end, s.patch))
     for i, a in enumerate(ordered):
         for b in ordered[i + 1:]:
@@ -128,8 +157,14 @@ def check_scope(spans, exceptions, only=None, declared=frozenset()):
             elif a.patch != b.patch:
                 gap = max(a.start - b.end, b.start - a.end)
                 if gap <= GAP_WARN:
-                    recs.append((("gap", str(a), str(b)), "WARN", "gap", f"{gap} byte gap: {a} <-> {b}"))
-    return recs, used
+                    hit = [k for k, ad in enumerate(adjacencies) if _match_adjacency(ad, a, b)]
+                    if hit:
+                        used_adj.add(hit[0])
+                        recs.append((("adj", str(a), str(b)), "INFO", "adjacency",
+                                     f"{gap} byte gap: {a} <-> {b}: documented adjacency (verified by disassembly)"))
+                    else:
+                        recs.append((("gap", str(a), str(b)), "WARN", "gap", f"{gap} byte gap: {a} <-> {b}"))
+    return recs, used, used_adj
 
 
 def _source_spans(mods, sha):
@@ -160,20 +195,22 @@ def _check_test_ids(rep, exceptions, smokes):
                 rep.fail("exception-test", f"0x{e['address']:08X}: test id {t!r} is not in smokes.toml")
 
 
-def run(mods, live_config=None, exceptions=None, live_sha=None, mod_ids=None, smokes=None, reporter=None):
+def run(mods, live_config=None, exceptions=None, live_sha=None, mod_ids=None, smokes=None, reporter=None, adjacencies=None):
     """Run every check; returns the list of Findings (also streamed to `reporter` if given).
 
     mods           [Mod] (sc.load_mods) - their hooks and code_patches are the source scope
     live_config    a patch_config.toml path or {id: [Hook]} (sc.load_live_config); None = source scope only
     exceptions     a span_exceptions.toml path or a list of {address, patches, reason, tests} dicts
     live_sha       target_version_sha filter for the mods' hooks (default: the live config's, when it is a path)
-    mod_ids        only report pairs involving one of these patch ids (skips the stale-exception check)
+    mod_ids        only report pairs involving one of these patch ids (skips the stale-exception and stale-adjacency checks)
     smokes         optional smokes.toml path: `wine:<name>[<mode>]` test ids in exceptions must exist there
+    adjacencies    a list of {address, patches, reason} dicts; default = the [[adjacency]] tables of the `exceptions` path (if it is a path)
     """
     rep = reporter or sc.Reporter(out=None)
     mark = len(rep.findings)
     only = set(mod_ids) if mod_ids else None
     excs = load_exceptions(exceptions)
+    adjs = load_adjacencies(adjacencies if adjacencies is not None else exceptions if isinstance(exceptions, (str, Path)) else None)
     live = None
     if isinstance(live_config, (str, Path)):
         if Path(live_config).is_file():
@@ -185,13 +222,14 @@ def run(mods, live_config=None, exceptions=None, live_sha=None, mod_ids=None, sm
         live = live_config
     mods = list(mods)
     merged = {}   # key -> [sev, check, msg, [scopes]]
-    used_any = set()
+    used_any, used_adj_any = set(), set()
 
     declared = {frozenset((m.id, c)) for m in mods for c in getattr(m, "conflicts", ()) if c != m.id}
 
     def add_scope(name, spans):
-        recs, used = check_scope(spans, excs, only, declared if name == "source" else frozenset())
+        recs, used, used_adj = check_scope(spans, excs, only, declared if name == "source" else frozenset(), adjs)
         used_any.update(used)
+        used_adj_any.update(used_adj)
         for key, sev, chk, msg in recs:
             if key in merged:
                 merged[key][3].append(name)
@@ -227,6 +265,10 @@ def run(mods, live_config=None, exceptions=None, live_sha=None, mod_ids=None, sm
                          f"{'source or installed scope' if live is not None else 'the source scope'}")
             if not e["tests"]:
                 rep.fail("exception", f"exception at 0x{e['address']:08X} lists no `tests` proving the refusal")
+        for k, ad in enumerate(adjs):
+            if k not in used_adj_any:
+                rep.fail("adjacency-stale", f"adjacency at 0x{ad['address']:08X} ({', '.join(ad['patches'])}) matched no gap in "
+                         f"{'source or installed scope' if live is not None else 'the source scope'}")
     _check_test_ids(rep, excs, smokes)
     if not any(f.sev == "FAIL" for f in rep.findings[mark:]):
         rep.passed("spans", "no overlapping patches" + (f"; {len(used_any)} documented exception(s) used" if used_any else ""))
@@ -237,7 +279,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--repo", default=str(sc.REPO), help="repo root holding patch_manager_mods/")
     ap.add_argument("--live-config", default=str(sc.LIVE_CONFIG), help="live patch_config.toml (read-only; missing = source scope only)")
-    ap.add_argument("--exceptions", default=str(DEFAULT_EXCEPTIONS), help="span_exceptions.toml")
+    ap.add_argument("--exceptions", default=str(DEFAULT_EXCEPTIONS), help="span_exceptions.toml ([[exception]] and [[adjacency]])")
     ap.add_argument("--mod", action="append", default=[], metavar="ID", help="only pairs involving this patch id (repeatable)")
     ap.add_argument("--quiet", action="store_true", help="hide PASS and INFO lines")
     a = ap.parse_args(argv)

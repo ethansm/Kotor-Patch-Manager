@@ -32,6 +32,10 @@ def exc(addr=0x4261CF, patches=("a", "b"), tests=("wine:x[y]",)):
     return {"address": addr, "patches": list(patches), "reason": "r", "tests": list(tests)}
 
 
+def adj(addr=0x1005, patches=("a", "b")):
+    return {"address": addr, "patches": list(patches), "reason": "r"}
+
+
 def sevs(findings, check=None):
     return [f.sev for f in findings if f.sev in ("FAIL", "WARN") and (check is None or f.check == check)]
 
@@ -173,6 +177,54 @@ class SpanTests(unittest.TestCase):
         f = chs.run(mods, mod_ids=["c"])
         self.assertEqual(sevs(f, "overlap"), ["FAIL"])
         self.assertIn("c ", next(x.msg for x in f if x.check == "overlap"))
+
+    # [[adjacency]]: a documented near-miss between two non-overlapping spans (WARN -> INFO)
+    def test_registered_adjacency_is_info(self):
+        for gap_b in (0x1005, 0x100B):   # 0-byte and 6-byte gap; the address is the lower span's end either way
+            f = chs.run([mod("a", [hook(0x1000, 5)]), mod("b", [hook(gap_b, 5)])], adjacencies=[adj()])
+            self.assertEqual(sevs(f), [])
+            self.assertTrue(any(x.sev == "INFO" and x.check == "adjacency" and "documented adjacency" in x.msg for x in f))
+
+    def test_registered_adjacency_matches_either_span_order(self):
+        f = chs.run([mod("b", [hook(0x1000, 5)]), mod("a", [hook(0x1005, 5)])], adjacencies=[adj(patches=("a", "b"))])
+        self.assertEqual(sevs(f), [])
+
+    def test_unregistered_adjacency_still_warns(self):
+        f = chs.run([mod("a", [hook(0x1000, 5)]), mod("b", [hook(0x1005, 5)])], adjacencies=[])
+        self.assertEqual(sevs(f, "gap"), ["WARN"])
+
+    def test_adjacency_with_wrong_patch_ids_does_not_match(self):
+        f = chs.run([mod("a", [hook(0x1000, 5)]), mod("b", [hook(0x1005, 5)])], adjacencies=[adj(patches=("a", "c"))])
+        self.assertEqual(sevs(f, "gap"), ["WARN"])
+        self.assertEqual(sevs(f, "adjacency-stale"), ["FAIL"])
+
+    def test_adjacency_with_wrong_address_does_not_match(self):
+        f = chs.run([mod("a", [hook(0x1000, 5)]), mod("b", [hook(0x1005, 5)])], adjacencies=[adj(addr=0x1006)])
+        self.assertEqual(sevs(f, "gap"), ["WARN"])
+        self.assertEqual(sevs(f, "adjacency-stale"), ["FAIL"])
+
+    def test_stale_adjacency_fails(self):
+        f = chs.run([mod("a", [hook(0x1000, 5)]), mod("b", [hook(0x2000, 5)])], adjacencies=[adj()])
+        self.assertEqual(sevs(f, "adjacency-stale"), ["FAIL"])
+
+    def test_adjacency_used_only_in_source_scope_is_not_stale(self):
+        f = chs.run([mod("a", [hook(0x1000, 5)]), mod("b", [hook(0x1005, 5)])], live_config={"a": [hook(0x1000, 5, "a")]}, adjacencies=[adj()])
+        self.assertEqual(sevs(f), [])
+
+    def test_adjacency_does_not_excuse_an_overlap(self):
+        f = chs.run([mod("a", [hook(0x1000, 6)]), mod("b", [hook(0x1005, 5)])], adjacencies=[adj()])
+        self.assertEqual(sevs(f, "overlap"), ["FAIL"])
+
+    def test_adjacencies_from_toml(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "e.toml"
+            p.write_text('[[adjacency]]\naddress = 0x1005\npatches = ["a", "b"]\nreason = "r"\n')
+            f = chs.run([mod("a", [hook(0x1000, 5)]), mod("b", [hook(0x1005, 5)])], exceptions=p)
+            self.assertEqual(sevs(f), [])
+            self.assertTrue(any(x.check == "adjacency" for x in f))
+            p.write_text('[[adjacency]]\npatches = ["a", "b"]\n')
+            with self.assertRaises(ValueError):
+                chs.run([], exceptions=p)
 
 
 if __name__ == "__main__":
