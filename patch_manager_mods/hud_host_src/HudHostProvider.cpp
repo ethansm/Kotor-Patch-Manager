@@ -5,6 +5,8 @@
 // Hook (cdecl detour at the prologue, original bytes still run, so parameters are esp-relative):
 //   0x00743540  PopulateMenus: ecx = menu (hud + 0xCC), [esp+4] = leader, [esp+8] = forceUnusable, [esp+0xC] = target.
 //               menu+0x1BAA = int8 target type (0..3, 0xFF none), read through SafeRead (site 0x7001).
+//   0x0040F5A0  BUILD (hud-host 0.3.0): layout-closing function of every panel ctor, ecx = panel; dispatched only when the panel
+//               vtable (read through SafeRead, site 0x7C10) is the HUD's (gameaddr::HudVtable); the layout is still open there.
 //   0x00743850  TARGET_MENU_POST, called once at the end of PopulateMenus: ecx = menu, [esp+4] = leader, [esp+8] = target (may be
 //               null); callee RET 8. Dispatched only after a matching PRE (hhd::runPost), frame number reused from the PRE.
 // Logging: kpatch.log patch "hud-host", channel "core" (registrations and the first dispatch at INFO).
@@ -17,6 +19,7 @@
 #include "kpatch_api.h"
 #include "KpLog.h"
 #include "SafeRead.h"
+#include "GameAddr.h"
 #include "HudHost.h"
 #include "HhDispatch.h"
 
@@ -25,6 +28,7 @@ KP_LOG_PATCH("hud-host");
 namespace {
 
 constexpr unsigned S_TargetType = 0x7001;
+constexpr unsigned S_PanelVtable = 0x7C10;   // panel vtable read in HH_LayoutClosing
 constexpr int TargetTypeOff = 0x1BAA;
 
 KP_CHANNEL(chCore, "core");
@@ -99,6 +103,26 @@ __declspec(dllexport) void __cdecl HH_TargetMenuPost(void* menuPtr, void* leader
         KP_LOG(chCore, "POST skipped (result=%d: 1 no PRE, 2 menu mismatch, 3 second POST): menu=%08x preMenu=%08x frame=%u; logged once",
                (int)r, (unsigned)menu, (unsigned)g_pre.ctx.menu, (unsigned)g_pre.ctx.frame);
     }
+}
+
+// 0x0040F5A0 (layout-closing function, called by every panel ctor): ecx = panel. Only the HUD panel (vtable 0x0099DCC4) dispatches
+// K2HUD_BUILD; the layout is still open here, so consumers may create labels (guikit::createLabelFromTemplate).
+__declspec(dllexport) void __cdecl HH_LayoutClosing(void* panelPtr) {
+    saferead::beginScope();
+    const uintptr_t panel = reinterpret_cast<uintptr_t>(panelPtr);
+    uint32_t vtbl = 0;
+    if (!panel || !saferead::readAt(S_PanelVtable, panel, 0, &vtbl)) return;
+    if (!hhd::isHudPanel(vtbl, uint32_t(gameaddr::HudVtable))) return;
+    g_hud = int32_t(panel);
+    K2HudContext ctx = hhd::makeBuildContext(int32_t(panel), g_frame);
+    static bool first = true;
+    if (first) {
+        first = false;
+        KP_LOG(chCore, "first BUILD dispatch: panel=%08x consumers build=%d", (unsigned)panel, g_disp.n[K2HUD_BUILD]);
+    } else {
+        KP_LOGV(chCore, KPLOG_DEBUG, "BUILD dispatch: panel=%08x consumers build=%d", (unsigned)panel, g_disp.n[K2HUD_BUILD]);
+    }
+    hhd::runBuild(g_disp, ctx);
 }
 
 } // extern "C"

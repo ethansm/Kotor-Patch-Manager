@@ -73,6 +73,29 @@ inline void runPopulate(const Dispatcher& d, K2HudContext& ctx) {
     ctx.phase = K2HUD_TARGET_MENU_PRE; d.run(ctx);
 }
 
+// ---- BUILD (0x0040F5A0, the panel layout-closing function; the layout is still open while it runs) ----
+// Fires only for the HUD panel: the hook runs for every panel ctor, so the vtable decides.
+inline bool isHudPanel(uint32_t vtbl, uint32_t hudVtbl) { return vtbl != 0 && vtbl == hudVtbl; }
+
+// BUILD context: panel == hud == the HUD object; no menu / leader / target.
+inline K2HudContext makeBuildContext(int32_t panel, uint32_t frame) {
+    K2HudContext c = {};
+    c.struct_size = sizeof(c);
+    c.phase = K2HUD_BUILD;
+    c.frame = frame;
+    c.panel = panel;
+    c.hud = panel;
+    c.menu = 0;
+    c.targetType = -1;
+    return c;
+}
+
+// Dispatches K2HUD_BUILD only (never FRAME / PRE / POST). ctx comes from makeBuildContext.
+inline void runBuild(const Dispatcher& d, K2HudContext& ctx) {
+    ctx.phase = K2HUD_BUILD;
+    d.run(ctx);
+}
+
 // ---- TARGET_MENU_POST (0x00743850, called once at the end of PopulateMenus) ----
 // POST only fires for a PopulateMenus call whose PRE was seen: PreState remembers the last PRE; runPost consumes it. Rules:
 //   - no PRE seen yet, or the PRE was already consumed by an earlier POST (second POST in the same frame) -> skipped;

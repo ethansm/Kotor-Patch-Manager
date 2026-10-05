@@ -13,14 +13,16 @@
  *   K2HUD_FRAME            dispatched BEFORE K2HUD_TARGET_MENU_PRE on every PopulateMenus call (0x00743540).
  *   K2HUD_TARGET_MENU_PRE  PopulateMenus, before the stock target-menu population.
  *   K2HUD_TARGET_MENU_POST end of PopulateMenus (hud-host 0.2.0+, hook at PopulateMenus exit); fires once per PRE, same frame.
- *   K2HUD_BUILD            reserved: no source (hook) until HL3. ctx.panel is only valid in this phase.
+ *   K2HUD_BUILD            hud-host 0.3.0+: source = the layout-closing function 0x0040F5A0, which runs for every panel ctor; fires
+ *                          only for the HUD panel (vtable 0x0099DCC4), once per HUD layout load. The layout is still open while
+ *                          the callbacks run, so guikit::createLabelFromTemplate + appendToPanel are valid there. ctx.panel ==
+ *                          ctx.hud == the HUD panel; ctx.menu == 0, ctx.targetType == -1. ctx.panel is only valid in this phase.
  * ctx.target / ctx.targetType use -1 for "none" (the engine's 0xFF).
  *
  * Register: returns a token > 0, or <= 0 on failure (null fn, bad phase, table full). Callbacks of a phase run in priority order
  * (lower first); ties run in registration order. A callback must be cheap and must not throw.
  *
- * Planned (NOT in the struct today): `ReserveIds` (reserve n control ids for the HUD ctor 0x748502 / BUILD phase) will be appended
- * to K2HudApi in v1 by growing struct_size at HL3. Consumers must not assume it exists until they check struct_size.
+ * Control ids: BUILD consumers get their ids from appendToPanel; there is no ReserveIds API.
  */
 #ifndef K2_HUDHOST_H
 #define K2_HUDHOST_H
@@ -33,7 +35,7 @@
 #define K2HUD_FRAME            0
 #define K2HUD_TARGET_MENU_PRE  1
 #define K2HUD_TARGET_MENU_POST 2   /* hud-host 0.2.0+: PopulateMenus exit, after a PRE */
-#define K2HUD_BUILD            3   /* reserved, no source until HL3 */
+#define K2HUD_BUILD            3   /* hud-host 0.3.0+: 0x0040F5A0, HUD panel only, layout still open */
 #define K2HUD_PHASE_COUNT      4
 
 #ifdef __cplusplus

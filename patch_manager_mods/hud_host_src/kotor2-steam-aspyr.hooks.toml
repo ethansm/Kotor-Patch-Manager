@@ -49,3 +49,18 @@ type = "pointer"
 [[hooks.parameters]]
 source = "[esp+8]"
 type = "pointer"
+
+# CGuiInGame/HUD layout load (0x0040F5A0, StopLoadFromLayout entry, called by every panel ctor), detour at the prologue: ecx = panel.
+# companion-selfheal used to own this hook (see companion_selfheal_src/kotor2-steam-aspyr.hooks.toml). The layout is still open
+# while it runs, so the K2HUD_BUILD callbacks can create labels (guikit::createLabelFromTemplate).
+[[hooks]]
+address = 0x0040F5A0
+type = "detour"
+function = "HH_LayoutClosing"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x10]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"

@@ -79,7 +79,7 @@ static void tLimits() {
     KT_CHECK(e.add(99, 0, a, nullptr, "x") <= 0);
     KT_CHECK(e.empty(K2HUD_FRAME) && e.empty(K2HUD_BUILD));                      // refused adds left nothing behind
     KT_CHECK(e.empty(-1) && e.empty(K2HUD_PHASE_COUNT));
-    // reserved phases accept registrations (they just never fire yet)
+    // every phase accepts registrations
     KT_CHECK(e.add(K2HUD_TARGET_MENU_POST, 0, a, nullptr, "x") > 0);
     KT_CHECK(e.add(K2HUD_BUILD, 0, a, nullptr, "x") > 0);
     KT_CHECK(e.add(K2HUD_FRAME, 0, a, nullptr, nullptr) > 0);                    // null owner is tolerated
@@ -91,7 +91,7 @@ static void tPopulate() {
     d.add(K2HUD_TARGET_MENU_PRE, 0, preCb, nullptr, "x");
     d.add(K2HUD_FRAME, 0, frameCb, nullptr, "x");
     d.add(K2HUD_TARGET_MENU_POST, 0, a, nullptr, "x");   // fires only via runPost, never from runPopulate
-    d.add(K2HUD_BUILD, 0, b, nullptr, "x");              // reserved: must not fire
+    d.add(K2HUD_BUILD, 0, b, nullptr, "x");              // runPopulate does not fire BUILD (it has its own source, runBuild)
     K2HudContext ctx = hhd::makeContext(0x1000 + 0xCC, 0x2000, 1, 0x3000, 2, 5);
     g_trace.clear(); hhd::runPopulate(d, ctx);
     KT_CHECK_EQ(g_trace.c_str(), "frameCb@p0;preCb@p1;");
@@ -118,6 +118,42 @@ static void tContext() {
     KT_CHECK_EQ(hhd::makeContext(0x1000, 0, 0, 0, -128, 1).targetType, -1);
     // a consumer-side struct_size gate sees the full v1 size
     KT_CHECK(c.struct_size >= offsetof(K2HudContext, panel) + sizeof(c.panel));
+}
+
+static int32_t g_buildPanel = -1, g_buildHud = -1, g_buildMenu = -1; static int g_buildPhase = -1;
+static void KPATCH_CALL buildCb(const K2HudContext* c, void*) {
+    g_buildPanel = c->panel; g_buildHud = c->hud; g_buildMenu = c->menu; g_buildPhase = c->phase; rec("buildCb", c);
+}
+
+static void tBuild() {
+    // the HUD-vtable decision: only the exact HUD vtable passes (the hook runs for every panel ctor)
+    KT_CHECK(hhd::isHudPanel(0x0099DCC4, 0x0099DCC4));
+    KT_CHECK(!hhd::isHudPanel(0x0099E5EC, 0x0099DCC4));   // another panel's vtable: skipped
+    KT_CHECK(!hhd::isHudPanel(0, 0x0099DCC4));            // failed read
+    KT_CHECK(!hhd::isHudPanel(0, 0));
+
+    hhd::Dispatcher d;
+    d.add(K2HUD_BUILD, 0, buildCb, nullptr, "x");
+    d.add(K2HUD_FRAME, 0, frameCb, nullptr, "x");
+    K2HudContext bc = hhd::makeBuildContext(0x5000, 9);
+    KT_CHECK_EQ(bc.struct_size, uint32_t(sizeof(K2HudContext)));
+    KT_CHECK_EQ(bc.phase, K2HUD_BUILD); KT_CHECK_EQ(bc.panel, 0x5000); KT_CHECK_EQ(bc.hud, 0x5000);
+    KT_CHECK_EQ(bc.menu, 0); KT_CHECK_EQ(bc.targetType, -1); KT_CHECK_EQ(bc.frame, 9u);
+    g_trace.clear(); hhd::runBuild(d, bc);
+    KT_CHECK_EQ(g_trace.c_str(), "buildCb@p3;");           // BUILD only: the FRAME consumer did not run
+    KT_CHECK_EQ(g_buildPanel, 0x5000); KT_CHECK_EQ(g_buildHud, 0x5000); KT_CHECK_EQ(g_buildMenu, 0); KT_CHECK_EQ(g_buildPhase, K2HUD_BUILD);
+    // runBuild with no BUILD consumers is a no-op
+    hhd::Dispatcher none; g_trace.clear(); hhd::runBuild(none, bc);
+    KT_CHECK_EQ(g_trace.c_str(), "");
+    // panel is 0 in the PopulateMenus contexts (FRAME / PRE / POST)
+    K2HudContext pc = hhd::makeContext(0x1000 + 0xCC, 0x2000, 1, 0x3000, 2, 5);
+    KT_CHECK_EQ(pc.panel, 0);
+    hhd::PreState st; hhd::recordPre(st, pc);
+    KT_CHECK_EQ(st.ctx.panel, 0);
+    hhd::Dispatcher pd; pd.add(K2HUD_TARGET_MENU_POST, 0, buildCb, nullptr, "x");
+    g_buildPanel = -1; hhd::runPost(pd, st, pc.menu, 0x2000, 0x3000, 2);
+    KT_CHECK_EQ(g_buildPanel, 0);
+    KT_CHECK_EQ(g_buildPhase, K2HUD_TARGET_MENU_POST);
 }
 
 // ---- a consumer wired through k2hud::Client against a fake provider ----
@@ -216,6 +252,6 @@ static void tPost() {
 }
 
 int main() {
-    tOrder(); tUnregister(); tLimits(); tPopulate(); tContext(); tClient(); tPost();
+    tOrder(); tUnregister(); tLimits(); tPopulate(); tContext(); tClient(); tPost(); tBuild();
     return kt::Report("hh_dispatch_test");
 }
