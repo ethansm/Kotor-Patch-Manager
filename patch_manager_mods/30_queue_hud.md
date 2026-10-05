@@ -6,6 +6,7 @@
   Backup `$G/backups/queuehud010_install_20261004_2244` (rollback: restore it). No INI = defaults. Awaiting the user play test (checklist below).
 - Repo commits: `e7fa879` (RE + logic/tests), `66b3702` (DLL), `e4fc966` (Wine smoke), this doc. KPM `ethansm/local-mods` `cd0eba3` (`Patches/QueueHud`).
 - Gate: `pre_install_gate.sh --mod queue_hud_src` GATE PASS (113/113 default tier), smokes `queuehud` 6/6.
+- Offline next (user 10-04 22:50 "build strips and do L3"): companion strips 0.2.0-dev (build + gate, NOT install) + doc 24 L3 save-events library (not installable until hotbar migrates).
 - Next: user runs the checklist below, then "check queue-hud log" (KpLog file `$G/queue-hud_log.txt` or per KpLog naming).
 
 ## What it does
