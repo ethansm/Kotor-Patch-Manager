@@ -24,6 +24,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include "CodePatch.h"
+#include "IniKit.h"
 #include "KpLog.h"
 
 KP_LOG_PATCH("k2-texture-memory-release");
@@ -58,17 +59,7 @@ void emitLoadLine() {
     KP_LOGV(chMain, g_loadLevel, "%s", g_loadLine);
 }
 
-bool configEnabled() {
-    FILE* f = fopen("texmem.txt", "r");
-    if (!f) return true;
-    bool on = true; char line[128];
-    while (fgets(line, sizeof(line), f)) {
-        char* p = line; while (*p == ' ' || *p == '\t') ++p;
-        if (!strncmp(p, "enabled", 7)) { p += 7; while (*p == ' ' || *p == '=') ++p; on = *p != '0'; }
-    }
-    fclose(f);
-    return on;
-}
+bool configEnabled() { return inikit::enabledFile("texmem.txt"); }
 
 void putAbs(uint8_t* at, volatile LONG* p) { uint32_t a = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(p)); memcpy(at, &a, 4); }
 
@@ -76,7 +67,7 @@ int apply() {
     if (!codepatch::committed(Site, 7)) return -3;
     memcpy(g_seen, reinterpret_cast<const void*>(Site), 7);
     if (memcmp(g_seen, SiteOrig, 7) != 0) return -1;
-    g_cave = static_cast<uint8_t*>(VirtualAlloc(nullptr, 64, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE));
+    g_cave = codepatch::allocCave(64);
     if (!g_cave) return -4;
     uint8_t* c = g_cave;
     // +0  0F B6 C8        movzx ecx,al
@@ -98,8 +89,7 @@ int apply() {
     c[35] = 0xE9; codepatch::putRel32(c + 36, reinterpret_cast<uintptr_t>(c + 36), TxSkip);
     c[40] = 0xE9; codepatch::putRel32(c + 41, reinterpret_cast<uintptr_t>(c + 41), TxFree);
     FlushInstructionCache(GetCurrentProcess(), c, 45);
-    uint8_t jmp[7] = { 0xE9, 0, 0, 0, 0, 0x90, 0x90 };
-    int32_t d = static_cast<int32_t>(reinterpret_cast<uintptr_t>(c) - (Site + 5)); memcpy(jmp + 1, &d, 4);
+    uint8_t jmp[7]; codepatch::jmpRel(Site, reinterpret_cast<uintptr_t>(c), jmp, 7);
     if (codepatch::write(Site, jmp, 7) != 1) return -2;
     return 1;
 }

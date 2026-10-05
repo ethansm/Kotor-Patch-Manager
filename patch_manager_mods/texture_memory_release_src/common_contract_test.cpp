@@ -11,6 +11,7 @@
 #include <windows.h>
 #include <initializer_list>
 #include "CodePatch.h"
+#include "IniKit.h"
 #include "check.h"
 #include "KpLog.h"
 #include <stdio.h>
@@ -111,6 +112,29 @@ int main() {
         CEQ("putRel32 forward jump of 7 bytes past the field end encodes +7", rd32(cave), 7);
         codepatch::putRel32(cave, 0x1000 + 24, 0x1000 + 24 + 4);
         CEQ("putRel32 target == end of field encodes 0", rd32(cave), 0);
+    }
+
+    // ---- inikit::enabledFlag / enabledFile: the texmem.txt kill switch (key "enabled"; missing key/file = on; last matching line wins)
+    {
+        CCHECK("enabledFlag(\"enabled=0\") is off", !inikit::enabledFlag("enabled=0"));
+        CCHECK("enabledFlag with a missing key is on", inikit::enabledFlag("other=1"));
+        CCHECK("enabledFlag: the last matching line wins", inikit::enabledFlag("enabled=0\nenabled=1"));
+        CCHECK("enabledFlag skips leading tab, spaces and '=' before the value", !inikit::enabledFlag("\tenabled = 0"));
+        CCHECK("enabledFile on a missing file is on", inikit::enabledFile("/nonexistent/texmem_missing.txt"));
+    }
+
+    // ---- jmpRel / allocCave as the site jump and cave allocation use them
+    {
+        uint8_t out[7]; memset(out, 0xCC, sizeof out);
+        codepatch::jmpRel(0x1000, 0x2000, out, 7);
+        CCHECK("jmpRel starts with E9", out[0] == 0xE9);
+        CEQ("jmpRel rel32 = target - (at + 5), little-endian", rd32(out + 1), (int32_t)(0x2000 - 0x1005));
+        CCHECK("jmpRel pads the 7-byte site with two 0x90", out[5] == 0x90 && out[6] == 0x90);
+        uint8_t* cv = codepatch::allocCave(64);
+        CCHECK("allocCave(64) returns non-null", cv != nullptr);
+        bool zero = cv != nullptr; for (int i = 0; cv && i < 64; ++i) if (cv[i] != 0) zero = false;
+        CCHECK("allocCave(64) is zero-filled", zero);
+        free(cv);   // host build: calloc-backed
     }
 
     // ---- KpLog fallback sink (before any KpLog_Init; the mod sets it from a static initialiser): an INFO line lands in the
