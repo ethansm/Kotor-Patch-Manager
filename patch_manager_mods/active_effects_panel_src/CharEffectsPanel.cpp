@@ -33,6 +33,7 @@
 #include "../_shared/EffectIcons.h"   // k2fx: icon tables + collectBuffs (Buff HUD)
 #include "ChareffDecode.h"      // effect stat decoder + pixel-width text layer (pure, host-tested; includes EffectNameTable.inc)
 #include "../_shared/GameAddr.h"
+#include "../_shared/GuiKit.h"   // guikit:: setRect/getExtent/imageFor/setText/setTextColor/setFill/setBorderTint + detail::textObjOk (Steam table == the constants below)
 #include "../_shared/WindowHook.h"
 #include "../_shared/SafeRead.h"  // VirtualQuery-based probing: IsBadReadPtr faults are a storm under Wine (DB lesson 234)
 
@@ -45,11 +46,8 @@ constexpr int FnInitControl = 0x0040f620;   // thiscall(panel, ctl, CExoString*,
 constexpr int FnExoCtor = 0x00733570, FnExoDtor = 0x00733780;
 constexpr int FnNew = 0x00919723;           // cdecl(size)
 constexpr int FnLabelCtor = 0x00419740, LabelSize = 0x148, LabelVftable = 0x009878BC;
-constexpr int FnLoadImage = 0x0047EB60;     // cdecl(resref buf) -> image
-constexpr int FnTextSet = 0x00416E30;       // thiscall(text+0x18, CExoString*)
-constexpr int FnTextColor = 0x00417140;     // thiscall(text+0x18, float rgb[3]) RET 4 (R2d)
 constexpr int BorderVtable = 0x009875BC, TextVtable = 0x009876B4;
-constexpr int LabelBorderOff = 0x60, BorderColorOff = 0x28, BorderFillOff = 0x74;
+constexpr int LabelBorderOff = 0x60, BorderColorOff = 0x28;
 constexpr int LabelTextOff = 0xD8, TextRendererOff = 0x14, TextStringSubOff = 0x18, TextColorOff = 0x2c;   // colour at text+0x18+0x2c
 constexpr int CtlFlagsOff = 0x48, CtlIdOff = 0x54;   // flags bit1 visible, 0x20 click-through
 constexpr int AppGlobal = 0x00a1b4a4;       // CAppManager*: +4 client
@@ -287,17 +285,14 @@ unsigned char* bindLabel(int panel, const char* tagName, int expectId) {
          id == expectId ? "" : " MISMATCH", ext[0], ext[1], ext[2], ext[3], fl, nf);
     return id == expectId ? ctl : nullptr;
 }
-struct ImgPoolEntry { char resref[17]; void* image; };
-constexpr int MaxImages = 128;
-ImgPoolEntry g_imgPool[MaxImages]; int g_imgCount = 0;
-void* imageFor(const char* resref) {   // one engine image per resref, never released (Buff HUD / Mod 5 pattern)
-    for (int i = 0; i < g_imgCount; ++i) if (!strcmp(g_imgPool[i].resref, resref)) return g_imgPool[i].image;
-    if (g_imgCount >= MaxImages) return nullptr;
-    char buf[20] = {}; strncpy(buf, resref, 16);
-    for (char* p = buf; *p; ++p) *p = (char)tolower((unsigned char)*p);
-    void* im = reinterpret_cast<void*(__cdecl*)(const char*)>(FnLoadImage)(buf);
-    ImgPoolEntry& e = g_imgPool[g_imgCount++]; memset(&e, 0, sizeof e); strncpy(e.resref, resref, 16); e.image = im;
-    logf("image '%s' -> %p", buf, im);
+void* imageFor(const char* resref) {   // one engine image per resref, never released (Buff HUD / Mod 5 pattern); pool = guikit::imageFor
+    bool loaded = false;
+    void* im = guikit::imageFor(resref, &loaded);
+    if (loaded) {
+        char buf[20] = {}; strncpy(buf, resref, 16);
+        for (char* p = buf; *p; ++p) *p = (char)tolower((unsigned char)*p);
+        logf("image '%s' -> %p", buf, im);
+    }
     return im;
 }
 void setCtlVisible(unsigned char* c, bool vis) {
@@ -306,19 +301,13 @@ void setCtlVisible(unsigned char* c, bool vis) {
     if (nf != fl) *reinterpret_cast<int*>(c + CtlFlagsOff) = nf;
 }
 bool ctlRect(unsigned char* c, float* r) {   // engine-space rect from a label's extent (+4..+0x10, top-left origin)
-    if (!c) return false;
-    int e[4]; for (int k = 0; k < 4; ++k) if (!readAt<int>(reinterpret_cast<int>(c), 4 + 4 * k, &e[k])) return false;
+    int e[4];
+    if (!guikit::getExtent(reinterpret_cast<uintptr_t>(c), &e[0], &e[1], &e[2], &e[3])) return false;
     for (int k = 0; k < 4; ++k) r[k] = (float)e[k];
     return e[2] > 0 && e[3] > 0;
 }
-void setCtlRect(unsigned char* c, int x, int y, int w, int h) {
-    void** vt = nullptr; void* fn = nullptr; if (!c || !readAt<void**>(reinterpret_cast<int>(c), 0, &vt) || !vt || !readAt<void*>(reinterpret_cast<int>(vt), 4, &fn) || !fn) return;
-    int r[4] = {x, y, w, h}; reinterpret_cast<void(__thiscall*)(void*, int*)>(vt[1])(c, r);
-}
-bool textObjOk(unsigned char* c) {
-    int tx = reinterpret_cast<int>(c) + LabelTextOff, tvt = 0, rend = 0;
-    return readAt<int>(tx, 0, &tvt) && tvt == TextVtable && readAt<int>(tx, TextRendererOff, &rend) && rend;
-}
+void setCtlRect(unsigned char* c, int x, int y, int w, int h) { guikit::setRect(reinterpret_cast<uintptr_t>(c), x, y, w, h); }
+bool textObjOk(unsigned char* c) { return guikit::detail::textObjOk(reinterpret_cast<uintptr_t>(c)); }
 bool readVec3(int addr, float* v) { for (int k = 0; k < 3; ++k) if (!readAt<float>(addr, 4 * k, &v[k])) return false; return true; }
 bool near3(const float* a, const float* b) { for (int k = 0; k < 3; ++k) if (fabsf(a[k] - b[k]) > 0.01f) return false; return true; }
 
@@ -370,17 +359,13 @@ void setText(Slot* s, int t, const char* txt) {
     char* cache = t == T_TIP ? s->tipText : s->text[t]; int cap = t == T_TIP ? (int)sizeof s->tipText : (int)sizeof s->text[t];
     unsigned char* c = s->ctl[t]; if (!c || !strcmp(cache, txt)) return;
     if (!textObjOk(c)) { whyLog(100 + t, "label %d: text object bad, cannot set \"%s\"", t, txt); return; }
-    char exo[16] = {0};
-    reinterpret_cast<CExoCtor>(FnExoCtor)(exo, txt);
-    reinterpret_cast<void(__thiscall*)(void*, void*)>(FnTextSet)(c + LabelTextOff + TextStringSubOff, exo);
-    reinterpret_cast<CExoDtor>(FnExoDtor)(exo);
+    guikit::setText(reinterpret_cast<uintptr_t>(c), txt);   // ExoCtor / TextSet / ExoDtor
     dlogf("label %d: text \"%.80s\" -> \"%.80s\"", t, cache, txt);
     strncpy(cache, txt, cap - 1); cache[cap - 1] = 0;
 }
 void setTextColor(Slot* s, int t, int which, const float* rgb) {   // which: cache key (1 cream, 2 orange)
     unsigned char* c = s->ctl[t]; if (!c || !s->canTextColor || s->col[t] == which || !textObjOk(c)) return;
-    float v[3] = {rgb[0], rgb[1], rgb[2]};
-    reinterpret_cast<void(__thiscall*)(void*, float*)>(FnTextColor)(c + LabelTextOff + TextStringSubOff, v);
+    guikit::setTextColor(reinterpret_cast<uintptr_t>(c), rgb[0], rgb[1], rgb[2]);
     s->col[t] = which;
 }
 void setFill(Slot* s, int t, const char* resref, const float* tint) {
@@ -389,8 +374,8 @@ void setFill(Slot* s, int t, const char* resref, const float* tint) {
     if (!readAt<int>(border, 0, &bvt) || bvt != BorderVtable) { whyLog(200 + t, "label %d: border vtable %08x != %08x, no fill", t, bvt, BorderVtable); return; }
     void* im = resref ? imageFor(resref) : nullptr;
     if (resref && !im) im = imageFor(g_cfg.fallbackIcon);
-    if (s->fill[t] != im) { *reinterpret_cast<void**>(border + BorderFillOff) = im; s->fill[t] = im; }
-    if (tint && s->canBorderColor) { float* col = reinterpret_cast<float*>(border + BorderColorOff); if (!near3(col, tint)) for (int k = 0; k < 3; ++k) col[k] = tint[k]; }
+    if (s->fill[t] != im) { guikit::setFill(reinterpret_cast<uintptr_t>(c), im); s->fill[t] = im; }
+    if (tint && s->canBorderColor) { float col[3]; if (guikit::getBorderTint(reinterpret_cast<uintptr_t>(c), col) && !near3(col, tint)) guikit::setBorderTint(reinterpret_cast<uintptr_t>(c), tint); }
 }
 
 // ---- effect data ----
@@ -440,7 +425,7 @@ void logDecode(int type, const int* v, int n) {
     ++g_decLogs; logf("DECODE: type=0x%02x ints=%s -> '%s' / '%s'", type, iv, sh, lg);
 }
 // fake_rows test aid: alternating harmful/beneficial, growing names, 5 s .. 2 h plus one permanent, every third an item;
-// times are frozen. Entry 4 uses a resref with no texture to show what FnLoadImage returns for a missing image.
+// times are frozen. Entry 4 uses a resref with no texture to show what the engine image loader returns for a missing image.
 int addFakeRows(Entry* out, int nt, int n) {
     static const char* const tails[] = {"", " short", " with a long name", " with a much longer name that will not fit"};
     static const double secs[] = {5, 20, 45, 90, 300, 900, 3600, 7200};

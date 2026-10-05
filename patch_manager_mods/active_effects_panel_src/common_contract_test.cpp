@@ -5,7 +5,7 @@
 // "chareffects relies on: " so a failure names the consumer and the reason. Built against ../_shared_src (see test.toml), so ANY
 // edit to SafeRead.h / WindowHook.h / GameAddr.h re-runs this test: a Common change that would break the panel fails here first.
 //
-// Areas (also EffectIcons.h / Effects.h: icon tables, item-ability set, world-time chain; section 2b): (1) gameaddr constants (compile time), (2) saferead via the mod's readAt wrapper call shape (site 0), (3) WindowHook<WheelTag>
+// Areas (also EffectIcons.h / Effects.h: icon tables, item-ability set, world-time chain; section 2b; GuiKit.h: setRect / getExtent / imageFor / textObjOk / setText / setTextColor / setFill, section 2c): (1) gameaddr constants (compile time), (2) saferead via the mod's readAt wrapper call shape (site 0), (3) WindowHook<WheelTag>
 // lifecycle with a proc that mirrors the mod's wheelProc (handle when active, else forward). Host-only, deterministic.
 #ifndef GUIKIT_HOST
 #define GUIKIT_HOST 1
@@ -14,7 +14,9 @@
 #include "fake_wndproc.h"
 #include "SafeRead.h"
 #include "GameAddr.h"
+#include "K2Addr.h"
 #include "EffectIcons.h"
+#include "GuiKit.h"
 #include <sys/mman.h>
 #include <string.h>
 #include <stdio.h>
@@ -118,6 +120,89 @@ static void effecticons_contract() {
     k2fx::g_fx = saved;
 }
 
+// ============================================================ 2c. GuiKit (the helpers the panel's ctlRect / setCtlRect / imageFor / textObjOk / setText / setTextColor / setFill delegate to)
+// Steam table == the constants the panel used to hardcode (FnLoadImage 0x47EB60, FnTextSet 0x416E30, FnTextColor 0x417140, FnExoCtor/Dtor, vtables, offsets).
+static_assert(kSteam.GuiLoadImage == 0x0047EB60 && kSteam.TextSet == 0x00416E30 && kSteam.TextColor == 0x00417140, "chareffects relies on: Steam image/text engine calls");
+static_assert(kSteam.ExoCtor == 0x00733570 && kSteam.ExoDtor == 0x00733780, "chareffects relies on: Steam CExoString ctor/dtor");
+static_assert(kSteam.BorderVtable == 0x009875BC && kSteam.TextVtable == 0x009876B4, "chareffects relies on: Steam border/text vtables");
+static_assert(kSteam.Ctl_X == 4 && kSteam.Ctl_H == 0x10 && kSteam.Ctl_VtSetRect == 4, "chareffects relies on: Steam extent offsets and SetRect vtable slot 1");
+static_assert(kSteam.Label_Border == 0x60 && kSteam.Border_Tint == 0x28 && kSteam.Border_Fill == 0x74, "chareffects relies on: Steam border offsets");
+static_assert(kSteam.Label_Text == 0xD8 && kSteam.Text_Renderer == 0x14 && kSteam.Text_StringSub == 0x18, "chareffects relies on: Steam label text offsets");
+
+static uintptr_t g_gkNext = 0x12000;
+static uintptr_t gkAlloc(int n) { uintptr_t p = reinterpret_cast<uintptr_t>(g_arena) + g_gkNext; g_gkNext += (static_cast<uintptr_t>(n) + 15) & ~15u; return p; }
+static uintptr_t g_rectFn = 0, g_rectCtl = 0; static int g_rect[4], g_rectCalls = 0;
+static void fakeSetRect(uint32_t fn, uintptr_t ctl, int* r) { ++g_rectCalls; g_rectFn = fn; g_rectCtl = ctl; for (int k = 0; k < 4; ++k) g_rect[k] = r[k]; }
+static int g_nLoad = 0; static char g_loadName[24];
+static void* fakeLoad(const char* n) { ++g_nLoad; snprintf(g_loadName, sizeof g_loadName, "%s", n); return reinterpret_cast<void*>(0x7000u + 8u * static_cast<unsigned>(g_nLoad)); }
+static int g_exoCtors = 0, g_exoDtors = 0, g_textSets = 0, g_colors = 0; static uintptr_t g_textSubSeen = 0, g_colSubSeen = 0; static float g_colSeen[3];
+static void* fakeExoCtor(void*, const char*) { ++g_exoCtors; return nullptr; }
+static void fakeExoDtor(void*) { ++g_exoDtors; }
+static void fakeTextSet(void* sub, void*) { ++g_textSets; g_textSubSeen = reinterpret_cast<uintptr_t>(sub); }
+static void fakeTextColor(void* sub, float* v) { ++g_colors; g_colSubSeen = reinterpret_cast<uintptr_t>(sub); for (int k = 0; k < 3; ++k) g_colSeen[k] = v[k]; }
+static void guikit_contract() {
+    k2addr::setForTest(&kSteam);
+    guikit::g_gk.rebind();
+    guikit::Engine& e = guikit::g_gk;
+    // ctlRect: extent at +4/+8/+0xC/+0x10 = x,y,w,h
+    uintptr_t ctl = gkAlloc(0x200);
+    at<int>(ctl, 4) = 10; at<int>(ctl, 8) = 20; at<int>(ctl, 0xC) = 30; at<int>(ctl, 0x10) = 40;
+    int x = -1, y = -1, w = -1, h = -1;
+    saferead::beginScope();
+    HCHECK("getExtent reads x,y,w,h from ctl+4/+8/+0xC/+0x10 (ctlRect)", guikit::getExtent(ctl, &x, &y, &w, &h) && x == 10 && y == 20 && w == 30 && h == 40);
+    x = y = w = h = -7;
+    HCHECK("getExtent(null ctl) is false and leaves outputs untouched", !guikit::getExtent(0, &x, &y, &w, &h) && x == -7 && h == -7);
+    HCHECK("getExtent on an unreadable ctl is false", !guikit::getExtent(0x20, &x, &y, &w, &h));
+    // setCtlRect: vtable slot 1 (vt+4) called with {x,y,w,h}
+    uintptr_t vt = gkAlloc(0x20);
+    at<uint32_t>(ctl, 0) = static_cast<uint32_t>(vt); at<uint32_t>(vt, 4) = 0x00412345u;
+    e.callSetRect = &fakeSetRect; g_rectCalls = 0;
+    HCHECK("setRect calls vtable slot 1 (vt+4) with the ctl and {x,y,w,h}", guikit::setRect(ctl, 1, 2, 3, 4) && g_rectCalls == 1 && g_rectFn == 0x00412345u &&
+           g_rectCtl == ctl && g_rect[0] == 1 && g_rect[1] == 2 && g_rect[2] == 3 && g_rect[3] == 4);
+    at<uint32_t>(vt, 4) = 0; g_rectCalls = 0;
+    HCHECK("setRect with a null slot-1 function does not call (the panel's old guard)", !guikit::setRect(ctl, 1, 2, 3, 4) && g_rectCalls == 0);
+    at<uint32_t>(ctl, 0) = 0; g_rectCalls = 0;
+    HCHECK("setRect with a null vtable does not call", !guikit::setRect(ctl, 1, 2, 3, 4) && g_rectCalls == 0);
+    HCHECK("setRect(null ctl) does not call", !guikit::setRect(0, 1, 2, 3, 4) && g_rectCalls == 0);
+    // textObjOk: label+0xD8 vtable 0x9876B4 and a non-null renderer at text+0x14
+    uintptr_t lbl = gkAlloc(0x148);
+    HCHECK("textObjOk false while the text vtable is wrong", !guikit::detail::textObjOk(lbl));
+    at<uint32_t>(lbl, 0xD8) = 0x009876B4u;
+    HCHECK("textObjOk false with the right vtable but no renderer", !guikit::detail::textObjOk(lbl));
+    at<uint32_t>(lbl, 0xD8 + 0x14) = 0x1234u;
+    HCHECK("textObjOk true: text vtable 0x9876B4 + renderer at +0x14", guikit::detail::textObjOk(lbl));
+    // setText / setTextColor: engine calls on label+0xD8+0x18, and refused before the gate passes
+    e.exoCtor = &fakeExoCtor; e.exoDtor = &fakeExoDtor; e.textSet = &fakeTextSet; e.textColor = &fakeTextColor;
+    HCHECK("setText constructs, sets on label+0xF0, destroys", guikit::setText(lbl, "hi") && g_exoCtors == 1 && g_textSets == 1 && g_exoDtors == 1 && g_textSubSeen == lbl + 0xF0);
+    HCHECK("setTextColor passes rgb to label+0xF0", guikit::setTextColor(lbl, 0.25f, 0.5f, 0.75f) && g_colors == 1 && g_colSubSeen == lbl + 0xF0 &&
+           g_colSeen[0] == 0.25f && g_colSeen[1] == 0.5f && g_colSeen[2] == 0.75f);
+    at<uint32_t>(lbl, 0xD8) = 0;
+    HCHECK("setText / setTextColor refuse (no engine call) when the text object is bad", !guikit::setText(lbl, "x") && !guikit::setTextColor(lbl, 1, 1, 1) && g_textSets == 1 && g_colors == 1);
+    // setFill / getBorderTint / setBorderTint: gated on the border vtable 0x9875BC; fill at border+0x74, tint at border+0x28
+    HCHECK("setFill refused while the border vtable is wrong", !guikit::setFill(lbl, reinterpret_cast<void*>(0x5555)) && at<uint32_t>(lbl, 0x60 + 0x74) == 0);
+    at<uint32_t>(lbl, 0x60) = 0x009875BCu;
+    const float tint[3] = {0.5f, 0.25f, 1.0f}; float got[3] = {9, 9, 9};
+    HCHECK("setFill (no tint) writes only the image at border+0x74", guikit::setFill(lbl, reinterpret_cast<void*>(0x5555)) && at<uint32_t>(lbl, 0x60 + 0x74) == 0x5555u && at<float>(lbl, 0x60 + 0x28) == 0.f);
+    HCHECK("setBorderTint writes rgb at border+0x28 and getBorderTint reads it back", guikit::setBorderTint(lbl, tint) && guikit::getBorderTint(lbl, got) &&
+           got[0] == 0.5f && got[1] == 0.25f && got[2] == 1.0f);
+    HCHECK("setFill(nullptr) clears the image (an entry with no icon)", guikit::setFill(lbl, nullptr) && at<uint32_t>(lbl, 0x60 + 0x74) == 0);
+    // imageFor: lowercased, pooled per resref, the loaded flag says "log this one" (the panel logs 'image ...' only then)
+    e.loadImage = &fakeLoad; g_nLoad = 0;
+    bool loaded = true;
+    HCHECK("imageFor(null/empty) is nullptr and never loads", guikit::imageFor(nullptr, &loaded) == nullptr && !loaded && guikit::imageFor("") == nullptr && g_nLoad == 0);
+    void* a = guikit::imageFor("IP_Mind", &loaded);
+    HCHECK("first imageFor loads the LOWERCASE resref and reports loaded", a != nullptr && loaded && g_nLoad == 1 && !strcmp(g_loadName, "ip_mind"));
+    void* a2 = guikit::imageFor("ip_mind", &loaded);
+    HCHECK("repeat imageFor (any case) returns the pooled image, no reload, loaded=false (no log)", a2 == a && !loaded && g_nLoad == 1);
+    void* b = guikit::imageFor("ii_drdutldev_003", &loaded);
+    HCHECK("a 16-char resref reaches the loader untruncated", b != nullptr && b != a && loaded && !strcmp(g_loadName, "ii_drdutldev_003"));
+    int pc = 0; guikit::imageFor("ip_mind", &loaded, &pc);
+    HCHECK("pool capacity (256) covers more than the panel's old 128 entries", pc >= 2 && guikit::ImagePoolSize >= 128);
+    e.loadImage = nullptr;
+    HCHECK("unknown exe (no loader): imageFor returns nullptr, not a call into address 0", guikit::imageFor("ip_never_loaded") == nullptr);
+    guikit::g_gk.rebind();
+}
+
 // ============================================================ 3. WindowHook<WheelTag>
 struct WheelTag {};
 using WheelHook = kp::WindowHook<WheelTag>;
@@ -194,6 +279,7 @@ int main() {
     g_stubVirtualQueryAll = true;
     saferead_contract();
     effecticons_contract();
+    guikit_contract();
     windowhook_contract();
     return kt::Report("common_contract_test (active_effects_panel)");
 }
