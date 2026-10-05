@@ -95,10 +95,10 @@ bool foreground() {
 const char* const IniPath = ".\\companion_selfheal.ini";
 
 void loadIni() {
-    g_logOn = GetPrivateProfileIntA("General", "Log", 1, "companion_selfheal.ini") != 0;
+    g_logOn = GetPrivateProfileIntA("General", "Log", 1, IniPath) != 0;
     g_probeKey = GetPrivateProfileIntA("General", "ProbeKey", 0x48, IniPath);
     if (g_probeKey <= 0 || g_probeKey > 0xFF) g_probeKey = 0x48;
-    g_probeCall = GetPrivateProfileIntA("probe", "call", 0, "companion_selfheal.ini") != 0;
+    g_probeCall = GetPrivateProfileIntA("probe", "call", 0, IniPath) != 0;
     g_kick = GetPrivateProfileIntA("queue", "kick", 1, IniPath) != 0;
     g_callKey = GetPrivateProfileIntA("probe", "CallKey", 0x4A, IniPath);
     if (g_callKey <= 0 || g_callKey > 0xFF) g_callKey = 0x4A;
