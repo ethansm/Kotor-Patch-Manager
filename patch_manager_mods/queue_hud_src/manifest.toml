@@ -1,9 +1,9 @@
 [patch]
 id = "queue-hud"
 name = "Queue HUD"
-version = "0.1.0-dev"
+version = "0.2.0-dev"
 author = "local"
-description = "Shows the vanilla combat action-queue panel (up to 4 icons, green) OUT of combat, so a use-item or cast-spell command given while paused is visible while it waits for unpause (dimmed while the head action is waiting). Read-only toward the engine: one capture hook on the HUD update plus a portrait-slots HUD_DRAW callback. Optional queue_hud.ini in the game folder (enabled, bg_rgb, bg_alpha, border_rgb, border_alpha, border_px, waiting_dim, waiting_alpha, log). Needs portrait-slots."
+description = "Shows the vanilla combat action-queue panel (up to 4 icons, green) OUT of combat, so a use-item or cast-spell command given while paused is visible while it waits for unpause (dimmed while the head action is waiting). 0.2.0 adds small green queue-icon strips (up to 4) above/below the party-member 1-2 portrait cards. Read-only toward the engine: one capture hook on the HUD update plus a portrait-slots HUD_DRAW callback. Optional queue_hud.ini in the game folder (enabled, bg_rgb, bg_alpha, border_rgb, border_alpha, border_px, waiting_dim, waiting_alpha, log, companions, strip_icon_px, strip_side, strip_max). Needs portrait-slots."
 
 requires = ["portrait-slots"]
 requires_interfaces = ["k2.portraitslots@1"]

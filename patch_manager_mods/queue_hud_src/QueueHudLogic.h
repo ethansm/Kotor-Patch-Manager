@@ -134,6 +134,11 @@ struct Config {
     bool waitingDim = true;
     float waitingAlpha = 0.6f;
     bool log = true;
+    // 0.2.0: companion queue strips (party members 1-2).
+    bool companions = true;
+    int stripIconPx = 0;          // 0 = auto (60% of the vit-rect height, min 12)
+    int stripSide = 0;            // strip_side: kSideLeft (default) | kSideAbove | kSideBelow
+    int stripMax = 4;             // 1..4 icons per strip
 };
 
 struct Style { float bg[3], bgA, border[3], borderA, iconA; int borderPx; };
@@ -148,6 +153,63 @@ inline Style slotStyle(const Config& c, int slotIndex, bool waiting) {
         s.iconA *= c.waitingAlpha; s.bgA *= c.waitingAlpha; s.borderA *= c.waitingAlpha;
     }
     return s;
+}
+
+// ---- companion strips (0.2.0) ----
+struct Rect { int x, y, w, h; };
+
+// strip_side. left (default): right of the row ends left of the vit bar, clear of the selfheal button + ring zone, vertically centred
+// on the bar. above / below: on the card's top / bottom edge (live 3840x1600: small cards are 85 px tall and 104 px apart, so above /
+// below only fit with a small strip_icon_px).
+enum : int { kSideLeft = 0, kSideAbove = 1, kSideBelow = 2 };
+
+constexpr int kStripGap = 2;      // px between icons, and between the strip and the card
+constexpr int kStripMinIcon = 12;
+
+// Icon edge in px: the configured size, or auto = 40% (left) / 60% (above, below) of the vit-rect height, rounded, at least kStripMinIcon.
+inline int stripIconSize(Rect vit, const Config& c) {
+    if (c.stripIconPx > 0) return c.stripIconPx;
+    const int s = c.stripSide == kSideLeft ? (vit.h * 4 + 5) / 10 : (vit.h * 6 + 5) / 10;
+    return s < kStripMinIcon ? kStripMinIcon : s;
+}
+
+// Width left of vit.x kept free for the selfheal button + its ring (SelfHealUi.h buttonRect / ringRect: button 16..24 px = h/4, gap
+// 2*h/36, ring side ~1.5x button), rounded up, plus kStripGap. Host-tested against the real shui functions.
+inline int selfHealReserve(Rect vit) {
+    int sb = (vit.h + 2) / 4;
+    sb = sb < 16 ? 16 : (sb > 24 ? 24 : sb);
+    int gap = (vit.h + 17) / 18;
+    if (gap < 2) gap = 2;
+    const int ring = ((sb * 3 + 2) / 4) * 2;
+    return gap + sb + (ring - sb + 1) / 2 + kStripGap;
+}
+
+// A horizontal row of n square icons (n clamped to strip_max and 4), 2px apart, in queue order. left: the row ends selfHealReserve(vit)
+// px left of vit.x, centred on the vit bar's height. above / below: left-aligned on the card, bottom edge 2px above the card top /
+// top edge 2px below the card bottom. screenW > 0 shifts the row left so it stays on screen (never
+// left of x=0). Returns the icon count written to out[0..); 0 for n <= 0 or an unusable card / vit rect.
+inline int stripRects(Rect card, Rect vit, int n, const Config& c, Rect out[kMaxSlots], int screenW = 0) {
+    if (!out || n <= 0 || card.w <= 0 || card.h <= 0 || vit.h <= 0) return 0;
+    int cap = c.stripMax < 1 ? 1 : (c.stripMax > kMaxSlots ? kMaxSlots : c.stripMax);
+    if (n > cap) n = cap;
+    const int s = stripIconSize(vit, c);
+    const int rowW = n * s + (n - 1) * kStripGap;
+    int y = 0, x0 = 0;
+    if (c.stripSide == kSideAbove || c.stripSide == kSideBelow) {
+        y = c.stripSide == kSideBelow ? card.y + card.h + kStripGap : card.y - kStripGap - s;
+        x0 = card.x;
+    } else {
+        y = vit.y + (vit.h - s) / 2;
+        x0 = vit.x - selfHealReserve(vit) - rowW;
+        if (x0 < 0) x0 = 0;
+    }
+    if (screenW > 0) {
+        const int over = x0 + rowW - screenW;
+        if (over > 0) x0 -= over;
+        if (x0 < 0) x0 = 0;
+    }
+    for (int i = 0; i < n; ++i) { out[i].x = x0 + i * (s + kStripGap); out[i].y = y; out[i].w = s; out[i].h = s; }
+    return n;
 }
 
 // ---- INI ----
@@ -212,11 +274,32 @@ inline bool parsePx(const char* b, const char* e, int* out) {
     *out = *b - '0';
     return true;
 }
+inline bool parseStripPx(const char* b, const char* e, int* out) {   // 0 (auto) or 8..96 integer px
+    trim(b, e);
+    if (b == e || e - b > 2) return false;
+    int v = 0;
+    for (const char* p = b; p < e; ++p) { if (*p < '0' || *p > '9') return false; v = v * 10 + (*p - '0'); }
+    if (v != 0 && (v < 8 || v > 96)) return false;
+    *out = v;
+    return true;
+}
+inline bool parseStripMax(const char* b, const char* e, int* out) {   // a single digit 1..4
+    if (e - b != 1 || *b < '1' || *b > '4') return false;
+    *out = *b - '0';
+    return true;
+}
+inline bool parseSide(const char* b, const char* e, int* side) {
+    if (keyEq(b, e, "left")) { *side = kSideLeft; return true; }
+    if (keyEq(b, e, "above")) { *side = kSideAbove; return true; }
+    if (keyEq(b, e, "below")) { *side = kSideBelow; return true; }
+    return false;
+}
 }  // namespace detail
 
 // One INI line. Blank, ';' / '#' comments and [section] lines are ignored (true). key=value (spaces/tabs trimmed, key case-insensitive):
 //   enabled, waiting_dim, log (0/1/true/false/on/off/yes/no); bg_rgb / border_rgb ("r,g,b" floats, each clamped to 0..1);
 //   bg_alpha, border_alpha, waiting_alpha (float, clamped to 0..1); border_px (a single digit 1..6; anything else is a bad value).
+//   0.2.0: companions (bool), strip_icon_px (0 = auto, else 8..96), strip_side (left | above | below), strip_max (a single digit 1..4).
 // Unknown key, missing '=' or a bad value returns false and leaves the field unchanged.
 inline bool parseIniLine(Config& c, const char* line) {
     if (!line) return false;
@@ -240,6 +323,10 @@ inline bool parseIniLine(Config& c, const char* line) {
     if (detail::keyEq(kb, ke, "waiting_dim")) return detail::parseBool(vb, ve, &c.waitingDim);
     if (detail::keyEq(kb, ke, "waiting_alpha")) return detail::parseUnit(vb, ve, &c.waitingAlpha);
     if (detail::keyEq(kb, ke, "log")) return detail::parseBool(vb, ve, &c.log);
+    if (detail::keyEq(kb, ke, "companions")) return detail::parseBool(vb, ve, &c.companions);
+    if (detail::keyEq(kb, ke, "strip_icon_px")) return detail::parseStripPx(vb, ve, &c.stripIconPx);
+    if (detail::keyEq(kb, ke, "strip_side")) return detail::parseSide(vb, ve, &c.stripSide);
+    if (detail::keyEq(kb, ke, "strip_max")) return detail::parseStripMax(vb, ve, &c.stripMax);
     return false;
 }
 

@@ -101,6 +101,9 @@ addresses = ["0x0078237C", "0x007B3107"]
 [files."patch_manager_mods/perf_lab_src/harness/smoke_probe14.cpp"]
 addresses = ["0x0040A9AA", "0x0040C0DE", "0x009A5C84"]
 
+[files."patch_manager_mods/perf_lab_src/harness/smoke_queuehud.cpp"]
+addresses = ["0x0074E0B0"]
+
 [files."patch_manager_mods/perf_lab_src/harness/smoke_robustness.cpp"]
 addresses = ["0x00428AE5", "0x00428B2A", "0x00669012", "0x00669A27", "0x00712F55", "0x0071C2F0", "0x00726C9C", "0x00798A47"]
 
@@ -130,3 +133,6 @@ addresses = ["0x00744EEC"]
 
 [files."patch_manager_mods/texture_memory_release_src/TextureMemoryRelease.cpp"]
 addresses = ["0x004261CF", "0x004261D6", "0x004261E6"]
+[files."patch_manager_mods/perf_lab_src/harness/smoke_saveevents.cpp"]
+addresses = ["0x00A7EA88", "0x00A7EABC", "0x00A20000", "0x00A20100", "0x00A20200", "0x00A20400", "0x00A20600"]
+

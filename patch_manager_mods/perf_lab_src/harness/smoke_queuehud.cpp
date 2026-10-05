@@ -1,10 +1,10 @@
-// Smoke test for queue-hud 0.1.0-dev (commit 66b3702): the out-of-combat copy of the vanilla action-queue panel. Loaded under Wine's real PE
+// Smoke test for queue-hud 0.2.0-dev (0.1.0 base commit 66b3702): the out-of-combat copy of the vanilla action-queue panel. Loaded under Wine's real PE
 // loader TOGETHER with portrait-slots (the provider of "k2.portraitslots" v1), wired through the registry exactly as KPM would.
 // Build: i686-w64-mingw32-g++ -std=c++17 -O1 -I <harness> -I tests/include -I$KPM/Patches/Common -I../../_shared_src smoke_queuehud.cpp -static
 //        (runner flags in smokes.toml; the 7 MB .bss pad must start at or below the lowest engine address stubbed below, BeginGui2D 0x4792C0,
 //        and end above AppGlobal / ClipDepth, so every engine address the DLLs touch is ordinary zeroed memory of this exe; checked at
 //        startup, exit 2)
-// Run:   smoke_queuehud.exe <wire|combat|nocreature|badhud|badchain|inert>   (dir needs queue-hud.dll + portrait-slots.dll).
+// Run:   smoke_queuehud.exe <wire|combat|nocreature|badhud|badchain|strips|inert>   (dir needs queue-hud.dll + portrait-slots.dll).
 //        Exit codes: 0 pass, 1 check failed / LoadLibrary failed, 2 setup failure, 3 missing export.
 //
 // What is real: both DLLs, QueueHud's KPatchInit / QueueHudCapture (called with the KPM hook calling convention: cdecl, one int param =
@@ -24,6 +24,10 @@
 //   badhud      QueueHudCapture(unreadable pointer): treated as combat (hidden), no crash; HUD_DRAW logs "hidden (hud unreadable)".
 //   badchain    combat=0 with the AppGlobal party chain broken at each link / pointing at unreadable memory: saferead fails cleanly, the
 //               callback returns, no tripwire hit, engine memory untouched.
+//   strips      0.2.0 companion strips: 3 fake HUD slots (snapshotted into the real provider) while the party chain is unreadable, then
+//               readable-but-empty, then served by fake PartyGetAt / MemberServerCreature stubs (members 1-2 matched by CLIENT and by SERVER
+//               pointer, the leader never): bad / zero rects, empty queues, an unresolvable use-item entry. No crash, no draw, the
+//               resolver is only called for the real queue entry, 'strip k=%d hidden' logged once per member (edge log).
 //   inert       KOTOR_VERSION_SHA = unknown sha: the real provider's dispatch is a no-op (HUD_DRAW never reaches queue-hud), capture still
 //               safe, nothing drawn, one provider WARN.
 #define __USE_MINGW_ANSI_STDIO 0
@@ -93,12 +97,14 @@ static void checkNoEngineCalls(const char* where) {
         if (g_hits[i]) printf("queuehud:   tripwire %s hit %ld time(s)\n", kWireName[i], (long)g_hits[i]);
 }
 // true when every pad byte is zero except the planted stubs (16-byte windows); *at = first offending address
+static uintptr_t g_extraStub[2];   // strips mode: fake PartyGetAt / MemberServerCreature windows (not tripwires)
 static bool padClean(uintptr_t* at) {
     for (size_t i = 0; i < sizeof pad; ++i) {
         uintptr_t a = (uintptr_t)pad + i;
         if (pad[i] == 0) continue;
         bool stub = false;
         for (int w = 0; w < W_COUNT; ++w) if (a >= wireAddr(w) && a < wireAddr(w) + 16) stub = true;
+        for (uintptr_t x : g_extraStub) if (x && a >= x && a < x + 16) stub = true;
         if (!stub) { *at = a; return false; }
     }
     return true;
@@ -139,11 +145,13 @@ static std::vector<Reg> regsFromLog() {   // provider logs "register phase=%d pr
 typedef void (__cdecl *InitFn)(const KPatchApi*);
 typedef void (__cdecl *CaptureFn)(int);
 typedef void (__cdecl *SlotDrawFn)(int, int, int);
+typedef void (__cdecl *SnapFn)(int, int);
 struct Dlls {
     HMODULE ps = nullptr, qh = nullptr;
     InitFn psInit = nullptr, qhInit = nullptr;
     CaptureFn capture = nullptr;      // QueueHud hook H8
     SlotDrawFn slotDraw = nullptr;    // portrait-slots hook 6 (drives the HUD_DRAW dispatch)
+    SnapFn snapshot = nullptr;        // portrait-slots hooks 1a/1b (slot -> creature table, what slotAt() serves)
 };
 static Dlls D;
 static HMODULE loadDll(const char* n) {
@@ -160,6 +168,7 @@ static void loadAll() {
     D.ps = loadDll("portrait-slots.dll"); D.qh = loadDll("queue-hud.dll");
     D.psInit = (InitFn)need(D.ps, "portrait-slots.dll", "KPatchInit");
     D.slotDraw = (SlotDrawFn)need(D.ps, "portrait-slots.dll", "PS_PortraitSlotDraw");
+    D.snapshot = (SnapFn)need(D.ps, "portrait-slots.dll", "PS_SnapshotPortraitSlot");
     D.qhInit = (InitFn)need(D.qh, "queue-hud.dll", "KPatchInit");
     D.capture = (CaptureFn)need(D.qh, "queue-hud.dll", "QueueHudCapture");
 }
@@ -205,7 +214,7 @@ static int modeWire() {
     check(regs.size() == 1 && regs[0].owner == "queue-hud", "registered owner is \"queue-hud\"");
     check(regs.size() == 1 && regs[0].token > 0, "registration token > 0 (accepted)");
     check(logCount("portraitslots: connected") == 1, "queue-hud connected to the provider (onConnect logged once)");
-    check(logCount("0.1.0-dev: enabled=1") == 1, "queue-hud logged its version / config line once (default config: enabled)");
+    check(logCount("0.2.0-dev: enabled=1") == 1, "queue-hud logged its version / config line once (default config: enabled)");
     check(logCount("NOT connected") == 0 && warnCount() == 0, "no 'NOT connected' and no WARN line");
 
     // QueueHudCapture returns cleanly and logs the hud pointer once
@@ -326,6 +335,100 @@ static int modeBadChain() {
     return g_fail ? 1 : 0;
 }
 
+// ================================================================ strips
+static void putI32(uintptr_t addr, int v) { memcpy((void*)addr, &v, 4); }
+static uintptr_t g_fakeMember[3], g_fakeServer[3];   // party positions 0..2: client / server creatures
+static int g_memberCalls = 0, g_serverCalls = 0;
+static uintptr_t __fastcall FakeGetAt(void*, void*, int idx) { ++g_memberCalls; return idx >= 0 && idx < 3 ? g_fakeMember[idx] : 0; }   // thiscall(table, idx) RET 4
+static uintptr_t __fastcall FakeServerOf(void* member, void*) {                                                                      // thiscall(member) RET 0
+    ++g_serverCalls;
+    for (int i = 0; i < 3; ++i) if ((uintptr_t)member == g_fakeMember[i]) return g_fakeServer[i];
+    return 0;
+}
+static int modeStrips() {
+    setup(false);
+    setFlags(0);
+    const uintptr_t app = (uintptr_t)kSteam.AppGlobal, base = (uintptr_t)pad;
+    const uintptr_t A = base + 0x20000, B = base + 0x21000, C = base + 0x22000, TBL = base + 0x23000;
+    const uintptr_t S1 = base + 0x24000, S2 = base + 0x25000, S3 = base + 0x26000;                        // fake portrait slots (zeroed)
+    const uintptr_t CL0 = base + 0x27000, CL1 = base + 0x27400, CL2 = base + 0x27800;                    // client creatures
+    const uintptr_t SV0 = base + 0x28000, SV1 = base + 0x29000, SV2 = base + 0x2A000;                    // server creatures
+    const uintptr_t QI = base + 0x2B000, QN = base + 0x2B100, QD = base + 0x2B200;                       // queue: internal, node, action
+    const uintptr_t getAt = (uintptr_t)kSteam.PartyGetAt, serverOf = (uintptr_t)kSteam.MemberServerCreature;
+    if (getAt < (uintptr_t)pad || getAt + 16 > (uintptr_t)pad + sizeof pad || serverOf < (uintptr_t)pad || serverOf + 16 > (uintptr_t)pad + sizeof pad) die(2, "PartyGetAt / MemberServerCreature outside the pad");
+    const int vitOff = kSteam.Slot_VitRect, cardOff = kSteam.Slot_CardRect;
+    g_fakeMember[0] = CL0; g_fakeMember[1] = CL1; g_fakeMember[2] = CL2; g_fakeServer[0] = SV0; g_fakeServer[1] = SV1; g_fakeServer[2] = SV2;
+    D.capture((int)(uintptr_t)g_hud);
+    auto strip = [&](int k, const char* what) { char t[32]; snprintf(t, sizeof t, "strip k=%d %s", k, what); return logCount(t); };
+
+    // fake slots: S1 shows member 1 by its CLIENT pointer, S2 member 2 by its SERVER pointer, S3 the leader (client)
+    D.snapshot((int)S1, (int)CL1); D.snapshot((int)S2, (int)SV2); D.snapshot((int)S3, (int)CL0);
+
+    // 1. party chain unreadable
+    putU32(app, (uint32_t)kBadPtr);
+    leaderCalls(10);
+    check(strip(1, "hidden") == 1 && strip(2, "hidden") == 1, "unreadable party chain: 'strip k=1 hidden' and 'strip k=2 hidden' logged once each (edge)");
+    check(strip(1, "shown") == 0 && strip(2, "shown") == 0, "unreadable party chain: no strip shown");
+    checkNoEngineCalls("strips, unreadable chain");
+
+    // 2. readable but empty table (count 0): member() returns 0 without calling the engine
+    putU32(app, (uint32_t)A); putU32(A + 4, (uint32_t)B); putU32(B + 4, (uint32_t)C); putU32(C + 0x270, (uint32_t)TBL);
+    D.capture((int)(uintptr_t)g_hud);
+    leaderCalls(10);
+    check(g_memberCalls == 0, "empty party table: PartyGetAt never called");
+    check(strip(1, "hidden") == 1 && strip(2, "hidden") == 1, "empty party table: still hidden, no repeated edge line");
+    checkNoEngineCalls("strips, empty table");
+
+    // 3. members served by fake engine functions; slot rects still zero -> skipped
+    unprotect(getAt, 16); putJmp(getAt, (void*)&FakeGetAt); g_extraStub[0] = getAt;
+    unprotect(serverOf, 16); putJmp(serverOf, (void*)&FakeServerOf); g_extraStub[1] = serverOf;
+    putI32(TBL, 3);
+    D.capture((int)(uintptr_t)g_hud);
+    leaderCalls(10);
+    check(g_memberCalls >= 2 && g_serverCalls >= 2, "party of 3: members 1-2 resolved through the (fake) engine accessors");
+    check(strip(1, "hidden") == 1 && strip(2, "hidden") == 1 && strip(1, "shown") == 0, "zero slot rects: slots skipped, nothing shown");
+    checkNoEngineCalls("strips, zero rects");
+
+    // 4. valid rects (3840x1600 companion cards), empty queues -> nothing to show, still no engine call
+    const int vit[4] = { 3671, 1285, 47, 96 }, card[4] = { 3711, 1285, 85, 96 };
+    for (uintptr_t s : { S1, S2, S3 }) for (int j = 0; j < 4; ++j) { putI32(s + vitOff + 4 * j, vit[j]); putI32(s + cardOff + 4 * j, card[j]); }
+    D.capture((int)(uintptr_t)g_hud);
+    leaderCalls(10);
+    check(strip(1, "shown") == 0 && strip(2, "shown") == 0, "valid rects + empty queues: nothing shown");
+    checkNoEngineCalls("strips, empty queues");
+
+    // 5. a use-item entry in member 1's queue (and the leader's): the resolver is the ONLY engine call; the fake leaves the icon blank -> no strip
+    putU32(SV1 + 0x100, (uint32_t)QI); putU32(QI, (uint32_t)QN); putU32(QN + 4, 0); putU32(QN + 8, (uint32_t)QD);
+    putU32(QD, 0x2E); putU32(QD + 0x38, 0x7F000001u);
+    D.capture((int)(uintptr_t)g_hud);
+    leaderCalls(10);
+    check(g_hits[W_RESOLVER] >= 1 && g_hits[W_RESOLVER] <= 2, "member 1 use-item entry: icon resolver called (blank result is cached, not re-called every frame)");
+    long others = totalHits() - g_hits[W_RESOLVER];
+    check(others == 0, "no draw call: a blank icon takes no slot");
+    check(strip(1, "shown") == 0 && strip(2, "shown") == 0, "blank icon: no strip shown");
+    const long hitsBefore = g_hits[W_RESOLVER];
+    putU32(SV0 + 0x100, (uint32_t)QI);   // the LEADER's server creature gets the same queue: it is never matched as a companion strip
+    D.capture((int)(uintptr_t)g_hud);
+    leaderCalls(10);
+    check(g_hits[W_RESOLVER] - hitsBefore <= 1, "leader slot never drives a strip (only the cached key / one leader-panel resolve)");
+
+    // 6. garbage everywhere on a member: unreadable queue pointer / unreadable action
+    putU32(SV1 + 0x100, (uint32_t)kBadPtr); putU32(SV2 + 0x100, (uint32_t)QI); putU32(QN + 8, (uint32_t)kBadPtr);
+    D.capture((int)(uintptr_t)g_hud);
+    leaderCalls(10);
+    check(strip(1, "shown") == 0 && strip(2, "shown") == 0, "unreadable queue / action pointers: no crash, nothing shown");
+    // a member whose pointer no slot carries: no match
+    D.snapshot((int)S1, (int)kBadPtr);
+    leaderCalls(5);
+    check(warnCount() <= 2, "only the expected blank-icon WARN lines (<= 2)");
+    // restore the zeroed pad
+    for (uintptr_t x = base + 0x20000; x < base + 0x2C000; x += 4) putU32(x, 0);
+    putU32(app, 0);
+    uintptr_t bad = 0;
+    checkf(padClean(&bad), "engine pad back to all zero (stubs aside), first bad byte %08x", (int)bad);
+    return g_fail ? 1 : 0;
+}
+
 // ================================================================ inert
 static int modeInert() {
     setup(true);
@@ -352,8 +455,9 @@ int main(int argc, char** argv) {
     else if (!strcmp(mode, "nocreature")) rc = modeNoCreature();
     else if (!strcmp(mode, "badhud")) rc = modeBadHud();
     else if (!strcmp(mode, "badchain")) rc = modeBadChain();
+    else if (!strcmp(mode, "strips")) rc = modeStrips();
     else if (!strcmp(mode, "inert")) rc = modeInert();
-    else die(2, "unknown mode (wire|combat|nocreature|badhud|badchain|inert)");
+    else die(2, "unknown mode (wire|combat|nocreature|badhud|badchain|strips|inert)");
     printf("queuehud: %s %d checks, %d failed\n", rc ? "FAIL" : "PASS", g_checks, g_fail);
     return rc;
 }

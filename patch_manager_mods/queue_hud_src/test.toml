@@ -1,5 +1,5 @@
 # Default for every queue_hud test: warnings are errors. Per-test tables replace (not merge) these keys.
-cxxflags = ["-Werror"]
+cxxflags = ["-I../_shared_src", "-Werror"]
 
 # Per-test table: the Common contract test needs the shared headers, the KPM checkout's Patches/Common (KpLog.h, kpatch_api.h) and the host Win32 stub.
 [common_contract_test]

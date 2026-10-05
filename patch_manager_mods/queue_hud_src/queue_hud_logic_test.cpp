@@ -1,6 +1,7 @@
 // Tests for QueueHudLogic.h (queue-hud pure logic). Every rule in the header comment (D1..D5) and every boundary is pinned.
 #include "QueueHudLogic.h"
 #include "check.h"
+#include "SelfHealUi.h"   // real neighbour geometry: shui::buttonRect / ringRect
 #include <initializer_list>
 #include <stdio.h>
 #include <string.h>
@@ -421,6 +422,163 @@ void testIniText() {
     KT_CHECK_EQ(k.borderPx, 3);
 }
 
+// ---- 0.2.0 companion strips ----
+bool overlaps(const Rect& a, const shui::Rect& b) {
+    if (b.w <= 0 || b.h <= 0) return false;
+    return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+}
+
+void testStripConfig() {
+    Config c;
+    KT_CHECK(c.companions); KT_CHECK_EQ(c.stripIconPx, 0); KT_CHECK_EQ(c.stripSide, kSideLeft); KT_CHECK_EQ(c.stripMax, 4);
+    KT_CHECK(parseIniLine(c, "companions = 0")); KT_CHECK(!c.companions);
+    KT_CHECK(parseIniLine(c, "Companions=yes")); KT_CHECK(c.companions);
+    KT_CHECK(!parseIniLine(c, "companions=2")); KT_CHECK(c.companions);
+    KT_CHECK(parseIniLine(c, "strip_icon_px=24")); KT_CHECK_EQ(c.stripIconPx, 24);
+    KT_CHECK(parseIniLine(c, "strip_icon_px=8")); KT_CHECK_EQ(c.stripIconPx, 8);
+    KT_CHECK(parseIniLine(c, "strip_icon_px=96")); KT_CHECK_EQ(c.stripIconPx, 96);
+    KT_CHECK(!parseIniLine(c, "strip_icon_px=7")); KT_CHECK_EQ(c.stripIconPx, 96);
+    KT_CHECK(!parseIniLine(c, "strip_icon_px=97")); KT_CHECK_EQ(c.stripIconPx, 96);
+    KT_CHECK(!parseIniLine(c, "strip_icon_px=100")); KT_CHECK(!parseIniLine(c, "strip_icon_px=-5")); KT_CHECK(!parseIniLine(c, "strip_icon_px=")); KT_CHECK(!parseIniLine(c, "strip_icon_px=1x"));
+    KT_CHECK_EQ(c.stripIconPx, 96);
+    KT_CHECK(parseIniLine(c, "strip_icon_px=0")); KT_CHECK_EQ(c.stripIconPx, 0);   // auto
+    KT_CHECK(parseIniLine(c, "strip_side=below")); KT_CHECK_EQ(c.stripSide, kSideBelow);
+    KT_CHECK(parseIniLine(c, "strip_side = ABOVE")); KT_CHECK_EQ(c.stripSide, kSideAbove);
+    KT_CHECK(!parseIniLine(c, "strip_side=right")); KT_CHECK_EQ(c.stripSide, kSideAbove);
+    KT_CHECK(parseIniLine(c, "strip_side=Left")); KT_CHECK_EQ(c.stripSide, kSideLeft);
+    KT_CHECK(parseIniLine(c, "strip_max=1")); KT_CHECK_EQ(c.stripMax, 1);
+    KT_CHECK(parseIniLine(c, "strip_max=4")); KT_CHECK_EQ(c.stripMax, 4);
+    KT_CHECK(!parseIniLine(c, "strip_max=0")); KT_CHECK(!parseIniLine(c, "strip_max=5")); KT_CHECK(!parseIniLine(c, "strip_max=12")); KT_CHECK_EQ(c.stripMax, 4);
+}
+
+void testStripGeometry() {
+    Config c;
+    c.stripSide = kSideAbove;
+    Rect out[4];
+    const Rect card{ 3711, 1285, 85, 96 }, vit{ 3671, 1285, 47, 96 };
+    KT_CHECK_EQ(stripIconSize(vit, c), 58);                    // 96 * 0.6 = 57.6 -> 58
+    KT_CHECK_EQ(stripIconSize(Rect{ 0, 0, 47, 20 }, c), 12);   // 12 exactly
+    KT_CHECK_EQ(stripIconSize(Rect{ 0, 0, 47, 19 }, c), 12);   // floor at 12 (11.4 -> 12)
+    KT_CHECK_EQ(stripIconSize(Rect{ 0, 0, 47, 40 }, c), 24);
+    KT_CHECK_EQ(stripIconSize(Rect{ 0, 0, 47, 41 }, c), 25);   // 24.6 -> 25
+    KT_CHECK_EQ(stripIconSize(Rect{ 0, 0, 47, 24 }, c), 14);   // 14.4 rounds down (a round-half-up bias would give 15)
+    c.stripIconPx = 20; KT_CHECK_EQ(stripIconSize(vit, c), 20); c.stripIconPx = 1; KT_CHECK_EQ(stripIconSize(vit, c), 1); c.stripIconPx = 0;
+    // above: bottom edge 2px above the card top, left-aligned, 2px gap
+    int n = stripRects(card, vit, 3, c, out);
+    KT_CHECK_EQ(n, 3);
+    for (int i = 0; i < 3; ++i) { KT_CHECK_EQ(out[i].w, 58); KT_CHECK_EQ(out[i].h, 58); KT_CHECK_EQ(out[i].y + out[i].h, card.y - 2); KT_CHECK_EQ(out[i].x, 3711 + i * 60); }
+    // below: top edge 2px under the card bottom
+    c.stripSide = kSideBelow;
+    n = stripRects(card, vit, 2, c, out);
+    KT_CHECK_EQ(n, 2);
+    KT_CHECK_EQ(out[0].y, 1285 + 96 + 2); KT_CHECK_EQ(out[1].y, out[0].y); KT_CHECK_EQ(out[1].x, out[0].x + 60);
+    c.stripSide = kSideAbove;
+    // clamps: n to strip_max and to 4; n <= 0 and bad inputs give 0
+    c.stripMax = 1; KT_CHECK_EQ(stripRects(card, vit, 3, c, out), 1);
+    c.stripMax = 2; KT_CHECK_EQ(stripRects(card, vit, 4, c, out), 2);
+    c.stripMax = 4; KT_CHECK_EQ(stripRects(card, vit, 9, c, out), 4);
+    c.stripMax = 0; KT_CHECK_EQ(stripRects(card, vit, 3, c, out), 1);   // defensive floor
+    c.stripMax = 9; KT_CHECK_EQ(stripRects(card, vit, 9, c, out), 4);   // defensive ceiling
+    c.stripMax = 4;
+    KT_CHECK_EQ(stripRects(card, vit, 0, c, out), 0); KT_CHECK_EQ(stripRects(card, vit, -1, c, out), 0);
+    KT_CHECK_EQ(stripRects(card, vit, 1, c, nullptr), 0);
+    KT_CHECK_EQ(stripRects(Rect{ 0, 0, 0, 96 }, vit, 1, c, out), 0); KT_CHECK_EQ(stripRects(Rect{ 0, 0, 85, 0 }, vit, 1, c, out), 0);
+    KT_CHECK_EQ(stripRects(card, Rect{ 0, 0, 47, 0 }, 1, c, out), 0);
+    KT_CHECK_EQ(stripRects(Rect{ 0, 0, 1, 96 }, vit, 1, c, out), 1); KT_CHECK_EQ(stripRects(Rect{ 0, 0, 85, 1 }, vit, 1, c, out), 1);   // 1px card is usable
+    KT_CHECK_EQ(stripRects(card, Rect{ 0, 0, 47, 1 }, 1, c, out), 1);
+    KT_CHECK_EQ(stripRects(card, vit, 1, c, out), 1);
+    // an explicit icon size is used as is
+    c.stripIconPx = 16;
+    n = stripRects(card, vit, 4, c, out);
+    KT_CHECK_EQ(n, 4); KT_CHECK_EQ(out[3].x, 3711 + 3 * 18); KT_CHECK_EQ(out[0].y, 1285 - 2 - 16);
+    // screen clamp: a row that would run off the right edge slides left; screenW 0 = no clamp
+    c.stripIconPx = 0;
+    n = stripRects(card, vit, 4, c, out, 3840);
+    KT_CHECK_EQ(n, 4); KT_CHECK_EQ(out[3].x + out[3].w, 3840); KT_CHECK_EQ(out[1].x - out[0].x, 60);
+    n = stripRects(card, vit, 2, c, out, 3840);                     // 3711 + 2*58 + 2 = 3829 <= 3840: unchanged
+    KT_CHECK_EQ(out[0].x, 3711);
+    n = stripRects(card, vit, 4, c, out, 3840 + 0);
+    KT_CHECK(out[3].x + out[3].w <= 3840);
+    n = stripRects(Rect{ 10, 100, 85, 96 }, vit, 4, c, out, 50);   // a screen narrower than the row: pinned to x = 0, never negative
+    KT_CHECK_EQ(out[0].x, 0);
+    n = stripRects(card, vit, 4, c, out, 0);
+    KT_CHECK_EQ(out[0].x, 3711);
+    n = stripRects(card, vit, 1, c, out, 3768);                     // overflow of exactly 1px still shifts
+    KT_CHECK_EQ(out[0].x, 3710);
+    n = stripRects(card, vit, 1, c, out, 3769);                     // fits exactly: unchanged
+    KT_CHECK_EQ(out[0].x, 3711);
+    n = stripRects(card, vit, 1, c, out, 1);                        // screenW 1 is still a clamp
+    KT_CHECK_EQ(out[0].x, 0);
+    (void)n;
+}
+
+// Real small-card rects (doc 08 s5 / 27 R2: 3840x1600 vit (3671,1285|1181,47,96), card x 3711 w 85) plus other aspect/scales.
+void testStripAvoidsSelfHeal() {
+    struct Case { shui::Rect vit; Rect card; };
+    const Case cases[] = {
+        { { 3671, 1285, 47, 96 }, { 3711, 1285, 85, 96 } },    // 3840x1600 companion 2 (real)
+        { { 3671, 1181, 47, 96 }, { 3711, 1181, 85, 96 } },    // companion 3 (real)
+        { { 1727, 700, 73, 65 }, { 1767, 700, 57, 65 } },      // 1080p-ish (vit.w >= 70 so a button exists)
+        { { 700, 482, 72, 36 }, { 740, 482, 36, 36 } },        // 800x600 units, no scaling
+        { { 1000, 300, 100, 150 }, { 1040, 300, 120, 150 } },  // large scale
+    };
+    for (int side = kSideLeft; side <= kSideBelow; ++side) for (int nIcons = 1; nIcons <= 4; ++nIcons) for (int px : { 0, 12, 24 }) for (const Case& cs : cases) {
+        Config c; c.stripSide = side; c.stripIconPx = px;
+        Rect out[4];
+        const int n = stripRects(cs.card, Rect{ cs.vit.x, cs.vit.y, cs.vit.w, cs.vit.h }, nIcons, c, out);
+        KT_CHECK_EQ(n, nIcons);
+        // buttonRect() refuses vit.w < 70 (the real small-card vit is 47 wide); its x/y depend only on vit.x/y/h, so widen w to get the geometry.
+        const shui::Rect btn = shui::buttonRect(shui::Rect{ cs.vit.x, cs.vit.y, cs.vit.w < 70 ? 70 : cs.vit.w, cs.vit.h });
+        KT_CHECK(btn.w > 0);                                   // the case must exercise a real button
+        const shui::Rect ring = shui::ringRect(btn);
+        for (int i = 0; i < n; ++i) {
+            KT_CHECK(!overlaps(out[i], btn));
+            KT_CHECK(!overlaps(out[i], ring));
+            if (i) KT_CHECK(out[i].x >= out[i - 1].x + out[i - 1].w + 2);   // icons never overlap each other
+            if (side == kSideLeft) {                                         // left of the button / ring, never on the bar or card
+                KT_CHECK(out[i].x + out[i].w <= (btn.x < ring.x ? btn.x : ring.x) - 2);
+                KT_CHECK(!overlaps(out[i], cs.vit));
+                KT_CHECK(!overlaps(out[i], shui::Rect{ cs.card.x, cs.card.y, cs.card.w, cs.card.h }));
+            }
+        }
+    }
+}
+
+// left (the default) on the live 3840x1600 layout (doc 08 probe 1): auto 38 px icons centred on the 96 px bar, ending 38 px left of
+// vit.x; the two stacked companions (104 px apart) and the leader's bars never touch a strip.
+void testStripLeftLive() {
+    Config c;
+    Rect out[4];
+    const Rect vit2{ 3671, 1285, 47, 96 }, card2{ 3711, 1285, 85, 85 }, vit3{ 3671, 1181, 47, 96 }, card3{ 3711, 1181, 85, 85 };
+    const shui::Rect leaderVit{ 3511, 1386, 103, 208 }, leaderCard{ 3591, 1394, 191, 192 }, leaderForce{ 3762, 1386, 103, 208 };
+    KT_CHECK_EQ(stripIconSize(vit2, c), 38);                    // 96 * 0.4 = 38.4 -> 38
+    KT_CHECK_EQ(selfHealReserve(vit2), 38);                    // gap 6 + button 24 + ring overhang 6 + 2
+    KT_CHECK_EQ(stripRects(card2, vit2, 1, c, out), 1);
+    KT_CHECK_EQ(out[0].x, 3671 - 38 - 38); KT_CHECK_EQ(out[0].y, 1285 + 29); KT_CHECK_EQ(out[0].w, 38);
+    KT_CHECK_EQ(stripRects(card2, vit2, 4, c, out), 4);
+    KT_CHECK_EQ(out[3].x + out[3].w, 3671 - 38); KT_CHECK_EQ(out[0].x, 3633 - 4 * 38 - 3 * 2);   // queue order left to right
+    const Rect* vits[] = { &vit2, &vit3 }; const Rect* cards[] = { &card2, &card3 };
+    for (int k = 0; k < 2; ++k) {
+        KT_CHECK_EQ(stripRects(*cards[k], *vits[k], 4, c, out), 4);
+        for (int i = 0; i < 4; ++i) {
+            for (const Rect* r : { &vit2, &vit3, &card2, &card3 }) KT_CHECK(!overlaps(out[i], shui::Rect{ r->x, r->y, r->w, r->h }));
+            KT_CHECK(!overlaps(out[i], leaderVit)); KT_CHECK(!overlaps(out[i], leaderCard)); KT_CHECK(!overlaps(out[i], leaderForce));
+        }
+    }
+    // the reserve covers the real selfheal button + ring at every bar height, and wastes at most 3 px beyond kStripGap
+    for (int h = 8; h <= 400; ++h) {
+        const shui::Rect btn = shui::buttonRect(shui::Rect{ 1000, 100, 100, h });
+        if (btn.w <= 0) continue;
+        const shui::Rect ring = shui::ringRect(btn);
+        const int need = 1000 - (btn.x < ring.x ? btn.x : ring.x);
+        const int r = selfHealReserve(Rect{ 1000, 100, 47, h });
+        KT_CHECK(r - 2 >= need);
+        KT_CHECK(r - 2 <= need + 3);
+    }
+    KT_CHECK_EQ(stripRects(Rect{ 40, 0, 85, 85 }, Rect{ 10, 0, 47, 96 }, 2, c, out), 2);   // too close to the left edge: pinned to x = 0
+    KT_CHECK_EQ(out[0].x, 0);
+}
+
 }  // namespace
 
 int main() {
@@ -437,5 +595,9 @@ int main() {
     testIniLine();
     testIniBad();
     testIniText();
+    testStripConfig();
+    testStripGeometry();
+    testStripAvoidsSelfHeal();
+    testStripLeftLive();
     return kt::Report("queue_hud_logic_test");
 }

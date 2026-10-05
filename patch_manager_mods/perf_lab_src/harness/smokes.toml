@@ -178,7 +178,7 @@ modes = ["wire", "late", "inert", "order"]
 needs_display = false
 timeout_s = 60
 
-# queue-hud 0.1.0-dev: out-of-combat action-queue copy, loaded with the real portrait-slots provider. Tripwires on every engine draw /
+# queue-hud 0.2.0-dev: out-of-combat action-queue copy, loaded with the real portrait-slots provider. Tripwires on every engine draw /
 # resolver address; the kpatch lives in split_build/ like the other portrait-slots clients (kept out of Patches/). Common headers use the
 # absolute KPM checkout path, not $KPM_DIR: pre_install_gate.py points KPM_DIR at a scratch tree that has no Patches/Common.
 [[smoke]]
@@ -191,7 +191,7 @@ extra_dlls = [
 ]
 cxxflags = ["-static", "-I../../_shared_src", "-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common"]
 runtime_dlls = false
-modes = ["wire", "combat", "nocreature", "badhud", "badchain", "inert"]
+modes = ["wire", "combat", "nocreature", "badhud", "badchain", "strips", "inert"]
 needs_display = false
 timeout_s = 60
 

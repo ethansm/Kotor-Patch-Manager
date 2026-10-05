@@ -44,7 +44,7 @@ static int g_registered; static int32_t g_regPhase = -1, g_regPrio = -1; static 
 static int32_t KPATCH_CALL psRegister(int32_t phase, int32_t prio, K2PsCallback fn, void*, const char* owner) { if (!fn) return 0; ++g_registered; g_regPhase = phase; g_regPrio = prio; g_regOwner = owner; return 1; }
 static void KPATCH_CALL psUnreg(int32_t) {}
 static int32_t KPATCH_CALL psCreature(int32_t) { return 0; }
-static int32_t KPATCH_CALL psSlotAt(int32_t, int32_t*, int32_t*) { return 0; }
+static int32_t KPATCH_CALL psSlotAt(int32_t i, int32_t* slot, int32_t* cr) { if (i != 2) return 0; *slot = 0x1234; *cr = 0x5678; return 1; }
 static uint32_t KPATCH_CALL psFrame() { return 9; }
 static K2PortraitSlotsApi g_psApi = { sizeof(K2PortraitSlotsApi), psRegister, psUnreg, psCreature, psSlotAt, psFrame };
 static std::string g_reqName; static uint32_t g_reqVer;
@@ -158,6 +158,18 @@ int main() {
     QCHECK("owner is the manifest id", g_regOwner == "queue-hud");
     k2ps::Client c2; c2.poll();
     QCHECK("poll() on an unconnected, uninitialised client stays unconnected (no crash)", !c2.connected);
+
+    // ===== 4b. 0.2.0 companion strips: slotAt + slot geometry offsets + party members 1-2
+    { int32_t sl = 0, cr = 0;
+      QCHECK("k2ps::Client::slotAt(i, int32_t* slot, int32_t* creature) -> bool fills both for a live entry and fails for others", c.slotAt(2, &sl, &cr) && sl == 0x1234 && cr == 0x5678 && !c.slotAt(0, &sl, &cr));
+      QEQ("K2PS_MAX_SLOTS is 4 (the strips loop bounds)", K2PS_MAX_SLOTS, 4); }
+    static_assert(kSteam.Slot_CardRect == 0x54c && kSteam.Slot_VitRect == 0x694, "queue-hud relies on: Slot_CardRect 0x54c / Slot_VitRect 0x694 (strip anchors, 4 ints x,y,w,h)");
+    static_assert(kSteam.ScreenW == 0x009F42A4, "queue-hud relies on: ScreenW 0x9F42A4 (strip right-edge clamp)");
+    QEQ("Steam table is the default for this host test: Slot_VitRect", k2addr::get()->Slot_VitRect, 0x694);
+    party::g_member = [](void*, int i) -> uintptr_t { return i == 1 ? A(0xC00) : i == 2 ? A(0xC40) : 0; };
+    QEQ("member(table, 1) is the first companion (client creature)", (unsigned long long)party::member(A(0x900), 1), (unsigned long long)A(0xC00));
+    put<int32_t>(0x900, 3);
+    QEQ("member(table, 2) with count 3 is the second companion", (unsigned long long)party::member(A(0x900), 2), (unsigned long long)A(0xC40));
 
     // ===== 5. Gui2D: fillRect / drawImage forward to the engine hooks (compile-time signatures + behaviour on fakes)
     QCHECK("gui2d::fillRect(x, y, w, h, const float* rgb, float alpha) keeps its signature", static_cast<void(*)(int, int, int, int, const float*, float)>(&gui2d::fillRect) != nullptr);
