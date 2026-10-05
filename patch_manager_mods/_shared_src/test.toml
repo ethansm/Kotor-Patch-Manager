@@ -26,3 +26,9 @@ cxxflags = ["-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HO
 
 [embtex_test]
 cxxflags = ["-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HOST", "-DEMBTEX_HOST", "-Werror"]
+
+[inikit_test]
+cxxflags = ["-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HOST", "-Werror"]
+
+[panelslots_test]
+cxxflags = ["-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HOST", "-Werror"]
