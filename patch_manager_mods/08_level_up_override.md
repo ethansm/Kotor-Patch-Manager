@@ -1107,3 +1107,5 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
 - **RESUME HERE (2026-10-04 ~23:30, R10 batch 3c BUILT, NOT installed):** doc 25 section 15. 1.4.0-dev kpatch 978b39fd (dll d14fa7cd, KPM 6015fe4,
   32 hooks unchanged). Live still 1.3.0-dev 8dfce2de. Next (user present + GO): DLL hot-swap per doc 25 s15 "Live test" (gear/square/window).
 - **INSTALLED 2026-10-05 00:28:** 1.4.0-dev dll d14fa7cd hot-swapped into `$G/patches/level-up-override.dll` (md5 verified); previous 545e330b backed up to `$G/backups/luo_3c_0028`. Awaiting the user live check; read `levelup_override_log.txt` from line 794.
+- **RESUME HERE (2026-10-05 ~02:00, R10 batch 3d BUILT, NOT installed):** doc 25 section 16. 1.5.0-dev kpatch cb0d73bf (dll 91bbda85, KOTOR-II d2856d9,
+  KPM 540b91f, hooks unchanged). Live still 1.4.0-dev d14fa7cd. Next (user present + GO): DLL hot-swap per doc 25 s16 "Live test", log from line 886.

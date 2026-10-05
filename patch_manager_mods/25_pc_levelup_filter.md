@@ -189,3 +189,20 @@ no stats show through. (3) Log: `tex luo_gear: created ... queued`, `UI icon emb
   lvlbtn consistent). User: gear looks good. Batch 3d feedback: gear needs the button fill behind it; highlight the border on hover; keep the gear while
   the page is open and make it act as Cancel; page = solid background, rounded border, vanilla colours (the EFX window and row fills are see-through live).
   Handoff `.claude/handoffs/25_pc_levelup_filter.handoff.md`.
+
+## 16. Batch 3d: gear on a button, vanilla hover highlight, gear closes the page, opaque vanilla-framed window (built, NOT installed) - 2026-10-05
+User feedback on 1.4.0-dev (s15 "Live result"); screenshots `~/Documents/Screenshot_2026-10-05_01-01-13.png` / `_01-01-26.png`.
+| part | what |
+|---|---|
+| gear | New `C_GEAR` (plain `LBL_EXPERIENCE_STAT` clone, right after `C_ICON` = drawn on top) carries the gear fill (stretch, alpha 1, click-through re-set after each show), placed by `uiGearRect` = `uiIconRect` inset round(side * 0.18). `C_ICON` keeps its framed template fill (looks like the rows / Apply). Hover swap (`luo_gear_hi`) moved to `C_GEAR`. Embedded failure or `ui.icon=<other>`: the image goes on `C_ICON` as before, `C_GEAR` hidden (`r->gearOk`). |
+| hover | `guikit::setBorderTint` (border+0x28; Draw 0x415300 tints corners, edges and fill). `uiHoverTint`: hovered clickable control -> `kHiTint` 0.8/0.8/0.69804 (vanilla BTN_LEVELUP HILIGHT COLOR), previous one -> its base COLOR read once in `uiAppend`; restored when the control is hidden (`uiShow`). New log `UI hover tint base_ok=%d n=%d/%d`. |
+| close | `uiClickable(C_ICON)` = shown (page open or not); icon + gear shown on every open page (PC and companion, any `lvl`); click while open -> `uiClosePage` like Cancel, new log `UI gear close tag=%s`. The icon's tip box stays in the 3D-view region while the page is open. |
+| window | `luo_fill` (8x8 opaque RGB 2,8,6, 3rd `kLuoTex`) stretched over BG0 (efx window or the LBL_XP_BACK clone), alpha 1; frame + COLOR kept. `r->oneBack = win \|\| fillOk` hides BG1/BG2. Fill failure: 3-stack as before. New log `UI page fill=luo_fill ok=%d style=%d one=%d`. Rect unchanged [54,134,246,336]. |
+| tests | guikit_test (setBorderTint), ui_test 739 (section 8: gear rect/fill, hover tint enter/once/leave/follow/hidden, icon closes companion + PC page and writes nothing, one back on the 3-stack, fill failure -> 3-stack + fallback icon), parity/scenarios(-m32)/options/wizard green, mutate 194/194 (HL01-HL05 new, RB07 regex updated). gui_ids count 26. |
+Build: 1.5.0-dev, LevelUpOverride.kpatch md5 cb0d73bf (dll 91bbda85), previous kept as `LevelUpOverride.kpatch.140dev_978b39fd.bak`; KOTOR-II d2856d9, KPM 540b91f.
+Gates: check_hook_bytes FAIL=0 (hooks unchanged -> DLL hot-swap install), check_exports FAIL=0, check_shared_headers 0 drift, mingw -Wall -Wextra clean, gen_luo_textures --check 0.
+
+**Live test (user present, game closed, GO; tell the other sessions first):** back up to `$G/backups/luo_3d_<HHMM>`, copy `binaries/windows_x86.dll`
+from the kpatch to `$G/patches/level-up-override.dll`, md5 91bbda85. Read `levelup_override_log.txt` from line 886.
+(1) Gear on a teal button fill; cream border on hover (rows, Apply, Cancel too). (2) Page open: gear still there, clicking it closes the page.
+(3) Page solid (no stats / column lines through it), rounded teal frame. (4) Log: `UI page fill=luo_fill ok=1 style=1 one=1`, `UI hover tint base_ok=1`, banner `1.5.0-dev`.
