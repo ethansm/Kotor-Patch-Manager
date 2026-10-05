@@ -409,6 +409,158 @@ inline bool playHoverSound() {
     return true;
 }
 
+// ---- screen size / float cursor / mouse wheel / bind-by-tag (additive; factored from the copies in chareffects (A), inv3d (I), equip3d (E)) ----
+// Pure parts (screenValid, pickScreen, clientToEngineF, wheel*, rectContainsF, bindFlags) have no engine or Win32 dependency and are host-tested.
+inline bool screenValid(int w, int h) { return w >= 320 && w <= 16384 && h >= 200 && h <= 16384; }   // A/I inline range test, E eq3d::screenValid
+enum ScreenSrc { SS_None = 0, SS_Ini = 1, SS_Engine = 2 };
+// Screen-size decision of the copies' syncScreen(): an INI override (iniW > 0 or iniH > 0, the copies' screenExplicit) wins and the engine
+// globals are NOT consulted; each of *w / *h takes its INI value when > 0 and otherwise keeps the caller's current value (the copies' cfg
+// default). No override: the engine globals replace *w/*h only when screenValid(engW, engH); otherwise *w/*h are left untouched (SS_None).
+inline int pickScreen(int iniW, int iniH, int engW, int engH, int* w, int* h) {
+    if (!w || !h) return SS_None;
+    if (iniW > 0 || iniH > 0) { if (iniW > 0) *w = iniW; if (iniH > 0) *h = iniH; return SS_Ini; }
+    if (screenValid(engW, engH)) { *w = engW; *h = engH; return SS_Engine; }
+    return SS_None;
+}
+namespace detail {
+inline int syncScreenSrc(int iniW, int iniH, int* w, int* h) {
+    int ew = 0, eh = 0;
+    if (!(iniW > 0 || iniH > 0)) {   // like the copies: the engine globals are only read when the INI does not override
+        if (g_gk.screenWAddr) rdInt(g_gk.screenWAddr, 0, &ew);
+        if (g_gk.screenHAddr) rdInt(g_gk.screenHAddr, 0, &eh);
+    }
+    return pickScreen(iniW, iniH, ew, eh, w, h);
+}
+}
+// Engine framebuffer size honouring an INI override (copies' syncScreen). In/out *w,*h = the caller's current size (fallback).
+// True when this call set *w/*h from the INI or the engine globals; false (values untouched) when neither was usable.
+inline bool syncScreen(int iniW, int iniH, int* w, int* h) { return detail::syncScreenSrc(iniW, iniH, w, h) != SS_None; }
+// Client px -> engine px in float, same arithmetic as the copies' `pt.x * screenW / r.right`. Precondition cw >= 1 && ch >= 1.
+inline void clientToEngineF(int px, int py, int cw, int ch, float sw, float sh, float* x, float* y) { *x = px * sw / cw; *y = py * sh / ch; }
+// Float variant of cursorEngine (same mapping, no int truncation; what the copies' cursorEngine(float*,float*) return). iniW/iniH (optional,
+// default 0 = engine globals) are the INI screen override. Falls back to client px (as cursorEngine) when no usable screen size is known.
+inline bool cursorEngineF(float* x, float* y, int iniW = 0, int iniH = 0) {
+    int cx, cy, cw, ch;
+    if (!g_gk.cursorClient || !x || !y || !g_gk.cursorClient(&cx, &cy, &cw, &ch) || cw < 1 || ch < 1) return false;
+    int sw = 0, sh = 0;
+    int src = detail::syncScreenSrc(iniW, iniH, &sw, &sh);
+    if (src == SS_Engine || (src == SS_Ini && sw > 0 && sh > 0)) clientToEngineF(cx, cy, cw, ch, static_cast<float>(sw), static_cast<float>(sh), x, y);
+    else { *x = static_cast<float>(cx); *y = static_cast<float>(cy); }
+    return true;
+}
+
+// ---- mouse wheel (WheelHook) ----
+// Subclasses the game window once per DLL, accumulates WM_MOUSEWHEEL deltas that land inside caller-provided engine-px rects while the caller
+// keeps "ticking", and chains to the original WndProc for everything else (consumed wheel events are swallowed, as in A/I/E).
+// NOTE: L4 `k2.guiinput` is the long-term owner of input subclassing; WheelHook is the interim shared copy of the three per-mod subclasses.
+// Usage per tick: touch(GetTickCount()); setRect(0, x, y, w, h) (w <= 0 = inactive; engine px, top-left origin); then n = take().
+// Differences between the copies, kept as parameters: A/I/E all gate on (feature enabled && tick < 300 ms old && rect w > 0) -> enabled/freshMs/rects;
+// only I calls saferead::beginScope() inside the proc -> `scoped`; A/I/E log the first 20 events -> onEvent/eventLogMax. None of the copies has a
+// drag guard (their drag code runs in the tick); `dragGuard` is optional (nullptr = off): while it returns true the wheel is NOT consumed and is
+// chained to the game untouched.
+constexpr int WheelMaxRects = 4;
+constexpr int WheelAccumMax = 1 << 20;   // saturation bound of the accumulator (120 units per notch)
+inline int wheelDelta(uintptr_t wParam) { return static_cast<int16_t>((wParam >> 16) & 0xFFFF); }   // (short)HIWORD(wParam)
+inline int wheelPtX(uintptr_t lParam) { return static_cast<int16_t>(lParam & 0xFFFF); }             // (short)LOWORD(lParam), screen px
+inline int wheelPtY(uintptr_t lParam) { return static_cast<int16_t>((lParam >> 16) & 0xFFFF); }     // (short)HIWORD(lParam)
+// cur + delta saturated to +-WheelAccumMax (the copies' InterlockedExchangeAdd could wrap).
+inline int wheelAddClamped(int cur, int delta) {
+    long long s = static_cast<long long>(cur) + delta;
+    return s > WheelAccumMax ? WheelAccumMax : s < -WheelAccumMax ? -WheelAccumMax : static_cast<int>(s);
+}
+// Half-open box test (left/top inclusive, right/bottom exclusive); a rect with w <= 0 or h <= 0 contains nothing.
+inline bool rectContainsF(float x, float y, int rx, int ry, int rw, int rh) { return x >= rx && x < rx + rw && y >= ry && y < ry + rh; }
+
+struct WheelHook {
+    volatile int32_t accum = 0;           // summed deltas since the last take()
+    volatile uint32_t lastTickMs = 0;     // touch() time
+    volatile int32_t rects[WheelMaxRects][4];   // x, y, w, h in engine px; w <= 0 = inactive
+    bool enabled = true;                  // A/I/E: cfg.wheelScroll / wheelZoom
+    uint32_t freshMs = 300;               // wheel is only seen while touch() is younger than this (the owning panel is up)
+    int iniW = 0, iniH = 0;               // INI screen override (0 = engine globals), see syncScreen
+    int screenW = 3840, screenH = 1600;   // current / fallback screen size used to map the cursor
+    bool scoped = false;                  // call saferead::beginScope() on entry to the Win32 proc (I does)
+    bool (*dragGuard)() = nullptr;        // optional: true = a drag is active, do not consume the wheel
+    void (*onEvent)(int delta, int px, int py, bool inside) = nullptr;   // optional diagnostic (first eventLogMax events)
+    int eventLogMax = 20, eventLogs = 0;
+    WheelHook() { for (int i = 0; i < WheelMaxRects; ++i) for (int k = 0; k < 4; ++k) rects[i][k] = 0; }
+    void touch(uint32_t nowMs) { __atomic_store_n(&lastTickMs, nowMs, __ATOMIC_RELAXED); }
+    void setRect(int i, int x, int y, int w, int h) {
+        if (i < 0 || i >= WheelMaxRects) return;
+        __atomic_store_n(&rects[i][0], x, __ATOMIC_RELAXED); __atomic_store_n(&rects[i][1], y, __ATOMIC_RELAXED);
+        __atomic_store_n(&rects[i][3], h, __ATOMIC_RELAXED); __atomic_store_n(&rects[i][2], w, __ATOMIC_RELAXED);
+    }
+    void clearRect(int i) { if (i >= 0 && i < WheelMaxRects) __atomic_store_n(&rects[i][2], 0, __ATOMIC_RELAXED); }
+    bool anyRect() const { for (int i = 0; i < WheelMaxRects; ++i) if (__atomic_load_n(&rects[i][2], __ATOMIC_RELAXED) > 0) return true; return false; }
+    bool fresh(uint32_t nowMs) const { return static_cast<uint32_t>(nowMs - __atomic_load_n(&lastTickMs, __ATOMIC_RELAXED)) < freshMs; }
+    // Should the proc look at this wheel event at all (the copies' leading `if`), plus the optional drag guard.
+    bool gate(uint32_t nowMs) const { return enabled && fresh(nowMs) && anyRect() && !(dragGuard && dragGuard()); }
+    // Engine-px point inside any active rect.
+    bool inside(float x, float y) const {
+        for (int i = 0; i < WheelMaxRects; ++i) {
+            int rw = __atomic_load_n(&rects[i][2], __ATOMIC_RELAXED);
+            if (rw > 0 && rectContainsF(x, y, __atomic_load_n(&rects[i][0], __ATOMIC_RELAXED), __atomic_load_n(&rects[i][1], __ATOMIC_RELAXED), rw, __atomic_load_n(&rects[i][3], __ATOMIC_RELAXED))) return true;
+        }
+        return false;
+    }
+    // Core of the subclass proc for one WM_MOUSEWHEEL (client px + client size, screenW/H already synced). True = consumed (accumulated, do not chain).
+    bool onWheel(uint32_t nowMs, int delta, bool haveClient, int px, int py, int cw, int ch) {
+        if (!gate(nowMs)) return false;
+        bool in = false;
+        if (haveClient && cw > 0 && ch > 0) {
+            float x, y; clientToEngineF(px, py, cw, ch, static_cast<float>(screenW), static_cast<float>(screenH), &x, &y);
+            in = inside(x, y);
+        }
+        if (onEvent && eventLogs < eventLogMax) { ++eventLogs; onEvent(delta, px, py, in); }
+        if (!in) return false;
+        int32_t cur = __atomic_load_n(&accum, __ATOMIC_RELAXED);
+        while (!__atomic_compare_exchange_n(&accum, &cur, wheelAddClamped(cur, delta), false, __ATOMIC_ACQ_REL, __ATOMIC_RELAXED)) {}
+        return true;
+    }
+    int take() { return __atomic_exchange_n(&accum, 0, __ATOMIC_ACQ_REL); }   // drain; 120 per notch, positive = away from the user
+};
+inline WheelHook g_wheel;   // the one hook per DLL (inline variable: one instance per module)
+
+// ---- bind a layout-created label by tag (panel ctor, before StopLoadFromLayout; copies: bindLabel A, bindCover I/E) ----
+// Decision after InitControl: a control whose id differs from expectId is not the layout's (the layout lacks it): hide it (clear bit1);
+// either way the control is made click-through (set bit5).
+inline bool bindMatches(int id, int expectId) { return id == expectId; }
+inline int bindFlags(int id, int expectId, int fl) { return (bindMatches(id, expectId) ? fl : (fl & ~FlagVisible)) | FlagClickThrough; }
+struct BindInfo {   // what the copies logged ("H1 %s: ctl id expect extent flags -> flags")
+    uintptr_t ctl = 0; int id = -999, flagsBefore = 0, flagsAfter = 0, ext[4] = {0, 0, 0, 0}; int why = CF_None; uint32_t badVtable = 0;
+};
+// alloc(labelSize) + zero + label ctor + vtable check + InitControl(panel, ctl, tag, addToList = 1, scale = 1) (so the panel list takes it,
+// unlike createLabelFromTemplate) + id/flags/extent readback + bindFlags write. Returns the control iff its id == expectId, else 0 (the
+// hidden control stays in the panel list, as in the copies; info->ctl still holds it). labelSize <= 0 = the K2Addr table's LabelSize
+// (the copies hard-coded 0x148). `tagName` is the layout tag string (the copies' tagName), not an int.
+inline uintptr_t bindByTag(uintptr_t panel, const char* tagName, int expectId, int labelSize = 0, BindInfo* info = nullptr) {
+    using namespace detail;
+    BindInfo bi; BindInfo& r = info ? *info : bi; r = BindInfo();
+    const int size = labelSize > 0 ? labelSize : off(&K2AddrTable::LabelSize), oId = off(&K2AddrTable::Ctl_Id), oFlags = off(&K2AddrTable::Ctl_Flags);
+    const uint32_t labelVt = vtab(&K2AddrTable::LabelVtable);
+    if (!panel || !tagName || !g_gk.alloc || !g_gk.labelCtor || !g_gk.initControl || !g_gk.exoCtor || !g_gk.exoDtor || size <= 0 || !oId || !oFlags || !labelVt) { r.why = CF_Alloc; return 0; }
+    unsigned char* mem = static_cast<unsigned char*>(g_gk.alloc(size));
+    if (!mem) { r.why = CF_Alloc; return 0; }
+    memset(mem, 0, size);
+    g_gk.labelCtor(mem);
+    uintptr_t c = reinterpret_cast<uintptr_t>(mem);
+    uint32_t vt = 0;
+    if (!rd32(c, 0, &vt) || vt != labelVt) { r.why = CF_Vtable; r.badVtable = vt; return 0; }
+    char exo[16] = {0};
+    g_gk.exoCtor(exo, tagName);
+    g_gk.initControl(reinterpret_cast<void*>(panel), mem, exo, 1, 1);
+    g_gk.exoDtor(exo);
+    r.ctl = c;
+    int id = -999, fl = 0;
+    rdInt(c, oId, &id); rdInt(c, oFlags, &fl);
+    r.id = id; r.flagsBefore = fl;
+    getExtent(c, &r.ext[0], &r.ext[1], &r.ext[2], &r.ext[3]);
+    r.flagsAfter = bindFlags(id, expectId, fl);
+    if (!wr<int>(c, oFlags, r.flagsAfter)) { r.why = CF_Flags; return 0; }
+    if (!bindMatches(id, expectId)) { r.why = CF_Template; return 0; }
+    return c;
+}
+
 // ---- Win32 platform defaults (game window lookup as Mod 14 gameWindow 241: largest visible window of this pid, > 320x240 per Mod 3) ----
 #ifndef GUIKIT_HOST
 namespace detail {
@@ -450,6 +602,39 @@ inline bool winLButton() { return (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0; 
 inline bool winRButton() { return (GetAsyncKeyState(VK_RBUTTON) & 0x8000) != 0; }
 struct InstallPlatform { InstallPlatform() { g_gk.cursorClient = winCursorClient; g_gk.gameForeground = winForeground; g_gk.lbuttonDown = winLButton; g_gk.rbuttonDown = winRButton; } };
 inline InstallPlatform g_installPlatform;
+// WheelHook's Win32 side: subclass proc + install (A/I/E wheelProc and the subclass step of their gameWindow()).
+inline WNDPROC g_wheelOldProc = nullptr;
+inline LRESULT CALLBACK wheelProc(HWND h, UINT m, WPARAM w, LPARAM l) {
+    if (m == WM_MOUSEWHEEL) {
+        WheelHook& s = g_wheel; DWORD now = GetTickCount();
+        if (s.gate(now)) {
+            if (s.scoped) saferead::beginScope();
+            POINT pt = { wheelPtX(l), wheelPtY(l) }; RECT r = { 0, 0, 0, 0 };
+            bool have = ScreenToClient(h, &pt) && GetClientRect(h, &r) && r.right > 0 && r.bottom > 0;
+            if (have) syncScreen(s.iniW, s.iniH, &s.screenW, &s.screenH);
+            if (s.onWheel(now, wheelDelta(w), have, pt.x, pt.y, r.right, r.bottom)) return 0;
+        }
+    }
+    return g_wheelOldProc ? CallWindowProcA(g_wheelOldProc, h, m, w, l) : DefWindowProcA(h, m, w, l);
+}
+}
+// Subclasses the game window once (idempotent). False until the window exists (retry; gameWindow() throttles its own lookups to 2 s).
+inline HWND g_wheelHwnd = nullptr;
+inline bool wheelInstall() {
+    if (detail::g_wheelOldProc) return true;
+    HWND h = detail::gameWindow(); if (!h) return false;
+    detail::g_wheelOldProc = reinterpret_cast<WNDPROC>(SetWindowLongPtrA(h, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(detail::wheelProc)));
+    if (detail::g_wheelOldProc) g_wheelHwnd = h;
+    return detail::g_wheelOldProc != nullptr;
+}
+// Unload: restore the saved proc ONLY IF ours is still on top (another DLL that subclassed later would otherwise be unhooked); when it is not,
+// the proc stays installed and keeps chaining to the saved one (tests/static/subclassers.toml rule).
+inline void wheelUninstall() {
+    if (!detail::g_wheelOldProc || !g_wheelHwnd || !IsWindow(g_wheelHwnd)) return;
+    if (reinterpret_cast<WNDPROC>(GetWindowLongPtrA(g_wheelHwnd, GWLP_WNDPROC)) == detail::wheelProc) {
+        SetWindowLongPtrA(g_wheelHwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(detail::g_wheelOldProc));
+        detail::g_wheelOldProc = nullptr; g_wheelHwnd = nullptr;
+    }
 }
 #endif
 

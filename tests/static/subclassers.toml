@@ -41,3 +41,10 @@ install = 'g_oldProc\s*=[^;]*SetWindowLongPtr[AW]?\s*\(\s*g_gameWnd\s*,\s*GWLP_W
 restore = 'GetWindowLongPtr[AW]?\s*\(\s*g_gameWnd\s*,\s*GWLP_WNDPROC\s*\)[^;]*==\s*wheelProc[^;]*\)\s*\{\s*SetWindowLongPtr[AW]?\s*\(\s*g_gameWnd\s*,\s*GWLP_WNDPROC\s*,[^;]*g_oldProc'
 install_hint = 810
 restore_hint = 1462
+
+[[subclasser]]
+file = "patch_manager_mods/_shared_src/GuiKit.h"
+install = 'g_wheelOldProc\s*=[^;]*SetWindowLongPtr[AW]?\s*\(\s*h\s*,\s*GWLP_WNDPROC\s*,[^;]*wheelProc'
+restore = 'GetWindowLongPtr[AW]?\s*\(\s*g_wheelHwnd\s*,\s*GWLP_WNDPROC\s*\)[^;]*==[^;]*wheelProc[^;]*\)\s*\{\s*SetWindowLongPtr[AW]?\s*\(\s*g_wheelHwnd\s*,\s*GWLP_WNDPROC\s*,[^;]*g_wheelOldProc'
+install_hint = 617
+restore_hint = 625
