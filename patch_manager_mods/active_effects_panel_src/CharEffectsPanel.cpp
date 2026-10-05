@@ -30,8 +30,7 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include <math.h>
-#include "EffectIconTable.inc"   // Buff HUD: beneficial spells.2da row -> icon
-#include "DebuffIconTable.inc"   // Buff HUD: harmful spells.2da row -> icon (+ item flag)
+#include "../_shared/EffectIcons.h"   // k2fx: icon tables + collectBuffs (Buff HUD)
 #include "ChareffDecode.h"      // effect stat decoder + pixel-width text layer (pure, host-tested; includes EffectNameTable.inc)
 #include "../_shared/GameAddr.h"
 #include "../_shared/WindowHook.h"
@@ -395,17 +394,6 @@ void setFill(Slot* s, int t, const char* resref, const float* tint) {
 }
 
 // ---- effect data ----
-bool currentTime(int* day, int* ms) {   // BuffDurationHUD.cpp
-    int g, a, b;
-    if (!readAt(AppGlobal, 0, &g) || !readAt(g, 8, &a) || !readAt(a, 4, &b)) return false;
-    int timer;
-    if (!readAt(b, 0x10048, &timer) || timer == 0) return false;
-    reinterpret_cast<void(__thiscall*)(void*, int*, int*)>(WorldTimerGetCurrentTime)(reinterpret_cast<void*>(timer), day, ms);
-    return true;
-}
-bool isItemAbility(int spell) {   // BuffDurationHUD.cpp: stims, shots, shields, cloak
-    return (spell >= 69 && spell <= 77) || (spell >= 99 && spell <= 108) || (spell >= 110 && spell <= 115) || spell == 129 || spell == 132 || spell == 257;
-}
 int leaderClient() {   // what SetStats 0x84e6f0 shows: 0x7e5da0(0x73fb90(client), 0)
     int app = 0, client = 0, c4 = 0, party = 0;
     if (!readAt<int>(AppGlobal, 0, &app) || !readAt<int>(app, 4, &client) || !readAt<int>(client, 4, &c4) || !readAt<int>(c4, 0x270, &party) || !party) return 0;
@@ -481,7 +469,7 @@ int collect(Slot* s, int server, Entry* out, bool dump) {
     if (!readAt<int>(server, EffArrOff, &arr) || !readAt<int>(server, EffCntOff, &count) || count < 0 || count > MaxEffects) return -1;
     if ((!arr || !count) && !g_cfg.fakeRows) return 0;
     if (!arr) count = 0;
-    int day = 0, ms = 0; bool haveTime = currentTime(&day, &ms);
+    int day = 0, ms = 0; bool haveTime = k2fx::currentTime(&day, &ms);
     static Raw raw[MaxEffects]; int nr = 0;
     for (int i = 0; i < count; ++i) {
         int eff = 0; if (!readAt<int>(arr, 4 * i, &eff) || !eff) continue;
@@ -530,7 +518,7 @@ int collect(Slot* s, int server, Entry* out, bool dump) {
                 const char* nm = kSpellRows[r.spell].name;
                 if (nm) strncpy(e.name, nm, sizeof e.name - 1); else snprintf(e.name, sizeof e.name, "Effect %d", r.spell);
                 strncpy(e.icon, bad ? bad : good, 16);
-                e.item = bad ? kDebuffIcons[r.spell].item : isItemAbility(r.spell);
+                e.item = bad ? kDebuffIcons[r.spell].item : k2fx::isItemAbility(r.spell);
                 use = true;
             }
         }

@@ -5,7 +5,7 @@
 // "chareffects relies on: " so a failure names the consumer and the reason. Built against ../_shared_src (see test.toml), so ANY
 // edit to SafeRead.h / WindowHook.h / GameAddr.h re-runs this test: a Common change that would break the panel fails here first.
 //
-// Areas: (1) gameaddr constants (compile time), (2) saferead via the mod's readAt wrapper call shape (site 0), (3) WindowHook<WheelTag>
+// Areas (also EffectIcons.h / Effects.h: icon tables, item-ability set, world-time chain; section 2b): (1) gameaddr constants (compile time), (2) saferead via the mod's readAt wrapper call shape (site 0), (3) WindowHook<WheelTag>
 // lifecycle with a proc that mirrors the mod's wheelProc (handle when active, else forward). Host-only, deterministic.
 #ifndef GUIKIT_HOST
 #define GUIKIT_HOST 1
@@ -14,6 +14,7 @@
 #include "fake_wndproc.h"
 #include "SafeRead.h"
 #include "GameAddr.h"
+#include "EffectIcons.h"
 #include <sys/mman.h>
 #include <string.h>
 #include <stdio.h>
@@ -76,6 +77,45 @@ static void saferead_contract() {
     bool ok = true;
     for (int n = 0; n < 5; ++n) { saferead::beginScope(); i = 0; ok = ok && modRead(g_arena, 8, &i) && i == 1920; }
     HCHECK("beginScope is callable repeatedly (every poll) and reads still work", ok);
+}
+
+// ============================================================ 2b. EffectIcons / k2fx (icon tables, item-ability set, world time chain)
+static int g_fakeDay = 0;
+static void fakeGetTime(uintptr_t timer, int* day, int* ms) { g_fakeDay = static_cast<int>(timer); *day = 7; *ms = 1234; }
+static void effecticons_contract() {
+    bool item = true;
+    const char* ic = k2fx::iconForSpell(8, false, &item);
+    HCHECK("k2fx::iconForSpell(8) buff row is tracked (ip_speedburst), not on the item disc", ic && !strcmp(ic, "ip_speedburst") && !item);
+    HCHECK("k2fx::iconForSpell(257) is an item-ability buff on the disc (shield)", k2fx::iconForSpell(257, false, &item) && item);
+    const char* bad = k2fx::iconForSpell(4, true, &item);
+    HCHECK("k2fx::iconForSpell(4, debuff) is tracked (ip_advlsthrow)", bad && !strcmp(bad, "ip_advlsthrow") && !item);
+    HCHECK("k2fx::iconForSpell out of range (-1, 287) is nullptr", !k2fx::iconForSpell(-1, false, &item) && !k2fx::iconForSpell(287, true, &item));
+    HEQ("icon tables cover 287 spells.2da rows (the panel guards with kEffectIconTableSize)", kEffectIconTableSize, 287);
+    HEQ("debuff table is the same size as the buff table", kDebuffIconTableSize, kEffectIconTableSize);
+    HCHECK("kDebuffIcons[4] resref/item readable (the panel reads the table directly)", kDebuffIcons[4].resref && !kDebuffIcons[4].item);
+    HCHECK("k2fx::isItemAbility(69) true (stim range start)", k2fx::isItemAbility(69));
+    HCHECK("k2fx::isItemAbility 77/99/108/110/115/129/132/257 true", k2fx::isItemAbility(77) && k2fx::isItemAbility(99) && k2fx::isItemAbility(108) &&
+           k2fx::isItemAbility(110) && k2fx::isItemAbility(115) && k2fx::isItemAbility(129) && k2fx::isItemAbility(132) && k2fx::isItemAbility(257));
+    HCHECK("k2fx::isItemAbility false for force-power rows 8, 24 and range gaps 68, 78, 109, 256", !k2fx::isItemAbility(8) && !k2fx::isItemAbility(24) &&
+           !k2fx::isItemAbility(68) && !k2fx::isItemAbility(78) && !k2fx::isItemAbility(109) && !k2fx::isItemAbility(256));
+
+    // world time: AppGlobal -> +8 -> +4 -> +0x10048 timer (Steam offsets the panel's old local currentTime used)
+    uintptr_t base = reinterpret_cast<uintptr_t>(g_arena);
+    memset(g_arena, 0, 0x10400);
+    uintptr_t ag = base, w = base + 0x100, sub = base + 0x200, w2 = base + 0x300;
+    at<int>(ag, 0) = static_cast<int>(w);               // *(AppGlobal)
+    at<int>(w, 8) = static_cast<int>(w2);               // +8 -> world
+    at<int>(w2, 4) = static_cast<int>(sub);             // +4 -> sub
+    k2fx::Engine saved = k2fx::g_fx;
+    k2fx::g_fx.appGlobal = ag; k2fx::g_fx.getTime = &fakeGetTime;
+    int day = -1, ms = -1;
+    saferead::beginScope();
+    HCHECK("k2fx::currentTime false while the world timer is null (main menu / load)", !k2fx::currentTime(&day, &ms));
+    at<int>(sub, 0x10048) = 0x5150;
+    saferead::beginScope();
+    HCHECK("k2fx::currentTime true once the timer exists; day/ms from the engine call", k2fx::currentTime(&day, &ms) && day == 7 && ms == 1234);
+    HEQ("k2fx::currentTime passes the timer read at sub+0x10048 to the engine call", g_fakeDay, 0x5150);
+    k2fx::g_fx = saved;
 }
 
 // ============================================================ 3. WindowHook<WheelTag>
@@ -144,7 +184,7 @@ static void windowhook_contract() {
 }
 
 int main() {
-    void* m = mmap(nullptr, 1u << 16, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS
+    void* m = mmap(nullptr, 1u << 17, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS
 #ifdef MAP_32BIT
                    | MAP_32BIT
 #endif
@@ -153,6 +193,7 @@ int main() {
     g_arena = static_cast<uint8_t*>(m);
     g_stubVirtualQueryAll = true;
     saferead_contract();
+    effecticons_contract();
     windowhook_contract();
     return kt::Report("common_contract_test (active_effects_panel)");
 }
