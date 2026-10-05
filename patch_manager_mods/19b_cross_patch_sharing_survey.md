@@ -77,7 +77,7 @@ Companion to doc 19. Question (user): can the RFC #180 registry simplify our pat
 | 7 | B2 GuiKit adoption (+ `showTip`, `inRect`) | hotbar, effects, equip3d, sort_filter, inv3d | 4 adopters (hotbar first); effects = doc 24 C4 |
 | 8 | B6 `Party.h` (`controlledCreature`, `partyCount`, `table`) | hotbar, companion_ai, buff, effects | 2 adopters (hotbar first) |
 | 9 | `SaveBinding.h` | hotbar (per-save files), level_up (GUID globals) | needs framework save events; stays local |
-| 10 | `Textures.h` | hotbar only | defer until a second user |
+| 10 | `EmbedTex.h` (was "Textures.h": embedded TGA -> CAurTextureBasic, `ensure`/`heal`, 20-refill give-up) | level_up (1.4.0-dev, first adopter 2026-10-04); hotbar = migration candidate (still its own copy in ActionHotbar.cpp 1503-1575 + HotbarLogic.h tga helpers) | header DONE `_shared_src/EmbedTex.h` (KOTOR-II a111b83, KPM 6015fe4); hotbar session migrates itself |
 | 11 | `TestHarness.h` | perf_lab harness, pure-logic tests | doc 20 |
 | - | `TwoDA.h`, `Tlk.h` | hotbar | move with #4 if level_up adopts them |
 | 12 | `GuiTip.h` (`namespace guitip`: native engine tooltip string `setNative` + custom-box fallback `tick`/`layout`, `readMgr` probe) | level_up (first, 10-04 f33235f / KPM c7a2bb6); candidates Mod 14 (`showTip`), hotbar (`tipLayout`) | landed, additive; native path unverified live (spike `research/companion_levelup/phase7_evidence/UX_native_tooltip.md`); migrations in their own sessions after level_up's live TIPPROBE result |

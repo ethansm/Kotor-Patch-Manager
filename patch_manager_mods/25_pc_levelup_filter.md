@@ -167,3 +167,20 @@ written (r10=0: On was toggled twice) and reloaded (`start=playthrough`). Native
 Bugs: banner still says `Version = "1.2.0-dev"` (LevelUpOverride.cpp:93); first `UI lvlbtn shown=0 isVisible=1` (likely a stale ctor-time flag, recheck).
 User feedback (batch 3c): gear icon instead of the hammer; the icon is stretched (not square: sx != sy on this screen); the config page needs a proper
 bordered window that fully covers the menu underneath. No screenshots were taken.
+
+## 15. Batch 3c: gear icon (embedded), square icon, framed config window (built, NOT installed) - 2026-10-04
+User feedback after the 3a live test (s14 "Live result"): gear instead of the hammer, square icon, a bordered window that fully covers the menu.
+Gear art matched to the hotbar wrench family (same gradient / outline / glow / rim recipe) at the user's request.
+| part | what |
+|---|---|
+| gear | `scripts/gen_luo_textures.py` -> `level_up_override_src/LuoTextures.inc` (`luo_gear` teal, `luo_gear_hi` gold, 64x64 32-bit TGA; previews + `family_compare.png` in `research/companion_levelup/r10/ui_icon/`; `--check` = deterministic). Registered at the first UI tick by the new shared `EmbedTex.h` (`embtex::ensure`; `heal()` every uiTick; Steam-only). Default `ui.icon=luo_gear`; fallback `lbl_icn_opt2`, then text "LU". FILLSTYLE 2 (stretch) via new `guikit::setFillStyle` (border+0x34 bits 0-1). Hover swaps the fill to `luo_gear_hi` on a change only. Logs `tex luo_gear: created ...`, `UI icon fill=%s ok=%d` (unchanged) + new `UI icon emb=%d hi=%d style=%d`. |
+| square | `uiIconRect(Scale)`: side = round(28 * sy), right edge pinned at unitX(520), top unitY(172); used by `uiPlace` and the tip anchor (`uiRectUnits(r, i, &sc)`); the hit test reads the placed extent. |
+| window | `C_BG0` tries Mod 14's `LBL_EFX_BACK` first (opaque frame `uibit_brdr_16wc/16we`, fill `uibit_fill_2bt`): `r->win`, own frame/fill kept, alpha 1, BG1/BG2 stay hidden (`uiShowBack`). Without Mod 14: the 3-stack as before. Same rect [54,134,246,336] (x <= 300). Logs `UI page window=efx|stack`, `UI page window back alpha ok=%d`. The failed template try costs one extra label alloc per panel ctor. |
+| bugs | Banner `Version` 1.2.0-dev -> 1.4.0-dev. `UI lvlbtn shown=%d isVisible=%d` is now logged on the tick AFTER the change (the engine writes bit1 after our hook); format unchanged. |
+| tests | embtex_test (create / upload / reset refill / missing rebuild / give-up 20 / bad TGA / non-Steam), guikit_test (setFillStyle), ui_test 713 (section 7: wide-screen square rect + anchor, gear + hover once, idempotent second panel, two fallbacks, window vs stack, heal refill + give-up, lvlbtn timing), parity/scenarios(-m32)/options/wizard/guikit green, mutate 189/189 (IC01-IC05 new). gui_ids unchanged (no new control). |
+Build: 1.4.0-dev, LevelUpOverride.kpatch md5 978b39fd (dll d14fa7cd), previous kept as `LevelUpOverride.kpatch.130dev_8dfce2de.bak`; KOTOR-II 0044115/a111b83/0972045/dbabc2b/889e5ba, KPM 6015fe4.
+Gates: check_hook_bytes FAIL=0 (32 hooks unchanged -> DLL hot-swap install), check_exports FAIL=0, check_shared_headers 0 drift, mingw -Wall -Wextra clean.
+
+**Live test (user present, game closed, GO; tell the other sessions first):** hot-swap `$G/patches/level-up-override.dll` (back up to
+`$G/backups/luo_3c_<HHMM>`, md5 check). (1) Gear square in the 3D-view corner, gold on hover. (2) Options/filter page = one framed opaque window,
+no stats show through. (3) Log: `tex luo_gear: created ... queued`, `UI icon emb=1 hi=1 style=1`, `UI page window=efx`, banner `1.4.0-dev`.
