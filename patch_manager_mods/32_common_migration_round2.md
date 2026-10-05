@@ -6,6 +6,10 @@ Direction: "start extracting the common patch logic and then plan to migrate the
 This round added Common APIs only (additive, host-tested, mutation-checked). **No mod was edited.**
 Each batch below is run later by the session that owns the mod. Status starts TODO.
 
+## RESUME HERE
+
+Next: MG1 (texmem, equip-icon, activation; perf-lab deferred, its source is being edited by another session). Handoff: `.claude/handoffs/32_common_migration_round2.handoff.md`.
+
 ## 1. What landed (round 2 headers)
 
 | Row | Header | API | KOTOR-II sha | KPM sha |
