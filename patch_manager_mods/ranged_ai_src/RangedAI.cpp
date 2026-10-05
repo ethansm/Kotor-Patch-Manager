@@ -28,6 +28,7 @@
 #include <stdarg.h>
 
 #include "../_shared/SafeRead.h"
+#include "RangedAiLogic.h"
 #include "KpLog.h"
 
 KP_LOG_PATCH("ranged-ai");
@@ -127,15 +128,7 @@ Config g_cfg;
 DWORD g_lastIni = 0;
 char IniName[MAX_PATH + 32] = "ranged_ai.ini";   // made absolute in DllMain (a bare name is searched in the Windows dir)
 
-unsigned parseMask(const char* s) {
-    unsigned m = 0;
-    for (const char* p = s; *p;) {
-        while (*p == ' ' || *p == ',') ++p;
-        if (*p >= '0' && *p <= '9') { int v = 0; while (*p >= '0' && *p <= '9') v = v * 10 + (*p++ - '0'); if (v < 32) m |= 1u << v; }
-        else if (*p) ++p;
-    }
-    return m;
-}
+using rai::parseMask;   // RangedAiLogic.h
 
 // Before the load line is emitted (DllMain) the config line is only formatted; afterwards it is logged directly.
 void cfgLog(const char* fmt, ...) {
@@ -191,11 +184,7 @@ void summary() {
 }
 
 struct V3 { float x, y, z; };
-// E-H3 range test: same formula as E-H1's inline test (a zero/garbage weapon range never counts as in range)
-bool inWeaponRange(float maxR, float dist2) {
-    float lim = maxR + 0.1f; lim *= lim;
-    return maxR > 1.0f && dist2 <= lim;
-}
+using rai::inWeaponRange;   // RangedAiLogic.h (E-H3 range test, same formula as E-H1)
 
 V3 pos(int obj, int off) { V3 v = {0, 0, 0}; saferead::readAt<V3>(2, static_cast<uintptr_t>(obj), off, &v); return v; }
 
