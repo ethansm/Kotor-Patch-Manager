@@ -6,3 +6,6 @@ cxxflags = ["-Werror"]
 [chareff_decode_test]
 cxxflags = ["-Werror", "-Wno-format-truncation"]
 args = ["testdata/decode_cases.txt", "research/decode_samples_live.txt"]
+
+[common_contract_test]
+cxxflags = ["-I../_shared_src", "-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HOST", "-DWINDOWHOOK_HOST", "-Werror"]
