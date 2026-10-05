@@ -1,6 +1,15 @@
-# 30 — Queue HUD (`queue-hud` 0.1.0-dev): green out-of-combat action queue, leader
+# 30 — Queue HUD (`queue-hud` 0.2.0-dev): green out-of-combat action queue, leader + companion strips
 
 ## RESUME HERE
+- **0.2.0-dev LIVE 2026-10-05 00:09 (user "install when ready")**: DLL hot-swap (hooks/exports unchanged since 0.1.0), live dll `2950ce26`,
+  config `629754e3` untouched. Backup `$G/backups/queuehud020_swap_20261005_0009/queue-hud.dll` (= 0.1.0 `75defebf`; rollback = copy it back,
+  game closed). Repo `1181d18`, KPM `b53229b`. Gate `--mod queue_hud_src --mod save_events_src` GATE PASS, smokes queuehud 7/7 (new `strips`).
+  0.1.0 was never play-tested, so the checklist below covers both. No `queue_hud.ini` in `$G` = defaults (companions=1, strip_side=left).
+- Strips: `stripRects` default `left` = row ends `selfHealReserve(vit)` (38 px at the live 47x96 small vit) left of the vit bar, auto icon
+  40% of vit.h (38 px), centred on the bar. `above`/`below` (opt-in) only fit with a small `strip_icon_px`: small cards are 85 px tall,
+  104 px apart. Slot creature matched against the member's client OR server pointer (slotAt kind unconfirmed; first live `strip k=` line).
+- Finding for the selfheal session (not fixed here): `shui::buttonRect` returns empty for `vit.w < 70` and CompanionSelfHeal.cpp:597 treats
+  `vit.w < 70` as the leader, but live small-card vits are 47x96 (doc 08 probe 1), so the selfheal button probably never draws on companions.
 - State: **INSTALLED 2026-10-04 22:44** (user GO). Stage `$K/queuehud_stage_1004` (STAGE_INFO head=cd0eba3; DIRTY = sibling .bak/CharEffectsPanel only;
   PROBLEMS 1 = known 4gb artifact), 34 ids applied, verify mismatches 0, live dll `75defebf`, config `56e83f2e` -> `bdadbf1e` (appended block only).
   Backup `$G/backups/queuehud010_install_20261004_2244` (rollback: restore it). No INI = defaults. Awaiting the user play test (checklist below).
@@ -44,3 +53,8 @@ extents, for party member 0. The vanilla red panel still handles combat. Compani
 3. Enter combat: green hides, red vanilla shows.
 4. Two queued commands: two slots, slot 0 dimmed while waiting.
 5. Log: `python3 scripts/kotor2_logs.py check <queue-hud log> --new`.
+6. (0.2.0) Pause, give a companion a command (selfheal click or a Force power on them): a green strip appears LEFT of that companion's
+   health bar, not on the leader's panel. Log: `draw strip k=1|2 shown n=.. types=[..] rect=(..)`.
+7. (0.2.0) Strip clears when the companion's action fires; both companions queued = two strips, neither overlapping a card, the
+   selfheal button or the leader's bars.
+8. (0.2.0) Combat or a menu: strips hide with the leader panel (`strip k=.. hidden`).
