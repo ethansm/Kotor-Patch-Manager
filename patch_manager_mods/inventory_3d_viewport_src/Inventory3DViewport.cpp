@@ -9,6 +9,7 @@
 //   H1 0x008a69ad BindInventoryView  panel ctor 008a6170, before StopLoadFromLayout
 //   H2 0x008a8172 ShowItem           entry event-0 handler 008a8100, after GetItemByObjectId
 //   H3 0x008a7350 InventoryTick      inventory Update prologue: spin, drag, INI reload
+// 0.3.0-dev (doc 32 MG3): KpLog (core file inventory-3d-viewport_log.txt, old core fallback inv3d_log.txt), IniKit primitives; lazy init from KPatchInit/first hook.
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <string.h>
@@ -18,12 +19,17 @@
 #include <ctype.h>
 #include <math.h>
 
+#include "KpLog.h"
+#include "IniKit.h"
 #include "SafeRead.h"   // VirtualQuery probing: the Win32 bad-pointer probes fault-storm under Wine (DB lesson 234)
 #include "SceneView.h"  // CSWGui3DSceneView block, scene models, Gob vtable guard (doc 23)
 #include "Inv3dQuat.h"
-#include "WindowHook.h"  // one game-HWND subclass, safe against out-of-order unhook (F28)
+#include "GuiKit.h"      // Common: screen sync, float cursor, wheel subclass (kp::WindowHook inside), bindByTag
+#include "PanelSlots.h"  // Common: panel -> slot table
 #include "Inv3dLogic.h"   // pure logic (INI parse/clamp, fit, cursor math): host-tested by inv3d_logic_test.cpp (doc 20 T1)
 #include "ItemModelTable.inc"
+
+KP_LOG_PATCH("inventory-3d-viewport");
 
 #define INV3D_PRESENTATION 1   // 0 = v1 behaviour (no transform handling)
 #define INV3D_DRAG 1           // 0 = no mouse polling
@@ -31,16 +37,6 @@
 namespace {
 
 // Scene view (block ctor, scene room, AddModel/GetModel/RemoveModel, camera, Gob guard/pose/scale): SceneView.h.
-// Shared engine addresses: GameAddr.h names (Steam column; bindCover only). -> K2Addr table once bindCover moves to Common (doc 23).
-constexpr int FnInitControl = gameaddr::InitControl;   // thiscall(panel, view, CExoString*, addToList, scale) RET 16
-constexpr int FnExoCtor = gameaddr::ExoCtor;
-constexpr int FnExoDtor = gameaddr::ExoDtor;
-constexpr int FnNew = gameaddr::New;                   // cdecl(size)
-constexpr int FnLabelCtor = gameaddr::LabelCtor;       // CSWGuiLabel ctor, fastcall(ECX=this), object size 0x148 (same as the Force Power Hotbar)
-constexpr int LabelSize = 0x148;
-constexpr int LabelVftable = gameaddr::LabelVtable;
-constexpr int CtlFlagsOff = 0x48;           // bit1 = visible, bit5 (0x20) = hit-test rejects the mouse (click-through)
-constexpr int CtlIdOff = 0x54;
 constexpr int FnRender = 0x008cd2c0;        // fastcall(fakeThis)
 constexpr int SceneOffset = 0x60;           // view+0x60 = CSWGuiScene (dumped for diagnostics only)
 constexpr int FakeCategoryBlockOff = 0x2fc;
@@ -51,36 +47,33 @@ constexpr int ItemVarOff = 0x2a4;           // item model variation byte
 constexpr unsigned ExpectedCamVtable = gameaddr::SceneCameraVtable;   // logged only (SceneView.h reads the K2Addr table)
 constexpr unsigned ExpectedGobVtable = gameaddr::GobVtable;
 
-using InitCtl = void(__thiscall*)(void*, void*, void*, int, int);
-using CExoCtor = void*(__thiscall*)(void*, const char*);
-using CExoDtor = void(__thiscall*)(void*);
-using NewFn = void*(__cdecl*)(unsigned);
 using Render = void(__fastcall*)(void*);
 using sceneview::modelCount;
 using sceneview::getModel;
 
-// ---- diagnostics: inv3d_log.txt in the game dir, capped ----
+// ---- diagnostics: KpLog (core file inventory-3d-viewport_log.txt; old core: fallback inv3d_log.txt at INFO), capped ----
+KP_CHANNEL(chMain, "main");
+KP_CHANNEL(chDbg, "debug");
+// Only stores the path and the level (no I/O): safe from a static initialiser.
+const bool g_fallbackSet = (KpLog_SetFallbackFile("inv3d_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
 int g_logLines = 0;
 constexpr int MaxLogLines = 12000;
 bool g_debug = false;  // inv3d_debug.txt present -> per-tick detail
 void logf(const char* fmt, ...) {
     if (g_logLines >= MaxLogLines) return;
-    FILE* f = fopen("inv3d_log.txt", "a");
-    if (!f) return;
     ++g_logLines;
-    va_list ap; va_start(ap, fmt); vfprintf(f, fmt, ap); va_end(ap);
-    fputc('\n', f); fclose(f);
+    char buf[600]; va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
+    KP_LOGV(chMain, KPLOG_INFO, "%s", buf);
 }
 int g_dbgLines = 0;
 constexpr int MaxDebugLines = 6000;
 void dlogf(const char* fmt, ...) {  // debug-only, own cap so it cannot starve the bind/error/drag lines
     if (!g_debug || g_dbgLines >= MaxDebugLines) return;
-    FILE* f = fopen("inv3d_log.txt", "a");
-    if (!f) return;
     ++g_dbgLines;
-    va_list ap; va_start(ap, fmt); vfprintf(f, fmt, ap); va_end(ap);
-    fputc('\n', f); fclose(f);
+    char buf[600]; va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
+    KP_LOGV(chDbg, KPLOG_INFO, "%s", buf);
 }
+char g_loadLine[160];   // formatted by DllMain, emitted by ensureInit (the logger is only known after KPatchInit)
 
 constexpr unsigned SiteInv3d = 0x0100;   // saferead site id for this DLL's own probes
 void dumpMem(const char* tag, int addr, int words) {
@@ -160,24 +153,17 @@ struct Slot {
     int lastItem, lastBase, lastVar; unsigned seq;
     DWORD bindTick; DWORD lastBeat; Pres p;
 };
-Slot g_slots[4];
+panelslots::PanelSlots<Slot, 4> g_slots;
 unsigned g_seq = 0;
 bool g_guardLogged = false;
 
-Slot* findSlot(int panel) {
-    Slot* best = nullptr;
-    for (auto& s : g_slots)
-        if (s.seq && s.panel == panel && (!best || s.seq > best->seq)) best = &s;
-    return best;
-}
-Slot* claimSlot(int panel) {
-    Slot* pick = nullptr;
-    for (auto& s : g_slots) if (s.seq && s.panel == panel) { pick = &s; break; }
-    if (!pick) {
-        pick = &g_slots[0];
-        for (auto& s : g_slots) if (s.seq < pick->seq) pick = &s;
-    }
-    return pick;
+uintptr_t slotKey(int panel) { return static_cast<uintptr_t>(static_cast<unsigned>(panel)); }
+Slot* findSlot(int panel) { return g_slots.find(slotKey(panel)); }
+// Array index of a slot (slots are never released, so the used entries are the prefix and forEach order == array order).
+int slotIndex(const Slot* s) {
+    int idx = -1, i = 0;
+    g_slots.forEach([&](Slot& e) { if (&e == s) idx = i; ++i; });
+    return idx;
 }
 // ---- Gob access with the vtable guard (Design 8; checks in SceneView.h gobCheck, log lines kept here) ----
 bool gobGuard(void* gob, const char* why) {
@@ -301,33 +287,14 @@ BOOL CALLBACK enumProc(HWND h, LPARAM lp) {
     if (a > c->area) { c->area = a; c->best = h; }
     return TRUE;
 }
-// ---- mouse wheel: subclass the game window (only consumes wheel events over the 3D view while the inventory ticks) ----
-// Engine framebuffer size (gameaddr::ScreenW/ScreenH, same ones BuffDurationHUD reads): used unless the INI sets screen_w/screen_h explicitly.
+// ---- mouse wheel: GuiKit.h subclasses the game window (only consumes wheel events over the 3D view while the inventory ticks) ----
+// Engine framebuffer size (GuiKit reads the K2Addr ScreenW/ScreenH globals): used unless the INI sets screen_w/screen_h explicitly.
 void syncScreen() {
-    if (g_cfg.screenExplicit) return;
-    int w = 0, h = 0; readAt<int>(static_cast<int>(gameaddr::ScreenW), 0, &w); readAt<int>(static_cast<int>(gameaddr::ScreenH), 0, &h);
-    if (w >= 320 && w <= 16384 && h >= 200 && h <= 16384) { g_cfg.screenW = (float)w; g_cfg.screenH = (float)h; }
+    int w = (int)g_cfg.screenW, h = (int)g_cfg.screenH;
+    if (guikit::syncScreen(g_cfg.screenExplicit ? w : 0, g_cfg.screenExplicit ? h : 0, &w, &h)) { g_cfg.screenW = (float)w; g_cfg.screenH = (float)h; }
 }
-struct Inv3dWheelTag {};
-using WheelHook = kp::WindowHook<Inv3dWheelTag>;
-volatile LONG g_wheelAccum = 0;          // sum of WHEEL_DELTA units seen over the view since the last tick
-volatile DWORD g_lastTickMs = 0;         // GetTickCount() of the last InventoryTick
-volatile LONG g_viewRect[4] = {0, 0, 0, 0};  // engine px [L, top(after flip), W, H]
-int g_wheelLogs = 0;
-LRESULT CALLBACK wheelProc(HWND h, UINT m, WPARAM w, LPARAM l) {
-    if (WheelHook::active() && m == WM_MOUSEWHEEL && g_cfg.wheelZoom && GetTickCount() - g_lastTickMs < 300 && g_viewRect[2] > 0) {
-        saferead::beginScope();
-        POINT pt = {(short)LOWORD(l), (short)HIWORD(l)}; RECT r;
-        bool inside = false;
-        if (ScreenToClient(h, &pt) && GetClientRect(h, &r) && r.right > 0 && r.bottom > 0) {
-            syncScreen(); float x, y; inv3d::clientToEngine(pt.x, pt.y, r.right, r.bottom, g_cfg.screenW, g_cfg.screenH, &x, &y);
-            inside = inv3d::rectContains(x, y, g_viewRect[0], g_viewRect[1], g_viewRect[2], g_viewRect[3]);
-        }
-        if (g_wheelLogs < 20) { ++g_wheelLogs; logf("WHEEL: delta=%d cursor=(%ld,%ld) inside=%d", (int)(short)HIWORD(w), pt.x, pt.y, inside); }
-        if (inside) { InterlockedExchangeAdd(&g_wheelAccum, (short)HIWORD(w)); return 0; }
-    }
-    return WheelHook::forward(h, m, w, l);
-}
+void wheelEvent(int delta, int px, int py, bool inside) { logf("WHEEL: delta=%d cursor=(%d,%d) inside=%d", delta, px, py, inside); }
+bool g_wheelCfgSet = false;
 
 HWND gameWindow() {
     if (g_hwnd && IsWindow(g_hwnd)) return g_hwnd;
@@ -339,18 +306,17 @@ HWND gameWindow() {
     g_hwnd = c.best;
     RECT r = {0, 0, 0, 0}; if (g_hwnd) GetClientRect(g_hwnd, &r);
     logf("DRAG: hwnd=%p client=%ldx%ld (engine %.0fx%.0f)", g_hwnd, r.right, r.bottom, g_cfg.screenW, g_cfg.screenH);
-    if (g_hwnd && g_cfg.wheelZoom && !WheelHook::old) {
-        WheelHook::install(g_hwnd, &wheelProc);
-        logf("WHEEL: subclassed window %p, old proc %p (err=%lu)", g_hwnd, WheelHook::old, WheelHook::old ? 0UL : GetLastError());
+    if (g_hwnd && g_cfg.wheelZoom && !guikit::g_wheelHwnd) {
+        if (!g_wheelCfgSet) { g_wheelCfgSet = true; guikit::g_wheel.scoped = true; guikit::g_wheel.onEvent = wheelEvent; }
+        bool ok = guikit::wheelInstall();
+        logf("WHEEL: subclassed window %p, old proc %p (err=%lu)", (void*)guikit::g_wheelHwnd, (void*)guikit::detail::WheelWin::old, ok ? 0UL : GetLastError());
     }
     return g_hwnd;
 }
 bool cursorEngine(float* x, float* y) {
-    HWND h = gameWindow(); if (!h) return false;
-    POINT pt; if (!GetCursorPos(&pt) || !ScreenToClient(h, &pt)) return false;
-    RECT r; if (!GetClientRect(h, &r) || r.right < 1 || r.bottom < 1) return false;
-    syncScreen(); inv3d::clientToEngine(pt.x, pt.y, r.right, r.bottom, g_cfg.screenW, g_cfg.screenH, x, y);
-    return true;
+    if (!gameWindow()) return false;
+    syncScreen();
+    return guikit::cursorEngineF(x, y, (int)g_cfg.screenW, (int)g_cfg.screenH);
 }
 #endif
 
@@ -366,7 +332,7 @@ void tickDrag(Slot* s, float dt) {
     float cx = 0, cy = 0; bool haveCur = cursorEngine(&cx, &cy);
     int ext[4] = {0}; for (int i = 0; i < 4; ++i) readAt<int>(reinterpret_cast<int>(s->block), 4 + 4 * i, &ext[i]);
     float top = inv3d::flipTop(g_cfg.hitFlipY, g_cfg.screenH, ext[1], ext[3]);
-    g_viewRect[0] = ext[0]; g_viewRect[1] = (LONG)top; g_viewRect[2] = ext[2]; g_viewRect[3] = ext[3];
+    guikit::g_wheel.setRect(0, ext[0], (int)top, ext[2], ext[3]);
     bool inside = haveCur && inv3d::rectContainsTop(cx, cy, ext[0], top, ext[2], ext[3]);
     bool fg = gameWindow() && GetForegroundWindow() == g_hwnd;
     bool anyEdge = (l && !wasL) || (r && !wasR) || (mb && !wasM);
@@ -399,7 +365,7 @@ void tickDrag(Slot* s, float dt) {
             }
         }
     }
-    LONG wheel = InterlockedExchange(&g_wheelAccum, 0);
+    LONG wheel = guikit::g_wheel.take();
     if (wheel && p.valid) {
         p.zoom *= powf(g_cfg.wheelStep, wheel / 120.0f); p.zoom = fminf(fmaxf(p.zoom, g_cfg.zoomMin), g_cfg.zoomMax); p.dirty = true;
         logf("WHEEL: applied %ld -> zoom=%.2f", wheel, p.zoom);
@@ -411,28 +377,28 @@ void tickDrag(Slot* s, float dt) {
 // Cover labels (character-page style arcs) that frame the 3D view. Only controls the constructor binds by tag get created,
 // so they are built here right after the view (control order = draw order, so they draw on top of it).
 void bindCover(int panel, const char* tagName, int expectId) {
-    using LabelCtorFn = void(__fastcall*)(void*);
-    unsigned char* ctl = static_cast<unsigned char*>(reinterpret_cast<NewFn>(FnNew)(LabelSize));
-    if (!ctl) { logf("H1 cover %s: allocation failed", tagName); return; }
-    memset(ctl, 0, LabelSize);
-    reinterpret_cast<LabelCtorFn>(FnLabelCtor)(ctl);
-    int vt = 0; readAt<int>(reinterpret_cast<int>(ctl), 0, &vt);
-    if (vt != LabelVftable) { logf("H1 cover %s: ctor left vtable %08x (expected %08x), not binding", tagName, vt, LabelVftable); return; }
-    char exo[16] = {0};
-    reinterpret_cast<CExoCtor>(FnExoCtor)(exo, tagName);
-    reinterpret_cast<InitCtl>(FnInitControl)(reinterpret_cast<void*>(panel), ctl, exo, 1, 1);
-    reinterpret_cast<CExoDtor>(FnExoDtor)(exo);
-    int id = -999, fl = 0, ext[4] = {0};
-    readAt<int>(reinterpret_cast<int>(ctl), CtlIdOff, &id); readAt<int>(reinterpret_cast<int>(ctl), CtlFlagsOff, &fl);
-    for (int i = 0; i < 4; ++i) readAt<int>(reinterpret_cast<int>(ctl), 4 + 4 * i, &ext[i]);
-    if (id != expectId) fl &= ~2;  // GUI lacks this control (layout without covers): keep it invisible
-    *reinterpret_cast<int*>(ctl + CtlFlagsOff) = fl | 0x20;
-    logf("H1 cover %s: ctl=%p id=%d (expect %d) extent=[%d,%d,%d,%d] flags=%08x -> %08x", tagName, ctl, id, expectId, ext[0], ext[1], ext[2], ext[3], fl, fl | 0x20);
+    guikit::BindInfo bi;
+    guikit::bindByTag(static_cast<uintptr_t>(static_cast<unsigned>(panel)), tagName, expectId, 0, &bi);
+    if (bi.why == guikit::CF_Alloc) { logf("H1 cover %s: allocation failed", tagName); return; }
+    if (bi.why == guikit::CF_Vtable) { logf("H1 cover %s: ctor left vtable %08x (expected %08x), not binding", tagName, bi.badVtable, (unsigned)gameaddr::LabelVtable); return; }
+    logf("H1 cover %s: ctl=%p id=%d (expect %d) extent=[%d,%d,%d,%d] flags=%08x -> %08x", tagName, (void*)bi.ctl, bi.id, expectId, bi.ext[0], bi.ext[1], bi.ext[2], bi.ext[3], bi.flagsBefore, bi.flagsAfter);
+}
+
+// Lazy init: load line + first loadIni(). Runs from KPatchInit, else from the first hook (old core without KPatchInit).
+volatile LONG g_inited = 0;
+void ensureInit() {
+    if (g_inited) return;                                 // cheap fast path
+    if (InterlockedExchange(&g_inited, 1)) return;
+    logf("%s", g_loadLine);
+    loadIni();
 }
 
 } // namespace
 
+extern "C" void __cdecl KPatchInit(const KPatchApi* api) { KpLog_Init(api); ensureInit(); }
+
 extern "C" void __cdecl BindInventoryView(int panel) {
+    ensureInit();
     saferead::beginScope();   // engine code ran since the last hook: drop the readable-region cache
     int ctlCount = -1; readAt<int>(panel, 0x28, &ctlCount);
     int gate = 0; sceneview::gateOpen(&gate);
@@ -453,9 +419,9 @@ extern "C" void __cdecl BindInventoryView(int panel) {
          block, id, ExpectedControlId, ext[0], ext[1], ext[2], ext[3], ext[3] ? (float)ext[2] / ext[3] : 0.f, newCount, ctlCount + 1);
     dumpMem("view", reinterpret_cast<int>(view), 38);
 
-    Slot* s = claimSlot(panel);
-    memset(s, 0, sizeof(*s));
-    s->panel = panel; s->block = block; s->seq = ++g_seq; s->bindTick = GetTickCount();
+    Slot* s = g_slots.claim(slotKey(panel), ++g_seq);
+    memset(s, 0, sizeof(*s));   // PanelSlots keeps its key/seq/used bookkeeping outside Slot
+    s->panel = panel; s->block = block; s->seq = g_seq; s->bindTick = GetTickCount();
 
     if (id != ExpectedControlId) { logf("H1: GUI control missing (id=%d), slot unusable", id); return; }
     if (!gate) { logf("H1: gate global 009f42b4 is zero, slot unusable"); return; }
@@ -480,10 +446,11 @@ extern "C" void __cdecl BindInventoryView(int panel) {
     logf("H1: camera=%08x vtable=%08x (expect %08x)", cam, camv, ExpectedCamVtable);
     if (g_cfg.bevels) { bindCover(panel, "LBL_BEVEL", ExpectedControlId + 1); bindCover(panel, "LBL_BEVEL2", ExpectedControlId + 2); }
     s->usable = true;
-    logf("H1: slot %d ready (panel=%08x seq=%u rigFallback=%d)", static_cast<int>(s - g_slots), panel, s->seq, s->rigFallback);
+    logf("H1: slot %d ready (panel=%08x seq=%u rigFallback=%d)", slotIndex(s), panel, s->seq, s->rigFallback);
 }
 
 extern "C" void __cdecl ShowItem(int item, int panel) {
+    ensureInit();
     saferead::beginScope();
     static int repeatLogs = 0, detailLogs = 0;
     Slot* s = findSlot(panel);
@@ -557,13 +524,13 @@ extern "C" void __cdecl ShowItem(int item, int panel) {
 }
 
 extern "C" void __cdecl InventoryTick(int panel) {
+    ensureInit();
     saferead::beginScope();
     static int calls = 0;
     if (!g_qpcFreq.QuadPart) { QueryPerformanceFrequency(&g_qpcFreq); QueryPerformanceCounter(&g_qpcLast); }
     LARGE_INTEGER now; QueryPerformanceCounter(&now);
     float dt = (float)((double)(now.QuadPart - g_qpcLast.QuadPart) / (double)g_qpcFreq.QuadPart);
     g_qpcLast = now;
-    g_lastTickMs = GetTickCount();
     if (dt > 0.5f) logf("H3: tick gap %.2fs (inventory reopened or stalled)", dt);
     if (dt > 0.1f) dt = 0.1f;
     if (calls < 5) { ++calls; Slot* s0 = findSlot(panel); logf("H3 tick #%d panel=%08x slot=%s", calls, panel, s0 ? (s0->usable ? "usable" : "unusable") : "none"); }
@@ -577,6 +544,9 @@ extern "C" void __cdecl InventoryTick(int panel) {
     }
     if (!p.valid) return;
 #if INV3D_PRESENTATION
+    syncScreen();
+    guikit::g_wheel.enabled = g_cfg.wheelZoom; guikit::g_wheel.iniW = (int)g_cfg.screenW; guikit::g_wheel.iniH = (int)g_cfg.screenH;
+    guikit::g_wheel.touch(GetTickCount());
     tickDrag(s, dt);
     DWORD t = GetTickCount();
     bool spinning = false;
@@ -588,13 +558,13 @@ extern "C" void __cdecl InventoryTick(int panel) {
     if (p.dirty) applyTransform(s, spinning ? "spin" : "drag");
     if (t - s->bindTick < 60000 && t - s->lastBeat >= 1000) {
         s->lastBeat = t;
-        logf("H3 beat: slot=%d row=%d yaw=%.1f pitch=%.1f D=%.3f s=%.3f drag=%d model=%p", (int)(s - g_slots), p.row, p.yaw, p.pitch, p.D, p.s, p.dragging, getModel(s->block, 1));
+        logf("H3 beat: slot=%d row=%d yaw=%.1f pitch=%.1f D=%.3f s=%.3f drag=%d model=%p", slotIndex(s), p.row, p.yaw, p.pitch, p.D, p.s, p.dragging, getModel(s->block, 1));
     }
 #endif
 }
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
-    if (reason == DLL_PROCESS_DETACH) WheelHook::uninstall(&wheelProc);   // restore if still on top, else stay chained but inert
-    if (reason == DLL_PROCESS_ATTACH) { logf("inv3d v2 0.2.1-dev loaded (Common SafeRead + SceneView)"); loadIni(); }
+    if (reason == DLL_PROCESS_DETACH) guikit::wheelUninstall();   // restore if still on top, else stay chained but inert
+    if (reason == DLL_PROCESS_ATTACH) { snprintf(g_loadLine, sizeof g_loadLine, "inv3d v2 0.3.0-dev loaded (Common SafeRead + SceneView + GuiKit + PanelSlots + KpLog) tick=%lu", (unsigned long)GetTickCount()); }
     return TRUE;
 }

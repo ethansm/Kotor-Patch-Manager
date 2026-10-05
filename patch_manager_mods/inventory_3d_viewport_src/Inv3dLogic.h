@@ -14,6 +14,7 @@
 #ifndef _WIN32
 #include <strings.h>
 #endif
+#include "IniKit.h"     // trim / parseFloats / splitIniLine (Common)
 #include "Inv3dQuat.h"
 
 namespace inv3d {
@@ -52,22 +53,8 @@ inline bool drainLongLine(char* line, size_t n, FILE* f) {
     while (c != '\n' && c != EOF) c = getc(f);
     return true;
 }
-inline void trim(char* s) {
-    char* p = s; while (*p && isspace((unsigned char)*p)) ++p;
-    memmove(s, p, strlen(p) + 1);
-    for (int n = (int)strlen(s); n > 0 && isspace((unsigned char)s[n - 1]); --n) s[n - 1] = 0;
-}
-inline bool parseFloats(const char* v, float* out, int n) {
-    const char* p = v;
-    for (int i = 0; i < n; ++i) {
-        char* e; out[i] = strtof(p, &e);
-        if (e == p || !isfinite(out[i])) return false;
-        p = e; while (*p && isspace((unsigned char)*p)) ++p;
-        if (i < n - 1) { if (*p != ',') return false; ++p; }
-    }
-    while (*p && isspace((unsigned char)*p)) ++p;
-    return *p == 0;
-}
+using inikit::trim;          // 0.3.0-dev (doc 32 MG3): the line primitives live in Common IniKit.h (byte-identical copies)
+using inikit::parseFloats;
 // Case-insensitive ASCII compare, 0 = equal (_stricmp on Windows, strcasecmp elsewhere).
 inline int stricmp_(const char* a, const char* b) {
 #ifdef _WIN32
@@ -77,22 +64,11 @@ inline int stricmp_(const char* a, const char* b) {
 #endif
 }
 
-// One INI line (already trim()ed by the caller) -> key/value. Blank lines and '#'/';' comment lines are skipped; a line
-// without '=' is rejected (and left untouched so the caller can log it). Otherwise `line` is cut in place: *key is
-// trimmed and lower-cased, *val is trimmed with everything from the first ';' or '#' dropped (so a value can never
-// contain those characters).
-enum IniLine { IniLineSkip = 0, IniLineNoEquals, IniLineKeyValue };
-inline IniLine splitIniLine(char* line, char** key, char** val) {
-    if (!line[0] || line[0] == '#' || line[0] == ';') return IniLineSkip;
-    char* eq = strchr(line, '=');
-    if (!eq) return IniLineNoEquals;
-    *eq = 0; char* k = line; char* v = eq + 1;
-    for (char* cm = v; *cm; ++cm) if (*cm == ';' || *cm == '#') { *cm = 0; break; }  // inline comment
-    trim(k); trim(v);
-    for (char* p = k; *p; ++p) *p = (char)tolower((unsigned char)*p);
-    *key = k; *val = v;
-    return IniLineKeyValue;
-}
+using inikit::IniLine;
+using inikit::IniLineSkip;
+using inikit::IniLineNoEquals;
+using inikit::IniLineKeyValue;
+using inikit::splitIniLine;
 
 // Apply one key (already lower-cased) = value to `c`.
 //   IniOk       accepted

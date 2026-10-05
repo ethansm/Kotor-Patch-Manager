@@ -18,14 +18,6 @@
 # pattern, WARN for a listed file with no GWLP_WNDPROC call (stale). Use single-quoted TOML literal strings for the regexes.
 
 [[subclasser]]
-file = "patch_manager_mods/inventory_3d_viewport_src/Inventory3DViewport.cpp"
-uses = "WindowHook"
-install = 'WheelHook::install\s*\('
-restore = 'WheelHook::uninstall\s*\('
-install_hint = 343
-restore_hint = 597
-
-[[subclasser]]
 file = "patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp"
 uses = "WindowHook"
 install = 'WheelHook::install\s*\('

@@ -3,3 +3,4 @@ EXPORTS
     BindInventoryView
     ShowItem
     InventoryTick
+    KPatchInit
