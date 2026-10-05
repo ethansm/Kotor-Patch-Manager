@@ -198,3 +198,35 @@ Per-frame work stays in `K2PS_FRAME_BEGIN`, and HUD_DRAW becomes optional.
     - the leader doesn't act.
   - Then repeat in combat and with companion-ai live.
 - Rollback: remove the patch id from the live config (KPM), the backup dir is named in the install row.
+
+## 7. Shared companion strip + queue UX kit (CS10-CS12 design, 10-05)
+Design only. The code belongs to the queue-hud / hud-host owner (docs 30/31). Proposal for that owner: `30_queue_hud_evidence/PROPOSAL_selfheal_strip.md`.
+
+### 7.1 One strip per companion card
+- Each companion card gets one strip that runs right to left, ending next to the vit bar.
+- Selfheal takes the **right-most slot**, so it sits next to the vit. Queue-hud already keeps that space free: `selfHealReserve(vit)` (QueueHudLogic.h:178) = gap + button + ring overhang + `kStripGap`, which is 38 px on the live 47x96 vit.
+- The queue icons fill the strip leftward from there.
+- The leader card (vit 103x208, `shui::isLeaderVit`) has no selfheal slot.
+- The hard-coded reserve becomes a hud-host reservation, so neither mod knows the other's size:
+  `ReserveSlot(owner, card, order, width) -> Rect`. Order 0 is right-most; selfheal asks for order 0 and queue-hud for 1..n. hud-host stacks the slots right to left from `vit.x - gap`.
+- Until that API exists, both sides keep the current constants. Our `shui::buttonRect` and their `selfHealReserve` must stay equal; a contract test on the live vit pins this.
+
+### 7.2 Queue UX kit (CS11)
+Same look as the action hotbar, from `scripts/gen_hotbar_textures.py`:
+
+| part | spec |
+|---|---|
+| panel | rounded rect, border (0,44,26) (hover (208,204,170)), fill (0,0,0,175) inset 6/128, radius 22/128 |
+| frame accent | (10,96,80), the hotbar wrench `fph_edit` frame |
+| icon | textured, shaded glyph (wrench recipe: gradient body, 1 px bevel, dark outline), tinted by state |
+| Cancel | modelled on vanilla "Cancel Combat": a dark-green panel with a red-ish X glyph; LMB cancels the companion queue (route = queue-hud owner's RE, doc 30) |
+| slim variant | per companion: icon size = selfheal button (`shui::buttonRect` side), no title, Cancel as the left-most slot |
+
+- The selfheal disc (CS9 `csh_disc`: fill (0,0,0,175) + 2 px (10,96,80) rim) already uses the kit colours, so the button fits next to the queue tiles without restyling.
+
+### 7.3 Queue as its own mod (CS12)
+- queue-hud stays a separate mod. Both mods are hud-host consumers, so there is one shared dll for HUD phases and no private copies of the kit.
+- **Hook collision to settle first:** hud-host 0.3.0-dev (9e18444) hooks 0x0040F5A0 for `K2HUD_BUILD`, and selfheal has hooked the same address since 0.3.0. Two KPM hooks on one address must not both ship.
+  - Plan: selfheal moves to `Register(K2HUD_BUILD, ...)` and drops its own hook once hud-host 0.3.0 is live.
+  - Until then, installing hud-host 0.3.0 needs a check that both hooks don't overlap (`check_hook_spans.py`).
+- Order of work: hud-host `ReserveSlot` + BUILD live → selfheal on hud-host (no own hook) → queue-hud kit + Cancel → slim variant.
