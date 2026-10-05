@@ -185,3 +185,7 @@ Gates: check_hook_bytes FAIL=0 (32 hooks unchanged -> DLL hot-swap install), che
 `$G/backups/luo_3c_<HHMM>`, md5 check). (1) Gear square in the 3D-view corner, gold on hover. (2) Options/filter page = one framed opaque window,
 no stats show through. (3) Log: `tex luo_gear: created ... queued`, `UI icon emb=1 hi=1 style=1`, `UI page window=efx`, banner `1.4.0-dev`.
 - **INSTALLED 2026-10-05 00:28:** 1.4.0-dev dll d14fa7cd hot-swapped into `$G/patches/level-up-override.dll` (md5 verified); previous 545e330b backed up to `$G/backups/luo_3c_0028`. Awaiting the user live check; read `levelup_override_log.txt` from line 794.
+- **Live result 2026-10-05 ~01:00 (1.4.0-dev d14fa7cd, log 794-825):** all new log lines as designed (window=efx, gear textures created, emb=1 hi=1 style=1,
+  lvlbtn consistent). User: gear looks good. Batch 3d feedback: gear needs the button fill behind it; highlight the border on hover; keep the gear while
+  the page is open and make it act as Cancel; page = solid background, rounded border, vanilla colours (the EFX window and row fills are see-through live).
+  Handoff `.claude/handoffs/25_pc_levelup_filter.handoff.md`.
