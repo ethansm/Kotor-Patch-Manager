@@ -79,5 +79,135 @@ int main() {
         std::string k; CompCfg y; y.autoOn = !a; y.hpPct = 1; y.keep = 1;
         KT_CHECK(parse(serialize("tag", x).c_str(), k, y)); KT_CHECK(k == "tag"); KT_CHECK(y == x);
     }
+
+    // ---- popover layout ----
+    { Rect b{200, 50, 16, 16}; PopLayout L = popoverLayout(b, 1920);
+      KT_CHECK(L.r[0] == (Rect{200 - 4 - 128, 50, 128, 48}));   // gap h/4 = 4, w = 8h
+      KT_CHECK(L.r[1] == (Rect{68, 50, 128, 16}));
+      KT_CHECK(L.r[2] == (Rect{68, 66, 16, 16})); KT_CHECK(L.r[3] == (Rect{68 + 112, 66, 16, 16}));
+      KT_CHECK(L.r[4] == (Rect{68, 82, 16, 16})); KT_CHECK(L.r[5] == (Rect{180, 82, 16, 16}));
+      KT_CHECK(popValueRect(L, 2) == (Rect{84, 66, 96, 16})); KT_CHECK(popValueRect(L, 3) == (Rect{84, 82, 96, 16}));
+      KT_CHECK(popValueRect(L, 1) == (Rect{0, 0, 0, 0})); KT_CHECK(popValueRect(L, 4) == (Rect{0, 0, 0, 0})); }
+    { Rect b{400, 10, 24, 24}; PopLayout L = popoverLayout(b, 0);
+      KT_CHECK(L.r[0] == (Rect{400 - 6 - 192, 10, 192, 72})); KT_CHECK(L.r[5] == (Rect{202 + 168, 58, 24, 24})); }
+    { PopLayout L = popoverLayout(Rect{50, 5, 16, 16}, 1920); KT_CHECK_EQ(L.r[0].x, 0); KT_CHECK_EQ(L.r[3].x, 112); }   // left clamp
+    { PopLayout L = popoverLayout(Rect{300, 5, 16, 16}, 200); KT_CHECK_EQ(L.r[0].x, 72); KT_CHECK_EQ(L.r[0].x + L.r[0].w, 200); }   // right clamp
+    { PopLayout L = popoverLayout(Rect{300, 5, 16, 16}, 100); KT_CHECK_EQ(L.r[0].x, 0); }   // left wins
+    { PopLayout L = popoverLayout(Rect{300, 5, 16, 16}, 1000); KT_CHECK_EQ(L.r[0].x, 300 - 4 - 128); }   // no clamp when it fits
+    { PopLayout L = popoverLayout(Rect{300, 5, 16, 16}, 1); KT_CHECK_EQ(L.r[0].x, 0); }   // tiny screen still clamps
+    { PopLayout L = popoverLayout(Rect{200, 50, 16, 16}, 1920); KT_CHECK(L.r[0].x + L.r[0].w == 200 - 4); }
+    // ---- popover hit ----
+    for (int h : {16, 24}) {
+        PopLayout L = popoverLayout(Rect{400, 50, h, h}, 1920);
+        for (int i = 1; i <= 5; ++i) {
+            const Rect& r = L.r[i];
+            KT_CHECK(popoverHit(L, r.x, r.y) == static_cast<PopItem>(i));
+            KT_CHECK(popoverHit(L, r.x + r.w - 1, r.y + r.h - 1) == static_cast<PopItem>(i));
+            KT_CHECK(popoverHit(L, r.x + r.w / 2, r.y + r.h / 2) == static_cast<PopItem>(i));
+        }
+        KT_CHECK(popoverHit(L, L.r[0].x + h + 1, L.r[0].y + h + 1) == PopItem::None);   // value text area
+        KT_CHECK(popoverHit(L, L.r[0].x + h + 1, L.r[0].y + 2 * h + 1) == PopItem::None);
+        KT_CHECK(popoverHit(L, L.r[0].x - 1, L.r[0].y) == PopItem::None);
+        KT_CHECK(popoverHit(L, L.r[0].x + L.r[0].w, L.r[0].y) == PopItem::None);
+        KT_CHECK(popoverHit(L, L.r[0].x, L.r[0].y - 1) == PopItem::None);
+        KT_CHECK(popoverHit(L, L.r[0].x, L.r[0].y + 3 * h) == PopItem::None);
+        KT_CHECK(popoverHit(L, L.r[2].x + h, L.r[2].y) == PopItem::None);
+        KT_CHECK(popoverHit(L, L.r[3].x - 1, L.r[3].y) == PopItem::None);
+    }
+    // ---- applyPop / labels ----
+    { CompCfg c; c = applyPop(c, PopItem::AutoToggle); KT_CHECK(c.autoOn); c = applyPop(c, PopItem::AutoToggle); KT_CHECK(!c.autoOn); }
+    { CompCfg c; c = applyPop(c, PopItem::HpPlus); KT_CHECK_EQ(c.hpPct, 40); c = applyPop(c, PopItem::HpMinus); c = applyPop(c, PopItem::HpMinus); KT_CHECK_EQ(c.hpPct, 30);
+      KT_CHECK_EQ(c.keep, 2); KT_CHECK(!c.autoOn); }
+    { CompCfg c; c = applyPop(c, PopItem::KeepPlus); KT_CHECK_EQ(c.keep, 3); c = applyPop(c, PopItem::KeepMinus); c = applyPop(c, PopItem::KeepMinus); KT_CHECK_EQ(c.keep, 1);
+      KT_CHECK_EQ(c.hpPct, 35); }
+    { CompCfg c; c.hpPct = 95; c = applyPop(c, PopItem::HpPlus); KT_CHECK_EQ(c.hpPct, 95); c.hpPct = 5; c = applyPop(c, PopItem::HpMinus); KT_CHECK_EQ(c.hpPct, 5);
+      c.keep = 20; c = applyPop(c, PopItem::KeepPlus); KT_CHECK_EQ(c.keep, 20); c.keep = 0; c = applyPop(c, PopItem::KeepMinus); KT_CHECK_EQ(c.keep, 0); }
+    { CompCfg c; c.autoOn = true; KT_CHECK(applyPop(c, PopItem::None) == c); }
+    { CompCfg c; KT_CHECK(popLabel(PopItem::AutoToggle, c) == "Auto: OFF"); c.autoOn = true; KT_CHECK(popLabel(PopItem::AutoToggle, c) == "Auto: ON");
+      KT_CHECK(popLabel(PopItem::HpMinus, c) == "-"); KT_CHECK(popLabel(PopItem::KeepMinus, c) == "-");
+      KT_CHECK(popLabel(PopItem::HpPlus, c) == "+"); KT_CHECK(popLabel(PopItem::KeepPlus, c) == "+"); KT_CHECK(popLabel(PopItem::None, c) == ""); }
+    { CompCfg c; KT_CHECK(popValueLabel(2, c) == "Use below 35%"); KT_CHECK(popValueLabel(3, c) == "Keep 2"); KT_CHECK(popValueLabel(1, c) == ""); KT_CHECK(popValueLabel(4, c) == ""); }
+
+    // ---- file model ----
+    {
+        const std::string orig =
+            "; header comment\r\n[General]\r\nlog=1\r\n\r\n[defaults]\r\n; old\r\ndefault=auto:1,hp:50,keep:3\r\n\r\n[probe]\r\n# keep me\r\ncall=1\r\n"
+            "[companions]\r\n  bastila = auto:1,hp:60,keep:1 \r\nt3=auto:0\r\nbastila=auto:0,hp:25,keep:4\r\nbad line\r\n;c=auto:1\r\n";
+        CfgTable t = parseFile(orig);
+        KT_CHECK(t.def == (CompCfg{true, 50, 3}));
+        KT_CHECK_EQ((int)t.rows.size(), 2);
+        KT_CHECK(t.rows[0].first == "bastila"); KT_CHECK(t.rows[0].second == (CompCfg{false, 25, 4}));   // later duplicate wins, in place
+        KT_CHECK(t.rows[1].first == "t3");
+        KT_CHECK(lookup(t, "t3") == CompCfg()); KT_CHECK(lookup(t, "zzz") == t.def); KT_CHECK(lookup(t, "bastila").keep == 4);
+        upsert(t, "hk47", CompCfg{true, 10, 0}); upsert(t, "t3", CompCfg{true, 70, 5});
+        KT_CHECK_EQ((int)t.rows.size(), 3); KT_CHECK(t.rows[1].second == (CompCfg{true, 70, 5}));
+        std::string w = serializeFile(t, orig);
+        KT_CHECK(parseFile(w) == t);
+        KT_CHECK(w.find("; header comment\r\n[General]\r\nlog=1\r\n\r\n[defaults]\r\n") == 0);
+        KT_CHECK(w.find("[probe]\r\n# keep me\r\ncall=1\r\n") != std::string::npos);
+        KT_CHECK(w.find("; old") == std::string::npos);            // comment inside rewritten section dropped
+        KT_CHECK(w.find("default=auto:1,hp:50,keep:3\r\n\r\n[probe]") != std::string::npos);   // blank separator kept
+        KT_CHECK(w.find("\r\n") != std::string::npos);
+        for (size_t i = 0; i < w.size(); ++i) if (w[i] == '\n') KT_CHECK(i > 0 && w[i - 1] == '\r');
+        KT_CHECK(serializeFile(t, w) == w);                         // idempotent
+    }
+    {   // LF, no trailing newline, other-section comments, no companions/defaults sections
+        const std::string orig = "[General]\n; note\nx=1\n[probe]\ncall=0";
+        CfgTable t; t.def = CompCfg{true, 20, 1}; upsert(t, "a", CompCfg{false, 90, 9});
+        std::string w = serializeFile(t, orig);
+        KT_CHECK(w == "[General]\n; note\nx=1\n[probe]\ncall=0\n\n[defaults]\ndefault=auto:1,hp:20,keep:1\n\n[companions]\na=auto:0,hp:90,keep:9\n");
+        KT_CHECK(parseFile(w) == t);
+    }
+    {   // empty original; only defaults missing; only companions missing
+        CfgTable t; t.def = CompCfg{true, 5, 0};
+        std::string w = serializeFile(t, "");
+        KT_CHECK(w == "[defaults]\ndefault=auto:1,hp:5,keep:0\n\n[companions]\n"); KT_CHECK(parseFile(w) == t);
+        std::string w2 = serializeFile(t, "[companions]\nq=auto:1\n");
+        KT_CHECK(parseFile(w2) == t);
+        std::string w3 = serializeFile(t, "[defaults]\ndefault=auto:0\n");
+        KT_CHECK(w3 == "[defaults]\ndefault=auto:1,hp:5,keep:0\n\n[companions]\n"); KT_CHECK(parseFile(w3) == t);
+    }
+    {   // duplicate sections merge; other keys in [defaults] ignored; stray lines before any section ignored
+        const std::string orig = "default=auto:1\n[defaults]\ndefault=hp:40\n[companions]\na=hp:10\n[defaults]\ndefault=keep:7\nfoo=hp:99\n[companions]\nb=hp:20\n[ companions ]\nc=hp:30\n";
+        CfgTable t = parseFile(orig);
+        KT_CHECK_EQ(t.def.keep, 7); KT_CHECK_EQ(t.def.hpPct, 35);
+        KT_CHECK_EQ((int)t.rows.size(), 3);
+        std::string w = serializeFile(t, orig);
+        KT_CHECK(parseFile(w) == t);
+        size_t first = w.find("[defaults]"); KT_CHECK(first != std::string::npos); KT_CHECK(w.find("[defaults]", first + 1) == std::string::npos);
+        KT_CHECK(w.find("[companions]") != std::string::npos); KT_CHECK(w.find("[companions]", w.find("[companions]") + 1) == std::string::npos);
+        KT_CHECK(w.find("default=auto:1\n[defaults]") == 0);        // pre-section stray line preserved verbatim
+    }
+    {   // adjacent headers, blank-only body, "[]" is a real (unnamed) section header
+        CfgTable t; t.def = CompCfg{true, 5, 0}; upsert(t, "q", CompCfg{false, 10, 1});
+        KT_CHECK(serializeFile(t, "[defaults]\n[companions]\n") == "[defaults]\ndefault=auto:1,hp:5,keep:0\n[companions]\nq=auto:0,hp:10,keep:1\n");
+        KT_CHECK(serializeFile(t, "[defaults]\n\n[probe]\nx=1\n") == "[defaults]\ndefault=auto:1,hp:5,keep:0\n\n[probe]\nx=1\n\n[companions]\nq=auto:0,hp:10,keep:1\n");
+        KT_CHECK(parseFile("[companions]\n[]\nq=auto:1\n").rows.empty());
+        KT_CHECK(parseFile("[companions]\n[\nq=auto:1\n").rows.size() == 1);
+        KT_CHECK(parseFile("[companions]\n]\nq=auto:1\n").rows.size() == 1);
+    }
+    {   // lookup/upsert on empty table
+        CfgTable t; KT_CHECK(lookup(t, "x") == CompCfg()); upsert(t, "x", CompCfg{true, 5, 5}); KT_CHECK(lookup(t, "x").hpPct == 5);
+        CfgTable u = t; KT_CHECK(u == t); u.def.keep = 9; KT_CHECK(!(u == t)); u = t; u.rows[0].second.keep = 1; KT_CHECK(!(u == t));
+    }
+
+    // ---- pending ----
+    KT_CHECK_EQ((int)kPendingTimeoutMs, 6000);
+    { Pending p; p.on = true; p.since = 1000; p.preHp = 10; p.preStack = 3;
+      KT_CHECK(!pendingDone(p, 1100, 10, 3));
+      KT_CHECK(pendingDone(p, 1100, 11, 3));                     // hp up
+      KT_CHECK(!pendingDone(p, 1100, 9, 3));                     // hp down alone
+      KT_CHECK(pendingDone(p, 1100, 10, 2));                     // stack down
+      KT_CHECK(pendingDone(p, 1100, 10, 0));                     // stack to zero
+      KT_CHECK(!pendingDone(p, 1100, 10, 4));                    // stack up
+      KT_CHECK(pendingDone(p, 1100, 10, -1));                    // item gone
+      KT_CHECK(!pendingDone(p, 6999, 10, 3)); KT_CHECK(pendingDone(p, 7000, 10, 3)); KT_CHECK(pendingDone(p, 99999, 10, 3));
+      KT_CHECK(!pendingTimedOut(p, 6999)); KT_CHECK(pendingTimedOut(p, 7000)); }
+    { Pending p; p.preStack = 1; KT_CHECK(pendingDone(p, 0, 0, -1)); KT_CHECK(!pendingDone(p, 0, 0, 1)); }
+    { Pending p; p.preStack = 0; KT_CHECK(!pendingDone(p, 0, 0, -1)); KT_CHECK(!pendingDone(p, 0, 0, 0)); }   // no stack known: gone != consumed
+    { Pending p; p.since = 0xFFFFFF00u; p.preHp = 5; p.preStack = 1;
+      KT_CHECK(!pendingDone(p, 0xFFFFFF10u, 5, 1)); KT_CHECK(!pendingDone(p, 100, 5, 1)); KT_CHECK(!pendingDone(p, 0x00001000u, 5, 1)); KT_CHECK(pendingDone(p, 0x00001800u, 5, 1));
+      KT_CHECK(pendingDone(p, 0xFFFFFF00u + 6000u, 5, 1)); KT_CHECK(!pendingDone(p, 0xFFFFFF00u + 5999u, 5, 1)); }
+    { Pending p; KT_CHECK(!p.on); KT_CHECK_EQ((int)p.since, 0); KT_CHECK_EQ(p.preHp, 0); KT_CHECK_EQ(p.preStack, 0); }
     return kt::Report("selfheal_ui_test");
 }

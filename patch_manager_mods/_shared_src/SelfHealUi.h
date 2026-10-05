@@ -1,8 +1,11 @@
-// SelfHealUi.h - pure UI logic for the companion self-heal button/popover (doc 27): button geometry, state priority, steppers, INI line codec.
+// SelfHealUi.h - pure UI logic for the companion self-heal button/popover (doc 27): button geometry, state priority, steppers, INI line codec, popover layout/hit, INI file model, pending tracker.
 // Header-only, std only (no Windows/engine includes).
 #pragma once
 #include <cmath>
+#include <cstdint>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace shui {
 
@@ -102,6 +105,193 @@ inline bool parseLine(const std::string& line, std::string& key, CompCfg& out) {
 
 inline std::string serialize(const std::string& key, const CompCfg& c) {
     return key + "=auto:" + (c.autoOn ? "1" : "0") + ",hp:" + std::to_string(c.hpPct) + ",keep:" + std::to_string(c.keep);
+}
+
+// ---- popover (3 rows: Auto toggle / HP% stepper / Keep stepper) ----
+enum class PopItem { None, AutoToggle, HpMinus, HpPlus, KeepMinus, KeepPlus };
+
+struct PopLayout {
+    Rect r[6];   // r[0] = background panel; r[i] == rect of static_cast<PopItem>(i) for i >= 1
+};
+
+// Panel is 8*h wide, 3*h tall (h = button.h), top-aligned with the button and placed to its LEFT with a gap of h/4.
+// Clamped so x+w <= screenW (when screenW > 0), then x >= 0 (left clamp wins).
+inline PopLayout popoverLayout(Rect b, int screenW) {
+    int h = b.h, w = 8 * h, gap = h / 4;
+    int x = b.x - gap - w;
+    if (screenW > 0 && x + w > screenW) x = screenW - w;
+    if (x < 0) x = 0;
+    int y = b.y;
+    PopLayout L;
+    L.r[0] = Rect{x, y, w, 3 * h};
+    L.r[1] = Rect{x, y, w, h};
+    L.r[2] = Rect{x, y + h, h, h};
+    L.r[3] = Rect{x + w - h, y + h, h, h};
+    L.r[4] = Rect{x, y + 2 * h, h, h};
+    L.r[5] = Rect{x + w - h, y + 2 * h, h, h};
+    return L;
+}
+
+// Span between the minus and plus squares of row 2 (HP) or 3 (Keep); {0,0,0,0} for other rows.
+inline Rect popValueRect(const PopLayout& L, int row) {
+    if (row != 2 && row != 3) return Rect{0, 0, 0, 0};
+    const Rect& m = L.r[row == 2 ? 2 : 4];
+    const Rect& p = L.r[row == 2 ? 3 : 5];
+    return Rect{m.x + m.w, m.y, p.x - (m.x + m.w), m.h};
+}
+
+namespace detail {
+inline bool inRect(const Rect& r, int x, int y) { return x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h; }
+}  // namespace detail
+
+inline PopItem popoverHit(const PopLayout& L, int x, int y) {
+    for (int i = 1; i <= 5; ++i)
+        if (detail::inRect(L.r[i], x, y)) return static_cast<PopItem>(i);
+    return PopItem::None;
+}
+
+
+inline CompCfg applyPop(CompCfg c, PopItem it) {
+    switch (it) {
+        case PopItem::AutoToggle: c.autoOn = !c.autoOn; break;
+        case PopItem::HpMinus: c.hpPct = stepHpPct(c.hpPct, -1); break;
+        case PopItem::HpPlus: c.hpPct = stepHpPct(c.hpPct, 1); break;
+        case PopItem::KeepMinus: c.keep = stepKeep(c.keep, -1); break;
+        case PopItem::KeepPlus: c.keep = stepKeep(c.keep, 1); break;
+        case PopItem::None: break;
+    }
+    return c;
+}
+
+inline std::string popLabel(PopItem it, const CompCfg& c) {
+    switch (it) {
+        case PopItem::AutoToggle: return c.autoOn ? "Auto: ON" : "Auto: OFF";
+        case PopItem::HpMinus: case PopItem::KeepMinus: return "-";
+        case PopItem::HpPlus: case PopItem::KeepPlus: return "+";
+        case PopItem::None: break;
+    }
+    return "";
+}
+
+inline std::string popValueLabel(int row, const CompCfg& c) {
+    if (row == 2) return "Use below " + std::to_string(c.hpPct) + "%";
+    if (row == 3) return "Keep " + std::to_string(c.keep);
+    return "";
+}
+
+// ---- INI file model: [defaults] default=..., [companions] <tag>=... ; everything else is preserved verbatim on write ----
+struct CfgTable {
+    CompCfg def;
+    std::vector<std::pair<std::string, CompCfg>> rows;
+    bool operator==(const CfgTable& o) const { return def == o.def && rows == o.rows; }
+};
+
+namespace detail {
+// Splits on '\n', strips a trailing '\r' from each line.
+inline void splitLines(const std::string& text, std::vector<std::string>& v) {
+    size_t pos = 0;
+    while (pos < text.size()) {
+        size_t nl = text.find('\n', pos);
+        if (nl == std::string::npos) nl = text.size();
+        std::string l = text.substr(pos, nl - pos);
+        if (!l.empty() && l.back() == '\r') l.pop_back();
+        v.push_back(l);
+        pos = nl + 1;
+    }
+}
+// If the line is a "[name]" header returns true and sets name (trimmed).
+inline bool sectionName(const std::string& line, std::string& name) {
+    std::string t = trim(line);
+    if (t.size() < 2 || t[0] != '[' || t.back() != ']') return false;
+    name = trim(t.substr(1, t.size() - 2));
+    return true;
+}
+}  // namespace detail
+
+inline void upsert(CfgTable& t, const std::string& tag, const CompCfg& c) {
+    for (auto& r : t.rows)
+        if (r.first == tag) { r.second = c; return; }
+    t.rows.emplace_back(tag, c);
+}
+
+inline const CompCfg& lookup(const CfgTable& t, const std::string& tag) {
+    for (const auto& r : t.rows)
+        if (r.first == tag) return r.second;
+    return t.def;
+}
+
+inline CfgTable parseFile(const std::string& text) {
+    CfgTable t;
+    std::string sec;
+    std::vector<std::string> lines;
+    detail::splitLines(text, lines);
+    for (const std::string& line : lines) {
+        std::string name;
+        if (detail::sectionName(line, name)) { sec = name; continue; }
+        std::string key;
+        CompCfg c;
+        if (sec == "defaults") {
+            if (parseLine(line, key, c) && key == "default") t.def = c;
+        } else if (sec == "companions") {
+            if (parseLine(line, key, c)) upsert(t, key, c);
+        }
+    }
+    return t;
+}
+
+// Rewrites only the bodies of [defaults] and [companions]; all other lines are kept verbatim (original EOL style kept).
+// A repeated section header of the same name is merged into the first. Missing sections are appended.
+inline std::string serializeFile(const CfgTable& t, const std::string& original) {
+    const std::string eol = original.find("\r\n") != std::string::npos ? "\r\n" : "\n";
+    std::vector<std::string> in, out;
+    detail::splitLines(original, in);
+    auto body = [&](const std::string& sec) {
+        if (sec == "defaults") out.push_back(serialize("default", t.def));
+        else for (const auto& r : t.rows) out.push_back(serialize(r.first, r.second));
+    };
+    bool seenDef = false, seenComp = false;
+    size_t i = 0;
+    while (i < in.size()) {
+        std::string name;
+        if (!detail::sectionName(in[i], name) || (name != "defaults" && name != "companions")) { out.push_back(in[i++]); continue; }
+        bool& seen = name == "defaults" ? seenDef : seenComp;
+        size_t j = i + 1;
+        while (j < in.size()) { std::string n2; if (detail::sectionName(in[j], n2)) break; ++j; }
+        size_t end = j;                                   // keep trailing blank lines of the old body
+        while (end > i + 1 && detail::trim(in[end - 1]).empty()) --end;
+        if (!seen) {
+            seen = true;
+            out.push_back(in[i]);
+            body(name);
+            for (size_t k = end; k < j; ++k) out.push_back(in[k]);
+        }                                                  // else: duplicate section dropped (its rows were merged by parseFile)
+        i = j;
+    }
+    for (const char* sec : {"defaults", "companions"}) {
+        if (std::string(sec) == "defaults" ? seenDef : seenComp) continue;
+        if (!out.empty() && !detail::trim(out.back()).empty()) out.push_back("");
+        out.push_back(std::string("[") + sec + "]");
+        body(sec);
+    }
+    std::string s;
+    for (const auto& l : out) s += l + eol;
+    return s;
+}
+
+// ---- pending tracker: after a heal click/auto use, wait for HP up / stack down, else time out ----
+constexpr uint32_t kPendingTimeoutMs = 6000;
+
+struct Pending {
+    bool on = false;
+    uint32_t since = 0;
+    int preHp = 0, preStack = 0;
+};
+
+inline bool pendingTimedOut(const Pending& p, uint32_t now) { return (uint32_t)(now - p.since) >= kPendingTimeoutMs; }
+
+// stack < 0 means the item is gone (unknown/removed).
+inline bool pendingDone(const Pending& p, uint32_t now, int hp, int stack) {
+    return hp > p.preHp || (stack >= 0 && stack < p.preStack) || (stack < 0 && p.preStack > 0) || pendingTimedOut(p, now);
 }
 
 }  // namespace shui
