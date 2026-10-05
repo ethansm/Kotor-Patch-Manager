@@ -13,6 +13,7 @@
 #include "SafeRead.h"
 #include "KpLog.h"
 #include "HudHost.h"
+#include "K2Addr.h"
 #include "GuiKit.h"
 #include "CombatLogic.h"
 #include "check.h"
@@ -102,6 +103,42 @@ int main() {
     ch::GroupView gv; memset(&gv, 0, sizeof(gv)); gv.count = 1; gv.e[0].usable = true; gv.e[0].owner = 1;
     HEQ("pickInvokeEntry picks a usable owned entry", ch::pickInvokeEntry(gv, 2), 0);
     HEQ("pickInvokeEntry rejects 0xFF target", ch::pickInvokeEntry(gv, 0xFF), -1);
+
+    // 6. CH4b: K2HUD_BUILD phase + ctx.panel (HudHost.h), GuiKit flag/extent semantics on a fake control, grid layout contract
+    HEQ("K2HUD_BUILD phase id", K2HUD_BUILD, 3);
+    HCHECK("K2HUD_PHASE_COUNT covers BUILD", K2HUD_PHASE_COUNT > K2HUD_BUILD);
+    HCHECK("K2HudContext carries panel inside struct_size", offsetof(K2HudContext, panel) + sizeof(int32_t) <= sizeof(K2HudContext));
+    HEQ("K2HudContext.panel is the last v1 field", int(offsetof(K2HudContext, panel)), 36);
+    HCHECK("add() accepts the BUILD callback", hud.add(K2HUD_BUILD, 300, [](const K2HudContext*, void*) {}));
+    {
+        uintptr_t ctl = menu + 0x900;   // fake control: flags + extent ints at the Steam table offsets
+        const int oFlags = guikit::detail::off(&K2AddrTable::Ctl_Flags);
+        const int oX = guikit::detail::off(&K2AddrTable::Ctl_X), oY = guikit::detail::off(&K2AddrTable::Ctl_Y);
+        const int oW = guikit::detail::off(&K2AddrTable::Ctl_W), oH = guikit::detail::off(&K2AddrTable::Ctl_H);
+        HCHECK("Ctl offsets known for this exe", oFlags && oX && oY && oW && oH);
+        *reinterpret_cast<int*>(ctl + oFlags) = 0;
+        HCHECK("setVisible(true) succeeds", guikit::setVisible(ctl, true));
+        HCHECK("shown control has bit1 set and bit5 clear", (*reinterpret_cast<int*>(ctl + oFlags) & guikit::FlagVisible) && !(*reinterpret_cast<int*>(ctl + oFlags) & guikit::FlagClickThrough));
+        HCHECK("setClickable(false) sets bit5 only", guikit::setClickable(ctl, false) && (*reinterpret_cast<int*>(ctl + oFlags) & guikit::FlagClickThrough) && (*reinterpret_cast<int*>(ctl + oFlags) & guikit::FlagVisible));
+        HCHECK("setVisible(false) hides and goes click-through", guikit::setVisible(ctl, false) && !(*reinterpret_cast<int*>(ctl + oFlags) & guikit::FlagVisible) && (*reinterpret_cast<int*>(ctl + oFlags) & guikit::FlagClickThrough));
+        *reinterpret_cast<int*>(ctl + oX) = 10; *reinterpret_cast<int*>(ctl + oY) = 20; *reinterpret_cast<int*>(ctl + oW) = 30; *reinterpret_cast<int*>(ctl + oH) = 40;
+        int ex = 0, ey = 0, ew = 0, eh = 0;
+        HCHECK("getExtent reads menu-local x,y,w,h", guikit::getExtent(ctl, &ex, &ey, &ew, &eh) && ex == 10 && ey == 20 && ew == 30 && eh == 40);
+        guikit::ClickEdge ce;
+        HCHECK("clickEdge is false without the platform hooks", !guikit::clickEdge(ce));
+    }
+    {
+        ch::Rect box[3] = { {100, 50, 62, 20}, {200, 50, 62, 20}, {300, 50, 62, 20} };
+        int cnt[3] = { 3, 0, 9 }, outN[3] = { -1, -1, -1 };
+        ch::Rect out[3 * 8];
+        ch::layoutGroupGrid(box, cnt, 2, 4, 2, 800, 600, out, outN);
+        HCHECK("layoutGroupGrid: counts clamp to cols*maxRows", outN[0] == 3 && outN[1] == 0 && outN[2] == 8);
+        HCHECK("layoutGroupGrid: row-major 2-col grid under the box", out[0].x == 100 && out[0].y == 72 && out[0].w == 30 && out[1].x == 132 && out[2].x == 100 && out[2].y == 104);
+        int g = -2;
+        HEQ("slotEntry maps flat slot back to entry", ch::slotEntry(8 + 5, 2, 4, &g), 5);
+        HEQ("slotEntry group", g, 1);
+        HEQ("hitSlot hits the first button", ch::hitSlot(out, 24, 101, 73), 0);
+    }
 
     munmap(arena, 0x10000);
     return ::kt::Report("common_contract_test (combat-hotbar)");
