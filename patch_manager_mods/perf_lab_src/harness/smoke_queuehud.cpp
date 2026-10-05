@@ -1,22 +1,26 @@
-// Smoke test for queue-hud 0.2.0-dev (0.1.0 base commit 66b3702): the out-of-combat copy of the vanilla action-queue panel. Loaded under Wine's real PE
+// Smoke test for queue-hud 0.3.0-dev (0.1.0 base commit 66b3702): the out-of-combat copy of the vanilla action-queue panel. Loaded under Wine's real PE
 // loader TOGETHER with portrait-slots (the provider of "k2.portraitslots" v1), wired through the registry exactly as KPM would.
 // Build: i686-w64-mingw32-g++ -std=c++17 -O1 -I <harness> -I tests/include -I$KPM/Patches/Common -I../../_shared_src smoke_queuehud.cpp -static
-//        (runner flags in smokes.toml; the 7 MB .bss pad must start at or below the lowest engine address stubbed below, BeginGui2D 0x4792C0,
+//        (runner flags in smokes.toml, incl. --image-base=0x120000; the 10 MB .bss pad must start at or below the lowest engine address stubbed below, TexBasicCtor 0x423000,
 //        and end above AppGlobal / ClipDepth, so every engine address the DLLs touch is ordinary zeroed memory of this exe; checked at
 //        startup, exit 2)
-// Run:   smoke_queuehud.exe <wire|combat|nocreature|badhud|badchain|strips|inert>   (dir needs queue-hud.dll + portrait-slots.dll).
+// Run:   smoke_queuehud.exe <wire|combat|nocreature|badhud|badchain|strips|cancel|inert>   (dir needs queue-hud.dll + portrait-slots.dll).
 //        Exit codes: 0 pass, 1 check failed / LoadLibrary failed, 2 setup failure, 3 missing export.
 //
 // What is real: both DLLs, QueueHud's KPatchInit / QueueHudCapture (called with the KPM hook calling convention: cdecl, one int param =
 // the HUD pointer, per kotor2-steam-aspyr.hooks.toml), the portrait-slots dispatcher (PS_PortraitSlotDraw leader calls drive the real
 // HUD_DRAW phase), the k2addr Steam table, saferead, the registry semantics (tests/include/FakeKPatchApi.h) and a fake "kpatch.log" sink.
 // What is faked: engine memory = a zeroed pad; a fake HUD object (a heap buffer, flags dword at +0xA904); and TRIPWIRES planted at every
-// engine function a draw can reach (Begin/EndGui2D, Push/PopClipRect, FlushGuiBatch, HudScale, the icon resolver 0x74E0B0): each only counts
-// its calls, and every mode other than a real draw requires all counts to stay 0 ("draws nothing"). No test exports are used: the
+// engine function a draw can reach (Begin/EndGui2D, Push/PopClipRect, FlushGuiBatch, HudScale, the icon resolver 0x74E0B0, GuiLoadImage,
+// ServerClearAllActions): each only counts its calls, and every mode other than a real draw requires all counts to stay 0 ("draws nothing").
+// 0.3.0 also plants STUBS (not tripwires) for the embtex engine calls the FRAME_BEGIN callback makes on its first frame (engine new / new[],
+// CAurTextureBasic ctor, pending-list add, Reset; the pad is zeroed code, so executing them unstubbed is an access violation): they hand out
+// heap memory and count calls; the first leader call must create exactly the 4 kit textures once, never Reset. No test exports are used: the
 // callback is observed through its own log lines ("hidden (<reason>)"), the registry and the tripwires.
 //
-//   wire        provider -> queue-hud. KPatchInit OK, provided + exports present, exactly ONE registration: phase K2PS_HUD_DRAW (5),
-//               prio 400, owner "queue-hud"; the client connected; no WARN.
+//   wire        provider -> queue-hud. KPatchInit OK, provided + exports present, exactly TWO registrations, both owner "queue-hud":
+//               K2PS_HUD_DRAW (5) prio 400 and K2PS_FRAME_BEGIN (2) prio 300; the client connected; the one expected WARN is hud-host's
+//               'NOT connected (no Cancel controls)' (hud-host is not loaded in this harness).
 //   combat      QueueHudCapture(hud) with flags bit1 set: logs combat=1 once; leader calls dispatch HUD_DRAW: "hidden (combat)", no
 //               tripwire hit, no crash. Bit 1 clear (other bits set) flips it to combat=0; set again flips back.
 //   nocreature  combat=0, zeroed game memory (party chain reads 0): the callback returns "hidden (no creature)" cleanly; then a capture
@@ -28,8 +32,10 @@
 //               readable-but-empty, then served by fake PartyGetAt / MemberServerCreature stubs (members 1-2 matched by CLIENT and by SERVER
 //               pointer, the leader never): bad / zero rects, empty queues, an unresolvable use-item entry. No crash, no draw, the
 //               resolver is only called for the real queue entry, 'strip k=%d hidden' logged once per member (edge log).
-//   inert       KOTOR_VERSION_SHA = unknown sha: the real provider's dispatch is a no-op (HUD_DRAW never reaches queue-hud), capture still
-//               safe, nothing drawn, one provider WARN.
+//   cancel      0.3.0: hud-host absent -> no Cancel controls exist: 40 leader frames (hover/click paths run) never call ServerClearAllActions
+//               (tripwire), never log CANCEL, never load an image.
+//   inert       KOTOR_VERSION_SHA = unknown sha: the real provider's dispatch is a no-op (neither phase reaches queue-hud), capture still
+//               safe, nothing drawn, exactly two WARNs (the provider's k2addr table complaint + hud-host NOT connected).
 #define __USE_MINGW_ANSI_STDIO 0
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -59,15 +65,16 @@ static void checkf(bool ok, const char* fmt, int a = 0, int b = 0, int c = 0) {
 [[noreturn]] static void die(int code, const char* msg) { printf("queuehud: %s\n", msg); fflush(stdout); exit(code); }
 
 // ---------------------------------------------------------------- engine memory: the zeroed pad + tripwires
-static char pad[0x700000];
+static char pad[0xA00000];   // 0.3.0: 10 MB; the exe is linked at --image-base=0x120000 so this .bss starts below 0x423000 (embtex stubs)
 
 static const uintptr_t AddrResolver = 0x0074E0B0;   // the engine icon resolver queue-hud calls (thiscall, 6 stack args, RET 0x18)
-enum Wire { W_BEGIN, W_END, W_PUSH, W_POP, W_FLUSH, W_HUDSCALE, W_RESOLVER, W_COUNT };
-static const char* const kWireName[W_COUNT] = { "BeginGui2D", "EndGui2D", "PushClipRect", "PopClipRect", "FlushGuiBatch", "HudScale", "icon resolver 0x74E0B0" };
+enum Wire { W_BEGIN, W_END, W_PUSH, W_POP, W_FLUSH, W_HUDSCALE, W_RESOLVER, W_LOADIMG, W_CLEARALL, W_COUNT };
+static const char* const kWireName[W_COUNT] = { "BeginGui2D", "EndGui2D", "PushClipRect", "PopClipRect", "FlushGuiBatch", "HudScale", "icon resolver 0x74E0B0", "GuiLoadImage", "ServerClearAllActions" };
 static uintptr_t wireAddr(int w) {
     switch (w) {
         case W_BEGIN: return kSteam.BeginGui2D; case W_END: return kSteam.EndGui2D; case W_PUSH: return kSteam.PushClipRect;
         case W_POP: return kSteam.PopClipRect; case W_FLUSH: return kSteam.FlushGuiBatch; case W_HUDSCALE: return kSteam.HudScale;
+        case W_LOADIMG: return gameaddr::GuiLoadImage; case W_CLEARALL: return gameaddr::ServerClearAllActions;
         default: return AddrResolver;
     }
 }
@@ -79,7 +86,23 @@ static void  __cdecl   FakePop()                              { ++g_hits[W_POP];
 static void  __cdecl   FakeFlush(float)                       { ++g_hits[W_FLUSH]; }
 static float __cdecl   FakeHudScale()                         { ++g_hits[W_HUDSCALE]; return 1.0f; }
 static void  __stdcall FakeResolver(int, int, int, int, int, int) { ++g_hits[W_RESOLVER]; }   // thiscall = ecx + 6 stack args, callee pops 0x18
-static void* const kFake[W_COUNT] = { (void*)&FakeBegin, (void*)&FakeEnd, (void*)&FakePush, (void*)&FakePop, (void*)&FakeFlush, (void*)&FakeHudScale, (void*)&FakeResolver };
+static void* __cdecl   FakeLoadImage(const char*)              { ++g_hits[W_LOADIMG]; return nullptr; }
+static void  __fastcall FakeClearAll(void*, void*, unsigned)  { ++g_hits[W_CLEARALL]; }   // thiscall(server app, object id) RET 4
+static void* const kFake[W_COUNT] = { (void*)&FakeBegin, (void*)&FakeEnd, (void*)&FakePush, (void*)&FakePop, (void*)&FakeFlush, (void*)&FakeHudScale, (void*)&FakeResolver, (void*)&FakeLoadImage, (void*)&FakeClearAll };
+
+// embtex engine STUBS (0.3.0; EmbedTex.h's engine table): heap-backed so the real create / fill path runs, calls counted, not tripwires.
+enum Emb { E_NEW, E_NEWARR, E_CTOR, E_LISTADD, E_RESET, E_COUNT };
+static volatile long g_eh[E_COUNT];
+static uintptr_t embAddr(int e) {
+    switch (e) { case E_NEW: return gameaddr::New; case E_NEWARR: return gameaddr::EngineNewArr; case E_CTOR: return gameaddr::TexBasicCtor;
+                 case E_LISTADD: return gameaddr::TexListAdd; default: return gameaddr::TexReset; }
+}
+static void* __cdecl     EmbNew(unsigned n)                         { ++g_eh[E_NEW]; return calloc(1, n); }
+static void* __cdecl     EmbNewArr(unsigned n)                      { ++g_eh[E_NEWARR]; return calloc(1, n); }
+static void* __fastcall  EmbCtor(void* self, void*, const char*, const char*) { ++g_eh[E_CTOR]; return self; }   // thiscall RET 8
+static void  __fastcall  EmbListAdd(void*, void*, void*)            { ++g_eh[E_LISTADD]; }                        // thiscall(list, basic) RET 4
+static void  __fastcall  EmbReset(void*)                            { ++g_eh[E_RESET]; }                          // fastcall(basic)
+static void* const kEmb[E_COUNT] = { (void*)&EmbNew, (void*)&EmbNewArr, (void*)&EmbCtor, (void*)&EmbListAdd, (void*)&EmbReset };
 
 static void unprotect(uintptr_t addr, unsigned size) {
     DWORD o;
@@ -104,6 +127,7 @@ static bool padClean(uintptr_t* at) {
         if (pad[i] == 0) continue;
         bool stub = false;
         for (int w = 0; w < W_COUNT; ++w) if (a >= wireAddr(w) && a < wireAddr(w) + 16) stub = true;
+        for (int e = 0; e < E_COUNT; ++e) if (a >= embAddr(e) && a < embAddr(e) + 16) stub = true;
         for (uintptr_t x : g_extraStub) if (x && a >= x && a < x + 16) stub = true;
         if (!stub) { *at = a; return false; }
     }
@@ -176,6 +200,8 @@ static void loadAll() {
 static void setup(bool inert) {
     uintptr_t lo = ~(uintptr_t)0, hi = 0;
     for (int w = 0; w < W_COUNT; ++w) { lo = std::min(lo, wireAddr(w)); hi = std::max(hi, wireAddr(w) + 16); }
+    for (int e = 0; e < E_COUNT; ++e) { lo = std::min(lo, embAddr(e)); hi = std::max(hi, embAddr(e) + 16); }
+    hi = std::max(hi, (uintptr_t)gameaddr::TexPendingList + 0x1000);   // embtex reads the pending-list count at +4 (zeroed pad)
     hi = std::max(hi, (uintptr_t)kSteam.ClipDepth + 0x1000);
     hi = std::max(hi, (uintptr_t)kSteam.AppGlobal + 0x1000);
     if ((uintptr_t)pad > lo || (uintptr_t)pad + sizeof pad < hi) {
@@ -184,6 +210,7 @@ static void setup(bool inert) {
     }
     if (!unreadable(kBadPtr)) die(2, "bad-pointer sentinel 0xDEAD0000 is committed memory in this process");
     for (int w = 0; w < W_COUNT; ++w) { unprotect(wireAddr(w), 16); putJmp(wireAddr(w), kFake[w]); }
+    for (int e = 0; e < E_COUNT; ++e) { unprotect(embAddr(e), 16); putJmp(embAddr(e), kEmb[e]); }
     g_hud = (char*)VirtualAlloc(nullptr, HudSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);   // zeroed
     if (!g_hud) die(2, "cannot allocate the fake HUD buffer");
     SLOT_A = (int)(uintptr_t)pad + 0x10000;
@@ -208,14 +235,17 @@ static int modeWire() {
     setup(false);
     check(fakekp::provided(K2PS_IFACE, K2PS_VERSION), "portrait-slots provided k2.portraitslots v1 (KPatchInit of queue-hud ran after it without crashing)");
     const std::vector<Reg> regs = regsFromLog();
-    checkf(regs.size() == 1, "exactly 1 registration in total (queue-hud's), got %d", (int)regs.size());
-    check(regs.size() == 1 && regs[0].phase == K2PS_HUD_DRAW && K2PS_HUD_DRAW == 5, "registered phase is K2PS_HUD_DRAW (5)");
-    check(regs.size() == 1 && regs[0].prio == 400, "registered priority is 400");
-    check(regs.size() == 1 && regs[0].owner == "queue-hud", "registered owner is \"queue-hud\"");
-    check(regs.size() == 1 && regs[0].token > 0, "registration token > 0 (accepted)");
+    checkf(regs.size() == 2, "exactly 2 registrations in total (queue-hud's HUD_DRAW + FRAME_BEGIN), got %d", (int)regs.size());
+    check(regs.size() == 2 && regs[0].phase == K2PS_HUD_DRAW && K2PS_HUD_DRAW == 5, "first registered phase is K2PS_HUD_DRAW (5)");
+    check(regs.size() == 2 && regs[0].prio == 400, "HUD_DRAW priority is 400");
+    check(regs.size() == 2 && regs[1].phase == K2PS_FRAME_BEGIN && K2PS_FRAME_BEGIN == 2, "second registered phase is K2PS_FRAME_BEGIN (2)");
+    check(regs.size() == 2 && regs[1].prio == 300, "FRAME_BEGIN priority is 300");
+    check(regs.size() == 2 && regs[0].owner == "queue-hud" && regs[1].owner == "queue-hud", "both registrations are owned by \"queue-hud\"");
+    check(regs.size() == 2 && regs[0].token > 0 && regs[1].token > 0, "registration tokens > 0 (accepted)");
     check(logCount("portraitslots: connected") == 1, "queue-hud connected to the provider (onConnect logged once)");
-    check(logCount("0.2.0-dev: enabled=1") == 1, "queue-hud logged its version / config line once (default config: enabled)");
-    check(logCount("NOT connected") == 0 && warnCount() == 0, "no 'NOT connected' and no WARN line");
+    check(logCount("0.3.0-dev: kit=1 ") == 1 && logCount(" enabled=1 ") == 1, "queue-hud logged its version / config line once (default config: kit on, enabled)");
+    check(logCount("portraitslots: NOT connected") == 0, "the portrait-slots client is connected");
+    check(logCount("hud-host: NOT connected (no Cancel controls)") == 1 && warnCount() == 1, "exactly one WARN: hud-host absent -> 'NOT connected (no Cancel controls)'");
 
     // QueueHudCapture returns cleanly and logs the hud pointer once
     setFlags(0);
@@ -223,6 +253,7 @@ static int modeWire() {
     D.capture((int)(uintptr_t)g_hud);
     checkf(logCount("hud=") == 1, "capture of a fake HUD logged the pointer once (same pointer twice), got %d", logCount("hud="));
     checkNoEngineCalls("wire");
+    check(g_eh[E_NEW] == 0 && g_eh[E_CTOR] == 0, "KPatchInit / capture create no texture (that waits for the first FRAME_BEGIN)");
     uintptr_t bad = 0;
     checkf(padClean(&bad), "engine pad untouched (all zero but the stubs), first bad byte %08x", (int)bad);
     return g_fail ? 1 : 0;
@@ -238,6 +269,8 @@ static int modeCombat() {
     check(logCount(want) == 1, "capture with flags bit1 set logged combat=1");
 
     leaderCalls(20);
+    checkf(g_eh[E_NEW] == 4 && g_eh[E_CTOR] == 4 && g_eh[E_NEWARR] == 4 && g_eh[E_LISTADD] == 4, "FRAME_BEGIN created the 4 kit textures exactly once over 20 frames (new/ctor/new[]/list add = %d/%d/%d)", (int)g_eh[E_NEW], (int)g_eh[E_CTOR], (int)g_eh[E_NEWARR]);
+    check(g_eh[E_RESET] == 0, "heal() never Reset a healthy (queued, pixel-bearing) texture");
     check(logCount("hidden (combat)") == 1, "20 HUD_DRAW dispatches with combat=1: callback ran and logged 'hidden (combat)' once (edge log)");
     check(logCount("hidden (no creature)") == 0 && logCount("shown ") == 0, "combat short-circuits before the party chain and before any draw");
     checkNoEngineCalls("combat=1");
@@ -253,7 +286,7 @@ static int modeCombat() {
     leaderCalls(3);
     check(logCount("hidden (combat)") == 2, "bit 1 set again: hidden (combat) logged again on the transition");
     checkNoEngineCalls("combat toggling");
-    check(warnCount() == 0, "no WARN lines");
+    check(warnCount() == 1 && logCount("hud-host: NOT connected") == 1, "only the expected hud-host WARN");
     uintptr_t bad = 0;
     checkf(padClean(&bad), "engine pad untouched, first bad byte %08x", (int)bad);
     return g_fail ? 1 : 0;
@@ -277,7 +310,7 @@ static int modeNoCreature() {
     leaderCalls(5);
     check(logCount("hidden (no creature)") == 2, "fresh capture again: back to 'hidden (no creature)'");
     checkNoEngineCalls("stale / fresh");
-    check(warnCount() == 0, "no WARN lines");
+    check(warnCount() == 1 && logCount("hud-host: NOT connected") == 1, "only the expected hud-host WARN");
     uintptr_t bad = 0;
     checkf(padClean(&bad), "engine pad untouched, first bad byte %08x", (int)bad);
     return g_fail ? 1 : 0;
@@ -293,7 +326,7 @@ static int modeBadHud() {
     D.capture(0);   // null hud: nothing to show, silent
     leaderCalls(10);
     checkNoEngineCalls("bad hud");
-    check(warnCount() == 0, "no WARN lines");
+    check(warnCount() == 1 && logCount("hud-host: NOT connected") == 1, "only the expected hud-host WARN");
     uintptr_t bad = 0;
     checkf(padClean(&bad), "engine pad untouched, first bad byte %08x", (int)bad);
     return g_fail ? 1 : 0;
@@ -326,7 +359,7 @@ static int modeBadChain() {
     putU32(C + 0x270, (uint32_t)(base + 0x23000));                      // table readable, count 0, member 0 = null
     run("party table readable but empty");
     check(logCount("shown ") == 0 && logCount("changed ") == 0, "no draw line in any broken-chain case");
-    check(warnCount() == 0, "no WARN lines");
+    check(warnCount() == 1 && logCount("hud-host: NOT connected") == 1, "only the expected hud-host WARN");
     checkNoEngineCalls("broken party chains");
     // restore the zeroed pad before the cleanliness check
     putU32(app, 0); putU32(A + 4, 0); putU32(B + 4, 0); putU32(C + 0x270, 0);
@@ -420,7 +453,7 @@ static int modeStrips() {
     // a member whose pointer no slot carries: no match
     D.snapshot((int)S1, (int)kBadPtr);
     leaderCalls(5);
-    check(warnCount() <= 2, "only the expected blank-icon WARN lines (<= 2)");
+    check(warnCount() <= 3, "only the expected hud-host WARN + blank-icon WARN lines (<= 3)");
     // restore the zeroed pad
     for (uintptr_t x = base + 0x20000; x < base + 0x2C000; x += 4) putU32(x, 0);
     putU32(app, 0);
@@ -429,17 +462,34 @@ static int modeStrips() {
     return g_fail ? 1 : 0;
 }
 
+// ================================================================ cancel
+static int modeCancel() {
+    setup(false);
+    setFlags(0);
+    D.capture((int)(uintptr_t)g_hud);
+    leaderCalls(40);   // FRAME_BEGIN runs the cancel / hover / click path every frame (menu flag 0 from the fake context, combat=0)
+    check(logCount("hud-host: NOT connected (no Cancel controls)") == 1, "hud-host absent: 'NOT connected (no Cancel controls)' logged once");
+    check(g_hits[W_CLEARALL] == 0 && logCount("CANCEL") == 0, "no Cancel control exists: ServerClearAllActions never called, no CANCEL log line");
+    check(g_hits[W_LOADIMG] == 0, "no Cancel art requested without a control (GuiLoadImage never called)");
+    checkNoEngineCalls("cancel (hud-host absent)");
+    check(warnCount() == 1, "only the expected hud-host WARN");
+    uintptr_t bad = 0;
+    checkf(padClean(&bad), "engine pad untouched, first bad byte %08x", (int)bad);
+    return g_fail ? 1 : 0;
+}
+
 // ================================================================ inert
 static int modeInert() {
     setup(true);
     check(fakekp::provided(K2PS_IFACE, K2PS_VERSION), "provider still provides on an unknown exe");
-    check(regsFromLog().size() == 1, "queue-hud still registers its one callback (KPatchInit never touches the table)");
+    check(regsFromLog().size() == 2, "queue-hud still registers its two callbacks (KPatchInit never touches the table)");
     setFlags(0);
     for (int i = 0; i < 100; ++i) { D.capture((int)(uintptr_t)g_hud); leaderCalls(2); }
     setFlags(FlagCombat);
     for (int i = 0; i < 100; ++i) { D.capture((int)(uintptr_t)g_hud); leaderCalls(2); }
     check(logCount("hidden (") == 0 && logCount("shown ") == 0, "unknown exe: HUD_DRAW never dispatched to queue-hud (no 'hidden' / 'shown' line)");
-    checkf(warnCount() == 1, "exactly one WARN (the provider's k2addr table complaint), got %d", warnCount());
+    checkf(warnCount() == 2 && logCount("hud-host: NOT connected") == 1, "exactly two WARNs (provider's k2addr table complaint + hud-host NOT connected), got %d", warnCount());
+    check(g_eh[E_NEW] == 0 && g_eh[E_CTOR] == 0, "unknown exe: FRAME_BEGIN never dispatched, no texture created");
     checkNoEngineCalls("unknown exe");
     uintptr_t bad = 0;
     checkf(padClean(&bad), "engine pad untouched, first bad byte %08x", (int)bad);
@@ -456,8 +506,9 @@ int main(int argc, char** argv) {
     else if (!strcmp(mode, "badhud")) rc = modeBadHud();
     else if (!strcmp(mode, "badchain")) rc = modeBadChain();
     else if (!strcmp(mode, "strips")) rc = modeStrips();
+    else if (!strcmp(mode, "cancel")) rc = modeCancel();
     else if (!strcmp(mode, "inert")) rc = modeInert();
-    else die(2, "unknown mode (wire|combat|nocreature|badhud|badchain|strips|inert)");
+    else die(2, "unknown mode (wire|combat|nocreature|badhud|badchain|strips|cancel|inert)");
     printf("queuehud: %s %d checks, %d failed\n", rc ? "FAIL" : "PASS", g_checks, g_fail);
     return rc;
 }
