@@ -209,5 +209,43 @@ int main() {
       KT_CHECK(!pendingDone(p, 0xFFFFFF10u, 5, 1)); KT_CHECK(!pendingDone(p, 100, 5, 1)); KT_CHECK(!pendingDone(p, 0x00001000u, 5, 1)); KT_CHECK(pendingDone(p, 0x00001800u, 5, 1));
       KT_CHECK(pendingDone(p, 0xFFFFFF00u + 6000u, 5, 1)); KT_CHECK(!pendingDone(p, 0xFFFFFF00u + 5999u, 5, 1)); }
     { Pending p; KT_CHECK(!p.on); KT_CHECK_EQ((int)p.since, 0); KT_CHECK_EQ(p.preHp, 0); KT_CHECK_EQ(p.preStack, 0); }
+    // ---- lookFor / ringRect ----
+    {
+        struct C { BtnState st; bool au; float r, g, b, a; bool ring; } cs[] = {
+            {BtnState::Normal, false, 0.30f, 0.95f, 0.40f, 1.0f, false}, {BtnState::Normal, true, 1.00f, 0.80f, 0.25f, 1.0f, true},
+            {BtnState::AutoOn, false, 1.00f, 0.80f, 0.25f, 1.0f, false}, {BtnState::AutoOn, true, 1.00f, 0.80f, 0.25f, 1.0f, true},
+            {BtnState::Pending, false, 0.30f, 0.95f, 0.40f, 0.65f, false}, {BtnState::Pending, true, 1.00f, 0.80f, 0.25f, 0.65f, true},
+            {BtnState::FullHp, false, 0.60f, 0.60f, 0.60f, 0.40f, false}, {BtnState::FullHp, true, 0.60f, 0.60f, 0.60f, 0.40f, true},
+            {BtnState::NoItem, false, 0.60f, 0.60f, 0.60f, 0.40f, false}, {BtnState::NoItem, true, 0.60f, 0.60f, 0.60f, 0.40f, true},
+            {BtnState::Hidden, false, 0.30f, 0.95f, 0.40f, 0.0f, false}, {BtnState::Hidden, true, 1.00f, 0.80f, 0.25f, 0.0f, false},
+        };
+        for (const C& c : cs) {
+            Look l = lookFor(c.st, c.au, 0);
+            KT_CHECK(l.r == c.r); KT_CHECK(l.g == c.g); KT_CHECK(l.b == c.b); KT_CHECK(l.alpha == c.a); KT_CHECK(l.ring == c.ring);
+        }
+    }
+    KT_CHECK_EQ(kRingFrames, 8); KT_CHECK_EQ((int)kRingFrameMs, 90);
+    KT_CHECK_EQ(lookFor(BtnState::Normal, true, 0).ringFrame, 0);
+    KT_CHECK_EQ(lookFor(BtnState::Normal, true, 89).ringFrame, 0);
+    KT_CHECK_EQ(lookFor(BtnState::Normal, true, 90).ringFrame, 1);
+    KT_CHECK_EQ(lookFor(BtnState::Normal, true, 629).ringFrame, 6);
+    KT_CHECK_EQ(lookFor(BtnState::Normal, true, 630).ringFrame, 7);
+    KT_CHECK_EQ(lookFor(BtnState::Normal, true, 719).ringFrame, 7);
+    KT_CHECK_EQ(lookFor(BtnState::Normal, true, 720).ringFrame, 0);   // wrap at 8
+    KT_CHECK_EQ(lookFor(BtnState::Normal, true, 810).ringFrame, 1);
+    KT_CHECK_EQ(lookFor(BtnState::Normal, false, 90).ringFrame, 1);   // computed even when ring off
+    KT_CHECK_EQ(lookFor(BtnState::Hidden, true, 180).ringFrame, 2);
+    KT_CHECK_EQ(lookFor(BtnState::Normal, true, 0xFFFFFFFFu).ringFrame, 2);   // 4294967295/90 = 47721858 -> %8 = 2
+    KT_CHECK_EQ(lookFor(BtnState::Normal, true, 0xFFFFFFFFu + 1u).ringFrame, 0);   // uint32 wraps to 0
+    KT_CHECK_EQ(lookFor(BtnState::AutoOn, true, 0xFFFFFFFFu - 89u).ringFrame, 1);
+    { Rect z{0, 0, 0, 0}; KT_CHECK(ringRect({10, 10, 16, 0}) == z); KT_CHECK(ringRect({10, 10, 16, -4}) == z); }
+    KT_CHECK(ringRect({100, 50, 16, 16}) == (Rect{96, 46, 24, 24}));
+    KT_CHECK(ringRect({100, 50, 24, 24}) == (Rect{94, 44, 36, 36}));
+    KT_CHECK(ringRect({100, 50, 20, 20}) == (Rect{95, 45, 30, 30}));
+    KT_CHECK(ringRect({100, 50, 17, 17}) == (Rect{96, 46, 26, 26}));   // 25.5 -> 26
+    KT_CHECK(ringRect({100, 50, 1, 1}) == (Rect{100, 50, 2, 2}));     // 1.5 -> 2; (1-2)/2 truncates to 0
+    KT_CHECK_EQ(ringRect({0, 0, 3, 3}).w, 4);    // 4.5 -> 4 (not 6)
+    KT_CHECK_EQ(ringRect({0, 0, 7, 7}).w, 10);   // 10.5 -> 10 (not 12)
+    KT_CHECK(ringRect({100, 50, 18, 18}) == (Rect{95, 45, 28, 28}));   // 27 -> 28 (half rounds up)
     return kt::Report("selfheal_ui_test");
 }

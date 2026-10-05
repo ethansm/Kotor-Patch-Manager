@@ -294,4 +294,36 @@ inline bool pendingDone(const Pending& p, uint32_t now, int hp, int stack) {
     return hp > p.preHp || (stack >= 0 && stack < p.preStack) || (stack < 0 && p.preStack > 0) || pendingTimedOut(p, now);
 }
 
+// ---- look: colour / alpha / spinner ring per state (CS4) ----
+constexpr int kRingFrames = 8;
+constexpr uint32_t kRingFrameMs = 90;   // 8 frames * 90 ms = ~0.7 s per revolution
+
+struct Look {
+    float r, g, b, alpha;
+    int ringFrame;
+    bool ring;
+};
+
+// ringFrame is always computed (wraps with uint32 now, 0 only at frame boundaries); ring says whether to draw it.
+inline Look lookFor(BtnState st, bool autoOn, uint32_t now) {
+    Look l{0.30f, 0.95f, 0.40f, 1.0f, (int)((now / kRingFrameMs) % (uint32_t)kRingFrames), autoOn && st != BtnState::Hidden};
+    const bool gold = autoOn || st == BtnState::AutoOn;
+    if (gold) { l.r = 1.00f; l.g = 0.80f; l.b = 0.25f; }
+    switch (st) {
+        case BtnState::Hidden: l.alpha = 0.0f; break;
+        case BtnState::FullHp:
+        case BtnState::NoItem: l.r = l.g = l.b = 0.60f; l.alpha = 0.40f; break;
+        case BtnState::Pending: l.alpha = 0.65f; break;
+        default: break;
+    }
+    return l;
+}
+
+// Square ring centred on the button, side = 1.5 * h rounded to the nearest even number.
+inline Rect ringRect(Rect btn) {
+    if (btn.h <= 0) return Rect{0, 0, 0, 0};
+    int side = ((btn.h * 3 + 2) / 4) * 2;
+    return Rect{btn.x + (btn.w - side) / 2, btn.y + (btn.h - side) / 2, side, side};
+}
+
 }  // namespace shui
