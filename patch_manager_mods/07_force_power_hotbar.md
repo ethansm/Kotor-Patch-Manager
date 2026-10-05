@@ -1,10 +1,10 @@
 # Mod 3: Action Hotbar (formerly Force Power Hotbar)
 
 ## Status
-- **Action Hotbar 1.2.1**, KPM id `action-hotbar`, DLL md5 `df48fc9e` (framework `Patches/ActionHotbar/ActionHotbar.kpatch`). 8 hooks, 86 runtime controls.
-- **LIVE since 2026-10-04 13:02** (one-DLL hot-swap, backup `~/Games/KOTOR2_Mod_Workspace/backups/inst21_1004_1302`). Awaiting the user's play test (checklist below); neither 1.2.0 nor 1.2.1 has been played yet.
+- **Action Hotbar 1.2.2-dev** (HP4 refactor of 1.2.1, no intended behavior change), KPM id `action-hotbar`, DLL md5 `eeb6144f` (framework `Patches/ActionHotbar/ActionHotbar.kpatch`). 8 hooks, 86 runtime controls.
+- **LIVE since 2026-10-05 18:23** (one-DLL hot-swap, KPM 9136ea5, backup `~/Games/KOTOR2_Mod_Workspace/backups/inst22_1005_1823`; rollback = its `patches/action-hotbar.dll` `131e407a` = 1.2.1 as rebuilt by the BD3 install 10-05 ~17:17; post-check 0 diffs). Awaiting the user's play test (checklist below); 1.2.x has not been played yet. Live smoke for HP4: log must match 1.2.1 behavior except per-HUD change-only lines repeating once per HUD rebuild.
 - `kpm_install_state.json` is stale (still lists the old id): the next full reinstall MUST use id `action-hotbar` (see "Install and rollback").
-- Next polish = doc 24 phases HP4-HP7 (HP1-HP3 done). Review list = `07_force_power_hotbar_evidence/POLISH_REVIEW_2026-10-04.md`.
+- Next polish = doc 24 phases HP5-HP7 (HP1-HP4 done). Review list = `07_force_power_hotbar_evidence/POLISH_REVIEW_2026-10-04.md`.
 - Player docs (link, not repeated here): [`action_hotbar_src/README.md`](action_hotbar_src/README.md), [`action_hotbar_src/CHANGELOG.md`](action_hotbar_src/CHANGELOG.md).
 - Older RESUME/STATUS blocks and the dated build logs are kept verbatim under [History](#history) (old paths and ids stay there on purpose).
 
