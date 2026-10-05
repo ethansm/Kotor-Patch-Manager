@@ -23,6 +23,7 @@
 
 #include "KpLog.h"
 #include "SafeRead.h"
+#include "ActQueue.h"
 #include "K2Addr.h"
 #include "Party.h"
 #include "PortraitSlots.h"
@@ -52,8 +53,6 @@ constexpr uintptr_t AddrIconResolver = 0x0074E0B0;   // thiscall(hud ignored) 6 
 constexpr uintptr_t AddrRulesGlobal = 0x00A1B4D0;    // [rules+0x104] -> spell table {count@0, data@4}, row stride 0x1A8
 constexpr int HudCombatFlags = 0xA904;               // bit 1 = combat mode (set by 0x74E910 just before the hook)
 constexpr int HudSlotBase = 0x5F2C, HudSlotStride = 0x148;
-constexpr int CrQueue = 0x100, CrRound = 0x10DC;
-constexpr int RdList = 0xB00, RdCur = 0xB18, RdAA8 = 0xAA8, RdAB8 = 0xAB8;
 constexpr int PauseInternal = 0x10078;               // byte [[[[AppGlobal]+8]+4]+0x10078] & 2 = player pause (0x51C720 / 0x538CD0)
 constexpr unsigned SpellRowStride = 0x1A8;
 constexpr int AppToServer = 8;                       // *(AppGlobal) + 8 = CServerExoApp (R7: ECX of ClearAllActions)
@@ -172,22 +171,9 @@ bool resolveIcon(uintptr_t hud, uintptr_t round, const qh::QEntry& e, uintptr_t 
 }
 
 // ---- engine reads ----
-bool playerPaused() {
-    uint32_t app = 0, srv = 0, internal = 0;
-    uint8_t b = 0;
-    if (!rd(SitePause, party::appGlobalAddr(), 0, &app) || !app) return false;
-    if (!rd(SitePause + 1, app, 8, &srv) || !srv) return false;
-    if (!rd(SitePause + 2, srv, 4, &internal) || !internal) return false;
-    return rd(SitePause + 3, internal, PauseInternal, &b) && (b & 2) != 0;
-}
+bool playerPaused() { return actq::playerPaused(SitePause); }
 
-bool readRNode(uintptr_t n, qh::RNode* out) {
-    uint8_t sub = 0; uint32_t spell = 0, item = 0; uint16_t feat = 0;
-    if (!n || !rd(SiteRound + 4, n, 0x10, &sub)) return false;
-    rd(SiteRound + 5, n, 0x24, &spell); rd(SiteRound + 6, n, 0x64, &item); rd(SiteRound + 7, n, 0x5C, &feat);
-    out->subType = sub; out->spellId = spell; out->itemId = item; out->featId = feat; out->ptr = static_cast<uint32_t>(n);
-    return true;
-}
+static_assert(actq::kMaxEntries == qh::kMaxEntries && actq::kMaxRound == qh::kMaxRound, "actq caps match the slot builder");
 
 struct Snapshot {
     uintptr_t creature = 0, round = 0;
@@ -197,50 +183,25 @@ struct Snapshot {
     bool paused = false, waiting = false;
 };
 
-// One server creature's queue / round, all via saferead. false = no creature (nothing to show).
+qh::RNode toQh(const actq::RNode& r) {
+    qh::RNode o; o.subType = r.subType; o.spellId = r.spellId; o.itemId = r.itemId; o.featId = r.featId; o.ptr = r.ptr;
+    return o;
+}
+
+// One server creature's queue / round, all via saferead (actq::read). false = no creature (nothing to show).
 bool gatherFor(uintptr_t cr, Snapshot& s) {
+    actq::Snapshot a;
     s.creature = cr;
-    if (!s.creature) return false;
-    // queue: inline CExoLinkedList at cr+0x100 -> internal -> head node; node: next @4, data @8
-    uint32_t internal = 0, node = 0;
-    if (rd(SiteQueue, s.creature, CrQueue, &internal) && internal && rd(SiteQueue + 1, internal, 0, &node)) {
-        for (int i = 0; node && i < qh::kMaxEntries; ++i) {
-            uint32_t data = 0, next = 0, type = 0, p0 = 0;
-            rd(SiteQueue + 2, node, 8, &data);
-            rd(SiteQueue + 3, node, 4, &next);
-            qh::QEntry& e = s.e[s.ne];
-            e.type = -1; e.param0 = 0; s.eData[s.ne] = 0;   // an unreadable entry keeps its index but never qualifies
-            if (data && rd(SiteQueue + 4, data, 0, &type)) {
-                e.type = static_cast<int>(type);
-                rd(SiteQueue + 5, data, 0x38, &p0);
-                e.param0 = p0;
-                s.eData[s.ne] = data;
-            }
-            ++s.ne;
-            node = next;
-        }
-    }
-    uint32_t round = 0;
-    rd(SiteRound, s.creature, CrRound, &round);
-    s.round = round;
-    int ab8 = 0, aa8 = 0;
-    if (round) {
-        uint32_t list = 0, curPtr = 0;
-        if (rd(SiteRound + 1, round, RdList, &list) && list && rd(SiteRound + 2, list, 0, &internal) && internal && rd(SiteRound + 3, internal, 0, &node)) {
-            for (int i = 0; node && i < qh::kMaxRound; ++i) {
-                uint32_t data = 0, next = 0;
-                rd(SiteRound + 8, node, 8, &data);
-                rd(SiteRound + 9, node, 4, &next);
-                if (data && readRNode(data, &s.rn[s.nrn])) ++s.nrn;
-                node = next;
-            }
-        }
-        if (rd(SiteRound + 10, round, RdCur, &curPtr) && curPtr && readRNode(curPtr, &s.cur)) s.haveCur = true;
-        rd(SiteRound + 11, round, RdAB8, &ab8);
-        rd(SiteRound + 12, round, RdAA8, &aa8);
-    }
+    if (!actq::read(cr, &a, SiteQueue, SiteRound)) return false;
+    s.round = a.round;
+    s.ne = a.ne;
+    for (int i = 0; i < a.ne; ++i) { s.e[i].type = a.e[i].type; s.e[i].param0 = a.e[i].param0; s.eData[i] = a.eData[i]; }
+    s.nrn = a.nrn;
+    for (int i = 0; i < a.nrn; ++i) s.rn[i] = toQh(a.rn[i]);
+    s.haveCur = a.haveCur;
+    if (a.haveCur) s.cur = toQh(a.cur);
     s.paused = playerPaused();
-    s.waiting = qh::isWaiting(s.paused, ab8, aa8);
+    s.waiting = qh::isWaiting(s.paused, a.ab8, a.aa8);
     return true;
 }
 

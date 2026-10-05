@@ -20,6 +20,7 @@
 #include "GuiTip.h"
 #include "FileWatch.h"
 #include "SelfHealUi.h"
+#include "ActQueue.h"
 #include "EmbedTex.h"
 #include "check.h"
 #include <sys/mman.h>
@@ -250,6 +251,25 @@ int main() {
     HEQ("gameaddr::TexBasicCtor/EngineNewArr/TexListAdd/TexReset (embedded-texture recipe)", (long long)gameaddr::TexBasicCtor + gameaddr::EngineNewArr + gameaddr::TexListAdd + gameaddr::TexReset, 0x423000LL + 0x91D288LL + 0x4491C0LL + 0x423990LL);
     HEQ("gameaddr::MessagesPanelVtable is 0x0099E5EC (gate whitelist)", (long long)gameaddr::MessagesPanelVtable, 0x99E5ECLL);
     HEQ("kPendingTimeoutMs is 6000", (long long)kPendingTimeoutMs, 6000LL);
+
+    // ===== CS12 (0.6.0-dev): ActQueue.h + the SelfHealUi pending/dedupe helpers
+    {
+        actq::Snapshot qa; qa.e[0].type = 0x3D; qa.e[1].type = 0x3F; qa.ne = 2;
+        HCHECK("actq::useQueued is false for a bare leftover 0x3F (empty round list) and true with a round node carrying an item id", !actq::useQueued(qa) && (qa.rn[0].itemId = 5, qa.nrn = 1, actq::useQueued(qa)));
+        HCHECK("actq::starved = queued use + first 0x3F at index 1..3 behind only 0x3D; actq::firstIndex returns that index (-1 none)", actq::starved(qa) && actq::firstIndex(qa, actq::T_USE_ITEM) == 1 && actq::firstIndex(qa, 0x99) == -1);
+        qa.e[0].type = 0x40;
+        HCHECK("actq::starved is false with a non-0x3D (MoveToPoint/0x40) ahead of the 0x3F", !actq::starved(qa));
+        HEQ("actq action types: FollowLeader 0x3D, UseItem 0x3F", actq::T_FOLLOW_LEADER * 256 + actq::T_USE_ITEM, 0x3D * 256 + 0x3F);
+        HEQ("actq gate offsets: CrQueue 0x100, CrRunning 0x20C, Cr11AC 0x11AC, RdAA8 0xAA8, RdAB8 0xAB8", actq::CrQueue + actq::CrRunning + actq::Cr11AC + actq::RdAA8 + actq::RdAB8, 0x100 + 0x20C + 0x11AC + 0xAA8 + 0xAB8);
+        HCHECK("actq::read(0, ...) returns false (no creature) and playerPaused(site) is declared bool(unsigned)", !actq::read(0, &qa, 0x6E10, 0x6E20) && static_cast<bool(*)(unsigned)>(&actq::playerPaused) != nullptr);
+        HEQ("gameaddr kick calls: ActListRemoveHead/ActListAddTail/RoundHasPending", (long long)gameaddr::ActListRemoveHead + gameaddr::ActListAddTail + gameaddr::RoundHasPending, 0x7F2A90LL + 0x54AA30LL + 0x590110LL);
+        Pending p2; p2.on = true; p2.since = 1000; p2.preHp = 10; p2.preStack = 3;
+        uint32_t us = 0;
+        HCHECK("shui::pendingDone2: queued never times out (and resets the unqueued stretch); HP up / stack down still end it", !pendingDone2(p2, 1000 + 10 * kPendingTimeoutMs, 10, 3, true, &us) && us == 0 && pendingDone2(p2, 1100, 11, 3, true, &us) && pendingDone2(p2, 1100, 10, 2, true, &us));
+        HCHECK("shui::pendingDone2: the timeout runs over a continuous not-queued stretch (first call arms *unqueuedSince)", !pendingDone2(p2, 20000, 10, 3, false, &us) && us == 20000 && !pendingDone2(p2, 20000 + kPendingTimeoutMs - 1, 10, 3, false, &us) && pendingDone2(p2, 20000 + kPendingTimeoutMs, 10, 3, false, &us));
+        HCHECK("shui::pendingDone2: a requeue resets the stretch", (pendingDone2(p2, 30000, 10, 3, false, &us), !pendingDone2(p2, 30001, 10, 3, true, &us) && us == 0));
+        HCHECK("shui::useAllowed(true) refuses with text \"already queued\"; useAllowed(false) allows", useAllowed(true) == UseRefusal::AlreadyQueued && useAllowed(false) == UseRefusal::None && strcmp(useRefusalText(UseRefusal::AlreadyQueued), "already queued") == 0);
+    }
 
     // filewatch: atomicWrite + changed/accept (the INI save + hot reload)
     char tmpl[] = "/tmp/cs_contract_XXXXXX";

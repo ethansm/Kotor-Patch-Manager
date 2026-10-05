@@ -250,5 +250,34 @@ int main() {
     KT_CHECK_EQ(ringRect({0, 0, 3, 3}).w, 4);    // 4.5 -> 4 (not 6)
     KT_CHECK_EQ(ringRect({0, 0, 7, 7}).w, 10);   // 10.5 -> 10 (not 12)
     KT_CHECK(ringRect({100, 50, 18, 18}) == (Rect{95, 45, 28, 28}));   // 27 -> 28 (half rounds up)
+    // pendingDone2 / useAllowed (CS12)
+    {
+        Pending p; p.on = true; p.since = 1000; p.preHp = 10; p.preStack = 3;
+        uint32_t u = 0;
+        KT_CHECK(pendingDone2(p, 1100, 11, 3, true, &u));          // hp up wins even while queued
+        KT_CHECK(pendingDone2(p, 1100, 10, 2, true, &u));          // stack down
+        KT_CHECK(pendingDone2(p, 1100, 10, -1, false, &u));        // item gone
+        u = 0; KT_CHECK(!pendingDone2(p, 1100, 10, 3, true, &u));
+        KT_CHECK_EQ(u, 0u);
+        u = 0; KT_CHECK(!pendingDone2(p, 900000, 10, 3, true, &u));   // queued forever never times out
+        KT_CHECK(!pendingDone2(p, 0xFFFFFF00u, 10, 3, true, &u));
+        u = 0;
+        KT_CHECK(!pendingDone2(p, 10000, 10, 3, false, &u));       // stretch starts at 10000
+        KT_CHECK_EQ(u, 10000u);
+        KT_CHECK(!pendingDone2(p, 15999, 10, 3, false, &u));       // 5999 ms
+        KT_CHECK(pendingDone2(p, 16000, 10, 3, false, &u));        // 6000 ms
+        u = 0; pendingDone2(p, 10000, 10, 3, false, &u);
+        KT_CHECK(!pendingDone2(p, 14000, 10, 3, true, &u));        // requeued: timer resets
+        KT_CHECK_EQ(u, 0u);
+        KT_CHECK(!pendingDone2(p, 15000, 10, 3, false, &u));       // new stretch from 15000
+        KT_CHECK(!pendingDone2(p, 20999, 10, 3, false, &u));
+        KT_CHECK(pendingDone2(p, 21000, 10, 3, false, &u));
+        KT_CHECK(pendingDone2(p, 7000, 10, 3, false, nullptr));    // no tracker: falls back to the old since-based timeout
+        KT_CHECK(!pendingDone2(p, 6999, 10, 3, false, nullptr));
+        KT_CHECK(useAllowed(false) == UseRefusal::None);
+        KT_CHECK(useAllowed(true) == UseRefusal::AlreadyQueued);
+        KT_CHECK(std::string(useRefusalText(useAllowed(true))) == "already queued");
+        KT_CHECK(std::string(useRefusalText(UseRefusal::None)).empty());
+    }
     return kt::Report("selfheal_ui_test");
 }

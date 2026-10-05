@@ -1,11 +1,14 @@
-// Companion Self-Heal 0.5.0-dev (doc 27, CS4 restyle + CS5 + CS8/CS9). The HUD gets, from hud-host's K2HUD_BUILD phase (k2.hud@1, source 0x0040F5A0, HUD panel only; the only own hook is the RMB camera swallow 0x7B3817), 14 runtime
+// Companion Self-Heal 0.6.0-dev (doc 27, CS4 restyle + CS5 + CS8/CS9). The HUD gets, from hud-host's K2HUD_BUILD phase (k2.hud@1, source 0x0040F5A0, HUD panel only; the only own hook is the RMB camera swallow 0x7B3817), 14 runtime
 // labels (2 dark discs under the buttons, 2 cross-icon buttons, a popover background, 5 popover items, 2 value labels, 2 gold auto rings drawn on top; the cross, disc + ring art are
 // embedded textures, see namespace tex / EmbedTex.h; fallback = the text "+"). Per frame (K2PS_FRAME_BEGIN, only in gameplay HUD):
 // buttons follow the companion cards (slot+0x694 vit rect); LMB = use the picked healing item now (route A), RMB = popover
 // (Auto on/off, use-below %, keep reserve; persisted to companion_selfheal.ini); Auto mode uses items by itself (HealItems.h rules).
 // Route A is reachable ONLY through useNow(): HUD gate + commandable (+0xEC) + CanUseItem + per-member 2 s debounce. The popover never calls it.
 // Engine writes: label setters + the ProjectionFlag clear/restore around the creates + our own texture objects. Everything else is SafeRead.
-// Logs: P1/P3 (hook, slot map), DUMP (Ctrl+Shift+ProbeKey), BUILD, MAP, CLICK/USE/AUTO/DONE/REFUSE, CFG.
+// Logs: P1/P3 (hook, slot map), DUMP (Ctrl+Shift+ProbeKey), BUILD, MAP, CLICK/USE/AUTO/DONE/REFUSE, CFG, KICK.
+// CS12 (0.6.0-dev): a follower's queue is [0x3D FollowLeader] which re-adds itself at the head, so the 0x3F item use appended by route A starves.
+// kickTick() rotates the queue (pop head + append tail, k times) when the R8 gates hold; useNow() refuses a second use while one is queued; the pending
+// timeout only runs over a not-queued stretch. INI [queue] kick=1 (0 = no rotate). Never ClearAllActions, never 0x5648D0.
 // Opt-in (companion_selfheal.ini [probe] call=1): Ctrl+Shift+CallKey (default 'J') = useNow(first companion with a pick, "key") + POST/RESULT window.
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -29,13 +32,15 @@
 #include "GuiTip.h"
 #include "FileWatch.h"
 #include "SelfHealUi.h"
+#include "ActQueue.h"
 #include "EmbedTex.h"
 
 KP_LOG_PATCH("companion-selfheal");
 
 namespace {
 
-constexpr unsigned SiteBase = 0x6E00;                    // saferead site id
+constexpr unsigned SiteBase = 0x6E00;                    // saferead site id (+0..4)
+constexpr unsigned SiteQueue = 0x6E10, SiteRound = 0x6E20, SitePause = 0x6E40, SiteKick = 0x6E50;   // CS12: actq queue reads +0..5, round reads +0..12, pause chain +0..3, kick gate reads +0..3
 constexpr uintptr_t HudVtable = gameaddr::HudVtable;             // CSWGuiInGame (HUD) RTTI vtable
 constexpr uintptr_t ServerIdMask = gameaddr::ServerIdMask;       // global: client id & ~[mask] = server id (ClientToServerObjectId)
 constexpr uintptr_t UseItemRouteA = gameaddr::UseItemRouteA;     // logged; called only with [probe] call=1
@@ -74,6 +79,7 @@ bool g_keyPrev = false;
 int g_probeCall = 0, g_callKey = 0x4A;
 bool g_callPrev = false;
 DWORD g_lastCallMs = 0;
+bool g_kick = true;   // [queue] kick=1 (CS12 rotate); 0 = 0.5.0 behaviour (dedupe + pendingDone2 stay)
 struct Post { bool active = false; DWORD start = 0, next = 0; int member = 0; uint32_t itemKey = 0; int preHp = 0, preStack = 0; uintptr_t server = 0; } g_post;
 
 template <typename T> bool rd(uintptr_t base, int off, T* out) { return saferead::readAt(SiteBase, base, off, out); }
@@ -93,6 +99,7 @@ void loadIni() {
     g_probeKey = GetPrivateProfileIntA("General", "ProbeKey", 0x48, IniPath);
     if (g_probeKey <= 0 || g_probeKey > 0xFF) g_probeKey = 0x48;
     g_probeCall = GetPrivateProfileIntA("probe", "call", 0, "companion_selfheal.ini") != 0;
+    g_kick = GetPrivateProfileIntA("queue", "kick", 1, IniPath) != 0;
     g_callKey = GetPrivateProfileIntA("probe", "CallKey", 0x4A, IniPath);
     if (g_callKey <= 0 || g_callKey > 0xFF) g_callKey = 0x4A;
 }
@@ -250,6 +257,11 @@ bool gateOpen(const K2PsContext* ctx) { return menuInfo(ctx) && ctx->inMenu == 0
 // ---- per-member state ----
 DWORD g_lastUseMs[3] = {};
 shui::Pending g_pend[3];
+uint32_t g_unqueuedSince[3] = {};   // pendingDone2 not-queued stretch start (0 = not running); zeroed when pending is armed
+// kick state per member (CS12); reset when a pending is armed or ends
+int g_kickReason[3] = {};           // last logged skip gate (0 = none) so the log is edge-triggered
+DWORD g_starvedSince[3] = {};       // start of the current starved + unpaused stretch (0 = none)
+bool g_kickGaveUp[3] = {};
 uint32_t g_pendKey[3] = {};
 heal::AutoState g_auto[3];
 
@@ -277,6 +289,12 @@ bool useNow(const K2PsContext* ctx, DWORD now, int mi, int minCount, const char*
     uint32_t cmd = 0, clientId = 0;
     if (!m.server) REFUSEF("REFUSE server=0 member=%d", mi);
     if (!rd<uint32_t>(m.server, Server_Commandable, &cmd) || !cmd) REFUSEF("REFUSE not commandable member=%d (+0xEC=%u)", mi, (unsigned)cmd);
+    {   // CS12 dedupe: a second use while one is still queued would stack behind the stalled first
+        actq::Snapshot qs;
+        actq::read(m.server, &qs, SiteQueue, SiteRound);
+        shui::UseRefusal ur = shui::useAllowed(actq::useQueued(qs));
+        if (ur != shui::UseRefusal::None) REFUSEF("REFUSE %s member=%d (%s)", shui::useRefusalText(ur), mi, src);
+    }
     if (!m.client || !rd<uint32_t>(m.client, Client_ObjectId, &clientId)) REFUSEF("REFUSE ids: client object id unreadable member=%d", mi);
     uint32_t selfServerId = serverIdOf(clientId), itemServerId = pk.srv;
     if (!selfServerId || !itemServerId || !pk.itemPtr) REFUSEF("REFUSE ids self=%08x item=%08x itemPtr=%08x", (unsigned)selfServerId, (unsigned)itemServerId, (unsigned)pk.itemPtr);
@@ -291,6 +309,7 @@ bool useNow(const K2PsContext* ctx, DWORD now, int mi, int minCount, const char*
     g_lastUseMs[mi] = now;   // only real uses debounce
     KP_LOG(chCall, "USE member=%d item=%08x \"%s\" heal=%d hp=%d/%d src=%s", mi, (unsigned)itemServerId, pk.name.c_str(), pk.heal, m.cur, m.max, src);
     g_pend[mi] = shui::Pending(); g_pend[mi].on = true; g_pend[mi].since = now; g_pend[mi].preHp = m.cur; g_pend[mi].preStack = pk.count;
+    g_unqueuedSince[mi] = 0; g_kickReason[mi] = 0; g_starvedSince[mi] = 0; g_kickGaveUp[mi] = false;
     g_pendKey[mi] = pk.key;
     g_auto[mi].lastUseMs = now; g_auto[mi].pending = true;
     if (out) { out->pk = pk; out->hp = m.cur; out->server = m.server; }
@@ -503,9 +522,77 @@ void pendingTick(DWORD now) {
         int stack = -1;
         if (haveItems) { for (const itemread::Entry& e : items) if ((uint32_t)e.key == g_pendKey[i]) { stack = itemread::stackCount(e.key, e.name); if (stack <= 0) stack = 1; break; } }
         else stack = g_pend[i].preStack;   // group unreadable: no stack evidence, wait for HP or the timeout
-        if (!shui::pendingDone(g_pend[i], now, hp, stack)) continue;
-        KP_LOG(chCall, "DONE member=%d hp%+d stack%+d timeout=%d", i, hp - g_pend[i].preHp, (stack < 0 ? 0 : stack) - g_pend[i].preStack, (int)shui::pendingTimedOut(g_pend[i], now));
-        g_pend[i].on = false; g_auto[i].pending = false;
+        actq::Snapshot qs;
+        if (i < cnt) actq::read(v[i].server, &qs, SiteQueue, SiteRound);
+        bool queued = actq::useQueued(qs);
+        if (!shui::pendingDone2(g_pend[i], now, hp, stack, queued, &g_unqueuedSince[i])) continue;
+        bool progress = hp > g_pend[i].preHp || (stack >= 0 && stack < g_pend[i].preStack) || (stack < 0 && g_pend[i].preStack > 0);
+        KP_LOG(chCall, "DONE member=%d hp%+d stack%+d queued=%d", i, hp - g_pend[i].preHp, (stack < 0 ? 0 : stack) - g_pend[i].preStack, (int)queued);
+        if (!progress) KP_LOGV(chCall, KPLOG_WARN, "TIMEOUT unqueued member=%d", i);
+        g_pend[i].on = false; g_auto[i].pending = false; g_unqueuedSince[i] = 0; g_kickReason[i] = 0; g_starvedSince[i] = 0; g_kickGaveUp[i] = false;
+    }
+}
+
+// CS12 route B (R8): rotate the starved follower queue so the 0x3F reaches the head. Game thread, our draw callback (outside RunActions).
+// Gates (all required): cr+0x20C==0, cr+0x11AC!=0, round!=0, round+0xAA8==0, round+0xAB8<1, RoundHasPending(round)!=0, not paused.
+void typesStr(const actq::Snapshot& q, char* buf, size_t cap) {
+    size_t n = 0; buf[0] = 0;
+    for (int j = 0; j < q.ne && n + 6 < cap; ++j) n += snprintf(buf + n, cap - n, "%s%x", j ? "," : "", q.e[j].type & 0xFF);
+}
+void kickSkip(int mi, int reason, const char* gate, long long val) {
+    if (g_kickReason[mi] == reason) return;
+    g_kickReason[mi] = reason;
+    KP_LOG(chCall, "KICK skipped member=%d (%s=%lld)", mi, gate, val);
+}
+void kickTick(DWORD now) {
+    if (!g_kick || !g_hud) return;
+    bool any = false;
+    for (int i = 1; i <= 2; ++i) any = any || g_pend[i].on;
+    if (!any) return;
+    party::Vitals v[3];
+    int cnt = party::members(v, 3);
+    for (int i = 1; i <= 2 && i < cnt; ++i) {   // never member 0 (the controlled leader)
+        if (!g_pend[i].on || g_kickGaveUp[i] || !v[i].server) continue;
+        uintptr_t cr = v[i].server;
+        actq::Snapshot q;
+        actq::read(cr, &q, SiteQueue, SiteRound);
+        if (!actq::starved(q)) { g_starvedSince[i] = 0; g_kickReason[i] = 0; continue; }
+        bool paused = actq::playerPaused(SitePause);
+        if (paused) { g_starvedSince[i] = 0; kickSkip(i, 1, "paused", 1); continue; }
+        if (!g_starvedSince[i]) g_starvedSince[i] = now ? now : 1u;
+        else if (now - g_starvedSince[i] > 5000) {
+            KP_LOGV(chCall, KPLOG_WARN, "KICK starved member=%d", i);
+            g_kickGaveUp[i] = true; continue;
+        }
+        uint32_t running = 0, c11ac = 0, round = 0;
+        int aa8 = 0, ab8 = 0;
+        if (!saferead::readAt(SiteKick, cr, actq::CrRunning, &running)) { kickSkip(i, 2, "running", -1); continue; }
+        if (running != 0) { kickSkip(i, 2, "running", running); continue; }
+        if (!saferead::readAt(SiteKick + 1, cr, actq::Cr11AC, &c11ac)) { kickSkip(i, 3, "cr11ac", -1); continue; }
+        if (c11ac == 0) { kickSkip(i, 3, "cr11ac", 0); continue; }
+        round = q.round;
+        if (!round) { kickSkip(i, 4, "round", 0); continue; }
+        if (!saferead::readAt(SiteKick + 2, round, actq::RdAA8, &aa8)) { kickSkip(i, 5, "aa8", -1); continue; }
+        if (aa8 != 0) { kickSkip(i, 5, "aa8", aa8); continue; }
+        if (!saferead::readAt(SiteKick + 3, round, actq::RdAB8, &ab8)) { kickSkip(i, 6, "ab8", -1); continue; }
+        if (ab8 >= 1) { kickSkip(i, 6, "ab8", ab8); continue; }
+        uint32_t pending = reinterpret_cast<uint32_t(__thiscall*)(uintptr_t)>(gameaddr::RoundHasPending)(round);
+        if (pending == 0) { kickSkip(i, 7, "pending", 0); continue; }
+        int k = actq::firstIndex(q, actq::T_USE_ITEM);
+        char before[96], after[96];
+        typesStr(q, before, sizeof before);
+        int done = 0;
+        for (int n = 0; n < k; ++n) {
+            uint32_t d = reinterpret_cast<uint32_t(__thiscall*)(uintptr_t)>(gameaddr::ActListRemoveHead)(cr + actq::CrQueue);
+            if (d == 0) break;
+            reinterpret_cast<void(__thiscall*)(uintptr_t, uint32_t)>(gameaddr::ActListAddTail)(cr + actq::CrQueue, d);
+            ++done;
+        }
+        actq::Snapshot q2;
+        actq::read(cr, &q2, SiteQueue, SiteRound);
+        typesStr(q2, after, sizeof after);
+        KP_LOG(chCall, "KICK member=%d before=[%s] after=[%s] k=%d route=rotate", i, before, after, done);
+        g_kickReason[i] = 0;
     }
 }
 
@@ -566,6 +653,7 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
     // INI hot reload (1 s throttle inside changed())
     if (filewatch::changed(g_cfgPoll, IniPath, now)) loadCfg();
     pendingTick(now);
+    kickTick(now);
     tex::healTextures();   // every frame, before the gate: a GL reset can happen in menus too
     bool ledge = guikit::clickEdge(g_lmb), redge = guikit::rclickEdge(g_rmb);   // polled every frame so a held press never fires on reopen
     if (!gateOpen(ctx)) { hideAll(); return; }
@@ -800,7 +888,7 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     loadIni();
     loadCfg();
     filewatch::accept(g_cfgPoll, IniPath);
-    KP_LOG(chMain, "0.5.0-dev: probe call=%d CallKey=0x%02X cfg rows=%d", g_probeCall, g_callKey, (int)g_cfg.rows.size());
+    KP_LOG(chMain, "0.6.0-dev: probe call=%d CallKey=0x%02X kick=%d cfg rows=%d", g_probeCall, g_callKey, (int)g_kick, (int)g_cfg.rows.size());
     g_ps.init(api, "companion-selfheal");
     g_ps.onConnect = onConnect;
     g_ps.add(K2PS_FRAME_BEGIN, 300, onFrameBegin);

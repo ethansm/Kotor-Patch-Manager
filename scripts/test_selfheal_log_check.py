@@ -142,3 +142,49 @@ def test_v050_pass_new_refuse_format():
     assert [b[1] for b in r["v"]["build"]] == [14]
     assert any(k.startswith("canuse=0 member=1") for k in r["v"]["refuse"])
     assert S.fmt(r).splitlines()[-1].endswith("VERDICT=PASS")
+
+
+V06 = [
+    'REFUSE already queued member=1 (click)',
+    'USE member=1 item=0c000100 "Medical Supplies" heal=27 hp=12/40 src=click',
+    'KICK skipped member=1 (running=1)',
+    'KICK skipped member=1 (running=1)',
+    'KICK skipped member=1 (ab8=2)',
+    'KICK member=1 before=[3d,3f] after=[3f,3d] k=1 route=rotate',
+    'DONE member=1 hp+27 stack-1 queued=0',
+]
+
+
+def test_v060_kick_pass():
+    r = S.check(v30(V06))
+    v = r["v"]
+    assert r["verdict"] == "PASS" and not v["fail"] and not v["warn"]
+    assert len(v["kick"]) == 1 and v["kick"][0]["k"] == 1 and v["kick_skip"] == {"running=1": 2, "ab8=2": 1} and v["refuse_queued"] == 1
+    assert v["done"][0]["queued"] == 0 and v["done"][0]["timeout"] == 0
+    out = S.fmt(r)
+    assert "CS12: KICK=1 skipped=3 starved=0 REFUSE-queued=1 TIMEOUT-unqueued=0" in out and "queued=0" in out
+    assert out.splitlines()[-1].endswith("USE=1 DONE=1 TIMEOUT=0 VERDICT=PASS")
+
+
+def test_v060_starved_and_timeout_are_warn_not_fail():
+    L = v30(['USE member=2 item=0c000100 "Medical Supplies" heal=27 hp=12/40 src=auto', "KICK starved member=2",
+             "DONE member=2 hp+0 stack+0 queued=0", "TIMEOUT unqueued member=2"])
+    r = S.check(L)
+    v = r["v"]
+    assert r["verdict"] == "PASS" and not v["fail"]       # not FAIL, also not the legacy "never lands" check
+    assert v["kick_starved"] == 1 and v["timeout_unq"] == 1 and v["done"][0]["timeout"] == 1
+    out = S.fmt(r)
+    assert any(l.startswith("WARN") and "KICK starved member=2" in l for l in out.splitlines())
+    assert any(l.startswith("WARN") and "TIMEOUT unqueued member=2" in l for l in out.splitlines())
+    assert out.splitlines()[-1].endswith("USE=1 DONE=1 TIMEOUT=1 VERDICT=PASS")
+
+
+def test_v060_kick_that_did_not_reach_head_warns():
+    r = S.check(v30(["KICK member=1 before=[3d,3f] after=[3d,3f] k=0 route=rotate"]))
+    assert r["verdict"] == "PASS" and any("did not bring" in m for _, m in r["v"]["warn"])
+
+
+def test_v060_prefixed_lines_and_legacy_done_still_parse():
+    r = S.check(v30(["12000 companion-selfheal/call KICK member=1 before=[3d,3d,3f] after=[3f,3d,3d] k=2 route=rotate",
+                     "12001 companion-selfheal/call WARN KICK starved member=1", "DONE member=1 hp+0 stack+0 timeout=1"]))
+    assert r["v"]["kick"][0]["k"] == 2 and r["v"]["kick_starved"] == 1 and r["v"]["done"][0]["timeout"] == 1

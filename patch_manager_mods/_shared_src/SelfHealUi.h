@@ -296,6 +296,22 @@ inline bool pendingDone(const Pending& p, uint32_t now, int hp, int stack) {
     return hp > p.preHp || (stack >= 0 && stack < p.preStack) || (stack < 0 && p.preStack > 0) || pendingTimedOut(p, now);
 }
 
+// pendingDone2 (CS12): while the use is still in the creature's action queue (queued) the item is merely waiting, so the pending
+// state never times out; the 6 s timeout runs only over a continuous not-queued stretch. *unqueuedSince (0 = not running; the caller
+// keeps it with the Pending and zeroes it when arming) is the tick the not-queued stretch began; a requeue resets it.
+inline bool pendingDone2(const Pending& p, uint32_t now, int hp, int stack, bool queued, uint32_t* unqueuedSince) {
+    if (hp > p.preHp || (stack >= 0 && stack < p.preStack) || (stack < 0 && p.preStack > 0)) return true;
+    if (queued) { if (unqueuedSince) *unqueuedSince = 0; return false; }
+    if (!unqueuedSince) return pendingTimedOut(p, now);
+    if (*unqueuedSince == 0) *unqueuedSince = now ? now : 1u;   // 0 is the "not running" sentinel
+    return (uint32_t)(now - *unqueuedSince) >= kPendingTimeoutMs;
+}
+
+enum class UseRefusal { None, AlreadyQueued };
+inline const char* useRefusalText(UseRefusal r) { return r == UseRefusal::AlreadyQueued ? "already queued" : ""; }
+// A second heal use is refused while one is still queued (it would stack behind the stalled first).
+inline UseRefusal useAllowed(bool queued) { return queued ? UseRefusal::AlreadyQueued : UseRefusal::None; }
+
 // ---- look: colour / alpha / spinner ring per state (CS4) ----
 constexpr int kRingFrames = 8;
 constexpr float kRingR = 1.00f, kRingG = 0.80f, kRingB = 0.25f;   // gold tint for the busy ring

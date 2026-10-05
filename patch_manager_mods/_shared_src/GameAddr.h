@@ -71,6 +71,9 @@ constexpr uintptr_t AutoPausePanelVtable = 0x009A8FCC;   // auto-pause panel
 constexpr uintptr_t ServerIdMask = 0x0099449C;           // global: server id = client id & ~[mask]
 constexpr uintptr_t UseItemRouteA = 0x0057D8B0;          // thiscall(server creature; 0,0,selfServerId,0,itemServerId,0,0,0) RET 0x20: called only by companion-selfheal 0.2.0-probe with [probe] call=1
 constexpr uintptr_t CanUseItem = 0x005D2F80;             // thiscall(server creature; itemPtr,0,1) RET 0xC -> nonzero = usable; verified B12b
+constexpr uintptr_t ActListRemoveHead = 0x007F2A90;      // thiscall(ECX = cr+0x100 action list) RET 0 -> data ptr of the head, node freed (R8 rotate pop; string-anchored thunk)
+constexpr uintptr_t ActListAddTail = 0x0054AA30;         // thiscall(ECX = cr+0x100 action list; push data) RET 4: append at the tail (R8 rotate push; body-anchored thunk)
+constexpr uintptr_t RoundHasPending = 0x00590110;        // thiscall(ECX = [cr+0x10DC] round object) RET 0 -> nonzero if pending round nodes (GetActionPending, R8 Q4 rotate gate)
 constexpr uintptr_t ServerClearAllActions = 0x0051CB10;    // CServerExoApp::ClearAllActions thiscall(ECX = *(*AppGlobal + 8), serverObjectId) RET 4: empties cr+0x100 and the round list (what vanilla Cancel Combat reaches); verified B9, doc 30 R7
 constexpr uintptr_t RmbHoldFlag = 0x00A7FCBC;          // DAT_00A7FCBC: RMB-hold flag; the camera director (0x78C350) follows mouse deltas while it is nonzero
 constexpr uintptr_t RButtonDownHoldSite = 0x007B3817;    // PerformRButtonDownAction 0x7B3810: MOV [RmbHoldFlag],1 (10 bytes); companion-selfheal detours it (R6 swallow)

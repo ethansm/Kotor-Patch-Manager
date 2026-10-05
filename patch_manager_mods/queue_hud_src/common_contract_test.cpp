@@ -1,5 +1,5 @@
 // common_contract_test.cpp -- Patches/Common + _shared_src CONTRACT test for queue-hud (doc 20 section 4.1).
-// Pins the semantics QueueHud.cpp relies on in SafeRead.h, KpLog.h, Party.h, PortraitSlots.h, Gui2D.h, GuiKit.h, GuiTip.h, HudHost.h, EmbedTex.h and GameAddr.h.
+// Pins the semantics QueueHud.cpp relies on in SafeRead.h, ActQueue.h, KpLog.h, Party.h, PortraitSlots.h, Gui2D.h, GuiKit.h, GuiTip.h, HudHost.h, EmbedTex.h and GameAddr.h.
 // Every message starts with "queue-hud relies on:" so a failure names the consumer and the reason. Built against ../_shared_src and
 // the KPM checkout's Patches/Common (see test.toml). Host-only, deterministic; expected values are independent literals.
 #ifndef GUIKIT_HOST
@@ -9,6 +9,7 @@
 #define GUI2D_HOST 1
 #endif
 #include "SafeRead.h"
+#include "ActQueue.h"
 #include "KpLog.h"
 #include "Party.h"
 #include "PortraitSlots.h"
@@ -259,5 +260,24 @@ int main() {
       QCHECK("readAt(serverCreature, +4) resolves the server object id (the stack argument)", saferead::readAt(0x7162u, A(0x1300), 4, &id) && id == 0x7F001234u);
       QCHECK("an empty app cell fails the chain instead of calling the engine", !saferead::readAt(0x7163u, 0, AppToServerForTest, &server)); }
 
+    // ---- ActQueue.h: the reader QueueHud's gatherFor wraps (offsets, caps, site-id parameters, entry/round shapes)
+    QEQ("actq creature queue / round offsets", actq::CrQueue * 0x10000 + actq::CrRound, 0x100 * 0x10000 + 0x10DC);
+    QEQ("actq round list/cur/ab8/aa8 offsets", (actq::RdList << 16) ^ actq::RdCur ^ (actq::RdAB8 << 4) ^ actq::RdAA8, (0xB00 << 16) ^ 0xB18 ^ (0xAB8 << 4) ^ 0xAA8);
+    QEQ("actq entry cap (the slot builder's 16)", actq::kMaxEntries, 16);
+    QEQ("actq round cap (the slot builder's 4)", actq::kMaxRound, 4);
+    QEQ("actq round-node item id offset", actq::RnItem, 0x64);
+    {
+        // cr @0xE000 -> list @0xE200 -> node @0xE210 -> action @0xE220 {type 0x3F, p0 9}
+        const size_t cr = 0xE000;
+        put<uint32_t>(cr + actq::CrQueue, (uint32_t)A(0xE200)); put<uint32_t>(0xE200, (uint32_t)A(0xE210));
+        put<uint32_t>(0xE210 + actq::NodeData, (uint32_t)A(0xE220)); put<uint32_t>(0xE220 + actq::ActType, 0x3F); put<uint32_t>(0xE220 + actq::ActParam0, 9);
+        actq::Snapshot s;
+        const bool ok = actq::read(A(0xE000), &s, 0x7110, 0x7120);
+        QCHECK("actq::read(cr, snap, siteQueue, siteRound) returns true for a live creature pointer", ok);
+        QEQ("actq::read fills entry count/type/param0", s.ne * 1000 + s.e[0].type, 1 * 1000 + 0x3F);
+        QEQ("actq::read keeps param0 and the action data pointer", (int)s.e[0].param0 * 2 + (s.eData[0] == A(0xE220) ? 1 : 0), 19);
+        QCHECK("actq::read with creature 0 returns false", !actq::read(0, &s, 0x7110, 0x7120));
+        QCHECK("actq::hasType / headType read the snapshot", ([&] { actq::Snapshot t; t.e[0].type = 0x3F; t.ne = 1; return actq::hasType(t, 0x3F) && actq::headType(t) == 0x3F && actq::headType(actq::Snapshot()) == -1; })());
+    }
     return kt::Report("common_contract_test (queue_hud)");
 }

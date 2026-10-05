@@ -9,6 +9,9 @@ Usage: selfheal_log_check.py [LOG | --log LOG] [--from LINE] [--to LINE]
 Line formats come from patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp; KpLog.h prefixes each line with
 "<ms> companion-selfheal/<chan> [ERR |WARN ]" (prefix optional here so bare lines parse too).
 Checks (0.4.0-dev adds): BUILD n=N/D (FAIL if N<D without why=), ICON fallback and TEX giving up are WARN.
+0.6.0-dev (CS12): REFUSE already queued, KICK member=N before=[..] after=[..] k=K route=rotate, KICK skipped member=N (gate=v),
+KICK starved member=N, DONE ... queued=Q, TIMEOUT unqueued member=N. `KICK starved` and `TIMEOUT unqueued` are WARN (never FAIL): a timeout while
+queued cannot happen by design, so an unqueued timeout means the use never entered the queue or was dropped.
 Checks: P1 (>=1 `P1 hud built ... layoutOpen=1`, ctlCount 1..4096), P3 (every `P3 slot[i]=` has k=0|1|2),
 DUMP blocks (hp cur<=max, heal-row cand {64,65,66,84,127,128} has heal>0 and only those have heal>0, a pick line, routeA idOk=1 when a pick exists).
 """
@@ -37,6 +40,11 @@ DONE_RE = re.compile(r"^DONE member=(\S+) hp(\S+) stack(\S+) timeout=(\S+)\s*$")
 AUTO_RE = re.compile(r"^AUTO member=(\S+) hp=(\S+?)/(\S+) pick=\"(.*)\" keep=(\S+)\s*$")
 CFGSAVE_RE = re.compile(r"^CFG save tag=(\S*) auto=(\S+) hp=(\S+) keep=(\S+) ok=(\S+)\s*$")
 CFGRELOAD_RE = re.compile(r"^CFG reload n=(\S+)\s*$")
+DONE2_RE = re.compile(r"^DONE member=(\S+) hp(\S+) stack(\S+) queued=(\S+)\s*$")
+KICK_RE = re.compile(r"^KICK member=(\S+) before=\[(.*?)\] after=\[(.*?)\] k=(\S+) route=rotate\s*$")
+KICKSKIP_RE = re.compile(r"^KICK skipped member=(\S+) \((\w+)=(\S+?)\)\s*$")
+KICKSTARVED_RE = re.compile(r"^KICK starved member=(\S+)\s*$")
+TIMEOUT_RE = re.compile(r"^TIMEOUT unqueued member=(\S+)\s*$")
 CLICK_RE = re.compile(r"^CLICK member=(\S+) noitem\s*$")
 ROWS = {64, 65, 66, 84, 127, 128}
 FAMILY = {64: "organic medpac(10+1*TI)", 65: "organic medpac(20+2*TI)", 66: "organic medpac(30+3*TI)",
@@ -76,6 +84,29 @@ def v030_line(v, n, t):
     elif DONE_RE.match(t):
         g = DONE_RE.match(t).groups()
         v["done"].append({"line": n, "member": g[0], "hp": to_int(g[1]), "stack": to_int(g[2]), "timeout": to_int(g[3])})
+    elif DONE2_RE.match(t):
+        g = DONE2_RE.match(t).groups()
+        v["done"].append({"line": n, "member": g[0], "hp": to_int(g[1]), "stack": to_int(g[2]), "timeout": 0, "queued": to_int(g[3]), "new": True})
+    elif KICK_RE.match(t):
+        g = KICK_RE.match(t).groups()
+        v["kick"].append({"line": n, "member": g[0], "before": g[1], "after": g[2], "k": to_int(g[3])})
+        if to_int(g[3]) is None or to_int(g[3]) < 1 or not g[2].lower().startswith("3f"):
+            v["warn"].append((n, "KICK member=%s did not bring 0x3F to the head (before=[%s] after=[%s] k=%s)" % (g[0], g[1], g[2], g[3])))
+    elif KICKSKIP_RE.match(t):
+        g = KICKSKIP_RE.match(t).groups()
+        key = "%s=%s" % (g[1], g[2])
+        v["kick_skip"][key] = v["kick_skip"].get(key, 0) + 1
+    elif KICKSTARVED_RE.match(t):
+        v["kick_starved"] += 1
+        v["warn"].append((n, "KICK starved member=%s (queue stayed starved >5 s unpaused; kicking stopped for that pending)" % KICKSTARVED_RE.match(t).group(1)))
+    elif TIMEOUT_RE.match(t):
+        ms = TIMEOUT_RE.match(t).group(1)
+        v["timeout_unq"] += 1
+        for d in reversed(v["done"]):
+            if d["member"] == ms and d.get("new"):
+                d["timeout"] = 1
+                break
+        v["warn"].append((n, "TIMEOUT unqueued member=%s (pending ended with no progress and the use was not in the queue)" % ms))
     elif AUTO_RE.match(t):
         g = AUTO_RE.match(t).groups()
         v["auto"].append({"line": n, "member": g[0], "pick": g[3]})
@@ -90,6 +121,8 @@ def v030_line(v, n, t):
         v["click_noitem"] += 1
     elif REFUSE_RE.match(t):
         why = REFUSE_RE.match(t).group(1) or "(none)"
+        if why.startswith("already queued"):
+            v["refuse_queued"] += 1
         v["refuse"][why] = v["refuse"].get(why, 0) + 1
     else:
         return False
@@ -101,7 +134,8 @@ def check(lines, lo=1, hi=None):
     r = {"p1": "MISSING", "p1_fail": [], "p1_ok": 0, "p3": "PASS", "p3_fail": [], "p3_n": 0,
          "blocks": [], "dump_fail": [], "table": [],
          "v": {"build": [], "use": [], "done": [], "auto": [], "refuse": {}, "cfg_save": [], "cfg_reload": [], "click_noitem": 0,
-               "fail": [], "warn": [], "tex": {}, "seen": False}}
+               "fail": [], "warn": [], "tex": {}, "seen": False,
+               "kick": [], "kick_skip": {}, "kick_starved": 0, "timeout_unq": 0, "refuse_queued": 0}}
     v = r["v"]
     cur = None  # current DUMP block
     mem = None  # current member dict in the block
@@ -203,7 +237,7 @@ def check(lines, lo=1, hi=None):
         r["p1"] = "FAIL"
     if r["p3_fail"]:
         r["p3"] = "FAIL"
-    if v["use"] and v["done"] and all(d["timeout"] == 1 for d in v["done"]):
+    if v["use"] and v["done"] and all(d["timeout"] == 1 and not d.get("new") for d in v["done"]):
         v["fail"].append((v["use"][0]["line"], "route A never lands: %d USE, every DONE has timeout=1" % len(v["use"])))
     bad = (bool(v["fail"]) or r["p1"] == "FAIL" or r["p3"] == "FAIL" or bool(r["dump_fail"])
            or (r["p1"] == "MISSING" and (r["blocks"] or r["p3_n"])))
@@ -231,13 +265,18 @@ def fmt(r):
                 pend.setdefault(ev["member"], []).append(ev)
             else:
                 u = pend.get(ev["member"], [None]).pop(0) if pend.get(ev["member"]) else None
-                o.append("  m%s %s hp%+d stack%+d timeout=%s" % (ev["member"], ('"%s" src=%s' % (u["name"], u["src"])) if u else "(no USE)",
-                         ev["hp"] or 0, ev["stack"] or 0, ev["timeout"]))
+                o.append("  m%s %s hp%+d stack%+d timeout=%s%s" % (ev["member"], ('"%s" src=%s' % (u["name"], u["src"])) if u else "(no USE)",
+                         ev["hp"] or 0, ev["stack"] or 0, ev["timeout"], (" queued=%s" % ev["queued"]) if "queued" in ev else ""))
         for ms, us in pend.items():
             for u in us:
                 o.append("  m%s \"%s\" src=%s no DONE" % (ms, u["name"], u["src"]))
         if v["refuse"]:
             o.append("REFUSE: " + ", ".join("%s x%d" % kv for kv in sorted(v["refuse"].items())))
+        if v["kick"] or v["kick_skip"] or v["kick_starved"] or v["timeout_unq"] or v["refuse_queued"]:
+            o.append("CS12: KICK=%d skipped=%d starved=%d REFUSE-queued=%d TIMEOUT-unqueued=%d" % (
+                len(v["kick"]), sum(v["kick_skip"].values()), v["kick_starved"], v["refuse_queued"], v["timeout_unq"]))
+            if v["kick_skip"]:
+                o.append("KICK skipped: " + ", ".join("%s x%d" % kv for kv in sorted(v["kick_skip"].items())))
         o.append("AUTO=%d CLICK-noitem=%d CFG save=%d reload=%d" % (len(v["auto"]), v["click_noitem"], len(v["cfg_save"]), len(v["cfg_reload"])))
         if v["tex"]:
             o.append("TEX " + ", ".join("%s x%d" % kv for kv in sorted(v["tex"].items())))
