@@ -41,3 +41,6 @@ cxxflags = ["-DWINDOWHOOK_HOST", "-Werror"]
 
 [strfmt_test]
 cxxflags = ["-I../buff_duration_hud_src", "-I../shield_bar_src", "-Werror"]
+
+[member_function_thunk_test]
+cxxflags = ["-m32", "-D_GLIBCXX_DEBUG", "-DKT_MSVC_CRT_SHIM", "-include", "TestHarness.h", "-I../../research/companion_levelup/tools/parity/stub", "-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common", "$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common/GameAPI/GameAPIObject.cpp", "-Werror"]
