@@ -63,6 +63,14 @@ Dumps: `~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71/decomp/74/<addr
 | `0x72CB63` key capture | action-hotbar |
 `0x743540` is free (check_hook_spans PASS: 22 src / 209 spans, 33 installed / 247 spans).
 
+### G. TARGET_MENU_POST site (CH3a, full evidence in `31a_target_menu_post_re.md`)
+- **VERDICT: SUITABLE.** Detour `0x00743850`, `original_bytes = 55 8B EC 81 EC E4 00 00 00` (3 whole insns, 16-aligned, unowned). Its only caller is the single exit path of PopulateMenus (`0x743847`, after all `0x741660` calls and `0x742A00`).
+- Entry: `ecx` = menu, `[esp+4]` = leader, `[esp+8]` = target (may be null), `RET 8`.
+- `0x741660` writes only **bit 1** of `ctl+0x3E8` / `ctl+0x5B8` (set iff group count > 1). Both draw (`0x7414D0`) and hit test (`0x418D20`) check bit 1.
+- **Hide write at POST**, for i in 0..2: `*(u32*)(menu+0x43C+i*0x750) &= ~2; *(u32*)(menu+0x60C+i*0x750) &= ~2;`
+- UNVERIFIED: whether wheel events (500/0x1F5) are hit-test gated. Worst case, the wheel does not work while the pointer is over a hidden arrow. Check this in the play test.
+- Steam DB rows for `0x7445D0` / `0x751710` / `0x743850`: deferred to the steam-db session.
+
 ---
 
 ## 3. Shared code: what to reuse, what to add
@@ -101,7 +109,7 @@ Rules: one batch per row; each batch ends with `build_check.py --mod combat_hotb
 | CH3a | Static RE: find a post-`0x741660` point (becomes hud-host TARGET_MENU_POST phase) for arrow suppression. Candidates: entry of `0x743850` (called at end of PopulateMenus), or a mid-function site after the call at `0x74D19F` in 0x74CFE0 (must not overlap perf-lab span). Confirm arrow sub-control flags `+0x3E8/+0x5B8` and the hit-test path `0x7433B0` HitCheckMouse | CH2 | - | TODO | | CH3b |
 | CH3b | Suppression behind INI `hide_arrows=0/1` (default 0); wheel still works | CH3a | user play | TODO | | CH4 |
 | HL3 | hud-host takes `0x40F5A0` (StopLoadFromLayout, filtered on HUD vtable `0x0099DCC4`) → BUILD phase with `ReserveIds(n)`; companion-selfheal migrates its build to BUILD (same install, KPM rejects double hooks) | HL2 | selfheal session owner + user play | TODO | | CH4b |
-| CH4a | `CombatLogic.h` pure layout + hit + slot model + host tests (no engine) | CH2 | - | TODO | | CH4b |
+| CH4a | `CombatLogic.h` pure layout + hit + slot model + host tests (no engine) | CH2 | - | DONE | 30929bd | CH4b |
 | CH4b | Runtime buttons via GuiKit on the HUD panel (hud-host BUILD phase), icon = entry `+0x20`, greyed when `+0x30` bit0 clear, GuiTip names, click → CH2 invoke path; dock under target banner; ultrawide-safe (`aspectFix`) | CH4a, HL3 | user play | TODO | | CH5 |
 | CH5 | Auto-fill + INI profiles: highest tier per feat/power family, carried grenades by count; `FileWatch.h` hot-reload; INI codec in `CombatLogic.h` with tests | CH4b | user play | TODO | | ship |
 | CH6 | Ship: KpLog trim, mutation run on `CombatLogic.h`, doc 24 row, upstream PR candidate | CH5 | user approval | TODO | | - |
