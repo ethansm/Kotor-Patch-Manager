@@ -385,6 +385,8 @@ TESTS = [
     ("DR with limit", [(0x0c, [5, 1, 20])], "DR 5", ["Damage reduction 5 (up to 20)"]),
     ("regen", [(0x07, [2, 6000])], "Regen 2/6s", ["Regenerates 2 Vitality every 6 s"]),
     ("regen rounding", [(0x07, [1, 1500])], "Regen 1/2s", ["Regenerates 1 Vitality every 2 s"]),
+    ("regen INT_MAX period (no 32-bit overflow)", [(0x07, [1, 2147483647])], "Regen 1/2147484s",
+     ["Regenerates 1 Vitality every 2147484 s"]),
     ("regen zero period", [(0x07, [1, 0])], "Regen 1/0s", ["Regenerates 1 Vitality every 0 s"]),
     ("empty entry", [], "", []),
     ("ability bad index", [(0x24, [6, 2])], "", []),

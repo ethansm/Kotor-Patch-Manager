@@ -191,6 +191,25 @@ int main(int argc, char** argv) {
     for (size_t i = 0; i < live.size(); ++i) runSample(live[i], (int)i + 1);
     kt::Check("live samples: at least one DECODE line replayed", g_samples > 0);
 
+    // F29: A_REGEN period b = INT_MAX must not overflow (x.b + 500) -- 2147483647 ms -> 2147484 s
+    {
+        int v[2] = {1, 2147483647}; Atom a; bool has = atomOf(0x07, v, 2, &a);
+        kt::Check("F29 regen INT_MAX has an atom", has);
+        char sh[48], lg[LineLen]; sh[0] = lg[0] = 0;
+        if (has) fmtAtom(a, sh, sizeof sh, lg, sizeof lg);
+        kt::CheckEq("F29 regen INT_MAX short", sh, "Regen 1/2147484s");
+        kt::CheckEq("F29 regen INT_MAX long", lg, "Regenerates 1 Vitality every 2147484 s");
+    }
+    // F30: marqueeText with a negative offset behaves as offset 0 (no read before the buffer)
+    {
+        const char* txt = "Immune: Piercing, Slashing, Universal, Acid, Cold";
+        char o0[256], oN[256]; int m0 = -1, mN = -1;
+        marqueeText(ctx, txt, 120.0f, 0, o0, sizeof o0, &m0);
+        marqueeText(ctx, txt, 120.0f, -5, oN, sizeof oN, &mN);
+        kt::CheckEq("F30 marquee off=-5 text equals off=0", oN, o0);
+        kt::CheckEq("F30 marquee off=-5 maxOff equals off=0", mN, m0);
+    }
+
     std::printf("chareff_decode_test: %d cases (decode %d, wrap %d, px %d, fit %d, marq %d), %d live samples\n", total,
                 g_cases[0], g_cases[1], g_cases[2], g_cases[3], g_cases[4], g_samples);
     return kt::Report("chareff_decode_test");

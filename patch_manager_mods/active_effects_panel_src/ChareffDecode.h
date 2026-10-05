@@ -152,7 +152,7 @@ inline void fmtAtom(const Atom& x, char* sh, int shn, char* lg, int lgn) {
         snprintf(lg, lgn, "%s %+d%s%s", kSaveLong[w], x.a, vs ? " vs " : "", vs ? vs : ""); break; }
     case A_SKILL: snprintf(sh, shn, "%s %+d", kSkillShort[x.b], x.a); snprintf(lg, lgn, "%s %+d", kSkillLong[x.b], x.a); break;
     case A_THP: snprintf(sh, shn, "+%d VP", x.a); snprintf(lg, lgn, "+%d temporary Vitality", x.a); break;
-    case A_REGEN: { int sec = x.b > 0 ? (x.b + 500) / 1000 : 0;
+    case A_REGEN: { int sec = x.b > 0 ? (int)(((long long)x.b + 500) / 1000) : 0;
         snprintf(sh, shn, "Regen %d/%ds", x.a, sec); snprintf(lg, lgn, "Regenerates %d Vitality every %d s", x.a, sec); break; }
     case A_SPEED: snprintf(sh, shn, "Speed %+d%%", x.a); snprintf(lg, lgn, "Movement speed %+d%%%s", x.a, x.a > 50 ? " (engine cap +50%)" : ""); break;
     case A_IMM: { const char* nm = x.b >= 0 && x.b < 34 ? kImmunity[x.b] : "?";
@@ -227,6 +227,7 @@ inline void marqueeText(const TextCtx& c, const char* full, float maxPx, int off
     while (m < len && textPx(c, full + m, len - m, f) > maxPx) ++m;
     *maxOff = m;
     if (off > m) off = m;
+    if (off < 0) off = 0;
     while (off > 0 && off < len && full[off] == ' ') ++off;   // never start on a space
     fitText(c, full + off, maxPx, out, n, f);
 }
