@@ -36,7 +36,7 @@ workers, gates, commits explicit paths, then updates its row here (status, commi
 | T5b | contract tests inventory_sort_filter + perf_lab | T1 | - | DONE | (T5 commit) | 31 + 42 checks; SortLogic.h cov 93.8 |
 | T5c | contract tests load_hang_probe + mouse_probe | T1 | - | DONE | (T5 commit) | 54 + 62 checks (mouse_probe pins KpLog.h via KPM include) |
 | T5d | contract test level_up_override | T1 | OWNED level-up session (PHASE7 C2) | DONE | d89b511 | 43 checks: GuiTip + GuiKit (f33235f) + SafeRead |
-| T5e | contract tests char_effects + equip3d | C3, C4 | doc 23 / 14 | TODO | | |
+| T5e | contract tests char_effects + equip3d | C3, C4 | doc 23 / 14 | DONE | c042624,aa63ec8 | chareffects 32 + equip3d 27 checks; red-proven per block (gameaddr, saferead, WH early-out, WH passthrough); C3/C4 will extend |
 | T6 | Wine smoke portrait-slots + buff + shield (`smoke_portraitslots.cpp`, extra_dlls) | T2 | split | DONE | | `--wine -k portraitslots` x3 PASS (wire 25, late 15, inert 11, order 6 checks) |
 | T7 | Wine smoke K2DialogueLetterboxFix | M0 | - | DONE | | `--wine -k letterbox` x3 PASS 25/25 (ship 11 + probe 14 modes, ~1.1 s/mode, probe 2.3 s, ~30 s total) |
 | T8 | `pre_install_gate.sh` (doc 20 Phase 6) | T2 | - | DONE | | PASS perf-lab, FAIL broken tmp kpatch |
