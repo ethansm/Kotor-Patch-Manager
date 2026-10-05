@@ -299,7 +299,8 @@ Step 0 → T (if multilib) → K → C → H → D → merge into local-mods (Op
 | level-up-override | level-up | pending |
 | perf-lab, robustness-fixes | engine research / engine-bug | pending |
 | k2-dialogue-letterbox-fix (+ probe variant) | engine-bug owns behaviour; shared-logging does the KpLog migration (19h) | **migrated 1.0.2 LIVE 10-03 22:42 (7b3936bc, backup pre_lb102_1003_2242), NOT VALIDATED: 17-row manual checklist in doc 17 "Manual validation checklist (1.0.2)"**; 1.0.2-probe staged (local-setup 2823ff6/aea74cb, fork b4e1db6) |
-| companion-ai, ranged-ai | engine AI atlas | pending (parser `^` anchors: analyze_play_logs.py) |
+| companion-ai | engine AI atlas | pending (C5c-style; ai_trace.txt keeps its own format) |
+| ranged-ai | C5b (doc 24) | **migrated 0.4.0 (local-setup 1ec207f, fork 98d53f6), NOT installed**; fallback = `ranged_ai_log.txt` at INFO; core `ranged-ai_log.txt`; analyze_play_logs reads legacy, fallback and core |
 | k2-texture-memory-release, k2-activation-fix, k2-equip-icon-fix | C5a (doc 24) | **migrated 1.1.0 (local-setup ed52d2b, fork 34c0785), NOT installed**; fallback = old log names; core `<id>_log.txt` read by analyze_runs |
 | char-effects-panel, equip/inv3d, inventory-sort-filter, load-hang-probe | their sessions | pending |
 
