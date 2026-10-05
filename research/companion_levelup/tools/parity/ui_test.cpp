@@ -1037,8 +1037,18 @@ int main(int argc, char** argv) {
         CHECK(at<uint32_t>(ic, Label_Border + Border_Fill) == 0xDEAD, "hover fill written only on a change");
         curX = 0; curY = 0; tick(pI, atton, 0);
         CHECK(at<uint32_t>(ic, Label_Border + Border_Fill) == 0x5200, "leave -> luo_gear");
+        for (int k = 0; k < embtex::slotCount(); ++k) at<uint32_t>(reinterpret_cast<uintptr_t>(embtex::slots()[k].basic), embtex::Tex_Uploaded) = 1;   // the texture tick uploaded both
+        auto glReset = [](unsigned char* b) { b[embtex::Tex_Constructed] = 0; *reinterpret_cast<void**>(b + embtex::Tex_Pixels) = nullptr; };   // what an engine GL reset leaves
         tick(pI, atton, 0);
         CHECK(eCtor == 2 && eAdd == 2, "heal: healthy textures are not refilled (add %d)", eAdd);
+        // GL reset -> heal() refills on the next UI tick; a texture that never comes back is given up after exactly 20 refills
+        unsigned char* gb = embtex::slots()[0].basic;
+        clearLog(); glReset(gb); tick(pI, atton, 0);
+        CHECK(eAdd == 3 && logHas("tex luo_gear: refilled after a texture reset"), "heal refills after a reset (add %d):\n%s", eAdd, readLog().c_str());
+        at<uint32_t>(reinterpret_cast<uintptr_t>(gb), embtex::Tex_Uploaded) = 0;
+        clearLog();
+        for (int k = 0; k < 30; ++k) { glReset(gb); tick(pI, atton, 0); }
+        CHECK(eAdd == 2 + 20 && logCount("tex luo_gear: giving up after 20") == 1, "give-up after 20 refills in all (the first one above counts; adds %d)", eAdd - 2);
 
         // a second panel reuses the created textures (ensure is idempotent)
         uintptr_t pI2 = makePanel(); LuoUiPanelCtor((int)pI2); clearLog(); tick(pI2, atton, 0);

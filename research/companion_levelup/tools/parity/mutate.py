@@ -233,6 +233,14 @@ m("PF04", PT, r"if \(allDefault && !strcmp\(dst, \"all\"\)\) dst\[0\] = 0;", "",
 m("PF06", PT, r"c == '_' \|\| c == '/'\)\) \{ dst\[0\] = 0; return; \}", "c == '_' || c == '/' || c == ' ')) { dst[0] = 0; return; }", "setToken: blanks accepted in a token")
 m("PF07", PT, r"if \(n == 0 \|\| n >= static_cast<size_t>\(cap\)\) return;", "if (n == 0) return;", "setToken: over-long token not rejected")
 
+# ---- R10 batch 3c (EmbedTex.h heal/give-up, LevelUpUi.h square icon / framed window; killed by ui_test section 7 + embtex via the stub twin) -----
+E = "../_shared_src/EmbedTex.h"
+m("IC01", UI, r"lroundf\(kIconSide \* s\.sy\)", "lroundf(kIconSide * s.sx)", "icon side from sx instead of sy (stretched / wrong size on a wide screen)")
+m("IC02", UI, r"if \(x\) \*x = right - side;", "if (x) *x = guikit::unitX(s, static_cast<float>(kIconRight - kIconSide));", "icon right-edge pin dropped (left edge from the spec rect)")
+m("IC03", UI, r"if \(i == C_BG0 && \(c = guikit::createLabelFromTemplate\(panel, kTplWindow\)\) != 0\) r->win = true;", "if (i == C_BG0 && (c = guikit::createLabelFromTemplate(panel, kTplWindow)) == 0) r->win = true;", "window template fallback inverted")
+m("IC04", UI, r"    embtex::heal\(\);   // refill", "    // embtex::heal();   // refill", "embtex::heal() never called")
+m("IC05", E, r"if \(s\.heals >= MaxHeals\) continue;", "if (s.heals > MaxHeals) continue;", "EmbedTex: refill cap off by one (21 refills)")
+
 BY_ID = {x[0]: x for x in M}
 assert len(BY_ID) == len(M), "duplicate mutation id"
 
