@@ -47,8 +47,7 @@ ALLOWLIST_REL = "tests/static/raw_addresses.toml"
 GENERATED_INC = {
     "patch_manager_mods/_shared_src/EffectIconTable.inc": "scripts/gen_buff_hud_icon_table.py (spells.2da icon table)",
     "patch_manager_mods/_shared_src/DebuffIconTable.inc": "scripts/gen_debuff_icon_table.py (debuff icon table)",
-    "patch_manager_mods/active_effects_panel_src/EffectIconTable.inc": "scripts/gen_buff_hud_icon_table.py",
-    "patch_manager_mods/active_effects_panel_src/DebuffIconTable.inc": "scripts/gen_debuff_icon_table.py",
+    "patch_manager_mods/_shared_src/FontWidths.inc": "scripts/gen_effect_name_table.py (font width tables)",
     "patch_manager_mods/active_effects_panel_src/EffectNameTable.inc": "scripts/gen_effect_name_table.py (effect/spell name table)",
     "patch_manager_mods/shield_bar_src/ShieldTable.inc": "scripts/gen_shield_table.py (shield rows)",
     "patch_manager_mods/equipment_3d_character_src/EquipWeaponTable.inc": "scripts/gen_equip3d_weapon_table.py (baseitems.2da)",

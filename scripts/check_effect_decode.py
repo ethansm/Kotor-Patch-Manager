@@ -5,7 +5,7 @@ DECODE log lines (the live fixture patch_manager_mods/active_effects_panel_src/r
 runs; --samples adds another log).
 
 Source of truth: ~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/CharEffectsPanel/CharEffectsPanel.cpp
-Usage: check_effect_decode.py [--samples chareffects_log.txt] [--inc PATH_TO_EffectNameTable.inc]
+Usage: check_effect_decode.py [--samples chareffects_log.txt] [--inc PATH_TO_EffectNameTable.inc] [--fonts FontWidths.inc]
        check_effect_decode.py --emit-cases PATH [--inc PATH_TO_EffectNameTable.inc]
 
 --emit-cases PATH writes this script's hand-derived cases (TESTS, WRAP_TESTS, PX_WRAP_CASES, the wrap-buffer cases and
@@ -33,6 +33,9 @@ import argparse, os, re, struct, sys
 
 DEFAULT_INC = os.path.expanduser(
     "~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/CharEffectsPanel/EffectNameTable.inc")
+# Font width tables moved out of EffectNameTable.inc into the shared TextFit layer (doc 24 C4c).
+DEFAULT_FONTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "patch_manager_mods", "_shared_src",
+                             "FontWidths.inc")
 LIVE_FIXTURE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "patch_manager_mods",
                             "active_effects_panel_src", "research", "decode_samples_live.txt")
 # Fixture lines were logged by an older build; an intentional output change is listed here per (type, ints) as
@@ -627,10 +630,11 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--samples", help="chareffects_log.txt copy with DECODE: lines (in addition to the live fixture)")
     ap.add_argument("--inc", default=DEFAULT_INC)
+    ap.add_argument("--fonts", default=DEFAULT_FONTS, help="FontWidths.inc (kFontTexW / kFont10TexW)")
     ap.add_argument("--emit-cases", metavar="PATH", help="write the cases for the C++ host test (see header) and exit")
     args = ap.parse_args()
     FORCE_SHIELD = load_force_shield(args.inc)
-    ft = load_font_tables(args.inc)
+    ft = load_font_tables(os.path.normpath(args.fonts))
     FONT_TEX_W = {"F16": ft["kFontTexW"], "F10": ft["kFont10TexW"]}
     live = os.path.normpath(LIVE_FIXTURE)
     if args.emit_cases: return emit_cases(args.emit_cases, sample_stats(live))
