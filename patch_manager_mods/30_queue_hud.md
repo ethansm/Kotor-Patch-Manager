@@ -1,10 +1,12 @@
 # 30 — Queue HUD (`queue-hud` 0.1.0-dev): green out-of-combat action queue, leader
 
 ## RESUME HERE
-- State (2026-10-04): built, gated, NOT installed. Awaiting user GO for the live install.
+- State: **INSTALLED 2026-10-04 22:44** (user GO). Stage `$K/queuehud_stage_1004` (STAGE_INFO head=cd0eba3; DIRTY = sibling .bak/CharEffectsPanel only;
+  PROBLEMS 1 = known 4gb artifact), 34 ids applied, verify mismatches 0, live dll `75defebf`, config `56e83f2e` -> `bdadbf1e` (appended block only).
+  Backup `$G/backups/queuehud010_install_20261004_2244` (rollback: restore it). No INI = defaults. Awaiting the user play test (checklist below).
 - Repo commits: `e7fa879` (RE + logic/tests), `66b3702` (DLL), `e4fc966` (Wine smoke), this doc. KPM `ethansm/local-mods` `cd0eba3` (`Patches/QueueHud`).
 - Gate: `pre_install_gate.sh --mod queue_hud_src` GATE PASS (113/113 default tier), smokes `queuehud` 6/6.
-- Next: stage (`stage_and_verify_install.py stage <dir>`), back up, install with the live ids + `queue-hud` (game closed), then run the checklist below.
+- Next: user runs the checklist below, then "check queue-hud log" (KpLog file `$G/queue-hud_log.txt` or per KpLog naming).
 
 ## What it does
 When NOT in combat mode, draws a green copy of the vanilla queue panel (4 slots: slot 0 big, 1-3 small) at the vanilla `LBL_QUEUE0..3`
