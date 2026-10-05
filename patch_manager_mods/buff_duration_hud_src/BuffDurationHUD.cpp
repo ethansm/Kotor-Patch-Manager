@@ -97,13 +97,8 @@ void probeLog(const char* fmt, ...) {
 // that finds it unusable logs ONE line per session, from the hook call (KPatchInit must not do file I/O).
 bool g_tableNoted = false;
 bool featureOk(bool ok, const char* feature) {
-    if (ok) return true;
-    if (!g_tableNoted) {
-        g_tableNoted = true;
-        logf("k2addr: %s disabled (no address table for this exe, or a needed field is 0)", feature);
-        probeLog("K2ADDR %s disabled (no address table for this exe, or a needed field is 0)", feature);
-    }
-    return false;
+    if (!ok && !g_tableNoted) logf("k2addr: %s disabled (no address table for this exe, or a needed field is 0)", feature);
+    return k2addr::featureOk(ok, feature, probeLog, &g_tableNoted);   // shared: sets g_tableNoted, writes the K2ADDR probe line once
 }
 
 // ---- kill switch (polled every 30 frames, works mid-session): buffhud_off.txt -> skip the icon columns (engine arrows draw natively).

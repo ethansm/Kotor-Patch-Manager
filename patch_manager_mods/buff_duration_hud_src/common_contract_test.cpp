@@ -104,6 +104,8 @@ HG(ClipNoFillColor, 0x00A768A4); HG(BorderVtable, 0x009A994C);
 HG(Slot_Flags, 0x590); HG(Slot_ArrowBuff, 0xDDC); HG(Slot_ArrowDebuff, 0xDDD); HG(Slot_Overlay0, 0x1B8); HG(Slot_Overlay1, 0x300);
 HG(Slot_Overlay2, 0x448); HG(Label_Border, 0x60); HG(Border_Rot, 0x20); HG(Border_Alpha, 0x24); HG(Border_Tint, 0x28);
 HG(Creature_EffectArray, 0x148); HG(Creature_EffectCount, 0x14C); HG(Effect_SpellId, 0x1C); HG(ImageVt_Draw, 6);
+static int g_featureLogs = 0;
+static void fakeFeatureLog(const char*, ...) { ++g_featureLogs; }
 static void k2addr_contract() {
     // BuffDurationHUD.cpp:144 -- unset env / known sha / unknown exe. hooks toml target_versions literals (Steam, GOG).
     const char* steam = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF";
@@ -127,6 +129,11 @@ static void k2addr_contract() {
     HCHECK("a zero Slot_Overlay2 fails the arrow-counter gate (field 0 = unknown)", !bh::arrowFieldsOk(&z));
     z = kSteam; z.ImageVt_Draw = 0;
     HCHECK("a zero ImageVt_Draw fails the column gate", !bh::columnFieldsOk(&z));
+    // BuffDurationHUD.cpp:99-102 -- the mod's featureOk wraps k2addr::featureOk: ok -> true silently; !ok -> false, ONE log line per noted flag.
+    g_featureLogs = 0; bool noted = false;
+    HCHECK("k2addr::featureOk(true) is true with no log and noted untouched", k2addr::featureOk(true, "f", fakeFeatureLog, &noted) && g_featureLogs == 0 && !noted);
+    bool r1 = k2addr::featureOk(false, "f", fakeFeatureLog, &noted), r2 = k2addr::featureOk(false, "f", fakeFeatureLog, &noted);
+    HCHECK("k2addr::featureOk(false) twice: false both times, exactly one log line, noted set", !r1 && !r2 && g_featureLogs == 1 && noted);
     // BuffDurationHUD.cpp:144 -- get() returns whatever setForTest forced, and the field values the mod reads through it.
     k2addr::setForTest(&kSteam);
     const K2AddrTable* T = k2addr::get();
