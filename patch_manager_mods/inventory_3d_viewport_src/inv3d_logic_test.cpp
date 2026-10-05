@@ -30,6 +30,7 @@ static Cfg loadText(const std::string& text, IniStats* st = nullptr) {
     fwrite(text.data(), 1, text.size(), f); rewind(f);
     char line[256]; IniStats s;
     while (fgets(line, sizeof(line), f)) {
+        if (drainLongLine(line, sizeof(line), f)) { ++s.bad; continue; }   // F31: a >255-char line is rejected once
         trim(line);
         char* k = nullptr; char* v = nullptr;
         IniLine sp = splitIniLine(line, &k, &v);
@@ -288,12 +289,53 @@ static void testLoadText() {
     Cfg e = loadText("spin_deg_s = 12", &st); KT_CHECK(approx(e.spin, 12));
     // later keys override earlier ones
     Cfg f = loadText("spin_deg_s = 1\nspin_deg_s = 2\n"); KT_CHECK(approx(f.spin, 2));
-    // CHARACTERIZATION: the DLL reads with fgets(line[256]); a longer line is delivered in 255-char pieces and each tail
-    // piece is parsed as a line of its own. A 300-char rig value: the 255-char head ("rig = qqq...") is rejected (> 63
-    // chars) and the tail has no '=' and is rejected too, so the default rig survives and TWO lines count as rejected.
+    // F31: the DLL reads with fgets(line[256]) + drainLongLine; a longer line is rejected ONCE (its tail is not parsed as a
+    // line of its own). A 300-char rig value: the default rig survives and ONE line counts as rejected.
     std::string longRig = "rig = " + std::string(300, 'q') + "\n";
     Cfg g = loadText(longRig, &st);
-    KT_CHECK_EQ(st.ok, 0); KT_CHECK_EQ(st.bad, 2); KT_CHECK_EQ(g.rig, "inv3d_light");
+    KT_CHECK_EQ(st.ok, 0); KT_CHECK_EQ(st.bad, 1); KT_CHECK_EQ(g.rig, "inv3d_light");
+    // a valid line after the long one is still read intact
+    Cfg h = loadText(longRig + "spin_deg_s = 13\n", &st);
+    KT_CHECK_EQ(st.ok, 1); KT_CHECK_EQ(st.bad, 1); KT_CHECK(approx(h.spin, 13));
+}
+
+// ---- drainLongLine (F31) -----------------------------------------------------------------------------------------
+static void testDrainLongLine() {
+    {   // 600-char line then "key=1\n": exactly 2 logical lines, the second intact
+        FILE* f = tmpfile();
+        std::string text = std::string(600, 'x') + "\nkey=1\n";
+        fwrite(text.data(), 1, text.size(), f); rewind(f);
+        char line[256]; int n = 0; bool drained[4] = {false}; std::string second;
+        while (fgets(line, sizeof(line), f) && n < 4) {
+            drained[n] = drainLongLine(line, sizeof(line), f);
+            if (n == 1) second = line;
+            ++n;
+        }
+        fclose(f);
+        KT_CHECK_EQ(n, 2); KT_CHECK(drained[0]); KT_CHECK(!drained[1]); KT_CHECK(second == "key=1\n");
+    }
+    {   // short line: false, untouched, next line still readable
+        FILE* f = tmpfile(); fputs("ab=1\nnext=2\n", f); rewind(f);
+        char line[256];
+        KT_CHECK(fgets(line, sizeof(line), f) != nullptr);
+        KT_CHECK(!drainLongLine(line, sizeof(line), f)); KT_CHECK(std::string(line) == "ab=1\n");
+        KT_CHECK(fgets(line, sizeof(line), f) != nullptr); KT_CHECK(std::string(line) == "next=2\n");
+        fclose(f);
+    }
+    {   // boundary: exactly 255 chars + newline is not "longer than 255"; 256 chars is; 255 chars at EOF is not
+        char line[256];
+        FILE* f = tmpfile(); fputs((std::string(255, 'a') + "\nz=1\n").c_str(), f); rewind(f);
+        KT_CHECK(fgets(line, sizeof(line), f) != nullptr); KT_CHECK(!drainLongLine(line, sizeof(line), f));
+        KT_CHECK(fgets(line, sizeof(line), f) != nullptr); KT_CHECK(std::string(line) == "z=1\n"); fclose(f);
+        f = tmpfile(); fputs((std::string(256, 'a') + "\nz=1\n").c_str(), f); rewind(f);
+        KT_CHECK(fgets(line, sizeof(line), f) != nullptr); KT_CHECK(drainLongLine(line, sizeof(line), f));
+        KT_CHECK(fgets(line, sizeof(line), f) != nullptr); KT_CHECK(std::string(line) == "z=1\n"); fclose(f);
+        f = tmpfile(); fputs((std::string(255, 'a') + "\r\nz=1\r\n").c_str(), f); rewind(f);   // CRLF ini: 255 chars still fit
+        KT_CHECK(fgets(line, sizeof(line), f) != nullptr); KT_CHECK(!drainLongLine(line, sizeof(line), f));
+        KT_CHECK(fgets(line, sizeof(line), f) != nullptr); KT_CHECK(std::string(line) == "z=1\r\n"); fclose(f);
+        f = tmpfile(); fputs(std::string(255, 'a').c_str(), f); rewind(f);
+        KT_CHECK(fgets(line, sizeof(line), f) != nullptr); KT_CHECK(!drainLongLine(line, sizeof(line), f)); fclose(f);
+    }
 }
 
 // ---- fitLookup ---------------------------------------------------------------------------------------------------
@@ -326,9 +368,11 @@ static void testFitLookup() {
     KT_CHECK(fitLookup(-1, 1) == nullptr);
     KT_CHECK(fitLookup(0, -1) == nullptr);
     KT_CHECK(fitLookup(255, 255) == nullptr);
-    // CHARACTERIZATION: var is not range-checked, so var >= 256 spills into the row bits and aliases another entry.
-    // Harmless today (the caller passes a byte), but fitLookup(r, 256+v) == fitLookup(r+1, v).
-    KT_CHECK(fitLookup(0, 256 + 1) == fitLookup(1, 1) && fitLookup(1, 1) != nullptr);
+    // F32: out-of-byte row/var are rejected (var >= 256 used to spill into the row bits and alias fitLookup(r+1, v)).
+    KT_CHECK(fitLookup(0, 256 + 1) == nullptr);
+    KT_CHECK(fitLookup(1, 1) != nullptr);                  // the entry it used to alias still resolves directly
+    KT_CHECK(fitLookup(256, 1) == nullptr);                // row > 255
+    KT_CHECK(fitLookup(0, 256) == nullptr);
 }
 
 // ---- camBasis / computeFit ---------------------------------------------------------------------------------------
@@ -499,6 +543,7 @@ int main() {
     testOverrides();
     testClamp();
     testLoadText();
+    testDrainLongLine();
     testFitLookup();
     testCamBasis();
     testComputeFitDistance();

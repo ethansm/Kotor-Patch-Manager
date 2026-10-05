@@ -114,7 +114,9 @@ void loadIni() {
     if (!f) { logf("INI: inv3d.ini not found, using defaults (debug=%d)", g_debug); g_cfg = c; ++g_cfgGen; return; }
     char line[256]; int ln = 0, ok = 0, bad = 0;
     while (fgets(line, sizeof(line), f)) {
-        ++ln; inv3d::trim(line);
+        ++ln;
+        if (inv3d::drainLongLine(line, sizeof(line), f)) { logf("INI line %d rejected (longer than 255 chars)", ln); ++bad; continue; }
+        inv3d::trim(line);
         char* k = nullptr; char* v = nullptr;
         inv3d::IniLine sp = inv3d::splitIniLine(line, &k, &v);
         if (sp == inv3d::IniLineSkip) continue;

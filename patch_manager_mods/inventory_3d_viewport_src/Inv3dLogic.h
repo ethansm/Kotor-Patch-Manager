@@ -41,6 +41,17 @@ inline void cfgDefaults(Cfg* c) {
     for (int i = 0; i < 3; ++i) { c->camPos[i] = kRigCamPos[i]; c->camFwd[i] = kRigCamFwd[i]; c->camUp[i] = kRigCamUp[i]; }
     memset(c->itype, 0, sizeof(c->itype)); memset(c->row, 0, sizeof(c->row));
 }
+// F31: call right after fgets(line, n, f). If the physical line did not fit (buffer full, no '\n', more data follows),
+// consume the rest of it and return true so the caller rejects the line ONCE instead of parsing the tail as a new line.
+// A line of exactly n-1 chars (with its '\n' next, or at EOF) fits and returns false.
+inline bool drainLongLine(char* line, size_t n, FILE* f) {
+    if (n < 2 || strlen(line) != n - 1 || line[n - 2] == '\n') return false;
+    int c = getc(f);
+    if (c == '\r') { int d = getc(f); if (d == '\n' || d == EOF) return false; c = d; }   // CRLF after exactly n-1 chars fits
+    if (c == EOF || c == '\n') return false;
+    while (c != '\n' && c != EOF) c = getc(f);
+    return true;
+}
 inline void trim(char* s) {
     char* p = s; while (*p && isspace((unsigned char)*p)) ++p;
     memmove(s, p, strlen(p) + 1);
@@ -153,6 +164,7 @@ inline int clampCfg(Cfg& c) {
 
 // ---------------------------------------------------------------- fit table lookup (sorted by row, var)
 inline const FitEntry* fitLookup(int row, int var) {
+    if (row < 0 || row > 255 || var < 0 || var > 255) return nullptr;   // F32: key packs row<<8|var; out-of-byte var would alias another row
     int lo = 0, hi = kFitCount - 1; unsigned key = ((unsigned)row << 8) | (unsigned)var;
     while (lo <= hi) {
         int m = (lo + hi) / 2; unsigned k = ((unsigned)kFit[m].row << 8) | kFit[m].var;
