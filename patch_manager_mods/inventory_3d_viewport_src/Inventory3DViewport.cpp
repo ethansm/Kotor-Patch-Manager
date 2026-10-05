@@ -21,9 +21,8 @@
 #include "SafeRead.h"   // VirtualQuery probing: the Win32 bad-pointer probes fault-storm under Wine (DB lesson 234)
 #include "SceneView.h"  // CSWGui3DSceneView block, scene models, Gob vtable guard (doc 23)
 #include "Inv3dQuat.h"
+#include "Inv3dLogic.h"   // pure logic (INI parse/clamp, fit, cursor math): host-tested by inv3d_logic_test.cpp (doc 20 T1)
 #include "ItemModelTable.inc"
-#include "ItemFitTable.inc"
-#include "RigCamera.inc"
 
 #define INV3D_PRESENTATION 1   // 0 = v1 behaviour (no transform handling)
 #define INV3D_DRAG 1           // 0 = no mouse polling
@@ -99,47 +98,13 @@ template <typename T>
 bool readAt(int base, int off, T* out) { return saferead::readAt<T>(SiteInv3d, static_cast<uintptr_t>(static_cast<unsigned>(base)), off, out); }
 
 // ---- configuration: $GAME/inv3d.ini (missing/garbage = defaults; every key and rejected line logged) ----
-struct Ov { bool set; float v[5]; };  // rx,ry,rz,pitch[,zoom]
-struct Cfg {
-    int enabled = 1; char rig[64] = "inv3d_light"; int onlyWeaponsArmor = 0;
-    float spin = 70, dragDegPx = 0.5f, pitchClamp = 80, idleResume = 1.5f;
-    int fitScale = 0; float margin = 1.15f, distMin = 0.25f, distMax = 4.0f;
-    float fov = 22.726f; char fovAxis = 'v';
-    float camPos[3], camFwd[3], camUp[3];
-    float armorBox[6] = {0, 0, 0.95f, 0.6f, 0.4f, 1.9f}; int armorSpin = 1; int hitFlipY = 0;
-    float screenW = 3840, screenH = 1600; bool screenExplicit = false;
-    int bevels = 1; int wheelZoom = 1; float wheelStep = 0.9f, zoomDrag = 0.004f, rollDegPx = 0.5f, zoomMin = 0.3f, zoomMax = 3.0f;
-    float fillRef = 0.6f, fillExp = 0.35f, fillMin = 0.4f;  // small items fill less of the view: fill=clamp((diag/ref)^exp, min, 1)
-    Ov itype[256], row[256];
-};
+using inv3d::Ov; using inv3d::Cfg; using inv3d::FitEntry;
 Cfg g_cfg;
 unsigned g_cfgGen = 0;
 ULONGLONG g_iniStamp = 0; DWORD g_iniLastCheck = 0;
 
-void cfgDefaults(Cfg* c) {
-    *c = Cfg();
-    for (int i = 0; i < 3; ++i) { c->camPos[i] = kRigCamPos[i]; c->camFwd[i] = kRigCamFwd[i]; c->camUp[i] = kRigCamUp[i]; }
-    memset(c->itype, 0, sizeof(c->itype)); memset(c->row, 0, sizeof(c->row));
-}
-void trim(char* s) {
-    char* p = s; while (*p && isspace((unsigned char)*p)) ++p;
-    memmove(s, p, strlen(p) + 1);
-    for (int n = (int)strlen(s); n > 0 && isspace((unsigned char)s[n - 1]); --n) s[n - 1] = 0;
-}
-bool parseFloats(const char* v, float* out, int n) {
-    const char* p = v;
-    for (int i = 0; i < n; ++i) {
-        char* e; out[i] = strtof(p, &e);
-        if (e == p || !isfinite(out[i])) return false;
-        p = e; while (*p && isspace((unsigned char)*p)) ++p;
-        if (i < n - 1) { if (*p != ',') return false; ++p; }
-    }
-    while (*p && isspace((unsigned char)*p)) ++p;
-    return *p == 0;
-}
-
 void loadIni() {
-    Cfg c; cfgDefaults(&c);
+    Cfg c; inv3d::cfgDefaults(&c);
     g_debug = GetFileAttributesA("inv3d_debug.txt") != INVALID_FILE_ATTRIBUTES;
     WIN32_FILE_ATTRIBUTE_DATA fa;
     if (GetFileAttributesExA("inv3d.ini", GetFileExInfoStandard, &fa))
@@ -149,67 +114,22 @@ void loadIni() {
     if (!f) { logf("INI: inv3d.ini not found, using defaults (debug=%d)", g_debug); g_cfg = c; ++g_cfgGen; return; }
     char line[256]; int ln = 0, ok = 0, bad = 0;
     while (fgets(line, sizeof(line), f)) {
-        ++ln; trim(line);
-        if (!line[0] || line[0] == '#' || line[0] == ';') continue;
-        char* eq = strchr(line, '=');
-        if (!eq) { logf("INI line %d rejected (no '='): %s", ln, line); ++bad; continue; }
-        *eq = 0; char* k = line; char* v = eq + 1;
-        for (char* cm = v; *cm; ++cm) if (*cm == ';' || *cm == '#') { *cm = 0; break; }  // inline comment
-        trim(k); trim(v);
-        for (char* p = k; *p; ++p) *p = (char)tolower((unsigned char)*p);
-        float a[6]; bool good = true;
-        if (!strcmp(k, "enabled")) { good = parseFloats(v, a, 1); if (good) c.enabled = (int)a[0]; }
-        else if (!strcmp(k, "rig")) { if (v[0] && strlen(v) < sizeof(c.rig)) strcpy(c.rig, v); else good = false; }
-        else if (!strcmp(k, "only_weapons_armor")) { good = parseFloats(v, a, 1); if (good) c.onlyWeaponsArmor = (int)a[0]; }
-        else if (!strcmp(k, "spin_deg_s")) { good = parseFloats(v, a, 1); if (good) c.spin = a[0]; }
-        else if (!strcmp(k, "drag_deg_per_px")) { good = parseFloats(v, a, 1); if (good) c.dragDegPx = a[0]; }
-        else if (!strcmp(k, "pitch_clamp")) { good = parseFloats(v, a, 1); if (good) c.pitchClamp = a[0]; }
-        else if (!strcmp(k, "idle_resume_s")) { good = parseFloats(v, a, 1); if (good) c.idleResume = a[0]; }
-        else if (!strcmp(k, "fit_mode")) { if (!_stricmp(v, "distance")) c.fitScale = 0; else if (!_stricmp(v, "scale")) c.fitScale = 1; else good = false; }
-        else if (!strcmp(k, "fit_margin")) { good = parseFloats(v, a, 1); if (good) c.margin = a[0]; }
-        else if (!strcmp(k, "dist_min")) { good = parseFloats(v, a, 1); if (good) c.distMin = a[0]; }
-        else if (!strcmp(k, "dist_max")) { good = parseFloats(v, a, 1); if (good) c.distMax = a[0]; }
-        else if (!strcmp(k, "fov_deg")) { good = parseFloats(v, a, 1); if (good) c.fov = a[0]; }
-        else if (!strcmp(k, "fov_axis")) { if (!_stricmp(v, "v")) c.fovAxis = 'v'; else if (!_stricmp(v, "h")) c.fovAxis = 'h'; else good = false; }
-        else if (!strcmp(k, "cam_pos")) { good = parseFloats(v, a, 3); if (good) memcpy(c.camPos, a, 12); }
-        else if (!strcmp(k, "cam_fwd")) { good = parseFloats(v, a, 3); if (good) memcpy(c.camFwd, a, 12); }
-        else if (!strcmp(k, "cam_up")) { good = parseFloats(v, a, 3); if (good) memcpy(c.camUp, a, 12); }
-        else if (!strcmp(k, "armor_box")) { good = parseFloats(v, a, 6); if (good) memcpy(c.armorBox, a, 24); }
-        else if (!strcmp(k, "armor_spin")) { good = parseFloats(v, a, 1); if (good) c.armorSpin = (int)a[0]; }
-        else if (!strcmp(k, "hit_flip_y")) { good = parseFloats(v, a, 1); if (good) c.hitFlipY = (int)a[0]; }
-        else if (!strcmp(k, "bevels")) { good = parseFloats(v, a, 1); if (good) c.bevels = (int)a[0]; }
-        else if (!strcmp(k, "wheel_zoom")) { good = parseFloats(v, a, 1); if (good) c.wheelZoom = (int)a[0]; }
-        else if (!strcmp(k, "wheel_step")) { good = parseFloats(v, a, 1); if (good) c.wheelStep = a[0]; }
-        else if (!strcmp(k, "zoom_drag")) { good = parseFloats(v, a, 1); if (good) c.zoomDrag = a[0]; }
-        else if (!strcmp(k, "roll_deg_per_px")) { good = parseFloats(v, a, 1); if (good) c.rollDegPx = a[0]; }
-        else if (!strcmp(k, "zoom_min")) { good = parseFloats(v, a, 1); if (good) c.zoomMin = a[0]; }
-        else if (!strcmp(k, "zoom_max")) { good = parseFloats(v, a, 1); if (good) c.zoomMax = a[0]; }
-        else if (!strcmp(k, "fill_ref")) { good = parseFloats(v, a, 1); if (good) c.fillRef = a[0]; }
-        else if (!strcmp(k, "fill_exp")) { good = parseFloats(v, a, 1); if (good) c.fillExp = a[0]; }
-        else if (!strcmp(k, "fill_min")) { good = parseFloats(v, a, 1); if (good) c.fillMin = a[0]; }
-        else if (!strcmp(k, "screen_w")) { good = parseFloats(v, a, 1); if (good) { c.screenW = a[0]; c.screenExplicit = true; } }
-        else if (!strcmp(k, "screen_h")) { good = parseFloats(v, a, 1); if (good) { c.screenH = a[0]; c.screenExplicit = true; } }
-        else if (!strncmp(k, "itype.", 6) || !strncmp(k, "row.", 4)) {
-            bool isT = k[0] == 'i'; const char* num = k + (isT ? 6 : 4); char* e; long n = strtol(num, &e, 10);
-            good = *num && !*e && n >= 0 && n < 256 && (parseFloats(v, a, 5) || (a[4] = 1.0f, parseFloats(v, a, 4)));
-            if (good) { Ov& o = isT ? c.itype[n] : c.row[n]; o.set = true; memcpy(o.v, a, 20); }
-        } else { logf("INI line %d rejected (unknown key '%s')", ln, k); ++bad; continue; }
-        if (!good) { logf("INI line %d rejected (bad value for '%s': '%s')", ln, k, v); ++bad; }
+        ++ln; inv3d::trim(line);
+        char* k = nullptr; char* v = nullptr;
+        inv3d::IniLine sp = inv3d::splitIniLine(line, &k, &v);
+        if (sp == inv3d::IniLineSkip) continue;
+        if (sp == inv3d::IniLineNoEquals) { logf("INI line %d rejected (no '='): %s", ln, line); ++bad; continue; }
+        inv3d::IniResult r = inv3d::parseIniLine(c, k, v);
+        if (r == inv3d::IniUnknown) { logf("INI line %d rejected (unknown key '%s')", ln, k); ++bad; continue; }
+        if (r == inv3d::IniBad) { logf("INI line %d rejected (bad value for '%s': '%s')", ln, k, v); ++bad; }
         else { logf("INI %s = %s", k, v); ++ok; }
     }
     fclose(f);
-    if (c.margin < 1.0f || c.margin > 3) { logf("INI fit_margin out of range, reset 1.15"); c.margin = 1.15f; }
-    if (c.zoomMin < 0.05f) c.zoomMin = 0.05f;
-    if (c.zoomMax < c.zoomMin) c.zoomMax = c.zoomMin;
-    if (c.wheelStep < 0.5f || c.wheelStep > 0.99f) { logf("INI wheel_step out of range, reset 0.9"); c.wheelStep = 0.9f; }
-    if (c.fillRef < 0.05f) c.fillRef = 0.05f;
-    if (c.fillMin < 0.1f || c.fillMin > 1) c.fillMin = 0.4f;
-    if (c.pitchClamp < 0) c.pitchClamp = 0;
-    if (c.idleResume < 0) c.idleResume = 0;
-    if (c.screenW < 100 || c.screenH < 100) { logf("INI screen_w/h invalid, reset 3840x1600"); c.screenW = 3840; c.screenH = 1600; }
-    if (c.distMin < 0.05f) c.distMin = 0.05f;
-    if (c.distMax < c.distMin) c.distMax = c.distMin;
-    if (c.fov < 5 || c.fov > 120) { logf("INI fov_deg out of range, reset 22.726"); c.fov = 22.726f; }
+    int clamped = inv3d::clampCfg(c);
+    if (clamped & inv3d::ClampMargin) logf("INI fit_margin out of range, reset 1.15");
+    if (clamped & inv3d::ClampWheelStep) logf("INI wheel_step out of range, reset 0.9");
+    if (clamped & inv3d::ClampScreen) logf("INI screen_w/h invalid, reset 3840x1600");
+    if (clamped & inv3d::ClampFov) logf("INI fov_deg out of range, reset 22.726");
     g_cfg = c; ++g_cfgGen;
     logf("INI loaded: %d keys ok, %d rejected, debug=%d gen=%u enabled=%d rig=%s", ok, bad, g_debug, g_cfgGen, c.enabled, c.rig);
 }
@@ -224,16 +144,7 @@ void maybeReloadIni() {
     if (st != g_iniStamp || dbg != g_debug) { logf("INI changed on disk, reloading"); loadIni(); }
 }
 
-// ---- fit table lookup (sorted by row, var) ----
-const FitEntry* fitLookup(int row, int var) {
-    int lo = 0, hi = kFitCount - 1; unsigned key = ((unsigned)row << 8) | (unsigned)var;
-    while (lo <= hi) {
-        int m = (lo + hi) / 2; unsigned k = ((unsigned)kFit[m].row << 8) | kFit[m].var;
-        if (k == key) return &kFit[m];
-        if (k < key) lo = m + 1; else hi = m - 1;
-    }
-    return nullptr;
-}
+using inv3d::fitLookup;   // fit table lookup (sorted by row, var): Inv3dLogic.h
 
 struct Pres {
     bool valid; int row, var, cat; Q base; float c[3], e[3]; float defPitch;
@@ -285,41 +196,12 @@ bool gobGuard(void* gob, const char* why) {
 }
 
 // ---- presentation ----
-void camBasis(float* right) { vcross(g_cfg.camFwd, g_cfg.camUp, right); }
-
 void computeFit(Pres* p, float aspect) {
-    // bbox after qBase: AABB of the 8 rotated corners
-    float lo[3] = {1e30f, 1e30f, 1e30f}, hi[3] = {-1e30f, -1e30f, -1e30f};
-    for (int i = 0; i < 8; ++i) {
-        float v[3] = {(i & 1 ? .5f : -.5f) * p->e[0], (i & 2 ? .5f : -.5f) * p->e[1], (i & 4 ? .5f : -.5f) * p->e[2]}, r[3];
-        qrotate(p->base, v, r);
-        for (int k = 0; k < 3; ++k) { if (r[k] < lo[k]) lo[k] = r[k]; if (r[k] > hi[k]) hi[k] = r[k]; }
-    }
-    float ex = hi[0] - lo[0], ey = hi[1] - lo[1], ez = hi[2] - lo[2];
-    float hs, vs;
-    if (p->defPitch == 0) { hs = sqrtf(ex * ex + ey * ey); vs = ez; }
-    else { hs = vs = sqrtf(ex * ex + ey * ey + ez * ez); }
-    if (aspect < 0.1f) aspect = 1;
-    float t = tanf(g_cfg.fov * 3.14159265f / 360.0f);
-    float tanV = g_cfg.fovAxis == 'v' ? t : t / aspect;
-    float need = g_cfg.margin * fmaxf(vs / (2 * tanV), hs / (2 * tanV * aspect));
-    float diag = sqrtf(ex * ex + ey * ey + ez * ez);
-    p->fill = 1;
-    if (p->cat != 4) p->fill = fminf(1.0f, fmaxf(g_cfg.fillMin, powf(diag / g_cfg.fillRef, g_cfg.fillExp)));
-    need /= p->fill;
-    float d0 = -(g_cfg.camPos[0] * g_cfg.camFwd[0] + g_cfg.camPos[1] * g_cfg.camFwd[1] + g_cfg.camPos[2] * g_cfg.camFwd[2]);
-    p->s = 1;
-    if (g_cfg.fitScale) {
-        p->D = d0;
-        if (need > 1e-4f) p->s = d0 / need;
-        p->s = fminf(fmaxf(p->s, 0.01f), 100.0f);
-    } else {
-        p->D = need;
-        if (p->D < g_cfg.distMin) p->D = g_cfg.distMin;
-        if (p->D > g_cfg.distMax) { p->s = g_cfg.distMax / need; p->D = g_cfg.distMax; }
-    }
+    inv3d::FitResult fr;
+    inv3d::computeFit(g_cfg, p->base, p->e, p->defPitch, p->cat, aspect, &fr);
+    p->fill = fr.fill; p->D = fr.D; p->s = fr.s;
     logf("  fit: ext'=[%.3f %.3f %.3f] h=%.3f v=%.3f aspect=%.3f tanV=%.4f fill=%.2f need=%.3f -> D=%.3f s=%.3f (d0=%.3f mode=%s)",
-         ex, ey, ez, hs, vs, aspect, tanV, p->fill, need, p->D, p->s, d0, g_cfg.fitScale ? "scale" : "distance");
+         fr.ex, fr.ey, fr.ez, fr.hs, fr.vs, fr.aspect, fr.tanV, fr.fill, fr.need, fr.D, fr.s, fr.d0, g_cfg.fitScale ? "scale" : "distance");
 }
 
 void applyTransform(Slot* s, const char* why) {
@@ -331,7 +213,7 @@ void applyTransform(Slot* s, const char* why) {
     if (n < 2) { dlogf("apply(%s): model count %d < 2, skip", why, n); return; }
     void* gob = getModel(view, 1);
     if (!gobGuard(gob, why)) { p.valid = false; logf("apply(%s): guard failed, presentation off for this item", why); return; }
-    float right[3]; camBasis(right);
+    float right[3]; inv3d::camBasis(g_cfg, right);
     Q qy = qaxis(g_cfg.camUp, p.yaw), qp = qaxis(right, p.pitch);
     Q qr = qaxis(g_cfg.camFwd, p.roll);
     Q q = qnormalize(qmul(qr, qmul(qp, qmul(qy, p.base))));
@@ -434,8 +316,8 @@ LRESULT CALLBACK wheelProc(HWND h, UINT m, WPARAM w, LPARAM l) {
         POINT pt = {(short)LOWORD(l), (short)HIWORD(l)}; RECT r;
         bool inside = false;
         if (ScreenToClient(h, &pt) && GetClientRect(h, &r) && r.right > 0 && r.bottom > 0) {
-            syncScreen(); float x = pt.x * g_cfg.screenW / r.right, y = pt.y * g_cfg.screenH / r.bottom;
-            inside = x >= g_viewRect[0] && x < g_viewRect[0] + g_viewRect[2] && y >= g_viewRect[1] && y < g_viewRect[1] + g_viewRect[3];
+            syncScreen(); float x, y; inv3d::clientToEngine(pt.x, pt.y, r.right, r.bottom, g_cfg.screenW, g_cfg.screenH, &x, &y);
+            inside = inv3d::rectContains(x, y, g_viewRect[0], g_viewRect[1], g_viewRect[2], g_viewRect[3]);
         }
         if (g_wheelLogs < 20) { ++g_wheelLogs; logf("WHEEL: delta=%d cursor=(%ld,%ld) inside=%d", (int)(short)HIWORD(w), pt.x, pt.y, inside); }
         if (inside) { InterlockedExchangeAdd(&g_wheelAccum, (short)HIWORD(w)); return 0; }
@@ -463,7 +345,7 @@ bool cursorEngine(float* x, float* y) {
     HWND h = gameWindow(); if (!h) return false;
     POINT pt; if (!GetCursorPos(&pt) || !ScreenToClient(h, &pt)) return false;
     RECT r; if (!GetClientRect(h, &r) || r.right < 1 || r.bottom < 1) return false;
-    syncScreen(); *x = pt.x * g_cfg.screenW / r.right; *y = pt.y * g_cfg.screenH / r.bottom;
+    syncScreen(); inv3d::clientToEngine(pt.x, pt.y, r.right, r.bottom, g_cfg.screenW, g_cfg.screenH, x, y);
     return true;
 }
 #endif
@@ -479,9 +361,9 @@ void tickDrag(Slot* s, float dt) {
     bool shift = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
     float cx = 0, cy = 0; bool haveCur = cursorEngine(&cx, &cy);
     int ext[4] = {0}; for (int i = 0; i < 4; ++i) readAt<int>(reinterpret_cast<int>(s->block), 4 + 4 * i, &ext[i]);
-    float top = g_cfg.hitFlipY ? g_cfg.screenH - ext[1] - ext[3] : (float)ext[1];
+    float top = inv3d::flipTop(g_cfg.hitFlipY, g_cfg.screenH, ext[1], ext[3]);
     g_viewRect[0] = ext[0]; g_viewRect[1] = (LONG)top; g_viewRect[2] = ext[2]; g_viewRect[3] = ext[3];
-    bool inside = haveCur && cx >= ext[0] && cx < ext[0] + ext[2] && cy >= top && cy < top + ext[3];
+    bool inside = haveCur && inv3d::rectContainsTop(cx, cy, ext[0], top, ext[2], ext[3]);
     bool fg = gameWindow() && GetForegroundWindow() == g_hwnd;
     bool anyEdge = (l && !wasL) || (r && !wasR) || (mb && !wasM);
     if (anyEdge && presses < 30) { ++presses; logf("DRAG: press #%d L=%d R=%d M=%d shift=%d cursor=(%.0f,%.0f) rect=[%d,%d,%d,%d] top=%.0f flip=%d inside=%d fg=%d", presses, l, r, mb, shift, cx, cy, ext[0], ext[1], ext[2], ext[3], top, g_cfg.hitFlipY, inside, fg); }
