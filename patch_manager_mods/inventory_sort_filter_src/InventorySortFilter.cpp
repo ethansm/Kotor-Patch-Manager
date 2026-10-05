@@ -20,6 +20,7 @@
 
 #include "../_shared/SafeRead.h"
 #include "SortLogic.h"
+#include "GameAddr.h"
 
 namespace {
 
@@ -29,7 +30,7 @@ constexpr int FnGetGuiInGame = 0x0073F750;    // thiscall(holder) -> GuiInGame*
 constexpr int FilterModeOff = 0xFC1;          // byte on GuiInGame
 constexpr int FnCreateItemEntry = 0x008A75F0; // thiscall(panel; cobj, int* counter, list*, item, slot, equipped) RET 0x18
 constexpr int FnIsItemUsable = 0x0077B670;    // thiscall(cobj; item, slot, mask) RET 0xC -- "has an activatable property", NOT an equip test
-constexpr int FnGetBaseItem = 0x006D6E30;     // thiscall(item), no stack args -> baseitems row (slot mask at +4, gender req byte at +0xB4)
+constexpr int FnGetBaseItem = (int)gameaddr::GetBaseItem;   // thiscall(item), no stack args -> baseitems row (slot mask at +4, gender req byte at +0xB4)
 constexpr int FnCanEquipInSlot = 0x005BD6A0;  // thiscall(creature; item, u32* slotBit, 0, 0, 0) RET 0x14 -> AL; params 4/6 = 0 => no feedback
 constexpr int GenderReq1Val = 0x0099A8BC, GenderReq2Val = 0x0099A8B8;   // u16 constants 0x8ac330 compares stats+0xE0 with
 constexpr int FnSetCanUse = 0x008B1D00;       // thiscall(row; byte mode) RET 4
