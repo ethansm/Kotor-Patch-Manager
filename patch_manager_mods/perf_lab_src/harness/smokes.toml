@@ -195,6 +195,20 @@ modes = ["wire", "combat", "nocreature", "badhud", "badchain", "inert"]
 needs_display = false
 timeout_s = 60
 
+# save-events 0.1.0-dev (doc 22 4.1, doc 24 L3): the real library DLL driven through its five hook exports over a zeroed pad (AppGlobal /
+# Steam Cloud byte / cloud root planted). The kpatch is packaged into split_build/ (kept out of Patches/ like the portrait-slots set).
+# Common headers use the absolute KPM checkout path (see queuehud above).
+[[smoke]]
+name = "saveevents"
+src = "smoke_saveevents.cpp"
+kpatch = "../split_build/SaveEvents.kpatch"
+dll_name = "save-events.dll"
+cxxflags = ["-static", "-I../../_shared_src", "-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common"]
+runtime_dlls = false
+modes = ["wire", "dispatch", "inert"]
+needs_display = false
+timeout_s = 60
+
 # Letterbox (doc 24 T7): one harness for both DLL variants; probe-only modes print SKIP on the shipping DLL.
 # DLLs: live 1.0.2 md5 7b3936bc (stage_lb_102), probe 1.0.2-probe md5 969fe458. Pinned to the stage dirs, not Patches/: that copy
 # moves with in-tree rebuilds (it held 1.0.1 cf45a03a until 10-03). 1.0.0/1.0.1 fail every mode here (exit 3, missing dlbLog* exports).

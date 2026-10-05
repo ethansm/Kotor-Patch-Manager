@@ -97,6 +97,77 @@ typedef struct K2SaveEventsApi { uint32_t struct_size;
 - **Risk:** callbacks run on the engine thread inside save/load. Consumers must not block, so this goes in the doc text and is enforced by a
   test with a slow fake consumer.
 
+### 4.1a Hotbar migration to `k2.saveevents@1` (owner-gated)
+
+Status 2026-10-04: library `save-events` 0.1.0-dev is BUILT and smoked (L3), NOT installed, and the hotbar is NOT migrated. Everything below is
+the plan for the hotbar change; it needs an owner GO because it changes a live mod (hotbar 1.2.1 -> 1.3.0).
+
+**Spec deviations (read first).** `K2SaveEvent.folder` is the save folder qualified with its save root, `saves/000012 - Game11` or
+`cloudsaves/<steam id>/000012 - Game11`, relative to the game directory (the process cwd), not a drive-absolute path. It is exactly what the
+hotbar's `saveDirFor()` returns today, so the consumer needs no further join. `CurrentSaveFolder` returns the full folder length snprintf-style
+(`>= cap` = truncated; always NUL-terminated for `cap > 0`; `0` = none). An event whose folder cannot be parsed is not dispatched (logged).
+Sources: `save_events_src/` (`SeDispatch.h` registry, `SaveEventsProvider.cpp`, `kotor2-steam-aspyr.hooks.toml`), client `_shared_src/SaveEvents.h`.
+
+**Hooks the hotbar drops (5 of its 8; Steam hooks toml, byte-identical in `save_events_src`):**
+
+| Address | Hotbar export removed | Library export | Becomes |
+|---|---|---|---|
+| 0x00534527 | `HotbarOnSaved` | `SE_OnSaved` | `K2SE_SAVED` |
+| 0x0053C5AA | `HotbarOnAutosaved` | `SE_OnAutosaved` | `K2SE_AUTOSAVED` |
+| 0x0052FD1E | `HotbarOnLoadRequest` | `SE_OnLoadRequest` | `K2SE_LOAD_REQUEST` |
+| 0x008529E0 | `HotbarOnAutosaveSlotLoad` | `SE_OnAutosaveSlotLoad` | `K2SE_LOAD_REQUEST` (autosave folder) |
+| 0x008FACA0 | `HotbarOnNewGame` | `SE_OnNewGame` | `K2SE_NEW_GAME` |
+
+The hotbar keeps 3 hooks (key capture 0x72CB63, HUD tick 0x74B3F0, button build 0x748502; those are 4.2 / later). Also removed from the hotbar:
+`saveDirFor`'s folder parse + cloud alias, `SaveRequestHolder` / `SaveReq_Folder` / `CloudSavesFlag` / `CloudSavesDir`, `HotbarLogic.h`
+`normalizeSaveFolder` / `joinSaveDir` (and their tests, which now live in `se_registry_test.cpp`). Kept: the per-save INI copy logic
+(`snapshotToSave` / `restoreFromSave` / `replaceLiveProfiles`), now taking the already-qualified directory.
+
+**Consumer code shape (hotbar side):**
+
+```cpp
+#include "SaveEvents.h"
+static k2se::Client g_se;                                  // lazy require, like k2ps::Client
+
+static void KPATCH_CALL onSaveEvent(const K2SaveEvent* ev, void*) {   // engine thread, inside save/load: cheap, never block
+    startOnce(); saferead::beginScope();                   // what each HotbarOn* did first
+    if (!K2SE_EVENT_HAS(ev, cloud)) return;                // provider older than v1.0 table (cannot happen today; keeps the gate pattern)
+    switch (ev->kind) {
+        case K2SE_SAVED:        snapshotToDir(ev->folder, "save written");        break;
+        case K2SE_AUTOSAVED:    snapshotToDir(ev->folder, "module autosave written"); break;
+        case K2SE_LOAD_REQUEST: restoreFromDir(ev->folder, "save loading");       break;
+        case K2SE_NEW_GAME:     replaceLiveProfiles(nullptr, "new game", "-", "new game started"); break;
+    }
+}
+extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
+    KpLog_Init(api);
+    g_se.init(api, "action-hotbar"); g_se.onConnect = logSaveEventsConnect;
+    g_se.add(K2SE_SAVED | K2SE_AUTOSAVED | K2SE_LOAD_REQUEST | K2SE_NEW_GAME, onSaveEvent);
+    g_se.connect();
+}
+// and in the remaining hooks (HotbarHudTick): g_se.poll();   // retries if the provider's KPatchInit ran later
+```
+
+**Fallback with no provider.** `connect()` fails soft, `onConnect(false, ...)` logs one line ("k2.saveevents v1 not provided"), and the hotbar
+behaves as one global INI: no per-save snapshot on save, no restore on load, no reset on new game (live profiles stay whatever was last
+loaded). That is the 4.1 fallback and is strictly weaker than 1.2.1, so the hotbar manifest must declare the dependency
+(`requires = ["save-events"]`, `requires_interfaces = ["k2.saveevents@1"]`) and KPM auto-adds the library; the fallback only matters for a
+patcher without the registry. `g_se.currentSaveFolder()` is available for a consumer that starts after a load (none needed here).
+
+**Install order (hard rules).**
+1. `save-events` and the migrated hotbar go into ONE KPM install, library first in the patch_config order (provider `KPatchInit` runs in
+   config order; `poll()` covers the opposite order, but the require window closes after init, so the library must still be installed).
+2. NEVER install `save-events` next to Action Hotbar 1.2.1 (or any build that still owns the five addresses): identical hook addresses are
+   rejected by KPM. Until the migration, `save_events_src/manifest.toml` declares `conflicts = ["action-hotbar"]`: KPM refuses the pair, and
+   `check_hook_spans.py` reports the 5 overlaps (0x52FD1E / 0x534527 / 0x53C5AA / 0x8529E0 / 0x8FACA0) as INFO `declared-conflict` in the
+   source scope (still FAIL in the installed scope). The migration commit removes the hotbar's 5 hook blocks AND that `conflicts` entry
+   (the migrated hotbar `requires` the library, so a leftover conflict would block the install).
+3. Order of work: (a) library already built + gated; (b) hotbar 1.3.0 source change + tests (`hotbar_logic_test` loses the folder fixtures,
+   `common_contract_test` gains a `k2se` block per doc 20 4.1); (c) `pre_install_gate.sh --mod save_events_src --mod action_hotbar_src`;
+   (d) stage both with `stage_and_verify_install.py`, then a play session: a save / quicksave / autosave / load / new game cycle with the
+   `evt` channel (`kplog.ini` `[save-events]` level=info) showing one line per event with `consumers=1`.
+4. Rollback = reinstall the previous hotbar 1.2.1 package and uninstall `save-events` together (a 1.2.1 + library mix is the rejected case).
+
 ### 4.2 `k2.hotkeys@1` (library `hotkeys`)
 
 Source: 0x72CB63 key capture + the "gameplay HUD active" gate (panel-stack scan with `PanelWhitelist[]` vtables 0x99E5EC, 0x9A044C, 0x9A7BAC,
