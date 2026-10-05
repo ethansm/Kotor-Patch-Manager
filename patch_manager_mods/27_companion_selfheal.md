@@ -18,6 +18,11 @@
   - `P3 slot[i]=... k=0|1|2` for every portrait slot (never `k=none`) -> confirms slot->HUD formula.
   - Ctrl+Shift+H: per companion `cand` rows (row 64-66 organic / 84,127,128 droid, heal vs in-game skills, count = stack), the pick, route A args (server ids = client & ~mask), auto decision.
   - Pass = 2 companions x (organic, droid) match in-game numbers (section 6). Then the one-click live call.
+- 10-04 night: **CS4 + CS5 0.3.0-dev BUILT, NOT installed** (user: "keep implementing the feature, we can test everything built together later"). Repo 093816c (SelfHealUi popover/INI/pending, cov 100%) + d234649 + review de98925; KPM d27a188 + 10283dc + b56483b; checker f12f0f4; kpatch dll md5 `bd80fb2903ffe4867c693a34e0e7869f` (1 hook 0x0040F5A0, gate PASS build-only; dll 1.2 MB from static libstdc++).
+  - Built: "H" button per companion card (states: full HP dim, no item red, pending pulse, auto green, native tooltip); LMB = `useNow` (gate + debounce 2 s + +0xEC + CanUseItem + route A); RMB popover (Auto / Use below % / Keep) -> `.\companion_selfheal.ini` `[companions]` via atomicWrite + FileWatch reload; auto every 250 ms with minCount keep+1, only for shown cards; `DONE` on HP up / stack down / 6 s timeout. `[probe] label` removed; `[probe] call` + Ctrl+Shift+J/H kept.
+  - Review fix: INI path now `.\` (a bare name sends GetPrivateProfileIntA to the Windows dir; 0.1.0/0.2.0 read their `[General]`/`[probe]` keys from there).
+  - Live risks: click-through to world, route A behaviour, companion-ai ClearAllActions wiping the queued use.
+  - Batch test checklist (on user GO): 1) install 0.3.0-dev; 2) play ~10 min: each companion's button heals, full HP dimmed, right-click popover toggles persist across restart, auto fires below threshold and stops at keep, clicks on buttons do not move the party; 3) `python3 scripts/selfheal_log_check.py` (USE/DONE/TIMEOUT summary).
 - Build rows live in doc 24 (CS0-CS7, owner gate "selfheal").
 
 ## User decisions (10-04)
