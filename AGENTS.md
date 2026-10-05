@@ -15,13 +15,16 @@ When starting a new session or beginning mod work:
 - Always interact with the Ghidra Server autonomously via `python3 scripts/ghidra_server_api.py` or `scripts/export_server_knowledge.sh`, which consume credentials internally in memory and never expose them in command arguments, stdout, stderr, or transcript logs.
 
 ## Fast Local Development Tools
-- **Master Plan & Context Resume:** `python3 scripts/plan_manager.py resume | next | handoff` (instant phase recovery < 200 tokens; never scrape past session logs)
+- **Master Plan & Context Resume:** `python3 scripts/plan_manager.py resume | next | handoff` (instant phase recovery < 200 tokens; never scrape past session logs). Spec & Legend: `patch_manager_mods/MASTER_KEY.md`.
 - **Symbol & Struct Resolution:** `python3 scripts/query_ghidra.py symbol <name> | address <hex> | struct <class>` (instant lookup; never write inline sqlite scripts)
 - **Fast Code Search:** `rg "<pattern>" [dir]` (ripgrep v15.2.0 installed in PATH)
 - **Structural Repo Map:** `python3 scripts/generate_repo_map.py [dir]` (compact class/fn skeleton)
 - **Doc Semantic Search:** `python3 scripts/search_docs.py "<query>"` (local vector search via LM Studio / FTS5)
 - **Subagent Context Compactor:** `npx repomix [dir]` (packs directory into token-counted artifact for subagents)
 - **Offline Log Analyzers:** `python3 scripts/kotor2_logs.py status | check <log> [--new]` (routes every live log to its parser; `--new` = only lines since last check, no manual line offsets). Details: `kotor2-log-analysis` skill. NEVER `cat`/`tail`/`grep` raw `.txt` logs.
+- **Two-Stage Logging Lifecycle**:
+  - *Dev / Probe*: Instrument rich diagnostics (KpLog channels, struct dumps, first-draw coordinates). Never guess blind in live play.
+  - *Tightening / Release*: Before PR or final install, gate per-frame or high-volume logs behind `Verbose=0` in INI, enforce deduplication (log state changes, not per-frame redraws), drop probe detours, and verify clean logs (<50 lines on startup) via `kotor2_logs.py check`.
 
 ## Context Management & Plan Mode Handoffs
 - Before context clearing, trigger the `/plan-handoff` skill (runs `python3 scripts/plan_manager.py handoff`).
@@ -40,19 +43,11 @@ When starting a new session or beginning mod work:
   - Do NOT prepend redundant `cd $PWD` to shell commands.
   - Use native file edit tools (`Edit`/`Write`) instead of multi-line Python heredocs in Bash when modifying files.
 
-## Subagent Output Contract (5-Line Summary Schema)
-When spawning subagents via `Agent(...)`, always append this exact contract to the prompt:
-```markdown
-## Output Schema (Strict 5 lines max - NO conversational prose, NO diffs, NO compiler output):
-STATUS: <PASS | FAIL>
-CREATED: <comma-separated relative paths, or None>
-MODIFIED: <comma-separated relative paths, or None>
-TESTS: <e.g. 52/52 PASS, COV: 84%, mutation verified>
-NOTES: <one sentence on blockers/traps, or None>
-```
-Orchestrators verify via `git status --short` and `run_tests.py`, never by requesting diff dumps or reading raw subagent prose.
+## Subagent Contracts (supersede the ADHD style for subagents)
+Brief = `Contract: worker|recon` + `Write Scope: <globs>` + output of `python3 scripts/agent_contract.py print worker|recon`.
+Order: worker CREATED,MODIFIED,TESTS,NOTES,STATUS · recon OUTPUT,EVIDENCE,FINDING,OPEN,VERDICT. Verify: `agent_contract.py snapshot` before launch, `agent_contract.py check --scope <globs> -` after.
 
 ## AI Agent Output Style (`i-have-adhd`)
 - The `i-have-adhd` plugin is installed globally across Claude Code and Antigravity (`agy`).
 - Shape all responses for an ADHD reader: lead with actions/commands/snippets, number multi-step work, cap lists to 5 items, give concrete time estimates, and end with one concrete next action doable in under 2 minutes.
-- **Subagent Exemption**: When reporting back to an AI orchestrator or tool caller, the human ADHD rules are superseded by the 5-line schema above. Do NOT suggest next steps, do NOT paste code snippets, and do NOT number multi-step prose.
+- **Subagent Exemption**: When reporting back to an AI orchestrator or tool caller, the human ADHD rules are superseded by the worker/recon contract above. Do NOT suggest next steps, do NOT paste code snippets, and do NOT number multi-step prose.

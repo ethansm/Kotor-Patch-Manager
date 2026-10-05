@@ -288,7 +288,7 @@ def cmd_legend():
     print("  Doc 10 : Engine Research & Perf-Lab Optimization")
     print("\nFull Legend Guide: patch_manager_mods/MASTER_KEY.md\n")
 
-def cmd_next(plan: dict):
+def cmd_next(plan: dict, contract: str = ""):
     remaining = [p for p in plan["phases"] if not p["done"]]
     if not remaining:
         print("All phases in active plan are marked complete.")
@@ -296,6 +296,10 @@ def cmd_next(plan: dict):
     cur = remaining[0]
     print(f"## {cur['ident']}: {cur['name']}\n")
     print(cur['body'])
+    if contract:
+        sys.path.insert(0, str(REPO_ROOT / "scripts"))
+        from agent_contract import template
+        print("\n" + template(contract))
 
 def cmd_mark_done(plan: dict, target_str: str, commit_sha: str = "", notes: str = "", state: str = "DONE"):
     plan_path = plan["path"]
@@ -366,11 +370,16 @@ def cmd_mark_done(plan: dict, target_str: str, commit_sha: str = "", notes: str 
             fp.write(f"\n- [x] {target_str} (completed)\n")
         print(f"Appended completed item to {plan_path.name}: {target_str}")
 
-def cmd_handoff(plan: dict, git_info: dict, user_direction: str = ""):
-    HANDOFF_FILE.parent.mkdir(parents=True, exist_ok=True)
-    if HANDOFF_FILE.exists():
+def cmd_handoff(plan: dict, git_info: dict, user_direction: str = "", handoff_dir: Path | str | None = None):
+    target_dir = Path(handoff_dir).resolve() if handoff_dir else HANDOFF_FILE.parent
+    target_dir.mkdir(parents=True, exist_ok=True)
+    handoff_file = target_dir / "session_handoff.md"
+    prev_handoff_file = target_dir / "session_handoff.prev.md"
+    handoffs_dir = target_dir / "handoffs"
+
+    if handoff_file.exists():
         import shutil
-        shutil.copy2(HANDOFF_FILE, PREV_HANDOFF_FILE)
+        shutil.copy2(handoff_file, prev_handoff_file)
 
     remaining = [p for p in plan["phases"] if not p["done"]]
     current = remaining[0] if remaining else None
@@ -416,16 +425,19 @@ def cmd_handoff(plan: dict, git_info: dict, user_direction: str = ""):
     content.append("- **Targeted Reads Only**: Use `sed -n 'X,Yp'` or `rg` for specific lines if needed.")
     content.append("- **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume`.\n")
 
-    HANDOFF_FILE.write_text("\n".join(content), encoding="utf-8")
-    print(f"Handoff written to {HANDOFF_FILE.relative_to(REPO_ROOT)}")
-    print(f"Rotated previous handoff to {PREV_HANDOFF_FILE.relative_to(REPO_ROOT)}")
+    handoff_file.write_text("\n".join(content), encoding="utf-8")
+    rel_h = handoff_file.relative_to(REPO_ROOT) if handoff_file.is_relative_to(REPO_ROOT) else handoff_file
+    rel_prev = prev_handoff_file.relative_to(REPO_ROOT) if prev_handoff_file.is_relative_to(REPO_ROOT) else prev_handoff_file
+    print(f"Handoff written to {rel_h}")
+    print(f"Rotated previous handoff to {rel_prev}")
 
     # Plan-scoped handoff file (prevents multi-session clobbering in same worktree)
-    HANDOFFS_DIR.mkdir(parents=True, exist_ok=True)
+    handoffs_dir.mkdir(parents=True, exist_ok=True)
     plan_stem = plan["path"].stem
-    plan_handoff_file = HANDOFFS_DIR / f"{plan_stem}.handoff.md"
+    plan_handoff_file = handoffs_dir / f"{plan_stem}.handoff.md"
     plan_handoff_file.write_text("\n".join(content), encoding="utf-8")
-    print(f"Plan-scoped handoff written to {plan_handoff_file.relative_to(REPO_ROOT)}")
+    rel_plan_h = plan_handoff_file.relative_to(REPO_ROOT) if plan_handoff_file.is_relative_to(REPO_ROOT) else plan_handoff_file
+    print(f"Plan-scoped handoff written to {rel_plan_h}")
     print("Safe to run /clear or exit session.")
 
 def main():
@@ -444,6 +456,7 @@ def main():
 
     p_nxt = subparsers.add_parser("next", parents=[parent_parser], help="Output next phase details")
     p_nxt.add_argument("plan_path", nargs="?", default="", help="Optional explicit master plan path")
+    p_nxt.add_argument("--contract", choices=["worker", "recon"], default="", help="Append subagent contract block (scripts/agent_contract.py)")
     
     p_set = subparsers.add_parser("set", parents=[parent_parser], help="Set active plan")
     p_set.add_argument("plan_path", help="Path to master plan markdown file")
@@ -459,6 +472,7 @@ def main():
 
     p_hand = subparsers.add_parser("handoff", parents=[parent_parser], help="Prepare session handoff file")
     p_hand.add_argument("direction", nargs="?", default="", help="Optional user instructions for next phase")
+    p_hand.add_argument("--handoff-dir", default="", help="Optional directory to write handoff files (default .claude)")
 
     if len(sys.argv) == 1:
         sys.argv.append("resume")
@@ -491,7 +505,7 @@ def main():
     if args.cmd in ("resume", "status"):
         cmd_resume(plan, git_info, json_mode=getattr(args, "json", False))
     elif args.cmd == "next":
-        cmd_next(plan)
+        cmd_next(plan, contract=getattr(args, "contract", ""))
     elif args.cmd == "mark-done":
         cmd_mark_done(plan, args.phase, commit_sha=args.commit, notes=args.notes, state=args.state)
     elif args.cmd == "handoff":
@@ -503,7 +517,7 @@ def main():
                 user_dir = f"Execute §{rest} in {plan_from_dir.name}" if rest.isdigit() else f"Execute {rest} in {plan_from_dir.name}"
             else:
                 user_dir = f"Continue {plan_from_dir.name}"
-        cmd_handoff(plan, git_info, user_direction=user_dir)
+        cmd_handoff(plan, git_info, user_direction=user_dir, handoff_dir=getattr(args, "handoff_dir", "") or None)
 
 if __name__ == "__main__":
     main()

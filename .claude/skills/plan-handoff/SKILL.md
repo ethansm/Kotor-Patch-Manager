@@ -41,7 +41,8 @@ Switch to Claude Code's built-in plan mode by calling the `EnterPlanMode` tool (
 2. **Discrete Scopes**: Break implementation work into modular tasks for Sonnet subagents.
 3. **Explicit File Targets**: Provide exact file paths and symbols; prevent open-ended exploratory searches by workers.
 4. **Self-Verification Gates**: Every subagent task must define an explicit verification command (compiler, test, audit).
-5. **Output Contracts**: The plan itself, read by the user, follows the `i-have-adhd` rules (lead with actions, number steps, cap lists to 5, concrete time estimates). Subagent prompts instead end with the CLAUDE.md "Subagent Output Contract" 5-line schema; subagents never use the ADHD format.
+5. **Output Contracts**: The plan itself, read by the user, follows the `i-have-adhd` rules (lead with actions, number steps, cap lists to 5, concrete time estimates). Subagent prompts instead end with the output of `python3 scripts/agent_contract.py print worker` (edits) or `python3 scripts/agent_contract.py print recon` (read-only); subagents never use the ADHD format. The orchestrator runs `python3 scripts/agent_contract.py snapshot` before launch and `python3 scripts/agent_contract.py check --scope <globs> -` on the reply before `mark-done`.
+6. **Master Plan Alignment**: Session plans focus strictly on the immediate assigned batch/tasks. The Two-Stage Logging Lifecycle (verbose dev/probing -> tightening/hardening) is tracked across milestone phases in the **Master Plan**, not forced into every sub-session.
 
 ### Plan Structure Template:
 ```markdown
@@ -59,6 +60,8 @@ Switch to Claude Code's built-in plan mode by calling the `EnterPlanMode` tool (
 ## 1. Modular Task Units (for Sonnet Subagents)
 
 ### Task 1: [Component / Unit Name]
+- **Contract**: worker | recon
+- **Write Scope**: `path/glob/*` (validator rejects edits outside it)
 - **Target Files**: `path/to/file.ext`
 - **Objective**: [Specific behavioral change]
 - **Data / Offsets**: [Hex addresses, struct layouts, formulas]
