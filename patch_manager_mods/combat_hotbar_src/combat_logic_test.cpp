@@ -346,5 +346,100 @@ int main() {
     layoutBannerGroups(wide, boxes, c403, 0, maxRows, btnPx, pad, gap, cap, side, 1920, 1080, out, n, cont);
     KT_CHECK_EQ(n[0], 0); KT_CHECK_EQ(cont[0].w, 0); KT_CHECK_EQ(cont[2].h, 0);
   }
+  // ---- layoutBannerPills (content-sized pills, empty groups hidden)
+  {
+    const int per = 8, colsTotal = 6, btnPx = 40, pad = 4, gap = 8, cap = 10, side = 6;
+    Rect out[3 * per], cont[3]; int n[3];
+    const Rect banner = {760, 40, 400, 20}, boxes = {760, 64, 400, 56};
+    const int cx = banner.x + banner.w / 2;
+    auto run = [&](const int c[3], int colsT, int bPx, Rect bn, Rect bx) {
+      layoutBannerPills(bn, bx, c, per, colsT, bPx, pad, gap, cap, side, 1920, 1080, out, n, cont);
+    };
+    // [4,0,3]: middle hidden, cols 3, group 0 has 2 rows
+    const int c403[3] = {4, 0, 3};
+    run(c403, colsTotal, btnPx, banner, boxes);
+    KT_CHECK_EQ(n[0], 4); KT_CHECK_EQ(n[1], 0); KT_CHECK_EQ(n[2], 3);
+    KT_CHECK(cont[1].x == 0 && cont[1].y == 0 && cont[1].w == 0 && cont[1].h == 0);
+    KT_CHECK(out[per].w == 0 && out[per].x == 0 && out[per + 1].h == 0);
+    KT_CHECK(out[3].y > out[0].y); KT_CHECK_EQ(out[3].y, out[0].y + btnPx + pad);
+    KT_CHECK_EQ(out[2].y, out[0].y);                                       // 3 columns per row
+    KT_CHECK_EQ(cont[0].w, 2 * side + 3 * btnPx + 2 * pad);                // usedCols 3
+    KT_CHECK_EQ(cont[0].w, cont[2].w); KT_CHECK_EQ(cont[0].h, cont[2].h);
+    KT_CHECK_EQ(cont[0].h, 2 * cap + 2 * btnPx + pad);
+    KT_CHECK_EQ(cont[0].y, boxes.y); KT_CHECK_EQ(cont[2].y, boxes.y);
+    KT_CHECK(abs((cont[0].x + cont[2].x + cont[2].w) / 2 - cx) <= 1);
+    KT_CHECK_EQ(cont[0].x + cont[0].w + gap, cont[2].x);
+    // every button inside its pill with >= side / cap margin
+    bool inPill = true;
+    for (int g = 0; g < 3; ++g) for (int i = 0; i < n[g]; ++i) {
+      const Rect& r = out[g * per + i];
+      inPill = inPill && r.x - cont[g].x >= side && (cont[g].x + cont[g].w) - (r.x + r.w) >= side
+                      && r.y - cont[g].y >= cap && (cont[g].y + cont[g].h) - (r.y + r.h) >= cap;
+    }
+    KT_CHECK(inPill);
+    // [1,1,0]: two single-button pills
+    const int c110[3] = {1, 1, 0};
+    run(c110, colsTotal, btnPx, banner, boxes);
+    KT_CHECK(cont[0].w > 0 && cont[1].w > 0); KT_CHECK(cont[2].w == 0 && cont[2].h == 0);
+    KT_CHECK_EQ(cont[0].w, 2 * side + btnPx); KT_CHECK_EQ(cont[0].h, 2 * cap + btnPx);
+    KT_CHECK_EQ(cont[1].w, cont[0].w);
+    KT_CHECK(abs((cont[0].x + cont[1].x + cont[1].w) / 2 - cx) <= 1);
+    // [2,2,2]: three pills, 2 columns each
+    const int c222[3] = {2, 2, 2};
+    run(c222, colsTotal, btnPx, banner, boxes);
+    for (int g = 0; g < 3; ++g) KT_CHECK_EQ(cont[g].w, 2 * side + 2 * btnPx + pad);
+    KT_CHECK(abs((cont[0].x + cont[2].x + cont[2].w) / 2 - cx) <= 1);
+    KT_CHECK_EQ(cont[0].x + cont[0].w + gap, cont[1].x); KT_CHECK_EQ(cont[1].x + cont[1].w + gap, cont[2].x);
+    // [5,0,0]: one pill, one row of 5
+    const int c500[3] = {5, 0, 0};
+    run(c500, colsTotal, btnPx, banner, boxes);
+    KT_CHECK(cont[1].w == 0 && cont[2].w == 0);
+    for (int i = 1; i < 5; ++i) KT_CHECK_EQ(out[i].y, out[0].y);
+    KT_CHECK_EQ(cont[0].w, 2 * side + 5 * btnPx + 4 * pad);
+    KT_CHECK_EQ(cont[0].h, 2 * cap + btnPx);
+    KT_CHECK(abs(cont[0].x + cont[0].w / 2 - cx) <= 1);
+    // [0,0,0]: everything zero
+    const int c000[3] = {0, 0, 0};
+    run(c000, colsTotal, btnPx, banner, boxes);
+    bool zero = true;
+    for (int g = 0; g < 3; ++g) zero = zero && n[g] == 0 && cont[g].x == 0 && cont[g].y == 0 && cont[g].w == 0 && cont[g].h == 0;
+    for (int i = 0; i < 3 * per; ++i) zero = zero && out[i].x == 0 && out[i].y == 0 && out[i].w == 0 && out[i].h == 0;
+    KT_CHECK(zero);
+    // [8,0,0]: cols 6, 2 rows (6 + 2)
+    const int c800[3] = {8, 0, 0};
+    run(c800, colsTotal, btnPx, banner, boxes);
+    KT_CHECK_EQ(n[0], 8);
+    KT_CHECK_EQ(out[5].y, out[0].y); KT_CHECK(out[6].y > out[0].y);
+    KT_CHECK_EQ(cont[0].w, 2 * side + 6 * btnPx + 5 * pad);
+    KT_CHECK_EQ(cont[0].h, 2 * cap + 2 * btnPx + pad);
+    // right-edge clamp: shifted left together, sizes unchanged
+    run(c403, colsTotal, btnPx, banner, boxes);
+    const Rect c0 = cont[0], c2 = cont[2], b0 = out[0], b3 = out[3];
+    run(c403, colsTotal, btnPx, {1800, 40, 400, 20}, {1800, 64, 400, 56});
+    KT_CHECK_EQ(cont[2].x + cont[2].w, 1920);
+    KT_CHECK(cont[0].x + cont[0].w <= 1920 && cont[2].x + cont[2].w <= 1920);
+    KT_CHECK_EQ(cont[0].w, c0.w); KT_CHECK_EQ(cont[0].h, c0.h); KT_CHECK_EQ(cont[2].w, c2.w);
+    KT_CHECK_EQ(cont[2].x - cont[0].x, c2.x - c0.x);
+    KT_CHECK_EQ(out[0].x - cont[0].x, b0.x - c0.x); KT_CHECK_EQ(out[3].y - out[0].y, b3.y - b0.y);
+    KT_CHECK_EQ(cont[0].y, c0.y);
+    // left-edge clamp
+    run(c403, colsTotal, btnPx, {-100, 40, 400, 20}, {-100, 64, 400, 56});
+    KT_CHECK_EQ(cont[0].x, 0); KT_CHECK_EQ(cont[0].w, c0.w);
+    // narrow banner: buttons shrink to fit, all the same size ([3,0,0] -> cols 6 clamp 8, fit (120-12-20)/6 = 14)
+    const int c300[3] = {3, 0, 0};
+    run(c300, colsTotal, btnPx, {800, 40, 120, 20}, {800, 64, 56, 56});
+    KT_CHECK(out[0].w < btnPx); KT_CHECK_EQ(out[0].w, 14); KT_CHECK_EQ(out[0].h, 14);
+    KT_CHECK_EQ(out[1].w, out[0].w); KT_CHECK_EQ(out[2].w, out[0].w);
+    KT_CHECK(cont[0].w <= 120);
+    // colsTotal 1: one column, rows stack
+    run(c300, 1, btnPx, banner, boxes);
+    KT_CHECK_EQ(out[1].x, out[0].x); KT_CHECK_EQ(out[2].x, out[0].x);
+    KT_CHECK_EQ(out[1].y, out[0].y + btnPx + pad); KT_CHECK_EQ(out[2].y, out[0].y + 2 * (btnPx + pad));
+    KT_CHECK_EQ(cont[0].h, 2 * cap + 3 * btnPx + 2 * pad);
+    KT_CHECK_EQ(cont[0].w, 2 * side + btnPx);
+    // degenerate: per < 1 or null count zero outputs without touching memory
+    layoutBannerPills(banner, boxes, c403, 0, colsTotal, btnPx, pad, gap, cap, side, 1920, 1080, out, n, cont);
+    KT_CHECK_EQ(n[0], 0); KT_CHECK_EQ(cont[0].w, 0); KT_CHECK_EQ(cont[2].h, 0);
+  }
   return kt::Report("combat_logic_test");
 }

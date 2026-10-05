@@ -245,6 +245,78 @@ inline void layoutBannerGroups(Rect banner, Rect boxesUnion, const int count[3],
     }
 }
 
+// Content-sized pills (one per non-empty group, empty groups hidden): outN[g] = min(max(count,0), per); nVis = groups with outN > 0; none -> everything zeroed.
+// cols = clamp(colsTotal/nVis, 1, per); span = max(boxesUnion.w, banner.w); share = (span - (nVis-1)*gapPx)/nVis; fit = (share - 2*sidePx - (cols-1)*padPx)/cols, min 1; btn = (btnPx <= 0 || btnPx > fit) ? fit : btnPx, min 1.
+// usedCols = min(cols, max visible outN); rows = max over visible groups of ceil(outN/cols); every visible pill has pillW = 2*sidePx + usedCols*btn + (usedCols-1)*padPx, pillH = 2*capPx + rows*btn + (rows-1)*padPx.
+// The pills (gapPx apart, in group order) are centred on the banner centre at y = boxesUnion.y; cont[g] of a hidden group is zero. Buttons fill row-major at out[g*per + k], each row centred in its pill, row r at y = cont.y + capPx + r*(btn+padPx).
+// The pills' bounding box is shifted, never resized, back inside [0,screenW) x [0,screenH) (right/bottom edge first, then left/top wins); visible containers and their buttons move together.
+inline void layoutBannerPills(Rect banner, Rect boxesUnion, const int count[3], int per, int colsTotal, int btnPx, int padPx, int gapPx, int capPx, int sidePx, int screenW, int screenH, Rect* out, int outN[3], Rect cont[3]) {
+    if (!out || !outN || !cont) return;
+    if (!count || per < 1) {
+        if (per >= 1) memset(out, 0, sizeof(Rect) * 3 * per);
+        for (int g = 0; g < 3; ++g) { outN[g] = 0; cont[g].x = cont[g].y = cont[g].w = cont[g].h = 0; }
+        return;
+    }
+    memset(out, 0, sizeof(Rect) * 3 * per);
+    int nVis = 0, maxN = 0;
+    for (int g = 0; g < 3; ++g) {
+        int n = count[g] < 0 ? 0 : count[g];
+        if (n > per) n = per;
+        outN[g] = n;
+        cont[g].x = cont[g].y = cont[g].w = cont[g].h = 0;
+        if (n > 0) { ++nVis; if (n > maxN) maxN = n; }
+    }
+    if (nVis == 0) return;
+    int cols = colsTotal / nVis;
+    if (cols < 1) cols = 1;
+    if (cols > per) cols = per;
+    const int span = boxesUnion.w > banner.w ? boxesUnion.w : banner.w;
+    const int share = (span - (nVis - 1) * gapPx) / nVis;
+    int fit = (share - 2 * sidePx - (cols - 1) * padPx) / cols;
+    if (fit < 1) fit = 1;
+    int btn = (btnPx <= 0 || btnPx > fit) ? fit : btnPx;
+    if (btn < 1) btn = 1;
+    const int usedCols = cols < maxN ? cols : maxN;
+    int rows = 1;
+    for (int g = 0; g < 3; ++g) {
+        const int r = (outN[g] + cols - 1) / cols;
+        if (outN[g] > 0 && r > rows) rows = r;
+    }
+    const int pillW = 2 * sidePx + usedCols * btn + (usedCols - 1) * padPx;
+    const int pillH = 2 * capPx + rows * btn + (rows - 1) * padPx;
+    const int total = nVis * pillW + (nVis - 1) * gapPx;
+    const int startX = banner.x + banner.w / 2 - total / 2;
+    int vi = 0;
+    for (int g = 0; g < 3; ++g) {
+        const int n = outN[g];
+        if (n <= 0) continue;
+        cont[g].x = startX + vi * (pillW + gapPx); cont[g].y = boxesUnion.y; cont[g].w = pillW; cont[g].h = pillH;
+        ++vi;
+        for (int k = 0; k < n; ++k) {
+            const int row = k / cols;
+            int inRow = n - row * cols;
+            if (inRow > cols) inRow = cols;
+            const int rowW = inRow * btn + (inRow - 1) * padPx;
+            Rect& r = out[g * per + k];
+            r.x = cont[g].x + (pillW - rowW) / 2 + (k % cols) * (btn + padPx);
+            r.y = cont[g].y + capPx + row * (btn + padPx);
+            r.w = btn; r.h = btn;
+        }
+    }
+    const int x0 = startX, x1 = startX + total, y0 = boxesUnion.y, y1 = boxesUnion.y + pillH;
+    int dx = 0, dy = 0;
+    if (x1 > screenW) dx = screenW - x1;
+    if (x0 + dx < 0) dx = -x0;
+    if (y1 > screenH) dy = screenH - y1;
+    if (y0 + dy < 0) dy = -y0;
+    if (dx == 0 && dy == 0) return;
+    for (int g = 0; g < 3; ++g) {
+        if (outN[g] <= 0) continue;
+        cont[g].x += dx; cont[g].y += dy;
+        for (int k = 0; k < outN[g]; ++k) { out[g * per + k].x += dx; out[g * per + k].y += dy; }
+    }
+}
+
 // Hover freeze (CH4c): while the cursor stays inside the grid, the menu origin (menu+0x1648/+0x164C) captured on entry is held, so the banner and
 // the buttons under the cursor stop following the target. curX/curY = this frame's engine origin, not the cursor.
 struct FreezeState { bool active; int x, y; };
