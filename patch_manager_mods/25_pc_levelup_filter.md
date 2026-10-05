@@ -184,3 +184,4 @@ Gates: check_hook_bytes FAIL=0 (32 hooks unchanged -> DLL hot-swap install), che
 **Live test (user present, game closed, GO; tell the other sessions first):** hot-swap `$G/patches/level-up-override.dll` (back up to
 `$G/backups/luo_3c_<HHMM>`, md5 check). (1) Gear square in the 3D-view corner, gold on hover. (2) Options/filter page = one framed opaque window,
 no stats show through. (3) Log: `tex luo_gear: created ... queued`, `UI icon emb=1 hi=1 style=1`, `UI page window=efx`, banner `1.4.0-dev`.
+- **INSTALLED 2026-10-05 00:28:** 1.4.0-dev dll d14fa7cd hot-swapped into `$G/patches/level-up-override.dll` (md5 verified); previous 545e330b backed up to `$G/backups/luo_3c_0028`. Awaiting the user live check; read `levelup_override_log.txt` from line 794.
