@@ -19,31 +19,35 @@
 
 [[subclasser]]
 file = "patch_manager_mods/inventory_3d_viewport_src/Inventory3DViewport.cpp"
-install = 'g_oldProc\s*=[^;]*SetWindowLongPtr[AW]?\s*\(\s*g_hwnd\s*,\s*GWLP_WNDPROC\s*,[^;]*wheelProc'
-restore = 'GetWindowLongPtr[AW]?\s*\(\s*g_hwnd\s*,\s*GWLP_WNDPROC\s*\)[^;]*==\s*wheelProc[^;]*\)\s*\{\s*SetWindowLongPtr[AW]?\s*\(\s*g_hwnd\s*,\s*GWLP_WNDPROC\s*,[^;]*g_oldProc'
-install_hint = 457
-restore_hint = 712
+uses = "WindowHook"
+install = 'WheelHook::install\s*\('
+restore = 'WheelHook::uninstall\s*\('
+install_hint = 343
+restore_hint = 597
 
 [[subclasser]]
 file = "patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp"
-install = 'g_oldProc\s*=[^;]*SetWindowLongPtr[AW]?\s*\(\s*g_hwnd\s*,\s*GWLP_WNDPROC\s*,[^;]*wheelProc'
-restore = 'GetWindowLongPtr[AW]?\s*\(\s*g_hwnd\s*,\s*GWLP_WNDPROC\s*\)[^;]*==\s*wheelProc[^;]*\)\s*\{\s*SetWindowLongPtr[AW]?\s*\(\s*g_hwnd\s*,\s*GWLP_WNDPROC\s*,[^;]*g_oldProc'
-install_hint = 361
-restore_hint = 1100
+uses = "WindowHook"
+install = 'WheelHook::install\s*\('
+restore = 'WheelHook::uninstall\s*\('
+install_hint = 295
+restore_hint = 1017
 
 [[subclasser]]
 file = "patch_manager_mods/active_effects_panel_src/CharEffectsPanel.cpp"
-install = 'g_oldProc\s*=[^;]*SetWindowLongPtr[AW]?\s*\(\s*g_hwnd\s*,\s*GWLP_WNDPROC\s*,[^;]*wheelProc'
-restore = 'GetWindowLongPtr[AW]?\s*\(\s*g_hwnd\s*,\s*GWLP_WNDPROC\s*\)[^;]*==\s*wheelProc[^;]*\)\s*\{\s*SetWindowLongPtr[AW]?\s*\(\s*g_hwnd\s*,\s*GWLP_WNDPROC\s*,[^;]*g_oldProc'
-install_hint = 254
-restore_hint = 1255
+uses = "WindowHook"
+install = 'WheelHook::install\s*\('
+restore = 'WheelHook::uninstall\s*\('
+install_hint = 256
+restore_hint = 1030
 
 [[subclasser]]
 file = "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp"
-install = 'g_oldProc\s*=[^;]*SetWindowLongPtr[AW]?\s*\(\s*g_gameWnd\s*,\s*GWLP_WNDPROC\s*,[^;]*wheelProc'
-restore = 'GetWindowLongPtr[AW]?\s*\(\s*g_gameWnd\s*,\s*GWLP_WNDPROC\s*\)[^;]*==\s*wheelProc[^;]*\)\s*\{\s*SetWindowLongPtr[AW]?\s*\(\s*g_gameWnd\s*,\s*GWLP_WNDPROC\s*,[^;]*g_oldProc'
-install_hint = 810
-restore_hint = 1462
+uses = "WindowHook"
+install = 'WheelHook::install\s*\('
+restore = 'WheelHook::uninstall\s*\('
+install_hint = 1037
+restore_hint = 1865
 
 [[subclasser]]
 file = "patch_manager_mods/_shared_src/GuiKit.h"
