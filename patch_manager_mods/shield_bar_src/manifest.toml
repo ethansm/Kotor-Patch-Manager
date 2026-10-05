@@ -1,7 +1,7 @@
 [patch]
 id = "shield-bar"
 name = "Shield Bar"
-version = "1.2.1"
+version = "1.2.2"
 author = "local"
 description = "Energy-shield absorb bar beside each party portrait's health bar (one segment per shield, coloured like its VFX, draining as it absorbs), health/force/shield gauges for the companion portraits on the in-game menu screens, and 'Shield: cur/max' in the portrait hover tooltip. Needs portrait-slots."
 

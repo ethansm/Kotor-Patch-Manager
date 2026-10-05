@@ -400,10 +400,12 @@ void drawGauge(const char* texture, int x, int y, int w, int h, const float* fil
 // Spread the two companion portrait groups apart (runtime write of the controls' x, so no .gui edit and the hit areas move too).
 // Group 2 moves 0.30w; group 3 is placed so the gap between the companions equals the gap between the leader's force bar and
 // companion 1 (sb::secondCompanionX; leader force rect lfx/lfw, 0 = unknown -> fallback 1.00w).
-// Shifts are remembered per panel; a layout we did not write (menu rebuilt) is adopted as the new original.
-struct ShiftRec { int panel; int orig[2][4], shifted[2][4]; };
+// Group 2 and 3 also move down by dy so their card bottoms meet the leader card bottom (sb::leaderCardBottom from the leader vit
+// rect vy/vh; sb::companionDy caps the nudge at 8 px).
+// Shifts are remembered per panel; a layout we did not write (menu rebuilt) is adopted as the new original (x and y separately).
+struct ShiftRec { int panel; int orig[2][4], shifted[2][4], origY[2][4], shiftedY[2][4]; };
 ShiftRec g_shift[8];
-void spreadCompanions(int panel, int w, int lfx, int lfw) {
+void spreadCompanions(int panel, int w, int lfx, int lfw, int vy, int vh) {
     const K2AddrTable* T = k2addr::get();
     if (!featureOk(sb::menuFieldsOk(T), "companion spacing")) return;
     const int grp[2][4] = { { T->Menu_Char2, T->Menu_Level2, T->Menu_Back2, T->Menu_Change2 },    // LBL_CHARn, LEVELUPn, BACKn, BTN_CHANGEn
@@ -414,8 +416,10 @@ void spreadCompanions(int panel, int w, int lfx, int lfw) {
     int rc[2][4][4] = {};
     for (int g = 0; g < 2; ++g) for (int i = 0; i < 4; ++i) {
         readCtlRect(panel + grp[g][i], rc[g][i]);
-        int cur = rc[g][i][0];
-        if (rc[g][i][2] >= 1 && rc[g][i][3] >= 1 && cur != rec->orig[g][i] && cur != rec->shifted[g][i]) rec->orig[g][i] = cur;
+        if (rc[g][i][2] < 1 || rc[g][i][3] < 1) continue;
+        int cx = rc[g][i][0], cy = rc[g][i][1];
+        if (cx != rec->orig[g][i] && cx != rec->shifted[g][i]) rec->orig[g][i] = cx;
+        if (cy != rec->origY[g][i] && cy != rec->shiftedY[g][i]) rec->origY[g][i] = cy;
     }
     int dx[2] = { int(0.30f * w + 0.5f), int(1.00f * w + 0.5f) };
     const int* c2 = rc[0][0];
@@ -424,17 +428,20 @@ void spreadCompanions(int panel, int w, int lfx, int lfw) {
         int d = c3x - rec->orig[1][0];
         if (d > 0 && d < 3 * w) dx[1] = d;
     }
+    int dy = 0;
+    if (vh >= 8 && vh <= 2000 && c2[3] >= 8 && c2[3] <= 2000) dy = sb::companionDy(sb::leaderCardBottom(vy, vh), rec->origY[0][0], c2[3]);
     for (int g = 0; g < 2; ++g) for (int i = 0; i < 4; ++i) {
-        int ctl = panel + grp[g][i], cur = rc[g][i][0];
+        int ctl = panel + grp[g][i], cur = rc[g][i][0], curY = rc[g][i][1];
         if (rc[g][i][2] < 1 || rc[g][i][3] < 1) continue;
         rec->shifted[g][i] = rec->orig[g][i] + dx[g];
-        if (cur == rec->shifted[g][i]) continue;
+        rec->shiftedY[g][i] = rec->origY[g][i] + dy;
+        if (cur == rec->shifted[g][i] && curY == rec->shiftedY[g][i]) continue;
         // engine SetRect (vtable slot 1, RET 4: moves the rect + border/text copies, so the drawn portrait follows; raw int writes only moved the hit area)
         int vt = 0, fn = 0;
         if (!readAt(ctl, 0, &vt) || !vt || !readAt(vt, T->Ctl_VtSetRect, &fn) || !fn) continue;
-        int nr[4] = { rec->shifted[g][i], rc[g][i][1], rc[g][i][2], rc[g][i][3] };
+        int nr[4] = { rec->shifted[g][i], rec->shiftedY[g][i], rc[g][i][2], rc[g][i][3] };
         reinterpret_cast<void(__thiscall*)(int, int*)>(fn)(ctl, nr);
-        probeLog("MENUMOVE g=%d i=%d x %d -> %d (dx %d, leader force x=%d w=%d)", g, i, cur, nr[0], dx[g], lfx, lfw);
+        probeLog("MENUMOVE g=%d i=%d x %d -> %d (dx %d, leader force x=%d w=%d) y %d -> %d (dy %d)", g, i, cur, nr[0], dx[g], lfx, lfw, curY, nr[1], dy);
     }
 }
 
@@ -535,7 +542,7 @@ void KPATCH_CALL onMenuOverlay(const K2PsContext* c, void*) {
     if (haveMenu) {
         int w2 = 0, lf[4] = {};   // leader force rect (after the SLOT-phase FORCEMOVE slide): companion 3 is spaced from it
         if (T->Slot_ForceRect) for (int k = 0; k < 4; ++k) readAt(slotPtr, T->Slot_ForceRect + 4 * k, &lf[k]);
-        if (readAt(c->companionCtrl[0], T->Ctl_W, &w2) && w2 >= 8 && w2 <= 2000) spreadCompanions(panel, w2, lf[0], lf[2]);
+        if (readAt(c->companionCtrl[0], T->Ctl_W, &w2) && w2 >= 8 && w2 <= 2000) spreadCompanions(panel, w2, lf[0], lf[2], v[1], v[3]);
     }
     for (int k = 0; haveMenu && k < 2; ++k) {
         int ctrl = c->companionCtrl[k], fl = 0, r[4] = {};

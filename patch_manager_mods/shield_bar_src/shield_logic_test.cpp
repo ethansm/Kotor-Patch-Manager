@@ -95,6 +95,23 @@ void testMenuBars() {
     KT_CHECK(gapComp - gapLead > -1.0f && gapComp - gapLead < 1.0f);
 }
 
+// Companion cards aligned to the leader card bottom (user 10-04 option b). Leader vit rect (2395,1269,100,202), leader card bottom
+// 1463 (GUI check), companion cards 96x96 at y 1365 (bottom 1461).
+void testCompanionDy() {
+    KT_CHECK_EQ(sb::leaderCardBottom(1269, 202), 1463);
+    KT_CHECK_EQ(sb::companionDy(1463, 1365, 96), 2);
+    KT_CHECK_EQ(sb::companionDy(1463, 1367, 96), 0);                            // already aligned
+    KT_CHECK_EQ(sb::companionDy(1463, 1359, 96), 8);  KT_CHECK_EQ(sb::companionDy(1463, 1375, 96), -8);
+    KT_CHECK_EQ(sb::companionDy(1463, 1358, 96), 0);  KT_CHECK_EQ(sb::companionDy(1463, 1376, 96), 0);   // |d| > 8: bad read, no move
+    KT_CHECK_EQ(sb::companionDy(1463, 0, 96), 0);
+    // bars follow the moved card: visible bottom on the card bottom, still above the leader bar's visible bottom
+    sb::MenuBars m = sb::menuBars(2750, 1365 + 2, 96, 96);
+    float bot = m.by + sb::kArtBottom / sb::kArtH * m.bh;
+    float leaderBot = 1269 + sb::kArtBottom / sb::kArtH * 202;
+    KT_CHECK(bot > 1463 - 1.0f && bot < 1463 + 1.0f);
+    KT_CHECK(bot < leaderBot);
+}
+
 }  // namespace
 
 int main() {
@@ -219,6 +236,7 @@ int main() {
 
     testTableGates();
     testMenuBars();
+    testCompanionDy();
 
     return kt::Report("shield_logic");
 }

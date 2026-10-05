@@ -68,6 +68,16 @@ inline int secondCompanionX(int lfx, int lfw, int c1x, int y, int w, int h) {
     return int(c2VisLeft - (healthVisLeft(b.vx, b.bw) - c1x) + 0.5f);   // same card-to-visible-left offset on every card
 }
 
+// Leader card (LBL_CHAR1) bottom from the leader vit rect (vy, vh): top_p.gui PB_VIT1 y476 h76 (bottom 552), LBL_CHAR1 y479 h70
+// (bottom 549), so the card ends 3/76 of the vit height above the vit bottom. 3840x1600: vit (y 1269, h 202) -> 1463.
+inline int leaderCardBottom(int vy, int vh) { return vy + vh - int(vh * 3.0f / 76.0f + 0.5f); }
+// y nudge that puts a companion card's bottom (compY + compH) on the leader card bottom (user 10-04 option b: 1461 -> 1463).
+// Only a small nudge: |d| > 8 returns 0, so a bad read never moves the cards far.
+inline int companionDy(int leaderBottom, int compY, int compH) {
+    int d = leaderBottom - (compY + compH);
+    return (d >= -8 && d <= 8) ? d : 0;
+}
+
 // Bounded printf-append: a copy of bh::appendf (buff_duration_hud_src/BuffHudLogic.h, audit 20a F7, abc01d8). The two patches build
 // from separate folders and cannot include each other's headers; shield_logic_test.cpp checks the copies stay identical.
 // Appends at buf[len], never writes past buf[cap-1], always NUL-terminated, returns the new length clamped to cap-1.
