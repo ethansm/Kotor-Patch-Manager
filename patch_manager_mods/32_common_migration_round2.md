@@ -18,6 +18,7 @@ MG1 DONE (source) 2026-10-05: texmem aeb60ff, equip-icon 62001fe, activation f87
 | C9 | `PanelSlots.h` (new) | `panelslots::PanelSlots<Slot,N>`: `find`, `claim(panel, seq, &fresh)`, `release`, `forEach`, `count`, `onEvict` hook | 21d5c9b | 4df4a29 |
 | C10 | `K2Addr.h`, `CodePatch.h`, `Gui2D.h` | `k2addr::featureOk`, `codepatch::allocCave`, `gui2d::Rect` / `vfillClip` / `drawVFill` | 60b61b4 | 6cfa7e2 |
 | C8 | `GuiKit.h` | `cursorEngineF`, `syncScreen`, `WheelHook` + `wheelInstall`/`wheelUninstall`, `bindByTag` (+ pure helpers) | a3286fe | c060999 |
+| C11 | `WindowHook.h` (new; F28 design A, note 20f) + GuiKit wheel on it | `kp::WindowHook<Tag>`: `install(hwnd, proc)` (pins module once), `active()`, `forward(h,m,w,l)`, `uninstall(proc)` (restore if on top, else pass-through); registry `uses = "WindowHook"` | 7d41942, 7aca7fd | d46a699, f03c258 (`_shared` forwarder) |
 
 Semantics worth knowing before migrating:
 - **IniKit covers the trio dialect only** (inv3d / equip3d / chareffects) plus the `.txt` kill switch.
@@ -43,6 +44,7 @@ Semantics worth knowing before migrating:
 | MG3 inv3d | inventory_3d_viewport | IniKit `forEachLine` + FileWatch reload, GuiKit `WheelHook` / `cursorEngineF` / `syncScreen` / `bindByTag`, `PanelSlots`, KpLog | doc 23 session | inv3d host tests + contract test; live: open inventory, wheel-zoom, drag, close/reopen | KpLog prefix change only | zoom step per notch unchanged; drag guard still blocks wheel while dragging; slot reused on reopen | TODO |
 | MG4 equip3d | equipment_3d_character | MG3 set + SafeRead for its 14 `IsBadReadPtr` sites (= C3, after S1d) | doc 23 session | as MG3 + `--wine` | IsBadReadPtr fault storms gone under Wine | destroy-on-rebind via `fresh=false`; eviction calls `onEvict` once | TODO |
 | MG5 chareffects | active_effects_panel | MG3 set + GuiKit setters + `party::` leader + `k2fx::currentTime` / `isItemAbility` (= C4) | doc 14 session | contract test; doc 14 build-4c checklist | KpLog prefix change only | `bound` flag lives in the Slot payload; same rows / icons on the effects page | TODO |
+| MG6 WindowHook | inv3d, equip3d, chareffects, action hotbar (one commit per mod) | `kp::WindowHook<Tag>` replaces each mod's `g_oldProc` + SetWindowLongPtr install / restore-if-on-top (or GuiKit `wheelInstall` where MG3-MG5 already adopt `WheelHook`); proc = `if (Hook::active()) {...} return Hook::forward(...)` | owning sessions: doc 23 (inv3d, equip3d), doc 14 (chareffects), doc 31 (hotbar) | `check_subclassers.py` after flipping the mod's `subclassers.toml` entry to `uses = "WindowHook"`; the LAST mod also flips the F28 CHARACTERIZATION asserts in `tests/wndproc_chain`; `--build` | none | wheel / input behaviour unchanged with that mod alone; unload order irrelevant (pass-through) | TODO (owner-gated) |
 
 Rules for every batch:
 - One mod per commit; commit with explicit paths (`git commit -- <paths>`).
