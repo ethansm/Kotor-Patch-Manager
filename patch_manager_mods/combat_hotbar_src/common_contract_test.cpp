@@ -177,6 +177,18 @@ int main() {
         HCHECK("layoutBannerGrid: group g rects at g*cols*maxRows (slotEntry stride)", out[2 * 8].w > 0 && out[1 * 8].w == 0);
         ch::Rect gb = ch::gridBounds(out, outN, 8);
         HCHECK("gridBounds covers the used rects", gb.w > 0 && gb.x <= out[0].x && gb.x + gb.w >= out[2 * 8].x + out[2 * 8].w);
+        // layoutBannerGroups: same inputs plus capPx=10, sidePx=6; one uniform-height pill per group, buttons inside
+        ch::Rect gout[3 * 8], gcont[3]; int goutN[3] = { -1, -1, -1 };
+        ch::layoutBannerGroups(banner, boxes, cnt, 2, 4, 0, 4, 8, 10, 6, 800, 600, gout, goutN, gcont);
+        HCHECK("layoutBannerGroups: outN clamps counts like layoutBannerGrid", goutN[0] == 2 && goutN[1] == 0 && goutN[2] == 5);
+        HCHECK("layoutBannerGroups: three pills of equal height, empty group included, starting at boxesUnion.y", gcont[0].w > 0 && gcont[1].w > 0 && gcont[2].w > 0 && gcont[0].y == 75 && gcont[0].h == gcont[1].h && gcont[1].h == gcont[2].h);
+        HCHECK("layoutBannerGroups: group g buttons at g*cols*maxRows, unused zeroed", gout[2 * 8].w > 0 && gout[1 * 8].w == 0);
+        HCHECK("layoutBannerGroups: buttons sit inside their pill (capPx top, sidePx sides)", gout[0].x >= gcont[0].x + 6 && gout[0].y >= gcont[0].y + 10 && gout[2 * 8].x + gout[2 * 8].w <= gcont[2].x + gcont[2].w - 6);
+        // GuiKit tint/alpha copy (CH4d): the borderOk gate refuses a control with no label border vtable, the setters/getters never fault on it
+        {
+            float rgb[3] = { 0.f, 0.f, 0.f }, al = 0.f;
+            HCHECK("guikit::getBorderTint/getAlpha/setBorderTint refuse a null control", !guikit::getBorderTint(0, rgb) && !guikit::getAlpha(0, &al) && !guikit::setBorderTint(0, rgb));
+        }
         ch::FreezeState fs = { false, 0, 0 }; int fx = -1, fy = -1;
         HCHECK("freezeOrigin: cursor outside follows the live origin", !ch::freezeOrigin(fs, false, 10, 20, &fx, &fy) && fx == 10 && fy == 20);
         HCHECK("freezeOrigin: cursor in grid latches the entry origin", ch::freezeOrigin(fs, true, 10, 20, &fx, &fy) && fx == 10 && fy == 20);

@@ -1,4 +1,4 @@
-// Combat Action Hotbar (Mod 31, 0.5.0-dev: probe + CH2 invoke keys + CH3b arrow hide + CH4c own buttons replacing the vanilla target boxes; consumer of hud-host)
+// Combat Action Hotbar (Mod 31, 0.6.0-dev: probe + CH2 invoke keys + CH3b arrow hide + CH4c own buttons replacing the vanilla target boxes + CH4d per-group pill containers; consumer of hud-host)
 // Diagnostic probe for CSWGuiTargetActionMenu (hud + 0xCC).
 // Safely reads and logs target action groups when an enemy is targeted.
 // 0.2.0: no own hook any more. hud-host owns the PopulateMenus hook (0x00743540) and calls onTargetMenu through k2.hud@1
@@ -15,6 +15,11 @@
 // (hud-host 0.4.0), after the engine wrote the menu origin and before anything is drawn, so origin reads are zero-lag. ch::layoutBannerGrid puts three
 // columns under the banner (LBL_NAME + PB_HEALTH); while the cursor is over the grid the origin menu+0x1648/+0x164C is frozen (written back) so the banner
 // stops following the target. INI [Buttons] Replace/Cols/MaxRows/BtnPx/Pad/GroupGap/Inset/ClickSound (Gap is gone); hover plays GUI sound 1, a click ClickSound.
+// 0.6.0-dev: CH4d draws one vanilla pill container per target-menu group behind the buttons (3 labels from LBL_QUEUE1 created in BUILD before the slot labels, so they
+// draw underneath; lbl_miscroll_f art). ch::layoutBannerGroups sizes the pills (INI [Buttons] CapPad = top/bottom padding, SidePad = left/right padding) and puts the
+// buttons inside; empty groups keep their pill. Tint and alpha of each pill (and of that group's button frames) are copied live every POST from the hidden vanilla
+// BTN_TARGETn (getBorderTint/getAlpha), so the pills keep the vanilla look; the hover highlight keeps the copied tint. The pills are clickable but carry no action,
+// so a click in a gap between buttons is swallowed instead of reaching the world. The hover-freeze area is the union of last frame's three pills.
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <stdio.h>
@@ -85,6 +90,8 @@ struct Config {
     int groupGap = 8;            // 0..64 px between the three group columns
     int inset = 3;               // 0..16 px icon inset inside the frame
     int clickSound = 0;          // GUI sound idx on click, -1 off
+    int capPad = 10;             // CH4d 0..64 px above/below the buttons inside a group pill
+    int sidePad = 6;             // CH4d 0..64 px left/right of the buttons inside a group pill
 } g_cfg;
 ch::KeyEdge g_edge[3];
 int g_arrowState = -1;   // -1 never applied, 0 failed, 1 applied (log on change only)
@@ -114,9 +121,11 @@ void loadIni() {
     g_cfg.groupGap = clampInt(GetPrivateProfileIntA("Buttons", "GroupGap", 8, IniPath), 0, 64);
     g_cfg.inset = clampInt(GetPrivateProfileIntA("Buttons", "Inset", 3, IniPath), 0, 16);
     g_cfg.clickSound = clampInt(GetPrivateProfileIntA("Buttons", "ClickSound", 0, IniPath), -1, 18);
-    KP_LOGV(chMain, KPLOG_INFO, "config: invoke=%d mod=%d keys=[%02x,%02x,%02x] keepSelection=%d arrowsHide=%d buttons=%d replace=%d cols=%d maxRows=%d btnPx=%d pad=%d groupGap=%d inset=%d clickSound=%d",
+    g_cfg.capPad = clampInt(GetPrivateProfileIntA("Buttons", "CapPad", 10, IniPath), 0, 64);
+    g_cfg.sidePad = clampInt(GetPrivateProfileIntA("Buttons", "SidePad", 6, IniPath), 0, 64);
+    KP_LOGV(chMain, KPLOG_INFO, "config: invoke=%d mod=%d keys=[%02x,%02x,%02x] keepSelection=%d arrowsHide=%d buttons=%d replace=%d cols=%d maxRows=%d btnPx=%d pad=%d groupGap=%d inset=%d clickSound=%d capPad=%d sidePad=%d",
             (int)g_cfg.invokeEnabled, g_cfg.mod, g_cfg.keys[0], g_cfg.keys[1], g_cfg.keys[2], (int)g_cfg.keepSelection, (int)g_cfg.hideArrows,
-            (int)g_cfg.btnEnabled, (int)g_cfg.replace, g_cfg.cols, g_cfg.maxRows, g_cfg.btnPx, g_cfg.pad, g_cfg.groupGap, g_cfg.inset, g_cfg.clickSound);
+            (int)g_cfg.btnEnabled, (int)g_cfg.replace, g_cfg.cols, g_cfg.maxRows, g_cfg.btnPx, g_cfg.pad, g_cfg.groupGap, g_cfg.inset, g_cfg.clickSound, g_cfg.capPad, g_cfg.sidePad);
 }
 
 bool modifiersMatch() {
@@ -198,6 +207,8 @@ struct Wid {
     void* fill = nullptr;
     bool fillSet = false;
     float alpha = -1.f;
+    float tint[3] = { 0.f, 0.f, 0.f };
+    bool tintSet = false;
 };
 
 struct Btn {
@@ -208,10 +219,12 @@ struct Btn {
     bool tipSet = false;
 };
 Btn g_btn[MaxBtn];
+Wid g_cont[3];                     // CH4d one pill container per group (created before the slot labels so they draw behind the buttons)
 int g_nBtn = 0;                    // slots created in the last BUILD
 int g_per = 0;                     // Cols*MaxRows used by that BUILD
 guikit::ClickEdge g_click;
-ch::Rect g_lastRect[MaxBtn];       // last frame's displayed rects (zeroed when unused); only used to compute cursorInGrid
+ch::Rect g_lastRect[MaxBtn];       // last frame's displayed button rects (zeroed when unused)
+ch::Rect g_lastCont[3];            // last frame's pill rects; their union is the hover-freeze area
 int g_lastN[3] = { 0, 0, 0 };
 bool g_haveLast = false;
 ch::FreezeState g_freeze = { false, 0, 0 };
@@ -224,6 +237,8 @@ bool g_replaced = false;           // vanilla bit1 cleared by us (Replace=1), so
 int g_replState = -1;              // -1 never applied, 0 failed, 1 applied (log on change only)
 uintptr_t g_logObj = 0; int g_logType = -2;
 int g_flagLast = -1;
+int g_contState[3] = { -1, -1, -1 };          // -1 never logged, 0 tint read failed, 1 tint read ok (log on change only)
+float g_contLog[3][4] = { { 0 }, { 0 }, { 0 } };   // last logged tint rgb + alpha per group
 
 // GUI sound by index (mirrors guikit::playHoverSound, which is idx 1): idx < 0 = off. False when the manager is null.
 bool playGuiSound(int idx) {
@@ -257,6 +272,14 @@ void widAlpha(Wid& w, float a) {
     if (w.alpha != a) { guikit::setAlpha(w.c, a); w.alpha = a; }
 }
 
+void widTint(Wid& w, const float* rgb) {
+    if (!w.c) return;
+    if (!w.tintSet || w.tint[0] != rgb[0] || w.tint[1] != rgb[1] || w.tint[2] != rgb[2]) {
+        guikit::setBorderTint(w.c, rgb);
+        w.tint[0] = rgb[0]; w.tint[1] = rgb[1]; w.tint[2] = rgb[2]; w.tintSet = true;
+    }
+}
+
 ch::Rect unionRect(const ch::Rect& a, const ch::Rect& b) {
     const int x0 = a.x < b.x ? a.x : b.x, y0 = a.y < b.y ? a.y : b.y;
     const int x1 = (a.x + a.w) > (b.x + b.w) ? (a.x + a.w) : (b.x + b.w), y1 = (a.y + a.h) > (b.y + b.h) ? (a.y + a.h) : (b.y + b.h);
@@ -279,6 +302,9 @@ struct ProjGuard {
 // Per slot: bg first, then icon (later in the panel list draws on top).
 void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
     for (Btn& b : g_btn) b = Btn();
+    for (Wid& w : g_cont) w = Wid();
+    for (int g = 0; g < 3; ++g) { g_contState[g] = -1; for (int k = 0; k < 4; ++k) g_contLog[g][k] = 0.f; }
+    memset(g_lastCont, 0, sizeof(g_lastCont));
     g_nBtn = 0; g_per = 0; g_click = guikit::ClickEdge(); g_haveLast = false; g_freeze = { false, 0, 0 }; g_frozenLog = false; g_hover = -1; g_logObj = 0; g_logType = -2;
     if (!g_cfg.btnEnabled) { KP_LOGV(chMain, KPLOG_INFO, "BUILD: buttons disabled ([Buttons] Enabled=0)"); return; }
     if (!ctx || ctx->struct_size < offsetof(K2HudContext, panel) + sizeof(ctx->panel) || !ctx->panel) { KP_LOGV(chMain, KPLOG_WARN, "BUILD: no panel in the context"); return; }
@@ -288,6 +314,18 @@ void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
     ProjGuard pg;
     int n = 0, failAlloc = 0, failVt = 0, failTpl = 0, failOther = 0, failAppend = 0;
     uint32_t badVt = 0;
+    int nCont = 0;
+    for (int g = 0; g < 3; ++g) {   // pill containers first: the panel list is the draw order, so they sit behind every button label
+        int why = guikit::CF_None; uint32_t bv = 0;
+        uintptr_t c = guikit::createLabelFromTemplate(panel, "LBL_QUEUE1", &why, &bv);
+        if (!c) { KP_LOGV(chMain, KPLOG_WARN, "BUILD: container g%d create failed (why=%d vtable=%08x)", g, why, (unsigned)bv); continue; }
+        guikit::setVisible(c, false);
+        guikit::setClickable(c, false);
+        if (!guikit::appendToPanel(panel, c)) { KP_LOGV(chMain, KPLOG_WARN, "BUILD: container g%d append failed, control %08x left hidden + click-through", g, (unsigned)c); continue; }
+        g_cont[g].c = c; g_cont[g].vis = 0;
+        ++nCont;
+    }
+    KP_LOGV(chMain, nCont == 3 ? KPLOG_INFO : KPLOG_WARN, "BUILD: containers=%d/3", nCont);
     for (int i = 0; i < total && i < MaxBtn; ++i) {
         uintptr_t cs[2] = { 0, 0 };
         bool okSlot = true;
@@ -314,6 +352,7 @@ void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
 }
 
 void hideAllButtons() {
+    for (Wid& w : g_cont) widHide(w);
     for (int i = 0; i < g_nBtn; ++i) {
         Btn& b = g_btn[i];
         if (!b.bg.c) continue;
@@ -321,7 +360,7 @@ void hideAllButtons() {
         b.tipSet = false;
     }
     g_haveLast = false; g_freeze = { false, 0, 0 }; g_frozenLog = false; g_hover = -1; g_logObj = 0; g_logType = -2;
-    memset(g_lastRect, 0, sizeof(g_lastRect)); memset(g_lastN, 0, sizeof(g_lastN));
+    memset(g_lastRect, 0, sizeof(g_lastRect)); memset(g_lastCont, 0, sizeof(g_lastCont)); memset(g_lastN, 0, sizeof(g_lastN));
 }
 
 bool anyButtonVisible() { for (int i = 0; i < g_nBtn; ++i) if (g_btn[i].bg.c && g_btn[i].bg.vis == 1) return true; return false; }
@@ -381,10 +420,10 @@ void updateButtons(const K2HudContext* ctx) {
     ch::GroupView gv[3]; uintptr_t base[3] = { 0, 0, 0 };
     readGroups(menu, gv, base);
     const int per = g_per;
-    int pre[3];   // displayed counts = what layoutBannerGrid will report in outN
+    int pre[3];   // displayed counts = what layoutBannerGroups will report in outN
     for (int g = 0; g < 3; ++g) pre[g] = gv[g].count < 0 ? 0 : (gv[g].count > per ? per : gv[g].count);
 
-    // Hover freeze: while the cursor is over last frame's grid (and the counts did not change) the menu origin is held, so the whole banner and
+    // Hover freeze: while the cursor is over last frame's pill containers (and the counts did not change) the menu origin is held, so the whole banner and
     // the buttons under the cursor stop following the target. Written back before the engine draws (POST runs at the PopulateMenus tail).
     const uintptr_t obj = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->target));
     const bool retarget = obj != g_logObj || type != g_logType;
@@ -392,7 +431,8 @@ void updateButtons(const K2HudContext* ctx) {
     const bool haveCursor = guikit::cursorEngine(&cx, &cy);
     bool inGrid = false;
     if (ok && !retarget && g_haveLast && haveCursor && pre[0] == g_lastN[0] && pre[1] == g_lastN[1] && pre[2] == g_lastN[2]) {
-        const ch::Rect gb = ch::gridBounds(g_lastRect, g_lastN, per);
+        ch::Rect gb = g_lastCont[0];
+        for (int g = 1; g < 3; ++g) gb = unionRect(gb, g_lastCont[g]);
         inGrid = gb.w > 0 && gb.h > 0 && cx >= gb.x && cx < gb.x + gb.w && cy >= gb.y && cy < gb.y + gb.h;
     }
     int fx = ox, fy = oy;
@@ -422,21 +462,23 @@ void updateButtons(const K2HudContext* ctx) {
     }
     if (!ok) { hideAllButtons(); return; }
 
-    ch::Rect rects[MaxBtn]; int outN[3] = { 0, 0, 0 };
+    ch::Rect rects[MaxBtn]; int outN[3] = { 0, 0, 0 }; ch::Rect cont[3];
     const int btnPx = g_cfg.btnPx > 0 ? g_cfg.btnPx : boxes[0].w / 2;
-    ch::layoutBannerGrid(banner, boxesUnion, pre, g_cfg.cols, g_cfg.maxRows, btnPx, g_cfg.pad, g_cfg.groupGap, sw, sh, rects, outN);
+    ch::layoutBannerGroups(banner, boxesUnion, pre, g_cfg.cols, g_cfg.maxRows, btnPx, g_cfg.pad, g_cfg.groupGap, g_cfg.capPad, g_cfg.sidePad, sw, sh, rects, outN, cont);
     memcpy(g_lastRect, rects, sizeof(ch::Rect) * 3 * per);
+    memcpy(g_lastCont, cont, sizeof(cont));
     memcpy(g_lastN, outN, sizeof(outN)); g_haveLast = true;
 
     if (retarget) {
         g_logObj = obj; g_logType = type;
         int firstW = 0;
         for (int g = 0; g < 3 && !firstW; ++g) if (outN[g] > 0) firstW = rects[g * per].w;
-        KP_LOGV(chTarget, KPLOG_INFO, "buttons: first draw obj=%p type=%d origin=[%d,%d,%d,%d]%s banner=[%d,%d,%d,%d] boxesUnion=[%d,%d,%d,%d] outN=[%d,%d,%d] first=[%d,%d,%d,%d][%d,%d,%d,%d][%d,%d,%d,%d] btn=%d screen=%dx%d",
+        KP_LOGV(chTarget, KPLOG_INFO, "buttons: first draw obj=%p type=%d origin=[%d,%d,%d,%d]%s banner=[%d,%d,%d,%d] boxesUnion=[%d,%d,%d,%d] outN=[%d,%d,%d] first=[%d,%d,%d,%d][%d,%d,%d,%d][%d,%d,%d,%d] cont=[%d,%d,%d,%d][%d,%d,%d,%d][%d,%d,%d,%d] btn=%d screen=%dx%d",
                 (void*)obj, (int)type, fx, fy, ow, oh, frozen ? " frozen" : "",
                 banner.x, banner.y, banner.w, banner.h, boxesUnion.x, boxesUnion.y, boxesUnion.w, boxesUnion.h,
                 outN[0], outN[1], outN[2],
                 rects[0].x, rects[0].y, rects[0].w, rects[0].h, rects[per].x, rects[per].y, rects[per].w, rects[per].h, rects[2 * per].x, rects[2 * per].y, rects[2 * per].w, rects[2 * per].h,
+                cont[0].x, cont[0].y, cont[0].w, cont[0].h, cont[1].x, cont[1].y, cont[1].w, cont[1].h, cont[2].x, cont[2].y, cont[2].w, cont[2].h,
                 firstW, sw, sh);
     }
 
@@ -465,6 +507,31 @@ void updateButtons(const K2HudContext* ctx) {
         }
     }
 
+    // Per group: copy the vanilla BTN_TARGETn tint + alpha (a failed read keeps the defaults), then show the pill behind the buttons.
+    // The pill is clickable (swallows gap clicks) but has no action: the click handler below only acts on button hits.
+    bool tOk[3], aOk[3]; float tint[3][3], alp[3];
+    for (int g = 0; g < 3; ++g) {
+        const uintptr_t btnCtl = menu + GroupBase + (uintptr_t)g * GroupStride;
+        // Sanity gates (the hidden-BTN tint is UNVERIFIED): pure black or a near-zero alpha would make the pills vanish, so keep the defaults instead.
+        tOk[g] = guikit::getBorderTint(btnCtl, tint[g]) && (tint[g][0] > 0.01f || tint[g][1] > 0.01f || tint[g][2] > 0.01f);
+        aOk[g] = guikit::getAlpha(btnCtl, &alp[g]) && alp[g] >= 0.05f && alp[g] <= 1.0f;
+        if (!tOk[g]) { if (g_contState[g] != 0) { g_contState[g] = 0; KP_LOGV(chTarget, KPLOG_INFO, "container g%d tint read failed or rejected (black)", g); } }
+        else if (g_contState[g] != 1 || g_contLog[g][0] != tint[g][0] || g_contLog[g][1] != tint[g][1] || g_contLog[g][2] != tint[g][2] || (aOk[g] && g_contLog[g][3] != alp[g])) {
+            g_contState[g] = 1;
+            for (int k = 0; k < 3; ++k) g_contLog[g][k] = tint[g][k];
+            if (aOk[g]) g_contLog[g][3] = alp[g];
+            KP_LOGV(chTarget, KPLOG_INFO, "container g%d tint=(%.2f,%.2f,%.2f) alpha=%.2f", g, tint[g][0], tint[g][1], tint[g][2], aOk[g] ? alp[g] : -1.f);
+        }
+        Wid& c = g_cont[g];
+        if (!c.c) continue;
+        if (!replace) { widHide(c); continue; }   // Replace=0: the vanilla pills are still drawn, never stack ours on them
+        widRect(c, cont[g]);
+        if (g_imgFrame) widFill(c, g_imgFrame);
+        if (tOk[g]) widTint(c, tint[g]);
+        if (aOk[g]) widAlpha(c, alp[g]);
+        widShow(c, true);
+    }
+
     for (int g = 0; g < 3; ++g) {
         for (int k = 0; k < per; ++k) {
             const int s = g * per + k;
@@ -487,7 +554,8 @@ void updateButtons(const K2HudContext* ctx) {
                 widFill(b.icon, e.icon[0] ? guikit::imageFor(e.icon) : nullptr);
                 memcpy(b.iconName, e.icon, 16); b.iconName[16] = 0; b.iconSet = true;
             }
-            widAlpha(b.bg, 1.0f);
+            if (tOk[g]) widTint(b.bg, tint[g]);
+            widAlpha(b.bg, aOk[g] ? alp[g] : 1.0f);
             widAlpha(b.icon, e.usable ? 1.0f : 0.35f);
             widShow(b.bg, true); widShow(b.icon, false);
             if (!b.tipSet || b.tipKey != e.key) {
