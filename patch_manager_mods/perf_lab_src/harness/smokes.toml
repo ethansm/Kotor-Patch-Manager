@@ -196,6 +196,25 @@ modes = ["wire", "combat", "nocreature", "badhud", "badchain", "strips", "cancel
 needs_display = false
 timeout_s = 60
 
+# companion-selfheal 0.6.0-dev (CS12) wiring only, not heal behaviour: the real DLL with the real portrait-slots + hud-host providers; tripwires on
+# UseItemRouteA / ActListRemoveHead / ActListAddTail / RoundHasPending; label ctor + embtex engine calls stubbed. split_build/CompanionSelfHeal.kpatch,
+# HudHost.kpatch and PortraitSlots.kpatch were refreshed from the current $K/Patches/<X>/<X>.kpatch (split_build is gitignored; re-copy after a rebuild).
+# kick-rotate is NOT covered: a pending member is only armed by useNow() (route A behind the foreground + HUD gate), unreachable in Wine.
+[[smoke]]
+name = "selfheal"
+src = "smoke_selfheal.cpp"
+kpatch = "../split_build/CompanionSelfHeal.kpatch"
+dll_name = "companion-selfheal.dll"
+extra_dlls = [
+  { kpatch = "../split_build/PortraitSlots.kpatch", dll_name = "portrait-slots.dll" },
+  { kpatch = "../split_build/HudHost.kpatch", dll_name = "hud-host.dll" },
+]
+cxxflags = ["-static", "-Wl,--image-base=0x120000", "-I../../_shared_src", "-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common"]
+runtime_dlls = false
+modes = ["wire", "inert", "badchain", "kick-off"]
+needs_display = false
+timeout_s = 60
+
 # save-events 0.1.0-dev (doc 22 4.1, doc 24 L3): the real library DLL driven through its five hook exports over a zeroed pad (AppGlobal /
 # Steam Cloud byte / cloud root planted). The kpatch is packaged into split_build/ (kept out of Patches/ like the portrait-slots set).
 # Common headers use the absolute KPM checkout path (see queuehud above).
