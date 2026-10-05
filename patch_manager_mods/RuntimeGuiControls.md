@@ -2,7 +2,7 @@
 
 This guide shows how a patch can add GUI elements to an existing engine panel from its own DLL: labels with text, images and
 hover tooltips, plus custom art. It needs no `.gui` edit and no files in `override/`. The technique was developed for the
-Force Power Hotbar (75 controls and 4 textures on the in-game HUD, live since 2026-10-02). It improves on the older
+Action Hotbar, formerly Force Power Hotbar (86 controls and 4 textures on the in-game HUD, live since 2026-10-02). It improves on the older
 `.gui`-plus-bind approach that CharEffectsPanel, Inventory3DViewport and EquipCharPreview still use.
 
 All addresses below are for **KOTOR II, Steam Aspyr** (`swkotor2.exe`, the two hashes in the hotbar's `hooks.toml`). Other
@@ -183,9 +183,9 @@ Runtime labels have no event handlers. The hotbar polls in its per-frame hook:
 | Area | Result |
 |---|---|
 | Files | None in `override/`; the `.gui` is untouched. Uninstalling the patch leaves only its INI and log. |
-| Native controls | Unaffected. `addToList=0` never touches the list. Native controls keep indices `0..N-1`, and ours are `N..N+74` (75 controls). |
+| Native controls | Unaffected. `addToList=0` never touches the list. Native controls keep indices `0..N-1`, and ours are `N..N+85` (86 controls). |
 | Other `.gui` mods | Compatible if the template tags exist. If they don't, the control is not created, the log says so, and the dependent feature (slot, editor or tooltip) disables itself. No crash. |
-| Memory | One `0x148`-byte label per control (the hotbar: 75, about 25 KB) plus small text buffers per HUD construction, never freed. The HUD is rebuilt on every save load **and area transition** (sometimes at the same address), so this accrues: about 2.5 MB per 100 transitions in one session. Harmless for the large-address-aware process, but a patch with many or large controls should free its previous controls once the old panel is proven destroyed. |
+| Memory | One `0x148`-byte label per control (the hotbar: 86, about 28 KB) plus small text buffers per HUD construction, never freed. The HUD is rebuilt on every save load **and area transition** (sometimes at the same address), so this accrues: about 2.8 MB per 100 transitions in one session. Harmless for the large-address-aware process, but a patch with many or large controls should free its previous controls once the old panel is proven destroyed. |
 | Textures | 4 small RGBA textures, engine-allocated, so the engine's own free and reset paths match. The GL-reset ordering was analysed statically (lesson 290). |
 | Projection flag | Cleared and restored inside the hook. The constructor clears it right after anyway. |
 | Clicks | Hidden controls carry `0x20`, so the world and native controls get every click. Only visible hotbar slots and open editor controls absorb clicks, by design. |
@@ -213,8 +213,8 @@ Runtime labels have no event handlers. The hotbar polls in its per-frame hook:
 
 ## Reference Implementations
 
-- **Force Power Hotbar.** `Patches/ForcePowerHotbar/ForcePowerHotbar.cpp`:
-  - `createLabel` and the `Layout[]` table (75 controls, layout units);
+- **Action Hotbar (formerly Force Power Hotbar).** `Patches/ActionHotbar/ActionHotbar.cpp`:
+  - `createLabel` and the `Layout[]` table (86 controls, layout units);
   - `ensureTextures` / `fillTexture` / `healTextures`;
   - `HotbarBuildButtons` (constructor hook) and `HotbarHudTick` (per-frame).
 - **Character Effects Panel, Inventory 3D Viewport, Equipment Character Preview.** These use the older variant. They add
