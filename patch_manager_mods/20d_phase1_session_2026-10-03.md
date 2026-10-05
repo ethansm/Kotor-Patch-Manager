@@ -68,6 +68,13 @@ The user wants these called out for other contributors. See memory `feedback-rep
 | F24 | BuffDurationHUD 2.0.0 `columnSig` (:195) | Bit fields overlap (`debuff=1,cardH=0` == `debuff=0,cardH=16`), `cardW<<20` overflows above 2047: a change can go unlogged | log only | ours | RESOLVED 98ee38c (buff 2.0.1, KPM dbc31e1; pins now assert the fix; not live until installed) |
 | F25 | BuffDurationHUD 2.0.0 | Dead branch `:238-244` (inner `if (disc)` always true); `arrowRawFor(slot 0)` matches a free cell without claiming it (unreachable); first all-zero ARROWS sighting never logged | hygiene | ours | open |
 | F26 | `bh::appendf` / `sb::appendf` | Two copies (shield_bar_src cannot include the buff dir). Drift guard: `shield_logic_test` section 8 compares both over 3000+ cases. A `_shared_src/StrFmt.h` needs a KPM `Patches/Common` sync | duplication | ours | follow-up |
+| F27 | RangedAI `parseMask` (was RangedAI.cpp:130) | Null string deref; digit runs past INT_MAX overflow `int` (UB; a wrap could set a wrong stance bit). Diverged from `cai::parseMask` | latent crash/UB | ours | RESOLVED 7f63c52 (`RangedAiLogic.h`, test red->green; not installed) |
+| F28 | WndProc subclass pattern (all 5 registered subclassers) | Restore-if-still-ours skips the restore when a DLL is not on top, so its proc stays chained after unhook (10/12 orders in `tests/wndproc_chain`); a later restore can put the stale proc back on top. Latent: DLLs detach only at process exit | latent dangling proc | ours | open (design input for a Common `WindowHook.h`) |
+| F29 | CharEffectsPanel `ChareffDecode.h:155` (A_REGEN) | `(x.b + 500) / 1000` is signed overflow UB for b > INT_MAX-500 | latent UB | ours | open |
+| F30 | CharEffectsPanel `cfx::marqueeText` | Reads before the buffer when `off < 0`; callers' `mqOff` is never negative | latent | ours | open |
+| F31 | Inventory3DViewport.cpp:115 `char line[256]` | An INI line over 255 chars is read as two lines and both are rejected | latent | ours | open |
+| F32 | `inv3d::fitLookup` | No range check on `var`: var >= 256 aliases (r+1, var-256) | latent | ours | open |
+| F33 | queue-hud tests (10-05) | `wine:queuehud[*]` 8 modes fail registration-owner / version-line checks against 0.3.0-dev; `test_gen_queuehud_textures.py` needs PIL (not installed) | test drift / env | theirs (queue-hud session) | open, reported |
 
 Upstream-interesting candidates. Do not post without the user's approval.
 - **KPM `HookValidator` only catches same-address hooks.** Partial overlaps and DLL code patches are invisible to it, and our spans checker covers both. A natural upstream RFC.
@@ -99,3 +106,9 @@ Upstream-interesting candidates. Do not post without the user's approval.
 - **Read-only check:** this session wrote only `letterbox_probe_stage/` (and removed the probe dir) in KPM. Other KPM and `patch_config.toml` changes after the marker are other sessions' (Common headers, PortraitSlots, shield_live_patches, a 12:00 install).
 - F2 (stale `CompanionAI-0.1.0-live.kpatch`) stays open: it needs separate approval.
 - **F1 regression (10-03 15:29):** `Patches/K2DialogueLetterboxFixProbe/` reappeared, byte-identical; recreated by the engine-bug Phase 4 session (before it knew of F1). Its doc 15e now says never recreate it (`a2fef28`), and the vanilla session dropped the dir from KPM `.git/info/exclude` so a recreation shows in `git status` (`b2e79d0`). It was removed again (same approval) and the letterbox and vanilla sessions were told. KPM validate: 84 patches, 0 errors.
+
+## Medium + T3 + Low session (10-05)
+- Commits: `73652a4` (Low: H6b pin, WrapMeasureFix README), `7f63c52` (#9 RangedAI, F27), `4019742` (T3 WndProc chain, F28; runner discovers `tests/`), `adf868f` (#4 CharEffectsPanel), `96c2053` (#7 Inventory3DViewport).
+- Plan facts that were wrong: `research/decode_samples_live.txt` has 6 DECODE lines, not 8; LoadHangProbe smokes (probe11/12/14) already asserted; H6b was already checked generically (now pinned by name).
+- `run_tests.py -k a -k b` keeps only the last `-k`.
+- Read-only check: `find -newer` marker over KPM, `override/` and `patch_config.toml` shows nothing written.
