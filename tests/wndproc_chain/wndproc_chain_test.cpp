@@ -7,7 +7,7 @@
 //                 SetWindowLongPtr(hwnd, GWLP_WNDPROC, g_oldProc); g_oldProc = nullptr; }
 // Sub<N,true> mirrors that exactly; Sub<N,false> omits the still-ours check (the computed negative).
 //
-// KNOWN HAZARD F28: unhooking a subclasser that is NOT on top skips the restore, so its proc stays chained after the
+// LEGACY F28 (fixed: every mod now on kp::WindowHook): unhooking a subclasser that is NOT on top skips the restore, so its proc stays chained after the
 // DLL considers itself unhooked (a WndProc leak, and a dangling pointer once that DLL unloads). It is also never
 // retried (g_oldProc stays set), and when the subclasser above it later restores, the leaked proc becomes the
 // window's top proc again. Only unhooking in exact reverse install order is leak-free. These tests characterise that
@@ -316,10 +316,10 @@ int main() {
     KT_CHECK_EQ(modelMismatch, 0);
     // Safe invariant with the still-ours check: no live subclasser is ever dropped from the chain.
     KT_CHECK_EQ(checkedLiveLost, 0);
-    // KNOWN HAZARD F28: 10 of 12 (install order x unhook order) scenarios leave a proc chained; only reverse order is clean.
-    ::kt::CheckEq("KNOWN HAZARD F28: scenarios that leak a WndProc (middle/bottom unhook skips restore)", leakScenarios, 10);
+    // LEGACY F28 (fixed: every mod now on kp::WindowHook): 10 of 12 (install order x unhook order) scenarios leave a proc chained; only reverse order is clean.
+    ::kt::CheckEq("LEGACY F28 (fixed: every mod now on kp::WindowHook): scenarios that leak a WndProc (middle/bottom unhook skips restore)", leakScenarios, 10);
     ::kt::CheckEq("exactly the 2 reverse-order scenarios are leak-free", leakFree, 2);
-    ::kt::Check("KNOWN HAZARD F28: a leaked proc can become the window's top proc again after a later restore", staleScenarios > 0);
+    ::kt::Check("LEGACY F28 (fixed: every mod now on kp::WindowHook): a leaked proc can become the window's top proc again after a later restore", staleScenarios > 0);
 
     // ---- named hazard walk-through: install A,B,C then unhook B (middle) ----
     {
@@ -332,13 +332,13 @@ int main() {
         KT_CHECK(SB::g_oldProc != nullptr);                                           // still holds its old proc
         int b0 = SB::postUnhookHits;
         FakeSendMessage(0x20A, 0, 0);
-        ::kt::Check("KNOWN HAZARD F28: unhooked middle subclasser B still receives messages (WndProc leak)", SB::postUnhookHits == b0 + 1);
+        ::kt::Check("LEGACY F28 (fixed: every mod now on kp::WindowHook): unhooked middle subclasser B still receives messages (WndProc leak)", SB::postUnhookHits == b0 + 1);
         int bBefore = SB::hits;
         SB::install();                                                                // a second install is refused: g_oldProc still set
         KT_CHECK(FakeGetWindowLongPtr(kHwnd) == SC::procPtr());
         KT_CHECK_EQ(SB::hits, bBefore);
         SC::uninstall();                                                              // C is on top: restores to B (leaked, stale)
-        ::kt::Check("KNOWN HAZARD F28: C's restore puts the already-unhooked B proc back on top", FakeGetWindowLongPtr(kHwnd) == SB::procPtr());
+        ::kt::Check("LEGACY F28 (fixed: every mod now on kp::WindowHook): C's restore puts the already-unhooked B proc back on top", FakeGetWindowLongPtr(kHwnd) == SB::procPtr());
         SA::uninstall();                                                              // A not top (B is): skipped
         KT_CHECK(FakeGetWindowLongPtr(kHwnd) == SB::procPtr());
         base().hits = 0;
