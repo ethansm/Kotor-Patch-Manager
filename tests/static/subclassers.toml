@@ -9,9 +9,12 @@
 #   restore       regex (DOTALL) matching restore-if-still-ours: GetWindowLong(GWLP_WNDPROC) == our proc, followed by
 #                 SetWindowLong(GWLP_WNDPROC, saved old proc)
 #   install_hint, restore_hint   informational line numbers only; lines drift, never checked (drift is an INFO line)
+#   uses          optional; "WindowHook" marks a file that subclasses through Common WindowHook.h (kp::WindowHook<Tag>, safe unhook:
+#                 restore-if-on-top else pass-through). The file must name `WindowHook<` (a `using X = kp::WindowHook<Tag>` alias is
+#                 fine), install/restore regexes match its X::install( / X::uninstall( calls, and it needs no direct GWLP_WNDPROC call.
 #
 # check_subclassers.py: FAIL for a file with a GWLP_WNDPROC SetWindowLong that is not listed here ("new WndProc subclasser:
-# use Common WindowHook.h when it lands; or register it here"), FAIL when a listed file lacks its install or restore
+# use Common WindowHook.h (kp::WindowHook); or register it here"), FAIL when a listed file lacks its install or restore
 # pattern, WARN for a listed file with no GWLP_WNDPROC call (stale). Use single-quoted TOML literal strings for the regexes.
 
 [[subclasser]]
@@ -44,7 +47,15 @@ restore_hint = 1462
 
 [[subclasser]]
 file = "patch_manager_mods/_shared_src/GuiKit.h"
-install = 'g_wheelOldProc\s*=[^;]*SetWindowLongPtr[AW]?\s*\(\s*h\s*,\s*GWLP_WNDPROC\s*,[^;]*wheelProc'
-restore = 'GetWindowLongPtr[AW]?\s*\(\s*g_wheelHwnd\s*,\s*GWLP_WNDPROC\s*\)[^;]*==[^;]*wheelProc[^;]*\)\s*\{\s*SetWindowLongPtr[AW]?\s*\(\s*g_wheelHwnd\s*,\s*GWLP_WNDPROC\s*,[^;]*g_wheelOldProc'
-install_hint = 617
-restore_hint = 625
+uses = "WindowHook"
+install = 'WheelWin::install\s*\('
+restore = 'WheelWin::uninstall\s*\('
+install_hint = 630
+restore_hint = 639
+
+[[subclasser]]
+file = "patch_manager_mods/_shared_src/WindowHook.h"
+install = 'SetWindowLongPtr[AW]?\s*\(\s*h\s*,\s*GWLP_WNDPROC'
+restore = 'getProc\(hwnd\)\s*==\s*proc\)\s*\{\s*whapi::setProc\(hwnd,\s*old\).*?else\s*\{\s*whapi::xchg\(&passthrough,\s*1\)'
+install_hint = 12
+restore_hint = 45

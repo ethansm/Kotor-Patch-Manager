@@ -21,6 +21,9 @@
 #include <string.h>
 #include <math.h>
 #include <ctype.h>
+#ifndef GUIKIT_HOST
+#include "WindowHook.h"   // kp::WindowHook for the wheel subclass (included here, not inside namespace guikit)
+#endif
 
 namespace guikit {
 
@@ -603,9 +606,11 @@ inline bool winRButton() { return (GetAsyncKeyState(VK_RBUTTON) & 0x8000) != 0; 
 struct InstallPlatform { InstallPlatform() { g_gk.cursorClient = winCursorClient; g_gk.gameForeground = winForeground; g_gk.lbuttonDown = winLButton; g_gk.rbuttonDown = winRButton; } };
 inline InstallPlatform g_installPlatform;
 // WheelHook's Win32 side: subclass proc + install (A/I/E wheelProc and the subclass step of their gameWindow()).
-inline WNDPROC g_wheelOldProc = nullptr;
+// The subclass is a kp::WindowHook (Common WindowHook.h, finding F28 design A): one per DLL, DLL image pinned.
+struct WheelTag;
+using WheelWin = kp::WindowHook<WheelTag>;
 inline LRESULT CALLBACK wheelProc(HWND h, UINT m, WPARAM w, LPARAM l) {
-    if (m == WM_MOUSEWHEEL) {
+    if (m == WM_MOUSEWHEEL && WheelWin::active()) {
         WheelHook& s = g_wheel; DWORD now = GetTickCount();
         if (s.gate(now)) {
             if (s.scoped) saferead::beginScope();
@@ -615,26 +620,24 @@ inline LRESULT CALLBACK wheelProc(HWND h, UINT m, WPARAM w, LPARAM l) {
             if (s.onWheel(now, wheelDelta(w), have, pt.x, pt.y, r.right, r.bottom)) return 0;
         }
     }
-    return g_wheelOldProc ? CallWindowProcA(g_wheelOldProc, h, m, w, l) : DefWindowProcA(h, m, w, l);
+    return WheelWin::forward(h, m, w, l);
 }
 }
-// Subclasses the game window once (idempotent). False until the window exists (retry; gameWindow() throttles its own lookups to 2 s).
+// Subclasses the game window once (idempotent; also re-arms a hook that an earlier wheelUninstall left pass-through). False until the window
+// exists (retry; gameWindow() throttles its own lookups to 2 s).
 inline HWND g_wheelHwnd = nullptr;
 inline bool wheelInstall() {
-    if (detail::g_wheelOldProc) return true;
+    if (detail::WheelWin::old) { detail::WheelWin::install(detail::WheelWin::hwnd, detail::wheelProc); return true; }
     HWND h = detail::gameWindow(); if (!h) return false;
-    detail::g_wheelOldProc = reinterpret_cast<WNDPROC>(SetWindowLongPtrA(h, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(detail::wheelProc)));
-    if (detail::g_wheelOldProc) g_wheelHwnd = h;
-    return detail::g_wheelOldProc != nullptr;
+    bool ok = detail::WheelWin::install(h, detail::wheelProc);
+    if (ok) g_wheelHwnd = h;
+    return ok;
 }
-// Unload: restore the saved proc ONLY IF ours is still on top (another DLL that subclassed later would otherwise be unhooked); when it is not,
-// the proc stays installed and keeps chaining to the saved one (tests/static/subclassers.toml rule).
+// Unload (design A): the DLL image is pinned, so the proc may stay chained. Restore the saved proc ONLY IF ours is still on top; otherwise the
+// hook goes pass-through (inert, forwards everything) instead of unhooking a DLL that subclassed later (tests/static/subclassers.toml rule).
 inline void wheelUninstall() {
-    if (!detail::g_wheelOldProc || !g_wheelHwnd || !IsWindow(g_wheelHwnd)) return;
-    if (reinterpret_cast<WNDPROC>(GetWindowLongPtrA(g_wheelHwnd, GWLP_WNDPROC)) == detail::wheelProc) {
-        SetWindowLongPtrA(g_wheelHwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(detail::g_wheelOldProc));
-        detail::g_wheelOldProc = nullptr; g_wheelHwnd = nullptr;
-    }
+    detail::WheelWin::uninstall(detail::wheelProc);
+    g_wheelHwnd = detail::WheelWin::hwnd;
 }
 #endif
 

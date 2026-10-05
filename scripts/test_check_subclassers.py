@@ -56,8 +56,8 @@ class SubclasserTests(unittest.TestCase):
         fails = sevs(rep, "FAIL")
         self.assertEqual([f.msg.split(" ")[0] for f in fails], [f"{B}:2", f"{B}:3"])   # W/A and Ptr variants both match
         for f in fails:
-            self.assertIn("new WndProc subclasser: use Common WindowHook.h when it lands; "
-                          "or register it in tests/static/subclassers.toml", f.msg)
+            self.assertIn("new WndProc subclasser: use Common WindowHook.h (kp::WindowHook); "
+                          "or register it here", f.msg)
         self.assertEqual(rep.exit_code(), 1)
 
     def test_missing_restore_fails(self):
@@ -104,6 +104,31 @@ class SubclasserTests(unittest.TestCase):
         self.assertEqual((ok.returncode, bad.returncode), (0, 1))
         self.assertNotIn("PASS subclasser", ok.stdout)
         self.assertIn("FAIL subclasser", bad.stdout)
+
+    def _wh_root(self, src):
+        root = Path(self._tmp.name) / "wh"
+        (root / "patch_manager_mods/a_src").mkdir(parents=True, exist_ok=True)
+        (root / "tests/static").mkdir(parents=True, exist_ok=True)
+        (root / A).write_text(src)
+        (root / "tests/static/subclassers.toml").write_text(
+            '[[subclasser]]\nfile = "' + A + '"\nuses = "WindowHook"\n'
+            "install = 'Win::install\\s*\\('\nrestore = 'Win::uninstall\\s*\\('\n")
+        return root
+
+    def test_uses_windowhook_passes_without_direct_call(self):
+        rep = check(self._wh_root("struct T; using Win = kp::WindowHook<T>;\nvoid f(){ Win::install(h, p); }\nvoid g(){ Win::uninstall(p); }\n"))
+        self.assertEqual(sevs(rep, "FAIL"), [])
+        self.assertEqual(sevs(rep, "WARN"), [])                 # no stale-entry warning without a GWLP_WNDPROC call
+        self.assertIn("WindowHook install and restore present", [f.msg for f in sevs(rep, "INFO")][0])
+
+    def test_uses_windowhook_requires_windowhook_and_calls(self):
+        rep = check(self._wh_root("void f(){ Win::install(h, p); }\nvoid g(){ Win::uninstall(p); }\n"))   # no WindowHook< alias
+        self.assertEqual(len(sevs(rep, "FAIL")), 1)
+        self.assertIn("WindowHook", sevs(rep, "FAIL")[0].msg)
+        rep = check(self._wh_root("struct T; using Win = kp::WindowHook<T>;\nvoid f(){ Win::install(h, p); }\n"))   # no uninstall
+        fails = sevs(rep, "FAIL")
+        self.assertEqual(len(fails), 1)
+        self.assertIn("WindowHook restore pattern not found", fails[0].msg)
 
     def test_regex_covers_variants(self):
         for s in ("SetWindowLongPtrA(h, GWLP_WNDPROC, 0)", "SetWindowLongW (h, GWL_WNDPROC, 0)", "SetWindowLong(a.b,\n  GWLP_WNDPROC,x)",

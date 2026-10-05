@@ -12,6 +12,8 @@ Several DLLs chaining WndProcs over one game window must unhook in a safe order 
 subclasser is listed in tests/static/subclassers.toml (schema in that file) with an install and a restore pattern.
   FAIL  a file with a match that is not registered ("new WndProc subclasser: ...")
   FAIL  a registered file whose install or restore pattern is missing from the file
+  FAIL  an entry with uses = "WindowHook" whose file lacks `WindowHook<` (a using-alias of kp::WindowHook<Tag> is fine); such an
+        entry may have no direct GWLP_WNDPROC call (no stale WARN) and its install/restore regexes match the WindowHook calls
   WARN  a registered file with no SetWindowLong(GWLP_WNDPROC) match at all (stale entry)
   WARN  a registered file that does not exist / is not scanned
   PASS  every subclasser registered with both patterns present
@@ -31,7 +33,7 @@ import check_raw_addresses as cra  # noqa: E402  (scan_files: one source file se
 CHECK = "subclasser"
 SUBCLASS_RE = re.compile(r"SetWindowLong(?:Ptr)?[AW]?\s*\([^,]+,\s*GWLP?_WNDPROC")
 REGISTRY_REL = "tests/static/subclassers.toml"
-NEW_MSG = "new WndProc subclasser: use Common WindowHook.h when it lands; or register it in tests/static/subclassers.toml"
+NEW_MSG = "new WndProc subclasser: use Common WindowHook.h (kp::WindowHook); or register it here"
 
 
 def load_registry(path):
@@ -64,7 +66,11 @@ def run(root, registry=None, reporter=None):
             continue
         if entry is None:
             continue
-        if not matches:
+        uses_wh = entry.get("uses") == "WindowHook"
+        if uses_wh and "WindowHook<" not in text:
+            rep.fail(CHECK, f"{rel}: uses = \"WindowHook\" but the file never names kp::WindowHook<Tag> (alias via `using X = kp::WindowHook<Tag>` is fine)")
+            continue
+        if not matches and not uses_wh:
             rep.warn(CHECK, f"stale registry entry {rel}: no SetWindowLong(GWLP_WNDPROC) call in the file")
             continue
         ok = True
@@ -74,14 +80,16 @@ def run(root, registry=None, reporter=None):
             m = re.search(pat, text, re.S) if pat else None
             if not m:
                 ok = False
-                rep.fail(CHECK, f"{rel}: {kind} pattern {'missing from the registry' if not pat else 'not found in the file'}"
-                                f"{'' if kind == 'install' else ' (restore only if still ours: GetWindowLong == our proc, then SetWindowLong with the saved old proc)'}")
+                what = "WindowHook " + kind if uses_wh else kind
+                tail = "" if kind == "install" else (" (call WindowHook::uninstall(proc): it restores only if still on top, else goes pass-through)" if uses_wh
+                                                      else " (restore only if still ours: GetWindowLong == our proc, then SetWindowLong with the saved old proc)")
+                rep.fail(CHECK, f"{rel}: {what} pattern {'missing from the registry' if not pat else 'not found in the file'}{tail}")
             else:
                 hints[kind] = line_of(text, m.start())
         if ok:
             seen_registered += 1
             drift = [f"{k} line {hints[k]} (hint {entry.get(k + '_hint')})" for k in hints if entry.get(k + "_hint") != hints[k]]
-            rep.info(CHECK, f"{rel}: install and restore present" + (f"; hints drifted: {', '.join(drift)}" if drift else ""))
+            rep.info(CHECK, f"{rel}: {'WindowHook ' if uses_wh else ''}install and restore present" + (f"; hints drifted: {', '.join(drift)}" if drift else ""))
     for rel in sorted(set(reg) - set(scanned)):
         rep.warn(CHECK, f"stale registry entry {rel}: file missing or not scanned")
     if not rep.of("FAIL"):
