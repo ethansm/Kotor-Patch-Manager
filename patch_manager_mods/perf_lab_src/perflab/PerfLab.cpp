@@ -328,7 +328,7 @@ struct Metrics {
     volatile LONG64 netSend, netBytes, netOvfTest, netOvfHit, focusDummy, sceneDtor; volatile LONG netMaxLen;
     // U3 (server thread = main thread in single player; scratch fields are plain)
     volatile LONG64 aiTicks, aiObj, aiObjQpc, aiObjMaxQpc, aiObjSlow, aiPrepass, aiTickQpc; volatile LONG aiMaxN, aiMaxNLevel, aiTickHist[8];
-    uintptr_t aiMaster; LONG64 aiTickT0, aiLastPost, aiObjT0;
+    uintptr_t aiMaster; LONG64 aiTickT0, aiLastPost, aiObjT0; int aiLevelN[5];
     volatile LONG64 pathN, pathPending, pathOk, pathFail, pathOther, pathQpc, pathMaxQpc; LONG64 pathT0;
     volatile LONG64 effApply, effRemove;
     // 0.5.0
@@ -1471,7 +1471,16 @@ void __cdecl PerfLabAiTick(void* aim) {
     m.aiTickT0 = now; m.aiLastPost = 0; m.aiMaster = reinterpret_cast<uintptr_t>(aim);
     InterlockedIncrement64(&m.aiTicks);
     LONG total = 0; saferead::beginScope();
-    for (int L = 0; L < 5; ++L) { int n = 0; if (saferead::readAt(57, m.aiMaster, 8 + 16 * L, &n) && n > 0 && n < 100000) { total += n; if (n > m.aiMaxNLevel) m.aiMaxNLevel = n; } }
+    for (int L = 0; L < 5; ++L) {
+        int n = 0;
+        if (saferead::readAt(57, m.aiMaster, 8 + 16 * L, &n) && n > 0 && n < 100000) {
+            total += n;
+            if (n > m.aiMaxNLevel) m.aiMaxNLevel = n;
+            m.aiLevelN[L] = n;
+        } else {
+            m.aiLevelN[L] = 0;
+        }
+    }
     if (total > m.aiMaxN) m.aiMaxN = total;
 }
 // 0x51DC70: about to dispatch obj->vtbl[0x70] ([EBP-0x28] = object, [EBP-0x34] = level). Pre-pass work of this iteration = size of the level list.
@@ -1480,7 +1489,7 @@ void __cdecl PerfLabAiObjPre(void* obj, int level) {
     MTimer t(HkAiPre);
     Metrics& m = *g_m;
     InterlockedIncrement64(&m.aiObj);
-    if (m.aiMaster && level >= 0 && level < 5) { int n = 0; saferead::beginScope(); if (saferead::readAt(58, m.aiMaster, 8 + 16 * level, &n) && n > 0 && n < 100000) m.aiPrepass += n; }
+    if (level >= 0 && level < 5) m.aiPrepass += m.aiLevelN[level];
     m.aiObjT0 = qpc();
 }
 // 0x51DC86: after the dispatch (also reached on the skip path with no object: only a pending pre stamp counts).

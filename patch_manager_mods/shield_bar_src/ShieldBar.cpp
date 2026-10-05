@@ -82,15 +82,8 @@ struct CreatureRec { int creature; unsigned lastTick; bool primed; int n; EffRec
 CreatureRec g_cr[ProbeMaxCreatures];
 
 void probeDump(int eff, char* out, int cap) {
-    int len = 0;
-    for (int row = 0; row < 12; ++row) {
-        len = sb::appendf(out, cap, len, "\n    +%02x:", row * 16);
-        for (int k = 0; k < 16; ++k) {
-            unsigned char b = 0;
-            if (!readAt(eff, row * 16 + k, &b)) { len = sb::appendf(out, cap, len, " .."); continue; }
-            len = sb::appendf(out, cap, len, " %02x", b);
-        }
-    }
+    (void)eff;
+    if (cap > 0) out[0] = 0;
 }
 
 void probeEffects(int slotPtr, int creature) {
@@ -342,20 +335,8 @@ void glDump(const char* tag) {
 }
 // average brightness (0..255) of a 5x5 grid over the 3D scene area; -1 when unavailable
 int sceneBrightness() {
-    const gui2d::GlFns& g_gl = gui2d::gl();
-    if (!g_gl.readPixels) return -1;
-    const uintptr_t aw = k2addr::addr(&K2AddrTable::ScreenW), ah = k2addr::addr(&K2AddrTable::ScreenH);
-    if (!aw || !ah) return -1;
-    int w = 0, h = 0; readAt(static_cast<int>(aw), 0, &w); readAt(static_cast<int>(ah), 0, &h);
-    if (w < 100 || h < 100) return -1;
-    long sum = 0; int cnt = 0;
-    for (int iy = 0; iy < 5; ++iy) for (int ix = 0; ix < 5; ++ix) {
-        unsigned char px[16] = {};
-        g_gl.readPixels(w * (15 + 8 * ix) / 100, h * (25 + 9 * iy) / 100, 1, 1, 0x1908, 0x1401, px);
-        sum += px[0] + px[1] + px[2]; ++cnt;
-    }
-    while (g_gl.getError()) {}
-    return int(sum / (3 * cnt));
+    // GPU readback probe disabled to prevent PCIe pipeline stalls
+    return -1;
 }
 
 

@@ -119,7 +119,10 @@ void __cdecl ProbeMouseRaw(uintptr_t ebp) {
     ++g_polls;
     bool zero = (lx | ly | lz | (int)btn) == 0;
     if (zero) ++g_zeroPolls;
-    if (!zero || btn != g_lastBtn) KP_LOG(chRaw, "RAW %d %d %d %08x", lx, ly, lz, btn);
+    if (!zero || btn != g_lastBtn) {
+        if (btn != g_lastBtn) KP_LOG(chRaw, "RAW %d %d %d %08x", lx, ly, lz, btn);
+        else KP_LOG_EVERY(chRaw, 100, "RAW %d %d %d %08x", lx, ly, lz, btn);
+    }
     g_lastBtn = btn;
     if (g_secStart == 0) g_secStart = t;
     if (t - g_secStart >= 1000.0) {
@@ -136,7 +139,7 @@ void __cdecl ProbeMouseNorm(uintptr_t ebp) {
     if (!rd(ebp, -0x28, &self) || !rd(self, 0x408, &nx) || !rd(self, 0x40C, &ny)) return;
     if (nx == 0.0f && ny == 0.0f) return;
     bool sat = fabsf(nx) >= 1.0f || fabsf(ny) >= 1.0f;
-    KP_LOG(chNorm, "NORM %.4f%s %.4f%s%s", nx, tag(nx), ny, tag(ny), sat ? " SAT" : "");
+    KP_LOG_EVERY(chNorm, 100, "NORM %.4f%s %.4f%s%s", nx, tag(nx), ny, tag(ny), sat ? " SAT" : "");
 }
 
 // 0x78C452: [ebp-0x30]=dx [ebp-0x50]=dy [ebp-0x84]=scale, this=[ebp-0x130], ctl=*(this+0x18)
@@ -167,11 +170,20 @@ void __cdecl ProbeCameraFrame(uintptr_t ebp) {
                    rd(ctl, 0x94, &pitch) && rd(ctl, 0x98, &yaw) && rd(ctl, 0xC, &mode);
     bool pitchMoved = haveCtl && g_havePitch && fabsf(pitch - g_lastPitch) > 0.001f;
     if (drag || dx != 0.0f || dy != 0.0f || pitchMoved || (haveCtl && !g_havePitch)) {
-        if (haveCtl) {
-            KP_LOG(chCam, "CAM dx=%.4f%s dy=%.4f%s scale=%.3f%s drag=%d mode=%d yaw=%.4f%s pitch=%.4f%s ctl94=%.4f ctl98=%.4f",
-                   dx, tag(dx), dy, tag(dy), scale, tag(scale), drag, mode, yaw, tag(yaw), pitch, tag(pitch), pitch, yaw);
+        if (drag != g_drag || (haveCtl && !g_havePitch)) {
+            if (haveCtl) {
+                KP_LOG(chCam, "CAM dx=%.4f%s dy=%.4f%s scale=%.3f%s drag=%d mode=%d yaw=%.4f%s pitch=%.4f%s ctl94=%.4f ctl98=%.4f",
+                       dx, tag(dx), dy, tag(dy), scale, tag(scale), drag, mode, yaw, tag(yaw), pitch, tag(pitch), pitch, yaw);
+            } else {
+                KP_LOG(chCam, "CAM dx=%.4f%s dy=%.4f%s scale=%.3f%s drag=%d ctl=unreadable", dx, tag(dx), dy, tag(dy), scale, tag(scale), drag);
+            }
         } else {
-            KP_LOG(chCam, "CAM dx=%.4f%s dy=%.4f%s scale=%.3f%s drag=%d ctl=unreadable", dx, tag(dx), dy, tag(dy), scale, tag(scale), drag);
+            if (haveCtl) {
+                KP_LOG_EVERY(chCam, 100, "CAM dx=%.4f%s dy=%.4f%s scale=%.3f%s drag=%d mode=%d yaw=%.4f%s pitch=%.4f%s ctl94=%.4f ctl98=%.4f",
+                             dx, tag(dx), dy, tag(dy), scale, tag(scale), drag, mode, yaw, tag(yaw), pitch, tag(pitch), pitch, yaw);
+            } else {
+                KP_LOG_EVERY(chCam, 100, "CAM dx=%.4f%s dy=%.4f%s scale=%.3f%s drag=%d ctl=unreadable", dx, tag(dx), dy, tag(dy), scale, tag(scale), drag);
+            }
         }
     }
     if (haveCtl) { g_lastPitch = pitch; g_havePitch = true; }
