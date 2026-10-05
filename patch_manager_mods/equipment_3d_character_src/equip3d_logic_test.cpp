@@ -33,6 +33,7 @@ static Cfg loadText(const std::string& text, IniStats* st = nullptr) {
     fwrite(text.data(), 1, text.size(), f); rewind(f);
     char line[600];
     while (fgets(line, sizeof(line), f)) {
+        if (drainLongLine(line, sizeof(line), f)) { ++s.bad; continue; }   // F19: a >599-char line is rejected once
         trim(line);
         char* k = nullptr; char* v = nullptr;
         IniLine sp = splitIniLine(line, &k, &v);
@@ -97,8 +98,46 @@ static void testParseFloats() {
     KT_CHECK(parseFloats("1,2,3", o, 3)); KT_CHECK(approx(o[2], 3.f));
     KT_CHECK(!parseFloats("1,2", o, 3));
     KT_CHECK(parseFloats("", o, 0)); KT_CHECK(parseFloats("  ", o, 0)); KT_CHECK(!parseFloats("0", o, 0));   // n=0: only whitespace is a valid "empty list"
-    // CHARACTERIZATION: strtof accepts C99 hex floats, so "stage=0x3" is a valid 3.
-    KT_CHECK(parseFloats("0x10", o, 1)); KT_CHECK(approx(o[0], 16.f));
+    // F19 fixed: strtof would accept C99 hex floats ("stage=0x3" = 3); a hex token is now rejected (decimal unchanged).
+    KT_CHECK(!parseFloats("0x10", o, 1)); KT_CHECK(!parseFloats("-0x10", o, 1)); KT_CHECK(!parseFloats("+0X1p3", o, 1));
+    KT_CHECK(!parseFloats("  0x10", o, 1)); KT_CHECK(!parseFloats("1, 0x10", o, 2)); KT_CHECK(!parseFloats("0x10,1", o, 2));
+    KT_CHECK(parseFloats("0", o, 1) && o[0] == 0.f); KT_CHECK(parseFloats("-0.5", o, 1)); KT_CHECK(parseFloats("10", o, 1));
+    KT_CHECK(!parseFloats("0x", o, 1));
+}
+
+// ---- drainLongLine (F19, mirrors inv3d F31) ------------------------------------------------------------------------
+static void testDrainLongLine() {
+    char line[600];
+    {   // 700-char line then "key=1\n": exactly 2 logical lines, the second intact
+        FILE* f = tmpfile();
+        std::string text = std::string(700, 'x') + "\nkey=1\n";
+        fwrite(text.data(), 1, text.size(), f); rewind(f);
+        int n = 0; bool drained[4] = {false}; std::string second;
+        while (fgets(line, sizeof(line), f) && n < 4) { drained[n] = drainLongLine(line, sizeof(line), f); if (n == 1) second = line; ++n; }
+        fclose(f);
+        KT_CHECK_EQ(n, 2); KT_CHECK(drained[0]); KT_CHECK(!drained[1]); KT_CHECK(second == "key=1\n");
+    }
+    {   // short line untouched
+        FILE* f = tmpfile(); fputs("ab=1\nnext=2\n", f); rewind(f);
+        KT_CHECK(fgets(line, sizeof(line), f) != nullptr); KT_CHECK(!drainLongLine(line, sizeof(line), f)); KT_CHECK(std::string(line) == "ab=1\n");
+        KT_CHECK(fgets(line, sizeof(line), f) != nullptr); KT_CHECK(std::string(line) == "next=2\n"); fclose(f);
+    }
+    {   // boundary: 599 chars fits with LF, CRLF or EOF; 600 does not; degenerate n
+        FILE* f = tmpfile(); fputs((std::string(599, 'a') + "\nz=1\n").c_str(), f); rewind(f);
+        KT_CHECK(fgets(line, sizeof(line), f) != nullptr); KT_CHECK(!drainLongLine(line, sizeof(line), f));
+        KT_CHECK(fgets(line, sizeof(line), f) != nullptr); KT_CHECK(std::string(line) == "z=1\n"); fclose(f);
+        f = tmpfile(); fputs((std::string(600, 'a') + "\nz=1\n").c_str(), f); rewind(f);
+        KT_CHECK(fgets(line, sizeof(line), f) != nullptr); KT_CHECK(drainLongLine(line, sizeof(line), f));
+        KT_CHECK(fgets(line, sizeof(line), f) != nullptr); KT_CHECK(std::string(line) == "z=1\n"); fclose(f);
+        f = tmpfile(); fputs((std::string(599, 'a') + "\r\nz=1\r\n").c_str(), f); rewind(f);   // CRLF ini: 599 chars still fit
+        KT_CHECK(fgets(line, sizeof(line), f) != nullptr); KT_CHECK(!drainLongLine(line, sizeof(line), f));
+        KT_CHECK(fgets(line, sizeof(line), f) != nullptr); KT_CHECK(std::string(line) == "z=1\r\n"); fclose(f);
+        f = tmpfile(); fputs(std::string(599, 'a').c_str(), f); rewind(f);
+        KT_CHECK(fgets(line, sizeof(line), f) != nullptr); KT_CHECK(!drainLongLine(line, sizeof(line), f)); fclose(f);
+        f = tmpfile(); fputs((std::string(599, 'a') + "\rb\nz=1\n").c_str(), f); rewind(f);   // lone CR then more data: too long
+        KT_CHECK(fgets(line, sizeof(line), f) != nullptr); KT_CHECK(drainLongLine(line, sizeof(line), f));
+        KT_CHECK(fgets(line, sizeof(line), f) != nullptr); KT_CHECK(std::string(line) == "z=1\n"); fclose(f);
+    }
 }
 
 static void testSplitIniLine() {
@@ -124,7 +163,7 @@ static void testSplitIniLine() {
     sp("rig=Charrec_Light", &k, &v); KT_CHECK_EQ(v.c_str(), "Charrec_Light");   // value case preserved
     sp("stage=3 ; five", &k, &v); KT_CHECK_EQ(v.c_str(), "3");                  // ';' trailing comment
     sp("stage=3 # five", &k, &v); KT_CHECK_EQ(v.c_str(), "3");                  // '#' trailing comment
-    sp("rig=a#b", &k, &v); KT_CHECK_EQ(v.c_str(), "a");      // CHARACTERIZATION: a value can never contain '#' or ';'
+    sp("rig=a#b", &k, &v); KT_CHECK_EQ(v.c_str(), "a");      // by design: INI comment -- a value can never contain '#' or ';'
     sp("stage=;3", &k, &v); KT_CHECK_EQ(v.c_str(), "");
     sp("a=b=c", &k, &v); KT_CHECK_EQ(k.c_str(), "a"); KT_CHECK_EQ(v.c_str(), "b=c");   // first '=' splits
     sp("=v", &k, &v); KT_CHECK_EQ(k.c_str(), ""); KT_CHECK_EQ(v.c_str(), "v");        // empty key -> later "unknown key ''"
@@ -214,7 +253,20 @@ static void testParseIniLineValues() {
     Cfg d; KT_CHECK_EQ(applyLine(d, "stage=abc"), IniBad); KT_CHECK_EQ(d.stage, 5);
     KT_CHECK_EQ(applyLine(d, "stage="), IniBad); KT_CHECK_EQ(d.stage, 5);
     KT_CHECK_EQ(applyLine(d, "stage=1 2"), IniBad); KT_CHECK_EQ(d.stage, 5);
-    KT_CHECK_EQ(applyLine(d, "stage=nan"), IniBad); KT_CHECK_EQ(d.stage, 5);
+    KT_CHECK_EQ(applyLine(d, "stage=nan"), IniBad); KT_CHECK_EQ(d.stage, 5);   // parseFloats rejects nan/inf, so toIntSat never sees NaN from the INI
+    // F19 fixed: hex tokens are rejected (strtof accepted them)
+    KT_CHECK_EQ(applyLine(d, "stage=0x10"), IniBad); KT_CHECK_EQ(d.stage, 5);
+    KT_CHECK_EQ(applyLine(d, "stage=-0x10"), IniBad); KT_CHECK_EQ(d.stage, 5);
+    KT_CHECK_EQ(applyLine(d, "stage=0"), IniOk); KT_CHECK_EQ(d.stage, 0);
+    // F19 fixed: a float beyond int range saturates instead of (int)f undefined behaviour
+    KT_CHECK_EQ(toIntSat(1e30f), INT_MAX); KT_CHECK_EQ(toIntSat(-1e30f), INT_MIN);
+    KT_CHECK_EQ(toIntSat(2147483648.f), INT_MAX); KT_CHECK_EQ(toIntSat(-2147483648.f), INT_MIN);
+    KT_CHECK_EQ(toIntSat(2147483520.f), 2147483520); KT_CHECK_EQ(toIntSat(-2147483520.f), -2147483520);
+    KT_CHECK_EQ(toIntSat(2.9f), 2); KT_CHECK_EQ(toIntSat(-2.9f), -2); KT_CHECK_EQ(toIntSat(0.f), 0); KT_CHECK_EQ(toIntSat(-0.5f), 0);
+    KT_CHECK_EQ(toIntSat(NAN), 0);                                             // NaN -> 0 (unreachable from the INI)
+    { Cfg e; KT_CHECK_EQ(applyLine(e, "stage=1e30"), IniOk); KT_CHECK_EQ(e.stage, INT_MAX); clampCfg(e); KT_CHECK_EQ(e.stage, 5); }
+    { Cfg e; KT_CHECK_EQ(applyLine(e, "stage=-1e30"), IniOk); KT_CHECK_EQ(e.stage, INT_MIN); clampCfg(e); KT_CHECK_EQ(e.stage, 0); }
+    { Cfg e; KT_CHECK_EQ(applyLine(e, "poll_ms=-1e30"), IniOk); KT_CHECK_EQ(e.pollMs, INT_MIN); clampCfg(e); KT_CHECK_EQ(e.pollMs, 16); }
     KT_CHECK_EQ(applyLine(d, "fov_deg=inf"), IniBad); KT_CHECK(d.fov == 22.726f);
     KT_CHECK_EQ(applyLine(d, "screen_w=oops"), IniBad); KT_CHECK(!d.screenExplicit);   // a rejected screen_* does not mark explicit
     // string fields: length limits (strlen < sizeof) and emptiness
@@ -331,9 +383,18 @@ static void testIniFile() {
     c = loadText("keep_obj10=1\nkeep_obj10=0\n", &st); KT_CHECK_EQ(st.keep, 1); KT_CHECK_EQ(st.ok, 2);
     c = loadText("stage=4");                                            // no trailing newline
     KT_CHECK_EQ(c.stage, 4);
-    // CHARACTERIZATION: loadIni reads with fgets(line[600]); a longer line is split and the tail is parsed as its own line.
+    // F19 fixed: loadIni reads with fgets(line[600]) + drainLongLine; a longer line is rejected ONCE (its tail is not parsed
+    // as a second line) and the line after it is still applied.
     std::string longRig = "rig=" + std::string(700, 'a') + "\n";
-    c = loadText(longRig, &st); KT_CHECK_EQ(st.ok, 0); KT_CHECK_EQ(st.bad, 2); KT_CHECK_EQ(c.rig, "charrec_light");
+    c = loadText(longRig, &st); KT_CHECK_EQ(st.ok, 0); KT_CHECK_EQ(st.bad, 1); KT_CHECK_EQ(c.rig, "charrec_light");
+    c = loadText(longRig + "stage=3\n", &st); KT_CHECK_EQ(st.ok, 1); KT_CHECK_EQ(st.bad, 1); KT_CHECK_EQ(c.stage, 3);
+    // exactly 599 chars (buffer 600 = 599 + NUL) fits whether it ends in LF, CRLF or EOF
+    std::string l599 = "stage=3" + std::string(599 - 7, ' ');
+    c = loadText(l599 + "\nhelmet=0\n", &st); KT_CHECK_EQ(st.ok, 2); KT_CHECK_EQ(st.bad, 0); KT_CHECK_EQ(c.stage, 3); KT_CHECK_EQ(c.helmet, 0);
+    c = loadText(l599 + "\r\nhelmet=0\r\n", &st); KT_CHECK_EQ(st.ok, 2); KT_CHECK_EQ(st.bad, 0); KT_CHECK_EQ(c.stage, 3); KT_CHECK_EQ(c.helmet, 0);
+    c = loadText(l599, &st); KT_CHECK_EQ(st.ok, 1); KT_CHECK_EQ(st.bad, 0); KT_CHECK_EQ(c.stage, 3);
+    // 600 chars is "longer than 599": rejected once, next line applied
+    c = loadText(l599 + " \nhelmet=0\n", &st); KT_CHECK_EQ(st.bad, 1); KT_CHECK_EQ(st.ok, 1); KT_CHECK_EQ(c.helmet, 0); KT_CHECK_EQ(c.stage, 5);
     // 598-char key=value fits (599 chars + NUL); flourish_list tops out at 511 chars regardless
     std::string fits = "flourish_list=" + std::string(511, 'x') + "\n";
     c = loadText(fits, &st); KT_CHECK_EQ(st.ok, 1); KT_CHECK_EQ(strlen(c.flList), 511);
@@ -704,6 +765,7 @@ static void testLayoutMenu() {
 int main() {
     testTrim();
     testParseFloats();
+    testDrainLongLine();
     testSplitIniLine();
     testCfgDefaults();
     testParseIniLineKeys();

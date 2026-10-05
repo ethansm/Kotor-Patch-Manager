@@ -154,7 +154,9 @@ void loadIni() {
     if (!f) { logf("INI: equip3d.ini not found, using defaults (stage=%d debug=%d)", c.stage, g_debug); g_cfg = c; ++g_cfgGen; return; }
     char line[600]; int ln = 0, ok = 0, bad = 0;
     while (fgets(line, sizeof(line), f)) {
-        ++ln; trim(line);
+        ++ln;
+        if (eq3d::drainLongLine(line, sizeof(line), f)) { logf("INI line %d rejected (longer than 599 chars)", ln); ++bad; continue; }
+        trim(line);
         char* k = nullptr; char* v = nullptr;
         eq3d::IniLine sp = eq3d::splitIniLine(line, &k, &v);
         if (sp == eq3d::IniLineSkip) continue;
@@ -239,10 +241,6 @@ Slot* claimSlot(int panel) {
 }
 
 int modelCount(unsigned char* view) { int n = -1; readAt<int>(reinterpret_cast<int>(view), ModelCountOffset, &n); return n; }
-void* getModel(unsigned char* view, int idx) {
-    if (!view) return nullptr;
-    return reinterpret_cast<GetModelFn>(FnGetModel)(view + SceneOffset, idx);
-}
 
 // ---- game window / wheel (copied from Mod 1) ----
 HWND g_hwnd = nullptr;
@@ -620,14 +618,6 @@ void* partGob(Slot* s, int id) {
     void** hv = vtOf(reinterpret_cast<void*>(holder));
     if (!hv || IsBadReadPtr(hv + 2, 4)) return nullptr;
     return reinterpret_cast<PartGetFn>(hv[2])(reinterpret_cast<void*>(holder), id);
-}
-// Idle name as 0077ec20 picks it (evil <40, neutral <60, else good; droids: pause1) - verified by the anim length probe.
-bool partLen(void* part, const char* name, float* len) {
-    void** pv = vtOf(part);
-    if (!pv || IsBadReadPtr(pv + PartLenSlot / 4, 4)) return false;
-    float l = 0; reinterpret_cast<PartLenFn>(pv[PartLenSlot / 4])(part, name, 0, &l);
-    *len = l;
-    return l > 0.0f;   // -1.0 = missing animation
 }
 void playPart(void* part, const char* name, float speed, unsigned flags) {
     void** pv = vtOf(part);

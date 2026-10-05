@@ -38,9 +38,32 @@ inline void trim(char* s) {
     memmove(s, p, strlen(p) + 1);
     for (int n = (int)strlen(s); n > 0 && isspace((unsigned char)s[n - 1]); --n) s[n - 1] = 0;
 }
+// F19: call right after fgets(line, n, f). If the physical line did not fit (buffer full, no '\n', more data follows),
+// consume the rest of it and return true so the caller rejects the line ONCE instead of parsing the tail as a new line.
+// A line of exactly n-1 chars (with its '\n' or "\r\n" next, or at EOF) fits and returns false. (Copy of inv3d::drainLongLine.)
+inline bool drainLongLine(char* line, size_t n, FILE* f) {
+    if (n < 2 || strlen(line) != n - 1 || line[n - 2] == '\n') return false;
+    int c = getc(f);
+    if (c == '\r') { int d = getc(f); if (d == '\n' || d == EOF) return false; c = d; }   // CRLF after exactly n-1 chars fits
+    if (c == EOF || c == '\n') return false;
+    while (c != '\n' && c != EOF) c = getc(f);
+    return true;
+}
+// F19: float -> int without the undefined behaviour of (int)f for |f| >= 2^31: saturates to INT_MAX / INT_MIN, NaN -> 0
+// (parseFloats already rejects nan/inf, so NaN is unreachable from the INI), otherwise truncates toward zero like (int)f.
+inline int toIntSat(float f) {
+    if (f != f) return 0;
+    if (f >= 2147483648.f) return 2147483647;
+    if (f <= -2147483648.f) return -2147483647 - 1;
+    return (int)f;
+}
+// F19: strtof also accepts C99 hex floats ("stage=0x10" = 16); a token starting 0x/0X (after optional whitespace and sign) is rejected.
 inline bool parseFloats(const char* v, float* out, int n) {
     const char* p = v;
     for (int i = 0; i < n; ++i) {
+        const char* q = p; while (*q && isspace((unsigned char)*q)) ++q;
+        if (*q == '+' || *q == '-') ++q;
+        if (q[0] == '0' && (q[1] == 'x' || q[1] == 'X')) return false;
         char* e; out[i] = strtof(p, &e);
         if (e == p || !isfinite(out[i])) return false;
         p = e; while (*p && isspace((unsigned char)*p)) ++p;
@@ -75,34 +98,34 @@ inline IniLine splitIniLine(char* line, char** key, char** val) {
 enum IniResult { IniOk = 0, IniBad, IniUnknown, IniOkKeepObj10 };
 inline IniResult parseIniLine(Cfg& c, const char* k, const char* v) {
     float a[2]; bool good = true;
-    if (!strcmp(k, "enabled")) { good = parseFloats(v, a, 1); if (good) c.enabled = (int)a[0]; }
-    else if (!strcmp(k, "stage")) { good = parseFloats(v, a, 1); if (good) c.stage = (int)a[0]; }
+    if (!strcmp(k, "enabled")) { good = parseFloats(v, a, 1); if (good) c.enabled = toIntSat(a[0]); }
+    else if (!strcmp(k, "stage")) { good = parseFloats(v, a, 1); if (good) c.stage = toIntSat(a[0]); }
     else if (!strcmp(k, "rig")) { if (v[0] && strlen(v) < sizeof(c.rig)) strcpy(c.rig, v); else good = false; }
     else if (!strcmp(k, "fov_deg")) { good = parseFloats(v, a, 1); if (good) c.fov = a[0]; }
-    else if (!strcmp(k, "bevels")) { good = parseFloats(v, a, 1); if (good) c.bevels = (int)a[0]; }
+    else if (!strcmp(k, "bevels")) { good = parseFloats(v, a, 1); if (good) c.bevels = toIntSat(a[0]); }
     else if (!strcmp(k, "drag_deg_per_px")) { good = parseFloats(v, a, 1); if (good) c.dragDegPx = a[0]; }
-    else if (!strcmp(k, "wheel_zoom")) { good = parseFloats(v, a, 1); if (good) c.wheelZoom = (int)a[0]; }
+    else if (!strcmp(k, "wheel_zoom")) { good = parseFloats(v, a, 1); if (good) c.wheelZoom = toIntSat(a[0]); }
     else if (!strcmp(k, "wheel_step")) { good = parseFloats(v, a, 1); if (good) c.wheelStep = a[0]; }
     else if (!strcmp(k, "zoom_min")) { good = parseFloats(v, a, 1); if (good) c.zoomMin = a[0]; }
     else if (!strcmp(k, "zoom_max")) { good = parseFloats(v, a, 1); if (good) c.zoomMax = a[0]; }
-    else if (!strcmp(k, "hit_flip_y")) { good = parseFloats(v, a, 1); if (good) c.hitFlipY = (int)a[0]; }
+    else if (!strcmp(k, "hit_flip_y")) { good = parseFloats(v, a, 1); if (good) c.hitFlipY = toIntSat(a[0]); }
     else if (!strcmp(k, "screen_w")) { good = parseFloats(v, a, 1); if (good) { c.screenW = a[0]; c.screenExplicit = true; c.screenSet |= 1; } }
     else if (!strcmp(k, "screen_h")) { good = parseFloats(v, a, 1); if (good) { c.screenH = a[0]; c.screenExplicit = true; c.screenSet |= 2; } }
-    else if (!strcmp(k, "flourish")) { good = parseFloats(v, a, 1); if (good) c.flourish = (int)a[0]; }
+    else if (!strcmp(k, "flourish")) { good = parseFloats(v, a, 1); if (good) c.flourish = toIntSat(a[0]); }
     else if (!strcmp(k, "flourish_min_s")) { good = parseFloats(v, a, 1); if (good) c.flMin = a[0]; }
     else if (!strcmp(k, "flourish_max_s")) { good = parseFloats(v, a, 1); if (good) c.flMax = a[0]; }
     else if (!strcmp(k, "flourish_first_s")) { good = parseFloats(v, a, 1); if (good) c.flFirst = a[0]; }
     else if (!strcmp(k, "flourish_quiet_s")) { good = parseFloats(v, a, 1); if (good) c.flQuiet = a[0]; }
-    else if (!strcmp(k, "flourish_on_equip")) { good = parseFloats(v, a, 1); if (good) c.flOnEquip = (int)a[0]; }
+    else if (!strcmp(k, "flourish_on_equip")) { good = parseFloats(v, a, 1); if (good) c.flOnEquip = toIntSat(a[0]); }
     else if (!strcmp(k, "flourish_stance_list")) { if (strlen(v) < sizeof(c.flStance)) strcpy(c.flStance, v); else good = false; }
     else if (!strcmp(k, "flourish_list")) { if (strlen(v) < sizeof(c.flList)) strcpy(c.flList, v); else good = false; }
     else if (!strcmp(k, "equip_anim")) { if (v[0] && strlen(v) < sizeof(c.equipAnim)) strcpy(c.equipAnim, v); else good = false; }
-    else if (!strcmp(k, "poll_ms")) { good = parseFloats(v, a, 1); if (good) c.pollMs = (int)a[0]; }
-    else if (!strcmp(k, "buttons")) { good = parseFloats(v, a, 1); if (good) c.buttons = (int)a[0]; }
+    else if (!strcmp(k, "poll_ms")) { good = parseFloats(v, a, 1); if (good) c.pollMs = toIntSat(a[0]); }
+    else if (!strcmp(k, "buttons")) { good = parseFloats(v, a, 1); if (good) c.buttons = toIntSat(a[0]); }
     else if (!strcmp(k, "spin_toggle_deg_s")) { good = parseFloats(v, a, 1); if (good) c.spinToggleDegS = a[0]; }
-    else if (!strcmp(k, "keep_obj10")) { good = parseFloats(v, a, 1); if (good) c.keepObj10 = (int)a[0]; if (good && c.keepObj10) return IniOkKeepObj10; }
-    else if (!strcmp(k, "helmet")) { good = parseFloats(v, a, 1); if (good) c.helmet = (int)a[0]; }
-    else if (!strcmp(k, "rebuild_min_ms")) { good = parseFloats(v, a, 1); if (good) c.rebuildMinMs = (int)a[0]; }
+    else if (!strcmp(k, "keep_obj10")) { good = parseFloats(v, a, 1); if (good) c.keepObj10 = toIntSat(a[0]); if (good && c.keepObj10) return IniOkKeepObj10; }
+    else if (!strcmp(k, "helmet")) { good = parseFloats(v, a, 1); if (good) c.helmet = toIntSat(a[0]); }
+    else if (!strcmp(k, "rebuild_min_ms")) { good = parseFloats(v, a, 1); if (good) c.rebuildMinMs = toIntSat(a[0]); }
     else if (!strcmp(k, "spin_deg_s")) { good = parseFloats(v, a, 1); if (good) c.spinDegS = a[0]; }
     else return IniUnknown;
     return good ? IniOk : IniBad;
