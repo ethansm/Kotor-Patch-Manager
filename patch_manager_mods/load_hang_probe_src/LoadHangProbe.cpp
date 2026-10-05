@@ -36,6 +36,7 @@
 #include <stdlib.h>
 #include "../_shared/SafeRead.h"
 #include "CodePatch.h"
+#include "GameAddr.h"
 
 namespace {
 
@@ -44,7 +45,7 @@ using saferead::readAt;
 // ---- engine layout (Ghidra, 09 section 9d) ------------------------------------------------------------
 constexpr uintptr_t AppGlobal = 0x00A1B4A4;          // app; client = *(app+4); internal = *(client+4)
 constexpr uintptr_t LoadScreenVtable = 0x009A5C84;   // CSWGuiLoadScreen
-constexpr uintptr_t FlagA1B4E0 = 0x00A1B4E0;         // tested next to HideLoadScreen in MainLoop
+constexpr uintptr_t FlagA1B4E0 = gameaddr::AppActiveFlag;   // tested next to HideLoadScreen in MainLoop
 constexpr int In_Flag18 = 0x18, In_PlayerId = 0x20, In_Sub48 = 0x48, In_Movie = 0x130, In_GuiMgr = 0x274,
               In_LoadScreen = 0x278, In_AreaReady = 0x288, In_PendingSwap = 0x338, In_PlayerCacheId = 0x3BC,
               In_PlayerCachePtr = 0x3C0;
@@ -53,7 +54,7 @@ constexpr int App_ModuleState = 0x14;                // *(app+0x14) -> [0]==1, [
 constexpr int Mgr_Modals = 0x94, Mgr_ModalCount = 0x98;
 // activation machinery (Ghidra, doc 09 s15)
 constexpr uintptr_t GameHwndG = 0x00A1B484, GateD4 = 0x00A1B4D4, GateBC = 0x00A1B4BC, GateC0 = 0x00A1B4C0, GateTick = 0x00A1B6F4,
-                    Gate768 = 0x00A1B768, Gate76C = 0x00A1B76C, Gate42A0 = 0x009F42A0, InitFlag = 0x00A1B48C;
+                    Gate768 = 0x00A1B768, Gate76C = gameaddr::MovieRestoreSkipFlag, Gate42A0 = 0x009F42A0, InitFlag = 0x00A1B48C;
 constexpr uintptr_t FnAppActivated = 0x0040BCF0;   // void __cdecl (void): sets a1b4e0=1 when it was 0
 
 // ---- config -------------------------------------------------------------------------------------------
