@@ -38,3 +38,6 @@ cxxflags = ["-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HO
 
 [windowhook_test]
 cxxflags = ["-DWINDOWHOOK_HOST", "-Werror"]
+
+[strfmt_test]
+cxxflags = ["-I../buff_duration_hud_src", "-I../shield_bar_src", "-Werror"]
