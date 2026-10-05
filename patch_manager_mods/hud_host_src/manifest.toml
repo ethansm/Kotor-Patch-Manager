@@ -1,0 +1,15 @@
+[patch]
+id = "hud-host"
+name = "HUD Host (shared in-game menu / HUD hooks)"
+version = "0.1.0-dev"
+kind = "library"
+provides = ["k2.hud@1"]
+author = "local"
+description = "Owns the CSWGuiTargetActionMenu::PopulateMenus hook (0x00743540) and provides the k2.hud v1 registry interface, so several HUD mods (combat hotbar, ...) can share it. Draws and writes nothing by itself. Needs a KotorPatcher with the patch registry (KPatchInit)."
+
+requires = []
+conflicts = []
+
+# Steam only for now. Design: patch_manager_mods/31_combat_action_hotbar.md section 5 (local-setup/KOTOR-II worktree).
+[patch.supported_versions]
+kotor2_steam_aspyr = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"

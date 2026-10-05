@@ -1,0 +1,28 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
+
+# CSWGuiTargetActionMenu::PopulateMenus (0x00743540), detour at the prologue (no frame yet), so params are esp-relative:
+# ecx = menu (hud + 0xCC), [esp+4] = leader, [esp+8] = forceUnusable (int), [esp+0xC] = target
+[[hooks]]
+address = 0x00743540
+type = "detour"
+function = "HH_TargetMenuPopulate"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x38]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+8]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[esp+0xC]"
+type = "pointer"
