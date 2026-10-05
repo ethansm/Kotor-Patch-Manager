@@ -160,3 +160,10 @@ Gates: run_tests 104/104, check_hook_bytes FAIL=0 (32 hooks, unchanged), check_h
 Change path button; check the icon draws over the 3D model (not live-verified) and that clicking it does not rotate the model. (2) Level-up available:
 Change path under Level Up, icon hidden. (3) PC: icon -> filter page -> On + profile -> Apply -> `pc=r10|...|r10=1|...` in levelup_playthroughs.ini ->
 PC feats level-up greyed entries + `R10 config source=playthrough` + `R10 dim` lines. Next offline: batch 3b (in-panel `Filter:` button, needs panel GUI RE).
+
+**Live result 2026-10-04 ~16:15 (1.3.0-dev 8dfce2de, installed by the C1/C2 reinstall, backup `$G/backups/c1c2_reinstall_20261004_1611`; log from line 629):**
+icon fill `lbl_icn_opt2` ok=1, 25 controls appended, `UI tips kind=pc native=8`; PC icon -> page -> Cancel / rows / Apply -> `pc=r10|...|pcfilter=melee/double/light|ffilter=build_dim|pfilter=build_dim`
+written (r10=0: On was toggled twice) and reloaded (`start=playthrough`). Native tooltips CONFIRMED live (`TIPPROBE ... owner_is_ours=1 shown=1 ctl40=1`).
+Bugs: banner still says `Version = "1.2.0-dev"` (LevelUpOverride.cpp:93); first `UI lvlbtn shown=0 isVisible=1` (likely a stale ctor-time flag, recheck).
+User feedback (batch 3c): gear icon instead of the hammer; the icon is stretched (not square: sx != sy on this screen); the config page needs a proper
+bordered window that fully covers the menu underneath. No screenshots were taken.

@@ -1102,3 +1102,5 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
 - **RESUME HERE (2026-10-04, R10 batch 3a):** PC filter page + settings icon DONE offline, NOT installed (doc 25 section 14): 1.3.0-dev kpatch 8dfce2de
   (KPM de587d3, 32 hooks unchanged). Live still 8f9ca9e2. When the user is back: play-test 8f9ca9e2, then one reinstall (consent) carries 2a + 3a; run
   doc 25 s14 "Live test" (icon/Change path switch, PC page Apply -> `pc=` line -> dim). Next offline = batch 3b (in-panel Filter button).
+- **RESUME HERE (2026-10-04 ~22:00, batch 3c planned):** 1.3.0-dev LIVE since 16:11 (C1/C2 reinstall), PC page works live (doc 25 s14 "Live result").
+  Next = batch 3c: gear icon (no vanilla gear texture: generate one), square icon (pixel-square from sy), bordered opaque config window. Handoff `.claude/handoffs/25_pc_levelup_filter.handoff.md`.
