@@ -212,6 +212,35 @@ int main() {
         HCHECK("freezeOrigin: leaving unfreezes", !ch::freezeOrigin(fs, false, 50, 60, &fx, &fy) && fx == 50 && fy == 60);
     }
 
+    // 8. CH5: profile parse/format/order/signature APIs (CombatLogic.h) as used by loadProfile + updateButtons
+    {
+        ch::Profile pr; ch::defaultProfile(pr);
+        HCHECK("defaultProfile: grenades (g2) sort by count, others engine order", !pr.byCount[0] && !pr.byCount[1] && pr.byCount[2] && pr.nPin[0] == 0 && pr.nHide[2] == 0);
+        HCHECK("parseProfileLine accepts Pin/Hide lists and Sort values", ch::parseProfileLine(pr, "Pin0", "Flurry, 0x10") && ch::parseProfileLine(pr, "Hide1", "Attack") && ch::parseProfileLine(pr, "Sort2", "engine") && pr.nPin[0] == 2 && pr.nHide[1] == 1 && !pr.byCount[2]);
+        HCHECK("parseProfileLine rejects an unknown key or bad Sort value", !ch::parseProfileLine(pr, "Bogus0", "x") && !ch::parseProfileLine(pr, "Sort0", "sideways"));
+        char fb[1024] = { 0 };
+        const int fl = ch::formatProfile(pr, fb, sizeof(fb));
+        HCHECK("formatProfile returns the length, lines joined by newline", fl > 0 && fl == static_cast<int>(strlen(fb)) && strstr(fb, "Pin0=Flurry,0x10\nHide0=") != nullptr && strstr(fb, "Sort2=engine") != nullptr);
+        char tiny[8];
+        HEQ("formatProfile returns -1 when the buffer is too small", ch::formatProfile(pr, tiny, sizeof(tiny)), -1);
+
+        ch::GroupView og; memset(&og, 0, sizeof(og)); og.count = 3;
+        for (int i = 0; i < 3; ++i) { og.e[i].key = 0x100u + i; og.e[i].count = static_cast<uint32_t>(i + 1); }
+        char onames[16][64]; memset(onames, 0, sizeof(onames));
+        strcpy(onames[0], "Attack"); strcpy(onames[1], "Master Flurry"); strcpy(onames[2], "Power Blast");
+        int ord[16] = { -1 }; ch::Profile op; ch::defaultProfile(op);
+        HEQ("orderGroup engine order for g0 by default", ch::orderGroup(og, onames, op, 0, ord, 16), 3);
+        HCHECK("orderGroup keeps engine order (0,1,2)", ord[0] == 0 && ord[1] == 1 && ord[2] == 2);
+        HEQ("orderGroup g2 sorts by stack size descending", ch::orderGroup(og, onames, op, 2, ord, 16), 3);
+        HCHECK("orderGroup g2 order is (2,1,0)", ord[0] == 2 && ord[1] == 1 && ord[2] == 0);
+        ch::parseProfileLine(op, "Pin0", "Flurry"); ch::parseProfileLine(op, "Hide0", "Attack");
+        HEQ("orderGroup: hide drops, pin suffix-matches", ch::orderGroup(og, onames, op, 0, ord, 16), 2);
+        HCHECK("orderGroup: pinned entry first", ord[0] == 1 && ord[1] == 2);
+        const uint32_t s1 = ch::orderSig(og, ord, 2);
+        const int rev[2] = { ord[1], ord[0] };
+        HCHECK("orderSig is deterministic and order-sensitive", s1 == ch::orderSig(og, ord, 2) && s1 != ch::orderSig(og, rev, 2));
+    }
+
     munmap(arena, 0x10000);
     return ::kt::Report("common_contract_test (combat-hotbar)");
 }
