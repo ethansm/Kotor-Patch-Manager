@@ -72,10 +72,13 @@ inline ArrowCounters bumpArrowCounters(int rawBuff, int rawDebuff, int nBuff, in
 }
 
 // Per-slot last-seen (raw, tracked) tuple: the ARROWS / ICONCACHE lines are logged only when it changes.
-struct ArrowRaw { int slot; unsigned char buff, debuff, nBuff, nDebuff; };
+// `seen` = a tuple has been stored (a zeroed, freshly claimed entry has not): the first update always counts as changed.
+struct ArrowRaw { int slot; unsigned char buff, debuff, nBuff, nDebuff; bool seen; };
 
 // Existing entry for slot, else the first free one (slot == 0) claimed and zeroed, else nullptr (table full: no change log).
+// slotPtr == 0 is the free marker, never a valid key: it yields nullptr (nothing claimed).
 inline ArrowRaw* arrowRawFor(ArrowRaw* tbl, int count, int slotPtr) {
+    if (slotPtr == 0) return nullptr;
     for (int i = 0; i < count; ++i) if (tbl[i].slot == slotPtr) return &tbl[i];
     for (int i = 0; i < count; ++i) if (tbl[i].slot == 0) { tbl[i] = {}; tbl[i].slot = slotPtr; return &tbl[i]; }
     return nullptr;
@@ -84,7 +87,8 @@ inline ArrowRaw* arrowRawFor(ArrowRaw* tbl, int count, int slotPtr) {
 // Store the new tuple (counts truncated to unsigned char) and report whether it differs from the stored one.
 inline bool arrowRawUpdate(ArrowRaw* raw, int rawBuff, int rawDebuff, int nBuff, int nDebuff) {
     unsigned char sig[4] = { (unsigned char)rawBuff, (unsigned char)rawDebuff, (unsigned char)nBuff, (unsigned char)nDebuff };
-    bool changed = memcmp(sig, &raw->buff, 4) != 0;
+    bool changed = !raw->seen || memcmp(sig, &raw->buff, 4) != 0;
+    raw->seen = true;
     raw->buff = (unsigned char)rawBuff; raw->debuff = (unsigned char)rawDebuff;
     raw->nBuff = (unsigned char)nBuff; raw->nDebuff = (unsigned char)nDebuff;
     return changed;

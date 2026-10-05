@@ -132,9 +132,9 @@ static void testArrowRawTable() {
     KT_CHECK(c == &u[0]); KT_CHECK_EQ(c->buff, 0); KT_CHECK_EQ(c->nDebuff, 0);
     KT_CHECK(bh::arrowRawFor(u, 0, 0x55) == nullptr);        // empty table
 
-    // CHARACTERIZATION: slot 0 is the "free" marker, so asking for slot 0 returns the first free cell (and never claims it).
+    // slot 0 is the "free" marker, so asking for slot 0 yields no entry (nothing is claimed).
     bh::ArrowRaw v[2] = {};
-    KT_CHECK(bh::arrowRawFor(v, 2, 0) == &v[0]);
+    KT_CHECK(bh::arrowRawFor(v, 2, 0) == nullptr);
     KT_CHECK_EQ(v[0].slot, 0);
 
     // arrowRawUpdate: change detection + stored values.
@@ -149,11 +149,17 @@ static void testArrowRawTable() {
     KT_CHECK_EQ(r.slot, 7);                                  // slot untouched
     // CHARACTERIZATION: counts are truncated to a byte, so 256 looks like 0 (tracked counts are <= 16 in practice).
     bh::ArrowRaw z = {}; z.slot = 1;
-    KT_CHECK(!bh::arrowRawUpdate(&z, 0, 0, 256, 0));         // first sighting of an all-zero tuple is "unchanged": never logged
+    KT_CHECK(bh::arrowRawUpdate(&z, 0, 0, 256, 0));          // first sighting is always "changed" (logged), even if it truncates to all-zero
     KT_CHECK_EQ(z.nBuff, 0);
     KT_CHECK(bh::arrowRawUpdate(&z, 0, 0, 257, 0));
     KT_CHECK_EQ(z.nBuff, 1);
     KT_CHECK(!bh::arrowRawUpdate(&z, 0, 0, 1, 0));
+    // First sighting of an all-zero tuple on a fresh claimed entry is logged once, then unchanged.
+    bh::ArrowRaw w[1] = {};
+    bh::ArrowRaw* wz = bh::arrowRawFor(w, 1, 0x77);
+    KT_CHECK(wz != nullptr); KT_CHECK(!wz->seen);
+    KT_CHECK(bh::arrowRawUpdate(wz, 0, 0, 0, 0));
+    KT_CHECK(!bh::arrowRawUpdate(wz, 0, 0, 0, 0));
 }
 
 static void testArrowSuppressed() {

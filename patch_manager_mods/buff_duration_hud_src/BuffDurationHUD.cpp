@@ -219,12 +219,9 @@ static void drawColumnCore(int slotPtr, int creature, int iconWidget, int isLarg
                 draw2(image, 0, -(size - bright), size, size, color, baseAlpha);
                 gui2d::popClip();
                 if (disc && bright < size) {                                                     // 1px boundary line (round item icons only)
-                    int lx = ix, lw = size;
-                    if (disc) {                                     // item icons: only inside the round backing
-                        const bh::DiscLine dl = bh::discLine(ix, iy, size, y0);
-                        lw = dl.w;
-                        lx = dl.x;
-                    }
+                    // item icons: only inside the round backing
+                    const bh::DiscLine dl = bh::discLine(ix, iy, size, y0);
+                    int lx = dl.x, lw = dl.w;
                     if (lw > 0 && gui2d::pushClip(lx, y0, lw, 1, LineColor, LineAlpha)) gui2d::popClip();
                 }
             } else if (logIt) logf("  icon[%d] clip push refused", i);
