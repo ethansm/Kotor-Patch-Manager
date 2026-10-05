@@ -1,0 +1,4 @@
+LIBRARY QueueHud
+EXPORTS
+    KPatchInit
+    QueueHudCapture
