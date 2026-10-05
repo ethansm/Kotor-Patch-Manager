@@ -52,6 +52,7 @@
 
 #include "../_shared/SafeRead.h"
 #include "CompanionAiLogic.h"
+#include "GameAddr.h"
 
 namespace {
 
@@ -69,7 +70,7 @@ constexpr int FnControlled = 0x0077D800;    // thiscall(p) RET -> controlled cre
 constexpr int FnNearestEnemy = 0x0057C990;  // thiscall(cr; float range, int exclude, int ref) RET 0xC -> id
 constexpr int FnClearAllActions = 0x00541080; // thiscall(obj; int clearAttacks) RET 4
 constexpr int FnSetLock = 0x0057D370;       // thiscall(cr; int id, int) RET 8 (EndAttackAction's lock clear 0x6DAB40)
-constexpr int FnGetArea = 0x005453C0;       // thiscall(cr) RET -> area
+constexpr int FnGetArea = (int)gameaddr::ServerObjectGetArea;   // thiscall(cr) RET -> area
 using Fn0 = int(__thiscall*)(int);
 using Fn1 = int(__thiscall*)(int, int);
 using Fn2 = int(__thiscall*)(int, int, int);
