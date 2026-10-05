@@ -14,7 +14,7 @@ def test_docstring_has_no_hardcoded_versions():
 def test_manifest_version_reads(tmp_path):
     p = tmp_path / "a.kpatch"
     with zipfile.ZipFile(p, "w") as z:
-        z.writestr("manifest.toml", 'id = "x"\nversion = "1.2.3"\n')
+        z.writestr("manifest.toml", '[patch]\nid = "x"\nversion = "1.2.3"\n')  # real kpatch layout: version under [patch]
     assert sps.manifest_version(p) == "1.2.3"
 
 

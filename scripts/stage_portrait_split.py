@@ -34,7 +34,8 @@ def manifest_version(archive_path):
     """`version` from the manifest.toml inside a kpatch (zip) archive, or None if unreadable/absent."""
     try:
         with zipfile.ZipFile(archive_path) as z:
-            v = tomllib.loads(z.read("manifest.toml").decode()).get("version")
+            m = tomllib.loads(z.read("manifest.toml").decode())
+            v = m.get("patch", {}).get("version", m.get("version"))
         return None if v is None else str(v)
     except (OSError, KeyError, zipfile.BadZipFile, tomllib.TOMLDecodeError, UnicodeDecodeError):
         return None
