@@ -14,7 +14,7 @@
 // MAP_32BIT) and every arena access goes through memcpy so UBSan sees no misaligned load.
 //
 // Areas: (1) K2Addr table values + selection, (2) SafeRead, (3) Effects.h pool decode, (4) Gui2D clip/draw/scale + CapGuard on a fake GL,
-// (5) GuiKit imageFor, (6) PortraitSlots k2ps::Client on a fake provider, (7) StrFmt appendf. Host-only, deterministic, no game, no DLL.
+// (5) GuiKit imageFor, (6) PortraitSlots k2ps::Client on a fake provider, (7) StrFmt appendf, (8) k2addr::featureOk + gui2d::vfillClip(int). Host-only, deterministic, no game, no DLL.
 #ifndef GUIKIT_HOST
 #define GUIKIT_HOST 1
 #endif
@@ -790,6 +790,38 @@ static void strfmt_contract() {
     }
 }
 
+// ============================================================ 8. k2addr::featureOk + gui2d::vfillClip(Rect,int,int)
+// shield-bar relies on: k2addr::featureOk (one line, once per flag), gui2d::vfillClip(Rect,int,int). ShieldBar.cpp featureOk() forwards to the
+// first with probeLog and g_tableNoted; drawGauge() forwards its cur / max fill to the second (double-rounded, half up).
+static int g_foLines = 0;
+static char g_foLast[160];
+static void foLog(const char* fmt, ...) {
+    ++g_foLines;
+    va_list ap; va_start(ap, fmt); vsnprintf(g_foLast, sizeof g_foLast, fmt, ap); va_end(ap);
+}
+static void featureok_vfill_contract() {
+    {   bool noted = false; g_foLines = 0; g_foLast[0] = 0;
+        SCHECK("shield relies on: featureOk(ok=true) is true", k2addr::featureOk(true, "gauge draw", foLog, &noted));
+        SEQ("shield relies on: featureOk(ok=true) logs nothing", g_foLines, 0);
+        SCHECK("shield relies on: featureOk(ok=true) leaves the noted flag clear", !noted);
+        SCHECK("shield relies on: featureOk(ok=false) is false", !k2addr::featureOk(false, "gauge draw", foLog, &noted));
+        SCHECK("shield relies on: featureOk(ok=false) sets the noted flag", noted);
+        SCHECK("shield relies on: a second featureOk(ok=false) is still false", !k2addr::featureOk(false, "companion vitals", foLog, &noted));
+        SEQ("shield relies on: two failures write exactly one log line in total", g_foLines, 1);
+        SEQ("shield relies on: the one line names the first feature", strncmp(g_foLast, "K2ADDR gauge draw disabled", 26), 0);
+    }
+    {   const gui2d::Rect r{10, 20, 6, 10};
+        gui2d::Rect f = gui2d::vfillClip(r, 10, 10);
+        SCHECK("shield relies on: full gauge (cur==mx) fills the whole height from the rect top", f.h == 10 && f.y == 20 && f.x == 10 && f.w == 6);
+        f = gui2d::vfillClip(r, 5, 10);
+        SCHECK("shield relies on: half gauge (h=10, 5/10) is 5 px tall and bottom-anchored (y=25)", f.h == 5 && f.y == 25);
+        f = gui2d::vfillClip(r, 0, 10);
+        SEQ("shield relies on: empty gauge (cur=0) fills 0 px", f.h, 0);
+        f = gui2d::vfillClip(gui2d::Rect{10, 20, 6, 11}, 13, 22);
+        SCHECK("shield relies on: h=11, 13/22 = 6.5 rounds half up to 7 px (bottom edge stays 31)", f.h == 7 && f.y + f.h == 31);
+    }
+}
+
 int main() {
     unsetenv("KOTOR_VERSION_SHA");   // k2addr::get() caches the environment choice on first use: make it Steam, as on every host test
     void* m = mmap(nullptr, ArenaSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS
@@ -807,5 +839,6 @@ int main() {
     imagefor_contract();
     ps_contract();
     strfmt_contract();
+    featureok_vfill_contract();
     return kt::Report("common_contract_test (shield_bar)");
 }

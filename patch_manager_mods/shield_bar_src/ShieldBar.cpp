@@ -71,9 +71,7 @@ void probeLog(const char* fmt, ...) {
 // finds it unusable writes ONE probe-log line per session, from the hook call (KPatchInit must not do file I/O).
 bool g_tableNoted = false;
 bool featureOk(bool ok, const char* feature) {
-    if (ok) return true;
-    if (!g_tableNoted) { g_tableNoted = true; probeLog("K2ADDR %s disabled (no address table for this exe, or a needed field is 0)", feature); }
-    return false;
+    return k2addr::featureOk(ok, feature, probeLog, &g_tableNoted);
 }
 
 struct EffRec { int n34; int eff; unsigned short type, sub; int spell, creator; float dur; int ints[8]; bool seen; };
@@ -374,8 +372,7 @@ void drawGauge(const char* texture, int x, int y, int w, int h, const float* fil
     auto draw = [](void* i, int dx, int dy, int dw, int dh, const float* rgb, float a) { gui2d::drawImage(i, dx, dy, dw, dh, 0, rgb, a); };   // image vtable ImageVt_Draw
     if (mx < 1) { draw(img, x, y, w, h, TrackTint, 1.0f); return; }     // no Force (droid): empty teal track, as the active portrait shows
     draw(img, x, y, w, h, TrackTint, 1.0f);
-    int fh = int(double(h) * cur / mx + 0.5), y0 = y + h - fh;
-    if (fh > 0 && gui2d::pushClip(x, y0, w, fh)) { draw(img, 0, -(y0 - y), w, h, fill, 1.0f); gui2d::popClip(); }
+    gui2d::drawVFill(img, {x, y, w, h}, cur, mx, fill, 1.0f);
 }
 
 // Spread the two companion portrait groups apart (runtime write of the controls' x, so no .gui edit and the hit areas move too).
