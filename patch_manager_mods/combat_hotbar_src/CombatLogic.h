@@ -73,4 +73,44 @@ inline int hitSlot(const Rect* r, int n, int x, int y) {
     return -1;
 }
 
+// Per-group button grids under three banner boxes. btn = (box.w - gap*(cols-1)) / cols (min 1), square; group g's grid starts at (box.x, box.y+box.h+gap), filled row-major (column k%cols, row k/cols).
+// outN[g] = min(max(count,0), cols*maxRows). out is 3*cols*maxRows rects, slot (g,k) at g*cols*maxRows+k, unused ones zeroed. Each grid's used bounding box is shifted (never shrunk) into [0,screenW) x [0,screenH).
+inline void layoutGroupGrid(const Rect box[3], const int count[3], int cols, int maxRows, int gap, int screenW, int screenH, Rect* out, int outN[3]) {
+    if (!out || !outN) return;
+    if (!box || !count || cols < 1 || maxRows < 1) {
+        if (cols >= 1 && maxRows >= 1) memset(out, 0, sizeof(Rect) * 3 * cols * maxRows);
+        for (int g = 0; g < 3; ++g) outN[g] = 0;
+        return;
+    }
+    const int per = cols * maxRows;
+    memset(out, 0, sizeof(Rect) * 3 * per);
+    for (int g = 0; g < 3; ++g) {
+        int n = count[g] < 0 ? 0 : count[g];
+        if (n > per) n = per;
+        outN[g] = n;
+        if (n == 0) continue;
+        int btn = (box[g].w - gap * (cols - 1)) / cols;
+        if (btn < 1) btn = 1;
+        const int usedCols = n < cols ? n : cols, usedRows = (n + cols - 1) / cols;
+        const int bw = usedCols * btn + (usedCols - 1) * gap, bh = usedRows * btn + (usedRows - 1) * gap;
+        int x0 = box[g].x, y0 = box[g].y + box[g].h + gap;
+        if (x0 + bw > screenW) x0 = screenW - bw;
+        if (x0 < 0) x0 = 0;
+        if (y0 + bh > screenH) y0 = screenH - bh;
+        if (y0 < 0) y0 = 0;
+        for (int k = 0; k < n; ++k) {
+            Rect& r = out[g * per + k];
+            r.x = x0 + (k % cols) * (btn + gap); r.y = y0 + (k / cols) * (btn + gap); r.w = btn; r.h = btn;
+        }
+    }
+}
+
+// Map a flat slot index (group*cols*maxRows + entry) back to its group and entry index. Returns the entry index and sets *group; -1 and *group = -1 when out of range or negative.
+inline int slotEntry(int slotIndex, int cols, int maxRows, int* group) {
+    const int per = cols * maxRows;
+    if (slotIndex < 0 || per < 1 || slotIndex >= 3 * per) { if (group) *group = -1; return -1; }
+    if (group) *group = slotIndex / per;
+    return slotIndex % per;
+}
+
 }  // namespace ch

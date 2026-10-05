@@ -135,5 +135,67 @@ int main() {
     KT_CHECK_EQ(hitSlot(r, 0, r[0].x, r[0].y), -1);
     KT_CHECK_EQ(hitSlot(nullptr, 3, 0, 0), -1);
   }
+  // ---- layoutGroupGrid / slotEntry
+  {
+    const Rect box[3] = {{100, 50, 56, 56}, {160, 50, 56, 56}, {220, 50, 56, 56}};
+    const int cols = 2, maxRows = 4, gap = 2, per = cols * maxRows;   // btn = (56-2)/2 = 27
+    Rect out[3 * 8]; int n[3];
+    const int c1[3] = {4, 0, 3};
+    layoutGroupGrid(box, c1, cols, maxRows, gap, 1920, 1080, out, n);
+    KT_CHECK_EQ(n[0], 4); KT_CHECK_EQ(n[1], 0); KT_CHECK_EQ(n[2], 3);
+    KT_CHECK_EQ(out[0].x, 100); KT_CHECK_EQ(out[0].y, 108); KT_CHECK_EQ(out[0].w, 27); KT_CHECK_EQ(out[0].h, 27);
+    KT_CHECK_EQ(out[3].x, 100 + 29); KT_CHECK_EQ(out[3].y, 108 + 29);          // group 0 last slot: col 1, row 1
+    KT_CHECK_EQ(out[2 * per + 2].x, 220); KT_CHECK_EQ(out[2 * per + 2].y, 108 + 29);   // group 2 last slot: col 0, row 1
+    KT_CHECK_EQ(out[2 * per + 1].x, 220 + 29); KT_CHECK_EQ(out[2 * per + 1].y, 108);
+    KT_CHECK(out[per].w == 0 && out[per].h == 0 && out[per + 5].x == 0);          // empty group zeroed
+    KT_CHECK(out[4].w == 0 && out[2 * per + 3].w == 0);                           // unused tail zeroed
+
+    const int c2[3] = {16, -5, 99};
+    layoutGroupGrid(box, c2, cols, maxRows, gap, 1920, 1080, out, n);
+    KT_CHECK_EQ(n[0], 8); KT_CHECK_EQ(n[1], 0); KT_CHECK_EQ(n[2], 8);             // capped to cols*maxRows
+    KT_CHECK_EQ(out[7].x, 100 + 29); KT_CHECK_EQ(out[7].y, 108 + 3 * 29);         // 4 rows
+
+    // no overlap among all used slots, within and across groups
+    const int c3[3] = {8, 8, 8};
+    layoutGroupGrid(box, c3, cols, maxRows, gap, 1920, 1080, out, n);
+    bool noOv = true; int used = 0;
+    for (int i = 0; i < 3 * per; ++i)
+      for (int j = i + 1; j < 3 * per; ++j)
+        if (out[i].w > 0 && out[j].w > 0) noOv = noOv && !overlap(out[i], out[j]);
+    for (int i = 0; i < 3 * per; ++i) used += out[i].w > 0;
+    KT_CHECK(noOv); KT_CHECK_EQ(used, 24);
+
+    // bottom edge clamp: grid shifted up, size unchanged
+    const Rect low[3] = {{100, 1040, 56, 56}, {160, 50, 56, 56}, {220, 50, 56, 56}};
+    const int c4[3] = {4, 0, 0};
+    layoutGroupGrid(low, c4, cols, maxRows, gap, 1920, 1080, out, n);
+    KT_CHECK_EQ(out[0].w, 27); KT_CHECK_EQ(out[3].h, 27);
+    KT_CHECK_EQ(out[3].y + out[3].h, 1080);                                       // last row flush with the bottom
+    KT_CHECK_EQ(out[3].y - out[0].y, 29);                                         // row pitch preserved
+    KT_CHECK_EQ(out[0].x, 100);
+    // right edge clamp shifts left
+    const Rect rt[3] = {{1900, 50, 56, 56}, {160, 50, 56, 56}, {220, 50, 56, 56}};
+    layoutGroupGrid(rt, c4, cols, maxRows, gap, 1920, 1080, out, n);
+    KT_CHECK_EQ(out[1].x + out[1].w, 1920);
+
+    // hitSlot over the grid
+    layoutGroupGrid(box, c1, cols, maxRows, gap, 1920, 1080, out, n);
+    KT_CHECK_EQ(hitSlot(out, 3 * per, out[3].x + 13, out[3].y + 13), 3);
+    KT_CHECK_EQ(hitSlot(out, 3 * per, out[2 * per + 1].x + 13, out[2 * per + 1].y + 13), 2 * per + 1);
+    KT_CHECK_EQ(hitSlot(out, 3 * per, out[0].x + 27, out[0].y + 5), -1);          // gap between col 0 and col 1
+    KT_CHECK_EQ(hitSlot(out, 3 * per, out[0].x + 5, out[0].y + 28), -1);          // gap between row 0 and row 1
+
+    // slotEntry round-trip
+    bool rt_ok = true;
+    for (int s = 0; s < 3 * per; ++s) {
+      int g = -9; int e = slotEntry(s, cols, maxRows, &g);
+      rt_ok = rt_ok && e >= 0 && e < per && g >= 0 && g < 3 && g * per + e == s;
+    }
+    KT_CHECK(rt_ok);
+    int g = 7;
+    KT_CHECK_EQ(slotEntry(-1, cols, maxRows, &g), -1); KT_CHECK_EQ(g, -1);
+    g = 7; KT_CHECK_EQ(slotEntry(3 * per, cols, maxRows, &g), -1); KT_CHECK_EQ(g, -1);
+    g = 7; KT_CHECK_EQ(slotEntry(per, cols, maxRows, &g), 0); KT_CHECK_EQ(g, 1);
+  }
   return kt::Report("combat_logic_test");
 }
