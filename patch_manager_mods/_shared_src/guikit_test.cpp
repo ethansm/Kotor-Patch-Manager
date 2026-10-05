@@ -107,6 +107,12 @@ int main() {
         KT_CHECK(getBorderTint(k, rgb)); KT_CHECK(rgb[0] == 0.25f && rgb[1] == 0.5f && rgb[2] == 0.75f);
         KT_CHECK(getAlpha(k, &al)); KT_CHECK(al == 0.125f);
         KT_CHECK(!getBorderTint(k, nullptr)); KT_CHECK(!getBorderTint(0, rgb)); KT_CHECK(!getAlpha(k, nullptr)); KT_CHECK(!getAlpha(0, &al));
+        // setFillStyle: low 2 bits only, other bits kept; gated like the other border setters
+        at<uint32_t>(k, Label_Border + Border_FillStyle) = 0xF0u | 1u;
+        KT_CHECK(setFillStyle(k, 2)); KT_CHECK_EQ((unsigned long long)at<uint32_t>(k, Label_Border + Border_FillStyle), 0xF2ull);
+        KT_CHECK(setFillStyle(k, 0)); KT_CHECK_EQ((unsigned long long)at<uint32_t>(k, Label_Border + Border_FillStyle), 0xF0ull);
+        KT_CHECK(!setFillStyle(k, 4)); KT_CHECK(!setFillStyle(k, -1)); KT_CHECK(!setFillStyle(0, 2));
+        at<uint32_t>(k, Label_Border) = 0; KT_CHECK(!setFillStyle(k, 2)); at<uint32_t>(k, Label_Border) = 0x9875BC;
 
         // scaleFromRef: ref ctl px rect (100,50,800,600) vs layout units (10,20,400,300) -> s = 2, origin (100,50)
         at<int>(k, Ctl_X) = 100; at<int>(k, Ctl_Y) = 50; at<int>(k, Ctl_W) = 800; at<int>(k, Ctl_H) = 600;

@@ -42,7 +42,7 @@ constexpr uint32_t LabelVtable = gameaddr::LabelVtable, BorderVtable = gameaddr:
 constexpr int LabelSize = 0x148;
 constexpr int Ctl_Flags = 0x48, Ctl_Id = 0x54, Ctl_X = 4, Ctl_Y = 8, Ctl_W = 0xC, Ctl_H = 0x10;
 constexpr int Label_Border = 0x60, Label_Text = 0xD8, Text_Renderer = 0x14, Text_StringSub = 0x18, Text_Color = 0x2C;
-constexpr int Border_Alpha = 0x24, Border_Tint = 0x28, Border_Fill = 0x74;
+constexpr int Border_Alpha = 0x24, Border_Tint = 0x28, Border_Fill = 0x74, Border_FillStyle = 0x34;
 constexpr int Panel_CtlArray = 0x24, Panel_CtlCount = 0x28;
 constexpr int FlagVisible = 0x2, FlagClickThrough = 0x20;
 constexpr int ImagePoolSize = 256;                   // imageFor pool capacity (one entry per distinct resref)
@@ -325,6 +325,14 @@ inline bool getAlpha(uintptr_t ctl, float* a) {
     using namespace detail;
     const int oAlpha = off(&K2AddrTable::Border_Alpha);
     return ctl && a && oAlpha && borderOk(ctl) && rd<float>(ctl + off(&K2AddrTable::Label_Border), oAlpha, a);
+}
+// border+0x34 bits 0-1 = FILLSTYLE (0 tile, 1 centre, 2 stretch); the other bits are kept. Doc 02 RE notes 672/1661, doc 08 499.
+inline bool setFillStyle(uintptr_t ctl, int style) {
+    using namespace detail;
+    const int oStyle = off(&K2AddrTable::Border_FillStyle);
+    if (!ctl || !oStyle || style < 0 || style > 3 || !borderOk(ctl)) return false;
+    uintptr_t b = ctl + off(&K2AddrTable::Label_Border); uint32_t v = 0;
+    return rd<uint32_t>(b, oStyle, &v) && wr<uint32_t>(b, oStyle, (v & ~3u) | static_cast<uint32_t>(style));
 }
 
 // ---- layout units -> engine pixels (Mod 14 ux/uy 368-375, scale from LBL_EFX_BACK 1130) ----

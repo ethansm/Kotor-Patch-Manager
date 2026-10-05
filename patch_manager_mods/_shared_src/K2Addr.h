@@ -98,6 +98,7 @@ struct K2AddrTable {
     int Border_Alpha = 0;                // border +alpha (float)
     int Border_Tint = 0;                 // border +tint rgb (3 floats)
     int Border_Fill = 0;                 // border +fill image*
+    int Border_FillStyle = 0;            // border +FILLSTYLE in bits 0-1 (0 tile, 1 centre, 2 stretch)
     int Panel_CtlArray = 0;              // panel control list {ptr, count, cap}
     int Panel_CtlCount = 0;              // count inside that list
 
@@ -242,6 +243,7 @@ constexpr K2AddrTable makeSteam() {
     t.Border_Alpha = 0x24;
     t.Border_Tint = 0x28;
     t.Border_Fill = 0x74;
+    t.Border_FillStyle = 0x34;
     t.Panel_CtlArray = 0x24;
     t.Panel_CtlCount = 0x28;
 
@@ -398,6 +400,7 @@ constexpr K2AddrTable makeGog() {
     t.Border_Alpha = 0x24;
     t.Border_Tint = 0x28;
     t.Border_Fill = 0x74;
+    t.Border_FillStyle = 0x34;
     t.Panel_CtlArray = 0x24;
     t.Panel_CtlCount = 0x28;
     t.CExoStringFormat = 0x00606380;
