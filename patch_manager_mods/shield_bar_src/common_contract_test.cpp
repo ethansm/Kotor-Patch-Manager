@@ -14,7 +14,7 @@
 // MAP_32BIT) and every arena access goes through memcpy so UBSan sees no misaligned load.
 //
 // Areas: (1) K2Addr table values + selection, (2) SafeRead, (3) Effects.h pool decode, (4) Gui2D clip/draw/scale + CapGuard on a fake GL,
-// (5) GuiKit imageFor, (6) PortraitSlots k2ps::Client on a fake provider. Host-only, deterministic, no game, no DLL.
+// (5) GuiKit imageFor, (6) PortraitSlots k2ps::Client on a fake provider, (7) StrFmt appendf. Host-only, deterministic, no game, no DLL.
 #ifndef GUIKIT_HOST
 #define GUIKIT_HOST 1
 #endif
@@ -764,6 +764,32 @@ static void ps_contract() {
       SEQ("... and registers all five phases", g_nReg, 5); }
 }
 
+// ============================================================ 7. StrFmt (strfmt::appendf, re-exported as sb::appendf)
+// ShieldBar.cpp builds its log lines with sb::appendf (ShieldLogic.h: `using strfmt::appendf`); the shared helper must keep the bounded,
+// always-terminated, clamped-length semantics the probe / effect-dump lines depend on.
+static void strfmt_contract() {
+    {   // appends at len, returns the new length
+        char b[32] = "ab";
+        int n = sb::appendf(b, (int)sizeof b, 2, " %d/%d", 3, 7);
+        SEQ("sb::appendf appends at buf[len] and returns the new length", n, 6);
+        SEQ("sb::appendf leaves the appended text in the buffer", strcmp(b, "ab 3/7"), 0);
+    }
+    {   // truncation: clamped to cap-1, NUL-terminated, never past the buffer (guard bytes intact)
+        char g[16]; memset(g, 'g', sizeof g);
+        char* b = g; int cap = 8;
+        int n = sb::appendf(b, cap, 0, "%s", "0123456789abcdef");
+        SEQ("sb::appendf clamps the returned length to cap-1 on truncation", n, cap - 1);
+        SEQ("sb::appendf keeps the buffer NUL-terminated on truncation", (int)b[cap - 1], 0);
+        SEQ("sb::appendf never writes past cap (guard byte intact)", (int)g[cap], (int)'g');
+        int n2 = sb::appendf(b, cap, n, " more %d", 1);
+        SEQ("sb::appendf on a full buffer is a no-op (length stays cap-1)", n2, cap - 1);
+    }
+    {   // cap <= 0 touches nothing and returns len
+        char c = 'x';
+        SEQ("sb::appendf with cap <= 0 returns len and writes nothing", sb::appendf(&c, 0, 3, "zzz") + (c == 'x' ? 0 : 100), 3);
+    }
+}
+
 int main() {
     unsetenv("KOTOR_VERSION_SHA");   // k2addr::get() caches the environment choice on first use: make it Steam, as on every host test
     void* m = mmap(nullptr, ArenaSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS
@@ -780,5 +806,6 @@ int main() {
     capguard_contract();
     imagefor_contract();
     ps_contract();
+    strfmt_contract();
     return kt::Report("common_contract_test (shield_bar)");
 }
