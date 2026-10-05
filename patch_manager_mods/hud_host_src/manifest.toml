@@ -1,11 +1,11 @@
 [patch]
 id = "hud-host"
 name = "HUD Host (shared in-game menu / HUD hooks)"
-version = "0.1.0-dev"
+version = "0.2.0-dev"
 kind = "library"
 provides = ["k2.hud@1"]
 author = "local"
-description = "Owns the CSWGuiTargetActionMenu::PopulateMenus hook (0x00743540) and provides the k2.hud v1 registry interface, so several HUD mods (combat hotbar, ...) can share it. Draws and writes nothing by itself. Needs a KotorPatcher with the patch registry (KPatchInit)."
+description = "Owns the CSWGuiTargetActionMenu::PopulateMenus hook (0x00743540) and its POST hook (0x00743850) and provides the k2.hud v1 registry interface, so several HUD mods (combat hotbar, ...) can share it. Draws and writes nothing by itself. Needs a KotorPatcher with the patch registry (KPatchInit)."
 
 requires = []
 conflicts = []

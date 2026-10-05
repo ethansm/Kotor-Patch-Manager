@@ -1,5 +1,5 @@
 // Host test of the hud-host dispatcher (HhDispatch.h): priority order, stable ties, unregister, limits, snapshot iteration,
-// FRAME-before-PRE sequencing, context construction (hud = menu - 0xCC, targetType mapping, struct_size) and a consumer wired
+// FRAME-before-PRE sequencing, POST gating (only after a PRE, one per PRE, menu match, frame reused), context construction (hud = menu - 0xCC, targetType mapping, struct_size) and a consumer wired
 // through k2hud::Client against a fake provider (tests/include/FakeKPatchApi.h). HL1.
 #include "HhDispatch.h"
 #include "check.h"
@@ -90,7 +90,7 @@ static void tPopulate() {
     // registration order deliberately reversed: PRE first, FRAME second; phases decide, not registration order
     d.add(K2HUD_TARGET_MENU_PRE, 0, preCb, nullptr, "x");
     d.add(K2HUD_FRAME, 0, frameCb, nullptr, "x");
-    d.add(K2HUD_TARGET_MENU_POST, 0, a, nullptr, "x");   // reserved: must not fire
+    d.add(K2HUD_TARGET_MENU_POST, 0, a, nullptr, "x");   // fires only via runPost, never from runPopulate
     d.add(K2HUD_BUILD, 0, b, nullptr, "x");              // reserved: must not fire
     K2HudContext ctx = hhd::makeContext(0x1000 + 0xCC, 0x2000, 1, 0x3000, 2, 5);
     g_trace.clear(); hhd::runPopulate(d, ctx);
@@ -154,7 +154,68 @@ static void tClient() {
     KT_CHECK(!k2hud::Client::usable(&tiny)); KT_CHECK(!k2hud::Client::usable(nullptr)); KT_CHECK(k2hud::Client::usable(&g_fakeHud));
 }
 
+static uint32_t g_postFrame; static int32_t g_postLeader, g_postTarget, g_postType, g_postMenu, g_postHud, g_postForce;
+static void KPATCH_CALL postCb(const K2HudContext* c, void*) {
+    rec("post", c);
+    g_postFrame = c->frame; g_postLeader = c->leader; g_postTarget = c->target; g_postType = c->targetType;
+    g_postMenu = c->menu; g_postHud = c->hud; g_postForce = c->forceUnusable;
+}
+
+static void tPost() {
+    hhd::Dispatcher d;
+    d.add(K2HUD_TARGET_MENU_POST, 0, postCb, nullptr, "x");
+    d.add(K2HUD_TARGET_MENU_PRE, 0, preCb, nullptr, "x");
+    hhd::PreState st;
+    const int32_t menu = 0x1000 + 0xCC;
+    // no PRE seen yet: skipped
+    g_trace.clear();
+    KT_CHECK_EQ(int(hhd::runPost(d, st, menu, 0x2000, 0x3000, 1)), int(hhd::PostNoPre));
+    KT_CHECK_EQ(g_trace.c_str(), "");
+    // PRE recorded (frame 42) -> POST runs, frame reused, leader/target/type come from the POST call, forceUnusable from the PRE
+    K2HudContext pre = hhd::makeContext(menu, 0x2000, 1, 0x3000, 2, 42);
+    hhd::recordPre(st, pre);
+    KT_CHECK_EQ(int(hhd::runPost(d, st, menu, 0x2222, 0x3333, 3)), int(hhd::PostRan));
+    KT_CHECK_EQ(g_trace.c_str(), "post@p2;");
+    KT_CHECK_EQ(g_postFrame, 42u); KT_CHECK_EQ(g_postMenu, menu); KT_CHECK_EQ(g_postHud, 0x1000);
+    KT_CHECK_EQ(g_postLeader, 0x2222); KT_CHECK_EQ(g_postTarget, 0x3333); KT_CHECK_EQ(g_postType, 3); KT_CHECK_EQ(g_postForce, 1);
+    // null target and unreadable/0xFF type pass through as 0 / -1
+    hhd::recordPre(st, pre);
+    KT_CHECK_EQ(int(hhd::runPost(d, st, menu, 0x2000, 0, -1)), int(hhd::PostRan));
+    KT_CHECK_EQ(g_postTarget, 0); KT_CHECK_EQ(g_postType, -1);
+    // second POST in the same frame: skipped (one POST per PRE), nothing dispatched
+    g_trace.clear();
+    KT_CHECK_EQ(int(hhd::runPost(d, st, menu, 0x2000, 0x3000, 1)), int(hhd::PostAlreadyRan));
+    KT_CHECK_EQ(g_trace.c_str(), "");
+    // a new PRE re-arms; frame follows the new PRE
+    hhd::recordPre(st, hhd::makeContext(menu, 0x2000, 0, 0x3000, 1, 43));
+    KT_CHECK_EQ(int(hhd::runPost(d, st, menu, 0x2000, 0x3000, 1)), int(hhd::PostRan));
+    KT_CHECK_EQ(g_postFrame, 43u);
+    // mismatched menu: skipped, the PRE stays pending so the matching POST still fires
+    hhd::recordPre(st, hhd::makeContext(menu, 0x2000, 0, 0x3000, 1, 44));
+    g_trace.clear();
+    KT_CHECK_EQ(int(hhd::runPost(d, st, menu + 0x10, 0x2000, 0x3000, 1)), int(hhd::PostMenuMismatch));
+    KT_CHECK_EQ(g_trace.c_str(), "");
+    KT_CHECK_EQ(int(hhd::runPost(d, st, 0, 0x2000, 0x3000, 1)), int(hhd::PostMenuMismatch));
+    KT_CHECK_EQ(int(hhd::runPost(d, st, menu, 0x2000, 0x3000, 1)), int(hhd::PostRan));
+    KT_CHECK_EQ(g_postFrame, 44u);
+    // PRE recorded but never followed by a POST, then another PRE: the newer one wins
+    hhd::recordPre(st, hhd::makeContext(menu, 0, 0, 0, 0, 45));
+    hhd::recordPre(st, hhd::makeContext(menu, 0, 0, 0, 0, 46));
+    KT_CHECK_EQ(int(hhd::runPost(d, st, menu, 0, 0, 0)), int(hhd::PostRan));
+    KT_CHECK_EQ(g_postFrame, 46u);
+    // no POST consumers: still consumes the PRE, dispatches nothing
+    hhd::Dispatcher none; hhd::PreState s2; hhd::recordPre(s2, pre);
+    g_trace.clear();
+    KT_CHECK_EQ(int(hhd::runPost(none, s2, menu, 1, 2, 0)), int(hhd::PostRan));
+    KT_CHECK_EQ(g_trace.c_str(), "");
+    KT_CHECK_EQ(int(hhd::runPost(none, s2, menu, 1, 2, 0)), int(hhd::PostAlreadyRan));
+    // the dispatch of FRAME/PRE (runPopulate) must not disturb a pending PRE state
+    hhd::PreState s3; hhd::recordPre(s3, pre);
+    K2HudContext c2 = pre; hhd::runPopulate(d, c2);
+    KT_CHECK_EQ(int(hhd::runPost(d, s3, menu, 0, 0, 0)), int(hhd::PostRan));
+}
+
 int main() {
-    tOrder(); tUnregister(); tLimits(); tPopulate(); tContext(); tClient();
+    tOrder(); tUnregister(); tLimits(); tPopulate(); tContext(); tClient(); tPost();
     return kt::Report("hh_dispatch_test");
 }

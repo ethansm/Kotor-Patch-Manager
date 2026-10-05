@@ -73,4 +73,35 @@ inline void runPopulate(const Dispatcher& d, K2HudContext& ctx) {
     ctx.phase = K2HUD_TARGET_MENU_PRE; d.run(ctx);
 }
 
+// ---- TARGET_MENU_POST (0x00743850, called once at the end of PopulateMenus) ----
+// POST only fires for a PopulateMenus call whose PRE was seen: PreState remembers the last PRE; runPost consumes it. Rules:
+//   - no PRE seen yet, or the PRE was already consumed by an earlier POST (second POST in the same frame) -> skipped;
+//   - POST menu != PRE menu -> skipped (a PRE stays pending, so the matching POST can still fire);
+//   - otherwise ctx = PRE ctx with phase POST, frame reused (no increment), leader/target from the POST call.
+enum PostResult { PostRan = 0, PostNoPre = 1, PostMenuMismatch = 2, PostAlreadyRan = 3 };
+
+struct PreState {
+    K2HudContext ctx = {};
+    bool seen = false;       // a PRE was recorded
+    bool pending = false;    // ... and no POST has consumed it yet
+};
+
+inline void recordPre(PreState& st, const K2HudContext& preCtx) {
+    st.ctx = preCtx; st.seen = true; st.pending = true;
+}
+
+inline PostResult runPost(const Dispatcher& d, PreState& st, int32_t menu, int32_t leader, int32_t target, int32_t targetTypeRaw) {
+    if (!st.seen) return PostNoPre;
+    if (!st.pending) return PostAlreadyRan;
+    if (menu != st.ctx.menu) return PostMenuMismatch;
+    st.pending = false;
+    K2HudContext c = st.ctx;
+    c.phase = K2HUD_TARGET_MENU_POST;
+    c.leader = leader;
+    c.target = target;
+    c.targetType = (targetTypeRaw < 0 || targetTypeRaw > 0x7F) ? -1 : targetTypeRaw;
+    d.run(c);
+    return PostRan;
+}
+
 } // namespace hhd

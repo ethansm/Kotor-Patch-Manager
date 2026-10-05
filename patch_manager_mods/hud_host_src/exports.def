@@ -2,3 +2,4 @@ LIBRARY HudHost
 EXPORTS
     KPatchInit
     HH_TargetMenuPopulate
+    HH_TargetMenuPost

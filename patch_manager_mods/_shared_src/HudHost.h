@@ -12,7 +12,7 @@
  * Phases (all on the game thread, inside the hooked engine function):
  *   K2HUD_FRAME            dispatched BEFORE K2HUD_TARGET_MENU_PRE on every PopulateMenus call (0x00743540).
  *   K2HUD_TARGET_MENU_PRE  PopulateMenus, before the stock target-menu population.
- *   K2HUD_TARGET_MENU_POST reserved: no source (hook) until CH3a. Registering is accepted but never fires yet.
+ *   K2HUD_TARGET_MENU_POST end of PopulateMenus (hud-host 0.2.0+, hook 0x00743850); fires once per PRE, same frame.
  *   K2HUD_BUILD            reserved: no source (hook) until HL3. ctx.panel is only valid in this phase.
  * ctx.target / ctx.targetType use -1 for "none" (the engine's 0xFF).
  *
@@ -32,7 +32,7 @@
 
 #define K2HUD_FRAME            0
 #define K2HUD_TARGET_MENU_PRE  1
-#define K2HUD_TARGET_MENU_POST 2   /* reserved, no source until CH3a */
+#define K2HUD_TARGET_MENU_POST 2   /* hud-host 0.2.0+: 0x00743850, after a PRE */
 #define K2HUD_BUILD            3   /* reserved, no source until HL3 */
 #define K2HUD_PHASE_COUNT      4
 

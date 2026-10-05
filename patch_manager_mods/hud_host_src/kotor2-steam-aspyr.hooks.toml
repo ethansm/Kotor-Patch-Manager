@@ -26,3 +26,26 @@ type = "int"
 [[hooks.parameters]]
 source = "[esp+0xC]"
 type = "pointer"
+
+# CSWGuiTargetActionMenu POST (0x00743850), called once at the end of PopulateMenus (0x743540), before the menu is drawn.
+# Detour at the prologue: ecx = menu (hud + 0xCC), [esp+4] = leader, [esp+8] = target (may be null); callee RET 8.
+# Design/RE: patch_manager_mods/31a_target_menu_post_re.md.
+[[hooks]]
+address = 0x00743850
+type = "detour"
+function = "HH_TargetMenuPost"
+original_bytes = [0x55, 0x8B, 0xEC, 0x81, 0xEC, 0xE4, 0x00, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+8]"
+type = "pointer"
