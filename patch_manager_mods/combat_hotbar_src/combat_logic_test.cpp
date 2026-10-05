@@ -441,5 +441,181 @@ int main() {
     layoutBannerPills(banner, boxes, c403, 0, colsTotal, btnPx, pad, gap, cap, side, 1920, 1080, out, n, cont);
     KT_CHECK_EQ(n[0], 0); KT_CHECK_EQ(cont[0].w, 0); KT_CHECK_EQ(cont[2].h, 0);
   }
+  // ---- parseNameList
+  {
+    char out[8][ProfName];
+    int n = parseNameList("  Flurry ,, \tPower Attack\t, flurry,FLURRY ,Sonic Grenade", out, 8);
+    KT_CHECK_EQ(n, 3);
+    KT_CHECK(strcmp(out[0], "Flurry") == 0); KT_CHECK(strcmp(out[1], "Power Attack") == 0); KT_CHECK(strcmp(out[2], "Sonic Grenade") == 0);
+    KT_CHECK_EQ(parseNameList(nullptr, out, 8), 0);
+    KT_CHECK_EQ(parseNameList("", out, 8), 0);
+    KT_CHECK_EQ(parseNameList(" , ,\t,", out, 8), 0);
+    std::string longName(60, 'x');
+    n = parseNameList(longName.c_str(), out, 8);
+    KT_CHECK_EQ(n, 1); KT_CHECK_EQ((int)strlen(out[0]), 47);
+    n = parseNameList("a,b,c,d,e", out, 3);
+    KT_CHECK_EQ(n, 3); KT_CHECK(strcmp(out[2], "c") == 0);
+    // truncated duplicates dedupe against the stored (truncated) form
+    std::string two = longName + "y," + longName + "z";
+    KT_CHECK_EQ(parseNameList(two.c_str(), out, 8), 1);
+  }
+
+  // ---- nameMatches (suffix rule: name == token, or name ends with " " + token; "Power Attack" DOES match "Attack" by definition)
+  {
+    KT_CHECK(nameMatches("Master Flurry", 1, "Flurry"));
+    KT_CHECK(nameMatches("flurry", 1, "FLURRY"));
+    KT_CHECK(nameMatches("Master Flurry", 1, "master flurry"));
+    KT_CHECK(!nameMatches("Minor Sonic Detonator", 1, "Sonic Grenade"));
+    KT_CHECK(!nameMatches("Master Flurry", 1, "Flur"));
+    KT_CHECK(!nameMatches("FlurryX", 1, "Flurry"));
+    KT_CHECK(!nameMatches("Master Flurry", 1, "Master"));
+    KT_CHECK(nameMatches("Power Attack", 1, "Attack"));
+    KT_CHECK(!nameMatches("Attack", 1, "Power Attack"));
+    KT_CHECK(nameMatches("anything", 0x10000035u, "0x10000035"));
+    KT_CHECK(nameMatches(nullptr, 0x10000035u, "0X10000035"));
+    KT_CHECK(nameMatches("", 0xABu, "0xab"));
+    KT_CHECK(!nameMatches("anything", 0x10000036u, "0x10000035"));
+    KT_CHECK(!nameMatches("0x10000035", 1, "0x10000035"));   // hex token compares key only
+    KT_CHECK(!nameMatches(nullptr, 1, "Flurry"));
+    KT_CHECK(!nameMatches("", 1, "Flurry"));
+    KT_CHECK(!nameMatches("Flurry", 1, nullptr));
+    KT_CHECK(!nameMatches("Flurry", 1, ""));
+  }
+
+  // ---- orderGroup / orderSig
+  {
+    GroupView g; memset(&g, 0, sizeof g);
+    static const char names[16][64] = {"Flurry", "Power Attack", "Master Flurry", "Sonic Grenade", "Heal"};
+    g.count = 5;
+    for (int i = 0; i < 5; ++i) g.e[i] = mk(100 + i, true, 1);
+    Profile p; defaultProfile(p);
+    KT_CHECK(!p.byCount[0] && !p.byCount[1] && p.byCount[2]);
+    KT_CHECK_EQ(p.nPin[1], 0); KT_CHECK_EQ(p.nHide[2], 0);
+    int ord[16];
+    int n = orderGroup(g, names, p, 0, ord, 16);
+    KT_CHECK_EQ(n, 5);
+    for (int i = 0; i < 5; ++i) KT_CHECK_EQ(ord[i], i);
+    // pins first, in INI order; each pin places the first unplaced match
+    p.nPin[0] = parseNameList("Heal,Flurry,Flurry", p.pin[0], ProfMax);   // deduped to Heal,Flurry
+    n = orderGroup(g, names, p, 0, ord, 16);
+    KT_CHECK_EQ(n, 5);
+    KT_CHECK_EQ(ord[0], 4); KT_CHECK_EQ(ord[1], 0); KT_CHECK_EQ(ord[2], 1); KT_CHECK_EQ(ord[3], 2); KT_CHECK_EQ(ord[4], 3);
+    // pin matching several entries places one at a time: key-less suffix token matches both Flurry and Master Flurry, first wins
+    p.nPin[0] = parseNameList("Master Flurry,Flurry", p.pin[0], ProfMax);
+    n = orderGroup(g, names, p, 0, ord, 16);
+    KT_CHECK_EQ(ord[0], 2); KT_CHECK_EQ(ord[1], 0);
+    // hide removes; hide wins over pin
+    p.nHide[0] = parseNameList("Power Attack,Flurry", p.hide[0], ProfMax);
+    n = orderGroup(g, names, p, 0, ord, 16);
+    KT_CHECK_EQ(n, 3);   // exact "Flurry" exists, so the suffix rule is off for that token: Flurry + Power Attack hidden, Master Flurry stays pinned
+    KT_CHECK_EQ(ord[0], 2); KT_CHECK_EQ(ord[1], 3); KT_CHECK_EQ(ord[2], 4);
+    // checklist v6 case: Hide0=Attack + Pin0=Power Attack -> only the basic Attack is hidden, Power Attack first
+    {
+      static const char an[16][64] = {"Attack", "Flurry", "Power Attack"};
+      GroupView a; memset(&a, 0, sizeof a); a.count = 3;
+      for (int i = 0; i < 3; ++i) a.e[i] = mk(200 + i, true, 1);
+      Profile r; defaultProfile(r);
+      r.nHide[0] = parseNameList("Attack", r.hide[0], ProfMax);
+      r.nPin[0] = parseNameList("Power Attack", r.pin[0], ProfMax);
+      n = orderGroup(a, an, r, 0, ord, 16);
+      KT_CHECK_EQ(n, 2); KT_CHECK_EQ(ord[0], 2); KT_CHECK_EQ(ord[1], 1);
+      // no exact "Attack" entry -> suffix rule applies again
+      static const char bn[16][64] = {"Flurry", "Power Attack"};
+      GroupView b; memset(&b, 0, sizeof b); b.count = 2;
+      b.e[0] = mk(1, true, 1); b.e[1] = mk(2, true, 1);
+      n = orderGroup(b, bn, r, 0, ord, 16);
+      KT_CHECK_EQ(n, 1); KT_CHECK_EQ(ord[0], 0);
+    }
+    // hex key hide
+    Profile q; defaultProfile(q);
+    q.nHide[1] = parseNameList("0x66", q.hide[1], ProfMax);   // key 102 = entry 2
+    n = orderGroup(g, names, q, 1, ord, 16);
+    KT_CHECK_EQ(n, 4); KT_CHECK_EQ(ord[0], 0); KT_CHECK_EQ(ord[1], 1); KT_CHECK_EQ(ord[2], 3); KT_CHECK_EQ(ord[3], 4);
+    // byCount: counts {1,5,3} -> 1,2,0
+    GroupView c; memset(&c, 0, sizeof c); c.count = 3;
+    c.e[0] = mk(1, true, 1); c.e[0].count = 1;
+    c.e[1] = mk(2, true, 1); c.e[1].count = 5;
+    c.e[2] = mk(3, true, 1); c.e[2].count = 3;
+    n = orderGroup(c, names, p, 2, ord, 16);
+    KT_CHECK_EQ(n, 3); KT_CHECK_EQ(ord[0], 1); KT_CHECK_EQ(ord[1], 2); KT_CHECK_EQ(ord[2], 0);
+    // ties stable
+    c.count = 4; c.e[3] = mk(4, true, 1); c.e[3].count = 5; c.e[0].count = 3;
+    n = orderGroup(c, names, p, 2, ord, 16);   // counts {3,5,3,5} -> 1,3,0,2
+    KT_CHECK_EQ(n, 4); KT_CHECK_EQ(ord[0], 1); KT_CHECK_EQ(ord[1], 3); KT_CHECK_EQ(ord[2], 0); KT_CHECK_EQ(ord[3], 2);
+    // pins precede the count sort
+    p.nPin[2] = parseNameList("Heal", p.pin[2], ProfMax);   // names[4] is beyond count 4? index 3 is "Sonic Grenade"; use names[2]
+    static const char names2[16][64] = {"A", "B", "C", "D"};
+    p.nPin[2] = parseNameList("C", p.pin[2], ProfMax);
+    n = orderGroup(c, names2, p, 2, ord, 16);
+    KT_CHECK_EQ(n, 4); KT_CHECK_EQ(ord[0], 2); KT_CHECK_EQ(ord[1], 1); KT_CHECK_EQ(ord[2], 3); KT_CHECK_EQ(ord[3], 0);
+    // maxOut cap
+    n = orderGroup(c, names2, p, 2, ord, 2);
+    KT_CHECK_EQ(n, 2); KT_CHECK_EQ(ord[0], 2); KT_CHECK_EQ(ord[1], 1);
+    // bad args
+    KT_CHECK_EQ(orderGroup(c, names2, p, -1, ord, 16), 0);
+    KT_CHECK_EQ(orderGroup(c, names2, p, 3, ord, 16), 0);
+    KT_CHECK_EQ(orderGroup(c, nullptr, p, 2, ord, 16), 0);
+    KT_CHECK_EQ(orderGroup(c, names2, p, 2, nullptr, 16), 0);
+    KT_CHECK_EQ(orderGroup(c, names2, p, 2, ord, 0), 0);
+
+    // orderSig
+    int a[4] = {0, 1, 2, 3}, b[4] = {0, 1, 2, 3}, d[4] = {1, 0, 2, 3};
+    KT_CHECK_EQ(orderSig(c, a, 4), orderSig(c, b, 4));
+    KT_CHECK(orderSig(c, a, 4) != orderSig(c, d, 4));
+    KT_CHECK(orderSig(c, a, 3) != orderSig(c, a, 4));
+    KT_CHECK_EQ(orderSig(c, nullptr, 4), orderSig(c, nullptr, 4));
+    KT_CHECK(orderSig(c, nullptr, 4) != orderSig(c, nullptr, 3));
+    // FNV-1a known value: n = 0 -> hash of four zero bytes
+    uint32_t h = 2166136261u; for (int i = 0; i < 4; ++i) { h ^= 0u; h *= 16777619u; }
+    KT_CHECK_EQ(orderSig(c, nullptr, 0), h);
+  }
+
+  // ---- formatProfile / parseProfileLine round trip
+  {
+    Profile p; defaultProfile(p);
+    p.nPin[0] = parseNameList("Flurry,Heal", p.pin[0], ProfMax);
+    p.nHide[1] = parseNameList("0x10000035, Sonic Grenade", p.hide[1], ProfMax);
+    p.byCount[0] = true; p.byCount[2] = false;
+    char buf[1024];
+    int len = formatProfile(p, buf, sizeof buf);
+    KT_CHECK(len > 0); KT_CHECK_EQ(len, (int)strlen(buf));
+    KT_CHECK(buf[len - 1] != '\n');
+    KT_CHECK(strstr(buf, "Pin0=Flurry,Heal\n") != nullptr);
+    KT_CHECK(strstr(buf, "Sort2=engine") != nullptr);
+    Profile r; defaultProfile(r);
+    r.byCount[2] = true;
+    std::string s(buf); size_t pos = 0; int lines = 0; bool allOk = true;
+    while (pos <= s.size()) {
+      size_t e = s.find('\n', pos); if (e == std::string::npos) e = s.size();
+      std::string line = s.substr(pos, e - pos); pos = e + 1;
+      size_t eq = line.find('=');
+      if (eq == std::string::npos) { allOk = false; continue; }
+      allOk = parseProfileLine(r, line.substr(0, eq).c_str(), line.substr(eq + 1).c_str()) && allOk;
+      ++lines;
+    }
+    KT_CHECK(allOk); KT_CHECK_EQ(lines, 9);
+    bool same = true;
+    for (int g = 0; g < 3; ++g) {
+      same = same && r.nPin[g] == p.nPin[g] && r.nHide[g] == p.nHide[g] && r.byCount[g] == p.byCount[g];
+      for (int i = 0; i < p.nPin[g]; ++i) same = same && strcmp(r.pin[g][i], p.pin[g][i]) == 0;
+      for (int i = 0; i < p.nHide[g]; ++i) same = same && strcmp(r.hide[g][i], p.hide[g][i]) == 0;
+    }
+    KT_CHECK(same);
+    // small buffer
+    char small[8]; small[0] = 'x';
+    KT_CHECK_EQ(formatProfile(p, small, sizeof small), -1); KT_CHECK_EQ((int)small[0], 0);
+    KT_CHECK_EQ(formatProfile(p, buf, len), -1);       // no room for the NUL
+    KT_CHECK_EQ(formatProfile(p, buf, len + 1), len);  // exact fit
+    // parseProfileLine rules
+    Profile q; defaultProfile(q);
+    KT_CHECK(parseProfileLine(q, "PIN1", "a, b"));  KT_CHECK_EQ(q.nPin[1], 2);
+    KT_CHECK(parseProfileLine(q, "pin1", nullptr)); KT_CHECK_EQ(q.nPin[1], 0);
+    KT_CHECK(parseProfileLine(q, "Sort0", " COUNT ")); KT_CHECK(q.byCount[0]);
+    KT_CHECK(parseProfileLine(q, "sort2", "Engine")); KT_CHECK(!q.byCount[2]);
+    KT_CHECK(!parseProfileLine(q, "Sort2", "bogus")); KT_CHECK(!q.byCount[2]);
+    KT_CHECK(!parseProfileLine(q, "Sort1", nullptr));
+    KT_CHECK(!parseProfileLine(q, "Pin3", "a")); KT_CHECK(!parseProfileLine(q, "Foo0", "a"));
+    KT_CHECK(!parseProfileLine(q, "Pin", "a")); KT_CHECK(!parseProfileLine(q, nullptr, "a"));
+  }
   return kt::Report("combat_logic_test");
 }

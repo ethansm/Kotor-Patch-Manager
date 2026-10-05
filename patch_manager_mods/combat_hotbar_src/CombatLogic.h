@@ -6,7 +6,7 @@
 
 namespace ch {
 
-struct EntryView { uint32_t key; bool usable; uint32_t owner; char icon[17]; };
+struct EntryView { uint32_t key; bool usable; uint32_t owner; char icon[17]; uint32_t count; };   // count = stack size, 0 = not a stack
 struct GroupView { int count; EntryView e[16]; };
 
 inline int clampCount(int c) { return c < 0 ? 0 : (c > 16 ? 16 : c); }
@@ -333,6 +333,181 @@ inline bool freezeOrigin(FreezeState& s, bool cursorInGrid, int curX, int curY, 
     if (outX) *outX = s.x;
     if (outY) *outY = s.y;
     return true;
+}
+
+// ---- INI profile: per-group pin / hide lists and sort mode, plus group ordering.
+constexpr int ProfMax = 8, ProfName = 48;
+struct Profile {
+    char pin[3][ProfMax][ProfName]; int nPin[3];
+    char hide[3][ProfMax][ProfName]; int nHide[3];
+    bool byCount[3];
+};
+
+inline void defaultProfile(Profile& p) {
+    memset(&p, 0, sizeof p);
+    p.byCount[2] = true;
+}
+
+namespace detail {
+inline char lower(char c) { return (c >= 'A' && c <= 'Z') ? (char)(c + 32) : c; }
+inline bool isBlank(char c) { return c == ' ' || c == '\t'; }
+// Case-insensitive compare of a[0..alen) with b[0..blen).
+inline bool eqNoCase(const char* a, size_t alen, const char* b, size_t blen) {
+    if (alen != blen) return false;
+    for (size_t i = 0; i < alen; ++i) if (lower(a[i]) != lower(b[i])) return false;
+    return true;
+}
+inline bool eqNoCase(const char* a, const char* b) { return eqNoCase(a, strlen(a), b, strlen(b)); }
+inline int hexVal(char c) {
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+    return -1;
+}
+}  // namespace detail
+
+// Split csv on ',', trim spaces/tabs, skip empty tokens, truncate each to ProfName-1 chars, drop case-insensitive duplicates, cap at max. Returns the count.
+inline int parseNameList(const char* csv, char out[][ProfName], int max) {
+    if (!csv || !out || max <= 0) return 0;
+    int n = 0;
+    const char* p = csv;
+    while (*p && n < max) {
+        const char* end = p;
+        while (*end && *end != ',') ++end;
+        const char* b = p; const char* e = end;
+        while (b < e && detail::isBlank(*b)) ++b;
+        while (e > b && detail::isBlank(e[-1])) --e;
+        size_t len = (size_t)(e - b);
+        if (len > (size_t)(ProfName - 1)) len = ProfName - 1;
+        if (len > 0) {
+            bool dup = false;
+            for (int i = 0; i < n && !dup; ++i) dup = detail::eqNoCase(out[i], strlen(out[i]), b, len);
+            if (!dup) { memcpy(out[n], b, len); out[n][len] = '\0'; ++n; }
+        }
+        p = *end ? end + 1 : end;
+    }
+    return n;
+}
+
+// Does an entry (display name, engine key) match a profile token?
+//  - null/empty token: never.
+//  - "0x..."/"0X..." token: hex key, matches iff equal to key (name is ignored and may be null). Malformed hex never matches.
+//  - otherwise (case-insensitive): name equals token, OR name ends with " " + token. So "Flurry" matches "Master Flurry", but "Sonic Grenade" does
+//    NOT match "Minor Sonic Detonator". By the same suffix rule "Attack" DOES match "Power Attack" -- that is the defined behaviour.
+inline bool nameMatches(const char* name, uint32_t key, const char* token) {
+    if (!token || !token[0]) return false;
+    if (token[0] == '0' && (token[1] == 'x' || token[1] == 'X')) {
+        const char* h = token + 2;
+        int digits = 0; uint32_t v = 0;
+        for (; *h; ++h, ++digits) {
+            int d = detail::hexVal(*h);
+            if (d < 0 || digits >= 8) return false;
+            v = (v << 4) | (uint32_t)d;
+        }
+        return digits > 0 && v == key;
+    }
+    if (!name || !name[0]) return false;
+    const size_t nl = strlen(name), tl = strlen(token);
+    if (nl == tl) return detail::eqNoCase(name, nl, token, tl);
+    if (nl > tl + 1 && name[nl - tl - 1] == ' ') return detail::eqNoCase(name + nl - tl, tl, token, tl);
+    return false;
+}
+
+// Order group gi's entries (token matching = nameMatches, but an exact-name entry in the group disables the suffix rule for that token): hidden entries dropped (hide wins over pin); each pin token in INI order places the first unplaced match;
+// the rest follow in engine order, or by stack count descending (stable) when p.byCount[gi]. Writes entry indices to ord (cap maxOut), returns the number written.
+inline int orderGroup(const GroupView& g, const char names[][64], const Profile& p, int gi, int* ord, int maxOut) {
+    if (gi < 0 || gi > 2 || !names || !ord || maxOut <= 0) return 0;
+    const int n = clampCount(g.count);
+    // A token that equals some entry's name exactly matches only exact names, so Hide0=Attack hides "Attack" but not "Power Attack";
+    // the " " + token suffix rule applies only when no entry has that exact name ("Flurry" -> "Master Flurry").
+    auto hits = [&](int i, const char* tok) {
+        if (!nameMatches(names[i], g.e[i].key, tok)) return false;
+        if (tok[0] == '0' && (tok[1] == 'x' || tok[1] == 'X')) return true;
+        if (detail::eqNoCase(names[i], tok)) return true;
+        for (int j = 0; j < n; ++j) if (names[j][0] && detail::eqNoCase(names[j], tok)) return false;
+        return true;
+    };
+    bool hidden[16] = {}, placed[16] = {};
+    for (int i = 0; i < n; ++i)
+        for (int t = 0; t < p.nHide[gi] && !hidden[i]; ++t)
+            hidden[i] = hits(i, p.hide[gi][t]);
+    int seq[16]; int ns = 0;
+    for (int t = 0; t < p.nPin[gi]; ++t)
+        for (int i = 0; i < n; ++i)
+            if (!hidden[i] && !placed[i] && hits(i, p.pin[gi][t])) { placed[i] = true; seq[ns++] = i; break; }
+    const int restStart = ns;
+    for (int i = 0; i < n; ++i) if (!hidden[i] && !placed[i]) seq[ns++] = i;
+    if (p.byCount[gi]) {   // stable insertion sort, count descending
+        for (int a = restStart + 1; a < ns; ++a) {
+            const int v = seq[a]; int b = a - 1;
+            while (b >= restStart && g.e[seq[b]].count < g.e[v].count) { seq[b + 1] = seq[b]; --b; }
+            seq[b + 1] = v;
+        }
+    }
+    const int w = ns < maxOut ? ns : maxOut;
+    for (int i = 0; i < w; ++i) ord[i] = seq[i];
+    return w;
+}
+
+// FNV-1a 32-bit over n (4 bytes, little-endian) then each g.e[ord[i]].key (4 bytes, little-endian). null ord with n > 0 hashes n only.
+inline uint32_t orderSig(const GroupView& g, const int* ord, int n) {
+    uint32_t h = 2166136261u;
+    auto mix = [&h](uint32_t v) { for (int s = 0; s < 32; s += 8) { h ^= (v >> s) & 0xFFu; h *= 16777619u; } };
+    mix((uint32_t)n);
+    if (!ord) return h;
+    for (int i = 0; i < n; ++i) mix((ord[i] >= 0 && ord[i] < 16) ? g.e[ord[i]].key : 0u);
+    return h;
+}
+
+// Serialize as lines "Pin<g>=a,b", "Hide<g>=...", "Sort<g>=count|engine" (g = 0..2) joined with '\n', no trailing newline, NUL-terminated.
+// Returns the length, or -1 (buf[0] = 0 when size > 0) if it does not fit.
+inline int formatProfile(const Profile& p, char* buf, int size) {
+    if (!buf || size <= 0) return -1;
+    int len = 0; bool ok = true;
+    auto put = [&](const char* s, size_t l) {
+        if (!ok) return;
+        if ((size_t)len + l + 1 > (size_t)size) { ok = false; return; }
+        memcpy(buf + len, s, l); len += (int)l;
+    };
+    auto putS = [&](const char* s) { put(s, strlen(s)); };
+    for (int g = 0; g < 3 && ok; ++g) {
+        const char d[2] = {(char)('0' + g), '\0'};
+        for (int k = 0; k < 2; ++k) {
+            if (g > 0 || k > 0) putS("\n");
+            putS(k == 0 ? "Pin" : "Hide"); putS(d); putS("=");
+            const int cnt = k == 0 ? p.nPin[g] : p.nHide[g];
+            for (int i = 0; i < cnt && i < ProfMax; ++i) { if (i) putS(","); putS(k == 0 ? p.pin[g][i] : p.hide[g][i]); }
+        }
+        putS("\nSort"); putS(d); putS(p.byCount[g] ? "=count" : "=engine");
+    }
+    if (!ok) { buf[0] = '\0'; return -1; }
+    buf[len] = '\0';
+    return len;
+}
+
+// Apply one INI line. key (case-insensitive): Pin0..2 / Hide0..2 replace that list (null val = empty); Sort0..2 accepts "count"/"engine" (trimmed, case-insensitive).
+// Returns false for an unknown key or bad Sort value, leaving p unchanged.
+inline bool parseProfileLine(Profile& p, const char* key, const char* val) {
+    if (!key) return false;
+    const size_t kl = strlen(key);
+    auto isKey = [&](const char* base, int* gi) {
+        const size_t bl = strlen(base);
+        if (kl != bl + 1 || !detail::eqNoCase(key, bl, base, bl) || key[bl] < '0' || key[bl] > '2') return false;
+        *gi = key[bl] - '0'; return true;
+    };
+    int gi = 0;
+    if (isKey("Pin", &gi))  { p.nPin[gi] = parseNameList(val, p.pin[gi], ProfMax); return true; }
+    if (isKey("Hide", &gi)) { p.nHide[gi] = parseNameList(val, p.hide[gi], ProfMax); return true; }
+    if (isKey("Sort", &gi)) {
+        if (!val) return false;
+        const char* b = val; const char* e = val + strlen(val);
+        while (b < e && detail::isBlank(*b)) ++b;
+        while (e > b && detail::isBlank(e[-1])) --e;
+        if (detail::eqNoCase(b, (size_t)(e - b), "count", 5)) { p.byCount[gi] = true; return true; }
+        if (detail::eqNoCase(b, (size_t)(e - b), "engine", 6)) { p.byCount[gi] = false; return true; }
+        return false;
+    }
+    return false;
 }
 
 }  // namespace ch
