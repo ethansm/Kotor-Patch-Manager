@@ -206,3 +206,4 @@ Gates: check_hook_bytes FAIL=0 (hooks unchanged -> DLL hot-swap install), check_
 from the kpatch to `$G/patches/level-up-override.dll`, md5 91bbda85. Read `levelup_override_log.txt` from line 886.
 (1) Gear on a teal button fill; cream border on hover (rows, Apply, Cancel too). (2) Page open: gear still there, clicking it closes the page.
 (3) Page solid (no stats / column lines through it), rounded teal frame. (4) Log: `UI page fill=luo_fill ok=1 style=1 one=1`, `UI hover tint base_ok=1`, banner `1.5.0-dev`.
+- **INSTALLED 2026-10-05 01:57:** 1.5.0-dev dll 91bbda85 hot-swapped into `$G/patches/level-up-override.dll` (md5 verified); previous d14fa7cd backed up to `$G/backups/luo_3d_0157`. Other sessions told (cs11 + combat-hotbar will copy it back after their own installs). Awaiting the user live check; read `levelup_override_log.txt` from line 886.
