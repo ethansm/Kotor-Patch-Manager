@@ -1,14 +1,5 @@
-# Companion Self-Heal probe: log only (doc 27 CS2).
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
 
-# StopLoadFromLayout entry (FUN_0040f5a0), called by every panel ctor; HUD ctor calls it at 0x00748508 (after the hotbar's 0x748502). ecx = panel.
-[[hooks]]
-address = 0x0040F5A0
-type = "detour"
-function = "SelfHealLayoutClosing"
-original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x10]
-skip_original_bytes = false
-exclude_from_restore = []
-
-[[hooks.parameters]]
-source = "ecx"
-type = "pointer"
+# No hooks: DLL-only consumer of hud-host (k2.hud@1). The StopLoadFromLayout detour (0x0040F5A0) moved to hud-host
+# (K2HUD_BUILD, HUD panel only); this patch registers onHudBuild for K2HUD_BUILD in KPatchInit.

@@ -10,6 +10,7 @@
 #include "K2Addr.h"
 #include "Party.h"
 #include "PortraitSlots.h"
+#include "HudHost.h"
 #include "HealItems.h"
 #include "ItemRead.h"
 #include "GuiKit.h"
@@ -50,11 +51,23 @@ static int32_t KPATCH_CALL psCreature(int32_t) { return 0; }
 static int32_t KPATCH_CALL psSlotAt(int32_t i, int32_t* slot, int32_t* cr) { if (i != 1) return 0; *slot = 0x5000; *cr = 0x6000; return 1; }
 static uint32_t KPATCH_CALL psFrame() { return 9; }
 static K2PortraitSlotsApi g_psApi = { sizeof(K2PortraitSlotsApi), psRegister, psUnreg, psCreature, psSlotAt, psFrame };
+static int g_hudRegs; static int32_t g_hudPhase = -1, g_hudPrio = -1; static std::string g_hudOwner; static K2HudCallback g_hudFn;
+static int32_t KPATCH_CALL huRegister(int32_t phase, int32_t prio, K2HudCallback fn, void*, const char* owner) { if (!fn) return 0; ++g_hudRegs; g_hudPhase = phase; g_hudPrio = prio; g_hudOwner = owner; g_hudFn = fn; return 3; }
+static void KPATCH_CALL huUnreg(int32_t) {}
+static int32_t KPATCH_CALL huHud() { return 0; }
+static uint32_t KPATCH_CALL huFrame() { return 5; }
+static K2HudApi g_huApi = { sizeof(K2HudApi), huRegister, huUnreg, huHud, huFrame };
 static std::string g_reqName; static uint32_t g_reqVer;
-static const void* KPATCH_CALL fRequire(const char* n, uint32_t v) { g_reqName = n; g_reqVer = v; return strcmp(n, "kpatch.log") == 0 ? (const void*)&g_log : (const void*)&g_psApi; }
+static const void* KPATCH_CALL fRequire(const char* n, uint32_t v) {
+    g_reqName = n; g_reqVer = v;
+    if (strcmp(n, "kpatch.log") == 0) return &g_log;
+    if (strcmp(n, K2HUD_IFACE) == 0) return &g_huApi;
+    return &g_psApi;
+}
 static KPatchApi g_api = { sizeof(KPatchApi), 1, nullptr, fRequire };
 
 static void KPATCH_CALL dummyCb(const K2PsContext*, void*) {}
+static void KPATCH_CALL dummyHudCb(const K2HudContext*, void*) {}
 
 static uint8_t* g_a;
 static uintptr_t A(size_t off) { return reinterpret_cast<uintptr_t>(g_a + off); }
@@ -135,6 +148,23 @@ int main() {
     HEQ("K2PS_MAX_SLOTS bounds the P3 walk", K2PS_MAX_SLOTS, 4);
     k2ps::Client c2; c2.poll();   // poll() before init/connect must not crash
     HCHECK("poll() on an unconnected, uninitialised client stays unconnected", !c2.connected);
+
+    // ===== 5b. hud-host client (K2HUD_BUILD, 0.4.2-dev: the HUD labels are built in hud-host's BUILD phase, no hook of ours)
+    HEQ("K2HUD_BUILD is phase 3 (onHudBuild registration)", K2HUD_BUILD, 3);
+    HCHECK("K2HudContext has a panel field, covered by struct_size, after the older fields", offsetof(K2HudContext, panel) + sizeof(int32_t) <= sizeof(K2HudContext) && offsetof(K2HudContext, panel) > offsetof(K2HudContext, targetType));
+    HCHECK("K2HudContext struct_size gate: offsetof(panel)+sizeof(panel) == sizeof(K2HudContext) on v1 (the onHudBuild guard)", offsetof(K2HudContext, panel) + sizeof(K2HudContext::panel) == sizeof(K2HudContext));
+    {
+        k2hud::Client hc;
+        hc.init(&g_api, "companion-selfheal");
+        HCHECK("k2hud::Client::add() accepts the BUILD callback at prio 200", hc.add(K2HUD_BUILD, 200, dummyHudCb));
+        HCHECK("k2hud::Client::connect() succeeds against a complete v1 K2HudApi", hc.connect());
+        HCHECK("it required \"k2.hud\" v1", g_reqName == K2HUD_IFACE && g_reqVer == (uint32_t)K2HUD_VERSION);
+        HEQ("one hud registration", g_hudRegs, 1);
+        HEQ("phase K2HUD_BUILD", (long long)g_hudPhase, (long long)K2HUD_BUILD);
+        HEQ("priority 200", (long long)g_hudPrio, 200LL);
+        HCHECK("hud owner is the manifest id and the callback is the one added", g_hudOwner == "companion-selfheal" && g_hudFn == dummyHudCb);
+        HCHECK("manifest requires_interfaces: the iface id string is \"k2.hud\"", strcmp(K2HUD_IFACE, "k2.hud") == 0 && K2HUD_VERSION == 1);
+    }
 
     // ===== 6. HealItems
     heal::AutoCfg cfg;

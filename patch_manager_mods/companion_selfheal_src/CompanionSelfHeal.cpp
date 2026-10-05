@@ -1,4 +1,4 @@
-// Companion Self-Heal 0.4.1-dev (doc 27, CS4 restyle + CS5). The HUD gets, from ONE hook (StopLoadFromLayout 0x0040F5A0, HUD vtable only), 12 runtime
+// Companion Self-Heal 0.4.2-dev (doc 27, CS4 restyle + CS5). The HUD gets, from hud-host's K2HUD_BUILD phase (k2.hud@1, source 0x0040F5A0, HUD panel only; no hook of ours), 12 runtime
 // labels (2 cross-icon buttons, a popover background, 5 popover items, 2 value labels, 2 gold auto rings drawn on top; the cross + ring art are
 // embedded textures, see namespace tex; fallback = the text "+"). Per frame (K2PS_FRAME_BEGIN, only in gameplay HUD):
 // buttons follow the companion cards (slot+0x694 vit rect); LMB = use the picked healing item now (route A), RMB = popover
@@ -21,6 +21,7 @@
 #include "K2Addr.h"
 #include "Party.h"
 #include "PortraitSlots.h"
+#include "HudHost.h"
 #include "HealItems.h"
 #include "ItemRead.h"
 #include "GuiKit.h"
@@ -61,6 +62,7 @@ KP_CHANNEL(chUi, "ui");
 KP_CHANNEL(chCfg, "cfg");
 
 k2ps::Client g_ps;
+k2hud::Client g_hudc;
 uintptr_t g_hud = 0;
 bool g_logOn = true;
 int g_probeKey = 0x48;
@@ -92,6 +94,7 @@ void loadIni() {
     if (g_callKey <= 0 || g_callKey > 0xFF) g_callKey = 0x4A;
 }
 
+void onHudConnect(bool ok, const char* why) { if (g_logOn) KP_LOGV(chMain, ok ? KPLOG_INFO : KPLOG_WARN, "k2.hud: %s (%s)", ok ? "connected" : "NOT connected", why ? why : ""); }
 void onConnect(bool ok, const char* why) { if (g_logOn) KP_LOGV(chMain, ok ? KPLOG_INFO : KPLOG_WARN, "portraitslots: %s (%s)", ok ? "connected" : "NOT connected", why ? why : ""); }
 
 // P3: which of the 3 portrait slots belong to the HUD panel (slot - 0x1F34 - k*0xDE4 == hud).
@@ -762,24 +765,10 @@ void buildWidgets(uintptr_t panel) {
     KP_LOGV(chHud, n == NWidgets ? KPLOG_INFO : KPLOG_WARN, "BUILD n=%d/%d why=%s", n, NWidgets, whys.empty() ? "ok" : whys.c_str());
 }
 
-} // namespace
-
-extern "C" {
-
-void __cdecl KPatchInit(const KPatchApi* api) {
-    KpLog_Init(api);
-    loadIni();
-    loadCfg();
-    filewatch::accept(g_cfgPoll, IniPath);
-    KP_LOG(chMain, "0.4.1-dev: probe call=%d CallKey=0x%02X cfg rows=%d", g_probeCall, g_callKey, (int)g_cfg.rows.size());
-    g_ps.init(api, "companion-selfheal");
-    g_ps.onConnect = onConnect;
-    g_ps.add(K2PS_FRAME_BEGIN, 300, onFrameBegin);
-    g_ps.connect();
-}
-
-// 0x0040F5A0 entry, ecx = panel. Only the HUD (gameaddr::HudVtable) is of interest; everything else returns at once.
-void __cdecl SelfHealLayoutClosing(uintptr_t panel) {
+// K2HUD_BUILD callback (hud-host, source 0x0040F5A0, HUD panel only, layout still open). The vtable check is a cheap guard.
+void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
+    if (!ctx || ctx->struct_size < offsetof(K2HudContext, panel) + sizeof(ctx->panel)) return;
+    const uintptr_t panel = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->panel));
     saferead::beginScope();
     g_ps.poll();
     uint32_t vt = 0;
@@ -791,6 +780,26 @@ void __cdecl SelfHealLayoutClosing(uintptr_t panel) {
     rd<uint32_t>(panel, Panel_Open, &f30); rd<uint32_t>(panel, Panel_Flags, &f48); rd<uint32_t>(panel, Panel_Ctl, &ctl); rd<uint32_t>(panel, Panel_CtlCount, &cnt);
     bool layoutOpen = f30 != 0 && (f48 & 2);
     KP_LOG(chHud, "P1 hud built panel=%08x +0x30=%08x +0x48=%08x layoutOpen=%d ctlList=%08x ctlCount=%u", (unsigned)panel, (unsigned)f30, (unsigned)f48, (int)layoutOpen, (unsigned)ctl, (unsigned)cnt);
+}
+
+} // namespace
+
+extern "C" {
+
+void __cdecl KPatchInit(const KPatchApi* api) {
+    KpLog_Init(api);
+    loadIni();
+    loadCfg();
+    filewatch::accept(g_cfgPoll, IniPath);
+    KP_LOG(chMain, "0.4.2-dev: probe call=%d CallKey=0x%02X cfg rows=%d", g_probeCall, g_callKey, (int)g_cfg.rows.size());
+    g_ps.init(api, "companion-selfheal");
+    g_ps.onConnect = onConnect;
+    g_ps.add(K2PS_FRAME_BEGIN, 300, onFrameBegin);
+    g_ps.connect();
+    g_hudc.init(api, "companion-selfheal");
+    g_hudc.onConnect = onHudConnect;
+    g_hudc.add(K2HUD_BUILD, 200, onHudBuild);
+    g_hudc.connect();
 }
 
 }
