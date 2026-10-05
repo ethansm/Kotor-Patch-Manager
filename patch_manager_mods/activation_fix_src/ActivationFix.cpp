@@ -26,6 +26,7 @@
 #include "CodePatch.h"
 #include "IniKit.h"
 #include "KpLog.h"
+#include "GameAddr.h"
 
 KP_LOG_PATCH("k2-activation-fix");
 
@@ -33,8 +34,8 @@ namespace {
 
 constexpr uintptr_t SitePost = 0x0040D69E;     // movie thread: CALL dword ptr [0x0098646C] (PostMessageA)
 constexpr uintptr_t IatPostMessageA = 0x0098646C;   // game IAT slot used by the replaced CALL
-constexpr uintptr_t FlagA1B4E0 = 0x00A1B4E0;   // engine app-active flag
-constexpr uintptr_t Gate76C = 0x00A1B76C;      // movie-thread "restore will not re-activate" flag
+constexpr uintptr_t FlagA1B4E0 = gameaddr::AppActiveFlag;   // engine app-active flag
+constexpr uintptr_t Gate76C = gameaddr::MovieRestoreSkipFlag;   // movie-thread "restore will not re-activate" flag
 const uint8_t SiteOrig[6] = { 0xFF, 0x15, 0x6C, 0x64, 0x98, 0x00 };
 
 volatile LONG g_ignored = 0, g_passed = 0;
