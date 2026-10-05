@@ -54,6 +54,7 @@ ROUTES = {
     "k2-equip-icon-fix_log.txt": ("analyze_runs", "runs"),
     "ai_trace.txt": ("analyze_play_logs", "playlogs"),
     "ranged_ai_log.txt": ("analyze_play_logs", "playlogs"),
+    "ranged-ai_log.txt": ("analyze_play_logs", "playlogs"),
     "inventory_sort_filter_log.txt": ("analyze_play_logs", "playlogs"),
 }
 KPLOG_HEADER = "# kplog session"

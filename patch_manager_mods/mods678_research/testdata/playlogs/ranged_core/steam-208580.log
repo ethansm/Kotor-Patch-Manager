@@ -1,0 +1,48 @@
+1000.490:0138:013c:trace:loaddll:build_module Loaded L"S:\\steamapps\\common\\KOTOR II\\KotorPatcher.dll" at 79E50000: native
+1000.491:0138:013c:warn:debugstr:OutputDebugStringA "[KotorPatcher] DLL_PROCESS_ATTACH - DLL loaded!\n"
+1000.491:0138:013c:warn:seh:dispatch_exception "[KotorPatcher] DLL_PROCESS_ATTACH - DLL loaded!\n"
+1000.492:0138:013c:warn:debugstr:OutputDebugStringA "[Config] Loaded SIMPLE hook: unrelated-mod @ 0x004752D8 (7 bytes)\n"
+1000.492:0138:013c:warn:seh:dispatch_exception "[Config] Loaded SIMPLE hook: unrelated-mod @ 0x004752D8 (7 bytes)\n"
+1000.493:0138:013c:warn:debugstr:OutputDebugStringA "[KotorPatcher] Applied SIMPLE hook at 0x004752D8 (7 bytes replaced)\n"
+1000.493:0138:013c:warn:seh:dispatch_exception "[KotorPatcher] Applied SIMPLE hook at 0x004752D8 (7 bytes replaced)\n"
+1000.494:0138:013c:warn:debugstr:OutputDebugStringA "[Config] Loaded DETOUR hook: companion-ai -> AiTraceShipBuild @ 0x00692C50 (6 bytes)\n"
+1000.494:0138:013c:warn:seh:dispatch_exception "[Config] Loaded DETOUR hook: companion-ai -> AiTraceShipBuild @ 0x00692C50 (6 bytes)\n"
+1000.495:0138:013c:warn:debugstr:OutputDebugStringA "[Config] Parsed consumed_exit_address = 0x0068F39F for hook at 0x0068F301\n"
+1000.495:0138:013c:warn:seh:dispatch_exception "[Config] Parsed consumed_exit_address = 0x0068F39F for hook at 0x0068F301\n"
+1000.496:0138:013c:warn:debugstr:OutputDebugStringA "[Config] Loaded DETOUR hook: companion-ai -> AiTracePrintString @ 0x0068F301 (6 bytes)\n"
+1000.496:0138:013c:warn:seh:dispatch_exception "[Config] Loaded DETOUR hook: companion-ai -> AiTracePrintString @ 0x0068F301 (6 bytes)\n"
+1000.497:0138:013c:warn:debugstr:OutputDebugStringA "[Config] Parsed consumed_exit_address = 0x006D7D2F for hook at 0x006D853E\n"
+1000.497:0138:013c:warn:seh:dispatch_exception "[Config] Parsed consumed_exit_address = 0x006D7D2F for hook at 0x006D853E\n"
+1000.498:0138:013c:warn:debugstr:OutputDebugStringA "[Config] Loaded DETOUR hook: companion-ai -> CompanionAiA1Gate @ 0x006D853E (6 bytes)\n"
+1000.498:0138:013c:warn:seh:dispatch_exception "[Config] Loaded DETOUR hook: companion-ai -> CompanionAiA1Gate @ 0x006D853E (6 bytes)\n"
+1000.499:0138:013c:warn:debugstr:OutputDebugStringA "[KotorPatcher] Applied DETOUR hook at 0x00692C50 -> AiTraceShipBuild\n"
+1000.499:0138:013c:warn:seh:dispatch_exception "[KotorPatcher] Applied DETOUR hook at 0x00692C50 -> AiTraceShipBuild\n"
+1000.500:0138:013c:warn:debugstr:OutputDebugStringA "[KotorPatcher] Applied DETOUR hook at 0x0068F301 -> AiTracePrintString\n"
+1000.500:0138:013c:warn:seh:dispatch_exception "[KotorPatcher] Applied DETOUR hook at 0x0068F301 -> AiTracePrintString\n"
+1000.501:0138:013c:warn:debugstr:OutputDebugStringA "[KotorPatcher] Applied DETOUR hook at 0x006D853E -> CompanionAiA1Gate\n"
+1000.501:0138:013c:warn:seh:dispatch_exception "[KotorPatcher] Applied DETOUR hook at 0x006D853E -> CompanionAiA1Gate\n"
+1000.511:0138:013c:trace:loaddll:build_module Loaded L"S:\\steamapps\\common\\KOTOR II\\patches\\companion-ai.dll" at 79680000: native
+1000.512:0138:013c:warn:debugstr:OutputDebugStringA "[Config] Parsed consumed_exit_address = 0x006D83FF for hook at 0x006D83EA\n"
+1000.512:0138:013c:warn:seh:dispatch_exception "[Config] Parsed consumed_exit_address = 0x006D83FF for hook at 0x006D83EA\n"
+1000.513:0138:013c:warn:debugstr:OutputDebugStringA "[Config] Loaded DETOUR hook: ranged-ai -> RangedAiHold @ 0x006D83EA (6 bytes)\n"
+1000.513:0138:013c:warn:seh:dispatch_exception "[Config] Loaded DETOUR hook: ranged-ai -> RangedAiHold @ 0x006D83EA (6 bytes)\n"
+1000.514:0138:013c:warn:debugstr:OutputDebugStringA "[Config] Loaded DETOUR hook: ranged-ai -> RangedAiHudStance @ 0x0074DBDD (6 bytes)\n"
+1000.514:0138:013c:warn:seh:dispatch_exception "[Config] Loaded DETOUR hook: ranged-ai -> RangedAiHudStance @ 0x0074DBDD (6 bytes)\n"
+1000.515:0138:013c:warn:debugstr:OutputDebugStringA "[KotorPatcher] Applied DETOUR hook at 0x006D83EA -> RangedAiHold\n"
+1000.515:0138:013c:warn:seh:dispatch_exception "[KotorPatcher] Applied DETOUR hook at 0x006D83EA -> RangedAiHold\n"
+1000.516:0138:013c:warn:debugstr:OutputDebugStringA "[KotorPatcher] Applied DETOUR hook at 0x0074DBDD -> RangedAiHudStance\n"
+1000.516:0138:013c:warn:seh:dispatch_exception "[KotorPatcher] Applied DETOUR hook at 0x0074DBDD -> RangedAiHudStance\n"
+1000.526:0138:013c:trace:loaddll:build_module Loaded L"S:\\steamapps\\common\\KOTOR II\\patches\\ranged-ai.dll" at 79680000: native
+1000.527:0138:013c:warn:debugstr:OutputDebugStringA "[Config] Parsed consumed_exit_address = 0x008A8DE2 for hook at 0x008A8CF0\n"
+1000.527:0138:013c:warn:seh:dispatch_exception "[Config] Parsed consumed_exit_address = 0x008A8DE2 for hook at 0x008A8CF0\n"
+1000.528:0138:013c:warn:debugstr:OutputDebugStringA "[Config] Loaded DETOUR hook: inventory-sort-filter -> SortFilterTabClick @ 0x008A8CF0 (6 bytes)\n"
+1000.528:0138:013c:warn:seh:dispatch_exception "[Config] Loaded DETOUR hook: inventory-sort-filter -> SortFilterTabClick @ 0x008A8CF0 (6 bytes)\n"
+1000.529:0138:013c:warn:debugstr:OutputDebugStringA "[KotorPatcher] Applied DETOUR hook at 0x008A8CF0 -> SortFilterTabClick\n"
+1000.529:0138:013c:warn:seh:dispatch_exception "[KotorPatcher] Applied DETOUR hook at 0x008A8CF0 -> SortFilterTabClick\n"
+1000.539:0138:013c:trace:loaddll:build_module Loaded L"S:\\steamapps\\common\\KOTOR II\\patches\\inventory-sort-filter.dll" at 79680000: native
+1005.539:0138:013c:warn:seh:dispatch_exception backtrace: --- Exception 0xc0000005.
+1005.539:0138:013c:trace:seh:dispatch_exception code=c0000005 (EXCEPTION_ACCESS_VIOLATION) flags=0 addr=7BEAD017
+1005.539:0138:013c:trace:seh:IsBadReadPtr FFFFFFFD caused page fault during read
+1005.539:0098:00a4:err:ntoskrnl:ZwLoadDriver failed to create driver L"winebth": c0000142
+1065.540:0138:013c:warn:debugstr:OutputDebugStringA "[KotorPatcher] DLL_PROCESS_DETACH - Cleaning up\n"
+1065.540:0138:013c:warn:seh:dispatch_exception "[KotorPatcher] DLL_PROCESS_DETACH - Cleaning up\n"

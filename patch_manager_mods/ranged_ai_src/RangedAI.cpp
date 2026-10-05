@@ -18,6 +18,7 @@
 //   S-H3 0x0077d8d4 RangedAiStanceClick(ebp)           StanceActionClicked 0x77d890: id 0x415 => stance 16; return 1 => 0x77d9ca
 //   S-H4 0x0074dbdd RangedAiHudStance(ebp)             HUD refresh 0x74da40 default branch (skip-only): marker id for stance 16
 //
+// Log (0.4.0): shared KpLog.h (channel main), see the "log" section; behaviour unchanged from 0.3.0.
 // Behaviour applies only to the stances in hold_stances / retarget_stances (shipped: 16), so the vanilla stances stay
 // vanilla. Everything is re-read from ranged_ai.ini once a second, no restart needed.
 #define WIN32_LEAN_AND_MEAN
@@ -27,6 +28,9 @@
 #include <stdarg.h>
 
 #include "../_shared/SafeRead.h"
+#include "KpLog.h"
+
+KP_LOG_PATCH("ranged-ai");
 
 namespace {
 
@@ -59,15 +63,44 @@ constexpr int F_Attacker = -0x49C, F_Los = -0xD0, F_Dist2 = -0xBC, F_Max = -0x2C
               F_RangedFlag = -0x164, F_ActionObj = -0x14;
 
 // ---- log ----
+// 0.4.0: shared KpLog.h (channel main) replaces the private fopen/append logger. Lines keep their text and field order; KpLog adds the
+// prefix (core file ranged-ai_log.txt: `T=<s.ms> f=- ranged-ai/main ...`; old core: fallback ranged_ai_log.txt at INFO, `<ms> ranged-ai/main ...`).
+// One session per core file (a `# kplog session` header marks it); the fallback file appends, so the parser splits sessions on the
+// `ranged-ai <ver> loaded` line (the old DllMain "w" truncate is gone). MaxLogLines stays as a message-count guard; KpLog's own
+// rate limit (max_lines_per_sec) is a second guard and shows up as DROPPED marks.
+KP_CHANNEL(chMain, "main");
+
+// Only stores the path and the level (no I/O): safe from a static initialiser. Old core: same file name as 0.3.0, at INFO.
+const bool g_fallbackSet = (KpLog_SetFallbackFile("ranged_ai_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
+
 int g_logLines = 0;
 constexpr int MaxLogLines = 6000;
-void logf(const char* fmt, ...) {
+void logv(int level, const char* fmt, va_list ap) {
     if (g_logLines > MaxLogLines) return;
-    FILE* f = fopen("ranged_ai_log.txt", "a");
-    if (!f) return;
-    if (++g_logLines > MaxLogLines) { fputs("-- log cap reached, further lines dropped --\n", f); fclose(f); return; }
-    va_list ap; va_start(ap, fmt); vfprintf(f, fmt, ap); va_end(ap);
-    fputc('\n', f); fclose(f);
+    if (++g_logLines > MaxLogLines) { KP_LOGV(chMain, KPLOG_INFO, "%s", "-- log cap reached, further lines dropped --"); return; }
+    char buf[600]; vsnprintf(buf, sizeof buf, fmt, ap);
+    KP_LOGV(chMain, level, "%s", buf);
+}
+
+// DllMain formats the load / ini-path / first config lines (g_loadLine / g_iniLine / g_cfgLine) but they are emitted once the logger is known: by
+// KPatchInit, else by the first loadIni(false) / log call (old core without KPatchInit). Order: load, ini path, config.
+char g_loadLine[400], g_iniLine[MAX_PATH + 40], g_cfgLine[400];
+volatile LONG g_loadEmitted = 0;
+void logf(const char* fmt, ...);
+void emitLoadLine() {
+    if (g_loadEmitted) return;                         // cheap fast path (hot after the first call)
+    if (InterlockedExchange(&g_loadEmitted, 1)) return;
+    if (g_loadLine[0]) logf("%s", g_loadLine);
+    if (g_iniLine[0]) logf("%s", g_iniLine);
+    if (g_cfgLine[0]) logf("%s", g_cfgLine);
+}
+void logf(const char* fmt, ...) {
+    if (!g_loadEmitted) emitLoadLine();
+    va_list ap; va_start(ap, fmt); logv(KPLOG_INFO, fmt, ap); va_end(ap);
+}
+void logw(const char* fmt, ...) {
+    if (!g_loadEmitted) emitLoadLine();
+    va_list ap; va_start(ap, fmt); logv(KPLOG_WARN, fmt, ap); va_end(ap);
 }
 
 template <typename T> T rd(int base, int off, T def = T()) {
@@ -104,7 +137,14 @@ unsigned parseMask(const char* s) {
     return m;
 }
 
+// Before the load line is emitted (DllMain) the config line is only formatted; afterwards it is logged directly.
+void cfgLog(const char* fmt, ...) {
+    va_list ap; va_start(ap, fmt);
+    if (!g_loadEmitted) vsnprintf(g_cfgLine, sizeof g_cfgLine, fmt, ap); else logv(KPLOG_INFO, fmt, ap);
+    va_end(ap);
+}
 void loadIni(bool force) {
+    if (!force) emitLoadLine();
     DWORD now = GetTickCount();
     if (!force && g_lastIni && now - g_lastIni < 1000) return;
     g_lastIni = now ? now : 1;
@@ -126,7 +166,7 @@ void loadIni(bool force) {
     if (!c.icon[0]) strcpy(c.icon, "ib_ranged");
     if (force || c.hold != g_cfg.hold || c.retarget != g_cfg.retarget || c.holdMask != g_cfg.holdMask || c.retargetMask != g_cfg.retargetMask ||
         c.msgStrref != g_cfg.msgStrref || strcmp(c.icon, g_cfg.icon) || c.rangedRules != g_cfg.rangedRules || c.kiteApproach != g_cfg.kiteApproach)
-        logf("config: hold=%d retarget=%d hold_stances=%x retarget_stances=%x ranged_rules=%d kite_approach=%d kite_strref_msg=%d kite_icon=%s log=%d log_all=%d",
+        cfgLog("config: hold=%d retarget=%d hold_stances=%x retarget_stances=%x ranged_rules=%d kite_approach=%d kite_strref_msg=%d kite_icon=%s log=%d log_all=%d",
              c.hold, c.retarget, c.holdMask, c.retargetMask, c.rangedRules, c.kiteApproach, c.msgStrref, c.icon, c.log, c.logAll);
     g_cfg = c;
 }
@@ -252,9 +292,9 @@ extern "C" int __cdecl RangedAiStanceRow(int ebp) {
     if (rd<int>(ebp, FA_State, -1) != KiteStance) return 0;
     loadIni(false);
     int list = rd<int>(ebp, FA_List), base = list ? rd<int>(list, 0) : 0, idx = rd<int>(ebp, FA_RowIdx, -1);
-    if (!base || idx < 0 || idx > 64) { logf("S2 bad frame: list=%08x base=%08x idx=%d (row left empty)", list, base, idx); return 1; }
+    if (!base || idx < 0 || idx > 64) { logw("S2 bad frame: list=%08x base=%08x idx=%d (row left empty)", list, base, idx); return 1; }
     int row = base + idx * RowStride;
-    if (!wr<int>(row + RowActionId, KiteActionId)) { logf("S2 row %08x not writable", row); return 1; }
+    if (!wr<int>(row + RowActionId, KiteActionId)) { logw("S2 row %08x not writable", row); return 1; }
     char ref[16] = {0};
     for (int i = 0; i < 16 && g_cfg.icon[i]; ++i) ref[i] = g_cfg.icon[i];   // CResRef: 16 bytes, lower case, zero padded (as 0x710eb0)
     for (int i = 0; i < 16; i += 4) { int w; memcpy(&w, ref + i, 4); wr<int>(row + RowIcon + i, w); }
@@ -330,13 +370,15 @@ extern "C" void __cdecl RangedAiHudStance(int ebp) {
     if (stance == KiteStance && g_cfg.log) logf("S4 t=%lu HUD stance marker -> 0x%x", GetTickCount(), KiteActionId);
 }
 
+// KpLog_Init may fail on an old core; the load line is emitted either way (KpLog then falls back to ranged_ai_log.txt).
+extern "C" void __cdecl KPatchInit(const KPatchApi* api) { KpLog_Init(api); emitLoadLine(); }
+
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {
-        if (FILE* f = fopen("ranged_ai_log.txt", "w")) fclose(f);   // one session per file (cwd = game folder)
         char cwd[MAX_PATH] = "?"; GetCurrentDirectoryA(MAX_PATH, cwd);
-        logf("ranged-ai 0.3.0 loaded; cwd=%s pid=%lu", cwd, (unsigned long)GetCurrentProcessId());
+        snprintf(g_loadLine, sizeof g_loadLine, "ranged-ai 0.4.0 loaded; cwd=%s pid=%lu tick=%lu", cwd, (unsigned long)GetCurrentProcessId(), GetTickCount());
         if (GetCurrentDirectoryA(MAX_PATH, cwd) > 0) snprintf(IniName, sizeof IniName, "%s\\ranged_ai.ini", cwd);
-        logf("ini path: %s", IniName);
+        snprintf(g_iniLine, sizeof g_iniLine, "ini path: %s", IniName);
         loadIni(true);
     }
     return TRUE;

@@ -1,0 +1,14 @@
+1000000 ranged-ai/main ranged-ai 0.4.0 loaded; cwd=Z:\game pid=312 tick=1000000
+1000001 ranged-ai/main ini path: Z:\game\ranged_ai.ini
+1000002 ranged-ai/main config: hold=1 retarget=1 hold_stances=10800 retarget_stances=10800 ranged_rules=1 kite_approach=1 kite_strref_msg=136539 kite_icon=ib_ranged log=1 log_all=0
+1000003 ranged-ai/main S1 t=1000500 stance menu build: stance 16 kept (vanilla clamp skipped)
+1000004 ranged-ai/main S2 t=1000501 stance row 4 (13fc0c4c): id=0x415 icon=ib_ranged
+1000005 ranged-ai/main S3 t=1003000 stance click: id=0x415 stance 11 -> 16 msg strref=136539
+1000006 ranged-ai/main S4 t=1003001 HUD stance marker -> 0x415
+1000007 ranged-ai/main H1 t=1020000 cr=7f0001a2 party=1 pc=0 stance=11 ranged=1 los=0 dist2=36.00 max=15.00 desired=10.00 inRange=1 area=0000aaaa/0000aaaa tgt=7f000233 ttype=5 backoff=0 rangedLocal=1 end52c=00000000 me=(1.00,2.00,0.00) tgtpos=(8.00,2.00,0.00) lastBlocked=(1.00,2.00,0.00) -> hold=0
+1000008 ranged-ai/main H1 t=2200000 cr=7f0001a2 party=1 pc=0 stance=11 ranged=1 los=0 dist2=30.00 max=15.00 desired=10.00 inRange=1 area=0000aaaa/0000aaaa tgt=7f000233 ttype=5 backoff=0 rangedLocal=1 end52c=00000000 me=(5.00,2.00,0.00) tgtpos=(8.00,2.00,0.00) lastBlocked=(4.00,2.00,0.00) -> hold=1
+1000009 ranged-ai/main H1 t=1021000 cr=7f0001a4 party=1 pc=0 stance=16 ranged=1 los=1 dist2=9.00 max=15.00 desired=10.00 inRange=1 area=0000aaaa/0000aaaa tgt=7f000233 ttype=5 backoff=0 rangedLocal=1 end52c=00000000 me=(1.00,2.00,0.00) tgtpos=(8.00,2.00,0.00) lastBlocked=(0.00,0.00,0.00) -> hold=0
+1000010 ranged-ai/main H2 t=1022000 cr=7f0001a4 party=1 pc=0 stance=16 ranged=1 los=0 me=(1.00,2.00,0.00) lastBlocked=(1.00,2.00,0.00) -> retarget=1
+1000011 ranged-ai/main H3 t=1023000 cr=7f0001a4 stance=16 ranged=1 inRange=1 kite_approach=1 -> 11 (no approach)
+1000012 ranged-ai/main H3 t=1024000 cr=7f0001a4 stance=16 ranged=0 inRange=1 kite_approach=1 -> 16 (approach)
+1000013 ranged-ai/main H3 t=1025000 cr=7f0001a4 stance=16 ranged=1 inRange=0 kite_approach=1 -> 16 (approach)

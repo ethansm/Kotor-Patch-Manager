@@ -5,7 +5,7 @@ Usage:
     python3 analyze_play_logs.py PLAYLOGS_DIR [--hooks-toml [ID=]PATH ...] [--window HH:MM-HH:MM]
                                  [--anchor "YYYY-MM-DD HH:MM:SS=TICK_MS"] [--out PATH] [--strict]
 
-Reads (each optional) from PLAYLOGS_DIR: ai_trace.txt, ranged_ai_log.txt, inventory_sort_filter_log.txt,
+Reads (each optional) from PLAYLOGS_DIR: ai_trace.txt, ranged_ai_log.txt or ranged-ai_log.txt (KpLog core, ranged-ai 0.4.0), inventory_sort_filter_log.txt,
 steam-208580.log (the Proton/Wine log). Writes REPORT.md into PLAYLOGS_DIR (or --out).
 Python 3.12, stdlib only. Never reads the live game folder: it only reads the directory it is given.
 
@@ -22,6 +22,9 @@ import sys
 import tomllib
 from collections import Counter, defaultdict
 from pathlib import Path
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "scripts"))
+import kplog_parse  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 MODS_DIR = HERE.parent                       # patch_manager_mods/
@@ -116,6 +119,9 @@ BENIGN_EXC = {"40010006": "DBG_PRINTEXCEPTION_C (OutputDebugString)", "406d1388"
               "6ba": "RPC_S_SERVER_UNAVAILABLE (wine startup)", "6be": "RPC (wine startup)"}
 
 FILES = {"trace": "ai_trace.txt", "ranged": "ranged_ai_log.txt", "inv": "inventory_sort_filter_log.txt"}
+# ranged-ai 0.4.0 logs through KpLog: core file ranged-ai_log.txt (T=... prefix + "# kplog session" header), or ranged_ai_log.txt in the
+# fallback shape ("<ms> ranged-ai/main ..."); 0.3.0 and older wrote raw lines to ranged_ai_log.txt. find_files picks one (see there).
+RANGED_NAMES = ("ranged_ai_log.txt", "ranged-ai_log.txt")
 QUOTE_MAX = 220
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -218,6 +224,22 @@ def read_lines(path: Path):
     with open(path, "r", encoding="utf-8", errors="replace", newline=None) as f:
         for i, line in enumerate(f, 1):
             yield i, line.rstrip("\r\n")
+
+
+def read_ranged_lines(path: Path):
+    """Yield (ln, kind, msg) for a ranged-ai log in any shape (legacy raw / KpLog fallback / KpLog core).
+    kind: 'line' (msg = the 0.3.0 text, KpLog prefix and level tag removed), 'header' (a KpLog session header: a new session starts),
+    'drop' (KpLog MARK / DROPPED line). Legacy raw lines and unparseable lines come back as kind 'line' with the text unchanged."""
+    for ln, line in read_lines(path):
+        d = kplog_parse.parse_line(line) if line else None
+        if d is None:
+            yield ln, "line", line
+        elif d["kind"] == "header":
+            yield ln, "header", d["msg"]
+        elif d["kind"] in ("mark", "dropped"):
+            yield ln, "drop", d["msg"]
+        else:
+            yield ln, "line", d["msg"]
 
 
 def fmt_addr(a: int) -> str:
@@ -928,9 +950,15 @@ def analyze_ranged(path: Path | None, win: Window | None, an: Anoms, cr_tag: dic
     skipped = 0
     n_lines = 0
     t_min = t_max = None
-    for ln, line in read_lines(path):
+    drops: list[str] = []
+    for ln, kind, line in read_ranged_lines(path):
         n_lines += 1
         if not line:
+            continue
+        if kind == "header":
+            continue
+        if kind == "drop":
+            drops.append(q(ln, line, name))
             continue
         if line.startswith("-- log cap reached"):
             cap = q(ln, line, name)
@@ -994,9 +1022,12 @@ def analyze_ranged(path: Path | None, win: Window | None, an: Anoms, cr_tag: dic
                 s_err.append(q(ln, line, name))
             continue
     R.update(name=name, n_lines=n_lines, s_counts=s_counts, s_ex=s_ex, s3_to16=s3_to16, s_err=s_err, h1=h1, h1_los0=h1_los0, h1_eq=h1_eq, h2=h2,
-             h3=h3, h3_rows=h3_rows, cfgs=cfgs, loaded=loaded, cap=cap, skipped=skipped, t_min=t_min, t_max=t_max)
+             h3=h3, h3_rows=h3_rows, cfgs=cfgs, loaded=loaded, cap=cap, drops=drops, skipped=skipped, t_min=t_min, t_max=t_max)
     if len(loaded) > 1:
-        an.add("INFO", name, f"{len(loaded)} 'ranged-ai loaded' lines: the file holds several sessions (it is opened in append mode); counts are totals")
+        an.add("INFO", name, f"{len(loaded)} 'ranged-ai loaded' lines: the file holds several sessions (the fallback file is opened in append mode); counts are totals")
+    if drops:
+        an.add("INFO", name, f"OBSERVE: {len(drops)} KpLog MARK/DROPPED line(s) (rate limit max_lines_per_sec; the 0.3.0 file had none), "
+                             f"counts are lower bounds, first: {drops[0]}")
     if s_err:
         an.add("FAIL", name, f"stance menu errors: {s_err[0]}")
     if cap:
@@ -1509,7 +1540,9 @@ def analyze_probes(trace_path: Path | None, ranged_path: Path | None, win: Windo
         C["PR-RAH2"] = ("OBSERVE", "ranged_ai_log.txt not present", "")
     else:
         h2, h1, h1_any = [], [], 0
-        for ln, line in read_lines(ranged_path):
+        for ln, kind, line in read_ranged_lines(ranged_path):
+            if kind != "line":
+                continue
             m = R_H2_RE.match(line)
             if m and int(m.group(14)) == 1:
                 h2.append(dict(t=int(m.group(1)), cr=m.group(2).lower(), ln=ln, line=line))
@@ -1842,7 +1875,7 @@ def render(dirp: Path, found: dict, S, T, RG, I, hooks, hook_notes, checklist, a
     rows = []
     for k, fname in [("trace", FILES["trace"]), ("ranged", FILES["ranged"]), ("inv", FILES["inv"])]:
         p = found.get(k)
-        rows.append([fname, "found" if p else "**missing**", f"{p.stat().st_size} B" if p else "-"])
+        rows.append([p.name if p else fname, "found" if p else "**missing**", f"{p.stat().st_size} B" if p else "-"])
     p = found.get("steam")
     rows.append([p.name if p else "steam-208580.log", "found" if p else "**missing**", f"{p.stat().st_size} B" if p else "-"])
     L.extend(md_table(["file", "status", "size"], rows))
@@ -2192,6 +2225,10 @@ def find_files(d: Path) -> dict:
     for k, fn in FILES.items():
         p = d / fn
         found[k] = p if p.is_file() else None
+    # ranged-ai: legacy/fallback name vs KpLog core name; the newer file (mtime) wins, a tie goes to the legacy name
+    cands = [d / n for n in RANGED_NAMES if (d / n).is_file()]
+    if cands:
+        found["ranged"] = max(cands, key=lambda c: (c.stat().st_mtime_ns, c.name == RANGED_NAMES[0]))
     steam = d / "steam-208580.log"
     if not steam.is_file():
         cands = sorted(d.glob("steam-*.log"))

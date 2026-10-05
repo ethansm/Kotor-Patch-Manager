@@ -239,6 +239,51 @@ class MissingFiles(Base):
         self.assertEqual(apl.run_full([str(self.tmp / "nope")])["rc"], 1)
 
 
+class RangedLogShapes(Base):
+    """ranged-ai 0.4.0 (KpLog) shapes give the same counts as the legacy raw file."""
+    def counts(self, case):
+        r = self.run_case(case)
+        RG = r["RG"]
+        return r, (dict(RG["s_counts"]), sum(c["n"] for c in RG["h1"].values()), len(RG["h2"]), sum(RG["h3"].values()), len(RG["cfgs"]), len(RG["loaded"]))
+
+    def test_same_counts_in_every_shape(self):
+        _, legacy = self.counts("healthy")
+        for case in ("ranged_fallback", "ranged_core"):
+            r, c = self.counts(case)
+            self.assertEqual(c, legacy, case)
+            self.assertEqual(self.fails(r), [], case)
+            self.assertIsNone(r["RG"]["cap"], case)
+
+    def test_core_file_name_is_found(self):
+        r, _ = self.counts("ranged_core")
+        self.assertEqual(r["RG"]["name"], "ranged-ai_log.txt")
+
+    def test_both_names_tie_goes_to_legacy(self):
+        d = self.copy_case("ranged_core")
+        shutil.copy(FIX / "ranged_fallback" / "ranged_ai_log.txt", d)
+        for n in ("ranged_ai_log.txt", "ranged-ai_log.txt"):
+            os.utime(d / n, ns=(10**18, 10**18))
+        self.assertEqual(apl.find_files(d)["ranged"].name, "ranged_ai_log.txt")
+        os.utime(d / "ranged-ai_log.txt", ns=(2 * 10**18, 2 * 10**18))
+        self.assertEqual(apl.find_files(d)["ranged"].name, "ranged-ai_log.txt")
+
+    def test_dropped_marks_are_one_observe_anomaly(self):
+        r, c = self.counts("ranged_core_drops")
+        self.assertEqual(c, self.counts("healthy")[1])
+        drops = [m for s, _src, m in r["an"].items if "KpLog MARK/DROPPED" in m]
+        self.assertEqual(len(drops), 1)
+        self.assertIn("2 KpLog MARK/DROPPED", drops[0])
+        self.assertEqual(r["RG"]["drops"][0].split()[0] != "", True)
+        self.assertEqual([m for s, _src, m in self.counts("ranged_core")[0]["an"].items if "MARK/DROPPED" in m], [])
+
+    def test_cap_line_matches_through_the_prefix(self):
+        d = self.copy_case("ranged_fallback")
+        with open(d / "ranged_ai_log.txt", "a") as f:
+            f.write("1999999 ranged-ai/main -- log cap reached, further lines dropped --\n")
+        r = apl.run_full([str(d)] + MINI)
+        self.assertIsNotNone(r["RG"]["cap"])
+
+
 class RealHookTomls(Base):
     def test_default_tomls_match_the_task_spec(self):
         hooks, notes = apl.load_hooks(None)
@@ -781,7 +826,7 @@ class FormatsMatchSource(unittest.TestCase):
         self.chk(r, '"S3 t=%lu stance click: id=0x%x stance %d -> %d msg strref=%d"', [100, 0x415, 11, 16, 136539], A.R_S3_RE, groups=["100", "415", "11", "16", "136539"])
         self.chk(r, '"S4 t=%lu HUD stance marker -> 0x%x"', [100, 0x415], A.R_S_RE, groups=["S4", "100"])
         self.assertTrue(A.R_CFG_RE.match(c_literal_at(r, '"config: hold=%d')))
-        loaded = render_c(c_literal_at(r, '"ranged-ai 0.3.0 loaded'), ["Z:\\\\g", 1234])
+        loaded = render_c(c_literal_at(r, '"ranged-ai 0.4.0 loaded'), ["Z:\\\\g", 1234, 99])
         self.assertTrue(A.R_LOADED_RE.match(loaded), loaded)
 
     def test_inventory_lines(self):

@@ -32,6 +32,12 @@ static SIZE_T fakeVQ(LPCVOID a, MEMORY_BASIC_INFORMATION* m, SIZE_T n) {
 #define VirtualQuery fakeVQ
 #include "SafeRead.h"
 #include "check.h"
+#include "KpLog.h"
+#include <string>
+#include <unistd.h>
+
+KP_LOG_PATCH("ranged-ai");
+KP_CHANNEL(chMain, "main");
 
 static uint8_t* g_arena = nullptr;
 constexpr size_t ArenaSize = 0x10000, Page = 0x1000;
@@ -128,6 +134,28 @@ static void scope_contract() {
     setup();
 }
 
+// RangedAI.cpp log section: static-init fallback sink (path + level only, no I/O). An INFO line lands in the fallback file with the
+// "<ms> ranged-ai/main " prefix and the text unchanged; WARN carries the WARN tag (S2 bad frame / not writable).
+static void kplog_contract() {
+    const char* td = getenv("TMPDIR"); if (!td || !*td) td = "/tmp";
+    char path[300]; snprintf(path, sizeof path, "%s/ranged_ai_contract_%d.txt", td, (int)getpid());
+    remove(path);
+    HCHECK("KpLog_HasCore() is false before KPatchInit (old-core path: emit from the first loadIni / log call)", !KpLog_HasCore());
+    KpLog_SetFallbackFile(path); KpLog_SetFallbackLevel(KPLOG_INFO);
+    HCHECK("KpLog_SetFallbackFile only stores the path, no I/O (safe from a static initialiser)", access(path, F_OK) != 0);
+    HCHECK("fallback level INFO enables INFO on the main channel (every ranged-ai line is INFO or WARN)", KP_ENABLED(chMain, KPLOG_INFO));
+    KP_LOGV(chMain, KPLOG_INFO, "%s", "ranged-ai 0.4.0 loaded; cwd=x pid=1 tick=1");
+    std::string t; if (FILE* f = fopen(path, "r")) { char b[512]; size_t n; while ((n = fread(b, 1, sizeof b, f)) > 0) t.append(b, n); fclose(f); }
+    size_t sp = t.find(' ');
+    HCHECK("fallback line starts with a decimal tick count", sp != std::string::npos && sp > 0 && t.find_first_not_of("0123456789") == sp);
+    HCHECK("fallback line is \"<ms> ranged-ai/main \" then the text unchanged", t.substr(sp) == " ranged-ai/main ranged-ai 0.4.0 loaded; cwd=x pid=1 tick=1\n");
+    KP_LOGV(chMain, KPLOG_WARN, "%s", "S2 bad frame probe");
+    std::string u; if (FILE* f = fopen(path, "r")) { char b[512]; size_t n; while ((n = fread(b, 1, sizeof b, f)) > 0) u.append(b, n); fclose(f); }
+    HCHECK("a WARN line carries the WARN tag", u.find(" ranged-ai/main WARN S2 bad frame probe\n") != std::string::npos);
+    KpLog_SetFallbackFile(nullptr);
+    remove(path);
+}
+
 int main() {
     void* m = mmap(nullptr, ArenaSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS
 #ifdef MAP_32BIT
@@ -141,5 +169,6 @@ int main() {
     v3_contract();
     probe_contract();
     scope_contract();
+    kplog_contract();
     return kt::Report("common_contract_test (ranged_ai)");
 }
