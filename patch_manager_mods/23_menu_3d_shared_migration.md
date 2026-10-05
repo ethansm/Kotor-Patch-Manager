@@ -13,7 +13,7 @@ inv3d 0.2.1-dev: INSTALLED 2026-10-03 21:00 (DLL swap, `59ed7c77`; rollback `pat
 | Mod | Patch id | Manifest | Step | Gate to start |
 |---|---|---|---|---|
 | Mod 1 Inventory 3D viewport | `inventory-3d-viewport` | 0.2.0-dev (bump to 0.2.1-dev, `manifest.toml:4`) | Step 1 (IsBad* -> saferead) committed in the KPM clone as 6544ac5 (20:28); repo mirror NOT yet synced | now |
-| Mod 5 Equipment 3D character | `equipment-3d-character` | 0.1.0-probe | waiting | inv3d accepted + Equip3dLogic.h extraction shipped alone |
+| Mod 5 Equipment 3D character | `equipment-3d-character` | 0.1.0-probe | Step 1 (IsBad* -> saferead, SiteEquip 0x0500) committed 2026-10-05 as repo e180af1 / KPM c9dbe25 (doc 24 C3a); source only, not installed (waits on BD3 play check); SceneView + camera = C3b | inv3d accepted + Equip3dLogic.h extraction shipped alone |
 | Mod 14 Character effects panel | `character-effects-panel` | 0.1.0-probe | waiting | user accepts build 4c (doc 14 line 26: awaiting test) |
 
 Out of scope: Mod 11 sort/filter, equip icon fix. Related: 19b sections A1/A2/B4/D, 19e (KpLog), 22 section 4.4, `$TOOL/docs/PatchRegistry.md:273` (library patches).
