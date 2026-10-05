@@ -33,6 +33,8 @@
 #include "EffectIconTable.inc"   // Buff HUD: beneficial spells.2da row -> icon
 #include "DebuffIconTable.inc"   // Buff HUD: harmful spells.2da row -> icon (+ item flag)
 #include "ChareffDecode.h"      // effect stat decoder + pixel-width text layer (pure, host-tested; includes EffectNameTable.inc)
+#include "../_shared/GameAddr.h"
+#include "../_shared/WindowHook.h"
 #include "../_shared/SafeRead.h"  // VirtualQuery-based probing: IsBadReadPtr faults are a storm under Wine (DB lesson 234)
 
 namespace {
@@ -54,13 +56,13 @@ constexpr int CtlFlagsOff = 0x48, CtlIdOff = 0x54;   // flags bit1 visible, 0x20
 constexpr int AppGlobal = 0x00a1b4a4;       // CAppManager*: +4 client
 constexpr int FnPartyMember = 0x007e5da0;   // thiscall(party, i) RET 4 -> client creature
 constexpr int FnClientToServer = 0x0077d800;   // ECX = client creature -> server creature (R2c)
-constexpr int ClientCreatureVftable = 0x0099ee14;
+constexpr int ClientCreatureVftable = static_cast<int>(gameaddr::ClientCreatureVtable);
 constexpr int PanelShownOff = 0x4b70;       // SetStats' cache of the shown client creature (logged for comparison only)
 constexpr int EffArrOff = 0x148, EffCntOff = 0x14c;
 constexpr int EffTypeOff = 0x8, EffSubOff = 0xA, EffDurOff = 0xC, EffDayOff = 0x10, EffMsOff = 0x14, EffSpellOff = 0x1c;
 constexpr int EffNIntsOff = 0x30, EffIntsOff = 0x34;
 constexpr int EffTypeIcon = 0x43;
-constexpr int WorldTimerGetCurrentTime = 0x0051ad20;   // thiscall(timer, int* day, int* ms)
+constexpr int WorldTimerGetCurrentTime = static_cast<int>(gameaddr::WorldTimerGetCurrentTime);   // thiscall(timer, int* day, int* ms)
 constexpr int MsPerDay = 86400000, MaxEffects = 512;
 
 // ---- controls (character_p.gui IDs 69.., order = NEW_TAGS in scripts/mirror_character_page.py) ----
@@ -222,13 +224,13 @@ void syncScreen() {   // engine framebuffer size (Aspyr globals, same ones BuffD
     int w = 0, h = 0; readAt<int>(0x009F42A4, 0, &w); readAt<int>(0x009F42A8, 0, &h);
     if (w >= 320 && w <= 16384 && h >= 200 && h <= 16384) { g_cfg.screenW = (float)w; g_cfg.screenH = (float)h; }
 }
-WNDPROC g_oldProc = nullptr;
+struct WheelTag {}; using WheelHook = kp::WindowHook<WheelTag>;
 volatile LONG g_wheelAccum = 0;
 volatile DWORD g_lastTickMs = 0;
 volatile LONG g_panelRect[4] = {0, 0, 0, 0};   // engine px; [2] = 0 while the list does not overflow (wheel passes through)
 int g_wheelLogs = 0;
 LRESULT CALLBACK wheelProc(HWND h, UINT m, WPARAM w, LPARAM l) {
-    if (m == WM_MOUSEWHEEL && g_cfg.wheelScroll && GetTickCount() - g_lastTickMs < 300 && g_panelRect[2] > 0) {
+    if (WheelHook::active() && m == WM_MOUSEWHEEL && g_cfg.wheelScroll && GetTickCount() - g_lastTickMs < 300 && g_panelRect[2] > 0) {
         POINT pt = {(short)LOWORD(l), (short)HIWORD(l)}; RECT r;
         bool inside = false;
         if (ScreenToClient(h, &pt) && GetClientRect(h, &r) && r.right > 0 && r.bottom > 0) {
@@ -238,7 +240,7 @@ LRESULT CALLBACK wheelProc(HWND h, UINT m, WPARAM w, LPARAM l) {
         if (g_wheelLogs < 20) { ++g_wheelLogs; logf("WHEEL: delta=%d cursor=(%ld,%ld) inside=%d", (int)(short)HIWORD(w), pt.x, pt.y, inside); }
         if (inside) { InterlockedExchangeAdd(&g_wheelAccum, (short)HIWORD(w)); return 0; }
     }
-    return CallWindowProcA(g_oldProc, h, m, w, l);
+    return WheelHook::forward(h, m, w, l);
 }
 HWND gameWindow() {
     if (g_hwnd && IsWindow(g_hwnd)) return g_hwnd;
@@ -250,9 +252,9 @@ HWND gameWindow() {
     g_hwnd = c.best;
     RECT r = {0, 0, 0, 0}; if (g_hwnd) GetClientRect(g_hwnd, &r);
     logf("INPUT: hwnd=%p client=%ldx%ld (engine %.0fx%.0f)", g_hwnd, r.right, r.bottom, g_cfg.screenW, g_cfg.screenH);
-    if (g_hwnd && g_cfg.wheelScroll && !g_oldProc) {
-        g_oldProc = reinterpret_cast<WNDPROC>(SetWindowLongPtrA(g_hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(wheelProc)));
-        logf("WHEEL: subclassed window %p, old proc %p (err=%lu)", g_hwnd, g_oldProc, g_oldProc ? 0UL : GetLastError());
+    if (g_hwnd && g_cfg.wheelScroll && !WheelHook::active()) {
+        WheelHook::install(g_hwnd, &wheelProc);
+        logf("WHEEL: subclassed window %p, old proc %p (err=%lu)", g_hwnd, WheelHook::old, WheelHook::old ? 0UL : GetLastError());
     }
     return g_hwnd;
 }
@@ -1025,10 +1027,7 @@ extern "C" void __cdecl CharEffectsDestroy(int panel) {
 }
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
-    if (reason == DLL_PROCESS_DETACH && g_oldProc && g_hwnd && IsWindow(g_hwnd) &&
-        reinterpret_cast<WNDPROC>(GetWindowLongPtrA(g_hwnd, GWLP_WNDPROC)) == wheelProc) {
-        SetWindowLongPtrA(g_hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(g_oldProc)); g_oldProc = nullptr;   // never leave a dangling window proc
-    }
+    if (reason == DLL_PROCESS_DETACH) WheelHook::uninstall(&wheelProc);   // never leave a dangling window proc: restores if on top, else stays chained but inert
     if (reason == DLL_PROCESS_ATTACH) { logf("chareffects 0.1.0-probe build 4c loaded"); loadIni(); saferead::enableRing(g_debug); }
     return TRUE;
 }
