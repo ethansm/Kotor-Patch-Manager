@@ -1,7 +1,7 @@
 # Action Hotbar polish review (2026-10-04)
 
 Source for phases HP1-HP7 (doc 24). Three review passes over code, tests and docs at b6aad91.
-HP2-HP7 work from this list; no new review is needed. Items tagged `(HP1) DONE` were fixed in session HP1.
+HP2-HP7 work from this list; no new review is needed. Items tagged `(HP1) DONE` were fixed in session HP1, `(HP4) DONE <sha>` in HP4.
 
 Format: ID | where | sev | effort | issue -> fix. Line numbers are as of b6aad91 + Task-2 commit 706a6d3.
 
@@ -12,12 +12,12 @@ A3 | ActionHotbar.cpp:1612 | bug | S | replaceLiveProfiles skips refreshEffectiv
 A4 | ActionHotbar.cpp:1620 | bug | S | prints engine folder %.120s after 1-byte probe -> bounded copy (HP1) DONE
 A5 | ActionHotbar.cpp:98,503 | bug | M | only override/spells.2da; absent = target modes silently dead -> resource fallback or WARN (HP7)
 A6 | :1605 vs :1091 | med | S | every load overwrites the first-edit .bak -> .load.bak + BakPath const (HP1) DONE
-A7 | :413,594,1209 | med | M | resolve() re-reads 6 groups x10 slots per refresh; `g<6` literal x3 -> per-tick snapshot + InvokableGroups (HP4)
-A8 | :514,553,889 | med | S | CanUseItem cast x3, Vitals->Candidate loop x2 -> canUseItem/buildCandidates (HP4)
-A9 | :683/790/957 etc | med | M | 3 visibility + 2 fill + 2 alpha writers -> one Widget API (HP4)
-A10 | :1140-1303 | med | M | updateEditor 165 lines -> split visibility/hover/picker/arrows/click (HP4)
+A7 | :413,594,1209 | med | M | resolve() re-reads 6 groups x10 slots per refresh; `g<6` literal x3 -> per-tick snapshot + InvokableGroups (HP4) DONE a79280f
+A8 | :514,553,889 | med | S | CanUseItem cast x3, Vitals->Candidate loop x2 -> canUseItem/buildCandidates (HP4) DONE 095d173
+A9 | :683/790/957 etc | med | M | 3 visibility + 2 fill + 2 alpha writers -> one Widget API (HP4) DONE 77a8de3
+A10 | :1140-1303 | med | M | updateEditor 165 lines -> split visibility/hover/picker/arrows/click (HP4) DONE 46675c3
 A11 | :761-781,1208-1219,1235,1131,341-363 | med | M | pure tooltip/picker/modeBtn/autofill logic in DLL -> HotbarLogic.h + tests (HP5)
-A12 | :1156,906,912,355,727,846,864 | med | S | function statics not reset on HUD rebuild -> move into Bar/Editor (HP4)
+A12 | :1156,906,912,355,727,846,864 | med | S | function statics not reset on HUD rebuild -> move into Bar/Editor (HP4) DONE a79280f
 A13 | :1613,1708-1713 | med | S | load/new-game hooks touch g_bar widgets outside tick -> pending flag (HP1) DONE
 A14 | :148-151 | low | S | seen[] sized to S_WrProjRestore, misses S_Mode -> S_Count (HP6)
 A15 | :8, hooks.toml:36, :1740 | low | S | stale 75/57/base+56 counts -> ControlCount (HP1) DONE
@@ -36,14 +36,14 @@ A27 | :428,489-492,215,819,1749,1701,1543,1554,1796,301,1819 | low | S | unnamed
 A28 | :1682 vs 1011,... | low | S | HUD-fresh 250 vs 300 ms; cadences; pt.y>1100; {3840,1600} fallback; heal cap 20 x3 -> constants, GuiRefW/H (HP6)
 A29 | :377-383,399,599-602 | low | S | targetProbeMode rescans extra; TM_Self vs LowHp probe rule differ (HP1 parse; rule check) — HP1 part DONE
 A30 | :533,571,842,238,44; HotbarConfig.h:42; HotbarLogic.h:383,400 | low | S | dead params/globals, RowDef::modifier, stanceKey/rectsOverlap test-only (HP6)
-A31 | :841,903-904 | low | S | forward decls from definition order (HP4)
+A31 | :841,903-904 | low | S | forward decls from definition order (HP4) DONE 46675c3
 A32 | :254,227,1574,1062 vs 1403 | low | S | naming: gateWhy, IniPath mutable, Power/Powers tab names, hb:: case mix (HP6)
 A33 | :126-127,1642-1643,1831,372 | low | S | literals instead of LogPath/IniName/HudSyncStance/slotDigit (HP1) DONE
 A34 | :594,685,692,164-170 | low | S | log tag style (`avail` no colon, btn[] vs edit:, KP_WARN vs KP_LOGV) (HP6)
 A35 | :1347-1365,1556,1560 | low | S | ignored results in createLabel/healTextures -> count g_widgetFaults (HP6)
-A36 | :719-725,1314 | low | S | aspectFix own EnumWindows; enumWnd dup of guikit::gameWindow (HP4)
-A37 | :919,923,927 | low | S | hide-slot sequence x3 -> hideSlot (HP4)
-A38 | :474-481,520-579 | low | S | "using it normally"+dumpRing x8 -> targetFail (HP4)
+A36 | :719-725,1314 | low | S | aspectFix own EnumWindows; enumWnd dup of guikit::gameWindow (HP4) DONE a79280f
+A37 | :919,923,927 | low | S | hide-slot sequence x3 -> hideSlot (HP4) DONE 77a8de3
+A38 | :474-481,520-579 | low | S | "using it normally"+dumpRing x8 -> targetFail (HP4) DONE 095d173
 A39 | HotbarConfig.h:330,334; :352,191 | low | S | raw strtol for HealThreshold/SyncActionBar; keys[256]; g%7 wrap (HP6)
 A40 | :1580; TwoDA.h:100 | low | S | saveDirFor per-byte probeRead; 64 KiB stack buffer (HP6)
 
