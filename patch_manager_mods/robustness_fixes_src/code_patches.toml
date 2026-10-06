@@ -9,6 +9,7 @@
 #   source            file:line in this mod's C++ (original bytes, verify and write)
 # Sites are written per group; verifySite() memcmp's every site of a group before any of it is written.
 # 1.2.0 adds fs, ssb, ssc, td (3 sites), vmlk, movspin (default OFF: movspin=1 enables; fs: 1 = count only, 2 = count + free).
+# 1.3.0 adds dclk (3 sites; only the 5-byte CALL 0x9196FD is listed, the following ADD ESP,4 is verified too but not written; dclk=1 default count only, 2 = count + free).
 
 [[code_patches]]
 name = "kt_a"
@@ -162,3 +163,30 @@ kind = "code"
 verifies_original = true
 enabled_by = "robustnessfixes.txt movspin=1 enables the group (default OFF; enabled=0 disables all)"
 source = "RobustnessFixes.cpp:95,193-198"
+
+[[code_patches]]
+name = "dclk_a"
+address = 0x0067046D
+original_bytes = [0xE8, 0x8B, 0x92, 0x2A, 0x00]
+kind = "code"
+verifies_original = true
+enabled_by = "robustnessfixes.txt dclk=0 disables; 2 = count + free (default 1 = count only)"
+source = "RobustnessFixes.cpp:121,478,495"
+
+[[code_patches]]
+name = "dclk_b"
+address = 0x0067048E
+original_bytes = [0xE8, 0x6A, 0x92, 0x2A, 0x00]
+kind = "code"
+verifies_original = true
+enabled_by = "robustnessfixes.txt dclk=0 disables; 2 = count + free (default 1 = count only)"
+source = "RobustnessFixes.cpp:122,478,495"
+
+[[code_patches]]
+name = "dclk_c"
+address = 0x0066DACC
+original_bytes = [0xE8, 0x2C, 0xBC, 0x2A, 0x00]
+kind = "code"
+verifies_original = true
+enabled_by = "robustnessfixes.txt dclk=0 disables; 2 = count + free (default 1 = count only)"
+source = "RobustnessFixes.cpp:123,478,495"

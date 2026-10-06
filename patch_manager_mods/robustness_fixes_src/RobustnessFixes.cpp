@@ -50,17 +50,34 @@
 //            counts vmlk_free. The success exit jumps to 0x669A32 (perf-lab PerfLabAdcHandoff detour, adjacent, no overlap).
 //            1.2.1 (W9 item 6.3): 1.2.0 called 0x6FDBB0, a thiscall wrapper that loads ECX=[ECX+0x1C] before calling 0x7037C0;
 //            on this branch ECX = the byte at 0x99447F (0/1), so the first vmlk fire would have faulted. Never fired in the field.
+//   1.3.0 (W9 item 6.1-6.2, engine_research_findings/W9.md):
+//   dclk     DCLK: DelayCommand 0x670370 and AssignCommand 0x66D9F0 pop a freshly built script situation (0x28-byte struct + ~45 KB
+//            code copy + ~1.3 KB stack object, same allocation as ActionDoCommand's) and, on their failure branches, drop it with a bare
+//            operator delete (CALL 0x9196FD) that frees only the 0x28-byte struct: the code copy and the stack object leak (vmlk's class).
+//            Three sites, each `E8 <rel32> 83 C4 04` (CALL 0x9196FD / ADD ESP,4; the caller did PUSH reg(situation)):
+//              dclk_a 0x67046D  DelayCommand, object lookup failed (0x6703FC -> 0x67045D)
+//              dclk_b 0x67048E  DelayCommand, [this+4] != 1 (0x6703C1 -> 0x67047E)
+//              dclk_c 0x66DACC  AssignCommand, object lookup failed (0x66DA6D -> 0x66DABC)
+//            Only the 4 rel32 bytes of each CALL are rewritten (E8 stays, no instruction boundary moves); one cave per site, all three
+//            sites are byte-verified (8 bytes each incl. the ADD ESP) before any write. Keys: dclk=0 off, dclk=1 (DEFAULT) count only,
+//            dclk=2 count + free (never the default: the drop frequency is still unmeasured; count first).
+//              dclk=1 cave: lock inc [g_dclkN] ; jmp 0x9196FD            (tail jump: same stack argument, the delete returns straight
+//                           to the site's ADD ESP,4, i.e. vanilla behaviour plus a counter)
+//              dclk=2 cave: lock inc [g_dclkN] ; push dword [esp+4] ; call 0x7037C0 ; ret
+//                           (0x7037C0 = the situation delete, RET 4, ignores ECX: dtor 0x6FF6E0 frees the code copy + stack object, then the
+//                           struct; the caller's ADD ESP,4 pops the original argument). NEVER 0x6FDBB0: a thiscall that dereferences ECX
+//                           (see the 1.2.1 vmlk note); ECX is not set at dclk_b.
 //   movspin  F1: PlayMovies 0x798820 spins with no yield; cave at the pump branch 0x798A47 does one Sleep(1) via the IAT slot
 //            0x9860D4 per message pump (once per 501 spins) and counts f1_sleeps. DEFAULT OFF (movspin=1 enables): may shift
 //            the load-hang (H1) race, test in a dedicated soak.
 //
 // Config: $G/robustnessfixes.txt, one `key=value` per line (enabled=0 disables all; missing keys default to 1, except
-// movspin = 0; key=0 disables a group; fs also takes 2 = count + free).
+// movspin = 0; key=0 disables a group; fs and dclk also take 2 = count + free).
 // Log (1.3.0): shared KpLog.h, channel main (core file k2-robustness-fixes_log.txt; old core: fallback robustnessfixes_log.txt at INFO).
 //      One `loaded` line per launch with the per-group state; a helper thread polls
-// every 5 s and appends a COUNTERS line (all 18 values) when any changed, a one-shot `FIRED <group> ...` line the
-// first time each fix's counter moves (sndri, vmid, guiid, netovf, abbound, kt, fs, ssb, ssc, td, vmlk, movspin), and reports a non-zero byte in
-// the KT dummy entry). 1.2.0: 12 groups, 18 counter values, FIRED lines for fs/ssb/ssc/td/vmlk/movspin too.
+// every 5 s and appends three COUNTERS lines (all 21 values) when any changed, a one-shot `FIRED <group> ...` line the
+// first time each fix's counter moves (sndri, vmid, guiid, netovf, abbound, kt, fs, ssb, ssc, td, vmlk, movspin, dclk), and reports a non-zero byte in
+// the KT dummy entry). 1.2.0: 12 groups, 18 counter values, FIRED lines for fs/ssb/ssc/td/vmlk/movspin too. 1.3.0: + dclk (13 groups, 21 counter values).
 #include <windows.h>
 #include <stdio.h>
 #include <string.h>
@@ -76,9 +93,9 @@ namespace {
 
 struct Site { uintptr_t at; uint8_t n; uint8_t orig[40]; };
 
-enum { G_KT, G_VMID, G_SNDRI, G_NETOVF, G_GUIID, G_ABBOUND, G_FS, G_SSB, G_SSC, G_TD, G_VMLK, G_MOVSPIN, G_COUNT };
-const char* const GroupKey[G_COUNT] = { "kt", "vmid", "sndri", "netovf", "guiid", "abbound", "fs", "ssb", "ssc", "td", "vmlk", "movspin" };
-constexpr int NCOUNTERS = 18;
+enum { G_KT, G_VMID, G_SNDRI, G_NETOVF, G_GUIID, G_ABBOUND, G_FS, G_SSB, G_SSC, G_TD, G_VMLK, G_MOVSPIN, G_DCLK, G_COUNT };
+const char* const GroupKey[G_COUNT] = { "kt", "vmid", "sndri", "netovf", "guiid", "abbound", "fs", "ssb", "ssc", "td", "vmlk", "movspin", "dclk" };
+constexpr int NCOUNTERS = 21;
 
 // Sites per group (original bytes from the dump, checked against the Steam Aspyr exe).
 const Site KtA   = { 0x00726527, 10, { 0x89, 0x50, 0x0C, 0xC7, 0x45, 0xFC, 0xFF, 0xFF, 0xFF, 0xFF } };
@@ -100,6 +117,10 @@ const Site TdB   = { 0x0071C2C9, 37, { 0x8B, 0x45, 0x10, 0x8B, 0x4D, 0xFC, 0x8A,
                                        0x8B, 0x4D, 0xFC, 0x83, 0xC1, 0x01, 0x89, 0x4D, 0xFC, 0x8B, 0x55, 0xF8, 0x83, 0xC2, 0x01, 0x89, 0x55, 0xF8 } };
 const Site TdC   = { 0x0071C2F0, 6,  { 0x8B, 0x45, 0x08, 0x8B, 0x4D, 0xFC } };
 const Site VmlkA = { 0x00669A27, 11, { 0x0F, 0xB6, 0x0D, 0x7F, 0x44, 0x99, 0x00, 0x3B, 0xC1, 0x75, 0x0C } };
+// 1.3.0 dclk (W9 6.2): CALL 0x9196FD (operator delete) + ADD ESP,4 at the three situation drops; only the rel32 is rewritten
+const Site DclkA = { 0x0067046D, 8, { 0xE8, 0x8B, 0x92, 0x2A, 0x00, 0x83, 0xC4, 0x04 } };
+const Site DclkB = { 0x0067048E, 8, { 0xE8, 0x6A, 0x92, 0x2A, 0x00, 0x83, 0xC4, 0x04 } };
+const Site DclkC = { 0x0066DACC, 8, { 0xE8, 0x2C, 0xBC, 0x2A, 0x00, 0x83, 0xC4, 0x04 } };
 const Site MovA  = { 0x00798A47, 9,  { 0x8B, 0x45, 0x84, 0x8B, 0x88, 0x54, 0x02, 0x00, 0x00 } };
 
 constexpr uintptr_t KtAResume = 0x00726531, KtBResume = 0x00726CDD;
@@ -110,12 +131,15 @@ constexpr uintptr_t AilQuickShutdownIat = 0x0098657C;
 constexpr uintptr_t FsResume = 0x00712F5B, FsFreeResData = 0x007120C0;
 constexpr uintptr_t SsbSkip = 0x00428B88, SsbPresent = 0x00428B33, SscResume = 0x00428AEA, TdResume = 0x0071C2F6;
 constexpr uintptr_t VmlkSuccess = 0x00669A32, VmlkDone = 0x00669A3E, VmlkDeleteSituation = 0x007037C0;   // 1.2.1: was 0x6FDBB0 (needs ECX = owner; see header)
+constexpr uintptr_t OperatorDelete = 0x009196FD;   // dclk: the engine's operator delete (cdecl), the original CALL target
 constexpr uintptr_t MovResume = 0x00798A50, SleepIat = 0x009860D4;
 
 alignas(16) uint8_t g_ktDummy[0x24];   // stand-in key entry for orphaned CRes (+0x10 is written 0 by ReleaseResObject)
 volatile LONG g_ktDestroy = 0, g_ktUpdate = 0, g_abClamp = 0;
 volatile LONG g_sndri = 0, g_vmReject = 0, g_vmNeg = 0, g_vmLastId = 0, g_guiReject = 0, g_guiLastId = 0, g_netDrop = 0, g_netLastLen = 0;
 volatile LONG g_fsStale = 0, g_fsStaleBytes = 0, g_ssbCamnull = 0, g_sscDims = 0, g_tdLong = 0, g_vmlkFree = 0, g_f1Sleeps = 0;
+volatile LONG g_dclkA = 0, g_dclkB = 0, g_dclkC = 0;   // dclk: drops at 0x67046D / 0x67048E / 0x66DACC
+int g_dclkMode = 1;   // dclk level chosen in DllMain: 1 = count only, 2 = count + free (selects which cave applyDclk emits)
 volatile uint8_t g_fsFree = 0;   // read by the FS cave: 0 = count only (fs=1), 1 = also free the stale buffer (fs=2)
 
 int g_state[G_COUNT];      // 1 patched, 0 disabled, -1 refused (bytes), -2 refused (protect), -3 refused (unmapped), -4 no cave
@@ -153,7 +177,7 @@ void logf(const char* fmt, ...) {
     KP_LOGV(chMain, KPLOG_INFO, "%s", line);
 }
 
-void readConfig(int lvl[G_COUNT]) {   // lvl: 0 off, 1 on (fs: 1 = count only, 2 = count + free)
+void readConfig(int lvl[G_COUNT]) {   // lvl: 0 off, 1 on (fs, dclk: 1 = count only, 2 = count + free)
     for (int g = 0; g < G_COUNT; ++g) lvl[g] = 1;
     lvl[G_MOVSPIN] = 0;   // default OFF
     FILE* f = fopen("robustnessfixes.txt", "r");
@@ -167,7 +191,7 @@ void readConfig(int lvl[G_COUNT]) {   // lvl: 0 off, 1 on (fs: 1 = count only, 2
         bool val = *v != '0';
         if (kl == 7 && !strncmp(p, "enabled", 7)) all = val;
         for (int g = 0; g < G_COUNT; ++g) if (kl == strlen(GroupKey[g]) && !strncmp(p, GroupKey[g], kl))
-            lvl[g] = !val ? 0 : (g == G_FS && *v >= '2' && *v <= '9') ? 2 : 1;
+            lvl[g] = !val ? 0 : ((g == G_FS || g == G_DCLK) && *v >= '2' && *v <= '9') ? 2 : 1;
     }
     fclose(f);
     if (!all) for (int g = 0; g < G_COUNT; ++g) lvl[g] = 0;
@@ -446,6 +470,32 @@ void applyVmlk() {
     if (write(g, VmlkA.at, r, 11)) g_state[g] = 1;
 }
 
+// dclk: one cave per drop site, selected by g_dclkMode (see the header). Only the CALL's rel32 (site+1..+4) is written.
+void applyDclk() {
+    const int g = G_DCLK;
+    const Site* const sites[3] = { &DclkA, &DclkB, &DclkC };
+    volatile LONG* const ctrs[3] = { &g_dclkA, &g_dclkB, &g_dclkC };
+    for (const Site* s : sites) if (!verifySite(g, *s)) return;   // all three verified before the first write
+    uint8_t* cv[3];
+    for (int i = 0; i < 3; ++i) { cv[i] = caveAlloc(24); if (!cv[i]) { g_state[g] = -4; return; } }
+    uint8_t r[3][4];
+    for (int i = 0; i < 3; ++i) {
+        Emit e{ cv[i], 0 };
+        e.lockInc(ctrs[i]);                        // lock inc [g_dclkN]
+        if (g_dclkMode == 2) {
+            e.b({ 0xFF, 0x74, 0x24, 0x04 });      // push dword [esp+4]            copy of the situation argument
+            e.rel(0xE8, VmlkDeleteSituation);      // call 0x007037C0               delete situation (ret 4, ECX unused)
+            e.b({ 0xC3 });                         // ret                           caller's ADD ESP,4 pops the original argument
+        } else {
+            e.rel(0xE9, OperatorDelete);           // jmp 0x009196FD                tail jump: vanilla operator delete, returns to ADD ESP,4
+        }
+        const int32_t rel = static_cast<int32_t>(reinterpret_cast<uintptr_t>(cv[i]) - (sites[i]->at + 5));
+        memcpy(r[i], &rel, 4);
+    }
+    for (int i = 0; i < 3; ++i) if (!write(g, sites[i]->at + 1, r[i], 4)) return;
+    g_state[g] = 1;
+}
+
 void applyMovspin() {
     const int g = G_MOVSPIN;
     if (!verifySite(g, MovA)) return;
@@ -470,19 +520,20 @@ const char* stateName(int s) {
 DWORD WINAPI helperThread(LPVOID) {
     LONG last[NCOUNTERS]; for (LONG& v : last) v = -1;
     bool dummyReported = false, firedSndri = false, firedVm = false, firedGui = false, firedNet = false, firedAb = false, firedKt = false;
-    bool firedFs = false, firedSsb = false, firedSsc = false, firedTd = false, firedVmlk = false, firedMov = false;
+    bool firedFs = false, firedSsb = false, firedSsc = false, firedTd = false, firedVmlk = false, firedMov = false, firedDclk = false;
     for (;;) {
         Sleep(5000);
         emitLoadLine();
         LONG now[NCOUNTERS] = { g_ktDestroy, g_ktUpdate, g_abClamp, g_sndri, g_vmReject, g_vmNeg, g_vmLastId, g_guiReject, g_guiLastId, g_netDrop, g_netLastLen,
-                                g_fsStale, g_fsStaleBytes, g_ssbCamnull, g_sscDims, g_tdLong, g_vmlkFree, g_f1Sleeps };
+                                g_fsStale, g_fsStaleBytes, g_ssbCamnull, g_sscDims, g_tdLong, g_vmlkFree, g_f1Sleeps, g_dclkA, g_dclkB, g_dclkC };
         if (memcmp(now, last, sizeof now)) {
-            // Two lines (the KPM core truncates a line's text at 232 bytes); worst case 223 / 202 bytes with 10-digit values.
+            // Three lines (the KPM core truncates a line's text at 232 bytes); worst case 223 / 202 / 43 bytes with 10-digit values.
             logf("COUNTERS kt_destroy_orphan=%ld kt_update_orphan=%ld ab_shrink_clamp=%ld sndri_restart=%ld vm_reject=%ld vm_neg=%ld vm_last_id=%ld "
                  "gui_reject=%ld gui_last_id=%ld",
                  now[0], now[1], now[2], now[3], now[4], now[5], now[6], now[7], now[8]);
             logf("COUNTERS net_drop=%ld net_last_len=%ld fs_stale=%ld fs_stale_bytes=%ld ssb_camnull=%ld ssc_dims=%ld td_long=%ld vmlk_free=%ld f1_sleeps=%ld",
                  now[9], now[10], now[11], now[12], now[13], now[14], now[15], now[16], now[17]);
+            logf("COUNTERS dclk_a=%ld dclk_b=%ld dclk_c=%ld", now[18], now[19], now[20]);
             memcpy(last, now, sizeof now);
         }
         if (!firedSndri && now[3]) { firedSndri = true; logf("FIRED sndri restart=%ld", now[3]); }
@@ -497,6 +548,7 @@ DWORD WINAPI helperThread(LPVOID) {
         if (!firedTd && now[15]) { firedTd = true; logf("FIRED td long=%ld", now[15]); }
         if (!firedVmlk && now[16]) { firedVmlk = true; logf("FIRED vmlk free=%ld", now[16]); }
         if (!firedMov && now[17]) { firedMov = true; logf("FIRED movspin sleeps=%ld", now[17]); }
+        if (!firedDclk && (now[18] || now[19] || now[20])) { firedDclk = true; logf("FIRED dclk a=%ld b=%ld c=%ld", now[18], now[19], now[20]); }
         if (!dummyReported) {
             for (int i = 0; i < 0x24; ++i) if (g_ktDummy[i]) {
                 KP_LOGV(chMain, KPLOG_WARN, "KT dummy entry byte +0x%02x = %02x (unexpected writer; left as is)", i, g_ktDummy[i]);
@@ -510,12 +562,12 @@ DWORD WINAPI helperThread(LPVOID) {
 
 // Harness-only exports (never called by the game).
 extern "C" int __cdecl RobFixTestState(int g) { return g >= 0 && g < G_COUNT ? g_state[g] : -99; }
-// out18 order: kt_destroy_orphan kt_update_orphan ab_shrink_clamp sndri_restart vm_reject vm_neg vm_last_id gui_reject gui_last_id net_drop net_last_len
-//              fs_stale fs_stale_bytes ssb_camnull ssc_dims td_long vmlk_free f1_sleeps
-extern "C" void __cdecl RobFixTestCounters(long* out18) {
+// out21 order: kt_destroy_orphan kt_update_orphan ab_shrink_clamp sndri_restart vm_reject vm_neg vm_last_id gui_reject gui_last_id net_drop net_last_len
+//              fs_stale fs_stale_bytes ssb_camnull ssc_dims td_long vmlk_free f1_sleeps dclk_a dclk_b dclk_c
+extern "C" void __cdecl RobFixTestCounters(long* out21) {
     const long v[NCOUNTERS] = { g_ktDestroy, g_ktUpdate, g_abClamp, g_sndri, g_vmReject, g_vmNeg, g_vmLastId, g_guiReject, g_guiLastId, g_netDrop, g_netLastLen,
-                                g_fsStale, g_fsStaleBytes, g_ssbCamnull, g_sscDims, g_tdLong, g_vmlkFree, g_f1Sleeps };
-    for (int i = 0; i < NCOUNTERS; ++i) out18[i] = v[i];
+                                g_fsStale, g_fsStaleBytes, g_ssbCamnull, g_sscDims, g_tdLong, g_vmlkFree, g_f1Sleeps, g_dclkA, g_dclkB, g_dclkC };
+    for (int i = 0; i < NCOUNTERS; ++i) out21[i] = v[i];
 }
 extern "C" void* __cdecl RobFixTestDummy() { return g_ktDummy; }
 
@@ -526,9 +578,10 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason != DLL_PROCESS_ATTACH) return TRUE;
     int lvl[G_COUNT]; readConfig(lvl);
     g_fsFree = lvl[G_FS] == 2 ? 1 : 0;
+    g_dclkMode = lvl[G_DCLK] == 2 ? 2 : 1;
     g_cave = static_cast<uint8_t*>(VirtualAlloc(nullptr, 4096, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE));
     void (*const apply[G_COUNT])() = { applyKt, applyVmid, applySndri, applyNetovf, applyGuiid, applyAbBound,
-                                       applyFs, applySsb, applySsc, applyTd, applyVmlk, applyMovspin };
+                                       applyFs, applySsb, applySsc, applyTd, applyVmlk, applyMovspin, applyDclk };
     for (int g = 0; g < G_COUNT; ++g) if (lvl[g]) apply[g]();
     char buf[500]; int k = 0; int patched = 0;
     for (int g = 0; g < G_COUNT; ++g) {

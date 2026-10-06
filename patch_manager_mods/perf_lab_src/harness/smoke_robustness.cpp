@@ -1,13 +1,14 @@
-// Smoke test for k2-robustness-fixes 1.3.0 (DLL-only; DllMain patches 12 independent groups, doc 10 "Robustness set"; 1.1.0 added
+// Smoke test for k2-robustness-fixes 1.3.0 (DLL-only; DllMain patches 13 independent groups, doc 10 "Robustness set"; 1.1.0 added
 // fire counters and cave-based sites for vmid (2nd site 0x669012), sndri, guiid and netovf A; 1.2.0 adds fs / ssb / ssc / td / vmlk / movspin
-// from W8, all checked here against real engine byte ranges).
+// from W8, all checked here against real engine byte ranges; 1.3.0 adds dclk (W9 6.2: the three DelayCommand/AssignCommand
+// situation drops 0x67046D / 0x67048E / 0x66DACC, `push; call 0x9196FD; add esp,4` with a fake operator delete / situation delete)).
 // Build: i686-w64-mingw32-g++ -O1 -static-libgcc -static-libstdc++ -o smoke_robustness.exe smoke_robustness.cpp
 //        (default base 0x400000; the 7 MB .bss pad covers 0x428A00-0x99A000 so every site, the IAT slots 0x98657C / 0x9860D4, the byte at
 //        0x99447F and the stub targets are ordinary memory of this exe; the guiid site 0x40F96F sits in the zero padding after .rdata,
 //        checked at startup: `objdump -h` must show .rdata ending below 0x40F960 and .bss below 0x428A00)
 // Run:   smoke_robustness.exe <run|fs2|movon|disabled|refuse|refuse2|keys|keys2>   (dir needs windows_x86.dll from RobustnessFixes.kpatch).
-//        Exit 0 = pass.  run = default config (fs=1 count only, movspin OFF), fs2 = fs=2 (count + free), movon = movspin=1,
-//        refuse = kt + vmid corrupted, refuse2 = one byte corrupted in each of fs/ssb/ssc/td/vmlk/movspin (movspin=1),
+//        Exit 0 = pass.  run = default config (fs=1 count only, movspin OFF), fs2 = fs=2 + dclk=2 (count + free), movon = movspin=1,
+//        refuse = kt + vmid corrupted, refuse2 = one byte corrupted in each of fs/ssb/ssc/td/vmlk/movspin/dclk (movspin=1),
 //        keys / keys2 = two complementary sets of key=0 (every group's key is 0 in one of them), disabled = enabled=0.
 // Each fix site is the REAL engine byte range (generated from the dump asm / vanilla exe) followed/targeted by tiny marker stubs
 // (`mov eax,N; ret`); TD runs the whole real C2DA::NextToken 0x71C180. Every scenario runs first with the original bytes (reference =
@@ -89,10 +90,10 @@ static long ab(int oldCount, int newCap) {   // SetAllocated copy loop entered a
 }
 
 typedef int (__cdecl *StFn)(int); typedef void (__cdecl *CtFn)(long*); typedef void* (__cdecl *DmFn)();
-static const char* G[12] = { "kt", "vmid", "sndri", "netovf", "guiid", "abbound", "fs", "ssb", "ssc", "td", "vmlk", "movspin" };
+static const char* G[13] = { "kt", "vmid", "sndri", "netovf", "guiid", "abbound", "fs", "ssb", "ssc", "td", "vmlk", "movspin", "dclk" };
 static CtFn g_ct = nullptr;
-enum { C_FS = 11, C_FSB = 12, C_SSB = 13, C_SSC = 14, C_TD = 15, C_VMLK = 16, C_F1 = 17 };
-static long ctr(int i) { if (!g_ct) return 0; long c[18]; g_ct(c); return c[i]; }
+enum { C_FS = 11, C_FSB = 12, C_SSB = 13, C_SSC = 14, C_TD = 15, C_VMLK = 16, C_F1 = 17, C_DCLKA = 18, C_DCLKB = 19, C_DCLKC = 20 };
+static long ctr(int i) { if (!g_ct) return 0; long c[21]; g_ct(c); return c[i]; }
 static char tag[64];
 static void checkf(bool ok, const char* fmt, const char* what) { char w[160]; snprintf(w, sizeof w, fmt, tag, what); check(ok, w); }
 
@@ -232,6 +233,50 @@ static void checkVmlk(bool on) {
     else    checkf(rm == 0 && b1 && g_handoff == 0 && g_delsit == 0 && dMiss == 0, "%s vmlk: object missing -> situation dropped, never freed (leak) (%s)", "not patched");
 }
 
+// --- DCLK: DelayCommand / AssignCommand situation drops: `push situation; call 0x9196FD; add esp,4; ret` at the real site addresses -------
+#pragma GCC push_options
+#pragma GCC optimize ("Os")   // the image must stay small enough that .rdata ends below 0x40F960 (guiid site lives in the page padding)
+static volatile long g_opdel; static volatile unsigned g_opdelArg; static void* p_opdel;
+static void __cdecl fakeOpDelete(void* p) { ++g_opdel; g_opdelArg = (unsigned)p; }   // 0x9196FD: cdecl operator delete (caller pops)
+struct DclkSite { unsigned at; int ctr; };   // a = DelayCommand lookup failed, b = DelayCommand [this+4] != 1, c = AssignCommand lookup failed
+static const DclkSite DCLK[3] = { { 0x67046D, C_DCLKA }, { 0x67048E, C_DCLKB }, { 0x66DACC, C_DCLKC } };
+static void putDclkSites() {
+    for (int i = 0; i < 3; ++i) {   // driver at at-5: push 0x5150 ; <site: E8 rel32 ; 83 C4 04> ; ret
+        unsigned char b[14] = { 0x68, 0x50, 0x51, 0x00, 0x00, 0xE8, 0, 0, 0, 0, 0x83, 0xC4, 0x04, 0xC3 };
+        put32(b + 6, 0x9196FD - (DCLK[i].at + 5)); put(DCLK[i].at - 5, b, sizeof b);
+    }
+    stubJmpInd(0x9196FD, &p_opdel);
+}
+// level 0 = untouched (reference), 1 = count only, 2 = count + free
+static void checkDclk(int level) {
+    for (int i = 0; i < 3; ++i) {
+        const unsigned at = DCLK[i].at;
+        g_opdel = g_delsit = g_wrongDel = 0; g_opdelArg = g_delArg = 0;
+        long c0[3] = { ctr(C_DCLKA), ctr(C_DCLKB), ctr(C_DCLKC) };
+        run(at - 5, 0x11, 0x22, 0x33, ebpAt()); bool bal = g_r.esp0 == g_r.esp1;
+        long d[3] = { ctr(C_DCLKA) - c0[0], ctr(C_DCLKB) - c0[1], ctr(C_DCLKC) - c0[2] };
+        const long want = level ? 1 : 0; const int me = DCLK[i].ctr - C_DCLKA;
+        bool cok = true; for (int k = 0; k < 3; ++k) if (d[k] != (k == me ? want : 0)) cok = false;
+        char w[100];
+        // level 2: freed via 0x7037C0(0x5150) once, never 0x6FDBB0, no bare operator delete; else: operator delete(0x5150) once, nothing else freed. Both: stack balanced, only this site's counter moved (+1 when patched)
+        bool beh = level == 2 ? (g_delsit == 1 && g_delArg == 0x5150 && g_wrongDel == 0 && g_opdel == 0) : (g_opdel == 1 && g_opdelArg == 0x5150 && g_delsit == 0 && g_wrongDel == 0);
+        snprintf(w, sizeof w, "%s dclk_%c level %d: behaviour, stack, own counter", tag, 'a' + i, level); check(bal && beh && cok, w);
+        if (!level) continue;
+        // exact bytes: the site keeps E8 and the ADD ESP,4; its rel32 points at the cave; the cave is hand-assembled below
+        const unsigned char* sp = (const unsigned char*)at; int rel; memcpy(&rel, sp + 1, 4); const unsigned char* cave = (const unsigned char*)(at + 5 + rel);
+        unsigned abs32; memcpy(&abs32, cave + 3, 4);
+        static unsigned seenAbs[3]; seenAbs[i] = abs32; bool distinct = true; for (int k = 0; k < i; ++k) if (seenAbs[k] == abs32) distinct = false;   // one counter per site
+        unsigned char exp[17]; int n = 0;
+        exp[n++] = 0xF0; exp[n++] = 0xFF; exp[n++] = 0x05; put32(exp + n, abs32); n += 4;                     // lock inc dword [abs32]
+        if (level == 1) { exp[n++] = 0xE9; put32(exp + n, 0x9196FD - ((unsigned)cave + n + 4)); n += 4; }      // jmp 0x9196FD
+        else { exp[n++] = 0xFF; exp[n++] = 0x74; exp[n++] = 0x24; exp[n++] = 0x04;                               // push dword [esp+4]
+               exp[n++] = 0xE8; put32(exp + n, 0x7037C0 - ((unsigned)cave + n + 4)); n += 4; exp[n++] = 0xC3; }   // call 0x7037C0 ; ret
+        snprintf(w, sizeof w, "%s dclk_%c level %d: site E8 <rel32> 83 C4 04, cave bytes exact (%d)", tag, 'a' + i, level, n);
+        check(sp[0] == 0xE8 && sp[5] == 0x83 && sp[6] == 0xC4 && sp[7] == 0x04 && abs32 >= 0x400000 && distinct && memcmp(cave, exp, n) == 0, w);
+    }
+}
+#pragma GCC pop_options
+
 // --- F1 / movspin: PlayMovies pump branch --------------------------------------------------------------------------------------
 static volatile unsigned g_movEax, g_movEcx, g_sleepArg; static unsigned g_thisObj[0x100]; static volatile long g_sleeps;
 static void __stdcall FakeSleep(unsigned ms) { ++g_sleeps; g_sleepArg = ms; }
@@ -247,11 +292,12 @@ static void checkMov(bool on) {
 // --- generic site table ----------------------------------------------------------------------------------------------------------
 struct SiteRow { int g; unsigned at, n; };
 static const SiteRow SITES[] = { {0,0x726527,10}, {0,0x726C9C,5}, {1,0x668FE0,2}, {1,0x669012,5}, {2,0x7054CE,12}, {3,0x704406,15}, {3,0x7040EF,5}, {4,0x40F972,6}, {5,0x58C61A,8},
-                                 {6,0x712F55,6}, {7,0x428B2A,9}, {8,0x428AE5,5}, {9,0x71C243,37}, {9,0x71C2C9,37}, {9,0x71C2F0,6}, {10,0x669A27,11}, {11,0x798A47,9} };
+                                 {6,0x712F55,6}, {7,0x428B2A,9}, {8,0x428AE5,5}, {9,0x71C243,37}, {9,0x71C2C9,37}, {9,0x71C2F0,6}, {10,0x669A27,11}, {11,0x798A47,9},
+                                 {12,0x67046D,8}, {12,0x67048E,8}, {12,0x66DACC,8} };
 static const int NSITES = sizeof SITES / sizeof SITES[0];
 static unsigned char g_snap[NSITES][40];
-static void checkStates(StFn st, const int want[12]) {
-    for (int g = 0; g < 12; ++g) {
+static void checkStates(StFn st, const int want[13]) {
+    for (int g = 0; g < 13; ++g) {
         bool changed = false, unchanged = true;
         for (int i = 0; i < NSITES; ++i) if (SITES[i].g == g) { bool c = memcmp(g_snap[i], (void*)SITES[i].at, SITES[i].n) != 0; changed |= c; if (c) unchanged = false; else changed = changed; }
         bool allChanged = true; for (int i = 0; i < NSITES; ++i) if (SITES[i].g == g && !memcmp(g_snap[i], (void*)SITES[i].at, SITES[i].n)) allChanged = false;
@@ -268,6 +314,10 @@ static void dumpCaves(const char* mode, StFn st) {
             int rel; memcpy(&rel, (void*)(SITES[i].at + 1), 4); unsigned cave = SITES[i].at + 5 + rel;
             fprintf(idx, "%s %08x %08x %u\n", G[SITES[i].g], SITES[i].at, cave, SITES[i].n);
             snprintf(name, sizeof name, "cave_%s_%08x.bin", mode, SITES[i].at); if (FILE* f = fopen(name, "wb")) { fwrite((void*)cave, 1, 0x60, f); fclose(f); }
+        } else if (SITES[i].g == 12) {   // dclk: E8 <rel32 -> cave> ; the cave is not a jmp-patched site
+            int rel; memcpy(&rel, (void*)(SITES[i].at + 1), 4); unsigned cave = SITES[i].at + 5 + rel;
+            fprintf(idx, "%s %08x %08x %u\n", G[SITES[i].g], SITES[i].at, cave, SITES[i].n);
+            snprintf(name, sizeof name, "cave_%s_%08x.bin", mode, SITES[i].at); if (FILE* f = fopen(name, "wb")) { fwrite((void*)cave, 1, 0x20, f); fclose(f); }
         } else fprintf(idx, "%s %08x inplace %u\n", G[SITES[i].g], SITES[i].at, SITES[i].n);
     }
     fclose(idx);
@@ -293,12 +343,13 @@ int main(int argc, char** argv) {
     put(0x726C9C, F_KTB, sizeof F_KTB); *(unsigned char*)0x726CDD = 0xC3;
     put(0x58C60E, F_AB, sizeof F_AB); *(unsigned char*)0x58C63E = 0xC3; stubInc(0x58C700, &g_copies, 4);
     // 1.2.0 sites
-    p_fsResume = (void*)&fsResume; p_fakeFree = (void*)&fakeFreeRes; p_handoff = (void*)&fakeHandoff; p_delsit = (void*)&fakeDelSit; p_wrongDel = (void*)&fakeWrongDel;
+    p_fsResume = (void*)&fsResume; p_fakeFree = (void*)&fakeFreeRes; p_handoff = (void*)&fakeHandoff; p_delsit = (void*)&fakeDelSit; p_wrongDel = (void*)&fakeWrongDel; p_opdel = (void*)&fakeOpDelete;
     put(0x712F55, F_FS, sizeof F_FS); stubCapEaxJmp(0x712F5B, &g_fsEax, &p_fsResume); stubJmpInd(0x7120C0, &p_fakeFree);
     put(0x428B2A, F_SSB, sizeof F_SSB); stubRet(0x428B33, 1); stubRet(0x428B44, 3); stubRet(0x428B88, 2);
     put(0x428AE5, F_SSC, sizeof F_SSC); stubRet(0x428AEA, 1); stubRet(0x428B17, 2);
     put(0x71C180, F_TDFN, sizeof F_TDFN);
     *(unsigned char*)0x99447F = 0; put(0x669A27, F_VMLK, sizeof F_VMLK); *(unsigned char*)0x669A40 = 0xC3; stubJmpInd(0x5E1340, &p_handoff); stubJmpInd(0x7037C0, &p_delsit); stubJmpInd(0x6FDBB0, &p_wrongDel);
+    putDclkSites();
     put(0x798A47, F_MOV, sizeof F_MOV); stubCapEaxEcxRet(0x798A50, &g_movEax, &g_movEcx); *(void**)0x9860D4 = (void*)&FakeSleep;
 
     // reference run (original bytes = engine behaviour incl. the bugs)
@@ -310,32 +361,33 @@ int main(int argc, char** argv) {
     KtRes k0 = kt(0x726527, 0x200); check(k0.flags == 0x200 && k0.p14 == 0xF00DF00D && k0.ebpm4 == -1, "ref kt A: CRes+0x14 left dangling (bug)");
     KtRes k1 = kt(0x726C9C, 0x201); check(k1.flags == 0x201 && k1.p14 == 0xF00DF00D, "ref kt B: CRes+0x14 left dangling (bug)");
     check(ab(5, 2) == 5 && ab(2, 5) == 2, "ref ab: shrink copies the OLD count (bug)");
-    strcpy(tag, "ref"); checkFs(0); checkSsb(false); checkSsc(false); tdReference(); checkTd(false); checkVmlk(false); checkMov(false); snprintf(tag, sizeof tag, "%s", mode);
+    strcpy(tag, "ref"); checkFs(0); checkSsb(false); checkSsc(false); tdReference(); checkTd(false); checkVmlk(false); checkMov(false); checkDclk(0); snprintf(tag, sizeof tag, "%s", mode);
 
     // per-mode setup: corruptions, config, expected states
-    static const int WANT_RUN[12]    = { 1,1,1,1,1,1, 1,1,1,1,1,0 };
-    static const int WANT_MOVON[12]  = { 1,1,1,1,1,1, 1,1,1,1,1,1 };
-    static const int WANT_OFF[12]    = { 0,0,0,0,0,0, 0,0,0,0,0,0 };
-    static const int WANT_KEYS[12]   = { 1,0,1,1,0,1, 0,1,0,0,1,0 };
-    static const int WANT_KEYS2[12]  = { 0,1,0,0,1,0, 1,0,1,1,0,1 };
-    static const int WANT_REF1[12]   = { -1,-1,1,1,1,1, 1,1,1,1,1,0 };
-    static const int WANT_REF2[12]   = { 1,1,1,1,1,1, -1,-1,-1,-1,-1,-1 };
-    const int* want = WANT_RUN; int fsLvl = 1; const char* cfg = nullptr;
-    Corr corr[8]; int ncorr = 0;
+    static const int WANT_RUN[13]    = { 1,1,1,1,1,1, 1,1,1,1,1,0, 1 };
+    static const int WANT_MOVON[13]  = { 1,1,1,1,1,1, 1,1,1,1,1,1, 1 };
+    static const int WANT_OFF[13]    = { 0,0,0,0,0,0, 0,0,0,0,0,0, 0 };
+    static const int WANT_KEYS[13]   = { 1,0,1,1,0,1, 0,1,0,0,1,0, 1 };
+    static const int WANT_KEYS2[13]  = { 0,1,0,0,1,0, 1,0,1,1,0,1, 0 };
+    static const int WANT_REF1[13]   = { -1,-1,1,1,1,1, 1,1,1,1,1,0, 1 };
+    static const int WANT_REF2[13]   = { 1,1,1,1,1,1, -1,-1,-1,-1,-1,-1, -1 };
+    const int* want = WANT_RUN; int fsLvl = 1, dclkLvl = 1; const char* cfg = nullptr;
+    Corr corr[10]; int ncorr = 0;
     bool isRun = !strcmp(mode, "run"), isFs2 = !strcmp(mode, "fs2"), isMovon = !strcmp(mode, "movon"), isDis = !strcmp(mode, "disabled");
     bool isKeys = !strcmp(mode, "keys"), isKeys2 = !strcmp(mode, "keys2"), isRef = !strcmp(mode, "refuse"), isRef2 = !strcmp(mode, "refuse2");
     if (!(isRun || isFs2 || isMovon || isDis || isKeys || isKeys2 || isRef || isRef2)) { printf("unknown mode %s\n", mode); return 2; }
-    if (isFs2) { cfg = "fs=2\n"; fsLvl = 2; }
+    if (isFs2) { cfg = "fs=2\ndclk=2\n"; fsLvl = 2; dclkLvl = 2; }
     if (isMovon) { cfg = "movspin=1\n"; want = WANT_MOVON; }
     if (isDis) { cfg = "enabled=0\n"; want = WANT_OFF; fsLvl = 0; }
     if (isKeys) { cfg = "vmid=0\nguiid = 0\nkt=1\nfs=0\nssc=0\ntd=0\nmovspin=0\n"; want = WANT_KEYS; fsLvl = 0; }
-    if (isKeys2) { cfg = "ssb=0\nvmlk=0\nsndri=0\nnetovf=0\nkt=0\nabbound=0\nfs=1\nmovspin=1\n"; want = WANT_KEYS2; }
+    if (isKeys2) { cfg = "ssb=0\nvmlk=0\nsndri=0\nnetovf=0\nkt=0\nabbound=0\nfs=1\nmovspin=1\ndclk=0\n"; want = WANT_KEYS2; }
     if (isRef) { want = WANT_REF1; corr[ncorr++] = { 0x726C9E, 0x0C, 0x0D }; corr[ncorr++] = { 0x669014, 0xF8, 0xF9 }; }   // kt (2nd site) + vmid (2nd site only; site 1 intact)
     if (isRef2) {
         want = WANT_REF2; fsLvl = 0; cfg = "movspin=1\n";
         corr[ncorr++] = { 0x712F57, 0xF0, 0xF1 }; corr[ncorr++] = { 0x428B2E, 0xFF, 0xFE }; corr[ncorr++] = { 0x428AE7, 0xF0, 0xF1 };
         corr[ncorr++] = { 0x71C2F2, 0x08, 0x09 };   // td: the COUNTER site only; the two in-place blocks must stay untouched (all or none)
         corr[ncorr++] = { 0x669A2A, 0x7F, 0x7E }; corr[ncorr++] = { 0x798A49, 0x84, 0x85 };
+        corr[ncorr++] = { 0x66DACD, 0x2C, 0x2D };   // dclk: the THIRD site (dclk_c) only; dclk_a / dclk_b must stay untouched (all or none)
     }
     for (int i = 0; i < ncorr; ++i) { if (*(unsigned char*)corr[i].at != corr[i].orig) { printf("corruption setup: byte at %x is not %02x\n", corr[i].at, corr[i].orig); return 2; } *(unsigned char*)corr[i].at = corr[i].bad; }
     for (int i = 0; i < NSITES; ++i) memcpy(g_snap[i], (void*)SITES[i].at, SITES[i].n);
@@ -348,24 +400,23 @@ int main(int argc, char** argv) {
     check(st && ct && dm, "test exports present"); if (!st || !ct || !dm) return 3;
     g_ct = ct;
     readLog();
-    long c[18], c0[18], c1[18];
+    long c[21], c0[21], c1[21];
     checkStates(st, want);
     if (isRun || isFs2 || isMovon) dumpCaves(mode, st);
-    int npatched = 0; for (int g = 0; g < 12; ++g) if (want[g] == 1) ++npatched;
-    char loaded[400]; snprintf(loaded, sizeof loaded, "%d/12 groups patched:", npatched); check(strstr(g_log, loaded) != NULL, "log: loaded line count");
+    int npatched = 0; for (int g = 0; g < 13; ++g) if (want[g] == 1) ++npatched;
+    char loaded[400]; snprintf(loaded, sizeof loaded, "%d/13 groups patched:%s", npatched, ""); check(strstr(g_log, loaded) != NULL, "log: loaded line count");
     check(strstr(g_log, "k2-robustness-fixes 1.3.0 loaded") != NULL, "log: version 1.3.0");
     checkLoadOnce();
-    if (isRun || isFs2 || isMovon) {
-        const char* names[12] = { "kt", "vmid", "sndri", "netovf", "guiid", "abbound", "fs", "ssb", "ssc", "td", "vmlk", "movspin" };
-        char exp[400]; int k = 0; for (int g = 0; g < 12; ++g) {
-            if (g == 6) k += snprintf(exp + k, sizeof exp - k, " fs=ON(%s)", fsLvl == 2 ? "free" : "count");
-            else k += snprintf(exp + k, sizeof exp - k, " %s=%s", names[g], want[g] == 1 ? "ON" : "off");
+    if (isRun || isFs2 || isMovon || isRef2) {
+        char exp[400]; int k = 0; for (int g = 0; g < 13; ++g) {
+            if (g == 6 && want[g] == 1) k += snprintf(exp + k, sizeof exp - k, " fs=ON(%s)", fsLvl == 2 ? "free" : "count");
+            else k += snprintf(exp + k, sizeof exp - k, " %s=%s", G[g], want[g] == 1 ? "ON" : want[g] == 0 ? "off" : "REFUSED(bytes)");
         }
-        char w[500]; snprintf(w, sizeof w, "%d/12 groups patched:%s", npatched, exp); check(strstr(g_log, w) != NULL, "log: loaded line with per-group state (fs mode, movspin)");
+        char w[500]; snprintf(w, sizeof w, "%d/13 groups patched:%s", npatched, exp); check(strstr(g_log, w) != NULL, "log: loaded line with per-group state (fs mode, movspin)");
     }
     if (isRef) {
         check(strstr(g_log, "kt REFUSED: bytes at 0x00726c9c are 89 50 0d eb 3c") != NULL && strstr(g_log, "vmid REFUSED: bytes at 0x00669012 are b8 2e f9 ff ff") != NULL, "log: REFUSED lines with the seen bytes");
-        check(strstr(g_log, "9/12 groups patched: kt=REFUSED(bytes) vmid=REFUSED(bytes)") != NULL, "log: loaded line");
+        check(strstr(g_log, "10/13 groups patched: kt=REFUSED(bytes) vmid=REFUSED(bytes)") != NULL, "log: loaded line");
         check(*(unsigned char*)0x668FE0 == 0x7D, "refuse: vmid site 1 still 7D (group refuses as a whole)");
     }
     if (isRef2) {
@@ -374,8 +425,8 @@ int main(int argc, char** argv) {
         check(strstr(g_log, "ssc REFUSED: bytes at 0x00428ae5 are 3b 55 f1 7e 2d (group untouched)") != NULL, "log: ssc REFUSED line");
         check(strstr(g_log, "td REFUSED: bytes at 0x0071c2f0 are 8b 45 09 8b 4d fc (group untouched)") != NULL, "log: td REFUSED line (counter site seen, in-place blocks untouched)");
         check(strstr(g_log, "vmlk REFUSED: bytes at 0x00669a27 are 0f b6 0d 7e 44 99 00 3b c1 75 0c (group untouched)") != NULL, "log: vmlk REFUSED line");
+        check(strstr(g_log, "dclk REFUSED: bytes at 0x0066dacc are e8 2d bc 2a 00 83 c4 04 (group untouched)") != NULL, "log: REFUSED line");
         check(strstr(g_log, "movspin REFUSED: bytes at 0x00798a47 are 8b 45 85 8b 88 54 02 00 00 (group untouched)") != NULL, "log: movspin REFUSED line");
-        check(strstr(g_log, "6/12 groups patched: kt=ON vmid=ON sndri=ON netovf=ON guiid=ON abbound=ON fs=REFUSED(bytes) ssb=REFUSED(bytes) ssc=REFUSED(bytes) td=REFUSED(bytes) vmlk=REFUSED(bytes) movspin=REFUSED(bytes)") != NULL, "log: loaded line");
     }
     for (int i = 0; i < ncorr; ++i) *(unsigned char*)corr[i].at = corr[i].orig;   // refused groups must now behave like the reference run
 
@@ -421,17 +472,19 @@ int main(int argc, char** argv) {
         else check(sndri().eax == 2 && guiid(5000) == 0 && neta().eax == 0 && ab(5, 2) == 2 && vmid(-1) == 1 && kt(0x726527, 0x200).p14 == 0xF00DF00Du, "refuse: sndri/guiid/netovf/abbound patched, vmid/kt refused (original behaviour)");
     }
     // 1.2.0 groups: behaviour must match the expected state in every mode
-    checkFs(want[6] == 1 ? fsLvl : 0); checkSsb(want[7] == 1); checkSsc(want[8] == 1); checkTd(want[9] == 1); checkVmlk(want[10] == 1); checkMov(want[11] == 1);
+    checkFs(want[6] == 1 ? fsLvl : 0); checkSsb(want[7] == 1); checkSsc(want[8] == 1); checkTd(want[9] == 1); checkVmlk(want[10] == 1); checkMov(want[11] == 1); checkDclk(want[12] == 1 ? dclkLvl : 0);
 
     if (isRun || isFs2 || isMovon) {
         ct(c);
         Sleep(5600); readLog();   // helper thread polls every 5 s
         char exp[600]; snprintf(exp, sizeof exp, "COUNTERS kt_destroy_orphan=%ld kt_update_orphan=%ld ab_shrink_clamp=%ld sndri_restart=%ld vm_reject=%ld vm_neg=%ld vm_last_id=%ld "
             "gui_reject=%ld gui_last_id=%ld\n", c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7], c[8]);
-        check(strstr(g_log, exp) != NULL, "log: COUNTERS line 1/2 (first 9 values)");
+        check(strstr(g_log, exp) != NULL, "log: COUNTERS 1/3");
         snprintf(exp, sizeof exp, "COUNTERS net_drop=%ld net_last_len=%ld fs_stale=%ld fs_stale_bytes=%ld ssb_camnull=%ld ssc_dims=%ld td_long=%ld vmlk_free=%ld f1_sleeps=%ld\n",
             c[9], c[10], c[11], c[12], c[13], c[14], c[15], c[16], c[17]);
-        check(strstr(g_log, exp) != NULL, "log: COUNTERS line 2/2 (last 9 values)");
+        check(strstr(g_log, exp) != NULL, "log: COUNTERS 2/3");
+        snprintf(exp, sizeof exp, "COUNTERS dclk_a=%ld dclk_b=%ld dclk_c=%ld\n", c[18], c[19], c[20]);
+        check(c[18] == 1 && c[19] == 1 && c[20] == 1 && strstr(g_log, exp) != NULL, "log: COUNTERS 3/3");
         char f[200];
         if (isRun) {
             check(strstr(g_log, "FIRED sndri restart=1") && strstr(g_log, "FIRED vmid neg=") && strstr(g_log, "FIRED guiid reject=") &&
@@ -444,6 +497,7 @@ int main(int argc, char** argv) {
         snprintf(f, sizeof f, "FIRED ssc dims=%ld", c[14]); check(strstr(g_log, f) != NULL, "log: FIRED ssc");
         snprintf(f, sizeof f, "FIRED td long=%ld", c[15]); check(strstr(g_log, f) != NULL, "log: FIRED td");
         snprintf(f, sizeof f, "FIRED vmlk free=%ld", c[16]); check(strstr(g_log, f) != NULL, "log: FIRED vmlk");
+        check(strstr(g_log, "FIRED dclk a=1 b=1 c=1") != NULL, "log: FIRED dclk");
         if (isMovon) { snprintf(f, sizeof f, "FIRED movspin sleeps=%ld", c[17]); check(c[17] == 1 && strstr(g_log, f) != NULL, "log: FIRED movspin sleeps=1 (movspin=1)"); }
         if (isFs2) check(c[11] == 3 && c[12] == 0x2020, "counters fs=2: fs_stale=3 (stale, flags 2, self-free) bytes=0x2020");
     }
