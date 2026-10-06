@@ -38,9 +38,9 @@ inline bool parseInt32(const std::string& v, int* out) {
     *out = (int)n; return true;
 }
 
-// Row name used in INI keys ("Bottom1".."Bottom0") + required modifier (0 none).
-struct RowDef { const char* name; int modifier; };
-constexpr RowDef kRows[Rows] = { {"Bottom", 0} };
+// Row name used in INI keys ("Bottom1".."Bottom0").
+struct RowDef { const char* name; };
+constexpr RowDef kRows[Rows] = { {"Bottom"} };
 constexpr int kFirstDik = 0x02;  // DIK_1; slot i uses DIK 0x02+i (0x0B = key 0 = slot 10)
 
 enum Kind { K_None = 0, K_Spell, K_Feat, K_Item, K_Other };
@@ -79,11 +79,16 @@ inline std::string normalizeItemName(const std::string& s) {
     return trim(t);
 }
 
+// HUD entry key layout (hud group lists): bit 0x40000000 = item (low bits = client object id), 0x20000000 = spell row (low 29 bits = spells.2da row),
+// neither = other (stance / form / mode toggles). Entry flags (Entry_Flags): bit 0 = usable right now.
+constexpr int KeyItemFlag = 0x40000000, KeySpellFlag = 0x20000000, KeyRowMask = 0x1FFFFFFF;
+constexpr int EntryUsable = 1;
+
 // Item stack count from a HUD entry: the engine formats item names "%s (%d)" only when the stack is > 1 (FUN_0074CF00).
-// Returns 0 for non-items (key bit 0x40000000 clear), for names without a trailing " (<digits>)" (no sign/spaces inside the
+// Returns 0 for non-items (KeyItemFlag clear), for names without a trailing " (<digits>)" (no sign/spaces inside the
 // parens), for "(0)" (the engine only prints counts > 1) and for more than 6 digits (not a plausible stack).
 inline int StackCount(int key, const std::string& name) {
-    if (!(key & 0x40000000) || name.size() < 4 || name.back() != ')') return 0;
+    if (!(key & KeyItemFlag) || name.size() < 4 || name.back() != ')') return 0;
     size_t p = name.rfind(" (");
     if (p == std::string::npos || p + 3 > name.size() - 1) return 0;
     int n = 0;
@@ -328,13 +333,13 @@ struct Config {
                     else general.keyboardDevice = n;
                 }
                 else if (k == "healthreshold") {
-                    char* e = nullptr; long n = strtol(val.c_str(), &e, 10);
-                    if (val.empty() || *e || n < 1 || n > 100) { snprintf(msg, sizeof msg, "line %d: HealThreshold '%.60s' must be 1..100", lineNo, val.c_str()); warnings.push_back(msg); }
-                    else general.healThreshold = (int)n;
+                    int n = 0;
+                    if (!parseInt32(val, &n) || n < 1 || n > 100) { snprintf(msg, sizeof msg, "line %d: HealThreshold '%.60s' must be 1..100", lineNo, val.c_str()); warnings.push_back(msg); }
+                    else general.healThreshold = n;
                 } else if (k == "syncactionbar") {
-                    char* e = nullptr; long n = strtol(val.c_str(), &e, 10);
-                    if (val.empty() || *e || (n != 0 && n != 1)) { snprintf(msg, sizeof msg, "line %d: SyncActionBar '%.60s' must be 0 or 1", lineNo, val.c_str()); warnings.push_back(msg); }
-                    else general.syncActionBar = (int)n;
+                    int n = 0;
+                    if (!parseInt32(val, &n) || (n != 0 && n != 1)) { snprintf(msg, sizeof msg, "line %d: SyncActionBar '%.60s' must be 0 or 1", lineNo, val.c_str()); warnings.push_back(msg); }
+                    else general.syncActionBar = n;
                 } else if (k == "healfallback") {
                     std::string v = lower(val);
                     if (v == "self") general.healFallbackSelf = 1; else if (v == "none") general.healFallbackSelf = 0;

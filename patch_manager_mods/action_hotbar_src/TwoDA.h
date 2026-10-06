@@ -19,8 +19,14 @@ struct TwoDA {
         cols.clear(); labels.clear(); rows.clear(); error.clear();
         FILE* f = fopen(path, "rb");
         if (!f) { error = "cannot open"; return false; }
-        std::string d; char buf[65536]; size_t n;
-        while ((n = fread(buf, 1, sizeof buf, f)) > 0) d.append(buf, n);
+        constexpr size_t Chunk = 64 * 1024;   // heap, not stack: read straight into the string in 64 KiB steps
+        std::string d; d.reserve(Chunk);
+        for (;;) {
+            size_t old = d.size(); d.resize(old + Chunk);
+            size_t n = fread(&d[old], 1, Chunk, f);
+            d.resize(old + n);
+            if (n == 0) break;
+        }
         fclose(f);
         return Parse(d);
     }

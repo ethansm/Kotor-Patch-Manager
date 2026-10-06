@@ -84,7 +84,7 @@ KP_CHANNEL(chMain,   "main");     // banner, addresses, heartbeat; same name as 
 | 394 | logf `target: PerformUseItem(item %08x -> member %d id %08x) ret..` | target | INFO | EV (per use) | 71 | keep |
 | 403 | logf `slot %s: unbound now (config changed?)` | slots | INFO | EV (per key) | 47 | keep |
 | 406 | logf `slot %s: %s -> entry not available for '%s'; available now:` | slots | INFO | EV (per key) | 175 | reword (fields first; "available now:" dropped, 409 follows) |
-| 409 | logf `    avail g%d.%d key=%08x %s "%s"` | slots | INFO | CAP20 per process | 213 (near) | reword (drop indent; omit name for items) |
+| 409 | logf `    avail: g%d.%d key=%08x %s "%s"` | slots | INFO | CAP20 per process | 213 (near) | reword (drop indent; omit name for items) |
 | 412 | logf `slot %s: %s -> group %d index %d key=%08x flags=%08x usabl..` | slots | INFO | EV (per key) | 212 (near) | split (fmtSlotResolve, ref last) |
 | 472 | logf `img: loaded '%s' -> %p (pool %d)` | tip | INFO | EV, once per resref (<=256) | 56 | keep |
 | 473 | logf `img: pool full (%d), cannot load '%s'` | tip | WARN | CHG+ first + EVERY 10 s [R4] | 55 | gate |
@@ -220,7 +220,7 @@ Prefix not counted: the core adds `T=<ms> f=<n> force-power-hotbar/<chan> ` and 
 | 965 | 239 | `Format` (100) + item name (80) + two keys | line 1 `edit: cell %d click -> slot %d := group %d key=%08x` (about 55), line 2 `edit: cell %d ref=%s` plus ` name="%s"` for non-items only. |
 | 1254 | 405 | persave `source` string is `'<dir>/force_power_hotbar.ini' found` (dir up to 112, `cloudsaves/<17-digit id>/` + folder up to 80) | line 1 `persave: <why>: live hotbar replaced|NOT replaced profiles=%d snapshot_warnings=%d backup=ok|none` (about 110 with a 24-char why), line 2 `persave: <why>: source=%s` (at most about 210; drop the surrounding quotes), then one WARN line per snapshot warning (section 6). |
 | 1407 | 339 | `cwd` is `MAX_PATH` (260) | line 1 `force-power-hotbar 1.0.0 loaded; pid=%lu ini=%s core=%d` (about 70; keep the first words, tools grep them), then `fmtChunks("cwd", cwd, 200)` = `cwd[0]=<200 bytes>`, `cwd[1]=<rest>`. |
-| 409 (near, 213) | 213 | item `ref` + name | `avail g%d.%d key=%08x %s`; add ` "%s"` only for spells/modes. Max about 150. |
+| 409 (near, 213) | 213 | item `ref` + name | `avail: g%d.%d key=%08x %s`; add ` "%s"` only for spells/modes. Max about 150. |
 | 412 (near, 212) | 212 | `Format` (100) in the middle of the line | `fmtSlotResolve`: `slot Bottom1: group=%d index=%d key=%08x flags=%08x usable=%d INVOKING ref=%s` (`(Invoke=0)` instead of `INVOKING` when off). Ref last; max about 185. |
 | 1242 (near, 217) | 217 | `dst` path up to 136 | line 1 `persave: <why>: save ok|FAILED profiles=%d`, line 2 `persave: <why>: dst=%s` (at most about 180). |
 | 1354 (190, split anyway) | 190 bounded (245 if every int is 11 digits) | 11 ints plus the editor state | `fmtH3Summary`: `H3: %d/%d controls created (indices %d..%d) buttons=%d/%d editor=%d/%d -> editor ENABLED|DISABLED frame=%ld` and `fmtH3Rect`: `H3: picker background rect [%d,%d,%d,%d]`. Reason to split: new fields (disabled parts, missing control names, section 4) must fit, and `frame=` is one of the two places the hotbar's own frame counter stays in text. |

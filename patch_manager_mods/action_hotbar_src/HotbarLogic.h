@@ -49,17 +49,24 @@ inline bool isTargetableItemType(int itemType) { return itemType >= 0 && itemTyp
 // ======== pure units extracted from ActionHotbar.cpp (behaviour-neutral; tested in hotbar_logic_test.cpp) ========
 // (this header is included by the DLL after windows.h: only <cstdint>/<algorithm>/<string>/<vector> here, no Win32 types)
 
-// HUD entry key -> stable ref: bit 0x40000000 = item (identity = normalised name), 0x20000000 = spell row, else other.
+// Request ring (click/key -> HUD tick): single producer / single consumer on the game thread, one slot always empty (full = RingSize - 1 queued).
+constexpr int RingSize = 16;
+inline int ringNext(int i) { return (i + 1) % RingSize; }
+inline int ringCount(int head, int tail) { return (head - tail + RingSize) % RingSize; }
+inline bool ringFull(int head, int tail) { return ringNext(head) == tail; }
+
+// HUD entry key -> stable ref: KeyItemFlag = item (identity = normalised name), KeySpellFlag = spell row, else other (flag constants: HotbarConfig.h).
 inline ActionRef decodeKey(int key, const std::string& name) {
     ActionRef r;
-    if (key & 0x40000000) { r.kind = K_Item; r.name = normalizeItemName(name); if (r.name.empty()) r.kind = K_None; }
-    else if (key & 0x20000000) { r.kind = K_Spell; r.id = key & 0x1FFFFFFF; }
+    if (key & KeyItemFlag) { r.kind = K_Item; r.name = normalizeItemName(name); if (r.name.empty()) r.kind = K_None; }
+    else if (key & KeySpellFlag) { r.kind = K_Spell; r.id = key & KeyRowMask; }
     else { r.kind = K_Other; r.id = key; }
     return r;
 }
 
 // Picker tab of an entry key: 0 powers, 1 items, 2 modes.
-inline int tabOfKey(int key) { return (key & 0x40000000) ? 1 : ((key & 0x20000000) ? 0 : 2); }
+enum Tab { Tab_Power = 0, Tab_Item = 1, Tab_Mode = 2 };
+inline int tabOfKey(int key) { return (key & KeyItemFlag) ? Tab_Item : ((key & KeySpellFlag) ? Tab_Power : Tab_Mode); }
 
 // Character key from the controlled creature's object id: "obj%08x"; "" = unknown. *invalid = id is 0 / 0xFFFFFFFF (transient during loads).
 // A one-member party with id 0xFFFFFFFF is the Exile (valid id fffffffd), which the engine can report as 0xFFFFFFFF for a whole session.
@@ -72,7 +79,7 @@ inline std::string characterKeyFor(unsigned oid, int partyCount, bool* invalid =
 }
 
 // AutoFill: true for a spell key that is a known Force power (not an item, not a mode toggle).
-inline bool isKnownPowerKey(int key) { return !((key & 0x40000000) || !(key & 0x20000000)); }
+inline bool isKnownPowerKey(int key) { return tabOfKey(key) == Tab_Power; }
 
 // True when v already holds an action Same() as r.
 inline bool hasSame(const std::vector<ActionRef>& v, const ActionRef& r) { for (const ActionRef& x : v) if (Same(x, r)) return true; return false; }
@@ -205,7 +212,7 @@ inline SlotView slotView(bool wantEmpty, bool wantIsItem, bool have, int flags, 
     if (wantEmpty) { have = false; wantIsItem = false; }   // HB18: an unbound slot shows nothing, whatever a (stale) resolved entry says: no qty, no out-of-stock
     if (wantEmpty) v.state = "unbound";
     else if (!have) { if (settlingNormal) { v.hideSettling = true; return v; } v.state = "entry not available"; }
-    else v.state = (flags & 1) ? "usable" : "unusable (dimmed)";
+    else v.state = (flags & EntryUsable) ? "usable" : "unusable (dimmed)";
     // An item that left the HUD's lists is out of stock: dimmed icon + gray "0"; it comes back by itself once the party has one again.
     v.outOfStock = !have && wantIsItem;
     if (v.outOfStock) v.state = "out of stock";
@@ -213,7 +220,7 @@ inline SlotView slotView(bool wantEmpty, bool wantIsItem, bool have, int flags, 
     v.showQty = v.qty > 1 || v.outOfStock; v.grayQty = v.outOfStock;
     v.qtyHideWhy = have ? "single item / not an item" : v.state;
     v.bgFactor = have ? 1.0f : EmptyFrameAlpha;
-    v.icFactor = ((have && !(flags & 1)) || v.outOfStock) ? DimAlpha : 1.0f;
+    v.icFactor = ((have && !(flags & EntryUsable)) || v.outOfStock) ? DimAlpha : 1.0f;
     return v;
 }
 
@@ -371,9 +378,9 @@ inline std::vector<std::string> fmtTipLines(const std::string& text) {
     return r;
 }
 
-// "slot <key>: group=.. index=.. key=.. flags=.. usable=<flags&1> INVOKING|(Invoke=0) ref=<ref>" (ref last: it can be 100 bytes)
+// "slot <key>: group=.. index=.. key=.. flags=.. usable=<flags&EntryUsable> INVOKING|(Invoke=0) ref=<ref>" (ref last: it can be 100 bytes)
 inline std::string fmtSlotResolve(const std::string& slotKey, int group, int index, unsigned key, unsigned flags, bool invoke, const std::string& refText) {
-    return sfmt("slot %s: group=%d index=%d key=%08x flags=%08x usable=%d %s ref=%s", slotKey.c_str(), group, index, key, flags, (int)(flags & 1),
+    return sfmt("slot %s: group=%d index=%d key=%08x flags=%08x usable=%d %s ref=%s", slotKey.c_str(), group, index, key, flags, (int)(flags & EntryUsable),
                 invoke ? "INVOKING" : "(Invoke=0)", refText.c_str());
 }
 inline std::string fmtSlotMiss(const std::string& slotKey, const std::string& refText, const std::string& charKey) {
@@ -428,9 +435,6 @@ inline bool modeChanged(ModeWatch& w, uint32_t creature, int stance, uint32_t fo
     if (w.stance == stance && w.form == form) return false;
     w.stance = stance; w.form = form;
     return true;
-}
-inline int stanceKey(int stance) {
-    switch (stance) { case 9: return 0x410; case 10: return 0x411; case 0xB: return 0x412; case 0xC: return 0x413; case 0xD: return 0x414; case 16: return 0x415; default: return 0; }
 }
 
 // Item target-mode cycle: Default -> LowHp (healing only) -> Self (if allowed) -> Default; non-items unchanged; result is a fresh spec (custom suffix dropped).
@@ -522,22 +526,23 @@ inline TipTitle tipTitleQty(const std::string& name) {
     return t;
 }
 
-// A11: hover text of a picker/bar entry. Force-power keys (0x20000000 without 0x40000000) take their spells.2da cells from `sp`
+// A11: hover text of a picker/bar entry. Force-power keys (KeySpellFlag without KeyItemFlag) take their spells.2da cells from `sp`
 // (fp already "****"-stripped, range raw, desc = raw TLK text, "" = none); item keys show the stack quantity from the name.
 struct TipSpell { std::string fp, range, desc; };
 inline std::string tipText(char digit, const std::string& name, int key, int flags, const TipSpell& sp) {
     TipTitle tt = tipTitleQty(name);
     std::string out = tt.title + "\n";
-    const char* kind = (key & 0x40000000) ? "Item" : ((key & 0x20000000) ? "Force Power" : "Mode");
+    int tab = tabOfKey(key);
+    const char* kind = tab == Tab_Item ? "Item" : (tab == Tab_Power ? "Force Power" : "Mode");
     if (digit) out += std::string("Key: ") + digit + "   " + kind + "\n"; else out += std::string(kind) + "\n";
-    if ((key & 0x20000000) && !(key & 0x40000000)) {
+    if (tab == Tab_Power) {
         if (!sp.fp.empty() && sp.fp != "0") out += "Force Points: " + sp.fp + "\n";
         if (sp.range == "P") out += "Range: Personal\n"; else if (sp.range == "T") out += "Range: Target\n";
         if (!sp.desc.empty()) { std::string d = shortDesc(sp.desc); if (!d.empty()) out += wrapText(d, TipWrap, TipMaxDescLines) + "\n"; }
-    } else if (key & 0x40000000) {
+    } else if (tab == Tab_Item) {
         if (!tt.qty.empty()) out += "Quantity: " + tt.qty + "\n";
     }
-    if (!(flags & 1)) out += "Not usable right now\n";
+    if (!(flags & EntryUsable)) out += "Not usable right now\n";
     while (!out.empty() && out.back() == '\n') out.pop_back();
     return out;
 }

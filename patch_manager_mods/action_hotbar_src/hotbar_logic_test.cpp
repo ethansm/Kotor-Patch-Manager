@@ -578,7 +578,7 @@ int main() {
     h[12] = 0; TgaInfo z; z.bytes = 7; KT_CHECK_EQ(tgaInspect(h, 18, &z), TGA_TRUNCATED); KT_CHECK_EQ((long long)z.bytes, 0);   // w == 0
     TgaInfo e; KT_CHECK_EQ(e.w, 0); KT_CHECK_EQ(e.h, 0); KT_CHECK_EQ((long long)e.off, 0); KT_CHECK_EQ((long long)e.bytes, 0);
   }
-  { // ModeWatch / modeChanged / maskForm / stanceKey: fire once per stance/form edge; vanilla resyncs on character switch itself
+  { // ModeWatch / modeChanged / maskForm: fire once per stance/form edge; vanilla resyncs on character switch itself
     ModeWatch w;
     KT_CHECK(!modeChanged(w, 0x100, 9, 0x5, true));                 // first sight: no fire
     KT_CHECK(w.valid && w.creature == 0x100 && w.stance == 9 && w.form == 0x5);
@@ -594,9 +594,31 @@ int main() {
     KT_CHECK(w.creature == before.creature && w.stance == before.stance && w.form == before.form && w.valid);
     KT_CHECK(!modeChanged(w, 0x200, 0xB, 0x7, true));               // still in sync after the failed read
     ModeWatch f; KT_CHECK(!modeChanged(f, 1, 2, 3, false)); KT_CHECK(!f.valid && f.creature == 0);   // failed first read leaves it invalid
-    KT_CHECK_EQ(stanceKey(9), 0x410); KT_CHECK_EQ(stanceKey(10), 0x411); KT_CHECK_EQ(stanceKey(0xB), 0x412);
-    KT_CHECK_EQ(stanceKey(0xC), 0x413); KT_CHECK_EQ(stanceKey(0xD), 0x414); KT_CHECK_EQ(stanceKey(16), 0x415);
-    KT_CHECK_EQ(stanceKey(0), 0); KT_CHECK_EQ(stanceKey(14), 0); KT_CHECK_EQ(stanceKey(-1), 0);
+  }
+  { // A24 request ring: RingSize slots, one always empty (full = RingSize - 1 queued), indices wrap
+    KT_CHECK_EQ(RingSize, 16);
+    KT_CHECK_EQ(ringNext(0), 1); KT_CHECK_EQ(ringNext(RingSize - 2), RingSize - 1); KT_CHECK_EQ(ringNext(RingSize - 1), 0);
+    KT_CHECK_EQ(ringCount(0, 0), 0); KT_CHECK_EQ(ringCount(5, 2), 3); KT_CHECK_EQ(ringCount(2, 5), RingSize - 3); KT_CHECK_EQ(ringCount(0, 1), RingSize - 1);
+    KT_CHECK(!ringFull(0, 0)); KT_CHECK(ringFull(RingSize - 1, 0)); KT_CHECK(ringFull(4, 5)); KT_CHECK(!ringFull(3, 5));
+    int head = 0, tail = 0, queued = 0;   // producer fills until full, consumer drains: every index stays in range
+    while (!ringFull(head, tail)) { head = ringNext(head); ++queued; }
+    KT_CHECK_EQ(queued, RingSize - 1); KT_CHECK_EQ(ringCount(head, tail), RingSize - 1);
+    for (int i = 0; i < 5; ++i) tail = ringNext(tail);
+    KT_CHECK_EQ(ringCount(head, tail), RingSize - 6); KT_CHECK(!ringFull(head, tail));
+    for (int i = 0; i < 40; ++i) { head = ringNext(head); tail = ringNext(tail); KT_CHECK(head >= 0 && head < RingSize && tail >= 0 && tail < RingSize); }
+  }
+  { // A25/A26 key + entry flag constants: bit layout the HUD uses, shared by decodeKey / tabOfKey / isKnownPowerKey / tipText
+    KT_CHECK_EQ(KeyItemFlag, 0x40000000); KT_CHECK_EQ(KeySpellFlag, 0x20000000); KT_CHECK_EQ(KeyRowMask, 0x1FFFFFFF); KT_CHECK_EQ(EntryUsable, 1);
+    KT_CHECK_EQ(KeyRowMask & (KeyItemFlag | KeySpellFlag), 0);
+    KT_CHECK_EQ(tabOfKey(KeySpellFlag | 7), 0); KT_CHECK_EQ(tabOfKey(KeyItemFlag | 7), 1); KT_CHECK_EQ(tabOfKey(KeyItemFlag | KeySpellFlag), 1); KT_CHECK_EQ(tabOfKey(0x410), 2);
+    KT_CHECK(Tab_Power == 0 && Tab_Item == 1 && Tab_Mode == 2);
+    KT_CHECK(isKnownPowerKey(KeySpellFlag | 7)); KT_CHECK(!isKnownPowerKey(KeyItemFlag | KeySpellFlag)); KT_CHECK(!isKnownPowerKey(0x410));
+    KT_CHECK_EQ(decodeKey(KeySpellFlag | 0x1234, "x").id, 0x1234);
+    TipSpell none;
+    KT_CHECK_EQ(tipText('1', "Stance", 0x410, EntryUsable, none).c_str(), "Stance\nKey: 1   Mode");
+    KT_CHECK_EQ(tipText(0, "Medpac (3)", KeyItemFlag | 9, 0, none).c_str(), "Medpac\nItem\nQuantity: 3\nNot usable right now");
+    TipSpell sp; sp.fp = "10"; sp.range = "T";
+    KT_CHECK_EQ(tipText('2', "Heal", KeySpellFlag | 3, EntryUsable, sp).c_str(), "Heal\nKey: 2   Force Power\nForce Points: 10\nRange: Target");
   }
   { // target-mode cycle / badge / button state / tooltips
     ActionRef it; it.kind = K_Item; it.id = 1; it.name = "medpac";
