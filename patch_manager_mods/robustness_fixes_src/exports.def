@@ -1,5 +1,6 @@
 LIBRARY RobustnessFixes
 EXPORTS
+    KPatchInit
     RobFixTestState
     RobFixTestCounters
     RobFixTestDummy

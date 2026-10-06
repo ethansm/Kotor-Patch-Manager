@@ -1,4 +1,4 @@
-// k2-robustness-fixes 1.2.1 (Steam Aspyr build 6A522E71...). Engine robustness fixes from the
+// k2-robustness-fixes 1.3.0 (Steam Aspyr build 6A522E71...). Engine robustness fixes from the
 // doc 10 Phase 6E research (batches W4-W8, Opus-verified; section "Robustness set").
 //
 // DLL-only. Each fix is an independent group: DllMain verifies every byte of the group's sites, then writes the group;
@@ -56,7 +56,8 @@
 //
 // Config: $G/robustnessfixes.txt, one `key=value` per line (enabled=0 disables all; missing keys default to 1, except
 // movspin = 0; key=0 disables a group; fs also takes 2 = count + free).
-// Log: $G/robustnessfixes_log.txt (one `loaded` line per launch with the per-group state; a helper thread polls
+// Log (1.3.0): shared KpLog.h, channel main (core file k2-robustness-fixes_log.txt; old core: fallback robustnessfixes_log.txt at INFO).
+//      One `loaded` line per launch with the per-group state; a helper thread polls
 // every 5 s and appends a COUNTERS line (all 18 values) when any changed, a one-shot `FIRED <group> ...` line the
 // first time each fix's counter moves (sndri, vmid, guiid, netovf, abbound, kt, fs, ssb, ssc, td, vmlk, movspin), and reports a non-zero byte in
 // the KT dummy entry). 1.2.0: 12 groups, 18 counter values, FIRED lines for fs/ssb/ssc/td/vmlk/movspin too.
@@ -67,6 +68,9 @@
 #include <stdint.h>
 #include <initializer_list>
 #include "CodePatch.h"
+#include "KpLog.h"
+
+KP_LOG_PATCH("k2-robustness-fixes");
 
 namespace {
 
@@ -114,21 +118,39 @@ volatile LONG g_sndri = 0, g_vmReject = 0, g_vmNeg = 0, g_vmLastId = 0, g_guiRej
 volatile LONG g_fsStale = 0, g_fsStaleBytes = 0, g_ssbCamnull = 0, g_sscDims = 0, g_tdLong = 0, g_vmlkFree = 0, g_f1Sleeps = 0;
 volatile uint8_t g_fsFree = 0;   // read by the FS cave: 0 = count only (fs=1), 1 = also free the stale buffer (fs=2)
 
-CRITICAL_SECTION g_logLock;
 int g_state[G_COUNT];      // 1 patched, 0 disabled, -1 refused (bytes), -2 refused (protect), -3 refused (unmapped), -4 no cave
 uintptr_t g_badAt[G_COUNT]; uint8_t g_seen[G_COUNT][40]; uint8_t g_seenN[G_COUNT];
 uint8_t* g_cave = nullptr; size_t g_caveUsed = 0;
 
+// ---- log ----
+// 1.3.0: shared KpLog.h (channel main) replaces the private fopen/append logger (KpLog serialises writes, so no lock). Lines keep their text;
+// KpLog adds the prefix (core file k2-robustness-fixes_log.txt; old core: fallback robustnessfixes_log.txt at INFO, `<ms> k2-robustness-fixes/main ...`).
+KP_CHANNEL(chMain, "main");
+
+// Only stores the path and the level (no I/O): safe from a static initialiser.
+const bool g_fallbackSet = (KpLog_SetFallbackFile("robustnessfixes_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
+
+// DllMain formats the load line and the REFUSED continuation lines (setLoad / g_refLine) but they are emitted once the logger is known:
+// by KPatchInit, else by the helper-thread tick (old core), or directly from DllMain when no group is patched (no helper thread).
+char g_loadLine[700]; int g_loadLevel = KPLOG_INFO;
+char g_refLine[G_COUNT][200];
+volatile LONG g_loadEmitted = 0;
+void setLoad(int level, const char* fmt, ...) {
+    va_list ap; va_start(ap, fmt); vsnprintf(g_loadLine, sizeof(g_loadLine), fmt, ap); va_end(ap);
+    size_t n = strlen(g_loadLine);
+    snprintf(g_loadLine + n, sizeof(g_loadLine) - n, " tick=%lu", GetTickCount());
+    g_loadLevel = level;
+}
+void emitLoadLine() {
+    if (g_loadEmitted) return;                         // cheap fast path
+    if (InterlockedExchange(&g_loadEmitted, 1)) return;
+    KP_LOGV(chMain, g_loadLevel, "%s", g_loadLine);
+    for (int g = 0; g < G_COUNT; ++g) if (g_refLine[g][0]) KP_LOGV(chMain, KPLOG_WARN, "%s", g_refLine[g]);
+}
 void logf(const char* fmt, ...) {
     char line[600];
     va_list ap; va_start(ap, fmt); vsnprintf(line, sizeof(line), fmt, ap); va_end(ap);
-    EnterCriticalSection(&g_logLock);
-    if (FILE* f = fopen("robustnessfixes_log.txt", "a")) {
-        SYSTEMTIME t; GetLocalTime(&t);
-        fprintf(f, "[%02u:%02u:%02u.%03u %lu] %s\n", t.wHour, t.wMinute, t.wSecond, t.wMilliseconds, GetTickCount(), line);
-        fclose(f);
-    }
-    LeaveCriticalSection(&g_logLock);
+    KP_LOGV(chMain, KPLOG_INFO, "%s", line);
 }
 
 void readConfig(int lvl[G_COUNT]) {   // lvl: 0 off, 1 on (fs: 1 = count only, 2 = count + free)
@@ -451,13 +473,16 @@ DWORD WINAPI helperThread(LPVOID) {
     bool firedFs = false, firedSsb = false, firedSsc = false, firedTd = false, firedVmlk = false, firedMov = false;
     for (;;) {
         Sleep(5000);
+        emitLoadLine();
         LONG now[NCOUNTERS] = { g_ktDestroy, g_ktUpdate, g_abClamp, g_sndri, g_vmReject, g_vmNeg, g_vmLastId, g_guiReject, g_guiLastId, g_netDrop, g_netLastLen,
                                 g_fsStale, g_fsStaleBytes, g_ssbCamnull, g_sscDims, g_tdLong, g_vmlkFree, g_f1Sleeps };
         if (memcmp(now, last, sizeof now)) {
+            // Two lines (the KPM core truncates a line's text at 232 bytes); worst case 223 / 202 bytes with 10-digit values.
             logf("COUNTERS kt_destroy_orphan=%ld kt_update_orphan=%ld ab_shrink_clamp=%ld sndri_restart=%ld vm_reject=%ld vm_neg=%ld vm_last_id=%ld "
-                 "gui_reject=%ld gui_last_id=%ld net_drop=%ld net_last_len=%ld fs_stale=%ld fs_stale_bytes=%ld ssb_camnull=%ld ssc_dims=%ld "
-                 "td_long=%ld vmlk_free=%ld f1_sleeps=%ld",
-                 now[0], now[1], now[2], now[3], now[4], now[5], now[6], now[7], now[8], now[9], now[10], now[11], now[12], now[13], now[14], now[15], now[16], now[17]);
+                 "gui_reject=%ld gui_last_id=%ld",
+                 now[0], now[1], now[2], now[3], now[4], now[5], now[6], now[7], now[8]);
+            logf("COUNTERS net_drop=%ld net_last_len=%ld fs_stale=%ld fs_stale_bytes=%ld ssb_camnull=%ld ssc_dims=%ld td_long=%ld vmlk_free=%ld f1_sleeps=%ld",
+                 now[9], now[10], now[11], now[12], now[13], now[14], now[15], now[16], now[17]);
             memcpy(last, now, sizeof now);
         }
         if (!firedSndri && now[3]) { firedSndri = true; logf("FIRED sndri restart=%ld", now[3]); }
@@ -474,7 +499,7 @@ DWORD WINAPI helperThread(LPVOID) {
         if (!firedMov && now[17]) { firedMov = true; logf("FIRED movspin sleeps=%ld", now[17]); }
         if (!dummyReported) {
             for (int i = 0; i < 0x24; ++i) if (g_ktDummy[i]) {
-                logf("KT dummy entry byte +0x%02x = %02x (unexpected writer; left as is)", i, g_ktDummy[i]);
+                KP_LOGV(chMain, KPLOG_WARN, "KT dummy entry byte +0x%02x = %02x (unexpected writer; left as is)", i, g_ktDummy[i]);
                 dummyReported = true; break;
             }
         }
@@ -494,9 +519,11 @@ extern "C" void __cdecl RobFixTestCounters(long* out18) {
 }
 extern "C" void* __cdecl RobFixTestDummy() { return g_ktDummy; }
 
+// KpLog_Init may fail on an old core; the load line is emitted either way (KpLog then falls back to robustnessfixes_log.txt).
+extern "C" void __cdecl KPatchInit(const KPatchApi* api) { KpLog_Init(api); emitLoadLine(); }
+
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason != DLL_PROCESS_ATTACH) return TRUE;
-    InitializeCriticalSection(&g_logLock);
     int lvl[G_COUNT]; readConfig(lvl);
     g_fsFree = lvl[G_FS] == 2 ? 1 : 0;
     g_cave = static_cast<uint8_t*>(VirtualAlloc(nullptr, 4096, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE));
@@ -509,12 +536,14 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
         else k += snprintf(buf + k, sizeof(buf) - k, " %s=%s", GroupKey[g], stateName(g_state[g]));
         if (g_state[g] == 1) ++patched;
     }
-    logf("k2-robustness-fixes 1.2.1 loaded: %d/%d groups patched:%s cave=%p pid=%lu", patched, G_COUNT, buf, (void*)g_cave, GetCurrentProcessId());
+    bool refused = false; for (int g = 0; g < G_COUNT; ++g) if (g_state[g] < 0) refused = true;
+    setLoad(refused ? KPLOG_WARN : KPLOG_INFO, "k2-robustness-fixes 1.3.0 loaded: %d/%d groups patched:%s cave=%p pid=%lu", patched, G_COUNT, buf, (void*)g_cave, GetCurrentProcessId());
     for (int g = 0; g < G_COUNT; ++g) if (g_state[g] == -1) {
         char hex[100]; int h = 0; for (int i = 0; i < g_seenN[g] && i < 24; ++i) h += snprintf(hex + h, sizeof(hex) - h, "%02x ", g_seen[g][i]);
-        logf("  %s REFUSED: bytes at 0x%08x are %s(group untouched)", GroupKey[g], (unsigned)g_badAt[g], hex);
-    } else if (g_state[g] < -1) logf("  %s REFUSED at 0x%08x%s", GroupKey[g], (unsigned)g_badAt[g], g_state[g] == -2 ? " (VirtualProtect failed; group may be PARTIAL)" : "");
+        snprintf(g_refLine[g], sizeof g_refLine[g], "  %s REFUSED: bytes at 0x%08x are %s(group untouched)", GroupKey[g], (unsigned)g_badAt[g], hex);
+    } else if (g_state[g] < -1) snprintf(g_refLine[g], sizeof g_refLine[g], "  %s REFUSED at 0x%08x%s", GroupKey[g], (unsigned)g_badAt[g], g_state[g] == -2 ? " (VirtualProtect failed; group may be PARTIAL)" : "");
     bool any = false; for (int g = 0; g < G_COUNT; ++g) if (g_state[g] == 1) any = true;
     if (any) CloseHandle(CreateThread(nullptr, 0, helperThread, nullptr, 0, nullptr));
+    else emitLoadLine();   // no helper thread to emit it later
     return TRUE;
 }
