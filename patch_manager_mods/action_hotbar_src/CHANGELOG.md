@@ -2,6 +2,17 @@
 
 Action Hotbar (id `action-hotbar`), formerly Force Power Hotbar.
 
+## 1.3.0-dev (2026-10-05)
+
+- `spells.2da` no longer has to be in `override/`: without it the patch reads the base game's `chitin.key` -> `data/2da.bif` (HP7). The log line names the source.
+- `@self`/`@lowhp` on a `spell:`/`feat:` slot is refused with a warning (it only applies to items).
+- `[Profile. Name ]` section names are trimmed.
+- An unbound slot never shows a quantity or out-of-stock marker.
+- Numbers in `spells.2da` cells read as decimal or `0x` hex only (no octal).
+- The editor wheel scroll uses the same 250 ms HUD-alive window as the keys (was 300 ms).
+- Heartbeat `wfaults=` also counts ignored widget setup results.
+- Internal: pure logic moved to `HotbarLogic.h` (HP5), named constants and cleanup (HP6), more tests.
+
 ## 1.2.2-dev (2026-10-05)
 
 - Internal: refactor (HP4), no behavior change.

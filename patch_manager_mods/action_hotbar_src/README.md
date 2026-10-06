@@ -172,7 +172,7 @@ The mod uses the shared KpLog logger. Settings are in `kplog.ini`, section `[act
 Without the `kpatch.log` core, the mod writes `action_hotbar_log.txt` instead. The previous session is kept as
 `action_hotbar_log.1.txt`. In that case `Verbose=1` raises the level to debug.
 
-Useful lines: `action-hotbar 1.2.1 loaded` at start, `migrate:` on a first run, `persave:` on every save and load,
+Useful lines: `action-hotbar 1.3.0-dev loaded` at start, `migrate:` on a first run, `persave:` on every save and load,
 `actionbar:` on a bar refresh. A `WARN` line is a real fault.
 
 The `spells.2da` lookup is logged once per session, on the `tip` channel. Order: `override/spells.2da`, then `chitin.key`
