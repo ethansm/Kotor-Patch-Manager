@@ -59,15 +59,18 @@ def get_git_info() -> dict:
 
 def resolve_plan_shorthand(token: str) -> tuple[Path | None, str]:
     token = token.strip()
-    if not token:
-        return None, ""
+    if not token or len(token) > 255 or "\n" in token:
+        return None, token
     
     # 1. Exact path match
-    p = Path(token)
-    if p.exists() and p.is_file():
-        return p.resolve(), ""
-    if (REPO_ROOT / p).exists() and (REPO_ROOT / p).is_file():
-        return (REPO_ROOT / p).resolve(), ""
+    try:
+        p = Path(token)
+        if p.exists() and p.is_file():
+            return p.resolve(), ""
+        if (REPO_ROOT / p).exists() and (REPO_ROOT / p).is_file():
+            return (REPO_ROOT / p).resolve(), ""
+    except (OSError, ValueError):
+        pass
 
     # 2. Numbered doc shorthand: '25 §12', 'doc 25 §12', 'doc25:12', '19e', '24:T6', '25'
     m = re.match(r'^(?:doc\s*)?([0-9]{1,2}[a-z]?)(?:[:\s§]+(.*))?$', token, re.IGNORECASE)
@@ -238,6 +241,7 @@ def cmd_resume(plan: dict, git_info: dict, json_mode: bool = False):
 
     if json_mode:
         import json
+        upcoming = remaining[1:4]
         print(json.dumps({
             "plan_path": str(plan["path"].relative_to(REPO_ROOT)),
             "title": plan["title"],
@@ -246,6 +250,8 @@ def cmd_resume(plan: dict, git_info: dict, json_mode: bool = False):
             "progress": f"{len(completed)}/{total}",
             "current_phase": current["ident"] if current else "ALL_DONE",
             "current_title": current["name"] if current else "Complete",
+            "upcoming_phases": [{"ident": p["ident"], "name": p["name"]} for p in upcoming],
+            "next_handoff": f"/plan-handoff {current['ident']}" if current else "",
             "dirty_files": git_info["dirty_count"]
         }, indent=2))
         return
@@ -261,13 +267,25 @@ def cmd_resume(plan: dict, git_info: dict, json_mode: bool = False):
         print(f"Done: {done_str}")
 
     if current:
+        upcoming = remaining[1:4]
         ident_prefix = current['ident'][0].upper() if current['ident'] else ""
         category = PREFIX_LEGEND.get(ident_prefix, "")
         badge = f"[{category}] " if category else ""
         print(f"\n>>> NEXT OBJECTIVE: {badge}{current['ident']} — {current['name']} <<<")
         for t in current['tasks'][:5]:
             print(f"  {t}")
-        print("\nAction: Implement this objective, then run 'python3 scripts/plan_manager.py mark-done <phase>'.")
+
+        if upcoming:
+            print("\nUpcoming Batches:")
+            for p in upcoming:
+                p_prefix = p['ident'][0].upper() if p['ident'] else ""
+                p_cat = PREFIX_LEGEND.get(p_prefix, "")
+                p_badge = f"[{p_cat}] " if p_cat else ""
+                print(f"  - {p_badge}{p['ident']} — {p['name']}")
+
+        print(f"\nNext Steps:")
+        print(f"  - Handoff / Plan Mode: /plan-handoff {current['ident']} (or 'python3 scripts/plan_manager.py handoff {current['ident']}')")
+        print(f"  - Mark Complete: python3 scripts/plan_manager.py mark-done {current['ident']} [--commit <sha>]")
     else:
         print("\n[ALL PHASES COMPLETE] Ready for final verification & PR submission.")
 
@@ -294,8 +312,17 @@ def cmd_next(plan: dict, contract: str = ""):
         print("All phases in active plan are marked complete.")
         return
     cur = remaining[0]
+    upcoming = remaining[1:4]
     print(f"## {cur['ident']}: {cur['name']}\n")
     print(cur['body'])
+    if upcoming:
+        print("\n### Next Batches in Pipeline:")
+        for p in upcoming:
+            p_prefix = p['ident'][0].upper() if p['ident'] else ""
+            p_cat = PREFIX_LEGEND.get(p_prefix, "")
+            p_badge = f"[{p_cat}] " if p_cat else ""
+            print(f"- {p_badge}{p['ident']}: {p['name']}")
+    print(f"\nNext Handoff: /plan-handoff {cur['ident']} (or 'python3 scripts/plan_manager.py handoff {cur['ident']}')")
     if contract:
         sys.path.insert(0, str(REPO_ROOT / "scripts"))
         from agent_contract import template
@@ -418,6 +445,15 @@ def cmd_handoff(plan: dict, git_info: dict, user_direction: str = "", handoff_di
         for t in current['tasks']:
             content.append(f"{t}")
         content.append("")
+
+        if len(remaining) > 1:
+            content.append("## 2b. Upcoming Batches in Pipeline")
+            for p in remaining[1:4]:
+                p_prefix = p['ident'][0].upper() if p['ident'] else ""
+                p_cat = PREFIX_LEGEND.get(p_prefix, "")
+                p_badge = f"[{p_cat}] " if p_cat else ""
+                content.append(f"- **{p['ident']}** {p_badge}: {p['name']}")
+            content.append("")
 
     content.append("## 3. Strict Context Budget & Read Policy")
     content.append("- **Self-Contained Plan**: Do NOT run broad `ls`, find commands, or `cat` entire source files.")

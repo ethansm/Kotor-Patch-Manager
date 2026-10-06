@@ -28,6 +28,32 @@ class TestPlanManager(unittest.TestCase):
         self.assertIn("branch", data)
         self.assertIn("progress", data)
         self.assertIn("current_phase", data)
+        self.assertIn("upcoming_phases", data)
+        self.assertIn("next_handoff", data)
+
+    def test_resume_upcoming_batches_text(self):
+        """Verify resume text output shows upcoming batches and next handoff step."""
+        table_plan = """# Pipeline Plan
+| Id | Batch | Status |
+|---|---|---|
+| M1 | Init | TODO |
+| M2 | Build | TODO |
+| M3 | Test | TODO |
+"""
+        with tempfile.NamedTemporaryFile("w", suffix="_plan.md", delete=False) as fp:
+            fp.write(table_plan)
+            tmp_path = Path(fp.name)
+
+        try:
+            res = self.run_cli("--plan", str(tmp_path), "resume")
+            self.assertEqual(res.returncode, 0, f"Stderr: {res.stderr}")
+            self.assertIn("Upcoming Batches:", res.stdout)
+            self.assertIn("M2 — Build", res.stdout)
+            self.assertIn("M3 — Test", res.stdout)
+            self.assertIn("Next Steps:", res.stdout)
+            self.assertIn("/plan-handoff M1", res.stdout)
+        finally:
+            tmp_path.unlink()
 
     def test_table_plan_parsing(self):
         """Verify parsing of markdown table plans (e.g. doc 24)."""
@@ -115,5 +141,20 @@ class TestPlanManager(unittest.TestCase):
         finally:
             tmp_path.unlink()
 
+    def test_handoff_long_direction_text(self):
+        """Verify handoff does not crash with OSError when passed long direction text >255 chars."""
+        table_plan = "# Test Plan\n| Id | Batch | Status |\n|---|---|---|\n| M1 | Init | TODO |\n"
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_root = Path(tmpdir)
+            tmp_plan = tmp_root / "test_plan.md"
+            tmp_plan.write_text(table_plan)
+            long_prompt = "next plan should focus on reviewing our kotor2 skills and finding better prompts, techniques, strategies or scripts " * 5
+            res = self.run_cli("--plan", str(tmp_plan), "handoff", long_prompt, "--handoff-dir", str(tmp_root))
+            self.assertEqual(res.returncode, 0, f"Stderr: {res.stderr}")
+            h_path = tmp_root / "session_handoff.md"
+            self.assertTrue(h_path.exists())
+            self.assertIn("reviewing our kotor2 skills", h_path.read_text())
+
 if __name__ == "__main__":
     unittest.main()
+

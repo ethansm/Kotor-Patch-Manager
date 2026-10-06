@@ -2,6 +2,7 @@
 """luo_scenario.py - apply a [scenario.<id>.config] table from tests/luo_scenarios/saves.toml to the game-dir
 levelup_override.ini / levelup_playthroughs.ini (Phase 6b M2).
 
+  list    [--toml FILE] [--json]                            list available scenario ids
   plan    <id> [--guid gXXXXXXXX] [--game-dir DIR]          print the unified diff that apply would make
   apply   <id> [--guid ..] [--game-dir DIR] --yes           back up, write, print the diff (game must be closed)
   restore [--game-dir DIR] [--yes]                          put the latest backup back
@@ -289,21 +290,38 @@ def cmd_status(a):
         print(f"  {n}: {'matches' if cur == st['written_sha256'][n] else 'DIFFERS from'} what the scenario wrote")
 
 
+def cmd_list(a):
+    with open(a.toml, "rb") as f:
+        data = tomllib.load(f)
+    scenarios = data.get("scenario", {})
+    if getattr(a, "json", False):
+        print(json.dumps(list(scenarios.keys())))
+        return
+    for sid in sorted(scenarios.keys()):
+        desc = scenarios[sid].get("description", "")
+        if desc:
+            print(f"{sid:12s} {desc}")
+        else:
+            print(sid)
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest="cmd", required=True)
-    for name in ("plan", "apply", "restore", "status"):
+    for name in ("plan", "apply", "restore", "status", "list"):
         s = sub.add_parser(name)
         if name in ("plan", "apply"):
             s.add_argument("scenario")
             s.add_argument("--guid")
         if name in ("apply", "restore"):
             s.add_argument("--yes", action="store_true")
+        if name == "list":
+            s.add_argument("--json", action="store_true")
         s.add_argument("--game-dir", default=DEFAULT_GAME_DIR)
         s.add_argument("--toml", default=DEFAULT_TOML)
     a = p.parse_args(argv)
     try:
-        return {"plan": cmd_plan, "apply": cmd_apply, "restore": cmd_restore, "status": cmd_status}[a.cmd](a) or 0
+        return {"plan": cmd_plan, "apply": cmd_apply, "restore": cmd_restore, "status": cmd_status, "list": cmd_list}[a.cmd](a) or 0
     except Err as e:
         print("error:", e, file=sys.stderr)
         return 1

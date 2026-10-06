@@ -2,13 +2,17 @@
 """LevelUpOverride live-log checker (Phase 6b M4). Python 3.12, stdlib only; reads the log, never writes anything.
 
 Usage:
-    luo_log_check.py [--log PATH] [--from LINE] [--to LINE] [--scenario ID] [--scenarios-file PATH]
+    luo_log_check.py [--log PATH] [--from LINE] [--to LINE] [--new] [--no-advance] [--state PATH]
+                     [--scenario ID] [--scenarios-file PATH]
                      [--expect-crc HEX|DLLPATH] [--expect-version X.Y.Z] [--table PATH] [--json]
 
   --log        default ~/.local/share/Steam/steamapps/common/Knights of the Old Republic II/levelup_override_log.txt
                (C++ LogName = "levelup_override_log.txt", LevelUpOverride.cpp:120; the previous log rotates to
                levelup_override_log.old.txt). 1-based line numbers; --from default 1, --to default end of file.
                The whole file is parsed (so CONFIG state set before --from is known); verdicts use only lines in range.
+  --new        analyze only lines added since the last bookmark, then advance the bookmark.
+  --no-advance with --new: do not advance the bookmark.
+  --state      path to bookmark file (default: ~/.cache/kotor2_logs/bookmarks.json).
   --scenario   id in tests/luo_scenarios/saves.toml (default --scenarios-file; the file is optional). Format (owned by
                that file's header): [scenario.<id>] title/status/v_items, [scenario.<id>.expect] events = [regex...] must each
                match some line in range, absent = [regex...] must match none. Regexes are re.search()ed against the raw line
@@ -43,7 +47,25 @@ REPO = HERE.parent
 DEFAULT_LOG = Path.home() / ".local/share/Steam/steamapps/common/Knights of the Old Republic II/levelup_override_log.txt"
 DEFAULT_SCENARIOS = REPO / "tests/luo_scenarios/saves.toml"
 DEFAULT_TABLE = REPO / "research/companion_levelup/runtime/levelup_paths.ini"
+DEFAULT_STATE = Path.home() / ".cache/kotor2_logs/bookmarks.json"
 SIM_PATH = REPO / "research/companion_levelup/simulate_rewrite.py"
+
+
+def load_bookmarks(path: Path) -> dict:
+    if not path.is_file():
+        return {}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def save_bookmarks(path: Path, data: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, sort_keys=True)
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 # V checklist rule table (edit here). PASS rule / FAIL rule / NOT-EXERCISED rule.
@@ -618,8 +640,11 @@ def format_report(r):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--log", default=str(DEFAULT_LOG))
-    ap.add_argument("--from", dest="lo", type=int, default=1)
+    ap.add_argument("--from", dest="lo", type=int, default=None)
     ap.add_argument("--to", dest="hi", type=int, default=None)
+    ap.add_argument("--new", action="store_true", help="analyze only lines after this log's bookmark, then advance it")
+    ap.add_argument("--no-advance", action="store_true", help="with --new: do not move the bookmark")
+    ap.add_argument("--state", default=str(DEFAULT_STATE), help="bookmark file (default ~/.cache/kotor2_logs/bookmarks.json)")
     ap.add_argument("--scenario")
     ap.add_argument("--scenarios-file", default=str(DEFAULT_SCENARIOS))
     ap.add_argument("--expect-crc", help="8-hex crc32 of the installed DLL, or the DLL path (crc computed here); compared with the banner crc32=")
@@ -627,12 +652,52 @@ def main(argv=None):
     ap.add_argument("--table", default=str(DEFAULT_TABLE), help="levelup_paths.ini for the replay (default: repo runtime table)")
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args(argv)
+
+    log_path = Path(a.log).resolve()
     try:
-        lines = Path(a.log).read_text(errors="replace").splitlines()
+        lines = log_path.read_text(errors="replace").splitlines()
     except OSError as ex:
         print("cannot read log: %s" % ex, file=sys.stderr)
         return 2
-    r = run(lines, a.lo, a.hi, a.scenario, a.scenarios_file, a.expect_crc, a.expect_version, a.table)
+
+    lo = a.lo
+    total = len(lines)
+    state_file = Path(os.path.expanduser(a.state))
+    key = str(log_path)
+    bookmarks = {}
+
+    if a.new:
+        bookmarks = load_bookmarks(state_file)
+        bm = bookmarks.get(key)
+        try:
+            st = log_path.stat()
+        except OSError:
+            st = None
+        if lo is None:
+            if bm and st:
+                if bm.get("inode") != st.st_ino or st.st_size < bm.get("size", 0) or bm.get("line", 0) > total:
+                    lo = 1
+                else:
+                    lo = bm.get("line", 0) + 1
+            else:
+                lo = 1
+    elif lo is None:
+        lo = 1
+
+    r = run(lines, lo, a.hi, a.scenario, a.scenarios_file, a.expect_crc, a.expect_version, a.table)
+
+    if a.new and not a.no_advance:
+        try:
+            st = log_path.stat()
+            bookmarks[key] = {
+                "inode": st.st_ino,
+                "size": st.st_size,
+                "line": total
+            }
+            save_bookmarks(state_file, bookmarks)
+        except OSError:
+            pass
+
     print(json.dumps(r, indent=1, default=str) if a.json else format_report(r))
     return r["exit"]
 

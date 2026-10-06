@@ -171,6 +171,53 @@ class Cli(unittest.TestCase):
             self.assertEqual(L.main(["--log", str(FX / "run4b.txt"), "--from", "1"]), 0)
             self.assertEqual(L.main(["--log", str(FX / "synth_fail.txt"), "--json"]), 1)
 
+    def test_bookmark_new_and_advance(self):
+        import contextlib
+        import io
+        import tempfile
+        d = tempfile.mkdtemp()
+        try:
+            log_p = Path(d) / "test_log.txt"
+            state_p = Path(d) / "bm.json"
+            log_p.write_text("line 1\nline 2\nline 3\n")
+
+            with contextlib.redirect_stdout(io.StringIO()):
+                rc = L.main(["--log", str(log_p), "--new", "--state", str(state_p), "--json"])
+                self.assertEqual(rc, 0)
+
+            # Check that state was written with line 3
+            bm = L.load_bookmarks(state_p)
+            self.assertEqual(bm[str(log_p.resolve())]["line"], 3)
+
+            # Append two lines
+            with open(log_p, "a") as f:
+                f.write("line 4\nline 5\n")
+
+            # Run with --new --no-advance
+            with contextlib.redirect_stdout(io.StringIO()) as out:
+                rc = L.main(["--log", str(log_p), "--new", "--no-advance", "--state", str(state_p), "--json"])
+                self.assertEqual(rc, 0)
+                import json
+                data = json.loads(out.getvalue())
+                self.assertEqual(data["range"], [4, 5])
+
+            # Verify bookmark was NOT advanced
+            bm2 = L.load_bookmarks(state_p)
+            self.assertEqual(bm2[str(log_p.resolve())]["line"], 3)
+
+            # Run with --new (should advance)
+            with contextlib.redirect_stdout(io.StringIO()) as out:
+                rc = L.main(["--log", str(log_p), "--new", "--state", str(state_p), "--json"])
+                self.assertEqual(rc, 0)
+                data = json.loads(out.getvalue())
+                self.assertEqual(data["range"], [4, 5])
+
+            bm3 = L.load_bookmarks(state_p)
+            self.assertEqual(bm3[str(log_p.resolve())]["line"], 5)
+        finally:
+            import shutil
+            shutil.rmtree(d, ignore_errors=True)
+
 
 if __name__ == "__main__":
     unittest.main()

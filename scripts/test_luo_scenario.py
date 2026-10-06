@@ -123,6 +123,17 @@ class T(unittest.TestCase):
             rc, _, err = self.run_cli("plan", sid, "--guid", "gaaaaaaaa", toml=REAL_TOML)
             self.assertEqual(rc, 0, (sid, err))
 
+    def test_list_scenarios(self):
+        rc, out, _ = self.run_cli("list")
+        self.assertEqual(rc, 0)
+        self.assertIn("T_none", out)
+        self.assertIn("T_save", out)
+
+        rc, out_json, _ = self.run_cli("list", "--json")
+        self.assertEqual(rc, 0)
+        self.assertIn("T_none", out_json)
+
 
 if __name__ == "__main__":
     unittest.main()
+
