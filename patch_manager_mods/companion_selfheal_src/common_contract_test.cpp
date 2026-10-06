@@ -22,6 +22,7 @@
 #include "SelfHealUi.h"
 #include "ActQueue.h"
 #include "EmbedTex.h"
+#include "HudKit.h"
 #include "check.h"
 #include <sys/mman.h>
 #include <string.h>
@@ -309,14 +310,19 @@ int main() {
         HCHECK("filewatch::atomicWrite again (bak exists) works; accept() makes our own write quiet", filewatch::atomicWrite(path.c_str(), "a=2\n", true) && (filewatch::accept(rp, path.c_str()), !filewatch::changed(rp, path.c_str(), 9000)));
         remove(path.c_str()); remove((path + ".bak").c_str());
     }
-    {   // EmbedTex.h: the embedded cross + 8 ring frames + disc (CompanionSelfHeal.cpp namespace tex)
+    {   // EmbedTex.h: the embedded cross + 8 ring frames, plus the shared HUD kit frame / disc (CompanionSelfHeal.cpp namespace tex)
         unsigned char tga[18 + 4] = {0}; tga[2] = 2; tga[12] = 1; tga[14] = 1; tga[16] = 32;   // 1x1 uncompressed 32-bit
         embtex::TgaInfo ti;
         HCHECK("EmbedTex.h tgaInspect accepts the generated uncompressed 32-bit TGA (18 byte header, w/h little endian)", embtex::tgaInspect(tga, sizeof tga, &ti) == embtex::TGA_OK && ti.w == 1 && ti.h == 1 && ti.off == 18 && ti.bytes == 4);
         HCHECK("EmbedTex.h tgaInspect rejects a truncated pixel block", embtex::tgaInspect(tga, sizeof tga - 1, &ti) == embtex::TGA_TRUNCATED);
         tga[16] = 24;
         HCHECK("EmbedTex.h tgaInspect rejects non-32-bit TGAs", embtex::tgaInspect(tga, sizeof tga, &ti) == embtex::TGA_NOT_UNCOMPRESSED32);
-        HCHECK("EmbedTex.h slot table holds all 10 mod textures (cross + 8 ring + disc)", embtex::MaxTex >= 10);
+        HCHECK("EmbedTex.h slot table holds all 9 mod textures (cross + 8 ring) plus the 5 HUD kit textures", embtex::MaxTex >= 9 + hudkit::Count);
+        HCHECK("hudkit::ensure() -> bool, hudkit::image(int) / frame(bool) / disc() -> void*, hudkit::resref(int) -> const char*",
+               static_cast<bool(*)()>(&hudkit::ensure) != nullptr && static_cast<void*(*)(int)>(&hudkit::image) != nullptr && static_cast<void*(*)(bool)>(&hudkit::frame) != nullptr &&
+               static_cast<void*(*)()>(&hudkit::disc) != nullptr && static_cast<const char*(*)(int)>(&hudkit::resref) != nullptr);
+        HCHECK("hudkit ids Frame/FrameHi = 0/1, Disc = 4, kit_frame / kit_frame_hi / kit_disc resrefs, 5 textures",
+               hudkit::Frame == 0 && hudkit::FrameHi == 1 && hudkit::Disc == 4 && hudkit::Count == 5 && !strcmp(hudkit::resref(hudkit::Frame), "kit_frame") && !strcmp(hudkit::resref(hudkit::FrameHi), "kit_frame_hi") && !strcmp(hudkit::resref(hudkit::Disc), "kit_disc"));
         HCHECK("EmbedTex.h CAurTextureBasic layout: object 0xF4, pixels +0x44, GL name +0x58, w +0x68, constructed +0xE4, missing +0xE5",
                embtex::ObjSize == 0xF4 && embtex::Tex_Pixels == 0x44 && embtex::Tex_Uploaded == 0x58 && embtex::Tex_W == 0x68 && embtex::Tex_Constructed == 0xE4 && embtex::Tex_Missing == 0xE5);
         const embtex::Tex set[1] = {{"csh_pin", tga, sizeof tga}};

@@ -34,6 +34,7 @@
 #include "SelfHealUi.h"
 #include "ActQueue.h"
 #include "EmbedTex.h"
+#include "HudKit.h"
 
 KP_LOG_PATCH("companion-selfheal");
 
@@ -58,7 +59,7 @@ constexpr int Hud_Manager = 0x1C, Mgr_Panels = 0x88, Mgr_PanelCount = 0x8C, Mgr_
 constexpr int Cr_Tag = 0x18, PanelIgnoredByInput = 0x600;
 // Panels that do not block gameplay hotkeys (RTTI vtables): messages, fade, pause, auto-pause
 constexpr uintptr_t PanelWhitelist[] = { gameaddr::MessagesPanelVtable, gameaddr::FadePanelVtable, gameaddr::PausePanelVtable, gameaddr::AutoPausePanelVtable };
-constexpr int NWidgets = 14;
+constexpr int NWidgets = 16;
 constexpr DWORD CacheMs = 250;
 constexpr DWORD DebounceMs = 2000, PostMs = 10000, PostStepMs = 500;
 
@@ -380,17 +381,16 @@ bool saveIni(const std::string& key, const shui::CompCfg& c) {
     return ok;
 }
 
-// ---- embedded textures (cross + 8 ring frames) ----
+// ---- embedded textures (cross + 8 ring frames; the kit frame + disc come from the shared HudKit.h) ----
 // Copy of hotbar embedded-texture recipe; Common candidate (19b section D).
 // A CAurTextureBasic registered under our name (like the engine's own "NormCubeMap") with the decoded pixels already in place and +0xE4
 // "constructed" set, so the engine never asks the resource manager for it; the texture tick uploads it and frees the buffer.
 namespace tex {
 #include "SelfHealTextures.inc"
-constexpr int DiscIdx = 1 + shui::kRingFrames;
-constexpr int Count = 2 + shui::kRingFrames;   // csh_cross, csh_ring0..7, csh_disc
+constexpr int Count = 1 + shui::kRingFrames;   // csh_cross, csh_ring0..7 (the backing disc is hudkit kit_disc)
 bool g_texInit = false;
-void* g_crossImg = nullptr; void* g_discImg = nullptr; void* g_ringImg[shui::kRingFrames] = {};
-static_assert(sizeof kSelfHealTextures / sizeof kSelfHealTextures[0] == Count, "csh_cross + csh_ring0..7 + csh_disc");
+void* g_crossImg = nullptr; void* g_ringImg[shui::kRingFrames] = {};
+static_assert(sizeof kSelfHealTextures / sizeof kSelfHealTextures[0] == Count, "csh_cross + csh_ring0..7");
 
 void logLine(const char* fmt, ...) {   // embtex::g_log sink
     char buf[256]; va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
@@ -401,9 +401,10 @@ void ensureTextures() {   // once per process; the textures outlive every HUD (n
     g_texInit = true;
     embtex::g_log = logLine;
     embtex::ensure(kSelfHealTextures, Count);   // create + fill + queue (idempotent); heal() below refills after a GL reset
+    hudkit::ensure();                           // shared kit frame + disc, same pattern
     for (int i = 0; i < Count; ++i) {
         void* im = guikit::imageFor(kSelfHealTextures[i].resref);   // a pooled GUI handle that is never released keeps the texture alive
-        if (i == 0) g_crossImg = im; else if (i == DiscIdx) g_discImg = im; else g_ringImg[i - 1] = im;
+        if (i == 0) g_crossImg = im; else g_ringImg[i - 1] = im;
     }
 }
 void healTextures() { embtex::heal(); }   // every frame (GL reset + missing rebuild, 20-refill give-up per texture; DB lesson 290)
@@ -423,7 +424,7 @@ struct W {
     std::string tip;
     bool hover = false;
 };
-enum { W_Disc0 = 0, W_Disc1, W_Btn0, W_Btn1, W_PopBg, W_Auto, W_HpM, W_HpP, W_KeepM, W_KeepP, W_HpVal, W_KeepVal, W_Ring0, W_Ring1 };   // discs first (under the buttons), rings last: appended after the buttons, drawn on top
+enum { W_Disc0 = 0, W_Disc1, W_Frame0, W_Frame1, W_Btn0, W_Btn1, W_PopBg, W_Auto, W_HpM, W_HpP, W_KeepM, W_KeepP, W_HpVal, W_KeepVal, W_Ring0, W_Ring1 };   // discs first (under the buttons), then the kit frames (under the crosses), rings last: appended after the buttons, drawn on top
 W g_w[NWidgets];
 
 void wRect(W& w, const shui::Rect& r) { if (!w.c || (w.rectSet && w.r == r)) return; if (guikit::setRect(w.c, r.x, r.y, r.w, r.h)) { w.r = r; w.rectSet = true; } }
@@ -458,10 +459,23 @@ bool wRing(W& w, const shui::Look& L) {
     if (w.frame != L.ringFrame) { float rgb[3] = { shui::kRingR, shui::kRingG, shui::kRingB }; if (!guikit::setFill(w.c, img, rgb)) return false; w.frame = L.ringFrame; }
     return true;
 }
-// Disc backdrop: csh_disc untinted (change-gated). False = no image / fill refused (caller hides the disc).
+// Disc backdrop: hudkit::disc() (kit_disc) untinted (change-gated). False = no image / fill refused (caller hides the disc).
 bool wDisc(W& w) {
-    if (!w.c || !tex::g_discImg) return false;
-    if (!w.filled) { float rgb[3] = { 1.f, 1.f, 1.f }; if (!guikit::setFill(w.c, tex::g_discImg, rgb)) return false; w.filled = true; }
+    void* img = w.c ? hudkit::disc() : nullptr;
+    if (!img) return false;
+    if (!w.filled) { float rgb[3] = { 1.f, 1.f, 1.f }; if (!guikit::setFill(w.c, img, rgb)) return false; w.filled = true; }
+    return true;
+}
+// Button background: hudkit::frame(hover) (kit_frame / kit_frame_hi) untinted, under the cross (change-gated on hover; w.frame = 0 / 1).
+// False = no image / fill refused (caller hides the frame; the cross and disc still draw).
+bool wFrame(W& w, bool hover) {
+    if (!w.c) return false;
+    const int want = hover ? 1 : 0;
+    if (w.frame == want) return true;
+    void* img = hudkit::frame(hover);
+    float rgb[3] = { 1.f, 1.f, 1.f };
+    if (!img || !guikit::setFill(w.c, img, rgb)) return false;
+    w.frame = want;
     return true;
 }
 void wTip(W& w, const std::string& t) { if (!w.c || w.tip == t || !guitip::nativeSupported()) return; if (guitip::setNative(w.c, t.c_str())) w.tip = t; }
@@ -698,11 +712,15 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
         if (c.btn.w <= 0) c.st = shui::BtnState::Hidden;
         W& ring = g_w[W_Ring0 + mi - 1];
         W& disc = g_w[W_Disc0 + mi - 1];
-        if (c.st == shui::BtnState::Hidden) { wShow(b, false); wShow(ring, false); wShow(disc, false); if (g_popMi == mi) g_popMi = 0; continue; }
+        W& frm = g_w[W_Frame0 + mi - 1];
+        if (c.st == shui::BtnState::Hidden) { wShow(b, false); wShow(ring, false); wShow(disc, false); wShow(frm, false); if (g_popMi == mi) g_popMi = 0; continue; }
         wRect(b, c.btn);
         wRect(disc, shui::ringRect(c.btn));
         wVis(disc, wDisc(disc));
         const shui::Look L = shui::lookFor(c.st, c.cfg.autoOn, now);
+        wRect(frm, c.btn);   // kit frame behind the cross (hover = last frame's cursor test), dimmed with the cross
+        wVis(frm, wFrame(frm, b.hover));
+        if (frm.c) wAlpha(frm, L.alpha);
         wIcon(b, mi, L);
         if (L.ring) {
             wRect(ring, shui::ringRect(c.btn));
@@ -820,7 +838,7 @@ uintptr_t makeLabel(uintptr_t panel, const char* tmpl, const char* text, bool fo
     return c;
 }
 
-// 12 widgets while the HUD layout is still open (before StopLoadFromLayout).
+// 16 widgets while the HUD layout is still open (before StopLoadFromLayout).
 void buildWidgets(uintptr_t panel) {
     for (W& w : g_w) w = W();
     tex::ensureTextures();
@@ -834,11 +852,13 @@ void buildWidgets(uintptr_t panel) {
         uintptr_t c = makeLabel(panel, tmpl, text, font, &why);
         if (!c && !strcmp(tmpl, "LBL_MOULDING3")) { c = makeLabel(panel, "LBL_QUEUE1", text, font, &why); if (c) whys += std::string(name) + ":moulding3 fallback ";}
         g_w[idx].c = c; g_w[idx].txt = text ? text : "";
-        if ((idx >= W_Ring0 || idx <= W_Disc1) && c) { g_w[idx].vis = 0; g_w[idx].clk = 0; }   // discs + rings start hidden + click-through and stay non-clickable
+        if ((idx >= W_Ring0 || idx <= W_Frame1) && c) { g_w[idx].vis = 0; g_w[idx].clk = 0; }   // discs + frames + rings start hidden + click-through and stay non-clickable
         if (c) ++n; else whys += std::string(name) + ":" + std::to_string(why) + " ";
     };
     add(W_Disc0, "LBL_QUEUE1", nullptr, false, "disc0");   // before the buttons: z-order disc < button < ring
     add(W_Disc1, "LBL_QUEUE1", nullptr, false, "disc1");
+    add(W_Frame0, "LBL_QUEUE1", nullptr, false, "frame0");   // z-order disc < frame < button (cross) < ring
+    add(W_Frame1, "LBL_QUEUE1", nullptr, false, "frame1");
     add(W_Btn0, "LBL_QUEUE1", "+", true, "btn0");   // "+" = the fallback glyph until the cross fill is applied
     add(W_Btn1, "LBL_QUEUE1", "+", true, "btn1");
     add(W_PopBg, "LBL_MOULDING3", nullptr, false, "popbg");

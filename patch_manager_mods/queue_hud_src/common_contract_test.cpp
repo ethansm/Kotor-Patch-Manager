@@ -19,6 +19,7 @@
 #include "HudHost.h"
 #include "SelfHealUi.h"
 #include "EmbedTex.h"
+#include "HudKit.h"
 #include "GameAddr.h"
 #include "check.h"
 #include <sys/mman.h>
@@ -233,7 +234,14 @@ int main() {
       QCHECK("k2hud::Client::poll() (the capture-hook retry) connects on its first call and registers nothing when nothing was added", (hn.poll(), hn.connected) && g_hudRegs == 1); }
     QEQ("K2PS_FRAME_BEGIN is phase 2 (the Cancel click / texture heal tick)", K2PS_FRAME_BEGIN, 2);
     QCHECK("embtex::ensure(const Tex*, int) -> bool and embtex::heal() keep their signatures", static_cast<bool(*)(const embtex::Tex*, int)>(&embtex::ensure) != nullptr && static_cast<void(*)()>(&embtex::heal) != nullptr);
-    QCHECK("embtex::Tex is {resref, data, size} (QueueHudTextures.inc initialisers)", offsetof(embtex::Tex, resref) == 0 && sizeof(embtex::Tex) == sizeof(void*) * 2 + sizeof(unsigned) + (sizeof(void*) == 8 ? 4 : 0));
+    QCHECK("embtex::Tex is {resref, data, size} (HudKitTextures.inc initialisers)", offsetof(embtex::Tex, resref) == 0 && sizeof(embtex::Tex) == sizeof(void*) * 2 + sizeof(unsigned) + (sizeof(void*) == 8 ? 4 : 0));
+    QCHECK("hudkit::ensure() -> bool, hudkit::image(int) / frame(bool) / cancel(bool) -> void*, hudkit::resref(int) -> const char*",
+           static_cast<bool(*)()>(&hudkit::ensure) != nullptr && static_cast<void*(*)(int)>(&hudkit::image) != nullptr && static_cast<void*(*)(bool)>(&hudkit::frame) != nullptr &&
+           static_cast<void*(*)(bool)>(&hudkit::cancel) != nullptr && static_cast<const char*(*)(int)>(&hudkit::resref) != nullptr);
+    QCHECK("hudkit ids Frame/FrameHi/Cancel/CancelHi = 0..3 (tex::Frame.. aliases), 5 kit textures, kit_frame / kit_cancel_hi resrefs",
+           hudkit::Frame == 0 && hudkit::FrameHi == 1 && hudkit::Cancel == 2 && hudkit::CancelHi == 3 && hudkit::Count == 5 && !strcmp(hudkit::resref(hudkit::Frame), "kit_frame") && !strcmp(hudkit::resref(hudkit::CancelHi), "kit_cancel_hi"));
+    QCHECK("the 5 kit textures fit the embtex slot table", embtex::MaxTex >= hudkit::Count);
+    QCHECK("shui::buttonRect(Rect) -> Rect: the slim strip icon size is its width (24 on the live 47x96 vit)", shui::buttonRect(shui::Rect{ 3671, 1285, 47, 96 }).w == 24);
     QCHECK("embtex::g_log is a printf-style sink pointer (tex::logLine)", static_cast<void (**)(const char*, ...)>(&embtex::g_log) != nullptr);
     QCHECK("guikit::createLabelFromTemplate(panel, template, int* why, uint32_t* badVt) -> uintptr_t", static_cast<uintptr_t(*)(uintptr_t, const char*, int*, uint32_t*)>(&guikit::createLabelFromTemplate) != nullptr);
     QCHECK("guikit::appendToPanel(panel, ctl) -> bool", static_cast<bool(*)(uintptr_t, uintptr_t)>(&guikit::appendToPanel) != nullptr);

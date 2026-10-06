@@ -7,7 +7,7 @@ Writes patch_manager_mods/companion_selfheal_src/SelfHealTextures.inc: one uncom
                            (~70 deg, alpha 255 at the head fading to 0 along the tail) + soft sparkle dot at the head.
                            ANGLE CONVENTION: 0 deg = up (12 o'clock), increasing clockwise; the head of frame k is at
                            k*45 deg and the tail trails counter-clockwise behind it. All white; the engine tints gold.
-  csh_disc                 48x48 backing disc (0,0,0,175) with 2 px (10,96,80) rim, radius = ring radius, drawn untinted (LAST entry)
+  (the backing disc moved to the shared HUD kit: scripts/gen_hud_kit_textures.py -> _shared_src/HudKitTextures.inc, kit_disc)
 Deterministic: fixed-seed noise only, no timestamps. Re-run after changing the art, then rebuild the patch.
 
 The .inc uses embtex::Tex (EmbedTex.h) and the names kSelfHealTextures / kSelfHealTextureCount.
@@ -25,13 +25,11 @@ INC = REPO / "patch_manager_mods/companion_selfheal_src/SelfHealTextures.inc"
 CROSS = "csh_cross"
 RING_FRAMES = 8
 RING = tuple(f"csh_ring{k}" for k in range(RING_FRAMES))
-DISC = "csh_disc"
-ALL_NAMES = (CROSS,) + RING + (DISC,)   # disc appended last so existing indices stay valid
+ALL_NAMES = (CROSS,) + RING
 RING_SIZE, CROSS_SIZE = 48, 32
 CROSS_SPAN = 22   # tip-to-tip arm span of the cross glyph, px
 RING_RADIUS, RING_WIDTH = 21.0, 2.5
 ARC_DEG = 70.0
-DISC_RADIUS, DISC_RIM = RING_RADIUS, 2.0
 
 
 def make_cross(out: Path) -> list[Path]:
@@ -90,30 +88,6 @@ def make_cross(out: Path) -> list[Path]:
     return [p]
 
 
-def make_disc(out: Path) -> list[Path]:
-    """Dark backing disc under the cross: (0,0,0,175) fill, 2 px (10,96,80) rim, radius == RING_RADIUS, untinted."""
-    from PIL import Image
-    S, N = 8, RING_SIZE
-    c = N / 2
-    im = Image.new("RGBA", (N, N), (0, 0, 0, 0))
-    px = im.load()
-    for y in range(N):
-        for x in range(N):
-            ar = ag = ab = aa = 0.0
-            for sy in range(S):
-                for sx in range(S):
-                    r = math.hypot(x + (sx + 0.5) / S - c, y + (sy + 0.5) / S - c)
-                    if r > DISC_RADIUS:
-                        continue
-                    col, al = ((10, 96, 80), 255.0) if r > DISC_RADIUS - DISC_RIM else ((0, 0, 0), 175.0)
-                    ar += col[0] * al; ag += col[1] * al; ab += col[2] * al; aa += al
-            if aa:
-                px[x, y] = (int(round(ar / aa)), int(round(ag / aa)), int(round(ab / aa)), int(round(aa / (S * S))))
-    p = out / f"{DISC}.tga"
-    im.save(p, format="TGA")
-    return [p]
-
-
 def ring_alpha(x: float, y: float, k: int) -> int:
     """Alpha (0..255) of ring frame k at pixel-space point (x, y)."""
     c = RING_SIZE / 2
@@ -154,7 +128,7 @@ def make_ring_textures(out: Path) -> list[Path]:
 
 
 def make_all(out: Path) -> list[Path]:
-    return make_cross(out) + make_ring_textures(out) + make_disc(out)
+    return make_cross(out) + make_ring_textures(out)
 
 
 def render_inc(blobs) -> str:

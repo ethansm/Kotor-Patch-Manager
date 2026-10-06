@@ -17,6 +17,7 @@
 #pragma once
 #include <stdint.h>
 #include <string.h>
+#include "SelfHealUi.h"   // shui::buttonRect: the slim left-side icon size is the selfheal button side
 
 namespace qh {
 
@@ -170,10 +171,19 @@ enum : int { kSideLeft = 0, kSideAbove = 1, kSideBelow = 2 };
 constexpr int kStripGap = 2;      // px between icons, and between the strip and the card
 constexpr int kStripMinIcon = 12;
 
-// Icon edge in px: the configured size, or auto = 40% (left) / 60% (above, below) of the vit-rect height, rounded, at least kStripMinIcon.
+// Icon edge in px: the configured size, or auto. Auto, left side ("slim", doc 30): the selfheal button side, shui::buttonRect(vit).w
+// (16..24 px = h/4; 24 px on the live 47x96 small vit), so the row is as tall as the button beside it. A vit buttonRect rejects (a leader-width
+// vit, h > 400) falls back to 40% of the vit height. Above / below: 60% of the vit height. Rounded, at least kStripMinIcon.
 inline int stripIconSize(Rect vit, const Config& c) {
     if (c.stripIconPx > 0) return c.stripIconPx;
-    const int s = c.stripSide == kSideLeft ? (vit.h * 4 + 5) / 10 : (vit.h * 6 + 5) / 10;
+    int s = 0;
+    if (c.stripSide == kSideLeft) {
+        // x is irrelevant to the side; a far-right x keeps buttonRect's "would start left of the screen" reject out of the way.
+        s = shui::buttonRect(shui::Rect{ 1 << 20, vit.y, vit.w, vit.h }).w;
+        if (s <= 0) s = (vit.h * 4 + 5) / 10;
+    } else {
+        s = (vit.h * 6 + 5) / 10;
+    }
     return s < kStripMinIcon ? kStripMinIcon : s;
 }
 

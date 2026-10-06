@@ -470,6 +470,16 @@ void testStripGeometry() {
     KT_CHECK_EQ(stripIconSize(Rect{ 0, 0, 47, 41 }, c), 25);   // 24.6 -> 25
     KT_CHECK_EQ(stripIconSize(Rect{ 0, 0, 47, 24 }, c), 14);   // 14.4 rounds down (a round-half-up bias would give 15)
     c.stripIconPx = 20; KT_CHECK_EQ(stripIconSize(vit, c), 20); c.stripIconPx = 1; KT_CHECK_EQ(stripIconSize(vit, c), 1); c.stripIconPx = 0;
+    // slim left side (doc 30): auto size = the selfheal button side, whatever the vit x (a vit at x = 0 has no room for the button but the same side)
+    { Config l; l.stripSide = kSideLeft;
+      KT_CHECK_EQ(stripIconSize(Rect{ 3671, 1285, 47, 96 }, l), 24);   // live small card
+      KT_CHECK_EQ(stripIconSize(Rect{ 0, 0, 47, 96 }, l), 24);         // x does not matter
+      KT_CHECK_EQ(stripIconSize(Rect{ 100, 0, 47, 36 }, l), 16);       // button floor 16
+      KT_CHECK_EQ(stripIconSize(Rect{ 100, 0, 47, 80 }, l), 20);       // unclamped h/4
+      KT_CHECK_EQ(stripIconSize(Rect{ 100, 0, 47, 400 }, l), 24);      // button cap 24
+      KT_CHECK_EQ(stripIconSize(Rect{ 100, 0, 103, 208 }, l), 83);     // leader-width vit: buttonRect rejects -> old 40% of h (208 * 0.4 = 83.2)
+      l.stripIconPx = 30; KT_CHECK_EQ(stripIconSize(Rect{ 3671, 1285, 47, 96 }, l), 30);   // strip_icon_px still overrides
+      KT_CHECK_EQ(stripIconSize(Rect{ 3671, 1285, 47, 96 }, c), 58); }                      // above / below keep 60% of h
     // above: bottom edge 2px above the card top, left-aligned, 2px gap
     int n = stripRects(card, vit, 3, c, out);
     KT_CHECK_EQ(n, 3);
@@ -558,12 +568,13 @@ void testStripLeftLive() {
     Rect out[4];
     const Rect vit2{ 3671, 1285, 47, 96 }, card2{ 3711, 1285, 85, 85 }, vit3{ 3671, 1181, 47, 96 }, card3{ 3711, 1181, 85, 85 };
     const shui::Rect leaderVit{ 3511, 1386, 103, 208 }, leaderCard{ 3591, 1394, 191, 192 }, leaderForce{ 3762, 1386, 103, 208 };
-    KT_CHECK_EQ(stripIconSize(vit2, c), 38);                    // 96 * 0.4 = 38.4 -> 38
+    KT_CHECK_EQ(stripIconSize(vit2, c), 24);                    // slim: the selfheal button side, buttonRect(vit 47x96).w = 24 (was 96 * 0.4 -> 38)
+    KT_CHECK_EQ(stripIconSize(vit2, c), shui::buttonRect(shui::Rect{ vit2.x, vit2.y, vit2.w, vit2.h }).w);
     KT_CHECK_EQ(shui::stripReserve(shui::Rect{ vit2.x, vit2.y, vit2.w, vit2.h }), 38);                    // gap 6 + button 24 + ring overhang 6 + 2
     KT_CHECK_EQ(stripRects(card2, vit2, 1, c, out), 1);
-    KT_CHECK_EQ(out[0].x, 3671 - 38 - 38); KT_CHECK_EQ(out[0].y, 1285 + 29); KT_CHECK_EQ(out[0].w, 38);
+    KT_CHECK_EQ(out[0].x, 3671 - 38 - 24); KT_CHECK_EQ(out[0].y, 1285 + 36); KT_CHECK_EQ(out[0].w, 24);   // y centres 24 px on the 96 px bar
     KT_CHECK_EQ(stripRects(card2, vit2, 4, c, out), 4);
-    KT_CHECK_EQ(out[3].x + out[3].w, 3671 - 38); KT_CHECK_EQ(out[0].x, 3633 - 4 * 38 - 3 * 2);   // queue order left to right
+    KT_CHECK_EQ(out[3].x + out[3].w, 3671 - 38); KT_CHECK_EQ(out[0].x, 3633 - 4 * 24 - 3 * 2);   // queue order left to right
     const Rect* vits[] = { &vit2, &vit3 }; const Rect* cards[] = { &card2, &card3 };
     for (int k = 0; k < 2; ++k) {
         KT_CHECK_EQ(stripRects(*cards[k], *vits[k], 4, c, out), 4);
@@ -619,7 +630,7 @@ void testStripHudHostSlots() {
         KT_CHECK_EQ(qh::stripRects(card, vit, n, c, oldOut, 0, oldSelfHealReserve(vit)), n);
         KT_CHECK_EQ(qh::stripRects(card, vit, n, c, newOut, 0, slotReserve(st, vit, n, c)), n);
         for (int i = 0; i < n; ++i) { KT_CHECK_EQ(newOut[i].x, oldOut[i].x); KT_CHECK_EQ(newOut[i].y, oldOut[i].y); KT_CHECK_EQ(newOut[i].w, oldOut[i].w); }
-        KT_CHECK_EQ(newOut[0].x, vit.x - 38 - (n * 38 + (n - 1) * 2));   // the literal live value: 3633 - rowW
+        KT_CHECK_EQ(newOut[0].x, vit.x - 38 - (n * 24 + (n - 1) * 2));   // the literal live value: 3633 - rowW
     }
     // every bar height: the slot path is the old formula
     for (int h = 8; h <= 400; ++h) {
@@ -635,8 +646,8 @@ void testStripHudHostSlots() {
     hh::Strip alone;
     KT_CHECK_EQ(slotReserve(alone, vit, 2, c), 0);
     // stripRowWidth mirrors stripRects: clamped to strip_max / kMaxSlots, 0 for n <= 0
-    KT_CHECK_EQ(stripRowWidth(vit, 0, c), 0); KT_CHECK_EQ(stripRowWidth(vit, 9, c), 4 * 38 + 3 * 2);
-    c.stripMax = 2; KT_CHECK_EQ(stripRowWidth(vit, 4, c), 2 * 38 + 2);
+    KT_CHECK_EQ(stripRowWidth(vit, 0, c), 0); KT_CHECK_EQ(stripRowWidth(vit, 9, c), 4 * 24 + 3 * 2);
+    c.stripMax = 2; KT_CHECK_EQ(stripRowWidth(vit, 4, c), 2 * 24 + 2);
 }
 
 // ---- 0.3.0: kit frame + Cancel ----
@@ -699,8 +710,8 @@ void testStripCancel() {
         Rect icons[4];
         KT_CHECK_EQ(stripRects(*cards[k], *vits[k], n, c, icons, 3840), n);
         const Rect cr = stripCancelRect(icons, n, kSideLeft, 3840);
-        KT_CHECK_EQ(cr.w, 38); KT_CHECK_EQ(cr.h, 38); KT_CHECK_EQ(cr.y, icons[0].y);
-        KT_CHECK_EQ(icons[0].x - (cr.x + cr.w), 9);                  // gap = 38 / 4
+        KT_CHECK_EQ(cr.w, 24); KT_CHECK_EQ(cr.h, 24); KT_CHECK_EQ(cr.y, icons[0].y);
+        KT_CHECK_EQ(icons[0].x - (cr.x + cr.w), 6);                  // gap = 24 / 4
         for (int i = 0; i < n; ++i) KT_CHECK(!ov(cr, icons[i]));
         // clear of the real selfheal button + ring, the bars and cards
         const shui::Rect btn = shui::buttonRect(shui::Rect{ vits[k]->x, vits[k]->y, 47, vits[k]->h });
@@ -711,7 +722,7 @@ void testStripCancel() {
         for (const shui::Rect& o : { leaderVit, leaderCard, leaderForce }) KT_CHECK(!ov(cr, Rect{ o.x, o.y, o.w, o.h }));
     }
     { Rect icons[4]; stripRects(card2, vit2, 1, c, icons, 3840);
-      KT_CHECK(rectEq(stripCancelRect(icons, 1, kSideLeft, 3840), 3595 - 9 - 38, 1285 + 29, 38, 38)); }
+      KT_CHECK(rectEq(stripCancelRect(icons, 1, kSideLeft, 3840), 3609 - 6 - 24, 1285 + 36, 24, 24)); }
     // left: no room left of the row (x < 0) -> no cancel, never moved into the selfheal reserve
     { const Rect icons[1] = { Rect{ 20, 100, 38, 38 } };
       KT_CHECK(rectEq(stripCancelRect(icons, 1, kSideLeft, 3840), 0, 0, 0, 0)); }

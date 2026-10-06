@@ -56,6 +56,7 @@ GENERATED_INC = {
     "patch_manager_mods/inventory_3d_viewport_src/RigCamera.inc": "scripts/make_inv3d_light.py (camera rest pose)",
     "patch_manager_mods/action_hotbar_src/HotbarTextures.inc": "scripts/gen_hotbar_textures.py (TGA byte arrays)",
     "patch_manager_mods/companion_selfheal_src/SelfHealTextures.inc": "scripts/gen_selfheal_textures.py (TGA byte arrays)",
+    "patch_manager_mods/_shared_src/HudKitTextures.inc": "scripts/gen_hud_kit_textures.py (TGA byte arrays)",
 }
 
 TOML_HEADER = """\

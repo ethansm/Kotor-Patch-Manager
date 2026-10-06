@@ -23,7 +23,7 @@ from PIL import Image  # noqa: E402
 sys.path.insert(0, str(HERE))
 import gen_selfheal_textures as gt  # noqa: E402
 
-EXPECTED = {"csh_cross": (32, 32), **{f"csh_ring{k}": (48, 48) for k in range(8)}, "csh_disc": (48, 48)}
+EXPECTED = {"csh_cross": (32, 32), **{f"csh_ring{k}": (48, 48) for k in range(8)}}
 
 
 def gen():
@@ -69,25 +69,11 @@ class GenSelfHealTextures(unittest.TestCase):
         ys = [y for y in range(32) for x in range(32) if im.getpixel((x, y))[3] >= 250]
         self.assertLessEqual(max(ys) - min(ys) + 1, 24)
 
-    def test_disc(self):
-        im = img(dict(gen())["csh_disc"])
-        c = im.getpixel((24, 24))
-        self.assertLessEqual(abs(c[3] - 175), 3)
-        self.assertLessEqual(max(c[:3]), 3)
-        rim = im.getpixel((24 + 20, 24))   # inside the 2 px rim
-        for got, want in zip(rim[:3], (10, 96, 80)):
-            self.assertLessEqual(abs(got - want), 12, rim)
-        self.assertGreater(rim[3], 230)
-        # radius from the alpha extent along the centre rows, as a coverage sum
-        xs = [x for x in range(48) if im.getpixel((x, 24))[3] > 128]
-        radius = (xs[-1] - xs[0] + 1) / 2
-        self.assertLessEqual(abs(radius - gt.RING_RADIUS), 1.0)
-        self.assertEqual(im.getpixel((0, 0))[3], 0)
-
-    def test_disc_is_last_in_inc(self):
+    def test_inc_order_and_count(self):   # the disc moved to the shared HUD kit (scripts/gen_hud_kit_textures.py, kit_disc)
         t = gt.INC.read_text()
         names = re.findall(r'^    \{ "(csh_\w+)", SHTex_', t, re.M)
-        self.assertEqual(names[-1], "csh_disc")
+        self.assertEqual(names[-1], "csh_ring7")
+        self.assertNotIn("csh_disc", names)
         self.assertEqual(names[0], "csh_cross")
         self.assertIn(f"kSelfHealTextureCount = {len(names)}u", t)
 

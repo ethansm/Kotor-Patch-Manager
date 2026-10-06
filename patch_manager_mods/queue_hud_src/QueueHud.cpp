@@ -7,10 +7,12 @@
 //            engine's own 0x74E0B0 (cached), and draws bg + border + icon over the hidden vanilla slots (hud+0x5F2C+i*0x148)
 //   0.2.0    companion strips: for party members 1-2 a row of small green queue icons left of their health bar
 //            (strip_side left | above | below the card; HUD slot table via portrait-slots; slot creature matched against the party member's client OR server pointer; per-creature round)
-//   0.3.0    kit look: the slots are the qh_frame image (icon inset 15%), flat rects only as the fallback when a kit texture is missing;
-//            a Cancel control (qh_cancel / qh_cancel_hi, a HUD label built in hud-host's K2HUD_BUILD phase, k2.hud@1) right of the leader's
+//   0.3.0    kit look: the slots are the kit_frame image (icon inset 15%), flat rects only as the fallback when a kit texture is missing;
+//            a Cancel control (kit_cancel / kit_cancel_hi, a HUD label built in hud-host's K2HUD_BUILD phase, k2.hud@1) right of the leader's
 //            QUEUE0 and left of each companion strip; LMB calls CServerExoApp::ClearAllActions (0x51CB10, doc 30 R7) for that member.
 //            Out of combat only (the vanilla red Cancel Combat bar is untouched). No new hook: BUILD + FRAME_BEGIN are registry phases.
+//   CS11/12  the kit art (frame, Cancel X) is the shared HUD kit _shared_src/HudKit.h (kit_* textures, also used by companion-selfheal);
+//            the left-side strip icon auto size is the selfheal button side (QueueHudLogic.h stripIconSize), strip_icon_px still overrides.
 // Every pointer deref goes through saferead (site ids 0x7100+, strips 0x7150+, cancel 0x7160+). The only engine write is the Cancel call.
 // Without portrait-slots (or an unknown exe) the mod is inert.
 #define WIN32_LEAN_AND_MEAN
@@ -33,6 +35,7 @@
 #include "HudHost.h"
 #include "SelfHealUi.h"   // shui::stripReserve: the fallback selfheal footprint when hud-host strip slots are unavailable
 #include "EmbedTex.h"
+#include "HudKit.h"
 #include "GameAddr.h"
 #include "QueueHudLogic.h"
 
@@ -214,14 +217,11 @@ bool gather(Snapshot& s) {
     return gatherFor(m ? party::serverCreature(m) : 0, s);
 }
 
-// ---- kit textures (embedded TGAs; recipe copied from companion-selfheal) ----
+// ---- kit textures (shared HUD kit: _shared_src/HudKit.h, embedded TGAs kit_frame / kit_frame_hi / kit_cancel / kit_cancel_hi) ----
 namespace tex {
-#include "QueueHudTextures.inc"
-enum { Frame = 0, FrameHi, Cancel, CancelHi };   // order of kQueueHudTextures
-static_assert(sizeof kQueueHudTextures / sizeof kQueueHudTextures[0] == 4, "qh_frame, qh_frame_hi, qh_cancel, qh_cancel_hi");
+using hudkit::Frame; using hudkit::FrameHi; using hudkit::Cancel; using hudkit::CancelHi;
 bool g_init = false;
-void* g_img[4] = {};
-bool g_missLogged[4] = {};
+bool g_missLogged[hudkit::Count] = {};
 
 void logLine(const char* fmt, ...) {   // embtex::g_log sink
     char buf[256]; va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
@@ -231,21 +231,19 @@ void ensure() {   // once per process; the textures outlive every HUD (never fre
     if (g_init) return;
     g_init = true;
     embtex::g_log = logLine;
-    embtex::ensure(kQueueHudTextures, 4);   // create + fill + queue (idempotent); heal() refills after a GL reset
+    hudkit::ensure();   // create + fill + queue (idempotent); heal() refills after a GL reset
 }
 // A pooled GUI handle keeps the texture alive; looked up lazily (null until the texture exists), the miss is logged once per texture.
 void* image(int i) {
-    if (!g_img[i]) {
-        g_img[i] = guikit::imageFor(kQueueHudTextures[i].resref);
-        if (!g_img[i] && !g_missLogged[i]) { g_missLogged[i] = true; KP_LOGV(chMain, KPLOG_WARN, "texture %s unavailable: %s", kQueueHudTextures[i].resref, i <= FrameHi ? "flat fallback look" : "Cancel shows a text X"); }
-    }
-    return g_img[i];
+    void* im = hudkit::image(i);
+    if (!im && !g_missLogged[i]) { g_missLogged[i] = true; KP_LOGV(chMain, KPLOG_WARN, "texture %s unavailable: %s", hudkit::resref(i), i <= FrameHi ? "flat fallback look" : "Cancel shows a text X"); }
+    return im;
 }
 void heal() { embtex::heal(); }   // every frame (GL reset + missing rebuild, 20-refill give-up per texture)
 }  // namespace tex
 
 // ---- drawing ----
-// Kit look: the qh_frame image (white, alpha = style frameA) with the icon inset 15%; a missing frame texture (or kit = 0) falls back to the
+// Kit look: the kit_frame image (white, alpha = style frameA) with the icon inset 15%; a missing frame texture (or kit = 0) falls back to the
 // 0.2.0 flat bg + border rects (logged once).
 void drawSlot(int x, int y, int w, int h, const qh::Style& st, void* img) {
     static const float white[3] = { 1.0f, 1.0f, 1.0f };
@@ -275,7 +273,7 @@ struct CW {
     qh::Rect r{ 0, 0, 0, 0 };
     bool rectSet = false;
     int vis = -1;            // last visible / clickable state sent (-1 = unknown)
-    int fill = -1;           // 0 = qh_cancel, 1 = qh_cancel_hi, 2 = text fallback
+    int fill = -1;           // 0 = kit_cancel, 1 = kit_cancel_hi, 2 = text fallback
     bool hover = false, tipSet = false;
 };
 CW g_cw[3];
@@ -297,7 +295,7 @@ void cwShow(CW& w, bool on) {   // clickable only while visible (a shown control
 }
 void cwHideAll() { for (CW& w : g_cw) cwShow(w, false); }
 
-// qh_cancel / qh_cancel_hi untinted; no texture or a refused fill -> a text "X" (once).
+// kit_cancel / kit_cancel_hi untinted; no texture or a refused fill -> a text "X" (once).
 void cwLook(CW& w) {
     static const float white[3] = { 1.0f, 1.0f, 1.0f };
     const int want = w.hover ? 1 : 0;
