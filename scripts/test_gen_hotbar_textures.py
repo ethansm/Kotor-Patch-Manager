@@ -70,6 +70,18 @@ class GenHotbarTextures(unittest.TestCase):
         self.assertEqual(gt.render_inc(gen()), gt.INC.read_text(),
                          "HotbarTextures.inc is stale: run python3 scripts/gen_hotbar_textures.py")
 
+    def test_textures_test_expected_table_matches_generator(self):
+        want = gt.render_expected(gen())
+        cpp = (gt.REPO / "patch_manager_mods/action_hotbar_src/textures_test.cpp").read_text()
+        self.assertIn(want, cpp, "textures_test.cpp kExpected is stale: paste the output of "
+                                 "python3 scripts/gen_hotbar_textures.py --emit-expected")
+
+    def test_emit_expected_cli(self):
+        import subprocess
+        r = subprocess.run([sys.executable, str(HERE / "gen_hotbar_textures.py"), "--emit-expected"],
+                           capture_output=True, text=True, check=True)
+        self.assertEqual(r.stdout, gt.render_expected(gen()))
+
 
 if __name__ == "__main__":
     unittest.main()

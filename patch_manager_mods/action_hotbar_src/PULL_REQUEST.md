@@ -40,7 +40,6 @@ See `README.md` for keys, the INI reference and troubleshooting, and `CHANGELOG.
 Host tests, run with `python3 scripts/run_tests.py -k <name>` (each passes, 2026-10-05):
 - `config_roundtrip_test`: INI parse, format and round trip, target suffix grammar, bounds.
 - `hotbar_logic_test`: pure logic (keys, target choice, snapshot pick and merge, layout, TargetProbe).
-- `hotbar_bugs_test`: regressions for fixed bugs.
 - `hotbar_log_test`: log formatters and delivery through KpLog.
 - `textures_test`, `tlk_test`, `twoda_test`: embedded art, `dialog.tlk` and `spells.2da` readers.
 - `common_contract_test`: pins the shared Common APIs the patch uses.

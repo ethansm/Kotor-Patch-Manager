@@ -10,9 +10,6 @@ cxxflags = ["-I../_shared_src", "-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-
 [config_roundtrip_test]
 cxxflags = ["-I../_shared_src", "-Werror"]
 
-[hotbar_bugs_test]
-cxxflags = ["-I../_shared_src", "-Werror"]
-
 [hotbar_logic_test]
 cxxflags = ["-I../_shared_src", "-Werror"]
 

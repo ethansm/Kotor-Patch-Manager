@@ -5,6 +5,7 @@
 #include "HealItems.h"
 #include <algorithm>
 #include <cctype>
+#include <cerrno>
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
@@ -201,6 +202,7 @@ constexpr float QtyOutOfStockRgb[3] = { 0.55f, 0.55f, 0.55f };
 struct SlotView { const char* state = ""; bool hideSettling = false, outOfStock = false, showQty = false, grayQty = false; int qty = 0; const char* qtyHideWhy = ""; float bgFactor = 1.0f, icFactor = 1.0f; };
 inline SlotView slotView(bool wantEmpty, bool wantIsItem, bool have, int flags, int key, const std::string& name, bool settlingNormal) {
     SlotView v;
+    if (wantEmpty) { have = false; wantIsItem = false; }   // HB18: an unbound slot shows nothing, whatever a (stale) resolved entry says: no qty, no out-of-stock
     if (wantEmpty) v.state = "unbound";
     else if (!have) { if (settlingNormal) { v.hideSettling = true; return v; } v.state = "entry not available"; }
     else v.state = (flags & 1) ? "usable" : "unusable (dimmed)";
@@ -473,8 +475,12 @@ inline std::string slotTargetLine(const TargetSpec& t, int effectiveThresholdPct
 // ---- item edge cases (B2, doc 07): column-driven from spells.2da, item property 0 from the engine item ----
 inline int parseHexOrInt(const std::string& s) {   // spells.2da category is "0x1408"; "****"/empty/garbage -> -1
     if (s.empty() || s == "****") return -1;
-    char* e = nullptr; long v = strtol(s.c_str(), &e, 0);
-    return (e && e != s.c_str() && *e == 0) ? (int)v : -1;
+    // HB16: decimal, or hex only with an explicit 0x/0X prefix ("010" is 10, never octal 8); no sign/space; overflow/range -> -1.
+    bool hex = s.size() > 2 && s[0] == '0' && (s[1] == 'x' || s[1] == 'X');
+    const char* d = s.c_str() + (hex ? 2 : 0);
+    if (!isxdigit((unsigned char)*d) || (!hex && !isdigit((unsigned char)*d))) return -1;   // also rejects "0x", "+5", "-5", " 5"
+    char* e = nullptr; errno = 0; unsigned long long v = strtoull(d, &e, hex ? 16 : 10);
+    return (*e == 0 && errno != ERANGE && v <= 0x7FFFFFFFULL) ? (int)v : -1;
 }
 using heal::isHealingRow;   // shared (_shared_src/HealItems.h): usertype 4, range "T", category medpac/repair/cure
 inline bool selfAllowedRow(const std::string& range, int hostileSetting) { return (range == "T" || range == "t") && hostileSetting != 1; }

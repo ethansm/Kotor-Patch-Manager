@@ -167,6 +167,7 @@ inline bool Parse(const std::string& text, ActionRef* out) {
     if (k == "spell" || k == "feat") {
         int n = 0;
         if (!parseInt32(v, &n) || n < 0) return false;   // 0..INT32_MAX
+        if (ts.mode != TM_Default) return false;          // HB12: "@self"/"@lowhp" only mean something on items; refused (Config::Parse warns, slot left empty)
         out->kind = (k == "spell") ? K_Spell : K_Feat; out->id = (int)n; out->target = ts; return true;
     }
     if (k == "other") {
@@ -308,7 +309,7 @@ struct Config {
                 if (rb == std::string::npos) { snprintf(msg, sizeof msg, "line %d: unterminated section", lineNo); warnings.push_back(msg); cur = nullptr; inGeneral = false; continue; }
                 section = trim(line.substr(1, rb - 1)); inGeneral = false; cur = nullptr;
                 if (lower(section) == "general") inGeneral = true;
-                else if (lower(section).compare(0, 8, "profile.") == 0 && section.size() > 8) cur = &profile(section.substr(8));
+                else if (lower(section).compare(0, 8, "profile.") == 0 && section.size() > 8) cur = &profile(trim(section.substr(8)));   // HB15: "[Profile. Bob ]" is profile "Bob"
                 else { snprintf(msg, sizeof msg, "line %d: unknown section [%.60s]", lineNo, section.c_str()); warnings.push_back(msg); }
                 continue;
             }

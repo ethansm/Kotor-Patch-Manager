@@ -4,8 +4,10 @@
 Run with the repo venv:  .venv/bin/python patch_manager_mods/action_hotbar_src/testdata/make_spells_fixture.py
 
 43 rows (labels "0".."42", like the real spells.2da). Rows 8, 10, 22, 42 carry real
-cells copied from vanilla spells.2da (category is the hex string, e.g. "0x1808");
-every other row is synthetic filler. The file is read back and verified; exit 1 on mismatch.
+cells copied from vanilla spells.2da (category is the hex string, e.g. "0x1808"); row 11 is a synthetic healing row
+(usertype 4, range T, category 0x1408 = medpac; the rule is _shared_src/HealItems.h isHealingRow) and row 12 a synthetic
+hostile single-target row; every other row is synthetic filler. usertype/hostilesetting on the real rows are hand-filled (1 / 0). They are the columns the hotbar's
+classifyRow reads (HB09); unset cells are "****". The file is read back and verified; exit 1 on mismatch.
 """
 import logging
 import sys
@@ -16,18 +18,20 @@ logging.disable(logging.CRITICAL)
 from pykotor.resource.formats.twoda import TwoDA, read_2da, write_2da  # noqa: E402
 from pykotor.resource.type import ResourceType  # noqa: E402
 
-HEADERS = ["label", "name", "forcepoints", "range", "category", "iconresref", "spelldesc"]
+HEADERS = ["label", "name", "forcepoints", "range", "category", "iconresref", "spelldesc", "usertype", "hostilesetting"]
 NROWS = 43
 REAL = {
-    8: ["FORCE_POWER_SPEED_BURST", "267", "25", "P", "0x1808", "ip_speedburst", "1250"],
-    10: ["FORCE_POWER_CURE", "287", "30", "T", "0x2441", "ip_cure", "136478"],
-    22: ["FORCE_POWER_FORCE_VALOR", "281", "25", "P", "0x1808", "ip_mind", "1222"],
-    42: ["FORCE_POWER_RESIST_ENERGY_1", "301", "20", "P", "0x1808", "ip_resistenergy1", "1240"],
+    8: ["FORCE_POWER_SPEED_BURST", "267", "25", "P", "0x1808", "ip_speedburst", "1250", "1", "0"],
+    10: ["FORCE_POWER_CURE", "287", "30", "T", "0x2441", "ip_cure", "136478", "1", "0"],
+    11: ["ITEM_MEDPAC_HEAL", "****", "****", "T", "0x1408", "ip_medpac", "****", "4", "0"],   # synthetic healing row
+    12: ["ITEM_STUN_BOLT", "****", "****", "T", "0x1404", "ip_stun", "****", "4", "1"],       # synthetic: repair category, hostile single target
+    22: ["FORCE_POWER_FORCE_VALOR", "281", "25", "P", "0x1808", "ip_mind", "1222", "1", "0"],
+    42: ["FORCE_POWER_RESIST_ENERGY_1", "301", "20", "P", "0x1808", "ip_resistenergy1", "1240", "1", "0"],
 }
 
 
 def expected_row(i):
-    return REAL.get(i, [f"FILLER_{i}", "****", "****", "****", "****", "****", "****"])
+    return REAL.get(i, [f"FILLER_{i}"] + ["****"] * (len(HEADERS) - 1))
 
 
 def main():

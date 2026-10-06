@@ -3,6 +3,7 @@
 #include "HotbarLogic.h"
 #include "TwoDA.h"
 #include "check.h"
+#include <climits>
 #include <memory>
 #include <cstring>
 using namespace hb;
@@ -233,21 +234,17 @@ int main() {
     for (int s = 7; s < Slots; ++s) KT_CHECK(eff[s].empty() && !isAuto[s]);
     KT_CHECK_EQ(assignAutoFill(cfg, std::vector<ActionRef>(), eff, isAuto), 0);   // no autos: eff == cfg
     KT_CHECK(eff[0].empty() && eff[1].id == 9);
-    // signature: equals the original loop (reproduced below); changes with id / auto flag / name
+    // signature: golden values from the original DLL loop; changes with id / auto flag / name
     ActionRef z[Slots]; bool za[Slots] = {};
     unsigned h0 = effSignature(z, za);
     KT_CHECK_EQ(h0, effSignature(z, za));                                          // deterministic
-    unsigned h = 2166136261u;                                                      // reference implementation, verbatim from the DLL
-    for (int s = 0; s < Slots; ++s) { h = (h ^ (unsigned)Format(z[s]).size() ^ ((unsigned)z[s].id << 8) ^ (za[s] ? 0x5000000u : 0)) * 16777619u; for (char c : Format(z[s])) h = (h ^ (unsigned char)c) * 16777619u; }
-    KT_CHECK_EQ(h0, h);
+    KT_CHECK_EQ(h0, 1078699117u);                                                  // HB21: golden FNV-1a values (no reimplementation of the hash here);
     ActionRef a[Slots]; bool aa[Slots] = {}; a[2] = mk(K_Spell, 8); a[5] = mk(K_Item, 0, "Medpac");
-    unsigned h1 = effSignature(a, aa);
-    h = 2166136261u;
-    for (int s = 0; s < Slots; ++s) { h = (h ^ (unsigned)Format(a[s]).size() ^ ((unsigned)a[s].id << 8) ^ (aa[s] ? 0x5000000u : 0)) * 16777619u; for (char c : Format(a[s])) h = (h ^ (unsigned char)c) * 16777619u; }
-    KT_CHECK_EQ(h1, h);
+    unsigned h1 = effSignature(a, aa);                                             // a change in the hash scheme must be a deliberate edit of these constants
+    KT_CHECK_EQ(h1, 1090647492u);
     KT_CHECK(h1 != h0);
     bool ab[Slots] = {}; ab[2] = true;
-    KT_CHECK(effSignature(a, ab) != h1);                                           // auto flag changes it
+    KT_CHECK_EQ(effSignature(a, ab), 2617374148u);                                 // auto flag changes it
     a[2].id = 9; KT_CHECK(effSignature(a, aa) != h1);
     // helpers: known-power key filter, dedup, selection pick
     KT_CHECK(isKnownPowerKey(0x20000005)); KT_CHECK(!isKnownPowerKey(0x40000005)); KT_CHECK(!isKnownPowerKey(0x60000005)); KT_CHECK(!isKnownPowerKey(0x5));
@@ -303,7 +300,6 @@ int main() {
     TipRect e = tipLayout("", 10, 500, -1, 3840); KT_CHECK_EQ(e.lines, 1); KT_CHECK_EQ(e.maxLen, 0); KT_CHECK_EQ(e.w, 44); KT_CHECK_EQ(e.h, 76);
     TipRect nl = tipLayout("a\n", 10, 500, -1, 3840); KT_CHECK_EQ(nl.lines, 2); KT_CHECK_EQ(nl.maxLen, 1);   // trailing newline = extra line
     TipRect lg = tipLayout("abcd\nx\nabcdefg", 10, 500, -1, 3840); KT_CHECK_EQ(lg.lines, 3); KT_CHECK_EQ(lg.maxLen, 7);
-    KT_CHECK_EQ(TipWrap, 38); KT_CHECK_EQ(TipMaxDescLines, 3);
   }
   { // 6. settling predicate
     KT_CHECK(!isSettling(0, 5000, 1500));                                          // no character change seen yet
@@ -339,7 +335,6 @@ int main() {
     KT_CHECK(slotView(false, false, false, 0, 0, "", true).hideSettling);          // not resolved while settling in Normal mode: hide
     KT_CHECK(slotView(false, true, false, 0, 0, "", true).hideSettling);
     KT_CHECK(!slotView(false, true, true, 1, 0x40000001, "X", true).hideSettling); // resolved: never hidden
-    KT_CHECK(QtyOutOfStockRgb[0] == 0.55f && QtyOutOfStockRgb[1] == 0.55f && QtyOutOfStockRgb[2] == 0.55f);
   }
   { // 8. picker maxOff + clamp + wheel steps
     KT_CHECK_EQ(pickerMaxOff(0, 8), 0); KT_CHECK_EQ(pickerMaxOff(5, 8), 0); KT_CHECK_EQ(pickerMaxOff(8, 8), 0);
@@ -354,7 +349,6 @@ int main() {
     KT_CHECK_EQ(scrollClamp(12 - wheelSteps(-120), 12), 12);
   }
   { // 9. arrow repeat timing: 350 ms first, then every 90 ms
-    KT_CHECK_EQ(ArrowFirstMs, 350); KT_CHECK_EQ(ArrowRepeatMs, 90);
     KT_CHECK(!arrowRepeatDue(1349, 1000, 1000)); KT_CHECK(arrowRepeatDue(1350, 1000, 1000));
     KT_CHECK(!arrowRepeatDue(1400, 1000, 1350)); KT_CHECK(!arrowRepeatDue(1439, 1000, 1350)); KT_CHECK(arrowRepeatDue(1440, 1000, 1350));
     KT_CHECK(!arrowRepeatDue(5000, 4800, 4990));                                   // repeat fine, first delay not reached (200 ms)
@@ -493,7 +487,6 @@ int main() {
       std::vector<unsigned char> d; hdr(d, 0, MaxTgaDim, MaxTgaDim); d.resize(d.size() + (size_t)MaxTgaDim * MaxTgaDim * 4);
       TgaInfo t; KT_CHECK_EQ(tgaInspect(d.data(), d.size(), &t), TGA_OK); KT_CHECK_EQ((long long)t.bytes, (long long)MaxTgaDim * MaxTgaDim * 4);
       hdr(d, 0, MaxTgaDim + 1, 1); d.resize(d.size() + 16); KT_CHECK_EQ(tgaInspect(d.data(), d.size(), &t), TGA_TOO_LARGE);
-      KT_CHECK_EQ(MaxTgaDim, 4096);
     }
   }
   // ===== mutation-triage additions (doc 20e): boundaries and defaults the pure units rely on =====
@@ -545,13 +538,12 @@ int main() {
     KT_CHECK_EQ(tipLayout("ab", 100, 96, -1, 3840).y, 8); KT_CHECK_EQ(tipLayout("ab", 100, 97, -1, 3840).y, 9);
     TipRect d; KT_CHECK_EQ(d.lines, 1); KT_CHECK_EQ(d.maxLen, 0); KT_CHECK_EQ(d.x, 0); KT_CHECK_EQ(d.y, 0); KT_CHECK_EQ(d.w, 0); KT_CHECK_EQ(d.h, 0);
   }
-  { // slotView: defaults stay quiet on the settling early-out, qty 2 shows a count, out-of-stock colour has 3 channels
+  { // slotView: defaults stay quiet on the settling early-out, qty 2 shows a count
     SlotView h = slotView(false, true, false, 0, 0, "", true);
     KT_CHECK(h.hideSettling); KT_CHECK(!h.outOfStock); KT_CHECK(!h.showQty); KT_CHECK(!h.grayQty); KT_CHECK_EQ(h.qty, 0);
     KT_CHECK(!slotView(false, false, true, 1, 0x20000005, "Heal", false).hideSettling);
     SlotView t = slotView(false, true, true, 1, 0x40000009, "Medpac (2)", false);
     KT_CHECK_EQ(t.qty, 2); KT_CHECK(t.showQty); KT_CHECK(!t.grayQty);
-    KT_CHECK_EQ(sizeof(QtyOutOfStockRgb) / sizeof(QtyOutOfStockRgb[0]), 3);
   }
   { // aspectCorrection: every dimension of 1 is a real size (only <= 0 means unknown)
     auto near = [](double a, double b) { return a - b < 1e-9 && b - a < 1e-9; };
@@ -824,17 +816,70 @@ int main() {
     KT_CHECK(!c.healing && c.selfOk);
     c = classifyRow(0, "ok", 1, "", "", "", "");                                             // all cells empty: row 0 is valid
     KT_CHECK_EQ(c.row, 0); KT_CHECK(!c.healing && !c.selfOk); KT_CHECK_EQ(c.why, "ok");
-    // spells_fixture.2da: forcepoints/range/category columns exist, usertype/hostilesetting do not (Get -> "")
+    // spells_fixture.2da (HB09): carries the usertype / hostilesetting columns the DLL reads; rows 11/12 are synthetic healing rows
     TwoDA t; KT_CHECK(t.Load("testdata/spells_fixture.2da"));
     int n = (int)t.rows.size(); KT_CHECK_EQ(n, 43);
+    KT_CHECK(t.Col("usertype") >= 0 && t.Col("hostilesetting") >= 0);
     auto cls = [&](int row) { return classifyRow(row, "ok", n, t.Get(row, "range"), t.Get(row, "usertype"), t.Get(row, "hostilesetting"), t.Get(row, "category")); };
-    c = cls(10);                                                                             // Cure: range T, category 0x2441, no usertype -> not healing, self allowed
+    c = cls(11); KT_CHECK(c.healing && c.selfOk); KT_CHECK_EQ(c.row, 11);                    // usertype 4, range T, category 0x1408 (medpac), hostile 0
+    c = cls(12); KT_CHECK(c.healing && !c.selfOk);                                           // category 0x1404 (repair), hostilesetting 1: healing, but no self use
+    c = cls(10);                                                                             // Cure: usertype 1, range T, category 0x2441 -> not healing, self allowed
     KT_CHECK(!c.healing && c.selfOk);
     c = cls(8); KT_CHECK(!c.healing && !c.selfOk);                                           // Speed Burst: range P
     c = cls(22); KT_CHECK(!c.healing && !c.selfOk);
     c = cls(7); KT_CHECK(!c.healing && !c.selfOk);                                           // filler row: "****" range
     c = cls(42); KT_CHECK_EQ(c.row, 42); KT_CHECK_EQ(c.why, "ok");
     c = cls(43); KT_CHECK_EQ(c.why, "spells.2da row unknown");                               // one past the last row
+  }
+  { // HB16: parseHexOrInt: decimal, or hex only with a 0x/0X prefix (never octal); anything else, a sign, a space or an overflow is -1
+    KT_CHECK_EQ(parseHexOrInt("0x1408"), 0x1408); KT_CHECK_EQ(parseHexOrInt("0X1408"), 0x1408); KT_CHECK_EQ(parseHexOrInt("0x1a0f"), 0x1a0f); KT_CHECK_EQ(parseHexOrInt("0xFF"), 255);
+    KT_CHECK_EQ(parseHexOrInt("5128"), 5128); KT_CHECK_EQ(parseHexOrInt("4"), 4); KT_CHECK_EQ(parseHexOrInt("0"), 0); KT_CHECK_EQ(parseHexOrInt("0x0"), 0); KT_CHECK_EQ(parseHexOrInt("00"), 0);
+    KT_CHECK_EQ(parseHexOrInt("010"), 10);                                         // was 8 (strtol base 0 = octal)
+    KT_CHECK_EQ(parseHexOrInt("012010"), 12010); KT_CHECK_EQ(parseHexOrInt("08"), 8); KT_CHECK_EQ(parseHexOrInt("09"), 9);   // "08"/"09" were -1 as octal
+    KT_CHECK_EQ(parseHexOrInt("2147483647"), INT_MAX); KT_CHECK_EQ(parseHexOrInt("0x7FFFFFFF"), INT_MAX);
+    for (const char* bad : { "", "****", "abc", "0x", "0xG", "0x1G", "0x 5", "1408h", "12 ", " 12", "+5", "-5", "-0", "1.5", "0b101", "1e3", "x1408", "0x-1", "0x+1", "\t5", "5\n" })
+      if (!KT_CHECK_EQ(parseHexOrInt(bad), -1)) std::printf("  (input '%s')\n", bad);
+    KT_CHECK_EQ(parseHexOrInt("2147483648"), -1); KT_CHECK_EQ(parseHexOrInt("4294967295"), -1); KT_CHECK_EQ(parseHexOrInt("99999999999999999999999"), -1);   // overflow: -1, not a wrapped value
+    KT_CHECK_EQ(parseHexOrInt("0x80000000"), -1); KT_CHECK_EQ(parseHexOrInt("0xFFFFFFFF"), -1); KT_CHECK_EQ(parseHexOrInt("0xFFFFFFFFFFFFFFFFFFFF"), -1);
+    // through classifyRow: an octal-looking category is decimal now (012010 = 0x1408 only as octal), usertype "04" is 4
+    ItemClass c = classifyRow(5, "ok", 43, "T", "4", "0", "012010"); KT_CHECK(!c.healing);
+    c = classifyRow(5, "ok", 43, "T", "04", "0", "0x1408"); KT_CHECK(c.healing);
+    c = classifyRow(5, "ok", 43, "T", "4", "01", "0x1408"); KT_CHECK(c.healing && !c.selfOk);
+    c = classifyRow(5, "ok", 43, "T", "4", "-1", "0x1408"); KT_CHECK(c.healing && c.selfOk);   // a signed cell is unknown (-1), not "hostile 1"
+  }
+  { // HB17: the range test differs on purpose or by accident: isHealingRow wants a capital "T", selfAllowedRow accepts "t" as well. Pinned, shared HealItems.h untouched.
+    KT_CHECK(!isHealingRow(4, "t", 0x1408)); KT_CHECK(selfAllowedRow("t", 0));
+    KT_CHECK(isHealingRow(4, "T", 0x1408)); KT_CHECK(selfAllowedRow("T", 0));
+    KT_CHECK(!isHealingRow(4, "T ", 0x1408)); KT_CHECK(!selfAllowedRow("T ", 0)); KT_CHECK(!selfAllowedRow("P", 0)); KT_CHECK(!selfAllowedRow("", 0));
+    KT_CHECK(!selfAllowedRow("T", 1)); KT_CHECK(selfAllowedRow("T", -1)); KT_CHECK(selfAllowedRow("t", 2));   // only hostilesetting == 1 blocks self use
+  }
+  { // HB18: an unbound slot (wantEmpty) shows nothing even if a stale resolved entry is passed in: no qty, no out-of-stock, no dimming
+    const float E = EmptyFrameAlpha;
+    SlotView v = slotView(true, true, true, 1, 0x40000009, "Medpac (3)", false);
+    KT_CHECK_EQ(v.state, "unbound"); KT_CHECK(!v.showQty && !v.grayQty && !v.outOfStock && !v.hideSettling); KT_CHECK_EQ(v.qty, 0);
+    KT_CHECK_EQ(v.qtyHideWhy, "unbound"); KT_CHECK(v.bgFactor == E && v.icFactor == 1.0f);
+    v = slotView(true, false, true, 0, 0x20000005, "Heal", false);                 // unusable flag on a stale entry: still not dimmed
+    KT_CHECK_EQ(v.state, "unbound"); KT_CHECK(v.icFactor == 1.0f && v.bgFactor == E);
+    v = slotView(true, true, false, 0, 0, "", false);                             // unbound + "wants an item" is not out of stock
+    KT_CHECK_EQ(v.state, "unbound"); KT_CHECK(!v.outOfStock && !v.showQty && !v.grayQty);
+    KT_CHECK(!slotView(true, false, false, 0, 0, "", true).hideSettling);          // unbound is never hidden by the settling rule
+    SlotView o = slotView(false, true, false, 0, 0, "", false);                    // unchanged: a bound item that left the HUD is out of stock
+    KT_CHECK(o.outOfStock && o.showQty && o.grayQty && o.qty == 0);
+    // moveDuplicates: the identity is kind + id/name, the target suffix does not matter: all holders move, whatever their suffix
+    Profile p; ActionRef lo = mk(K_Item, 0, "Medpac"); lo.target.mode = TM_LowHp; lo.target.thresholdPct = 40; lo.target.fallback = 0;
+    ActionRef se = mk(K_Item, 0, "medpac"); se.target.mode = TM_Self; ActionRef de = mk(K_Item, 0, "MEDPAC");
+    p.slots[0][1] = lo; p.slots[0][2] = se; p.slots[0][7] = de; p.slots[0][4] = mk(K_Item, 0, "Stim");
+    ActionRef pick = mk(K_Item, 0, "Medpac"); pick.target.mode = TM_Self;
+    std::vector<int> mv = moveDuplicates(p, 0, 4, pick);
+    KT_CHECK_EQ(mv.size(), 3); KT_CHECK(mv.size() == 3 && mv[0] == 1 && mv[1] == 2 && mv[2] == 7);
+    for (int s : { 1, 2, 7 }) { KT_CHECK(p.slots[0][s].empty() && p.slots[0][s].blank); KT_CHECK_EQ(p.notes[0][s].c_str(), "moved"); KT_CHECK_EQ(p.slots[0][s].target.mode, TM_Default); }
+    KT_CHECK_EQ(p.slots[0][4].name.c_str(), "Stim");                              // the target slot is the caller's: untouched
+    pick.target = TargetSpec(); p.slots[0][2] = se; mv = moveDuplicates(p, 0, 2, pick);   // picking onto a holder with a different suffix: that slot is the target, never moved
+    KT_CHECK_EQ(mv.size(), 0); KT_CHECK_EQ(p.slots[0][2].target.mode, TM_Self);
+  }
+  { // HB23 (was hotbar_bugs_test): slotDigit covers 0..9 and returns '?' for anything else
+    KT_CHECK_EQ(slotDigit(0), '1'); KT_CHECK_EQ(slotDigit(8), '9'); KT_CHECK_EQ(slotDigit(9), '0');
+    KT_CHECK_EQ(slotDigit(-1), '?'); KT_CHECK_EQ(slotDigit(10), '?'); KT_CHECK_EQ(slotDigit(INT_MIN), '?'); KT_CHECK_EQ(slotDigit(INT_MAX), '?');
   }
   { // A11 tipText
     TipSpell none;
@@ -857,16 +902,15 @@ int main() {
     struct E { int key, flags; std::string name; };
     std::vector<E> a = { { 0x20000008, 1, "Speed" }, { 0x40000005, 0, "Medpac (3)" } };
     unsigned h0 = pickerSignature(a, 0);
-    KT_CHECK_EQ(pickerSignature(std::vector<E>(), 0), (2166136261u ^ 0u) * 16777619u);
+    KT_CHECK_EQ(pickerSignature(std::vector<E>(), 0), 84696351u);
     KT_CHECK_EQ(pickerSignature(a, 0), h0);
     KT_CHECK(pickerSignature(a, 1) != h0);
     { auto b = a; b[1].name = "Medpac (2)"; KT_CHECK(pickerSignature(b, 0) != h0); }
     { auto b = a; b[0].flags = 0; KT_CHECK(pickerSignature(b, 0) != h0); }
     { auto b = a; b[0].key ^= 1; KT_CHECK(pickerSignature(b, 0) != h0); }
     { auto b = a; std::swap(b[0], b[1]); KT_CHECK(pickerSignature(b, 0) != h0); }
-    unsigned h = 2166136261u;   // reference: the original edPicker loop
-    for (const E& x : a) { h = (h ^ (unsigned)x.key ^ ((unsigned)x.flags << 3)) * 16777619u; for (char ch : x.name) h = (h ^ (unsigned char)ch) * 16777619u; }
-    KT_CHECK_EQ(h0, (h ^ 0u) * 16777619u);
+    KT_CHECK_EQ(h0, 860471925u);                                                 // HB21: golden values of the original edPicker loop
+    KT_CHECK_EQ(pickerSignature(a, 1), 843694306u);
   }
   { // A11 modeBtnWhy: click-ignored log wording per button state
     KT_CHECK_EQ(modeBtnWhy(MB_Hidden), "empty slot"); KT_CHECK_EQ(modeBtnWhy(MB_DisabledItemsOnly), "items only");

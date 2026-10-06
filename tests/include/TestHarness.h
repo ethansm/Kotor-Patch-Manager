@@ -19,7 +19,13 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 #include <type_traits>
+#ifndef _WIN32
+#include <dirent.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
 
 namespace kt {
 
@@ -87,6 +93,45 @@ inline int Report(const char* name) {
     std::fflush(stdout);
     return g_failures != 0 ? 1 : 0;
 }
+
+#ifndef _WIN32
+// Per-test scratch directory (POSIX host only): $TMPDIR (else /tmp)/kt_<pid>_<counter>, created 0700 on construction and removed
+// with everything inside it on destruction (also when a check failed or the test returned early). Not copyable.
+//   kt::TempDir td; std::string p = td.file("x.ini");   // nothing is created for file(); the test writes it, the dtor cleans up
+class TempDir {
+public:
+    TempDir() {
+        static int counter = 0;
+        const char* t = std::getenv("TMPDIR");
+        path_ = std::string(t && *t ? t : "/tmp") + "/kt_" + std::to_string((long)::getpid()) + "_" + std::to_string(counter++);
+        ok_ = ::mkdir(path_.c_str(), 0700) == 0;
+    }
+    ~TempDir() { if (ok_) RemoveTree(path_); }
+    TempDir(const TempDir&) = delete;
+    TempDir& operator=(const TempDir&) = delete;
+    bool ok() const { return ok_; }
+    const std::string& path() const { return path_; }
+    std::string file(const std::string& name) const { return path_ + "/" + name; }
+
+private:
+    static void RemoveTree(const std::string& p) {
+        struct stat st;
+        if (::lstat(p.c_str(), &st) != 0) return;
+        if (!S_ISDIR(st.st_mode)) { ::unlink(p.c_str()); return; }
+        ::chmod(p.c_str(), 0700);   // a test may have made it read-only
+        if (DIR* d = ::opendir(p.c_str())) {
+            while (dirent* e = ::readdir(d)) {
+                if (!std::strcmp(e->d_name, ".") || !std::strcmp(e->d_name, "..")) continue;
+                RemoveTree(p + "/" + e->d_name);
+            }
+            ::closedir(d);
+        }
+        ::rmdir(p.c_str());
+    }
+    std::string path_;
+    bool ok_ = false;
+};
+#endif  // !_WIN32
 
 }  // namespace kt
 

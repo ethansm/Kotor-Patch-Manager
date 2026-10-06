@@ -219,7 +219,7 @@ Eight detours, all for the Steam Aspyr build. Addresses are in `kotor2-steam-asp
 ## Tests
 
 Host tests (no game needed), in this folder and listed in `test.toml`: `config_roundtrip_test`, `hotbar_logic_test`,
-`hotbar_bugs_test`, `hotbar_log_test`, `textures_test`, `tlk_test`, `twoda_test`, `common_contract_test`.
+`hotbar_log_test`, `textures_test`, `tlk_test`, `twoda_test`, `common_contract_test`.
 Run them from the repo root, one `-k` per test name (the runner matches part of a test id):
 
 ```

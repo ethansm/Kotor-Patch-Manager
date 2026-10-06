@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
     KT_CHECK_EQ(t.rows.size(), t.labels.size());
     if (!real) {
         KT_CHECK_EQ(t.rows.size(), 43);
-        KT_CHECK_EQ(t.cols.size(), 7);
+        KT_CHECK_EQ(t.cols.size(), 9);   // + usertype, hostilesetting (HB09)
         KT_CHECK_EQ(t.cols[0].c_str(), "label");
         KT_CHECK_EQ(t.cols[6].c_str(), "spelldesc");
     }
@@ -150,7 +150,7 @@ int main(int argc, char** argv) {
         KT_CHECK_EQ(m.cols.size(), 0); KT_CHECK_EQ(m.rows.size(), 0); KT_CHECK_EQ(m.labels.size(), 0);
         // Load twice on the fixture: no accumulation either.
         hb::TwoDA f; KT_CHECK(f.Load("testdata/spells_fixture.2da")); KT_CHECK(f.Load("testdata/spells_fixture.2da"));
-        KT_CHECK_EQ(f.rows.size(), 43); KT_CHECK_EQ(f.cols.size(), 7);
+        KT_CHECK_EQ(f.rows.size(), 43); KT_CHECK_EQ(f.cols.size(), 9);
     }
 
     // ================= Col is case-insensitive (engine 2DA column names are), first match wins =================

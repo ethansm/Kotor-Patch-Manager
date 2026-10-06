@@ -2,16 +2,16 @@
 #include "check.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include <unistd.h>
+#include <sys/stat.h>
 using namespace hb;
 int main(){
+  kt::TempDir td; KT_CHECK(td.ok());   // HB24: every temp file below lives here and is removed on exit, pass or fail
   const char* sample =
    "[General]\nSchemaVersion=1\nInvoke=0 ; safe\nVerbose=1\nFoo=bar\n"
    "[Profile.Default]\nBottom1=spell:8 ; speed burst\nBottom0=spell:135\nLeft1=item:Medpac (3)\nRight3=other:1a\nBottom5=feat:12\nBottom6=garbage\nLeft2=\n"
    "[Profile.Atton]\nBottom1=spell:22\nBogus9=spell:1\n";
   Config a; a.Parse(sample);
-  for(auto&w:a.warnings) printf("warn: %s\n",w.c_str());
-  KT_CHECK_EQ(a.warnings.size(),2);
+  if(!KT_CHECK_EQ(a.warnings.size(),2)) for(auto&w:a.warnings) printf("warn: %s\n",w.c_str());
   std::string s1=a.Serialize(); Config b; b.Parse(s1); std::string s2=b.Serialize();
   KT_CHECK(s1==s2);
   KT_CHECK(b.warnings.empty());
@@ -20,7 +20,7 @@ int main(){
   KT_CHECK_EQ(a.slotFor("Atton",0,9).id,135);
   KT_CHECK_EQ(a.slotFor("Nobody",0,0).id,8);
   KT_CHECK_EQ(a.general.extra["Foo"].c_str(),"bar");
-  const char* td=getenv("TMPDIR"); std::string path=std::string(td&&*td?td:"/tmp")+"/test_rt_"+std::to_string((long)getpid())+".ini";
+  std::string path=td.file("test_rt.ini");
   KT_CHECK(a.Save(path));
   Config c;
   KT_CHECK(c.Load(path));
@@ -51,8 +51,7 @@ int main(){
   KT_CHECK(Parse("item: (3)",&r)); KT_CHECK_EQ(r.name.c_str(), "(3)");   // a bare parenthetical is a name (normalize only strips " (..")
   { // a long bad value must not truncate the slot key out of the warning (msg buffer)
     Config w; w.Parse("[Profile.Long]\nBottom7=item:" + std::string(300, 'x') + "@lowhp:0\n");
-    for (auto& x : w.warnings) printf("warn: %s\n", x.c_str());
-    KT_CHECK_EQ(w.warnings.size(), 1);
+    if (!KT_CHECK_EQ(w.warnings.size(), 1)) for (auto& x : w.warnings) printf("warn: %s\n", x.c_str());
     if (!w.warnings.empty()) { KT_CHECK(w.warnings[0].find("Bottom7") != std::string::npos); KT_CHECK(w.warnings[0].size() <= 200); }
   }
   KT_CHECK(Parse("OTHER:FF",&r));
@@ -92,8 +91,12 @@ int main(){
     KT_CHECK(Parse("item:Medpac@lowhp::none",&r)); KT_CHECK_EQ(r.target.thresholdPct,-1); KT_CHECK_EQ(r.target.fallback,0);
     KT_CHECK(Parse("item:Medpac@lowhp:100",&r)); KT_CHECK_EQ(r.target.thresholdPct,100); KT_CHECK_EQ(r.target.fallback,-1);
     KT_CHECK(Parse("item:Medpac@lowhp:1",&r)); KT_CHECK_EQ(r.target.thresholdPct,1);
-    KT_CHECK(Parse("spell:8@lowhp",&r)); KT_CHECK_EQ(r.kind,K_Spell); KT_CHECK_EQ(r.id,8); KT_CHECK_EQ(r.target.mode,TM_LowHp);
-    KT_CHECK(Parse("feat:3@lowhp:25",&r)); KT_CHECK_EQ(r.kind,K_Feat); KT_CHECK_EQ(r.target.thresholdPct,25);
+    // HB12: a target suffix only means something on items; spell:/feat: refuse it (the slot is left empty, Config::Parse warns)
+    KT_CHECK(!Parse("spell:8@lowhp",&r)); KT_CHECK(r.empty());
+    KT_CHECK(!Parse("feat:3@lowhp:25",&r)); KT_CHECK(r.empty());
+    KT_CHECK(!Parse("spell:8@self",&r)); KT_CHECK(r.empty()); KT_CHECK(!Parse("feat:3@SELF",&r)); KT_CHECK(!Parse("spell:8@lowhp::none",&r));
+    KT_CHECK(Parse("spell:8@default",&r)); KT_CHECK_EQ(r.kind,K_Spell); KT_CHECK_EQ(r.target.mode,TM_Default);   // "@default" is the no-op suffix: accepted everywhere
+    KT_CHECK(Parse("spell:8@bogus",&r) == false);   // not a target word: stays part of the value, which is not an integer
     KT_CHECK(Parse("item:Medpac@lowhp:40:none",&r)); KT_CHECK(Parse("item:Medpac@default",&r));
     KT_CHECK_EQ(r.name.c_str(),"Medpac"); KT_CHECK_EQ(r.target.mode,TM_Default);
     KT_CHECK(Parse("item:A@bogus",&r)); KT_CHECK_EQ(r.name.c_str(),"A@bogus"); KT_CHECK_EQ(r.target.mode,TM_Default);
@@ -112,20 +115,19 @@ int main(){
     KT_CHECK(Parse("item:Medpac@self",&r)); KT_CHECK_EQ(r.name.c_str(),"Medpac"); KT_CHECK_EQ(r.target.mode,TM_Self);
     KT_CHECK_EQ(Format(r).c_str(),"item:Medpac@self");
     KT_CHECK(Parse("item:Stim@SELF",&r)); KT_CHECK_EQ(r.target.mode,TM_Self); KT_CHECK_EQ(r.target.thresholdPct,-1); KT_CHECK_EQ(r.target.fallback,-1);
-    KT_CHECK(Parse("spell:8@self",&r)); KT_CHECK_EQ(r.kind,K_Spell); KT_CHECK_EQ(r.target.mode,TM_Self);   // parses; ignored at use
     KT_CHECK(!Parse("item:X@self:40",&r)); KT_CHECK(r.empty());
     KT_CHECK(!Parse("item:X@self:",&r));
     KT_CHECK(!Parse("none@self",&r));
     KT_CHECK(Parse("item:A@b@self",&r)); KT_CHECK_EQ(r.name.c_str(),"A@b"); KT_CHECK_EQ(r.target.mode,TM_Self);
     // Format: shortest form that round-trips
     const char* forms[]={"item:Medpac","item:Medpac@lowhp","item:Medpac@lowhp:40","item:Medpac@lowhp::none","item:Medpac@lowhp::self","item:Medpac@lowhp:40:none","item:Medpac@lowhp:40:self",
-                         "spell:8","spell:8@lowhp","spell:8@lowhp:40","spell:8@lowhp::none","spell:8@lowhp:40:none","feat:3@lowhp","other:1a"};
+                         "item:Medpac@self","spell:8","feat:3","other:1a","other:1a@lowhp:40"};
     for(const char* f:forms){ ActionRef q; KT_CHECK(Parse(f,&q)); KT_CHECK_EQ(Format(q).c_str(),f); }
     { ActionRef q; Parse("item:Medpac@default",&q); KT_CHECK_EQ(Format(q).c_str(),"item:Medpac");
       q=ActionRef(); q.blank=true; KT_CHECK_EQ(Format(q).c_str(),"none"); }
     // Same() is identity only
     { ActionRef x,y; Parse("item:Medpac",&x); Parse("item:medpac@lowhp:40:none",&y); KT_CHECK(Same(x,y));
-      Parse("spell:8",&x); Parse("spell:8@lowhp",&y); KT_CHECK(Same(x,y)); Parse("spell:9@lowhp",&y); KT_CHECK(!Same(x,y)); }
+      Parse("other:8",&x); Parse("other:8@lowhp",&y); KT_CHECK(Same(x,y)); Parse("other:9@lowhp",&y); KT_CHECK(!Same(x,y)); }
     // effective values: slot override, else [General]
     { General g; TargetSpec t;
       KT_CHECK_EQ(g.healThreshold,50); KT_CHECK_EQ(g.healFallbackSelf,1);
@@ -153,8 +155,8 @@ int main(){
     Config d; d.Parse("[General]\nInvoke=1\n"); std::string od=d.Serialize();
     KT_CHECK(od.find("HealThreshold=50\n")!=std::string::npos); KT_CHECK(od.find("HealFallback=self\n")!=std::string::npos);
     KT_CHECK(od.find("HealThreshold")>od.find("AutoFill=")); }
-  { const char* ini="[General]\nHealThreshold=60\nHealFallback=none\n[Profile.Default]\nBottom1=item:Medpac@lowhp\nBottom2=item:Medpac@lowhp:40:none ; heal\nBottom3=spell:8@lowhp::self\nBottom4=item:Adrenal@default\nBottom5=item:A@bogus\n"
-                    "[Profile.Atton]\nBottom1=spell:22@lowhp:10\n";
+  { const char* ini="[General]\nHealThreshold=60\nHealFallback=none\n[Profile.Default]\nBottom1=item:Medpac@lowhp\nBottom2=item:Medpac@lowhp:40:none ; heal\nBottom3=item:Stim@lowhp::self\nBottom4=item:Adrenal@default\nBottom5=item:A@bogus\n"
+                    "[Profile.Atton]\nBottom1=item:Kit@lowhp:10\n";
     Config a; a.Parse(ini); KT_CHECK(a.warnings.empty());
     ActionRef s=a.slotFor("Nobody",0,1); KT_CHECK_EQ(s.target.mode,TM_LowHp); KT_CHECK_EQ(effectiveThreshold(s.target,a.general),40); KT_CHECK(!effectiveFallbackSelf(s.target,a.general));
     s=a.slotFor("Nobody",0,0); KT_CHECK_EQ(effectiveThreshold(s.target,a.general),60); KT_CHECK(!effectiveFallbackSelf(s.target,a.general));
@@ -163,10 +165,10 @@ int main(){
     std::string o1=a.Serialize(); Config b; b.Parse(o1); KT_CHECK(b.warnings.empty()); KT_CHECK(b.Serialize()==o1);
     KT_CHECK(o1.find("Bottom1=item:Medpac@lowhp\n")!=std::string::npos);
     KT_CHECK(o1.find("Bottom2=item:Medpac@lowhp:40:none   ; heal")!=std::string::npos);
-    KT_CHECK(o1.find("Bottom3=spell:8@lowhp::self\n")!=std::string::npos);
+    KT_CHECK(o1.find("Bottom3=item:Stim@lowhp::self\n")!=std::string::npos);
     KT_CHECK(o1.find("Bottom4=item:Adrenal\n")!=std::string::npos);
     KT_CHECK(o1.find("Bottom5=item:A@bogus\n")!=std::string::npos);
-    KT_CHECK(o1.find("[Profile.Atton]\nBottom1=spell:22@lowhp:10\n")!=std::string::npos); }
+    KT_CHECK(o1.find("[Profile.Atton]\nBottom1=item:Kit@lowhp:10\n")!=std::string::npos); }
 
   // ================= hardening (doc 20 4.1): parsing robustness =================
   static const Profile kNoProf;
@@ -263,7 +265,7 @@ int main(){
   // ================= round trip: everything Serialize writes parses back identically =================
   { Config c; c.general.invoke=0; c.general.verbose=1; c.general.autoFill=1; c.general.keyboardDevice=4; c.general.healThreshold=77; c.general.healFallbackSelf=0;
     c.general.extra["Zed"]="1"; c.general.extra["Alpha"]="two words";
-    const char* vals[]={"spell:0","spell:2147483647","feat:12","item:Medpac","item:Adrenal Stimulant@lowhp","spell:8@lowhp:40","feat:3@lowhp::none","item:Repair Kit@lowhp:100:self",
+    const char* vals[]={"spell:0","spell:2147483647","feat:12","item:Medpac","item:Adrenal Stimulant@lowhp","item:Stim@lowhp:40","item:Kit@lowhp::none","item:Repair Kit@lowhp:100:self",
                         "other:1a","other:ffffffff","other:80000000@lowhp","none","item:A@bogus"};
     for(int i=0;i<10;++i){ ActionRef a; KT_CHECK(Parse(vals[i],&a)); c.SetSlot("Default",0,i,a,i%2?"note "+std::to_string(i):"");
       ActionRef b; KT_CHECK(Parse(vals[i+3],&b)); c.SetSlot("Atton",0,i,b,i%3?"":"a; b"); }
@@ -280,17 +282,16 @@ int main(){
         KT_CHECK_EQ(x->slots[0][s].kind,y->slots[0][s].kind); KT_CHECK_EQ(x->slots[0][s].target.thresholdPct,y->slots[0][s].target.thresholdPct);
         KT_CHECK_EQ(x->slots[0][s].target.fallback,y->slots[0][s].target.fallback); KT_CHECK_EQ(x->notes[0][s].c_str(),y->notes[0][s].c_str()); } }
     // file round trip through Save/Load
-    const char* td=getenv("TMPDIR"); std::string path=std::string(td&&*td?td:"/tmp")+"/test_rt2_"+std::to_string((long)getpid())+".ini";
+    std::string path=td.file("test_rt2.ini");
     KT_CHECK(c.Save(path)); Config e; KT_CHECK(e.Load(path)); KT_CHECK(e.warnings.empty()); KT_CHECK(e.Serialize()==o); remove(path.c_str());
     Config nf; KT_CHECK(!nf.Load("/nonexistent_dir_xyz/none.ini"));
   }
   // ===== mutation-triage additions (doc 20e) =====
-  { // layout constants: the INI keys, the editor grid and the file header all derive from these
-    KT_CHECK_EQ(Rows,1); KT_CHECK_EQ(Slots,10); KT_CHECK_EQ(SchemaVersion,1);
+  { // layout: validSlot / SlotKeyName / the file header follow Rows, Slots and SchemaVersion (the constants themselves are not re-asserted, HB22)
     KT_CHECK(validSlot(0,0)); KT_CHECK(validSlot(0,9)); KT_CHECK(!validSlot(0,10)); KT_CHECK(!validSlot(0,-1)); KT_CHECK(!validSlot(1,0)); KT_CHECK(!validSlot(-1,0));
     KT_CHECK_EQ(SlotKeyName(0,10).c_str(),""); KT_CHECK_EQ(slotDigit(0),'1'); KT_CHECK_EQ(slotDigit(8),'9');
     Config c; c.profile("Default");
-    KT_CHECK(c.Serialize().find("[General]\nSchemaVersion=1\nInvoke=")!=std::string::npos); }
+    KT_CHECK(c.Serialize().find("[General]\nSchemaVersion="+std::to_string(SchemaVersion)+"\nInvoke=")!=std::string::npos); }
   { // parseInt32 range (through the strict General ints): INT32_MIN..INT32_MAX
     Config c=W("[General]\nInvoke=-2147483648\nVerbose=2147483647\n"); KT_CHECK(c.warnings.empty());
     KT_CHECK_EQ(c.general.invoke,(int)(-2147483647-1)); KT_CHECK_EQ(c.general.verbose,2147483647);
@@ -320,11 +321,11 @@ int main(){
     TargetSpec ts; KT_CHECK(!parseTargetSuffix("bogus",&ts)); KT_CHECK(!parseTargetSuffix("",&ts)); KT_CHECK(parseTargetSuffix("default",&ts)); KT_CHECK(!parseTargetSuffix("default:1",&ts));
     KT_CHECK(parseTargetSuffix("lowhp",&ts)); KT_CHECK(!parseTargetSuffix("lowhp:1:self:x",&ts));
     ActionRef r;
-    KT_CHECK(Parse("spell:1@lowhp:19",&r)); KT_CHECK_EQ(r.target.thresholdPct,19);
-    KT_CHECK(Parse("spell:1@lowhp:99",&r)); KT_CHECK_EQ(r.target.thresholdPct,99);
-    KT_CHECK(Parse("spell:1@lowhp:0050",&r)); KT_CHECK_EQ(r.target.thresholdPct,50);
-    KT_CHECK(!Parse("spell:1@lowhp:4294967346",&r));       // would wrap to 50 without the digit-accumulator guard
-    KT_CHECK(!Parse("spell:1@lowhp:1x",&r)); KT_CHECK(!Parse("spell:1@lowhp:9a",&r)); KT_CHECK(!Parse("spell:1@lowhp:101",&r)); KT_CHECK(!Parse("spell:1@lowhp:1000",&r)); KT_CHECK(!Parse("spell:1@lowhp:1001",&r)); KT_CHECK(!Parse("spell:1@lowhp:00000000000000000000000101",&r));
+    KT_CHECK(Parse("item:S@lowhp:19",&r)); KT_CHECK_EQ(r.target.thresholdPct,19);
+    KT_CHECK(Parse("item:S@lowhp:99",&r)); KT_CHECK_EQ(r.target.thresholdPct,99);
+    KT_CHECK(Parse("item:S@lowhp:0050",&r)); KT_CHECK_EQ(r.target.thresholdPct,50);
+    KT_CHECK(!Parse("item:S@lowhp:4294967346",&r));       // would wrap to 50 without the digit-accumulator guard
+    KT_CHECK(!Parse("item:S@lowhp:1x",&r)); KT_CHECK(!Parse("item:S@lowhp:9a",&r)); KT_CHECK(!Parse("item:S@lowhp:101",&r)); KT_CHECK(!Parse("item:S@lowhp:1000",&r)); KT_CHECK(!Parse("item:S@lowhp:1001",&r)); KT_CHECK(!Parse("item:S@lowhp:00000000000000000000000101",&r));
     KT_CHECK(!Parse("item",&r)); KT_CHECK(r.empty()); KT_CHECK(!Parse("item:",&r)); KT_CHECK(r.empty()); KT_CHECK(!Parse("item:   ",&r)); KT_CHECK(!Parse("spell",&r));
     KT_CHECK(!Parse("other:+5",&r)); KT_CHECK(!Parse("other:-0",&r)); KT_CHECK(!Parse("other:-5",&r)); KT_CHECK(r.empty()); }
   { // Same(): identity only
@@ -338,7 +339,7 @@ int main(){
     General g; g.healThreshold=70; TargetSpec t; t.thresholdPct=0; KT_CHECK_EQ(effectiveThreshold(t,g),0);
     t.thresholdPct=-1; KT_CHECK_EQ(effectiveThreshold(t,g),70); t.fallback=0; g.healFallbackSelf=1; KT_CHECK(!effectiveFallbackSelf(t,g)); }
   { // Config::readFile: whole file, including a final partial chunk
-    const char* td=getenv("TMPDIR"); std::string path=std::string(td&&*td?td:"/tmp")+"/test_rf_"+std::to_string((long)getpid())+".bin";
+    std::string path=td.file("test_rf.bin");
     for(size_t n:{(size_t)1,(size_t)4095,(size_t)4096,(size_t)4097,(size_t)8193}){
       std::string body(n,'a'); body[n-1]='Z'; FILE* f=fopen(path.c_str(),"wb"); KT_CHECK(f!=nullptr); if(!f) continue; fwrite(body.data(),1,n,f); fclose(f);
       std::string got="stale"; KT_CHECK(Config::readFile(path,&got)); KT_CHECK(got==body); }
@@ -363,7 +364,7 @@ int main(){
     c=W("[Profile.Long]\n"+std::string(300,'k')+"=spell:1\n"); KT_CHECK_EQ(c.warnings.size(),1);
     if(!c.warnings.empty()) KT_CHECK_EQ(c.warnings[0].c_str(),("line 2: unknown key '"+std::string(40,'k')+"' in [Profile.Long]").c_str()); }
   { // Save never leaves a .bak (the hotbar makes its own backups) and replaces the file each time
-    const char* td=getenv("TMPDIR"); std::string path=std::string(td&&*td?td:"/tmp")+"/test_save2_"+std::to_string((long)getpid())+".ini";
+    std::string path=td.file("test_save2.ini");
     remove(path.c_str()); remove((path+".bak").c_str()); remove((path+".tmp").c_str());   // stale files from an aborted earlier run must not matter
     Config c; c.profile("Default"); KT_CHECK(c.Save(path)); c.general.invoke=0; KT_CHECK(c.Save(path));
     FILE* b=fopen((path+".bak").c_str(),"rb"); KT_CHECK(b==nullptr); if(b) fclose(b);
@@ -371,13 +372,100 @@ int main(){
     Config d; KT_CHECK(d.Load(path)); KT_CHECK_EQ(d.general.invoke,0);
     remove(path.c_str()); remove((path+".bak").c_str()); }
   { // ini migration: new name wins; else copy the legacy file; else nothing. Snapshots load new name first, then legacy.
-    KT_CHECK_EQ(IniName,"action_hotbar.ini"); KT_CHECK_EQ(LegacyIniName,"force_power_hotbar.ini");
     KT_CHECK_EQ((int)iniMigrateAction(true,true),(int)IM_UseNew);
     KT_CHECK_EQ((int)iniMigrateAction(true,false),(int)IM_UseNew);
     KT_CHECK_EQ((int)iniMigrateAction(false,true),(int)IM_CopyLegacy);
     KT_CHECK_EQ((int)iniMigrateAction(false,false),(int)IM_None);
     std::vector<std::string> sn=snapshotNames(); KT_CHECK_EQ(sn.size(),2);
     if(sn.size()==2){ KT_CHECK(sn[0]==IniName); KT_CHECK(sn[1]==LegacyIniName); } }
-  puts(s1.c_str());
+
+  // ================= HB10-HB15, HB19: config edge cases =================
+  { // HB10: SchemaVersion is NOT validated on load (pinned): any value, even junk, is ignored without a warning and never reaches extra;
+    // the next Save rewrites the current version.
+    for(const char* v:{"999","0","-1","abc",""}){
+      Config c=W(std::string("[General]\nSchemaVersion=")+v+"\nInvoke=0\n");
+      KT_CHECK(c.warnings.empty()); KT_CHECK_EQ(c.general.invoke,0); KT_CHECK(c.general.extra.empty());
+      std::string o=c.Serialize(); KT_CHECK(o.find("SchemaVersion="+std::to_string(SchemaVersion)+"\n")!=std::string::npos); }
+    Config c=W("[General]\nschemaversion=7\n"); KT_CHECK(c.warnings.empty()); KT_CHECK(c.general.extra.empty()); }   // key match is case-insensitive
+  { // HB11: ';' starts the note in [General] too: "Foo=a;b" keeps value "a" and DROPS ";b" (no note store for General keys), so the round trip is lossy (pinned).
+    Config c=W("[General]\nFoo=a;b\nBar = x ; y\n");
+    KT_CHECK(c.warnings.empty()); KT_CHECK_EQ(c.general.extra["Foo"].c_str(),"a"); KT_CHECK_EQ(c.general.extra["Bar"].c_str(),"x");
+    std::string o=c.Serialize(); KT_CHECK(o.find("\nFoo=a\n")!=std::string::npos); KT_CHECK(o.find("a;b")==std::string::npos); KT_CHECK(o.find("; y")==std::string::npos);
+    Config d=W(o); KT_CHECK_EQ(d.general.extra["Foo"].c_str(),"a"); KT_CHECK(d.Serialize()==o); }   // stable after the first (lossy) pass
+  { // HB12: "@self"/"@lowhp" on spell:/feat: is refused with the standard bad-value warning; the slot stays empty; items and other:@default keep working
+    Config c=W("[Profile.D]\nBottom1=spell:8@self\nBottom2=feat:3@lowhp:40\nBottom3=item:Medpac@self\nBottom4=spell:9@default\nBottom5=spell:8@lowhp ; note\n");
+    KT_CHECK_EQ(c.warnings.size(),3);
+    if(c.warnings.size()==3){
+      KT_CHECK_EQ(c.warnings[0].c_str(),"line 2: Bottom1: bad value 'spell:8@self' (slot left empty)");
+      KT_CHECK_EQ(c.warnings[1].c_str(),"line 3: Bottom2: bad value 'feat:3@lowhp:40' (slot left empty)");
+      KT_CHECK_EQ(c.warnings[2].c_str(),"line 6: Bottom5: bad value 'spell:8@lowhp' (slot left empty)"); }
+    const Profile& p=P(c,"D");
+    KT_CHECK(p.slots[0][0].empty() && !p.slots[0][0].blank); KT_CHECK(p.slots[0][1].empty()); KT_CHECK(p.slots[0][4].empty());
+    KT_CHECK_EQ(p.notes[0][4].c_str(),"note");   // the note survives the refused value
+    KT_CHECK_EQ(p.slots[0][2].target.mode,TM_Self); KT_CHECK_EQ(p.slots[0][3].id,9); KT_CHECK_EQ(p.slots[0][3].target.mode,TM_Default);
+    // a refused value is dropped from the canonical text, so the second parse is warning-free
+    Config d=W(c.Serialize()); KT_CHECK(d.warnings.empty()); KT_CHECK(d.Serialize()==c.Serialize()); }
+  { // HB12 property: Format -> Parse for item names, incl. the awkward ones. A name the editor produces (decodeKey -> normalizeItemName) round-trips;
+    // names that END in @self/@lowhp... or contain ';' / " (" are re-read by the parser as suffix / note / count and do NOT (pinned, documented limits).
+    auto rt=[&](const std::string& name,TargetMode m){ ActionRef a; a.kind=K_Item; a.name=normalizeItemName(name); a.target.mode=m;
+      Config c; c.SetSlot("Default",0,0,a,""); Config d=W(c.Serialize()); ActionRef b=d.slotFor("",0,0); return std::make_pair(a,b); };
+    for(const char* ok:{"Medpac","Medpac Mk II","Dr. A@B","A@","@","a@b@c","Medpac(3)","Ünï","Name:with:colons","  spaced  "}){
+      for(TargetMode m:{TM_Default,TM_Self,TM_LowHp}){ auto pr=rt(ok,m);
+        if(!KT_CHECK(pr.second.kind==K_Item && Same(pr.first,pr.second))) printf("  (name '%s' mode %d)\n",ok,(int)m);
+        KT_CHECK_EQ(pr.second.target.mode,m); } }
+    { auto pr=rt("Foo@self",TM_Default); KT_CHECK_EQ(pr.second.name.c_str(),"Foo"); KT_CHECK_EQ(pr.second.target.mode,TM_Self); KT_CHECK(!Same(pr.first,pr.second)); }
+    { auto pr=rt("Foo@lowhp",TM_Default); KT_CHECK_EQ(pr.second.name.c_str(),"Foo"); KT_CHECK_EQ(pr.second.target.mode,TM_LowHp); }
+    { auto pr=rt("Foo@SELF",TM_LowHp); KT_CHECK_EQ(pr.second.name.c_str(),"Foo@SELF"); KT_CHECK_EQ(pr.second.target.mode,TM_LowHp); }   // an explicit suffix wins: the last '@' is the suffix
+    { auto pr=rt("Foo@lowhp",TM_Self); KT_CHECK_EQ(pr.second.name.c_str(),"Foo@lowhp"); KT_CHECK_EQ(pr.second.target.mode,TM_Self); }
+    { auto pr=rt("A;B",TM_Default); KT_CHECK_EQ(pr.second.name.c_str(),"A"); }                                   // ';' = note start (see the Foo; Bar quirk above)
+    { ActionRef a; a.kind=K_Item; a.name="A;B"; Config c; c.SetSlot("Default",0,0,a,""); Config d=W(c.Serialize());
+      KT_CHECK_EQ(P(d,"Default").notes[0][0].c_str(),"B"); KT_CHECK(d.warnings.empty()); }
+    { ActionRef a; a.kind=K_Item; a.name="A (B)";                                                               // an un-normalised " (" is cut by Parse
+      Config c; c.SetSlot("Default",0,0,a,""); Config d=W(c.Serialize()); KT_CHECK_EQ(d.slotFor("",0,0).name.c_str(),"A"); }
+    { auto pr=rt("A (B) (3)",TM_Self); KT_CHECK_EQ(pr.second.name.c_str(),"A"); KT_CHECK_EQ(pr.first.name.c_str(),"A"); KT_CHECK(Same(pr.first,pr.second)); }   // normalised first: stable
+    for(const char* hz:{"Foo@self","Foo@lowhp","A;B","A (B)"}){   // none of the awkward names may raise a warning or lose the slot
+      ActionRef a; a.kind=K_Item; a.name=hz; Config c; c.SetSlot("Default",0,0,a,""); Config d=W(c.Serialize());
+      KT_CHECK(d.warnings.empty()); KT_CHECK_EQ(d.slotFor("",0,0).kind,K_Item); } }
+  { // HB13: Save failure paths report false and never leave a .tmp behind or clobber the old file
+    Config c; c.profile("Default"); std::string nodir=td.file("no_such_dir/x.ini");
+    KT_CHECK(!c.Save(nodir));                                                   // parent directory missing: fopen(.tmp) fails
+    KT_CHECK(!filewatch::stamp(nodir.c_str()).exists); KT_CHECK(!filewatch::stamp((nodir+".tmp").c_str()).exists);
+    std::string dirp=td.file("adir.ini"); KT_CHECK_EQ(mkdir(dirp.c_str(),0700),0);
+    KT_CHECK(!c.Save(dirp));                                                    // target is a directory: rename fails
+    KT_CHECK(!filewatch::stamp((dirp+".tmp").c_str()).exists);
+    std::string keep=td.file("keep.ini"); { FILE* f=fopen(keep.c_str(),"wb"); KT_CHECK(f!=nullptr); if(f){ fputs("OLD",f); fclose(f); } }
+    KT_CHECK_EQ(mkdir((keep+".tmp").c_str(),0700),0);                           // the temp name is taken by a directory: fopen(.tmp) fails
+    KT_CHECK(!c.Save(keep)); std::string got; KT_CHECK(Config::readFile(keep,&got)); KT_CHECK_EQ(got.c_str(),"OLD");
+    KT_CHECK(!c.Save("")); }                                                    // empty path
+  { // HB14: non-ASCII (UTF-8) item names, profile names, notes and file paths survive the text round trip and Save/Load byte for byte
+    const std::string nm="M\xC3\xA9" "dpac \xC3\x9C" "nï \xE2\x98\x85 \xE6\x97\xA5\xE6\x9C\xAC", pn="Bast\xC3\xAF" "la", note="n\xC3\xB6te \xE2\x80\x94 x";
+    ActionRef a; a.kind=K_Item; a.name=nm; Config c; c.SetSlot(pn,0,2,a,note); c.SetSlot("Default",0,0,a,"");
+    Config d=W(c.Serialize()); KT_CHECK(d.warnings.empty()); KT_CHECK(d.Serialize()==c.Serialize());
+    const Profile* p=d.find(pn); if(KT_CHECK(p!=nullptr)){ KT_CHECK_EQ(p->name.c_str(),pn.c_str()); KT_CHECK_EQ(p->slots[0][2].name.c_str(),nm.c_str()); KT_CHECK_EQ(p->notes[0][2].c_str(),note.c_str()); }
+    std::string path=td.file("t\xC3\xA9st_\xC3\xBCn\xC3\xAF\xE2\x98\x85.ini"); KT_CHECK(c.Save(path));
+    Config e; KT_CHECK(e.Load(path)); KT_CHECK(e.warnings.empty()); KT_CHECK(e.Serialize()==c.Serialize());
+    KT_CHECK(trim("\xC2\xA0x\xC2\xA0")=="\xC2\xA0x\xC2\xA0");                   // bytes >= 0x80 (incl. a UTF-8 NBSP) are never whitespace
+    KT_CHECK_EQ(lower("\xC3\x89").c_str(),"\xC3\x89");                           // lower() is ASCII-only: "É" stays "É" ...
+    ActionRef x,y; x.kind=y.kind=K_Item; x.name="\xC3\x89"; y.name="\xC3\xA9"; KT_CHECK(!Same(x,y));   // ... so É and é are different items (pinned)
+    c=W("\xEF\xBB\xBF[Profile.\xC3\x9C" "ber]\nBottom1=item:\xC3\x84" "xt\n"); KT_CHECK(c.warnings.empty()); KT_CHECK_EQ(P(c,"\xC3\x9C" "ber").slots[0][0].name.c_str(),"\xC3\x84xt"); }
+  { // HB15: the profile name is trimmed ("[Profile. Bob ]" == "[Profile.Bob]"); anything after ']' on the line is ignored (pinned)
+    Config c=W("[Profile.  Bob \t]\nBottom1=spell:1\n[Profile.Bob]\nBottom2=spell:2\n[profile.BOB ]\nBottom3=spell:3\n");
+    KT_CHECK(c.warnings.empty()); KT_CHECK_EQ(c.profiles.size(),1);
+    const Profile* p=c.find("bob"); if(KT_CHECK(p!=nullptr)){ KT_CHECK_EQ(p->name.c_str(),"Bob"); KT_CHECK_EQ(p->slots[0][0].id,1); KT_CHECK_EQ(p->slots[0][1].id,2); KT_CHECK_EQ(p->slots[0][2].id,3); }
+    KT_CHECK(c.Serialize().find("[Profile.Bob]\n")!=std::string::npos);
+    c=W("[Profile.  Eve]\nBottom1=spell:1\n"); KT_CHECK(c.find("Eve")!=nullptr); KT_CHECK_EQ(c.find("Eve")->name.c_str(),"Eve");
+    c=W("[General] junk here\nInvoke=0\n[Profile.X] more junk\nBottom1=spell:5\n[Profile.Y]] extra\nBottom1=spell:6\n[Profile.Z] ; note\nBottom1=spell:7\n");
+    KT_CHECK(c.warnings.empty()); KT_CHECK_EQ(c.general.invoke,0); KT_CHECK_EQ(P(c,"X").slots[0][0].id,5); KT_CHECK_EQ(P(c,"Y").slots[0][0].id,6); KT_CHECK_EQ(P(c,"Z").slots[0][0].id,7);
+    KT_CHECK(c.profiles.count("x")==1 && c.profiles.count("y")==1 && c.profiles.count("z")==1 && c.profiles.size()==3);
+    c=W("[Profile. ]\nBottom1=spell:1\n"); KT_CHECK_EQ(c.warnings.size(),2); KT_CHECK(c.profiles.empty()); }   // blank name after trim: unknown section, then the key is outside any section
+  { // HB19: normalizeItemName: identity = trimmed text before the first " (" (stack count / type suffix)
+    KT_CHECK_EQ(normalizeItemName("Medpac (3)").c_str(),"Medpac"); KT_CHECK_EQ(normalizeItemName("Medpac (Type) (3)").c_str(),"Medpac");
+    KT_CHECK_EQ(normalizeItemName("  Medpac \t").c_str(),"Medpac"); KT_CHECK_EQ(normalizeItemName("Medpac").c_str(),"Medpac");
+    KT_CHECK_EQ(normalizeItemName("A  (3)").c_str(),"A"); KT_CHECK_EQ(normalizeItemName("Name (").c_str(),"Name");
+    KT_CHECK_EQ(normalizeItemName("Medpac(3)").c_str(),"Medpac(3)"); KT_CHECK_EQ(normalizeItemName("A\t(3)").c_str(),"A\t(3)");   // only a SPACE then '('
+    KT_CHECK_EQ(normalizeItemName("(3)").c_str(),"(3)"); KT_CHECK_EQ(normalizeItemName(" (3)").c_str(),"(3)");                   // nothing before it: the trimmed text is the name
+    KT_CHECK_EQ(normalizeItemName("").c_str(),""); KT_CHECK_EQ(normalizeItemName(" \t\r\n").c_str(),"");
+    KT_CHECK_EQ(normalizeItemName("A (x) y").c_str(),"A"); KT_CHECK_EQ(normalizeItemName("A@self (2)").c_str(),"A@self"); }
+  if(kt::g_failures) puts(s1.c_str());   // HB30: the canonical sample text is only noise unless something failed
   return kt::Report("config_roundtrip_test");
 }

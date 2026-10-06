@@ -2,6 +2,8 @@
 """Generate testdata/fixture.tlk (TLK V3.0) for tlk_test.cpp. Deterministic; the output is committed.
 
 Run:  python3 patch_manager_mods/action_hotbar_src/testdata/make_tlk_fixture.py
+Check: add --check to rebuild into a temp file and byte-compare with the committed fixture.tlk (writes nothing there;
+exit 1 on a difference). scripts/test_make_tlk_fixture.py runs it from run_tests.py.
 
 Layout (same as Tlk.h): "TLK V3.0", u32 language, u32 count, u32 stringsOffset, then count * 40-byte entries
 (u32 flags, char[16] sound, u32 volVar, u32 pitchVar, u32 offset, u32 size, f32 soundLen), then the string blob.
@@ -9,6 +11,7 @@ No pykotor needed. Reads the file back and verifies every entry; exit 1 on misma
 """
 import struct
 import sys
+import tempfile
 from pathlib import Path
 
 # (raw bytes as stored, text Tlk::Get must return). Keep in sync with tlk_test.cpp.
@@ -34,7 +37,28 @@ def build():
     return head + table + blob
 
 
+def check(committed=None):
+    """Rebuild into a temp file and byte-compare with the committed fixture.tlk. True when identical."""
+    committed = committed or Path(__file__).resolve().parent / "fixture.tlk"
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td) / "fixture.tlk"
+        tmp.write_bytes(build())
+        fresh = tmp.read_bytes()
+    if not committed.exists():
+        print(f"error: {committed} missing", file=sys.stderr)
+        return False
+    if committed.read_bytes() != fresh:
+        print(f"error: {committed} differs from the generator output: re-run make_tlk_fixture.py", file=sys.stderr)
+        return False
+    return True
+
+
 def main():
+    if "--check" in sys.argv[1:]:
+        if not check():
+            return 1
+        print("fixture.tlk matches the generator")
+        return 0
     out = Path(__file__).resolve().parent / "fixture.tlk"
     data = build()
     out.write_bytes(data)

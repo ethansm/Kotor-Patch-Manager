@@ -9,9 +9,12 @@ fph_tgt_self: 32x32 teal person-silhouette corner badge for 'apply to self' slot
 start-up, so nothing is installed into override/. Re-run after changing the art, then rebuild the patch.
 
   --out-dir DIR   also write the .tga files to DIR (for inspection)
+  --emit-expected print the kExpected[] table for action_hotbar_src/textures_test.cpp (name, width, height per
+                  texture, make_all order) to stdout and exit; scripts/test_gen_hotbar_textures.py checks the .cpp matches
 """
 import argparse
 import io
+import struct
 import sys
 from pathlib import Path
 
@@ -230,14 +233,31 @@ def render_inc(blobs) -> str:
     return "\n".join(out) + "\n"
 
 
+def render_expected(blobs) -> str:
+    """The `kExpected[]` block of textures_test.cpp: (name, width, height) from each TGA header, 4 entries per line."""
+    cells = []
+    for name, data in blobs:
+        w, h = struct.unpack("<HH", data[12:16])
+        cells.append(f'{{ "{name}", {w}, {h} }}')
+    lines = ["static const Expect kExpected[] = {"]
+    for i in range(0, len(cells), 4):
+        lines.append("    " + ", ".join(cells[i:i + 4]) + ",")
+    lines.append("};")
+    return "\n".join(lines) + "\n"
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out-dir", type=Path)
+    ap.add_argument("--emit-expected", action="store_true", help="print the textures_test.cpp kExpected table and exit")
     a = ap.parse_args()
     import tempfile
     with tempfile.TemporaryDirectory() as td:
         made = make_all(Path(td))
         blobs = [(p.stem, p.read_bytes()) for p in made]
+        if a.emit_expected:
+            sys.stdout.write(render_expected(blobs))
+            return 0
         if a.out_dir:
             a.out_dir.mkdir(parents=True, exist_ok=True)
             for name, data in blobs:

@@ -41,11 +41,11 @@ int main() {
     } else printf("err=%s\n", err.c_str());
 
     // ResRef is case-insensitive; other type with the same name and the decoy resource are distinguished.
-    KT_CHECK(hb::ReadKeyBifResource((fx + "/chitin.key").c_str(), FX, "SPELLS", hb::ResType2DA, out, err) && out.size() == 1387);
+    KT_CHECK(hb::ReadKeyBifResource((fx + "/chitin.key").c_str(), FX, "SPELLS", hb::ResType2DA, out, err) && out.size() == 1633);
     KT_CHECK(hb::ReadKeyBifResource((fx + "/chitin.key").c_str(), FX, "spells", 2002, out, err) && out == "wrong-type-decoy");
     KT_CHECK(hb::ReadKeyBifResource((fx + "/chitin.key").c_str(), FX, "decoy", hb::ResType2DA, out, err) && out == "decoy-2da-bytes");
     // Mixed-case BIF name in the KEY ("Data\2DA.BIF"): lowercase fallback opens data/2da.bif.
-    KT_CHECK(hb::ReadKeyBifResource((fx + "/case.key").c_str(), FX, "spells", hb::ResType2DA, out, err) && out.size() == 1387);
+    KT_CHECK(hb::ReadKeyBifResource((fx + "/case.key").c_str(), FX, "spells", hb::ResType2DA, out, err) && out.size() == 1633);
     // Trailing slash on gameDir is fine.
     KT_CHECK(hb::ReadKeyBifResource((fx + "/chitin.key").c_str(), (fx + "/").c_str(), "spells", hb::ResType2DA, out, err));
 
