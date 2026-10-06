@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <math.h>
+#include "IniKit.h"   // trim / splitIniLine (Common; byte-identical to the copies that lived here). parseFloats stays local: F19 rejects hex floats
 
 namespace eq3d {
 
@@ -34,11 +35,7 @@ struct Cfg {
     float spinDegS = 0;
 };
 
-inline void trim(char* s) {
-    char* p = s; while (*p && isspace((unsigned char)*p)) ++p;
-    memmove(s, p, strlen(p) + 1);
-    for (int n = (int)strlen(s); n > 0 && isspace((unsigned char)s[n - 1]); --n) s[n - 1] = 0;
-}
+using inikit::trim;   // 0.2.0-probe (doc 32 MG4)
 // F19: call right after fgets(line, n, f). If the physical line did not fit (buffer full, no '\n', more data follows),
 // consume the rest of it and return true so the caller rejects the line ONCE instead of parsing the tail as a new line.
 // A line of exactly n-1 chars (with its '\n' or "\r\n" next, or at EOF) fits and returns false. (Copy of inv3d::drainLongLine.)
@@ -78,18 +75,8 @@ inline bool parseFloats(const char* v, float* out, int n) {
 // without '=' is rejected (and left untouched so the caller can log it). Otherwise `line` is cut in place: *key is
 // trimmed and lower-cased, *val is trimmed with everything from the first ';' or '#' dropped (so a value can never
 // contain those characters).
-enum IniLine { IniLineSkip = 0, IniLineNoEquals, IniLineKeyValue };
-inline IniLine splitIniLine(char* line, char** key, char** val) {
-    if (!line[0] || line[0] == '#' || line[0] == ';') return IniLineSkip;
-    char* eq = strchr(line, '=');
-    if (!eq) return IniLineNoEquals;
-    *eq = 0; char* k = line; char* v = eq + 1;
-    for (char* cm = v; *cm; ++cm) if (*cm == ';' || *cm == '#') { *cm = 0; break; }
-    trim(k); trim(v);
-    for (char* p = k; *p; ++p) *p = (char)tolower((unsigned char)*p);
-    *key = k; *val = v;
-    return IniLineKeyValue;
-}
+using inikit::IniLine; using inikit::IniLineSkip; using inikit::IniLineNoEquals; using inikit::IniLineKeyValue;
+using inikit::splitIniLine;
 
 // Apply one key (already lower-cased) = value to `c`.
 //   IniOk           accepted

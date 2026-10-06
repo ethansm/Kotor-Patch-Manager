@@ -5,6 +5,7 @@
 // so a failure names the consumer and the reason. Built against ../_shared_src (see test.toml), so ANY edit to GameAddr.h /
 // WindowHook.h re-runs this test: a Common change that would break the preview fails here first.
 //
+// 0.2.0-probe (doc 32 MG4) adds IniKit split, GuiKit pickScreen/wheel/bindByTag flags, PanelSlots, KpLog fallback (sections 5-10 below).
 // Areas: (1) gameaddr constants (compile time), (2) saferead (host stub: every address reads as committed), (3) WindowHook as the mouse-wheel subclass: install only while old is null, handle
 // only while active, forward chains to the previous proc, top uninstall restores, buried uninstall goes pass-through. Host-only.
 // (4) sceneview on a fake engine in a MAP_32BIT arena (createView / initScene / addModel / camera / cameraAttach / cameraFov / gateOpen / modelCount).
@@ -39,9 +40,18 @@ inline LONG xchg(volatile LONG* t, LONG v) { return __atomic_exchange_n(t, v, __
 #include "SafeRead.h"
 #include "K2Addr.h"
 #include "SceneView.h"
+#include "IniKit.h"
+#include "GuiKit.h"
+#include "PanelSlots.h"
+#include "KpLog.h"
+#include <string>
+#include <unistd.h>
 
 #define HCHECK(why, expr) ::kt::Check("equip3d relies on: " why " (line " KT_STR(__LINE__) ")", static_cast<bool>(expr))
 #define HEQ(why, a, b) ::kt::CheckEq("equip3d relies on: " why " (line " KT_STR(__LINE__) ")", (a), (b))
+
+KP_LOG_PATCH("equipment-3d-character");
+KP_CHANNEL(chMain, "main");
 
 // ============================================================ 1. GameAddr (compile time)
 #define HADDR(name, val) static_assert(gameaddr::name == (val), "equip3d relies on: gameaddr::" #name " == " #val " (validated Steam address)")
@@ -271,6 +281,142 @@ static void sceneview_contract() {
     installFakes();
 }
 
+// ============================================================ 5. IniKit::splitIniLine (EquipCharPreview.cpp loadIni via Equip3dLogic.h; the line is already trim()ed)
+static void inikit_contract() {
+    char b1[64] = "  Wheel_Step = 0.8 ; tweak # more";   // the mod trims first; splitIniLine trims key and value itself
+    inikit::trim(b1);
+    char *k = nullptr, *v = nullptr;
+    HCHECK("splitIniLine returns IniLineKeyValue for 'key = value'", inikit::splitIniLine(b1, &k, &v) == inikit::IniLineKeyValue);
+    HCHECK("splitIniLine lower-cases and trims the key (eq3d::parseIniLine compares lower-case names)", k && !strcmp(k, "wheel_step"));
+    HCHECK("splitIniLine cuts an inline ';'/'#' comment from the value and trims it (parseIniLine sees '0.8')", v && !strcmp(v, "0.8"));
+    char b2[64] = "stage=3#c";
+    HCHECK("splitIniLine cuts an inline '#' comment too", inikit::splitIniLine(b2, &k, &v) == inikit::IniLineKeyValue && !strcmp(k, "stage") && !strcmp(v, "3"));
+    char b3[64] = "this line has no equals";
+    HCHECK("splitIniLine of a line without '=' returns IniLineNoEquals", inikit::splitIniLine(b3, &k, &v) == inikit::IniLineNoEquals);
+    HCHECK("splitIniLine leaves a no-'=' line untouched (the mod logs it verbatim)", !strcmp(b3, "this line has no equals"));
+    char b4[32] = "# a comment = x", b5[32] = "; another = y", b6[8] = "";
+    HCHECK("splitIniLine returns IniLineSkip for a '#' comment line", inikit::splitIniLine(b4, &k, &v) == inikit::IniLineSkip);
+    HCHECK("splitIniLine returns IniLineSkip for a ';' comment line", inikit::splitIniLine(b5, &k, &v) == inikit::IniLineSkip);
+    HCHECK("splitIniLine returns IniLineSkip for an empty line", inikit::splitIniLine(b6, &k, &v) == inikit::IniLineSkip);
+}
+
+// ============================================================ 6. GuiKit::pickScreen / syncScreen (cfg.screenW/H vs engine globals)
+static void pickscreen_contract() {
+    int w = 3840, h = 1600;
+    HEQ("pickScreen: an explicit INI size wins over the engine globals (SS_Ini)", guikit::pickScreen(2560, 1080, 1920, 1080, &w, &h), (int)guikit::SS_Ini);
+    HCHECK("pickScreen: the INI size replaces the cfg values", w == 2560 && h == 1080);
+    w = 3840; h = 1600;
+    HCHECK("pickScreen: an INI override of only one axis keeps the caller's other value", guikit::pickScreen(2560, 0, 1920, 1080, &w, &h) == guikit::SS_Ini && w == 2560 && h == 1600);
+    w = 3840; h = 1600;
+    HEQ("pickScreen: no INI override -> the engine size is used (SS_Engine)", guikit::pickScreen(0, 0, 1920, 1080, &w, &h), (int)guikit::SS_Engine);
+    HCHECK("pickScreen: engine size replaces cfg values", w == 1920 && h == 1080);
+    w = 3840; h = 1600;
+    HCHECK("pickScreen: an engine size of 0x0 returns SS_None and leaves the cfg values", guikit::pickScreen(0, 0, 0, 0, &w, &h) == guikit::SS_None && w == 3840 && h == 1600);
+    HCHECK("pickScreen: an out-of-range engine size (99999) returns SS_None and leaves the cfg values", guikit::pickScreen(0, 0, 99999, 1080, &w, &h) == guikit::SS_None && w == 3840 && h == 1600);
+    HCHECK("screenValid rejects 0x0 and an absurd height (the SS_None cases)", !guikit::screenValid(0, 0) && !guikit::screenValid(1920, 100));
+}
+
+// ============================================================ 7. GuiKit WheelHook (g_wheel: touch / setRect / take / onEvent / eventLogMax)
+static int g_evN; static int g_evLastDelta; static bool g_evLastInside;
+static void onEv(int d, int, int, bool in) { ++g_evN; g_evLastDelta = d; g_evLastInside = in; }
+static void wheel_contract() {
+    guikit::WheelHook wh; wh.screenW = 1000; wh.screenH = 500;   // client 500x250 -> engine scale 2
+    HCHECK("WheelHook defaults: enabled, freshMs 300, eventLogMax 20 (equip3d sets scoped=false/onEvent/iniW/iniH)", wh.enabled && wh.freshMs == 300 && wh.eventLogMax == 20);
+    wh.touch(1000);
+    HCHECK("WheelHook does not consume while no rect has width > 0", !wh.onWheel(1100, 120, true, 100, 75, 500, 250) && wh.take() == 0);
+    wh.setRect(0, 100, 100, 200, 100);
+    HCHECK("WheelHook consumes an event inside the rect while enabled and touched", wh.onWheel(1100, 120, true, 100, 75, 500, 250));
+    HCHECK("WheelHook consumes a second event and accumulates both", wh.onWheel(1100, -60, true, 100, 75, 500, 250) && wh.take() == 60);
+    HEQ("WheelHook take() drained the accumulator to 0", wh.take(), 0);
+    HCHECK("WheelHook does not consume an event outside the rect (passes through to the game)", !wh.onWheel(1100, 120, true, 10, 10, 500, 250) && wh.take() == 0);
+    HCHECK("WheelHook does not consume when touch() is older than freshMs (300 ms)", !wh.onWheel(1300, 120, true, 100, 75, 500, 250) && wh.take() == 0);
+    HCHECK("WheelHook consumes at touch age 299 ms", wh.onWheel(1299, 120, true, 100, 75, 500, 250) && wh.take() == 120);
+    wh.enabled = false;
+    HCHECK("WheelHook does not consume when disabled (cfg.wheelZoom = 0)", !wh.onWheel(1100, 120, true, 100, 75, 500, 250) && wh.take() == 0);
+    wh.enabled = true; wh.setRect(0, 100, 100, 0, 100);
+    HCHECK("WheelHook does not consume when the rect width is 0 (panel hidden)", !wh.onWheel(1100, 120, true, 100, 75, 500, 250) && wh.take() == 0);
+    wh.setRect(0, 100, 100, 200, 100);
+    g_evN = 0; wh.onEvent = onEv; wh.eventLogs = 0;
+    for (int i = 0; i < 50; ++i) wh.onWheel(1100, 120, true, 100, 75, 500, 250);
+    HEQ("WheelHook onEvent fires at most eventLogMax (20) times", g_evN, 20);
+    HCHECK("WheelHook onEvent reports delta and inside", g_evLastDelta == 120 && g_evLastInside);
+    HEQ("WheelHook accumulated all 50 consumed events (logging does not gate consumption)", wh.take(), 50 * 120);
+}
+
+// ============================================================ 8. PanelSlots<Slot, 4> (g_slots: find / claim fresh flag / onEvict before reset / release / slotIndex via forEach)
+struct PSlot { int tag; };
+static void panelslots_contract() {
+    panelslots::PanelSlots<PSlot, 4> t;
+    bool fresh = false; unsigned seq = 0;
+    PSlot* a = t.claim(0x100, ++seq, &fresh);
+    HCHECK("PanelSlots first claim is fresh and non-null", a && fresh); a->tag = 11;
+    PSlot* b = t.claim(0x200, ++seq, &fresh); b->tag = 22;
+    PSlot* a2 = t.claim(0x100, ++seq, &fresh);
+    HCHECK("PanelSlots claim of an existing key returns the same slot", a2 == a);
+    HCHECK("PanelSlots claim of an existing key reports fresh=false and keeps the payload", !fresh && a2->tag == 11);
+    HCHECK("PanelSlots find returns the claimed slot, nullptr for an unknown key", t.find(0x200) == b && t.find(0x999) == nullptr);
+    t.claim(0x300, ++seq, &fresh)->tag = 33;
+    t.claim(0x400, ++seq, &fresh)->tag = 44;
+    // seqs now: 0x100=3 (refreshed), 0x200=2, 0x300=4, 0x400=5 -> lowest is 0x200
+    PSlot* e = t.claim(0x500, ++seq, &fresh);
+    HCHECK("PanelSlots claiming a 5th distinct key evicts the entry with the lowest seq (0x200), reusing its storage", fresh && e == b && t.find(0x200) == nullptr && t.find(0x500) == e);
+    HCHECK("PanelSlots eviction resets the payload (equip3d does *s = Slot() after the claim anyway)", e->tag == 0);
+    HCHECK("PanelSlots eviction keeps the other three panels", t.find(0x100) == a && t.find(0x300) && t.find(0x400));
+    // forEach visits used entries in index order: index order = a(0), e(1, took 0x200's place), 0x300(2), 0x400(3)
+    int order[4], n = 0;
+    t.forEach([&](PSlot& s) { if (n < 4) order[n] = s.tag; ++n; });
+    HCHECK("PanelSlots forEach visits every used entry exactly once", n == 4);
+    HCHECK("PanelSlots forEach visits in index order, not seq order (equip3d slotIndex relies on this)", order[0] == 11 && order[1] == 0 && order[2] == 33 && order[3] == 44);
+    t.release(0x300); n = 0; t.forEach([&](PSlot&) { ++n; });
+    HCHECK("PanelSlots forEach skips a released entry", n == 3);
+}
+
+
+// onEvict runs on the OLD occupant before its payload is reset (equip3d destroys the preview creature there), release() does not call it,
+// and a hit claim keeps the payload (equip3d then does destroyCreature("re-bind") itself because fresh == false).
+static int g_evictTag = -1, g_evictCalls = 0; static unsigned g_evictKey = 0, g_evictSeq = 0;
+static void panelslots_evict_contract() {
+    panelslots::PanelSlots<PSlot, 4> t;
+    bool fresh = false; unsigned seq = 0;
+    for (unsigned k = 1; k <= 4; ++k) t.claim(k * 0x100, ++seq, &fresh)->tag = (int)k;
+    t.onEvict = [](PSlot& old, uintptr_t key, unsigned sq) { ++g_evictCalls; g_evictTag = old.tag; g_evictKey = (unsigned)key; g_evictSeq = sq; };
+    PSlot* e = t.claim(0x900, ++seq, &fresh);
+    HCHECK("PanelSlots calls onEvict once, before the reset, with the old payload (creature still live), its key and its seq", g_evictCalls == 1 && g_evictTag == 1 && g_evictKey == 0x100 && g_evictSeq == 1);
+    HCHECK("PanelSlots evicted entry is fresh and reset after onEvict", fresh && e->tag == 0);
+    t.claim(0x200, ++seq, &fresh);
+    HCHECK("PanelSlots a hit claim does not call onEvict and reports fresh=false", g_evictCalls == 1 && !fresh);
+    HCHECK("PanelSlots release returns true for a held panel, false for an unknown one", t.release(0x300) && !t.release(0x300));
+    HCHECK("PanelSlots release does not call onEvict and hides the entry from find()", g_evictCalls == 1 && t.find(0x300) == nullptr);
+}
+
+// ============================================================ 10. GuiKit bindByTag flags (bindCover: hidden when the id mismatches, always click-through)
+static void bindflags_contract() {
+    HCHECK("bindMatches is plain id == expectId (bindCover returned the control iff the ids matched)", guikit::bindMatches(52, 52) && !guikit::bindMatches(51, 52));
+    HEQ("bindFlags on a matching id keeps the flags and adds click-through 0x20 (the old fl | 0x20)", guikit::bindFlags(52, 52, 0x02), 0x22);
+    HEQ("bindFlags on a mismatched id clears visible (bit1) and adds 0x20 (the old fl &= ~2; fl | 0x20)", guikit::bindFlags(51, 52, 0x02), 0x20);
+}
+
+// ============================================================ 9. KpLog fallback (no KPatchInit): equip3d_log.txt "<ms> equipment-3d-character/main <text>"
+static std::string slurp(const char* path) {
+    std::string t; if (FILE* f = fopen(path, "r")) { char b[512]; size_t n; while ((n = fread(b, 1, sizeof b, f)) > 0) t.append(b, n); fclose(f); } return t;
+}
+static void kplog_contract() {
+    const char* td = getenv("TMPDIR"); if (!td || !*td) td = "/tmp";
+    char path[300]; snprintf(path, sizeof path, "%s/equip3d_log_contract_%d.txt", td, (int)getpid());   // stands in for the mod's "equip3d_log.txt"
+    remove(path);
+    HCHECK("KpLog_HasCore() is false before KPatchInit (old-core path: the mod logs through the fallback)", !KpLog_HasCore());
+    KpLog_SetFallbackFile(path); KpLog_SetFallbackLevel(KPLOG_INFO);
+    HCHECK("KpLog_SetFallbackFile only stores the path, no I/O (safe from the static initialiser g_fallbackSet)", access(path, F_OK) != 0);
+    HCHECK("fallback level INFO enables INFO on the main channel (every equip3d line is INFO)", KP_ENABLED(chMain, KPLOG_INFO));
+    KP_LOGV(chMain, KPLOG_INFO, "%s", "equip3d 0.2.0-probe loaded (KpLog + IniKit + PanelSlots + GuiKit) tick=1");
+    std::string t = slurp(path);
+    size_t sp = t.find(' ');
+    HCHECK("fallback line starts with a decimal tick count", sp != std::string::npos && sp > 0 && t.find_first_not_of("0123456789") == sp);
+    HCHECK("fallback line is \"<ms> equipment-3d-character/main \" then the text unchanged", t.substr(sp) == " equipment-3d-character/main equip3d 0.2.0-probe loaded (KpLog + IniKit + PanelSlots + GuiKit) tick=1\n");
+    KpLog_SetFallbackFile(nullptr);
+    remove(path);
+}
+
 int main() {
     void* m = mmap(nullptr, ArenaSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_32BIT, -1, 0);
     if (m == MAP_FAILED) { perror("mmap MAP_32BIT"); return 5; }
@@ -278,5 +424,12 @@ int main() {
     saferead_contract();
     windowhook_contract();
     sceneview_contract();
+    inikit_contract();
+    pickscreen_contract();
+    wheel_contract();
+    panelslots_contract();
+    panelslots_evict_contract();
+    bindflags_contract();
+    kplog_contract();
     return kt::Report("common_contract_test (equipment_3d_character)");
 }
