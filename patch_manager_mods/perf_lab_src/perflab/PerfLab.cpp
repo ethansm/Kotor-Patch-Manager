@@ -1,4 +1,4 @@
-// PerfLab 0.5.0 (Steam Aspyr build 6A522E71...). Diagnostics; the only behaviour changes are the
+// PerfLab 0.5.1 (0.5.0 + KpLog) (Steam Aspyr build 6A522E71...). Diagnostics; the only behaviour changes are the
 // flag-gated experiments tx=1 / g1skip=1 / hwmip=1 (off by default). Research program: patch_manager_mods/10_engine_optimization_research.md.
 // 0.5.0 is measurement-only (all file output on the helper thread, hooks only count/copy; every engine pointer through SafeRead):
 //   MOD      (no hook) the `#METRICS` header gets ` module=<resref|-|?>` appended (client module name, `-` = no module/menu, `?` = chain unreadable)
@@ -74,6 +74,9 @@
 #include <stdarg.h>
 #include "../_shared/SafeRead.h"
 #include "CodePatch.h"
+#include "KpLog.h"
+
+KP_LOG_PATCH("perf-lab");
 
 namespace {
 
@@ -735,13 +738,46 @@ void applyExperiments() {
     if (g_cfg.g1skip) g_g1State = codepatch::writeChecked(PatchG1, g1Orig, g1New, 2, g_g1Seen);
 }
 
-// ---- logging / reports (helper thread only) ---------------------------------------------------------------
+// ---- log ----
+// 0.5.1: shared KpLog.h (channel main) replaces the private fopen/append logger. Text is unchanged; KpLog adds the prefix
+// (core file perf-lab_log.txt, old core: fallback perflab_log.txt at INFO, `<ms> perf-lab/main ...`). The old `t<frames>` field
+// survives as ` frames=` on the live= line. Lines containing FAILED log at WARN.
+KP_CHANNEL(chMain, "main");
+
+// Only stores the path and the level (no I/O): safe from a static initialiser.
+const bool g_fallbackSet = (KpLog_SetFallbackFile("perflab_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
+
+// The attach line is formatted in DllMain (setLoad) but emitted once the logger is known: by KPatchInit, else by the helper thread tick.
+// The other DllMain lines (IAT hooks, metrics on, hwmip, FAILED) are queued by pendf and emitted right after it, so the attach
+// line (the session marker for analyze_runs.py) always comes first in the log.
+char g_loadLine[500]; int g_loadLevel = KPLOG_INFO;
+volatile LONG g_loadEmitted = 0;
+constexpr int PendCap = 8;
+struct PendLine { int level; char text[500]; };
+PendLine g_pend[PendCap]; int g_pendN = 0;   // DllMain only (single-threaded; the helper thread is created after the last pendf)
+void setLoad(int level, const char* fmt, ...) {
+    va_list ap; va_start(ap, fmt); vsnprintf(g_loadLine, sizeof(g_loadLine), fmt, ap); va_end(ap);
+    size_t n = strlen(g_loadLine);
+    snprintf(g_loadLine + n, sizeof(g_loadLine) - n, " tick=%lu", GetTickCount());
+    g_loadLevel = level;
+}
+void pendf(const char* fmt, ...) {
+    if (g_pendN >= PendCap) return;
+    PendLine& p = g_pend[g_pendN++];
+    va_list ap; va_start(ap, fmt); vsnprintf(p.text, sizeof(p.text), fmt, ap); va_end(ap);
+    p.level = strstr(p.text, "FAILED") ? KPLOG_WARN : KPLOG_INFO;
+}
+void emitLoadLine() {
+    if (g_loadEmitted || !g_loadLine[0]) return;       // cheap fast path; silent when DllMain returned early (no perflab_debug.txt)
+    if (InterlockedExchange(&g_loadEmitted, 1)) return;
+    KP_LOGV(chMain, g_loadLevel, "%s", g_loadLine);
+    for (int i = 0; i < g_pendN; ++i) KP_LOGV(chMain, g_pend[i].level, "%s", g_pend[i].text);
+}
+
 void logf(const char* fmt, ...) {
-    FILE* f = fopen("perflab_log.txt", "a");
-    if (!f) return;
-    fprintf(f, "[%lu t%ld] ", GetTickCount(), g_ticks);
-    va_list ap; va_start(ap, fmt); vfprintf(f, fmt, ap); va_end(ap);
-    fputc('\n', f); fclose(f);
+    char buf[700];
+    va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
+    KP_LOGV(chMain, strstr(buf, "FAILED") ? KPLOG_WARN : KPLOG_INFO, "%s", buf);
 }
 
 int cmpLive(const void* a, const void* b) {
@@ -967,7 +1003,10 @@ template <typename F> void hwvLines(F emit) {
 }
 void logHwmipSummary(const char* ev) {
     char b[640]; hwmipFields(b, sizeof b);
-    logf("HWMIP %s%s", ev, b);
+    // Two lines (the KPM core cuts a line's text at 232 bytes; the single line reached it once the counters grew): split before hwmip_fallback_null.
+    char* cut = strstr(b, " hwmip_fallback_null=");
+    if (cut) { *cut = 0; logf("HWMIP %s%s", ev, b); *cut = ' '; logf("HWMIP %s%s", ev, cut); }
+    else logf("HWMIP %s%s", ev, b);
     hwvLines([](const char* l) { logf("%s", l); });
 }
 LONG g_hwEvLogged = 0;
@@ -1105,6 +1144,7 @@ DWORD WINAPI helper(LPVOID) {
     // No stop flag: the DLL is never unloaded and a detach-time flag would wake this thread in unmapped code; reports are written periodically below.
     for (;;) {
         Sleep(100);
+        emitLoadLine();
         if (!loggedExp && g_firstTickDone) { loggedExp = true; logExperiments(); }
         logHwmipEvents();
         if (g_gameProcess) {
@@ -1119,7 +1159,7 @@ DWORD WINAPI helper(LPVOID) {
         }
         if (GetTickCount() - lastFlush >= g_cfg.flushMs) {
             lastFlush = GetTickCount(); writeReport(); writeMetrics("FLUSH");
-            logf("live=%lldB blocks=%lld sites=%ld dropped=%ld", (long long)g_liveBytes, (long long)g_liveN, g_siteCount, g_dropped);
+            logf("live=%lldB blocks=%lld sites=%ld dropped=%ld frames=%ld", (long long)g_liveBytes, (long long)g_liveN, g_siteCount, g_dropped, g_ticks);
         }
     }
 }
@@ -1546,6 +1586,9 @@ int __cdecl PerfLabTestResolveEntries(void** out) {
 void __cdecl PerfLabSceneDtor() { if (g_m && grp(g_cfg.misc)) { MTimer t(HkSceneDtor); InterlockedIncrement64(&g_m->sceneDtor); } }
 }
 
+// KpLog_Init may fail on an old core; the attach line is emitted either way (KpLog then falls back to perflab_log.txt).
+extern "C" void __cdecl KPatchInit(const KPatchApi* api) { KpLog_Init(api); emitLoadLine(); }
+
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {
         if (GetFileAttributesA("perflab_debug.txt") == INVALID_FILE_ATTRIBUTES) return TRUE;
@@ -1557,13 +1600,13 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
         g_exeHi = g_exeLo + nt->OptionalHeader.SizeOfImage;
         g_gameProcess = g_exeLo == 0x00400000 && nt->OptionalHeader.SizeOfImage > 0x600000;
         { LARGE_INTEGER f; QueryPerformanceFrequency(&f); g_qpf = f.QuadPart ? f.QuadPart : 1; }
-        logf("perf-lab 0.5.0 attach exe=%08x-%08x game=%d alloc=%d heapfilter=%d scan=%d metrics=%d vq=%d tx=%s g1skip=%s hwmip=%s ev=%d", (unsigned)g_exeLo, (unsigned)g_exeHi,
+        setLoad(KPLOG_INFO, "perf-lab 0.5.1 attach exe=%08x-%08x game=%d alloc=%d heapfilter=%d scan=%d metrics=%d vq=%d tx=%s g1skip=%s hwmip=%s ev=%d", (unsigned)g_exeLo, (unsigned)g_exeHi,
              g_gameProcess, g_cfg.alloc, g_cfg.heapFilter, g_cfg.scan, g_cfg.metrics, g_cfg.vq, g_cfg.tx ? "ON" : "OFF", g_cfg.g1skip ? "ON" : "OFF", g_cfg.hwmip ? "ON" : "OFF", grp(g_cfg.ev));
         if (g_cfg.alloc) {
             g_sites = static_cast<Site*>(VirtualAlloc(nullptr, sizeof(Site) * SiteCap, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
             g_pk = static_cast<uint32_t*>(VirtualAlloc(nullptr, PtrCap * 4, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
             g_pv = static_cast<uint32_t*>(VirtualAlloc(nullptr, PtrCap * 4, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
-            if (!g_sites || !g_pk || !g_pv) { logf("table allocation FAILED (%lu); alloc census off", GetLastError()); g_cfg.alloc = false; }
+            if (!g_sites || !g_pk || !g_pv) { pendf("table allocation FAILED (%lu); alloc census off", GetLastError()); g_cfg.alloc = false; }
         }
         if (g_cfg.alloc) {
             HMODULE k32 = GetModuleHandleA("kernel32.dll");
@@ -1576,12 +1619,12 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
             if (r) rHeapReAlloc = reinterpret_cast<HeapReAlloc_t>(o2);
             bool fr = codepatch::patchIat(exe, "KERNEL32.dll", "HeapFree", reinterpret_cast<void*>(hkHeapFree), &o3);
             if (fr) rHeapFree = reinterpret_cast<HeapFree_t>(o3);
-            logf("IAT hooks: HeapAlloc=%d HeapReAlloc=%d HeapFree=%d (orig %p %p %p) tables: sites=%uKB ptrs=%uMB", a, r, fr, o1, o2, o3,
+            pendf("IAT hooks: HeapAlloc=%d HeapReAlloc=%d HeapFree=%d (orig %p %p %p) tables: sites=%uKB ptrs=%uMB", a, r, fr, o1, o2, o3,
                  (unsigned)(sizeof(Site) * SiteCap >> 10), (unsigned)(PtrCap * 8 >> 20));
         }
         if (g_cfg.metrics) {
             auto m = static_cast<Metrics*>(VirtualAlloc(nullptr, sizeof(Metrics), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
-            if (!m) logf("metrics block allocation FAILED (%lu); metrics off", GetLastError());
+            if (!m) pendf("metrics block allocation FAILED (%lu); metrics off", GetLastError());
             else {
                 m->budgetMin = 0x7FFFFFFF;
                 void* o1 = nullptr; void* o2 = nullptr;
@@ -1594,20 +1637,21 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
                 if (grp(g_cfg.ev)) {
                     g_top = static_cast<TopEnt*>(VirtualAlloc(nullptr, sizeof(TopEnt) * TopSlots, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
                     g_topCopy = static_cast<TopCopy*>(VirtualAlloc(nullptr, sizeof(TopCopy) * TopSlots, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
-                    if (!g_top || !g_topCopy) { logf("TPCTOP table allocation FAILED (%lu); TPCTOP off", GetLastError()); g_top = nullptr; g_topCopy = nullptr; }
+                    if (!g_top || !g_topCopy) { pendf("TPCTOP table allocation FAILED (%lu); TPCTOP off", GetLastError()); g_top = nullptr; g_topCopy = nullptr; }
                 }
                 g_m = m;   // publish last: detours see NULL until everything is set
-                logf("metrics on: block=%uKB IAT SwapBuffers=%d gluBuild2DMipmaps=%d GlobalMemoryStatus=%d (orig %p %p) qpf=%lld ev=%d tpctop=%d", (unsigned)(sizeof(Metrics) >> 10), s, g, gm, o1, o2,
+                pendf("metrics on: block=%uKB IAT SwapBuffers=%d gluBuild2DMipmaps=%d GlobalMemoryStatus=%d (orig %p %p) qpf=%lld ev=%d tpctop=%d", (unsigned)(sizeof(Metrics) >> 10), s, g, gm, o1, o2,
                      (long long)g_qpf, grp(g_cfg.ev), g_top != nullptr);
             }
         }
         if (g_cfg.hwmip) {   // hwmip needs the GLU hook even with metrics=0; installGluHook never patches the IAT twice
             bool g = installGluHook(exe);
-            logf("hwmip: gluBuild2DMipmaps IAT hook %s (orig %p, installed once for metrics and/or hwmip)", g ? "ON" : "FAILED: hwmip inactive", (void*)rGluMip);
+            pendf("hwmip: gluBuild2DMipmaps IAT hook %s (orig %p, installed once for metrics and/or hwmip)", g ? "ON" : "FAILED: hwmip inactive", (void*)rGluMip);
         }
         g_on = true;
         HANDLE t = CreateThread(nullptr, 0, helper, nullptr, 0, nullptr);
-        if (t) CloseHandle(t); else logf("helper thread creation FAILED (%lu)", GetLastError());
+        if (t) CloseHandle(t); else pendf("helper thread creation FAILED (%lu)", GetLastError());
+        if (!t) emitLoadLine();   // no helper thread to emit it later
     }
     return TRUE;
 }

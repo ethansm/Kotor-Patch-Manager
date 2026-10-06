@@ -1,5 +1,6 @@
 LIBRARY PerfLab
 EXPORTS
+    KPatchInit
     PerfLabTick
     PerfLabSnapshot
     PerfLabStats

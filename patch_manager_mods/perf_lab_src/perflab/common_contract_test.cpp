@@ -36,9 +36,15 @@ static SIZE_T fakeVQ(LPCVOID a, MEMORY_BASIC_INFORMATION* m, SIZE_T n) {
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "KpLog.h"
+#include <string.h>
+#include <string>
 
 #define HCHECK(why, expr) ::kt::Check("perf_lab relies on: " why " (line " KT_STR(__LINE__) ")", static_cast<bool>(expr))
 #define HEQ(why, a, b) ::kt::CheckEq("perf_lab relies on: " why " (line " KT_STR(__LINE__) ")", (a), (b))
+
+KP_LOG_PATCH("perf-lab");
+KP_CHANNEL(chMain, "main");
 #define U(x) static_cast<unsigned long long>(x)
 
 constexpr size_t ArenaSize = 1u << 20;   // 1 MiB: room for the +0x2000C / +0x20000 net ring offsets
@@ -335,5 +341,27 @@ int main() {
         HCHECK("patchIat is false for an image without an import directory", !codepatch::patchIat(mod, "GDI32.dll", "SwapBuffers", hook, &o2));
         codepatch::ops() = savedOps;
     }
+    // ---- KpLog fallback sink (before any KpLog_Init; the mod sets it from a static initialiser): an INFO line lands in the
+    // fallback file with the "<ms> perf-lab/main " prefix, and the file is only created by the first line (SetFallbackFile does no I/O).
+    {
+        const char* td = getenv("TMPDIR"); if (!td || !*td) td = "/tmp";
+        char path[300]; snprintf(path, sizeof path, "%s/perflab_contract_%d.txt", td, (int)getpid());
+        remove(path);
+        HCHECK("KpLog_HasCore() is false before KPatchInit (old-core path: emit from the helper tick)", !KpLog_HasCore());
+        KpLog_SetFallbackFile(path); KpLog_SetFallbackLevel(KPLOG_INFO);
+        HCHECK("KpLog_SetFallbackFile only stores the path, no I/O (safe from a static initialiser)", access(path, F_OK) != 0);
+        HCHECK("fallback level INFO enables INFO on the main channel (the load line is INFO)", KP_ENABLED(chMain, KPLOG_INFO));
+        KP_LOGV(chMain, KPLOG_INFO, "%s", "perf-lab 0.5.1 loaded: probe tick=1");
+        std::string t; if (FILE* f = fopen(path, "r")) { char b[512]; size_t n; while ((n = fread(b, 1, sizeof b, f)) > 0) t.append(b, n); fclose(f); }
+        size_t sp = t.find(' ');
+        HCHECK("fallback line starts with a decimal tick count", sp != std::string::npos && sp > 0 && t.find_first_not_of("0123456789") == sp);
+        HCHECK("fallback line has the prefix \"<ms> perf-lab/main \" then the text unchanged", t.substr(sp) == " perf-lab/main perf-lab 0.5.1 loaded: probe tick=1\n");
+        KP_LOGV(chMain, KPLOG_WARN, "%s", "REFUSED probe");
+        std::string u; if (FILE* f = fopen(path, "r")) { char b[512]; size_t n; while ((n = fread(b, 1, sizeof b, f)) > 0) u.append(b, n); fclose(f); }
+        HCHECK("a WARN line carries the WARN tag (REFUSED / FAILED lines)", u.find(" perf-lab/main WARN REFUSED probe\n") != std::string::npos);
+        KpLog_SetFallbackFile(nullptr);
+        remove(path);
+    }
+
     return kt::Report("common_contract_test (perf_lab)");
 }
