@@ -1,4 +1,4 @@
-// Character Active Effects Panel 0.1.0-probe (Steam Aspyr build 6A522E71...). Fills the right third of the character page
+// Character Active Effects Panel 0.2.0-probe (Steam Aspyr build 6A522E71...). Fills the right third of the character page
 // (CSWGuiInGameCharacter) with the shown character's active effects: icon, name, remaining time; Harmful section first,
 // then Beneficial; expiring first, permanent last; whole-entry scrolling with a scrollbar only when the list overflows.
 // Research trail: patch_manager_mods/14_character_active_effects_panel.md and active_effects_panel_src/research/R* (worktree
@@ -22,6 +22,7 @@
 // effect does, decoded from the live effect ints (decodeEffect, research R3 + R3b), short forms joined with ", " and cut
 // with "..."; long names/stats marquee after marquee_delay_ms without input; hover tooltips (name + time, every stat line,
 // the spells.2da description). GUI = 82 controls (S block inserted before MORE: ids of MORE..TIP moved by 14).
+// 0.2.0-probe (doc 32 MG5): KpLog (core file character-effects-panel_log.txt, old core fallback chareffects_log.txt), IniKit primitives, PanelSlots, GuiKit wheel/screen/cursor/bindByTag, Party; lazy init from KPatchInit/first hook.
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <string.h>
@@ -30,29 +31,27 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include <math.h>
-#include "../_shared/EffectIcons.h"   // k2fx: icon tables + collectBuffs (Buff HUD)
+#include "KpLog.h"
+#include "IniKit.h"
+#include "EffectIcons.h"   // k2fx: icon tables + collectBuffs (Buff HUD)
 #include "ChareffDecode.h"      // effect stat decoder + pixel-width text layer (pure, host-tested; includes EffectNameTable.inc)
-#include "../_shared/GameAddr.h"
-#include "../_shared/GuiKit.h"   // guikit:: setRect/getExtent/imageFor/setText/setTextColor/setFill/setBorderTint + detail::textObjOk (Steam table == the constants below)
-#include "../_shared/WindowHook.h"
-#include "../_shared/SafeRead.h"  // VirtualQuery-based probing: IsBadReadPtr faults are a storm under Wine (DB lesson 234)
+#include "GameAddr.h"
+#include "GuiKit.h"   // guikit:: setRect/getExtent/imageFor/setText/setTextColor/setFill/setBorderTint/bindByTag/wheel/screen/cursor + detail::textObjOk
+#include "PanelSlots.h"   // Common: panel -> slot table
+#include "Party.h"        // Common: party table / member / server creature
+#include "SafeRead.h"  // VirtualQuery-based probing: IsBadReadPtr faults are a storm under Wine (DB lesson 234)
+
+KP_LOG_PATCH("character-effects-panel");
 
 namespace {
 
 using namespace cfx;   // ChareffDecode.h: Entry, Atom, atomOf, formatStats, Font, TextK ...
 
 // ---- engine addresses (Steam Aspyr) ----
-constexpr int FnInitControl = 0x0040f620;   // thiscall(panel, ctl, CExoString*, addToList, scale) RET 16
-constexpr int FnExoCtor = 0x00733570, FnExoDtor = 0x00733780;
-constexpr int FnNew = 0x00919723;           // cdecl(size)
-constexpr int FnLabelCtor = 0x00419740, LabelSize = 0x148, LabelVftable = 0x009878BC;
 constexpr int BorderVtable = 0x009875BC, TextVtable = 0x009876B4;
 constexpr int LabelBorderOff = 0x60, BorderColorOff = 0x28;
 constexpr int LabelTextOff = 0xD8, TextRendererOff = 0x14, TextStringSubOff = 0x18, TextColorOff = 0x2c;   // colour at text+0x18+0x2c
 constexpr int CtlFlagsOff = 0x48, CtlIdOff = 0x54;   // flags bit1 visible, 0x20 click-through
-constexpr int AppGlobal = 0x00a1b4a4;       // CAppManager*: +4 client
-constexpr int FnPartyMember = 0x007e5da0;   // thiscall(party, i) RET 4 -> client creature
-constexpr int FnClientToServer = 0x0077d800;   // ECX = client creature -> server creature (R2c)
 constexpr int ClientCreatureVftable = static_cast<int>(gameaddr::ClientCreatureVtable);
 constexpr int PanelShownOff = 0x4b70;       // SetStats' cache of the shown client creature (logged for comparison only)
 constexpr int EffArrOff = 0x148, EffCntOff = 0x14c;
@@ -85,22 +84,20 @@ const float TealText[3] = {0.10196f, 0.69804f, 0.54902f}, TealFrame[3] = {0.0509
 const float DiscTeal[3] = {0.035f, 0.415f, 0.34f}, White[3] = {1, 1, 1};   // disc = the Buff HUD backing colour
 const char* const DiscResref = "buffhud_circle";
 
-using CExoCtor = void*(__thiscall*)(void*, const char*);
-using CExoDtor = void(__thiscall*)(void*);
-using InitCtl = void(__thiscall*)(void*, void*, void*, int, int);
-using NewFn = void*(__cdecl*)(unsigned);
-
-// ---- diagnostics: chareffects_log.txt (capped); chareffects_debug.txt enables detail ----
+// ---- diagnostics: KpLog (core file character-effects-panel_log.txt; old core: fallback chareffects_log.txt at INFO), capped; chareffects_debug.txt enables detail ----
+KP_CHANNEL(chMain, "main");
+KP_CHANNEL(chDbg, "debug");
+// Only stores the path and the level (no I/O): safe from a static initialiser.
+const bool g_fallbackSet = (KpLog_SetFallbackFile("chareffects_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
 int g_logLines = 0; constexpr int MaxLogLines = 20000;
 bool g_debug = false; int g_dbgLines = 0; constexpr int MaxDebugLines = 10000;
-void vlog(const char* fmt, va_list ap, bool stamp) {
-    FILE* f = fopen("chareffects_log.txt", "a");
-    if (!f) return;
-    if (stamp) { SYSTEMTIME st; GetLocalTime(&st); fprintf(f, "%02d:%02d:%02d.%03d ", st.wHour, st.wMinute, st.wSecond, st.wMilliseconds); }
-    vfprintf(f, fmt, ap); fputc('\n', f); fclose(f);
+char g_loadLine[160];   // formatted by DllMain, emitted by ensureInit (the logger is only known after KPatchInit)
+void vlog(::kplog::Channel& ch, const char* fmt, va_list ap) {
+    char buf[2048]; vsnprintf(buf, sizeof buf, fmt, ap);
+    KP_LOGV(ch, KPLOG_INFO, "%s", buf);
 }
-void logf(const char* fmt, ...) { if (g_logLines >= MaxLogLines) return; ++g_logLines; va_list ap; va_start(ap, fmt); vlog(fmt, ap, true); va_end(ap); }
-void dlogf(const char* fmt, ...) { if (!g_debug || g_dbgLines >= MaxDebugLines) return; ++g_dbgLines; va_list ap; va_start(ap, fmt); vlog(fmt, ap, true); va_end(ap); }
+void logf(const char* fmt, ...) { if (g_logLines >= MaxLogLines) return; ++g_logLines; va_list ap; va_start(ap, fmt); vlog(chMain, fmt, ap); va_end(ap); }
+void dlogf(const char* fmt, ...) { if (!g_debug || g_dbgLines >= MaxDebugLines) return; ++g_dbgLines; va_list ap; va_start(ap, fmt); vlog(chDbg, fmt, ap); va_end(ap); }
 template <typename T>
 bool readAt(int base, int off, T* out) { return saferead::readAt<T>(0, static_cast<uintptr_t>(static_cast<unsigned>(base)), off, out); }
 // early-return reasons: logged when the reason changes, else at most every 10 s
@@ -111,7 +108,7 @@ void whyLog(int code, const char* fmt, ...) {
     g_lastWhy = code; g_lastWhyAt = t;
     if (g_logLines >= MaxLogLines) return;
     ++g_logLines;
-    va_list ap; va_start(ap, fmt); vlog(fmt, ap, true); va_end(ap);
+    va_list ap; va_start(ap, fmt); vlog(chMain, fmt, ap); va_end(ap);
 }
 
 // ---- configuration: $GAME/chareffects.ini (missing/garbage = defaults; every key and rejected line logged) ----
@@ -127,12 +124,8 @@ struct Cfg {
 };
 Cfg g_cfg; unsigned g_cfgGen = 0;
 ULONGLONG g_iniStamp = 0; DWORD g_iniLastCheck = 0;
-void trim(char* s) {
-    char* p = s; while (*p && isspace((unsigned char)*p)) ++p;
-    memmove(s, p, strlen(p) + 1);
-    for (int n = (int)strlen(s); n > 0 && isspace((unsigned char)s[n - 1]); --n) s[n - 1] = 0;
-}
-bool parseNum(const char* v, float* out) { char* e; *out = strtof(v, &e); return e != v && !*e && isfinite(*out); }
+using inikit::trim;
+void syncWheelCfg() { guikit::g_wheel.enabled = g_cfg.wheelScroll != 0; guikit::g_wheel.iniW = (int)g_cfg.screenW; guikit::g_wheel.iniH = (int)g_cfg.screenH; }   // after every loadIni and each tick
 void loadIni() {
     Cfg c;
     g_debug = GetFileAttributesA("chareffects_debug.txt") != INVALID_FILE_ATTRIBUTES;
@@ -140,7 +133,7 @@ void loadIni() {
     g_iniStamp = GetFileAttributesExA("chareffects.ini", GetFileExInfoStandard, &fa)
         ? (((ULONGLONG)fa.ftLastWriteTime.dwHighDateTime << 32) | fa.ftLastWriteTime.dwLowDateTime) : 0;
     FILE* f = fopen("chareffects.ini", "r");
-    if (!f) { logf("INI: chareffects.ini not found, using defaults (stage=%d debug=%d)", c.stage, g_debug); g_cfg = c; ++g_cfgGen; return; }
+    if (!f) { logf("INI: chareffects.ini not found, using defaults (stage=%d debug=%d)", c.stage, g_debug); g_cfg = c; ++g_cfgGen; syncWheelCfg(); return; }
     char line[300]; int ln = 0, ok = 0, bad = 0;
     struct { const char* k; int* i; float* fl; } keys[] = {
         {"enabled", &c.enabled, nullptr}, {"stage", &c.stage, nullptr}, {"poll_ms", &c.pollMs, nullptr},
@@ -154,17 +147,14 @@ void loadIni() {
         {"tooltip_desc", &c.tooltipDesc, nullptr}, {"tip_line_scale", nullptr, &c.tipLineScale}};
     while (fgets(line, sizeof(line), f)) {
         ++ln; trim(line);
-        if (!line[0] || line[0] == '#' || line[0] == ';') continue;
-        char* eq = strchr(line, '=');
-        if (!eq) { logf("INI line %d rejected (no '='): %s", ln, line); ++bad; continue; }
-        *eq = 0; char* k = line; char* v = eq + 1;
-        for (char* cm = v; *cm; ++cm) if (*cm == ';' || *cm == '#') { *cm = 0; break; }
-        trim(k); trim(v);
-        for (char* p = k; *p; ++p) *p = (char)tolower((unsigned char)*p);
+        char* k = nullptr; char* v = nullptr;
+        inikit::IniLine sp = inikit::splitIniLine(line, &k, &v);
+        if (sp == inikit::IniLineSkip) continue;
+        if (sp == inikit::IniLineNoEquals) { logf("INI line %d rejected (no '='): %s", ln, line); ++bad; continue; }
         bool known = false, good = false;
         if (!strcmp(k, "fallback_icon")) { known = true; good = v[0] && strlen(v) < sizeof(c.fallbackIcon); if (good) strcpy(c.fallbackIcon, v); }
         for (auto& e : keys) if (!strcmp(k, e.k)) {
-            known = true; float a; good = parseNum(v, &a);
+            known = true; float a; good = inikit::parseFloats(v, &a, 1);
             if (good) { if (e.i) *e.i = (int)a; else *e.fl = a; }
             if (good && (!strcmp(k, "screen_w") || !strcmp(k, "screen_h"))) c.screenExplicit = true;
         }
@@ -188,7 +178,7 @@ void loadIni() {
     if (c.tooltipDelayMs < 0) c.tooltipDelayMs = 0;
     if (c.tipLineScale < 0.5f || c.tipLineScale > 2.0f) c.tipLineScale = 1.0f;
     if (c.screenW < 100 || c.screenH < 100) { c.screenW = 3840; c.screenH = 1600; c.screenExplicit = false; }
-    g_cfg = c; ++g_cfgGen;
+    g_cfg = c; ++g_cfgGen; syncWheelCfg();
     logf("INI loaded: %d keys ok, %d rejected, debug=%d gen=%u enabled=%d stage=%d poll_ms=%d fake_rows=%d stat=%d/%.0f marquee=%d (%d/%d/%d) tooltips=%d (%d ms, desc=%d)",
          ok, bad, g_debug, g_cfgGen, c.enabled, c.stage, c.pollMs, c.fakeRows, c.statColumn, c.statMaxW, c.marquee,
          c.marqueeDelayMs, c.marqueeStepMs, c.marqueeHoldMs, c.tooltips, c.tooltipDelayMs, c.tooltipDesc);
@@ -216,29 +206,12 @@ BOOL CALLBACK enumProc(HWND h, LPARAM lp) {
     if (a > c->area) { c->area = a; c->best = h; }
     return TRUE;
 }
-void syncScreen() {   // engine framebuffer size (Aspyr globals, same ones BuffDurationHUD reads) unless the INI sets it
-    if (g_cfg.screenExplicit) return;
-    int w = 0, h = 0; readAt<int>(0x009F42A4, 0, &w); readAt<int>(0x009F42A8, 0, &h);
-    if (w >= 320 && w <= 16384 && h >= 200 && h <= 16384) { g_cfg.screenW = (float)w; g_cfg.screenH = (float)h; }
+void syncScreen() {   // engine framebuffer size (GuiKit reads the K2Addr ScreenW/ScreenH globals) unless the INI sets it
+    int w = (int)g_cfg.screenW, h = (int)g_cfg.screenH;
+    if (guikit::syncScreen(g_cfg.screenExplicit ? w : 0, g_cfg.screenExplicit ? h : 0, &w, &h)) { g_cfg.screenW = (float)w; g_cfg.screenH = (float)h; }
 }
-struct WheelTag {}; using WheelHook = kp::WindowHook<WheelTag>;
-volatile LONG g_wheelAccum = 0;
-volatile DWORD g_lastTickMs = 0;
-volatile LONG g_panelRect[4] = {0, 0, 0, 0};   // engine px; [2] = 0 while the list does not overflow (wheel passes through)
-int g_wheelLogs = 0;
-LRESULT CALLBACK wheelProc(HWND h, UINT m, WPARAM w, LPARAM l) {
-    if (WheelHook::active() && m == WM_MOUSEWHEEL && g_cfg.wheelScroll && GetTickCount() - g_lastTickMs < 300 && g_panelRect[2] > 0) {
-        POINT pt = {(short)LOWORD(l), (short)HIWORD(l)}; RECT r;
-        bool inside = false;
-        if (ScreenToClient(h, &pt) && GetClientRect(h, &r) && r.right > 0 && r.bottom > 0) {
-            syncScreen(); float x = pt.x * g_cfg.screenW / r.right, y = pt.y * g_cfg.screenH / r.bottom;
-            inside = x >= g_panelRect[0] && x < g_panelRect[0] + g_panelRect[2] && y >= g_panelRect[1] && y < g_panelRect[1] + g_panelRect[3];
-        }
-        if (g_wheelLogs < 20) { ++g_wheelLogs; logf("WHEEL: delta=%d cursor=(%ld,%ld) inside=%d", (int)(short)HIWORD(w), pt.x, pt.y, inside); }
-        if (inside) { InterlockedExchangeAdd(&g_wheelAccum, (short)HIWORD(w)); return 0; }
-    }
-    return WheelHook::forward(h, m, w, l);
-}
+void wheelEvent(int delta, int px, int py, bool inside) { logf("WHEEL: delta=%d cursor=(%d,%d) inside=%d", delta, px, py, inside); }
+bool g_wheelCfgSet = false;
 HWND gameWindow() {
     if (g_hwnd && IsWindow(g_hwnd)) return g_hwnd;
     static DWORD lastTry = 0; DWORD nowT = GetTickCount();
@@ -249,41 +222,29 @@ HWND gameWindow() {
     g_hwnd = c.best;
     RECT r = {0, 0, 0, 0}; if (g_hwnd) GetClientRect(g_hwnd, &r);
     logf("INPUT: hwnd=%p client=%ldx%ld (engine %.0fx%.0f)", g_hwnd, r.right, r.bottom, g_cfg.screenW, g_cfg.screenH);
-    if (g_hwnd && g_cfg.wheelScroll && !WheelHook::active()) {
-        WheelHook::install(g_hwnd, &wheelProc);
-        logf("WHEEL: subclassed window %p, old proc %p (err=%lu)", g_hwnd, WheelHook::old, WheelHook::old ? 0UL : GetLastError());
+    if (g_hwnd && g_cfg.wheelScroll && !guikit::g_wheelHwnd) {
+        if (!g_wheelCfgSet) { g_wheelCfgSet = true; guikit::g_wheel.scoped = false; guikit::g_wheel.onEvent = wheelEvent; }
+        bool ok = guikit::wheelInstall();
+        logf("WHEEL: subclassed window %p, old proc %p (err=%lu)", (void*)guikit::g_wheelHwnd, (void*)guikit::detail::WheelWin::old, ok ? 0UL : GetLastError());
     }
     return g_hwnd;
 }
 bool cursorEngine(float* x, float* y) {
-    HWND h = gameWindow(); if (!h) return false;
-    POINT pt; if (!GetCursorPos(&pt) || !ScreenToClient(h, &pt)) return false;
-    RECT r; if (!GetClientRect(h, &r) || r.right < 1 || r.bottom < 1) return false;
-    syncScreen(); *x = pt.x * g_cfg.screenW / r.right; *y = pt.y * g_cfg.screenH / r.bottom;
-    return true;
+    if (!gameWindow()) return false;
+    syncScreen();
+    return guikit::cursorEngineF(x, y, (int)g_cfg.screenW, (int)g_cfg.screenH);
 }
 
 // ---- label plumbing (Mod 5) ----
 unsigned char* bindLabel(int panel, const char* tagName, int expectId) {
-    using LabelCtorFn = void(__fastcall*)(void*);
-    unsigned char* ctl = static_cast<unsigned char*>(reinterpret_cast<NewFn>(FnNew)(LabelSize));
-    if (!ctl) { logf("H1 %s: allocation failed", tagName); return nullptr; }
-    memset(ctl, 0, LabelSize);
-    reinterpret_cast<LabelCtorFn>(FnLabelCtor)(ctl);
-    int vt = 0; readAt<int>(reinterpret_cast<int>(ctl), 0, &vt);
-    if (vt != LabelVftable) { logf("H1 %s: ctor left vtable %08x (expected %08x), not binding", tagName, vt, LabelVftable); return nullptr; }
-    char exo[16] = {0};
-    reinterpret_cast<CExoCtor>(FnExoCtor)(exo, tagName);
-    reinterpret_cast<InitCtl>(FnInitControl)(reinterpret_cast<void*>(panel), ctl, exo, 1, 1);
-    reinterpret_cast<CExoDtor>(FnExoDtor)(exo);
-    int id = -999, fl = 0, ext[4] = {0};
-    readAt<int>(reinterpret_cast<int>(ctl), CtlIdOff, &id); readAt<int>(reinterpret_cast<int>(ctl), CtlFlagsOff, &fl);
-    for (int i = 0; i < 4; ++i) readAt<int>(reinterpret_cast<int>(ctl), 4 + 4 * i, &ext[i]);
-    int nf = (id == expectId ? fl : (fl & ~2)) | 0x20;   // click-through; a mismatched control is hidden and not used
-    *reinterpret_cast<int*>(ctl + CtlFlagsOff) = nf;
-    logf("H1 %s: ctl=%p id=%d (expect %d)%s extent=[%d,%d,%d,%d] flags=%08x -> %08x", tagName, ctl, id, expectId,
-         id == expectId ? "" : " MISMATCH", ext[0], ext[1], ext[2], ext[3], fl, nf);
-    return id == expectId ? ctl : nullptr;
+    guikit::BindInfo bi;
+    guikit::bindByTag(static_cast<uintptr_t>(static_cast<unsigned>(panel)), tagName, expectId, 0, &bi);
+    saferead::beginScope();   // bindByTag does not drop the readable-region cache itself
+    if (bi.why == guikit::CF_Alloc) { logf("H1 %s: allocation failed", tagName); return nullptr; }
+    if (bi.why == guikit::CF_Vtable) { logf("H1 %s: ctor left vtable %08x (expected %08x), not binding", tagName, bi.badVtable, (unsigned)gameaddr::LabelVtable); return nullptr; }
+    logf("H1 %s: ctl=%p id=%d (expect %d)%s extent=[%d,%d,%d,%d] flags=%08x -> %08x", tagName, (void*)bi.ctl, bi.id, expectId,
+         bi.id == expectId ? "" : " MISMATCH", bi.ext[0], bi.ext[1], bi.ext[2], bi.ext[3], bi.flagsBefore, bi.flagsAfter);
+    return bi.id == expectId ? reinterpret_cast<unsigned char*>(bi.ctl) : nullptr;
 }
 void* imageFor(const char* resref) {   // one engine image per resref, never released (Buff HUD / Mod 5 pattern); pool = guikit::imageFor
     bool loaded = false;
@@ -334,16 +295,15 @@ struct Slot {
     // tooltip
     int hoverKey = -1, hoverRow = -1; DWORD hoverSince = 0; bool tipShown = false; int tipKey = -1;
 };
-constexpr int MaxSlots = 4;
-Slot g_slots[MaxSlots];
+panelslots::PanelSlots<Slot, 4> g_slots;
 unsigned g_seq = 0;
-Slot* findSlot(int panel) { for (auto& s : g_slots) if (s.panel == panel && s.bound) return &s; return nullptr; }
-Slot* claimSlot(int panel) {
-    if (Slot* e = findSlot(panel)) return e;
-    Slot* oldest = &g_slots[0];
-    for (auto& s : g_slots) { if (!s.bound) { oldest = &s; break; } if (s.seq < oldest->seq) oldest = &s; }
-    if (oldest->bound) logf("slot: evicting panel=%08x seq=%u", oldest->panel, oldest->seq);
-    return oldest;
+uintptr_t slotKey(int panel) { return static_cast<uintptr_t>(static_cast<unsigned>(panel)); }
+Slot* findSlot(int panel) { return g_slots.find(slotKey(panel)); }
+// Array position of a slot in forEach order (index order; used only for the "slot %d ready" log).
+int slotIndex(const Slot* s) {
+    int idx = -1, i = 0;
+    g_slots.forEach([&](Slot& e) { if (&e == s) idx = i; ++i; });
+    return idx;
 }
 
 int ux(Slot* s, float u) { return (int)lroundf(s->bx + (u - PanelX) * s->sx); }
@@ -379,11 +339,10 @@ void setFill(Slot* s, int t, const char* resref, const float* tint) {
 }
 
 // ---- effect data ----
-int leaderClient() {   // what SetStats 0x84e6f0 shows: 0x7e5da0(0x73fb90(client), 0)
-    int app = 0, client = 0, c4 = 0, party = 0;
-    if (!readAt<int>(AppGlobal, 0, &app) || !readAt<int>(app, 4, &client) || !readAt<int>(client, 4, &c4) || !readAt<int>(c4, 0x270, &party) || !party) return 0;
-    int n = 0; if (!readAt<int>(party, 0, &n) || n <= 0 || n > 64) return 0;
-    return reinterpret_cast<int(__thiscall*)(int, int)>(FnPartyMember)(party, 0);
+int leaderClient() {   // what SetStats 0x84e6f0 shows: PartyGetAt(party table, 0)
+    uintptr_t t = party::table();
+    int n = party::partyCount(t); if (n <= 0 || n > 64) return 0;   // 0.1.0's range check (Party.h only tests i < count)
+    return static_cast<int>(party::member(t, 0));
 }
 bool clientValid(int c) { int vt = 0; return readAt<int>(c, 0, &vt) && vt == ClientCreatureVftable; }
 
@@ -605,7 +564,7 @@ void logLayout(Slot* s, int cnt, int lf, bool over, float rowW, const char* rows
          s->rTrk[0], s->rTrk[1], s->rTrk[2], s->rTrk[3], rows[0] ? rows : " (none)");
 }
 
-void hideAll(Slot* s) { for (int t = 0; t < NumTags; ++t) hide(s, t); s->over = false; s->tipShown = false; s->nPlaced = 0; g_panelRect[2] = 0; }
+void hideAll(Slot* s) { for (int t = 0; t < NumTags; ++t) hide(s, t); s->over = false; s->tipShown = false; s->nPlaced = 0; guikit::g_wheel.setRect(0, 0, 0, 0, 0); }
 
 void layout(Slot* s) {
     const Entry* e = s->ent; int n = s->nEnt;
@@ -620,7 +579,7 @@ void layout(Slot* s) {
         else snprintf(msg, sizeof msg, "%d active effect%s (preview)", rows, rows == 1 ? "" : "s");
         place(s, T_MORE, X0, PanelY + PanelH / 2 - RowH / 2, InnerW, RowH);
         setText(s, T_MORE, msg);
-        s->over = false; g_panelRect[2] = 0;
+        s->over = false; guikit::g_wheel.setRect(0, 0, 0, 0, 0);
         return;
     }
     hide(s, T_MORE);
@@ -713,7 +672,7 @@ void layout(Slot* s) {
     s->over = over; s->shownN = cnt; s->lastFirst = lf;
     if (!over) {
         for (int t = T_SBTRK; t <= T_SBDN; ++t) hide(s, t);
-        g_panelRect[2] = 0;
+        guikit::g_wheel.setRect(0, 0, 0, 0, 0);
         memset(s->rUp, 0, sizeof s->rUp); memset(s->rDn, 0, sizeof s->rDn); memset(s->rTrk, 0, sizeof s->rTrk); memset(s->rThm, 0, sizeof s->rThm);
         logLayout(s, cnt, lf, over, rowW, rows);
         return;
@@ -730,8 +689,10 @@ void layout(Slot* s) {
     setFill(s, T_SBUP, "uibit_uparrowg", s->first > 0 ? White : Dim);
     setFill(s, T_SBDN, "efx_dnarrowg", s->first < lf ? White : Dim);
     ctlRect(s->ctl[T_SBUP], s->rUp); ctlRect(s->ctl[T_SBDN], s->rDn); ctlRect(s->ctl[T_SBTRK], s->rTrk); ctlRect(s->ctl[T_SBTHM], s->rThm);
-    g_panelRect[0] = ux(s, PanelX); g_panelRect[1] = uy(s, PanelY); g_panelRect[3] = uy(s, PanelY + PanelH) - g_panelRect[1];
-    g_panelRect[2] = ux(s, PanelX + PanelW) - g_panelRect[0];
+    {
+        int pr0 = ux(s, PanelX), pr1 = uy(s, PanelY);
+        guikit::g_wheel.setRect(0, pr0, pr1, ux(s, PanelX + PanelW) - pr0, uy(s, PanelY + PanelH) - pr1);
+    }
     logLayout(s, cnt, lf, over, rowW, rows);
 }
 
@@ -755,7 +716,7 @@ bool scrollTo(Slot* s, int f, const char* why) {
 // returns true when the scroll position changed
 bool tickInput(Slot* s) {
     bool changed = false;
-    LONG wheel = InterlockedExchange(&g_wheelAccum, 0);
+    LONG wheel = guikit::g_wheel.take();
     if (wheel && s->over) { int steps = -(int)(wheel / 120); if (!steps) steps = wheel > 0 ? -1 : 1; changed |= scrollTo(s, s->first + steps, "wheel"); }
     bool l = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0;
     if (!s->over) {
@@ -882,18 +843,33 @@ void tickTooltip(Slot* s, DWORD t, bool haveCur, float cx, float cy, bool refres
 
 LARGE_INTEGER g_qpcFreq, g_qpcLast;
 
+// Lazy init: load line + first loadIni() + ring. Runs from KPatchInit, else from the first hook (old core without KPatchInit).
+volatile LONG g_inited = 0;
+void ensureInit() {
+    if (g_inited) return;                                 // cheap fast path
+    if (InterlockedExchange(&g_inited, 1)) return;
+    logf("%s", g_loadLine);
+    loadIni();
+    saferead::enableRing(g_debug);
+}
+
 } // namespace
 
+extern "C" void __cdecl KPatchInit(const KPatchApi* api) { KpLog_Init(api); ensureInit(); }
+
 extern "C" void __cdecl BindCharEffects(int panel) {
+    ensureInit();
     saferead::beginScope();
     int ctlCount = -1; readAt<int>(panel, 0x28, &ctlCount);
     logf("H1 BindCharEffects panel=%08x controls=%d enabled=%d stage=%d", panel, ctlCount, g_cfg.enabled, g_cfg.stage);
     if (!panel) { logf("H1: null panel, abort"); return; }
     if (!g_cfg.enabled) { logf("H1: disabled by INI, controls not bound (right third stays empty)"); return; }
-    Slot* s = claimSlot(panel);
-    if (s->mqActive && s->panel == panel) logf("MARQUEE: reset (rebind)");
+    g_slots.onEvict = [](Slot& old, uintptr_t, unsigned seq) { if (old.bound) logf("slot: evicting panel=%08x seq=%u", old.panel, seq); };
+    bool fresh = false;
+    Slot* s = g_slots.claim(slotKey(panel), ++g_seq, &fresh);
+    if (!fresh && s->mqActive) logf("MARQUEE: reset (rebind)");
     *s = Slot();
-    s->panel = panel; s->seq = ++g_seq; s->bindTick = GetTickCount();
+    s->panel = panel; s->seq = g_seq; s->bindTick = GetTickCount();
     static const char* const fixed[] = {"LBL_EFX_BACK", "LBL_EFX_HEADER", "LBL_EFX_SECG", "LBL_EFX_SECB"};
     static const char* const tail[] = {"LBL_EFX_MORE", "LBL_EFX_SBTRK", "LBL_EFX_SBTHM", "LBL_EFX_SBUP", "LBL_EFX_SBDN", "LBL_EFX_TIPBG", "LBL_EFX_TIPT", "LBL_EFX_TIP"};
     int bound = 0;
@@ -930,25 +906,28 @@ extern "C" void __cdecl BindCharEffects(int panel) {
     setCtlVisible(s->ctl[T_BACK], true); setCtlVisible(s->ctl[T_HEADER], true);
     s->bound = true;
     layout(s);   // empty state until the first tick polls the creature
-    logf("H1: slot %d ready (panel=%08x seq=%u)", static_cast<int>(s - g_slots), panel, s->seq);
+    logf("H1: slot %d ready (panel=%08x seq=%u)", slotIndex(s), panel, s->seq);
 }
 
 extern "C" void __cdecl CharEffectsTick(int panel) {
+    ensureInit();
     saferead::beginScope();
     static int calls = 0;
     if (!g_qpcFreq.QuadPart) { QueryPerformanceFrequency(&g_qpcFreq); QueryPerformanceCounter(&g_qpcLast); }
     LARGE_INTEGER now; QueryPerformanceCounter(&now);
     float dt = (float)((double)(now.QuadPart - g_qpcLast.QuadPart) / (double)g_qpcFreq.QuadPart);
     g_qpcLast = now;
-    g_lastTickMs = GetTickCount();
-    Slot* s = findSlot(panel);
+    syncScreen();
+    syncWheelCfg();
+    guikit::g_wheel.touch(GetTickCount());
+    Slot* s = findSlot(panel); if (s && !s->bound) s = nullptr;
     if (calls < 5) { ++calls; logf("H3 tick #%d panel=%08x slot=%s", calls, panel, s ? "bound" : "none"); }
     if (!s) return;
     if (dt > 0.5f) logf("H3: tick gap %.2fs (page reopened)", dt);
     maybeReloadIni();
     if (!g_cfg.enabled) { hideAll(s); whyLog(1, "H3: disabled by INI, panel hidden"); return; }
     setCtlVisible(s->ctl[T_BACK], true); setCtlVisible(s->ctl[T_HEADER], true);
-    bool wheelPending = g_wheelAccum != 0;
+    bool wheelPending = guikit::g_wheel.accum != 0;
     bool scrolled = g_cfg.stage >= 1 && tickInput(s);
     DWORD t = GetTickCount();
     float cx = 0, cy = 0; bool haveCur = cursorEngine(&cx, &cy);
@@ -962,7 +941,7 @@ extern "C" void __cdecl CharEffectsTick(int panel) {
     int client = leaderClient();
     if (!client) { whyLog(2, "H3: no party leader (client creature null)"); s->nEnt = 0; layout(s); return; }
     if (!clientValid(client)) { int vt = 0; readAt<int>(client, 0, &vt); whyLog(3, "H3: leader %08x vtable %08x != %08x, skipped", client, vt, ClientCreatureVftable); return; }
-    int server = reinterpret_cast<int(__thiscall*)(int)>(FnClientToServer)(client);
+    int server = static_cast<int>(party::serverCreature(static_cast<uintptr_t>(static_cast<unsigned>(client))));
     saferead::beginScope();   // engine code ran: drop the readable-region cache
     if (!server) { whyLog(4, "H3: leader %08x has no server creature", client); s->nEnt = 0; layout(s); return; }
     bool changedCreature = client != s->client || server != s->server;
@@ -992,15 +971,17 @@ extern "C" void __cdecl CharEffectsTick(int panel) {
 }
 
 extern "C" void __cdecl CharEffectsDestroy(int panel) {
-    Slot* s = findSlot(panel);
+    ensureInit();
+    Slot* s = findSlot(panel); if (s && !s->bound) s = nullptr;
     logf("H4 CharEffectsDestroy panel=%08x slot=%s", panel, s ? "found" : "none");
     if (!s) return;
-    g_panelRect[2] = 0;
+    guikit::g_wheel.setRect(0, 0, 0, 0, 0);
     s->bound = false; s->panel = 0;   // controls are engine-owned (InitControl addToList=1): never freed here
+    g_slots.release(slotKey(panel));
 }
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
-    if (reason == DLL_PROCESS_DETACH) WheelHook::uninstall(&wheelProc);   // never leave a dangling window proc: restores if on top, else stays chained but inert
-    if (reason == DLL_PROCESS_ATTACH) { logf("chareffects 0.1.0-probe build 4c loaded"); loadIni(); saferead::enableRing(g_debug); }
+    if (reason == DLL_PROCESS_DETACH) guikit::wheelUninstall();   // never leave a dangling window proc: restores if on top, else stays chained but inert
+    if (reason == DLL_PROCESS_ATTACH) { snprintf(g_loadLine, sizeof g_loadLine, "chareffects 0.2.0-probe build 5 loaded (KpLog + IniKit + PanelSlots + GuiKit wheel + Party) tick=%lu", (unsigned long)GetTickCount()); }
     return TRUE;
 }
