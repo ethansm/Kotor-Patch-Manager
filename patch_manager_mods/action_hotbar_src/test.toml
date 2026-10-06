@@ -22,3 +22,7 @@ cxxflags = ["-I../_shared_src", "-Werror"]
 # Log formatters (HotbarLogic.h fmt*) + their delivery through KpLog.h.
 [hotbar_log_test]
 cxxflags = ["-I../_shared_src", "-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common", "-Werror"]
+
+# KeyBif.h is plain stdio; -I for the shared TestHarness-adjacent headers like the other hotbar tests.
+[keybif_test]
+cxxflags = ["-I../_shared_src", "-Werror"]
