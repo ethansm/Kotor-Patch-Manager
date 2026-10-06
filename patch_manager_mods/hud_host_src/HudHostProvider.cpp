@@ -23,6 +23,7 @@
 #include "GameAddr.h"
 #include "HudHost.h"
 #include "HhDispatch.h"
+#include "HhStrip.h"
 
 KP_LOG_PATCH("hud-host");
 
@@ -51,7 +52,23 @@ void KPATCH_CALL apiUnregister(int32_t token) {
 int32_t KPATCH_CALL apiHud() { return g_hud; }
 uint32_t KPATCH_CALL apiFrame() { return g_frame; }
 
-const K2HudApi g_api = { sizeof(K2HudApi), apiRegister, apiUnregister, apiHud, apiFrame };
+hh::Strip g_strip;
+
+int32_t KPATCH_CALL apiStripSlot(const char* owner, int32_t order, const K2HudRect* vit, int32_t width, int32_t height, K2HudRect* out) {
+    if (!vit || !out) return 0;
+    hh::Box r{};
+    bool changed = false;
+    if (!g_strip.slot(order, hh::Box{ vit->x, vit->y, vit->w, vit->h }, width, height, &r, &changed)) {
+        KP_LOGV(chCore, KPLOG_WARN, "strip slot refused owner=%s order=%d", owner ? owner : "?", order);
+        return 0;
+    }
+    // DEBUG: queue-hud registers a per-companion row width, so order 1 changes every frame when two companions queue different lengths.
+    if (changed) KP_LOGV(chCore, KPLOG_DEBUG, "strip order %d width=%d owner=%s", order, width < 0 ? 0 : width, owner ? owner : "?");
+    *out = K2HudRect{ r.x, r.y, r.w, r.h };
+    return 1;
+}
+
+const K2HudApi g_api = { sizeof(K2HudApi), apiRegister, apiUnregister, apiHud, apiFrame, apiStripSlot };
 
 } // namespace
 

@@ -10,12 +10,14 @@
 
 // ---- ABI layout: the numbers a consumer DLL built separately relies on ----
 #if UINTPTR_MAX == 0xffffffff
-static_assert(sizeof(K2HudApi) == 20, "K2HudApi size");
+static_assert(sizeof(K2HudApi) == 24, "K2HudApi size");
 static_assert(offsetof(K2HudApi, struct_size) == 0, "api.struct_size");
 static_assert(offsetof(K2HudApi, Register) == 4, "api.Register");
 static_assert(offsetof(K2HudApi, Unregister) == 8, "api.Unregister");
 static_assert(offsetof(K2HudApi, Hud) == 12, "api.Hud");
 static_assert(offsetof(K2HudApi, Frame) == 16, "api.Frame");
+static_assert(offsetof(K2HudApi, StripSlot) == 20, "api.StripSlot (appended after Frame)");
+static_assert(sizeof(K2HudRect) == 16 && offsetof(K2HudRect, y) == 4 && offsetof(K2HudRect, w) == 8 && offsetof(K2HudRect, h) == 12, "K2HudRect layout");
 #endif
 static_assert(offsetof(K2HudContext, struct_size) == 0, "ctx.struct_size");
 static_assert(offsetof(K2HudContext, phase) == 4, "ctx.phase");
@@ -40,7 +42,16 @@ static int32_t KPATCH_CALL fReg(int32_t ph, int32_t, K2HudCallback, void*, const
 static void KPATCH_CALL fUnreg(int32_t) {}
 static int32_t KPATCH_CALL fHud() { return 0x1000; }
 static uint32_t KPATCH_CALL fFrame() { return 7; }
-static const K2HudApi g_table = { sizeof(K2HudApi), fReg, fUnreg, fHud, fFrame };
+static const K2HudApi g_table = { sizeof(K2HudApi), fReg, fUnreg, fHud, fFrame, nullptr };
+
+static int g_stripCalls = 0;
+static int32_t KPATCH_CALL fStrip(const char*, int32_t order, const K2HudRect* vit, int32_t width, int32_t height, K2HudRect* out) {
+    ++g_stripCalls;
+    if (order < 0 || order > 1) return 0;
+    *out = K2HudRect{ vit->x - width, vit->y + (vit->h - height) / 2, width, height };
+    return 1;
+}
+static const K2HudApi g_tableStrip = { sizeof(K2HudApi), fReg, fUnreg, fHud, fFrame, fStrip };
 
 static void KPATCH_CALL cb(const K2HudContext*, void*) {}
 
@@ -135,10 +146,43 @@ int main() {
 
     // 6. a v1 table without Frame() (too short) or without Register is not usable
     {
-        static const K2HudApi noReg = { sizeof(K2HudApi), nullptr, fUnreg, fHud, fFrame };
-        static const K2HudApi noHud = { sizeof(K2HudApi), fReg, fUnreg, nullptr, fFrame };
+        static const K2HudApi noReg = { sizeof(K2HudApi), nullptr, fUnreg, fHud, fFrame, nullptr };
+        static const K2HudApi noHud = { sizeof(K2HudApi), fReg, fUnreg, nullptr, fFrame, nullptr };
         KT_CHECK(!k2hud::Client::usable(&noReg)); KT_CHECK(!k2hud::Client::usable(&noHud));
         KT_CHECK(k2hud::Client::usable(&g_table));
+    }
+
+    // 7. stripSlot (CS10): false without a provider, with a table that predates StripSlot (struct_size 20 or null fn), or when refused;
+    //    true and filled through a table that has it
+    {
+        const K2HudRect vit{ 3671, 1285, 47, 96 };
+        K2HudRect r{ -1, -1, -1, -1 };
+        k2hud::Client none;
+        KT_CHECK(!none.stripSlot("t", 0, vit, 38, 38, &r)); KT_CHECK_EQ(r.x, -1);
+        fakekp::reset(); resetConn(); g_stripCalls = 0;
+        fakekp::provide(K2HUD_IFACE, K2HUD_VERSION, &g_tableStrip);
+        k2hud::Client c; c.init(fakekp::api(), "t"); c.onConnect = onConn; c.add(K2HUD_FRAME, 1, cb);
+        KT_CHECK(!c.stripSlot("t", 0, vit, 38, 38, &r));   // not connected yet: hu == null
+        KT_CHECK(c.connect());
+        KT_CHECK(c.stripSlot("t", 0, vit, 38, 38, &r));
+        KT_CHECK_EQ(r.x, 3671 - 38); KT_CHECK_EQ(r.y, 1285 + 29); KT_CHECK_EQ(r.w, 38); KT_CHECK_EQ(r.h, 38);
+        KT_CHECK(!c.stripSlot("t", 5, vit, 38, 38, &r));   // provider refuses
+        KT_CHECK(!c.stripSlot("t", 0, vit, 38, 38, nullptr));
+        KT_CHECK_EQ(g_stripCalls, 2);                       // null out never reaches the provider
+
+        // v1.0 provider: struct_size covers Frame only
+        static K2HudApi oldT = g_tableStrip; oldT.struct_size = uint32_t(offsetof(K2HudApi, Frame) + sizeof(oldT.Frame));
+        fakekp::reset(); resetConn(); g_stripCalls = 0;
+        fakekp::provide(K2HUD_IFACE, K2HUD_VERSION, &oldT);
+        k2hud::Client o; o.init(fakekp::api(), "t"); o.onConnect = onConn; o.add(K2HUD_FRAME, 1, cb);
+        KT_CHECK(o.connect());
+        KT_CHECK(!o.stripSlot("t", 0, vit, 38, 38, &r)); KT_CHECK_EQ(g_stripCalls, 0);
+        // full-size struct but null StripSlot
+        static K2HudApi nullT = g_tableStrip; nullT.StripSlot = nullptr;
+        fakekp::reset(); resetConn();
+        fakekp::provide(K2HUD_IFACE, K2HUD_VERSION, &nullT);
+        k2hud::Client n; n.init(fakekp::api(), "t"); n.onConnect = onConn; n.add(K2HUD_FRAME, 1, cb);
+        KT_CHECK(n.connect()); KT_CHECK(!n.stripSlot("t", 0, vit, 38, 38, &r)); KT_CHECK_EQ(g_stripCalls, 0);
     }
     return kt::Report("hh_registry_test");
 }

@@ -17,6 +17,7 @@
 #include "GuiKit.h"
 #include "GuiTip.h"
 #include "HudHost.h"
+#include "SelfHealUi.h"
 #include "EmbedTex.h"
 #include "GameAddr.h"
 #include "check.h"
@@ -58,7 +59,9 @@ static int32_t KPATCH_CALL huRegister(int32_t phase, int32_t prio, K2HudCallback
 static void KPATCH_CALL huUnreg(int32_t) {}
 static int32_t KPATCH_CALL huHud() { return 0; }
 static uint32_t KPATCH_CALL huFrame() { return 3; }
-static K2HudApi g_huApi = { sizeof(K2HudApi), huRegister, huUnreg, huHud, huFrame };
+static int g_stripCalls; static std::string g_stripOwner; static int32_t g_stripOrder = -1, g_stripW = -1, g_stripH = -1;
+static int32_t KPATCH_CALL huStrip(const char* owner, int32_t order, const K2HudRect* vit, int32_t width, int32_t height, K2HudRect* out) { ++g_stripCalls; g_stripOwner = owner; g_stripOrder = order; g_stripW = width; g_stripH = height; *out = K2HudRect{ vit->x - width, vit->y + (vit->h - height) / 2, width, height }; return 1; }
+static K2HudApi g_huApi = { sizeof(K2HudApi), huRegister, huUnreg, huHud, huFrame, huStrip };
 static std::string g_reqName; static uint32_t g_reqVer;
 static const void* KPATCH_CALL fRequire(const char* n, uint32_t v) { g_reqName = n; g_reqVer = v; if (strcmp(n, K2HUD_IFACE) == 0) return &g_huApi;
     return strcmp(n, "kpatch.log") == 0 ? (const void*)&g_log : (const void*)&g_psApi; }

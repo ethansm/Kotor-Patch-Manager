@@ -61,7 +61,9 @@ static int32_t KPATCH_CALL huRegister(int32_t phase, int32_t prio, K2HudCallback
 static void KPATCH_CALL huUnreg(int32_t) {}
 static int32_t KPATCH_CALL huHud() { return 0; }
 static uint32_t KPATCH_CALL huFrame() { return 5; }
-static K2HudApi g_huApi = { sizeof(K2HudApi), huRegister, huUnreg, huHud, huFrame };
+static int g_stripCalls; static std::string g_stripOwner; static int32_t g_stripOrder = -1, g_stripW = -1, g_stripH = -1;
+static int32_t KPATCH_CALL huStrip(const char* owner, int32_t order, const K2HudRect* vit, int32_t width, int32_t height, K2HudRect* out) { ++g_stripCalls; g_stripOwner = owner; g_stripOrder = order; g_stripW = width; g_stripH = height; *out = K2HudRect{ vit->x - width, vit->y + (vit->h - height) / 2, width, height }; return 1; }
+static K2HudApi g_huApi = { sizeof(K2HudApi), huRegister, huUnreg, huHud, huFrame, huStrip };
 static std::string g_reqName; static uint32_t g_reqVer;
 static const void* KPATCH_CALL fRequire(const char* n, uint32_t v) {
     g_reqName = n; g_reqVer = v;
@@ -170,6 +172,28 @@ int main() {
         HEQ("priority 200", (long long)g_hudPrio, 200LL);
         HCHECK("hud owner is the manifest id and the callback is the one added", g_hudOwner == "companion-selfheal" && g_hudFn == dummyHudCb);
         HCHECK("manifest requires_interfaces: the iface id string is \"k2.hud\"", strcmp(K2HUD_IFACE, "k2.hud") == 0 && K2HUD_VERSION == 1);
+    }
+
+    // ===== 5c. CS10: hud-host strip slot (companion-selfheal registers order 0 with shui::stripReserve; it still draws at buttonRect)
+    HEQ("K2HudApi::StripSlot is appended right after Frame (struct_size gate)", (long long)offsetof(K2HudApi, StripSlot), (long long)(offsetof(K2HudApi, Frame) + sizeof(K2HudApi::Frame)));
+    HCHECK("K2HudRect is four int32 {x, y, w, h}", sizeof(K2HudRect) == 16 && offsetof(K2HudRect, y) == 4 && offsetof(K2HudRect, w) == 8 && offsetof(K2HudRect, h) == 12);
+    {
+        k2hud::Client sc;
+        sc.init(&g_api, "companion-selfheal");
+        K2HudRect r{};
+        const shui::Rect sv{ 3671, 1285, 47, 96 };
+        const shui::Rect sb = buttonRect(sv);
+        g_stripCalls = 0;
+        HCHECK("k2hud::Client::stripSlot() is false before connect", !sc.stripSlot("companion-selfheal", 0, K2HudRect{ sv.x, sv.y, sv.w, sv.h }, stripReserve(sv), sb.h, &r) && g_stripCalls == 0);
+        HCHECK("connect() succeeds", sc.connect());
+        HCHECK("stripSlot(\"companion-selfheal\", 0, vit, stripReserve(vit), btn.h) reaches the provider with those args", sc.stripSlot("companion-selfheal", 0, K2HudRect{ sv.x, sv.y, sv.w, sv.h }, stripReserve(sv), sb.h, &r) && g_stripCalls == 1 && g_stripOwner == "companion-selfheal" && g_stripOrder == 0 && g_stripW == stripReserve(sv) && g_stripH == sb.h);
+        HEQ("shui::stripReserve(live companion vit 47x96) == 38 (gap 6 + button 24 + ring overhang 6 + kReserveGap 2)", stripReserve(sv), 38);
+        HCHECK("stripReserve covers the real button + ring at every bar height (wastes at most 3 px)", [] { for (int h = 8; h <= 400; ++h) { const shui::Rect bt = buttonRect(shui::Rect{ 1000, 100, 47, h }); if (bt.w <= 0) continue; const shui::Rect rg = ringRect(bt); const int need = 1000 - (bt.x < rg.x ? bt.x : rg.x); const int rs = stripReserve(shui::Rect{ 1000, 100, 47, h }); if (rs - shui::kReserveGap < need || rs - shui::kReserveGap > need + 3) return false; } return true; }());
+        const uint32_t full = g_huApi.struct_size;
+        g_huApi.struct_size = (uint32_t)(offsetof(K2HudApi, Frame) + sizeof(K2HudApi::Frame));
+        k2hud::Client oc; oc.init(&g_api, "companion-selfheal"); g_stripCalls = 0;
+        HCHECK("stripSlot() is false against a provider whose struct_size predates StripSlot", oc.connect() && !oc.stripSlot("companion-selfheal", 0, K2HudRect{ sv.x, sv.y, sv.w, sv.h }, 38, 24, &r) && g_stripCalls == 0);
+        g_huApi.struct_size = full;
     }
 
     // ===== 6. HealItems

@@ -690,6 +690,10 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
         Card& c = g_card[mi];
         W& b = g_w[W_Btn0 + mi - 1];
         c.btn = c.seen ? shui::buttonRect(c.vit) : shui::Rect{ 0, 0, 0, 0 };
+        if (c.btn.w > 0) {   // hud-host strip slot order 0 (doc 24 CS10): registration only, the button is still drawn at shui::buttonRect
+            K2HudRect sr{};
+            g_hudc.stripSlot("companion-selfheal", 0, K2HudRect{ c.vit.x, c.vit.y, c.vit.w, c.vit.h }, shui::stripReserve(c.vit), c.btn.h, &sr);
+        }
         c.st = shui::resolveState(c.have && c.seen, false, c.m.cur, c.m.max, c.pk.pick >= 0, g_pend[mi].on, c.cfg.autoOn);
         if (c.btn.w <= 0) c.st = shui::BtnState::Hidden;
         W& ring = g_w[W_Ring0 + mi - 1];

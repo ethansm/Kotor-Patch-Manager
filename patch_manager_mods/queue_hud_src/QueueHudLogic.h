@@ -177,22 +177,19 @@ inline int stripIconSize(Rect vit, const Config& c) {
     return s < kStripMinIcon ? kStripMinIcon : s;
 }
 
-// Width left of vit.x kept free for the selfheal button + its ring (SelfHealUi.h buttonRect / ringRect: button 16..24 px = h/4, gap
-// 2*h/36, ring side ~1.5x button), rounded up, plus kStripGap. Host-tested against the real shui functions.
-inline int selfHealReserve(Rect vit) {
-    int sb = (vit.h + 2) / 4;
-    sb = sb < 16 ? 16 : (sb > 24 ? 24 : sb);
-    int gap = (vit.h + 17) / 18;
-    if (gap < 2) gap = 2;
-    const int ring = ((sb * 3 + 2) / 4) * 2;
-    return gap + sb + (ring - sb + 1) / 2 + kStripGap;
+// Row width of n icons (n clamped to strip_max and kMaxSlots), 2px apart: the width queue-hud registers at hud-host strip order 1.
+inline int stripRowWidth(Rect vit, int n, const Config& c) {
+    if (n <= 0) return 0;
+    const int cap = c.stripMax < 1 ? 1 : (c.stripMax > kMaxSlots ? kMaxSlots : c.stripMax);
+    if (n > cap) n = cap;
+    return n * stripIconSize(vit, c) + (n - 1) * kStripGap;
 }
 
-// A horizontal row of n square icons (n clamped to strip_max and 4), 2px apart, in queue order. left: the row ends selfHealReserve(vit)
-// px left of vit.x, centred on the vit bar's height. above / below: left-aligned on the card, bottom edge 2px above the card top /
+// A horizontal row of n square icons (n clamped to strip_max and 4), 2px apart, in queue order. left: the row ends `reserve`
+// px left of vit.x (the selfheal footprint: hud-host strip slots, or shui::stripReserve(vit) as fallback), centred on the vit bar's height. above / below: left-aligned on the card, bottom edge 2px above the card top /
 // top edge 2px below the card bottom. screenW > 0 shifts the row left so it stays on screen (never
 // left of x=0). Returns the icon count written to out[0..); 0 for n <= 0 or an unusable card / vit rect.
-inline int stripRects(Rect card, Rect vit, int n, const Config& c, Rect out[kMaxSlots], int screenW = 0) {
+inline int stripRects(Rect card, Rect vit, int n, const Config& c, Rect out[kMaxSlots], int screenW, int reserve) {
     if (!out || n <= 0 || card.w <= 0 || card.h <= 0 || vit.h <= 0) return 0;
     int cap = c.stripMax < 1 ? 1 : (c.stripMax > kMaxSlots ? kMaxSlots : c.stripMax);
     if (n > cap) n = cap;
@@ -204,7 +201,7 @@ inline int stripRects(Rect card, Rect vit, int n, const Config& c, Rect out[kMax
         x0 = card.x;
     } else {
         y = vit.y + (vit.h - s) / 2;
-        x0 = vit.x - selfHealReserve(vit) - rowW;
+        x0 = vit.x - reserve - rowW;
         if (x0 < 0) x0 = 0;
     }
     if (screenW > 0) {
@@ -232,7 +229,7 @@ inline Rect cancelRect(Rect q0, Rect q1) {
 }
 
 // Companion Cancel: a square of the strip icon size placed just LEFT of the strip's first icon (gap = max(icon / 4, kStripGap)).
-// strip_side left: the row already ends selfHealReserve() left of the vit bar, so the cancel square lies further left, clear of the
+// strip_side left: the row already ends `reserve` left of the vit bar, so the cancel square lies further left, clear of the
 // selfheal button + ring; when it would leave the screen (x < 0) there is no cancel (never move it into the reserve). above / below:
 // the row starts at the card's left edge, nothing of selfheal is there; at x < 0 it goes just RIGHT of the last icon instead. A square
 // that would pass screenW (> 0) is refused. {0,0,0,0} = none.

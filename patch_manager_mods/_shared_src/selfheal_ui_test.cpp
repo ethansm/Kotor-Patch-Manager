@@ -249,6 +249,17 @@ int main() {
     KT_CHECK(ringRect({100, 50, 1, 1}) == (Rect{100, 50, 2, 2}));     // 1.5 -> 2; (1-2)/2 truncates to 0
     KT_CHECK_EQ(ringRect({0, 0, 3, 3}).w, 4);    // 4.5 -> 4 (not 6)
     KT_CHECK_EQ(ringRect({0, 0, 7, 7}).w, 10);   // 10.5 -> 10 (not 12)
+    // ---- stripReserve (moved from queue-hud's selfHealReserve, math unchanged): live companion vit 47x96, bounds, covers button + ring ----
+    KT_CHECK_EQ(stripReserve({3671, 1285, 47, 96}), 38);     // gap 6 + button 24 + ring overhang 6 + kReserveGap 2
+    KT_CHECK_EQ(stripReserve({0, 0, 47, 8}), 2 + 16 + 4 + kReserveGap);   // minimum button 16, gap floor 2
+    for (int h = 8; h <= 400; ++h) {
+        const Rect bt = buttonRect({1000, 100, 47, h});
+        if (bt.w <= 0) continue;
+        const Rect rg = ringRect(bt);
+        const int need = 1000 - (bt.x < rg.x ? bt.x : rg.x);
+        const int rs = stripReserve({1000, 100, 47, h});
+        KT_CHECK(rs - kReserveGap >= need && rs - kReserveGap <= need + 3);
+    }
     KT_CHECK(ringRect({100, 50, 18, 18}) == (Rect{95, 45, 28, 28}));   // 27 -> 28 (half rounds up)
     // pendingDone2 / useAllowed (CS12)
     {

@@ -30,6 +30,19 @@ inline Rect buttonRect(Rect vit) {
     return Rect{x, vit.y + (vit.h - s) / 2, s, s};
 }
 
+// Width left of vit.x kept free for the selfheal button + its ring (buttonRect / ringRect: button 16..24 px = h/4, gap 2*h/36, ring side
+// ~1.5x button), rounded up, plus kReserveGap. This is the width companion-selfheal registers at hud-host strip order 0 (doc 24 CS10);
+// queue-hud falls back to it when hud-host / selfheal is absent. Moved from queue-hud's selfHealReserve, math unchanged.
+constexpr int kReserveGap = 2;
+inline int stripReserve(Rect vit) {
+    int sb = (vit.h + 2) / 4;
+    sb = sb < 16 ? 16 : (sb > 24 ? 24 : sb);
+    int gap = (vit.h + 17) / 18;
+    if (gap < 2) gap = 2;
+    const int ring = ((sb * 3 + 2) / 4) * 2;
+    return gap + sb + (ring - sb + 1) / 2 + kReserveGap;
+}
+
 enum class BtnState { Hidden, FullHp, NoItem, Pending, AutoOn, Normal };
 
 inline BtnState resolveState(bool hasCreature, bool isLeader, int cur, int max, bool havePick, bool pending, bool autoOn) {

@@ -31,6 +31,7 @@
 #include "GuiKit.h"
 #include "GuiTip.h"
 #include "HudHost.h"
+#include "SelfHealUi.h"   // shui::stripReserve: the fallback selfheal footprint when hud-host strip slots are unavailable
 #include "EmbedTex.h"
 #include "GameAddr.h"
 #include "QueueHudLogic.h"
@@ -501,7 +502,15 @@ void drawStrips(uintptr_t hud, DWORD now) {
         if (len > 0 && len < static_cast<int>(sizeof types[k])) types[k][len] = 0;
         if (sd.n == 0) continue;
         const qh::Rect card{ cd[0], cd[1], cd[2], cd[3] }, vit{ vr[0], vr[1], vr[2], vr[3] };
-        sd.n = qh::stripRects(card, vit, sd.n, g_cfg, sd.r, screenW);
+        // Left side: the selfheal footprint comes from the hud-host strip slots (selfheal registers order 0, this row is order 1); without
+        // hud-host / selfheal / StripSlot it is the same value computed locally, so the layout is identical either way.
+        int reserve = shui::stripReserve(shui::Rect{ vit.x, vit.y, vit.w, vit.h });
+        if (g_cfg.stripSide == qh::kSideLeft) {
+            const int rowW = qh::stripRowWidth(vit, sd.n, g_cfg), rowH = qh::stripIconSize(vit, g_cfg);
+            K2HudRect sr{};
+            if (g_hudc.stripSlot("queue-hud", 1, K2HudRect{ vit.x, vit.y, vit.w, vit.h }, rowW, rowH, &sr)) reserve = vit.x - sr.x - rowW;
+        }
+        sd.n = qh::stripRects(card, vit, sd.n, g_cfg, sd.r, screenW, reserve);
         if (sd.n == 0) continue;
         sd.have = true;
         sigs[k] = sig * 131u + static_cast<uint32_t>(sd.r[0].x) * 7u + static_cast<uint32_t>(sd.r[0].y) * 13u + static_cast<uint32_t>(sd.r[0].w);

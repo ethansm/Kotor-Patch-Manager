@@ -163,7 +163,7 @@ static int32_t KPATCH_CALL fReg(int32_t ph, int32_t pr, K2HudCallback fn, void* 
 static void KPATCH_CALL fUnreg(int32_t t) { g_disp.remove(t); }
 static int32_t KPATCH_CALL fHud() { return g_hudSeen; }
 static uint32_t KPATCH_CALL fFrame() { return g_frameSeen; }
-static const K2HudApi g_fakeHud = { sizeof(K2HudApi), fReg, fUnreg, fHud, fFrame };
+static const K2HudApi g_fakeHud = { sizeof(K2HudApi), fReg, fUnreg, fHud, fFrame, nullptr };
 static int g_connectLogs = 0;
 static void onConn(bool, const char*) { ++g_connectLogs; }
 
@@ -186,7 +186,7 @@ static void tClient() {
     K2HudContext ctx = hhd::makeContext(0x10CC, 1, 0, 2, 1, 8);
     g_trace.clear(); hhd::runPopulate(g_disp, ctx);
     KT_CHECK_EQ(g_trace.c_str(), "frameCb@p0;a@p1;preCb@p1;");   // priority 50 < 100 within PRE
-    static const K2HudApi tiny = { 8, fReg, fUnreg, fHud, fFrame };
+    static const K2HudApi tiny = { 8, fReg, fUnreg, fHud, fFrame, nullptr };
     KT_CHECK(!k2hud::Client::usable(&tiny)); KT_CHECK(!k2hud::Client::usable(nullptr)); KT_CHECK(k2hud::Client::usable(&g_fakeHud));
 }
 

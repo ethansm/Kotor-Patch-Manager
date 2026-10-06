@@ -2,6 +2,7 @@
 #include "QueueHudLogic.h"
 #include "check.h"
 #include "SelfHealUi.h"   // real neighbour geometry: shui::buttonRect / ringRect
+#include "../hud_host_src/HhStrip.h"   // the real hud-host strip math (CS10 equivalence test)
 #include <initializer_list>
 #include <stdio.h>
 #include <string.h>
@@ -9,6 +10,12 @@
 using namespace qh;
 
 namespace {
+
+// The left-side footprint the in-game caller passes when hud-host is absent: shui::stripReserve (the fallback). The legacy 5-argument
+// form below keeps the existing geometry tests unchanged; they now exercise the fallback path of the real caller.
+int stripRects(Rect card, Rect vit, int n, const Config& c, Rect* out, int screenW = 0) {
+    return qh::stripRects(card, vit, n, c, out, screenW, shui::stripReserve(shui::Rect{ vit.x, vit.y, vit.w, vit.h }));
+}
 
 RNode N(uint8_t sub, uint32_t ptr, uint32_t spell = 0, uint32_t item = 0, uint32_t feat = 0) { RNode n; n.subType = sub; n.spellId = spell; n.itemId = item; n.featId = feat; n.ptr = ptr; return n; }
 QEntry E(int type, uint32_t p0 = 0) { return QEntry{ type, p0 }; }
@@ -552,7 +559,7 @@ void testStripLeftLive() {
     const Rect vit2{ 3671, 1285, 47, 96 }, card2{ 3711, 1285, 85, 85 }, vit3{ 3671, 1181, 47, 96 }, card3{ 3711, 1181, 85, 85 };
     const shui::Rect leaderVit{ 3511, 1386, 103, 208 }, leaderCard{ 3591, 1394, 191, 192 }, leaderForce{ 3762, 1386, 103, 208 };
     KT_CHECK_EQ(stripIconSize(vit2, c), 38);                    // 96 * 0.4 = 38.4 -> 38
-    KT_CHECK_EQ(selfHealReserve(vit2), 38);                    // gap 6 + button 24 + ring overhang 6 + 2
+    KT_CHECK_EQ(shui::stripReserve(shui::Rect{ vit2.x, vit2.y, vit2.w, vit2.h }), 38);                    // gap 6 + button 24 + ring overhang 6 + 2
     KT_CHECK_EQ(stripRects(card2, vit2, 1, c, out), 1);
     KT_CHECK_EQ(out[0].x, 3671 - 38 - 38); KT_CHECK_EQ(out[0].y, 1285 + 29); KT_CHECK_EQ(out[0].w, 38);
     KT_CHECK_EQ(stripRects(card2, vit2, 4, c, out), 4);
@@ -571,12 +578,65 @@ void testStripLeftLive() {
         if (btn.w <= 0) continue;
         const shui::Rect ring = shui::ringRect(btn);
         const int need = 1000 - (btn.x < ring.x ? btn.x : ring.x);
-        const int r = selfHealReserve(Rect{ 1000, 100, 47, h });
+        const int r = shui::stripReserve(shui::Rect{ 1000, 100, 47, h });
         KT_CHECK(r - 2 >= need);
         KT_CHECK(r - 2 <= need + 3);
     }
     KT_CHECK_EQ(stripRects(Rect{ 40, 0, 85, 85 }, Rect{ 10, 0, 47, 96 }, 2, c, out), 2);   // too close to the left edge: pinned to x = 0
     KT_CHECK_EQ(out[0].x, 0);
+}
+
+
+// ---- CS10: hud-host strip slots. With selfheal registered at order 0 (width = shui::stripReserve) and queue-hud at order 1 (width =
+// the row), the row lands exactly where the old hard-coded formula put it; without selfheal the row moves flush to the vit bar.
+int oldSelfHealReserve(Rect vit) {   // the pre-CS10 qh::selfHealReserve, verbatim
+    int sb = (vit.h + 2) / 4;
+    sb = sb < 16 ? 16 : (sb > 24 ? 24 : sb);
+    int gap = (vit.h + 17) / 18;
+    if (gap < 2) gap = 2;
+    const int ring = ((sb * 3 + 2) / 4) * 2;
+    return gap + sb + (ring - sb + 1) / 2 + kStripGap;
+}
+
+// What QueueHud.cpp does on the left side: register, then reserve = vit.x - slot.x - rowW.
+int slotReserve(hh::Strip& st, Rect vit, int n, const Config& c) {
+    hh::Box r{};
+    const int rowW = stripRowWidth(vit, n, c);
+    if (!st.slot(1, hh::Box{ vit.x, vit.y, vit.w, vit.h }, rowW, stripIconSize(vit, c), &r)) return -1;
+    return vit.x - r.x - rowW;
+}
+
+void testStripHudHostSlots() {
+    Config c;
+    Rect oldOut[4], newOut[4];
+    const Rect vit{ 3671, 1285, 47, 96 }, card{ 3711, 1285, 85, 85 };
+    hh::Strip st;
+    hh::Box sh{};
+    KT_CHECK_EQ(st.slot(0, hh::Box{ vit.x, vit.y, vit.w, vit.h }, shui::stripReserve(shui::Rect{ vit.x, vit.y, vit.w, vit.h }), 24, &sh), 1);   // selfheal, order 0
+    KT_CHECK_EQ(oldSelfHealReserve(vit), 38);
+    KT_CHECK_EQ(slotReserve(st, vit, 3, c), 38);
+    for (int n = 1; n <= 4; ++n) {
+        KT_CHECK_EQ(qh::stripRects(card, vit, n, c, oldOut, 0, oldSelfHealReserve(vit)), n);
+        KT_CHECK_EQ(qh::stripRects(card, vit, n, c, newOut, 0, slotReserve(st, vit, n, c)), n);
+        for (int i = 0; i < n; ++i) { KT_CHECK_EQ(newOut[i].x, oldOut[i].x); KT_CHECK_EQ(newOut[i].y, oldOut[i].y); KT_CHECK_EQ(newOut[i].w, oldOut[i].w); }
+        KT_CHECK_EQ(newOut[0].x, vit.x - 38 - (n * 38 + (n - 1) * 2));   // the literal live value: 3633 - rowW
+    }
+    // every bar height: the slot path is the old formula
+    for (int h = 8; h <= 400; ++h) {
+        const Rect v{ 1500, 300, 47, h }, cd{ 1540, 300, 85, 85 };
+        hh::Strip s2;
+        s2.slot(0, hh::Box{ v.x, v.y, v.w, v.h }, shui::stripReserve(shui::Rect{ v.x, v.y, v.w, v.h }), 24, &sh);
+        Rect a[4], b[4];
+        const int na = qh::stripRects(cd, v, 3, c, a, 3840, oldSelfHealReserve(v)), nb = qh::stripRects(cd, v, 3, c, b, 3840, slotReserve(s2, v, 3, c));
+        KT_CHECK_EQ(na, nb);
+        for (int i = 0; i < na; ++i) KT_CHECK_EQ(a[i].x, b[i].x);
+    }
+    // selfheal not registered (mod absent / not yet seen): the row sits flush against the vit bar - the reason the caller keeps the fallback
+    hh::Strip alone;
+    KT_CHECK_EQ(slotReserve(alone, vit, 2, c), 0);
+    // stripRowWidth mirrors stripRects: clamped to strip_max / kMaxSlots, 0 for n <= 0
+    KT_CHECK_EQ(stripRowWidth(vit, 0, c), 0); KT_CHECK_EQ(stripRowWidth(vit, 9, c), 4 * 38 + 3 * 2);
+    c.stripMax = 2; KT_CHECK_EQ(stripRowWidth(vit, 4, c), 2 * 38 + 2);
 }
 
 // ---- 0.3.0: kit frame + Cancel ----
@@ -708,6 +768,7 @@ int main() {
     testStripGeometry();
     testStripAvoidsSelfHeal();
     testStripLeftLive();
+    testStripHudHostSlots();
     testKitConfig();
     testInsetRect();
     testCancelRect();

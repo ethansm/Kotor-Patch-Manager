@@ -60,6 +60,8 @@ typedef struct K2HudContext {
 
 typedef void (KPATCH_CALL *K2HudCallback)(const K2HudContext* ctx, void* user);
 
+typedef struct K2HudRect { int32_t x, y, w, h; } K2HudRect;
+
 typedef struct K2HudApi {
     uint32_t struct_size;
     /* Add fn to a phase. owner = your manifest id (logged). Returns a token > 0, or <= 0 (null fn, bad phase, table full). */
@@ -68,6 +70,10 @@ typedef struct K2HudApi {
     /* Last seen HUD object; 0 = none seen yet. */
     int32_t (KPATCH_CALL *Hud)(void);
     uint32_t (KPATCH_CALL *Frame)(void);
+    /* Portrait strip (appended after Frame; gated by struct_size): right-to-left slots left of a companion vit bar.
+       order 0 = right-most. Each owner's width includes its own gap.
+       out->x = vit->x - (sum of widths registered for orders < order) - width; y centred on vit (height = side). 1 = ok. */
+    int32_t (KPATCH_CALL *StripSlot)(const char* owner, int32_t order, const K2HudRect* vit, int32_t width, int32_t height, K2HudRect* out);
 } K2HudApi;
 
 #pragma pack(pop)
@@ -128,6 +134,12 @@ struct Client {
     void poll() { if (!connected && (pollCount++ & 255) == 0) connect(); }
     int32_t hud() const { return hu ? hu->Hud() : 0; }
     uint32_t frame() const { return hu && hu->Frame ? hu->Frame() : 0; }
+    // Register `width` at strip `order` and get this owner's rect. False when the provider is absent or predates StripSlot (struct_size
+    // too old / null fn) or refuses (bad order); callers then fall back to their own geometry.
+    bool stripSlot(const char* owner, int order, const K2HudRect& vit, int width, int height, K2HudRect* out) const {
+        if (!hu || !out || hu->struct_size < offsetof(K2HudApi, StripSlot) + sizeof(hu->StripSlot) || !hu->StripSlot) return false;
+        return hu->StripSlot(owner, order, &vit, width, height, out) == 1;
+    }
 };
 
 } // namespace k2hud
