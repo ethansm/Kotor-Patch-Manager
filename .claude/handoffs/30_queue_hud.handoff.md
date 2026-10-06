@@ -31,7 +31,7 @@ build strips and do L3
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume`.
 
 ## Dead Ends & Anti-Patterns (Do NOT Attempt) — added 10-04 22:50
-- queue-hud 0.1.0-dev is LIVE (dll 75defebf) but NOT play-tested: do not install 0.2.0 before the user's doc 30 checklist passes.
+- queue-hud 0.2.0-dev is LIVE (dll 2950ce26, hot-swap 10-05 00:09 on user "install when ready"), NOT play-tested; doc 30 checklist 1-8.
 - L3 save-events library must NOT be installed while action-hotbar 1.2.1 is live: it uses the same 5 addresses (0x534527, 0x53C5AA, 0x52FD1E, 0x8529E0, 0x8FACA0); KPM rejects identical addresses. Hotbar migration is owner-gated (hotbar session).
 - Doc 24 L3 row names perf-lab EVT entries (0x52F610/0x52FB80/0x53AF20/0x7A06B0/0x7D0F50): those are perf-lab's measurement hooks, not the library's sites. Do not hook them.
 - check_raw_addresses: hand-edit own entries only; never --write-baseline.

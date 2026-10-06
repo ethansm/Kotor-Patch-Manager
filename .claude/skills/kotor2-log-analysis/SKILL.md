@@ -31,7 +31,7 @@ python3 scripts/kotor2_logs.py check <log_name> --new          # only lines adde
 python3 scripts/kotor2_logs.py check <log_name> --new --no-advance
 ```
 
-Bookmarks live in `~/.cache/kotor2_logs/bookmarks.json`. A rotated or truncated log restarts from line 1 and prints `rotated:`. Use this instead of writing "next log from line N" into docs or memory. This works for the `log_triage` route; other parsers take their own range flags (section 4).
+Bookmarks live in `~/.cache/kotor2_logs/bookmarks.json`. A rotated or truncated log restarts from line 1 and prints `rotated:`. Use this instead of writing "next log from line N" into docs or memory. This works for the `log_triage` route and `luo_log_check.py` (`levelup_override_log.txt`); other parsers take their own range flags (section 4).
 
 ## 3. Generic summary output (`log_triage` route)
 
@@ -48,7 +48,7 @@ To look at one signature's real lines, use the `first_line` number with a bounde
 
 | Log | Tool | Useful flags |
 |---|---|---|
-| `levelup_override_log.txt` | `scripts/luo_log_check.py` | `--from/--to LINE`, `--scenario ID`, `--expect-version`, `--json` |
+| `levelup_override_log.txt` | `scripts/luo_log_check.py` | `--new`, `--no-advance`, `--scenario ID`, `--from/--to LINE`, `--expect-version`, `--json` |
 | `k2-dialogue-letterbox-fix_log.txt` | `patch_manager_mods/engine_bug_research/tools/analyze_engfix_logs.py FILE` | `--json` |
 | perflab / robustnessfixes / texmem / activationfix | `patch_manager_mods/perf_lab_src/analyze_runs.py --game-dir G` | `--summary`, `--latest N`, `--from-offsets F`, `--out F.md` (default without flags is ~37 KB; `check` uses `--summary --latest 1`) |
 | `ai_trace.txt`, `ranged_ai_log.txt`, `inventory_sort_filter_log.txt` | `scripts/archive_play_logs.py` then `patch_manager_mods/mods678_research/analyze_play_logs.py DIR` | `check` chains both into a temp dir |

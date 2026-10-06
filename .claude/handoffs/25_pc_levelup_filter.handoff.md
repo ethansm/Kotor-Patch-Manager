@@ -1,29 +1,28 @@
 # Session Handoff & Plan State: patch_manager_mods/25_pc_levelup_filter.md
 
 ## 0. Next-Phase Direction
-let's use a gear icon for settings instead a hammer.  the button is not a square in property aspect ratio, its stretched. the window for config needs a proper border styling to fully cover the menu below it.
+Execute §15 in 25_pc_levelup_filter.md
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/25_pc_levelup_filter.md`
-- **Branch:** `KOTOR-II` (05a5475 doc 27/24: companion-selfheal 0.3.0-dev INSTALLED 10-04 20:44 (dll bd80fb29))
+- **Branch:** `KOTOR-II` (e5ffefc doc 27: companion-selfheal 0.5.0-dev INSTALLED 10-05 00:57 (config db096abc, backup selfheal050_install_20261005_005737))
 - **Last Landed Commit:**
 ```
-05a5475 doc 27/24: companion-selfheal 0.3.0-dev INSTALLED 10-04 20:44 (dll bd80fb29)
- patch_manager_mods/24_master_plan_status.md | 4 ++--
- patch_manager_mods/27_companion_selfheal.md | 1 +
- 2 files changed, 3 insertions(+), 2 deletions(-)
+e5ffefc doc 27: companion-selfheal 0.5.0-dev INSTALLED 10-05 00:57 (config db096abc, backup selfheal050_install_20261005_005737)
+ patch_manager_mods/27_companion_selfheal.md | 3 +++
+ 1 file changed, 3 insertions(+)
 ```
-- **Dirty Files (120):**
-  - `M .claude/skills/plan-handoff/SKILL.md`
+- **Dirty Files (130):**
+  - `M .claude/handoffs/24_master_plan_status.handoff.md`
+  - ` M .claude/handoffs/30_queue_hud.handoff.md`
+  - ` M .claude/handoffs/31_combat_action_hotbar.handoff.md`
+  - ` M .claude/session_handoff.md`
+  - ` M .claude/skills/plan-handoff/SKILL.md`
+  - ` M AGENTS.md`
+  - ` M CLAUDE.md`
+  - ` M patch_manager_mods/MASTER_KEY.md`
   - ` M patch_manager_mods/README.md`
-  - ` D patch_manager_mods/engine_ai_atlas/tools/__pycache__/atlas_coverage.cpython-312.pyc`
-  - ` D patch_manager_mods/engine_ai_atlas/tools/__pycache__/cg.cpython-312.pyc`
-  - ` D patch_manager_mods/engine_ai_atlas/tools/__pycache__/export_dump_inputs.cpython-312.pyc`
-  - ` D patch_manager_mods/engine_ai_atlas/tools/__pycache__/field_census.cpython-312.pyc`
-  - ` D patch_manager_mods/engine_ai_atlas/tools/tests/__pycache__/helpers.cpython-312.pyc`
-  - ` D patch_manager_mods/engine_ai_atlas/tools/tests/__pycache__/test_cg.cpython-312.pyc`
-  - ` D patch_manager_mods/engine_ai_atlas/tools/tests/__pycache__/test_export_and_coverage.cpython-312.pyc`
-  - ` D patch_manager_mods/engine_ai_atlas/tools/tests/__pycache__/test_field_census.cpython-312.pyc`
+  - ` M patch_manager_mods/_shared_src/GuiKit.h`
 
 ## 3. Strict Context Budget & Read Policy
 - **Self-Contained Plan**: Do NOT run broad `ls`, find commands, or `cat` entire source files.
@@ -31,12 +30,23 @@ let's use a gear icon for settings instead a hammer.  the button is not a square
 - **Targeted Reads Only**: Use `sed -n 'X,Yp'` or `rg` for specific lines if needed.
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume`.
 
-## Dead Ends & Anti-Patterns (batch 3a/3c)
-- No vanilla gear texture: `list_icons.py --filter 'gear|cog|setting|option|opt|wrench|tool|config'` -> only if_gearhead* (portraits), lbl_icn_opt2/3 (hammer). Don't search again.
-- ActionHotbar embeds art via engine texture objects (ActionHotbar.cpp ensureTextures 1537 + healTextures for GL resets; HotbarTextures.inc from scripts/gen_hotbar_textures.py). Sibling-owned: read-only; extracting to _shared_src is a cross-session change.
-- ShieldBar precedent: generated TGA in override/ (scripts/gen_shield_bar_art.py), installed by hand.
-- GuiKit has no border edge/corner setters (only Fill/Tint/Alpha at border+0x74/0x28/0x24); CSWGuiBorder edge/corner offsets need RE or a different template tag.
-- check_gui_ids registry (tests/static/gui_ids.toml) pins the UiCtl enum + count: update it with any control added.
-- Scenario/ui tests assume heldResult semantics: tick(real=0) -> icon, real=1 -> Configure.
-## Verification Commands
-cd research/companion_levelup && python3 tools/parity/parity.py && python3 tools/parity/scenarios.py && python3 tools/parity/mutate.py --jobs 6; cd ../.. && python3 scripts/run_tests.py && .venv/bin/python scripts/check_gui_ids.py
+
+## Batch 3d direction (user, 2026-10-05 01:01, verbatim)
+"Gear looks good! It needs to have the same background as the button fill. Highlight button border on hover. When the menu is open, keep the gear
+button and let it do the same as cancel. UX for the pannel that opens needs work. Solid background, give it a border with rounded corners etc,
+make it look and feel vanilla colors." Screenshots: ~/Documents/Screenshot_2026-10-05_01-01-13.png (gear: black interior, no button fill),
+~/Documents/Screenshot_2026-10-05_01-01-26.png (page: stats show through the EFX window and through the translucent row fills).
+
+## Live result 1.4.0-dev (log lines 794-825)
+`UI page window=efx`, `UI page window back alpha ok=1`, `tex luo_gear/luo_gear_hi: created`, `UI icon fill=luo_gear ok=1`, `UI icon emb=1 hi=1 style=1`,
+lvlbtn lines now consistent (shown=1 isVisible=1 / shown=0 isVisible=0). Code behaved as designed; the problems are visual.
+
+## Dead ends (Do NOT attempt)
+- One LBL_EFX_BACK clone as the page back: alpha 1 but still see-through live (its tiled uibit_fill_2bt is not opaque on its own; the old 3-stack
+  was opaque only by stacking). Need a guaranteed-opaque fill (embedded solid texture via EmbedTex.h) or stacking.
+- Gear as the C_ICON fill: replaces the button's own fill, so the interior is black. Needs a second (plain, frameless) label on top or a composited texture.
+- Labels have no hilight border (only CSWGuiButton has one at +0xE8); hover highlight must swap border images/tint on the label itself.
+
+## Verification commands
+cd research/companion_levelup && python3 tools/parity/parity.py && python3 tools/parity/scenarios.py && python3 tools/parity/scenarios.py --m32 && python3 tools/parity/mutate.py --jobs 6
+cd ../.. && python3 scripts/run_tests.py -k "embtex or guikit or level_up" && .venv/bin/python scripts/check_gui_ids.py && python3 scripts/check_shared_headers.py && .venv/bin/python3 scripts/gen_luo_textures.py --check

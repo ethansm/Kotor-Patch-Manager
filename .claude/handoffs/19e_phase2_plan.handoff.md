@@ -1,29 +1,30 @@
 # Session Handoff & Plan State: patch_manager_mods/19e_phase2_plan.md
 
 ## 0. Next-Phase Direction
-continue with CS3, install approved
+Test direction for phase X
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/19e_phase2_plan.md`
-- **Branch:** `KOTOR-II` (cd3b8e7 doc 24 + 19e: C5a DONE (ed52d2b, KPM 34c0785), C5 split into C5a/b/c)
+- **Branch:** `KOTOR-II` (a3286fe Common C8: GuiKit cursorEngineF/syncScreen/WheelHook (+wheelInstall/Uninstall)/bindByTag + pure helpers, host tests; subclassers.toml entry)
 - **Last Landed Commit:**
 ```
-cd3b8e7 doc 24 + 19e: C5a DONE (ed52d2b, KPM 34c0785), C5 split into C5a/b/c
- patch_manager_mods/19e_phase2_plan.md       | 3 ++-
- patch_manager_mods/24_master_plan_status.md | 4 +++-
- 2 files changed, 5 insertions(+), 2 deletions(-)
+a3286fe Common C8: GuiKit cursorEngineF/syncScreen/WheelHook (+wheelInstall/Uninstall)/bindByTag + pure helpers, host tests; subclassers.toml entry
+ patch_manager_mods/_shared_src/GuiKit.h        | 185 +++++++++++++++++++++++++
+ patch_manager_mods/_shared_src/guikit_test.cpp | 182 ++++++++++++++++++++++++
+ tests/static/subclassers.toml                  |   7 +
+ 3 files changed, 374 insertions(+)
 ```
-- **Dirty Files (116):**
-  - `M .claude/skills/plan-handoff/SKILL.md`
+- **Dirty Files (130):**
+  - `M .claude/handoffs/19e_phase2_plan.handoff.md`
+  - ` M .claude/handoffs/24_master_plan_status.handoff.md`
+  - ` M .claude/handoffs/25_pc_levelup_filter.handoff.md`
+  - ` M .claude/handoffs/30_queue_hud.handoff.md`
+  - ` M .claude/session_handoff.md`
+  - ` M .claude/skills/plan-handoff/SKILL.md`
+  - ` M AGENTS.md`
+  - ` M CLAUDE.md`
+  - ` M patch_manager_mods/MASTER_KEY.md`
   - ` M patch_manager_mods/README.md`
-  - ` D patch_manager_mods/engine_ai_atlas/tools/__pycache__/atlas_coverage.cpython-312.pyc`
-  - ` D patch_manager_mods/engine_ai_atlas/tools/__pycache__/cg.cpython-312.pyc`
-  - ` D patch_manager_mods/engine_ai_atlas/tools/__pycache__/export_dump_inputs.cpython-312.pyc`
-  - ` D patch_manager_mods/engine_ai_atlas/tools/__pycache__/field_census.cpython-312.pyc`
-  - ` D patch_manager_mods/engine_ai_atlas/tools/tests/__pycache__/helpers.cpython-312.pyc`
-  - ` D patch_manager_mods/engine_ai_atlas/tools/tests/__pycache__/test_cg.cpython-312.pyc`
-  - ` D patch_manager_mods/engine_ai_atlas/tools/tests/__pycache__/test_export_and_coverage.cpython-312.pyc`
-  - ` D patch_manager_mods/engine_ai_atlas/tools/tests/__pycache__/test_field_census.cpython-312.pyc`
 
 ## 2. Immediate Objective (mouse-probe)
 **shared-logging (this)**

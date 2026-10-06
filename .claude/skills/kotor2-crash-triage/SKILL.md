@@ -24,24 +24,13 @@ build if a deployed asset is a suspect.
 
 ## Step 1: is the process actually still running?
 
-Before assuming a "crash" killed the game, check:
-
+Check process state and detect spinning hangs via the triage CLI:
+```bash
+python3 scripts/crash_triage.py proc
 ```
-pgrep -af '^S:.*swkotor2\.exe'      # the game process itself (cmdline starts with S:\)
-ps -o pid,stat,pcpu,etime -p <pid>   # state + CPU + how long it has been up
-```
-
-Don't grep `swkotor`/`reaper` loosely: the Steam launch wrapper's command line
-contains the game path too, and `oom_reaper` (a kernel thread) matches "reaper".
-`^S:.*swkotor2\.exe` matches only the real process.
-
-A `winedbg`-caught fault (see Step 3) does **not** always kill the process —
-it can keep running afterward in a degraded/spinning state, which shows up
-later as a black-screen hang. If `swkotor2.exe` is listed and pegged at high
-CPU (state `R`/`RN` in the `ps` STAT column, not sleeping), that's a hang,
-not a crash — go to Step 4.
-
-If nothing is running, it's a real crash/exit — go to Step 2 for the log.
+- Emits `VERDICT: STOPPED` (process exited/crashed -> proceed to Step 2/3 for log analysis).
+- Emits `VERDICT: HANG` (`swkotor2.exe` spinning at high CPU / black-screen hang -> proceed to Step 4 to kill).
+- Emits `VERDICT: RUNNING` (`swkotor2.exe` is healthy/sleeping).
 
 ## Step 2: find the log
 
@@ -58,50 +47,29 @@ Steam):
   ```
   (`gamemoderun` is currently a silent no-op on this machine — missing
   `libgamemode.so` — harmless, not a bug to chase.)
-- This writes `~/steam-208580.log`. Confirm you're looking at the right
-  session with `ls -la ~/steam-208580.log` (mtime) before reading — Proton
-  overwrites it fresh per launch.
+- This writes `~/steam-208580.log`. Proton overwrites it fresh per launch.
 - Two more logs live in the game install dir (`.../Knights of the Old
   Republic II/`), both **wall-clock timestamped** (unlike the Proton log,
   whose timestamps are seconds-since-boot):
-  - `AR_ERROR.LOG` — the Aurora engine's own error log. Usually just
-    resource name-mismatch warnings; overwritten fresh every session. Its
-    mtime is the best anchor for converting the Proton log's monotonic
-    timestamps to wall-clock time.
-  - `ReShade.log` — present only if ReShade is installed. Same wall-clock
-    anchoring use, plus shows what got hooked/injected that session.
+  - `AR_ERROR.LOG` — Aurora engine's error log. Overwritten fresh every session.
+  - `ReShade.log` — present only if ReShade is installed. Wall-clock anchor.
 
 ## Step 3: filter the log — don't read it whole
 
-These logs run 3-30MB+. Never `Read` the whole file. Grep for signal first:
-
+These logs run 3-30MB+. Never `Read` the whole file. Run the automated signal extractor:
+```bash
+python3 scripts/crash_triage.py log [--limit 40]
 ```
-grep -n -iE "unhandled exception|backtrace: --- Exception|EXCEPTION_|err:module|err:seh|Backtrace:" ~/steam-208580.log | head -40
+This isolates exceptions, signal dispatches, and backtrace frames, returning candidate crash offsets and a `VERDICT: FAULT(addr) | EXCEPTION | CLEAN`.
+
+For KPM detours and patcher status:
+```bash
+python3 scripts/crash_triage.py kpm
 ```
-
-If the 40-line cap is hit, count first (`grep -c ...`) and narrow the pattern
-rather than raising the cap.
-
-This surfaces every exception dispatch and the final `winedbg` backtrace in
-one pass. Wine's own severity convention: `err:` lines are real problems;
-`warn:`/`fixme:`/`trace:` mostly aren't — skim `err:` first if the grep above
-is noisy.
-
-Once you find the crash line numbers, `sed -n '<start>,<end>p' file` around
-them to pull the actual backtrace and register dump (keep each range under
-~60 lines), rather than tailing the whole file.
-
-**If the log is wall of `+unwind` trace noise** (repeated
-`dump_unwind_info`/`RtlVirtualUnwind2` blocks — this is what makes these logs
-huge), that's diagnostic verbosity, not the crash itself; skip past it to the
-`Unhandled exception` / `Backtrace:` block, which is a compact, readable
-symbol+offset list per frame (`swkotor2 (+0xNNNNN)`, `glu32 (+0xNNNN)`, etc.).
-For routine play going forward, prefer `WINEDEBUG=+seh` (add it as an env var
-in the same launch line) over `+all`/`+unwind` — enough signal, far smaller
-file.
+Returns hook counts and patcher init status (`VERDICT: PASS(detours=N) | ABORTED`).
 
 **Resolving Crash Offsets:**
-Once you have the crash offset or instruction address (e.g. `swkotor2 (+0x13f000)` or `0x0053f000`), immediately resolve the function and source symbol using:
+Once you have the crash offset or instruction address (e.g. `0x0053f000`), immediately resolve the function and source symbol using:
 ```bash
 python3 scripts/query_ghidra.py address 0x0053f000
 ```
@@ -109,26 +77,11 @@ This maps the raw crash address to the verified function name, prototype, and GO
 
 ## Step 4: kill a hung process
 
-Target the game process only — **not** `reaper`, `wineserver`, or the Steam
-client:
-
+Target the game process only — **not** `reaper`, `wineserver`, or the Steam client:
+```bash
+python3 scripts/crash_triage.py kill [--timeout 5.0]
 ```
-PID=$(pgrep -f '^S:.*swkotor2\.exe')
-kill -TERM $PID; sleep 5
-kill -0 $PID 2>/dev/null && kill -KILL $PID   # escalate only if still alive
-```
-
-Steam's `reaper` → pressure-vessel → Proton chain notices the exit and tears
-down the rest (`wineserver`, `winedevice`, `xalia.exe`, `gameoverlayui`); this
-takes up to ~10 s, so check after a pause, not immediately. Fully cleaned up =
-this prints nothing:
-
-```
-ps -eo pid,comm,args | grep -E ' (reaper|wineserver|xalia\.exe|swkotor2)' | grep -v grep
-```
-
-(`comm` filtering avoids the false `oom_reaper` hit.) If entries remain after
-~15 s, wait and re-check before escalating.
+Sends `SIGTERM` gracefully, waits up to timeout, escalates to `SIGKILL` only if still alive, and confirms teardown. Emits `VERDICT: KILLED | NOT_RUNNING`.
 
 ### Relaunch
 

@@ -50,4 +50,5 @@ Order: worker CREATED,MODIFIED,TESTS,NOTES,STATUS · recon OUTPUT,EVIDENCE,FINDI
 ## AI Agent Output Style (`i-have-adhd`)
 - The `i-have-adhd` plugin is installed globally across Claude Code and Antigravity (`agy`).
 - Shape all responses for an ADHD reader: lead with actions/commands/snippets, number multi-step work, cap lists to 5 items, give concrete time estimates, and end with one concrete next action doable in under 2 minutes.
+- **Actionable Plan-Handoff Over Generic Reviews**: When ending with a next action and work remains on a feature or mod, provide concrete next development steps or plan-handoff commands (e.g. `/plan-handoff <batch>` or `python3 scripts/plan_manager.py handoff <batch>`), NEVER generic instructions to "review the changes made" or "inspect files".
 - **Subagent Exemption**: When reporting back to an AI orchestrator or tool caller, the human ADHD rules are superseded by the worker/recon contract above. Do NOT suggest next steps, do NOT paste code snippets, and do NOT number multi-step prose.
