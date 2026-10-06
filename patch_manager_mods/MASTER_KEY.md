@@ -50,16 +50,73 @@ Our numbered markdown documents in `patch_manager_mods/` map directly to specifi
 
 ---
 
-## 3. Fast CLI Reference
+## 3. Master Plan Table Specification
+
+Every active master plan (e.g. `24_master_plan_status.md`, `31_combat_action_hotbar.md`) uses a standardized 7-column markdown schema:
+
+| Column | Description | Format / Values |
+|---|---|---|
+| **Id** | Unique phase or batch identifier | Leading prefix letter + number (e.g. `T5d`, `CS2`, `M0`) |
+| **Batch** | Scoped deliverable or component | Concise summary of code, test, or config changes |
+| **Deps** | Upstream prerequisites | Comma-separated phase Ids, or `-` if none |
+| **Owner gate** | Concurrency or user approval lock | `-`, session name (e.g. `split`, `hotbar`), or `user GO` |
+| **Status** | Current phase lifecycle state | `TODO`, `PARTIAL`, `BUILT`, `STAGED`, `DONE`, `DEFERRED` |
+| **Commit** | Short SHA of git commit | 7-char hash (e.g. `6fcb8ec`), or empty if uncommitted |
+| **Next** | Immediate verification or next action | Verification metrics, test counts, or next batch pointer |
+
+Progress is updated deterministically via CLI:
+```bash
+python3 scripts/plan_manager.py mark-done <Id> [--state <STATE>] [--commit <sha>] [--notes <txt>]
+```
+
+---
+
+## 4. The 5-Stage Mod Milestone Lifecycle
+
+Master plans track features through five standard lifecycle stages. Logging and diagnostics are strictly phased:
+
+1. **Stage 1: Research & Probes (`R`, `P`)**
+   - *Goal*: Reverse-engineer memory layouts, offsets, and engine calling conventions.
+   - *Logging*: Instrument **rich diagnostic logging** (dedicated KpLog channels, raw struct dumps, first-draw coordinates). Never guess blind in live play.
+2. **Stage 2: Core Logic & Contract Tests (`C`, `T`)**
+   - *Goal*: Extract pure algorithms, implement SafeRead boundaries, and write host tests.
+   - *Gates*: Colocated unit tests (`run_tests.py`), mutation testing, and `--wine` smoke tests.
+3. **Stage 3: Live Probing & Calibration (`CS3`, `HL2`)**
+   - *Goal*: Live in-game validation with user consent.
+   - *Rule*: Gated behind explicit `user GO`; backup created before staging (`stage_and_verify_install.py`).
+4. **Stage 4: Hardening & Log Tightening (`HP`, `L`)**
+   - *Goal*: Clean up development telemetry before final integration or PR.
+   - *Logging*: Gate high-volume and per-frame logs behind `Verbose=0` in INI; enforce state-change deduplication (log state changes, never per-frame redraws); drop temporary probe detours; verify clean logs (<50 lines on startup) via `python3 scripts/kotor2_logs.py check <log>`.
+5. **Stage 5: Packaging, Sync & Release (`S`, `L`)**
+   - *Goal*: Production deployment and upstream submission.
+   - *Rule*: Header sync to `Patches/Common`, STAGE_INFO tracking, KPM install verification, PR branch cut in separate worktree.
+
+---
+
+## 5. Batch Protocol & Concurrency Standards
+
+1. **One Batch = One Execution Turn**: Orchestrators focus strictly on the active batch rather than conflating multi-batch tasks.
+2. **Pre-Flight Concurrency Check**: Run `git status --short` on target paths. If another session owns or is modifying files, coordinate via `SendMessage` or stop.
+3. **Explicit Commit Scoping**: NEVER run broad `git commit -a`. Always commit explicit target paths (`git commit -- path/to/file`).
+4. **Zero-Read Plans**: Plan steps inline exact struct layouts or 5-10 line snippets so executors do not scrape past context.
+5. **Automated Status Sync**: Mark completed batches immediately using `scripts/plan_manager.py mark-done`.
+
+---
+
+## 6. Fast CLI Reference
 
 ```bash
-# View the master key and legend anytime:
+# View the master key, prefixes, and active docs:
 python3 scripts/plan_manager.py legend
 
-# Check current objective with plain-English category badge:
+# Check current active plan objective with category badge:
 python3 scripts/plan_manager.py resume
 
-# Resume a specific doc with shorthand:
+# Resume a specific doc shorthand:
 python3 scripts/plan_manager.py resume 24    # Common master plan
 python3 scripts/plan_manager.py resume 25    # Level-up filter plan
+python3 scripts/plan_manager.py resume 31    # Action hotbar plan
+
+# Advance a master plan batch state:
+python3 scripts/plan_manager.py mark-done T5e --state DONE --commit abc1234 --notes "32/32 tests PASS"
 ```
