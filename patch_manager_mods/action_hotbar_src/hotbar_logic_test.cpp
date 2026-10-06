@@ -1,6 +1,7 @@
 // Pure-logic tests for the hotbar model (U2: picking an action already on the bar MOVES it).
 #include "HotbarConfig.h"
 #include "HotbarLogic.h"
+#include "TwoDA.h"
 #include "check.h"
 #include <memory>
 #include <cstring>
@@ -732,6 +733,149 @@ int main() {
     g.extra["TargetProbe"] = "2"; KT_CHECK_EQ(targetProbe(g), 2);
     g.extra["TargetProbe"] = "abc"; bad = false; KT_CHECK_EQ(targetProbe(g, &bad), 2); KT_CHECK(bad);
     General h; h.extra["targetprobe"] = "1"; bad = true; KT_CHECK_EQ(targetProbe(h, &bad), 1); KT_CHECK(!bad);
+  }
+  { // HB04 freezeEffective: only empty, non-"none" slots take the effective action; returns the count
+    ActionRef row[Slots], eff[Slots];
+    row[0] = mk(K_Spell, 1);                       // explicit: kept
+    row[1].blank = true;                           // explicit none: kept empty
+    // row[2] empty + eff[2] set -> frozen; row[3] empty + eff[3] empty -> untouched
+    eff[0] = mk(K_Spell, 99); eff[1] = mk(K_Spell, 98); eff[2] = mk(K_Item, 0, "Medpac"); eff[5] = mk(K_Spell, 7); eff[5].blank = true;   // blank flag on eff must be cleared in the copy
+    KT_CHECK_EQ(freezeEffective(row, eff), 2);
+    KT_CHECK(row[0].kind == K_Spell && row[0].id == 1);
+    KT_CHECK(row[1].empty() && row[1].blank);
+    KT_CHECK(row[2].kind == K_Item && row[2].name == "Medpac" && !row[2].blank);
+    KT_CHECK(row[3].empty() && !row[3].blank);
+    KT_CHECK(row[5].kind == K_Spell && row[5].id == 7 && !row[5].blank);
+    KT_CHECK_EQ(freezeEffective(row, eff), 0);     // idempotent
+    ActionRef none[Slots], noneEff[Slots]; KT_CHECK_EQ(freezeEffective(none, noneEff), 0);
+  }
+  { // HB05 useRoute: item @self needs probe >= 2, item @lowhp needs probe > 0 (asymmetry pinned); everything else invoke / log-only
+    ActionRef self = mk(K_Item, 0, "Medpac"); self.target.mode = TM_Self;
+    ActionRef low = self; low.target.mode = TM_LowHp;
+    ActionRef def = self; def.target.mode = TM_Default;
+    ActionRef spellLow = mk(K_Spell, 8); spellLow.target.mode = TM_LowHp;
+    ActionRef spellSelf = mk(K_Spell, 8); spellSelf.target.mode = TM_Self;
+    struct Row { const ActionRef* a; int probe; bool invoke; UseRoute want; };
+    const Row t[] = {
+      { &self, 0, true, UR_Invoke }, { &self, 1, true, UR_Invoke }, { &self, 2, true, UR_SelfDirect }, { &self, 3, false, UR_SelfDirect },
+      { &self, 1, false, UR_LogOnly }, { &self, 0, false, UR_LogOnly },
+      { &low, 0, true, UR_Invoke }, { &low, 1, true, UR_LowHpDirect }, { &low, 2, true, UR_LowHpDirect }, { &low, 1, false, UR_LowHpDirect },
+      { &low, 0, false, UR_LogOnly },
+      { &def, 2, true, UR_Invoke }, { &def, 2, false, UR_LogOnly },
+      { &spellLow, 2, true, UR_Invoke }, { &spellSelf, 2, false, UR_LogOnly },
+    };
+    for (const Row& r : t) KT_CHECK_EQ((int)useRoute(*r.a, r.probe, r.invoke), (int)r.want);
+    KT_CHECK(useRoute(self, 1, true) != useRoute(low, 1, true));   // probe 1: lowhp acts directly, self does not
+  }
+  { // HB07 collectAutos
+    const ActionRef sp8 = mk(K_Spell, 8), sp10 = mk(K_Spell, 10), sp22 = mk(K_Spell, 22);
+    const int kPow = 0x20000000, kItem = 0x40000000;
+    std::vector<std::pair<int, ActionRef>> powers = { { kPow | 8, sp8 }, { kItem | 5, mk(K_Item, 0, "Medpac") }, { 3, mk(K_Other, 3) }, { kPow | 10, sp10 }, { kPow | 22, sp22 } };
+    AutoGroup g[3];
+    unsigned dm = 0xFFu;
+    // autoFill off: nothing, mask cleared
+    KT_CHECK(collectAutos({}, powers, g, false, &dm).empty()); KT_CHECK_EQ(dm, 0u);
+    // known powers only (no item/mode keys), in order; explicit ones skipped
+    std::vector<ActionRef> a = collectAutos({ sp10 }, powers, g, true, &dm);
+    KT_CHECK_EQ(a.size(), 2); KT_CHECK(a.size() == 2 && a[0].id == 8 && a[1].id == 22); KT_CHECK_EQ(dm, 0u);
+    // item groups: selKey match picks that entry; no match falls back to the first; empty group skipped
+    ActionRef med = mk(K_Item, 0, "Medpac"), stim = mk(K_Item, 0, "Stim"), shield = mk(K_Item, 0, "Shield"), mine = mk(K_Item, 0, "Mine");
+    g[0].keys = { 101, 102 }; g[0].refs = { med, stim }; g[0].selKey = 102;
+    g[1].keys = { 201 }; g[1].refs = { shield }; g[1].selKey = 999;
+    a = collectAutos({}, {}, g, true, &dm);
+    KT_CHECK_EQ(a.size(), 2); KT_CHECK(a.size() == 2 && a[0].name == "Stim" && a[1].name == "Shield"); KT_CHECK_EQ(dm, 0u);
+    // dup against explicit sets the group's bit and skips; dup against an earlier auto (power list) too
+    g[2].keys = { 301 }; g[2].refs = { mine }; g[2].selKey = 301;
+    a = collectAutos({ stim, mine }, {}, g, true, &dm);
+    KT_CHECK_EQ(a.size(), 1); KT_CHECK(a.size() == 1 && a[0].name == "Shield"); KT_CHECK_EQ(dm, 0x5u);   // groups 0 and 2
+    g[0].keys = { 7 }; g[0].refs = { sp8 }; g[0].selKey = 7;                                              // group pick equals a collected power
+    a = collectAutos({}, powers, g, true, &dm);
+    KT_CHECK_EQ(a.size(), 5); KT_CHECK_EQ(dm, 1u);   // 3 powers + shield + mine; group 0 dup of power 8
+    KT_CHECK(collectAutos({ med }, {}, g, true, nullptr).size() == 3);                                    // null mask accepted
+    // two groups picking the same item: the second is the dup
+    AutoGroup h[3]; h[0].keys = { 1 }; h[0].refs = { med }; h[1].keys = { 2 }; h[1].refs = { med };
+    a = collectAutos({}, {}, h, true, &dm); KT_CHECK_EQ(a.size(), 1); KT_CHECK_EQ(dm, 0x2u);
+    // an empty-ref pick is not collected and sets no dup bit; a group with fewer refs than keys uses the shorter length
+    AutoGroup e[3]; e[0].keys = { 1 }; e[0].refs = { ActionRef() }; e[1].keys = { 5, 6 }; e[1].refs = { shield }; e[1].selKey = 6;
+    a = collectAutos({}, {}, e, true, &dm);
+    KT_CHECK_EQ(a.size(), 1); KT_CHECK(a.size() == 1 && a[0].name == "Shield"); KT_CHECK_EQ(dm, 0u);
+    AutoGroup m[3]; m[0].keys = { 1 }; KT_CHECK(collectAutos({}, {}, m, true, &dm).empty());              // keys without refs = empty group
+  }
+  { // HB08 classifyRow: direct strings
+    ItemClass c = classifyRow(-1, "no uses left", 43, "T", "4", "0", "0x1408");
+    KT_CHECK_EQ(c.row, -1); KT_CHECK(!c.healing && !c.selfOk); KT_CHECK_EQ(c.why, "no uses left");
+    c = classifyRow(64, "ok", 0, "T", "4", "0", "0x1408");                                   // table not loaded
+    KT_CHECK_EQ(c.row, 64); KT_CHECK(!c.healing && !c.selfOk); KT_CHECK_EQ(c.why, "spells.2da row unknown");
+    c = classifyRow(64, "ok", 43, "T", "4", "0", "0x1408");                                  // row past the end
+    KT_CHECK_EQ(c.row, 64); KT_CHECK(!c.healing && !c.selfOk); KT_CHECK_EQ(c.why, "spells.2da row unknown");
+    c = classifyRow(5, "ok", 43, "T", "4", "0", "0x1408");                                   // medpac
+    KT_CHECK(c.healing && c.selfOk); KT_CHECK_EQ(c.why, "ok"); KT_CHECK_EQ(c.row, 5);
+    c = classifyRow(5, "ok", 43, "t", "4", "1", "0x1404");                                   // repair, hostile-flagged: no self use; range case-insensitive for self only
+    KT_CHECK(!c.healing && !c.selfOk);                                                       // healing needs a capital "T"
+    c = classifyRow(5, "ok", 43, "T", "4", "1", "0x1048");                                   // cure, hostile 1
+    KT_CHECK(c.healing && !c.selfOk);
+    c = classifyRow(5, "ok", 43, "T", "3", "****", "0x1408");                                // wrong usertype; "****" hostile = -1 -> self allowed
+    KT_CHECK(!c.healing && c.selfOk);
+    c = classifyRow(5, "ok", 43, "P", "4", "0", "0x1408");                                   // personal range: neither
+    KT_CHECK(!c.healing && !c.selfOk);
+    c = classifyRow(5, "ok", 43, "T", "4", "", "5128");                                      // decimal category 5128 = 0x1408
+    KT_CHECK(c.healing && c.selfOk);
+    c = classifyRow(5, "ok", 43, "T", "4", "0", "0x2441");                                   // category not on the list
+    KT_CHECK(!c.healing && c.selfOk);
+    c = classifyRow(0, "ok", 1, "", "", "", "");                                             // all cells empty: row 0 is valid
+    KT_CHECK_EQ(c.row, 0); KT_CHECK(!c.healing && !c.selfOk); KT_CHECK_EQ(c.why, "ok");
+    // spells_fixture.2da: forcepoints/range/category columns exist, usertype/hostilesetting do not (Get -> "")
+    TwoDA t; KT_CHECK(t.Load("testdata/spells_fixture.2da"));
+    int n = (int)t.rows.size(); KT_CHECK_EQ(n, 43);
+    auto cls = [&](int row) { return classifyRow(row, "ok", n, t.Get(row, "range"), t.Get(row, "usertype"), t.Get(row, "hostilesetting"), t.Get(row, "category")); };
+    c = cls(10);                                                                             // Cure: range T, category 0x2441, no usertype -> not healing, self allowed
+    KT_CHECK(!c.healing && c.selfOk);
+    c = cls(8); KT_CHECK(!c.healing && !c.selfOk);                                           // Speed Burst: range P
+    c = cls(22); KT_CHECK(!c.healing && !c.selfOk);
+    c = cls(7); KT_CHECK(!c.healing && !c.selfOk);                                           // filler row: "****" range
+    c = cls(42); KT_CHECK_EQ(c.row, 42); KT_CHECK_EQ(c.why, "ok");
+    c = cls(43); KT_CHECK_EQ(c.why, "spells.2da row unknown");                               // one past the last row
+  }
+  { // A11 tipText
+    TipSpell none;
+    KT_CHECK_EQ(tipText('1', "Medpac (3)", 0x40000000 | 5, 1, none).c_str(), "Medpac\nKey: 1   Item\nQuantity: 3");
+    KT_CHECK_EQ(tipText(0, "Medpac (3)", 0x40000000 | 5, 1, none).c_str(), "Medpac\nItem\nQuantity: 3");
+    KT_CHECK_EQ(tipText('2', "Grenade (x)", 0x40000000 | 5, 1, none).c_str(), "Grenade\nKey: 2   Item");        // non-numeric suffix: stripped from the title, no Quantity line
+    KT_CHECK_EQ(tipText('3', "Stim", 0x40000000 | 5, 0, none).c_str(), "Stim\nKey: 3   Item\nNot usable right now");
+    KT_CHECK_EQ(tipText('4', "Stance", 12, 1, none).c_str(), "Stance\nKey: 4   Mode");
+    KT_CHECK_EQ(tipText(0, "Stance", 12, 0, none).c_str(), "Stance\nMode\nNot usable right now");
+    TipSpell sp; sp.fp = "30"; sp.range = "T"; sp.desc = "Heals. Second sentence.";
+    KT_CHECK_EQ(tipText('5', "Cure", 0x20000000 | 10, 1, sp).c_str(), "Cure\nKey: 5   Force Power\nForce Points: 30\nRange: Target\nHeals.");
+    sp.fp = "0"; sp.range = "P"; sp.desc.clear();
+    KT_CHECK_EQ(tipText('6', "Burst", 0x20000000 | 8, 0, sp).c_str(), "Burst\nKey: 6   Force Power\nRange: Personal\nNot usable right now");
+    sp.fp.clear(); sp.range = "X";
+    KT_CHECK_EQ(tipText('7', "Odd", 0x20000000 | 9, 1, sp).c_str(), "Odd\nKey: 7   Force Power");
+    sp.fp = "5"; sp.range = "P"; sp.desc = "x";
+    KT_CHECK_EQ(tipText('8', "Item flag wins", 0x60000000 | 9, 1, sp).c_str(), "Item flag wins\nKey: 8   Item");   // both bits: item, no spell lines, qty absent
+  }
+  { // A11 pickerSignature: fixed FNV, sensitive to key/flags/name/tab/order
+    struct E { int key, flags; std::string name; };
+    std::vector<E> a = { { 0x20000008, 1, "Speed" }, { 0x40000005, 0, "Medpac (3)" } };
+    unsigned h0 = pickerSignature(a, 0);
+    KT_CHECK_EQ(pickerSignature(std::vector<E>(), 0), (2166136261u ^ 0u) * 16777619u);
+    KT_CHECK_EQ(pickerSignature(a, 0), h0);
+    KT_CHECK(pickerSignature(a, 1) != h0);
+    { auto b = a; b[1].name = "Medpac (2)"; KT_CHECK(pickerSignature(b, 0) != h0); }
+    { auto b = a; b[0].flags = 0; KT_CHECK(pickerSignature(b, 0) != h0); }
+    { auto b = a; b[0].key ^= 1; KT_CHECK(pickerSignature(b, 0) != h0); }
+    { auto b = a; std::swap(b[0], b[1]); KT_CHECK(pickerSignature(b, 0) != h0); }
+    unsigned h = 2166136261u;   // reference: the original edPicker loop
+    for (const E& x : a) { h = (h ^ (unsigned)x.key ^ ((unsigned)x.flags << 3)) * 16777619u; for (char ch : x.name) h = (h ^ (unsigned char)ch) * 16777619u; }
+    KT_CHECK_EQ(h0, (h ^ 0u) * 16777619u);
+  }
+  { // A11 modeBtnWhy: click-ignored log wording per button state
+    KT_CHECK_EQ(modeBtnWhy(MB_Hidden), "empty slot"); KT_CHECK_EQ(modeBtnWhy(MB_DisabledItemsOnly), "items only");
+    KT_CHECK_EQ(modeBtnWhy(MB_DisabledCannotTarget), "cannot target this item"); KT_CHECK_EQ(modeBtnWhy(MB_Enabled), "");
+    ActionRef it = mk(K_Item, 0, "Medpac");
+    KT_CHECK_EQ(modeBtnWhy(modeButtonState(ActionRef(), false, false)), "empty slot");
+    KT_CHECK_EQ(modeBtnWhy(modeButtonState(mk(K_Spell, 8), false, false)), "items only");
+    KT_CHECK_EQ(modeBtnWhy(modeButtonState(it, false, false)), "cannot target this item");
+    KT_CHECK_EQ(modeBtnWhy(modeButtonState(it, true, false)), "");
   }
   return kt::Report("hotbar_logic_test");
 }

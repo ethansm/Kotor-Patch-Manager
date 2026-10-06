@@ -486,18 +486,15 @@ hb::ItemProp readItemProp(uintptr_t itemPtr) {
     return p;
 }
 
-struct ItemClass { int row = -1; bool healing = false, selfOk = false; const char* why = ""; };
+using hb::ItemClass;
 ItemClass classifyItem(uintptr_t itemPtr) {
-    ItemClass c; hb::ItemProp p = readItemProp(itemPtr);
-    c.row = hb::usableSpellRow(p); c.why = hb::itemPropWhy(p);
-    if (c.row < 0) return c;
+    hb::ItemProp p = readItemProp(itemPtr);
+    int row = hb::usableSpellRow(p); const char* why = hb::itemPropWhy(p);
+    if (row < 0) return hb::classifyRow(row, why, 0, "", "", "", "");
     ensureLookups();
-    if (g_spells.rows.empty() || c.row >= (int)g_spells.rows.size()) { c.why = "spells.2da row unknown"; return c; }
-    std::string range = g_spells.Get(c.row, "range");
-    int ut = hb::parseHexOrInt(g_spells.Get(c.row, "usertype")), hs = hb::parseHexOrInt(g_spells.Get(c.row, "hostilesetting")), cat = hb::parseHexOrInt(g_spells.Get(c.row, "category"));
-    c.healing = hb::isHealingRow(ut, range, cat);
-    c.selfOk = hb::selfAllowedRow(range, hs);
-    return c;
+    int nRows = (int)g_spells.rows.size();
+    if (nRows == 0 || row >= nRows) return hb::classifyRow(row, why, nRows, "", "", "", "");
+    return hb::classifyRow(row, why, nRows, g_spells.Get(row, "range"), g_spells.Get(row, "usertype"), g_spells.Get(row, "hostilesetting"), g_spells.Get(row, "category"));
 }
 
 // CanUseItem(strict) on member idx, then PerformUseItem(item -> member idx) exactly as the original member path. True = handled (also when refused);
@@ -587,11 +584,11 @@ void drainRing(uintptr_t hud) {
         KP_LOG(chSlots, "%s", hb::fmtSlotResolve(sk, e.group, e.index, (unsigned)e.key, (unsigned)e.flags, g_cfg.general.invoke != 0, hb::Format(a)).c_str());   // ref last: it can be 100 bytes
         if (a.kind != hb::K_Item && a.target.mode != hb::TM_Default) KP_LOG(chTarget, "target: mode ignored for non-item %.100s", hb::Format(a).c_str());
         // @self has no target decision to log, so TargetProbe=1 leaves it on the vanilla path
-        if (a.kind == hb::K_Item && a.target.mode == hb::TM_Self && targetProbeMode() >= 2 && selfUse(hud, e, a)) continue;
-        if (a.kind == hb::K_Item && a.target.mode == hb::TM_LowHp) {
-            int probe = targetProbeMode();
-            if (probe > 0 && targetedUse(hud, e, a, probe)) continue;
-        }
+        // a direct route that returns false still falls through to the vanilla invoke below (when Invoke=1)
+        int probe = a.kind == hb::K_Item ? targetProbeMode() : 0;   // only item slots consult TargetProbe (its bad-value WARN fires once, already at cfg load)
+        hb::UseRoute route = hb::useRoute(a, probe, g_cfg.general.invoke != 0);
+        if (route == hb::UR_SelfDirect && selfUse(hud, e, a)) continue;
+        if (route == hb::UR_LowHpDirect && targetedUse(hud, e, a, probe)) continue;
         if (g_cfg.general.invoke) invokeEntry(hud, e);
     }
 }
@@ -661,18 +658,25 @@ void refreshEffective(uintptr_t hud) {
     std::vector<hb::ActionRef> autos;
     if (g_cfg.general.autoFill) {
         std::vector<Entry> es; readGroup(hud, 0, &es);
-        for (auto& e : es) {
-            if (!hb::isKnownPowerKey(e.key)) continue;   // known Force powers only (no items, no mode toggles)
-            if (!hb::hasSame(explicitRefs, e.ref)) autos.push_back(e.ref);
-        }
+        std::vector<std::pair<int, hb::ActionRef>> powers;   // known Force powers only is decided by hb::collectAutos (no items, no mode toggles)
+        for (auto& e : es) powers.push_back({e.key, e.ref});
         // then the selected entry of each item group (1 medpac/stim, 2 shield, 3 mine), like the native quick bar's current pick
+        hb::AutoGroup groups[3]; std::vector<Entry> gEntries[3];
         for (int g = 1; g <= 3; ++g) {
-            std::vector<Entry> is; readGroup(hud, g, &is);
+            std::vector<Entry>& is = gEntries[g - 1]; readGroup(hud, g, &is);
             if (is.empty()) continue;
-            unsigned selKey = (unsigned)rdInt(S_Hud, hud, Hud_GroupSel + g * 4);
-            int keys[256]; int nk = std::min((int)is.size(), 256); for (int i = 0; i < nk; ++i) keys[i] = is[i].key;
-            const Entry* pick = &is[std::max(0, hb::pickIndexByKey(keys, nk, selKey))];
-            bool dup = hb::hasSame(explicitRefs, pick->ref) || hb::hasSame(autos, pick->ref);
+            hb::AutoGroup& ag = groups[g - 1];
+            ag.selKey = (unsigned)rdInt(S_Hud, hud, Hud_GroupSel + g * 4);
+            int nk = std::min((int)is.size(), 256); for (int i = 0; i < nk; ++i) { ag.keys.push_back(is[i].key); ag.refs.push_back(is[i].ref); }
+        }
+        unsigned dupMask = 0;
+        autos = hb::collectAutos(explicitRefs, powers, groups, true, &dupMask);
+        for (int g = 1; g <= 3; ++g) {
+            const std::vector<Entry>& is = gEntries[g - 1];
+            if (is.empty()) continue;
+            const hb::AutoGroup& ag = groups[g - 1];
+            const Entry* pick = &is[std::max(0, hb::pickIndexByKey(ag.keys.data(), (int)ag.keys.size(), ag.selKey))];
+            bool dup = (dupMask >> (g - 1)) & 1u;
             unsigned& lastPick = g_bar.lastPick[g];   // per group: key*31+dup+1 of the last logged pick (map R3: change-only, was every refresh); per-HUD state in Bar
             unsigned pk = (unsigned)pick->key * 31u + (dup ? 1u : 0u) + 1u;
             if (lastPick != pk && KP_ENABLED(chSlots, KPLOG_DEBUG)) {
@@ -680,7 +684,6 @@ void refreshEffective(uintptr_t hud) {
                 std::string nm = pick->ref.kind == hb::K_Item ? std::string() : " name='" + pick->name + "'";   // an item ref already contains the name
                 KP_LOGV(chSlots, KPLOG_DEBUG, "eff: autofill group %d pick key=%08x ref=%s%s%s", g, (unsigned)pick->key, hb::Format(pick->ref).c_str(), dup ? " (dup, skipped)" : "", nm.c_str());
             }
-            if (!dup && !pick->ref.empty()) autos.push_back(pick->ref);
         }
     }
     bool effAuto[hb::Slots]; hb::ActionRef eff[hb::Slots];
@@ -829,25 +832,16 @@ using hb::wrapText; using hb::shortDesc;   // greedy word wrap / first-sentence 
 
 // Title, key, type, cost and description of slot s's current entry ('\n'-separated lines).
 std::string buildTipText(char digit, const Entry& e, bool verboseLog = true) {
-    auto tt = hb::tipTitleQty(e.name); const std::string& title = tt.title; const std::string& qty = tt.qty;
-    std::string out = title + "\n";
-    const char* kind = (e.key & 0x40000000) ? "Item" : ((e.key & 0x20000000) ? "Force Power" : "Mode");
-    if (digit) out += std::string("Key: ") + digit + "   " + kind + "\n"; else out += std::string(kind) + "\n";
+    hb::TipSpell sp;
     if ((e.key & 0x20000000) && !(e.key & 0x40000000)) {
         ensureLookups();
         int row = e.key & 0x1FFFFFFF;
-        std::string fp = nullish(g_spells.Get(row, "forcepoints")), range = g_spells.Get(row, "range");
-        if (!fp.empty() && fp != "0") out += "Force Points: " + fp + "\n";
-        if (range == "P") out += "Range: Personal\n"; else if (range == "T") out += "Range: Target\n";
+        sp.fp = nullish(g_spells.Get(row, "forcepoints")); sp.range = g_spells.Get(row, "range");
         std::string dsc = nullish(g_spells.Get(row, "spelldesc"));
-        if (!dsc.empty()) { std::string d = shortDesc(g_tlk.Get((uint32_t)atoi(dsc.c_str()))); if (!d.empty()) out += wrapText(d, TipWrap, TipMaxDescLines) + "\n"; }
-        if (verboseLog) KP_LOGV(chTip, KPLOG_DEBUG, "tip: spell row %d fp='%s' range='%s' desc strref='%s'", row, fp.c_str(), range.c_str(), dsc.c_str());
-    } else if (e.key & 0x40000000) {
-        if (!qty.empty()) out += "Quantity: " + qty + "\n";
+        if (!dsc.empty()) sp.desc = g_tlk.Get((uint32_t)atoi(dsc.c_str()));
+        if (verboseLog) KP_LOGV(chTip, KPLOG_DEBUG, "tip: spell row %d fp='%s' range='%s' desc strref='%s'", row, sp.fp.c_str(), sp.range.c_str(), dsc.c_str());
     }
-    if (!(e.flags & 1)) out += "Not usable right now\n";
-    while (!out.empty() && out.back() == '\n') out.pop_back();
-    return out;
+    return hb::tipText(digit, e.name, e.key, e.flags, sp);
 }
 
 void setRect(Widget& w, const char* nm, int x, int y, int ww, int hh) {
@@ -1144,8 +1138,7 @@ bool assignSlot(uintptr_t hud, int slot, const Entry* e) {
     }
     if (g_charKey.empty()) { KP_LOGV(chEdit, KPLOG_WARN, "edit: assign REFUSED: character key unknown (load in progress?)"); ed.msg = "Character not identified yet - try again"; return false; }
     hb::Profile& d = g_cfg.profile(g_charKey);   // per-character profile; slotFor falls back to Default for slots it leaves unset
-    int frozen = 0;
-    for (int i = 0; i < hb::Slots; ++i) if (d.slots[0][i].empty() && !d.slots[0][i].blank && !g_eff[i].empty()) { d.slots[0][i] = g_eff[i]; d.slots[0][i].blank = false; ++frozen; }
+    int frozen = hb::freezeEffective(d.slots[0], g_eff);
     hb::ActionRef a; if (e) a = e->ref; else a.blank = true;
     if (e && a.empty()) { KP_LOGV(chEdit, KPLOG_WARN, "edit: assign REFUSED: entry '%s' has no stable ref", e->name.c_str()); ed.msg = "That entry cannot be bound"; return false; }
     if (e) for (int from : hb::moveDuplicates(d, 0, slot, a)) KP_LOG(chEdit, "edit: '%s' moved from slot %c to %c", e->name.c_str(), hb::slotDigit(from), hb::slotDigit(slot));   // re-pick of an action already on the bar = move
@@ -1191,7 +1184,7 @@ void modeClick(uintptr_t hud, int slot) {
     Editor& ed = g_bar.ed;
     hb::ActionRef a = g_eff[slot]; bool heal, selfOk; modeInputs(slot, a, &heal, &selfOk);
     hb::ModeBtn st = hb::modeButtonState(a, heal, selfOk);
-    if (st != hb::MB_Enabled) { KP_LOG(chTarget, "target: mode click slot %s ignored (%s)", hb::SlotKeyName(0, slot).c_str(), st == hb::MB_Hidden ? "empty slot" : st == hb::MB_DisabledItemsOnly ? "items only" : "cannot target this item"); return; }
+    if (st != hb::MB_Enabled) { KP_LOG(chTarget, "target: mode click slot %s ignored (%s)", hb::SlotKeyName(0, slot).c_str(), hb::modeBtnWhy(st)); return; }
     hb::TargetSpec n = hb::nextTargetMode(a, heal, selfOk);
     if (hb::dropsCustomSuffix(a.target)) KP_LOG(chEdit, "edit: target mode slot %s drops custom suffix (threshold=%d fallback=%d)", hb::SlotKeyName(0, slot).c_str(), a.target.thresholdPct, a.target.fallback);
     KP_LOG(chEdit, "edit: target mode slot %s %s -> %s", hb::SlotKeyName(0, slot).c_str(), hb::targetModeName(a.target.mode), hb::targetModeName(n.mode));
@@ -1277,18 +1270,17 @@ static void edPicker(uintptr_t hud, Editor& ed, EdFrame& f) {
     // ---- picker contents (rebuilt from the HUD's group lists when stale)
     int& maxOff = f.maxOff; maxOff = 0;
     if (ed.mode == M_Pick) {
-        std::vector<Entry> all; unsigned h = 2166136261u;
+        std::vector<Entry> all;
         GroupSnapshot snap(hud);
         for (int g = 0; g < InvokableGroups; ++g) {
             for (auto& x : snap.get(g)) {
                 if (tabOf(x) != ed.tab || x.ref.empty()) continue;
                 bool dup = false; for (auto& y : all) if (hb::Same(y.ref, x.ref)) dup = true;
                 if (dup) continue;
-                all.push_back(x); h = (h ^ (unsigned)x.key ^ ((unsigned)x.flags << 3)) * 16777619u;
-                for (char ch : x.name) h = (h ^ (unsigned char)ch) * 16777619u;   // the name carries the stack count: refresh when it changes
+                all.push_back(x);
             }
         }
-        h = (h ^ (unsigned)ed.tab) * 16777619u;
+        unsigned h = hb::pickerSignature(all, ed.tab);   // the name carries the stack count: refresh when it changes
         if (h != ed.sig || g_frame - ed.lastRefresh >= 60) {
             if (h != ed.sig) KP_LOG(chEdit, "edit: picker list tab=%s off=%d entries=%d (was %d) slot=%d", TabName[ed.tab], ed.off, (int)all.size(), (int)ed.list.size(), ed.slot);
             ed.sig = h; ed.lastRefresh = g_frame; ed.list = all;

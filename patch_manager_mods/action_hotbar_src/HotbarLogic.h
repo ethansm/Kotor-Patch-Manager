@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace hb {
@@ -91,6 +92,49 @@ inline int assignAutoFill(const ActionRef* cfg, const std::vector<ActionRef>& au
         eff[s] = a; isAuto[s] = au;
     }
     return nAuto;
+}
+
+// HB04: before an assignment rewrites the profile row, every empty, non-"none" slot of the row is frozen to what the bar currently shows
+// (the effective/auto-filled action), so saving never silently drops an auto-filled binding. Returns how many slots were frozen.
+inline int freezeEffective(ActionRef (&row)[Slots], const ActionRef* eff) {
+    int frozen = 0;
+    for (int i = 0; i < Slots; ++i)
+        if (row[i].empty() && !row[i].blank && !eff[i].empty()) { row[i] = eff[i]; row[i].blank = false; ++frozen; }
+    return frozen;
+}
+
+// HB05: how drainRing runs a resolved slot. Direct routes (item @self needs probe >= 2, item @lowhp needs probe > 0) may still fail to a
+// vanilla invoke: the DLL falls through to invokeEntry when Invoke=1 after a direct route returns false. Invoke/LogOnly = no direct route.
+enum UseRoute { UR_Invoke, UR_SelfDirect, UR_LowHpDirect, UR_LogOnly };
+inline UseRoute useRoute(const ActionRef& a, int probe, bool invoke) {
+    if (a.kind == K_Item && a.target.mode == TM_Self && probe >= 2) return UR_SelfDirect;
+    if (a.kind == K_Item && a.target.mode == TM_LowHp && probe > 0) return UR_LowHpDirect;
+    return invoke ? UR_Invoke : UR_LogOnly;
+}
+
+// HB07: the AutoFill candidate list. powers = group 0 entries (HUD key, ref) in HUD order; known Force powers (isKnownPowerKey) not already
+// explicit are taken first. Then one pick per item group (HUD groups 1..3 = groups[0..2]): the entry whose key == selKey, else the first;
+// skipped (dupMask bit g set) when already explicit or already collected, or when its ref is empty (no dup bit for that).
+struct AutoGroup { std::vector<int> keys; std::vector<ActionRef> refs; unsigned selKey = 0; };
+inline std::vector<ActionRef> collectAutos(const std::vector<ActionRef>& explicitRefs, const std::vector<std::pair<int, ActionRef>>& powers,
+                                           const AutoGroup groups[3], bool autoFill, unsigned* dupMask) {
+    std::vector<ActionRef> autos;
+    if (dupMask) *dupMask = 0;
+    if (!autoFill) return autos;
+    for (const auto& p : powers) {
+        if (!isKnownPowerKey(p.first)) continue;
+        if (!hasSame(explicitRefs, p.second)) autos.push_back(p.second);
+    }
+    for (int g = 0; g < 3; ++g) {
+        const AutoGroup& ag = groups[g];
+        int n = (int)std::min(ag.keys.size(), ag.refs.size());
+        if (n <= 0) continue;
+        const ActionRef& pick = ag.refs[(size_t)std::max(0, pickIndexByKey(ag.keys.data(), n, ag.selKey))];
+        bool dup = hasSame(explicitRefs, pick) || hasSame(autos, pick);
+        if (dup && dupMask) *dupMask |= 1u << g;
+        if (!dup && !pick.empty()) autos.push_back(pick);
+    }
+    return autos;
 }
 
 // FNV-1a style signature of the effective bar (ref text + id + auto flag); the DLL logs the bar only when it changes.
@@ -417,6 +461,10 @@ inline std::string modeTooltip(const ActionRef& a, bool isHealing, bool selfAllo
     default: return "";
     }
 }
+// Reason text the mode-button click log gives when the click is ignored ("" for MB_Enabled). Log wording, not the tooltip wording.
+inline const char* modeBtnWhy(ModeBtn st) {
+    return st == MB_Hidden ? "empty slot" : st == MB_DisabledItemsOnly ? "items only" : st == MB_DisabledCannotTarget ? "cannot target this item" : "";
+}
 inline std::string slotTargetLine(const TargetSpec& t, int effectiveThresholdPct) {
     if (t.mode == TM_LowHp) return "Target: Lowest HP (below " + std::to_string(effectiveThresholdPct) + "%)";
     return t.mode == TM_Self ? "Target: Self" : "";
@@ -438,6 +486,19 @@ inline const char* itemPropWhy(const ItemProp& p) {
     if (p.usable == 0) return "no uses left";
     return p.row < 0 ? "bad row" : "ok";
 }
+// HB08: item classification. row < 0 = not usable (why = propWhy); healing = a medpac/repair/cure row, selfOk = self use allowed.
+struct ItemClass { int row = -1; bool healing = false, selfOk = false; const char* why = ""; };
+// row = usableSpellRow(prop), propWhy = itemPropWhy(prop), nRows = spells.2da row count (0 = not loaded), the strings = that row's cells
+// (empty when the row is out of range). A row past the table keeps row set but reports "spells.2da row unknown" and neither flag.
+inline ItemClass classifyRow(int row, const char* propWhy, int nRows, const std::string& range, const std::string& usertype,
+                             const std::string& hostile, const std::string& category) {
+    ItemClass c; c.row = row; c.why = propWhy;
+    if (row < 0) return c;
+    if (nRows <= 0 || row >= nRows) { c.why = "spells.2da row unknown"; return c; }
+    c.healing = isHealingRow(parseHexOrInt(usertype), range, parseHexOrInt(category));
+    c.selfOk = selfAllowedRow(range, parseHexOrInt(hostile));
+    return c;
+}
 
 
 // ---- pure helpers extracted from ActionHotbar.cpp (tip title/qty, per-save snapshot merge/pick, TargetProbe) ----
@@ -453,6 +514,36 @@ inline TipTitle tipTitleQty(const std::string& name) {
     for (char c : q) if (c < '0' || c > '9') { digits = false; break; }
     if (digits) t.qty = q;
     return t;
+}
+
+// A11: hover text of a picker/bar entry. Force-power keys (0x20000000 without 0x40000000) take their spells.2da cells from `sp`
+// (fp already "****"-stripped, range raw, desc = raw TLK text, "" = none); item keys show the stack quantity from the name.
+struct TipSpell { std::string fp, range, desc; };
+inline std::string tipText(char digit, const std::string& name, int key, int flags, const TipSpell& sp) {
+    TipTitle tt = tipTitleQty(name);
+    std::string out = tt.title + "\n";
+    const char* kind = (key & 0x40000000) ? "Item" : ((key & 0x20000000) ? "Force Power" : "Mode");
+    if (digit) out += std::string("Key: ") + digit + "   " + kind + "\n"; else out += std::string(kind) + "\n";
+    if ((key & 0x20000000) && !(key & 0x40000000)) {
+        if (!sp.fp.empty() && sp.fp != "0") out += "Force Points: " + sp.fp + "\n";
+        if (sp.range == "P") out += "Range: Personal\n"; else if (sp.range == "T") out += "Range: Target\n";
+        if (!sp.desc.empty()) { std::string d = shortDesc(sp.desc); if (!d.empty()) out += wrapText(d, TipWrap, TipMaxDescLines) + "\n"; }
+    } else if (key & 0x40000000) {
+        if (!tt.qty.empty()) out += "Quantity: " + tt.qty + "\n";
+    }
+    if (!(flags & 1)) out += "Not usable right now\n";
+    while (!out.empty() && out.back() == '\n') out.pop_back();
+    return out;
+}
+
+// Picker list signature (FNV-1a over key, flags, name per entry, then the tab); the name carries the stack count, so a count change refreshes.
+template <class E> inline unsigned pickerSignature(const std::vector<E>& entries, int tab) {
+    unsigned h = 2166136261u;
+    for (const E& x : entries) {
+        h = (h ^ (unsigned)x.key ^ ((unsigned)x.flags << 3)) * 16777619u;
+        for (char ch : x.name) h = (h ^ (unsigned char)ch) * 16777619u;
+    }
+    return (h ^ (unsigned)tab) * 16777619u;
 }
 
 // replaceLiveProfiles rule: keep the live [General], always have a Default profile, snapshot profiles overwrite.
