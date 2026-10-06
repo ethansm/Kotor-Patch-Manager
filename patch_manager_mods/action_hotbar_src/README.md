@@ -23,8 +23,9 @@ The DLL creates its own controls, art and INI. No `.gui` or texture files are in
 1. Install `ActionHotbar.kpatch` (id `action-hotbar`) with Kotor Patch Manager.
 2. Start the game. `action_hotbar.ini` is created in the game folder (next to `swkotor2.exe`) on first run.
    If you have an old `force_power_hotbar.ini`, it is copied first (see Migration).
-3. For the item target modes, the game needs `override/spells.2da`. The patch reads it to decide which
-   items can be targeted. The base game ships this table.
+3. For the item target modes, the patch needs `spells.2da` to decide which items can be targeted. It looks in
+   `override/spells.2da` first, then in the base game's `chitin.key` -> `data/2da.bif`. No file needs to be copied.
+   The log shows which one was used (see Logs).
 
 ## Keys
 
@@ -173,6 +174,13 @@ Without the `kpatch.log` core, the mod writes `action_hotbar_log.txt` instead. T
 
 Useful lines: `action-hotbar 1.2.1 loaded` at start, `migrate:` on a first run, `persave:` on every save and load,
 `actionbar:` on a bar refresh. A `WARN` line is a real fault.
+
+The `spells.2da` lookup is logged once per session, on the `tip` channel. Order: `override/spells.2da`, then `chitin.key`
+-> `data/2da.bif`. Lines:
+
+- `tip: override/spells.2da -> ok source=override (cols=<n> rows=<n>)` : the override copy was used.
+- `tip: spells.2da -> ok source=chitin (cols=<n> rows=<n>)` : no override, the base game table was used.
+- `WARN tip: spells.2da missing (override + chitin: <err>); @lowhp/@self and tooltips disabled` : neither source worked.
 
 ## Troubleshooting
 
