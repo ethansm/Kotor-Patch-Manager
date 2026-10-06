@@ -25,7 +25,7 @@
 // (ch::layoutBannerPills). Reflow click guard: a click, or a hover sound, on the frame the group counts change is ignored (the buttons moved under the cursor).
 // [Buttons] HideEmpty=0 restores the CH4d three-equal-pill layout (ch::layoutBannerGroups).
 // 0.8.0-dev: CH5 [Profile] Pin0..2/Hide0..2 (comma lists; a token matches an entry's name exactly, or as a " "-suffix when no entry has that exact name, or a 0x engine key)
-// and Sort0..2=count|engine (default count for grenades g2, by stack size +0x34); tiers are native (doc 31 sec 2H). combat_hotbar.ini hot-reloads within 1 s (FileWatch)
+// and Sort0..2=count|engine (default count for grenades g2, by stack size +0x34); tiers are native (doc 31 sec 2H). combat_hotbar.ini hot-reloads within 1 s (FileWatch); [General] Verbose=1 (default 0) enables the per-frame/probe log lines
 // except Buttons Enabled/Cols/MaxRows, which take effect after a game reload. The reflow guard also compares an order signature.
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -102,7 +102,11 @@ struct Config {
     int sidePad = 6;             // CH4d 0..64 px left/right of the buttons inside a group pill
     int hideEmpty = 1;           // CH4e 0/1: hide the pill of an empty group, content-sized centred pills (0 = CH4d three equal pills)
     int colsTotal = 6;           // CH4e 1..12: button columns split across the visible pills (6 = 3x2, 2x3, 1x6)
+    bool verbose = false;        // CH6 [General] Verbose: per-frame / probe logging (default off)
 } g_cfg;
+
+// CH6: high-volume and probe log lines only when [General] Verbose=1. Lines the log analyzers parse (profile:, config: reloaded, pills: visible=, click g=) and warnings stay on KP_LOGV.
+#define CH_VLOG(ch, lvl, ...) do { if (g_cfg.verbose) KP_LOGV(ch, lvl, __VA_ARGS__); } while (0)
 ch::KeyEdge g_edge[3];
 int g_arrowState = -1;   // -1 never applied, 0 failed, 1 applied (log on change only)
 
@@ -135,6 +139,7 @@ void loadIni() {
     g_cfg.sidePad = clampInt(GetPrivateProfileIntA("Buttons", "SidePad", 6, IniPath), 0, 64);
     g_cfg.hideEmpty = GetPrivateProfileIntA("Buttons", "HideEmpty", 1, IniPath) != 0 ? 1 : 0;
     g_cfg.colsTotal = clampInt(GetPrivateProfileIntA("Buttons", "ColsTotal", 6, IniPath), 1, 12);
+    g_cfg.verbose = GetPrivateProfileIntA("General", "Verbose", 0, IniPath) != 0;
     KP_LOGV(chMain, KPLOG_INFO, "config: invoke=%d mod=%d keys=[%02x,%02x,%02x] keepSelection=%d arrowsHide=%d buttons=%d replace=%d cols=%d maxRows=%d btnPx=%d pad=%d groupGap=%d inset=%d clickSound=%d capPad=%d sidePad=%d hideEmpty=%d colsTotal=%d",
             (int)g_cfg.invokeEnabled, g_cfg.mod, g_cfg.keys[0], g_cfg.keys[1], g_cfg.keys[2], (int)g_cfg.keepSelection, (int)g_cfg.hideArrows,
             (int)g_cfg.btnEnabled, (int)g_cfg.replace, g_cfg.cols, g_cfg.maxRows, g_cfg.btnPx, g_cfg.pad, g_cfg.groupGap, g_cfg.inset, g_cfg.clickSound, g_cfg.capPad, g_cfg.sidePad, g_cfg.hideEmpty, g_cfg.colsTotal);
@@ -214,11 +219,11 @@ bool invokeEntry(uintptr_t hud, uintptr_t menu, int g, int type, int idx, const 
 // CH2 key path: the last usable owned entry of group g.
 void invokeGroup(uintptr_t hud, uintptr_t menu, int g) {
     int8_t type = -1;
-    if (!saferead::readAt(S_InvRd, menu, 0x1BAA, &type) || type < 0 || type > 3) { KP_LOGV(chTarget, KPLOG_INFO, "invoke g%d: skip, no target (type=%d)", g, (int)type); return; }
+    if (!saferead::readAt(S_InvRd, menu, 0x1BAA, &type) || type < 0 || type > 3) { CH_VLOG(chTarget, KPLOG_INFO, "invoke g%d: skip, no target (type=%d)", g, (int)type); return; }
     ch::GroupView gv; uintptr_t base = 0;
     readGroup(menu, g, &gv, &base);
     const int idx = ch::pickInvokeEntry(gv, type);
-    if (idx < 0) { KP_LOGV(chTarget, KPLOG_INFO, "invoke g%d: skip, no entry (type=%d count=%d)", g, (int)type, gv.count); return; }
+    if (idx < 0) { CH_VLOG(chTarget, KPLOG_INFO, "invoke g%d: skip, no entry (type=%d count=%d)", g, (int)type, gv.count); return; }
     invokeEntry(hud, menu, g, type, idx, gv.e[idx]);
 }
 
@@ -449,7 +454,7 @@ void updateButtons(const K2HudContext* ctx) {
     if (replace) hideVanilla(menu);
 
     uint8_t hoverFlag = 0;
-    if (saferead::readAt(S_BtnRd, menu, 0x1BAC, &hoverFlag) && (int)hoverFlag != g_flagLast) { KP_LOGV(chTarget, KPLOG_DEBUG, "menu+0x1BAC = %02x (bit1=%d)", (unsigned)hoverFlag, (hoverFlag >> 1) & 1); g_flagLast = hoverFlag; }
+    if (saferead::readAt(S_BtnRd, menu, 0x1BAC, &hoverFlag) && (int)hoverFlag != g_flagLast) { CH_VLOG(chTarget, KPLOG_DEBUG, "menu+0x1BAC = %02x (bit1=%d)", (unsigned)hoverFlag, (hoverFlag >> 1) & 1); g_flagLast = hoverFlag; }
 
     int sw = 0, sh = 0;
     if (guikit::g_gk.screenWAddr) saferead::readAt(S_BtnRd, guikit::g_gk.screenWAddr, 0, &sw);
@@ -475,7 +480,7 @@ void updateButtons(const K2HudContext* ctx) {
         char nb[512]; int no = 0;
         nb[0] = 0;
         for (int i = 0; i < c && no < (int)sizeof(nb) - 80; ++i) no += snprintf(nb + no, sizeof(nb) - no, "%s%s", i ? " | " : "", g_names[g][i]);
-        KP_LOGV(chTarget, KPLOG_DEBUG, "names g%d: %s", g, nb);
+        CH_VLOG(chTarget, KPLOG_DEBUG, "names g%d: %s", g, nb);
     }
     int ord[3][16]; int nShow[3];
     uint32_t sig[3];
@@ -515,7 +520,7 @@ void updateButtons(const K2HudContext* ctx) {
             if (saferead::probeWrite(S_OrgWr, px, 4) && saferead::probeWrite(S_OrgWr, py, 4)) { *px = fx; *py = fy; }
             else { fx = ox; fy = oy; KP_LOGV(chTarget, KPLOG_WARN, "buttons: freeze origin write failed (menu=%08x), following the live origin", (unsigned)menu); }
         }
-        if (frozen != g_frozenLog) { g_frozenLog = frozen; KP_LOGV(chTarget, KPLOG_DEBUG, "buttons: hover freeze %s (cursor %d,%d origin %d,%d live %d,%d)", frozen ? "on" : "off", cx, cy, fx, fy, ox, oy); }
+        if (frozen != g_frozenLog) { g_frozenLog = frozen; CH_VLOG(chTarget, KPLOG_DEBUG, "buttons: hover freeze %s (cursor %d,%d origin %d,%d live %d,%d)", frozen ? "on" : "off", cx, cy, fx, fy, ox, oy); }
     }
 
     // Screen rects: banner = LBL_NAME + PB_HEALTH, boxesUnion = the three vanilla BTN extents (menu-local extent + origin).
@@ -562,7 +567,7 @@ void updateButtons(const K2HudContext* ctx) {
         g_logObj = obj; g_logType = type;
         int firstW = 0;
         for (int g = 0; g < 3 && !firstW; ++g) if (outN[g] > 0) firstW = rects[g * per].w;
-        KP_LOGV(chTarget, KPLOG_INFO, "buttons: first draw obj=%p type=%d origin=[%d,%d,%d,%d]%s banner=[%d,%d,%d,%d] boxesUnion=[%d,%d,%d,%d] outN=[%d,%d,%d] first=[%d,%d,%d,%d][%d,%d,%d,%d][%d,%d,%d,%d] cont=[%d,%d,%d,%d][%d,%d,%d,%d][%d,%d,%d,%d] btn=%d screen=%dx%d",
+        CH_VLOG(chTarget, KPLOG_INFO, "buttons: first draw obj=%p type=%d origin=[%d,%d,%d,%d]%s banner=[%d,%d,%d,%d] boxesUnion=[%d,%d,%d,%d] outN=[%d,%d,%d] first=[%d,%d,%d,%d][%d,%d,%d,%d][%d,%d,%d,%d] cont=[%d,%d,%d,%d][%d,%d,%d,%d][%d,%d,%d,%d] btn=%d screen=%dx%d",
                 (void*)obj, (int)type, fx, fy, ow, oh, frozen ? " frozen" : "",
                 banner.x, banner.y, banner.w, banner.h, boxesUnion.x, boxesUnion.y, boxesUnion.w, boxesUnion.h,
                 outN[0], outN[1], outN[2],
@@ -588,7 +593,7 @@ void updateButtons(const K2HudContext* ctx) {
     if (over != g_hover) {
         const int prev = g_hover;
         g_hover = over;
-        KP_LOGV(chTarget, KPLOG_DEBUG, "buttons: hover slot %d -> %d cursor=(%d,%d)", prev, over, cx, cy);
+        CH_VLOG(chTarget, KPLOG_DEBUG, "buttons: hover slot %d -> %d cursor=(%d,%d)", prev, over, cx, cy);
         if (over >= 0) {
             int hg = -1;
             const int hidx = ch::slotEntry(over, g_cfg.cols, g_cfg.maxRows, &hg);
@@ -604,12 +609,12 @@ void updateButtons(const K2HudContext* ctx) {
         // Sanity gates (the hidden-BTN tint is UNVERIFIED): pure black or a near-zero alpha would make the pills vanish, so keep the defaults instead.
         tOk[g] = guikit::getBorderTint(btnCtl, tint[g]) && (tint[g][0] > 0.01f || tint[g][1] > 0.01f || tint[g][2] > 0.01f);
         aOk[g] = guikit::getAlpha(btnCtl, &alp[g]) && alp[g] >= 0.05f && alp[g] <= 1.0f;
-        if (!tOk[g]) { if (g_contState[g] != 0) { g_contState[g] = 0; KP_LOGV(chTarget, KPLOG_INFO, "container g%d tint read failed or rejected (black)", g); } }
+        if (!tOk[g]) { if (g_contState[g] != 0) { g_contState[g] = 0; CH_VLOG(chTarget, KPLOG_INFO, "container g%d tint read failed or rejected (black)", g); } }
         else if (g_contState[g] != 1 || g_contLog[g][0] != tint[g][0] || g_contLog[g][1] != tint[g][1] || g_contLog[g][2] != tint[g][2] || (aOk[g] && g_contLog[g][3] != alp[g])) {
             g_contState[g] = 1;
             for (int k = 0; k < 3; ++k) g_contLog[g][k] = tint[g][k];
             if (aOk[g]) g_contLog[g][3] = alp[g];
-            KP_LOGV(chTarget, KPLOG_INFO, "container g%d tint=(%.2f,%.2f,%.2f) alpha=%.2f", g, tint[g][0], tint[g][1], tint[g][2], aOk[g] ? alp[g] : -1.f);
+            CH_VLOG(chTarget, KPLOG_INFO, "container g%d tint=(%.2f,%.2f,%.2f) alpha=%.2f", g, tint[g][0], tint[g][1], tint[g][2], aOk[g] ? alp[g] : -1.f);
         }
         Wid& c = g_cont[g];
         if (!c.c) continue;
@@ -656,7 +661,7 @@ void updateButtons(const K2HudContext* ctx) {
         }
     }
 
-    if (click && reflow) KP_LOGV(chTarget, KPLOG_DEBUG, "click ignored: layout reflow");
+    if (click && reflow) CH_VLOG(chTarget, KPLOG_DEBUG, "click ignored: layout reflow");
     else if (click && anyButtonVisible() && haveCursor && over >= 0) {
         int g = -1;
         const int idx = ch::slotEntry(over, g_cfg.cols, g_cfg.maxRows, &g);
@@ -729,7 +734,7 @@ void logTargetGroup(uintptr_t menu, int g, int count) {
         char icon[17] = {0};
         saferead::readResRef16(S_Entry, e + 0x20, icon, 0);
 
-        KP_LOGV(chTarget, KPLOG_DEBUG, "  g%d[%d]: key=%08x usable=%d fn=%08x owner=%08x icon=%.16s name=%s",
+        CH_VLOG(chTarget, KPLOG_DEBUG, "  g%d[%d]: key=%08x usable=%d fn=%08x owner=%08x icon=%.16s name=%s",
                 g, i, (unsigned)key, (int)(flags & 1), (unsigned)fn, (unsigned)owner, icon, name);
     }
 }
@@ -787,13 +792,15 @@ void KPATCH_CALL onTargetMenu(const K2HudContext* ctx, void*) {
             char typeStr[16];
             if (targetType >= 0 && targetType <= 3) snprintf(typeStr, sizeof(typeStr), "%d", (int)targetType);
             else snprintf(typeStr, sizeof(typeStr), "none");
-            KP_LOG(chTarget, "target_menu: obj=%p leader=%p forceUnusable=%d state1644=%d type=%s counts=[%d,%d,%d] sel=[%08x,%08x,%08x]",
+            CH_VLOG(chTarget, KPLOG_INFO, "target_menu: obj=%p leader=%p forceUnusable=%d state1644=%d type=%s counts=[%d,%d,%d] sel=[%08x,%08x,%08x]",
                    (void*)targetObj, (void*)leader, forceUnusable, menuState, typeStr,
                    counts[0], counts[1], counts[2],
                    (unsigned)selKeys[0], (unsigned)selKeys[1], (unsigned)selKeys[2]);
 
-            for (int g = 0; g < 3; ++g) {
-                logTargetGroup(menu, g, counts[g]);
+            if (g_cfg.verbose) {
+                for (int g = 0; g < 3; ++g) {
+                    logTargetGroup(menu, g, counts[g]);
+                }
             }
         }
     }

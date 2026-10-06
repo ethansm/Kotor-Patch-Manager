@@ -3,6 +3,10 @@
 #include "check.h"
 #include <cstring>
 #include <string>
+#include <vector>
+#include <algorithm>
+#include <cstdlib>
+#include <cstdio>
 using namespace ch;
 
 static EntryView mk(uint32_t key, bool usable, uint32_t owner, const char* icon = "ic") {
@@ -26,6 +30,752 @@ static void checkLayout(int W, int H, Rect banner, int n, int btn, int gap, cons
   kt::Check((std::string(tag) + ": inside safe area").c_str(), allIn);
   kt::Check((std::string(tag) + ": no overlap").c_str(), noOverlap);
   kt::Check((std::string(tag) + ": below banner, square").c_str(), below);
+}
+
+
+// ===================== CH6 additions (doc 31 CH6 mutation gate) =====================
+// Struct-size contracts the DLL relies on (resref 16 + NUL, 16 entries per group, 8 pins/hides per group of 48-byte tokens).
+// Runtime checks (not static_assert) so a mutated size is reported as a failed test rather than a build break.
+static void ch6Contracts() {
+  KT_CHECK_EQ((int)sizeof(EntryView::icon), 17);   // EntryView.icon is a 16-char resref + NUL
+  KT_CHECK_EQ((int)sizeof(Slot::icon), 17);        // Slot.icon is a 16-char resref + NUL
+  KT_CHECK_EQ((int)(sizeof(GroupView::e) / sizeof(EntryView)), 16);   // GroupView holds 16 entries
+  KT_CHECK_EQ(ProfMax, 8); KT_CHECK_EQ(ProfName, 48);                  // profile list limits
+  KT_CHECK_EQ((int)sizeof(Profile::pin), 3 * ProfMax * ProfName);      // pin/hide lists are per group (3)
+  KT_CHECK_EQ((int)sizeof(Profile::hide), 3 * ProfMax * ProfName);
+  KT_CHECK_EQ((int)sizeof(Profile::nPin), (int)(3 * sizeof(int))); KT_CHECK_EQ((int)sizeof(Profile::nHide), (int)(3 * sizeof(int)));
+  KT_CHECK_EQ((int)sizeof(Profile::byCount), (int)(3 * sizeof(bool)));
+}
+
+struct Rng {
+  uint32_t s;
+  int next(int lo, int hi) { s = s * 1664525u + 1013904223u; return lo + (int)((s >> 8) % (uint32_t)(hi - lo + 1)); }
+};
+static const Rect kJunk = { 7777, 7777, 7777, 7777 };
+static bool sameRect(const Rect& a, const Rect& b) { return a.x == b.x && a.y == b.y && a.w == b.w && a.h == b.h; }
+static bool sameRects(const std::vector<Rect>& a, const std::vector<Rect>& b) {
+  if (a.size() != b.size()) return false;
+  for (size_t i = 0; i < a.size(); ++i) if (!sameRect(a[i], b[i])) return false;
+  return true;
+}
+static bool allZero(const std::vector<Rect>& v) { for (const Rect& r : v) if (!sameRect(r, Rect{0, 0, 0, 0})) return false; return true; }
+// Shift [l, r) back inside [0, W): the right edge first, then the left edge wins (never shrinks).
+static int refShift(int l, int r, int W) {
+  int nl = l;
+  if (r > W) nl = W - (r - l);
+  if (nl < 0) nl = 0;
+  return nl - l;
+}
+static int clampN(int n, int per) { return n < 0 ? 0 : (n > per ? per : n); }
+
+// ---- reference models written from the header doc comments
+static void refGroupGrid(const Rect box[3], const int count[3], int cols, int maxRows, int gap, int W, int H, std::vector<Rect>& out, int outN[3]) {
+  const int per = cols * maxRows;
+  out.assign(3 * per, Rect{0, 0, 0, 0});
+  for (int g = 0; g < 3; ++g) {
+    const int n = clampN(count[g], per); outN[g] = n;
+    if (n == 0) continue;
+    int btn = (box[g].w - gap * (cols - 1)) / cols; if (btn < 1) btn = 1;
+    const int uc = n < cols ? n : cols, ur = (n + cols - 1) / cols;
+    const int bw = uc * btn + (uc - 1) * gap, bh = ur * btn + (ur - 1) * gap;
+    int x0 = box[g].x, y0 = box[g].y + box[g].h + gap;
+    x0 += refShift(x0, x0 + bw, W); y0 += refShift(y0, y0 + bh, H);
+    for (int k = 0; k < n; ++k) out[g * per + k] = Rect{ x0 + (k % cols) * (btn + gap), y0 + (k / cols) * (btn + gap), btn, btn };
+  }
+}
+
+static void shiftUsed(std::vector<Rect>& out, const int outN[3], int per, int W, int H) {
+  bool any = false; int l = 0, t = 0, r = 0, b = 0;
+  for (int g = 0; g < 3; ++g) for (int k = 0; k < outN[g]; ++k) {
+    const Rect& q = out[g * per + k];
+    if (!any) { l = q.x; t = q.y; r = q.x + q.w; b = q.y + q.h; any = true; continue; }
+    l = std::min(l, q.x); t = std::min(t, q.y); r = std::max(r, q.x + q.w); b = std::max(b, q.y + q.h);
+  }
+  if (!any) return;
+  const int dx = refShift(l, r, W), dy = refShift(t, b, H);
+  for (int g = 0; g < 3; ++g) for (int k = 0; k < outN[g]; ++k) { out[g * per + k].x += dx; out[g * per + k].y += dy; }
+}
+
+static void refBannerGrid(Rect banner, Rect bu, const int count[3], int cols, int maxRows, int btnPx, int pad, int gap, int W, int H, std::vector<Rect>& out, int outN[3]) {
+  const int per = cols * maxRows;
+  out.assign(3 * per, Rect{0, 0, 0, 0});
+  const int span = std::max(bu.w, banner.w);
+  const int spanX = banner.x + banner.w / 2 - span / 2;
+  const int colW = (span - 2 * gap) / 3;
+  const int fit = std::max(1, (colW - (cols - 1) * pad) / cols);
+  const int btn = (btnPx > 0 && btnPx <= fit) ? btnPx : fit;
+  for (int g = 0; g < 3; ++g) {
+    const int n = clampN(count[g], per); outN[g] = n;
+    const int colX = spanX + g * (colW + gap);
+    for (int k = 0; k < n; ++k) {
+      const int row = k / cols, inRow = std::min(cols, n - row * cols);
+      const int rowW = inRow * btn + (inRow - 1) * pad;
+      out[g * per + k] = Rect{ colX + (colW - rowW) / 2 + (k % cols) * (btn + pad), bu.y + row * (btn + pad), btn, btn };
+    }
+  }
+  shiftUsed(out, outN, per, W, H);
+}
+
+static void refBannerGroups(Rect banner, Rect bu, const int count[3], int cols, int maxRows, int btnPx, int pad, int gap, int cap, int side, int W, int H, std::vector<Rect>& out, int outN[3], Rect cont[3]) {
+  const int per = cols * maxRows;
+  out.assign(3 * per, Rect{0, 0, 0, 0});
+  const int span = std::max(bu.w, banner.w);
+  const int spanX = banner.x + banner.w / 2 - span / 2;
+  const int colW = (span - 2 * gap) / 3;
+  const int fit = std::max(1, (colW - 2 * side - (cols - 1) * pad) / cols);
+  const int btn = (btnPx > 0 && btnPx <= fit) ? btnPx : fit;
+  int rows = 1;
+  for (int g = 0; g < 3; ++g) { outN[g] = clampN(count[g], per); rows = std::max(rows, (outN[g] + cols - 1) / cols); }
+  const int h = 2 * cap + rows * btn + (rows - 1) * pad;
+  for (int g = 0; g < 3; ++g) {
+    const int colX = spanX + g * (colW + gap);
+    cont[g] = Rect{ colX, bu.y, colW, h };
+    for (int k = 0; k < outN[g]; ++k) {
+      const int row = k / cols, inRow = std::min(cols, outN[g] - row * cols);
+      const int rowW = inRow * btn + (inRow - 1) * pad;
+      out[g * per + k] = Rect{ colX + (colW - rowW) / 2 + (k % cols) * (btn + pad), bu.y + cap + row * (btn + pad), btn, btn };
+    }
+  }
+  int l = cont[0].x, r = cont[0].x + cont[0].w;
+  for (int g = 1; g < 3; ++g) { l = std::min(l, cont[g].x); r = std::max(r, cont[g].x + cont[g].w); }
+  const int dx = refShift(l, r, W), dy = refShift(bu.y, bu.y + h, H);
+  for (int g = 0; g < 3; ++g) {
+    cont[g].x += dx; cont[g].y += dy;
+    for (int k = 0; k < outN[g]; ++k) { out[g * per + k].x += dx; out[g * per + k].y += dy; }
+  }
+}
+
+static void refBannerPills(Rect banner, Rect bu, const int count[3], int per, int colsTotal, int btnPx, int pad, int gap, int cap, int side, int W, int H, std::vector<Rect>& out, int outN[3], Rect cont[3]) {
+  out.assign(3 * per, Rect{0, 0, 0, 0});
+  int nVis = 0, maxN = 0;
+  for (int g = 0; g < 3; ++g) {
+    outN[g] = clampN(count[g], per); cont[g] = Rect{0, 0, 0, 0};
+    if (outN[g] > 0) { ++nVis; maxN = std::max(maxN, outN[g]); }
+  }
+  if (nVis == 0) return;
+  const int cols = std::min(per, std::max(1, colsTotal / nVis));
+  const int span = std::max(bu.w, banner.w);
+  const int share = (span - (nVis - 1) * gap) / nVis;
+  const int fit = std::max(1, (share - 2 * side - (cols - 1) * pad) / cols);
+  const int btn = (btnPx > 0 && btnPx <= fit) ? btnPx : fit;
+  const int usedCols = std::min(cols, maxN);
+  int rows = 1;
+  for (int g = 0; g < 3; ++g) if (outN[g] > 0) rows = std::max(rows, (outN[g] + cols - 1) / cols);
+  const int pillW = 2 * side + usedCols * btn + (usedCols - 1) * pad;
+  const int pillH = 2 * cap + rows * btn + (rows - 1) * pad;
+  const int total = nVis * pillW + (nVis - 1) * gap;
+  const int startX = banner.x + banner.w / 2 - total / 2;
+  int vi = 0;
+  for (int g = 0; g < 3; ++g) {
+    const int n = outN[g];
+    if (n <= 0) continue;
+    cont[g] = Rect{ startX + vi * (pillW + gap), bu.y, pillW, pillH }; ++vi;
+    for (int k = 0; k < n; ++k) {
+      const int row = k / cols, inRow = std::min(cols, n - row * cols);
+      const int rowW = inRow * btn + (inRow - 1) * pad;
+      out[g * per + k] = Rect{ cont[g].x + (pillW - rowW) / 2 + (k % cols) * (btn + pad), cont[g].y + cap + row * (btn + pad), btn, btn };
+    }
+  }
+  const int dx = refShift(startX, startX + total, W), dy = refShift(bu.y, bu.y + pillH, H);
+  for (int g = 0; g < 3; ++g) {
+    if (outN[g] <= 0) continue;
+    cont[g].x += dx; cont[g].y += dy;
+    for (int k = 0; k < outN[g]; ++k) { out[g * per + k].x += dx; out[g * per + k].y += dy; }
+  }
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+static void ch6Basics() {
+  ch6Contracts();
+  // clampCount
+  KT_CHECK_EQ(clampCount(-5), 0); KT_CHECK_EQ(clampCount(-1), 0); KT_CHECK_EQ(clampCount(0), 0); KT_CHECK_EQ(clampCount(1), 1);
+  KT_CHECK_EQ(clampCount(15), 15); KT_CHECK_EQ(clampCount(16), 16); KT_CHECK_EQ(clampCount(17), 16); KT_CHECK_EQ(clampCount(20), 16); KT_CHECK_EQ(clampCount(1000), 16);
+
+  // fillSlots: tight limits, tails of the icon copy
+  {
+    GroupView g[3]; memset(g, 0, sizeof g);
+    g[0].count = 2; g[0].e[0] = mk(1, true, 1, "a"); g[0].e[1] = mk(2, true, 1, "b");
+    g[1].count = 1; g[1].e[0] = mk(3, true, 1, "c");
+    Slot s[8];
+    KT_CHECK_EQ(fillSlots(g, s, 1, 1), 1); KT_CHECK_EQ(s[0].key, 1u);          // maxSlots == 1 still writes one
+    KT_CHECK_EQ(fillSlots(g, s, 8, 1), 2); KT_CHECK_EQ(s[1].group, 1);          // perGroup == 1 still writes one per group
+    KT_CHECK_EQ(fillSlots(g, s, 8, -2), 0); KT_CHECK_EQ(fillSlots(g, s, -2, 4), 0);
+    KT_CHECK_EQ(fillSlots(nullptr, s, 8, 4), 0);                                 // null group view
+    KT_CHECK_EQ(fillSlots(g, nullptr, 8, 4), 0);                                 // null output
+    GroupView h[3]; memset(h, 0, sizeof h); h[0].count = 1;
+    for (int i = 0; i < 16; ++i) h[0].e[0].icon[i] = (char)('a' + i);
+    h[0].e[0].icon[16] = 'Z';
+    Slot t[1]; memset(t, 0x55, sizeof t);
+    KT_CHECK_EQ(fillSlots(h, t, 1, 1), 1);
+    KT_CHECK(memcmp(t[0].icon, "abcdefghijklmnop", 16) == 0);   // all 16 bytes copied, incl. the last
+    KT_CHECK_EQ((int)t[0].icon[16], 0);
+  }
+
+  // slotEntry
+  {
+    int gr = 5;
+    KT_CHECK_EQ(slotEntry(0, 2, 3, &gr), 0); KT_CHECK_EQ(gr, 0);
+    KT_CHECK_EQ(slotEntry(6, 2, 3, &gr), 0); KT_CHECK_EQ(gr, 1);
+    KT_CHECK_EQ(slotEntry(17, 2, 3, &gr), 5); KT_CHECK_EQ(gr, 2);
+    KT_CHECK_EQ(slotEntry(18, 2, 3, &gr), -1); KT_CHECK_EQ(gr, -1);
+    gr = 5; KT_CHECK_EQ(slotEntry(-1, 2, 3, &gr), -1); KT_CHECK_EQ(gr, -1);
+    gr = 5; KT_CHECK_EQ(slotEntry(0, 1, 1, &gr), 0); KT_CHECK_EQ(gr, 0);           // per == 1 is valid
+    KT_CHECK_EQ(slotEntry(2, 1, 1, &gr), 0); KT_CHECK_EQ(gr, 2);
+    KT_CHECK_EQ(slotEntry(3, 1, 1, &gr), -1);
+    gr = 5; KT_CHECK_EQ(slotEntry(0, 0, 4, &gr), -1); KT_CHECK_EQ(gr, -1);          // per == 0
+    gr = 5; KT_CHECK_EQ(slotEntry(0, -2, 4, &gr), -1); KT_CHECK_EQ(gr, -1);         // per < 0
+    KT_CHECK_EQ(slotEntry(1, 2, 2, nullptr), 1); KT_CHECK_EQ(slotEntry(99, 2, 2, nullptr), -1);
+  }
+
+  // gridBounds
+  {
+    Rect out[6] = { {10, 20, 5, 6}, {0, 0, 0, 0}, {100, 50, 3, 3}, {-4, 7, 2, 2}, {0, 0, 0, 0}, {30, 90, 10, 1} };
+    const int n3[3] = { 2, 0, 1 };
+    // stride 3: group0 -> out[0..1], group1 -> none, group2 -> out[6..] ... use stride 2 instead
+    Rect b = gridBounds(out, n3, 2);   // g0: out[0], out[1]; g2: out[4]
+    KT_CHECK_EQ(b.x, 0); KT_CHECK_EQ(b.y, 0); KT_CHECK_EQ(b.w, 15); KT_CHECK_EQ(b.h, 26);
+    const int n1[3] = { 1, 1, 1 };
+    Rect c = gridBounds(out, n1, 1);   // out[0], out[1], out[2]
+    KT_CHECK_EQ(c.x, 0); KT_CHECK_EQ(c.y, 0); KT_CHECK_EQ(c.w, 103); KT_CHECK_EQ(c.h, 53);
+    const int n2[3] = { 0, 0, 1 };
+    Rect d = gridBounds(out, n2, 1);   // only out[2]
+    KT_CHECK_EQ(d.x, 100); KT_CHECK_EQ(d.y, 50); KT_CHECK_EQ(d.w, 3); KT_CHECK_EQ(d.h, 3);
+    const int neg[3] = { -3, 1, -1 };
+    Rect e = gridBounds(out, neg, 2);   // only g1 -> out[2]
+    KT_CHECK_EQ(e.x, 100); KT_CHECK_EQ(e.y, 50); KT_CHECK_EQ(e.w, 3); KT_CHECK_EQ(e.h, 3);
+    const int none[3] = { 0, 0, 0 };
+    Rect z = gridBounds(out, none, 2);
+    KT_CHECK_EQ(z.x, 0); KT_CHECK_EQ(z.y, 0); KT_CHECK_EQ(z.w, 0); KT_CHECK_EQ(z.h, 0);
+    Rect zn = gridBounds(nullptr, n3, 2);   KT_CHECK_EQ(zn.x, 0); KT_CHECK_EQ(zn.y, 0); KT_CHECK_EQ(zn.w, 0); KT_CHECK_EQ(zn.h, 0);
+    Rect zo = gridBounds(out, nullptr, 2);  KT_CHECK_EQ(zo.x, 0); KT_CHECK_EQ(zo.y, 0); KT_CHECK_EQ(zo.w, 0); KT_CHECK_EQ(zo.h, 0);
+    Rect zs = gridBounds(out, n3, 0);       KT_CHECK_EQ(zs.x, 0); KT_CHECK_EQ(zs.y, 0); KT_CHECK_EQ(zs.w, 0); KT_CHECK_EQ(zs.h, 0);
+    Rect zt = gridBounds(out, n3, -4);      KT_CHECK_EQ(zt.w, 0); KT_CHECK_EQ(zt.h, 0);
+    // counts above the stride are capped to it
+    const int big[3] = { 9, 0, 0 };
+    Rect f = gridBounds(out, big, 2);       // only out[0], out[1]
+    KT_CHECK_EQ(f.x, 0); KT_CHECK_EQ(f.w, 15); KT_CHECK_EQ(f.y, 0); KT_CHECK_EQ(f.h, 26);
+    // negative origin and extents: w/h are right/bottom minus left/top
+    Rect two[2] = { {-10, -20, 4, 4}, {-2, -3, 10, 5} };
+    const int nn[3] = { 2, 0, 0 };
+    Rect g2 = gridBounds(two, nn, 2);
+    KT_CHECK_EQ(g2.x, -10); KT_CHECK_EQ(g2.y, -20); KT_CHECK_EQ(g2.w, 18); KT_CHECK_EQ(g2.h, 22);
+  }
+
+  // layoutRow guards
+  {
+    Rect r[3] = { kJunk, kJunk, kJunk };
+    layoutRow(800, 600, Rect{300, 100, 200, 20}, 0, 48, 6, r);
+    KT_CHECK(sameRect(r[0], kJunk));                       // n == 0 writes nothing
+    layoutRow(800, 600, Rect{300, 100, 200, 20}, -2, 48, 6, r);
+    KT_CHECK(sameRect(r[0], kJunk));
+    layoutRow(800, 600, Rect{300, 100, 200, 20}, 1, 48, 6, r);
+    KT_CHECK_EQ(r[0].x, 400 - 24); KT_CHECK_EQ(r[0].y, 126); KT_CHECK(sameRect(r[1], kJunk));   // n == 1 writes one
+    layoutRow(800, 600, Rect{300, 100, 200, 20}, 3, 48, 6, nullptr);   // null out: no crash
+  }
+}
+
+static void ch6GuardsAndNulls() {
+  const Rect box[3] = { {10, 10, 100, 20}, {120, 10, 100, 20}, {230, 10, 100, 20} };
+  const int cnt[3] = { 2, 1, 3 };
+  // ---- layoutGroupGrid
+  {
+    int outN[3] = { 9, 9, 9 };
+    layoutGroupGrid(box, cnt, 2, 2, 1, 400, 300, nullptr, outN);
+    KT_CHECK_EQ(outN[0], 9);   // null out: untouched
+    std::vector<Rect> o(12, kJunk);
+    layoutGroupGrid(box, cnt, 2, 2, 1, 400, 300, o.data(), nullptr);
+    KT_CHECK(sameRect(o[0], kJunk));   // null outN: untouched
+    for (int variant = 0; variant < 4; ++variant) {   // invalid input -> everything zeroed (when the grid size is valid), outN zeroed
+      std::vector<Rect> z(3 * 1 * 1, kJunk); int n9[3] = { 9, 9, 9 };
+      layoutGroupGrid(variant == 0 ? nullptr : box, variant == 1 ? nullptr : cnt, 1, 1, 1, 400, 300, z.data(), n9);
+      if (variant < 2) { KT_CHECK(allZero(z)); KT_CHECK(n9[0] == 0 && n9[1] == 0 && n9[2] == 0); }
+    }
+    {
+      std::vector<Rect> z(3 * 1 * 2, kJunk); int n9[3] = { 9, 9, 9 };
+      layoutGroupGrid(nullptr, cnt, 1, 2, 1, 400, 300, z.data(), n9);   // cols == 1 and maxRows == 2 are valid sizes
+      KT_CHECK(allZero(z)); KT_CHECK(n9[0] == 0 && n9[1] == 0 && n9[2] == 0);
+      std::vector<Rect> y(3 * 2 * 1, kJunk); int m9[3] = { 9, 9, 9 };
+      layoutGroupGrid(nullptr, cnt, 2, 1, 1, 400, 300, y.data(), m9);   // maxRows == 1
+      KT_CHECK(allZero(y));
+      int k9[3] = { 9, 9, 9 };
+      layoutGroupGrid(nullptr, cnt, -1, 4, 1, 400, 300, y.data(), k9);  // invalid sizes: no memset at all
+      KT_CHECK(k9[0] == 0 && k9[1] == 0 && k9[2] == 0);
+      layoutGroupGrid(nullptr, cnt, 3, -1, 1, 400, 300, y.data(), k9);
+      layoutGroupGrid(nullptr, cnt, 0, 4, 1, 400, 300, y.data(), k9);
+      layoutGroupGrid(box, cnt, 0, 4, 1, 400, 300, y.data(), k9);
+      layoutGroupGrid(box, cnt, 3, 0, 1, 400, 300, y.data(), k9);
+      KT_CHECK(k9[0] == 0 && k9[1] == 0 && k9[2] == 0);
+    }
+    // valid, but with out-of-range / negative counts and a tiny box (btn clamps to 1)
+    Rect tiny[3] = { {0, 0, 0, 5}, {0, 0, -9, 5}, {0, 0, 2, 5} };
+    const int neg[3] = { -1, 1, 1 };
+    std::vector<Rect> o2(3 * 2 * 2, kJunk); int n2[3] = { 9, 9, 9 };
+    layoutGroupGrid(tiny, neg, 2, 2, 3, 400, 300, o2.data(), n2);
+    KT_CHECK_EQ(n2[0], 0); KT_CHECK_EQ(n2[1], 1); KT_CHECK_EQ(n2[2], 1);
+    KT_CHECK_EQ(o2[4].w, 1); KT_CHECK_EQ(o2[8].w, 1); KT_CHECK(sameRect(o2[0], Rect{0, 0, 0, 0}));
+  }
+  // ---- layoutBannerGrid / layoutBannerGroups / layoutBannerPills guards
+  {
+    const Rect ban = { 100, 10, 200, 20 }, bu = { 50, 40, 300, 20 };
+    int outN[3] = { 9, 9, 9 }; Rect cont[3] = { kJunk, kJunk, kJunk };
+    layoutBannerGrid(ban, bu, cnt, 2, 2, 0, 2, 4, 400, 300, nullptr, outN);
+    KT_CHECK_EQ(outN[0], 9);
+    std::vector<Rect> o(12, kJunk);
+    layoutBannerGrid(ban, bu, cnt, 2, 2, 0, 2, 4, 400, 300, o.data(), nullptr);
+    KT_CHECK(sameRect(o[0], kJunk));
+    layoutBannerGroups(ban, bu, cnt, 2, 2, 0, 2, 4, 3, 3, 400, 300, nullptr, outN, cont);
+    layoutBannerGroups(ban, bu, cnt, 2, 2, 0, 2, 4, 3, 3, 400, 300, o.data(), nullptr, cont);
+    layoutBannerGroups(ban, bu, cnt, 2, 2, 0, 2, 4, 3, 3, 400, 300, o.data(), outN, nullptr);
+    KT_CHECK_EQ(outN[0], 9); KT_CHECK(sameRect(o[0], kJunk)); KT_CHECK(sameRect(cont[0], kJunk));
+    layoutBannerPills(ban, bu, cnt, 4, 6, 0, 2, 4, 3, 3, 400, 300, nullptr, outN, cont);
+    layoutBannerPills(ban, bu, cnt, 4, 6, 0, 2, 4, 3, 3, 400, 300, o.data(), nullptr, cont);
+    layoutBannerPills(ban, bu, cnt, 4, 6, 0, 2, 4, 3, 3, 400, 300, o.data(), outN, nullptr);
+    KT_CHECK_EQ(outN[0], 9); KT_CHECK(sameRect(o[0], kJunk)); KT_CHECK(sameRect(cont[0], kJunk));
+
+    // invalid sizes / null counts zero everything that is sized validly
+    for (int cols = 1; cols <= 2; ++cols) for (int rows = 1; rows <= 2; ++rows) {
+      std::vector<Rect> z(3 * cols * rows, kJunk); int n9[3] = { 9, 9, 9 };
+      layoutBannerGrid(ban, bu, nullptr, cols, rows, 0, 2, 4, 400, 300, z.data(), n9);
+      KT_CHECK(allZero(z)); KT_CHECK(n9[0] == 0 && n9[1] == 0 && n9[2] == 0);
+      std::vector<Rect> z2(3 * cols * rows, kJunk); Rect c2[3] = { kJunk, kJunk, kJunk }; int m9[3] = { 9, 9, 9 };
+      layoutBannerGroups(ban, bu, nullptr, cols, rows, 0, 2, 4, 3, 3, 400, 300, z2.data(), m9, c2);
+      KT_CHECK(allZero(z2)); KT_CHECK(m9[0] == 0 && m9[1] == 0 && m9[2] == 0);
+      for (int g = 0; g < 3; ++g) KT_CHECK(sameRect(c2[g], Rect{0, 0, 0, 0}));
+    }
+    {
+      std::vector<Rect> z(16, kJunk); Rect c2[3] = { kJunk, kJunk, kJunk }; int n9[3] = { 9, 9, 9 };
+      layoutBannerGrid(ban, bu, cnt, -1, 4, 0, 2, 4, 400, 300, z.data(), n9);
+      KT_CHECK(n9[0] == 0 && n9[1] == 0 && n9[2] == 0); KT_CHECK(sameRect(z[0], kJunk));
+      layoutBannerGrid(ban, bu, cnt, 4, -1, 0, 2, 4, 400, 300, z.data(), n9);
+      layoutBannerGrid(ban, bu, cnt, 0, 4, 0, 2, 4, 400, 300, z.data(), n9);
+      layoutBannerGrid(ban, bu, cnt, 4, 0, 0, 2, 4, 400, 300, z.data(), n9);
+      KT_CHECK(sameRect(z[0], kJunk));
+      layoutBannerGroups(ban, bu, cnt, -1, 4, 0, 2, 4, 3, 3, 400, 300, z.data(), n9, c2);
+      layoutBannerGroups(ban, bu, cnt, 4, -1, 0, 2, 4, 3, 3, 400, 300, z.data(), n9, c2);
+      layoutBannerGroups(ban, bu, cnt, 0, 4, 0, 2, 4, 3, 3, 400, 300, z.data(), n9, c2);
+      layoutBannerGroups(ban, bu, cnt, 4, 0, 0, 2, 4, 3, 3, 400, 300, z.data(), n9, c2);
+      KT_CHECK(sameRect(z[0], kJunk)); KT_CHECK(sameRect(c2[0], Rect{0, 0, 0, 0}));
+      // with a valid grid size the caller's counts must still be zeroed
+      layoutBannerGrid(ban, bu, nullptr, 1, 1, 0, 2, 4, 400, 300, z.data(), n9);
+      layoutBannerGrid(ban, bu, nullptr, 3, 1, 0, 2, 4, 400, 300, z.data(), n9);
+    }
+    // pills: count == null / per < 1
+    for (int per = 1; per <= 3; ++per) {
+      std::vector<Rect> z(3 * per, kJunk); Rect c2[3] = { kJunk, kJunk, kJunk }; int n9[3] = { 9, 9, 9 };
+      layoutBannerPills(ban, bu, nullptr, per, 6, 0, 2, 4, 3, 3, 400, 300, z.data(), n9, c2);
+      KT_CHECK(allZero(z)); KT_CHECK(n9[0] == 0 && n9[1] == 0 && n9[2] == 0);
+      for (int g = 0; g < 3; ++g) KT_CHECK(sameRect(c2[g], Rect{0, 0, 0, 0}));
+    }
+    for (int per = -2; per <= 0; ++per) {
+      std::vector<Rect> z(4, kJunk); Rect c2[3] = { kJunk, kJunk, kJunk }; int n9[3] = { 9, 9, 9 };
+      layoutBannerPills(ban, bu, cnt, per, 6, 0, 2, 4, 3, 3, 400, 300, z.data(), n9, c2);
+      KT_CHECK(n9[0] == 0 && n9[1] == 0 && n9[2] == 0); KT_CHECK(sameRect(z[0], kJunk));
+      for (int g = 0; g < 3; ++g) KT_CHECK(sameRect(c2[g], Rect{0, 0, 0, 0}));
+    }
+    {   // per == 1, valid counts: one pill button per group
+      std::vector<Rect> z(3, kJunk); Rect c2[3] = { kJunk, kJunk, kJunk }; int n9[3] = { 9, 9, 9 };
+      layoutBannerPills(ban, bu, cnt, 1, 6, 0, 2, 4, 3, 3, 400, 300, z.data(), n9, c2);
+      KT_CHECK(n9[0] == 1 && n9[1] == 1 && n9[2] == 1);
+      KT_CHECK(c2[0].w > 0 && c2[1].w > 0 && c2[2].w > 0);
+    }
+    {   // all-empty counts: everything zero, the visible-pill math never runs
+      const int none[3] = { 0, -3, 0 };
+      std::vector<Rect> z(3 * 4, kJunk); Rect c2[3] = { kJunk, kJunk, kJunk }; int n9[3] = { 9, 9, 9 };
+      layoutBannerPills(ban, bu, none, 4, 6, 0, 2, 4, 3, 3, 400, 300, z.data(), n9, c2);
+      KT_CHECK(allZero(z)); KT_CHECK(n9[0] == 0 && n9[1] == 0 && n9[2] == 0);
+      for (int g = 0; g < 3; ++g) KT_CHECK(sameRect(c2[g], Rect{0, 0, 0, 0}));
+    }
+  }
+  // ---- fewer visible pills than colsTotal columns / more groups than columns (cols clamps to 1, per cap)
+  {
+    const Rect ban = { 100, 10, 200, 20 }, bu = { 50, 40, 300, 20 };
+    const int three[3] = { 2, 2, 2 };
+    std::vector<Rect> o(3 * 4), ref; Rect c[3], rc[3]; int n[3], rn[3];
+    layoutBannerPills(ban, bu, three, 4, 2, 0, 2, 4, 3, 3, 1000, 800, o.data(), n, c);   // colsTotal 2 < nVis 3
+    refBannerPills(ban, bu, three, 4, 2, 0, 2, 4, 3, 3, 1000, 800, ref, rn, rc);
+    KT_CHECK(sameRects(o, ref)); KT_CHECK(c[0].w > 0);
+    layoutBannerPills(ban, bu, three, 2, 12, 0, 2, 4, 3, 3, 1000, 800, o.data(), n, c);   // cols capped by per
+    std::vector<Rect> o2(3 * 2); layoutBannerPills(ban, bu, three, 2, 12, 0, 2, 4, 3, 3, 1000, 800, o2.data(), n, c);
+    refBannerPills(ban, bu, three, 2, 12, 0, 2, 4, 3, 3, 1000, 800, ref, rn, rc);
+    KT_CHECK(sameRects(o2, ref));
+  }
+}
+
+template <class F> static void sweep(int iters, uint32_t seed, F f) { Rng r{ seed }; for (int i = 0; i < iters; ++i) f(r); }
+
+static void ch6LayoutSweeps() {
+  int bad = 0;
+  // ---- layoutGroupGrid vs the reference
+  sweep(6000, 11, [&](Rng& r) {
+    const int cols = r.next(1, 4), rows = r.next(1, 3), gap = r.next(0, 8), W = r.next(60, 500), H = r.next(60, 400), per = cols * rows;
+    Rect box[3]; int cnt[3];
+    for (int g = 0; g < 3; ++g) { box[g] = Rect{ r.next(-40, W + 40), r.next(-20, H + 20), r.next(-10, 150), r.next(0, 40) }; cnt[g] = r.next(-2, per + 3); }
+    std::vector<Rect> o(3 * per, kJunk), ref; int n[3], rn[3];
+    layoutGroupGrid(box, cnt, cols, rows, gap, W, H, o.data(), n);
+    refGroupGrid(box, cnt, cols, rows, gap, W, H, ref, rn);
+    if (!sameRects(o, ref) || n[0] != rn[0] || n[1] != rn[1] || n[2] != rn[2]) ++bad;
+  });
+  KT_CHECK_EQ(bad, 0); bad = 0;
+
+  // ---- layoutBannerGrid vs the reference
+  sweep(8000, 22, [&](Rng& r) {
+    const int cols = r.next(1, 4), rows = r.next(1, 3), per = cols * rows, W = r.next(60, 500), H = r.next(60, 400);
+    const Rect ban = { r.next(-60, W + 60), r.next(0, H), r.next(0, 300), r.next(0, 30) };
+    const Rect bu = { r.next(-20, W), r.next(-30, H + 30), r.next(0, 420), r.next(0, 40) };
+    const int btnPx = r.next(-2, 70), pad = r.next(0, 8), gap = r.next(0, 14);
+    int cnt[3]; for (int g = 0; g < 3; ++g) cnt[g] = r.next(-2, per + 3);
+    std::vector<Rect> o(3 * per, kJunk), ref; int n[3], rn[3];
+    layoutBannerGrid(ban, bu, cnt, cols, rows, btnPx, pad, gap, W, H, o.data(), n);
+    refBannerGrid(ban, bu, cnt, cols, rows, btnPx, pad, gap, W, H, ref, rn);
+    if (!sameRects(o, ref) || n[0] != rn[0] || n[1] != rn[1] || n[2] != rn[2]) ++bad;
+  });
+  KT_CHECK_EQ(bad, 0); bad = 0;
+
+  // ---- layoutBannerGroups vs the reference
+  sweep(8000, 33, [&](Rng& r) {
+    const int cols = r.next(1, 4), rows = r.next(1, 3), per = cols * rows, W = r.next(60, 500), H = r.next(60, 400);
+    const Rect ban = { r.next(-60, W + 60), r.next(0, H), r.next(0, 300), r.next(0, 30) };
+    const Rect bu = { r.next(-20, W), r.next(-30, H + 30), r.next(0, 420), r.next(0, 40) };
+    const int btnPx = r.next(-2, 70), pad = r.next(0, 8), gap = r.next(0, 14), cap = r.next(0, 12), side = r.next(0, 12);
+    int cnt[3]; for (int g = 0; g < 3; ++g) cnt[g] = r.next(-2, per + 3);
+    std::vector<Rect> o(3 * per, kJunk), ref; int n[3], rn[3]; Rect c[3] = { kJunk, kJunk, kJunk }, rc[3];
+    layoutBannerGroups(ban, bu, cnt, cols, rows, btnPx, pad, gap, cap, side, W, H, o.data(), n, c);
+    refBannerGroups(ban, bu, cnt, cols, rows, btnPx, pad, gap, cap, side, W, H, ref, rn, rc);
+    bool ok = sameRects(o, ref) && n[0] == rn[0] && n[1] == rn[1] && n[2] == rn[2];
+    for (int g = 0; g < 3; ++g) ok = ok && sameRect(c[g], rc[g]);
+    if (!ok) ++bad;
+  });
+  KT_CHECK_EQ(bad, 0); bad = 0;
+
+  // ---- layoutBannerPills vs the reference
+  sweep(10000, 44, [&](Rng& r) {
+    const int per = r.next(1, 8), W = r.next(60, 500), H = r.next(60, 400);
+    const Rect ban = { r.next(-60, W + 60), r.next(0, H), r.next(0, 300), r.next(0, 30) };
+    const Rect bu = { r.next(-20, W), r.next(-30, H + 30), r.next(0, 420), r.next(0, 40) };
+    const int colsTotal = r.next(-1, 14), btnPx = r.next(-2, 70), pad = r.next(0, 8), gap = r.next(0, 14), cap = r.next(0, 12), side = r.next(0, 12);
+    int cnt[3]; for (int g = 0; g < 3; ++g) cnt[g] = r.next(-2, per + 3);
+    if (r.next(0, 5) == 0) cnt[r.next(0, 2)] = 0;
+    std::vector<Rect> o(3 * per, kJunk), ref; int n[3], rn[3]; Rect c[3] = { kJunk, kJunk, kJunk }, rc[3];
+    layoutBannerPills(ban, bu, cnt, per, colsTotal, btnPx, pad, gap, cap, side, W, H, o.data(), n, c);
+    refBannerPills(ban, bu, cnt, per, colsTotal, btnPx, pad, gap, cap, side, W, H, ref, rn, rc);
+    bool ok = sameRects(o, ref) && n[0] == rn[0] && n[1] == rn[1] && n[2] == rn[2];
+    for (int g = 0; g < 3; ++g) ok = ok && sameRect(c[g], rc[g]);
+    if (!ok) ++bad;
+  });
+  KT_CHECK_EQ(bad, 0); bad = 0;
+
+  // ---- gridBounds vs the reference
+  sweep(3000, 55, [&](Rng& r) {
+    const int stride = r.next(1, 5); std::vector<Rect> rs(3 * stride);
+    for (Rect& q : rs) q = Rect{ r.next(-50, 50), r.next(-50, 50), r.next(0, 30), r.next(0, 30) };
+    int n[3]; for (int g = 0; g < 3; ++g) n[g] = r.next(-1, stride + 2);
+    bool any = false; int l = 0, t = 0, rr = 0, b = 0;
+    for (int g = 0; g < 3; ++g) for (int k = 0; k < clampN(n[g], stride); ++k) {
+      const Rect& q = rs[g * stride + k];
+      if (!any) { l = q.x; t = q.y; rr = q.x + q.w; b = q.y + q.h; any = true; continue; }
+      l = std::min(l, q.x); t = std::min(t, q.y); rr = std::max(rr, q.x + q.w); b = std::max(b, q.y + q.h);
+    }
+    const Rect got = gridBounds(rs.data(), n, stride);
+    const Rect want = any ? Rect{ l, t, rr - l, b - t } : Rect{ 0, 0, 0, 0 };
+    if (!sameRect(got, want)) ++bad;
+  });
+  KT_CHECK_EQ(bad, 0);
+}
+
+// Names table helper for the profile tests.
+struct Names { char n[16][64]; Names() { memset(n, 0, sizeof n); } void set(int i, const char* s) { strncpy(n[i], s, 63); } };
+
+static uint32_t refFnv(const GroupView& g, const int* ord, int n) {
+  uint32_t h = 2166136261u;
+  auto byte = [&](uint32_t b) { h ^= b; h *= 16777619u; };
+  auto word = [&](uint32_t v) { byte(v & 0xFF); byte((v >> 8) & 0xFF); byte((v >> 16) & 0xFF); byte(v >> 24); };
+  word((uint32_t)n);
+  if (!ord) return h;
+  for (int i = 0; i < n; ++i) word((ord[i] >= 0 && ord[i] < 16) ? g.e[ord[i]].key : 0u);
+  return h;
+}
+
+static std::vector<int> order(const GroupView& g, const Names& nm, const Profile& p, int gi, int maxOut = 16) {
+  std::vector<int> o(maxOut > 0 ? maxOut : 1, -77);   // exact size: a write past maxOut trips the sanitizer
+  const int n = orderGroup(g, nm.n, p, gi, o.data(), maxOut);
+  o.resize(n < 0 ? 0 : n);
+  return o;
+}
+
+static void ch6Profile() {
+  // ---- orderSig: pinned values + reference
+  {
+    GroupView g; memset(&g, 0, sizeof g);
+    for (int i = 0; i < 16; ++i) g.e[i].key = 0x01000193u * (uint32_t)(i + 1) + 0x11u * (uint32_t)i + 7u;
+    KT_CHECK_EQ(orderSig(g, nullptr, 0), 0x4b95f515u);   // FNV-1a of the four zero bytes of n = 0
+    GroupView h; memset(&h, 0, sizeof h); h.e[0].key = 0x11; h.e[1].key = 0x22; h.e[2].key = 0x33;
+    const int o3[3] = { 0, 1, 2 };
+    KT_CHECK_EQ(orderSig(h, o3, 3), 0x96199c46u);
+    GroupView k; memset(&k, 0, sizeof k); k.e[0].key = 0x01020304u;
+    const int o2[2] = { 0, 99 };
+    KT_CHECK_EQ(orderSig(k, o2, 2), 0x96207b5fu);        // out-of-range index hashes key 0
+    const int sets[][6] = { { 0, 1, 2, 3, 4, 5 }, { 15, 0, 15, 7, 8, 9 }, { 0, -1, 16, 1, 17, 15 }, { 3, 3, 3, 3, 3, 3 }, { -1, -1, 16, 99, -50, 0 }, { 14, 15, 0, 1, 2, 3 } };
+    for (const auto& s : sets) for (int n = 0; n <= 6; ++n) KT_CHECK_EQ(orderSig(g, s, n), refFnv(g, s, n));
+    KT_CHECK_EQ(orderSig(g, nullptr, 5), refFnv(g, nullptr, 5));
+    KT_CHECK(orderSig(g, o3, 3) != orderSig(g, o3, 2));
+  }
+
+  // ---- parseNameList
+  {
+    char out[4][ProfName];
+    for (int i = 0; i < 4; ++i) { memset(out[i], 0, ProfName); }
+    strcpy(out[1], "foo");   // stale text just past the filled part must not count as a duplicate
+    KT_CHECK_EQ(parseNameList("bar,foo", out, 4), 2);
+    KT_CHECK(strcmp(out[1], "foo") == 0);
+    KT_CHECK_EQ(parseNameList("a,b,c", out, 1), 1);   // max == 1
+    KT_CHECK_EQ(parseNameList("a,b,c", out, 0), 0);
+    KT_CHECK_EQ(parseNameList("a,b,c", out, -1), 0);
+    KT_CHECK_EQ(parseNameList(nullptr, out, 3), 0);
+    KT_CHECK_EQ(parseNameList("a", nullptr, 3), 0);
+    // truncation to ProfName-1 chars: 46, 47, 48 and 60 long tokens
+    for (int len : { 46, 47, 48, 60 }) {
+      std::string tok((size_t)len, 'q');
+      char o2[2][ProfName]; memset(o2, 0x5A, sizeof o2);
+      KT_CHECK_EQ(parseNameList(tok.c_str(), o2, 1), 1);
+      KT_CHECK_EQ((int)strlen(o2[0]), len < ProfName - 1 ? len : ProfName - 1);
+    }
+    // a token that only differs past the truncation point is a duplicate of the truncated first one
+    std::string a(47, 'x'), b = a + "yz";
+    char o3[3][ProfName]; memset(o3, 0, sizeof o3);
+    KT_CHECK_EQ(parseNameList((a + "," + b).c_str(), o3, 3), 1);
+    // trailing blank handling, tabs, empty tokens
+    char o4[4][ProfName]; memset(o4, 0, sizeof o4);
+    KT_CHECK_EQ(parseNameList(" \t a b \t,, ,\tc ", o4, 4), 2);
+    KT_CHECK(strcmp(o4[0], "a b") == 0); KT_CHECK(strcmp(o4[1], "c") == 0);
+  }
+
+  // ---- nameMatches
+  {
+    KT_CHECK(!nameMatches(" x", 0, "x"));          // a leading blank alone is not a suffix match
+    KT_CHECK(nameMatches("a x", 0, "x"));          // one-char prefix
+    KT_CHECK(nameMatches("ab x", 0, "x"));
+    KT_CHECK(nameMatches("Master Flurry", 0, "flurry"));
+    KT_CHECK(!nameMatches("MasterFlurry", 0, "Flurry"));
+    KT_CHECK(nameMatches("Ax", 0, "Ax"));
+    KT_CHECK(nameMatches("0a", 0, "0a"));          // starts with '0' but is not hex
+    KT_CHECK(nameMatches("ax", 0, "AX"));          // 'x' second but not a hex prefix
+    KT_CHECK(nameMatches("1x", 0, "1x"));
+    KT_CHECK(nameMatches("x", 0, "x"));
+    // hex tokens
+    KT_CHECK(nameMatches(nullptr, 0x5, "0x5"));
+    KT_CHECK(nameMatches("zz", 0x5, "0X5"));
+    KT_CHECK(nameMatches("zz", 0x12345678u, "0x12345678"));
+    KT_CHECK(nameMatches("zz", 0x2345678u, "0x02345678"));
+    KT_CHECK(!nameMatches("zz", 0x23456789u, "0x123456789"));   // 9 digits: never
+    KT_CHECK(!nameMatches("zz", 0x23456789u, "0x1234567890"));
+    KT_CHECK(!nameMatches("zz", 0, "0x"));
+    KT_CHECK(!nameMatches("0x", 0, "0x"));
+    KT_CHECK(!nameMatches("zz", 0xFFFFFFFFu, "0xg"));
+    KT_CHECK(!nameMatches("zz", 0xFFFFFFFFu, "0xG"));
+    KT_CHECK(!nameMatches("zz", 0x1, "0x1g"));
+    KT_CHECK(!nameMatches("zz", 0xA, "0xAZ"));
+    KT_CHECK(!nameMatches("zz", 0xF, "0xF@"));
+    KT_CHECK(!nameMatches("zz", 0xFFFFFFFFu, "0x@"));
+    KT_CHECK(!nameMatches("zz", 0xFFFFFFFFu, "0x/"));
+    KT_CHECK(!nameMatches("zz", 0xFFFFFFFFu, "0x:"));
+    KT_CHECK(!nameMatches("zz", 0xFFFFFFFFu, "0x`"));
+    KT_CHECK(!nameMatches("zz", 0xFFFFFFFFu, "0x["));
+    KT_CHECK(nameMatches("zz", 0xABCDEFu, "0xabcdef")); KT_CHECK(nameMatches("zz", 0xABCDEFu, "0xABCDEF"));
+    KT_CHECK(nameMatches("zz", 0x9u, "0x9")); KT_CHECK(nameMatches("zz", 0x0u, "0x0"));
+    KT_CHECK(nameMatches("zz", 0xAu, "0xa")); KT_CHECK(nameMatches("zz", 0xFu, "0xf")); KT_CHECK(nameMatches("zz", 0xFu, "0xF"));
+    KT_CHECK(!nameMatches("zz", 0x10u, "0x1")); KT_CHECK(!nameMatches("zz", 0u, "0x1"));
+    // detail helpers through the public surface: every hex digit and its neighbours
+    for (int c = 0; c < 256; ++c) {
+      char tok[5] = { '0', 'x', (char)c, 0, 0 };
+      if (c == 0) continue;
+      int want = -1;
+      if (c >= '0' && c <= '9') want = c - '0'; else if (c >= 'a' && c <= 'f') want = c - 'a' + 10; else if (c >= 'A' && c <= 'F') want = c - 'A' + 10;
+      for (uint32_t key : { 0u, 1u, 9u, 10u, 15u, 16u, 0xFFFFFFFFu, 0xFFFFFFF0u }) {
+        const bool exp = want >= 0 && key == (uint32_t)want;
+        if (nameMatches("zz", key, tok) != exp) KT_CHECK(false);
+      }
+    }
+    for (int c = 0; c < 256; ++c) {   // case folding: every char vs. its case twin
+      if (c == 0) continue;
+      char a[3] = { (char)c, 0, 0 }, b[3] = { (char)c, 0, 0 };
+      if (c >= 'a' && c <= 'z') b[0] = (char)(c - 32); else if (c >= 'A' && c <= 'Z') b[0] = (char)(c + 32);
+      const bool hexLead = false;
+      (void)hexLead;
+      if (c == '0') continue;
+      KT_CHECK(nameMatches(a, 0, b));
+      char d[3] = { (char)(c == 'q' ? 'r' : 'q'), 0, 0 };
+      if (c != 'q' && c != 'Q' && c != 'r' && c != 'R') KT_CHECK(!nameMatches(d, 0, a));
+    }
+    KT_CHECK(!nameMatches("@", 0, "`")); KT_CHECK(!nameMatches("[", 0, "{")); KT_CHECK(!nameMatches("`", 0, "@")); KT_CHECK(!nameMatches("{", 0, "["));
+    KT_CHECK(nameMatches("Z", 0, "z")); KT_CHECK(nameMatches("z", 0, "Z")); KT_CHECK(nameMatches("A", 0, "a")); KT_CHECK(nameMatches("a", 0, "A"));
+    KT_CHECK(!nameMatches("a", 0, "b")); KT_CHECK(!nameMatches("A", 0, "B"));
+    KT_CHECK(!nameMatches("ab", 0, "ac"));   // equal length, differs
+    KT_CHECK(!nameMatches("abc", 0, "abcd"));
+  }
+
+  // ---- orderGroup
+  {
+    GroupView g; memset(&g, 0, sizeof g); Names nm; Profile p; defaultProfile(p);
+    // hex token vs a decoy entry whose NAME is that token text
+    g.count = 2; g.e[0].key = 0x99; g.e[1].key = 0x10; nm.set(0, "0x10"); nm.set(1, "Alpha");
+    strcpy(p.pin[1][0], "0x10"); p.nPin[1] = 1;
+    KT_CHECK(order(g, nm, p, 1) == (std::vector<int>{ 1, 0 }));
+    strcpy(p.pin[1][0], "0X10");
+    KT_CHECK(order(g, nm, p, 1) == (std::vector<int>{ 1, 0 }));
+    // exact-name rule for plain tokens, incl. tokens that start with '0' / have 'x' second
+    for (const char* tok : { "Ax", "0k", "ax", "aX", "1x", "xk", "q" }) {
+      GroupView h; memset(&h, 0, sizeof h); Names hn; Profile q; defaultProfile(q);
+      h.count = 2; h.e[0].key = 1; h.e[1].key = 2;
+      std::string big = std::string("Big ") + tok;
+      hn.set(0, big.c_str()); hn.set(1, tok);
+      strcpy(q.hide[0][0], tok); q.nHide[0] = 1;
+      KT_CHECK(order(h, hn, q, 0) == (std::vector<int>{ 0 }));    // only the exact entry is hidden
+      hn.set(0, tok); hn.set(1, big.c_str());
+      KT_CHECK(order(h, hn, q, 0) == (std::vector<int>{ 1 }));
+      q.nHide[0] = 0; strcpy(q.pin[0][0], tok); q.nPin[0] = 1;
+      hn.set(0, big.c_str()); hn.set(1, tok);
+      KT_CHECK(order(h, hn, q, 0) == (std::vector<int>{ 1, 0 }));   // only the exact entry is pinned first
+    }
+    // a hex token pins by key even if another entry is named with the token text
+    // gi bounds
+    GroupView h; memset(&h, 0, sizeof h); Names hn; Profile q; defaultProfile(q);
+    h.count = 3; hn.set(0, "a"); hn.set(1, "b"); hn.set(2, "c");
+    for (int i = 0; i < 3; ++i) h.e[i].key = 10 + i;
+    int o[4] = { -1, -1, -1, -1 };
+    KT_CHECK_EQ(orderGroup(h, hn.n, q, 0, o, 4), 3); KT_CHECK_EQ(o[2], 2);
+    KT_CHECK_EQ(orderGroup(h, hn.n, q, 2, o, 4), 3);
+    KT_CHECK_EQ(orderGroup(h, hn.n, q, -1, o, 4), 0); KT_CHECK_EQ(orderGroup(h, hn.n, q, 3, o, 4), 0);
+    KT_CHECK_EQ(orderGroup(h, nullptr, q, 0, o, 4), 0); KT_CHECK_EQ(orderGroup(h, hn.n, q, 0, nullptr, 4), 0);
+    KT_CHECK_EQ(orderGroup(h, hn.n, q, 0, o, 0), 0); KT_CHECK_EQ(orderGroup(h, hn.n, q, 0, o, -1), 0);
+    KT_CHECK(order(h, hn, q, 1, 1) == (std::vector<int>{ 0 }));      // maxOut caps, exact-size buffer
+    KT_CHECK(order(h, hn, q, 1, 2) == (std::vector<int>{ 0, 1 }));
+    KT_CHECK(order(h, hn, q, 1, 3) == (std::vector<int>{ 0, 1, 2 }));
+    KT_CHECK(order(h, hn, q, 1, 9) == (std::vector<int>{ 0, 1, 2 }));
+    // entries / tokens past the live count must be ignored (stale data beyond count, stale tokens beyond nHide/nPin)
+    {
+      GroupView s; memset(&s, 0, sizeof s); Names sn; Profile t; defaultProfile(t);
+      s.count = 2; s.e[0].key = 1; s.e[1].key = 2; s.e[2].key = 3; sn.set(0, "Power Attack"); sn.set(1, "Other"); sn.set(2, "Attack");
+      strcpy(t.hide[1][0], "Attack"); t.nHide[1] = 1;
+      KT_CHECK(order(s, sn, t, 1) == (std::vector<int>{ 1 }));       // names[2]=="Attack" is beyond the count: suffix rule applies
+      t.nHide[1] = 0; strcpy(t.hide[1][0], "Other");                 // stale hide token beyond nHide
+      KT_CHECK(order(s, sn, t, 1) == (std::vector<int>{ 0, 1 }));
+      strcpy(t.pin[1][0], "Zed"); t.nPin[1] = 0;                     // stale pin token beyond nPin
+      sn.set(1, "Zed");
+      KT_CHECK(order(s, sn, t, 1) == (std::vector<int>{ 0, 1 }));
+      t.nPin[1] = 1; strcpy(t.pin[1][1], "Power Attack");
+      KT_CHECK(order(s, sn, t, 1) == (std::vector<int>{ 1, 0 }));
+      // an entry past the count that matches a pin must not be placed
+      GroupView u; memset(&u, 0, sizeof u); Names un; Profile w; defaultProfile(w);
+      u.count = 1; u.e[0].key = 1; un.set(0, "One"); u.e[1].key = 2; un.set(1, "Two");
+      strcpy(w.pin[0][0], "Nope"); strcpy(w.pin[0][1], "Two"); w.nPin[0] = 2;
+      KT_CHECK(order(u, un, w, 0) == (std::vector<int>{ 0 }));
+      // hide beats pin; pin first match only; stable engine order for the rest
+    }
+    // the first entry can be pinned / hidden; the pin for entry 0 and ties
+    {
+      GroupView s; memset(&s, 0, sizeof s); Names sn; Profile t; defaultProfile(t);
+      s.count = 3; for (int i = 0; i < 3; ++i) s.e[i].key = 20 + i;
+      sn.set(0, "Alpha"); sn.set(1, "Beta"); sn.set(2, "Gamma");
+      strcpy(t.pin[2][0], "Alpha"); t.nPin[2] = 1;
+      KT_CHECK(order(s, sn, t, 2) == (std::vector<int>{ 0, 1, 2 }));
+      strcpy(t.pin[2][0], "Gamma"); strcpy(t.pin[2][1], "Alpha"); t.nPin[2] = 2;
+      KT_CHECK(order(s, sn, t, 2) == (std::vector<int>{ 2, 0, 1 }));
+      strcpy(t.hide[2][0], "Alpha"); t.nHide[2] = 1;
+      KT_CHECK(order(s, sn, t, 2) == (std::vector<int>{ 2, 1 }));
+    }
+    // all 16 entries: pin/hide/sort touch every array slot (sanitizers catch an undersized scratch array)
+    {
+      GroupView s; memset(&s, 0, sizeof s); Names sn; Profile t; defaultProfile(t);
+      s.count = 16; char nbuf[16][16];
+      for (int i = 0; i < 16; ++i) { s.e[i].key = 100 + i; s.e[i].count = (uint32_t)(i % 5); snprintf(nbuf[i], sizeof nbuf[i], "N%d", i); sn.set(i, nbuf[i]); }
+      strcpy(t.pin[1][0], "N15"); strcpy(t.pin[1][1], "N0"); t.nPin[1] = 2;
+      strcpy(t.hide[1][0], "N7"); t.nHide[1] = 1; t.byCount[1] = true;
+      std::vector<int> r = order(s, sn, t, 1);
+      KT_CHECK_EQ((int)r.size(), 15); KT_CHECK_EQ(r[0], 15); KT_CHECK_EQ(r[1], 0);
+      // rest by count descending, stable: counts i%5 -> 4: {4,9,14}, 3: {3,8,13}, 2: {2,12} (7 hidden), 1: {1,6,11}, 0: {5,10}
+      const int want[] = { 15, 0, 4, 9, 14, 3, 8, 13, 2, 12, 1, 6, 11, 5, 10 };
+      for (int i = 0; i < 15; ++i) KT_CHECK_EQ(r[i], want[i]);
+      t.nPin[1] = 0; t.nHide[1] = 0; t.byCount[1] = false;
+      r = order(s, sn, t, 1); KT_CHECK_EQ((int)r.size(), 16); KT_CHECK_EQ(r[15], 15);
+      t.byCount[1] = true;
+      r = order(s, sn, t, 1); KT_CHECK_EQ((int)r.size(), 16); KT_CHECK_EQ(r[0], 4);
+      strcpy(t.hide[1][0], "N3"); t.nHide[1] = 1;
+      r = order(s, sn, t, 1); KT_CHECK_EQ((int)r.size(), 15);
+    }
+    // byCount sort: the insertion loop starts at the second 'rest' entry; pins before it stay put
+    {
+      GroupView s; memset(&s, 0, sizeof s); Names sn; Profile t; defaultProfile(t);
+      s.count = 4; const uint32_t cnts[4] = { 1, 9, 5, 7 };
+      for (int i = 0; i < 4; ++i) { s.e[i].key = i + 1; s.e[i].count = cnts[i]; }
+      sn.set(0, "a"); sn.set(1, "b"); sn.set(2, "c"); sn.set(3, "d");
+      t.byCount[0] = true;
+      KT_CHECK(order(s, sn, t, 0) == (std::vector<int>{ 1, 3, 2, 0 }));
+      strcpy(t.pin[0][0], "a"); t.nPin[0] = 1;                    // pinned entry has the lowest count and stays first
+      KT_CHECK(order(s, sn, t, 0) == (std::vector<int>{ 0, 1, 3, 2 }));
+      strcpy(t.pin[0][0], "c");
+      KT_CHECK(order(s, sn, t, 0) == (std::vector<int>{ 2, 1, 3, 0 }));
+      s.e[0].count = s.e[1].count = s.e[2].count = s.e[3].count = 3;   // ties stay in engine order
+      t.nPin[0] = 0;
+      KT_CHECK(order(s, sn, t, 0) == (std::vector<int>{ 0, 1, 2, 3 }));
+      s.e[2].count = 4;
+      KT_CHECK(order(s, sn, t, 0) == (std::vector<int>{ 2, 0, 1, 3 }));
+      s.count = 1; KT_CHECK(order(s, sn, t, 0) == (std::vector<int>{ 0 }));
+      s.count = 0; KT_CHECK(order(s, sn, t, 0).empty());
+      s.count = -4; KT_CHECK(order(s, sn, t, 0).empty());
+    }
+  }
+
+  // ---- formatProfile
+  {
+    Profile p; defaultProfile(p); strcpy(p.pin[0][0], "A"); p.nPin[0] = 1; strcpy(p.hide[2][0], "B"); strcpy(p.hide[2][1], "C"); p.nHide[2] = 2;
+    char buf[256]; memset(buf, 'x', sizeof buf);
+    const int len = formatProfile(p, buf, sizeof buf);
+    KT_CHECK(len > 0); KT_CHECK_EQ((int)strlen(buf), len);
+    KT_CHECK(strcmp(buf, "Pin0=A\nHide0=\nSort0=engine\nPin1=\nHide1=\nSort1=engine\nPin2=\nHide2=B,C\nSort2=count") == 0);
+    // guards
+    KT_CHECK_EQ(formatProfile(p, nullptr, 64), -1); KT_CHECK_EQ(formatProfile(p, nullptr, 0), -1);
+    char one[4] = { 'x', 'x', 'x', 'x' };
+    KT_CHECK_EQ(formatProfile(p, one, 0), -1); KT_CHECK_EQ((int)one[0], 'x');       // size 0: buffer untouched
+    KT_CHECK_EQ(formatProfile(p, one, -3), -1); KT_CHECK_EQ((int)one[0], 'x');
+    KT_CHECK_EQ(formatProfile(p, one, 1), -1); KT_CHECK_EQ((int)one[0], 0);          // size 1: NUL only
+    for (int sz = 1; sz <= len; ++sz) {   // every size below the exact fit fails and leaves an empty string
+      std::vector<char> v((size_t)sz, 'x');
+      KT_CHECK_EQ(formatProfile(p, v.data(), sz), -1); KT_CHECK_EQ((int)v[0], 0);
+    }
+    { std::vector<char> v((size_t)len + 1, 'x'); KT_CHECK_EQ(formatProfile(p, v.data(), len + 1), len); KT_CHECK_EQ((int)v[(size_t)len], 0); }
+    // a corrupt (over-large) count never prints more than ProfMax entries
+    Profile q; defaultProfile(q);
+    for (int i = 0; i < 3 * ProfMax; ++i) { /* fill the whole pin block so entries beyond ProfMax of group 0 are group 1's */ }
+    for (int i = 0; i < ProfMax; ++i) { snprintf(q.pin[0][i], ProfName, "p%d", i); snprintf(q.pin[1][i], ProfName, "z%d", i); }
+    q.nPin[0] = 20;
+    char big[512]; const int bl = formatProfile(q, big, sizeof big);
+    KT_CHECK(bl > 0); KT_CHECK(strstr(big, "p7\n") != nullptr); KT_CHECK(strstr(big, "z0") == nullptr || strstr(big, "Pin1=z0") != nullptr);
+    KT_CHECK(strstr(big, "p7,z0") == nullptr);
+    q.nHide[0] = 20; for (int i = 0; i < ProfMax; ++i) { snprintf(q.hide[0][i], ProfName, "h%d", i); snprintf(q.hide[1][i], ProfName, "y%d", i); }
+    KT_CHECK(formatProfile(q, big, sizeof big) > 0); KT_CHECK(strstr(big, "h7,y0") == nullptr);
+  }
+
+  // ---- parseProfileLine
+  {
+    Profile q; defaultProfile(q);
+    // trailing blanks and the empty value: val[-1] must not be read
+    char* heap = (char*)malloc(1); heap[0] = 0;
+    KT_CHECK(!parseProfileLine(q, "Sort0", heap));
+    free(heap);
+    KT_CHECK(!parseProfileLine(q, "Sort0", " "));
+    KT_CHECK(!parseProfileLine(q, "Sort0", "\t \t"));
+    KT_CHECK(parseProfileLine(q, "Sort1", "\tcount\t")); KT_CHECK(q.byCount[1]);
+    KT_CHECK(parseProfileLine(q, "Sort1", "  engine  ")); KT_CHECK(!q.byCount[1]);
+    KT_CHECK(!parseProfileLine(q, "Sort1", "counts")); KT_CHECK(!parseProfileLine(q, "Sort1", "coun"));
+    KT_CHECK(parseProfileLine(q, "Hide2", "x, y")); KT_CHECK_EQ(q.nHide[2], 2);
+    KT_CHECK(parseProfileLine(q, "hide0", nullptr)); KT_CHECK_EQ(q.nHide[0], 0);
+    KT_CHECK(parseProfileLine(q, "PIN2", "m")); KT_CHECK_EQ(q.nPin[2], 1);
+    KT_CHECK(parseProfileLine(q, "pin0", "n")); KT_CHECK_EQ(q.nPin[0], 1);
+    KT_CHECK(!parseProfileLine(q, "Pin-1", "a")); KT_CHECK(!parseProfileLine(q, "Pin9", "a")); KT_CHECK(!parseProfileLine(q, "Pin12", "a"));
+    KT_CHECK(!parseProfileLine(q, "Hide", "a")); KT_CHECK(!parseProfileLine(q, "Hide3", "a")); KT_CHECK(!parseProfileLine(q, "Sort3", "count"));
+    KT_CHECK(!parseProfileLine(q, "Sort", "count")); KT_CHECK(!parseProfileLine(q, "Sort/", "count")); KT_CHECK(!parseProfileLine(q, "Pin0x", "a"));
+    KT_CHECK(!parseProfileLine(q, "Pinn0", "a")); KT_CHECK(!parseProfileLine(q, "Sin0", "a"));
+  }
 }
 
 int main() {
@@ -617,5 +1367,10 @@ int main() {
     KT_CHECK(!parseProfileLine(q, "Pin3", "a")); KT_CHECK(!parseProfileLine(q, "Foo0", "a"));
     KT_CHECK(!parseProfileLine(q, "Pin", "a")); KT_CHECK(!parseProfileLine(q, nullptr, "a"));
   }
+  // ================= CH6 mutation-gate additions (doc 31 CH6): contract pins, guards, reference-model sweeps =================
+  ch6Basics();
+  ch6GuardsAndNulls();
+  ch6LayoutSweeps();
+  ch6Profile();
   return kt::Report("combat_logic_test");
 }
