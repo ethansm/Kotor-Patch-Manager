@@ -1,4 +1,4 @@
-// Smoke test for companion-selfheal 0.6.0-dev (CS12): WIRING only, not heal behaviour. The real selfheal DLL is loaded under Wine's PE loader
+// Smoke test for companion-selfheal 0.7.0-dev (CS12): WIRING only, not heal behaviour. The real selfheal DLL is loaded under Wine's PE loader
 // TOGETHER with the real portrait-slots provider (k2.portraitslots v1) and the real hud-host provider (k2.hud v1), wired through the registry
 // exactly as KPM would (tests/include/FakeKPatchApi.h). Engine memory = a zeroed pad at image base 0x120000 (see smoke_queuehud.cpp); the heal
 // engine calls are TRIPWIRES (UseItemRouteA 0x57D8B0, ActListRemoveHead 0x7F2A90, ActListAddTail 0x54AA30, RoundHasPending 0x590110 + the draw /
@@ -7,8 +7,8 @@
 //        Exit codes: 0 pass, 1 check failed / LoadLibrary failed, 2 setup failure, 3 missing export.
 //
 //   wire       provider + hud-host -> selfheal. KPatchInit OK; registrations owner "companion-selfheal": K2PS_FRAME_BEGIN (2) prio 300 and
-//              K2HUD_BUILD (3) prio 200; both clients connected; the version line (0.6.0-dev ... kick=1) once; zero WARNs. Then the BUILD phase on a
-//              fake HUD (vtable only; the label ctor stub leaves no vtable): exactly one WARN, 'BUILD n=0/14', no engine calls.
+//              K2HUD_BUILD (3) prio 200; both clients connected; the version line (0.7.0-dev ... kick=1) once; zero WARNs. Then the BUILD phase on a
+//              fake HUD (vtable only; the label ctor stub leaves no vtable): exactly one WARN, 'BUILD n=0/16', no engine calls.
 //   inert      unknown KOTOR_VERSION_SHA: the provider dispatch is a no-op, nothing drawn / used, no tick evidence.
 //   badchain   HUD built, party chain broken at each link: the FRAME_BEGIN tick returns cleanly (evidence: the P3 slot-map log), kickTick /
 //              pendingTick make NO engine call (tripwires 0). NOTE: both ticks return early with no pending use armed (arming needs useNow()
@@ -227,7 +227,7 @@ static int modeWire() {
     check(regs.size() == 2 && regs[0].token > 0 && regs[1].token > 0, "registration tokens > 0 (accepted)");
     check(logCount("portraitslots: connected") == 1, "selfheal connected to portrait-slots (onConnect logged once)");
     check(logCount("k2.hud: connected") == 1, "selfheal connected to hud-host (onHudConnect logged once)");
-    check(logCount("0.6.0-dev: probe call=0") == 1 && logCount(" kick=1 ") == 1, "version line '0.6.0-dev ... kick=1' logged once");
+    check(logCount("0.7.0-dev: probe call=0") == 1 && logCount(" kick=1 ") == 1, "version line '0.7.0-dev ... kick=1' logged once");
     check(logCount("NOT connected") == 0 && warnCount() == 0, "no WARN after init (both providers present)");
     if (warnCount()) dumpWarns();
 
@@ -237,11 +237,11 @@ static int modeWire() {
     // BUILD phase: the vtable-only fake HUD; the label ctor stub leaves no vtable, so every widget fails cleanly
     D.layoutClosing(g_hud);
     check(logCount("first BUILD dispatch") == 1, "hud-host dispatched BUILD for the HUD vtable once");
-    check(logCount("BUILD n=0/14") == 1, "selfheal BUILD built 0/14 widgets (label ctor stub) and said so");
-    check(warnCount() == 1, "exactly one WARN: the BUILD n=0/14 summary");
+    check(logCount("BUILD n=0/16") == 1, "selfheal BUILD built 0/16 widgets (label ctor stub) and said so");
+    check(warnCount() == 1, "exactly one WARN: the BUILD n=0/16 summary");
     if (warnCount() != 1) dumpWarns();
     check(g_sh[S_LABELCTOR] >= 1, "createLabel reached the (stubbed) label ctor");
-    checkf(g_sh[S_CTOR] == 10 && g_sh[S_RESET] == 0, "BUILD created the 10 embedded textures once, never Reset (tex ctor / reset = %d / %d)", (int)g_sh[S_CTOR], (int)g_sh[S_RESET]);
+    checkf(g_sh[S_CTOR] == 14 && g_sh[S_RESET] == 0, "BUILD created the 14 embedded textures once (9 own + 5 HudKit), never Reset (tex ctor / reset = %d / %d)", (int)g_sh[S_CTOR], (int)g_sh[S_RESET]);
     leaderCalls(5);
     checkNoEngineCalls("wire");
     uintptr_t bad = 0;
@@ -258,7 +258,7 @@ static int modeInert() {
     D.layoutClosing(g_hud);   // hud-host + guikit with a null address table: no label can be built, nothing is called
     for (int i = 0; i < 100; ++i) leaderCalls(2);
     check(logCount("P3 slot") == 0, "unknown exe: FRAME_BEGIN never dispatched to selfheal (no slot-map tick)");
-    check(logCount("BUILD n=0/14") == 1, "BUILD still reports 0/14 (guikit refuses without a table)");
+    check(logCount("BUILD n=0/16") == 1, "BUILD still reports 0/16 (guikit refuses without a table)");
     check(g_sh[S_LABELCTOR] == 0 && g_sh[S_CTOR] == 0, "unknown exe: no label ctor / texture ctor call");
     check(warnCount() >= 1, "the provider's k2addr table complaint is logged");
     checkNoEngineCalls("unknown exe");
@@ -289,7 +289,7 @@ static int modeBadChain() {
     putU32(C + 0x270, (uint32_t)(base + 0x23000));                      // table readable, count 0
     run("party table readable but empty");
     check(logCount("KICK") == 0 && logCount("DONE") == 0 && logCount("AUTO") == 0, "no KICK / DONE / AUTO line in any broken-chain case");
-    check(warnCount() == 1 && logCount("BUILD n=0/14") == 1, "only the expected BUILD n=0/14 WARN");
+    check(warnCount() == 1 && logCount("BUILD n=0/16") == 1, "only the expected BUILD n=0/16 WARN");
     checkNoEngineCalls("broken party chains");
     putU32(app, 0); putU32(A + 4, 0); putU32(B + 4, 0); putU32(C + 0x270, 0);
     uintptr_t bad = 0;
@@ -300,7 +300,7 @@ static int modeBadChain() {
 // ================================================================ kick-off
 static int modeKickOff() {
     setup(false, true);
-    check(logCount("0.6.0-dev: probe call=0") == 1 && logCount(" kick=0 ") == 1 && logCount(" kick=1 ") == 0, "[queue] kick=0 in companion_selfheal.ini -> version line logs kick=0");
+    check(logCount("0.7.0-dev: probe call=0") == 1 && logCount(" kick=0 ") == 1 && logCount(" kick=1 ") == 0, "[queue] kick=0 in companion_selfheal.ini -> version line logs kick=0");
     D.layoutClosing(g_hud);
     leaderCalls(10);
     checkNoEngineCalls("kick=0");

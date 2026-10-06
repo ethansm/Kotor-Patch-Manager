@@ -1,4 +1,4 @@
-// Smoke test for queue-hud 0.3.0-dev (0.1.0 base commit 66b3702): the out-of-combat copy of the vanilla action-queue panel. Loaded under Wine's real PE
+// Smoke test for queue-hud 0.4.0-dev (0.1.0 base commit 66b3702): the out-of-combat copy of the vanilla action-queue panel. Loaded under Wine's real PE
 // loader TOGETHER with portrait-slots (the provider of "k2.portraitslots" v1), wired through the registry exactly as KPM would.
 // Build: i686-w64-mingw32-g++ -std=c++17 -O1 -I <harness> -I tests/include -I$KPM/Patches/Common -I../../_shared_src smoke_queuehud.cpp -static
 //        (runner flags in smokes.toml, incl. --image-base=0x120000; the 10 MB .bss pad must start at or below the lowest engine address stubbed below, TexBasicCtor 0x423000,
@@ -15,7 +15,7 @@
 // ServerClearAllActions): each only counts its calls, and every mode other than a real draw requires all counts to stay 0 ("draws nothing").
 // 0.3.0 also plants STUBS (not tripwires) for the embtex engine calls the FRAME_BEGIN callback makes on its first frame (engine new / new[],
 // CAurTextureBasic ctor, pending-list add, Reset; the pad is zeroed code, so executing them unstubbed is an access violation): they hand out
-// heap memory and count calls; the first leader call must create exactly the 4 kit textures once, never Reset. No test exports are used: the
+// heap memory and count calls; the first leader call must create exactly the 5 HudKit textures once, never Reset. No test exports are used: the
 // callback is observed through its own log lines ("hidden (<reason>)"), the registry and the tripwires.
 //
 //   wire        provider -> queue-hud. KPatchInit OK, provided + exports present, exactly TWO registrations, both owner "queue-hud":
@@ -243,7 +243,7 @@ static int modeWire() {
     check(regs.size() == 2 && regs[0].owner == "queue-hud" && regs[1].owner == "queue-hud", "both registrations are owned by \"queue-hud\"");
     check(regs.size() == 2 && regs[0].token > 0 && regs[1].token > 0, "registration tokens > 0 (accepted)");
     check(logCount("portraitslots: connected") == 1, "queue-hud connected to the provider (onConnect logged once)");
-    check(logCount("0.3.0-dev: kit=1 ") == 1 && logCount(" enabled=1 ") == 1, "queue-hud logged its version / config line once (default config: kit on, enabled)");
+    check(logCount("0.4.0-dev: kit=1 ") == 1 && logCount(" enabled=1 ") == 1, "queue-hud logged its version / config line once (default config: kit on, enabled)");
     check(logCount("portraitslots: NOT connected") == 0, "the portrait-slots client is connected");
     check(logCount("hud-host: NOT connected (no Cancel controls)") == 1 && warnCount() == 1, "exactly one WARN: hud-host absent -> 'NOT connected (no Cancel controls)'");
 
@@ -269,7 +269,7 @@ static int modeCombat() {
     check(logCount(want) == 1, "capture with flags bit1 set logged combat=1");
 
     leaderCalls(20);
-    checkf(g_eh[E_NEW] == 4 && g_eh[E_CTOR] == 4 && g_eh[E_NEWARR] == 4 && g_eh[E_LISTADD] == 4, "FRAME_BEGIN created the 4 kit textures exactly once over 20 frames (new/ctor/new[]/list add = %d/%d/%d)", (int)g_eh[E_NEW], (int)g_eh[E_CTOR], (int)g_eh[E_NEWARR]);
+    checkf(g_eh[E_NEW] == 5 && g_eh[E_CTOR] == 5 && g_eh[E_NEWARR] == 5 && g_eh[E_LISTADD] == 5, "FRAME_BEGIN created the 5 HudKit textures exactly once over 20 frames (new/ctor/new[]/list add = %d/%d/%d)", (int)g_eh[E_NEW], (int)g_eh[E_CTOR], (int)g_eh[E_NEWARR]);
     check(g_eh[E_RESET] == 0, "heal() never Reset a healthy (queued, pixel-bearing) texture");
     check(logCount("hidden (combat)") == 1, "20 HUD_DRAW dispatches with combat=1: callback ran and logged 'hidden (combat)' once (edge log)");
     check(logCount("hidden (no creature)") == 0 && logCount("shown ") == 0, "combat short-circuits before the party chain and before any draw");
