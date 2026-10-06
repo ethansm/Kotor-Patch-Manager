@@ -59,6 +59,24 @@ SPECS = {
 }
 RE_FIELD = re.compile(r"^([A-Z]+):\s*(.*)$")
 
+# Process rules printed above the reply schema (CH6 2026-10-05: a worker's silent poll loops on a buffered mutation run
+# looked stuck for 11 min, left 3 orphaned pollers, and wrote into the orchestrator's scratchpad).
+RULES = {
+    "worker": [
+        "## Process rules",
+        "- Scratch: only the dir the brief names (Scratch: $SP/<task>/); never the orchestrator's scratchpad root or /tmp.",
+        "- Long jobs (> 2 min: mutation, full test tier, wine smokes): start with run_in_background and wait for the completion "
+        "notification. NEVER poll with `while pgrep ...` / `while [ ! -s file ]` / sleep loops.",
+        "- Run Python unbuffered and tee: `python3 -u <script> ... 2>&1 | tee <scratch>/<name>.txt`, so `tail -1` shows progress.",
+        "- Iterating on mutation survivors: re-run only the survivors (`mutate_header.py --only K`), not the whole header.",
+        "- Before replying: kill your own background jobs/pollers; list any still running in NOTES.",
+    ],
+    "recon": [
+        "## Process rules",
+        "- Scratch: only the dir the brief names; long jobs via run_in_background + notification, never poll loops.",
+    ],
+}
+
 
 def keys(kind):
     return [k for k, _ in SPECS[kind]["fields"]]
@@ -265,7 +283,7 @@ def main(argv=None, out=sys.stdout, stdin=sys.stdin):
     a = ap.parse_args(argv)
 
     if a.cmd == "print":
-        out.write(template(a.kind) + "\n")
+        out.write("\n".join(RULES[a.kind]) + "\n" + template(a.kind) + "\n")
         return 0
     root = Path(a.repo_root).expanduser().resolve() if a.repo_root else DEFAULT_ROOT
     if a.cmd == "snapshot":

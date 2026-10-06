@@ -102,6 +102,11 @@ class TestParse(unittest.TestCase):
             body = ac.template(kind).splitlines()[1:]
             self.assertEqual([l.split(":")[0] for l in body], ac.keys(kind))
 
+    def test_rules_cover_every_kind_and_forbid_poll_loops(self):
+        self.assertEqual(set(ac.RULES), set(ac.SPECS))
+        self.assertIn("run_in_background", "\n".join(ac.RULES["worker"]))
+        self.assertIn("pgrep", "\n".join(ac.RULES["worker"]))
+
 
 class TestGit(unittest.TestCase):
     def setUp(self):

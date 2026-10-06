@@ -38,6 +38,7 @@ import json
 import os
 import re
 import shutil
+import threading
 import sys
 import time
 from dataclasses import dataclass
@@ -359,6 +360,8 @@ def main(argv=None) -> int:
     ap.add_argument("--no-sanitize", action="store_true", help="build tests without ASan/UBSan (faster)")
     ap.add_argument("--keep", action="store_true", help="keep the scratch trees")
     ap.add_argument("-v", action="store_true", help="print every mutant's result")
+    ap.add_argument("--progress", type=int, default=25, metavar="N",
+                    help="flushed 'progress i/n killed= survived=' line every N mutants (0 = off)")
     a = ap.parse_args(argv)
 
     header = Path(a.header).resolve()
@@ -413,6 +416,9 @@ def main(argv=None) -> int:
         print(f"mutate_header: baseline (unmutated) is not green: {st} {detail}", file=sys.stderr)
         return 2
 
+    done = {"n": 0, "KILLED": 0, "SURVIVED": 0}
+    done_lock = threading.Lock()
+
     def work(m: Mutation):
         root = MUT_ROOT / str(m.id)
         try:
@@ -424,6 +430,11 @@ def main(argv=None) -> int:
             shutil.rmtree(root, ignore_errors=True)
         if a.v:
             print(f"{s:<8} {m.id} {hrel}:{m.line} {m.before} -> {m.after}", flush=True)
+        with done_lock:   # so `tail -1` on a tee'd log shows a live run is moving
+            done["n"] += 1
+            done[s] = done.get(s, 0) + 1
+            if a.progress > 0 and (done["n"] % a.progress == 0 or done["n"] == len(muts)):
+                print(f"progress {done['n']}/{len(muts)} killed={done['KILLED']} survived={done['SURVIVED']}", flush=True)
         return s, d
 
     with cf.ThreadPoolExecutor(max(1, a.jobs)) as ex:
