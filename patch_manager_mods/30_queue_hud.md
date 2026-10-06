@@ -1,6 +1,7 @@
 # 30 — Queue HUD (`queue-hud` 0.2.0-dev): green out-of-combat action queue, leader + companion strips
 
 ## RESUME HERE
+- **0.4.0-dev INSTALLED 2026-10-05 21:34 (doc 24 CS10-CS12, hot-swap 7d7650a8 -> ab52dfd7, backup `$G/backups/cs10_ch6_dclk_20261005_2134`)**: left strip reserve comes from hud-host StripSlot (order 1, selfheal order 0; fallback `shui::stripReserve`); kit art from `_shared_src/HudKit.h` (kit_frame/_hi, kit_cancel/_hi, kit_disc, byte-identical to the old qh_*); slim auto icon = selfheal button side (24 px on 47x96; `strip_icon_px` overrides). Play check: no overlap with the selfheal button, art identical, both mods register the same kit_* names (watch for missing/garbled textures).
 - **0.3.0-dev INSTALLED 2026-10-05 01:41 (user GO, with selfheal CS9b)**: stage `$K/cs11_stage_1005` (STAGE_INFO head=70e5144), 36 ids / 221 hooks,
   live dll `8bfa99d9` (kpatch `8ddf09fe`), config `d9ed58a2`. Backup `$G/backups/cs11_install_20261005_0141` (rollback = restore it, game closed).
   Hand-swapped shield-bar / perf-lab / mouse-probe dlls restored after the install; verify = exactly those 3 md5 mismatches. `kplog.ini` has `[queue-hud] enabled=1`.

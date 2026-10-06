@@ -1,6 +1,7 @@
 # 27 — Companion self-heal portrait buttons (design)
 
 ## Status
+- **10-05 21:34 0.7.0-dev INSTALLED (doc 24 CS10-CS12, hot-swap 968041f1 -> 469ee363):** registers hud-host strip slot order 0 (`shui::stripReserve`), button draws the shared `hudkit::frame` (HudKit.h) behind `csh_cross`, disc = `kit_disc`; 16 widgets. Play check: button right-most, queue strip left of it, no overlap, art unchanged.
 - **10-05 CS6 DONE `f50bd15`:** `companion_selfheal_src/README.md` (settings GLOBAL, not per save) + Wine smoke `selfheal` (wire/inert/badchain/kick-off, wiring only; kick-rotate unreachable in Wine). Install already live 0.6.0-dev. Play test (doc 27 CS12 checklist) still pending.
 - **10-05 01:41 CS9b + CS11 INSTALLED (user GO):** stage `$K/cs11_stage_1005` (head 70e5144), 36 ids / 221 hooks, selfheal dll `fe9025eb` (kpatch `6f73a4f7`), queue-hud 0.3.0-dev `8bfa99d9`, config `d9ed58a2`, backup `$G/backups/cs11_install_20261005_0141` (keep_shield-bar/perf-lab/mouse-probe restored; verify = those 3 mismatches only). CS12 0.6.0-dev installed 01:55, see CS12 RESUME HERE below.
 - 2026-10-04 CS0 research DONE (static only, nothing installed). Evidence: `27_companion_selfheal_evidence/` R1 actor route, R2 portrait UI, R3 item choice.
