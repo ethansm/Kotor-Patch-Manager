@@ -8,7 +8,8 @@ Usage:
 
 Inputs (all optional; a missing file is reported as absent, never a crash):
   perflab_metrics.txt, perflab_alloc_snaps.txt, perflab_log.txt, robustnessfixes_log.txt, texmem_log.txt,
-  activationfix_log.txt, equipiconfix_log.txt (+ the config files perflab_debug.txt, texmem.txt, shown as-is).
+  activationfix_log.txt, equipiconfix_log.txt (+ the KpLog core names perf-lab_log.txt, k2-robustness-fixes_log.txt,
+  k2-texture-memory-release_log.txt, ...; the newest launch wins per mod) (+ the config files perflab_debug.txt, texmem.txt, shown as-is).
 
 Offsets: each log is read from a byte offset (default table below = doc 10 run A; `--from-offsets FILE` has lines
 `name bytes [ignored...]`, `#` comments).  The file is opened, seeked to the offset, and if the byte before the offset
@@ -23,9 +24,11 @@ Launch splitting and matching rule (what each log actually prints):
   * perflab_metrics.txt: a new launch starts at every `#METRICS 1 <event> tick=<GetTickCount>` header (the block counter
     is per process).  The header carries NO pid, version or wall-clock; `tick` is GetTickCount() in ms.
   * perflab_log.txt: `[<tick> t<frames>] perf-lab <ver> attach ... key=value ...` is the launch start (version, config
-    flags, hwmip=ON/OFF/0/1 when 0.4.0+).  Its tick is the launch START tick.  An attach line with no metrics block
+    flags, hwmip=ON/OFF/0/1 when 0.4.0+).  0.5.1+ (KpLog): fallback `<ms> perf-lab/main [LVL ]perf-lab <ver> attach ...
+    tick=<n>` or core perf-lab_log.txt `T=<s> f=<n> perf-lab/main ...` (tick = attach `tick=` + T delta).  Its tick is the launch START tick.  An attach line with no metrics block
     (died before the first 30 s flush) becomes a stub launch.
-  * robustness / texmem / activationfix / equipiconfix: `[HH:MM:SS.mmm <tick>] ... loaded: ... pid=<pid>` starts a block;
+  * robustness / texmem / activationfix / equipiconfix: `[HH:MM:SS.mmm <tick>] ... loaded: ... pid=<pid>` starts a block
+    (KpLog shapes: `<ms> <id>/main [LVL ]msg` fallback, `T=<s> f=<n> <id>/main [LVL ]msg` core, load line carries `tick=`);
     every following line up to the next `loaded` line belongs to that block (COUNTERS / FIRED / REFUSED / IGNORED / PASSED
     / STATS ...).  Lines before the first `loaded` line (offset landed mid-launch) are ignored and counted.
   * Matching: pid is NOT usable as the key (the Steam/Proton pid repeats: 312, 316, 312, ...) and perf-lab prints none,
@@ -57,10 +60,14 @@ DEFAULT_OFFSETS = {
     "equipiconfix_log.txt": 31015,
     "robustnessfixes_log.txt": 0,
     "texmem_log.txt": 0,
+    "perf-lab_log.txt": 0,
+    "k2-robustness-fixes_log.txt": 0,
 }
 LOG_FILES = ("robustnessfixes_log.txt", "texmem_log.txt", "activationfix_log.txt", "equipiconfix_log.txt")
 # KpLog core file (kplog.ini enabled) for each text-log key; the key stays the legacy/fallback file name.
-LOG_ALIASES = {"texmem_log.txt": "k2-texture-memory-release_log.txt",
+LOG_ALIASES = {"robustnessfixes_log.txt": "k2-robustness-fixes_log.txt",
+               "perflab_log.txt": "perf-lab_log.txt",
+               "texmem_log.txt": "k2-texture-memory-release_log.txt",
                "activationfix_log.txt": "k2-activation-fix_log.txt",
                "equipiconfix_log.txt": "k2-equip-icon-fix_log.txt"}
 ALL_FILES = ("perflab_metrics.txt", "perflab_alloc_snaps.txt", "perflab_log.txt") + LOG_FILES
@@ -366,12 +373,30 @@ _PL = re.compile(r"^\[(\d+) t(-?\d+)\] (.*)$")
 
 
 def parse_perflab_log(info):
+    """-> (attaches, lives). Legacy `[tick tN] msg`, KpLog fallback `<ms> perf-lab/main [LVL ]msg`, KpLog core
+    `T=<s> f=<n> perf-lab/main [LVL ]msg` (tick = the attach line's `tick=` plus the T delta)."""
     attaches, lives = [], []
+    t_att = base = None
     for ln in read_lines(info):
         m = _PL.match(ln)
-        if not m:
-            continue
-        tick, msg = int(m.group(1)), m.group(3)
+        if m:
+            tick, msg = int(m.group(1)), m.group(3)
+        else:
+            p = kplog_parse.parse_line(ln)
+            if p is None or p["kind"] not in ("line", "fallback"):
+                continue
+            msg = p["msg"]
+            if p["kind"] == "fallback":
+                tick = int(p["t_ms"])
+            elif " attach " in msg and msg.startswith("perf-lab"):
+                tm = re.search(r"\btick=(\d+)", msg)
+                t_att = p["t_ms"]
+                base = int(tm.group(1)) if tm else int(p["t_ms"] * 1000)
+                tick = base
+            elif t_att is None:
+                continue
+            else:
+                tick = base + int(round((p["t_ms"] - t_att) * 1000))
         if " attach " in msg and msg.startswith("perf-lab"):
             ver = msg.split()[1]
             kv = parse_kv(msg.split())
@@ -379,6 +404,17 @@ def parse_perflab_log(info):
         elif msg.startswith("live="):
             lives.append(tick)
     return attaches, lives
+
+
+def parse_perflab_pair(old_info, new_info):
+    """Legacy/fallback file vs core file: the one with the newer last attach tick wins; ties -> legacy name."""
+    oa, ol = parse_perflab_log(old_info)
+    if new_info is None:
+        return oa, ol
+    na, nl = parse_perflab_log(new_info)
+    if na and (not oa or na[-1]["tick"] != oa[-1]["tick"] and tdiff(na[-1]["tick"], oa[-1]["tick"]) < 0x80000000):
+        return na, nl
+    return oa, ol
 
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -398,10 +434,11 @@ class LogBlock:
         self.lines = []   # (tick, msg)
 
     def counters(self, tag="COUNTERS"):
+        # robustness 1.3.0 splits COUNTERS into two lines (core 232-byte cut): merge, later values win per key
         last = {}
         for _, m in self.lines:
             if m.startswith(tag + " "):
-                last = parse_kv(m.split()[1:])
+                last.update(parse_kv(m.split()[1:]))
         return last
 
     def count(self, prefix):
@@ -463,12 +500,12 @@ def parse_textlog(info):
                 headless += 1
                 continue
             tick = blocks[-1].tick + int(round((core_t - t_load) * 1000)) if t_load is not None else blocks[-1].tick
-            blocks[-1].lines.append((tick, msg))
+            blocks[-1].lines.append((tick, msg.strip()))
             continue
         if is_load:
             blocks.append(LogBlock(info.name, tick, wall, msg))
         elif blocks:
-            blocks[-1].lines.append((tick, msg))
+            blocks[-1].lines.append((tick, msg.strip()))
         else:
             headless += 1
     return blocks, headless
@@ -1342,7 +1379,8 @@ def run(game_dir, offsets, arms=None, latest=None, summary=False):
     infos = {n: ReadInfo(n, os.path.join(game_dir, n), offsets.get(n, 0)) for n in ALL_FILES}
     mlaunches = parse_metrics(infos["perflab_metrics.txt"])
     snaps = parse_snaps(infos["perflab_alloc_snaps.txt"])
-    attaches, _ = parse_perflab_log(infos["perflab_log.txt"])
+    pinfo = ReadInfo("perf-lab_log.txt", os.path.join(game_dir, "perf-lab_log.txt"), offsets.get("perf-lab_log.txt", 0))
+    attaches, _ = parse_perflab_pair(infos["perflab_log.txt"], pinfo if pinfo.present else None)
     text, headless = {}, {}
     for n in LOG_FILES:
         alias = LOG_ALIASES.get(n)

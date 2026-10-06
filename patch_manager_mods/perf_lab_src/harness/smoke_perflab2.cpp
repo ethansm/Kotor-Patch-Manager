@@ -26,6 +26,7 @@ template <typename T> T fn(const char* n) { T f = (T)GetProcAddress(g_dll, n); i
 
 static int g_fail = 0;
 static void check(bool ok, const char* what) { printf("%s %s\n", ok ? "PASS" : "FAIL", what); if (!ok) ++g_fail; }
+static void checkLoadOnce(const std::string& log) { int n = 0; for (size_t p = 0; (p = log.find("perf-lab 0.5.1 attach", p)) != std::string::npos; ++p) ++n; check(n == 1, "log: attach (load) line appears exactly once"); }
 
 // Fake CRes (R1 layout): +4 u16 refcount, +8 source (>>30), +0xC flags, +0x10 data, +0x14 key entry (restype u16 at +0x1A), +0x18 size.
 struct FakeRes { char b[0x40]; char key[0x20]; };
@@ -116,6 +117,7 @@ int main(int argc, char** argv) {
     *(void**)(app + 4) = client; *(void**)(client + 4) = internal; G(0xA1B4A4) = (uint32_t)(uintptr_t)app;
 
     g_dll = LoadLibraryA("perflab.dll"); if (!g_dll) { printf("LoadLibrary failed %lu\n", GetLastError()); return 1; }
+    { auto ki = (void (__cdecl*)(const void*))GetProcAddress(g_dll, "KPatchInit"); if (!ki) { printf("missing export KPatchInit\n"); return 3; } ki(nullptr); }
     V0 tick = fn<V0>("PerfLabTick");
     tick();   // first tick applies the experiments
     if (run) check(tx[0] == 0xE9 && tx[5] == 0x90 && tx[6] == 0x90 && g1[0] == 0xEB && g1[1] == 0x06, "tx cave jump + g1skip patched the right original bytes");
@@ -125,6 +127,7 @@ int main(int argc, char** argv) {
     else if (!refuse) check(txFreed(texPlain, 0) && !txFreed(texPlain, 1) && !txFreed(texCtrl, 1) && txFreed(texCtrl, 0), "engine behaviour: only TGA freed");
     Sleep(400);
     std::string log = fileText("perflab_log.txt");
+    checkLoadOnce(log);
     if (run) check(log.find("tx=ON") != std::string::npos && log.find("g1skip=ON") != std::string::npos, "log records tx=ON g1skip=ON");
     if (refuse) check(log.find("tx=REFUSED(bytes)") != std::string::npos && log.find("g1skip=REFUSED(bytes)") != std::string::npos, "log records REFUSED(bytes)");
     if (!run && !refuse) check(log.find("tx=OFF") != std::string::npos && log.find("g1skip=OFF") != std::string::npos, "log records tx=OFF g1skip=OFF");

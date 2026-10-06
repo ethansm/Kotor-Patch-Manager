@@ -21,6 +21,7 @@
 
 static int g_fail = 0;
 static void check(bool ok, const char* what) { printf("%s %s\n", ok ? "PASS" : "FAIL", what); if (!ok) ++g_fail; }
+static void checkLoadOnce(const std::string& log) { int n = 0; for (size_t p = 0; (p = log.find("perf-lab 0.5.1 attach", p)) != std::string::npos; ++p) ++n; check(n == 1, "log: attach (load) line appears exactly once"); }
 
 static HMODULE g_dll;
 template <typename T> T fn(const char* n) { T f = (T)GetProcAddress(g_dll, n); if (!f) { printf("missing export %s\n", n); exit(3); } return f; }
@@ -118,13 +119,15 @@ int main(int argc, char** argv) {
     void* realGlu = glu ? (void*)GetProcAddress(glu, "gluBuild2DMipmaps") : nullptr;
     if (!realGlu) { printf("glu32 gluBuild2DMipmaps not resolvable\n"); return 2; }
     g_dll = LoadLibraryA("perflab.dll"); if (!g_dll) { printf("LoadLibrary failed %lu\n", GetLastError()); return 1; }
+    { typedef void (__cdecl *InitFn)(const void*); InitFn ini = (InitFn)GetProcAddress(g_dll, "KPatchInit"); check(ini != nullptr, "KPatchInit export present"); if (ini) ini(nullptr); }
     auto rglu = fn<void* (__cdecl*)()>("PerfLabTestRGluMip");
     fn<void (__cdecl*)(void**)>("PerfLabTestSetGl"); fn<int (__cdecl*)(long long*, int)>("PerfLabTestHwmipCounters"); fn<int (__cdecl*)(void**)>("PerfLabTestResolveEntries");
     Sleep(150);
     std::string log0 = fileText("perflab_log.txt");
+    checkLoadOnce(log0);
 
     // ---- install / ordering ----
-    check(log0.find("perf-lab 0.5.0 attach") != std::string::npos, "0.5.0 version in the attach line");
+    check(log0.find("perf-lab 0.5.1 attach") != std::string::npos, "0.5.1 version in the attach line");
     check(log0.find(hw ? "hwmip=ON" : "hwmip=OFF") != std::string::npos, hw ? "attach line records hwmip=ON" : "attach line records hwmip=OFF");
     if (bare) {
         check(rglu() == nullptr, "bare: neither metrics nor hwmip -> GLU IAT slot untouched (rGluMip NULL)");
@@ -252,7 +255,7 @@ int main(int argc, char** argv) {
     // ---- counters concurrent with metrics=0, log output ----
     if (run) {
         check(!fileText("perflab_metrics.txt").size() || fileText("perflab_metrics.txt").find("#METRICS") == std::string::npos, "metrics=0: no #METRICS block is written");
-        std::string lg; for (int i = 0; i < 50; ++i) { lg = fileText("perflab_log.txt"); if (lg.find("HWMIP FLUSH hwmip_calls=") != std::string::npos) break; Sleep(100); }
+        std::string lg; for (int i = 0; i < 50; ++i) { lg = fileText("perflab_log.txt"); if (lg.find("hwmip_cube_fallback=") != std::string::npos) break; Sleep(100); }
         check(lg.find("HWMIP FLUSH hwmip_calls=") != std::string::npos && lg.find("hwmip_hw=") != std::string::npos && lg.find("hwmip_cube_fallback=") != std::string::npos,
               "metrics=0: helper logs `HWMIP FLUSH hwmip_calls=.. hwmip_hw=..` at the flush");
         check(lg.find("HWMIP GL resolved:") == std::string::npos, "injected GL: no resolver event (resolver ran only in the game path)");

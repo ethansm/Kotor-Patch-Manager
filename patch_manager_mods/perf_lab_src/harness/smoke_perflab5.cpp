@@ -29,6 +29,7 @@ template <typename T> T fn(const char* n) { T f = (T)GetProcAddress(g_dll, n); i
 
 static int g_fail = 0;
 static void check(bool ok, const char* what) { printf("%s %s\n", ok ? "PASS" : "FAIL", what); if (!ok) ++g_fail; }
+static void checkLoadOnce(const std::string& log) { int n = 0; for (size_t p = 0; (p = log.find("perf-lab 0.5.1 attach", p)) != std::string::npos; ++p) ++n; check(n == 1, "log: attach (load) line appears exactly once"); }
 
 static std::string fileText(const char* name) {
     FILE* f = fopen(name, "r"); if (!f) return ""; std::string s; char b[4096]; size_t n; while ((n = fread(b, 1, sizeof b, f)) > 0) s.append(b, n); fclose(f); return s;
@@ -149,6 +150,7 @@ int main(int argc, char** argv) {
     void* realGlu = glu ? (void*)GetProcAddress(glu, "gluBuild2DMipmaps") : nullptr;
 
     g_dll = LoadLibraryA("perflab.dll"); if (!g_dll) { printf("LoadLibrary failed %lu\n", GetLastError()); return 1; }
+    { typedef void (__cdecl *InitFn)(const void*); InitFn ini = (InitFn)GetProcAddress(g_dll, "KPatchInit"); check(ini != nullptr, "KPatchInit export present"); if (ini) ini(nullptr); }
     V2 malloc_ = fn<V2>("PerfLabResMalloc"), freed = fn<V2>("PerfLabResFreeData");
     V1 evict = fn<V1>("PerfLabResEvict"), demand = fn<V1>("PerfLabResDemand");
     typedef void (__cdecl* VSave)(int, void*);
@@ -179,7 +181,8 @@ int main(int argc, char** argv) {
 
     // ======================================================================================================== run / noev
     std::string log0 = fileText("perflab_log.txt");
-    check(log0.find("perf-lab 0.5.0 attach") != std::string::npos, "0.5.0 version in the attach line");
+    checkLoadOnce(log0);
+    check(log0.find("perf-lab 0.5.1 attach") != std::string::npos, "0.5.1 version in the attach line");
     check(log0.find(noev ? "ev=0" : "ev=1") != std::string::npos, noev ? "attach line records ev=0" : "attach line records ev=1");
     check(log0.find("GlobalMemoryStatus=1") != std::string::npos, "GlobalMemoryStatus IAT hook installed (the exe imports it)");
     check(log0.find(noev ? "tpctop=0" : "tpctop=1") != std::string::npos, noev ? "ev=0: TPCTOP table not allocated" : "TPCTOP table allocated");

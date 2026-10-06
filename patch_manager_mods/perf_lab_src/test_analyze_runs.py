@@ -6,6 +6,7 @@ Run from this directory:  python3 -m unittest   or   python3 test_analyze_runs.p
 import contextlib
 import io
 import os
+import re
 import shutil
 import tempfile
 import unittest
@@ -202,6 +203,98 @@ class KpLogShapes(unittest.TestCase):
         md, L, A = ar.run(d, ZERO, None)
         self.assertTrue(any("texmem_log.txt" in x.logs for x in L))
         self.assertIsInstance(md, str)
+
+
+class KpLogShapesPerfRb(unittest.TestCase):
+    """perf-lab attach/live and robustness loaded/FIRED/REFUSED/COUNTERS in legacy, fallback and core shape."""
+    RB = "k2-robustness-fixes"
+    LOADED = "%s 1.3.0 loaded: 2/3 groups patched: a b cave=0x1234 pid=42"
+
+    def _legacy(self):
+        return {"perflab_log.txt": "[1000000 t0] perf-lab 0.5.0 attach exe=x ev=1 hwmip=1\n[1030000 t900] live=1 dropped=0\n",
+                "robustnessfixes_log.txt": "[10:00:00.100 1000100] " + self.LOADED % self.RB + "\n  kt REFUSED: bad bytes\n"
+                "[10:00:03.000 1003000] FIRED grpA n=2\n[10:00:05.000 1005000] COUNTERS x=3 y=4\n"}
+
+    def _fallback(self):
+        return {"perflab_log.txt": "1000000 perf-lab/main perf-lab 0.5.1 attach exe=x ev=1 tick=1000000\n"
+                "1030000 perf-lab/main live=1 dropped=0 frames=900\n",
+                "robustnessfixes_log.txt":
+                "1000100 %s/main WARN %s tick=1000100\n1000100 %s/main WARN   kt REFUSED: bad bytes\n"
+                "1003000 %s/main FIRED grpA n=2\n1005000 %s/main COUNTERS x=3 y=4\n"
+                % (self.RB, self.LOADED % self.RB, self.RB, self.RB, self.RB)}
+
+    def _core(self):
+        h = "# kplog session 2026-10-04 10:00:00\n"
+        return {"perf-lab_log.txt": h + "T=0.000 f=- perf-lab/main perf-lab 0.5.1 attach exe=x ev=1 tick=1000000\n"
+                "T=30.000 f=900 perf-lab/main live=1 dropped=0 frames=900\n",
+                self.RB + "_log.txt": h + "T=0.100 f=- %s/main WARN %s tick=1000100\n"
+                "T=0.100 f=- %s/main WARN   kt REFUSED: bad bytes\n"
+                "T=3.000 f=5 %s/main FIRED grpA n=2\nT=5.000 f=9 %s/main COUNTERS x=3 y=4\n"
+                % (self.RB, self.LOADED % self.RB, self.RB, self.RB, self.RB)}
+
+    def _write(self, files):
+        d = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, d, True)
+        for n, t in files.items():
+            with open(os.path.join(d, n), "w") as f:
+                f.write(t)
+        return d
+
+    def _rb(self, files):
+        d = self._write(files)
+        old = ar.ReadInfo("robustnessfixes_log.txt", os.path.join(d, "robustnessfixes_log.txt"), 0)
+        new = ar.ReadInfo("k2-robustness-fixes_log.txt", os.path.join(d, "k2-robustness-fixes_log.txt"), 0)
+        return ar.parse_textlog_pair(old, new if new.present else None)[0]
+
+    def _pl(self, files):
+        d = self._write(files)
+        old = ar.ReadInfo("perflab_log.txt", os.path.join(d, "perflab_log.txt"), 0)
+        new = ar.ReadInfo("perf-lab_log.txt", os.path.join(d, "perf-lab_log.txt"), 0)
+        return ar.parse_perflab_pair(old, new if new.present else None)
+
+    def test_perflab_attach_and_live(self):
+        for mk in (self._legacy, self._fallback, self._core):
+            att, lives = self._pl(mk())
+            self.assertEqual(len(att), 1, mk.__name__)
+            self.assertEqual(att[0]["tick"], 1000000, mk.__name__)
+            self.assertEqual(att[0]["kv"].get("ev"), 1, mk.__name__)
+            self.assertEqual(lives, [1030000], mk.__name__)
+        self.assertEqual(self._pl(self._fallback())[0][0]["version"], "0.5.1")
+
+    def test_robustness_blocks(self):
+        for mk in (self._legacy, self._fallback, self._core):
+            b = self._rb(mk())
+            self.assertEqual(len(b), 1, mk.__name__)
+            self.assertEqual(b[0].tick, 1000100, mk.__name__)
+            self.assertEqual(b[0].pid, 42)
+            self.assertEqual(b[0].counters()["x"], 3, mk.__name__)
+            self.assertEqual(len(b[0].where("FIRED")), 1, mk.__name__)
+            self.assertTrue(any("REFUSED" in m for _, m in b[0].lines), mk.__name__)
+            self.assertTrue(re.search(r"loaded: (\d+)/(\d+) groups patched", b[0].loaded), mk.__name__)
+
+    def test_split_counters_merge(self):
+        # 1.3.0 writes COUNTERS as two lines (core 232-byte cut); counters() merges them, later values win per key
+        f = self._core()
+        f[self.RB + "_log.txt"] += "T=10.000 f=20 %s/main COUNTERS x=5\nT=10.000 f=20 %s/main COUNTERS z=7\n" % (self.RB, self.RB)
+        c = self._rb(f)[0].counters()
+        self.assertEqual((c["x"], c["y"], c["z"]), (5, 4, 7))
+
+    def test_run_renders_all_shapes(self):
+        for mk in (self._legacy, self._fallback, self._core):
+            files = mk()
+            d = self._write(files)
+            for n in os.listdir(GAME):
+                if n not in files and n not in ("robustnessfixes_log.txt", "perflab_log.txt"):
+                    shutil.copy(os.path.join(GAME, n), os.path.join(d, n))
+            md, L, A = ar.run(d, ZERO, None)
+            self.assertIn("robustness:", md, mk.__name__)
+            self.assertIn("2/3", md, mk.__name__)
+            self.assertIn("REFUSED", md, mk.__name__)
+
+    def test_newest_perflab_file_wins(self):
+        files = dict(self._legacy())
+        files["perf-lab_log.txt"] = self._core()["perf-lab_log.txt"].replace("tick=1000000", "tick=9000000")
+        self.assertEqual(self._pl(files)[0][0]["tick"], 9000000)
 
 
 class Perf050(unittest.TestCase):

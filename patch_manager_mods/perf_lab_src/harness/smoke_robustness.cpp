@@ -1,4 +1,4 @@
-// Smoke test for k2-robustness-fixes 1.2.0 (DLL-only; DllMain patches 12 independent groups, doc 10 "Robustness set"; 1.1.0 added
+// Smoke test for k2-robustness-fixes 1.3.0 (DLL-only; DllMain patches 12 independent groups, doc 10 "Robustness set"; 1.1.0 added
 // fire counters and cave-based sites for vmid (2nd site 0x669012), sndri, guiid and netovf A; 1.2.0 adds fs / ssb / ssc / td / vmlk / movspin
 // from W8, all checked here against real engine byte ranges).
 // Build: i686-w64-mingw32-g++ -O1 -static-libgcc -static-libstdc++ -o smoke_robustness.exe smoke_robustness.cpp
@@ -66,6 +66,7 @@ static unsigned ebpAt() { return (unsigned)g_frame + 0x200; }
 static int& fr(int off) { return *(int*)(ebpAt() + off); }
 static char* g_log;
 static void readLog() { if (!g_log) g_log = (char*)malloc(16384); g_log[0] = 0; FILE* f = fopen("robustnessfixes_log.txt", "r"); if (!f) return; size_t k = fread(g_log, 1, 16383, f); g_log[k] = 0; fclose(f); }
+static void checkLoadOnce() { int n = 0; if (g_log) for (const char* p = g_log; (p = strstr(p, " 1.3.0 loaded: ")) != nullptr; ++p) ++n; check(n == 1, "log: load line appears exactly once"); }
 
 // --- scenarios: each returns a small result struct the reference/patched checks compare -------------------------
 static unsigned vmid(int id) { fr(8) = id; return run(0x668FD9, 0, 0, 0, ebpAt()); }
@@ -342,6 +343,7 @@ int main(int argc, char** argv) {
     if (cfg) { FILE* f = fopen("robustnessfixes.txt", "w"); fputs(cfg, f); fclose(f); } else DeleteFileA("robustnessfixes.txt");
 
     HMODULE m = LoadLibraryA("windows_x86.dll"); if (!m) { printf("LoadLibrary failed %lu\n", GetLastError()); return 1; }
+    { typedef void (__cdecl *InitFn)(const void*); InitFn ini = (InitFn)GetProcAddress(m, "KPatchInit"); check(ini != nullptr, "KPatchInit export present"); if (ini) ini(nullptr); }
     StFn st = (StFn)GetProcAddress(m, "RobFixTestState"); CtFn ct = (CtFn)GetProcAddress(m, "RobFixTestCounters"); DmFn dm = (DmFn)GetProcAddress(m, "RobFixTestDummy");
     check(st && ct && dm, "test exports present"); if (!st || !ct || !dm) return 3;
     g_ct = ct;
@@ -351,7 +353,8 @@ int main(int argc, char** argv) {
     if (isRun || isFs2 || isMovon) dumpCaves(mode, st);
     int npatched = 0; for (int g = 0; g < 12; ++g) if (want[g] == 1) ++npatched;
     char loaded[400]; snprintf(loaded, sizeof loaded, "%d/12 groups patched:", npatched); check(strstr(g_log, loaded) != NULL, "log: loaded line count");
-    check(strstr(g_log, "k2-robustness-fixes 1.2.1 loaded") != NULL, "log: version 1.2.1");
+    check(strstr(g_log, "k2-robustness-fixes 1.3.0 loaded") != NULL, "log: version 1.3.0");
+    checkLoadOnce();
     if (isRun || isFs2 || isMovon) {
         const char* names[12] = { "kt", "vmid", "sndri", "netovf", "guiid", "abbound", "fs", "ssb", "ssc", "td", "vmlk", "movspin" };
         char exp[400]; int k = 0; for (int g = 0; g < 12; ++g) {
@@ -423,10 +426,12 @@ int main(int argc, char** argv) {
     if (isRun || isFs2 || isMovon) {
         ct(c);
         Sleep(5600); readLog();   // helper thread polls every 5 s
-        char exp[900]; snprintf(exp, sizeof exp, "COUNTERS kt_destroy_orphan=%ld kt_update_orphan=%ld ab_shrink_clamp=%ld sndri_restart=%ld vm_reject=%ld vm_neg=%ld vm_last_id=%ld "
-            "gui_reject=%ld gui_last_id=%ld net_drop=%ld net_last_len=%ld fs_stale=%ld fs_stale_bytes=%ld ssb_camnull=%ld ssc_dims=%ld td_long=%ld vmlk_free=%ld f1_sleeps=%ld",
-            c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7], c[8], c[9], c[10], c[11], c[12], c[13], c[14], c[15], c[16], c[17]);
-        check(strstr(g_log, exp) != NULL, "log: COUNTERS line with all 18 values");
+        char exp[600]; snprintf(exp, sizeof exp, "COUNTERS kt_destroy_orphan=%ld kt_update_orphan=%ld ab_shrink_clamp=%ld sndri_restart=%ld vm_reject=%ld vm_neg=%ld vm_last_id=%ld "
+            "gui_reject=%ld gui_last_id=%ld\n", c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7], c[8]);
+        check(strstr(g_log, exp) != NULL, "log: COUNTERS line 1/2 (first 9 values)");
+        snprintf(exp, sizeof exp, "COUNTERS net_drop=%ld net_last_len=%ld fs_stale=%ld fs_stale_bytes=%ld ssb_camnull=%ld ssc_dims=%ld td_long=%ld vmlk_free=%ld f1_sleeps=%ld\n",
+            c[9], c[10], c[11], c[12], c[13], c[14], c[15], c[16], c[17]);
+        check(strstr(g_log, exp) != NULL, "log: COUNTERS line 2/2 (last 9 values)");
         char f[200];
         if (isRun) {
             check(strstr(g_log, "FIRED sndri restart=1") && strstr(g_log, "FIRED vmid neg=") && strstr(g_log, "FIRED guiid reject=") &&
