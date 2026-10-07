@@ -1,12 +1,96 @@
-# tests/compat.toml - Non-include coverage and generator mappings for compat_check.py (Doc 22)
+# tests/compat.toml - Non-include coverage and generator mappings for compat_check.py (Doc 22 U5)
 
+# ---- Level-Up Parity Suites (Doc 22 U5) ----
 [[covers]]
 id = "suite:levelup-parity"
 paths = [
+    "research/companion_levelup/levelup_rules.py",
+    "research/companion_levelup/options_twin.py",
+    "research/companion_levelup/wizard_twin.py",
     "research/companion_levelup/tools/**",
-    "research/companion_levelup/levelup_paths.ini",
+    "research/companion_levelup/runtime/levelup_paths.ini",
 ]
 
+[[covers]]
+id = "suite:levelup-wizard-parity"
+paths = [
+    "research/companion_levelup/levelup_rules.py",
+    "research/companion_levelup/wizard_twin.py",
+    "research/companion_levelup/tools/**",
+]
+
+[[covers]]
+id = "suite:levelup-options-parity"
+paths = [
+    "research/companion_levelup/levelup_rules.py",
+    "research/companion_levelup/options_twin.py",
+    "research/companion_levelup/tools/**",
+]
+
+[[covers]]
+id = "suite:guikit"
+paths = [
+    "research/companion_levelup/tools/parity/**",
+]
+
+[[covers]]
+id = "suite:levelup-scenarios"
+paths = [
+    "research/companion_levelup/levelup_rules.py",
+    "tests/luo_scenarios/**",
+]
+
+[[covers]]
+id = "suite:levelup-scenarios-m32"
+paths = [
+    "research/companion_levelup/levelup_rules.py",
+    "tests/luo_scenarios/**",
+]
+
+# ---- Python LUO Tests (Doc 22 U5) ----
+[[covers]]
+id = "py:scripts/test_luo_scenario.py"
+paths = [
+    "tests/luo_scenarios/**",
+]
+
+[[covers]]
+id = "py:scripts/test_luo_log_check.py"
+paths = [
+    "tests/luo_scenarios/**",
+]
+
+[[covers]]
+id = "py:scripts/test_kotor_save_forge.py"
+paths = [
+    "tests/luo_scenarios/**",
+]
+
+# ---- Generators (Doc 22 U5) ----
 [[generator]]
 script = "scripts/gen_debuff_icon_table.py"
 writes = ["patch_manager_mods/_shared_src/DebuffIconTable.inc"]
+
+[[generator]]
+script = "scripts/gen_buff_hud_icon_table.py"
+writes = ["patch_manager_mods/_shared_src/EffectIconTable.inc"]
+
+[[generator]]
+script = "scripts/gen_hud_kit_textures.py"
+writes = ["patch_manager_mods/_shared_src/HudKitTextures.inc"]
+
+[[generator]]
+script = "scripts/gen_hotbar_textures.py"
+writes = ["patch_manager_mods/action_hotbar_src/HotbarTextures.inc"]
+
+[[generator]]
+script = "scripts/gen_luo_textures.py"
+writes = ["patch_manager_mods/level_up_override_src/LuoTextures.inc"]
+
+[[generator]]
+script = "scripts/gen_selfheal_textures.py"
+writes = ["patch_manager_mods/companion_selfheal_src/SelfHealTextures.inc"]
+
+[[generator]]
+script = "scripts/gen_equip3d_weapon_table.py"
+writes = ["patch_manager_mods/equipment_3d_character_src/EquipWeaponTable.inc"]

@@ -341,12 +341,18 @@ def run_lint(repo_root: Path, graph: CompatGraph) -> tuple[int, list[str]]:
             # Match name@major
             if "@" in iface:
                 iname, imajor = iface.split("@", 1)
-                # Check headers in _shared_src or mod
-                hdr_path = repo_root / "patch_manager_mods/_shared_src/PortraitSlots.h"
-                if hdr_path.is_file():
-                    content = hdr_path.read_text(encoding="utf-8", errors="ignore")
-                    if iname not in content:
-                        warnings.append(f"WARN interface {iface} provided by {mod} not found in header")
+                found = False
+                candidate_headers = list((repo_root / "patch_manager_mods/_shared_src").glob("*.h")) + list((repo_root / f"patch_manager_mods/{mod}").glob("*.h"))
+                for hdr in candidate_headers:
+                    try:
+                        content = hdr.read_text(encoding="utf-8", errors="ignore")
+                        if iname in content:
+                            found = True
+                            break
+                    except Exception:
+                        pass
+                if not found:
+                    warnings.append(f"WARN interface {iface} provided by {mod} not found in header")
 
     return 0, warnings
 
