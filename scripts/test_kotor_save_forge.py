@@ -163,7 +163,7 @@ class ForgeTests(unittest.TestCase):
         outer, cre = self.creatures(slot)
         pt = read_gff((slot / "PARTYTABLE.res").read_bytes()).root
         # nested git / ifo
-        last = "203tel"
+        last = F.Slot(slot).last
         nest = read_erf(next(r for r in outer if str(r.resref) == last and r.restype.extension == "sav").data)
         git = read_gff(next(r for r in nest if r.restype.extension == "git").data).root
         ifo = read_gff(next(r for r in nest if r.restype.extension == "ifo").data).root
