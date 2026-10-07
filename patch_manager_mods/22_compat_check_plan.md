@@ -239,7 +239,7 @@ Where our tool meets KPM: when a touched file is in `_shared_src`, `compat_check
 | U3 | `compat_check.py` CLI and file-class table | U1, U2 | - | DONE | f633a1f | U12 |
 | U4 | Consumer contract gaps, ranked (`shield_bar`, `buff_hud`, `portrait_slots`, `luo`) | U3 | - | DONE | 7ae5119 | U5 |
 | U5 | `covers` annotations for what scan cannot see (`tests/compat.toml`, `test.toml`) | U3 | - | DONE | 8d17773 | U7 |
-| U6 | Interface contract tests and ABI golden (`abi_check.py`, golden diff) | U3, U4 | split session | TODO | | U7 |
+| U6 | Interface contract tests and ABI golden (`abi_check.py`, golden diff) | U3, U4 | split session | DONE | 3de985d | U7 |
 | U7 | `--lint` (stale covers, missing contract tests, unreached mods) | U3, U5 | - | TODO | | U8 |
 | U8 | Wine smokes on fresh DLL (`dll_from = "build"`, optional) | U3 | - | TODO | | U10 |
 | U9 | KPM variant (`tools/affected-patches.py`, Python 3.9) | U1, U3 | user GO | TODO | | U10 |
