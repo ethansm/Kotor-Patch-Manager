@@ -62,6 +62,13 @@ def norm_hooks(hooks):
     return sorted(out)
 
 
+def steam_hooks_name(names):
+    """The live game is Steam/Windows: pick kotor2-steam-aspyr.hooks.toml, never the GOG/linux/macos files next to it."""
+    hooks = [n for n in names if n.endswith("hooks.toml")]
+    steam = [n for n in hooks if "steam" in n and not any(x in n for x in ("linux", "macos", "mac"))]
+    return (steam or [n for n in hooks if "gog" not in n] or [None])[0]
+
+
 def git_dirty(src):
     r = subprocess.run(["git", "-C", str(REPO), "status", "--porcelain", "--", str(src)], capture_output=True, text=True)
     return [l[3:].split("/")[-1] for l in r.stdout.splitlines() if is_production(l[3:].split("/")[-1])]
@@ -120,7 +127,7 @@ def status(mod_manifest, kpm_map, live, game):
         names = z.namelist()
         kdll = z.read("binaries/windows_x86.dll")
         kman = z.read("manifest.toml")
-        hname = next((n for n in names if n.endswith(".hooks.toml")), None)
+        hname = steam_hooks_name(names)
         khooks_raw = z.read(hname) if hname else b""
     row["kpatch"] = md5(kdll)
     kp_m = kp.stat().st_mtime

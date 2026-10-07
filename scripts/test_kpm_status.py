@@ -132,6 +132,12 @@ class HelperTest(unittest.TestCase):
             got = ks.pick_sources([old / "manifest.toml", new / "manifest.toml"], {"x": kd})
             self.assertEqual(got, [new / "manifest.toml"])
 
+    def test_steam_hooks_name_skips_gog_and_ports(self):
+        names = ["manifest.toml", "kotor2-gog-aspyr.hooks.toml", "kotor2-steam-aspyr.hooks.toml", "kotor2-steam-aspyr-linux.hooks.toml"]
+        self.assertEqual(ks.steam_hooks_name(names), "kotor2-steam-aspyr.hooks.toml")
+        self.assertEqual(ks.steam_hooks_name(["kotor2_steam_aspyr.hooks.toml"]), "kotor2_steam_aspyr.hooks.toml")
+        self.assertIsNone(ks.steam_hooks_name(["manifest.toml"]))
+
     def test_is_production(self):
         for n in ("A.cpp", "A.h", "T.inc", "exports.def", "manifest.toml", "x.hooks.toml"):
             self.assertTrue(ks.is_production(n), n)
