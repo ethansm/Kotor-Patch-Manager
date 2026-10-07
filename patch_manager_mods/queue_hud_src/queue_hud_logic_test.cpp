@@ -471,14 +471,14 @@ void testStripGeometry() {
     KT_CHECK_EQ(stripIconSize(Rect{ 0, 0, 47, 41 }, c), 25);   // 24.6 -> 25
     KT_CHECK_EQ(stripIconSize(Rect{ 0, 0, 47, 24 }, c), 14);   // 14.4 rounds down (a round-half-up bias would give 15)
     c.stripIconPx = 20; KT_CHECK_EQ(stripIconSize(vit, c), 20); c.stripIconPx = 1; KT_CHECK_EQ(stripIconSize(vit, c), 1); c.stripIconPx = 0;
-    // left side (doc 33): auto size = vit.h * 0.40f clamped [32, 48]
+    // left side (doc 33): auto size = vit.h * 0.60f clamped [48, 72]
     { Config l; l.stripSide = kSideLeft;
-      KT_CHECK_EQ(stripIconSize(Rect{ 3671, 1285, 47, 96 }, l), 38);   // live small card: 96 * 0.4 = 38
-      KT_CHECK_EQ(stripIconSize(Rect{ 0, 0, 47, 96 }, l), 38);         // x does not matter
-      KT_CHECK_EQ(stripIconSize(Rect{ 100, 0, 47, 36 }, l), 32);       // floor 32 (36 * 0.4 = 14 -> 32)
-      KT_CHECK_EQ(stripIconSize(Rect{ 100, 0, 47, 80 }, l), 32);       // 80 * 0.4 = 32
-      KT_CHECK_EQ(stripIconSize(Rect{ 100, 0, 47, 400 }, l), 48);      // cap 48 (400 * 0.4 = 160 -> 48)
-      KT_CHECK_EQ(stripIconSize(Rect{ 100, 0, 103, 208 }, l), 48);     // cap 48 (208 * 0.4 = 83 -> 48)
+      KT_CHECK_EQ(stripIconSize(Rect{ 3671, 1285, 47, 96 }, l), 58);   // live small card: 96 * 0.6 = 57.6 -> 58
+      KT_CHECK_EQ(stripIconSize(Rect{ 0, 0, 47, 96 }, l), 58);         // x does not matter
+      KT_CHECK_EQ(stripIconSize(Rect{ 100, 0, 47, 36 }, l), 48);       // floor 48 (36 * 0.6 = 21 -> 48)
+      KT_CHECK_EQ(stripIconSize(Rect{ 100, 0, 47, 80 }, l), 48);       // 80 * 0.6 = 48
+      KT_CHECK_EQ(stripIconSize(Rect{ 100, 0, 47, 400 }, l), 72);      // cap 72 (400 * 0.6 = 240 -> 72)
+      KT_CHECK_EQ(stripIconSize(Rect{ 100, 0, 103, 208 }, l), 72);     // cap 72 (208 * 0.6 = 124 -> 72)
       l.stripIconPx = 30; KT_CHECK_EQ(stripIconSize(Rect{ 3671, 1285, 47, 96 }, l), 30);   // strip_icon_px still overrides
       KT_CHECK_EQ(stripIconSize(Rect{ 3671, 1285, 47, 96 }, c), 58); }                      // above / below keep 60% of h
     // above: bottom edge 2px above the card top, left-aligned, 2px gap
@@ -569,13 +569,13 @@ void testStripLeftLive() {
     Rect out[4];
     const Rect vit2{ 3671, 1285, 47, 96 }, card2{ 3711, 1285, 85, 85 }, vit3{ 3671, 1181, 47, 96 }, card3{ 3711, 1181, 85, 85 };
     const shui::Rect leaderVit{ 3511, 1386, 103, 208 }, leaderCard{ 3591, 1394, 191, 192 }, leaderForce{ 3762, 1386, 103, 208 };
-    KT_CHECK_EQ(stripIconSize(vit2, c), 38);                    // auto: vit.h * 0.40 = 38 (was 24)
+    KT_CHECK_EQ(stripIconSize(vit2, c), 58);                    // auto: vit.h * 0.60 = 58 (was 38)
     KT_CHECK_EQ(stripIconSize(vit2, c), autoIconPx(vit2.h));
     KT_CHECK_EQ(shui::stripReserve(shui::Rect{ vit2.x, vit2.y, vit2.w, vit2.h }), 38);                    // gap 6 + button 24 + ring overhang 6 + 2
     KT_CHECK_EQ(stripRects(card2, vit2, 1, c, out), 1);
-    KT_CHECK_EQ(out[0].x, 3671 - 38 - 38); KT_CHECK_EQ(out[0].y, 1285 + 29); KT_CHECK_EQ(out[0].w, 38);   // y centres 38 px on the 96 px bar (1285 + (96-38)/2 = 1285 + 29)
+    KT_CHECK_EQ(out[0].x, 3671 - 38 - 58); KT_CHECK_EQ(out[0].y, 1285 + 19); KT_CHECK_EQ(out[0].w, 58);   // y centres 58 px on the 96 px bar (1285 + (96-58)/2 = 1285 + 19)
     KT_CHECK_EQ(stripRects(card2, vit2, 4, c, out), 4);
-    KT_CHECK_EQ(out[3].x + out[3].w, 3671 - 38); KT_CHECK_EQ(out[0].x, 3633 - 4 * 38 - 3 * 2);   // queue order left to right
+    KT_CHECK_EQ(out[3].x + out[3].w, 3671 - 38); KT_CHECK_EQ(out[0].x, 3633 - 4 * 58 - 3 * 2);   // queue order left to right
     const Rect* vits[] = { &vit2, &vit3 }; const Rect* cards[] = { &card2, &card3 };
     for (int k = 0; k < 2; ++k) {
         KT_CHECK_EQ(stripRects(*cards[k], *vits[k], 4, c, out), 4);
@@ -631,7 +631,7 @@ void testStripHudHostSlots() {
         KT_CHECK_EQ(qh::stripRects(card, vit, n, c, oldOut, 0, oldSelfHealReserve(vit)), n);
         KT_CHECK_EQ(qh::stripRects(card, vit, n, c, newOut, 0, slotReserve(st, vit, n, c)), n);
         for (int i = 0; i < n; ++i) { KT_CHECK_EQ(newOut[i].x, oldOut[i].x); KT_CHECK_EQ(newOut[i].y, oldOut[i].y); KT_CHECK_EQ(newOut[i].w, oldOut[i].w); }
-        KT_CHECK_EQ(newOut[0].x, vit.x - 38 - (n * 38 + (n - 1) * 2));   // the literal live value: 3633 - rowW
+        KT_CHECK_EQ(newOut[0].x, vit.x - 38 - (n * 58 + (n - 1) * 2));   // the literal live value: 3633 - rowW
     }
     // every bar height: the slot path is the old formula
     for (int h = 8; h <= 400; ++h) {
@@ -647,8 +647,8 @@ void testStripHudHostSlots() {
     hh::Strip alone;
     KT_CHECK_EQ(slotReserve(alone, vit, 2, c), 0);
     // stripRowWidth mirrors stripRects: clamped to strip_max / kMaxSlots, 0 for n <= 0
-    KT_CHECK_EQ(stripRowWidth(vit, 0, c), 0); KT_CHECK_EQ(stripRowWidth(vit, 9, c), 4 * 38 + 3 * 2);
-    c.stripMax = 2; KT_CHECK_EQ(stripRowWidth(vit, 4, c), 2 * 38 + 2);
+    KT_CHECK_EQ(stripRowWidth(vit, 0, c), 0); KT_CHECK_EQ(stripRowWidth(vit, 9, c), 4 * 58 + 3 * 2);
+    c.stripMax = 2; KT_CHECK_EQ(stripRowWidth(vit, 4, c), 2 * 58 + 2);
 }
 
 // ---- 0.3.0: kit frame + Cancel ----
@@ -707,6 +707,13 @@ void testChevronRect() {
     KT_CHECK(rectEq(c2, 820, 1056, 36, 52));
     // unusable
     KT_CHECK(rectEq(chevronRect(Rect{ 0, 0, 0, 0 }), 0, 0, 0, 0));
+
+    // combatBgRect parity with native LBL_COMBATBG3 [310, 498, 180, 90]
+    Rect bg = combatBgRect(q0);
+    KT_CHECK(rectEq(bg, 310, 498, 180, 90));
+    Rect bg2 = combatBgRect(Rect{ 864, 1042, 80, 80 });
+    KT_CHECK(rectEq(bg2, 864 - 244, 1042 - 46, 360, 180));
+    KT_CHECK(rectEq(combatBgRect(Rect{ 0, 0, 0, 0 }), 0, 0, 0, 0));
 }
 
 void testItemBuffer() {
@@ -766,8 +773,8 @@ void testStripCancel() {
         Rect icons[4];
         KT_CHECK_EQ(stripRects(*cards[k], *vits[k], n, c, icons, 3840), n);
         const Rect cr = stripCancelRect(icons, n, kSideLeft, 3840);
-        KT_CHECK_EQ(cr.w, 38); KT_CHECK_EQ(cr.h, 38); KT_CHECK_EQ(cr.y, icons[0].y);
-        KT_CHECK_EQ(icons[0].x - (cr.x + cr.w), 9);                  // gap = 38 / 4
+        KT_CHECK_EQ(cr.w, 58); KT_CHECK_EQ(cr.h, 58); KT_CHECK_EQ(cr.y, icons[0].y);
+        KT_CHECK_EQ(icons[0].x - (cr.x + cr.w), 14);                  // gap = 58 / 4 = 14
         for (int i = 0; i < n; ++i) KT_CHECK(!ov(cr, icons[i]));
         // clear of the real selfheal button + ring, the bars and cards
         const shui::Rect btn = shui::buttonRect(shui::Rect{ vits[k]->x, vits[k]->y, 47, vits[k]->h });
@@ -778,7 +785,7 @@ void testStripCancel() {
         for (const shui::Rect& o : { leaderVit, leaderCard, leaderForce }) KT_CHECK(!ov(cr, Rect{ o.x, o.y, o.w, o.h }));
     }
     { Rect icons[4]; stripRects(card2, vit2, 1, c, icons, 3840);
-      KT_CHECK(rectEq(stripCancelRect(icons, 1, kSideLeft, 3840), 3595 - 9 - 38, 1285 + 29, 38, 38)); }
+      KT_CHECK(rectEq(stripCancelRect(icons, 1, kSideLeft, 3840), 3575 - 14 - 58, 1285 + 19, 58, 58)); }
     // left: no room left of the row (x < 0) -> no cancel, never moved into the selfheal reserve
     { const Rect icons[1] = { Rect{ 20, 100, 38, 38 } };
       KT_CHECK(rectEq(stripCancelRect(icons, 1, kSideLeft, 3840), 0, 0, 0, 0)); }

@@ -627,7 +627,9 @@ void updateButtons(const K2HudContext* ctx) {
         if (!replace) { widHide(c); continue; }   // Replace=0: the vanilla pills are still drawn, never stack ours on them
         if (cont[g].w == 0 || cont[g].h == 0) { widHide(c); continue; }   // CH4e: empty group, no pill
         widRect(c, cont[g]);
-        if (g_imgFrame) widFill(c, g_imgFrame);
+        // Use g_imgHi (cream border in lbl_miscroll_hi) so red tint produces vibrant red (lbl_miscroll_f has teal baked in)
+        void* contImg = g_imgHi ? g_imgHi : g_imgFrame;
+        if (contImg) widFill(c, contImg);
         if (tOk[g]) widTint(c, tint[g]);
         if (aOk[g]) widAlpha(c, alp[g]);
         widShow(c, true);
@@ -649,16 +651,19 @@ void updateButtons(const K2HudContext* ctx) {
             if (r.w - 2 * in < 1 || r.h - 2 * in < 1) in = 0;
             const ch::Rect ir = { r.x + in, r.y + in, r.w - 2 * in < 1 ? 1 : r.w - 2 * in, r.h - 2 * in < 1 ? 1 : r.h - 2 * in };
             widRect(b.bg, r); widRect(b.icon, ir);
-            void* want = (s == g_hover) ? g_imgHi : g_imgFrame;
+            void* want = g_imgHi ? g_imgHi : g_imgFrame;
             if (want) widFill(b.bg, want);
             if (!b.iconSet || strncmp(b.iconName, e.icon, 16) != 0) {
                 widFill(b.icon, e.icon[0] ? guikit::imageFor(e.icon) : nullptr);
                 memcpy(b.iconName, e.icon, 16); b.iconName[16] = 0; b.iconSet = true;
             }
-            if (tOk[g]) widTint(b.bg, tint[g]);
-            widAlpha(b.bg, aOk[g] ? alp[g] : 1.0f);
+            float bTint[3] = { tint[g][0], tint[g][1], tint[g][2] };
+            if (s == g_hover) { bTint[0] = 1.0f; bTint[1] = 0.35f; bTint[2] = 0.35f; }
+            widTint(b.bg, bTint);
+            widAlpha(b.bg, (s == g_hover) ? 1.0f : (aOk[g] ? alp[g] : 0.85f));
             widAlpha(b.icon, e.usable ? 1.0f : 0.35f);
             widShow(b.bg, true); widShow(b.icon, false);
+
             if (!b.tipSet || b.tipKey != e.key) {
                 const char* name = g_names[g][ord[g][k]];
                 if (name[0]) guitip::setNative(b.bg.c, name);

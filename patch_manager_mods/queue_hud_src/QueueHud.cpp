@@ -513,10 +513,24 @@ void drawLeader(uintptr_t hud, DWORD now, DWORD age, const K2PsContext* ctx) {
         }
     }
     gui2d::CapGuard capGuard;
-    for (int i = 0; i < nd; ++i) drawSlot(d[i].x, d[i].y, d[i].w, d[i].h, d[i].st, guikit::imageFor(d[i].rr));
-    if (nd > 0) {
-        qh::Rect chev = qh::chevronRect(qh::Rect{ d[0].x, d[0].y, d[0].w, d[0].h });
-        drawChevron(chev.x, chev.y, chev.w, chev.h, d[0].st.border, d[0].st.borderA);
+    static const float white[3] = { 1.0f, 1.0f, 1.0f };
+    void* bgImg = guikit::imageFor("lbl_miqueue_teal");
+    qh::Rect q0 = (nd > 0) ? qh::Rect{ d[0].x, d[0].y, d[0].w, d[0].h } : qh::Rect{};
+    if (bgImg && nd > 0) {
+        qh::Rect bg{};
+        if (!guikit::getExtent(hud + 0x6594, &bg.x, &bg.y, &bg.w, &bg.h) || bg.w <= 0 || bg.h <= 0) {
+            bg = qh::combatBgRect(q0);
+        }
+        gui2d::drawImage(bgImg, bg.x, bg.y, bg.w, bg.h, 0, white, 0.95f);
+        for (int i = 0; i < nd; ++i) {
+            void* im = guikit::imageFor(d[i].rr);
+            if (im) {
+                float a = d[i].st.iconA;
+                gui2d::drawImage(im, d[i].x, d[i].y, d[i].w, d[i].h, 0, white, a);
+            }
+        }
+    } else {
+        for (int i = 0; i < nd; ++i) drawSlot(d[i].x, d[i].y, d[i].w, d[i].h, d[i].st, guikit::imageFor(d[i].rr));
     }
 }
 

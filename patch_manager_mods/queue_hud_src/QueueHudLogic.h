@@ -177,10 +177,10 @@ enum : int { kSideLeft = 0, kSideAbove = 1, kSideBelow = 2 };
 constexpr int kStripGap = 2;      // px between icons, and between the strip and the card
 constexpr int kStripMinIcon = 12;
 
-// Auto icon size calculation: vit.h * 0.40f (~38px on 96px health bar), clamped [32, 48].
+// Auto icon size calculation: vit.h * 0.60f (~58px on 96px health bar), clamped [48, 72].
 inline int autoIconPx(int vitH) {
-    int px = (vitH * 40) / 100;
-    return px < 32 ? 32 : (px > 48 ? 48 : px);
+    int px = (vitH * 6 + 5) / 10;
+    return px < 48 ? 48 : (px > 72 ? 72 : px);
 }
 
 // Icon edge in px: the configured size, or auto. Auto, left side: 40% of vit height clamped [32, 48]
@@ -237,6 +237,16 @@ inline int stripRects(Rect card, Rect vit, int n, const Config& c, Rect out[kMax
 inline Rect insetRect(Rect r) {
     const int dx = r.w * 15 / 100, dy = r.h * 15 / 100;
     return Rect{ r.x + dx, r.y + dy, r.w - 2 * dx, r.h - 2 * dy };
+}
+
+// Vanilla combat layout parity: LBL_COMBATBG3 [310, 498, 180, 90] relative to QUEUE0 [432, 521, 40, 40]
+inline Rect combatBgRect(Rect q0) {
+    if (q0.w <= 0 || q0.h <= 0) return Rect{ 0, 0, 0, 0 };
+    int w = (q0.w * 180 + 20) / 40;
+    int h = (q0.h * 90 + 20) / 40;
+    int dx = (q0.w * 122 + 20) / 40;
+    int dy = (q0.h * 23 + 20) / 40;
+    return Rect{ q0.x - dx, q0.y - dy, w, h };
 }
 
 // Left pointer chevron indicator pointing right into Slot 0 (vanilla combat layout parity)
