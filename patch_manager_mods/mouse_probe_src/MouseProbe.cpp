@@ -23,6 +23,7 @@
 #include <math.h>
 #include "KpLog.h"
 #include "ClickLogic.h"
+#include "MouseFixLogic.h"
 #include "../_shared/SafeRead.h"
 
 KP_LOG_PATCH("mouse-probe");
@@ -100,6 +101,26 @@ float g_lastPitch = 0; bool g_havePitch = false;
 clicklogic::ClickState g_click;
 int g_moveptBg = 0;                // AddMoveToPointAction calls outside the 3 s click window since the last CLICK line
 
+// ---- mouse fix state (0.4.0) ----
+mousefix::FixConfig g_fixCfg;
+bool g_fixCfgLoaded = false;
+POINT g_lastDragPos = {0, 0};
+bool g_wasDragging = false;
+
+void loadFixConfig() {
+    if (g_fixCfgLoaded) return;
+    g_fixCfgLoaded = true;
+    const char* ini = ".\\mouse_probe.ini";
+    g_fixCfg.enabled = GetPrivateProfileIntA("mouse_fix", "enabled", 1, ini) != 0;
+    g_fixCfg.sanitizeNorm = GetPrivateProfileIntA("mouse_fix", "sanitize_norm", 1, ini) != 0;
+    g_fixCfg.synthDblClk = GetPrivateProfileIntA("mouse_fix", "synth_dblclk", 1, ini) != 0;
+    g_fixCfg.edgeWarp = GetPrivateProfileIntA("mouse_fix", "edge_warp", 1, ini) != 0;
+    int pct = GetPrivateProfileIntA("mouse_fix", "sens_scale_pct", 5, ini);
+    if (pct > 0) g_fixCfg.sensScale = static_cast<float>(pct) / 100.0f;
+    int margin = GetPrivateProfileIntA("mouse_fix", "edge_margin", 50, ini);
+    if (margin > 0) g_fixCfg.edgeMargin = margin;
+}
+
 } // namespace
 
 extern "C" {
@@ -134,9 +155,50 @@ void __cdecl ProbeMouseRaw(uintptr_t ebp) {
 // 0x72F2EC: this=[ebp-0x28]; this+0x408/+0x40C = normalised dx/dy
 void __cdecl ProbeMouseNorm(uintptr_t ebp) {
     enter();
+    loadFixConfig();
+    uintptr_t self = 0;
+    if (!rd(ebp, -0x28, &self)) return;
+
+    if (g_fixCfg.enabled && g_fixCfg.sanitizeNorm) {
+        int drag = 0;
+        rd(DragFlagAddr, 0, &drag);
+        bool dragging = (drag != 0) || g_rmbDown;
+
+        POINT cur = {0, 0};
+        GetCursorPos(&cur);
+
+        float fixedNx = 0.0f, fixedNy = 0.0f;
+        mousefix::computeSanitizedDelta(
+            dragging, g_wasDragging,
+            cur.x, cur.y, g_lastDragPos.x, g_lastDragPos.y,
+            g_fixCfg.sensScale, fixedNx, fixedNy);
+
+        if (dragging) {
+            g_lastDragPos = cur;
+            g_wasDragging = true;
+            if (g_fixCfg.edgeWarp) {
+                HWND hwnd = GetForegroundWindow();
+                RECT rc;
+                if (hwnd && GetWindowRect(hwnd, &rc)) {
+                    int wx = 0, wy = 0;
+                    if (mousefix::checkEdgeWarp(cur.x, cur.y, rc.left, rc.top, rc.right, rc.bottom, g_fixCfg.edgeMargin, wx, wy)) {
+                        SetCursorPos(wx, wy);
+                        g_lastDragPos.x = wx;
+                        g_lastDragPos.y = wy;
+                    }
+                }
+            }
+        } else {
+            g_wasDragging = false;
+        }
+
+        *reinterpret_cast<float*>(self + 0x408) = fixedNx;
+        *reinterpret_cast<float*>(self + 0x40C) = fixedNy;
+    }
+
     if (!KP_ENABLED(chNorm)) return;
-    uintptr_t self = 0; float nx = 0, ny = 0;
-    if (!rd(ebp, -0x28, &self) || !rd(self, 0x408, &nx) || !rd(self, 0x40C, &ny)) return;
+    float nx = 0, ny = 0;
+    if (!rd(self, 0x408, &nx) || !rd(self, 0x40C, &ny)) return;
     if (nx == 0.0f && ny == 0.0f) return;
     bool sat = fabsf(nx) >= 1.0f || fabsf(ny) >= 1.0f;
     KP_LOG_EVERY(chNorm, 100, "NORM %.4f%s %.4f%s%s", nx, tag(nx), ny, tag(ny), sat ? " SAT" : "");
@@ -214,9 +276,14 @@ void __cdecl ProbeMouseMsg(uintptr_t ebp) {
             KP_LOG(chClick, "CLICK msg=0x%03x x=%d y=%d guard3EC=%d dtLmbDown=none dpos=none movept_bg=%d", id, x, y, guard, g_moveptBg);
         g_moveptBg = 0;
     }
-    if (v == clicklogic::Verdict::MissedDbl)
+    loadFixConfig();
+    if (mousefix::shouldSynthesizeDblClick(id, v == clicklogic::Verdict::MissedDbl, g_fixCfg.enabled && g_fixCfg.synthDblClk)) {
+        *reinterpret_cast<int*>(msgp + 4) = clicklogic::MsgLDbl;
+        KP_LOG(chClick, "SYNTHDBL 0x203 synthesized from dropped 0x201 (dt=%.0f dpos=%.1f)", g_click.dtMs, g_click.dpos);
+    } else if (v == clicklogic::Verdict::MissedDbl) {
         KP_LOGV(chClick, KPLOG_WARN, "MISSEDDBL dt=%.0f dpos=%.1f", g_click.dtMs, g_click.dpos);
-    else if (v == clicklogic::Verdict::DblGuard)
+    }
+    if (v == clicklogic::Verdict::DblGuard)
         KP_LOGV(chClick, KPLOG_WARN, "DBLGUARD 0x203 with guard3EC=%d", guard);
 }
 

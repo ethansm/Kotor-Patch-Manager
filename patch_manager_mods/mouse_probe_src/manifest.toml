@@ -1,9 +1,9 @@
 [patch]
 id = "mouse-probe"
 name = "Mouse Probe"
-version = "0.3.0"
+version = "0.4.0"
 author = "local"
-description = "Read-only mouse/camera probe (logs raw DirectInput deltas, drag flag, camera yaw/pitch, click/double-click chain via the click channel)"
+description = "Mouse camera fix & telemetry probe (sanitizes pitch/yaw deltas, synthesizes dropped double-clicks under Wine/Wayland)"
 
 requires = []
 conflicts = []

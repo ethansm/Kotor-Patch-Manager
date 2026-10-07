@@ -16,6 +16,7 @@
 #include "SafeRead.h"
 #include "KpLog.h"
 #include "ClickLogic.h"
+#include "MouseFixLogic.h"
 #include "check.h"
 #include <sys/mman.h>
 #include <unistd.h>
@@ -310,5 +311,50 @@ int main() {
     }
     KP_LOGV(chDrag, KPLOG_DEBUG, "debug detail");
     HEQ("a level the service reports disabled (DEBUG) is not submitted", (long long)g_subs.size(), (long long)nsub + 1);
+
+    // ================= 6. mousefix logic (MouseFixLogic.h)
+    {
+        using namespace mousefix;
+        float nx = 99.0f, ny = 99.0f;
+        // Non-drag state must yield 0.0 (kills camera pitch lock)
+        computeSanitizedDelta(false, false, 100, 200, 50, 50, 0.05f, nx, ny);
+        HCHECK("non-drag yields nx=0.0f", fabsf(nx) < 0.0001f);
+        HCHECK("non-drag yields ny=0.0f", fabsf(ny) < 0.0001f);
+
+        computeSanitizedDelta(false, true, 100, 200, 50, 50, 0.05f, nx, ny);
+        HCHECK("non-drag after drag yields nx=0.0f", fabsf(nx) < 0.0001f);
+        HCHECK("non-drag after drag yields ny=0.0f", fabsf(ny) < 0.0001f);
+
+        // First drag frame (wasDragging = false) must yield 0.0 (prevents initial jump)
+        computeSanitizedDelta(true, false, 100, 200, 0, 0, 0.05f, nx, ny);
+        HCHECK("first drag frame yields nx=0.0f", fabsf(nx) < 0.0001f);
+        HCHECK("first drag frame yields ny=0.0f", fabsf(ny) < 0.0001f);
+
+        // Normal drag: dx = 20 (moved right), dy = 10 (moved down)
+        // nx = -20 * 0.05 = -1.0, ny = -10 * 0.05 = -0.5
+        computeSanitizedDelta(true, true, 120, 210, 100, 200, 0.05f, nx, ny);
+        HCHECK("drag right yields negative nx (-1.0f)", fabsf(nx - (-1.0f)) < 0.0001f);
+        HCHECK("drag down yields negative ny (-0.5f)", fabsf(ny - (-0.5f)) < 0.0001f);
+
+        // Extreme motion clamping: dx = 500, dy = -500
+        computeSanitizedDelta(true, true, 600, -300, 100, 200, 0.05f, nx, ny);
+        HCHECK("extreme dx clamped to -1.0f", fabsf(nx - (-1.0f)) < 0.0001f);
+        HCHECK("extreme dy clamped to 1.0f", fabsf(ny - 1.0f) < 0.0001f);
+
+        // Edge warp check
+        int wx = 0, wy = 0;
+        HCHECK("cursor at edge (x=30, win=0..3840) triggers warp", checkEdgeWarp(30, 800, 0, 0, 3840, 1600, 50, wx, wy));
+        HEQ("warp x targets center (1920)", wx, 1920);
+        HEQ("warp y targets center (800)", wy, 800);
+
+        HCHECK("cursor in middle (x=1920, y=800) does not trigger warp", !checkEdgeWarp(1920, 800, 0, 0, 3840, 1600, 50, wx, wy));
+
+        // Double click synthesis
+        HCHECK("missed dbl on 0x201 triggers synthesis", shouldSynthesizeDblClick(0x201, true, true));
+        HCHECK("normal click does not synthesize", !shouldSynthesizeDblClick(0x201, false, true));
+        HCHECK("disabled config does not synthesize", !shouldSynthesizeDblClick(0x201, true, false));
+        HCHECK("other message id does not synthesize", !shouldSynthesizeDblClick(0x202, true, true));
+    }
+
     return kt::Report("common_contract_test (mouse_probe)");
 }
