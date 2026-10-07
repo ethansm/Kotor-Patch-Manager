@@ -21,6 +21,12 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+try:
+    import master_ledger as ml
+except ImportError:
+    ml = None
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ACTIVE_PLAN_FILE = REPO_ROOT / ".claude" / "active_plan.txt"
 HANDOFF_FILE = REPO_ROOT / ".claude" / "session_handoff.md"
@@ -450,9 +456,20 @@ def cmd_mark_done(plan: dict, target_str: str, commit_sha: str = "", notes: str 
                 table_updated = True
                 break
 
+    def _log_done():
+        if ml:
+            ml.log_event("PHASE_DONE", {
+                "plan": str(plan_path),
+                "phase": target_str,
+                "state": state_str,
+                "commit": commit_sha,
+                "notes": notes,
+            })
+
     if table_updated:
         plan_path.write_text("\n".join(lines), encoding="utf-8")
         print(f"Marked table row '{target_str}' {state_str} in {plan_path.name}")
+        _log_done()
         return
 
     # 2. Try checkbox update
@@ -461,6 +478,7 @@ def cmd_mark_done(plan: dict, target_str: str, commit_sha: str = "", notes: str 
         new_text = pattern.sub(r'\1x\2', text, count=1)
         plan_path.write_text(new_text, encoding="utf-8")
         print(f"Marked checkbox done in {plan_path.name}: {target_str}")
+        _log_done()
         return
 
     # 3. Append to Execution log if present
@@ -469,11 +487,13 @@ def cmd_mark_done(plan: dict, target_str: str, commit_sha: str = "", notes: str 
         new_text = text.replace("## Execution log\n", f"## Execution log\n\n{entry}")
         plan_path.write_text(new_text, encoding="utf-8")
         print(f"Appended to Execution log in {plan_path.name}: {target_str}")
+        _log_done()
     else:
         # Append checklist update at bottom
         with open(plan_path, "a", encoding="utf-8") as fp:
             fp.write(f"\n- [x] {target_str} (completed)\n")
         print(f"Appended completed item to {plan_path.name}: {target_str}")
+        _log_done()
 
 def cmd_handoff(plan: dict, git_info: dict, user_direction: str = "", handoff_dir: Path | str | None = None):
     target_dir = Path(handoff_dir).resolve() if handoff_dir else HANDOFF_FILE.parent
@@ -553,6 +573,11 @@ def cmd_handoff(plan: dict, git_info: dict, user_direction: str = "", handoff_di
     rel_prev = prev_handoff_file.relative_to(REPO_ROOT) if prev_handoff_file.is_relative_to(REPO_ROOT) else prev_handoff_file
     print(f"Handoff written to {rel_h}")
     print(f"Rotated previous handoff to {rel_prev}")
+    if ml:
+        ml.log_event("SESSION_HANDOFF", {
+            "plan": str(plan["path"]) if plan and "path" in plan else "",
+            "notes": user_direction,
+        })
 
     # Plan-scoped handoff file (prevents multi-session clobbering in same worktree)
     handoffs_dir.mkdir(parents=True, exist_ok=True)
@@ -589,6 +614,8 @@ def main():
     p_mark.add_argument("--state", default="DONE", help="Target status to record in table (e.g. DONE, PARTIAL, BUILT, STAGED)")
     p_mark.add_argument("--commit", default="", help="Optional commit SHA to record in table")
     p_mark.add_argument("--notes", default="", help="Optional notes/verification result")
+    p_mark.add_argument("--handoff-dir", default="", help="Optional directory to write handoff files (default .claude)")
+    p_mark.add_argument("--no-handoff", action="store_true", help="Skip automatic handoff generation")
 
     subparsers.add_parser("legend", help="Display the master key and phase prefix legend")
     subparsers.add_parser("key", help="Display the master key and phase prefix legend")
@@ -658,6 +685,32 @@ def main():
         # Ensure active plan reflects the plan we just marked done
         ACTIVE_PLAN_FILE.parent.mkdir(parents=True, exist_ok=True)
         ACTIVE_PLAN_FILE.write_text(str(plan["path"]), encoding="utf-8")
+
+        # Automatically update handoff and output Saved State block
+        if not getattr(args, "no_handoff", False):
+            updated_plan = parse_plan(plan["path"])
+            remaining = [p for p in updated_plan["phases"] if not p["done"]]
+            next_phase = remaining[0] if remaining else None
+            next_ident = next_phase["ident"] if next_phase else ""
+            user_dir = f"Execute {next_phase['ident']}: {next_phase['name']}" if next_phase else "All phases complete"
+            h_dir = getattr(args, "handoff_dir", "") or None
+            cmd_handoff(updated_plan, git_info, user_direction=user_dir, handoff_dir=h_dir)
+
+            plan_stem = updated_plan["path"].stem
+            target_h_dir = Path(h_dir).resolve() if h_dir else HANDOFFS_DIR
+            plan_handoff_file = target_h_dir / f"{plan_stem}.handoff.md"
+            rel_plan_h = plan_handoff_file.relative_to(REPO_ROOT) if plan_handoff_file.is_relative_to(REPO_ROOT) else plan_handoff_file
+
+            print("\n=== SAVED STATE (Safe to /clear) ===")
+            print(f"  - Plan: {updated_plan['path'].name}")
+            commit_str = f" @ {args.commit}" if args.commit else ""
+            print(f"  - Completed: {args.phase} ({args.state}){commit_str}")
+            print(f"  - Handoff: {rel_plan_h}")
+            if next_phase:
+                print(f"  - Next Phase: {next_phase['ident']} — {next_phase['name']}")
+                print(f"  - Resume: python3 scripts/plan_manager.py resume {next_ident} (or 'resume {next_ident}')")
+            else:
+                print("  - Next Phase: None (all phases complete)")
     elif args.cmd == "handoff":
         user_dir = args.direction
         plan_from_dir, rest = resolve_plan_shorthand(user_dir)

@@ -141,6 +141,32 @@ class TestPlanManager(unittest.TestCase):
         finally:
             tmp_path.unlink()
 
+    def test_mark_done_auto_handoff_and_saved_state(self):
+        """Verify mark-done automatically generates handoff and prints Saved State block."""
+        table_plan = """# Master Test Plan
+| Id | Batch | Status | Commit | Notes |
+|---|---|---|---|---|
+| M1 | Init | TODO | | |
+| M2 | Build | TODO | | |
+"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_root = Path(tmpdir)
+            tmp_plan = tmp_root / "test_saved_state_plan.md"
+            tmp_plan.write_text(table_plan, encoding="utf-8")
+            h_dir = tmp_root / ".claude"
+
+            res = self.run_cli("--plan", str(tmp_plan), "mark-done", "M1", "--commit", "feedbee", "--handoff-dir", str(h_dir))
+            self.assertEqual(res.returncode, 0, f"Stderr: {res.stderr}")
+            self.assertIn("=== SAVED STATE (Safe to /clear) ===", res.stdout)
+            self.assertIn("Completed: M1 (DONE) @ feedbee", res.stdout)
+            self.assertIn("Next Phase: M2 — Build", res.stdout)
+            self.assertIn("Resume: python3 scripts/plan_manager.py resume M2", res.stdout)
+
+            # Verify handoff file was written automatically
+            scoped_h = h_dir / "handoffs" / "test_saved_state_plan.handoff.md"
+            self.assertTrue(scoped_h.exists())
+            self.assertIn("Execute M2: Build", scoped_h.read_text(encoding="utf-8"))
+
     def test_handoff_long_direction_text(self):
         """Verify handoff does not crash with OSError when passed long direction text >255 chars."""
         table_plan = "# Test Plan\n| Id | Batch | Status |\n|---|---|---|\n| M1 | Init | TODO |\n"
