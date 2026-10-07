@@ -234,9 +234,9 @@ Where our tool meets KPM: when a touched file is in `_shared_src`, `compat_check
 | Id | Batch | Deps | Owner gate | Status | Commit | Next |
 |---|---|---|---|---|---|---|
 | U0 | Freeze schema and decisions | - | - | DONE | | schema and 5 open decisions frozen |
-| U1 | Graph builder (`scripts/compat_graph.py` + tests) | U0 | - | DONE | | compat_graph.py + test suite 12/12 PASS |
+| U1 | Graph builder (`scripts/compat_graph.py` + tests) | U0 | - | DONE | 40b47d2 | compat_graph.py + test suite 12/12 PASS |
 | U2 | Runner hooks (`run_tests.py` Item.src/covers/consumer, `--id`, `--ids-file`) | U0 | doc 20 owner | DONE | 0b91725 | run_tests.py Item.src/covers/consumer, --id, --ids-file, --list --json; 12/12 PASS |
-| U3 | `compat_check.py` CLI and file-class table | U1, U2 | - | TODO | | U12 |
+| U3 | `compat_check.py` CLI and file-class table | U1, U2 | - | DONE | f633a1f | U12 |
 | U4 | Consumer contract gaps, ranked (`shield_bar`, `buff_hud`, `portrait_slots`, `luo`) | U3 | - | TODO | | U5 |
 | U5 | `covers` annotations for what scan cannot see (`tests/compat.toml`, `test.toml`) | U3 | - | TODO | | U7 |
 | U6 | Interface contract tests and ABI golden (`abi_check.py`, golden diff) | U3, U4 | split session | TODO | | U7 |
@@ -339,3 +339,5 @@ Parallelism: U1 and U2 are independent (different files); U4, U5 and U7 are inde
 3. **Wine smokes:** Smokes are strictly opt-in via `--wine`. Without U8 (`dll_from = "build"`), smokes report as `unverified` (SKIP). U8 enables testing against fresh build DLLs.
 4. **Contract keys and schema:** Use `covers` array in `test.toml` and `tests/compat.toml`. Use filename convention `*_contract_test.cpp` as the consumer contract marker. Drop `tags = ["compat"]`. Missing contract tests are reported as GAPs in `--lint` and plan output; U4 prioritized for high-churn mods.
 5. **KPM variant:** Maintain local tool first. `tools/affected-patches.py` will be developed on isolated branch `feat/affected-patches` under KPM repo as a candidate PR draft (U9), requiring explicit user conversational chat approval before any PR creation or push. In this repo, `compat_check.py` prints KPM consumer lists when `_shared_src` headers change.
+
+- [x] AR1 (completed)
