@@ -155,6 +155,69 @@ class TestPlanManager(unittest.TestCase):
             self.assertTrue(h_path.exists())
             self.assertIn("reviewing our kotor2 skills", h_path.read_text())
 
+    def test_handoff_shorthand_disambiguation(self):
+        """Verify shorthand resolution disambiguates between candidate docs sharing the same prefix."""
+        from scripts.plan_manager import resolve_plan_shorthand
+        p, rest = resolve_plan_shorthand("10 — Rank 7: Perf-Lab 0.6.0 Telemetry (10_engine_optimization_research.md)")
+        self.assertIsNotNone(p)
+        self.assertEqual(p.name, "10_engine_optimization_research.md")
+        self.assertIn("Rank 7", rest)
+
+    def test_list_plans_cli(self):
+        """Verify list subcommand outputs known plans in text and JSON modes."""
+        res_text = self.run_cli("list")
+        self.assertEqual(res_text.returncode, 0)
+        self.assertIn("KNOWN MASTER & SUBDOMAIN PLANS", res_text.stdout)
+
+        res_json = self.run_cli("list", "--json")
+        self.assertEqual(res_json.returncode, 0)
+        data = json.loads(res_json.stdout)
+        self.assertIsInstance(data, list)
+        self.assertTrue(any(p["stem"] == "22_compat_check_plan" for p in data))
+
+    def test_mark_done_auto_resolves_plan_from_phase(self):
+        """Verify mark-done finds the owning plan doc from the phase token even if another plan is active."""
+        test_plan_path = REPO_ROOT / "patch_manager_mods" / "99_temp_autoresolve_test_plan.md"
+        content = """# Temp Auto-Resolve Plan
+| Id | Batch | Status |
+|---|---|---|
+| AR1 | Action 1 | TODO |
+| AR2 | Action 2 | TODO |
+"""
+        test_plan_path.write_text(content, encoding="utf-8")
+        try:
+            # Call mark-done without --plan, passing phase AR1
+            res = self.run_cli("mark-done", "AR1", "--notes", "auto resolved")
+            self.assertEqual(res.returncode, 0, f"Stderr: {res.stderr}")
+            updated = test_plan_path.read_text(encoding="utf-8")
+            self.assertIn("| AR1 | Action 1 | DONE |", updated)
+        finally:
+            test_plan_path.unlink(missing_ok=True)
+
+    def test_resume_scoped_handoff_direction(self):
+        """Verify resume reads direction from .claude/handoffs/<plan_stem>.handoff.md."""
+        test_plan = REPO_ROOT / "patch_manager_mods" / "99_temp_scoped_handoff_plan.md"
+        handoffs_dir = REPO_ROOT / ".claude" / "handoffs"
+        handoffs_dir.mkdir(parents=True, exist_ok=True)
+        scoped_file = handoffs_dir / "99_temp_scoped_handoff_plan.handoff.md"
+
+        test_plan.write_text("# Temp Scoped Plan\n| Id | Batch | Status |\n|---|---|---|\n| SC1 | Action | TODO |\n", encoding="utf-8")
+        scoped_file.write_text("# Handoff\n## 0. Next-Phase Direction\nExecute SC1 with private TMPDIR\n\n## 1. Provenance\n", encoding="utf-8")
+        try:
+            res = self.run_cli("--plan", str(test_plan), "resume")
+            self.assertEqual(res.returncode, 0, f"Stderr: {res.stderr}")
+            self.assertIn("Handoff Direction: Execute SC1 with private TMPDIR", res.stdout)
+            self.assertIn("Resume: python3 scripts/plan_manager.py resume SC1", res.stdout)
+
+            res_json = self.run_cli("--plan", str(test_plan), "resume", "--json")
+            self.assertEqual(res_json.returncode, 0)
+            data = json.loads(res_json.stdout)
+            self.assertEqual(data.get("handoff_direction"), "Execute SC1 with private TMPDIR")
+        finally:
+            test_plan.unlink(missing_ok=True)
+            scoped_file.unlink(missing_ok=True)
+
+
 if __name__ == "__main__":
     unittest.main()
 

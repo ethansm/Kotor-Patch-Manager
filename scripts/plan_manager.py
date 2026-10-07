@@ -36,6 +36,7 @@ PREFIX_LEGEND = {
     "B": "Steam Address DB Batches",
     "R": "Research & Probes",
     "P": "Parity Verification",
+    "U": "Unit / Compatibility Tooling",
 }
 
 PHASE_HEADER_RE = re.compile(r'^(?:#{2,3})\s+(?:(Phase\s+\d+|Chunk\s+[A-Za-z0-9]+|Step\s+\d+)[^:\n]*:?\s*(.*))$', re.MULTILINE)
@@ -59,41 +60,62 @@ def get_git_info() -> dict:
 
 def resolve_plan_shorthand(token: str) -> tuple[Path | None, str]:
     token = token.strip()
-    if not token or len(token) > 255 or "\n" in token:
+    if not token or "\n" in token:
         return None, token
     
     # 1. Exact path match
-    try:
-        p = Path(token)
-        if p.exists() and p.is_file():
-            return p.resolve(), ""
-        if (REPO_ROOT / p).exists() and (REPO_ROOT / p).is_file():
-            return (REPO_ROOT / p).resolve(), ""
-    except (OSError, ValueError):
-        pass
+    if len(token) <= 255:
+        try:
+            p = Path(token)
+            if p.exists() and p.is_file():
+                return p.resolve(), ""
+            if (REPO_ROOT / p).exists() and (REPO_ROOT / p).is_file():
+                return (REPO_ROOT / p).resolve(), ""
+        except (OSError, ValueError):
+            pass
 
     # 2. Numbered doc shorthand: '25 §12', 'doc 25 §12', 'doc25:12', '19e', '24:T6', '25'
-    m = re.match(r'^(?:doc\s*)?([0-9]{1,2}[a-z]?)(?:[:\s§]+(.*))?$', token, re.IGNORECASE)
+    m = re.match(r'^(?:doc\s*)?([0-9]{1,2}[a-z]?)(?:[:\s§—-]+(.*))?$', token, re.IGNORECASE)
     if m:
         prefix = m.group(1).lower()
         rest = (m.group(2) or "").strip()
         pattern = f"{int(prefix[:2]):02d}" if prefix[:2].isdigit() and len(prefix) <= 2 else prefix
         candidates = list(REPO_ROOT.glob(f"patch_manager_mods/{pattern}_*.md")) + list(REPO_ROOT.glob(f"patch_manager_mods/{prefix}_*.md")) + list(REPO_ROOT.glob(f"*{pattern}*.md"))
         if candidates:
+            if len(candidates) > 1 and rest:
+                rest_lower = rest.lower()
+                for cand in candidates:
+                    if cand.name.lower() in rest_lower or cand.stem.lower() in rest_lower:
+                        return cand.resolve(), rest
+                best_cand = None
+                max_score = 0
+                for cand in candidates:
+                    cand_words = set(cand.stem.lower().split('_'))
+                    rest_words = set(re.findall(r'[a-z0-9_]+', rest_lower))
+                    overlap = len(cand_words & rest_words)
+                    if overlap > max_score:
+                        max_score = overlap
+                        best_cand = cand
+                if best_cand and max_score > 0:
+                    return best_cand.resolve(), rest
             return candidates[0].resolve(), rest
 
-    # 3. Phase ID shorthand: 'T4', 'T5d', 'M0', 'R10'
-    m_phase = re.match(r'^([A-Za-z][0-9]{1,2}[a-z]?)(?:[:\s§]+(.*))?$', token)
+    # 3. Phase ID shorthand: 'T4', 'T5d', 'M0', 'R10', 'HL4', 'CH1c', 'U3', 'QH1'
+    m_phase = re.match(r'^([A-Za-z]{1,3}[0-9]{1,2}[a-z]?)(?:[:\s§—-]+(.*))?$', token)
     if m_phase:
         phase = m_phase.group(1)
         rest = (m_phase.group(2) or "").strip()
-        for p_cand in [REPO_ROOT / "patch_manager_mods" / "24_master_plan_status.md"] + list(REPO_ROOT.glob("patch_manager_mods/*plan*.md")):
-            if p_cand.exists():
-                txt = p_cand.read_text(encoding="utf-8", errors="ignore")
-                pattern = re.compile(rf'\|\s*{re.escape(phase)}\s*\|', re.IGNORECASE)
-                if pattern.search(txt) or f"## {phase}" in txt:
-                    detail = f"Phase {phase}" + (f" - {rest}" if rest else "")
-                    return p_cand.resolve(), detail
+        pattern = re.compile(rf'(?:\|\s*\*{{0,2}}{re.escape(phase)}\*{{0,2}}\s*\||#+\s*(?:Phase\s*)?{re.escape(phase)}\b)', re.IGNORECASE)
+        cands = [REPO_ROOT / "patch_manager_mods" / "24_master_plan_status.md"] + sorted(REPO_ROOT.glob("patch_manager_mods/*plan*.md")) + sorted(REPO_ROOT.glob("patch_manager_mods/*.md"))
+        seen = set()
+        for p_cand in cands:
+            if p_cand in seen or not p_cand.is_file():
+                continue
+            seen.add(p_cand)
+            txt = p_cand.read_text(encoding="utf-8", errors="ignore")
+            if pattern.search(txt):
+                detail = f"Phase {phase}" + (f" - {rest}" if rest else "")
+                return p_cand.resolve(), detail
 
     return None, token
 
@@ -142,6 +164,7 @@ def parse_plan(plan_path: Path) -> dict:
 
     for line in lines:
         if not line.strip().startswith("|"):
+            status_col_idx = None
             continue
         cells = [c.strip() for c in line.strip().split("|")[1:-1]]
         if not cells or all(c.startswith("-") for c in cells):
@@ -239,10 +262,22 @@ def cmd_resume(plan: dict, git_info: dict, json_mode: bool = False):
     remaining = [p for p in plan["phases"] if not p["done"]]
     current = remaining[0] if remaining else None
 
+    plan_stem = plan["path"].stem
+    scoped_handoff = HANDOFFS_DIR / f"{plan_stem}.handoff.md"
+    handoff_direction = ""
+    if scoped_handoff.is_file():
+        try:
+            h_txt = scoped_handoff.read_text(encoding="utf-8")
+            m_sec0 = re.search(r'## 0\.\s*Next-Phase Direction\s*\n+([^\n#]+)', h_txt)
+            if m_sec0:
+                handoff_direction = m_sec0.group(1).strip()
+        except Exception:
+            pass
+
     if json_mode:
         import json
         upcoming = remaining[1:4]
-        print(json.dumps({
+        res_data = {
             "plan_path": str(plan["path"].relative_to(REPO_ROOT)),
             "title": plan["title"],
             "branch": git_info["branch"],
@@ -253,12 +288,18 @@ def cmd_resume(plan: dict, git_info: dict, json_mode: bool = False):
             "upcoming_phases": [{"ident": p["ident"], "name": p["name"]} for p in upcoming],
             "next_handoff": f"/plan-handoff {current['ident']}" if current else "",
             "dirty_files": git_info["dirty_count"]
-        }, indent=2))
+        }
+        if handoff_direction:
+            res_data["handoff_direction"] = handoff_direction
+            res_data["scoped_handoff"] = str(scoped_handoff.relative_to(REPO_ROOT))
+        print(json.dumps(res_data, indent=2))
         return
 
     rel_path = plan["path"].relative_to(REPO_ROOT) if plan["path"].is_relative_to(REPO_ROOT) else plan["path"].name
     print(f"=== ACTIVE PLAN: {rel_path} ===")
     print(f"Goal: {plan['title']}")
+    if handoff_direction:
+        print(f"Handoff Direction: {handoff_direction}")
     print(f"Git: {git_info['branch']} ({git_info['head']}) | {git_info['dirty_count']} uncommitted file(s)")
     print(f"Progress: {len(completed)}/{total} phases complete")
 
@@ -284,6 +325,7 @@ def cmd_resume(plan: dict, git_info: dict, json_mode: bool = False):
                 print(f"  - {p_badge}{p['ident']} — {p['name']}")
 
         print(f"\nNext Steps:")
+        print(f"  - Resume: python3 scripts/plan_manager.py resume {current['ident']}")
         print(f"  - Handoff / Plan Mode: /plan-handoff {current['ident']} (or 'python3 scripts/plan_manager.py handoff {current['ident']}')")
         print(f"  - Mark Complete: python3 scripts/plan_manager.py mark-done {current['ident']} [--commit <sha>]")
     else:
@@ -305,6 +347,39 @@ def cmd_legend():
     print("  Doc 17 : Dialogue Letterbox & Word Wrap Fixes")
     print("  Doc 10 : Engine Research & Perf-Lab Optimization")
     print("\nFull Legend Guide: patch_manager_mods/MASTER_KEY.md\n")
+
+def cmd_list_plans(json_mode: bool = False):
+    cands = sorted(REPO_ROOT.glob("patch_manager_mods/*plan*.md")) + sorted(REPO_ROOT.glob("patch_manager_mods/*.md"))
+    seen = set()
+    plans = []
+    for p in cands:
+        if p in seen or not p.is_file() or p.name.startswith(".") or "feedback" in p.name:
+            continue
+        seen.add(p)
+        try:
+            pl = parse_plan(p)
+            if pl["phases"]:
+                done_cnt = sum(1 for ph in pl["phases"] if ph["done"])
+                tot_cnt = len(pl["phases"])
+                curr = next((ph for ph in pl["phases"] if not ph["done"]), None)
+                plans.append({
+                    "path": str(p.relative_to(REPO_ROOT)),
+                    "stem": p.stem,
+                    "title": pl["title"],
+                    "done": done_cnt,
+                    "total": tot_cnt,
+                    "next": curr["ident"] if curr else "DONE",
+                })
+        except Exception:
+            pass
+    if json_mode:
+        import json
+        print(json.dumps(plans, indent=2))
+        return
+    print("=== KNOWN MASTER & SUBDOMAIN PLANS ===\n")
+    for pl in plans:
+        prog = f"[{pl['done']}/{pl['total']}]"
+        print(f"  {pl['path']:<45} {prog:<8} next: {pl['next']:<8} ({pl['title']})")
 
 def cmd_next(plan: dict, contract: str = ""):
     remaining = [p for p in plan["phases"] if not p["done"]]
@@ -343,6 +418,7 @@ def cmd_mark_done(plan: dict, target_str: str, commit_sha: str = "", notes: str 
 
     for idx, line in enumerate(lines):
         if not line.strip().startswith("|"):
+            status_col_idx = None
             continue
         cells = [c.strip() for c in line.strip().split("|")[1:-1]]
         if not cells or all(c.startswith("-") for c in cells):
@@ -361,7 +437,9 @@ def cmd_mark_done(plan: dict, target_str: str, commit_sha: str = "", notes: str 
 
         if status_col_idx is not None and len(cells) > max(status_col_idx, id_col_idx):
             ident = cells[id_col_idx].strip()
-            if ident.lower() == target_str.strip().lower() or target_str.strip().lower() in ident.lower():
+            clean_ident = ident.strip("*_ ")
+            clean_target = target_str.strip("*_ ")
+            if clean_ident.lower() == clean_target.lower() or clean_target.lower() in clean_ident.lower():
                 raw_cells = line.split("|")
                 raw_cells[status_col_idx + 1] = f" {state_str} "
                 if commit_sha and commit_col_idx is not None and len(raw_cells) > commit_col_idx + 1:
@@ -410,6 +488,15 @@ def cmd_handoff(plan: dict, git_info: dict, user_direction: str = "", handoff_di
 
     remaining = [p for p in plan["phases"] if not p["done"]]
     current = remaining[0] if remaining else None
+    if user_direction:
+        m_target = re.search(r'\b([A-Za-z]{1,3}[0-9]{1,2}[a-z]?)\b', user_direction)
+        if m_target:
+            target_id = m_target.group(1).upper()
+            for p in plan["phases"]:
+                if p.get("ident", "").upper() == target_id:
+                    current = p
+                    remaining = [p] + [x for x in remaining if x != p]
+                    break
     rel_path = plan["path"].relative_to(REPO_ROOT) if plan["path"].is_relative_to(REPO_ROOT) else plan["path"].name
 
     # Pull last commit summary
@@ -505,6 +592,8 @@ def main():
 
     subparsers.add_parser("legend", help="Display the master key and phase prefix legend")
     subparsers.add_parser("key", help="Display the master key and phase prefix legend")
+    subparsers.add_parser("list", parents=[parent_parser], help="List all known master and subdomain plans")
+    subparsers.add_parser("plans", parents=[parent_parser], help="List all known master and subdomain plans")
 
     p_hand = subparsers.add_parser("handoff", parents=[parent_parser], help="Prepare session handoff file")
     p_hand.add_argument("direction", nargs="?", default="", help="Optional user instructions for next phase")
@@ -519,6 +608,10 @@ def main():
         cmd_legend()
         sys.exit(0)
 
+    if args.cmd in ("list", "plans"):
+        cmd_list_plans(json_mode=getattr(args, "json", False))
+        sys.exit(0)
+
     if args.cmd == "set":
         p = Path(args.plan_path).resolve()
         if not p.exists():
@@ -530,10 +623,28 @@ def main():
         sys.exit(0)
 
     explicit_plan = getattr(args, "plan", "") or getattr(args, "plan_path", "")
+
+    # Auto-resolve plan from phase when mark-done is called without explicit plan
+    if args.cmd == "mark-done" and not explicit_plan and getattr(args, "phase", ""):
+        resolved_p, _ = resolve_plan_shorthand(args.phase)
+        if resolved_p:
+            explicit_plan = str(resolved_p)
+
+    # Auto-resolve plan when next is called with a phase or plan shorthand
+    if args.cmd == "next" and not explicit_plan and getattr(args, "plan_path", ""):
+        resolved_p, _ = resolve_plan_shorthand(args.plan_path)
+        if resolved_p:
+            explicit_plan = str(resolved_p)
+
     plan_path = discover_active_plan(explicit_path=explicit_plan)
     if not plan_path:
         sys.stderr.write("No active master plan found. Set one with 'python3 scripts/plan_manager.py set <path>'.\n")
         sys.exit(1)
+
+    # When explicit plan/phase was provided, anchor active_plan.txt for this session
+    if explicit_plan and not getattr(args, "handoff_dir", None):
+        ACTIVE_PLAN_FILE.parent.mkdir(parents=True, exist_ok=True)
+        ACTIVE_PLAN_FILE.write_text(str(plan_path), encoding="utf-8")
 
     plan = parse_plan(plan_path)
     git_info = get_git_info()
@@ -544,15 +655,27 @@ def main():
         cmd_next(plan, contract=getattr(args, "contract", ""))
     elif args.cmd == "mark-done":
         cmd_mark_done(plan, args.phase, commit_sha=args.commit, notes=args.notes, state=args.state)
+        # Ensure active plan reflects the plan we just marked done
+        ACTIVE_PLAN_FILE.parent.mkdir(parents=True, exist_ok=True)
+        ACTIVE_PLAN_FILE.write_text(str(plan["path"]), encoding="utf-8")
     elif args.cmd == "handoff":
         user_dir = args.direction
         plan_from_dir, rest = resolve_plan_shorthand(user_dir)
         if plan_from_dir and not explicit_plan:
             plan = parse_plan(plan_from_dir)
             if rest:
-                user_dir = f"Execute §{rest} in {plan_from_dir.name}" if rest.isdigit() else f"Execute {rest} in {plan_from_dir.name}"
+                cleaned_rest = rest.lstrip("— -").strip()
+                if cleaned_rest.isdigit() or cleaned_rest.startswith("§"):
+                    user_dir = f"Execute {cleaned_rest} in {plan_from_dir.name}"
+                elif cleaned_rest:
+                    user_dir = cleaned_rest
+                else:
+                    user_dir = f"Continue {plan_from_dir.name}"
             else:
                 user_dir = f"Continue {plan_from_dir.name}"
+        active_plan_target = (Path(args.handoff_dir) / "active_plan.txt") if getattr(args, "handoff_dir", None) else ACTIVE_PLAN_FILE
+        active_plan_target.parent.mkdir(parents=True, exist_ok=True)
+        active_plan_target.write_text(str(plan["path"]), encoding="utf-8")
         cmd_handoff(plan, git_info, user_direction=user_dir, handoff_dir=getattr(args, "handoff_dir", "") or None)
 
 if __name__ == "__main__":

@@ -26,11 +26,11 @@ User input: $ARGUMENTS
 - **Inline Execution (No Subagents)**: Minor tasks (checking git status, inspecting 1-3 files, running a single test command). **Never spawn subagents for trivial operations.**
 
 ## 2. Step 1: Snapshot and Persist Working State
-1. Run `python3 scripts/plan_manager.py handoff "$ARGUMENTS"` directly (or with `--plan <path>` if working on a specific sub-plan). This writes both `.claude/session_handoff.md` and `.claude/handoffs/<plan_stem>.handoff.md` to prevent clobbering concurrent sessions in the same worktree.
-2. Append to the handoff file if specific runtime anti-patterns occurred:
+1. Always pass the target feature/phase token: `python3 scripts/plan_manager.py handoff "$ARGUMENTS"`. This writes `.claude/handoffs/<plan_stem>.handoff.md` scoped directly to this project, eliminating clobbering across concurrent sessions in the same worktree.
+2. Update the feature's Master Plan document directly via `python3 scripts/plan_manager.py mark-done <phase> --commit <sha> --notes "<summary>"` (auto-resolves target plan from `<phase>`).
+3. Append to `.claude/handoffs/<plan_stem>.handoff.md` if specific runtime anti-patterns occurred:
    - **Dead Ends & Anti-Patterns (Do NOT Attempt)**: Specific strategies attempted that failed and reasons why (compiler errors, runtime asserts).
    - **Verification Commands**: Exact commands to validate progress.
-3. Also update the durable records the fresh session will read: the active project doc's "RESUME HERE" section or memory index.
 4. Finish all writes in this step: plan mode blocks file edits.
 
 ## 3. Step 2: Switch to Built-in Plan Mode

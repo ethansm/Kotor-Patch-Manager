@@ -33,12 +33,12 @@ When starting a new session or beginning mod work:
   - *Dev / Probe*: Instrument rich diagnostics (KpLog channels, struct dumps, first-draw coordinates). Never guess blind in live play.
   - *Tightening / Release*: Before PR or final install, gate per-frame or high-volume logs behind `Verbose=0` in INI, enforce deduplication (log state changes, not per-frame redraws), drop probe detours, and verify clean logs (<50 lines on startup) via `kotor2_logs.py check`.
 
-## Context Management & Plan Mode Handoffs
-- Before context clearing, trigger the `/plan-handoff` skill (runs `python3 scripts/plan_manager.py handoff`).
-- On fresh session startup after context clear: run `python3 scripts/plan_manager.py resume` to immediately bootstrap active plan, git state, and next chunk with zero token waste.
-- Switch to built-in plan mode so the user can select "Clear context and approve (bypass mode)". Do NOT prematurely exit plan mode with `ExitPlanMode` when waiting for context-clear approval.
-- **Shorthand Plan Inputs:** Both `/plan-handoff` and `plan_manager.py resume|handoff` accept shorthand doc numbers (e.g. `25 §12`, `doc 25`, `24:T6`, `19e`) and phase IDs (`T5e`, `T6`), auto-resolving target plan paths.
-- Mark completed phases via `python3 scripts/plan_manager.py mark-done <phase> [--state <STATE>] [--commit <sha>] [--notes <txt>]` (updates markdown table rows or checkboxes automatically; NEVER manually sed/grep the master plan doc).
+## Context Management & Multi-Session Plan Mode Handoffs
+- **Feature-Scoped Handoffs (Zero Collision)**: Concurrent sessions in the same worktree must track their state through their specific master plan doc (e.g. `22_compat_check_plan.md`, `33_ui_queue_hotbar_fixes.md`).
+- Before context clearing: run `/plan-handoff <doc|phase>` (or `python3 scripts/plan_manager.py handoff <doc|phase>`). This writes `.claude/handoffs/<plan_stem>.handoff.md` without clobbering concurrent sessions.
+- On fresh session startup after context clear: run `python3 scripts/plan_manager.py resume <doc|phase>` (e.g. `resume U3`, `resume 22`, `resume 33`) to instantly bootstrap that specific feature's state and scoped handoff direction (<200 tokens).
+- Query all active projects: `python3 scripts/plan_manager.py list` shows progress and next phase across all plans in the worktree.
+- Mark completed phases via `python3 scripts/plan_manager.py mark-done <phase> [--state <STATE>] [--commit <sha>] [--notes <txt>]` (auto-resolves target plan doc from `<phase>`; NEVER manually sed/grep the master plan doc).
 
 ## Context Budget & Read Policy (Anti-Bloat Standards)
 - **Zero-Read / Self-Contained Plans**: In Plan Mode, inline the exact 5-10 line struct/interface or macro snippets directly in the plan. Never tell the executor to "Read first: `LargeHeader.h`".
