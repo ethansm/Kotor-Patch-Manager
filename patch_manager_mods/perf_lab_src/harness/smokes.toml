@@ -13,6 +13,9 @@
 #   src           source file, relative to this directory
 #   kpatch        patch archive, relative to $KPM_DIR/Patches; the DLL is `unzip -j <kpatch> binaries/windows_x86.dll`
 #   dll_name      file name the smoke LoadLibrary's; the extracted DLL is renamed to it (perflab: perflab.dll)
+#   dll_from      "kpatch" (default) or "build". "build" uses the DLL produced by build_check --keep
+#                 from current sources instead of extracting from the .kpatch archive.
+#   mod           (optional) source dir under patch_manager_mods/ (e.g. "texture_memory_release_src").
 #   extra_dlls    (optional) list of further {kpatch, dll_name} tables for smokes that need more than one DLL (portraitslots)
 #   cxxflags      link-style flags and libs ONLY; the runner always adds `i686-w64-mingw32-g++ -std=c++17 -O1 -I <this dir> -I tests/include`
 #   runtime_dlls  true = copy the 3 MinGW runtime DLLs next to the exe (the exe links libstdc++/libgcc dynamically)
@@ -113,6 +116,8 @@ name = "texmem"
 src = "smoke_texmem.cpp"
 kpatch = "TextureMemoryRelease/TextureMemoryRelease.kpatch"
 dll_name = "windows_x86.dll"
+dll_from = "build"
+mod = "texture_memory_release_src"
 cxxflags = ["-static-libgcc", "-static-libstdc++"]
 runtime_dlls = false
 modes = ["run", "disabled", "refuse", "foreign"]

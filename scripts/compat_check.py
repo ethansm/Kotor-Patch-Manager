@@ -203,7 +203,105 @@ def summarize_reason(why: tuple[str, ...]) -> str:
     return f"(includes {first_name})"
 
 
-def print_plan(plan: Plan, why_mode: bool = False) -> None:
+def check_stale_wine_smokes(plan: Plan, repo_root: Path, kpm_dir: Path) -> tuple[dict[str, str], list[str]]:
+    """Check wine smokes in plan. If dll_from != 'build' and kpatch is older than newest affected source,
+    return (stale_messages_by_item_id, list_of_stale_item_ids).
+    """
+    smokes_toml = repo_root / "patch_manager_mods/perf_lab_src/harness/smokes.toml"
+    if not smokes_toml.is_file():
+        return {}, []
+
+    try:
+        cfg = tomllib.loads(smokes_toml.read_text(encoding="utf-8"))
+    except Exception:
+        return {}, []
+
+    smokes_by_name = {s.get("name"): s for s in cfg.get("smoke", []) if s.get("name")}
+
+    mods_by_stem = {}
+    try:
+        import _static_common as sc
+        mods = sc.load_mods(repo_root, kpm_dir, variants=True)
+        for m in mods:
+            p_name = (m.kpm_dir.name if m.kpm_dir else m.dir.name).lower()
+            mods_by_stem[p_name] = m
+            mods_by_stem[m.dir.name.lower()] = m
+            mods_by_stem[m.id.replace("-", "").lower()] = m
+    except Exception:
+        pass
+
+    stale_map: dict[str, str] = {}
+    stale_ids: list[str] = []
+
+    for it in plan.items:
+        if it.kind != "wine":
+            continue
+        sm_name = it.id.split(":", 1)[1].split("[")[0]
+        s = smokes_by_name.get(sm_name)
+        if not s:
+            continue
+        dll_from = s.get("dll_from", "kpatch")
+        if dll_from == "build":
+            continue
+
+        kpatch_rel = s.get("kpatch", "")
+        if not kpatch_rel:
+            continue
+        kpatch_path = kpm_dir / "Patches" / kpatch_rel
+
+        # Resolve mod directory
+        mod_dir = None
+        if s.get("mod"):
+            p = Path(s["mod"])
+            mod_dir = p if p.is_absolute() else repo_root / "patch_manager_mods" / p
+        else:
+            stem = Path(kpatch_rel).stem.lower()
+            parent = Path(kpatch_rel).parent.name.lower()
+            m = mods_by_stem.get(stem) or mods_by_stem.get(parent)
+            if m:
+                mod_dir = m.dir
+            else:
+                for d in (repo_root / "patch_manager_mods").iterdir():
+                    if d.is_dir():
+                        clean = d.name.replace("_src", "").replace("-", "").lower()
+                        if clean and (clean in stem or stem in clean):
+                            mod_dir = d
+                            break
+
+        # Collect candidate source files affecting this smoke/mod
+        candidate_sources: list[Path] = []
+        for w in it.why:
+            wp = repo_root / w
+            if wp.is_file():
+                candidate_sources.append(wp)
+            elif (repo_root / "patch_manager_mods" / w).is_file():
+                candidate_sources.append(repo_root / "patch_manager_mods" / w)
+
+        if mod_dir and mod_dir.is_dir():
+            for p in mod_dir.rglob("*"):
+                if p.is_file() and p.suffix.lower() in (".cpp", ".h", ".hpp", ".inc", ".def"):
+                    candidate_sources.append(p)
+
+        if not candidate_sources:
+            continue
+
+        newest_source = max(candidate_sources, key=lambda p: p.stat().st_mtime)
+        newest_mtime = newest_source.stat().st_mtime
+
+        kpatch_mtime = kpatch_path.stat().st_mtime if kpatch_path.is_file() else -1.0
+        if kpatch_mtime < newest_mtime:
+            try:
+                src_rel = _norm_posix(newest_source.relative_to(repo_root))
+            except ValueError:
+                src_rel = _norm_posix(newest_source)
+            msg = f"STALE: {kpatch_rel} older than {src_rel}"
+            stale_map[it.id] = msg
+            stale_ids.append(it.id)
+
+    return stale_map, stale_ids
+
+
+def print_plan(plan: Plan, why_mode: bool = False, repo_root: Path | None = None, kpm_dir: Path | None = None) -> None:
     """Print the plan actions and reasons matching doc 22 layout."""
     for t in plan.touched:
         print(f"touched: {t}")
@@ -240,6 +338,13 @@ def print_plan(plan: Plan, why_mode: bool = False) -> None:
     if wine_items:
         w_list = ", ".join(it.id for it in wine_items)
         print(f"WINE    {w_list}")
+        if repo_root and kpm_dir:
+            stale_map, _ = check_stale_wine_smokes(plan, repo_root, kpm_dir)
+            seen_msgs = set()
+            for it in wine_items:
+                if it.id in stale_map and stale_map[it.id] not in seen_msgs:
+                    print(stale_map[it.id])
+                    seen_msgs.add(stale_map[it.id])
 
     # 6. KPM consumers
     if plan.kpm_consumers:
@@ -653,7 +758,7 @@ def main() -> int:
 
     # If --why or --list, print plan
     if args.list or args.why:
-        print_plan(plan, why_mode=args.why)
+        print_plan(plan, why_mode=args.why, repo_root=repo_root, kpm_dir=graph.kpm_dir)
         if args.json:
             json_data = {
                 "touched": unique_touched_records,
@@ -683,7 +788,7 @@ def main() -> int:
         return 0
 
     # Print plan header before execution
-    print_plan(plan, why_mode=False)
+    print_plan(plan, why_mode=False, repo_root=repo_root, kpm_dir=graph.kpm_dir)
 
     # Set up private TMPDIR unless --shared-tmp
     private_tmpdir: str | None = None
@@ -701,6 +806,86 @@ def main() -> int:
         # Separate test and build items
         test_suite_ids = [it.id for it in plan.items if it.kind in ("test", "suite", "wine", "static")]
         build_mods = plan.builds()
+
+        # Check stale wine smokes if wine is enabled
+        stale_map, stale_ids = check_stale_wine_smokes(plan, repo_root, graph.kpm_dir) if args.wine else ({}, [])
+        for s_id in stale_ids:
+            s_msg = stale_map[s_id]
+            all_results.append({
+                "id": s_id,
+                "kind": "wine",
+                "status": "SKIP",
+                "seconds": 0.0,
+                "reason": "unverified (stale kpatch)",
+                "tail": s_msg,
+            })
+            counts["SKIP"] = counts.get("SKIP", 0) + 1
+
+        test_suite_ids = [tid for tid in test_suite_ids if tid not in stale_ids]
+
+        def run_build_mods(build_mods_list: list[str]) -> None:
+            if not build_mods_list:
+                return
+            build_check_script = repo_root / "scripts/build_check.py"
+            b_cmd = [sys.executable, str(build_check_script)]
+            for m in build_mods_list:
+                b_cmd += ["--mod", m]
+            if args.jobs:
+                b_cmd += ["--jobs", str(args.jobs)]
+            if args.kpm_dir:
+                b_cmd += ["--kpm-dir", str(args.kpm_dir)]
+            if args.wine:
+                b_cmd.append("--keep")
+
+            b_proc = subprocess.run(
+                b_cmd,
+                cwd=repo_root,
+                env=exec_env,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                check=False,
+            )
+
+            # Parse build_check output lines
+            out_lines = b_proc.stdout.splitlines()
+            for line in out_lines:
+                m_pass = re.search(
+                    r"PASS\s+build:\s+([^\s:]+)(?:\s+\([^)]+\))?:\s*(.*?)(?:,\s*([0-9.]+)s)?$",
+                    line,
+                )
+                m_fail = re.search(r"FAIL\s+build:\s+([^\s:]+):\s*(.*)$", line)
+                if m_pass:
+                    mod_id = m_pass.group(1)
+                    sec = float(m_pass.group(3)) if m_pass.group(3) else 0.0
+                    all_results.append(
+                        {
+                            "id": f"build_check:{mod_id}",
+                            "kind": "build",
+                            "status": "PASS",
+                            "seconds": sec,
+                            "reason": "",
+                            "tail": m_pass.group(2),
+                        }
+                    )
+                    counts["PASS"] = counts.get("PASS", 0) + 1
+                elif m_fail:
+                    mod_id = m_fail.group(1)
+                    all_results.append(
+                        {
+                            "id": f"build_check:{mod_id}",
+                            "kind": "build",
+                            "status": "FAIL",
+                            "seconds": 0.0,
+                            "reason": "",
+                            "tail": m_fail.group(2),
+                        }
+                    )
+                    counts["FAIL"] = counts.get("FAIL", 0) + 1
+
+        # If running wine smokes, run builds first with --keep so built DLLs are available for smokes
+        if args.wine and build_mods:
+            run_build_mods(build_mods)
 
         # 1. Run tests and suites via run_tests.py
         if test_suite_ids:
@@ -768,62 +953,9 @@ def main() -> int:
                 if os.path.exists(ids_file_path):
                     os.unlink(ids_file_path)
 
-        # 2. Run builds via build_check.py
-        if build_mods:
-            build_check_script = repo_root / "scripts/build_check.py"
-            b_cmd = [sys.executable, str(build_check_script)]
-            for m in build_mods:
-                b_cmd += ["--mod", m]
-            if args.jobs:
-                b_cmd += ["--jobs", str(args.jobs)]
-            if args.kpm_dir:
-                b_cmd += ["--kpm-dir", str(args.kpm_dir)]
-
-            b_proc = subprocess.run(
-                b_cmd,
-                cwd=repo_root,
-                env=exec_env,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                check=False,
-            )
-
-            # Parse build_check output lines
-            out_lines = b_proc.stdout.splitlines()
-            for line in out_lines:
-                m_pass = re.search(
-                    r"PASS\s+build:\s+([^\s:]+)(?:\s+\([^)]+\))?:\s*(.*?)(?:,\s*([0-9.]+)s)?$",
-                    line,
-                )
-                m_fail = re.search(r"FAIL\s+build:\s+([^\s:]+):\s*(.*)$", line)
-                if m_pass:
-                    mod_id = m_pass.group(1)
-                    sec = float(m_pass.group(3)) if m_pass.group(3) else 0.0
-                    all_results.append(
-                        {
-                            "id": f"build_check:{mod_id}",
-                            "kind": "build",
-                            "status": "PASS",
-                            "seconds": sec,
-                            "reason": "",
-                            "tail": m_pass.group(2),
-                        }
-                    )
-                    counts["PASS"] = counts.get("PASS", 0) + 1
-                elif m_fail:
-                    mod_id = m_fail.group(1)
-                    all_results.append(
-                        {
-                            "id": f"build_check:{mod_id}",
-                            "kind": "build",
-                            "status": "FAIL",
-                            "seconds": 0.0,
-                            "reason": "",
-                            "tail": m_fail.group(2),
-                        }
-                    )
-                    counts["FAIL"] = counts.get("FAIL", 0) + 1
+        # 2. Run builds if not already run
+        if not args.wine and build_mods:
+            run_build_mods(build_mods)
 
     finally:
         if private_tmpdir and os.path.isdir(private_tmpdir):

@@ -554,13 +554,17 @@ def find_runtime_dlls(cfg) -> tuple[dict, str]:
     return found, ""
 
 
-def wine_plan(cfg_path: Path):
+def wine_plan(cfg_path: Path, dll_from_override: str | None = None):
     """Return (smokes, error). Each smoke dict gets `_dlls` (runtime DLL paths) and `_dll_missing`."""
     if not cfg_path.is_file():
         return [], f"smokes.toml missing ({rel(cfg_path)})"
     cfg = load_toml(cfg_path)
+    default_from = dll_from_override or cfg.get("dll_from", "kpatch")
     dlls, missing = find_runtime_dlls(cfg)
-    return [{**s, "_dlls": dlls, "_dll_missing": missing} for s in cfg.get("smoke", [])], ""
+    return [{**s,
+             "dll_from": dll_from_override or s.get("dll_from") or default_from,
+             "_dlls": dlls,
+             "_dll_missing": missing} for s in cfg.get("smoke", [])], ""
 
 
 def smoke_skip(s) -> str:
@@ -568,12 +572,16 @@ def smoke_skip(s) -> str:
         return "missing i686-w64-mingw32-g++"
     if not wine_binary().exists():
         return f"missing {wine_binary()}"
-    kp = KPM_DIR / "Patches" / s["kpatch"]
-    if not kp.exists():
-        return f"missing {kp}"
+    dll_from = s.get("dll_from", "kpatch")
+    if dll_from != "build":
+        kp = KPM_DIR / "Patches" / s["kpatch"]
+        if not kp.exists():
+            return f"missing {kp}"
     for x in s.get("extra_dlls", []):
-        if not (KPM_DIR / "Patches" / x["kpatch"]).exists():
-            return f"missing {KPM_DIR / 'Patches' / x['kpatch']}"
+        x_from = x.get("dll_from", dll_from)
+        if x_from != "build":
+            if not (KPM_DIR / "Patches" / x["kpatch"]).exists():
+                return f"missing {KPM_DIR / 'Patches' / x['kpatch']}"
     if s.get("runtime_dlls") and s["_dll_missing"]:
         return f"missing {s['_dll_missing']} (mingw_runtime_dirs)"
     if s.get("needs_display") and not os.environ.get("DISPLAY"):
@@ -581,7 +589,91 @@ def smoke_skip(s) -> str:
     return ""
 
 
-def _extract_dll(kpatch: Path, dest: Path):
+_build_locks: dict[str, threading.Lock] = {}
+_build_locks_guard = threading.Lock()
+
+
+def _get_build_lock(key: str) -> threading.Lock:
+    with _build_locks_guard:
+        if key not in _build_locks:
+            _build_locks[key] = threading.Lock()
+        return _build_locks[key]
+
+
+def resolve_mod_for_smoke(kpatch: Path | str, mod: str | None = None) -> Path | None:
+    if mod:
+        p = Path(mod)
+        return p if p.is_absolute() else REPO / "patch_manager_mods" / p
+    kpatch_str = str(kpatch)
+    stem = Path(kpatch_str).stem.lower()
+    parent = Path(kpatch_str).parent.name.lower()
+    try:
+        import _static_common as sc
+        mods = sc.load_mods(REPO, KPM_DIR, variants=True)
+        for m in mods:
+            p_name = (m.kpm_dir.name if m.kpm_dir else m.dir.name).lower()
+            if stem == p_name or stem == m.dir.name.lower() or stem == m.id.replace("-", "").lower():
+                return m.dir
+            if parent and (parent == p_name or parent == m.dir.name.lower()):
+                return m.dir
+    except Exception:
+        pass
+    for d in (REPO / "patch_manager_mods").iterdir():
+        if d.is_dir():
+            clean = d.name.replace("_src", "").replace("-", "").lower()
+            if clean and (clean in stem or stem in clean):
+                return d
+    return None
+
+
+def _ensure_built_dll(mod_dir: Path) -> Path:
+    """Ensure mod is built via build_check.py --keep and return path to its built DLL."""
+    try:
+        m_rel = mod_dir.relative_to(REPO / "patch_manager_mods")
+    except ValueError:
+        m_rel = mod_dir
+    key = "__".join(m_rel.parts)
+    with _get_build_lock(key):
+        build_root = TMP / "build"
+        dll_candidates = list((build_root / key).glob("*/build/*.dll"))
+
+        rebuild_needed = not dll_candidates
+        if dll_candidates:
+            dll_path = dll_candidates[0]
+            dll_mtime = dll_path.stat().st_mtime
+            src_dirs = [mod_dir, REPO / "patch_manager_mods" / "_shared_src"]
+            for sdir in src_dirs:
+                if not sdir.is_dir():
+                    continue
+                for p in sdir.rglob("*"):
+                    if p.is_file() and p.suffix.lower() in (".cpp", ".h", ".hpp", ".inc", ".def"):
+                        if p.stat().st_mtime > dll_mtime:
+                            rebuild_needed = True
+                            break
+                if rebuild_needed:
+                    break
+
+        if rebuild_needed:
+            cmd = [sys.executable, str(REPO / "scripts/build_check.py"), "--mod", str(m_rel), "--keep"]
+            proc = subprocess.run(cmd, cwd=REPO, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            if proc.returncode != 0:
+                raise RuntimeError(f"build_check failed for {m_rel}:\n{proc.stdout}")
+            dll_candidates = list((build_root / key).glob("*/build/*.dll"))
+            if not dll_candidates:
+                raise RuntimeError(f"build_check --keep for {m_rel} produced no DLL in {build_root / key}")
+
+        return dll_candidates[0]
+
+
+def _extract_dll(kpatch: Path, dest: Path, dll_from: str = "kpatch", mod: str | None = None):
+    if dll_from == "build":
+        mod_dir = resolve_mod_for_smoke(kpatch, mod)
+        if not mod_dir:
+            raise RuntimeError(f"could not resolve mod directory for kpatch {kpatch.name}")
+        dll_path = _ensure_built_dll(mod_dir)
+        shutil.copy2(dll_path, dest)
+        return
+
     with zipfile.ZipFile(kpatch) as z:
         dest.write_bytes(z.read("binaries/windows_x86.dll"))
 
@@ -604,14 +696,18 @@ def smoke_build(s) -> Result:
         st, why, out = run_cmd(cmd, HARNESS, None, 600)
         if st != "OK":
             return res("FAIL" if st == "FAIL" else "ERROR", f"build failed ({why})", out)
-        _extract_dll(KPM_DIR / "Patches" / s["kpatch"], bdir / s["dll_name"])
+        dll_from = s.get("dll_from", "kpatch")
+        _extract_dll(KPM_DIR / "Patches" / s["kpatch"], bdir / s["dll_name"],
+                     dll_from=dll_from, mod=s.get("mod"))
         for x in s.get("extra_dlls", []):
-            _extract_dll(KPM_DIR / "Patches" / x["kpatch"], bdir / x["dll_name"])
+            x_from = x.get("dll_from", dll_from)
+            _extract_dll(KPM_DIR / "Patches" / x["kpatch"], bdir / x["dll_name"],
+                         dll_from=x_from, mod=x.get("mod"))
         if s.get("runtime_dlls"):
             for p in s["_dlls"].values():
                 shutil.copy2(p, bdir / p.name)
-    except (OSError, KeyError, TypeError, zipfile.BadZipFile) as e:
-        return res("ERROR", f"{type(e).__name__}: {e}")
+    except (OSError, KeyError, TypeError, zipfile.BadZipFile, RuntimeError) as e:
+        return res("FAIL" if isinstance(e, RuntimeError) else "ERROR", f"{type(e).__name__}: {e}")
     return res("PASS", "", out)
 
 
@@ -695,6 +791,8 @@ def main() -> int:
     ap.add_argument("--ids-file", metavar="PATH", help="file containing item ids to run, one per line")
     ap.add_argument("--jobs", type=int, default=os.cpu_count() or 4, help="parallel builds/host runs (default: cpu count)")
     ap.add_argument("--wine", action="store_true", help="also run the Wine smokes from harness/smokes.toml")
+    ap.add_argument("--dll-from", choices=["kpatch", "build"], default=None,
+                    help="DLL source for Wine smokes: 'kpatch' (extract from .kpatch) or 'build' (use build_check --keep). Overrides smokes.toml.")
     ap.add_argument("--build", action="store_true", help="also run tier=\"build\" suites (Windows source builds; implied by --wine)")
     ap.add_argument("--json", nargs="?", const="-", default=None, metavar="PATH",
                     help="write machine-readable results (to PATH, or stdout if omitted / '-')")
@@ -758,7 +856,7 @@ def main() -> int:
     smokes, wine_err = ([], "")
     include_wine = a.wine or any(x.startswith("wine:") for x in target_ids)
     if include_wine:
-        smokes, wine_err = wine_plan(SMOKES_TOML)
+        smokes, wine_err = wine_plan(SMOKES_TOML, dll_from_override=a.dll_from)
     if a.k:
         items = [i for i in items if a.k in i.id]
     if target_ids:
@@ -770,7 +868,8 @@ def main() -> int:
         skip = smoke_skip(s)
         for mode in (s.get("modes") or [""]):
             wid = f"wine:{s['name']}" + (f"[{mode}]" if mode else "")
-            if (not a.k or a.k in wid) and (not target_ids or wid in target_ids):
+            match_target = not target_ids or wid in target_ids or any(wid == t or wid.startswith(f"{t}[") for t in target_ids)
+            if (not a.k or a.k in wid) and match_target:
                 wine_items.append((wid, s, mode, skip))
 
     if a.list:
