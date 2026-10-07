@@ -266,30 +266,77 @@ def print_plan(plan: Plan, why_mode: bool = False) -> None:
             print(f"  {it.kind.upper():<6} {it.id}: {chain_str}")
 
 
-def run_lint(repo_root: Path, graph: CompatGraph) -> tuple[int, list[str]]:
-    """Run lint checks (doc 22 section U7 / --lint). Returns (exit_code, warnings)."""
+def run_lint(
+    repo_root: Path,
+    graph: CompatGraph,
+    touched_files: list[str] | None = None,
+) -> tuple[int, list[str]]:
+    """Run lint checks (doc 22 section U7 / --lint). Returns (exit_code, warnings).
+
+    Checks:
+    1. Stale covers patterns in tests/compat.toml and test.toml files.
+    2. Stale interface strings in covers (interfaces not provided by any mod or header).
+    3. Contract-test gaps: mods including Common headers without a *_contract_test.cpp.
+    4. Interface provides vs header string: manifest provides == <PREFIX>_IFACE@<PREFIX>_VERSION in header.
+    5. Manifests with requires_interfaces but no covering test (test with covers naming the interface).
+    6. Unreached mods: mods with no reaching test and no smoke (GAP), and mods with only wine smokes (WARN).
+    7. UNCLASSIFIED file kinds under patch_manager_mods/ or passed files.
+    """
     warnings: list[str] = []
 
-    # 1. Stale covers check
+    # 1. Stale covers check in tests/compat.toml
     compat_toml_path = repo_root / "tests/compat.toml"
     if compat_toml_path.is_file():
         try:
             data = tomllib.loads(compat_toml_path.read_text(encoding="utf-8"))
             for cov in data.get("covers", []):
                 for p in cov.get("paths", []):
-                    # Check if pattern matches at least one file
                     matches = list(repo_root.glob(p))
                     if not matches:
                         warnings.append(f"WARN stale covers pattern in tests/compat.toml: {p}")
         except Exception as exc:
             warnings.append(f"WARN unreadable tests/compat.toml: {exc}")
 
-    # 2. Check test.toml covers
+    # 2. Header interfaces (<PREFIX>_IFACE and <PREFIX>_VERSION)
+    candidate_headers = list((repo_root / "patch_manager_mods/_shared_src").glob("*.h"))
+    for mod_dir in graph.mod_dirs:
+        candidate_headers.extend((repo_root / f"patch_manager_mods/{mod_dir}").glob("*.h"))
+
+    iface_pattern = re.compile(r'#define\s+([A-Z0-9_]+)_IFACE\s+"([^"]+)"')
+    ver_pattern = re.compile(r'#define\s+([A-Z0-9_]+)_VERSION\s+(\d+)')
+
+    header_interfaces: dict[str, list[Path]] = {}
+    header_definitions: list[tuple[str, str, Path]] = []
+
+    for hdr in candidate_headers:
+        try:
+            content = hdr.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            continue
+        ifaces = dict(iface_pattern.findall(content))
+        versions = dict(ver_pattern.findall(content))
+        for pfx, iname in ifaces.items():
+            ver = versions.get(pfx, "1")
+            full_iface = f"{iname}@{ver}"
+            header_interfaces.setdefault(full_iface, []).append(hdr)
+            header_definitions.append((full_iface, pfx, hdr))
+
+    all_provided_interfaces = set(header_interfaces.keys())
+    for mod, minfo in graph.manifests.items():
+        for iface in minfo.get("provides", []):
+            all_provided_interfaces.add(iface)
+
+    # 3. Check test.toml covers (paths and interface strings)
+    covered_interfaces_by_mod: dict[str, set[str]] = {}
+    all_covered_interfaces: set[str] = set()
+
     pm_root = repo_root / "patch_manager_mods"
     if pm_root.is_dir():
         for root, dirs, files in os.walk(pm_root):
             if "test.toml" in files:
                 tpath = Path(root) / "test.toml"
+                rel_tpath = _norm_posix(tpath.relative_to(repo_root))
+                mod_dir = graph._find_mod_dir(tpath)
                 try:
                     data = tomllib.loads(tpath.read_text(encoding="utf-8"))
                     for key, val in data.items():
@@ -301,58 +348,108 @@ def run_lint(repo_root: Path, graph: CompatGraph) -> tuple[int, list[str]]:
                             covers_list = val
                         for pat in covers_list:
                             if "@" in pat:
-                                # Interface string name@major
-                                continue
-                            pat_path = repo_root / pat if not (Path(root) / pat).exists() else Path(root) / pat
-                            matches = list(repo_root.glob(pat)) or list(Path(root).glob(pat))
-                            if not matches and not pat_path.exists():
-                                warnings.append(f"WARN stale covers in {tpath}: {pat}")
+                                if mod_dir:
+                                    covered_interfaces_by_mod.setdefault(mod_dir, set()).add(pat)
+                                all_covered_interfaces.add(pat)
+                                if pat not in all_provided_interfaces:
+                                    warnings.append(f"WARN stale covers interface in {rel_tpath}: {pat}")
+                            else:
+                                pat_path = repo_root / pat if not (Path(root) / pat).exists() else Path(root) / pat
+                                matches = list(repo_root.glob(pat)) or list(Path(root).glob(pat))
+                                if not matches and not pat_path.exists():
+                                    warnings.append(f"WARN stale covers in {rel_tpath}: {pat}")
                 except Exception:
                     pass
 
-    # 3. Contract test gaps
-    for mod in sorted(graph.mod_dirs):
-        if not graph.mod_has_contract_test.get(mod, False):
-            # Check if mod includes any common headers
-            includes_common = False
-            for cpp_f in graph.all_cpp_files:
-                if cpp_f.startswith(f"patch_manager_mods/{mod}/") and not cpp_f.endswith("_test.cpp"):
-                    # Check reverse includes of common headers
-                    for sh in (
-                        "patch_manager_mods/_shared_src/SafeRead.h",
-                        "patch_manager_mods/_shared_src/K2Addr.h",
-                        "patch_manager_mods/_shared_src/GameAddr.h",
-                        "patch_manager_mods/_shared_src/Gui2D.h",
-                        "patch_manager_mods/_shared_src/PortraitSlots.h",
-                    ):
-                        for inc_file, _ in graph.reverse_includes.get(sh, []):
-                            if inc_file == cpp_f:
-                                includes_common = True
-                                break
-                    if includes_common:
-                        break
-            if includes_common:
-                warnings.append(f"GAP {mod} includes Common headers but owns no common_contract_test.cpp (doc 20 4.1)")
-
     # 4. Interface provides vs header check
-    for mod, minfo in graph.manifests.items():
+    for mod, minfo in sorted(graph.manifests.items()):
         provides = minfo.get("provides", [])
         for iface in provides:
-            # Match name@major
-            if "@" in iface:
-                iname, imajor = iface.split("@", 1)
-                found = False
-                candidate_headers = list((repo_root / "patch_manager_mods/_shared_src").glob("*.h")) + list((repo_root / f"patch_manager_mods/{mod}").glob("*.h"))
-                for hdr in candidate_headers:
-                    try:
-                        content = hdr.read_text(encoding="utf-8", errors="ignore")
-                        if iname in content:
-                            found = True
-                            break
-                    except Exception:
-                        pass
-                if not found:
-                    warnings.append(f"WARN interface {iface} provided by {mod} not found in header")
+            if iface not in header_interfaces:
+                warnings.append(f"WARN interface {iface} provided by {mod} not found in header")
+
+    all_manifest_provides = set()
+    for mod, minfo in graph.manifests.items():
+        all_manifest_provides.update(minfo.get("provides", []))
+    for full_iface, pfx, hdr in header_definitions:
+        if full_iface not in all_manifest_provides:
+            rel_hdr = _norm_posix(hdr.relative_to(repo_root))
+            warnings.append(f"WARN interface {full_iface} defined in {rel_hdr} is not provided by any manifest")
+
+    # 5. Contract test gaps (mods including Common headers without a contract test)
+    common_targets = set()
+    for target in graph.reverse_includes:
+        if target.startswith("patch_manager_mods/_shared_src/") or target.startswith("kpm:Patches/Common/"):
+            common_targets.add(target)
+
+    visited = set(common_targets)
+    queue = list(common_targets)
+    while queue:
+        curr = queue.pop(0)
+        for inc, _ in graph.reverse_includes.get(curr, []):
+            if inc not in visited:
+                visited.add(inc)
+                queue.append(inc)
+
+    mods_including_common = set()
+    for f in visited:
+        if f.endswith("_test.cpp"):
+            continue
+        if f.startswith("patch_manager_mods/"):
+            parts = f.split("/")
+            if len(parts) >= 2:
+                candidate_mod = parts[1]
+                if candidate_mod in graph.mod_dirs:
+                    mods_including_common.add(candidate_mod)
+
+    for mod in sorted(graph.mod_dirs):
+        if mod in mods_including_common and not graph.mod_has_contract_test.get(mod, False):
+            warnings.append(f"GAP {mod} includes Common headers but owns no *_contract_test.cpp (doc 20 4.1)")
+
+    # 6. Manifests with requires_interfaces but no covering test
+    for mod, minfo in sorted(graph.manifests.items()):
+        requires = minfo.get("requires_interfaces", [])
+        mod_covered = covered_interfaces_by_mod.get(mod, set())
+        for iface in requires:
+            if iface not in mod_covered and iface not in all_covered_interfaces:
+                warnings.append(f"GAP {mod} requires interface {iface} but has no test covering it")
+            elif iface not in mod_covered:
+                warnings.append(f"GAP {mod} requires interface {iface} but owns no test covering it")
+
+    # 7. Mods with no reaching test and no smoke
+    for mod in sorted(graph.mod_dirs):
+        mod_sources = set()
+        for cpp in graph.all_cpp_files:
+            if cpp.startswith(f"patch_manager_mods/{mod}/") and not cpp.endswith("_test.cpp"):
+                mod_sources.add(cpp)
+        for h in (repo_root / f"patch_manager_mods/{mod}").glob("*.h"):
+            mod_sources.add(_norm_posix(h.relative_to(repo_root)))
+
+        reachers = set()
+        for src in mod_sources:
+            for inc_file, _ in graph.reverse_includes.get(src, []):
+                if inc_file.endswith("_test.cpp") and not inc_file.startswith(f"patch_manager_mods/{mod}/common_contract_test"):
+                    reachers.add(inc_file)
+
+        covers_tests = set()
+        for src in mod_sources:
+            for pat, item_id in graph.covers_map:
+                if fnmatch.fnmatch(src, pat) or src == pat:
+                    covers_tests.add(item_id)
+
+        has_reaching_test = bool(reachers or covers_tests)
+        smokes = graph.mod_to_smokes.get(mod, [])
+
+        if not has_reaching_test and not smokes:
+            warnings.append(f"GAP {mod} has no reaching test and no smoke")
+        elif not has_reaching_test:
+            warnings.append(f"WARN {mod} has no reaching host test (smoke only: {', '.join(sorted(smokes))})")
+
+    # 8. Check unclassified touched files if provided
+    if touched_files:
+        for t in touched_files:
+            if not graph._is_classified(t, Plan()):
+                warnings.append(f"WARN UNCLASSIFIED file: {t}")
 
     return 0, warnings
 
@@ -469,9 +566,26 @@ def main() -> int:
 
     # Lint mode
     if args.lint:
-        code, warnings = run_lint(repo_root, graph)
-        for w in warnings:
-            print(w)
+        touched: list[str] = []
+        if args.files:
+            for f in args.files:
+                resolved, _ = resolve_file_arg(repo_root, f, graph.all_cpp_files)
+                touched.append(resolved)
+        code, warnings = run_lint(repo_root, graph, touched_files=touched if touched else None)
+        if args.json:
+            payload = {
+                "lint": True,
+                "warnings": [w for w in warnings if w.startswith("WARN")],
+                "gaps": [w for w in warnings if w.startswith("GAP")],
+                "all": warnings,
+            }
+            if args.json == "-":
+                print(json.dumps(payload, indent=2))
+            else:
+                Path(args.json).write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        else:
+            for w in warnings:
+                print(w)
         if args.strict and warnings:
             return 3
         return 0

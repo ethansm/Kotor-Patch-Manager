@@ -70,7 +70,7 @@ class PlanItem:
 
 @dataclass
 class Plan:
-    touched: list[str]
+    touched: list[str] = field(default_factory=list)
     items: list[PlanItem] = field(default_factory=list)
     gaps: list[str] = field(default_factory=list)
     unclassified: list[str] = field(default_factory=list)
@@ -305,7 +305,7 @@ class CompatGraph:
             if mod_dir:
                 if src.name.endswith("_test.cpp"):
                     self.mod_colocated_tests.setdefault(mod_dir, []).append(rel_src)
-                if src.name == "common_contract_test.cpp":
+                if src.name.endswith("_contract_test.cpp"):
                     self.mod_has_contract_test[mod_dir] = True
 
         # Parse includes (E1)
@@ -495,16 +495,29 @@ class CompatGraph:
 
             # kpatch is e.g. "LoadHangProbe/LoadHangProbe.kpatch" or "../split_build/PortraitSlots.kpatch"
             patch_token = Path(kpatch).stem
-            # Match against known manifests
+            token_clean = patch_token.replace("-", "").replace("_", "").lower()
+            is_probe = "probe" in token_clean
+
             matched_mod = None
+            # Pass 1: match with probe parity
             for mod_dir, m_info in self.manifests.items():
                 m_name = m_info.get("name", "").replace(" ", "").lower()
                 m_id = m_info.get("id", "").replace("-", "").lower()
-                token_clean = patch_token.replace("-", "").replace("_", "").lower()
-
-                if token_clean in m_id or token_clean in m_name or m_id in token_clean:
+                mod_is_probe = "probe" in mod_dir.lower()
+                if is_probe != mod_is_probe:
+                    continue
+                if token_clean in m_id or token_clean in m_name or m_id in token_clean or m_name in token_clean:
                     matched_mod = mod_dir
                     break
+
+            # Pass 2: fallback without probe filter
+            if not matched_mod:
+                for mod_dir, m_info in self.manifests.items():
+                    m_name = m_info.get("name", "").replace(" ", "").lower()
+                    m_id = m_info.get("id", "").replace("-", "").lower()
+                    if token_clean in m_id or token_clean in m_name or m_id in token_clean or m_name in token_clean:
+                        matched_mod = mod_dir
+                        break
 
             if matched_mod:
                 self.mod_to_smokes.setdefault(matched_mod, []).append(name)

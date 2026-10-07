@@ -34,7 +34,7 @@ REPO_ROOT = SCRIPT_DIR.parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
-from compat_check import get_git_diff_records, resolve_file_arg
+from compat_check import get_git_diff_records, resolve_file_arg, run_lint
 from compat_graph import CompatGraph
 
 
@@ -195,6 +195,68 @@ class TestCompatCheckCLI(unittest.TestCase):
             check=False,
         )
         self.assertEqual(res.returncode, 0)
+        self.assertIn("GAP dialogue_letterbox_fix_src includes Common headers", res.stdout)
+        self.assertIn("GAP action_hotbar_src requires interface k2.hud@1", res.stdout)
+        self.assertIn("WARN activation_fix_src has no reaching host test", res.stdout)
+
+    def test_lint_strict_fails_on_gaps(self):
+        """--lint --strict exits with code 3 when gaps or warnings exist."""
+        res = subprocess.run(
+            [sys.executable, str(self.script), "--lint", "--strict"],
+            cwd=REPO_ROOT,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(res.returncode, 3)
+
+    def test_lint_json_schema(self):
+        """--lint --json output conforms to expected schema."""
+        res = subprocess.run(
+            [sys.executable, str(self.script), "--lint", "--json", "-"],
+            cwd=REPO_ROOT,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(res.returncode, 0)
+        data = json.loads(res.stdout)
+        self.assertTrue(data.get("lint"))
+        self.assertIn("warnings", data)
+        self.assertIn("gaps", data)
+        self.assertIn("all", data)
+
+    def test_lint_stale_covers_warning(self):
+        """Adding a stale covers pattern produces a WARN message."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmproot = Path(tmpdir)
+            shutil.copytree(REPO_ROOT / "tests", tmproot / "tests", dirs_exist_ok=True)
+            compat_toml = tmproot / "tests/compat.toml"
+            if compat_toml.is_file():
+                content = compat_toml.read_text(encoding="utf-8")
+                compat_toml.write_text(
+                    content + '\n[[covers]]\nid = "test:stale"\npaths = ["nonexistent/fake/path/**"]\n',
+                    encoding="utf-8",
+                )
+            g = CompatGraph(tmproot)
+            code, warnings = run_lint(tmproot, g)
+            stale_warns = [w for w in warnings if "stale covers pattern" in w and "nonexistent/fake/path/**" in w]
+            self.assertTrue(len(stale_warns) > 0)
+
+    def test_lint_unclassified_file(self):
+        """Passing an unclassified file to --lint reports WARN UNCLASSIFIED file."""
+        res = subprocess.run(
+            [sys.executable, str(self.script), "--lint", "README.md"],
+            cwd=REPO_ROOT,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(res.returncode, 0)
+        self.assertIn("WARN UNCLASSIFIED file: README.md", res.stdout)
 
     def test_breaking_for_mod_detection_mock(self):
         """Regex parses BREAKING for <mod> correctly from failure output."""
