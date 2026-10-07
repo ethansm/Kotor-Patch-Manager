@@ -69,11 +69,11 @@ enum Tab { Tab_Power = 0, Tab_Item = 1, Tab_Mode = 2 };
 inline int tabOfKey(int key) { return (key & KeyItemFlag) ? Tab_Item : ((key & KeySpellFlag) ? Tab_Power : Tab_Mode); }
 
 // Character key from the controlled creature's object id: "obj%08x"; "" = unknown. *invalid = id is 0 / 0xFFFFFFFF (transient during loads).
-// A one-member party with id 0xFFFFFFFF is the Exile (valid id fffffffd), which the engine can report as 0xFFFFFFFF for a whole session.
-inline std::string characterKeyFor(unsigned oid, int partyCount, bool* invalid = nullptr) {
+// Party member 0 (or a one-member party) with id 0xFFFFFFFF is the Exile (valid id fffffffd), which the engine can report as 0xFFFFFFFF for a whole session.
+inline std::string characterKeyFor(unsigned oid, int partyCount, bool* invalid = nullptr, bool isMember0 = false) {
     bool bad = (oid == 0xFFFFFFFFu || oid == 0);
     if (invalid) *invalid = bad;
-    if (bad) return (oid == 0xFFFFFFFFu && partyCount == 1) ? "objfffffffd" : "";
+    if (bad) return (oid == 0xFFFFFFFFu && (partyCount == 1 || isMember0)) ? "objfffffffd" : "";
     char b[24]; snprintf(b, sizeof b, "obj%08x", oid);
     return b;
 }

@@ -241,12 +241,22 @@ bool gameplayHudActive(uintptr_t hud) {
     return false;
 }
 
-// Tag of a creature (CExoString {char*, len} at +0x18); false = unreadable or empty (the PC has an empty tag).
+// Tag of a creature (CExoString {char*, len} at +0x18); false = unreadable (the PC has an empty tag, recognized as "player").
 bool readCreatureTag(uintptr_t cr, char* out, int cap) {
     out[0] = 0;
+    if (!cr || cap < 1) return false;
     uint32_t str = 0, len = 0;
     if (!rd<uint32_t>(cr, Cr_Tag, &str) || !rd<uint32_t>(cr, Cr_Tag + 4, &len)) return false;
-    if (!str || len == 0 || len >= static_cast<uint32_t>(cap) || !saferead::probeRead(SiteBase + 4, reinterpret_cast<const void*>(static_cast<uintptr_t>(str)), len)) return false;
+    if (!str || len == 0) {
+        // Recognize the Exile / player character (empty tag when leader control is switched to a follower)
+        if (cap > 6) {
+            strncpy(out, "player", cap);
+            out[cap - 1] = 0;
+            return true;
+        }
+        return false;
+    }
+    if (len >= static_cast<uint32_t>(cap) || !saferead::probeRead(SiteBase + 4, reinterpret_cast<const void*>(static_cast<uintptr_t>(str)), len)) return false;
     memcpy(out, reinterpret_cast<const void*>(static_cast<uintptr_t>(str)), len);
     out[len] = 0;
     return true;
@@ -429,7 +439,15 @@ W g_w[NWidgets];
 
 void wRect(W& w, const shui::Rect& r) { if (!w.c || (w.rectSet && w.r == r)) return; if (guikit::setRect(w.c, r.x, r.y, r.w, r.h)) { w.r = r; w.rectSet = true; } }
 bool isPopText(const W& w) { int i = static_cast<int>(&w - g_w); return i == W_Auto || i == W_HpM || i == W_HpP || i == W_KeepM || i == W_KeepP || i == W_HpVal || i == W_KeepVal; }
-void popStyle(W& w) { if (!w.c || !isPopText(w)) return; guikit::setTextColor(w.c, 0.85f, 0.95f, 0.85f); guikit::setAlpha(w.c, 1.0f); w.alpha = 1.0f; w.tr = 0.85f; w.tg = 0.95f; w.tb = 0.85f; }   // popover text was invisible (CS8 R-pop): explicit light colour + alpha 1 on build and every show
+void popStyle(W& w) {
+    if (!w.c || !isPopText(w)) return;
+    guikit::setTextColor(w.c, 0.85f, 0.95f, 0.85f);
+    guikit::setAlpha(w.c, 1.0f);
+    w.alpha = 1.0f;
+    float rgb[3] = {};
+    if (guikit::getTextColor(w.c, rgb)) { w.tr = rgb[0]; w.tg = rgb[1]; w.tb = rgb[2]; }
+    else { w.tr = 0.85f; w.tg = 0.95f; w.tb = 0.85f; }
+}   // popover text was invisible (CS8 R-pop): explicit light colour + alpha 1 on build and every show
 void wShow(W& w, bool on) {
     if (!w.c) return;
     if (on) { if (w.vis != 1) popStyle(w); if (w.clk != 1) { guikit::setClickable(w.c, true); w.clk = 1; } if (w.vis != 1) { guikit::setVisible(w.c, true); w.vis = 1; } }
@@ -867,8 +885,8 @@ void buildWidgets(uintptr_t panel) {
     add(W_HpP, "LBL_QUEUE1", "+", true, "hpp");
     add(W_KeepM, "LBL_QUEUE1", "-", true, "keepm");
     add(W_KeepP, "LBL_QUEUE1", "+", true, "keepp");
-    add(W_HpVal, "LBL_QUEUE1", "", true, "hpval");
-    add(W_KeepVal, "LBL_QUEUE1", "", true, "keepval");
+    add(W_HpVal, "LBL_QUEUE1", "-", true, "hpval");
+    add(W_KeepVal, "LBL_QUEUE1", "-", true, "keepval");
     add(W_Ring0, "LBL_QUEUE1", nullptr, false, "ring0");   // after the buttons: drawn on top
     add(W_Ring1, "LBL_QUEUE1", nullptr, false, "ring1");
     for (W& w : g_w) popStyle(w);

@@ -125,36 +125,42 @@ inline bool shouldShow(bool enabled, bool combat, bool inMenu, uint32_t ageMs, i
     return enabled && !combat && !inMenu && ageMs < 250u && nSlots > 0;
 }
 
+// Dark teal palette matching custom GUI theme (Session 2)
+constexpr float kTealBg[3]     = { 0.05f, 0.25f, 0.28f }; // background
+constexpr float kTealBorder[3] = { 0.10f, 0.58f, 0.62f }; // border highlight
+constexpr float kTealDim[3]    = { 0.03f, 0.15f, 0.18f }; // waiting / dimmed
+
 struct Config {
     bool enabled = true;
-    float bg[3] = { 0.10f, 0.55f, 0.20f };
+    float bg[3] = { kTealBg[0], kTealBg[1], kTealBg[2] };
     float bgAlpha = 0.45f;
-    float border[3] = { 0.30f, 0.95f, 0.40f };
+    float border[3] = { kTealBorder[0], kTealBorder[1], kTealBorder[2] };
     float borderAlpha = 0.9f;
     int borderPx = 2;
     bool waitingDim = true;
     float waitingAlpha = 0.6f;
+    float waitingBg[3] = { kTealDim[0], kTealDim[1], kTealDim[2] };
     bool log = true;
     // 0.2.0: companion queue strips (party members 1-2).
     bool companions = true;
     int stripIconPx = 0;          // 0 = auto (60% of the vit-rect height, min 12)
     int stripSide = 0;            // strip_side: kSideLeft (default) | kSideAbove | kSideBelow
     int stripMax = 4;             // 1..4 icons per strip
-    // 0.3.0: kit frames + Cancel controls. The flat bg/border keys above are only the fallback when a kit texture is missing.
-    bool kit = true;              // kit = 0 forces the flat fallback look
+    bool kit = true;              // 0.3.0: kit frames + Cancel controls (default on)
     float frameAlpha = 0.9f;      // qh_frame alpha (scaled by waiting_alpha for the dimmed head slot)
     bool cancel = true;           // the Cancel controls (leader + companion strips)
 };
 
 struct Style { float bg[3], bgA, border[3], borderA, iconA, frameA; int borderPx; };
 
-// Slot 0 while waiting (and waitingDim) is dimmed: icon, background and border alpha all scale by waitingAlpha.
+// Slot 0 while waiting (and waitingDim) is dimmed: icon, background and border alpha all scale by waitingAlpha; bg recoloured to waitingBg.
 inline Style slotStyle(const Config& c, int slotIndex, bool waiting) {
     Style s;
     s.bg[0] = c.bg[0]; s.bg[1] = c.bg[1]; s.bg[2] = c.bg[2];
     s.border[0] = c.border[0]; s.border[1] = c.border[1]; s.border[2] = c.border[2];
     s.bgA = c.bgAlpha; s.borderA = c.borderAlpha; s.iconA = 1.0f; s.frameA = c.frameAlpha; s.borderPx = c.borderPx;
     if (slotIndex == 0 && waiting && c.waitingDim) {
+        s.bg[0] = c.waitingBg[0]; s.bg[1] = c.waitingBg[1]; s.bg[2] = c.waitingBg[2];
         s.iconA *= c.waitingAlpha; s.bgA *= c.waitingAlpha; s.borderA *= c.waitingAlpha; s.frameA *= c.waitingAlpha;
     }
     return s;
@@ -171,16 +177,19 @@ enum : int { kSideLeft = 0, kSideAbove = 1, kSideBelow = 2 };
 constexpr int kStripGap = 2;      // px between icons, and between the strip and the card
 constexpr int kStripMinIcon = 12;
 
-// Icon edge in px: the configured size, or auto. Auto, left side ("slim", doc 30): the selfheal button side, shui::buttonRect(vit).w
-// (16..24 px = h/4; 24 px on the live 47x96 small vit), so the row is as tall as the button beside it. A vit buttonRect rejects (a leader-width
-// vit, h > 400) falls back to 40% of the vit height. Above / below: 60% of the vit height. Rounded, at least kStripMinIcon.
+// Auto icon size calculation: vit.h * 0.40f (~38px on 96px health bar), clamped [32, 48].
+inline int autoIconPx(int vitH) {
+    int px = (vitH * 40) / 100;
+    return px < 32 ? 32 : (px > 48 ? 48 : px);
+}
+
+// Icon edge in px: the configured size, or auto. Auto, left side: 40% of vit height clamped [32, 48]
+// (~38 px on the live 47x96 small vit). Above / below: 60% of the vit height. Rounded, at least kStripMinIcon.
 inline int stripIconSize(Rect vit, const Config& c) {
     if (c.stripIconPx > 0) return c.stripIconPx;
     int s = 0;
     if (c.stripSide == kSideLeft) {
-        // x is irrelevant to the side; a far-right x keeps buttonRect's "would start left of the screen" reject out of the way.
-        s = shui::buttonRect(shui::Rect{ 1 << 20, vit.y, vit.w, vit.h }).w;
-        if (s <= 0) s = (vit.h * 4 + 5) / 10;
+        s = autoIconPx(vit.h);
     } else {
         s = (vit.h * 6 + 5) / 10;
     }
@@ -230,12 +239,31 @@ inline Rect insetRect(Rect r) {
     return Rect{ r.x + dx, r.y + dy, r.w - 2 * dx, r.h - 2 * dy };
 }
 
-// Leader Cancel: a square of side = the live LBL_QUEUE1 height, RIGHT of QUEUE0 (the vanilla queue runs right to left, QUEUE0 is the
-// rightmost / current slot), gap = side / 4, vertically centred on QUEUE0. {0,0,0,0} for an unusable extent.
+// Left pointer chevron indicator pointing right into Slot 0 (vanilla combat layout parity)
+inline Rect chevronRect(Rect q0) {
+    if (q0.w <= 0 || q0.h <= 0) return Rect{ 0, 0, 0, 0 };
+    int w = (q0.w * 18 + 20) / 40;
+    int h = (q0.h * 26 + 20) / 40;
+    if (w < 8) w = 8;
+    if (h < 10) h = 10;
+    int gap = (q0.w * 4 + 20) / 40;
+    int right = q0.x - gap;
+    int x = right - w;
+    int y = q0.y + (q0.h - h) / 2;
+    return Rect{ x, y, w, h };
+}
+
+// Leader Cancel: wide rounded bar beneath Slot 0 matching native combat BTN_CLEARALL [317,570,166,24] vs QUEUE0 [432,521,40,40].
 inline Rect cancelRect(Rect q0, Rect q1) {
-    if (q0.w <= 0 || q0.h <= 0 || q1.h <= 0) return Rect{ 0, 0, 0, 0 };
-    const int side = q1.h, gap = side / 4;
-    return Rect{ q0.x + q0.w + gap, q0.y + (q0.h - side) / 2, side, side };
+    (void)q1;
+    if (q0.w <= 0 || q0.h <= 0) return Rect{ 0, 0, 0, 0 };
+    int w = (q0.w * 166 + 20) / 40;
+    int h = (q0.h * 24 + 20) / 40;
+    int gap = (q0.h * 9 + 20) / 40;
+    int right = q0.x + q0.w + (q0.w * 11 + 20) / 40;
+    int x = right - w;
+    int y = q0.y + q0.h + gap;
+    return Rect{ x, y, w, h };
 }
 
 // Companion Cancel: a square of the strip icon size placed just LEFT of the strip's first icon (gap = max(icon / 4, kStripGap)).
@@ -373,6 +401,7 @@ inline bool parseIniLine(Config& c, const char* line) {
     if (detail::keyEq(kb, ke, "border_alpha")) return detail::parseUnit(vb, ve, &c.borderAlpha);
     if (detail::keyEq(kb, ke, "border_px")) return detail::parsePx(vb, ve, &c.borderPx);
     if (detail::keyEq(kb, ke, "waiting_dim")) return detail::parseBool(vb, ve, &c.waitingDim);
+    if (detail::keyEq(kb, ke, "waiting_dim_rgb")) return detail::parseRgb(vb, ve, c.waitingBg);
     if (detail::keyEq(kb, ke, "waiting_alpha")) return detail::parseUnit(vb, ve, &c.waitingAlpha);
     if (detail::keyEq(kb, ke, "log")) return detail::parseBool(vb, ve, &c.log);
     if (detail::keyEq(kb, ke, "companions")) return detail::parseBool(vb, ve, &c.companions);
@@ -401,6 +430,76 @@ inline void parseIni(Config& c, const char* text) {
         }
         p = *q ? q + 1 : q;
     }
+}
+
+// ---- Multi-Item Action Buffer & Follower Wipe Guard (Workstream 4) ----
+struct QueuedItemAction {
+    uintptr_t creature = 0;
+    uint32_t clientItem = 0;
+    int packedByte = 0;
+    uint32_t targetId = 0;
+    float pos[3] = {};
+    uint32_t queueTime = 0;
+};
+
+constexpr int kMaxItemQueue = 3;
+
+struct ItemBuffer {
+    QueuedItemAction queue[kMaxItemQueue];
+    int count = 0;
+    bool active = false;
+    QueuedItemAction activeAction;
+    uint32_t activeStartTick = 0;
+    bool reInjectPending = false;
+
+    bool empty() const { return count == 0; }
+    bool full() const { return count >= kMaxItemQueue; }
+
+    bool push(const QueuedItemAction& a) {
+        if (count >= kMaxItemQueue) return false;
+        queue[count++] = a;
+        return true;
+    }
+
+    bool pop(QueuedItemAction* out = nullptr) {
+        if (count <= 0) return false;
+        if (out) *out = queue[0];
+        for (int i = 1; i < count; ++i) queue[i - 1] = queue[i];
+        --count;
+        return true;
+    }
+
+    void clear() {
+        count = 0;
+        active = false;
+        activeAction = QueuedItemAction{};
+        activeStartTick = 0;
+        reInjectPending = false;
+    }
+};
+
+enum ActionDecision : int {
+    DECIDE_DISPATCH_NOW = 0,
+    DECIDE_BUFFER = 1,
+    DECIDE_DROP_FULL = 2
+};
+
+inline ActionDecision decideItemAction(const ItemBuffer& buf, bool inCombat, int engineQueueLen) {
+    if (inCombat) return DECIDE_DISPATCH_NOW;
+    if (engineQueueLen == 0 && !buf.active && buf.empty()) return DECIDE_DISPATCH_NOW;
+    if (buf.full()) return DECIDE_DROP_FULL;
+    return DECIDE_BUFFER;
+}
+
+inline bool shouldReInject(const ItemBuffer& buf, bool itemInQueue, bool hasFollowLeader, bool paused, uint32_t now) {
+    if (!buf.active || buf.reInjectPending) return false;
+    if (itemInQueue) return false;
+    uint32_t elapsed = now - buf.activeStartTick;
+    return hasFollowLeader || (paused && elapsed < 3000);
+}
+
+inline bool shouldDispatchNext(const ItemBuffer& buf, int engineQueueLen) {
+    return !buf.active && !buf.empty() && engineQueueLen == 0;
 }
 
 }  // namespace qh

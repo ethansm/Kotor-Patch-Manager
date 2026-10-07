@@ -66,6 +66,12 @@ qh::Config g_cfg;
 k2ps::Client g_ps;
 k2hud::Client g_hudc;
 
+// Multi-item queue buffers (per party member)
+qh::ItemBuffer g_itemQueue[3];
+bool g_dispatching = false;
+using PerformUseItemFn = void(__thiscall*)(void* creature, uint32_t itemId, int packedByte, uint32_t targetId, const float* pos);
+constexpr uintptr_t AddrPerformUseItem = gameaddr::PerformUseItem;
+
 // ---- capture state (written by the hook, read by the draw callback; same game thread) ----
 uintptr_t g_hud = 0;
 int g_combat = 0;
@@ -160,7 +166,14 @@ bool resolveIcon(uintptr_t hud, uintptr_t round, const qh::QEntry& e, uintptr_t 
     char out1[16], out2[16];
     memset(out1, 0, sizeof out1); memset(out2, 0, sizeof out2);
     int scratch = -1;
-    reinterpret_cast<ResolveFn>(AddrIconResolver)(reinterpret_cast<void*>(hud), round, action, node, &scratch, out1, out2);
+    uint32_t fakeAction[16] = {};
+    uintptr_t actPtr = action;
+    if (!actPtr && e.type == qh::T_USE_ITEM) {
+        fakeAction[0] = qh::T_USE_ITEM; // 0x2E
+        fakeAction[14] = e.param0;      // +0x38 = 14*4
+        actPtr = reinterpret_cast<uintptr_t>(fakeAction);
+    }
+    reinterpret_cast<ResolveFn>(AddrIconResolver)(reinterpret_cast<void*>(hud), round, actPtr, node, &scratch, out1, out2);
     char name[17];
     memcpy(name, out1, 16); name[16] = 0;
     if (!resrefOk(name)) {
@@ -182,6 +195,8 @@ static_assert(actq::kMaxEntries == qh::kMaxEntries && actq::kMaxRound == qh::kMa
 struct Snapshot {
     uintptr_t creature = 0, round = 0;
     qh::QEntry e[qh::kMaxEntries]; uintptr_t eData[qh::kMaxEntries]; int ne = 0;
+    int engineNe = 0;
+    int nBuffered = 0;
     qh::RNode rn[qh::kMaxRound]; int nrn = 0;
     qh::RNode cur; bool haveCur = false;
     bool paused = false, waiting = false;
@@ -198,6 +213,7 @@ bool gatherFor(uintptr_t cr, Snapshot& s) {
     s.creature = cr;
     if (!actq::read(cr, &a, SiteQueue, SiteRound)) return false;
     s.round = a.round;
+    s.engineNe = a.ne;
     s.ne = a.ne;
     for (int i = 0; i < a.ne; ++i) { s.e[i].type = a.e[i].type; s.e[i].param0 = a.e[i].param0; s.eData[i] = a.eData[i]; }
     s.nrn = a.nrn;
@@ -206,6 +222,31 @@ bool gatherFor(uintptr_t cr, Snapshot& s) {
     if (a.haveCur) s.cur = toQh(a.cur);
     s.paused = playerPaused();
     s.waiting = qh::isWaiting(s.paused, a.ab8, a.aa8);
+
+    // Append buffered multi-item actions
+    party::Fail why = party::F_None;
+    const uintptr_t tbl = party::table(&why);
+    int memberK = -1;
+    if (tbl) {
+        for (int k = 0; k < 3; ++k) {
+            uintptr_t m = party::member(tbl, k);
+            if (m && (m == cr || party::serverCreature(m) == cr)) {
+                memberK = k;
+                break;
+            }
+        }
+    }
+    s.nBuffered = 0;
+    if (memberK >= 0 && memberK < 3) {
+        const qh::ItemBuffer& ib = g_itemQueue[memberK];
+        for (int bi = 0; bi < ib.count && s.ne < qh::kMaxEntries; ++bi) {
+            s.e[s.ne].type = qh::T_USE_ITEM;
+            s.e[s.ne].param0 = ib.queue[bi].clientItem;
+            s.eData[s.ne] = 0;
+            s.ne++;
+            s.nBuffered++;
+        }
+    }
     return true;
 }
 
@@ -267,6 +308,25 @@ void drawSlot(int x, int y, int w, int h, const qh::Style& st, void* img) {
     if (img) gui2d::drawImage(img, ir.x, ir.y, ir.w, ir.h, 0, white, st.iconA);
 }
 
+void drawChevron(int x, int y, int w, int h, const float* rgb, float alpha) {
+    if (w <= 0 || h <= 0) return;
+    void* img = guikit::imageFor("uibit_arrow_r");
+    if (!img) img = guikit::imageFor("gui_arrow_r");
+    if (img) {
+        gui2d::drawImage(img, x, y, w, h, 0, rgb, alpha);
+        return;
+    }
+    // Scanline rasterized right-pointing triangle fallback
+    for (int col = 0; col < w; ++col) {
+        int insetY = ((h / 2) * col) / (w > 1 ? (w - 1) : 1);
+        int startY = y + insetY;
+        int colH = h - 2 * insetY;
+        if (colH > 0) {
+            gui2d::fillRect(x + col, startY, 1, colH, rgb, alpha);
+        }
+    }
+}
+
 // ---- Cancel controls (0.3.0): 3 HUD labels (0 = leader, 1-2 = companions) built from LBL_QUEUE1 in hud-host's BUILD phase ----
 struct CW {
     uintptr_t c = 0;
@@ -295,8 +355,24 @@ void cwShow(CW& w, bool on) {   // clickable only while visible (a shown control
 }
 void cwHideAll() { for (CW& w : g_cw) cwShow(w, false); }
 
+void cwLookLeader(CW& w) {
+    static const float cream[3] = { 0.80f, 0.80f, 0.698f };
+    static const float tealBorder[3] = { 0.10f, 0.58f, 0.62f };
+    static const float tealHover[3]  = { 0.15f, 0.75f, 0.80f };
+    const int want = w.hover ? 1 : 0;
+    if (w.fill != want) {
+        guikit::setFont(w.c, "dialogfont16x16");
+        guikit::setAlign(w.c, 18);
+        guikit::setText(w.c, "CANCEL QUEUE");
+        guikit::setTextColor(w.c, cream[0], cream[1], cream[2]);
+        guikit::setBorderTint(w.c, w.hover ? tealHover : tealBorder);
+        guikit::setAlpha(w.c, 0.9f);
+        w.fill = want;
+    }
+}
+
 // kit_cancel / kit_cancel_hi untinted; no texture or a refused fill -> a text "X" (once).
-void cwLook(CW& w) {
+void cwLookCompanion(CW& w) {
     static const float white[3] = { 1.0f, 1.0f, 1.0f };
     const int want = w.hover ? 1 : 0;
     if (w.fill == want || w.fill == 2) return;
@@ -305,6 +381,11 @@ void cwLook(CW& w) {
     guikit::setFont(w.c, "dialogfont10x10"); guikit::setAlign(w.c, 18); guikit::setText(w.c, "X");
     w.fill = 2;
     if (!g_cancelMissLogged) { g_cancelMissLogged = true; KP_LOGV(chCancel, KPLOG_WARN, "Cancel art %s: text fallback", img ? "fill refused" : "texture missing"); }
+}
+
+void cwLook(CW& w, int k) {
+    if (k == 0) cwLookLeader(w);
+    else cwLookCompanion(w);
 }
 
 // End of every draw callback: place + show the wanted controls (change-gated), hide the rest.
@@ -318,7 +399,7 @@ void cwApply() {
             if (guikit::setRect(w.c, d.r.x, d.r.y, d.r.w, d.r.h)) { w.r = d.r; w.rectSet = true; }
             else { cwShow(w, false); continue; }
         }
-        cwLook(w);
+        cwLook(w, k);
         cwShow(w, true);
     }
 }
@@ -334,17 +415,17 @@ struct ProjGuard {
     ~ProjGuard() { if (cleared) { if (saferead::probeWrite(SiteCancel + 0x12, flag, 4)) *flag = saved; else KP_LOGV(chCancel, KPLOG_WARN, "BUILD: projection flag restore failed (saved=%d)", saved); } }
 };
 
-// One hidden + click-through label from the LBL_QUEUE1 template; 0 on failure (only that Cancel is disabled).
-uintptr_t makeCancelLabel(uintptr_t panel, int* whyOut) {
+// One hidden + click-through label from a template; 0 on failure (only that Cancel is disabled).
+uintptr_t makeCancelLabel(uintptr_t panel, const char* tmplName, int* whyOut) {
     int why = guikit::CF_None; uint32_t badVt = 0;
-    const uintptr_t c = guikit::createLabelFromTemplate(panel, "LBL_QUEUE1", &why, &badVt);
+    const uintptr_t c = guikit::createLabelFromTemplate(panel, tmplName, &why, &badVt);
     *whyOut = why;
     if (!c) return 0;
     guikit::setVisible(c, false);
     guikit::setClickable(c, false);
     if (!guikit::appendToPanel(panel, c)) {   // no destroy helper in GuiKit: the control stays hidden + click-through and unreferenced
         *whyOut = guikit::CF_Count;
-        KP_LOGV(chCancel, KPLOG_WARN, "BUILD append failed, control %08x left hidden + click-through", (unsigned)c);
+        KP_LOGV(chCancel, KPLOG_WARN, "BUILD append failed for %s, control %08x left hidden + click-through", tmplName, (unsigned)c);
         return 0;
     }
     return c;
@@ -363,7 +444,11 @@ void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
     tex::ensure();
     ProjGuard pg;
     int n = 0, why[3] = {};
-    for (int k = 0; k < 3; ++k) { g_cw[k].c = makeCancelLabel(panel, &why[k]); if (g_cw[k].c) ++n; }
+    for (int k = 0; k < 3; ++k) {
+        const char* tmpl = (k == 0) ? "LBL_MOULDING3" : "LBL_QUEUE1";
+        g_cw[k].c = makeCancelLabel(panel, tmpl, &why[k]);
+        if (g_cw[k].c) ++n;
+    }
     KP_LOGV(chCancel, n == 3 ? KPLOG_INFO : KPLOG_WARN, "BUILD panel=%08x cancel labels n=%d/3 why=%d,%d,%d", (unsigned)panel, n, why[0], why[1], why[2]);
 }
 
@@ -429,6 +514,10 @@ void drawLeader(uintptr_t hud, DWORD now, DWORD age, const K2PsContext* ctx) {
     }
     gui2d::CapGuard capGuard;
     for (int i = 0; i < nd; ++i) drawSlot(d[i].x, d[i].y, d[i].w, d[i].h, d[i].st, guikit::imageFor(d[i].rr));
+    if (nd > 0) {
+        qh::Rect chev = qh::chevronRect(qh::Rect{ d[0].x, d[0].y, d[0].w, d[0].h });
+        drawChevron(chev.x, chev.y, chev.w, chev.h, d[0].st.border, d[0].st.borderA);
+    }
 }
 
 
@@ -558,7 +647,7 @@ int queueCountOf(int k) {
     const uintptr_t tbl = party::table(&why);
     const uintptr_t m = tbl ? party::member(tbl, k) : 0;
     Snapshot s;
-    return gatherFor(m ? party::serverCreature(m) : 0, s) ? s.ne : -1;
+    return gatherFor(m ? party::serverCreature(m) : 0, s) ? s.engineNe : -1;
 }
 
 // Route per R7: CServerExoApp::ClearAllActions(serverObjectId), ECX = *(*AppGlobal + 8). Every pointer is saferead-probed first
@@ -577,8 +666,88 @@ void doCancel(int k) {
     if (bad) { KP_LOGV(chCancel, KPLOG_WARN, "CANCEL refused member=%d (%s)", k, bad); return; }
     const int n = queueCountOf(k);
     QLOG(chCancel, "CANCEL member=%d n=%d route=ServerClearAll", k, n);
+    g_itemQueue[k].clear();
     reinterpret_cast<void(__thiscall*)(uintptr_t, uint32_t)>(gameaddr::ServerClearAllActions)(server, id);
     g_cpend[k].on = true; g_cpend[k].n = n;
+}
+
+// Multi-item buffer ticker and follower wipe guard
+void tickItemQueues(DWORD now, bool inMenu) {
+    if (inMenu || g_combat != 0) {
+        if (g_combat != 0) {
+            for (int k = 0; k < 3; ++k) g_itemQueue[k].clear();
+        }
+        return;
+    }
+    party::Fail why = party::F_None;
+    const uintptr_t tbl = party::table(&why);
+    if (!tbl) return;
+
+    for (int k = 0; k < 3; ++k) {
+        qh::ItemBuffer& buf = g_itemQueue[k];
+        uintptr_t cli = party::member(tbl, k);
+        uintptr_t srv = cli ? party::serverCreature(cli) : 0;
+        if (!srv) {
+            if (buf.count > 0 || buf.active) buf.clear();
+            continue;
+        }
+
+        Snapshot s;
+        if (!gatherFor(srv, s)) continue;
+
+        // 1. Check if active item action is present in server queue/round
+        bool itemInQueue = false;
+        bool hasFollowLeader = false;
+        for (int i = 0; i < s.engineNe; ++i) {
+            if (s.e[i].type == qh::T_USE_ITEM) itemInQueue = true;
+            if (s.e[i].type == 0x3D) hasFollowLeader = true; // AIActionFollowLeader
+        }
+        if (s.haveCur && s.cur.subType == 10) itemInQueue = true; // 10 = use item
+        for (int i = 0; i < s.nrn; ++i) {
+            if (s.rn[i].subType == 10) itemInQueue = true;
+        }
+
+        // 2. Follower wipe protection & active completion tracking
+        if (buf.active) {
+            if (qh::shouldReInject(buf, itemInQueue, hasFollowLeader, s.paused, now)) {
+                QLOG(chMain, "re-injecting eaten item action for member %d (item=%08x, target=%08x)",
+                     k, buf.activeAction.clientItem, buf.activeAction.targetId);
+                buf.reInjectPending = true;
+                g_dispatching = true;
+                reinterpret_cast<PerformUseItemFn>(AddrPerformUseItem)(
+                    reinterpret_cast<void*>(buf.activeAction.creature),
+                    buf.activeAction.clientItem,
+                    buf.activeAction.packedByte,
+                    buf.activeAction.targetId,
+                    buf.activeAction.pos);
+                g_dispatching = false;
+                buf.activeStartTick = now;
+                buf.reInjectPending = false;
+            } else if (!itemInQueue && (now - buf.activeStartTick > 500)) {
+                buf.active = false;
+            }
+        }
+
+        // 3. Sequential dispatch of next buffered item
+        if (qh::shouldDispatchNext(buf, s.engineNe)) {
+            qh::QueuedItemAction nextA;
+            if (buf.pop(&nextA)) {
+                QLOG(chMain, "dispatching buffered item for member %d (item=%08x, target=%08x, remaining=%d)",
+                     k, nextA.clientItem, nextA.targetId, buf.count);
+                buf.active = true;
+                buf.activeAction = nextA;
+                buf.activeStartTick = now;
+                g_dispatching = true;
+                reinterpret_cast<PerformUseItemFn>(AddrPerformUseItem)(
+                    reinterpret_cast<void*>(nextA.creature),
+                    nextA.clientItem,
+                    nextA.packedByte,
+                    nextA.targetId,
+                    nextA.pos);
+                g_dispatching = false;
+            }
+        }
+    }
 }
 
 void KPATCH_CALL onFrameBegin(const K2PsContext* ctx, void*) {
@@ -586,13 +755,23 @@ void KPATCH_CALL onFrameBegin(const K2PsContext* ctx, void*) {
     saferead::beginScope();
     tex::ensure();
     tex::heal();   // every frame, before any gate: a GL reset can happen in menus too
+    const bool menuKnown = ctx->struct_size >= offsetof(K2PsContext, inMenu) + sizeof(int32_t);
+    const bool inMenu = menuKnown && (ctx->inMenu != 0);
+
+    const DWORD now = GetTickCount();
+    tickItemQueues(now, inMenu);
+
     const bool ledge = guikit::clickEdge(g_lmb);   // polled every frame so a held press never fires on reopen
     for (int k = 0; k < 3; ++k)
         if (g_cpend[k].on) { g_cpend[k].on = false; QLOG(chCancel, "CANCEL done member=%d n=%d", k, queueCountOf(k)); }
-    const bool menuKnown = ctx->struct_size >= offsetof(K2PsContext, inMenu) + sizeof(int32_t);
-    if (!g_cfg.cancel || !menuKnown || ctx->inMenu != 0 || g_combat != 0) { cwHideAll(); return; }
-    for (CW& w : g_cw)   // the native tooltip, once per control (UI tick, not a draw callback)
-        if (w.c && !w.tipSet && guitip::nativeSupported() && guitip::setNative(w.c, "Cancel queued actions")) w.tipSet = true;
+    if (!g_cfg.cancel || inMenu || g_combat != 0) { cwHideAll(); return; }
+    for (int k = 0; k < 3; ++k) {
+        CW& w = g_cw[k];
+        if (w.c && !w.tipSet && guitip::nativeSupported()) {
+            const char* tip = (k == 0) ? "Cancel queued actions" : "Cancel queued actions";
+            if (guitip::setNative(w.c, tip)) w.tipSet = true;
+        }
+    }
     int cx = 0, cy = 0, on = -1;
     if (!guikit::cursorEngine(&cx, &cy)) return;
     for (int k = 0; k < 3; ++k) {
@@ -638,6 +817,80 @@ void __cdecl QueueHudCapture(int hud) {
         g_hud = static_cast<uintptr_t>(static_cast<uint32_t>(hud));
         QLOG(chCap, "hud=%08x flags=%08x combat=%d", (unsigned)hud, (unsigned)flags, g_combat);
     }
+}
+
+// H9: PerformUseItem detour hook. Consumes and buffers out-of-combat item actions when queue busy.
+int __cdecl QueueHudPerformUseItem(int clientCreature, int ebp) {
+    if (g_dispatching || !g_cfg.enabled || g_combat != 0) return 0;
+    saferead::beginScope();
+
+    uint32_t itemId = 0;
+    int packedByte = 0;
+    uint32_t targetId = 0;
+    uintptr_t posPtr = 0;
+    float posVal[3] = {};
+
+    if (!rd(SiteQueue + 0x20, static_cast<uintptr_t>(static_cast<uint32_t>(ebp)), 8, &itemId) ||
+        !rd(SiteQueue + 0x21, static_cast<uintptr_t>(static_cast<uint32_t>(ebp)), 0xC, &packedByte) ||
+        !rd(SiteQueue + 0x22, static_cast<uintptr_t>(static_cast<uint32_t>(ebp)), 0x10, &targetId)) {
+        return 0;
+    }
+    if (rd(SiteQueue + 0x23, static_cast<uintptr_t>(static_cast<uint32_t>(ebp)), 0x14, &posPtr) && posPtr) {
+        rd(SiteQueue + 0x24, posPtr, 0, &posVal[0]);
+        rd(SiteQueue + 0x25, posPtr, 4, &posVal[1]);
+        rd(SiteQueue + 0x26, posPtr, 8, &posVal[2]);
+    }
+
+    int memberK = -1;
+    party::Fail why = party::F_None;
+    const uintptr_t tbl = party::table(&why);
+    if (tbl) {
+        for (int k = 0; k < 3; ++k) {
+            uintptr_t m = party::member(tbl, k);
+            if (m && (m == static_cast<uintptr_t>(static_cast<uint32_t>(clientCreature)) ||
+                      party::serverCreature(m) == static_cast<uintptr_t>(static_cast<uint32_t>(clientCreature)))) {
+                memberK = k;
+                break;
+            }
+        }
+    }
+    if (memberK < 0) memberK = 0;
+
+    const int engineQ = queueCountOf(memberK);
+    const qh::ActionDecision dec = qh::decideItemAction(g_itemQueue[memberK], g_combat != 0, engineQ > 0 ? engineQ : 0);
+
+    if (dec == qh::DECIDE_DISPATCH_NOW) {
+        g_itemQueue[memberK].active = true;
+        g_itemQueue[memberK].activeAction.creature = static_cast<uintptr_t>(static_cast<uint32_t>(clientCreature));
+        g_itemQueue[memberK].activeAction.clientItem = itemId;
+        g_itemQueue[memberK].activeAction.packedByte = packedByte;
+        g_itemQueue[memberK].activeAction.targetId = targetId;
+        memcpy(g_itemQueue[memberK].activeAction.pos, posVal, sizeof(posVal));
+        g_itemQueue[memberK].activeAction.queueTime = GetTickCount();
+        g_itemQueue[memberK].activeStartTick = GetTickCount();
+        return 0;
+    }
+
+    if (dec == qh::DECIDE_BUFFER) {
+        qh::QueuedItemAction a;
+        a.creature = static_cast<uintptr_t>(static_cast<uint32_t>(clientCreature));
+        a.clientItem = itemId;
+        a.packedByte = packedByte;
+        a.targetId = targetId;
+        memcpy(a.pos, posVal, sizeof(posVal));
+        a.queueTime = GetTickCount();
+        g_itemQueue[memberK].push(a);
+        QLOG(chMain, "buffered item use for member %d (item=%08x, target=%08x, count=%d)",
+             memberK, itemId, targetId, g_itemQueue[memberK].count);
+        return 1;
+    }
+
+    if (dec == qh::DECIDE_DROP_FULL) {
+        QLOGV(chMain, KPLOG_WARN, "item buffer full for member %d, dropped item %08x", memberK, itemId);
+        return 1;
+    }
+
+    return 0;
 }
 
 } // extern "C"

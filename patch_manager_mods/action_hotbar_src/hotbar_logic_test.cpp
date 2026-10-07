@@ -209,6 +209,8 @@ int main() {
     KT_CHECK_EQ(characterKeyFor(0x7F000001u, 3, &bad).c_str(), "obj7f000001"); KT_CHECK(!bad);
     KT_CHECK_EQ(characterKeyFor(0xFFFFFFFDu, 1, &bad).c_str(), "objfffffffd"); KT_CHECK(!bad);
     KT_CHECK_EQ(characterKeyFor(0xFFFFFFFFu, 1, &bad).c_str(), "objfffffffd"); KT_CHECK(bad);   // one-member party = the Exile
+    KT_CHECK_EQ(characterKeyFor(0xFFFFFFFFu, 2, &bad, true).c_str(), "objfffffffd"); KT_CHECK(bad);   // member 0 in multi-member party = the Exile
+    KT_CHECK_EQ(characterKeyFor(0xFFFFFFFFu, 2, &bad, false).c_str(), ""); KT_CHECK(bad);
     KT_CHECK_EQ(characterKeyFor(0xFFFFFFFFu, 2, &bad).c_str(), ""); KT_CHECK(bad);
     KT_CHECK_EQ(characterKeyFor(0xFFFFFFFFu, 0, &bad).c_str(), ""); KT_CHECK(bad);
     KT_CHECK_EQ(characterKeyFor(0u, 1, &bad).c_str(), ""); KT_CHECK(bad);                       // id 0 never gets the party==1 rescue

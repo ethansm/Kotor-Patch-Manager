@@ -6,6 +6,12 @@
 
 namespace ch {
 
+// Sizing defaults: increased padding and inter-button gaps
+constexpr int kDefaultPad = 6;         // was 4 (inside pill margin)
+constexpr int kDefaultGroupGap = 8;    // gap between group pills
+constexpr int kDefaultSidePad = 10;    // was 6 (side pill padding)
+constexpr int kDefaultCapPad = 6;      // was 10 (cap padding)
+
 struct EntryView { uint32_t key; bool usable; uint32_t owner; char icon[17]; uint32_t count; };   // count = stack size, 0 = not a stack
 struct GroupView { int count; EntryView e[16]; };
 

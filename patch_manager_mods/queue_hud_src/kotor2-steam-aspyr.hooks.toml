@@ -14,3 +14,22 @@ exclude_from_restore = []
 [[hooks.parameters]]
 source = "[ebp-0x16C]"
 type = "int"
+
+# H9: PerformUseItem (0x00775603): intercept out-of-combat item use for multi-item buffering (doc 33 WS4).
+# 6 bytes (2 instructions): SUB ESP,0x14 / MOV [EBP-0x14],ECX.
+# ECX = client creature, EBP = stack frame. Non-zero return jumps to 0x77565D (MOV ESP,EBP / POP EBP / RET 0x10).
+[[hooks]]
+address = 0x00775603
+type = "detour"
+function = "QueueHudPerformUseItem"
+original_bytes = [0x83, 0xEC, 0x14, 0x89, 0x4D, 0xEC]
+consumed_exit_address = 0x0077565D
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "int"
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"

@@ -94,15 +94,15 @@ struct Config {
     int maxRows = 4;             // 1..8
     bool replace = true;         // CH4c: hide the vanilla group controls
     int btnPx = 0;               // 0 = auto (vanilla BTN width / 2, capped by fit), else 8..256
-    int pad = 4;                 // 0..32 px between buttons / rows
-    int groupGap = 8;            // 0..64 px between the three group columns
-    int inset = 3;               // 0..16 px icon inset inside the frame
-    int clickSound = 0;          // GUI sound idx on click, -1 off
-    int capPad = 10;             // CH4d 0..64 px above/below the buttons inside a group pill
-    int sidePad = 6;             // CH4d 0..64 px left/right of the buttons inside a group pill
-    int hideEmpty = 1;           // CH4e 0/1: hide the pill of an empty group, content-sized centred pills (0 = CH4d three equal pills)
-    int colsTotal = 6;           // CH4e 1..12: button columns split across the visible pills (6 = 3x2, 2x3, 1x6)
-    bool verbose = false;        // CH6 [General] Verbose: per-frame / probe logging (default off)
+    int pad = ch::kDefaultPad;                 // was 4: 0..32 px between buttons / rows
+    int groupGap = ch::kDefaultGroupGap;       // was 8: 0..64 px between the three group columns
+    int inset = 3;                             // 0..16 px icon inset inside the frame
+    int clickSound = 0;                        // GUI sound idx on click, -1 off
+    int capPad = ch::kDefaultCapPad;           // was 10: 0..64 px above/below the buttons inside a group pill
+    int sidePad = ch::kDefaultSidePad;         // was 6: 0..64 px left/right of the buttons inside a group pill
+    int hideEmpty = 1;                         // CH4e 0/1: hide the pill of an empty group, content-sized centred pills (0 = CH4d three equal pills)
+    int colsTotal = 6;                         // CH4e 1..12: button columns split across the visible pills (6 = 3x2, 2x3, 1x6)
+    bool verbose = false;                      // CH6 [General] Verbose: per-frame / probe logging (default off)
 } g_cfg;
 
 // CH6: high-volume and probe log lines only when [General] Verbose=1. Lines the log analyzers parse (profile:, config: reloaded, pills: visible=, click g=) and warnings stay on KP_LOGV.
@@ -131,12 +131,12 @@ void loadIni() {
     g_cfg.replace = GetPrivateProfileIntA("Buttons", "Replace", 1, IniPath) != 0;
     const int bp = GetPrivateProfileIntA("Buttons", "BtnPx", 0, IniPath);
     g_cfg.btnPx = bp <= 0 ? 0 : clampInt(bp, 8, 256);
-    g_cfg.pad = clampInt(GetPrivateProfileIntA("Buttons", "Pad", 4, IniPath), 0, 32);
-    g_cfg.groupGap = clampInt(GetPrivateProfileIntA("Buttons", "GroupGap", 8, IniPath), 0, 64);
+    g_cfg.pad = clampInt(GetPrivateProfileIntA("Buttons", "Pad", ch::kDefaultPad, IniPath), 0, 32);
+    g_cfg.groupGap = clampInt(GetPrivateProfileIntA("Buttons", "GroupGap", ch::kDefaultGroupGap, IniPath), 0, 64);
     g_cfg.inset = clampInt(GetPrivateProfileIntA("Buttons", "Inset", 3, IniPath), 0, 16);
     g_cfg.clickSound = clampInt(GetPrivateProfileIntA("Buttons", "ClickSound", 0, IniPath), -1, 18);
-    g_cfg.capPad = clampInt(GetPrivateProfileIntA("Buttons", "CapPad", 10, IniPath), 0, 64);
-    g_cfg.sidePad = clampInt(GetPrivateProfileIntA("Buttons", "SidePad", 6, IniPath), 0, 64);
+    g_cfg.capPad = clampInt(GetPrivateProfileIntA("Buttons", "CapPad", ch::kDefaultCapPad, IniPath), 0, 64);
+    g_cfg.sidePad = clampInt(GetPrivateProfileIntA("Buttons", "SidePad", ch::kDefaultSidePad, IniPath), 0, 64);
     g_cfg.hideEmpty = GetPrivateProfileIntA("Buttons", "HideEmpty", 1, IniPath) != 0 ? 1 : 0;
     g_cfg.colsTotal = clampInt(GetPrivateProfileIntA("Buttons", "ColsTotal", 6, IniPath), 1, 12);
     g_cfg.verbose = GetPrivateProfileIntA("General", "Verbose", 0, IniPath) != 0;
@@ -605,10 +605,16 @@ void updateButtons(const K2HudContext* ctx) {
     // The pill is clickable (swallows gap clicks) but has no action: the click handler below only acts on button hits.
     bool tOk[3], aOk[3]; float tint[3][3], alp[3];
     for (int g = 0; g < 3; ++g) {
+        tint[g][0] = 0.85f; tint[g][1] = 0.15f; tint[g][2] = 0.15f;
+        alp[g] = 0.95f;
         const uintptr_t btnCtl = menu + GroupBase + (uintptr_t)g * GroupStride;
         // Sanity gates (the hidden-BTN tint is UNVERIFIED): pure black or a near-zero alpha would make the pills vanish, so keep the defaults instead.
         tOk[g] = guikit::getBorderTint(btnCtl, tint[g]) && (tint[g][0] > 0.01f || tint[g][1] > 0.01f || tint[g][2] > 0.01f);
         aOk[g] = guikit::getAlpha(btnCtl, &alp[g]) && alp[g] >= 0.05f && alp[g] <= 1.0f;
+        // Force combat red theme for container & button border tint (matching native combat UI)
+        tint[g][0] = 0.85f; tint[g][1] = 0.15f; tint[g][2] = 0.15f;
+        tOk[g] = true;
+        if (!aOk[g]) { alp[g] = 0.95f; aOk[g] = true; }
         if (!tOk[g]) { if (g_contState[g] != 0) { g_contState[g] = 0; CH_VLOG(chTarget, KPLOG_INFO, "container g%d tint read failed or rejected (black)", g); } }
         else if (g_contState[g] != 1 || g_contLog[g][0] != tint[g][0] || g_contLog[g][1] != tint[g][1] || g_contLog[g][2] != tint[g][2] || (aOk[g] && g_contLog[g][3] != alp[g])) {
             g_contState[g] = 1;

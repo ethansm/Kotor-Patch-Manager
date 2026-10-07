@@ -332,11 +332,14 @@ std::string computeCharacterKey() {
     if (!c) return "";
     unsigned oid = creatureOid(c);
     bool invalid = false;
-    std::string key = hb::characterKeyFor(oid, g_partyCount, &invalid);
+    party::Fail why = party::F_None;
+    uintptr_t t = party::table(&why);
+    bool isMember0 = (t != 0 && party::member(t, 0) == c);
+    std::string key = hb::characterKeyFor(oid, g_partyCount, &invalid, isMember0);
     if (invalid) {   // invalid object id: transient during loads, never a real character
         static unsigned lastBad = 1; static int badLogs = 0;
-        if (lastBad != oid * 31u + (unsigned)g_partyCount && badLogs < 30) { lastBad = oid * 31u + (unsigned)g_partyCount; ++badLogs; KP_LOG(chChar, "character: creature %p has invalid object id %08x (party members=%d)", (void*)c, oid, g_partyCount); }
-        // A one-member party is always the player character (the Exile, whose valid id is fffffffd): the id can read 0xFFFFFFFF for a whole session
+        if (lastBad != oid * 31u + (unsigned)g_partyCount && badLogs < 30) { lastBad = oid * 31u + (unsigned)g_partyCount; ++badLogs; KP_LOG(chChar, "character: creature %p has invalid object id %08x (party members=%d isMember0=%d)", (void*)c, oid, g_partyCount, (int)isMember0); }
+        // Party member 0 (or a one-member party) is the player character (the Exile, whose valid id is fffffffd): the id can read 0xFFFFFFFF for a whole session
         // (seen on the Ebon Hawk), which would otherwise leave the character unidentified and refuse every assignment (hb::characterKeyFor).
     }
     return key;
