@@ -1,5 +1,12 @@
 # KOTOR-II Workspace Guidelines
 
+## KPM install
+- Run `python3 scripts/kpm_status.py` first; it gives one verdict per mod.
+- Follow `patch_manager_mods/BUILD_AND_INSTALL.md` (gate, `kpm_hotswap.py --prepare`, `--apply`).
+- Never use KPatchLauncher for a change that can be hot-swapped.
+- Never run two installers at once; commit with explicit paths only.
+- Ask the user for GO before `kpm_hotswap.py --apply` (game closed).
+
 ## Upstream Issue & PR Notification Check
 When starting a new session or beginning mod work:
 - Run `python3 scripts/check_kpm_updates.py --quiet` to check for any new upstream replies on `LaneDibello/Kotor-Patch-Manager`.

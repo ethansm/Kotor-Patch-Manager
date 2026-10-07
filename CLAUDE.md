@@ -2,7 +2,7 @@
 
 ## Task Routing (load the skill before the task)
 - Address-DB rows / Steam DB batches / PR 5 → `kotor2-address-db` skill
-- KPM install, DLL hot-swap, staging, release log tightening, kpm-pr-* worktrees → `kotor2-kpm-install` skill
+- KPM install, DLL hot-swap, staging, release log tightening, kpm-pr-* worktrees → `kotor2-kpm-install` skill (reference: `patch_manager_mods/BUILD_AND_INSTALL.md`)
 - Ghidra server (status, export, audit) → `openkotor-ghidra-server` skill
 - Live mod logs → `kotor2-log-analysis` skill (`python3 scripts/kotor2_logs.py status | check <log> [--new]`); NEVER `cat`/`tail`/`grep` raw `.txt` logs
 - Crash/freeze/hang → `kotor2-crash-triage` skill

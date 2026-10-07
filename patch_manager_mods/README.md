@@ -12,6 +12,8 @@ runtime** (C++ code executing alongside `swkotor2.exe`'s own render/update
 loop). That's the only way to do either of the two ideas below — neither is
 expressible in NWScript, 2DA edits, or GFF/GUI structs alone.
 
+Building and installing mods into the live game: see [`BUILD_AND_INSTALL.md`](BUILD_AND_INSTALL.md).
+
 ## Contents
 
 - [`01_inventory_3d_viewport.md`](01_inventory_3d_viewport.md) — render a
