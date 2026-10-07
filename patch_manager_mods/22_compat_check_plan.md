@@ -1,6 +1,6 @@
 # Doc 22: update compatibility check (`scripts/compat_check.py`) - plan
 
-Written 2026-10-03 (research + plan only; nothing implemented, nothing committed). Related: doc 20 (`20_TESTING_PLAN.md`, section 4.1 "Common contract tests"), doc 22 hotbar shared services (`22_hotbar_shared_services.md` section 6), doc 21 portrait slots (`21_portrait_slots_and_split.md`), doc 19b section D (Common extraction).
+Status: Active (U0 schema and decisions frozen; U1 graph builder next). Written 2026-10-03. Related: doc 20 (`20_TESTING_PLAN.md`, section 4.1 "Common contract tests"), doc 22 hotbar shared services (`22_hotbar_shared_services.md` section 6), doc 21 portrait slots (`21_portrait_slots_and_split.md`), doc 19b section D (Common extraction).
 
 ## Context
 
@@ -118,14 +118,16 @@ Game-version scoping (optional, unit U11): hooks files are named by version (`ko
 ```toml
 # patch_manager_mods/<dir>/test.toml, inside a per-test table (or as a dir default)
 [hotbar_bugs_test]
-covers = ["force_power_hotbar_src/ForcePowerHotbar.cpp"]   # repo-relative globs (relative to patch_manager_mods/ or repo root)
-covers = ["k2.portraitslots@1"]                           # an interface string name@major (matched against provides / requires_interfaces)
+covers = [
+    "force_power_hotbar_src/ForcePowerHotbar.cpp",   # repo-relative globs (relative to patch_manager_mods/ or repo root)
+    "k2.portraitslots@1",                           # interface string name@major (matched against provides / requires_interfaces)
+]
 ```
 
 ```toml
 # tests/compat.toml  (new; only for items that have no natural toml: py tests, parity suites, generators)
 [[covers]]
-id = "suite:levelup-parity"              # an id as printed by run_tests.py --list
+id = "suite:levelup-parity"              # item id as printed by run_tests.py --list
 paths = ["research/companion_levelup/tools/**", "research/companion_levelup/levelup_paths.ini"]
 
 [[generator]]
@@ -133,7 +135,10 @@ script = "scripts/gen_debuff_icon_table.py"
 writes = ["patch_manager_mods/_shared_src/DebuffIconTable.inc"]
 ```
 
-Conventions (no key needed): `*_contract_test.cpp` in a mod dir = consumer contract of that mod; `covers` entries are verified by `--lint` (a glob that matches nothing is a WARN, same convention as the stale-entry WARNs in `check_raw_addresses`).
+Conventions (no key needed):
+- `*_contract_test.cpp` in a mod dir = consumer contract of that mod.
+- `covers` entries are verified by `--lint` (a glob that matches nothing is a WARN, same convention as the stale-entry WARNs in `check_raw_addresses`).
+- Failure in a consumer contract test prints: `BREAKING for <mod>: <first "relies on:" line>`.
 
 `run_tests.py` change that makes this possible: `Item` gains `src` (the `.cpp`/`.py` path), `covers` and `consumer`; new `--id ID` (repeatable, exact) and `--ids-file`. `-k` stays as is. `discover()` is imported by `compat_check.py`, so the ids are guaranteed identical to the runner's.
 
@@ -169,7 +174,13 @@ GAP     buff-duration-hud, shield-bar, portrait-slots include Gui2D.h but own no
 RESULT  PASS 7  FAIL 0  SKIP 0   (unverified: 0)   wall 14.8 s
 ```
 
-Exit codes: 0 all selected items passed (SKIPs listed as `unverified`), 1 any FAIL/ERROR (a failing `*_contract_test` additionally prints `BREAKING for <mod>: <first "relies on:" line>`), 2 tool/usage error (bad ref, git failure, unreadable toml), 3 `--strict` only: UNCLASSIFIED files, GAPs or unverified items present. `--json` schema: `{touched:[{path,status}], plan:[{kind,id,why:[...],cmd:[...]}], gaps:[...], unclassified:[...], results:[{id,status,seconds,reason,tail}], counts, wall_seconds}`; `results` reuses the exact `run_tests.py --json` record shape.
+Exit codes:
+- `0`: All selected items passed (SKIPs listed as `unverified`).
+- `1`: Any FAIL or ERROR in selected items (a failing `*_contract_test` additionally prints `BREAKING for <mod>: <first "relies on:" line>`).
+- `2`: Tool/usage error (bad ref, git failure, unreadable toml, invalid arguments).
+- `3`: `--strict` only: UNCLASSIFIED files, GAPs or unverified items present.
+
+`--json` schema: `{touched:[{path,status}], plan:[{kind,id,why:[...],cmd:[...]}], gaps:[...], unclassified:[...], results:[{id,status,seconds,reason,tail}], counts, wall_seconds}`; `results` reuses the exact `run_tests.py --json` record shape.
 
 Execution: one `run_tests.py --id ... --id ... --build` call for tests/suites (so output, SKIP semantics and JSON are the runner's), then `build_check --mod ...`, then the per-mod checkers. The tool never runs the mutation gate, never touches the game dir (the `check-hook-*` suites read the live config read-only, as they do in the normal runner), and never writes to the KPM tree.
 
@@ -218,9 +229,23 @@ Upstream contributors have no KOTOR-II repo: their relationship is `Patches/Comm
 
 Where our tool meets KPM: when a touched file is in `_shared_src`, `compat_check.py` prints the KPM-side consumer list (same scan over `$KPM_DIR/Patches`) and runs `check_shared_headers.py` read-only to say whether the sync is pending. It never syncs by itself. Proposed (doc 20 4.1, user rule): `check_shared_headers.py --sync` refuses while the selected contract tests are red; implemented as a one-line call into `compat_check.py --list --json` plus `run_tests.py --id`.
 
-## Modular task units
+## Batch table
 
-Model split follows the delegation memory: Sonnet builds, Haiku does mechanical annotation, Opus designs seams, reviews every diff, runs gates and commits. All commits by explicit path (sibling sessions leave many dirty files). Another session is running tests on `_shared_src` right now: no unit below starts before U0 confirms those files are quiet.
+| Id | Batch | Deps | Owner gate | Status | Commit | Next |
+|---|---|---|---|---|---|---|
+| U0 | Freeze schema and decisions | - | - | DONE | | schema and 5 open decisions frozen |
+| U1 | Graph builder (`scripts/compat_graph.py` + tests) | U0 | - | DONE | | compat_graph.py + test suite 12/12 PASS |
+| U2 | Runner hooks (`run_tests.py` Item.src/covers/consumer, `--id`, `--ids-file`) | U0 | doc 20 owner | DONE | 0b91725 | run_tests.py Item.src/covers/consumer, --id, --ids-file, --list --json; 12/12 PASS |
+| U3 | `compat_check.py` CLI and file-class table | U1, U2 | - | TODO | | U12 |
+| U4 | Consumer contract gaps, ranked (`shield_bar`, `buff_hud`, `portrait_slots`, `luo`) | U3 | - | TODO | | U5 |
+| U5 | `covers` annotations for what scan cannot see (`tests/compat.toml`, `test.toml`) | U3 | - | TODO | | U7 |
+| U6 | Interface contract tests and ABI golden (`abi_check.py`, golden diff) | U3, U4 | split session | TODO | | U7 |
+| U7 | `--lint` (stale covers, missing contract tests, unreached mods) | U3, U5 | - | TODO | | U8 |
+| U8 | Wine smokes on fresh DLL (`dll_from = "build"`, optional) | U3 | - | TODO | | U10 |
+| U9 | KPM variant (`tools/affected-patches.py`, Python 3.9) | U1, U3 | user GO | TODO | | U10 |
+| U10 | Docs and rules (`20_TESTING_PLAN.md`, `CLAUDE.md` / `AGENTS.md`) | U3, U7 | user GO | TODO | | U11 |
+| U11 | Version scoping (GOG-only `K2Addr.h` narrowing, optional) | U3 | - | TODO | | U12 |
+| U12 | Proof by deliberate breakage (`SafeRead`, `Gui2D`, `PortraitSlots`, `PsDispatch`, stub) | U3, U4 | - | TODO | | - |
 
 ### U0 - freeze schema and decisions (Opus, 20 min)
 - **Target files:** this doc only.
@@ -307,10 +332,10 @@ Critical path (MVP that answers the user's question): U0 20 min -> U1 3 h -> U2 
 
 Parallelism: U1 and U2 are independent (different files); U4, U5 and U7 are independent after U3; U6 waits on the split session; U9 is independent of everything but needs the KPM master worktree.
 
-## Risks and open questions for the user (max 5)
+## Frozen decisions (resolved in U0)
 
-1. **Dirty shared worktree.** Right now 100+ files are dirty from sibling sessions; `--since HEAD` would select all of them and run half the repo for the wrong reason. Proposed default: explicit file arguments, and `--since` refusing above 25 files without `--yes`. OK?
-2. **Where does it block?** Tool only (your wording), or also: `check_shared_headers.py --sync` refuses while the selected contract tests are red (doc 20 4.1 proposal, which you already approved in principle), and/or a git pre-commit hook on `_shared_src`? The plan assumes "tool + sync refusal", nothing automatic.
-3. **Wine smokes test stale binaries** (they extract the prebuilt `.kpatch`). Want U8 (`dll_from = "build"`) so `compat_check --wine` is trustworthy, or keep smokes out of compat runs and only report them as `unverified`?
-4. **Contract keys.** Accept `covers` in `test.toml` + new `tests/compat.toml`, and the filename convention `*_contract_test.cpp` as the consumer marker, instead of `tags = ["compat"]`? (This also means the 11 missing `common_contract_test.cpp` files become visible gaps; do you want U4 prioritised before more mods adopt Common headers?)
-5. **KPM variant.** Build `tools/affected-patches.py` as an upstream PR candidate (draft only, your approval needed per PR), or keep the tool local to this repo and just print the KPM-side consumer list?
+1. **Dirty shared worktree:** Default invocation requires explicit file arguments (positional). If `--since` is used and touched files count exceeds 25, the tool refuses to run unless `--yes` is passed.
+2. **Enforcement boundary:** Standalone CLI tool (`compat_check.py`) + sync refusal in `check_shared_headers.py --sync` if selected contract tests fail. No automated git pre-commit hook.
+3. **Wine smokes:** Smokes are strictly opt-in via `--wine`. Without U8 (`dll_from = "build"`), smokes report as `unverified` (SKIP). U8 enables testing against fresh build DLLs.
+4. **Contract keys and schema:** Use `covers` array in `test.toml` and `tests/compat.toml`. Use filename convention `*_contract_test.cpp` as the consumer contract marker. Drop `tags = ["compat"]`. Missing contract tests are reported as GAPs in `--lint` and plan output; U4 prioritized for high-churn mods.
+5. **KPM variant:** Maintain local tool first. `tools/affected-patches.py` will be developed on isolated branch `feat/affected-patches` under KPM repo as a candidate PR draft (U9), requiring explicit user conversational chat approval before any PR creation or push. In this repo, `compat_check.py` prints KPM consumer lists when `_shared_src` headers change.
