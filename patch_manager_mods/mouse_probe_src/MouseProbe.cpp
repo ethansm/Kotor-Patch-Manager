@@ -107,6 +107,30 @@ bool g_fixCfgLoaded = false;
 POINT g_lastDragPos = {0, 0};
 bool g_wasDragging = false;
 
+typedef BOOL (WINAPI *pfn_GetCursorPos)(LPPOINT);
+typedef BOOL (WINAPI *pfn_SetCursorPos)(int, int);
+typedef HWND (WINAPI *pfn_GetForegroundWindow)(void);
+typedef BOOL (WINAPI *pfn_GetWindowRect)(HWND, LPRECT);
+
+pfn_GetCursorPos dyn_GetCursorPos = nullptr;
+pfn_SetCursorPos dyn_SetCursorPos = nullptr;
+pfn_GetForegroundWindow dyn_GetForegroundWindow = nullptr;
+pfn_GetWindowRect dyn_GetWindowRect = nullptr;
+bool g_user32Resolved = false;
+
+void resolveUser32() {
+    if (g_user32Resolved) return;
+    g_user32Resolved = true;
+    HMODULE u32 = GetModuleHandleA("user32.dll");
+    if (!u32) u32 = LoadLibraryA("user32.dll");
+    if (u32) {
+        dyn_GetCursorPos = reinterpret_cast<pfn_GetCursorPos>(reinterpret_cast<void*>(GetProcAddress(u32, "GetCursorPos")));
+        dyn_SetCursorPos = reinterpret_cast<pfn_SetCursorPos>(reinterpret_cast<void*>(GetProcAddress(u32, "SetCursorPos")));
+        dyn_GetForegroundWindow = reinterpret_cast<pfn_GetForegroundWindow>(reinterpret_cast<void*>(GetProcAddress(u32, "GetForegroundWindow")));
+        dyn_GetWindowRect = reinterpret_cast<pfn_GetWindowRect>(reinterpret_cast<void*>(GetProcAddress(u32, "GetWindowRect")));
+    }
+}
+
 void loadFixConfig() {
     if (g_fixCfgLoaded) return;
     g_fixCfgLoaded = true;
@@ -160,12 +184,13 @@ void __cdecl ProbeMouseNorm(uintptr_t ebp) {
     if (!rd(ebp, -0x28, &self)) return;
 
     if (g_fixCfg.enabled && g_fixCfg.sanitizeNorm) {
+        resolveUser32();
         int drag = 0;
         rd(DragFlagAddr, 0, &drag);
         bool dragging = (drag != 0) || g_rmbDown;
 
         POINT cur = {0, 0};
-        GetCursorPos(&cur);
+        if (dyn_GetCursorPos) dyn_GetCursorPos(&cur);
 
         float fixedNx = 0.0f, fixedNy = 0.0f;
         mousefix::computeSanitizedDelta(
@@ -176,13 +201,13 @@ void __cdecl ProbeMouseNorm(uintptr_t ebp) {
         if (dragging) {
             g_lastDragPos = cur;
             g_wasDragging = true;
-            if (g_fixCfg.edgeWarp) {
-                HWND hwnd = GetForegroundWindow();
+            if (g_fixCfg.edgeWarp && dyn_GetForegroundWindow && dyn_GetWindowRect && dyn_SetCursorPos) {
+                HWND hwnd = dyn_GetForegroundWindow();
                 RECT rc;
-                if (hwnd && GetWindowRect(hwnd, &rc)) {
+                if (hwnd && dyn_GetWindowRect(hwnd, &rc)) {
                     int wx = 0, wy = 0;
                     if (mousefix::checkEdgeWarp(cur.x, cur.y, rc.left, rc.top, rc.right, rc.bottom, g_fixCfg.edgeMargin, wx, wy)) {
-                        SetCursorPos(wx, wy);
+                        dyn_SetCursorPos(wx, wy);
                         g_lastDragPos.x = wx;
                         g_lastDragPos.y = wy;
                     }
