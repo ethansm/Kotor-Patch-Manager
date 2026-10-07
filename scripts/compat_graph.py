@@ -523,7 +523,9 @@ class CompatGraph:
                             cov = val["covers"]
                             if isinstance(cov, str):
                                 cov = [cov]
-                            test_id = f"cpp:{key}"
+                            test_cpp = Path(root) / f"{key}.cpp"
+                            rel_cpp = self._rel(test_cpp)
+                            test_id = self.test_ids.get(rel_cpp, f"cpp:{key}")
                             for c in cov:
                                 self.covers_map.append((c, test_id))
                         elif key == "covers" and isinstance(val, list):

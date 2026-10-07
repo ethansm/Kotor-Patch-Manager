@@ -1,0 +1,51 @@
+# tests/abi/k2.portraitslots@1.toml - Golden ABI definition for k2.portraitslots@1 (Doc 22 U6).
+# Verified with gcc -m32 for plain C ABI rules.
+
+[interface]
+name = "k2.portraitslots"
+major = 1
+header = "patch_manager_mods/_shared_src/PortraitSlots.h"
+provides = "k2.portraitslots@1"
+
+[constants]
+K2PS_IFACE = "k2.portraitslots"
+K2PS_VERSION = 1
+K2PS_SNAPSHOT = 0
+K2PS_PRE_ENGINE_READ = 1
+K2PS_FRAME_BEGIN = 2
+K2PS_SLOT = 3
+K2PS_MENU_OVERLAY = 4
+K2PS_HUD_DRAW = 5
+K2PS_PHASE_COUNT = 6
+K2PS_PRIO_SHIELD = 100
+K2PS_PRIO_BUFF = 200
+K2PS_MAX_SLOTS = 4
+
+[struct.K2PsContext]
+sizeof = 72
+fields = [
+    { name = "struct_size", offset = 0, size = 4 },
+    { name = "phase", offset = 4, size = 4 },
+    { name = "slot", offset = 8, size = 4 },
+    { name = "creature", offset = 12, size = 4 },
+    { name = "isLarge", offset = 16, size = 4 },
+    { name = "callerEbp", offset = 20, size = 4 },
+    { name = "frame", offset = 24, size = 4 },
+    { name = "inMenu", offset = 28, size = 4 },
+    { name = "panel", offset = 32, size = 4 },
+    { name = "panelRect", offset = 36, size = 16 },
+    { name = "menuCreature", offset = 52, size = 4 },
+    { name = "companions", offset = 56, size = 8 },
+    { name = "companionCtrl", offset = 64, size = 8 },
+]
+
+[struct.K2PortraitSlotsApi]
+sizeof = 24
+fields = [
+    { name = "struct_size", offset = 0, size = 4 },
+    { name = "Register", offset = 4, size = 4 },
+    { name = "Unregister", offset = 8, size = 4 },
+    { name = "CreatureForSlot", offset = 12, size = 4 },
+    { name = "SlotAt", offset = 16, size = 4 },
+    { name = "Frame", offset = 20, size = 4 },
+]
