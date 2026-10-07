@@ -93,7 +93,9 @@ class Item:
     build_timeout: int = 600
     cmd: list | None = None        # the run step
     pre: object = None             # optional callable() -> str|None run before build; str = ERROR message
-    src: Path | None = None        # cpp items: the test source
+    src: Path | None = None        # cpp/py items: the test source
+    covers: list[str] = field(default_factory=list)  # patterns/interfaces covered by this item
+    consumer: str = ""             # mod directory if this is a consumer contract test
 
 
 @dataclass
@@ -244,7 +246,26 @@ def _prepare_build(exe: Path):
     return None
 
 
-def cpp_item(src: Path, sanitize=True, extra_flags=(), tag="", include_dirs=None, cfg=None, exe_dir=None) -> Item:
+def find_mod_dir(p: Path) -> str:
+    """Find the mod directory relative to patch_manager_mods/ for a file."""
+    curr = p if p.is_dir() else p.parent
+    while curr != REPO and curr != CPP_ROOT and curr.parent != curr:
+        if (curr / "manifest.toml").is_file():
+            try:
+                return str(curr.resolve().relative_to(CPP_ROOT.resolve())).replace("\\", "/")
+            except ValueError:
+                return curr.name
+        curr = curr.parent
+    if p.parent != CPP_ROOT and p.parent != REPO:
+        try:
+            return str(p.parent.resolve().relative_to(CPP_ROOT.resolve())).replace("\\", "/")
+        except ValueError:
+            return p.parent.name
+    return ""
+
+
+def cpp_item(src: Path, sanitize=True, extra_flags=(), tag="", include_dirs=None, cfg=None, exe_dir=None,
+             covers=None, consumer=None) -> Item:
     stem = src.stem
     d = src.parent
     if cfg is None:
@@ -260,6 +281,25 @@ def cpp_item(src: Path, sanitize=True, extra_flags=(), tag="", include_dirs=None
         flags += ["-fsanitize=address,undefined", "-fno-omit-frame-pointer"]
     flags += list(extra_flags)
     post = [expand(f) for f in cfg.get("cxxflags", [])]  # after the source so -l libs link; -D/-I work anywhere
+
+    if covers is None:
+        cov = cfg.get("covers", [])
+        if isinstance(cov, str):
+            covers = [cov]
+        elif isinstance(cov, (list, tuple)):
+            covers = [str(x) for x in cov]
+        else:
+            covers = []
+    else:
+        covers = [str(x) for x in covers]
+
+    if consumer is None:
+        if src.name.endswith("_contract_test.cpp"):
+            consumer = find_mod_dir(src)
+        else:
+            consumer = ""
+    consumer = str(cfg.get("consumer", consumer) or "")
+
     return Item(
         id=f"cpp:{stem}{tag}", kind="cpp", skip=expand(cfg.get("skip_reason", "")), cwd=d,
         build_cmd=["g++"] + flags + [str(src), "-o", str(exe)] + post, build_cwd=d,
@@ -267,19 +307,22 @@ def cpp_item(src: Path, sanitize=True, extra_flags=(), tag="", include_dirs=None
         env={"KT_VERBOSE": "", "UBSAN_OPTIONS": "print_stacktrace=1",
              "ASAN_OPTIONS": "abort_on_error=0"},
         pre=lambda: _prepare_build(exe), src=src,
+        covers=covers, consumer=consumer,
     )
 
 
-def py_item(path: Path, tag="") -> Item:
+def py_item(path: Path, tag="", covers=None, consumer="") -> Item:
+    cov = [str(x) for x in covers] if covers else []
     return Item(id=f"py:{rel(path)}{tag}", kind="py", cwd=path.parent, cmd=[sys.executable, path.name],
-                timeout=300, env={"PYTHONDONTWRITEBYTECODE": "1"})
+                timeout=300, env={"PYTHONDONTWRITEBYTECODE": "1"}, src=path, covers=cov, consumer=str(consumer or ""))
 
 
-def unittest_item(d: Path) -> Item:
+def unittest_item(d: Path, covers=None, consumer="") -> Item:
     skip = "" if VENV_PY.exists() else f"missing {rel(VENV_PY)}"
+    cov = [str(x) for x in covers] if covers else []
     return Item(id=f"py:{rel(d)}(unittest)", kind="py", skip=skip, cwd=REPO,
                 cmd=[str(VENV_PY), "-m", "unittest", "discover", "-s", str(d)], timeout=600,
-                env={"PYTHONDONTWRITEBYTECODE": "1"})
+                env={"PYTHONDONTWRITEBYTECODE": "1"}, src=d, covers=cov, consumer=str(consumer or ""))
 
 
 def discover(sanitize=True, tiers=()):
@@ -342,9 +385,13 @@ def discover(sanitize=True, tiers=()):
             else:
                 cmd[0] = sys.executable
         cmd = [expand(c) if i else c for i, c in enumerate(cmd)]
+        cov = s.get("covers", [])
+        suite_covers = [str(x) for x in cov] if isinstance(cov, list) else ([str(cov)] if isinstance(cov, str) else [])
+        suite_src = (REPO / s["src"]) if "src" in s else None
         items.append(Item(id=f"suite:{s['name']}", kind="suite", skip=skip,
                           cwd=suite_cwd(s.get("cwd")), cmd=cmd,
-                          timeout=int(s.get("timeout_s", 300)), env={"PYTHONDONTWRITEBYTECODE": "1"}))
+                          timeout=int(s.get("timeout_s", 300)), env={"PYTHONDONTWRITEBYTECODE": "1"},
+                          src=suite_src, covers=suite_covers, consumer=str(s.get("consumer", ""))))
     return items
 
 
@@ -644,10 +691,13 @@ def main() -> int:
                                  epilog="See the module docstring (head of this file) for discovery rules and test.toml.")
     ap.add_argument("--list", action="store_true", help="list items and would-skip reasons; run nothing")
     ap.add_argument("-k", metavar="SUBSTR", help="only items whose id contains SUBSTR")
+    ap.add_argument("--id", action="append", default=[], help="only run item with exact id (repeatable)")
+    ap.add_argument("--ids-file", metavar="PATH", help="file containing item ids to run, one per line")
     ap.add_argument("--jobs", type=int, default=os.cpu_count() or 4, help="parallel builds/host runs (default: cpu count)")
     ap.add_argument("--wine", action="store_true", help="also run the Wine smokes from harness/smokes.toml")
     ap.add_argument("--build", action="store_true", help="also run tier=\"build\" suites (Windows source builds; implied by --wine)")
-    ap.add_argument("--json", metavar="PATH", help="write machine-readable results")
+    ap.add_argument("--json", nargs="?", const="-", default=None, metavar="PATH",
+                    help="write machine-readable results (to PATH, or stdout if omitted / '-')")
     ap.add_argument("-v", action="store_true", help="print the full output of every item (as each finishes)")
     ap.add_argument("--no-sanitize", action="store_true", help="drop -fsanitize=address,undefined from C++ builds")
     ap.add_argument("--selftest", action="store_true", help="check that failing tests are reported as FAIL")
@@ -671,8 +721,19 @@ def main() -> int:
             cmd.append("-v")
         return subprocess.call(cmd)
 
+    target_ids = set(a.id)
+    if a.ids_file:
+        p = Path(a.ids_file)
+        if not p.is_file():
+            sys.stderr.write(f"error: --ids-file not found: {a.ids_file}\n")
+            return 2
+        for line in p.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line and not line.startswith("#"):
+                target_ids.add(line)
+
     if a.coverage:
-        cpp = [i for i in discover(sanitize=False) if i.kind == "cpp" and (not a.k or a.k in i.id)]
+        cpp = [i for i in discover(sanitize=False) if i.kind == "cpp" and (not a.k or a.k in i.id) and (not target_ids or i.id in target_ids)]
         if a.list:
             for i in cpp:
                 print(f"{i.id}  [cpp]" + (f"  SKIP ({i.skip})" if i.skip else ""))
@@ -692,12 +753,16 @@ def main() -> int:
         return 1 if cr.failed else 0
 
     t_start = time.monotonic()
-    items = discover(sanitize=not a.no_sanitize, tiers=("build",) if (a.build or a.wine) else ())
+    include_build_tier = a.build or a.wine or any(x == "suite:build-check" for x in target_ids)
+    items = discover(sanitize=not a.no_sanitize, tiers=("build",) if include_build_tier else ())
     smokes, wine_err = ([], "")
-    if a.wine:
+    include_wine = a.wine or any(x.startswith("wine:") for x in target_ids)
+    if include_wine:
         smokes, wine_err = wine_plan(SMOKES_TOML)
     if a.k:
         items = [i for i in items if a.k in i.id]
+    if target_ids:
+        items = [i for i in items if i.id in target_ids]
 
     # Wine items: (smoke, mode) -> id
     wine_items = []  # (id, smoke, mode, skip)
@@ -705,13 +770,50 @@ def main() -> int:
         skip = smoke_skip(s)
         for mode in (s.get("modes") or [""]):
             wid = f"wine:{s['name']}" + (f"[{mode}]" if mode else "")
-            if not a.k or a.k in wid:
+            if (not a.k or a.k in wid) and (not target_ids or wid in target_ids):
                 wine_items.append((wid, s, mode, skip))
 
     if a.list:
+        if a.json:
+            table = []
+            for i in items:
+                table.append({
+                    "id": i.id,
+                    "kind": i.kind,
+                    "src": rel(i.src) if i.src else None,
+                    "covers": list(i.covers),
+                    "consumer": i.consumer,
+                    "skip": i.skip,
+                })
+            if include_wine:
+                if wine_err:
+                    table.append({
+                        "id": "wine",
+                        "kind": "wine",
+                        "src": None,
+                        "covers": [],
+                        "consumer": "",
+                        "skip": f"ERROR ({wine_err})",
+                    })
+                for wid, s, mode, skip in wine_items:
+                    table.append({
+                        "id": wid,
+                        "kind": "wine",
+                        "src": rel(HARNESS / s["src"]) if "src" in s else None,
+                        "covers": [],
+                        "consumer": "",
+                        "skip": skip,
+                    })
+            out_str = json.dumps(table, indent=2)
+            if a.json == "-":
+                print(out_str)
+            else:
+                Path(a.json).write_text(out_str, encoding="utf-8")
+            return 0
+
         for i in items:
             print(f"{i.id}  [{i.kind}]" + (f"  SKIP ({i.skip})" if i.skip else ""))
-        if a.wine:
+        if include_wine:
             if wine_err:
                 print(f"wine  [wine]  ERROR ({wine_err})")
             for wid, s, mode, skip in wine_items:
@@ -739,7 +841,7 @@ def main() -> int:
             else:
                 builds[bfuts[f]] = f.result()
 
-    if a.wine:
+    if include_wine:
         if wine_err:
             emit(Result("wine", "wine", "ERROR", 0.0, wine_err))
         prefix_err = ""
@@ -771,11 +873,15 @@ def main() -> int:
     print(f"\n{counts['PASS']} passed, {counts['FAIL']} failed, {counts['ERROR']} error, {counts['SKIP']} skipped "
           f"({len(results)} items) in {wall:.1f}s")
     if a.json:
-        Path(a.json).write_text(json.dumps(
+        out_str = json.dumps(
             {"wall_seconds": round(wall, 2), "counts": counts,
              "results": [{"id": r.id, "kind": r.kind, "status": r.status, "seconds": round(r.seconds, 2),
                           "reason": r.reason, "tail": tail(r.output)} for r in sorted(results, key=lambda r: r.id)]},
-            indent=2), encoding="utf-8")
+            indent=2)
+        if a.json == "-":
+            print(out_str)
+        else:
+            Path(a.json).write_text(out_str, encoding="utf-8")
     return 1 if counts["FAIL"] or counts["ERROR"] else 0
 
 
