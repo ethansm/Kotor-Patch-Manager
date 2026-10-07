@@ -345,4 +345,17 @@ Negative-evidence probes for "does any walk reach the server" (both [V]): `0x005
 mouse-probe `click` channel: H2 (isDbl, hovered, sel, last) + H3 (branch) + H3b (fn) + the two negative probes; one session with (1) double click on a door/NPC that is not yet selected, (2) double click on a selected object, (3) double click on bare ground. Expected from the static trace: (1) A,A (no activation) for a real 0x203 press2, B only if both presses are plain 0x201; (2) B once, then A; (3) A only, no walk anywhere.
 
 ### 0.3.0 install (2026-10-04 17:48)
-mouse-probe 0.3.0 INSTALLED: kpatch md5 `77a3b41e`, KOTOR-II `cb7e361`, fork STAGE_INFO head=`9e18c52`; 33 ids / 217 hooks, verify mismatches 0; backup `backups_mp030_1004_1748`. Log cursor advanced (`kotor2_logs.py check mouse-probe_log.txt --new`). **RESUME HERE:** after the user test (double-click unselected object x5, selected object x5, bare ground x5), run `--new`, count CLICK/MISSEDDBL/DBLGUARD/DBLACT/WORLDCLICK/DEFACT/MOVEPT/WALKWP, and write the verdict here.
+mouse-probe 0.3.0 INSTALLED: kpatch md5 `77a3b41e`, KOTOR-II `cb7e361`, fork STAGE_INFO head=`9e18c52`; 33 ids / 217 hooks, verify mismatches 0; backup `backups_mp030_1004_1748`. Log cursor advanced (`kotor2_logs.py check mouse-probe_log.txt --new`).
+
+### 0.4.0 install (2026-10-06 21:35)
+mouse-probe 0.4.0 HOT-SWAPPED: kpatch md5 `6568fe27`, KOTOR-II `20eafed`, KPM head `cf1c22b`; backup `mouse-probe_swap_20261006_213529`.
+- **Camera Delta Sanitization**: Kills saturated raw desktop DirectInput coordinates under Wine/XWayland (`lX=-x, lY=-(1600-y)`); clamps normalized deltas to `0.0f` when idle and derives relative movement from `GetCursorPos` during RMB drag with `sens_scale_pct=5` and window boundary edge warping (`edge_margin=50`).
+- **Double-Click Synthesis**: Intercepts dropped `WM_LBUTTONDBLCLK` (0x203) when two successive `0x201` arrive within 350ms and 5px, converting the second `0x201` into native `0x203` to trigger vanilla default actions.
+- **Dynamic Linkage**: Win32 `user32.dll` APIs (`GetCursorPos`, `SetCursorPos`, `GetForegroundWindow`, `GetWindowRect`) resolved dynamically via `GetProcAddress` to preserve exact PE import table parity (`kernel32.dll`, `msvcrt.dll`) for hot-swap.
+
+## RESUME HERE (2026-10-06): Shared Input Architecture (`k2.guiinput`, L4)
+- **Play-test verification:** Launch game, verify pitch lock elimination on RMB drag and double-click synthesis in `mouse-probe_log.txt`.
+- **Shared Input Architecture (`k2.guiinput`, L4):** Unify the 4 stacked `SetWindowLongPtrA` subclasses (`hotbar`, `inv3d`, `equip3d`, `chareffects`) into a single `k2.guiinput` provider offering `game_hwnd()`, `cursor_engine()`, `wheel_subscribe()`, and focus tracking.
+- **Handoff Document:** `.claude/session_handoff.md` and `.claude/handoffs/18_mouse_camera_investigation.handoff.md`.
+
+
