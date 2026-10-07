@@ -237,7 +237,7 @@ Where our tool meets KPM: when a touched file is in `_shared_src`, `compat_check
 | U1 | Graph builder (`scripts/compat_graph.py` + tests) | U0 | - | DONE | 40b47d2 | compat_graph.py + test suite 12/12 PASS |
 | U2 | Runner hooks (`run_tests.py` Item.src/covers/consumer, `--id`, `--ids-file`) | U0 | doc 20 owner | DONE | 0b91725 | run_tests.py Item.src/covers/consumer, --id, --ids-file, --list --json; 12/12 PASS |
 | U3 | `compat_check.py` CLI and file-class table | U1, U2 | - | DONE | f633a1f | U12 |
-| U4 | Consumer contract gaps, ranked (`shield_bar`, `buff_hud`, `portrait_slots`, `luo`) | U3 | - | TODO | | U5 |
+| U4 | Consumer contract gaps, ranked (`shield_bar`, `buff_hud`, `portrait_slots`, `luo`) | U3 | - | DONE | 7ae5119 | U5 |
 | U5 | `covers` annotations for what scan cannot see (`tests/compat.toml`, `test.toml`) | U3 | - | TODO | | U7 |
 | U6 | Interface contract tests and ABI golden (`abi_check.py`, golden diff) | U3, U4 | split session | TODO | | U7 |
 | U7 | `--lint` (stale covers, missing contract tests, unreached mods) | U3, U5 | - | TODO | | U8 |
