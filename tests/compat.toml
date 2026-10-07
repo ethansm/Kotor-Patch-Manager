@@ -1,0 +1,12 @@
+# tests/compat.toml - Non-include coverage and generator mappings for compat_check.py (Doc 22)
+
+[[covers]]
+id = "suite:levelup-parity"
+paths = [
+    "research/companion_levelup/tools/**",
+    "research/companion_levelup/levelup_paths.ini",
+]
+
+[[generator]]
+script = "scripts/gen_debuff_icon_table.py"
+writes = ["patch_manager_mods/_shared_src/DebuffIconTable.inc"]
