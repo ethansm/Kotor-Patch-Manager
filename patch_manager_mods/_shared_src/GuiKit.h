@@ -566,7 +566,41 @@ inline uintptr_t bindByTag(uintptr_t panel, const char* tagName, int expectId, i
 
 // ---- Win32 platform defaults (game window lookup as Mod 14 gameWindow 241: largest visible window of this pid, > 320x240 per Mod 3) ----
 #ifndef GUIKIT_HOST
+#ifdef K2_GUIINPUT_H
+inline k2input::Client g_gkInput;
+inline void initGuiInput(const KPatchApi* api, const char* owner) {
+    g_gkInput.init(api, owner);
+    g_gkInput.connect();
+}
+#endif
+
 namespace detail {
+#ifdef K2_GUIINPUT_H
+inline int32_t KPATCH_CALL guikitWheelCb(const K2WheelEvent* ev, void*) {
+    WheelHook& s = g_wheel; DWORD now = GetTickCount();
+    if (s.gate(now)) {
+        if (s.scoped) saferead::beginScope();
+        int sw = ev->screen_w, sh = ev->screen_h;
+        syncScreen(s.iniW, s.iniH, &sw, &sh);
+        float ex = ev->engine_x, ey = ev->engine_y;
+        if (s.iniW > 0 || s.iniH > 0) {
+            clientToEngineF(ev->client_x, ev->client_y, ev->screen_w, ev->screen_h,
+                            static_cast<float>(sw), static_cast<float>(sh), &ex, &ey);
+        }
+        if (s.inside(ex, ey)) {
+            int32_t cur = __atomic_load_n(&s.accum, __ATOMIC_RELAXED);
+            while (!__atomic_compare_exchange_n(&s.accum, &cur, wheelAddClamped(cur, ev->delta), false, __ATOMIC_ACQ_REL, __ATOMIC_RELAXED)) {}
+            if (s.onEvent && s.eventLogs < s.eventLogMax) {
+                ++s.eventLogs;
+                s.onEvent(ev->delta, ev->client_x, ev->client_y, true);
+            }
+            return 1; // consumed!
+        }
+    }
+    return 0; // not consumed
+}
+#endif
+
 struct EnumCtx { DWORD pid; HWND best; long area; };
 inline BOOL CALLBACK enumProc(HWND h, LPARAM lp) {
     EnumCtx* c = reinterpret_cast<EnumCtx*>(lp);
@@ -578,6 +612,12 @@ inline BOOL CALLBACK enumProc(HWND h, LPARAM lp) {
     return TRUE;
 }
 inline HWND gameWindow() {
+#ifdef K2_GUIINPUT_H
+    if (g_gkInput.connected) {
+        HWND gh = reinterpret_cast<HWND>(g_gkInput.game_hwnd());
+        if (gh) return gh;
+    }
+#endif
     static HWND hwnd = nullptr; static DWORD lastTry = 0;
     if (hwnd && IsWindow(hwnd)) return hwnd;
     DWORD now = GetTickCount();
@@ -596,6 +636,9 @@ inline bool winCursorClient(int* cx, int* cy, int* cw, int* ch) {
     return true;
 }
 inline bool winForeground() {
+#ifdef K2_GUIINPUT_H
+    if (g_gkInput.connected) return g_gkInput.foreground();
+#endif
     HWND fg = GetForegroundWindow(); DWORD pid = 0;
     if (!fg) return false;
     GetWindowThreadProcessId(fg, &pid);
@@ -627,6 +670,19 @@ inline LRESULT CALLBACK wheelProc(HWND h, UINT m, WPARAM w, LPARAM l) {
 // exists (retry; gameWindow() throttles its own lookups to 2 s).
 inline HWND g_wheelHwnd = nullptr;
 inline bool wheelInstall() {
+#ifdef K2_GUIINPUT_H
+    g_gkInput.poll();
+    if (g_gkInput.connected) {
+        static bool subOk = false;
+        if (!subOk) {
+            int32_t tok = g_gkInput.wheel_subscribe(detail::guikitWheelCb, nullptr);
+            if (tok > 0) subOk = true;
+        }
+        HWND h = reinterpret_cast<HWND>(g_gkInput.game_hwnd());
+        if (h) g_wheelHwnd = h;
+        return subOk;
+    }
+#endif
     if (detail::WheelWin::old) { detail::WheelWin::install(detail::WheelWin::hwnd, detail::wheelProc); return true; }
     HWND h = detail::gameWindow(); if (!h) return false;
     bool ok = detail::WheelWin::install(h, detail::wheelProc);
@@ -636,6 +692,11 @@ inline bool wheelInstall() {
 // Unload (design A): the DLL image is pinned, so the proc may stay chained. Restore the saved proc ONLY IF ours is still on top; otherwise the
 // hook goes pass-through (inert, forwards everything) instead of unhooking a DLL that subclassed later (tests/static/subclassers.toml rule).
 inline void wheelUninstall() {
+#ifdef K2_GUIINPUT_H
+    if (g_gkInput.connected) {
+        g_gkInput.wheel_unsubscribe(detail::guikitWheelCb);
+    }
+#endif
     detail::WheelWin::uninstall(detail::wheelProc);
     g_wheelHwnd = detail::WheelWin::hwnd;
 }
