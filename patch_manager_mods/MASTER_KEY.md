@@ -18,6 +18,7 @@ When looking at batches in master plans (e.g. `T5d`, `S1a`, `C1`, `R10`), the le
 | **B** | **Database Batches** | Steam address DB reverse-engineering batches in `kpm-pr-steam-db` | `B12b`: Acc/Steam ABI normalization |
 | **R** | **Research & Probes** | Live-game diagnostic probes, Ghidra decompilation, atlas analysis | `R10`: PC level-up filter research |
 | **P** | **Parity Verification** | Byte-exact or behavioral parity comparison against vanilla exe | `P0`: Companion level-up baseline |
+| **U** | **Unit / Compatibility** | Dependency graphs, contract testing, and tool units | `U1`: Graph builder `compat_graph.py` |
 
 ---
 
@@ -43,10 +44,16 @@ Our numbered markdown documents in `patch_manager_mods/` map directly to specifi
 | **19** | `shared_logging_design` | Universal logging library (`KpLog.h`) adoption |
 | **20** | `TESTING_PLAN` | Testing harness architecture, `check.h`, and `run_tests.py` |
 | **21** | `portrait_slots_and_split` | Splitting portrait-slots, buff-hud, and shield-bar into DLLs |
+| **22** | `compat_check_plan` / `hotbar_shared_services` | Update compatibility checker tooling (`compat_check.py`) & shared services |
 | **23** | `menu_3d_shared_migration` | Shared 3D rendering pipeline for inventory and equip screens |
 | **24** | `master_plan_status` | **Active Master Plan**: Patches/Common integration and test coverage |
 | **25** | `pc_levelup_filter` | **Active Mod Plan**: PC & companion level-up filter and stat allocation |
 | **26** | `FORCED_STATE_TESTING` | Forced state regression suite and headless mock testing |
+| **30** | `queue_hud` | Out-of-combat green queue HUD & companion strips |
+| **31** | `combat_action_hotbar` | Dedicated 1-click combat action hotbar |
+| **32** | `common_migration_round2` | Common migration round 2 |
+| **33** | `ui_queue_hotbar_fixes` | **Active Master Plan**: UI, queue, hotbar polish & movement fixes |
+
 
 ---
 
@@ -120,3 +127,22 @@ python3 scripts/plan_manager.py resume 31    # Action hotbar plan
 # Advance a master plan batch state:
 python3 scripts/plan_manager.py mark-done T5e --state DONE --commit abc1234 --notes "32/32 tests PASS"
 ```
+
+---
+
+## 7. Turnkey Mod Scaffolding & Compliance Standards
+
+To ensure every new mod or patch automatically complies with our scoping, testing, and subagent architecture:
+
+```bash
+# Automatically scaffold a compliant mod directory + master plan:
+python3 scripts/scaffold_mod.py <name> [--doc-id <XX>] [--title "<Title>"]
+```
+
+Every new mod generated via `scaffold_mod.py` automatically configures:
+1. **Standard Include Style**: `#include "SafeRead.h"` with `-I Common` (no relative `../_shared/` paths).
+2. **Common Contract Test**: `<mod>_src/common_contract_test.cpp` and `test.toml` pre-configured to run via `scripts/run_tests.py`.
+3. **Strict Mod Scope Boundary**: Master plan header declares `Owning Mod Scope`, automatically extracted by `scripts/subagent_prompt.py` to confine subagent write scopes.
+4. **Role-Based Subagents**: Master plan template pre-populates `oc-subagent <scout|ghidra|code|test|verify|gate|doc>` commands across all 5 standard lifecycle phases.
+5. **KPM Packaging**: `exports.def`, `kotor2-steam-aspyr.hooks.toml`, and `manifest.toml` ready for `scripts/build_check.py`.
+
