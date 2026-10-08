@@ -243,7 +243,7 @@ Where our tool meets KPM: when a touched file is in `_shared_src`, `compat_check
 | U7 | `--lint` (stale covers, missing contract tests, unreached mods) | U3, U5 | - | DONE | b756482 | Implemented --lint checks (stale covers, provides/header validation, contract gaps, unreached mods, unclassified files); test_compat_check 19/19 PASS |
 | U8 | Wine smokes on fresh DLL (`dll_from = "build"`, optional) | U3 | - | DONE | ea85883 | Wine smokes on fresh DLL with dll_from='build', stale kpatch detection and skip/unverified reporting; 71/71 tests PASS |
 | U9 | KPM variant (`tools/affected-patches.py`, Python 3.9) | U1, U3 | user GO | DONE | f1d0a03 | KPM affected-patches.py and test_affected_patches.py on feat/affected-patches (7f05ef7); draft in patch_manager_mods/issue_drafts/pr_affected_patches.md; 7/7 tests PASS; validate-patches green |
-| U10 | Docs and rules (`20_TESTING_PLAN.md`, `CLAUDE.md` / `AGENTS.md`) | U3, U7 | user GO | TODO | | U11 |
+| U10 | Docs and rules (`20_TESTING_PLAN.md`, `CLAUDE.md` / `AGENTS.md`) | U3, U7 | user GO | DONE | e5d32e1 | Documented compat_check.py in 20_TESTING_PLAN.md §4.4 + status line, CLAUDE.md, and AGENTS.md |
 | U11 | Version scoping (GOG-only `K2Addr.h` narrowing, optional) | U3 | - | TODO | | U12 |
 | U12 | Proof by deliberate breakage (`SafeRead`, `Gui2D`, `PortraitSlots`, `PsDispatch`, stub) | U3, U4 | - | TODO | | - |
 
