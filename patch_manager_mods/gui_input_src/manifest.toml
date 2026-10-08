@@ -1,0 +1,15 @@
+[patch]
+id = "gui-input"
+name = "GUI Input (shared game window / input / wheel provider)"
+version = "0.1.0-dev"
+kind = "library"
+provides = ["k2.guiinput@1"]
+author = "local"
+description = "Consolidates window subclassing on the game window into a single owner, providing k2.guiinput v1: game HWND, cursor in engine coordinates, foreground tracking, and mouse wheel subscription dispatch. Needs a KotorPatcher with the patch registry (KPatchInit)."
+
+requires = []
+conflicts = []
+
+[patch.supported_versions]
+kotor2_steam_aspyr = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"
+kotor2_gog_aspyr = "777BEE235A9E8BDD9863F6741BC3AC54BB6A113B62B1D2E4D12BBE6DB963A914"
