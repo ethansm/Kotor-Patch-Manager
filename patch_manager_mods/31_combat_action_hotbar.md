@@ -129,7 +129,21 @@ Rules: one batch per row; each batch ends with `build_check.py --mod combat_hotb
 | CH4e | Hide empty pills, pills sized to their content and centred: only non-empty groups get a pill (all empty = no pills, like the vanilla row collapse in `00743850`), `[Buttons] ColsTotal=6` split across the visible pills (3x2 / 2x3 / 1x6), uniform content-sized pills centred under the banner (`ch::layoutBannerPills`), freeze union over visible pills only, reflow click guard (click / hover sound ignored on the frame counts change), `HideEmpty=0` = CH4d layout; combat-hotbar 0.7.0-dev | CH4d | user play | PARTIAL (installed 10-05 11:36 by DLL hot-swap, live pending) | bfc0f8e, 32afa6f | CH5 |
 | CH5 | INI profile per group: `[Profile] Pin0..2` (actions first, INI order), `Hide0..2` (dropped; hide wins over pin), `Sort0..2=count|engine` (default g2 = count: grenades by stack size `+0x34`). Token = exact name, or " "-suffix when no entry has that exact name ("Flurry" -> "Master Flurry"), or `0x` key. Tiers are native (§2H). `combat_hotbar.ini` hot-reloads within 1 s (`FileWatch.h`; Buttons Enabled/Cols/MaxRows frozen until game reload); name cache per group; reflow guard also compares an order signature; codec + `ch::orderGroup` in `CombatLogic.h` with tests; combat-hotbar 0.8.0-dev | CH4e | user play | PARTIAL (installed 10-05 17:48 by DLL hot-swap, live pending) | 76fa325, ca341dc | CH6 |
 | CH6 | Ship: KpLog trim, mutation run on `CombatLogic.h`, doc 24 row, upstream PR candidate | CH5 | user approval | BUILT (0.9.0-rc, INSTALLED 10-05 21:34) | 3c78d95 | mutation 585 -> 817/999 killed, 182 equivalent (31_combat_action_hotbar_evidence/CH6_mutation.md); [General] Verbose=0 gates per-frame/probe logs; dll 0497eb6d; 1.0.0 after the v6 play test; upstream PR candidate pending |
-| HL4 | Later, optional: action-hotbar (`0x748502`, `0x74B3F0`) and queue-hud (`0x74C168`) migrate to BUILD/FRAME; GOG hooks file (static-verified, GOG callout rule doc 21) | HL3 | owners | TODO | | - |
+| HL4 | Later, optional: action-hotbar (`0x748502`, `0x74B3F0`) and queue-hud (`0x74C168`) migrate to BUILD/FRAME; GOG hooks file (static-verified, GOG callout rule doc 21) | HL3 | owners | DONE | | Action-hotbar and queue-hud hooks migrated to hud-host BUILD/FRAME; GOG hooks created; LevelUp parity tests aligned to TestHarness.h |
+
+## Active Subagent Delegation Commands (`opencode-subagents`)
+
+When delegating pending batches via `python3 scripts/plan_manager.py delegate <id>` or running role subagents directly:
+
+### Batch CH1c - Probe Verification & Log Analysis (Combat Hotbar)
+- Subagent: `oc-subagent scout "Inspect combat-hotbar_log.txt and hud-host_log.txt via python3 scripts/kotor2_logs.py check combat-hotbar"`
+- Subagent: `oc-subagent verify "Validate group 0/1/2 meanings and targetType values 0..3 from live probe log"`
+- Subagent: `oc-subagent gate "Verify pre-install build gate with python3 scripts/build_check.py --mod combat_hotbar_src --mod hud_host_src"`
+
+### Batch HL2 - HudHost Consumer Migration & Verification (Combat Hotbar)
+- Subagent: `oc-subagent code "Verify CombatHotbar requires = ['hud-host'] registration and TARGET_MENU_PRE callback"`
+- Subagent: `oc-subagent verify "Validate probe output byte-parity between CH1b and HL2 via test logs"`
+- Subagent: `oc-subagent gate "Verify pre-install build gate with python3 scripts/build_check.py --mod combat_hotbar_src --mod hud_host_src"`
 
 ### Play-test checklist v6 (CH4c + CH4d + CH4e + CH5, ~10 min; replaces v5)
 1. Target an enemy: 2 pills (feats + grenades) centred under the banner, equal size, 3 buttons per row; no empty middle pill; red tint like vanilla; grenades ordered by stack size, largest first.
@@ -191,3 +205,5 @@ typedef struct K2HudApi { uint32_t struct_size;
 Phase sources: FRAME + TARGET_MENU_PRE = `0x743540` entry (HL1, every HUD draw; entries of the previous frame still valid); TARGET_MENU_POST = CH3a site; BUILD = `0x40F5A0` + HUD vtable filter (HL3). FRAME runs before TARGET_MENU_PRE in the same call.
 
 Rules: library draws nothing and never writes engine memory itself; per-phase priority, ties keep registration order; one SafeRead site range for the library (`0x7000`, register in 19b); GOG = static-verified only (callout rule, doc 21).
+
+- [x] P4 (completed)

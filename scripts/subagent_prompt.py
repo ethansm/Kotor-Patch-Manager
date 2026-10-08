@@ -87,7 +87,7 @@ def extract_phase_info(plan_path: Path, phase_key: str):
             break
 
     # 2. Check full section headers
-    sec_pattern = re.compile(rf"(^#+\s+(?:Phase\s+)?{re.escape(phase_key)}[:\s].*?)(?=^#+\s|\Z)", re.MULTILINE | re.DOTALL | re.IGNORECASE)
+    sec_pattern = re.compile(rf"(^#+\s+(?:(?:Phase|Batch|Chunk|Task|Step)\s+)?{re.escape(phase_key)}[:\s].*?)(?=^#+\s|\Z)", re.MULTILINE | re.DOTALL | re.IGNORECASE)
     sec_match = sec_pattern.search(text)
     if sec_match:
         section_text = sec_match.group(1).strip()
@@ -122,7 +122,7 @@ def extract_phase_info(plan_path: Path, phase_key: str):
         if "build_check.py" in line or "run_tests.py" in line or "kpm_stage_check.py" in line:
             m = re.search(r"(python3\s+scripts/[\w\._-]+\s+[^`\n]+)", line)
             if m:
-                verif_cmds.append(m.group(1).strip().strip("`"))
+                verif_cmds.append(m.group(1).strip().strip("`\"'"))
 
     verif_cmds = list(dict.fromkeys(verif_cmds))
 
@@ -132,7 +132,9 @@ def extract_phase_info(plan_path: Path, phase_key: str):
     if "companion_levelup" in plan_str or "level_up" in plan_str:
         mod_scope = "patch_manager_mods/level_up_override_src/ and research/companion_levelup/"
     else:
-        m = re.search(r"(?:patch_manager_mods/)?([a-zA-Z0-9_]+_src)", text)
+        m = re.search(r"(?:patch_manager_mods/)?([a-zA-Z0-9_]+_src)", combined_text)
+        if not m:
+            m = re.search(r"(?:patch_manager_mods/)?([a-zA-Z0-9_]+_src)", text)
         if m:
             mod_scope = f"patch_manager_mods/{m.group(1)}/"
 

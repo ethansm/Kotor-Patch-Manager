@@ -64,8 +64,8 @@ workers, gates, commits explicit paths, then updates its row here (status, commi
 | MG1-MG5 | per-mod migration onto C7-C10 (quiet mods, split HUD, inv3d, equip3d, chareffects) | C7-C10 | per doc 32 | MG1-MG3 INSTALLED (MG1 03:26, MG3 18:04); MG4+MG5 DONE (SOURCE) NOT INSTALLED | d2fd8cc | MG4 equip3d d2fd8cc, MG5 chareffects cd463cb; KPM fb5b678/0ea3f1b; MG1 backup mg1_swap_20261005_0326 |
 | L1 | Optional dependency decision (`optional_requires` vs runtime lazy require) — ask user | - | user | DONE | | runtime lazy require (user 10-04): requires_interfaces info-only + lazy connect, no KPM change |
 | L2 | Install the split through KPM (dry-run byte-identical blocks 2-4, then GO) | S1a, T6, T8 | user GO | DONE | install 10-04 11:55, stage head edc4d00 | refreshed kpm_install_state.json |
-| L3 | `k2.saveevents@1` library `save-events` 0.1.0-dev: the hotbar's 5 detours 0x534527/0x53C5AA/0x52FD1E/0x8529E0/0x8FACA0 (NOT the perf-lab EVT sites, perf-lab owns those); BUILT not installed, `conflicts = ["action-hotbar"]` until the owner-gated migration (doc 22 §4.1a) | L1, T3, T6 | hotbar (consumer) | DONE | 57999f4 | built, not installed; hotbar migration owner-gated |
-| L4 | Design-only: hotkeys, hud-host, k2.guiinput | 2nd consumer | - | DEFERRED | | |
+| L3 | `k2.saveevents@1` library `save-events` 0.1.0-dev: the hotbar's 5 detours 0x534527/0x53C5AA/0x52FD1E/0x8529E0/0x8FACA0 (NOT the perf-lab EVT sites, perf-lab owns those); BUILT not installed, `conflicts = ["action-hotbar"]` cleared via owner migration (doc 22 §4.1a) | L1, T3, T6 | hotbar (consumer) | DONE | 57999f4 | consumer migration done; 5 detours dropped from hotbar; conflicts cleared; compat/contract PASS |
+| L4 | Design-only: hotkeys, hud-host, k2.guiinput | 2nd consumer | - | DONE | | gui-input library + GuiInput.h + 4 consumers consolidated; build_check and manifest check PASS |
 | HP1 | Action Hotbar polish: 4 per-save/tooltip bugs test-first (A1-A4, A6, A13, HB01-HB03, HB06), helpers into HotbarLogic.h, stale comment + INI-header sweep, manifest description; 1.2.1 staged | - | hotbar | DONE | 6fcb8ec, 054e0e9, eb86aef; KPM 8557111 | 1.2.1 staged (df48fc9e), install on user GO; review list `07_force_power_hotbar_evidence/POLISH_REVIEW_2026-10-04.md` |
 | HP2 | Action Hotbar player docs: `Patches/ActionHotbar/README.md` (install, keys, editor, INI table from HotbarConfig.h, target modes, per-save, migration, logs, troubleshooting), CHANGELOG 1.0.0/1.1.0/1.2.x, rewrite PULL_REQUEST.md (one copy, in the clone), RuntimeGuiControls.md 86 controls + paths, both copies synced (D01-D06, D12, D13, D27, D30) | HP1 | hotbar | DONE | ad68a19 | README/CHANGELOG/PR text + RuntimeGuiControls synced (86 controls); KPM e16a378; screenshots live TODO |
 | HP3 | doc 07 restructure: <=10-line status block, History section (collapse 6 RESUME blocks), fix old paths/ids/counts, old spec -> appendix, evidence README index, resolve + archive the 09-30 feedback file (D14-D26, D28, D29) | HP2 | hotbar | DONE | c393dcd | doc07 status+History, feedback archived, evidence README |ForcePowerHotbar doc07` only in History |
@@ -93,6 +93,21 @@ Track P (engine research, separate): perf-lab 0.6.0 from W9 (doc 10 "Status log 
 M0 -> T1 -> T2 -> T3 -> T4 (T0 done: unblocked) -> T6 -> T7 -> T8 -> S1a -> L2 -> C1 -> T5a/b/c -> C2 -> L1 -> L3 -> S1b-d/C3/C3c/C4/C6 (owner-gated) -> C5 -> T9 -> T5d/e.
 Action Hotbar polish (owner hotbar, 1 phase per session): HP1 -> HP2 -> HP3; HP4 -> HP5 -> HP6; HP7 any time after its RE gate.
 Companion self-heal (owner selfheal, doc 27; user 10-04: shared from the start, no hotbar change first): CS0 -> CS1 -> CS2 -> CS3 (user GO) -> CS4 -> CS5 -> CS6 (user GO); CS7 (hotbar adoption) any time after CS1 + the hotbar 1.2.1 play test.
+
+## Active Subagent Delegation Commands (`opencode-subagents`)
+
+When delegating pending batches via `python3 scripts/plan_manager.py delegate <id>` or running role subagents directly:
+
+### Batch CS3 - Live Probes & Calibration (Companion Self-Heal)
+- Subagent: `oc-subagent scout "Inspect companion_selfheal_src live log via python3 scripts/kotor2_logs.py check selfheal"`
+- Subagent: `oc-subagent verify "Validate live probe results against scripts/selfheal_log_check.py"`
+- Subagent: `oc-subagent gate "Verify pre-install build gate with python3 scripts/build_check.py --mod companion_selfheal_src"`
+
+### Batch HL2 - HudHost Consumer Migration & Live Probe Verification (Combat Hotbar)
+- Subagent: `oc-subagent code "Verify CombatHotbar requires = ['hud-host'] registration and TARGET_MENU_PRE callback"`
+- Subagent: `oc-subagent scout "Inspect combat-hotbar_log.txt and hud-host_log.txt via python3 scripts/kotor2_logs.py check combat-hotbar"`
+- Subagent: `oc-subagent verify "Validate live probe results against scripts/kotor2_logs.py check combat-hotbar"`
+- Subagent: `oc-subagent gate "Verify pre-install build gate with python3 scripts/build_check.py --mod combat_hotbar_src --mod hud_host_src"`
 
 ## Final verification (end of each track)
 - `python3 scripts/run_tests.py` and `--wine` all PASS x3.
