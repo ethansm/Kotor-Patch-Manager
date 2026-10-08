@@ -1059,7 +1059,7 @@ def main() -> int:
             run_tests_script = repo_root / "scripts/run_tests.py"
             test_cmd = [sys.executable, str(run_tests_script), "--build"]
             if args.jobs:
-                test_cmd += ["-j", str(args.jobs)]
+                test_cmd += ["--jobs", str(args.jobs)]
             if args.no_sanitize:
                 test_cmd.append("--no-sanitize")
             if args.wine:
