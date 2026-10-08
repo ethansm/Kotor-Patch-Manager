@@ -203,6 +203,162 @@ def summarize_reason(why: tuple[str, ...]) -> str:
     return f"(includes {first_name})"
 
 
+HUNK_HEADER_RE = re.compile(r"^@@\s+-(\d+)(?:,(\d+))?\s+\+(\d+)(?:,(\d+))?\s+@@")
+
+
+def find_k2addr_gog_range(content: str) -> tuple[int, int] | None:
+    """Find 1-based (start_line, end_line) of the makeGog/kGog block in K2Addr.h."""
+    lines = content.splitlines()
+    start_line = None
+    end_line = None
+    for idx, line in enumerate(lines, 1):
+        if start_line is None and ("makeGog()" in line and "constexpr" in line and "kGog" not in line):
+            start_line = idx
+        if start_line is not None and ("kGog =" in line or "kGog=" in line):
+            end_line = idx
+            break
+    if start_line is not None and end_line is not None:
+        return start_line, end_line
+    return None
+
+
+def is_k2addr_gog_only_diff(
+    diff_text: str,
+    base_content: str,
+    new_content: str,
+) -> bool:
+    """Check if all hunks in a unified diff for K2Addr.h touch only the kGog initializer (Doc 22 U11)."""
+    if not diff_text.strip():
+        return False
+
+    base_range = find_k2addr_gog_range(base_content)
+    new_range = find_k2addr_gog_range(new_content)
+    if not base_range or not new_range:
+        return False
+
+    base_start, base_end = base_range
+    new_start, new_end = new_range
+
+    hunk_count = 0
+    for line in diff_text.splitlines():
+        m = HUNK_HEADER_RE.match(line)
+        if not m:
+            continue
+        hunk_count += 1
+        old_s = int(m.group(1))
+        old_c = int(m.group(2)) if m.group(2) is not None else 1
+        new_s = int(m.group(3))
+        new_c = int(m.group(4)) if m.group(4) is not None else 1
+
+        old_range = (old_s, old_s + old_c - 1) if old_c > 0 else (old_s, old_s)
+        new_range_hunk = (new_s, new_s + new_c - 1) if new_c > 0 else (new_s, new_s)
+
+        if not (base_start <= old_range[0] and old_range[1] <= base_end):
+            return False
+        if not (new_start <= new_range_hunk[0] and new_range_hunk[1] <= new_end):
+            return False
+
+    return hunk_count > 0
+
+
+def get_k2addr_git_state(
+    repo_root: Path,
+    ref: str | None = None,
+    staged: bool = False,
+) -> tuple[str, str, str]:
+    """Extract (diff_text, base_content, new_content) for K2Addr.h from git."""
+    k2addr_rel = "patch_manager_mods/_shared_src/K2Addr.h"
+    k2addr_path = repo_root / k2addr_rel
+
+    new_content = ""
+    if staged:
+        try:
+            sproc = subprocess.run(
+                ["git", "show", f":{k2addr_rel}"],
+                cwd=repo_root,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=False,
+            )
+            if sproc.returncode == 0:
+                new_content = sproc.stdout
+        except Exception:
+            pass
+    if not new_content and k2addr_path.is_file():
+        try:
+            new_content = k2addr_path.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            pass
+
+    base_ref = ref if ref else "HEAD"
+    base_content = ""
+    try:
+        sproc = subprocess.run(
+            ["git", "show", f"{base_ref}:{k2addr_rel}"],
+            cwd=repo_root,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
+        )
+        if sproc.returncode == 0:
+            base_content = sproc.stdout
+    except Exception:
+        pass
+
+    diff_cmd = ["git", "diff", "-U0"]
+    if staged:
+        diff_cmd.append("--cached")
+    elif ref:
+        diff_cmd.append(ref)
+    else:
+        diff_cmd.append("HEAD")
+    diff_cmd.extend(["--", k2addr_rel])
+
+    diff_text = ""
+    try:
+        dproc = subprocess.run(
+            diff_cmd,
+            cwd=repo_root,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
+        )
+        if dproc.returncode == 0:
+            diff_text = dproc.stdout
+    except Exception:
+        pass
+
+    return diff_text, base_content, new_content
+
+
+def narrow_plan_to_gog_scoping(plan: Plan) -> None:
+    """Narrow plan for GOG-only K2Addr.h changes: cpp:k2addr_test + compile-only builds."""
+    narrowed_items = []
+    has_k2addr_test = False
+    for it in plan.items:
+        if it.kind == "build":
+            narrowed_items.append(it)
+        elif it.kind == "test" and it.id == "cpp:k2addr_test":
+            narrowed_items.append(it)
+            has_k2addr_test = True
+
+    if not has_k2addr_test:
+        narrowed_items.append(
+            PlanItem(
+                kind="test",
+                id="cpp:k2addr_test",
+                why=("GOG-only: k2addr_test",),
+            )
+        )
+
+    plan.items = narrowed_items
+    plan.gaps.clear()
+    plan.info_notes.append("GOG-only: Steam runtime unchanged")
+
+
 def check_stale_wine_smokes(plan: Plan, repo_root: Path, kpm_dir: Path) -> tuple[dict[str, str], list[str]]:
     """Check wine smokes in plan. If dll_from != 'build' and kpatch is older than newest affected source,
     return (stale_messages_by_item_id, list_of_stale_item_ids).
@@ -756,6 +912,16 @@ def main() -> int:
     # Derive affected plan
     plan = graph.affected(touched_paths, include_wine=args.wine)
 
+    # Version scoping (Doc 22 U11): GOG-only K2Addr.h narrowing
+    is_k2addr_touched = any(p.endswith("K2Addr.h") for p in touched_paths)
+    other_touched = [p for p in touched_paths if not p.endswith("K2Addr.h") and not p.endswith("k2addr_test.cpp")]
+    if is_k2addr_touched and not other_touched:
+        diff_text, base_content, new_content = get_k2addr_git_state(
+            repo_root, ref=args.since, staged=args.staged
+        )
+        if is_k2addr_gog_only_diff(diff_text, base_content, new_content):
+            narrow_plan_to_gog_scoping(plan)
+
     # If --why or --list, print plan
     if args.list or args.why:
         print_plan(plan, why_mode=args.why, repo_root=repo_root, kpm_dir=graph.kpm_dir)
@@ -773,6 +939,7 @@ def main() -> int:
                 ],
                 "gaps": plan.gaps,
                 "unclassified": plan.unclassified,
+                "info_notes": plan.info_notes,
                 "results": [],
                 "counts": {"PASS": 0, "FAIL": 0, "SKIP": 0, "ERROR": 0},
                 "wall_seconds": 0.0,
@@ -993,6 +1160,7 @@ def main() -> int:
             ],
             "gaps": plan.gaps,
             "unclassified": plan.unclassified,
+            "info_notes": plan.info_notes,
             "results": all_results,
             "counts": counts,
             "wall_seconds": wall_seconds,
