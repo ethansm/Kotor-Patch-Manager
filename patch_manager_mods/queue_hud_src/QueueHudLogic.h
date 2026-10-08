@@ -461,12 +461,14 @@ struct ItemBuffer {
     QueuedItemAction activeAction;
     uint32_t activeStartTick = 0;
     bool reInjectPending = false;
+    bool userCancelled = false;
 
     bool empty() const { return count == 0; }
     bool full() const { return count >= kMaxItemQueue; }
 
     bool push(const QueuedItemAction& a) {
         if (count >= kMaxItemQueue) return false;
+        userCancelled = false;
         queue[count++] = a;
         return true;
     }
@@ -479,12 +481,22 @@ struct ItemBuffer {
         return true;
     }
 
+    void cancel() {
+        count = 0;
+        active = false;
+        activeAction = QueuedItemAction{};
+        activeStartTick = 0;
+        reInjectPending = false;
+        userCancelled = true;
+    }
+
     void clear() {
         count = 0;
         active = false;
         activeAction = QueuedItemAction{};
         activeStartTick = 0;
         reInjectPending = false;
+        userCancelled = false;
     }
 };
 
@@ -501,11 +513,11 @@ inline ActionDecision decideItemAction(const ItemBuffer& buf, bool inCombat, int
     return DECIDE_BUFFER;
 }
 
-inline bool shouldReInject(const ItemBuffer& buf, bool itemInQueue, bool hasFollowLeader, bool paused, uint32_t now) {
-    if (!buf.active || buf.reInjectPending) return false;
+inline bool shouldReInject(const ItemBuffer& buf, bool itemInQueue, bool hasFollowLeader, bool paused = false, uint32_t now = 0, bool userCancelled = false) {
+    (void)paused; (void)now;
+    if (!buf.active || buf.reInjectPending || buf.userCancelled || userCancelled) return false;
     if (itemInQueue) return false;
-    uint32_t elapsed = now - buf.activeStartTick;
-    return hasFollowLeader || (paused && elapsed < 3000);
+    return hasFollowLeader;
 }
 
 inline bool shouldDispatchNext(const ItemBuffer& buf, int engineQueueLen) {

@@ -72,6 +72,9 @@ constexpr int MaxEntriesToLog = 8;
 KP_CHANNEL(chMain, "main");
 KP_CHANNEL(chTarget, "target");
 
+// Only stores the path and the level (no I/O): safe from a static initialiser.
+const bool g_fallbackSet = (KpLog_SetFallbackFile("combat-hotbar_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
+
 struct TargetState {
     uintptr_t targetObj = 0;
     int8_t targetType = -1;

@@ -1,19 +1,7 @@
 [metadata]
 target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
 
-# H8: HUD Update (FUN_0074b3f0), just before the combat-bit test that gates the vanilla queue panel (0x74DC80).
-# 2 whole instructions (12 bytes, no jumps / relative operands): mov ecx,[ebp-0x16C] / mov edx,[ecx+0xA904].
-# [ebp-0x16C] = hud (this). The handler only records the hud pointer, combat bit ([hud+0xA904] bit 1) and a tick count.
-[[hooks]]
-address = 0x0074C168
-type = "detour"
-function = "QueueHudCapture"
-original_bytes = [0x8B, 0x8D, 0x94, 0xFE, 0xFF, 0xFF, 0x8B, 0x91, 0x04, 0xA9, 0x00, 0x00]
-exclude_from_restore = []
-
-[[hooks.parameters]]
-source = "[ebp-0x16C]"
-type = "int"
+# H8 (0x0074C168) migrated to hud-host K2HUD_FRAME (HL4 hook consolidation).
 
 # H9: PerformUseItem (0x00775603): intercept out-of-combat item use for multi-item buffering (doc 33 WS4).
 # 6 bytes (2 instructions): SUB ESP,0x14 / MOV [EBP-0x14],ECX.

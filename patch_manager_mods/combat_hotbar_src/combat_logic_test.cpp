@@ -45,6 +45,11 @@ static void ch6Contracts() {
   KT_CHECK_EQ((int)sizeof(Profile::hide), 3 * ProfMax * ProfName);
   KT_CHECK_EQ((int)sizeof(Profile::nPin), (int)(3 * sizeof(int))); KT_CHECK_EQ((int)sizeof(Profile::nHide), (int)(3 * sizeof(int)));
   KT_CHECK_EQ((int)sizeof(Profile::byCount), (int)(3 * sizeof(bool)));
+  // Doc 33 layout padding defaults
+  KT_CHECK_EQ(kDefaultPad, 8);
+  KT_CHECK_EQ(kDefaultGroupGap, 10);
+  KT_CHECK_EQ(kDefaultSidePad, 16);
+  KT_CHECK_EQ(kDefaultCapPad, 16);
 }
 
 struct Rng {

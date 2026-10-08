@@ -144,13 +144,35 @@ int capPad = 6;      // was 4 (cap padding)
 
 ---
 
-## Execution Order & Verification Steps
+## Workstream 5: Action Hotbar Reset Prevention (`action-hotbar`)
 
-| Step | Action | Time Est | Validation Command |
-|---|---|---|---|
-| **1** | Apply `combat-hotbar` red theme & padding adjustments | 15 min | `python3 scripts/run_tests.py -k combat` |
-| **2** | Fix `companion-selfheal` popover text init & Exile tag check | 20 min | `python3 scripts/run_tests.py -k selfheal` |
-| **3** | Update `queue-hud` companion icon sizing to 38px | 10 min | `python3 scripts/run_tests.py -k queue_hud` |
-| **4** | Implement dark teal geometry & wide Cancel button in `queue-hud` | 35 min | `python3 scripts/build_check.py --mod queue_hud_src` |
-| **5** | Implement multi-item action buffer & wipe guard in `queue-hud` | 40 min | `python3 scripts/run_tests.py -k queue` |
-| **6** | Pre-install gate & live test verification | 15 min | `bash scripts/pre_install_gate.sh --mod combat_hotbar_src --mod queue_hud_src` |
+### 5.1 Objective & Code Targets
+- **Target Files:**
+  - `patch_manager_mods/action_hotbar_src/ActionHotbar.cpp`
+  - `patch_manager_mods/action_hotbar_src/HotbarLogic.h`
+  - `patch_manager_mods/action_hotbar_src/HotbarConfig.h`
+  - `patch_manager_mods/action_hotbar_src/hotbar_logic_test.cpp`
+
+### 5.2 Root Causes & Implementations
+1. **AH1: Absent Snapshot Wiping Live INI:**
+   - In `restoreFromSave`, when `pick.src == hb::SS_Absent`, `ActionHotbar.cpp` previously invoked `replaceLiveProfiles(nullptr, ...)` which erased all active profile bindings in `action_hotbar.ini`.
+   - Fix: Disallowed `replaceLiveProfiles(nullptr)` on `SS_Absent`. It now logs `persave: %s: absent (live hotbar kept): source=%s` at `KPLOG_INFO` and returns immediately without overwriting the live INI.
+2. **AH2: Transient Object ID Fluctuation (`objfffffffe` vs `objfffffffd`):**
+   - In `HotbarLogic.h:characterKeyFor`, the player character alternately registered as `0xFFFFFFFEu` (-2) and `0xFFFFFFFDu` (-3) or `0xFFFFFFFFu` (-1). Naive hex printing caused player profile splitting between `[Profile.objfffffffe]` and `[Profile.objfffffffd]`. Companions used transient heap IDs (`obj8000xxxx`) that reset across module transitions.
+   - Fix:
+     - Player character recognition (`isExile`) anchors party slot 0, single-member party, `"player"`/`"exile"` tags, and IDs `0xFFFFFFFDu`/`0xFFFFFFFEu` strictly to canonical `"objfffffffd"`.
+     - Companions are identified via creature tags (`CExoString` at server creature `+0x18`) yielding stable profile names (e.g. `[Profile.atton]`, `[Profile.kreia]`).
+     - Fallback to party slot (`slot1`, `slot2`) if tags are missing, eliminating transient IDs.
+
+---
+
+## Execution Order & Phase Status
+
+| Id | Batch | Status | Validation | Time Est |
+|---|---|---|---|---|
+| QH1 | [Queue HUD] Strip paused re-inject loop & disallow post-cancel resurrection | DONE | `python3 scripts/run_tests.py -k queue` | 15 min |
+| QH2 | [Queue HUD] Exhaustive deterministic unit tests for queueing/cancels/wipes | DONE | `python3 scripts/run_tests.py -k queue` | 25 min |
+| QH3 | [Queue HUD] Dark teal Cancel button styling parity (Leader & Companion) | DONE | `python3 scripts/build_check.py --mod queue_hud_src` | 20 min |
+| AH1 | [Action Hotbar] Stop wiping live hotbar on absent snapshot (`SS_Absent`) | DONE | `python3 scripts/run_tests.py -k hotbar` | 20 min |
+| AH2 | [Action Hotbar] Stabilize character profile keys using party slot / creature tags | DONE | `python3 scripts/run_tests.py -k hotbar` | 20 min |
+

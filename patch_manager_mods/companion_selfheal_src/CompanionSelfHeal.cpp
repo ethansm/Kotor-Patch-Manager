@@ -70,6 +70,9 @@ KP_CHANNEL(chCall, "call");
 KP_CHANNEL(chUi, "ui");
 KP_CHANNEL(chCfg, "cfg");
 
+// Only stores the path and the level (no I/O): safe from a static initialiser.
+const bool g_fallbackSet = (KpLog_SetFallbackFile("companion-selfheal_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
+
 k2ps::Client g_ps;
 k2hud::Client g_hudc;
 uintptr_t g_hud = 0;
@@ -813,7 +816,21 @@ void KPATCH_CALL onFrameBegin(const K2PsContext* ctx, void*) {
     saferead::beginScope();
     DWORD now = GetTickCount();
     if (g_logOn) {
-        if (now - g_lastPollMs >= 2000) { g_lastPollMs = now; logSlotMap(); }
+        if (now - g_lastPollMs >= 2000) {
+            g_lastPollMs = now;
+            static uint32_t s_lastSlotSig = 0;
+            static bool s_sigInit = false;
+            uint32_t slotSig = 17;
+            for (int i = 0; i < K2PS_MAX_SLOTS; ++i) {
+                int32_t sl = 0, cr = 0;
+                if (g_ps.slotAt(i, &sl, &cr)) slotSig = slotSig * 31 + (uint32_t)sl ^ (uint32_t)cr;
+            }
+            if (!s_sigInit || slotSig != s_lastSlotSig) {
+                s_sigInit = true;
+                s_lastSlotSig = slotSig;
+                logSlotMap();
+            }
+        }
         bool down = foreground() && (GetAsyncKeyState(VK_CONTROL) & 0x8000) && (GetAsyncKeyState(VK_SHIFT) & 0x8000) && (GetAsyncKeyState(g_probeKey) & 0x8000);
         if (down && !g_keyPrev) dumpAll();
         g_keyPrev = down;

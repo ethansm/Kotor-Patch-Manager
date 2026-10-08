@@ -713,6 +713,9 @@ void testChevronRect() {
     KT_CHECK(rectEq(bg, 310, 498, 180, 90));
     Rect bg2 = combatBgRect(Rect{ 864, 1042, 80, 80 });
     KT_CHECK(rectEq(bg2, 864 - 244, 1042 - 46, 360, 180));
+    // Live 3840x1600 coordinates from play logs (q0 = 106x106 at x=2005, y=1389)
+    Rect bgLive = combatBgRect(Rect{ 2005, 1389, 106, 106 });
+    KT_CHECK(rectEq(bgLive, 1682, 1328, 477, 239));
     KT_CHECK(rectEq(combatBgRect(Rect{ 0, 0, 0, 0 }), 0, 0, 0, 0));
 }
 
@@ -757,10 +760,241 @@ void testItemBuffer() {
     KT_CHECK(!shouldReInject(b, true, false, false, 1100));
     // Follower AI 0x3D wiped queue -> re-inject!
     KT_CHECK(shouldReInject(b, false, true, false, 1100));
-    // Paused wipe before 3000ms -> re-inject!
-    KT_CHECK(shouldReInject(b, false, false, true, 1500));
-    // Finished normally after 3000ms -> no re-inject
-    KT_CHECK(!shouldReInject(b, false, false, true, 4500));
+    // Paused wipe without followLeader -> no re-inject (loop stripped)
+    KT_CHECK(!shouldReInject(b, false, false, true, 1500));
+    // User cancellation -> no re-inject even with followLeader
+    b.cancel();
+    KT_CHECK(!shouldReInject(b, false, true, true, 1500));
+    KT_CHECK(!shouldReInject(b, false, true, false, 1500, true));
+
+    // shouldDispatchNext decision
+    b.clear();
+    KT_CHECK(!shouldDispatchNext(b, 0)); // empty -> no
+    b.push(a1);
+    KT_CHECK(shouldDispatchNext(b, 0));  // has items, idle engine -> yes
+    KT_CHECK(!shouldDispatchNext(b, 1)); // has items, busy engine -> no
+    b.active = true;
+    KT_CHECK(!shouldDispatchNext(b, 0)); // has items, dispatch in-flight -> no
+}
+
+void testPausedItemQueueing() {
+    // 1. Paused single/multi-item queueing
+    // Dispatches immediate or buffers up to cap 3, no infinite pause re-inject loop
+    ItemBuffer buf;
+    KT_CHECK(buf.empty());
+
+    QueuedItemAction a1{ 0x1000, 101, 0, 1, {1,2,3}, 1000 };
+    QueuedItemAction a2{ 0x1000, 102, 0, 1, {1,2,3}, 1050 };
+    QueuedItemAction a3{ 0x1000, 103, 0, 1, {1,2,3}, 1100 };
+    QueuedItemAction a4{ 0x1000, 104, 0, 1, {1,2,3}, 1150 };
+    QueuedItemAction a5{ 0x1000, 105, 0, 1, {1,2,3}, 1200 };
+
+    // When paused and idle (engine queue len = 0, no active action), first item dispatches immediately
+    KT_CHECK_EQ((int)decideItemAction(buf, /*inCombat=*/false, /*engineQueueLen=*/0), (int)DECIDE_DISPATCH_NOW);
+    buf.active = true;
+    buf.activeAction = a1;
+    buf.activeStartTick = 1000;
+
+    // Simulate 60 Hz paused ticker across 3000ms:
+    // When paused, if hasFollowLeader is false, shouldReInject MUST remain false on every frame.
+    for (uint32_t t = 1000; t <= 4000; t += 16) {
+        KT_CHECK(!shouldReInject(buf, /*itemInQueue=*/false, /*hasFollowLeader=*/false, /*paused=*/true, t));
+        KT_CHECK(!shouldReInject(buf, /*itemInQueue=*/true, /*hasFollowLeader=*/false, /*paused=*/true, t));
+    }
+
+    // Now while paused and active item is in flight, queue further items up to cap 3
+    KT_CHECK_EQ((int)decideItemAction(buf, false, 0), (int)DECIDE_BUFFER);
+    KT_CHECK(buf.push(a2));
+    KT_CHECK_EQ(buf.count, 1);
+
+    KT_CHECK_EQ((int)decideItemAction(buf, false, 0), (int)DECIDE_BUFFER);
+    KT_CHECK(buf.push(a3));
+    KT_CHECK_EQ(buf.count, 2);
+
+    KT_CHECK_EQ((int)decideItemAction(buf, false, 0), (int)DECIDE_BUFFER);
+    KT_CHECK(buf.push(a4));
+    KT_CHECK_EQ(buf.count, 3);
+    KT_CHECK(buf.full());
+
+    // 5th item exceeds cap 3: rejected
+    KT_CHECK_EQ((int)decideItemAction(buf, false, 0), (int)DECIDE_DROP_FULL);
+    KT_CHECK(!buf.push(a5));
+    KT_CHECK_EQ(buf.count, 3);
+
+    // Engine is still busy with active item or paused
+    KT_CHECK(!shouldDispatchNext(buf, /*engineQueueLen=*/0));
+}
+
+void testPausedCancelClick() {
+    // 2. Paused cancel click
+    // buf.cancel() sets userCancelled = true, disallows re-injection even if follower AI sets hasFollowLeader
+    ItemBuffer buf;
+    QueuedItemAction a1{ 0x1000, 101, 0, 1, {1,2,3}, 1000 };
+    QueuedItemAction a2{ 0x1000, 102, 0, 1, {1,2,3}, 1050 };
+    QueuedItemAction a3{ 0x1000, 103, 0, 1, {1,2,3}, 1100 };
+
+    buf.active = true;
+    buf.activeAction = a1;
+    buf.activeStartTick = 1000;
+    buf.push(a2);
+    buf.push(a3);
+    KT_CHECK_EQ(buf.count, 2);
+    KT_CHECK(!buf.userCancelled);
+
+    // User clicks Cancel while paused:
+    buf.cancel();
+    KT_CHECK_EQ(buf.count, 0);
+    KT_CHECK(buf.empty());
+    KT_CHECK(!buf.active);
+    KT_CHECK(buf.userCancelled);
+    KT_CHECK(!buf.reInjectPending);
+
+    // Follower AI tries to wipe / run followLeader:
+    // Even if follower AI sets hasFollowLeader=true, re-injection is strictly blocked!
+    KT_CHECK(!shouldReInject(buf, /*itemInQueue=*/false, /*hasFollowLeader=*/true, /*paused=*/true, 1050));
+    KT_CHECK(!shouldReInject(buf, /*itemInQueue=*/false, /*hasFollowLeader=*/true, /*paused=*/false, 1050));
+    KT_CHECK(!shouldReInject(buf, /*itemInQueue=*/false, /*hasFollowLeader=*/true, /*paused=*/false, 1050, /*userCancelled=*/true));
+
+    // Even if caller artificially set active=true, userCancelled still blocks re-inject:
+    buf.active = true;
+    KT_CHECK(!shouldReInject(buf, false, true, true, 1050));
+    buf.active = false;
+
+    // Buffer does not dispatch next because it is empty
+    KT_CHECK(!shouldDispatchNext(buf, 0));
+
+    // When a fresh action is later queued, userCancelled resets
+    QueuedItemAction aFresh{ 0x1000, 104, 0, 1, {1,2,3}, 2000 };
+    KT_CHECK(buf.push(aFresh));
+    KT_CHECK(!buf.userCancelled);
+}
+
+void testFollowerWipeProtection() {
+    // 3. Follower wipes
+    // Legitimate AI wipe with hasFollowLeader triggers re-inject if not user-cancelled
+    ItemBuffer buf;
+    QueuedItemAction a1{ 0x1000, 201, 0, 1, {1,2,3}, 1000 };
+    QueuedItemAction a2{ 0x1000, 202, 0, 1, {1,2,3}, 1050 };
+
+    buf.active = true;
+    buf.activeAction = a1;
+    buf.activeStartTick = 1000;
+    buf.push(a2);
+
+    // A. Normal execution: item is present in queue, no re-inject
+    KT_CHECK(!shouldReInject(buf, /*itemInQueue=*/true, /*hasFollowLeader=*/false, false, 1050));
+
+    // B. Follower AI (0x3D) wipes queue: itemInQueue=false, hasFollowLeader=true
+    KT_CHECK(shouldReInject(buf, /*itemInQueue=*/false, /*hasFollowLeader=*/true, false, 1050));
+
+    // Simulation of re-injection dispatch:
+    buf.reInjectPending = true;
+    // While reInjectPending is set, no secondary re-inject can fire
+    KT_CHECK(!shouldReInject(buf, false, true, false, 1051));
+
+    // Re-inject dispatch finishes
+    buf.reInjectPending = false;
+    buf.activeStartTick = 1060;
+
+    // Item now executes in server queue
+    KT_CHECK(!shouldReInject(buf, /*itemInQueue=*/true, /*hasFollowLeader=*/false, false, 1100));
+
+    // C. Natural item completion:
+    // Item finishes and leaves queue: itemInQueue=false, hasFollowLeader=false
+    // Within 500ms grace period: not yet marked inactive
+    const uint32_t nowEarly = 1400; // 340ms elapsed
+    KT_CHECK(!shouldReInject(buf, false, false, false, nowEarly));
+    KT_CHECK(buf.active); // still active until 500ms elapsed
+
+    // At 550ms after activeStartTick (1610): completion window met
+    const uint32_t nowDone = 1610;
+    if (nowDone - buf.activeStartTick > 500) {
+        buf.active = false;
+    }
+    KT_CHECK(!buf.active);
+
+    // D. Now next buffered action (a2) is ready for dispatch
+    KT_CHECK(shouldDispatchNext(buf, /*engineQueueLen=*/0));
+    QueuedItemAction nextA;
+    KT_CHECK(buf.pop(&nextA));
+    KT_CHECK_EQ(nextA.clientItem, 202u);
+    buf.active = true;
+    buf.activeAction = nextA;
+    buf.activeStartTick = nowDone;
+
+    KT_CHECK_EQ(buf.count, 0);
+    KT_CHECK(buf.empty());
+
+    // E. Contrast with user cancel: if user cancelled, wipe does NOT re-inject
+    buf.cancel();
+    KT_CHECK(!shouldReInject(buf, false, true, false, 1700));
+}
+
+void testMixedForcePowersAndItems() {
+    // 4. Mixed force powers and items
+    // Item buffer waits for engine spell queue to reach 0 before dispatch
+    ItemBuffer buf;
+    QueuedItemAction medpac1{ 0x1000, 301, 0, 1, {0,0,0}, 1000 };
+    QueuedItemAction medpac2{ 0x1000, 302, 0, 1, {0,0,0}, 1050 };
+
+    // Situation: Player queued 2 Force Powers in engine queue (e.g. Force Heal + Force Speed)
+    int engineQueueLen = 2;
+
+    // Out-of-combat: Player activates Medpac 1
+    // decideItemAction sees engineQueueLen > 0 -> DECIDE_BUFFER
+    KT_CHECK_EQ((int)decideItemAction(buf, /*inCombat=*/false, engineQueueLen), (int)DECIDE_BUFFER);
+    KT_CHECK(buf.push(medpac1));
+    KT_CHECK_EQ(buf.count, 1);
+
+    // While engine queue has force powers, item buffer cannot dispatch
+    KT_CHECK(!shouldDispatchNext(buf, engineQueueLen));
+
+    // Player activates Medpac 2:
+    KT_CHECK_EQ((int)decideItemAction(buf, false, engineQueueLen), (int)DECIDE_BUFFER);
+    KT_CHECK(buf.push(medpac2));
+    KT_CHECK_EQ(buf.count, 2);
+
+    // Engine finishes 1st Force Power: 1 remains
+    engineQueueLen = 1;
+    KT_CHECK(!shouldDispatchNext(buf, engineQueueLen));
+
+    // Engine finishes 2nd Force Power: queue is now empty
+    engineQueueLen = 0;
+    KT_CHECK(shouldDispatchNext(buf, engineQueueLen));
+
+    // Sequential dispatch of Medpac 1:
+    QueuedItemAction dispatched1;
+    KT_CHECK(buf.pop(&dispatched1));
+    KT_CHECK_EQ(dispatched1.clientItem, 301u);
+    buf.active = true;
+    buf.activeAction = dispatched1;
+    buf.activeStartTick = 2000;
+
+    // Engine is now executing Medpac 1 (engineQueueLen = 1)
+    engineQueueLen = 1;
+    // Medpac 2 must wait in buffer:
+    KT_CHECK(!shouldDispatchNext(buf, engineQueueLen));
+
+    // Medpac 1 completes: engineQueueLen = 0, elapsed > 500ms
+    buf.active = false;
+    engineQueueLen = 0;
+
+    // Now Medpac 2 can dispatch:
+    KT_CHECK(shouldDispatchNext(buf, engineQueueLen));
+    QueuedItemAction dispatched2;
+    KT_CHECK(buf.pop(&dispatched2));
+    KT_CHECK_EQ(dispatched2.clientItem, 302u);
+    buf.active = true;
+    buf.activeAction = dispatched2;
+
+    // Buffer is now empty; once Medpac 2 completes, nothing more to dispatch
+    KT_CHECK(buf.empty());
+    buf.active = false;
+    KT_CHECK(!shouldDispatchNext(buf, 0));
+
+    // Combat override verification:
+    // If in combat, engine queue length does not cause buffering; it dispatches immediately
+    KT_CHECK_EQ((int)decideItemAction(buf, /*inCombat=*/true, /*engineQueueLen=*/3), (int)DECIDE_DISPATCH_NOW);
 }
 
 void testStripCancel() {
@@ -848,6 +1082,10 @@ int main() {
     testCancelRect();
     testChevronRect();
     testItemBuffer();
+    testPausedItemQueueing();
+    testPausedCancelClick();
+    testFollowerWipeProtection();
+    testMixedForcePowersAndItems();
     testStripCancel();
     testCancelVisible();
     return kt::Report("queue_hud_logic_test");

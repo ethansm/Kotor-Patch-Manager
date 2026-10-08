@@ -49,6 +49,9 @@ KP_CHANNEL(chIcon, "icon");
 KP_CHANNEL(chDraw, "draw");
 KP_CHANNEL(chCancel, "cancel");
 
+// Only stores the path and the level (no I/O): safe from a static initialiser.
+const bool g_fallbackSet = (KpLog_SetFallbackFile("queue-hud_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
+
 // saferead site ids (0x7100+)
 constexpr unsigned SiteCap = 0x7100, SiteHud = 0x7101, SiteQueue = 0x7110, SiteRound = 0x7120, SitePause = 0x7130, SiteRules = 0x7140, SiteStrip = 0x7150, SiteCancel = 0x7160;
 
@@ -359,6 +362,7 @@ void cwLookLeader(CW& w) {
     static const float cream[3] = { 0.80f, 0.80f, 0.698f };
     static const float tealBorder[3] = { 0.10f, 0.58f, 0.62f };
     static const float tealHover[3]  = { 0.15f, 0.75f, 0.80f };
+    static const float darkTealFill[3] = { 0.05f, 0.25f, 0.28f };
     const int want = w.hover ? 1 : 0;
     if (w.fill != want) {
         guikit::setFont(w.c, "dialogfont16x16");
@@ -367,17 +371,21 @@ void cwLookLeader(CW& w) {
         guikit::setTextColor(w.c, cream[0], cream[1], cream[2]);
         guikit::setBorderTint(w.c, w.hover ? tealHover : tealBorder);
         guikit::setAlpha(w.c, 0.9f);
+        void* fillImg = guikit::imageFor("uibit_fill_2wt");
+        if (fillImg) guikit::setFill(w.c, fillImg, darkTealFill);
         w.fill = want;
     }
 }
 
 // kit_cancel / kit_cancel_hi untinted; no texture or a refused fill -> a text "X" (once).
 void cwLookCompanion(CW& w) {
-    static const float white[3] = { 1.0f, 1.0f, 1.0f };
+    static const float tealBorder[3] = { 0.10f, 0.58f, 0.62f };
+    static const float tealHover[3]  = { 0.15f, 0.75f, 0.80f };
     const int want = w.hover ? 1 : 0;
     if (w.fill == want || w.fill == 2) return;
     void* img = tex::image(want ? tex::CancelHi : tex::Cancel);
-    if (img && guikit::setFill(w.c, img, white)) { w.fill = want; return; }
+    const float* tint = w.hover ? tealHover : tealBorder;
+    if (img && guikit::setFill(w.c, img, tint)) { w.fill = want; return; }
     guikit::setFont(w.c, "dialogfont10x10"); guikit::setAlign(w.c, 18); guikit::setText(w.c, "X");
     w.fill = 2;
     if (!g_cancelMissLogged) { g_cancelMissLogged = true; KP_LOGV(chCancel, KPLOG_WARN, "Cancel art %s: text fallback", img ? "fill refused" : "texture missing"); }
@@ -436,7 +444,10 @@ void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
     const uintptr_t panel = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->panel));
     saferead::beginScope();
     uint32_t vt = 0;
-    if (!panel || !rd(SiteCancel, panel, 0, &vt) || vt != gameaddr::HudVtable) return;
+    if (!panel || !rd(SiteCancel, panel, 0, &vt) || vt != gameaddr::HudVtable) {
+        if (panel) KP_LOGV(chCancel, KPLOG_WARN, "BUILD skipped: panel %08x vtable %08x != %08x", (unsigned)panel, (unsigned)vt, (unsigned)gameaddr::HudVtable);
+        return;
+    }
     for (CW& w : g_cw) w = CW();
     for (CWant& d : g_want) d = CWant();
     for (CPending& p : g_cpend) p = CPending();
@@ -680,7 +691,7 @@ void doCancel(int k) {
     if (bad) { KP_LOGV(chCancel, KPLOG_WARN, "CANCEL refused member=%d (%s)", k, bad); return; }
     const int n = queueCountOf(k);
     QLOG(chCancel, "CANCEL member=%d n=%d route=ServerClearAll", k, n);
-    g_itemQueue[k].clear();
+    g_itemQueue[k].cancel();
     reinterpret_cast<void(__thiscall*)(uintptr_t, uint32_t)>(gameaddr::ServerClearAllActions)(server, id);
     g_cpend[k].on = true; g_cpend[k].n = n;
 }
@@ -724,19 +735,25 @@ void tickItemQueues(DWORD now, bool inMenu) {
         // 2. Follower wipe protection & active completion tracking
         if (buf.active) {
             if (qh::shouldReInject(buf, itemInQueue, hasFollowLeader, s.paused, now)) {
-                QLOG(chMain, "re-injecting eaten item action for member %d (item=%08x, target=%08x)",
-                     k, buf.activeAction.clientItem, buf.activeAction.targetId);
-                buf.reInjectPending = true;
-                g_dispatching = true;
-                reinterpret_cast<PerformUseItemFn>(AddrPerformUseItem)(
-                    reinterpret_cast<void*>(buf.activeAction.creature),
-                    buf.activeAction.clientItem,
-                    buf.activeAction.packedByte,
-                    buf.activeAction.targetId,
-                    buf.activeAction.pos);
-                g_dispatching = false;
-                buf.activeStartTick = now;
-                buf.reInjectPending = false;
+                if (!saferead::probeRead(SiteQueue, reinterpret_cast<const void*>(buf.activeAction.creature), 4)) {
+                    QLOGV(chMain, KPLOG_WARN, "re-inject skipped: creature %08x unreadable for member %d",
+                          (unsigned)buf.activeAction.creature, k);
+                    buf.active = false;
+                } else {
+                    QLOG(chMain, "re-injecting eaten item action for member %d (item=%08x, target=%08x)",
+                         k, buf.activeAction.clientItem, buf.activeAction.targetId);
+                    buf.reInjectPending = true;
+                    g_dispatching = true;
+                    reinterpret_cast<PerformUseItemFn>(AddrPerformUseItem)(
+                        reinterpret_cast<void*>(buf.activeAction.creature),
+                        buf.activeAction.clientItem,
+                        buf.activeAction.packedByte,
+                        buf.activeAction.targetId,
+                        buf.activeAction.pos);
+                    g_dispatching = false;
+                    buf.activeStartTick = now;
+                    buf.reInjectPending = false;
+                }
             } else if (!itemInQueue && (now - buf.activeStartTick > 500)) {
                 buf.active = false;
             }
@@ -746,19 +763,24 @@ void tickItemQueues(DWORD now, bool inMenu) {
         if (qh::shouldDispatchNext(buf, s.engineNe)) {
             qh::QueuedItemAction nextA;
             if (buf.pop(&nextA)) {
-                QLOG(chMain, "dispatching buffered item for member %d (item=%08x, target=%08x, remaining=%d)",
-                     k, nextA.clientItem, nextA.targetId, buf.count);
-                buf.active = true;
-                buf.activeAction = nextA;
-                buf.activeStartTick = now;
-                g_dispatching = true;
-                reinterpret_cast<PerformUseItemFn>(AddrPerformUseItem)(
-                    reinterpret_cast<void*>(nextA.creature),
-                    nextA.clientItem,
-                    nextA.packedByte,
-                    nextA.targetId,
-                    nextA.pos);
-                g_dispatching = false;
+                if (!saferead::probeRead(SiteQueue, reinterpret_cast<const void*>(nextA.creature), 4)) {
+                    QLOGV(chMain, KPLOG_WARN, "dispatch skipped: creature %08x unreadable for member %d",
+                          (unsigned)nextA.creature, k);
+                } else {
+                    QLOG(chMain, "dispatching buffered item for member %d (item=%08x, target=%08x, remaining=%d)",
+                         k, nextA.clientItem, nextA.targetId, buf.count);
+                    buf.active = true;
+                    buf.activeAction = nextA;
+                    buf.activeStartTick = now;
+                    g_dispatching = true;
+                    reinterpret_cast<PerformUseItemFn>(AddrPerformUseItem)(
+                        reinterpret_cast<void*>(nextA.creature),
+                        nextA.clientItem,
+                        nextA.packedByte,
+                        nextA.targetId,
+                        nextA.pos);
+                    g_dispatching = false;
+                }
             }
         }
     }
@@ -771,36 +793,42 @@ void KPATCH_CALL onFrameBegin(const K2PsContext* ctx, void*) {
     tex::heal();   // every frame, before any gate: a GL reset can happen in menus too
     const bool menuKnown = ctx->struct_size >= offsetof(K2PsContext, inMenu) + sizeof(int32_t);
     const bool inMenu = menuKnown && (ctx->inMenu != 0);
-
-    const DWORD now = GetTickCount();
-    tickItemQueues(now, inMenu);
-
     const bool ledge = guikit::clickEdge(g_lmb);   // polled every frame so a held press never fires on reopen
     for (int k = 0; k < 3; ++k)
         if (g_cpend[k].on) { g_cpend[k].on = false; QLOG(chCancel, "CANCEL done member=%d n=%d", k, queueCountOf(k)); }
-    if (!g_cfg.cancel || inMenu || g_combat != 0) { cwHideAll(); return; }
-    for (int k = 0; k < 3; ++k) {
-        CW& w = g_cw[k];
-        if (w.c && !w.tipSet && guitip::nativeSupported()) {
-            const char* tip = (k == 0) ? "Cancel queued actions" : "Cancel queued actions";
-            if (guitip::setNative(w.c, tip)) w.tipSet = true;
+    if (!g_cfg.cancel || inMenu || g_combat != 0) {
+        cwHideAll();
+    } else {
+        for (int k = 0; k < 3; ++k) {
+            CW& w = g_cw[k];
+            if (w.c && !w.tipSet && guitip::nativeSupported()) {
+                const char* tip = (k == 0) ? "Cancel queued actions" : "Cancel queued actions";
+                if (guitip::setNative(w.c, tip)) w.tipSet = true;
+            }
+        }
+        int cx = 0, cy = 0, on = -1;
+        if (guikit::cursorEngine(&cx, &cy)) {
+            for (int k = 0; k < 3; ++k) {
+                CW& w = g_cw[k];
+                const bool h = w.c && guikit::hit(w.c, cx, cy);   // hit() needs the visible flag: a hidden control never matches
+                if (h && !w.hover) guikit::playHoverSound();
+                w.hover = h;
+                if (h) on = k;
+            }
+            if (ledge && on >= 0) doCancel(on);
         }
     }
-    int cx = 0, cy = 0, on = -1;
-    if (!guikit::cursorEngine(&cx, &cy)) return;
-    for (int k = 0; k < 3; ++k) {
-        CW& w = g_cw[k];
-        const bool h = w.c && guikit::hit(w.c, cx, cy);   // hit() needs the visible flag: a hidden control never matches
-        if (h && !w.hover) guikit::playHoverSound();
-        w.hover = h;
-        if (h) on = k;
-    }
-    if (ledge && on >= 0) doCancel(on);
+
+    const DWORD now = GetTickCount();
+    tickItemQueues(now, inMenu);
 }
 
 } // namespace
 
 extern "C" {
+
+void __cdecl QueueHudCapture(int hud);
+void KPATCH_CALL onHudFrame(const K2HudContext* ctx, void*);
 
 void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
@@ -814,11 +842,17 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     g_ps.connect();
     g_hudc.init(api, "queue-hud");
     g_hudc.onConnect = onHudConnect;
+    g_hudc.add(K2HUD_FRAME, 300, onHudFrame);
     g_hudc.add(K2HUD_BUILD, 300, onHudBuild);
     g_hudc.connect();
 }
 
-// H8 0x0074C168: HUD Update, replaces `mov ecx,[ebp-0x16C]; mov edx,[ecx+0xA904]`. [ebp-0x16C] = hud (this of FUN_0074b3f0).
+// K2HUD_FRAME callback: dispatches on every PopulateMenus via hud-host, captures hud & combat status without hook 0x74C168.
+void KPATCH_CALL onHudFrame(const K2HudContext* ctx, void*) {
+    if (ctx && ctx->hud) QueueHudCapture(ctx->hud);
+}
+
+// H8 0x0074C168 / K2HUD_FRAME handler: retains export for tests/smoke harness.
 // Hot path: one safe read + two stores (+ a rare hud-host connect retry); logs only when the HUD pointer changes.
 void __cdecl QueueHudCapture(int hud) {
     saferead::beginScope();
@@ -874,6 +908,7 @@ int __cdecl QueueHudPerformUseItem(int clientCreature, int ebp) {
     const qh::ActionDecision dec = qh::decideItemAction(g_itemQueue[memberK], g_combat != 0, engineQ > 0 ? engineQ : 0);
 
     if (dec == qh::DECIDE_DISPATCH_NOW) {
+        g_itemQueue[memberK].userCancelled = false;
         g_itemQueue[memberK].active = true;
         g_itemQueue[memberK].activeAction.creature = static_cast<uintptr_t>(static_cast<uint32_t>(clientCreature));
         g_itemQueue[memberK].activeAction.clientItem = itemId;
