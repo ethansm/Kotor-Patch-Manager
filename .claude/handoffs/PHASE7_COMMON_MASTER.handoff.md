@@ -78,4 +78,7 @@ Task: Engine addresses -> GameAddr.h (+ proposal)
 
 ## 4. Subagent Delegation Direction
 - **Delegate to Subagent**: `python3 scripts/plan_manager.py delegate C4`
-- **Supported Commands**: `oc-subagent <scout|code|ghidra|verify|gate|doc>` or `oc-flow auto "<task>"`
+- **Role-Based Commands**:
+  - Address Cross-ref: `oc-subagent ghidra "Cross-reference LevelUpOverride struct Engine addresses (0x73F450, 0x7E5D80, 0xA1B4D0) against Ghidra DB and GameAddr.h"`
+  - Constant Replacement: `oc-subagent code "Replace struct Engine constants with GameAddr.h constants in LevelUpOverride.cpp and draft 19b proposal"`
+  - Build/Test Verification: `oc-subagent verify "Run python3 scripts/build_check.py --mod level_up_override_src"`

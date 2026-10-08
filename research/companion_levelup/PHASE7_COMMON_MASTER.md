@@ -84,30 +84,43 @@ commit (explicit paths) -> status row + doc 08 note -> memory line.
 - Verification: mingw syntax in a `$TMPDIR` copy of `$T/Patches`; all parity gates.
 
 ### C4 - Engine addresses -> GameAddr.h (behaviour-neutral; medium)
+- Subagent: `oc-subagent ghidra "Cross-reference LevelUpOverride struct Engine addresses (0x73F450, 0x7E5D80, 0xA1B4D0) against Ghidra DB and GameAddr.h"`
+- Subagent: `oc-subagent code "Replace struct Engine constants with GameAddr.h constants in LevelUpOverride.cpp and draft 19b proposal"`
+- Subagent: `oc-subagent verify "Run python3 scripts/build_check.py --mod level_up_override_src"`
 - Replace `struct Engine` constants that exist in GameAddr.h with its names; write a PROPOSAL (additive entries for missing addresses with DB evidence)
   in doc 19b notes - no `_shared_src` edit without owner OK. Resolve 0x73F450 vs 0x7E5D80 semantics with the knowledge DB.
 - Verification: gates + `check_raw_addresses` baseline unchanged or reviewed.
 
 ### C5 - Party.h adoption (medium)
+- Subagent: `oc-subagent code "Refactor leaderCreature to party:: helpers in LevelUpOverride.cpp"`
+- Subagent: `oc-subagent test "Switch test hooks from fakePartyGet to Party.h g_member in gate_test.cpp"`
+- Subagent: `oc-subagent verify "Run parity gates and scenarios.py"`
 - `leaderCreature` -> `party::` helpers (same chain); tests switch from `fakePartyGet` to Party.h test hooks (`g_member`).
 - Verification: gate_test/scenarios green incl. -m32; mutate 100 %.
 
 ### C6 - FileWatch.h adoption (medium)
+- Subagent: `oc-subagent code "Adopt filewatch::Stamp/ReloadPoll in LevelUpOverride.cpp and Playthrough.h"`
+- Subagent: `oc-subagent test "Verify playthrough_test.cpp and scenarios.py with filewatch mutations"`
 - `fileStamp/reloadDue` -> `filewatch::Stamp/ReloadPoll`; `ptWriteText` -> `filewatch::atomicWrite` only if WRITE_THROUGH is kept (else propose an
   additive flag to the owner).
 - Verification: playthrough_test + scenarios (X4/X5 lossy, ptsnap/ptdiff) green; mutate 100 %.
 
 ### C7 - KpLog migration (largest; C7a design / C7b code)
+- Subagent: `oc-subagent doc "Audit KpLog format strings against doc 19f migration guide for C7a design"`
+- Subagent: `oc-subagent code "Replace debug logging with KpLog channels in LevelUpOverride.cpp for C7b"`
+- Subagent: `oc-subagent gate "Run scripts/build_check.py and test_luo_log_check.py"`
 - Follow `patch_manager_mods/19f_kplog_migration_guide.md`. Format strings byte-identical; keep the file name or teach `luo_log_check.py` the KpLog
   path; logging never gates behaviour (F1); decide rotation vs 60000-line cap; banner crc32 stays. Doc 19e adoption row via owning session.
 - Verification: `scripts/test_luo_log_check.py` + every M4 fixture unchanged; gates; one live smoke after install consent.
 
 ### C8 - Library DLL interfaces: consumer requirements (design only)
+- Subagent: `oc-subagent doc "Draft LevelUpOverride requirements for k2.saveevents@1 and k2.charscreen in doc 22"`
 - Level-up's requirements for `k2.saveevents@1` (pre-save / post-load / new-server events + per-mod globals namespace; hooks 0x656640, 0x65675B,
   0x401C52, LUO_G globals; removal-safety S5/S7) and `k2.charscreen` (ctor 0x84D82C, tick 0x84F221, GUI ids 151..169, shared with Mod 14) into doc
   `22_hotbar_shared_services.md` / 19b notes sections. No code.
 
 ### C9 - Offers to Common owners (notes only)
+- Subagent: `oc-subagent doc "Draft CodePatch.h, IniFile.h, and CRC helper proposal notes for doc 19b section D"`
 - CodePatch.h candidate (codeMatches + kCode arrays), IniFile.h candidate (Playthrough.h doc model), CRC helper. One note each in doc 19b section D.
 
 ## 3. Verification gates (every code chunk)
