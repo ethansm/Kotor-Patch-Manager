@@ -133,6 +133,7 @@ Rules: one batch per row; each batch ends with `build_check.py --mod combat_hotb
 
 ## Active Subagent Delegation Commands (`opencode-subagents`)
 
+See [SUBAGENT_ROLES.md](SUBAGENT_ROLES.md) for role specifications, contracts, and backend routes.
 When delegating pending batches via `python3 scripts/plan_manager.py delegate <id>` or running role subagents directly:
 
 ### Batch CH1c - Probe Verification & Log Analysis (Combat Hotbar)

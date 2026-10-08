@@ -55,8 +55,9 @@ When starting a new session or beginning mod work:
   - Use native file edit tools (`Edit`/`Write`) instead of multi-line Python heredocs in Bash when modifying files.
 
 ## Subagent Contracts (supersede the ADHD style for subagents)
-Brief = `Contract: worker|recon` + `Write Scope: <globs>` + output of `python3 scripts/agent_contract.py print worker|recon`.
-Order: worker CREATED,MODIFIED,TESTS,NOTES,STATUS · recon OUTPUT,EVIDENCE,FINDING,OPEN,VERDICT. Verify: `agent_contract.py snapshot` before launch, `agent_contract.py check --scope <globs> -` after.
+- See `patch_manager_mods/SUBAGENT_ROLES.md` for full role catalog, backend routing, and contract specs.
+- Brief = `Contract: worker|recon` + `Write Scope: <globs>` + output of `python3 scripts/agent_contract.py print worker|recon`.
+- Order: worker CREATED,MODIFIED,TESTS,NOTES,STATUS · recon OUTPUT,EVIDENCE,FINDING,OPEN,VERDICT. Verify: `agent_contract.py snapshot` before launch, `agent_contract.py check --scope <globs> -` after.
 
 ## AI Agent Output Style (`i-have-adhd`)
 - The `i-have-adhd` plugin is installed globally across Claude Code and Antigravity (`agy`).
@@ -74,6 +75,7 @@ When in plan mode (`plan` agent / `oc-flow start`), subagents MUST output an exh
 ## Terminal & Task Execution Rules (CRITICAL)
 - **Synchronous Execution:** Set `WaitMsBeforeAsync` to `10000` (or `300000`) for test/build scripts. Note: Antigravity CLI's `run_command` tool implementation clamps synchronous wait to 10s (10000ms); commands exceeding 10s will automatically detach to a background task (`task-XXX`).
 - **Unbuffered Python Output & Stdin Detachment:** Always invoke Python test/parity scripts with `PYTHONUNBUFFERED=1 python3 -u <script> < /dev/null 2>&1` so child processes never deadlock on stdin or buffer stdout.
-- **NEVER Poll ManageTask in a Loop:** If a `Bash` command demotes to a background task (`task-XXX`), NEVER call `ManageTask(status task-XXX)` repeatedly in a tight loop.
+- **NEVER Poll ManageTask, Logs, or ps:** If a command demotes to a background task (`task-XXX`), NEVER call `ManageTask(status task-XXX)`, NEVER repeatedly `view_file` on `.system_generated/tasks/task-*.log`, and NEVER run `ps aux | grep ...` to monitor it. Reading task logs before completion is polling.
 - **Yield the Turn on Background Tasks:** If you have no parallel file edits or reading to perform while a background task runs, STOP calling tools and end your turn immediately with a one-line status notice. Antigravity's reactive wakeup listener will automatically resume you upon completion.
 - **No Polling Schedules:** Do NOT call `Schedule(30s)` or recurring timers to check on background tasks; wait for reactive task completion messages.
+- **Execute CLI Prompts Directly:** If the user's prompt begins with or consists of a console command (e.g. `python3 scripts/...`, `./scripts/...`, `git ...`), immediately execute it via `run_command` on turn 1 without asking for confirmation or explaining the command.

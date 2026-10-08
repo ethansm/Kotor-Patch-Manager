@@ -143,6 +143,8 @@ Every new mod generated via `scaffold_mod.py` automatically configures:
 1. **Standard Include Style**: `#include "SafeRead.h"` with `-I Common` (no relative `../_shared/` paths).
 2. **Common Contract Test**: `<mod>_src/common_contract_test.cpp` and `test.toml` pre-configured to run via `scripts/run_tests.py`.
 3. **Strict Mod Scope Boundary**: Master plan header declares `Owning Mod Scope`, automatically extracted by `scripts/subagent_prompt.py` to confine subagent write scopes.
-4. **Role-Based Subagents**: Master plan template pre-populates `oc-subagent <scout|ghidra|code|test|verify|gate|doc>` commands across all 5 standard lifecycle phases.
+4. **Role-Based Subagents**: Master plan template links to [SUBAGENT_ROLES.md](file:///home/ethansm/orca/workspaces/local-setup/KOTOR-II/patch_manager_mods/SUBAGENT_ROLES.md) and pre-populates `oc-subagent <scout|ghidra|code|test|verify|gate|doc>` commands across all 5 standard lifecycle phases.
 5. **KPM Packaging**: `exports.def`, `kotor2-steam-aspyr.hooks.toml`, and `manifest.toml` ready for `scripts/build_check.py`.
+
+See **[SUBAGENT_ROLES.md](file:///home/ethansm/orca/workspaces/local-setup/KOTOR-II/patch_manager_mods/SUBAGENT_ROLES.md)** for the complete catalog of subagent roles, backend routes, output contracts, and autonomous delegation rules.
 

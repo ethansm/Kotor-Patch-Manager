@@ -56,6 +56,7 @@ plan it in detail, execute with Sonnet agents, commit, then tick its row below. 
   copy KPM source back to `_src`, install only with user OK), doc `22_compat_check_plan.md:250,286` (contract test; compat_check.py after `_shared_src` edits).
 
 ## 2. Chunks
+See [SUBAGENT_ROLES.md](../../patch_manager_mods/SUBAGENT_ROLES.md) for role specifications, contracts, and backend routes.
 Each chunk: Opus plans + reviews + commits; Sonnet agents do the edits; Haiku only for wide read-only scans. Every chunk ends: gates green ->
 commit (explicit paths) -> status row + doc 08 note -> memory line.
 

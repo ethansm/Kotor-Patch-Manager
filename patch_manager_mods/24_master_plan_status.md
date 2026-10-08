@@ -96,6 +96,7 @@ Companion self-heal (owner selfheal, doc 27; user 10-04: shared from the start, 
 
 ## Active Subagent Delegation Commands (`opencode-subagents`)
 
+See [SUBAGENT_ROLES.md](SUBAGENT_ROLES.md) for role specifications, contracts, and backend routes.
 When delegating pending batches via `python3 scripts/plan_manager.py delegate <id>` or running role subagents directly:
 
 ### Batch CS3 - Live Probes & Calibration (Companion Self-Heal)

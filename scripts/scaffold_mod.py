@@ -184,6 +184,7 @@ Detailed design and requirements for {display_title}.
 
 ## 3. Subagent Delegation Architecture (`opencode-subagents`)
 
+See [SUBAGENT_ROLES.md](SUBAGENT_ROLES.md) for role specifications, contracts, and backend routes.
 When orchestrating OpenCode / OpenRouter subagents, invoke role-based commands directly:
 
 ### Phase P0 - Baseline & Scaffolding
