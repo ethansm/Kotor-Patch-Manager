@@ -10,6 +10,8 @@ description = "Owns the CSWGuiTargetActionMenu::PopulateMenus hook (0x00743540) 
 requires = []
 conflicts = []
 
-# Steam only for now. Design: patch_manager_mods/31_combat_action_hotbar.md section 5 (local-setup/KOTOR-II worktree).
+# Steam live-tested. GOG = static-verified only (GOG contributor testing required).
 [patch.supported_versions]
 kotor2_steam_aspyr = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"
+kotor2_gog_aspyr = "777BEE235A9E8BDD9863F6741BC3AC54BB6A113B62B1D2E4D12BBE6DB963A914"
+

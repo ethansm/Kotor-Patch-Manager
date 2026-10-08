@@ -35,6 +35,9 @@ constexpr int TargetTypeOff = 0x1BAA;
 
 KP_CHANNEL(chCore, "core");
 
+// Only stores the path and the level (no I/O): safe from a static initialiser.
+const bool g_fallbackSet = (KpLog_SetFallbackFile("hud-host_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
+
 hhd::Dispatcher g_disp;
 uint32_t g_frame = 0;
 int32_t g_hud = 0;   // last seen HUD object (0 = none yet)

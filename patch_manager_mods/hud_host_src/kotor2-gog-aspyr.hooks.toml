@@ -1,0 +1,66 @@
+# GOG Aspyr build. Hook addresses static-verified against Ghidra database k2_win_gog_aspyr_swkotor2.exe.
+# GOG support is static-verified only (no GOG install here); GOG contributor testing is required before it is considered supported.
+# Steam address -> GOG address is noted per hook.
+[metadata]
+target_versions = ["777BEE235A9E8BDD9863F6741BC3AC54BB6A113B62B1D2E4D12BBE6DB963A914"]
+
+# CSWGuiTargetActionMenu::PopulateMenus (GOG 0x00514B40 / Steam 0x00743540), detour at prologue (no frame yet):
+# ecx = menu (hud + 0xCC), [esp+4] = leader, [esp+8] = forceUnusable (int), [esp+0xC] = target
+[[hooks]]
+address = 0x00514B40   # Steam 0x00743540
+type = "detour"
+function = "HH_TargetMenuPopulate"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x38]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+8]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[esp+0xC]"
+type = "pointer"
+
+# CSWGuiTargetActionMenu::PopulateMenus tail (GOG 0x00514E47 / Steam 0x00743847): POP ESI / MOV ESP,EBP / POP EBP / RET 0xC (7 bytes)
+# Frame is still up: [ebp-0x30] = menu, [ebp+8] = leader, [ebp+0x10] = target (may be null).
+[[hooks]]
+address = 0x00514E47   # Steam 0x00743847
+type = "detour"
+function = "HH_TargetMenuTail"
+original_bytes = [0x5E, 0x8B, 0xE5, 0x5D, 0xC2, 0x0C, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-0x30]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[ebp+8]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[ebp+0x10]"
+type = "pointer"
+
+# CGuiInGame/HUD layout load (GOG 0x0090DA20 / Steam 0x0040F5A0, StopLoadFromLayout entry): ecx = panel.
+[[hooks]]
+address = 0x0090DA20   # Steam 0x0040F5A0
+type = "detour"
+function = "HH_LayoutClosing"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x10]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
