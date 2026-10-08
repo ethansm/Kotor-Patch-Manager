@@ -11,6 +11,7 @@ Action Hotbar (id `action-hotbar`), formerly Force Power Hotbar.
 - Numbers in `spells.2da` cells read as decimal or `0x` hex only (no octal).
 - The editor wheel scroll uses the same 250 ms HUD-alive window as the keys (was 300 ms).
 - Heartbeat `wfaults=` also counts ignored widget setup results.
+- Migrated 5 save/load/new-game detours to the `save-events` library (`k2.saveevents@1`, doc 22 §4.1a).
 - Internal: pure logic moved to `HotbarLogic.h` (HP5), named constants and cleanup (HP6), more tests.
 
 ## 1.2.2-dev (2026-10-05)

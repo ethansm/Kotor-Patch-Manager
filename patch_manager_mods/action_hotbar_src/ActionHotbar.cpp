@@ -9,12 +9,8 @@
 //               controls at runtime (Layout[], copied from native template labels of the HUD layout) and append them to the panel's control
 //               list. The panel's own Draw (0x0040EC90) then draws them with the HUD; the tick only swaps fill (border+0x74), alpha
 //               (border+0x24), text and visibility. Frame/wrench art is embedded (HotbarTextures.inc) and registered as engine textures.
-//   Per-save hotbars (the INI is snapshotted into each save folder and restored on load):
-//     S1  HotbarOnSaved             -- a save was written (menu save, quicksave, timer autosave)
-//     S2  HotbarOnAutosaved         -- the module-entry autosave was written
-//     L1  HotbarOnLoadRequest       -- a save is loading (folder from the load request)
-//     L1b HotbarOnAutosaveSlotLoad  -- the autosave slot is loading (bypasses L1)
-//     NG  HotbarOnNewGame           -- new game started: reset to the default profile
+//   Per-save hotbars (the INI is snapshotted into each save folder and restored on load via k2.saveevents@1):
+//     K2SE_SAVED / K2SE_AUTOSAVED / K2SE_LOAD_REQUEST / K2SE_NEW_GAME events from the save-events library.
 //   Item slots can carry a per-slot target mode (@lowhp = lowest-HP party member, @self); it needs override/spells.2da.
 //
 // Invoke design: the HUD's own per-group action list (hud+0x78+g*0xC, entry stride 0x3C) holds powers
@@ -31,6 +27,9 @@
 #include "GuiKit.h"
 #include "GameAddr.h"
 #include "WindowHook.h"
+#include "HudHost.h"
+#include "SaveEvents.h"
+#include "GuiInput.h"
 #include "FileWatch.h"
 #include "HotbarConfig.h"
 #include "HotbarLogic.h"
@@ -325,6 +324,21 @@ uintptr_t controlledCreature() {
     return c;
 }
 
+constexpr int Cr_Tag = 0x18;   // CExoString {char* str, uint32_t len}
+
+static bool readCreatureTag(uintptr_t cr, char* out, int cap) {
+    if (!out || cap <= 0) return false;
+    out[0] = 0;
+    if (!cr) return false;
+    uint32_t str = 0, len = 0;
+    if (!saferead::readAt(S_Misc, cr, Cr_Tag, &str) || !saferead::readAt(S_Misc, cr, Cr_Tag + 4, &len)) return false;
+    if (!str || len == 0) return false;
+    if (len >= (uint32_t)cap || !saferead::probeRead(S_Misc, reinterpret_cast<const void*>(static_cast<uintptr_t>(str)), len)) return false;
+    memcpy(out, reinterpret_cast<const void*>(static_cast<uintptr_t>(str)), len);
+    out[len] = 0;
+    return true;
+}
+
 unsigned creatureOid(uintptr_t c) { return (unsigned)rdInt(S_Misc, c, Client_ObjectId); }   // the one object-id read (client creature +4)
 
 std::string computeCharacterKey() {
@@ -334,11 +348,30 @@ std::string computeCharacterKey() {
     bool invalid = false;
     party::Fail why = party::F_None;
     uintptr_t t = party::table(&why);
-    bool isMember0 = (t != 0 && party::member(t, 0) == c);
-    std::string key = hb::characterKeyFor(oid, g_partyCount, &invalid, isMember0);
+    int partySlot = -1;
+    if (t != 0) {
+        for (int i = 0; i < g_partyCount && i < 3; ++i) {
+            if (party::member(t, i) == c) {
+                partySlot = i;
+                break;
+            }
+        }
+    }
+    if (partySlot == -1 && g_partyCount == 1) partySlot = 0;
+    bool isMember0 = (partySlot == 0);
+
+    char tag[64] = {};
+    uintptr_t s = party::serverCreature(c);
+    bool haveTag = (s != 0 && readCreatureTag(s, tag, sizeof tag));
+
+    std::string key = hb::characterKeyFor(oid, g_partyCount, &invalid, isMember0, haveTag ? tag : nullptr, partySlot);
     if (invalid) {   // invalid object id: transient during loads, never a real character
         static unsigned lastBad = 1; static int badLogs = 0;
-        if (lastBad != oid * 31u + (unsigned)g_partyCount && badLogs < 30) { lastBad = oid * 31u + (unsigned)g_partyCount; ++badLogs; KP_LOG(chChar, "character: creature %p has invalid object id %08x (party members=%d isMember0=%d)", (void*)c, oid, g_partyCount, (int)isMember0); }
+        if (lastBad != oid * 31u + (unsigned)g_partyCount && badLogs < 30) {
+            lastBad = oid * 31u + (unsigned)g_partyCount; ++badLogs;
+            KP_LOG(chChar, "character: creature %p has invalid object id %08x (party members=%d slot=%d tag='%s')",
+                   (void*)c, oid, g_partyCount, partySlot, haveTag ? tag : "");
+        }
         // Party member 0 (or a one-member party) is the player character (the Exile, whose valid id is fffffffd): the id can read 0xFFFFFFFF for a whole session
         // (seen on the Ebon Hawk), which would otherwise leave the character unidentified and refuse every assignment (hb::characterKeyFor).
     }
@@ -819,13 +852,20 @@ void setAlpha(Button& bt, Widget& b, int slot, float a) {
 
 // ---- hover: poll the OS cursor against the frame's pixel rect (labels are click-through, so the game never sees the mouse over them)
 // Common candidate later: GuiKit's gameWindow() picks the LARGEST visible window of the pid; this takes the FIRST > 320x240 (and retries every 120 frames, logs the pick).
+k2input::Client g_guiInput;
 HWND g_gameWnd = nullptr;
 BOOL CALLBACK enumWnd(HWND h, LPARAM lp) {
     DWORD pid = 0; GetWindowThreadProcessId(h, &pid);
     if (pid == GetCurrentProcessId() && IsWindowVisible(h)) { RECT r; if (GetClientRect(h, &r) && r.right > 320 && r.bottom > 240) { *reinterpret_cast<HWND*>(lp) = h; return FALSE; } }
     return TRUE;
 }
-static HWND findGameWnd() { HWND win = nullptr; EnumWindows(enumWnd, reinterpret_cast<LPARAM>(&win)); return win; }
+static HWND findGameWnd() {
+    if (g_guiInput.connected) {
+        HWND win = reinterpret_cast<HWND>(g_guiInput.game_hwnd());
+        if (win) return win;
+    }
+    HWND win = nullptr; EnumWindows(enumWnd, reinterpret_cast<LPARAM>(&win)); return win;
+}
 bool cursorInGame(POINT* out) {
     static bool lastCursorOk = true;
     if (!g_gameWnd || !IsWindow(g_gameWnd)) {
@@ -1094,6 +1134,22 @@ bool wHit(const Widget& w, const POINT& pt) {
 // ---- mouse wheel over the picker: subclass the game window like Mod 1 (DirectInput never sees the wheel). Chains to the old proc; DllMain restores it on detach if we are still the outermost proc.
 struct WheelTag {}; using WheelHook = kp::WindowHook<WheelTag>;
 volatile LONG g_wheelAccum = 0; volatile LONG g_pickRect[4] = {0, 0, 0, 0}; int g_wheelLogs = 0;
+static int32_t KPATCH_CALL hotbarWheelCb(const K2WheelEvent* ev, void*) {
+    if (g_editOpen && g_pickRect[2] > 0 && GetTickCount() - g_hudTick < HudFreshMs) {
+        bool inside = ev->client_x >= g_pickRect[0] && ev->client_x < g_pickRect[0] + g_pickRect[2] &&
+                      ev->client_y >= g_pickRect[1] && ev->client_y < g_pickRect[1] + g_pickRect[3];
+        if (g_wheelLogs < 40) {
+            ++g_wheelLogs;
+            KP_LOGV(chInput, KPLOG_DEBUG, "wheel: delta=%d client=(%d,%d) rect=[%ld,%ld,%ld,%ld] inside=%d",
+                    ev->delta, ev->client_x, ev->client_y, (long)g_pickRect[0], (long)g_pickRect[1], (long)g_pickRect[2], (long)g_pickRect[3], (int)inside);
+        }
+        if (inside) {
+            InterlockedExchangeAdd(&g_wheelAccum, (short)ev->delta);
+            return 1;
+        }
+    }
+    return 0;
+}
 LRESULT CALLBACK wheelProc(HWND h, UINT m, WPARAM w, LPARAM l) {
     if (WheelHook::active() && m == WM_MOUSEWHEEL && g_editOpen && g_pickRect[2] > 0 && GetTickCount() - g_hudTick < HudFreshMs) {
         POINT pt = {(short)LOWORD(l), (short)HIWORD(l)};
@@ -1104,6 +1160,18 @@ LRESULT CALLBACK wheelProc(HWND h, UINT m, WPARAM w, LPARAM l) {
     return WheelHook::forward(h, m, w, l);
 }
 void ensureWheelHook() {
+    g_guiInput.poll();
+    if (g_guiInput.connected) {
+        static bool subscribed = false;
+        if (!subscribed) {
+            int32_t tok = g_guiInput.wheel_subscribe(hotbarWheelCb, nullptr);
+            if (tok > 0) {
+                subscribed = true;
+                KP_LOG(chInput, "wheel: subscribed to k2.guiinput (token %d)", tok);
+            }
+        }
+        return;
+    }
     if (WheelHook::active()) return;
     if (!g_gameWnd || !IsWindow(g_gameWnd)) {
         static bool waitLogged = false;
@@ -1681,34 +1749,15 @@ void healTextures() {
 // ---- per-save hotbars: the live INI's profiles are snapshotted into each save folder and restored on load ------------------
 // Every save (menu, quicksave, autosave) copies action_hotbar.ini into the save folder; every load replaces the live INI's
 // profiles with that save's copy, or empties them when the save has none (older saves, new games). [General] is never touched.
-// Engine facts: DB lessons 355-357 (save request R = *(*(0xA1B4A4)+0x14), folder CExoString at R+0x18 = "SAVES:NNNNNN - Name";
-// the SAVES: alias = the CExoString at 0xA7EABC ("cloudsaves/<steam id>/") while the Steam Cloud byte 0xA7EA88 is set, else saves/).
-constexpr uintptr_t SaveRequestHolder = gameaddr::AppGlobal;   // same global as AppGlobal: *(*(it)+0x14) = server save/load request
-constexpr int SaveReq_Folder = 0x18;
-constexpr uintptr_t CloudSavesFlag = gameaddr::CloudSavesFlag, CloudSavesDir = gameaddr::CloudSavesDir;
+// Detours 0x534527, 0x53C5AA, 0x52FD1E, 0x8529E0, 0x8FACA0 are owned by the save-events library (k2.saveevents@1).
 const char* const SnapshotFile = hb::IniName;
-const char* const AutosaveFolder = "000001 - AUTOSAVE";
-constexpr int SaveFolderMax = 260;   // longest save folder string read from the engine
 
-// "SAVES:000012 - Game11" / "000012 - Game11" -> "cloudsaves/<id>/000012 - Game11" (relative to the game dir = our cwd). "" if implausible.
-std::string saveDirFor(const char* folder) {
-    if (!folder || !saferead::probeRead(S_Save, folder, 9)) return "";
-    std::string f;
-    if (saferead::probeRead(S_Save, folder, SaveFolderMax)) { const void* z = memchr(folder, 0, SaveFolderMax); f.assign(folder, z ? (size_t)((const char*)z - folder) : (size_t)SaveFolderMax); }   // one probe; per-byte only when the 260-byte window is not all readable (string near a page end)
-    else for (int i = 0; i < SaveFolderMax && saferead::probeRead(S_Save, folder + i, 1) && folder[i]; ++i) f += folder[i];
-    f = hb::normalizeSaveFolder(f);
-    if (f.empty()) return "";
-    unsigned char cloud = 0; saferead::readAt(S_Save, CloudSavesFlag, 0, &cloud);
-    return hb::joinSaveDir(cloud ? readExoStr(S_Save, CloudSavesDir) : std::string("saves/"), f);
-}
-
-void snapshotToSave(const char* folder, const char* why) {
-    std::string dir = saveDirFor(folder);
-    if (dir.empty()) { KP_LOGV(chCfg, KPLOG_WARN, "persave: %s: save folder not recognised ('%.120s'), no snapshot", why, folder && saferead::probeRead(S_Save, folder, 1) ? folder : "?"); return; }
-    DWORD at = GetFileAttributesA(dir.c_str());
-    if (at == INVALID_FILE_ATTRIBUTES || !(at & FILE_ATTRIBUTE_DIRECTORY)) { KP_LOGV(chCfg, KPLOG_WARN, "persave: %s: folder '%s' not found, no snapshot", why, dir.c_str()); return; }
+void snapshotToSave(const char* dir, const char* why) {
+    if (!dir || !*dir) { KP_LOGV(chCfg, KPLOG_WARN, "persave: %s: save folder not recognised ('%s'), no snapshot", why, dir ? dir : "?"); return; }
+    DWORD at = GetFileAttributesA(dir);
+    if (at == INVALID_FILE_ATTRIBUTES || !(at & FILE_ATTRIBUTE_DIRECTORY)) { KP_LOGV(chCfg, KPLOG_WARN, "persave: %s: folder '%s' not found, no snapshot", why, dir); return; }
     checkConfig(true);   // a hand edit made in the last second is part of what the player saved
-    std::string dst = dir + "/" + SnapshotFile;
+    std::string dst = std::string(dir) + "/" + SnapshotFile;
     BOOL ok = CopyFileA(IniPath, dst.c_str(), FALSE);
     int lv = ok ? KPLOG_INFO : KPLOG_WARN;   // two lines (map section 3): the destination path can be long
     KP_LOGV(chCfg, lv, "%s", hb::fmtPersaveSnapshot(why, ok != 0, (int)g_cfg.profiles.size()).c_str());
@@ -1735,17 +1784,16 @@ void replaceLiveProfiles(const hb::Config* snap, const char* status, const std::
 
 static bool snapExists(const std::string& p) { return filewatch::stamp(p.c_str()).exists; }
 
-void restoreFromSave(const char* folder, const char* why) {
-    std::string dir = saveDirFor(folder);
-    if (dir.empty()) {
-        char shown[121]; size_t n = 0;   // bounded copy: every byte is probed before it is read
-        if (folder) while (n < 120 && saferead::probeRead(S_Save, folder + n, 1) && folder[n]) { shown[n] = folder[n]; ++n; }
-        shown[n] = 0;
-        KP_LOGV(chCfg, KPLOG_WARN, "persave: %s: save folder not recognised ('%.120s'), live hotbar kept", why, n ? shown : "?");
+void restoreFromSave(const char* dir, const char* why) {
+    if (!dir || !*dir) {
+        KP_LOGV(chCfg, KPLOG_WARN, "persave: %s: save folder not recognised ('%s'), live hotbar kept", why, dir ? dir : "?");
         return;
     }
     hb::SnapPick pick = hb::pickSnapshot(dir, snapExists);
-    if (pick.src == hb::SS_Absent) { replaceLiveProfiles(nullptr, hb::snapStatus(pick.src, false), pick.path, why); return; }
+    if (pick.src == hb::SS_Absent) {
+        KP_LOGV(chCfg, KPLOG_INFO, "%s", hb::fmtPersaveSource(why, hb::snapStatus(pick.src, false), pick.path).c_str());
+        return;
+    }
     hb::Config snap;
     if (!snap.Load(pick.path)) { KP_LOGV(chCfg, KPLOG_WARN, "%s", hb::fmtPersaveSource(why, hb::snapStatus(pick.src, false), pick.path).c_str()); return; }
     replaceLiveProfiles(&snap, hb::snapStatus(pick.src, true), pick.path, why);
@@ -1768,20 +1816,73 @@ void startOnce() {
         }
     }
     char cwd[MAX_PATH] = "?"; GetCurrentDirectoryA(MAX_PATH, cwd);
-    KP_LOG(chMain, "action-hotbar %s loaded; pid=%lu ini=%s core=%d", Version, (unsigned long)GetCurrentProcessId(), IniPath, KpLog_HasCore() ? 1 : 0);
-    logChunks(chMain, KPLOG_INFO, "cwd", cwd);
     KP_LOG(chMain, "addresses: invoke=%08x kbdevGlobal=%08x app=%08x getCreature=%08x whitelist=%08x,%08x,%08x,%08x", (unsigned)HudInvokeGroup, (unsigned)KeyboardDeviceGlobal, (unsigned)AppGlobal, (unsigned)GetControlledCreature, (unsigned)PanelWhitelist[0], (unsigned)PanelWhitelist[1], (unsigned)PanelWhitelist[2], (unsigned)PanelWhitelist[3]);
+}
+
+// Forward declarations for HUD hooks migrated to hud-host
+extern "C" void __cdecl HotbarBuildButtons(int panelArg);
+extern "C" void __cdecl HotbarHudTick(void* hudPtr);
+
+k2hud::Client g_hudc;
+k2se::Client g_se;
+
+void onHudConnect(bool ok, const char* why) {
+    KP_LOGV(chBuild, ok ? KPLOG_INFO : KPLOG_WARN, "hud-host: %s (%s)", ok ? "connected" : "NOT connected", why ? why : "");
+}
+
+void onSaveEventsConnect(bool ok, const char* why) {
+    KP_LOGV(chCfg, ok ? KPLOG_INFO : KPLOG_WARN, "save-events: %s (%s)", ok ? "connected" : "NOT connected", why ? why : "");
+}
+
+void KPATCH_CALL onHudFrame(const K2HudContext* ctx, void*) {
+    if (!ctx || !ctx->hud) return;
+    g_se.poll();
+    HotbarHudTick(reinterpret_cast<void*>(static_cast<uintptr_t>(static_cast<uint32_t>(ctx->hud))));
+}
+
+void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
+    if (!ctx || !ctx->panel) return;
+    HotbarBuildButtons(ctx->panel);
+}
+
+void KPATCH_CALL onSaveEvent(const K2SaveEvent* ev, void*) {
+    startOnce(); saferead::beginScope();
+    if (!ev || !K2SE_EVENT_HAS(ev, cloud)) return;
+    switch (ev->kind) {
+        case K2SE_SAVED:        snapshotToSave(ev->folder, "save written");                break;
+        case K2SE_AUTOSAVED:    snapshotToSave(ev->folder, "module autosave written");     break;
+        case K2SE_LOAD_REQUEST: restoreFromSave(ev->folder, "save loading");              break;
+        case K2SE_NEW_GAME:     replaceLiveProfiles(nullptr, "new game", "-", "new game started"); break;
+    }
 }
 
 } // namespace
 
-extern "C" void __cdecl KPatchInit(const KPatchApi* api) { KpLog_Init(api); }
+extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
+    KpLog_Init(api);
+    g_hudc.init(api, "action-hotbar");
+    g_hudc.onConnect = onHudConnect;
+    g_hudc.add(K2HUD_FRAME, 100, onHudFrame);
+    g_hudc.add(K2HUD_BUILD, 100, onHudBuild);
+    g_hudc.connect();
+
+    g_se.init(api, "action-hotbar");
+    g_se.onConnect = onSaveEventsConnect;
+    g_se.add(K2SE_SAVED | K2SE_AUTOSAVED | K2SE_LOAD_REQUEST | K2SE_NEW_GAME, onSaveEvent);
+    g_se.connect();
+
+    g_guiInput.init(api, "action-hotbar");
+    g_guiInput.connect();
+}
 
 // ---- hook 1: keyboard capture -------------------------------------------------------------------------
 struct DIRecord { DWORD dwOfs, dwData; };
 
 extern "C" void __cdecl CaptureHotbarKey(DIRecord* rec, int dev) {
     startOnce(); saferead::beginScope();
+    g_hudc.poll();
+    g_se.poll();
+    g_guiInput.poll();
     if (!rec) return;
     if (dev != g_kbDevice) {   // every mouse / other-device record lands here: stay silent per call (map section 4 #4)
         ++g_capForeign;
@@ -1817,24 +1918,6 @@ extern "C" void __cdecl CaptureHotbarKey(DIRecord* rec, int dev) {
     if (isDigit || isMod || isEsc) { KP_LOGV(chInput, KPLOG_DEBUG, "cap: dev=%d dik=%02x %s mods=%c%c%c -> %s", dev, (unsigned)dik, down ? "down" : "up", g_ctrl ? 'C' : '-', g_alt ? 'A' : '-', g_shift ? 'S' : '-', decision); }
 }
 
-// ---- hooks 4-8: per-save hotbars (see snapshotToSave / restoreFromSave) -------------------------------------------------
-// S1 0x00534527: main loop right after SaveGameInProgress (0x00534600, the only writer of menu saves, quicksaves and timer autosaves).
-extern "C" void __cdecl HotbarOnSaved() {
-    startOnce(); saferead::beginScope();
-    uintptr_t req = 0; int app = 0;
-    if (saferead::readAt(S_Save, SaveRequestHolder, 0, &app) && app) saferead::readAt(S_Save, static_cast<uintptr_t>(app), App_SaveRequest, &req);
-    std::string f = req ? readExoStr(S_Save, req + SaveReq_Folder) : std::string();
-    snapshotToSave(f.c_str(), "save written");
-}
-// S2 0x0053C5AA: end of DoPCAutosave (module-entry autosave; always 000001 - AUTOSAVE, bypasses S1).
-extern "C" void __cdecl HotbarOnAutosaved() { startOnce(); saferead::beginScope(); snapshotToSave(AutosaveFolder, "module autosave written"); }
-// L1 0x0052FD1E: CServerExoAppInternal::LoadGame after the save's party table and globals loaded; folder = "SAVES:NNNNNN - Name".
-extern "C" void __cdecl HotbarOnLoadRequest(const char* folder) { startOnce(); saferead::beginScope(); restoreFromSave(folder, "save loading"); }
-// L1b 0x008529E0: LoadAutosaveSlot (PCAUTOSAVE entries; bypasses LoadGame).
-extern "C" void __cdecl HotbarOnAutosaveSlotLoad() { startOnce(); saferead::beginScope(); restoreFromSave(AutosaveFolder, "autosave loading"); }
-// NG 0x008FACA0: chargen "Play" commit (only caller CSWGuiMainCharGen::BeginPlayGame 0x00907340), before the server is re-created.
-// Backing out of New Game never reaches it, so the previous game's hotbar is only dropped once the new game really starts.
-extern "C" void __cdecl HotbarOnNewGame() { startOnce(); saferead::beginScope(); replaceLiveProfiles(nullptr, "new game", "-", "new game started"); }
 
 // ---- hook 3: HUD constructor -- build the button labels ---------------------------------------------------
 // Runs inside CSWGuiMainInterface's constructor between the last InitControl and StopLoadFromLayout, so the layout GFF
@@ -1970,6 +2053,11 @@ extern "C" void __cdecl HotbarHudTick(void* hudPtr) {
 }
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
-    if (reason == DLL_PROCESS_DETACH) WheelHook::uninstall(&wheelProc);   // restores only if we are still on top; otherwise stays chained but inert
+    if (reason == DLL_PROCESS_DETACH) {
+        if (g_guiInput.connected) {
+            g_guiInput.wheel_unsubscribe(hotbarWheelCb);
+        }
+        WheelHook::uninstall(&wheelProc);   // restores only if we are still on top; otherwise stays chained but inert
+    }
     return TRUE;
 }

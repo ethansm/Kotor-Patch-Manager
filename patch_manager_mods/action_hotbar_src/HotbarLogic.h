@@ -68,12 +68,37 @@ inline ActionRef decodeKey(int key, const std::string& name) {
 enum Tab { Tab_Power = 0, Tab_Item = 1, Tab_Mode = 2 };
 inline int tabOfKey(int key) { return (key & KeyItemFlag) ? Tab_Item : ((key & KeySpellFlag) ? Tab_Power : Tab_Mode); }
 
-// Character key from the controlled creature's object id: "obj%08x"; "" = unknown. *invalid = id is 0 / 0xFFFFFFFF (transient during loads).
-// Party member 0 (or a one-member party) with id 0xFFFFFFFF is the Exile (valid id fffffffd), which the engine can report as 0xFFFFFFFF for a whole session.
-inline std::string characterKeyFor(unsigned oid, int partyCount, bool* invalid = nullptr, bool isMember0 = false) {
+// Character key from creature tag, party slot, or creature object id:
+// 1. Tag (if present and not player/exile): returns lowercase trimmed tag (e.g. "atton", "kreia").
+// 2. Player character (Exile): recognized by party slot 0 / isMember0, partyCount == 1, tag "player"/"exile",
+//    or sentinel IDs 0xFFFFFFFD / 0xFFFFFFFE (stabilized: 0xFFFFFFFE returns "objfffffffd", not "objfffffffe").
+// 3. Transient invalid IDs (0 / 0xFFFFFFFF): returns "" (load in progress).
+// 4. Companion without tag: returns "slot1" / "slot2" if partySlot > 0.
+// 5. Fallback: "obj%08x".
+inline std::string characterKeyFor(unsigned oid, int partyCount, bool* invalid = nullptr, bool isMember0 = false, const char* tag = nullptr, int partySlot = -1) {
     bool bad = (oid == 0xFFFFFFFFu || oid == 0);
     if (invalid) *invalid = bad;
-    if (bad) return (oid == 0xFFFFFFFFu && (partyCount == 1 || isMember0)) ? "objfffffffd" : "";
+
+    if (tag && *tag) {
+        std::string t = lower(trim(tag));
+        if (t == "player" || t == "exile") return "objfffffffd";
+        return t;
+    }
+
+    bool isExile = (oid == 0xFFFFFFFDu || oid == 0xFFFFFFFEu || partyCount == 1 || isMember0 || partySlot == 0);
+    if (isExile) {
+        if (oid == 0) return "";   // id 0 never gets the rescue
+        if (oid == 0xFFFFFFFFu && !(partyCount == 1 || isMember0 || partySlot == 0)) return "";
+        return "objfffffffd";
+    }
+
+    if (bad) return "";
+
+    if (partySlot > 0) {
+        char b[16]; snprintf(b, sizeof b, "slot%d", partySlot);
+        return b;
+    }
+
     char b[24]; snprintf(b, sizeof b, "obj%08x", oid);
     return b;
 }
@@ -252,20 +277,6 @@ inline void unitRect(int x, int y, int w, int h, const Scale& k, int* r) {
     r[0] = (int)((int)(x * k.sx) * k.c + 0.5); r[1] = (int)(y * k.sy); r[2] = (int)((int)(w * k.sx) * k.c + 0.5); r[3] = (int)(h * k.sy);
 }
 
-// "SAVES:000012 - Game11" / "/000012 - Game11" -> "000012 - Game11"; "" if it is not "NNNNNN - Name".
-inline std::string normalizeSaveFolder(std::string f) {
-    if (f.size() > 6 && lower(f.substr(0, 6)) == "saves:") f = f.substr(6);
-    while (!f.empty() && (f[0] == '\\' || f[0] == '/')) f.erase(0, 1);
-    if (f.size() < 10 || f.compare(6, 3, " - ") != 0) return "";
-    for (int i = 0; i < 6; ++i) if (f[i] < '0' || f[i] > '9') return "";
-    return f;
-}
-// <save root> + folder: an empty root means "saves/"; a missing trailing slash is added.
-inline std::string joinSaveDir(std::string base, const std::string& folder) {
-    if (base.empty()) base = "saves/";
-    if (base.back() != '/' && base.back() != '\\') base += '/';
-    return base + folder;
-}
 
 // Keyboard capture: DIK 0x02..0x0B are the digit keys 1..0.
 inline bool isHotbarDigit(unsigned dik) { return dik >= 0x02 && dik <= 0x0B; }
@@ -574,7 +585,7 @@ inline SnapPick pickSnapshot(const std::string& dir, bool (*exists)(const std::s
     SnapPick p; p.path = dir + "/" + IniName; p.src = SS_Absent; return p;
 }
 inline const char* snapStatus(SnapSrc src, bool loaded) {
-    if (src == SS_Absent) return "absent (empty bar)";
+    if (src == SS_Absent) return "absent (live hotbar kept)";
     if (!loaded) return "UNREADABLE (live hotbar kept)";
     return src == SS_Legacy ? "found (legacy name)" : "found";
 }

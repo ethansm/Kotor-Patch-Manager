@@ -204,7 +204,7 @@ int main() {
     KT_CHECK_EQ(tabOfKey(0x40000001), 1); KT_CHECK_EQ(tabOfKey(0x20000001), 0); KT_CHECK_EQ(tabOfKey(5), 2);
     KT_CHECK_EQ(tabOfKey(0x60000000), 1);
   }
-  { // 2. characterKeyFor: obj%08x / invalid / party==1
+  { // 2. characterKeyFor: obj%08x / invalid / party==1 / tags / slots
     bool bad = true;
     KT_CHECK_EQ(characterKeyFor(0x7F000001u, 3, &bad).c_str(), "obj7f000001"); KT_CHECK(!bad);
     KT_CHECK_EQ(characterKeyFor(0xFFFFFFFDu, 1, &bad).c_str(), "objfffffffd"); KT_CHECK(!bad);
@@ -216,7 +216,14 @@ int main() {
     KT_CHECK_EQ(characterKeyFor(0u, 1, &bad).c_str(), ""); KT_CHECK(bad);                       // id 0 never gets the party==1 rescue
     KT_CHECK_EQ(characterKeyFor(0u, 3, &bad).c_str(), ""); KT_CHECK(bad);
     KT_CHECK_EQ(characterKeyFor(1u, 3).c_str(), "obj00000001");                                // bad == nullptr allowed
-    KT_CHECK_EQ(characterKeyFor(0xFFFFFFFEu, 1).c_str(), "objfffffffe");
+    KT_CHECK_EQ(characterKeyFor(0xFFFFFFFEu, 1).c_str(), "objfffffffd");                        // AH2: stabilized to Exile canonical key
+    KT_CHECK_EQ(characterKeyFor(0xFFFFFFFEu, 2, &bad, true).c_str(), "objfffffffd"); KT_CHECK(!bad);
+    KT_CHECK_EQ(characterKeyFor(0x80000042u, 3, &bad, false, "atton", 1).c_str(), "atton"); KT_CHECK(!bad);
+    KT_CHECK_EQ(characterKeyFor(0x80000043u, 3, &bad, false, "  Kreia  ", 2).c_str(), "kreia"); KT_CHECK(!bad);
+    KT_CHECK_EQ(characterKeyFor(0x80000042u, 3, &bad, false, "", 1).c_str(), "slot1"); KT_CHECK(!bad);
+    KT_CHECK_EQ(characterKeyFor(0x80000043u, 3, &bad, false, nullptr, 2).c_str(), "slot2"); KT_CHECK(!bad);
+    KT_CHECK_EQ(characterKeyFor(0xFFFFFFFDu, 3, &bad, true, "player", 0).c_str(), "objfffffffd"); KT_CHECK(!bad);
+    KT_CHECK_EQ(characterKeyFor(0xFFFFFFFEu, 3, &bad, true, "", 0).c_str(), "objfffffffd"); KT_CHECK(!bad);
   }
   { // 3. AutoFill merge + FNV signature
     ActionRef cfg[Slots], eff[Slots]; bool isAuto[Slots];
@@ -384,28 +391,6 @@ int main() {
     Scale iv = makeScale(-5, 1200, 800, 600); KT_CHECK(iv.sx == 1.0 && iv.c == 1.0);
     Scale w = makeScale(2560, 1080, 800, 600); KT_CHECK(w.c < 1.0 && w.sx == 3.2 && w.sy == 1.8);     // 21:9
   }
-  { // 11. save-folder parsing
-    KT_CHECK_EQ(normalizeSaveFolder("SAVES:000012 - Game11").c_str(), "000012 - Game11");
-    KT_CHECK_EQ(normalizeSaveFolder("saves:000012 - Game11").c_str(), "000012 - Game11");          // alias is case-insensitive
-    KT_CHECK_EQ(normalizeSaveFolder("000012 - Game11").c_str(), "000012 - Game11");
-    KT_CHECK_EQ(normalizeSaveFolder("SAVES:/000012 - Game11").c_str(), "000012 - Game11");
-    KT_CHECK_EQ(normalizeSaveFolder("SAVES:\\\\000012 - Game11").c_str(), "000012 - Game11");
-    KT_CHECK_EQ(normalizeSaveFolder("/000001 - AUTOSAVE").c_str(), "000001 - AUTOSAVE");
-    KT_CHECK_EQ(normalizeSaveFolder("SAVES:").c_str(), "");
-    KT_CHECK_EQ(normalizeSaveFolder("").c_str(), "");
-    KT_CHECK_EQ(normalizeSaveFolder("12 - Game").c_str(), "");                                      // too short
-    KT_CHECK_EQ(normalizeSaveFolder("000012 - ").c_str(), "");                                      // no name
-    KT_CHECK_EQ(normalizeSaveFolder("000012 - G").c_str(), "000012 - G");
-    KT_CHECK_EQ(normalizeSaveFolder("00001x - Game11").c_str(), "");                                // non-digit
-    KT_CHECK_EQ(normalizeSaveFolder("000012-Game11").c_str(), "");                                  // separator
-    KT_CHECK_EQ(normalizeSaveFolder("000012  -Game11").c_str(), "");
-    KT_CHECK_EQ(normalizeSaveFolder("SAVES:SAVES:000012 - Game11").c_str(), "");
-    KT_CHECK_EQ(joinSaveDir("saves/", "000012 - G").c_str(), "saves/000012 - G");
-    KT_CHECK_EQ(joinSaveDir("cloudsaves/123/", "000012 - G").c_str(), "cloudsaves/123/000012 - G");
-    KT_CHECK_EQ(joinSaveDir("cloudsaves/123", "000012 - G").c_str(), "cloudsaves/123/000012 - G");   // missing slash added
-    KT_CHECK_EQ(joinSaveDir("cloudsaves\\123\\", "000012 - G").c_str(), "cloudsaves\\123\\000012 - G");
-    KT_CHECK_EQ(joinSaveDir("", "000012 - G").c_str(), "saves/000012 - G");                          // empty cloud dir -> saves/
-  }
   { // 12. DIK -> slot decision table (decision strings are logged: they must not change)
     auto K = [](unsigned dik, bool down) { KeyEvent k; k.dik = dik; k.down = down; return k; };
     KeyEvent k;
@@ -554,12 +539,6 @@ int main() {
     KT_CHECK(near(aspectCorrection(10, 10, 1, 10), 0.1));
     KT_CHECK(near(aspectCorrection(10, 10, 10, 1), 10.0));
     KT_CHECK(near(aspectCorrection(0, 10, 10, 10), 1.0)); KT_CHECK(near(aspectCorrection(10, 0, 10, 10), 1.0));
-  }
-  { // normalizeSaveFolder: the first digit is checked and '9' is a digit
-    KT_CHECK_EQ(normalizeSaveFolder("A00012 - Game11").c_str(), "");
-    KT_CHECK_EQ(normalizeSaveFolder("0000a2 - Game11").c_str(), "");
-    KT_CHECK_EQ(normalizeSaveFolder("999999 - Game11").c_str(), "999999 - Game11");
-    KT_CHECK_EQ(normalizeSaveFolder("SAVES:090909 - G").c_str(), "090909 - G");
   }
   { // decideKey / KeyEvent / KeyAction defaults: a default event is an idle, unbound, not-down key 0
     KeyAction a = decideKey(KeyEvent());
@@ -738,7 +717,7 @@ int main() {
     SnapPick c = pickSnapshot("d", Ex::both); KT_CHECK(c.src == SS_New);
     SnapPick d = pickSnapshot("d", Ex::none); KT_CHECK(d.src == SS_Absent); KT_CHECK_EQ(d.path.c_str(), "d/action_hotbar.ini");
     KT_CHECK_EQ(snapStatus(SS_New, true), "found"); KT_CHECK_EQ(snapStatus(SS_Legacy, true), "found (legacy name)");
-    KT_CHECK_EQ(snapStatus(SS_Absent, false), "absent (empty bar)");
+    KT_CHECK_EQ(snapStatus(SS_Absent, false), "absent (live hotbar kept)");
     KT_CHECK_EQ(snapStatus(SS_New, false), "UNREADABLE (live hotbar kept)"); KT_CHECK_EQ(snapStatus(SS_Legacy, false), "UNREADABLE (live hotbar kept)");
   }
   { // targetProbe

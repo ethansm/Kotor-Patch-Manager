@@ -268,6 +268,10 @@ struct Config {
         if (!validSlot(row, slot)) return ActionRef();
         if (!characterKey.empty()) {
             const Profile* p = find(characterKey);
+            if (!p && characterKey == "objfffffffd") {
+                p = find("player");
+                if (!p) p = find("exile");
+            }
             if (p && (!p->slots[row][slot].empty() || p->slots[row][slot].blank)) return p->slots[row][slot];
         }
         const Profile* d = find("Default");

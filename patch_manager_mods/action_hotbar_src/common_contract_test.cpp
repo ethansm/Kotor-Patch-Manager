@@ -17,6 +17,7 @@
 #include "Party.h"
 #include "FileWatch.h"
 #include "KpLog.h"
+#include "SaveEvents.h"
 #include "check.h"
 #include <sys/mman.h>
 #include <type_traits>
@@ -787,6 +788,149 @@ static void kplog_contract() {
     threshold = KPLOG_WARN;
 }
 
+namespace kset {
+
+static int g_regCalls = 0, g_unregCalls = 0;
+static int32_t g_lastMask = 0;
+static const char* g_lastOwner = nullptr;
+static K2SaveCallback g_lastFn = nullptr;
+static void* g_lastUser = nullptr;
+
+static int32_t KPATCH_CALL fakeReg(int32_t mask, K2SaveCallback fn, void* user, const char* owner) {
+    ++g_regCalls;
+    g_lastMask = mask;
+    g_lastFn = fn;
+    g_lastUser = user;
+    g_lastOwner = owner;
+    return 42; // token > 0
+}
+
+static void KPATCH_CALL fakeUnreg(int32_t token) {
+    if (token == 42) ++g_unregCalls;
+}
+
+static int32_t KPATCH_CALL fakeCurrent(char* buf, uint32_t cap) {
+    const char* cur = "saves/000001 - Test";
+    uint32_t len = (uint32_t)strlen(cur);
+    if (buf && cap > 0) {
+        uint32_t n = len < cap - 1 ? len : cap - 1;
+        memcpy(buf, cur, n);
+        buf[n] = 0;
+    }
+    return (int32_t)len;
+}
+
+static K2SaveEventsApi g_table = { sizeof(K2SaveEventsApi), fakeReg, fakeUnreg, fakeCurrent };
+
+static const void* g_seIface = nullptr;
+static int g_seReqCalls = 0;
+static std::string g_seReqName;
+static uint32_t g_seReqVer = 0;
+
+static const void* KPATCH_CALL seRequire(const char* n, uint32_t v) {
+    ++g_seReqCalls;
+    g_seReqName = n ? n : "";
+    g_seReqVer = v;
+    return g_seIface;
+}
+
+static KPatchApi mkSeApi() {
+    KPatchApi a; memset(&a, 0, sizeof a);
+    a.struct_size = sizeof a;
+    a.abi_version = KPATCH_ABI_VERSION;
+    a.require = seRequire;
+    return a;
+}
+
+static int g_cbHits = 0;
+static int32_t g_cbKind = 0;
+static std::string g_cbFolder;
+static void KPATCH_CALL testSaveCb(const K2SaveEvent* ev, void*) {
+    if (!ev) return;
+    ++g_cbHits;
+    g_cbKind = ev->kind;
+    g_cbFolder = ev->folder ? ev->folder : "";
+}
+
+static bool g_connOk = false;
+static std::string g_connWhy;
+static void testConn(bool ok, const char* why) {
+    g_connOk = ok;
+    g_connWhy = why ? why : "";
+}
+
+} // namespace kset
+
+static void k2se_contract() {
+    using namespace kset;
+
+    // Constants & bitmasks hotbar relies on
+    HCHECK("K2SE_IFACE is k2.saveevents", strcmp(K2SE_IFACE, "k2.saveevents") == 0);
+    HCHECK("K2SE_VERSION is 1", K2SE_VERSION == 1);
+    HCHECK("K2SE_SAVED bit is 1", K2SE_SAVED == 1);
+    HCHECK("K2SE_AUTOSAVED bit is 2", K2SE_AUTOSAVED == 2);
+    HCHECK("K2SE_LOAD_REQUEST bit is 4", K2SE_LOAD_REQUEST == 4);
+    HCHECK("K2SE_NEW_GAME bit is 8", K2SE_NEW_GAME == 8);
+    const int32_t wantMask = K2SE_SAVED | K2SE_AUTOSAVED | K2SE_LOAD_REQUEST | K2SE_NEW_GAME;
+    HCHECK("combined hotbar mask is 15 (K2SE_ALL)", wantMask == 15 && wantMask == K2SE_ALL);
+
+    // K2SE_EVENT_HAS macro semantics
+    K2SaveEvent ev = {};
+    ev.struct_size = sizeof(K2SaveEvent);
+    HCHECK("K2SE_EVENT_HAS true for cloud when struct_size is full", K2SE_EVENT_HAS(&ev, cloud));
+    HCHECK("K2SE_EVENT_HAS true for folder", K2SE_EVENT_HAS(&ev, folder));
+    ev.struct_size = offsetof(K2SaveEvent, folder) + sizeof(ev.folder);
+    HCHECK("K2SE_EVENT_HAS false for cloud when struct_size truncated before cloud", !K2SE_EVENT_HAS(&ev, cloud));
+    const K2SaveEvent* nullEv = nullptr;
+    HCHECK("K2SE_EVENT_HAS false on nullptr", !K2SE_EVENT_HAS(nullEv, cloud));
+
+    // Client without provider (absent): fails soft without crashing
+    k2se::Client c;
+    KPatchApi api = mkSeApi();
+    g_seIface = nullptr;
+    g_seReqCalls = 0;
+    c.init(&api, "action-hotbar");
+    c.onConnect = testConn;
+    c.add(wantMask, testSaveCb);
+    HCHECK("connect fails soft when provider is absent", !c.connect());
+    HCHECK("connected is false when provider absent", !c.connected);
+    HCHECK("require was requested for k2.saveevents@1", g_seReqCalls == 1 && g_seReqName == "k2.saveevents" && g_seReqVer == 1);
+    HCHECK("onConnect reports not provided", !g_connOk && g_connWhy.find("not provided") != std::string::npos);
+
+    // Client with provider present
+    g_seIface = &g_table;
+    g_regCalls = 0;
+    c.release();
+    HCHECK("connect succeeds with valid provider", c.connect());
+    HCHECK("connected is true", c.connected);
+    HCHECK("Register was called on provider table", g_regCalls == 1);
+    HCHECK("Register received hotbar mask 15", g_lastMask == 15);
+    HCHECK("Register received action-hotbar owner", g_lastOwner && strcmp(g_lastOwner, "action-hotbar") == 0);
+    HCHECK("Register received callback fn", g_lastFn == testSaveCb);
+    HCHECK("onConnect reports registered", g_connOk && g_connWhy == "registered");
+
+    // Event delivery through callback
+    K2SaveEvent fire = {};
+    fire.struct_size = sizeof(K2SaveEvent);
+    fire.kind = K2SE_SAVED;
+    fire.folder = "saves/000012 - Game11";
+    fire.cloud = 0;
+    g_cbHits = 0;
+    g_lastFn(&fire, nullptr);
+    HCHECK("callback receives SAVED event", g_cbHits == 1 && g_cbKind == K2SE_SAVED && g_cbFolder == "saves/000012 - Game11");
+
+    fire.kind = K2SE_NEW_GAME;
+    fire.folder = nullptr;
+    g_lastFn(&fire, nullptr);
+    HCHECK("callback receives NEW_GAME event with null folder", g_cbHits == 2 && g_cbKind == K2SE_NEW_GAME && g_cbFolder.empty());
+
+    // release unregisters
+    g_unregCalls = 0;
+    c.release();
+    HCHECK("release unregisters token 42", g_unregCalls == 1);
+    HCHECK("connected is false after release", !c.connected);
+}
+
 int main() {
     void* m = mmap(nullptr, ArenaSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS
 #ifdef MAP_32BIT
@@ -802,5 +946,6 @@ int main() {
     party_contract();
     filewatch_contract();
     kplog_contract();
+    k2se_contract();
     return kt::Report("common_contract_test (action_hotbar)");
 }

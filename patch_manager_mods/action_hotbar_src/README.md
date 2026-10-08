@@ -203,18 +203,14 @@ The `spells.2da` lookup is logged once per session, on the `tip` channel. Order:
 
 ## Hooks
 
-Eight detours, all for the Steam Aspyr build. Addresses are in `kotor2-steam-aspyr.hooks.toml`.
+One direct detour for the Steam Aspyr build (`CaptureHotbarKey`). HUD hooks are provided by `hud-host` (`k2.hud@1`), and save/load events are provided by `save-events` (`k2.saveevents@1`). Address is in `kotor2-steam-aspyr.hooks.toml`.
 
 | Address | Function | Purpose |
 |---|---|---|
 | `0x0072CB63` | `CaptureHotbarKey` | Reads the DirectInput key event, so the bound keys can be taken. |
-| `0x0074B3F0` | `HotbarHudTick` | Per-frame update of the bar, editor and tooltips. |
-| `0x00748502` | `HotbarBuildButtons` | Builds the controls in the HUD constructor. |
-| `0x00534527` | `HotbarOnSaved` | After a save is written: copy the INI into the save folder. |
-| `0x0053C5AA` | `HotbarOnAutosaved` | Same for the module-entry autosave. |
-| `0x0052FD1E` | `HotbarOnLoadRequest` | On load: restore that save's hotbar. |
-| `0x008529E0` | `HotbarOnAutosaveSlotLoad` | Same for autosave-slot loads. |
-| `0x008FACA0` | `HotbarOnNewGame` | New game: start with an empty bar. |
+| (hud-host) | `HotbarHudTick` | Per-frame update of the bar, editor and tooltips via `k2.hud@1`. |
+| (hud-host) | `HotbarBuildButtons` | Builds the controls in the HUD constructor via `k2.hud@1`. |
+| (save-events) | `onSaveEvent` | Per-save INI snapshots and restores via `k2.saveevents@1`. |
 
 ## Tests
 

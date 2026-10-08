@@ -4,8 +4,3 @@ EXPORTS
     CaptureHotbarKey
     HotbarHudTick
     HotbarBuildButtons
-    HotbarOnSaved
-    HotbarOnAutosaved
-    HotbarOnLoadRequest
-    HotbarOnAutosaveSlotLoad
-    HotbarOnNewGame
