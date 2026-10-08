@@ -19,6 +19,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -454,8 +455,14 @@ def cmd_delegate(plan: dict, target_phase: str = "", mode: str = "auto", dry_run
     flow_cmd = ["oc-flow", mode, prompt]
     res = subprocess.run(flow_cmd, cwd=str(REPO_ROOT))
     if res.returncode != 0:
-        print(f"Error: oc-flow exited with code {res.returncode}")
-        return res.returncode
+        # Check if plan artifact was still generated despite non-zero exit (e.g. post-generation logging race)
+        subagent_runs = REPO_ROOT / ".claude" / "subagent_runs"
+        recent_plans = sorted(subagent_runs.glob("*_plan.md"), key=lambda p: p.stat().st_mtime, reverse=True) if subagent_runs.exists() else []
+        if mode == "start" and recent_plans and (time.time() - recent_plans[0].stat().st_mtime < 120):
+            print(f"\n[WARN] oc-flow exited with code {res.returncode}, but recovered generated plan: {recent_plans[0].name}")
+        else:
+            print(f"Error: oc-flow exited with code {res.returncode}")
+            return res.returncode
 
     if mode == "start":
         print(f"\n[PLAN GENERATED] Plan mode complete for phase {target_phase}.")
