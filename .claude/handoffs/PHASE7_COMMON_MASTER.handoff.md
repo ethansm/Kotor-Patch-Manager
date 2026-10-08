@@ -1,48 +1,45 @@
 # Session Handoff & Plan State: research/companion_levelup/PHASE7_COMMON_MASTER.md
 
 ## 0. Next-Phase Direction
-Execute C1: Integration audit baseline (read-only)
+Execute C3: Include style + parity stub alignment
 
 ## 1. Active State & Provenance
 - **Master Plan:** `research/companion_levelup/PHASE7_COMMON_MASTER.md`
-- **Branch:** `KOTOR-II` (5eb7be3 scripts: track plan_manager.py, query_ghidra.py (+test); skills and CLAUDE.md call them)
+- **Branch:** `KOTOR-II` (83cb016 docs(levelup): complete Phase 7 Chunk C1 integration audit baseline)
 - **Last Landed Commit:**
 ```
-5eb7be3 scripts: track plan_manager.py, query_ghidra.py (+test); skills and CLAUDE.md call them
- scripts/plan_manager.py      | 426 +++++++++++++++++++++++++++++++++++++++++++
- scripts/query_ghidra.py      | 231 +++++++++++++++++++++++
- scripts/test_query_ghidra.py |  69 +++++++
- 3 files changed, 726 insertions(+)
+83cb016 docs(levelup): complete Phase 7 Chunk C1 integration audit baseline
+ .claude/handoffs/PHASE7_COMMON_MASTER.handoff.md   | 61 +++++++++---------
+ research/companion_levelup/PHASE7_COMMON_MASTER.md |  2 +-
+ .../phase7_evidence/C1_integration_audit.md        | 72 ++++++++++++++++++++++
+ 3 files changed, 101 insertions(+), 34 deletions(-)
 ```
-- **Dirty Files (111):**
-  - `D patch_manager_mods/engine_ai_atlas/tools/__pycache__/atlas_coverage.cpython-312.pyc`
-  - ` D patch_manager_mods/engine_ai_atlas/tools/__pycache__/cg.cpython-312.pyc`
-  - ` D patch_manager_mods/engine_ai_atlas/tools/__pycache__/export_dump_inputs.cpython-312.pyc`
-  - ` D patch_manager_mods/engine_ai_atlas/tools/__pycache__/field_census.cpython-312.pyc`
-  - ` D patch_manager_mods/engine_ai_atlas/tools/tests/__pycache__/helpers.cpython-312.pyc`
-  - ` D patch_manager_mods/engine_ai_atlas/tools/tests/__pycache__/test_cg.cpython-312.pyc`
-  - ` D patch_manager_mods/engine_ai_atlas/tools/tests/__pycache__/test_export_and_coverage.cpython-312.pyc`
-  - ` D patch_manager_mods/engine_ai_atlas/tools/tests/__pycache__/test_field_census.cpython-312.pyc`
-  - ` M patch_manager_mods/ghidra_knowledge/kotor2_ghidra_knowledge.db`
-  - ` M patch_manager_mods/steam_db_pr3/README.md`
+- **Dirty Files (200):**
+  - `M .claude/handoffs/18_mouse_camera_investigation.handoff.md`
+  - ` M .claude/handoffs/24_master_plan_status.handoff.md`
+  - ` M .claude/handoffs/31_combat_action_hotbar.handoff.md`
+  - ` M .claude/session_handoff.md`
+  - ` M AGENTS.md`
+  - ` M patch_manager_mods/10_engine_optimization_research.md`
+  - ` M patch_manager_mods/31_combat_action_hotbar.md`
+  - ` M patch_manager_mods/33_ui_queue_hotbar_fixes.md`
+  - ` M patch_manager_mods/MASTER_KEY.md`
+  - ` M patch_manager_mods/action_hotbar_src/ActionHotbar.cpp`
 
-## 2. Immediate Objective (C1)
-**Integration audit baseline (read-only)**
+## 2. Immediate Objective (C3)
+**Include style + parity stub alignment**
 
 Status: TODO
-Task: Integration audit baseline (read-only)
+Task: Include style + parity stub alignment
+
+## 2b. Upcoming Batches in Pipeline
+- **C4** [Common Extraction] : Engine addresses -> GameAddr.h (+ proposal)
+- **C5** [Common Extraction] : Party.h adoption
+- **C6** [Common Extraction] : FileWatch.h adoption
 
 ## 3. Strict Context Budget & Read Policy
-- **Self-Contained Plan**: Do NOT run broad `ls`, find commands, or `cat` entire source files.
-- **No Historical Docs**: Do NOT read past markdown docs (`19*.md`, `15*.md`, etc.). All active state is captured here.
-- **Targeted Reads Only**: Use `sed -n 'X,Yp'` or `rg` for specific lines if needed.
-- **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume`.
+- **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume C3` (or `resume PHASE7_COMMON_MASTER`).
 
-## Session 2026-10-04 (R10 batch 1) - Dead Ends & Anti-Patterns
-- KPM `LevelUpOverride.kpatch` is untracked build output: commit only sources in $T (`git commit -- <paths>` failed on the .kpatch pathspec).
-- Background Sonnet agents that start Monitor waits re-notify repeatedly after finishing: TaskStop them once their result is committed.
-- Tag table: role-narrowing powers gave hundreds of preset conflicts -> powers carry all 5 roles; only alignment narrows (doc 25 s12 known limit).
-- check_exports FAILs on a stale kpatch until the rebuild (`python3 ../create-patch.py` in $T/Patches/LevelUpOverride).
-## Verification Commands
-- `python3 scripts/run_tests.py` (97/97 at 2026-10-04), `python3 scripts/run_tests.py -k r10`, `cd research/companion_levelup && python3 tools/parity/parity.py && python3 tools/parity/mutate.py --jobs 6` (162/162)
-- `.venv/bin/python3 research/companion_levelup/r10/gen_r10_tags.py --check` (run from research/companion_levelup with ../../.venv/bin/python3)
+## 4. Subagent Delegation Direction
+- **Delegate to Subagent**: `python3 scripts/plan_manager.py delegate C3`
+- **Supported Commands**: `oc-subagent <scout|code|ghidra|verify|gate|doc>` or `oc-flow auto "<task>"`
