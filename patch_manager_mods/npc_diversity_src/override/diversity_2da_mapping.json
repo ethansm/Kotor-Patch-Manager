@@ -1,0 +1,27 @@
+{
+  "appearances": {
+    "Commoner_Fat_Male": 802,
+    "Commoner_Fat_Female": 803,
+    "Czerka_Officer_Female": 804,
+    "Twilek_Commoner_M_02_A": 805,
+    "Twilek_Commoner_M_02_B": 806,
+    "Twilek_Commoner_M_02_C": 807,
+    "Twilek_Commoner_M_02_D": 808,
+    "Twilek_Female_Dancer_Boot": 809,
+    "Twilek_Female_Dancer": 810,
+    "Twilek_Female_Underwear": 811,
+    "Alien_KelDor_01": 812,
+    "Alien_KelDor_02": 813,
+    "Alien_Iridorian_01": 814,
+    "Alien_Iridorian_02": 815
+  },
+  "heads": {
+    "llk_Ahrnell": 192,
+    "llk_Harra": 193,
+    "llk_KehVehn": 194,
+    "llk_LupoShar": 195,
+    "llk_DahnisH": 196
+  },
+  "heads_count": 249,
+  "appearance_count": 816
+}

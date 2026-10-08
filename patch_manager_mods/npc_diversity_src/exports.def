@@ -1,0 +1,4 @@
+EXPORTS
+    NpcDiversity_Init
+    OverrideNpcTexture
+    RemapNpcAppearance

@@ -1,0 +1,39 @@
+[metadata]
+target_versions = [
+    "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"
+]
+
+# Detour inside CSWCCreatureAppearance::GetBTypeModelAndTextureResRef to diversify clothing texture
+[[hooks]]
+address = 0x0085E601
+type = "detour"
+function = "OverrideNpcTexture"
+original_bytes = [
+    0xC6, 0x45, 0xFC, 0x00,
+    0x8D, 0x4D, 0xB4
+]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+# Detour at CSWCCreature::SetAppearance for body/head appearance remapping
+[[hooks]]
+address = 0x0076D200
+type = "detour"
+function = "RemapNpcAppearance"
+original_bytes = [
+    0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x74
+]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "esp+4"
+type = "pointer"

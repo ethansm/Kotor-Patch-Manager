@@ -1,0 +1,20 @@
+[patch]
+id = "npc-diversity"
+name = "Master NPC Diversity Dispatcher"
+version = "1.0.0"
+author = "ethansm"
+description = "Deterministic runtime NPC appearance & clothing diversity dispatcher"
+kind = "mod"
+target = "swkotor2.exe"
+
+requires = []
+conflicts = []
+
+[patch.supported_versions]
+kotor2_steam_aspyr = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"
+kotor2_gog_aspyr = "777BEE235A9E8BDD9863F6741BC3AC54BB6A113B62B1D2E4D12BBE6DB963A914"
+
+[build]
+sources = ["NpcDiversityDispatcher.cpp"]
+exports = "exports.def"
+hooks = "kotor2-steam-aspyr.hooks.toml"
