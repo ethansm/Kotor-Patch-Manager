@@ -36,6 +36,7 @@
 #include "EffectIcons.h"   // k2fx: icon tables + collectBuffs (Buff HUD)
 #include "ChareffDecode.h"      // effect stat decoder + pixel-width text layer (pure, host-tested; includes EffectNameTable.inc)
 #include "GameAddr.h"
+#include "GuiInput.h"
 #include "GuiKit.h"   // guikit:: setRect/getExtent/imageFor/setText/setTextColor/setFill/setBorderTint/bindByTag/wheel/screen/cursor + detail::textObjOk
 #include "PanelSlots.h"   // Common: panel -> slot table
 #include "Party.h"        // Common: party table / member / server creature
@@ -92,12 +93,14 @@ const bool g_fallbackSet = (KpLog_SetFallbackFile("chareffects_log.txt"), KpLog_
 int g_logLines = 0; constexpr int MaxLogLines = 20000;
 bool g_debug = false; int g_dbgLines = 0; constexpr int MaxDebugLines = 10000;
 char g_loadLine[160];   // formatted by DllMain, emitted by ensureInit (the logger is only known after KPatchInit)
-void vlog(::kplog::Channel& ch, const char* fmt, va_list ap) {
+void vlog(::kplog::Channel& ch, int level, const char* fmt, va_list ap) {
     char buf[2048]; vsnprintf(buf, sizeof buf, fmt, ap);
-    KP_LOGV(ch, KPLOG_INFO, "%s", buf);
+    KP_LOGV(ch, level, "%s", buf);
 }
-void logf(const char* fmt, ...) { if (g_logLines >= MaxLogLines) return; ++g_logLines; va_list ap; va_start(ap, fmt); vlog(chMain, fmt, ap); va_end(ap); }
-void dlogf(const char* fmt, ...) { if (!g_debug || g_dbgLines >= MaxDebugLines) return; ++g_dbgLines; va_list ap; va_start(ap, fmt); vlog(chDbg, fmt, ap); va_end(ap); }
+void logf(const char* fmt, ...) { if (g_logLines >= MaxLogLines) return; ++g_logLines; va_list ap; va_start(ap, fmt); vlog(chMain, KPLOG_INFO, fmt, ap); va_end(ap); }
+void logw(const char* fmt, ...) { va_list ap; va_start(ap, fmt); vlog(chMain, KPLOG_WARN, fmt, ap); va_end(ap); }
+void loge(const char* fmt, ...) { va_list ap; va_start(ap, fmt); vlog(chMain, KPLOG_ERR, fmt, ap); va_end(ap); }
+void dlogf(const char* fmt, ...) { if (!g_debug || g_dbgLines >= MaxDebugLines) return; ++g_dbgLines; va_list ap; va_start(ap, fmt); vlog(chDbg, KPLOG_INFO, fmt, ap); va_end(ap); }
 template <typename T>
 bool readAt(int base, int off, T* out) { return saferead::readAt<T>(0, static_cast<uintptr_t>(static_cast<unsigned>(base)), off, out); }
 // early-return reasons: logged when the reason changes, else at most every 10 s
@@ -108,7 +111,8 @@ void whyLog(int code, const char* fmt, ...) {
     g_lastWhy = code; g_lastWhyAt = t;
     if (g_logLines >= MaxLogLines) return;
     ++g_logLines;
-    va_list ap; va_start(ap, fmt); vlog(chMain, fmt, ap); va_end(ap);
+    int lvl = (code <= 1) ? KPLOG_INFO : KPLOG_WARN;
+    va_list ap; va_start(ap, fmt); vlog(chMain, lvl, fmt, ap); va_end(ap);
 }
 
 // ---- configuration: $GAME/chareffects.ini (missing/garbage = defaults; every key and rejected line logged) ----
@@ -240,8 +244,8 @@ unsigned char* bindLabel(int panel, const char* tagName, int expectId) {
     guikit::BindInfo bi;
     guikit::bindByTag(static_cast<uintptr_t>(static_cast<unsigned>(panel)), tagName, expectId, 0, &bi);
     saferead::beginScope();   // bindByTag does not drop the readable-region cache itself
-    if (bi.why == guikit::CF_Alloc) { logf("H1 %s: allocation failed", tagName); return nullptr; }
-    if (bi.why == guikit::CF_Vtable) { logf("H1 %s: ctor left vtable %08x (expected %08x), not binding", tagName, bi.badVtable, (unsigned)gameaddr::LabelVtable); return nullptr; }
+    if (bi.why == guikit::CF_Alloc) { logw("H1 %s: allocation failed", tagName); return nullptr; }
+    if (bi.why == guikit::CF_Vtable) { logw("H1 %s: ctor left vtable %08x (expected %08x), not binding", tagName, bi.badVtable, (unsigned)gameaddr::LabelVtable); return nullptr; }
     logf("H1 %s: ctl=%p id=%d (expect %d)%s extent=[%d,%d,%d,%d] flags=%08x -> %08x", tagName, (void*)bi.ctl, bi.id, expectId,
          bi.id == expectId ? "" : " MISMATCH", bi.ext[0], bi.ext[1], bi.ext[2], bi.ext[3], bi.flagsBefore, bi.flagsAfter);
     return bi.id == expectId ? reinterpret_cast<unsigned char*>(bi.ctl) : nullptr;
@@ -855,7 +859,11 @@ void ensureInit() {
 
 } // namespace
 
-extern "C" void __cdecl KPatchInit(const KPatchApi* api) { KpLog_Init(api); ensureInit(); }
+extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
+    KpLog_Init(api);
+    guikit::initGuiInput(api, "character-effects-panel");
+    ensureInit();
+}
 
 extern "C" void __cdecl BindCharEffects(int panel) {
     ensureInit();
@@ -884,7 +892,7 @@ extern "C" void __cdecl BindCharEffects(int panel) {
     int newCount = -1; readAt<int>(panel, 0x28, &newCount);
     logf("H1: bound %d/%d labels, controls now %d (was %d)", bound, (int)NumTags, newCount, ctlCount);
     float br[4];
-    if (!s->ctl[T_BACK] || !ctlRect(s->ctl[T_BACK], br)) { logf("H1: LBL_EFX_BACK missing (is character_p.gui patched? scripts/mirror_character_page.py), panel unusable"); s->panel = panel; s->bound = false; return; }
+    if (!s->ctl[T_BACK] || !ctlRect(s->ctl[T_BACK], br)) { logw("H1: LBL_EFX_BACK missing (is character_p.gui patched? scripts/mirror_character_page.py), panel unusable"); s->panel = panel; s->bound = false; return; }
     s->bx = br[0]; s->by = br[1]; s->sx = br[2] / PanelW; s->sy = br[3] / PanelH;
     logf("H1: BACK px [%.0f,%.0f,%.0f,%.0f] -> unit scale %.4f x %.4f", br[0], br[1], br[2], br[3], s->sx, s->sy);
     // colour offsets: accept only when the GUI's own colours read back where expected

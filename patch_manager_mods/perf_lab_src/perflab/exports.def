@@ -57,8 +57,24 @@ EXPORTS
     PerfLabAutosave
     PerfLabOptSave
     PerfLabSoundApply
+    PerfLabRbPass1Entry
+    PerfLabRbPass1Exit
+    PerfLabRbPass2Entry
+    PerfLabRbPass2Exit
+    PerfLabRbPass3Entry
+    PerfLabRbPass3Exit
+    PerfLabAiScanBegin
+    PerfLabAiScanEnd
+    PerfLabAiHeavyPre
+    PerfLabAiHeavyPost
+    PerfLabAiTickEnd
+    PerfLabTexScanEntry
+    PerfLabTexScanExit
+    PerfLabFocusGobStrcmp
+    PerfLabToLower
     PerfLabTestSetGl
     PerfLabTestHwmipCounters
     PerfLabTestRGluMip
     PerfLabTestResolveEntries
     PerfLabTestSetGetTexLevel
+

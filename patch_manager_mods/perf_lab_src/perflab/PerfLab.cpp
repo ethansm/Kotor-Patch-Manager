@@ -1,4 +1,4 @@
-// PerfLab 0.5.1 (0.5.0 + KpLog) (Steam Aspyr build 6A522E71...). Diagnostics; the only behaviour changes are the
+// PerfLab 0.6.0 (Perf-Lab 0.6.0 Telemetry & Texture Memory Hardening) (Steam Aspyr build 6A522E71...). Diagnostics; the only behaviour changes are the
 // flag-gated experiments tx=1 / g1skip=1 / hwmip=1 (off by default). Research program: patch_manager_mods/10_engine_optimization_research.md.
 // 0.5.0 is measurement-only (all file output on the helper thread, hooks only count/copy; every engine pointer through SafeRead):
 //   MOD      (no hook) the `#METRICS` header gets ` module=<resref|-|?>` appended (client module name, `-` = no module/menu, `?` = chain unreadable)
@@ -93,7 +93,7 @@ constexpr int In_Module = 0x18, Mod_Name = 0x38;
 // ---- config --------------------------------------------------------------------------------------------
 struct Cfg {
     bool alloc = true, heapFilter = true; DWORD flushMs = 30000; int scan = 48; unsigned snapMin = 1024;
-    bool metrics = false, vq = false, tx = false, g1skip = false, hwmip = false;
+    bool metrics = false, vq = false, tx = false, g1skip = false, hwmip = false, abreserve = false;
     int live = -1, br = -1, kt = -1, vm = -1, misc = -1, ai = -1;   // 0.3.0 groups; -1 = follow metrics
     int ev = -1;                                      // 0.5.0 group: EVT + TPCTOP/RESTOP; -1 = follow metrics
 } g_cfg;
@@ -284,12 +284,13 @@ constexpr uintptr_t G_ResMan = 0x00A1B490;
 enum Hk { HkMalloc, HkEvict, HkFreeData, HkRelease, HkDemand, HkGetImage, HkBuild, HkBucket, HkActionBar,
           HkBr1, HkBr2, HkBr3, HkAsync, HkDestroyTable, HkStillDemand, HkUafWrite, HkTxiTpc, HkRequeue, HkFreeImage, HkTexDtor,
           HkUnload, HkRunScript, HkExecCmd, HkTmi, HkDelay, HkAdcEnter, HkAdcHandoff, HkNetSend, HkNetOvf, HkFocus, HkSceneDtor,
-          HkAiTick, HkAiPre, HkAiPost, HkPathEnter, HkPathResult, HkEffApply, HkEffRemove, HkEvt, HkCount };
+          HkAiTick, HkAiPre, HkAiPost, HkPathEnter, HkPathResult, HkEffApply, HkEffRemove, HkEvt, HkRbPass, HkAiScan, HkAiHeavy,
+          HkTexScan, HkFocusStrcmp, HkToLower, HkCount };
 const char* const HkName[HkCount] = { "ResMalloc", "ResEvict", "ResFreeData", "ResRelease", "ResDemand", "GetImage", "BuildTex", "Bucket",
           "ActionBar", "BrSetter1", "BrSetter2", "BrTexMiss", "AsyncStart", "DestroyTable", "StillInDemand", "KtUafWrite", "TxiViaTpc",
           "TexRequeue", "FreeImage", "TexDtor", "UnloadModule", "RunScript", "ExecCommand", "InstrLimit", "DelayCommand", "AdcEnter",
           "AdcHandoff", "NetSend", "NetOvfTest", "FocusDummy", "SceneDtor", "AiTick", "AiObjPre", "AiObjPost", "PathEnter", "PathResult",
-          "EffectApply", "EffectRemove", "Evt" };
+          "EffectApply", "EffectRemove", "Evt", "RbPass", "AiScan", "AiHeavy", "TexScan", "FocusStrcmp", "ToLower" };
 enum Nt { NtTgaLoad, NtBuild, NtBr1, NtBr2, NtBr3, NtScript, NtTxiTpc, NtCount };
 const char* const NtName[NtCount] = { "tga_load", "build", "gui_setter1", "gui_setter2", "tex_miss", "script", "txi_via_tpc" };
 constexpr int NameSlots = 512, NameLen = 24, RingN = 64, ExecIds = 0x36D;
@@ -337,11 +338,24 @@ struct Metrics {
     // 0.5.0
     EvtRec evt[EvtRingN]; volatile LONG evtN; volatile LONG64 evtCount[EkCount];
     volatile LONG64 txiTpcBytes, requeueRetainedBytes, gmsCalls, gmsQpc;
+    // 0.6.0 RenderBackend (RB) passes & AIQ scan telemetry
+    volatile LONG64 rbPassCalls[3], rbPassQpc[3], rbPassMaxQpc[3]; LONG64 rbPassT0[3];
+    volatile LONG64 aiScanN, aiScanQpc, aiScanMaxQpc; LONG64 aiScanT0; volatile LONG aiScanArmed;
+    volatile LONG64 aiHeavyN, aiHeavyQpc, aiHeavyMaxQpc; LONG64 aiHeavyT0;
+    volatile LONG64 aiTickTrueQpc;
+    // 0.6.0 Texture-id scan & FocusGob strcmp telemetry
+    volatile LONG64 texScanN, texScanQpc, texScanMaxQpc; LONG64 texScanT0;
+    volatile LONG texScanRecs, texScanBound, texScanMaxId;
+    volatile LONG64 focusGobStrcmp;
+    // 0.6.0 CExoString ToLower telemetry
+    volatile LONG64 toLowerN;
+    CallerStat toLowerCallers[CallerSlots];
 };
 Metrics* g_m = nullptr;
 LONG64 g_qpf = 1;
 volatile LONG g_firstTickDone = 0;
-volatile LONG g_txState = 0, g_g1State = 0;          // 0 not requested, 1 applied, -1 byte mismatch, -2 VirtualProtect failed, -3 cave alloc failed
+volatile LONG g_txState = 0, g_g1State = 0, g_abState = 0;          // 0 not requested, 1 applied, -1 byte mismatch, -2 VirtualProtect failed, -3 cave alloc failed
+volatile LONG g_abReuse = 0, g_abGrow = 0;
 
 inline LONG64 qpc() { LARGE_INTEGER v; QueryPerformanceCounter(&v); return v.QuadPart; }
 // Histogram bucket for v with n buckets: 0 = zero, k = [2^(k-1), 2^k), last bucket open-ended.
@@ -532,6 +546,62 @@ void readModuleName(char* out) {
     if (k) out[k] = 0;
 }
 
+// ---- 0.6.0 GUI state: RTTI name of the top modal / panel (W9 item 1e) --------------------------------------------------
+// mgr = [internal+0x274]; modal stack = [mgr+0x94] count [mgr+0x98]; panel list = [mgr+0x88] count [mgr+0x8C].
+// top = last of modals else last of panels; RTTI = [top]->vt -> [vt-4]->COL -> [COL+0xC]->TD -> cstr(TD+8).
+volatile uintptr_t g_stateVt = 0;
+char g_guiState[32] = "?";
+
+void sampleGuiState(char* out, size_t outLen) {
+    using saferead::readAt;
+    strncpy(out, "?", outLen);
+    saferead::beginScope();
+    uintptr_t app = 0, client = 0, in = 0, mgr = 0, modals = 0, top = 0; int modalCnt = 0;
+    if (!readAt(80, AppGlobal, 0, &app) || !app || !readAt(81, app, 4, &client) || !client || !readAt(82, client, 4, &in) || !in) return;
+    if (!readAt(83, in, In_GuiMgr, &mgr) || !mgr) return;
+
+    if (readAt(84, mgr, Mgr_Modals, &modals) && readAt(85, mgr, Mgr_ModalCount, &modalCnt) && modals && modalCnt > 0 && modalCnt < 64) {
+        readAt(86, modals, (modalCnt - 1) * 4, &top);
+    }
+    if (!top) {
+        uintptr_t panels = 0; int pCnt = 0;
+        if (readAt(87, mgr, 0x88, &panels) && readAt(88, mgr, 0x8C, &pCnt) && panels && pCnt > 0 && pCnt < 128) {
+            for (int i = pCnt - 1; i >= 0; --i) {
+                uintptr_t p = 0;
+                if (readAt(89, panels, i * 4, &p) && p) { top = p; break; }
+            }
+        }
+    }
+    if (!top) {
+        uintptr_t mod = 0;
+        if (readAt(90, in, In_Module, &mod) && mod) strncpy(out, "InGame", outLen);
+        else strncpy(out, "MainMenu", outLen);
+        g_stateVt = 0;
+        return;
+    }
+    uintptr_t vt = 0, col = 0, td = 0; int sig = -1;
+    if (!readAt(91, top, 0, &vt) || !vt) { strncpy(out, "UnknownPanel", outLen); return; }
+    g_stateVt = vt;
+    if (!readAt(92, vt - 4, 0, &col) || !col || !readAt(93, col, 0, &sig) || sig != 0 || !readAt(94, col, 0xC, &td) || !td) {
+        strncpy(out, "PanelNoRTTI", outLen); return;
+    }
+    char raw[64]; memset(raw, 0, sizeof(raw));
+    for (int k = 0; k < 63; ++k) {
+        char ch = 0;
+        if (!readAt(95, td + 8, k, &ch) || !ch) break;
+        raw[k] = ch;
+    }
+    if (strncmp(raw, ".?AV", 4) == 0) {
+        const char* p = raw + 4;
+        char clean[32]; int c = 0;
+        while (*p && *p != '@' && c < 31) clean[c++] = *p++;
+        clean[c] = 0;
+        if (c > 0) { strncpy(out, clean, outLen); out[outLen - 1] = 0; return; }
+    }
+    strncpy(out, raw[0] ? raw : "Unknown", outLen);
+    out[outLen - 1] = 0;
+}
+
 // IAT hooks (M4 mipmaps, M5 frame time)
 typedef int(WINAPI* GluMip_t)(unsigned, int, int, int, unsigned, unsigned, const void*);
 typedef BOOL(WINAPI* Swap_t)(HDC);
@@ -710,8 +780,10 @@ BOOL WINAPI hkSwapBuffers(HDC dc) {
 }
 
 // Experiments, applied from the first tick (main thread: the engine cannot be executing the patched bytes then).
-uint8_t g_txSeen[7], g_g1Seen[2];
+uint8_t g_txSeen[7], g_g1Seen[2], g_abSeen[12];
 uint8_t* g_txCave = nullptr;
+uint8_t* g_abCave = nullptr;
+constexpr uintptr_t PatchAb = 0x0058C406;
 // TX cave (EAX = IsTPCLoaded() result, [EBP-4] = texture; EDX is reloaded at 0x4261D6 and dead at the epilogue 0x4261E6):
 //   movzx ecx,al / test ecx,ecx / jz free        ; not TPC: free as the engine always did
 //   mov edx,[ebp-4] / cmp dword [edx+0x34],0 / jnz skip   ; TPC with a procedural controller: keep the image (engine behaviour)
@@ -730,12 +802,44 @@ int applyTx() {
     int32_t d = static_cast<int32_t>(reinterpret_cast<uintptr_t>(g_txCave) - (PatchTx + 5)); memcpy(jmp + 1, &d, 4);
     return codepatch::writeChecked(PatchTx, orig, jmp, 7, g_txSeen);
 }
+// ABRESERVE cave (0x58C406 in CExoArray<ActionEntry>::SetSize; doc 10 / W9 item 3).
+// Reuses capacity when n <= [this+8], only calling ActionEntry::Reset 0x7ECFA0 for new elements.
+int applyAbReserve() {
+    static const uint8_t orig[12] = { 0x8B, 0x45, 0x08, 0x50, 0x8B, 0x4D, 0xF4, 0xE8, 0x2E, 0x01, 0x00, 0x00 };
+    g_abCave = static_cast<uint8_t*>(VirtualAlloc(nullptr, 128, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE));
+    if (!g_abCave) return -3;
+    static const uint8_t tmpl[97] = {
+        0x8B, 0x4D, 0xF4, 0x8B, 0x45, 0x08, 0x8B, 0x11, 0x85, 0xD2, 0x74, 0x2F, 0x3B, 0x41, 0x08, 0x7F, 0x2A,
+        0x56, 0x57, 0x8B, 0x71, 0x04, 0x89, 0xC7, 0x39, 0xFE, 0x7D, 0x18, 0x8B, 0x4D, 0xF4, 0x8B, 0x09,
+        0x6B, 0xD6, 0x3C, 0x01, 0xD1, 0xE8, 0x00, 0x00, 0x00, 0x00, 0x46, 0xEB, 0xEA,
+        0xFF, 0x05, 0x00, 0x00, 0x00, 0x00, 0x5F, 0x5E, 0xE9, 0x00, 0x00, 0x00, 0x00,
+        0x8B, 0x51, 0x08, 0x01, 0xD2, 0x83, 0xFA, 0x04, 0x7D, 0x05, 0xBA, 0x04, 0x00, 0x00, 0x00,
+        0x39, 0xC2, 0x7D, 0x02, 0x89, 0xC2, 0xFF, 0x05, 0x00, 0x00, 0x00, 0x00, 0x52,
+        0xE8, 0x00, 0x00, 0x00, 0x00, 0xE9, 0x00, 0x00, 0x00, 0x00
+    };
+    memcpy(g_abCave, tmpl, sizeof(tmpl));
+    uintptr_t c = reinterpret_cast<uintptr_t>(g_abCave);
+    codepatch::putRel32(g_abCave + 0x27, c + 0x27, 0x007ECFA0);
+    codepatch::putRel32(g_abCave + 0x37, c + 0x37, 0x0058C412);
+    codepatch::putRel32(g_abCave + 0x58, c + 0x58, 0x0058C540);
+    codepatch::putRel32(g_abCave + 0x5D, c + 0x5D, 0x0058C412);
+    uintptr_t addrReuse = reinterpret_cast<uintptr_t>(&g_abReuse);
+    uintptr_t addrGrow = reinterpret_cast<uintptr_t>(&g_abGrow);
+    memcpy(g_abCave + 0x30, &addrReuse, 4);
+    memcpy(g_abCave + 0x52, &addrGrow, 4);
+    FlushInstructionCache(GetCurrentProcess(), g_abCave, sizeof(tmpl));
+    uint8_t jmp[12];
+    codepatch::jmpRel(PatchAb, c, jmp, 12);
+    return codepatch::writeChecked(PatchAb, orig, jmp, 12, g_abSeen);
+}
 void applyExperiments() {
     static const uint8_t g1Orig[2] = { 0x74, 0x06 }, g1New[2] = { 0xEB, 0x06 };
     memcpy(g_txSeen, reinterpret_cast<const void*>(PatchTx), 7);   // logged even when the experiment is off (0.3.0)
     memcpy(g_g1Seen, reinterpret_cast<const void*>(PatchG1), 2);
+    memcpy(g_abSeen, reinterpret_cast<const void*>(PatchAb), 12);
     if (g_cfg.tx) g_txState = applyTx();
     if (g_cfg.g1skip) g_g1State = codepatch::writeChecked(PatchG1, g1Orig, g1New, 2, g_g1Seen);
+    if (g_cfg.abreserve) g_abState = applyAbReserve();
 }
 
 // ---- log ----
@@ -970,12 +1074,37 @@ void writeMetrics3(FILE* f, Metrics& m) {
         fprintf(f, "AI ticks=%lld max_n=%ld max_n_level=%ld obj_updates=%lld obj_ms=%.1f obj_max_ms=%.2f obj_slow10ms=%lld prepass_iter=%lld tick_ms_est=%.1f tick_hist",
             (long long)m.aiTicks, m.aiMaxN, m.aiMaxNLevel, (long long)m.aiObj, ms(m.aiObjQpc), ms(m.aiObjMaxQpc), (long long)m.aiObjSlow, (long long)m.aiPrepass, ms(m.aiTickQpc));
         for (int i = 0; i < 8; ++i) fprintf(f, " %ld", m.aiTickHist[i]);
+        if (m.aiScanN || m.aiHeavyN || m.aiTickTrueQpc) {
+            fprintf(f, " scan_n=%lld scan_ms=%.1f scan_max_ms=%.2f heavy_n=%lld heavy_ms=%.1f tick_true_ms=%.1f",
+                (long long)m.aiScanN, ms(m.aiScanQpc), ms(m.aiScanMaxQpc),
+                (long long)m.aiHeavyN, ms(m.aiHeavyQpc), ms(m.aiTickTrueQpc));
+        }
         fprintf(f, "\nPATH calls=%lld pending=%lld ok=%lld fail=%lld other=%lld ms=%.1f max_ms=%.2f | EFFECT apply=%lld remove=%lld\n", (long long)m.pathN,
             (long long)m.pathPending, (long long)m.pathOk, (long long)m.pathFail, (long long)m.pathOther, ms(m.pathQpc), ms(m.pathMaxQpc), (long long)m.effApply, (long long)m.effRemove);
     }
     if (grp(g_cfg.misc))
         fprintf(f, "NET send=%lld bytes=%lld max_len=%ld ovf_test=%lld ovf_hit=%lld | SCENE focus_dummy=%lld scene_dtor=%lld\n", (long long)m.netSend,
             (long long)m.netBytes, m.netMaxLen, (long long)m.netOvfTest, (long long)m.netOvfHit, (long long)m.focusDummy, (long long)m.sceneDtor);
+    if (m.rbPassCalls[0] || m.rbPassCalls[1] || m.rbPassCalls[2]) {
+        auto ms = [](LONG64 q) { return static_cast<double>(q) * 1000.0 / static_cast<double>(g_qpf); };
+        fprintf(f, "RB pass1_calls=%lld pass1_ms=%.1f pass1_max_ms=%.2f pass2_calls=%lld pass2_ms=%.1f pass2_max_ms=%.2f pass3_calls=%lld pass3_ms=%.1f pass3_max_ms=%.2f\n",
+            (long long)m.rbPassCalls[0], ms(m.rbPassQpc[0]), ms(m.rbPassMaxQpc[0]),
+            (long long)m.rbPassCalls[1], ms(m.rbPassQpc[1]), ms(m.rbPassMaxQpc[1]),
+            (long long)m.rbPassCalls[2], ms(m.rbPassQpc[2]), ms(m.rbPassMaxQpc[2]));
+    }
+    if (m.texScanN || m.focusGobStrcmp) {
+        auto ms = [](LONG64 q) { return static_cast<double>(q) * 1000.0 / static_cast<double>(g_qpf); };
+        fprintf(f, "TEXSCAN calls=%lld ms=%.2f max_ms=%.2f recs=%ld bound=%ld max_id=%ld | FOCUS_STRCMP %lld\n",
+            (long long)m.texScanN, ms(m.texScanQpc), ms(m.texScanMaxQpc),
+            m.texScanRecs, m.texScanBound, m.texScanMaxId, (long long)m.focusGobStrcmp);
+    }
+    if (m.toLowerN) {
+        fprintf(f, "TOLOWER calls=%lld\n", (long long)m.toLowerN);
+        writeCallers(f, "TOLOWERCALLER", m.toLowerCallers);
+    }
+    if (g_abState != 0 || g_abReuse || g_abGrow) {
+        fprintf(f, "ABRESERVE state=%ld reuse=%ld grow=%ld\n", g_abState, g_abReuse, g_abGrow);
+    }
 }
 
 int g_metricsN = 0;
@@ -1070,8 +1199,9 @@ void writeMetrics(const char* ev) {
     if (!f) return;
     auto ms = [](LONG64 q) { return static_cast<double>(q) * 1000.0 / static_cast<double>(g_qpf); };
     char modName[32]; readModuleName(modName);   // 0.5.0 MOD: appended at the END of the header
-    fprintf(f, "#METRICS %d %s tick=%lu frames(hook)=%ld live_bytes=%lld allocs=%lld tx=%ld g1skip=%ld hwmip=%ld module=%s\n", ++g_metricsN, ev, GetTickCount(), g_ticks,
-        (long long)g_liveBytes, (long long)g_allocN, g_txState, g_g1State, (long)g_cfg.hwmip, modName);
+    char stateName[32]; sampleGuiState(stateName, sizeof(stateName));
+    fprintf(f, "#METRICS %d %s tick=%lu frames(hook)=%ld live_bytes=%lld allocs=%lld tx=%ld g1skip=%ld hwmip=%ld module=%s state=%s abreserve=%ld\n", ++g_metricsN, ev, GetTickCount(), g_ticks,
+        (long long)g_liveBytes, (long long)g_allocN, g_txState, g_g1State, (long)g_cfg.hwmip, modName, stateName, g_abState);
     writeGlobals(f);
     if (g_m) {
         Metrics& m = *g_m;
@@ -1135,8 +1265,10 @@ bool g_gameProcess = false;
 
 void logExperiments() {
     auto st = [](LONG v) { return v == 1 ? "ON" : v == 0 ? "OFF" : v == -1 ? "REFUSED(bytes)" : v == -2 ? "REFUSED(protect)" : "REFUSED(cave alloc)"; };
-    logf("experiments at first tick: tx=%s (0x4261CF saw %02x %02x %02x %02x %02x %02x %02x, cave %p) g1skip=%s (0x4265F3 saw %02x %02x)", st(g_txState),
-         g_txSeen[0], g_txSeen[1], g_txSeen[2], g_txSeen[3], g_txSeen[4], g_txSeen[5], g_txSeen[6], (void*)g_txCave, st(g_g1State), g_g1Seen[0], g_g1Seen[1]);
+    logf("experiments at first tick: tx=%s (0x4261CF saw %02x %02x %02x %02x %02x %02x %02x, cave %p) g1skip=%s (0x4265F3 saw %02x %02x) abreserve=%s (0x58C406 saw %02x %02x %02x %02x, cave %p)",
+         st(g_txState), g_txSeen[0], g_txSeen[1], g_txSeen[2], g_txSeen[3], g_txSeen[4], g_txSeen[5], g_txSeen[6], (void*)g_txCave,
+         st(g_g1State), g_g1Seen[0], g_g1Seen[1],
+         st(g_abState), g_abSeen[0], g_abSeen[1], g_abSeen[2], g_abSeen[3], (void*)g_abCave);
 }
 
 DWORD WINAPI helper(LPVOID) {
@@ -1151,6 +1283,7 @@ DWORD WINAPI helper(LPVOID) {
             bool nowUp = loadScreenUp();
             if (haveState && nowUp != up) { writeSnapshot(nowUp ? "LOAD_UP" : "LOAD_DOWN"); writeMetrics(nowUp ? "LOAD_UP" : "LOAD_DOWN"); }
             up = nowUp; haveState = true;
+            sampleGuiState(g_guiState, sizeof(g_guiState));
         }
         if (InterlockedExchange(&g_snapNow, 0)) { writeSnapshot("MANUAL"); writeMetrics("MANUAL"); }
         if (InterlockedExchange(&g_unloadNow, 0)) { writeSnapshot("UNLOAD"); writeMetrics("UNLOAD"); }
@@ -1187,6 +1320,7 @@ void readCfg() {
         else if (!strcmp(line, "misc")) g_cfg.misc = v != 0;
         else if (!strcmp(line, "ai")) g_cfg.ai = v != 0;
         else if (!strcmp(line, "ev")) g_cfg.ev = v != 0;
+        else if (!strcmp(line, "abreserve")) g_cfg.abreserve = v != 0;
     }
     fclose(f);
 }
@@ -1454,6 +1588,44 @@ void __cdecl PerfLabAutosave() { if (evOn()) { MTimer t(HkEvt); evtRecord(EkAuto
 void __cdecl PerfLabOptSave() { if (evOn()) { MTimer t(HkEvt); evtRecord(EkOptSave, -1, 0); } }      // 0x740B40
 void __cdecl PerfLabSoundApply() { if (evOn()) { MTimer t(HkEvt); evtRecord(EkSndApply, -1, 0); } }  // 0x70B9B0
 
+// ---- 0.6.0 RenderBackend pass timing (W9 item 1a) ----
+// 0x465F90 Scene vt+0xD8 pass 1
+void __cdecl PerfLabRbPass1Entry() { if (g_m && g_cfg.metrics) { MTimer t(HkRbPass); g_m->rbPassT0[0] = qpc(); } }
+void __cdecl PerfLabRbPass1Exit() {
+    if (!g_m || !g_cfg.metrics) return;
+    MTimer t(HkRbPass);
+    if (g_m->rbPassT0[0]) {
+        LONG64 d = qpc() - g_m->rbPassT0[0]; g_m->rbPassT0[0] = 0;
+        InterlockedIncrement64(&g_m->rbPassCalls[0]);
+        InterlockedExchangeAdd64(&g_m->rbPassQpc[0], d);
+        atomicMax(&g_m->rbPassMaxQpc[0], d);
+    }
+}
+// 0x4662E0 Scene vt+0xF0 pass 2
+void __cdecl PerfLabRbPass2Entry() { if (g_m && g_cfg.metrics) { MTimer t(HkRbPass); g_m->rbPassT0[1] = qpc(); } }
+void __cdecl PerfLabRbPass2Exit() {
+    if (!g_m || !g_cfg.metrics) return;
+    MTimer t(HkRbPass);
+    if (g_m->rbPassT0[1]) {
+        LONG64 d = qpc() - g_m->rbPassT0[1]; g_m->rbPassT0[1] = 0;
+        InterlockedIncrement64(&g_m->rbPassCalls[1]);
+        InterlockedExchangeAdd64(&g_m->rbPassQpc[1], d);
+        atomicMax(&g_m->rbPassMaxQpc[1], d);
+    }
+}
+// 0x466700 Scene vt+0xF8 pass 3
+void __cdecl PerfLabRbPass3Entry() { if (g_m && g_cfg.metrics) { MTimer t(HkRbPass); g_m->rbPassT0[2] = qpc(); } }
+void __cdecl PerfLabRbPass3Exit() {
+    if (!g_m || !g_cfg.metrics) return;
+    MTimer t(HkRbPass);
+    if (g_m->rbPassT0[2]) {
+        LONG64 d = qpc() - g_m->rbPassT0[2]; g_m->rbPassT0[2] = 0;
+        InterlockedIncrement64(&g_m->rbPassCalls[2]);
+        InterlockedExchangeAdd64(&g_m->rbPassQpc[2], d);
+        atomicMax(&g_m->rbPassMaxQpc[2], d);
+    }
+}
+
 // ---- 0.3.0 NWScript VM (U1) ----
 // RunScript 0x7022A0 (ECX = VMInternal, [esp+4] = CExoString* script; CExoString = { char* text; int len }).
 void __cdecl PerfLabRunScript(void* str) {
@@ -1554,6 +1726,93 @@ void __cdecl PerfLabPathResult(int r) {
 void __cdecl PerfLabEffectApply() { if (g_m && grp(g_cfg.ai)) { MTimer t(HkEffApply); InterlockedIncrement64(&g_m->effApply); } }
 void __cdecl PerfLabEffectRemove() { if (g_m && grp(g_cfg.ai)) { MTimer t(HkEffRemove); InterlockedIncrement64(&g_m->effRemove); } }
 
+// ---- 0.6.0 AIQ UpdateState scan loop telemetry (W9 item 1b) ----
+// 0x51D842: scan begin ([ebp-0x34] = level, [ebp-0xCC] = this/aim).
+void __cdecl PerfLabAiScanBegin(int level, void* aim) {
+    if (!g_m || !grp(g_cfg.ai)) return;
+    MTimer t(HkAiScan);
+    g_m->aiScanT0 = qpc();
+    g_m->aiScanArmed = 1;
+}
+// 0x51D9F1: scan end.
+void __cdecl PerfLabAiScanEnd() {
+    if (!g_m || !grp(g_cfg.ai)) return;
+    if (g_m->aiScanArmed && g_m->aiScanT0) {
+        LONG64 d = qpc() - g_m->aiScanT0;
+        g_m->aiScanT0 = 0;
+        g_m->aiScanArmed = 0;
+        InterlockedIncrement64(&g_m->aiScanN);
+        InterlockedExchangeAdd64(&g_m->aiScanQpc, d);
+        atomicMax(&g_m->aiScanMaxQpc, d);
+    }
+}
+// 0x51D9AB: heavy call pre ([ebp-0x48] = creature pointer).
+void __cdecl PerfLabAiHeavyPre(void* obj) {
+    if (!g_m || !grp(g_cfg.ai)) return;
+    MTimer t(HkAiHeavy);
+    g_m->aiHeavyT0 = qpc();
+}
+// 0x51D9C1: heavy call post (EAX = result).
+void __cdecl PerfLabAiHeavyPost(int res) {
+    if (!g_m || !grp(g_cfg.ai)) return;
+    if (g_m->aiHeavyT0) {
+        LONG64 d = qpc() - g_m->aiHeavyT0;
+        g_m->aiHeavyT0 = 0;
+        InterlockedIncrement64(&g_m->aiHeavyN);
+        InterlockedExchangeAdd64(&g_m->aiHeavyQpc, d);
+        atomicMax(&g_m->aiHeavyMaxQpc, d);
+    }
+}
+// 0x51DF9D: tick end (exact tick time, replaces entry-to-last-post estimate).
+void __cdecl PerfLabAiTickEnd() {
+    if (!g_m || !grp(g_cfg.ai)) return;
+    Metrics& m = *g_m;
+    if (m.aiTickT0) {
+        LONG64 d = qpc() - m.aiTickT0;
+        m.aiTickTrueQpc += d;
+        LONG us = static_cast<LONG>(d * 1000000 / g_qpf);
+        int b = us < 1000 ? 0 : us < 2000 ? 1 : us < 5000 ? 2 : us < 10000 ? 3 : us < 20000 ? 4 : us < 75000 ? 5 : us < 200000 ? 6 : 7;
+        InterlockedIncrement(&m.aiTickHist[b]);
+        m.aiTickT0 = 0;
+    }
+}
+
+// ---- 0.6.0 Texture-id scan & FocusGob strcmp telemetry (W9 items 1c, 1d) ----
+// 0x427970: Texture-id scan entry.
+void __cdecl PerfLabTexScanEntry() {
+    if (!g_m || !g_cfg.metrics) return;
+    MTimer t(HkTexScan);
+    g_m->texScanT0 = qpc();
+    int recs = 0; saferead::beginScope();
+    if (saferead::readAt(58, 0x00A1BC70, 0, &recs)) g_m->texScanRecs = recs;
+}
+// 0x427A51: Texture-id scan exit.
+void __cdecl PerfLabTexScanExit() {
+    if (!g_m || !g_cfg.metrics) return;
+    if (g_m->texScanT0) {
+        LONG64 d = qpc() - g_m->texScanT0; g_m->texScanT0 = 0;
+        InterlockedIncrement64(&g_m->texScanN);
+        InterlockedExchangeAdd64(&g_m->texScanQpc, d);
+        atomicMax(&g_m->texScanMaxQpc, d);
+        int bound = 0, maxId = 0; saferead::beginScope();
+        if (saferead::readAt(59, 0x00A1BC4C, 0, &bound)) g_m->texScanBound = bound;
+        if (saferead::readAt(60, 0x00A1BB84, 0, &maxId)) g_m->texScanMaxId = maxId;
+    }
+}
+// 0x4999F4: c_FocusGob strcmp counter.
+void __cdecl PerfLabFocusGobStrcmp() {
+    if (!g_m || !g_cfg.metrics) return;
+    MTimer t(HkFocusStrcmp);
+    InterlockedIncrement64(&g_m->focusGobStrcmp);
+}
+// 0x734690: CExoString::ToLower entry counter (doc 10 / W9 item 5).
+void __cdecl PerfLabToLower(void* str, void* ra) {
+    if (!g_m || !g_cfg.metrics) return;
+    MTimer t(HkToLower);
+    InterlockedIncrement64(&g_m->toLowerN);
+    countCaller(g_m->toLowerCallers, reinterpret_cast<uintptr_t>(ra));
+}
+
 // ---- 0.4.0 harness-only entry points (smoke_hwmip.cpp; inert in the game: nothing calls them) ----
 // f[0..4] = glTexImage2D, glTexParameteri, glGetError, glGetIntegerv, glGenerateMipmap (NULL = unavailable), f[5] = replacement for the real
 // GLU function (NULL = keep), f[6] = GL_MAX_TEXTURE_SIZE as an integer. Resets the hwmip counters.
@@ -1600,7 +1859,7 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
         g_exeHi = g_exeLo + nt->OptionalHeader.SizeOfImage;
         g_gameProcess = g_exeLo == 0x00400000 && nt->OptionalHeader.SizeOfImage > 0x600000;
         { LARGE_INTEGER f; QueryPerformanceFrequency(&f); g_qpf = f.QuadPart ? f.QuadPart : 1; }
-        setLoad(KPLOG_INFO, "perf-lab 0.5.1 attach exe=%08x-%08x game=%d alloc=%d heapfilter=%d scan=%d metrics=%d vq=%d tx=%s g1skip=%s hwmip=%s ev=%d", (unsigned)g_exeLo, (unsigned)g_exeHi,
+        setLoad(KPLOG_INFO, "perf-lab 0.6.0 attach exe=%08x-%08x game=%d alloc=%d heapfilter=%d scan=%d metrics=%d vq=%d tx=%s g1skip=%s hwmip=%s ev=%d", (unsigned)g_exeLo, (unsigned)g_exeHi,
              g_gameProcess, g_cfg.alloc, g_cfg.heapFilter, g_cfg.scan, g_cfg.metrics, g_cfg.vq, g_cfg.tx ? "ON" : "OFF", g_cfg.g1skip ? "ON" : "OFF", g_cfg.hwmip ? "ON" : "OFF", grp(g_cfg.ev));
         if (g_cfg.alloc) {
             g_sites = static_cast<Site*>(VirtualAlloc(nullptr, sizeof(Site) * SiteCap, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));

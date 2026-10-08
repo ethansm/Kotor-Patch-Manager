@@ -25,6 +25,7 @@
 #include "GameAddr.h"
 #include "SafeRead.h"   // VirtualQuery probing: the Win32 bad-pointer probes fault-storm under Wine (DB lesson 234)
 #include "SceneView.h"   // shared CSWGui3DSceneView block / scene / camera helpers (K2Addr.h table; Mods 1 + 5)
+#include "GuiInput.h"
 #include "GuiKit.h"     // Common: screen sync, float cursor, wheel subclass (kp::WindowHook inside), bindByTag, setRect/getExtent/setText/imageFor/setFill
 #include "PanelSlots.h"  // Common: panel -> slot table
 #include "Equip3dLogic.h"   // host-tested pure logic (equip3d_logic_test.cpp); includes EquipWeaponTable.inc (scripts/gen_equip3d_weapon_table.py)
@@ -91,6 +92,14 @@ void logf(const char* fmt, ...) {
     ++g_logLines;
     char buf[2048]; va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
     KP_LOGV(chMain, KPLOG_INFO, "%s", buf);
+}
+void logw(const char* fmt, ...) {
+    char buf[2048]; va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
+    KP_LOGV(chMain, KPLOG_WARN, "%s", buf);
+}
+void loge(const char* fmt, ...) {
+    char buf[2048]; va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
+    KP_LOGV(chMain, KPLOG_ERR, "%s", buf);
 }
 void dlogf(const char* fmt, ...) {
     if (!g_debug || g_dbgLines >= MaxDebugLines) return;
@@ -266,8 +275,8 @@ unsigned char* bindCover(int panel, const char* tagName, int expectId) {
     guikit::BindInfo bi;
     guikit::bindByTag(static_cast<uintptr_t>(static_cast<unsigned>(panel)), tagName, expectId, 0, &bi);
     saferead::beginScope();   // engine alloc+ctor ran: cached readable regions may be stale
-    if (bi.why == guikit::CF_Alloc) { logf("H1 cover %s: allocation failed", tagName); return nullptr; }
-    if (bi.why == guikit::CF_Vtable) { logf("H1 cover %s: ctor left vtable %08x (expected %08x), not binding", tagName, bi.badVtable, (unsigned)gameaddr::LabelVtable); return nullptr; }
+    if (bi.why == guikit::CF_Alloc) { logw("H1 cover %s: allocation failed", tagName); return nullptr; }
+    if (bi.why == guikit::CF_Vtable) { logw("H1 cover %s: ctor left vtable %08x (expected %08x), not binding", tagName, bi.badVtable, (unsigned)gameaddr::LabelVtable); return nullptr; }
     logf("H1 cover %s: ctl=%p id=%d (expect %d) extent=[%d,%d,%d,%d] flags=%08x -> %08x", tagName, (void*)bi.ctl, bi.id, expectId, bi.ext[0], bi.ext[1], bi.ext[2], bi.ext[3], bi.flagsBefore, bi.flagsAfter);
     return bi.id == expectId ? reinterpret_cast<unsigned char*>(bi.ctl) : nullptr;
 }
@@ -490,19 +499,19 @@ void attachHelmet(Slot* s, int id, const char* why) {
     int item = getItemObj(id);
     if (!item) { logf("helmet: WARNING id=%08x -> no client item object (%s), skipped", id, why); return; }
     char name[17] = {};
-    if (!saferead::probeRead(SiteEquip, reinterpret_cast<void*>(item + ItemModelResOff), 16)) { logf("helmet: WARNING item %08x model ResRef unreadable, skipped", item); return; }
+    if (!saferead::probeRead(SiteEquip, reinterpret_cast<void*>(item + ItemModelResOff), 16)) { logw("helmet: WARNING item %08x model ResRef unreadable, skipped", item); return; }
     memcpy(name, reinterpret_cast<void*>(item + ItemModelResOff), 16); name[16] = 0;
     bool okName = name[0] != 0;
     for (char* p = name; *p; ++p) if (!isalnum((unsigned char)*p) && *p != '_') okName = false;
     int base = -1; readAt<int>(item, ItemBaseIdxOff, &base); unsigned char var = 0; readAt<unsigned char>(item, ItemVariationOff, &var);
     if (!okName || !_stricmp(name, "i_null")) { logf("helmet: id=%08x item=%08x base=%d var=%d model='%s': no visible model, skipped", id, item, base, var, okName ? name : "?"); return; }
     void* head = partGob(s, 0xfe);
-    if (!head) { logf("helmet: WARNING no head part on the preview (%s), skipped", why); return; }
+    if (!head) { logw("helmet: WARNING no head part on the preview (%s), skipped", why); return; }
     void* g = reinterpret_cast<void*(__cdecl*)(const char*, const char*, int, int)>(FnCreateModel)(name, reinterpret_cast<const char*>(0x009a4ab0), 0, 0);
     saferead::beginScope();
     int gvt = 0; if (g) readAt<int>(reinterpret_cast<int>(g), 0, &gvt);
-    if (!g) { logf("helmet: WARNING model '%s' failed to load (id=%08x), skipped", name, id); return; }
-    if (gvt != ExpectedGobVtable) { logf("helmet: WARNING model '%s' gob=%p vtable %08x (expect %08x), not attaching (leak instead of crash)", name, g, gvt, ExpectedGobVtable); return; }
+    if (!g) { logw("helmet: WARNING model '%s' failed to load (id=%08x), skipped", name, id); return; }
+    if (gvt != ExpectedGobVtable) { logw("helmet: WARNING model '%s' gob=%p vtable %08x (expect %08x), not attaching (leak instead of crash)", name, g, gvt, ExpectedGobVtable); return; }
     void** vt = vtOf(g);
     reinterpret_cast<AttachFn>(vt[GobAttachSlot / 4])(g, head, "GoggleHook", 0);   // same node + call as 0085a9e0; missing node = silently unattached (00461670)
     reinterpret_cast<PartPlayFn>(vt[PartPlaySlot / 4])(g, "default", 1.0f, 0, 0.0f);   // as 0085a9e0 does (animated visors)
@@ -518,7 +527,7 @@ void destroyCreature(Slot* s, const char* why) {
     int vt0 = 0; readAt<int>(reinterpret_cast<int>(s->creature), 0, &vt0);
     logf("creature: destroy %p (%s) vtable=%08x", s->creature, why, vt0);
     if (vt0 == CreatureVftable && vt && saferead::probeRead(SiteEquip, vt, 4)) reinterpret_cast<CrDtorFn>(vt[0])(s->creature, 1);
-    else logf("creature: vtable mismatch, NOT calling dtor (leak instead of crash)");
+    else logw("creature: vtable mismatch, NOT calling dtor (leak instead of crash)");
     saferead::beginScope();
     s->creature = nullptr; s->built = false; s->real = 0; s->flourishActive = false; s->baseModels = -1;
 }
@@ -527,13 +536,13 @@ bool allocCreature(Slot* s) {
     if (s->creature) return true;
     if (s->creatureBad) return false;
     unsigned char* c = static_cast<unsigned char*>(reinterpret_cast<NewFn>(FnNew)(CreatureSize));
-    if (!c) { logf("creature: allocation failed"); s->creatureBad = true; return false; }
+    if (!c) { logw("creature: allocation failed"); s->creatureBad = true; return false; }
     memset(c, 0, CreatureSize);
     reinterpret_cast<Fast1>(FnCreatureCtor)(c);
     saferead::beginScope();
     int vt = 0; readAt<int>(reinterpret_cast<int>(c), 0, &vt);
     logf("creature: allocated %p vtable=%08x (expect %08x)", c, vt, CreatureVftable);
-    if (vt != CreatureVftable) { logf("creature: ctor left wrong vtable, abandoning this panel"); dumpMem("creature", reinterpret_cast<int>(c), 24); s->creatureBad = true; return false; }
+    if (vt != CreatureVftable) { logw("creature: ctor left wrong vtable, abandoning this panel"); dumpMem("creature", reinterpret_cast<int>(c), 24); s->creatureBad = true; return false; }
     int app = 0, holder = 0, stats = 0;
     readAt<int>(reinterpret_cast<int>(c), CreatureAppOff, &app); readAt<int>(reinterpret_cast<int>(c), CreatureHolderOff, &holder); readAt<int>(reinterpret_cast<int>(c), CreatureStatsOff, &stats);
     logf("creature: app=%08x holder=%08x stats=%08x", app, holder, stats);
@@ -819,7 +828,11 @@ void ensureInit() {
 
 } // namespace
 
-extern "C" void __cdecl KPatchInit(const KPatchApi* api) { KpLog_Init(api); ensureInit(); }
+extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
+    KpLog_Init(api);
+    guikit::initGuiInput(api, "equipment-3d-character");
+    ensureInit();
+}
 
 extern "C" void __cdecl BindEquipView(int panel) {
     ensureInit();
@@ -831,7 +844,7 @@ extern "C" void __cdecl BindEquipView(int panel) {
     if (!g_cfg.enabled || g_cfg.stage < 1) { logf("H1: disabled by INI (enabled=%d stage=%d)", g_cfg.enabled, g_cfg.stage); return; }
 
     unsigned char* block = sceneview::createView(static_cast<uintptr_t>(static_cast<unsigned>(panel)), "3D_MODEL");
-    if (!block) { logf("H1: operator new failed"); return; }
+    if (!block) { loge("H1: operator new failed"); return; }
     saferead::beginScope();
     unsigned char* view = block;
 
@@ -850,12 +863,12 @@ extern "C" void __cdecl BindEquipView(int panel) {
     *s = Slot();
     s->panel = panel; s->block = block; s->seq = g_seq; s->bindTick = GetTickCount(); s->zoom = 1;
 
-    if (id != ExpectedControlId) { logf("H1: GUI control missing/mismatched (id=%d), slot unusable (is equip_p.gui patched? scripts/add_equip_3dview_control.py)", id); return; }
-    if (!gate) { logf("H1: gate global 009f42b4 is zero, slot unusable"); return; }
+    if (id != ExpectedControlId) { logw("H1: GUI control missing/mismatched (id=%d), slot unusable (is equip_p.gui patched? scripts/add_equip_3dview_control.py)", id); return; }
+    if (!gate) { logw("H1: gate global 009f42b4 is zero, slot unusable"); return; }
     uintptr_t scene = 0;
     int sf = sceneview::initScene(view, "gui3D_room", &scene);
-    if (sf == sceneview::SF_VtableBad) { logf("H1: scene vtable bad, slot unusable"); return; }
-    if (sf != sceneview::SF_None) { logf("H1: scene pointer bad (%08x), slot unusable", static_cast<unsigned>(scene)); return; }
+    if (sf == sceneview::SF_VtableBad) { logw("H1: scene vtable bad, slot unusable"); return; }
+    if (sf != sceneview::SF_None) { logw("H1: scene pointer bad (%08x), slot unusable", static_cast<unsigned>(scene)); return; }
     saferead::beginScope();
     logf("H1: scene %08x initialised (gui3D_room)", scene);
 
@@ -863,7 +876,7 @@ extern "C" void __cdecl BindEquipView(int panel) {
     saferead::beginScope();
     int n = modelCount(view);
     logf("H1: rig '%s' model=%p, scene model count=%d", g_cfg.rig, rig, n);
-    if (!rig || n < 1) { logf("H1: rig missing, slot unusable"); return; }
+    if (!rig || n < 1) { logw("H1: rig missing, slot unusable"); return; }
     uint32_t cam = 0, camv = 0; bool camOk = sceneview::camera(view, &cam, &camv);
     logf("H1: camera=%08x vtable=%08x (expect %08x)", static_cast<int>(cam), static_cast<int>(camv), ExpectedCamVtable);
     if (camOk) {
