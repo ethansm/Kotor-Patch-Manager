@@ -33,6 +33,7 @@ When starting a new session or beginning mod work:
 - **Two-Stage Logging Lifecycle**:
   - *Dev / Probe*: Instrument rich diagnostics (KpLog channels, struct dumps, first-draw coordinates). Never guess blind in live play.
   - *Tightening / Release*: Before PR or final install, gate per-frame or high-volume logs behind `Verbose=0` in INI, enforce deduplication (log state changes, not per-frame redraws), drop probe detours, and verify clean logs (<50 lines on startup) via `kotor2_logs.py check`.
+- **Update Compatibility Check:** after touching `_shared_src` or a library, run `python3 scripts/compat_check.py <files>` (traces transitive dependents, contract tests, and mod builds; doc 22).
 
 ## Context Management & Multi-Session Plan Mode Handoffs
 - **Feature-Scoped Handoffs (Zero Collision)**: Concurrent sessions in the same worktree must track their state through their specific master plan doc (e.g. `22_compat_check_plan.md`, `33_ui_queue_hotbar_fixes.md`).
@@ -60,4 +61,4 @@ Order: worker CREATED,MODIFIED,TESTS,NOTES,STATUS · recon OUTPUT,EVIDENCE,FINDI
 - The `i-have-adhd` plugin is installed globally across Claude Code and Antigravity (`agy`).
 - Shape all responses for an ADHD reader: lead with actions/commands/snippets, number multi-step work, cap lists to 5 items, give concrete time estimates, and end with one concrete next action doable in under 2 minutes.
 - **Actionable Plan-Handoff Over Generic Reviews**: When ending with a next action and work remains on a feature or mod, provide concrete next development steps or plan-handoff commands (e.g. `/plan-handoff <batch>` or `python3 scripts/plan_manager.py handoff <batch>`), NEVER generic instructions to "review the changes made" or "inspect files".
-- **Subagent Exemption**: When reporting back to an AI orchestrator or tool caller, the human ADHD rules are superseded by the worker/recon contract above. Do NOT suggest next steps, do NOT paste code snippets, and do NOT number multi-step prose.
+- **Subagent & Orchestrator Delegation Exemption**: When reporting back to an AI orchestrator or delegating work to OpenCode/subagents, the human ADHD rules are superseded. The orchestrator MUST run the full plan/review/build delegation chain to completion in a single turn without pausing midway to ask the human for approval. The human ADHD rules apply ONLY to the final user-facing response.

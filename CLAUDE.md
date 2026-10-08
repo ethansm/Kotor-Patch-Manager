@@ -24,6 +24,7 @@ At session start or before mod work, run `python3 scripts/check_kpm_updates.py -
 - Symbols/structs: `python3 scripts/query_ghidra.py symbol <name> | address <hex> | struct <class>` (never inline sqlite)
 - Search: `rg`; repo map: `python3 scripts/generate_repo_map.py [dir]`; docs: `python3 scripts/search_docs.py "<query>"`; subagent pack: `npx repomix [dir]`
 - Logging: probe builds log richly (never guess blind live); release tightening rules live in `kotor2-kpm-install`.
+- Compat check: after touching `_shared_src` or a library, run `python3 scripts/compat_check.py <files>`
 
 ## Context Budget & Read Policy (Anti-Bloat Standards)
 - **Zero-Read / Self-Contained Plans**: In Plan Mode, inline the exact 5-10 line struct/interface or macro snippets directly in the plan. Never tell the executor to "Read first: `LargeHeader.h`".
