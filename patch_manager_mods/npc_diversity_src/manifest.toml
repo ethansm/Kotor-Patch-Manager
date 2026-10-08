@@ -4,7 +4,7 @@ name = "Master NPC Diversity Dispatcher"
 version = "1.0.0"
 author = "ethansm"
 description = "Deterministic runtime NPC appearance & clothing diversity dispatcher"
-kind = "mod"
+kind = "patch"
 target = "swkotor2.exe"
 
 requires = []
