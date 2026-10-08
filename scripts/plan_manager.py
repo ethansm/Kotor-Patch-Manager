@@ -80,6 +80,12 @@ def resolve_plan_shorthand(token: str) -> tuple[Path | None, str]:
         except (OSError, ValueError):
             pass
 
+    # 1b. Filename or exact stem match across repository (e.g. 'PHASE7_COMMON_MASTER', 'PHASE4_PLAN')
+    stem_token = token[:-3] if token.endswith(".md") else token
+    for cand in sorted(REPO_ROOT.glob(f"**/{stem_token}.md")):
+        if cand.is_file() and not cand.name.endswith(".handoff.md") and ".claude" not in cand.parts:
+            return cand.resolve(), ""
+
     # 2. Numbered doc shorthand: '25 §12', 'doc 25 §12', 'doc25:12', '19e', '24:T6', '25'
     m = re.match(r'^(?:doc\s*)?([0-9]{1,2}[a-z]?)(?:[:\s§—-]+(.*))?$', token, re.IGNORECASE)
     if m:
@@ -112,7 +118,15 @@ def resolve_plan_shorthand(token: str) -> tuple[Path | None, str]:
         phase = m_phase.group(1)
         rest = (m_phase.group(2) or "").strip()
         pattern = re.compile(rf'(?:\|\s*\*{{0,2}}{re.escape(phase)}\*{{0,2}}\s*\||#+\s*(?:Phase\s*)?{re.escape(phase)}\b)', re.IGNORECASE)
-        cands = [REPO_ROOT / "patch_manager_mods" / "24_master_plan_status.md"] + sorted(REPO_ROOT.glob("patch_manager_mods/*plan*.md")) + sorted(REPO_ROOT.glob("patch_manager_mods/*.md"))
+        active_cands = []
+        if ACTIVE_PLAN_FILE.exists():
+            try:
+                ap = Path(ACTIVE_PLAN_FILE.read_text().strip())
+                if ap.exists() and ap.is_file():
+                    active_cands.append(ap)
+            except Exception:
+                pass
+        cands = active_cands + sorted(REPO_ROOT.glob("research/**/*MASTER*.md")) + sorted(REPO_ROOT.glob("research/**/*plan*.md")) + [REPO_ROOT / "patch_manager_mods" / "24_master_plan_status.md"] + sorted(REPO_ROOT.glob("patch_manager_mods/*plan*.md")) + sorted(REPO_ROOT.glob("patch_manager_mods/*.md"))
         seen = set()
         for p_cand in cands:
             if p_cand in seen or not p_cand.is_file():
@@ -331,6 +345,7 @@ def cmd_resume(plan: dict, git_info: dict, json_mode: bool = False):
                 print(f"  - {p_badge}{p['ident']} — {p['name']}")
 
         print(f"\nNext Steps:")
+        print(f"  - Delegate to Subagent: python3 scripts/plan_manager.py delegate {current['ident']} (or 'python3 scripts/subagent_prompt.py {current['ident']} --run auto')")
         print(f"  - Resume: python3 scripts/plan_manager.py resume {current['ident']}")
         print(f"  - Handoff / Plan Mode: /plan-handoff {current['ident']} (or 'python3 scripts/plan_manager.py handoff {current['ident']}')")
         print(f"  - Mark Complete: python3 scripts/plan_manager.py mark-done {current['ident']} [--commit <sha>]")
@@ -403,11 +418,62 @@ def cmd_next(plan: dict, contract: str = ""):
             p_cat = PREFIX_LEGEND.get(p_prefix, "")
             p_badge = f"[{p_cat}] " if p_cat else ""
             print(f"- {p_badge}{p['ident']}: {p['name']}")
+    print(f"\nSubagent Delegation (Autonomous):")
+    print(f"  python3 scripts/plan_manager.py delegate {cur['ident']}")
     print(f"\nNext Handoff: /plan-handoff {cur['ident']} (or 'python3 scripts/plan_manager.py handoff {cur['ident']}')")
     if contract:
         sys.path.insert(0, str(REPO_ROOT / "scripts"))
         from agent_contract import template
         print("\n" + template(contract))
+
+def cmd_delegate(plan: dict, target_phase: str = "", mode: str = "auto", dry_run: bool = False):
+    remaining = [p for p in plan["phases"] if not p["done"]]
+    if not target_phase:
+        if not remaining:
+            print("All phases in active plan are complete. Nothing to delegate.")
+            return 0
+        target_phase = remaining[0]["ident"]
+
+    sys.path.insert(0, str(REPO_ROOT / "scripts"))
+    import subagent_prompt as sap
+    import agent_contract as ac
+
+    title, desc, files, verif_cmds = sap.extract_phase_info(plan["path"], target_phase)
+    prompt = sap.build_self_contained_prompt(target_phase, title, desc, files, verif_cmds)
+
+    if dry_run:
+        print(f"=== DRY-RUN DELEGATION PROMPT FOR PHASE {target_phase} ===")
+        print(prompt)
+        return 0
+
+    print(f"=== DELEGATING PHASE {target_phase} VIA oc-flow ({mode}) ===")
+    snap_file = REPO_ROOT / ".claude" / "contract_baseline.tsv"
+    snap_count = ac.write_snapshot(REPO_ROOT, snap_file)
+    print(f"Recorded pre-delegation git baseline ({snap_count} dirty paths).")
+
+    flow_cmd = ["oc-flow", mode, prompt]
+    res = subprocess.run(flow_cmd, cwd=str(REPO_ROOT))
+    if res.returncode != 0:
+        print(f"Error: oc-flow exited with code {res.returncode}")
+        return res.returncode
+
+    if mode == "start":
+        print(f"\n[PLAN GENERATED] Plan mode complete for phase {target_phase}.")
+        print("Orchestrator Actions:")
+        print("  1. Review plan values (offsets, textures, types) against query_ghidra.py.")
+        print("  2. If critique needed: oc-flow revise <SESSION_ID> \"<feedback>\"")
+        print("  3. If sound: oc-flow fork-build <SESSION_ID>")
+        return 0
+
+    print("\n=== RUNNING POST-EXECUTION DIFF & BUILD GATE ===")
+    diff_chk = subprocess.run(["python3", "scripts/agent_diff_check.py"], cwd=str(REPO_ROOT))
+    if diff_chk.returncode == 0:
+        print(f"\n[PASS] Subagent successfully completed phase {target_phase}.")
+        cmd_mark_done(plan, target_phase, notes="Completed autonomously via oc-flow auto")
+        return 0
+    else:
+        print(f"\n[FAIL] Post-execution verification failed for phase {target_phase}. Orchestrator intervention required.")
+        return 1
 
 def cmd_mark_done(plan: dict, target_str: str, commit_sha: str = "", notes: str = "", state: str = "DONE"):
     plan_path = plan["path"]
@@ -563,10 +629,14 @@ def cmd_handoff(plan: dict, git_info: dict, user_direction: str = "", handoff_di
             content.append("")
 
     content.append("## 3. Strict Context Budget & Read Policy")
-    content.append("- **Self-Contained Plan**: Do NOT run broad `ls`, find commands, or `cat` entire source files.")
-    content.append("- **No Historical Docs**: Do NOT read past markdown docs (`19*.md`, `15*.md`, etc.). All active state is captured here.")
-    content.append("- **Targeted Reads Only**: Use `sed -n 'X,Yp'` or `rg` for specific lines if needed.")
-    content.append("- **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume`.\n")
+    plan_stem = plan["path"].stem
+    resume_target = current['ident'] if current else plan_stem
+    content.append(f"- **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume {resume_target}` (or `resume {plan_stem}`).\n")
+
+    if current:
+        content.append("## 4. Subagent Delegation Direction")
+        content.append(f"- **Delegate to Subagent**: `python3 scripts/plan_manager.py delegate {current['ident']}`")
+        content.append("- **Supported Commands**: `oc-subagent <scout|code|ghidra|verify|gate|doc>` or `oc-flow auto \"<task>\"`\n")
 
     handoff_file.write_text("\n".join(content), encoding="utf-8")
     rel_h = handoff_file.relative_to(REPO_ROOT) if handoff_file.is_relative_to(REPO_ROOT) else handoff_file
@@ -617,6 +687,11 @@ def main():
     p_mark.add_argument("--handoff-dir", default="", help="Optional directory to write handoff files (default .claude)")
     p_mark.add_argument("--no-handoff", action="store_true", help="Skip automatic handoff generation")
 
+    p_del = subparsers.add_parser("delegate", parents=[parent_parser], help="Autonomously delegate phase to subagent via oc-flow")
+    p_del.add_argument("phase", nargs="?", default="", help="Target phase ID (defaults to current active phase)")
+    p_del.add_argument("--mode", choices=["start", "auto"], default="start", help="Delegation mode: start (plan-mode for orchestrator review, default) or auto (unsupervised end-to-end)")
+    p_del.add_argument("--dry-run", action="store_true", help="Print synthesized prompt without launching oc-flow")
+
     subparsers.add_parser("legend", help="Display the master key and phase prefix legend")
     subparsers.add_parser("key", help="Display the master key and phase prefix legend")
     subparsers.add_parser("list", parents=[parent_parser], help="List all known master and subdomain plans")
@@ -663,6 +738,12 @@ def main():
         if resolved_p:
             explicit_plan = str(resolved_p)
 
+    # Auto-resolve plan when delegate is called with a phase
+    if args.cmd == "delegate" and not explicit_plan and getattr(args, "phase", ""):
+        resolved_p, _ = resolve_plan_shorthand(args.phase)
+        if resolved_p:
+            explicit_plan = str(resolved_p)
+
     plan_path = discover_active_plan(explicit_path=explicit_plan)
     if not plan_path:
         sys.stderr.write("No active master plan found. Set one with 'python3 scripts/plan_manager.py set <path>'.\n")
@@ -680,6 +761,8 @@ def main():
         cmd_resume(plan, git_info, json_mode=getattr(args, "json", False))
     elif args.cmd == "next":
         cmd_next(plan, contract=getattr(args, "contract", ""))
+    elif args.cmd == "delegate":
+        sys.exit(cmd_delegate(plan, target_phase=getattr(args, "phase", ""), mode=args.mode, dry_run=args.dry_run))
     elif args.cmd == "mark-done":
         cmd_mark_done(plan, args.phase, commit_sha=args.commit, notes=args.notes, state=args.state)
         # Ensure active plan reflects the plan we just marked done
