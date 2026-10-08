@@ -1,0 +1,1 @@
+../../../../../../patch_manager_mods/_shared_src/PortraitSlots.h

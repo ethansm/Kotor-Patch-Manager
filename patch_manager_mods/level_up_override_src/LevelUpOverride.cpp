@@ -76,10 +76,10 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include "../_shared/SafeRead.h"
-#include "../_shared/GuiKit.h"
-#include "../_shared/GuiTip.h"
-#include "../_shared/EmbedTex.h"
+#include "SafeRead.h"
+#include "GuiKit.h"
+#include "GuiTip.h"
+#include "EmbedTex.h"
 #include "LuoTextures.inc"   // kLuoTex: the embedded settings gear (luo_gear, luo_gear_hi)
 #include "Playthrough.h"
 #include "R10Probe.h"

@@ -3,7 +3,7 @@
 import os, subprocess, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 exe = os.path.join(HERE, "guikit_test_bin")
-r = subprocess.run(["g++", "-std=c++17", "-O1", "-Wall", "-Wextra", "-I", os.path.join(HERE, "stub"), "-o", exe, os.path.join(HERE, "guikit_test.cpp")], capture_output=True, text=True)
+r = subprocess.run(["g++", "-std=c++17", "-O1", "-Wall", "-Wextra", "-I", os.path.join(HERE, "stub"), "-I", os.path.join(HERE, "stub", "_shared"), "-o", exe, os.path.join(HERE, "guikit_test.cpp")], capture_output=True, text=True)
 if r.returncode:
     sys.exit(r.stderr)
 r = subprocess.run([exe], capture_output=True, text=True)

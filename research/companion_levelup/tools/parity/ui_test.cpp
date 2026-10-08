@@ -21,8 +21,12 @@ static uintptr_t arenaAlloc(size_t n) {
     g_used += n;
     return a;
 }
-static int g_fail = 0, g_checks = 0;
-#define CHECK(c, ...) do { ++g_checks; if (!(c)) { ++g_fail; fprintf(stderr, "FAIL line %d: ", __LINE__); fprintf(stderr, __VA_ARGS__); fputc('\n', stderr); } } while (0)
+#include "TestHarness.h"
+#define CHECK(c, ...) do { \
+    char _detail[512]; \
+    std::snprintf(_detail, sizeof(_detail), __VA_ARGS__); \
+    ::kt::Check(__FILE__ ":" KT_STR(__LINE__) ": " #c, static_cast<bool>(c), _detail); \
+} while (0)
 template <typename T> static T& at(uintptr_t b, int off) { return *reinterpret_cast<T*>(b + off); }
 static void* P(uintptr_t a) { return reinterpret_cast<void*>(a); }
 
@@ -174,7 +178,7 @@ static bool anyVisible(uintptr_t panel) { for (int i = 0; i < C_N; ++i) if (vis(
 static void clickCtl(uintptr_t panel, const Fake& who, int real, int idx) {
     int x, y, w, h;
     if (idx == C_CFG && !vis(panel, C_CFG) && vis(panel, C_ICON)) idx = C_ICON;   // batch 3a: no level-up buttons -> the corner icon opens the same page
-    if (!getExtent(ctl(panel, idx), &x, &y, &w, &h)) { ++g_fail; fprintf(stderr, "FAIL clickCtl: no extent\n"); return; }
+    if (!getExtent(ctl(panel, idx), &x, &y, &w, &h)) { CHECK(false, "clickCtl: no extent"); return; }
     curX = x + w / 2; curY = y + h / 2;
     lmb = false; tick(panel, who, real);
     lmb = true; tick(panel, who, real);
@@ -188,7 +192,7 @@ static const uintptr_t kTipDelay = 500;   // fake manager appear time 0.5 s
 static void tipHover(uintptr_t panel, const Fake& who, int idx, int real = 0) {   // real = the SetStats CanLevelUp value (1: Configure shown, 0: icon)
     UiPanel* r = rec(panel);
     int x, y, w, h;
-    if (!r || !getExtent(ctl(panel, idx), &x, &y, &w, &h)) { ++g_fail; fprintf(stderr, "FAIL tipHover: no extent for %d\n", idx); return; }
+    if (!r || !getExtent(ctl(panel, idx), &x, &y, &w, &h)) { CHECK(false, "tipHover: no extent for %d", idx); return; }
     at<uint32_t>(g_tipMgr, 0x40) = 0; at<uint32_t>(g_tipMgr, 0x08) = (uint32_t)ctl(panel, idx); at<uint32_t>(g_tipMgr, 0x1C) = 0;
     curX = 0; curY = 0; lmb = false; tick(panel, who, real);   // start from no hover
     curX = x + w / 2; curY = y + h / 2;
@@ -537,7 +541,7 @@ int main(int argc, char** argv) {
         {
             const Preset* ep = findPreset(PRESET);
             const int mn = uiMinPause(*ep), lo = uiPauseLo(*ep, 3);   // attonLo is level 3
-            CHECK(lo >= 3 && lo <= 5, "lo %d");
+            CHECK(lo >= 3 && lo <= 5, "lo %d", lo);
             clickCtl(pW, attonLo, 0, C_CFG);   // opens on the recommended (early) preset: bank on, pause = the current level (lo)
             CHECK(r->open && r->bank && r->pause == lo && r->itemPreset[r->os.cur] == (int)(ep - g_presets), "pause block: page on the early preset");
             for (int k = lo; k < 5; ++k) clickCtl(pW, attonLo, 0, C_PPLUS);   // lo -> 5
@@ -1167,6 +1171,5 @@ int main(int argc, char** argv) {
         curX = 0; curY = 0;
     }
 
-    printf("ui_test checks %d failures %d\n", g_checks, g_fail);
-    return g_fail ? 1 : 0;
+    return kt::Report("ui_test");
 }

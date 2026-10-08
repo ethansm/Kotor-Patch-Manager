@@ -4,8 +4,12 @@
 #include <string>
 #include <unistd.h>
 
-static int g_fail = 0, g_checks = 0;
-#define CHECK(c, ...) do { ++g_checks; if (!(c)) { ++g_fail; fprintf(stderr, "FAIL line %d: ", __LINE__); fprintf(stderr, __VA_ARGS__); fputc('\n', stderr); } } while (0)
+#include "TestHarness.h"
+#define CHECK(c, ...) do { \
+    char _detail[512]; \
+    std::snprintf(_detail, sizeof(_detail), __VA_ARGS__); \
+    ::kt::Check(__FILE__ ":" KT_STR(__LINE__) ": " #c, static_cast<bool>(c), _detail); \
+} while (0)
 
 static std::string readLog() {
     std::string s; FILE* f = fopen(LogName, "rb"); if (!f) return s;
@@ -189,6 +193,5 @@ int main() {
         CHECK(v.result && v.resultItem == 1, "Pick answer selects exactly that item (%d)", v.resultItem);
     }
 
-    printf("unit_gap_test checks %d failures %d\n", g_checks, g_fail);
-    return g_fail ? 1 : 0;
+    return kt::Report("unit_gap_test");
 }

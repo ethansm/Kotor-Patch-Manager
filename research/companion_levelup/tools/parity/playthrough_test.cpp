@@ -3,8 +3,12 @@
 #include <memory>
 #include <string>
 
-static int g_fail = 0, g_checks = 0;
-#define CHECK(c, ...) do { ++g_checks; if (!(c)) { ++g_fail; fprintf(stderr, "FAIL line %d: ", __LINE__); fprintf(stderr, __VA_ARGS__); fputc('\n', stderr); } } while (0)
+#include "TestHarness.h"
+#define CHECK(c, ...) do { \
+    char _detail[512]; \
+    std::snprintf(_detail, sizeof(_detail), __VA_ARGS__); \
+    ::kt::Check(__FILE__ ":" KT_STR(__LINE__) ": " #c, static_cast<bool>(c), _detail); \
+} while (0)
 
 static std::string ser(const pt::Doc& d) {
     static char buf[pt::MaxText];
@@ -263,6 +267,5 @@ int main() {
         CHECK(ser(*w) == "[g00000003]\npc=r10|instant=0|hold=1|pause=2147483647|r10=1|pcfilter=melee/unarmed/neutral|ffilter=build_hide|pfilter=build_hide\n", "worst-case pc line: %s", ser(*w).c_str());
     }
 
-    printf("playthrough_test checks %d failures %d\n", g_checks, g_fail);
-    return g_fail ? 1 : 0;
+    return kt::Report("playthrough_test");
 }

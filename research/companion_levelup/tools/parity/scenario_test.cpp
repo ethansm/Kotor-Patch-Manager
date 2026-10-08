@@ -29,9 +29,15 @@ static uintptr_t arenaAlloc(size_t n) {
     g_used += n;
     return a;
 }
-static int g_fail = 0, g_checks = 0;
+#include "TestHarness.h"
 static std::string g_ctx = "unit";
-#define CHECK(c, ...) do { ++g_checks; if (!(c)) { ++g_fail; fprintf(stderr, "FAIL [%s] line %d: ", g_ctx.c_str(), __LINE__); fprintf(stderr, __VA_ARGS__); fputc('\n', stderr); } } while (0)
+#define CHECK(c, ...) do { \
+    char _detail[512]; \
+    std::snprintf(_detail, sizeof(_detail), __VA_ARGS__); \
+    char _what[128]; \
+    std::snprintf(_what, sizeof(_what), "[%s] line %d: %s", g_ctx.c_str(), __LINE__, #c); \
+    ::kt::Check(_what, static_cast<bool>(c), _detail); \
+} while (0)
 template <typename T> static T& at(uintptr_t b, int off) { return *reinterpret_cast<T*>(b + off); }
 static void* P(uintptr_t a) { return reinterpret_cast<void*>(a); }
 
@@ -465,10 +471,10 @@ static int runScenario(const char* datPath, const std::string& id) {
         if (d.second.rfind("<=", 0) == 0 && it != g_dec.end()) { CHECK(atoi(it->second.c_str()) <= atoi(d.second.c_str() + 2), "decision %s = %s (want %s)", d.first.c_str(), it->second.c_str(), d.second.c_str()); continue; }
         CHECK(it != g_dec.end() && it->second == d.second, "decision %s = '%s' (want '%s')", d.first.c_str(), it == g_dec.end() ? "<unset>" : it->second.c_str(), d.second.c_str());
     }
-    printf("scenario %s: checks %d failures %d", id.c_str(), g_checks, g_fail);
+    printf("scenario %s: checks %d failures %d", id.c_str(), kt::g_checks, kt::g_failures);
     for (auto& d : g_dec) printf(" %s=%s", d.first.c_str(), d.second.c_str());
     printf("\n");
-    return g_fail ? 1 : 0;
+    return kt::g_failures ? 1 : 0;
 }
 
 // ---- unit mode: onLevelUp T2 + LUO_G removal safety ----
@@ -623,8 +629,7 @@ static int runUnit(const char* table) {
         LuoGuidLoad(t0, 1);
         CHECK(ptGuid() == 0 && g_adds == adds && g_sets == sets, "load without globals writes nothing");
     }
-    printf("scenario_test --unit checks %d failures %d\n", g_checks, g_fail);
-    return g_fail ? 1 : 0;
+    return kt::Report("scenario_test --unit");
 }
 
 int main(int argc, char** argv) {

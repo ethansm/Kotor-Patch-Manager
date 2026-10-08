@@ -83,8 +83,14 @@ static uintptr_t makePending(const Pend& p, CapMode cm) {
 
 static void ids(const std::string& s, std::vector<uint32_t>& out) { std::stringstream ss(s); std::string t; while (std::getline(ss, t, ',')) if (!t.empty()) out.push_back(std::stoul(t)); }
 
-static int g_fail = 0;
-#define CHECK(c, ...) do { if (!(c)) { ++g_fail; fprintf(stderr, "FAIL %s:%d: ", tag, key); fprintf(stderr, __VA_ARGS__); fputc('\n', stderr); } } while (0)
+#include "TestHarness.h"
+#define CHECK(c, ...) do { \
+    char _detail[512]; \
+    std::snprintf(_detail, sizeof(_detail), __VA_ARGS__); \
+    char _what[128]; \
+    std::snprintf(_what, sizeof(_what), "%s:%d: %s", tag, key, #c); \
+    ::kt::Check(_what, static_cast<bool>(c), _detail); \
+} while (0)
 
 int main(int argc, char** argv) {
     void* m = mmap(nullptr, ArenaSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_32BIT, -1, 0);
@@ -155,6 +161,6 @@ int main(int argc, char** argv) {
             }
         }
     }
-    printf("apply_test applied %d replays-already %d aborts %d skipped(non-rewrite) %d failures %d\n", applied, replays, aborts, skipped, g_fail);
-    return g_fail ? 1 : 0;
+    printf("apply_test: applied %d replays-already %d aborts %d skipped(non-rewrite) %d\n", applied, replays, aborts, skipped);
+    return kt::Report("apply_test");
 }

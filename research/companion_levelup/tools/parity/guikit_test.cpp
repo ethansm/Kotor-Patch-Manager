@@ -2,15 +2,19 @@
 // Engine calls and platform queries are fakes recorded in g_calls; the label vtable (0x9878BC) is a real low-address page so
 // the slot-1 read works. Run via guikit_test.py.
 #define GUIKIT_HOST 1
-#include "../../../../patch_manager_mods/_shared_src/GuiKit.h"
+#include "GuiKit.h"
 #include <sys/mman.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 static uint8_t* g_arena = nullptr; static size_t g_used = 0; constexpr size_t ArenaSize = 4u << 20;
 static uintptr_t arenaAlloc(size_t n) { n = (n + 15) & ~size_t(15); if (g_used + n > ArenaSize) { fprintf(stderr, "arena full\n"); exit(4); } uintptr_t a = reinterpret_cast<uintptr_t>(g_arena + g_used); memset(g_arena + g_used, 0, n); g_used += n; return a; }
-static int g_fail = 0, g_checks = 0;
-#define CHECK(c, ...) do { ++g_checks; if (!(c)) { ++g_fail; fprintf(stderr, "FAIL line %d: ", __LINE__); fprintf(stderr, __VA_ARGS__); fputc('\n', stderr); } } while (0)
+#include "TestHarness.h"
+#define CHECK(c, ...) do { \
+    char _detail[512]; \
+    std::snprintf(_detail, sizeof(_detail), __VA_ARGS__); \
+    ::kt::Check(__FILE__ ":" KT_STR(__LINE__) ": " #c, static_cast<bool>(c), _detail); \
+} while (0)
 using namespace guikit;
 template <typename T> static T& at(uintptr_t b, int off) { return *reinterpret_cast<T*>(b + off); }
 
@@ -151,6 +155,5 @@ int main() {
     // unreadable ctl (low page): guarded, no crash
     CHECK(!setVisible(0x10, true) && !setText(0x10, "x") && !getExtent(0x10, &x, &y, &w, &h), "garbage ctl");
 
-    printf("guikit_test: %d checks, %d failures\n", g_checks, g_fail);
-    return g_fail ? 1 : 0;
+    return kt::Report("guikit_test");
 }

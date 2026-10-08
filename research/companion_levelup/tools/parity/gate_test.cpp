@@ -19,8 +19,12 @@ static uintptr_t arenaAlloc(size_t n) {
     g_used += n;
     return a;
 }
-static int g_fail = 0, g_checks = 0;
-#define CHECK(c, ...) do { ++g_checks; if (!(c)) { ++g_fail; fprintf(stderr, "FAIL line %d: ", __LINE__); fprintf(stderr, __VA_ARGS__); fputc('\n', stderr); } } while (0)
+#include "TestHarness.h"
+#define CHECK(c, ...) do { \
+    char _detail[512]; \
+    std::snprintf(_detail, sizeof(_detail), __VA_ARGS__); \
+    ::kt::Check(__FILE__ ":" KT_STR(__LINE__) ": " #c, static_cast<bool>(c), _detail); \
+} while (0)
 
 // ---- fake engine ----
 static int g_canRet = 1, g_ccRet = 0;
@@ -657,6 +661,6 @@ int main(int argc, char** argv) {
         remove("levelup_override.ini");
     }
 
-    printf("gate_test checks %d failures %d (engine calls %d)\n", g_checks, g_fail, g_fakeCalls);
-    return g_fail ? 1 : 0;
+    printf("gate_test: engine calls %d\n", g_fakeCalls);
+    return kt::Report("gate_test");
 }
