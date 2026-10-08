@@ -36,6 +36,9 @@ namespace {
 KP_CHANNEL(chEvt, "evt");
 KP_CHANNEL(chCore, "core");
 
+// Only stores the path and the level (no I/O): safe from a static initialiser.
+const bool g_fallbackSet = (KpLog_SetFallbackFile("save-events_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
+
 // saferead site ids: 0x7200-0x72FF belong to this mod
 enum Site : unsigned { S_Req = 0x7201, S_Folder, S_Cloud, S_Str };
 
