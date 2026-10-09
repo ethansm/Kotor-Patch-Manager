@@ -11,7 +11,7 @@ plan it in detail, execute with Sonnet agents, commit, then tick its row below. 
 | C1 | Integration audit baseline (read-only) | DONE | 83cb016 |
 | C2 | Common contract test | DONE | d89b511 |
 | C3 | Include style + parity stub alignment | DONE | d8438c6 |
-| C4 | Engine addresses -> GameAddr.h (+ proposal) | TODO | |
+| C4 | Engine addresses -> GameAddr.h (+ proposal) | DONE | 7159269 |
 | C5 | Party.h adoption | TODO | |
 | C6 | FileWatch.h adoption | TODO | |
 | C7 | KpLog migration (C7a design / C7b code) | TODO | |
