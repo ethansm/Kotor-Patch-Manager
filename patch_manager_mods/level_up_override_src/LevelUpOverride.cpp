@@ -81,6 +81,7 @@
 #include "GuiTip.h"
 #include "EmbedTex.h"
 #include "GameAddr.h"
+#include "Party.h"
 #include "LuoTextures.inc"   // kLuoTex: the embedded settings gear (luo_gear, luo_gear_hi)
 #include "Playthrough.h"
 #include "R10Probe.h"
@@ -2035,15 +2036,11 @@ void* leaderInstant(void* ecx, uintptr_t ebp) {
     return g_noCtl;
 }
 
-// Leader creature as the GUI sees it: 0x77D800(0x7E5DA0(0x73FB90([[0xA1B4A4]+4]), 0)); 0 on any null / unreadable link.
+// Leader creature as the GUI sees it: member 0 -> server creature via Party.h; 0 on any null / unreadable link.
 uintptr_t leaderCreature() {
-    uint32_t app = 0, client = 0;
-    if (!readAt(S_Chain, g_eng.appGlobal, 0, &app) || !app || !readAt(S_Chain, app, 4, &client) || !client) return 0;
-    void* party = reinterpret_cast<TableGet_t>(g_eng.tableGet)(reinterpret_cast<void*>(static_cast<uintptr_t>(client)));
-    if (!party) return 0;
-    void* member = reinterpret_cast<PartyGet_t>(g_eng.partyGet)(party, 0);
-    if (!member) return 0;
-    return reinterpret_cast<uintptr_t>(reinterpret_cast<GetCreature_t>(g_eng.getCreature)(member));
+    const uintptr_t tbl = party::table();
+    const uintptr_t m = tbl ? party::member(tbl, 0) : 0;
+    return m ? party::serverCreature(m) : 0;
 }
 // Held (hold enabled + rule says HOLD) evaluation of a creature object.
 Eval evalCreature(uintptr_t cr) {

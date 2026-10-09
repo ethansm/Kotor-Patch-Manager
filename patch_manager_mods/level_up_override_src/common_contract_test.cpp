@@ -10,6 +10,7 @@
 #endif
 #include "GuiTip.h"
 #include "GameAddr.h"
+#include "Party.h"
 #include "check.h"
 #include <sys/mman.h>
 #include <stdio.h>
@@ -154,5 +155,26 @@ int main() {
     LEQ("ClientPartyTable address 0x73FB90", gameaddr::ClientPartyTable, 0x0073FB90u);
     LEQ("ExoCtor address 0x733570", gameaddr::ExoCtor, 0x00733570u);
     LEQ("ExoDtor address 0x733780", gameaddr::ExoDtor, 0x00733780u);
+
+    // ---- Party: party table, member 0, and server creature lookup ----
+    LCHECK("party::table function exists", static_cast<uintptr_t(*)(party::Fail*)>(&party::table) != nullptr);
+    LCHECK("party::member function exists", static_cast<uintptr_t(*)(uintptr_t, int)>(&party::member) != nullptr);
+    LCHECK("party::serverCreature function exists", static_cast<uintptr_t(*)(uintptr_t)>(&party::serverCreature) != nullptr);
+    {
+        uintptr_t cell = arenaAlloc(16), app = arenaAlloc(32), client = arenaAlloc(32), ci = arenaAlloc(0x300), partyTable = arenaAlloc(32);
+        at<uint32_t>(cell, 0) = (uint32_t)app;
+        at<uint32_t>(app, 4) = (uint32_t)client;
+        at<uint32_t>(client, 4) = (uint32_t)ci;
+        at<uint32_t>(ci, 0x270) = (uint32_t)partyTable;
+        at<int>(partyTable, 0) = 1;
+        party::g_appGlobal = cell;
+        party::Fail why = party::F_App;
+        LEQ("party::table walks app -> client -> ci -> partyTable", party::table(&why), partyTable);
+        LEQ("party::table success reason is F_None", (int)why, (int)party::F_None);
+        party::g_member = [](void* t, int idx) -> uintptr_t { return (t != nullptr && idx == 0) ? 0x2000u : 0u; };
+        LEQ("party::member(table, 0) returns client creature", party::member(partyTable, 0), 0x2000u);
+        party::g_serverCreature = [](void* m) -> uintptr_t { return (m == (void*)0x2000u) ? 0x3000u : 0u; };
+        LEQ("party::serverCreature returns server creature", party::serverCreature(0x2000u), 0x3000u);
+    }
     return kt::Report("common_contract_test (level_up_override)");
 }

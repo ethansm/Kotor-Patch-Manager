@@ -31,6 +31,8 @@ static int g_canRet = 1, g_ccRet = 0;
 static void* g_optPtr = nullptr;
 static void* g_creatureRet = nullptr;
 static void* g_lastTableEcx = nullptr;
+static void* g_lastPartyTable = nullptr;
+static int g_lastPartyIdx = -1;
 static int g_fakeCalls = 0;
 static int fakeCanLevelUp(void*) { ++g_fakeCalls; return g_canRet; }
 static void* fakeAccessor(void*) { ++g_fakeCalls; return g_optPtr; }
@@ -124,11 +126,25 @@ int main(int argc, char** argv) {
     g_eng.partyGet = reinterpret_cast<uintptr_t>(&fakePartyGet);
     g_eng.getCreature = reinterpret_cast<uintptr_t>(&fakeGetCreature);
     g_eng.autoLevelup = reinterpret_cast<uintptr_t>(&fakeAutoLevelup);
-    // app global chain: [appGlobal] = app, [app+4] = client
-    uintptr_t cell = arenaAlloc(16), app = arenaAlloc(32);
+    // app global chain: [appGlobal] = app, [app+4] = client, [client+4] = ci, [ci+0x270] = partyTable, [partyTable] = count (Party.h)
+    uintptr_t cell = arenaAlloc(16), app = arenaAlloc(32), client = arenaAlloc(32), ci = arenaAlloc(0x300), partyTable = arenaAlloc(32);
     *reinterpret_cast<uint32_t*>(cell) = (uint32_t)app;
-    *reinterpret_cast<uint32_t*>(app + 4) = 0x10001234;
+    *reinterpret_cast<uint32_t*>(app + 4) = (uint32_t)client;
+    *reinterpret_cast<uint32_t*>(client + 4) = (uint32_t)ci;
+    *reinterpret_cast<uint32_t*>(ci + 0x270) = (uint32_t)partyTable;
+    *reinterpret_cast<int*>(partyTable) = 3;
     g_eng.appGlobal = cell;
+    party::g_appGlobal = cell;
+    party::g_member = [](void* tbl, int idx) -> uintptr_t {
+        ++g_fakeCalls;
+        g_lastPartyTable = tbl;
+        g_lastPartyIdx = idx;
+        return (tbl != nullptr && idx == 0) ? 0x1000F100u : 0u;
+    };
+    party::g_serverCreature = [](void* member) -> uintptr_t {
+        ++g_fakeCalls;
+        return (member == reinterpret_cast<void*>(0x1000F100)) ? reinterpret_cast<uintptr_t>(g_creatureRet) : 0u;
+    };
     g_eng.rulesGlobal = arenaAlloc(16);   // zero cell: the banked-level count reads no rules object (R11 is covered by ui_test.cpp)
     for (auto& sl : g_nameSlots) sl = arenaAlloc(32);
     g_eng.strCtor = reinterpret_cast<uintptr_t>(&fakeStrCtor);
@@ -303,7 +319,7 @@ int main(int argc, char** argv) {
     setIni(ini, table); clearLog();
     g_ccRet = 0; g_creatureRet = P(heldAtton.creature);
     CHECK(LuoGuardGui_84FD2F(P(7)) == 1, "gui guard: held leader -> 1");
-    CHECK(g_lastTableEcx == P(0x10001234), "table-get ECX must be [[appGlobal]+4], got %p", g_lastTableEcx);
+    CHECK(g_lastPartyTable == P(partyTable) && g_lastPartyIdx == 0, "party::member table must be partyTable (idx 0), got %p (idx %d)", g_lastPartyTable, g_lastPartyIdx);
     CHECK(LuoGuardAuto_84F9FE(P(7)) == 1, "auto guard: held leader -> 1");
     CHECK(logHas("GUARD gui tag=Atton") && logHas("GUARD auto tag=Atton"), "guard log lines:\n%s", readLog().c_str());
     g_creatureRet = P(sentinel.creature);

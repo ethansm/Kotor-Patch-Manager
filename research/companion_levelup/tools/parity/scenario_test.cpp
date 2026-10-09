@@ -273,12 +273,20 @@ static void initWorld(const char* tmplName) {
     g_eng.serverInit = reinterpret_cast<uintptr_t>(&fakeServerInit); g_eng.bankedAdd = reinterpret_cast<uintptr_t>(&fakeBankedAdd);
     for (auto& sl : g_nameSlots) sl = arenaAlloc(256);
     for (auto& sl : g_exoSlots) sl = arenaAlloc(256);
-    // app chain: [appGlobal] = app; [app+4] = client; [client+4] = clientInternal; [ci+0x40] = GuiInGame; [app+8] = srv; [srv+4] = intl
-    uintptr_t cell = arenaAlloc(16), client = arenaAlloc(32), ci = arenaAlloc(0x100), gui = arenaAlloc(32);
+    // app chain: [appGlobal] = app; [app+4] = client; [client+4] = clientInternal; [ci+0x40] = GuiInGame; [ci+0x270] = partyTable; [app+8] = srv; [srv+4] = intl
+    uintptr_t cell = arenaAlloc(16), client = arenaAlloc(32), ci = arenaAlloc(0x300), gui = arenaAlloc(32), partyTable = arenaAlloc(32);
     g_app = arenaAlloc(32); g_srv = arenaAlloc(32); g_intl = arenaAlloc(0x10200);
     at<uint32_t>(cell, 0) = (uint32_t)g_app; at<uint32_t>(g_app, 4) = (uint32_t)client; at<uint32_t>(client, 4) = (uint32_t)ci; at<uint32_t>(ci, 0x40) = (uint32_t)gui;
+    at<uint32_t>(ci, 0x270) = (uint32_t)partyTable; at<int>(partyTable, 0) = 3;
     at<uint32_t>(g_app, 8) = (uint32_t)g_srv; at<uint32_t>(g_srv, 4) = (uint32_t)g_intl;
     g_eng.appGlobal = cell;
+    party::g_appGlobal = cell;
+    party::g_member = [](void* tbl, int idx) -> uintptr_t {
+        return (tbl != nullptr && idx == 0) ? 0x1000F100u : 0u;
+    };
+    party::g_serverCreature = [](void* member) -> uintptr_t {
+        return (member == reinterpret_cast<void*>(0x1000F100) && g_leader) ? reinterpret_cast<uintptr_t>(g_leader->creature) : 0u;
+    };
     // rules object at the REAL global 0xA1B4D0 (onLevelUp reads it raw): skill count +0x123, XP table +0x38
     uintptr_t rules = arenaAlloc(0x200);
     at<uint32_t>(0x00A1B4D0, 0) = (uint32_t)rules; at<uint8_t>(rules, Rules_SkillCount) = NumSkills;
