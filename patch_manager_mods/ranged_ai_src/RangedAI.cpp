@@ -27,7 +27,9 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#include "../_shared/SafeRead.h"
+#include "SafeRead.h"
+#include "IniKit.h"
+#include "RangedAI.h"
 #include "RangedAiLogic.h"
 #include "KpLog.h"
 #include "GameAddr.h"
@@ -152,9 +154,14 @@ void loadIni(bool force) {
     c.log = GetPrivateProfileIntA("RangedAI", "log", 1, IniName) != 0;
     c.logAll = GetPrivateProfileIntA("RangedAI", "log_all", 0, IniName) != 0;
     char s[128] = {};
-    GetPrivateProfileStringA("RangedAI", "hold_stances", "16", s, sizeof s, IniName); c.holdMask = parseMask(s);
-    GetPrivateProfileStringA("RangedAI", "retarget_stances", "16", s, sizeof s, IniName); c.retargetMask = parseMask(s);
+    GetPrivateProfileStringA("RangedAI", "hold_stances", "16", s, sizeof s, IniName);
+    inikit::trim(s);
+    c.holdMask = parseMask(s);
+    GetPrivateProfileStringA("RangedAI", "retarget_stances", "16", s, sizeof s, IniName);
+    inikit::trim(s);
+    c.retargetMask = parseMask(s);
     GetPrivateProfileStringA("RangedAI", "kite_icon", "ib_ranged", s, sizeof s, IniName);
+    inikit::trim(s);
     for (int i = 0; i < 16; ++i) { char ch = s[i]; c.icon[i] = (ch >= 'A' && ch <= 'Z') ? char(ch + 32) : ch; if (!ch) break; }
     c.icon[16] = 0;
     if (!c.icon[0]) strcpy(c.icon, "ib_ranged");
@@ -305,7 +312,10 @@ extern "C" int __cdecl RangedAiStanceClick(int ebp) {
         if (g_cfg.log) logf("S3 t=%lu stance click: id=0x%x (vanilla) stance before=%d", GetTickCount(), id, stats ? rd<unsigned short>(stats, StatsStance, 0xFFFF) : -1);
         return 0;
     }
-    if (!stats) return 0;
+    if (!stats) {
+        logw("S3 stance click: null stats pointer (ebp=%08x), stance not switched", ebp);
+        return 0;
+    }
     int before = rd<unsigned short>(stats, StatsStance, 0xFFFF);
     wr<unsigned short>(stats + StatsStance, KiteStance);
     wr<int>(ebp + FC_MsgStrref, g_cfg.msgStrref);
@@ -323,16 +333,45 @@ struct H3Log { int id = 0; int last = -1; DWORD t = 0; };
 H3Log g_h3[8];
 int g_h3Logged = 0;
 }
+// ---- k2.rangedai v1 provider ----
+int32_t KPATCH_CALL RaiKiteStance(void) {
+    return g_cfg.rangedRules ? KiteStance : 0;
+}
+
+int32_t KPATCH_CALL RaiMapsToRanged(int32_t raw, intptr_t ebp) {
+    saferead::beginScope();
+    if (raw == VanillaRangedStance) return 1;
+    if (raw != KiteStance || !g_cfg.rangedRules) return 0;
+    if (!g_cfg.kiteApproach || !ebp) return 1;
+    int ranged = 0;
+    float maxR = 0.0f, dist2 = 0.0f;
+    if (!saferead::readAt<int>(3, static_cast<uintptr_t>(ebp), F_RangedFlag, &ranged) ||
+        !saferead::readAt<float>(3, static_cast<uintptr_t>(ebp), F_Max, &maxR) ||
+        !saferead::readAt<float>(3, static_cast<uintptr_t>(ebp), F_Dist2, &dist2)) {
+        return 0;
+    }
+    return (ranged != 0 && rai::inWeaponRange(maxR, dist2)) ? 1 : 0;
+}
+
+const K2RangedAiApi g_raiApi = {
+    sizeof(K2RangedAiApi),
+    RaiKiteStance,
+    RaiMapsToRanged
+};
+
 extern "C" void __cdecl RangedAiStanceRules(int stance, int ebp) {
     saferead::beginScope();
-    bool map = stance == KiteStance && g_cfg.rangedRules;
     int ranged = -1, inRange = -1;
-    if (map && g_cfg.kiteApproach) {
-        // live frame slots of the hooked function: read directly (as the store below)
-        ranged = *reinterpret_cast<const int*>(ebp + F_RangedFlag) != 0;
-        inRange = inWeaponRange(*reinterpret_cast<const float*>(ebp + F_Max), *reinterpret_cast<const float*>(ebp + F_Dist2));
-        if (!ranged || !inRange) map = false;   // melee or out of range: vanilla Aggressive approach (move range = max if ranged)
+    if (stance == KiteStance && g_cfg.rangedRules && g_cfg.kiteApproach && ebp) {
+        int rf = 0; float mx = 0.0f, d2 = 0.0f;
+        if (saferead::readAt<int>(3, static_cast<uintptr_t>(ebp), F_RangedFlag, &rf) &&
+            saferead::readAt<float>(3, static_cast<uintptr_t>(ebp), F_Max, &mx) &&
+            saferead::readAt<float>(3, static_cast<uintptr_t>(ebp), F_Dist2, &d2)) {
+            ranged = rf != 0;
+            inRange = rai::inWeaponRange(mx, d2) ? 1 : 0;
+        }
     }
+    bool map = RaiMapsToRanged(stance, static_cast<intptr_t>(ebp)) != 0;
     int eff = map ? VanillaRangedStance : stance;
     // [ebp-0x174] is a slot of the live hooked frame; the replaced instruction is skipped, so always store it.
     *reinterpret_cast<int*>(ebp + F_StanceRules) = eff;
@@ -361,7 +400,13 @@ extern "C" void __cdecl RangedAiHudStance(int ebp) {
 }
 
 // KpLog_Init may fail on an old core; the load line is emitted either way (KpLog then falls back to ranged_ai_log.txt).
-extern "C" void __cdecl KPatchInit(const KPatchApi* api) { KpLog_Init(api); emitLoadLine(); }
+extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
+    if (api && api->struct_size >= offsetof(KPatchApi, require) + sizeof(api->require) && api->provide) {
+        api->provide(K2RAI_IFACE, K2RAI_VERSION, &g_raiApi);
+    }
+    KpLog_Init(api);
+    emitLoadLine();
+}
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {

@@ -31,6 +31,10 @@ static SIZE_T fakeVQ(LPCVOID a, MEMORY_BASIC_INFORMATION* m, SIZE_T n) {
 }
 #define VirtualQuery fakeVQ
 #include "SafeRead.h"
+#include "IniKit.h"
+#include "RangedAI.h"
+#include "RangedAiLogic.h"
+#include "FakeKPatchApi.h"
 #include "check.h"
 #include "KpLog.h"
 #include <string>
@@ -156,6 +160,113 @@ static void kplog_contract() {
     remove(path);
 }
 
+static void inikit_contract() {
+    char b1[64] = "  ib_ranged \r\n";
+    inikit::trim(b1);
+    HCHECK("inikit::trim strips leading and trailing whitespace and CRLF (RangedAI.cpp loadIni)", !strcmp(b1, "ib_ranged"));
+
+    char b2[64] = "\t16\t ";
+    inikit::trim(b2);
+    HCHECK("inikit::trim handles tabs and spaces", !strcmp(b2, "16"));
+
+    char b3[64] = "";
+    inikit::trim(b3);
+    HCHECK("inikit::trim handles empty string", !strcmp(b3, ""));
+
+    char b4[64] = "  hold = 1 ; inline comment # more";
+    inikit::trim(b4);
+    char *k = nullptr, *v = nullptr;
+    HCHECK("inikit::splitIniLine returns IniLineKeyValue", inikit::splitIniLine(b4, &k, &v) == inikit::IniLineKeyValue);
+    HCHECK("inikit::splitIniLine trims and lower-cases key", k && !strcmp(k, "hold"));
+    HCHECK("inikit::splitIniLine cuts inline comment from value", v && !strcmp(v, "1"));
+}
+
+static void rangedai_contract() {
+    // 1. Static layout assertions
+    static_assert(sizeof(K2RangedAiApi) == 3 * sizeof(void*), "ranged_ai relies on: K2RangedAiApi size");
+    static_assert(offsetof(K2RangedAiApi, KiteStance) == sizeof(void*), "ranged_ai relies on: KiteStance offset");
+    static_assert(offsetof(K2RangedAiApi, MapsToRanged) == 2 * sizeof(void*), "ranged_ai relies on: MapsToRanged offset");
+
+    // 2. Client fallback when provider is missing
+    fakekp::reset();
+    k2rai::Client client;
+    client.init(fakekp::api(), "test_consumer");
+    HCHECK("client fails to connect before provide()", !client.connect());
+    HEQ("kiteStance returns fallback when unprovided", client.kiteStance(99), 99);
+    HCHECK("mapsToRanged returns fallback when unprovided", !client.mapsToRanged(16, 0, false));
+
+    // 3. Provider implementation and client connection
+    struct ProviderState {
+        int rangedRules = 1;
+        int kiteApproach = 1;
+    };
+    static ProviderState ps;
+    ps.rangedRules = 1;
+    ps.kiteApproach = 1;
+
+    auto fakeKiteStance = []() -> int32_t {
+        return ps.rangedRules ? 16 : 0;
+    };
+    auto fakeMapsToRanged = [](int32_t raw, intptr_t ebp) -> int32_t {
+        if (raw == 11) return 1;
+        if (raw != 16 || !ps.rangedRules) return 0;
+        if (!ps.kiteApproach || !ebp) return 1;
+        int ranged = 0;
+        float maxR = 0.0f, dist2 = 0.0f;
+        if (!saferead::readAt<int>(3, static_cast<uintptr_t>(ebp), -0x164, &ranged) ||
+            !saferead::readAt<float>(3, static_cast<uintptr_t>(ebp), -0x2C, &maxR) ||
+            !saferead::readAt<float>(3, static_cast<uintptr_t>(ebp), -0xBC, &dist2)) {
+            return 0;
+        }
+        return (ranged != 0 && rai::inWeaponRange(maxR, dist2)) ? 1 : 0;
+    };
+
+    K2RangedAiApi provTable = {
+        sizeof(K2RangedAiApi),
+        fakeKiteStance,
+        fakeMapsToRanged
+    };
+
+    HEQ("fakekp::provide returns 0 on success", fakekp::provide(K2RAI_IFACE, K2RAI_VERSION, &provTable), 0);
+    HCHECK("client connects to provided interface", client.connect());
+    HEQ("kiteStance returns 16 when ranged_rules=1", client.kiteStance(), 16);
+    ps.rangedRules = 0;
+    HEQ("kiteStance returns 0 when ranged_rules=0", client.kiteStance(), 0);
+    ps.rangedRules = 1;
+
+    // Vanilla stance 11 always maps to ranged
+    HCHECK("mapsToRanged(11) returns true regardless of frame", client.mapsToRanged(11, 0));
+    // Stance 16 without ebp frame maps to 1 when kiteApproach=0
+    ps.kiteApproach = 0;
+    HCHECK("mapsToRanged(16, 0) returns true when kiteApproach=0", client.mapsToRanged(16, 0));
+    ps.kiteApproach = 1;
+
+    // Fake frame in arena (page 0)
+    setup();
+    uintptr_t frame = A(0x500);
+    // [ebp-0x164] = ranged, [ebp-0x2C] = max, [ebp-0xBC] = dist2
+    put<int>(0x500 - 0x164, 1);       // ranged = true
+    put<float>(0x500 - 0x2C, 30.0f);  // max = 30m
+    put<float>(0x500 - 0xBC, 100.0f); // dist2 = 100 (10m) -> in range!
+
+    HCHECK("mapsToRanged(16, frame) returns true when ranged weapon in range", client.mapsToRanged(16, static_cast<intptr_t>(frame)));
+
+    // Melee weapon (ranged = 0)
+    put<int>(0x500 - 0x164, 0);
+    HCHECK("mapsToRanged(16, frame) returns false for melee weapon", !client.mapsToRanged(16, static_cast<intptr_t>(frame)));
+
+    // Out of range (max = 5m, dist2 = 100 -> 10m)
+    put<int>(0x500 - 0x164, 1);
+    put<float>(0x500 - 0x2C, 5.0f);
+    HCHECK("mapsToRanged(16, frame) returns false when out of range", !client.mapsToRanged(16, static_cast<intptr_t>(frame)));
+
+    // Struct size gating on KPatchApi
+    fakekp::reset(8); // truncated api struct
+    k2rai::Client smallClient;
+    smallClient.init(fakekp::api(), "consumer2");
+    HCHECK("client refuses truncated KPatchApi", !smallClient.connect());
+}
+
 int main() {
     void* m = mmap(nullptr, ArenaSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS
 #ifdef MAP_32BIT
@@ -170,5 +281,7 @@ int main() {
     probe_contract();
     scope_contract();
     kplog_contract();
+    inikit_contract();
+    rangedai_contract();
     return kt::Report("common_contract_test (ranged_ai)");
 }

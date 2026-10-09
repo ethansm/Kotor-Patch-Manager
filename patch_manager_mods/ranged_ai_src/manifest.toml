@@ -5,6 +5,7 @@ version = "0.4.0"
 author = "local"
 description = "Party ranged-AI engine hooks: hold position instead of walking into melee when the line of fire is blocked, and retarget like the player does, for the new party stance 16 Ranged (Kiting) added to the stance menu."
 
+provides = ["k2.rangedai@1"]
 requires = []
 conflicts = []
 
