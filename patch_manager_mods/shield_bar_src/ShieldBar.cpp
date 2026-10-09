@@ -226,7 +226,11 @@ int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale, i
     int n = collectPools(creature, pools, 8);
     if (n <= 0) return 0;
     void* image = imageFor(ShieldBarTexture);
-    if (!image) return -1;
+    if (!image) {
+        static bool s_warnLogged = false;
+        if (!s_warnLogged) { s_warnLogged = true; probeLog("DRAW: shield bar texture '%s' unresolved, draw skipped", ShieldBarTexture); }
+        return -1;
+    }
     if (n > MaxSegments) {                                     // merge extras into the last segment
         for (int i = MaxSegments; i < n; ++i) { pools[MaxSegments - 1].remaining += pools[i].remaining; pools[MaxSegments - 1].max += pools[i].max; }
         n = MaxSegments;
