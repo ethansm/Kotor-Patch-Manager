@@ -140,7 +140,10 @@ void __cdecl RetargetBuffIcon(int slotPtr, int index, int iconWidget, int whichR
     if (!featureOk(bh::arrowHideFieldsOk(T), "arrow suppression")) return;
     int border = iconWidget + T->Label_Border;
     int w = 0, h = 0, bvt = 0;
-    if (!readAt(border, 0, &bvt) || bvt != static_cast<int>(T->BorderVtable) || !readAt(border, T->Border_Width, &w) || !readAt(border, T->Border_Height, &h)) return;
+    if (!readAt(border, 0, &bvt) || bvt != static_cast<int>(T->BorderVtable) || !readAt(border, T->Border_Width, &w) || !readAt(border, T->Border_Height, &h)) {
+        if (logIt) logf("arrow suppression: border %08x unreadable or vtable %08x != %08x", border, bvt, (unsigned)T->BorderVtable);
+        return;
+    }
     g_saved ={ true, border, 0, w, h, T->Border_Width, T->Border_Height };
     *reinterpret_cast<int*>(border + T->Border_Width) = 0;
     *reinterpret_cast<int*>(border + T->Border_Height) = 0;
