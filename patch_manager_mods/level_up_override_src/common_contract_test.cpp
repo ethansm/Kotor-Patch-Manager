@@ -9,6 +9,7 @@
 #define GUIKIT_HOST 1
 #endif
 #include "GuiTip.h"
+#include "GameAddr.h"
 #include "check.h"
 #include <sys/mman.h>
 #include <stdio.h>
@@ -145,5 +146,13 @@ int main() {
         LCHECK("clickEdge never fires while the game is not the foreground window", !guikit::clickEdge(ce));
         fFg = true;
     }
+    // ---- GameAddr: engine addresses used by LevelUpOverride ----
+    LEQ("PtrListAdd address 0x83EA60", gameaddr::PtrListAdd, 0x0083EA60u);
+    LEQ("AppGlobal address 0xA1B4A4", gameaddr::AppGlobal, 0x00A1B4A4u);
+    LEQ("MemberServerCreature address 0x77D800", gameaddr::MemberServerCreature, 0x0077D800u);
+    LEQ("PartyGetAt address 0x7E5DA0", gameaddr::PartyGetAt, 0x007E5DA0u);
+    LEQ("ClientPartyTable address 0x73FB90", gameaddr::ClientPartyTable, 0x0073FB90u);
+    LEQ("ExoCtor address 0x733570", gameaddr::ExoCtor, 0x00733570u);
+    LEQ("ExoDtor address 0x733780", gameaddr::ExoDtor, 0x00733780u);
     return kt::Report("common_contract_test (level_up_override)");
 }

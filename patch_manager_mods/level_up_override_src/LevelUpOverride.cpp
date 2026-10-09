@@ -80,6 +80,7 @@
 #include "GuiKit.h"
 #include "GuiTip.h"
 #include "EmbedTex.h"
+#include "GameAddr.h"
 #include "LuoTextures.inc"   // kLuoTex: the embedded settings gear (luo_gear, luo_gear_hi)
 #include "Playthrough.h"
 #include "R10Probe.h"
@@ -1053,15 +1054,15 @@ struct Engine {
     uintptr_t addFeat, setSkillDelta, pushU32;
     bool checkCode;   // compare the functions' first bytes before calling (off in the host test, which uses fakes)
     uintptr_t controlled = 0x0073F450;   // client GetControlledObject (thiscall ECX, no args, plain RET): +4 = controlled object id (U5)
-    uintptr_t canLevelUp = 0x006B9790, optAccessor = 0x0072FB00, charChange = 0x00740FC0, getCreature = 0x0077D800,
-              partyGet = 0x007E5DA0, tableGet = 0x0073FB90, appGlobal = 0x00A1B4A4;
-    uintptr_t strCtor = 0x00733570, strDtor = 0x00733780, guidFind = 0x006545B0, guidAdd = 0x00654430, guidSet = 0x00654BB0,
+    uintptr_t canLevelUp = 0x006B9790, optAccessor = 0x0072FB00, charChange = 0x00740FC0, getCreature = gameaddr::MemberServerCreature,
+              partyGet = gameaddr::PartyGetAt, tableGet = gameaddr::ClientPartyTable, appGlobal = gameaddr::AppGlobal;
+    uintptr_t strCtor = gameaddr::ExoCtor, strDtor = gameaddr::ExoDtor, guidFind = 0x006545B0, guidAdd = 0x00654430, guidSet = 0x00654BB0,
               guidGet = 0x00654740, serverInit = 0x0051C450;
     uintptr_t rulesGlobal = 0x00A1B4D0;   // address of the global holding the rules object (XP table at +0x38)
     uintptr_t bankedAdd = 0x007BE090;     // client message-list append, thiscall(GuiInGame, CExoString*, int 0x80, uint8 0) RET 0xC
     uintptr_t autoLevelup = 0x006BEDF0;   // CSWSCreatureStats::AutoLevelup, thiscall(stats, int notify) RET 4 (the call UpdatePortraits makes at 0x74F47A)
 };
-Engine g_eng = {0x006F5B40, 0x006F5B00, 0x0083EA60, true};
+Engine g_eng = {0x006F5B40, 0x006F5B00, gameaddr::PtrListAdd, true};
 const uint8_t kAddFeatCode[] = {0x55, 0x8B, 0xEC, 0x51, 0x89, 0x4D, 0xFC};
 const uint8_t kSetSkillDeltaCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08, 0x89, 0x4D, 0xF8};
 const uint8_t kPushU32Code[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08, 0x89, 0x4D, 0xFC};
