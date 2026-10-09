@@ -177,7 +177,7 @@ extra_dlls = [
   { kpatch = "../split_build/BuffDurationHUD.kpatch", dll_name = "buff-duration-hud.dll" },
   { kpatch = "../split_build/ShieldBar.kpatch", dll_name = "shield-bar.dll" },
 ]
-cxxflags = ["-static", "-I../../_shared_src", "-I$KPM_DIR/Patches/Common"]
+cxxflags = ["-static", "-I../../_shared_src", "-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common"]
 runtime_dlls = false
 modes = ["wire", "late", "inert", "order"]
 needs_display = false
