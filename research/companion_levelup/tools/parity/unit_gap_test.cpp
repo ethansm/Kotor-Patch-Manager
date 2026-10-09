@@ -127,7 +127,7 @@ int main() {
         for (const C& c : bad) {
             put("t.ini", c.rules);
             remove(LogName); g_logLines = 0; g_nHoldState = 0;
-            snprintf(g_cfg.table, sizeof g_cfg.table, "t.ini"); g_tableStamp = ~0ULL; g_tableOk = false; g_cfg.nTags = 0;
+            snprintf(g_cfg.table, sizeof g_cfg.table, "t.ini"); g_tablePoll = {}; g_tableStamp = {}; g_tableOk = false; g_cfg.nTags = 0;
             reloadTable(true);
             const std::string l = readLog();
             char want[64]; snprintf(want, sizeof want, "CARRY disabled: malformed rule line %d\n", c.line);
@@ -137,11 +137,11 @@ int main() {
             CHECK(countStr(l, want) == 1 && countStr(l, "CARRY disabled") == 1 && l.find("TABLE loaded") != std::string::npos && l.find("TABLE ERROR") == std::string::npos, "%s: log:\n%s", c.what, l.c_str());
         }
         put("t.ini", "[featrules]\nf3=0|||2\n[powerrules]\np10=|2:0\n");   // control: a good table keeps carry on, no CARRY disabled line
-        remove(LogName); g_logLines = 0; g_tableStamp = ~0ULL;
+        remove(LogName); g_logLines = 0; g_tablePoll = {}; g_tableStamp = {};
         reloadTable(true);
         CHECK(g_tableOk && g_rules && g_fr[3].present && g_pr[10].present && !g_ruleBadLine && countStr(readLog(), "CARRY disabled") == 0, "good rules: carry stays on");
         put("t.ini", "");   // old table (no rule sections): the existing line
-        remove(LogName); g_logLines = 0; g_tableStamp = ~0ULL;
+        remove(LogName); g_logLines = 0; g_tablePoll = {}; g_tableStamp = {};
         reloadTable(true);
         CHECK(g_tableOk && !g_rules && countStr(readLog(), "CARRY disabled: table has no [featrules]/[powerrules] sections") == 1 && countStr(readLog(), "malformed rule line") == 0, "old table line unchanged");
     }

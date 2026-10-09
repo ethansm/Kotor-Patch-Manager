@@ -11,10 +11,13 @@
 #include "GuiTip.h"
 #include "GameAddr.h"
 #include "Party.h"
+#include "FileWatch.h"
 #include "check.h"
 #include <sys/mman.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #define LCHECK(why, expr) ::kt::Check("level-up-override relies on: " why " (line " KT_STR(__LINE__) ")", static_cast<bool>(expr))
 #define LEQ(why, a, b) ::kt::CheckEq("level-up-override relies on: " why " (line " KT_STR(__LINE__) ")", (a), (b))
@@ -175,6 +178,31 @@ int main() {
         LEQ("party::member(table, 0) returns client creature", party::member(partyTable, 0), 0x2000u);
         party::g_serverCreature = [](void* m) -> uintptr_t { return (m == (void*)0x2000u) ? 0x3000u : 0u; };
         LEQ("party::serverCreature returns server creature", party::serverCreature(0x2000u), 0x3000u);
+    }
+
+    // ---- FileWatch: file watching, reload polling, and accept contracts ----
+    {
+        char tmpPath[] = "/tmp/luo_fw_XXXXXX";
+        int fd = mkstemp(tmpPath);
+        LCHECK("temp file for filewatch contract test created", fd >= 0);
+        if (fd >= 0) {
+            ssize_t w = write(fd, "test", 4);
+            (void)w;
+            close(fd);
+            const filewatch::Stamp s = filewatch::stamp(tmpPath);
+            LCHECK("filewatch::stamp reports existing file", s.exists && s.size == 4);
+            LCHECK("filewatch::Stamp equality operator", s == s);
+            filewatch::ReloadPoll rp;
+            LCHECK("filewatch::changed initial load reports change", filewatch::changed(rp, tmpPath, 1000));
+            LCHECK("filewatch::changed throttled within 1000ms", !filewatch::changed(rp, tmpPath, 1500));
+            LCHECK("filewatch::changed quiet after throttle when unchanged", !filewatch::changed(rp, tmpPath, 2500));
+            LCHECK("filewatch::changed force skips throttle if changed", !filewatch::changed(rp, tmpPath, 2600, true));
+            filewatch::accept(rp, tmpPath);
+            LCHECK("filewatch::accept primes poll", rp.primed);
+            remove(tmpPath);
+            const filewatch::Stamp sMissing = filewatch::stamp(tmpPath);
+            LCHECK("filewatch::stamp reports missing file", !sMissing.exists && sMissing != s);
+        }
     }
     return kt::Report("common_contract_test (level_up_override)");
 }

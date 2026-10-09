@@ -788,7 +788,7 @@ int main(int argc, char** argv) {
         tick(pW, atton, 0);
         clickCtl(pW, atton, 0, C_CFG);
         CHECK(r->open, "open before the table change");
-        g_tableStamp ^= 1;
+        g_tableStamp.mtime ^= 1;
         tick(pW, atton, 0);
         CHECK(!r->open && !vis(pW, C_BG0), "table change closes the page");
         (void)rp;

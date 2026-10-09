@@ -82,6 +82,7 @@
 #include "EmbedTex.h"
 #include "GameAddr.h"
 #include "Party.h"
+#include "FileWatch.h"
 #include "LuoTextures.inc"   // kLuoTex: the embedded settings gear (luo_gear, luo_gear_hi)
 #include "Playthrough.h"
 #include "R10Probe.h"
@@ -215,23 +216,8 @@ Config g_cfg;
 Config g_ptCfg;                // tag entries of the current playthrough's section (valid while g_ptActive)
 bool g_ptActive = false;
 uint32_t g_guid = 0;           // playthrough GUID of the current game (0 = none); set by the save/load hooks and ptApply
-uint64_t g_cfgStamp = ~0ULL;   // forces the first read
-DWORD g_cfgLast = 0, g_tableLast = 0;
-bool g_cfgChecked = false, g_tableChecked = false;
-
-uint64_t fileStamp(const char* path) {   // 0 = missing
-    WIN32_FILE_ATTRIBUTE_DATA d;
-    if (!GetFileAttributesExA(path, GetFileExInfoStandard, &d)) return 0;
-    return (static_cast<uint64_t>(d.ftLastWriteTime.dwHighDateTime) << 32 | d.ftLastWriteTime.dwLowDateTime) ^ d.nFileSizeLow;
-}
-
-// True when a file check is due: always on the first call and when forced, else at most once per ReloadThrottleMs.
-bool reloadDue(DWORD* last, bool* checked, bool force) {
-    DWORD now = GetTickCount();
-    if (*checked && !force && now - *last < ReloadThrottleMs) return false;
-    *last = now; *checked = true;
-    return true;
-}
+filewatch::ReloadPoll g_cfgPoll;
+filewatch::ReloadPoll g_tablePoll;
 
 char* trim(char* s) {
     while (*s == ' ' || *s == '\t') ++s;
@@ -255,10 +241,8 @@ int cfgEntry(Config& c, const char* tag, bool create = true) {
 }
 
 void reloadConfig(bool force = false) {
-    if (!reloadDue(&g_cfgLast, &g_cfgChecked, force)) return;
-    uint64_t st = fileStamp("levelup_override.ini");
-    if (st == g_cfgStamp) return;
-    g_cfgStamp = st;
+    filewatch::Stamp st;
+    if (!filewatch::changed(g_cfgPoll, "levelup_override.ini", GetTickCount(), force, &st)) return;
     Config c;
     char legacy[MaxTagCfg][32]; int nLegacy = 0;
     bool hasInstant[MaxTagCfg] = {}, hasHold[MaxTagCfg] = {};
@@ -336,7 +320,7 @@ void reloadConfig(bool force = false) {
     resolvePresets();
     Buf b;
     for (int i = 0; i < c.nTags; ++i) b.add("%s%s:%s/i%d/h%d/p%d", i ? "," : "", c.tags[i].tag, c.presetId[i][0] ? c.presetId[i] : "-", c.tags[i].instant, c.tags[i].hold, c.tags[i].pause);
-    logLine("CONFIG %s mode=%s apply=%d verbose=%d table=%s tags=%s", st ? "loaded" : "missing (defaults)",
+    logLine("CONFIG %s mode=%s apply=%d verbose=%d table=%s tags=%s", st.exists ? "loaded" : "missing (defaults)",
             c.mode == Mode::Off ? "off" : c.mode == Mode::Rewrite ? "rewrite" : "log", c.apply, c.verbose, c.table, b.s);
     if (c.r10) logLine("R10 config r10=1 profile=%s feats=%s powers=%s", c.r10Profile[0] ? c.r10Profile : "-", r10f::modeName(c.r10Feats), r10f::modeName(c.r10Powers));
     if (c.dev) logLine("DEV keys enabled (dev=1): preset./instant./hold./pause.<tag>= and tags= are read");
@@ -377,7 +361,7 @@ int g_nPresets = 0;
 uint8_t g_cs[MaxClass][NumSkills];
 bool g_csHave[MaxClass];
 bool g_tableOk = false;
-uint64_t g_tableStamp = ~0ULL;
+filewatch::Stamp g_tableStamp;
 char g_tableErr[160] = "";
 int g_tableWarn = 0;
 char g_tableWarnIds[200] = "";
@@ -626,9 +610,8 @@ bad:
 }
 
 void reloadTable(bool force = false) {
-    if (!reloadDue(&g_tableLast, &g_tableChecked, force)) return;
-    uint64_t st = fileStamp(g_cfg.table);
-    if (st == g_tableStamp) return;
+    filewatch::Stamp st;
+    if (!filewatch::changed(g_tablePoll, g_cfg.table, GetTickCount(), force, &st)) return;
     g_tableStamp = st;
     g_tableOk = parseTable(g_cfg.table);
     resolvePresets();
@@ -1368,9 +1351,8 @@ const char* const PtName = "levelup_playthroughs.ini";
 const char* const PtTmp = "levelup_playthroughs.ini.tmp";
 pt::Doc g_ptDoc;
 char g_ptText[pt::MaxText];
-uint64_t g_ptStamp = ~0ULL;
-DWORD g_ptLast = 0;
-bool g_ptChecked = false;
+filewatch::ReloadPoll g_ptPoll;
+filewatch::Stamp g_ptStamp;
 size_t g_ptLen = 0;           // bytes of the file text held in g_ptText after the last reloadPlay
 bool g_ptBig = false;         // the file did not fit g_ptText (g_ptText holds only its beginning)
 int g_srcLast = -1;           // last logged config source: 1 dev, 2 playthrough
@@ -1406,15 +1388,22 @@ void rebuildPtCfg() {
 
 // Re-reads levelup_playthroughs.ini when its stamp changed (throttled like the other configs); force = re-read now regardless.
 void reloadPlay(bool force = false) {
-    if (!reloadDue(&g_ptLast, &g_ptChecked, force)) return;
-    const uint64_t st = fileStamp(PtName);
-    if (st == g_ptStamp && !force) return;
-    const bool changed = st != g_ptStamp;
+    filewatch::Stamp st;
+    if (!force) {
+        if (!filewatch::changed(g_ptPoll, PtName, GetTickCount(), false, &st)) return;
+    } else {
+        st = filewatch::stamp(PtName);
+        g_ptPoll.checked = true;
+        g_ptPoll.lastCheck = GetTickCount();
+    }
+    const bool changed = !g_ptPoll.primed || (st != g_ptPoll.last);
+    g_ptPoll.last = st;
+    g_ptPoll.primed = true;
     g_ptStamp = st;
     size_t len = 0;
     bool big = false;
     g_ptLen = 0; g_ptBig = false;
-    if (st) {
+    if (st.exists) {
         if (FILE* f = fopen(PtName, "rb")) {
             len = fread(g_ptText, 1, sizeof g_ptText - 1, f);
             big = !feof(f);
@@ -1424,11 +1413,13 @@ void reloadPlay(bool force = false) {
     g_ptLen = len; g_ptBig = big;
     pt::parse(g_ptDoc, g_ptText, len);
     if (big) g_ptDoc.lossy = true;
-    if (changed) logLine("PLAYTHROUGH %s: %d section(s)%s", st ? "loaded" : "missing", g_ptDoc.n - 1, g_ptDoc.lossy ? " LOSSY (caps exceeded, writes disabled)" : "");
+    if (changed) logLine("PLAYTHROUGH %s: %d section(s)%s", st.exists ? "loaded" : "missing", g_ptDoc.n - 1, g_ptDoc.lossy ? " LOSSY (caps exceeded, writes disabled)" : "");
     rebuildPtCfg();
 }
 
 // Writes n bytes of g_ptText to levelup_playthroughs.ini.tmp and replaces the ini.
+// Note: retains MOVEFILE_WRITE_THROUGH (flush to disk before rename returns) per LevelUpOverride save safety.
+// Propose additive writeThrough parameter to filewatch::atomicWrite for Common owner adoption in Chunk C9.
 bool ptWriteText(size_t n) {
     FILE* f = fopen(PtTmp, "wb");
     if (!f) return false;
@@ -2157,7 +2148,7 @@ void r10Close() {
 constexpr int PnF_Vec = 0x1BC0, PnP_Vec = 0x1BD4;
 r10f::TagTable g_r10Tags;
 bool g_r10TagsOk = false;
-uint64_t g_r10TagsStamp = ~0ULL;
+filewatch::Stamp g_r10TagsStamp;
 char g_r10TagsPath[MAX_PATH] = "";
 char g_r10TagsBuf[65536];
 
@@ -2169,12 +2160,13 @@ bool r10TagsReady() {
     if (char* s2 = strrchr(path, '/')) if (!slash || s2 > slash) slash = s2;
     if (slash) slash[1] = 0; else path[0] = 0;
     strncat(path, "r10_tags.ini", sizeof path - strlen(path) - 1);
-    const uint64_t st = fileStamp(path);
+    const filewatch::Stamp st = filewatch::stamp(path);
     if (st == g_r10TagsStamp && !strcmp(path, g_r10TagsPath)) return g_r10TagsOk;
     g_r10TagsStamp = st;
     snprintf(g_r10TagsPath, sizeof g_r10TagsPath, "%s", path);
     g_r10TagsOk = false;
     g_r10Tags.clear();
+    if (!st.exists) { logLine("R10 tags error line=0 cannot open %s", path); return false; }
     FILE* f = fopen(path, "rb");
     if (!f) { logLine("R10 tags error line=0 cannot open %s", path); return false; }
     const size_t len = fread(g_r10TagsBuf, 1, sizeof g_r10TagsBuf - 1, f);

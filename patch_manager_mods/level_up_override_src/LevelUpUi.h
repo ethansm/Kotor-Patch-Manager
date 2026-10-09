@@ -114,7 +114,7 @@ struct UiPanel {
     char pageTag[32] = {};
     bool pcPage = false;         // the open page is the PC's R10 filter page (r10 below), not a companion options page
     r10p::State r10 = {};
-    uint64_t pageTable = 0;
+    filewatch::Stamp pageTable;
     wiz::Item items[wiz::MaxItems] = {};
     int itemPreset[wiz::MaxItems] = {};
     int nItems = 0, recItem = -1;
