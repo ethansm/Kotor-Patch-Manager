@@ -131,6 +131,7 @@ unsigned g_cfgGen = 0;
 ULONGLONG g_iniStamp = 0; DWORD g_iniLastCheck = 0;
 
 using eq3d::trim;
+void syncScreen();
 void syncWheelCfg() { guikit::g_wheel.enabled = g_cfg.wheelZoom != 0; guikit::g_wheel.iniW = (int)g_cfg.screenW; guikit::g_wheel.iniH = (int)g_cfg.screenH; }   // after every loadIni and each tick
 void loadIni() {
     Cfg c;
@@ -140,7 +141,7 @@ void loadIni() {
         g_iniStamp = ((ULONGLONG)fa.ftLastWriteTime.dwHighDateTime << 32) | fa.ftLastWriteTime.dwLowDateTime;
     else g_iniStamp = 0;
     FILE* f = fopen("equip3d.ini", "r");
-    if (!f) { logf("INI: equip3d.ini not found, using defaults (stage=%d debug=%d)", c.stage, g_debug); g_cfg = c; ++g_cfgGen; syncWheelCfg(); return; }
+    if (!f) { logf("INI: equip3d.ini not found, using defaults (stage=%d debug=%d)", c.stage, g_debug); g_cfg = c; ++g_cfgGen; syncWheelCfg(); syncScreen(); return; }
     char line[600]; int ln = 0, ok = 0, bad = 0;
     while (fgets(line, sizeof(line), f)) {
         ++ln;
@@ -161,6 +162,7 @@ void loadIni() {
     if (clamped & eq3d::ClampFov) logf("INI fov_deg out of range, reset 22.726");
     if (clamped & eq3d::ClampWheelStep) logf("INI wheel_step out of range, reset 0.9");
     g_cfg = c; ++g_cfgGen; syncWheelCfg();
+    syncScreen();
     logf("INI loaded: %d keys ok, %d rejected, debug=%d gen=%u enabled=%d stage=%d rig=%s", ok, bad, g_debug, g_cfgGen, c.enabled, c.stage, c.rig);
 }
 void maybeReloadIni() {
@@ -591,9 +593,12 @@ const FlLen* animTable(int row, int* n) {
     *n = (int)(sizeof(kHumanoid) / sizeof(kHumanoid[0])); return kHumanoid;
 }
 bool animLen(Slot* s, const char* name, float* len) {
-    int n; const FlLen* t = animTable(appRow(s), &n);
-    for (int i = 0; i < n; ++i) if (!strcmp(t[i].name, name)) { *len = t[i].len; return true; }
-    return false;
+    int n = 0; const FlLen* t = animTable(appRow(s), &n);
+    if (t) {
+        for (int i = 0; i < n; ++i) if (!strcmp(t[i].name, name)) { *len = t[i].len; return true; }
+    }
+    *len = 2.0f; // Safe 2.0s fallback for unmapped supermodels/animations
+    return true;
 }
 const char* labelFor(const char* n) {
     static const char* const m[][2] = {{"pausesh","Pause"},{"scanning","Scan"},{"salute","Salute"},{"victory","Victory"},{"bow","Bow"},{"greeting","Greet"},
@@ -703,6 +708,9 @@ bool buildPreview(Slot* s, int real, const char* why) {
     detachHelmet(s, "before rebuild");    // likewise the helmet on the old head Gob
     s->helmApplied = false;               // a failed rebuild below leaves the old head: the tick toggle block re-attaches to it
     s->stanceOn = false; s->wpnApplied = false;
+    if (s->creature && s->real != real) {
+        destroyCreature(s, "character change");
+    }
     if (!allocCreature(s)) return false;
     unsigned char copy[AppCopyBytes]; short al = 0;
     if (!readApp(real, copy, &al)) { logf("build: real %08x appearance unreadable", real); return false; }
