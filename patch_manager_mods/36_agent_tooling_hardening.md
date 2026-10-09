@@ -319,4 +319,84 @@ This plan specifies the implementation for hardening scripts, test runners, and 
 | H9 | End-to-end atomic deployment pipeline (`scripts/kpm_ship.py`) | `scripts/kpm_ship.py` | READY | Implement unified single-command shipping runner |
 | H10 | Safe automated hook reinstaller (`scripts/kpm_reinstall.py`) | `scripts/kpm_reinstall.py` | READY | Build KPatchLauncher wrapper with peer DLL preservation |
 
+---
+
+## 4. Cross-Phase Overlap & Dependency Analysis
+
+```
+  H1 (Recursive Discovery) ──► H4 (Canonical Folders)
+          │                               │
+          ▼                               ▼
+  H2 (Decoupled --prepare) ──► H6 (--commit-kpm) ──► H9 (kpm_ship.py)
+          ▲                                                 ▲
+          │                                                 │
+  H3 (Scratch Gate) ────────────────────────────────────────┤
+                                                            │
+  H7 (kpm_commit.py) ───────────────────────────────────────┘
+                                                            │
+  H10 (kpm_reinstall.py) ◄── [REINSTALL Verdict Handoff] ───┘
+```
+
+1. **H2 vs H6 vs H9 Pipeline Coupling**:
+   - `H9` (`kpm_ship.py`) directly invokes `H7` (commit) -> `H3` (gate) -> `H6` (mirror + commit) -> apply.
+   - **Critical Contract**: `H6` depends on `H2`. If `H2` is not implemented first, `kpm_hotswap.py --prepare --commit-kpm` will exit with code 1 on any mod whose hooks modified (`REINSTALL`), causing `kpm_ship.py` to abort before committing KPM changes.
+2. **H4 vs H6 Untracked Directory Staging**:
+   - When `H4` auto-creates a new PascalCase directory in `$KPM/Patches/` (e.g. `Patches/GuiInput`), all mirrored files are initially untracked in KPM git.
+   - `H6` (`git_pending()`) must execute `git add -- <untracked>` for new directories before committing; otherwise git will ignore untracked files and commit nothing.
+3. **H5 Directives vs H7/H9 Tooling Automation**:
+   - `H5` establishes prompt-level rules in `AGENTS.md` ("Verify After Fix").
+   - `H7` and `H9` translate these instructions into deterministic code paths. If an agent runs `kpm_ship.py`, compliance with `H5` is guaranteed automatically.
+
+---
+
+## 5. Critical Edge Cases & Architectural Safeguards
+
+1. **Mixed Batch Partitioning in `kpm_ship.py` (H9)**:
+   - A multi-batch run often includes mixed mod types:
+     - Pure DLL modifications (`SWAP` -> hot-swappable).
+     - Provider libraries (`NOT-LIVE` -> e.g. `gui-input`, `save-events` not in `patch_config.toml`).
+     - Hook structure changes (`REINSTALL` -> e.g. `action-hotbar`, `queue-hud`).
+   - **Safeguard**: `kpm_ship.py` must never treat `NOT-LIVE` or `REINSTALL` as fatal errors during `--prepare`. It must mirror and build all targets, apply only `SWAP` targets, and print an explicit handoff notice:
+     `"Target mods [X, Y] require full hook reinstallation. Run: python3 scripts/kpm_reinstall.py --mod X --mod Y"`
+2. **Topological Commit Ordering in `kpm_commit.py` (H7)**:
+   - If `_shared_src` (e.g. `GuiInput.h`, `SaveEvents.h`) is dirty alongside consumer patches (`action_hotbar_src`), committing consumer patches first breaks git bisectability.
+   - **Safeguard**: `kpm_commit.py` must sort commits topologically:
+     1. `patch_manager_mods/_shared_src/`
+     2. Provider libraries (`gui_input_src/`, `save_events_src/`)
+     3. Consumer patches (`action_hotbar_src/`, `combat_hotbar_src/`, etc.)
+     If `_shared_src` is dirty, `kpm_commit.py` must also run `python3 scripts/compat_check.py` before committing.
+3. **Peer DLL & `patch_config.toml` Preservation in `kpm_reinstall.py` (H10)**:
+   - `KPatchLauncher` uninstalls all patches and rewrites `patch_config.toml`, which reverts peer DLLs that were hot-swapped without a repo kpatch.
+   - **Safeguard**: `kpm_reinstall.py` must snapshot both `$G/patches/` and `$G/patch_config.toml`. After `KPatchLauncher` completes, it must restore any overwritten peer DLLs and merge any custom configuration sections before verifying with `kpm_status.py`.
+4. **Dynamic CRT Runtime Dependencies in MinGW Smokes (H8)**:
+   - Smokes compiled dynamically with MinGW (e.g. `smoke_perflab2.cpp`) require `libstdc++-6.dll`, `libgcc_s_dw2-1.dll`, and `libwinpthread-1.dll` in the execution directory under Wine, or Wine exits with code 53 silently.
+   - **Safeguard**: `run_tests.py` smoke runner must copy or symlink these 3 runtime DLLs into the scratch test directory alongside the test executable.
+5. **Stale Raw Address Cleanup in `tests/static/raw_addresses.toml`**:
+   - When engine addresses migrate to symbolic constants in `GameAddr.h`, existing allowlist entries produce warnings (`WARN raw-address: stale allowlist entry`).
+   - **Safeguard**: Add `--prune` flag to `scripts/check_raw_addresses.py` so agents can prune obsolete allowlist entries cleanly without manual regex editing.
+6. **Shallow Mirroring & Asset Pool Omission (`is_production()` & `mirror()`)**:
+   - `kpm_status.py`'s `CODE_EXT` (`.cpp`, `.h`, `.inc`, `.def`) omits `.ini`, `.toml` (e.g. `code_patches.toml`), and asset files (`.tpc`, `.mdl`, `.mdx`, `.2da`, `.tga` in `override/`).
+   - `kpm_hotswap.py`'s `mirror()` performs a shallow `src.iterdir()`, ignoring nested asset trees (such as `npc_diversity_src/override/`).
+   - **Safeguard**: Expand `is_production()` to include `.ini`, `.toml`, `.tpc`, `.mdl`, `.mdx`, `.2da`, `.tga`, and make `mirror()` recursively copy nested production asset folders while skipping test harnesses.
+7. **Cross-Worktree Concurrency Lock on Shared `$KPM` Repo**:
+   - Multiple git worktrees share a single KPM checkout (`~/Games/.../kotor-patch-manager`). Concurrent agents running `--prepare` can clobber uncommitted mirror states.
+   - **Safeguard**: `kpm_hotswap.py --prepare` and `kpm_ship.py` must acquire a lock via `scripts/master_ledger.py` (`LOCK_ACQUIRE` for `kpm_repo`), check for collision, and release on exit.
+8. **Headless Git Commit Hangs (GPG Pinentry Guard)**:
+   - If user git configuration enables `commit.gpgsign = true`, `git commit` invocations inside subagents or background tasks will hang indefinitely waiting for pinentry.
+   - **Safeguard**: `kpm_hotswap.py --commit-kpm` and `kpm_commit.py` must detect non-interactive environments and add `--no-gpg-sign` to prevent deadlocking.
+
+---
+
+## 6. Required Additional Test Suites
+
+| Test Suite | Target | Verifies |
+|---|---|---|
+| `scripts/test_kpm_status.py` | `kpm_status.py` (H1, H4) | Recursive manifest discovery (`perf_lab_src/perflab`), case collision detection (`SaveEvents` vs `save-events`). |
+| `scripts/test_kpm_hotswap.py` | `kpm_hotswap.py` (H1, H2, H4, H6) | Stderr fuzzy suggestions, exit code 0 on `REINSTALL` in `--prepare`, `--commit-kpm` staging of untracked dirs. |
+| `scripts/test_kpm_commit.py` | `kpm_commit.py` (H7) | Production vs non-production file filtering, topological commit order, unit test abort on failure. |
+| `scripts/test_kpm_ship.py` | `kpm_ship.py` (H9) | End-to-end orchestration, dry-run mode, mixed-batch partitioning (`SWAP` vs `REINSTALL` vs `NOT-LIVE`), running-game abort. |
+| `scripts/test_kpm_reinstall.py` | `kpm_reinstall.py` (H10) | Snapshot creation, mock `KPatchLauncher` execution, peer DLL restoration, and atomic rollback on failure. |
+| `scripts/test_pre_install_gate.py` | `pre_install_gate.py` (H3) | Decoupled Step 1 default tier, Step 3 scratch `.kpatch` export verification with new detour functions. |
+
+
 
