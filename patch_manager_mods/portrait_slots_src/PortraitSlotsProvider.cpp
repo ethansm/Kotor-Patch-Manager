@@ -17,6 +17,7 @@
 #include <stddef.h>
 
 #include "kpatch_api.h"
+#include "KpLog.h"
 #include "SafeRead.h"
 #include "K2Addr.h"
 #include "Effects.h"
@@ -24,6 +25,8 @@
 #include "Party.h"
 #include "PortraitSlots.h"
 #include "PsDispatch.h"
+
+KP_LOG_PATCH("portrait-slots");
 
 namespace {
 
@@ -47,17 +50,17 @@ psd::Dispatcher g_disp;
 uint32_t g_frame = 0;
 
 // ---- kpatch.log -----------------------------------------------------------------------------------------------------------------
-const KPatchLogApi* g_log = nullptr;
-int32_t g_logCh = -1;
+KP_CHANNEL(chCore, "core");
+const bool g_fallbackSet = (KpLog_SetFallbackFile("portrait-slots_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
+
 void logf(int level, const char* fmt, ...) {
-    if (!g_log || g_logCh < 0 || !g_log->Enabled(g_logCh, level)) return;
     char buf[256];
     va_list ap; va_start(ap, fmt);
     int n = vsnprintf(buf, sizeof(buf), fmt, ap);
     va_end(ap);
     if (n < 0) return;
     if (n >= int(sizeof(buf))) n = int(sizeof(buf)) - 1;
-    g_log->Submit(g_logCh, level, buf, uint32_t(n));
+    KP_LOGV(chCore, level, "%s", buf);
 }
 
 // One WARN per DLL session for the first feature that finds the address table unusable (never from KPatchInit).
@@ -131,14 +134,7 @@ extern "C" {
 void __cdecl KPatchInit(const KPatchApi* api) {
     if (!api || api->struct_size < offsetof(KPatchApi, require) + sizeof(api->require) || !api->provide) return;
     api->provide(K2PS_IFACE, K2PS_VERSION, &g_api);
-    if (api->require) {
-        const KPatchLogApi* lg = static_cast<const KPatchLogApi*>(api->require(KPATCH_LOG_IFACE, KPATCH_LOG_VERSION));
-        if (lg && lg->struct_size >= offsetof(KPatchLogApi, Submit) + sizeof(lg->Submit) && lg->Register && lg->Channel && lg->Enabled) {
-            int32_t p = lg->Register("portrait-slots");
-            g_logCh = p >= 0 ? lg->Channel(p, "core") : -1;
-            g_log = lg;
-        }
-    }
+    KpLog_Init(api);
     logf(KPLOG_INFO, "provided %s v%d", K2PS_IFACE, K2PS_VERSION);
 }
 
