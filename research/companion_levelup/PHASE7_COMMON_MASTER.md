@@ -13,7 +13,7 @@ plan it in detail, execute with Sonnet agents, commit, then tick its row below. 
 | C3 | Include style + parity stub alignment | DONE | d8438c6 |
 | C4 | Engine addresses -> GameAddr.h (+ proposal) | DONE | 7159269 |
 | C5 | Party.h adoption | DONE | 39144b7 |
-| C6 | FileWatch.h adoption | TODO | |
+| C6 | FileWatch.h adoption | DONE | 0fd1151 |
 | C7 | KpLog migration (C7a design / C7b code) | TODO | |
 | C8 | Library DLL interfaces: consumer requirements (design only) | TODO | |
 | C9 | Offers to Common owners (notes only) | TODO | |
