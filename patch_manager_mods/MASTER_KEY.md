@@ -19,6 +19,7 @@ When looking at batches in master plans (e.g. `T5d`, `S1a`, `C1`, `R10`), the le
 | **R** | **Research & Probes** | Live-game diagnostic probes, Ghidra decompilation, atlas analysis | `R10`: PC level-up filter research |
 | **P** | **Parity Verification** | Byte-exact or behavioral parity comparison against vanilla exe | `P0`: Companion level-up baseline |
 | **U** | **Unit / Compatibility** | Dependency graphs, contract testing, and tool units | `U1`: Graph builder `compat_graph.py` |
+| **H** | **Harness & Tooling** | Agent harness, gate hardening, auto-committers, atomic KPM pipeline | `H6`: `kpm_hotswap --commit-kpm` |
 
 ---
 
@@ -53,6 +54,9 @@ Our numbered markdown documents in `patch_manager_mods/` map directly to specifi
 | **31** | `combat_action_hotbar` | Dedicated 1-click combat action hotbar |
 | **32** | `common_migration_round2` | Common migration round 2 |
 | **33** | `ui_queue_hotbar_fixes` | **Active Master Plan**: UI, queue, hotbar polish & movement fixes |
+| **34** | `npc_diversity_dispatcher` | Master NPC Diversity Dispatcher (.kpatch Architecture & Asset Pool) |
+| **35** | `clef_systemone_matcher_and_ledger` | Master Audit Ledger & Clef-Flash System-1 Subagent Router |
+| **36** | `agent_tooling_hardening` | **Active Tooling Plan**: Agent harness, gate hardening & atomic KPM pipeline |
 
 
 ---

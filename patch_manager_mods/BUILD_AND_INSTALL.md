@@ -61,6 +61,7 @@ KPATCH_NO_LAUNCH=1 "$K/bin/NoLaunch/KPatchLauncher" "$G/swkotor2.exe" --patches 
 ```
 
 Risks: it uninstalls and reinstalls every patch, so it reverts peer DLLs that were hot-swapped but not committed to a kpatch, and it rewrites the hand-edited `patch_config.toml`. Pass every live id, not only the changed one. Take a backup of the DLLs, `patch_config.toml` and `kpm_install_state.json` first (a manual `$G/backups/<tag>_full_<ts>/`), and run `kpm_status.py` afterwards.
+Automated alternative (doc 36 Phase H10): `python3 scripts/kpm_reinstall.py --mod <id>` automates this workflow while preserving peer DLLs.
 
 ## 5. Step-by-step flow (hot-swap)
 
@@ -68,17 +69,33 @@ Prepare:
 
 1. `python3 scripts/kpm_status.py`. Note the verdict per id you want to ship.
 2. Commit the repo mod with explicit paths: `git commit -m "<msg>" -- patch_manager_mods/<x>_src/<files>`. DIRTY must clear.
-3. `scripts/pre_install_gate.sh --mod <x>_src [--mod <y>_src ...]`. Wait for `GATE PASS`.
-4. Dry run: `python3 scripts/kpm_hotswap.py --mod <id> [<id> ...]`. It prints the verdict and the needed action per mod.
-5. `python3 scripts/kpm_hotswap.py --mod <id> [<id> ...] --prepare`. It mirrors production files, backs up the old kpatch as `<name>.kpatch.<tag>_pre.bak`, runs create-patch.py, and prints the commit commands.
+3. Pre-mirror build check: `scripts/pre_install_gate.sh --skip-default --mod <x>_src [--mod <y>_src ...]`. Verifies fresh compilation and unit tests without tripping on stale KPM kpatch exports.
+4. `python3 scripts/kpm_hotswap.py --mod <id> [<id> ...] --prepare`. Mirrors production files, auto-creates canonical KPM folders, backs up old kpatches, and rebuilds. If hooks changed, its post-prepare verdict is `REINSTALL` (requires launcher reinstall); pure DLL changes become `SWAP`.
+5. Commit KPM with explicit paths: `git -C "$K" commit -m "<msg>" -- Patches/<X>/<files>` (use the exact commit command that `--prepare` printed; kpatch and `.bak` files are not committed).
+
+Gate & Verify:
+
+1. **Verify After Fix Gate (MANDATORY)**: `scripts/pre_install_gate.sh --mod <x>_src [--mod <y>_src ...]`. MUST report `GATE PASS` across all suites (including check-exports and Wine smokes) against the freshly prepared kpatches before proceeding. Never dismiss a failure as "pre-existing" or "expected" without explicit waiver.
+2. `python3 scripts/kpm_status.py`. Each id targeted for hot-swap must read `SWAP`.
 
 Install:
 
-1. Commit KPM with explicit paths: `git -C "$K" commit -m "<msg>" -- Patches/<X>/<files>` (use the exact commit command that `--prepare` printed; kpatch and `.bak` files are not committed).
-2. `python3 scripts/kpm_status.py`. Each id must read `SWAP`.
-3. Ask the user for GO. The game must be closed (`game_running=no`).
-4. `python3 scripts/kpm_hotswap.py --mod <id> [<id> ...] --apply`. It refuses unless every verdict allows the swap, writes one backup dir, swaps atomically (a failure restores the DLLs already swapped), and prints the old and new md5 per mod and the rollback command. MIRROR/REBUILD mods are not swapped by `--apply` alone; run `--prepare` first (it can be combined: `--mod ... --prepare --apply`).
-5. `python3 scripts/kpm_status.py`. Each id must read `LIVE`, and `patch_config.toml` is unchanged.
+1. Ask the user for GO. The game must be closed (`game_running=no`).
+2. `python3 scripts/kpm_hotswap.py --mod <id> [<id> ...] --apply`. It refuses unless every verdict allows the swap, writes one backup dir, swaps atomically (a failure restores the DLLs already swapped), and prints the old and new md5 per mod and the rollback command.
+3. `python3 scripts/kpm_status.py`. Each swapped id must read `LIVE`, and `patch_config.toml` is unchanged.
+
+## 5b. Automated single-command flow (`scripts/kpm_ship.py` — doc 36 Phase H9)
+
+To eliminate the 7-step manual dance and nondeterministic agent round-trips:
+```bash
+python3 scripts/kpm_ship.py [--mod <id> ...] [--apply]
+```
+Orchestrates deterministically:
+1. Production dirty auto-committer (`kpm_commit.py` — Phase H7) with scoped unit tests.
+2. Pre-install gate (`pre_install_gate.sh`) across all target mods.
+3. Mirror and KPM auto-commit (`kpm_hotswap.py --prepare --commit-kpm` — Phase H6).
+4. Atomic hot-swap (`--apply`) with rollback snapshot if game is closed.
+
 
 Verify: section 7.
 
