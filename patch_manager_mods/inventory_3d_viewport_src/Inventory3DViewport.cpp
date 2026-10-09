@@ -24,6 +24,7 @@
 #include "SafeRead.h"   // VirtualQuery probing: the Win32 bad-pointer probes fault-storm under Wine (DB lesson 234)
 #include "SceneView.h"  // CSWGui3DSceneView block, scene models, Gob vtable guard (doc 23)
 #include "Inv3dQuat.h"
+#include "GuiInput.h"
 #include "GuiKit.h"      // Common: screen sync, float cursor, wheel subclass (kp::WindowHook inside), bindByTag
 #include "PanelSlots.h"  // Common: panel -> slot table
 #include "Inv3dLogic.h"   // pure logic (INI parse/clamp, fit, cursor math): host-tested by inv3d_logic_test.cpp (doc 20 T1)
@@ -64,6 +65,14 @@ void logf(const char* fmt, ...) {
     ++g_logLines;
     char buf[600]; va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
     KP_LOGV(chMain, KPLOG_INFO, "%s", buf);
+}
+void logw(const char* fmt, ...) {
+    char buf[600]; va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
+    KP_LOGV(chMain, KPLOG_WARN, "%s", buf);
+}
+void loge(const char* fmt, ...) {
+    char buf[600]; va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
+    KP_LOGV(chMain, KPLOG_ERR, "%s", buf);
 }
 int g_dbgLines = 0;
 constexpr int MaxDebugLines = 6000;
@@ -379,8 +388,8 @@ void tickDrag(Slot* s, float dt) {
 void bindCover(int panel, const char* tagName, int expectId) {
     guikit::BindInfo bi;
     guikit::bindByTag(static_cast<uintptr_t>(static_cast<unsigned>(panel)), tagName, expectId, 0, &bi);
-    if (bi.why == guikit::CF_Alloc) { logf("H1 cover %s: allocation failed", tagName); return; }
-    if (bi.why == guikit::CF_Vtable) { logf("H1 cover %s: ctor left vtable %08x (expected %08x), not binding", tagName, bi.badVtable, (unsigned)gameaddr::LabelVtable); return; }
+    if (bi.why == guikit::CF_Alloc) { logw("H1 cover %s: allocation failed", tagName); return; }
+    if (bi.why == guikit::CF_Vtable) { logw("H1 cover %s: ctor left vtable %08x (expected %08x), not binding", tagName, bi.badVtable, (unsigned)gameaddr::LabelVtable); return; }
     logf("H1 cover %s: ctl=%p id=%d (expect %d) extent=[%d,%d,%d,%d] flags=%08x -> %08x", tagName, (void*)bi.ctl, bi.id, expectId, bi.ext[0], bi.ext[1], bi.ext[2], bi.ext[3], bi.flagsBefore, bi.flagsAfter);
 }
 
@@ -395,7 +404,11 @@ void ensureInit() {
 
 } // namespace
 
-extern "C" void __cdecl KPatchInit(const KPatchApi* api) { KpLog_Init(api); ensureInit(); }
+extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
+    KpLog_Init(api);
+    guikit::initGuiInput(api, "inventory-3d-viewport");
+    ensureInit();
+}
 
 extern "C" void __cdecl BindInventoryView(int panel) {
     ensureInit();
@@ -408,7 +421,7 @@ extern "C" void __cdecl BindInventoryView(int panel) {
 
     // alloc 0x400 + CSWGuiControl ctor + scene-view vtable + scene ctor + InitControl("3D_MODEL", addToList=1, scale=1)
     unsigned char* block = sceneview::createView(static_cast<uintptr_t>(static_cast<unsigned>(panel)), "3D_MODEL");
-    if (!block) { logf("H1: operator new failed"); return; }
+    if (!block) { loge("H1: operator new failed"); return; }
     unsigned char* view = block;
 
     int id = -999, newCount = -1; int ext[4] = {0};
@@ -423,13 +436,13 @@ extern "C" void __cdecl BindInventoryView(int panel) {
     memset(s, 0, sizeof(*s));   // PanelSlots keeps its key/seq/used bookkeeping outside Slot
     s->panel = panel; s->block = block; s->seq = g_seq; s->bindTick = GetTickCount();
 
-    if (id != ExpectedControlId) { logf("H1: GUI control missing (id=%d), slot unusable", id); return; }
-    if (!gate) { logf("H1: gate global 009f42b4 is zero, slot unusable"); return; }
+    if (id != ExpectedControlId) { logw("H1: GUI control missing (id=%d), slot unusable", id); return; }
+    if (!gate) { logw("H1: gate global 009f42b4 is zero, slot unusable"); return; }
 
     uintptr_t scene = 0;
     int sf = sceneview::initScene(view, "gui3D_room", &scene);
-    if (sf == sceneview::SF_VtableBad) { logf("H1: scene vtable bad, slot unusable"); return; }
-    if (sf != sceneview::SF_None) { logf("H1: scene pointer bad (%08x), slot unusable", (unsigned)scene); return; }
+    if (sf == sceneview::SF_VtableBad) { logw("H1: scene vtable bad, slot unusable"); return; }
+    if (sf != sceneview::SF_None) { logw("H1: scene pointer bad (%08x), slot unusable", (unsigned)scene); return; }
     logf("H1: scene %08x initialised (gui3D_room)", (unsigned)scene);
 
     const char* rig = g_cfg.enabled ? g_cfg.rig : "upgitem_light";
@@ -439,9 +452,9 @@ extern "C" void __cdecl BindInventoryView(int panel) {
         n = modelCount(view);
         logf("H1: rig '%s' model=%p, scene model count=%d", rig, light, n);
         if (light && n >= 1) break;
-        if (attempt == 0 && strcmp(rig, "upgitem_light")) { logf("H1: rig '%s' failed, falling back to upgitem_light", rig); rig = "upgitem_light"; s->rigFallback = true; }
+        if (attempt == 0 && strcmp(rig, "upgitem_light")) { logw("H1: rig '%s' failed, falling back to upgitem_light", rig); rig = "upgitem_light"; s->rigFallback = true; }
     }
-    if (!light || n < 1) { logf("H1: light model missing, slot unusable"); return; }
+    if (!light || n < 1) { logw("H1: light model missing, slot unusable"); return; }
     uint32_t cam = 0, camv = 0; sceneview::camera(view, &cam, &camv);
     logf("H1: camera=%08x vtable=%08x (expect %08x)", cam, camv, ExpectedCamVtable);
     if (g_cfg.bevels) { bindCover(panel, "LBL_BEVEL", ExpectedControlId + 1); bindCover(panel, "LBL_BEVEL2", ExpectedControlId + 2); }
@@ -455,16 +468,16 @@ extern "C" void __cdecl ShowItem(int item, int panel) {
     static int repeatLogs = 0, detailLogs = 0;
     Slot* s = findSlot(panel);
     if (!s) { logf("H2: no slot for panel=%08x", panel); return; }
-    if (!s->usable) { logf("H2: slot unusable (panel=%08x)", panel); return; }
+    if (!s->usable) { logw("H2: slot unusable (panel=%08x)", panel); return; }
     if (!item) { logf("H2: null item"); return; }
     unsigned char* view = s->block;
 
     int id = -1; unsigned char v0 = 0, v1 = 0;
     if (!readAt<int>(item, 0xc, &id) || !readAt<unsigned char>(item, ItemVarOff, &v0) || !readAt<unsigned char>(item, ItemVarOff + 2, &v1)) {
-        logf("H2: item %08x unreadable", item); return;
+        logw("H2: item %08x unreadable", item); return;
     }
     int var = v0 | (v1 << 8);
-    if (id < 0 || id >= kItemRows) { logf("H2: base item id %d out of range", id); return; }
+    if (id < 0 || id >= kItemRows) { logw("H2: base item id %d out of range", id); return; }
     int cat = kItemCategory[id];
     if ((g_cfg.onlyWeaponsArmor) && !kIsWeaponOrArmor[id]) cat = 0;
     if (item == s->lastItem && id == s->lastBase && var == s->lastVar) {
@@ -479,7 +492,7 @@ extern "C" void __cdecl ShowItem(int item, int panel) {
         logf("H2: item %08x base=%d var=%04x cat=0 (no preview), models %d -> %d", item, id, var, n, modelCount(view));
         return;
     }
-    if (n < 1) { logf("H2: light model gone (count=%d), slot unusable", n); s->usable = false; return; }
+    if (n < 1) { logw("H2: light model gone (count=%d), slot unusable", n); s->usable = false; return; }
 
     // Design 4: missing/EMPTY variation -> substitute var 1 (item bytes restored on every path)
     int effVar = v0; bool substituted = false;

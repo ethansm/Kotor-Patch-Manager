@@ -5,7 +5,8 @@ version = "0.3.0-dev"
 author = "local"
 description = "Shows a live 3D model of the inventory item under the cursor in the ultrawide margin of the inventory screen."
 
-requires = []
+requires = ["gui-input"]
+requires_interfaces = ["k2.guiinput@1"]
 conflicts = []
 
 [patch.supported_versions]
