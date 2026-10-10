@@ -9,6 +9,7 @@ Manages VRAM allocation across active AI modes:
 Usage:
   gpu-mode status
   gpu-mode kev
+  gpu-mode clef                (alias of kev)
   gpu-mode lms [model_identifier]
   gpu-mode game [--all]
 """
@@ -122,7 +123,7 @@ def cmd_kev() -> int:
 
     print("[gpu-mode] Warning: Service started but port 8101 not yet responding.", file=sys.stderr)
     cmd_status()
-    return 0
+    return 1
 
 
 def cmd_lms(model: str | None = None) -> int:
@@ -138,6 +139,8 @@ def cmd_lms(model: str | None = None) -> int:
     rc, out = run_cmd([lms_bin, "load", target_model], timeout=30.0)
     if rc != 0:
         print(f"[gpu-mode] Warning during lms load: {out}", file=sys.stderr)
+        cmd_status()
+        return 1
 
     cmd_status()
     return 0
@@ -147,9 +150,13 @@ def cmd_game(stop_all: bool = False) -> int:
     print("[gpu-mode] Preparing GPU for gaming...")
 
     lms_bin = shutil.which("lms") or os.path.expanduser("~/.lmstudio/bin/lms")
+    unload_ok = True
     if os.path.isfile(lms_bin):
         print("[gpu-mode] Unloading LM Studio models...")
-        run_cmd([lms_bin, "unload", "-a"])
+        unload_rc, unload_out = run_cmd([lms_bin, "unload", "-a"])
+        if unload_rc != 0:
+            print(f"[gpu-mode] Warning during lms unload: {unload_out}", file=sys.stderr)
+            unload_ok = False
 
     if stop_all:
         print(f"[gpu-mode] Stopping {KEV_SERVICE} for 100% clean VRAM...")
@@ -160,6 +167,9 @@ def cmd_game(stop_all: bool = False) -> int:
     time.sleep(0.5)
     used_mb, total_mb = get_gpu_memory_mb()
     free_mb = max(0, total_mb - used_mb)
+    if not unload_ok or total_mb == 0:
+        print("[gpu-mode] Error: VRAM not confirmed ready (unload failed or nvidia-smi unavailable).", file=sys.stderr)
+        return 1
     print(f"[gpu-mode] OK: VRAM ready. {free_mb} MiB VRAM free for KOTOR II / games.")
     return 0
 

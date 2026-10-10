@@ -38,8 +38,8 @@ KNOWN_MOD_ALIASES = {
     "hotbar": "combat_hotbar_src",
     "diversity": "npc_diversity_src",
     "letterbox": "dialogue_letterbox_fix_src",
-    "companion": "companion_ai_src",
     "selfheal": "companion_selfheal_src",
+    "companion": "companion_ai_src",
 }
 
 
@@ -157,8 +157,9 @@ def log_event(
     event: str,
     data: dict | None = None,
     ledger_path: str | Path | None = None,
+    strict: bool = False,
 ) -> dict:
-    """Append a structured event to master_ledger.jsonl. Never raises (logs error to stderr)."""
+    """Append a structured event to master_ledger.jsonl. Never raises unless strict=True (logs error to stderr)."""
     ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     record = {
         "ts": ts,
@@ -190,6 +191,8 @@ def log_event(
             f.flush()
     except Exception as e:
         sys.stderr.write(f"WARN [master_ledger]: Failed to write ledger event '{event}': {e}\n")
+        if strict:
+            raise
 
     return record
 
@@ -205,14 +208,16 @@ def read_events(ledger_path: str | Path | None = None) -> list[dict]:
             if not line:
                 continue
             try:
-                records.append(json.loads(line))
+                rec = json.loads(line)
             except json.JSONDecodeError:
                 continue
+            if isinstance(rec, dict):
+                records.append(rec)
     return records
 
 
 def format_event_line(rec: dict) -> str:
-    ts = rec.get("ts", "")[:19].replace("T", " ")
+    ts = (rec.get("ts") or "")[:19].replace("T", " ")
     event = rec.get("event", "UNKNOWN")
     agent = rec.get("agent", "")
     parent = rec.get("parent_agent")
@@ -405,14 +410,14 @@ def cmd_status(args, ledger_path: Path):
             plan_latest[plan_name] = e
 
     for mod, e in sorted(mod_latest.items())[:10]:
-        print(f"  {mod:<24} {e.get('event'):<16} {e.get('ts')[:19].replace('T', ' ')}")
+        print(f"  {mod:<24} {e.get('event'):<16} {(e.get('ts') or '')[:19].replace('T', ' ')}")
 
     if plan_latest:
         print("\n--- Recent Plan Milestones ---")
         for plan, e in sorted(plan_latest.items())[:5]:
             phase = e.get("phase", "-")
             status = e.get("status") or e.get("verdict") or "-"
-            print(f"  {plan:<32} Phase {phase:<6} [{status}] {e.get('ts')[:19].replace('T', ' ')}")
+            print(f"  {plan:<32} Phase {phase:<6} [{status}] {(e.get('ts') or '')[:19].replace('T', ' ')}")
 
     return 0
 
@@ -512,7 +517,10 @@ def main(argv=None) -> int:
             if "=" in f:
                 k, v = f.split("=", 1)
                 payload[k.strip()] = v.strip()
-        log_event(args.event, payload, ledger_path)
+        try:
+            log_event(args.event, payload, ledger_path, strict=True)
+        except Exception:
+            return 1
         print(f"Logged event {args.event.upper()} to {ledger_path}")
         return 0
 
