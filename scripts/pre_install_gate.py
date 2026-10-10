@@ -42,6 +42,12 @@ GAME_DIR = Path(os.environ.get("KOTOR2_ROOT")
 DLL_MEMBER = "binaries/windows_x86.dll"
 RESULT_RE = re.compile(r"^(PASS|FAIL|ERROR|SKIP)\s+wine:([^\s\[]+)(\[\S*\])?\s+(.*)$")
 
+sys.path.insert(0, str(REPO / "scripts"))
+try:
+    import master_ledger as ml
+except ImportError:
+    ml = None
+
 
 class GateFail(Exception):
     def __init__(self, n, step, reason):
@@ -252,12 +258,25 @@ def gate(mods, skip_default=False, scratch=None, runner=run) -> int:
         skipped = step_wine(all_rows, scratch, runner)
     except GateFail as e:
         print(str(e), flush=True)
+        if ml:
+            ml.log_event("BUILD_GATE", {
+                "verdict": "FAIL",
+                "error": str(e),
+                "head": git_head(),
+            })
         return 1
     for r in skipped:
         print(f"WARN  wine:{r} SKIP (no DISPLAY): not proven by this gate")
     print(f"GATE PASS mods={','.join(ids.values())} smokes={','.join(all_rows) or '-'} head={git_head()}")
     for m in mods:
         print(f"  md5 {md5(dlls[m])}  {ids[m]}  {dlls[m]}")
+    if ml:
+        ml.log_event("BUILD_GATE", {
+            "verdict": "PASS",
+            "mods": list(ids.values()),
+            "smokes": all_rows,
+            "head": git_head(),
+        })
     return 0
 
 

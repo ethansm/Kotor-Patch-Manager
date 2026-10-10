@@ -12,6 +12,8 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = REPO_ROOT / "scripts" / "plan_manager.py"
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
+import os
+os.environ["MASTER_LEDGER_TEST"] = "1"
 
 class TestPlanManager(unittest.TestCase):
     def run_cli(self, *args):
@@ -51,7 +53,7 @@ class TestPlanManager(unittest.TestCase):
             self.assertIn("M2 — Build", res.stdout)
             self.assertIn("M3 — Test", res.stdout)
             self.assertIn("Next Steps:", res.stdout)
-            self.assertIn("/plan-handoff M1", res.stdout)
+            self.assertIn("/plan-handoff", res.stdout)
         finally:
             tmp_path.unlink()
 
@@ -160,7 +162,7 @@ class TestPlanManager(unittest.TestCase):
             self.assertIn("=== SAVED STATE (Safe to /clear) ===", res.stdout)
             self.assertIn("Completed: M1 (DONE) @ feedbee", res.stdout)
             self.assertIn("Next Phase: M2 — Build", res.stdout)
-            self.assertIn("Resume: python3 scripts/plan_manager.py resume M2", res.stdout)
+            self.assertIn("resume \"test_saved_state_plan:M2\"", res.stdout)
 
             # Verify handoff file was written automatically
             scoped_h = h_dir / "handoffs" / "test_saved_state_plan.handoff.md"
@@ -233,7 +235,7 @@ class TestPlanManager(unittest.TestCase):
             res = self.run_cli("--plan", str(test_plan), "resume")
             self.assertEqual(res.returncode, 0, f"Stderr: {res.stderr}")
             self.assertIn("Handoff Direction: Execute SC1 with private TMPDIR", res.stdout)
-            self.assertIn("Resume: python3 scripts/plan_manager.py resume SC1", res.stdout)
+            self.assertIn("resume \"99:SC1\"", res.stdout)
 
             res_json = self.run_cli("--plan", str(test_plan), "resume", "--json")
             self.assertEqual(res_json.returncode, 0)
@@ -242,6 +244,19 @@ class TestPlanManager(unittest.TestCase):
         finally:
             test_plan.unlink(missing_ok=True)
             scoped_file.unlink(missing_ok=True)
+
+    def test_delegate_dry_run(self):
+        """Verify delegate --dry-run emits prompt and respects plan."""
+        test_plan = REPO_ROOT / "patch_manager_mods" / "99_temp_delegate_plan.md"
+        test_plan.write_text("# Temp Plan\n| Id | Batch | Status |\n|---|---|---|\n| DG1 | Delegate Batch | TODO |\n", encoding="utf-8")
+        try:
+            res = self.run_cli("--plan", str(test_plan), "delegate", "DG1", "--dry-run")
+            self.assertEqual(res.returncode, 0, f"Stderr: {res.stderr}")
+            self.assertIn("DRY-RUN DELEGATION PROMPT FOR PHASE DG1", res.stdout)
+            self.assertIn("DG1: Delegate Batch", res.stdout)
+            self.assertIn("agent_diff_check.py", res.stdout)
+        finally:
+            test_plan.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":

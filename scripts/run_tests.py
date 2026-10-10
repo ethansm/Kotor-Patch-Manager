@@ -65,6 +65,7 @@ except Exception:  # pragma: no cover - _common is optional
     _GAME_DIR = Path("~/.local/share/Steam/steamapps/common/Knights of the Old Republic II").expanduser()
 
 TMP = Path(os.environ.get("TMPDIR") or f"/tmp/claude-{os.getuid()}") / "kotor-tests"
+os.environ["MASTER_LEDGER_TEST"] = "1"
 KPM_DIR = Path(os.environ.get("KPM_DIR") or "~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager").expanduser()
 VENV_PY = REPO / ".venv" / "bin" / "python"
 HARNESS = REPO / "patch_manager_mods" / "perf_lab_src" / "harness"
@@ -802,6 +803,7 @@ def main() -> int:
     ap.add_argument("--coverage", action="store_true",
                     help="build host C++ tests with --coverage -O0, run, gcov; print per-header COV lines (every dir with a test.toml)")
     ap.add_argument("--mutate", metavar="HEADER", help="run the mutation gate on one header (scripts/mutate_header.py)")
+    ap.add_argument("filters", nargs="*", default=[], help="optional positional filter strings or item IDs (e.g. suite:check-hook-bytes, diversity)")
     a = ap.parse_args()
 
     if a.selftest:
@@ -859,6 +861,13 @@ def main() -> int:
         smokes, wine_err = wine_plan(SMOKES_TOML, dll_from_override=a.dll_from)
     if a.k:
         items = [i for i in items if a.k in i.id]
+    if a.filters:
+        pos_exact = {f for f in a.filters if any(f == i.id for i in items) or f.startswith("wine:")}
+        pos_subs = [f for f in a.filters if f not in pos_exact]
+        if pos_exact:
+            target_ids.update(pos_exact)
+        if pos_subs:
+            items = [i for i in items if any(sub in i.id for sub in pos_subs)]
     if target_ids:
         items = [i for i in items if i.id in target_ids]
 
@@ -869,7 +878,9 @@ def main() -> int:
         for mode in (s.get("modes") or [""]):
             wid = f"wine:{s['name']}" + (f"[{mode}]" if mode else "")
             match_target = not target_ids or wid in target_ids or any(wid == t or wid.startswith(f"{t}[") for t in target_ids)
-            if (not a.k or a.k in wid) and match_target:
+            match_k = not a.k or a.k in wid
+            match_filters = not a.filters or not pos_subs or any(sub in wid for sub in pos_subs) or match_target
+            if match_k and match_filters and match_target:
                 wine_items.append((wid, s, mode, skip))
 
     if a.list:

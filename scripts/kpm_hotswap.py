@@ -32,6 +32,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import kpm_status as ks  # noqa: E402
 import _static_common as sc  # noqa: E402
+try:
+    import master_ledger as ml
+except ImportError:
+    ml = None
 
 REPO = ks.REPO
 MODS = ks.MODS
@@ -332,6 +336,11 @@ def rollback(target, game):
     else:
         print("  WARNING: patch_config.toml / kpm_install_state.json changed since the snapshot (a KPatchLauncher run?); "
               "config NOT restored, only the DLLs were. Check `python3 scripts/kpm_status.py`.")
+    if ml:
+        ml.log_event("HOTSWAP_ROLLBACK", {
+            "backup": snap.name,
+            "mods": [p[0] for p in todo],
+        })
     return 0
 
 
@@ -473,6 +482,13 @@ def main(argv=None):
     rc, rec = swap_batch(todo, manifests, kmap, game, kpm, ts)
     if rc:
         return rc
+    if ml:
+        ml.log_event("HOTSWAP_APPLY", {
+            "mods": list(rec["plan"].keys()),
+            "backup": rec["backup"].name,
+            "repo_head": rec["meta"].get("repo_head", ""),
+            "kpm_head": rec["meta"].get("kpm_head", ""),
+        })
     print(f"\nSwapped {len(rec['plan'])} DLL(s); all LIVE; patch_config.toml and kpm_install_state.json unchanged")
     print(f"{'id':<24} {'old md5 -> new md5':<22} DLL")
     for pid, p in rec["plan"].items():

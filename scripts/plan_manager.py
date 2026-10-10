@@ -344,12 +344,16 @@ def cmd_resume(plan: dict, git_info: dict, json_mode: bool = False):
                 p_cat = PREFIX_LEGEND.get(p_prefix, "")
                 p_badge = f"[{p_cat}] " if p_cat else ""
                 print(f"  - {p_badge}{p['ident']} — {p['name']}")
+        plan_stem = plan["path"].stem
+        doc_prefix = plan_stem[:2] if (len(plan_stem) >= 2 and plan_stem[:2].isdigit()) else plan_stem
+        clean_ident = current['ident'].strip('*_ ')
+        scoped_ident = f"{doc_prefix}:{clean_ident}" if not clean_ident.lower().startswith(doc_prefix.lower()) else clean_ident
 
         print(f"\nNext Steps:")
-        print(f"  - Delegate to Subagent: python3 scripts/plan_manager.py delegate {current['ident']} (or 'python3 scripts/subagent_prompt.py {current['ident']} --run auto')")
-        print(f"  - Resume: python3 scripts/plan_manager.py resume {current['ident']}")
-        print(f"  - Handoff / Plan Mode: /plan-handoff {current['ident']} (or 'python3 scripts/plan_manager.py handoff {current['ident']}')")
-        print(f"  - Mark Complete: python3 scripts/plan_manager.py mark-done {current['ident']} [--commit <sha>]")
+        print(f"  - Delegate to Subagent: python3 scripts/plan_manager.py delegate \"{scoped_ident}\" (or 'python3 scripts/subagent_prompt.py \"{scoped_ident}\" --run auto')")
+        print(f"  - Resume: python3 scripts/plan_manager.py resume \"{scoped_ident}\" (or 'resume \"{scoped_ident}\"')")
+        print(f"  - Handoff / Plan Mode: /plan-handoff \"{scoped_ident}\" (or 'python3 scripts/plan_manager.py handoff \"{scoped_ident}\"')")
+        print(f"  - Mark Complete: python3 scripts/plan_manager.py mark-done \"{scoped_ident}\" [--commit <sha>]")
     else:
         print("\n[ALL PHASES COMPLETE] Ready for final verification & PR submission.")
 
@@ -439,8 +443,13 @@ def cmd_delegate(plan: dict, target_phase: str = "", mode: str = "auto", dry_run
     import subagent_prompt as sap
     import agent_contract as ac
 
-    title, desc, files, verif_cmds = sap.extract_phase_info(plan["path"], target_phase)
-    prompt = sap.build_self_contained_prompt(target_phase, title, desc, files, verif_cmds)
+    info = sap.extract_phase_info(plan["path"], target_phase)
+    if len(info) >= 5:
+        title, desc, files, verif_cmds, mod_scope = info[:5]
+    else:
+        title, desc, files, verif_cmds = info[:4]
+        mod_scope = None
+    prompt = sap.build_self_contained_prompt(target_phase, title, desc, files, verif_cmds, mod_scope=mod_scope, role="code")
 
     if dry_run:
         print(f"=== DRY-RUN DELEGATION PROMPT FOR PHASE {target_phase} ===")
@@ -797,8 +806,11 @@ def main():
             print(f"  - Completed: {args.phase} ({args.state}){commit_str}")
             print(f"  - Handoff: {rel_plan_h}")
             if next_phase:
+                doc_prefix = plan_stem[:2] if (len(plan_stem) >= 2 and plan_stem[:2].isdigit()) else plan_stem
+                clean_next = next_ident.strip('*_ ')
+                scoped_next = f"{doc_prefix}:{clean_next}" if not clean_next.lower().startswith(doc_prefix.lower()) else clean_next
                 print(f"  - Next Phase: {next_phase['ident']} — {next_phase['name']}")
-                print(f"  - Resume: python3 scripts/plan_manager.py resume {next_ident} (or 'resume {next_ident}')")
+                print(f"  - Resume: python3 scripts/plan_manager.py resume \"{scoped_next}\" (or 'resume \"{scoped_next}\"')")
             else:
                 print("  - Next Phase: None (all phases complete)")
     elif args.cmd == "handoff":

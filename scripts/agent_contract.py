@@ -26,6 +26,11 @@ import subprocess
 import sys
 from pathlib import Path
 
+try:
+    import master_ledger as ml
+except ImportError:
+    ml = None
+
 DEFAULT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_BASELINE = Path(".claude") / "contract_baseline.tsv"
 
@@ -309,6 +314,13 @@ def main(argv=None, out=sys.stdout, stdin=sys.stdin):
         for l, c, d in probs:
             out.write("%s %s %s\n" % (l, c, d))
         out.write("VERDICT: %s type=%s fails=%d warns=%d\n" % (verdict, kind, fails, warns))
+    if ml:
+        ml.log_event("CONTRACT_CHECK", {
+            "verdict": verdict,
+            "type": kind,
+            "fails": fails,
+            "warns": warns,
+        })
     return 1 if fails else 0
 
 
