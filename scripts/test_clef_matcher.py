@@ -89,7 +89,10 @@ class TestClefMatcher(unittest.TestCase):
         self.assertLessEqual(res["confidence"], 1.0)
         self.assertEqual(res["engine"], "deterministic_fallback")
 
-    def test_route_task_contract(self):
+    @patch("clef_matcher.query_clef_engine")
+    def test_route_task_contract(self, mock_query):
+        # Simulate daemon offline so the contract check never reaches a live clef daemon
+        mock_query.return_value = None
         res = route_task("Fix pointer math in QueueHud hook detour", explicit_mod="queue_hud_src", log_telemetry=False)
 
         # Validate all required fields in spec

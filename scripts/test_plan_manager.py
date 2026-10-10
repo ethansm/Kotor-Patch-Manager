@@ -54,6 +54,7 @@ class TestPlanManager(unittest.TestCase):
             self.assertIn("M3 — Test", res.stdout)
             self.assertIn("Next Steps:", res.stdout)
             self.assertIn("/plan-handoff", res.stdout)
+            self.assertIn(f'/plan-handoff "{tmp_path.stem}:M1"', res.stdout)
         finally:
             tmp_path.unlink()
 
@@ -213,14 +214,21 @@ class TestPlanManager(unittest.TestCase):
 | AR2 | Action 2 | TODO |
 """
         test_plan_path.write_text(content, encoding="utf-8")
+        active_plan = REPO_ROOT / ".claude" / "active_plan.txt"
+        prev_active = active_plan.read_text(encoding="utf-8") if active_plan.exists() else None
         try:
-            # Call mark-done without --plan, passing phase AR1
-            res = self.run_cli("mark-done", "AR1", "--notes", "auto resolved")
-            self.assertEqual(res.returncode, 0, f"Stderr: {res.stderr}")
-            updated = test_plan_path.read_text(encoding="utf-8")
-            self.assertIn("| AR1 | Action 1 | DONE |", updated)
+            # Call mark-done without --plan, passing phase AR1; keep handoff output in a temp dir
+            with tempfile.TemporaryDirectory() as hdir:
+                res = self.run_cli("mark-done", "AR1", "--notes", "auto resolved", "--handoff-dir", hdir)
+                self.assertEqual(res.returncode, 0, f"Stderr: {res.stderr}")
+                updated = test_plan_path.read_text(encoding="utf-8")
+                self.assertIn("| AR1 | Action 1 | DONE |", updated)
         finally:
             test_plan_path.unlink(missing_ok=True)
+            if prev_active is None:
+                active_plan.unlink(missing_ok=True)
+            else:
+                active_plan.write_text(prev_active, encoding="utf-8")
 
     def test_resume_scoped_handoff_direction(self):
         """Verify resume reads direction from .claude/handoffs/<plan_stem>.handoff.md."""

@@ -93,6 +93,7 @@ class TestAbiCheck(unittest.TestCase):
             "    int32_t companionCtrl[2];/* LBL_CHAR2 / LBL_CHAR3 controls (panel + 0x3134 / 0x36DC) */",
             "    int32_t companionCtrl[2];/* LBL_CHAR2 / LBL_CHAR3 controls (panel + 0x3134 / 0x36DC) */\n    int32_t newTrailingField;",
         )
+        self.assertIn("int32_t newTrailingField;", appended)
         with tempfile.NamedTemporaryFile("w+", suffix=".h", delete=False) as tf:
             tf.write(appended)
             tf_path = tf.name

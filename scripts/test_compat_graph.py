@@ -49,7 +49,7 @@ class TestCompatGraphFixtures(unittest.TestCase):
         os.symlink(shared_h, symlink_h)
 
         test_cpp = self.repo / "tests/dummy_test.cpp"
-        test_cpp.write_text('#include "Common.h"\nint main(){ return common(); }\n')
+        test_cpp.write_text('#include "../research/companion_levelup/stub/_shared/Common.h"\nint main(){ return common(); }\n')
 
         cg = CompatGraph(repo_root=self.repo)
         plan = cg.affected(["patch_manager_mods/_shared_src/Common.h"])

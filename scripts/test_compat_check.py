@@ -389,8 +389,9 @@ class TestK2AddrVersionScoping(unittest.TestCase):
         rng = find_k2addr_gog_range(content)
         self.assertIsNotNone(rng)
         start, end = rng
-        self.assertEqual(start, 378)
-        self.assertEqual(end, 532)
+        lines = content.splitlines()
+        self.assertIn("constexpr K2AddrTable makeGog()", lines[start - 1])
+        self.assertIn("inline constexpr K2AddrTable kGog", lines[end - 1])
 
     def test_find_k2addr_gog_range_synthetic(self):
         """find_k2addr_gog_range works on synthetic C++ text."""
