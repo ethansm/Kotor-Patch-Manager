@@ -265,3 +265,19 @@ Same look as the action hotbar, from `scripts/gen_hotbar_textures.py`:
   - Plan: selfheal moves to `Register(K2HUD_BUILD, ...)` and drops its own hook once hud-host 0.3.0 is live.
   - Until then, installing hud-host 0.3.0 needs a check that both hooks don't overlap (`check_hook_spans.py`).
 - Order of work: hud-host `ReserveSlot` + BUILD live → selfheal on hud-host (no own hook) → queue-hud kit + Cancel → slim variant.
+
+---
+
+## 8. 2026-10-08 Polish Additions (doc 33 workstreams SH1, SH2, SH3)
+
+1. **SH1: 58px Companion Health Buttons & Action Tray UX:**
+   - Enlarge companion health button from 16..24 px to 58x58 px (`w=58, h=58`), matching companion queue icon dimensions.
+   - Combine with queue-hud companion strips into a unified action tray using custom `lbl_miqueue_teal` style framing (sea-green `#139373` border, translucent black fill).
+2. **SH2: Leader Health Button (Top-Left of Leader Portrait):**
+   - Drop `isLeaderVit` restriction.
+   - Anchor a 58x58 px health button at top-left of player portrait (`Slot_CardRect 0x54C` / `Slot_VitRect 0x694`).
+   - Wire member 0 into click-to-heal and auto-heal loop.
+3. **SH3: Options Popover UX Blank Text Fix:**
+   - Popover labels cloned from `LBL_QUEUE1` lack an initialized `CSWGuiTextParams` renderer (`+0xD8+0x14 == 0`), causing silent failure of `setText`, `setFont`, and `setTextColor`.
+   - Clone from `LBL_HOTBARPTITLE` or render via custom 2D quads; with 58px button size, popover rows expand from 16px to 40..58px, eliminating font clipping.
+

@@ -19,6 +19,7 @@ inline int clampi(int v, int lo, int hi) { return v < lo ? lo : (v > hi ? hi : v
 // Button sits left of the vitality bar, vertically centred. {0,0,0,0} = do not draw.
 // Small (companion) cards only: live vits are 47x96 small vs 103x208 leader at 3840x1600 (doc 08 probe 1); w >= 70 = leader.
 inline bool isLeaderVit(Rect vit) { return vit.w >= 70; }
+inline bool isLeaderVitForButton(Rect vit) { return vit.w >= 70; }
 inline Rect buttonRect(Rect vit) {
     if (vit.w <= 0 || isLeaderVit(vit) || vit.h <= 0 || vit.h > 400) return Rect{0, 0, 0, 0};
     double pxu = vit.h / 36.0;
@@ -41,6 +42,10 @@ inline int stripReserve(Rect vit) {
     if (gap < 2) gap = 2;
     const int ring = ((sb * 3 + 2) / 4) * 2;
     return gap + sb + (ring - sb + 1) / 2 + kReserveGap;
+}
+inline Rect leaderButtonRect(Rect card) {
+    if (card.w <= 0 || card.h <= 0) return Rect{0, 0, 0, 0};
+    return Rect{card.x, card.y, 58, 58};
 }
 
 enum class BtnState { Hidden, FullHp, NoItem, Pending, AutoOn, Normal };

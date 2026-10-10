@@ -54,12 +54,12 @@ constexpr int Stats_Race = 0xE0;                          // short, creature rac
 constexpr int Stats_Skills = 0x174, Stats_Abilities = 0xED, Skill_Repair = 5, Skill_TreatInjury = 7, Abil_Int = 3, Abil_Wis = 4;
 constexpr int ItemGroup = 1;                              // HUD item group
 constexpr int MaxCands = 64;
+constexpr int Slot_CardRect = 0x54C;                      // portrait card rect (screen px)
 constexpr int Slot_VitRect = 0x694;                       // K2Addr Slot_VitRect: 4 ints x,y,w,h (screen px)
 constexpr int Hud_Manager = 0x1C, Mgr_Panels = 0x88, Mgr_PanelCount = 0x8C, Mgr_Modals = 0x94, Mgr_ModalCount = 0x98;
 constexpr int Cr_Tag = 0x18, PanelIgnoredByInput = 0x600;
 // Panels that do not block gameplay hotkeys (RTTI vtables): messages, fade, pause, auto-pause
 constexpr uintptr_t PanelWhitelist[] = { gameaddr::MessagesPanelVtable, gameaddr::FadePanelVtable, gameaddr::PausePanelVtable, gameaddr::AutoPausePanelVtable };
-constexpr int NWidgets = 16;
 constexpr DWORD CacheMs = 250;
 constexpr DWORD DebounceMs = 2000, PostMs = 10000, PostStepMs = 500;
 
@@ -278,6 +278,15 @@ DWORD g_starvedSince[3] = {};       // start of the current starved + unpaused s
 bool g_kickGaveUp[3] = {};
 uint32_t g_pendKey[3] = {};
 heal::AutoState g_auto[3];
+// Member 0 (leader) state
+DWORD g_lastUseMs0 = 0;
+shui::Pending g_pend0;
+uint32_t g_unqueuedSince0 = 0;
+int g_kickReason0 = 0;
+DWORD g_starvedSince0 = 0;
+bool g_kickGaveUp0 = false;
+uint32_t g_pendKey0 = 0;
+heal::AutoState g_auto0;
 
 struct UseInfo { Pick pk; int hp = 0; uintptr_t server = 0; };
 
@@ -286,12 +295,13 @@ struct UseInfo { Pick pk; int hp = 0; uintptr_t server = 0; };
 
 // THE only path to route A: gate -> per-member debounce -> commandable -> ids -> CanUseItem -> route A once. src = click|auto|key.
 bool useNow(const K2PsContext* ctx, DWORD now, int mi, int minCount, const char* src, UseInfo* out = nullptr) {
-    if (mi < 1 || mi > 2) REFUSEF("REFUSE bad member %d (%s)", mi, src);
+    if (mi < 0 || mi > 2) REFUSEF("REFUSE bad member %d (%s)", mi, src);
     if (!g_hud) REFUSEF("REFUSE no hud (%s)", src);
     if (!menuInfo(ctx)) REFUSEF("REFUSE no menu info in K2PsContext (%s)", src);
     if (ctx->inMenu) REFUSEF("REFUSE in menu (ctx.inMenu=1) (%s)", src);
     if (!gameplayHudActive(g_hud)) REFUSEF("REFUSE hud gate not active (%s)", src);
-    if (g_lastUseMs[mi] && now - g_lastUseMs[mi] < DebounceMs) REFUSEF("REFUSE debounce member=%d (%lu ms since the last use) (%s)", mi, (unsigned long)(now - g_lastUseMs[mi]), src);
+    if (mi >= 0 && mi <= 2 && g_lastUseMs[mi] && now - g_lastUseMs[mi] < DebounceMs) REFUSEF("REFUSE debounce member=%d (%lu ms since the last use) (%s)", mi, (unsigned long)(now - g_lastUseMs[mi]), src);
+    else if (mi == 0 && g_lastUseMs0 && now - g_lastUseMs0 < DebounceMs) REFUSEF("REFUSE debounce member=0 (%lu ms since the last use) (%s)", (unsigned long)(now - g_lastUseMs0), src);
     std::vector<itemread::Entry> items;
     itemread::readGroup(g_hud, ItemGroup, &items);
     party::Vitals v[3];
@@ -320,12 +330,11 @@ bool useNow(const K2PsContext* ctx, DWORD now, int mi, int minCount, const char*
         KP_LOGV(chCall, KPLOG_WARN, "REFUSE canuse=0 member=%d item=%08x ptr=%08x name=\"%s\" type=%d race=%d", mi, (unsigned)itemServerId, (unsigned)pk.itemPtr, pk.name.c_str(), type, (int)race);
         return false;
     }
-    g_lastUseMs[mi] = now;   // only real uses debounce
+    if (mi >= 0 && mi <= 2) g_lastUseMs[mi] = now;   // only real uses debounce
+    else if (mi == 0) g_lastUseMs0 = now;
     KP_LOG(chCall, "USE member=%d item=%08x \"%s\" heal=%d hp=%d/%d src=%s", mi, (unsigned)itemServerId, pk.name.c_str(), pk.heal, m.cur, m.max, src);
-    g_pend[mi] = shui::Pending(); g_pend[mi].on = true; g_pend[mi].since = now; g_pend[mi].preHp = m.cur; g_pend[mi].preStack = pk.count;
-    g_unqueuedSince[mi] = 0; g_kickReason[mi] = 0; g_starvedSince[mi] = 0; g_kickGaveUp[mi] = false;
-    g_pendKey[mi] = pk.key;
-    g_auto[mi].lastUseMs = now; g_auto[mi].pending = true;
+    if (mi >= 0 && mi <= 2) { g_pend[mi] = shui::Pending(); g_pend[mi].on = true; g_pend[mi].since = now; g_pend[mi].preHp = m.cur; g_pend[mi].preStack = pk.count; g_unqueuedSince[mi] = 0; g_kickReason[mi] = 0; g_starvedSince[mi] = 0; g_kickGaveUp[mi] = false; g_pendKey[mi] = pk.key; g_auto[mi].lastUseMs = now; g_auto[mi].pending = true; }
+    else if (mi == 0) { g_pend0 = shui::Pending(); g_pend0.on = true; g_pend0.since = now; g_pend0.preHp = m.cur; g_pend0.preStack = pk.count; g_unqueuedSince0 = 0; g_kickReason0 = 0; g_starvedSince0 = 0; g_kickGaveUp0 = false; g_pendKey0 = pk.key; g_auto0.lastUseMs = now; g_auto0.pending = true; }
     if (out) { out->pk = pk; out->hp = m.cur; out->server = m.server; }
     reinterpret_cast<void(__thiscall*)(uintptr_t, int, int, uint32_t, int, uint32_t, int, int, int)>(UseItemRouteA)(m.server, 0, 0, selfServerId, 0, itemServerId, 0, 0, 0);
     KP_LOG(chCall, "CALL routeA returned member=%d", mi);
@@ -437,7 +446,14 @@ struct W {
     std::string tip;
     bool hover = false;
 };
-enum { W_Disc0 = 0, W_Disc1, W_Frame0, W_Frame1, W_Btn0, W_Btn1, W_PopBg, W_Auto, W_HpM, W_HpP, W_KeepM, W_KeepP, W_HpVal, W_KeepVal, W_Ring0, W_Ring1 };   // discs first (under the buttons), then the kit frames (under the crosses), rings last: appended after the buttons, drawn on top
+enum {
+    W_Disc0 = 0, W_Disc1, W_DiscLeader,
+    W_Frame0, W_Frame1, W_FrameLeader,
+    W_Btn0, W_Btn1, W_BtnLeader,
+    W_PopBg, W_Auto, W_HpM, W_HpP, W_KeepM, W_KeepP, W_HpVal, W_KeepVal,
+    W_Ring0, W_Ring1, W_RingLeader,
+    NWidgets
+};
 W g_w[NWidgets];
 
 void wRect(W& w, const shui::Rect& r) { if (!w.c || (w.rectSet && w.r == r)) return; if (guikit::setRect(w.c, r.x, r.y, r.w, r.h)) { w.r = r; w.rectSet = true; } }
@@ -501,7 +517,7 @@ bool wFrame(W& w, bool hover) {
 }
 void wTip(W& w, const std::string& t) { if (!w.c || w.tip == t || !guitip::nativeSupported()) return; if (guitip::setNative(w.c, t.c_str())) w.tip = t; }
 
-int g_popMi = 0;                       // member whose popover is open (0 = closed)
+int g_popMi = -1;                      // member whose popover is open (-1 = closed, 0 = leader, 1..2 = companions)
 guikit::ClickEdge g_lmb, g_rmb;
 DWORD g_cacheMs = 0, g_cfgCheckMs = 0;
 bool g_cacheValid = false;
@@ -516,12 +532,15 @@ struct Card {
     int k = -1;
     bool seen = false;                 // matched to a slot this frame
     shui::Rect vit{ 0, 0, 0, 0 };
+    shui::Rect card{ 0, 0, 0, 0 };
     shui::Rect btn{ 0, 0, 0, 0 };
     shui::BtnState st = shui::BtnState::Hidden;
 };
 Card g_card[3];
+Card g_card0;   // Member 0 (leader)
 
 std::string keyFor(int mi) {
+    if (mi == 0) return "slot0";
     if (!g_card[mi].tag.empty()) return g_card[mi].tag;
     if (!g_warnTag[mi]) {
         uintptr_t sv = g_card[mi].m.server; char hex[64] = {}; int hn = 0;   // CS8 investigation: raw bytes of the CExoString field {char*, len, ...} at server+0x18
@@ -538,14 +557,17 @@ shui::Rect g_shown[8]; int g_nShown = 0;
 void hideAll() {
     g_nShown = 0;
     for (W& w : g_w) wShow(w, false);
-    g_popMi = 0;
+    g_popMi = -1;
     for (Card& c : g_card) { c.seen = false; c.st = shui::BtnState::Hidden; }
+    g_card0.seen = false;
+    g_card0.st = shui::BtnState::Hidden;
 }
 
 // pending tracker: HP up / stack down / timeout -> DONE (runs every frame while a use is pending, also in menus)
 void pendingTick(DWORD now) {
     bool any = false;
     for (int i = 1; i <= 2; ++i) any = any || g_pend[i].on;
+    any = any || g_pend0.on;
     if (!any || !g_hud) return;
     party::Vitals v[3];
     int cnt = party::members(v, 3);
@@ -566,6 +588,20 @@ void pendingTick(DWORD now) {
         if (!progress) KP_LOGV(chCall, KPLOG_WARN, "TIMEOUT unqueued member=%d", i);
         g_pend[i].on = false; g_auto[i].pending = false; g_unqueuedSince[i] = 0; g_kickReason[i] = 0; g_starvedSince[i] = 0; g_kickGaveUp[i] = false;
     }
+    // Member 0 (leader)
+    if (!g_pend0.on) return;
+    int hp0 = 0 < cnt ? v[0].cur : g_pend0.preHp;
+    int stack0 = -1;
+    if (haveItems) { for (const itemread::Entry& e : items) if ((uint32_t)e.key == g_pendKey0) { stack0 = itemread::stackCount(e.key, e.name); if (stack0 <= 0) stack0 = 1; break; } }
+    else stack0 = g_pend0.preStack;
+    actq::Snapshot qs0;
+    if (0 < cnt) actq::read(v[0].server, &qs0, SiteQueue, SiteRound);
+    bool queued0 = actq::useQueued(qs0);
+    if (!shui::pendingDone2(g_pend0, now, hp0, stack0, queued0, &g_unqueuedSince0)) return;
+    bool progress0 = hp0 > g_pend0.preHp || (stack0 >= 0 && stack0 < g_pend0.preStack) || (stack0 < 0 && g_pend0.preStack > 0);
+    KP_LOG(chCall, "DONE member=0 hp%+d stack%+d queued=%d", hp0 - g_pend0.preHp, (stack0 < 0 ? 0 : stack0) - g_pend0.preStack, (int)queued0);
+    if (!progress0) KP_LOGV(chCall, KPLOG_WARN, "TIMEOUT unqueued member=0");
+    g_pend0.on = false; g_auto0.pending = false; g_unqueuedSince0 = 0; g_kickReason0 = 0; g_starvedSince0 = 0; g_kickGaveUp0 = false;
 }
 
 // CS12 route B (R8): rotate the starved follower queue so the 0x3F reaches the head. Game thread, our draw callback (outside RunActions).
@@ -658,6 +694,28 @@ void refreshCache(const K2PsContext* ctx, DWORD now) {
             }
         }
     }
+    // Member 0 (leader)
+    Card& c0 = g_card0;
+    c0.have = 0 < cnt && v[0].ok;
+    if (!c0.have) { c0.pk = Pick(); c0.apk = Pick(); } else {
+        c0.m = v[0];
+        char tag[64]; readCreatureTag(c0.m.server, tag, sizeof tag);
+        c0.tag = tag;
+        c0.cfg = shui::lookup(g_cfg, keyFor(0));
+        c0.pk = analyzeMember(c0.m, items, false, 1);
+        c0.apk = c0.cfg.autoOn ? analyzeMember(c0.m, items, false, c0.cfg.keep + 1) : Pick();
+        // Auto-heal for leader (member 0)
+        if (c0.cfg.autoOn && c0.apk.pick >= 0) {
+            heal::AutoCfg ac; ac.on = true; ac.hpPct = c0.cfg.hpPct; ac.keep = c0.cfg.keep;
+            uint32_t cmd = 0;
+            bool haveCmd = rd<uint32_t>(c0.m.server, Server_Commandable, &cmd);
+            bool alive = c0.m.ok && c0.m.cur > 0;
+            if (heal::shouldAutoUse(ac, c0.m.cur, c0.m.max, alive, haveCmd && cmd != 0, g_card0.seen, g_auto0, now)) {
+                KP_LOG(chCall, "AUTO member=0 hp=%d/%d pick=\"%s\" keep=%d", c0.m.cur, c0.m.max, c0.apk.name.c_str(), c0.cfg.keep);
+                if (!useNow(ctx, now, 0, c0.cfg.keep + 1, "auto")) g_auto0.lastUseMs = now;
+            }
+        }
+    }
     g_cacheMs = now; g_cacheValid = true;
 }
 
@@ -696,6 +754,7 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
 
     // slot -> card mapping + vit rects
     for (Card& c : g_card) c.seen = false;
+    g_card0.seen = false;
     for (int i = 0; i < K2PS_MAX_SLOTS; ++i) {
         int32_t slot = 0, cr = 0;
         if (!g_ps.slotAt(i, &slot, &cr)) continue;
@@ -716,6 +775,18 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
             c.k = k; c.vit = vit; c.seen = !isLeader;
             if (!g_mapLogged[mi]) { g_mapLogged[mi] = true; KP_LOG(chUi, "MAP member=%d slot=%d k=%d via=%s vit=[%d,%d,%d,%d] leader=%d", mi, i, k, byClient ? "client" : "server", vit.x, vit.y, vit.w, vit.h, (int)isLeader); }
         }
+        // Member 0 (leader) - always have if slot exists
+        if (k == 0) {
+            g_card0.have = true;
+            g_card0.k = k;
+            g_card0.vit = vit;
+            g_card0.seen = true;
+            int cd[4] = {};
+            bool okCd = true;
+            for (int j = 0; j < 4; ++j) okCd = rd<int>((uintptr_t)slot, Slot_CardRect + 4 * j, &cd[j]) && okCd;
+            if (okCd && cd[2] > 0 && cd[3] > 0) g_card0.card = shui::Rect{ cd[0], cd[1], cd[2], cd[3] };
+            if (!g_mapLogged[0]) { g_mapLogged[0] = true; KP_LOG(chUi, "MAP member=0 slot=%d k=%d vit=[%d,%d,%d,%d] card=[%d,%d,%d,%d]", i, k, vit.x, vit.y, vit.w, vit.h, cd[0], cd[1], cd[2], cd[3]); }
+        }
     }
     int screenW = 0;   // popover right clamp; 0 = unknown (no clamp)
     if (guikit::g_gk.screenWAddr) guikit::detail::rdInt(guikit::g_gk.screenWAddr, 0, &screenW);
@@ -734,7 +805,7 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
         W& ring = g_w[W_Ring0 + mi - 1];
         W& disc = g_w[W_Disc0 + mi - 1];
         W& frm = g_w[W_Frame0 + mi - 1];
-        if (c.st == shui::BtnState::Hidden) { wShow(b, false); wShow(ring, false); wShow(disc, false); wShow(frm, false); if (g_popMi == mi) g_popMi = 0; continue; }
+        if (c.st == shui::BtnState::Hidden) { wShow(b, false); wShow(ring, false); wShow(disc, false); wShow(frm, false); if (g_popMi == mi) g_popMi = -1; continue; }
         wRect(b, c.btn);
         wRect(disc, shui::ringRect(c.btn));
         wVis(disc, wDisc(disc));
@@ -750,11 +821,39 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
         wTip(b, tipFor(c));
         wShow(b, true);
     }
+    // Member 0 (leader) button
+    Card& c0 = g_card0;
+    W& b0 = g_w[W_BtnLeader];
+    c0.btn = c0.seen ? (c0.card.w > 0 ? shui::leaderButtonRect(c0.card) : shui::Rect{ c0.vit.x - 58 - 4, c0.vit.y, 58, 58 }) : shui::Rect{ 0, 0, 0, 0 };
+    if (c0.btn.w > 0) {   // hud-host strip slot order 0 (doc 24 CS10): registration only, the button is still drawn at shui::buttonRect
+        K2HudRect sr{};
+        g_hudc.stripSlot("companion-selfheal", 0, K2HudRect{ c0.vit.x, c0.vit.y, c0.vit.w, c0.vit.h }, shui::stripReserve(c0.vit), c0.btn.h, &sr);
+    }
+    c0.st = shui::resolveState(c0.have && c0.seen, false, c0.m.cur, c0.m.max, c0.pk.pick >= 0, g_pend0.on, c0.cfg.autoOn);
+    if (c0.btn.w <= 0) c0.st = shui::BtnState::Hidden;
+    W& ring0 = g_w[W_RingLeader];
+    W& disc0 = g_w[W_DiscLeader];
+    W& frm0  = g_w[W_FrameLeader];
+    if (c0.st == shui::BtnState::Hidden) { wShow(b0, false); wShow(ring0, false); wShow(disc0, false); wShow(frm0, false); if (g_popMi == 0) g_popMi = -1; return; }
+    wRect(b0, c0.btn);
+    wRect(disc0, shui::ringRect(c0.btn));
+    wVis(disc0, wDisc(disc0));
+    const shui::Look L0 = shui::lookFor(c0.st, c0.cfg.autoOn, now);
+    wRect(frm0, c0.btn);   // kit frame behind the cross (hover = last frame's cursor test), dimmed with the cross
+    wVis(frm0, wFrame(frm0, b0.hover));
+    if (frm0.c) wAlpha(frm0, L0.alpha);
+    wIcon(b0, 0, L0);
+    if (L0.ring) {
+        wRect(ring0, shui::ringRect(c0.btn));
+        if (wRing(ring0, L0)) wVis(ring0, true); else wVis(ring0, false);
+    } else wVis(ring0, false);
+    wTip(b0, tipFor(c0));
+    wShow(b0, true);
 
     // input
     int cx = 0, cy = 0;
     bool haveCur = guikit::cursorEngine(&cx, &cy);
-    int onBtn = 0;
+    int onBtn = -1;
     if (haveCur) {
         for (int mi = 1; mi <= 2; ++mi) {
             W& b = g_w[W_Btn0 + mi - 1];
@@ -763,11 +862,18 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
             if (h && !b.hover) guikit::playHoverSound();
             b.hover = h;
         }
+        // Member 0 (leader) button
+        W& b0 = g_w[W_BtnLeader];
+        bool h0 = g_card0.st != shui::BtnState::Hidden && guikit::hit(b0.c, cx, cy);
+        if (h0) onBtn = 0;
+        if (h0 && !b0.hover) guikit::playHoverSound();
+        b0.hover = h0;
     }
     shui::PopLayout L{};
-    bool popOpen = g_popMi != 0 && g_card[g_popMi].btn.w > 0;
-    if (!popOpen) g_popMi = 0;
-    if (popOpen) L = shui::popoverLayout(g_card[g_popMi].btn, screenW);
+    Card& popCard = (g_popMi == 0) ? g_card0 : g_card[g_popMi >= 0 ? g_popMi : 1];
+    bool popOpen = g_popMi >= 0 && popCard.btn.w > 0;
+    if (!popOpen) g_popMi = -1;
+    if (popOpen) L = shui::popoverLayout(popCard.btn, screenW);
     bool inPop = popOpen && haveCur && cx >= L.r[0].x && cx < L.r[0].x + L.r[0].w && cy >= L.r[0].y && cy < L.r[0].y + L.r[0].h;
     if (haveCur && ledge) {
         if (inPop) {   // popover click: edit config only, NEVER useNow
@@ -777,26 +883,28 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
                 std::string key = keyFor(g_popMi);
                 shui::CompCfg nc = shui::applyPop(shui::lookup(g_cfg, key), it);
                 shui::upsert(g_cfg, key, nc);
-                g_card[g_popMi].cfg = nc;
+                if (g_popMi == 0) g_card0.cfg = nc;
+                else g_card[g_popMi].cfg = nc;
                 saveIni(key, nc);
             }
-        } else if (onBtn) {
-            Card& c = g_card[onBtn];
+        } else if (onBtn >= 0) {
+            Card& c = (onBtn == 0) ? g_card0 : g_card[onBtn];
             if (shui::clickAllowed(c.st)) {
                 if (c.st == shui::BtnState::NoItem) KP_LOG(chCall, "CLICK member=%d noitem", onBtn);
                 else useNow(ctx, now, onBtn, shui::clickMinCount(c.st), "click");
             }
-        } else if (popOpen) g_popMi = 0;
+        } else if (popOpen) g_popMi = -1;
     } else if (haveCur && redge) {
-        if (onBtn) g_popMi = (g_popMi == onBtn) ? 0 : onBtn;
-        else if (popOpen && !inPop) g_popMi = 0;
+        if (onBtn >= 0) g_popMi = (g_popMi == onBtn) ? -1 : onBtn;
+        else if (popOpen && !inPop) g_popMi = -1;
     }
 
     // popover widgets
-    popOpen = g_popMi != 0;
+    popOpen = g_popMi >= 0;
     if (popOpen) {
-        L = shui::popoverLayout(g_card[g_popMi].btn, screenW);
-        const shui::CompCfg& cfg = g_card[g_popMi].cfg;
+        Card& pc = (g_popMi == 0) ? g_card0 : g_card[g_popMi];
+        L = shui::popoverLayout(pc.btn, screenW);
+        const shui::CompCfg& cfg = pc.cfg;
         wRect(g_w[W_PopBg], L.r[0]);
         const int items[5] = { W_Auto, W_HpM, W_HpP, W_KeepM, W_KeepP };
         for (int i = 0; i < 5; ++i) { wRect(g_w[items[i]], L.r[i + 1]); wText(g_w[items[i]], shui::popLabel(static_cast<shui::PopItem>(i + 1), cfg)); }
@@ -807,6 +915,7 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
     popDiag(popOpen);
     int ns = 0;   // rects the RMB camera hook must not turn into a camera drag: buttons, rings, popover bg
     for (int mi = 1; mi <= 2; ++mi) if (g_card[mi].st != shui::BtnState::Hidden && g_card[mi].btn.w > 0) { g_shown[ns++] = g_card[mi].btn; g_shown[ns++] = shui::ringRect(g_card[mi].btn); }   // disc and ring share ringRect (outer extent)
+    if (g_card0.st != shui::BtnState::Hidden && g_card0.btn.w > 0) { g_shown[ns++] = g_card0.btn; g_shown[ns++] = shui::ringRect(g_card0.btn); }
     if (popOpen) g_shown[ns++] = L.r[0];
     g_nShown = ns;
 }
@@ -877,25 +986,29 @@ uintptr_t makeLabel(uintptr_t panel, const char* tmpl, const char* text, bool fo
 void buildWidgets(uintptr_t panel) {
     for (W& w : g_w) w = W();
     tex::ensureTextures();
-    g_popMi = 0; g_lmb = guikit::ClickEdge(); g_rmb = guikit::ClickEdge();
+    g_popMi = -1; g_lmb = guikit::ClickEdge(); g_rmb = guikit::ClickEdge();
     for (Card& c : g_card) c.seen = false;
+    g_card0.seen = false;
     ProjGuard pg;
-    int n = 0;
+    int n = 0, why[3] = {};
     std::string whys;
     auto add = [&](int idx, const char* tmpl, const char* text, bool font, const char* name) {
         int why = 0;
         uintptr_t c = makeLabel(panel, tmpl, text, font, &why);
         if (!c && !strcmp(tmpl, "LBL_MOULDING3")) { c = makeLabel(panel, "LBL_QUEUE1", text, font, &why); if (c) whys += std::string(name) + ":moulding3 fallback ";}
         g_w[idx].c = c; g_w[idx].txt = text ? text : "";
-        if ((idx >= W_Ring0 || idx <= W_Frame1) && c) { g_w[idx].vis = 0; g_w[idx].clk = 0; }   // discs + frames + rings start hidden + click-through and stay non-clickable
+        if ((idx >= W_Ring0 || idx <= W_FrameLeader) && c) { g_w[idx].vis = 0; g_w[idx].clk = 0; }   // discs + frames + rings start hidden + click-through and stay non-clickable
         if (c) ++n; else whys += std::string(name) + ":" + std::to_string(why) + " ";
     };
     add(W_Disc0, "LBL_QUEUE1", nullptr, false, "disc0");   // before the buttons: z-order disc < button < ring
     add(W_Disc1, "LBL_QUEUE1", nullptr, false, "disc1");
+    add(W_DiscLeader, "LBL_QUEUE1", nullptr, false, "discLeader");
     add(W_Frame0, "LBL_QUEUE1", nullptr, false, "frame0");   // z-order disc < frame < button (cross) < ring
     add(W_Frame1, "LBL_QUEUE1", nullptr, false, "frame1");
+    add(W_FrameLeader, "LBL_QUEUE1", nullptr, false, "frameLeader");
     add(W_Btn0, "LBL_QUEUE1", "+", true, "btn0");   // "+" = the fallback glyph until the cross fill is applied
     add(W_Btn1, "LBL_QUEUE1", "+", true, "btn1");
+    add(W_BtnLeader, "LBL_QUEUE1", "+", true, "btnLeader");   // Leader button (member 0)
     add(W_PopBg, "LBL_MOULDING3", nullptr, false, "popbg");
     add(W_Auto, "LBL_QUEUE1", "Auto", true, "auto");
     add(W_HpM, "LBL_QUEUE1", "-", true, "hpm");
@@ -906,8 +1019,8 @@ void buildWidgets(uintptr_t panel) {
     add(W_KeepVal, "LBL_QUEUE1", "-", true, "keepval");
     add(W_Ring0, "LBL_QUEUE1", nullptr, false, "ring0");   // after the buttons: drawn on top
     add(W_Ring1, "LBL_QUEUE1", nullptr, false, "ring1");
+    add(W_RingLeader, "LBL_QUEUE1", nullptr, false, "ringLeader");   // Leader ring
     for (W& w : g_w) popStyle(w);
-    KP_LOGV(chHud, n == NWidgets ? KPLOG_INFO : KPLOG_WARN, "BUILD n=%d/%d why=%s", n, NWidgets, whys.empty() ? "ok" : whys.c_str());
 }
 
 // K2HUD_BUILD callback (hud-host, source 0x0040F5A0, HUD panel only, layout still open). The vtable check is a cheap guard.
