@@ -279,7 +279,6 @@ bool g_kickGaveUp[3] = {};
 uint32_t g_pendKey[3] = {};
 heal::AutoState g_auto[3];
 // Member 0 (leader) state
-DWORD g_lastUseMs0 = 0;
 shui::Pending g_pend0;
 uint32_t g_unqueuedSince0 = 0;
 int g_kickReason0 = 0;
@@ -301,7 +300,6 @@ bool useNow(const K2PsContext* ctx, DWORD now, int mi, int minCount, const char*
     if (ctx->inMenu) REFUSEF("REFUSE in menu (ctx.inMenu=1) (%s)", src);
     if (!gameplayHudActive(g_hud)) REFUSEF("REFUSE hud gate not active (%s)", src);
     if (mi >= 0 && mi <= 2 && g_lastUseMs[mi] && now - g_lastUseMs[mi] < DebounceMs) REFUSEF("REFUSE debounce member=%d (%lu ms since the last use) (%s)", mi, (unsigned long)(now - g_lastUseMs[mi]), src);
-    else if (mi == 0 && g_lastUseMs0 && now - g_lastUseMs0 < DebounceMs) REFUSEF("REFUSE debounce member=0 (%lu ms since the last use) (%s)", (unsigned long)(now - g_lastUseMs0), src);
     std::vector<itemread::Entry> items;
     itemread::readGroup(g_hud, ItemGroup, &items);
     party::Vitals v[3];
@@ -331,9 +329,8 @@ bool useNow(const K2PsContext* ctx, DWORD now, int mi, int minCount, const char*
         return false;
     }
     if (mi >= 0 && mi <= 2) g_lastUseMs[mi] = now;   // only real uses debounce
-    else if (mi == 0) g_lastUseMs0 = now;
     KP_LOG(chCall, "USE member=%d item=%08x \"%s\" heal=%d hp=%d/%d src=%s", mi, (unsigned)itemServerId, pk.name.c_str(), pk.heal, m.cur, m.max, src);
-    if (mi >= 0 && mi <= 2) { g_pend[mi] = shui::Pending(); g_pend[mi].on = true; g_pend[mi].since = now; g_pend[mi].preHp = m.cur; g_pend[mi].preStack = pk.count; g_unqueuedSince[mi] = 0; g_kickReason[mi] = 0; g_starvedSince[mi] = 0; g_kickGaveUp[mi] = false; g_pendKey[mi] = pk.key; g_auto[mi].lastUseMs = now; g_auto[mi].pending = true; }
+    if (mi >= 1 && mi <= 2) { g_pend[mi] = shui::Pending(); g_pend[mi].on = true; g_pend[mi].since = now; g_pend[mi].preHp = m.cur; g_pend[mi].preStack = pk.count; g_unqueuedSince[mi] = 0; g_kickReason[mi] = 0; g_starvedSince[mi] = 0; g_kickGaveUp[mi] = false; g_pendKey[mi] = pk.key; g_auto[mi].lastUseMs = now; g_auto[mi].pending = true; }
     else if (mi == 0) { g_pend0 = shui::Pending(); g_pend0.on = true; g_pend0.since = now; g_pend0.preHp = m.cur; g_pend0.preStack = pk.count; g_unqueuedSince0 = 0; g_kickReason0 = 0; g_starvedSince0 = 0; g_kickGaveUp0 = false; g_pendKey0 = pk.key; g_auto0.lastUseMs = now; g_auto0.pending = true; }
     if (out) { out->pk = pk; out->hp = m.cur; out->server = m.server; }
     reinterpret_cast<void(__thiscall*)(uintptr_t, int, int, uint32_t, int, uint32_t, int, int, int)>(UseItemRouteA)(m.server, 0, 0, selfServerId, 0, itemServerId, 0, 0, 0);
@@ -834,21 +831,23 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
     W& ring0 = g_w[W_RingLeader];
     W& disc0 = g_w[W_DiscLeader];
     W& frm0  = g_w[W_FrameLeader];
-    if (c0.st == shui::BtnState::Hidden) { wShow(b0, false); wShow(ring0, false); wShow(disc0, false); wShow(frm0, false); if (g_popMi == 0) g_popMi = -1; return; }
-    wRect(b0, c0.btn);
-    wRect(disc0, shui::ringRect(c0.btn));
-    wVis(disc0, wDisc(disc0));
-    const shui::Look L0 = shui::lookFor(c0.st, c0.cfg.autoOn, now);
-    wRect(frm0, c0.btn);   // kit frame behind the cross (hover = last frame's cursor test), dimmed with the cross
-    wVis(frm0, wFrame(frm0, b0.hover));
-    if (frm0.c) wAlpha(frm0, L0.alpha);
-    wIcon(b0, 0, L0);
-    if (L0.ring) {
-        wRect(ring0, shui::ringRect(c0.btn));
-        if (wRing(ring0, L0)) wVis(ring0, true); else wVis(ring0, false);
-    } else wVis(ring0, false);
-    wTip(b0, tipFor(c0));
-    wShow(b0, true);
+    if (c0.st == shui::BtnState::Hidden) { wShow(b0, false); wShow(ring0, false); wShow(disc0, false); wShow(frm0, false); if (g_popMi == 0) g_popMi = -1; }
+    else {
+        wRect(b0, c0.btn);
+        wRect(disc0, shui::ringRect(c0.btn));
+        wVis(disc0, wDisc(disc0));
+        const shui::Look L0 = shui::lookFor(c0.st, c0.cfg.autoOn, now);
+        wRect(frm0, c0.btn);   // kit frame behind the cross (hover = last frame's cursor test), dimmed with the cross
+        wVis(frm0, wFrame(frm0, b0.hover));
+        if (frm0.c) wAlpha(frm0, L0.alpha);
+        wIcon(b0, 0, L0);
+        if (L0.ring) {
+            wRect(ring0, shui::ringRect(c0.btn));
+            if (wRing(ring0, L0)) wVis(ring0, true); else wVis(ring0, false);
+        } else wVis(ring0, false);
+        wTip(b0, tipFor(c0));
+        wShow(b0, true);
+    }
 
     // input
     int cx = 0, cy = 0;
@@ -990,7 +989,7 @@ void buildWidgets(uintptr_t panel) {
     for (Card& c : g_card) c.seen = false;
     g_card0.seen = false;
     ProjGuard pg;
-    int n = 0, why[3] = {};
+    int n = 0;
     std::string whys;
     auto add = [&](int idx, const char* tmpl, const char* text, bool font, const char* name) {
         int why = 0;
@@ -1020,6 +1019,7 @@ void buildWidgets(uintptr_t panel) {
     add(W_Ring0, "LBL_QUEUE1", nullptr, false, "ring0");   // after the buttons: drawn on top
     add(W_Ring1, "LBL_QUEUE1", nullptr, false, "ring1");
     add(W_RingLeader, "LBL_QUEUE1", nullptr, false, "ringLeader");   // Leader ring
+    KP_LOGV(chHud, n == NWidgets ? KPLOG_INFO : KPLOG_WARN, "BUILD n=%d/%d why=%s", n, (int)NWidgets, whys.c_str());
     for (W& w : g_w) popStyle(w);
 }
 
