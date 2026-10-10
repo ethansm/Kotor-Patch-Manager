@@ -66,7 +66,11 @@ void logf(const char* fmt, ...) {
     char buf[600]; va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
     KP_LOGV(chMain, KPLOG_INFO, "%s", buf);
 }
+int g_warnLines = 0;
+constexpr int MaxWarnLines = 4000;  // warnings can fire per ShowItem call while a slot stays unusable
 void logw(const char* fmt, ...) {
+    if (g_warnLines >= MaxWarnLines) return;
+    ++g_warnLines;
     char buf[600]; va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
     KP_LOGV(chMain, KPLOG_WARN, "%s", buf);
 }
@@ -285,6 +289,13 @@ void setupPresentation(Slot* s, int row, int var, int cat, const FitEntry* fe) {
 #endif
 }
 
+// Engine framebuffer size (GuiKit reads the K2Addr ScreenW/ScreenH globals): used unless the INI sets screen_w/screen_h explicitly.
+// Kept outside INV3D_DRAG: loadIni() calls it in every build.
+void syncScreen() {
+    int w = (int)g_cfg.screenW, h = (int)g_cfg.screenH;
+    if (guikit::syncScreen(g_cfg.screenExplicit ? w : 0, g_cfg.screenExplicit ? h : 0, &w, &h)) { g_cfg.screenW = (float)w; g_cfg.screenH = (float)h; }
+}
+
 // ---- mouse drag (Design 6) ----
 #if INV3D_DRAG
 HWND g_hwnd = nullptr;
@@ -299,11 +310,6 @@ BOOL CALLBACK enumProc(HWND h, LPARAM lp) {
     return TRUE;
 }
 // ---- mouse wheel: GuiKit.h subclasses the game window (only consumes wheel events over the 3D view while the inventory ticks) ----
-// Engine framebuffer size (GuiKit reads the K2Addr ScreenW/ScreenH globals): used unless the INI sets screen_w/screen_h explicitly.
-void syncScreen() {
-    int w = (int)g_cfg.screenW, h = (int)g_cfg.screenH;
-    if (guikit::syncScreen(g_cfg.screenExplicit ? w : 0, g_cfg.screenExplicit ? h : 0, &w, &h)) { g_cfg.screenW = (float)w; g_cfg.screenH = (float)h; }
-}
 void wheelEvent(int delta, int px, int py, bool inside) { logf("WHEEL: delta=%d cursor=(%d,%d) inside=%d", delta, px, py, inside); }
 bool g_wheelCfgSet = false;
 
