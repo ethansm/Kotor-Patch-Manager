@@ -2,6 +2,19 @@
 
 Living record. Started 2026-09-30. Research + evidence first: **no engine-behaviour patch is installed without a measured win and the user's go-ahead.** Diagnostics-only patches follow "deploy and debug live, offer the choice".
 
+## Master Plan: Track P — Perf-Lab 0.6.0 & Engine Optimization
+
+| Id | Batch | Deps | Owner gate | Status | Commit | Next |
+|---|---|---|---|---|---|---|
+| P0 | W9 Static Research & Site Verification | - | - | DONE | 7751f7d | P1 |
+| P1 | RB render-pass QPC timing hooks (6 sites) | P0 | - | DONE | | P2 |
+| P2 | AIQ UpdateState scan loop telemetry (5 sites) | P1 | - | DONE | | P3 |
+| P3 | Texture-id scan & FocusGob strcmp counters (3 sites) | P2 | - | DONE | | P4 |
+| P4 | Helper-thread GUI modal RTTI sampler (0 hooks) | P3 | - | DONE | | P5 |
+| P5 | CExoString ToLower counter & abreserve experiment | P4 | - | DONE | | P6 |
+| P6 | Contract tests & wine harness smoke verification | P1-P5 | - | DONE | | P7 |
+| P7 | Live install & staging (DLL hot-swap + hooks merge) | P6 | user GO | DONE | | Play soak |
+
 ## HAND-OFF STATE (2026-10-03 16:45 Phase 6 part 3 closed; read this first after a context clear)
 **LIVE since 15:51 (DLL hot-swap, Status log):** perf-lab 0.4.0 `9c72cffb` (hwmip off), k2-robustness-fixes 1.2.0 `294be99f` (11/12 groups expected, fs count-only, movspin off), texmem 1.0.0 disabled. The live patch_config is the split session's hand-edited W5 set (doc 21): **do not KPM-reinstall without coordinating**; DLL-only changes = hot-swap. **Awaiting the user:** first launch (check `1.2.0 loaded: 11/12`, `perf-lab 0.4.0 attach ... hwmip=OFF`), Options>Sound test, run B (`texmem.txt enabled=1`), run C (`hwmip=1`), 10-launch soak; analyze with `perf_lab_src/analyze_runs.py --from-offsets ~/Games/KOTOR2_Mod_Workspace/runs_after_1551_offsets.txt` (`--arms texmem` / `--arms hwmip`). **NEXT PHASE (user direction 10-03, plan 'perf-lab 0.5.0'):** close perf-lab's blind spots first: module resref per LOAD_UP/DOWN, save/quicksave/quickload/autosave events, Options-apply marker, top-20 TPC by resident size per LOAD_DOWN, VA headroom (largest free block + total free) per LOAD_DOWN; then ledger measurements (RB, AB abreserve experiment, AIQ, J1 WAV bytes, TPC2X bytes/time, requeue bytes), per-frame overheads (GlobalMemoryStatus, c_FocusGob strcmp, texture-id scans), menu/in-game frame split + active panel, input jitter (doc 18), hwmip validation (per-format counts, first fallbacks, glGetTexLevelParameter level-1 check); static W9 (MDL/MDX/2002/2010, CExoString temporaries, DelayCommand/AssignCommand situation frees). Session handoff: `.claude/session_handoff.md`.
 
@@ -429,3 +442,12 @@ One diagnostic build (extend `perf-lab`, all counters off unless `perflab_debug.
 - NEXT: 0.6.0 plan from W9 sites (Opus), after the first 0.5.0 launch log is read.
 
 - Note (log analysis 2026-10-04): first 0.5.0 launch read (pid 320, 00:48). `analyze_runs --summary`: PASS, 10 launches, 0 hangs, gate B PASS; 4 loads, first load 5271 ms, TPC 549.5 MB, VA min largest 823 MB, robust FIRED 0, S2/S3 not covered. 0.6.0 plan is unblocked. Report `play_session_reports/2026-10-03_evening.md`.
+
+### Status log 2026-10-07 14:10 — INSTALLED perf-lab 0.6.0 (Track P, user GO)
+- Live: perf-lab.dll (77 exports, 68 detours; +15 hooks merged into patch_config.toml).
+- Verification: check_hook_bytes PASS=242/FAIL=0, check_hook_spans PASS=1/FAIL=0, common_contract_test PASS.
+- Backup: ~/.steam/steam/steamapps/common/Knights of the Old Republic II/backups/perflab_060_20261007_1404/ (live DLL + patch_config.toml).
+- Staging: files mirrored to ~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/PerfLab/.
+- Phases P0-P7: ALL 8 PHASES COMPLETE.
+- NEXT: Play soak to capture live telemetry with perflab_debug.txt.
+

@@ -122,3 +122,15 @@ Logging, wheel/WndProc, textures and per-save hooks stay local. New headers: mut
 - equip3d (`EquipCharPreview.cpp` ~:557, helmet model resref): goes with C3 (IsBadReadPtr removal). Its alnum+underscore `okName`
   check differs from the resref formatter, so it keeps a local predicate over `readResRef16(site, item + ItemModelResOff, name, 0)`.
 - level_up `readTag` (`LevelUpOverride.cpp` ~:946): `readExo` (strict) or `readExoLoose` (tolerant); owner's call, level-up session.
+
+**C4 follow-ups (2026-10-08, proposals for GameAddr.h additions from level-up-override / queue-hud).**
+Level-up override migrated 7 addresses to `GameAddr.h` (`PtrListAdd`, `AppGlobal`, `MemberServerCreature`, `PartyGetAt`, `ClientPartyTable`, `ExoCtor`, `ExoDtor`). The following unmapped addresses have multi-mod utility or verified Ghidra DB symbols and are proposed for additive inclusion in `GameAddr.h`:
+- `RulesGlobal = 0x00A1B4D0`: Global pointer to `CSWRules` singleton. Contains `+0x38` 2DA EXPTABLE (51 rows), `+0x104` spell table (consumed by `queue-hud` 0x60 and `level_up_override` 0x100), `+0x108` feat table rows, `+0x11C` feat count, `+0x123` skill count byte.
+- `GetPlayerCreature = 0x0073F450` (GOG `0x0040C910`): `CClientExoApp::GetPlayerCreature`, `thiscall(clientApp)`. Contrasts with `GetControlledCreature = 0x007E5D80` (`thiscall(partyTable)`). Used in `CSWGuiInGame::UpdatePortraits` (0x74F423) and leader instant evaluation.
+- `GetCharacterChangeInProgress = 0x00740FC0` (GOG `0x0040E480`): `CClientExoApp::GetCharacterChangeInProgress`, `thiscall(clientApp)`. Guards against GUI/portrait updates while party member swaps occur.
+- `GetClientOptions = 0x0072FB00` (GOG `0x0040CCF0`): `CClientExoApp::GetClientOptions`, `thiscall(clientApp)`.
+- `CanLevelUp = 0x006B9790` (GOG `0x006F5C10`): `CSWSCreatureStats::CanLevelUp`, `thiscall(creatureStats)`.
+- `AutoLevelup = 0x006BEDF0` (GOG `0x006FB270`): `CSWSCreatureStats::AutoLevelup`, `thiscall(creatureStats, int notify) RET 4`.
+- `AppendToMsgBuffer = 0x007BE090` (GOG `0x004CE720`): `CGuiInGame::AppendToMsgBuffer`, `thiscall(guiInGame, CExoString*, int, uint8) RET 0xC`.
+- `CSWGlobalVariableTable`: `FindIdentifierIndex` (`0x006545B0` / GOG `0x00651470`), `AddIdentifierBoolean` (`0x00654430` / GOG `0x006512F0`), `GetValueBoolean` (`0x00654740` / GOG `0x00651600`), `SetValueBoolean` (`0x00654BB0` / GOG `0x00651A70`).
+- `ServerInitialize = 0x0051C450` (GOG `0x0064BE70`): `CServerExoApp::Initialize`, `thiscall(serverApp)`.

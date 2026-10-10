@@ -226,12 +226,8 @@ Summary: `mods678_research/HANDOFF_2026-09-30.md` "Phase 0 background research D
 Shared by both: A1 freeze fix (11/12/16), E1 follow after the fight, H2 heal any party member, FM1 bump. `hold`/`retarget` are scoped to stance 16 in `ranged_ai.ini`, so vanilla Ranged stays vanilla. None of this is play-tested yet.
 
 
-## Planned shared state and shared code (doc 19 / 19b, added 2026-10-02)
-**Nothing here is built yet.** When a piece lands, use it instead of extending this patch's local copy. The ids (A1, B2, ...) refer to [`19b_cross_patch_sharing_survey.md`](19b_cross_patch_sharing_survey.md), which has the evidence. Line numbers there are from 10-02.
-- **Registry interfaces** (A-ids) use the RFC #180 registry from [`19_shared_logging_design.md`](19_shared_logging_design.md). Call `require` lazily at first use, and keep the current local code as the fallback when the provider is not installed.
-- **Common helpers** (B-ids) live in `Patches/Common` on the KPM fork. Edit them in `patch_manager_mods/_shared_src/` and sync with `scripts/check_shared_headers.py --sync`. New code includes `"SafeRead.h"`, not `"../_shared/SafeRead.h"`.
-- **Rollout:** shared pieces are consolidated on our fork first. Each one goes upstream inside the first mod PR that uses it, so order this mod's PR after the PR that introduces anything it reuses. Migrating this patch needs its owner's go.
-- **Logging:** move to `KpLog.h` channels and `kplog.ini` (doc 19 Phase 6). Keep the tag text exactly as it is, because the parsers depend on it.
-- **A5 `k2.rangedai` (provider):** companion AI's A1 hook (0x6D853E) reads the `[ebp-0x174]` stance this patch's E-H3 (0x6D850F) writes. It also hard-codes stance 16 (`companion_ai.ini:51-58`, `CompanionAiLogic.h:216-217`), while this patch owns the definition (`RangedAI.cpp:44`, `:87`). If this patch is absent or `ranged_rules=0`, companion AI silently misses stance 16. Provide `kite_stance()` (0 when the mapping is off) and `maps_to_ranged(raw, ebp)`.
-- **B3 ini helper:** loadIni (:107).
-- **B7:** `rd`/`wr`, `parseMask` (~:66, identical to companion AI).
+## Planned shared state and shared code (doc 19 / 19b, updated 2026-10-08)
+- **Common helpers:** Adopted shared `"SafeRead.h"` (dropped `"../_shared/SafeRead.h"`) and `"IniKit.h"` (`inikit::trim` in `loadIni`).
+- **A5 `k2.rangedai` (provider):** Migration complete (2026-10-08). Stance 16 is registered via the shared provider interface `k2.rangedai@1` in `RangedAI.h` (`api->provide(K2RAI_IFACE, K2RAI_VERSION, &g_raiApi)`). Provides `KiteStance()` (returns 16 when `ranged_rules=1`, 0 when off) and `MapsToRanged(raw, ebp)` (evaluates mapping to stance 11 with frame context). Pinned in `common_contract_test.cpp` (`inikit_contract`, `rangedai_contract`). Manifest declares `provides = ["k2.rangedai@1"]`.
+- **Registry interfaces:** Uses RFC #180 `KPatchApi` in `KPatchInit`.
+- **Logging:** Shared `KpLog.h` (channel main).
