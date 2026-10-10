@@ -36,11 +36,16 @@ def to_snake_case(s: str) -> str:
 
 def scaffold_mod(mod_name: str, doc_id: str = None, title: str = None, dry_run: bool = False):
     clean_name = to_snake_case(mod_name).removesuffix("_src")
+    if not re.fullmatch(r"[a-z0-9_]+", clean_name):
+        print(f"ERROR: invalid mod name {mod_name!r}; use only letters, digits and underscores")
+        return 1
     pascal_name = to_pascal_case(clean_name)
     mod_dir_name = f"{clean_name}_src"
     mod_path = REPO_ROOT / "patch_manager_mods" / mod_dir_name
 
     display_title = title or f"{pascal_name} Mod"
+    display_title = re.sub(r"[\r\n]+", " ", display_title)
+    toml_title = display_title.replace("\\", "\\\\").replace('"', '\\"')
 
     if not doc_id:
         existing_docs = []
@@ -49,6 +54,8 @@ def scaffold_mod(mod_name: str, doc_id: str = None, title: str = None, dry_run: 
             if m:
                 existing_docs.append(int(m.group(1)))
         doc_id = f"{max(existing_docs, default=34) + 1:02d}"
+    elif doc_id.isdigit():
+        doc_id = f"{int(doc_id):02d}"
 
     plan_filename = f"{doc_id}_{clean_name}.md"
     plan_path = REPO_ROOT / "patch_manager_mods" / plan_filename
@@ -115,10 +122,10 @@ target_version = "Steam Aspyr 2015"
     # 4. manifest.toml
     manifest_toml = f"""[patch]
 id = "{clean_name.replace('_', '-')}"
-name = "{display_title}"
+name = "{toml_title}"
 version = "1.0.0"
 author = "ethansm"
-description = "{display_title} for KOTOR II"
+description = "{toml_title} for KOTOR II"
 kind = "mod"
 target = "swkotor2.exe"
 
@@ -240,17 +247,22 @@ python3 scripts/agent_diff_check.py --mod {mod_dir_name}
         return 0
 
     mod_path.mkdir(parents=True, exist_ok=True)
+    created = 0
     for target, content in files_to_write:
         if not target.exists():
             target.write_text(content, encoding="utf-8")
+            created += 1
             print(f"  [CREATED] {target.relative_to(REPO_ROOT)}")
         else:
             print(f"  [EXISTS]  {target.relative_to(REPO_ROOT)} (skipped)")
 
-    print("\nMod scaffolding complete and verified compliant with:")
-    print("  ✓ Standard Include Style (\"Header.h\" with -I Common)")
-    print("  ✓ Common Contract Testing (common_contract_test.cpp + test.toml)")
-    print("  ✓ Master Plan 7-column schema & oc-subagent delegation matrix")
+    if created == 0:
+        print("\nNo files created; all targets already existed.")
+    else:
+        print("\nMod scaffolding complete (templates only, no compliance check run). Conventions applied:")
+        print("  ✓ Standard Include Style (\"Header.h\" with -I Common)")
+        print("  ✓ Common Contract Testing (common_contract_test.cpp + test.toml)")
+        print("  ✓ Master Plan 7-column schema & oc-subagent delegation matrix")
     print(f"\nNext Action: python3 scripts/plan_manager.py resume {plan_path.name}")
     return 0
 

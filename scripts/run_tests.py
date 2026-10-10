@@ -617,12 +617,12 @@ def resolve_mod_for_smoke(kpatch: Path | str, mod: str | None = None) -> Path | 
                 return m.dir
             if parent and (parent == p_name or parent == m.dir.name.lower()):
                 return m.dir
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"warning: _static_common lookup failed ({e}); falling back to directory name match", file=sys.stderr)
     for d in (REPO / "patch_manager_mods").iterdir():
         if d.is_dir():
             clean = d.name.replace("_src", "").replace("-", "").lower()
-            if clean and (clean in stem or stem in clean):
+            if clean and clean == stem:
                 return d
     return None
 
@@ -640,14 +640,12 @@ def _ensure_built_dll(mod_dir: Path) -> Path:
 
         rebuild_needed = not dll_candidates
         if dll_candidates:
-            dll_path = dll_candidates[0]
-            dll_mtime = dll_path.stat().st_mtime
-            src_dirs = [mod_dir, REPO / "patch_manager_mods" / "_shared_src"]
+            dll_mtime = max(p.stat().st_mtime for p in dll_candidates)
+            src_dirs = [mod_dir, REPO / "patch_manager_mods" / "_shared_src", KPM_DIR, REPO / "scripts" / "build_check.py"]
             for sdir in src_dirs:
-                if not sdir.is_dir():
-                    continue
-                for p in sdir.rglob("*"):
-                    if p.is_file() and p.suffix.lower() in (".cpp", ".h", ".hpp", ".inc", ".def"):
+                scan = [sdir] if sdir.is_file() else sdir.rglob("*") if sdir.is_dir() else []
+                for p in scan:
+                    if p.is_file():
                         if p.stat().st_mtime > dll_mtime:
                             rebuild_needed = True
                             break
@@ -663,7 +661,7 @@ def _ensure_built_dll(mod_dir: Path) -> Path:
             if not dll_candidates:
                 raise RuntimeError(f"build_check --keep for {m_rel} produced no DLL in {build_root / key}")
 
-        return dll_candidates[0]
+        return max(dll_candidates, key=lambda p: p.stat().st_mtime)
 
 
 def _extract_dll(kpatch: Path, dest: Path, dll_from: str = "kpatch", mod: str | None = None):
@@ -853,10 +851,11 @@ def main() -> int:
         return 1 if cr.failed else 0
 
     t_start = time.monotonic()
-    include_build_tier = a.build or a.wine or any(x == "suite:build-check" for x in target_ids)
+    requested = set(target_ids) | set(a.filters)
+    include_build_tier = a.build or a.wine or any(x == "suite:build-check" for x in requested)
     items = discover(sanitize=not a.no_sanitize, tiers=("build",) if include_build_tier else ())
     smokes, wine_err = ([], "")
-    include_wine = a.wine or any(x.startswith("wine:") for x in target_ids)
+    include_wine = a.wine or any(x.startswith("wine:") for x in requested)
     if include_wine:
         smokes, wine_err = wine_plan(SMOKES_TOML, dll_from_override=a.dll_from)
     if a.k:
@@ -930,11 +929,14 @@ def main() -> int:
                 print(f"{wid}  [wine]" + (f"  SKIP ({skip})" if skip else ""))
         return 0
 
-    # Fail closed per id: a stale or typo'd id must not be silently dropped while the rest still run
-    matched_ids = {i.id for i in items} | {w[0] for w in wine_items}
-    missing = sorted(t for t in target_ids if t not in matched_ids and not any(w[0].startswith(f"{t}[") for w in wine_items))
+    # Every requested id / filter must match something; --json output is not written on this exit-2 path.
+    matched_ids = {i.id for i in items} | {w for w, *_ in wine_items}
+    missing = sorted(t for t in target_ids
+                     if t not in matched_ids and not (t.startswith("wine:") and wine_err)
+                     and not any(w.startswith(f"{t}[") for w in matched_ids))
+    missing += sorted(s for s in pos_subs if not any(s in m for m in matched_ids)) if a.filters else []
     if missing:
-        sys.stderr.write(f"error: no tests matched the requested ids: {', '.join(missing)}\n")
+        sys.stderr.write("error: no test item matched: " + ", ".join(missing) + "\n")
         return 2
 
     results: list[Result] = []

@@ -7,7 +7,8 @@ Usage: selfheal_log_check.py [LOG | --log LOG] [--from LINE] [--to LINE]
   Exit 0 = PASS/INCOMPLETE, 1 = FAIL, 2 = log missing/unreadable.
 
 Line formats come from patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp; KpLog.h prefixes each line with
-"<ms> companion-selfheal/<chan> [ERR |WARN ]" (prefix optional here so bare lines parse too).
+"<ms> companion-selfheal/<chan> [ERR |WARN ]" or "T=<secs> f=<frame|-> companion-selfheal/<chan> [ERR |WARN ]"
+(prefix optional here so bare lines parse too).
 Checks (0.4.0-dev adds): BUILD n=N/D (FAIL if N<D without why=), ICON fallback and TEX giving up are WARN.
 0.6.0-dev (CS12): REFUSE already queued, KICK member=N before=[..] after=[..] k=K route=rotate, KICK skipped member=N (gate=v),
 KICK starved member=N, DONE ... queued=Q, TIMEOUT unqueued member=N. `KICK starved` and `TIMEOUT unqueued` are WARN (never FAIL): a timeout while
