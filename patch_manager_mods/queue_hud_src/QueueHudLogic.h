@@ -183,8 +183,8 @@ inline int autoIconPx(int vitH) {
     return px < 48 ? 48 : (px > 72 ? 72 : px);
 }
 
-// Icon edge in px: the configured size, or auto. Auto, left side: 40% of vit height clamped [32, 48]
-// (~38 px on the live 47x96 small vit). Above / below: 60% of the vit height. Rounded, at least kStripMinIcon.
+// Icon edge in px: the configured size, or auto. Auto, left side: autoIconPx (60% of vit height clamped [48, 72],
+// ~58 px on the live 96 px vit). Above / below: 60% of the vit height. Rounded, at least kStripMinIcon.
 inline int stripIconSize(Rect vit, const Config& c) {
     if (c.stripIconPx > 0) return c.stripIconPx;
     int s = 0;

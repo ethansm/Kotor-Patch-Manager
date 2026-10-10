@@ -562,7 +562,7 @@ void testStripAvoidsSelfHeal() {
     }
 }
 
-// left (the default) on the live 3840x1600 layout (doc 08 probe 1): auto 38 px icons centred on the 96 px bar, ending 38 px left of
+// left (the default) on the live 3840x1600 layout (doc 08 probe 1): auto 58 px icons centred on the 96 px bar, ending 38 px left of
 // vit.x; the two stacked companions (104 px apart) and the leader's bars never touch a strip.
 void testStripLeftLive() {
     Config c;
@@ -998,7 +998,7 @@ void testMixedForcePowersAndItems() {
 }
 
 void testStripCancel() {
-    // live 3840x1600 companion 2 / 3 (doc 08 probe 1, as testStripLeftLive): 38 px icons centred on the 96 px bar
+    // live 3840x1600 companion 2 / 3 (doc 08 probe 1, as testStripLeftLive): 58 px icons centred on the 96 px bar
     Config c;
     const Rect vit2{ 3671, 1285, 47, 96 }, card2{ 3711, 1285, 85, 85 }, vit3{ 3671, 1181, 47, 96 }, card3{ 3711, 1181, 85, 85 };
     const shui::Rect leaderVit{ 3511, 1386, 103, 208 }, leaderCard{ 3591, 1394, 191, 192 }, leaderForce{ 3762, 1386, 103, 208 };
