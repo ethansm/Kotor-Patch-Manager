@@ -930,6 +930,13 @@ def main() -> int:
                 print(f"{wid}  [wine]" + (f"  SKIP ({skip})" if skip else ""))
         return 0
 
+    # Fail closed per id: a stale or typo'd id must not be silently dropped while the rest still run
+    matched_ids = {i.id for i in items} | {w[0] for w in wine_items}
+    missing = sorted(t for t in target_ids if t not in matched_ids and not any(w[0].startswith(f"{t}[") for w in wine_items))
+    if missing:
+        sys.stderr.write(f"error: no tests matched the requested ids: {', '.join(missing)}\n")
+        return 2
+
     results: list[Result] = []
 
     def emit(r):

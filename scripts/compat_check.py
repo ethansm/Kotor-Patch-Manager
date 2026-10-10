@@ -619,8 +619,8 @@ def run_lint(
                                 matches = list(repo_root.glob(pat)) or list(Path(root).glob(pat))
                                 if not matches and not pat_path.exists():
                                     warnings.append(f"WARN stale covers in {rel_tpath}: {pat}")
-                except Exception:
-                    pass
+                except Exception as exc:
+                    warnings.append(f"WARN unreadable {rel_tpath}: {exc}")
 
     # 4. Interface provides vs header check
     for mod, minfo in sorted(graph.manifests.items()):
@@ -1050,6 +1050,22 @@ def main() -> int:
                     )
                     counts["FAIL"] = counts.get("FAIL", 0) + 1
 
+            if b_proc.returncode != 0 and not any(
+                r["kind"] == "build" and r["status"] == "FAIL" and r["id"].startswith("build_check:")
+                for r in all_results
+            ):
+                all_results.append(
+                    {
+                        "id": "build_check",
+                        "kind": "build",
+                        "status": "ERROR",
+                        "seconds": 0.0,
+                        "reason": f"build_check.py exited {b_proc.returncode}",
+                        "tail": "\n".join(out_lines[-20:]),
+                    }
+                )
+                counts["ERROR"] = counts.get("ERROR", 0) + 1
+
         # If running wine smokes, run builds first with --keep so built DLLs are available for smokes
         if args.wine and build_mods:
             run_build_mods(build_mods)
@@ -1086,12 +1102,13 @@ def main() -> int:
                     check=False,
                 )
                 # Parse runner output JSON
-                if Path(json_tmp_path).is_file():
+                # The temp file is pre-created by NamedTemporaryFile, so an empty file means the runner wrote no results
+                if Path(json_tmp_path).is_file() and Path(json_tmp_path).stat().st_size > 0:
                     try:
                         runner_json = json.loads(Path(json_tmp_path).read_text(encoding="utf-8"))
                         for r in runner_json.get("results", []):
                             all_results.append(r)
-                            st = r.get("status", "PASS")
+                            st = r.get("status", "ERROR")
                             counts[st] = counts.get(st, 0) + 1
 
                             # Check for contract test breakage
@@ -1110,10 +1127,10 @@ def main() -> int:
                                         mod_name = mod_match.group(1).replace("_src", "") if mod_match else "unknown"
                                         breaking_errors.append(f"BREAKING for {mod_name}: {relies_line}")
                     except Exception:
-                        pass
-                else:
-                    if proc.returncode != 0:
                         counts["ERROR"] = counts.get("ERROR", 0) + len(test_suite_ids)
+                else:
+                    # No usable runner output (crash, early exit, empty file): fail closed
+                    counts["ERROR"] = counts.get("ERROR", 0) + len(test_suite_ids)
             finally:
                 if os.path.exists(json_tmp_path):
                     os.unlink(json_tmp_path)

@@ -340,7 +340,7 @@ DIVERSITY_APPEARANCES: List[Dict[str, Any]] = [
         "label": "Twilek_Commoner_M_02_A",
         "base": MALE_COMM_TEMPLATE,
         "overrides": {
-            "normalhead": "192",  # llk_Ahrnell
+            "normalhead": "llk_Ahrnell",
             "race": "N_CommM",
         },
     },
@@ -348,7 +348,7 @@ DIVERSITY_APPEARANCES: List[Dict[str, Any]] = [
         "label": "Twilek_Commoner_M_02_B",
         "base": MALE_COMM_TEMPLATE,
         "overrides": {
-            "normalhead": "193",  # llk_Harra
+            "normalhead": "llk_Harra",
             "race": "N_CommM",
         },
     },
@@ -356,7 +356,7 @@ DIVERSITY_APPEARANCES: List[Dict[str, Any]] = [
         "label": "Twilek_Commoner_M_02_C",
         "base": MALE_COMM_TEMPLATE,
         "overrides": {
-            "normalhead": "194",  # llk_KehVehn
+            "normalhead": "llk_KehVehn",
             "race": "N_CommM",
         },
     },
@@ -364,7 +364,7 @@ DIVERSITY_APPEARANCES: List[Dict[str, Any]] = [
         "label": "Twilek_Commoner_M_02_D",
         "base": MALE_COMM_TEMPLATE,
         "overrides": {
-            "normalhead": "195",  # llk_LupoShar
+            "normalhead": "llk_LupoShar",
             "race": "N_CommM",
         },
     },

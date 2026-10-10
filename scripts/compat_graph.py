@@ -286,7 +286,7 @@ class CompatGraph:
                     if ext in CPP_EXTS:
                         candidate_files.append(dpath / fn)
 
-        for src in candidate_files:
+        for src in sorted(candidate_files):
             rel_src = self._rel(src)
             self.all_cpp_files.add(rel_src)
 
@@ -409,7 +409,7 @@ class CompatGraph:
                     if fn.endswith(".py"):
                         candidate_files.append(dpath / fn)
 
-        for p in candidate_files:
+        for p in sorted(candidate_files):
             rel_p = self._rel(p)
             self.all_py_files.add(rel_p)
             stem = p.stem
@@ -506,7 +506,7 @@ class CompatGraph:
                 mod_is_probe = "probe" in mod_dir.lower()
                 if is_probe != mod_is_probe:
                     continue
-                if token_clean in m_id or token_clean in m_name or m_id in token_clean or m_name in token_clean:
+                if (m_id and token_clean in m_id) or (m_name and token_clean in m_name) or (m_id and m_id in token_clean) or (m_name and m_name in token_clean):
                     matched_mod = mod_dir
                     break
 
@@ -515,7 +515,7 @@ class CompatGraph:
                 for mod_dir, m_info in self.manifests.items():
                     m_name = m_info.get("name", "").replace(" ", "").lower()
                     m_id = m_info.get("id", "").replace("-", "").lower()
-                    if token_clean in m_id or token_clean in m_name or m_id in token_clean or m_name in token_clean:
+                    if (m_id and token_clean in m_id) or (m_name and token_clean in m_name) or (m_id and m_id in token_clean) or (m_name and m_name in token_clean):
                         matched_mod = mod_dir
                         break
 
@@ -526,6 +526,8 @@ class CompatGraph:
         """Scan test.toml covers and tests/compat.toml (E4d, E5)."""
         # test.toml files
         for root, dirs, files in os.walk(self.repo_root / "patch_manager_mods"):
+            if _is_pruned(Path(root)):
+                continue
             if "test.toml" in files:
                 tpath = Path(root) / "test.toml"
                 try:
