@@ -117,6 +117,20 @@ class CliSelectionTests(unittest.TestCase):
         self.assertEqual(res.returncode, 2)
         self.assertIn("error: --ids-file not found", res.stderr)
 
+    def test_positional_exact_id(self):
+        res = self._run_cli("cpp:gui2d_test", "--list")
+        self.assertEqual(res.returncode, 0)
+        lines = [ln.strip() for ln in res.stdout.splitlines() if ln.strip()]
+        self.assertEqual(len(lines), 1)
+        self.assertIn("cpp:gui2d_test", lines[0])
+
+    def test_positional_substring_filter(self):
+        res = self._run_cli("gui2d", "--list")
+        self.assertEqual(res.returncode, 0)
+        lines = [ln.strip() for ln in res.stdout.splitlines() if ln.strip()]
+        self.assertEqual(len(lines), 1)
+        self.assertIn("cpp:gui2d_test", lines[0])
+
 
 class ListJsonTests(unittest.TestCase):
     def _run_cli(self, *args):
