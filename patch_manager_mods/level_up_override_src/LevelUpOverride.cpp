@@ -164,12 +164,18 @@ const bool g_fallbackSet = (KpLog_SetFallbackFile(LogName), true);
 inline bool logOpen() { return true; }
 inline void logClose() {}
 
+// Marks a log line that vsnprintf had to cut short (w = untruncated length) so the loss is visible.
+template <size_t N> void markTruncated(char (&buf)[N], int w) {
+    if (w >= (int)N) { buf[N - 4] = '.'; buf[N - 3] = '.'; buf[N - 2] = '.'; }
+}
+
 // Level-up call dump logger (indented call lines).
 void logf(const char* fmt, ...) {
     char buf[2048];
     va_list ap; va_start(ap, fmt);
-    vsnprintf(buf, sizeof buf, fmt, ap);
+    int w = vsnprintf(buf, sizeof buf, fmt, ap);
     va_end(ap);
+    markTruncated(buf, w);
     KP_LOG(chLevelUp, "%s", buf);
 }
 
@@ -177,8 +183,9 @@ void logf(const char* fmt, ...) {
 void logLine(const char* fmt, ...) {
     char buf[2048];
     va_list ap; va_start(ap, fmt);
-    vsnprintf(buf, sizeof buf, fmt, ap);
+    int w = vsnprintf(buf, sizeof buf, fmt, ap);
     va_end(ap);
+    markTruncated(buf, w);
     KP_LOG(chUi, "%s", buf);
 }
 
@@ -1409,7 +1416,7 @@ void reloadPlay(bool force = false) {
         g_ptPoll.checked = true;
         g_ptPoll.lastCheck = GetTickCount();
     }
-    const bool changed = !g_ptPoll.primed || (st != g_ptPoll.last);
+    const bool changed = !force || !g_ptPoll.primed || (st != g_ptPoll.last);
     g_ptPoll.last = st;
     g_ptPoll.primed = true;
     g_ptStamp = st;
@@ -1432,7 +1439,6 @@ void reloadPlay(bool force = false) {
 
 // Writes n bytes of g_ptText to levelup_playthroughs.ini.tmp and replaces the ini.
 // Note: retains MOVEFILE_WRITE_THROUGH (flush to disk before rename returns) per LevelUpOverride save safety.
-// Propose additive writeThrough parameter to filewatch::atomicWrite for Common owner adoption in Chunk C9.
 bool ptWriteText(size_t n) {
     FILE* f = fopen(PtTmp, "wb");
     if (!f) return false;
@@ -1567,7 +1573,7 @@ void onLevelUp(uintptr_t stats, uintptr_t ret, uintptr_t pending, int addToList,
     if (g_cfg.mode == Mode::Off) return;
     reloadTable(true);
     reloadPlay(true);
-    logOpen();   // F1: the log is diagnostics only - a closed/capped/unopenable log (g_f == nullptr) makes logf a no-op, the decision and rewrite below still run
+    logOpen();   // F1: the log is diagnostics only - logf never gates the decision and rewrite below (logOpen is a no-op here)
     const bool v = g_cfg.verbose;
 
     // -- caller chain: EBP at hook time = LevelUp's caller frame; [ebp+4] = caller's return address
@@ -2247,7 +2253,7 @@ void r10LogSource(const R10Eff& e) {
     const int k = (e.playthrough ? 1 : 0) | (e.on ? 2 : 0);
     if (k == g_r10SrcLast) return;
     g_r10SrcLast = k;
-    logLine("R10 config source=%s on=%d profile=%s feats=%s powers=%s", e.playthrough ? "playthrough" : "ini", e.on, e.profile[0] ? e.profile : "-", r10f::modeName(e.feats), r10f::modeName(e.powers));
+    KP_LOG(chR10, "R10 config source=%s on=%d profile=%s feats=%s powers=%s", e.playthrough ? "playthrough" : "ini", e.on, e.profile[0] ? e.profile : "-", r10f::modeName(e.feats), r10f::modeName(e.powers));
 }
 
 void r10Dim(int kind, uintptr_t ebp, int panelOff) {
@@ -2263,7 +2269,7 @@ void r10Dim(int kind, uintptr_t ebp, int panelOff) {
     if (!readAt(S_Frame, ebp, panelOff, &panel) || !panel) return;
     const char* const kn = r10::kindName(kind);
     const int pc = r10IsPc(panel);
-    if (pc != 1) { logLine("R10 dim skip kind=%s panel=%08x reason=%s", kn, (unsigned)panel, pc ? "unreadable" : "not_pc"); return; }
+    if (pc != 1) { KP_LOG(chR10, "R10 dim skip kind=%s panel=%08x reason=%s", kn, (unsigned)panel, pc ? "unreadable" : "not_pc"); return; }
     if (!r10TagsReady()) return;
     r10f::Profile prof;
     r10f::parseProfile(eff.profile, &prof);   // invalid -> empty profile -> build modes report noprofile
@@ -2271,11 +2277,11 @@ void r10Dim(int kind, uintptr_t ebp, int panelOff) {
     uint16_t w = 0; uint8_t b = 0;
     if (kind == r10::Feats) { if (readAt(S_R10, panel, PnF_Picks, &w)) picks = w; }
     else if (readAt(S_R10, panel, PnP_Picks, &b)) picks = b;
-    if (picks < 0) { logLine("R10 dim skip kind=%s panel=%08x reason=picks_unreadable", kn, (unsigned)panel); return; }
+    if (picks < 0) { KP_LOG(chR10, "R10 dim skip kind=%s panel=%08x reason=picks_unreadable", kn, (unsigned)panel); return; }
     int before = -1, after = -1;
     const int v = kind == r10::Powers ? r10DimVector<uint32_t>(kind, panel + PnP_Vec, prof, m, picks, &before, &after)
                                       : r10DimVector<uint16_t>(kind, panel + PnF_Vec, prof, m, picks, &before, &after);
-    logLine("R10 dim kind=%s panel=%08x mode=%s before=%d after=%d picks=%d fallback=%d verdict=%s", kn, (unsigned)panel, r10f::modeName(m), before, after,
+    KP_LOG(chR10, "R10 dim kind=%s panel=%08x mode=%s before=%d after=%d picks=%d fallback=%d verdict=%s", kn, (unsigned)panel, r10f::modeName(m), before, after,
             picks, v == r10f::DimFallback, v < 0 ? "unreadable" : r10f::dimVerdictName(v));
 }
 

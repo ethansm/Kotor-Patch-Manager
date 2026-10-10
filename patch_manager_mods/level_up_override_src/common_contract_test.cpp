@@ -2,7 +2,7 @@
 //
 // Pins the semantics THIS mod relies on in GuiTip.h (new, LevelUpUi.h call sites) and the GuiKit.h helpers its character-screen UI uses; the
 // headers' own behaviour is _shared_src/{guitip,guikit,saferead,k2addr}_test.cpp. Every message starts with "level-up-override relies on: " so a
-// failure names the consumer and the reason. Built against ../_shared_src (see test.toml): any edit to GuiTip.h / GuiKit.h / K2Addr.h re-runs it.
+// failure names the consumer and the reason. Built against ../_shared_src (see test.toml): any edit to GuiTip.h / GuiKit.h / K2Addr.h / GameAddr.h / Party.h / FileWatch.h re-runs it.
 // Expected values are independent literals (LevelUpUi.h comments, RE spike UX_native_tooltip.md, GuiKit engine facts), never read back from the headers.
 // Host: the stub's VirtualQuery reports every address readable; engine 32-bit pointers live in a MAP_32BIT arena and are written as uint32_t.
 #ifndef GUIKIT_HOST
@@ -196,7 +196,9 @@ int main() {
             LCHECK("filewatch::changed initial load reports change", filewatch::changed(rp, tmpPath, 1000));
             LCHECK("filewatch::changed throttled within 1000ms", !filewatch::changed(rp, tmpPath, 1500));
             LCHECK("filewatch::changed quiet after throttle when unchanged", !filewatch::changed(rp, tmpPath, 2500));
-            LCHECK("filewatch::changed force skips throttle if changed", !filewatch::changed(rp, tmpPath, 2600, true));
+            FILE* grow = fopen(tmpPath, "ab");
+            if (grow) { fputs("more", grow); fclose(grow); }
+            LCHECK("filewatch::changed force skips throttle if changed", filewatch::changed(rp, tmpPath, 2600, true));
             filewatch::accept(rp, tmpPath);
             LCHECK("filewatch::accept primes poll", rp.primed);
             remove(tmpPath);
