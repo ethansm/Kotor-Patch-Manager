@@ -1,7 +1,7 @@
 [patch]
 id = "level-up-override"
 name = "LevelUpOverride"
-version = "1.5.0-dev"
+version = "1.6.0-dev"
 author = "local"
 description = "Level-up override: makes AUTO level-ups follow a per-character build preset from levelup_paths.ini (manual picks never changed), can hold a companion's level-ups (bank them) until its Jedi class change, with an optional per-companion 'Pause at level N', and can make level-ups instant (opt-in). Configured per save on the character screen (Configure button -> options page; save-bound playthrough config); a status line and a one-time banked-level message show what is held. Hooks CSWSCreatureStats::LevelUp (0x006B9870), the CanLevelUp gate at 13 sites, the options accessor gate at 4 sites, the GUI guards, the character panel ctor (0x84D82C) and tick (0x84F221), and the globals save/load/new-server hooks (0x656640, 0x65675B, 0x401C52). Config levelup_override.ini (all optional; a missing file means mode=rewrite, which changes nothing until a path is configured): mode=rewrite|log|off, apply=, verbose=, table=, and dev=1 to enable the dev keys preset.<tag>=, instant.<tag>=, hold.<tag>=, pause.<tag>= and legacy tags=. R10 (off by default): r10probe=1 logs the feats/powers level-up panels; r10=1 with r10.profile=<role>/<style>/<align>, r10.feats= and r10.powers= (all|build_dim|combat|force) greys the PC's feats/powers that do not fit the build (r10_tags.ini next to the table)."
 

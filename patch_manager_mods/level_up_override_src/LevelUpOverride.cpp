@@ -76,6 +76,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include "KpLog.h"
 #include "SafeRead.h"
 #include "GuiKit.h"
 #include "GuiTip.h"
@@ -91,13 +92,26 @@
 #include "WizardLogic.h"
 #include "OptionsLogic.h"
 
+KP_LOG_PATCH("level-up-override");
+
+extern "C" void __cdecl KPatchInit(const KPatchApi* api) { KpLog_Init(api); }
+
 namespace {
 
 using saferead::readAt;
 using saferead::probeRead;
 
-constexpr const char* Version = "1.5.0-dev";
+constexpr const char* Version = "1.6.0-dev";
 constexpr bool ApplyEnabled = true;    // build-level switch; runtime switches are mode=rewrite + apply=1
+
+KP_CHANNEL(chMain, "main");
+KP_CHANNEL(chCfg, "cfg");
+KP_CHANNEL(chTable, "table");
+KP_CHANNEL(chPlay, "play");
+KP_CHANNEL(chGate, "gate");
+KP_CHANNEL(chLevelUp, "levelup");
+KP_CHANNEL(chUi, "ui");
+KP_CHANNEL(chR10, "r10");
 
 // ---- engine layout (doc 08 "Struct offsets" + "Phase 1b results" O5) ------------------------------------
 constexpr uintptr_t RulesGlobal = 0x00A1B4D0;      // rules singleton; +0x123 byte skill count
@@ -143,34 +157,29 @@ bool isEngineGrantPower(uint32_t s) {
 }
 
 // ---- logging -------------------------------------------------------------------------------------------
-constexpr int MaxLogLines = 20000;
 constexpr long RotateBytes = 4L << 20;
 const char* LogName = "levelup_override_log.txt";
-int g_logLines = 0;
-FILE* g_f = nullptr;   // open only inside one hook call
+const bool g_fallbackSet = (KpLog_SetFallbackFile(LogName), true);
 
-bool logOpen() {
-    if (g_logLines >= MaxLogLines) return false;
-    g_f = fopen(LogName, "a");
-    return g_f != nullptr;
-}
-void logClose() { if (g_f) { fclose(g_f); g_f = nullptr; } }
+inline bool logOpen() { return true; }
+inline void logClose() {}
+
+// Level-up call dump logger (indented call lines).
 void logf(const char* fmt, ...) {
-    if (!g_f || g_logLines >= MaxLogLines) return;
-    ++g_logLines;
-    va_list ap; va_start(ap, fmt); vfprintf(g_f, fmt, ap); va_end(ap);
-    fputc('\n', g_f);
-    if (g_logLines == MaxLogLines) fputs("== log line cap reached ==\n", g_f);
+    char buf[2048];
+    va_list ap; va_start(ap, fmt);
+    vsnprintf(buf, sizeof buf, fmt, ap);
+    va_end(ap);
+    KP_LOG(chLevelUp, "%s", buf);
 }
-// Opens, writes one line, closes (for config/table messages outside a call dump).
+
+// UI logger (LevelUpUi.h call sites + embtex::g_log).
 void logLine(const char* fmt, ...) {
-    bool own = !g_f;
-    if (own && !logOpen()) return;
-    ++g_logLines;
-    fprintf(g_f, "[%lu] ", GetTickCount());
-    va_list ap; va_start(ap, fmt); vfprintf(g_f, fmt, ap); va_end(ap);
-    fputc('\n', g_f);
-    if (own) logClose();
+    char buf[2048];
+    va_list ap; va_start(ap, fmt);
+    vsnprintf(buf, sizeof buf, fmt, ap);
+    va_end(ap);
+    KP_LOG(chUi, "%s", buf);
 }
 
 // Small appender for building one log line from lists.
@@ -263,7 +272,7 @@ void reloadConfig(bool force = false) {
                 else if (!strcmp(v, "log")) c.mode = Mode::Log;
                 else {
                     c.mode = Mode::Rewrite;   // F17: same as a missing key; only an explicit mode=rewrite is silent
-                    if (strcmp(v, "rewrite")) logLine("CONFIG WARNING unknown mode=%s - using rewrite", raw);
+                    if (strcmp(v, "rewrite")) KP_LOGV(chCfg, KPLOG_WARN, "CONFIG WARNING unknown mode=%s - using rewrite", raw);
                 }
             } else if (!strcmp(k, "dev")) {
                 c.dev = atoi(v) != 0;
@@ -317,13 +326,14 @@ void reloadConfig(bool force = false) {
         if (!hasHold[i]) c.tags[i].hold = false;
     }
     g_cfg = c;
+    if (!KpLog_HasCore()) KpLog_SetFallbackLevel(c.verbose ? KPLOG_DEBUG : KPLOG_INFO);
     resolvePresets();
     Buf b;
     for (int i = 0; i < c.nTags; ++i) b.add("%s%s:%s/i%d/h%d/p%d", i ? "," : "", c.tags[i].tag, c.presetId[i][0] ? c.presetId[i] : "-", c.tags[i].instant, c.tags[i].hold, c.tags[i].pause);
-    logLine("CONFIG %s mode=%s apply=%d verbose=%d table=%s tags=%s", st.exists ? "loaded" : "missing (defaults)",
-            c.mode == Mode::Off ? "off" : c.mode == Mode::Rewrite ? "rewrite" : "log", c.apply, c.verbose, c.table, b.s);
-    if (c.r10) logLine("R10 config r10=1 profile=%s feats=%s powers=%s", c.r10Profile[0] ? c.r10Profile : "-", r10f::modeName(c.r10Feats), r10f::modeName(c.r10Powers));
-    if (c.dev) logLine("DEV keys enabled (dev=1): preset./instant./hold./pause.<tag>= and tags= are read");
+    KP_LOG(chCfg, "CONFIG %s mode=%s apply=%d verbose=%d table=%s tags=%s", st.exists ? "loaded" : "missing (defaults)",
+           c.mode == Mode::Off ? "off" : c.mode == Mode::Rewrite ? "rewrite" : "log", c.apply, c.verbose, c.table, b.s);
+    if (c.r10) KP_LOG(chR10, "R10 config r10=1 profile=%s feats=%s powers=%s", c.r10Profile[0] ? c.r10Profile : "-", r10f::modeName(c.r10Feats), r10f::modeName(c.r10Powers));
+    if (c.dev) KP_LOG(chCfg, "DEV keys enabled (dev=1): preset./instant./hold./pause.<tag>= and tags= are read");
 }
 
 // Per-tag configuration lookup (case-insensitive); nullptr = unconfigured -> every gate passes through.
@@ -627,12 +637,12 @@ void reloadTable(bool force = false) {
             const TagCfg& tc = g_cfg.tags[i];
             b.add(" %s=%s", tc.tag, tc.preset >= 0 ? g_presets[tc.preset].id : "UNRESOLVED");
         }
-        logLine("TABLE loaded %s: %d presets, %d records;%s", g_cfg.table, g_nPresets, total, b.s);
-        if (g_ruleBadLine) logLine("CARRY disabled: malformed rule line %d", g_ruleBadLine);
-        else if (!g_rules) logLine("CARRY disabled: table has no [featrules]/[powerrules] sections (old table format) - carry-over off");
-        if (g_tableWarn) logLine("TABLE warning: %d preset section(s) without an index row (hold_class 0):%s", g_tableWarn, g_tableWarnIds);
+        KP_LOG(chTable, "TABLE loaded %s: %d presets, %d records;%s", g_cfg.table, g_nPresets, total, b.s);
+        if (g_ruleBadLine) KP_LOGV(chTable, KPLOG_WARN, "CARRY disabled: malformed rule line %d", g_ruleBadLine);
+        else if (!g_rules) KP_LOGV(chTable, KPLOG_WARN, "CARRY disabled: table has no [featrules]/[powerrules] sections (old table format) - carry-over off");
+        if (g_tableWarn) KP_LOGV(chTable, KPLOG_WARN, "TABLE warning: %d preset section(s) without an index row (hold_class 0):%s", g_tableWarn, g_tableWarnIds);
     } else {
-        logLine("TABLE ERROR %s -> rewrite disabled", g_tableErr);
+        KP_LOGV(chTable, KPLOG_ERR, "TABLE ERROR %s -> rewrite disabled", g_tableErr);
     }
 }
 
@@ -1197,11 +1207,14 @@ HINSTANCE g_inst = nullptr;   // this module (set by DllMain)
 void ensureHeader() {
     if (g_headerDone) return;
     g_headerDone = true;
-    rotateIfLarge();
+    if (!KpLog_HasCore()) {
+        KpLog_SetFallbackLevel(g_cfg.verbose ? KPLOG_DEBUG : KPLOG_INFO);
+        rotateIfLarge();
+    }
     char path[MAX_PATH] = "";
     uint32_t crc = 0;
     if (GetModuleFileNameA(g_inst, path, sizeof path) > 0 && path[0]) crc = fileCrc32(path);
-    logLine("== LevelUpOverride %s loaded; first hook call (build apply=%d crc32=%08x) ==", Version, ApplyEnabled, (unsigned)crc);
+    KP_LOG(chMain, "== LevelUpOverride %s loaded; first hook call (build apply=%d crc32=%08x) ==", Version, ApplyEnabled, (unsigned)crc);
 }
 
 // The creature's class entries (engine order, newest last) and total level; false when unreadable or not 1..4 classes.
@@ -1294,7 +1307,7 @@ bool guidEngineOk() {
                         codeMatches(g_eng.strCtor, kStrCtorCode, sizeof kStrCtorCode) && codeMatches(g_eng.strDtor, kStrDtorCode, sizeof kStrDtorCode) &&
                         codeMatches(g_eng.serverInit, kServerInitCode, sizeof kServerInitCode);
         g_guidEngState = ok ? 1 : 2;
-        if (!ok) logLine("GUID ENGINE mismatch - save binding disabled (gates keep working)");
+        if (!ok) KP_LOGV(chPlay, KPLOG_WARN, "GUID ENGINE mismatch - save binding disabled (gates keep working)");
     }
     return g_guidEngState == 1;
 }
@@ -1379,11 +1392,11 @@ void rebuildPtCfg() {
     const int src = g_ptActive ? 2 : 1;
     if (src == g_srcLast && (src == 1 || g_srcGuid == g_guid)) return;
     g_srcLast = src; g_srcGuid = g_guid;
-    if (src == 1) { logLine("CONFIG source=dev"); return; }
+    if (src == 1) { KP_LOG(chCfg, "CONFIG source=dev"); return; }
     Buf b;
     for (int i = 0; i < g_ptCfg.nTags; ++i)
         b.add("%s%s:%s/i%d/h%d/p%d", i ? "," : "", g_ptCfg.tags[i].tag, g_ptCfg.presetId[i], g_ptCfg.tags[i].instant, g_ptCfg.tags[i].hold, g_ptCfg.tags[i].pause);
-    logLine("CONFIG source=playthrough g%08x tags=%s", (unsigned)g_guid, b.s);
+    KP_LOG(chCfg, "CONFIG source=playthrough g%08x tags=%s", (unsigned)g_guid, b.s);
 }
 
 // Re-reads levelup_playthroughs.ini when its stamp changed (throttled like the other configs); force = re-read now regardless.
@@ -1413,7 +1426,7 @@ void reloadPlay(bool force = false) {
     g_ptLen = len; g_ptBig = big;
     pt::parse(g_ptDoc, g_ptText, len);
     if (big) g_ptDoc.lossy = true;
-    if (changed) logLine("PLAYTHROUGH %s: %d section(s)%s", st.exists ? "loaded" : "missing", g_ptDoc.n - 1, g_ptDoc.lossy ? " LOSSY (caps exceeded, writes disabled)" : "");
+    if (changed) KP_LOG(chPlay, "PLAYTHROUGH %s: %d section(s)%s", st.exists ? "loaded" : "missing", g_ptDoc.n - 1, g_ptDoc.lossy ? " LOSSY (caps exceeded, writes disabled)" : "");
     rebuildPtCfg();
 }
 
@@ -1431,7 +1444,7 @@ bool ptWriteText(size_t n) {
 }
 // Serialises g_ptDoc and replaces the ini. Refuses when the parse lost data (caps).
 bool ptWrite() {
-    if (g_ptDoc.lossy) { logLine("PLAYTHROUGH write refused: file exceeded the caps (would lose data)"); return false; }
+    if (g_ptDoc.lossy) { KP_LOGV(chPlay, KPLOG_WARN, "PLAYTHROUGH write refused: file exceeded the caps (would lose data)"); return false; }
     const size_t n = pt::serialise(g_ptDoc, g_ptText, sizeof g_ptText);
     return n && ptWriteText(n);
 }
@@ -1441,9 +1454,9 @@ bool ptWrite() {
 // The current playthrough's GUID; the first call of a playthrough creates it and writes it to the live globals table at once. False = none (logged).
 bool ptEnsureGuid() {
     if (g_guid) return true;
-    if (g_ptDoc.n >= pt::MaxSections + 1) { logLine("GUID new: levelup_playthroughs.ini already holds %d playthroughs (cap) - not applied", pt::MaxSections); return false; }
+    if (g_ptDoc.n >= pt::MaxSections + 1) { KP_LOGV(chPlay, KPLOG_WARN, "GUID new: levelup_playthroughs.ini already holds %d playthroughs (cap) - not applied", pt::MaxSections); return false; }
     const uintptr_t tb = liveTable();
-    if (!tb || !guidEngineOk()) { logLine("GUID new: no live globals table / engine mismatch - not applied"); return false; }
+    if (!tb || !guidEngineOk()) { KP_LOGV(chPlay, KPLOG_WARN, "GUID new: no live globals table / engine mismatch - not applied"); return false; }
     uint32_t guid;
     do {
         LARGE_INTEGER q;
@@ -1451,7 +1464,7 @@ bool ptEnsureGuid() {
         guid = static_cast<uint32_t>(q.QuadPart) ^ static_cast<uint32_t>(GetTickCount()) ^ (static_cast<uint32_t>(rand()) << 16 | static_cast<uint32_t>(rand()));
     } while (!guid || pt::findGuid(g_ptDoc, guid));
     const bool wrote = writeGuid(reinterpret_cast<void*>(tb), guid);
-    logLine("GUID new g%08x live-write ok=%d", (unsigned)guid, wrote);
+    KP_LOG(chPlay, "GUID new g%08x live-write ok=%d", (unsigned)guid, wrote);
     if (!wrote) return false;
     g_guid = guid;
     return true;
@@ -1466,7 +1479,7 @@ bool ptEnsureGuid() {
     reloadPlay(true);
     if (!ptEnsureGuid()) return false;
     const bool ok = pt::setTag(g_ptDoc, g_guid, tag, presetId, instant, hold, pause) && ptWrite();
-    logLine("PLAYTHROUGH write g%08x tag=%s ok=%d", (unsigned)g_guid, tag, ok);
+    KP_LOG(chPlay, "PLAYTHROUGH write g%08x tag=%s ok=%d", (unsigned)g_guid, tag, ok);
     reloadPlay(true);   // on failure this restores the in-memory doc from the file
     return ok;
 }
@@ -1477,9 +1490,9 @@ bool ptEnsureGuid() {
     ensureHeader();
     reloadPlay(true);
     if (!ptEnsureGuid()) return false;
-    if (g_ptDoc.lossy) { logLine("PLAYTHROUGH write refused: file exceeded the caps (would lose data)"); return false; }
+    if (g_ptDoc.lossy) { KP_LOGV(chPlay, KPLOG_WARN, "PLAYTHROUGH write refused: file exceeded the caps (would lose data)"); return false; }
     const bool ok = pt::setPc(g_ptDoc, g_guid, on, pcfilter, ffilter, pfilter) && ptWrite();
-    logLine("PLAYTHROUGH write g%08x tag=%s r10=%d ok=%d", (unsigned)g_guid, pt::kPcKey, on, ok);
+    KP_LOG(chPlay, "PLAYTHROUGH write g%08x tag=%s r10=%d ok=%d", (unsigned)g_guid, pt::kPcKey, on, ok);
     reloadPlay(true);
     return ok;
 }
@@ -1493,17 +1506,17 @@ const pt::Line* ptPcLine() { return g_guid ? pt::findPc(g_ptDoc, g_guid) : nullp
     if (!tag || !*tag || !g_guid) return false;
     reloadPlay(true);
     if (g_ptDoc.lossy) {   // F6: a lossy parse cannot be serialised (data would be lost) - but deleting ONE line of the raw text loses nothing, so Vanilla still works
-        if (g_ptBig) { logLine("PLAYTHROUGH write refused: file too large to edit (only its beginning was read)"); return false; }
+        if (g_ptBig) { KP_LOGV(chPlay, KPLOG_WARN, "PLAYTHROUGH write refused: file too large to edit (only its beginning was read)"); return false; }
         size_t n = g_ptLen;
         if (!pt::removeTagRaw(g_ptText, &n, g_guid, tag)) return false;
         const bool ok = ptWriteText(n);
-        logLine("PLAYTHROUGH write g%08x tag=%s ok=%d (raw line removal, file is LOSSY)", (unsigned)g_guid, tag, ok);
+        KP_LOG(chPlay, "PLAYTHROUGH write g%08x tag=%s ok=%d (raw line removal, file is LOSSY)", (unsigned)g_guid, tag, ok);
         reloadPlay(true);
         return ok;
     }
     if (!pt::removeTag(g_ptDoc, g_guid, tag)) return false;
     const bool ok = ptWrite();
-    logLine("PLAYTHROUGH write g%08x tag=%s ok=%d", (unsigned)g_guid, tag, ok);
+    KP_LOG(chPlay, "PLAYTHROUGH write g%08x tag=%s ok=%d", (unsigned)g_guid, tag, ok);
     reloadPlay(true);
     return ok;
 }
@@ -1512,10 +1525,10 @@ const pt::Line* ptPcLine() { return g_guid ? pt::findPc(g_ptDoc, g_guid) : nullp
 void guidSave(void* table) {
     saferead::beginScope();
     ensureHeader();
-    if (!g_guid) { logLine("GUID save none"); return; }
+    if (!g_guid) { KP_LOG(chPlay, "GUID save none"); return; }
     if (!table || !guidEngineOk()) return;
     const bool ok = writeGuid(table, g_guid);
-    logLine("GUID save g%08x table=%08x ok=%d", (unsigned)g_guid, (unsigned)reinterpret_cast<uintptr_t>(table), ok);
+    KP_LOG(chPlay, "GUID save g%08x table=%08x ok=%d", (unsigned)g_guid, (unsigned)reinterpret_cast<uintptr_t>(table), ok);
 }
 void guidLoad(void* table, int result) {
     saferead::beginScope();
@@ -1523,14 +1536,14 @@ void guidLoad(void* table, int result) {
     uint32_t g = 0; int found = 0;
     if (table && guidEngineOk()) readGuid(table, &g, &found);
     g_guid = found == 32 ? g : 0;   // a partial set (1..31 names) is not a GUID we wrote: treat as none (logged below)
-    logLine("GUID load g%08x found=%d/32 result=%d table=%08x", (unsigned)g_guid, found, result, (unsigned)reinterpret_cast<uintptr_t>(table));
+    KP_LOG(chPlay, "GUID load g%08x found=%d/32 result=%d table=%08x", (unsigned)g_guid, found, result, (unsigned)reinterpret_cast<uintptr_t>(table));
     reloadPlay(true);
 }
 int guidNewServer(void* app) {
     saferead::beginScope();
     const int r = reinterpret_cast<ServerInit_t>(g_eng.serverInit)(app);   // the replaced call; its EAX is returned
     ensureHeader();
-    logLine("GUID new-server (cache cleared, was g%08x)", (unsigned)g_guid);
+    KP_LOG(chPlay, "GUID new-server (cache cleared, was g%08x)", (unsigned)g_guid);
     g_guid = 0;
     rebuildPtCfg();
     return r;
@@ -1736,7 +1749,7 @@ bool engineOk() {
                         codeMatches(g_eng.charChange, kCharChangeCode, sizeof kCharChangeCode) && codeMatches(g_eng.getCreature, kGetCreatureCode, sizeof kGetCreatureCode) &&
                         codeMatches(g_eng.partyGet, kPartyGetCode, sizeof kPartyGetCode) && codeMatches(g_eng.tableGet, kTableGetCode, sizeof kTableGetCode);
         g_engState = ok ? 1 : 2;
-        if (!ok) logLine("ENGINE gate function bytes differ from the expected build - gates pass through (vanilla)");
+        if (!ok) KP_LOGV(chGate, KPLOG_WARN, "ENGINE gate function bytes differ from the expected build - gates pass through (vanilla)");
     }
     return g_engState == 1;
 }
@@ -1798,8 +1811,8 @@ void noteHold(const char* tag, int key, bool held, unsigned site, bool real) {
     if (s->everLogged && now - s->lastLog < HoldLogGapMs) { if (differs) ++s->suppressed; return; }
     char sup[32] = "";
     if (s->suppressed) snprintf(sup, sizeof sup, " suppressed=%d", s->suppressed);
-    if (held) logLine("%s tag=%s key=%d site=0x%X%s", real ? "HOLD" : "WOULD HOLD", tag, key, site, sup);
-    else logLine("UNHOLD tag=%s%s", tag, sup);
+    if (held) KP_LOG(chGate, "%s tag=%s key=%d site=0x%X%s", real ? "HOLD" : "WOULD HOLD", tag, key, site, sup);
+    else KP_LOG(chGate, "UNHOLD tag=%s%s", tag, sup);
     s->logHeld = held; s->logKey = held ? key : 0; s->lastLog = now; s->everLogged = true; s->suppressed = 0;
 }
 
@@ -1851,7 +1864,7 @@ bool bankedEngineOk() {
         const bool ok = codeMatches(g_eng.bankedAdd, kBankedAddCode, sizeof kBankedAddCode) && codeMatches(g_eng.strCtor, kStrCtorCode, sizeof kStrCtorCode) &&
                         codeMatches(g_eng.strDtor, kStrDtorCode, sizeof kStrDtorCode);
         g_bankedEngState = ok ? 1 : 2;
-        if (!ok) logLine("BANKED engine function bytes differ - banked message disabled");
+        if (!ok) KP_LOGV(chGate, KPLOG_WARN, "BANKED engine function bytes differ - banked message disabled");
     }
     return g_bankedEngState == 1;
 }
@@ -1889,7 +1902,7 @@ void maybeBanked(const Eval& e, uintptr_t stats) {
     reinterpret_cast<StrCtor_t>(g_eng.strCtor)(cs, text);
     reinterpret_cast<BankedAdd_t>(g_eng.bankedAdd)(reinterpret_cast<void*>(gui), cs, 0x80, 0);
     reinterpret_cast<StrDtor_t>(g_eng.strDtor)(cs);
-    logLine("BANKED tag=%s n=%d guid=%08x shown=1", e.tag, n, (unsigned)g_guid);
+    KP_LOG(chGate, "BANKED tag=%s n=%d guid=%08x shown=1", e.tag, n, (unsigned)g_guid);
 }
 
 // ---- apply-now: clear the menu arrow of an instant creature right after "Apply" (doc 08) ----
@@ -1917,33 +1930,33 @@ bool applyNowConsume(uintptr_t stats, const Eval& e) {
     if (!e.cfg->instant) return false;   // a non-instant config keeps its arrow (path levels left) by design
     uint32_t cr = 0, back = 0, pcr = 0, app = 0, client = 0;
     if (!readAt(S_Chain, stats, St_Creature, &cr) || !cr || !readAt(S_Chain, cr, Cr_Stats, &back) || back != stats) {
-        logLine("INSTANT apply-now skip tag=%s key=%d reason=creature-unreadable", e.tag, e.key);
+        KP_LOG(chGate, "INSTANT apply-now skip tag=%s key=%d reason=creature-unreadable", e.tag, e.key);
         return false;
     }
     if (!readAt(S_Chain, cr, Cr_PlayerCreated, &pcr) || pcr) {
-        logLine("INSTANT apply-now skip tag=%s key=%d reason=%s", e.tag, e.key, pcr ? "player-created" : "creature-unreadable");
+        KP_LOG(chGate, "INSTANT apply-now skip tag=%s key=%d reason=%s", e.tag, e.key, pcr ? "player-created" : "creature-unreadable");
         return false;
     }
-    if (g_cfg.mode != Mode::Rewrite) { logLine("INSTANT apply-now WOULD tag=%s key=%d", e.tag, e.key); return false; }
+    if (g_cfg.mode != Mode::Rewrite) { KP_LOG(chGate, "INSTANT apply-now WOULD tag=%s key=%d", e.tag, e.key); return false; }
     // F4 (as leaderInstant): no auto level-up while a character change is in progress; 0x740FC0 takes the client app object ([[appGlobal]+4]).
     if (!readAt(S_Chain, g_eng.appGlobal, 0, &app) || !app || !readAt(S_Chain, app, 4, &client) || !client || !probeRead(S_Chain, reinterpret_cast<const void*>(static_cast<uintptr_t>(client)), 8)) {
-        logLine("INSTANT apply-now skip tag=%s key=%d reason=client-unreadable", e.tag, e.key);
+        KP_LOG(chGate, "INSTANT apply-now skip tag=%s key=%d reason=client-unreadable", e.tag, e.key);
         return false;
     }
     if (reinterpret_cast<CharChange_t>(g_eng.charChange)(reinterpret_cast<void*>(static_cast<uintptr_t>(client)))) {
-        logLine("INSTANT apply-now skip tag=%s key=%d reason=character-change", e.tag, e.key);
+        KP_LOG(chGate, "INSTANT apply-now skip tag=%s key=%d reason=character-change", e.tag, e.key);
         return false;
     }
     if (g_eng.checkCode && !g_autoEngState) {
         g_autoEngState = codeMatches(g_eng.autoLevelup, kAutoLevelupCode, sizeof kAutoLevelupCode) ? 1 : 2;
-        if (g_autoEngState == 2) logLine("ENGINE 0x6BEDF0 bytes differ - apply-now disabled");
+        if (g_autoEngState == 2) KP_LOGV(chGate, KPLOG_WARN, "ENGINE 0x6BEDF0 bytes differ - apply-now disabled");
     }
     if (g_eng.checkCode && g_autoEngState != 1) return false;
     uint8_t ids[4], lv[4]; int n = 0, before = -1, after = -1;
     if (!readClasses(stats, ids, lv, &n, &before)) before = -1;
     reinterpret_cast<AutoLevelup_t>(g_eng.autoLevelup)(reinterpret_cast<void*>(stats), 1);
     if (!readClasses(stats, ids, lv, &n, &after)) after = -1;
-    logLine("INSTANT apply-now tag=%s lvl %d->%d", e.tag, before, after);
+    KP_LOG(chGate, "INSTANT apply-now tag=%s lvl %d->%d", e.tag, before, after);
     return true;
 }
 
@@ -1985,7 +1998,7 @@ void* instantGate(unsigned site, int ebpOff, void* ecx, uintptr_t ebp) {
     if (!seen) {
         InstantKey& k = g_instSeen[g_nInstSeen < 32 ? g_nInstSeen++ : (g_instNext++ & 31)];
         snprintf(k.tag, sizeof k.tag, "%s", e.tag); k.key = e.key;
-        logLine("INSTANT tag=%s key=%d site=0x%X", e.tag, e.key, site);
+        KP_LOG(chGate, "INSTANT tag=%s key=%d site=0x%X", e.tag, e.key, site);
     }
     return g_instBuf;
 }
@@ -2005,7 +2018,7 @@ void* leaderInstant(void* ecx, uintptr_t ebp) {
     if (!p || !gateActive() || g_cfg.mode != Mode::Rewrite) return p;
     if (g_eng.checkCode && !g_ctlEngState) {
         g_ctlEngState = codeMatches(g_eng.controlled, kControlledCode, sizeof kControlledCode) ? 1 : 2;
-        if (g_ctlEngState == 2) logLine("ENGINE 0x73F450 bytes differ - leader instant disabled");
+        if (g_ctlEngState == 2) KP_LOGV(chGate, KPLOG_WARN, "ENGINE 0x73F450 bytes differ - leader instant disabled");
     }
     if (g_eng.checkCode && g_ctlEngState != 1) return p;
     uint32_t cr = 0, stats = 0, ctlId = 0;
@@ -2022,7 +2035,7 @@ void* leaderInstant(void* ecx, uintptr_t ebp) {
     if (!seen) {
         InstantKey& k = g_leadSeen[g_nLeadSeen < 16 ? g_nLeadSeen++ : (g_leadNext++ & 15)];
         snprintf(k.tag, sizeof k.tag, "%s", e.tag); k.key = e.key;
-        logLine("INSTANT-LEADER tag=%s key=%d controlledId=%08x creature=%08x site=0x74F423", e.tag, e.key, (unsigned)ctlId, (unsigned)cr);
+        KP_LOG(chGate, "INSTANT-LEADER tag=%s key=%d controlledId=%08x creature=%08x site=0x74F423", e.tag, e.key, (unsigned)ctlId, (unsigned)cr);
     }
     return g_noCtl;
 }
@@ -2049,7 +2062,7 @@ int guiGuard(unsigned site, const char* what, void* ecx) {
     if (cr) readAt(S_Stats, cr, Cr_Stats, &stats);
     Eval e = evalStats(stats, cr);
     if (e.ok && e.d == Decision::Hold && g_cfg.mode == Mode::Rewrite) {
-        logLine("GUARD %s tag=%s key=%d site=0x%X", what, e.tag, e.key, site);
+        KP_LOG(chGate, "GUARD %s tag=%s key=%d site=0x%X", what, e.tag, e.key, site);
         return 1;
     }
     return r;
@@ -2061,7 +2074,7 @@ void* autoOkBackstop(void* ecx) {
     if (!c || !gateActive()) return c;
     Eval e = evalCreature(reinterpret_cast<uintptr_t>(c));
     if (e.ok && e.d == Decision::Hold && g_cfg.mode == Mode::Rewrite) {
-        logLine("GUARD autook tag=%s key=%d site=0x850062", e.tag, e.key);
+        KP_LOG(chGate, "GUARD autook tag=%s key=%d site=0x850062", e.tag, e.key);
         return nullptr;
     }
     return c;
@@ -2081,7 +2094,7 @@ constexpr int F2_Panel = -0x28, P2_Panel = -0x68, X2_Id = -0x1C;   // P2: the pa
 
 r10::State g_r10;
 
-void r10Emit(void*, const char* line) { logLine("%s", line); }
+void r10Emit(void*, const char* line) { KP_LOG(chR10, "%s", line); }
 
 // Pulls the config into the state; false = probe off (handlers return at once).
 bool r10Active() {
@@ -2166,22 +2179,22 @@ bool r10TagsReady() {
     snprintf(g_r10TagsPath, sizeof g_r10TagsPath, "%s", path);
     g_r10TagsOk = false;
     g_r10Tags.clear();
-    if (!st.exists) { logLine("R10 tags error line=0 cannot open %s", path); return false; }
+    if (!st.exists) { KP_LOGV(chR10, KPLOG_WARN, "R10 tags error line=0 cannot open %s", path); return false; }
     FILE* f = fopen(path, "rb");
-    if (!f) { logLine("R10 tags error line=0 cannot open %s", path); return false; }
+    if (!f) { KP_LOGV(chR10, KPLOG_WARN, "R10 tags error line=0 cannot open %s", path); return false; }
     const size_t len = fread(g_r10TagsBuf, 1, sizeof g_r10TagsBuf - 1, f);
     const bool full = feof(f) != 0;
     fclose(f);
-    if (!full) { logLine("R10 tags error line=0 %s larger than %u bytes", path, (unsigned)sizeof g_r10TagsBuf - 1); return false; }
+    if (!full) { KP_LOGV(chR10, KPLOG_WARN, "R10 tags error line=0 %s larger than %u bytes", path, (unsigned)sizeof g_r10TagsBuf - 1); return false; }
     g_r10TagsBuf[len] = 0;
     char err[96];
     if (!r10f::parseTagIni(g_r10TagsBuf, &g_r10Tags, err, sizeof err)) {
         int line = 0, pos = 0;
         if (sscanf(err, "line %d: %n", &line, &pos) < 1) pos = 0;
-        logLine("R10 tags error line=%d %s", line, err + pos);
+        KP_LOGV(chR10, KPLOG_WARN, "R10 tags error line=%d %s", line, err + pos);
         return false;
     }
-    logLine("R10 tags loaded %s feats=%d powers=%d", path, g_r10Tags.nFeats, g_r10Tags.nPowers);
+    KP_LOG(chR10, "R10 tags loaded %s feats=%d powers=%d", path, g_r10Tags.nFeats, g_r10Tags.nPowers);
     return g_r10TagsOk = true;
 }
 
