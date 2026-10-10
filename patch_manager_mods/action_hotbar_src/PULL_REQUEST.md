@@ -28,13 +28,9 @@ See `README.md` for keys, the INI reference and troubleshooting, and `CHANGELOG.
 | Address | Function | Purpose |
 |---|---|---|
 | `0x0072CB63` | `CaptureHotbarKey` | DirectInput key event capture. |
-| `0x0074B3F0` | `HotbarHudTick` | Per-frame bar, editor and tooltip update. |
-| `0x00748502` | `HotbarBuildButtons` | Build controls inside the HUD constructor. |
-| `0x00534527` | `HotbarOnSaved` | Copy the INI into the save folder after a save. |
-| `0x0053C5AA` | `HotbarOnAutosaved` | Same for the module-entry autosave. |
-| `0x0052FD1E` | `HotbarOnLoadRequest` | Restore that save's hotbar on load. |
-| `0x008529E0` | `HotbarOnAutosaveSlotLoad` | Same for autosave-slot loads. |
-| `0x008FACA0` | `HotbarOnNewGame` | Empty bar on a new game. |
+| (hud-host) | `HotbarHudTick` | Per-frame bar, editor and tooltip update via `k2.hud@1`. |
+| (hud-host) | `HotbarBuildButtons` | Build controls inside the HUD constructor via `k2.hud@1`. |
+| (save-events) | `onSaveEvent` | Per-save hotbar snapshots and restores via `k2.saveevents@1`. |
 
 ### Test evidence
 Host tests, run with `python3 scripts/run_tests.py -k <name>` (each passes, 2026-10-05):

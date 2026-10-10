@@ -71,7 +71,8 @@ inline int tabOfKey(int key) { return (key & KeyItemFlag) ? Tab_Item : ((key & K
 // Character key from creature tag, party slot, or creature object id:
 // 1. Tag (if present and not player/exile): returns lowercase trimmed tag (e.g. "atton", "kreia").
 // 2. Player character (Exile): recognized by party slot 0 / isMember0, partyCount == 1, tag "player"/"exile",
-//    or sentinel IDs 0xFFFFFFFD / 0xFFFFFFFE (stabilized: 0xFFFFFFFE returns "objfffffffd", not "objfffffffe").
+//    or sentinel IDs 0xFFFFFFF0..0xFFFFFFFE (the Odyssey negative player sentinel range,
+//    e.g. 0xFFFFFFF9 during fast-travel); all map to canonical "objfffffffd".)
 // 3. Transient invalid IDs (0 / 0xFFFFFFFF): returns "" (load in progress).
 // 4. Companion without tag: returns "slot1" / "slot2" if partySlot > 0.
 // 5. Fallback: "obj%08x".
@@ -85,7 +86,7 @@ inline std::string characterKeyFor(unsigned oid, int partyCount, bool* invalid =
         return t;
     }
 
-    bool isExile = (oid == 0xFFFFFFFDu || oid == 0xFFFFFFFEu || partyCount == 1 || isMember0 || partySlot == 0);
+    bool isExile = ((oid >= 0xFFFFFFF0u && oid <= 0xFFFFFFFEu) || partyCount == 1 || isMember0 || partySlot == 0);
     if (isExile) {
         if (oid == 0) return "";   // id 0 never gets the rescue
         if (oid == 0xFFFFFFFFu && !(partyCount == 1 || isMember0 || partySlot == 0)) return "";

@@ -224,6 +224,13 @@ int main() {
     KT_CHECK_EQ(characterKeyFor(0x80000043u, 3, &bad, false, nullptr, 2).c_str(), "slot2"); KT_CHECK(!bad);
     KT_CHECK_EQ(characterKeyFor(0xFFFFFFFDu, 3, &bad, true, "player", 0).c_str(), "objfffffffd"); KT_CHECK(!bad);
     KT_CHECK_EQ(characterKeyFor(0xFFFFFFFEu, 3, &bad, true, "", 0).c_str(), "objfffffffd"); KT_CHECK(!bad);
+    // AH3: full Odyssey negative player sentinel range 0xFFFFFFF0..0xFFFFFFFE maps to canonical Exile key
+    KT_CHECK_EQ(characterKeyFor(0xFFFFFFF0u, 1, &bad).c_str(), "objfffffffd"); KT_CHECK(!bad);
+    KT_CHECK_EQ(characterKeyFor(0xFFFFFFF0u, 2, &bad, true).c_str(), "objfffffffd"); KT_CHECK(!bad);
+    KT_CHECK_EQ(characterKeyFor(0xFFFFFFF9u, 2, &bad, false).c_str(), "objfffffffd"); KT_CHECK(!bad);   // fast-travel sentinel
+    KT_CHECK_EQ(characterKeyFor(0xFFFFFFFAu, 1).c_str(), "objfffffffd"); KT_CHECK(!bad);
+    KT_CHECK_EQ(characterKeyFor(0xFFFFFFFEu, 1).c_str(), "objfffffffd"); KT_CHECK(!bad);
+    KT_CHECK_EQ(characterKeyFor(0xFFFFFFFFu, 2, &bad, false).c_str(), ""); KT_CHECK(bad);   // 0xFFFFFFFF stays invalid (outside sentinel range)
   }
   { // 3. AutoFill merge + FNV signature
     ActionRef cfg[Slots], eff[Slots]; bool isAuto[Slots];

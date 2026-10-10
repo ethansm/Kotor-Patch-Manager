@@ -254,6 +254,11 @@ int readGroup(uintptr_t hud, int g, std::vector<Entry>* out) {
 const char* const IniPath = hb::IniName;
 const char* const BakPath = "action_hotbar.ini.bak", *const LoadBakPath = "action_hotbar.ini.load.bak";   // BakPath: first-edit backup; LoadBakPath: written by save loads / new game
 bool g_pendingReload = false;   // set by load/new-game hooks, consumed by HotbarHudTick (widgets must only be touched from the HUD tick)
+bool g_pendingSaveSnapshot = false;   // set by save hook if save folder is deferred/unresolved, consumed by HotbarHudTick
+std::string g_pendingSaveDir;
+std::string g_pendingSaveWhy;
+int g_pendingSaveRetries = 0;
+k2se::Client g_se;
 hb::Config g_cfg;
 int g_qtyColorFail = 0; std::string g_qtyColorFirst;   // qty controls whose text-colour readback failed in the current HUD build (map section 4 #14)
 int g_buildSeq = 0;   // HUD builds so far (once-per-build change-only caches)
@@ -350,12 +355,13 @@ std::string computeCharacterKey() {
     uintptr_t t = party::table(&why);
     int partySlot = -1;
     if (t != 0) {
-        for (int i = 0; i < g_partyCount && i < 3; ++i) {
-            if (party::member(t, i) == c) {
-                partySlot = i;
-                break;
-            }
-        }
+         for (int i = 0; i < g_partyCount && i < 3; ++i) {
+             uintptr_t mem = party::member(t, i);
+             if (mem == c || (mem != 0 && creatureOid(mem) == oid)) {   // match by pointer or by OID (module loads may wrap the creature pointer differently)
+                 partySlot = i;
+                 break;
+             }
+         }
     }
     if (partySlot == -1 && g_partyCount == 1) partySlot = 0;
     bool isMember0 = (partySlot == 0);
@@ -1753,9 +1759,25 @@ void healTextures() {
 const char* const SnapshotFile = hb::IniName;
 
 void snapshotToSave(const char* dir, const char* why) {
-    if (!dir || !*dir) { KP_LOGV(chCfg, KPLOG_WARN, "persave: %s: save folder not recognised ('%s'), no snapshot", why, dir ? dir : "?"); return; }
+    char cur[260] = {};
+    if ((!dir || !*dir) && g_se.currentSaveFolder(cur, sizeof cur) > 0 && cur[0]) {
+        dir = cur;
+    }
+    if (!dir || !*dir) {
+        g_pendingSaveDir.clear();
+        g_pendingSaveWhy = why ? why : "save written";
+        g_pendingSaveSnapshot = true;
+        g_pendingSaveRetries = 0;
+        return;
+    }
     DWORD at = GetFileAttributesA(dir);
-    if (at == INVALID_FILE_ATTRIBUTES || !(at & FILE_ATTRIBUTE_DIRECTORY)) { KP_LOGV(chCfg, KPLOG_WARN, "persave: %s: folder '%s' not found, no snapshot", why, dir); return; }
+    if (at == INVALID_FILE_ATTRIBUTES || !(at & FILE_ATTRIBUTE_DIRECTORY)) {
+        g_pendingSaveDir = dir;
+        g_pendingSaveWhy = why ? why : "save written";
+        g_pendingSaveSnapshot = true;
+        g_pendingSaveRetries = 0;
+        return;
+    }
     checkConfig(true);   // a hand edit made in the last second is part of what the player saved
     std::string dst = std::string(dir) + "/" + SnapshotFile;
     BOOL ok = CopyFileA(IniPath, dst.c_str(), FALSE);
@@ -1785,6 +1807,10 @@ void replaceLiveProfiles(const hb::Config* snap, const char* status, const std::
 static bool snapExists(const std::string& p) { return filewatch::stamp(p.c_str()).exists; }
 
 void restoreFromSave(const char* dir, const char* why) {
+    char cur[260] = {};
+    if ((!dir || !*dir) && g_se.currentSaveFolder(cur, sizeof cur) > 0 && cur[0]) {
+        dir = cur;
+    }
     if (!dir || !*dir) {
         KP_LOGV(chCfg, KPLOG_WARN, "persave: %s: save folder not recognised ('%s'), live hotbar kept", why, dir ? dir : "?");
         return;
@@ -1824,7 +1850,6 @@ extern "C" void __cdecl HotbarBuildButtons(int panelArg);
 extern "C" void __cdecl HotbarHudTick(void* hudPtr);
 
 k2hud::Client g_hudc;
-k2se::Client g_se;
 
 void onHudConnect(bool ok, const char* why) {
     KP_LOGV(chBuild, ok ? KPLOG_INFO : KPLOG_WARN, "hud-host: %s (%s)", ok ? "connected" : "NOT connected", why ? why : "");
@@ -2008,6 +2033,29 @@ extern "C" void __cdecl HotbarHudTick(void* hudPtr) {
         if (g_bar.ed.mode != M_Normal) setMode(M_Normal, -1, "reload");
         refreshEffective(hud);
     }
+    if (g_pendingSaveSnapshot) {
+        std::string dir = g_pendingSaveDir;
+        if (dir.empty()) {
+            char cur[260] = {};
+            if (g_se.currentSaveFolder(cur, sizeof cur) > 0 && cur[0]) dir = cur;
+        }
+        if (!dir.empty()) {
+            DWORD at = GetFileAttributesA(dir.c_str());
+            if (at != INVALID_FILE_ATTRIBUTES && (at & FILE_ATTRIBUTE_DIRECTORY)) {
+                g_pendingSaveSnapshot = false;
+                g_pendingSaveDir.clear();
+                snapshotToSave(dir.c_str(), g_pendingSaveWhy.c_str());
+            } else if (++g_pendingSaveRetries > 60) {
+                g_pendingSaveSnapshot = false;
+                g_pendingSaveDir.clear();
+                KP_LOGV(chCfg, KPLOG_WARN, "persave: %s: folder '%s' not found, no snapshot", g_pendingSaveWhy.c_str(), dir.c_str());
+            }
+        } else if (++g_pendingSaveRetries > 60) {
+            g_pendingSaveSnapshot = false;
+            g_pendingSaveDir.clear();
+            KP_LOGV(chCfg, KPLOG_WARN, "persave: %s: save folder not recognised (''), no snapshot", g_pendingSaveWhy.c_str());
+        }
+    }
     healTextures();
     if (g_frame == TextureLogFrame) logTextures("frame 120");
 
@@ -2029,7 +2077,7 @@ extern "C" void __cdecl HotbarHudTick(void* hudPtr) {
     {   // every frame: the bar must follow the controlled character without a visible lag
         static uintptr_t lastCreature = ~0u; static unsigned lastOid = 0xFFFFFFF0u;
         uintptr_t cr = controlledCreature(); unsigned oid = cr ? creatureOid(cr) : 0;
-        static int lastParty = -1; bool same = (cr == lastCreature && oid == lastOid && g_partyCount == lastParty); lastParty = g_partyCount;   // unchanged creature: skip the key build (string work) entirely
+        static int lastParty = -1; bool same = (!g_charKey.empty() && g_charKey.rfind("slot", 0) != 0 && cr == lastCreature && oid == lastOid && g_partyCount == lastParty); lastParty = g_partyCount;   // unchanged creature: skip the key build (string work) entirely — but only when the key is already resolved (non-empty, not a slot fallback) so fast-travel sentinels / load-in-progress re-evaluate
         lastCreature = cr; lastOid = oid;
         std::string k = same ? g_charKey : computeCharacterKey();
         if (k != g_charKey) { KP_LOG(chChar, "character: '%s' -> '%s'", g_charKey.c_str(), k.c_str()); g_charKey = k; g_charChangeTick = GetTickCount(); recomputeBound(); charChanged = true; }
