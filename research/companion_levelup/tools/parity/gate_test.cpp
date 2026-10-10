@@ -21,9 +21,10 @@ static uintptr_t arenaAlloc(size_t n) {
 }
 #include "TestHarness.h"
 #define CHECK(c, ...) do { \
-    char _detail[512]; \
-    std::snprintf(_detail, sizeof(_detail), __VA_ARGS__); \
-    ::kt::Check(__FILE__ ":" KT_STR(__LINE__) ": " #c, static_cast<bool>(c), _detail); \
+    int _n = std::snprintf(nullptr, 0, __VA_ARGS__); \
+    std::vector<char> _detail(_n + 1); \
+    std::snprintf(_detail.data(), _detail.size(), __VA_ARGS__); \
+    ::kt::Check(__FILE__ ":" KT_STR(__LINE__) ": " #c, static_cast<bool>(c), _detail.data()); \
 } while (0)
 
 // ---- fake engine ----

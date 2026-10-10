@@ -87,7 +87,7 @@ static void ids(const std::string& s, std::vector<uint32_t>& out) { std::strings
 #define CHECK(c, ...) do { \
     char _detail[512]; \
     std::snprintf(_detail, sizeof(_detail), __VA_ARGS__); \
-    char _what[128]; \
+    char _what[512]; \
     std::snprintf(_what, sizeof(_what), "%s:%d: %s", tag, key, #c); \
     ::kt::Check(_what, static_cast<bool>(c), _detail); \
 } while (0)
