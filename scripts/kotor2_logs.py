@@ -38,9 +38,11 @@ RUNS = "patch_manager_mods/perf_lab_src/analyze_runs.py"
 PLAY = "patch_manager_mods/mods678_research/analyze_play_logs.py"
 ARCHIVE = "scripts/archive_play_logs.py"
 TRIAGE = "scripts/log_triage.py"
+SELFHEAL = "scripts/selfheal_log_check.py"
 
-# name -> (parser label, route kind). kinds: engfix, luo, runs, playlogs. Anything else -> log_triage.
+# name -> (parser label, route kind). kinds: engfix, luo, runs, playlogs, selfheal. Anything else -> log_triage.
 ROUTES = {
+    "companion-selfheal_log.txt": ("selfheal_log_check", "selfheal"),
     "k2-dialogue-letterbox-fix_log.txt": ("analyze_engfix_logs", "engfix"),
     "levelup_override_log.txt": ("luo_log_check", "luo"),
     "perflab_log.txt": ("analyze_runs", "runs"),
@@ -120,6 +122,8 @@ def route(name: str, game_dir: str) -> list[str]:
     if kind == "runs":
         return [py, _py(RUNS), "--game-dir", os.path.dirname(os.path.abspath(path)) if os.sep in name else game_dir,
                 "--summary", "--latest", "1"]
+    if kind == "selfheal":
+        return [py, _py(SELFHEAL), path]
     if kind == "playlogs":
         return [py, str(HERE / "kotor2_logs.py"), "_playlogs", os.path.dirname(os.path.abspath(path)) if os.sep in name else game_dir]
     return [py, _py(TRIAGE), path]
@@ -206,12 +210,19 @@ def print_routes(out=None) -> None:
     print("everything else -> log_triage", file=out)
 
 
+ALIASES = {
+    "selfheal": "companion-selfheal_log.txt",
+    "companion-selfheal": "companion-selfheal_log.txt",
+}
+
+
 def check(name: str, extra: list[str], game_dir: str) -> int:
-    path = name if os.sep in name else os.path.join(game_dir, name)
+    resolved = ALIASES.get(name, name)
+    path = resolved if os.sep in resolved else os.path.join(game_dir, resolved)
     if not os.path.isfile(path):
         print("missing: %s" % name)
         return 2
-    argv = route(name, game_dir)
+    argv = route(resolved, game_dir)
     kind = kind_of(path)
     if kind not in ("playlogs",):
         argv = argv + list(extra)

@@ -71,6 +71,16 @@ class Routing(Tmp):
         self.assertTrue(a[1].endswith("scripts/luo_log_check.py"))
         self.assertEqual(a[2:], ["--log", os.path.join(self.g, "levelup_override_log.txt")])
 
+    def test_selfheal(self):
+        a = self.argv("companion-selfheal_log.txt")
+        self.assertTrue(a[1].endswith("scripts/selfheal_log_check.py"))
+        self.assertEqual(a[2], os.path.join(self.g, "companion-selfheal_log.txt"))
+
+    def test_alias_selfheal(self):
+        self.w("companion-selfheal_log.txt", "T=0.100 f=- companion-selfheal/hud P1 hud built panel=1 +0x30=1 +0x48=1 layoutOpen=1 ctlList=1 ctlCount=212\n")
+        rc = K.check("selfheal", [], self.g)
+        self.assertEqual(rc, 0)
+
     def test_runs_class(self):
         for n in ("perflab_log.txt", "perflab_metrics.txt", "robustnessfixes_log.txt", "texmem_log.txt", "activationfix_log.txt",
                   "equipiconfix_log.txt", "k2-texture-memory-release_log.txt", "k2-activation-fix_log.txt", "k2-equip-icon-fix_log.txt",
