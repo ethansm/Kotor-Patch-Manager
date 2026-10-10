@@ -144,6 +144,30 @@ def query_struct(con: sqlite3.Connection, class_name: str, limit: int = 100) -> 
         results.append(d)
     return results
 
+def format_cpp_struct(results: list[dict], class_name: str) -> str:
+    lines = [f"// Auto-generated struct layout for {class_name}", f"struct {class_name} {{"]
+    type_map = {
+        "ptr": "void*",
+        "int": "int32_t",
+        "i32": "int32_t",
+        "u32": "uint32_t",
+        "word": "uint16_t",
+        "byte": "uint8_t",
+        "f32": "float",
+        "id": "uint32_t",
+    }
+    for item in results:
+        off = item.get("offset", 0)
+        t_raw = str(item.get("type", "")).strip().lower()
+        c_type = type_map.get(t_raw, "uint32_t")
+        raw_name = item.get("name", f"field_0x{off:x}")
+        clean_name = re.sub(r"[^a-zA-Z0-9_]", "_", raw_name).strip("_")
+        if not clean_name or clean_name[0].isdigit():
+            clean_name = f"field_{clean_name}"
+        lines.append(f"    /* 0x{off:04x} */ {c_type:10s} {clean_name};")
+    lines.append("};")
+    return "\n".join(lines)
+
 def get_stats(con: sqlite3.Connection) -> dict:
     cur = con.cursor()
     stats = {}
@@ -176,6 +200,7 @@ def main():
     # Subcommand: struct
     p_struct = subparsers.add_parser("struct", parents=[parent_parser], help="Lookup struct fields by class name")
     p_struct.add_argument("class_name", help="Class name (e.g. CSWSCreature)")
+    p_struct.add_argument("--cpp", action="store_true", help="Format struct fields as C++ struct declaration")
 
     # Subcommand: stats
     subparsers.add_parser("stats", parents=[parent_parser], help="Show knowledge database statistics")
@@ -209,6 +234,8 @@ def main():
 
     if args.json:
         print(json.dumps(results, indent=2))
+    elif args.command == "struct" and getattr(args, "cpp", False):
+        print(format_cpp_struct(results, args.class_name))
     else:
         for i, item in enumerate(results, 1):
             source = item.get("source_table", args.command)
