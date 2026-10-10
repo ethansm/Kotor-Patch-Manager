@@ -1,0 +1,15 @@
+{
+  "as_of": "2026-10-10",
+  "tier_threshold_tokens": 100000,
+  "currency": "USD per million tokens",
+  "note": "Estimates only. Priced per request; tier picked by that request's own prompt size (input + cache write + cache read).",
+  "models": [
+    {
+      "match": "^claude-haiku-5-5(-\\d{8})?$",
+      "source": "list rates mirrored from ~/.claude/skills/deep-haiku-review/bundle/engine/merge.py:33-45 (third-party corroborated)",
+      "verified": {"input": false, "output": false, "cache_write_5m": false, "cache_write_1h": false, "cache_read": false},
+      "low": {"input": 0.10, "output": 0.50, "cache_write_5m": 0.125, "cache_write_1h": 0.20, "cache_read": 0.01},
+      "high": {"input": 0.50, "output": 2.50, "cache_write_5m": 0.625, "cache_write_1h": 1.00, "cache_read": 0.05}
+    }
+  ]
+}
