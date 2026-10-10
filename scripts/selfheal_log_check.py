@@ -24,7 +24,7 @@ from pathlib import Path
 
 DEFAULT_LOG = Path.home() / ".local/share/Steam/steamapps/common/Knights of the Old Republic II/companion-selfheal_log.txt"
 
-PREFIX_RE = re.compile(r"^\d+ [\w.-]+/\w+ (?:(?:ERR|WARN) )?(.*)$")
+PREFIX_RE = re.compile(r"^(?:T=\d+(?:\.\d+)? f=(?:\d+|-)|\d+)\s+[\w.-]+/\w+\s+(?:(?:ERR|WARN)\s+)?(.*)$")
 P1_RE = re.compile(r"^P1 hud built .*?\blayoutOpen=(\S+) .*?\bctlCount=(\S+)\s*$")
 P3_RE = re.compile(r"^P3 slot\[(\d+)\]=\S+ .*?\bk=(\S+)\s*$")
 MEMBER_RE = re.compile(r"^member (\d+) .*?\bhp=(\S+?)/(\S+?) ")
@@ -46,6 +46,7 @@ KICKSKIP_RE = re.compile(r"^KICK skipped member=(\S+) \((\w+)=(\S+?)\)\s*$")
 KICKSTARVED_RE = re.compile(r"^KICK starved member=(\S+)\s*$")
 TIMEOUT_RE = re.compile(r"^TIMEOUT unqueued member=(\S+)\s*$")
 CLICK_RE = re.compile(r"^CLICK member=(\S+) noitem\s*$")
+DIAGPOP_RE = re.compile(r"^DIAG pop item=(\S+) .*?rgbOk=(\d+) alphaOk=(\d+)")
 ROWS = {64, 65, 66, 84, 127, 128}
 FAMILY = {64: "organic medpac(10+1*TI)", 65: "organic medpac(20+2*TI)", 66: "organic medpac(30+3*TI)",
           84: "droid repair(15+1*Rep)", 127: "droid repair(25+2*Rep)", 128: "droid repair(35+3*Rep)"}
@@ -119,6 +120,12 @@ def v030_line(v, n, t):
         v["cfg_reload"].append((n, to_int(CFGRELOAD_RE.match(t).group(1))))
     elif CLICK_RE.match(t):
         v["click_noitem"] += 1
+    elif DIAGPOP_RE.match(t):
+        m = DIAGPOP_RE.match(t)
+        rgb_ok, alpha_ok = to_int(m.group(2)), to_int(m.group(3))
+        v["diag_pop"].append((n, to_int(m.group(1)), rgb_ok, alpha_ok))
+        if rgb_ok != 1 or alpha_ok != 1:
+            v["fail"].append((n, "DIAG pop item=%s color/alpha not ok (rgbOk=%s alphaOk=%s)" % (m.group(1), m.group(2), m.group(3))))
     elif REFUSE_RE.match(t):
         why = REFUSE_RE.match(t).group(1) or "(none)"
         if why.startswith("already queued"):
@@ -134,7 +141,7 @@ def check(lines, lo=1, hi=None):
     r = {"p1": "MISSING", "p1_fail": [], "p1_ok": 0, "p3": "PASS", "p3_fail": [], "p3_n": 0,
          "blocks": [], "dump_fail": [], "table": [],
          "v": {"build": [], "use": [], "done": [], "auto": [], "refuse": {}, "cfg_save": [], "cfg_reload": [], "click_noitem": 0,
-               "fail": [], "warn": [], "tex": {}, "seen": False,
+               "fail": [], "warn": [], "tex": {}, "seen": False, "diag_pop": [],
                "kick": [], "kick_skip": {}, "kick_starved": 0, "timeout_unq": 0, "refuse_queued": 0}}
     v = r["v"]
     cur = None  # current DUMP block

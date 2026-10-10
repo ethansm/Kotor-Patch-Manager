@@ -188,3 +188,20 @@ def test_v060_prefixed_lines_and_legacy_done_still_parse():
     r = S.check(v30(["12000 companion-selfheal/call KICK member=1 before=[3d,3d,3f] after=[3f,3d,3d] k=2 route=rotate",
                      "12001 companion-selfheal/call WARN KICK starved member=1", "DONE member=1 hp+0 stack+0 timeout=1"]))
     assert r["v"]["kick"][0]["k"] == 2 and r["v"]["kick_starved"] == 1 and r["v"]["done"][0]["timeout"] == 1
+
+
+def test_kplog_v1_prefix_and_diag_pop():
+    lines = [
+        "T=100.000 f=- companion-selfheal/hud P1 hud built panel=08790760 +0x30=08302b58 +0x48=ffdbe447 layoutOpen=1 ctlList=0883cdf8 ctlCount=213",
+        "T=100.001 f=- companion-selfheal/hud P3 slot[1]=332b05e8 creature=33701258 hud=332ad8d0 k=1",
+        "T=100.002 f=- companion-selfheal/hud BUILD n=16/16 why=ok",
+        'T=100.003 f=- companion-selfheal/ui DIAG pop item=12 rgb=0.85,0.95,0.85 alpha=1.00 txt="Use below 35%" (rgbOk=1 alphaOk=1)',
+    ]
+    r = S.check(lines)
+    assert r["p1"] == "PASS"
+    assert r["p3"] == "PASS"
+    assert len(r["v"]["build"]) == 1
+    assert len(r["v"]["diag_pop"]) == 1
+    assert r["v"]["diag_pop"][0][2] == 1  # rgbOk
+    assert r["v"]["diag_pop"][0][3] == 1  # alphaOk
+    assert r["verdict"] == "PASS"
