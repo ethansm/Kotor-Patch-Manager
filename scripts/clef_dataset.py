@@ -39,7 +39,7 @@ DEFAULT_ROLE_DURATIONS_MS = {
 }
 
 
-def parse_duration_ms(val) -> float | None:
+def parse_duration_ms(val, bare_is_ms: bool = False) -> float | None:
     if val is None:
         return None
     try:
@@ -50,7 +50,7 @@ def parse_duration_ms(val) -> float | None:
             return float(s[:-1]) * 1000.0
         # raw number; if small (< 100), likely seconds; if large (> 100), likely ms
         f = float(s)
-        if f < 100.0:
+        if f < 100.0 and not bare_is_ms:
             return f * 1000.0
         return f
     except (ValueError, TypeError):
@@ -73,12 +73,26 @@ def extract_ledger_facts(ledger_path: Path | str | None = None, force_refresh: b
             "roles": {},
         }
 
-    cache_path = path.parent / "clef_priors.json"
+    # Non-default ledgers get their own cache file so they never share priors with a sibling ledger
+    if path.resolve() == DEFAULT_LEDGER.resolve():
+        cache_path = DEFAULT_CACHE
+    else:
+        cache_path = path.with_name(f"{path.stem}.clef_priors.json")
+    # Identity of the exact ledger the priors were computed from; a restored older mtime or a same-size rewrite still differs
+    st = path.stat()
+    ledger_id = {"path": str(path.resolve()), "size": st.st_size, "mtime_ns": st.st_mtime_ns}
     if not force_refresh and cache_path.is_file():
         try:
-            if cache_path.stat().st_mtime >= path.stat().st_mtime:
-                with open(cache_path, "r", encoding="utf-8") as f:
-                    return json.load(f)
+            with open(cache_path, "r", encoding="utf-8") as f:
+                cached = json.load(f)
+            # Reject caches written by an older or different schema; main() reads these keys directly
+            if (
+                isinstance(cached, dict)
+                and {"total_events", "global_prior", "mods", "roles", "ledger"} <= cached.keys()
+                and cached["ledger"] == ledger_id
+            ):
+                del cached["ledger"]
+                return cached
         except Exception:
             pass
 
@@ -117,9 +131,11 @@ def extract_ledger_facts(ledger_path: Path | str | None = None, force_refresh: b
                 rec = json.loads(line)
             except Exception:
                 continue
+            if not isinstance(rec, dict):
+                continue
 
             total_events += 1
-            event = rec.get("event", "").upper()
+            event = str(rec.get("event") or "").upper()
 
             # Ignore test pollution
             if rec.get("mod") in ("demo", "demo_src") or "demo_swap_" in str(rec.get("backup", "")):
@@ -146,7 +162,8 @@ def extract_ledger_facts(ledger_path: Path | str | None = None, force_refresh: b
             role = rec.get("role")
             backend = rec.get("backend")
             model = rec.get("actual_model") or rec.get("model")
-            dur = parse_duration_ms(rec.get("duration_ms") or rec.get("duration"))
+            dur_ms_val = rec.get("duration_ms")
+            dur = parse_duration_ms(dur_ms_val or rec.get("duration"), bare_is_ms=bool(dur_ms_val))
             status = rec.get("status") or rec.get("verdict")
 
             tin = None
@@ -202,7 +219,7 @@ def extract_ledger_facts(ledger_path: Path | str | None = None, force_refresh: b
                         r["tokens_out"].append(tout)
 
     # Aggregate summaries
-    global_avg_dur = round(sum(all_durations) / len(all_durations), 1) if all_durations else 45000.0
+    global_avg_dur = round(sum(all_durations) / len(all_durations), 1) if all_durations else 3500.0
     best_global_backend = max(global_backends.keys(), key=lambda k: global_backends[k]) if global_backends else "local"
     common_global_role = max(global_roles.keys(), key=lambda k: global_roles[k]) if global_roles else "code"
 
@@ -253,7 +270,7 @@ def extract_ledger_facts(ledger_path: Path | str | None = None, force_refresh: b
     res = {
         "total_events": total_events,
         "global_prior": {
-            "avg_duration_ms": 3500.0,
+            "avg_duration_ms": global_avg_dur,
             "best_backend": best_global_backend,
             "common_role": common_global_role,
             "pass_rate": 0.95,
@@ -265,7 +282,7 @@ def extract_ledger_facts(ledger_path: Path | str | None = None, force_refresh: b
     try:
         tmp_cache = cache_path.with_suffix(".tmp")
         with open(tmp_cache, "w", encoding="utf-8") as f:
-            json.dump(res, f, indent=2)
+            json.dump({**res, "ledger": ledger_id}, f, indent=2)
         tmp_cache.replace(cache_path)
     except Exception:
         pass

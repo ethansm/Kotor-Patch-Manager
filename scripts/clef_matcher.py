@@ -2,7 +2,8 @@
 """clef_matcher.py - Local clef-flash System-1 Routing Engine & Matcher.
 
 Consumes task prompt, active mod, and git diff telemetry paired with historical ledger
-priors to output calibrated subagent execution contracts in <45ms.
+priors to output calibrated subagent execution contracts. Daemon queries wait up to
+1.0s (timeout_sec) before falling back; the <45ms figure is a target, not a bound.
 Logs all decisions to master_ledger.jsonl under event CLEF_ROUTE.
 
 Usage:
@@ -28,7 +29,6 @@ from clef_dataset import extract_ledger_facts, get_mod_prior
 from master_ledger import log_event, canonical_mod_name
 
 CLEF_ENDPOINT = os.environ.get("CLEF_SYSTEMONE_URL", "http://127.0.0.1:8101/v1/systemone")
-CLEF_HEALTH_URL = os.environ.get("CLEF_HEALTH_URL", "http://127.0.0.1:8101/docs")
 MODS_DIR = REPO_ROOT / "patch_manager_mods"
 
 VALID_ROLES = ["scout", "verify", "gate", "review", "deep", "code", "ghidra", "test", "doc"]
@@ -78,7 +78,7 @@ def infer_active_mod(prompt: str, explicit_mod: str | None = None) -> str | None
             return f"{clean}_src"
 
     prompt_lower = prompt.lower()
-    for mod in existing_mods:
+    for mod in sorted(existing_mods):
         base = mod.replace("_src", "").replace("_", "")
         clean_mod = mod.replace("_", "")
         if mod.lower() in prompt_lower or clean_mod.lower() in prompt_lower or base.lower() in prompt_lower:
@@ -165,6 +165,29 @@ def sanitize_write_scope(role: str, active_mod: str | None) -> list[str]:
     return []
 
 
+def clef_answers_valid(clef_resp) -> bool:
+    """True only when the daemon reply has the dict/numeric shape route_task reads; anything else falls back."""
+    if not isinstance(clef_resp, dict) or not isinstance(clef_resp.get("answers"), dict):
+        return False
+    ans = clef_resp["answers"]
+    if not all(isinstance(ans.get(k, {}), dict) for k in ("role", "backend", "model")):
+        return False
+    role_ans = ans.get("role", {})
+    probs = role_ans.get("probabilities", {})
+    if not isinstance(probs, dict):
+        return False
+    if not all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in probs.values()):
+        return False
+    try:
+        float(role_ans.get("confidence", 0.8))
+    except (TypeError, ValueError):
+        return False
+    if not all(isinstance(ans.get(k, {}).get("choice", ""), str) for k in ("role", "backend", "model")):
+        return False
+    top_role = max(probs, key=probs.get) if probs else role_ans.get("choice", "code")
+    return top_role in VALID_ROLES and ans.get("backend", {}).get("choice", "cloud") in VALID_BACKENDS
+
+
 def query_clef_engine(payload: dict, timeout_sec: float = 1.0) -> dict | None:
     """Queries local Kev-0.8B System-1 daemon over HTTP on port 8101."""
     try:
@@ -200,7 +223,7 @@ def get_cooled_down_models() -> set[str]:
 
 
 def deterministic_fallback_routing(prompt: str, active_mod: str | None, prior: dict) -> dict:
-    """Fallback router when local clef-flash daemon is offline (<5ms latency)."""
+    """Fallback router when local clef-flash daemon is offline or times out (after up to 1.0s)."""
     p_lower = prompt.lower()
 
     if any(k in p_lower for k in ["find", "search", "locate", "where is", "log check", "scan"]):
@@ -312,7 +335,7 @@ def route_task(prompt: str, explicit_mod: str | None = None, log_telemetry: bool
     clef_resp = query_clef_engine(payload)
     latency_ms = round((time.perf_counter() - t0) * 1000.0, 1)
 
-    if clef_resp and "answers" in clef_resp:
+    if clef_answers_valid(clef_resp):
         ans = clef_resp["answers"]
         role_ans = ans.get("role", {})
         backend_ans = ans.get("backend", {})
