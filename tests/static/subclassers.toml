@@ -22,16 +22,16 @@ file = "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp"
 uses = "WindowHook"
 install = 'WheelHook::install\s*\('
 restore = 'WheelHook::uninstall\s*\('
-install_hint = 1037
-restore_hint = 1865
+install_hint = 1182
+restore_hint = 2060
 
 [[subclasser]]
 file = "patch_manager_mods/_shared_src/GuiKit.h"
 uses = "WindowHook"
 install = 'WheelWin::install\s*\('
 restore = 'WheelWin::uninstall\s*\('
-install_hint = 630
-restore_hint = 639
+install_hint = 686
+restore_hint = 700
 
 [[subclasser]]
 file = "patch_manager_mods/_shared_src/WindowHook.h"
@@ -39,3 +39,12 @@ install = 'SetWindowLongPtr[AW]?\s*\(\s*h\s*,\s*GWLP_WNDPROC'
 restore = 'getProc\(hwnd\)\s*==\s*proc\)\s*\{\s*whapi::setProc\(hwnd,\s*old\).*?else\s*\{\s*whapi::xchg\(&passthrough,\s*1\)'
 install_hint = 12
 restore_hint = 45
+
+[[subclasser]]
+file = "patch_manager_mods/gui_input_src/GuiInputProvider.cpp"
+uses = "WindowHook"
+install = 'Hook::install\s*\('
+restore = 'Hook::uninstall\s*\('
+install_hint = 120
+restore_hint = 198
+

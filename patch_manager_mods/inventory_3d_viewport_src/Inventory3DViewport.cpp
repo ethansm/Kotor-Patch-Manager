@@ -105,6 +105,7 @@ using inv3d::Ov; using inv3d::Cfg; using inv3d::FitEntry;
 Cfg g_cfg;
 unsigned g_cfgGen = 0;
 ULONGLONG g_iniStamp = 0; DWORD g_iniLastCheck = 0;
+void syncScreen();
 
 void loadIni() {
     Cfg c; inv3d::cfgDefaults(&c);
@@ -114,7 +115,7 @@ void loadIni() {
         g_iniStamp = ((ULONGLONG)fa.ftLastWriteTime.dwHighDateTime << 32) | fa.ftLastWriteTime.dwLowDateTime;
     else g_iniStamp = 0;
     FILE* f = fopen("inv3d.ini", "r");
-    if (!f) { logf("INI: inv3d.ini not found, using defaults (debug=%d)", g_debug); g_cfg = c; ++g_cfgGen; return; }
+    if (!f) { logf("INI: inv3d.ini not found, using defaults (debug=%d)", g_debug); g_cfg = c; ++g_cfgGen; syncScreen(); return; }
     char line[256]; int ln = 0, ok = 0, bad = 0;
     while (fgets(line, sizeof(line), f)) {
         ++ln;
@@ -136,6 +137,7 @@ void loadIni() {
     if (clamped & inv3d::ClampScreen) logf("INI screen_w/h invalid, reset 3840x1600");
     if (clamped & inv3d::ClampFov) logf("INI fov_deg out of range, reset 22.726");
     g_cfg = c; ++g_cfgGen;
+    syncScreen();
     logf("INI loaded: %d keys ok, %d rejected, debug=%d gen=%u enabled=%d rig=%s", ok, bad, g_debug, g_cfgGen, c.enabled, c.rig);
 }
 void maybeReloadIni() {

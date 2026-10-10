@@ -353,9 +353,10 @@ mouse-probe 0.4.0 HOT-SWAPPED: kpatch md5 `6568fe27`, KOTOR-II `20eafed`, KPM he
 - **Double-Click Synthesis**: Intercepts dropped `WM_LBUTTONDBLCLK` (0x203) when two successive `0x201` arrive within 350ms and 5px, converting the second `0x201` into native `0x203` to trigger vanilla default actions.
 - **Dynamic Linkage**: Win32 `user32.dll` APIs (`GetCursorPos`, `SetCursorPos`, `GetForegroundWindow`, `GetWindowRect`) resolved dynamically via `GetProcAddress` to preserve exact PE import table parity (`kernel32.dll`, `msvcrt.dll`) for hot-swap.
 
-## RESUME HERE (2026-10-06): Shared Input Architecture (`k2.guiinput`, L4)
-- **Play-test verification:** Launch game, verify pitch lock elimination on RMB drag and double-click synthesis in `mouse-probe_log.txt`.
-- **Shared Input Architecture (`k2.guiinput`, L4):** Unify the 4 stacked `SetWindowLongPtrA` subclasses (`hotbar`, `inv3d`, `equip3d`, `chareffects`) into a single `k2.guiinput` provider offering `game_hwnd()`, `cursor_engine()`, `wheel_subscribe()`, and focus tracking.
-- **Handoff Document:** `.claude/session_handoff.md` and `.claude/handoffs/18_mouse_camera_investigation.handoff.md`.
+## Shared Input Architecture (`k2.guiinput`, L4) -- COMPLETED
+- **Shared Provider (`gui-input`, `k2.guiinput@1`):** Unified the 4 stacked `SetWindowLongPtrA(GWLP_WNDPROC)` subclasses (`action-hotbar`, `inventory-3d-viewport`, `equipment-3d-character`, `character-effects-panel`) into `gui-input` provider.
+- **Provider API (`GuiInput.h`):** Plain C ABI v1 providing `game_hwnd()`, `cursor_engine(x,y)`, `wheel_subscribe(cb, user)`, `wheel_unsubscribe(cb)`, and `foreground()`. Includes C++ `k2input::Client` with fallback-safety and 256-tick reconnect polling.
+- **Consumer Consolidation:** `action-hotbar` subscribes to `k2.guiinput` directly; `inventory-3d-viewport`, `equipment-3d-character`, and `character-effects-panel` route through `GuiKit.h`'s `guikit::initGuiInput()`, falling back to local `WheelHook` when running standalone.
+- **Verification:** Built and verified all 5 DLLs with `build_check.py`, passed `check_library_manifests.py` (0 warnings), passed `check_subclassers.py` (0 drift), passed host unit tests `gi_dispatch_test` and `gi_registry_test`, and all contract tests.
 
 
