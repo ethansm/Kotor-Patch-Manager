@@ -8,7 +8,6 @@ Validates the work of an OpenCode subagent after code execution:
 1. Scope verification: Ensures modified/untracked files conform to allowed globs.
 2. Build verification: Runs build_check.py for affected mods.
 3. Test verification: Runs unit/logic tests via run_tests.py.
-4. Static invariants: Checks for raw address anti-patterns or broken includes.
 
 Exit codes:
   0 = PASS (all scope, build, and test invariants satisfied)
@@ -25,11 +24,13 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+CMD_TIMEOUT_SECS = 900
 
 try:
     import master_ledger as ml
 except ImportError:
     ml = None
+    print("WARNING: master_ledger not importable; SUBAGENT_DIFF_CHECK ledger event will be skipped.", file=sys.stderr)
 
 try:
     import agent_contract as ac
@@ -89,7 +90,10 @@ def run_build_checks(mods):
     cmd = ["python3", "scripts/build_check.py"]
     for m in mods:
         cmd.extend(["--mod", m])
-    res = subprocess.run(cmd, cwd=str(REPO_ROOT), capture_output=True, text=True)
+    try:
+        res = subprocess.run(cmd, cwd=str(REPO_ROOT), capture_output=True, text=True, timeout=CMD_TIMEOUT_SECS)
+    except subprocess.TimeoutExpired:
+        return False, f"build_check.py timed out after {CMD_TIMEOUT_SECS}s"
     return res.returncode == 0, res.stdout + res.stderr
 
 
@@ -101,7 +105,12 @@ def run_tests(test_filters):
     outputs = []
     for tf in test_filters:
         cmd = ["python3", "scripts/run_tests.py", "-k", tf]
-        res = subprocess.run(cmd, cwd=str(REPO_ROOT), capture_output=True, text=True)
+        try:
+            res = subprocess.run(cmd, cwd=str(REPO_ROOT), capture_output=True, text=True, timeout=CMD_TIMEOUT_SECS)
+        except subprocess.TimeoutExpired:
+            all_ok = False
+            outputs.append(f"run_tests.py -k {tf} timed out after {CMD_TIMEOUT_SECS}s")
+            continue
         if res.returncode != 0:
             all_ok = False
         outputs.append(res.stdout + res.stderr)
@@ -138,11 +147,15 @@ def main():
         if def_base.is_file():
             baseline_file = str(def_base)
 
+    baseline_used = None
     if baseline_file and Path(baseline_file).is_file() and ac:
         base_snap = ac.read_snapshot(Path(baseline_file))
         changed_paths_set, _ = ac.changed_since(REPO_ROOT, base_snap)
         changed_paths = sorted(changed_paths_set)
+        baseline_used = baseline_file
     else:
+        if baseline_file and Path(baseline_file).is_file() and ac is None:
+            print("WARNING: agent_contract not importable; falling back to git status instead of baseline.", file=sys.stderr)
         changes = get_git_status()
         changed_paths = sorted(changes.keys())
 
@@ -175,7 +188,7 @@ def main():
 
     summary = {
         "verdict": verdict,
-        "baseline_used": baseline_file,
+        "baseline_used": baseline_used,
         "changed_files_count": len(changed_paths),
         "changed_files": changed_paths,
         "scope_violations": scope_violations,
@@ -221,8 +234,8 @@ def main():
                     if e.get("event") in ("OPENCODE_RUN", "OPENCODE_FLOW"):
                         subagent = e.get("agent") or e.get("role")
                         break
-            except Exception:
-                pass
+            except Exception as err:
+                print(f"  Warning: could not read ledger events: {err}")
         ml.log_event("SUBAGENT_DIFF_CHECK", {
             "subagent": subagent or "subagent",
             "verdict": verdict,

@@ -65,7 +65,8 @@ def find_interface_consumers(repo_root: Path, iface_tag: str) -> list[str]:
             req_ifaces = patch.get("requires_interfaces", [])
             if iface_tag in req_ifaces:
                 consumers.append(mfile.parent.name)
-        except Exception:
+        except Exception as exc:
+            sys.stderr.write(f"Skipping unreadable manifest {mfile}: {exc}\n")
             continue
     return sorted(consumers)
 
@@ -321,6 +322,9 @@ def main() -> int:
     )
 
     args = parser.parse_args()
+    if args.update and args.header:
+        sys.stderr.write("--update cannot be combined with --header (would rebaseline the golden from a scratch header).\n")
+        return 2
     repo_root = (args.repo or REPO_ROOT).resolve()
     kpm_dir = find_kpm_dir(repo_root, args.kpm_dir)
 
@@ -357,9 +361,10 @@ def main() -> int:
         dumper_src = repo_root / f"tests/abi/abi_dump_{stem_simple}.cpp"
         if not dumper_src.is_file():
             # Try direct match
-            candidates = list((repo_root / "tests/abi").glob(f"abi_dump_*.cpp"))
+            candidates = sorted((repo_root / "tests/abi").glob("abi_dump_*.cpp"))
             if candidates:
                 dumper_src = candidates[0]
+                sys.stderr.write(f"No dumper for {iface_tag}; falling back to {dumper_src.name}\n")
             else:
                 sys.stderr.write(f"No dumper found for {iface_tag} (expected {dumper_src})\n")
                 overall_exit = 2
@@ -374,7 +379,7 @@ def main() -> int:
 
         if args.dump_only:
             print(dump_to_toml_str(dumped_data))
-            return 0
+            continue
 
         if args.update:
             toml_content = dump_to_toml_str(dumped_data)
