@@ -1056,6 +1056,162 @@ void testCancelVisible() {
     KT_CHECK(!cancelVisible(true, false, false, false, 0, 1));    // cancel = 0
 }
 
+// ---- Unified action buffer (doc 33 QH4/H10): item + spell actions share one ActionBuffer ----
+void fillBuf(ActionBuffer& b, int n) {
+    for (int i = 0; i < n; ++i) KT_CHECK(b.push(makeItemAction(0x1000, 100 + i, 0, 1, nullptr, 1)));
+}
+
+void testUnifiedActionMake() {
+    const float pos[3] = { 1.5f, 2.5f, 3.5f };
+    QueuedAction it = makeItemAction(0x1000, 301, 4, 7, pos, 999);
+    KT_CHECK_EQ(it.creature, (uintptr_t)0x1000);
+    KT_CHECK_EQ((int)it.kind, (int)ActionKind::Item);
+    KT_CHECK_EQ(it.clientItem, 301u);
+    KT_CHECK_EQ(it.packedByte, 4);
+    KT_CHECK_EQ(it.targetId, 7u);
+    KT_CHECK(it.pos[0] == 1.5f && it.pos[1] == 2.5f && it.pos[2] == 3.5f);
+    KT_CHECK_EQ(it.queueTime, 999u);
+    KT_CHECK_EQ(it.spellId, 0u); KT_CHECK_EQ(it.arg2, 0); KT_CHECK_EQ(it.multispell, 0);
+    KT_CHECK_EQ(it.metamagic, 0); KT_CHECK_EQ(it.domain, 0); KT_CHECK_EQ(it.reInjectCount, 0);
+
+    QueuedAction sp = makeSpellAction(0x2000, 0x55, 3, 9, 2, 4, 5, pos, 77);
+    KT_CHECK_EQ(sp.creature, (uintptr_t)0x2000);
+    KT_CHECK_EQ((int)sp.kind, (int)ActionKind::Spell);
+    KT_CHECK_EQ(sp.clientItem, 0x55u);          // spellId mirrored into clientItem
+    KT_CHECK_EQ(sp.packedByte, 3);              // arg2 mirrored into packedByte
+    KT_CHECK_EQ(sp.targetId, 9u);
+    KT_CHECK_EQ(sp.spellId, 0x55u);
+    KT_CHECK_EQ(sp.arg2, 3);
+    KT_CHECK_EQ(sp.multispell, 2);
+    KT_CHECK_EQ(sp.metamagic, 4);
+    KT_CHECK_EQ(sp.domain, 5);
+    KT_CHECK(sp.pos[0] == 1.5f && sp.pos[1] == 2.5f && sp.pos[2] == 3.5f);
+    KT_CHECK_EQ(sp.queueTime, 77u);
+    KT_CHECK_EQ(sp.reInjectCount, 0);
+
+    // null pos leaves zeros, for both kinds
+    QueuedAction itNull = makeItemAction(0x1000, 1, 0, 0, nullptr, 0);
+    KT_CHECK(itNull.pos[0] == 0.0f && itNull.pos[1] == 0.0f && itNull.pos[2] == 0.0f);
+    QueuedAction spNull = makeSpellAction(0x2000, 1, 0, 0, 0, 0, 0, nullptr, 0);
+    KT_CHECK(spNull.pos[0] == 0.0f && spNull.pos[1] == 0.0f && spNull.pos[2] == 0.0f);
+    KT_CHECK_EQ((int)spNull.kind, (int)ActionKind::Spell);
+
+    // default-constructed action is an Item with no re-inject history
+    QueuedAction def;
+    KT_CHECK_EQ((int)def.kind, (int)ActionKind::Item);
+    KT_CHECK_EQ(def.reInjectCount, 0);
+}
+
+void testDecideBranches() {
+    ActionBuffer idle;                               // inactive, empty
+    KT_CHECK_EQ((int)decideAction(idle, false, 0), (int)DECIDE_DISPATCH_NOW);   // idle + nothing queued in engine
+    KT_CHECK_EQ((int)decideAction(idle, false, 1), (int)DECIDE_BUFFER);         // engine queue busy
+    KT_CHECK_EQ((int)decideAction(idle, false, 3), (int)DECIDE_BUFFER);
+
+    ActionBuffer active;                             // active, empty
+    active.active = true;
+    KT_CHECK_EQ((int)decideAction(active, false, 0), (int)DECIDE_BUFFER);       // active with empty buffer still buffers
+    KT_CHECK_EQ((int)decideAction(active, false, 2), (int)DECIDE_BUFFER);
+
+    ActionBuffer two;                                // count 2 is not full
+    fillBuf(two, 2);
+    KT_CHECK(!two.full());
+    KT_CHECK_EQ((int)decideAction(two, false, 0), (int)DECIDE_BUFFER);
+    KT_CHECK_EQ((int)decideAction(two, false, 1), (int)DECIDE_BUFFER);
+
+    ActionBuffer three;                              // count 3 is full
+    fillBuf(three, 3);
+    KT_CHECK(three.full());
+    KT_CHECK_EQ((int)decideAction(three, false, 0), (int)DECIDE_DROP_FULL);
+    KT_CHECK_EQ((int)decideAction(three, false, 5), (int)DECIDE_DROP_FULL);
+    KT_CHECK_EQ((int)decideAction(three, true, 0), (int)DECIDE_DISPATCH_NOW);   // combat beats full
+    KT_CHECK_EQ((int)decideAction(three, true, 4), (int)DECIDE_DISPATCH_NOW);
+    three.active = true;
+    KT_CHECK_EQ((int)decideAction(three, false, 0), (int)DECIDE_DROP_FULL);
+
+    KT_CHECK_EQ((int)decideAction(two, true, 3), (int)DECIDE_DISPATCH_NOW);     // combat beats engine queue
+    KT_CHECK_EQ((int)decideItemAction(three, false, 0), (int)DECIDE_DROP_FULL); // wrapper matches
+    KT_CHECK_EQ((int)decideItemAction(idle, false, 0), (int)DECIDE_DISPATCH_NOW);
+}
+
+void testFifoMixedKinds() {
+    const float pos[3] = { 0.f, 0.f, 0.f };
+    ActionBuffer b;
+    KT_CHECK(b.push(makeItemAction(0x1000, 301, 0, 1, pos, 1)));
+    KT_CHECK(b.push(makeSpellAction(0x1000, 0x55, 2, 1, 0, 0, 0, pos, 2)));
+    KT_CHECK(b.push(makeItemAction(0x1000, 302, 0, 1, pos, 3)));
+    KT_CHECK_EQ(b.count, 3);
+    KT_CHECK(b.full());
+    KT_CHECK(!b.push(makeSpellAction(0x1000, 0x66, 0, 1, 0, 0, 0, pos, 4)));   // full: rejected
+    KT_CHECK_EQ(b.count, 3);
+    KT_CHECK_EQ(b.queue[2].clientItem, 302u);                                  // rejected push did not overwrite
+
+    QueuedAction out;
+    KT_CHECK(b.pop(&out));
+    KT_CHECK_EQ((int)out.kind, (int)ActionKind::Item);
+    KT_CHECK_EQ(out.clientItem, 301u);
+    KT_CHECK(b.pop(&out));
+    KT_CHECK_EQ((int)out.kind, (int)ActionKind::Spell);
+    KT_CHECK_EQ(out.spellId, 0x55u);
+    KT_CHECK_EQ(out.arg2, 2);
+    KT_CHECK(b.pop(&out));
+    KT_CHECK_EQ((int)out.kind, (int)ActionKind::Item);
+    KT_CHECK_EQ(out.clientItem, 302u);
+    KT_CHECK_EQ(b.count, 0);
+    KT_CHECK(b.empty());
+    KT_CHECK(!b.pop(&out));                                                    // pop on empty fails
+    KT_CHECK(b.push(makeSpellAction(0x1000, 0x66, 0, 1, 0, 0, 0, pos, 5)));    // room again after draining
+    KT_CHECK_EQ(b.count, 1);
+}
+
+void testReInjectEachCondition() {
+    const float pos[3] = { 0.f, 0.f, 0.f };
+    ActionBuffer base;
+    base.active = true;
+    base.activeAction = makeSpellAction(0x1000, 0x55, 0, 1, 0, 0, 0, pos, 1);
+    KT_CHECK(shouldReInject(base, false, true));                              // true case
+    KT_CHECK(shouldReInject(base, false, true, /*paused=*/true, 999, false));  // paused/now are ignored by the header
+    KT_CHECK(!shouldReInject(base, false, false));                            // no follow leader
+
+    ActionBuffer inactive = base; inactive.active = false;
+    KT_CHECK(!shouldReInject(inactive, false, true));                         // not active
+
+    ActionBuffer pending = base; pending.reInjectPending = true;
+    KT_CHECK(!shouldReInject(pending, false, true));                          // re-inject already pending
+
+    ActionBuffer cancelled = base; cancelled.userCancelled = true;
+    KT_CHECK(!shouldReInject(cancelled, false, true));                        // buffer-level user cancel
+
+    KT_CHECK(!shouldReInject(base, false, true, false, 0, /*userCancelled=*/true));   // call-level user cancel
+    KT_CHECK(!shouldReInject(base, /*actionInQueue=*/true, true));            // action still in engine queue
+
+    ActionBuffer once = base; once.activeAction.reInjectCount = 1;
+    KT_CHECK(shouldReInject(once, false, true));                              // 1 < kMaxReInjectCount
+    ActionBuffer twice = base; twice.activeAction.reInjectCount = kMaxReInjectCount;
+    KT_CHECK(!shouldReInject(twice, false, true));                            // 2 == cap -> no more re-injects
+    KT_CHECK_EQ(kMaxReInjectCount, 2);
+}
+
+void testDispatchNextEachCondition() {
+    const float pos[3] = { 0.f, 0.f, 0.f };
+    ActionBuffer b;
+    KT_CHECK(b.push(makeSpellAction(0x1000, 0x55, 0, 1, 0, 0, 0, pos, 1)));
+    KT_CHECK(shouldDispatchNext(b, 0));                                        // all clear
+    KT_CHECK(shouldDispatchNext(b, 0, false, 0));
+
+    ActionBuffer busy = b; busy.active = true;
+    KT_CHECK(!shouldDispatchNext(busy, 0));                                    // active alone blocks
+
+    ActionBuffer drained;
+    KT_CHECK(!shouldDispatchNext(drained, 0));                                 // empty alone blocks
+
+    KT_CHECK(!shouldDispatchNext(b, 1));                                       // engine queue non-empty alone blocks
+
+    KT_CHECK(!shouldDispatchNext(b, 0, /*haveCur=*/true, 0));                  // current action alone blocks
+
+    KT_CHECK(!shouldDispatchNext(b, 0, false, /*nrn=*/1));                     // nrn alone blocks
+}
+
 }  // namespace
 
 int main() {
@@ -1088,5 +1244,10 @@ int main() {
     testMixedForcePowersAndItems();
     testStripCancel();
     testCancelVisible();
+    testUnifiedActionMake();
+    testDecideBranches();
+    testFifoMixedKinds();
+    testReInjectEachCondition();
+    testDispatchNextEachCondition();
     return kt::Report("queue_hud_logic_test");
 }
