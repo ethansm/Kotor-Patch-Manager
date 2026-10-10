@@ -155,7 +155,10 @@ int32_t KPATCH_CALL apiCursorEngine(float* x, float* y) {
 
 int32_t KPATCH_CALL apiWheelSubscribe(K2WheelCallback cb, void* user) {
     if (!cb) return -1;
-    ensureSubclass();
+    if (!ensureSubclass()) {
+        KP_LOGV(chCore, KPLOG_WARN, "wheel subscribe cb=%p -> -1 (game window not subclassed yet)", (void*)cb);
+        return -1;
+    }
     int32_t tok = g_disp.subscribe(cb, user);
     KP_LOGV(chCore, tok > 0 ? KPLOG_INFO : KPLOG_WARN, "wheel subscribe cb=%p -> token %d", (void*)cb, tok);
     return tok;

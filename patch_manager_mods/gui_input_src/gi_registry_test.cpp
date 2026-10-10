@@ -32,6 +32,7 @@ static_assert(offsetof(K2WheelEvent, screen_h) == 28, "ev.screen_h");
 static int g_gameHwndCalls = 0;
 static int g_cursorCalls = 0;
 static int g_subCalls = 0;
+static int g_subNoWinCalls = 0;
 static int g_unsubCalls = 0;
 static int g_fgCalls = 0;
 
@@ -43,6 +44,7 @@ static int32_t KPATCH_CALL fakeCursorEngine(float* x, float* y) {
     return 1;
 }
 static int32_t KPATCH_CALL fakeWheelSub(K2WheelCallback, void*) { ++g_subCalls; return 42; }
+static int32_t KPATCH_CALL fakeWheelSubNoWindow(K2WheelCallback, void*) { ++g_subNoWinCalls; return -1; }
 static void KPATCH_CALL fakeWheelUnsub(K2WheelCallback) { ++g_unsubCalls; }
 static int32_t KPATCH_CALL fakeForeground() { ++g_fgCalls; return 1; }
 
@@ -51,6 +53,15 @@ static const K2GuiInputApi g_fakeTable = {
     fakeGameHwnd,
     fakeCursorEngine,
     fakeWheelSub,
+    fakeWheelUnsub,
+    fakeForeground
+};
+
+static const K2GuiInputApi g_fakeTableNoWindow = {
+    sizeof(K2GuiInputApi),
+    fakeGameHwnd,
+    fakeCursorEngine,
+    fakeWheelSubNoWindow,
     fakeWheelUnsub,
     fakeForeground
 };
@@ -122,6 +133,15 @@ int main() {
     fakekp::provide(K2GUIINPUT_IFACE, K2GUIINPUT_VERSION, &g_fakeTable);
     client.poll();
     GEQ("connected at poll 256", client.connected, true);
+
+    // 7. Provider present but game window not yet available: wheel_subscribe fails
+    fakekp::reset();
+    fakekp::provide(K2GUIINPUT_IFACE, K2GUIINPUT_VERSION, &g_fakeTableNoWindow);
+    client.init(fakekp::api(), "test_mod");
+    GCHECK("connect with no-window provider succeeds", client.connect());
+    int32_t noWinTok = client.wheel_subscribe(dummyCb, nullptr);
+    GCHECK("wheel_subscribe without game window returns token <= 0", noWinTok <= 0);
+    GEQ("no-window subCalls count", g_subNoWinCalls, 1);
 
     return ::kt::Report("gi_registry_test");
 }

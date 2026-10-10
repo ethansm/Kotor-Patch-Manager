@@ -46,7 +46,7 @@ typedef struct K2GuiInputApi {
     intptr_t (KPATCH_CALL *GameHwnd)(void);
     /* Converts current cursor pos to engine virtual coordinates (top-left). Returns 1 if valid, 0 if unavailable. */
     int32_t  (KPATCH_CALL *CursorEngine)(float* x, float* y);
-    /* Subscribe to mouse wheel events. Returns token > 0 on success, <= 0 on failure (null cb, table full). */
+    /* Subscribe to mouse wheel events. Returns token > 0 on success, <= 0 on failure (null cb, table full, or game window not yet available). */
     int32_t  (KPATCH_CALL *WheelSubscribe)(K2WheelCallback cb, void* user);
     /* Unsubscribe all registrations matching cb. */
     void     (KPATCH_CALL *WheelUnsubscribe)(K2WheelCallback cb);
