@@ -442,38 +442,91 @@ inline void parseIni(Config& c, const char* text) {
     }
 }
 
-// ---- Multi-Item Action Buffer & Follower Wipe Guard (Workstream 4) ----
-struct QueuedItemAction {
+// ---- Unified Action Buffer & Follower Wipe Guard (Workstreams 4 & QH4) ----
+enum class ActionKind : uint8_t {
+    Item = 0,
+    Spell = 1
+};
+
+struct QueuedAction {
     uintptr_t creature = 0;
-    uint32_t clientItem = 0;
-    int packedByte = 0;
+    uint32_t clientItem = 0; // itemId for Item, spellId for Spell
+    int packedByte = 0;      // packedByte for Item, arg2 for Spell
     uint32_t targetId = 0;
     float pos[3] = {};
     uint32_t queueTime = 0;
+    ActionKind kind = ActionKind::Item;
+    uint32_t spellId = 0;    // spellId for Spell
+    int arg2 = 0;            // arg2 for Spell
+    int multispell = 0;
+    int metamagic = 0;
+    int domain = 0;
+    int reInjectCount = 0;
 };
+using QueuedItemAction = QueuedAction;
 
-constexpr int kMaxItemQueue = 3;
+inline QueuedAction makeItemAction(uintptr_t creature, uint32_t itemId, int packedByte, uint32_t targetId,
+                                   const float* pos, uint32_t queueTime) {
+    QueuedAction a;
+    a.creature = creature;
+    a.clientItem = itemId;
+    a.packedByte = packedByte;
+    a.targetId = targetId;
+    if (pos) { a.pos[0] = pos[0]; a.pos[1] = pos[1]; a.pos[2] = pos[2]; }
+    a.queueTime = queueTime;
+    a.kind = ActionKind::Item;
+    a.spellId = 0;
+    a.arg2 = 0;
+    a.multispell = 0;
+    a.metamagic = 0;
+    a.domain = 0;
+    a.reInjectCount = 0;
+    return a;
+}
 
-struct ItemBuffer {
-    QueuedItemAction queue[kMaxItemQueue];
+inline QueuedAction makeSpellAction(uintptr_t creature, uint32_t spellId, int arg2, uint32_t targetId,
+                                    int multispell, int metamagic, int domain, const float* pos, uint32_t queueTime) {
+    QueuedAction a;
+    a.creature = creature;
+    a.clientItem = spellId;
+    a.packedByte = arg2;
+    a.targetId = targetId;
+    if (pos) { a.pos[0] = pos[0]; a.pos[1] = pos[1]; a.pos[2] = pos[2]; }
+    a.queueTime = queueTime;
+    a.kind = ActionKind::Spell;
+    a.spellId = spellId;
+    a.arg2 = arg2;
+    a.multispell = multispell;
+    a.metamagic = metamagic;
+    a.domain = domain;
+    a.reInjectCount = 0;
+    return a;
+}
+
+constexpr int kMaxActionQueue = 3;
+constexpr int kMaxItemQueue = kMaxActionQueue;
+constexpr int kMaxReInjectCount = 2;
+
+struct ActionBuffer {
+    QueuedAction queue[kMaxActionQueue];
     int count = 0;
     bool active = false;
-    QueuedItemAction activeAction;
+    QueuedAction activeAction;
     uint32_t activeStartTick = 0;
     bool reInjectPending = false;
     bool userCancelled = false;
 
     bool empty() const { return count == 0; }
-    bool full() const { return count >= kMaxItemQueue; }
+    bool full() const { return count >= kMaxActionQueue; }
 
-    bool push(const QueuedItemAction& a) {
-        if (count >= kMaxItemQueue) return false;
+    bool push(const QueuedAction& a) {
+        if (count >= kMaxActionQueue) return false;
         userCancelled = false;
         queue[count++] = a;
         return true;
     }
 
-    bool pop(QueuedItemAction* out = nullptr) {
+    bool pop(QueuedAction* out = nullptr) {
         if (count <= 0) return false;
         if (out) *out = queue[0];
         for (int i = 1; i < count; ++i) queue[i - 1] = queue[i];
@@ -484,7 +537,7 @@ struct ItemBuffer {
     void cancel() {
         count = 0;
         active = false;
-        activeAction = QueuedItemAction{};
+        activeAction = QueuedAction{};
         activeStartTick = 0;
         reInjectPending = false;
         userCancelled = true;
@@ -493,12 +546,14 @@ struct ItemBuffer {
     void clear() {
         count = 0;
         active = false;
-        activeAction = QueuedItemAction{};
+        activeAction = QueuedAction{};
         activeStartTick = 0;
         reInjectPending = false;
         userCancelled = false;
     }
 };
+
+using ItemBuffer = ActionBuffer;
 
 enum ActionDecision : int {
     DECIDE_DISPATCH_NOW = 0,
@@ -506,22 +561,28 @@ enum ActionDecision : int {
     DECIDE_DROP_FULL = 2
 };
 
-inline ActionDecision decideItemAction(const ItemBuffer& buf, bool inCombat, int engineQueueLen) {
+inline ActionDecision decideAction(const ActionBuffer& buf, bool inCombat, int engineQueueLen) {
     if (inCombat) return DECIDE_DISPATCH_NOW;
     if (engineQueueLen == 0 && !buf.active && buf.empty()) return DECIDE_DISPATCH_NOW;
     if (buf.full()) return DECIDE_DROP_FULL;
     return DECIDE_BUFFER;
 }
 
-inline bool shouldReInject(const ItemBuffer& buf, bool itemInQueue, bool hasFollowLeader, bool paused = false, uint32_t now = 0, bool userCancelled = false) {
+inline ActionDecision decideItemAction(const ActionBuffer& buf, bool inCombat, int engineQueueLen) {
+    return decideAction(buf, inCombat, engineQueueLen);
+}
+
+inline bool shouldReInject(const ActionBuffer& buf, bool actionInQueue, bool hasFollowLeader, bool paused = false, uint32_t now = 0, bool userCancelled = false) {
     (void)paused; (void)now;
     if (!buf.active || buf.reInjectPending || buf.userCancelled || userCancelled) return false;
-    if (itemInQueue) return false;
+    if (buf.activeAction.reInjectCount >= kMaxReInjectCount) return false;
+    if (actionInQueue) return false;
     return hasFollowLeader;
 }
 
-inline bool shouldDispatchNext(const ItemBuffer& buf, int engineQueueLen) {
-    return !buf.active && !buf.empty() && engineQueueLen == 0;
+inline bool shouldDispatchNext(const ActionBuffer& buf, int engineQueueLen, bool haveCur = false, int nrn = 0) {
+    return !buf.active && !buf.empty() && engineQueueLen == 0 && !haveCur && nrn == 0;
 }
 
 }  // namespace qh
+

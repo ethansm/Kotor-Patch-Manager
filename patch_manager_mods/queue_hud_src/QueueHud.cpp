@@ -69,11 +69,13 @@ qh::Config g_cfg;
 k2ps::Client g_ps;
 k2hud::Client g_hudc;
 
-// Multi-item queue buffers (per party member)
-qh::ItemBuffer g_itemQueue[3];
+// Unified action queue buffers (per party member)
+qh::ActionBuffer g_itemQueue[3];
 bool g_dispatching = false;
 using PerformUseItemFn = void(__thiscall*)(void* creature, uint32_t itemId, int packedByte, uint32_t targetId, const float* pos);
 constexpr uintptr_t AddrPerformUseItem = gameaddr::PerformUseItem;
+using PerformCastSpellFn = void(__thiscall*)(void* creature, uint32_t spellId, int arg2, uint32_t targetId, int multispell, int metamagic, int domain, const float* pos);
+constexpr uintptr_t AddrPerformCastSpell = gameaddr::PerformCastSpell;
 
 // ---- capture state (written by the hook, read by the draw callback; same game thread) ----
 uintptr_t g_hud = 0;
@@ -171,9 +173,9 @@ bool resolveIcon(uintptr_t hud, uintptr_t round, const qh::QEntry& e, uintptr_t 
     int scratch = -1;
     uint32_t fakeAction[16] = {};
     uintptr_t actPtr = action;
-    if (!actPtr && e.type == qh::T_USE_ITEM) {
-        fakeAction[0] = qh::T_USE_ITEM; // 0x2E
-        fakeAction[14] = e.param0;      // +0x38 = 14*4
+    if (!actPtr && (e.type == qh::T_USE_ITEM || e.type == qh::T_CAST_SPELL)) {
+        fakeAction[0] = static_cast<uint32_t>(e.type); // 0x2E or 0x0F
+        fakeAction[14] = e.param0;                     // +0x38 = 14*4
         actPtr = reinterpret_cast<uintptr_t>(fakeAction);
     }
     reinterpret_cast<ResolveFn>(AddrIconResolver)(reinterpret_cast<void*>(hud), round, actPtr, node, &scratch, out1, out2);
@@ -241,10 +243,15 @@ bool gatherFor(uintptr_t cr, Snapshot& s) {
     }
     s.nBuffered = 0;
     if (memberK >= 0 && memberK < 3) {
-        const qh::ItemBuffer& ib = g_itemQueue[memberK];
+        const qh::ActionBuffer& ib = g_itemQueue[memberK];
         for (int bi = 0; bi < ib.count && s.ne < qh::kMaxEntries; ++bi) {
-            s.e[s.ne].type = qh::T_USE_ITEM;
-            s.e[s.ne].param0 = ib.queue[bi].clientItem;
+            if (ib.queue[bi].kind == qh::ActionKind::Spell) {
+                s.e[s.ne].type = qh::T_CAST_SPELL;
+                s.e[s.ne].param0 = ib.queue[bi].spellId;
+            } else {
+                s.e[s.ne].type = qh::T_USE_ITEM;
+                s.e[s.ne].param0 = ib.queue[bi].clientItem;
+            }
             s.eData[s.ne] = 0;
             s.ne++;
             s.nBuffered++;
@@ -709,7 +716,7 @@ void tickItemQueues(DWORD now, bool inMenu) {
     if (!tbl) return;
 
     for (int k = 0; k < 3; ++k) {
-        qh::ItemBuffer& buf = g_itemQueue[k];
+        qh::ActionBuffer& buf = g_itemQueue[k];
         uintptr_t cli = party::member(tbl, k);
         uintptr_t srv = cli ? party::serverCreature(cli) : 0;
         if (!srv) {
@@ -720,65 +727,92 @@ void tickItemQueues(DWORD now, bool inMenu) {
         Snapshot s;
         if (!gatherFor(srv, s)) continue;
 
-        // 1. Check if active item action is present in server queue/round
-        bool itemInQueue = false;
+        // 1. Check if active action is present in server queue/round
+        bool actionInQueue = false;
         bool hasFollowLeader = false;
         for (int i = 0; i < s.engineNe; ++i) {
-            if (s.e[i].type == qh::T_USE_ITEM) itemInQueue = true;
+            if (s.e[i].type == qh::T_USE_ITEM || s.e[i].type == qh::T_CAST_SPELL) actionInQueue = true;
             if (s.e[i].type == 0x3D) hasFollowLeader = true; // AIActionFollowLeader
         }
-        if (s.haveCur && s.cur.subType == 10) itemInQueue = true; // 10 = use item
+        if (s.haveCur && (s.cur.subType == 9 || s.cur.subType == 10)) actionInQueue = true; // 9 = cast spell, 10 = use item
         for (int i = 0; i < s.nrn; ++i) {
-            if (s.rn[i].subType == 10) itemInQueue = true;
+            if (s.rn[i].subType == 9 || s.rn[i].subType == 10) actionInQueue = true;
         }
 
         // 2. Follower wipe protection & active completion tracking
         if (buf.active) {
-            if (qh::shouldReInject(buf, itemInQueue, hasFollowLeader, s.paused, now)) {
+            if (qh::shouldReInject(buf, actionInQueue, hasFollowLeader, s.paused, now)) {
                 if (!saferead::probeRead(SiteQueue, reinterpret_cast<const void*>(buf.activeAction.creature), 4)) {
                     QLOGV(chMain, KPLOG_WARN, "re-inject skipped: creature %08x unreadable for member %d",
                           (unsigned)buf.activeAction.creature, k);
                     buf.active = false;
                 } else {
-                    QLOG(chMain, "re-injecting eaten item action for member %d (item=%08x, target=%08x)",
-                         k, buf.activeAction.clientItem, buf.activeAction.targetId);
+                    buf.activeAction.reInjectCount++;
+                    QLOG(chMain, "re-injecting eaten %s action for member %d (id=%08x, target=%08x, attempt=%d)",
+                         buf.activeAction.kind == qh::ActionKind::Spell ? "spell" : "item",
+                         k, buf.activeAction.clientItem, buf.activeAction.targetId, buf.activeAction.reInjectCount);
                     buf.reInjectPending = true;
                     g_dispatching = true;
-                    reinterpret_cast<PerformUseItemFn>(AddrPerformUseItem)(
-                        reinterpret_cast<void*>(buf.activeAction.creature),
-                        buf.activeAction.clientItem,
-                        buf.activeAction.packedByte,
-                        buf.activeAction.targetId,
-                        buf.activeAction.pos);
+                    if (buf.activeAction.kind == qh::ActionKind::Spell) {
+                        reinterpret_cast<PerformCastSpellFn>(AddrPerformCastSpell)(
+                            reinterpret_cast<void*>(buf.activeAction.creature),
+                            buf.activeAction.spellId,
+                            buf.activeAction.arg2,
+                            buf.activeAction.targetId,
+                            buf.activeAction.multispell,
+                            buf.activeAction.metamagic,
+                            buf.activeAction.domain,
+                            buf.activeAction.pos);
+                    } else {
+                        reinterpret_cast<PerformUseItemFn>(AddrPerformUseItem)(
+                            reinterpret_cast<void*>(buf.activeAction.creature),
+                            buf.activeAction.clientItem,
+                            buf.activeAction.packedByte,
+                            buf.activeAction.targetId,
+                            buf.activeAction.pos);
+                    }
                     g_dispatching = false;
                     buf.activeStartTick = now;
                     buf.reInjectPending = false;
                 }
-            } else if (!itemInQueue && (now - buf.activeStartTick > 500)) {
+            } else if (!actionInQueue && (now - buf.activeStartTick > 500)) {
                 buf.active = false;
             }
         }
 
-        // 3. Sequential dispatch of next buffered item
-        if (qh::shouldDispatchNext(buf, s.engineNe)) {
-            qh::QueuedItemAction nextA;
+        // 3. Sequential dispatch of next buffered action (idle gate: engineNe == 0 && !haveCur && nrn == 0)
+        if (qh::shouldDispatchNext(buf, s.engineNe, s.haveCur, s.nrn)) {
+            qh::QueuedAction nextA;
             if (buf.pop(&nextA)) {
                 if (!saferead::probeRead(SiteQueue, reinterpret_cast<const void*>(nextA.creature), 4)) {
                     QLOGV(chMain, KPLOG_WARN, "dispatch skipped: creature %08x unreadable for member %d",
                           (unsigned)nextA.creature, k);
                 } else {
-                    QLOG(chMain, "dispatching buffered item for member %d (item=%08x, target=%08x, remaining=%d)",
+                    QLOG(chMain, "dispatching buffered %s for member %d (id=%08x, target=%08x, remaining=%d)",
+                         nextA.kind == qh::ActionKind::Spell ? "spell" : "item",
                          k, nextA.clientItem, nextA.targetId, buf.count);
                     buf.active = true;
                     buf.activeAction = nextA;
                     buf.activeStartTick = now;
                     g_dispatching = true;
-                    reinterpret_cast<PerformUseItemFn>(AddrPerformUseItem)(
-                        reinterpret_cast<void*>(nextA.creature),
-                        nextA.clientItem,
-                        nextA.packedByte,
-                        nextA.targetId,
-                        nextA.pos);
+                    if (nextA.kind == qh::ActionKind::Spell) {
+                        reinterpret_cast<PerformCastSpellFn>(AddrPerformCastSpell)(
+                            reinterpret_cast<void*>(nextA.creature),
+                            nextA.spellId,
+                            nextA.arg2,
+                            nextA.targetId,
+                            nextA.multispell,
+                            nextA.metamagic,
+                            nextA.domain,
+                            nextA.pos);
+                    } else {
+                        reinterpret_cast<PerformUseItemFn>(AddrPerformUseItem)(
+                            reinterpret_cast<void*>(nextA.creature),
+                            nextA.clientItem,
+                            nextA.packedByte,
+                            nextA.targetId,
+                            nextA.pos);
+                    }
                     g_dispatching = false;
                 }
             }
@@ -905,29 +939,22 @@ int __cdecl QueueHudPerformUseItem(int clientCreature, int ebp) {
     if (memberK < 0) memberK = 0;
 
     const int engineQ = queueCountOf(memberK);
-    const qh::ActionDecision dec = qh::decideItemAction(g_itemQueue[memberK], g_combat != 0, engineQ > 0 ? engineQ : 0);
+    const qh::ActionDecision dec = qh::decideAction(g_itemQueue[memberK], g_combat != 0, engineQ > 0 ? engineQ : 0);
 
     if (dec == qh::DECIDE_DISPATCH_NOW) {
         g_itemQueue[memberK].userCancelled = false;
         g_itemQueue[memberK].active = true;
-        g_itemQueue[memberK].activeAction.creature = static_cast<uintptr_t>(static_cast<uint32_t>(clientCreature));
-        g_itemQueue[memberK].activeAction.clientItem = itemId;
-        g_itemQueue[memberK].activeAction.packedByte = packedByte;
-        g_itemQueue[memberK].activeAction.targetId = targetId;
-        memcpy(g_itemQueue[memberK].activeAction.pos, posVal, sizeof(posVal));
-        g_itemQueue[memberK].activeAction.queueTime = GetTickCount();
+        g_itemQueue[memberK].activeAction = qh::makeItemAction(
+            static_cast<uintptr_t>(static_cast<uint32_t>(clientCreature)),
+            itemId, packedByte, targetId, posVal, GetTickCount());
         g_itemQueue[memberK].activeStartTick = GetTickCount();
         return 0;
     }
 
     if (dec == qh::DECIDE_BUFFER) {
-        qh::QueuedItemAction a;
-        a.creature = static_cast<uintptr_t>(static_cast<uint32_t>(clientCreature));
-        a.clientItem = itemId;
-        a.packedByte = packedByte;
-        a.targetId = targetId;
-        memcpy(a.pos, posVal, sizeof(posVal));
-        a.queueTime = GetTickCount();
+        qh::QueuedAction a = qh::makeItemAction(
+            static_cast<uintptr_t>(static_cast<uint32_t>(clientCreature)),
+            itemId, packedByte, targetId, posVal, GetTickCount());
         g_itemQueue[memberK].push(a);
         QLOG(chMain, "buffered item use for member %d (item=%08x, target=%08x, count=%d)",
              memberK, itemId, targetId, g_itemQueue[memberK].count);
@@ -936,6 +963,80 @@ int __cdecl QueueHudPerformUseItem(int clientCreature, int ebp) {
 
     if (dec == qh::DECIDE_DROP_FULL) {
         QLOGV(chMain, KPLOG_WARN, "item buffer full for member %d, dropped item %08x", memberK, itemId);
+        return 1;
+    }
+
+    return 0;
+}
+
+// H10: PerformCastSpell detour hook (gameaddr::PerformCastSpell + 3; address in hooks.toml). Consumes and buffers out-of-combat spell actions when queue busy.
+int __cdecl QueueHudPerformCastSpell(int clientCreature, int ebp) {
+    if (g_dispatching || !g_cfg.enabled || g_combat != 0) return 0;
+    saferead::beginScope();
+
+    uint32_t spellId = 0;
+    int arg2 = 0;
+    uint32_t targetId = 0;
+    int multispell = 0;
+    int metamagic = 0;
+    int domain = 0;
+    uintptr_t posPtr = 0;
+    float posVal[3] = {};
+
+    if (!rd(SiteQueue + 0x30, static_cast<uintptr_t>(static_cast<uint32_t>(ebp)), 8, &spellId) ||
+        !rd(SiteQueue + 0x31, static_cast<uintptr_t>(static_cast<uint32_t>(ebp)), 0xC, &arg2) ||
+        !rd(SiteQueue + 0x32, static_cast<uintptr_t>(static_cast<uint32_t>(ebp)), 0x10, &targetId) ||
+        !rd(SiteQueue + 0x33, static_cast<uintptr_t>(static_cast<uint32_t>(ebp)), 0x14, &multispell) ||
+        !rd(SiteQueue + 0x34, static_cast<uintptr_t>(static_cast<uint32_t>(ebp)), 0x18, &metamagic) ||
+        !rd(SiteQueue + 0x35, static_cast<uintptr_t>(static_cast<uint32_t>(ebp)), 0x1C, &domain)) {
+        return 0;
+    }
+    if (rd(SiteQueue + 0x36, static_cast<uintptr_t>(static_cast<uint32_t>(ebp)), 0x20, &posPtr) && posPtr) {
+        rd(SiteQueue + 0x37, posPtr, 0, &posVal[0]);
+        rd(SiteQueue + 0x38, posPtr, 4, &posVal[1]);
+        rd(SiteQueue + 0x39, posPtr, 8, &posVal[2]);
+    }
+
+    int memberK = -1;
+    party::Fail why = party::F_None;
+    const uintptr_t tbl = party::table(&why);
+    if (tbl) {
+        for (int k = 0; k < 3; ++k) {
+            uintptr_t m = party::member(tbl, k);
+            if (m && (m == static_cast<uintptr_t>(static_cast<uint32_t>(clientCreature)) ||
+                      party::serverCreature(m) == static_cast<uintptr_t>(static_cast<uint32_t>(clientCreature)))) {
+                memberK = k;
+                break;
+            }
+        }
+    }
+    if (memberK < 0) memberK = 0;
+
+    const int engineQ = queueCountOf(memberK);
+    const qh::ActionDecision dec = qh::decideAction(g_itemQueue[memberK], g_combat != 0, engineQ > 0 ? engineQ : 0);
+
+    if (dec == qh::DECIDE_DISPATCH_NOW) {
+        g_itemQueue[memberK].userCancelled = false;
+        g_itemQueue[memberK].active = true;
+        g_itemQueue[memberK].activeAction = qh::makeSpellAction(
+            static_cast<uintptr_t>(static_cast<uint32_t>(clientCreature)),
+            spellId, arg2, targetId, multispell, metamagic, domain, posVal, GetTickCount());
+        g_itemQueue[memberK].activeStartTick = GetTickCount();
+        return 0;
+    }
+
+    if (dec == qh::DECIDE_BUFFER) {
+        qh::QueuedAction a = qh::makeSpellAction(
+            static_cast<uintptr_t>(static_cast<uint32_t>(clientCreature)),
+            spellId, arg2, targetId, multispell, metamagic, domain, posVal, GetTickCount());
+        g_itemQueue[memberK].push(a);
+        QLOG(chMain, "buffered spell use for member %d (spell=%08x, target=%08x, count=%d)",
+             memberK, spellId, targetId, g_itemQueue[memberK].count);
+        return 1;
+    }
+
+    if (dec == qh::DECIDE_DROP_FULL) {
+        QLOGV(chMain, KPLOG_WARN, "action buffer full for member %d, dropped spell %08x", memberK, spellId);
         return 1;
     }
 
