@@ -280,8 +280,8 @@ int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale, i
         }
         baseUp += segH;
     }
-    // Seam between shield and health: a thin DARK line (the card border's own deep teal), not a bright bar, so the two bars read
-    // as one gauge with a groove between them. 2 px on the leader card, 1 px on small cards, full bar height.
+    // Seam between shield and health (disabled: DrawSeam is false, line 151): when enabled, a thin DARK line (the card border's own deep teal),
+    // not a bright bar, so the two bars read as one gauge with a groove between them. 2 px on the leader card, 1 px on small cards, full bar height.
     int dw = vw / 50 < 1 ? 1 : vw / 50;
     // Corner fillers: the card frame's rounded corner leaves a dark notch above/below the health bar's outline, right of the shield's
     // right edge. uibit_bar_sc_p (scripts/gen_shield_bar_art.py) is drawn on the HEALTH rect and holds only the wedge between x=0.445*vw and
