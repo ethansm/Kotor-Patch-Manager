@@ -49,8 +49,15 @@ inline bool checkEdgeWarp(
     int& outWarpX, int& outWarpY)
 {
     if (winRight <= winLeft || winBottom <= winTop) return false;
-    if (curX <= winLeft + margin || curX >= winRight - margin ||
-        curY <= winTop + margin || curY >= winBottom - margin)
+    // Clamp the band to a quarter of the smaller side so the centre and an interior region
+    // stay outside it (no warp on every frame), and do the math in 64-bit.
+    long long w = static_cast<long long>(winRight) - winLeft;
+    long long h = static_cast<long long>(winBottom) - winTop;
+    long long maxMargin = (w < h ? w : h) / 4;
+    long long m = margin < 0 ? 0 : margin;
+    if (m > maxMargin) m = maxMargin;
+    if (static_cast<long long>(curX) <= winLeft + m || static_cast<long long>(curX) >= winRight - m ||
+        static_cast<long long>(curY) <= winTop + m || static_cast<long long>(curY) >= winBottom - m)
     {
         outWarpX = (winLeft + winRight) / 2;
         outWarpY = (winTop + winBottom) / 2;

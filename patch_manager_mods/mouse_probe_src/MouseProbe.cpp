@@ -1,6 +1,6 @@
-// Mouse Probe 0.3.0 -- STRICTLY READ-ONLY diagnostics for the Wine mouse/camera investigation
-// (patch_manager_mods/18_mouse_camera_investigation.md). Every hook only reads (through SafeRead) and
-// logs through KpLog.h; it never writes engine memory.
+// Mouse Probe 0.3.0 -- diagnostics for the Wine mouse/camera investigation
+// (patch_manager_mods/18_mouse_camera_investigation.md). Hooks read engine memory through SafeRead and
+// log through KpLog.h. The only engine write is the sanitizeNorm path in ProbeMouseNorm (this+0x408/+0x40C), on by default (sanitize_norm=1 in [mouse_fix]; set 0 in the ini to turn it off).
 //
 // Logging (0.2.0): channels main (START), raw (RAW), polls (POLLS), norm (NORM), drag (DRAGSTATE,
 // STUCKDRAG? at WARN), cam (CAM). On a core with the kpatch.log service, kplog.ini [mouse-probe]
@@ -181,7 +181,7 @@ void __cdecl ProbeMouseNorm(uintptr_t ebp) {
     enter();
     loadFixConfig();
     uintptr_t self = 0;
-    if (!rd(ebp, -0x28, &self)) return;
+    if (!rd(ebp, -0x28, &self) || self == 0) return;
 
     if (g_fixCfg.enabled && g_fixCfg.sanitizeNorm) {
         resolveUser32();

@@ -7,6 +7,7 @@
 // fails here first.
 //
 // 0.3.0 adds area (5): the pure click heuristics in ClickLogic.h and the hook-side pointer hops that ProbeMouseMsg / ProbeClickInWorld / ProbeDefaultAction make.
+// Area (6) is mod-local, not Patches/Common: the mousefix math in MouseFixLogic.h (computeSanitizedDelta, checkEdgeWarp, shouldSynthesizeDblClick).
 // Areas: (1) saferead as rd<T> uses it (MouseProbe.cpp:55,74), (2) KpLog fallback sink BEFORE any successful KpLog_Init (init cannot be
 // undone): file path, level gate, old-core path, (3) KpLog_Init rejections, (4) KpLog_Init success against a fake kpatch.log service.
 // Host-only, deterministic.
