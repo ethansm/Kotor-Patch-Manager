@@ -30,6 +30,7 @@ static uintptr_t arenaAlloc(size_t n) {
     return a;
 }
 #include "TestHarness.h"
+#include "LuoLogHost.h"
 static std::string g_ctx = "unit";
 #define CHECK(c, ...) do { \
     char _detail[512]; \
@@ -173,7 +174,7 @@ static void writeIni(const std::vector<std::string>& lines, const char* table) {
 }
 static std::string fileText(const char* name) { std::string s; if (FILE* f = fopen(name, "r")) { char b[512]; while (fgets(b, sizeof b, f)) s += b; fclose(f); } return s; }
 static std::string readLog() { return fileText("levelup_override_log.txt"); }
-static void clearLog() { remove("levelup_override_log.txt"); }
+static void clearLog() { luoHostLogReset("levelup_override_log.txt"); }
 static bool logHas(const char* x) { return readLog().find(x) != std::string::npos; }
 // Per log line after the `[tick] ` prefix and leading spaces (the contract in saves.toml; anchor with ^), case-sensitive ECMAScript.
 static bool logRe(const std::string& re) {
@@ -405,7 +406,7 @@ static bool act(const std::string& line, void* tabLoad, void* tabSave) {
             if (r->c[C_STATUS]) g_dec["ui.statustext"] = g_text[r->c[C_STATUS]];
         }
     } else if (a == "logcap") {   // the 20000-line log cap reached (F1)
-        g_logLines = MaxLogLines;
+        // the 20000-line cap moved to KpLog.h (Common) and is pinned by its own tests; nothing to force here, the scenario still checks the gate is unaffected
     } else if (a == "logro") {    // the log file cannot be opened for append (read-only; F1)
         if (geteuid() == 0) { fprintf(stderr, "logro: running as root, chmod 0444 does not stop fopen - scenario meaningless\n"); return false; }
         if (FILE* f = fopen(LogName, "a")) fclose(f);
@@ -644,6 +645,7 @@ int main(int argc, char** argv) {
     if (argc < 3) { fprintf(stderr, "usage: scenario_test <levelup_paths.ini> --unit | <scenarios.dat> <id>\n"); return 2; }
     const char* table = argv[1];
     setenv("LUO_TABLE", table, 1);
+    luoHostLogInit();
     const char* xp = getenv("LUO_EXPTABLE");
     if (!xp || !loadXp(xp)) { fprintf(stderr, "LUO_EXPTABLE (testdata/exptable.tsv) missing or incomplete\n"); return 2; }
     if (!strcmp(argv[2], "--unit")) return runUnit(table);

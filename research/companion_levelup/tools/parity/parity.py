@@ -30,7 +30,7 @@ def case(tag, key, p, mask=0):
 
 
 def build(exe, src, m32=False):
-    r = subprocess.run(["g++", "-std=c++17", "-O1", "-Wall", "-Wextra"] + (["-m32"] if m32 else []) + ["-I", os.path.join(HERE, "stub"), "-I", os.path.join(HERE, "stub", "_shared"), "-I", os.path.join(HERE, "stub", "inc"), "-include", os.path.join(HERE, "stub", "m3_win_shim.h"), "-o", exe,
+    r = subprocess.run(["g++", "-std=c++17", "-O1", "-Wall", "-Wextra"] + (["-m32"] if m32 else []) + ["-I", os.path.join(HERE, "stub"), "-I", os.path.join(HERE, "stub", "_shared"), "-I", os.path.join(HERE, "stub", "inc"), "-include", os.path.join(HERE, "stub", "m3_win_shim.h"), "-I", os.path.expanduser("~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common"), "-o", exe,
                         os.path.join(HERE, src)], capture_output=True, text=True)
     if r.returncode:
         sys.exit(r.stderr)

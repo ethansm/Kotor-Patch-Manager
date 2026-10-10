@@ -22,6 +22,7 @@ static uintptr_t arenaAlloc(size_t n) {
     return a;
 }
 #include "TestHarness.h"
+#include "LuoLogHost.h"
 #define CHECK(c, ...) do { \
     char _detail[512]; \
     std::snprintf(_detail, sizeof(_detail), __VA_ARGS__); \
@@ -159,7 +160,7 @@ static void setIni(const char* body, const char* table) {
     g_stubTick += 5000;
 }
 static std::string readLog() { std::string s; if (FILE* f = fopen("levelup_override_log.txt", "r")) { char b[512]; while (fgets(b, sizeof b, f)) s += b; fclose(f); } return s; }
-static void clearLog() { remove("levelup_override_log.txt"); }
+static void clearLog() { luoHostLogReset("levelup_override_log.txt"); }
 static bool logHas(const char* x) { return readLog().find(x) != std::string::npos; }
 static int logCount(const char* x) { std::string l = readLog(); int n = 0; size_t p = 0; while ((p = l.find(x, p)) != std::string::npos) { ++n; ++p; } return n; }
 static std::string fileText(const char* name) { std::string s; if (FILE* f = fopen(name, "r")) { char b[512]; while (fgets(b, sizeof b, f)) s += b; fclose(f); } return s; }
@@ -228,6 +229,7 @@ int main(int argc, char** argv) {
     const char* table = argv[1];
     char tmpl[] = "/tmp/ui_test_XXXXXX";
     if (!mkdtemp(tmpl) || chdir(tmpl)) { perror("mkdtemp"); return 5; }
+    luoHostLogInit();
     void* m = mmap(nullptr, ArenaSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_32BIT, -1, 0);
     if (m == MAP_FAILED) { perror("mmap MAP_32BIT"); return 5; }
     g_arena = static_cast<uint8_t*>(m);
