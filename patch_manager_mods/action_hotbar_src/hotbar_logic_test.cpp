@@ -228,8 +228,8 @@ int main() {
     KT_CHECK_EQ(characterKeyFor(0xFFFFFFF0u, 1, &bad).c_str(), "objfffffffd"); KT_CHECK(!bad);
     KT_CHECK_EQ(characterKeyFor(0xFFFFFFF0u, 2, &bad, true).c_str(), "objfffffffd"); KT_CHECK(!bad);
     KT_CHECK_EQ(characterKeyFor(0xFFFFFFF9u, 2, &bad, false).c_str(), "objfffffffd"); KT_CHECK(!bad);   // fast-travel sentinel
-    KT_CHECK_EQ(characterKeyFor(0xFFFFFFFAu, 1).c_str(), "objfffffffd"); KT_CHECK(!bad);
-    KT_CHECK_EQ(characterKeyFor(0xFFFFFFFEu, 1).c_str(), "objfffffffd"); KT_CHECK(!bad);
+    KT_CHECK_EQ(characterKeyFor(0xFFFFFFFAu, 1, &bad).c_str(), "objfffffffd"); KT_CHECK(!bad);
+    KT_CHECK_EQ(characterKeyFor(0xFFFFFFFEu, 1, &bad).c_str(), "objfffffffd"); KT_CHECK(!bad);
     KT_CHECK_EQ(characterKeyFor(0xFFFFFFFFu, 2, &bad, false).c_str(), ""); KT_CHECK(bad);   // 0xFFFFFFFF stays invalid (outside sentinel range)
   }
   { // 3. AutoFill merge + FNV signature

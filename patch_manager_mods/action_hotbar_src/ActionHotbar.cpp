@@ -2,10 +2,10 @@
 // quick-action, plus an in-game editor. Self-contained: controls, art and the INI template are all created by this DLL.
 // Research trail and every address: patch_manager_mods/07_force_power_hotbar.md (local-setup/KOTOR-II worktree).
 //
-// Hooks (8 cdecl detours, original bytes still run; see kotor2-steam-aspyr.hooks.toml):
+// Hooks (cdecl detours, original bytes still run; see kotor2-steam-aspyr.hooks.toml; Draw and HUD ctor go through hud-host, save detours through save-events):
 //   0x0072CB63  CExoInputInternal::GetEvents+0x383  CaptureHotbarKey(record*, device)  -- swallow bound digits
-//   0x0074B3F0  CSWGuiMainInterface::Draw           HotbarHudTick(hud)                 -- gate, config, invoke, button state, vanilla action-bar resync
-//   0x00748502  HUD ctor (FUN_00747210), just before StopLoadFromLayout  HotbarBuildButtons(panel) -- create our ControlCount CSWGuiLabel
+//   0x0074B3F0  CSWGuiMainInterface::Draw           HotbarHudTick(hud) (hud-host)      -- gate, config, invoke, button state, vanilla action-bar resync
+//   0x00748502  HUD ctor (FUN_00747210), just before StopLoadFromLayout  HotbarBuildButtons(panel) (hud-host) -- create our ControlCount CSWGuiLabel
 //               controls at runtime (Layout[], copied from native template labels of the HUD layout) and append them to the panel's control
 //               list. The panel's own Draw (0x0040EC90) then draws them with the HUD; the tick only swaps fill (border+0x74), alpha
 //               (border+0x24), text and visibility. Frame/wrench art is embedded (HotbarTextures.inc) and registered as engine textures.
@@ -253,8 +253,8 @@ int readGroup(uintptr_t hud, int g, std::vector<Entry>* out) {
 // ---- state --------------------------------------------------------------------------------------------
 const char* const IniPath = hb::IniName;
 const char* const BakPath = "action_hotbar.ini.bak", *const LoadBakPath = "action_hotbar.ini.load.bak";   // BakPath: first-edit backup; LoadBakPath: written by save loads / new game
-bool g_pendingReload = false;   // set by load/new-game hooks, consumed by HotbarHudTick (widgets must only be touched from the HUD tick)
-bool g_pendingSaveSnapshot = false;   // set by save hook if save folder is deferred/unresolved, consumed by HotbarHudTick
+bool g_pendingReload = false;   // set by replaceLiveProfiles (load / new game), consumed by HotbarHudTick (widgets must only be touched from the HUD tick)
+bool g_pendingSaveSnapshot = false;   // set by snapshotToSave if save folder is deferred/unresolved, consumed by HotbarHudTick
 std::string g_pendingSaveDir;
 std::string g_pendingSaveWhy;
 int g_pendingSaveRetries = 0;
@@ -1842,6 +1842,8 @@ void startOnce() {
         }
     }
     char cwd[MAX_PATH] = "?"; GetCurrentDirectoryA(MAX_PATH, cwd);
+    KP_LOG(chMain, "action-hotbar %s loaded; pid=%lu ini=%s core=%d", Version, (unsigned long)GetCurrentProcessId(), hb::IniName, KpLog_HasCore() ? 1 : 0);
+    logChunks(chMain, KPLOG_INFO, "cwd", cwd);
     KP_LOG(chMain, "addresses: invoke=%08x kbdevGlobal=%08x app=%08x getCreature=%08x whitelist=%08x,%08x,%08x,%08x", (unsigned)HudInvokeGroup, (unsigned)KeyboardDeviceGlobal, (unsigned)AppGlobal, (unsigned)GetControlledCreature, (unsigned)PanelWhitelist[0], (unsigned)PanelWhitelist[1], (unsigned)PanelWhitelist[2], (unsigned)PanelWhitelist[3]);
 }
 
