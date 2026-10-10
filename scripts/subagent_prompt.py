@@ -30,13 +30,15 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 try:
     import agent_contract as ac
-except ImportError:
+except ImportError as exc:
     ac = None
+    print(f"warning: agent_contract unavailable, output schema omitted: {exc}", file=sys.stderr)
 
 try:
     import plan_manager as pm
-except ImportError:
+except ImportError as exc:
     pm = None
+    print(f"warning: plan_manager unavailable, plan shorthand resolution degraded: {exc}", file=sys.stderr)
 
 RECON_ROLES = {"scout", "verify", "review", "deep", "ghidra"}
 WORKER_ROLES = {"code", "gate", "test", "doc"}
@@ -93,7 +95,7 @@ def resolve_phase_and_plan(phase_key: str, explicit_plan: str = None):
         if resolved:
             plan_path = resolved
 
-    if not plan_path or not plan_path.exists():
+    if not explicit_plan and (not plan_path or not plan_path.exists()):
         active_txt = REPO_ROOT / ".claude" / "active_plan.txt"
         if active_txt.exists():
             content = active_txt.read_text().strip()
@@ -148,7 +150,7 @@ def extract_phase_info(plan_path: Path, phase_key: str):
 
     # 3. Find files mentioned in section
     combined_text = f"{title}\n{description}"
-    words = re.findall(r"[\w\./-]+\.(?:cpp|h|hpp|c|py|ini|md|sh)", combined_text)
+    words = re.findall(r"[\w\./-]+\.(?:cpp|hpp|h|c|py|ini|md|sh)", combined_text)
     valid_paths = []
     for w in words:
         clean = w.strip("`'\"(),:;[]")
@@ -159,7 +161,10 @@ def extract_phase_info(plan_path: Path, phase_key: str):
             # Check relative to plan directory and subdirectories
             for cand in [plan_path.parent / clean, plan_path.parent / "tools" / clean, plan_path.parent / "tools" / "parity" / clean]:
                 if cand.exists() and cand.is_file():
-                    rel = str(cand.relative_to(REPO_ROOT))
+                    try:
+                        rel = str(cand.relative_to(REPO_ROOT))
+                    except ValueError:
+                        continue
                     if rel not in valid_paths:
                         valid_paths.append(rel)
                     break
@@ -407,6 +412,9 @@ def main():
     args = parser.parse_args()
 
     plan_path = resolve_phase_and_plan(args.phase, args.plan)
+    if args.plan and (not plan_path or not plan_path.exists()):
+        print(f"error: --plan file not found: {args.plan}", file=sys.stderr)
+        return 2
     title, desc, files, verif_cmds, mod_scope = extract_phase_info(plan_path, args.phase)
 
     symbols = extract_ghidra_symbols(f"{title}\n{desc}")

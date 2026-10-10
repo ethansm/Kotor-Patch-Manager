@@ -85,16 +85,19 @@ def extract_evaluation_cases(ledger_path: Path, limit: int = 20) -> list[dict]:
 
                 if rec.get("event") == "CLEF_ROUTE":
                     prompt = rec.get("prompt")
+                    clef_out = rec.get("clef_output")
+                    if not isinstance(clef_out, dict):
+                        clef_out = {}
                     if prompt and prompt not in seen_prompts:
                         seen_prompts.add(prompt)
                         cases.append({
                             "prompt": prompt,
                             "active_mod": rec.get("active_mod"),
                             "baseline_engine": rec.get("engine", "clef-flash"),
-                            "baseline_role": rec.get("decision") or rec.get("clef_output", {}).get("role"),
-                            "baseline_backend": rec.get("backend") or rec.get("clef_output", {}).get("backend"),
-                            "baseline_model": rec.get("routed_model") or rec.get("clef_output", {}).get("model"),
-                            "baseline_latency_ms": rec.get("latency_ms", 160.0),
+                            "baseline_role": rec.get("decision") or clef_out.get("role"),
+                            "baseline_backend": rec.get("backend") or clef_out.get("backend"),
+                            "baseline_model": rec.get("routed_model") or clef_out.get("model"),
+                            "baseline_latency_ms": rec.get("latency_ms"),
                             "baseline_confidence": rec.get("confidence", 0.75),
                         })
 
@@ -122,7 +125,7 @@ def extract_evaluation_cases(ledger_path: Path, limit: int = 20) -> list[dict]:
                 "baseline_role": expected_role,
                 "baseline_backend": "cloud" if expected_role not in ("gate", "scout", "verify") else "local",
                 "baseline_model": "openrouter/poolside/laguna-s-2.1:free",
-                "baseline_latency_ms": 160.0,
+                "baseline_latency_ms": None,
                 "baseline_confidence": 0.85,
             })
 
@@ -170,7 +173,7 @@ def extract_transcript_cases(limit: int = 15) -> list[dict]:
                                 "baseline_role": expected_role,
                                 "baseline_backend": "cloud",
                                 "baseline_model": "openrouter/poolside/laguna-s-2.1:free",
-                                "baseline_latency_ms": 160.0,
+                                "baseline_latency_ms": None,
                                 "baseline_confidence": 0.8,
                             })
                             if len(cases) >= limit:
@@ -221,15 +224,23 @@ def main():
         print("No evaluation cases found.", file=sys.stderr)
         sys.exit(1)
 
+    # Synthetic/transcript baselines are heuristic labels with an assumed latency, not clef-flash output.
+    real_baseline = all(not str(c.get("baseline_engine", "")).endswith((" (synthetic)", "(real)")) for c in cases)
+    base_name = "clef-flash" if real_baseline else "baseline"
+    lat_measured = all(c.get("baseline_latency_ms") is not None for c in cases)
+
     print(f"\n{'='*80}")
-    print(f"3-WAY SHADOW BENCHMARK: clef-flash vs Kev-4B (:8100) vs Kev-0.8B (:8101)")
+    print(f"3-WAY SHADOW BENCHMARK: {base_name} vs Kev-4B (:8100) vs Kev-0.8B (:8101)")
+    if not real_baseline:
+        print("NOTE: some baseline roles are heuristic/hand-written labels and baseline latency is not measured, not clef-flash output.")
     print(f"Evaluating {len(cases)} prompt cases extracted from master ledger & test matrix...")
     print(f"{'='*80}\n")
 
     kev4b_roles, kev08b_roles, baseline_roles = [], [], []
     kev4b_lats, kev08b_lats, baseline_lats = [], [], []
+    n_cached_4b = 0
 
-    print(f"{'Prompt Case':<42} | {'clef-flash':<10} | {'Kev-4B':<10} | {'Kev-0.8B':<10} | {'4B ms':<6} | {'0.8B ms':<7}")
+    print(f"{'Prompt Case':<42} | {base_name:<10} | {'Kev-4B':<10} | {'Kev-0.8B':<10} | {'4B ms':<6} | {'0.8B ms':<7}")
     print(f"{'-'*42}-+-{'-'*10}-+-{'-'*10}-+-{'-'*10}-+-{'-'*6}-+-{'-'*7}")
 
     for idx, c in enumerate(cases):
@@ -255,6 +266,7 @@ def main():
 
         # Query Kev-4B (:8100, fallback to GPU benchmark cache)
         res_4b, lat_4b = query_systemone(KEV_4B_URL, payload)
+        cached_4b = False
         if not res_4b:
             cached_4b_file = REPO_ROOT / ".claude" / "kev_4b_benchmark.json"
             if cached_4b_file.is_file():
@@ -263,8 +275,9 @@ def main():
                         cached_4b_data = json.load(f)
                     if prompt in cached_4b_data:
                         c_entry = cached_4b_data[prompt]
-                        res_4b = {"answers": {"role": c_entry}}
                         lat_4b = c_entry.get("latency_ms", 185.0)
+                        res_4b = {"answers": {"role": c_entry}}
+                        cached_4b = True
                 except Exception:
                     pass
 
@@ -274,42 +287,61 @@ def main():
         r_4b, conf_4b, margin_4b = parse_answer(res_4b.get("answers", {}).get("role", {}) if res_4b else {})
         r_08b, conf_08b, margin_08b = parse_answer(res_08b.get("answers", {}).get("role", {}) if res_08b else {})
 
-        kev4b_roles.append(r_4b)
-        kev08b_roles.append(r_08b)
+        # Unavailable endpoints and stale cached Kev-4B answers are recorded as None so they are excluded from agreement
+        kev4b_roles.append(r_4b if res_4b and not cached_4b else None)
+        kev08b_roles.append(r_08b if res_08b else None)
         baseline_roles.append(base_role)
 
-        if res_4b:
+        if cached_4b:
+            n_cached_4b += 1
+        if res_4b and not cached_4b:
             kev4b_lats.append(lat_4b)
         if res_08b:
             kev08b_lats.append(lat_08b)
-        baseline_lats.append(base_lat)
+        if base_lat is not None:
+            baseline_lats.append(base_lat)
 
         short_prompt = prompt[:40] + ".." if len(prompt) > 42 else prompt
-        lat_4b_str = f"{lat_4b:.1f}" if res_4b else "OFF"
+        lat_4b_str = ("cache" if cached_4b else f"{lat_4b:.1f}") if res_4b else "OFF"
         lat_08b_str = f"{lat_08b:.1f}" if res_08b else "OFF"
+        # Mark cached Kev-4B roles so the table does not show them as live answers
+        r_4b_str = f"{r_4b}*" if cached_4b else f"{r_4b}"
 
-        print(f"{short_prompt:<42} | {base_role:<10} | {r_4b:<10} | {r_08b:<10} | {lat_4b_str:<6} | {lat_08b_str:<7}")
+        print(f"{short_prompt:<42} | {base_role:<10} | {r_4b_str:<10} | {r_08b:<10} | {lat_4b_str:<6} | {lat_08b_str:<7}")
 
     print(f"{'-'*42}-+-{'-'*10}-+-{'-'*10}-+-{'-'*10}-+-{'-'*6}-+-{'-'*7}\n")
 
     # Metrics computation
-    total = len(cases)
-    agree_4b_base = sum(1 for a, b in zip(kev4b_roles, baseline_roles) if a == b) / total * 100.0 if total else 0.0
-    agree_08b_base = sum(1 for a, b in zip(kev08b_roles, baseline_roles) if a == b) / total * 100.0 if total else 0.0
-    agree_08b_4b = sum(1 for a, b in zip(kev08b_roles, kev4b_roles) if a == b) / total * 100.0 if total else 0.0
+    def agreement(a_roles, b_roles):
+        pairs = [(a, b) for a, b in zip(a_roles, b_roles) if a is not None and b is not None]
+        return sum(1 for a, b in pairs if a == b) / len(pairs) * 100.0 if pairs else 0.0
 
-    avg_base_lat = sum(baseline_lats) / len(baseline_lats) if baseline_lats else 160.0
-    avg_4b_lat = sum(kev4b_lats) / len(kev4b_lats) if kev4b_lats else 0.0
+    agree_4b_base = agreement(kev4b_roles, baseline_roles)
+    agree_08b_base = agreement(kev08b_roles, baseline_roles)
+    agree_08b_4b = agreement(kev08b_roles, kev4b_roles)
+    total = len(cases)
+    missing_4b = sum(1 for r in kev4b_roles if r is None) - n_cached_4b
+    missing_08b = sum(1 for r in kev08b_roles if r is None)
+
+    avg_base_lat = sum(baseline_lats) / len(baseline_lats) if baseline_lats else 0.0
+    avg_base_str = f"{avg_base_lat:.1f}ms" if lat_measured and baseline_lats else "n/a"
+    avg_4b_lat = sum(kev4b_lats) / len(kev4b_lats) if kev4b_lats else None
     avg_08b_lat = sum(kev08b_lats) / len(kev08b_lats) if kev08b_lats else 0.0
+    avg_4b_str = f"{avg_4b_lat:.1f}ms" if avg_4b_lat is not None else "n/a"
 
     print(f"=== SUMMARY METRICS ===")
-    print(f"  • Top-1 Agreement (Kev-4B vs clef-flash):  {agree_4b_base:.1f}%")
-    print(f"  • Top-1 Agreement (Kev-0.8B vs clef-flash):{agree_08b_base:.1f}%")
+    print(f"  • Top-1 Agreement (Kev-4B vs {base_name}):  {agree_4b_base:.1f}%")
+    print(f"  • Top-1 Agreement (Kev-0.8B vs {base_name}):{agree_08b_base:.1f}%")
     print(f"  • Top-1 Agreement (Kev-0.8B vs Kev-4B):    {agree_08b_4b:.1f}%")
-    print(f"  • Mean Latency: clef-flash: {avg_base_lat:.1f}ms | Kev-4B: {avg_4b_lat:.1f}ms | Kev-0.8B: {avg_08b_lat:.1f}ms")
-    if avg_08b_lat > 0:
+    print(f"  • Cases without endpoint response (excluded): Kev-4B {missing_4b} | Kev-0.8B {missing_08b}")
+    print(f"  • Mean Latency: {base_name}: {avg_base_str} | Kev-4B: {avg_4b_str} | Kev-0.8B: {avg_08b_lat:.1f}ms")
+    if n_cached_4b:
+        print(f"  • Kev-4B cache fallback used for {n_cached_4b}/{total} cases (excluded from Kev-4B agreement and latency)")
+    if avg_08b_lat > 0 and real_baseline and lat_measured and avg_base_lat > 0:
         speedup = avg_base_lat / avg_08b_lat
-        print(f"  • Kev-0.8B Speedup over clef-flash:       {speedup:.1f}x faster")
+        print(f"  • Kev-0.8B Speedup over {base_name}:       {speedup:.1f}x (baseline latency / 0.8B latency)")
+    elif avg_08b_lat > 0:
+        print("  • Kev-0.8B Speedup: n/a (baseline latency is not measured)")
     print()
 
 
