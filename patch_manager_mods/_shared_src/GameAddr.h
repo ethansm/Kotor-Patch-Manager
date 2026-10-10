@@ -66,6 +66,7 @@ constexpr uintptr_t GetItemByObjectId = 0x0051C0E0;      // thiscall(objTable, s
 constexpr uintptr_t HudSyncStance = 0x0074DA40;          // fastcall(ECX=hud), no stack args, plain RET: resyncs hud+0x1C8C (stance) / +0x1C90 (form) from the creature
 constexpr uintptr_t HudInvokeGroup = 0x00751750;         // thiscall(hud, group 0..6, 0) RET 8
 constexpr uintptr_t PerformUseItem = 0x00775600;         // thiscall(controlled client creature; clientItemId, 0, targetClientId, float* pos) RET 0x10, void
+constexpr uintptr_t PerformCastSpell = 0x00775700;       // thiscall(controlled client creature; spellId, arg2, targetClientId, multispell, metamagic, domain, float* pos) RET 0x1C, void
 constexpr uintptr_t CloudSavesFlag = 0x00A7EA88;         // Steam Cloud byte (set -> SAVES: alias = cloudsaves dir, else saves/)
 constexpr uintptr_t CloudSavesDir = 0x00A7EABC;          // CExoString "cloudsaves/<steam id>/"
 constexpr uintptr_t HudVtable = 0x0099DCC4;             // CSWGuiInGame (HUD panel) RTTI vtable

@@ -360,19 +360,19 @@ void cwHideAll() { for (CW& w : g_cw) cwShow(w, false); }
 
 void cwLookLeader(CW& w) {
     static const float cream[3] = { 0.80f, 0.80f, 0.698f };
-    static const float tealBorder[3] = { 0.10f, 0.58f, 0.62f };
-    static const float tealHover[3]  = { 0.15f, 0.75f, 0.80f };
-    static const float darkTealFill[3] = { 0.05f, 0.25f, 0.28f };
+    static const float seaGreenBorder[3] = { 0.067f, 0.514f, 0.404f };
+    static const float seaGreenHover[3]  = { 0.10f, 0.72f, 0.57f };
+    static const float blackFill[3]      = { 0.00f, 0.00f, 0.00f };
     const int want = w.hover ? 1 : 0;
     if (w.fill != want) {
         guikit::setFont(w.c, "dialogfont16x16");
         guikit::setAlign(w.c, 18);
         guikit::setText(w.c, "CANCEL QUEUE");
         guikit::setTextColor(w.c, cream[0], cream[1], cream[2]);
-        guikit::setBorderTint(w.c, w.hover ? tealHover : tealBorder);
-        guikit::setAlpha(w.c, 0.9f);
+        guikit::setBorderTint(w.c, w.hover ? seaGreenHover : seaGreenBorder);
+        guikit::setAlpha(w.c, 0.70f);
         void* fillImg = guikit::imageFor("uibit_fill_2wt");
-        if (fillImg) guikit::setFill(w.c, fillImg, darkTealFill);
+        if (fillImg) guikit::setFill(w.c, fillImg, blackFill);
         w.fill = want;
     }
 }

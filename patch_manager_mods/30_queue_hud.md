@@ -68,3 +68,26 @@ extents, for party member 0. The vanilla red panel still handles combat. Compani
 7. (0.2.0) Strip clears when the companion's action fires; both companions queued = two strips, neither overlapping a card, the
    selfheal button or the leader's bars.
 8. (0.2.0) Combat or a menu: strips hide with the leader panel (`strip k=.. hidden`).
+
+---
+
+## 2026-10-08 Polish Additions (doc 33 workstreams QH4, QH5)
+
+1. **QH4: Force Power & Unified Non-Combat Action Queue Buffering:**
+   - **Hook & Calling Convention:** Detour `CSWCCreature::PerformCastSpell` at `0x00775703` (`83 ec 0c 89 4d f4`, consumed exit `0x0077574C`, `RET 0x1C`, `__thiscall` on client creature with 7 DWORD stack arguments = spellId, arg2, targetId, multispell, metamagic, domain, pos).
+   - **QH4a: Round-Node Busy Gate (`haveCur` / `nrn` Idle Check):**
+     - Crucial discovery: `s.engineNe` can drop to 0 while `s.haveCur` is still running the 3000 ms round node (`subType == 9` spell or `10` item). Dispatching while `haveCur` is true causes server `ActionManager(1)` -> `ClearAllActions(1)` to wipe the in-flight action!
+     - `qh::shouldDispatchNext` must strictly require `engineQueueLen == 0 && !haveCur && nrn == 0` so creatures are 100% idle before the next action fires.
+     - `actionInQueue` must detect both `subType == 9` (spell) and `subType == 10` (item), as well as action types `0x0F` (`T_CAST_SPELL`) and `0x2E` (`T_USE_ITEM`).
+   - **QH4b: Unified `QueuedAction` Buffer:**
+     - Replace `ItemBuffer` with `ActionBuffer` storing `QueuedAction` union for both `ActionKind::Item` and `ActionKind::Spell`.
+     - Sequential FIFO dispatcher calls `AddrPerformCastSpell` (`0x00775700`) or `AddrPerformUseItem` (`0x00775600`).
+   - **QH4c: Spell Icon Resolution in `QueueHud.cpp:174`:**
+     - `AddrIconResolver` (`0x0074E0B0`) reads spell ID from `fakeAction[14]` (+0x38), matching items. Expand `fakeAction` to set `fakeAction[0] = 0x0F` and `fakeAction[14] = spellId` so queued spells render their `spells.2da` icons.
+   - **QH4d: Follower AI Re-Inject Cap:**
+     - Follower AI (`AIActionFollowLeader` 0x3D) cancels follower casting when leader moves. Cap re-injections to max 2 attempts to prevent infinite stutter loops when leader sprints away.
+   - **QH4e: Combat Transition Invariant:**
+     - Detour hook returns 0 immediately when `g_combat != 0`, and any active non-combat buffer is cleared on combat entry (`g_combat != 0`), ensuring zero bleed-through into native combat queue.
+2. **QH5: Cancel Queue Button Color Parity:**
+   - Harmonize Cancel button border and fill tints in `cwLookLeader` with `lbl_miqueue_teal` palette: border `{ 0.067f, 0.514f, 0.404f }` (hover `{ 0.10f, 0.72f, 0.57f }`), dark translucent fill `{ 0.00f, 0.00f, 0.00f }` (alpha `0.70f`).
+

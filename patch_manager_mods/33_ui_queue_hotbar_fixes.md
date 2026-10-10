@@ -137,10 +137,27 @@ int capPad = 6;      // was 4 (cap padding)
    ```
 2. **Sequential Dispatcher:**
    - When player clicks an item out of combat while another action is active, buffer it.
-   - On frame tick, when `creature->queueList` empties or creature animation ends, dispatch the next buffered item via `PerformUseItem`.
+    - On frame tick, when `creature->queueList` empties or creature animation ends, dispatch the next buffered item via `PerformUseItem`.
 3. **Follower Wipe Protection:**
    - Track pending item count in `QueueHud`.
    - If `creature->queueList` drops an item action before HP changes or stack count decrements, re-inject the action to ensure it is not eaten by follower follow resets.
+
+### 4.3 QH4: Force Power Queue Buffering (`queue-hud`)
+1. **Root Cause Analysis:**
+   - `QueueHudPerformUseItem` only intercepts items (`PerformUseItem` 0x775600).
+   - In non-combat, native Force power invocations call `CSWCCreature::PerformCastSpell` (`0x00775700`, sibling of `PerformUseItem` at `0x775600`).
+   - The engine sends message `(6, 0x12)`, whose server handler `0x65D37F` calls `ActionManager(1)` -> `ClearAllActions(1)` on non-combat actors (`[creature+0x520] == 0`), instantly wiping any in-flight/queued action!
+   - Gameplay log showed `ip_cure` -> `ip_knightspeed` -> `ip_mind` replacing each other at entries=1.
+2. **Hook & Disassembly Specification:**
+   - Target Address: `0x00775703` (6 bytes: `83 ec 0c 89 4d f4`, `sub esp, 0xc` / `mov [ebp-0xc], ecx`).
+   - Consumed Exit: `0x0077574C` (`8b e5 5d c2 1c 00`, `mov esp, ebp` / `pop ebp` / `ret $0x1c`).
+   - Signature: `__thiscall` on client creature (`ECX`), 7 stack parameters (28 bytes) = `spellId`, `arg2`, `targetId`, `multispell`, `metamagic`, `domain`, `posPtr`.
+   - Dispatch Address: `0x00775700` (`PerformCastSpell`).
+3. **Implementation Design & Edge Cases:**
+   - Detour hook `QueueHudPerformCastSpell(int clientCreature, int ebp)`. Returns 0 if `g_combat != 0` (preserves vanilla in-combat queueing).
+   - Unified `QueuedAction` buffer supporting both `ActionKind::Item` and `ActionKind::Spell`.
+   - In `QueueHud.cpp:174`, expand `fakeAction` to support `T_CAST_SPELL` (0x0F) with spell ID at `fakeAction[14]` (+0x38), allowing `AddrIconResolver` (`0x0074E0B0`) to look up `spells.2da` icons without blanking.
+   - Cancel integration: `doCancel(k)` clears the unified buffer and invokes `ServerClearAllActions`. Follower wipe guard re-injects if follower AI drops a spell before execution.
 
 ---
 
@@ -158,11 +175,52 @@ int capPad = 6;      // was 4 (cap padding)
    - In `restoreFromSave`, when `pick.src == hb::SS_Absent`, `ActionHotbar.cpp` previously invoked `replaceLiveProfiles(nullptr, ...)` which erased all active profile bindings in `action_hotbar.ini`.
    - Fix: Disallowed `replaceLiveProfiles(nullptr)` on `SS_Absent`. It now logs `persave: %s: absent (live hotbar kept): source=%s` at `KPLOG_INFO` and returns immediately without overwriting the live INI.
 2. **AH2: Transient Object ID Fluctuation (`objfffffffe` vs `objfffffffd`):**
-   - In `HotbarLogic.h:characterKeyFor`, the player character alternately registered as `0xFFFFFFFEu` (-2) and `0xFFFFFFFDu` (-3) or `0xFFFFFFFFu` (-1). Naive hex printing caused player profile splitting between `[Profile.objfffffffe]` and `[Profile.objfffffffd]`. Companions used transient heap IDs (`obj8000xxxx`) that reset across module transitions.
-   - Fix:
-     - Player character recognition (`isExile`) anchors party slot 0, single-member party, `"player"`/`"exile"` tags, and IDs `0xFFFFFFFDu`/`0xFFFFFFFEu` strictly to canonical `"objfffffffd"`.
-     - Companions are identified via creature tags (`CExoString` at server creature `+0x18`) yielding stable profile names (e.g. `[Profile.atton]`, `[Profile.kreia]`).
-     - Fallback to party slot (`slot1`, `slot2`) if tags are missing, eliminating transient IDs.
+   - In `HotbarLogic.h:characterKeyFor`, the player character alternately registered as `0xFFFFFFFEu` (-2) and `0xFFFFFFFDu` (-3) or `0xFFFFFFFFu` (-1). Naive hex printing caused player profile splitting between `[Profile.objfffffffe]` and `[Profile.objfffffffd]`.
+   - Fix: Initial anchor for player slot 0 / tags.
+3. **AH3: Fast-Travel Sentinel Fluctuation (`objfffffff9`..`objfffffffa`) & Caching Trap:**
+   - **Root Cause from Recent Log:** When fast-traveling between Telos modules, player creature was assigned `0xFFFFFFF9u` (-7) while party table was temporarily desynced (`partySlot = -1`, `isMember0 = false`). Because `HotbarLogic.h:88` only checked `0xFFFFFFFDu` and `0xFFFFFFFEu`, `isExile` returned false, falling through to `obj%08x` (`objfffffff9`). This selected an empty `[Profile.objfffffff9]` with 0/10 slots bound.
+   - **Double-Check Discovery (Critical Caching Trap):** In `ActionHotbar.cpp:2032`, `same = (cr == lastCreature && oid == lastOid && g_partyCount == lastParty)` evaluated to `true` on every frame once `g_charKey` was computed as `"objfffffff9"`, locking the character key permanently for that module!
+   - **Fix:**
+     - In `HotbarLogic.h:characterKeyFor`, map the full Odyssey negative player sentinel range `0xFFFFFFF0u <= oid && oid <= 0xFFFFFFFEu` to canonical `"objfffffffd"` (Exile).
+     - In `ActionHotbar.cpp:2032`, enforce `same = (!g_charKey.empty() && g_charKey.rfind("slot", 0) != 0 && cr == lastCreature && oid == lastOid && g_partyCount == lastParty)` so that uninitialized keys or slot fallbacks continue to re-evaluate until resolved to canonical key or named tag.
+     - In `computeCharacterKey()`, enhance party slot matching via `(mem == c || (mem != 0 && creatureOid(mem) == oid))` to reliably identify companions even when pointer wrappers differ across module loads.
+
+---
+
+## Workstream 6: Portrait Health Buttons & Action Tray UX (`companion-selfheal` & `queue-hud`)
+
+### 6.1 Objective & Code Targets
+- **Target Files:**
+  - `patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp`
+  - `patch_manager_mods/_shared_src/SelfHealUi.h`
+  - `patch_manager_mods/queue_hud_src/QueueHud.cpp`
+  - `patch_manager_mods/queue_hud_src/QueueHudLogic.h`
+
+### 6.2 Implementations
+1. **SH1: 58px Companion Health Buttons & Action Tray UX:**
+   - Standardize companion health button dimensions to **58x58 px** (`autoIconPx`: `vit.h * 0.60f` clamped `[48, 72]`), matching companion queue buttons.
+   - Update `shui::stripReserve(vit)` to reserve space for the 58px button + gap + ring overhang, ensuring `queue-hud` offsets companion queue icons correctly.
+   - Render a unified companion action tray wrapper/pill enclosing both the 58px health button and queue icons, using a scaled version of the `lbl_miqueue_teal` style (sea-green `#118367` border, translucent black fill).
+2. **SH2: Leader Health Button (Click/Auto Heal for Exile):**
+   - Remove the `isLeaderVit` prohibition in `SelfHealUi.h:21` and `resolveState`.
+   - Position a 58x58 px health button at top-left of the leader character portrait (`Slot_CardRect 0x54C`).
+   - Allocate member 0 widget (`W_BtnLeader` / `mi = 0`), wire click to `useNow(ctx, now, 0, ...)`, and include member 0 in `tickAutoHeal()`, enabling click-to-heal and auto-heal for the Exile.
+3. **SH3: Options Popover UX Blank Rendering Fix:**
+   - **Double-Check Discovery (Template & Font Clipping Traps):**
+     - `LBL_HOTBARPTITLE` does NOT exist in `mipc28x6_p.gui` (it was dynamically created by ActionHotbar from `LBL_QUEUE1`). `createLabelFromTemplate` requires templates present in the layout GFF.
+     - `LBL_QUEUE1` is the valid template, but the engine forces the `b` font variant (`dialogfont10x10b`), which has a 16x16 / 24px cell height (V8 research). When the button was 16..20px, popover rows were cramped to 16..20px, vertically clipping out the text!
+     - `setAlign(18)` centers text via `(rect.h - font_height) / 2`; when `rect.h < font_height`, this offset is negative, pushing text out of bounds.
+   - **Fix:**
+     - Expand popover row height in `shui::popoverLayout` to 40..58px (matching 58px button size), providing ample vertical line height for `dialogfont10x10b`.
+     - Use `setRect` before setting text/font and align 17 (top-center) or ensure height >= 40px for positive centering.
+     - Explicitly invalidate `wText` cache and set text color/alpha on popover show.
+4. **QH5: Cancel Queue Button Color Parity:**
+   - **Measured Values from `lbl_miqueue_teal.tga`:**
+     - Border: Sea-green/emerald `{ 0.067f, 0.514f, 0.404f }` (`#118367`, G >> B), hover `{ 0.10f, 0.72f, 0.57f }`.
+     - Fill: Translucent black `{ 0.00f, 0.00f, 0.00f }` with alpha `0.70f` (179/255).
+   - In `QueueHud.cpp:cwLookLeader`:
+     - Replace hardcoded cyan `{ 0.10f, 0.58f, 0.62f }` with `{ 0.067f, 0.514f, 0.404f }`.
+     - Replace opaque cyan fill `{ 0.05f, 0.25f, 0.28f }` with translucent dark fill at alpha `0.70f`.
 
 ---
 
@@ -175,4 +233,11 @@ int capPad = 6;      // was 4 (cap padding)
 | QH3 | [Queue HUD] Dark teal Cancel button styling parity (Leader & Companion) | DONE | `python3 scripts/build_check.py --mod queue_hud_src` | 20 min |
 | AH1 | [Action Hotbar] Stop wiping live hotbar on absent snapshot (`SS_Absent`) | DONE | `python3 scripts/run_tests.py -k hotbar` | 20 min |
 | AH2 | [Action Hotbar] Stabilize character profile keys using party slot / creature tags | DONE | `python3 scripts/run_tests.py -k hotbar` | 20 min |
+| AH3 | [Action Hotbar] Fix fast-travel profile wipe via negative sentinel range `0xFFFFFFF0`..`0xFFFFFFFE` | DONE | `python3 scripts/run_tests.py -k hotbar` | 15 min |
+| QH4 | [Queue HUD] Buffer non-combat Force powers & items in unified FIFO (`haveCur` idle gate, `fakeAction` icon resolution) | PLANNED | `python3 scripts/run_tests.py -k queue` | 30 min |
+| QH5 | [Queue HUD] Exact color parity for Cancel button matching `lbl_miqueue_teal` palette | DONE | `python3 scripts/build_check.py --mod queue_hud_src` | 15 min |
+| SH1 | [SelfHeal] 58px companion health button & unified action tray wrapper | DONE | `python3 scripts/run_tests.py -k selfheal` | 25 min |
+| SH2 | [SelfHeal] Leader 58px health button at top-left of leader portrait | DONE | `python3 scripts/run_tests.py -k selfheal` | 25 min |
+| SH3 | [SelfHeal] Popover options text fix: `LBL_HOTBARPTITLE` template & 58px row layout | DONE | `python3 scripts/run_tests.py -k selfheal` | 20 min |
+
 

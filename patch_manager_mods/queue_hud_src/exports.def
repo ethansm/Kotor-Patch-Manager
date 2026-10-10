@@ -3,3 +3,4 @@ EXPORTS
     KPatchInit
     QueueHudCapture
     QueueHudPerformUseItem
+    QueueHudPerformCastSpell

@@ -21,3 +21,22 @@ type = "int"
 [[hooks.parameters]]
 source = "ebp"
 type = "int"
+
+# H10: PerformCastSpell (0x00775703): intercept out-of-combat spell use for unified buffering (doc 33 QH4).
+# 6 bytes (2 instructions): SUB ESP,0x0C / MOV [EBP-0x0C],ECX.
+# ECX = client creature, EBP = stack frame. Non-zero return jumps to 0x77574C (MOV ESP,EBP / POP EBP / RET 0x1C).
+[[hooks]]
+address = 0x00775703
+type = "detour"
+function = "QueueHudPerformCastSpell"
+original_bytes = [0x83, 0xEC, 0x0C, 0x89, 0x4D, 0xF4]
+consumed_exit_address = 0x0077574C
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "int"
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"
