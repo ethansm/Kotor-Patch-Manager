@@ -149,3 +149,59 @@ requires = ["which:g++"]
 name = "levelup-scenarios-m32"
 cmd = ["python", "research/companion_levelup/tools/parity/scenarios.py", "--m32"]
 requires = ["which:g++"]
+
+# ---- swarm library (M2.1, ~/.claude/swarm, stdlib only) and fix-sandbox self-tests (M2.2+) ----
+# Run one group: run_tests.py swarm-lib   |   run_tests.py swarm-fix
+
+[[suite]]
+name = "swarm-lib-invariants"
+cmd = ["python3", "-I", "~/.claude/swarm/tests/test_invariants.py"]
+requires = ["~/.claude/swarm/tests/test_invariants.py"]
+timeout_s = 120
+
+[[suite]]
+name = "swarm-lib-sandbox"
+cmd = ["python3", "-I", "~/.claude/swarm/tests/test_sandbox.py"]
+requires = ["~/.claude/swarm/tests/test_sandbox.py"]
+timeout_s = 300
+
+[[suite]]
+name = "swarm-lib-home-probe"
+cmd = ["python3", "-I", "~/.claude/swarm/tests/test_home_probe.py"]
+requires = ["~/.claude/swarm/tests/test_home_probe.py"]
+timeout_s = 300
+
+[[suite]]
+name = "swarm-fix-fcommon"
+cmd = ["python3", "-I", "fcommon.py", "--self-test"]
+cwd = "$REPO/.claude/review/fix"
+requires = ["$REPO/.claude/review/fix/fcommon.py"]
+timeout_s = 300
+
+[[suite]]
+name = "swarm-fix-intake"
+cmd = ["python3", "-I", "fix_intake.py", "--self-test"]
+cwd = "$REPO/.claude/review/fix"
+requires = ["$REPO/.claude/review/fix/fix_intake.py"]
+timeout_s = 300
+
+[[suite]]
+name = "swarm-fix-workspace"
+cmd = ["python3", "-I", "fix_workspace.py", "--self-test"]
+cwd = "$REPO/.claude/review/fix"
+requires = ["$REPO/.claude/review/fix/fix_workspace.py"]
+timeout_s = 600
+
+[[suite]]
+name = "swarm-fix-settings"
+cmd = ["python3", "-I", "fix_settings.py", "--self-test"]
+cwd = "$REPO/.claude/review/fix"
+requires = ["$REPO/.claude/review/fix/fix_settings.py"]
+timeout_s = 300
+
+[[suite]]
+name = "swarm-fix-checks"
+cmd = ["python3", "-I", "fix_checks.py", "--self-test"]
+cwd = "$REPO/.claude/review/fix"
+requires = ["$REPO/.claude/review/fix/fix_checks.py"]
+timeout_s = 300
