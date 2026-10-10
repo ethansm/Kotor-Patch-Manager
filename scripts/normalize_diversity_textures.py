@@ -26,7 +26,6 @@ from typing import Dict, List, Tuple
 
 # Default search directories for raw assets
 DEFAULT_SEARCH_DIRS = [
-    os.path.expanduser("~/.local/share/Steam/steamapps/common/Knights of the Old Republic II/override"),
     os.path.expanduser("~/Games/KOTOR2_Mod_Workspace/01_extracted/nexus_mod144_uco_redux"),
     os.path.expanduser("~/Games/KOTOR2_Mod_Workspace/01_extracted/mod149_character_textures_2x"),
     os.path.expanduser("~/Games/KOTOR2_Mod_Workspace/01_extracted/extra_fashion_line_b"),
@@ -109,8 +108,9 @@ def build_catalog(search_dirs: List[str]) -> Dict[str, str]:
     for directory in search_dirs:
         if not os.path.isdir(directory):
             continue
-        for root, _, files in os.walk(directory):
-            for f in files:
+        for root, dirs, files in os.walk(directory):
+            dirs.sort()
+            for f in sorted(files):
                 lkey = f.lower()
                 base, ext = os.path.splitext(lkey)
                 # Store full key (e.g. n_fatcomm.mdl)
@@ -209,7 +209,6 @@ def main() -> int:
     print(f"  Female Commoner Textures: {females:02d}/35 (N_CommF01..35)")
     print(f"  Supporting Models/Heads:  {models}")
     print(f"  Total Assets Ingested:    {males + females + models}")
-    print("SUCCESS: Zero name collisions. All slots 01..35 verified.")
     return 0
 
 

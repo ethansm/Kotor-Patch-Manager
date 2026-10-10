@@ -83,7 +83,7 @@ def resolve_plan_shorthand(token: str) -> tuple[Path | None, str]:
 
     # 1b. Filename or exact stem match across repository (e.g. 'PHASE7_COMMON_MASTER', 'PHASE4_PLAN')
     stem_token = token[:-3] if token.endswith(".md") else token
-    for cand in sorted(REPO_ROOT.glob(f"**/{stem_token}.md")):
+    for cand in sorted(REPO_ROOT.glob(f"**/{glob.escape(stem_token)}.md")):
         if cand.is_file() and not cand.name.endswith(".handoff.md") and ".claude" not in cand.parts:
             return cand.resolve(), ""
 
@@ -495,7 +495,10 @@ def cmd_mark_done(plan: dict, target_str: str, commit_sha: str = "", notes: str 
     plan_path = plan["path"]
     text = plan_path.read_text(encoding="utf-8")
     state_str = state.strip().upper() if state else "DONE"
-    
+    if not target_str.strip("*_ "):
+        print(f"Error: phase argument {target_str!r} has no usable identifier; plan not modified.")
+        return
+
     # 1. Try Markdown table update
     lines = text.split("\n")
     table_updated = False
@@ -796,7 +799,7 @@ def main():
             cmd_handoff(updated_plan, git_info, user_direction=user_dir, handoff_dir=h_dir)
 
             plan_stem = updated_plan["path"].stem
-            target_h_dir = Path(h_dir).resolve() if h_dir else HANDOFFS_DIR
+            target_h_dir = (Path(h_dir).resolve() / "handoffs") if h_dir else HANDOFFS_DIR
             plan_handoff_file = target_h_dir / f"{plan_stem}.handoff.md"
             rel_plan_h = plan_handoff_file.relative_to(REPO_ROOT) if plan_handoff_file.is_relative_to(REPO_ROOT) else plan_handoff_file
 

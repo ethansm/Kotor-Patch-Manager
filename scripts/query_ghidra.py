@@ -145,7 +145,6 @@ def query_struct(con: sqlite3.Connection, class_name: str, limit: int = 100) -> 
     return results
 
 def format_cpp_struct(results: list[dict], class_name: str) -> str:
-    lines = [f"// Auto-generated struct layout for {class_name}", f"struct {class_name} {{"]
     type_map = {
         "ptr": "void*",
         "int": "int32_t",
@@ -156,7 +155,9 @@ def format_cpp_struct(results: list[dict], class_name: str) -> str:
         "f32": "float",
         "id": "uint32_t",
     }
+    members = {}
     for item in results:
+        lines = members.setdefault(item.get("class", class_name), [])
         off = item.get("offset", 0)
         t_raw = str(item.get("type", "")).strip().lower()
         c_type = type_map.get(t_raw, "uint32_t")
@@ -165,8 +166,10 @@ def format_cpp_struct(results: list[dict], class_name: str) -> str:
         if not clean_name or clean_name[0].isdigit():
             clean_name = f"field_{clean_name}"
         lines.append(f"    /* 0x{off:04x} */ {c_type:10s} {clean_name};")
-    lines.append("};")
-    return "\n".join(lines)
+    blocks = []
+    for cls, lines in members.items():
+        blocks.append("\n".join([f"// Auto-generated struct layout for {cls}", f"struct {cls} {{", *lines, "};"]))
+    return "\n\n".join(blocks)
 
 def get_stats(con: sqlite3.Connection) -> dict:
     cur = con.cursor()
@@ -235,6 +238,8 @@ def main():
     if args.json:
         print(json.dumps(results, indent=2))
     elif args.command == "struct" and getattr(args, "cpp", False):
+        if len(results) >= args.limit:
+            sys.stderr.write(f"Warning: struct output may be truncated at {args.limit} fields; rerun with a higher --limit\n")
         print(format_cpp_struct(results, args.class_name))
     else:
         for i, item in enumerate(results, 1):
