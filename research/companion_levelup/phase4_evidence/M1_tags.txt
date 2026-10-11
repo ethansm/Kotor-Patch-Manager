@@ -1,0 +1,25 @@
+M1 tag verification (read-only). Matching is case-insensitive.
+utc source: live_utc/p_*.utc == game override/p_*.utc (identical Tags).
+Saves: 000000-QUICKSAVE (newest), 000003-Game2, 000001-AUTOSAVE; identical results in all 3.
+Save sources: availnpc*.utc, nested 003ebo.sav GIT creature list. PC tag = '' (expected).
+Only Atton/Kreia/T3M4 are recruited in these saves (PARTYTABLE avail idx 0,6,8); others not verifiable from saves.
+
+preset_tag   | utc Tag    | save Tag(s)                         | match? | recommended meta.tag
+atton        | Atton      | atton (availnpc0, git; all 3)       | yes(ci)| atton (keep)
+kreia        | Kreia      | kreia (availnpc6, git; all 3)       | yes(ci)| kreia (keep)
+t3m4         | T3M4       | t3m4 (availnpc8, git; all 3)        | yes(ci)| t3m4 (keep)
+baodur       | BaoDur     | not recruited                       | yes(ci)| baodur (keep)
+disciple     | Disciple   | not recruited                       | yes(ci)| disciple (keep)
+handmaiden   | Handmaiden | not recruited                       | yes(ci)| handmaiden (keep)
+mira         | Mira       | availnpc7 Tag='3cfd' (see note)     | yes(ci) utc | mira (keep)
+VisasMarr    | VisasMarr  | not recruited                       | yes    | VisasMarr (keep)
+hk47         | HK47       | not recruited                       | yes(ci)| hk47 (keep)
+g0t0         | G0T0       | not recruited                       | yes(ci)| g0t0 (keep)
+mand         | Mand       | not recruited                       | yes(ci)| mand (keep)
+hanharr      | Hanharr    | not recruited                       | yes(ci)| hanharr (keep)
+
+Notes:
+- Saves store lowercase tags (atton/kreia/t3m4) while utcs have mixed case; a case-insensitive compare is REQUIRED.
+- Handmaiden/Disciple: only one utc each (p_handmaiden Gender=1, p_disciple Gender=0, both Tag unchanged); no PC-gender variants exist in Tag. Disciple/Handmaiden tags in K2 are fixed regardless of PC gender.
+- availnpc7 (the Mira slot by npc.2da order, not available in PARTYTABLE) has Tag '3cfd', Gender 4, empty TemplateResRef: an uninitialized placeholder, not a real Mira. Once Mira is recruited the engine should rewrite it; unverified. Do not match on it.
+- No preset tag needs changing.
