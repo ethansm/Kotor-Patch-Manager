@@ -1,0 +1,14 @@
+{
+"C01": {"category":"commoner_clothing","body":"male","outfit":"grey tunic, brown vest, olive trousers","confidence":4},
+"C02": {"category":"face_head","body":"female","outfit":"woman face, brown hair, earpiece","confidence":5},
+"C03": {"category":"face_head","body":"female","outfit":"older woman face, white hair","confidence":5},
+"C04": {"category":"armor","body":"male","outfit":"dark purple armor, orange-striped trousers","confidence":4},
+"C05": {"category":"uniform","body":"male","outfit":"red uniform, tan chest harness, gold stripes","confidence":4},
+"C06": {"category":"armor","body":"male","outfit":"dark blue armor, gold-striped trousers, pouches","confidence":4},
+"C07": {"category":"face_head","body":"male","outfit":"man face, dark brown hair","confidence":5},
+"C08": {"category":"commoner_clothing","body":"male","outfit":"drab olive tunic, vest, trousers","confidence":4},
+"C09": {"category":"commoner_clothing","body":"either","outfit":"beige tunic, tan trousers, brown boots","confidence":3},
+"C10": {"category":"blank_garbled","body":"either","outfit":"blurry green and white lavender smear","confidence":4},
+"C11": {"category":"face_head","body":"male","outfit":"bearded man face, black hair","confidence":5},
+"C12": {"category":"face_head","body":"female","outfit":"woman face, black hair, braid, earrings","confidence":5}
+}

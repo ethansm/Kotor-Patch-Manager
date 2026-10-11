@@ -1,0 +1,664 @@
+[
+{
+"tag": "cortatqst1",
+"name": "Yula",
+"n": 1,
+"rule": "plot",
+"mods": [
+"967cor"
+],
+"conv": [
+"corwraidqst"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+621
+]
+},
+{
+"tag": "corteldc",
+"name": "Doctor Ganius",
+"n": 1,
+"rule": "plot",
+"mods": [
+"204tel"
+],
+"conv": [
+"corteldc"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+193
+]
+},
+{
+"tag": "corvetdude",
+"name": "Dardo",
+"n": 1,
+"rule": "plot",
+"mods": [
+"973cor"
+],
+"conv": [
+"corvetdude"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+591
+]
+},
+{
+"tag": "coryvartfqst1",
+"name": "Arvish",
+"n": 1,
+"rule": "plot",
+"mods": [
+"955cor"
+],
+"conv": [
+"coryvartfqst1"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+606
+]
+},
+{
+"tag": "corzerkgirl1",
+"name": "Administrator Daesha",
+"n": 1,
+"rule": "plot",
+"mods": [
+"972cor"
+],
+"conv": [
+"corzerkdaesh"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+621
+]
+},
+{
+"tag": "czerka_employee",
+"name": "Czerka Employee{F}",
+"n": 1,
+"rule": "named",
+"mods": [
+"209tel"
+],
+"conv": [
+"202czerf"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+590
+]
+},
+{
+"tag": "dan_ctz_f1",
+"name": "Settler",
+"n": 1,
+"rule": "named",
+"mods": [
+"602dan"
+],
+"conv": [
+"g_settlf"
+],
+"conv_shared": 2,
+"plot": 0,
+"apps": [
+185
+]
+},
+{
+"tag": "dan_ctz_f2",
+"name": "Settler",
+"n": 1,
+"rule": "named",
+"mods": [
+"602dan"
+],
+"conv": [
+"g_settlf"
+],
+"conv_shared": 2,
+"plot": 0,
+"apps": [
+14
+]
+},
+{
+"tag": "dan_ctz_male",
+"name": "Settler",
+"n": 1,
+"rule": "named",
+"mods": [
+"602dan"
+],
+"conv": [
+"g_settle"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+593
+]
+},
+{
+"tag": "Dancer",
+"name": "Dancer",
+"n": 2,
+"rule": "generic",
+"mods": [
+"306nar",
+"307nar"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+611
+]
+},
+{
+"tag": "Dancer",
+"name": "Twi'lek Dancer{2}",
+"n": 2,
+"rule": "generic",
+"mods": [
+"306nar",
+"307nar"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+621
+]
+},
+{
+"tag": "DarkJedi",
+"name": "Dark Jedi{Female 2}",
+"n": 5,
+"rule": "generic",
+"mods": [
+"745kor",
+"903mal",
+"905mal"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+614
+]
+},
+{
+"tag": "DarkJedi",
+"name": "Dark Jedi{Male 2}",
+"n": 6,
+"rule": "generic",
+"mods": [
+"740kor",
+"903mal",
+"905mal"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+616
+]
+},
+{
+"tag": "doton",
+"name": "Doton Het",
+"n": 1,
+"rule": "named",
+"mods": [
+"207tel"
+],
+"conv": [
+"dotonhet"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+449
+]
+},
+{
+"tag": "ekunboss",
+"name": "Ghost of Exar Kun",
+"n": 1,
+"rule": "named",
+"mods": [
+"yavtomb2"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+596
+]
+},
+{
+"tag": "endzerkgal2",
+"name": "Czerka Employee",
+"n": 2,
+"rule": "plot",
+"mods": [
+"endor2"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+448
+]
+},
+{
+"tag": "endzerkgal3",
+"name": "Czerka Employee",
+"n": 1,
+"rule": "plot",
+"mods": [
+"endor1"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+620
+]
+},
+{
+"tag": "endzerkgal4",
+"name": "Czerka Employee",
+"n": 2,
+"rule": "plot",
+"mods": [
+"endor2"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+446
+]
+},
+{
+"tag": "endzerkguy5",
+"name": "Czerka Employee",
+"n": 2,
+"rule": "plot",
+"mods": [
+"endor2"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+619
+]
+},
+{
+"tag": "ExThug1",
+"name": "Exchange Thug{Human}",
+"n": 1,
+"rule": "generic",
+"mods": [
+"208tel"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+190
+]
+},
+{
+"tag": "ExThugL1",
+"name": "Benok{Exchange Lt}",
+"n": 1,
+"rule": "generic",
+"mods": [
+"208tel"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+191
+]
+},
+{
+"tag": "FatComM",
+"name": "Telosian",
+"n": 1,
+"rule": "named",
+"mods": [
+"207tel"
+],
+"conv": [
+"200comm"
+],
+"conv_shared": 14,
+"plot": 0,
+"apps": [
+596
+]
+},
+{
+"tag": "FatComM",
+"name": "{Sitting}Telosian",
+"n": 1,
+"rule": "generic",
+"mods": [
+"207tel"
+],
+"conv": [
+"200comm"
+],
+"conv_shared": 14,
+"plot": 0,
+"apps": [
+596
+]
+},
+{
+"tag": "g_dead_merc",
+"name": "Dead Mercenary",
+"n": 1,
+"rule": "named",
+"mods": [
+"610dan"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+596
+]
+},
+{
+"tag": "g_dead_merc2",
+"name": "Dead Mercenary{2}",
+"n": 2,
+"rule": "generic",
+"mods": [
+"610dan"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+190
+]
+},
+{
+"tag": "g_merc",
+"name": "Mercenary",
+"n": 2,
+"rule": "named",
+"mods": [
+"605dan"
+],
+"conv": [
+"gen_merc"
+],
+"conv_shared": 2,
+"plot": 0,
+"apps": [
+190
+]
+},
+{
+"tag": "g_militia",
+"name": "Militia",
+"n": 1,
+"rule": "named",
+"mods": [
+"602dan"
+],
+"conv": [
+"g_militi"
+],
+"conv_shared": 3,
+"plot": 0,
+"apps": [
+592
+]
+},
+{
+"tag": "g_militia2",
+"name": "Militia{Easy}",
+"n": 1,
+"rule": "named",
+"mods": [
+"601dan"
+],
+"conv": [
+"g_milit2"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+17
+]
+},
+{
+"tag": "g_militia3",
+"name": "Militia{Main Door Guard}",
+"n": 1,
+"rule": "named",
+"mods": [
+"601dan"
+],
+"conv": [
+"g_militi"
+],
+"conv_shared": 3,
+"plot": 0,
+"apps": [
+17
+]
+},
+{
+"tag": "g_militia_a",
+"name": "Wounded Militia{A}",
+"n": 1,
+"rule": "named",
+"mods": [
+"602dan"
+],
+"conv": [
+"dummy_a"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+191
+]
+},
+{
+"tag": "g_militia_b",
+"name": "Wounded Militia{B}",
+"n": 1,
+"rule": "named",
+"mods": [
+"602dan"
+],
+"conv": [
+"dummy_b"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+596
+]
+},
+{
+"tag": "g_militia_c",
+"name": "Wounded Militia{C}",
+"n": 1,
+"rule": "named",
+"mods": [
+"602dan"
+],
+"conv": [
+"dummy_c"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+591
+]
+},
+{
+"tag": "g_militia_d",
+"name": "Wounded Militia{D}",
+"n": 1,
+"rule": "named",
+"mods": [
+"602dan"
+],
+"conv": [
+"dummy_d"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+616
+]
+},
+{
+"tag": "g_salvager",
+"name": "Salvager",
+"n": 1,
+"rule": "generic",
+"mods": [
+"605dan"
+],
+"conv": [
+"gen_salv"
+],
+"conv_shared": 6,
+"plot": 0,
+"apps": [
+345
+]
+},
+{
+"tag": "g_salvager_tae",
+"name": "Salvager{Taepalae 1}",
+"n": 1,
+"rule": "generic",
+"mods": [
+"605dan"
+],
+"conv": [
+"gen_salv"
+],
+"conv_shared": 6,
+"plot": 0,
+"apps": [
+348
+]
+},
+{
+"tag": "g_salvager_tae2",
+"name": "Salvager",
+"n": 2,
+"rule": "generic",
+"mods": [
+"605dan"
+],
+"conv": [
+"gen_salv"
+],
+"conv_shared": 6,
+"plot": 0,
+"apps": [
+345
+]
+},
+{
+"tag": "g_staff_f",
+"name": "Staff",
+"n": 1,
+"rule": "named",
+"mods": [
+"602dan"
+],
+"conv": [
+"g_staff"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+593
+]
+},
+{
+"tag": "Gamble1",
+"name": "{JDM}Gambler{Human Male}",
+"n": 2,
+"rule": "named",
+"mods": [
+"306nar",
+"307nar"
+],
+"conv": [
+"gambler"
+],
+"conv_shared": 2,
+"plot": 0,
+"apps": [
+193
+]
+},
+{
+"tag": "Gamble2",
+"name": "{JDM}Gambler{Human Female 2}",
+"n": 2,
+"rule": "named",
+"mods": [
+"306nar",
+"307nar"
+],
+"conv": [
+"gamblerf"
+],
+"conv_shared": 2,
+"plot": 0,
+"apps": [
+188
+]
+},
+{
+"tag": "Geriel",
+"name": "Geriel",
+"n": 1,
+"rule": "named",
+"mods": [
+"302nar"
+],
+"conv": [
+"geriel"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+595
+]
+}
+]

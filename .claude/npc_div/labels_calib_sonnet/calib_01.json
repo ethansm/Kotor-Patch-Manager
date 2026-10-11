@@ -1,0 +1,14 @@
+{
+"C13": {"category":"commoner_clothing","body":"either","outfit":"dark green tunic with orange panels","confidence":3},
+"C14": {"category":"face_head","body":"male","outfit":"pale scarred alien/humanoid face","confidence":4},
+"C15": {"category":"face_head","body":"female","outfit":"pale pink face with brown hair","confidence":4},
+"C16": {"category":"face_head","body":"female","outfit":"dark-haired woman face with makeup","confidence":5},
+"C17": {"category":"robe","body":"male","outfit":"tan Jedi tunic, brown belt and boots","confidence":4},
+"C18": {"category":"armor","body":"male","outfit":"black leather with holster, grey trousers","confidence":3},
+"C19": {"category":"robe","body":"male","outfit":"grey-tan Jedi tunic and trousers","confidence":4},
+"C20": {"category":"armor","body":"male","outfit":"black suit, yellow armor plates, yellow stripes","confidence":4},
+"C21": {"category":"robe","body":"male","outfit":"brown Jedi robes with yellow belt","confidence":3},
+"C22": {"category":"commoner_clothing","body":"male","outfit":"grey tunic, brown vest, olive belt","confidence":3},
+"C23": {"category":"uniform","body":"male","outfit":"red jumpsuit with brown armor pouches","confidence":4},
+"C24": {"category":"armor","body":"male","outfit":"black suit, yellow armor plates, pouches","confidence":4}
+}

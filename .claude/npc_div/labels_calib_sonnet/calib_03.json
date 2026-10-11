@@ -1,0 +1,14 @@
+{
+"C37": {"category":"commoner_clothing","body":"either","outfit":"red draped tunic, olive striped sash, tan trousers","confidence":3},
+"C38": {"category":"commoner_clothing","body":"male","outfit":"beige wrap shirt, tan trousers, brown vest","confidence":4},
+"C39": {"category":"armor","body":"either","outfit":"black leather jacket, dark blue trousers, utility gear","confidence":3},
+"C40": {"category":"commoner_clothing","body":"either","outfit":"dark green tunic, orange sash, green trousers","confidence":3},
+"C41": {"category":"uniform","body":"male","outfit":"navy trousers with gold stripe, tan vest, boots","confidence":3},
+"C42": {"category":"face_head","body":"female","outfit":"female face, wavy brown hair","confidence":5},
+"C43": {"category":"creature_alien_droid","body":"either","outfit":"grey metal droid plating with blue eye","confidence":5},
+"C44": {"category":"robe","body":"either","outfit":"grey-white wrapped robe, brown belt with orange trim","confidence":3},
+"C45": {"category":"commoner_clothing","body":"male","outfit":"dark teal jacket, olive and brown trousers, shoes","confidence":3},
+"C46": {"category":"commoner_clothing","body":"either","outfit":"grey shirt, red top, blue-grey trousers","confidence":4},
+"C47": {"category":"creature_alien_droid","body":"either","outfit":"green reptilian creature skin with orange eye","confidence":5},
+"C48": {"category":"commoner_clothing","body":"either","outfit":"light blue shirt, pale blue trousers, brown belt","confidence":4}
+}

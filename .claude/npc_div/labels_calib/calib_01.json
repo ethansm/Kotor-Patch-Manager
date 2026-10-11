@@ -1,0 +1,14 @@
+{
+  "C13": {"category": "commoner_clothing", "body": "either", "outfit": "orange shirt and dark green trousers", "confidence": 2},
+  "C14": {"category": "face_head", "body": "male", "outfit": "none, beige cracked bald skin", "confidence": 2},
+  "C15": {"category": "face_head", "body": "female", "outfit": "none, pale skin and brown hair", "confidence": 4},
+  "C16": {"category": "face_head", "body": "female", "outfit": "none, tan skin and dark hair", "confidence": 5},
+  "C17": {"category": "commoner_clothing", "body": "either", "outfit": "beige wrap top and tan trousers", "confidence": 3},
+  "C18": {"category": "armor", "body": "either", "outfit": "black plates and grey trousers", "confidence": 3},
+  "C19": {"category": "commoner_clothing", "body": "either", "outfit": "olive wrap top and khaki trousers", "confidence": 2},
+  "C20": {"category": "armor", "body": "either", "outfit": "black trousers and yellow armour vest", "confidence": 2},
+  "C21": {"category": "armor", "body": "either", "outfit": "brown leather jacket and grey trousers", "confidence": 2},
+  "C22": {"category": "armor", "body": "either", "outfit": "grey tunic and brown leather straps", "confidence": 2},
+  "C23": {"category": "armor", "body": "either", "outfit": "red trousers and red pouches", "confidence": 2},
+  "C24": {"category": "armor", "body": "either", "outfit": "navy trousers and yellow armour vest", "confidence": 3}
+}

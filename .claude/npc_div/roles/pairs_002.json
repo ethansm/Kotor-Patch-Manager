@@ -1,0 +1,667 @@
+[
+{
+"tag": "Kahranna",
+"name": "Kahranna",
+"n": 1,
+"rule": "named",
+"mods": [
+"302nar"
+],
+"conv": [
+"kahranna"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+185
+]
+},
+{
+"tag": "kas22_dasol_01",
+"name": "Matton",
+"n": 1,
+"rule": "named",
+"mods": [
+"kasm22aa"
+],
+"conv": [
+"kasmatton"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+17
+]
+},
+{
+"tag": "kiph",
+"name": "Kiph",
+"n": 2,
+"rule": "named",
+"mods": [
+"503ond",
+"506ond"
+],
+"conv": [
+"kiph"
+],
+"conv_shared": 2,
+"plot": 0,
+"apps": [
+449
+]
+},
+{
+"tag": "Lootra",
+"name": "{kds}Lootra",
+"n": 1,
+"rule": "named",
+"mods": [
+"303nar"
+],
+"conv": [
+"lootra"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+592
+]
+},
+{
+"tag": "MalePilot",
+"name": "Pilot",
+"n": 1,
+"rule": "named",
+"mods": [
+"202tel"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+596
+]
+},
+{
+"tag": "man26_ignus",
+"name": "Ignus",
+"n": 1,
+"rule": "named",
+"mods": [
+"man_m26ae"
+],
+"conv": [
+"manaanignus"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+194
+]
+},
+{
+"tag": "man26_travel",
+"name": "Traveler",
+"n": 1,
+"rule": "named",
+"mods": [
+"man_m26aa"
+],
+"conv": [
+"man26_travel"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+17
+]
+},
+{
+"tag": "Mebla",
+"name": "Mebla Dule",
+"n": 1,
+"rule": "named",
+"mods": [
+"207tel"
+],
+"conv": [
+"mebla"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+189
+]
+},
+{
+"tag": "Mechanic",
+"name": "Tarn",
+"n": 1,
+"rule": "named",
+"mods": [
+"601dan"
+],
+"conv": [
+"mechanic"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+349
+]
+},
+{
+"tag": "merc_rep1",
+"name": "Mercenary{Replacement 1}",
+"n": 1,
+"rule": "generic",
+"mods": [
+"231tel"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+17
+]
+},
+{
+"tag": "merc_rep2",
+"name": "Mercenary{Replacement 2}",
+"n": 1,
+"rule": "generic",
+"mods": [
+"231tel"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+612
+]
+},
+{
+"tag": "merc_rep3",
+"name": "Mercenary{Replacement 3}",
+"n": 1,
+"rule": "generic",
+"mods": [
+"231tel"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+592
+]
+},
+{
+"tag": "n_forestall",
+"name": "Forrestal",
+"n": 1,
+"rule": "named",
+"mods": [
+"740kor"
+],
+"conv": [
+"forestall"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+193
+]
+},
+{
+"tag": "n_proselyte03",
+"name": "Proselyte",
+"n": 1,
+"rule": "generic",
+"mods": [
+"745kor"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+446
+]
+},
+{
+"tag": "n_sithcleric02",
+"name": "Sith Cleric",
+"n": 1,
+"rule": "named",
+"mods": [
+"745kor"
+],
+"conv": [
+"cleric2"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+193
+]
+},
+{
+"tag": "n_yogasith",
+"name": "Acolyte",
+"n": 1,
+"rule": "named",
+"mods": [
+"745kor"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+187
+]
+},
+{
+"tag": "Nadaa",
+"name": "Nadaa",
+"n": 1,
+"rule": "named",
+"mods": [
+"302nar"
+],
+"conv": [
+"nadaa"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+590
+]
+},
+{
+"tag": "nonhosttwi1",
+"name": "Twi'lek Thug",
+"n": 1,
+"rule": "generic",
+"mods": [
+"sley99aj"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+450
+]
+},
+{
+"tag": "npc_bthug",
+"name": "Thug",
+"n": 2,
+"rule": "generic",
+"mods": [
+"503ond"
+],
+"conv": [
+"gen_thug"
+],
+"conv_shared": 8,
+"plot": 0,
+"apps": [
+596
+]
+},
+{
+"tag": "npc_bthug",
+"name": "Thug{M}",
+"n": 2,
+"rule": "generic",
+"mods": [
+"503ond"
+],
+"conv": [
+"gen_thug"
+],
+"conv_shared": 8,
+"plot": 0,
+"apps": [
+615
+]
+},
+{
+"tag": "npc_dhagon_thug",
+"name": "Thug{Dhagon}",
+"n": 1,
+"rule": "generic",
+"mods": [
+"512ond"
+],
+"conv": [
+"d_thug"
+],
+"conv_shared": 7,
+"plot": 0,
+"apps": [
+190
+]
+},
+{
+"tag": "npc_nallek",
+"name": "Nallek",
+"n": 1,
+"rule": "named",
+"mods": [
+"605dan"
+],
+"conv": [
+"nallek"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+617
+]
+},
+{
+"tag": "npc_panar",
+"name": "Panar",
+"n": 1,
+"rule": "named",
+"mods": [
+"503ond"
+],
+"conv": [
+"panar"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+190
+]
+},
+{
+"tag": "npc_ralon",
+"name": "Ralon",
+"n": 1,
+"rule": "named",
+"mods": [
+"605dan"
+],
+"conv": [
+"ralon"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+190
+]
+},
+{
+"tag": "npc_sakarie",
+"name": "Sakarie",
+"n": 1,
+"rule": "named",
+"mods": [
+"503ond"
+],
+"conv": [
+"sakarie"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+612
+]
+},
+{
+"tag": "npc_suulru",
+"name": "Suulru",
+"n": 1,
+"rule": "named",
+"mods": [
+"602dan"
+],
+"conv": [
+"suulru"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+596
+]
+},
+{
+"tag": "npc_xaart",
+"name": "Xaart",
+"n": 1,
+"rule": "named",
+"mods": [
+"503ond"
+],
+"conv": [
+"xaart"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+595
+]
+},
+{
+"tag": "Odis",
+"name": "Odis",
+"n": 1,
+"rule": "named",
+"mods": [
+"302nar"
+],
+"conv": [
+"odis"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+596
+]
+},
+{
+"tag": "om_scout_dead",
+"name": "Scout{dead}",
+"n": 1,
+"rule": "generic",
+"mods": [
+"402dxn"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+17
+]
+},
+{
+"tag": "ponlar",
+"name": "Ponlar",
+"n": 1,
+"rule": "named",
+"mods": [
+"502ond"
+],
+"conv": [
+"mp_ponla"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+190
+]
+},
+{
+"tag": "rahasia2",
+"name": "Rahasia",
+"n": 1,
+"rule": "named",
+"mods": [
+"682dan"
+],
+"conv": [
+"rahasia2"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+186
+]
+},
+{
+"tag": "Refugee",
+"name": "{CA}Refugee",
+"n": 1,
+"rule": "named",
+"mods": [
+"301nar"
+],
+"conv": [
+"refugee"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+194
+]
+},
+{
+"tag": "Refugee2",
+"name": "{CA}Refugee{2}",
+"n": 1,
+"rule": "named",
+"mods": [
+"301nar"
+],
+"conv": [
+"refugee2"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+349
+]
+},
+{
+"tag": "Refugee3",
+"name": "{CA}Refugee{3}",
+"n": 1,
+"rule": "named",
+"mods": [
+"301nar"
+],
+"conv": [
+"refugee3"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+592
+]
+},
+{
+"tag": "RefugeeM",
+"name": "Refugee{Man02}",
+"n": 2,
+"rule": "generic",
+"mods": [
+"302nar"
+],
+"conv": [
+"refugeem"
+],
+"conv_shared": 11,
+"plot": 0,
+"apps": [
+615
+]
+},
+{
+"tag": "RefugeeM",
+"name": "Refugee{Man03}",
+"n": 1,
+"rule": "generic",
+"mods": [
+"302nar"
+],
+"conv": [
+"refugeem"
+],
+"conv_shared": 11,
+"plot": 0,
+"apps": [
+617
+]
+},
+{
+"tag": "RefugeeM",
+"name": "Refugee{Man04}",
+"n": 2,
+"rule": "generic",
+"mods": [
+"302nar"
+],
+"conv": [
+"refugeem"
+],
+"conv_shared": 11,
+"plot": 0,
+"apps": [
+591
+]
+},
+{
+"tag": "RefugeeM",
+"name": "Refugee{Man05}",
+"n": 1,
+"rule": "generic",
+"mods": [
+"302nar"
+],
+"conv": [
+"refugeem"
+],
+"conv_shared": 11,
+"plot": 0,
+"apps": [
+596
+]
+},
+{
+"tag": "RefugeeM",
+"name": "Refugee{Man}",
+"n": 1,
+"rule": "generic",
+"mods": [
+"302nar"
+],
+"conv": [
+"refugeem"
+],
+"conv_shared": 11,
+"plot": 0,
+"apps": [
+423
+]
+},
+{
+"tag": "RefugeeM",
+"name": "Refugee{Old Man02}",
+"n": 1,
+"rule": "generic",
+"mods": [
+"302nar"
+],
+"conv": [
+"refugeem"
+],
+"conv_shared": 11,
+"plot": 0,
+"apps": [
+594
+]
+}
+]

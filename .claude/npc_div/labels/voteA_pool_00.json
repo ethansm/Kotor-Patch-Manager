@@ -1,0 +1,14 @@
+{
+  "commf22": {"layout_matches_ref": "no", "category": "face_head", "body": "female", "outfit": "face with auburn hair, no clothing", "confidence": 5},
+  "commf07": {"layout_matches_ref": "yes", "category": "commoner_clothing", "body": "female", "outfit": "dark grey-brown wrap top and trousers", "confidence": 5},
+  "commm06": {"layout_matches_ref": "yes", "category": "commoner_clothing", "body": "male", "outfit": "charcoal jacket, blue and pink sash, tan vest", "confidence": 5},
+  "commm02": {"layout_matches_ref": "yes", "category": "commoner_clothing", "body": "male", "outfit": "pale grey-white wrap shirt, orange trim", "confidence": 5},
+  "commf25": {"layout_matches_ref": "no", "category": "face_head", "body": "female", "outfit": "face with dark skin and hair, no clothing", "confidence": 5},
+  "commf05": {"layout_matches_ref": "yes", "category": "commoner_clothing", "body": "female", "outfit": "brown wrap top, ochre belt, grey vest", "confidence": 5},
+  "commm05": {"layout_matches_ref": "yes", "category": "commoner_clothing", "body": "male", "outfit": "red robe-like wrap shirt and trousers", "confidence": 5},
+  "commf21": {"layout_matches_ref": "no", "category": "face_head", "body": "female", "outfit": "face with black hair, no clothing", "confidence": 5},
+  "commm03": {"layout_matches_ref": "yes", "category": "commoner_clothing", "body": "male", "outfit": "rust red tunic and trousers, purple vest", "confidence": 5},
+  "commm23": {"layout_matches_ref": "no", "category": "face_head", "body": "male", "outfit": "male face with black hair, no clothing", "confidence": 5},
+  "commf33": {"layout_matches_ref": "no", "category": "commoner_clothing", "body": "female", "outfit": "cream belted dress with hood, brown corset", "confidence": 3},
+  "commf18": {"layout_matches_ref": "no", "category": "face_head", "body": "female", "outfit": "face with black hair, no clothing", "confidence": 5}
+}

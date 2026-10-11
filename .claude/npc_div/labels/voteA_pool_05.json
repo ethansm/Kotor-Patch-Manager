@@ -1,0 +1,12 @@
+{
+  "commf03": {"layout_matches_ref": "yes", "category": "commoner_clothing", "body": "female", "outfit": "grey tunic, olive trousers, brown belt", "confidence": 5},
+  "commf31": {"layout_matches_ref": "no", "category": "face_head", "body": "female", "outfit": "face and black hair atlas", "confidence": 5},
+  "commf23": {"layout_matches_ref": "no", "category": "face_head", "body": "female", "outfit": "face and black hair atlas", "confidence": 5},
+  "commf06": {"layout_matches_ref": "yes", "category": "commoner_clothing", "body": "female", "outfit": "light grey shirt, blue top, purple trousers", "confidence": 5},
+  "commf08": {"layout_matches_ref": "yes", "category": "commoner_clothing", "body": "female", "outfit": "olive green tunic, red-brown belt", "confidence": 5},
+  "commm01": {"layout_matches_ref": "yes", "category": "commoner_clothing", "body": "male", "outfit": "tan wrap shirt, tan trousers, brown belt", "confidence": 5},
+  "commm09": {"layout_matches_ref": "yes", "category": "commoner_clothing", "body": "male", "outfit": "light blue shirt, blue trousers, brown belt", "confidence": 5},
+  "commm29": {"layout_matches_ref": "no", "category": "robe", "body": "male", "outfit": "blue-grey hooded robe with straps", "confidence": 4},
+  "commm10": {"layout_matches_ref": "yes", "category": "commoner_clothing", "body": "male", "outfit": "dark brown shirt, orange stripe, olive trousers", "confidence": 4},
+  "commm28": {"layout_matches_ref": "no", "category": "robe", "body": "male", "outfit": "cream hooded robe with brown straps", "confidence": 4}
+}

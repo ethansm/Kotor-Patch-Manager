@@ -1,0 +1,14 @@
+{
+  "C25": {"category": "commoner_clothing", "body": "either", "outfit": "dark grey and black jacket and trousers", "confidence": 2},
+  "C26": {"category": "commoner_clothing", "body": "male", "outfit": "light blue shirt and trousers with brown boots", "confidence": 3},
+  "C27": {"category": "commoner_clothing", "body": "male", "outfit": "black jacket with blue jeans", "confidence": 3},
+  "C28": {"category": "commoner_clothing", "body": "male", "outfit": "olive green jacket and grey-blue trousers", "confidence": 2},
+  "C29": {"category": "armor", "body": "male", "outfit": "dark blue shirt with olive armored vest", "confidence": 3},
+  "C30": {"category": "face_head", "body": "female", "outfit": "none (face and black hair)", "confidence": 5},
+  "C31": {"category": "armor", "body": "male", "outfit": "dark brown jacket and khaki trousers", "confidence": 2},
+  "C32": {"category": "armor", "body": "male", "outfit": "olive green vest and dark green trousers", "confidence": 2},
+  "C33": {"category": "face_head", "body": "female", "outfit": "none (face and black hair)", "confidence": 5},
+  "C34": {"category": "commoner_clothing", "body": "either", "outfit": "rose-red jacket and grey-purple trousers", "confidence": 2},
+  "C35": {"category": "commoner_clothing", "body": "male", "outfit": "olive green shirt with brown leather belt", "confidence": 2},
+  "C36": {"category": "commoner_clothing", "body": "either", "outfit": "dark brown shirt and trousers", "confidence": 2}
+}

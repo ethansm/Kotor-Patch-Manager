@@ -1,0 +1,14 @@
+{
+"C25": {"category":"armor","body":"male","outfit":"dark grey/black plated armor, grey undersuit","confidence":3},
+"C26": {"category":"uniform","body":"male","outfit":"blue-purple coverall with brown boots, gloves","confidence":3},
+"C27": {"category":"commoner_clothing","body":"male","outfit":"dark jacket, tan shirt, blue jeans, pink sash","confidence":3},
+"C28": {"category":"commoner_clothing","body":"male","outfit":"olive green shirt, blue trousers, black shoes","confidence":4},
+"C29": {"category":"uniform","body":"male","outfit":"navy blue shirt with emblem, olive-brown vest","confidence":3},
+"C30": {"category":"face_head","body":"female","outfit":"pale female face, black hair","confidence":5},
+"C31": {"category":"commoner_clothing","body":"male","outfit":"brown jacket, orange trim, olive trousers, gloves","confidence":3},
+"C32": {"category":"uniform","body":"male","outfit":"olive-brown jacket and trousers, navy shirt","confidence":3},
+"C33": {"category":"face_head","body":"female","outfit":"female face, black hair, earpiece","confidence":5},
+"C34": {"category":"commoner_clothing","body":"male","outfit":"red-pink suede jacket, purple trousers, gloves","confidence":4},
+"C35": {"category":"commoner_clothing","body":"male","outfit":"olive green shirt and trousers, brown gloves","confidence":4},
+"C36": {"category":"commoner_clothing","body":"male","outfit":"dark brown wrap tunic, vest, trousers","confidence":3}
+}

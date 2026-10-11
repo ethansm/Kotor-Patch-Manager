@@ -1,0 +1,11 @@
+[
+{"tag": "Vula", "name": "Vula", "role": "named", "reason": "Unique proper name, unique conversation 203vula, rule says named."},
+{"tag": "waitress", "name": "Waitress", "role": "merchant", "reason": "Cantina service staff, bartender-like; unique conversation, not generic."},
+{"tag": "ws_salvager", "name": "Salvager", "role": "uniformed", "reason": "Salvage worker job title; keep default outfit despite shared conversation."},
+{"tag": "yavdjedim1", "name": "Dark Jedi", "role": "uniformed", "reason": "Dark Jedi is a Sith/Jedi role; rule-generic overridden, keep default."},
+{"tag": "yavdjedim1", "name": "Sith Ghost", "role": "uniformed", "reason": "Sith spirit; Sith role, not generic, keep default outfit."},
+{"tag": "yavdjedim2", "name": "Dark Jedi", "role": "uniformed", "reason": "Dark Jedi is a Sith/Jedi role; rule-generic overridden, keep default."},
+{"tag": "yavdjedim2", "name": "Sith Ghost", "role": "uniformed", "reason": "Sith spirit; Sith role, not generic, keep default outfit."},
+{"tag": "yavdjedim3", "name": "Dark Jedi", "role": "uniformed", "reason": "Dark Jedi is a Sith/Jedi role; rule-generic overridden, keep default."},
+{"tag": "yavdjedim3", "name": "Sith Ghost", "role": "uniformed", "reason": "Sith spirit; Sith role, not generic, keep default outfit."}
+]

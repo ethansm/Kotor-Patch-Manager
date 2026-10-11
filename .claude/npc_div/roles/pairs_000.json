@@ -1,0 +1,669 @@
+[
+{
+"tag": "203_batono",
+"name": "Batono",
+"n": 1,
+"rule": "named",
+"mods": [
+"203tel"
+],
+"conv": [
+"batono"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+616
+]
+},
+{
+"tag": "203_merc1",
+"name": "Mercenary{Wander 1}",
+"n": 1,
+"rule": "named",
+"mods": [
+"209tel"
+],
+"conv": [
+"200merc"
+],
+"conv_shared": 3,
+"plot": 0,
+"apps": [
+17
+]
+},
+{
+"tag": "203_merc2",
+"name": "Mercenary{Wander 2}",
+"n": 1,
+"rule": "named",
+"mods": [
+"209tel"
+],
+"conv": [
+"200merc"
+],
+"conv_shared": 3,
+"plot": 0,
+"apps": [
+591
+]
+},
+{
+"tag": "203_merc3",
+"name": "Mercenary{Wander 3}",
+"n": 1,
+"rule": "named",
+"mods": [
+"209tel"
+],
+"conv": [
+"200merc"
+],
+"conv_shared": 3,
+"plot": 0,
+"apps": [
+596
+]
+},
+{
+"tag": "207_benok",
+"name": "Benok{Exchange Lt}",
+"n": 1,
+"rule": "named",
+"mods": [
+"207tel"
+],
+"conv": [
+"benok"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+191
+]
+},
+{
+"tag": "231_cmerc03",
+"name": "Mercenary{Gunner}",
+"n": 2,
+"rule": "generic",
+"mods": [
+"231tel"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+592
+]
+},
+{
+"tag": "231_merc01",
+"name": "Mercenary{Grunt 01}",
+"n": 4,
+"rule": "generic",
+"mods": [
+"231tel"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+17
+]
+},
+{
+"tag": "231_merce02",
+"name": "Veteran Mercenary{Grenadier}",
+"n": 1,
+"rule": "generic",
+"mods": [
+"231tel"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+17
+]
+},
+{
+"tag": "231_merce03",
+"name": "Veteran Mercenary{Assault}",
+"n": 1,
+"rule": "generic",
+"mods": [
+"231tel"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+591
+]
+},
+{
+"tag": "602_receptionist",
+"name": "Receptionist",
+"n": 1,
+"rule": "named",
+"mods": [
+"602dan"
+],
+"conv": [
+"recept"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+191
+]
+},
+{
+"tag": "Aaida",
+"name": "Aaida",
+"n": 1,
+"rule": "named",
+"mods": [
+"302nar"
+],
+"conv": [
+"aaida"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+609
+]
+},
+{
+"tag": "al_twilek",
+"name": "{Alien Politics}Twi'lek",
+"n": 1,
+"rule": "named",
+"mods": [
+"502ond"
+],
+"conv": [
+"al_poli"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+619
+]
+},
+{
+"tag": "Bartender",
+"name": "{CA}Bartender",
+"n": 2,
+"rule": "named",
+"mods": [
+"306nar",
+"307nar"
+],
+"conv": [
+"bartend"
+],
+"conv_shared": 2,
+"plot": 0,
+"apps": [
+193
+]
+},
+{
+"tag": "beast_rider",
+"name": "Beast-rider",
+"n": 1,
+"rule": "named",
+"mods": [
+"501ond"
+],
+"conv": [
+"beastrdr"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+591
+]
+},
+{
+"tag": "bibfortuna1",
+"name": "Bib Sorte",
+"n": 1,
+"rule": "named",
+"mods": [
+"sley99ae"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+618
+]
+},
+{
+"tag": "Bik",
+"name": "{JDM}Bik",
+"n": 1,
+"rule": "named",
+"mods": [
+"301nar"
+],
+"conv": [
+"bik"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+450
+]
+},
+{
+"tag": "bloodfromstone1",
+"name": "Dacen",
+"n": 1,
+"rule": "named",
+"mods": [
+"302nar"
+],
+"conv": [
+"bloodfromstone1"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+596
+]
+},
+{
+"tag": "CommF",
+"name": "Telosian",
+"n": 1,
+"rule": "named",
+"mods": [
+"207tel"
+],
+"conv": [
+"200comf"
+],
+"conv_shared": 16,
+"plot": 0,
+"apps": [
+14
+]
+},
+{
+"tag": "CommF",
+"name": "{Sitting}Telosian",
+"n": 1,
+"rule": "generic",
+"mods": [
+"207tel"
+],
+"conv": [
+"200comf"
+],
+"conv_shared": 16,
+"plot": 0,
+"apps": [
+14
+]
+},
+{
+"tag": "CommM",
+"name": "{CA}Commoner{Nar Shaddaa Male}",
+"n": 2,
+"rule": "generic",
+"mods": [
+"301nar"
+],
+"conv": [
+"nscommal"
+],
+"conv_shared": 8,
+"plot": 0,
+"apps": [
+596
+]
+},
+{
+"tag": "CommM2",
+"name": "{CA}Commoner{Nar Shaddaa Male2}",
+"n": 1,
+"rule": "generic",
+"mods": [
+"301nar"
+],
+"conv": [
+"nscommal"
+],
+"conv_shared": 8,
+"plot": 0,
+"apps": [
+616
+]
+},
+{
+"tag": "CommM3",
+"name": "{CA}Commoner{Nar Shaddaa Male3}",
+"n": 2,
+"rule": "generic",
+"mods": [
+"301nar"
+],
+"conv": [
+"nscommal"
+],
+"conv_shared": 8,
+"plot": 0,
+"apps": [
+17
+]
+},
+{
+"tag": "CommMS1",
+"name": "{CA}Commoner{Nar Shaddaa MaleS1}",
+"n": 1,
+"rule": "generic",
+"mods": [
+"301nar"
+],
+"conv": [
+"nscommal"
+],
+"conv_shared": 8,
+"plot": 0,
+"apps": [
+191
+]
+},
+{
+"tag": "CommMS2",
+"name": "{CA}Commoner{Nar Shaddaa MaleS2}",
+"n": 2,
+"rule": "generic",
+"mods": [
+"301nar"
+],
+"conv": [
+"nscommal"
+],
+"conv_shared": 8,
+"plot": 0,
+"apps": [
+190
+]
+},
+{
+"tag": "common",
+"name": "Telosian{F01}",
+"n": 2,
+"rule": "generic",
+"mods": [
+"203tel"
+],
+"conv": [
+"200comf",
+"200comm"
+],
+"conv_shared": 16,
+"plot": 0,
+"apps": [
+590,
+593
+]
+},
+{
+"tag": "common",
+"name": "Telosian{F02}",
+"n": 3,
+"rule": "generic",
+"mods": [
+"203tel"
+],
+"conv": [
+"200comf",
+"200comm"
+],
+"conv_shared": 16,
+"plot": 0,
+"apps": [
+189,
+596,
+612
+]
+},
+{
+"tag": "commoner",
+"name": "Taris Citizen",
+"n": 1,
+"rule": "named",
+"mods": [
+"201tel"
+],
+"conv": [
+"taris"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+17
+]
+},
+{
+"tag": "commoner",
+"name": "Telosian{F01}",
+"n": 1,
+"rule": "generic",
+"mods": [
+"204tel"
+],
+"conv": [
+"200comf"
+],
+"conv_shared": 16,
+"plot": 0,
+"apps": [
+586
+]
+},
+{
+"tag": "commoner",
+"name": "Telosian{F02}",
+"n": 1,
+"rule": "generic",
+"mods": [
+"204tel"
+],
+"conv": [
+"200comf"
+],
+"conv_shared": 16,
+"plot": 0,
+"apps": [
+590
+]
+},
+{
+"tag": "commoner",
+"name": "Telosian{F03}",
+"n": 2,
+"rule": "generic",
+"mods": [
+"204tel"
+],
+"conv": [
+"200comf"
+],
+"conv_shared": 16,
+"plot": 0,
+"apps": [
+185
+]
+},
+{
+"tag": "commoner",
+"name": "Traveler{F1, Mobile}",
+"n": 1,
+"rule": "named",
+"mods": [
+"201tel"
+],
+"conv": [
+"201travf"
+],
+"conv_shared": 3,
+"plot": 0,
+"apps": [
+188
+]
+},
+{
+"tag": "commoner",
+"name": "Traveler{M1, Mobile}",
+"n": 1,
+"rule": "named",
+"mods": [
+"201tel"
+],
+"conv": [
+"201travm"
+],
+"conv_shared": 2,
+"plot": 0,
+"apps": [
+423
+]
+},
+{
+"tag": "corbrtndr1",
+"name": "Bartender",
+"n": 1,
+"rule": "plot",
+"mods": [
+"955cor"
+],
+"conv": [
+"corbrtndr1"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+416
+]
+},
+{
+"tag": "corgangboss1",
+"name": "Gang Lieutenant",
+"n": 4,
+"rule": "generic",
+"mods": [
+"959cor",
+"960cor",
+"965cor"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+417,
+450
+]
+},
+{
+"tag": "corgangboss2",
+"name": "Gang Lieutenant",
+"n": 1,
+"rule": "generic",
+"mods": [
+"965cor"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+621
+]
+},
+{
+"tag": "corganglt1",
+"name": "Gang Lieutenant",
+"n": 2,
+"rule": "generic",
+"mods": [
+"960cor"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+446
+]
+},
+{
+"tag": "corganglt2",
+"name": "Gang Lieutenant",
+"n": 2,
+"rule": "generic",
+"mods": [
+"960cor"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+621
+]
+},
+{
+"tag": "corgangundbss3",
+"name": "Gang Underboss",
+"n": 1,
+"rule": "generic",
+"mods": [
+"969cor"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+620
+]
+},
+{
+"tag": "cormerchantgen1",
+"name": "Caster",
+"n": 1,
+"rule": "plot",
+"mods": [
+"967cor"
+],
+"conv": [
+"cormerchantgen1"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+596
+]
+},
+{
+"tag": "correpcitz1",
+"name": "Citizen",
+"n": 1,
+"rule": "plot",
+"mods": [
+"973cor"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+596
+]
+}
+]

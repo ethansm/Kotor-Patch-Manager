@@ -1,0 +1,14 @@
+{
+  "commf35": {"layout_matches_ref": "yes", "category": "commoner_clothing", "body": "female", "outfit": "tan wrap top, olive vest, cream trousers", "confidence": 4},
+  "commm18": {"layout_matches_ref": "no", "category": "face_head", "body": "male", "outfit": "face and hair atlas, no clothing", "confidence": 5},
+  "commm13": {"layout_matches_ref": "yes", "category": "commoner_clothing", "body": "male", "outfit": "olive green jacket, blue trousers, dark shoes", "confidence": 4},
+  "commm16": {"layout_matches_ref": "yes", "category": "commoner_clothing", "body": "male", "outfit": "ragged blood-stained tan and rust clothes", "confidence": 3},
+  "commm17": {"layout_matches_ref": "no", "category": "face_head", "body": "male", "outfit": "face and black hair atlas", "confidence": 5},
+  "commf29": {"layout_matches_ref": "no", "category": "face_head", "body": "female", "outfit": "face and dark hair atlas", "confidence": 5},
+  "commf32": {"layout_matches_ref": "no", "category": "face_head", "body": "female", "outfit": "face and braided auburn hair atlas", "confidence": 5},
+  "commf11": {"layout_matches_ref": "yes", "category": "commoner_clothing", "body": "female", "outfit": "grey-blue wrap top, brown belt, olive trousers", "confidence": 5},
+  "commm32": {"layout_matches_ref": "no", "category": "armor", "body": "male", "outfit": "red plated armor with black parts", "confidence": 5},
+  "commm26": {"layout_matches_ref": "no", "category": "face_head", "body": "male", "outfit": "face and black hair atlas", "confidence": 5},
+  "commm25": {"layout_matches_ref": "no", "category": "face_head", "body": "male", "outfit": "dirty face, dark hair, scarf", "confidence": 5},
+  "commf26": {"layout_matches_ref": "no", "category": "face_head", "body": "female", "outfit": "face and brown hair atlas", "confidence": 5}
+}

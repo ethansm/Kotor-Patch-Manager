@@ -1,0 +1,14 @@
+{
+  "commm33": {"layout_matches_ref": "no", "category": "armor", "body": "male", "outfit": "grey plated armor suit", "confidence": 5},
+  "commm15": {"layout_matches_ref": "yes", "category": "commoner_clothing", "body": "male", "outfit": "olive green coat, blue-grey trousers", "confidence": 5},
+  "commf04": {"layout_matches_ref": "yes", "category": "commoner_clothing", "body": "female", "outfit": "dark teal jacket, olive skirt, brown boots", "confidence": 5},
+  "commm31": {"layout_matches_ref": "no", "category": "armor", "body": "male", "outfit": "white plated armor suit", "confidence": 5},
+  "commf12": {"layout_matches_ref": "yes", "category": "commoner_clothing", "body": "female", "outfit": "dark green jacket, olive skirt, mauve top", "confidence": 4},
+  "commf28": {"layout_matches_ref": "no", "category": "face_head", "body": "female", "outfit": "face and hair head map", "confidence": 5},
+  "commm30": {"layout_matches_ref": "no", "category": "robe", "body": "male", "outfit": "brown hooded robe with straps", "confidence": 4},
+  "commf20": {"layout_matches_ref": "no", "category": "face_head", "body": "female", "outfit": "face and dark hair head map", "confidence": 5},
+  "commm07": {"layout_matches_ref": "yes", "category": "commoner_clothing", "body": "male", "outfit": "grey-brown wrap shirt, grey trousers", "confidence": 5},
+  "commm19": {"layout_matches_ref": "no", "category": "face_head", "body": "male", "outfit": "bearded face and afro head map", "confidence": 5},
+  "commf27": {"layout_matches_ref": "no", "category": "face_head", "body": "female", "outfit": "pale face and blonde hair head map", "confidence": 5},
+  "commf17": {"layout_matches_ref": "unsure", "category": "blank_garbled", "body": "female", "outfit": "tattered patchwork rags, muddled pattern", "confidence": 2}
+}

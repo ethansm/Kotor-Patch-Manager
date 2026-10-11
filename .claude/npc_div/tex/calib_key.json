@@ -1,0 +1,257 @@
+{
+ "C01": {
+  "kind": "vanilla",
+  "name": "vanilla:n_commf11",
+  "truth": "commoner_clothing"
+ },
+ "C02": {
+  "kind": "decoy",
+  "name": "decoy:pfha01d1",
+  "truth": "face_head"
+ },
+ "C03": {
+  "kind": "decoy",
+  "name": "decoy:p_atrish01",
+  "truth": "face_head"
+ },
+ "C04": {
+  "kind": "decoy",
+  "name": "decoy:pfbc05",
+  "truth": "armor"
+ },
+ "C05": {
+  "kind": "decoy",
+  "name": "decoy:pmbd02",
+  "truth": "armor"
+ },
+ "C06": {
+  "kind": "decoy",
+  "name": "decoy:pfbc01",
+  "truth": "armor"
+ },
+ "C07": {
+  "kind": "decoy",
+  "name": "decoy:p_attnh1",
+  "truth": "face_head"
+ },
+ "C08": {
+  "kind": "vanilla",
+  "name": "vanilla:n_commm07",
+  "truth": "commoner_clothing"
+ },
+ "C09": {
+  "kind": "vanilla",
+  "name": "vanilla:n_commf02",
+  "truth": "commoner_clothing"
+ },
+ "C10": {
+  "kind": "decoy",
+  "name": "decoy:c_brith01",
+  "truth": "creature_alien_droid"
+ },
+ "C11": {
+  "kind": "decoy",
+  "name": "decoy:n_azkulh01",
+  "truth": "face_head"
+ },
+ "C12": {
+  "kind": "decoy",
+  "name": "decoy:pfha05",
+  "truth": "face_head"
+ },
+ "C13": {
+  "kind": "decoy",
+  "name": "decoy:n_czerkaoff01",
+  "truth": "uniform"
+ },
+ "C14": {
+  "kind": "decoy",
+  "name": "decoy:p_bao_durh",
+  "truth": "face_head"
+ },
+ "C15": {
+  "kind": "decoy",
+  "name": "decoy:n_child_m",
+  "truth": "creature_alien_droid"
+ },
+ "C16": {
+  "kind": "decoy",
+  "name": "decoy:pfha03",
+  "truth": "face_head"
+ },
+ "C17": {
+  "kind": "vanilla",
+  "name": "vanilla:n_commf01",
+  "truth": "commoner_clothing"
+ },
+ "C18": {
+  "kind": "decoy",
+  "name": "decoy:n_darkjlowm01",
+  "truth": "robe"
+ },
+ "C19": {
+  "kind": "vanilla",
+  "name": "vanilla:n_commm11",
+  "truth": "commoner_clothing"
+ },
+ "C20": {
+  "kind": "decoy",
+  "name": "decoy:pmbd05",
+  "truth": "armor"
+ },
+ "C21": {
+  "kind": "vanilla",
+  "name": "vanilla:n_commf05",
+  "truth": "commoner_clothing"
+ },
+ "C22": {
+  "kind": "vanilla",
+  "name": "vanilla:n_commf03",
+  "truth": "commoner_clothing"
+ },
+ "C23": {
+  "kind": "decoy",
+  "name": "decoy:pfbd02",
+  "truth": "armor"
+ },
+ "C24": {
+  "kind": "decoy",
+  "name": "decoy:pfbd05",
+  "truth": "armor"
+ },
+ "C25": {
+  "kind": "decoy",
+  "name": "decoy:n_darkjedim01",
+  "truth": "robe"
+ },
+ "C26": {
+  "kind": "vanilla",
+  "name": "vanilla:n_commf09",
+  "truth": "commoner_clothing"
+ },
+ "C27": {
+  "kind": "vanilla",
+  "name": "vanilla:n_commm06",
+  "truth": "commoner_clothing"
+ },
+ "C28": {
+  "kind": "vanilla",
+  "name": "vanilla:n_commm04",
+  "truth": "commoner_clothing"
+ },
+ "C29": {
+  "kind": "decoy",
+  "name": "decoy:pfbc09",
+  "truth": "armor"
+ },
+ "C30": {
+  "kind": "decoy",
+  "name": "decoy:pfha04",
+  "truth": "face_head"
+ },
+ "C31": {
+  "kind": "vanilla",
+  "name": "vanilla:n_commf10",
+  "truth": "commoner_clothing"
+ },
+ "C32": {
+  "kind": "decoy",
+  "name": "decoy:pmbc09",
+  "truth": "armor"
+ },
+ "C33": {
+  "kind": "decoy",
+  "name": "decoy:pfha01",
+  "truth": "face_head"
+ },
+ "C34": {
+  "kind": "vanilla",
+  "name": "vanilla:n_commm03",
+  "truth": "commoner_clothing"
+ },
+ "C35": {
+  "kind": "vanilla",
+  "name": "vanilla:n_commf08",
+  "truth": "commoner_clothing"
+ },
+ "C36": {
+  "kind": "vanilla",
+  "name": "vanilla:n_commf07",
+  "truth": "commoner_clothing"
+ },
+ "C37": {
+  "kind": "vanilla",
+  "name": "vanilla:n_commm05",
+  "truth": "commoner_clothing"
+ },
+ "C38": {
+  "kind": "vanilla",
+  "name": "vanilla:n_commm01",
+  "truth": "commoner_clothing"
+ },
+ "C39": {
+  "kind": "decoy",
+  "name": "decoy:n_darthband01",
+  "truth": "armor"
+ },
+ "C40": {
+  "kind": "vanilla",
+  "name": "vanilla:n_commm08",
+  "truth": "commoner_clothing"
+ },
+ "C41": {
+  "kind": "decoy",
+  "name": "decoy:pmbc01",
+  "truth": "armor"
+ },
+ "C42": {
+  "kind": "decoy",
+  "name": "decoy:p_bastilah04",
+  "truth": "face_head"
+ },
+ "C43": {
+  "kind": "decoy",
+  "name": "decoy:c_drdprot01",
+  "truth": "creature_alien_droid"
+ },
+ "C44": {
+  "kind": "vanilla",
+  "name": "vanilla:n_commm02",
+  "truth": "commoner_clothing"
+ },
+ "C45": {
+  "kind": "vanilla",
+  "name": "vanilla:n_commf04",
+  "truth": "commoner_clothing"
+ },
+ "C46": {
+  "kind": "vanilla",
+  "name": "vanilla:n_commf06",
+  "truth": "commoner_clothing"
+ },
+ "C47": {
+  "kind": "decoy",
+  "name": "decoy:c_dewback01",
+  "truth": "creature_alien_droid"
+ },
+ "C48": {
+  "kind": "vanilla",
+  "name": "vanilla:n_commm09",
+  "truth": "commoner_clothing"
+ },
+ "C49": {
+  "kind": "decoy",
+  "name": "decoy:c_drdmouse01",
+  "truth": "creature_alien_droid"
+ },
+ "C50": {
+  "kind": "decoy",
+  "name": "decoy:c_bantha01",
+  "truth": "creature_alien_droid"
+ },
+ "C51": {
+  "kind": "decoy",
+  "name": "decoy:pmbc05",
+  "truth": "armor"
+ }
+}

@@ -1,0 +1,14 @@
+{
+  "C37": {"category": "commoner_clothing", "body": "either", "outfit": "red tunic and red trousers", "confidence": 3},
+  "C38": {"category": "commoner_clothing", "body": "either", "outfit": "cream shirt and tan trousers", "confidence": 3},
+  "C39": {"category": "uniform", "body": "either", "outfit": "dark navy shirt and black trousers", "confidence": 2},
+  "C40": {"category": "commoner_clothing", "body": "either", "outfit": "dark green shirt and green trousers", "confidence": 3},
+  "C41": {"category": "armor", "body": "either", "outfit": "black trousers with brown leather harness", "confidence": 3},
+  "C42": {"category": "face_head", "body": "female", "outfit": "none, face and brown hair", "confidence": 5},
+  "C43": {"category": "creature_alien_droid", "body": "either", "outfit": "grey metal plating with cyan lens", "confidence": 4},
+  "C44": {"category": "commoner_clothing", "body": "either", "outfit": "grey shirt and white trousers with brown vest", "confidence": 2},
+  "C45": {"category": "commoner_clothing", "body": "either", "outfit": "dark teal shirt and green trousers", "confidence": 3},
+  "C46": {"category": "commoner_clothing", "body": "either", "outfit": "grey shirt and blue trousers with red top", "confidence": 3},
+  "C47": {"category": "creature_alien_droid", "body": "either", "outfit": "none, scaly green hide", "confidence": 5},
+  "C48": {"category": "commoner_clothing", "body": "either", "outfit": "light blue vest and pale blue trousers", "confidence": 4}
+}

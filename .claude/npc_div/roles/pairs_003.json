@@ -1,0 +1,676 @@
+[
+{
+"tag": "RefugeeM",
+"name": "Refugee{Old Man03}",
+"n": 1,
+"rule": "generic",
+"mods": [
+"302nar"
+],
+"conv": [
+"refugeem"
+],
+"conv_shared": 11,
+"plot": 0,
+"apps": [
+192
+]
+},
+{
+"tag": "RefugeeM",
+"name": "Refugee{Old Man}",
+"n": 2,
+"rule": "generic",
+"mods": [
+"302nar"
+],
+"conv": [
+"refugeem"
+],
+"conv_shared": 11,
+"plot": 0,
+"apps": [
+193
+]
+},
+{
+"tag": "Rutum",
+"name": "{CA}Rutum",
+"n": 1,
+"rule": "named",
+"mods": [
+"301nar"
+],
+"conv": [
+"rutum"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+190
+]
+},
+{
+"tag": "shen1",
+"name": "Shen",
+"n": 1,
+"rule": "plot",
+"mods": [
+"681dan"
+],
+"conv": [
+"shen1"
+],
+"conv_shared": 1,
+"plot": 1,
+"apps": [
+17
+]
+},
+{
+"tag": "shen2",
+"name": "Shen",
+"n": 1,
+"rule": "plot",
+"mods": [
+"682dan"
+],
+"conv": [
+"shen2"
+],
+"conv_shared": 1,
+"plot": 1,
+"apps": [
+17
+]
+},
+{
+"tag": "SittingAlien",
+"name": "{Sitting}Twi'lek",
+"n": 1,
+"rule": "generic",
+"mods": [
+"207tel"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+622
+]
+},
+{
+"tag": "SittingAlien2",
+"name": "{Sitting}Twi'lek",
+"n": 1,
+"rule": "generic",
+"mods": [
+"207tel"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+620
+]
+},
+{
+"tag": "SittingCommFemale",
+"name": "Patron{Sitter}",
+"n": 2,
+"rule": "generic",
+"mods": [
+"503ond"
+],
+"conv": [
+"patron"
+],
+"conv_shared": 4,
+"plot": 0,
+"apps": [
+588,
+609
+]
+},
+{
+"tag": "SittingCommMale",
+"name": "Patron{Sitter}",
+"n": 3,
+"rule": "generic",
+"mods": [
+"503ond"
+],
+"conv": [
+"pat_twif",
+"patron"
+],
+"conv_shared": 4,
+"plot": 0,
+"apps": [
+445,
+593
+]
+},
+{
+"tag": "slave_man",
+"name": "Slave",
+"n": 1,
+"rule": "named",
+"mods": [
+"748kor"
+],
+"conv": [
+"plead_human"
+],
+"conv_shared": 2,
+"plot": 0,
+"apps": [
+17
+]
+},
+{
+"tag": "slave_women",
+"name": "Slave",
+"n": 1,
+"rule": "named",
+"mods": [
+"748kor"
+],
+"conv": [
+"warning"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+14
+]
+},
+{
+"tag": "sleybrtndr1",
+"name": "Bartender",
+"n": 1,
+"rule": "plot",
+"mods": [
+"sley99ab"
+],
+"conv": [
+"sleybrtndr1"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+445
+]
+},
+{
+"tag": "sleyhassle1",
+"name": "Hutt Enforcer",
+"n": 1,
+"rule": "named",
+"mods": [
+"sley99aa"
+],
+"conv": [
+"sleyhassle1"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+450
+]
+},
+{
+"tag": "sleyhunter1",
+"name": "Elite Hutt Enforcer",
+"n": 1,
+"rule": "named",
+"mods": [
+"sley99ah"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+619
+]
+},
+{
+"tag": "sleyoverseer1",
+"name": "Overseer",
+"n": 1,
+"rule": "named",
+"mods": [
+"sley99aj"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+417
+]
+},
+{
+"tag": "sleyzerkwand4",
+"name": "Czerka Security",
+"n": 3,
+"rule": "generic",
+"mods": [
+"sley99ai"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+450
+]
+},
+{
+"tag": "Squik",
+"name": "{JDM}Squik",
+"n": 1,
+"rule": "generic",
+"mods": [
+"301nar"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+619
+]
+},
+{
+"tag": "SwoopMC",
+"name": "Race Master",
+"n": 1,
+"rule": "named",
+"mods": [
+"207tel"
+],
+"conv": [
+"207swpmc"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+416
+]
+},
+{
+"tag": "tat17_news_01",
+"name": "Anchorhead Tradesman",
+"n": 3,
+"rule": "generic",
+"mods": [
+"tatm17aa"
+],
+"conv": [
+"tat17_news_01"
+],
+"conv_shared": 5,
+"plot": 0,
+"apps": [
+617
+]
+},
+{
+"tag": "tat17_news_06",
+"name": "Anchorhead Tradesman",
+"n": 1,
+"rule": "generic",
+"mods": [
+"tatm17aa"
+],
+"conv": [
+"tat17_news_01"
+],
+"conv_shared": 5,
+"plot": 0,
+"apps": [
+191
+]
+},
+{
+"tag": "tat17_news_07",
+"name": "Anchorhead Tradesman",
+"n": 1,
+"rule": "generic",
+"mods": [
+"tatm17aa"
+],
+"conv": [
+"tat17_news_01"
+],
+"conv_shared": 5,
+"plot": 0,
+"apps": [
+616
+]
+},
+{
+"tag": "tatgang3",
+"name": "Gang Lieutenant",
+"n": 1,
+"rule": "generic",
+"mods": [
+"tatruins2"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+621
+]
+},
+{
+"tag": "TelF01",
+"name": "Telosian{F01}",
+"n": 2,
+"rule": "generic",
+"mods": [
+"202tel"
+],
+"conv": [
+"200comf"
+],
+"conv_shared": 16,
+"plot": 0,
+"apps": [
+610
+]
+},
+{
+"tag": "TelF01s",
+"name": "Telosian{F01s}",
+"n": 3,
+"rule": "generic",
+"mods": [
+"203tel",
+"204tel",
+"207tel"
+],
+"conv": [
+"200comf"
+],
+"conv_shared": 16,
+"plot": 0,
+"apps": [
+590,
+610,
+612
+]
+},
+{
+"tag": "TelF01s",
+"name": "Telosian{F02s}",
+"n": 1,
+"rule": "generic",
+"mods": [
+"204tel"
+],
+"conv": [
+"200comf"
+],
+"conv_shared": 16,
+"plot": 0,
+"apps": [
+14
+]
+},
+{
+"tag": "TelF02s",
+"name": "Telosian{F02}",
+"n": 1,
+"rule": "generic",
+"mods": [
+"203tel"
+],
+"conv": [
+"200comf"
+],
+"conv_shared": 16,
+"plot": 0,
+"apps": [
+590
+]
+},
+{
+"tag": "TelM01s",
+"name": "Telosian{M01s}",
+"n": 5,
+"rule": "generic",
+"mods": [
+"202tel",
+"207tel"
+],
+"conv": [
+"200comm"
+],
+"conv_shared": 14,
+"plot": 0,
+"apps": [
+17,
+594
+]
+},
+{
+"tag": "TelM02s",
+"name": "Telosian{M02s}",
+"n": 2,
+"rule": "generic",
+"mods": [
+"203tel"
+],
+"conv": [
+"200comm"
+],
+"conv_shared": 14,
+"plot": 0,
+"apps": [
+193
+]
+},
+{
+"tag": "TelM03s",
+"name": "Telosian{M03s}",
+"n": 2,
+"rule": "generic",
+"mods": [
+"207tel"
+],
+"conv": [
+"200comm"
+],
+"conv_shared": 14,
+"plot": 0,
+"apps": [
+424
+]
+},
+{
+"tag": "terena_guard",
+"name": "Militia{terena's guard}",
+"n": 1,
+"rule": "named",
+"mods": [
+"602dan"
+],
+"conv": [
+"g_militi"
+],
+"conv_shared": 3,
+"plot": 0,
+"apps": [
+592
+]
+},
+{
+"tag": "thug",
+"name": "Thug",
+"n": 4,
+"rule": "generic",
+"mods": [
+"512ond"
+],
+"conv": [
+"gen_thug"
+],
+"conv_shared": 8,
+"plot": 0,
+"apps": [
+191
+]
+},
+{
+"tag": "thug_beast",
+"name": "Beast-rider Thug",
+"n": 4,
+"rule": "generic",
+"mods": [
+"512ond"
+],
+"conv": [
+"gen_bst"
+],
+"conv_shared": 4,
+"plot": 0,
+"apps": [
+591
+]
+},
+{
+"tag": "thug_grenade",
+"name": "Thug Grenadier{Hostile}",
+"n": 2,
+"rule": "generic",
+"mods": [
+"512ond"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+17
+]
+},
+{
+"tag": "thug_gun",
+"name": "Thug{Hostile}",
+"n": 3,
+"rule": "generic",
+"mods": [
+"512ond"
+],
+"conv": [
+"d_thug"
+],
+"conv_shared": 7,
+"plot": 0,
+"apps": [
+190
+]
+},
+{
+"tag": "thug_melee",
+"name": "Thug{Hostile}",
+"n": 3,
+"rule": "generic",
+"mods": [
+"512ond"
+],
+"conv": [
+"d_thug"
+],
+"conv_shared": 7,
+"plot": 0,
+"apps": [
+595
+]
+},
+{
+"tag": "tolcressa",
+"name": "Chancellor Tol Cressa",
+"n": 1,
+"rule": "named",
+"mods": [
+"974cor"
+],
+"conv": [
+"tolcressa"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+424
+]
+},
+{
+"tag": "travf",
+"name": "Traveler{F1, Sit}",
+"n": 2,
+"rule": "named",
+"mods": [
+"201tel"
+],
+"conv": [
+"201travf"
+],
+"conv_shared": 3,
+"plot": 0,
+"apps": [
+188
+]
+},
+{
+"tag": "travm",
+"name": "Traveler{M1}",
+"n": 1,
+"rule": "named",
+"mods": [
+"201tel"
+],
+"conv": [
+"201travm"
+],
+"conv_shared": 2,
+"plot": 0,
+"apps": [
+423
+]
+},
+{
+"tag": "TwilekDomo",
+"name": "Twi'lek Domo",
+"n": 2,
+"rule": "named",
+"mods": [
+"306nar",
+"307nar"
+],
+"conv": [
+"twidomo"
+],
+"conv_shared": 2,
+"plot": 0,
+"apps": [
+606
+]
+},
+{
+"tag": "VeteranM",
+"name": "Veteran{Man}",
+"n": 2,
+"rule": "named",
+"mods": [
+"302nar"
+],
+"conv": [
+"veteranm"
+],
+"conv_shared": 2,
+"plot": 0,
+"apps": [
+349
+]
+}
+]

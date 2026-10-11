@@ -23,7 +23,9 @@
 [discovery]
 # Test-looking files that must not run, each with a reason, e.g.
 #   { path = "patch_manager_mods/foo/test_bar.py", reason = "needs the live game" }
-exclude = []
+exclude = [
+    { path = "scripts/test_npc_div_texture_sheets.py", reason = "needs numpy/Pillow: runs as suite:npc_div_texture_sheets with .venv" },
+]
 
 # ---- level-up parity (host g++ + stub windows.h; cwd-independent, exit 1 on failure) ----
 
@@ -277,3 +279,10 @@ cmd = ["python3", "-I", "fix_checks.py", "--self-test"]
 cwd = "$REPO/.claude/review/fix"
 requires = ["$REPO/.claude/review/fix/fix_checks.py"]
 timeout_s = 300
+
+[[suite]]
+name = "npc_div_texture_sheets"
+# Pure feature maths + sheet geometry for the npc-diversity texture labelling swarm (numpy/Pillow from .venv).
+cmd = ["python", "scripts/test_npc_div_texture_sheets.py"]
+python = "venv"
+timeout_s = 120

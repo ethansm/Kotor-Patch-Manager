@@ -1,0 +1,2059 @@
+{
+ "decoy:c_bantha01": {
+  "alpha_mean": 0.928,
+  "fmt": "tpc",
+  "gender": "either",
+  "h": 512,
+  "kind": "decoy",
+  "mean_rgb": [
+   73,
+   47,
+   32
+  ],
+  "skin_frac": 0.228,
+  "src": "pack",
+  "truth": "creature_alien_droid",
+  "uv_corr": 0.046,
+  "w": 512
+ },
+ "decoy:c_brith01": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "either",
+  "h": 64,
+  "kind": "decoy",
+  "mean_rgb": [
+   131,
+   128,
+   123
+  ],
+  "skin_frac": 0.007,
+  "src": "pack",
+  "truth": "creature_alien_droid",
+  "uv_corr": 0.019,
+  "w": 64
+ },
+ "decoy:c_dewback01": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "either",
+  "h": 256,
+  "kind": "decoy",
+  "mean_rgb": [
+   90,
+   74,
+   45
+  ],
+  "skin_frac": 0.271,
+  "src": "pack",
+  "truth": "creature_alien_droid",
+  "uv_corr": 0.018,
+  "w": 256
+ },
+ "decoy:c_drdmouse01": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "either",
+  "h": 512,
+  "kind": "decoy",
+  "mean_rgb": [
+   41,
+   38,
+   36
+  ],
+  "skin_frac": 0.004,
+  "src": "pack",
+  "truth": "creature_alien_droid",
+  "uv_corr": 0.025,
+  "w": 512
+ },
+ "decoy:c_drdprot01": {
+  "alpha_mean": 0.831,
+  "fmt": "tpc",
+  "gender": "either",
+  "h": 256,
+  "kind": "decoy",
+  "mean_rgb": [
+   95,
+   95,
+   98
+  ],
+  "skin_frac": 0.021,
+  "src": "pack",
+  "truth": "creature_alien_droid",
+  "uv_corr": 0.046,
+  "w": 256
+ },
+ "decoy:n_azkulh01": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "either",
+  "h": 512,
+  "kind": "decoy",
+  "mean_rgb": [
+   104,
+   84,
+   74
+  ],
+  "skin_frac": 0.496,
+  "src": "pack",
+  "truth": "face_head",
+  "uv_corr": 0.021,
+  "w": 512
+ },
+ "decoy:n_child_m": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "male",
+  "h": 256,
+  "kind": "decoy",
+  "mean_rgb": [
+   146,
+   105,
+   91
+  ],
+  "skin_frac": 0.734,
+  "src": "pack",
+  "truth": "creature_alien_droid",
+  "uv_corr": -0.02,
+  "w": 256
+ },
+ "decoy:n_czerkaoff01": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "male",
+  "h": 512,
+  "kind": "decoy",
+  "mean_rgb": [
+   79,
+   61,
+   39
+  ],
+  "skin_frac": 0.293,
+  "src": "pack",
+  "truth": "uniform",
+  "uv_corr": -0.006,
+  "w": 512
+ },
+ "decoy:n_darkjedim01": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "male",
+  "h": 512,
+  "kind": "decoy",
+  "mean_rgb": [
+   56,
+   51,
+   55
+  ],
+  "skin_frac": 0.031,
+  "src": "pack",
+  "truth": "robe",
+  "uv_corr": 0.08,
+  "w": 512
+ },
+ "decoy:n_darkjlowm01": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "male",
+  "h": 512,
+  "kind": "decoy",
+  "mean_rgb": [
+   46,
+   45,
+   44
+  ],
+  "skin_frac": 0.005,
+  "src": "pack",
+  "truth": "robe",
+  "uv_corr": 0.027,
+  "w": 512
+ },
+ "decoy:n_darthband01": {
+  "alpha_mean": 0.988,
+  "fmt": "tpc",
+  "gender": "male",
+  "h": 512,
+  "kind": "decoy",
+  "mean_rgb": [
+   52,
+   51,
+   53
+  ],
+  "skin_frac": 0.093,
+  "src": "pack",
+  "truth": "armor",
+  "uv_corr": 0.035,
+  "w": 512
+ },
+ "decoy:p_atrish01": {
+  "alpha_mean": 0.995,
+  "fmt": "tpc",
+  "gender": "either",
+  "h": 512,
+  "kind": "decoy",
+  "mean_rgb": [
+   133,
+   118,
+   109
+  ],
+  "skin_frac": 0.392,
+  "src": "pack",
+  "truth": "face_head",
+  "uv_corr": 0.032,
+  "w": 512
+ },
+ "decoy:p_attnh1": {
+  "alpha_mean": 0.975,
+  "fmt": "tpc",
+  "gender": "either",
+  "h": 512,
+  "kind": "decoy",
+  "mean_rgb": [
+   87,
+   62,
+   50
+  ],
+  "skin_frac": 0.406,
+  "src": "pack",
+  "truth": "face_head",
+  "uv_corr": 0.066,
+  "w": 512
+ },
+ "decoy:p_bao_durh": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "either",
+  "h": 512,
+  "kind": "decoy",
+  "mean_rgb": [
+   124,
+   99,
+   81
+  ],
+  "skin_frac": 0.653,
+  "src": "pack",
+  "truth": "face_head",
+  "uv_corr": 0.052,
+  "w": 512
+ },
+ "decoy:p_bastilah04": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "female",
+  "h": 256,
+  "kind": "decoy",
+  "mean_rgb": [
+   97,
+   70,
+   57
+  ],
+  "skin_frac": 0.414,
+  "src": "pack",
+  "truth": "face_head",
+  "uv_corr": 0.025,
+  "w": 256
+ },
+ "decoy:pfbc01": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "female",
+  "h": 512,
+  "kind": "decoy",
+  "mean_rgb": [
+   86,
+   61,
+   52
+  ],
+  "skin_frac": 0.355,
+  "src": "pack",
+  "truth": "armor",
+  "uv_corr": -0.007,
+  "w": 512
+ },
+ "decoy:pfbc05": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "female",
+  "h": 512,
+  "kind": "decoy",
+  "mean_rgb": [
+   57,
+   51,
+   52
+  ],
+  "skin_frac": 0.053,
+  "src": "pack",
+  "truth": "armor",
+  "uv_corr": 0.056,
+  "w": 512
+ },
+ "decoy:pfbc09": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "female",
+  "h": 512,
+  "kind": "decoy",
+  "mean_rgb": [
+   34,
+   33,
+   27
+  ],
+  "skin_frac": 0.031,
+  "src": "pack",
+  "truth": "armor",
+  "uv_corr": 0.063,
+  "w": 512
+ },
+ "decoy:pfbd02": {
+  "alpha_mean": 0.982,
+  "fmt": "tpc",
+  "gender": "female",
+  "h": 512,
+  "kind": "decoy",
+  "mean_rgb": [
+   116,
+   36,
+   27
+  ],
+  "skin_frac": 0.249,
+  "src": "pack",
+  "truth": "armor",
+  "uv_corr": 0.018,
+  "w": 512
+ },
+ "decoy:pfbd05": {
+  "alpha_mean": 0.982,
+  "fmt": "tpc",
+  "gender": "female",
+  "h": 512,
+  "kind": "decoy",
+  "mean_rgb": [
+   85,
+   63,
+   39
+  ],
+  "skin_frac": 0.144,
+  "src": "pack",
+  "truth": "armor",
+  "uv_corr": 0.068,
+  "w": 512
+ },
+ "decoy:pfha01": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "female",
+  "h": 512,
+  "kind": "decoy",
+  "mean_rgb": [
+   96,
+   70,
+   58
+  ],
+  "skin_frac": 0.547,
+  "src": "pack",
+  "truth": "face_head",
+  "uv_corr": 0.034,
+  "w": 512
+ },
+ "decoy:pfha01d1": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "female",
+  "h": 512,
+  "kind": "decoy",
+  "mean_rgb": [
+   99,
+   78,
+   69
+  ],
+  "skin_frac": 0.52,
+  "src": "pack",
+  "truth": "face_head",
+  "uv_corr": 0.029,
+  "w": 512
+ },
+ "decoy:pfha03": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "female",
+  "h": 512,
+  "kind": "decoy",
+  "mean_rgb": [
+   105,
+   72,
+   51
+  ],
+  "skin_frac": 0.443,
+  "src": "pack",
+  "truth": "face_head",
+  "uv_corr": 0.002,
+  "w": 512
+ },
+ "decoy:pfha04": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "female",
+  "h": 512,
+  "kind": "decoy",
+  "mean_rgb": [
+   111,
+   83,
+   61
+  ],
+  "skin_frac": 0.56,
+  "src": "pack",
+  "truth": "face_head",
+  "uv_corr": 0.087,
+  "w": 512
+ },
+ "decoy:pfha05": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "female",
+  "h": 512,
+  "kind": "decoy",
+  "mean_rgb": [
+   113,
+   85,
+   67
+  ],
+  "skin_frac": 0.512,
+  "src": "pack",
+  "truth": "face_head",
+  "uv_corr": -0.012,
+  "w": 512
+ },
+ "decoy:pmbc01": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "male",
+  "h": 512,
+  "kind": "decoy",
+  "mean_rgb": [
+   84,
+   60,
+   48
+  ],
+  "skin_frac": 0.36,
+  "src": "pack",
+  "truth": "armor",
+  "uv_corr": 0.024,
+  "w": 512
+ },
+ "decoy:pmbc05": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "male",
+  "h": 512,
+  "kind": "decoy",
+  "mean_rgb": [
+   49,
+   45,
+   45
+  ],
+  "skin_frac": 0.028,
+  "src": "pack",
+  "truth": "armor",
+  "uv_corr": 0.021,
+  "w": 512
+ },
+ "decoy:pmbc09": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "male",
+  "h": 512,
+  "kind": "decoy",
+  "mean_rgb": [
+   36,
+   32,
+   17
+  ],
+  "skin_frac": 0.028,
+  "src": "pack",
+  "truth": "armor",
+  "uv_corr": -0.025,
+  "w": 512
+ },
+ "decoy:pmbd02": {
+  "alpha_mean": 0.973,
+  "fmt": "tpc",
+  "gender": "male",
+  "h": 512,
+  "kind": "decoy",
+  "mean_rgb": [
+   109,
+   31,
+   24
+  ],
+  "skin_frac": 0.222,
+  "src": "pack",
+  "truth": "armor",
+  "uv_corr": 0.02,
+  "w": 512
+ },
+ "decoy:pmbd05": {
+  "alpha_mean": 0.959,
+  "fmt": "tpc",
+  "gender": "male",
+  "h": 512,
+  "kind": "decoy",
+  "mean_rgb": [
+   79,
+   59,
+   31
+  ],
+  "skin_frac": 0.083,
+  "src": "pack",
+  "truth": "armor",
+  "uv_corr": -0.009,
+  "w": 512
+ },
+ "n_commf01": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "female",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   91,
+   69,
+   48
+  ],
+  "skin_frac": 0.554,
+  "src": "N_CommF01.tpc",
+  "truth": null,
+  "uv_corr": 0.635,
+  "w": 1024
+ },
+ "n_commf02": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "female",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   110,
+   97,
+   72
+  ],
+  "skin_frac": 0.177,
+  "src": "N_CommF02.tpc",
+  "truth": null,
+  "uv_corr": 0.499,
+  "w": 1024
+ },
+ "n_commf03": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "female",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   85,
+   77,
+   63
+  ],
+  "skin_frac": 0.052,
+  "src": "N_CommF03.tpc",
+  "truth": null,
+  "uv_corr": 0.665,
+  "w": 1024
+ },
+ "n_commf04": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "female",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   66,
+   61,
+   55
+  ],
+  "skin_frac": 0.084,
+  "src": "N_CommF04.tpc",
+  "truth": null,
+  "uv_corr": 0.469,
+  "w": 1024
+ },
+ "n_commf05": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "female",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   74,
+   48,
+   21
+  ],
+  "skin_frac": 0.106,
+  "src": "N_CommF05.tpc",
+  "truth": null,
+  "uv_corr": 0.503,
+  "w": 1024
+ },
+ "n_commf06": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "female",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   103,
+   89,
+   88
+  ],
+  "skin_frac": 0.119,
+  "src": "N_CommF06.tpc",
+  "truth": null,
+  "uv_corr": 0.516,
+  "w": 1024
+ },
+ "n_commf07": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "female",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   44,
+   36,
+   29
+  ],
+  "skin_frac": 0.017,
+  "src": "N_CommF07.tpc",
+  "truth": null,
+  "uv_corr": 0.592,
+  "w": 1024
+ },
+ "n_commf08": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "female",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   88,
+   78,
+   50
+  ],
+  "skin_frac": 0.071,
+  "src": "N_CommF08.tpc",
+  "truth": null,
+  "uv_corr": 0.649,
+  "w": 1024
+ },
+ "n_commf09": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "female",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   65,
+   64,
+   87
+  ],
+  "skin_frac": 0.003,
+  "src": "N_CommF09.tpc",
+  "truth": null,
+  "uv_corr": 0.496,
+  "w": 1024
+ },
+ "n_commf10": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "female",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   74,
+   60,
+   39
+  ],
+  "skin_frac": 0.08,
+  "src": "N_CommF10.tpc",
+  "truth": null,
+  "uv_corr": 0.598,
+  "w": 1024
+ },
+ "n_commf11": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "female",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   39,
+   37,
+   35
+  ],
+  "skin_frac": 0.0,
+  "src": "N_CommF11.tpc",
+  "truth": null,
+  "uv_corr": 0.61,
+  "w": 1024
+ },
+ "n_commf12": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "female",
+  "h": 512,
+  "kind": "pool",
+  "mean_rgb": [
+   69,
+   63,
+   57
+  ],
+  "skin_frac": 0.139,
+  "src": "N_CommF12.tpc",
+  "truth": null,
+  "uv_corr": 0.446,
+  "w": 512
+ },
+ "n_commf13": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "female",
+  "h": 512,
+  "kind": "pool",
+  "mean_rgb": [
+   107,
+   90,
+   89
+  ],
+  "skin_frac": 0.171,
+  "src": "N_CommF13.tpc",
+  "truth": null,
+  "uv_corr": 0.458,
+  "w": 512
+ },
+ "n_commf14": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "female",
+  "h": 512,
+  "kind": "pool",
+  "mean_rgb": [
+   92,
+   80,
+   52
+  ],
+  "skin_frac": 0.122,
+  "src": "N_CommF14.tpc",
+  "truth": null,
+  "uv_corr": 0.587,
+  "w": 512
+ },
+ "n_commf15": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "female",
+  "h": 512,
+  "kind": "pool",
+  "mean_rgb": [
+   68,
+   64,
+   58
+  ],
+  "skin_frac": 0.103,
+  "src": "N_CommF15.tpc",
+  "truth": null,
+  "uv_corr": 0.432,
+  "w": 512
+ },
+ "n_commf16": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "female",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   74,
+   60,
+   39
+  ],
+  "skin_frac": 0.08,
+  "src": "N_CommF16.tpc",
+  "truth": null,
+  "uv_corr": 0.598,
+  "w": 1024
+ },
+ "n_commf17": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "female",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   54,
+   46,
+   42
+  ],
+  "skin_frac": 0.038,
+  "src": "N_CommF17.tpc",
+  "truth": null,
+  "uv_corr": 0.204,
+  "w": 1024
+ },
+ "n_commf18": {
+  "alpha_mean": 0.999,
+  "fmt": "3",
+  "gender": "female",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   139,
+   99,
+   68
+  ],
+  "skin_frac": 0.614,
+  "src": "N_CommF18.tpc",
+  "truth": null,
+  "uv_corr": 0.025,
+  "w": 1024
+ },
+ "n_commf19": {
+  "alpha_mean": 0.999,
+  "fmt": "3",
+  "gender": "female",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   138,
+   89,
+   56
+  ],
+  "skin_frac": 0.61,
+  "src": "N_CommF19.tpc",
+  "truth": null,
+  "uv_corr": -0.013,
+  "w": 1024
+ },
+ "n_commf20": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "female",
+  "h": 2048,
+  "kind": "pool",
+  "mean_rgb": [
+   79,
+   47,
+   34
+  ],
+  "skin_frac": 0.566,
+  "src": "N_CommF20.tpc",
+  "truth": null,
+  "uv_corr": 0.037,
+  "w": 2048
+ },
+ "n_commf21": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "female",
+  "h": 2048,
+  "kind": "pool",
+  "mean_rgb": [
+   98,
+   65,
+   48
+  ],
+  "skin_frac": 0.61,
+  "src": "N_CommF21.tpc",
+  "truth": null,
+  "uv_corr": 0.028,
+  "w": 2048
+ },
+ "n_commf22": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "female",
+  "h": 2048,
+  "kind": "pool",
+  "mean_rgb": [
+   165,
+   116,
+   83
+  ],
+  "skin_frac": 0.663,
+  "src": "N_CommF22.tpc",
+  "truth": null,
+  "uv_corr": 0.029,
+  "w": 2048
+ },
+ "n_commf23": {
+  "alpha_mean": 0.999,
+  "fmt": "3",
+  "gender": "female",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   135,
+   98,
+   66
+  ],
+  "skin_frac": 0.581,
+  "src": "N_CommF23.tpc",
+  "truth": null,
+  "uv_corr": 0.024,
+  "w": 1024
+ },
+ "n_commf24": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "female",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   67,
+   30,
+   21
+  ],
+  "skin_frac": 0.178,
+  "src": "N_CommF24.tpc",
+  "truth": null,
+  "uv_corr": 0.007,
+  "w": 1024
+ },
+ "n_commf25": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "female",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   73,
+   40,
+   31
+  ],
+  "skin_frac": 0.352,
+  "src": "N_CommF25.tpc",
+  "truth": null,
+  "uv_corr": 0.032,
+  "w": 1024
+ },
+ "n_commf26": {
+  "alpha_mean": 0.998,
+  "fmt": "3",
+  "gender": "female",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   160,
+   109,
+   82
+  ],
+  "skin_frac": 0.751,
+  "src": "N_CommF26.tpc",
+  "truth": null,
+  "uv_corr": 0.016,
+  "w": 1024
+ },
+ "n_commf27": {
+  "alpha_mean": 0.998,
+  "fmt": "3",
+  "gender": "female",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   194,
+   143,
+   113
+  ],
+  "skin_frac": 0.946,
+  "src": "N_CommF27.tpc",
+  "truth": null,
+  "uv_corr": 0.023,
+  "w": 1024
+ },
+ "n_commf28": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "female",
+  "h": 2048,
+  "kind": "pool",
+  "mean_rgb": [
+   96,
+   73,
+   49
+  ],
+  "skin_frac": 0.515,
+  "src": "N_CommF28.tpc",
+  "truth": null,
+  "uv_corr": -0.024,
+  "w": 2048
+ },
+ "n_commf29": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "female",
+  "h": 2048,
+  "kind": "pool",
+  "mean_rgb": [
+   59,
+   31,
+   22
+  ],
+  "skin_frac": 0.342,
+  "src": "N_CommF29.tpc",
+  "truth": null,
+  "uv_corr": -0.033,
+  "w": 2048
+ },
+ "n_commf30": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "female",
+  "h": 2048,
+  "kind": "pool",
+  "mean_rgb": [
+   93,
+   57,
+   43
+  ],
+  "skin_frac": 0.502,
+  "src": "N_CommF30.tpc",
+  "truth": null,
+  "uv_corr": -0.016,
+  "w": 2048
+ },
+ "n_commf31": {
+  "alpha_mean": 0.999,
+  "fmt": "3",
+  "gender": "female",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   133,
+   93,
+   70
+  ],
+  "skin_frac": 0.624,
+  "src": "N_CommF31.tpc",
+  "truth": null,
+  "uv_corr": 0.106,
+  "w": 1024
+ },
+ "n_commf32": {
+  "alpha_mean": 0.999,
+  "fmt": "3",
+  "gender": "female",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   148,
+   104,
+   77
+  ],
+  "skin_frac": 0.653,
+  "src": "N_CommF32.tpc",
+  "truth": null,
+  "uv_corr": 0.012,
+  "w": 1024
+ },
+ "n_commf33": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "female",
+  "h": 2048,
+  "kind": "pool",
+  "mean_rgb": [
+   128,
+   105,
+   86
+  ],
+  "skin_frac": 0.615,
+  "src": "N_CommF33.tpc",
+  "truth": null,
+  "uv_corr": 0.028,
+  "w": 2048
+ },
+ "n_commf34": {
+  "alpha_mean": 0.999,
+  "fmt": "3",
+  "gender": "female",
+  "h": 2048,
+  "kind": "pool",
+  "mean_rgb": [
+   89,
+   85,
+   90
+  ],
+  "skin_frac": 0.006,
+  "src": "N_CommF34.tpc",
+  "truth": null,
+  "uv_corr": 0.027,
+  "w": 2048
+ },
+ "n_commf35": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "female",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   122,
+   101,
+   65
+  ],
+  "skin_frac": 0.59,
+  "src": "N_CommF35.tpc",
+  "truth": null,
+  "uv_corr": 0.438,
+  "w": 1024
+ },
+ "n_commm01": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "male",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   106,
+   85,
+   58
+  ],
+  "skin_frac": 0.61,
+  "src": "N_CommM01.tpc",
+  "truth": null,
+  "uv_corr": 0.676,
+  "w": 1024
+ },
+ "n_commm02": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "male",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   121,
+   105,
+   100
+  ],
+  "skin_frac": 0.324,
+  "src": "N_CommM02.tpc",
+  "truth": null,
+  "uv_corr": 0.506,
+  "w": 1024
+ },
+ "n_commm03": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "male",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   98,
+   66,
+   69
+  ],
+  "skin_frac": 0.466,
+  "src": "N_CommM03.tpc",
+  "truth": null,
+  "uv_corr": 0.496,
+  "w": 1024
+ },
+ "n_commm04": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "male",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   72,
+   73,
+   59
+  ],
+  "skin_frac": 0.019,
+  "src": "N_CommM04.tpc",
+  "truth": null,
+  "uv_corr": 0.449,
+  "w": 1024
+ },
+ "n_commm05": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "male",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   83,
+   48,
+   31
+  ],
+  "skin_frac": 0.092,
+  "src": "N_CommM05.tpc",
+  "truth": null,
+  "uv_corr": 0.598,
+  "w": 1024
+ },
+ "n_commm06": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "male",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   59,
+   57,
+   52
+  ],
+  "skin_frac": 0.054,
+  "src": "N_CommM06.tpc",
+  "truth": null,
+  "uv_corr": 0.535,
+  "w": 1024
+ },
+ "n_commm07": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "male",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   43,
+   41,
+   35
+  ],
+  "skin_frac": 0.0,
+  "src": "N_CommM07.tpc",
+  "truth": null,
+  "uv_corr": 0.649,
+  "w": 1024
+ },
+ "n_commm08": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "male",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   53,
+   52,
+   38
+  ],
+  "skin_frac": 0.098,
+  "src": "N_CommM08.tpc",
+  "truth": null,
+  "uv_corr": 0.577,
+  "w": 1024
+ },
+ "n_commm09": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "male",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   68,
+   73,
+   77
+  ],
+  "skin_frac": 0.053,
+  "src": "N_CommM09.tpc",
+  "truth": null,
+  "uv_corr": 0.59,
+  "w": 1024
+ },
+ "n_commm10": {
+  "alpha_mean": 1.0,
+  "fmt": "tga",
+  "gender": "male",
+  "h": 512,
+  "kind": "pool",
+  "mean_rgb": [
+   62,
+   51,
+   33
+  ],
+  "skin_frac": 0.057,
+  "src": "N_CommM10.tga",
+  "truth": null,
+  "uv_corr": 0.484,
+  "w": 512
+ },
+ "n_commm11": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "male",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   60,
+   53,
+   40
+  ],
+  "skin_frac": 0.042,
+  "src": "N_CommM11.tpc",
+  "truth": null,
+  "uv_corr": 0.648,
+  "w": 1024
+ },
+ "n_commm12": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "male",
+  "h": 512,
+  "kind": "pool",
+  "mean_rgb": [
+   104,
+   67,
+   69
+  ],
+  "skin_frac": 0.535,
+  "src": "N_CommM12.tpc",
+  "truth": null,
+  "uv_corr": 0.45,
+  "w": 512
+ },
+ "n_commm13": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "male",
+  "h": 512,
+  "kind": "pool",
+  "mean_rgb": [
+   78,
+   73,
+   58
+  ],
+  "skin_frac": 0.088,
+  "src": "N_CommM13.tpc",
+  "truth": null,
+  "uv_corr": 0.433,
+  "w": 512
+ },
+ "n_commm14": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "male",
+  "h": 512,
+  "kind": "pool",
+  "mean_rgb": [
+   59,
+   52,
+   36
+  ],
+  "skin_frac": 0.171,
+  "src": "N_CommM14.tpc",
+  "truth": null,
+  "uv_corr": 0.565,
+  "w": 512
+ },
+ "n_commm15": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "male",
+  "h": 512,
+  "kind": "pool",
+  "mean_rgb": [
+   72,
+   73,
+   60
+  ],
+  "skin_frac": 0.02,
+  "src": "N_CommM15.tpc",
+  "truth": null,
+  "uv_corr": 0.431,
+  "w": 512
+ },
+ "n_commm16": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "male",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   78,
+   59,
+   40
+  ],
+  "skin_frac": 0.276,
+  "src": "N_CommM16.tpc",
+  "truth": null,
+  "uv_corr": 0.269,
+  "w": 1024
+ },
+ "n_commm17": {
+  "alpha_mean": 0.998,
+  "fmt": "3",
+  "gender": "male",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   90,
+   57,
+   39
+  ],
+  "skin_frac": 0.537,
+  "src": "N_CommM17.tpc",
+  "truth": null,
+  "uv_corr": 0.013,
+  "w": 1024
+ },
+ "n_commm18": {
+  "alpha_mean": 0.999,
+  "fmt": "3",
+  "gender": "male",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   114,
+   58,
+   42
+  ],
+  "skin_frac": 0.633,
+  "src": "N_CommM18.tpc",
+  "truth": null,
+  "uv_corr": 0.026,
+  "w": 1024
+ },
+ "n_commm19": {
+  "alpha_mean": 0.999,
+  "fmt": "3",
+  "gender": "male",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   84,
+   40,
+   29
+  ],
+  "skin_frac": 0.455,
+  "src": "N_CommM19.tpc",
+  "truth": null,
+  "uv_corr": 0.029,
+  "w": 1024
+ },
+ "n_commm20": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "male",
+  "h": 2048,
+  "kind": "pool",
+  "mean_rgb": [
+   140,
+   103,
+   74
+  ],
+  "skin_frac": 0.676,
+  "src": "N_CommM20.tpc",
+  "truth": null,
+  "uv_corr": 0.037,
+  "w": 2048
+ },
+ "n_commm21": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "male",
+  "h": 2048,
+  "kind": "pool",
+  "mean_rgb": [
+   135,
+   90,
+   69
+  ],
+  "skin_frac": 0.663,
+  "src": "N_CommM21.tpc",
+  "truth": null,
+  "uv_corr": 0.038,
+  "w": 2048
+ },
+ "n_commm22": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "male",
+  "h": 2048,
+  "kind": "pool",
+  "mean_rgb": [
+   160,
+   111,
+   90
+  ],
+  "skin_frac": 0.685,
+  "src": "N_CommM22.tpc",
+  "truth": null,
+  "uv_corr": 0.048,
+  "w": 2048
+ },
+ "n_commm23": {
+  "alpha_mean": 0.999,
+  "fmt": "3",
+  "gender": "male",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   127,
+   87,
+   83
+  ],
+  "skin_frac": 0.631,
+  "src": "N_CommM23.tpc",
+  "truth": null,
+  "uv_corr": 0.036,
+  "w": 1024
+ },
+ "n_commm24": {
+  "alpha_mean": 0.999,
+  "fmt": "3",
+  "gender": "male",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   122,
+   75,
+   59
+  ],
+  "skin_frac": 0.586,
+  "src": "N_CommM24.tpc",
+  "truth": null,
+  "uv_corr": 0.04,
+  "w": 1024
+ },
+ "n_commm25": {
+  "alpha_mean": 0.999,
+  "fmt": "3",
+  "gender": "male",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   70,
+   49,
+   44
+  ],
+  "skin_frac": 0.264,
+  "src": "N_CommM25.tpc",
+  "truth": null,
+  "uv_corr": 0.023,
+  "w": 1024
+ },
+ "n_commm26": {
+  "alpha_mean": 0.999,
+  "fmt": "3",
+  "gender": "male",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   124,
+   90,
+   63
+  ],
+  "skin_frac": 0.7,
+  "src": "N_CommM26.tpc",
+  "truth": null,
+  "uv_corr": -0.027,
+  "w": 1024
+ },
+ "n_commm27": {
+  "alpha_mean": 0.999,
+  "fmt": "3",
+  "gender": "male",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   115,
+   79,
+   66
+  ],
+  "skin_frac": 0.61,
+  "src": "N_CommM27.tpc",
+  "truth": null,
+  "uv_corr": 0.038,
+  "w": 1024
+ },
+ "n_commm28": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "male",
+  "h": 2048,
+  "kind": "pool",
+  "mean_rgb": [
+   113,
+   99,
+   82
+  ],
+  "skin_frac": 0.453,
+  "src": "N_CommM28.tpc",
+  "truth": null,
+  "uv_corr": -0.087,
+  "w": 2048
+ },
+ "n_commm29": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "male",
+  "h": 2048,
+  "kind": "pool",
+  "mean_rgb": [
+   57,
+   62,
+   67
+  ],
+  "skin_frac": 0.0,
+  "src": "N_CommM29.tpc",
+  "truth": null,
+  "uv_corr": -0.083,
+  "w": 2048
+ },
+ "n_commm30": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "male",
+  "h": 2048,
+  "kind": "pool",
+  "mean_rgb": [
+   64,
+   45,
+   31
+  ],
+  "skin_frac": 0.202,
+  "src": "N_CommM30.tpc",
+  "truth": null,
+  "uv_corr": -0.035,
+  "w": 2048
+ },
+ "n_commm31": {
+  "alpha_mean": 0.639,
+  "fmt": "3",
+  "gender": "male",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   134,
+   135,
+   135
+  ],
+  "skin_frac": 0.001,
+  "src": "N_CommM31.tpc",
+  "truth": null,
+  "uv_corr": 0.044,
+  "w": 1024
+ },
+ "n_commm32": {
+  "alpha_mean": 0.657,
+  "fmt": "3",
+  "gender": "male",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   105,
+   26,
+   20
+  ],
+  "skin_frac": 0.243,
+  "src": "N_CommM32.tpc",
+  "truth": null,
+  "uv_corr": 0.036,
+  "w": 1024
+ },
+ "n_commm33": {
+  "alpha_mean": 0.626,
+  "fmt": "3",
+  "gender": "male",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   44,
+   44,
+   43
+  ],
+  "skin_frac": 0.0,
+  "src": "N_CommM33.tpc",
+  "truth": null,
+  "uv_corr": 0.037,
+  "w": 1024
+ },
+ "n_commm34": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "male",
+  "h": 1024,
+  "kind": "pool",
+  "mean_rgb": [
+   123,
+   101,
+   65
+  ],
+  "skin_frac": 0.616,
+  "src": "N_CommM34.tpc",
+  "truth": null,
+  "uv_corr": 0.414,
+  "w": 1024
+ },
+ "n_commm35": {
+  "alpha_mean": 1.0,
+  "fmt": "3",
+  "gender": "male",
+  "h": 2048,
+  "kind": "pool",
+  "mean_rgb": [
+   88,
+   84,
+   88
+  ],
+  "skin_frac": 0.011,
+  "src": "N_CommM35.tpc",
+  "truth": null,
+  "uv_corr": 0.041,
+  "w": 2048
+ },
+ "vanilla:n_commf01": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "female",
+  "h": 512,
+  "kind": "vanilla",
+  "mean_rgb": [
+   93,
+   69,
+   50
+  ],
+  "skin_frac": 0.554,
+  "src": "pack",
+  "truth": "commoner_clothing",
+  "uv_corr": 0.53,
+  "w": 512
+ },
+ "vanilla:n_commf02": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "female",
+  "h": 512,
+  "kind": "vanilla",
+  "mean_rgb": [
+   115,
+   99,
+   76
+  ],
+  "skin_frac": 0.248,
+  "src": "pack",
+  "truth": "commoner_clothing",
+  "uv_corr": 0.395,
+  "w": 512
+ },
+ "vanilla:n_commf03": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "female",
+  "h": 512,
+  "kind": "vanilla",
+  "mean_rgb": [
+   88,
+   79,
+   66
+  ],
+  "skin_frac": 0.072,
+  "src": "pack",
+  "truth": "commoner_clothing",
+  "uv_corr": 0.592,
+  "w": 512
+ },
+ "vanilla:n_commf04": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "female",
+  "h": 512,
+  "kind": "vanilla",
+  "mean_rgb": [
+   67,
+   62,
+   56
+  ],
+  "skin_frac": 0.119,
+  "src": "pack",
+  "truth": "commoner_clothing",
+  "uv_corr": 0.327,
+  "w": 512
+ },
+ "vanilla:n_commf05": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "female",
+  "h": 512,
+  "kind": "vanilla",
+  "mean_rgb": [
+   77,
+   48,
+   21
+  ],
+  "skin_frac": 0.115,
+  "src": "pack",
+  "truth": "commoner_clothing",
+  "uv_corr": 0.379,
+  "w": 512
+ },
+ "vanilla:n_commf06": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "female",
+  "h": 512,
+  "kind": "vanilla",
+  "mean_rgb": [
+   108,
+   91,
+   90
+  ],
+  "skin_frac": 0.129,
+  "src": "pack",
+  "truth": "commoner_clothing",
+  "uv_corr": 0.396,
+  "w": 512
+ },
+ "vanilla:n_commf07": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "female",
+  "h": 512,
+  "kind": "vanilla",
+  "mean_rgb": [
+   46,
+   37,
+   30
+  ],
+  "skin_frac": 0.031,
+  "src": "pack",
+  "truth": "commoner_clothing",
+  "uv_corr": 0.507,
+  "w": 512
+ },
+ "vanilla:n_commf08": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "female",
+  "h": 512,
+  "kind": "vanilla",
+  "mean_rgb": [
+   91,
+   79,
+   51
+  ],
+  "skin_frac": 0.097,
+  "src": "pack",
+  "truth": "commoner_clothing",
+  "uv_corr": 0.581,
+  "w": 512
+ },
+ "vanilla:n_commf09": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "female",
+  "h": 512,
+  "kind": "vanilla",
+  "mean_rgb": [
+   67,
+   65,
+   89
+  ],
+  "skin_frac": 0.003,
+  "src": "pack",
+  "truth": "commoner_clothing",
+  "uv_corr": 0.384,
+  "w": 512
+ },
+ "vanilla:n_commf10": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "female",
+  "h": 512,
+  "kind": "vanilla",
+  "mean_rgb": [
+   74,
+   60,
+   41
+  ],
+  "skin_frac": 0.081,
+  "src": "pack",
+  "truth": "commoner_clothing",
+  "uv_corr": 0.475,
+  "w": 512
+ },
+ "vanilla:n_commf11": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "female",
+  "h": 512,
+  "kind": "vanilla",
+  "mean_rgb": [
+   40,
+   38,
+   36
+  ],
+  "skin_frac": 0.001,
+  "src": "pack",
+  "truth": "commoner_clothing",
+  "uv_corr": 0.519,
+  "w": 512
+ },
+ "vanilla:n_commm01": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "male",
+  "h": 512,
+  "kind": "vanilla",
+  "mean_rgb": [
+   108,
+   86,
+   60
+  ],
+  "skin_frac": 0.617,
+  "src": "pack",
+  "truth": "commoner_clothing",
+  "uv_corr": 0.565,
+  "w": 512
+ },
+ "vanilla:n_commm02": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "male",
+  "h": 512,
+  "kind": "vanilla",
+  "mean_rgb": [
+   124,
+   106,
+   103
+  ],
+  "skin_frac": 0.437,
+  "src": "pack",
+  "truth": "commoner_clothing",
+  "uv_corr": 0.373,
+  "w": 512
+ },
+ "vanilla:n_commm03": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "male",
+  "h": 512,
+  "kind": "vanilla",
+  "mean_rgb": [
+   102,
+   66,
+   70
+  ],
+  "skin_frac": 0.508,
+  "src": "pack",
+  "truth": "commoner_clothing",
+  "uv_corr": 0.378,
+  "w": 512
+ },
+ "vanilla:n_commm04": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "male",
+  "h": 512,
+  "kind": "vanilla",
+  "mean_rgb": [
+   74,
+   74,
+   61
+  ],
+  "skin_frac": 0.025,
+  "src": "pack",
+  "truth": "commoner_clothing",
+  "uv_corr": 0.283,
+  "w": 512
+ },
+ "vanilla:n_commm05": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "male",
+  "h": 512,
+  "kind": "vanilla",
+  "mean_rgb": [
+   85,
+   48,
+   31
+  ],
+  "skin_frac": 0.107,
+  "src": "pack",
+  "truth": "commoner_clothing",
+  "uv_corr": 0.485,
+  "w": 512
+ },
+ "vanilla:n_commm06": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "male",
+  "h": 512,
+  "kind": "vanilla",
+  "mean_rgb": [
+   61,
+   57,
+   53
+  ],
+  "skin_frac": 0.071,
+  "src": "pack",
+  "truth": "commoner_clothing",
+  "uv_corr": 0.408,
+  "w": 512
+ },
+ "vanilla:n_commm07": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "male",
+  "h": 512,
+  "kind": "vanilla",
+  "mean_rgb": [
+   44,
+   42,
+   36
+  ],
+  "skin_frac": 0.0,
+  "src": "pack",
+  "truth": "commoner_clothing",
+  "uv_corr": 0.554,
+  "w": 512
+ },
+ "vanilla:n_commm08": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "male",
+  "h": 512,
+  "kind": "vanilla",
+  "mean_rgb": [
+   56,
+   53,
+   39
+  ],
+  "skin_frac": 0.117,
+  "src": "pack",
+  "truth": "commoner_clothing",
+  "uv_corr": 0.477,
+  "w": 512
+ },
+ "vanilla:n_commm09": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "male",
+  "h": 512,
+  "kind": "vanilla",
+  "mean_rgb": [
+   69,
+   73,
+   79
+  ],
+  "skin_frac": 0.065,
+  "src": "pack",
+  "truth": "commoner_clothing",
+  "uv_corr": 0.466,
+  "w": 512
+ },
+ "vanilla:n_commm11": {
+  "alpha_mean": 1.0,
+  "fmt": "tpc",
+  "gender": "male",
+  "h": 512,
+  "kind": "vanilla",
+  "mean_rgb": [
+   62,
+   54,
+   41
+  ],
+  "skin_frac": 0.084,
+  "src": "pack",
+  "truth": "commoner_clothing",
+  "uv_corr": 0.567,
+  "w": 512
+ }
+}

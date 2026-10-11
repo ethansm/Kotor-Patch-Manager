@@ -1,0 +1,152 @@
+[
+{
+"tag": "Vula",
+"name": "Vula",
+"n": 1,
+"rule": "named",
+"mods": [
+"208tel"
+],
+"conv": [
+"203vula"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+188
+]
+},
+{
+"tag": "waitress",
+"name": "Waitress",
+"n": 1,
+"rule": "named",
+"mods": [
+"503ond"
+],
+"conv": [
+"wtress"
+],
+"conv_shared": 1,
+"plot": 0,
+"apps": [
+590
+]
+},
+{
+"tag": "ws_salvager",
+"name": "Salvager",
+"n": 2,
+"rule": "generic",
+"mods": [
+"512ond"
+],
+"conv": [
+"gen_salv"
+],
+"conv_shared": 6,
+"plot": 0,
+"apps": [
+346
+]
+},
+{
+"tag": "yavdjedim1",
+"name": "Dark Jedi",
+"n": 4,
+"rule": "generic",
+"mods": [
+"mansithb1",
+"yavbase1",
+"yavtomb1"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+14,
+613
+]
+},
+{
+"tag": "yavdjedim1",
+"name": "Sith Ghost",
+"n": 4,
+"rule": "generic",
+"mods": [
+"772kor",
+"korr_m38ab",
+"yavshrine1"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+613
+]
+},
+{
+"tag": "yavdjedim2",
+"name": "Dark Jedi",
+"n": 4,
+"rule": "generic",
+"mods": [
+"lev3",
+"mansithb1",
+"yavbase1"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+616
+]
+},
+{
+"tag": "yavdjedim2",
+"name": "Sith Ghost",
+"n": 1,
+"rule": "generic",
+"mods": [
+"yavshrine1"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+616
+]
+},
+{
+"tag": "yavdjedim3",
+"name": "Dark Jedi",
+"n": 3,
+"rule": "generic",
+"mods": [
+"gra802",
+"lev2",
+"lev3"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+616
+]
+},
+{
+"tag": "yavdjedim3",
+"name": "Sith Ghost",
+"n": 1,
+"rule": "generic",
+"mods": [
+"772kor"
+],
+"conv": [],
+"conv_shared": 0,
+"plot": 0,
+"apps": [
+616
+]
+}
+]

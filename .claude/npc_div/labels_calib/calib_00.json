@@ -1,0 +1,14 @@
+{
+  "C01": {"category": "commoner_clothing", "body": "either", "outfit": "grey wrap shirt and grey trousers", "confidence": 3},
+  "C02": {"category": "face_head", "body": "female", "outfit": "none, pale skin and dark hair", "confidence": 3},
+  "C03": {"category": "face_head", "body": "female", "outfit": "none, pale skin and white hair", "confidence": 4},
+  "C04": {"category": "armor", "body": "male", "outfit": "navy utility vest and dark trousers with pouches", "confidence": 2},
+  "C05": {"category": "armor", "body": "male", "outfit": "red trousers and tan leather harness", "confidence": 2},
+  "C06": {"category": "armor", "body": "male", "outfit": "dark blue trousers and tan utility pouches", "confidence": 2},
+  "C07": {"category": "face_head", "body": "male", "outfit": "none, tan skin and brown hair", "confidence": 4},
+  "C08": {"category": "commoner_clothing", "body": "either", "outfit": "olive grey shirt and grey trousers", "confidence": 3},
+  "C09": {"category": "commoner_clothing", "body": "either", "outfit": "cream tunic, tan trousers, brown boots", "confidence": 2},
+  "C10": {"category": "creature_alien_droid", "body": "either", "outfit": "none, lavender-white and green skin", "confidence": 2},
+  "C11": {"category": "face_head", "body": "male", "outfit": "none, tan skin, stubble and black hair", "confidence": 4},
+  "C12": {"category": "face_head", "body": "female", "outfit": "none, tan skin and black braided hair", "confidence": 4}
+}

@@ -1,0 +1,14 @@
+{
+  "commf09": {"layout_matches_ref": "yes", "category": "commoner_clothing", "body": "female", "outfit": "blue tunic, blue trousers, brown boots", "confidence": 5},
+  "commf34": {"layout_matches_ref": "no", "category": "uniform", "body": "female", "outfit": "grey jumpsuit with black straps, pouches", "confidence": 4},
+  "commm04": {"layout_matches_ref": "yes", "category": "commoner_clothing", "body": "male", "outfit": "olive green coat, blue-grey trousers, boots", "confidence": 5},
+  "commm20": {"layout_matches_ref": "no", "category": "face_head", "body": "male", "outfit": "face and hair close-up, no clothing", "confidence": 5},
+  "commf14": {"layout_matches_ref": "yes", "category": "commoner_clothing", "body": "female", "outfit": "olive green tunic, brown corset, boots", "confidence": 4},
+  "commm35": {"layout_matches_ref": "no", "category": "uniform", "body": "male", "outfit": "grey tactical vest with pouches, black gear", "confidence": 4},
+  "commm08": {"layout_matches_ref": "yes", "category": "commoner_clothing", "body": "male", "outfit": "dark green robe, orange striped sash", "confidence": 5},
+  "commm14": {"layout_matches_ref": "yes", "category": "commoner_clothing", "body": "male", "outfit": "dark green robe, orange sash, skin hands", "confidence": 4},
+  "commm21": {"layout_matches_ref": "no", "category": "face_head", "body": "male", "outfit": "face and hair close-up, no clothing", "confidence": 5},
+  "commm11": {"layout_matches_ref": "yes", "category": "commoner_clothing", "body": "male", "outfit": "beige wrap tunic, grey-tan trousers", "confidence": 5},
+  "commf01": {"layout_matches_ref": "yes", "category": "commoner_clothing", "body": "female", "outfit": "tan wrap tunic, tan trousers, brown belt", "confidence": 5},
+  "commm34": {"layout_matches_ref": "unsure", "category": "commoner_clothing", "body": "male", "outfit": "cream-olive wrap tunic, pink skin hands", "confidence": 2}
+}
