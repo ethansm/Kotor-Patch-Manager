@@ -8,6 +8,8 @@ stub (bundle/stub/claude). Nothing reaches the network or a model, and no live r
 
 Compares the argv each engine passes to `claude -p`, plus the content of the three file-valued inputs (settings, schema,
 system prompt). A positive control (bundle with EFFORT_MAP=xhigh) must show --effort, or the probe reports FAIL.
+dr_sandbox_prefix is stubbed to an empty prefix so the probe compares the claude argv only; the OS wrapper is covered by
+swarm-bundle-wrapper.
 
 Usage: python3 scripts/swarm_argv_probe.py [--work DIR] [--keep] [--json]
 Exit: 0 probe ran and control passed, 1 probe error or control failed.
@@ -81,7 +83,8 @@ def harness_text(engine, src, root):
         env = (f'REVIEW_DIR="{eng}"; TREE="{root}/tree"; WORKER_TIMEOUT_S=900; WORKER_BUDGET_USD=0.30; PY="python3 -I"\n'
                f'mkdir -p "$REVIEW_DIR"/raw "$REVIEW_DIR"/work/prompts "$TREE"\n')
         effort = ""
-    return ("#!/bin/bash\n" + top_line(text, "ISOLATION=(") + "\n" + 'ISOLATION_STR="${ISOLATION[*]}"\n'
+    return ("#!/bin/bash\n" + "DR_HIDE_HOME=0\n" + "dr_sandbox_prefix() { DR_SBX=(); }\n"
+            + top_line(text, "ISOLATION=(") + "\n" + 'ISOLATION_STR="${ISOLATION[*]}"\n'
             + f'MODEL="{MODEL}"\n' + env + effort + block(text, "run_one() {") + "\n"
             + f'run_one "{PACKET}"\n')
 
