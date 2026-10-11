@@ -196,6 +196,12 @@ requires = ["~/.claude/swarm/tests/test_bundle_wrapper.py", "~/.claude/skills/de
 timeout_s = 300
 
 [[suite]]
+name = "swarm-bundle-prep"
+cmd = ["python3", "-I", "~/.claude/skills/deep-haiku-review/bundle/engine/prep.py", "--self-test"]
+requires = ["~/.claude/skills/deep-haiku-review/bundle/engine/prep.py"]
+timeout_s = 120
+
+[[suite]]
 name = "swarm-fix-fcommon"
 cmd = ["python3", "-I", "fcommon.py", "--self-test"]
 cwd = "$REPO/.claude/review/fix"
