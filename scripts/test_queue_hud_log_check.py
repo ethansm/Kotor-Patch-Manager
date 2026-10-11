@@ -72,8 +72,8 @@ def _kw_line(kw, n, m=0, why=None):
     return "%s cmd=%d m=%d" % (kw, n, m) + ((" why=%s" % why) if why else "")
 
 
-def reinject(n, m=0, why=None):
-    return _kw_line("REINJECT", n, m, why)
+def reinject(n, m=0, why=None, attempt=None):
+    return _kw_line("REINJECT", n, m, why) + ((" attempt=%d" % attempt) if attempt is not None else "")
 
 
 def dispatch(n, m=0, why=None):
@@ -92,6 +92,46 @@ def reinject_no(n, m=0, why="pending"):
     return "REINJECT_NO cmd=%d m=%d why=%s" % (n, m, why)
 
 
+# Synthetic goldens for the six newer forms (C++ side is written elsewhere; these copy the spec lines exactly).
+NEW_GOLDEN = [
+    "VANISH cmd=3 m=0 kind=eaten_paused paused=1 exec=0 ne=0 round=0 cur=0 aa8=0 ab8=0 age=1592",
+    "REINJECT cmd=3 m=0 why=eaten_paused attempt=2",
+    "HANDOFF m=0 active=5 buffered=2 cmds=6,7",
+    "HANDOFF m=0 active=- buffered=0 cmds=-",
+    "HANDOFF_ONE cmd=6 m=0 seq=1/2",
+    "STALE_CUR m=0 sub=1 since=0 aa8=0 ab8=0 paused=1",
+    "IDENT_SWAP from=0 to=2",
+]
+VANISH_KIND_NAMES = ["executed", "unseen", "eaten_paused", "eaten_wait"]
+OLD_REINJECT_BODY = ("re-injecting eaten item action for member 0 "
+                     "(id=00001234, target=00000000, attempt=2) cmd=7 why=eaten_paused")
+
+
+def vanish(n, m=0, kind="eaten_paused", age=1592, exec_=0):
+    return "VANISH cmd=%d m=%d kind=%s paused=1 exec=%d ne=0 round=0 cur=0 aa8=0 ab8=0 age=%d" % (
+        n, m, kind, exec_, age)
+
+
+def handoff(m=0, active="5", buffered=0, cmds="-"):
+    return "HANDOFF m=%d active=%s buffered=%d cmds=%s" % (m, active, buffered, cmds)
+
+
+def handoff_one(n, m=0, seq="1/1"):
+    return "HANDOFF_ONE cmd=%d m=%d seq=%s" % (n, m, seq)
+
+
+def stale(m=0, sub=1):
+    return "STALE_CUR m=%d sub=%d since=0 aa8=0 ab8=0 paused=1" % (m, sub)
+
+
+def ident_swap(frm=0, to=2):
+    return "IDENT_SWAP from=%d to=%d" % (frm, to)
+
+
+def wait_cur(n, m=0, age=3000):
+    return "WAIT cmd=%d m=%d why=cur_busy buf=2 engNe=1 age=%d" % (n, m, age)
+
+
 def parse(bodies):
     return Q.parse_lines([(i + 1, s) for i, s in enumerate(bodies)])
 
@@ -99,6 +139,11 @@ def parse(bodies):
 def flags_of(bodies):
     recs, _ = parse(bodies)
     return Q.qj_flags(recs)
+
+
+def all_flags_of(bodies):
+    recs, _ = parse(bodies)
+    return Q.all_flags(recs)
 
 
 def run(argv):
@@ -415,6 +460,218 @@ class RouteTests(unittest.TestCase):
         self.assertEqual(p.returncode, 0, p.stderr)
         self.assertIn("QUEUE-HUD lines=2 parsed=2", p.stdout)
         self.assertIn("FLAGS 1", p.stdout)
+
+
+class NewFormParseTests(unittest.TestCase):
+    def test_new_golden_lines_parse_exactly(self):
+        recs, skipped = parse(NEW_GOLDEN)
+        self.assertEqual(skipped, [])
+        self.assertEqual([r["kw"] for r in recs],
+                         ["VANISH", "REINJECT", "HANDOFF", "HANDOFF", "HANDOFF_ONE", "STALE_CUR", "IDENT_SWAP"])
+
+    def test_new_golden_values(self):
+        by = {r["body"]: r for r in parse(NEW_GOLDEN)[0]}
+        v = by[NEW_GOLDEN[0]]
+        self.assertEqual((v["cmd"], v["m"], v["f"]["kind"], v["f"]["age"]), (3, 0, "eaten_paused", "1592"))
+        self.assertEqual((by[NEW_GOLDEN[1]]["f"]["why"], by[NEW_GOLDEN[1]]["f"]["attempt"]), ("eaten_paused", "2"))
+        self.assertEqual((by[NEW_GOLDEN[2]]["f"]["buffered"], by[NEW_GOLDEN[2]]["f"]["cmds"]), ("2", "6,7"))
+        self.assertEqual((by[NEW_GOLDEN[3]]["f"]["active"], by[NEW_GOLDEN[3]]["f"]["cmds"]), ("-", "-"))
+        self.assertEqual((by[NEW_GOLDEN[4]]["cmd"], by[NEW_GOLDEN[4]]["m"], by[NEW_GOLDEN[4]]["f"]["seq"]), (6, 0, "1/2"))
+        self.assertEqual(by[NEW_GOLDEN[5]]["f"]["sub"], "1")
+        self.assertEqual((by[NEW_GOLDEN[6]]["f"]["from"], by[NEW_GOLDEN[6]]["f"]["to"]), ("0", "2"))
+
+    def test_vanish_every_kind_parses(self):
+        recs, skipped = parse([vanish(3, kind=k) for k in VANISH_KIND_NAMES])
+        self.assertEqual(skipped, [])
+        self.assertEqual([r["f"]["kind"] for r in recs], VANISH_KIND_NAMES)
+
+    def test_bad_new_forms_are_skipped_not_fatal(self):
+        bad = [
+            "VANISH cmd=3 m=0 kind=bogus paused=1 exec=0 ne=0 round=0 cur=0 aa8=0 ab8=0 age=1",
+            "VANISH cmd=3 m=0 kind=unseen paused=1 exec=0 ne=0 round=0 cur=0 aa8=0 ab8=0",
+            "HANDOFF_ONE cmd=6 m=0 seq=1-2",
+            "HANDOFF m=0 active=5 buffered=x cmds=6",
+            "IDENT_SWAP from=0",
+            "STALE_CUR m=0 sub=x since=0 aa8=0 ab8=0 paused=1",
+        ]
+        recs, skipped = parse(bad)
+        self.assertEqual(recs, [])
+        self.assertEqual([(s[1], s[2]) for s in skipped], [
+            ("VANISH", "malformed kind=bogus"), ("VANISH", "missing age"), ("HANDOFF_ONE", "malformed seq=1-2"),
+            ("HANDOFF", "malformed buffered=x"), ("IDENT_SWAP", "missing to"), ("STALE_CUR", "malformed sub=x")])
+
+    def test_old_free_form_reinject_with_trailing_why_parses(self):
+        recs, skipped = Q.parse_lines([(1, stamped(OLD_REINJECT_BODY))])
+        self.assertEqual(skipped, [])
+        self.assertEqual([(r["kw"], r["cmd"], r["m"]) for r in recs], [("REINJECT", 7, 0)])
+        self.assertEqual((recs[0]["f"]["why"], recs[0]["f"]["attempt"]), ("eaten_paused", "2"))
+
+    def test_old_free_form_reinject_without_why_has_no_why(self):
+        recs, _ = Q.parse_lines([(1, "re-injecting eaten item action for member 1 (id=00001234, target=00000000, attempt=2) cmd=7")])
+        self.assertNotIn("why", recs[0]["f"])
+        self.assertEqual(recs[0]["f"]["attempt"], "2")
+
+
+class NewLifecycleTests(unittest.TestCase):
+    def test_vanish_and_numbered_reinject_steps_in_lifecycle(self):
+        recs, _ = parse([cmd(3), vanish(3), reinject(3, why="eaten_paused", attempt=2), vanish(3),
+                         reinject(3, why="eaten_paused", attempt=3), resolve(3, seen=1, reinj=2, age=900)])
+        self.assertEqual(Q.life_line(Q.build_cmds(recs)[0]),
+                         "cmd 3 m=0 item dec=buffer -> VANISH:eaten_paused -> REINJECT#2 -> VANISH:eaten_paused -> "
+                         "REINJECT#3 -> RESOLVE seen=1 reinj=2 age=900")
+
+    def test_numbered_reinject_falls_back_to_running_count_without_attempt(self):
+        recs, _ = parse([cmd(3), reinject(3, why="eaten_paused"), reinject(3, why="eaten_paused")])
+        self.assertEqual(Q.life_line(Q.build_cmds(recs)[0]), "cmd 3 m=0 item dec=buffer -> REINJECT#1 -> REINJECT#2 -> no outcome")
+
+    def test_old_free_form_with_eaten_paused_renders_numbered(self):
+        recs, _ = parse([cmd(7), OLD_REINJECT_BODY])
+        self.assertEqual(Q.life_line(Q.build_cmds(recs)[0]), "cmd 7 m=0 item dec=buffer -> REINJECT#2 -> no outcome")
+
+    def test_reinject_eaten_paused_is_not_a_decline(self):
+        rc, out = run_log([cmd(3), reinject(3, why="eaten_paused", attempt=2)])
+        self.assertIn("DECLINES 0: none", out)
+
+    def test_other_reinject_why_is_still_a_decline(self):
+        rc, out = run_log([cmd(3), reinject(3, why="engine_busy")])
+        self.assertIn("DECLINES 1: engine_busy=1", out)
+        self.assertIn("  cmd 3 m=0 item dec=buffer -> reinject-declined:engine_busy -> no outcome", out)
+
+    def test_cmd_view_shows_vanish_line_and_step(self):
+        rc, out = run_log([cmd(3), vanish(3)], ["--cmd", "3"])
+        self.assertIn("L2 VANISH cmd=3 m=0 kind=eaten_paused paused=1 exec=0 ne=0 round=0 cur=0 aa8=0 ab8=0 age=1592", out)
+        self.assertIn("cmd 3 m=0 item dec=buffer -> VANISH:eaten_paused -> no outcome", out)
+
+
+class NewFlagTests(unittest.TestCase):
+    # D: >= 4 VANISH kind=eaten_paused per command lifecycle
+    def test_D_fires_at_fourth_eaten_paused(self):
+        f = all_flags_of([cmd(3), vanish(3), vanish(3), vanish(3), vanish(3)])
+        self.assertEqual(f, [(5, "D L5 cmd=3 m=0 VANISH kind=eaten_paused x4")])
+
+    def test_D_quiet_at_three(self):
+        self.assertEqual(all_flags_of([cmd(3), vanish(3), vanish(3), vanish(3)]), [])
+
+    def test_D_counts_per_lifecycle_not_per_number(self):
+        self.assertEqual(all_flags_of([cmd(3), vanish(3), vanish(3), vanish(3),
+                                       cmd(3), vanish(3), vanish(3), vanish(3)]), [])
+
+    # E: WAIT why=cur_busy age >= 3000 with no STALE_CUR for that member
+    def test_E_fires_at_3000(self):
+        self.assertEqual(all_flags_of([wait_cur(4, 0, 3000)]),
+                         [(1, "E L1 m=0 WAIT why=cur_busy age=3000 with no STALE_CUR for this member")])
+
+    def test_E_quiet_at_2999(self):
+        self.assertEqual(all_flags_of([wait_cur(4, 0, 2999)]), [])
+
+    def test_E_quiet_when_member_has_stale_cur(self):
+        self.assertEqual(all_flags_of([wait_cur(4, 0, 3000), stale(0)]), [])
+
+    def test_E_fires_when_stale_cur_is_for_another_member(self):
+        self.assertEqual(len(all_flags_of([wait_cur(4, 0, 3000), stale(1)])), 1)
+
+    def test_E_ignores_other_wait_reasons(self):
+        self.assertEqual(all_flags_of(["WAIT cmd=4 m=0 why=engine_busy buf=2 engNe=1 age=9000"]), [])
+
+    # F: HANDOFF buffered=n > 0 with fewer than n HANDOFF_ONE for that member before its next HANDOFF
+    def test_F_fires_when_fewer_handoff_one_than_buffered(self):
+        self.assertEqual(all_flags_of([handoff(0, "5", 2, "6,7"), handoff_one(6, 0, "1/2")]),
+                         [(1, "F L1 m=0 HANDOFF buffered=2 but 1 HANDOFF_ONE")])
+
+    def test_F_quiet_when_all_handoff_one_present(self):
+        self.assertEqual(all_flags_of([handoff(0, "5", 2, "6,7"), handoff_one(6, 0, "1/2"), handoff_one(7, 0, "2/2")]), [])
+
+    def test_F_quiet_when_buffered_zero(self):
+        self.assertEqual(all_flags_of([handoff(0, "-", 0, "-")]), [])
+
+    def test_F_window_closes_at_next_handoff_of_same_member(self):
+        self.assertEqual(all_flags_of([handoff(0, "5", 1, "6"), handoff(0, "5", 1, "6"), handoff_one(6, 0, "1/1")]),
+                         [(1, "F L1 m=0 HANDOFF buffered=1 but 0 HANDOFF_ONE")])
+
+    def test_F_ignores_handoff_one_of_other_members(self):
+        self.assertEqual(len(all_flags_of([handoff(0, "5", 1, "6"), handoff_one(6, 1, "1/1")])), 1)
+
+    # G: two VANISH kind=executed, or two RESOLVE seen=1, for one command lifecycle
+    def test_G_fires_on_two_vanish_executed(self):
+        self.assertEqual(all_flags_of([cmd(3), vanish(3, kind="executed", exec_=1), vanish(3, kind="executed", exec_=1)]),
+                         [(3, "G L3 cmd=3 m=0 executed twice (VANISH kind=executed x2, RESOLVE seen=1 x0)")])
+
+    def test_G_quiet_when_vanish_executed_then_resolve_seen(self):
+        self.assertEqual(all_flags_of([cmd(3), vanish(3, kind="executed", exec_=1), resolve(3, seen=1)]), [])
+
+    def test_G_fires_on_two_resolve_seen_1(self):
+        self.assertEqual(all_flags_of([cmd(3), resolve(3, seen=1), resolve(3, seen=1)]),
+                         [(3, "G L3 cmd=3 m=0 executed twice (VANISH kind=executed x0, RESOLVE seen=1 x2)")])
+
+    def test_G_quiet_across_lifecycles(self):
+        self.assertEqual(all_flags_of([cmd(3), vanish(3, kind="executed", exec_=1),
+                                       cmd(3), vanish(3, kind="executed", exec_=1)]), [])
+
+    def test_new_flags_listed_in_flags_section(self):
+        rc, out = run_log([handoff(0, "5", 1, "6"), wait_cur(4, 0, 3000)])
+        self.assertIn("FLAGS 2", out)
+        self.assertIn("  F L1 m=0 HANDOFF buffered=1 but 0 HANDOFF_ONE", out)
+        self.assertIn("  E L2 m=0 WAIT why=cur_busy age=3000 with no STALE_CUR for this member", out)
+
+
+class NewSectionTests(unittest.TestCase):
+    def test_handoffs_one_line_per_handoff_with_follow_count(self):
+        rc, out = run_log([handoff(0, "5", 2, "6,7"), handoff_one(6, 0, "1/2"), handoff_one(7, 0, "2/2"), handoff(1, "-", 0, "-")])
+        self.assertIn("HANDOFFS 2", out)
+        self.assertIn("  L1 m=0 active=5 buffered=2 cmds=6,7 -> HANDOFF_ONE x2", out)
+        self.assertIn("  L4 m=1 active=- buffered=0 cmds=- -> HANDOFF_ONE x0", out)
+        self.assertIn("FLAGS 0", out)
+
+    def test_handoffs_none_and_ident_swap_suffix(self):
+        rc, out = run_log([ident_swap(0, 2)])
+        self.assertIn("HANDOFFS 0 (IDENT_SWAP x1)", out)
+        self.assertIn("VANISHES 0", out)
+        self.assertIn("STALE_CUR 0", out)
+
+    def test_vanishes_histogram_and_below_d_threshold(self):
+        bodies = [vanish(1, kind="executed", exec_=1)] + [vanish(2, kind="eaten_paused")] * 3 + [vanish(3, kind="eaten_wait")]
+        rc, out = run_log(bodies)
+        self.assertIn("VANISHES 5", out)
+        self.assertIn("  executed=1 unseen=0 eaten_paused=3 eaten_wait=1", out)
+        self.assertIn("FLAGS 0", out)
+
+    def test_stale_cur_count_and_members(self):
+        rc, out = run_log([stale(0), stale(0), stale(1)])
+        self.assertIn("STALE_CUR 3", out)
+        self.assertIn("  m=0 x2 first L1", out)
+        self.assertIn("  m=1 x1 first L3", out)
+
+    def test_default_view_worst_case_is_exactly_60_lines(self):
+        # Every section over its cap, plus one SKIPPED line: 1+1+1+20+7+10+4+2+4+10 = 60.
+        bodies = [cmd(100 + i) for i in range(20)]                                  # 20 lifecycles
+        bodies += [drop(200 + i, 0, "cancel", 1) for i in range(6)]                 # 6 DROP lifecycles, DROPS 6
+        bodies += [edge() for _ in range(9)]                                        # EDGES 9
+        bodies += [handoff(m, "-", 0, "-") for m in range(3)]                       # HANDOFFS 3 (+ suffix below)
+        bodies += [handoff(3, "5", 1, "6"), handoff(4, "5", 1, "6"), handoff(4, "5", 1, "6")]   # 3 F flags, HANDOFFS 6
+        bodies += [vanish(5)]                                                       # VANISHES 1
+        bodies += [stale(0), stale(1), stale(2)]                                    # STALE_CUR 3 (3 members)
+        bodies += [ident_swap()]                                                    # HANDOFFS title suffix
+        bodies += [wait(7)]                                                         # DECLINES 1, lifecycle cmd 7
+        bodies += [wait_cur(9, 5, 3000), wait_cur(9, 5, 3000)]                      # 2 E flags (member 5 has no STALE)
+        bodies += ["DROP cmd=1 m=1 why=combat_clear"]                               # SKIPPED 1 (missing n)
+        for _ in range(5):
+            bodies += [qj(0, "[3d]", 1), qj(0, "[c]", 1)]                           # 5 flags A
+        rc, out = run_log(bodies)
+        self.assertEqual(rc, 0)
+        self.assertEqual(len(out), 60)
+        self.assertIn("SKIPPED 1: L", out[1])
+        self.assertIn("COMMANDS 29", out)                                           # 20 + 6 DROP + cmd 5, 7, 9
+        self.assertIn("  ... +11 more", out)
+        self.assertIn("DROPS 6", out)
+        self.assertIn("  ... +1 more", out)
+        self.assertIn("EDGES 9", out)
+        self.assertIn("HANDOFFS 6 (IDENT_SWAP x1)", out)
+        self.assertIn("  ... +4 more", out)                                         # 6 HANDOFFS, 2 shown
+        self.assertIn("VANISHES 1", out)
+        self.assertIn("STALE_CUR 3", out)
+        self.assertIn("  ... +1 more", out)                                         # 3 members, 2 shown
+        self.assertIn("FLAGS 10", out)
+        self.assertIn("  ... +2 more", out)                                         # 10 flags, 8 shown
 
 
 if __name__ == "__main__":

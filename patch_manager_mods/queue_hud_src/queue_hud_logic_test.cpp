@@ -294,6 +294,16 @@ void testWaitingAndShow() {
     KT_CHECK(!shouldShow(false, false, false, 100, 1));  // each gate alone
     KT_CHECK(!shouldShow(true, true, false, 100, 1));
     KT_CHECK(!shouldShow(true, false, true, 100, 1));
+    // show_in_combat (T1b): combat hides only when showInCombat is off; the other gates still apply with it on
+    KT_CHECK(!shouldShow(true, true, false, 100, 1, false));   // default: combat hides
+    KT_CHECK(shouldShow(true, true, false, 100, 1, true));     // showInCombat: combat no longer hides
+    KT_CHECK(shouldShow(true, true, false, 249, 4, true));     // boundary: age < 250 still required
+    KT_CHECK(!shouldShow(true, true, false, 250, 1, true));
+    KT_CHECK(!shouldShow(true, true, false, 100, 0, true));    // slot gate still applies
+    KT_CHECK(!shouldShow(false, true, false, 100, 1, true));   // enabled gate still applies
+    KT_CHECK(!shouldShow(true, true, true, 100, 1, true));     // menu gate still applies
+    KT_CHECK(shouldShow(true, false, false, 100, 1, false));   // out of combat: unchanged
+    KT_CHECK(!shouldShow(true, false, true, 100, 1, true));    // menu gates out of combat too
 }
 
 void testConfigDefaultsAndStyle() {
@@ -380,7 +390,7 @@ void testIniBad() {
         "bg_rgb=", "bg_rgb=1,2", "bg_rgb=1,2,3,4", "bg_rgb=1;2;3", "bg_rgb=a,b,c", "bg_rgb=1,,3", "bg_rgb=0.1,0.2,", "bg_rgb=,0.2,0.3", "bg_rgb=1 2 3",
         "border_rgb=1,2", "border_rgb=x",
         "border_px=0", "border_px=7", "border_px=-1", "border_px=", "border_px=2.5", "border_px=abc", "border_px=99999999999", "border_px=2px", "border_px=06", "border_px=10", "border_px=1,2", "border_px=/;", "border_px=:", "border_px=/",
-        "waiting_dim=2", "log=x", "trace_queue=x",
+        "waiting_dim=2", "log=x", "trace_queue=x", "pause_reinject=x", "handoff_on_combat=", "show_in_combat=2",
         "unknown=1", "enabledx=1", "enable=1", "bg=1", "novalue", "=1", "enabled 1",
     };
     for (const char* l : bad) {
@@ -671,6 +681,32 @@ void testKitConfig() {
     KT_CHECK(!parseIniLine(d, "kit = maybe") && d.kit);
     Config e; parseIni(e, "kit=0\r\nframe_alpha=0.25\r\ncancel=0\r\nborder_px=3\r\n");
     KT_CHECK(!e.kit && e.frameAlpha == 0.25f && !e.cancel && e.borderPx == 3);
+}
+
+// ---- T1b: pause_reinject / handoff_on_combat / show_in_combat (all default on; parsed like the other bool keys) ----
+void testPauseHandoffShowConfig() {
+    Config c;
+    KT_CHECK(c.pauseReinject && c.handoffOnCombat && c.showInCombat);     // defaults
+    KT_CHECK(parseIniLine(c, "pause_reinject=0") && !c.pauseReinject);
+    KT_CHECK(parseIniLine(c, "pause_reinject=1") && c.pauseReinject);
+    KT_CHECK(parseIniLine(c, "Handoff_On_Combat = off") && !c.handoffOnCombat);
+    KT_CHECK(parseIniLine(c, "handoff_on_combat=yes") && c.handoffOnCombat);
+    KT_CHECK(parseIniLine(c, "show_in_combat = 0") && !c.showInCombat);
+    KT_CHECK(parseIniLine(c, "show_in_combat=true") && c.showInCombat);
+    // bad values are rejected and keep the previous value
+    KT_CHECK(!parseIniLine(c, "pause_reinject=x") && c.pauseReinject);
+    KT_CHECK(!parseIniLine(c, "handoff_on_combat=") && c.handoffOnCombat);
+    KT_CHECK(!parseIniLine(c, "show_in_combat=2") && c.showInCombat);
+    // each key sets only its own field
+    Config d;
+    KT_CHECK(parseIniLine(d, "show_in_combat=0") && !d.showInCombat && d.pauseReinject && d.handoffOnCombat);
+    Config e;
+    KT_CHECK(parseIniLine(e, "pause_reinject=0") && !e.pauseReinject && e.handoffOnCombat && e.showInCombat);
+    // absent keys keep the defaults (true) in a whole-file parse; present keys apply
+    Config f; parseIni(f, "enabled=1\r\nborder_px=3\r\n");
+    KT_CHECK(f.pauseReinject && f.handoffOnCombat && f.showInCombat);
+    Config g; parseIni(g, "show_in_combat=0\r\npause_reinject=0\r\nhandoff_on_combat=0\r\n");
+    KT_CHECK(!g.showInCombat && !g.pauseReinject && !g.handoffOnCombat);
 }
 
 void testInsetRect() {
@@ -1276,6 +1312,9 @@ void testWhyNames() {
     KT_CHECK_EQ(whyName(DR_CANCEL), "cancel");
     KT_CHECK_EQ(whyName(DR_BUFFER_FULL), "buffer_full");
     KT_CHECK_EQ(whyName(DR_UNREADABLE_CREATURE), "unreadable_creature");
+    KT_CHECK_EQ(whyName(DR_REINJECT_EXHAUSTED), "reinject_exhausted");
+    KT_CHECK_EQ(whyName(DR_EATEN_TIMEOUT), "eaten_timeout");
+    KT_CHECK_EQ(whyName(DR_IDENTITY_LOST), "identity_lost");
 }
 
 void testQueueSig() {
@@ -1392,6 +1431,37 @@ void testLogFormatGolden() {
     KT_CHECK_EQ(out, "DROP cmd=5 m=2 why=buffer_full n=1");
     fmtDrop(out, sizeof out, 9, 0, DR_UNREADABLE_CREATURE, 3);
     KT_CHECK_EQ(out, "DROP cmd=9 m=0 why=unreadable_creature n=3");
+    fmtDrop(out, sizeof out, 11, 1, DR_REINJECT_EXHAUSTED, 1);
+    KT_CHECK_EQ(out, "DROP cmd=11 m=1 why=reinject_exhausted n=1");
+    fmtDrop(out, sizeof out, 12, 2, DR_EATEN_TIMEOUT, 2);
+    KT_CHECK_EQ(out, "DROP cmd=12 m=2 why=eaten_timeout n=2");
+    fmtDrop(out, sizeof out, 13, 0, DR_IDENTITY_LOST, 1);
+    KT_CHECK_EQ(out, "DROP cmd=13 m=0 why=identity_lost n=1");
+
+    // T1b vanish / handoff / stale-cur / identity-swap grammar
+    KT_CHECK_EQ(vanishKindName(VK_EXECUTED), "executed");
+    KT_CHECK_EQ(vanishKindName(VK_UNSEEN), "unseen");
+    KT_CHECK_EQ(vanishKindName(VK_EATEN_PAUSED), "eaten_paused");
+    KT_CHECK_EQ(vanishKindName(VK_EATEN_WAIT), "eaten_wait");
+    fmtVanish(out, sizeof out, 3, 0, VK_EATEN_PAUSED, true, false, 0, 0, 0, false, false, 1592);
+    KT_CHECK_EQ(out, "VANISH cmd=3 m=0 kind=eaten_paused paused=1 exec=0 ne=0 round=0 cur=0 aa8=0 ab8=0 age=1592");
+    fmtVanish(out, sizeof out, 4, -1, VK_EXECUTED, false, true, 2, 7, 0x3F, true, false, 0);
+    KT_CHECK_EQ(out, "VANISH cmd=4 m=? kind=executed paused=0 exec=1 ne=2 round=7 cur=3f aa8=1 ab8=0 age=0");
+    fmtVanish(out, sizeof out, 5, 1, VK_UNSEEN, false, false, 0, 0, -1, false, false, 300);
+    KT_CHECK_EQ(out, "VANISH cmd=5 m=1 kind=unseen paused=0 exec=0 ne=0 round=0 cur=- aa8=0 ab8=0 age=300");
+    const uint32_t hIds[2] = { 6, 7 };
+    fmtHandoff(out, sizeof out, 0, true, 5, hIds, 2);
+    KT_CHECK_EQ(out, "HANDOFF m=0 active=5 buffered=2 cmds=6,7");
+    fmtHandoff(out, sizeof out, 1, false, 0, hIds, 2);
+    KT_CHECK_EQ(out, "HANDOFF m=1 active=- buffered=2 cmds=6,7");
+    fmtHandoff(out, sizeof out, 0, false, 0, nullptr, 0);
+    KT_CHECK_EQ(out, "HANDOFF m=0 active=- buffered=0 cmds=-");
+    fmtHandoffOne(out, sizeof out, 6, 0, 1, 2);
+    KT_CHECK_EQ(out, "HANDOFF_ONE cmd=6 m=0 seq=1/2");
+    fmtStaleCur(out, sizeof out, 0, 1, 0, false, false, true);
+    KT_CHECK_EQ(out, "STALE_CUR m=0 sub=1 since=0 aa8=0 ab8=0 paused=1");
+    fmtIdentSwap(out, sizeof out, 0, 2);
+    KT_CHECK_EQ(out, "IDENT_SWAP from=0 to=2");
 
     const int edgeBuf[3] = { 3, 0, 1 };
     fmtEdge(out, sizeof out, "combat", false, true, "hud", edgeBuf, 3);
@@ -1438,6 +1508,23 @@ void testLogFormatBounds() {
     KT_CHECK(strncmp(tiny, "RESOLVE cmd=5 m", 15) == 0);
     // null buffer: nothing written, length still reported
     KT_CHECK_EQ(fmtResolve(nullptr, 0, 5, 0, true, 1, 3400), 41);
+    // HANDOFF list over the limit: clamped to 199 chars + NUL, return value still reports the full length
+    uint32_t many[60];
+    for (int i = 0; i < 60; ++i) many[i] = 4000000000u + (uint32_t)i;
+    const int nh = fmtHandoff(out, sizeof out, 0, true, 4294967295u, many, 60);
+    KT_CHECK(nh > kLogLineMax);
+    KT_CHECK_EQ(strlen(out), (size_t)(kLogLineMax - 1));
+    const char* hPrefix = "HANDOFF m=0 active=4294967295 buffered=60 cmds=4000000000,4000000001,";
+    KT_CHECK(strncmp(out, hPrefix, strlen(hPrefix)) == 0);
+    // tiny buffer: truncated to 11 chars + NUL (no overflow), return value is the full 40-char line
+    char tinyH[12];
+    memset(tinyH, 'Z', sizeof tinyH);
+    const uint32_t hIds2[2] = { 6, 7 };
+    KT_CHECK_EQ(fmtHandoff(tinyH, sizeof tinyH, 0, true, 5, hIds2, 2), 40);
+    KT_CHECK_EQ(strlen(tinyH), (size_t)11);
+    KT_CHECK(strncmp(tinyH, "HANDOFF m=0", 11) == 0 && tinyH[11] == '\0');
+    // null buffer: nothing written, length still reported
+    KT_CHECK_EQ(fmtHandoff(nullptr, 0, 0, true, 5, hIds2, 2), 40);
     // worst-case CMD line stays under the limit
     CmdLine worst;
     worst.cmdId = 4294967295u; worst.m = 2; worst.cr = 0xffffffffu; worst.kind = (int)ActionKind::Spell;
@@ -1447,7 +1534,256 @@ void testLogFormatBounds() {
     KT_CHECK(strlen(out) < (size_t)kLogLineMax);
 }
 
+// ---- eaten-action verdict (activeVerdict), its ActionBuffer bookkeeping, curReal and makeEngineView ----
+EngineView Ev(bool present, bool paused = false, bool foreign = false, bool idle = true) {
+    EngineView e;
+    e.actionPresent = present; e.paused = paused; e.foreign = foreign; e.idle = idle;
+    return e;
+}
+
+int V(const ActionBuffer& b, const EngineView& e, uint32_t now) { return (int)activeVerdict(b, e, now); }
+
+bool verdictFieldsClear(const ActionBuffer& b) {
+    return !b.sawExecuting && !b.eaten && !b.staleCurLogged && b.eatenReInjects == 0 && b.goneSinceTick == 0 &&
+           b.lastReInjectTick == 0 && b.staleCurSince == 0 && b.eatenUnpausedMs == 0 && b.lastVerdictTick == 0;
+}
+
+void dirtyVerdictFields(ActionBuffer& b) {
+    b.sawExecuting = true; b.eaten = true; b.staleCurLogged = true; b.eatenReInjects = 4;
+    b.goneSinceTick = 9; b.lastReInjectTick = 9; b.staleCurSince = 9; b.eatenUnpausedMs = 9; b.lastVerdictTick = 9;
+}
+
+void testActiveVerdictRules() {
+    // rule 1: a present frame is always PRESENT, whatever the other fields say
+    ActionBuffer b;
+    KT_CHECK_EQ(V(b, Ev(true), 0), (int)AV_PRESENT);
+    KT_CHECK_EQ(V(b, Ev(true, true, true, false), 99999), (int)AV_PRESENT);
+    b.eaten = true; b.sawExecuting = true; b.eatenReInjects = 6; b.eatenUnpausedMs = 20000;
+    KT_CHECK_EQ(V(b, Ev(true), 99999), (int)AV_PRESENT);
+    // rule 1: never noted gone (goneSinceTick == 0) -> PRESENT
+    ActionBuffer g0;
+    KT_CHECK_EQ(V(g0, Ev(false), 10000), (int)AV_PRESENT);
+    // rule 1: vanish debounce boundary, 149 ms still PRESENT, 150 ms not
+    ActionBuffer d; d.goneSinceTick = 1000;
+    KT_CHECK_EQ(V(d, Ev(false), 1149), (int)AV_PRESENT);
+    KT_CHECK_EQ(V(d, Ev(false), 1150), (int)AV_UNSEEN);
+    // rule 1: min-active window boundary, 500 ms PRESENT, 501 ms not (debounce already passed)
+    ActionBuffer m; m.activeStartTick = 1000; m.goneSinceTick = 1;
+    KT_CHECK_EQ(V(m, Ev(false), 1500), (int)AV_PRESENT);
+    KT_CHECK_EQ(V(m, Ev(false), 1501), (int)AV_UNSEEN);
+    // rule 2: executed then vanished, paused or not, eaten or not
+    ActionBuffer x; x.goneSinceTick = 1; x.sawExecuting = true;
+    KT_CHECK_EQ(V(x, Ev(false, false), 10000), (int)AV_EXECUTED);
+    KT_CHECK_EQ(V(x, Ev(false, true), 10000), (int)AV_EXECUTED);
+    x.eaten = true;
+    KT_CHECK_EQ(V(x, Ev(false, true), 10000), (int)AV_EXECUTED);
+    KT_CHECK_EQ(V(x, Ev(false, false), 10000), (int)AV_EXECUTED);
+    // rule 3: vanished, never executed, not eaten, not paused -> UNSEEN
+    ActionBuffer u; u.goneSinceTick = 1;
+    KT_CHECK_EQ(V(u, Ev(false), 10000), (int)AV_UNSEEN);
+    // rule 3 skipped while paused: a wipe during pause counts as eaten -> re-inject, never UNSEEN
+    KT_CHECK_EQ(V(u, Ev(false, true), 10000), (int)AV_EATEN_REINJECT);
+    // eaten survives unpause: wiped while paused, unpaused later, still NOT UNSEEN
+    ActionBuffer p; p.eaten = true; p.goneSinceTick = 1;
+    KT_CHECK_EQ(V(p, Ev(false, true), 10000), (int)AV_EATEN_REINJECT);
+    KT_CHECK_EQ(V(p, Ev(false, false), 10000), (int)AV_EATEN_REINJECT);
+    KT_CHECK(V(p, Ev(false, false), 10000) != (int)AV_UNSEEN);
+    // rule 4: eaten unpaused time 19999 ms still waits, 20000 ms gives up
+    ActionBuffer e4; e4.eaten = true; e4.goneSinceTick = 1; e4.eatenUnpausedMs = 19999;
+    KT_CHECK_EQ(V(e4, Ev(false, false, true, false), 10000), (int)AV_EATEN_WAIT);
+    e4.eatenUnpausedMs = 20000;
+    KT_CHECK_EQ(V(e4, Ev(false, false, true, false), 10000), (int)AV_GIVE_UP);
+    // rule 4 beats rule 5 (foreign order) and applies while paused too
+    KT_CHECK_EQ(V(e4, Ev(false, true, true, false), 10000), (int)AV_GIVE_UP);
+    // rule 5: a foreign order or a non-idle character -> EATEN_WAIT
+    ActionBuffer e5; e5.eaten = true; e5.goneSinceTick = 1;
+    KT_CHECK_EQ(V(e5, Ev(false, false, true, true), 10000), (int)AV_EATEN_WAIT);
+    KT_CHECK_EQ(V(e5, Ev(false, false, false, false), 10000), (int)AV_EATEN_WAIT);
+    // rule 6: re-inject budget 5 re-injects, 6 gives up
+    e5.eatenReInjects = 5;
+    KT_CHECK_EQ(V(e5, Ev(false), 10000), (int)AV_EATEN_REINJECT);
+    e5.eatenReInjects = 6;
+    KT_CHECK_EQ(V(e5, Ev(false), 10000), (int)AV_GIVE_UP);
+    // rule 6 before rule 7: budget spent beats spacing
+    e5.lastReInjectTick = 10000;
+    KT_CHECK_EQ(V(e5, Ev(false), 10000), (int)AV_GIVE_UP);
+    // rule 7: spacing 249 ms waits, 250 ms re-injects
+    ActionBuffer s; s.eaten = true; s.goneSinceTick = 1; s.lastReInjectTick = 1000;
+    KT_CHECK_EQ(V(s, Ev(false), 1249), (int)AV_EATEN_WAIT);
+    KT_CHECK_EQ(V(s, Ev(false), 1250), (int)AV_EATEN_REINJECT);
+    // rule 8: otherwise re-inject
+    ActionBuffer r8; r8.eaten = true; r8.goneSinceTick = 1;
+    KT_CHECK_EQ(V(r8, Ev(false), 10000), (int)AV_EATEN_REINJECT);
+    // verdictName, every value plus the fallback
+    KT_CHECK(strcmp(verdictName(AV_PRESENT), "present") == 0);
+    KT_CHECK(strcmp(verdictName(AV_EXECUTED), "executed") == 0);
+    KT_CHECK(strcmp(verdictName(AV_UNSEEN), "unseen") == 0);
+    KT_CHECK(strcmp(verdictName(AV_EATEN_WAIT), "eaten_wait") == 0);
+    KT_CHECK(strcmp(verdictName(AV_EATEN_REINJECT), "eaten_reinject") == 0);
+    KT_CHECK(strcmp(verdictName(AV_GIVE_UP), "give_up") == 0);
+    KT_CHECK(strcmp(verdictName(static_cast<ActiveVerdict>(99)), "?") == 0);
+}
+
+void testVerdictBookkeeping() {
+    // markDispatched stamps the start and clears the per-action flags
+    ActionBuffer b;
+    b.sawExecuting = true; b.eaten = true; b.goneSinceTick = 77;
+    b.markDispatched(500);
+    KT_CHECK_EQ(b.activeStartTick, 500u);
+    KT_CHECK(!b.sawExecuting && !b.eaten);
+    KT_CHECK_EQ(b.goneSinceTick, 0u);
+    // accrueEaten: adds only while eaten and unpaused, each step capped at 1000 ms
+    ActionBuffer a;
+    a.accrueEaten(false, 1000);                       // not eaten: no add, but stamps lastVerdictTick
+    KT_CHECK_EQ(a.eatenUnpausedMs, 0u); KT_CHECK_EQ(a.lastVerdictTick, 1000u);
+    a.eaten = true;
+    a.accrueEaten(false, 1100);                       // +100
+    KT_CHECK_EQ(a.eatenUnpausedMs, 100u);
+    a.accrueEaten(true, 1200);                        // paused: no add
+    KT_CHECK_EQ(a.eatenUnpausedMs, 100u); KT_CHECK_EQ(a.lastVerdictTick, 1200u);
+    a.accrueEaten(false, 3201);                       // delta 2001 capped to 1000
+    KT_CHECK_EQ(a.eatenUnpausedMs, 1100u);
+    a.accrueEaten(false, 4201);                       // delta exactly 1000 kept
+    KT_CHECK_EQ(a.eatenUnpausedMs, 2100u);
+    a.accrueEaten(false, 4000);                       // time went backwards: unsigned delta capped to 1000
+    KT_CHECK_EQ(a.eatenUnpausedMs, 3100u);
+    ActionBuffer f; f.eaten = true;                   // first call, lastVerdictTick == 0: at most 1000 ms
+    f.accrueEaten(false, 5000);
+    KT_CHECK_EQ(f.eatenUnpausedMs, 1000u);
+    ActionBuffer f2; f2.eaten = true;
+    f2.accrueEaten(false, 999);                       // 999 below the cap is kept as is
+    KT_CHECK_EQ(f2.eatenUnpausedMs, 999u);
+    // noteView: first absent frame stamps, later absent frames keep it, a present frame clears it
+    ActionBuffer v;
+    v.noteView(true, 100);  KT_CHECK_EQ(v.goneSinceTick, 0u);
+    v.noteView(false, 200); KT_CHECK_EQ(v.goneSinceTick, 200u);
+    v.noteView(false, 300); KT_CHECK_EQ(v.goneSinceTick, 200u);
+    v.noteView(true, 400);  KT_CHECK_EQ(v.goneSinceTick, 0u);
+    // notePresent: executing sets sawExecuting (even when absent); reset of the re-inject budget needs a present frame at >= 2000 ms
+    ActionBuffer q;
+    q.notePresent(false, true, 1000);  KT_CHECK(!q.sawExecuting);
+    q.notePresent(true, false, 1000);  KT_CHECK(q.sawExecuting);
+    ActionBuffer r; r.eatenReInjects = 3; r.eatenUnpausedMs = 7000; r.lastReInjectTick = 100;
+    r.notePresent(false, false, 99999); KT_CHECK_EQ(r.eatenReInjects, 3); KT_CHECK_EQ(r.eatenUnpausedMs, 7000u);   // absent: no reset
+    r.notePresent(false, true, 2099);   KT_CHECK_EQ(r.eatenReInjects, 3); KT_CHECK_EQ(r.eatenUnpausedMs, 7000u);   // 1999 ms: no reset
+    r.notePresent(false, true, 2100);   KT_CHECK_EQ(r.eatenReInjects, 0); KT_CHECK_EQ(r.eatenUnpausedMs, 0u);      // 2000 ms: episode over
+    // cancel() and clear() reset every new field; a fresh buffer starts clear
+    KT_CHECK(verdictFieldsClear(ActionBuffer{}));
+    ActionBuffer c; dirtyVerdictFields(c); c.cancel();
+    KT_CHECK(verdictFieldsClear(c));
+    ActionBuffer k; dirtyVerdictFields(k); k.clear();
+    KT_CHECK(verdictFieldsClear(k));
+}
+
+void testCurReal() {
+    // no current node -> not real
+    KT_CHECK(!curReal(false, 10, 1, 1, false, 0, 0));
+    // ghost (subType 1 attack ghost, flags 0): not real immediately, paused or not
+    KT_CHECK(!curReal(true, 1, 0, 0, false, 0, 0));
+    KT_CHECK(!curReal(true, 1, 0, 0, true, 0, 0));
+    // paused item/spell round node with flags 0: real (the stale timer does not run while paused)
+    KT_CHECK(curReal(true, 10, 0, 0, true, 0, 0));
+    KT_CHECK(curReal(true, 10, 0, 0, true, 1, 999999));
+    // unpaused flagless subType 10: stale at exactly kStaleCurMs (1500), real at 1499
+    KT_CHECK(curReal(true, 10, 0, 0, false, 1000, 2499));
+    KT_CHECK(!curReal(true, 10, 0, 0, false, 1000, 2500));
+    // staleSince == 0 -> never stale
+    KT_CHECK(curReal(true, 10, 0, 0, false, 0, 999999));
+    // subType 9 is the other item/spell node: same stale rule
+    KT_CHECK(curReal(true, 9, 0, 0, false, 1000, 2499));
+    KT_CHECK(!curReal(true, 9, 0, 0, false, 1000, 2500));
+    // unpaused with aa8 or ab8 set -> real, even on a stale timer and for a ghost sub
+    KT_CHECK(curReal(true, 10, 1, 0, false, 1000, 999999));
+    KT_CHECK(curReal(true, 1, 0, 1, false, 0, 0));
+    // paused with flags set on a non-item/spell sub -> not real; on item/spell -> real
+    KT_CHECK(!curReal(true, 1, 1, 0, true, 0, 0));
+    KT_CHECK(curReal(true, 10, 1, 0, true, 0, 0));
+    // other subType with flags 0 -> not real
+    KT_CHECK(!curReal(true, 8, 0, 0, false, 0, 0));
+}
+
+void testMakeEngineView() {
+    const int a3f[] = { 0x3F };
+    const int a3d[] = { 0x3D };
+    const int a3f01[] = { 0x3F, 0x01 };
+    const int a2e[] = { 0x2E };
+    const int a0f[] = { 0x0F };
+    // sticky ab8 while paused: not executing, idle
+    EngineView s = makeEngineView(nullptr, 0, false, false, 0, 0, 0, 1, true, 0, 1000);
+    KT_CHECK(!s.executing && s.idle && !s.foreign && s.paused && !s.actionPresent);
+    // null entries and ne <= 0 are safe and ignore the entries
+    EngineView n = makeEngineView(nullptr, 5, true, false, 0, 0, 0, 0, false, 0, 1000);
+    KT_CHECK(!n.foreign && !n.executing && n.idle && n.actionPresent && !n.paused);
+    EngineView n0 = makeEngineView(a3f01, 0, false, false, 0, 0, 0, 0, false, 0, 1000);
+    KT_CHECK(!n0.foreign && !n0.executing && n0.idle);
+    // 0x3F and 0x3D are not foreign; 0x3F with 0x01 is
+    EngineView f0 = makeEngineView(a3f, 1, false, false, 0, 0, 0, 0, false, 0, 1000);
+    KT_CHECK(!f0.foreign && !f0.executing && f0.idle);
+    EngineView fd = makeEngineView(a3d, 1, false, false, 0, 0, 0, 0, false, 0, 1000);
+    KT_CHECK(!fd.foreign);
+    EngineView f1 = makeEngineView(a3f01, 2, false, false, 0, 0, 0, 0, false, 0, 1000);
+    KT_CHECK(f1.foreign && !f1.idle);
+    // 0x2E and 0x0F are exec nodes: executing, not idle, not foreign (also while paused)
+    EngineView e2e = makeEngineView(a2e, 1, false, false, 0, 0, 0, 0, false, 0, 1000);
+    KT_CHECK(e2e.executing && !e2e.idle && !e2e.foreign);
+    EngineView e0f = makeEngineView(a0f, 1, false, false, 0, 0, 0, 0, false, 0, 1000);
+    KT_CHECK(e0f.executing && !e0f.idle && !e0f.foreign);
+    EngineView e2p = makeEngineView(a2e, 1, false, false, 0, 0, 0, 0, true, 0, 1000);
+    KT_CHECK(e2p.executing && !e2p.idle);
+    // nrn != 0 -> not idle
+    EngineView nr = makeEngineView(nullptr, 0, false, false, 0, 1, 0, 0, false, 0, 1000);
+    KT_CHECK(!nr.idle && !nr.executing);
+    // ghost current node while paused -> idle
+    EngineView gh = makeEngineView(nullptr, 0, false, true, 1, 0, 0, 0, true, 0, 1000);
+    KT_CHECK(gh.idle && !gh.executing);
+    // real current node sub 10 while paused -> neither idle nor executing
+    EngineView rp = makeEngineView(nullptr, 0, false, true, 10, 0, 0, 0, true, 0, 1000);
+    KT_CHECK(!rp.idle && !rp.executing);
+    // real current node sub 10 unpaused -> executing, not idle
+    EngineView ru = makeEngineView(nullptr, 0, false, true, 10, 0, 0, 0, false, 0, 1000);
+    KT_CHECK(ru.executing && !ru.idle);
+    // aa8 is executing while unpaused, ignored while paused
+    EngineView au = makeEngineView(nullptr, 0, false, false, 0, 0, 1, 0, false, 0, 1000);
+    KT_CHECK(au.executing);
+    EngineView ap = makeEngineView(nullptr, 0, false, false, 0, 0, 1, 0, true, 0, 1000);
+    KT_CHECK(!ap.executing && ap.idle);
+}
+
 }  // namespace
+
+// Mutation-gate gaps: values that only a boundary or a default can tell apart.
+void testMutationGaps() {
+    char out[200];
+    // accrueEaten adds at most 1000 ms per step: 1001 -> 1000, exactly 1000 -> 1000, 999 -> 999
+    ActionBuffer a; a.eaten = true; a.lastVerdictTick = 100;
+    a.accrueEaten(false, 1101);  KT_CHECK_EQ(a.eatenUnpausedMs, 1000u);
+    a.accrueEaten(false, 2101);  KT_CHECK_EQ(a.eatenUnpausedMs, 2000u);
+    a.accrueEaten(false, 3100);  KT_CHECK_EQ(a.eatenUnpausedMs, 2999u);
+    // fmtHandoff: a null id list or n <= 0 prints no ids; one id prints one
+    const uint32_t one[1] = { 7 };
+    fmtHandoff(out, sizeof out, 0, false, 0, nullptr, 2);  KT_CHECK_EQ(out, "HANDOFF m=0 active=- buffered=0 cmds=-");
+    fmtHandoff(out, sizeof out, 0, false, 0, one, 0);      KT_CHECK_EQ(out, "HANDOFF m=0 active=- buffered=0 cmds=-");
+    fmtHandoff(out, sizeof out, 0, false, 0, one, -1);     KT_CHECK_EQ(out, "HANDOFF m=0 active=- buffered=0 cmds=-");
+    fmtHandoff(out, sizeof out, 0, false, 0, one, 1);      KT_CHECK_EQ(out, "HANDOFF m=0 active=- buffered=1 cmds=7");
+    // EngineView defaults: everything false
+    const EngineView d;
+    KT_CHECK(!d.paused && !d.actionPresent && !d.executing && !d.foreign && !d.idle);
+    // verdict rule 1: a present action is PRESENT even when an old gone clock is still set
+    ActionBuffer g; g.goneSinceTick = 1000; g.activeStartTick = 1;
+    EngineView p; p.actionPresent = true; p.paused = true; p.idle = true;
+    KT_CHECK_EQ((int)activeVerdict(g, p, 9000), (int)AV_PRESENT);
+    p.actionPresent = false;
+    KT_CHECK_EQ((int)activeVerdict(g, p, 9000), (int)AV_EATEN_REINJECT);   // the same buffer, absent: the clock is old enough
+    // executing: unpaused, flags 0, a fresh item/spell cur node (9 and 10) executes; other subtypes and stale nodes do not
+    EngineView e = makeEngineView(nullptr, 0, false, true, 9, 0, 0, 0, false, 0, 1000);   KT_CHECK(e.executing);
+    e = makeEngineView(nullptr, 0, false, true, 10, 0, 0, 0, false, 0, 1000);             KT_CHECK(e.executing);
+    e = makeEngineView(nullptr, 0, false, true, 8, 0, 0, 0, false, 0, 1000);              KT_CHECK(!e.executing);
+    e = makeEngineView(nullptr, 0, false, true, 11, 0, 0, 0, false, 0, 1000);             KT_CHECK(!e.executing);
+    e = makeEngineView(nullptr, 0, false, true, 1, 0, 0, 0, false, 0, 1000);              KT_CHECK(!e.executing);
+    e = makeEngineView(nullptr, 0, false, true, 10, 0, 0, 0, false, 1000, 2500);          KT_CHECK(!e.executing);   // stale 1500 ms
+    e = makeEngineView(nullptr, 0, false, true, 9, 0, 0, 0, false, 1000, 2500);           KT_CHECK(!e.executing);
+    e = makeEngineView(nullptr, 0, false, false, 10, 0, 0, 0, false, 0, 1000);            KT_CHECK(!e.executing);   // no cur at all
+}
 
 int main() {
     testConstants();
@@ -1469,6 +1805,7 @@ int main() {
     testStripLeftLive();
     testStripHudHostSlots();
     testKitConfig();
+    testPauseHandoffShowConfig();
     testInsetRect();
     testCancelRect();
     testChevronRect();
@@ -1491,5 +1828,10 @@ int main() {
     testTraceQueueIni();
     testLogFormatGolden();
     testLogFormatBounds();
+    testActiveVerdictRules();
+    testVerdictBookkeeping();
+    testCurReal();
+    testMakeEngineView();
+    testMutationGaps();
     return kt::Report("queue_hud_logic_test");
 }

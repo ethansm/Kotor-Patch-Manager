@@ -18,14 +18,25 @@ these keywords are ignored; a keyword line with a missing or malformed field is 
   EDGE what=<combat|paused|menu|party_table|gather_m<k>|creature|journal_cap> old=<0|1> new=<0|1> src=<hud|unreadable> buf=<n,n,...|empty>
     (journal_cap is a marker: its old/new carry no meaning and the timeline shows it as a marker)
   QJ m=<k> ne=<n> types=[<hex,...,+N>] round=<n> cur=<hex|-> aa8=<n> ab8=<n> paused=<0|1> combat=<0|1> ours=<tag>@<age>ms|external
-  REINJECT|DISPATCH|CANCEL cmd=<n> [m=<k>] [why=<reason>]   (REINJECT/DISPATCH: a why other than ok is a decline)
+  REINJECT|DISPATCH|CANCEL cmd=<n> [m=<k>] [why=<reason>] [attempt=<n>]   (REINJECT/DISPATCH: a why other than ok is a
+    decline, except REINJECT why=eaten_paused, which is the re-inject reason and shows as REINJECT#<attempt>)
   REINJECT_NO cmd=<n> m=<k> why=<ok|inactive|pending|cancel|max_reinject|in_queue|no_leader>   (a why other than ok is a decline)
+  VANISH cmd=<n> m=<k> kind=<executed|unseen|eaten_paused|eaten_wait> paused=<0|1> exec=<0|1> ne=<n> round=<n>
+    cur=<hex|-> aa8=<n> ab8=<n> age=<ms>
+  HANDOFF m=<k> active=<n|-> buffered=<n> cmds=<n,n,...|->
+  HANDOFF_ONE cmd=<n> m=<k> seq=<i>/<n>
+  STALE_CUR m=<k> sub=<n> since=<n> aa8=<n> ab8=<n> paused=<0|1>
+  IDENT_SWAP from=<n> to=<n>   (no m=: dropped by --member)
 
 Flags:
   A follower-wiped (QJ): 0x3D in one member's shown types=, absent from that member's next QJ (only when that QJ is not
     +N truncated), and that next QJ's ours is not cancel. Types compare by hex value (3d == 3D).
   B orphan-round (QJ): the first QJ after an ours=cancel QJ has round >= that cancel QJ's round (cancel round > 0).
   C unseen-reinject (RESOLVE): seen=0 with reinj>0.
+  D eaten-loop (VANISH): one command (lifecycle) has >= 4 VANISH kind=eaten_paused. Anchored at the 4th.
+  E stale-wait (WAIT why=cur_busy): age >= 3000 for a member with no STALE_CUR line in the window.
+  F handoff-short (HANDOFF): buffered=n > 0 but fewer than n HANDOFF_ONE for that member before its next HANDOFF.
+  G double-exec (VANISH kind=executed or RESOLVE seen=1): one command (lifecycle) has two of either.
 """
 from __future__ import annotations
 
@@ -42,9 +53,13 @@ import log_triage as LT  # noqa: E402  (--new bookmark: same state file and help
 
 DEFAULT_LOG = Path.home() / ".local/share/Steam/steamapps/common/Knights of the Old Republic II/queue-hud_log.txt"
 FOLLOWER_TYPE = 0x3D
-CAPS = {"cmd": 18, "drop": 5, "edge": 8, "flag": 8}   # default view: 1 + 1 + 20 + 1 + 7 + 10 + 10 = 50 lines at most
+CAPS = {"cmd": 18, "drop": 5, "edge": 8, "handoff": 2, "stale": 2, "flag": 8}
+# default view worst case = 60 lines: header 1 + SKIPPED 1 + DECLINES 1 + COMMANDS 20 + DROPS 7 + EDGES 10
+#   + HANDOFFS 4 + VANISHES 2 + STALE_CUR 4 + FLAGS 10
 CMD_VIEW_MAX = 30
-CMD_KWS = ("CMD", "WAIT", "RESOLVE", "DROP", "REINJECT", "REINJECT_NO", "DISPATCH", "CANCEL")
+CMD_KWS = ("CMD", "WAIT", "RESOLVE", "DROP", "REINJECT", "REINJECT_NO", "DISPATCH", "CANCEL", "VANISH")
+VANISH_KINDS = ("executed", "unseen", "eaten_paused", "eaten_wait")
+EATEN_PAUSED = "eaten_paused"   # REINJECT why= that is the re-inject reason (not a decline)
 PREFIX_RE = re.compile(r"^T=\S+\s+f=\S+\s+[\w.-]+/\w+\s+(?:(?:ERR|WARN)\s+)?(.*)$")
 HEXV = r"[0-9a-fA-F]+"
 # Field value grammar, matched with fullmatch. Keys not listed here are not validated.
@@ -57,8 +72,11 @@ FIELD_RE = {
     "ne": r"-?\d+", "types": r"\[(?:" + HEXV + r"(?:," + HEXV + r")*(?:,\+\d+)?|\+\d+)?\]",
     "round": r"-?\d+", "cur": r"-|" + HEXV, "aa8": r"-?\d+", "ab8": r"-?\d+",
     "ours": r"external|[^@\s]+(?:@\d+ms)?",
+    "exec": r"[01]", "attempt": r"\d+", "vanish_kind": "|".join(VANISH_KINDS),
+    "active": r"-|\d+", "buffered": r"\d+", "cmds": r"-|\d+(?:,\d+)*", "seq": r"\d+/\d+",
+    "sub": r"-?\d+", "since": r"-?\d+", "from": r"-?\d+", "to": r"-?\d+",
 }
-OVERRIDE = {("EDGE", "buf"): "buflist"}
+OVERRIDE = {("EDGE", "buf"): "buflist", ("VANISH", "kind"): "vanish_kind"}
 REQUIRED = {
     "CMD": ("m", "cr", "kind", "id", "tgt", "dec", "fb", "engq", "buf", "paused", "combat"),
     "WAIT": ("cmd", "m", "why", "buf", "engNe", "age"),
@@ -68,6 +86,11 @@ REQUIRED = {
     "QJ": ("m", "ne", "types", "round", "cur", "aa8", "ab8", "paused", "combat", "ours"),
     "REINJECT": ("cmd",), "DISPATCH": ("cmd",), "CANCEL": ("cmd",),
     "REINJECT_NO": ("cmd", "m", "why"),
+    "VANISH": ("cmd", "m", "kind", "paused", "exec", "ne", "round", "cur", "aa8", "ab8", "age"),
+    "HANDOFF": ("m", "active", "buffered", "cmds"),
+    "HANDOFF_ONE": ("cmd", "m", "seq"),
+    "STALE_CUR": ("m", "sub", "since", "aa8", "ab8", "paused"),
+    "IDENT_SWAP": ("from", "to"),
 }
 
 
@@ -86,14 +109,18 @@ def _ms(m):
 
 
 # QueueHud.cpp keeps its existing free-form re-inject / dispatch lines and appends cmd=<n>. Rewrite them to the grammar keyword.
-_REINJECT_OLD = re.compile(r"re-injecting eaten \S+ action for member (\d+) .*\bcmd=(\d+)$")
+_REINJECT_OLD = re.compile(r"re-injecting eaten \S+ action for member (\d+) .*\bcmd=(\d+)(?: why=(\w+))?$")
 _DISPATCH_OLD = re.compile(r"dispatching buffered \S+ for member (\d+) .*\bcmd=(\d+)$")
 
 
 def normalize_old(body):
     m = _REINJECT_OLD.match(body)
     if m:
-        return "REINJECT cmd=%s m=%s" % (m.group(2), m.group(1))
+        out = "REINJECT cmd=%s m=%s" % (m.group(2), m.group(1))
+        if m.group(3):   # optional trailing why=eaten_paused (newer build)
+            out += " why=%s" % m.group(3)
+        att = re.search(r"\battempt=(\d+)", body)   # the free-form text carries attempt=<n> inside its parentheses
+        return out + (" attempt=%s" % att.group(1) if att else "")
     m = _DISPATCH_OLD.match(body)
     if m:
         return "DISPATCH cmd=%s m=%s" % (m.group(2), m.group(1))
@@ -212,15 +239,22 @@ def collapse(events):
     return [e if c == 1 else "%s x%d" % (e, c) for e, c in out]
 
 
+def _reinject_reason(r):
+    """REINJECT why=eaten_paused: the reason for a re-inject, not a decline."""
+    return r["kw"] == "REINJECT" and r["f"].get("why") == EATEN_PAUSED
+
+
 def build_cmds(recs):
-    """Per-command lifecycles in log order. A new CMD# line for a number starts a new lifecycle (counter restarts)."""
+    """Per-command lifecycles in log order. A new CMD# line for a number starts a new lifecycle (counter restarts).
+    Each lifecycle also keeps what flags D and G need: vanish [(line, kind)] and executed [(line, label)]."""
     insts, open_ = [], {}
     for r in recs:
         if r["kw"] not in CMD_KWS or r["cmd"] is None:
             continue
         f, kw, why = r["f"], r["kw"], r["f"].get("why")
         if kw == "CMD" or r["cmd"] not in open_:
-            open_[r["cmd"]] = {"cmd": r["cmd"], "m": None, "head": None, "events": [], "outcome": None}
+            open_[r["cmd"]] = {"cmd": r["cmd"], "m": None, "head": None, "events": [], "outcome": None,
+                               "reinjects": 0, "vanish": [], "executed": []}
             insts.append(open_[r["cmd"]])
         inst = open_[r["cmd"]]
         if inst["m"] is None:
@@ -229,8 +263,18 @@ def build_cmds(recs):
             inst["head"] = "%s dec=%s" % (f["kind"], f["dec"])
         elif kw == "WAIT":
             inst["events"].append("wait:%s" % why)
+        elif kw == "VANISH":
+            inst["events"].append("VANISH:%s" % f["kind"])
+            inst["vanish"].append((r["line"], f["kind"]))
+            if f["kind"] == "executed":
+                inst["executed"].append((r["line"], "VANISH kind=executed"))
         elif kw in ("REINJECT", "DISPATCH"):
-            if why in (None, "ok"):
+            if kw == "REINJECT":
+                inst["reinjects"] += 1
+            if _reinject_reason(r):
+                n = _num(f.get("attempt"))
+                inst["events"].append("REINJECT#%d" % (inst["reinjects"] if n is None else n))
+            elif why in (None, "ok"):
                 inst["events"].append(kw.lower())
             else:
                 inst["events"].append("%s-declined:%s" % (kw.lower(), why))
@@ -240,9 +284,70 @@ def build_cmds(recs):
             inst["events"].append("cancel")
         elif kw == "RESOLVE":
             inst["outcome"] = "RESOLVE seen=%s reinj=%s age=%s" % (f["seen"], f["reinj"], f["age"])
+            if f["seen"] == "1":
+                inst["executed"].append((r["line"], "RESOLVE seen=1"))
         elif kw == "DROP":
             inst["outcome"] = "DROP why=%s n=%s" % (why, f["n"])
     return insts
+
+
+def life_flags(insts):
+    """[(line, text)] for flags D (eaten loop) and G (double exec), per lifecycle."""
+    out = []
+    for i in insts:
+        m, cmd = _ms(i["m"]), i["cmd"]
+        ep = [line for line, kind in i["vanish"] if kind == EATEN_PAUSED]
+        if len(ep) >= 4:
+            out.append((ep[3], "D L%d cmd=%s m=%s VANISH kind=eaten_paused x%d" % (ep[3], cmd, m, len(ep))))
+        n_v = sum(1 for _, label in i["executed"] if label.startswith("VANISH"))
+        n_r = len(i["executed"]) - n_v
+        if n_v >= 2 or n_r >= 2:
+            second = sorted(i["executed"])[1][0]
+            out.append((second, "G L%d cmd=%s m=%s executed twice (VANISH kind=executed x%d, RESOLVE seen=1 x%d)" % (
+                second, cmd, m, n_v, n_r)))
+    return out
+
+
+def handoff_windows(recs):
+    """[(HANDOFF rec, [HANDOFF_ONE recs])]. A HANDOFF_ONE belongs to the latest HANDOFF of the same m (until the next one)."""
+    out, open_ = [], {}
+    for r in recs:
+        if r["kw"] == "HANDOFF":
+            entry = (r, [])
+            out.append(entry)
+            open_[r["m"]] = entry
+        elif r["kw"] == "HANDOFF_ONE" and r["m"] in open_:
+            open_[r["m"]][1].append(r)
+    return out
+
+
+def handoff_flags(recs):
+    """[(line, text)] for flag F: HANDOFF buffered=n > 0 with fewer than n HANDOFF_ONE in its window."""
+    out = []
+    for h, ones in handoff_windows(recs):
+        n = _num(h["f"]["buffered"])
+        if n > 0 and len(ones) < n:
+            out.append((h["line"], "F L%d m=%s HANDOFF buffered=%d but %d HANDOFF_ONE" % (h["line"], _ms(h["m"]), n, len(ones))))
+    return out
+
+
+def stale_flags(recs):
+    """[(line, text)] for flag E: WAIT why=cur_busy with age >= 3000 for a member that has no STALE_CUR in the window."""
+    stale_members = {r["m"] for r in recs if r["kw"] == "STALE_CUR"}
+    out = []
+    for r in recs:
+        if r["kw"] != "WAIT" or r["f"]["why"] != "cur_busy" or r["m"] in stale_members:
+            continue
+        age = _num(r["f"]["age"])
+        if age is not None and age >= 3000:
+            out.append((r["line"], "E L%d m=%s WAIT why=cur_busy age=%d with no STALE_CUR for this member" % (
+                r["line"], _ms(r["m"]), age)))
+    return out
+
+
+def all_flags(recs):
+    """Every flag as sorted [(line, text)]: A, B, C (qj_flags) plus D, E, F, G."""
+    return sorted(qj_flags(recs) + life_flags(build_cmds(recs)) + handoff_flags(recs) + stale_flags(recs))
 
 
 def life_line(i):
@@ -258,8 +363,8 @@ def _edge_text(r):
     return "L%d %s %s->%s src=%s buf=%s" % (r["line"], f["what"], f["old"], f["new"], f["src"], f["buf"])
 
 
-def _section(title, items, cap):
-    out = ["%s %d" % (title, len(items))]
+def _section(title, items, cap, count=None):
+    out = ["%s %d" % (title, len(items) if count is None else count)]
     if not items:
         return out + ["  (none)"]
     out += ["  " + s for s in items[:cap]]
@@ -268,17 +373,36 @@ def _section(title, items, cap):
     return out
 
 
+def _handoff_text(h, ones):
+    f = h["f"]
+    return "L%d m=%s active=%s buffered=%s cmds=%s -> HANDOFF_ONE x%d" % (
+        h["line"], _ms(h["m"]), f["active"], f["buffered"], f["cmds"], len(ones))
+
+
+def _stale_items(recs):
+    """One item per member: 'm=<k> x<count> first L<line>', members in first-seen order."""
+    groups = {}
+    for r in recs:
+        if r["kw"] == "STALE_CUR":
+            groups.setdefault(r["m"], []).append(r["line"])
+    return ["m=%s x%d first L%d" % (_ms(m), len(ls), ls[0]) for m, ls in groups.items()]
+
+
 def render_default(recs, skipped, nlines, meta):
     insts = build_cmds(recs)
     declines = Counter()
     for r in recs:
         why = r["f"].get("why")
-        if ((r["kw"] == "WAIT" and why != "ok") or (r["kw"] in ("REINJECT", "DISPATCH") and why not in (None, "ok"))
+        if ((r["kw"] == "WAIT" and why != "ok") or (r["kw"] in ("REINJECT", "DISPATCH") and why not in (None, "ok")
+                                                    and not _reinject_reason(r))
                 or (r["kw"] == "REINJECT_NO" and why != "ok")):
             declines[why] += 1
     drops = [r for r in recs if r["kw"] == "DROP"]
     edges = [r for r in recs if r["kw"] == "EDGE"]
-    flags = qj_flags(recs)
+    vanishes = [r for r in recs if r["kw"] == "VANISH"]
+    stale = [r for r in recs if r["kw"] == "STALE_CUR"]
+    n_swap = sum(1 for r in recs if r["kw"] == "IDENT_SWAP")
+    flags = all_flags(recs)
     n_qj = sum(1 for r in recs if r["kw"] == "QJ")
     out = ["QUEUE-HUD lines=%d parsed=%d skipped=%d cmds=%d qj=%d%s" % (nlines, len(recs), len(skipped), len(insts), n_qj, meta)]
     if skipped:
@@ -291,6 +415,15 @@ def render_default(recs, skipped, nlines, meta):
     out += _section("DROPS", ["L%d cmd=%s m=%s %s n=%s" % (r["line"], r["cmd"], _ms(r["m"]), r["f"]["why"], r["f"]["n"])
                               for r in drops], CAPS["drop"])
     out += _section("EDGES", [_edge_text(r) for r in edges], CAPS["edge"])
+    hand = handoff_windows(recs)
+    hsec = _section("HANDOFFS", [_handoff_text(h, ones) for h, ones in hand], CAPS["handoff"])
+    if n_swap:
+        hsec[0] += " (IDENT_SWAP x%d)" % n_swap
+    out += hsec
+    hist = Counter(r["f"]["kind"] for r in vanishes)
+    out += _section("VANISHES", [" ".join("%s=%d" % (k, hist[k]) for k in VANISH_KINDS)] if vanishes else [], 1,
+                    count=len(vanishes))
+    out += _section("STALE_CUR", _stale_items(stale), CAPS["stale"], count=len(stale))
     out += _section("FLAGS", [text for _, text in flags], CAPS["flag"])
     return out
 

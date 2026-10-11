@@ -121,8 +121,9 @@ inline int buildSlots(const QEntry* e, int ne, const RNode* rn, int nrn, const R
 inline bool isWaiting(bool paused, int ab8, int aa8) { return paused || ab8 >= 1 || aa8 != 0; }
 
 // Draw only outside combat, outside menu frames, for a fresh snapshot (< 250 ms old) with something to show.
-inline bool shouldShow(bool enabled, bool combat, bool inMenu, uint32_t ageMs, int nSlots) {
-    return enabled && !combat && !inMenu && ageMs < 250u && nSlots > 0;
+// showInCombat (show_in_combat=1) drops the combat term only; enabled, menu, age and slot gates still apply.
+inline bool shouldShow(bool enabled, bool combat, bool inMenu, uint32_t ageMs, int nSlots, bool showInCombat = false) {
+    return enabled && (showInCombat || !combat) && !inMenu && ageMs < 250u && nSlots > 0;
 }
 
 // Dark teal palette matching custom GUI theme (Session 2)
@@ -150,6 +151,9 @@ struct Config {
     bool kit = true;              // 0.3.0: kit frames + Cancel controls (default on)
     float frameAlpha = 0.9f;      // qh_frame alpha (scaled by waiting_alpha for the dimmed head slot)
     bool cancel = true;           // the Cancel controls (leader + companion strips)
+    bool pauseReinject = true;    // pause_reinject: re-inject a paused/eaten action (default on)
+    bool handoffOnCombat = true;  // handoff_on_combat: hand the buffered queue over when combat starts (default on)
+    bool showInCombat = true;     // show_in_combat: keep the queue strip drawn during combat (default on)
 };
 
 struct Style { float bg[3], bgA, border[3], borderA, iconA, frameA; int borderPx; };
@@ -423,6 +427,9 @@ inline bool parseIniLine(Config& c, const char* line) {
     if (detail::keyEq(kb, ke, "kit")) return detail::parseBool(vb, ve, &c.kit);
     if (detail::keyEq(kb, ke, "frame_alpha")) return detail::parseUnit(vb, ve, &c.frameAlpha);
     if (detail::keyEq(kb, ke, "cancel")) return detail::parseBool(vb, ve, &c.cancel);
+    if (detail::keyEq(kb, ke, "pause_reinject")) return detail::parseBool(vb, ve, &c.pauseReinject);
+    if (detail::keyEq(kb, ke, "handoff_on_combat")) return detail::parseBool(vb, ve, &c.handoffOnCombat);
+    if (detail::keyEq(kb, ke, "show_in_combat")) return detail::parseBool(vb, ve, &c.showInCombat);
     return false;
 }
 
@@ -513,6 +520,15 @@ constexpr int kMaxActionQueue = 3;
 constexpr int kMaxItemQueue = kMaxActionQueue;
 constexpr int kMaxReInjectCount = 2;
 
+// Eaten-action verdict timing (activeVerdict). Milliseconds, measured on the caller's tick clock.
+constexpr uint32_t kVanishDebounceMs = 150;    // gone this long before it counts as vanished
+constexpr uint32_t kMinActiveMs = 500;         // a just-dispatched action is never judged for this long
+constexpr int kMaxEatenReInject = 6;           // re-inject budget per eaten episode
+constexpr uint32_t kReInjectSpacingMs = 250;   // minimum gap between two re-injects
+constexpr uint32_t kEatenWaitMaxMs = 20000;    // unpaused time spent eaten before giving up
+constexpr uint32_t kStaleCurMs = 1500;         // a flagless item/spell round node older than this is stale
+constexpr uint32_t kReInjectResetMs = 2000;    // a present action this long after the last re-inject clears the budget
+
 struct ActionBuffer {
     QueuedAction queue[kMaxActionQueue];
     int count = 0;
@@ -522,6 +538,16 @@ struct ActionBuffer {
     bool reInjectPending = false;
     bool userCancelled = false;
     bool seenInQueue = false;   // active action was seen in the engine queue (RESOLVE seen=); reset by cancel()/clear()
+    // eaten-action bookkeeping (appended; cancel() and clear() reset every one of them)
+    bool sawExecuting = false;      // the engine showed the active action executing
+    bool eaten = false;             // the active action vanished without executing (queue wipe)
+    bool staleCurLogged = false;
+    int eatenReInjects = 0;         // re-injects spent in the current eaten episode
+    uint32_t goneSinceTick = 0;     // first tick the action was absent in a row (0 = not absent)
+    uint32_t lastReInjectTick = 0;
+    uint32_t staleCurSince = 0;     // first tick a flagless round node was seen as cur
+    uint32_t eatenUnpausedMs = 0;   // accrued unpaused time while eaten
+    uint32_t lastVerdictTick = 0;
 
     bool empty() const { return count == 0; }
     bool full() const { return count >= kMaxActionQueue; }
@@ -549,6 +575,15 @@ struct ActionBuffer {
         reInjectPending = false;
         userCancelled = true;
         seenInQueue = false;
+        sawExecuting = false;
+        eaten = false;
+        staleCurLogged = false;
+        eatenReInjects = 0;
+        goneSinceTick = 0;
+        lastReInjectTick = 0;
+        staleCurSince = 0;
+        eatenUnpausedMs = 0;
+        lastVerdictTick = 0;
     }
 
     void clear() {
@@ -559,6 +594,37 @@ struct ActionBuffer {
         reInjectPending = false;
         userCancelled = false;
         seenInQueue = false;
+        sawExecuting = false;
+        eaten = false;
+        staleCurLogged = false;
+        eatenReInjects = 0;
+        goneSinceTick = 0;
+        lastReInjectTick = 0;
+        staleCurSince = 0;
+        eatenUnpausedMs = 0;
+        lastVerdictTick = 0;
+    }
+
+    // Dispatch stamps the start and clears the per-action eaten flags.
+    void markDispatched(uint32_t now) { activeStartTick = now; sawExecuting = false; eaten = false; goneSinceTick = 0; }
+    // Adds the unpaused time since the last verdict while eaten; one step is capped at 1000 ms.
+    void accrueEaten(bool paused, uint32_t now) {
+        if (eaten && !paused) {
+            const uint32_t d = now - lastVerdictTick;
+            eatenUnpausedMs += d < 1000u ? d : 1000u;
+        }
+        lastVerdictTick = now;
+    }
+    // Starts the gone clock on the first absent frame; a present frame stops it.
+    void noteView(bool actionPresent, uint32_t now) {
+        if (actionPresent) goneSinceTick = 0;
+        else if (goneSinceTick == 0) goneSinceTick = now;
+    }
+    // Records that the engine showed the action executing; a present frame well after the last re-inject ends the eaten
+    // episode (clears the re-inject budget and the unpaused wait, so the next command starts fresh).
+    void notePresent(bool executing, bool actionPresent, uint32_t now) {
+        if (executing) sawExecuting = true;
+        if (actionPresent && now - lastReInjectTick >= kReInjectResetMs) { eatenReInjects = 0; eatenUnpausedMs = 0; }
     }
 };
 
@@ -606,7 +672,7 @@ inline bool shouldDispatchNext(const ActionBuffer& buf, int engineQueueLen, bool
 // reInjectWhy(...) == RI_OK  <=>  shouldReInject(...);   dispatchWhy(...) == DS_OK  <=>  shouldDispatchNext(...).
 enum ReInjectWhy : uint8_t { RI_OK, RI_INACTIVE, RI_PENDING, RI_CANCEL, RI_MAX, RI_IN_QUEUE, RI_NO_LEADER };
 enum DispatchWhy : uint8_t { DS_OK, DS_ACTIVE, DS_EMPTY, DS_ENGINE_BUSY, DS_CUR_BUSY, DS_NRN_BUSY };
-enum DropWhy : uint8_t { DR_COMBAT_CLEAR, DR_NULL_CREATURE, DR_CANCEL, DR_BUFFER_FULL, DR_UNREADABLE_CREATURE };
+enum DropWhy : uint8_t { DR_COMBAT_CLEAR, DR_NULL_CREATURE, DR_CANCEL, DR_BUFFER_FULL, DR_UNREADABLE_CREATURE, DR_REINJECT_EXHAUSTED, DR_EATEN_TIMEOUT, DR_IDENTITY_LOST };
 
 inline ReInjectWhy reInjectWhy(const ActionBuffer& buf, bool actionInQueue, bool hasFollowLeader, bool paused = false, uint32_t now = 0, bool userCancelled = false) {
     (void)paused; (void)now;
@@ -659,6 +725,9 @@ inline const char* whyName(DropWhy w) {
         case DR_CANCEL: return "cancel";
         case DR_BUFFER_FULL: return "buffer_full";
         case DR_UNREADABLE_CREATURE: return "unreadable_creature";
+        case DR_REINJECT_EXHAUSTED: return "reinject_exhausted";
+        case DR_EATEN_TIMEOUT: return "eaten_timeout";
+        case DR_IDENTITY_LOST: return "identity_lost";
     }
     return "?";
 }
@@ -771,7 +840,7 @@ inline int fmtResolve(char* out, int cap, uint32_t cmdId, int m, bool seen, int 
     return w.done();
 }
 
-// DROP cmd=<n> m=<k> why=combat_clear|null_creature|cancel|buffer_full|unreadable_creature n=<count>
+// DROP cmd=<n> m=<k> why=combat_clear|null_creature|cancel|buffer_full|unreadable_creature|reinject_exhausted|eaten_timeout|identity_lost n=<count>
 inline int fmtDrop(char* out, int cap, uint32_t cmdId, int m, DropWhy why, int n) {
     detail::LogWr w(out, cap);
     w.s("DROP cmd="); w.u(cmdId);
@@ -814,6 +883,142 @@ inline int fmtQj(char* out, int cap, int m, const QueueSig& q, bool paused, bool
     if (!oursTag) w.s("external");
     else { w.s(oursTag); w.c('@'); w.u(ageMs); w.s("ms"); }
     return w.done();
+}
+
+// ---- Vanish / handoff / stale-cur / identity-swap grammar. Same LogWr rules as above (caller buffer + cap, clamp 200, returns length). ----
+enum VanishKind : uint8_t { VK_EXECUTED, VK_UNSEEN, VK_EATEN_PAUSED, VK_EATEN_WAIT };
+
+inline const char* vanishKindName(VanishKind k) {
+    switch (k) {
+        case VK_EXECUTED: return "executed";
+        case VK_UNSEEN: return "unseen";
+        case VK_EATEN_PAUSED: return "eaten_paused";
+        case VK_EATEN_WAIT: return "eaten_wait";
+    }
+    return "?";
+}
+
+// VANISH cmd=<n> m=<k> kind=executed|unseen|eaten_paused|eaten_wait paused=<0|1> exec=<0|1> ne=<n> round=<n> cur=<type|-> aa8=<0|1> ab8=<0|1> age=<ms>
+// cur uses the QJ convention: hex type, '-' when cur < 0.
+inline int fmtVanish(char* out, int cap, uint32_t cmdId, int m, VanishKind kind, bool paused, bool executing, int ne, int round, int cur, bool aa8, bool ab8, uint32_t ageMs) {
+    detail::LogWr w(out, cap);
+    w.s("VANISH cmd="); w.u(cmdId);
+    w.s(" m="); w.mm(m);
+    w.s(" kind="); w.s(vanishKindName(kind));
+    w.s(" paused="); w.c(paused ? '1' : '0');
+    w.s(" exec="); w.c(executing ? '1' : '0');
+    w.s(" ne="); w.i(ne);
+    w.s(" round="); w.i(round);
+    w.s(" cur="); if (cur < 0) w.c('-'); else w.x((unsigned long long)(unsigned)cur);
+    w.s(" aa8="); w.c(aa8 ? '1' : '0');
+    w.s(" ab8="); w.c(ab8 ? '1' : '0');
+    w.s(" age="); w.u(ageMs);
+    return w.done();
+}
+
+// HANDOFF m=<k> active=<cmd|-> buffered=<n> cmds=<id,id,...|->
+// hasActive=false prints active=-. ids/n: the buffered command ids in queue order; a null ids or n <= 0 prints buffered=0 cmds=-.
+inline int fmtHandoff(char* out, int cap, int m, bool hasActive, uint32_t activeCmd, const uint32_t* ids, int n) {
+    detail::LogWr w(out, cap);
+    const int cnt = (ids && n > 0) ? n : 0;
+    w.s("HANDOFF m="); w.mm(m);
+    w.s(" active="); if (hasActive) w.u(activeCmd); else w.c('-');
+    w.s(" buffered="); w.i(cnt);
+    w.s(" cmds=");
+    if (cnt == 0) w.c('-');
+    for (int k = 0; k < cnt; ++k) { if (k) w.c(','); w.u(ids[k]); }
+    return w.done();
+}
+
+// HANDOFF_ONE cmd=<n> m=<k> seq=<i>/<total>
+inline int fmtHandoffOne(char* out, int cap, uint32_t cmdId, int m, int seq, int total) {
+    detail::LogWr w(out, cap);
+    w.s("HANDOFF_ONE cmd="); w.u(cmdId);
+    w.s(" m="); w.mm(m);
+    w.s(" seq="); w.i(seq); w.c('/'); w.i(total);
+    return w.done();
+}
+
+// STALE_CUR m=<k> sub=<n> since=<ms> aa8=<0|1> ab8=<0|1> paused=<0|1>
+inline int fmtStaleCur(char* out, int cap, int m, int sub, uint32_t sinceMs, bool aa8, bool ab8, bool paused) {
+    detail::LogWr w(out, cap);
+    w.s("STALE_CUR m="); w.mm(m);
+    w.s(" sub="); w.i(sub);
+    w.s(" since="); w.u(sinceMs);
+    w.s(" aa8="); w.c(aa8 ? '1' : '0');
+    w.s(" ab8="); w.c(ab8 ? '1' : '0');
+    w.s(" paused="); w.c(paused ? '1' : '0');
+    return w.done();
+}
+
+// IDENT_SWAP from=<k> to=<k>   (member indices; a negative index prints '?')
+inline int fmtIdentSwap(char* out, int cap, int from, int to) {
+    detail::LogWr w(out, cap);
+    w.s("IDENT_SWAP from="); w.mm(from);
+    w.s(" to="); w.mm(to);
+    return w.done();
+}
+
+// ---- Eaten-action verdict. PURE: the caller fills EngineView from engine memory and acts on the verdict. ----
+struct EngineView { bool paused = false, actionPresent = false, executing = false, foreign = false, idle = false; };
+
+enum ActiveVerdict : uint8_t { AV_PRESENT, AV_EXECUTED, AV_UNSEEN, AV_EATEN_WAIT, AV_EATEN_REINJECT, AV_GIVE_UP };
+
+inline const char* verdictName(ActiveVerdict v) {
+    switch (v) {
+        case AV_PRESENT: return "present";
+        case AV_EXECUTED: return "executed";
+        case AV_UNSEEN: return "unseen";
+        case AV_EATEN_WAIT: return "eaten_wait";
+        case AV_EATEN_REINJECT: return "eaten_reinject";
+        case AV_GIVE_UP: return "give_up";
+    }
+    return "?";
+}
+
+// Rules are checked in order; the first match wins.
+inline ActiveVerdict activeVerdict(const ActionBuffer& buf, const EngineView& ev, uint32_t now) {
+    if (ev.actionPresent) return AV_PRESENT;                                              // 1
+    if (buf.goneSinceTick == 0 || now - buf.goneSinceTick < kVanishDebounceMs) return AV_PRESENT;
+    if (now - buf.activeStartTick <= kMinActiveMs) return AV_PRESENT;
+    if (buf.sawExecuting) return AV_EXECUTED;                                             // 2
+    if (!buf.eaten && !ev.paused) return AV_UNSEEN;                                       // 3
+    if (buf.eatenUnpausedMs >= kEatenWaitMaxMs) return AV_GIVE_UP;                        // 4
+    if (ev.foreign || !ev.idle) return AV_EATEN_WAIT;                                     // 5
+    if (buf.eatenReInjects >= kMaxEatenReInject) return AV_GIVE_UP;                       // 6
+    if (now - buf.lastReInjectTick < kReInjectSpacingMs) return AV_EATEN_WAIT;            // 7
+    return AV_EATEN_REINJECT;                                                             // 8
+}
+
+// Is the engine's current round node a real action? Flagless item/spell nodes go stale after kStaleCurMs unpaused.
+inline bool curReal(bool haveCur, int curSub, int aa8, int ab8, bool paused, uint32_t staleSince, uint32_t now) {
+    if (!haveCur) return false;
+    if (!paused && (aa8 != 0 || ab8 != 0)) return true;
+    if (curSub == 9 || curSub == 10) {
+        if (!paused && aa8 == 0 && ab8 == 0 && staleSince != 0 && now - staleSince >= kStaleCurMs) return false;
+        return true;
+    }
+    return false;
+}
+
+// Builds the EngineView from raw engine reads. aa8/ab8 are ignored while paused (sticky in a frozen round).
+inline EngineView makeEngineView(const int* entryTypes, int ne, bool actionPresent, bool haveCur, int curSub, int nrn,
+                                 int aa8, int ab8, bool paused, uint32_t staleSince, uint32_t now) {
+    bool execNode = false;
+    bool foreign = false;
+    for (int i = 0; entryTypes != nullptr && i < ne; ++i) {
+        const int t = entryTypes[i];
+        if (t == 0x2E || t == 0x0F) execNode = true;
+        if (t != 0x3F && t != 0x3D && t != 0x2E && t != 0x0F) foreign = true;
+    }
+    const bool creal = curReal(haveCur, curSub, aa8, ab8, paused, staleSince, now);
+    EngineView ev;
+    ev.paused = paused;
+    ev.actionPresent = actionPresent;
+    ev.executing = execNode || (!paused && ((creal && (curSub == 9 || curSub == 10)) || aa8 != 0 || ab8 != 0));
+    ev.foreign = foreign;
+    ev.idle = !foreign && !execNode && nrn == 0 && !creal;
+    return ev;
 }
 
 }  // namespace qh

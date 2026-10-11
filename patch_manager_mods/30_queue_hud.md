@@ -1,6 +1,7 @@
 # 30 — Queue HUD (`queue-hud` 0.2.0-dev): green out-of-combat action queue, leader + companion strips
 
 ## RESUME HERE
+- **queue-fix QL1 0.5.0-dev (2026-10-11)**: implemented in source, NOT installed, NOT play-tested. Details: QH4e and the "2026-10-11 Queue-fix QL1" section at the end of this doc.
 - **0.4.0-dev INSTALLED 2026-10-05 21:34 (doc 24 CS10-CS12, hot-swap 7d7650a8 -> ab52dfd7, backup `$G/backups/cs10_ch6_dclk_20261005_2134`)**: left strip reserve comes from hud-host StripSlot (order 1, selfheal order 0; fallback `shui::stripReserve`); kit art from `_shared_src/HudKit.h` (kit_frame/_hi, kit_cancel/_hi, kit_disc, byte-identical to the old qh_*); slim auto icon = selfheal button side (24 px on 47x96; `strip_icon_px` overrides). Play check: no overlap with the selfheal button, art identical, both mods register the same kit_* names (watch for missing/garbled textures).
 - **0.3.0-dev INSTALLED 2026-10-05 01:41 (user GO, with selfheal CS9b)**: stage `$K/cs11_stage_1005` (STAGE_INFO head=70e5144), 36 ids / 221 hooks,
   live dll `8bfa99d9` (kpatch `8ddf09fe`), config `d9ed58a2`. Backup `$G/backups/cs11_install_20261005_0141` (rollback = restore it, game closed).
@@ -86,8 +87,50 @@ extents, for party member 0. The vanilla red panel still handles combat. Compani
      - `AddrIconResolver` (`0x0074E0B0`) reads spell ID from `fakeAction[14]` (+0x38), matching items. Expand `fakeAction` to set `fakeAction[0] = 0x0F` and `fakeAction[14] = spellId` so queued spells render their `spells.2da` icons.
    - **QH4d: Follower AI Re-Inject Cap:**
      - Follower AI (`AIActionFollowLeader` 0x3D) cancels follower casting when leader moves. Cap re-injections to max 2 attempts to prevent infinite stutter loops when leader sprints away.
-   - **QH4e: Combat Transition Invariant:**
-     - Detour hook returns 0 immediately when `g_combat != 0`, and any active non-combat buffer is cleared on combat entry (`g_combat != 0`), ensuring zero bleed-through into native combat queue.
+   - **QH4e: Combat Transition Hand-off (QL1, 0.5.0-dev; supersedes the old "cleared on combat entry" rule):**
+     - At the combat rising edge the queued commands are handed to the engine, one per frame (`HANDOFF` / `HANDOFF_ONE`). Order: the active command first if it is no longer in the engine, then the buffer in FIFO order.
+     - Guard per hand-off: `nrn + 1 <= 4` (engine round list cap is 4; one round node runs per ~3000 ms round) and the engine is not mid-flight. After hand-off, clicks go straight to vanilla.
+     - The vanilla red combat bar shows the engine's round nodes. Our leader panel and Cancel stay hidden in combat. `show_in_combat` applies to the companion strips only.
+     - Companion (m=1,2) hand-off is best effort.
+     - `handoff_on_combat=0`: the old behaviour applies (`DROP why=combat_clear`, once per member).
 2. **QH5: Cancel Queue Button Color Parity:**
    - Harmonize Cancel button border and fill tints in `cwLookLeader` with `lbl_miqueue_teal` palette: border `{ 0.067f, 0.514f, 0.404f }` (hover `{ 0.10f, 0.72f, 0.57f }`), dark translucent fill `{ 0.00f, 0.00f, 0.00f }` (alpha `0.70f`).
+
+---
+
+## 2026-10-11 Queue-fix QL1 (0.5.0-dev): pause restore, combat hand-off, identity guard
+
+Status: **implemented in source, NOT installed, NOT play-tested.** Replaces the QH4e "cleared on combat entry" rule above when `handoff_on_combat=1`.
+
+### Pause restore (leader)
+- A vanilla quickbar click wipes the leader's engine queue (main queue and round list) even when our hook swallows the call, so a paused queued item vanishes.
+- Each wipe of an active command gets an **active-command verdict** (debounce 150 ms, min active 500 ms): `executed`, `unseen`, or `eaten` (wiped while paused or while the engine was busy).
+- An `eaten` command is re-injected once the engine is idle. It is not re-injected while a foreign order (e.g. a right-click move) owns the engine; the queue survives a new move order. Max 6 restores, 250 ms apart. Give up after 20 s of unpaused waiting (`DROP why=reinject_exhausted` or `eaten_timeout`).
+- An unpaused vanish that was never wiped is simply resolved (no loop).
+- A leftover attack node (subType 1, aa8=ab8=0) is a ghost `cur`, not busy (`STALE_CUR` once per episode). Item/spell nodes (subType 9/10) with zero flags are stale after 1500 ms unpaused.
+- `aa8`/`ab8` are sticky while paused and ignored then.
+
+### Identity guard
+- Slot k is not a stable creature: Tab / party rotation moves creatures between slots m=0/1/2.
+- The tick matches each buffer's creature to its slot and swaps buffers (`IDENT_SWAP from=k to=j`).
+- If the creature is in no slot, verdicts are skipped. After 20 s unpaused it drops (`DROP why=identity_lost`).
+
+### Ini switches (`queue_hud.ini`)
+All default to 1 in code; an absent key means 1.
+
+| Key | 1 | 0 |
+|---|---|---|
+| `pause_reinject` | re-inject eaten paused commands | no re-inject |
+| `handoff_on_combat` | hand the queue to the engine at combat entry | old behaviour: `DROP why=combat_clear`, once per member |
+| `show_in_combat` | companion strips show in combat | companion strips hide in combat |
+
+### New log lines (`queue-hud` log)
+| Line | Fields |
+|---|---|
+| `VANISH` | `cmd= m= kind=executed\|unseen\|eaten_paused\|eaten_wait paused= exec= ne= round= cur= aa8= ab8= age=` |
+| `REINJECT` | `... why=eaten_paused attempt=` |
+| `HANDOFF` | `m= active= buffered= cmds=` |
+| `HANDOFF_ONE` | `cmd= m= seq=i/n` |
+| `STALE_CUR` | `m= sub= since= aa8= ab8= paused=` |
+| `IDENT_SWAP` | `from= to=` |
 
