@@ -485,8 +485,8 @@ enum {
     NWidgets
 };
 W g_w[NWidgets];
-// Phase G bisect (HUD +0x48 = 0xFF8FB44F hides hotbar + self-heal): false = the 4 SH2 leader widgets are not created.
-constexpr bool kLeaderWidgets = false;
+// Phase G bisect (HUD +0x48 = 0xFF8FB44F hides hotbar + self-heal): false = the 4 SH2 leader widgets are not created. true = leader auto toggle button (outside, left of the portrait).
+constexpr bool kLeaderWidgets = true;
 
 void wRect(W& w, const shui::Rect& r) { if (!w.c || (w.rectSet && w.r == r)) return; if (guikit::setRect(w.c, r.x, r.y, r.w, r.h)) { w.r = r; w.rectSet = true; } }
 bool isPopText(const W& w) { int i = static_cast<int>(&w - g_w); return i == W_Auto || i == W_HpM || i == W_HpP || i == W_KeepM || i == W_KeepP || i == W_HpVal || i == W_KeepVal; }
@@ -770,6 +770,7 @@ void refreshCache(const K2PsContext* ctx, DWORD now) {
 
 std::string tipFor(const Card& c) {
     char b[160];
+    if (&c == &g_card0) return c.cfg.autoOn ? "Auto medpacks: ON - click to toggle" : "Auto medpacks: OFF - click to toggle";   // leader button = auto toggle only
     switch (c.st) {
         case shui::BtnState::FullHp: return "Full health";
         case shui::BtnState::NoItem: return "No healing item";
@@ -873,10 +874,12 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
     // Member 0 (leader) button
     Card& c0 = g_card0;
     W& b0 = g_w[W_BtnLeader];
-    c0.btn = c0.seen ? (c0.card.w > 0 ? shui::leaderButtonRect(c0.card) : shui::Rect{ c0.vit.x - 58 - 4, c0.vit.y, 58, 58 }) : shui::Rect{ 0, 0, 0, 0 };
-    if (c0.btn.w > 0) {   // hud-host strip slot order 0 (doc 24 CS10): registration only, the button is still drawn at shui::buttonRect
+    // Geometry source: the portrait card rect; fallback (card unreadable) = the vit rect through the same formula.
+    const shui::Rect geo0 = c0.card.w > 0 ? c0.card : c0.vit;
+    c0.btn = c0.seen ? shui::leaderButtonRect(geo0) : shui::Rect{ 0, 0, 0, 0 };
+    if (c0.btn.w > 0) {   // hud-host strip slot order 0 (doc 24 CS10): registration only, the button is still drawn at shui::leaderButtonRect
         K2HudRect sr{};
-        g_hudc.stripSlot("companion-selfheal", 0, K2HudRect{ c0.vit.x, c0.vit.y, c0.vit.w, c0.vit.h }, shui::stripReserve(c0.vit), c0.btn.h, &sr);
+        g_hudc.stripSlot("companion-selfheal", 0, K2HudRect{ geo0.x, geo0.y, geo0.w, geo0.h }, shui::leaderStripReserve(geo0), c0.btn.h, &sr);
     }
     c0.st = shui::resolveState(c0.have && c0.seen, false, c0.m.cur, c0.m.max, c0.pk.pick >= 0, g_pend0.on, c0.cfg.autoOn);
     if (c0.btn.w <= 0) c0.st = shui::BtnState::Hidden;
@@ -939,14 +942,24 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
                 saveIni(key, nc);
             }
         } else if (onBtn >= 0) {
-            Card& c = (onBtn == 0) ? g_card0 : g_card[onBtn];
-            if (shui::clickAllowed(c.st)) {
+            if (onBtn == 0) {   // leader button: LMB toggles auto only (no useNow, no popover)
+                if (g_card0.st != shui::BtnState::Hidden) {
+                    if (filewatch::changed(g_cfgPoll, IniPath, now, true)) loadCfg();   // pick up a hand edit before overwriting
+                    shui::CompCfg nc = shui::lookup(g_cfg, "slot0");
+                    nc.autoOn = !nc.autoOn;
+                    shui::upsert(g_cfg, "slot0", nc);
+                    g_card0.cfg = nc;
+                    saveIni("slot0", nc);
+                    KP_LOG(chUi, "TOGGLE member=0 auto=%d", (int)nc.autoOn);
+                }
+            } else if (Card& c = g_card[onBtn]; shui::clickAllowed(c.st)) {
                 if (c.st == shui::BtnState::NoItem) KP_LOG(chCall, "CLICK member=%d noitem", onBtn);
                 else useNow(ctx, now, onBtn, shui::clickMinCount(c.st), "click");
             }
         } else if (popOpen) g_popMi = -1;
     } else if (haveCur && redge) {
-        if (onBtn >= 0) g_popMi = (g_popMi == onBtn) ? -1 : onBtn;
+        if (onBtn == 0) { /* leader button: RMB does nothing, g_popMi never becomes 0 */ }
+        else if (onBtn > 0) g_popMi = (g_popMi == onBtn) ? -1 : onBtn;
         else if (popOpen && !inPop) g_popMi = -1;
     }
 
@@ -1089,7 +1102,7 @@ void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
     rd<uint32_t>(panel, Panel_Flags, &f48pre);
     buildWidgets(panel);
     if (!g_logOn) return;
-    KP_LOG(chHud, "P0 bisect leaderWidgets=%d hud +0x48 before build=%08x", (int)kLeaderWidgets, (unsigned)f48pre);
+    KP_LOGV(chHud, KPLOG_DEBUG, "P0 bisect leaderWidgets=%d hud +0x48 before build=%08x", (int)kLeaderWidgets, (unsigned)f48pre);
     uint32_t f30 = 0, f48 = 0, ctl = 0, cnt = 0;
     rd<uint32_t>(panel, Panel_Open, &f30); rd<uint32_t>(panel, Panel_Flags, &f48); rd<uint32_t>(panel, Panel_Ctl, &ctl); rd<uint32_t>(panel, Panel_CtlCount, &cnt);
     bool layoutOpen = f30 != 0 && (f48 & 2);

@@ -190,6 +190,33 @@ static void tClient() {
     KT_CHECK(!k2hud::Client::usable(&tiny)); KT_CHECK(!k2hud::Client::usable(nullptr)); KT_CHECK(k2hud::Client::usable(&g_fakeHud));
 }
 
+static std::string g_obs; static int g_obsCalls = 0;
+static void KPATCH_CALL bld1(const K2HudContext* c, void*) { rec("bld1", c); }
+static void KPATCH_CALL bld2(const K2HudContext* c, void*) { rec("bld2", c); }
+static void obsCb(const char* owner, void* u) { g_obs += owner; g_obs += ";"; ++g_obsCalls; if (u) ++*static_cast<int*>(u); }
+
+static void tBuildObserver() {
+    hhd::Dispatcher d;
+    d.add(K2HUD_BUILD, 20, bld2, nullptr, "second");
+    d.add(K2HUD_BUILD, 10, bld1, nullptr, "first");
+    d.add(K2HUD_FRAME, 0, frameCb, nullptr, "frameOwner");
+    K2HudContext ctx = hhd::makeBuildContext(0x1000, 3);
+    // null observer: behaviour unchanged
+    g_trace.clear(); hhd::runBuild(d, ctx);
+    std::string plain = g_trace;
+    KT_CHECK_EQ(plain.c_str(), "bld1@p3;bld2@p3;");
+    // observer: once per BUILD consumer, in order, owner names; consumers still run in the same order
+    int user = 0; g_obs.clear(); g_obsCalls = 0; g_trace.clear();
+    hhd::runBuild(d, ctx, obsCb, &user);
+    KT_CHECK_EQ(g_trace.c_str(), plain.c_str());
+    KT_CHECK_EQ(g_obs.c_str(), "first;second;");
+    KT_CHECK_EQ(g_obsCalls, 2); KT_CHECK_EQ(user, 2);
+    // empty phase: observer never called
+    hhd::Dispatcher none; g_obsCalls = 0;
+    hhd::runBuild(none, ctx, obsCb, nullptr);
+    KT_CHECK_EQ(g_obsCalls, 0);
+}
+
 static uint32_t g_postFrame; static int32_t g_postLeader, g_postTarget, g_postType, g_postMenu, g_postHud, g_postForce;
 static void KPATCH_CALL postCb(const K2HudContext* c, void*) {
     rec("post", c);
@@ -252,6 +279,6 @@ static void tPost() {
 }
 
 int main() {
-    tOrder(); tUnregister(); tLimits(); tPopulate(); tContext(); tClient(); tPost(); tBuild();
+    tOrder(); tUnregister(); tLimits(); tPopulate(); tContext(); tClient(); tPost(); tBuild(); tBuildObserver();
     return kt::Report("hh_dispatch_test");
 }

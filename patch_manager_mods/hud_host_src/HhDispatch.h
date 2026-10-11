@@ -8,6 +8,9 @@ namespace hhd {
 
 constexpr int MaxPerPhase = 16;
 
+// Optional per-entry observer: called right after each consumer returns, with that consumer's owner name (diagnostics only).
+typedef void (*EntryObserver)(const char* owner, void* user);
+
 struct Entry { int32_t token; int32_t prio; K2HudCallback fn; void* user; const char* owner; };
 
 struct Dispatcher {
@@ -39,12 +42,16 @@ struct Dispatcher {
     }
     bool empty(int32_t phase) const { return phase < 0 || phase >= K2HUD_PHASE_COUNT || n[phase] == 0; }
     // Calls every callback of ctx.phase in order. Iterates a snapshot, so a callback that (un)registers does not skip or repeat others.
-    void run(const K2HudContext& ctx) const {
+    // obs (default null = identical behaviour) is called once after each callback, in order, with that entry's owner.
+    void run(const K2HudContext& ctx, EntryObserver obs = nullptr, void* obsUser = nullptr) const {
         if (empty(ctx.phase)) return;
         Entry snap[MaxPerPhase];
         const int cnt = n[ctx.phase];
         memcpy(snap, e[ctx.phase], sizeof(Entry) * cnt);
-        for (int i = 0; i < cnt; ++i) snap[i].fn(&ctx, snap[i].user);
+        for (int i = 0; i < cnt; ++i) {
+            snap[i].fn(&ctx, snap[i].user);
+            if (obs) obs(snap[i].owner, obsUser);
+        }
     }
 };
 
@@ -91,9 +98,10 @@ inline K2HudContext makeBuildContext(int32_t panel, uint32_t frame) {
 }
 
 // Dispatches K2HUD_BUILD only (never FRAME / PRE / POST). ctx comes from makeBuildContext.
-inline void runBuild(const Dispatcher& d, K2HudContext& ctx) {
+// obs (optional, diagnostics) is called after each BUILD consumer with its owner name.
+inline void runBuild(const Dispatcher& d, K2HudContext& ctx, EntryObserver obs = nullptr, void* obsUser = nullptr) {
     ctx.phase = K2HUD_BUILD;
-    d.run(ctx);
+    d.run(ctx, obs, obsUser);
 }
 
 // ---- TARGET_MENU_POST (0x00743847 PopulateMenus tail since hud-host 0.4.0; was the 0x00743850 entry) ----

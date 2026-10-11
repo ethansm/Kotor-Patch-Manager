@@ -71,6 +71,23 @@ int32_t KPATCH_CALL apiStripSlot(const char* owner, int32_t order, const K2HudRe
     return 1;
 }
 
+// BUILD48 probe (diagnostic): the HUD panel's dwords at +0x40..+0x4F around each BUILD consumer, first 4 builds only.
+constexpr unsigned S_BuildProbe = 0x7C11;
+constexpr int BuildProbeOff = 0x40;
+constexpr int BuildProbeMax = 4;
+int g_buildProbe = 0;          // builds probed so far
+bool g_frame0Logged = false;   // +0x48 logged at the first FRAME dispatch
+uintptr_t g_probePanel = 0;    // panel of the build being probed (0 = not probing)
+uint32_t g_probeLast = 0;      // +0x48 before the next consumer
+
+bool probeRead48(uint32_t* v) { return g_probePanel && saferead::readAt(S_BuildProbe, g_probePanel, BuildProbeOff + 8, v); }
+void probeAfterConsumer(const char* owner, void*) {
+    uint32_t now = 0;
+    if (!probeRead48(&now)) return;
+    KP_LOG(chCore, "BUILD48 owner=%s +0x48 %08x -> %08x", owner ? owner : "?", (unsigned)g_probeLast, (unsigned)now);
+    g_probeLast = now;
+}
+
 const K2HudApi g_api = { sizeof(K2HudApi), apiRegister, apiUnregister, apiHud, apiFrame, apiStripSlot };
 
 } // namespace
@@ -93,6 +110,11 @@ __declspec(dllexport) void __cdecl HH_TargetMenuPopulate(void* menuPtr, void* le
     K2HudContext ctx = hhd::makeContext(int32_t(menu), int32_t(reinterpret_cast<uintptr_t>(leaderPtr)), forceUnusable,
                                         int32_t(reinterpret_cast<uintptr_t>(targetPtr)), raw, ++g_frame);
     if (ctx.hud) g_hud = ctx.hud;
+    if (!g_frame0Logged && g_hud) {
+        g_frame0Logged = true;
+        uint32_t v = 0;
+        if (saferead::readAt(S_BuildProbe, uintptr_t(g_hud), BuildProbeOff + 8, &v)) KP_LOG(chCore, "BUILD48 frame0 +0x48 %08x", (unsigned)v);
+    }
     static bool first = true;
     if (first) {
         first = false;
@@ -142,6 +164,20 @@ __declspec(dllexport) void __cdecl HH_LayoutClosing(void* panelPtr) {
         KP_LOG(chCore, "first BUILD dispatch: panel=%08x consumers build=%d", (unsigned)panel, g_disp.n[K2HUD_BUILD]);
     } else {
         KP_LOGV(chCore, KPLOG_DEBUG, "BUILD dispatch: panel=%08x consumers build=%d", (unsigned)panel, g_disp.n[K2HUD_BUILD]);
+    }
+    if (g_buildProbe < BuildProbeMax) {
+        ++g_buildProbe;
+        uint32_t d[4] = {};
+        bool ok = true;
+        for (int i = 0; i < 4; ++i) ok = saferead::readAt(S_BuildProbe, panel, BuildProbeOff + 4 * i, &d[i]) && ok;
+        if (ok) {
+            KP_LOG(chCore, "BUILD48 entry +0x40 %08x %08x %08x %08x", (unsigned)d[0], (unsigned)d[1], (unsigned)d[2], (unsigned)d[3]);
+            g_probePanel = panel;
+            g_probeLast = d[2];
+            hhd::runBuild(g_disp, ctx, probeAfterConsumer, nullptr);
+            g_probePanel = 0;
+            return;
+        }
     }
     hhd::runBuild(g_disp, ctx);
 }

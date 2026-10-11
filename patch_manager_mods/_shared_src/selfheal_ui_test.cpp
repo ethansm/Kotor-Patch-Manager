@@ -249,6 +249,18 @@ int main() {
     KT_CHECK(ringRect({100, 50, 1, 1}) == (Rect{100, 50, 2, 2}));     // 1.5 -> 2; (1-2)/2 truncates to 0
     KT_CHECK_EQ(ringRect({0, 0, 3, 3}).w, 4);    // 4.5 -> 4 (not 6)
     KT_CHECK_EQ(ringRect({0, 0, 7, 7}).w, 10);   // 10.5 -> 10 (not 12)
+    // ---- leaderButtonRect: OUTSIDE, left of the portrait card, top edges aligned (gap = lround(2*h/36), s = clamp(lround(h/4), 16, 24)) ----
+    { Rect card{100, 500, 106, 106}; Rect r = leaderButtonRect(card);
+      KT_CHECK(r == (Rect{70, 500, 24, 24}));
+      KT_CHECK_EQ(r.y, card.y);
+      KT_CHECK_EQ(r.x + r.w + 6, card.x);
+      KT_CHECK(leaderStripReserve(card) > r.w);
+      KT_CHECK_EQ(leaderStripReserve(card), 6 + 24 + (36 - 24 + 1) / 2 + kReserveGap); }
+    { Rect z{0, 0, 0, 0}; KT_CHECK(leaderButtonRect({20, 500, 106, 106}) == z); KT_CHECK(leaderButtonRect({0, 500, 106, 106}) == z);   // would fall off the left edge
+      KT_CHECK(leaderButtonRect({100, 500, 0, 106}) == z); KT_CHECK(leaderButtonRect({100, 500, 106, 0}) == z);
+      KT_CHECK(!(leaderButtonRect({36, 500, 106, 106}) == z)); }   // x = 36-6-24 = 6 >= 0
+    { Rect r = leaderButtonRect({100, 50, 20, 20}); KT_CHECK_EQ(r.w, 16); KT_CHECK_EQ(r.x + r.w + 2, 100); }   // small card: min size 16, gap floor 2
+
     // ---- stripReserve (moved from queue-hud's selfHealReserve, math unchanged): live companion vit 47x96, bounds, covers button + ring ----
     KT_CHECK_EQ(stripReserve({3671, 1285, 47, 96}), 38);     // gap 6 + button 24 + ring overhang 6 + kReserveGap 2
     KT_CHECK_EQ(stripReserve({0, 0, 47, 8}), 2 + 16 + 4 + kReserveGap);   // minimum button 16, gap floor 2

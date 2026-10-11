@@ -43,9 +43,22 @@ inline int stripReserve(Rect vit) {
     const int ring = ((sb * 3 + 2) / 4) * 2;
     return gap + sb + (ring - sb + 1) / 2 + kReserveGap;
 }
+// Leader (party-leader card) button: OUTSIDE, left of the portrait card, top edges aligned. Same size/gap rules as buttonRect, keyed on card.h.
+// {0,0,0,0} = do not draw (invalid card, or it would fall off the left screen edge).
+inline int leaderBtnSize(Rect card) { return clampi((int)std::lround(card.h * 0.25), 16, 24); }
+inline int leaderBtnGap(Rect card) { int g = (int)std::lround(2 * card.h / 36.0); return g < 2 ? 2 : g; }
 inline Rect leaderButtonRect(Rect card) {
     if (card.w <= 0 || card.h <= 0) return Rect{0, 0, 0, 0};
-    return Rect{card.x, card.y, 58, 58};
+    const int s = leaderBtnSize(card);
+    const int x = card.x - leaderBtnGap(card) - s;
+    if (x < 0) return Rect{0, 0, 0, 0};
+    return Rect{x, card.y, s, s};
+}
+// Width left of card.x kept free for the leader button + its ring (mirrors stripReserve).
+inline int leaderStripReserve(Rect card) {
+    const int s = leaderBtnSize(card);
+    const int ring = ((s * 3 + 2) / 4) * 2;
+    return leaderBtnGap(card) + s + (ring - s + 1) / 2 + kReserveGap;
 }
 
 enum class BtnState { Hidden, FullHp, NoItem, Pending, AutoOn, Normal };
