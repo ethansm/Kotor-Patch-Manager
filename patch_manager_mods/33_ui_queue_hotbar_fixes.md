@@ -238,6 +238,7 @@ int capPad = 6;      // was 4 (cap padding)
 | QH5 | [Queue HUD] Exact color parity for Cancel button matching `lbl_miqueue_teal` palette | DONE | `python3 scripts/build_check.py --mod queue_hud_src` | 15 min |
 | QL1 | [Queue HUD] Non-combat queue fix: pause restore (active-command verdict), ghost `cur`, identity guard, combat hand-off (doc 30 "Queue-fix QL1") | BUILT | `python3 scripts/run_tests.py queue_hud` | 20 min |
 | QL2 | [Queue HUD] Strip flicker (active-cmd slot + 400 ms hold), hand-off clears engine queue first (`handoff_clear_first`), ROUND/HANDOFF_CLEAR trace; medpack = recon only (doc 30 "Queue-fix QL2") | BUILT | `python3 scripts/run_tests.py queue_hud` | 25 min |
+| HK1 | [cmdq-probe 0.1.0] Log-only probe mod, 11 windows (pause/cmd/fire/round/clr/reequip/med), log checker `scripts/cmdq_probe_log_check.py`; CanUseItem window is 0x5D32AE (read eax), not 0x5D32AB; AddAttackActions re-adds 0x0C not 0x3F (`.claude/handoffs/hk1/`). NOT installed: needs full reinstall + GO | BUILT | `python3 scripts/run_tests.py cmdq_probe_log` | 45 min |
 | SH1 | [SelfHeal] 58px companion health button & unified action tray wrapper | DONE | `python3 scripts/run_tests.py -k selfheal` | 25 min |
 | SH2 | [SelfHeal] Leader 58px health button at top-left of leader portrait | DONE | `python3 scripts/run_tests.py -k selfheal` | 25 min |
 | SH3 | [SelfHeal] Popover options text fix: `LBL_HOTBARPTITLE` template & 58px row layout | DONE | `python3 scripts/run_tests.py -k selfheal` | 20 min |
