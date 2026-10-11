@@ -25,7 +25,10 @@
 
 KP_LOG_PATCH("npc-diversity");
 
-extern "C" void __cdecl KPatchInit(const KPatchApi* api) { KpLog_Init(api); }
+// KPatchInit (KpLog_Init) is deliberately NOT exported in 0.1.1-probe: a hot-swap refuses a DLL whose exports
+// differ from the live one, and the live npc-diversity.dll exports NpcDiversity_Init. Logs therefore use the
+// header's fallback sink (npc-diversity_log.txt) at INFO. The KPatchInit migration (19f) is a later full reinstall.
+extern "C" __declspec(dllexport) void NpcDiversity_Init() {}
 
 namespace {
 
@@ -50,7 +53,7 @@ KP_CHANNEL(chProbe, "probe");
 KP_CHANNEL(chRead, "read");
 
 // Only stores the path (no I/O); old core: same file name the checker expects.
-const bool g_fallbackSet = (KpLog_SetFallbackFile("npc-diversity_log.txt"), true);
+const bool g_fallbackSet = (KpLog_SetFallbackFile("npc-diversity_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
 
 nl::Counts g_c;
 nl::U32Set<256> g_frSet, g_retSet, g_oidSet, g_cenTexSet, g_cenRemSet;

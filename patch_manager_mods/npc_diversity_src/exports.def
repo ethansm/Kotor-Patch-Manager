@@ -1,4 +1,4 @@
 EXPORTS
-    KPatchInit
+    NpcDiversity_Init
     OverrideNpcTexture
     RemapNpcAppearance
