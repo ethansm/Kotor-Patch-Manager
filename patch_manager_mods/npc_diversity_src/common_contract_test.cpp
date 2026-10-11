@@ -1,6 +1,8 @@
 // common_contract_test.cpp -- Common CONTRACT test for Master NPC Diversity Dispatcher
+// Pins the engine layout constants (NpcDivLayout.h) and the Common row/exclusion APIs the mod relies on.
 #include "DiversityLogic.h"
 #include "DiversityRows.h"
+#include "NpcDivLayout.h"
 #include "check.h"
 #include <cstdint>
 #include <cstddef>
@@ -10,55 +12,50 @@
 
 namespace {
 
+namespace L = NpcDiversity::layout;
+
 void testRowIndices() {
     CEQ("Fat Male commoner row index", NpcDiversity::APP_COMMONER_FAT_MALE, 802);
     CEQ("Fat Female commoner row index", NpcDiversity::APP_COMMONER_FAT_FEMALE, 803);
     CEQ("Czerka Officer Female row index", NpcDiversity::APP_CZERKA_OFFICER_FEMALE, 804);
     CEQ("Twilek Male 02 A row index", NpcDiversity::APP_TWILEK_COMMONER_M_02_A, 805);
+    CEQ("Twilek Male 02 B row index", NpcDiversity::APP_TWILEK_COMMONER_M_02_B, 806);
+    CEQ("Twilek Male 02 C row index", NpcDiversity::APP_TWILEK_COMMONER_M_02_C, 807);
+    CEQ("Twilek Male 02 D row index", NpcDiversity::APP_TWILEK_COMMONER_M_02_D, 808);
+    CEQ("Twilek Female Dancer Boot row index", NpcDiversity::APP_TWILEK_FEMALE_DANCER_BOOT, 809);
     CEQ("Twilek Female Dancer row index", NpcDiversity::APP_TWILEK_FEMALE_DANCER, 810);
-    CEQ("Alien Kel Dor 01 row index", NpcDiversity::APP_ALIEN_KELDOR_01, 812);
-    CEQ("Alien Iridorian 01 row index", NpcDiversity::APP_ALIEN_IRIDORIAN_01, 814);
+    CEQ("Twilek Female Underwear row index", NpcDiversity::APP_TWILEK_FEMALE_UNDERWEAR, 811);
     CEQ("Restored head Ahrnell row index", NpcDiversity::HEAD_LLK_AHRNELL, 192);
 }
 
 void testDescriptorOffsets() {
-    #pragma pack(push, 1)
-    struct AppearanceDesc {
-        char subType;           // +0x00
-        uint8_t textureVar;     // +0x01
-        uint8_t pad[0x12];      // +0x02 .. +0x13
-        int32_t bodyClass;      // +0x14
-        uint16_t appearance;    // +0x18
-        char headOverride;      // +0x1A
-        uint8_t gender;         // +0x1B
-        uint8_t phenotype;      // +0x1C
-    };
-    #pragma pack(pop)
-
-    CEQ("AppearanceDesc::textureVar offset", offsetof(AppearanceDesc, textureVar), 0x01);
-    CEQ("AppearanceDesc::bodyClass offset", offsetof(AppearanceDesc, bodyClass), 0x14);
-    CEQ("AppearanceDesc::appearance offset", offsetof(AppearanceDesc, appearance), 0x18);
-    CEQ("AppearanceDesc::headOverride offset", offsetof(AppearanceDesc, headOverride), 0x1A);
-    CEQ("AppearanceDesc::gender offset", offsetof(AppearanceDesc, gender), 0x1B);
-    CEQ("AppearanceDesc::phenotype offset", offsetof(AppearanceDesc, phenotype), 0x1C);
+    using AppearanceDesc = L::AppearanceDesc;
+    CEQ("AppearanceDesc::textureVar offset", offsetof(AppearanceDesc, textureVar), L::kDescOffTextureVar);
+    CEQ("AppearanceDesc::descMode14 offset", offsetof(AppearanceDesc, descMode14), L::kDescOffMode14);
+    CEQ("AppearanceDesc::appearance offset", offsetof(AppearanceDesc, appearance), L::kDescOffAppearance);
+    CEQ("AppearanceDesc::headOverride offset", offsetof(AppearanceDesc, headOverride), L::kDescOffHeadOverride);
+    CEQ("AppearanceDesc::gender offset", offsetof(AppearanceDesc, gender), L::kDescOffGender);
+    CEQ("AppearanceDesc::phenotype offset", offsetof(AppearanceDesc, phenotype), L::kDescOffPhenotype);
+    CCHECK("AppearanceDesc covers +0x00..+0x1C", sizeof(AppearanceDesc) >= 0x1D);
 }
 
 void testCreatureOffsets() {
-    // Engine constants from CSWCObject / CSWCCreature layout
-    constexpr size_t OffsetObjectID = 0x04;
-    constexpr size_t OffsetTag = 0x18;
-    constexpr size_t OffsetTagLen = 0x1C;
-    constexpr size_t OffsetPositionX = 0x24;
-    constexpr size_t OffsetPositionY = 0x28;
-    constexpr size_t OffsetPositionZ = 0x2C;
+    CEQ("CSWCObject m_nObjectID offset (INFERRED)", L::kCreOffObjectId, 0x04);
+    CEQ("CSWCObject m_sTag ptr offset (UNVERIFIED)", L::kCreOffTagPtr, 0x18);
+    CEQ("CSWCObject m_sTag len offset (UNVERIFIED)", L::kCreOffTagLen, 0x1C);
+    CEQ("CSWCObject m_vPosition.x offset (read VERIFIED)", L::kCreOffPosX, 0x24);
+    CEQ("CSWCObject m_vPosition.y offset (INFERRED)", L::kCreOffPosY, 0x28);
+    CEQ("CSWCObject m_vPosition.z offset (INFERRED)", L::kCreOffPosZ, 0x2C);
+    CEQ("CSWCCreature pending appearance counter offset (UNVERIFIED)", L::kCreOffAppCounter, 0x328);
+}
 
-    CEQ("CSWCObject m_nObjectID offset", OffsetObjectID, 0x04);
-    CEQ("CSWCObject m_sTag (CExoString) offset", OffsetTag, 0x18);
-    CEQ("CSWCObject m_sTag len offset", OffsetTagLen, 0x1C);
-    CEQ("CSWCObject m_vPosition.x offset", OffsetPositionX, 0x24);
-    CEQ("CSWCObject m_vPosition.y offset", OffsetPositionY, 0x28);
-    CEQ("CSWCObject m_vPosition.z offset", OffsetPositionZ, 0x2C);
+void testHookFrameOffsets() {
+    CEQ("hook 1 pDesc arg [EBP+0x08] (VERIFIED)", L::kFrameOffPDesc, 0x08);
+    CEQ("hook 1 out texture arg [EBP+0x10] (VERIFIED)", L::kFrameOffOutTexture, 0x10);
+    CEQ("engine resref buffer size is 16 bytes", sizeof(L::ResRef), 16);
+}
 
+void testExclusionContract() {
     // Verify critical exclusion behavior contract
     CCHECK("Kreia companion tag excluded", NpcDiversity::IsExcludedFromDiversification("kreia"));
     CCHECK("Atton companion tag excluded", NpcDiversity::IsExcludedFromDiversification("atton"));
@@ -72,5 +69,7 @@ int main() {
     testRowIndices();
     testDescriptorOffsets();
     testCreatureOffsets();
+    testHookFrameOffsets();
+    testExclusionContract();
     return kt::Report("npc_diversity_common_contract_test");
 }

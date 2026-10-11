@@ -99,7 +99,7 @@ __declspec(dllexport) void __cdecl RemapNpcAppearance(void* pCreature, Appearanc
     uint32_t objectId = *(const uint32_t*)((const char*)pCreature + 0x04);
 
     uint32_t hash = NpcDiversity::HashCreaturePosition(x, y, objectId, pDesc->appearance);
-    uint16_t newApp = NpcDiversity::RemapAppearance(pDesc->appearance, hash);
+    uint16_t newApp = NpcDiversity::RemapAppearance(pDesc->appearance, pDesc->gender, hash);
     if (newApp != pDesc->appearance) {
         pDesc->appearance = newApp;
     }

@@ -7,6 +7,8 @@
 #include <cstdio>
 
 #include "DiversityRows.h"
+#include "DiversityExclusion.h"
+#include "DiversityTables.h"
 
 namespace NpcDiversity {
 
@@ -14,94 +16,56 @@ namespace NpcDiversity {
 constexpr uint32_t FNV_OFFSET_BASIS = 2166136261u;
 constexpr uint32_t FNV_PRIME = 16777619u;
 
-// Case-insensitive prefix helper
-inline bool StartsWithCaseInsensitive(const char* str, const char* prefix) {
-    if (!str || !prefix) return false;
-    while (*prefix) {
-        char c1 = *str++;
-        char c2 = *prefix++;
-        if (c1 >= 'A' && c1 <= 'Z') c1 = static_cast<char>(c1 + ('a' - 'A'));
-        if (c2 >= 'A' && c2 <= 'Z') c2 = static_cast<char>(c2 + ('a' - 'A'));
-        if (c1 != c2) return false;
-    }
-    return true;
+// Selection percentages (per generic NPC class). Each is applied to BandRoll(hash).
+// Kept here, not in DiversityRows.h (generated).
+constexpr uint32_t kTwilekMaleRemapPct = 80;  // male Twi'lek: remapped to 805..808, rest unchanged
+constexpr uint32_t kFatPct = 15;              // male and female commoners: fat body
+constexpr uint32_t kCzerkaPct = 5;            // female commoner: Czerka officer, after the fat band
+constexpr uint32_t kDancerPct = 20;           // female Twi'lek: dancer variants
+
+// Commoner clothing texture slots N_CommM%02d / N_CommF%02d. Any content works;
+// ComputeSlot indexes this array, so removing an entry only shrinks the pool.
+constexpr uint8_t kCommonerSlots[] = {
+    1,  2,  3,  4,  5,  6,  7,  8,  9,  10,
+    11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+    21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+    31, 32, 33, 34, 35};
+constexpr size_t kCommonerSlotCount = sizeof(kCommonerSlots) / sizeof(kCommonerSlots[0]);
+
+// Murmur3 32-bit finaliser (fmix32). Bijective, full avalanche: every input bit
+// flips about half the output bits. Used to turn a low-entropy FNV state into a
+// well-mixed value before taking a modulus.
+inline uint32_t Fmix32(uint32_t h) {
+    h ^= h >> 16;
+    h *= 0x85ebca6bu;
+    h ^= h >> 13;
+    h *= 0xc2b2ae35u;
+    h ^= h >> 16;
+    return h;
 }
 
-// Exclusion tag lookup for companions and major story NPCs
-inline bool IsExcludedFromDiversification(const char* tag) {
-    if (!tag) return false;
-
-    // Skip common creature tag prefixes (e.g. "n_chodo" -> "chodo", "npc_atton" -> "atton")
-    const char* p = tag;
-    if (StartsWithCaseInsensitive(p, "npc_")) {
-        p += 4;
-    } else if (StartsWithCaseInsensitive(p, "n_") || StartsWithCaseInsensitive(p, "c_")) {
-        p += 2;
-    }
-
-    // Companion exclusion tags (case-insensitive)
-    if (StartsWithCaseInsensitive(p, "kreia") ||
-        StartsWithCaseInsensitive(p, "atton") ||
-        StartsWithCaseInsensitive(p, "bao_dur") ||
-        StartsWithCaseInsensitive(p, "baodur") ||
-        StartsWithCaseInsensitive(p, "mira") ||
-        StartsWithCaseInsensitive(p, "hanharr") ||
-        StartsWithCaseInsensitive(p, "mandalore") ||
-        StartsWithCaseInsensitive(p, "visas") ||
-        StartsWithCaseInsensitive(p, "disciple") ||
-        StartsWithCaseInsensitive(p, "handmaiden") ||
-        StartsWithCaseInsensitive(p, "t3m4") ||
-        StartsWithCaseInsensitive(p, "t3_m4") ||
-        StartsWithCaseInsensitive(p, "hk47") ||
-        StartsWithCaseInsensitive(p, "hk_47") ||
-        StartsWithCaseInsensitive(p, "g0t0") ||
-        StartsWithCaseInsensitive(p, "g0_t0") ||
-        StartsWithCaseInsensitive(p, "player")) {
-        return true;
-    }
-
-    // Major story NPC exclusion tags (case-insensitive)
-    if (StartsWithCaseInsensitive(p, "chodo") ||
-        StartsWithCaseInsensitive(p, "luxa") ||
-        StartsWithCaseInsensitive(p, "grenn") ||
-        StartsWithCaseInsensitive(p, "opo_chano") ||
-        StartsWithCaseInsensitive(p, "opochano") ||
-        StartsWithCaseInsensitive(p, "lorso") ||
-        StartsWithCaseInsensitive(p, "b4d4") ||
-        StartsWithCaseInsensitive(p, "ralon") ||
-        StartsWithCaseInsensitive(p, "moza") ||
-        StartsWithCaseInsensitive(p, "vrook") ||
-        StartsWithCaseInsensitive(p, "zreztik") ||
-        StartsWithCaseInsensitive(p, "geeda")) {
-        return true;
-    }
-
-    return false;
+// Salted draw: Mix(hash, salt) = Fmix32(hash ^ (salt * 0x9E3779B1)).
+// Each independent decision uses its own salt so draws do not share bits:
+//   salt 1 = band roll (BandRoll), 2 = Twi'lek male variant, 3 = female dancer variant,
+//   salt 4 = commoner texture slot (ComputeSlot).
+inline uint32_t Mix(uint32_t hash, uint32_t salt) {
+    return Fmix32(hash ^ (salt * 0x9E3779B1u));
 }
 
-// Deterministic hash computed from creature spawn parameters
-inline uint32_t HashCreatureSpawn(const char* areaResRef, float x, float y, const char* tag) {
+// Percentage roll in [0, 100) for the class-level remap decisions (salt 1).
+inline uint32_t BandRoll(uint32_t hash) {
+    return Mix(hash, 1) % 100u;
+}
+
+// FNV-1a over the 8 bytes of (ptr, ret). Fallback seed when a per-creature stash is absent.
+inline uint32_t HashSeedFallback(uint32_t ptr, uint32_t ret) {
     uint32_t hash = FNV_OFFSET_BASIS;
-
-    auto mix_str = [&](const char* s) {
-        if (!s) return;
-        while (*s) {
-            hash = (hash ^ static_cast<uint8_t>(*s++)) * FNV_PRIME;
-        }
-    };
-
-    mix_str(areaResRef);
-    mix_str(tag);
-
-    // Quantize position to 0.1m precision
-    int32_t qx = static_cast<int32_t>(x * 10.0f);
-    int32_t qy = static_cast<int32_t>(y * 10.0f);
-
-    hash = (hash ^ static_cast<uint32_t>(qx & 0xFFFF)) * FNV_PRIME;
-    hash = (hash ^ static_cast<uint32_t>((qx >> 16) & 0xFFFF)) * FNV_PRIME;
-    hash = (hash ^ static_cast<uint32_t>(qy & 0xFFFF)) * FNV_PRIME;
-    hash = (hash ^ static_cast<uint32_t>((qy >> 16) & 0xFFFF)) * FNV_PRIME;
-
+    for (int i = 0; i < 4; ++i) {
+        hash = (hash ^ static_cast<uint8_t>((ptr >> (8 * i)) & 0xFFu)) * FNV_PRIME;
+    }
+    for (int i = 0; i < 4; ++i) {
+        hash = (hash ^ static_cast<uint8_t>((ret >> (8 * i)) & 0xFFu)) * FNV_PRIME;
+    }
     return hash;
 }
 
@@ -121,11 +85,9 @@ inline uint32_t HashDescriptor(uint16_t appearance, uint8_t gender, uint8_t text
     return hash;
 }
 
-// Map hash value to an integer slot in [minSlot, maxSlot] inclusive
-inline int ComputeSlot(uint32_t hash, int minSlot = 1, int maxSlot = 35) {
-    if (minSlot >= maxSlot) return minSlot;
-    int range = maxSlot - minSlot + 1;
-    return minSlot + static_cast<int>(hash % static_cast<uint32_t>(range));
+// Map a hash to a commoner texture slot (salt 4), chosen from kCommonerSlots
+inline int ComputeSlot(uint32_t hash) {
+    return static_cast<int>(kCommonerSlots[Mix(hash, 4) % kCommonerSlotCount]);
 }
 
 // Check if a texture ResRef belongs to generic commoner clothing
@@ -151,7 +113,7 @@ inline bool ShouldDiversifyTexture(const char* currentTex, uint32_t hash, char* 
         return false;
     }
 
-    int slot = ComputeSlot(hash, 1, 35);
+    int slot = ComputeSlot(hash);
     if (isFemale) {
         std::snprintf(outTex, outSize, "N_CommF%02d", slot);
     } else {
@@ -160,77 +122,24 @@ inline bool ShouldDiversifyTexture(const char* currentTex, uint32_t hash, char* 
     return true;
 }
 
-// Generic civilian appearance checks (matching generic civilian appearance rows)
-inline bool IsGenericMaleCommoner(uint16_t app) {
-    switch (app) {
-        // Test ranges
-        case 300: case 301: case 302: case 303: case 304:
-        case 305: case 306: case 307: case 308: case 309: case 310:
-        // Vanilla appearance.2da generic male commoners
-        case 17:
-        case 190: case 191: case 192: case 193: case 194:
-        case 345: case 346: case 347: case 348: case 349:
-        case 423: case 424: case 428: case 430:
-        case 591: case 592: case 593: case 594: case 595: case 596:
-        case 615: case 616: case 617:
-            return true;
-        default:
-            return false;
-    }
+// Quantise a coordinate to 0.1 m units (v * 10, truncated).
+// NaN maps to 0. Values are clamped to +/-1.0e6 first, so the float->int cast is always in range
+// (|v * 10| <= 1e7) and +/-inf and huge values give a fixed, deterministic bucket.
+inline int32_t QuantizeCoord(float v) {
+    if (!(v == v)) return 0;  // NaN
+    constexpr float kLimit = 1.0e6f;
+    if (v > kLimit) v = kLimit;
+    if (v < -kLimit) v = -kLimit;
+    return static_cast<int32_t>(v * 10.0f);
 }
 
-inline bool IsGenericFemaleCommoner(uint16_t app) {
-    switch (app) {
-        // Test ranges
-        case 350: case 351: case 352: case 353: case 354:
-        case 355: case 356: case 357: case 358: case 359: case 360:
-        // Vanilla appearance.2da generic female commoners
-        case 14:
-        case 185: case 186: case 187: case 188: case 189:
-        case 339: case 340: case 341: case 342: case 343: case 344:
-        case 429: case 431:
-        case 585: case 586: case 587: case 588: case 589: case 590:
-        case 609: case 610: case 611: case 612: case 613: case 614:
-            return true;
-        default:
-            return false;
-    }
-}
-
-inline bool IsGenericTwilekMale(uint16_t app) {
-    switch (app) {
-        // Test ranges
-        case 500: case 501: case 502: case 503: case 504:
-        case 505: case 506: case 507: case 508: case 509: case 510:
-        // Vanilla appearance.2da generic male Twi'leks
-        case 416: case 417: case 445: case 449: case 450:
-        case 606: case 618: case 619:
-            return true;
-        default:
-            return false;
-    }
-}
-
-inline bool IsGenericTwilekFemale(uint16_t app) {
-    switch (app) {
-        // Test ranges
-        case 550: case 551: case 552: case 553: case 554:
-        case 555: case 556: case 557: case 558: case 559: case 560:
-        // Vanilla appearance.2da generic female Twi'leks
-        case 280: case 446: case 447: case 448:
-        case 620: case 621: case 622:
-            return true;
-        default:
-            return false;
-    }
-}
-
-// Hash creature position (quantized x*10, y*10) with objectId and appearance using FNV-1a
+// Hash creature position (quantized x*10, y*10) with objectId and appearance using FNV-1a.
+// This is the per-creature hash used by the dispatcher.
 inline uint32_t HashCreaturePosition(float x, float y, uint32_t objectId, uint16_t appearance) {
     uint32_t hash = FNV_OFFSET_BASIS;
 
-    int32_t qx = static_cast<int32_t>(x * 10.0f);
-    int32_t qy = static_cast<int32_t>(y * 10.0f);
+    int32_t qx = QuantizeCoord(x);
+    int32_t qy = QuantizeCoord(y);
 
     hash = (hash ^ static_cast<uint32_t>(qx & 0xFFFF)) * FNV_PRIME;
     hash = (hash ^ static_cast<uint32_t>((qx >> 16) & 0xFFFF)) * FNV_PRIME;
@@ -248,49 +157,41 @@ inline uint32_t HashCreaturePosition(float x, float y, uint32_t objectId, uint16
     return hash;
 }
 
-// Remap appearance based on hash for diversity distribution
-inline uint16_t RemapAppearance(uint16_t currentApp, uint32_t hash) {
+// Remap appearance based on hash for diversity distribution.
+// gender: 0 = male, 1 = female. A row whose gender does not match is returned unchanged.
+// Every decision uses its own salted draw (see Mix); no bits are reused across decisions.
+inline uint16_t RemapAppearance(uint16_t currentApp, uint8_t gender, uint32_t hash) {
     if (IsGenericMaleCommoner(currentApp)) {
-        uint32_t pct = hash % 100;
-        if (pct < 15) return APP_COMMONER_FAT_MALE;
-        if (pct < 20) {
-            // Rotate between Kel Dor 01 and 02
-            return (hash % 2 == 0) ? APP_ALIEN_KELDOR_01 : APP_ALIEN_KELDOR_02;
-        }
-        if (pct < 25) {
-            // Rotate between Iridorian 01 and 02
-            return (hash % 2 == 0) ? APP_ALIEN_IRIDORIAN_01 : APP_ALIEN_IRIDORIAN_02;
-        }
-        // 75% unchanged
+        if (gender != 0) return currentApp;
+        // kFatPct% fat, rest unchanged
+        if (BandRoll(hash) < kFatPct) return APP_COMMONER_FAT_MALE;
         return currentApp;
     }
     if (IsGenericFemaleCommoner(currentApp)) {
-        uint32_t pct = hash % 100;
-        if (pct < 15) return APP_COMMONER_FAT_FEMALE;
-        if (pct < 20) return APP_CZERKA_OFFICER_FEMALE;
-        // 80% unchanged
+        if (gender != 1) return currentApp;
+        uint32_t roll = BandRoll(hash);
+        if (roll < kFatPct) return APP_COMMONER_FAT_FEMALE;
+        if (roll < kFatPct + kCzerkaPct) return APP_CZERKA_OFFICER_FEMALE;
         return currentApp;
     }
     if (IsGenericTwilekMale(currentApp)) {
-        switch (hash % 4) {
+        if (gender != 0) return currentApp;
+        if (BandRoll(hash) >= kTwilekMaleRemapPct) return currentApp;
+        switch (Mix(hash, 2) % 4u) {
             case 0: return APP_TWILEK_COMMONER_M_02_A;
             case 1: return APP_TWILEK_COMMONER_M_02_B;
             case 2: return APP_TWILEK_COMMONER_M_02_C;
-            case 3: return APP_TWILEK_COMMONER_M_02_D;
+            default: return APP_TWILEK_COMMONER_M_02_D;
         }
-        return currentApp;
     }
     if (IsGenericTwilekFemale(currentApp)) {
-        uint32_t pct = hash % 100;
-        if (pct < 20) {
-            // Dancer variants: rotate through the three dancer variants
-            uint32_t dancerSlot = (hash / 100) % 3;
-            if (dancerSlot == 0) return APP_TWILEK_FEMALE_DANCER_BOOT;
-            if (dancerSlot == 1) return APP_TWILEK_FEMALE_DANCER;
-            return APP_TWILEK_FEMALE_UNDERWEAR;
+        if (gender != 1) return currentApp;
+        if (BandRoll(hash) >= kDancerPct) return currentApp;
+        switch (Mix(hash, 3) % 3u) {
+            case 0: return APP_TWILEK_FEMALE_DANCER_BOOT;
+            case 1: return APP_TWILEK_FEMALE_DANCER;
+            default: return APP_TWILEK_FEMALE_UNDERWEAR;
         }
-        // 80% unchanged
-        return currentApp;
     }
     // Any other appearance: unchanged
     return currentApp;
