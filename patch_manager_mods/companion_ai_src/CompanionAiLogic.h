@@ -451,6 +451,18 @@ inline bool onlyFollowTypes(const uint16_t* types, int n) {
         if (types[i] != ActFollowLeader && types[i] != ActCheckMoveToFollowRadius && types[i] != ActFollowOwner) return false;
     return true;
 }
+// FM1 reason (log only): the first failing gate of the keep decision, in the handler's order. Fm1Keep <=> keep.
+enum Fm1Why { Fm1Off = 0, Fm1NotParty, Fm1UnreadableList, Fm1NonFollowTypes, Fm1Keep };
+inline Fm1Why fm1KeepWhy(bool fm1, int party, bool listOk, const uint16_t* types, int n) {
+    if (!fm1) return Fm1Off;
+    if (!party) return Fm1NotParty;
+    if (!listOk) return Fm1UnreadableList;
+    return onlyFollowTypes(types, n) ? Fm1Keep : Fm1NonFollowTypes;
+}
+inline const char* fm1WhyName(int w) {
+    static const char* const n[] = {"off", "not-party", "unreadable-list", "non-follow-types", "keep"};
+    return (w >= 0 && w <= 4) ? n[w] : "?";
+}
 
 // C1: belt and braces against an endless restart loop. Every restart follows a successful group delete, so a real
 // call needs at most groups-count restarts; past `cap` restarts for the same (object, frame) within 50 ms the

@@ -48,6 +48,7 @@ KP_CHANNEL(chCap, "cap");
 KP_CHANNEL(chIcon, "icon");
 KP_CHANNEL(chDraw, "draw");
 KP_CHANNEL(chCancel, "cancel");
+KP_CHANNEL(chTrace, "trace");
 
 // Only stores the path and the level (no I/O): safe from a static initialiser.
 const bool g_fallbackSet = (KpLog_SetFallbackFile("queue-hud_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
@@ -80,6 +81,7 @@ constexpr uintptr_t AddrPerformCastSpell = gameaddr::PerformCastSpell;
 // ---- capture state (written by the hook, read by the draw callback; same game thread) ----
 uintptr_t g_hud = 0;
 int g_combat = 0;
+bool g_combatUnreadable = false;   // last capture could not read the HUD flags (g_combat is then forced to 1)
 DWORD g_capTick = 0;
 
 template <typename T> bool rd(unsigned site, uintptr_t base, int off, T* out) { return saferead::readAt(site, base, off, out); }
@@ -87,6 +89,12 @@ template <typename T> bool rd(unsigned site, uintptr_t base, int off, T* out) { 
 bool g_logOn = true;
 #define QLOG(ch, ...) do { if (g_logOn) KP_LOG(ch, __VA_ARGS__); } while (0)
 #define QLOGV(ch, lvl, ...) do { if (g_logOn) KP_LOGV(ch, lvl, __VA_ARGS__); } while (0)
+// Queue trace lines (CMD#/WAIT/RESOLVE/DROP/EDGE/QJ): INFO, gated by log=1 and trace_queue=1.
+#define QTRACE(...) do { if (g_logOn && g_cfg.traceQueue) KP_LOG(chTrace, __VA_ARGS__); } while (0)
+
+uint32_t g_cmdSeq = 0;                                   // per-mod command id counter (CMD#<n>)
+struct OursStamp { const char* tag; DWORD tick; };
+OursStamp g_lastOurs[3] = {};                            // last action of ours per member: tag (hook|cancel|...) + GetTickCount()
 
 void onConnect(bool ok, const char* why) { QLOGV(chMain, ok ? KPLOG_INFO : KPLOG_WARN, "portraitslots: %s (%s)", ok ? "connected" : "NOT connected", why ? why : ""); }
 
@@ -698,21 +706,91 @@ void doCancel(int k) {
     if (bad) { KP_LOGV(chCancel, KPLOG_WARN, "CANCEL refused member=%d (%s)", k, bad); return; }
     const int n = queueCountOf(k);
     QLOG(chCancel, "CANCEL member=%d n=%d route=ServerClearAll", k, n);
+    if (g_logOn && g_cfg.traceQueue) {
+        uint32_t ids[qh::kMaxActionQueue + 1];
+        const int ni = qh::bufferedCmdIds(g_itemQueue[k], ids, qh::kMaxActionQueue + 1);
+        for (int i = 0; i < ni; ++i) {
+            char line[200];
+            qh::fmtDrop(line, sizeof line, ids[i], k, qh::DR_CANCEL, n);
+            QTRACE("%s", line);
+        }
+    }
+    g_lastOurs[k].tag = "cancel"; g_lastOurs[k].tick = GetTickCount();
     g_itemQueue[k].cancel();
     reinterpret_cast<void(__thiscall*)(uintptr_t, uint32_t)>(gameaddr::ServerClearAllActions)(server, id);
     g_cpend[k].on = true; g_cpend[k].n = n;
 }
 
+// CMD# trace line for the H9/H10 hooks (one per intercepted command that is not our own re-entry). No-op unless trace_queue is on.
+// m < 0 / cr only: the pass_combat and pass_unreadable exits, where nothing beyond the creature pointer is known.
+void traceCmd(uint32_t cmd, int m, uintptr_t cr, qh::ActionKind kind, bool known, uint32_t id, uint32_t tgt, const char* dec,
+              bool fb, int engq, int buf, bool combat) {
+    if (!g_logOn || !g_cfg.traceQueue) return;
+    qh::CmdLine c;
+    c.cmdId = cmd; c.m = m; c.cr = cr;
+    if (known) { c.kind = static_cast<int>(kind); c.hasId = true; c.id = id; c.hasTgt = true; c.tgt = tgt; }
+    c.dec = dec; c.fb = fb; c.engq = engq; c.buf = buf;
+    c.paused = known ? playerPaused() : false;
+    c.combat = combat;
+    char line[200];
+    qh::fmtCmd(line, sizeof line, c);
+    QTRACE("%s", line);
+}
+
+// ---- queue trace helpers (EDGE / DROP / WAIT / QJ). Everything is edge-triggered or rate-capped; idle = zero lines. ----
+void bufCounts(int* out) { for (int k = 0; k < 3; ++k) out[k] = g_itemQueue[k].count; }
+
+void traceEdge(const char* what, bool oldOn, bool newOn, const char* src) {
+    if (!g_logOn || !g_cfg.traceQueue) return;
+    int b[3];
+    bufCounts(b);
+    char line[200];
+    qh::fmtEdge(line, sizeof line, what, oldOn, newOn, src, b, 3);
+    QTRACE("%s", line);
+}
+
+// One DROP per command held by member k (buffered + active), n = how many were lost. Call BEFORE the buffer is cleared.
+void traceDropAll(int k, qh::DropWhy why) {
+    if (!g_logOn || !g_cfg.traceQueue) return;
+    uint32_t ids[qh::kMaxActionQueue + 1];
+    const int ni = qh::bufferedCmdIds(g_itemQueue[k], ids, qh::kMaxActionQueue + 1);
+    for (int i = 0; i < ni; ++i) {
+        char line[200];
+        qh::fmtDrop(line, sizeof line, ids[i], k, why, ni);
+        QTRACE("%s", line);
+    }
+}
+
+bool bufBusy(const qh::ActionBuffer& b) { return b.active || b.count > 0; }
+
+// Last-value globals for the edge-only lines in tickItemQueues (-1 = unknown / nothing to report).
+int8_t g_prevTblOk = -1;
+int8_t g_prevGatherOk[3] = {-1, -1, -1};
+int g_prevRiWhy[3] = {-1, -1, -1};
+int g_prevDsWhy[3] = {-1, -1, -1};
+DWORD g_lastWaitTick[3] = {0, 0, 0};
+
 // Multi-item buffer ticker and follower wipe guard
 void tickItemQueues(DWORD now, bool inMenu) {
     if (inMenu || g_combat != 0) {
         if (g_combat != 0) {
-            for (int k = 0; k < 3; ++k) g_itemQueue[k].clear();
+            for (int k = 0; k < 3; ++k) {
+                traceDropAll(k, qh::DR_COMBAT_CLEAR);
+                g_itemQueue[k].clear();
+            }
         }
         return;
     }
     party::Fail why = party::F_None;
     const uintptr_t tbl = party::table(&why);
+    {
+        const int8_t ok = tbl ? 1 : 0;
+        if (ok != g_prevTblOk) {
+            if (g_prevTblOk >= 0 && (bufBusy(g_itemQueue[0]) || bufBusy(g_itemQueue[1]) || bufBusy(g_itemQueue[2])))
+                traceEdge("party_table", g_prevTblOk != 0, ok != 0, "unreadable");
+            g_prevTblOk = ok;
+        }
+    }
     if (!tbl) return;
 
     for (int k = 0; k < 3; ++k) {
@@ -720,12 +798,24 @@ void tickItemQueues(DWORD now, bool inMenu) {
         uintptr_t cli = party::member(tbl, k);
         uintptr_t srv = cli ? party::serverCreature(cli) : 0;
         if (!srv) {
-            if (buf.count > 0 || buf.active) buf.clear();
+            if (buf.count > 0 || buf.active) {
+                traceDropAll(k, qh::DR_NULL_CREATURE);
+                buf.clear();
+            }
             continue;
         }
 
         Snapshot s;
-        if (!gatherFor(srv, s)) continue;
+        const bool gOk = gatherFor(srv, s);
+        if ((gOk ? 1 : 0) != g_prevGatherOk[k]) {
+            if (g_prevGatherOk[k] >= 0 && bufBusy(buf)) {
+                char nm[16];
+                snprintf(nm, sizeof nm, "gather_m%d", k);
+                traceEdge(nm, g_prevGatherOk[k] != 0, gOk, "unreadable");
+            }
+            g_prevGatherOk[k] = gOk ? 1 : 0;
+        }
+        if (!gOk) continue;
 
         // 1. Check if active action is present in server queue/round
         bool actionInQueue = false;
@@ -739,18 +829,38 @@ void tickItemQueues(DWORD now, bool inMenu) {
             if (s.rn[i].subType == 9 || s.rn[i].subType == 10) actionInQueue = true;
         }
 
+        if (buf.active && actionInQueue) buf.seenInQueue = true;   // bookkeeping only (RESOLVE seen=)
+
         // 2. Follower wipe protection & active completion tracking
+        const qh::ReInjectWhy riWhy = qh::reInjectWhy(buf, actionInQueue, hasFollowLeader, s.paused, now);
+        if (bufBusy(buf)) {
+            if (static_cast<int>(riWhy) != g_prevRiWhy[k]) {
+                g_prevRiWhy[k] = static_cast<int>(riWhy);
+                if (buf.active && riWhy != qh::RI_OK && g_logOn && g_cfg.traceQueue)   // inactive+buffered is the WAIT line's job
+                    QTRACE("REINJECT_NO cmd=%u m=%d why=%s", (unsigned)buf.activeAction.cmdId, k, qh::whyName(riWhy));
+            }
+        } else {
+            g_prevRiWhy[k] = -1;
+        }
         if (buf.active) {
-            if (qh::shouldReInject(buf, actionInQueue, hasFollowLeader, s.paused, now)) {
+            if (riWhy == qh::RI_OK) {
                 if (!saferead::probeRead(SiteQueue, reinterpret_cast<const void*>(buf.activeAction.creature), 4)) {
                     QLOGV(chMain, KPLOG_WARN, "re-inject skipped: creature %08x unreadable for member %d",
                           (unsigned)buf.activeAction.creature, k);
+                    if (g_logOn && g_cfg.traceQueue) {   // only the active command is lost; buffered ones stay queued
+                        char line[200];
+                        qh::fmtDrop(line, sizeof line, buf.activeAction.cmdId, k, qh::DR_UNREADABLE_CREATURE, 1);
+                        QTRACE("%s", line);
+                    }
                     buf.active = false;
+                    buf.seenInQueue = false;
                 } else {
                     buf.activeAction.reInjectCount++;
-                    QLOG(chMain, "re-injecting eaten %s action for member %d (id=%08x, target=%08x, attempt=%d)",
+                    g_lastOurs[k].tag = "reinject"; g_lastOurs[k].tick = GetTickCount();
+                    QLOG(chMain, "re-injecting eaten %s action for member %d (id=%08x, target=%08x, attempt=%d) cmd=%u",
                          buf.activeAction.kind == qh::ActionKind::Spell ? "spell" : "item",
-                         k, buf.activeAction.clientItem, buf.activeAction.targetId, buf.activeAction.reInjectCount);
+                         k, buf.activeAction.clientItem, buf.activeAction.targetId, buf.activeAction.reInjectCount,
+                         (unsigned)buf.activeAction.cmdId);
                     buf.reInjectPending = true;
                     g_dispatching = true;
                     if (buf.activeAction.kind == qh::ActionKind::Spell) {
@@ -776,21 +886,53 @@ void tickItemQueues(DWORD now, bool inMenu) {
                     buf.reInjectPending = false;
                 }
             } else if (!actionInQueue && (now - buf.activeStartTick > 500)) {
+                // Normal completion (the action ran and left the queue), not an abandon.
+                if (g_logOn && g_cfg.traceQueue) {
+                    char line[200];
+                    qh::fmtResolve(line, sizeof line, buf.activeAction.cmdId, k, buf.seenInQueue, buf.activeAction.reInjectCount,
+                                   now - buf.activeAction.queueTime);
+                    QTRACE("%s", line);
+                }
+                g_lastOurs[k].tag = buf.activeAction.reInjectCount > 0 ? "reinject" : "dispatch";
+                g_lastOurs[k].tick = GetTickCount();
                 buf.active = false;
+                buf.seenInQueue = false;
             }
         }
 
         // 3. Sequential dispatch of next buffered action (idle gate: engineNe == 0 && !haveCur && nrn == 0)
-        if (qh::shouldDispatchNext(buf, s.engineNe, s.haveCur, s.nrn)) {
+        const qh::DispatchWhy dsWhy = qh::dispatchWhy(buf, s.engineNe, s.haveCur, s.nrn);
+        if (dsWhy != qh::DS_OK && buf.count > 0) {
+            // A buffered command is waiting: one WAIT on edge (why changed) plus a 1 s heartbeat.
+            if (static_cast<int>(dsWhy) != g_prevDsWhy[k] || now - g_lastWaitTick[k] >= 1000u) {
+                g_prevDsWhy[k] = static_cast<int>(dsWhy);
+                g_lastWaitTick[k] = now;
+                if (g_logOn && g_cfg.traceQueue) {
+                    char line[200];
+                    qh::fmtWait(line, sizeof line, buf.queue[0].cmdId, k, dsWhy, buf.count, s.engineNe, now - buf.queue[0].queueTime);
+                    QTRACE("%s", line);
+                }
+            }
+        } else {
+            g_prevDsWhy[k] = -1;
+        }
+        if (dsWhy == qh::DS_OK) {
             qh::QueuedAction nextA;
             if (buf.pop(&nextA)) {
                 if (!saferead::probeRead(SiteQueue, reinterpret_cast<const void*>(nextA.creature), 4)) {
                     QLOGV(chMain, KPLOG_WARN, "dispatch skipped: creature %08x unreadable for member %d",
                           (unsigned)nextA.creature, k);
+                    if (g_logOn && g_cfg.traceQueue) {
+                        char line[200];
+                        qh::fmtDrop(line, sizeof line, nextA.cmdId, k, qh::DR_UNREADABLE_CREATURE, 1);
+                        QTRACE("%s", line);
+                    }
                 } else {
-                    QLOG(chMain, "dispatching buffered %s for member %d (id=%08x, target=%08x, remaining=%d)",
+                    g_lastOurs[k].tag = "dispatch"; g_lastOurs[k].tick = GetTickCount();
+                    buf.seenInQueue = false;
+                    QLOG(chMain, "dispatching buffered %s for member %d (id=%08x, target=%08x, remaining=%d) cmd=%u",
                          nextA.kind == qh::ActionKind::Spell ? "spell" : "item",
-                         k, nextA.clientItem, nextA.targetId, buf.count);
+                         k, nextA.clientItem, nextA.targetId, buf.count, (unsigned)nextA.cmdId);
                     buf.active = true;
                     buf.activeAction = nextA;
                     buf.activeStartTick = now;
@@ -818,6 +960,88 @@ void tickItemQueues(DWORD now, bool inMenu) {
             }
         }
     }
+}
+
+// ---- Queue journal (QJ): logs a member's engine queue only when its signature changes. Reads via actq::read only (never gatherFor). ----
+constexpr DWORD kJournalSampleMs = 100;    // sample period
+constexpr int kJournalPerSec = 4;          // max QJ lines per second per member
+constexpr int kJournalPerSecCombat = 1;    // ... while in combat
+constexpr int kJournalSessionCap = 5000;   // QJ lines per session, then one journal_cap marker
+constexpr DWORD kOursWindowMs = 2000;      // a g_lastOurs stamp newer than this makes the change "ours"
+
+struct JournalMember {
+    qh::QueueSig sig;
+    bool haveSig = false;
+    int8_t crOk = -1;          // last creature state: -1 unknown, 0 lost, 1 readable
+    DWORD winStart = 0;
+    int winCount = 0;
+};
+JournalMember g_jm[3];
+DWORD g_jLastSample = 0;
+int g_jTotal = 0;
+bool g_jCapped = false;
+
+void journalTick(DWORD now) {
+    if (!g_logOn || !g_cfg.traceQueue || g_jCapped) return;
+    if (g_jLastSample && now - g_jLastSample < kJournalSampleMs) return;
+    g_jLastSample = now;
+    if (g_jTotal >= kJournalSessionCap) {
+        g_jCapped = true;
+        const int zero = 0;
+        char line[200];
+        qh::fmtEdge(line, sizeof line, "journal_cap", false, true, "hud", &zero, 1);
+        QTRACE("%s", line);
+        return;
+    }
+    party::Fail why = party::F_None;
+    const uintptr_t tbl = party::table(&why);
+    for (int k = 0; k < 3; ++k) {
+        JournalMember& jm = g_jm[k];
+        const uintptr_t m = tbl ? party::member(tbl, k) : 0;
+        const uintptr_t srv = m ? party::serverCreature(m) : 0;
+        actq::Snapshot a;
+        const bool ok = srv && actq::read(srv, &a, SiteQueue, SiteRound);
+        const int8_t okv = ok ? 1 : 0;
+        if (okv != jm.crOk) {
+            if (jm.crOk >= 0) traceEdge("creature", jm.crOk != 0, ok, "unreadable");
+            jm.crOk = okv;
+        }
+        if (!ok) continue;   // unreadable is not a change: keep the last signature across the gap
+
+        qh::QEntry q[8] = {};
+        for (int i = 0; i < a.ne && i < 8; ++i) { q[i].type = a.e[i].type; q[i].param0 = a.e[i].param0; }
+        const qh::QueueSig sig = qh::makeQueueSig(q, a.ne, a.nrn, a.haveCur ? static_cast<int>(a.cur.subType) : -1, a.aa8 != 0, a.ab8 != 0);
+        if (!jm.haveSig) { jm.sig = sig; jm.haveSig = true; continue; }   // first sight is the baseline, not a change
+        if (qh::sigEqual(jm.sig, sig)) continue;
+
+        const bool combat = g_combat != 0;
+        if (now - jm.winStart >= 1000u) { jm.winStart = now; jm.winCount = 0; }
+        if (jm.winCount >= (combat ? kJournalPerSecCombat : kJournalPerSec)) continue;   // rate-capped: the change is logged once the window rolls
+        ++jm.winCount;
+        jm.sig = sig;
+        ++g_jTotal;
+
+        const DWORD tickNow = GetTickCount();
+        const char* tag = nullptr;
+        DWORD age = 0;
+        if (g_lastOurs[k].tag && tickNow - g_lastOurs[k].tick <= kOursWindowMs) { tag = g_lastOurs[k].tag; age = tickNow - g_lastOurs[k].tick; }
+        char line[200];
+        qh::fmtQj(line, sizeof line, k, sig, playerPaused(), combat, tag, age);
+        QTRACE("%s", line);
+    }
+}
+
+// EDGE lines for combat / paused / menu: one per change, previous values kept here. First observation is a baseline (silent).
+void edgeTick(bool inMenu) {
+    if (!g_logOn || !g_cfg.traceQueue) return;
+    static bool init = false;
+    static bool pCombat = false, pPaused = false, pMenu = false;
+    const bool combat = g_combat != 0;
+    const bool paused = playerPaused();
+    if (!init) { init = true; pCombat = combat; pPaused = paused; pMenu = inMenu; return; }
+    if (combat != pCombat) { traceEdge("combat", pCombat, combat, g_combatUnreadable ? "unreadable" : "hud"); pCombat = combat; }
+    if (paused != pPaused) { traceEdge("paused", pPaused, paused, "hud"); pPaused = paused; }
+    if (inMenu != pMenu) { traceEdge("menu", pMenu, inMenu, "hud"); pMenu = inMenu; }
 }
 
 void KPATCH_CALL onFrameBegin(const K2PsContext* ctx, void*) {
@@ -854,6 +1078,8 @@ void KPATCH_CALL onFrameBegin(const K2PsContext* ctx, void*) {
     }
 
     const DWORD now = GetTickCount();
+    edgeTick(inMenu);
+    journalTick(now);
     tickItemQueues(now, inMenu);
 }
 
@@ -893,7 +1119,9 @@ void __cdecl QueueHudCapture(int hud) {
     g_ps.poll();
     g_hudc.poll();
     uint32_t flags = 0;
-    g_combat = rd(SiteCap, static_cast<uintptr_t>(static_cast<uint32_t>(hud)), HudCombatFlags, &flags) ? static_cast<int>((flags >> 1) & 1u) : 1;   // unreadable = treat as combat (hidden)
+    const bool flagsOk = rd(SiteCap, static_cast<uintptr_t>(static_cast<uint32_t>(hud)), HudCombatFlags, &flags);
+    g_combat = flagsOk ? static_cast<int>((flags >> 1) & 1u) : 1;   // unreadable = treat as combat (hidden)
+    g_combatUnreadable = !flagsOk;
     g_capTick = GetTickCount();
     if (g_hud != static_cast<uintptr_t>(static_cast<uint32_t>(hud))) {
         g_hud = static_cast<uintptr_t>(static_cast<uint32_t>(hud));
@@ -903,7 +1131,13 @@ void __cdecl QueueHudCapture(int hud) {
 
 // H9: PerformUseItem detour hook. Consumes and buffers out-of-combat item actions when queue busy.
 int __cdecl QueueHudPerformUseItem(int clientCreature, int ebp) {
-    if (g_dispatching || !g_cfg.enabled || g_combat != 0) return 0;
+    if (g_dispatching || !g_cfg.enabled) return 0;   // re-entry from our own dispatch logs nothing here
+    const uint32_t cmd = ++g_cmdSeq;
+    const uintptr_t crPtr = static_cast<uintptr_t>(static_cast<uint32_t>(clientCreature));
+    if (g_combat != 0) {
+        traceCmd(cmd, -1, crPtr, qh::ActionKind::Item, false, 0, 0, "pass_combat", false, 0, 0, true);
+        return 0;
+    }
     saferead::beginScope();
 
     uint32_t itemId = 0;
@@ -915,6 +1149,7 @@ int __cdecl QueueHudPerformUseItem(int clientCreature, int ebp) {
     if (!rd(SiteQueue + 0x20, static_cast<uintptr_t>(static_cast<uint32_t>(ebp)), 8, &itemId) ||
         !rd(SiteQueue + 0x21, static_cast<uintptr_t>(static_cast<uint32_t>(ebp)), 0xC, &packedByte) ||
         !rd(SiteQueue + 0x22, static_cast<uintptr_t>(static_cast<uint32_t>(ebp)), 0x10, &targetId)) {
+        traceCmd(cmd, -1, crPtr, qh::ActionKind::Item, false, 0, 0, "pass_unreadable", false, 0, 0, false);
         return 0;
     }
     if (rd(SiteQueue + 0x23, static_cast<uintptr_t>(static_cast<uint32_t>(ebp)), 0x14, &posPtr) && posPtr) {
@@ -936,42 +1171,55 @@ int __cdecl QueueHudPerformUseItem(int clientCreature, int ebp) {
             }
         }
     }
-    if (memberK < 0) memberK = 0;
+    const bool fb = memberK < 0;
+    if (fb) memberK = 0;
 
     const int engineQ = queueCountOf(memberK);
+    const int engqLog = engineQ < 0 ? -1 : engineQ;
+    const int bufBefore = g_itemQueue[memberK].count;
     const qh::ActionDecision dec = qh::decideAction(g_itemQueue[memberK], g_combat != 0, engineQ > 0 ? engineQ : 0);
 
     if (dec == qh::DECIDE_DISPATCH_NOW) {
         g_itemQueue[memberK].userCancelled = false;
         g_itemQueue[memberK].active = true;
         g_itemQueue[memberK].activeAction = qh::makeItemAction(
-            static_cast<uintptr_t>(static_cast<uint32_t>(clientCreature)),
-            itemId, packedByte, targetId, posVal, GetTickCount());
+            crPtr, itemId, packedByte, targetId, posVal, GetTickCount(), cmd);
         g_itemQueue[memberK].activeStartTick = GetTickCount();
+        g_lastOurs[memberK].tag = "hook"; g_lastOurs[memberK].tick = GetTickCount();
+        traceCmd(cmd, memberK, crPtr, qh::ActionKind::Item, true, itemId, targetId, "dispatch_now", fb, engqLog, bufBefore, false);
         return 0;
     }
 
     if (dec == qh::DECIDE_BUFFER) {
         qh::QueuedAction a = qh::makeItemAction(
-            static_cast<uintptr_t>(static_cast<uint32_t>(clientCreature)),
-            itemId, packedByte, targetId, posVal, GetTickCount());
+            crPtr, itemId, packedByte, targetId, posVal, GetTickCount(), cmd);
         g_itemQueue[memberK].push(a);
-        QLOG(chMain, "buffered item use for member %d (item=%08x, target=%08x, count=%d)",
-             memberK, itemId, targetId, g_itemQueue[memberK].count);
+        traceCmd(cmd, memberK, crPtr, qh::ActionKind::Item, true, itemId, targetId, "buffer", fb, engqLog, bufBefore, false);
+        QLOG(chMain, "buffered item use for member %d (item=%08x, target=%08x, count=%d) cmd=%u",
+             memberK, itemId, targetId, g_itemQueue[memberK].count, (unsigned)cmd);
         return 1;
     }
 
     if (dec == qh::DECIDE_DROP_FULL) {
-        QLOGV(chMain, KPLOG_WARN, "item buffer full for member %d, dropped item %08x", memberK, itemId);
+        traceCmd(cmd, memberK, crPtr, qh::ActionKind::Item, true, itemId, targetId, "drop_full", fb, engqLog, bufBefore, false);
+        QLOGV(chMain, KPLOG_WARN, "item buffer full for member %d, dropped item %08x cmd=%u", memberK, itemId, (unsigned)cmd);
         return 1;
     }
+
+    traceCmd(cmd, memberK, crPtr, qh::ActionKind::Item, true, itemId, targetId, "unknown", fb, engqLog, bufBefore, false);
 
     return 0;
 }
 
 // H10: PerformCastSpell detour hook (gameaddr::PerformCastSpell + 3; address in hooks.toml). Consumes and buffers out-of-combat spell actions when queue busy.
 int __cdecl QueueHudPerformCastSpell(int clientCreature, int ebp) {
-    if (g_dispatching || !g_cfg.enabled || g_combat != 0) return 0;
+    if (g_dispatching || !g_cfg.enabled) return 0;   // re-entry from our own dispatch logs nothing here
+    const uint32_t cmd = ++g_cmdSeq;
+    const uintptr_t crPtr = static_cast<uintptr_t>(static_cast<uint32_t>(clientCreature));
+    if (g_combat != 0) {
+        traceCmd(cmd, -1, crPtr, qh::ActionKind::Spell, false, 0, 0, "pass_combat", false, 0, 0, true);
+        return 0;
+    }
     saferead::beginScope();
 
     uint32_t spellId = 0;
@@ -989,6 +1237,7 @@ int __cdecl QueueHudPerformCastSpell(int clientCreature, int ebp) {
         !rd(SiteQueue + 0x33, static_cast<uintptr_t>(static_cast<uint32_t>(ebp)), 0x14, &multispell) ||
         !rd(SiteQueue + 0x34, static_cast<uintptr_t>(static_cast<uint32_t>(ebp)), 0x18, &metamagic) ||
         !rd(SiteQueue + 0x35, static_cast<uintptr_t>(static_cast<uint32_t>(ebp)), 0x1C, &domain)) {
+        traceCmd(cmd, -1, crPtr, qh::ActionKind::Spell, false, 0, 0, "pass_unreadable", false, 0, 0, false);
         return 0;
     }
     if (rd(SiteQueue + 0x36, static_cast<uintptr_t>(static_cast<uint32_t>(ebp)), 0x20, &posPtr) && posPtr) {
@@ -1010,35 +1259,42 @@ int __cdecl QueueHudPerformCastSpell(int clientCreature, int ebp) {
             }
         }
     }
-    if (memberK < 0) memberK = 0;
+    const bool fb = memberK < 0;
+    if (fb) memberK = 0;
 
     const int engineQ = queueCountOf(memberK);
+    const int engqLog = engineQ < 0 ? -1 : engineQ;
+    const int bufBefore = g_itemQueue[memberK].count;
     const qh::ActionDecision dec = qh::decideAction(g_itemQueue[memberK], g_combat != 0, engineQ > 0 ? engineQ : 0);
 
     if (dec == qh::DECIDE_DISPATCH_NOW) {
         g_itemQueue[memberK].userCancelled = false;
         g_itemQueue[memberK].active = true;
         g_itemQueue[memberK].activeAction = qh::makeSpellAction(
-            static_cast<uintptr_t>(static_cast<uint32_t>(clientCreature)),
-            spellId, arg2, targetId, multispell, metamagic, domain, posVal, GetTickCount());
+            crPtr, spellId, arg2, targetId, multispell, metamagic, domain, posVal, GetTickCount(), cmd);
         g_itemQueue[memberK].activeStartTick = GetTickCount();
+        g_lastOurs[memberK].tag = "hook"; g_lastOurs[memberK].tick = GetTickCount();
+        traceCmd(cmd, memberK, crPtr, qh::ActionKind::Spell, true, spellId, targetId, "dispatch_now", fb, engqLog, bufBefore, false);
         return 0;
     }
 
     if (dec == qh::DECIDE_BUFFER) {
         qh::QueuedAction a = qh::makeSpellAction(
-            static_cast<uintptr_t>(static_cast<uint32_t>(clientCreature)),
-            spellId, arg2, targetId, multispell, metamagic, domain, posVal, GetTickCount());
+            crPtr, spellId, arg2, targetId, multispell, metamagic, domain, posVal, GetTickCount(), cmd);
         g_itemQueue[memberK].push(a);
-        QLOG(chMain, "buffered spell use for member %d (spell=%08x, target=%08x, count=%d)",
-             memberK, spellId, targetId, g_itemQueue[memberK].count);
+        traceCmd(cmd, memberK, crPtr, qh::ActionKind::Spell, true, spellId, targetId, "buffer", fb, engqLog, bufBefore, false);
+        QLOG(chMain, "buffered spell use for member %d (spell=%08x, target=%08x, count=%d) cmd=%u",
+             memberK, spellId, targetId, g_itemQueue[memberK].count, (unsigned)cmd);
         return 1;
     }
 
     if (dec == qh::DECIDE_DROP_FULL) {
-        QLOGV(chMain, KPLOG_WARN, "action buffer full for member %d, dropped spell %08x", memberK, spellId);
+        traceCmd(cmd, memberK, crPtr, qh::ActionKind::Spell, true, spellId, targetId, "drop_full", fb, engqLog, bufBefore, false);
+        QLOGV(chMain, KPLOG_WARN, "action buffer full for member %d, dropped spell %08x cmd=%u", memberK, spellId, (unsigned)cmd);
         return 1;
     }
+
+    traceCmd(cmd, memberK, crPtr, qh::ActionKind::Spell, true, spellId, targetId, "unknown", fb, engqLog, bufBefore, false);
 
     return 0;
 }

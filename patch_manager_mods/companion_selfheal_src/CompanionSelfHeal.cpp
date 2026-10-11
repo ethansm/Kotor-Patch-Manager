@@ -5,7 +5,7 @@
 // (Auto on/off, use-below %, keep reserve; persisted to companion_selfheal.ini); Auto mode uses items by itself (HealItems.h rules).
 // Route A is reachable ONLY through useNow(): HUD gate + commandable (+0xEC) + CanUseItem + per-member 2 s debounce. The popover never calls it.
 // Engine writes: label setters + the ProjectionFlag clear/restore around the creates + our own texture objects. Everything else is SafeRead.
-// Logs: P1/P3 (hook, slot map), DUMP (Ctrl+Shift+ProbeKey), BUILD, MAP, CLICK/USE/AUTO/DONE/REFUSE, CFG, KICK.
+// Logs: P1/P3 (hook, slot map), DUMP (Ctrl+Shift+ProbeKey), BUILD, MAP, CLICK/USE/AUTO/DONE/REFUSE, CFG, KICK, QDIAG (queue trace, INI [queue] trace=0 to silence).
 // CS12 (0.6.0-dev): a follower's queue is [0x3D FollowLeader] which re-adds itself at the head, so the 0x3F item use appended by route A starves.
 // kickTick() rotates the queue (pop head + append tail, k times) when the R8 gates hold; useNow() refuses a second use while one is queued; the pending
 // timeout only runs over a not-queued stretch. INI [queue] kick=1 (0 = no rotate). Never ClearAllActions, never 0x5648D0.
@@ -84,6 +84,7 @@ int g_probeCall = 0, g_callKey = 0x4A;
 bool g_callPrev = false;
 DWORD g_lastCallMs = 0;
 bool g_kick = true;   // [queue] kick=1 (CS12 rotate); 0 = 0.5.0 behaviour (dedupe + pendingDone2 stay)
+bool g_queueTrace = true;   // [queue] trace=1 (code default): QDIAG lines (own INFO lines, edge-triggered); 0 = off
 struct Post { bool active = false; DWORD start = 0, next = 0; int member = 0; uint32_t itemKey = 0; int preHp = 0, preStack = 0; uintptr_t server = 0; } g_post;
 
 template <typename T> bool rd(uintptr_t base, int off, T* out) { return saferead::readAt(SiteBase, base, off, out); }
@@ -104,6 +105,7 @@ void loadIni() {
     if (g_probeKey <= 0 || g_probeKey > 0xFF) g_probeKey = 0x48;
     g_probeCall = GetPrivateProfileIntA("probe", "call", 0, IniPath) != 0;
     g_kick = GetPrivateProfileIntA("queue", "kick", 1, IniPath) != 0;
+    g_queueTrace = GetPrivateProfileIntA("queue", "trace", 1, IniPath) != 0;
     g_callKey = GetPrivateProfileIntA("probe", "CallKey", 0x4A, IniPath);
     if (g_callKey <= 0 || g_callKey > 0xFF) g_callKey = 0x4A;
 }
@@ -275,6 +277,10 @@ uint32_t g_unqueuedSince[3] = {};   // pendingDone2 not-queued stretch start (0 
 // kick state per member (CS12); reset when a pending is armed or ends
 int g_kickReason[3] = {};           // last logged skip gate (0 = none) so the log is edge-triggered
 DWORD g_starvedSince[3] = {};       // start of the current starved + unpaused stretch (0 = none)
+bool g_starveLogged[3] = {};        // QDIAG edge flag: starved onset logged; its cleared edge logs and resets it; a pause keeps it; arm + DONE reset it
+bool g_rotNoopLogged[3] = {};       // QDIAG one-shot per pending: no-op rotate logged (reset on arm + DONE)
+bool g_readFail[3] = {};            // QDIAG edge flag: kick actq::read failing for this member
+const char* g_kickGate[3] = {};     // gate name of the last kickSkip (for the give-up QDIAG line)
 bool g_kickGaveUp[3] = {};
 uint32_t g_pendKey[3] = {};
 heal::AutoState g_auto[3];
@@ -292,13 +298,35 @@ struct UseInfo { Pick pk; int hp = 0; uintptr_t server = 0; };
 #define REFUSE(...) do { KP_LOGV(chCall, KPLOG_WARN, __VA_ARGS__); return; } while (0)
 #define REFUSEF(...) do { KP_LOGV(chCall, KPLOG_WARN, __VA_ARGS__); return false; } while (0)
 
+// QDIAG (trace only; callers check g_queueTrace). Own INFO lines, never appended to REFUSE/KICK/USE/DONE/TIMEOUT.
+// Types: hex, at most 8 shown, then ",+N" for the rest.
+void qdiagTypes(const actq::Snapshot& q, char* buf, size_t cap) {
+    size_t n = 0; buf[0] = 0;
+    for (int j = 0; j < q.ne && j < 8 && n + 8 < cap; ++j) n += snprintf(buf + n, cap - n, "%s%x", j ? "," : "", q.e[j].type & 0xFF);
+    if (q.ne > 8) snprintf(buf + n, cap - n, ",+%d", q.ne - 8);
+}
+void qdiagSnap(const char* tag, int mi, const actq::Snapshot& q, bool paused) {
+    char ty[64];
+    qdiagTypes(q, ty, sizeof ty);
+    KP_LOG(chCall, "QDIAG %s member=%d queue=%d types=[%s] rounds=%d paused=%d", tag, mi, q.ne, ty, q.nrn, (int)paused);
+}
+// The hud-gate refuse runs before the member lookup, so read the member here (pure reads).
+void qdiagHudRefuse(int mi) {
+    party::Vitals v[3];
+    int cnt = party::members(v, 3);
+    if (mi < 0 || mi >= cnt || !v[mi].server) { KP_LOG(chCall, "QDIAG hud-gate member=%d no server (members=%d)", mi, cnt); return; }
+    actq::Snapshot q;
+    actq::read(v[mi].server, &q, SiteQueue, SiteRound);
+    qdiagSnap("hud-gate", mi, q, actq::playerPaused(SitePause));
+}
+
 // THE only path to route A: gate -> per-member debounce -> commandable -> ids -> CanUseItem -> route A once. src = click|auto|key.
 bool useNow(const K2PsContext* ctx, DWORD now, int mi, int minCount, const char* src, UseInfo* out = nullptr) {
     if (mi < 0 || mi > 2) REFUSEF("REFUSE bad member %d (%s)", mi, src);
     if (!g_hud) REFUSEF("REFUSE no hud (%s)", src);
     if (!menuInfo(ctx)) REFUSEF("REFUSE no menu info in K2PsContext (%s)", src);
     if (ctx->inMenu) REFUSEF("REFUSE in menu (ctx.inMenu=1) (%s)", src);
-    if (!gameplayHudActive(g_hud)) REFUSEF("REFUSE hud gate not active (%s)", src);
+    if (!gameplayHudActive(g_hud)) { if (g_queueTrace) qdiagHudRefuse(mi); REFUSEF("REFUSE hud gate not active (%s)", src); }
     if (mi >= 0 && mi <= 2 && g_lastUseMs[mi] && now - g_lastUseMs[mi] < DebounceMs) REFUSEF("REFUSE debounce member=%d (%lu ms since the last use) (%s)", mi, (unsigned long)(now - g_lastUseMs[mi]), src);
     std::vector<itemread::Entry> items;
     itemread::readGroup(g_hud, ItemGroup, &items);
@@ -313,9 +341,9 @@ bool useNow(const K2PsContext* ctx, DWORD now, int mi, int minCount, const char*
     if (!rd<uint32_t>(m.server, Server_Commandable, &cmd) || !cmd) REFUSEF("REFUSE not commandable member=%d (+0xEC=%u)", mi, (unsigned)cmd);
     {   // CS12 dedupe: a second use while one is still queued would stack behind the stalled first
         actq::Snapshot qs;
-        actq::read(m.server, &qs, SiteQueue, SiteRound);
+        if (!actq::read(m.server, &qs, SiteQueue, SiteRound) && g_queueTrace) KP_LOG(chCall, "QDIAG dedupe queue read failed member=%d", mi);
         shui::UseRefusal ur = shui::useAllowed(actq::useQueued(qs));
-        if (ur != shui::UseRefusal::None) REFUSEF("REFUSE %s member=%d (%s)", shui::useRefusalText(ur), mi, src);
+        if (ur != shui::UseRefusal::None) { if (g_queueTrace) qdiagSnap("dedupe", mi, qs, actq::playerPaused(SitePause)); REFUSEF("REFUSE %s member=%d (%s)", shui::useRefusalText(ur), mi, src); }
     }
     if (!m.client || !rd<uint32_t>(m.client, Client_ObjectId, &clientId)) REFUSEF("REFUSE ids: client object id unreadable member=%d", mi);
     uint32_t selfServerId = serverIdOf(clientId), itemServerId = pk.srv;
@@ -330,9 +358,14 @@ bool useNow(const K2PsContext* ctx, DWORD now, int mi, int minCount, const char*
     }
     if (mi >= 0 && mi <= 2) g_lastUseMs[mi] = now;   // only real uses debounce
     KP_LOG(chCall, "USE member=%d item=%08x \"%s\" heal=%d hp=%d/%d src=%s", mi, (unsigned)itemServerId, pk.name.c_str(), pk.heal, m.cur, m.max, src);
-    if (mi >= 1 && mi <= 2) { g_pend[mi] = shui::Pending(); g_pend[mi].on = true; g_pend[mi].since = now; g_pend[mi].preHp = m.cur; g_pend[mi].preStack = pk.count; g_unqueuedSince[mi] = 0; g_kickReason[mi] = 0; g_starvedSince[mi] = 0; g_kickGaveUp[mi] = false; g_pendKey[mi] = pk.key; g_auto[mi].lastUseMs = now; g_auto[mi].pending = true; }
+    if (mi >= 1 && mi <= 2) { g_pend[mi] = shui::Pending(); g_pend[mi].on = true; g_pend[mi].since = now; g_pend[mi].preHp = m.cur; g_pend[mi].preStack = pk.count; g_unqueuedSince[mi] = 0; g_kickReason[mi] = 0; g_starvedSince[mi] = 0; g_kickGaveUp[mi] = false; g_pendKey[mi] = pk.key; g_auto[mi].lastUseMs = now; g_auto[mi].pending = true; g_starveLogged[mi] = false; g_rotNoopLogged[mi] = false; }
     else if (mi == 0) { g_pend0 = shui::Pending(); g_pend0.on = true; g_pend0.since = now; g_pend0.preHp = m.cur; g_pend0.preStack = pk.count; g_unqueuedSince0 = 0; g_kickReason0 = 0; g_starvedSince0 = 0; g_kickGaveUp0 = false; g_pendKey0 = pk.key; g_auto0.lastUseMs = now; g_auto0.pending = true; }
     if (out) { out->pk = pk; out->hp = m.cur; out->server = m.server; }
+    if (g_queueTrace) {
+        actq::Snapshot qb;
+        bool qok = actq::read(m.server, &qb, SiteQueue, SiteRound);
+        KP_LOG(chCall, "QDIAG routeA t=%lu member=%d queue=%d read=%d", (unsigned long)now, mi, qb.ne, (int)qok);
+    }
     reinterpret_cast<void(__thiscall*)(uintptr_t, int, int, uint32_t, int, uint32_t, int, int, int)>(UseItemRouteA)(m.server, 0, 0, selfServerId, 0, itemServerId, 0, 0, 0);
     KP_LOG(chCall, "CALL routeA returned member=%d", mi);
     return true;
@@ -583,7 +616,7 @@ void pendingTick(DWORD now) {
         bool progress = hp > g_pend[i].preHp || (stack >= 0 && stack < g_pend[i].preStack) || (stack < 0 && g_pend[i].preStack > 0);
         KP_LOG(chCall, "DONE member=%d hp%+d stack%+d queued=%d", i, hp - g_pend[i].preHp, (stack < 0 ? 0 : stack) - g_pend[i].preStack, (int)queued);
         if (!progress) KP_LOGV(chCall, KPLOG_WARN, "TIMEOUT unqueued member=%d", i);
-        g_pend[i].on = false; g_auto[i].pending = false; g_unqueuedSince[i] = 0; g_kickReason[i] = 0; g_starvedSince[i] = 0; g_kickGaveUp[i] = false;
+        g_pend[i].on = false; g_auto[i].pending = false; g_unqueuedSince[i] = 0; g_kickReason[i] = 0; g_starvedSince[i] = 0; g_kickGaveUp[i] = false; g_starveLogged[i] = false; g_rotNoopLogged[i] = false;
     }
     // Member 0 (leader)
     if (!g_pend0.on) return;
@@ -610,6 +643,7 @@ void typesStr(const actq::Snapshot& q, char* buf, size_t cap) {
 void kickSkip(int mi, int reason, const char* gate, long long val) {
     if (g_kickReason[mi] == reason) return;
     g_kickReason[mi] = reason;
+    g_kickGate[mi] = gate;
     KP_LOG(chCall, "KICK skipped member=%d (%s=%lld)", mi, gate, val);
 }
 void kickTick(DWORD now) {
@@ -623,13 +657,24 @@ void kickTick(DWORD now) {
         if (!g_pend[i].on || g_kickGaveUp[i] || !v[i].server) continue;
         uintptr_t cr = v[i].server;
         actq::Snapshot q;
-        actq::read(cr, &q, SiteQueue, SiteRound);
-        if (!actq::starved(q)) { g_starvedSince[i] = 0; g_kickReason[i] = 0; continue; }
+        bool qok = actq::read(cr, &q, SiteQueue, SiteRound);
+        if (!qok && g_queueTrace && !g_readFail[i]) KP_LOG(chCall, "QDIAG kick queue read failed member=%d cr=%08x (treated as empty)", i, (unsigned)cr);
+        g_readFail[i] = !qok;
+        if (!actq::starved(q)) {
+            if (g_starveLogged[i]) { g_starveLogged[i] = false; if (g_queueTrace) KP_LOG(chCall, "QDIAG starved cleared member=%d queue=%d", i, q.ne); }
+            g_starvedSince[i] = 0; g_kickReason[i] = 0; continue;
+        }
         bool paused = actq::playerPaused(SitePause);
         if (paused) { g_starvedSince[i] = 0; kickSkip(i, 1, "paused", 1); continue; }
+        if (!g_starveLogged[i]) { g_starveLogged[i] = true; if (g_queueTrace) qdiagSnap("starved onset", i, q, false); }
         if (!g_starvedSince[i]) g_starvedSince[i] = now ? now : 1u;
         else if (now - g_starvedSince[i] > 5000) {
             KP_LOGV(chCall, KPLOG_WARN, "KICK starved member=%d", i);
+            if (g_queueTrace) {
+                char ty[64]; qdiagTypes(q, ty, sizeof ty);
+                KP_LOG(chCall, "QDIAG giveup member=%d elapsed=%lu ms last=%s reason=%d types=[%s]", i, (unsigned long)(now - g_starvedSince[i]),
+                       g_kickReason[i] ? g_kickGate[i] : "none", g_kickReason[i], ty);
+            }
             g_kickGaveUp[i] = true; continue;
         }
         uint32_t running = 0, c11ac = 0, round = 0;
@@ -650,9 +695,10 @@ void kickTick(DWORD now) {
         char before[96], after[96];
         typesStr(q, before, sizeof before);
         int done = 0;
+        bool removeZero = false;
         for (int n = 0; n < k; ++n) {
             uint32_t d = reinterpret_cast<uint32_t(__thiscall*)(uintptr_t)>(gameaddr::ActListRemoveHead)(cr + actq::CrQueue);
-            if (d == 0) break;
+            if (d == 0) { removeZero = true; break; }
             reinterpret_cast<void(__thiscall*)(uintptr_t, uint32_t)>(gameaddr::ActListAddTail)(cr + actq::CrQueue, d);
             ++done;
         }
@@ -660,6 +706,10 @@ void kickTick(DWORD now) {
         actq::read(cr, &q2, SiteQueue, SiteRound);
         typesStr(q2, after, sizeof after);
         KP_LOG(chCall, "KICK member=%d before=[%s] after=[%s] k=%d route=rotate", i, before, after, done);
+        if (g_queueTrace && !g_rotNoopLogged[i] && (removeZero || !strcmp(before, after))) {
+            g_rotNoopLogged[i] = true;
+            KP_LOG(chCall, "QDIAG rotate no-op member=%d why=%s k=%d done=%d queue=%d", i, removeZero ? "remove-head-0" : "before==after", k, done, q2.ne);
+        }
         g_kickReason[i] = 0;
     }
 }

@@ -207,7 +207,8 @@ bool invokeEntry(uintptr_t hud, uintptr_t menu, int g, int type, int idx, const 
     int32_t oldSel = 0;
     if (!saferead::readAt(S_InvRd, reinterpret_cast<uintptr_t>(slot), 0, &oldSel)) { KP_LOGV(chTarget, KPLOG_WARN, "invoke g%d: skip, selection slot unreadable", g); return false; }
     if (!saferead::probeWrite(S_InvWr, slot, 4)) { KP_LOGV(chTarget, KPLOG_WARN, "invoke g%d: skip, not writable (slot=%p)", g, (void*)slot); return false; }
-    KP_LOGV(chTarget, KPLOG_INFO, "invoke g%d: pre idx=%d key=%08x oldSel=%08x owner=%08x usable=%d type=%d", g, idx, (unsigned)ev.key, (unsigned)oldSel, (unsigned)ev.owner, (int)ev.usable, type);
+    KP_LOGV(chTarget, KPLOG_INFO, "invoke g%d: pre idx=%d key=%08x oldSel=%08x owner=%08x usable=%d type=%d count=%u slot=%p",
+            g, idx, (unsigned)ev.key, (unsigned)oldSel, (unsigned)ev.owner, (int)ev.usable, type, (unsigned)ev.count, (void*)slot);
     *slot = static_cast<int32_t>(ev.key);
     using Fn = void(__thiscall*)(void*, int, int);
     reinterpret_cast<Fn>(HudTargetInvoke)(reinterpret_cast<void*>(hud), g, 0);
@@ -222,11 +223,11 @@ bool invokeEntry(uintptr_t hud, uintptr_t menu, int g, int type, int idx, const 
 // CH2 key path: the last usable owned entry of group g.
 void invokeGroup(uintptr_t hud, uintptr_t menu, int g) {
     int8_t type = -1;
-    if (!saferead::readAt(S_InvRd, menu, 0x1BAA, &type) || type < 0 || type > 3) { CH_VLOG(chTarget, KPLOG_INFO, "invoke g%d: skip, no target (type=%d)", g, (int)type); return; }
+    if (!saferead::readAt(S_InvRd, menu, 0x1BAA, &type) || type < 0 || type > 3) { KP_LOGV(chTarget, KPLOG_INFO, "invoke g%d: skip, no target (type=%d)", g, (int)type); return; }
     ch::GroupView gv; uintptr_t base = 0;
     readGroup(menu, g, &gv, &base);
     const int idx = ch::pickInvokeEntry(gv, type);
-    if (idx < 0) { CH_VLOG(chTarget, KPLOG_INFO, "invoke g%d: skip, no entry (type=%d count=%d)", g, (int)type, gv.count); return; }
+    if (idx < 0) { KP_LOGV(chTarget, KPLOG_INFO, "invoke g%d: skip, no entry (type=%d count=%d)", g, (int)type, gv.count); return; }
     invokeEntry(hud, menu, g, type, idx, gv.e[idx]);
 }
 
@@ -235,7 +236,9 @@ void pollInvokeKeys(const K2HudContext* ctx) {
     const bool active = guikit::detail::winForeground() && modifiersMatch();
     for (int g = 0; g < 3; ++g) {
         const bool down = active && (GetAsyncKeyState(g_cfg.keys[g]) & 0x8000) != 0;
-        if (g_edge[g].update(down) && ctx->hud) invokeGroup(static_cast<uintptr_t>(static_cast<uint32_t>(ctx->hud)), static_cast<uintptr_t>(static_cast<uint32_t>(ctx->menu)), g);
+        if (!g_edge[g].update(down)) continue;
+        KP_LOGV(chTarget, KPLOG_INFO, "key g%d pressed: vk=%02x hud=%d", g, (unsigned)g_cfg.keys[g], ctx->hud ? 1 : 0);
+        if (ctx->hud) invokeGroup(static_cast<uintptr_t>(static_cast<uint32_t>(ctx->hud)), static_cast<uintptr_t>(static_cast<uint32_t>(ctx->menu)), g);
     }
 }
 
@@ -675,7 +678,7 @@ void updateButtons(const K2HudContext* ctx) {
         }
     }
 
-    if (click && reflow) CH_VLOG(chTarget, KPLOG_DEBUG, "click ignored: layout reflow");
+    if (click && reflow) KP_LOGV(chTarget, KPLOG_INFO, "click ignored: layout reflow");
     else if (click && anyButtonVisible() && haveCursor && over >= 0) {
         int g = -1;
         const int idx = ch::slotEntry(over, g_cfg.cols, g_cfg.maxRows, &g);
@@ -684,6 +687,7 @@ void updateButtons(const K2HudContext* ctx) {
             KP_LOGV(chTarget, KPLOG_INFO, "click g=%d idx=%d src=%d key=%08x", g, idx, src, (unsigned)gv[g].e[src].key);
             if (invokeEntry(hud, menu, g, type, src, gv[g].e[src])) playGuiSound(g_cfg.clickSound);
         }
+        else KP_LOGV(chTarget, KPLOG_INFO, "click ignored: no entry or button hidden (g=%d idx=%d vis=%d hud=%d)", g, idx, (int)g_btn[over].bg.vis, hud ? 1 : 0);
     }
 }
 

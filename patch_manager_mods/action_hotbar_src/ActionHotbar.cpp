@@ -273,7 +273,9 @@ uintptr_t g_hud = 0;
 int g_kbDevice = 0;
 long g_frame = 0;
 
-struct Req { int slot; };
+enum ReqSrc { Src_Ring = 0, Src_Key, Src_Click };   // trigger source, logged on the invoke lines (Src_Ring = unset: no producer leaves it so today)
+struct Req { int slot; int src; };
+const char* srcName(int src) { return src == Src_Key ? "key" : src == Src_Click ? "click" : "ring"; }
 Req g_ring[hb::RingSize]; int g_ringHead = 0, g_ringTail = 0;  // single producer (input) / consumer (tick) on the game thread
 bool g_downSwallowed[256];
 bool g_ctrl = false, g_alt = false, g_shift = false;
@@ -470,18 +472,18 @@ bool readMode(uintptr_t& s, int& stance, uint32_t& form) {
 }
 void resyncActionBar(uintptr_t hud) { reinterpret_cast<void(__fastcall*)(void*)>(HudSyncStance)(reinterpret_cast<void*>(hud)); }
 
-void invokeEntry(uintptr_t hud, const Entry& e) {
+void invokeEntry(uintptr_t hud, const Entry& e, int src) {
     int* sel = reinterpret_cast<int*>(hud + Hud_GroupSel + e.group * 4);
     int* active = reinterpret_cast<int*>(hud + Hud_ActiveGroup);
     if (!saferead::probeWrite(S_WrSel, sel, 4) || !saferead::probeWrite(S_WrActive, active, 4)) { KP_LOGV(chSlots, KPLOG_WARN, "invoke: hud selection not writable group=%d sel=%p active=%p", e.group, (void*)sel, (void*)active); return; }
-    KP_LOGV(chSlots, KPLOG_DEBUG, "invoke: pre group=%d key=%08x sel=%08x active=%d", e.group, (unsigned)e.key, (unsigned)*sel, *active);
+    KP_LOGV(chSlots, KPLOG_DEBUG, "invoke: pre src=%s group=%d key=%08x sel=%08x active=%d", srcName(src), e.group, (unsigned)e.key, (unsigned)*sel, *active);
     int oldSel = *sel, oldActive = *active;
     *sel = e.key;
     using Fn = void(__thiscall*)(void*, int, int);
     reinterpret_cast<Fn>(HudInvokeGroup)(reinterpret_cast<void*>(hud), e.group, 0);
-    KP_LOG(chSlots, "invoke: returned group=%d key=%08x (sel before=%08x after=%08x active before=%d after=%d)", e.group, (unsigned)e.key, (unsigned)oldSel, (unsigned)*sel, oldActive, *active);
-    if (*sel == e.key) { *sel = oldSel; KP_LOG(chSlots, "invoke: selection restored to %08x", (unsigned)oldSel); }
-    else KP_LOGV(chSlots, KPLOG_WARN, "invoke: selection changed by the game to %08x, NOT restoring", (unsigned)*sel);
+    KP_LOG(chSlots, "invoke: returned src=%s group=%d key=%08x (sel before=%08x after=%08x active before=%d after=%d)", srcName(src), e.group, (unsigned)e.key, (unsigned)oldSel, (unsigned)*sel, oldActive, *active);
+    if (*sel == e.key) { *sel = oldSel; KP_LOG(chSlots, "invoke: selection restored src=%s to %08x", srcName(src), (unsigned)oldSel); }
+    else KP_LOGV(chSlots, KPLOG_WARN, "invoke: src=%s selection changed by the game to %08x, NOT restoring", srcName(src), (unsigned)*sel);
     *active = oldActive;
     if ((e.group == 4 || e.group == 5) && g_cfg.general.syncActionBar) {   // our restore of the old key leaves the stance/form group stale
         resyncActionBar(hud);
@@ -658,7 +660,7 @@ void drainRing(uintptr_t hud) {
         hb::UseRoute route = hb::useRoute(a, probe, g_cfg.general.invoke != 0);
         if (route == hb::UR_SelfDirect && selfUse(e, a)) continue;
         if (route == hb::UR_LowHpDirect && targetedUse(e, a, probe)) continue;
-        if (g_cfg.general.invoke) invokeEntry(hud, e);
+        if (g_cfg.general.invoke) invokeEntry(hud, e, r.src);
     }
 }
 
@@ -1012,7 +1014,7 @@ void updateHover(bool gate) {
         else if (click && over >= 0) {
             bool ok = g_bar.b[over].avail;
             KP_LOG(chInput, "click: slot %d %s", over, ok ? "queued" : "ignored (no action)");
-            if (ok) { if (hb::ringFull(g_ringHead, g_ringTail)) KP_LOGV(chInput, KPLOG_WARN, "click: ring full, dropped"); else { g_ring[g_ringHead] = { over }; g_ringHead = hb::ringNext(g_ringHead); } }
+            if (ok) { if (hb::ringFull(g_ringHead, g_ringTail)) KP_LOGV(chInput, KPLOG_WARN, "click: ring full, dropped"); else { g_ring[g_ringHead] = { over, Src_Click }; g_ringHead = hb::ringNext(g_ringHead); } }
         }
     }
     if (over >= 0 && g_bar.b[over].avail && g_bar.tipSlot != over && GetTickCount() - g_bar.hoverStart >= TipDelayMs) showTipAt(g_bar.b[over].bg, g_bar.b[over].entry, over);
@@ -1939,10 +1941,21 @@ extern "C" void __cdecl CaptureHotbarKey(DIRecord* rec, int dev) {
     if (ka.clearDown) g_downSwallowed[dik] = false;
     if (ka.markDown) g_downSwallowed[dik] = true;
     if (ka.escHit) g_escHit = true;
-    if (ka.enqueue) { g_ring[g_ringHead] = { ka.slot }; g_ringHead = hb::ringNext(g_ringHead); }
+    if (ka.enqueue) { g_ring[g_ringHead] = { ka.slot, Src_Key }; g_ringHead = hb::ringNext(g_ringHead); }
     if (ka.swallow) { rec->dwOfs = 0; rec->dwData = 0; }
     const char* decision = ka.decision;
-    if (isDigit || isMod || isEsc) { KP_LOGV(chInput, KPLOG_DEBUG, "cap: dev=%d dik=%02x %s mods=%c%c%c -> %s", dev, (unsigned)dik, down ? "down" : "up", g_ctrl ? 'C' : '-', g_alt ? 'A' : '-', g_shift ? 'S' : '-', decision); }
+    int decisionLvl = (ka.swallow && down) ? KPLOG_INFO : KPLOG_DEBUG;   // SWALLOW (key down) at INFO; PASS and the key-up release stay DEBUG
+    if (isDigit || isMod || isEsc) { KP_LOGV(chInput, decisionLvl, "cap: dev=%d dik=%02x %s mods=%c%c%c -> %s", dev, (unsigned)dik, down ? "down" : "up", g_ctrl ? 'C' : '-', g_alt ? 'A' : '-', g_shift ? 'S' : '-', decision); }
+    if (ke.ringFull && down && ka.swallow && !ka.enqueue && !ka.escHit) KP_LOGV(chInput, KPLOG_WARN, "cap: ring full, digit %02x dropped (invoke queue at capacity)", (unsigned)dik);
+    if (isDigit && down && g_hudGateOk) {   // gate open but the HUD tick is older than HudFreshMs: the digit is not invoked; WARN once per stale spell
+        static bool staleWarned = false;
+        DWORD age = GetTickCount() - g_hudTick;
+        if (age < HudFreshMs) staleWarned = false;
+        else if (!staleWarned) {
+            staleWarned = true;
+            KP_LOGV(chGate, KPLOG_WARN, "gate: HUD tick stale %lu ms (limit %lu) with gate open, digit %02x not invoked", (unsigned long)age, (unsigned long)HudFreshMs, (unsigned)dik);
+        }
+    }
 }
 
 

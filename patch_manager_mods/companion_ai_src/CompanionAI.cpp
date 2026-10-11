@@ -313,8 +313,9 @@ bool controlledId(int* out) {
 // ---- statistics
 struct Stats {
     unsigned flips = 0, prints = 0, aur = 0, e1 = 0, e1spins = 0, e1b = 0, e2 = 0, e3 = 0;
-    unsigned a1Would = 0, a1End = 0, a1Retarget = 0, p1Checks = 0, p1Allowed = 0, p1Throttled = 0, p1Runs = 0, p1Resets = 0;
-    unsigned fm1Keep = 0, fm1Clear = 0, fm4Snap = 0, fm4Restore = 0, a4 = 0, c1Restart = 0, c1Vanilla = 0, c1Capped = 0, a3 = 0;
+    unsigned a1Would = 0, a1End = 0, a1Retarget = 0, a1NonCand = 0, a1Unread = 0, a1Ctrl = 0;   // a1*: silent returns = vanilla
+    unsigned p1Checks = 0, p1Allowed = 0, p1Throttled = 0, p1Runs = 0, p1Resets = 0;
+    unsigned fm1Keep = 0, fm1Clear = 0, fm1PartySkip = 0, fm4Snap = 0, fm4Restore = 0, a4 = 0, c1Restart = 0, c1Vanilla = 0, c1Capped = 0, a3 = 0;
 };
 Stats g_st, g_stLast;
 DWORD g_lastSummary = 0;
@@ -373,11 +374,11 @@ void summary(DWORD now) {
     if (memcmp(&s, &g_stLast, sizeof s) || g_gate.totalLines != g_sumLines || g_gate.totalDropped != g_sumDropped ||
         g_gate.totalDeduped != g_sumDeduped) {
         eline(now, "t=%lu S lines=%llu dropped=%llu deduped=%llu capDropped=%llu | flips=%u prints=%u aur=%u e1=%u e1spins=%u e1b=%u e2=%u e3=%u | "
-                   "a1{would=%u end=%u retarget=%u} p1{checks=%u allowed=%u throttled=%u runs=%u resets=%u} fm1{keep=%u clear=%u} "
-                   "fm4{snap=%u restore=%u} a4=%u c1{restart=%u vanilla=%u capped=%u} a3=%u",
+                   "a1{would=%u end=%u retarget=%u silent{nonCand=%u unread=%u ctrl=%u}} p1{checks=%u allowed=%u throttled=%u runs=%u resets=%u} "
+                   "fm1{keep=%u clear=%u partySkip=%u} fm4{snap=%u restore=%u} a4=%u c1{restart=%u vanilla=%u capped=%u} a3=%u",
               now, g_gate.totalLines, g_gate.totalDropped, g_gate.totalDeduped, g_gate.totalCapDropped, s.flips, s.prints, s.aur, s.e1,
-              s.e1spins, s.e1b, s.e2, s.e3, s.a1Would, s.a1End, s.a1Retarget, s.p1Checks, s.p1Allowed, s.p1Throttled, s.p1Runs, s.p1Resets,
-              s.fm1Keep, s.fm1Clear, s.fm4Snap, s.fm4Restore, s.a4, s.c1Restart, s.c1Vanilla, s.c1Capped, s.a3);
+              s.e1spins, s.e1b, s.e2, s.e3, s.a1Would, s.a1End, s.a1Retarget, s.a1NonCand, s.a1Unread, s.a1Ctrl, s.p1Checks, s.p1Allowed,
+              s.p1Throttled, s.p1Runs, s.p1Resets, s.fm1Keep, s.fm1Clear, s.fm1PartySkip, s.fm4Snap, s.fm4Restore, s.a4, s.c1Restart, s.c1Vanilla, s.c1Capped, s.a3);
         g_stLast = s;
     }
     for (auto& t : g_tr)
@@ -863,16 +864,16 @@ extern "C" int __cdecl CompanionAiA1Gate(int ebp) {
     saferead::beginScope();
     DWORD now = GetTickCount(); tick(now);
     int eff = fr<int>(ebp, F_Stance);
-    if (!cai::a1SpinCandidate(eff, fr<int>(ebp, F_Backoff), fr<int>(ebp, F_ForceJump))) return 0;   // vanilla move / back-off / jump
+    if (!cai::a1SpinCandidate(eff, fr<int>(ebp, F_Backoff), fr<int>(ebp, F_ForceJump))) { ++g_st.a1NonCand; return 0; }   // vanilla move / back-off / jump
     int attacker = fr<int>(ebp, F_Attacker);
     int id = 0;
-    if (!attacker || !saferead::readAt<int>(5, static_cast<uintptr_t>(attacker), ObId, &id)) return 0;
+    if (!attacker || !saferead::readAt<int>(5, static_cast<uintptr_t>(attacker), ObId, &id)) { ++g_st.a1Unread; return 0; }
     int ctrl = Invalid, p = fr<int>(ebp, F_PartyTable);
     if (p) {   // = vanilla 0x6D8548..0x6D856B (pure getter)
         int q = reinterpret_cast<Fn0>(FnControlled)(p);
-        if (!q || !saferead::readAt<int>(5, static_cast<uintptr_t>(q), ObId, &ctrl)) return 0;   // unknown: vanilla
+        if (!q || !saferead::readAt<int>(5, static_cast<uintptr_t>(q), ObId, &ctrl)) { ++g_st.a1Unread; return 0; }   // unknown: vanilla
     }
-    if (ctrl == id) return 0;                                                     // controlled: vanilla moves
+    if (ctrl == id) { ++g_st.a1Ctrl; return 0; }                                  // controlled: vanilla moves
     int raw = rawStance(attacker), party = rd<int>(attacker, CrParty);
     float dist2 = fr<float>(ebp, F_Dist2), mx = fr<float>(ebp, F_Max);
     int los = fr<int>(ebp, F_Los), ranged = fr<int>(ebp, F_Ranged), tgt = fr<int>(ebp, F_ActionTarget);
@@ -884,8 +885,11 @@ extern "C" int __cdecl CompanionAiA1Gate(int ebp) {
         if (cai::a1TryRetarget(g_cfg, raw, mx))
             newId = cai::a1NewTarget(reinterpret_cast<RetargetFn>(FnNearestEnemy)(attacker, mx, tgt, Invalid));
         frw<int>(ebp, F_NewTarget, newId);
-        if (cai::a1RethinkWanted(g_cfg, newId) && cai::a1RethinkWrite(g_cfg, rd<int>(attacker, CrFallback)))
-            wr<int>(attacker + CrFallback, g_cfg.a1RethinkMs);
+        if (cai::a1RethinkWanted(g_cfg, newId)) {
+            int f570 = rd<int>(attacker, CrFallback);
+            if (cai::a1RethinkWrite(g_cfg, f570) && wr<int>(attacker + CrFallback, g_cfg.a1RethinkMs) && g_cfg.log && crPasses(attacker, party))
+                tline(now, 0, "t=%lu A1 RETHINK cr=%08x f570=%d -> a1_rethink_ms=%d", now, id, f570, g_cfg.a1RethinkMs);
+        }
         if (newId != Invalid) { ++t->retargets; ++g_st.a1Retarget; } else { ++t->ends; ++g_st.a1End; }
         t->lastA1 = now;
         if (g_cfg.probeA1x) {   // log only: strict 2D test of the retarget candidate, and the follow-up watch (RS S6*/E2 clear it)
@@ -975,8 +979,11 @@ extern "C" void __cdecl CompanionAiBumpClear(int ebp) {
         }
         if (node) listOk = false;   // longer than 64: never keep
     }
-    bool keep = g_cfg.fm1 && party && listOk && cai::onlyFollowTypes(types, n);
-    bool show = (g_cfg.log || (g_cfg.trace && g_cfg.enginePoints)) && crPasses(bumpee, party);
+    cai::Fm1Why why = cai::fm1KeepWhy(g_cfg.fm1, party, listOk, types, n);   // same gates as the keep decision (parity-tested)
+    bool keep = why == cai::Fm1Keep;
+    bool logOn = g_cfg.log || (g_cfg.trace && g_cfg.enginePoints);
+    bool show = logOn && crPasses(bumpee, party);
+    if (logOn && !show && !party && g_cfg.partyOnly && !g_cfg.logAll) ++g_st.fm1PartySkip;   // non-party bumpee: party_only kept its line off
     char q[64 * 5 + 8] = "";
     if (show) {
         int len = 0;
@@ -987,16 +994,19 @@ extern "C" void __cdecl CompanionAiBumpClear(int ebp) {
     else {
         reinterpret_cast<Fn1>(FnClearAllActions)(bumpee, 1);   // vanilla: same this, same argument
         ++g_st.fm1Clear;
-        if (g_cfg.fm1 && party && g_cfg.fm1RethinkMs > 0 &&
-            cai::fm1RethinkWrite(g_cfg, party, rd<int>(bumpee, CrCombat), rd<int>(bumpee, CrFallback)))
-            wr<int>(bumpee + CrFallback, g_cfg.fm1RethinkMs);
+        if (g_cfg.fm1 && party && g_cfg.fm1RethinkMs > 0) {
+            int combat = rd<int>(bumpee, CrCombat), f570 = rd<int>(bumpee, CrFallback);
+            if (cai::fm1RethinkWrite(g_cfg, party, combat, f570) && wr<int>(bumpee + CrFallback, g_cfg.fm1RethinkMs) && show)
+                tline(now, 0, "t=%lu FM1 RETHINK bumpee=%08x combat=%d f570=%d -> fm1_rethink_ms=%d", now, rd<int>(bumpee, ObId), combat, f570,
+                      g_cfg.fm1RethinkMs);
+        }
     }
     int bid = show ? rd<int>(bumpee, ObId) : 0;
     if (show && g_subj.allow(SkFm1, bid, now, keep ? 1u : 0u, 20, 2000)) {   // first 20 per bumpee, then on change / 2 s
         char bt[33], mt[33]; readTag(bumpee, bt, sizeof bt); readTag(mover, mt, sizeof mt);
-        tline(now, 0, "t=%lu FM1 bumpee=%08x %s party=%d mover=%08x %s combat=%d tgt=%08x round=%d queue=[%s]%s -> %s%s", now, bid, bt,
+        tline(now, 0, "t=%lu FM1 bumpee=%08x %s party=%d mover=%08x %s combat=%d tgt=%08x round=%d queue=[%s]%s -> %s why=%s%s", now, bid, bt,
               party, rd<int>(mover, ObId), mt, rd<int>(bumpee, CrCombat), rd<int>(bumpee, CrTarget, Invalid), roundActive(bumpee), q,
-              listOk ? "" : " (unreadable)", keep ? "keep" : "clear", (!keep && !g_cfg.fm1) ? " (fm1=0)" : "");
+              listOk ? "" : " (unreadable)", keep ? "keep" : "clear", cai::fm1WhyName(why), (!keep && !g_cfg.fm1) ? " (fm1=0)" : "");
     }
 }
 

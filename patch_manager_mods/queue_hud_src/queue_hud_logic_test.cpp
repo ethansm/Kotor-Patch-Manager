@@ -298,7 +298,7 @@ void testWaitingAndShow() {
 
 void testConfigDefaultsAndStyle() {
     Config c;
-    KT_CHECK(c.enabled && c.waitingDim && c.log);
+    KT_CHECK(c.enabled && c.waitingDim && c.log && c.traceQueue);
     KT_CHECK(c.bg[0] == 0.05f && c.bg[1] == 0.25f && c.bg[2] == 0.28f && c.bgAlpha == 0.45f);
     KT_CHECK(c.border[0] == 0.10f && c.border[1] == 0.58f && c.border[2] == 0.62f && c.borderAlpha == 0.9f);
     KT_CHECK(c.waitingBg[0] == 0.03f && c.waitingBg[1] == 0.15f && c.waitingBg[2] == 0.18f);
@@ -380,7 +380,7 @@ void testIniBad() {
         "bg_rgb=", "bg_rgb=1,2", "bg_rgb=1,2,3,4", "bg_rgb=1;2;3", "bg_rgb=a,b,c", "bg_rgb=1,,3", "bg_rgb=0.1,0.2,", "bg_rgb=,0.2,0.3", "bg_rgb=1 2 3",
         "border_rgb=1,2", "border_rgb=x",
         "border_px=0", "border_px=7", "border_px=-1", "border_px=", "border_px=2.5", "border_px=abc", "border_px=99999999999", "border_px=2px", "border_px=06", "border_px=10", "border_px=1,2", "border_px=/;", "border_px=:", "border_px=/",
-        "waiting_dim=2", "log=x",
+        "waiting_dim=2", "log=x", "trace_queue=x",
         "unknown=1", "enabledx=1", "enable=1", "bg=1", "novalue", "=1", "enabled 1",
     };
     for (const char* l : bad) {
@@ -1212,6 +1212,241 @@ void testDispatchNextEachCondition() {
     KT_CHECK(!shouldDispatchNext(b, 0, false, /*nrn=*/1));                     // nrn alone blocks
 }
 
+// ---- T1: why-codes, queue signature, lost-command ids, LOG GRAMMAR formatters ----
+void testWhyParityMatrix() {
+    const float pos[3] = { 0.f, 0.f, 0.f };
+    int reHits[7] = { 0 };
+    for (int active = 0; active < 2; ++active)
+    for (int pend = 0; pend < 2; ++pend)
+    for (int bcan = 0; bcan < 2; ++bcan)
+    for (int rc = 1; rc <= 3; ++rc)
+    for (int inq = 0; inq < 2; ++inq)
+    for (int lead = 0; lead < 2; ++lead)
+    for (int pcan = 0; pcan < 2; ++pcan)
+    for (int paused = 0; paused < 2; ++paused)
+    for (int nowSet = 0; nowSet < 2; ++nowSet) {
+        ActionBuffer b;
+        b.active = active != 0;
+        b.reInjectPending = pend != 0;
+        b.userCancelled = bcan != 0;
+        b.activeAction = makeSpellAction(0x1000, 0x55, 0, 1, 0, 0, 0, pos, 1);
+        b.activeAction.reInjectCount = rc;
+        const uint32_t now = nowSet ? 999u : 0u;
+        const bool want = shouldReInject(b, inq != 0, lead != 0, paused != 0, now, pcan != 0);
+        const ReInjectWhy why = reInjectWhy(b, inq != 0, lead != 0, paused != 0, now, pcan != 0);
+        KT_CHECK_EQ(why == RI_OK, want);
+        reHits[why]++;
+    }
+    for (int r = 0; r < 7; ++r) KT_CHECK(reHits[r] > 0);   // every ReInjectWhy is reachable in the matrix
+
+    int dsHits[6] = { 0 };
+    for (int active = 0; active < 2; ++active)
+    for (int isEmpty = 0; isEmpty < 2; ++isEmpty)
+    for (int eng = 0; eng < 3; ++eng)
+    for (int cur = 0; cur < 2; ++cur)
+    for (int nrn = -1; nrn <= 1; ++nrn) {
+        ActionBuffer b;
+        if (!isEmpty) KT_CHECK(b.push(makeSpellAction(0x1000, 0x55, 0, 1, 0, 0, 0, pos, 1)));
+        b.active = active != 0;
+        const bool want = shouldDispatchNext(b, eng, cur != 0, nrn);
+        const DispatchWhy why = dispatchWhy(b, eng, cur != 0, nrn);
+        KT_CHECK_EQ(why == DS_OK, want);
+        dsHits[why]++;
+    }
+    for (int r = 0; r < 6; ++r) KT_CHECK(dsHits[r] > 0);   // every DispatchWhy is reachable in the matrix
+}
+
+void testWhyNames() {
+    KT_CHECK_EQ(whyName(RI_OK), "ok");
+    KT_CHECK_EQ(whyName(RI_INACTIVE), "inactive");
+    KT_CHECK_EQ(whyName(RI_PENDING), "pending");
+    KT_CHECK_EQ(whyName(RI_CANCEL), "cancel");
+    KT_CHECK_EQ(whyName(RI_MAX), "max_reinject");
+    KT_CHECK_EQ(whyName(RI_IN_QUEUE), "in_queue");
+    KT_CHECK_EQ(whyName(RI_NO_LEADER), "no_leader");
+    KT_CHECK_EQ(whyName(DS_OK), "ok");
+    KT_CHECK_EQ(whyName(DS_ACTIVE), "active");
+    KT_CHECK_EQ(whyName(DS_EMPTY), "empty");
+    KT_CHECK_EQ(whyName(DS_ENGINE_BUSY), "engine_busy");
+    KT_CHECK_EQ(whyName(DS_CUR_BUSY), "cur_busy");
+    KT_CHECK_EQ(whyName(DS_NRN_BUSY), "nrn_busy");
+    // DROP words are the grammar set verbatim
+    KT_CHECK_EQ(whyName(DR_COMBAT_CLEAR), "combat_clear");
+    KT_CHECK_EQ(whyName(DR_NULL_CREATURE), "null_creature");
+    KT_CHECK_EQ(whyName(DR_CANCEL), "cancel");
+    KT_CHECK_EQ(whyName(DR_BUFFER_FULL), "buffer_full");
+    KT_CHECK_EQ(whyName(DR_UNREADABLE_CREATURE), "unreadable_creature");
+}
+
+void testQueueSig() {
+    QEntry q[10];
+    for (int i = 0; i < 10; ++i) { q[i].type = 0x0C + i; q[i].param0 = (uint32_t)i; }
+    const QueueSig a = makeQueueSig(q, 3, 1, 0x0C, true, false);
+    KT_CHECK_EQ(a.ne, 3); KT_CHECK_EQ(a.nTypes, 3); KT_CHECK_EQ(a.types[2], 0x0E);
+    KT_CHECK(sigEqual(a, makeQueueSig(q, 3, 1, 0x0C, true, false)));
+    KT_CHECK(!sigEqual(a, makeQueueSig(q, 4, 1, 0x0C, true, false)));    // ne
+    KT_CHECK(!sigEqual(a, makeQueueSig(q, 3, 2, 0x0C, true, false)));    // round
+    KT_CHECK(!sigEqual(a, makeQueueSig(q, 3, 1, 0x0D, true, false)));    // cur
+    KT_CHECK(!sigEqual(a, makeQueueSig(q, 3, 1, 0x0C, false, false)));   // aa8
+    KT_CHECK(!sigEqual(a, makeQueueSig(q, 3, 1, 0x0C, true, true)));     // ab8
+    QEntry r[3] = { q[0], q[1], q[2] };
+    r[1].type = 0x3F;
+    KT_CHECK(!sigEqual(a, makeQueueSig(r, 3, 1, 0x0C, true, false)));    // a stored type changed
+    // 8-type cap: 10 entries keep 8 types, ne still counts 10
+    const QueueSig big = makeQueueSig(q, 10, 1, -1, false, false);
+    KT_CHECK_EQ(big.ne, 10); KT_CHECK_EQ(big.nTypes, 8);
+    KT_CHECK(!sigEqual(big, makeQueueSig(q, 9, 1, -1, false, false)));  // ne differs
+    QEntry t[10];
+    for (int i = 0; i < 10; ++i) t[i] = q[i];
+    t[9].type = 0x99;                                                    // past the cap: not compared
+    KT_CHECK(sigEqual(big, makeQueueSig(t, 10, 1, -1, false, false)));
+    t[7].type = 0x99;                                                    // inside the cap: compared
+    KT_CHECK(!sigEqual(big, makeQueueSig(t, 10, 1, -1, false, false)));
+    // null queue keeps ne but no types; default signature
+    const QueueSig nq = makeQueueSig(nullptr, 2, 0, -1, false, false);
+    KT_CHECK_EQ(nq.ne, 2); KT_CHECK_EQ(nq.nTypes, 0);
+    const QueueSig d{};
+    KT_CHECK_EQ(d.ne, 0); KT_CHECK_EQ(d.cur, -1); KT_CHECK(!d.aa8 && !d.ab8 && sigEqual(d, QueueSig{}));
+}
+
+void testBufferedCmdIdsAndSeen() {
+    const float pos[3] = { 0.f, 0.f, 0.f };
+    ActionBuffer b;
+    KT_CHECK(b.push(makeItemAction(0x1000, 301, 0, 1, pos, 1, 11)));
+    KT_CHECK(b.push(makeSpellAction(0x1000, 0x55, 0, 1, 0, 0, 0, pos, 1, 12)));
+    b.active = true;
+    b.activeAction = makeItemAction(0x1000, 9, 0, 1, pos, 1, 13);
+    uint32_t ids[4] = { 0, 0, 0, 0 };
+    KT_CHECK_EQ(bufferedCmdIds(b, ids, 4), 3);                 // two buffered + the active one
+    KT_CHECK(ids[0] == 11u && ids[1] == 12u && ids[2] == 13u);
+    b.active = false;
+    KT_CHECK_EQ(bufferedCmdIds(b, ids, 4), 2);                 // inactive: active id not listed
+    b.active = true;
+    KT_CHECK_EQ(bufferedCmdIds(b, ids, 2), 2);                 // cap: stops after 11, 12
+    KT_CHECK(ids[0] == 11u && ids[1] == 12u);
+    ActionBuffer e;
+    KT_CHECK_EQ(bufferedCmdIds(e, ids, 4), 0);
+    // cmdId: trailing parameter, default 0 keeps the legacy positional calls unchanged
+    KT_CHECK_EQ(makeItemAction(0x1000, 301, 0, 1, pos, 1).cmdId, 0u);
+    KT_CHECK_EQ(makeSpellAction(0x1000, 0x55, 0, 1, 0, 0, 0, pos, 1).cmdId, 0u);
+    KT_CHECK_EQ(makeSpellAction(0x1000, 0x55, 0, 1, 0, 0, 0, pos, 1, 77).cmdId, 77u);
+    KT_CHECK_EQ(makeItemAction(0x1000, 301, 0, 1, pos, 1, 42).cmdId, 42u);
+    // seenInQueue is reset by cancel() and clear() only
+    ActionBuffer s;
+    KT_CHECK(!s.seenInQueue);
+    s.seenInQueue = true; s.cancel(); KT_CHECK(!s.seenInQueue);
+    s.seenInQueue = true; s.clear(); KT_CHECK(!s.seenInQueue);
+}
+
+void testTraceQueueIni() {
+    Config c;
+    KT_CHECK(c.traceQueue);                                            // default on
+    KT_CHECK(parseIniLine(c, "trace_queue=0")); KT_CHECK(!c.traceQueue);
+    KT_CHECK(parseIniLine(c, "trace_queue=1")); KT_CHECK(c.traceQueue);
+    KT_CHECK(parseIniLine(c, "Trace_Queue = off")); KT_CHECK(!c.traceQueue);
+    KT_CHECK(parseIniLine(c, "trace_queue=yes")); KT_CHECK(c.traceQueue);
+    KT_CHECK(!parseIniLine(c, "trace_queue=x")); KT_CHECK(c.traceQueue);   // bad value keeps the previous value
+    Config d;
+    KT_CHECK(!parseIniLine(d, "trace_queue=")); KT_CHECK(d.traceQueue);
+    Config e;
+    KT_CHECK(parseIniLine(e, "log=0")); KT_CHECK(e.traceQueue);            // independent of log=
+    KT_CHECK(parseIniLine(e, "trace_queue=0")); KT_CHECK(!e.traceQueue && !e.log);   // each key sets only its own field
+}
+
+void testLogFormatGolden() {
+    char out[kLogLineMax];
+    CmdLine c;
+    c.cmdId = 12; c.m = 0; c.cr = 0x1a2b3c4u; c.kind = (int)ActionKind::Item;
+    c.hasId = true; c.id = 0x12d; c.hasTgt = false; c.dec = "buffer";
+    c.fb = false; c.engq = 0; c.buf = 2; c.paused = false; c.combat = false;
+    fmtCmd(out, sizeof out, c);
+    KT_CHECK_EQ(out, "CMD#12 m=0 cr=1a2b3c4 kind=item id=12d tgt=- dec=buffer fb=0 engq=0 buf=2 paused=0 combat=0");
+    CmdLine d;
+    d.cmdId = 7; d.m = -1; d.cr = 0; d.kind = (int)ActionKind::Spell;
+    d.hasId = true; d.id = 0x55; d.hasTgt = true; d.tgt = 0x7f000001u;
+    d.dec = "pass_unreadable"; d.fb = true; d.engq = -1; d.buf = 0; d.paused = true; d.combat = true;
+    fmtCmd(out, sizeof out, d);
+    KT_CHECK_EQ(out, "CMD#7 m=? cr=0 kind=spell id=55 tgt=7f000001 dec=pass_unreadable fb=1 engq=unreadable buf=0 paused=1 combat=1");
+    CmdLine e;
+    e.cmdId = 4294967295u; e.m = 2; e.cr = 0xffffffffu; e.kind = 5; e.dec = "drop_full"; e.engq = 3; e.buf = 3;
+    fmtCmd(out, sizeof out, e);
+    KT_CHECK_EQ(out, "CMD#4294967295 m=2 cr=ffffffff kind=? id=- tgt=- dec=drop_full fb=0 engq=3 buf=3 paused=0 combat=0");
+
+    fmtWait(out, sizeof out, 5, 0, DS_ENGINE_BUSY, 2, 1, 120);
+    KT_CHECK_EQ(out, "WAIT cmd=5 m=0 why=engine_busy buf=2 engNe=1 age=120");
+    fmtWait(out, sizeof out, 6, 2, DS_NRN_BUSY, 0, 0, 0);
+    KT_CHECK_EQ(out, "WAIT cmd=6 m=2 why=nrn_busy buf=0 engNe=0 age=0");
+
+    fmtResolve(out, sizeof out, 5, 0, true, 1, 3400);
+    KT_CHECK_EQ(out, "RESOLVE cmd=5 m=0 seen=1 reinj=1 age=3400");
+    fmtResolve(out, sizeof out, 6, -1, false, 0, 0);
+    KT_CHECK_EQ(out, "RESOLVE cmd=6 m=? seen=0 reinj=0 age=0");
+
+    fmtDrop(out, sizeof out, 1, 1, DR_COMBAT_CLEAR, 2);
+    KT_CHECK_EQ(out, "DROP cmd=1 m=1 why=combat_clear n=2");
+    fmtDrop(out, sizeof out, 2, 0, DR_NULL_CREATURE, 1);
+    KT_CHECK_EQ(out, "DROP cmd=2 m=0 why=null_creature n=1");
+    fmtDrop(out, sizeof out, 3, 0, DR_CANCEL, 1);
+    KT_CHECK_EQ(out, "DROP cmd=3 m=0 why=cancel n=1");
+    fmtDrop(out, sizeof out, 5, 2, DR_BUFFER_FULL, 1);
+    KT_CHECK_EQ(out, "DROP cmd=5 m=2 why=buffer_full n=1");
+    fmtDrop(out, sizeof out, 9, 0, DR_UNREADABLE_CREATURE, 3);
+    KT_CHECK_EQ(out, "DROP cmd=9 m=0 why=unreadable_creature n=3");
+
+    const int edgeBuf[3] = { 3, 0, 1 };
+    fmtEdge(out, sizeof out, "combat", false, true, "hud", edgeBuf, 3);
+    KT_CHECK_EQ(out, "EDGE what=combat old=0 new=1 src=hud buf=3,0,1");
+    fmtEdge(out, sizeof out, "paused", true, false, "unreadable", nullptr, 0);
+    KT_CHECK_EQ(out, "EDGE what=paused old=1 new=0 src=unreadable buf=");
+
+    QEntry q2[2] = { { 0x0C, 0 }, { 0x3F, 0 } };
+    const QueueSig s2 = makeQueueSig(q2, 2, 1, -1, false, true);
+    fmtQj(out, sizeof out, 0, s2, false, false, "cmd5", 120);
+    KT_CHECK_EQ(out, "QJ m=0 ne=2 types=[c,3f] round=1 cur=- aa8=0 ab8=1 paused=0 combat=0 ours=cmd5@120ms");
+    const QueueSig s3 = makeQueueSig(q2, 2, 3, 0x3F, true, false);
+    fmtQj(out, sizeof out, 1, s3, true, true, nullptr, 0);
+    KT_CHECK_EQ(out, "QJ m=1 ne=2 types=[c,3f] round=3 cur=3f aa8=1 ab8=0 paused=1 combat=1 ours=external");
+    QEntry q10[10];
+    for (int i = 0; i < 10; ++i) { q10[i].type = 0x0C + i; q10[i].param0 = 0; }
+    const QueueSig s10 = makeQueueSig(q10, 10, 1, -1, false, false);
+    fmtQj(out, sizeof out, 2, s10, false, false, "x", 5);
+    KT_CHECK_EQ(out, "QJ m=2 ne=10 types=[c,d,e,f,10,11,12,13,+2] round=1 cur=- aa8=0 ab8=0 paused=0 combat=0 ours=x@5ms");
+    const QueueSig s0;
+    fmtQj(out, sizeof out, 0, s0, false, false, nullptr, 0);
+    KT_CHECK_EQ(out, "QJ m=0 ne=0 types=[] round=0 cur=- aa8=0 ab8=0 paused=0 combat=0 ours=external");
+}
+
+void testLogFormatBounds() {
+    char out[kLogLineMax];
+    // worst-case QJ: 8 full-width types, ne 16, every flag set, 16-char tag, max age
+    QEntry w[8];
+    for (int i = 0; i < 8; ++i) w[i].type = -1;
+    const QueueSig ws = makeQueueSig(w, 16, 99, 0x7fffffff, true, true);
+    const int n = fmtQj(out, sizeof out, 2, ws, true, true, "abcdefghijklmnop", 4294967295u);
+    KT_CHECK_EQ(out, "QJ m=2 ne=16 types=[ffffffff,ffffffff,ffffffff,ffffffff,ffffffff,ffffffff,ffffffff,ffffffff,+8] round=99 cur=7fffffff aa8=1 ab8=1 paused=1 combat=1 ours=abcdefghijklmnop@4294967295ms");
+    KT_CHECK(n < kLogLineMax && strlen(out) < (size_t)kLogLineMax);
+    // over-long tag: output clamped to 199 chars + NUL, return value still reports the full length
+    char longTag[301];
+    memset(longTag, 'x', 300); longTag[300] = '\0';
+    const int nl = fmtQj(out, sizeof out, 0, ws, false, false, longTag, 1);
+    KT_CHECK(nl > kLogLineMax);
+    KT_CHECK_EQ(strlen(out), (size_t)(kLogLineMax - 1));
+    // tiny buffer: truncated, NUL-terminated, returns the full length
+    char tiny[16];
+    KT_CHECK_EQ(fmtResolve(tiny, sizeof tiny, 5, 0, true, 1, 3400), 41);
+    KT_CHECK_EQ(strlen(tiny), (size_t)15);
+    KT_CHECK(strncmp(tiny, "RESOLVE cmd=5 m", 15) == 0);
+    // null buffer: nothing written, length still reported
+    KT_CHECK_EQ(fmtResolve(nullptr, 0, 5, 0, true, 1, 3400), 41);
+    // worst-case CMD line stays under the limit
+    CmdLine worst;
+    worst.cmdId = 4294967295u; worst.m = 2; worst.cr = 0xffffffffu; worst.kind = (int)ActionKind::Spell;
+    worst.hasId = true; worst.id = 0xffffffffu; worst.hasTgt = true; worst.tgt = 0xffffffffu;
+    worst.dec = "pass_unreadable"; worst.fb = true; worst.engq = 16; worst.buf = 3; worst.paused = true; worst.combat = true;
+    KT_CHECK(fmtCmd(out, sizeof out, worst) < kLogLineMax);
+    KT_CHECK(strlen(out) < (size_t)kLogLineMax);
+}
+
 }  // namespace
 
 int main() {
@@ -1249,5 +1484,12 @@ int main() {
     testFifoMixedKinds();
     testReInjectEachCondition();
     testDispatchNextEachCondition();
+    testWhyParityMatrix();
+    testWhyNames();
+    testQueueSig();
+    testBufferedCmdIdsAndSeen();
+    testTraceQueueIni();
+    testLogFormatGolden();
+    testLogFormatBounds();
     return kt::Report("queue_hud_logic_test");
 }

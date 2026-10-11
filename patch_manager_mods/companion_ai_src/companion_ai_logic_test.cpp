@@ -226,6 +226,16 @@ static void testDecisions() {
     uint16_t q1[] = {0x3D}; uint16_t q2[] = {0x3D, 0x40, 0x46}; uint16_t q3[] = {0x3D, 0x0C}; uint16_t q4[] = {0x13, 0x0C};
     CHECK(onlyFollowTypes(q1, 1)); CHECK(onlyFollowTypes(q2, 3)); CHECK(!onlyFollowTypes(q3, 2)); CHECK(!onlyFollowTypes(q4, 2));
     CHECK(!onlyFollowTypes(q1, 0));
+    // FM1 why: first failing gate in handler order; parity: why==keep <=> fm1 && party && listOk && onlyFollowTypes (the handler's keep)
+    CHECK(fm1KeepWhy(false, 1, true, q1, 1) == Fm1Off); CHECK(fm1KeepWhy(true, 0, true, q1, 1) == Fm1NotParty);
+    CHECK(fm1KeepWhy(true, 1, false, q1, 1) == Fm1UnreadableList); CHECK(fm1KeepWhy(true, 1, true, q3, 2) == Fm1NonFollowTypes);
+    CHECK(fm1KeepWhy(true, 1, true, q1, 0) == Fm1NonFollowTypes); CHECK(fm1KeepWhy(true, 1, true, q2, 3) == Fm1Keep);
+    CHECK(!strcmp(fm1WhyName(Fm1Keep), "keep") && !strcmp(fm1WhyName(Fm1NotParty), "not-party") && !strcmp(fm1WhyName(Fm1UnreadableList), "unreadable-list"));
+    uint16_t* qs[] = {q1, q2, q3, q4}; int qn[] = {1, 3, 2, 2};
+    for (int f = 0; f < 2; ++f) for (int p = 0; p < 2; ++p) for (int l = 0; l < 2; ++l) for (int k = 0; k < 4; ++k) {
+        bool keepOld = f && p && l && onlyFollowTypes(qs[k], qn[k]);
+        CHECK((fm1KeepWhy(f, p, l, qs[k], qn[k]) == Fm1Keep) == keepOld);
+    }
     // line keys
     CHECK(lineKey(1, "a", "b") != lineKey(2, "a", "b")); CHECK(lineKey(1, "a", "b") == lineKey(1, "a", "b"));
     CHECK(lineKey(1, "ab", "") != lineKey(1, "a", "b")); CHECK(lineKey(0, nullptr, nullptr) != 0);

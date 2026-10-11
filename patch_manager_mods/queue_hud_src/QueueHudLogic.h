@@ -141,6 +141,7 @@ struct Config {
     float waitingAlpha = 0.6f;
     float waitingBg[3] = { kTealDim[0], kTealDim[1], kTealDim[2] };
     bool log = true;
+    bool traceQueue = true;       // trace_queue: per-command CMD#/WAIT/RESOLVE/DROP/EDGE/QJ log lines
     // 0.2.0: companion queue strips (party members 1-2).
     bool companions = true;
     int stripIconPx = 0;          // 0 = auto (60% of the vit-rect height, min 12)
@@ -414,6 +415,7 @@ inline bool parseIniLine(Config& c, const char* line) {
     if (detail::keyEq(kb, ke, "waiting_dim_rgb")) return detail::parseRgb(vb, ve, c.waitingBg);
     if (detail::keyEq(kb, ke, "waiting_alpha")) return detail::parseUnit(vb, ve, &c.waitingAlpha);
     if (detail::keyEq(kb, ke, "log")) return detail::parseBool(vb, ve, &c.log);
+    if (detail::keyEq(kb, ke, "trace_queue")) return detail::parseBool(vb, ve, &c.traceQueue);
     if (detail::keyEq(kb, ke, "companions")) return detail::parseBool(vb, ve, &c.companions);
     if (detail::keyEq(kb, ke, "strip_icon_px")) return detail::parseStripPx(vb, ve, &c.stripIconPx);
     if (detail::keyEq(kb, ke, "strip_side")) return detail::parseSide(vb, ve, &c.stripSide);
@@ -462,11 +464,12 @@ struct QueuedAction {
     int metamagic = 0;
     int domain = 0;
     int reInjectCount = 0;
+    uint32_t cmdId = 0;      // host command number (CMD#<n>); 0 = unassigned. Keep as the last member.
 };
 using QueuedItemAction = QueuedAction;
 
 inline QueuedAction makeItemAction(uintptr_t creature, uint32_t itemId, int packedByte, uint32_t targetId,
-                                   const float* pos, uint32_t queueTime) {
+                                   const float* pos, uint32_t queueTime, uint32_t cmdId = 0) {
     QueuedAction a;
     a.creature = creature;
     a.clientItem = itemId;
@@ -481,11 +484,13 @@ inline QueuedAction makeItemAction(uintptr_t creature, uint32_t itemId, int pack
     a.metamagic = 0;
     a.domain = 0;
     a.reInjectCount = 0;
+    a.cmdId = cmdId;
     return a;
 }
 
 inline QueuedAction makeSpellAction(uintptr_t creature, uint32_t spellId, int arg2, uint32_t targetId,
-                                    int multispell, int metamagic, int domain, const float* pos, uint32_t queueTime) {
+                                    int multispell, int metamagic, int domain, const float* pos, uint32_t queueTime,
+                                    uint32_t cmdId = 0) {
     QueuedAction a;
     a.creature = creature;
     a.clientItem = spellId;
@@ -500,6 +505,7 @@ inline QueuedAction makeSpellAction(uintptr_t creature, uint32_t spellId, int ar
     a.metamagic = metamagic;
     a.domain = domain;
     a.reInjectCount = 0;
+    a.cmdId = cmdId;
     return a;
 }
 
@@ -515,6 +521,7 @@ struct ActionBuffer {
     uint32_t activeStartTick = 0;
     bool reInjectPending = false;
     bool userCancelled = false;
+    bool seenInQueue = false;   // active action was seen in the engine queue (RESOLVE seen=); reset by cancel()/clear()
 
     bool empty() const { return count == 0; }
     bool full() const { return count >= kMaxActionQueue; }
@@ -541,6 +548,7 @@ struct ActionBuffer {
         activeStartTick = 0;
         reInjectPending = false;
         userCancelled = true;
+        seenInQueue = false;
     }
 
     void clear() {
@@ -550,10 +558,20 @@ struct ActionBuffer {
         activeStartTick = 0;
         reInjectPending = false;
         userCancelled = false;
+        seenInQueue = false;
     }
 };
 
 using ItemBuffer = ActionBuffer;
+
+// Every buffered cmdId (queue order), then the active one when active. Writes at most cap ids, returns how many.
+// Call before clear()/cancel(): each id is one lost command, so log one DROP line per id.
+inline int bufferedCmdIds(const ActionBuffer& buf, uint32_t* out, int cap) {
+    int n = 0;
+    for (int i = 0; i < buf.count && i < kMaxActionQueue && n < cap; ++i) out[n++] = buf.queue[i].cmdId;
+    if (buf.active && n < cap) out[n++] = buf.activeAction.cmdId;
+    return n;
+}
 
 enum ActionDecision : int {
     DECIDE_DISPATCH_NOW = 0,
@@ -582,6 +600,220 @@ inline bool shouldReInject(const ActionBuffer& buf, bool actionInQueue, bool has
 
 inline bool shouldDispatchNext(const ActionBuffer& buf, int engineQueueLen, bool haveCur = false, int nrn = 0) {
     return !buf.active && !buf.empty() && engineQueueLen == 0 && !haveCur && nrn == 0;
+}
+
+// ---- Why-codes (LOG GRAMMAR). Reason order = check order of the bool predicate above.
+// reInjectWhy(...) == RI_OK  <=>  shouldReInject(...);   dispatchWhy(...) == DS_OK  <=>  shouldDispatchNext(...).
+enum ReInjectWhy : uint8_t { RI_OK, RI_INACTIVE, RI_PENDING, RI_CANCEL, RI_MAX, RI_IN_QUEUE, RI_NO_LEADER };
+enum DispatchWhy : uint8_t { DS_OK, DS_ACTIVE, DS_EMPTY, DS_ENGINE_BUSY, DS_CUR_BUSY, DS_NRN_BUSY };
+enum DropWhy : uint8_t { DR_COMBAT_CLEAR, DR_NULL_CREATURE, DR_CANCEL, DR_BUFFER_FULL, DR_UNREADABLE_CREATURE };
+
+inline ReInjectWhy reInjectWhy(const ActionBuffer& buf, bool actionInQueue, bool hasFollowLeader, bool paused = false, uint32_t now = 0, bool userCancelled = false) {
+    (void)paused; (void)now;
+    if (!buf.active) return RI_INACTIVE;
+    if (buf.reInjectPending) return RI_PENDING;
+    if (buf.userCancelled || userCancelled) return RI_CANCEL;
+    if (buf.activeAction.reInjectCount >= kMaxReInjectCount) return RI_MAX;
+    if (actionInQueue) return RI_IN_QUEUE;
+    return hasFollowLeader ? RI_OK : RI_NO_LEADER;
+}
+
+inline DispatchWhy dispatchWhy(const ActionBuffer& buf, int engineQueueLen, bool haveCur = false, int nrn = 0) {
+    if (buf.active) return DS_ACTIVE;
+    if (buf.empty()) return DS_EMPTY;
+    if (engineQueueLen != 0) return DS_ENGINE_BUSY;
+    if (haveCur) return DS_CUR_BUSY;
+    if (nrn != 0) return DS_NRN_BUSY;
+    return DS_OK;
+}
+
+inline const char* whyName(ReInjectWhy w) {
+    switch (w) {
+        case RI_OK: return "ok";
+        case RI_INACTIVE: return "inactive";
+        case RI_PENDING: return "pending";
+        case RI_CANCEL: return "cancel";
+        case RI_MAX: return "max_reinject";
+        case RI_IN_QUEUE: return "in_queue";
+        case RI_NO_LEADER: return "no_leader";
+    }
+    return "?";
+}
+
+inline const char* whyName(DispatchWhy w) {
+    switch (w) {
+        case DS_OK: return "ok";
+        case DS_ACTIVE: return "active";
+        case DS_EMPTY: return "empty";
+        case DS_ENGINE_BUSY: return "engine_busy";
+        case DS_CUR_BUSY: return "cur_busy";
+        case DS_NRN_BUSY: return "nrn_busy";
+    }
+    return "?";
+}
+
+inline const char* whyName(DropWhy w) {
+    switch (w) {
+        case DR_COMBAT_CLEAR: return "combat_clear";
+        case DR_NULL_CREATURE: return "null_creature";
+        case DR_CANCEL: return "cancel";
+        case DR_BUFFER_FULL: return "buffer_full";
+        case DR_UNREADABLE_CREATURE: return "unreadable_creature";
+    }
+    return "?";
+}
+
+// ---- Queue signature (QJ log): what the queue looked like on one tick. Equal sigs = nothing new to log. ----
+struct QueueSig {
+    int ne = 0;              // queue entry count (all entries)
+    int nTypes = 0;          // filled entries of types[]: min(ne, 8)
+    int types[8] = {};       // first 8 queue action types, in queue order
+    int round = 0;           // round counter (+0x10DC)
+    int cur = -1;            // current action type; -1 = none
+    bool aa8 = false;        // aa8 != 0
+    bool ab8 = false;        // ab8 != 0
+};
+
+// Keeps the first 8 types; ne counts all entries. q == nullptr keeps no types (ne still counts).
+inline QueueSig makeQueueSig(const QEntry* q, int ne, int round, int cur, bool aa8, bool ab8) {
+    QueueSig s;
+    s.ne = ne < 0 ? 0 : ne;
+    s.nTypes = (q && s.ne > 0) ? (s.ne < 8 ? s.ne : 8) : 0;
+    for (int i = 0; i < s.nTypes; ++i) s.types[i] = q[i].type;
+    s.round = round; s.cur = cur; s.aa8 = aa8; s.ab8 = ab8;
+    return s;
+}
+
+// Compares ne, the stored types (at most 8), round, cur and both flags. Types past the 8th are not compared.
+inline bool sigEqual(const QueueSig& a, const QueueSig& b) {
+    if (a.ne != b.ne || a.nTypes != b.nTypes || a.round != b.round || a.cur != b.cur || a.aa8 != b.aa8 || a.ab8 != b.ab8) return false;
+    for (int i = 0; i < a.nTypes && i < 8; ++i) if (a.types[i] != b.types[i]) return false;
+    return true;
+}
+
+// ---- LOG GRAMMAR formatters (INFO text after the KpLog T= stamp). Each writes a NUL-terminated line into out[cap] and
+// returns the length it would have had (snprintf style). Output is clamped to kLogLineMax-1 chars, so every line is < 200. ----
+constexpr int kLogLineMax = 200;
+
+namespace detail {
+// Minimal bounded writer: c=char, s=string (null prints '?'), u=unsigned dec, i=signed dec, x=lowercase hex, mm=member index.
+struct LogWr {
+    char* b;
+    int lim;          // usable bytes in b, including the NUL
+    int n = 0;        // chars that would have been written
+    LogWr(char* out, int cap) : b(out), lim(cap < kLogLineMax ? cap : kLogLineMax) { if (b && lim > 0) b[0] = '\0'; }
+    void c(char ch) { if (b && n + 1 < lim) b[n] = ch; ++n; }
+    void s(const char* t) { if (!t) t = "?"; while (*t) c(*t++); }
+    void u(unsigned long long v) { char t[24]; int k = 0; do { t[k++] = (char)('0' + v % 10); v /= 10; } while (v); while (k) c(t[--k]); }
+    void i(long long v) { if (v < 0) { c('-'); u(0ull - (unsigned long long)v); } else u((unsigned long long)v); }
+    void x(unsigned long long v) { char t[20]; int k = 0; do { unsigned d = (unsigned)(v & 0xF); t[k++] = (char)(d < 10 ? '0' + d : 'a' + d - 10); v >>= 4; } while (v); while (k) c(t[--k]); }
+    void mm(int m) { if (m < 0) c('?'); else i(m); }
+    int done() { if (b && lim > 0) b[n < lim ? n : lim - 1] = '\0'; return n; }
+};
+}  // namespace detail
+
+// CMD#<n> m=<k|?> cr=<hex> kind=item|spell|? id=<hex|-> tgt=<hex|-> dec=<dec> fb=<0|1> engq=<n|unreadable> buf=<n> paused=<0|1> combat=<0|1>
+struct CmdLine {
+    uint32_t cmdId = 0;
+    int m = -1;                              // party member index; < 0 prints '?'
+    uintptr_t cr = 0;                        // creature pointer
+    int kind = -1;                           // ActionKind value; anything but Item/Spell prints '?'
+    bool hasId = false;  uint32_t id = 0;    // id=<hex|->
+    bool hasTgt = false; uint32_t tgt = 0;   // tgt=<hex|->
+    const char* dec = "?";                   // dispatch_now|buffer|drop_full|pass_combat|pass_unreadable
+    bool fb = false;
+    int engq = 0;                            // queue length; < 0 prints 'unreadable'
+    int buf = 0;
+    bool paused = false;
+    bool combat = false;
+};
+
+inline int fmtCmd(char* out, int cap, const CmdLine& c) {
+    detail::LogWr w(out, cap);
+    w.s("CMD#"); w.u(c.cmdId);
+    w.s(" m="); w.mm(c.m);
+    w.s(" cr="); w.x((unsigned long long)c.cr);
+    w.s(" kind=");
+    if (c.kind == (int)ActionKind::Item) w.s("item");
+    else if (c.kind == (int)ActionKind::Spell) w.s("spell");
+    else w.s("?");
+    w.s(" id="); if (c.hasId) w.x(c.id); else w.c('-');
+    w.s(" tgt="); if (c.hasTgt) w.x(c.tgt); else w.c('-');
+    w.s(" dec="); w.s(c.dec);
+    w.s(" fb="); w.c(c.fb ? '1' : '0');
+    w.s(" engq="); if (c.engq < 0) w.s("unreadable"); else w.i(c.engq);
+    w.s(" buf="); w.i(c.buf);
+    w.s(" paused="); w.c(c.paused ? '1' : '0');
+    w.s(" combat="); w.c(c.combat ? '1' : '0');
+    return w.done();
+}
+
+// WAIT cmd=<n> m=<k> why=<reason> buf=<n> engNe=<n> age=<ms>
+inline int fmtWait(char* out, int cap, uint32_t cmdId, int m, DispatchWhy why, int buf, int engNe, uint32_t ageMs) {
+    detail::LogWr w(out, cap);
+    w.s("WAIT cmd="); w.u(cmdId);
+    w.s(" m="); w.mm(m);
+    w.s(" why="); w.s(whyName(why));
+    w.s(" buf="); w.i(buf);
+    w.s(" engNe="); w.i(engNe);
+    w.s(" age="); w.u(ageMs);
+    return w.done();
+}
+
+// RESOLVE cmd=<n> m=<k> seen=<0|1> reinj=<n> age=<ms>
+inline int fmtResolve(char* out, int cap, uint32_t cmdId, int m, bool seen, int reinj, uint32_t ageMs) {
+    detail::LogWr w(out, cap);
+    w.s("RESOLVE cmd="); w.u(cmdId);
+    w.s(" m="); w.mm(m);
+    w.s(" seen="); w.c(seen ? '1' : '0');
+    w.s(" reinj="); w.i(reinj);
+    w.s(" age="); w.u(ageMs);
+    return w.done();
+}
+
+// DROP cmd=<n> m=<k> why=combat_clear|null_creature|cancel|buffer_full|unreadable_creature n=<count>
+inline int fmtDrop(char* out, int cap, uint32_t cmdId, int m, DropWhy why, int n) {
+    detail::LogWr w(out, cap);
+    w.s("DROP cmd="); w.u(cmdId);
+    w.s(" m="); w.mm(m);
+    w.s(" why="); w.s(whyName(why));
+    w.s(" n="); w.i(n);
+    return w.done();
+}
+
+// EDGE what=combat|paused|menu old=<0|1> new=<0|1> src=hud|unreadable buf=<n,n,n>
+inline int fmtEdge(char* out, int cap, const char* what, bool oldOn, bool newOn, const char* src, const int* buf, int nBuf) {
+    detail::LogWr w(out, cap);
+    w.s("EDGE what="); w.s(what);
+    w.s(" old="); w.c(oldOn ? '1' : '0');
+    w.s(" new="); w.c(newOn ? '1' : '0');
+    w.s(" src="); w.s(src);
+    w.s(" buf=");
+    for (int k = 0; buf && k < nBuf; ++k) { if (k) w.c(','); w.i(buf[k]); }
+    return w.done();
+}
+
+// QJ m=<k> ne=<n> types=[<hex,...,+N>] round=<n> cur=<type|-> aa8=<0|1> ab8=<0|1> paused=<0|1> combat=<0|1> ours=<tag>@<age>ms|external
+// oursTag == nullptr prints 'external' (no age). Types are capped at 8; the remainder is shown as +N.
+inline int fmtQj(char* out, int cap, int m, const QueueSig& q, bool paused, bool combat, const char* oursTag, uint32_t ageMs) {
+    detail::LogWr w(out, cap);
+    const int shown = q.nTypes < 0 ? 0 : (q.nTypes > 8 ? 8 : q.nTypes);
+    w.s("QJ m="); w.mm(m);
+    w.s(" ne="); w.i(q.ne);
+    w.s(" types=[");
+    for (int k = 0; k < shown; ++k) { if (k) w.c(','); w.x((unsigned long long)(unsigned)q.types[k]); }
+    if (q.ne > shown) { if (shown) w.c(','); w.c('+'); w.i(q.ne - shown); }
+    w.s("]");
+    w.s(" round="); w.i(q.round);
+    w.s(" cur="); if (q.cur < 0) w.c('-'); else w.x((unsigned long long)(unsigned)q.cur);
+    w.s(" aa8="); w.c(q.aa8 ? '1' : '0');
+    w.s(" ab8="); w.c(q.ab8 ? '1' : '0');
+    w.s(" paused="); w.c(paused ? '1' : '0');
+    w.s(" combat="); w.c(combat ? '1' : '0');
+    w.s(" ours=");
+    if (!oursTag) w.s("external");
+    else { w.s(oursTag); w.c('@'); w.u(ageMs); w.s("ms"); }
+    return w.done();
 }
 
 }  // namespace qh
