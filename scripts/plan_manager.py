@@ -10,11 +10,10 @@ Usage:
   python3 scripts/plan_manager.py status             # Detailed phase checklist
   python3 scripts/plan_manager.py set <plan_path>    # Set active master plan
   python3 scripts/plan_manager.py mark-done <phase>  # Mark phase complete in plan
-  python3 scripts/plan_manager.py handoff [prompt]   # Write .claude/handoffs/<plan_stem>.handoff.md before /clear
+  python3 scripts/plan_manager.py handoff <doc|phase|--plan P> [notes]  # Write .claude/handoffs/<plan_stem>.handoff.md before /clear (refuses to guess the plan)
 """
 
 import argparse
-import glob
 import os
 import re
 import subprocess
@@ -44,14 +43,110 @@ PREFIX_LEGEND = {
     "U": "Unit / Compatibility Tooling",
 }
 
-PHASE_HEADER_RE = re.compile(r'^(?:#{2,3})\s+(?:(Phase\s+\d+|Chunk\s+[A-Za-z0-9]+|Step\s+\d+)[^:\n]*:?\s*(.*))$', re.MULTILINE)
+PHASE_HEADER_RE = re.compile(r'^#{2,3}[ \t]+(Phase[ \t]+\d+|Chunk[ \t]+[A-Za-z0-9]+|Step[ \t]+\d+)[ \t:\u2014\u2013-]*(.*)$', re.MULTILINE)
 CHECKBOX_RE = re.compile(r'^\s*-\s*\[([ xX/])\]\s*(.*)$', re.MULTILINE)
 EXEC_LOG_RE = re.compile(r'^\s*-\s*(Phase\s+\d+|Chunk\s+[A-Za-z0-9]+|Step\s+\d+)[^:\n]*:\s*(.*)$', re.MULTILINE)
+
+# Status cells are upper-cased before matching. INSTALLED counts as done: the remaining play test is a human task, not an agent one.
+DONE_STATUS_RE = re.compile(r'(?<!NOT )\b(DONE|COMPLETED?|MERGED|PASS(?:ED)?|INSTALLED)\b')
+NOT_DONE_LEAD_RE = re.compile(r'^[\W_]*(PARTIAL|PARTLY|PENDING|TODO|NOT)\b')
+EXEC_DONE_TEXT_RE = re.compile(r'(?<!not )\b(done|complete[d]?|merged|passed?|landed|verified|installed|committed|shipped|finished)\b', re.IGNORECASE)
+SEPARATOR_CELL_RE = re.compile(r':?-+:?')
+# A table is a phase table only with a status/state column plus one of these identifier-like columns
+# ('| Gate | State |' or '| Layer | Contents | State |' are not phases)
+TABLE_ID_HEADERS = ("id", "#", "batch", "phase", "task", "name", "step", "chunk", "half", "item", "rule id", "wave")
+PHASE_TOKEN_RE = re.compile(r'\b([A-Za-z]{1,3}[0-9]{1,3}[A-Za-z]?)\b')
+HANDOFF_TITLE_RE = re.compile(r'^# Session Handoff & Plan State: (.+)$', re.MULTILINE)
+DEAD_ENDS_HEADING = "## 5. Dead Ends & Verification (manual)"
+DEAD_ENDS_STUB = f"{DEAD_ENDS_HEADING}\n_(none recorded; append Dead Ends & Anti-Patterns and Verification Commands here)_\n"
+
+# Directories that hold plan docs; stem and doc-number lookups never walk outside them.
+PLAN_SEARCH_GLOBS = ("patch_manager_mods/**/*.md", "research/**/*.md", ".claude/plans/*.md")
+
+
+class AmbiguousPlan(Exception):
+    """A shorthand matched several plan files and cannot be resolved safely."""
+
+
+def atomic_write_text(path: Path, text: str) -> None:
+    """Write via a temp file + os.replace so concurrent readers never see a truncated file."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f"{path.name}.tmp.{os.getpid()}")
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, path)
+
+
+def read_pointer(strict: bool = False) -> Path | None:
+    """Plan named by the shared active-plan pointer. None when the pointer is absent or empty.
+
+    A pointer naming a missing file is an error when strict (exit 2) and ignored otherwise,
+    so a renamed plan is never replaced by a silent mtime guess."""
+    try:
+        raw = ACTIVE_PLAN_FILE.read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    if not raw:
+        return None
+    p = Path(raw)
+    if not p.is_absolute():
+        p = REPO_ROOT / p
+    if p.is_file():
+        return p
+    if strict:
+        sys.stderr.write(f"Error: active plan pointer {ACTIVE_PLAN_FILE} names a missing file: {raw}\n"
+                         f"Fix: python3 scripts/plan_manager.py set <plan path>, or pass a doc/phase/--plan.\n")
+        sys.exit(2)
+    return None
+
+
+def is_done_status(status: str) -> bool:
+    status = status.upper()
+    if NOT_DONE_LEAD_RE.match(status):
+        return False
+    return bool(DONE_STATUS_RE.search(status))
+
+
+def parse_table_header(cells: list[str]) -> dict | None:
+    """Column map for a phase table (needs a status/state column plus an id-like column), else None."""
+    lower = [c.lower() for c in cells]
+    status_key = "status" if "status" in lower else ("state" if "state" in lower else None)
+    if status_key is None or not any(k in lower for k in TABLE_ID_HEADERS):
+        return None
+    name_key = next((k for k in ("batch", "task", "name") if k in lower), None)
+    return {
+        "status": lower.index(status_key),
+        "id": lower.index("id") if "id" in lower else 0,
+        "name": lower.index(name_key) if name_key else 1,
+        "commit": lower.index("commit") if "commit" in lower else None,
+        "notes": lower.index("next" if "next" in lower else "notes") if ("next" in lower or "notes" in lower) else None,
+    }
+
+
+def is_separator_row(cells: list[str]) -> bool:
+    return not cells or all(SEPARATOR_CELL_RE.fullmatch(c) or not c for c in cells)
+
+
+def norm_ident(ident: str) -> str:
+    return ident.strip("*_` ").upper()
+
+
+def pick_target_phase(direction: str, phases: list[dict]) -> dict | None:
+    """First not-done phase whose ident appears as a token in the direction text."""
+    open_by_id: dict[str, dict] = {}
+    for p in phases:
+        if not p["done"]:
+            open_by_id.setdefault(norm_ident(p.get("ident", "")), p)
+    for m in PHASE_TOKEN_RE.finditer(direction):
+        hit = open_by_id.get(m.group(1).upper())
+        if hit:
+            return hit
+    return None
 
 def get_git_info() -> dict:
     try:
         branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=REPO_ROOT, text=True).strip()
-        status_out = subprocess.check_output(["git", "status", "--short"], cwd=REPO_ROOT, text=True).strip()
+        # rstrip only: .strip() would eat the leading space of the first " M path" line
+        status_out = subprocess.check_output(["git", "status", "--short"], cwd=REPO_ROOT, text=True).rstrip("\n")
         dirty_lines = [l for l in status_out.split("\n") if l.strip()] if status_out else []
         head_commit = subprocess.check_output(["git", "log", "-1", "--oneline"], cwd=REPO_ROOT, text=True).strip()
         return {
@@ -63,69 +158,98 @@ def get_git_info() -> dict:
     except Exception:
         return {"branch": "unknown", "dirty_count": 0, "dirty_preview": [], "head": "unknown"}
 
-def resolve_plan_shorthand(token: str) -> tuple[Path | None, str]:
+def _plan_files_with_stem(stem: str) -> list[Path]:
+    """Plan docs named <stem>.md under the known plan directories (never handoff files or dot-dirs like .pytest_cache)."""
+    found: dict[Path, None] = {}
+    for pat in PLAN_SEARCH_GLOBS:
+        for cand in sorted(REPO_ROOT.glob(pat)):
+            if cand.stem == stem and cand.is_file() and not cand.name.endswith(".handoff.md"):
+                found.setdefault(cand.resolve(), None)
+    # Repo-root docs count only when plan-like, so 'README' or 'CLAUDE' never resolve to a plan
+    for cand in sorted(REPO_ROOT.glob("*.md")):
+        if cand.stem == stem and re.search(r'plan|master', cand.stem, re.IGNORECASE):
+            found.setdefault(cand.resolve(), None)
+    return list(found)
+
+
+def _ambiguity(token: str, cands: list[Path], strict: bool) -> Path:
+    """First candidate (deterministic, sorted) for lenient callers; AmbiguousPlan for CLI callers."""
+    if len(cands) > 1 and strict:
+        listing = "\n".join(f"  - {c.relative_to(REPO_ROOT) if c.is_relative_to(REPO_ROOT) else c}" for c in cands[:8])
+        raise AmbiguousPlan(f"{token!r} matches {len(cands)} plan files; pass the repo-relative path instead:\n{listing}")
+    return cands[0]
+
+
+def resolve_plan_shorthand(token: str, strict: bool = False) -> tuple[Path | None, str]:
+    """Map a path, stem, doc number ('25 §12', '24:T6', '19e') or phase ID ('T5d') to (plan path, leftover text).
+
+    Unresolvable text returns (None, token). With strict, an ambiguous match raises AmbiguousPlan
+    instead of silently picking the first file."""
     token = token.strip()
     if not token or "\n" in token:
         return None, token
-    
-    # 1. Exact path match
+
+    # 1. Exact path match (handoff files are never plans)
     if len(token) <= 255:
         try:
             p = Path(token)
-            if p.exists() and p.is_file():
-                return p.resolve(), ""
-            if (REPO_ROOT / p).exists() and (REPO_ROOT / p).is_file():
-                return (REPO_ROOT / p).resolve(), ""
+            for cand in (p, REPO_ROOT / p):
+                if cand.is_file() and not cand.name.endswith(".handoff.md"):
+                    return cand.resolve(), ""
         except (OSError, ValueError):
             pass
 
-    # 1b. Filename or exact stem match across repository (e.g. 'PHASE7_COMMON_MASTER', 'PHASE4_PLAN')
+    # 1b. Exact stem match inside the plan directories (e.g. 'PHASE7_COMMON_MASTER', 'swarm_library_architecture')
     stem_token = token[:-3] if token.endswith(".md") else token
-    for cand in sorted(REPO_ROOT.glob(f"**/{glob.escape(stem_token)}.md")):
-        if cand.is_file() and not cand.name.endswith(".handoff.md") and ".claude" not in cand.parts:
-            return cand.resolve(), ""
+    stem_cands = _plan_files_with_stem(stem_token)
+    if stem_cands:
+        return _ambiguity(token, stem_cands, strict).resolve(), ""
+    # 'swarm_library_architecture M3b next': stem first, notes after
+    first, _, notes = token.partition(" ")
+    if notes.strip():
+        first_cands = _plan_files_with_stem(first[:-3] if first.endswith(".md") else first)
+        if first_cands:
+            return _ambiguity(first, first_cands, strict).resolve(), notes.strip()
 
     # 2. Numbered doc shorthand: '25 §12', 'doc 25 §12', 'doc25:12', '19e', '24:T6', '25'
-    m = re.match(r'^(?:doc\s*)?([0-9]{1,2}[a-z]?)(?:[:\s§—-]+(.*))?$', token, re.IGNORECASE)
+    m = re.match(r'^(?:doc\s*)?([0-9]{1,2}[a-z]?)(?:([:\s§—-]+)(.*))?$', token, re.IGNORECASE)
     if m:
         prefix = m.group(1).lower()
-        rest = (m.group(2) or "").strip()
-        pattern = f"{int(prefix[:2]):02d}" if prefix[:2].isdigit() and len(prefix) <= 2 else prefix
-        candidates = list(REPO_ROOT.glob(f"patch_manager_mods/{pattern}_*.md")) + list(REPO_ROOT.glob(f"patch_manager_mods/{prefix}_*.md")) + list(REPO_ROOT.glob(f"*{pattern}*.md"))
-        if candidates:
-            if len(candidates) > 1 and rest:
-                rest_lower = rest.lower()
-                for cand in candidates:
-                    if cand.name.lower() in rest_lower or cand.stem.lower() in rest_lower:
-                        return cand.resolve(), rest
-                best_cand = None
-                max_score = 0
-                for cand in candidates:
-                    cand_words = set(cand.stem.lower().split('_'))
+        sep = m.group(2) or ""
+        rest = (m.group(3) or "").strip()
+        # '2 hotbar fixes left' / '25 minutes of testing' is prose, not shorthand: a bare-space
+        # separator is only shorthand when followed by a phase token or a number.
+        prose = bool(rest) and not re.search(r'[:§—-]', sep) and not re.match(r'(?:[A-Za-z]{1,3}[0-9]|[0-9])', rest)
+        if not prose:
+            pattern = f"{int(prefix[:2]):02d}" if prefix[:2].isdigit() and len(prefix) <= 2 else prefix
+            # Numbered docs first; root-level '*NN*.md' only as a last resort (it matches any digits in a name)
+            groups = [
+                sorted(REPO_ROOT.glob(f"patch_manager_mods/{pattern}_*.md")) + sorted(REPO_ROOT.glob(f"patch_manager_mods/{prefix}_*.md")),
+                sorted(REPO_ROOT.glob(f"*{pattern}*.md")),
+            ]
+            for grp in groups:
+                candidates = list(dict.fromkeys(c.resolve() for c in grp if not c.name.endswith(".handoff.md")))
+                if not candidates:
+                    continue
+                if len(candidates) > 1 and rest:
+                    rest_lower = rest.lower()
+                    for cand in candidates:
+                        if cand.name.lower() in rest_lower or cand.stem.lower() in rest_lower:
+                            return cand, rest
                     rest_words = set(re.findall(r'[a-z0-9_]+', rest_lower))
-                    overlap = len(cand_words & rest_words)
-                    if overlap > max_score:
-                        max_score = overlap
-                        best_cand = cand
-                if best_cand and max_score > 0:
-                    return best_cand.resolve(), rest
-            return candidates[0].resolve(), rest
+                    scored = sorted(((len(set(c.stem.lower().split('_')) & rest_words), c) for c in candidates), key=lambda t: -t[0])
+                    if scored[0][0] > 0 and (len(scored) == 1 or scored[0][0] > scored[1][0]):
+                        return scored[0][1], rest
+                return _ambiguity(token, candidates, strict), rest
 
-    # 3. Phase ID shorthand: 'T4', 'T5d', 'M0', 'R10', 'HL4', 'CH1c', 'U3', 'QH1'
+    # 3. Phase ID shorthand (case-sensitive, so 'v2' or 'b1' in prose is not a phase): 'T4', 'T5d', 'M0', 'R10', 'HL4', 'CH1c', 'U3', 'QH1'
     m_phase = re.match(r'^([A-Za-z]{1,3}[0-9]{1,2}[a-z]?)(?:[:\s§—-]+(.*))?$', token)
     if m_phase:
         phase = m_phase.group(1)
         rest = (m_phase.group(2) or "").strip()
-        pattern = re.compile(rf'(?:\|\s*\*{{0,2}}{re.escape(phase)}\*{{0,2}}\s*\||#+\s*(?:Phase\s*)?{re.escape(phase)}\b)', re.IGNORECASE)
-        active_cands = []
-        if ACTIVE_PLAN_FILE.exists():
-            try:
-                ap = Path(ACTIVE_PLAN_FILE.read_text().strip())
-                if ap.exists() and ap.is_file():
-                    active_cands.append(ap)
-            except Exception:
-                pass
-        cands = active_cands + sorted(REPO_ROOT.glob("research/**/*MASTER*.md")) + sorted(REPO_ROOT.glob("research/**/*plan*.md")) + [REPO_ROOT / "patch_manager_mods" / "24_master_plan_status.md"] + sorted(REPO_ROOT.glob("patch_manager_mods/*plan*.md")) + sorted(REPO_ROOT.glob("patch_manager_mods/*.md"))
+        pattern = re.compile(rf'(?:\|\s*\*{{0,2}}{re.escape(phase)}\*{{0,2}}\s*\||#+\s*(?:Phase\s*)?{re.escape(phase)}\b)')
+        active = read_pointer()
+        cands = ([active] if active else []) + sorted(REPO_ROOT.glob("research/**/*MASTER*.md")) + sorted(REPO_ROOT.glob("research/**/*plan*.md")) + [REPO_ROOT / "patch_manager_mods" / "24_master_plan_status.md"] + sorted(REPO_ROOT.glob("patch_manager_mods/*plan*.md")) + sorted(REPO_ROOT.glob("patch_manager_mods/*.md"))
         seen = set()
         for p_cand in cands:
             if p_cand in seen or not p_cand.is_file():
@@ -140,18 +264,19 @@ def resolve_plan_shorthand(token: str) -> tuple[Path | None, str]:
 
 def discover_active_plan(explicit_path: str = "") -> Path | None:
     if explicit_path:
-        p, _ = resolve_plan_shorthand(explicit_path)
+        try:
+            p, _ = resolve_plan_shorthand(explicit_path, strict=True)
+        except AmbiguousPlan as exc:
+            sys.stderr.write(f"Error: {exc}\n")
+            sys.exit(2)
         if p:
             return p
         sys.stderr.write(f"Error: Specified plan file or shorthand not found: {explicit_path}\n")
         sys.exit(2)
 
-    if ACTIVE_PLAN_FILE.exists():
-        p = Path(ACTIVE_PLAN_FILE.read_text().strip())
-        if p.exists():
-            return p
-        if (REPO_ROOT / p).exists():
-            return (REPO_ROOT / p).resolve()
+    pointed = read_pointer(strict=True)
+    if pointed:
+        return pointed
 
     candidates = []
     # Search root and patch_manager_mods
@@ -177,36 +302,31 @@ def parse_plan(plan_path: Path) -> dict:
 
     # 1. Flexible Markdown Table Parser
     lines = text.split("\n")
-    status_col_idx = None
-    id_col_idx = 0
-    name_col_idx = 1
+    hdr = None  # column map of the phase table we are inside, else None
 
     for line in lines:
         if not line.strip().startswith("|"):
-            status_col_idx = None
+            hdr = None
             continue
         cells = [c.strip() for c in line.strip().split("|")[1:-1]]
-        if not cells or all(c.startswith("-") for c in cells):
+        if is_separator_row(cells):
             continue
 
-        # Header detection
-        lower_cells = [c.lower() for c in cells]
-        if "status" in lower_cells or "state" in lower_cells:
-            status_col_idx = lower_cells.index("status" if "status" in lower_cells else "state")
-            if "id" in lower_cells:
-                id_col_idx = lower_cells.index("id")
-            if "batch" in lower_cells or "task" in lower_cells or "name" in lower_cells:
-                name_col_idx = lower_cells.index("batch" if "batch" in lower_cells else ("task" if "task" in lower_cells else "name"))
+        # Header detection: only tables with a status column AND an id-like column are phase tables,
+        # so a preface table like '| Gate | State |' cannot hide the real Phase headers below it.
+        header = parse_table_header(cells)
+        if header:
+            hdr = header
             continue
 
         # Data row
-        if status_col_idx is not None and len(cells) > max(status_col_idx, id_col_idx, name_col_idx):
-            ident = cells[id_col_idx]
-            name = cells[name_col_idx]
-            status = cells[status_col_idx].upper()
+        if hdr is not None and len(cells) > max(hdr["status"], hdr["id"], hdr["name"]):
+            ident = cells[hdr["id"]]
+            name = cells[hdr["name"]]
+            status = cells[hdr["status"]].upper()
             if ident.lower() in ("id", "---", "--", "-") or not ident:
                 continue
-            is_done = any(k in status for k in ("DONE", "COMPLETED", "MERGED", "PASS"))
+            is_done = is_done_status(status)
             phases.append({
                 "ident": ident,
                 "name": name,
@@ -226,8 +346,9 @@ def parse_plan(plan_path: Path) -> dict:
     matches = list(PHASE_HEADER_RE.finditer(text))
     exec_done = set()
     for m in EXEC_LOG_RE.finditer(text):
-        ident = m.group(1).strip()
-        exec_done.add(ident.lower())
+        # '- Phase 3: started, blocked' is a progress note, not a completion: require a done word
+        if EXEC_DONE_TEXT_RE.search(m.group(2)):
+            exec_done.add(m.group(1).strip().lower())
 
     for i, m in enumerate(matches):
         ident = m.group(1).strip()
@@ -282,12 +403,12 @@ def cmd_resume(plan: dict, git_info: dict, json_mode: bool = False):
     current = remaining[0] if remaining else None
 
     plan_stem = plan["path"].stem
-    scoped_handoff = HANDOFFS_DIR / f"{plan_stem}.handoff.md"
+    scoped_handoff = handoff_file_for(plan["path"], HANDOFFS_DIR)
     handoff_direction = ""
     if scoped_handoff.is_file():
         try:
             h_txt = scoped_handoff.read_text(encoding="utf-8")
-            m_sec0 = re.search(r'## 0\.\s*Next-Phase Direction\s*\n+([^\n#]+)', h_txt)
+            m_sec0 = re.search(r'## 0\.\s*Next-Phase Direction\s*\n+(?!#)([^\n]+)', h_txt)
             if m_sec0:
                 handoff_direction = m_sec0.group(1).strip()
         except Exception:
@@ -489,55 +610,47 @@ def cmd_delegate(plan: dict, target_phase: str = "", mode: str = "auto", dry_run
         print(f"\n[FAIL] Post-execution verification failed for phase {target_phase}. Orchestrator intervention required.")
         return 1
 
-def cmd_mark_done(plan: dict, target_str: str, commit_sha: str = "", notes: str = "", state: str = "DONE"):
+def split_phase_arg(arg: str) -> str:
+    """'24:T6' / 'doc24 T6' -> 'T6'. Plain phase IDs and free text come back unchanged."""
+    m = re.match(r'^(?:doc\s*)?[0-9]{1,2}[a-z]?\s*[:\u00a7]\s*(\S.*)$', arg.strip(), re.IGNORECASE)
+    return m.group(1).strip() if m else arg.strip()
+
+
+def cmd_mark_done(plan: dict, target_str: str, commit_sha: str = "", notes: str = "", state: str = "DONE") -> bool:
+    """Record a phase state in the plan. Returns False (plan untouched) when nothing matched."""
     plan_path = plan["path"]
     text = plan_path.read_text(encoding="utf-8")
     state_str = state.strip().upper() if state else "DONE"
+    target_str = split_phase_arg(target_str)
     if not target_str.strip("*_ "):
         print(f"Error: phase argument {target_str!r} has no usable identifier; plan not modified.")
-        return
+        return False
 
-    # 1. Try Markdown table update
+    # 1. Try Markdown table update: exact ID match first, else a unique substring match ('T6' never hits both T6 and T6a)
     lines = text.split("\n")
-    table_updated = False
-    status_col_idx = None
-    id_col_idx = 0
-    commit_col_idx = None
-    notes_col_idx = None
-
+    clean_target = target_str.strip("*_ ").lower()
+    rows = []  # (line index, ident, column map)
+    hdr = None
     for idx, line in enumerate(lines):
         if not line.strip().startswith("|"):
-            status_col_idx = None
+            hdr = None
             continue
         cells = [c.strip() for c in line.strip().split("|")[1:-1]]
-        if not cells or all(c.startswith("-") for c in cells):
+        if is_separator_row(cells):
             continue
-
-        lower_cells = [c.lower() for c in cells]
-        if "status" in lower_cells or "state" in lower_cells:
-            status_col_idx = lower_cells.index("status" if "status" in lower_cells else "state")
-            if "id" in lower_cells:
-                id_col_idx = lower_cells.index("id")
-            if "commit" in lower_cells:
-                commit_col_idx = lower_cells.index("commit")
-            if "next" in lower_cells or "notes" in lower_cells:
-                notes_col_idx = lower_cells.index("next" if "next" in lower_cells else "notes")
+        header = parse_table_header(cells)
+        if header:
+            hdr = header
             continue
+        if hdr is not None and len(cells) > max(hdr["status"], hdr["id"]):
+            rows.append((idx, cells[hdr["id"]].strip("*_ "), hdr))
 
-        if status_col_idx is not None and len(cells) > max(status_col_idx, id_col_idx):
-            ident = cells[id_col_idx].strip()
-            clean_ident = ident.strip("*_ ")
-            clean_target = target_str.strip("*_ ")
-            if clean_ident.lower() == clean_target.lower() or clean_target.lower() in clean_ident.lower():
-                raw_cells = line.split("|")
-                raw_cells[status_col_idx + 1] = f" {state_str} "
-                if commit_sha and commit_col_idx is not None and len(raw_cells) > commit_col_idx + 1:
-                    raw_cells[commit_col_idx + 1] = f" {commit_sha.strip()} "
-                if notes and notes_col_idx is not None and len(raw_cells) > notes_col_idx + 1:
-                    raw_cells[notes_col_idx + 1] = f" {notes.strip()} "
-                lines[idx] = "|".join(raw_cells)
-                table_updated = True
-                break
+    exact = [r for r in rows if r[1].lower() == clean_target]
+    fuzzy = [r for r in rows if clean_target in r[1].lower()]
+    hits = exact[:1] or (fuzzy if len(fuzzy) == 1 else [])
+    if not hits and len(fuzzy) > 1:
+        print(f"Error: {target_str!r} matches {len(fuzzy)} rows ({', '.join(r[1] for r in fuzzy[:6])}); pass the exact ID. Plan not modified.")
+        return False
 
     def _log_done():
         if ml:
@@ -549,11 +662,24 @@ def cmd_mark_done(plan: dict, target_str: str, commit_sha: str = "", notes: str 
                 "notes": notes,
             })
 
-    if table_updated:
+    if hits:
+        idx, _ident, h = hits[0]
+        raw_cells = lines[idx].split("|")
+        raw_cells[h["status"] + 1] = f" {state_str} "
+        if commit_sha and h["commit"] is not None and len(raw_cells) > h["commit"] + 1:
+            raw_cells[h["commit"] + 1] = f" {commit_sha.strip()} "
+        if notes and h["notes"] is not None and len(raw_cells) > h["notes"] + 1:
+            raw_cells[h["notes"] + 1] = f" {notes.strip()} "
+        lines[idx] = "|".join(raw_cells)
         plan_path.write_text("\n".join(lines), encoding="utf-8")
         print(f"Marked table row '{target_str}' {state_str} in {plan_path.name}")
         _log_done()
-        return
+        return True
+
+    if rows:
+        # The plan has a phase table but no row matches: appending a stray checkbox would corrupt it
+        print(f"Error: no phase row matches {target_str!r} in {plan_path.name} (rows: {', '.join(r[1] for r in rows[:8])}). Plan not modified.")
+        return False
 
     # 2. Try checkbox update
     pattern = re.compile(rf'(-\s*\[)[ /](\]\s*.*{re.escape(target_str)}.*)', re.IGNORECASE)
@@ -562,7 +688,7 @@ def cmd_mark_done(plan: dict, target_str: str, commit_sha: str = "", notes: str 
         plan_path.write_text(new_text, encoding="utf-8")
         print(f"Marked checkbox done in {plan_path.name}: {target_str}")
         _log_done()
-        return
+        return True
 
     # 3. Append to Execution log if present
     if "## Execution log" in text:
@@ -577,24 +703,52 @@ def cmd_mark_done(plan: dict, target_str: str, commit_sha: str = "", notes: str 
             fp.write(f"\n- [x] {target_str} (completed)\n")
         print(f"Appended completed item to {plan_path.name}: {target_str}")
         _log_done()
+    return True
 
-def cmd_handoff(plan: dict, git_info: dict, user_direction: str = "", handoff_dir: Path | str | None = None):
-    target_dir = Path(handoff_dir).resolve() if handoff_dir else REPO_ROOT / ".claude"
-    target_dir.mkdir(parents=True, exist_ok=True)
-    handoffs_dir = target_dir / "handoffs"
+def plan_rel(path: Path) -> Path:
+    """Repo-relative plan path (the identity written on line 1 of its handoff); the full path for plans outside the repo."""
+    return path.relative_to(REPO_ROOT) if path.is_relative_to(REPO_ROOT) else path
+
+
+def handoff_root(handoff_dir: Path | str | None) -> Path:
+    """Directory holding handoffs/ and active_plan.txt for one run. A relative --handoff-dir resolves against the repo, not the cwd."""
+    if not handoff_dir:
+        return REPO_ROOT / ".claude"
+    p = Path(handoff_dir)
+    return (p if p.is_absolute() else REPO_ROOT / p).resolve()
+
+
+def handoffs_dir_for(handoff_dir: Path | str | None) -> Path:
+    """Writer and reader share this: --handoff-dir X means X/handoffs, otherwise HANDOFFS_DIR (honors PLAN_MANAGER_HANDOFFS_DIR)."""
+    return handoff_root(handoff_dir) / "handoffs" if handoff_dir else HANDOFFS_DIR
+
+
+def handoff_file_for(plan_path: Path, handoffs_dir: Path) -> Path:
+    """<stem>.handoff.md, unless that file already belongs to a different plan with the same stem
+    (two PHASE4_PLAN.md files); then <parent-dir>__<stem>.handoff.md."""
+    base = handoffs_dir / f"{plan_path.stem}.handoff.md"
+    if base.is_file():
+        try:
+            m = HANDOFF_TITLE_RE.search(base.read_text(encoding="utf-8")[:500])
+        except OSError:
+            m = None
+        if m and m.group(1).strip() != str(plan_rel(plan_path)):
+            return handoffs_dir / f"{plan_path.parent.name}__{plan_path.stem}.handoff.md"
+    return base
+
+
+def cmd_handoff(plan: dict, git_info: dict, user_direction: str = "", handoff_dir: Path | str | None = None, dry_run: bool = False) -> Path:
+    """Write (or with dry_run, print) the plan-scoped handoff; returns its path."""
+    handoffs_dir = handoffs_dir_for(handoff_dir)
 
     remaining = [p for p in plan["phases"] if not p["done"]]
     current = remaining[0] if remaining else None
     if user_direction:
-        m_target = re.search(r'\b([A-Za-z]{1,3}[0-9]{1,2}[a-z]?)\b', user_direction)
-        if m_target:
-            target_id = m_target.group(1).upper()
-            for p in plan["phases"]:
-                if p.get("ident", "").upper() == target_id:
-                    current = p
-                    remaining = [p] + [x for x in remaining if x != p]
-                    break
-    rel_path = plan["path"].relative_to(REPO_ROOT) if plan["path"].is_relative_to(REPO_ROOT) else plan["path"].name
+        target = pick_target_phase(user_direction, plan["phases"])
+        if target:
+            current = target
+            remaining = [target] + [x for x in remaining if x is not target]
+    rel_path = plan_rel(plan["path"])
 
     # Pull last commit summary
     try:
@@ -611,16 +765,21 @@ def cmd_handoff(plan: dict, git_info: dict, user_direction: str = "", handoff_di
         content.append(f"{user_direction}\n")
     elif current:
         content.append(f"Execute {current['ident']}: {current['name']}\n")
+    elif not plan["phases"]:
+        content.append(f"No phases parsed from {rel_path}; check its header levels (## Phase N / table with Id + Status columns).\n")
     else:
         content.append("All phases complete. Run master tests and prepare PR.\n")
 
     content.append("## 1. Active State & Provenance")
     content.append(f"- **Master Plan:** `{rel_path}`")
     content.append(f"- **Branch:** `{git_info['branch']}` ({git_info['head']})")
+    content.append(f"- **Generated:** {time.strftime('%Y-%m-%d %H:%M:%S')} in `{REPO_ROOT}`")
     content.append(f"- **Last Landed Commit:**\n```\n{last_commit_stat}\n```")
     content.append(f"- **Dirty Files ({git_info['dirty_count']}):**")
     for f in git_info['dirty_preview']:
         content.append(f"  - `{f}`")
+    if git_info['dirty_count'] > len(git_info['dirty_preview']):
+        content.append(f"  - ... +{git_info['dirty_count'] - len(git_info['dirty_preview'])} more (run `git status --short`)")
     content.append("")
 
     if current:
@@ -640,14 +799,33 @@ def cmd_handoff(plan: dict, git_info: dict, user_direction: str = "", handoff_di
             content.append("")
 
     content.append("## 3. Strict Context Budget & Read Policy")
-    plan_stem = plan["path"].stem
-    resume_target = current['ident'] if current else plan_stem
-    content.append(f"- **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume {resume_target}` (or `resume {plan_stem}`).\n")
+    # The repo-relative path is unambiguous even when two plans share a stem
+    content.append(f"- **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume {rel_path}`.\n")
 
     if current:
         content.append("## 4. Subagent Delegation Direction")
-        content.append(f"- **Delegate to Subagent**: `python3 scripts/plan_manager.py delegate {current['ident']}`")
-        content.append("- **Supported Commands**: `oc-subagent <scout|code|ghidra|verify|gate|doc>` or `oc-flow auto \"<task>\"`\n")
+        content.append("- **Claude Code**: parallel `model: haiku` Agent subagents; brief = `Contract` + `Write Scope` + `python3 scripts/agent_contract.py print worker|recon`.")
+        content.append(f"- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate {current['ident']}` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.\n")
+
+    # Plan-scoped handoff file (prevents multi-session clobbering in same worktree)
+    plan_handoff_file = handoff_file_for(plan["path"], handoffs_dir)
+    rel_plan_h = plan_handoff_file.relative_to(REPO_ROOT) if plan_handoff_file.is_relative_to(REPO_ROOT) else plan_handoff_file
+
+    # Dead Ends / Verification Commands are appended by hand after generation: carry them across rewrites
+    carried = DEAD_ENDS_STUB
+    if plan_handoff_file.is_file():
+        try:
+            old = plan_handoff_file.read_text(encoding="utf-8")
+            if DEAD_ENDS_HEADING in old:
+                carried = old[old.index(DEAD_ENDS_HEADING):].rstrip("\n") + "\n"
+        except OSError:
+            pass
+    text = "\n".join(content) + "\n" + carried
+
+    if dry_run:
+        print(f"DRY RUN: would write {rel_plan_h} for plan {rel_path}\n")
+        print(text)
+        return plan_handoff_file
 
     if ml:
         ml.log_event("SESSION_HANDOFF", {
@@ -655,14 +833,11 @@ def cmd_handoff(plan: dict, git_info: dict, user_direction: str = "", handoff_di
             "notes": user_direction,
         })
 
-    # Plan-scoped handoff file (prevents multi-session clobbering in same worktree)
-    handoffs_dir.mkdir(parents=True, exist_ok=True)
-    plan_stem = plan["path"].stem
-    plan_handoff_file = handoffs_dir / f"{plan_stem}.handoff.md"
-    plan_handoff_file.write_text("\n".join(content), encoding="utf-8")
-    rel_plan_h = plan_handoff_file.relative_to(REPO_ROOT) if plan_handoff_file.is_relative_to(REPO_ROOT) else plan_handoff_file
-    print(f"Plan-scoped handoff written to {rel_plan_h}")
+    atomic_write_text(plan_handoff_file, text)
+    # Naming the plan here lets the caller spot a wrong-plan write straight away
+    print(f"Plan-scoped handoff written to {rel_plan_h} for plan {rel_path}")
     print("Safe to run /clear or exit session.")
+    return plan_handoff_file
 
 def main():
     parent_parser = argparse.ArgumentParser(add_help=False)
@@ -706,6 +881,7 @@ def main():
     p_hand = subparsers.add_parser("handoff", parents=[parent_parser], help="Prepare session handoff file")
     p_hand.add_argument("direction", nargs="?", default="", help="Optional user instructions for next phase")
     p_hand.add_argument("--handoff-dir", default="", help="Optional directory to write handoff files (default .claude)")
+    p_hand.add_argument("--dry-run", action="store_true", help="Print the target path and handoff text without writing anything (pointer included)")
 
     if len(sys.argv) == 1:
         sys.argv.append("resume")
@@ -725,40 +901,47 @@ def main():
         if not p.exists():
             sys.stderr.write(f"Error: Plan file not found: {p}\n")
             sys.exit(2)
-        ACTIVE_PLAN_FILE.parent.mkdir(parents=True, exist_ok=True)
-        ACTIVE_PLAN_FILE.write_text(str(p), encoding="utf-8")
-        print(f"Active plan set to: {p.relative_to(REPO_ROOT)}")
+        atomic_write_text(ACTIVE_PLAN_FILE, str(p))
+        print(f"Active plan set to: {p.relative_to(REPO_ROOT) if p.is_relative_to(REPO_ROOT) else p}")
         sys.exit(0)
 
     explicit_plan = getattr(args, "plan", "") or getattr(args, "plan_path", "")
 
-    # Auto-resolve plan from phase when mark-done is called without explicit plan
-    if args.cmd == "mark-done" and not explicit_plan and getattr(args, "phase", ""):
-        resolved_p, _ = resolve_plan_shorthand(args.phase)
-        if resolved_p:
-            explicit_plan = str(resolved_p)
+    def resolve_or_die(token: str) -> tuple[Path | None, str]:
+        try:
+            return resolve_plan_shorthand(token, strict=True)
+        except AmbiguousPlan as exc:
+            sys.stderr.write(f"Error: {exc}\n")
+            sys.exit(2)
 
-    # Auto-resolve plan when next is called with a phase or plan shorthand
-    if args.cmd == "next" and not explicit_plan and getattr(args, "plan_path", ""):
-        resolved_p, _ = resolve_plan_shorthand(args.plan_path)
-        if resolved_p:
-            explicit_plan = str(resolved_p)
+    # Auto-resolve plan from a phase/shorthand argument when no explicit plan was given
+    for cmd_name, attr in (("mark-done", "phase"), ("next", "plan_path"), ("delegate", "phase")):
+        if args.cmd == cmd_name and not explicit_plan and getattr(args, attr, ""):
+            resolved_p, _ = resolve_or_die(getattr(args, attr))
+            if resolved_p:
+                explicit_plan = str(resolved_p)
 
-    # Auto-resolve plan when delegate is called with a phase
-    if args.cmd == "delegate" and not explicit_plan and getattr(args, "phase", ""):
-        resolved_p, _ = resolve_plan_shorthand(args.phase)
-        if resolved_p:
-            explicit_plan = str(resolved_p)
+    # handoff never guesses: the plan comes from --plan or from the direction itself. The shared
+    # active_plan.txt is rewritten by every session, so falling back to it wrote handoffs to the wrong plan.
+    handoff_rest = None
+    if args.cmd == "handoff" and not explicit_plan:
+        direction = args.direction.strip()
+        resolved_p, handoff_rest = resolve_or_die(direction) if direction else (None, "")
+        if not resolved_p:
+            sys.stderr.write(
+                "Error: handoff needs a plan. Pass a doc/phase shorthand first ('24:T6 <notes>', '25 §12', 'T5e'), "
+                "a plan path, or --plan <path>.\n"
+                "Free text alone is refused: .claude/active_plan.txt is shared between sessions, so guessing from it targets another session's plan.\n")
+            sys.exit(2)
+        explicit_plan = str(resolved_p)
 
     plan_path = discover_active_plan(explicit_path=explicit_plan)
     if not plan_path:
         sys.stderr.write("No active master plan found. Set one with 'python3 scripts/plan_manager.py set <path>'.\n")
         sys.exit(1)
 
-    # When explicit plan/phase was provided, anchor active_plan.txt for this session
-    if explicit_plan and not getattr(args, "handoff_dir", None):
-        ACTIVE_PLAN_FILE.parent.mkdir(parents=True, exist_ok=True)
-        ACTIVE_PLAN_FILE.write_text(str(plan_path), encoding="utf-8")
+    def pointer_target(h_dir) -> Path:
+        return (handoff_root(h_dir) / "active_plan.txt") if h_dir else ACTIVE_PLAN_FILE
 
     plan = parse_plan(plan_path)
     git_info = get_git_info()
@@ -770,11 +953,8 @@ def main():
     elif args.cmd == "delegate":
         sys.exit(cmd_delegate(plan, target_phase=getattr(args, "phase", ""), mode=args.mode, dry_run=args.dry_run))
     elif args.cmd == "mark-done":
-        cmd_mark_done(plan, args.phase, commit_sha=args.commit, notes=args.notes, state=args.state)
-        # Ensure active plan reflects the plan we just marked done (skipped for isolated --handoff-dir runs, e.g. tests)
-        if not getattr(args, "handoff_dir", None):
-            ACTIVE_PLAN_FILE.parent.mkdir(parents=True, exist_ok=True)
-            ACTIVE_PLAN_FILE.write_text(str(plan["path"]), encoding="utf-8")
+        if not cmd_mark_done(plan, args.phase, commit_sha=args.commit, notes=args.notes, state=args.state):
+            sys.exit(1)  # nothing matched: no handoff, no Saved State banner for work that was not recorded
 
         # Automatically update handoff and output Saved State block
         if not getattr(args, "no_handoff", False):
@@ -784,17 +964,17 @@ def main():
             next_ident = next_phase["ident"] if next_phase else ""
             user_dir = f"Execute {next_phase['ident']}: {next_phase['name']}" if next_phase else "All phases complete"
             h_dir = getattr(args, "handoff_dir", "") or None
-            cmd_handoff(updated_plan, git_info, user_direction=user_dir, handoff_dir=h_dir)
+            plan_handoff_file = cmd_handoff(updated_plan, git_info, user_direction=user_dir, handoff_dir=h_dir)
+            # The pointer follows the plan whose handoff was just written (--no-handoff leaves it alone)
+            atomic_write_text(pointer_target(h_dir), str(updated_plan["path"]))
 
             plan_stem = updated_plan["path"].stem
-            target_h_dir = (Path(h_dir).resolve() / "handoffs") if h_dir else HANDOFFS_DIR
-            plan_handoff_file = target_h_dir / f"{plan_stem}.handoff.md"
             rel_plan_h = plan_handoff_file.relative_to(REPO_ROOT) if plan_handoff_file.is_relative_to(REPO_ROOT) else plan_handoff_file
 
             print("\n=== SAVED STATE (Safe to /clear) ===")
             print(f"  - Plan: {updated_plan['path'].name}")
             commit_str = f" @ {args.commit}" if args.commit else ""
-            print(f"  - Completed: {args.phase} ({args.state}){commit_str}")
+            print(f"  - Completed: {split_phase_arg(args.phase)} ({args.state}){commit_str}")
             print(f"  - Handoff: {rel_plan_h}")
             if next_phase:
                 doc_prefix = plan_stem[:2] if (len(plan_stem) >= 2 and plan_stem[:2].isdigit()) else plan_stem
@@ -805,24 +985,22 @@ def main():
             else:
                 print("  - Next Phase: None (all phases complete)")
     elif args.cmd == "handoff":
-        user_dir = args.direction
-        plan_from_dir, rest = resolve_plan_shorthand(user_dir)
-        if plan_from_dir and not explicit_plan:
-            plan = parse_plan(plan_from_dir)
-            if rest:
-                cleaned_rest = rest.lstrip("— -").strip()
-                if cleaned_rest.isdigit() or cleaned_rest.startswith("§"):
-                    user_dir = f"Execute {cleaned_rest} in {plan_from_dir.name}"
-                elif cleaned_rest:
-                    user_dir = cleaned_rest
-                else:
-                    user_dir = f"Continue {plan_from_dir.name}"
+        user_dir = args.direction.strip()
+        if handoff_rest is not None:
+            # The plan was resolved from the direction itself; keep only the leftover text as the direction
+            rest = handoff_rest.lstrip("— -").strip()
+            if rest.isdigit() or rest.startswith("§"):
+                user_dir = f"Execute §{rest.lstrip('§')} in {plan_path.name}"
+            elif rest.startswith("Phase "):
+                user_dir = f"Execute {rest[len('Phase '):]} ({plan_path.name})"
+            elif rest:
+                user_dir = rest
             else:
-                user_dir = f"Continue {plan_from_dir.name}"
-        active_plan_target = (Path(args.handoff_dir) / "active_plan.txt") if getattr(args, "handoff_dir", None) else ACTIVE_PLAN_FILE
-        active_plan_target.parent.mkdir(parents=True, exist_ok=True)
-        active_plan_target.write_text(str(plan["path"]), encoding="utf-8")
-        cmd_handoff(plan, git_info, user_direction=user_dir, handoff_dir=getattr(args, "handoff_dir", "") or None)
+                user_dir = f"Continue {plan_path.name}"
+        h_dir = getattr(args, "handoff_dir", "") or None
+        cmd_handoff(plan, git_info, user_direction=user_dir, handoff_dir=h_dir, dry_run=args.dry_run)
+        if not args.dry_run:
+            atomic_write_text(pointer_target(h_dir), str(plan["path"]))
 
 if __name__ == "__main__":
     main()

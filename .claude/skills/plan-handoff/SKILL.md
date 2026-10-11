@@ -1,63 +1,68 @@
 ---
 name: plan-handoff
-argument-hint: "[doc <N> | <phase> | direction, e.g. '25 §12', 'T5e', '24:T6']"
+argument-hint: "[doc <N> | <phase> | direction, e.g. '25 §12', 'T5e', '24:T6 verify']"
 description: >-
-  Usage: /plan-handoff [shorthand | direction]. Accepts shorthand doc numbers ('25 §12', '24', '19e'), phase IDs ('T5e', 'T6'), or custom directions. Persists session context, active scratchpad, working hypotheses, dead ends, and git state to disk, then switches into built-in plan mode. Instructs Opus to decompose the new implementation plan for Sonnet subagents, designed for 'Clear context and approve (bypass mode)'. Use when the user says "plan handoff", "execute plan handoff", "persist context", "hand off and plan", "clear context", or "switch to plan mode and break down the plan".
+  /plan-handoff [shorthand | direction]: persist session state to the plan's named handoff file, then enter plan mode and write a self-contained plan for "Clear context and approve". Use for "plan handoff", "persist context", "hand off and plan", "clear context".
 ---
 
 # Plan Handoff & Plan Mode Transition Skill
 
-Use this skill when running in bypass mode and context window bloat is reached, or when a course correction is needed.
+Use when context is bloated or a course correction is needed. Order matters: ALL file writes happen before `EnterPlanMode`.
 
-## 0. Next-Phase Direction & Shorthand Controls
+## 0. Direction & Shorthand
 User input: $ARGUMENTS
 
-- **Shorthand Supported:**
-  - Doc + Section: `25 §12`, `doc 25 §12`, or `doc25:12` (auto-resolves `patch_manager_mods/25_pc_levelup_filter.md §12`).
-  - Phase ID: `T5e`, `T6`, `M0` (auto-resolves to that batch in doc 24 master plan).
-  - Doc Number: `25`, `24`, `19e` (auto-resolves to that master plan markdown file).
-- If text is present, it is passed directly to `scripts/plan_manager.py handoff "$ARGUMENTS"`.
-- If empty, infer the next phase from the active plan and session context.
+- `25 §12`, `doc25:12`: resolves the doc file; `§12` is recorded as direction text only (it does not select a phase).
+- `24:T6`, `T5e`, `M0`: resolves the plan holding that phase; leftover text becomes the direction.
+- `19e`, `25`: doc number. `<plan_stem>` or a repo-relative path also work. Ambiguous matches (two `PHASE4_PLAN.md`) are refused with a list: pass the repo-relative path.
+- Empty `$ARGUMENTS`: pick the plan and phase from THIS session's work (`python3 scripts/plan_manager.py resume <doc>` lists the next open phase). Never run a bare `handoff`: `.claude/active_plan.txt` is shared with other sessions and the script refuses to guess from it.
 
-## 1. Multi-Tier Model & Overhead Policy
-- **Opus (Lead Orchestrator)**: High-level synthesis, scratchpad archival, plan formulation, and task decomposition.
-- **Sonnet (Worker Subagents)**: Targeted, modular execution of scoped tasks (code generation, refactoring, local bug fixes).
-- **Haiku (Reconnaissance Subagents)**: High-volume read-only scans (broad regex, multi-directory greps, large log filtering) to isolate raw tool outputs from context.
-- **Inline Execution (No Subagents)**: Minor tasks (checking git status, inspecting 1-3 files, running a single test command). **Never spawn subagents for trivial operations.**
+## 1. Model Tiers
+- **Opus (lead)**: synthesis, plan, decomposition, review, gates, commits.
+- **Haiku swarm (default workers and recon)**: parallel `model: haiku` Agent subagents, narrow briefs (1 deliverable, <=3 files).
+- **Sonnet**: only after three failed Haiku layers.
+- **Inline**: trivial work (git status, 1-3 files, one test command). Never spawn subagents for it.
 
-## 2. Step 1: Snapshot and Persist Working State
-1. Always pass the target feature/phase token: `python3 scripts/plan_manager.py handoff "$ARGUMENTS"`. This writes `.claude/handoffs/<plan_stem>.handoff.md` scoped directly to this project, eliminating clobbering across concurrent sessions in the same worktree.
-2. Update the feature's Master Plan document directly via `python3 scripts/plan_manager.py mark-done <phase> --commit <sha> --notes "<summary>"` (auto-resolves target plan from `<phase>`).
-3. Append to `.claude/handoffs/<plan_stem>.handoff.md` if specific runtime anti-patterns occurred:
-   - **Dead Ends & Anti-Patterns (Do NOT Attempt)**: Specific strategies attempted that failed and reasons why (compiler errors, runtime asserts).
-   - **Verification Commands**: Exact commands to validate progress.
-4. Finish all writes in this step: plan mode blocks file edits.
+## 2. Step 1: Persist State (handoff is the LAST writer)
+1. Name the plan: its repo-relative path (`<plan>`), taken from the work done this session, not from `active_plan.txt`.
+2. If a phase landed, record it WITHOUT regenerating the handoff:
+   `python3 scripts/plan_manager.py mark-done <ID> --state <STATE> [--commit <sha>] --notes "<summary>" --no-handoff`
+   - Use the exact row ID (`T5e`, not `T5`). `--state DONE` only when committed and verified; `PARTIAL` mid-phase; skip this step when nothing landed.
+   - `INSTALLED` counts as done for agents; a pending play test is the user's to report, never an agent task.
+   - It exits 1 and changes nothing when no row matches. Do not retry with free text.
+3. Write the handoff last: `python3 scripts/plan_manager.py handoff --plan <plan> "<direction>"` (direction = the user's text verbatim, or `Execute <ID>: <name>`). Plain `mark-done` without `--no-handoff` would rewrite it.
+4. Verify: the output line reads `Plan-scoped handoff written to <path> for plan <plan>`. If the plan is not the one you meant, STOP and tell the user; do not write the handoff by hand or retarget it.
+5. Append runtime lessons under `## 5. Dead Ends & Verification (manual)` in that same file with Edit (kept across regeneration): failed strategies and why, plus exact verification commands.
+6. `--dry-run` on `handoff` previews the path and text without writing.
 
-## 3. Step 2: Switch to Built-in Plan Mode
-Switch to Claude Code's built-in plan mode by calling the `EnterPlanMode` tool (load it first with `ToolSearch` `select:EnterPlanMode` if it is deferred). When the plan is ready, present it with `ExitPlanMode`. As the Opus orchestrator, formulate the implementation plan adhering to these rules:
+## 3. Step 2: Switch to Plan Mode
+Call `EnterPlanMode` (load via `ToolSearch` `select:EnterPlanMode` if deferred). Write the plan, then present it with `ExitPlanMode`: that call is the deliberate approval step ("clear context and apply"), not an early exit. No repo writes after `EnterPlanMode` except the plan file.
 
-### Opus Task Decomposition Rules:
-1. **Section 0 Post-Clear Memory**: The top of the plan must embed the active branch, modified files, and critical "Do NOT Attempt" list from the handoff file so it survives the context wipe.
-2. **Discrete Scopes**: Break implementation work into modular tasks for Sonnet subagents.
-3. **Explicit File Targets**: Provide exact file paths and symbols; prevent open-ended exploratory searches by workers.
-4. **Self-Verification Gates**: Every subagent task must define an explicit verification command (compiler, test, audit).
-5. **Output Contracts**: The plan itself, read by the user, follows the `i-have-adhd` rules (lead with actions, number steps, cap lists to 5, concrete time estimates). Subagent prompts instead end with the output of `python3 scripts/agent_contract.py print worker` (edits) or `python3 scripts/agent_contract.py print recon` (read-only); subagents never use the ADHD format. The orchestrator runs `python3 scripts/agent_contract.py snapshot` before launch and `python3 scripts/agent_contract.py check --scope <globs> -` on the reply before `mark-done`.
-6. **Master Plan Alignment**: Session plans focus strictly on the immediate assigned batch/tasks. The Two-Stage Logging Lifecycle (verbose dev/probing -> tightening/hardening) is tracked across milestone phases in the **Master Plan**, not forced into every sub-session.
+### Opus Task Decomposition Rules
+1. **Section 0 Post-Clear Memory**: embed branch, dirty files, resume command, handoff path and the "Do NOT Attempt" list so they survive the wipe.
+2. **Discrete scopes**: modular tasks for Haiku subagents.
+3. **Explicit file targets**: exact paths and symbols; no open-ended searches by workers.
+4. **Self-verification gates**: every task names its verification command (compiler, test, audit).
+5. **Output contracts**: the plan read by the user follows the Output style rules in `~/.claude/CLAUDE.md` (lead with actions, numbered steps, lists capped at 5, concrete time estimates). Subagent briefs instead end with `python3 scripts/agent_contract.py print worker` (edits) or `print recon` (read-only); subagents never use the ADHD format. Run `python3 scripts/agent_contract.py snapshot` before launch and `python3 scripts/agent_contract.py check --scope <globs> -` on the reply before `mark-done`.
+6. **Master plan alignment**: session plans cover only the assigned batch; the two-stage logging lifecycle lives in the master plan.
+7. **Zero-read plans**: inline the 5-10 line struct/macro snippets the executor needs; never "read LargeHeader.h first".
 
-### Plan Structure Template:
+### Plan Structure Template
 ```markdown
 # Implementation Plan: [Goal Name]
 
 ## 0. Preserved Context & Anti-Patterns (Post-Clear Memory)
 - **Next-Phase Direction**: [user's /plan-handoff text, verbatim, or "inferred"]
 - **Active Branch & Worktree**: [Path / Branch]
+- **Plan**: `<repo-relative plan path>`
+- **Resume**: `python3 scripts/plan_manager.py resume <repo-relative plan path>`
+- **Handoff**: `<path printed in Step 1.4>`
 - **Current State**: [Summary of verified progress]
 - **Dirty Files**: [List of modified paths]
 - **Anti-Patterns & Traps**:
-  - ❌ [Failed Approach]: [Reason it failed]
-- **Handoff Reference**: `.claude/handoffs/<plan_stem>.handoff.md`
+  - [Failed Approach]: [Reason it failed]
 
-## 1. Modular Task Units (for Sonnet Subagents)
+## 1. Modular Task Units (for Haiku Subagents)
 
 ### Task 1: [Component / Unit Name]
 - **Contract**: worker | recon
@@ -76,5 +81,4 @@ Switch to Claude Code's built-in plan mode by calling the `EnterPlanMode` tool (
 ```
 
 ## 4. Step 3: Present for User Review
-Present the plan so the user can select:  
-**`Clear context and approve (bypass mode)`**.
+Present the plan so the user can select **`Clear context and approve (bypass mode)`**. After the clear, the fresh session starts from the Resume line in Section 0.

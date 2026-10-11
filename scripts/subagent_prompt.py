@@ -95,14 +95,8 @@ def resolve_phase_and_plan(phase_key: str, explicit_plan: str = None):
         if resolved:
             plan_path = resolved
 
-    if not explicit_plan and (not plan_path or not plan_path.exists()):
-        active_txt = REPO_ROOT / ".claude" / "active_plan.txt"
-        if active_txt.exists():
-            content = active_txt.read_text().strip()
-            if content:
-                p = Path(content)
-                plan_path = p if p.is_absolute() else REPO_ROOT / p
-
+    # No fallback to .claude/active_plan.txt: every session rewrites it, so an unresolved phase
+    # would silently pull another session's plan into the brief.
     return plan_path
 
 
@@ -414,6 +408,9 @@ def main():
     plan_path = resolve_phase_and_plan(args.phase, args.plan)
     if args.plan and (not plan_path or not plan_path.exists()):
         print(f"error: --plan file not found: {args.plan}", file=sys.stderr)
+        return 2
+    if not plan_path or not plan_path.exists():
+        print(f"error: phase {args.phase!r} did not resolve to a plan; pass --plan <path>", file=sys.stderr)
         return 2
     title, desc, files, verif_cmds, mod_scope = extract_phase_info(plan_path, args.phase)
 
