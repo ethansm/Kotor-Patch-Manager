@@ -1,14 +1,55 @@
-# Swarm M2 safety: current state (Session C closed, Session D next, 2026-10-11)
+# Swarm M2 safety: current state (Session D CLOSED, real canary waits for the user's go, 2026-10-11)
 
-Resume next: `swarm M2 safety, Session D (D1)`. Plan: Swarm M2 safety re-scope (post phase 3d), §6 Session D (re-plan first; the fix half is a diverged copy, so re-read `engine/fix/`).
+Resume next: `swarm M2 safety, canary (§9)`. Everything in M2 is landed except the real canary: `dr.py run canary` is paid (cap $0.03) and needs a FRESH yes in chat. Procedure: Session D plan §9 (copy `~/.cache/deep_haiku_review/kotor2-p2/p2c/canary.json` aside first, wide gate clear, `DR_CLAUDE_STATE=ro python3 -I $B/dr.py run canary --run p2c --profile $REPO/.claude/deep-review/phase3b/profile_p2.toml --yes-spend 0.02 --wait`; PASS = flip `claude_state` default to `"ro"` in `dr_profile.py` DEFAULTS and `PROFILE_SPEC.md`, FAIL = keep `rw`, record why).
 
-## Remaining swarm work (/plan-handoff, 2026-10-11, after Session C)
+## Remaining swarm work (/plan-handoff, 2026-10-11, after Session C) [ALL DONE in Session D except the canary; see the Session D CLOSED block]
 - **Direction (verbatim)**: "any remaining swarm work. delete the leftover doc file. fix any issues found."
 - **Done before planning**: `.claude/handoffs/misrouted_swarm_m2.handoff.md` deleted (the user asked). Root cause of the `prep.py --self-test` failure found: `prep.py` ~line 498 (in the phase 3d baseline `a42a422`) applies `[tree].strip` to dirty and untracked files, so `agent_out/log.c` never becomes a unit; the self-test assertion `byf["agent_out/log.c"][0]["domain"] == "rest"` (~line 1312) is stale. With that one line changed to `assert "agent_out/log.c" not in byf` the whole self-test passes (rc 0, checked on a scratch copy).
 - **Remaining M2 work**: Session D (D1 gate pins, D2 write scope, D3 profile and close; design in the earlier plan's §6, now inlined in the Session D plan), then §7 final report and the real canary (needs the user's go, cap $0.03).
 - **Issues to fix**: (I1) stale prep self-test assertion above, plus register a `tests/suites.toml` suite so something runs it; (I2) VOID: the binary-rewrite worry was wrong (`build_tree` drops binary files before the copy; see the correction under Session C residuals); (I3) no selftest covers `dr_init`'s home-probe gate (`engine/verify/runlib.sh` ~line 289); (I4) `/var/tmp/dr_hygiene.*` cache files are never removed (`runlib.sh` ~line 135); (I5) the three selftests on the LIVE bundle once the other session commits or parks its edits.
 - **Out of scope (own plans)**: M3 runner, M4 measurement (paid), M5 recipes; the frozen fork `.claude/review`; a forbidden-command union in the fix half (it has no such check, and its gate tests run `git commit` in clones).
 - **Dead end (new)**: `plan_manager.py handoff --plan <x>` ALSO rewrites the shared, untracked `.claude/active_plan.txt` (script ~lines 758 and 822). It pointed at the swarm plan for a few minutes; restored to `patch_manager_mods/33_ui_queue_hotbar_fixes.md` (97 bytes, no trailing newline). `.claude/handoffs/swarm_library_architecture.handoff.md` (generated) now only points here.
+
+## Session D CLOSED (2026-10-11)
+- **Bundle commits (HEAD `21a7784`; each went through the index, committed without a pathspec, landed tree hash == the verified scratch tree; patches `~/.claude/swarm/backups/swarm_m2_session_d_<task>.patch`)**: R1 `096a5b0` (stale prep self-test assertion; code unchanged), R3 `b53d440` (3 rows: `run_verify.sh` through `dr_init`'s home-probe gate), R4 `f4177f0` (hygiene args in exported `_DR_HYGIENE_ARGS` + `_DR_HYGIENE_READY`, no `dr_hygiene.*` temp file), R5 `c16a88b` (NEW issue: the selftest left a `/tmp/dr-selftest-*` tree after every real run, because the fix half's review copies are chmod a-w; cleanup now chmods first), D1a `3a0a87e` (`[fix].pinned`, `base.json["pins"]`, `fix_workspace add-pins`, `fcommon verify-pins` and `pin-closure`), D1b `0cac882` (`fixgate.sh` verifies pins before every verb except `reset`, exit 2; integrator settings deny Edit/Write per pinned path), D2 `21a7784` (`[fix].strict_scope`, `approved_scope.json`). Project: `8ba3029` (`tests/suites.toml`: `swarm-bundle-prep`). LIB unchanged (`d4f9834`).
+- **Profile (untracked project data, not committed as before)**: `.claude/deep-review/phase3f/fix_section_kotor2.toml` and the composite `profile_fix_kotor2.toml` got `pinned` = 11 files (`scripts/{run_tests,build_check,compat_check,agent_diff_check,_common,_static_common,check_exports,compat_graph,master_ledger,agent_contract}.py` + `tests/suites.toml`; the 10 scripts are exactly the `pin-closure` output for the four gate entrypoints). `dr_profile.py check` OK. The composite was NOT regenerated: it is stale against `phase3b/profile_p2c.toml` (budgets, `reduce_group`, `[coverage]` changed there since), so `build_profile.sh` would drag unrelated changes in; the key was added by hand to both files.
+
+| Stage | Floor (clean `58deafa`) | After Session D (clean copy of `21a7784`) |
+|---|---|---|
+| selftest mock | 160 | 162 |
+| real quick | 245 | 250 |
+| real full | 253 | 258 |
+| `fix_workspace --self-test` | 77 | 110 |
+| `fix_settings --self-test` | 206 | 217 |
+| `prep.py --self-test` | FAIL (stale assertion) | OK |
+| `fcommon`, `fix_intake` self-tests | PASS (no count printed) | PASS |
+| `fix_checks --self-test` | 31 | 31 |
+
+Also green: LIB loop (7 files, `test_vendor_parity` 0 skips) and `run_tests.py swarm-lib swarm-bundle-wrapper swarm-bundle-prep` (8 PASS) on the live tree, `swarm_argv_probe.py` rc 0 IDENTICAL, `dr_profile.py check` on the KOTOR composite.
+
+| ID | Mutation (scratch copy, confirmed by `diff`) | Result |
+|---|---|---|
+| M-R1 | revert the prep assertion | prep self-test `KeyError: 'agent_out/log.c'`, rc 1 |
+| M-R3 | delete the `dr_init` home-probe gate block | quick 3 of 248 FAIL (exactly the 3 new rows) |
+| M-R4 | restore the old `mktemp` block | quick 2 of 250 FAIL (no-leak row, once-per-tree row) |
+| M-R5 | old `rmtree(ignore_errors)` cleanup | one more `/tmp/dr-selftest-*` per real run (118 to 119) |
+| M-D1a1 | `verify_pins` skips the sha compare (worker) | `fcommon` and `fix_workspace` self-tests red |
+| M-D1a2 | drop the base.json pins union (gate-time, no profile) | `fcommon` and `fix_workspace` red (edited file passed with rc 0) |
+| M-D1b1 | drop `exit 2` after `verify-pins` in `fixgate.sh` | `fix_workspace` self-test red (10 rows per the worker; mine: `fixgate status, edited pinned file: rc=0`) |
+| M-D1b2 | drop the `extra_deny` pass-through (worker) | 6 `fix_settings` rows red |
+| M-D2 | strict branch back to `allowed = [primary] + cited` | `fix_intake` self-test red (cited file in `allowed_files`, waves, approved rows) |
+
+- **Choices and deviations**:
+  1. D1 was split into D1a (profile, `fcommon`, `fix_workspace`) and D1b (`fixgate.sh`, `fix_settings`, gate-level tamper rows): narrow workers.
+  2. **Review caught a fail-open in D1a before landing**: the installed `fcommon.py` runs at gate time with no `DR_PROFILE`, so `PINNED` was empty and `verify-pins` passed silently. Fix: with no explicit list, the pins recorded in the host-side `base.json` also define the checked set (profile list and base.json keys are unioned). Also the installed copy could not import `dr_profile` (it never read `bin/engine_dir.txt`, only `fix_settings.py` did): `fcommon.py` now reads it too. Both are pinned by tests (`fcommon` unit rows, `fix_workspace` rows with `DR_PROFILE` removed and via `fixgate.sh`).
+  3. R4 treats an empty or newline-bearing hygiene arg as "unavailable" (same WARNING as a python failure, no READY marker, so a later call retries).
+  4. Two workers slipped a whitespace-only hunk into existing lines (`repo =Path(`, `: >"$LEDGER_DIR`); both reverted in review. One worker used a Python heredoc for an edit.
+  5. D2 `strict_scope` defaults to true (opt out `strict_scope = false`): the write scope of needs-review and needs-design tasks shrinks to the primary file; cited files are read context. `approved_scope.json` = `{task_id: [paths]}` in `$FIX_DIR/work/`. There is no real bundle queue, so there is no queue-change list.
+  6. D3.2: no real bundle fix home exists (`~/.cache/deep_haiku_review/*` has none), so the pins and the new `fixgate.sh` apply at the next fix-prep (`build-base` records pins and installs bin). For an existing base: `fix_workspace.py add-pins` then `install-bin`.
+  7. I5: the live bundle is STILL dirty (the other session's `PROFILE_SPEC.md`, `SELFTEST.md`, `dr.py`, `engine/{dr_profile,merge,prep}.py`, `engine/run_map.sh`, `engine/verify/verify_merge.py` hunks), so the three selftests ran on a clean `git archive HEAD` copy; LIB loop, suites, argv probe and `fix_settings` ran on the live tree. `swarm-bundle-prep` is green on the live tree too (the other session's `prep.py` hunk is compatible).
+- **Workers**: 5 Sonnet (R3, R4, D1a, D1b, D2), no commits by workers; processed tokens 2.82M / 2.02M / 2.74M / 2.24M / 1.99M (11.8M total). R1 and R5 were inline (Opus).
+- **Residuals**: (a) `scripts/_common.py` is UNTRACKED in the project repo (since Sep 24) although four gate scripts import it; it is in the p2c tree only because `include_dirty = true`. Commit it. (b) About 118 older `/tmp/dr-selftest-*` dirs (about 170 KB each, from before R5) and about 320 old `/var/tmp/dr_hygiene.*` files (from before R4) are not cleaned: safe to delete when no selftest runs. (c) `pin-closure` sees static imports only (no dynamic imports or subprocess calls): re-run it when a gate script changes. (d) Pins are checked at the start of each fixgate verb: a gate script that rewrites a pinned file during one verb is caught by the next verb, not by that verb's own result. (e) A base built before D1 has no pins: with no profile at gate time the check is off until `add-pins`; with the profile loaded, missing pins fail closed. (f) The fix half still has no forbidden-command union (own plan). (g) `claude_state` stays `rw` until the canary passes.
+- **Next**: real canary (§9) behind the user's go; then M3 runner (re-plan against phase 3d first), M4 measurement (paid), M5 recipes: separate plans.
 
 ## Session C CLOSED (2026-10-11)
 - **Commits**: LIB `d4f9834` C1 (`lib/scrub.py`, `tests/test_scrub.py`, 17 tests). Project `cd80fb5` (`tests/suites.toml`: `swarm-lib-scrub`; `run_tests.py swarm-lib` is now 6 PASS). Bundle `cea6282` C2 (forbidden union: `engine/invariants.py` vendored, one helper `dr_profile.forbidden_hits` used by `dr.py`, `vcommon.py`, `fact_runner.sh`). Bundle `58deafa` C3 (`[protected] scrub`, default true; `engine/scrub.py` vendored; `prep.py` sites `file_diff`, whole-file read, `build_tree`).
