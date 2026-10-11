@@ -709,8 +709,9 @@ class FormatsMatchSource(unittest.TestCase):
                  3, 11, 0, 0x7f0001a0, 0, 31.4, 2.25, 1], A.E1SPIN_RE, groups=["100", "7f0001a2", "p_atton", "1", "11"])
         self.chk(c, '"t=%lu E1 END cr=%08x %s spin lasted %.1f s"', [100, 0x7f0001a2, "p_atton", 18.0], A.E1END_RE)
         for how in ("keep", "clear"):
-            self.chk(c, '"t=%lu FM1 bumpee=%08x %s party=%d mover=%08x %s combat=%d tgt=%08x round=%d queue=[%s]%s -> %s%s"',
-                     [100, 0x7f0001a2, "p_atton", 1, 0x7f0001a0, "p_exile", 0, 0x7f000000, 0, "3d", "", how, " (fm1=0)"], A.FM1_RE,
+            why = "keep" if how == "keep" else "off"   # the " (fm1=0)" suffix pairs with why=off
+            self.chk(c, '"t=%lu FM1 bumpee=%08x %s party=%d mover=%08x %s combat=%d tgt=%08x round=%d queue=[%s]%s -> %s why=%s%s"',
+                     [100, 0x7f0001a2, "p_atton", 1, 0x7f0001a0, "p_exile", 0, 0x7f000000, 0, "3d", "", how, why, " (fm1=0)"], A.FM1_RE,
                      groups=["100", "7f0001a2", "p_atton", "1", how])
         self.chk(c, '"t=%lu FM4 cr=%08x %s tid=%lu fi=%08x live:', [100, 0x7f0001a2, "p_atton", 111, 0xa1b2c3d, 0x7f0001a0, 3.2, 0, 0x7f0001a0, 3.2, 0,
                  "restored (mode 1)"], A.FM4_RE, groups=["100", "7f0001a2", "p_atton", "111", "0a1b2c3d"])
