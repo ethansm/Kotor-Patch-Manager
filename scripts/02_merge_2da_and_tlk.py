@@ -13,6 +13,12 @@ already ends with Echoes' strings, or appearance.2da already has Echoes' first
 appearance row, the script exits 1 before writing anything. To re-run, restore
 the pre-compatch backup first.
 
+planetary.2da, genericdoors.2da and soundset.2da are replaced whole, not merged. Before
+anything is written, each existing live copy is compared with what Echoes would write
+(planetary: ignoring the remapped TLK columns and the M4-78 row). If another mod changed
+a live copy, the script prints the differing cells and exits 1 with the game unchanged.
+Pass --replace-tables to overwrite those three tables anyway.
+
 Needs the patched pykotor (../pykotor_patches/README.md, patch #5). Stock 2.3.12
 reads some shipped 2DAs as blank tables, and this script would write them back.
 """
@@ -59,6 +65,7 @@ UTC_APPEARANCE = {
 PLANETARY_TLK_COLUMNS = ["name", "description", "lockedoutreason"]
 PLANETARY_M478_ROW = 4  # M4-78: disabled, since the build doesn't include it
 COPIED_2DAS = ["genericdoors.2da", "soundset.2da"]  # copied whole
+MAX_CONFLICT_LINES = 20
 
 
 def copy_2da_row(src_2da, src_idx, dst_2da, remap_dict=None):
@@ -103,6 +110,47 @@ def already_applied(live_tlk, echoes_tlk, live_app, echoes_app):
             if live_app.get_row(r).label() == label and [live_app.get_cell(r, h) for h in cols] == want:
                 return f"live appearance.2da row {r} is already Echoes' appearance row {first}"
     return None
+
+
+def table_conflicts(live, final, skip_columns=(), skip_rows=()):
+    """Describe how `live` differs from `final`, the table Echoes would write over it.
+
+    Returns "row <i> <label> <column> live=<v> echoes=<v>" lines, or [] when the
+    tables agree outside skip_columns and skip_rows. Pure: no I/O.
+    """
+    live_headers, final_headers = list(live.get_headers()), list(final.get_headers())
+    if set(live_headers) != set(final_headers):
+        return [f"headers live={live_headers} echoes={final_headers}"]
+    if live.get_height() != final.get_height():
+        return [f"height live={live.get_height()} echoes={final.get_height()}"]
+    out = []
+    for r in range(final.get_height()):
+        if r in skip_rows:
+            continue
+        label = final.get_row(r).label()
+        if live.get_row(r).label() != label:
+            out.append(f"row {r} label live={live.get_row(r).label()!r} echoes={label!r}")
+        for h in final_headers:
+            if h in skip_columns:
+                continue
+            a, b = live.get_cell(r, h), final.get_cell(r, h)
+            if a != b:
+                out.append(f"row {r} {label} {h} live={a!r} echoes={b!r}")
+    return out
+
+
+def load_live_tables_to_guard(echoes_plan):
+    """(name, live, final, skip_columns, skip_rows) for each whole-table overwrite whose live file exists."""
+    out = []
+    live_plan = LIVE_OVERRIDE / "planetary.2da"
+    if live_plan.is_file():
+        out.append(("planetary.2da", read_2da(live_plan), echoes_plan,
+                    tuple(PLANETARY_TLK_COLUMNS), (PLANETARY_M478_ROW,)))
+    for fname in COPIED_2DAS:
+        live_path = LIVE_OVERRIDE / fname
+        if live_path.is_file():
+            out.append((fname, read_2da(live_path), read_2da(STAGING_OVERRIDE / fname), (), ()))
+    return out
 
 
 def main():
@@ -196,6 +244,19 @@ def main():
     echoes_plan.set_cell(PLANETARY_M478_ROW, "icon", "****")
     echoes_plan.set_cell(PLANETARY_M478_ROW, "guitag", "")
     print("Configured planetary.2da (M4-78 disabled, new planets mapped).")
+
+    if "--replace-tables" not in sys.argv[1:]:
+        found = []
+        for name, live_t, final_t, skip_cols, skip_rows in load_live_tables_to_guard(echoes_plan):
+            found += [f"{name}: {line}" for line in table_conflicts(live_t, final_t, skip_cols, skip_rows)]
+        if found:
+            for line in found[:MAX_CONFLICT_LINES]:
+                print(f"   {line}")
+            if len(found) > MAX_CONFLICT_LINES:
+                print(f"   ... and {len(found) - MAX_CONFLICT_LINES} more")
+            sys.exit(f"{len(found)} live difference(s) in planetary.2da/genericdoors.2da/soundset.2da would be "
+                     "overwritten (another mod changed them). Nothing written. Review them (the pre-compatch "
+                     "tar backup holds the originals), then re-run with --replace-tables to overwrite.")
 
     print("\n=== Step 12: Updating Staged GFFs with New Mapped IDs ===")
     staged = []  # (write function, object, path)
