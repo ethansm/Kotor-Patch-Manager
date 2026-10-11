@@ -90,6 +90,47 @@ inline int ComputeSlot(uint32_t hash) {
     return static_cast<int>(kCommonerSlots[Mix(hash, 4) % kCommonerSlotCount]);
 }
 
+// Per-creature hash for the texture variant: FNV-1a over the 4 bytes of oid, then the 2 bytes of
+// appearance (each least significant byte first), finished with Fmix32.
+inline uint32_t HashCreatureId(uint32_t oid, uint16_t appearance) {
+    uint32_t hash = FNV_OFFSET_BASIS;
+    for (int i = 0; i < 4; ++i) {
+        hash = (hash ^ static_cast<uint8_t>((oid >> (8 * i)) & 0xFFu)) * FNV_PRIME;
+    }
+    for (int i = 0; i < 2; ++i) {
+        hash = (hash ^ static_cast<uint8_t>((appearance >> (8 * i)) & 0xFFu)) * FNV_PRIME;
+    }
+    return Fmix32(hash);
+}
+
+// True for rows that take a commoner texture variant: the generic male and female commoner tables,
+// plus the appended rows 802 APP_COMMONER_FAT_MALE, 803 APP_COMMONER_FAT_FEMALE,
+// 805..808 APP_TWILEK_COMMONER_M_02_A..D (male Twi'lek commoner variants) and
+// 811 APP_TWILEK_FEMALE_UNDERWEAR. Excluded: 804 APP_CZERKA_OFFICER_FEMALE and
+// 809/810 APP_TWILEK_FEMALE_DANCER_BOOT/APP_TWILEK_FEMALE_DANCER (dancers). Every other row is excluded.
+inline bool TexVarEligible(uint16_t finalApp) {
+    if (IsGenericMaleCommoner(finalApp) || IsGenericFemaleCommoner(finalApp)) return true;
+    switch (finalApp) {
+        case APP_COMMONER_FAT_MALE:
+        case APP_COMMONER_FAT_FEMALE:
+        case APP_TWILEK_COMMONER_M_02_A:
+        case APP_TWILEK_COMMONER_M_02_B:
+        case APP_TWILEK_COMMONER_M_02_C:
+        case APP_TWILEK_COMMONER_M_02_D:
+        case APP_TWILEK_FEMALE_UNDERWEAR:
+            return true;
+        default:
+            return false;
+    }
+}
+
+// Texture variant for a creature: a value from kCommonerSlots (1..35), or 0 when no variant applies
+// (row not eligible, or oid 0 meaning no creature id).
+inline uint8_t PickTextureVar(uint32_t oid, uint16_t finalApp) {
+    if (oid == 0 || !TexVarEligible(finalApp)) return 0;
+    return static_cast<uint8_t>(ComputeSlot(HashCreatureId(oid, finalApp)));
+}
+
 // Check if a texture ResRef belongs to generic commoner clothing
 inline bool IsCommonerTexture(const char* resRef, bool& isFemale) {
     if (!resRef) return false;

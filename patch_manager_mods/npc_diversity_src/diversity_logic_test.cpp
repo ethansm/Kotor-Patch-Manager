@@ -387,6 +387,117 @@ void testComputeSlotCoverage() {
     KT_CHECK(uniform);
 }
 
+// Golden values from an independent Python FNV-1a/fmix32 reference (bytes LSB first: oid, then appearance).
+void testHashCreatureIdGolden() {
+    KT_CHECK_EQ(NpcDiversity::HashCreatureId(1u, 190), 0x8A2319E1u);
+    KT_CHECK_EQ(NpcDiversity::HashCreatureId(0x12345678u, 802), 0x8D7671C1u);
+    KT_CHECK_EQ(NpcDiversity::HashCreatureId(0xDEADBEEFu, 811), 0xCA471ED4u);
+    KT_CHECK_EQ(NpcDiversity::HashCreatureId(1000u, 805), 0x494232EAu);
+    KT_CHECK_EQ(NpcDiversity::HashCreatureId(42u, 185), 0xE4F9FA16u);
+    KT_CHECK_EQ(NpcDiversity::HashCreatureId(0xFFFFFFFFu, 0xFFFFu), 0xF2FCD5C4u);
+
+    // Determinism, and both inputs feed the hash.
+    KT_CHECK_EQ(NpcDiversity::HashCreatureId(1000u, 805), NpcDiversity::HashCreatureId(1000u, 805));
+    KT_CHECK(NpcDiversity::HashCreatureId(1000u, 805) != NpcDiversity::HashCreatureId(1001u, 805));
+    KT_CHECK(NpcDiversity::HashCreatureId(1000u, 805) != NpcDiversity::HashCreatureId(1000u, 806));
+}
+
+void testTexVarEligible() {
+    // Generic male and female commoner tables (representative rows from each table).
+    KT_CHECK(NpcDiversity::TexVarEligible(17));
+    KT_CHECK(NpcDiversity::TexVarEligible(190));
+    KT_CHECK(NpcDiversity::TexVarEligible(617));
+    KT_CHECK(NpcDiversity::TexVarEligible(14));
+    KT_CHECK(NpcDiversity::TexVarEligible(185));
+    KT_CHECK(NpcDiversity::TexVarEligible(614));
+
+    // Appended rows: 802 fat male, 803 fat female, 805..808 male Twi'lek commoner variants, 811 underwear.
+    KT_CHECK(NpcDiversity::TexVarEligible(802));
+    KT_CHECK(NpcDiversity::TexVarEligible(803));
+    KT_CHECK(NpcDiversity::TexVarEligible(805));
+    KT_CHECK(NpcDiversity::TexVarEligible(806));
+    KT_CHECK(NpcDiversity::TexVarEligible(807));
+    KT_CHECK(NpcDiversity::TexVarEligible(808));
+    KT_CHECK(NpcDiversity::TexVarEligible(811));
+
+    // Excluded: 804 Czerka officer, 809/810 dancers.
+    KT_CHECK(!NpcDiversity::TexVarEligible(804));
+    KT_CHECK(!NpcDiversity::TexVarEligible(809));
+    KT_CHECK(!NpcDiversity::TexVarEligible(810));
+
+    // Story-style row outside every table, the zero row, and the all-ones row.
+    KT_CHECK(!NpcDiversity::TexVarEligible(300));
+    KT_CHECK(!NpcDiversity::TexVarEligible(0));
+    KT_CHECK(!NpcDiversity::TexVarEligible(0xFFFFu));
+
+    // Vanilla Twi'lek rows are table-only (remapped to 805..808 before this check), so they are not eligible.
+    KT_CHECK(!NpcDiversity::TexVarEligible(416));
+    KT_CHECK(!NpcDiversity::TexVarEligible(446));
+
+    // Exactly 57 eligible rows across the whole uint16 range: 24 male + 26 female + 7 appended.
+    int eligible = 0;
+    for (uint32_t a = 0; a <= 0xFFFFu; ++a) {
+        if (NpcDiversity::TexVarEligible(static_cast<uint16_t>(a))) ++eligible;
+    }
+    KT_CHECK_EQ(eligible, 57);
+}
+
+void testPickTextureVarGateAndGolden() {
+    // oid 0 means no creature id: always 0, even for eligible rows.
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(0u, 190), 0);
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(0u, 802), 0);
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(0u, 0xFFFFu), 0);
+
+    // Ineligible rows get 0 for any nonzero oid.
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(5u, 804), 0);
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(5u, 809), 0);
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(5u, 810), 0);
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(5u, 416), 0);
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(5u, 300), 0);
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(5u, 0), 0);
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(5u, 0xFFFFu), 0);
+
+    // Golden picks (ComputeSlot of HashCreatureId; values from the Python reference).
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(1u, 190), 14);
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(0x12345678u, 802), 10);
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(0xDEADBEEFu, 811), 34);
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(1000u, 805), 20);
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(42u, 185), 25);
+}
+
+void testPickTextureVarRangeAndDeterminism() {
+    const uint16_t eligibleRows[] = {190, 185, 802, 803, 805, 806, 807, 808, 811};
+    for (uint16_t row : eligibleRows) {
+        bool inRange = true;
+        bool stable = true;
+        for (uint32_t oid = 1; oid <= 10000u; ++oid) {
+            uint8_t v = NpcDiversity::PickTextureVar(oid, row);
+            if (v < 1 || v > 35) inRange = false;
+            if (v != NpcDiversity::PickTextureVar(oid, row)) stable = false;
+        }
+        KT_CHECK(inRange);
+        KT_CHECK(stable);
+    }
+}
+
+void testPickTextureVarUniform() {
+    // 100k sequential oids for one eligible row: every slot is reached and each is within +-25% of uniform.
+    long counts[256] = {};
+    for (uint32_t oid = 1; oid <= kDraws; ++oid) {
+        counts[NpcDiversity::PickTextureVar(oid, 190)]++;
+    }
+    KT_CHECK_EQ(counts[0], 0L);
+
+    const double uniformPct = 100.0 / static_cast<double>(kCommonerSlotCount);  // 2.857% per slot
+    long total = 0;
+    for (size_t k = 0; k < kCommonerSlotCount; ++k) {
+        long c = counts[kCommonerSlots[k]];
+        total += c;
+        KT_CHECK(ShareInRange("texvar slot", c, kDraws, uniformPct * 0.75, uniformPct * 1.25));
+    }
+    KT_CHECK_EQ(total, static_cast<long>(kDraws));  // no value outside kCommonerSlots
+}
+
 } // namespace
 
 int main() {
@@ -406,5 +517,10 @@ int main() {
     testFemaleCommonerDistribution();
     testTwilekMaleDistribution();
     testTwilekFemaleDistribution();
+    testHashCreatureIdGolden();
+    testTexVarEligible();
+    testPickTextureVarGateAndGolden();
+    testPickTextureVarRangeAndDeterminism();
+    testPickTextureVarUniform();
     return kt::Report("diversity_logic_test");
 }

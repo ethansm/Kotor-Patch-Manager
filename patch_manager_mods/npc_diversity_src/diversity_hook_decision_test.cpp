@@ -13,10 +13,29 @@ using NpcDiversity::layout::AppearanceDesc;
 using NpcDiversity::layout::ResRef;
 
 void testShouldSkipDescriptorBranches() {
-    // DescMode wins over everything else.
-    KT_CHECK_EQ(NpcDiversity::ShouldSkipDescriptor(1, 0, 190), SkipReason::DescMode);
-    KT_CHECK_EQ(NpcDiversity::ShouldSkipDescriptor(-1, 1, 185), SkipReason::DescMode);
-    KT_CHECK_EQ(NpcDiversity::ShouldSkipDescriptor(1, 2, 802), SkipReason::DescMode);
+    // descMode14 is not a skip gate: in-world commoners carry descMode14 == 1.
+    KT_CHECK_EQ(NpcDiversity::ShouldSkipDescriptor(1, 0, 190), SkipReason::None);   // male commoner, descMode 1
+    KT_CHECK_EQ(NpcDiversity::ShouldSkipDescriptor(5, 1, 185), SkipReason::None);   // female commoner, descMode 5
+    KT_CHECK_EQ(NpcDiversity::ShouldSkipDescriptor(-1, 0, 416), SkipReason::None);  // Twi'lek male, descMode -1
+    KT_CHECK_EQ(NpcDiversity::ShouldSkipDescriptor(1, 1, 446), SkipReason::None);   // Twi'lek female, descMode 1
+
+    // No descMode value produces DescMode, across genders and row classes.
+    const int32_t modes[] = {0, 1, 5, -1, INT32_MIN, INT32_MAX};
+    const uint8_t genders[] = {0, 1, 2, 255};
+    const uint16_t rows[] = {190, 185, 416, 446, 802, 803, 300, 0};
+    bool sawDescMode = false;
+    for (int32_t m : modes) {
+        for (uint8_t g : genders) {
+            for (uint16_t r : rows) {
+                if (NpcDiversity::ShouldSkipDescriptor(m, g, r) == SkipReason::DescMode) sawDescMode = true;
+            }
+        }
+    }
+    KT_CHECK(!sawDescMode);
+
+    // Gender out of range is still a skip, with or without a nonzero descMode14.
+    KT_CHECK_EQ(NpcDiversity::ShouldSkipDescriptor(1, 2, 190), SkipReason::Gender);
+    KT_CHECK_EQ(NpcDiversity::ShouldSkipDescriptor(-1, 255, 185), SkipReason::Gender);
 
     // Gender out of range wins over the row check.
     KT_CHECK_EQ(NpcDiversity::ShouldSkipDescriptor(0, 2, 190), SkipReason::Gender);
@@ -61,8 +80,8 @@ void testShouldSkipDescriptorPointer() {
     KT_CHECK_EQ(NpcDiversity::ShouldSkipDescriptor(&d), SkipReason::Gender);
 
     d.gender = 0;
-    d.descMode14 = 1;
-    KT_CHECK_EQ(NpcDiversity::ShouldSkipDescriptor(&d), SkipReason::DescMode);
+    d.descMode14 = 1;  // in-world commoner value: not skipped
+    KT_CHECK_EQ(NpcDiversity::ShouldSkipDescriptor(&d), SkipReason::None);
 
     d.descMode14 = 0;
     d.appearance = 802;

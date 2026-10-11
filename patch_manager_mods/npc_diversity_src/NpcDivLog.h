@@ -125,6 +125,7 @@ struct Counts {
     uint32_t remExcluded;
     uint32_t remTagUnread;
     uint32_t remChanged;
+    uint32_t remTvChg;
     uint32_t remNoChange;
     uint32_t remSkipRow;
     uint32_t remSkipGender;
@@ -254,19 +255,21 @@ inline int FormatTex(char* out, size_t cap, uint32_t pd, uint32_t fr, uint32_t r
 }
 
 // why: ok, nochg, excl:comp, excl:story, excl:notag, skip:dm, skip:gender, skip:row,
-//      unread:desc, unread:tag, unread:oid, unread:xy. xb and yb are the float bit patterns of x and y.
+//      unread:desc, unread:tag, unread:oid, unread:xy. skip:dm is no longer produced; it stays in this list.
+// xb and yb are the float bit patterns of x and y. app and tv print as before>after (tv right after app).
 inline int FormatRmp(char* out, size_t cap, uint32_t self, uint32_t pd, uint32_t oid, uint32_t tp, int tl,
                      const char* tag, size_t tagLen, float x, float y, uint32_t xb, uint32_t yb,
-                     uint32_t appBefore, uint32_t appAfter, uint32_t h, const char* why) {
+                     uint32_t appBefore, uint32_t appAfter, uint32_t tvBefore, uint32_t tvAfter, uint32_t h,
+                     const char* why) {
     cap = detail::ClampCap(cap);
     if (!out || cap == 0) return 0;
     char tg[33];
     char wy[17];
     const int r = std::snprintf(out, cap,
                                 "RMP this=%08x pd=%08x oid=%08x tp=%08x tl=%d tag=%s xy=%.1f,%.1f "
-                                "xyb=%08x,%08x app=%u>%u h=%08x why=%s",
+                                "xyb=%08x,%08x app=%u>%u tv=%u>%u h=%08x why=%s",
                                 self, pd, oid, tp, tl, SafeMem(tg, tag, tagLen, 32), x, y, xb, yb, appBefore,
-                                appAfter, h, SafeStr(wy, why, 16));
+                                appAfter, tvBefore, tvAfter, h, SafeStr(wy, why, 16));
     return detail::Stored(out, cap, r);
 }
 
@@ -309,10 +312,10 @@ inline int FormatStatRemap(char* out, size_t cap, const Counts& c) {
     if (!out || cap == 0) return 0;
     const int r = std::snprintf(out, cap,
                                 "STAT remap calls=%u nullg=%u unread=%u bcskip=%u excl=%u tagun=%u chg=%u "
-                                "nochg=%u oidd=%u skiprow=%u skipg=%u",
+                                "nochg=%u oidd=%u skiprow=%u skipg=%u tvchg=%u",
                                 c.remCalls, c.remNullGuard, c.remUnread, c.remBodySkip, c.remExcluded,
                                 c.remTagUnread, c.remChanged, c.remNoChange, c.oidDistinct, c.remSkipRow,
-                                c.remSkipGender);
+                                c.remSkipGender, c.remTvChg);
     return detail::Stored(out, cap, r);
 }
 
@@ -403,13 +406,18 @@ inline int FormatDsc0(char* out, size_t cap, uint32_t pd, const uint8_t (&bytes)
     return detail::Stored(out, cap, r);
 }
 
-inline int FormatCre0(char* out, size_t cap, uint32_t self, const uint8_t (&bytes)[64]) {
+// off is the byte offset of this 64-byte window within the creature block (printed %03x).
+inline int FormatCreN(char* out, size_t cap, uint32_t self, uint32_t off, const uint8_t (&bytes)[64]) {
     cap = detail::ClampCap(cap);
     if (!out || cap == 0) return 0;
     char hx[129];
     detail::HexInto(hx, bytes, 64);
-    const int r = std::snprintf(out, cap, "CRE0 this=%08x hex=%s", self, hx);
+    const int r = std::snprintf(out, cap, "CRE0 this=%08x off=%03x hex=%s", self, off, hx);
     return detail::Stored(out, cap, r);
+}
+
+inline int FormatCre0(char* out, size_t cap, uint32_t self, const uint8_t (&bytes)[64]) {
+    return FormatCreN(out, cap, self, 0u, bytes);
 }
 
 inline int FormatHookBytes(char* out, size_t cap, uint32_t addr, const char* want, const char* got) {

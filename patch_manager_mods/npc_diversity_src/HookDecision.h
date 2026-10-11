@@ -13,11 +13,12 @@ namespace NpcDiversity {
 
 enum class SkipReason : uint8_t { None = 0, NullDesc, DescMode, Gender, NotCommonerRow };
 
-// Order of checks: DescMode (descMode14 != 0), then Gender (gender > 1), then NotCommonerRow
-// (row in none of the generic-commoner tables), then Gender again when the row's class does not
-// match the gender (male tables and Twi'lek male need 0, female tables and Twi'lek female need 1).
-inline SkipReason ShouldSkipDescriptor(int32_t descMode14, uint8_t gender, uint16_t appearance) {
-    if (descMode14 != 0) return SkipReason::DescMode;
+// Order of checks: Gender (gender > 1), then NotCommonerRow (row in none of the generic-commoner
+// tables), then Gender again when the row's class does not match the gender (male tables and Twi'lek
+// male need 0, female tables and Twi'lek female need 1).
+// descMode14 is not a skip gate: in-world commoners carry descMode14 == 1, so any value is accepted.
+// SkipReason::DescMode is kept for existing callers but is never returned.
+inline SkipReason ShouldSkipDescriptor(int32_t /*descMode14*/, uint8_t gender, uint16_t appearance) {
     if (gender > 1) return SkipReason::Gender;
     const bool maleClass = IsGenericMaleCommoner(appearance) || IsGenericTwilekMale(appearance);
     const bool femaleClass = IsGenericFemaleCommoner(appearance) || IsGenericTwilekFemale(appearance);

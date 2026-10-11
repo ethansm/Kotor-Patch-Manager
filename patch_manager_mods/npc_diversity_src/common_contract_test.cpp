@@ -40,12 +40,12 @@ void testDescriptorOffsets() {
 }
 
 void testCreatureOffsets() {
-    CEQ("CSWCObject m_nObjectID offset (INFERRED)", L::kCreOffObjectId, 0x04);
-    CEQ("CSWCObject m_sTag ptr offset (UNVERIFIED)", L::kCreOffTagPtr, 0x18);
-    CEQ("CSWCObject m_sTag len offset (UNVERIFIED)", L::kCreOffTagLen, 0x1C);
-    CEQ("CSWCObject m_vPosition.x offset (read VERIFIED)", L::kCreOffPosX, 0x24);
-    CEQ("CSWCObject m_vPosition.y offset (INFERRED)", L::kCreOffPosY, 0x28);
-    CEQ("CSWCObject m_vPosition.z offset (INFERRED)", L::kCreOffPosZ, 0x2C);
+    CEQ("CSWCObject m_nObjectID offset (VERIFIED play-test)", L::kCreOffObjectId, 0x04);
+    CEQ("CSWCObject +0x18 pointer offset (NOT a CExoString; tag unresolved)", L::kCreOffTagPtr, 0x18);
+    CEQ("CSWCObject +0x1C pointer offset (NOT a CExoString; tag unresolved)", L::kCreOffTagLen, 0x1C);
+    CEQ("CSWCObject m_vPosition.x offset (VERIFIED CRE0 dump)", L::kCreOffPosX, 0x20);
+    CEQ("CSWCObject m_vPosition.y offset (VERIFIED CRE0 dump)", L::kCreOffPosY, 0x24);
+    CEQ("CSWCObject m_vPosition.z offset (VERIFIED CRE0 dump)", L::kCreOffPosZ, 0x28);
     CEQ("CSWCCreature pending appearance counter offset (UNVERIFIED)", L::kCreOffAppCounter, 0x328);
 }
 

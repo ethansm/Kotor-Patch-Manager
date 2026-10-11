@@ -19,14 +19,15 @@ constexpr const char* kGoldTex =
     "h=06c232b2 st=1 slot=09 new=1 sw=1";
 constexpr const char* kGoldRmp =
     "RMP this=12345678 pd=0a1b2c3d oid=000003e9 tp=00000010 tl=6 tag=Bastila xy=12.5,-3.5 "
-    "xyb=41480000,c0600000 app=805>806 h=06c232b2 why=ok";
+    "xyb=41480000,c0600000 app=805>806 tv=1>2 h=06c232b2 why=ok";
 constexpr const char* kGoldCenTex = "CEN k=tex app=805 g=1 tv=1 dm=0 cur=n_commm01";
 constexpr const char* kGoldCenRemap = "CEN k=remap app=805 g=1 tv=1 tag=Bastila";
 constexpr const char* kGoldStatTex =
     "STAT tex calls=10 nullg=0 unread=1 bcskip=2 nonc=3 comm=4 swap=5 frd=6 retd=7 skiprow=8 "
     "stashhit=9 stashmiss=10";
 constexpr const char* kGoldStatRemap =
-    "STAT remap calls=11 nullg=0 unread=1 bcskip=2 excl=3 tagun=4 chg=5 nochg=6 oidd=7 skiprow=8 skipg=9";
+    "STAT remap calls=11 nullg=0 unread=1 bcskip=2 excl=3 tagun=4 chg=5 nochg=6 oidd=7 skiprow=8 skipg=9 "
+    "tvchg=10";
 constexpr const char* kGoldStatAbi = "STAT abi app=1 g=2 dm=3";
 constexpr const char* kGoldStatXy = "STAT xy x=-3.5..12.5 y=0.0..100.5";
 constexpr const char* kGoldStatSlot0 =
@@ -37,7 +38,13 @@ constexpr const char* kGoldStatCensus = "STAT census keys=17 ovf=0";
 constexpr const char* kGoldDsc0 =
     "DSC0 pd=0a1b2c3d hex=000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f";
 constexpr const char* kGoldCre0 =
-    "CRE0 this=12345678 hex="
+    "CRE0 this=12345678 off=000 hex="
+    "000102030405060708090a0b0c0d0e0f"
+    "101112131415161718191a1b1c1d1e1f"
+    "202122232425262728292a2b2c2d2e2f"
+    "303132333435363738393a3b3c3d3e3f";
+constexpr const char* kGoldCreN40 =
+    "CRE0 this=12345678 off=040 hex="
     "000102030405060708090a0b0c0d0e0f"
     "101112131415161718191a1b1c1d1e1f"
     "202122232425262728292a2b2c2d2e2f"
@@ -95,7 +102,7 @@ void testLogFormatGolden() {
     ExpectLine(r, b, kGoldTex);
 
     r = nl::FormatRmp(b, sizeof b, 0x12345678u, 0x0A1B2C3Du, 0x3E9u, 0x10u, 6, "Bastila", 7u, 12.5f, -3.5f,
-                      0x41480000u, 0xC0600000u, 805u, 806u, 0x06C232B2u, "ok");
+                      0x41480000u, 0xC0600000u, 805u, 806u, 1u, 2u, 0x06C232B2u, "ok");
     ExpectLine(r, b, kGoldRmp);
 
     r = nl::FormatCenTex(b, sizeof b, 805u, 1u, 1u, 0, "n_commm01", 9u);
@@ -131,6 +138,7 @@ void testLogFormatGolden() {
     c.oidDistinct = 7;
     c.remSkipRow = 8;
     c.remSkipGender = 9;
+    c.remTvChg = 10;
     r = nl::FormatStatRemap(b, sizeof b, c);
     ExpectLine(r, b, kGoldStatRemap);
 
@@ -181,6 +189,9 @@ void testLogFormatGolden() {
     r = nl::FormatCre0(b, sizeof b, 0x12345678u, cre);
     ExpectLine(r, b, kGoldCre0);
 
+    r = nl::FormatCreN(b, sizeof b, 0x12345678u, 0x40u, cre);
+    ExpectLine(r, b, kGoldCreN40);
+
     r = nl::FormatHookBytes(b, sizeof b, 0x0085E601u, "8b442404", "e9000000");
     ExpectLine(r, b, kGoldHookBytes);
 
@@ -201,7 +212,7 @@ void testLineTruncationAndCaps() {
     // Tag bounded to 32 bytes; huge floats make the line longer than 231, so it must be cut there.
     char b[4096];
     int r = nl::FormatRmp(b, sizeof b, 0x12345678u, 0x0A1B2C3Du, 0x3E9u, 0x10u, 6, longTag, sizeof longTag,
-                          3.0e38f, -3.0e38f, 0u, 0u, 805u, 806u, 0x06C232B2u, "ok");
+                          3.0e38f, -3.0e38f, 0u, 0u, 805u, 806u, 1u, 2u, 0x06C232B2u, "ok");
     KT_CHECK_EQ(r, 231);
     KT_CHECK_EQ(static_cast<int>(std::strlen(b)), r);
     KT_CHECK(b[r] == '\0');
@@ -217,9 +228,18 @@ void testLineTruncationAndCaps() {
     KT_CHECK_EQ(r, 19);
     KT_CHECK_EQ(b, "BANNER v=1.0.0 kpl=");
 
+    // CREN window with a small cap: writes cap-1 bytes and NUL, same as CRE0.
+    const uint8_t zeroBytes[64] = {};
+    r = nl::FormatCreN(b, 20, 0x12345678u, 0x40u, zeroBytes);
+    KT_CHECK_EQ(r, 19);
+    KT_CHECK_EQ(b, "CRE0 this=12345678 ");
+
     // cap 0 writes nothing and returns 0.
     b[0] = 'Z';
     KT_CHECK_EQ(nl::FormatDump(b, 0), 0);
+    KT_CHECK(b[0] == 'Z');
+    b[0] = 'Z';
+    KT_CHECK_EQ(nl::FormatCreN(b, 0, 0x12345678u, 0x40u, zeroBytes), 0);
     KT_CHECK(b[0] == 'Z');
 }
 
@@ -244,10 +264,12 @@ void testCountsReset() {
     c.texCalls = 5;
     c.slot[1][63] = 9;
     c.appRem[1023] = 2;
+    c.remTvChg = 4;
     c.reset();
     KT_CHECK_EQ(c.texCalls, 0u);
     KT_CHECK_EQ(c.slot[1][63], 0u);
     KT_CHECK_EQ(c.appRem[1023], 0u);
+    KT_CHECK_EQ(c.remTvChg, 0u);
     KT_CHECK(c.xMin == std::numeric_limits<float>::infinity());
     KT_CHECK(c.xMax == -std::numeric_limits<float>::infinity());
     KT_CHECK(c.yMin == std::numeric_limits<float>::infinity());

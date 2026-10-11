@@ -1,9 +1,12 @@
-// NpcDiversityDispatcher.cpp -- Master NPC Diversity Dispatcher runtime detour hooks (0.1.1-probe).
+// NpcDiversityDispatcher.cpp -- Master NPC Diversity Dispatcher runtime detour hooks (0.1.2-probe).
 //
-// Hook 1 OverrideNpcTexture: inside CSWCCreatureAppearance::GetBTypeModelAndTextureResRef, after the
-//   texture ResRef copy (Steam 0x85E601). Rewrites N_CommM/F<nn> to a per-creature slot.
+// Strategy B (confirmed by the 0.1.1 play-test: the engine builds N_Comm?NN from descriptor textureVar):
 // Hook 2 RemapNpcAppearance: CSWCCreature::SetAppearance entry (Steam 0x76D200), args ecx=this,
-//   [esp+4]=pDesc. Remaps the appearance row (fat / Czerka / Twi'lek variants).
+//   [esp+4]=pDesc. Remaps the appearance row (fat / Czerka / Twi'lek variants), then writes
+//   pDesc->textureVar = PickTextureVar(oid, finalAppearance) so every engine caller builds the same clothing.
+//   Seed = (creature oid, appearance) only: position and `this` are not stable.
+// Hook 1 OverrideNpcTexture: inside CSWCCreatureAppearance::GetBTypeModelAndTextureResRef, after the
+//   texture ResRef copy (Steam 0x85E601). LOG-ONLY in this build: it counts and logs what the engine requests.
 //
 // Every engine read goes through SafeRead (no raw dereference). The probe build logs the layout facts
 // that are still INFERRED (creature oid / position / tag offsets, DSC0 / CRE0 hex dumps) so the
@@ -25,7 +28,7 @@
 
 KP_LOG_PATCH("npc-diversity");
 
-// KPatchInit (KpLog_Init) is deliberately NOT exported in 0.1.1-probe: a hot-swap refuses a DLL whose exports
+// KPatchInit (KpLog_Init) is deliberately NOT exported in the probe builds: a hot-swap refuses a DLL whose exports
 // differ from the live one, and the live npc-diversity.dll exports NpcDiversity_Init. Logs therefore use the
 // header's fallback sink (npc-diversity_log.txt) at INFO. The KPatchInit migration (19f) is a later full reinstall.
 extern "C" __declspec(dllexport) void NpcDiversity_Init() {}
@@ -35,7 +38,7 @@ namespace {
 using namespace NpcDiversity;
 namespace nl = NpcDiversity::log;
 
-constexpr const char* kVersion = "0.1.1-probe";
+constexpr const char* kVersion = "0.1.2-probe";
 constexpr size_t kResRefLen = 16;
 
 // SafeRead site ids (counted in Counts::fail, printed by STAT read).
@@ -64,18 +67,10 @@ bool g_dsc0Done = false;
 bool g_cre0Done = false;
 uint32_t g_totalCalls = 0;
 
-// Hooks run on the game thread; the stash is keyed by pDesc and also checked against the descriptor's
-// current appearance, so a stale or cross-thread entry can only cause a miss, never a wrong join.
-struct Stash {
-    uint32_t pd;
-    uint32_t hash;
-    uint16_t appBefore;
-    uint16_t appAfter;
-    bool valid;
-};
-constexpr int kStashSize = 8;
-Stash g_stash[kStashSize];
-int g_stashNext = 0;
+// One-shot CRE dumps beyond +0x40: solve the tag/oid layout offline from the log.
+constexpr uint32_t kCreDumpOffs[] = {0x40, 0x80, 0xC0, 0x100, 0x140, 0x180, 0x1C0};
+constexpr unsigned kCreDumpCount = sizeof kCreDumpOffs / sizeof kCreDumpOffs[0];
+unsigned g_creDumpDone = 0;  // bitmask over kCreDumpOffs
 
 void logBanner();
 
@@ -101,51 +96,68 @@ void logRead(unsigned site, uintptr_t addr, unsigned len) {
 }
 
 // ---- startup banner (lazy: first hook call, never under the loader lock) ----
+// The address table is chosen by probing the code bytes, not by the exe hash (the env var is not visible
+// in the game process). A hook is "ok" when the original bytes are still there, "jmp" when a detour whose
+// target lies outside the exe image has replaced them.
 
 struct HookAddr { const char* name; uint32_t addr; const unsigned char* want; size_t wantLen; const char* wantHex; };
 
 const unsigned char kTexBytes[] = {0xC6, 0x45, 0xFC, 0x00, 0x8D, 0x4D, 0xB4};
 const unsigned char kRemapBytes[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x74};
 
-bool shaIs(const char* sha, const char* want) {
-    return sha && std::strlen(sha) == std::strlen(want) && StartsWithCaseInsensitive(sha, want);
+struct Probe { const char* pre; char got[17]; };
+
+Probe probeHook(const HookAddr& h, uint32_t imgBase, uint32_t imgSize) {
+    Probe p{"unread", {}};
+    unsigned char raw[8] = {};
+    if (!saferead::probeRead(S_HOOKBYTES, reinterpret_cast<const void*>(static_cast<uintptr_t>(h.addr)), h.wantLen)) return p;
+    std::memcpy(raw, reinterpret_cast<const void*>(static_cast<uintptr_t>(h.addr)), h.wantLen);
+    for (size_t i = 0; i < h.wantLen && i < 8; ++i) std::snprintf(p.got + i * 2, 3, "%02x", raw[i]);
+    if (std::memcmp(raw, h.want, h.wantLen) == 0) { p.pre = "ok"; return p; }
+    p.pre = "bad";
+    if (raw[0] == 0xE9) {
+        int32_t rel = 0;
+        std::memcpy(&rel, raw + 1, 4);
+        const uint32_t target = h.addr + 5u + static_cast<uint32_t>(rel);
+        if (target < imgBase || target - imgBase >= imgSize) p.pre = "jmp";
+    }
+    return p;
 }
 
+bool preOk(const Probe& p) { return std::strcmp(p.pre, "ok") == 0 || std::strcmp(p.pre, "jmp") == 0; }
+
 void logBanner() {
-    const char* sha = std::getenv("KOTOR_VERSION_SHA");
-    const bool steam = shaIs(sha, "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF");
-    const bool gog = shaIs(sha, "777BEE235A9E8BDD9863F6741BC3AC54BB6A113B62B1D2E4D12BBE6DB963A914");
     uint32_t base = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(GetModuleHandleA(nullptr)));
-    uint32_t ts = 0, lfanew = 0;
-    if (saferead::readAt(S_DUMP, base, 0x3C, &lfanew)) saferead::readAt(S_DUMP, base, static_cast<int>(lfanew) + 8, &ts);
+    uint32_t ts = 0, lfanew = 0, imgSize = 0;
+    if (saferead::readAt(S_DUMP, base, 0x3C, &lfanew)) {
+        saferead::readAt(S_DUMP, base, static_cast<int>(lfanew) + 8, &ts);
+        saferead::readAt(S_DUMP, base, static_cast<int>(lfanew) + 0x50, &imgSize);
+    }
+
+    const HookAddr steam[2] = {
+        {"tex", 0x0085E601u, kTexBytes, sizeof kTexBytes, "c645fc008d4db4"},
+        {"remap", 0x0076D200u, kRemapBytes, sizeof kRemapBytes, "558bec83ec74"},
+    };
+    const HookAddr gog[2] = {
+        {"tex", 0x0048E691u, kTexBytes, sizeof kTexBytes, "c645fc008d4db4"},
+        {"remap", 0x00419070u, kRemapBytes, sizeof kRemapBytes, "558bec83ec74"},
+    };
+    Probe ps[2] = {probeHook(steam[0], base, imgSize), probeHook(steam[1], base, imgSize)};
+    Probe pg[2] = {probeHook(gog[0], base, imgSize), probeHook(gog[1], base, imgSize)};
+    const char* table = "none";
+    const HookAddr* hooks = steam;  // reported when neither table matches: Steam, with the bad bytes
+    Probe* probes = ps;
+    if (preOk(ps[0]) && preOk(ps[1])) { table = "steam"; }
+    else if (preOk(pg[0]) && preOk(pg[1])) { table = "gog"; hooks = gog; probes = pg; }
 
     char b[nl::kLineMax];
-    nl::FormatBanner0(b, sizeof b, kVersion, KpLog_HasCore() ? 1 : 0, sha ? sha : "unknown", base, ts);
+    nl::FormatBanner0(b, sizeof b, kVersion, KpLog_HasCore() ? 1 : 0, table, base, ts);
     logLine(chInit, b);
-
-    const HookAddr hooks[2] = {
-        {"tex", steam ? 0x0085E601u : (gog ? 0x0048E691u : 0u), kTexBytes, sizeof kTexBytes, "c645fc008d4db4"},
-        {"remap", steam ? 0x0076D200u : (gog ? 0x00419070u : 0u), kRemapBytes, sizeof kRemapBytes, "558bec83ec74"},
-    };
-    for (const HookAddr& h : hooks) {
-        const char* pre = "unread";
-        char got[33] = {};
-        if (h.addr) {
-            unsigned char raw[8] = {};
-            if (saferead::probeRead(S_HOOKBYTES, reinterpret_cast<const void*>(h.addr), h.wantLen)) {
-                std::memcpy(raw, reinterpret_cast<const void*>(h.addr), h.wantLen);
-                for (size_t i = 0; i < h.wantLen && i < 8; ++i) std::snprintf(got + i * 2, 3, "%02x", raw[i]);
-                if (std::memcmp(raw, h.want, h.wantLen) == 0) pre = "ok";
-                else if (raw[0] == 0xE9 || raw[0] == 0xE8 || raw[0] == 0xFF) pre = "jmp";  // detour already installed
-                else pre = "bad";
-            }
-        } else {
-            pre = "nosha";
-        }
-        nl::FormatBannerHook(b, sizeof b, h.name, h.addr, pre);
+    for (int i = 0; i < 2; ++i) {
+        nl::FormatBannerHook(b, sizeof b, hooks[i].name, hooks[i].addr, probes[i].pre);
         logLine(chInit, b);
-        if (std::strcmp(pre, "bad") == 0) {
-            nl::FormatHookBytes(b, sizeof b, h.addr, h.wantHex, got);
+        if (std::strcmp(probes[i].pre, "bad") == 0) {
+            nl::FormatHookBytes(b, sizeof b, hooks[i].addr, hooks[i].wantHex, probes[i].got);
             KP_LOGV(::kplog::detail::gMain, KPLOG_WARN, "%s", b);
         }
     }
@@ -207,15 +219,25 @@ void oneShotDsc0(uint32_t pd) {
     logLine(chProbe, b);
 }
 
-void oneShotCre0(uint32_t self) {
-    if (g_cre0Done || !KP_ENABLED(chProbe)) return;
+void oneShotCreN(uint32_t self, uint32_t off) {
     uint8_t bytes[64] = {};
-    if (!saferead::probeRead(S_DUMP, reinterpret_cast<const void*>(static_cast<uintptr_t>(self)), sizeof bytes)) return;
-    std::memcpy(bytes, reinterpret_cast<const void*>(static_cast<uintptr_t>(self)), sizeof bytes);
-    g_cre0Done = true;
+    const uintptr_t a = static_cast<uintptr_t>(self) + off;
+    if (!saferead::probeRead(S_DUMP, reinterpret_cast<const void*>(a), sizeof bytes)) return;
+    std::memcpy(bytes, reinterpret_cast<const void*>(a), sizeof bytes);
     char b[nl::kLineMax];
-    nl::FormatCre0(b, sizeof b, self, bytes);
+    nl::FormatCreN(b, sizeof b, self, off, bytes);
     logLine(chProbe, b);
+}
+
+// CRE0 (off 000) plus the higher windows, each once per session, from the first readable creature.
+void oneShotCreDumps(uint32_t self) {
+    if (!KP_ENABLED(chProbe)) return;
+    if (!g_cre0Done) { g_cre0Done = true; oneShotCreN(self, 0); }
+    for (unsigned i = 0; i < kCreDumpCount; ++i) {
+        if (g_creDumpDone & (1u << i)) continue;
+        g_creDumpDone |= 1u << i;
+        oneShotCreN(self, kCreDumpOffs[i]);
+    }
 }
 
 uint32_t floatBits(float f) { uint32_t u; std::memcpy(&u, &f, 4); return u; }
@@ -234,23 +256,12 @@ void abiCheck(const layout::AppearanceDesc& d, uint32_t pd, const char* where) {
     }
 }
 
-void stashPut(uint32_t pd, uint32_t hash, uint16_t before, uint16_t after) {
-    g_stash[g_stashNext] = {pd, hash, before, after, true};
-    g_stashNext = (g_stashNext + 1) % kStashSize;
-}
-
-const Stash* stashFind(uint32_t pd, uint16_t currentApp) {
-    for (int i = 0; i < kStashSize; ++i) {
-        if (g_stash[i].valid && g_stash[i].pd == pd && g_stash[i].appAfter == currentApp) return &g_stash[i];
-    }
-    return nullptr;
-}
-
 } // namespace
 
 extern "C" {
 
-// Intercepts CSWCCreatureAppearance::GetBTypeModelAndTextureResRef after the vanilla texture lookup.
+// LOG-ONLY in 0.1.2-probe. Intercepts CSWCCreatureAppearance::GetBTypeModelAndTextureResRef after the vanilla
+// texture lookup and records what the engine requested (texture name, st/tv). It never writes.
 // `frame` is the resolver's EBP: [frame+4] = return address, [frame+8] = pDesc, [frame+0x10] = out ResRef*.
 __declspec(dllexport) void __cdecl OverrideNpcTexture(void* frame) {
     saferead::beginScope();
@@ -278,8 +289,7 @@ __declspec(dllexport) void __cdecl OverrideNpcTexture(void* frame) {
     abiCheck(d, pdPtr, "tex");
 
     char cur[17] = {};
-    const bool haveTex = saferead::readResRef16(S_TEXRES, texPtr, cur, 0);
-    if (!haveTex) { ++g_c.texUnread; logRead(S_TEXRES, texPtr, 16); return; }
+    if (!saferead::readResRef16(S_TEXRES, texPtr, cur, 0)) { ++g_c.texUnread; logRead(S_TEXRES, texPtr, 16); return; }
     oneShotDsc0(pdPtr);
 
     if (KP_ENABLED(chCensus) && g_cenTexSet.insert(nl::detail::Fmix(d.appearance * 977u + d.gender * 31u + d.textureVar + (uint32_t)d.descMode14 * 7u + (uint32_t)cur[0] * 131u + (uint32_t)cur[7] * 17u))) {
@@ -288,44 +298,20 @@ __declspec(dllexport) void __cdecl OverrideNpcTexture(void* frame) {
         logLine(chCensus, b);
     }
 
-    const SkipReason skip = ShouldSkipDescriptor(d.descMode14, d.gender, d.appearance);
-    if (skip == SkipReason::DescMode) { ++g_c.texBodySkip; return; }
-    if (skip != SkipReason::None) { ++g_c.texSkipRow; return; }
-
     bool isFemaleTex = false;
     if (!IsCommonerTexture(cur, isFemaleTex)) { ++g_c.texNonCommoner; return; }
     ++g_c.texCommoner;
+    if (d.appearance < nl::kAppCount) ++g_c.appTex[d.appearance]; else ++g_c.appOvf;
 
-    const Stash* st = stashFind(pdPtr, d.appearance);
-    if (st) ++g_c.texStashHit; else ++g_c.texStashMiss;
-    const uint32_t seed = ResolveTextureSeed(st != nullptr, st ? st->hash : 0u, pdPtr, ret);
-
-    char newTex[32] = {};
-    int sw = 0;
-    int slot = 0;
-    if (ShouldDiversifyTexture(cur, seed, newTex, sizeof newTex)) {
-        slot = ComputeSlot(seed);
-        if (saferead::regionWritable(texPtr, texPtr + kResRefLen)) {
-            std::memset(reinterpret_cast<void*>(static_cast<uintptr_t>(texPtr)), 0, kResRefLen);
-            size_t len = std::strlen(newTex);
-            if (len > kResRefLen) len = kResRefLen;
-            std::memcpy(reinterpret_cast<void*>(static_cast<uintptr_t>(texPtr)), newTex, len);
-            sw = 1;
-            ++g_c.texSwap;
-            if (d.gender < 2 && slot >= 0 && slot < static_cast<int>(nl::kSlotCount)) ++g_c.slot[d.gender][slot];
-            if (d.appearance < nl::kAppCount) ++g_c.appTex[d.appearance]; else ++g_c.appOvf;
-        }
-    }
     if (KP_ENABLED(chTex) && g_bTex.take(300, 500)) {
         char b[nl::kLineMax];
         nl::FormatTex(b, sizeof b, pdPtr, static_cast<uint32_t>(fr), ret, d.appearance, d.gender, d.textureVar,
-                      d.descMode14, d.headOverride, d.phenotype, cur, std::strlen(cur), seed, st ? 1 : 0,
-                      static_cast<uint32_t>(slot), sw ? "1" : "0", sw);
+                      d.descMode14, d.headOverride, d.phenotype, cur, std::strlen(cur), 0u, 0, 0u, "0", 0);
         logLine(chTex, b);
     }
 }
 
-// Remaps the NPC appearance row before the engine builds the body.
+// Remaps the NPC appearance row and writes the texture variant before the engine builds the body.
 __declspec(dllexport) void __cdecl RemapNpcAppearance(void* pCreature, layout::AppearanceDesc* pDesc) {
     saferead::beginScope();
     ensureInit();
@@ -342,9 +328,10 @@ __declspec(dllexport) void __cdecl RemapNpcAppearance(void* pCreature, layout::A
     std::memcpy(&d, pDesc, sizeof d);
     abiCheck(d, pd, "remap");
     oneShotDsc0(pd);
-    oneShotCre0(static_cast<uint32_t>(self));
+    oneShotCreDumps(static_cast<uint32_t>(self));
 
-    // Creature facts. All offsets except the descriptor are INFERRED: the log (tp/tl/xyb/oid) validates them.
+    // Creature facts. oid (+0x04) and position (+0x20/+0x24, log only) are verified; the tag offset is not
+    // (+0x18/+0x1C are pointers), so the tag read is best-effort and an empty tag falls back to row gating.
     uint32_t oid = 0, tagPtr = 0;
     int32_t tagLen = 0;
     float x = 0.0f, y = 0.0f;
@@ -371,53 +358,67 @@ __declspec(dllexport) void __cdecl RemapNpcAppearance(void* pCreature, layout::A
         logLine(chCensus, b);
     }
 
-    const char* why = "ok";
+    const char* why = "nochg";
     uint32_t hash = 0;
     uint16_t newApp = d.appearance;
+    uint8_t newTv = d.textureVar;
 
     const SkipReason skip = ShouldSkipDescriptor(d.descMode14, d.gender, d.appearance);
-    if (skip == SkipReason::DescMode) { ++g_c.remBodySkip; why = "skip:dm"; }
-    else if (skip == SkipReason::Gender) { ++g_c.remSkipGender; why = "skip:gender"; }
-    else if (skip != SkipReason::None) { ++g_c.remSkipRow; why = "skip:row"; }
-    else {
-        // Tag exclusion is a secondary guard (story rows are not in the tables). An unreadable tag does
-        // not block the remap: it is counted, and the log shows whether the tag offsets are valid.
-        const bool tagUsable = okTag && tagN > 0;
-        ExcludeKind kind = ExcludeKind::None;
-        if (tagUsable) kind = ClassifyExclusion(tag);
-        else ++g_c.remTagUnread;
+    const bool tagUsable = okTag && tagN > 0;
+    ExcludeKind kind = ExcludeKind::None;
+    if (tagUsable) kind = ClassifyExclusion(tag);
+    else ++g_c.remTagUnread;
 
-        if (kind != ExcludeKind::None) {
-            ++g_c.remExcluded;
-            why = kind == ExcludeKind::Companion ? "excl:comp" : "excl:story";
-        } else {
-            hash = xyOk ? HashCreaturePosition(x, y, oid, d.appearance)
-                        : HashSeedFallback(static_cast<uint32_t>(self), pd);
-            if (!xyOk) why = "unread:xy";
-            else if (!tagUsable) why = "excl:notag";
-            newApp = RemapAppearance(d.appearance, d.gender, hash);
-            if (newApp != d.appearance) {
+    if (kind != ExcludeKind::None) {
+        // Companions and story NPCs keep their appearance and clothing.
+        ++g_c.remExcluded;
+        why = kind == ExcludeKind::Companion ? "excl:comp" : "excl:story";
+    } else if (skip == SkipReason::Gender) {
+        ++g_c.remSkipGender;
+        why = "skip:gender";
+    } else if (!okOid || oid == 0) {
+        // The seed is the creature id; without it nothing is written (the creature stays vanilla).
+        why = "unread:oid";
+    } else {
+        // Row remap: only rows in the generic commoner tables (a row already remapped is not in them).
+        if (skip == SkipReason::None) {
+            hash = HashCreatureId(oid, d.appearance);
+            const uint16_t cand = RemapAppearance(d.appearance, d.gender, hash);
+            if (cand != d.appearance) {
                 if (saferead::regionWritable(pd + layout::kDescOffAppearance, pd + layout::kDescOffAppearance + 2)) {
-                    pDesc->appearance = newApp;
+                    pDesc->appearance = cand;
+                    newApp = cand;
                     ++g_c.remChanged;
-                    if (d.appearance < nl::kAppCount) ++g_c.appRem[newApp < nl::kAppCount ? newApp : d.appearance]; else ++g_c.appOvf;
+                    if (cand < nl::kAppCount) ++g_c.appRem[cand]; else ++g_c.appOvf;
                 } else {
-                    newApp = d.appearance;
                     why = "unread:desc";
                 }
             } else {
                 ++g_c.remNoChange;
-                if (why[0] == 'o') why = "nochg";
             }
-            stashPut(pd, hash, d.appearance, newApp);
+        } else {
+            ++g_c.remSkipRow;
         }
+        // Texture variant for the final row. Idempotent: the seed ignores the old textureVar.
+        const uint8_t want = PickTextureVar(oid, newApp);
+        if (want != 0 && want != d.textureVar) {
+            if (saferead::regionWritable(pd + layout::kDescOffTextureVar, pd + layout::kDescOffTextureVar + 1)) {
+                pDesc->textureVar = want;
+                newTv = want;
+                ++g_c.remTvChg;
+                if (d.gender < 2 && want < nl::kSlotCount) ++g_c.slot[d.gender][want];
+            } else {
+                why = "unread:desc";
+            }
+        }
+        if (why[0] == 'n' && (newApp != d.appearance || newTv != d.textureVar)) why = "ok";
     }
 
     if (KP_ENABLED(chRemap) && g_bRmp.take(300, 500)) {
         char b[nl::kLineMax];
         nl::FormatRmp(b, sizeof b, static_cast<uint32_t>(self), pd, oid, tagPtr, tagLen, tag,
                       tagN > 0 ? static_cast<size_t>(tagN) : 0, x, y, floatBits(x), floatBits(y), d.appearance,
-                      newApp, hash, why);
+                      newApp, d.textureVar, newTv, hash, why);
         logLine(chRemap, b);
     }
 }
