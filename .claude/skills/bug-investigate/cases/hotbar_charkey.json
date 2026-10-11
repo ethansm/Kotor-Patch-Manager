@@ -1,0 +1,41 @@
+{
+  "case_id": "action_hotbar_charkey_unidentified_exile",
+  "symptom_text": "Action hotbar works on companions, but when controlling the main character (Exile), editor states \"Character not identified yet - try again\" and slots fail to bind/display.",
+  "kind": "logic",
+  "anchor_commit": "94c9c55a112fe22352a739a9a985913d4ffcfc9b",
+  "fix_commit": "e360569fc87dd22d19ebbc6899f5af7b647cf819",
+  "true_root_cause": "The Exile's creature object id reads 0xFFFFFFFF. characterKeyFor only rescued that id to the Exile key when the party had exactly one member, so with companions in the party the character key stayed empty and every hotbar edit was refused as 'Character not identified yet'. Fixed in e360569 by also treating party member 0 as the Exile.",
+  "doc_conflict": "Doc 00 section 4 blames the partyCount==1-only Exile rescue (empty key with companions, fixed by e360569). Doc 33 AH2/AH3 blames unrecognised negative sentinel ids and a stale per-frame key cache (wrong or locked key, fixed by ec95c98 and 25d4e42). Each is true only at its own code state; doc 33 never mentions the 'Character not identified yet' message. The plan's candidate fixes were wrong: 17dd709 is a pure rename and 25d4e42 closes a residual path, so this case anchors on the parent of e360569.",
+  "blind_forbidden_terms": [
+    "characterkeyfor", "computecharacterkey", "partycount", "ismember0", "partyslot",
+    "party::member", "g_charkey", "creatureoid",
+    "fffffffd", "fffffffe", "fffffff9", "fffffff0",
+    "sentinel", "one-member party", "single-member party", "exile key", "caching trap", "fast-travel",
+    "doc 33", "doc33", "doc 00",
+    "e360569", "25d4e42", "541d7d9", "94c9c55", "4519b96", "ec95c98", "hotbarlogic.h",
+    "falls back to the exile key", "member 0", "regardless of partycount", "ebon hawk", "profile splitting"
+  ],
+  "forbidden_terms_note": "Matched case-insensitively against the WHOLE unit prompt (symptom, style fragment, excerpts). The recon also proposed 'ffffffff' and 'ah1'/'ah2'/'ah3'; 'ffffffff' is dropped because it legitimately appears in the real log line 'invalid object id ffffffff' (that line is evidence, not a leak) and the AH ids need word-boundary matching, which the orchestrator's plain substring check does not do.",
+  "exclude_from_blind": [
+    "patch_manager_mods/00_ui_queue_hotbar_feedback_2026-10-06.md",
+    "patch_manager_mods/33_ui_queue_hotbar_fixes.md",
+    "patch_manager_mods/37_bug_board.md",
+    "patch_manager_mods/07_force_power_hotbar.md",
+    "patch_manager_mods/07_force_power_hotbar_evidence/",
+    "patch_manager_mods/20a_patch_test_audit_2026-10-03.md",
+    "patch_manager_mods/action_hotbar_src/",
+    "git log / git show messages of 541d7d9, e360569, 25d4e42, ec95c98"
+  ],
+  "evidence_logs_available": true,
+  "evidence_logs": [
+    {
+      "name": "force_power_hotbar_log.txt",
+      "launch": 1,
+      "alert_line": 3504,
+      "alert": "character: creature 0cd83410 has invalid object id ffffffff (party members=1)",
+      "mtime_note": "about 2026-10-04 02:04, before every candidate fix; legacy pre-rename log name, build line 'force-power-hotbar 1.0.0 loaded'",
+      "scope": "partial"
+    }
+  ],
+  "notes": "PILOT FEASIBILITY: no current-name hotbar log (action-hotbar, combat-hotbar, hud-host, queue-hud) predates the fix; all are 18 h to 5 days newer than e360569, so they cannot show the bug. The only pre-fix evidence is the legacy force_power_hotbar_log.txt (checked with kotor2_logs.py check, no --new, nothing else read). It has the alert 'invalid object id ffffffff (party members=1)' at line 3504 (2 hits), which shows the id-0xFFFFFFFF mechanism but with ONE party member, not the multi-member condition in the symptom, and no 'assign REFUSED' line in its top patterns. So a blind model can at best name 'creature id ffffffff leads to an empty character key'; the exact multi-member cause is not in the evidence and 'insufficient' is a correct answer for that part. Score the pilot on the mechanism (invalid id, empty key) and treat any claim about partyCount or member 0 as unsupported-by-evidence. Pre-fix markers the binary at the anchor writes: 'character: creature %p has invalid object id %08x (party members=%d)', 'cfg: profile for character '%s' -> %d/%d slots bound' (would read ''), 'edit: assign REFUSED: character key unknown (load in progress?)'. Open item (doc 37): the OID party-slot match added by 25d4e42 has no guard for 0 / 0xFFFFFFFF; keep it out of this case's ground truth."
+}
