@@ -277,3 +277,12 @@ To minimize Gemini remote API consumption while avoiding code quality degradatio
 
 
 
+
+## 8. Progress log (10-11)
+
+- Waves 0-3 done and committed (9a96a46, efc5335, e643515). Version policy: 0.X.Y until the upstream PR (BUILD_AND_INSTALL 2b); this build is `0.1.1-probe`.
+- Wave 4 install: hot-swapped (not a launcher reinstall). The live `patch_config.toml` npc-diversity hook param was hand-fixed `esp+4` -> `[esp+4]` (one line; backup `backups/npcdiv_probe_20261011_manual`), exports kept identical to the live DLL (`NpcDiversity_Init` kept, `KPatchInit` deferred), logs go to the fallback sink `npc-diversity_log.txt` at INFO. `KPatchInit` migration (19f) = one later full reinstall.
+- Live `override/appearance.2da` replaced with the regenerated 812-row table (rows 812-815 gone); `heads.2da` identical (249 rows, llk heads 192-196 pre-existing).
+- Known gap: `scripts/test_compat_breakage.py` fails on this tree (compat_check reports 45 ERROR items on an unmodified SafeRead.h); not caused by this mod, not waived by the user.
+- Next: user plays Telos (existing save, then reload the same save), then `python3 scripts/kotor2_logs.py check npc-diversity_log.txt --new`, then the decision gate (Wave 4 table) and Wave 5.
+- Optional follow-ons: H7 report `.claude/review/npc_div/H7_texture_dims.md` (fifteen 2048x2048 textures, 80 MiB VRAM); dancers 809/810 use N_TwiDanceA/B textures that exist only in the live override.
