@@ -391,6 +391,7 @@ void testIniBad() {
         "border_rgb=1,2", "border_rgb=x",
         "border_px=0", "border_px=7", "border_px=-1", "border_px=", "border_px=2.5", "border_px=abc", "border_px=99999999999", "border_px=2px", "border_px=06", "border_px=10", "border_px=1,2", "border_px=/;", "border_px=:", "border_px=/",
         "waiting_dim=2", "log=x", "trace_queue=x", "pause_reinject=x", "handoff_on_combat=", "show_in_combat=2",
+        "handoff_clear_first=2", "handoff_clear_first=",
         "unknown=1", "enabledx=1", "enable=1", "bg=1", "novalue", "=1", "enabled 1",
     };
     for (const char* l : bad) {
@@ -686,7 +687,7 @@ void testKitConfig() {
 // ---- T1b: pause_reinject / handoff_on_combat / show_in_combat (all default on; parsed like the other bool keys) ----
 void testPauseHandoffShowConfig() {
     Config c;
-    KT_CHECK(c.pauseReinject && c.handoffOnCombat && c.showInCombat);     // defaults
+    KT_CHECK(c.pauseReinject && c.handoffOnCombat && c.showInCombat && c.handoffClearFirst);     // defaults
     KT_CHECK(parseIniLine(c, "pause_reinject=0") && !c.pauseReinject);
     KT_CHECK(parseIniLine(c, "pause_reinject=1") && c.pauseReinject);
     KT_CHECK(parseIniLine(c, "Handoff_On_Combat = off") && !c.handoffOnCombat);
@@ -699,14 +700,133 @@ void testPauseHandoffShowConfig() {
     KT_CHECK(!parseIniLine(c, "show_in_combat=2") && c.showInCombat);
     // each key sets only its own field
     Config d;
-    KT_CHECK(parseIniLine(d, "show_in_combat=0") && !d.showInCombat && d.pauseReinject && d.handoffOnCombat);
+    KT_CHECK(parseIniLine(d, "show_in_combat=0") && !d.showInCombat && d.pauseReinject && d.handoffOnCombat && d.handoffClearFirst);
     Config e;
-    KT_CHECK(parseIniLine(e, "pause_reinject=0") && !e.pauseReinject && e.handoffOnCombat && e.showInCombat);
+    KT_CHECK(parseIniLine(e, "pause_reinject=0") && !e.pauseReinject && e.handoffOnCombat && e.showInCombat && e.handoffClearFirst);
     // absent keys keep the defaults (true) in a whole-file parse; present keys apply
     Config f; parseIni(f, "enabled=1\r\nborder_px=3\r\n");
-    KT_CHECK(f.pauseReinject && f.handoffOnCombat && f.showInCombat);
-    Config g; parseIni(g, "show_in_combat=0\r\npause_reinject=0\r\nhandoff_on_combat=0\r\n");
-    KT_CHECK(!g.showInCombat && !g.pauseReinject && !g.handoffOnCombat);
+    KT_CHECK(f.pauseReinject && f.handoffOnCombat && f.showInCombat && f.handoffClearFirst);
+    Config g; parseIni(g, "show_in_combat=0\r\npause_reinject=0\r\nhandoff_on_combat=0\r\nhandoff_clear_first=0\r\n");
+    KT_CHECK(!g.showInCombat && !g.pauseReinject && !g.handoffOnCombat && !g.handoffClearFirst);
+}
+
+// ---- handoff_clear_first: default on, parsed like the other bool keys, invalid values rejected, other fields untouched ----
+void testHandoffClearFirstIni() {
+    Config c;
+    KT_CHECK(c.handoffClearFirst);                                                  // default on
+    KT_CHECK(parseIniLine(c, "handoff_clear_first=0") && !c.handoffClearFirst);     // 0 = off
+    KT_CHECK(parseIniLine(c, "handoff_clear_first=1") && c.handoffClearFirst);      // 1 = on
+    KT_CHECK(parseIniLine(c, "Handoff_Clear_First = off") && !c.handoffClearFirst); // case-insensitive key, spaces trimmed
+    KT_CHECK(parseIniLine(c, "handoff_clear_first=yes") && c.handoffClearFirst);
+    KT_CHECK(parseIniLine(c, "handoff_clear_first=no") && !c.handoffClearFirst);
+    KT_CHECK(parseIniLine(c, "handoff_clear_first=true") && c.handoffClearFirst);
+    KT_CHECK(parseIniLine(c, "handoff_clear_first=false") && !c.handoffClearFirst);
+    // invalid values are rejected and keep the previous value (on and off)
+    KT_CHECK(parseIniLine(c, "handoff_clear_first=on") && c.handoffClearFirst);
+    KT_CHECK(!parseIniLine(c, "handoff_clear_first=2") && c.handoffClearFirst);
+    KT_CHECK(!parseIniLine(c, "handoff_clear_first=") && c.handoffClearFirst);
+    KT_CHECK(parseIniLine(c, "handoff_clear_first=0") && !c.handoffClearFirst);
+    KT_CHECK(!parseIniLine(c, "handoff_clear_first=2") && !c.handoffClearFirst);
+    KT_CHECK(!parseIniLine(c, "handoff_clear_first=") && !c.handoffClearFirst);
+    // a rejected line changes no field at all
+    Config ref;
+    Config b; b.handoffClearFirst = false;
+    KT_CHECK(!parseIniLine(b, "handoff_clear_first=x") && !b.handoffClearFirst);
+    KT_CHECK(b.enabled == ref.enabled && b.showInCombat == ref.showInCombat && b.handoffOnCombat == ref.handoffOnCombat && b.pauseReinject == ref.pauseReinject);
+    // the key sets only its own field (whole-file parse)
+    Config d; parseIni(d, "handoff_clear_first=0\r\n");
+    KT_CHECK(!d.handoffClearFirst);
+    KT_CHECK(d.enabled == ref.enabled && d.showInCombat == ref.showInCombat && d.handoffOnCombat == ref.handoffOnCombat && d.pauseReinject == ref.pauseReinject);
+    // absent key keeps the default (true) in a whole-file parse; other keys still apply
+    Config f; parseIni(f, "enabled=1\r\nshow_in_combat=0\r\n");
+    KT_CHECK(f.handoffClearFirst && !f.showInCombat);
+}
+
+// ---- T1 panel hold / active slot / clear-before-handoff pure rules ----
+void testPanelHoldAndSlotRules() {
+    KT_CHECK(kPanelHoldMs == 400u);
+    // panelHold: held while 0 <= elapsed < 400 (399 held, 400 released)
+    KT_CHECK(panelHold(1000, 1000, false, false));       // 0 elapsed
+    KT_CHECK(panelHold(1000, 1399, false, false));       // 399 elapsed
+    KT_CHECK(!panelHold(1000, 1400, false, false));      // 400 elapsed: released
+    KT_CHECK(!panelHold(1000, 1401, false, false));      // 401 elapsed
+    KT_CHECK(!panelHold(1000, 999, false, false));       // now before lastGood (wrap): not held
+    // lastGoodTick == 0 means no good read yet: never held
+    KT_CHECK(!panelHold(0, 0, false, false));
+    KT_CHECK(!panelHold(0, 100, false, false));
+    // a menu or a combat hide cancels the hold even inside the window
+    KT_CHECK(!panelHold(1000, 1399, true, false));
+    KT_CHECK(!panelHold(1000, 1399, false, true));
+    KT_CHECK(!panelHold(1000, 1399, true, true));
+    // activeNeedsSlot: all four combos
+    KT_CHECK(activeNeedsSlot(true, false));
+    KT_CHECK(!activeNeedsSlot(true, true));
+    KT_CHECK(!activeNeedsSlot(false, false));
+    KT_CHECK(!activeNeedsSlot(false, true));
+    // clearBeforeHandoff: only when the config is on and nothing was sent yet
+    KT_CHECK(clearBeforeHandoff(true, 0));
+    KT_CHECK(!clearBeforeHandoff(true, 1));
+    KT_CHECK(!clearBeforeHandoff(true, 2));
+    KT_CHECK(!clearBeforeHandoff(false, 0));
+    KT_CHECK(!clearBeforeHandoff(false, 1));
+}
+
+// ---- T1 HANDOFF_CLEAR / ROUND formatter goldens, clamp and tiny-buffer behaviour ----
+void testHandoffClearAndRoundFormat() {
+    char out[kLogLineMax];
+    // HANDOFF_CLEAR m=<k> cmd=<n> ne=<n> round=<n>
+    fmtHandoffClear(out, sizeof out, 0, 4, 3, 2);
+    KT_CHECK_EQ(out, "HANDOFF_CLEAR m=0 cmd=4 ne=3 round=2");
+    fmtHandoffClear(out, sizeof out, -1, 4294967295u, 0, 0);
+    KT_CHECK_EQ(out, "HANDOFF_CLEAR m=? cmd=4294967295 ne=0 round=0");
+    fmtHandoffClear(out, sizeof out, 2, 0, -1, -2);
+    KT_CHECK_EQ(out, "HANDOFF_CLEAR m=2 cmd=0 ne=-1 round=-2");
+    // ROUND m=<k> n=<count> subs=<s,...|-> cur=<n|-> ne=<n> types=<hex,...|->
+    const int subs2[2] = { 1, 10 };
+    const int types3[3] = { 0x3f, 1, 0x0d };
+    KT_CHECK_EQ(fmtRound(out, sizeof out, 0, subs2, 2, -1, 3, types3, 3), 49);
+    KT_CHECK_EQ(out, "ROUND m=0 n=2 subs=1,10 cur=- ne=3 types=3f,01,0d");
+    fmtRound(out, sizeof out, 0, nullptr, 0, -1, 0, nullptr, 0);
+    KT_CHECK_EQ(out, "ROUND m=0 n=0 subs=- cur=- ne=0 types=-");
+    // cur >= 0 prints decimal (0 included); hex boundary: 0x0f pads, 0x10 does not; 0 pads to 00
+    const int subs1[1] = { 5 };
+    const int types2[2] = { 0x0f, 0x10 };
+    fmtRound(out, sizeof out, 1, subs1, 1, 7, 2, types2, 2);
+    KT_CHECK_EQ(out, "ROUND m=1 n=1 subs=5 cur=7 ne=2 types=0f,10");
+    const int zero[1] = { 0 };
+    fmtRound(out, sizeof out, -1, nullptr, 0, 0, 1, zero, 1);
+    KT_CHECK_EQ(out, "ROUND m=? n=0 subs=- cur=0 ne=1 types=00");
+    // a negative type prints as unsigned 32-bit hex, the same as fmtQj
+    const int neg[1] = { -1 };
+    fmtRound(out, sizeof out, 0, subs1, 1, -1, 1, neg, 1);
+    KT_CHECK_EQ(out, "ROUND m=0 n=1 subs=5 cur=- ne=1 types=ffffffff");
+    // a null subs list with nSubs > 0 prints no subs (never dereferenced)
+    fmtRound(out, sizeof out, 0, nullptr, 2, -1, 0, nullptr, 0);
+    KT_CHECK_EQ(out, "ROUND m=0 n=0 subs=- cur=- ne=0 types=-");
+    // a null types list with nTypes > 0 prints no types (never dereferenced)
+    fmtRound(out, sizeof out, 0, nullptr, 0, -1, 2, nullptr, 2);
+    KT_CHECK_EQ(out, "ROUND m=0 n=0 subs=- cur=- ne=2 types=-");
+    // clamp: 60 types overflow the 200-char line; output clamped to 199 chars, return value is the full length
+    int many[60];
+    for (int i = 0; i < 60; ++i) many[i] = 0x3f;
+    const int nr = fmtRound(out, sizeof out, 0, nullptr, 0, -1, 60, many, 60);
+    KT_CHECK_EQ(nr, 218);
+    KT_CHECK_EQ(strlen(out), (size_t)(kLogLineMax - 1));
+    KT_CHECK(strncmp(out, "ROUND m=0 n=0 subs=- cur=- ne=60 types=3f,3f,", 45) == 0);
+    // tiny buffers: truncated and NUL-terminated, no overflow, return value is the full length
+    char tinyC[10];
+    memset(tinyC, 'Z', sizeof tinyC);
+    KT_CHECK_EQ(fmtHandoffClear(tinyC, sizeof tinyC, 0, 4, 3, 2), 36);
+    KT_CHECK_EQ(strlen(tinyC), (size_t)9);
+    KT_CHECK(strncmp(tinyC, "HANDOFF_C", 9) == 0 && tinyC[9] == '\0');
+    char tinyR[12];
+    memset(tinyR, 'Z', sizeof tinyR);
+    KT_CHECK_EQ(fmtRound(tinyR, sizeof tinyR, 0, subs2, 2, -1, 3, types3, 3), 49);
+    KT_CHECK_EQ(strlen(tinyR), (size_t)11);
+    KT_CHECK(strncmp(tinyR, "ROUND m=0 n", 11) == 0 && tinyR[11] == '\0');
+    // null buffers: nothing written, length still reported
+    KT_CHECK_EQ(fmtHandoffClear(nullptr, 0, 0, 4, 3, 2), 36);
+    KT_CHECK_EQ(fmtRound(nullptr, 0, 0, subs2, 2, -1, 3, types3, 3), 49);
 }
 
 void testInsetRect() {
@@ -1833,5 +1953,8 @@ int main() {
     testCurReal();
     testMakeEngineView();
     testMutationGaps();
+    testHandoffClearFirstIni();
+    testPanelHoldAndSlotRules();
+    testHandoffClearAndRoundFormat();
     return kt::Report("queue_hud_logic_test");
 }

@@ -120,6 +120,28 @@ def handoff_one(n, m=0, seq="1/1"):
     return "HANDOFF_ONE cmd=%d m=%d seq=%s" % (n, m, seq)
 
 
+def handoff_clear(m=0, n=4, ne=3, rnd=2):
+    return "HANDOFF_CLEAR m=%d cmd=%d ne=%d round=%d" % (m, n, ne, rnd)
+
+
+def round_line(m=0, subs="1,10", cur="-", ne=3, types="3f,01,0d"):
+    n = 0 if subs == "-" else len(subs.split(","))
+    return "ROUND m=%d n=%d subs=%s cur=%s ne=%d types=%s" % (m, n, subs, cur, ne, types)
+
+
+def at(t, body):
+    """A body with an explicit KpLog T= stamp in ms (the time window of flag H); plain bodies carry no time."""
+    return "T=%s f=- queue-hud/main %s" % (t, body)
+
+
+# Synthetic goldens for the two handoff-order forms (copied from the spec lines).
+NEW_ROUND_GOLDEN = [
+    "HANDOFF_CLEAR m=0 cmd=4 ne=3 round=2",
+    "ROUND m=0 n=2 subs=1,10 cur=- ne=3 types=3f,01,0d",
+    "ROUND m=0 n=0 subs=- cur=- ne=0 types=-",
+]
+
+
 def stale(m=0, sub=1):
     return "STALE_CUR m=%d sub=%d since=0 aa8=0 ab8=0 paused=1" % (m, sub)
 
@@ -385,7 +407,7 @@ class ViewTests(unittest.TestCase):
         self.assertEqual(rc, 0)
         self.assertLess(len(out), 60)
         self.assertIn("COMMANDS 100", out)
-        self.assertIn("  ... +82 more", out)
+        self.assertIn("  ... +88 more", out)                                        # 100 lifecycles, COMMANDS cap 12
         self.assertIn("DROPS 100", out)
         self.assertIn("  ... +95 more", out)
         self.assertIn("EDGES 100", out)
@@ -642,15 +664,16 @@ class NewSectionTests(unittest.TestCase):
         self.assertIn("  m=1 x1 first L3", out)
 
     def test_default_view_worst_case_is_exactly_60_lines(self):
-        # Every section over its cap, plus one SKIPPED line: 1+1+1+20+7+10+4+2+4+10 = 60.
-        bodies = [cmd(100 + i) for i in range(20)]                                  # 20 lifecycles
+        # Every section over its cap, plus one SKIPPED line: 1+1+1+14+7+10+4+6+2+4+10 = 60 (COMMANDS cap 12, ROUNDS cap 4).
+        bodies = [cmd(100 + i) for i in range(20)]                                  # 20 lifecycles, COMMANDS shows 12
         bodies += [drop(200 + i, 0, "cancel", 1) for i in range(6)]                 # 6 DROP lifecycles, DROPS 6
         bodies += [edge() for _ in range(9)]                                        # EDGES 9
         bodies += [handoff(m, "-", 0, "-") for m in range(3)]                       # HANDOFFS 3 (+ suffix below)
         bodies += [handoff(3, "5", 1, "6"), handoff(4, "5", 1, "6"), handoff(4, "5", 1, "6")]   # 3 F flags, HANDOFFS 6
         bodies += [vanish(5)]                                                       # VANISHES 1
         bodies += [stale(0), stale(1), stale(2)]                                    # STALE_CUR 3 (3 members)
-        bodies += [ident_swap()]                                                    # HANDOFFS title suffix
+        bodies += [ident_swap(), handoff_clear(4)]                                  # HANDOFFS title suffix (2 kinds)
+        bodies += [round_line(0) for _ in range(5)]                                 # ROUNDS 5, 4 shown + 1 more
         bodies += [wait(7)]                                                         # DECLINES 1, lifecycle cmd 7
         bodies += [wait_cur(9, 5, 3000), wait_cur(9, 5, 3000)]                      # 2 E flags (member 5 has no STALE)
         bodies += ["DROP cmd=1 m=1 why=combat_clear"]                               # SKIPPED 1 (missing n)
@@ -661,17 +684,125 @@ class NewSectionTests(unittest.TestCase):
         self.assertEqual(len(out), 60)
         self.assertIn("SKIPPED 1: L", out[1])
         self.assertIn("COMMANDS 29", out)                                           # 20 + 6 DROP + cmd 5, 7, 9
-        self.assertIn("  ... +11 more", out)
+        self.assertIn("  ... +17 more", out)                                        # 29 lifecycles, 12 shown
         self.assertIn("DROPS 6", out)
         self.assertIn("  ... +1 more", out)
         self.assertIn("EDGES 9", out)
-        self.assertIn("HANDOFFS 6 (IDENT_SWAP x1)", out)
+        self.assertIn("HANDOFFS 6 (IDENT_SWAP x1) (clear x1)", out)
         self.assertIn("  ... +4 more", out)                                         # 6 HANDOFFS, 2 shown
+        i = out.index("ROUNDS 5")
+        self.assertEqual(out[i + 5], "  ... +1 more")                              # ROUNDS block is title + 4 + more = 6
+        self.assertEqual(out[i + 6], "VANISHES 1")
         self.assertIn("VANISHES 1", out)
         self.assertIn("STALE_CUR 3", out)
         self.assertIn("  ... +1 more", out)                                         # 3 members, 2 shown
         self.assertIn("FLAGS 10", out)
         self.assertIn("  ... +2 more", out)                                         # 10 flags, 8 shown
+
+
+class RoundParseTests(unittest.TestCase):
+    def test_golden_handoff_clear_and_round_parse_exactly(self):
+        recs, skipped = parse(NEW_ROUND_GOLDEN)
+        self.assertEqual(skipped, [])
+        self.assertEqual([r["kw"] for r in recs], ["HANDOFF_CLEAR", "ROUND", "ROUND"])
+
+    def test_golden_round_values(self):
+        clear, full, empty = parse(NEW_ROUND_GOLDEN)[0]
+        self.assertEqual((clear["cmd"], clear["m"], clear["f"]["ne"], clear["f"]["round"]), (4, 0, "3", "2"))
+        self.assertEqual((full["f"]["n"], full["f"]["subs"], full["f"]["cur"], full["f"]["types"]),
+                         ("2", "1,10", "-", "3f,01,0d"))
+        self.assertEqual((empty["f"]["n"], empty["f"]["subs"], empty["f"]["types"]), ("0", "-", "-"))
+
+    def test_round_cur_is_decimal_and_bad_forms_are_skipped(self):
+        bad = ["ROUND m=0 n=1 subs=1 cur=3f ne=0 types=-", "ROUND m=0 n=2 subs=1,x cur=- ne=3 types=-",
+               "ROUND m=0 n=1 subs=1 cur=- ne=0 types=zz", "ROUND m=0 n=1 subs=1 cur=- ne=0",
+               "HANDOFF_CLEAR m=0 cmd=4 ne=3"]
+        recs, skipped = parse(bad)
+        self.assertEqual(recs, [])
+        self.assertEqual([(s[1], s[2]) for s in skipped], [
+            ("ROUND", "malformed cur=3f"), ("ROUND", "malformed subs=1,x"), ("ROUND", "malformed types=zz"),
+            ("ROUND", "missing types"), ("HANDOFF_CLEAR", "missing round")])
+
+    def test_stamp_is_kept_on_records(self):
+        recs, _ = Q.parse_lines([(1, at(1234.5, round_line(0))), (2, round_line(0))])
+        self.assertEqual([r["t"] for r in recs], [1234.5, None])
+
+
+class HandoffClearAndRoundSectionTests(unittest.TestCase):
+    def test_handoff_clear_counts_in_handoffs_title_and_makes_no_lifecycle(self):
+        rc, out = run_log([handoff(0, "5", 1, "6"), handoff_one(6, 0, "1/1"), handoff_clear(4), handoff_clear(5)])
+        self.assertIn("HANDOFFS 1 (clear x2)", out)
+        self.assertIn("  L1 m=0 active=5 buffered=1 cmds=6 -> HANDOFF_ONE x1", out)
+        self.assertIn("COMMANDS 0", out)
+        self.assertIn("FLAGS 0", out)
+
+    def test_handoff_clear_alone_shows_zero_handoffs_with_suffix(self):
+        rc, out = run_log([handoff_clear(4)])
+        self.assertIn("HANDOFFS 0 (clear x1)", out)
+
+    def test_rounds_timeline_shows_four_of_six_then_more(self):
+        bodies = [round_line(0, "1,10", "-", 3, "3f,01,0d"), round_line(1, "-", "-", 0, "-"), round_line(0, "9", "2", 1, "01"),
+                  round_line(0, "10,1", "3", 2, "0d,01"), round_line(2, "1", "-", 1, "3f"), round_line(2, "1", "-", 1, "3f")]
+        rc, out = run_log(bodies)
+        i = out.index("ROUNDS 6")
+        self.assertEqual(out[i + 1:i + 5], [
+            "  L1 m=0 n=2 subs=1,10 cur=- ne=3 types=3f,01,0d",
+            "  L2 m=1 n=0 subs=- cur=- ne=0 types=-",
+            "  L3 m=0 n=1 subs=9 cur=2 ne=1 types=01",
+            "  L4 m=0 n=2 subs=10,1 cur=3 ne=2 types=0d,01"])
+        self.assertEqual(out[i + 5], "  ... +2 more")
+        self.assertEqual(out[i + 6], "VANISHES 0")
+        self.assertIn("FLAGS 0", out)
+
+    def test_rounds_none_when_absent(self):
+        rc, out = run_log([cmd(1)])
+        i = out.index("ROUNDS 0")
+        self.assertEqual(out[i + 1], "  (none)")
+
+
+class HandoffOrderFlagTests(unittest.TestCase):
+    # H: first non-empty-subs ROUND of m within 1500 ms after a HANDOFF_ONE of m; its first subtype must be 9 or 10
+    def test_H_raised_when_first_subtype_is_an_attack_node(self):
+        self.assertEqual(all_flags_of([at(1000, handoff_one(6, 0, "1/1")), at(1200, round_line(0, "1,10"))]),
+                         [(2, "H L2 m=0 handoff-not-first subs=1,10 (+200 ms after HANDOFF_ONE L1)")])
+
+    def test_H_clean_when_first_subtype_is_9_or_10(self):
+        for subs in ("10", "10,1", "9", "9,1"):
+            with self.subTest(subs=subs):
+                self.assertEqual(all_flags_of([at(1000, handoff_one(6, 0, "1/1")), at(1200, round_line(0, subs))]), [])
+
+    def test_H_window_is_inclusive_at_1500_and_quiet_past_it(self):
+        self.assertEqual(all_flags_of([at(1000, handoff_one(6, 0, "1/1")), at(2500, round_line(0, "1"))]),
+                         [(2, "H L2 m=0 handoff-not-first subs=1 (+1500 ms after HANDOFF_ONE L1)")])
+        self.assertEqual(all_flags_of([at(1000, handoff_one(6, 0, "1/1")), at(2501, round_line(0, "1"))]), [])
+
+    def test_H_skips_empty_subs_rounds(self):
+        self.assertEqual(all_flags_of([at(1000, handoff_one(6, 0, "1/1")), at(1100, round_line(0, "-")),
+                                       at(1200, round_line(0, "1"))]),
+                         [(3, "H L3 m=0 handoff-not-first subs=1 (+200 ms after HANDOFF_ONE L1)")])
+        self.assertEqual(all_flags_of([at(1000, handoff_one(6, 0, "1/1")), at(1100, round_line(0, "-"))]), [])
+
+    def test_H_judges_only_the_first_qualifying_round(self):
+        self.assertEqual(all_flags_of([at(1000, handoff_one(6, 0, "1/1")), at(1100, round_line(0, "10")),
+                                       at(1200, round_line(0, "1"))]), [])
+
+    def test_H_reports_a_round_once_for_repeated_handoff_one(self):
+        self.assertEqual(all_flags_of([at(1000, handoff_one(6, 0, "1/2")), at(1100, handoff_one(7, 0, "2/2")),
+                                       at(1200, round_line(0, "1"))]),
+                         [(3, "H L3 m=0 handoff-not-first subs=1 (+200 ms after HANDOFF_ONE L1)")])
+
+    def test_H_is_per_member(self):
+        self.assertEqual(all_flags_of([at(1000, handoff_one(6, 0, "1/1")), at(1100, round_line(1, "1"))]), [])
+        self.assertEqual(all_flags_of([at(1000, handoff_one(6, 1, "1/1")), at(1100, round_line(0, "1"))]), [])
+        self.assertEqual(len(all_flags_of([at(1000, handoff_one(6, 1, "1/1")), at(1100, round_line(1, "1"))])), 1)
+
+    def test_H_needs_stamps(self):
+        self.assertEqual(all_flags_of([handoff_one(6, 0, "1/1"), round_line(0, "1")]), [])
+
+    def test_H_listed_in_flags_section(self):
+        rc, out = run_log([handoff_one(6, 0, "1/1"), round_line(0, "1,10")])   # run_log stamps T=1000 and T=1001
+        self.assertIn("FLAGS 1", out)
+        self.assertIn("  H L2 m=0 handoff-not-first subs=1,10 (+1 ms after HANDOFF_ONE L1)", out)
 
 
 if __name__ == "__main__":

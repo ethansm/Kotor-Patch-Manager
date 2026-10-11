@@ -3,7 +3,8 @@
 
 Usage: queue_hud_log_check.py [LOG | --log LOG] [--cmd N] [--member K] [--new [--no-advance] [--state PATH]]
   Default log: ~/.local/share/Steam/steamapps/common/Knights of the Old Republic II/queue-hud_log.txt
-  Default view (under 60 lines): per-command lifecycle, decline histogram, DROPs, EDGE timeline, suspicious flags.
+  Default view (at most 60 lines): per-command lifecycle, decline histogram, DROPs, EDGE timeline, handoffs, ROUND timeline,
+  suspicious flags.
   --cmd N: one command's lines only (max 30 lines). --member K: only lines with m=K (EDGE has no m, so it is dropped).
   --new: only lines after the bookmark shared with log_triage (same state file, keyed by absolute path), then advance it.
   Exit 0 = analyzed (flags are reported, not failures), 2 = log missing.
@@ -25,6 +26,8 @@ these keywords are ignored; a keyword line with a missing or malformed field is 
     cur=<hex|-> aa8=<n> ab8=<n> age=<ms>
   HANDOFF m=<k> active=<n|-> buffered=<n> cmds=<n,n,...|->
   HANDOFF_ONE cmd=<n> m=<k> seq=<i>/<n>
+  HANDOFF_CLEAR m=<k> cmd=<n> ne=<n> round=<n>   (counted as clear x<n> in the HANDOFFS title; no lifecycle)
+  ROUND m=<k> n=<count> subs=<s,s,...|-> cur=<n|-> ne=<n> types=<hex,hex,...|->   (subs/types: '-' = empty; cur '-' = none)
   STALE_CUR m=<k> sub=<n> since=<n> aa8=<n> ab8=<n> paused=<0|1>
   IDENT_SWAP from=<n> to=<n>   (no m=: dropped by --member)
 
@@ -37,6 +40,8 @@ Flags:
   E stale-wait (WAIT why=cur_busy): age >= 3000 for a member with no STALE_CUR line in the window.
   F handoff-short (HANDOFF): buffered=n > 0 but fewer than n HANDOFF_ONE for that member before its next HANDOFF.
   G double-exec (VANISH kind=executed or RESOLVE seen=1): one command (lifecycle) has two of either.
+  H handoff-not-first (ROUND): within 1500 ms after a HANDOFF_ONE for member m (T= stamps; bare lines have none), the
+    first ROUND of m with non-empty subs= has its first subtype outside {9,10} (an attack node is ahead of the item).
 """
 from __future__ import annotations
 
@@ -53,14 +58,16 @@ import log_triage as LT  # noqa: E402  (--new bookmark: same state file and help
 
 DEFAULT_LOG = Path.home() / ".local/share/Steam/steamapps/common/Knights of the Old Republic II/queue-hud_log.txt"
 FOLLOWER_TYPE = 0x3D
-CAPS = {"cmd": 18, "drop": 5, "edge": 8, "handoff": 2, "stale": 2, "flag": 8}
-# default view worst case = 60 lines: header 1 + SKIPPED 1 + DECLINES 1 + COMMANDS 20 + DROPS 7 + EDGES 10
-#   + HANDOFFS 4 + VANISHES 2 + STALE_CUR 4 + FLAGS 10
+CAPS = {"cmd": 12, "drop": 5, "edge": 8, "handoff": 2, "round": 4, "stale": 2, "flag": 8}
+# default view worst case = 60 lines: header 1 + SKIPPED 1 + DECLINES 1 + COMMANDS 14 + DROPS 7 + EDGES 10
+#   + HANDOFFS 4 + ROUNDS 6 + VANISHES 2 + STALE_CUR 4 + FLAGS 10
+HANDOFF_WINDOW_MS = 1500          # flag H: how long after a HANDOFF_ONE the first ROUND is judged
+ITEM_SUBTYPES = (9, 10)           # flag H: a first subtype outside these means an attack node is ahead of the item
 CMD_VIEW_MAX = 30
 CMD_KWS = ("CMD", "WAIT", "RESOLVE", "DROP", "REINJECT", "REINJECT_NO", "DISPATCH", "CANCEL", "VANISH")
 VANISH_KINDS = ("executed", "unseen", "eaten_paused", "eaten_wait")
 EATEN_PAUSED = "eaten_paused"   # REINJECT why= that is the re-inject reason (not a decline)
-PREFIX_RE = re.compile(r"^T=\S+\s+f=\S+\s+[\w.-]+/\w+\s+(?:(?:ERR|WARN)\s+)?(.*)$")
+PREFIX_RE = re.compile(r"^T=(?P<t>\S+)\s+f=\S+\s+[\w.-]+/\w+\s+(?:(?:ERR|WARN)\s+)?(?P<body>.*)$")
 HEXV = r"[0-9a-fA-F]+"
 # Field value grammar, matched with fullmatch. Keys not listed here are not validated.
 FIELD_RE = {
@@ -75,8 +82,10 @@ FIELD_RE = {
     "exec": r"[01]", "attempt": r"\d+", "vanish_kind": "|".join(VANISH_KINDS),
     "active": r"-|\d+", "buffered": r"\d+", "cmds": r"-|\d+(?:,\d+)*", "seq": r"\d+/\d+",
     "sub": r"-?\d+", "since": r"-?\d+", "from": r"-?\d+", "to": r"-?\d+",
+    "subs": r"-|\d+(?:,\d+)*", "hexlist": r"-|" + HEXV + r"(?:," + HEXV + r")*", "roundcur": r"-|\d+",
 }
-OVERRIDE = {("EDGE", "buf"): "buflist", ("VANISH", "kind"): "vanish_kind"}
+OVERRIDE = {("EDGE", "buf"): "buflist", ("VANISH", "kind"): "vanish_kind",
+            ("ROUND", "types"): "hexlist", ("ROUND", "cur"): "roundcur"}
 REQUIRED = {
     "CMD": ("m", "cr", "kind", "id", "tgt", "dec", "fb", "engq", "buf", "paused", "combat"),
     "WAIT": ("cmd", "m", "why", "buf", "engNe", "age"),
@@ -89,6 +98,8 @@ REQUIRED = {
     "VANISH": ("cmd", "m", "kind", "paused", "exec", "ne", "round", "cur", "aa8", "ab8", "age"),
     "HANDOFF": ("m", "active", "buffered", "cmds"),
     "HANDOFF_ONE": ("cmd", "m", "seq"),
+    "HANDOFF_CLEAR": ("m", "cmd", "ne", "round"),
+    "ROUND": ("m", "n", "subs", "cur", "ne", "types"),
     "STALE_CUR": ("m", "sub", "since", "aa8", "ab8", "paused"),
     "IDENT_SWAP": ("from", "to"),
 }
@@ -159,12 +170,19 @@ def parse_body(body):
     return kw, cmd, fields
 
 
+def _stamp_ms(s):
+    """KpLog T=<ms> stamp as a float, or None when it is not a plain number."""
+    return float(s) if re.fullmatch(r"\d+(?:\.\d+)?", s) else None
+
+
 def parse_lines(window):
-    """window: [(line_no, raw)] -> (records in log order, skipped [(line_no, label, reason)])."""
+    """window: [(line_no, raw)] -> (records in log order, skipped [(line_no, label, reason)]).
+    rec["t"] is the T= stamp in ms (None for a bare line)."""
     recs, skipped = [], []
     for n, raw in window:
         m = PREFIX_RE.match(raw)
-        body = (m.group(1) if m else raw).strip()
+        body = (m.group("body") if m else raw).strip()
+        t = _stamp_ms(m.group("t")) if m else None
         try:
             got = parse_body(body)
         except Bad as e:
@@ -173,7 +191,7 @@ def parse_lines(window):
         if got is not None:
             kw, cmd, fields = got
             recs.append({"line": n, "body": body, "kw": kw, "cmd": cmd if cmd is not None else _num(fields.get("cmd")),
-                         "m": _num(fields.get("m")), "f": fields})
+                         "m": _num(fields.get("m")), "f": fields, "t": t})
     return recs, skipped
 
 
@@ -331,6 +349,30 @@ def handoff_flags(recs):
     return out
 
 
+def handoff_order_flags(recs):
+    """[(line, text)] for flag H: after a HANDOFF_ONE for member m, the first ROUND of m with non-empty subs= that lands
+    0..HANDOFF_WINDOW_MS later (T= stamps) has a first subtype outside ITEM_SUBTYPES. Bare lines carry no time and are
+    skipped. Each judged ROUND is reported once, against the earliest HANDOFF_ONE that reaches it."""
+    by_m = {}
+    for r in recs:
+        if r["kw"] == "ROUND" and r["t"] is not None and r["f"]["subs"] != "-":
+            by_m.setdefault(r["m"], []).append(r)
+    out, judged = [], set()
+    for one in recs:
+        if one["kw"] != "HANDOFF_ONE" or one["t"] is None:
+            continue
+        first = next((rd for rd in by_m.get(one["m"], [])
+                      if rd["line"] > one["line"] and 0 <= rd["t"] - one["t"] <= HANDOFF_WINDOW_MS), None)
+        if first is None or first["line"] in judged:
+            continue
+        judged.add(first["line"])
+        sub = int(first["f"]["subs"].split(",")[0])
+        if sub not in ITEM_SUBTYPES:
+            out.append((first["line"], "H L%d m=%s handoff-not-first subs=%s (+%g ms after HANDOFF_ONE L%d)" % (
+                first["line"], _ms(first["m"]), first["f"]["subs"], first["t"] - one["t"], one["line"])))
+    return out
+
+
 def stale_flags(recs):
     """[(line, text)] for flag E: WAIT why=cur_busy with age >= 3000 for a member that has no STALE_CUR in the window."""
     stale_members = {r["m"] for r in recs if r["kw"] == "STALE_CUR"}
@@ -346,8 +388,9 @@ def stale_flags(recs):
 
 
 def all_flags(recs):
-    """Every flag as sorted [(line, text)]: A, B, C (qj_flags) plus D, E, F, G."""
-    return sorted(qj_flags(recs) + life_flags(build_cmds(recs)) + handoff_flags(recs) + stale_flags(recs))
+    """Every flag as sorted [(line, text)]: A, B, C (qj_flags) plus D, E, F, G, H."""
+    return sorted(qj_flags(recs) + life_flags(build_cmds(recs)) + handoff_flags(recs) + stale_flags(recs)
+                  + handoff_order_flags(recs))
 
 
 def life_line(i):
@@ -379,6 +422,12 @@ def _handoff_text(h, ones):
         h["line"], _ms(h["m"]), f["active"], f["buffered"], f["cmds"], len(ones))
 
 
+def _round_text(r):
+    f = r["f"]
+    return "L%d m=%s n=%s subs=%s cur=%s ne=%s types=%s" % (
+        r["line"], _ms(r["m"]), f["n"], f["subs"], f["cur"], f["ne"], f["types"])
+
+
 def _stale_items(recs):
     """One item per member: 'm=<k> x<count> first L<line>', members in first-seen order."""
     groups = {}
@@ -402,6 +451,8 @@ def render_default(recs, skipped, nlines, meta):
     vanishes = [r for r in recs if r["kw"] == "VANISH"]
     stale = [r for r in recs if r["kw"] == "STALE_CUR"]
     n_swap = sum(1 for r in recs if r["kw"] == "IDENT_SWAP")
+    n_clear = sum(1 for r in recs if r["kw"] == "HANDOFF_CLEAR")
+    rounds = [r for r in recs if r["kw"] == "ROUND"]
     flags = all_flags(recs)
     n_qj = sum(1 for r in recs if r["kw"] == "QJ")
     out = ["QUEUE-HUD lines=%d parsed=%d skipped=%d cmds=%d qj=%d%s" % (nlines, len(recs), len(skipped), len(insts), n_qj, meta)]
@@ -419,7 +470,10 @@ def render_default(recs, skipped, nlines, meta):
     hsec = _section("HANDOFFS", [_handoff_text(h, ones) for h, ones in hand], CAPS["handoff"])
     if n_swap:
         hsec[0] += " (IDENT_SWAP x%d)" % n_swap
+    if n_clear:
+        hsec[0] += " (clear x%d)" % n_clear
     out += hsec
+    out += _section("ROUNDS", [_round_text(r) for r in rounds], CAPS["round"])
     hist = Counter(r["f"]["kind"] for r in vanishes)
     out += _section("VANISHES", [" ".join("%s=%d" % (k, hist[k]) for k in VANISH_KINDS)] if vanishes else [], 1,
                     count=len(vanishes))

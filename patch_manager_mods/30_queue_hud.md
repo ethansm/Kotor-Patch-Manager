@@ -134,3 +134,35 @@ All default to 1 in code; an absent key means 1.
 | `STALE_CUR` | `m= sub= since= aa8= ab8= paused=` |
 | `IDENT_SWAP` | `from= to=` |
 
+## 2026-10-11 Queue-fix QL2: item flicker, combat order, observability (built, not installed)
+
+Status: **built (unit tests + mutation gate green), not installed, not play-tested.** Extends QL1 above.
+
+### Causes (B1-B3)
+| ID | Symptom | Cause |
+|---|---|---|
+| B1 | Item runs after the combat action | Combat start wipes the engine queue ~15-33 ms BEFORE our edge (round=0). Our hand-off re-dispatches via `PerformUseItem` 0x775600; in combat the handler skips its own clear (doc 29 D4: `+0x520==1`), so the new 0x3F lands BEHIND the engine's attack entries. |
+| B2 | Medpack does not queue | 0 of 7 CMD# were medpacks (stims, shields, one combat shot only). The click never reached `PerformUseItem` 0x775600, so it is refused upstream (likely `CanUseItem`). Recon only this round, NO code change. |
+| B3 | Strip flashes on item-button click | The ACTIVE command is not a slot source (`gatherFor` appends only `queue[]`). A quickbar press wipes the engine queue; with an empty buffer `n==0` hides the panel until our restore (150 ms to 1.6 s). |
+
+### Design
+- **D1 Flicker.**
+  - (a) `gatherFor` appends the buffer's active command as a synthetic entry (after engine entries, before buffered ones, guarded by `kMaxEntries`) when `buf.active` and the engine does not hold it.
+  - (b) `drawLeader`/`drawStrips` redraw the last good frame for `kPanelHoldMs=400` when `n==0`. Covers sub-400 ms gaps only: not engine-only entries (medpacks) wiped for longer, nor `drawAll`'s earlier gate for menu/stale capture.
+- **D2 Combat order.** At hand-off, the FIRST dispatch is preceded by `ServerClearAllActions` for that member only (empties `cr+0x100` and the round list), so the item lands first. Later hand-off items append in click order. Ini switch `handoff_clear_first` (default 1; 0 = QL1 behaviour). Log line `HANDOFF_CLEAR`.
+  - Discrepancy: the mod now makes a SECOND engine call (`ServerClearAllActions` at the first hand-off command) besides the Cancel click. `manifest.toml:6` still says "the only engine call is the Cancel click". Recorded here; manifest left alone (REINSTALL is tied to hook diffs only, `kpm_status.py:150`).
+- **D3 Observability.**
+  - Combat journal cap 1 -> 4 lines/s.
+  - Edge-only `ROUND` line for 15 s after any `HANDOFF_ONE`.
+  - `noteHidden` edge line gains ` age=<ms> menu=<0|1>`.
+
+### New log lines (`queue-hud` log)
+| Line | Example |
+|---|---|
+| `HANDOFF_CLEAR` | `HANDOFF_CLEAR m=0 cmd=4 ne=3 round=2` |
+| `ROUND` | `ROUND m=0 n=2 subs=1,10 cur=- ne=3 types=3f,01,0d` |
+| `noteHidden` edge | `... hidden (empty queue) ... age=<ms> menu=<0\|1>` |
+
+### Analyzer
+- New flag **H handoff-not-first**: the first non-empty `ROUND` within 1500 ms after `HANDOFF_ONE` does not start with subtype 9/10.
+

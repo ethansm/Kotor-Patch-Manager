@@ -216,6 +216,7 @@ struct Snapshot {
     qh::RNode cur; bool haveCur = false;
     bool paused = false, waiting = false;
 };
+bool engineHoldsAction(const Snapshot& s);   // defined with the hand-off code below
 
 qh::RNode toQh(const actq::RNode& r) {
     qh::RNode o; o.subType = r.subType; o.spellId = r.spellId; o.itemId = r.itemId; o.featId = r.featId; o.ptr = r.ptr;
@@ -255,6 +256,19 @@ bool gatherFor(uintptr_t cr, Snapshot& s) {
     s.nBuffered = 0;
     if (memberK >= 0 && memberK < 3) {
         const qh::ActionBuffer& ib = g_itemQueue[memberK];
+        // The active buffered action is a slot source too: a quickbar press wipes the engine queue, so without it the panel empties until our restore.
+        // Appended after the engine entries (buildSlots gives the engine's cur node to the first qualifying entry); not counted in nBuffered.
+        if (qh::activeNeedsSlot(ib.active, engineHoldsAction(s)) && s.ne < qh::kMaxEntries) {
+            if (ib.activeAction.kind == qh::ActionKind::Spell) {
+                s.e[s.ne].type = qh::T_CAST_SPELL;
+                s.e[s.ne].param0 = ib.activeAction.spellId;
+            } else {
+                s.e[s.ne].type = qh::T_USE_ITEM;
+                s.e[s.ne].param0 = ib.activeAction.clientItem;
+            }
+            s.eData[s.ne] = 0;
+            s.ne++;
+        }
         for (int bi = 0; bi < ib.count && s.ne < qh::kMaxEntries; ++bi) {
             if (ib.queue[bi].kind == qh::ActionKind::Spell) {
                 s.e[s.ne].type = qh::T_CAST_SPELL;
@@ -486,22 +500,68 @@ void onHudConnect(bool ok, const char* why) { QLOGV(chMain, ok ? KPLOG_INFO : KP
 // Edge log: shown / hidden transitions (never per frame).
 struct EdgeState { bool shown = false; uint32_t sig = 0; const char* reason = ""; bool primed = false; };
 EdgeState g_edge;
+// Set at the top of drawAll: the capture age and menu flag that the hidden edge line reports.
+DWORD g_hideAge = 0;
+bool g_hideMenu = false;
 
 void noteHidden(const char* reason) {
     if (g_edge.primed && !g_edge.shown && g_edge.reason == reason) return;
     g_edge.primed = true; g_edge.shown = false; g_edge.reason = reason; g_edge.sig = 0;
-    QLOG(chDraw, "hidden (%s)", reason);
+    QLOG(chDraw, "hidden (%s) age=%u menu=%d", reason, (unsigned)g_hideAge, g_hideMenu ? 1 : 0);
+}
+
+// One drawn leader slot: placed on the HUD control, with its icon and style.
+struct Draw { int x, y, w, h; qh::Style st; char rr[17]; };
+// The last good leader panel and its creature. Repainted for kPanelHoldMs when the queue reads empty (a quickbar press wipes the engine queue).
+struct Held { Draw d[qh::kMaxSlots]; int nd = 0; DWORD tick = 0; uintptr_t creature = 0; };
+Held g_heldLeader;
+
+// Paints the leader's background, icons and Cancel from a Draw list. The live draw and the panel hold both come through here.
+void paintLeader(uintptr_t hud, const Draw* d, int nd, DWORD age, const K2PsContext* ctx) {
+    // Cancel: right of the live QUEUE0 extent, sized by the live QUEUE1 height (read every frame; the HUD scale can change).
+    if (qh::cancelVisible(g_cfg.enabled, g_cfg.cancel, g_combat != 0, ctx->inMenu != 0, age, nd)) {
+        qh::Rect q0{}, q1{};
+        if (guikit::getExtent(hud + HudSlotBase, &q0.x, &q0.y, &q0.w, &q0.h) && guikit::getExtent(hud + HudSlotBase + HudSlotStride, &q1.x, &q1.y, &q1.w, &q1.h)) {
+            g_want[0].r = qh::cancelRect(q0, q1);
+            g_want[0].show = g_want[0].r.w > 0;
+        }
+    }
+    gui2d::CapGuard capGuard;
+    static const float white[3] = { 1.0f, 1.0f, 1.0f };
+    void* bgImg = guikit::imageFor("lbl_miqueue_teal");
+    qh::Rect q0 = (nd > 0) ? qh::Rect{ d[0].x, d[0].y, d[0].w, d[0].h } : qh::Rect{};
+    if (bgImg && nd > 0) {
+        qh::Rect bg{};
+        if (!guikit::getExtent(hud + 0x6594, &bg.x, &bg.y, &bg.w, &bg.h) || bg.w <= 0 || bg.h <= 0) {
+            bg = qh::combatBgRect(q0);
+        }
+        gui2d::drawImage(bgImg, bg.x, bg.y, bg.w, bg.h, 0, white, 0.95f);
+        for (int i = 0; i < nd; ++i) {
+            void* im = guikit::imageFor(d[i].rr);
+            if (im) {
+                float a = d[i].st.iconA;
+                gui2d::drawImage(im, d[i].x, d[i].y, d[i].w, d[i].h, 0, white, a);
+            }
+        }
+    } else {
+        for (int i = 0; i < nd; ++i) drawSlot(d[i].x, d[i].y, d[i].w, d[i].h, d[i].st, guikit::imageFor(d[i].rr));
+    }
 }
 
 // The leader's panel over the hidden vanilla slots (unchanged from 0.1.0). The caller already checked enabled / combat / menu / stale / hud.
 void drawLeader(uintptr_t hud, DWORD now, DWORD age, const K2PsContext* ctx) {
     Snapshot s;
     if (!gather(s)) { noteHidden("no creature"); return; }
+    Held& held = g_heldLeader;
+    if (held.creature != s.creature) { held.nd = 0; held.tick = 0; held.creature = s.creature; }   // a Tab switch never shows the old queue
     qh::Slot slots[qh::kMaxSlots];
     const int n = qh::buildSlots(s.e, s.ne, s.rn, s.nrn, s.haveCur ? &s.cur : nullptr, slots);
-    if (!qh::shouldShow(g_cfg.enabled, g_combat != 0, ctx->inMenu != 0, age, n)) { noteHidden(g_combat != 0 ? "combat" : "empty queue"); return; }
+    if (!qh::shouldShow(g_cfg.enabled, g_combat != 0, ctx->inMenu != 0, age, n)) {
+        if (n == 0 && held.nd > 0 && qh::panelHold(held.tick, now, ctx->inMenu != 0, g_combat != 0)) { paintLeader(hud, held.d, held.nd, age, ctx); return; }
+        noteHidden(g_combat != 0 ? "combat" : "empty queue");
+        return;
+    }
 
-    struct Draw { int x, y, w, h; qh::Style st; char rr[17]; };
     Draw d[qh::kMaxSlots];
     int nd = 0;
     uint32_t sig = static_cast<uint32_t>(n) * 31u + (s.waiting ? 7u : 0u);
@@ -533,34 +593,9 @@ void drawLeader(uintptr_t hud, DWORD now, DWORD age, const K2PsContext* ctx) {
              g_edge.shown ? "changed" : "shown", n, nd, s.ne, s.nrn, s.haveCur ? 1 : 0, s.waiting ? 1 : 0, s.paused ? 1 : 0, types, d[0].x, d[0].y, d[0].w, d[0].h, gui2d::hudScale());
         g_edge.primed = true; g_edge.shown = true; g_edge.sig = sig; g_edge.reason = "";
     }
-    // Cancel: right of the live QUEUE0 extent, sized by the live QUEUE1 height (read every frame; the HUD scale can change).
-    if (qh::cancelVisible(g_cfg.enabled, g_cfg.cancel, g_combat != 0, ctx->inMenu != 0, age, nd)) {
-        qh::Rect q0{}, q1{};
-        if (guikit::getExtent(hud + HudSlotBase, &q0.x, &q0.y, &q0.w, &q0.h) && guikit::getExtent(hud + HudSlotBase + HudSlotStride, &q1.x, &q1.y, &q1.w, &q1.h)) {
-            g_want[0].r = qh::cancelRect(q0, q1);
-            g_want[0].show = g_want[0].r.w > 0;
-        }
-    }
-    gui2d::CapGuard capGuard;
-    static const float white[3] = { 1.0f, 1.0f, 1.0f };
-    void* bgImg = guikit::imageFor("lbl_miqueue_teal");
-    qh::Rect q0 = (nd > 0) ? qh::Rect{ d[0].x, d[0].y, d[0].w, d[0].h } : qh::Rect{};
-    if (bgImg && nd > 0) {
-        qh::Rect bg{};
-        if (!guikit::getExtent(hud + 0x6594, &bg.x, &bg.y, &bg.w, &bg.h) || bg.w <= 0 || bg.h <= 0) {
-            bg = qh::combatBgRect(q0);
-        }
-        gui2d::drawImage(bgImg, bg.x, bg.y, bg.w, bg.h, 0, white, 0.95f);
-        for (int i = 0; i < nd; ++i) {
-            void* im = guikit::imageFor(d[i].rr);
-            if (im) {
-                float a = d[i].st.iconA;
-                gui2d::drawImage(im, d[i].x, d[i].y, d[i].w, d[i].h, 0, white, a);
-            }
-        }
-    } else {
-        for (int i = 0; i < nd; ++i) drawSlot(d[i].x, d[i].y, d[i].w, d[i].h, d[i].st, guikit::imageFor(d[i].rr));
-    }
+    held.nd = nd; held.tick = now;   // only a live draw refreshes the hold clock
+    memcpy(held.d, d, sizeof(Draw) * nd);
+    paintLeader(hud, held.d, held.nd, age, ctx);
 }
 
 
@@ -580,8 +615,11 @@ void stripsHidden() {
 }
 
 struct StripDraw { qh::Rect r[qh::kMaxSlots]; qh::Style st[qh::kMaxSlots]; char rr[qh::kMaxSlots][17]; int n = 0; bool have = false; };
+// Last good strip per party index k (1-2): repainted for kPanelHoldMs on an empty queue, with its edge signature and type text so the log edge does not flip.
+struct HeldStrip { StripDraw d; DWORD tick = 0; uintptr_t creature = 0; uint32_t sig = 0; char types[48] = {}; };
+HeldStrip g_heldStrip[3];
 
-void drawStrips(uintptr_t hud, DWORD now) {
+void drawStrips(uintptr_t hud, DWORD now, bool inMenu) {
     const K2AddrTable* T = k2addr::get();
     if (!T || !T->Slot_VitRect || !T->Slot_CardRect) return;   // unknown exe: no geometry, nothing to anchor to
     party::Fail why = party::F_None;
@@ -612,6 +650,14 @@ void drawStrips(uintptr_t hud, DWORD now) {
         if (!gatherFor(srv[k], s)) continue;
         qh::Slot slots[qh::kMaxSlots];
         const int n = qh::buildSlots(s.e, s.ne, s.rn, s.nrn, s.haveCur ? &s.cur : nullptr, slots);
+        HeldStrip& hs = g_heldStrip[k];
+        if (hs.creature != srv[k]) { hs.d = StripDraw(); hs.tick = 0; hs.creature = srv[k]; }   // a Tab switch never shows the old strip
+        if (n == 0 && hs.d.have && qh::panelHold(hs.tick, now, inMenu, g_combat != 0 && !g_cfg.showInCombat)) {
+            d[k] = hs.d;   // hold repaint: Cancel below and the draw loop use the held rects; hs.tick is not refreshed
+            memcpy(types[k], hs.types, sizeof types[k]);
+            sigs[k] = hs.sig;
+            continue;
+        }
         const int cap = g_cfg.stripMax < qh::kMaxSlots ? g_cfg.stripMax : qh::kMaxSlots;
         StripDraw& sd = d[k];
         uint32_t sig = static_cast<uint32_t>(n) * 31u + (s.waiting ? 7u : 0u);
@@ -644,6 +690,7 @@ void drawStrips(uintptr_t hud, DWORD now) {
         if (sd.n == 0) continue;
         sd.have = true;
         sigs[k] = sig * 131u + static_cast<uint32_t>(sd.r[0].x) * 7u + static_cast<uint32_t>(sd.r[0].y) * 13u + static_cast<uint32_t>(sd.r[0].w);
+        hs.d = sd; hs.tick = now; hs.sig = sigs[k]; memcpy(hs.types, types[k], sizeof hs.types);   // live draw: refresh the hold
     }
     bool any = false;
     for (int k = 1; k <= 2; ++k) {
@@ -663,6 +710,7 @@ void drawAll(const K2PsContext* ctx) {
     saferead::beginScope();
     const DWORD now = GetTickCount();
     const DWORD age = now - g_capTick;
+    g_hideAge = age; g_hideMenu = ctx->inMenu != 0;
     const uintptr_t hud = g_hud;
     uint32_t probe = 0;
     if (!hud || !rd(SiteHud, hud, HudSlotBase, &probe)) { if (hud) noteHidden("hud unreadable"); if (g_cfg.companions) stripsHidden(); return; }
@@ -672,7 +720,7 @@ void drawAll(const K2PsContext* ctx) {
         return;
     }
     drawLeader(hud, now, age, ctx);
-    if (g_cfg.companions) drawStrips(hud, now);
+    if (g_cfg.companions) drawStrips(hud, now, ctx->inMenu != 0);
 }
 
 // HUD_DRAW prio 400: the wanted Cancel rects are collected by drawLeader / drawStrips, then applied (every other path hides them).
@@ -693,6 +741,15 @@ int queueCountOf(int k) {
     return gatherFor(m ? party::serverCreature(m) : 0, s) ? s.engineNe : -1;
 }
 
+// Server-side ids for ServerClearAllActions(serverObjectId) on one member's creature: id = CrObjectId, server = *(*AppGlobal + AppToServer).
+// Returns nullptr when both resolve, else the refusal reason. Shared by doCancel and the combat hand-off clear (handoffTick).
+static const char* resolveServerClear(uintptr_t srv, uint32_t& id, uint32_t& server) {
+    uint32_t app = 0;
+    if (!rd(SiteCancel + 1, srv, CrObjectId, &id) || !id) return "server object id unreadable";
+    if (!rd(SiteCancel + 2, party::appGlobalAddr(), 0, &app) || !app || !rd(SiteCancel + 3, app, AppToServer, &server) || !server) return "server app unreadable";
+    return nullptr;
+}
+
 // Route per R7: CServerExoApp::ClearAllActions(serverObjectId), ECX = *(*AppGlobal + 8). Every pointer is saferead-probed first
 // (the codebase has no SEH call guard); nothing is called unless all of them resolve.
 void doCancel(int k) {
@@ -700,12 +757,11 @@ void doCancel(int k) {
     const uintptr_t tbl = party::table(&why);
     const uintptr_t m = tbl ? party::member(tbl, k) : 0;
     const uintptr_t srv = m ? party::serverCreature(m) : 0;
-    uint32_t id = 0, app = 0, server = 0;
+    uint32_t id = 0, server = 0;
     const char* bad = nullptr;
     if (!srv) bad = "no server creature";
-    else if (!rd(SiteCancel + 1, srv, CrObjectId, &id) || !id) bad = "server object id unreadable";
-    else if (!rd(SiteCancel + 2, party::appGlobalAddr(), 0, &app) || !app || !rd(SiteCancel + 3, app, AppToServer, &server) || !server) bad = "server app unreadable";
-    else if (GetTickCount() - g_capTick >= 250u) bad = "stale HUD capture";
+    else bad = resolveServerClear(srv, id, server);
+    if (!bad && GetTickCount() - g_capTick >= 250u) bad = "stale HUD capture";
     if (bad) { KP_LOGV(chCancel, KPLOG_WARN, "CANCEL refused member=%d (%s)", k, bad); return; }
     const int n = queueCountOf(k);
     QLOG(chCancel, "CANCEL member=%d n=%d route=ServerClearAll", k, n);
@@ -848,6 +904,9 @@ DWORD g_identLastTick[3] = {0, 0, 0};
 // ---- Combat hand-off: at combat start the queued commands (active + buffered) go to the engine in click order, one per frame ----
 struct Handoff { bool pending = false; bool headValid = false; qh::QueuedAction head; int total = 0; int sent = 0; };
 Handoff g_handoff[3];
+// Round-list watch: 15 s after each hand-off dispatch, roundWatchTick logs the member's round / cur / entry state on change only.
+DWORD g_roundWatchUntil[3] = {};
+struct RoundLast { int subs[qh::kMaxRound]; int n = -1; int cur = -2; int ne = -1; } g_lastRound[3];
 bool g_prevCombat[3] = {false, false, false};
 
 // The engine already holds this creature's action: an executing use-item / cast-spell entry, or a round node of subtype 9 or 10
@@ -937,9 +996,23 @@ void handoffTick(DWORD now, const bool* edge) {
                 QTRACE("%s", line);
             }
         } else {
+            // Combat start wipes the engine queue; the first send clears this member's creature so the hand-off is not queued behind the engine's attack entries.
+            if (qh::clearBeforeHandoff(g_cfg.handoffClearFirst, h.sent)) {
+                uint32_t id = 0, server = 0;
+                const char* bad = resolveServerClear(srv, id, server);
+                if (g_logOn && g_cfg.traceQueue) {
+                    char line[200];
+                    qh::fmtHandoffClear(line, sizeof line, k, a.cmdId, s.engineNe, s.nrn);
+                    if (bad) QTRACE("%s refused=%s", line, bad);
+                    else QTRACE("%s", line);
+                }
+                if (!bad) reinterpret_cast<void(__thiscall*)(uintptr_t, uint32_t)>(gameaddr::ServerClearAllActions)(server, id);
+            }
             ++h.sent;
             g_lastOurs[k].tag = "handoff"; g_lastOurs[k].tick = now;
             dispatchAction(a);
+            g_roundWatchUntil[k] = now + 15000;   // armed outside the trace gate: the watch runs with trace off too
+            g_lastRound[k].n = -1;
             if (g_logOn && g_cfg.traceQueue) {
                 char line[80];
                 qh::fmtHandoffOne(line, sizeof line, a.cmdId, k, h.sent, h.total);
@@ -950,13 +1023,45 @@ void handoffTick(DWORD now, const bool* edge) {
     }
 }
 
+// Round-list watch (combat only, 15 s per dispatch): one line per change of the member's round subtypes, cur and entry types. Edge only.
+void roundWatchTick(DWORD now) {
+    party::Fail why = party::F_None;
+    const uintptr_t tbl = party::table(&why);
+    if (!tbl) return;
+    for (int k = 0; k < 3; ++k) {
+        if (g_roundWatchUntil[k] == 0 || static_cast<int>(g_roundWatchUntil[k] - now) <= 0) continue;
+        const uintptr_t cli = party::member(tbl, k);
+        const uintptr_t srv = cli ? party::serverCreature(cli) : 0;
+        Snapshot s;
+        if (!srv || !gatherFor(srv, s)) continue;
+        const int nSub = s.nrn < qh::kMaxRound ? s.nrn : qh::kMaxRound;
+        const int nTy = s.ne < qh::kMaxEntries ? s.ne : qh::kMaxEntries;
+        const int cur = s.haveCur ? static_cast<int>(s.cur.subType) : -1;
+        int subs[qh::kMaxRound];
+        int types[qh::kMaxEntries];
+        for (int i = 0; i < nSub; ++i) subs[i] = s.rn[i].subType;
+        for (int i = 0; i < nTy; ++i) types[i] = s.e[i].type;
+        RoundLast& L = g_lastRound[k];
+        bool changed = L.n != nSub || L.cur != cur || L.ne != s.ne;
+        for (int i = 0; !changed && i < nSub; ++i) changed = L.subs[i] != subs[i];
+        if (!changed) continue;
+        L.n = nSub; L.cur = cur; L.ne = s.ne;
+        for (int i = 0; i < nSub; ++i) L.subs[i] = subs[i];
+        if (g_logOn && g_cfg.traceQueue) {
+            char line[256];
+            qh::fmtRound(line, sizeof line, k, subs, nSub, cur, s.ne, types, nTy);
+            QTRACE("%s", line);
+        }
+    }
+}
+
 // Multi-item buffer ticker and follower wipe guard
 void tickItemQueues(DWORD now, bool inMenu) {
     const bool combatNow = g_combat != 0 && !g_combatUnreadable;
     bool edgeFlags[3] = {false, false, false};
     for (int k = 0; k < 3; ++k) { edgeFlags[k] = combatNow && !g_prevCombat[k]; g_prevCombat[k] = combatNow; }
     if (inMenu || g_combat != 0) {
-        if (combatNow) handoffTick(now, edgeFlags);   // unreadable HUD flags: no hand-off and no drop, the buffers wait
+        if (combatNow) { handoffTick(now, edgeFlags); roundWatchTick(now); }   // unreadable HUD flags: no hand-off and no drop, the buffers wait
         return;
     }
     party::Fail why = party::F_None;
@@ -1218,7 +1323,7 @@ void tickItemQueues(DWORD now, bool inMenu) {
 // ---- Queue journal (QJ): logs a member's engine queue only when its signature changes. Reads via actq::read only (never gatherFor). ----
 constexpr DWORD kJournalSampleMs = 100;    // sample period
 constexpr int kJournalPerSec = 4;          // max QJ lines per second per member
-constexpr int kJournalPerSecCombat = 1;    // ... while in combat
+constexpr int kJournalPerSecCombat = 4;    // ... while in combat
 constexpr int kJournalSessionCap = 5000;   // QJ lines per session, then one journal_cap marker
 constexpr DWORD kOursWindowMs = 2000;      // a g_lastOurs stamp newer than this makes the change "ours"
 
@@ -1348,7 +1453,8 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     loadIni();
     g_logOn = g_cfg.log;
     KP_LOG(chMain, "0.4.0-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax);
-    QLOG(chMain, "pause_reinject=%d handoff_on_combat=%d show_in_combat=%d", g_cfg.pauseReinject ? 1 : 0, g_cfg.handoffOnCombat ? 1 : 0, g_cfg.showInCombat ? 1 : 0);
+    QLOG(chMain, "pause_reinject=%d handoff_on_combat=%d handoff_clear_first=%d show_in_combat=%d",
+         g_cfg.pauseReinject ? 1 : 0, g_cfg.handoffOnCombat ? 1 : 0, g_cfg.handoffClearFirst ? 1 : 0, g_cfg.showInCombat ? 1 : 0);
     g_ps.init(api, "queue-hud");
     g_ps.onConnect = onConnect;
     g_ps.add(K2PS_HUD_DRAW, 400, onHudDraw);

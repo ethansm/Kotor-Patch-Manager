@@ -126,6 +126,19 @@ inline bool shouldShow(bool enabled, bool combat, bool inMenu, uint32_t ageMs, i
     return enabled && (showInCombat || !combat) && !inMenu && ageMs < 250u && nSlots > 0;
 }
 
+// Panel hold: keep drawing the last good panel for kPanelHoldMs after a read miss. Never across a menu or a combat hide.
+// lastGoodTick == 0 means no good read yet, so nothing is held.
+constexpr uint32_t kPanelHoldMs = 400;
+inline bool panelHold(uint32_t lastGoodTick, uint32_t now, bool inMenu, bool combatHidden) {
+    return !inMenu && !combatHidden && lastGoodTick != 0 && now - lastGoodTick < kPanelHoldMs;
+}
+
+// The active slot is needed only when the buffer holds an active action and the engine does not already hold one.
+inline bool activeNeedsSlot(bool bufActive, bool engineHolds) { return bufActive && !engineHolds; }
+
+// handoff_clear_first: clear the engine queue before the first handoff send (nothing sent yet this handoff).
+inline bool clearBeforeHandoff(bool cfgOn, int sentSoFar) { return cfgOn && sentSoFar == 0; }
+
 // Dark teal palette matching custom GUI theme (Session 2)
 constexpr float kTealBg[3]     = { 0.05f, 0.25f, 0.28f }; // background
 constexpr float kTealBorder[3] = { 0.10f, 0.58f, 0.62f }; // border highlight
@@ -154,6 +167,7 @@ struct Config {
     bool pauseReinject = true;    // pause_reinject: re-inject a paused/eaten action (default on)
     bool handoffOnCombat = true;  // handoff_on_combat: hand the buffered queue over when combat starts (default on)
     bool showInCombat = true;     // show_in_combat: keep the queue strip drawn during combat (default on)
+    bool handoffClearFirst = true;  // handoff_clear_first: clear the engine queue before the first handoff send (default on)
 };
 
 struct Style { float bg[3], bgA, border[3], borderA, iconA, frameA; int borderPx; };
@@ -430,6 +444,7 @@ inline bool parseIniLine(Config& c, const char* line) {
     if (detail::keyEq(kb, ke, "pause_reinject")) return detail::parseBool(vb, ve, &c.pauseReinject);
     if (detail::keyEq(kb, ke, "handoff_on_combat")) return detail::parseBool(vb, ve, &c.handoffOnCombat);
     if (detail::keyEq(kb, ke, "show_in_combat")) return detail::parseBool(vb, ve, &c.showInCombat);
+    if (detail::keyEq(kb, ke, "handoff_clear_first")) return detail::parseBool(vb, ve, &c.handoffClearFirst);
     return false;
 }
 
@@ -936,6 +951,38 @@ inline int fmtHandoffOne(char* out, int cap, uint32_t cmdId, int m, int seq, int
     w.s("HANDOFF_ONE cmd="); w.u(cmdId);
     w.s(" m="); w.mm(m);
     w.s(" seq="); w.i(seq); w.c('/'); w.i(total);
+    return w.done();
+}
+
+// HANDOFF_CLEAR m=<k> cmd=<n> ne=<n> round=<n>   (handoff_clear_first: the engine queue was cleared before the first send)
+inline int fmtHandoffClear(char* out, int cap, int m, uint32_t cmdId, int ne, int round) {
+    detail::LogWr w(out, cap);
+    w.s("HANDOFF_CLEAR m="); w.mm(m);
+    w.s(" cmd="); w.u(cmdId);
+    w.s(" ne="); w.i(ne);
+    w.s(" round="); w.i(round);
+    return w.done();
+}
+
+// ROUND m=<k> n=<count> subs=<s,s,...|-> cur=<n|-> ne=<n> types=<hex,hex,...|->
+// n is the subs count (null subs or n <= 0 prints n=0 subs=-). cur < 0 prints '-'. Types are hex, zero-padded to two digits.
+inline int fmtRound(char* out, int cap, int m, const int* subs, int nSubs, int cur, int ne, const int* types, int nTypes) {
+    detail::LogWr w(out, cap);
+    const int ns = (subs && nSubs > 0) ? nSubs : 0;
+    const int nt = (types && nTypes > 0) ? nTypes : 0;
+    w.s("ROUND m="); w.mm(m);
+    w.s(" n="); w.i(ns);
+    w.s(" subs="); if (ns == 0) w.c('-');
+    for (int k = 0; k < ns; ++k) { if (k) w.c(','); w.i(subs[k]); }
+    w.s(" cur="); if (cur < 0) w.c('-'); else w.i(cur);
+    w.s(" ne="); w.i(ne);
+    w.s(" types="); if (nt == 0) w.c('-');
+    for (int k = 0; k < nt; ++k) {
+        if (k) w.c(',');
+        const unsigned t = (unsigned)types[k];
+        if (t < 16) w.c('0');
+        w.x(t);
+    }
     return w.done();
 }
 
