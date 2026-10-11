@@ -65,7 +65,7 @@ OUTPUT: <repo-relative output artifact path, or None>
 EVIDENCE: <log line, Ghidra address, or code symbol confirming findings>
 FINDING: <concise summary of discovery>
 OPEN: <unresolved questions, or None>
-VERDICT: <PASS | FAIL | INCONCLUSIVE>
+VERDICT: <CONFIRMED | REFUTED | PARTIAL | UNSURE>
 ```
 
 ---
@@ -76,3 +76,35 @@ VERDICT: <PASS | FAIL | INCONCLUSIVE>
 2. **Zero Hardcoded Addresses**: Always use `K2Addr.h`, `GameAddr.h`, or resolved constants from Ghidra DB. Never hardcode magic hex offsets in logic.
 3. **Automated Verification**: Always verify via `python3 scripts/build_check.py --mod <mod>_src` and `python3 scripts/run_tests.py -k <mod>`.
 4. **No Polling**: Use offline log parsers (`python3 scripts/kotor2_logs.py check <log>`) instead of background loops.
+
+---
+
+## Claude Code Haiku swarm (waves)
+
+Backend in Claude Code: native `Agent` calls with `model: haiku`. No `oc-*` backends, no swarm-runner real engine. Artifacts live under `.claude/waves/<id>/` (gitignored).
+
+1. **W0 Scout** (1-3 Haiku): input `python3 scripts/plan_manager.py phase-text <plan> <ID>`; output TSV `task<TAB>entry<TAB>question`.
+2. **W1 Recon** (N read-only Haiku): one unit per <= 3 entries; facts file <= 60 lines; RECON contract (Section 4.B).
+3. **W2 Draft** (one Haiku per task): writes a worker card to `.claude/waves/<id>/cards/<task>.md`.
+4. **W3 Check**: deterministic `python3 scripts/wave_cards.py verify <cards_dir>` first, then one Haiku semantic cross-check per card.
+5. **Opus gate**: Section 0, spot-check 2-3 cards, ordering.
+
+**Budget gate**
+- Per task: <= 60k tokens. Hard ceiling 100k (measured Haiku peaks hit ~98k).
+- Estimate: `E = 10000 overhead + brief_bytes/4 + sum(entry est)`. Entry est: code 3.5 bytes/token, prose 4 bytes/token.
+- Limits: <= 3 entries per unit; each entry <= 12k tokens.
+- Tools: `python3 scripts/wave_budget.py check <entry>...`; `python3 scripts/wave_budget.py windows <path>`.
+
+**Tooling and caps**
+- `python3 scripts/wave_tools.py new|add|list|check|report`. Per-wave baseline: `agent_contract.py snapshot --out <file>`.
+- Caps: <= 12 parallel read-only recon; <= 6 parallel write workers. Above 12 units, print the estimated total first.
+
+**Escalation**: retry once on Haiku with the failure excerpt; then split the task; only then one Sonnet.
+
+**Decisions**
+- Haiku is the default for map, recon, draft, verify.
+- Single Haiku pass by default. The Haiku ladder is opt-in (measured ~5x cost, no gain).
+- RE and address-DB matches: Haiku as sieve plus Opus gate (`ghidra_knowledge/RE_AGENT_GUIDE.md`).
+- The "1-3 parallel" cap applies to Opus agents only.
+
+**Stays inline (no agent)**: git status, one test command, one-file lookups, mark-done/handoff, Section 0, commits, anything touching live game files or shared state.

@@ -17,11 +17,14 @@ User input: $ARGUMENTS
 - `19e`, `25`: doc number. `<plan_stem>` or a repo-relative path also work. Ambiguous matches (two `PHASE4_PLAN.md`) are refused with a list: pass the repo-relative path.
 - Empty `$ARGUMENTS`: pick the plan and phase from THIS session's work (`python3 scripts/plan_manager.py resume <doc>` lists the next open phase). Never run a bare `handoff`: `.claude/active_plan.txt` is shared with other sessions and the script refuses to guess from it.
 
-## 1. Model Tiers
-- **Opus (lead)**: synthesis, plan, decomposition, review, gates, commits.
-- **Haiku swarm (default workers and recon)**: parallel `model: haiku` Agent subagents, narrow briefs (1 deliverable, <=3 files).
-- **Sonnet**: only after three failed Haiku layers.
-- **Inline**: trivial work (git status, 1-3 files, one test command). Never spawn subagents for it.
+## 1. Model Tiers (Haiku first)
+- **Haiku 5.5 (default for every delegated task)**: parallel `model: haiku` Agent subagents for scouting, recon, drafting cards, verification and mechanical edits. One deliverable, <=3 entries, task budget <=60k tokens (hard ceiling 100k). Single pass by default; the multi-layer Haiku ladder is opt-in (measured ~5x cost, no gain).
+- **Opus (lead, thin)**: Section 0, spot-checks, gates, user-facing text, commits, escalation decisions, anything touching live game files or shared state. Opus does not read the repo to write cards.
+- **Sonnet**: escalation only: retry once on Haiku with the failure excerpt, split the task, and only then one Sonnet.
+- **Inline (no agent)**: `git status`, one test command, one-file lookups, `mark-done`/`handoff`.
+- Caps: read-only recon <=12 parallel; write workers <=6 parallel with disjoint Write Scopes; >12 units in a wave: print the estimated token total first. The "1-3 parallel" cap is for Opus agents only.
+- RE and address-DB matches: Haiku output is a sieve (`ghidra_knowledge/RE_AGENT_GUIDE.md`), the Opus gate decides.
+- Recipe, budget formula and tooling: `patch_manager_mods/SUBAGENT_ROLES.md` "Claude Code Haiku swarm". No `oc-*` backends and no swarm runner real engine.
 
 ## 2. Step 1: Persist State (handoff is the LAST writer)
 1. Name the plan: its repo-relative path (`<plan>`), taken from the work done this session, not from `active_plan.txt`.
@@ -35,12 +38,22 @@ User input: $ARGUMENTS
 5. Append runtime lessons under `## 5. Dead Ends & Verification (manual)` in that same file with Edit (kept across regeneration): failed strategies and why, plus exact verification commands.
 6. `--dry-run` on `handoff` previews the path and text without writing.
 
+## 2b. Step 1b: Evidence Wave (BEFORE EnterPlanMode; plan mode blocks subagent writes)
+Skip for trivial plans (<=2 tasks, files already known). Otherwise build the evidence with Haiku waves; wave id = `w<N>-<plan prefix>-<phase>`, e.g. `w1-24-H1`. Artifacts live untracked under `.claude/waves/<id>/`.
+1. **W0 Scout** (1-3 Haiku, read-only): input `python3 scripts/plan_manager.py phase-text <plan> <ID>` (capped ~12k tokens). Output TSV `task<TAB>entry (path or path:lo-hi)<TAB>question`, one row per planned task.
+2. **W1 Recon** (N Haiku, <=12 parallel): `python3 scripts/wave_tools.py new <wave> --kind recon`, then per unit `wave_tools.py add <wave> --id uNN --task "<question>" --entries <entry>...`. It runs the budget gate (exit 3 prints line windows from `scripts/wave_budget.py windows <path>`: re-add with those), writes `uNN.brief.md`, prints the Agent `description` and one-line `prompt`. Launch each as `model: haiku`, `subagent_type: general-purpose`. Each writes a facts file (<=60 lines): exact signatures, 5-10 line snippets, line anchors, existing tests, hazards.
+3. **W2 Draft** (one Haiku per task): reads its facts files plus the phase text and writes one worker card (template below) to `.claude/waves/<id>/cards/<task>.md`. Use a separate `--kind worker` wave.
+4. **W3 Check**: `python3 scripts/wave_tools.py check <wave>` (reply contracts; prints `RERUN:` ids) then `python3 scripts/wave_cards.py verify .claude/waves/<id>/cards` (free: paths, anchors, scopes disjoint, budget). Then one Haiku per card for a semantic cross-check against the phase text. Failures: rerun once on Haiku with the failure excerpt, then split, then one Sonnet.
+5. **Opus gate**: read the one-line-per-unit check table, spot-check the 2-3 riskiest cards on disk, write Section 0, order the execution waves. Never pass long briefs through Opus context: briefs are files, agent prompts are one line.
+6. After a live wave run `python3 scripts/wave_tools.py report <wave>` (estimate vs actual `peak_ctx`; any peak >60k is a failure and prints the new `WAVE_OVERHEAD_TOKENS`).
+7. In plan mode, extra recon uses read-only agents that reply inline (no files).
+
 ## 3. Step 2: Switch to Plan Mode
 Call `EnterPlanMode` (load via `ToolSearch` `select:EnterPlanMode` if deferred). Write the plan, then present it with `ExitPlanMode`: that call is the deliberate approval step ("clear context and apply"), not an early exit. No repo writes after `EnterPlanMode` except the plan file.
 
 ### Opus Task Decomposition Rules
 1. **Section 0 Post-Clear Memory**: embed branch, dirty files, resume command, handoff path and the "Do NOT Attempt" list so they survive the wipe.
-2. **Discrete scopes**: modular tasks for Haiku subagents.
+2. **Discrete scopes**: cards come from the Step 1b wave (drafted by Haiku, gated by Opus); each task <=3 entries, one verification command, Write Scopes disjoint within an execution wave.
 3. **Explicit file targets**: exact paths and symbols; no open-ended searches by workers.
 4. **Self-verification gates**: every task names its verification command (compiler, test, audit).
 5. **Output contracts**: the plan read by the user follows the Output style rules in `~/.claude/CLAUDE.md` (lead with actions, numbered steps, lists capped at 5, concrete time estimates). Subagent briefs instead end with `python3 scripts/agent_contract.py print worker` (edits) or `print recon` (read-only); subagents never use the ADHD format. Run `python3 scripts/agent_contract.py snapshot` before launch and `python3 scripts/agent_contract.py check --scope <globs> -` on the reply before `mark-done`.
@@ -62,21 +75,28 @@ Call `EnterPlanMode` (load via `ToolSearch` `select:EnterPlanMode` if deferred).
 - **Anti-Patterns & Traps**:
   - [Failed Approach]: [Reason it failed]
 
-## 1. Modular Task Units (for Haiku Subagents)
+## 1. Modular Task Units (worker cards, drafted by Haiku in W2)
 
 ### Task 1: [Component / Unit Name]
 - **Contract**: worker | recon
-- **Write Scope**: `path/glob/*` (validator rejects edits outside it)
-- **Target Files**: `path/to/file.ext`
-- **Objective**: [Specific behavioral change]
-- **Data / Offsets**: [Hex addresses, struct layouts, formulas]
+- **Write Scope**: `path/glob/*` (disjoint from every other task in the wave)
+- **Target Files**: `path` or `path:lo-hi` (<=3 entries, each <=12k tokens, total est <=60k)
+- **Objective**: [Specific change]
+- **Data / Inlined Snippets**: [5-10 line struct/signature/macro text with `path:line` anchors]
 - **Guardrails**: [What NOT to do]
-- **Verification**: `[exact validation command]`
+- **Verification**: `[one exact command]`
 
 ### Task 2: [Component / Unit Name]
 - ...
 
-## 2. Final Integration & Regression Verification
+## 2. Wave Schedule (for the post-clear executor)
+- **Write waves**: <=6 Haiku workers each, disjoint Write Scopes; `agent_contract.py snapshot` before, `check --scope <globs> -` after.
+- **Verify wave**: Haiku agents run the scoped test/build commands and report counts only.
+- **Opus gate**: `git diff --stat`, then <=3 files at a time; spot-check the top 3 claims on disk. Commit by explicit paths.
+- **Escalation**: retry once with the failure excerpt, split, then one Sonnet.
+- **Waves dir**: `.claude/waves/<id>/` (cards, facts); the handoff lists it.
+
+## 3. Final Integration & Regression Verification
 - [ ] Comprehensive verification command
 ```
 

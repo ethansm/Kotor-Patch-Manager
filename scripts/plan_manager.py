@@ -8,6 +8,7 @@ Usage:
   python3 scripts/plan_manager.py resume             # Instant token-efficient bootstrap (<250 tokens)
   python3 scripts/plan_manager.py next               # Next phase prompt for subagents
   python3 scripts/plan_manager.py status             # Detailed phase checklist
+  python3 scripts/plan_manager.py phase-text <plan|shorthand> <ID> [--max-tokens N]  # One phase body, token-capped (read-only)
   python3 scripts/plan_manager.py set <plan_path>    # Set active master plan
   python3 scripts/plan_manager.py mark-done <phase>  # Mark phase complete in plan
   python3 scripts/plan_manager.py handoff <doc|phase|--plan P> [notes]  # Write .claude/handoffs/<plan_stem>.handoff.md before /clear (refuses to guess the plan)
@@ -30,6 +31,7 @@ except ImportError:
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ACTIVE_PLAN_FILE = Path(os.environ.get("PLAN_MANAGER_ACTIVE_FILE") or (REPO_ROOT / ".claude" / "active_plan.txt"))
 HANDOFFS_DIR = Path(os.environ.get("PLAN_MANAGER_HANDOFFS_DIR") or (REPO_ROOT / ".claude" / "handoffs"))
+WAVES_DIR = Path(os.environ.get("PLAN_MANAGER_WAVES_DIR") or (REPO_ROOT / ".claude" / "waves"))
 
 PREFIX_LEGEND = {
     "T": "Testing & Contracts",
@@ -56,6 +58,11 @@ SEPARATOR_CELL_RE = re.compile(r':?-+:?')
 # ('| Gate | State |' or '| Layer | Contents | State |' are not phases)
 TABLE_ID_HEADERS = ("id", "#", "batch", "phase", "task", "name", "step", "chunk", "half", "item", "rule id", "wave")
 PHASE_TOKEN_RE = re.compile(r'\b([A-Za-z]{1,3}[0-9]{1,3}[A-Za-z]?)\b')
+# Phase labels as headers print them ('Phase 12', 'Step 3', 'Chunk A', '§12'): the bare key is what remains
+PHASE_WORD_RE = re.compile(r'^(?:(?:PHASE|STEP|CHUNK)(?:\s+|(?=\d))|§\s*)')
+# Leading doc number or identifier of a plan stem: '24_master' -> '24', '19e_x' -> '19e', 'PHASE7_COMMON' -> 'PHASE7'
+WAVE_PREFIX_RE = re.compile(r'^([A-Za-z]{0,6}[0-9]+[A-Za-z]?)(?![A-Za-z0-9])')
+MAX_WAVE_LINES = 5
 HANDOFF_TITLE_RE = re.compile(r'^# Session Handoff & Plan State: (.+)$', re.MULTILINE)
 DEAD_ENDS_HEADING = "## 5. Dead Ends & Verification (manual)"
 DEAD_ENDS_STUB = f"{DEAD_ENDS_HEADING}\n_(none recorded; append Dead Ends & Anti-Patterns and Verification Commands here)_\n"
@@ -550,6 +557,38 @@ def cmd_next(plan: dict, contract: str = ""):
         from agent_contract import template
         print("\n" + template(contract))
 
+def phase_key(label: str) -> str:
+    """Comparable phase label: 'Phase 12', 'step 12', '§12' and '12' all map to '12'; 'h1' and 'H1' both map to 'H1'."""
+    return PHASE_WORD_RE.sub("", norm_ident(label))
+
+
+def _leftover_phase_id(rest: str) -> str:
+    """Phase label carried by a shorthand leftover: 'M3b next' -> 'M3b', 'Phase T5e - x' -> 'T5e'."""
+    m = re.match(r"^(?:Phase\s+)?(\S+)", rest.strip(), re.IGNORECASE)
+    return m.group(1) if m else ""
+
+
+def cmd_phase_text(plan: dict, phase_id: str, max_tokens: int = 12000) -> int:
+    """Print one phase's body, cut at a whole line once the running ceil(bytes/4) total would pass max_tokens. Returns exit code."""
+    key = phase_key(phase_id)
+    phase = next((p for p in plan["phases"] if key and phase_key(p.get("ident", "")) == key), None)
+    if phase is None:
+        known = ", ".join(p["ident"] for p in plan["phases"][:8]) or "none parsed"
+        sys.stderr.write(f"Error: phase {phase_id!r} not found in {plan_rel(plan['path'])}. Known: {known}\n")
+        return 1
+    lines = phase["body"].split("\n")
+    out: list[str] = []
+    used = 0
+    for i, line in enumerate(lines):
+        cost = -(-len(line.encode("utf-8")) // 4)  # ceil(bytes / 4)
+        if used + cost > max_tokens:
+            out.append(f"[truncated: {len(lines) - i} more lines]")
+            break
+        out.append(line)
+        used += cost
+    print("\n".join(out))
+    return 0
+
 def cmd_delegate(plan: dict, target_phase: str = "", mode: str = "auto", dry_run: bool = False):
     remaining = [p for p in plan["phases"] if not p["done"]]
     if not target_phase:
@@ -737,6 +776,14 @@ def handoff_file_for(plan_path: Path, handoffs_dir: Path) -> Path:
     return base
 
 
+def wave_dirs_for(plan_path: Path) -> list[Path]:
+    """WAVES_DIR/*-<doc prefix>-* dirs for this plan (sorted, at most MAX_WAVE_LINES); none when the stem has no leading number."""
+    m = WAVE_PREFIX_RE.match(plan_path.stem)
+    if not m or not WAVES_DIR.is_dir():
+        return []
+    return sorted(d for d in WAVES_DIR.glob(f"*-{m.group(1)}-*") if d.is_dir())[:MAX_WAVE_LINES]
+
+
 def cmd_handoff(plan: dict, git_info: dict, user_direction: str = "", handoff_dir: Path | str | None = None, dry_run: bool = False) -> Path:
     """Write (or with dry_run, print) the plan-scoped handoff; returns its path."""
     handoffs_dir = handoffs_dir_for(handoff_dir)
@@ -772,6 +819,9 @@ def cmd_handoff(plan: dict, git_info: dict, user_direction: str = "", handoff_di
 
     content.append("## 1. Active State & Provenance")
     content.append(f"- **Master Plan:** `{rel_path}`")
+    for wd in wave_dirs_for(plan["path"]):
+        wrel = wd.relative_to(REPO_ROOT) if wd.is_relative_to(REPO_ROOT) else wd
+        content.append(f"- **Waves:** {wrel}/")
     content.append(f"- **Branch:** `{git_info['branch']}` ({git_info['head']})")
     content.append(f"- **Generated:** {time.strftime('%Y-%m-%d %H:%M:%S')} in `{REPO_ROOT}`")
     content.append(f"- **Last Landed Commit:**\n```\n{last_commit_stat}\n```")
@@ -857,6 +907,11 @@ def main():
     p_nxt.add_argument("plan_path", nargs="?", default="", help="Optional explicit master plan path")
     p_nxt.add_argument("--contract", choices=["worker", "recon"], default="", help="Append subagent contract block (scripts/agent_contract.py)")
     
+    p_ptxt = subparsers.add_parser("phase-text", parents=[parent_parser], help="Print one phase's body, capped to a token budget (read-only)")
+    p_ptxt.add_argument("plan_path", nargs="?", default="", help="Master plan path or shorthand (e.g. 24:H1, 25 §12)")
+    p_ptxt.add_argument("phase_id", nargs="?", default="", help="Phase ID (e.g. H1, T5e, 'Phase 3'); optional when the shorthand carries it")
+    p_ptxt.add_argument("--max-tokens", type=int, default=12000, help="Token budget: ceil(bytes/4) per line (default 12000)")
+
     p_set = subparsers.add_parser("set", parents=[parent_parser], help="Set active plan")
     p_set.add_argument("plan_path", help="Path to master plan markdown file")
 
@@ -935,6 +990,31 @@ def main():
             sys.exit(2)
         explicit_plan = str(resolved_p)
 
+    # phase-text resolves its plan like next but never falls back to the shared pointer. The phase ID is the
+    # second positional, or the shorthand leftover when only one positional is given ('24:H1').
+    phase_text_id = ""
+    if args.cmd == "phase-text":
+        if args.max_tokens < 1:
+            sys.stderr.write("Error: --max-tokens must be 1 or more.\n")
+            sys.exit(2)
+        phase_text_id = args.phase_id
+        if getattr(args, "plan", ""):
+            # --plan given: the lone positional is the phase ID
+            phase_text_id = phase_text_id or args.plan_path
+        else:
+            if not args.plan_path:
+                sys.stderr.write("Error: phase-text needs a plan path or shorthand, e.g. 'phase-text 24:H1'.\n")
+                sys.exit(2)
+            resolved_p, phase_rest = resolve_or_die(args.plan_path)
+            if not resolved_p:
+                sys.stderr.write(f"Error: plan or shorthand not found: {args.plan_path}\n")
+                sys.exit(2)
+            explicit_plan = str(resolved_p)
+            phase_text_id = phase_text_id or _leftover_phase_id(phase_rest)
+        if not phase_text_id:
+            sys.stderr.write("Error: phase-text needs a phase ID, e.g. 'phase-text 24 H1' or 'phase-text 24:H1'.\n")
+            sys.exit(2)
+
     plan_path = discover_active_plan(explicit_path=explicit_plan)
     if not plan_path:
         sys.stderr.write("No active master plan found. Set one with 'python3 scripts/plan_manager.py set <path>'.\n")
@@ -950,6 +1030,8 @@ def main():
         cmd_resume(plan, git_info, json_mode=getattr(args, "json", False))
     elif args.cmd == "next":
         cmd_next(plan, contract=getattr(args, "contract", ""))
+    elif args.cmd == "phase-text":
+        sys.exit(cmd_phase_text(plan, phase_text_id, max_tokens=args.max_tokens))
     elif args.cmd == "delegate":
         sys.exit(cmd_delegate(plan, target_phase=getattr(args, "phase", ""), mode=args.mode, dry_run=args.dry_run))
     elif args.cmd == "mark-done":

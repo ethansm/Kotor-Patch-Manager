@@ -22,12 +22,14 @@ atexit.register(shutil.rmtree, _SANDBOX_DIR, ignore_errors=True)
 # Sandbox pointer and handoffs dir for CLI calls, so tests never rewrite the real .claude state
 _SANDBOX_ACTIVE = _SANDBOX_DIR / "active_plan.txt"
 _SANDBOX_HANDOFFS = _SANDBOX_DIR / "handoffs"
+_SANDBOX_WAVES = _SANDBOX_DIR / "waves"
 
 class TestPlanManager(unittest.TestCase):
     def setUp(self):
         # Every test starts with no pointer and no handoffs, so one test's leftovers never steer another
         _SANDBOX_ACTIVE.unlink(missing_ok=True)
         shutil.rmtree(_SANDBOX_HANDOFFS, ignore_errors=True)
+        shutil.rmtree(_SANDBOX_WAVES, ignore_errors=True)
 
     def make_plan(self, rel, body="# P\n| Id | Batch | Status |\n|---|---|---|\n| M1 | Init | TODO |\n| M2 | Build | TODO |\n"):
         p = _SANDBOX_DIR / rel
@@ -36,7 +38,8 @@ class TestPlanManager(unittest.TestCase):
         return p
 
     def run_cli(self, *args):
-        env = dict(os.environ, PLAN_MANAGER_ACTIVE_FILE=str(_SANDBOX_ACTIVE), PLAN_MANAGER_HANDOFFS_DIR=str(_SANDBOX_HANDOFFS))
+        env = dict(os.environ, PLAN_MANAGER_ACTIVE_FILE=str(_SANDBOX_ACTIVE), PLAN_MANAGER_HANDOFFS_DIR=str(_SANDBOX_HANDOFFS),
+                   PLAN_MANAGER_WAVES_DIR=str(_SANDBOX_WAVES))
         cmd = [sys.executable, str(SCRIPT)] + list(args)
         res = subprocess.run(cmd, cwd=str(REPO_ROOT), env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         return res
@@ -460,6 +463,61 @@ class TestPlanManager(unittest.TestCase):
         body = "# P\n| Id | Batch | Status |\n|---|---|---|\n" + "".join(f"| {i} | x | {s} |\n" for i, s in rows)
         done = {p["ident"]: p["done"] for p in self._parse(body)}
         self.assertEqual(done, {"A": True, "B": False, "C": False, "D": True, "E": False, "F": True, "G": False, "H": True})
+
+    def test_phase_text_prints_body(self):
+        """phase-text prints one phase's body (table row) and exits 0; the bare numeric form matches header phases too."""
+        plan = self.make_plan("pt/phase_text_plan.md")
+        res = self.run_cli("phase-text", str(plan), "M2")
+        self.assertEqual(res.returncode, 0, res.stderr)
+        self.assertEqual(res.stdout.strip(), "Status: TODO | Batch: Build")
+
+    def test_phase_text_truncates_with_marker(self):
+        """A tiny --max-tokens cuts at whole lines (ceil(bytes/4) each) and ends with the remaining-line marker."""
+        body_lines = [f"line {i:02d} " + "x" * 32 for i in range(1, 21)]  # 40 bytes = 10 tokens per line
+        plan = self.make_plan("pt/phase_budget_plan.md", "# Budget\n## Phase 1: Long\n" + "\n".join(body_lines) + "\n")
+        res = self.run_cli("phase-text", str(plan), "Phase 1", "--max-tokens", "25")
+        self.assertEqual(res.returncode, 0, res.stderr)
+        self.assertEqual(res.stdout.splitlines(), [body_lines[0], body_lines[1], "[truncated: 18 more lines]"])
+        full = self.run_cli("phase-text", str(plan), "1")
+        self.assertEqual(full.returncode, 0, full.stderr)
+        self.assertEqual(full.stdout.splitlines(), body_lines)
+
+    def test_phase_text_unknown_id_exits_1(self):
+        plan = self.make_plan("pt/phase_unknown_plan.md")
+        res = self.run_cli("phase-text", str(plan), "ZZ9")
+        self.assertEqual(res.returncode, 1, res.stdout)
+        self.assertIn("not found", res.stderr)
+
+    def test_phase_text_leaves_pointer_alone_and_never_guesses_plan(self):
+        """phase-text never rewrites the shared pointer, creates one, or falls back to it for an unresolvable plan."""
+        a = self.make_plan("pt/pointer_a.md")
+        b = self.make_plan("pt/pointer_b.md")
+        _SANDBOX_ACTIVE.write_text(str(a), encoding="utf-8")
+        self.assertEqual(self.run_cli("phase-text", str(b), "M1").returncode, 0)
+        self.assertEqual(_SANDBOX_ACTIVE.read_text(encoding="utf-8"), str(a))
+        bad = self.run_cli("phase-text", "no_such_plan_zz9", "M1")
+        self.assertEqual(bad.returncode, 2, bad.stdout)
+        self.assertIn("not found", bad.stderr)
+        self.assertEqual(_SANDBOX_ACTIVE.read_text(encoding="utf-8"), str(a))
+        _SANDBOX_ACTIVE.unlink(missing_ok=True)
+        self.assertEqual(self.run_cli("phase-text", str(b), "M1").returncode, 0)
+        self.assertFalse(_SANDBOX_ACTIVE.exists())
+
+    def test_handoff_lists_wave_dirs(self):
+        """handoff adds '- **Waves:**' lines for dirs named *-<doc number>-*: sorted, max 5, prefix-exact; no match adds none."""
+        plan = self.make_plan("wv/24_wave_probe.md")
+        other = self.make_plan("wv/25_no_waves.md")
+        for i in range(1, 7):
+            (_SANDBOX_WAVES / f"w{i}-24-H{i}").mkdir(parents=True, exist_ok=True)  # six matches, five listed
+        (_SANDBOX_WAVES / "w1-245-H1").mkdir(parents=True, exist_ok=True)  # '245' is not doc 24
+        res = self.run_cli("handoff", "--plan", str(plan), "Wave probe")
+        self.assertEqual(res.returncode, 0, res.stderr)
+        text = (_SANDBOX_HANDOFFS / "24_wave_probe.handoff.md").read_text(encoding="utf-8")
+        wave_lines = [l for l in text.splitlines() if l.startswith("- **Waves:**")]
+        self.assertEqual(wave_lines, [f"- **Waves:** {_SANDBOX_WAVES / f'w{i}-24-H{i}'}/" for i in range(1, 6)])
+        res2 = self.run_cli("handoff", "--plan", str(other), "No waves")
+        self.assertEqual(res2.returncode, 0, res2.stderr)
+        self.assertNotIn("- **Waves:**", (_SANDBOX_HANDOFFS / "25_no_waves.handoff.md").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

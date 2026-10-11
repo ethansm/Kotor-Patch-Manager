@@ -42,4 +42,5 @@ At session start or before mod work, run `python3 scripts/check_kpm_updates.py -
 - See `patch_manager_mods/SUBAGENT_ROLES.md` for full role catalog, backend routing, and contract specs.
 - Brief = `Contract: worker|recon` + `Write Scope: <globs>` + output of `python3 scripts/agent_contract.py print worker|recon`.
 - **Backend policy (Claude Code)**: Do not use OpenCode subagents (`oc-subagent`, `oc-flow`, `oc-free`, `oc-local`) unless the user explicitly asks for them in Claude Code. Default to the Haiku swarm (parallel `model: haiku` Agent subagents).
+- Wave recipe and budget gate: see `patch_manager_mods/SUBAGENT_ROLES.md` "Claude Code Haiku swarm (waves)".
 - Order: worker CREATED,MODIFIED,TESTS,NOTES,STATUS · recon OUTPUT,EVIDENCE,FINDING,OPEN,VERDICT. Verify: `agent_contract.py snapshot` before launch, `agent_contract.py check --scope <globs> -` after.
