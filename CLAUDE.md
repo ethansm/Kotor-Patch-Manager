@@ -34,7 +34,7 @@ At session start or before mod work, run `python3 scripts/check_kpm_updates.py -
 - **Forbidden Discovery Commands**:
   - NEVER run broad `ls` or recursive tree walks on mod directories on startup.
   - NEVER `cat` entire source files or headers just to inspect an API; use `sed -n 'X,Yp'` or `rg` for specific symbols.
-  - NEVER read historical session context docs (`19*.md`, `15*.md`, etc.); active state is in `.claude/session_handoff.md` and the active plan.
+  - NEVER read historical session context docs (`19*.md`, `15*.md`, etc.); active state is in your named handoff `.claude/handoffs/<plan_stem>.handoff.md` and the active plan. Several sessions share this worktree, so do not read `.claude/session_handoff.md`; it is no longer written.
   - Do NOT prepend redundant `cd $PWD` to shell commands.
   - Use native file edit tools (`Edit`/`Write`) instead of multi-line Python heredocs in Bash when modifying files.
 

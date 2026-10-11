@@ -10,7 +10,7 @@ Usage:
   python3 scripts/plan_manager.py status             # Detailed phase checklist
   python3 scripts/plan_manager.py set <plan_path>    # Set active master plan
   python3 scripts/plan_manager.py mark-done <phase>  # Mark phase complete in plan
-  python3 scripts/plan_manager.py handoff [prompt]   # Prepare .claude/session_handoff.md before /clear
+  python3 scripts/plan_manager.py handoff [prompt]   # Write .claude/handoffs/<plan_stem>.handoff.md before /clear
 """
 
 import argparse
@@ -29,10 +29,8 @@ except ImportError:
     ml = None
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-ACTIVE_PLAN_FILE = REPO_ROOT / ".claude" / "active_plan.txt"
-HANDOFF_FILE = REPO_ROOT / ".claude" / "session_handoff.md"
-PREV_HANDOFF_FILE = REPO_ROOT / ".claude" / "session_handoff.prev.md"
-HANDOFFS_DIR = REPO_ROOT / ".claude" / "handoffs"
+ACTIVE_PLAN_FILE = Path(os.environ.get("PLAN_MANAGER_ACTIVE_FILE") or (REPO_ROOT / ".claude" / "active_plan.txt"))
+HANDOFFS_DIR = Path(os.environ.get("PLAN_MANAGER_HANDOFFS_DIR") or (REPO_ROOT / ".claude" / "handoffs"))
 
 PREFIX_LEGEND = {
     "T": "Testing & Contracts",
@@ -299,7 +297,7 @@ def cmd_resume(plan: dict, git_info: dict, json_mode: bool = False):
         import json
         upcoming = remaining[1:4]
         res_data = {
-            "plan_path": str(plan["path"].relative_to(REPO_ROOT)),
+            "plan_path": str(plan["path"].relative_to(REPO_ROOT) if plan["path"].is_relative_to(REPO_ROOT) else plan["path"]),
             "title": plan["title"],
             "branch": git_info["branch"],
             "head": git_info["head"],
@@ -312,7 +310,7 @@ def cmd_resume(plan: dict, git_info: dict, json_mode: bool = False):
         }
         if handoff_direction:
             res_data["handoff_direction"] = handoff_direction
-            res_data["scoped_handoff"] = str(scoped_handoff.relative_to(REPO_ROOT))
+            res_data["scoped_handoff"] = str(scoped_handoff.relative_to(REPO_ROOT) if scoped_handoff.is_relative_to(REPO_ROOT) else scoped_handoff)
         print(json.dumps(res_data, indent=2))
         return
 
@@ -581,15 +579,9 @@ def cmd_mark_done(plan: dict, target_str: str, commit_sha: str = "", notes: str 
         _log_done()
 
 def cmd_handoff(plan: dict, git_info: dict, user_direction: str = "", handoff_dir: Path | str | None = None):
-    target_dir = Path(handoff_dir).resolve() if handoff_dir else HANDOFF_FILE.parent
+    target_dir = Path(handoff_dir).resolve() if handoff_dir else REPO_ROOT / ".claude"
     target_dir.mkdir(parents=True, exist_ok=True)
-    handoff_file = target_dir / "session_handoff.md"
-    prev_handoff_file = target_dir / "session_handoff.prev.md"
     handoffs_dir = target_dir / "handoffs"
-
-    if handoff_file.exists():
-        import shutil
-        shutil.copy2(handoff_file, prev_handoff_file)
 
     remaining = [p for p in plan["phases"] if not p["done"]]
     current = remaining[0] if remaining else None
@@ -657,11 +649,6 @@ def cmd_handoff(plan: dict, git_info: dict, user_direction: str = "", handoff_di
         content.append(f"- **Delegate to Subagent**: `python3 scripts/plan_manager.py delegate {current['ident']}`")
         content.append("- **Supported Commands**: `oc-subagent <scout|code|ghidra|verify|gate|doc>` or `oc-flow auto \"<task>\"`\n")
 
-    handoff_file.write_text("\n".join(content), encoding="utf-8")
-    rel_h = handoff_file.relative_to(REPO_ROOT) if handoff_file.is_relative_to(REPO_ROOT) else handoff_file
-    rel_prev = prev_handoff_file.relative_to(REPO_ROOT) if prev_handoff_file.is_relative_to(REPO_ROOT) else prev_handoff_file
-    print(f"Handoff written to {rel_h}")
-    print(f"Rotated previous handoff to {rel_prev}")
     if ml:
         ml.log_event("SESSION_HANDOFF", {
             "plan": str(plan["path"]) if plan and "path" in plan else "",
@@ -784,9 +771,10 @@ def main():
         sys.exit(cmd_delegate(plan, target_phase=getattr(args, "phase", ""), mode=args.mode, dry_run=args.dry_run))
     elif args.cmd == "mark-done":
         cmd_mark_done(plan, args.phase, commit_sha=args.commit, notes=args.notes, state=args.state)
-        # Ensure active plan reflects the plan we just marked done
-        ACTIVE_PLAN_FILE.parent.mkdir(parents=True, exist_ok=True)
-        ACTIVE_PLAN_FILE.write_text(str(plan["path"]), encoding="utf-8")
+        # Ensure active plan reflects the plan we just marked done (skipped for isolated --handoff-dir runs, e.g. tests)
+        if not getattr(args, "handoff_dir", None):
+            ACTIVE_PLAN_FILE.parent.mkdir(parents=True, exist_ok=True)
+            ACTIVE_PLAN_FILE.write_text(str(plan["path"]), encoding="utf-8")
 
         # Automatically update handoff and output Saved State block
         if not getattr(args, "no_handoff", False):

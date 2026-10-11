@@ -55,7 +55,7 @@ Switch to Claude Code's built-in plan mode by calling the `EnterPlanMode` tool (
 - **Dirty Files**: [List of modified paths]
 - **Anti-Patterns & Traps**:
   - ❌ [Failed Approach]: [Reason it failed]
-- **Handoff Reference**: `.claude/session_handoff.md`
+- **Handoff Reference**: `.claude/handoffs/<plan_stem>.handoff.md`
 
 ## 1. Modular Task Units (for Sonnet Subagents)
 

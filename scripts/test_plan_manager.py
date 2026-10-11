@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """test_plan_manager.py - Unit test suite for plan_manager.py"""
 
+import atexit
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -14,11 +16,18 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 import os
 os.environ["MASTER_LEDGER_TEST"] = "1"
+# Sandbox dir for every file a test writes, so nothing lands in the real repo or its .claude state
+_SANDBOX_DIR = Path(tempfile.mkdtemp(prefix="plan_manager_test_"))
+atexit.register(shutil.rmtree, _SANDBOX_DIR, ignore_errors=True)
+# Sandbox pointer and handoffs dir for CLI calls, so tests never rewrite the real .claude state
+_SANDBOX_ACTIVE = _SANDBOX_DIR / "active_plan.txt"
+_SANDBOX_HANDOFFS = _SANDBOX_DIR / "handoffs"
 
 class TestPlanManager(unittest.TestCase):
     def run_cli(self, *args):
+        env = dict(os.environ, PLAN_MANAGER_ACTIVE_FILE=str(_SANDBOX_ACTIVE), PLAN_MANAGER_HANDOFFS_DIR=str(_SANDBOX_HANDOFFS))
         cmd = [sys.executable, str(SCRIPT)] + list(args)
-        res = subprocess.run(cmd, cwd=str(REPO_ROOT), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        res = subprocess.run(cmd, cwd=str(REPO_ROOT), env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         return res
 
     def test_resume_json(self):
@@ -95,30 +104,33 @@ class TestPlanManager(unittest.TestCase):
         finally:
             tmp_path.unlink()
 
-    def test_handoff_rotation(self):
-        """Verify handoff writes session_handoff.md and rotates previous in isolated temp dir."""
+    def test_handoff_writes_named_file_only(self):
+        """Verify handoff writes only the plan-scoped file; the shared session_handoff.md is never written or rotated."""
         table_plan = "# Test Plan\n| Id | Batch | Status |\n|---|---|---|\n| M1 | Init | TODO |\n"
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp_root = Path(tmpdir)
             tmp_plan = tmp_root / "test_plan.md"
             tmp_plan.write_text(table_plan)
             handoff_dir = tmp_root / ".claude"
+            named_path = handoff_dir / "handoffs" / "test_plan.handoff.md"
+            shared_path = handoff_dir / "session_handoff.md"
+            shared_prev_path = handoff_dir / "session_handoff.prev.md"
 
-            # 1. First run writes session_handoff.md
+            # 1. First run writes the named file only
             res1 = self.run_cli("handoff", "--plan", str(tmp_plan), "--handoff-dir", str(handoff_dir), "Direction One")
             self.assertEqual(res1.returncode, 0, f"Stderr: {res1.stderr}")
-            h_path = handoff_dir / "session_handoff.md"
-            prev_path = handoff_dir / "session_handoff.prev.md"
-            self.assertTrue(h_path.exists())
-            self.assertFalse(prev_path.exists())
-            self.assertIn("Direction One", h_path.read_text())
+            self.assertTrue(named_path.exists())
+            self.assertIn("Direction One", named_path.read_text())
+            self.assertFalse(shared_path.exists())
+            self.assertFalse(shared_prev_path.exists())
 
-            # 2. Second run rotates previous to session_handoff.prev.md
+            # 2. Second run overwrites the named file; still no shared file and no rotation
             res2 = self.run_cli("handoff", "--plan", str(tmp_plan), "--handoff-dir", str(handoff_dir), "Direction Two")
             self.assertEqual(res2.returncode, 0, f"Stderr: {res2.stderr}")
-            self.assertTrue(prev_path.exists())
-            self.assertIn("Direction One", prev_path.read_text())
-            self.assertIn("Direction Two", h_path.read_text())
+            self.assertIn("Direction Two", named_path.read_text())
+            self.assertNotIn("Direction One", named_path.read_text())
+            self.assertFalse(shared_path.exists())
+            self.assertFalse(shared_prev_path.exists())
     def test_mark_done_custom_state(self):
         """Verify mark-done supports custom --state (e.g. PARTIAL, BUILT)."""
         table_plan = """# Master Test Plan
@@ -131,18 +143,20 @@ class TestPlanManager(unittest.TestCase):
             fp.write(table_plan)
             tmp_path = Path(fp.name)
 
-        try:
-            res = self.run_cli("--plan", str(tmp_path), "mark-done", "M1", "--state", "PARTIAL", "--notes", "halfway done")
-            self.assertEqual(res.returncode, 0, f"Stderr: {res.stderr}")
-            content = tmp_path.read_text()
-            self.assertIn("| M1 | Init | PARTIAL | | halfway done |", content)
+        # --handoff-dir isolates handoff output and keeps the real .claude/active_plan.txt untouched
+        with tempfile.TemporaryDirectory() as h_dir:
+            try:
+                res = self.run_cli("--plan", str(tmp_path), "mark-done", "M1", "--state", "PARTIAL", "--notes", "halfway done", "--handoff-dir", h_dir)
+                self.assertEqual(res.returncode, 0, f"Stderr: {res.stderr}")
+                content = tmp_path.read_text()
+                self.assertIn("| M1 | Init | PARTIAL | | halfway done |", content)
 
-            res2 = self.run_cli("--plan", str(tmp_path), "mark-done", "M2", "--state", "BUILT", "--commit", "abc1234")
-            self.assertEqual(res2.returncode, 0, f"Stderr: {res2.stderr}")
-            content2 = tmp_path.read_text()
-            self.assertIn("| M2 | Build | BUILT | abc1234 | |", content2)
-        finally:
-            tmp_path.unlink()
+                res2 = self.run_cli("--plan", str(tmp_path), "mark-done", "M2", "--state", "BUILT", "--commit", "abc1234", "--handoff-dir", h_dir)
+                self.assertEqual(res2.returncode, 0, f"Stderr: {res2.stderr}")
+                content2 = tmp_path.read_text()
+                self.assertIn("| M2 | Build | BUILT | abc1234 | |", content2)
+            finally:
+                tmp_path.unlink()
 
     def test_mark_done_auto_handoff_and_saved_state(self):
         """Verify mark-done automatically generates handoff and prints Saved State block."""
@@ -180,7 +194,7 @@ class TestPlanManager(unittest.TestCase):
             long_prompt = "next plan should focus on reviewing our kotor2 skills and finding better prompts, techniques, strategies or scripts " * 5
             res = self.run_cli("--plan", str(tmp_plan), "handoff", long_prompt, "--handoff-dir", str(tmp_root))
             self.assertEqual(res.returncode, 0, f"Stderr: {res.stderr}")
-            h_path = tmp_root / "session_handoff.md"
+            h_path = tmp_root / "handoffs" / "test_plan.handoff.md"
             self.assertTrue(h_path.exists())
             self.assertIn("reviewing our kotor2 skills", h_path.read_text())
 
@@ -206,7 +220,7 @@ class TestPlanManager(unittest.TestCase):
 
     def test_mark_done_auto_resolves_plan_from_phase(self):
         """Verify mark-done finds the owning plan doc from the phase token even if another plan is active."""
-        test_plan_path = REPO_ROOT / "patch_manager_mods" / "99_temp_autoresolve_test_plan.md"
+        test_plan_path = _SANDBOX_DIR / "99_temp_autoresolve_test_plan.md"
         content = """# Temp Auto-Resolve Plan
 | Id | Batch | Status |
 |---|---|---|
@@ -214,9 +228,9 @@ class TestPlanManager(unittest.TestCase):
 | AR2 | Action 2 | TODO |
 """
         test_plan_path.write_text(content, encoding="utf-8")
-        active_plan = REPO_ROOT / ".claude" / "active_plan.txt"
-        prev_active = active_plan.read_text(encoding="utf-8") if active_plan.exists() else None
         try:
+            # Point the sandbox pointer at the temp plan, so mark-done without --plan resolves it
+            _SANDBOX_ACTIVE.write_text(str(test_plan_path), encoding="utf-8")
             # Call mark-done without --plan, passing phase AR1; keep handoff output in a temp dir
             with tempfile.TemporaryDirectory() as hdir:
                 res = self.run_cli("mark-done", "AR1", "--notes", "auto resolved", "--handoff-dir", hdir)
@@ -225,15 +239,11 @@ class TestPlanManager(unittest.TestCase):
                 self.assertIn("| AR1 | Action 1 | DONE |", updated)
         finally:
             test_plan_path.unlink(missing_ok=True)
-            if prev_active is None:
-                active_plan.unlink(missing_ok=True)
-            else:
-                active_plan.write_text(prev_active, encoding="utf-8")
 
     def test_resume_scoped_handoff_direction(self):
         """Verify resume reads direction from .claude/handoffs/<plan_stem>.handoff.md."""
-        test_plan = REPO_ROOT / "patch_manager_mods" / "99_temp_scoped_handoff_plan.md"
-        handoffs_dir = REPO_ROOT / ".claude" / "handoffs"
+        test_plan = _SANDBOX_DIR / "99_temp_scoped_handoff_plan.md"
+        handoffs_dir = _SANDBOX_HANDOFFS
         handoffs_dir.mkdir(parents=True, exist_ok=True)
         scoped_file = handoffs_dir / "99_temp_scoped_handoff_plan.handoff.md"
 
@@ -255,7 +265,7 @@ class TestPlanManager(unittest.TestCase):
 
     def test_delegate_dry_run(self):
         """Verify delegate --dry-run emits prompt and respects plan."""
-        test_plan = REPO_ROOT / "patch_manager_mods" / "99_temp_delegate_plan.md"
+        test_plan = _SANDBOX_DIR / "99_temp_delegate_plan.md"
         test_plan.write_text("# Temp Plan\n| Id | Batch | Status |\n|---|---|---|\n| DG1 | Delegate Batch | TODO |\n", encoding="utf-8")
         try:
             res = self.run_cli("--plan", str(test_plan), "delegate", "DG1", "--dry-run")
