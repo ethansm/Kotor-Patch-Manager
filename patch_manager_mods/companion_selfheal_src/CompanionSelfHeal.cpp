@@ -485,6 +485,8 @@ enum {
     NWidgets
 };
 W g_w[NWidgets];
+// Phase G bisect (HUD +0x48 = 0xFF8FB44F hides hotbar + self-heal): false = the 4 SH2 leader widgets are not created.
+constexpr bool kLeaderWidgets = false;
 
 void wRect(W& w, const shui::Rect& r) { if (!w.c || (w.rectSet && w.r == r)) return; if (guikit::setRect(w.c, r.x, r.y, r.w, r.h)) { w.r = r; w.rectSet = true; } }
 bool isPopText(const W& w) { int i = static_cast<int>(&w - g_w); return i == W_Auto || i == W_HpM || i == W_HpP || i == W_KeepM || i == W_KeepP || i == W_HpVal || i == W_KeepVal; }
@@ -1042,6 +1044,7 @@ void buildWidgets(uintptr_t panel) {
     int n = 0;
     std::string whys;
     auto add = [&](int idx, const char* tmpl, const char* text, bool font, const char* name) {
+        if (!kLeaderWidgets && (idx == W_DiscLeader || idx == W_FrameLeader || idx == W_BtnLeader || idx == W_RingLeader)) { ++n; return; }
         int why = 0;
         uintptr_t c = makeLabel(panel, tmpl, text, font, &why);
         if (!c && !strcmp(tmpl, "LBL_MOULDING3")) { c = makeLabel(panel, "LBL_QUEUE1", text, font, &why); if (c) whys += std::string(name) + ":moulding3 fallback ";}
@@ -1082,8 +1085,11 @@ void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
     uint32_t vt = 0;
     if (!panel || !rd<uint32_t>(panel, 0, &vt) || vt != HudVtable) return;
     g_hud = panel;
+    uint32_t f48pre = 0;
+    rd<uint32_t>(panel, Panel_Flags, &f48pre);
     buildWidgets(panel);
     if (!g_logOn) return;
+    KP_LOG(chHud, "P0 bisect leaderWidgets=%d hud +0x48 before build=%08x", (int)kLeaderWidgets, (unsigned)f48pre);
     uint32_t f30 = 0, f48 = 0, ctl = 0, cnt = 0;
     rd<uint32_t>(panel, Panel_Open, &f30); rd<uint32_t>(panel, Panel_Flags, &f48); rd<uint32_t>(panel, Panel_Ctl, &ctl); rd<uint32_t>(panel, Panel_CtlCount, &cnt);
     bool layoutOpen = f30 != 0 && (f48 & 2);
