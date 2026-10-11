@@ -1,3 +1,60 @@
+# Swarm M2 safety: Session A handoff (2026-10-10)
+
+Resume next: `swarm M2 safety, Session B (B1)`. Plan: Swarm M2 safety re-scope (post phase 3d), §4 Session B.
+
+## Commits
+- Bundle baseline (own git repo, `~/.claude/skills/deep-haiku-review/bundle`): `a42a422` ("baseline before M2 re-scope (includes phase 3d)"). Tarball: `~/.claude/swarm/backups/bundle_20261010_224532.tgz`.
+- LIB (`~/.claude/swarm`, base `f0afd1c`):
+  - `3f89f33` hygiene module (`lib/hygiene.py`, `tests/test_hygiene.py`)
+  - `981759b` sandbox hygiene args, `--hide`, `--chdir` (`lib/sandbox.py`, `tests/test_sandbox.py`)
+  - `22f410c` home probe `env_clean`, `run_dir_hidden`, `--argv-file` (`bin/swarm_home_probe.py`, `tests/test_home_probe.py`)
+  - `7023abd` vendor-parity and bundle-wrapper tests (RED until B1)
+- Project `34927cb`: `tests/suites.toml` (3 suites) and `scripts/swarm_argv_probe.py` (stubs `dr_sandbox_prefix`).
+
+## A0 baselines (all $0; the "spend" in selftest output is the stub's simulated DEFAULT_COST, not billed)
+| Check | Plan expected | Actual |
+|---|---|---|
+| selftest mock | 113 | 115/115 |
+| selftest real --quick | 184 | 190/190 |
+| selftest real (full) | ~192 | 198/198 |
+| `run_tests.py swarm-lib` (pre-A3) | 3 PASS | 3 PASS |
+| argv probe | `IDENTICAL`, control PASS | rc 0, IDENTICAL, control PASS, no `command not found` (not broken; A2b is hardening) |
+
+## Red set (by design until B1)
+- `test_hygiene_checks_pass`: `env_clean` False, `run_dir_hidden` False. The current wrapper has no `--unsetenv` for `FAKE_API_TOKEN` and no `/run/user/<uid>` tmpfs.
+- `test_custom_non_stub_binary_is_wrapped`: EMPTY_PREFIX. `dr_is_stub` treats any `DR_CLAUDE_BIN` other than literal `claude` as a stub.
+- The other 5 wrapper tests PASS. `run_tests.py swarm-bundle-wrapper` shows 2 failures.
+
+## Mutation table (scratch copy of LIB; each must fail its test)
+| ID | Mutation | Result |
+|---|---|---|
+| M1 | drop the secret-env loop in `hygiene_args` | FAIL: 3 args-shape tests + live env test |
+| M2 | drop the run-dir tmpfs | FAIL: args-shape with run dir + live run-dir test |
+| M3 | hygiene args moved above the bwrap literal | FAIL: 3 order tests (assertions); 4 live tests ERROR (bwrap exec of `--tmpfs`) |
+| M4 | `env_clean` not recorded | ERROR: `KeyError: 'env_clean'` in 4 tests |
+| M5 | non-bwrap `--argv-file` accepted | FAIL: `test_main_argv_file_non_bwrap_exits_2` |
+
+## Plan corrections found during Session A
+- `ANTHROPIC_BASE_URL` does not match `SECRET_ENV_RE`; the passthrough test checks only the three names that match, plus that all four are never returned.
+- New live sandbox tests went into the existing `LiveSandboxTests` class (a second class with the same name would shadow it). One extra CLI test (`test_cli_passes_hide_and_chdir`) covers `--hide`/`--chdir`.
+- `_sh(script, *args)` in the probe already matched the spec; no adaptation.
+- `--argv-file` validation returns rc 2 before the bwrap availability check (rc 3).
+
+## Watch list for the §7 canary
+- `CLAUDE_CODE_MESSAGING_TOKEN` is unset by the hygiene regex. A child `claude -p` might need it (plan §3.0 item 5).
+- `/run/user/<uid>` tmpfs and `claude_state` (default `rw`) remain unproven until the real canary.
+
+## Open items for the user
+- Delete `.claude/handoffs/misrouted_swarm_m2.handoff.md`? (Not deleted; needs a yes.)
+- Registration choice: the three suites are registered now, so a bare `run_tests.py` shows one red (`swarm-bundle-wrapper`) until B1. Say so if you'd rather register it at B1.
+
+## Next (Session B)
+B1 wrapper hardening (`engine/verify/runlib.sh`, `dr_profile.py`, `engine/sandbox_hygiene.py`, `PROFILE_SPEC.md`, `dr_lib/selftest.py`). Gate first: `pgrep -af 'run_fix|run_map|run_integrate|fix_checks' | grep -v pgrep` must print nothing. Bundle baseline `a42a422`.
+
+---
+
+# Earlier handoff (M2.1 seed, 17:47): superseded where it conflicts with the Session A section above
+
 # Swarm M2 safety handoff
 
 Plan: "Swarm library: next phases (M2 safety now; M3-M5 as stubs)". Updated 2026-10-10 17:47 EDT.
