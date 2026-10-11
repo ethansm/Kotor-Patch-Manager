@@ -1,0 +1,62 @@
+Task: verify one claim about one source file.
+
+Decide whether the claim is supported by the excerpt alone. Use only the claim, the file location, and the numbered excerpt below. If the excerpt does not contain enough information to decide, say so in the output instead of guessing.
+
+Work through it this way:
+1. Restate the claim in your own words in claim_restated.
+2. Find the lines in the excerpt that bear on the claim. Put lines that support the claim in supporting_quotes, and lines that contradict it in refutation_quotes. For each quote, give the file path, the line number shown in the excerpt, and the line text copied character for character. The text field holds only the line content, without the line number prefix.
+3. Choose the verdict from the enum values in the attached schema, based only on what the excerpt shows.
+4. Set confidence to high, medium, or low.
+5. In not_verifiable_without_running, state what could not be checked from the excerpt alone. In residual_questions, list open questions. Use an empty list or an empty string when there are none.
+6. In counter_evidence_searched, record each search you made inside the excerpt, with the pattern, the scope, the number of hits, and a note. Use an empty list if you made no search.
+7. In tool_trace, record any tool use. Use an empty list if you used no tools.
+8. Set finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: Heavy post hook: `address = 0x0051D9C1` with `original_bytes = [0x3B, 0x05, 0xB8, 0x44, 0x99, 0x00]` (CMP EAX,[0x9944B8]) and `[[hooks.parameters]] source = "eax"`, bound to `void __cdecl PerfLabAiHeavyPost(int res)` (PerfLab.cpp:1756). Every hook in this block has `exclude_from_restore = []`. The stolen CMP sets the flags that the following Jcc consumes, and the handler is a compiled C++ cdecl function that can clobber EAX/ECX/EDX/EFLAGS.
+
+Why it matters: If the KPM detour trampoline does not save and restore EAX, ECX, EDX and EFLAGS around the handler call, the mid-function hooks at 0x51D9AB, 0x51D9C1 and 0x51D9F1 can change the comparison result or the AI update control flow in normal play. That would be a behaviour change in a perf-only patch.
+FILE: patch_manager_mods/perf_lab_src/perflab/kotor2-steam-aspyr.hooks.toml
+LINES: 756-765
+EXCERPT (±15 lines, line numbers shown):
+  741: 
+  742: # Heavy call pre: 0x51D9AB (PUSH 0 / MOV EAX,[EBP-0x48]).
+  743: [[hooks]]
+  744: address = 0x0051D9AB
+  745: type = "detour"
+  746: function = "PerfLabAiHeavyPre"
+  747: original_bytes = [0x6A, 0x00, 0x8B, 0x45, 0xB8]
+  748: skip_original_bytes = false
+  749: exclude_from_restore = []
+  750: 
+  751: [[hooks.parameters]]
+  752: source = "[ebp-0x48]"
+  753: type = "pointer"
+  754: 
+  755: # Heavy call post: 0x51D9C1 (CMP EAX,dword ptr [0x009944b8]).
+  756: [[hooks]]
+  757: address = 0x0051D9C1
+  758: type = "detour"
+  759: function = "PerfLabAiHeavyPost"
+  760: original_bytes = [0x3B, 0x05, 0xB8, 0x44, 0x99, 0x00]
+  761: skip_original_bytes = false
+  762: exclude_from_restore = []
+  763: 
+  764: [[hooks.parameters]]
+  765: source = "eax"
+  766: type = "int"
+  767: 
+  768: # Tick end: 0x51DF9D (MOV ECX,[EBP-0xCC]).
+  769: [[hooks]]
+  770: address = 0x0051DF9D
+  771: type = "detour"
+  772: function = "PerfLabAiTickEnd"
+  773: original_bytes = [0x8B, 0x8D, 0x34, 0xFF, 0xFF, 0xFF]
+  774: skip_original_bytes = false
+  775: exclude_from_restore = []
+  776: 
+  777: # ---- 0.6.0 Texture-id scan & FocusGob strcmp telemetry (doc 10 / W9 items 1c, 1d) ----
+  778: # Texture-id scan entry: 0x427970 (PUSH EBP / MOV EBP,ESP / SUB ESP,0x10).
+  779: [[hooks]]
+  780: address = 0x00427970

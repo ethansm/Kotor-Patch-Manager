@@ -1,0 +1,56 @@
+Task: verify one claim about one source file.
+
+Decide whether the claim is supported by the excerpt alone. Use only the claim, the file location, and the numbered excerpt below. If the excerpt does not contain enough information to decide, say so in the output instead of guessing.
+
+Work through it this way:
+1. Restate the claim in your own words in claim_restated.
+2. Find the lines in the excerpt that bear on the claim. Put lines that support the claim in supporting_quotes, and lines that contradict it in refutation_quotes. For each quote, give the file path, the line number shown in the excerpt, and the line text copied character for character. The text field holds only the line content, without the line number prefix.
+3. Choose the verdict from the enum values in the attached schema, based only on what the excerpt shows.
+4. Set confidence to high, medium, or low.
+5. In not_verifiable_without_running, state what could not be checked from the excerpt alone. In residual_questions, list open questions. Use an empty list or an empty string when there are none.
+6. In counter_evidence_searched, record each search you made inside the excerpt, with the pattern, the scope, the number of hits, and a note. Use an empty list if you made no search.
+7. In tool_trace, record any tool use. Use an empty list if you used no tools.
+8. Set finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: HH_LayoutClosing checks `if (!hhd::isHudPanel(vtbl, uint32_t(gameaddr::HudVtable))) return;` (line 136). GameAddr.h:2-3 states every constant in gameaddr is the STEAM Aspyr column, and line 72 defines `HudVtable = 0x0099DCC4`. GameAddr.h:3-6 says code that must also run on GOG should read names from k2addr::get(), and kGog is unfilled (all zero). The GOG hooks file (kotor2-gog-aspyr.hooks.toml:55-57) enables the same handler at a different GOG address (0x0090DA20 vs Steam 0x0040F5A0), so the GOG panel vtable read at line 135 is compared against the Steam HUD vtable constant.
+
+Why it matters: On GOG the HUD-vtable test will almost certainly never match, so K2HUD_BUILD is silently never dispatched. Consumers such as combat-hotbar that create labels at BUILD would never run on GOG. The manifest (manifest.toml:13-16) now advertises kotor2_gog_aspyr as supported, and the early return at line 136 gives no log line, so the failure is invisible in normal play.
+FILE: patch_manager_mods/hud_host_src/HudHostProvider.cpp
+LINES: 131-137
+EXCERPT (±15 lines, line numbers shown):
+  116:     if (r == hhd::PostRan) {
+  117:         if (first) {
+  118:             first = false;
+  119:             KP_LOG(chCore, "first POST dispatch: menu=%08x frame=%u consumers post=%d", (unsigned)menu, (unsigned)g_pre.ctx.frame,
+  120:                    g_disp.n[K2HUD_TARGET_MENU_POST]);
+  121:         }
+  122:     } else if (!skipLogged) {
+  123:         skipLogged = true;
+  124:         KP_LOG(chCore, "POST skipped (result=%d: 1 no PRE, 2 menu mismatch, 3 second POST): menu=%08x preMenu=%08x frame=%u; logged once",
+  125:                (int)r, (unsigned)menu, (unsigned)g_pre.ctx.menu, (unsigned)g_pre.ctx.frame);
+  126:     }
+  127: }
+  128: 
+  129: // 0x0040F5A0 (layout-closing function, called by every panel ctor): ecx = panel. Only the HUD panel (vtable 0x0099DCC4) dispatches
+  130: // K2HUD_BUILD; the layout is still open here, so consumers may create labels (guikit::createLabelFromTemplate).
+  131: __declspec(dllexport) void __cdecl HH_LayoutClosing(void* panelPtr) {
+  132:     saferead::beginScope();
+  133:     const uintptr_t panel = reinterpret_cast<uintptr_t>(panelPtr);
+  134:     uint32_t vtbl = 0;
+  135:     if (!panel || !saferead::readAt(S_PanelVtable, panel, 0, &vtbl)) return;
+  136:     if (!hhd::isHudPanel(vtbl, uint32_t(gameaddr::HudVtable))) return;
+  137:     g_hud = int32_t(panel);
+  138:     K2HudContext ctx = hhd::makeBuildContext(int32_t(panel), g_frame);
+  139:     static bool first = true;
+  140:     if (first) {
+  141:         first = false;
+  142:         KP_LOG(chCore, "first BUILD dispatch: panel=%08x consumers build=%d", (unsigned)panel, g_disp.n[K2HUD_BUILD]);
+  143:     } else {
+  144:         KP_LOGV(chCore, KPLOG_DEBUG, "BUILD dispatch: panel=%08x consumers build=%d", (unsigned)panel, g_disp.n[K2HUD_BUILD]);
+  145:     }
+  146:     hhd::runBuild(g_disp, ctx);
+  147: }
+  148: 
+  149: } // extern "C"

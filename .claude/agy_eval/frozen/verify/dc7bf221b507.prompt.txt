@@ -1,0 +1,53 @@
+Task: verify one claim about one source file.
+
+Decide whether the claim is supported by the excerpt alone. Use only the claim, the file location, and the numbered excerpt below. If the excerpt does not contain enough information to decide, say so in the output instead of guessing.
+
+Work through it this way:
+1. Restate the claim in your own words in claim_restated.
+2. Find the lines in the excerpt that bear on the claim. Put lines that support the claim in supporting_quotes, and lines that contradict it in refutation_quotes. For each quote, give the file path, the line number shown in the excerpt, and the line text copied character for character. The text field holds only the line content, without the line number prefix.
+3. Choose the verdict from the enum values in the attached schema, based only on what the excerpt shows.
+4. Set confidence to high, medium, or low.
+5. In not_verifiable_without_running, state what could not be checked from the excerpt alone. In residual_questions, list open questions. Use an empty list or an empty string when there are none.
+6. In counter_evidence_searched, record each search you made inside the excerpt, with the pattern, the scope, the number of hits, and a note. Use an empty list if you made no search.
+7. In tool_trace, record any tool use. Use an empty list if you used no tools.
+8. Set finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: The old exit path was `return g_fail ? 1 : 0;` with a local g_fail counter. It is now `return kt::Report("guikit_test");` (line 158). The counting and exit-code logic now lives in TestHarness.h, which could not be read in this snapshot. The assertion delta is 49 CHECK before and 49 after, with none removed.
+
+Why it matters: The domain requires failures to stay counted and reflected in the exit code. If kt::Report does not return nonzero when any check fails, guikit_test.py can report PASS on a failing run. That would weaken the gate without any visible diff in this file.
+FILE: patch_manager_mods/gui_input_src/gi_registry_test.cpp
+LINES: 8-16
+EXCERPT (±15 lines, line numbers shown):
+    1: // gi_registry_test.cpp -- Host test of k2input::Client and K2GuiInputApi ABI layout.
+    2: // Verifies inert-without-provider, connect(), poll(), struct_size gating, and ABI layout.
+    3: #include "GuiInput.h"
+    4: #include "check.h"
+    5: #include "FakeKPatchApi.h"
+    6: 
+    7: // ABI layout checks
+    8: #if UINTPTR_MAX == 0xffffffff
+    9: static_assert(sizeof(K2GuiInputApi) == 24, "K2GuiInputApi size 32-bit");
+   10: static_assert(offsetof(K2GuiInputApi, struct_size) == 0, "api.struct_size");
+   11: static_assert(offsetof(K2GuiInputApi, GameHwnd) == 4, "api.GameHwnd");
+   12: static_assert(offsetof(K2GuiInputApi, CursorEngine) == 8, "api.CursorEngine");
+   13: static_assert(offsetof(K2GuiInputApi, WheelSubscribe) == 12, "api.WheelSubscribe");
+   14: static_assert(offsetof(K2GuiInputApi, WheelUnsubscribe) == 16, "api.WheelUnsubscribe");
+   15: static_assert(offsetof(K2GuiInputApi, Foreground) == 20, "api.Foreground");
+   16: #endif
+   17: 
+   18: static_assert(sizeof(K2WheelEvent) == 32, "K2WheelEvent size");
+   19: static_assert(offsetof(K2WheelEvent, struct_size) == 0, "ev.struct_size");
+   20: static_assert(offsetof(K2WheelEvent, delta) == 4, "ev.delta");
+   21: static_assert(offsetof(K2WheelEvent, engine_x) == 8, "ev.engine_x");
+   22: static_assert(offsetof(K2WheelEvent, engine_y) == 12, "ev.engine_y");
+   23: static_assert(offsetof(K2WheelEvent, client_x) == 16, "ev.client_x");
+   24: static_assert(offsetof(K2WheelEvent, client_y) == 20, "ev.client_y");
+   25: static_assert(offsetof(K2WheelEvent, screen_w) == 24, "ev.screen_w");
+   26: static_assert(offsetof(K2WheelEvent, screen_h) == 28, "ev.screen_h");
+   27: 
+   28: #define GCHECK(why, expr) ::kt::Check(why " (line " KT_STR(__LINE__) ")", static_cast<bool>(expr))
+   29: #define GEQ(why, a, b) ::kt::CheckEq(why " (line " KT_STR(__LINE__) ")", (a), (b))
+   30: 
+   31: // Fake provider implementation

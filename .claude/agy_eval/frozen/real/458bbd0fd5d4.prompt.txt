@@ -1,0 +1,51 @@
+Task: verify one claim about one source file.
+
+Decide whether the claim is supported by the excerpt alone. Use only the claim, the file location, and the numbered excerpt below. If the excerpt does not contain enough information to decide, say so in the output instead of guessing.
+
+Work through it this way:
+1. Restate the claim in your own words in claim_restated.
+2. Find the lines in the excerpt that bear on the claim. Put lines that support the claim in supporting_quotes, and lines that contradict it in refutation_quotes. For each quote, give the file path, the line number shown in the excerpt, and the line text copied character for character. The text field holds only the line content, without the line number prefix.
+3. Choose the verdict from the enum values in the attached schema, based only on what the excerpt shows.
+4. Set confidence to high, medium, or low.
+5. In not_verifiable_without_running, state what could not be checked from the excerpt alone. In residual_questions, list open questions. Use an empty list or an empty string when there are none.
+6. In counter_evidence_searched, record each search you made inside the excerpt, with the pattern, the scope, the number of hits, and a note. Use an empty list if you made no search.
+7. In tool_trace, record any tool use. Use an empty list if you used no tools.
+8. Set finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: The smokes.toml header says the runner always adds `-I tests/include`, a cwd-relative path. check.h and FakeKPatchApi.h exist only under tests/include. The tables that add their own includes use `../../_shared_src` (relative to the harness dir). build_check reports 'check.h: No such file' for all 8 smoke files. Why it matters: All harness smokes fail to compile, so the smoke gate row is a build-environment failure that hides whether the smokes would pass.
+FILE: patch_manager_mods/perf_lab_src/harness/smokes.toml
+LINES: 20
+EXCERPT (±15 lines, line numbers shown):
+    5: # Top-level keys
+    6: #   mingw_runtime_dirs   directories (globs allowed) searched, in order, for the MinGW runtime DLLs below; first hit wins.
+    7: #   mingw_runtime_dll_names  the three DLLs copied next to the exe when a row has runtime_dlls = true.
+    8: #       libstdc++-6.dll + libgcc_s_dw2-1.dll live in /usr/lib/gcc/i686-w64-mingw32/<ver>-win32/ (13-win32 here);
+    9: #       libwinpthread-1.dll lives in /usr/i686-w64-mingw32/lib/.
+   10: #
+   11: # Keys of each [[smoke]] table
+   12: #   name          short id (probe11, perflab2, ...); also the work-dir name <out>/wine/<name>/
+   13: #   src           source file, relative to this directory
+   14: #   kpatch        patch archive, relative to $KPM_DIR/Patches; the DLL is `unzip -j <kpatch> binaries/windows_x86.dll`
+   15: #   dll_name      file name the smoke LoadLibrary's; the extracted DLL is renamed to it (perflab: perflab.dll)
+   16: #   dll_from      "kpatch" (default) or "build". "build" uses the DLL produced by build_check --keep
+   17: #                 from current sources instead of extracting from the .kpatch archive.
+   18: #   mod           (optional) source dir under patch_manager_mods/ (e.g. "texture_memory_release_src").
+   19: #   extra_dlls    (optional) list of further {kpatch, dll_name} tables for smokes that need more than one DLL (portraitslots)
+   20: #   cxxflags      link-style flags and libs ONLY; the runner always adds `i686-w64-mingw32-g++ -std=c++17 -O1 -I <this dir> -I tests/include`
+   21: #   runtime_dlls  true = copy the 3 MinGW runtime DLLs next to the exe (the exe links libstdc++/libgcc dynamically)
+   22: #   modes         argv[1] values, one run each, every one must exit 0; empty list = run once with no argument
+   23: #   needs_display true = needs a display (DISPLAY set): the smoke creates a real window and calls SetForegroundWindow. probe14 and
+   24: #                 activationfix fail their foreground checks without one; perflab2/3 (GLU calls only) pass headless (verified with DISPLAY and
+   25: #                 WAYLAND_DISPLAY unset).
+   26: #   timeout_s     per-run wall-clock limit (generous: >= 2.5x the slowest measured mode; probe11 runs ~25 s by design: 15 s MAIN_STALL wait)
+   27: #
+   28: # Notes
+   29: #   - probe14 and perflab are dynamic builds and need the runtime DLLs (without them wine exits 53 silently under WINEDEBUG=-all).
+   30: #   - The perflab2/perflab3/probe14/texmem/robustness/activationfix/equipiconfix/letterbox smokes rely on a 7 MB .bss pad so the exe's own image covers
+   31: #     the engine's addresses (0x400000-0xB00000); do not add -static (libstdc++ static grows .text past 0x4261CF in perflab2/3).
+   32: #   - Exit codes: 0 pass, 1 check failed / LoadLibrary failed, 2 setup failure, 3 missing export.
+   33: 
+   34: mingw_runtime_dirs = ["/usr/lib/gcc/i686-w64-mingw32/*-win32", "/usr/i686-w64-mingw32/lib"]
+   35: mingw_runtime_dll_names = ["libstdc++-6.dll", "libgcc_s_dw2-1.dll", "libwinpthread-1.dll"]

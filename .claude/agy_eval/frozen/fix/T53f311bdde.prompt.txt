@@ -1,0 +1,65 @@
+Task: review one proposed patch against one claim.
+
+Decide whether the patch correctly fixes the stated claim without breaking other behaviour shown in the excerpt. Judge from the claim, the patch text, and the numbered original excerpt below. The patch may also change lines outside the excerpt; judge those changes only from the patch text.
+
+Work through it this way:
+1. For the finding, decide whether the defect described in the claim is fixed by the patch: yes, partial, or no. Give the reason in why.
+2. Check the patch for regressions, scope creep, weakened tests, hook or interface changes, unchecked return values, and boundary changes. Set each boolean in checks to true only when the patch text or the excerpt shows that risk.
+3. List each problem in issues, with a severity of blocker, major, or minor. Use an empty list when there are none.
+4. Quote the exact text that supports your decision in quotes, with the file path, the line number, and the line text. Line numbers for original lines refer to the excerpt. For added lines, use the new-file line number from the patch hunk header.
+5. Set verdict to one of the enum values in the attached schema.
+6. In revise_instructions, state what would need to change. Use an empty string if nothing needs to change.
+7. Set task_id and per_finding finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: words = re.findall(r"[\w\./-]+\.(?:cpp|h|hpp|c|py|ini|md|sh)", combined_text) — the alternation tries `h` before `hpp`, and there is no trailing boundary, so 'Foo.hpp' matches as 'Foo.h' and the 'pp' is dropped. The cleaned path then fails the exists() check at line 156 and the header is silently omitted from the prompt's file list.
+
+Why it matters: Any plan section that targets a .hpp header never gets it into 'Target Files' / 'Relevant Files to Inspect', so the zero-read subagent is not told about the header it must edit or inspect. The failure is silent.
+PATCH:
+diff --git a/scripts/subagent_prompt.py b/scripts/subagent_prompt.py
+index b364498..399865f 100644
+--- a/scripts/subagent_prompt.py
++++ b/scripts/subagent_prompt.py
+@@ -148,7 +148,7 @@ def extract_phase_info(plan_path: Path, phase_key: str):
+ 
+     # 3. Find files mentioned in section
+     combined_text = f"{title}\n{description}"
+-    words = re.findall(r"[\w\./-]+\.(?:cpp|h|hpp|c|py|ini|md|sh)", combined_text)
++    words = re.findall(r"[\w\./-]+\.(?:cpp|hpp|h|c|py|ini|md|sh)\b", combined_text)
+     valid_paths = []
+     for w in words:
+         clean = w.strip("`'\"(),:;[]")
+
+ORIGINAL EXCERPT (±15 lines, line numbers shown):
+  136:     # 2. Check full section headers
+  137:     sec_pattern = re.compile(rf"(^#+\s+(?:(?:Phase|Batch|Chunk|Task|Step)\s+)?{re.escape(phase_key)}[:\s].*?)(?=^#+\s|\Z)", re.MULTILINE | re.DOTALL | re.IGNORECASE)
+  138:     sec_match = sec_pattern.search(text)
+  139:     if sec_match:
+  140:         section_text = sec_match.group(1).strip()
+  141:         if not description:
+  142:             description = section_text
+  143:         else:
+  144:             description += f"\n\n### Plan Section Details:\n{section_text}"
+  145:         header_title = section_text.splitlines()[0].strip("# ").strip()
+  146:         if header_title:
+  147:             title = header_title
+  148: 
+  149:     # 3. Find files mentioned in section
+  150:     combined_text = f"{title}\n{description}"
+  151:     words = re.findall(r"[\w\./-]+\.(?:cpp|h|hpp|c|py|ini|md|sh)", combined_text)
+  152:     valid_paths = []
+  153:     for w in words:
+  154:         clean = w.strip("`'\"(),:;[]")
+  155:         p = REPO_ROOT / clean
+  156:         if p.exists() and p.is_file() and clean not in valid_paths:
+  157:             valid_paths.append(clean)
+  158:         elif plan_path:
+  159:             # Check relative to plan directory and subdirectories
+  160:             for cand in [plan_path.parent / clean, plan_path.parent / "tools" / clean, plan_path.parent / "tools" / "parity" / clean]:
+  161:                 if cand.exists() and cand.is_file():
+  162:                     rel = str(cand.relative_to(REPO_ROOT))
+  163:                     if rel not in valid_paths:
+  164:                         valid_paths.append(rel)
+  165:                     break
+  166: 

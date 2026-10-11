@@ -1,0 +1,61 @@
+Task: verify one claim about one source file.
+
+Decide whether the claim is supported by the excerpt alone. Use only the claim, the file location, and the numbered excerpt below. If the excerpt does not contain enough information to decide, say so in the output instead of guessing.
+
+Work through it this way:
+1. Restate the claim in your own words in claim_restated.
+2. Find the lines in the excerpt that bear on the claim. Put lines that support the claim in supporting_quotes, and lines that contradict it in refutation_quotes. For each quote, give the file path, the line number shown in the excerpt, and the line text copied character for character. The text field holds only the line content, without the line number prefix.
+3. Choose the verdict from the enum values in the attached schema, based only on what the excerpt shows.
+4. Set confidence to high, medium, or low.
+5. In not_verifiable_without_running, state what could not be checked from the excerpt alone. In residual_questions, list open questions. Use an empty list or an empty string when there are none.
+6. In counter_evidence_searched, record each search you made inside the excerpt, with the pattern, the scope, the number of hits, and a note. Use an empty list if you made no search.
+7. In tool_trace, record any tool use. Use an empty list if you used no tools.
+8. Set finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: Comment at line 694 says "(a) does not apply inside _shared_src", but line 695 tests `if not is_test and not from_shared:` and line 702 tests `and not from_shared and mod_dir in self.library_consumers`. from_shared is set once per touched path (line 613) and carried unchanged into every queued node (lines 698, 718-724, 746, 750). It therefore suppresses colocated tests and library consumer fan-out for every mod node reached through a shared header, not only nodes inside _shared_src.
+
+Why it matters: A shared header change that reaches a library module through an include will not schedule its consumers' builds or colocated tests, although the code comment describes a narrower exclusion. This can under-select tests in a gate. The E1 include chain may cover some cases, but not library consumers that link the library.
+FILE: scripts/compat_graph.py
+LINES: 694-702
+EXCERPT (±15 lines, line numbers shown):
+  679:             if mod_dir and not node.startswith("patch_manager_mods/_shared_src"):
+  680:                 is_test = node.endswith("_test.cpp")
+  681: 
+  682:                 # If non-test source and not host-only, schedule DLL build
+  683:                 if not host_only and not is_test:
+  684:                     plan.items.append(
+  685:                         PlanItem(
+  686:                             kind="build",
+  687:                             id=f"build_check:{mod_dir}",
+  688:                             why=tuple(chain),
+  689:                             details={"mod": mod_dir},
+  690:                         )
+  691:                     )
+  692: 
+  693:                 # Colocation (E4a): a test in a mod dir covers that dir's non-test sources.
+  694:                 # (a) does not apply inside _shared_src (E1 is precise there).
+  695:                 if not is_test and not from_shared:
+  696:                     for col_test in self.mod_colocated_tests.get(mod_dir, []):
+  697:                         if col_test not in chain:
+  698:                             queue.append((col_test, chain + [f"colocated in {mod_dir}", col_test], host_only, from_shared))
+  699: 
+  700:                 # Manifest library fan-out (E3): library touched -> consumers
+  701:                 # Does not fan out for test files or when reached from _shared_src includes
+  702:                 if not is_test and not from_shared and mod_dir in self.library_consumers:
+  703:                     for consumer_mod in self.library_consumers[mod_dir]:
+  704:                         c_manifest = self.manifests[consumer_mod]
+  705:                         # Add consumer builds & colocated tests
+  706:                         if not host_only:
+  707:                             plan.items.append(
+  708:                                 PlanItem(
+  709:                                     kind="build",
+  710:                                     id=f"build_check:{consumer_mod}",
+  711:                                     why=tuple(chain + [f"library consumer: {consumer_mod}"]),
+  712:                                     details={"mod": consumer_mod},
+  713:                                 )
+  714:                             )
+  715:                         for col_test in self.mod_colocated_tests.get(consumer_mod, []):
+  716:                             if col_test not in chain:
+  717:                                 queue.append(

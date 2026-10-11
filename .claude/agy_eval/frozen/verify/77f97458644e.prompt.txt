@@ -1,0 +1,58 @@
+Task: verify one claim about one source file.
+
+Decide whether the claim is supported by the excerpt alone. Use only the claim, the file location, and the numbered excerpt below. If the excerpt does not contain enough information to decide, say so in the output instead of guessing.
+
+Work through it this way:
+1. Restate the claim in your own words in claim_restated.
+2. Find the lines in the excerpt that bear on the claim. Put lines that support the claim in supporting_quotes, and lines that contradict it in refutation_quotes. For each quote, give the file path, the line number shown in the excerpt, and the line text copied character for character. The text field holds only the line content, without the line number prefix.
+3. Choose the verdict from the enum values in the attached schema, based only on what the excerpt shows.
+4. Set confidence to high, medium, or low.
+5. In not_verifiable_without_running, state what could not be checked from the excerpt alone. In residual_questions, list open questions. Use an empty list or an empty string when there are none.
+6. In counter_evidence_searched, record each search you made inside the excerpt, with the pattern, the scope, the number of hits, and a note. Use an empty list if you made no search.
+7. In tool_trace, record any tool use. Use an empty list if you used no tools.
+8. Set finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: `backup_dir = live_override / "_diversity_premerge_backup"` then unconditionally `shutil.copy2(heads_path, backup_dir / "heads.2da.bak")` and `shutil.copy2(app_path, backup_dir / "appearance.2da.bak")`. The backup is created on every --apply run, with no existence check.
+
+Why it matters: After the first successful --apply, the live files already contain the merged tables. A second --apply run overwrites the 'premerge' backup with the merged state, so the only copy of the original vanilla 2DAs is lost. Recovery then depends on reinstalling the game.
+FILE: scripts/generate_diversity_2da.py
+LINES: 277-282
+EXCERPT (±15 lines, line numbers shown):
+  262:     "race": "N_Weeq",
+  263:     "walkdist": "1.813",
+  264:     "rundist": "3.66",
+  265:     "driveanimwalk": "1.813",
+  266:     "driveanimrun_pc": "3.66",
+  267:     "driveanimrun_xbox": "3.96",
+  268:     "modeltype": "S",
+  269:     "normalhead": "****",
+  270:     "backuphead": "****",
+  271:     "modela": "N_Weeq",
+  272:     "texa": "N_Weeq",
+  273:     "modelb": "N_Weeq",
+  274:     "texb": "N_Weeq",
+  275:     "modelc": "****",
+  276:     "texc": "****",
+  277:     "envmap": "DEFAULT",
+  278:     "bloodcolr": "R",
+  279:     "wing_tail_scale": "1",
+  280:     "moverate": "NORM",
+  281:     "driveaccl": "50",
+  282:     "drivemaxspeed": "5.4",
+  283:     "hitradius": "0.25",
+  284:     "perspace": "0.35",
+  285:     "creperspace": "0.4",
+  286:     "height": "1",
+  287:     "targetheight": "l",
+  288:     "abortonparry": "0",
+  289:     "racialtype": "20",
+  290:     "haslegs": "1",
+  291:     "hasarms": "1",
+  292:     "footstepvolume": "1",
+  293:     "sizecategory": "3",
+  294:     "perceptiondist": "9",
+  295:     "footsteptype": "0",
+  296:     "soundapptype": "0",
+  297:     "headtrack": "1",

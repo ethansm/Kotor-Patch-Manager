@@ -1,0 +1,58 @@
+Task: verify one claim about one source file.
+
+Decide whether the claim is supported by the excerpt alone. Use only the claim, the file location, and the numbered excerpt below. If the excerpt does not contain enough information to decide, say so in the output instead of guessing.
+
+Work through it this way:
+1. Restate the claim in your own words in claim_restated.
+2. Find the lines in the excerpt that bear on the claim. Put lines that support the claim in supporting_quotes, and lines that contradict it in refutation_quotes. For each quote, give the file path, the line number shown in the excerpt, and the line text copied character for character. The text field holds only the line content, without the line number prefix.
+3. Choose the verdict from the enum values in the attached schema, based only on what the excerpt shows.
+4. Set confidence to high, medium, or low.
+5. In not_verifiable_without_running, state what could not be checked from the excerpt alone. In residual_questions, list open questions. Use an empty list or an empty string when there are none.
+6. In counter_evidence_searched, record each search you made inside the excerpt, with the pattern, the scope, the number of hits, and a note. Use an empty list if you made no search.
+7. In tool_trace, record any tool use. Use an empty list if you used no tools.
+8. Set finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: `rc, out = run_cmd([lms_bin, "load", target_model], timeout=30.0)` followed by `if rc != 0: print(f"[gpu-mode] Warning during lms load: {out}", file=sys.stderr)` and then `cmd_status()` / `return 0`. A failed model load is reported only as a warning and the process exits 0 via `sys.exit(cmd_lms(args.model))` at line 179.
+
+Why it matters: Any caller or script that runs `gpu-mode lms` cannot detect that the model failed to load (for example a timeout after 30s or a bad identifier). The profile switch appears successful.
+FILE: scripts/gpu_mode.py
+LINES: 138-143
+EXCERPT (±15 lines, line numbers shown):
+  123:     print("[gpu-mode] Warning: Service started but port 8101 not yet responding.", file=sys.stderr)
+  124:     cmd_status()
+  125:     return 0
+  126: 
+  127: 
+  128: def cmd_lms(model: str | None = None) -> int:
+  129:     target_model = model or DEFAULT_LMS_MODEL
+  130:     print(f"[gpu-mode] Switching profile to LMS (Local LLM: {target_model})...")
+  131: 
+  132:     lms_bin = shutil.which("lms") or os.path.expanduser("~/.lmstudio/bin/lms")
+  133:     if not os.path.isfile(lms_bin):
+  134:         print(f"[gpu-mode] Error: lms binary not found at {lms_bin}", file=sys.stderr)
+  135:         return 1
+  136: 
+  137:     print(f"[gpu-mode] Loading {target_model} via LM Studio...")
+  138:     rc, out = run_cmd([lms_bin, "load", target_model], timeout=30.0)
+  139:     if rc != 0:
+  140:         print(f"[gpu-mode] Warning during lms load: {out}", file=sys.stderr)
+  141: 
+  142:     cmd_status()
+  143:     return 0
+  144: 
+  145: 
+  146: def cmd_game(stop_all: bool = False) -> int:
+  147:     print("[gpu-mode] Preparing GPU for gaming...")
+  148: 
+  149:     lms_bin = shutil.which("lms") or os.path.expanduser("~/.lmstudio/bin/lms")
+  150:     if os.path.isfile(lms_bin):
+  151:         print("[gpu-mode] Unloading LM Studio models...")
+  152:         run_cmd([lms_bin, "unload", "-a"])
+  153: 
+  154:     if stop_all:
+  155:         print(f"[gpu-mode] Stopping {KEV_SERVICE} for 100% clean VRAM...")
+  156:         run_cmd(["systemctl", "--user", "stop", KEV_SERVICE])
+  157:     else:
+  158:         print("[gpu-mode] Note: kev-08b left active (1.54 GB VRAM fits alongside KOTOR II).")

@@ -1,0 +1,57 @@
+Task: verify one claim about one source file.
+
+Decide whether the claim is supported by the excerpt alone. Use only the claim, the file location, and the numbered excerpt below. If the excerpt does not contain enough information to decide, say so in the output instead of guessing.
+
+Work through it this way:
+1. Restate the claim in your own words in claim_restated.
+2. Find the lines in the excerpt that bear on the claim. Put lines that support the claim in supporting_quotes, and lines that contradict it in refutation_quotes. For each quote, give the file path, the line number shown in the excerpt, and the line text copied character for character. The text field holds only the line content, without the line number prefix.
+3. Choose the verdict from the enum values in the attached schema, based only on what the excerpt shows.
+4. Set confidence to high, medium, or low.
+5. In not_verifiable_without_running, state what could not be checked from the excerpt alone. In residual_questions, list open questions. Use an empty list or an empty string when there are none.
+6. In counter_evidence_searched, record each search you made inside the excerpt, with the pattern, the scope, the number of hits, and a note. Use an empty list if you made no search.
+7. In tool_trace, record any tool use. Use an empty list if you used no tools.
+8. Set finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: RaiMapsToRanged: 'if (raw != KiteStance || !g_cfg.rangedRules) return 0; if (!g_cfg.kiteApproach || !ebp) return 1;' while a failed frame read returns 0 (line 351). So ebp=0 yields 1 (stance maps to vanilla Ranged, no approach) even with a melee weapon or an out-of-range target, but an unreadable live frame yields 0 (Aggressive approach). RangedAI.h:32-33 documents the return as 'under current weapon/range conditions' and says ebp=0 is a stance-only check.
+
+Why it matters: kite_approach exists because Ranged's no-approach rule re-queued attacks forever for melee or out-of-range party members (E-H3 comment, lines 327-330). A public-API caller that passes ebp=0 (the documented stance-only path) gets the no-approach answer and reintroduces that stall. The two failure paths also disagree.
+FILE: patch_manager_mods/ranged_ai_src/RangedAI.cpp
+LINES: 341-345
+EXCERPT (±15 lines, line numbers shown):
+  326: 
+  327: // E-H3. Replaces MOV [ebp-0x174],EAX (EAX = the attacker's stance) in AIActionPhysicalAttacks.
+  328: // 0.3.0 kite_approach: [ebp-0x164] (ranged, 0x6d836b), [ebp-0xbc] (dist^2) and [ebp-0x2c] (max weapon range) are written
+  329: // before this point on every path; with a melee weapon or the target out of range stance 16 keeps the Aggressive
+  330: // approach instead of inheriting Ranged's "never approach" (which re-queued the attack forever, review A1).
+  331: namespace {
+  332: struct H3Log { int id = 0; int last = -1; DWORD t = 0; };
+  333: H3Log g_h3[8];
+  334: int g_h3Logged = 0;
+  335: }
+  336: // ---- k2.rangedai v1 provider ----
+  337: int32_t KPATCH_CALL RaiKiteStance(void) {
+  338:     return g_cfg.rangedRules ? KiteStance : 0;
+  339: }
+  340: 
+  341: int32_t KPATCH_CALL RaiMapsToRanged(int32_t raw, intptr_t ebp) {
+  342:     saferead::beginScope();
+  343:     if (raw == VanillaRangedStance) return 1;
+  344:     if (raw != KiteStance || !g_cfg.rangedRules) return 0;
+  345:     if (!g_cfg.kiteApproach || !ebp) return 1;
+  346:     int ranged = 0;
+  347:     float maxR = 0.0f, dist2 = 0.0f;
+  348:     if (!saferead::readAt<int>(3, static_cast<uintptr_t>(ebp), F_RangedFlag, &ranged) ||
+  349:         !saferead::readAt<float>(3, static_cast<uintptr_t>(ebp), F_Max, &maxR) ||
+  350:         !saferead::readAt<float>(3, static_cast<uintptr_t>(ebp), F_Dist2, &dist2)) {
+  351:         return 0;
+  352:     }
+  353:     return (ranged != 0 && rai::inWeaponRange(maxR, dist2)) ? 1 : 0;
+  354: }
+  355: 
+  356: const K2RangedAiApi g_raiApi = {
+  357:     sizeof(K2RangedAiApi),
+  358:     RaiKiteStance,
+  359:     RaiMapsToRanged
+  360: };

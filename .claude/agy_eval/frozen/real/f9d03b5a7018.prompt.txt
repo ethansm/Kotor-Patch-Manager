@@ -1,0 +1,60 @@
+Task: verify one claim about one source file.
+
+Decide whether the claim is supported by the excerpt alone. Use only the claim, the file location, and the numbered excerpt below. If the excerpt does not contain enough information to decide, say so in the output instead of guessing.
+
+Work through it this way:
+1. Restate the claim in your own words in claim_restated.
+2. Find the lines in the excerpt that bear on the claim. Put lines that support the claim in supporting_quotes, and lines that contradict it in refutation_quotes. For each quote, give the file path, the line number shown in the excerpt, and the line text copied character for character. The text field holds only the line content, without the line number prefix.
+3. Choose the verdict from the enum values in the attached schema, based only on what the excerpt shows.
+4. Set confidence to high, medium, or low.
+5. In not_verifiable_without_running, state what could not be checked from the excerpt alone. In residual_questions, list open questions. Use an empty list or an empty string when there are none.
+6. In counter_evidence_searched, record each search you made inside the excerpt, with the pattern, the scope, the number of hits, and a note. Use an empty list if you made no search.
+7. In tool_trace, record any tool use. Use an empty list if you used no tools.
+8. Set finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: animLen() now ends with `*len = 2.0f; // Safe 2.0s fallback for unmapped supermodels/animations` and `return true;`, and the table branch is guarded by `if (t) {...}`. Previously the function returned false for names not in the table and for rows with n == 0 (animTable returns nullptr for rows 3, 538, 539 at line 592). The only caller, flourish scheduling at line 762 (`else if (!animLen(s, name, &len)) { dlogf("flourish: '%s' not in table for row %d" ...); return false; }`), therefore never takes its refusal branch any more, so flourishes are scheduled for rows that have no animation table and for animation names that the table does not list.
+
+Why it matters: Flourish animations for supermodels with no known animations (rows 3, 538, 539) or for unmapped names will now be played with an assumed 2.0 s length. If those animation names do not exist on that body, the engine plays nothing or a wrong animation, and the scheduler's timing is wrong. The change also turns the existing 'not in table' log and refusal path into dead code, and the commit does not say that this behaviour change was intended.
+FILE: patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp
+LINES: 595-602
+EXCERPT (±15 lines, line numbers shown):
+  580: }
+  581: // Static animation knowledge (R5 inventory): the vt[0x1c] length probe cannot see supermodel-inherited anims, so it is NOT used.
+  582: struct FlLen { const char* name; float len; };
+  583: const FlLen kHumanoid[] = {{"pausesh",2.0f},{"scanning",5.1f},{"salute",1.7f},{"victory",1.3f},{"bow",2.5f},{"greeting",1.5f},
+  584:     {"taunt",1.4f},{"touchheart",2.8f},{"rolleyes",2.3f},{"shrug",1.6f},{"nodyes",1.5f},{"point",2.0f},{"itemequip",1.3f},{"equip",1.0f}};
+  585: const FlLen kDroidT3[] = {{"victory",1.0f},{"greeting",1.0f},{"taunt",1.0f},{"equip",1.3f}};
+  586: const FlLen kDroidG0[] = {{"victory",2.0f},{"greeting",1.3f},{"taunt",1.3f},{"equip",1.3f}};
+  587: int appRow(Slot* s) { return (int)*reinterpret_cast<unsigned short*>(s->app + 0x18); }
+  588: using eq3d::isDroidRow;
+  589: const FlLen* animTable(int row, int* n) {
+  590:     if (row == 2 || row == 57 || row == 231 || row == 232) { *n = 4; return kDroidT3; }
+  591:     if (row == 453) { *n = 4; return kDroidG0; }
+  592:     if (row == 3 || row == 538 || row == 539) { *n = 0; return nullptr; }
+  593:     *n = (int)(sizeof(kHumanoid) / sizeof(kHumanoid[0])); return kHumanoid;
+  594: }
+  595: bool animLen(Slot* s, const char* name, float* len) {
+  596:     int n = 0; const FlLen* t = animTable(appRow(s), &n);
+  597:     if (t) {
+  598:         for (int i = 0; i < n; ++i) if (!strcmp(t[i].name, name)) { *len = t[i].len; return true; }
+  599:     }
+  600:     *len = 2.0f; // Safe 2.0s fallback for unmapped supermodels/animations
+  601:     return true;
+  602: }
+  603: const char* labelFor(const char* n) {
+  604:     static const char* const m[][2] = {{"pausesh","Pause"},{"scanning","Scan"},{"salute","Salute"},{"victory","Victory"},{"bow","Bow"},{"greeting","Greet"},
+  605:         {"taunt","Taunt"},{"touchheart","Touch heart"},{"rolleyes","Roll eyes"},{"shrug","Shrug"},{"nodyes","Nod"},{"point","Point"},{"itemequip","Equip item"},{"equip","Equip"}};
+  606:     for (auto& e : m) if (!strcmp(n, e[0])) return e[1];
+  607:     return n;
+  608: }
+  609: // Attack clips per wield style (R5 chains: melee g<N>a<k>, ranged b<N>a<k>; all ~1.5 s). Shown only while Weapons is on and a stance exists.
+  610: void menuBuild(Slot* s) {   // page 0 = gestures (+ "Attacks >" when a weapon stance exists), page 1 = attacks (+ "< Emotes")
+  611:     int n = 0, en = 0; const FlLen* t = animTable(appRow(s), &en);
+  612:     auto add = [&](const char* a, const char* label, bool atk) { if (n < MaxMenu) { strncpy(s->menuAnim[n], a, 11); s->menuAnim[n][11] = 0; strncpy(s->menuLabel[n], label, 15); s->menuLabel[n][15] = 0; s->menuAttack[n] = atk; ++n; } };
+  613:     int N = (g_weaponsOn && s->stanceOn && s->stanceName[0] == 'g' && s->stanceName[1] >= '1' && s->stanceName[1] <= '8') ? s->stanceName[1] - '0' : 0;
+  614:     bool droid = isDroidRow(appRow(s));
+  615:     int cnt = 0;
+  616:     if (N && !(droid && !(N == 5 || N == 6 || N == 8))) cnt = N == 1 || N == 8 ? 2 : (N <= 4 ? 5 : 4);
+  617:     if (!cnt) s->menuPage = 0;

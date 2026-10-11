@@ -1,0 +1,57 @@
+Task: verify one claim about one source file.
+
+Decide whether the claim is supported by the excerpt alone. Use only the claim, the file location, and the numbered excerpt below. If the excerpt does not contain enough information to decide, say so in the output instead of guessing.
+
+Work through it this way:
+1. Restate the claim in your own words in claim_restated.
+2. Find the lines in the excerpt that bear on the claim. Put lines that support the claim in supporting_quotes, and lines that contradict it in refutation_quotes. For each quote, give the file path, the line number shown in the excerpt, and the line text copied character for character. The text field holds only the line content, without the line number prefix.
+3. Choose the verdict from the enum values in the attached schema, based only on what the excerpt shows.
+4. Set confidence to high, medium, or low.
+5. In not_verifiable_without_running, state what could not be checked from the excerpt alone. In residual_questions, list open questions. Use an empty list or an empty string when there are none.
+6. In counter_evidence_searched, record each search you made inside the excerpt, with the pattern, the scope, the number of hits, and a note. Use an empty list if you made no search.
+7. In tool_trace, record any tool use. Use an empty list if you used no tools.
+8. Set finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: Line 333: `if (mi >= 0 && mi <= 2) g_lastUseMs[mi] = now;` followed by line 334 `else if (mi == 0) g_lastUseMs0 = now;`. Line 336: `if (mi >= 0 && mi <= 2) { g_pend[mi] = ...; g_auto[mi].lastUseMs = now; g_auto[mi].pending = true; }` followed by line 337 `else if (mi == 0) { g_pend0 = ...; g_auto0.lastUseMs = now; g_auto0.pending = true; }`. Because the first predicate already accepts mi == 0, every leader use takes the companion-array branch, and the `else if (mi == 0)` branches are unreachable.
+
+Why it matters: Leader uses never set g_pend0, g_pendKey0, g_auto0.pending or g_auto0.lastUseMs. pendingTick's leader block (lines 591-604) and the `any` gate at line 570 therefore never engage, so the leader's pending/DONE/TIMEOUT tracking and button pending state never run. The leader auto-heal cooldown (g_auto0, read by heal::shouldAutoUse at line 713) is never armed after a successful use, so the leader can be re-used on later cache ticks, limited only by the 2 s debounce. The leader's stored state is written to the companion slot g_pend[0]/g_auto[0] instead, which nothing reads.
+FILE: patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp
+LINES: 333-337
+EXCERPT (±15 lines, line numbers shown):
+  318:         actq::read(m.server, &qs, SiteQueue, SiteRound);
+  319:         shui::UseRefusal ur = shui::useAllowed(actq::useQueued(qs));
+  320:         if (ur != shui::UseRefusal::None) REFUSEF("REFUSE %s member=%d (%s)", shui::useRefusalText(ur), mi, src);
+  321:     }
+  322:     if (!m.client || !rd<uint32_t>(m.client, Client_ObjectId, &clientId)) REFUSEF("REFUSE ids: client object id unreadable member=%d", mi);
+  323:     uint32_t selfServerId = serverIdOf(clientId), itemServerId = pk.srv;
+  324:     if (!selfServerId || !itemServerId || !pk.itemPtr) REFUSEF("REFUSE ids self=%08x item=%08x itemPtr=%08x", (unsigned)selfServerId, (unsigned)itemServerId, (unsigned)pk.itemPtr);
+  325:     int can = canUseStrict(m.server, pk.itemPtr);
+  326:     if (can == 0) {
+  327:         // R5 probe: race short at stats+0xE0; base-item type (+0xAC) needs the 0x6D5200 lookup, not a GameAddr constant -> -1
+  328:         uint32_t st = 0; int16_t race = -1; int type = -1;
+  329:         if (rd<uint32_t>(m.server, Server_Stats, &st) && st) { int16_t r = 0; if (rd<int16_t>(st, Stats_Race, &r)) race = r; }
+  330:         KP_LOGV(chCall, KPLOG_WARN, "REFUSE canuse=0 member=%d item=%08x ptr=%08x name=\"%s\" type=%d race=%d", mi, (unsigned)itemServerId, (unsigned)pk.itemPtr, pk.name.c_str(), type, (int)race);
+  331:         return false;
+  332:     }
+  333:     if (mi >= 0 && mi <= 2) g_lastUseMs[mi] = now;   // only real uses debounce
+  334:     else if (mi == 0) g_lastUseMs0 = now;
+  335:     KP_LOG(chCall, "USE member=%d item=%08x \"%s\" heal=%d hp=%d/%d src=%s", mi, (unsigned)itemServerId, pk.name.c_str(), pk.heal, m.cur, m.max, src);
+  336:     if (mi >= 0 && mi <= 2) { g_pend[mi] = shui::Pending(); g_pend[mi].on = true; g_pend[mi].since = now; g_pend[mi].preHp = m.cur; g_pend[mi].preStack = pk.count; g_unqueuedSince[mi] = 0; g_kickReason[mi] = 0; g_starvedSince[mi] = 0; g_kickGaveUp[mi] = false; g_pendKey[mi] = pk.key; g_auto[mi].lastUseMs = now; g_auto[mi].pending = true; }
+  337:     else if (mi == 0) { g_pend0 = shui::Pending(); g_pend0.on = true; g_pend0.since = now; g_pend0.preHp = m.cur; g_pend0.preStack = pk.count; g_unqueuedSince0 = 0; g_kickReason0 = 0; g_starvedSince0 = 0; g_kickGaveUp0 = false; g_pendKey0 = pk.key; g_auto0.lastUseMs = now; g_auto0.pending = true; }
+  338:     if (out) { out->pk = pk; out->hp = m.cur; out->server = m.server; }
+  339:     reinterpret_cast<void(__thiscall*)(uintptr_t, int, int, uint32_t, int, uint32_t, int, int, int)>(UseItemRouteA)(m.server, 0, 0, selfServerId, 0, itemServerId, 0, 0, 0);
+  340:     KP_LOG(chCall, "CALL routeA returned member=%d", mi);
+  341:     return true;
+  342: }
+  343: 
+  344: // Ctrl+Shift+CallKey: useNow on the first companion that has a pick (opt-in, [probe] call=1), then the POST window.
+  345: void doCall(const K2PsContext* ctx, DWORD now) {
+  346:     if (now - g_lastCallMs < DebounceMs) REFUSE("REFUSE debounce (%lu ms since the last call)", (unsigned long)(now - g_lastCallMs));
+  347:     if (g_post.active) REFUSE("REFUSE post window active");
+  348:     g_lastCallMs = now;
+  349:     if (!g_hud) REFUSE("REFUSE no hud");
+  350:     std::vector<itemread::Entry> items;
+  351:     itemread::readGroup(g_hud, ItemGroup, &items);
+  352:     party::Vitals v[3];

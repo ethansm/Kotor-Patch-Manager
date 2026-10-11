@@ -1,0 +1,58 @@
+Task: verify one claim about one source file.
+
+Decide whether the claim is supported by the excerpt alone. Use only the claim, the file location, and the numbered excerpt below. If the excerpt does not contain enough information to decide, say so in the output instead of guessing.
+
+Work through it this way:
+1. Restate the claim in your own words in claim_restated.
+2. Find the lines in the excerpt that bear on the claim. Put lines that support the claim in supporting_quotes, and lines that contradict it in refutation_quotes. For each quote, give the file path, the line number shown in the excerpt, and the line text copied character for character. The text field holds only the line content, without the line number prefix.
+3. Choose the verdict from the enum values in the attached schema, based only on what the excerpt shows.
+4. Set confidence to high, medium, or low.
+5. In not_verifiable_without_running, state what could not be checked from the excerpt alone. In residual_questions, list open questions. Use an empty list or an empty string when there are none.
+6. In counter_evidence_searched, record each search you made inside the excerpt, with the pattern, the scope, the number of hits, and a note. Use an empty list if you made no search.
+7. In tool_trace, record any tool use. Use an empty list if you used no tools.
+8. Set finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: KP_LOGV(chBuild, ok ? KPLOG_INFO : KPLOG_WARN, "hud-host: %s (%s)", ok ? "connected" : "NOT connected", why ? why : "");  The hud-host connect callback only logs. The direct detours for HotbarHudTick and HotbarBuildButtons were removed from the hooks file (hooks file lines 22-23).
+
+Why it matters: Previously the HUD detours were installed directly by KPM and did not depend on another mod. Now, if hud-host is absent or fails to connect, the bar and its controls silently stop rendering or updating. The only signal is a log line. This is a behaviour change when that dependency is missing.
+FILE: patch_manager_mods/npc_diversity_src/NpcDiversityDispatcher.cpp
+LINES: 66-71
+EXCERPT (±15 lines, line numbers shown):
+   51: 
+   52:     if (!ppDesc || !*ppDesc || !ppTexture || !*ppTexture) return;
+   53: 
+   54:     const AppearanceDesc* pDesc = *ppDesc;
+   55:     ResRef* pTexture = *ppTexture;
+   56: 
+   57:     // Only diversify civilian clothing (bodyClass 0), never armor
+   58:     if (pDesc->bodyClass != 0) return;
+   59: 
+   60:     // Safely copy existing texture name with null terminator
+   61:     char curTex[ResRefLength + 1] = {};
+   62:     std::memcpy(curTex, pTexture->value, ResRefLength);
+   63:     curTex[ResRefLength] = '\0';
+   64: 
+   65:     // Compute deterministic hash for this creature appearance invocation
+   66:     uint32_t hash = NpcDiversity::HashDescriptor(
+   67:         pDesc->appearance,
+   68:         pDesc->gender,
+   69:         pDesc->textureVar,
+   70:         static_cast<uint32_t>(reinterpret_cast<uintptr_t>(resolverFrame))
+   71:     );
+   72: 
+   73:     char newTex[32] = {};
+   74:     if (NpcDiversity::ShouldDiversifyTexture(curTex, hash, newTex, sizeof(newTex))) {
+   75:         // Zero out target buffer and copy diversified texture name
+   76:         std::memset(pTexture->value, 0, ResRefLength);
+   77:         size_t len = std::strlen(newTex);
+   78:         if (len > ResRefLength) len = ResRefLength;
+   79:         std::memcpy(pTexture->value, newTex, len);
+   80:     }
+   81: }
+   82: 
+   83: // Remap NPC appearance based on creature position and appearance descriptor
+   84: __declspec(dllexport) void __cdecl RemapNpcAppearance(void* pCreature, AppearanceDesc* pDesc) {
+   85:     if (!pCreature || !pDesc) return;
+   86:     // Only civilian clothing (bodyClass 0), never armor

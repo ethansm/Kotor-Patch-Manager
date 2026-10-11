@@ -1,0 +1,49 @@
+Task: verify one claim about one source file.
+
+Decide whether the claim is supported by the excerpt alone. Use only the claim, the file location, and the numbered excerpt below. If the excerpt does not contain enough information to decide, say so in the output instead of guessing.
+
+Work through it this way:
+1. Restate the claim in your own words in claim_restated.
+2. Find the lines in the excerpt that bear on the claim. Put lines that support the claim in supporting_quotes, and lines that contradict it in refutation_quotes. For each quote, give the file path, the line number shown in the excerpt, and the line text copied character for character. The text field holds only the line content, without the line number prefix.
+3. Choose the verdict from the enum values in the attached schema, based only on what the excerpt shows.
+4. Set confidence to high, medium, or low.
+5. In not_verifiable_without_running, state what could not be checked from the excerpt alone. In residual_questions, list open questions. Use an empty list or an empty string when there are none.
+6. In counter_evidence_searched, record each search you made inside the excerpt, with the pattern, the scope, the number of hits, and a note. Use an empty list if you made no search.
+7. In tool_trace, record any tool use. Use an empty list if you used no tools.
+8. Set finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: The mapping names 14 appearances but never references any texture. The known facts list N_CommF01.tpc as the only N_CommF*.tpc asset referenced by code or generators (name_referenced_in_code_or_generators true). N_CommF02 through N_CommF32 and the other texture blobs are marked false, so they are not referenced by name in the code or the generators.
+
+Why it matters: Large unreferenced texture assets (1.4 MB and 5.6 MB each) add package weight and could mean a generator or appearance row was dropped, leaving some NPCs without the intended textures.
+FILE: patch_manager_mods/npc_diversity_src/override/diversity_2da_mapping.json
+LINES: 1-27
+EXCERPT (±15 lines, line numbers shown):
+    1: {
+    2:   "appearances": {
+    3:     "Commoner_Fat_Male": 802,
+    4:     "Commoner_Fat_Female": 803,
+    5:     "Czerka_Officer_Female": 804,
+    6:     "Twilek_Commoner_M_02_A": 805,
+    7:     "Twilek_Commoner_M_02_B": 806,
+    8:     "Twilek_Commoner_M_02_C": 807,
+    9:     "Twilek_Commoner_M_02_D": 808,
+   10:     "Twilek_Female_Dancer_Boot": 809,
+   11:     "Twilek_Female_Dancer": 810,
+   12:     "Twilek_Female_Underwear": 811,
+   13:     "Alien_KelDor_01": 812,
+   14:     "Alien_KelDor_02": 813,
+   15:     "Alien_Iridorian_01": 814,
+   16:     "Alien_Iridorian_02": 815
+   17:   },
+   18:   "heads": {
+   19:     "llk_Ahrnell": 192,
+   20:     "llk_Harra": 193,
+   21:     "llk_KehVehn": 194,
+   22:     "llk_LupoShar": 195,
+   23:     "llk_DahnisH": 196
+   24:   },
+   25:   "heads_count": 249,
+   26:   "appearance_count": 816
+   27: }

@@ -1,0 +1,61 @@
+Task: verify one claim about one source file.
+
+Decide whether the claim is supported by the excerpt alone. Use only the claim, the file location, and the numbered excerpt below. If the excerpt does not contain enough information to decide, say so in the output instead of guessing.
+
+Work through it this way:
+1. Restate the claim in your own words in claim_restated.
+2. Find the lines in the excerpt that bear on the claim. Put lines that support the claim in supporting_quotes, and lines that contradict it in refutation_quotes. For each quote, give the file path, the line number shown in the excerpt, and the line text copied character for character. The text field holds only the line content, without the line number prefix.
+3. Choose the verdict from the enum values in the attached schema, based only on what the excerpt shows.
+4. Set confidence to high, medium, or low.
+5. In not_verifiable_without_running, state what could not be checked from the excerpt alone. In residual_questions, list open questions. Use an empty list or an empty string when there are none.
+6. In counter_evidence_searched, record each search you made inside the excerpt, with the pattern, the scope, the number of hits, and a note. Use an empty list if you made no search.
+7. In tool_trace, record any tool use. Use an empty list if you used no tools.
+8. Set finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: When the live call fails, the code loads .claude/kev_4b_benchmark.json and sets res_4b = {"answers": {"role": c_entry}}, lat_4b = c_entry.get("latency_ms", 185.0). Lines 288 and 291 then print lat_4b as the live '4B ms' value, and line 282 adds it to kev4b_lats.
+
+Why it matters: Cached benchmark answers and latencies from an earlier run are shown and averaged as if they were live results. The 'Kev-4B' column and the 'Mean Latency' figure can therefore reflect stale data with no marker, and the fallback default of 185.0 is also an unmeasured constant.
+FILE: scripts/shadow_replay.py
+LINES: 259-267
+EXCERPT (±15 lines, line numbers shown):
+  244:                 "prompt": prompt[:500],
+  245:                 "active_mod": active_mod or "none"
+  246:             },
+  247:             "questions": {
+  248:                 "role": {
+  249:                     "type": "choice",
+  250:                     "instructions": "Which subagent role is best suited for this task?",
+  251:                     "criteria": ROLE_CRITERIA
+  252:                 }
+  253:             }
+  254:         }
+  255: 
+  256:         # Query Kev-4B (:8100, fallback to GPU benchmark cache)
+  257:         res_4b, lat_4b = query_systemone(KEV_4B_URL, payload)
+  258:         if not res_4b:
+  259:             cached_4b_file = REPO_ROOT / ".claude" / "kev_4b_benchmark.json"
+  260:             if cached_4b_file.is_file():
+  261:                 try:
+  262:                     with open(cached_4b_file, "r", encoding="utf-8") as f:
+  263:                         cached_4b_data = json.load(f)
+  264:                     if prompt in cached_4b_data:
+  265:                         c_entry = cached_4b_data[prompt]
+  266:                         res_4b = {"answers": {"role": c_entry}}
+  267:                         lat_4b = c_entry.get("latency_ms", 185.0)
+  268:                 except Exception:
+  269:                     pass
+  270: 
+  271:         # Query Kev-0.8B (:8101 live)
+  272:         res_08b, lat_08b = query_systemone(KEV_08B_URL, payload)
+  273: 
+  274:         r_4b, conf_4b, margin_4b = parse_answer(res_4b.get("answers", {}).get("role", {}) if res_4b else {})
+  275:         r_08b, conf_08b, margin_08b = parse_answer(res_08b.get("answers", {}).get("role", {}) if res_08b else {})
+  276: 
+  277:         kev4b_roles.append(r_4b)
+  278:         kev08b_roles.append(r_08b)
+  279:         baseline_roles.append(base_role)
+  280: 
+  281:         if res_4b:
+  282:             kev4b_lats.append(lat_4b)

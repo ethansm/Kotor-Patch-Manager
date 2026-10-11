@@ -1,0 +1,77 @@
+Task: review one proposed patch against one claim.
+
+Decide whether the patch correctly fixes the stated claim without breaking other behaviour shown in the excerpt. Judge from the claim, the patch text, and the numbered original excerpt below. The patch may also change lines outside the excerpt; judge those changes only from the patch text.
+
+Work through it this way:
+1. For the finding, decide whether the defect described in the claim is fixed by the patch: yes, partial, or no. Give the reason in why.
+2. Check the patch for regressions, scope creep, weakened tests, hook or interface changes, unchecked return values, and boundary changes. Set each boolean in checks to true only when the patch text or the excerpt shows that risk.
+3. List each problem in issues, with a severity of blocker, major, or minor. Use an empty list when there are none.
+4. Quote the exact text that supports your decision in quotes, with the file path, the line number, and the line text. Line numbers for original lines refer to the excerpt. For added lines, use the new-file line number from the patch hunk header.
+5. Set verdict to one of the enum values in the attached schema.
+6. In revise_instructions, state what would need to change. Use an empty string if nothing needs to change.
+7. Set task_id and per_finding finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: logf (lines 63-68) increments `++g_logLines` and returns when `g_logLines >= MaxLogLines`, but the new `logw` at lines 69-72 and `loge` at lines 73-76 call `KP_LOGV` directly with no counter. Warning sites that fire on every hover event are therefore uncapped, e.g. line 473 `logw("H2: slot unusable (panel=%08x)", panel)` and line 479/482 in ShowItem, which run per ShowItem call.
+
+Why it matters: The cap exists to stop the log from being starved or flooded. The ported warning paths sit on per-event code, so a persistent unusable-slot or out-of-range condition could emit unbounded lines into the core log file on every item hover, which the cap was meant to prevent.
+PATCH:
+--- a/patch_manager_mods/inventory_3d_viewport_src/Inv3dLogic.h
++++ b/patch_manager_mods/inventory_3d_viewport_src/Inv3dLogic.h
+@@ -23,7 +23,7 @@
+ #include "RigCamera.inc"      // kRigCamPos/Fwd/Up/Right: the inv3d_light rig's camera rest pose
+ 
+ // ---------------------------------------------------------------- configuration ($GAME/inv3d.ini)
+-struct Ov { bool set; float v[5]; };  // rx,ry,rz,pitch[,zoom]
++struct Ov { bool set; float v[6]; };  // rx,ry,rz,pitch[,zoom]
+ struct Cfg {
+     int enabled = 1; char rig[64] = "inv3d_light"; int onlyWeaponsArmor = 0;
+     float spin = 70, dragDegPx = 0.5f, pitchClamp = 80, idleResume = 1.5f;
+--- a/patch_manager_mods/inventory_3d_viewport_src/Inventory3DViewport.cpp
++++ b/patch_manager_mods/inventory_3d_viewport_src/Inventory3DViewport.cpp
+@@ -86,7 +86,7 @@
+ 
+ constexpr unsigned SiteInv3d = 0x0100;   // saferead site id for this DLL's own probes
+ void dumpMem(const char* tag, int addr, int words) {
+-    if (addr == 0) { logf("  dump %s @0: null", tag); return; }
++    if (addr == 0) { logf("  dump %s @0: null (updated)", tag); return; }
+     for (int i = 0; i < words; i += 8) {
+         char line[200]; int p = 0;
+         for (int j = i; j < i + 8 && j < words; ++j) {
+
+ORIGINAL EXCERPT (±15 lines, line numbers shown):
+   54: 
+   55: // ---- diagnostics: KpLog (core file inventory-3d-viewport_log.txt; old core: fallback inv3d_log.txt at INFO), capped ----
+   56: KP_CHANNEL(chMain, "main");
+   57: KP_CHANNEL(chDbg, "debug");
+   58: // Only stores the path and the level (no I/O): safe from a static initialiser.
+   59: const bool g_fallbackSet = (KpLog_SetFallbackFile("inv3d_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
+   60: int g_logLines = 0;
+   61: constexpr int MaxLogLines = 12000;
+   62: bool g_debug = false;  // inv3d_debug.txt present -> per-tick detail
+   63: void logf(const char* fmt, ...) {
+   64:     if (g_logLines >= MaxLogLines) return;
+   65:     ++g_logLines;
+   66:     char buf[600]; va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
+   67:     KP_LOGV(chMain, KPLOG_INFO, "%s", buf);
+   68: }
+   69: void logw(const char* fmt, ...) {
+   70:     char buf[600]; va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
+   71:     KP_LOGV(chMain, KPLOG_WARN, "%s", buf);
+   72: }
+   73: void loge(const char* fmt, ...) {
+   74:     char buf[600]; va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
+   75:     KP_LOGV(chMain, KPLOG_ERR, "%s", buf);
+   76: }
+   77: int g_dbgLines = 0;
+   78: constexpr int MaxDebugLines = 6000;
+   79: void dlogf(const char* fmt, ...) {  // debug-only, own cap so it cannot starve the bind/error/drag lines
+   80:     if (!g_debug || g_dbgLines >= MaxDebugLines) return;
+   81:     ++g_dbgLines;
+   82:     char buf[600]; va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
+   83:     KP_LOGV(chDbg, KPLOG_INFO, "%s", buf);
+   84: }
+   85: char g_loadLine[160];   // formatted by DllMain, emitted by ensureInit (the logger is only known after KPatchInit)
+   86: 
+   87: constexpr unsigned SiteInv3d = 0x0100;   // saferead site id for this DLL's own probes

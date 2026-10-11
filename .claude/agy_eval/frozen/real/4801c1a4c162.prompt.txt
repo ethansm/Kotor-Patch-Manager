@@ -1,0 +1,55 @@
+Task: verify one claim about one source file.
+
+Decide whether the claim is supported by the excerpt alone. Use only the claim, the file location, and the numbered excerpt below. If the excerpt does not contain enough information to decide, say so in the output instead of guessing.
+
+Work through it this way:
+1. Restate the claim in your own words in claim_restated.
+2. Find the lines in the excerpt that bear on the claim. Put lines that support the claim in supporting_quotes, and lines that contradict it in refutation_quotes. For each quote, give the file path, the line number shown in the excerpt, and the line text copied character for character. The text field holds only the line content, without the line number prefix.
+3. Choose the verdict from the enum values in the attached schema, based only on what the excerpt shows.
+4. Set confidence to high, medium, or low.
+5. In not_verifiable_without_running, state what could not be checked from the excerpt alone. In residual_questions, list open questions. Use an empty list or an empty string when there are none.
+6. In counter_evidence_searched, record each search you made inside the excerpt, with the pattern, the scope, the number of hits, and a note. Use an empty list if you made no search.
+7. In tool_trace, record any tool use. Use an empty list if you used no tools.
+8. Set finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: shutil.copytree("~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager", fake_kpm, symlinks=True,) hardcodes a absolute path under one developer's home directory and an external workspace outside the repository.
+
+Why it matters: On any other machine or CI runner the test errors out in test_2 (or, if the path exists, silently depends on an external tree that is not versioned with this repo). This is a machine-specific path in a committed gate, which the build-portability rules forbid.
+FILE: scripts/test_compat_breakage.py
+LINES: 147-149
+EXCERPT (±15 lines, line numbers shown):
+  132:                     "portrait_slots_src",
+  133:                     "shield_bar_src",
+  134:                     "queue_hud_src",
+  135:                 ),
+  136:             )
+  137: 
+  138:             # Rename hudScale in Gui2D.h
+  139:             g2d_path = scratch / "patch_manager_mods/_shared_src/Gui2D.h"
+  140:             content = g2d_path.read_text(encoding="utf-8")
+  141:             self.assertIn("inline float hudScale()", content)
+  142:             broken = content.replace("inline float hudScale()", "inline float hudScaleBroken()")
+  143:             g2d_path.write_text(broken, encoding="utf-8")
+  144: 
+  145:             # Setup fake_kpm directory pointing Common/Gui2D.h to broken Gui2D.h
+  146:             fake_kpm = Path(tmpdir) / "fake_kpm"
+  147:             shutil.copytree(
+  148:                 "~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager",
+  149:                 fake_kpm,
+  150:                 symlinks=True,
+  151:             )
+  152:             (fake_kpm / "Patches/Common/Gui2D.h").unlink()
+  153:             os.symlink(g2d_path, fake_kpm / "Patches/Common/Gui2D.h")
+  154: 
+  155:             # Expect build_check red for buff_duration_hud_src
+  156:             b_res_buff = subprocess.run(
+  157:                 [
+  158:                     sys.executable,
+  159:                     str(scratch / "scripts/build_check.py"),
+  160:                     "--mod",
+  161:                     "buff_duration_hud_src",
+  162:                     "--kpm-dir",
+  163:                     str(fake_kpm),
+  164:                 ],

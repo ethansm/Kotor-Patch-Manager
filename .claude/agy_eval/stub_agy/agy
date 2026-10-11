@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# Stub agy for test_agy_gate.sh. Never runs the real agy.
+# Appends one line per invocation to $STUB_AGY_LOG: "cwd=<physical cwd> argv=<%q-quoted args>".
+# Behaviour is chosen by $STUB_AGY_MODE (see case below).
+set -euo pipefail
+
+line="cwd=$(pwd -P) argv="
+for arg in "$@"; do
+  line+="$(printf '%q' "$arg") "
+done
+printf '%s\n' "${line% }" >>"${STUB_AGY_LOG:-/dev/null}"
+
+ENVELOPE='{"conversation_id":"stub","status":"success","response":"","error":null,"structured_output":{"verdict":"reproduced"},"usage":{"input_tokens":1,"output_tokens":1,"total_tokens":2}}'
+
+case "${STUB_AGY_MODE:-success}" in
+  success)
+    printf '%s\n' "$ENVELOPE"
+    ;;
+  concurrent)
+    sleep 0.2
+    printf '%s\n' "$ENVELOPE"
+    ;;
+  quota)
+    printf '%s\n' 'STUB_QUOTA_SIGNATURE weekly quota exhausted' >&2
+    exit 1
+    ;;
+  rate_limit)
+    printf '%s\n' 'STUB_RATE_SIGNATURE' >&2
+    exit 1
+    ;;
+  auth)
+    printf '%s\n' 'STUB_AUTH_SIGNATURE' >&2
+    exit 1
+    ;;
+  transient)
+    exit 2
+    ;;
+  hang)
+    sleep 60
+    ;;
+  malformed)
+    printf '%s\n' 'not json'
+    ;;
+  agy_missing)
+    printf '%s\n' 'STUB_MISSING_BINARY' >&2
+    exit 127
+    ;;
+  *)
+    printf '%s\n' 'STUB_UNKNOWN_MODE' >&2
+    exit 1
+    ;;
+esac

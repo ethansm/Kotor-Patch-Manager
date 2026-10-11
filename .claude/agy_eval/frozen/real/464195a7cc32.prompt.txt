@@ -1,0 +1,46 @@
+Task: verify one claim about one source file.
+
+Decide whether the claim is supported by the excerpt alone. Use only the claim, the file location, and the numbered excerpt below. If the excerpt does not contain enough information to decide, say so in the output instead of guessing.
+
+Work through it this way:
+1. Restate the claim in your own words in claim_restated.
+2. Find the lines in the excerpt that bear on the claim. Put lines that support the claim in supporting_quotes, and lines that contradict it in refutation_quotes. For each quote, give the file path, the line number shown in the excerpt, and the line text copied character for character. The text field holds only the line content, without the line number prefix.
+3. Choose the verdict from the enum values in the attached schema, based only on what the excerpt shows.
+4. Set confidence to high, medium, or low.
+5. In not_verifiable_without_running, state what could not be checked from the excerpt alone. In residual_questions, list open questions. Use an empty list or an empty string when there are none.
+6. In counter_evidence_searched, record each search you made inside the excerpt, with the pattern, the scope, the number of hits, and a note. Use an empty list if you made no search.
+7. In tool_trace, record any tool use. Use an empty list if you used no tools.
+8. Set finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: Header comment line 3-4 says the file 'pins the semantics THIS mod relies on' for Patches/Common APIs and line 9 says '0.3.0 adds area (5)' listing only areas (1)-(4) and (5). The new section at lines 315-357 ('// ================= 6. mousefix logic (MouseFixLogic.h)') tests mod-local MouseFixLogic.h, which is not a Patches/Common API, and the header comment never mentions area (6).
+
+Why it matters: The file's documented contract no longer matches its contents. A future reader who trusts the header will not know the mousefix checks exist or why they live in a Common-contract file, and the 'every message starts with mouse_probe relies on' rule is being applied to tests that do not pin Common semantics. Low risk, but it weakens the audit trail the contract-test rule depends on.
+FILE: patch_manager_mods/mouse_probe_src/common_contract_test.cpp
+LINES: 1-9
+EXCERPT (±15 lines, line numbers shown):
+    1: // common_contract_test.cpp -- Patches/Common CONTRACT test for Mouse Probe (doc 20 section 4.1; rule of 2026-10-03).
+    2: //
+    3: // Rule: every Patches/Common API a mod uses gets a mod-owned contract test colocated with the mod. It pins the semantics THIS mod
+    4: // relies on, not the headers' own behaviour (that is _shared_src/saferead_test.cpp and KPM's KpLog tests). Every message starts with
+    5: // "mouse_probe relies on:" so a failure names the consumer and the reason. Built against ../_shared_src and the KPM checkout's
+    6: // Patches/Common (see test.toml), so ANY edit to SafeRead.h / KpLog.h re-runs this test: a Common change that would break the probe
+    7: // fails here first.
+    8: //
+    9: // 0.3.0 adds area (5): the pure click heuristics in ClickLogic.h and the hook-side pointer hops that ProbeMouseMsg / ProbeClickInWorld / ProbeDefaultAction make.
+   10: // Areas: (1) saferead as rd<T> uses it (MouseProbe.cpp:55,74), (2) KpLog fallback sink BEFORE any successful KpLog_Init (init cannot be
+   11: // undone): file path, level gate, old-core path, (3) KpLog_Init rejections, (4) KpLog_Init success against a fake kpatch.log service.
+   12: // Host-only, deterministic.
+   13: #ifndef GUIKIT_HOST
+   14: #define GUIKIT_HOST 1
+   15: #endif
+   16: #include "SafeRead.h"
+   17: #include "KpLog.h"
+   18: #include "ClickLogic.h"
+   19: #include "MouseFixLogic.h"
+   20: #include "check.h"
+   21: #include <sys/mman.h>
+   22: #include <unistd.h>
+   23: #include <string.h>
+   24: #include <stdio.h>

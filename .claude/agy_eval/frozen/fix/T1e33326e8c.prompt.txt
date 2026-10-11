@@ -1,0 +1,56 @@
+Task: review one proposed patch against one claim.
+
+Decide whether the patch correctly fixes the stated claim without breaking other behaviour shown in the excerpt. Judge from the claim, the patch text, and the numbered original excerpt below. The patch may also change lines outside the excerpt; judge those changes only from the patch text.
+
+Work through it this way:
+1. For the finding, decide whether the defect described in the claim is fixed by the patch: yes, partial, or no. Give the reason in why.
+2. Check the patch for regressions, scope creep, weakened tests, hook or interface changes, unchecked return values, and boundary changes. Set each boolean in checks to true only when the patch text or the excerpt shows that risk.
+3. List each problem in issues, with a severity of blocker, major, or minor. Use an empty list when there are none.
+4. Quote the exact text that supports your decision in quotes, with the file path, the line number, and the line text. Line numbers for original lines refer to the excerpt. For added lines, use the new-file line number from the patch hunk header.
+5. Set verdict to one of the enum values in the attached schema.
+6. In revise_instructions, state what would need to change. Use an empty string if nothing needs to change.
+7. Set task_id and per_finding finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: The docstring says lines are prefixed with "<ms> companion-selfheal/<chan> [ERR |WARN ]", but the new PREFIX_RE at line 27 also accepts a `T=<secs> f=<frame|->` prefix form that is not documented anywhere in the module docstring (lines 2-17).
+
+Why it matters: The prefix grammar is now wider than the documented contract. A future maintainer relying on the docstring may not know that T=/f= lines are accepted, or may change the emitter's T=/f= format without updating the regex, causing silent non-matching (see f1 for how unmatched lines are dropped).
+PATCH:
+--- a/scripts/test_selfheal_log_check.py
++++ b/scripts/test_selfheal_log_check.py
+@@ -16,7 +16,6 @@
+ 
+ def test_pass():
+     r = S.check(lines("pass.txt"))
+-    assert (r["p1"], r["p3"], len(r["blocks"]), r["verdict"]) == ("PASS", "PASS", 1, "PASS")
+     assert len(r["table"]) == 2 and r["table"][0]["pick"][1] == 65
+     assert S.fmt(r).splitlines()[-1] == "SELFHEAL P1=PASS P3=PASS DUMP=1 blocks VERDICT=PASS"
+ 
+
+ORIGINAL EXCERPT (±15 lines, line numbers shown):
+    1: #!/usr/bin/env python3
+    2: """Companion-selfheal probe log checker (doc 27, CS3). Python 3.12, stdlib only; read-only.
+    3: 
+    4: Usage: selfheal_log_check.py [LOG | --log LOG] [--from LINE] [--to LINE]
+    5:   Default log: ~/.local/share/Steam/steamapps/common/Knights of the Old Republic II/companion-selfheal_log.txt
+    6:   1-based line numbers; verdicts use only lines in range. The whole file is one session (the probe logs no banner).
+    7:   Exit 0 = PASS/INCOMPLETE, 1 = FAIL, 2 = log missing/unreadable.
+    8: 
+    9: Line formats come from patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp; KpLog.h prefixes each line with
+   10: "<ms> companion-selfheal/<chan> [ERR |WARN ]" (prefix optional here so bare lines parse too).
+   11: Checks (0.4.0-dev adds): BUILD n=N/D (FAIL if N<D without why=), ICON fallback and TEX giving up are WARN.
+   12: 0.6.0-dev (CS12): REFUSE already queued, KICK member=N before=[..] after=[..] k=K route=rotate, KICK skipped member=N (gate=v),
+   13: KICK starved member=N, DONE ... queued=Q, TIMEOUT unqueued member=N. `KICK starved` and `TIMEOUT unqueued` are WARN (never FAIL): a timeout while
+   14: queued cannot happen by design, so an unqueued timeout means the use never entered the queue or was dropped.
+   15: Checks: P1 (>=1 `P1 hud built ... layoutOpen=1`, ctlCount 1..4096), P3 (every `P3 slot[i]=` has k=0|1|2),
+   16: DUMP blocks (hp cur<=max, heal-row cand {64,65,66,84,127,128} has heal>0 and only those have heal>0, a pick line, routeA idOk=1 when a pick exists).
+   17: """
+   18: from __future__ import annotations
+   19: 
+   20: import argparse
+   21: import re
+   22: import sys
+   23: from pathlib import Path
+   24: 
+   25: DEFAULT_LOG = Path.home() / ".local/share/Steam/steamapps/common/Knights of the Old Republic II/companion-selfheal_log.txt"

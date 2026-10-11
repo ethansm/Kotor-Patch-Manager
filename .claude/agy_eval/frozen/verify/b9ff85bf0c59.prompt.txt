@@ -1,0 +1,53 @@
+Task: verify one claim about one source file.
+
+Decide whether the claim is supported by the excerpt alone. Use only the claim, the file location, and the numbered excerpt below. If the excerpt does not contain enough information to decide, say so in the output instead of guessing.
+
+Work through it this way:
+1. Restate the claim in your own words in claim_restated.
+2. Find the lines in the excerpt that bear on the claim. Put lines that support the claim in supporting_quotes, and lines that contradict it in refutation_quotes. For each quote, give the file path, the line number shown in the excerpt, and the line text copied character for character. The text field holds only the line content, without the line number prefix.
+3. Choose the verdict from the enum values in the attached schema, based only on what the excerpt shows.
+4. Set confidence to high, medium, or low.
+5. In not_verifiable_without_running, state what could not be checked from the excerpt alone. In residual_questions, list open questions. Use an empty list or an empty string when there are none.
+6. In counter_evidence_searched, record each search you made inside the excerpt, with the pattern, the scope, the number of hits, and a note. Use an empty list if you made no search.
+7. In tool_trace, record any tool use. Use an empty list if you used no tools.
+8. Set finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: Line 57: `constexpr int Slot_CardRect = 0x54C;                      // portrait card rect (screen px)`. Compare line 58, which cites its source (`// K2Addr Slot_VitRect: 4 ints x,y,w,h`). The new offset has no source reference, and it is read at line 786 as four ints from the slot struct.
+
+Why it matters: An invented struct offset read as a screen rect feeds leaderButtonRect at line 827. A wrong offset that still yields positive w and h would place the leader button at the wrong screen location and pass the cd[2] > 0 && cd[3] > 0 check at line 787, so the fallback at line 827 would not run.
+FILE: patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp
+LINES: 457
+EXCERPT (±15 lines, line numbers shown):
+  442:     float alpha = -1.f;
+  443:     float tr = -1.f, tg = -1.f, tb = -1.f;   // last tint / text colour sent
+  444:     int frame = -1;                          // ring: last texture frame sent
+  445:     bool filled = false, fb = false;         // cross fill applied / fell back to the "+" text
+  446:     std::string tip;
+  447:     bool hover = false;
+  448: };
+  449: enum {
+  450:     W_Disc0 = 0, W_Disc1, W_DiscLeader,
+  451:     W_Frame0, W_Frame1, W_FrameLeader,
+  452:     W_Btn0, W_Btn1, W_BtnLeader,
+  453:     W_PopBg, W_Auto, W_HpM, W_HpP, W_KeepM, W_KeepP, W_HpVal, W_KeepVal,
+  454:     W_Ring0, W_Ring1, W_RingLeader,
+  455:     NWidgets
+  456: };
+  457: W g_w[NWidgets];
+  458: 
+  459: void wRect(W& w, const shui::Rect& r) { if (!w.c || (w.rectSet && w.r == r)) return; if (guikit::setRect(w.c, r.x, r.y, r.w, r.h)) { w.r = r; w.rectSet = true; } }
+  460: bool isPopText(const W& w) { int i = static_cast<int>(&w - g_w); return i == W_Auto || i == W_HpM || i == W_HpP || i == W_KeepM || i == W_KeepP || i == W_HpVal || i == W_KeepVal; }
+  461: void popStyle(W& w) {
+  462:     if (!w.c || !isPopText(w)) return;
+  463:     guikit::setTextColor(w.c, 0.85f, 0.95f, 0.85f);
+  464:     guikit::setAlpha(w.c, 1.0f);
+  465:     w.alpha = 1.0f;
+  466:     float rgb[3] = {};
+  467:     if (guikit::getTextColor(w.c, rgb)) { w.tr = rgb[0]; w.tg = rgb[1]; w.tb = rgb[2]; }
+  468:     else { w.tr = 0.85f; w.tg = 0.95f; w.tb = 0.85f; }
+  469: }   // popover text was invisible (CS8 R-pop): explicit light colour + alpha 1 on build and every show
+  470: void wShow(W& w, bool on) {
+  471:     if (!w.c) return;
+  472:     if (on) { if (w.vis != 1) popStyle(w); if (w.clk != 1) { guikit::setClickable(w.c, true); w.clk = 1; } if (w.vis != 1) { guikit::setVisible(w.c, true); w.vis = 1; } }

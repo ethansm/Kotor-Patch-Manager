@@ -1,0 +1,40 @@
+Task: verify one claim about one source file.
+
+Decide whether the claim is supported by the excerpt alone. Use only the claim, the file location, and the numbered excerpt below. If the excerpt does not contain enough information to decide, say so in the output instead of guessing.
+
+Work through it this way:
+1. Restate the claim in your own words in claim_restated.
+2. Find the lines in the excerpt that bear on the claim. Put lines that support the claim in supporting_quotes, and lines that contradict it in refutation_quotes. For each quote, give the file path, the line number shown in the excerpt, and the line text copied character for character. The text field holds only the line content, without the line number prefix.
+3. Choose the verdict from the enum values in the attached schema, based only on what the excerpt shows.
+4. Set confidence to high, medium, or low.
+5. In not_verifiable_without_running, state what could not be checked from the excerpt alone. In residual_questions, list open questions. Use an empty list or an empty string when there are none.
+6. In counter_evidence_searched, record each search you made inside the excerpt, with the pattern, the scope, the number of hits, and a note. Use an empty list if you made no search.
+7. In tool_trace, record any tool use. Use an empty list if you used no tools.
+8. Set finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: Line 1094 reads 'st = r.get("status", "PASS")' so any runner result that lacks a status key is counted as PASS in counts[st] at 1095. Result entries are appended to all_results unchanged (1093), so the JSON output shows them as well.
+
+Why it matters: A fail-open default turns malformed or partial runner output into a PASS. Nothing else in the file cross-checks that the number of PASS results matches the number of requested ids.
+FILE: AGENTS.md
+LINES: 91
+EXCERPT (±15 lines, line numbers shown):
+   76: - **Actionable Plan-Handoff Over Generic Reviews**: When ending with a next action and work remains on a feature or mod, provide concrete next development steps or plan-handoff commands (e.g. `/plan-handoff <batch>` or `python3 scripts/plan_manager.py handoff <batch>`), NEVER generic instructions to "review the changes made" or "inspect files".
+   77: - **Subagent & Orchestrator Delegation Exemption**: When reporting back to an AI orchestrator or delegating work to OpenCode/subagents, the human ADHD rules are superseded. The orchestrator MUST run the full plan/review/build delegation chain to completion in a single turn without pausing midway to ask the human for approval. The human ADHD rules apply ONLY to the final user-facing response.
+   78: 
+   79: ## Exhaustive Plan Specification Standard (Subagent Plan Mode)
+   80: When in plan mode (`plan` agent / `oc-flow start`), subagents MUST output an exhaustive 4-pillar specification before build:
+   81: 1. **Exact Code Changes**: Target file paths, function anchors, line numbers, exact struct offsets, texture names, RGB vectors, and calling conventions.
+   82: 2. **Edge Cases & Test Matrix**: State transitions (pause/unpause, save/load, area transition), boundary conditions, null pointer safety, and unit test vectors in `*_test.cpp`.
+   83: 3. **Tooling & Verification**: Exact commands for `scripts/build_check.py`, `scripts/run_tests.py`, and `scripts/agent_diff_check.py`.
+   84: 4. **Documentation & Contract**: Master plan status updates and compliance with the 5-line WORKER schema.
+   85: 
+   86: ## Terminal & Task Execution Rules (CRITICAL)
+   87: - **Synchronous Execution:** Set `WaitMsBeforeAsync` to `10000` (or `300000`) for test/build scripts. Note: Antigravity CLI's `run_command` tool implementation clamps synchronous wait to 10s (10000ms); commands exceeding 10s will automatically detach to a background task (`task-XXX`).
+   88: - **Unbuffered Python Output & Stdin Detachment:** Always invoke Python test/parity scripts with `PYTHONUNBUFFERED=1 python3 -u <script> < /dev/null 2>&1` so child processes never deadlock on stdin or buffer stdout.
+   89: - **NEVER Poll ManageTask, Logs, or ps:** If a command demotes to a background task (`task-XXX`), NEVER call `ManageTask(status task-XXX)`, NEVER repeatedly `view_file` on `.system_generated/tasks/task-*.log`, and NEVER run `ps aux | grep ...` to monitor it. Reading task logs before completion is polling.
+   90: - **Yield the Turn on Background Tasks:** If you have no parallel file edits or reading to perform while a background task runs, STOP calling tools and end your turn immediately with a one-line status notice. Antigravity's reactive wakeup listener will automatically resume you upon completion.
+   91: - **No Polling Schedules:** Do NOT call `Schedule(30s)` or recurring timers to check on background tasks; wait for reactive task completion messages.
+   92: - **Scoped Test Execution:** NEVER run bare `python3 scripts/run_tests.py` without a filter. Bare runs execute all 156 repository suites (>60s, background detach). Always scope test runs to the active feature (e.g. `python3 scripts/run_tests.py <name|filter>` or `-k <filter>`). Positional arguments (e.g. `run_tests.py suite:check-hook-bytes`, `run_tests.py diversity`) are supported.
+   93: - **Execute CLI Prompts Directly:** If the user's prompt begins with or consists of a console command (e.g. `python3 scripts/...`, `./scripts/...`, `git ...`, `oc-subagent ...`, `oc-flow ...`, `python3 scripts/plan_manager.py delegate ...`), immediately execute it via `run_command` on turn 1 without asking for confirmation or explaining the command.

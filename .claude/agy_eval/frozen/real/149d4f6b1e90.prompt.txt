@@ -1,0 +1,54 @@
+Task: verify one claim about one source file.
+
+Decide whether the claim is supported by the excerpt alone. Use only the claim, the file location, and the numbered excerpt below. If the excerpt does not contain enough information to decide, say so in the output instead of guessing.
+
+Work through it this way:
+1. Restate the claim in your own words in claim_restated.
+2. Find the lines in the excerpt that bear on the claim. Put lines that support the claim in supporting_quotes, and lines that contradict it in refutation_quotes. For each quote, give the file path, the line number shown in the excerpt, and the line text copied character for character. The text field holds only the line content, without the line number prefix.
+3. Choose the verdict from the enum values in the attached schema, based only on what the excerpt shows.
+4. Set confidence to high, medium, or low.
+5. In not_verifiable_without_running, state what could not be checked from the excerpt alone. In residual_questions, list open questions. Use an empty list or an empty string when there are none.
+6. In counter_evidence_searched, record each search you made inside the excerpt, with the pattern, the scope, the number of hits, and a note. Use an empty list if you made no search.
+7. In tool_trace, record any tool use. Use an empty list if you used no tools.
+8. Set finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: Line 231: `KT_CHECK_EQ(characterKeyFor(0xFFFFFFFAu, 1).c_str(), "objfffffffd"); KT_CHECK(!bad);` and line 232: `KT_CHECK_EQ(characterKeyFor(0xFFFFFFFEu, 1).c_str(), "objfffffffd"); KT_CHECK(!bad);`. Neither call passes `&bad`, so the `KT_CHECK(!bad)` reads the value left by line 230 rather than the result of these calls.
+
+Why it matters: The invalid-flag assertion on these two sentinel cases is vacuous: it cannot fail independently of the previous line, so it does not verify that 0xFFFFFFFA and 0xFFFFFFFE are not flagged invalid. HotbarLogic.h:80 would set bad=true for 0xFFFFFFFF and 0 only, so the assertion would pass here anyway, but the test would not catch a regression that sets bad for these ids.
+FILE: patch_manager_mods/action_hotbar_src/hotbar_logic_test.cpp
+LINES: 231-232
+EXCERPT (±15 lines, line numbers shown):
+  216:     KT_CHECK_EQ(characterKeyFor(0u, 1, &bad).c_str(), ""); KT_CHECK(bad);                       // id 0 never gets the party==1 rescue
+  217:     KT_CHECK_EQ(characterKeyFor(0u, 3, &bad).c_str(), ""); KT_CHECK(bad);
+  218:     KT_CHECK_EQ(characterKeyFor(1u, 3).c_str(), "obj00000001");                                // bad == nullptr allowed
+  219:     KT_CHECK_EQ(characterKeyFor(0xFFFFFFFEu, 1).c_str(), "objfffffffd");                        // AH2: stabilized to Exile canonical key
+  220:     KT_CHECK_EQ(characterKeyFor(0xFFFFFFFEu, 2, &bad, true).c_str(), "objfffffffd"); KT_CHECK(!bad);
+  221:     KT_CHECK_EQ(characterKeyFor(0x80000042u, 3, &bad, false, "atton", 1).c_str(), "atton"); KT_CHECK(!bad);
+  222:     KT_CHECK_EQ(characterKeyFor(0x80000043u, 3, &bad, false, "  Kreia  ", 2).c_str(), "kreia"); KT_CHECK(!bad);
+  223:     KT_CHECK_EQ(characterKeyFor(0x80000042u, 3, &bad, false, "", 1).c_str(), "slot1"); KT_CHECK(!bad);
+  224:     KT_CHECK_EQ(characterKeyFor(0x80000043u, 3, &bad, false, nullptr, 2).c_str(), "slot2"); KT_CHECK(!bad);
+  225:     KT_CHECK_EQ(characterKeyFor(0xFFFFFFFDu, 3, &bad, true, "player", 0).c_str(), "objfffffffd"); KT_CHECK(!bad);
+  226:     KT_CHECK_EQ(characterKeyFor(0xFFFFFFFEu, 3, &bad, true, "", 0).c_str(), "objfffffffd"); KT_CHECK(!bad);
+  227:     // AH3: full Odyssey negative player sentinel range 0xFFFFFFF0..0xFFFFFFFE maps to canonical Exile key
+  228:     KT_CHECK_EQ(characterKeyFor(0xFFFFFFF0u, 1, &bad).c_str(), "objfffffffd"); KT_CHECK(!bad);
+  229:     KT_CHECK_EQ(characterKeyFor(0xFFFFFFF0u, 2, &bad, true).c_str(), "objfffffffd"); KT_CHECK(!bad);
+  230:     KT_CHECK_EQ(characterKeyFor(0xFFFFFFF9u, 2, &bad, false).c_str(), "objfffffffd"); KT_CHECK(!bad);   // fast-travel sentinel
+  231:     KT_CHECK_EQ(characterKeyFor(0xFFFFFFFAu, 1).c_str(), "objfffffffd"); KT_CHECK(!bad);
+  232:     KT_CHECK_EQ(characterKeyFor(0xFFFFFFFEu, 1).c_str(), "objfffffffd"); KT_CHECK(!bad);
+  233:     KT_CHECK_EQ(characterKeyFor(0xFFFFFFFFu, 2, &bad, false).c_str(), ""); KT_CHECK(bad);   // 0xFFFFFFFF stays invalid (outside sentinel range)
+  234:   }
+  235:   { // 3. AutoFill merge + FNV signature
+  236:     ActionRef cfg[Slots], eff[Slots]; bool isAuto[Slots];
+  237:     std::vector<ActionRef> autos = { mk(K_Spell, 1), mk(K_Spell, 2), mk(K_Item, 0, "Medpac"), mk(K_Spell, 4) };
+  238:     cfg[1] = mk(K_Spell, 9);                    // explicit
+  239:     cfg[3].blank = true;                        // explicit "none": stays empty, takes no auto
+  240:     cfg[4] = mk(K_Spell, 9);
+  241:     int n = assignAutoFill(cfg, autos, eff, isAuto);
+  242:     KT_CHECK_EQ(n, 4 + 0);                      // empty slots 0,2,5,6,... fill in order: 4 autos -> slots 0,2,5,6
+  243:     KT_CHECK(eff[0].kind == K_Spell && eff[0].id == 1 && isAuto[0]);
+  244:     KT_CHECK(eff[1].id == 9 && !isAuto[1]);
+  245:     KT_CHECK(eff[2].id == 2 && isAuto[2]);
+  246:     KT_CHECK(eff[3].empty() && eff[3].blank && !isAuto[3]);
+  247:     KT_CHECK(eff[4].id == 9 && !isAuto[4]);

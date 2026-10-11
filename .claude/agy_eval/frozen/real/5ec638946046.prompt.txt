@@ -1,0 +1,60 @@
+Task: verify one claim about one source file.
+
+Decide whether the claim is supported by the excerpt alone. Use only the claim, the file location, and the numbered excerpt below. If the excerpt does not contain enough information to decide, say so in the output instead of guessing.
+
+Work through it this way:
+1. Restate the claim in your own words in claim_restated.
+2. Find the lines in the excerpt that bear on the claim. Put lines that support the claim in supporting_quotes, and lines that contradict it in refutation_quotes. For each quote, give the file path, the line number shown in the excerpt, and the line text copied character for character. The text field holds only the line content, without the line number prefix.
+3. Choose the verdict from the enum values in the attached schema, based only on what the excerpt shows.
+4. Set confidence to high, medium, or low.
+5. In not_verifiable_without_running, state what could not be checked from the excerpt alone. In residual_questions, list open questions. Use an empty list or an empty string when there are none.
+6. In counter_evidence_searched, record each search you made inside the excerpt, with the pattern, the scope, the number of hits, and a note. Use an empty list if you made no search.
+7. In tool_trace, record any tool use. Use an empty list if you used no tools.
+8. Set finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: log_event catches all write errors: `except Exception as e: sys.stderr.write(f"WARN [master_ledger]: Failed to write ledger event ...")` and returns the record. The CLI `log` branch (lines 515-517) then calls `log_event(args.event, payload, ledger_path)`, prints "Logged event ... to ...", and returns 0.
+
+Why it matters: A failed write (permissions, full disk, bad path) is reported to the caller as success with exit code 0. If a gate or build step records BUILD_GATE or HOTSWAP_APPLY through this CLI and checks only the exit code, a missing audit record passes silently, weakening the audit trail the gate relies on.
+FILE: scripts/master_ledger.py
+LINES: 185-192
+EXCERPT (±15 lines, line numbers shown):
+  170:         record["parent_agent"] = parent
+  171:     if data:
+  172:         for k, v in data.items():
+  173:             if k == "mod" and v:
+  174:                 record["mod"] = canonical_mod_name(v)
+  175:             elif k == "mods" and isinstance(v, list):
+  176:                 record["mods"] = [canonical_mod_name(m) for m in v if m]
+  177:             else:
+  178:                 record[k] = v
+  179: 
+  180:     # Test Isolation Guard: Suppress writing to production ledger during automated tests
+  181:     if is_test_environment() and ledger_path is None and "MASTER_LEDGER_PATH" not in os.environ:
+  182:         return record
+  183: 
+  184:     dest = get_ledger_path(ledger_path)
+  185:     try:
+  186:         dest.parent.mkdir(parents=True, exist_ok=True)
+  187:         line = json.dumps(record, separators=(",", ":")) + "\n"
+  188:         with open(dest, "a", encoding="utf-8") as f:
+  189:             f.write(line)
+  190:             f.flush()
+  191:     except Exception as e:
+  192:         sys.stderr.write(f"WARN [master_ledger]: Failed to write ledger event '{event}': {e}\n")
+  193: 
+  194:     return record
+  195: 
+  196: 
+  197: def read_events(ledger_path: str | Path | None = None) -> list[dict]:
+  198:     dest = get_ledger_path(ledger_path)
+  199:     if not dest.is_file():
+  200:         return []
+  201:     records = []
+  202:     with open(dest, "r", encoding="utf-8", errors="replace") as f:
+  203:         for line in f:
+  204:             line = line.strip()
+  205:             if not line:
+  206:                 continue
+  207:             try:

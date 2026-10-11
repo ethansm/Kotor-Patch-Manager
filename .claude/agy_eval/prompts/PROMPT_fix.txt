@@ -1,0 +1,14 @@
+Task: review one proposed patch against one claim.
+
+Decide whether the patch correctly fixes the stated claim without breaking other behaviour shown in the excerpt. Judge from the claim, the patch text, and the numbered original excerpt below. The patch may also change lines outside the excerpt; judge those changes only from the patch text.
+
+Work through it this way:
+1. For the finding, decide whether the defect described in the claim is fixed by the patch: yes, partial, or no. Give the reason in why.
+2. Check the patch for regressions, scope creep, weakened tests, hook or interface changes, unchecked return values, and boundary changes. Set each boolean in checks to true only when the patch text or the excerpt shows that risk.
+3. List each problem in issues, with a severity of blocker, major, or minor. Use an empty list when there are none.
+4. Quote the exact text that supports your decision in quotes, with the file path, the line number, and the line text. Line numbers for original lines refer to the excerpt. For added lines, use the new-file line number from the patch hunk header.
+5. Set verdict to one of the enum values in the attached schema.
+6. In revise_instructions, state what would need to change. Use an empty string if nothing needs to change.
+7. Set task_id and per_finding finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.

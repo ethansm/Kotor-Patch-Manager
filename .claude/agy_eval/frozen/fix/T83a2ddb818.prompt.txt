@@ -1,0 +1,113 @@
+Task: review one proposed patch against one claim.
+
+Decide whether the patch correctly fixes the stated claim without breaking other behaviour shown in the excerpt. Judge from the claim, the patch text, and the numbered original excerpt below. The patch may also change lines outside the excerpt; judge those changes only from the patch text.
+
+Work through it this way:
+1. For the finding, decide whether the defect described in the claim is fixed by the patch: yes, partial, or no. Give the reason in why.
+2. Check the patch for regressions, scope creep, weakened tests, hook or interface changes, unchecked return values, and boundary changes. Set each boolean in checks to true only when the patch text or the excerpt shows that risk.
+3. List each problem in issues, with a severity of blocker, major, or minor. Use an empty list when there are none.
+4. Quote the exact text that supports your decision in quotes, with the file path, the line number, and the line text. Line numbers for original lines refer to the excerpt. For added lines, use the new-file line number from the patch hunk header.
+5. Set verdict to one of the enum values in the attached schema.
+6. In revise_instructions, state what would need to change. Use an empty string if nothing needs to change.
+7. Set task_id and per_finding finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: The parent parser sets `--limit` default to 25 (line 187), and the struct branch passes it straight through: `results = query_struct(con, args.class_name, limit=args.limit)` (line 217). The new `--cpp` path (lines 237-238) then formats whatever came back with no warning that the list was cut off.
+
+Why it matters: A class with more than 25 fields produces a truncated C++ struct whose later members are missing. The user gets a plausible but incomplete layout, and the missing tail is never flagged.
+PATCH:
+diff --git a/scripts/query_ghidra.py b/scripts/query_ghidra.py
+index 0c49a24..0bca73c 100644
+--- a/scripts/query_ghidra.py
++++ b/scripts/query_ghidra.py
+@@ -184,7 +184,8 @@ def main():
+     parent_parser = argparse.ArgumentParser(add_help=False)
+     parent_parser.add_argument("--db", type=Path, default=DEFAULT_DB_PATH, help="Path to kotor2_ghidra_knowledge.db")
+     parent_parser.add_argument("--json", action="store_true", help="Output results in JSON format")
+-    parent_parser.add_argument("--limit", type=int, default=25, help="Maximum number of results to display")
++    parent_parser.add_argument("--limit", type=int, default=None,
++                               help="Maximum number of results to display (default 25; struct: all fields)")
+ 
+     parser = argparse.ArgumentParser(description="Query KOTOR II Ghidra knowledge database", parents=[parent_parser])
+     subparsers = parser.add_subparsers(dest="command", required=True)
+@@ -210,11 +211,14 @@ def main():
+ 
+     results = []
+     if args.command == "symbol":
+-        results = query_symbol(con, args.query, limit=args.limit)
++        results = query_symbol(con, args.query, limit=args.limit if args.limit is not None else 25)
+     elif args.command == "address":
+         results = query_address(con, args.address)
+     elif args.command == "struct":
+-        results = query_struct(con, args.class_name, limit=args.limit)
++        # A struct layout is never cut silently: no limit unless one is given, and a warning when it is hit.
++        results = query_struct(con, args.class_name, limit=args.limit if args.limit is not None else -1)
++        if args.limit is not None and len(results) >= args.limit:
++            print(f"warning: struct output truncated at --limit {args.limit}", file=sys.stderr)
+     elif args.command == "stats":
+         stats = get_stats(con)
+         if args.json:
+
+ORIGINAL EXCERPT (±15 lines, line numbers shown):
+  172:     cur = con.cursor()
+  173:     stats = {}
+  174:     tables = ["server_functions", "server_symbols", "server_types", "struct_fields", "steam_validated", "name_map"]
+  175:     for t in tables:
+  176:         try:
+  177:             cnt = cur.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
+  178:             stats[t] = cnt
+  179:         except sqlite3.Error:
+  180:             stats[t] = 0
+  181:     return stats
+  182: 
+  183: def main():
+  184:     parent_parser = argparse.ArgumentParser(add_help=False)
+  185:     parent_parser.add_argument("--db", type=Path, default=DEFAULT_DB_PATH, help="Path to kotor2_ghidra_knowledge.db")
+  186:     parent_parser.add_argument("--json", action="store_true", help="Output results in JSON format")
+  187:     parent_parser.add_argument("--limit", type=int, default=25, help="Maximum number of results to display")
+  188: 
+  189:     parser = argparse.ArgumentParser(description="Query KOTOR II Ghidra knowledge database", parents=[parent_parser])
+  190:     subparsers = parser.add_subparsers(dest="command", required=True)
+  191: 
+  192:     # Subcommand: symbol
+  193:     p_sym = subparsers.add_parser("symbol", parents=[parent_parser], help="Search by symbol or function name")
+  194:     p_sym.add_argument("query", help="Symbol name or substring")
+  195: 
+  196:     # Subcommand: address
+  197:     p_addr = subparsers.add_parser("address", parents=[parent_parser], help="Lookup by hex address (e.g. 0x0053f000)")
+  198:     p_addr.add_argument("address", help="Hex address")
+  199: 
+  200:     # Subcommand: struct
+  201:     p_struct = subparsers.add_parser("struct", parents=[parent_parser], help="Lookup struct fields by class name")
+  202:     p_struct.add_argument("class_name", help="Class name (e.g. CSWSCreature)")
+  203:     p_struct.add_argument("--cpp", action="store_true", help="Format struct fields as C++ struct declaration")
+  204: 
+  205:     # Subcommand: stats
+  206:     subparsers.add_parser("stats", parents=[parent_parser], help="Show knowledge database statistics")
+  207: 
+  208:     args = parser.parse_args()
+  209:     con = connect_db(args.db)
+  210: 
+  211:     results = []
+  212:     if args.command == "symbol":
+  213:         results = query_symbol(con, args.query, limit=args.limit)
+  214:     elif args.command == "address":
+  215:         results = query_address(con, args.address)
+  216:     elif args.command == "struct":
+  217:         results = query_struct(con, args.class_name, limit=args.limit)
+  218:     elif args.command == "stats":
+  219:         stats = get_stats(con)
+  220:         if args.json:
+  221:             print(json.dumps(stats, indent=2))
+  222:         else:
+  223:             print("Ghidra Knowledge Database Stats:")
+  224:             for k, v in stats.items():
+  225:                 print(f"  {k:20s}: {v:6d} entries")
+  226:         sys.exit(0)
+  227: 
+  228:     if not results:
+  229:         if args.json:
+  230:             print(json.dumps({"status": "not_found", "matches": []}))
+  231:         else:
+  232:             print(f"No results found for query: {getattr(args, 'query', getattr(args, 'address', getattr(args, 'class_name', '')))}")

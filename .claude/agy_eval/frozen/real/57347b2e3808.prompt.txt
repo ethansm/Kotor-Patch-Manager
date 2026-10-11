@@ -1,0 +1,53 @@
+Task: verify one claim about one source file.
+
+Decide whether the claim is supported by the excerpt alone. Use only the claim, the file location, and the numbered excerpt below. If the excerpt does not contain enough information to decide, say so in the output instead of guessing.
+
+Work through it this way:
+1. Restate the claim in your own words in claim_restated.
+2. Find the lines in the excerpt that bear on the claim. Put lines that support the claim in supporting_quotes, and lines that contradict it in refutation_quotes. For each quote, give the file path, the line number shown in the excerpt, and the line text copied character for character. The text field holds only the line content, without the line number prefix.
+3. Choose the verdict from the enum values in the attached schema, based only on what the excerpt shows.
+4. Set confidence to high, medium, or low.
+5. In not_verifiable_without_running, state what could not be checked from the excerpt alone. In residual_questions, list open questions. Use an empty list or an empty string when there are none.
+6. In counter_evidence_searched, record each search you made inside the excerpt, with the pattern, the scope, the number of hits, and a note. Use an empty list if you made no search.
+7. In tool_trace, record any tool use. Use an empty list if you used no tools.
+8. Set finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: DIAGPOP_RE = re.compile(r"^DIAG pop item=(\S+) .*?rgbOk=(\d+) alphaOk=(\d+)") only accepts unsigned digits. A line such as `DIAG pop item=X ... rgbOk=-1 alphaOk=1` (or any non-digit value) does not match; v030_line (lines 123-135) then falls through to `return False`, and check() (lines 183-199) silently drops the line when outside a DUMP block or ignores it inside one. The `rgb_ok != 1 or alpha_ok != 1` failure branch at line 127-128 is therefore never reached for malformed or negative values, so the new colour/alpha gate fails open.
+
+Why it matters: The DIAG pop check was added as a gate: a colour/alpha failure should make verdict FAIL (line 249 uses bool(v["fail"])). If the emitter ever writes a negative or non-numeric rgbOk/alphaOk, or omits one field, the probe reports PASS for a broken render path. This weakens the gate exactly for the new check.
+FILE: scripts/selfheal_log_check.py
+LINES: 49
+EXCERPT (±15 lines, line numbers shown):
+   34: BUILD_RE = re.compile(r"^BUILD n=(\S+)/(\d+)(?:\s+why=(.*))?$")   # 0.3.0: /10, 0.4.0-dev: /12 (+2 ring labels)
+   35: ICON_RE = re.compile(r"^ICON fallback member=(\S+)")
+   36: TEX_RE = re.compile(r"^TEX (\S+) (queued|refilled|giving up)\b")
+   37: USE_RE = re.compile(r"^USE member=(\S+) item=(\S+) \"(.*)\" heal=(\S+) hp=(\S+?)/(\S+) src=(\S+)\s*$")
+   38: REFUSE_RE = re.compile(r"^REFUSE\s*(.*?)\s*$")
+   39: DONE_RE = re.compile(r"^DONE member=(\S+) hp(\S+) stack(\S+) timeout=(\S+)\s*$")
+   40: AUTO_RE = re.compile(r"^AUTO member=(\S+) hp=(\S+?)/(\S+) pick=\"(.*)\" keep=(\S+)\s*$")
+   41: CFGSAVE_RE = re.compile(r"^CFG save tag=(\S*) auto=(\S+) hp=(\S+) keep=(\S+) ok=(\S+)\s*$")
+   42: CFGRELOAD_RE = re.compile(r"^CFG reload n=(\S+)\s*$")
+   43: DONE2_RE = re.compile(r"^DONE member=(\S+) hp(\S+) stack(\S+) queued=(\S+)\s*$")
+   44: KICK_RE = re.compile(r"^KICK member=(\S+) before=\[(.*?)\] after=\[(.*?)\] k=(\S+) route=rotate\s*$")
+   45: KICKSKIP_RE = re.compile(r"^KICK skipped member=(\S+) \((\w+)=(\S+?)\)\s*$")
+   46: KICKSTARVED_RE = re.compile(r"^KICK starved member=(\S+)\s*$")
+   47: TIMEOUT_RE = re.compile(r"^TIMEOUT unqueued member=(\S+)\s*$")
+   48: CLICK_RE = re.compile(r"^CLICK member=(\S+) noitem\s*$")
+   49: DIAGPOP_RE = re.compile(r"^DIAG pop item=(\S+) .*?rgbOk=(\d+) alphaOk=(\d+)")
+   50: ROWS = {64, 65, 66, 84, 127, 128}
+   51: FAMILY = {64: "organic medpac(10+1*TI)", 65: "organic medpac(20+2*TI)", 66: "organic medpac(30+3*TI)",
+   52:           84: "droid repair(15+1*Rep)", 127: "droid repair(25+2*Rep)", 128: "droid repair(35+3*Rep)"}
+   53: 
+   54: 
+   55: def to_int(s):
+   56:     try:
+   57:         return int(s)
+   58:     except (TypeError, ValueError):
+   59:         return None
+   60: 
+   61: 
+   62: def strip(raw):
+   63:     m = PREFIX_RE.match(raw)
+   64:     return m.group(1) if m else raw

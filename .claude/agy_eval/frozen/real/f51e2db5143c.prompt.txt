@@ -1,0 +1,58 @@
+Task: verify one claim about one source file.
+
+Decide whether the claim is supported by the excerpt alone. Use only the claim, the file location, and the numbered excerpt below. If the excerpt does not contain enough information to decide, say so in the output instead of guessing.
+
+Work through it this way:
+1. Restate the claim in your own words in claim_restated.
+2. Find the lines in the excerpt that bear on the claim. Put lines that support the claim in supporting_quotes, and lines that contradict it in refutation_quotes. For each quote, give the file path, the line number shown in the excerpt, and the line text copied character for character. The text field holds only the line content, without the line number prefix.
+3. Choose the verdict from the enum values in the attached schema, based only on what the excerpt shows.
+4. Set confidence to high, medium, or low.
+5. In not_verifiable_without_running, state what could not be checked from the excerpt alone. In residual_questions, list open questions. Use an empty list or an empty string when there are none.
+6. In counter_evidence_searched, record each search you made inside the excerpt, with the pattern, the scope, the number of hits, and a note. Use an empty list if you made no search.
+7. In tool_trace, record any tool use. Use an empty list if you used no tools.
+8. Set finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: for mod in existing_mods: base = mod.replace("_src", "").replace("_", ""); ... if mod.lower() in prompt_lower or clean_mod.lower() in prompt_lower or base.lower() in prompt_lower: return mod. existing_mods is a set (line 61-64) and the first substring hit wins.
+
+Why it matters: Set iteration order for strings depends on hash randomization, so when a prompt matches more than one mod the chosen active_mod changes between runs. Substring matching on short bases (e.g. a short mod name contained in common words) can also select the wrong write scope, which sanitize_write_scope (lines 159-161) then grants to the subagent.
+FILE: scripts/clef_matcher.py
+LINES: 80-85
+EXCERPT (±15 lines, line numbers shown):
+   65: 
+   66: 
+   67: def infer_active_mod(prompt: str, explicit_mod: str | None = None) -> str | None:
+   68:     """Infers the owning mod directory from explicit arg or prompt text."""
+   69:     existing_mods = get_existing_mod_dirs()
+   70:     if explicit_mod:
+   71:         canon = canonical_mod_name(explicit_mod)
+   72:         if canon and (canon in existing_mods or canon == "_shared_src"):
+   73:             return canon
+   74:         clean = explicit_mod.strip().replace("patch_manager_mods/", "").rstrip("/")
+   75:         if clean in existing_mods or clean == "_shared_src":
+   76:             return clean
+   77:         if f"{clean}_src" in existing_mods:
+   78:             return f"{clean}_src"
+   79: 
+   80:     prompt_lower = prompt.lower()
+   81:     for mod in existing_mods:
+   82:         base = mod.replace("_src", "").replace("_", "")
+   83:         clean_mod = mod.replace("_", "")
+   84:         if mod.lower() in prompt_lower or clean_mod.lower() in prompt_lower or base.lower() in prompt_lower:
+   85:             return mod
+   86: 
+   87:     # Common aliases
+   88:     if "queue" in prompt_lower:
+   89:         return "queue_hud_src"
+   90:     if "letterbox" in prompt_lower:
+   91:         return "dialogue_letterbox_fix_src"
+   92:     if "hotbar" in prompt_lower:
+   93:         return "combat_hotbar_src"
+   94:     if "diversity" in prompt_lower or "npc" in prompt_lower:
+   95:         return "npc_diversity_src"
+   96:     if "companion" in prompt_lower and "heal" in prompt_lower:
+   97:         return "companion_selfheal_src"
+   98:     if "companion" in prompt_lower:
+   99:         return "companion_ai_src"
+  100: 

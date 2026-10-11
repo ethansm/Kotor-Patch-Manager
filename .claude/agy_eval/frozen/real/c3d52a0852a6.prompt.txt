@@ -1,0 +1,97 @@
+Task: verify one claim about one source file.
+
+Decide whether the claim is supported by the excerpt alone. Use only the claim, the file location, and the numbered excerpt below. If the excerpt does not contain enough information to decide, say so in the output instead of guessing.
+
+Work through it this way:
+1. Restate the claim in your own words in claim_restated.
+2. Find the lines in the excerpt that bear on the claim. Put lines that support the claim in supporting_quotes, and lines that contradict it in refutation_quotes. For each quote, give the file path, the line number shown in the excerpt, and the line text copied character for character. The text field holds only the line content, without the line number prefix.
+3. Choose the verdict from the enum values in the attached schema, based only on what the excerpt shows.
+4. Set confidence to high, medium, or low.
+5. In not_verifiable_without_running, state what could not be checked from the excerpt alone. In residual_questions, list open questions. Use an empty list or an empty string when there are none.
+6. In counter_evidence_searched, record each search you made inside the excerpt, with the pattern, the scope, the number of hits, and a note. Use an empty list if you made no search.
+7. In tool_trace, record any tool use. Use an empty list if you used no tools.
+8. Set finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: test_cli_scratch_diff_make_gog_narrows and test_cli_scratch_diff_make_steam_stays_full_fanout call self.k2addr_path.write_text(modified) on the real patch_manager_mods/_shared_src/K2Addr.h (lines 526, 557), and restore the original only in a `finally` block (lines 546, 572). The replace() targets are literal addresses ("t.AppGlobal = 0x00A11C04;", "0x00A1B4A4"), so if an address changes the write silently becomes a no-op.
+
+Why it matters: The suite mutates a tracked source header in place. A killed or interrupted run (Ctrl-C between write and finally is handled, but SIGKILL or a crash is not) leaves a modified K2Addr.h in the worktree, which then feeds into every later compat/build gate and can be committed. Concurrent gate runs also read the mutated header. A no-op replace makes the scratch assertions test the unmodified file without noticing.
+FILE: scripts/test_compat_check.py
+LINES: 517-572
+EXCERPT (±15 lines, line numbers shown):
+  502:             [sys.executable, str(self.script), "patch_manager_mods/_shared_src/K2Addr.h", "--list"],
+  503:             cwd=REPO_ROOT,
+  504:             stdout=subprocess.PIPE,
+  505:             stderr=subprocess.PIPE,
+  506:             text=True,
+  507:             check=False,
+  508:         )
+  509:         self.assertEqual(res.returncode, 0)
+  510:         self.assertNotIn("GOG-only: Steam runtime unchanged", res.stdout)
+  511:         self.assertIn("BUILD   build_check", res.stdout)
+  512:         self.assertIn("TEST    cpp:k2addr_test", res.stdout)
+  513:         self.assertIn("TEST    cpp:gui2d_test", res.stdout)
+  514:         self.assertIn("SUITE   suite:guikit", res.stdout)
+  515:         self.assertIn("STATIC  suite:check-hook-bytes", res.stdout)
+  516: 
+  517:     def test_cli_scratch_diff_make_gog_narrows(self):
+  518:         """Scratch diff in makeGog yields cpp:k2addr_test + compile-only builds (Doc 22 U11)."""
+  519:         orig_content = self.k2addr_path.read_text(encoding="utf-8")
+  520:         try:
+  521:             # Modify an address in makeGog
+  522:             modified = orig_content.replace(
+  523:                 "t.AppGlobal = 0x00A11C04;",
+  524:                 "t.AppGlobal = 0x00A11C08;",
+  525:             )
+  526:             self.k2addr_path.write_text(modified, encoding="utf-8")
+  527: 
+  528:             res = subprocess.run(
+  529:                 [sys.executable, str(self.script), "patch_manager_mods/_shared_src/K2Addr.h", "--list"],
+  530:                 cwd=REPO_ROOT,
+  531:                 stdout=subprocess.PIPE,
+  532:                 stderr=subprocess.PIPE,
+  533:                 text=True,
+  534:                 check=False,
+  535:             )
+  536:             self.assertEqual(res.returncode, 0)
+  537:             self.assertIn("GOG-only: Steam runtime unchanged", res.stdout)
+  538:             self.assertIn("BUILD   build_check", res.stdout)
+  539:             self.assertIn("TEST    cpp:k2addr_test", res.stdout)
+  540:             # Ensure full fan-out items are excluded
+  541:             self.assertNotIn("TEST    cpp:gui2d_test", res.stdout)
+  542:             self.assertNotIn("TEST    cpp:buff_hud_logic_test", res.stdout)
+  543:             self.assertNotIn("SUITE", res.stdout)
+  544:             self.assertNotIn("STATIC", res.stdout)
+  545:         finally:
+  546:             self.k2addr_path.write_text(orig_content, encoding="utf-8")
+  547: 
+  548:     def test_cli_scratch_diff_make_steam_stays_full_fanout(self):
+  549:         """Scratch diff in makeSteam does not narrow to GOG-only (Doc 22 U11)."""
+  550:         orig_content = self.k2addr_path.read_text(encoding="utf-8")
+  551:         try:
+  552:             # Modify an address in makeSteam
+  553:             modified = orig_content.replace(
+  554:                 "t.AppGlobal = 0x00A1B4A4;",
+  555:                 "t.AppGlobal = 0x00A1B4A8;",
+  556:             )
+  557:             self.k2addr_path.write_text(modified, encoding="utf-8")
+  558: 
+  559:             res = subprocess.run(
+  560:                 [sys.executable, str(self.script), "patch_manager_mods/_shared_src/K2Addr.h", "--list"],
+  561:                 cwd=REPO_ROOT,
+  562:                 stdout=subprocess.PIPE,
+  563:                 stderr=subprocess.PIPE,
+  564:                 text=True,
+  565:                 check=False,
+  566:             )
+  567:             self.assertEqual(res.returncode, 0)
+  568:             self.assertNotIn("GOG-only: Steam runtime unchanged", res.stdout)
+  569:             self.assertIn("TEST    cpp:gui2d_test", res.stdout)
+  570:             self.assertIn("STATIC", res.stdout)
+  571:         finally:
+  572:             self.k2addr_path.write_text(orig_content, encoding="utf-8")
+  573: 
+  574: 
+  575: if __name__ == "__main__":
+  576:     unittest.main()

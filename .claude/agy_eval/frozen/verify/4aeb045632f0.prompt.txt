@@ -1,0 +1,54 @@
+Task: verify one claim about one source file.
+
+Decide whether the claim is supported by the excerpt alone. Use only the claim, the file location, and the numbered excerpt below. If the excerpt does not contain enough information to decide, say so in the output instead of guessing.
+
+Work through it this way:
+1. Restate the claim in your own words in claim_restated.
+2. Find the lines in the excerpt that bear on the claim. Put lines that support the claim in supporting_quotes, and lines that contradict it in refutation_quotes. For each quote, give the file path, the line number shown in the excerpt, and the line text copied character for character. The text field holds only the line content, without the line number prefix.
+3. Choose the verdict from the enum values in the attached schema, based only on what the excerpt shows.
+4. Set confidence to high, medium, or low.
+5. In not_verifiable_without_running, state what could not be checked from the excerpt alone. In residual_questions, list open questions. Use an empty list or an empty string when there are none.
+6. In counter_evidence_searched, record each search you made inside the excerpt, with the pattern, the scope, the number of hits, and a note. Use an empty list if you made no search.
+7. In tool_trace, record any tool use. Use an empty list if you used no tools.
+8. Set finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: install_hint = 1182 / restore_hint = 2060 for ActionHotbar.cpp, but the actual calls are at ActionHotbar.cpp:1188 (`WheelHook::install(g_gameWnd, &wheelProc);`) and ActionHotbar.cpp:2108 (`WheelHook::uninstall(&wheelProc);`). The hints were refreshed in this change but still do not match the file.
+
+Why it matters: The hints are informational only and are never checked by check_subclassers.py (drift is reported as INFO). Wrong hints are a hygiene problem: they make the INFO drift output misleading and suggest the values were typed rather than taken from the file.
+FILE: tests/static/subclassers.toml
+LINES: 25-26
+EXCERPT (±15 lines, line numbers shown):
+   10: #                 SetWindowLong(GWLP_WNDPROC, saved old proc)
+   11: #   install_hint, restore_hint   informational line numbers only; lines drift, never checked (drift is an INFO line)
+   12: #   uses          optional; "WindowHook" marks a file that subclasses through Common WindowHook.h (kp::WindowHook<Tag>, safe unhook:
+   13: #                 restore-if-on-top else pass-through). The file must name `WindowHook<` (a `using X = kp::WindowHook<Tag>` alias is
+   14: #                 fine), install/restore regexes match its X::install( / X::uninstall( calls, and it needs no direct GWLP_WNDPROC call.
+   15: #
+   16: # check_subclassers.py: FAIL for a file with a GWLP_WNDPROC SetWindowLong that is not listed here ("new WndProc subclasser:
+   17: # use Common WindowHook.h (kp::WindowHook); or register it here"), FAIL when a listed file lacks its install or restore
+   18: # pattern, WARN for a listed file with no GWLP_WNDPROC call (stale). Use single-quoted TOML literal strings for the regexes.
+   19: 
+   20: [[subclasser]]
+   21: file = "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp"
+   22: uses = "WindowHook"
+   23: install = 'WheelHook::install\s*\('
+   24: restore = 'WheelHook::uninstall\s*\('
+   25: install_hint = 1182
+   26: restore_hint = 2060
+   27: 
+   28: [[subclasser]]
+   29: file = "patch_manager_mods/_shared_src/GuiKit.h"
+   30: uses = "WindowHook"
+   31: install = 'WheelWin::install\s*\('
+   32: restore = 'WheelWin::uninstall\s*\('
+   33: install_hint = 686
+   34: restore_hint = 700
+   35: 
+   36: [[subclasser]]
+   37: file = "patch_manager_mods/_shared_src/WindowHook.h"
+   38: install = 'SetWindowLongPtr[AW]?\s*\(\s*h\s*,\s*GWLP_WNDPROC'
+   39: restore = 'getProc\(hwnd\)\s*==\s*proc\)\s*\{\s*whapi::setProc\(hwnd,\s*old\).*?else\s*\{\s*whapi::xchg\(&passthrough,\s*1\)'
+   40: install_hint = 12
+   41: restore_hint = 45

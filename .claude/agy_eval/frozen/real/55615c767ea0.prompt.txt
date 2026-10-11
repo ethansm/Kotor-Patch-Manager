@@ -1,0 +1,53 @@
+Task: verify one claim about one source file.
+
+Decide whether the claim is supported by the excerpt alone. Use only the claim, the file location, and the numbered excerpt below. If the excerpt does not contain enough information to decide, say so in the output instead of guessing.
+
+Work through it this way:
+1. Restate the claim in your own words in claim_restated.
+2. Find the lines in the excerpt that bear on the claim. Put lines that support the claim in supporting_quotes, and lines that contradict it in refutation_quotes. For each quote, give the file path, the line number shown in the excerpt, and the line text copied character for character. The text field holds only the line content, without the line number prefix.
+3. Choose the verdict from the enum values in the attached schema, based only on what the excerpt shows.
+4. Set confidence to high, medium, or low.
+5. In not_verifiable_without_running, state what could not be checked from the excerpt alone. In residual_questions, list open questions. Use an empty list or an empty string when there are none.
+6. In counter_evidence_searched, record each search you made inside the excerpt, with the pattern, the scope, the number of hits, and a note. Use an empty list if you made no search.
+7. In tool_trace, record any tool use. Use an empty list if you used no tools.
+8. Set finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: words = re.findall(r"[\w\./-]+\.(?:cpp|h|hpp|c|py|ini|md|sh)", combined_text) — the alternation tries `h` before `hpp`, and there is no trailing boundary, so 'Foo.hpp' matches as 'Foo.h' and the 'pp' is dropped. The cleaned path then fails the exists() check at line 156 and the header is silently omitted from the prompt's file list.
+
+Why it matters: Any plan section that targets a .hpp header never gets it into 'Target Files' / 'Relevant Files to Inspect', so the zero-read subagent is not told about the header it must edit or inspect. The failure is silent.
+FILE: scripts/subagent_prompt.py
+LINES: 151
+EXCERPT (±15 lines, line numbers shown):
+  136:     # 2. Check full section headers
+  137:     sec_pattern = re.compile(rf"(^#+\s+(?:(?:Phase|Batch|Chunk|Task|Step)\s+)?{re.escape(phase_key)}[:\s].*?)(?=^#+\s|\Z)", re.MULTILINE | re.DOTALL | re.IGNORECASE)
+  138:     sec_match = sec_pattern.search(text)
+  139:     if sec_match:
+  140:         section_text = sec_match.group(1).strip()
+  141:         if not description:
+  142:             description = section_text
+  143:         else:
+  144:             description += f"\n\n### Plan Section Details:\n{section_text}"
+  145:         header_title = section_text.splitlines()[0].strip("# ").strip()
+  146:         if header_title:
+  147:             title = header_title
+  148: 
+  149:     # 3. Find files mentioned in section
+  150:     combined_text = f"{title}\n{description}"
+  151:     words = re.findall(r"[\w\./-]+\.(?:cpp|h|hpp|c|py|ini|md|sh)", combined_text)
+  152:     valid_paths = []
+  153:     for w in words:
+  154:         clean = w.strip("`'\"(),:;[]")
+  155:         p = REPO_ROOT / clean
+  156:         if p.exists() and p.is_file() and clean not in valid_paths:
+  157:             valid_paths.append(clean)
+  158:         elif plan_path:
+  159:             # Check relative to plan directory and subdirectories
+  160:             for cand in [plan_path.parent / clean, plan_path.parent / "tools" / clean, plan_path.parent / "tools" / "parity" / clean]:
+  161:                 if cand.exists() and cand.is_file():
+  162:                     rel = str(cand.relative_to(REPO_ROOT))
+  163:                     if rel not in valid_paths:
+  164:                         valid_paths.append(rel)
+  165:                     break
+  166: 

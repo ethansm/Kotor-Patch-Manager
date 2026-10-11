@@ -1,0 +1,83 @@
+Task: verify one claim about one source file.
+
+Decide whether the claim is supported by the excerpt alone. Use only the claim, the file location, and the numbered excerpt below. If the excerpt does not contain enough information to decide, say so in the output instead of guessing.
+
+Work through it this way:
+1. Restate the claim in your own words in claim_restated.
+2. Find the lines in the excerpt that bear on the claim. Put lines that support the claim in supporting_quotes, and lines that contradict it in refutation_quotes. For each quote, give the file path, the line number shown in the excerpt, and the line text copied character for character. The text field holds only the line content, without the line number prefix.
+3. Choose the verdict from the enum values in the attached schema, based only on what the excerpt shows.
+4. Set confidence to high, medium, or low.
+5. In not_verifiable_without_running, state what could not be checked from the excerpt alone. In residual_questions, list open questions. Use an empty list or an empty string when there are none.
+6. In counter_evidence_searched, record each search you made inside the excerpt, with the pattern, the scope, the number of hits, and a note. Use an empty list if you made no search.
+7. In tool_trace, record any tool use. Use an empty list if you used no tools.
+8. Set finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: The parent parser sets `--limit` default to 25 (line 187), and the struct branch passes it straight through: `results = query_struct(con, args.class_name, limit=args.limit)` (line 217). The new `--cpp` path (lines 237-238) then formats whatever came back with no warning that the list was cut off.
+
+Why it matters: A class with more than 25 fields produces a truncated C++ struct whose later members are missing. The user gets a plausible but incomplete layout, and the missing tail is never flagged.
+FILE: scripts/query_ghidra.py
+LINES: 187-217
+EXCERPT (±15 lines, line numbers shown):
+  172:     cur = con.cursor()
+  173:     stats = {}
+  174:     tables = ["server_functions", "server_symbols", "server_types", "struct_fields", "steam_validated", "name_map"]
+  175:     for t in tables:
+  176:         try:
+  177:             cnt = cur.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
+  178:             stats[t] = cnt
+  179:         except sqlite3.Error:
+  180:             stats[t] = 0
+  181:     return stats
+  182: 
+  183: def main():
+  184:     parent_parser = argparse.ArgumentParser(add_help=False)
+  185:     parent_parser.add_argument("--db", type=Path, default=DEFAULT_DB_PATH, help="Path to kotor2_ghidra_knowledge.db")
+  186:     parent_parser.add_argument("--json", action="store_true", help="Output results in JSON format")
+  187:     parent_parser.add_argument("--limit", type=int, default=25, help="Maximum number of results to display")
+  188: 
+  189:     parser = argparse.ArgumentParser(description="Query KOTOR II Ghidra knowledge database", parents=[parent_parser])
+  190:     subparsers = parser.add_subparsers(dest="command", required=True)
+  191: 
+  192:     # Subcommand: symbol
+  193:     p_sym = subparsers.add_parser("symbol", parents=[parent_parser], help="Search by symbol or function name")
+  194:     p_sym.add_argument("query", help="Symbol name or substring")
+  195: 
+  196:     # Subcommand: address
+  197:     p_addr = subparsers.add_parser("address", parents=[parent_parser], help="Lookup by hex address (e.g. 0x0053f000)")
+  198:     p_addr.add_argument("address", help="Hex address")
+  199: 
+  200:     # Subcommand: struct
+  201:     p_struct = subparsers.add_parser("struct", parents=[parent_parser], help="Lookup struct fields by class name")
+  202:     p_struct.add_argument("class_name", help="Class name (e.g. CSWSCreature)")
+  203:     p_struct.add_argument("--cpp", action="store_true", help="Format struct fields as C++ struct declaration")
+  204: 
+  205:     # Subcommand: stats
+  206:     subparsers.add_parser("stats", parents=[parent_parser], help="Show knowledge database statistics")
+  207: 
+  208:     args = parser.parse_args()
+  209:     con = connect_db(args.db)
+  210: 
+  211:     results = []
+  212:     if args.command == "symbol":
+  213:         results = query_symbol(con, args.query, limit=args.limit)
+  214:     elif args.command == "address":
+  215:         results = query_address(con, args.address)
+  216:     elif args.command == "struct":
+  217:         results = query_struct(con, args.class_name, limit=args.limit)
+  218:     elif args.command == "stats":
+  219:         stats = get_stats(con)
+  220:         if args.json:
+  221:             print(json.dumps(stats, indent=2))
+  222:         else:
+  223:             print("Ghidra Knowledge Database Stats:")
+  224:             for k, v in stats.items():
+  225:                 print(f"  {k:20s}: {v:6d} entries")
+  226:         sys.exit(0)
+  227: 
+  228:     if not results:
+  229:         if args.json:
+  230:             print(json.dumps({"status": "not_found", "matches": []}))
+  231:         else:
+  232:             print(f"No results found for query: {getattr(args, 'query', getattr(args, 'address', getattr(args, 'class_name', '')))}")

@@ -1,0 +1,42 @@
+Task: verify one claim about one source file.
+
+Decide whether the claim is supported by the excerpt alone. Use only the claim, the file location, and the numbered excerpt below. If the excerpt does not contain enough information to decide, say so in the output instead of guessing.
+
+Work through it this way:
+1. Restate the claim in your own words in claim_restated.
+2. Find the lines in the excerpt that bear on the claim. Put lines that support the claim in supporting_quotes, and lines that contradict it in refutation_quotes. For each quote, give the file path, the line number shown in the excerpt, and the line text copied character for character. The text field holds only the line content, without the line number prefix.
+3. Choose the verdict from the enum values in the attached schema, based only on what the excerpt shows.
+4. Set confidence to high, medium, or low.
+5. In not_verifiable_without_running, state what could not be checked from the excerpt alone. In residual_questions, list open questions. Use an empty list or an empty string when there are none.
+6. In counter_evidence_searched, record each search you made inside the excerpt, with the pattern, the scope, the number of hits, and a note. Use an empty list if you made no search.
+7. In tool_trace, record any tool use. Use an empty list if you used no tools.
+8. Set finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: New entry for GuiInputProvider.cpp uses unanchored patterns `install = 'Hook::install\s*\('` and `restore = 'Hook::uninstall\s*\('`. The file has `using Hook = kp::WindowHook<GuiInputTag>;` (line 33), `bool ok = Hook::install(h, wheelProc);` (line 120) and `Hook::uninstall(&wheelProc);` (line 198).
+
+Why it matters: The patterns only prove that some install and some uninstall call exist in the file. They do not check that the uninstall sits on the same path as the install, or that it is not dead code. The check passes for any file that has both calls. Other registry entries have the same looseness, so this is a weak gate rather than a current bypass. The current file does satisfy the check: the `WindowHook<` rule passes at line 33 and both patterns match.
+FILE: tests/static/subclassers.toml
+LINES: 46-47
+EXCERPT (±15 lines, line numbers shown):
+   31: install = 'WheelWin::install\s*\('
+   32: restore = 'WheelWin::uninstall\s*\('
+   33: install_hint = 686
+   34: restore_hint = 700
+   35: 
+   36: [[subclasser]]
+   37: file = "patch_manager_mods/_shared_src/WindowHook.h"
+   38: install = 'SetWindowLongPtr[AW]?\s*\(\s*h\s*,\s*GWLP_WNDPROC'
+   39: restore = 'getProc\(hwnd\)\s*==\s*proc\)\s*\{\s*whapi::setProc\(hwnd,\s*old\).*?else\s*\{\s*whapi::xchg\(&passthrough,\s*1\)'
+   40: install_hint = 12
+   41: restore_hint = 45
+   42: 
+   43: [[subclasser]]
+   44: file = "patch_manager_mods/gui_input_src/GuiInputProvider.cpp"
+   45: uses = "WindowHook"
+   46: install = 'Hook::install\s*\('
+   47: restore = 'Hook::uninstall\s*\('
+   48: install_hint = 120
+   49: restore_hint = 198
+   50: 

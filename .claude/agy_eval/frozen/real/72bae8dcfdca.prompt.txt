@@ -1,0 +1,97 @@
+Task: verify one claim about one source file.
+
+Decide whether the claim is supported by the excerpt alone. Use only the claim, the file location, and the numbered excerpt below. If the excerpt does not contain enough information to decide, say so in the output instead of guessing.
+
+Work through it this way:
+1. Restate the claim in your own words in claim_restated.
+2. Find the lines in the excerpt that bear on the claim. Put lines that support the claim in supporting_quotes, and lines that contradict it in refutation_quotes. For each quote, give the file path, the line number shown in the excerpt, and the line text copied character for character. The text field holds only the line content, without the line number prefix.
+3. Choose the verdict from the enum values in the attached schema, based only on what the excerpt shows.
+4. Set confidence to high, medium, or low.
+5. In not_verifiable_without_running, state what could not be checked from the excerpt alone. In residual_questions, list open questions. Use an empty list or an empty string when there are none.
+6. In counter_evidence_searched, record each search you made inside the excerpt, with the pattern, the scope, the number of hits, and a note. Use an empty list if you made no search.
+7. In tool_trace, record any tool use. Use an empty list if you used no tools.
+8. Set finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: run_build_mods() runs b_proc = subprocess.run(b_cmd, ..., check=False) at 1007-1015 but never reads b_proc.returncode. Results are derived only from regex matches of PASS/FAIL lines in stdout (1019-1051). A build_check.py crash, or any non-zero exit that prints no 'FAIL build:' line, adds no FAIL and no ERROR to counts, so the RESULT line and the exit code at 1176 report success.
+
+Why it matters: The build leg of the gate can pass when the build tool itself failed. The exit code of the subprocess is the authoritative signal and is discarded.
+FILE: scripts/compat_check.py
+LINES: 1007-1051
+EXCERPT (±15 lines, line numbers shown):
+  992: 
+  993:         def run_build_mods(build_mods_list: list[str]) -> None:
+  994:             if not build_mods_list:
+  995:                 return
+  996:             build_check_script = repo_root / "scripts/build_check.py"
+  997:             b_cmd = [sys.executable, str(build_check_script)]
+  998:             for m in build_mods_list:
+  999:                 b_cmd += ["--mod", m]
+ 1000:             if args.jobs:
+ 1001:                 b_cmd += ["--jobs", str(args.jobs)]
+ 1002:             if args.kpm_dir:
+ 1003:                 b_cmd += ["--kpm-dir", str(args.kpm_dir)]
+ 1004:             if args.wine:
+ 1005:                 b_cmd.append("--keep")
+ 1006: 
+ 1007:             b_proc = subprocess.run(
+ 1008:                 b_cmd,
+ 1009:                 cwd=repo_root,
+ 1010:                 env=exec_env,
+ 1011:                 stdout=subprocess.PIPE,
+ 1012:                 stderr=subprocess.STDOUT,
+ 1013:                 text=True,
+ 1014:                 check=False,
+ 1015:             )
+ 1016: 
+ 1017:             # Parse build_check output lines
+ 1018:             out_lines = b_proc.stdout.splitlines()
+ 1019:             for line in out_lines:
+ 1020:                 m_pass = re.search(
+ 1021:                     r"PASS\s+build:\s+([^\s:]+)(?:\s+\([^)]+\))?:\s*(.*?)(?:,\s*([0-9.]+)s)?$",
+ 1022:                     line,
+ 1023:                 )
+ 1024:                 m_fail = re.search(r"FAIL\s+build:\s+([^\s:]+):\s*(.*)$", line)
+ 1025:                 if m_pass:
+ 1026:                     mod_id = m_pass.group(1)
+ 1027:                     sec = float(m_pass.group(3)) if m_pass.group(3) else 0.0
+ 1028:                     all_results.append(
+ 1029:                         {
+ 1030:                             "id": f"build_check:{mod_id}",
+ 1031:                             "kind": "build",
+ 1032:                             "status": "PASS",
+ 1033:                             "seconds": sec,
+ 1034:                             "reason": "",
+ 1035:                             "tail": m_pass.group(2),
+ 1036:                         }
+ 1037:                     )
+ 1038:                     counts["PASS"] = counts.get("PASS", 0) + 1
+ 1039:                 elif m_fail:
+ 1040:                     mod_id = m_fail.group(1)
+ 1041:                     all_results.append(
+ 1042:                         {
+ 1043:                             "id": f"build_check:{mod_id}",
+ 1044:                             "kind": "build",
+ 1045:                             "status": "FAIL",
+ 1046:                             "seconds": 0.0,
+ 1047:                             "reason": "",
+ 1048:                             "tail": m_fail.group(2),
+ 1049:                         }
+ 1050:                     )
+ 1051:                     counts["FAIL"] = counts.get("FAIL", 0) + 1
+ 1052: 
+ 1053:         # If running wine smokes, run builds first with --keep so built DLLs are available for smokes
+ 1054:         if args.wine and build_mods:
+ 1055:             run_build_mods(build_mods)
+ 1056: 
+ 1057:         # 1. Run tests and suites via run_tests.py
+ 1058:         if test_suite_ids:
+ 1059:             run_tests_script = repo_root / "scripts/run_tests.py"
+ 1060:             test_cmd = [sys.executable, str(run_tests_script), "--build"]
+ 1061:             if args.jobs:
+ 1062:                 test_cmd += ["--jobs", str(args.jobs)]
+ 1063:             if args.no_sanitize:
+ 1064:                 test_cmd.append("--no-sanitize")
+ 1065:             if args.wine:
+ 1066:                 test_cmd.append("--wine")

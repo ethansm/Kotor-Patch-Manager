@@ -1,0 +1,45 @@
+Task: verify one claim about one source file.
+
+Decide whether the claim is supported by the excerpt alone. Use only the claim, the file location, and the numbered excerpt below. If the excerpt does not contain enough information to decide, say so in the output instead of guessing.
+
+Work through it this way:
+1. Restate the claim in your own words in claim_restated.
+2. Find the lines in the excerpt that bear on the claim. Put lines that support the claim in supporting_quotes, and lines that contradict it in refutation_quotes. For each quote, give the file path, the line number shown in the excerpt, and the line text copied character for character. The text field holds only the line content, without the line number prefix.
+3. Choose the verdict from the enum values in the attached schema, based only on what the excerpt shows.
+4. Set confidence to high, medium, or low.
+5. In not_verifiable_without_running, state what could not be checked from the excerpt alone. In residual_questions, list open questions. Use an empty list or an empty string when there are none.
+6. In counter_evidence_searched, record each search you made inside the excerpt, with the pattern, the scope, the number of hits, and a note. Use an empty list if you made no search.
+7. In tool_trace, record any tool use. Use an empty list if you used no tools.
+8. Set finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: CLAUDE.md contains no mention of pre_install_gate.sh, "GATE PASS", the Gate Invariant, or the "ask for GO before --apply" rule. The KPM install route on line 5 only says: "KPM install, DLL hot-swap, staging ... → `kotor2-kpm-install` skill (reference: `patch_manager_mods/BUILD_AND_INSTALL.md`)". Those rules appear only in AGENTS.md lines 6-14.
+
+Why it matters: CLAUDE.md is the file Claude Code loads. If the Gate Invariant (a failure is a hard stop; rebuilt .kpatch needs a fresh PASS) and the GO requirement live only in AGENTS.md, a Claude Code session may not see them and may apply a hot-swap without a fresh gate PASS.
+FILE: CLAUDE.md
+LINES: 3-8
+EXCERPT (±15 lines, line numbers shown):
+    1: # CLAUDE.md — KOTOR II Workspace Guidelines
+    2: 
+    3: ## Task Routing (load the skill before the task)
+    4: - Address-DB rows / Steam DB batches / PR 5 → `kotor2-address-db` skill
+    5: - KPM install, DLL hot-swap, staging, release log tightening, kpm-pr-* worktrees → `kotor2-kpm-install` skill (reference: `patch_manager_mods/BUILD_AND_INSTALL.md`)
+    6: - Ghidra server (status, export, audit) → `openkotor-ghidra-server` skill
+    7: - Live mod logs → `kotor2-log-analysis` skill (`python3 scripts/kotor2_logs.py status | check <log> [--new]`); NEVER `cat`/`tail`/`grep` raw `.txt` logs
+    8: - Crash/freeze/hang → `kotor2-crash-triage` skill
+    9: - Plan handoff / context clear → `/plan-handoff` skill; after clear run `python3 scripts/plan_manager.py resume`. Stay in plan mode for "Clear context and approve"; do NOT `ExitPlanMode` early. Mark phases with `python3 scripts/plan_manager.py mark-done <phase> [--state <STATE>] [--commit <sha>] [--notes <txt>]` (auto-generates handoff & prints Saved State banner); NEVER sed the master plan. Both `/plan-handoff` and `plan_manager.py resume|handoff` accept shorthand (`25 §12`, `24:T6`, `19e`, `T5e`). Always output the 4-section protocol (`### Actions Completed`, `### What Now Works`, `### Agents Used`, `### Saved State`) upon step completion so context clearing is immediately actionable. Next actions ending turns should suggest concrete `/plan-handoff <batch>` targets rather than generic reviews.
+   10: 
+   11: ## Upstream Issue & PR Notification Check
+   12: At session start or before mod work, run `python3 scripts/check_kpm_updates.py --quiet` to check `LaneDibello/Kotor-Patch-Manager` (silent when nothing new). If it prints replies, alert the user with issue number, author, and preview.
+   13: 
+   14: ## GitHub Interaction Policy
+   15: - Never post comments, create issues, or submit PRs without the user's explicit, conversational approval in chat.
+   16: 
+   17: ## Ghidra Server Credential Isolation Policy (Strict)
+   18: - `~/.config/ghidra/.server_credentials` is an opaque system credential vault (permissions: `0600`).
+   19: - **NEVER** call `view_file`, `cat`, `head`, `tail`, `grep`, or `echo` on `~/.config/ghidra/.server_credentials` or any file matching `*credential*` or `*secret*`.
+   20: - Always interact with the Ghidra Server autonomously via `python3 scripts/ghidra_server_api.py` or `scripts/export_server_knowledge.sh`, which consume credentials internally in memory and never expose them in command arguments, stdout, stderr, or transcript logs.
+   21: 
+   22: ## Fast Local Tools
+   23: - Plan resume: `python3 scripts/plan_manager.py resume | next | handoff` (spec: `patch_manager_mods/MASTER_KEY.md`)

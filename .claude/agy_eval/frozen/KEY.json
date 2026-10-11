@@ -1,0 +1,267 @@
+{
+  "0176a0c6a864": {
+    "label": null,
+    "role": "real",
+    "set": "real"
+  },
+  "0c7f8b9b0214": {
+    "label": "K4",
+    "role": "control",
+    "set": "verify_gold"
+  },
+  "149d4f6b1e90": {
+    "label": null,
+    "role": "real",
+    "set": "real"
+  },
+  "2444cee4e725": {
+    "label": "dcy-7",
+    "role": "decoy",
+    "set": "verify_gold"
+  },
+  "257c4b579141": {
+    "label": "K3a (missed)",
+    "role": "control",
+    "set": "verify_gold"
+  },
+  "279efdfe2ece": {
+    "label": "K2",
+    "role": "control",
+    "set": "verify_gold"
+  },
+  "29d00622f431": {
+    "label": null,
+    "role": "real",
+    "set": "real"
+  },
+  "2a8fe6b54917": {
+    "label": null,
+    "role": "real",
+    "set": "real"
+  },
+  "2f387291e3ff": {
+    "label": null,
+    "role": "real",
+    "set": "real"
+  },
+  "327bda7cf27a": {
+    "label": null,
+    "role": "real",
+    "set": "real"
+  },
+  "3eeba9effd7f": {
+    "label": null,
+    "role": "real",
+    "set": "real"
+  },
+  "3f4afd470da1": {
+    "label": "K1",
+    "role": "control",
+    "set": "verify_gold"
+  },
+  "3fe9ee546096": {
+    "label": "dcy-3",
+    "role": "decoy",
+    "set": "verify_gold"
+  },
+  "458bbd0fd5d4": {
+    "label": null,
+    "role": "real",
+    "set": "real"
+  },
+  "464195a7cc32": {
+    "label": null,
+    "role": "real",
+    "set": "real"
+  },
+  "4801c1a4c162": {
+    "label": null,
+    "role": "real",
+    "set": "real"
+  },
+  "4aeb045632f0": {
+    "label": "K3b",
+    "role": "control",
+    "set": "verify_gold"
+  },
+  "4fe4dfe1361f": {
+    "label": null,
+    "role": "real",
+    "set": "real"
+  },
+  "55615c767ea0": {
+    "label": null,
+    "role": "real",
+    "set": "real"
+  },
+  "57347b2e3808": {
+    "label": null,
+    "role": "real",
+    "set": "real"
+  },
+  "5ec638946046": {
+    "label": null,
+    "role": "real",
+    "set": "real"
+  },
+  "61f2adfa4218": {
+    "label": null,
+    "role": "real",
+    "set": "real"
+  },
+  "6bf492ad8117": {
+    "label": null,
+    "role": "real",
+    "set": "real"
+  },
+  "706d9597de93": {
+    "label": null,
+    "role": "real",
+    "set": "real"
+  },
+  "72bae8dcfdca": {
+    "label": null,
+    "role": "real",
+    "set": "real"
+  },
+  "77f97458644e": {
+    "label": "dcy-8",
+    "role": "decoy",
+    "set": "verify_gold"
+  },
+  "7bc29377aa57": {
+    "label": "rejected",
+    "role": "control",
+    "set": "verify_gold"
+  },
+  "859789d1340d": {
+    "label": "K3b",
+    "role": "control",
+    "set": "verify_gold"
+  },
+  "86e98242c303": {
+    "label": null,
+    "role": "real",
+    "set": "real"
+  },
+  "8fb7d6f5d1d3": {
+    "label": null,
+    "role": "real",
+    "set": "real"
+  },
+  "92eac9b6aa52": {
+    "label": null,
+    "role": "real",
+    "set": "real"
+  },
+  "968ad73e0353": {
+    "label": null,
+    "role": "real",
+    "set": "real"
+  },
+  "9a378ce2b561": {
+    "label": "dcy-5",
+    "role": "decoy",
+    "set": "verify_gold"
+  },
+  "T1e33326e8c": {
+    "label": "reject",
+    "role": "seeded_bad",
+    "set": "fix_gold"
+  },
+  "T23c560695f": {
+    "label": "reject",
+    "role": "seeded_bad",
+    "set": "fix_gold"
+  },
+  "T53f311bdde": {
+    "label": "accept",
+    "role": "known_good",
+    "set": "fix_gold"
+  },
+  "T71b63bd421": {
+    "label": "reject",
+    "role": "seeded_bad",
+    "set": "fix_gold"
+  },
+  "T83a2ddb818": {
+    "label": "accept",
+    "role": "known_good",
+    "set": "fix_gold"
+  },
+  "Ta9d7f1476f": {
+    "label": "revise-or-reject",
+    "role": "seeded_bad",
+    "set": "fix_gold"
+  },
+  "Tb262627d01": {
+    "label": "accept",
+    "role": "known_good",
+    "set": "fix_gold"
+  },
+  "Tea8f2904a3": {
+    "label": "revise-or-reject",
+    "role": "seeded_bad",
+    "set": "fix_gold"
+  },
+  "a43054c7d728": {
+    "label": null,
+    "role": "real",
+    "set": "real"
+  },
+  "ab754f787bab": {
+    "label": null,
+    "role": "real",
+    "set": "real"
+  },
+  "b9ff85bf0c59": {
+    "label": "dcy-4",
+    "role": "decoy",
+    "set": "verify_gold"
+  },
+  "bd7f7f4f0b8f": {
+    "label": null,
+    "role": "real",
+    "set": "real"
+  },
+  "c03f9820ec82": {
+    "label": "dcy-2",
+    "role": "decoy",
+    "set": "verify_gold"
+  },
+  "c3d52a0852a6": {
+    "label": null,
+    "role": "real",
+    "set": "real"
+  },
+  "c402cd92eb83": {
+    "label": null,
+    "role": "real",
+    "set": "real"
+  },
+  "dc7bf221b507": {
+    "label": "dcy-6",
+    "role": "decoy",
+    "set": "verify_gold"
+  },
+  "e0a8aa228b90": {
+    "label": "dcy-1",
+    "role": "decoy",
+    "set": "verify_gold"
+  },
+  "efac576de524": {
+    "label": null,
+    "role": "real",
+    "set": "real"
+  },
+  "f51e2db5143c": {
+    "label": null,
+    "role": "real",
+    "set": "real"
+  },
+  "f9d03b5a7018": {
+    "label": null,
+    "role": "real",
+    "set": "real"
+  }
+}

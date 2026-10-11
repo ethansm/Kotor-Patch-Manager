@@ -1,0 +1,54 @@
+Task: verify one claim about one source file.
+
+Decide whether the claim is supported by the excerpt alone. Use only the claim, the file location, and the numbered excerpt below. If the excerpt does not contain enough information to decide, say so in the output instead of guessing.
+
+Work through it this way:
+1. Restate the claim in your own words in claim_restated.
+2. Find the lines in the excerpt that bear on the claim. Put lines that support the claim in supporting_quotes, and lines that contradict it in refutation_quotes. For each quote, give the file path, the line number shown in the excerpt, and the line text copied character for character. The text field holds only the line content, without the line number prefix.
+3. Choose the verdict from the enum values in the attached schema, based only on what the excerpt shows.
+4. Set confidence to high, medium, or low.
+5. In not_verifiable_without_running, state what could not be checked from the excerpt alone. In residual_questions, list open questions. Use an empty list or an empty string when there are none.
+6. In counter_evidence_searched, record each search you made inside the excerpt, with the pattern, the scope, the number of hits, and a note. Use an empty list if you made no search.
+7. In tool_trace, record any tool use. Use an empty list if you used no tools.
+8. Set finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: bool g_pendingReload = false;   // set by load/new-game hooks, consumed by HotbarHudTick ... bool g_pendingSaveSnapshot = false;   // set by save hook if save folder is deferred/unresolved
+
+Why it matters: The load, new-game and save hooks no longer exist (the hooks file and exports.def removed them). The flags are now set from save-events callbacks (ActionHotbar.cpp:1769-1802, 1877-1880). Stale comments make it harder to audit which path sets the flags, especially for the reload regression in f1.
+FILE: patch_manager_mods/action_hotbar_src/ActionHotbar.cpp
+LINES: 256-257
+EXCERPT (±15 lines, line numbers shown):
+  241:         en.name = readExoStr(S_Entry, e);
+  242:         { char ib[17] = {0}; if (saferead::probeRead(S_Entry, reinterpret_cast<const void*>(e + Entry_Icon), 16)) { memcpy(ib, reinterpret_cast<const void*>(e + Entry_Icon), 16); for (int k = 0; k < 16; ++k) if (ib[k] && (ib[k] < 0x20 || ib[k] > 0x7E)) ib[k] = '?'; }
+  243:           else if (++g_iconFaults <= 5) KP_LOGV(chSlots, KPLOG_DEBUG, "readGroup: icon unreadable g=%d i=%d entry=%08x (icon left empty)", g, i, (unsigned)e);
+  244:           en.icon = ib; }
+  245:         en.ref = decodeKey(en.key, en.name);
+  246:         if (en.ref.kind == hb::K_Item && !en.icon.empty()) g_itemIcon[en.ref.name] = en.icon;
+  247:         out->push_back(en);
+  248:     }
+  249:     if (!faulted) { gf.entry = 0; gf.idx = -1; }
+  250:     return (int)out->size();
+  251: }
+  252: 
+  253: // ---- state --------------------------------------------------------------------------------------------
+  254: const char* const IniPath = hb::IniName;
+  255: const char* const BakPath = "action_hotbar.ini.bak", *const LoadBakPath = "action_hotbar.ini.load.bak";   // BakPath: first-edit backup; LoadBakPath: written by save loads / new game
+  256: bool g_pendingReload = false;   // set by load/new-game hooks, consumed by HotbarHudTick (widgets must only be touched from the HUD tick)
+  257: bool g_pendingSaveSnapshot = false;   // set by save hook if save folder is deferred/unresolved, consumed by HotbarHudTick
+  258: std::string g_pendingSaveDir;
+  259: std::string g_pendingSaveWhy;
+  260: int g_pendingSaveRetries = 0;
+  261: k2se::Client g_se;
+  262: hb::Config g_cfg;
+  263: int g_qtyColorFail = 0; std::string g_qtyColorFirst;   // qty controls whose text-colour readback failed in the current HUD build (map section 4 #14)
+  264: int g_buildSeq = 0;   // HUD builds so far (once-per-build change-only caches)
+  265: unsigned g_capDevMask = 0, g_capMatched = 0, g_capForeign = 0, g_gateFlaps = 0;   // keyboard-device diagnosis + gate flap counter
+  266: filewatch::ReloadPoll g_cfgPoll;   // INI change poll (1 s throttle); seenMs() is -2 until the first look, -1 = missing
+  267: std::string g_charKey;                 // key of the controlled creature
+  268: DWORD g_charChangeTick = 0;            // GetTickCount() of the last character-key change (0 = none yet)
+  269: volatile bool g_slotBound[hb::Slots];   // Bottom row (row 0)
+  270: volatile DWORD g_hudTick = 0;          // last HUD tick time
+  271: volatile bool g_hudGateOk = false;
+  272: uintptr_t g_hud = 0;

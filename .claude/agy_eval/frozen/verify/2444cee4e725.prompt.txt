@@ -1,0 +1,63 @@
+Task: verify one claim about one source file.
+
+Decide whether the claim is supported by the excerpt alone. Use only the claim, the file location, and the numbered excerpt below. If the excerpt does not contain enough information to decide, say so in the output instead of guessing.
+
+Work through it this way:
+1. Restate the claim in your own words in claim_restated.
+2. Find the lines in the excerpt that bear on the claim. Put lines that support the claim in supporting_quotes, and lines that contradict it in refutation_quotes. For each quote, give the file path, the line number shown in the excerpt, and the line text copied character for character. The text field holds only the line content, without the line number prefix.
+3. Choose the verdict from the enum values in the attached schema, based only on what the excerpt shows.
+4. Set confidence to high, medium, or low.
+5. In not_verifiable_without_running, state what could not be checked from the excerpt alone. In residual_questions, list open questions. Use an empty list or an empty string when there are none.
+6. In counter_evidence_searched, record each search you made inside the excerpt, with the pattern, the scope, the number of hits, and a note. Use an empty list if you made no search.
+7. In tool_trace, record any tool use. Use an empty list if you used no tools.
+8. Set finding_id to the string UNSCORED. No ids are supplied for this prompt.
+
+Output only one JSON object that matches the attached schema. Do not write any text before or after the JSON, and do not wrap it in a code fence.
+
+CLAIM: Line 1: `// Mouse Probe 0.3.0 -- STRICTLY READ-ONLY diagnostics`, while patch_manager_mods/mouse_probe_src/manifest.toml line 4 now says `version = "0.4.0"`. The line 1-3 header also says the code never writes engine memory, and the new 0.4.0 'mouse fix' block (lines 104-146, 182-222) is not described in the 0.3.0 logging notes at lines 5-18.
+
+Why it matters: Version strings and the documented contract disagree across files, which makes it hard for reviewers and the KPM install metadata to tell what is actually shipped. The stale 'read-only' claim can mislead anyone who relies on it when judging the probe's safety.
+FILE: patch_manager_mods/level_up_override_src/LevelUpOverride.cpp
+LINES: 1404-1414
+EXCERPT (±15 lines, line numbers shown):
+ 1389:         }
+ 1390:     }
+ 1391:     resolvePresets();
+ 1392:     const int src = g_ptActive ? 2 : 1;
+ 1393:     if (src == g_srcLast && (src == 1 || g_srcGuid == g_guid)) return;
+ 1394:     g_srcLast = src; g_srcGuid = g_guid;
+ 1395:     if (src == 1) { KP_LOG(chCfg, "CONFIG source=dev"); return; }
+ 1396:     Buf b;
+ 1397:     for (int i = 0; i < g_ptCfg.nTags; ++i)
+ 1398:         b.add("%s%s:%s/i%d/h%d/p%d", i ? "," : "", g_ptCfg.tags[i].tag, g_ptCfg.presetId[i], g_ptCfg.tags[i].instant, g_ptCfg.tags[i].hold, g_ptCfg.tags[i].pause);
+ 1399:     KP_LOG(chCfg, "CONFIG source=playthrough g%08x tags=%s", (unsigned)g_guid, b.s);
+ 1400: }
+ 1401: 
+ 1402: // Re-reads levelup_playthroughs.ini when its stamp changed (throttled like the other configs); force = re-read now regardless.
+ 1403: void reloadPlay(bool force = false) {
+ 1404:     filewatch::Stamp st;
+ 1405:     if (!force) {
+ 1406:         if (!filewatch::changed(g_ptPoll, PtName, GetTickCount(), false, &st)) return;
+ 1407:     } else {
+ 1408:         st = filewatch::stamp(PtName);
+ 1409:         g_ptPoll.checked = true;
+ 1410:         g_ptPoll.lastCheck = GetTickCount();
+ 1411:     }
+ 1412:     const bool changed = !g_ptPoll.primed || (st != g_ptPoll.last);
+ 1413:     g_ptPoll.last = st;
+ 1414:     g_ptPoll.primed = true;
+ 1415:     g_ptStamp = st;
+ 1416:     size_t len = 0;
+ 1417:     bool big = false;
+ 1418:     g_ptLen = 0; g_ptBig = false;
+ 1419:     if (st.exists) {
+ 1420:         if (FILE* f = fopen(PtName, "rb")) {
+ 1421:             len = fread(g_ptText, 1, sizeof g_ptText - 1, f);
+ 1422:             big = !feof(f);
+ 1423:             fclose(f);
+ 1424:         }
+ 1425:     }
+ 1426:     g_ptLen = len; g_ptBig = big;
+ 1427:     pt::parse(g_ptDoc, g_ptText, len);
+ 1428:     if (big) g_ptDoc.lossy = true;
+ 1429:     if (changed) KP_LOG(chPlay, "PLAYTHROUGH %s: %d section(s)%s", st.exists ? "loaded" : "missing", g_ptDoc.n - 1, g_ptDoc.lossy ? " LOSSY (caps exceeded, writes disabled)" : "");
