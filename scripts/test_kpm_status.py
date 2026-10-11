@@ -132,6 +132,34 @@ class HelperTest(unittest.TestCase):
             got = ks.pick_sources([old / "manifest.toml", new / "manifest.toml"], {"x": kd})
             self.assertEqual(got, [new / "manifest.toml"])
 
+    def test_pick_sources_prefers_release_dir_over_newer_probe_dir(self):
+        # no dir matches the KPM copy: the newer -probe dir must not win over the release dir
+        with tempfile.TemporaryDirectory() as t:
+            root = pathlib.Path(t)
+            probe, release, kd = root / "probe_src", root / "release_src", root / "Patches/X"
+            for d in (probe, release, kd):
+                d.mkdir(parents=True)
+            (probe / "manifest.toml").write_text('[patch]\nid = "x"\nversion = "0.1.0-probe2"\n')
+            (release / "manifest.toml").write_text('[patch]\nid = "x"\nversion = "0.1.0"\n')
+            (kd / "manifest.toml").write_text('[patch]\nid = "x"\nversion = "1.0.2"\n')
+            t2 = time.time() + 50
+            os.utime(probe / "manifest.toml", (t2, t2))
+            got = ks.pick_sources([probe / "manifest.toml", release / "manifest.toml"], {"x": kd})
+            self.assertEqual(got, [release / "manifest.toml"])
+
+    def test_pick_sources_falls_back_to_probe_when_only_probe_dirs(self):
+        with tempfile.TemporaryDirectory() as t:
+            root = pathlib.Path(t)
+            a, b = root / "a_src", root / "b_src"
+            for d in (a, b):
+                d.mkdir(parents=True)
+            (a / "manifest.toml").write_text('[patch]\nid = "x"\nversion = "0.1.0-probe"\n')
+            (b / "manifest.toml").write_text('[patch]\nid = "x"\nversion = "0.1.0-probe2"\n')
+            t2 = time.time() + 50
+            os.utime(b / "manifest.toml", (t2, t2))
+            got = ks.pick_sources([a / "manifest.toml", b / "manifest.toml"], {})
+            self.assertEqual(got, [b / "manifest.toml"])
+
     def test_steam_hooks_name_skips_gog_and_ports(self):
         names = ["manifest.toml", "kotor2-gog-aspyr.hooks.toml", "kotor2-steam-aspyr.hooks.toml", "kotor2-steam-aspyr-linux.hooks.toml"]
         self.assertEqual(ks.steam_hooks_name(names), "kotor2-steam-aspyr.hooks.toml")

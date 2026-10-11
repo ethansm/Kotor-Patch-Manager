@@ -84,9 +84,17 @@ def kpm_dirs(kpm):
     return out
 
 
+def is_probe_manifest(m):
+    """True when the manifest's version has a -probe suffix (a probe build dir, not the release dir)."""
+    try:
+        return "-probe" in str(tomllib.load(open(m, "rb"))["patch"].get("version", ""))
+    except (KeyError, tomllib.TOMLDecodeError, OSError):
+        return False
+
+
 def pick_sources(manifests, kpm_map):
     """One repo dir per patch id. When several dirs share an id (an old probe dir next to the release dir), keep the one whose
-    manifest.toml equals the KPM copy, else the newest by mtime."""
+    manifest.toml equals the KPM copy. Failing that, the newest non-probe dir by mtime; probe dirs only when no release dir exists."""
     by_id = {}
     for m in manifests:
         try:
@@ -97,7 +105,8 @@ def pick_sources(manifests, kpm_map):
     for pid, ms in by_id.items():
         kd = kpm_map.get(pid)
         same = [m for m in ms if kd and (kd / "manifest.toml").exists() and m.read_bytes() == (kd / "manifest.toml").read_bytes()]
-        out.append(same[0] if same else max(ms, key=lambda m: m.stat().st_mtime))
+        release = [m for m in ms if not is_probe_manifest(m)] or ms
+        out.append(same[0] if same else max(release, key=lambda m: m.stat().st_mtime))
     return sorted(out)
 
 
