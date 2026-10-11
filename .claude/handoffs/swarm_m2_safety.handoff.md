@@ -1,6 +1,15 @@
-# Swarm M2 safety: current state (Session B2 to B4, 2026-10-11)
+# Swarm M2 safety: current state (Session B closed, Session C next, 2026-10-11)
 
-Resume next: `swarm M2 safety, Session B close (commit runner-order fix and B3b)`. Plan: Swarm M2 safety re-scope (post phase 3d), §4 Session B onward.
+Resume next: `swarm M2 safety, Session C (C1)`. Plan: Swarm M2 safety re-scope (post phase 3d), §5 Session C.
+
+## Session C status (2026-10-11, before clear)
+- **Session B CLOSED**: bundle HEAD `f15707f` (B3b), `50c05a2` (runner-order fix), `a74722a` (B2d), `b15884e` (B2c), `f353b90` (B2b), `2dcc917` (B2a), `fc8d54e` (B3a), `ad0b569` (B3c). Project handoff commits `7141a3e`, `48937ca`, `fdf5506`, `4a33d57`.
+- **LIB** (`~/.claude/swarm`) HEAD `7023abd`, clean. `lib/scrub.py` does NOT exist yet.
+- **C1 is unblocked**: LIB-only (`~/.claude/swarm/lib/scrub.py`, `~/.claude/swarm/tests/`, one line in project `tests/suites.toml`).
+- **C2 and C3 are BLOCKED** in the live bundle by another session's uncommitted edits: `engine/dr_profile.py` (C2 and C3 both touch it), `engine/prep.py` (C3), `engine/merge.py`, `engine/run_map.sh`. Its `lens_done` change also breaks the live chain test. Do C2 and C3 in a scratch copy at HEAD until that session commits or parks its work.
+- Session C resume phrase: `swarm M2 safety, Session C (C1)`. Do NOT use `plan_manager.py resume` or `handoff` for this work (see Dead Ends below).
+- **Dead ends for this work**: `plan_manager.py handoff "<text>"` writes the ACTIVE plan and rotates the shared `.claude/session_handoff.md`; `mark-done` has no matching master-plan phase; bare `git commit` or `git add -A` in the project sweeps other sessions' files (use explicit paths); editing the live bundle while a `run_fix|run_map|run_integrate|fix_checks` process is live (gate: `pgrep -af 'run_fix|run_map|run_integrate|fix_checks' | grep -v pgrep` must print nothing).
+- **Decided**: AGENTS.md stays without the agy backend line.
 
 ## Session B2 to B4 (2026-10-11)
 - Bundle commits (`~/.claude/skills/deep-haiku-review/bundle`, master):
