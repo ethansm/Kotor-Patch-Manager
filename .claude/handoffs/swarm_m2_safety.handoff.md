@@ -1,8 +1,41 @@
-# Swarm M2 safety: current state (Session B closed, Session C next, 2026-10-11)
+# Swarm M2 safety: current state (Session C closed, Session D next, 2026-10-11)
 
-Resume next: `swarm M2 safety, Session C (C1)`. Plan: Swarm M2 safety re-scope (post phase 3d), §5 Session C.
+Resume next: `swarm M2 safety, Session D (D1)`. Plan: Swarm M2 safety re-scope (post phase 3d), §6 Session D (re-plan first; the fix half is a diverged copy, so re-read `engine/fix/`).
 
-## Session C status (2026-10-11, before clear)
+## Session C CLOSED (2026-10-11)
+- **Commits**: LIB `d4f9834` C1 (`lib/scrub.py`, `tests/test_scrub.py`, 17 tests). Project `cd80fb5` (`tests/suites.toml`: `swarm-lib-scrub`; `run_tests.py swarm-lib` is now 6 PASS). Bundle `cea6282` C2 (forbidden union: `engine/invariants.py` vendored, one helper `dr_profile.forbidden_hits` used by `dr.py`, `vcommon.py`, `fact_runner.sh`). Bundle `58deafa` C3 (`[protected] scrub`, default true; `engine/scrub.py` vendored; `prep.py` sites `file_diff`, whole-file read, `build_tree`).
+- **Landing**: both bundle commits went through the index (patch `apply --cached`, then `apply` to the tree, commit without a pathspec). Patches: `~/.claude/swarm/backups/swarm_m2_session_c_c2.patch`, `..._c3.patch`. The verified scratch tree (`a58f78c`) equals the live `cea6282` tree.
+- **Workers**: 3 Sonnet (C1, C2, C3), no commits by workers. Processed tokens 168k / 1.97M / 2.29M.
+
+| Stage | Floor (Session B close) | After C2 | After C3 (clean copy of `58deafa`) |
+|---|---|---|---|
+| selftest mock | 147 | 160 | 160 |
+| real quick | 230 | 242 | 245 |
+| real full | 238 | 250 | 253 |
+
+Also green at `58deafa`: LIB loop (scrub 17 tests), `test_vendor_parity` 0 skips, `run_tests.py swarm-lib` (6) and `swarm-bundle-wrapper`, `fix_settings.py --self-test` 206 checks, `swarm_argv_probe.py` rc 0 IDENTICAL.
+
+| ID | Mutation (scratch copy, confirmed by diff) | Result |
+|---|---|---|
+| M-C1 | drop the `_STEAM.sub` line in `scrub.py` | 2 FAIL (`test_steam64`, mixed sample) |
+| M-C2a | `forbidden_hits` ignores the built-in list | mock 4 of 84 FAIL (`git -C x commit`, `git reset`, 2 in-process) |
+| M-C2b | `vcommon.forbidden_hit` legacy-only | quick 2 FAIL (`check-forbidden`, `vcommon --self-test`) |
+| M-C3a | `DEFAULTS["protected"]["scrub"]` False | quick 5 FAIL |
+| M-C3b | `build_tree` back to `shutil.copy2` | quick 3 FAIL |
+| M-C3c | `file_diff` result not scrubbed | quick 4 FAIL |
+
+- **Choices and deviations**:
+  1. C2 pre-gate: 5 literal hits, all test/comment/docs or fix-half help text (`engine/fix/fix_series.py:190` prints `git add` as advice). No engine-built stage argv or the `vcommon` claude preview holds a deny word. The fix half (`engine/fix/`) is NOT covered by C2.
+  2. `dr_profile.py` appends its own engine dir to `sys.path` before `import invariants`: `python3 -I engine/dr_profile.py` does not put the script dir on `sys.path`.
+  3. `_check_protected(...)` is called BEFORE `_check_lenses` (the plan said after): the other session's `_check_coverage` call sits on the line after `_check_lenses`, so reordering avoided an overlapping hunk. Patches built with `-U1`.
+  4. `fact_runner.sh` error text is now "forbidden command(s) in ..." (no check pinned the old text). The "not listed in the profile" proof uses `git reset --hard`, because the example profile already lists `git push`.
+  5. C3 checks are real-only (the mock engine's prep copies the repo verbatim), so the mock count did not move in C3. `STUB_SECRET_PATTERN` is widened by alternation (old pattern kept) and is in the env-restore tuple. The placeholder check requires both `/home/USER` and `REDACTED_TOKEN`.
+  6. **Gate lesson**: the plan's `pgrep` pattern did not match a live paid `dr.py ... run adjudicate --inline` (profile p2c, other session, `--yes-spend 0.44`). C2 waited until it exited. Use `pgrep -af 'run_fix|run_map|run_integrate|fix_checks|dr\.py|run_adjudicate|run_verify|run_reduce|prep\.py' | grep -v pgrep | grep -F "$B"` (filtered to the live bundle path, so scratch-copy selftests do not trip it).
+- **Finding in existing code (not Session C)**: `python3 -I engine/prep.py --self-test` fails at the pristine pre-session HEAD `f15707f` with `KeyError: 'agent_out/log.c'` (`prep.py` ~line 1312, `byf["agent_out/log.c"]`). It is in no selftest or suite. Not investigated.
+- **Residuals**: (a) the tree scrub rewrites any file, so a binary file holding `/home/x` text changes length; skipping NUL-containing files is the option. (b) The live-tree selftests were NOT repeated: the other session's uncommitted edits (`dr.py`, `engine/dr_profile.py`, `engine/merge.py`, `engine/prep.py`, `engine/run_map.sh`, `engine/verify/verify_merge.py`, `PROFILE_SPEC.md`, `SELFTEST.md`) still sit on top of my commits. Run the three selftests on the live tree after it commits or parks; evidence until then is the clean copy of `58deafa`. (c) `scrub` defaults on, so packet text and fix BASE seeding change (a fix patch touching a scrubbed line fails to apply); opt-out is `scrub = false`.
+- **Next**: Session D (D1 gate pins, D2 write scope, D3 profile and close), then §7 canary (needs the user's go, cap $0.03).
+
+## Session C status (2026-10-11, before clear) — SUPERSEDED by the section above, kept for history
 - **Session B CLOSED**: bundle HEAD `f15707f` (B3b), `50c05a2` (runner-order fix), `a74722a` (B2d), `b15884e` (B2c), `f353b90` (B2b), `2dcc917` (B2a), `fc8d54e` (B3a), `ad0b569` (B3c). Project handoff commits `7141a3e`, `48937ca`, `fdf5506`, `4a33d57`.
 - **LIB** (`~/.claude/swarm`) HEAD `7023abd`, clean. `lib/scrub.py` does NOT exist yet.
 - **C1 is unblocked**: LIB-only (`~/.claude/swarm/lib/scrub.py`, `~/.claude/swarm/tests/`, one line in project `tests/suites.toml`).
