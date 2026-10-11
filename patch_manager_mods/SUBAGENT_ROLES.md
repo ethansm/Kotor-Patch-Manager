@@ -108,3 +108,4 @@ Backend in Claude Code: native `Agent` calls with `model: haiku`. No `oc-*` back
 - The "1-3 parallel" cap applies to Opus agents only.
 
 **Stays inline (no agent)**: git status, one test command, one-file lookups, mark-done/handoff, Section 0, commits, anything touching live game files or shared state.
+- Worked example (a real W0-W3 run with briefs, facts, cards, check output): `patch_manager_mods/wave_examples/ACC1/README.md`.

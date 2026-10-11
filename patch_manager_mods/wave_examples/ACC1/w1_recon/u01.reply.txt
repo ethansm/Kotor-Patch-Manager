@@ -1,0 +1,5 @@
+OUTPUT: .claude/waves/w1-ACC1/u01.md
+EVIDENCE: scripts/wave_budget.py:19-25 (import block, json missing); scripts/wave_budget.py:129-131 (p_check args); scripts/wave_budget.py:166-168 (verdict/print/return); scripts/test_wave_budget.py:264 (CliTests insertion)
+FINDING: Add --json to p_check (line 131), import json after io (line 20), JSON branch before print (line 167); keep text default (tests 233-234).
+OPEN: Does check() per_entry hold plain ints? Fraction is imported at line 25 and check() body (26-125) was not read.
+VERDICT: PARTIAL

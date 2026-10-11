@@ -1,0 +1,8 @@
+task	entry	question
+a	scripts/wave_budget.py:126-168	Exact argparse flow of main(): check subparser, exit-code paths, where to add --json (store_true on p_check) and the JSON print branch; is `import json` present.
+a	scripts/wave_budget.py:4-11	Usage line and check description: where to add [--json] and what the flag prints.
+b	scripts/wave_tools.py:273-281	cmd_list output today and where to branch on --json; empty wave; missing wave behaviour.
+b	scripts/wave_tools.py:492-495	Exact p_list argparse block and how args reach cmd_list.
+c	patch_manager_mods/SUBAGENT_ROLES.md:90-99	Exact text of the Tools and Tooling and caps bullets; do other docs enumerate these flags.
+a-test	scripts/test_wave_budget.py:223-266	CliTests pattern and insertion point for a --json test.
+b-test	scripts/test_wave_tools.py:196-210	list test pattern and insertion point for a --json test.

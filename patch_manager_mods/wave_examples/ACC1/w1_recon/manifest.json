@@ -1,0 +1,54 @@
+{
+  "wave": "w1-ACC1",
+  "kind": "recon",
+  "created": "2026-10-11T23:30:32Z",
+  "baseline": ".claude/waves/w1-ACC1/baseline.tsv",
+  "units": [
+    {
+      "id": "u01",
+      "description": "w1-ACC1-u01 Recon for adding --json to",
+      "entries": [
+        "scripts/wave_budget.py:4-25",
+        "scripts/wave_budget.py:126-168",
+        "scripts/test_wave_budget.py:223-266"
+      ],
+      "scope": [
+        ".claude/waves/w1-ACC1/u01.md"
+      ],
+      "out": ".claude/waves/w1-ACC1/u01.md",
+      "reply": ".claude/waves/w1-ACC1/u01.reply.txt",
+      "brief": ".claude/waves/w1-ACC1/u01.brief.md",
+      "est_tokens": 11681
+    },
+    {
+      "id": "u02",
+      "description": "w1-ACC1-u02 Recon for adding --json to",
+      "entries": [
+        "scripts/wave_tools.py:273-281",
+        "scripts/wave_tools.py:488-520",
+        "scripts/test_wave_tools.py:196-210"
+      ],
+      "scope": [
+        ".claude/waves/w1-ACC1/u02.md"
+      ],
+      "out": ".claude/waves/w1-ACC1/u02.md",
+      "reply": ".claude/waves/w1-ACC1/u02.reply.txt",
+      "brief": ".claude/waves/w1-ACC1/u02.brief.md",
+      "est_tokens": 10973
+    },
+    {
+      "id": "u03",
+      "description": "w1-ACC1-u03 Recon for documenting the --json",
+      "entries": [
+        "patch_manager_mods/SUBAGENT_ROLES.md:85-105"
+      ],
+      "scope": [
+        ".claude/waves/w1-ACC1/u03.md"
+      ],
+      "out": ".claude/waves/w1-ACC1/u03.md",
+      "reply": ".claude/waves/w1-ACC1/u03.reply.txt",
+      "brief": ".claude/waves/w1-ACC1/u03.brief.md",
+      "est_tokens": 10610
+    }
+  ]
+}

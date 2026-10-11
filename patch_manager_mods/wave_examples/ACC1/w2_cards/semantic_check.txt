@@ -1,0 +1,3 @@
+W3 semantic cross-check (one Haiku, cards a and c, before the card b retry):
+a MISMATCH Objective adds a verdict key absent from check() dict (computed in main); verification py:scripts/test_wave_budget.py is valid.
+c MATCH Objective matches task c with no added or dropped requirements; -k wave_tools is runnable but only regression-checks code, not the doc bullet.

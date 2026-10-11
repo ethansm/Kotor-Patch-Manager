@@ -1,0 +1,5 @@
+Phase ACC1: machine-readable output for the wave tooling.
+Task a: `python3 scripts/wave_budget.py check <entry>... --json` prints the check() dict as JSON (exit codes unchanged).
+Task b: `python3 scripts/wave_tools.py list <wave_id> --json` prints the units as a JSON array (id, est_tokens, description).
+Task c: document both flags in the "Claude Code Haiku swarm (waves)" section of patch_manager_mods/SUBAGENT_ROLES.md.
+Each task needs a test next to the code (scripts/test_wave_budget.py, scripts/test_wave_tools.py).

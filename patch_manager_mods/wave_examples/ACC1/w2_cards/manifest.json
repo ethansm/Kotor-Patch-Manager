@@ -1,0 +1,53 @@
+{
+  "wave": "w2-ACC1",
+  "kind": "worker",
+  "created": "2026-10-11T23:32:14Z",
+  "baseline": ".claude/waves/w2-ACC1/baseline.tsv",
+  "units": [
+    {
+      "id": "u01",
+      "description": "w2-ACC1-u01 Draft the card for task",
+      "entries": [
+        ".claude/waves/w1-ACC1/u01.md",
+        ".claude/waves/w1-ACC1/phase.txt"
+      ],
+      "scope": [
+        ".claude/waves/w2-ACC1/cards/a.md"
+      ],
+      "out": ".claude/waves/w2-ACC1/u01.md",
+      "reply": ".claude/waves/w2-ACC1/u01.reply.txt",
+      "brief": ".claude/waves/w2-ACC1/u01.brief.md",
+      "est_tokens": 11558
+    },
+    {
+      "id": "u02",
+      "description": "w2-ACC1-u02 Draft the card for task",
+      "entries": [
+        ".claude/waves/w1-ACC1/u02.md",
+        ".claude/waves/w1-ACC1/phase.txt"
+      ],
+      "scope": [
+        ".claude/waves/w2-ACC1/cards/b.md"
+      ],
+      "out": ".claude/waves/w2-ACC1/u02.md",
+      "reply": ".claude/waves/w2-ACC1/u02.reply.txt",
+      "brief": ".claude/waves/w2-ACC1/u02.brief.md",
+      "est_tokens": 11485
+    },
+    {
+      "id": "u03",
+      "description": "w2-ACC1-u03 Draft the card for task",
+      "entries": [
+        ".claude/waves/w1-ACC1/u03.md",
+        ".claude/waves/w1-ACC1/phase.txt"
+      ],
+      "scope": [
+        ".claude/waves/w2-ACC1/cards/c.md"
+      ],
+      "out": ".claude/waves/w2-ACC1/u03.md",
+      "reply": ".claude/waves/w2-ACC1/u03.reply.txt",
+      "brief": ".claude/waves/w2-ACC1/u03.brief.md",
+      "est_tokens": 11124
+    }
+  ]
+}

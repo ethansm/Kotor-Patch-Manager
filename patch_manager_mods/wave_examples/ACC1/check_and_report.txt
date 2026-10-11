@@ -1,0 +1,29 @@
+$ python3 scripts/wave_tools.py check w1-ACC1
+u01 PASS PARTIAL no FAIL; 34 WARN, first: UNCLAIMED .claude/handoffs/swarm_library_architecture.handoff.md changed since baseline but is not
+u02 PASS PARTIAL no FAIL; 34 WARN, first: UNCLAIMED .claude/handoffs/swarm_library_architecture.handoff.md changed since baseline but is not
+u03 PASS REFUTED no FAIL; 34 WARN, first: UNCLAIMED .claude/handoffs/swarm_library_architecture.handoff.md changed since baseline but is not
+RERUN: none
+
+$ python3 scripts/wave_tools.py report w1-ACC1
+u01 est=11681 peak=52653 OK
+u02 est=10973 peak=49644 OK
+u03 est=10610 peak=46526 OK
+VERDICT: PASS units=3 flagged=0 no_data=0
+
+$ python3 scripts/wave_cards.py verify cards
+a.md#Task a PASS all checks passed
+b.md#Task b PASS all checks passed
+c.md#Task c PASS all checks passed
+VERDICT: PASS cards=3 fails=0
+
+$ python3 scripts/wave_tools.py check w2-ACC1
+u01 PASS PASS no FAIL; 27 WARN, first: UNCLAIMED .claude/handoffs/swarm_library_architecture.handoff.md changed since baseline but is not li
+u02 PASS PASS no FAIL; 27 WARN, first: UNCLAIMED .claude/handoffs/swarm_library_architecture.handoff.md changed since baseline but is not li
+u03 PASS PASS no FAIL; 27 WARN, first: UNCLAIMED .claude/handoffs/swarm_library_architecture.handoff.md changed since baseline but is not li
+RERUN: none
+
+$ python3 scripts/wave_tools.py report w2-ACC1
+u01 est=11558 peak=55829 OK
+u02 est=11485 peak=57224 OK
+u03 est=11124 peak=53064 OK
+VERDICT: PASS units=3 flagged=0 no_data=0

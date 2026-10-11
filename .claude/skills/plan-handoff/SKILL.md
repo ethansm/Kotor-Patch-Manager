@@ -47,6 +47,7 @@ Skip for trivial plans (<=2 tasks, files already known). Otherwise build the evi
 5. **Opus gate**: read the one-line-per-unit check table, spot-check the 2-3 riskiest cards on disk, write Section 0, order the execution waves. Never pass long briefs through Opus context: briefs are files, agent prompts are one line.
 6. After a live wave run `python3 scripts/wave_tools.py report <wave>` (estimate vs actual `peak_ctx`; any peak >60k is a failure and prints the new `WAVE_OVERHEAD_TOKENS`).
 7. In plan mode, extra recon uses read-only agents that reply inline (no files).
+8. Worked example of every artifact: `patch_manager_mods/wave_examples/ACC1/README.md`.
 
 ## 3. Step 2: Switch to Plan Mode
 Call `EnterPlanMode` (load via `ToolSearch` `select:EnterPlanMode` if deferred). Write the plan, then present it with `ExitPlanMode`: that call is the deliberate approval step ("clear context and apply"), not an early exit. No repo writes after `EnterPlanMode` except the plan file.
