@@ -184,6 +184,12 @@ requires = ["~/.claude/swarm/tests/test_vendor_parity.py"]
 timeout_s = 120
 
 [[suite]]
+name = "swarm-lib-scrub"
+cmd = ["python3", "-I", "~/.claude/swarm/tests/test_scrub.py"]
+requires = ["~/.claude/swarm/tests/test_scrub.py"]
+timeout_s = 120
+
+[[suite]]
 name = "swarm-bundle-wrapper"
 cmd = ["python3", "-I", "~/.claude/swarm/tests/test_bundle_wrapper.py"]
 requires = ["~/.claude/swarm/tests/test_bundle_wrapper.py", "~/.claude/skills/deep-haiku-review/bundle/engine/verify/runlib.sh"]
