@@ -8,9 +8,9 @@ Statuses come from this doc's own status blocks, the git log of `equipment_3d_ch
 | Id | Batch | Status | Commit | Notes |
 |---|---|---|---|---|
 | EQ1 | Probe stages 0-5: preview creature, live gear refresh, idle + flourishes, drag/zoom, Layout A | DONE | | User-tested "working", 19 ids live (STATUS BLOCK) |
-| EQ2 | Weapons in hands, engine wield-style rule, flourishes with weapons | BUILT | 34cb100 | Dual-wield visual result never reported (SESSION 3); F17 pins the style table |
+| EQ2 | Weapons in hands, engine wield-style rule, flourishes with weapons | BUILT | 05b4018 34cb100 | Wield rule in installed 05b4018 (backup `bak_pre_style`, doc line 37); dual-wield never user-reported (SESSION 3); 34cb100 (Oct 5) pins the style table, install not recorded |
 | EQ3 | Animation cross-fade (jumps at trigger/finish) | DONE | | Accepted 2026-09-30 ~18:00 (SESSION 4, Phase 0) |
-| EQ4 | Toolbar column: Animate, Spin (split play/pause + Reset), Weapons, Emotes pop-up | BUILT | KPM 8ba37be | Installed dcbdfde3; user test of the toolbar never recorded |
+| EQ4 | Toolbar column: Animate, Spin (split play/pause + Reset), Weapons, Emotes pop-up | BUILT | KPM 8ba37be | Installed dcbdfde3; spin row and Emotes not yet user-tested (SESSION 4); earlier build user-tested "working" (line 44) |
 | EQ5 | Headgear-loss fix (attachHelmet from the item model) | DONE | | User PASS 2026-10-02 ~02:40; DLL 962f9e22 |
 | EQ6 | Doc 20 extraction: Equip3dLogic.h, host test, F14-F19 clamps and INI hygiene | CHECK | 1d0ccab 47be017 14d905a | BF2 commits say source-only; shipped state not confirmed |
 | EQ7 | Common extraction: saferead C3a, SceneView C3b, vertical pan C3c | BUILT | e180af1 ba361f8 e77e64c | Installed 2026-10-05 (b6eeee09, d954782a); combined play test pending |
@@ -19,7 +19,7 @@ Statuses come from this doc's own status blocks, the git log of `equipment_3d_ch
 | EQ10 | Phase 2: holstered / combat-stance toggle | TODO | | Research gate first (SESSION 4 remaining plan) |
 | EQ11 | Per-weapon extras: saber blade/effects, forms g2r2..g2r7 | TODO | | Untested (STATUS BLOCK Open/next) |
 | EQ12 | Phase 3 / Track M: mirror the CHARACTER page | TODO | | SESSION 4 remaining plan |
-| EQ13 | Doc 19/19b shared state and code: registry A-ids, Common B-ids, kplog.ini | PARTIAL | d2fd8cc | Doc says nothing built (2026-10-02); MG4 landed part; rest unverified |
+| EQ13 | Doc 19/19b shared state and code: registry A-ids, Common B-ids, kplog.ini | PARTIAL | d2fd8cc | Doc 19 Phases 0-1 done 10-02 (Phase 1 not live); MG4 landed part; rest unverified |
 | EQ14 | Finalise doc, DB, memory; FINAL independent Opus review (user-required, run last) | TODO | | After EQ10-EQ13 |
 
 ## 2026-10-02 ~02:40: headgear-loss FIX USER-CONFIRMED (world helmets stay on after closing the page, party switch, equip/unequip on the page). Fix installed 01:05 (READ THIS FIRST) - see "Headgear missing after equip page" at the end (root cause, own-model helmet, DLL md5 `962f9e22`, rollback)
