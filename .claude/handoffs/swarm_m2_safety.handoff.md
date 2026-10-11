@@ -11,7 +11,7 @@ Resume next: `swarm M2 safety, Session B close (commit runner-order fix and B3b)
   - `b15884e` B2c: `run_map.sh` and `run_reduce.sh` call `dr_require_home_probe`
   - `a74722a` B2d: selftests for the run gate, the canary OS probe and the bound custom binary
 - `50c05a2` runner-order fix: the home-probe check in `engine/run_map.sh` and `engine/tools/run_reduce.sh` now runs after `dr_sandbox_prefix`, so `DR_ALLOW_UNSANDBOXED=1` waives it (before: both runners refused with the override set). Plus the regression check in `dr_lib/selftest.py`. Committed through the index only; the other session's `run_map.sh` hunk is still uncommitted in the working tree.
-- **NOT committed**: B3b (`templates/worker_settings.json` denies `~/.git-credentials` and `~/.claude.json`; static selftest checks for the fix runners and `fix_settings --self-test`). Durable patch: `~/.claude/swarm/backups/swarm_m2_pending_b3b_20261011.patch` (base `50c05a2`, applies cleanly).
+- `f15707f` B3b: `templates/worker_settings.json` denies `~/.git-credentials` and `~/.claude.json`; `dr_lib/selftest.py` static checks for the fix runners and `fix_settings --self-test`. Committed with explicit paths; the committed files match the verified scratch copies byte for byte. (Patch copy: `~/.claude/swarm/backups/swarm_m2_pending_b3b_20261011.patch`, now applied.)
 - Verified on a scratch copy at HEAD plus the two uncommitted pieces (`/tmp/.../scratchpad/bcheck`): quick 230/230, full 238/238. Before B3b: quick 227, full 235. Pre-fix, the new override check fails on both runners.
 - **Shared-tree conflict**: the live bundle has another session's uncommitted edits to `engine/run_map.sh`, `engine/prep.py`, `engine/merge.py`, `engine/dr_profile.py` (mtime 00:29, 2026-10-11). Its `lens_done` now calls `prep.py is-complete --lenses`, which `prep.py` does not accept, so the live chain test fails (`core-001:logic`). Not touched. The fix must be committed through the index (only my hunk) or after that session commits.
 
@@ -55,7 +55,8 @@ The mock engine skips the runner section (`if kind != "real"`), so the mock coun
 - Harness flag: the B3a worker's report matched an instruction-pattern filter ("settings-json"). The report contained no directives; reviewed by hand.
 
 ## Next
-- **Session B close, remaining**: commit B3b from `~/.claude/swarm/backups/swarm_m2_pending_b3b_20261011.patch` (`git -C $B apply <patch>`, then `git -C $B commit -- templates/worker_settings.json dr_lib/selftest.py`). Run this only after the other session's uncommitted edits are committed or parked. The older combined patch `swarm_m2_pending_20261011.patch` is superseded (its runner part is `50c05a2`).
+- **Session B is closed** at `f15707f` (bundle HEAD). Nothing from Session B is pending. The older combined patch `swarm_m2_pending_20261011.patch` and the B3b patch are superseded by the commits.
+- **Still open, not Session B**: the other session's uncommitted edits in the live bundle (`engine/dr_profile.py`, `engine/merge.py`, `engine/prep.py`, `engine/run_map.sh`). Its `lens_done` change breaks the live chain test until it is finished or parked.
 - Verified at HEAD `50c05a2` on a clean copy (other session's files reset in the copy only): real quick 227/227, real full 235/235. B3b on scratch on top of that: quick 230/230, full 238/238.
 - After B3b lands: run the three selftests on the live tree once the other session's `lens_done` edit is fixed, then update this section's status.
 - Decided (2026-10-11): AGENTS.md stays without the agy backend line. No re-add. The Claude Code policy line at HEAD `fdf9aff` stands. Agy policy, if wanted later, is a separate decision.
