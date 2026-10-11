@@ -232,6 +232,18 @@ requires = ["~/.claude/swarm/tests/test_runner_hardening.py", "~/.claude/skills/
 timeout_s = 600
 
 [[suite]]
+name = "swarm-lib-run-record"
+cmd = ["python3", "-I", "~/.claude/swarm/tests/test_run_record.py"]
+requires = ["~/.claude/swarm/tests/test_run_record.py", "~/.claude/swarm/lib/run_record.py"]
+timeout_s = 120
+
+[[suite]]
+name = "swarm-lib-swarm-run"
+cmd = ["python3", "-I", "~/.claude/swarm/tests/test_swarm_run.py"]
+requires = ["~/.claude/swarm/tests/test_swarm_run.py", "~/.claude/swarm/lib/swarm_run.py", "~/.claude/swarm/tests/stub_claude.py"]
+timeout_s = 300
+
+[[suite]]
 name = "swarm-fix-fcommon"
 cmd = ["python3", "-I", "fcommon.py", "--self-test"]
 cwd = "$REPO/.claude/review/fix"

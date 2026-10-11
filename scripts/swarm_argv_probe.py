@@ -49,6 +49,7 @@ CASES = [  # name, engine, extra env
 FAKE_PREP = "import sys\nif sys.argv[1] == 'is-complete':\n    sys.exit(1)\nif sys.argv[1] == 'render':\n" \
             "    sys.stdout.write(%r)\n    sys.exit(0)\nsys.exit(2)\n" % PROMPT
 FAKE_RECORD = "import sys\nsys.exit(0)\n"
+FAKE_BUDGET = "import sys\nif sys.argv[1] == 'reserve':\n    print('probe-token')\nsys.exit(0)\n"   # run_one reserves/settles per attempt (M3a)
 SHIM = "#!/usr/bin/env python3\n# argv probe shim: logs argv and stdin hash, then forwards to the offline stub\n" \
        "import hashlib, json, os, subprocess, sys\n" \
        "prompt = sys.stdin.buffer.read()\n" \
@@ -77,8 +78,9 @@ def harness_text(engine, src, root):
         env = (f'P_ENGINE="{eng}"; P_RUN="{root}/run"; P_TEMPLATES="{root}/none"; P_TREE="{root}/tree"\n'
                f'SETTINGS="{eng}/worker_settings.json"; SCHEMA="{eng}/worker_schema.json"; SYSPROMPT="{eng}/worker_system_prompt.md"\n'
                f'CLAUDE_BIN="{root}/bin/claude"; CALL_USD=0.30; TIMEOUT_S=900; BACKOFF_BASE=15; BACKOFF_SCALE=0; PY="python3 -I"\n'
+               f'TOTAL_USD=5; SPENT_CMD="echo 0"; DEFER_FILE="{root}/run/map.deferred"\n'
                f'mkdir -p "$P_RUN"/raw "$P_RUN"/work/prompts "$P_TREE"\n')
-        effort = block(text, "effort_args() {") + "\n"
+        effort = block(text, "effort_args() {") + "\n" + block(text, "budget_settle() {") + "\n"
     else:
         env = (f'REVIEW_DIR="{eng}"; TREE="{root}/tree"; WORKER_TIMEOUT_S=900; WORKER_BUDGET_USD=0.30; PY="python3 -I"\n'
                f'mkdir -p "$REVIEW_DIR"/raw "$REVIEW_DIR"/work/prompts "$TREE"\n')
@@ -98,6 +100,7 @@ def run_case(work, name, engine, extra_env):
     (eng / "prep.py").write_text(FAKE_PREP)
     (eng / "tools").mkdir()
     (eng / "tools/record_run.py").write_text(FAKE_RECORD)
+    (eng / "tools/budget.py").write_text(FAKE_BUDGET)
     (root / "bin").mkdir()
     shim = root / "bin/claude"
     shim.write_text(SHIM)
