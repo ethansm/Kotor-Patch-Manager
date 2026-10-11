@@ -4,7 +4,7 @@ Usage: gen_debuff_icon_table.py <game dir> <out.inc>
 Hostile spells.2da rows (forcehostile set or hostilesetting 1) with an iconresref use it
 (force powers, no backing disc). ITEM/DROID_ITEM rows have no icon, so the icon of the
 item that grants the spell is used: baseitems.2da itemclass + the UTI model variation ->
-ii_<itemclass>_<variation:03d>, checked against the installed textures (item = true: gets
+i<itemclass>_<variation:03d> (ii_frarmbnds_001, iw_rocket_003), checked against the installed textures (item = true: gets
 the round backing disc). Rows with no usable icon stay nullptr (engine arrow remains).
 """
 import sys, glob, os
@@ -31,7 +31,8 @@ for r in inst.chitin_resources():
     except Exception: continue
     cls = bi.get_row(u.base_item).get_string('itemclass').lower() if u.base_item < bi.get_height() else ''
     if not cls: continue
-    ic = f"ii_{cls[2:] if cls.startswith('i_') else cls}_{u.model_variation:03d}"
+    # the item icon is 'i' + itemclass: i_frarmbnds -> ii_frarmbnds, w_rocket -> iw_rocket (grenades, darts, rockets)
+    ic = f"i{cls}_{u.model_variation:03d}"
     for p in u.properties:
         if p.property_name == 10 and ic in tex and p.subtype not in item_icon:
             item_icon[p.subtype] = ic
