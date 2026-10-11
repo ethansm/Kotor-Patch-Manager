@@ -26,6 +26,8 @@ these keywords are ignored; a keyword line with a missing or malformed field is 
     cur=<hex|-> aa8=<n> ab8=<n> age=<ms>
   HANDOFF m=<k> active=<n|-> buffered=<n> cmds=<n,n,...|->
   HANDOFF_ONE cmd=<n> m=<k> seq=<i>/<n>
+  HANDOFF_HELD m=<k> cmd=<n> act=<resend|drop|wait> ms=<n>   (an engine-held active command settled: resend => a HANDOFF_ONE
+    for it follows; drop => deliberately not re-sent; no lifecycle)
   HANDOFF_CLEAR m=<k> cmd=<n> ne=<n> round=<n>   (counted as clear x<n> in the HANDOFFS title; no lifecycle)
   ROUND m=<k> n=<count> subs=<s,s,...|-> cur=<n|-> ne=<n> types=<hex,hex,...|->   (subs/types: '-' = empty; cur '-' = none)
   STALE_CUR m=<k> sub=<n> since=<n> aa8=<n> ab8=<n> paused=<0|1>
@@ -42,6 +44,8 @@ Flags:
   G double-exec (VANISH kind=executed or RESOLVE seen=1): one command (lifecycle) has two of either.
   H handoff-not-first (ROUND): within 1500 ms after a HANDOFF_ONE for member m (T= stamps; bare lines have none), the
     first ROUND of m with non-empty subs= has its first subtype outside {9,10} (an attack node is ahead of the item).
+  I trigger-lost (HANDOFF): active=<n> (not -) with neither HANDOFF_ONE cmd=<n> nor HANDOFF_HELD cmd=<n> act=drop in its
+    window (until the next HANDOFF of that member): the active command was never re-sent.
 """
 from __future__ import annotations
 
@@ -83,6 +87,7 @@ FIELD_RE = {
     "active": r"-|\d+", "buffered": r"\d+", "cmds": r"-|\d+(?:,\d+)*", "seq": r"\d+/\d+",
     "sub": r"-?\d+", "since": r"-?\d+", "from": r"-?\d+", "to": r"-?\d+",
     "subs": r"-|\d+(?:,\d+)*", "hexlist": r"-|" + HEXV + r"(?:," + HEXV + r")*", "roundcur": r"-|\d+",
+    "act": r"resend|drop|wait", "ms": r"\d+",
 }
 OVERRIDE = {("EDGE", "buf"): "buflist", ("VANISH", "kind"): "vanish_kind",
             ("ROUND", "types"): "hexlist", ("ROUND", "cur"): "roundcur"}
@@ -98,6 +103,7 @@ REQUIRED = {
     "VANISH": ("cmd", "m", "kind", "paused", "exec", "ne", "round", "cur", "aa8", "ab8", "age"),
     "HANDOFF": ("m", "active", "buffered", "cmds"),
     "HANDOFF_ONE": ("cmd", "m", "seq"),
+    "HANDOFF_HELD": ("m", "cmd", "act", "ms"),
     "HANDOFF_CLEAR": ("m", "cmd", "ne", "round"),
     "ROUND": ("m", "n", "subs", "cur", "ne", "types"),
     "STALE_CUR": ("m", "sub", "since", "aa8", "ab8", "paused"),
@@ -326,15 +332,15 @@ def life_flags(insts):
     return out
 
 
-def handoff_windows(recs):
-    """[(HANDOFF rec, [HANDOFF_ONE recs])]. A HANDOFF_ONE belongs to the latest HANDOFF of the same m (until the next one)."""
+def handoff_windows(recs, kws=("HANDOFF_ONE",)):
+    """[(HANDOFF rec, [recs whose kw is in kws])]. A follow-up record belongs to the latest HANDOFF of the same m (until the next one)."""
     out, open_ = [], {}
     for r in recs:
         if r["kw"] == "HANDOFF":
             entry = (r, [])
             out.append(entry)
             open_[r["m"]] = entry
-        elif r["kw"] == "HANDOFF_ONE" and r["m"] in open_:
+        elif r["kw"] in kws and r["m"] in open_:
             open_[r["m"]][1].append(r)
     return out
 
@@ -373,6 +379,22 @@ def handoff_order_flags(recs):
     return out
 
 
+def handoff_trigger_flags(recs):
+    """[(line, text)] for flag I: HANDOFF active=<n> (not '-') whose window has neither HANDOFF_ONE cmd=<n> nor
+    HANDOFF_HELD cmd=<n> act=drop, so the active command was never re-sent. act=resend needs its HANDOFF_ONE too."""
+    out = []
+    for h, follow in handoff_windows(recs, ("HANDOFF_ONE", "HANDOFF_HELD")):
+        if h["f"]["active"] == "-":
+            continue
+        cmd = _num(h["f"]["active"])
+        settled = any(r["cmd"] == cmd and (r["kw"] == "HANDOFF_ONE" or (r["kw"] == "HANDOFF_HELD" and r["f"]["act"] == "drop"))
+                      for r in follow)
+        if not settled:
+            out.append((h["line"], "I L%d m=%s HANDOFF active=%s never re-sent (trigger lost at hand-off)" % (
+                h["line"], _ms(h["m"]), h["f"]["active"])))
+    return out
+
+
 def stale_flags(recs):
     """[(line, text)] for flag E: WAIT why=cur_busy with age >= 3000 for a member that has no STALE_CUR in the window."""
     stale_members = {r["m"] for r in recs if r["kw"] == "STALE_CUR"}
@@ -388,9 +410,9 @@ def stale_flags(recs):
 
 
 def all_flags(recs):
-    """Every flag as sorted [(line, text)]: A, B, C (qj_flags) plus D, E, F, G, H."""
+    """Every flag as sorted [(line, text)]: A, B, C (qj_flags) plus D, E, F, G, H, I."""
     return sorted(qj_flags(recs) + life_flags(build_cmds(recs)) + handoff_flags(recs) + stale_flags(recs)
-                  + handoff_order_flags(recs))
+                  + handoff_order_flags(recs) + handoff_trigger_flags(recs))
 
 
 def life_line(i):

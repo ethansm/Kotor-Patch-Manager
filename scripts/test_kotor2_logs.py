@@ -90,6 +90,19 @@ class Routing(Tmp):
         self.assertEqual(K.ALIASES["npc-diversity"], "npc-diversity_log.txt")
         self.assertEqual(K.ALIASES["npcdiv"], "npc-diversity_log.txt")
 
+    def test_cmdq_probe(self):
+        a = self.argv("cmdq-probe_log.txt")
+        self.assertTrue(a[1].endswith("scripts/cmdq_probe_log_check.py"))
+        self.assertEqual(a[2], os.path.join(self.g, "cmdq-probe_log.txt"))
+        self.assertEqual(K.kind_of(a[2]), "cmdqprobe")
+        self.assertTrue(K.is_live_log("cmdq-probe_log.txt"))
+        self.assertEqual(K.ALIASES["cmdq-probe"], "cmdq-probe_log.txt")
+
+    def test_alias_cmdq_probe(self):
+        self.w("cmdq-probe_log.txt", "100 cmdq-probe/med PAUSE mask=3 val=-1\n")
+        rc = K.check("cmdq-probe", [], self.g)
+        self.assertEqual(rc, 0)
+
     def test_runs_class(self):
         for n in ("perflab_log.txt", "perflab_metrics.txt", "robustnessfixes_log.txt", "texmem_log.txt", "activationfix_log.txt",
                   "equipiconfix_log.txt", "k2-texture-memory-release_log.txt", "k2-activation-fix_log.txt", "k2-equip-icon-fix_log.txt",

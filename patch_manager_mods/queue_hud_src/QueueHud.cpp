@@ -403,19 +403,18 @@ void cwHideAll(const char* why = "?") { for (CW& w : g_cw) cwShow(w, false, why)
 
 void cwLookLeader(CW& w) {
     static const float cream[3] = { 0.80f, 0.80f, 0.698f };
-    static const float seaGreenBorder[3] = { 0.067f, 0.514f, 0.404f };
-    static const float seaGreenHover[3]  = { 0.10f, 0.72f, 0.57f };
-    static const float blackFill[3]      = { 0.00f, 0.00f, 0.00f };
+    const qh::CancelStyle style = qh::cancelStyle(true);
+    const float* tint = w.hover ? style.hoverTint : style.tint;   // border and fill share one tint field: same rgb for both
     const int want = w.hover ? 1 : 0;
     if (w.fill != want) {
         guikit::setFont(w.c, "dialogfont16x16");
         guikit::setAlign(w.c, 18);
         guikit::setText(w.c, "CANCEL QUEUE");
         guikit::setTextColor(w.c, cream[0], cream[1], cream[2]);
-        guikit::setBorderTint(w.c, w.hover ? seaGreenHover : seaGreenBorder);
-        guikit::setAlpha(w.c, 0.70f);
+        guikit::setBorderTint(w.c, tint);
+        guikit::setAlpha(w.c, style.alpha);
         void* fillImg = guikit::imageFor("uibit_fill_2wt");
-        if (fillImg) guikit::setFill(w.c, fillImg, blackFill);
+        if (fillImg) guikit::setFill(w.c, fillImg, tint);
         w.fill = want;
     }
 }
@@ -914,7 +913,8 @@ uint32_t g_identLostMs[3] = {0, 0, 0};
 DWORD g_identLastTick[3] = {0, 0, 0};
 
 // ---- Combat hand-off: at combat start the queued commands (active + buffered) go to the engine in click order, one per frame ----
-struct Handoff { bool pending = false; bool headValid = false; qh::QueuedAction head; int total = 0; int sent = 0; };
+// headHeld: the head was still held by the engine at the edge; it waits there (up to qh::kHeldWipeWindowMs after edgeAt) for the combat-start wipe.
+struct Handoff { bool pending = false; bool headValid = false; bool headHeld = false; DWORD edgeAt = 0; qh::QueuedAction head; int total = 0; int sent = 0; };
 Handoff g_handoff[3];
 // Round-list watch: 15 s after each hand-off dispatch, roundWatchTick logs the member's round / cur / entry state on change only.
 DWORD g_roundWatchUntil[3] = {};
@@ -966,7 +966,9 @@ void handoffTick(DWORD now, const bool* edge) {
             Handoff& h = g_handoff[k];
             const bool wasActive = buf.active;
             const uint32_t activeCmd = buf.activeAction.cmdId;
-            h.headValid = buf.active && !inEngine;
+            h.headHeld = buf.active && inEngine && g_cfg.handoffResendHeld;   // engine-held head: wait for the combat-start wipe, then re-send
+            h.edgeAt = now;
+            h.headValid = buf.active && (!inEngine || h.headHeld);
             if (h.headValid) h.head = buf.activeAction;
             if (g_logOn && g_cfg.traceQueue) {
                 uint32_t ids[qh::kMaxActionQueue];
@@ -993,7 +995,19 @@ void handoffTick(DWORD now, const bool* edge) {
         Snapshot s;
         if (!gatherFor(srv, s)) continue;
         if (s.nrn + 1 > qh::kMaxRound) continue;   // the engine's round list is full: retry next frame
-        bool midFlight = false;                    // the previous hand-off is still queued in the engine
+        if (h.headValid && h.headHeld) {
+            const int ms = static_cast<int>(now - h.edgeAt);
+            const qh::HeldHeadAction act = qh::heldHeadAction(engineHoldsAction(s), ms);
+            if (act == qh::HELD_WAIT) continue;
+            if (g_logOn && g_cfg.traceQueue) {
+                char line[200];
+                qh::fmtHandoffHeld(line, sizeof line, k, h.head.cmdId, act, ms);
+                QTRACE("%s", line);
+            }
+            h.headHeld = false;
+            if (act == qh::HELD_DROP) h.headValid = false;   // the engine really ran it (or it already finished): the buffered commands still go
+        }
+        bool midFlight = false;                   // the previous hand-off is still queued in the engine
         for (int i = 0; i < s.engineNe && i < qh::kMaxEntries; ++i)
             if (s.e[i].type == qh::T_USE_ITEM || s.e[i].type == qh::T_CAST_SPELL) midFlight = true;
         if (midFlight) continue;
@@ -1465,8 +1479,8 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     loadIni();
     g_logOn = g_cfg.log;
     KP_LOG(chMain, "0.4.0-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax);
-    QLOG(chMain, "pause_reinject=%d handoff_on_combat=%d handoff_clear_first=%d show_in_combat=%d",
-         g_cfg.pauseReinject ? 1 : 0, g_cfg.handoffOnCombat ? 1 : 0, g_cfg.handoffClearFirst ? 1 : 0, g_cfg.showInCombat ? 1 : 0);
+    QLOG(chMain, "pause_reinject=%d handoff_on_combat=%d handoff_clear_first=%d handoff_resend_held=%d show_in_combat=%d",
+         g_cfg.pauseReinject ? 1 : 0, g_cfg.handoffOnCombat ? 1 : 0, g_cfg.handoffClearFirst ? 1 : 0, g_cfg.handoffResendHeld ? 1 : 0, g_cfg.showInCombat ? 1 : 0);
     g_ps.init(api, "queue-hud");
     g_ps.onConnect = onConnect;
     g_ps.add(K2PS_HUD_DRAW, 400, onHudDraw);

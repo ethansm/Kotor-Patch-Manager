@@ -216,11 +216,9 @@ int capPad = 6;      // was 4 (cap padding)
      - Explicitly invalidate `wText` cache and set text color/alpha on popover show.
 4. **QH5: Cancel Queue Button Color Parity:**
    - **Measured Values from `lbl_miqueue_teal.tga`:**
-     - Border: Sea-green/emerald `{ 0.067f, 0.514f, 0.404f }` (`#118367`, G >> B), hover `{ 0.10f, 0.72f, 0.57f }`.
-     - Fill: Translucent black `{ 0.00f, 0.00f, 0.00f }` with alpha `0.70f` (179/255).
-   - In `QueueHud.cpp:cwLookLeader`:
-     - Replace hardcoded cyan `{ 0.10f, 0.58f, 0.62f }` with `{ 0.067f, 0.514f, 0.404f }`.
-     - Replace opaque cyan fill `{ 0.05f, 0.25f, 0.28f }` with translucent dark fill at alpha `0.70f`.
+     - Tint (border + fill, one shared rgb field): dark green-teal `{ 0.033f, 0.233f, 0.182f }`, hover sea-green `{ 0.067f, 0.514f, 0.404f }`, alpha `0.85f`.
+     - Reason: user play test 2026-10-11 (the black Cancel did not match the menu teal). Border and fill share one tint field, so the fill tint overwrote the border tint.
+   - In `QueueHud.cpp:cwLookLeader`: reads `qh::cancelStyle(true)` (`QueueHudLogic.h`); same tint passed to `setBorderTint` and `setFill`.
 
 ---
 
@@ -238,6 +236,10 @@ int capPad = 6;      // was 4 (cap padding)
 | QH5 | [Queue HUD] Exact color parity for Cancel button matching `lbl_miqueue_teal` palette | DONE | `python3 scripts/build_check.py --mod queue_hud_src` | 15 min |
 | QL1 | [Queue HUD] Non-combat queue fix: pause restore (active-command verdict), ghost `cur`, identity guard, combat hand-off (doc 30 "Queue-fix QL1") | BUILT | `python3 scripts/run_tests.py queue_hud` | 20 min |
 | QL2 | [Queue HUD] Strip flicker (active-cmd slot + 400 ms hold), hand-off clears engine queue first (`handoff_clear_first`), ROUND/HANDOFF_CLEAR trace; medpack = recon only (doc 30 "Queue-fix QL2") | BUILT | `python3 scripts/run_tests.py queue_hud` | 25 min |
+| QL3 | [Queue HUD] Lost combat-trigger action: engine-held head re-sent when combat start wipes it within 300 ms (`heldHeadAction`, `handoff_resend_held`), log `HANDOFF_HELD`, analyzer flag I (doc 30 "QL3") | BUILT | `python3 scripts/run_tests.py queue_hud` | 30 min |
+| QL4 | [Queue HUD] Leader Cancel button dark green-teal (`qh::cancelStyle`): border and fill share one tint field, the black fill had overwritten the border | BUILT | `python3 scripts/run_tests.py queue_hud` | 10 min |
+| QL5 | [Queue HUD] Click-to-cancel icons in the non-combat queue via the engine queue panel: RECON DONE, no implementation (doc 30 "QL5 investigation") | RECON | none | next plan |
+| PB1 | [cmdq-probe] No log: `[cmdq-probe] level=info` missing from game `kplog.ini` (added) + `kotor2_logs.py check cmdq-probe` route | BUILT | `python3 scripts/run_tests.py kotor2_logs` | 10 min |
 | HK1 | [cmdq-probe 0.1.0] Log-only probe mod, 11 windows (pause/cmd/fire/round/clr/reequip/med), log checker `scripts/cmdq_probe_log_check.py`; CanUseItem window is 0x5D32AE (read eax), not 0x5D32AB; AddAttackActions re-adds 0x0C not 0x3F (`.claude/handoffs/hk1/`). NOT installed: needs full reinstall + GO | INSTALLED | `python3 scripts/run_tests.py cmdq_probe_log` | 45 min |
 | SH1 | [SelfHeal] 58px companion health button & unified action tray wrapper | DONE | `python3 scripts/run_tests.py -k selfheal` | 25 min |
 | SH2 | [SelfHeal] Leader 58px health button at top-left of leader portrait | DONE | `python3 scripts/run_tests.py -k selfheal` | 25 min |

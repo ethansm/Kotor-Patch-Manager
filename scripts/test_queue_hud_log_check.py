@@ -124,6 +124,10 @@ def handoff_clear(m=0, n=4, ne=3, rnd=2):
     return "HANDOFF_CLEAR m=%d cmd=%d ne=%d round=%d" % (m, n, ne, rnd)
 
 
+def handoff_held(n, m=0, act="drop", ms=0):
+    return "HANDOFF_HELD m=%d cmd=%d act=%s ms=%d" % (m, n, act, ms)
+
+
 def round_line(m=0, subs="1,10", cur="-", ne=3, types="3f,01,0d"):
     n = 0 if subs == "-" else len(subs.split(","))
     return "ROUND m=%d n=%d subs=%s cur=%s ne=%d types=%s" % (m, n, subs, cur, ne, types)
@@ -597,21 +601,21 @@ class NewFlagTests(unittest.TestCase):
 
     # F: HANDOFF buffered=n > 0 with fewer than n HANDOFF_ONE for that member before its next HANDOFF
     def test_F_fires_when_fewer_handoff_one_than_buffered(self):
-        self.assertEqual(all_flags_of([handoff(0, "5", 2, "6,7"), handoff_one(6, 0, "1/2")]),
+        self.assertEqual(all_flags_of([handoff(0, "-", 2, "6,7"), handoff_one(6, 0, "1/2")]),
                          [(1, "F L1 m=0 HANDOFF buffered=2 but 1 HANDOFF_ONE")])
 
     def test_F_quiet_when_all_handoff_one_present(self):
-        self.assertEqual(all_flags_of([handoff(0, "5", 2, "6,7"), handoff_one(6, 0, "1/2"), handoff_one(7, 0, "2/2")]), [])
+        self.assertEqual(all_flags_of([handoff(0, "-", 2, "6,7"), handoff_one(6, 0, "1/2"), handoff_one(7, 0, "2/2")]), [])
 
     def test_F_quiet_when_buffered_zero(self):
         self.assertEqual(all_flags_of([handoff(0, "-", 0, "-")]), [])
 
     def test_F_window_closes_at_next_handoff_of_same_member(self):
-        self.assertEqual(all_flags_of([handoff(0, "5", 1, "6"), handoff(0, "5", 1, "6"), handoff_one(6, 0, "1/1")]),
+        self.assertEqual(all_flags_of([handoff(0, "-", 1, "6"), handoff(0, "-", 1, "6"), handoff_one(6, 0, "1/1")]),
                          [(1, "F L1 m=0 HANDOFF buffered=1 but 0 HANDOFF_ONE")])
 
     def test_F_ignores_handoff_one_of_other_members(self):
-        self.assertEqual(len(all_flags_of([handoff(0, "5", 1, "6"), handoff_one(6, 1, "1/1")])), 1)
+        self.assertEqual(len(all_flags_of([handoff(0, "-", 1, "6"), handoff_one(6, 1, "1/1")])), 1)
 
     # G: two VANISH kind=executed, or two RESOLVE seen=1, for one command lifecycle
     def test_G_fires_on_two_vanish_executed(self):
@@ -631,8 +635,9 @@ class NewFlagTests(unittest.TestCase):
 
     def test_new_flags_listed_in_flags_section(self):
         rc, out = run_log([handoff(0, "5", 1, "6"), wait_cur(4, 0, 3000)])
-        self.assertIn("FLAGS 2", out)
+        self.assertIn("FLAGS 3", out)
         self.assertIn("  F L1 m=0 HANDOFF buffered=1 but 0 HANDOFF_ONE", out)
+        self.assertIn("  I L1 m=0 HANDOFF active=5 never re-sent (trigger lost at hand-off)", out)
         self.assertIn("  E L2 m=0 WAIT why=cur_busy age=3000 with no STALE_CUR for this member", out)
 
 
@@ -642,7 +647,8 @@ class NewSectionTests(unittest.TestCase):
         self.assertIn("HANDOFFS 2", out)
         self.assertIn("  L1 m=0 active=5 buffered=2 cmds=6,7 -> HANDOFF_ONE x2", out)
         self.assertIn("  L4 m=1 active=- buffered=0 cmds=- -> HANDOFF_ONE x0", out)
-        self.assertIn("FLAGS 0", out)
+        self.assertIn("FLAGS 1", out)
+        self.assertIn("  I L1 m=0 HANDOFF active=5 never re-sent (trigger lost at hand-off)", out)
 
     def test_handoffs_none_and_ident_swap_suffix(self):
         rc, out = run_log([ident_swap(0, 2)])
@@ -696,8 +702,8 @@ class NewSectionTests(unittest.TestCase):
         self.assertIn("VANISHES 1", out)
         self.assertIn("STALE_CUR 3", out)
         self.assertIn("  ... +1 more", out)                                         # 3 members, 2 shown
-        self.assertIn("FLAGS 10", out)
-        self.assertIn("  ... +2 more", out)                                         # 10 flags, 8 shown
+        self.assertIn("FLAGS 13", out)                                              # 3 F + 3 I + 2 E + 5 A; 8 shown, +5 more
+        self.assertIn("  ... +5 more", out)                                         # 13 flags, 8 shown
 
 
 class RoundParseTests(unittest.TestCase):
@@ -734,7 +740,8 @@ class HandoffClearAndRoundSectionTests(unittest.TestCase):
         self.assertIn("HANDOFFS 1 (clear x2)", out)
         self.assertIn("  L1 m=0 active=5 buffered=1 cmds=6 -> HANDOFF_ONE x1", out)
         self.assertIn("COMMANDS 0", out)
-        self.assertIn("FLAGS 0", out)
+        self.assertIn("FLAGS 1", out)                                               # only I: active 5 never re-sent
+        self.assertIn("  I L1 m=0 HANDOFF active=5 never re-sent (trigger lost at hand-off)", out)
 
     def test_handoff_clear_alone_shows_zero_handoffs_with_suffix(self):
         rc, out = run_log([handoff_clear(4)])
@@ -803,6 +810,48 @@ class HandoffOrderFlagTests(unittest.TestCase):
         rc, out = run_log([handoff_one(6, 0, "1/1"), round_line(0, "1,10")])   # run_log stamps T=1000 and T=1001
         self.assertIn("FLAGS 1", out)
         self.assertIn("  H L2 m=0 handoff-not-first subs=1,10 (+1 ms after HANDOFF_ONE L1)", out)
+
+
+class HandoffTriggerFlagTests(unittest.TestCase):
+    # I: HANDOFF active=<n> (not -) with neither HANDOFF_ONE cmd=<n> nor HANDOFF_HELD cmd=<n> act=drop in its window
+    def test_HANDOFF_HELD_parses_every_act_and_rejects_unknown_act(self):
+        recs, skipped = parse(["HANDOFF_HELD m=0 cmd=8 act=resend ms=70", "HANDOFF_HELD m=? cmd=0 act=wait ms=0",
+                               "HANDOFF_HELD m=2 cmd=12 act=drop ms=1500", "HANDOFF_HELD m=0 cmd=8 act=bogus ms=1"])
+        self.assertEqual([(r["kw"], r["m"], r["cmd"], r["f"]["act"]) for r in recs],
+                         [("HANDOFF_HELD", 0, 8, "resend"), ("HANDOFF_HELD", None, 0, "wait"), ("HANDOFF_HELD", 2, 12, "drop")])
+        self.assertEqual([(n, label) for n, label, _ in skipped], [(4, "HANDOFF_HELD")])
+
+    def test_I_quiet_when_active_is_re_sent(self):
+        self.assertEqual(all_flags_of([handoff(0, "8", 1, "8"), handoff_one(8, 0, "1/1")]), [])
+
+    def test_I_fires_when_active_never_re_sent(self):
+        self.assertEqual(all_flags_of([handoff(0, "8", 0, "-")]),
+                         [(1, "I L1 m=0 HANDOFF active=8 never re-sent (trigger lost at hand-off)")])
+
+    def test_I_quiet_when_held_resend_is_followed_by_handoff_one(self):
+        self.assertEqual(all_flags_of([handoff(0, "8", 1, "8"), handoff_held(8, 0, "resend", 70), handoff_one(8, 0, "1/1")]), [])
+
+    def test_I_quiet_when_held_drop_settles_active_without_handoff_one(self):
+        self.assertEqual(all_flags_of([handoff(0, "8", 0, "-"), handoff_held(8, 0, "drop", 1500)]), [])
+
+    def test_I_fires_when_held_resend_has_no_handoff_one(self):
+        self.assertEqual(all_flags_of([handoff(0, "8", 0, "-"), handoff_held(8, 0, "resend", 70)]),
+                         [(1, "I L1 m=0 HANDOFF active=8 never re-sent (trigger lost at hand-off)")])
+
+    def test_I_quiet_when_active_is_dash(self):
+        self.assertEqual(all_flags_of([handoff(0, "-", 0, "-")]), [])
+
+    def test_I_window_closes_at_next_handoff_of_same_member(self):
+        self.assertEqual(all_flags_of([handoff(0, "8", 0, "-"), handoff(0, "-", 0, "-"), handoff_one(8, 0, "1/1")]),
+                         [(1, "I L1 m=0 HANDOFF active=8 never re-sent (trigger lost at hand-off)")])
+
+    def test_I_ignores_handoff_one_and_held_of_other_members(self):
+        self.assertEqual(len(all_flags_of([handoff(0, "8", 0, "-"), handoff_one(8, 1, "1/1"), handoff_held(8, 1, "drop")])), 1)
+
+    def test_I_listed_in_flags_section(self):
+        rc, out = run_log([handoff(0, "8", 0, "-")])
+        self.assertIn("FLAGS 1", out)
+        self.assertIn("  I L1 m=0 HANDOFF active=8 never re-sent (trigger lost at hand-off)", out)
 
 
 if __name__ == "__main__":

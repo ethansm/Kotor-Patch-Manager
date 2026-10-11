@@ -1866,6 +1866,48 @@ void testMakeEngineView() {
     KT_CHECK(!ap.executing && ap.idle);
 }
 
+// ---- QL3: an engine-held active command that combat start wipes is re-sent; one the engine really runs is not ----
+void testHeldHeadAction() {
+    // play test 2026-10-11 cmd 8: held at the edge, gone 70 ms later -> wait while held, re-send once released
+    KT_CHECK(heldHeadAction(true, 0) == HELD_WAIT);
+    KT_CHECK(heldHeadAction(true, 69) == HELD_WAIT);
+    KT_CHECK(heldHeadAction(false, 70) == HELD_RESEND);
+    KT_CHECK(heldHeadAction(false, 0) == HELD_RESEND);
+    // window boundary: 300 ms is still a wipe, 301 ms is not
+    KT_CHECK(heldHeadAction(false, kHeldWipeWindowMs) == HELD_RESEND);
+    KT_CHECK(heldHeadAction(true, kHeldWipeWindowMs) == HELD_WAIT);
+    KT_CHECK(heldHeadAction(false, kHeldWipeWindowMs + 1) == HELD_DROP);   // finished on its own: never run twice
+    KT_CHECK(heldHeadAction(true, kHeldWipeWindowMs + 1) == HELD_DROP);    // still executing: the engine owns it
+    KT_CHECK(heldHeadAction(true, 100000) == HELD_DROP);
+    // HANDOFF_HELD m=<k> cmd=<n> act=<resend|drop> ms=<n>
+    char out[kLogLineMax];
+    fmtHandoffHeld(out, sizeof out, 0, 8, HELD_RESEND, 70);
+    KT_CHECK_EQ(out, "HANDOFF_HELD m=0 cmd=8 act=resend ms=70");
+    fmtHandoffHeld(out, sizeof out, 2, 12, HELD_DROP, 1500);
+    KT_CHECK_EQ(out, "HANDOFF_HELD m=2 cmd=12 act=drop ms=1500");
+    fmtHandoffHeld(out, sizeof out, -1, 0, HELD_WAIT, 0);
+    KT_CHECK_EQ(out, "HANDOFF_HELD m=? cmd=0 act=wait ms=0");
+    // handoff_resend_held: default on, bool parsing, other fields untouched
+    Config c;
+    KT_CHECK(c.handoffResendHeld);
+    KT_CHECK(parseIniLine(c, "handoff_resend_held=0") && !c.handoffResendHeld && c.handoffClearFirst && c.handoffOnCombat);
+    KT_CHECK(parseIniLine(c, "Handoff_Resend_Held = yes") && c.handoffResendHeld);
+    KT_CHECK(!parseIniLine(c, "handoff_resend_held=2") && c.handoffResendHeld);
+}
+
+// Cancel Queue colours: the leader is dark green-teal (not black), hover is brighter, companion keeps the teal border.
+void testCancelStyle() {
+    const CancelStyle L = cancelStyle(true);
+    KT_CHECK(L.tint[0] + L.tint[1] + L.tint[2] > 0.3f);
+    KT_CHECK(L.tint[1] > L.tint[0] && L.tint[2] > L.tint[0]);   // green-teal, not red-dominant
+    KT_CHECK(L.tint[1] >= L.tint[2]);                            // green over blue (not a blue tint)
+    for (int k = 0; k < 3; ++k) KT_CHECK(L.hoverTint[k] > L.tint[k]);
+    KT_CHECK(L.alpha > 0.5f && L.alpha <= 1.0f);
+    const CancelStyle C = cancelStyle(false);
+    for (int k = 0; k < 3; ++k) { KT_CHECK(C.tint[k] == kTealBorder[k]); KT_CHECK(C.hoverTint[k] > C.tint[k]); }
+    KT_CHECK(C.alpha == 1.0f);
+}
+
 }  // namespace
 
 // Mutation-gate gaps: values that only a boundary or a default can tell apart.
@@ -1953,5 +1995,7 @@ int main() {
     testHandoffClearFirstIni();
     testPanelHoldAndSlotRules();
     testHandoffClearAndRoundFormat();
+    testCancelStyle();
+    testHeldHeadAction();
     return kt::Report("queue_hud_logic_test");
 }

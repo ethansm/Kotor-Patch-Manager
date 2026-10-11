@@ -139,10 +139,28 @@ inline bool activeNeedsSlot(bool bufActive, bool engineHolds) { return bufActive
 // handoff_clear_first: clear the engine queue before the first handoff send (nothing sent yet this handoff).
 inline bool clearBeforeHandoff(bool cfgOn, int sentSoFar) { return cfgOn && sentSoFar == 0; }
 
+// handoff_resend_held: the active command the engine still held at the combat edge (a thrown grenade / medpack that triggered combat).
+// Combat start wipes the engine queue (play test 2026-10-11: the entry was gone 70 ms after the edge, no RESOLVE), so the hand-off waits
+// for the engine to release it and re-sends it only if that happens within kHeldWipeWindowMs of the edge. A real use runs longer.
+constexpr int kHeldWipeWindowMs = 300;
+enum HeldHeadAction : uint8_t { HELD_WAIT, HELD_RESEND, HELD_DROP };
+inline HeldHeadAction heldHeadAction(bool engineStillHolds, int msSinceEdge) {
+    if (msSinceEdge > kHeldWipeWindowMs) return HELD_DROP;   // the engine is really executing it, or it already finished: never run it twice
+    return engineStillHolds ? HELD_WAIT : HELD_RESEND;
+}
+
 // Dark teal palette matching custom GUI theme (Session 2)
 constexpr float kTealBg[3]     = { 0.05f, 0.25f, 0.28f }; // background
 constexpr float kTealBorder[3] = { 0.10f, 0.58f, 0.62f }; // border highlight
 constexpr float kTealDim[3]    = { 0.03f, 0.15f, 0.18f }; // waiting / dimmed
+
+// Cancel Queue button. Border and fill share ONE tint field (GuiKit border+0x28), so cwLookLeader passes the same rgb to both.
+// Leader: dark green-teal, the measured mean of lbl_miqueue_teal.tga (QH5; user play test 2026-10-11: the old black did not match the menu).
+struct CancelStyle { float tint[3]; float hoverTint[3]; float alpha; };
+inline CancelStyle cancelStyle(bool leader) {
+    if (leader) return CancelStyle{ { 0.033f, 0.233f, 0.182f }, { 0.067f, 0.514f, 0.404f }, 0.85f };
+    return CancelStyle{ { kTealBorder[0], kTealBorder[1], kTealBorder[2] }, { 0.15f, 0.75f, 0.80f }, 1.0f };
+}
 
 struct Config {
     bool enabled = true;
@@ -168,6 +186,7 @@ struct Config {
     bool handoffOnCombat = true;  // handoff_on_combat: hand the buffered queue over when combat starts (default on)
     bool showInCombat = true;     // show_in_combat: keep the queue strip drawn during combat (default on)
     bool handoffClearFirst = true;  // handoff_clear_first: clear the engine queue before the first handoff send (default on)
+    bool handoffResendHeld = true;  // handoff_resend_held: re-send an engine-held active command the engine wipes at combat start (default on)
 };
 
 struct Style { float bg[3], bgA, border[3], borderA, iconA, frameA; int borderPx; };
@@ -445,6 +464,7 @@ inline bool parseIniLine(Config& c, const char* line) {
     if (detail::keyEq(kb, ke, "handoff_on_combat")) return detail::parseBool(vb, ve, &c.handoffOnCombat);
     if (detail::keyEq(kb, ke, "show_in_combat")) return detail::parseBool(vb, ve, &c.showInCombat);
     if (detail::keyEq(kb, ke, "handoff_clear_first")) return detail::parseBool(vb, ve, &c.handoffClearFirst);
+    if (detail::keyEq(kb, ke, "handoff_resend_held")) return detail::parseBool(vb, ve, &c.handoffResendHeld);
     return false;
 }
 
@@ -961,6 +981,16 @@ inline int fmtHandoffClear(char* out, int cap, int m, uint32_t cmdId, int ne, in
     w.s(" cmd="); w.u(cmdId);
     w.s(" ne="); w.i(ne);
     w.s(" round="); w.i(round);
+    return w.done();
+}
+
+// HANDOFF_HELD m=<k> cmd=<n> act=<resend|drop> ms=<n>   (handoff_resend_held: how an engine-held active command was settled; ms = since the edge)
+inline int fmtHandoffHeld(char* out, int cap, int m, uint32_t cmdId, HeldHeadAction act, int ms) {
+    detail::LogWr w(out, cap);
+    w.s("HANDOFF_HELD m="); w.mm(m);
+    w.s(" cmd="); w.u(cmdId);
+    w.s(" act="); w.s(act == HELD_RESEND ? "resend" : act == HELD_DROP ? "drop" : "wait");
+    w.s(" ms="); w.i(ms);
     return w.done();
 }
 

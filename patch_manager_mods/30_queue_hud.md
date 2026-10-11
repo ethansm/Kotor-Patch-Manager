@@ -94,7 +94,7 @@ extents, for party member 0. The vanilla red panel still handles combat. Compani
      - Companion (m=1,2) hand-off is best effort.
      - `handoff_on_combat=0`: the old behaviour applies (`DROP why=combat_clear`, once per member).
 2. **QH5: Cancel Queue Button Color Parity:**
-   - Harmonize Cancel button border and fill tints in `cwLookLeader` with `lbl_miqueue_teal` palette: border `{ 0.067f, 0.514f, 0.404f }` (hover `{ 0.10f, 0.72f, 0.57f }`), dark translucent fill `{ 0.00f, 0.00f, 0.00f }` (alpha `0.70f`).
+   - Cancel button in `cwLookLeader`: one shared tint (border and fill share one rgb field) dark green-teal `{ 0.033f, 0.233f, 0.182f }`, hover sea-green `{ 0.067f, 0.514f, 0.404f }`, alpha `0.85f`. Reason: user play test 2026-10-11 (the black Cancel did not match the menu teal).
 
 ---
 
@@ -160,9 +160,50 @@ Status: **built (unit tests + mutation gate green), not installed, not play-test
 | Line | Example |
 |---|---|
 | `HANDOFF_CLEAR` | `HANDOFF_CLEAR m=0 cmd=4 ne=3 round=2` |
+| `HANDOFF_HELD` (QL3) | `HANDOFF_HELD m=0 cmd=8 act=resend ms=70` |
 | `ROUND` | `ROUND m=0 n=2 subs=1,10 cur=- ne=3 types=3f,01,0d` |
 | `noteHidden` edge | `... hidden (empty queue) ... age=<ms> menu=<0\|1>` |
 
 ### Analyzer
 - New flag **H handoff-not-first**: the first non-empty `ROUND` within 1500 ms after `HANDOFF_ONE` does not start with subtype 9/10.
+- New flag **I trigger-lost** (QL3): `HANDOFF active=<n>` with neither `HANDOFF_ONE cmd=<n>` nor `HANDOFF_HELD cmd=<n> act=drop` before the next HANDOFF of that member.
+- **QL3 (2026-10-11)**: play test 10-11 13:07 log: cmd 8 (sonic grenade, the combat trigger) was engine-held at the edge, so `engineHoldsAction` skipped the re-send and the engine wiped it 70 ms later (HANDOFF L302, no CLEAR/ONE). Our clear killed no trigger (0 of 3). Fix: an engine-held head waits for the engine to release it and is re-sent if that happens within 300 ms of the edge (`qh::heldHeadAction`), else dropped; ini `handoff_resend_held` (default 1, 0 = old behaviour). Attack clicks are still never hooked: untracked, needs cmdq-probe `CLR caller=` data.
+
+## QL5 investigation (2026-10-11, recon only): engine queue panel reuse
+
+Evidence for the next plan. No implementation planned now.
+
+### Click chain
+| Control | Handler chain | Note |
+|---|---|---|
+| Our non-combat queue icons | No per-icon hit test. Only the Cancel label goes to `doCancel` (`QueueHud.cpp:767-792`), which runs `ClearAllActions` + `ActionBuffer::cancel` | No per-icon cancel |
+| Engine `BTN_CLEARONE` (hud+0x689C) | `0x752330` -> `0x752360` -> `0x7511B0` -> `CSWSCombatRound::RemoveLastAction` `0x5904C0` if round list `[cr+0x10DC]+0xB00`, else `0x541080(1)` | Not per-slot |
+| Engine `BTN_CLEARONE2` (hud+0x6A6C) | Same chain as `BTN_CLEARONE` | Not per-slot |
+| Engine `BTN_CLEARALL` (hud+0x6C3C) | `0x7523B0` -> `0x7F24C0` -> `0x51CB10` | Clear-all |
+
+No server message on the engine path.
+
+### Panel anatomy
+| Item | Fact |
+|---|---|
+| Panel | `mipc28x6_p.gui` |
+| Slot labels | `LBL_QUEUE0..3` at hud+0x5F2C, stride 0x148. Flags at +0x48 (bit 1), icon child +0x74, alpha +0x84 |
+| Slot cap | 4. A 5th entry overwrites `LBL_COMBATBG2` (0x644C) |
+| Feed | `0x74DC80` reads party slot 0 `cr+0x100` through icon resolver `0x74E0B0` and slot filler `0x74E7F0` |
+| Show/hide | `0x74E910` runs each frame and follows the GetCombatMode bit |
+| Live hooks | None own `0x74B3F0`, `0x74C168`, or `0x74DC80` |
+| Client panel class | None in the address DB |
+
+### Option ranking
+| Rank | Option |
+|---|---|
+| 1 | Keep our overlay. A1 shipped. A2 = per-entry cancel via `CSWSCreature::ClearAction` `0x56E620` + unlink `0x64DDE0` |
+| 2 | Hook the feed: new `0x74C168` detour writing bit 1 both ways, plus `0x74DC80` replacement. Needs a new hook, so queue-hud REINSTALL and user GO |
+| 3 | Gate-only |
+| Dead end | Forcing bit 1 of `[CSWGuiMainInterface+0xA904]`, or the `0x74C11B` GetCombatMode seam, to show the engine panel out of combat (minimap slide, red Cancel Combat) |
+
+### Live-probe unknowns
+- Are non-combat entries in `cr+0x100` while paused?
+- Do hidden `LBL_QUEUE` extents and art stay valid out of combat?
+- What does the `[hud+0x7334]` timer constant do under a per-frame hide branch?
 
