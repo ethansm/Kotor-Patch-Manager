@@ -908,13 +908,16 @@ int8_t g_prevGatherOk[3] = {-1, -1, -1};
 int g_prevRiWhy[3] = {-1, -1, -1};
 int g_prevDsWhy[3] = {-1, -1, -1};
 DWORD g_lastWaitTick[3] = {0, 0, 0};
+qh::FlagGate g_flagGate[3];
 // Identity guard: unpaused ms a buffer has been held by a creature that sits in no member slot, and the last tick it was counted.
 uint32_t g_identLostMs[3] = {0, 0, 0};
 DWORD g_identLastTick[3] = {0, 0, 0};
 
 // ---- Combat hand-off: at combat start the queued commands (active + buffered) go to the engine in click order, one per frame ----
-// headHeld: the head was still held by the engine at the edge; it waits there (up to qh::kHeldWipeWindowMs after edgeAt) for the combat-start wipe.
-struct Handoff { bool pending = false; bool headValid = false; bool headHeld = false; DWORD edgeAt = 0; qh::QueuedAction head; int total = 0; int sent = 0; };
+// headHeld: the head was still held by the engine at the edge; it waits there until the engine releases it (qh::heldHeadAction).
+// sawExec latches exec evidence (execEvidence) from the edge on; heldUnpausedMs / lastTick time a head that stays held.
+struct Handoff { bool pending = false; bool headValid = false; bool headHeld = false; bool sawExec = false; DWORD edgeAt = 0; DWORD lastTick = 0;
+                 int heldUnpausedMs = 0; qh::QueuedAction head; int total = 0; int sent = 0; };
 Handoff g_handoff[3];
 // Round-list watch: 15 s after each hand-off dispatch, roundWatchTick logs the member's round / cur / entry state on change only.
 DWORD g_roundWatchUntil[3] = {};
@@ -931,6 +934,50 @@ bool engineHoldsAction(const Snapshot& s) {
     for (int i = 0; i < s.nrn && i < qh::kMaxRound; ++i)
         if (s.rn[i].subType == 9 || s.rn[i].subType == 10) return true;
     return s.haveCur && (s.cur.subType == 9 || s.cur.subType == 10);
+}
+
+// The engine is (or was just) running the command: aa8/ab8 set or a cur node of subtype 9 / 10, read unpaused (the flags stick in a frozen round).
+bool execEvidence(const Snapshot& s) {
+    if (s.paused) return false;
+    return s.aa8 != 0 || s.ab8 != 0 || (s.haveCur && (s.cur.subType == 9 || s.cur.subType == 10));
+}
+
+// HANDOFF_OUT watch: 8 s per hand-off command, independent of buf.active (which goes false at the hand-off). Trace-gated.
+constexpr DWORD kHandoffOutMs = 8000;
+struct OutWatch { bool on = false; uint32_t cmd = 0; DWORD startAt = 0; bool exec = false; int firstExecMs = -1; } g_outWatch[3];
+
+void outWatchFlush(int k, DWORD now) {
+    OutWatch& w = g_outWatch[k];
+    if (!w.on) return;
+    if (g_logOn && g_cfg.traceQueue) {
+        char line[160];
+        qh::fmtHandoffOut(line, sizeof line, k, w.cmd, w.exec, w.firstExecMs, static_cast<int>(now - w.startAt));
+        QTRACE("%s", line);
+    }
+    w = OutWatch{};
+}
+void outWatchArm(int k, uint32_t cmd, DWORD now) {
+    outWatchFlush(k, now);
+    OutWatch& w = g_outWatch[k];
+    w.on = true; w.cmd = cmd; w.startAt = now; w.exec = false; w.firstExecMs = -1;
+}
+void outWatchTick(DWORD now) {
+    bool any = false;
+    for (int k = 0; k < 3; ++k) any = any || g_outWatch[k].on;
+    if (!any) return;
+    party::Fail why = party::F_None;
+    const uintptr_t tbl = party::table(&why);
+    for (int k = 0; k < 3; ++k) {
+        OutWatch& w = g_outWatch[k];
+        if (!w.on) continue;
+        if (tbl && !w.exec) {
+            const uintptr_t cli = party::member(tbl, k);
+            const uintptr_t srv = cli ? party::serverCreature(cli) : 0;
+            Snapshot s;
+            if (srv && gatherFor(srv, s) && execEvidence(s)) { w.exec = true; w.firstExecMs = static_cast<int>(now - w.startAt); }
+        }
+        if (now - w.startAt >= kHandoffOutMs) outWatchFlush(k, now);
+    }
 }
 
 // Ends one member's hand-off. A held head that was never dispatched is logged as a DROP; the buffer is left alone.
@@ -962,12 +1009,17 @@ void handoffTick(DWORD now, const bool* edge) {
             const uintptr_t srv = cli ? party::serverCreature(cli) : 0;
             if (!srv) { traceDropAll(k, qh::DR_NULL_CREATURE); buf.clear(); continue; }
             Snapshot s;
-            const bool inEngine = gatherFor(srv, s) && engineHoldsAction(s);
+            const bool gEdgeOk = gatherFor(srv, s);
+            const bool inEngine = gEdgeOk && engineHoldsAction(s);
             Handoff& h = g_handoff[k];
             const bool wasActive = buf.active;
             const uint32_t activeCmd = buf.activeAction.cmdId;
+            if (wasActive) outWatchArm(k, activeCmd, now);   // ground truth for the command that was active at the edge
             h.headHeld = buf.active && inEngine && g_cfg.handoffResendHeld;   // engine-held head: wait for the combat-start wipe, then re-send
             h.edgeAt = now;
+            h.lastTick = now;
+            h.heldUnpausedMs = 0;
+            h.sawExec = gEdgeOk && execEvidence(s);
             h.headValid = buf.active && (!inEngine || h.headHeld);
             if (h.headValid) h.head = buf.activeAction;
             if (g_logOn && g_cfg.traceQueue) {
@@ -994,10 +1046,16 @@ void handoffTick(DWORD now, const bool* edge) {
         if (!srv) { endHandoff(k, qh::DR_NULL_CREATURE); traceDropAll(k, qh::DR_NULL_CREATURE); buf.clear(); continue; }
         Snapshot s;
         if (!gatherFor(srv, s)) continue;
+        if (h.headValid && h.headHeld) {   // exec evidence and the stuck clock run even on frames that cannot send yet
+            if (execEvidence(s)) h.sawExec = true;
+            const bool held = engineHoldsAction(s);
+            if (held && !s.paused) { const DWORD d = now - h.lastTick; h.heldUnpausedMs += d < 1000u ? static_cast<int>(d) : 1000; }
+            h.lastTick = now;
+        }
         if (s.nrn + 1 > qh::kMaxRound) continue;   // the engine's round list is full: retry next frame
         if (h.headValid && h.headHeld) {
             const int ms = static_cast<int>(now - h.edgeAt);
-            const qh::HeldHeadAction act = qh::heldHeadAction(engineHoldsAction(s), ms);
+            const qh::HeldHeadAction act = qh::heldHeadAction(engineHoldsAction(s), h.sawExec, s.paused, h.heldUnpausedMs);
             if (act == qh::HELD_WAIT) continue;
             if (g_logOn && g_cfg.traceQueue) {
                 char line[200];
@@ -1037,6 +1095,7 @@ void handoffTick(DWORD now, const bool* edge) {
             ++h.sent;
             g_lastOurs[k].tag = "handoff"; g_lastOurs[k].tick = now;
             dispatchAction(a);
+            outWatchArm(k, a.cmdId, now);
             g_roundWatchUntil[k] = now + 15000;   // armed outside the trace gate: the watch runs with trace off too
             g_lastRound[k].n = -1;
             if (g_logOn && g_cfg.traceQueue) {
@@ -1081,13 +1140,45 @@ void roundWatchTick(DWORD now) {
     }
 }
 
+// Every combat edge: dump the soft-combat evidence (CMBT_FIELDS) for each party member and arm the round watch for 8 s, so an eaten
+// attack / force power click shows as ROUND lines even when no hand-off happens. The watch never shortens a running one.
+constexpr DWORD kEdgeWatchMs = 8000;
+constexpr int CrCombatOff = 0x520, CrTgt550 = 0x550, CrTgt564 = 0x564, CrTgt568 = 0x568;
+void combatEdgeTrace(DWORD now, const bool* edge) {
+    bool any = false;
+    for (int k = 0; k < 3; ++k) any = any || edge[k];
+    if (!any) return;
+    party::Fail why = party::F_None;
+    const uintptr_t tbl = party::table(&why);
+    for (int k = 0; k < 3; ++k) {
+        if (!edge[k]) continue;
+        if (static_cast<int>(g_roundWatchUntil[k] - (now + kEdgeWatchMs)) < 0 || g_roundWatchUntil[k] == 0) {
+            g_roundWatchUntil[k] = now + kEdgeWatchMs;
+            g_lastRound[k].n = -1;
+        }
+        if (!g_logOn || !g_cfg.traceQueue || !tbl) continue;
+        const uintptr_t cli = party::member(tbl, k);
+        const uintptr_t srv = cli ? party::serverCreature(cli) : 0;
+        if (!srv) continue;
+        uint32_t cr[qh::kCrCombatDwords] = {};
+        bool crOk[qh::kCrCombatDwords] = {};
+        for (int i = 0; i < qh::kCrCombatDwords; ++i) crOk[i] = rd(SiteQueue, srv, CrCombatOff + 4 * i, &cr[i]);
+        uint32_t t550 = 0, t564 = 0, t568 = 0;
+        const bool o550 = rd(SiteQueue, srv, CrTgt550, &t550), o564 = rd(SiteQueue, srv, CrTgt564, &t564), o568 = rd(SiteQueue, srv, CrTgt568, &t568);
+        char line[200];
+        qh::fmtCmbtFields(line, sizeof line, k, cr, crOk, t550, o550, t564, o564, t568, o568);
+        QTRACE("%s", line);
+    }
+}
+
 // Multi-item buffer ticker and follower wipe guard
 void tickItemQueues(DWORD now, bool inMenu) {
+    outWatchTick(now);
     const bool combatNow = g_combat != 0 && !g_combatUnreadable;
     bool edgeFlags[3] = {false, false, false};
     for (int k = 0; k < 3; ++k) { edgeFlags[k] = combatNow && !g_prevCombat[k]; g_prevCombat[k] = combatNow; }
     if (inMenu || g_combat != 0) {
-        if (combatNow) { handoffTick(now, edgeFlags); roundWatchTick(now); }   // unreadable HUD flags: no hand-off and no drop, the buffers wait
+        if (combatNow) { combatEdgeTrace(now, edgeFlags); handoffTick(now, edgeFlags); roundWatchTick(now); }   // unreadable HUD flags: no hand-off and no drop, the buffers wait
         return;
     }
     party::Fail why = party::F_None;
@@ -1243,7 +1334,7 @@ void tickItemQueues(DWORD now, bool inMenu) {
             } else if (s.round != 0) {
                 buf.noteView(actionInQueue, now);
                 buf.accrueEaten(s.paused, now);
-                qh::ActiveVerdict av = qh::activeVerdict(buf, ev, now);
+                qh::ActiveVerdict av = qh::activeVerdict(buf, ev, now, g_cfg.pauseEatenWait);
                 if (!g_cfg.pauseReinject && (av == qh::AV_EATEN_WAIT || av == qh::AV_EATEN_REINJECT || av == qh::AV_GIVE_UP)) av = qh::AV_UNSEEN;
                 switch (av) {
                     case qh::AV_PRESENT:
@@ -1304,7 +1395,14 @@ void tickItemQueues(DWORD now, bool inMenu) {
         }
 
         // 3. Sequential dispatch of next buffered action (idle gate: engineNe == 0 && !haveCur && nrn == 0)
-        const qh::DispatchWhy dsWhy = qh::dispatchWhy(buf, s.engineNe, creal, s.nrn);
+        qh::DispatchWhy dsWhy = qh::dispatchWhy(buf, s.engineNe, creal, s.nrn);
+        bool flagCapped = false;
+        if (dsWhy == qh::DS_OK && g_cfg.dispatchWaitFlags) {
+            const bool flagsBusy = !s.paused && (s.aa8 != 0 || s.ab8 != 0);
+            if (!g_flagGate[k].step(flagsBusy, now, &flagCapped)) dsWhy = qh::DS_FLAG_BUSY;
+        } else {
+            g_flagGate[k].reset();
+        }
         if (dsWhy != qh::DS_OK && buf.count > 0) {
             // A buffered command is waiting: one WAIT on edge (why changed) plus a 1 s heartbeat.
             if (static_cast<int>(dsWhy) != g_prevDsWhy[k] || now - g_lastWaitTick[k] >= 1000u) {
@@ -1336,12 +1434,14 @@ void tickItemQueues(DWORD now, bool inMenu) {
                     QLOG(chMain, "dispatching buffered %s for member %d (id=%08x, target=%08x, remaining=%d) cmd=%u",
                          nextA.kind == qh::ActionKind::Spell ? "spell" : "item",
                          k, nextA.clientItem, nextA.targetId, buf.count, (unsigned)nextA.cmdId);
+                    if (flagCapped) QLOG(chMain, "dispatch hold=flag_cap member=%d cmd=%u aa8=%d ab8=%d", k, (unsigned)nextA.cmdId, s.aa8, s.ab8);
                     buf.active = true;
                     buf.activeAction = nextA;
                     buf.markDispatched(now);
                     dispatchAction(nextA);
                 }
             }
+            g_flagGate[k].reset();
         }
     }
 }
@@ -1436,6 +1536,13 @@ void KPATCH_CALL onFrameBegin(const K2PsContext* ctx, void*) {
     const bool menuKnown = ctx->struct_size >= offsetof(K2PsContext, inMenu) + sizeof(int32_t);
     const bool inMenu = menuKnown && (ctx->inMenu != 0);
     const bool ledge = guikit::clickEdge(g_lmb);   // polled every frame so a held press never fires on reopen
+    if (ledge && g_logOn && g_cfg.traceQueue && g_cfg.traceClicks) {
+        int tx = 0, ty = 0;
+        const bool xy = guikit::cursorEngine(&tx, &ty);
+        char line[80];
+        qh::fmtClick(line, sizeof line, GetTickCount(), xy, tx, ty);
+        QTRACE("%s", line);
+    }
     for (int k = 0; k < 3; ++k)
         if (g_cpend[k].on) { g_cpend[k].on = false; QLOG(chCancel, "CANCEL done member=%d n=%d", k, queueCountOf(k)); }
     if (!g_cfg.cancel || inMenu || g_combat != 0) {
@@ -1479,6 +1586,7 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     loadIni();
     g_logOn = g_cfg.log;
     KP_LOG(chMain, "0.4.0-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax);
+    QLOG(chMain, "pause_eaten_wait=%d dispatch_wait_flags=%d", g_cfg.pauseEatenWait ? 1 : 0, g_cfg.dispatchWaitFlags ? 1 : 0);
     QLOG(chMain, "pause_reinject=%d handoff_on_combat=%d handoff_clear_first=%d handoff_resend_held=%d show_in_combat=%d",
          g_cfg.pauseReinject ? 1 : 0, g_cfg.handoffOnCombat ? 1 : 0, g_cfg.handoffClearFirst ? 1 : 0, g_cfg.handoffResendHeld ? 1 : 0, g_cfg.showInCombat ? 1 : 0);
     g_ps.init(api, "queue-hud");

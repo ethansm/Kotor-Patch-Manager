@@ -404,7 +404,7 @@ class ViewTests(unittest.TestCase):
         for i in range(1, 101):
             bodies += [cmd(i), wait(i), resolve(i)]
         bodies += [drop(i, 0, "cancel", 1) for i in range(1, 101)]
-        bodies += [edge() for _ in range(100)]
+        bodies += [edge("paused") for _ in range(100)]   # not a combat edge: flag J stays out of the FLAGS count
         for _ in range(50):
             bodies += [qj(0, "[3d]", 1), qj(0, "[c]", 1)]
         rc, out = run_log(bodies)
@@ -852,6 +852,48 @@ class HandoffTriggerFlagTests(unittest.TestCase):
         rc, out = run_log([handoff(0, "8", 0, "-")])
         self.assertIn("FLAGS 1", out)
         self.assertIn("  I L1 m=0 HANDOFF active=8 never re-sent (trigger lost at hand-off)", out)
+
+
+def handoff_out(n, m=0, exec_=1, first="120", end=8000):
+    return "HANDOFF_OUT m=%d cmd=%d exec=%d firstExecMs=%s endMs=%d" % (m, n, exec_, first, end)
+
+
+CMBT_BODY = ("CMBT_FIELDS m=0 cr520=80000448,00000000,00000000,00000000,00000000,00000000,00000000,00000000,"
+             "00000000,00000000,00000000,000000ab t550=7f000001 t564=00000000 t568=ffffffff")
+
+
+class T4TraceTests(unittest.TestCase):
+    def test_new_lines_parse(self):
+        recs, skipped = parse([handoff_out(6), handoff_out(7, 1, 0, "-", 8003), "CLICK t=123456 x=640 y=360", "CLICK t=7 x=- y=-",
+                               CMBT_BODY, "CMBT_FIELDS m=2 cr520=?,00000001 t550=? t564=00000005 t568=?"])
+        self.assertEqual(skipped, [])
+        self.assertEqual([r["kw"] for r in recs], ["HANDOFF_OUT"] * 2 + ["CLICK"] * 2 + ["CMBT_FIELDS"] * 2)
+        self.assertEqual((recs[0]["cmd"], recs[0]["m"], recs[1]["f"]["firstExecMs"]), (6, 0, "-"))
+
+    def test_bad_new_lines_are_skipped(self):
+        bad = ["HANDOFF_OUT m=0 cmd=6 exec=2 firstExecMs=1 endMs=2", "HANDOFF_OUT m=0 cmd=6 exec=1 firstExecMs=x endMs=2",
+               "HANDOFF_OUT m=0 cmd=6 exec=1 firstExecMs=1", "CLICK t=7 x=1", "CLICK t=a x=1 y=1",
+               "CMBT_FIELDS m=0 cr520=zz t550=? t564=? t568=?", "CMBT_FIELDS m=0 cr520=00000000 t550=1 t564=? t568=?"]
+        recs, skipped = parse(bad)
+        self.assertEqual(recs, [])
+        self.assertEqual(len(skipped), len(bad))
+
+    def test_J_fires_for_combat_edge_without_round(self):
+        rc, out = run_log([edge("combat", 0, 1)])
+        self.assertIn("FLAGS 1", out)
+        self.assertIn("  J L1 combat edge with no ROUND within 1500 ms", out)
+
+    def test_J_quiet_when_round_follows(self):
+        recs, _ = Q.parse_lines([(1, at(1000, edge("combat", 0, 1))), (2, at(2400, round_line()))])
+        self.assertEqual(Q.edge_silent_flags(recs), [])
+
+    def test_J_fires_when_round_comes_too_late_or_before(self):
+        recs, _ = Q.parse_lines([(1, at(500, round_line())), (2, at(1000, edge("combat", 0, 1))), (3, at(2501, round_line()))])
+        self.assertEqual(Q.edge_silent_flags(recs), [(2, "J L2 combat edge with no ROUND within 1500 ms")])
+
+    def test_J_ignores_non_combat_edges_exits_and_bare_lines(self):
+        recs, _ = Q.parse_lines([(1, at(1000, edge("paused", 0, 1))), (2, at(2000, edge("combat", 1, 0))), (3, edge("combat", 0, 1))])
+        self.assertEqual(Q.edge_silent_flags(recs), [])
 
 
 if __name__ == "__main__":

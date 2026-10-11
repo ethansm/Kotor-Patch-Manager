@@ -50,6 +50,7 @@ Medpacs and Force powers both use 170/1330/0 conj/cast/catch in spells.2da (rows
 - New channel line `REEQ actor=` at 0x5DF920 (AIActionType47_ReequipResumeAttack, cold per 0x47 node). Finding: AddAttackActions (0x568540) never re-adds 0x3F (all 12 callers pass a8!=0 and it re-adds 0x0C); 0x3F is re-added in AddCutsceneAttackActions 0x5683D0 and sibling Add*Actions.
 - Held for batch 2 (warm): gate 0x6D9500 / 0x6DA49F, mode 0x563C90, AIActionCombat clear+attack sites 0x6D9931 / 0x6D996B.
 - PB1 (2026-10-11): the first live run wrote no log because every probe line is INFO and the core default level is WARN. The game-dir `kplog.ini` needs a `[cmdq-probe]` section (`enabled=1`, `level=info`, `channels=*`); added 2026-10-11. The load line shows on the next launch. `kotor2_logs.py check cmdq-probe` routes to `cmdq_probe_log_check.py`.
+- PB2 (2026-10-11): game-dir `cmdq_probe.ini` set to `ch_med=0`, `party_only=0`, `max_lines=20000` after the 18:07 session where MED lines ate the shared 2000-line cap in 15 s.
 - Install = full KPatchLauncher reinstall of cmdq-probe (needs the user's GO + KPM Patches/CmdqProbe mirror + pre_install_gate.sh --mod cmdq_probe_src).
 
 Standalone patch (template: `Patches/MouseProbe`), `KP_LOG_PATCH("cmdq-probe")`, log `cmdq-probe_log.txt` via the kpatch.log service.

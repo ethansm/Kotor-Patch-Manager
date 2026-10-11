@@ -1423,6 +1423,7 @@ void testWhyNames() {
     KT_CHECK_EQ(whyName(DS_ENGINE_BUSY), "engine_busy");
     KT_CHECK_EQ(whyName(DS_CUR_BUSY), "cur_busy");
     KT_CHECK_EQ(whyName(DS_NRN_BUSY), "nrn_busy");
+    KT_CHECK_EQ(whyName(DS_FLAG_BUSY), "flags");
     // DROP words are the grammar set verbatim
     KT_CHECK_EQ(whyName(DR_COMBAT_CLEAR), "combat_clear");
     KT_CHECK_EQ(whyName(DR_NULL_CREATURE), "null_creature");
@@ -1661,12 +1662,12 @@ EngineView Ev(bool present, bool paused = false, bool foreign = false, bool idle
 int V(const ActionBuffer& b, const EngineView& e, uint32_t now) { return (int)activeVerdict(b, e, now); }
 
 bool verdictFieldsClear(const ActionBuffer& b) {
-    return !b.sawExecuting && !b.eaten && !b.staleCurLogged && b.eatenReInjects == 0 && b.goneSinceTick == 0 &&
+    return !b.sawExecuting && !b.eaten && !b.staleCurLogged && !b.pausedEaten && b.eatenReInjects == 0 && b.goneSinceTick == 0 &&
            b.lastReInjectTick == 0 && b.staleCurSince == 0 && b.eatenUnpausedMs == 0 && b.lastVerdictTick == 0;
 }
 
 void dirtyVerdictFields(ActionBuffer& b) {
-    b.sawExecuting = true; b.eaten = true; b.staleCurLogged = true; b.eatenReInjects = 4;
+    b.sawExecuting = true; b.eaten = true; b.staleCurLogged = true; b.pausedEaten = true; b.eatenReInjects = 4;
     b.goneSinceTick = 9; b.lastReInjectTick = 9; b.staleCurSince = 9; b.eatenUnpausedMs = 9; b.lastVerdictTick = 9;
 }
 
@@ -1739,6 +1740,137 @@ void testActiveVerdictRules() {
     KT_CHECK(strcmp(verdictName(AV_EATEN_REINJECT), "eaten_reinject") == 0);
     KT_CHECK(strcmp(verdictName(AV_GIVE_UP), "give_up") == 0);
     KT_CHECK(strcmp(verdictName(static_cast<ActiveVerdict>(99)), "?") == 0);
+}
+
+// QL6a: while paused an eaten action waits (no re-inject, no budget); the unpause edge gives one re-inject with a fresh budget.
+void testPauseEatenWait() {
+    // rule 4b only with the flag; the default keeps the old behaviour
+    ActionBuffer b; b.eaten = true; b.goneSinceTick = 1;
+    KT_CHECK_EQ((int)activeVerdict(b, Ev(false, true), 10000), (int)AV_EATEN_REINJECT);
+    KT_CHECK_EQ((int)activeVerdict(b, Ev(false, true), 10000, true), (int)AV_EATEN_WAIT);
+    KT_CHECK_EQ((int)activeVerdict(b, Ev(false, false), 10000, true), (int)AV_EATEN_REINJECT);   // unpaused: normal rules
+    // not yet flagged eaten and paused: waits too (rule 3 is skipped while paused)
+    ActionBuffer u; u.goneSinceTick = 1;
+    KT_CHECK_EQ((int)activeVerdict(u, Ev(false, true), 10000, true), (int)AV_EATEN_WAIT);
+    // rule 4 (unpaused wait cap) still beats 4b; PRESENT and EXECUTED still win
+    ActionBuffer t; t.eaten = true; t.goneSinceTick = 1; t.eatenUnpausedMs = 20000;
+    KT_CHECK_EQ((int)activeVerdict(t, Ev(false, true), 10000, true), (int)AV_GIVE_UP);
+    ActionBuffer x; x.goneSinceTick = 1; x.sawExecuting = true;
+    KT_CHECK_EQ((int)activeVerdict(x, Ev(false, true), 10000, true), (int)AV_EXECUTED);
+    KT_CHECK_EQ((int)activeVerdict(b, Ev(true, true), 10000, true), (int)AV_PRESENT);
+    // 10 eaten ticks while paused: never a give-up, budget stays 0 (the caller only counts on AV_EATEN_REINJECT)
+    ActionBuffer p; p.eaten = true; p.goneSinceTick = 1;
+    for (uint32_t t2 = 10000; t2 < 15000; t2 += 500) {
+        p.accrueEaten(true, t2);
+        KT_CHECK_EQ((int)activeVerdict(p, Ev(false, true), t2, true), (int)AV_EATEN_WAIT);
+    }
+    KT_CHECK_EQ(p.eatenReInjects, 0);
+    KT_CHECK(p.pausedEaten);
+    KT_CHECK_EQ(p.eatenUnpausedMs, 0u);
+    // unpause edge: a spent budget (4) and a recent re-inject stamp are cleared, then exactly one re-inject
+    p.eatenReInjects = 4; p.lastReInjectTick = 14900;
+    p.accrueEaten(false, 15000);
+    KT_CHECK(!p.pausedEaten);
+    KT_CHECK_EQ(p.eatenReInjects, 0); KT_CHECK_EQ(p.lastReInjectTick, 0u);
+    KT_CHECK_EQ((int)activeVerdict(p, Ev(false, false), 15000, true), (int)AV_EATEN_REINJECT);
+    // unpaused eats still reach the cap of 6
+    for (int i = 0; i < kMaxEatenReInject; ++i) {
+        KT_CHECK_EQ((int)activeVerdict(p, Ev(false, false), 20000, true), (int)AV_EATEN_REINJECT);
+        p.eatenReInjects++;
+    }
+    KT_CHECK_EQ((int)activeVerdict(p, Ev(false, false), 20000, true), (int)AV_GIVE_UP);
+    // an unpaused tick without a prior paused-eaten latch does not touch the budget
+    ActionBuffer n; n.eaten = true; n.eatenReInjects = 3; n.lastReInjectTick = 77;
+    n.accrueEaten(false, 1000);
+    KT_CHECK_EQ(n.eatenReInjects, 3); KT_CHECK_EQ(n.lastReInjectTick, 77u);
+    // markDispatched drops the latch
+    ActionBuffer m; m.eaten = true; m.accrueEaten(true, 10); KT_CHECK(m.pausedEaten);
+    m.markDispatched(20); KT_CHECK(!m.pausedEaten);
+    // ini key
+    Config c;
+    KT_CHECK(c.pauseEatenWait);
+    KT_CHECK(parseIniLine(c, "pause_eaten_wait=0") && !c.pauseEatenWait);
+    KT_CHECK(parseIniLine(c, "pause_eaten_wait=1") && c.pauseEatenWait);
+    KT_CHECK(!parseIniLine(c, "pause_eaten_wait=x") && c.pauseEatenWait);
+}
+
+// QL6b: the dispatch gate also waits for the engine's aa8/ab8 flags (cmd 4 / cmd 5 of the 10-11 18:xx session).
+void testFlagGate() {
+    // dispatchWhy: flagHold is the last check; it never masks an earlier reason
+    ActionBuffer b;
+    float pf[3] = {0, 0, 0};
+    KT_CHECK(b.push(makeSpellAction(0x1000, 0x55, 0, 1, 0, 0, 0, pf, 1)));
+    KT_CHECK_EQ((int)dispatchWhy(b, 0, false, 0, true), (int)DS_FLAG_BUSY);
+    KT_CHECK_EQ((int)dispatchWhy(b, 0, false, 0, false), (int)DS_OK);
+    KT_CHECK_EQ((int)dispatchWhy(b, 1, false, 0, true), (int)DS_ENGINE_BUSY);
+    KT_CHECK_EQ((int)dispatchWhy(b, 0, true, 0, true), (int)DS_CUR_BUSY);
+    KT_CHECK_EQ((int)dispatchWhy(b, 0, false, 1, true), (int)DS_NRN_BUSY);
+    // never busy: dispatches on the first tick (no added latency on an idle engine)
+    FlagGate g; bool cap = true;
+    KT_CHECK(g.step(false, 1000, &cap)); KT_CHECK(!cap);
+    // cmd 4 trace: ab8=1 -> wait; then clear must hold on two ticks >= 150 ms apart
+    g.reset();
+    KT_CHECK(!g.step(true, 2000, &cap));
+    KT_CHECK(!g.step(true, 2300, &cap));
+    KT_CHECK(!g.step(false, 2400, &cap));        // first clear tick
+    KT_CHECK(!g.step(false, 2549, &cap));        // 149 ms
+    KT_CHECK(g.step(false, 2550, &cap)); KT_CHECK(!cap);   // 150 ms
+    // flicker: busy again resets the clear run
+    g.reset();
+    KT_CHECK(!g.step(true, 3000));
+    KT_CHECK(!g.step(false, 3100));
+    KT_CHECK(!g.step(true, 3200));
+    KT_CHECK(!g.step(false, 3300));
+    KT_CHECK(!g.step(false, 3449));
+    KT_CHECK(g.step(false, 3450));
+    // cap: 1999 ms of busy still holds, 2000 ms dispatches with capped=true
+    g.reset();
+    KT_CHECK(!g.step(true, 5000));
+    KT_CHECK(!g.step(true, 6999, &cap)); KT_CHECK(!cap);
+    KT_CHECK(g.step(true, 7000, &cap)); KT_CHECK(cap);
+    // the cap runs from the hold start, not from the first busy tick
+    g.reset();
+    KT_CHECK(!g.step(true, 1));
+    KT_CHECK(!g.step(true, 1999)); KT_CHECK(!g.step(true, 2000));
+    KT_CHECK(g.step(true, 2001, &cap)); KT_CHECK(cap);
+    // reset clears everything (a new hold starts a new clock)
+    g.reset();
+    KT_CHECK(!g.holding && !g.clearing && !g.sawBusy);
+    KT_CHECK(!g.step(true, 0)); KT_CHECK(g.holding);   // tick 0 is a valid hold start
+    // ini key
+    Config c;
+    KT_CHECK(c.dispatchWaitFlags);
+    KT_CHECK(parseIniLine(c, "dispatch_wait_flags=0") && !c.dispatchWaitFlags);
+    KT_CHECK(parseIniLine(c, "Dispatch_Wait_Flags=on") && c.dispatchWaitFlags);
+    KT_CHECK(!parseIniLine(c, "dispatch_wait_flags=2") && c.dispatchWaitFlags);
+}
+
+// T4 trace formatters: CLICK and CMBT_FIELDS, plus the trace_clicks key.
+void testClickAndCmbtFields() {
+    char out[kLogLineMax];
+    fmtClick(out, sizeof out, 123456, true, 640, 360);
+    KT_CHECK_EQ(out, "CLICK t=123456 x=640 y=360");
+    fmtClick(out, sizeof out, 7, false, 5, 5);
+    KT_CHECK_EQ(out, "CLICK t=7 x=- y=-");
+    fmtClick(out, sizeof out, 1, true, -3, 0);
+    KT_CHECK_EQ(out, "CLICK t=1 x=-3 y=0");
+    uint32_t cr[kCrCombatDwords] = {};
+    bool ok[kCrCombatDwords];
+    for (int i = 0; i < kCrCombatDwords; ++i) ok[i] = true;
+    cr[0] = 0x80000448u; cr[11] = 0xabu;
+    const int n = fmtCmbtFields(out, sizeof out, 0, cr, ok, 0x7f000001u, true, 0u, true, 0xffffffffu, true);
+    KT_CHECK_EQ(out, "CMBT_FIELDS m=0 cr520=80000448,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,000000ab t550=7f000001 t564=00000000 t568=ffffffff");
+    KT_CHECK(n < kLogLineMax);
+    ok[1] = false;
+    fmtCmbtFields(out, sizeof out, 2, cr, ok, 0, false, 5, true, 0, false);
+    KT_CHECK_EQ(out, "CMBT_FIELDS m=2 cr520=80000448,?,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,000000ab t550=? t564=00000005 t568=?");
+    fmtCmbtFields(out, sizeof out, -1, nullptr, nullptr, 0, false, 0, false, 0, false);
+    KT_CHECK_EQ(out, "CMBT_FIELDS m=? cr520=?,?,?,?,?,?,?,?,?,?,?,? t550=? t564=? t568=?");
+    Config c;
+    KT_CHECK(c.traceClicks);
+    KT_CHECK(parseIniLine(c, "trace_clicks=0") && !c.traceClicks);
+    KT_CHECK(parseIniLine(c, "trace_clicks=1") && c.traceClicks);
+    KT_CHECK(!parseIniLine(c, "trace_clicks=x") && c.traceClicks);
 }
 
 void testVerdictBookkeeping() {
@@ -1869,16 +2001,30 @@ void testMakeEngineView() {
 // ---- QL3: an engine-held active command that combat start wipes is re-sent; one the engine really runs is not ----
 void testHeldHeadAction() {
     // play test 2026-10-11 cmd 8: held at the edge, gone 70 ms later -> wait while held, re-send once released
-    KT_CHECK(heldHeadAction(true, 0) == HELD_WAIT);
-    KT_CHECK(heldHeadAction(true, 69) == HELD_WAIT);
-    KT_CHECK(heldHeadAction(false, 70) == HELD_RESEND);
-    KT_CHECK(heldHeadAction(false, 0) == HELD_RESEND);
-    // window boundary: 300 ms is still a wipe, 301 ms is not
-    KT_CHECK(heldHeadAction(false, kHeldWipeWindowMs) == HELD_RESEND);
-    KT_CHECK(heldHeadAction(true, kHeldWipeWindowMs) == HELD_WAIT);
-    KT_CHECK(heldHeadAction(false, kHeldWipeWindowMs + 1) == HELD_DROP);   // finished on its own: never run twice
-    KT_CHECK(heldHeadAction(true, kHeldWipeWindowMs + 1) == HELD_DROP);    // still executing: the engine owns it
-    KT_CHECK(heldHeadAction(true, 100000) == HELD_DROP);
+    // held: WAIT; stuck (> 3000 ms of UNPAUSED held time) -> DROP; paused never counts as stuck
+    KT_CHECK(heldHeadAction(true, false, false, 0) == HELD_WAIT);
+    KT_CHECK(heldHeadAction(true, true, false, 0) == HELD_WAIT);
+    KT_CHECK(heldHeadAction(true, false, false, kHeldStuckMs) == HELD_WAIT);
+    KT_CHECK(heldHeadAction(true, false, false, kHeldStuckMs + 1) == HELD_DROP);
+    KT_CHECK(heldHeadAction(true, true, false, kHeldStuckMs + 1) == HELD_DROP);
+    KT_CHECK(heldHeadAction(true, false, true, 100000) == HELD_WAIT);
+    // gone: it ran -> DROP (never twice), it never ran -> RESEND (wiped / eaten), paused or not
+    KT_CHECK(heldHeadAction(false, true, false, 0) == HELD_DROP);
+    KT_CHECK(heldHeadAction(false, true, true, 0) == HELD_DROP);
+    KT_CHECK(heldHeadAction(false, false, false, 0) == HELD_RESEND);
+    KT_CHECK(heldHeadAction(false, false, true, 0) == HELD_RESEND);
+    // replay of the two logs: 13:07 cmd 8 gone at +70 ms with no exec evidence; 18:xx cmd 6 / cmd 8 lingered with aa8=1 ab8=1
+    KT_CHECK(heldHeadAction(false, false, false, 0) == HELD_RESEND);
+    KT_CHECK(heldHeadAction(true, true, false, 400) == HELD_WAIT);
+    KT_CHECK(heldHeadAction(false, true, false, 400) == HELD_DROP);
+    // HANDOFF_OUT m=<k> cmd=<n> exec=<0|1> firstExecMs=<n|-> endMs=<n>
+    char o2[kLogLineMax];
+    fmtHandoffOut(o2, sizeof o2, 0, 6, true, 120, 8000);
+    KT_CHECK_EQ(o2, "HANDOFF_OUT m=0 cmd=6 exec=1 firstExecMs=120 endMs=8000");
+    fmtHandoffOut(o2, sizeof o2, 2, 11, false, -1, 8003);
+    KT_CHECK_EQ(o2, "HANDOFF_OUT m=2 cmd=11 exec=0 firstExecMs=- endMs=8003");
+    fmtHandoffOut(o2, sizeof o2, -1, 0, false, 5, 0);                  // exec=0 never prints a time
+    KT_CHECK_EQ(o2, "HANDOFF_OUT m=? cmd=0 exec=0 firstExecMs=- endMs=0");
     // HANDOFF_HELD m=<k> cmd=<n> act=<resend|drop> ms=<n>
     char out[kLogLineMax];
     fmtHandoffHeld(out, sizeof out, 0, 8, HELD_RESEND, 70);
@@ -1989,6 +2135,9 @@ int main() {
     testLogFormatBounds();
     testActiveVerdictRules();
     testVerdictBookkeeping();
+    testPauseEatenWait();
+    testFlagGate();
+    testClickAndCmbtFields();
     testCurReal();
     testMakeEngineView();
     testMutationGaps();

@@ -140,13 +140,15 @@ inline bool activeNeedsSlot(bool bufActive, bool engineHolds) { return bufActive
 inline bool clearBeforeHandoff(bool cfgOn, int sentSoFar) { return cfgOn && sentSoFar == 0; }
 
 // handoff_resend_held: the active command the engine still held at the combat edge (a thrown grenade / medpack that triggered combat).
-// Combat start wipes the engine queue (play test 2026-10-11: the entry was gone 70 ms after the edge, no RESOLVE), so the hand-off waits
-// for the engine to release it and re-sends it only if that happens within kHeldWipeWindowMs of the edge. A real use runs longer.
-constexpr int kHeldWipeWindowMs = 300;
+// The hand-off waits while the engine still holds it, then settles by whether it ever ran (QL6c; the old 300 ms clock dropped real casts):
+//   held                     -> WAIT, or DROP when it has sat held for kHeldStuckMs of unpaused time (stuck)
+//   gone and sawExec         -> DROP   (it ran: aa8/ab8 or a cur subtype 9/10 was seen; never run twice)
+//   gone and not sawExec     -> RESEND (wiped before it ran, e.g. a combat-start wipe or a paused eat)
+constexpr int kHeldStuckMs = 3000;
 enum HeldHeadAction : uint8_t { HELD_WAIT, HELD_RESEND, HELD_DROP };
-inline HeldHeadAction heldHeadAction(bool engineStillHolds, int msSinceEdge) {
-    if (msSinceEdge > kHeldWipeWindowMs) return HELD_DROP;   // the engine is really executing it, or it already finished: never run it twice
-    return engineStillHolds ? HELD_WAIT : HELD_RESEND;
+inline HeldHeadAction heldHeadAction(bool held, bool sawExec, bool paused, int unpausedHeldMs) {
+    if (held) return (!paused && unpausedHeldMs > kHeldStuckMs) ? HELD_DROP : HELD_WAIT;
+    return sawExec ? HELD_DROP : HELD_RESEND;
 }
 
 // Dark teal palette matching custom GUI theme (Session 2)
@@ -183,6 +185,9 @@ struct Config {
     float frameAlpha = 0.9f;      // qh_frame alpha (scaled by waiting_alpha for the dimmed head slot)
     bool cancel = true;           // the Cancel controls (leader + companion strips)
     bool pauseReinject = true;    // pause_reinject: re-inject a paused/eaten action (default on)
+    bool dispatchWaitFlags = true; // dispatch_wait_flags: hold a buffered dispatch while the engine's aa8/ab8 flags are set (default on)
+    bool traceClicks = true;       // trace_clicks: one CLICK line per left-button press edge (needs trace_queue)
+    bool pauseEatenWait = true;   // pause_eaten_wait: while paused, an eaten action waits (no re-inject, no budget) until unpause (default on)
     bool handoffOnCombat = true;  // handoff_on_combat: hand the buffered queue over when combat starts (default on)
     bool showInCombat = true;     // show_in_combat: keep the queue strip drawn during combat (default on)
     bool handoffClearFirst = true;  // handoff_clear_first: clear the engine queue before the first handoff send (default on)
@@ -461,6 +466,9 @@ inline bool parseIniLine(Config& c, const char* line) {
     if (detail::keyEq(kb, ke, "frame_alpha")) return detail::parseUnit(vb, ve, &c.frameAlpha);
     if (detail::keyEq(kb, ke, "cancel")) return detail::parseBool(vb, ve, &c.cancel);
     if (detail::keyEq(kb, ke, "pause_reinject")) return detail::parseBool(vb, ve, &c.pauseReinject);
+    if (detail::keyEq(kb, ke, "trace_clicks")) return detail::parseBool(vb, ve, &c.traceClicks);
+    if (detail::keyEq(kb, ke, "dispatch_wait_flags")) return detail::parseBool(vb, ve, &c.dispatchWaitFlags);
+    if (detail::keyEq(kb, ke, "pause_eaten_wait")) return detail::parseBool(vb, ve, &c.pauseEatenWait);
     if (detail::keyEq(kb, ke, "handoff_on_combat")) return detail::parseBool(vb, ve, &c.handoffOnCombat);
     if (detail::keyEq(kb, ke, "show_in_combat")) return detail::parseBool(vb, ve, &c.showInCombat);
     if (detail::keyEq(kb, ke, "handoff_clear_first")) return detail::parseBool(vb, ve, &c.handoffClearFirst);
@@ -577,6 +585,7 @@ struct ActionBuffer {
     bool sawExecuting = false;      // the engine showed the active action executing
     bool eaten = false;             // the active action vanished without executing (queue wipe)
     bool staleCurLogged = false;
+    bool pausedEaten = false;       // eaten while paused (waiting for unpause; the unpause edge resets the re-inject budget)
     int eatenReInjects = 0;         // re-injects spent in the current eaten episode
     uint32_t goneSinceTick = 0;     // first tick the action was absent in a row (0 = not absent)
     uint32_t lastReInjectTick = 0;
@@ -613,6 +622,7 @@ struct ActionBuffer {
         sawExecuting = false;
         eaten = false;
         staleCurLogged = false;
+        pausedEaten = false;
         eatenReInjects = 0;
         goneSinceTick = 0;
         lastReInjectTick = 0;
@@ -632,6 +642,7 @@ struct ActionBuffer {
         sawExecuting = false;
         eaten = false;
         staleCurLogged = false;
+        pausedEaten = false;
         eatenReInjects = 0;
         goneSinceTick = 0;
         lastReInjectTick = 0;
@@ -641,9 +652,12 @@ struct ActionBuffer {
     }
 
     // Dispatch stamps the start and clears the per-action eaten flags.
-    void markDispatched(uint32_t now) { activeStartTick = now; sawExecuting = false; eaten = false; goneSinceTick = 0; }
+    void markDispatched(uint32_t now) { activeStartTick = now; sawExecuting = false; eaten = false; pausedEaten = false; goneSinceTick = 0; }
     // Adds the unpaused time since the last verdict while eaten; one step is capped at 1000 ms.
+    // Pause edges: eaten while paused latches pausedEaten; the first unpaused tick after it gives the action a fresh budget.
     void accrueEaten(bool paused, uint32_t now) {
+        if (eaten && paused) pausedEaten = true;
+        else if (pausedEaten && !paused) { pausedEaten = false; eatenReInjects = 0; lastReInjectTick = 0; }
         if (eaten && !paused) {
             const uint32_t d = now - lastVerdictTick;
             eatenUnpausedMs += d < 1000u ? d : 1000u;
@@ -703,10 +717,37 @@ inline bool shouldDispatchNext(const ActionBuffer& buf, int engineQueueLen, bool
     return !buf.active && !buf.empty() && engineQueueLen == 0 && !haveCur && nrn == 0;
 }
 
+// ---- QL6b flag gate: after an item/spell the engine keeps aa8/ab8 set for up to ~0.7 s and a dispatch in that window is wiped. ----
+constexpr uint32_t kFlagBusyCapMs = 2000;   // hold at most this long, then dispatch anyway (hold=flag_cap)
+
+// One per member. step() is called once per tick, only while every other dispatch gate passes (call reset() otherwise).
+// Flags that were never busy during the hold dispatch at once; once busy was seen, the flags must read clear on two ticks
+// >= kVanishDebounceMs apart. aa8/ab8 are ignored while paused (sticky in a frozen round), so the caller passes busy=false then.
+struct FlagGate {
+    uint32_t holdSince = 0;    // first tick of this hold
+    uint32_t clearSince = 0;   // first tick of the current clear run
+    bool holding = false, clearing = false, sawBusy = false;
+    void reset() { holdSince = 0; clearSince = 0; holding = false; clearing = false; sawBusy = false; }
+    // true = dispatch now. *capped is set when the dispatch is allowed only because the hold cap ran out.
+    bool step(bool busy, uint32_t now, bool* capped = nullptr) {
+        if (capped) *capped = false;
+        if (!holding) { holding = true; holdSince = now; }
+        if (busy) {
+            sawBusy = true;
+            clearing = false;
+            if (now - holdSince >= kFlagBusyCapMs) { if (capped) *capped = true; return true; }
+            return false;
+        }
+        if (!sawBusy) return true;
+        if (!clearing) { clearing = true; clearSince = now; return false; }
+        return now - clearSince >= kVanishDebounceMs;
+    }
+};
+
 // ---- Why-codes (LOG GRAMMAR). Reason order = check order of the bool predicate above.
 // reInjectWhy(...) == RI_OK  <=>  shouldReInject(...);   dispatchWhy(...) == DS_OK  <=>  shouldDispatchNext(...).
 enum ReInjectWhy : uint8_t { RI_OK, RI_INACTIVE, RI_PENDING, RI_CANCEL, RI_MAX, RI_IN_QUEUE, RI_NO_LEADER };
-enum DispatchWhy : uint8_t { DS_OK, DS_ACTIVE, DS_EMPTY, DS_ENGINE_BUSY, DS_CUR_BUSY, DS_NRN_BUSY };
+enum DispatchWhy : uint8_t { DS_OK, DS_ACTIVE, DS_EMPTY, DS_ENGINE_BUSY, DS_CUR_BUSY, DS_NRN_BUSY, DS_FLAG_BUSY };
 enum DropWhy : uint8_t { DR_COMBAT_CLEAR, DR_NULL_CREATURE, DR_CANCEL, DR_BUFFER_FULL, DR_UNREADABLE_CREATURE, DR_REINJECT_EXHAUSTED, DR_EATEN_TIMEOUT, DR_IDENTITY_LOST };
 
 inline ReInjectWhy reInjectWhy(const ActionBuffer& buf, bool actionInQueue, bool hasFollowLeader, bool paused = false, uint32_t now = 0, bool userCancelled = false) {
@@ -719,12 +760,13 @@ inline ReInjectWhy reInjectWhy(const ActionBuffer& buf, bool actionInQueue, bool
     return hasFollowLeader ? RI_OK : RI_NO_LEADER;
 }
 
-inline DispatchWhy dispatchWhy(const ActionBuffer& buf, int engineQueueLen, bool haveCur = false, int nrn = 0) {
+inline DispatchWhy dispatchWhy(const ActionBuffer& buf, int engineQueueLen, bool haveCur = false, int nrn = 0, bool flagHold = false) {
     if (buf.active) return DS_ACTIVE;
     if (buf.empty()) return DS_EMPTY;
     if (engineQueueLen != 0) return DS_ENGINE_BUSY;
     if (haveCur) return DS_CUR_BUSY;
     if (nrn != 0) return DS_NRN_BUSY;
+    if (flagHold) return DS_FLAG_BUSY;
     return DS_OK;
 }
 
@@ -749,6 +791,7 @@ inline const char* whyName(DispatchWhy w) {
         case DS_ENGINE_BUSY: return "engine_busy";
         case DS_CUR_BUSY: return "cur_busy";
         case DS_NRN_BUSY: return "nrn_busy";
+        case DS_FLAG_BUSY: return "flags";
     }
     return "?";
 }
@@ -811,6 +854,7 @@ struct LogWr {
     void u(unsigned long long v) { char t[24]; int k = 0; do { t[k++] = (char)('0' + v % 10); v /= 10; } while (v); while (k) c(t[--k]); }
     void i(long long v) { if (v < 0) { c('-'); u(0ull - (unsigned long long)v); } else u((unsigned long long)v); }
     void x(unsigned long long v) { char t[20]; int k = 0; do { unsigned d = (unsigned)(v & 0xF); t[k++] = (char)(d < 10 ? '0' + d : 'a' + d - 10); v >>= 4; } while (v); while (k) c(t[--k]); }
+    void x8(uint32_t v) { for (int sh = 28; sh >= 0; sh -= 4) { const unsigned d = (v >> sh) & 0xF; c((char)(d < 10 ? '0' + d : 'a' + d - 10)); } }
     void mm(int m) { if (m < 0) c('?'); else i(m); }
     int done() { if (b && lim > 0) b[n < lim ? n : lim - 1] = '\0'; return n; }
 };
@@ -994,6 +1038,45 @@ inline int fmtHandoffHeld(char* out, int cap, int m, uint32_t cmdId, HeldHeadAct
     return w.done();
 }
 
+// HANDOFF_OUT m=<k> cmd=<n> exec=<0|1> firstExecMs=<n|-> endMs=<n>
+// Ground truth for a hand-off: watched for 8 s after the edge / send. exec = aa8/ab8 or a cur subtype 9/10 was seen unpaused.
+inline int fmtHandoffOut(char* out, int cap, int m, uint32_t cmdId, bool exec, int firstExecMs, int endMs) {
+    detail::LogWr w(out, cap);
+    w.s("HANDOFF_OUT m="); w.mm(m);
+    w.s(" cmd="); w.u(cmdId);
+    w.s(" exec="); w.c(exec ? '1' : '0');
+    w.s(" firstExecMs="); if (exec && firstExecMs >= 0) w.i(firstExecMs); else w.c('-');
+    w.s(" endMs="); w.i(endMs);
+    return w.done();
+}
+
+// CLICK t=<tick ms> x=<n|-> y=<n|->   (one per left-button press edge; x/y are engine cursor coords, '-' when unreadable)
+inline int fmtClick(char* out, int cap, uint32_t tickMs, bool haveXy, int x, int y) {
+    detail::LogWr w(out, cap);
+    w.s("CLICK t="); w.u(tickMs);
+    w.s(" x="); if (haveXy) w.i(x); else w.c('-');
+    w.s(" y="); if (haveXy) w.i(y); else w.c('-');
+    return w.done();
+}
+
+// CMBT_FIELDS m=<k> cr520=<hex,..x12> t550=<hex> t564=<hex> t568=<hex>   (server creature, at a combat edge; '?' = unreadable)
+// Soft-combat evidence: cr520 is the CrCombat block (kCrCombatDwords dwords), t550/t564/t568 the target fields.
+constexpr int kCrCombatDwords = 12;
+inline int fmtCmbtFields(char* out, int cap, int m, const uint32_t* cr, const bool* crOk, uint32_t t550, bool ok550,
+                         uint32_t t564, bool ok564, uint32_t t568, bool ok568) {
+    detail::LogWr w(out, cap);
+    w.s("CMBT_FIELDS m="); w.mm(m);
+    w.s(" cr520=");
+    for (int i = 0; i < kCrCombatDwords; ++i) {
+        if (i) w.c(',');
+        if (cr && crOk && crOk[i]) w.x8(cr[i]); else w.c('?');
+    }
+    w.s(" t550="); if (ok550) w.x8(t550); else w.c('?');
+    w.s(" t564="); if (ok564) w.x8(t564); else w.c('?');
+    w.s(" t568="); if (ok568) w.x8(t568); else w.c('?');
+    return w.done();
+}
+
 // ROUND m=<k> n=<count> subs=<s,s,...|-> cur=<n|-> ne=<n> types=<hex,hex,...|->
 // n is the subs count (null subs or n <= 0 prints n=0 subs=-). cur < 0 prints '-'. Types are hex, zero-padded to two digits.
 inline int fmtRound(char* out, int cap, int m, const int* subs, int nSubs, int cur, int ne, const int* types, int nTypes) {
@@ -1053,14 +1136,15 @@ inline const char* verdictName(ActiveVerdict v) {
     return "?";
 }
 
-// Rules are checked in order; the first match wins.
-inline ActiveVerdict activeVerdict(const ActionBuffer& buf, const EngineView& ev, uint32_t now) {
+// Rules are checked in order; the first match wins. pauseEatenWait (ini pause_eaten_wait) adds rule 4b.
+inline ActiveVerdict activeVerdict(const ActionBuffer& buf, const EngineView& ev, uint32_t now, bool pauseEatenWait = false) {
     if (ev.actionPresent) return AV_PRESENT;                                              // 1
     if (buf.goneSinceTick == 0 || now - buf.goneSinceTick < kVanishDebounceMs) return AV_PRESENT;
     if (now - buf.activeStartTick <= kMinActiveMs) return AV_PRESENT;
     if (buf.sawExecuting) return AV_EXECUTED;                                             // 2
     if (!buf.eaten && !ev.paused) return AV_UNSEEN;                                       // 3
     if (buf.eatenUnpausedMs >= kEatenWaitMaxMs) return AV_GIVE_UP;                        // 4
+    if (pauseEatenWait && ev.paused) return AV_EATEN_WAIT;                                // 4b: the engine eats it again while paused
     if (ev.foreign || !ev.idle) return AV_EATEN_WAIT;                                     // 5
     if (buf.eatenReInjects >= kMaxEatenReInject) return AV_GIVE_UP;                       // 6
     if (now - buf.lastReInjectTick < kReInjectSpacingMs) return AV_EATEN_WAIT;            // 7

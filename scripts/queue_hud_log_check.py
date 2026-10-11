@@ -30,6 +30,9 @@ these keywords are ignored; a keyword line with a missing or malformed field is 
     for it follows; drop => deliberately not re-sent; no lifecycle)
   HANDOFF_CLEAR m=<k> cmd=<n> ne=<n> round=<n>   (counted as clear x<n> in the HANDOFFS title; no lifecycle)
   ROUND m=<k> n=<count> subs=<s,s,...|-> cur=<n|-> ne=<n> types=<hex,hex,...|->   (subs/types: '-' = empty; cur '-' = none)
+  HANDOFF_OUT m=<k> cmd=<n> exec=<0|1> firstExecMs=<n|-> endMs=<n>   (8 s ground truth per hand-off command; no lifecycle)
+  CLICK t=<tick ms> x=<n|-> y=<n|->   (one per left-button press edge)
+  CMBT_FIELDS m=<k> cr520=<hex|?,x12> t550=<hex|?> t564=<hex|?> t568=<hex|?>   (soft-combat evidence at a combat edge)
   STALE_CUR m=<k> sub=<n> since=<n> aa8=<n> ab8=<n> paused=<0|1>
   IDENT_SWAP from=<n> to=<n>   (no m=: dropped by --member)
 
@@ -46,6 +49,9 @@ Flags:
     first ROUND of m with non-empty subs= has its first subtype outside {9,10} (an attack node is ahead of the item).
   I trigger-lost (HANDOFF): active=<n> (not -) with neither HANDOFF_ONE cmd=<n> nor HANDOFF_HELD cmd=<n> act=drop in its
     window (until the next HANDOFF of that member): the active command was never re-sent.
+  J combat-edge-silent (EDGE): what=combat new=1 with no ROUND line (any member) within 1500 ms after it (T= stamps; bare
+    lines have none). The round watch is armed at every combat edge, so a silent edge means a build without that watch or
+    members whose engine state was unreadable.
 """
 from __future__ import annotations
 
@@ -88,6 +94,9 @@ FIELD_RE = {
     "sub": r"-?\d+", "since": r"-?\d+", "from": r"-?\d+", "to": r"-?\d+",
     "subs": r"-|\d+(?:,\d+)*", "hexlist": r"-|" + HEXV + r"(?:," + HEXV + r")*", "roundcur": r"-|\d+",
     "act": r"resend|drop|wait", "ms": r"\d+",
+    "firstExecMs": r"-|\d+", "endMs": r"-?\d+", "t": r"\d+", "x": r"-|-?\d+", "y": r"-|-?\d+",
+    "cr520": r"(?:[0-9a-fA-F]{8}|\?)(?:,(?:[0-9a-fA-F]{8}|\?))*", "t550": r"\?|[0-9a-fA-F]{8}",
+    "t564": r"\?|[0-9a-fA-F]{8}", "t568": r"\?|[0-9a-fA-F]{8}",
 }
 OVERRIDE = {("EDGE", "buf"): "buflist", ("VANISH", "kind"): "vanish_kind",
             ("ROUND", "types"): "hexlist", ("ROUND", "cur"): "roundcur"}
@@ -106,6 +115,9 @@ REQUIRED = {
     "HANDOFF_HELD": ("m", "cmd", "act", "ms"),
     "HANDOFF_CLEAR": ("m", "cmd", "ne", "round"),
     "ROUND": ("m", "n", "subs", "cur", "ne", "types"),
+    "HANDOFF_OUT": ("m", "cmd", "exec", "firstExecMs", "endMs"),
+    "CLICK": ("t", "x", "y"),
+    "CMBT_FIELDS": ("m", "cr520", "t550", "t564", "t568"),
     "STALE_CUR": ("m", "sub", "since", "aa8", "ab8", "paused"),
     "IDENT_SWAP": ("from", "to"),
 }
@@ -395,6 +407,18 @@ def handoff_trigger_flags(recs):
     return out
 
 
+def edge_silent_flags(recs):
+    """[(line, text)] for flag J: EDGE what=combat new=1 with no ROUND within HANDOFF_WINDOW_MS after it. Needs T= stamps."""
+    rounds = [r["t"] for r in recs if r["kw"] == "ROUND" and r["t"] is not None]
+    out = []
+    for r in recs:
+        if r["kw"] != "EDGE" or r["f"]["what"] != "combat" or r["f"]["new"] != "1" or r["t"] is None:
+            continue
+        if not any(0 <= t - r["t"] <= HANDOFF_WINDOW_MS for t in rounds):
+            out.append((r["line"], "J L%d combat edge with no ROUND within %d ms" % (r["line"], HANDOFF_WINDOW_MS)))
+    return out
+
+
 def stale_flags(recs):
     """[(line, text)] for flag E: WAIT why=cur_busy with age >= 3000 for a member that has no STALE_CUR in the window."""
     stale_members = {r["m"] for r in recs if r["kw"] == "STALE_CUR"}
@@ -410,9 +434,9 @@ def stale_flags(recs):
 
 
 def all_flags(recs):
-    """Every flag as sorted [(line, text)]: A, B, C (qj_flags) plus D, E, F, G, H, I."""
+    """Every flag as sorted [(line, text)]: A, B, C (qj_flags) plus D, E, F, G, H, I, J."""
     return sorted(qj_flags(recs) + life_flags(build_cmds(recs)) + handoff_flags(recs) + stale_flags(recs)
-                  + handoff_order_flags(recs) + handoff_trigger_flags(recs))
+                  + handoff_order_flags(recs) + handoff_trigger_flags(recs) + edge_silent_flags(recs))
 
 
 def life_line(i):
