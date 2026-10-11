@@ -1,0 +1,10 @@
+{"id":"C015","label":"verify.medium","ambiguous":false,"note":"Single-file clamp bound-order logic, checkable within 29 lines."}
+{"id":"C016","label":"verify.medium","ambiguous":false,"note":"Single-file string replacement logic, 8 lines; no memory or ABI risk."}
+{"id":"C017","label":"verify.high","ambiguous":true,"note":"Two cited rules 62 lines apart; medium's 40-line window does not cover both."}
+{"id":"C018","label":"verify.medium","ambiguous":false,"note":"Header detour count versus listed hook entries, single file, 7 lines."}
+{"id":"C019","label":"verify.high","ambiguous":false,"note":"Pointer arguments versus descriptor field reads is a calling-convention and layout claim."}
+{"id":"C020","label":"verify.high","ambiguous":true,"note":"Claim extends to other loaders outside cited place; medium scope unclear."}
+{"id":"C021","label":"verify.medium","ambiguous":false,"note":"Single-file default search path check, 3 lines."}
+{"id":"C022","label":"verify.medium","ambiguous":false,"note":"Single-file manifest kind check, 1 line, within 40 lines."}
+{"id":"C023","label":"verify.high","ambiguous":false,"note":"Symbol-to-hook binding spans QueueHud.cpp and exports.def, two files."}
+{"id":"C024","label":"verify.medium","ambiguous":false,"note":"Single-file early-return control flow, 18 lines."}

@@ -1,0 +1,8 @@
+{"id":"C033","label":"fix.sonnet","ambiguous":true,"note":"Single file, 23 lines, but label semantics for synthetic cases is judgment"}
+{"id":"C034","label":"fix.haiku","ambiguous":false,"note":"Single file, one line, mechanical description text correction"}
+{"id":"C035","label":"fix.haiku","ambiguous":false,"note":"Single file, one line, mechanical assertion update"}
+{"id":"C036","label":"fix.haiku","ambiguous":false,"note":"Single file, 13 lines, bounded condition fix"}
+{"id":"C037","label":"fix.sonnet","ambiguous":false,"note":"Shared header changes record size and ABI offsets; over 30 lines"}
+{"id":"C038","label":"fix.sonnet","ambiguous":false,"note":"35 lines exceeds 30-line cap; changes record layout"}
+{"id":"C039","label":"fix.sonnet","ambiguous":false,"note":"Concurrency redesign; failing check is not mechanical"}
+{"id":"C040","label":"fix.sonnet","ambiguous":false,"note":"Three files; rename touches multiple files; multi-file rule"}

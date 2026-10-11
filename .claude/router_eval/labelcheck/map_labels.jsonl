@@ -1,0 +1,14 @@
+{"id":"C001","label":"map.low","ambiguous":false,"note":"29-line slice helper; trivial glue under 150 lines, no hook or offset cue."}
+{"id":"C002","label":"map.low","ambiguous":false,"note":"29-line parse default helper; small glue under 150 lines, no pointer math."}
+{"id":"C003","label":"map.high","ambiguous":true,"note":"Native ring index and wrap math; rubric high names pointer math, not index math explicitly."}
+{"id":"C004","label":"map.medium","ambiguous":true,"note":"17-line test file; meaningful-tests rule vs under-150-line glue rule conflict."}
+{"id":"C005","label":"map.medium","ambiguous":true,"note":"Timeout gates runner behavior like buffer limits; decoupled-config low rule competes."}
+{"id":"C006","label":"map.low","ambiguous":false,"note":"Docs file; docs are low per rubric, 90 lines, no code semantics."}
+{"id":"C007","label":"map.medium","ambiguous":false,"note":"520-line UI state logic; no hook, offset, or concurrency cue in task."}
+{"id":"C008","label":"map.low","ambiguous":false,"note":"Generated level-table rows; rubric low covers generated or boilerplate code."}
+{"id":"C009","label":"map.high","ambiguous":false,"note":"Shared header used by three mods; rubric high applies regardless of size."}
+{"id":"C010","label":"map.high","ambiguous":false,"note":"Detour on camera update with saved original pointer; explicit hook rule."}
+{"id":"C011","label":"map.high","ambiguous":false,"note":"Fixed-offset mapping onto record struct; struct-offset math is high."}
+{"id":"C012","label":"map.high","ambiguous":false,"note":"Cross-thread shared command list; concurrency logic is high."}
+{"id":"C013","label":"map.medium","ambiguous":false,"note":"100-line parser edge-case tests; meaningful tests are medium."}
+{"id":"C014","label":"map.medium","ambiguous":true,"note":"Default slot count gates hotbar behavior; decoupled-config low rule competes."}

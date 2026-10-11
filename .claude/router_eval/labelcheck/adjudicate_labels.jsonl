@@ -1,0 +1,8 @@
+{"id":"C025","label":"adjudicate.ladder","ambiguous":false,"note":"Single-file include-path question; one prior split only, decidable from quote."}
+{"id":"C026","label":"adjudicate.ladder","ambiguous":true,"note":"Guard need depends on menu/target state outside the quoted lines."}
+{"id":"C027","label":"escalate.sonnet","ambiguous":true,"note":"Struct-size/function-pointer layout claim; no adjudicate criterion applies; ties go up."}
+{"id":"C028","label":"adjudicate.ladder","ambiguous":false,"note":"Single-file assertion-versus-comment check, decidable within the 28 lines."}
+{"id":"C029","label":"adjudicate.ladder","ambiguous":true,"note":"Off-by-one needs intended timeout semantics; one quoted line cannot settle it."}
+{"id":"C030","label":"adjudicate.ladder","ambiguous":true,"note":"Folder name truth needs code outside README; quoted line insufficient."}
+{"id":"C031","label":"adjudicate.ladder","ambiguous":false,"note":"Duplicate macro with differing values is quote-verifiable within one header."}
+{"id":"C032","label":"adjudicate.ladder","ambiguous":true,"note":"Removal depends on why entry is protected; one line gives no reason."}
