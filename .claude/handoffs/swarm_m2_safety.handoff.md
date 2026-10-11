@@ -1,13 +1,79 @@
-# Swarm M2 safety: current state (Session B, B1 done, 2026-10-10 late)
+# Swarm M2 safety: current state (Session B2 to B4, 2026-10-11)
 
-Resume next: `swarm M2 safety, Session B (B2)`. Plan: Swarm M2 safety re-scope (post phase 3d), §4 Session B onward.
+Resume next: `swarm M2 safety, Session B close (commit runner-order fix and B3b)`. Plan: Swarm M2 safety re-scope (post phase 3d), §4 Session B onward.
+
+## Session B2 to B4 (2026-10-11)
+- Bundle commits (`~/.claude/skills/deep-haiku-review/bundle`, master):
+  - `ad0b569` B3c: fix runners export `DR_SANDBOX_HANDLED=1` inside their own bwrap shim
+  - `2dcc917` B2a: `dr_wrapper_sha256`, `dr_require_home_probe`, `dr_canary_os_probe`; `DR_CLAUDE_BIN` dir bound
+  - `fc8d54e` B3a: `fix_settings` hygiene args, `claude_state` rw|ro, hide-off gate mask, 7 extra deny rules
+  - `f353b90` B2b: canary writes `wrapper_sha256`, `claude_state`, `env_hidden`, `run_dir_hidden`
+  - `b15884e` B2c: `run_map.sh` and `run_reduce.sh` call `dr_require_home_probe`
+  - `a74722a` B2d: selftests for the run gate, the canary OS probe and the bound custom binary
+- **NOT committed** (blocked, see below): runner-order fix in `engine/run_map.sh` and `engine/tools/run_reduce.sh` (the home-probe check now runs after `dr_sandbox_prefix`, so `DR_ALLOW_UNSANDBOXED=1` waives it; before the fix, both runners refused with the override set), and B3b (`templates/worker_settings.json` denies `~/.git-credentials` and `~/.claude.json`; static selftest checks for the runners and `fix_settings --self-test`).
+- Verified on a scratch copy at HEAD plus the two uncommitted pieces (`/tmp/.../scratchpad/bcheck`): quick 230/230, full 238/238. Before B3b: quick 227, full 235. Pre-fix, the new override check fails on both runners.
+- **Shared-tree conflict**: the live bundle has another session's uncommitted edits to `engine/run_map.sh`, `engine/prep.py`, `engine/merge.py`, `engine/dr_profile.py` (mtime 00:29, 2026-10-11). Its `lens_done` now calls `prep.py is-complete --lenses`, which `prep.py` does not accept, so the live chain test fails (`core-001:logic`). Not touched. The fix must be committed through the index (only my hunk) or after that session commits.
+
+## Counts (floors 128 / 203 / 211; all met)
+| Stage | Before B2 | After Wave 2 and 3 (HEAD `b15884e`) | B2d on scratch | + runner fix | + B3b |
+|---|---|---|---|---|---|
+| selftest mock | 128 | 128 | 147 | 147 | 147 |
+| real quick | 203 | 203 | 226 | 227 | 230 |
+| real full | 211 | 211 | 234 | 235 | 238 |
+
+The mock engine skips the runner section (`if kind != "real"`), so the mock count does not move with the runner checks.
+
+## B0 and B4 mutation checks (each must turn its test red)
+| ID | Mutation | Result |
+|---|---|---|
+| M-a | delete `DR_SBX+=("${H[@]}")` (runlib.sh) | FAIL `test_hygiene_checks_pass` |
+| M-b | old stub rule in `dr_is_stub` | FAIL `test_custom_non_stub_binary_is_wrapped` |
+| M-c | delete the unprimed-parent gate | mock 6 of 128 FAIL |
+| M-B2a | delete the wrong-hash `if` in `dr_require_home_probe` | quick 1 FAIL (wrong-hash row) |
+| M-B2b | `env_hidden=true` unconditional in `dr_canary_os_probe` | quick 1 FAIL (bare-bwrap control) |
+| M-B2c | delete `run_map`'s home-probe call | quick 1 FAIL (run_map WARNING row) |
+| M-B3a | delete `a += sh.hygiene_args()` in `fix_settings` | `--self-test` FAIL (hygiene placement) |
+| M-B3b | delete `~/.kube/**` from `HOME_DENY_EXTRA` | `--self-test` FAIL (deny_list) |
+| M-B3c | delete one `DR_SANDBOX_HANDLED` export (`run_fix_review.sh`) | quick 1 FAIL (static check) |
+
+- Deviation: the plan's M-B2c deletes the call in `dr_init`, but the check it names covers `run_map`'s call, so that deletion cannot turn it red. I mutated `run_map` instead. **Residual gap**: no selftest covers the `dr_init` home-probe gate.
+- The first M-a attempt applied nothing (bad grep escape) and passed; re-run with `grep -F` turned it red. The first M-B3b attempt matched two occurrences; re-run with a unique anchor.
+
+## Verification (live tree, 2026-10-11)
+- LIB tests: `test_bundle_wrapper`, `test_hygiene`, `test_invariants`, `test_sandbox`, `test_home_probe` all OK; `test_vendor_parity` OK with 2 skips (expected until Session C).
+- `run_tests.py swarm-lib`: 5 passed. `run_tests.py swarm-bundle-wrapper`: green.
+- `scripts/swarm_argv_probe.py`: rc 0, bundle and fork default argv IDENTICAL, control PASS.
+- The live real quick and full selftests are NOT green while the other session's `lens_done` edit is in place (see the shared-tree conflict above). Scratch results above are the evidence.
+
+## Deviations and residuals
+- `claude_state` lowercases its value (`RO` counts as `ro`). The `~/.claude.json` mask applies to the gate only, since the claude profile binds it on purpose.
+- The B2a worker added a dict guard around `canary.json` parsing (a JSON list gives the "no home_probe" line, not a traceback).
+- Residual: no selftest for `dr_init`'s home-probe gate (above).
+- Residual: §7 real canary not run (needs a go, cap $0.03). `claude_state` stays `rw` until it runs.
+- Residual: `/var/tmp/dr_hygiene.*` cache files are not removed at exit (unchanged from B1).
+- Harness flag: the B3a worker's report matched an instruction-pattern filter ("settings-json"). The report contained no directives; reviewed by hand.
+
+## Next
+- **Pending patch (durable copy, survives scratchpad cleanup)**: `~/.claude/swarm/backups/swarm_m2_pending_20261011.patch` (sha256 prefix `957db25f17ad92e4`, 107 lines). Base: bundle HEAD `a74722a`. Touches `dr_lib/selftest.py` (regression check + B3b static checks), `engine/run_map.sh` and `engine/tools/run_reduce.sh` (home-probe check moved after `dr_sandbox_prefix`), `templates/worker_settings.json` (two deny rules). `git -C $B apply --check <patch>` passes against the live tree now (2026-10-11); it has not been applied.
+- Verified for this patch on the scratch copy: quick 230/230, full 238/238.
+- **Session B close**: commit the patch. Preferred: stage only the patch's hunks in the index, then commit without pathspec, since `engine/run_map.sh` in the live tree also holds another session's uncommitted edits. Or apply and commit once that session commits. Blocked on the shared tree; the user has not chosen yet.
+- After the commit: run the three selftests on the live tree once the other session's `lens_done` edit is fixed, then update this section's status.
+- Then Session C (C1 scrubber in LIB, C2 forbidden union, C3 scrub in bundle), then Session D, then §7 canary with the user's go.
 
 ## Session B: B1 done (bundle `~/.claude/skills/deep-haiku-review/bundle`)
 - Bundle commits: `a42a422` baseline, `1926dcf` vendor hygiene, `6cb7c09` B1a hygiene args after the HOME tmpfs, `9441ced` B1b fail-closed gate and stub-by-`--version`, `12c5421` B1c `claude_state` rw|ro (default rw), `61dfbc8` B1d selftests and export fix.
 - Verified after B1d: mock 128/128, real quick 203/203, real full 211/211 (A0 baselines 115 / 190 / 198). `swarm-bundle-wrapper` GREEN (7/7).
 - Bugs found and fixed in B1: `dr_sandbox_gate` was missing from `export -f` (xargs children of a stub run exited 1, map stage failed). Unprimed parents (`run_map`, `run_reduce`, `canary_test`, `subagent_probe`) ran unwrapped and silent when bwrap was broken; `dr_sandbox_prefix` now runs the gate itself and exits 1.
 - Deviations from plan: B1 item 5 (`DR_SANDBOX_HANDLED=1` exported by `run_fix*.sh`) moved to B3 (its scope). `DR_CLAUDE_STATE` is env-wins in `sandbox_env`, unlike `DR_HIDE_HOME` (profile-wins). The `DR_SANDBOX=none` dry-run check now passes `DR_ALLOW_UNSANDBOXED=1`, the explicit opt-out.
-- Still open from B1: the mutation check (revert the hygiene step in a scratch copy of the bundle, the wrapper suite must go red) has NOT been run. First task of the next phase.
+- B0 mutation check (2026-10-10, scratch copy of bundle + LIB, control 7/7 OK), each mutation confirmed applied by diff:
+
+| ID | Mutation (runlib.sh) | Result |
+|---|---|---|
+| M-a | delete `DR_SBX+=("${H[@]}")` (line 144) | FAIL `test_hygiene_checks_pass` |
+| M-b | `dr_is_stub` last line -> old `DR_CLAUDE_BIN != claude` rule (line 61) | FAIL `test_custom_non_stub_binary_is_wrapped` |
+| M-c | delete the unprimed-parent gate (line 117) | mock selftest 6 of 128 FAIL, all `dr_sandbox_prefix` unprimed-caller checks |
+
+- Note: the first M-a attempt had a bad grep escape, so it applied nothing and passed; re-run with `grep -F` turned it red. Result above is the valid run.
 - Residual: `/var/tmp/dr_hygiene.*` cache files are not removed at exit (one small file per process tree).
 - Residual: `fix_settings.py` bwrap does not read `claude_state` (B3 item 1).
 
