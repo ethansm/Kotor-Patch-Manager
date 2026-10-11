@@ -1673,17 +1673,26 @@ REGISTRATION = {
 
 
 def registration_check(k: float) -> tuple[list[str], bool]:
-    """Mapped reference points and whether the overlay still registers."""
+    """Mapped reference points and whether the REGISTRATION constants still register.
+
+    fx is affine and increasing for k > 0, so every ordering and every gap (in units of
+    k) is preserved by the mapping: the verdict is decided on the virtual x values. This
+    is a constant-only check; it does not verify the engine's real widget geometry.
+    """
+    if k <= 0:
+        raise ValueError("content k must be positive")
     f = {name: fx(x, k) for name, x in REGISTRATION.items()}
     lines = [f"  {name:<34} {x:>4} -> {f[name]:7.1f}" for name, x in REGISTRATION.items()]
-    portrait = f["top_p portrait anchor"]
+    v = REGISTRATION
+    portrait = v["top_p portrait anchor"]
     ok = (
-        abs(f["top_p tabs anchor"] - f["equip_p LB_DESC right edge"]) <= 6 * k + 1e-9
-        and f["equip_p LBL_BAR5 left"] < portrait < f["equip_p LBL_BAR5 right"]
-        and f["equip_p LBL_BAR3 interior end"] < portrait < f["equip_p LBL_BAR4 interior start"]
+        abs(v["top_p tabs anchor"] - v["equip_p LB_DESC right edge"]) <= 6
+        and v["equip_p LBL_BAR5 left"] < portrait < v["equip_p LBL_BAR5 right"]
+        and v["equip_p LBL_BAR3 interior end"] < portrait < v["equip_p LBL_BAR4 interior start"]
     )
-    lines.append(f"  registration: {'OK' if ok else 'MISMATCH'} (tabs over the content's right edge; "
-                 "portrait inside LBL_BAR5 between the LBL_BAR3/LBL_BAR4 interior ends)")
+    lines.append(f"  registration: {'OK' if ok else 'MISMATCH'} (REGISTRATION constants only, NOT engine-verified; "
+                 "tabs within 6 of the content's right edge; portrait inside LBL_BAR5 between the "
+                 "LBL_BAR3/LBL_BAR4 interior ends)")
     return lines, ok
 
 
@@ -1828,11 +1837,12 @@ def main():
         f"Resolution: {args.width}x{args.height} | M = {m:.4f}"
         + ("".join(f" | {t} E_left = {e}" for t, e in sorted((frame_edges or {}).items()))),
     ]
+    reg_ok = True
     if content_k is not None:
         header.append(f"Content layer: {args.content_aspect} | k = {content_k:.4f} | content x "
                       f"{fx(0, content_k):.1f}..{fx(800, content_k):.1f} | "
                       f"{len(targets['content'])} content GUIs, excluded: {', '.join(sorted(CONTENT_EXCLUDE))}")
-        reg, _ = registration_check(content_k)
+        reg, reg_ok = registration_check(content_k)
         header += ["Overlay registration (virtual x):"] + reg
     if board_k is not None:
         header.append(f"Board layer: 4:3 | k = {board_k:.4f} | {', '.join(sorted(targets['board']))}")
@@ -1852,6 +1862,11 @@ def main():
         ] + dump
     report_path.write_text("\n".join(full_report) + "\n", encoding="utf-8")
     print(f"Report written to: {report_path}")
+
+    if not reg_ok:
+        print("ERROR: overlay registration MISMATCH (see 'Overlay registration' in the report); "
+              "refusing to deploy.", file=sys.stderr)
+        sys.exit(1)
 
     if args.deploy:
         print("\nDeploying to live override/...")
