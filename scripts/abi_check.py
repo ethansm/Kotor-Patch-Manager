@@ -138,6 +138,22 @@ def compile_and_dump_abi(
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
+def interface_identity_mismatch(golden_data: dict[str, Any], dumped_data: dict[str, Any]) -> str | None:
+    """Return an error line when the dumped interface name/major differs from the golden, else None."""
+    iface_golden = golden_data.get("interface", {})
+    iface_dumped = dumped_data.get("interface", {})
+
+    name = iface_golden.get("name", "")
+    major = iface_golden.get("major", 1)
+    tag = f"{name}@{major}"
+
+    if iface_dumped.get("name") != name or iface_dumped.get("major") != major:
+        return (
+            f"Interface mismatch: golden has {tag}, dumped has {iface_dumped.get('name')}@{iface_dumped.get('major')}"
+        )
+    return None
+
+
 def diff_abi_golden(
     golden_data: dict[str, Any],
     dumped_data: dict[str, Any],
@@ -147,17 +163,15 @@ def diff_abi_golden(
     errors: list[str] = []
 
     iface_golden = golden_data.get("interface", {})
-    iface_dumped = dumped_data.get("interface", {})
 
     name = iface_golden.get("name", "")
     major = iface_golden.get("major", 1)
     tag = f"{name}@{major}"
 
     # 1. Interface name and major
-    if iface_dumped.get("name") != name or iface_dumped.get("major") != major:
-        errors.append(
-            f"Interface mismatch: golden has {tag}, dumped has {iface_dumped.get('name')}@{iface_dumped.get('major')}"
-        )
+    mismatch = interface_identity_mismatch(golden_data, dumped_data)
+    if mismatch:
+        errors.append(mismatch)
 
     # 2. Constants validation
     consts_golden = golden_data.get("constants", {})
@@ -382,6 +396,14 @@ def main() -> int:
             continue
 
         if args.update:
+            # Refuse to rebaseline a golden from another interface's dumper (fallback to candidates[0]).
+            mismatch = interface_identity_mismatch(golden_data, dumped_data)
+            if mismatch:
+                sys.stderr.write(
+                    f"Refusing to update golden {g_path}: {mismatch} (dumper {dumper_src.name}); golden not written.\n"
+                )
+                overall_exit = 2
+                continue
             toml_content = dump_to_toml_str(dumped_data)
             g_path.write_text(toml_content, encoding="utf-8")
             print(f"Updated golden {g_path}")

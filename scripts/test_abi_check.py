@@ -12,6 +12,8 @@ Tests:
 
 from __future__ import annotations
 
+import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -112,6 +114,38 @@ class TestAbiCheck(unittest.TestCase):
             self.assertIn("append-only OK", res.stdout)
         finally:
             Path(tf_path).unlink(missing_ok=True)
+
+    def test_update_refuses_golden_without_matching_dumper(self):
+        """--update must not rewrite a golden whose interface has no dumper (fallback dumps another interface)."""
+        original = (
+            "[interface]\n"
+            'name = "k2.other"\n'
+            "major = 1\n"
+            'header = "patch_manager_mods/_shared_src/PortraitSlots.h"\n'
+            'provides = "k2.other@1"\n'
+        )
+        with tempfile.TemporaryDirectory() as td:
+            tmp_repo = Path(td)
+            abi_dir = tmp_repo / "tests" / "abi"
+            abi_dir.mkdir(parents=True)
+            # Only the portraitslots dumper exists; golden k2.other@1 has no matching dumper.
+            shutil.copy2(REPO_ROOT / "tests/abi/abi_dump_portraitslots.cpp", abi_dir / "abi_dump_portraitslots.cpp")
+            os.symlink(REPO_ROOT / "patch_manager_mods", tmp_repo / "patch_manager_mods")
+            os.symlink(REPO_ROOT / "tests/include", tmp_repo / "tests" / "include")
+            golden = abi_dir / "k2.other@1.toml"
+            golden.write_text(original, encoding="utf-8")
+
+            res = subprocess.run(
+                [sys.executable, str(self.script), "--update", "--repo", str(tmp_repo)],
+                cwd=REPO_ROOT,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=False,
+            )
+            self.assertNotEqual(res.returncode, 0)
+            self.assertIn("Refusing to update golden", res.stderr)
+            self.assertEqual(golden.read_text(encoding="utf-8"), original)
 
 
 if __name__ == "__main__":
