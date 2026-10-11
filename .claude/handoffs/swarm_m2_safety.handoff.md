@@ -10,7 +10,8 @@ Resume next: `swarm M2 safety, Session B close (commit runner-order fix and B3b)
   - `f353b90` B2b: canary writes `wrapper_sha256`, `claude_state`, `env_hidden`, `run_dir_hidden`
   - `b15884e` B2c: `run_map.sh` and `run_reduce.sh` call `dr_require_home_probe`
   - `a74722a` B2d: selftests for the run gate, the canary OS probe and the bound custom binary
-- **NOT committed** (blocked, see below): runner-order fix in `engine/run_map.sh` and `engine/tools/run_reduce.sh` (the home-probe check now runs after `dr_sandbox_prefix`, so `DR_ALLOW_UNSANDBOXED=1` waives it; before the fix, both runners refused with the override set), and B3b (`templates/worker_settings.json` denies `~/.git-credentials` and `~/.claude.json`; static selftest checks for the runners and `fix_settings --self-test`).
+- `50c05a2` runner-order fix: the home-probe check in `engine/run_map.sh` and `engine/tools/run_reduce.sh` now runs after `dr_sandbox_prefix`, so `DR_ALLOW_UNSANDBOXED=1` waives it (before: both runners refused with the override set). Plus the regression check in `dr_lib/selftest.py`. Committed through the index only; the other session's `run_map.sh` hunk is still uncommitted in the working tree.
+- **NOT committed**: B3b (`templates/worker_settings.json` denies `~/.git-credentials` and `~/.claude.json`; static selftest checks for the fix runners and `fix_settings --self-test`). Durable patch: `~/.claude/swarm/backups/swarm_m2_pending_b3b_20261011.patch` (base `50c05a2`, applies cleanly).
 - Verified on a scratch copy at HEAD plus the two uncommitted pieces (`/tmp/.../scratchpad/bcheck`): quick 230/230, full 238/238. Before B3b: quick 227, full 235. Pre-fix, the new override check fails on both runners.
 - **Shared-tree conflict**: the live bundle has another session's uncommitted edits to `engine/run_map.sh`, `engine/prep.py`, `engine/merge.py`, `engine/dr_profile.py` (mtime 00:29, 2026-10-11). Its `lens_done` now calls `prep.py is-complete --lenses`, which `prep.py` does not accept, so the live chain test fails (`core-001:logic`). Not touched. The fix must be committed through the index (only my hunk) or after that session commits.
 
@@ -54,11 +55,10 @@ The mock engine skips the runner section (`if kind != "real"`), so the mock coun
 - Harness flag: the B3a worker's report matched an instruction-pattern filter ("settings-json"). The report contained no directives; reviewed by hand.
 
 ## Next
-- **Pending patch (durable copy, survives scratchpad cleanup)**: `~/.claude/swarm/backups/swarm_m2_pending_20261011.patch` (sha256 prefix `957db25f17ad92e4`, 107 lines). Base: bundle HEAD `a74722a`. Touches `dr_lib/selftest.py` (regression check + B3b static checks), `engine/run_map.sh` and `engine/tools/run_reduce.sh` (home-probe check moved after `dr_sandbox_prefix`), `templates/worker_settings.json` (two deny rules). `git -C $B apply --check <patch>` passes against the live tree now (2026-10-11); it has not been applied.
-- Verified for this patch on the scratch copy: quick 230/230, full 238/238.
-- **Session B close**: commit the patch. Preferred: stage only the patch's hunks in the index, then commit without pathspec, since `engine/run_map.sh` in the live tree also holds another session's uncommitted edits. Or apply and commit once that session commits. Blocked on the shared tree; the user has not chosen yet.
-- After the commit: run the three selftests on the live tree once the other session's `lens_done` edit is fixed, then update this section's status.
-- Open, not swarm work: `AGENTS.md` agy backend line (Subagent Contracts, after the Claude Code policy line) was removed from the working tree after my edit. HEAD `fdf9aff` has the Claude Code line only. Decision pending: re-add the agy line (OpenCode subagents allowed, ask the user before each launch) and commit, or leave it.
+- **Session B close, remaining**: commit B3b from `~/.claude/swarm/backups/swarm_m2_pending_b3b_20261011.patch` (`git -C $B apply <patch>`, then `git -C $B commit -- templates/worker_settings.json dr_lib/selftest.py`). Run this only after the other session's uncommitted edits are committed or parked. The older combined patch `swarm_m2_pending_20261011.patch` is superseded (its runner part is `50c05a2`).
+- Verified at HEAD `50c05a2` on a clean copy (other session's files reset in the copy only): real quick 227/227, real full 235/235. B3b on scratch on top of that: quick 230/230, full 238/238.
+- After B3b lands: run the three selftests on the live tree once the other session's `lens_done` edit is fixed, then update this section's status.
+- Decided (2026-10-11): AGENTS.md stays without the agy backend line. No re-add. The Claude Code policy line at HEAD `fdf9aff` stands. Agy policy, if wanted later, is a separate decision.
 - Then Session C (C1 scrubber in LIB, C2 forbidden union, C3 scrub in bundle), then Session D, then §7 canary with the user's go.
 
 ## Session B: B1 done (bundle `~/.claude/skills/deep-haiku-review/bundle`)
