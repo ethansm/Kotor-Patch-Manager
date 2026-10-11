@@ -1,0 +1,156 @@
+{
+  "touched": [
+    {
+      "path": "patch_manager_mods/_shared_src/SelfHealUi.h",
+      "status": "M"
+    }
+  ],
+  "plan": [
+    {
+      "kind": "build",
+      "id": "build_check:companion_selfheal_src",
+      "why": [
+        "patch_manager_mods/_shared_src/SelfHealUi.h",
+        "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp"
+      ],
+      "cmd": []
+    },
+    {
+      "kind": "build",
+      "id": "build_check:queue_hud_src",
+      "why": [
+        "patch_manager_mods/_shared_src/SelfHealUi.h",
+        "patch_manager_mods/queue_hud_src/QueueHudLogic.h"
+      ],
+      "cmd": []
+    },
+    {
+      "kind": "test",
+      "id": "cpp:patch_manager_mods/companion_selfheal_src/common_contract_test.cpp",
+      "why": [
+        "patch_manager_mods/_shared_src/SelfHealUi.h",
+        "patch_manager_mods/companion_selfheal_src/common_contract_test.cpp"
+      ],
+      "cmd": []
+    },
+    {
+      "kind": "test",
+      "id": "cpp:patch_manager_mods/queue_hud_src/common_contract_test.cpp",
+      "why": [
+        "patch_manager_mods/_shared_src/SelfHealUi.h",
+        "patch_manager_mods/queue_hud_src/common_contract_test.cpp"
+      ],
+      "cmd": []
+    },
+    {
+      "kind": "test",
+      "id": "cpp:queue_hud_logic_test",
+      "why": [
+        "patch_manager_mods/_shared_src/SelfHealUi.h",
+        "patch_manager_mods/queue_hud_src/queue_hud_logic_test.cpp"
+      ],
+      "cmd": []
+    },
+    {
+      "kind": "test",
+      "id": "cpp:selfheal_ui_test",
+      "why": [
+        "patch_manager_mods/_shared_src/SelfHealUi.h",
+        "patch_manager_mods/_shared_src/selfheal_ui_test.cpp"
+      ],
+      "cmd": []
+    },
+    {
+      "kind": "static",
+      "id": "suite:check-raw-addresses",
+      "why": [
+        "touched _shared_src"
+      ],
+      "cmd": []
+    },
+    {
+      "kind": "static",
+      "id": "suite:check-shared-headers",
+      "why": [
+        "touched _shared_src"
+      ],
+      "cmd": []
+    }
+  ],
+  "gaps": [],
+  "unclassified": [],
+  "info_notes": [],
+  "results": [
+    {
+      "id": "cpp:patch_manager_mods/companion_selfheal_src/common_contract_test.cpp",
+      "kind": "cpp",
+      "status": "PASS",
+      "seconds": 3.91,
+      "reason": "",
+      "tail": "common_contract_test (companion_selfheal): 123 checks, 0 failed"
+    },
+    {
+      "id": "cpp:patch_manager_mods/queue_hud_src/common_contract_test.cpp",
+      "kind": "cpp",
+      "status": "PASS",
+      "seconds": 2.1,
+      "reason": "",
+      "tail": "common_contract_test (queue_hud): 104 checks, 0 failed"
+    },
+    {
+      "id": "cpp:queue_hud_logic_test",
+      "kind": "cpp",
+      "status": "PASS",
+      "seconds": 3.6,
+      "reason": "",
+      "tail": "queue_hud_logic_test: 6812 checks, 0 failed"
+    },
+    {
+      "id": "cpp:selfheal_ui_test",
+      "kind": "cpp",
+      "status": "PASS",
+      "seconds": 3.23,
+      "reason": "",
+      "tail": "selfheal_ui_test: 1401 checks, 0 failed"
+    },
+    {
+      "id": "suite:check-raw-addresses",
+      "kind": "suite",
+      "status": "PASS",
+      "seconds": 0.14,
+      "reason": "",
+      "tail": "WARN raw-address: stale allowlist entry 0x0052FD1E for patch_manager_mods/action_hotbar_src/ActionHotbar.cpp: the file no longer contains it\nWARN raw-address: stale allowlist entry 0x00534527 for patch_manager_mods/action_hotbar_src/ActionHotbar.cpp: the file no longer contains it\nWARN raw-address: stale allowlist entry 0x00534600 for patch_manager_mods/action_hotbar_src/ActionHotbar.cpp: the file no longer contains it\nWARN raw-address: stale allowlist entry 0x0053C5AA for patch_manager_mods/action_hotbar_src/ActionHotbar.cpp: the file no longer contains it\nWARN raw-address: stale allowlist entry 0x008529E0 for patch_manager_mods/action_hotbar_src/ActionHotbar.cpp: the file no longer contains it\nWARN raw-address: stale allowlist entry 0x008FACA0 for patch_manager_mods/action_hotbar_src/ActionHotbar.cpp: the file no longer contains it\nWARN raw-address: stale allowlist entry 0x00907340 for patch_manager_mods/action_hotbar_src/ActionHotbar.cpp: the file no longer contains it\nWARN raw-address: stale allowlist entry 0x00A7EA88 for patch_manager_mods/perf_lab_src/harness/smoke_saveevents.cpp: now covered by gameaddr::CloudSavesFlag\nWARN raw-address: stale allowlist entry 0x00A7EABC for patch_manager_mods/perf_lab_src/harness/smoke_saveevents.cpp: now covered by gameaddr::CloudSavesDir\nWARN raw-address: stale allowlist entry 0x00A7EA88 for patch_manager_mods/save_events_src/SaveEventsProvider.cpp: now covered by gameaddr::CloudSavesFlag\nWARN raw-address: stale allowlist entry 0x00A7EABC for patch_manager_mods/save_events_src/SaveEventsProvider.cpp: now covered by gameaddr::CloudSavesDir\ncheck_raw_addresses: FAIL=0 WARN=11 INFO=16 PASS=1 SKIP=0"
+    },
+    {
+      "id": "suite:check-shared-headers",
+      "kind": "suite",
+      "status": "FAIL",
+      "seconds": 0.04,
+      "reason": "exit 1",
+      "tail": "OK      copy      /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common/GuiTip.h\nOK      forwarder /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/_shared/GuiTip.h\nOK      copy      /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common/HealItems.h\nOK      forwarder /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/_shared/HealItems.h\nOK      copy      /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common/HudHost.h\nOK      forwarder /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/_shared/HudHost.h\nOK      copy      /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common/HudKit.h\nOK      forwarder /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/_shared/HudKit.h\nOK      copy      /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common/HudKitTextures.inc\nOK      forwarder /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/_shared/HudKitTextures.inc\nOK      copy      /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common/IniKit.h\nOK      forwarder /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/_shared/IniKit.h\nOK      copy      /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common/ItemRead.h\nOK      forwarder /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/_shared/ItemRead.h\nOK      copy      /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common/K2Addr.h\nOK      forwarder /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/_shared/K2Addr.h\nOK      copy      /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common/PanelSlots.h\nOK      forwarder /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/_shared/PanelSlots.h\nOK      copy      /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common/Party.h\nOK      forwarder /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/_shared/Party.h\nOK      copy      /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common/PortraitSlots.h\nOK      forwarder /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/_shared/PortraitSlots.h\nOK      copy      /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common/RangedAI.h\nOK      forwarder /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/_shared/RangedAI.h\nOK      copy      /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common/SafeRead.h\nOK      forwarder /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/_shared/SafeRead.h\nOK      copy      /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common/SaveEvents.h\nOK      forwarder /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/_shared/SaveEvents.h\nOK      copy      /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common/SceneView.h\nOK      forwarder /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/_shared/SceneView.h\nDRIFT   copy      /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common/SelfHealUi.h\nOK      forwarder /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/_shared/SelfHealUi.h\nOK      copy      /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common/StrFmt.h\nOK      forwarder /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/_shared/StrFmt.h\nOK      copy      /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common/TextFit.h\nOK      forwarder /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/_shared/TextFit.h\nOK      copy      /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common/WindowHook.h\nOK      forwarder /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/_shared/WindowHook.h\nOK      copy      /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common/test/TestHarness.h\n33 shared headers, 1 drifted"
+    },
+    {
+      "id": "build_check:queue_hud_src",
+      "kind": "build",
+      "status": "PASS",
+      "seconds": 2.7,
+      "reason": "",
+      "tail": "built 4 export(s), 2 detour function(s) present"
+    },
+    {
+      "id": "build_check",
+      "kind": "build",
+      "status": "ERROR",
+      "seconds": 0.0,
+      "reason": "build_check.py exited 1",
+      "tail": "INFO common: Common/GameAPI library ready (12.6s)\nFAIL build: companion_selfheal_src (CompanionSelfHeal): compile/link failed after 1.0s\n  | /tmp/compat-1242974-j0uui20w/kotor-tests/build/companion_selfheal_src/CompanionSelfHeal/CompanionSelfHeal.cpp: In function \u2018void {anonymous}::uiFrame(const K2PsContext*, DWORD)\u2019:\n  | /tmp/compat-1242974-j0uui20w/kotor-tests/build/companion_selfheal_src/CompanionSelfHeal/CompanionSelfHeal.cpp:882:102: error: \u2018leaderStripReserve\u2019 is not a member of \u2018shui\u2019; did you mean \u2018stripReserve\u2019?\n  |   882 |         g_hudc.stripSlot(\"companion-selfheal\", 0, K2HudRect{ geo0.x, geo0.y, geo0.w, geo0.h }, shui::leaderStripReserve(geo0), c0.btn.h, &sr);\n  |       |                                                                                                      ^~~~~~~~~~~~~~~~~~\n  |       |                                                                                                      stripReserve\nPASS build: queue_hud_src (QueueHud): built 4 export(s), 2 detour function(s) present, 2.7s\nINFO time: 2 mod(s) in 15.4s\nbuild_check: FAIL=1 WARN=0 INFO=2 PASS=1 SKIP=0"
+    }
+  ],
+  "counts": {
+    "PASS": 6,
+    "FAIL": 1,
+    "SKIP": 0,
+    "ERROR": 1
+  },
+  "wall_seconds": 19.51
+}

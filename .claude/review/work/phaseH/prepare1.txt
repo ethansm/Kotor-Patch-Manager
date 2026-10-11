@@ -1,0 +1,13 @@
+MIRROR     companion-selfheal       0.7.0-dev    -/-  needs --prepare (mirror production files, rebuild)  [CompanionSelfHeal.cpp]
+MIRROR     hud-host                 0.5.0-dev    -/-  needs --prepare (mirror production files, rebuild)  [HhDispatch.h,HudHostProvider.cpp]
+prepared companion-selfheal: mirrored CompanionSelfHeal.cpp; rebuilt
+prepared hud-host: mirrored HhDispatch.h, HudHostProvider.cpp; rebuilt
+after prepare: companion-selfheal=SWAP hud-host=SWAP
+
+Commit commands (this script never commits; run them yourself):
+  repo companion-selfheal: clean at b61dc81, nothing to commit
+  kpm  companion-selfheal: git -C /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager commit -m 'Patches/CompanionSelfHeal: companion-selfheal 0.7.0-dev (repo b61dc81)' -- 'Patches/CompanionSelfHeal/CompanionSelfHeal.cpp'
+  repo hud-host: clean at b61dc81, nothing to commit
+  kpm  hud-host: git -C /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager commit -m 'Patches/HudHost: hud-host 0.5.0-dev (repo b61dc81)' -- 'Patches/HudHost/HhDispatch.h' 'Patches/HudHost/HudHostProvider.cpp'
+
+Next: re-run with --apply (game closed)

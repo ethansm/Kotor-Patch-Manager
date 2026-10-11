@@ -1,0 +1,9 @@
+touched: patch_manager_mods/_shared_src/SelfHealUi.h
+BUILD   build_check --mod companion_selfheal_src --mod queue_hud_src   (includes SelfHealUi.h)
+TEST    cpp:patch_manager_mods/companion_selfheal_src/common_contract_test.cpp (includes SelfHealUi.h)
+TEST    cpp:patch_manager_mods/queue_hud_src/common_contract_test.cpp (includes SelfHealUi.h)
+TEST    cpp:queue_hud_logic_test (includes SelfHealUi.h)
+TEST    cpp:selfheal_ui_test   (includes SelfHealUi.h)
+STATIC  suite:check-raw-addresses, suite:check-shared-headers
+KPM     consumers after sync: CompanionSelf-Heal QueueHUD
+RESULT  PASS 6  FAIL 2  SKIP 0   (unverified: 0)   wall 17.3 s

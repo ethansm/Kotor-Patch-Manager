@@ -1,0 +1,17 @@
+SWAP       companion-selfheal       0.7.0-dev    231b5390/4c53aeca  ready: --apply  [CompanionSelfHeal.kpatch]
+SWAP       hud-host                 0.5.0-dev    7cb983b7/823a6892  ready: --apply  [HudHost.kpatch]
+
+Swapped 2 DLL(s); all LIVE; patch_config.toml and kpm_install_state.json unchanged
+id                       old md5 -> new md5     DLL
+companion-selfheal       231b5390 -> 4c53aeca    patches/companion-selfheal.dll
+hud-host                 7cb983b7 -> 823a6892    patches/hud-host.dll
+backup: /home/ethansm/.steam/steam/steamapps/common/Knights of the Old Republic II/backups/batch_swap_20261011_013446
+repo HEAD 7141a3e | KPM HEAD 8b84041
+
+Commit commands (this script never commits; run them yourself):
+  repo companion-selfheal: clean at 7141a3e, nothing to commit
+  kpm  companion-selfheal: clean at 8b84041, nothing to commit
+  repo hud-host: clean at 7141a3e, nothing to commit
+  kpm  hud-host: clean at 8b84041, nothing to commit
+
+Rollback: python3 scripts/kpm_hotswap.py --rollback batch_swap_20261011_013446

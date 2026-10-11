@@ -1,0 +1,4 @@
+INFO common: Common/GameAPI library ready (0.0s)
+PASS build: hud_host_src (HudHost): built 4 export(s), 3 detour function(s) present, 0.6s
+INFO time: 1 mod(s) in 0.7s
+build_check: FAIL=0 WARN=0 INFO=2 PASS=1 SKIP=0

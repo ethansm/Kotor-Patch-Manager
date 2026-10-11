@@ -1,0 +1,17 @@
+MIRROR     hud-host                 0.5.0-dev    -/-  needs --prepare (mirror production files, rebuild)  [HudHostProvider.cpp]
+MIRROR     companion-selfheal       0.7.0-dev    -/-  needs --prepare (mirror production files, rebuild)  [CompanionSelfHeal.cpp]
+MIRROR     action-hotbar            1.3.0-dev    -/-  needs --prepare (mirror production files, rebuild)  [ActionHotbar.cpp]
+prepared hud-host: mirrored HudHostProvider.cpp; rebuilt
+prepared companion-selfheal: mirrored CompanionSelfHeal.cpp; rebuilt
+prepared action-hotbar: mirrored ActionHotbar.cpp; rebuilt
+after prepare: hud-host=SWAP companion-selfheal=SWAP action-hotbar=SWAP
+
+Commit commands (this script never commits; run them yourself):
+  repo hud-host: clean at 9cc65d9, nothing to commit
+  kpm  hud-host: git -C /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager commit -m 'Patches/HudHost: hud-host 0.5.0-dev (repo 9cc65d9)' -- 'Patches/HudHost/HudHostProvider.cpp'
+  repo companion-selfheal: clean at 9cc65d9, nothing to commit
+  kpm  companion-selfheal: git -C /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager commit -m 'Patches/CompanionSelfHeal: companion-selfheal 0.7.0-dev (repo 9cc65d9)' -- 'Patches/CompanionSelfHeal/CompanionSelfHeal.cpp'
+  repo action-hotbar: clean at 9cc65d9, nothing to commit
+  kpm  action-hotbar: git -C /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager commit -m 'Patches/ActionHotbar: action-hotbar 1.3.0-dev (repo 9cc65d9)' -- 'Patches/ActionHotbar/ActionHotbar.cpp'
+
+Next: re-run with --apply (game closed)
