@@ -175,16 +175,28 @@ static void writeIni(const std::vector<std::string>& lines, const char* table) {
 static std::string fileText(const char* name) { std::string s; if (FILE* f = fopen(name, "r")) { char b[512]; while (fgets(b, sizeof b, f)) s += b; fclose(f); } return s; }
 static std::string readLog() { return fileText("levelup_override_log.txt"); }
 static void clearLog() { luoHostLogReset("levelup_override_log.txt"); }
+// Start of a log line's body: skips the old `[tick] ` prefix, or KpLog's fallback prefix `<tick> <mod>/<channel> [ERR |WARN ]`, then spaces.
+static size_t logBodyStart(const std::string& l) {
+    size_t p = 0;
+    if (!l.empty() && l[0] == '[') { size_t q = l.find("] "); if (q != std::string::npos) p = q + 2; }
+    else if (!l.empty() && isdigit((unsigned char)l[0])) {
+        size_t q = l.find(' '), r = q == std::string::npos ? q : l.find(' ', q + 1);
+        if (r != std::string::npos && l.find('/', q) < r) {
+            p = r + 1;
+            if (l.compare(p, 4, "ERR ") == 0) p += 4; else if (l.compare(p, 5, "WARN ") == 0) p += 5;
+        }
+    }
+    while (p < l.size() && l[p] == ' ') ++p;
+    return p;
+}
 static bool logHas(const char* x) { return readLog().find(x) != std::string::npos; }
-// Per log line after the `[tick] ` prefix and leading spaces (the contract in saves.toml; anchor with ^), case-sensitive ECMAScript.
+// Per log line after the tick/KpLog prefix and leading spaces (the contract in saves.toml; anchor with ^), case-sensitive ECMAScript.
 static bool logRe(const std::string& re) {
     std::regex rx;
     try { rx = std::regex(re, std::regex::ECMAScript); } catch (std::regex_error&) { CHECK(false, "bad regex %s", re.c_str()); return false; }
     std::istringstream is(readLog()); std::string l;
     while (std::getline(is, l)) {
-        size_t p = 0;
-        if (!l.empty() && l[0] == '[') { size_t q = l.find("] "); if (q != std::string::npos) p = q + 2; }
-        while (p < l.size() && l[p] == ' ') ++p;
+        size_t p = logBodyStart(l);
         if (std::regex_search(l.substr(p), rx)) return true;
     }
     return false;
@@ -195,9 +207,7 @@ static int logCount(const std::string& re) {   // number of log lines matching (
     try { rx = std::regex(re, std::regex::ECMAScript); } catch (std::regex_error&) { CHECK(false, "bad regex %s", re.c_str()); return 0; }
     std::istringstream is(readLog()); std::string l; int n = 0;
     while (std::getline(is, l)) {
-        size_t p = 0;
-        if (!l.empty() && l[0] == '[') { size_t q = l.find("] "); if (q != std::string::npos) p = q + 2; }
-        while (p < l.size() && l[p] == ' ') ++p;
+        size_t p = logBodyStart(l);
         if (std::regex_search(l.substr(p), rx)) ++n;
     }
     return n;

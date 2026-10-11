@@ -39,7 +39,7 @@ EXPECT_DECISIONS = {
 
 def build(exe, m32=False):
     cmd = ["g++", "-std=c++17", "-O1", "-Wall", "-Wextra"] + (["-m32"] if m32 else []) + [
-        "-I", os.path.join(HERE, "stub"), "-I", os.path.join(HERE, "stub", "_shared"), "-I", os.path.join(HERE, "stub", "inc"), "-include", os.path.join(HERE, "stub", "m3_win_shim.h"), "-o", exe, SRC]
+        "-I", os.path.join(HERE, "stub"), "-I", os.path.join(HERE, "stub", "_shared"), "-I", os.path.join(HERE, "stub", "inc"), "-include", os.path.join(HERE, "stub", "m3_win_shim.h"), "-I", os.path.expanduser("~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common"), "-o", exe, SRC]
     r = subprocess.run(cmd, capture_output=True, text=True)
     return r
 
