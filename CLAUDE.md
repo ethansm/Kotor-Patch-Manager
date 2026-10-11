@@ -6,7 +6,7 @@
 - Ghidra server (status, export, audit) → `openkotor-ghidra-server` skill
 - Live mod logs → `kotor2-log-analysis` skill (`python3 scripts/kotor2_logs.py status | check <log> [--new]`); NEVER `cat`/`tail`/`grep` raw `.txt` logs
 - Crash/freeze/hang → `kotor2-crash-triage` skill
-- Plan handoff / context clear → `/plan-handoff` skill; after clear run `python3 scripts/plan_manager.py resume`. Stay in plan mode for "Clear context and approve"; do NOT `ExitPlanMode` early. Mark phases with `python3 scripts/plan_manager.py mark-done <phase> [--state <STATE>] [--commit <sha>] [--notes <txt>]` (auto-generates handoff & prints Saved State banner); NEVER sed the master plan. Both `/plan-handoff` and `plan_manager.py resume|handoff` accept shorthand (`25 §12`, `24:T6`, `19e`, `T5e`). Always output the `### Saved State` block upon step completion so context clearing is immediately actionable. Next actions ending turns should suggest concrete `/plan-handoff <batch>` targets rather than generic reviews.
+- Plan handoff / context clear → `/plan-handoff` skill; after clear run `python3 scripts/plan_manager.py resume`. Stay in plan mode for "Clear context and approve"; do NOT `ExitPlanMode` early. Mark phases with `python3 scripts/plan_manager.py mark-done <phase> [--state <STATE>] [--commit <sha>] [--notes <txt>]` (auto-generates handoff & prints Saved State banner); NEVER sed the master plan. Both `/plan-handoff` and `plan_manager.py resume|handoff` accept shorthand (`25 §12`, `24:T6`, `19e`, `T5e`). Always output the 4-section protocol (`### Actions Completed`, `### What Now Works`, `### Agents Used`, `### Saved State`) upon step completion so context clearing is immediately actionable. Next actions ending turns should suggest concrete `/plan-handoff <batch>` targets rather than generic reviews.
 
 ## Upstream Issue & PR Notification Check
 At session start or before mod work, run `python3 scripts/check_kpm_updates.py --quiet` to check `LaneDibello/Kotor-Patch-Manager` (silent when nothing new). If it prints replies, alert the user with issue number, author, and preview.
@@ -26,6 +26,7 @@ At session start or before mod work, run `python3 scripts/check_kpm_updates.py -
 - Search: `rg`; repo map: `python3 scripts/generate_repo_map.py [dir]`; docs: `python3 scripts/search_docs.py "<query>"`; subagent pack: `npx repomix [dir]`
 - Logging: probe builds log richly (never guess blind live); release tightening rules live in `kotor2-kpm-install`.
 - Compat check: after touching `_shared_src` or a library, run `python3 scripts/compat_check.py <files>`
+- Scoped tests: always scope `run_tests.py` (e.g. `run_tests.py <name|filter>` or `-k <filter>`; bare `run_tests.py` runs all 156 repo suites >60s). Positional filter names and suite IDs are supported.
 
 ## Context Budget & Read Policy (Anti-Bloat Standards)
 - **Zero-Read / Self-Contained Plans**: In Plan Mode, inline the exact 5-10 line struct/interface or macro snippets directly in the plan. Never tell the executor to "Read first: `LargeHeader.h`".
@@ -38,5 +39,7 @@ At session start or before mod work, run `python3 scripts/check_kpm_updates.py -
   - Use native file edit tools (`Edit`/`Write`) instead of multi-line Python heredocs in Bash when modifying files.
 
 ## Subagent Contracts (supersede the ADHD style for subagents)
-Brief = `Contract: worker|recon` + `Write Scope: <globs>` + output of `python3 scripts/agent_contract.py print worker|recon`.
-Order: worker CREATED,MODIFIED,TESTS,NOTES,STATUS · recon OUTPUT,EVIDENCE,FINDING,OPEN,VERDICT. Verify: `agent_contract.py snapshot` before launch, `agent_contract.py check --scope <globs> -` after.
+- See `patch_manager_mods/SUBAGENT_ROLES.md` for full role catalog, backend routing, and contract specs.
+- Brief = `Contract: worker|recon` + `Write Scope: <globs>` + output of `python3 scripts/agent_contract.py print worker|recon`.
+- **Backend policy (Claude Code)**: Do not use OpenCode subagents (`oc-subagent`, `oc-flow`, `oc-free`, `oc-local`) unless the user explicitly asks for them in Claude Code. Default to the Haiku swarm (parallel `model: haiku` Agent subagents).
+- Order: worker CREATED,MODIFIED,TESTS,NOTES,STATUS · recon OUTPUT,EVIDENCE,FINDING,OPEN,VERDICT. Verify: `agent_contract.py snapshot` before launch, `agent_contract.py check --scope <globs> -` after.

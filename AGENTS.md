@@ -3,6 +3,12 @@
 ## KPM install
 - Run `python3 scripts/kpm_status.py` first; it gives one verdict per mod.
 - Follow `patch_manager_mods/BUILD_AND_INSTALL.md` (gate, `kpm_hotswap.py --prepare`, `--apply`).
+- **Two-Stage Gate Flow**: Source gate (`pre_install_gate.sh --skip-default --mod <x>_src`) -> Prepare (`kpm_hotswap.py --prepare`) -> Full verification gate (`pre_install_gate.sh --mod <x>_src`) -> Apply (`--apply`).
+- **Verify After Fix & Gate Invariant (CRITICAL)**:
+  - NEVER dismiss a test or gate failure as "pre-existing" or "expected" without an explicit written waiver. Gate failure is a hard stop.
+  - Rebuilding `.kpatch` files via `--prepare` REQUIRES re-running `pre_install_gate.sh` to obtain a fresh `GATE PASS` before `--apply`.
+  - Re-verify immediately after every edit to code, manifests, or allowlists before proceeding to downstream steps.
+  - NEVER dump raw addresses into `raw_addresses.toml` without prior lookup via `python3 scripts/query_ghidra.py address <hex>`.
 - Never use KPatchLauncher for a change that can be hot-swapped.
 - Never run two installers at once; commit with explicit paths only.
 - Ask the user for GO before `kpm_hotswap.py --apply` (game closed).
@@ -37,12 +43,16 @@ When starting a new session or beginning mod work:
 - **Update Compatibility Check:** after touching `_shared_src` or a library, run `python3 scripts/compat_check.py <files>` (traces transitive dependents, contract tests, and mod builds; doc 22).
 
 ## Context Management & Multi-Session Plan Mode Handoffs
-- **Feature-Scoped Handoffs (Zero Collision)**: Concurrent sessions in the same worktree must track their state through their specific master plan doc (e.g. `22_compat_check_plan.md`, `33_ui_queue_hotbar_fixes.md`).
+- **Feature-Scoped Handoffs (Zero Collision)**: Concurrent sessions in the same worktree must track their state through their specific master plan doc (e.g. `22_compat_check_plan.md`, `34_npc_diversity_dispatcher.md`).
+- **NEVER Bare Resume**: In concurrent worktrees, NEVER run bare `resume`, bare `python3 scripts/plan_manager.py resume`, or bare `agy-resume`. Bare resume falls back to `.claude/active_plan.txt` which collides across concurrent sessions. ALWAYS pass `<doc|phase>` (e.g. `resume 34`, `agy-resume 34`, `resume C4`).
+- **Relaunch vs Clear Flow**:
+  - *If exiting to shell (`/exit` / `Ctrl+D`)*: Run `agy-resume <doc|phase>` from terminal to boot directly into the scoped plan.
+  - *If staying inside agy (`/clear`)*: Type `/clear`, then enter `python3 scripts/plan_manager.py resume <doc|phase>` (or `resume <doc|phase>`). Never run `agy-resume` inside an active `agy` session to avoid nested CLI processes.
 - Before context clearing: run `/plan-handoff <doc|phase>` (or `python3 scripts/plan_manager.py handoff <doc|phase>`). This writes `.claude/handoffs/<plan_stem>.handoff.md` without clobbering concurrent sessions.
-- On fresh session startup after context clear: run `python3 scripts/plan_manager.py resume <doc|phase>` (e.g. `resume U3`, `resume 22`, `resume 33`) to instantly bootstrap that specific feature's state and scoped handoff direction (<200 tokens).
+- On fresh session startup after context clear: run `python3 scripts/plan_manager.py resume <doc|phase>` (e.g. `resume U3`, `resume 22`, `resume 34`) to instantly bootstrap that specific feature's state and scoped handoff direction (<200 tokens).
 - Query all active projects: `python3 scripts/plan_manager.py list` shows progress and next phase across all plans in the worktree.
 - Mark completed phases via `python3 scripts/plan_manager.py mark-done <phase> [--state <STATE>] [--commit <sha>] [--notes <txt>]` (auto-resolves target plan doc from `<phase>`, auto-generates the scoped handoff, and prints the `=== SAVED STATE (Safe to /clear) ===` banner; NEVER manually sed/grep the master plan doc).
-- **End-of-Step Saved State Protocol**: When concluding a step or milestone, always include a `### Saved State` section detailing landed commit(s), plan-scoped handoff path, safe-to-clear confirmation, and the exact next resume command (`resume <phase>`) so the user never has to ask if state was saved. For `### Agents Used`, paste the table from `python3 scripts/agent_usage.py --since <step start ISO8601>` (use `--all` if more than 5 agents), then add one line per agent: short id, what it did, and PASS/FAIL contract status.
+- **End-of-Step Output Protocol**: When concluding a step or milestone, always structure output into the 4 explicit sections: `### Actions Completed`, `### What Now Works`, `### Agents Used`, and `### Saved State` (detailing landed commit(s), plan-scoped handoff path, safe-to-clear confirmation, and the exact next resume command `resume <phase>` or `agy-resume <phase>`). For `### Agents Used`, paste the table from `python3 scripts/agent_usage.py --since <step start ISO8601>` (use `--all` if more than 5 agents), then add one line per agent: short id, what it did, and PASS/FAIL contract status.
 
 ## Context Budget & Read Policy (Anti-Bloat Standards)
 - **Zero-Read / Self-Contained Plans**: In Plan Mode, inline the exact 5-10 line struct/interface or macro snippets directly in the plan. Never tell the executor to "Read first: `LargeHeader.h`".
@@ -57,6 +67,7 @@ When starting a new session or beginning mod work:
 ## Subagent Contracts (supersede the ADHD style for subagents)
 - See `patch_manager_mods/SUBAGENT_ROLES.md` for full role catalog, backend routing, and contract specs.
 - Brief = `Contract: worker|recon` + `Write Scope: <globs>` + output of `python3 scripts/agent_contract.py print worker|recon`.
+- **Backend policy (Claude Code)**: Do not use OpenCode subagents (`oc-subagent`, `oc-flow`, `oc-free`, `oc-local`) unless the user explicitly asks for them in Claude Code. Default to the Haiku swarm (parallel `model: haiku` Agent subagents).
 - Order: worker CREATED,MODIFIED,TESTS,NOTES,STATUS · recon OUTPUT,EVIDENCE,FINDING,OPEN,VERDICT. Verify: `agent_contract.py snapshot` before launch, `agent_contract.py check --scope <globs> -` after.
 
 ## AI Agent Output Style (`i-have-adhd`)
@@ -78,4 +89,5 @@ When in plan mode (`plan` agent / `oc-flow start`), subagents MUST output an exh
 - **NEVER Poll ManageTask, Logs, or ps:** If a command demotes to a background task (`task-XXX`), NEVER call `ManageTask(status task-XXX)`, NEVER repeatedly `view_file` on `.system_generated/tasks/task-*.log`, and NEVER run `ps aux | grep ...` to monitor it. Reading task logs before completion is polling.
 - **Yield the Turn on Background Tasks:** If you have no parallel file edits or reading to perform while a background task runs, STOP calling tools and end your turn immediately with a one-line status notice. Antigravity's reactive wakeup listener will automatically resume you upon completion.
 - **No Polling Schedules:** Do NOT call `Schedule(30s)` or recurring timers to check on background tasks; wait for reactive task completion messages.
-- **Execute CLI Prompts Directly:** If the user's prompt begins with or consists of a console command (e.g. `python3 scripts/...`, `./scripts/...`, `git ...`), immediately execute it via `run_command` on turn 1 without asking for confirmation or explaining the command.
+- **Scoped Test Execution:** NEVER run bare `python3 scripts/run_tests.py` without a filter. Bare runs execute all 156 repository suites (>60s, background detach). Always scope test runs to the active feature (e.g. `python3 scripts/run_tests.py <name|filter>` or `-k <filter>`). Positional arguments (e.g. `run_tests.py suite:check-hook-bytes`, `run_tests.py diversity`) are supported.
+- **Execute CLI Prompts Directly:** If the user's prompt begins with or consists of a console command (e.g. `python3 scripts/...`, `./scripts/...`, `git ...`, `oc-subagent ...`, `oc-flow ...`, `python3 scripts/plan_manager.py delegate ...`), immediately execute it via `run_command` on turn 1 without asking for confirmation or explaining the command.
