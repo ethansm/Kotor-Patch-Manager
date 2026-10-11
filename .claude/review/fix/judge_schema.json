@@ -1,0 +1,71 @@
+{
+ "additionalProperties": false,
+ "properties": {
+  "improve_notes": {
+   "type": "string"
+  },
+  "per_candidate": {
+   "items": {
+    "additionalProperties": false,
+    "properties": {
+     "defect_fixed": {
+      "enum": [
+       "yes",
+       "partial",
+       "no"
+      ],
+      "type": "string"
+     },
+     "label": {
+      "enum": [
+       "A",
+       "B",
+       "C"
+      ],
+      "type": "string"
+     },
+     "risks": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array"
+     }
+    },
+    "required": [
+     "label",
+     "defect_fixed",
+     "risks"
+    ],
+    "type": "object"
+   },
+   "type": "array"
+  },
+  "pick": {
+   "enum": [
+    "A",
+    "B",
+    "C",
+    "none"
+   ],
+   "type": "string"
+  },
+  "ranking": {
+   "items": {
+    "enum": [
+     "A",
+     "B",
+     "C"
+    ],
+    "type": "string"
+   },
+   "type": "array"
+  }
+ },
+ "required": [
+  "pick",
+  "ranking",
+  "per_candidate",
+  "improve_notes"
+ ],
+ "type": "object"
+}

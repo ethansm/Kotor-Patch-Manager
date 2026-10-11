@@ -1,0 +1,138 @@
+{
+ "additionalProperties": false,
+ "properties": {
+  "checks": {
+   "additionalProperties": false,
+   "properties": {
+    "boundary_change": {
+     "type": "boolean"
+    },
+    "hook_abi_risk": {
+     "type": "boolean"
+    },
+    "regression_risk": {
+     "type": "boolean"
+    },
+    "scope_creep": {
+     "type": "boolean"
+    },
+    "unchecked_returns": {
+     "type": "boolean"
+    },
+    "weakened_tests": {
+     "type": "boolean"
+    }
+   },
+   "required": [
+    "regression_risk",
+    "scope_creep",
+    "weakened_tests",
+    "hook_abi_risk",
+    "unchecked_returns",
+    "boundary_change"
+   ],
+   "type": "object"
+  },
+  "issues": {
+   "items": {
+    "additionalProperties": false,
+    "properties": {
+     "description": {
+      "type": "string"
+     },
+     "severity": {
+      "enum": [
+       "blocker",
+       "major",
+       "minor"
+      ],
+      "type": "string"
+     }
+    },
+    "required": [
+     "severity",
+     "description"
+    ],
+    "type": "object"
+   },
+   "type": "array"
+  },
+  "per_finding": {
+   "items": {
+    "additionalProperties": false,
+    "properties": {
+     "defect_fixed": {
+      "enum": [
+       "yes",
+       "partial",
+       "no"
+      ],
+      "type": "string"
+     },
+     "finding_id": {
+      "type": "string"
+     },
+     "why": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "finding_id",
+     "defect_fixed",
+     "why"
+    ],
+    "type": "object"
+   },
+   "type": "array"
+  },
+  "quotes": {
+   "items": {
+    "additionalProperties": false,
+    "properties": {
+     "file": {
+      "type": "string"
+     },
+     "line": {
+      "type": "integer"
+     },
+     "text": {
+      "minLength": 1,
+      "type": "string"
+     }
+    },
+    "required": [
+     "file",
+     "line",
+     "text"
+    ],
+    "type": "object"
+   },
+   "type": "array"
+  },
+  "revise_instructions": {
+   "type": "string"
+  },
+  "task_id": {
+   "pattern": "^T[0-9a-f]{10}$",
+   "type": "string"
+  },
+  "verdict": {
+   "enum": [
+    "accept",
+    "revise",
+    "reject"
+   ],
+   "type": "string"
+  }
+ },
+ "required": [
+  "task_id",
+  "verdict",
+  "per_finding",
+  "checks",
+  "issues",
+  "quotes",
+  "revise_instructions"
+ ],
+ "type": "object"
+}

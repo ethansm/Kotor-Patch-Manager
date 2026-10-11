@@ -1,0 +1,124 @@
+{
+ "additionalProperties": false,
+ "properties": {
+  "files_changed": {
+   "items": {
+    "type": "string"
+   },
+   "type": "array"
+  },
+  "findings": {
+   "items": {
+    "additionalProperties": false,
+    "properties": {
+     "actual_lines": {
+      "type": "string"
+     },
+     "finding_id": {
+      "type": "string"
+     },
+     "note": {
+      "type": "string"
+     },
+     "status": {
+      "enum": [
+       "fixed",
+       "not-fixable",
+       "not-reproducible",
+       "already-fixed",
+       "needs-wider-scope"
+      ],
+      "type": "string"
+     }
+    },
+    "required": [
+     "finding_id",
+     "status",
+     "actual_lines",
+     "note"
+    ],
+    "type": "object"
+   },
+   "type": "array"
+  },
+  "location_quotes": {
+   "items": {
+    "additionalProperties": false,
+    "properties": {
+     "file": {
+      "type": "string"
+     },
+     "line": {
+      "type": "integer"
+     },
+     "text": {
+      "minLength": 1,
+      "type": "string"
+     }
+    },
+    "required": [
+     "file",
+     "line",
+     "text"
+    ],
+    "type": "object"
+   },
+   "type": "array"
+  },
+  "needs_live_check": {
+   "type": "boolean"
+  },
+  "not_fixable_reason": {
+   "type": "string"
+  },
+  "rationale": {
+   "minLength": 10,
+   "type": "string"
+  },
+  "risk": {
+   "enum": [
+    "low",
+    "medium",
+    "high"
+   ],
+   "type": "string"
+  },
+  "scope_request": {
+   "additionalProperties": false,
+   "properties": {
+    "files": {
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "reason": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "files",
+    "reason"
+   ],
+   "type": "object"
+  },
+  "task_id": {
+   "pattern": "^T[0-9a-f]{10}$",
+   "type": "string"
+  },
+  "test_plan": {
+   "type": "string"
+  }
+ },
+ "required": [
+  "task_id",
+  "findings",
+  "files_changed",
+  "rationale",
+  "test_plan",
+  "risk",
+  "needs_live_check",
+  "location_quotes"
+ ],
+ "type": "object"
+}

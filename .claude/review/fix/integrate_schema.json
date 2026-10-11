@@ -1,0 +1,101 @@
+{
+ "additionalProperties": false,
+ "properties": {
+  "batch": {
+   "pattern": "^batch_[0-9]{2}$",
+   "type": "string"
+  },
+  "bisect": {
+   "items": {
+    "additionalProperties": false,
+    "properties": {
+     "culprit_task_id": {
+      "type": "string"
+     },
+     "evidence": {
+      "type": "string"
+     },
+     "failing_gate": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "failing_gate",
+     "culprit_task_id",
+     "evidence"
+    ],
+    "type": "object"
+   },
+   "type": "array"
+  },
+  "gates_run": {
+   "items": {
+    "additionalProperties": false,
+    "properties": {
+     "cmd": {
+      "type": "string"
+     },
+     "exit_code": {
+      "type": "integer"
+     },
+     "summary": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "cmd",
+     "exit_code",
+     "summary"
+    ],
+    "type": "object"
+   },
+   "type": "array"
+  },
+  "notes": {
+   "type": "string"
+  },
+  "series": {
+   "items": {
+    "additionalProperties": false,
+    "properties": {
+     "action": {
+      "enum": [
+       "keep",
+       "drop",
+       "modified"
+      ],
+      "type": "string"
+     },
+     "attempt": {
+      "type": "integer"
+     },
+     "reason": {
+      "type": "string"
+     },
+     "resolved_patch": {
+      "type": "string"
+     },
+     "task_id": {
+      "pattern": "^T[0-9a-f]{10}$",
+      "type": "string"
+     }
+    },
+    "required": [
+     "task_id",
+     "attempt",
+     "action",
+     "reason"
+    ],
+    "type": "object"
+   },
+   "type": "array"
+  }
+ },
+ "required": [
+  "batch",
+  "series",
+  "gates_run",
+  "notes"
+ ],
+ "type": "object"
+}
