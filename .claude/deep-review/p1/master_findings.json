@@ -1,0 +1,483 @@
+{
+ "cost": {
+  "attempts_total": 0,
+  "basis": "cli_reported_total_cost_usd (the only figure used for budgets and decisions)",
+  "calls": 4,
+  "calls_with_cli_cost": 4,
+  "cli_reported_total_cost_usd": 0.033213,
+  "estimate": {
+   "calls_with_usage": 4,
+   "estimated_api_equivalent_usd": 0.013931,
+   "label": "ESTIMATE ONLY: illustrative list rates, never used for a budget or a decision",
+   "rate_model": "haiku-5.5",
+   "rates_usd_per_mtok": {
+    "gt_100k": {
+     "cache_read": 0.05,
+     "cache_write_5m": 0.625,
+     "input": 0.5,
+     "output": 2.5
+    },
+    "le_100k": {
+     "cache_read": 0.01,
+     "cache_write_5m": 0.125,
+     "input": 0.1,
+     "output": 0.5
+    }
+   },
+   "requests_over_100k": 0
+  },
+  "reduce_calls": 1,
+  "reduce_cli_reported_total_cost_usd": 0.003931,
+  "tokens": {
+   "cache_creation": 88965,
+   "cache_read": 276422,
+   "input": 22,
+   "output": 88
+  }
+ },
+ "coverage_passed": true,
+ "dedupe": {
+  "duplicates_folded": 1,
+  "groups": 8
+ },
+ "findings": [
+  {
+   "category": "logic",
+   "cluster": "C-b2a4f1e2",
+   "cluster_size": 1,
+   "commits": [
+    "22b56b4"
+   ],
+   "confidence": "medium",
+   "dedupe_group": "D-b2a4f1e2",
+   "dedupe_rep": "ba03658d665e",
+   "dedupe_size": 1,
+   "evidence": "Rows 3, 538 and 539 return *n = 0 and nullptr on line 592, meaning no animations. The old animLen (old lines 594-596) returned false when the name was not found. The new code (lines 596-601) returns true and sets *len = 2.0f in every case, including when t is null or n is 0: \"*len = 2.0f; // Safe 2.0s fallback for unmapped supermodels/animations\". The caller at line 762 is \"else if (!animLen(s, name, &len)) { dlogf(\\\"flourish: '%s' not in table for row %d\\\"...); return false; }\", and that false path is now unreachable.",
+   "files": [
+    "patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp"
+   ],
+   "id": "ba03658d665e",
+   "lines": "592-601",
+   "packet_ids": [
+    "code-001"
+   ],
+   "reduce_cited_lines_checked": "patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp:581-602, 757-773",
+   "reduce_reason": "Confirmed that animTable() returns nullptr with n=0 for rows 3, 538 and 539 (EquipCharPreview.cpp:592), and that animLen() now returns true with *len=2.0f on every path (lines 596-601). The caller at line 762 therefore never takes its 'not in table' branch, so unmapped flourishes now play with a 2.0s guess. The claimed regression from the old code (which returned false) cannot be checked in this snapshot because the old lines are not present. Whether playing a clip the supermodel may lack is harmful is unverified, so this is a behaviour change worth review rather than a proven defect.",
+   "root_cause": "animLen() was changed to return true with a 2.0s default for every name, which removes the caller's 'not in table' rejection path for rows with no static animation list.",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check the flourish scheduler around line 762 and the rows that map to animTable returning nullptr or n=0. Confirm whether any flourish is now scheduled on rows 3, 538 or 539, or on unmapped supermodels, that previously was skipped. Then decide whether the 2.0 s default should apply only when the row has a table, or the function should keep returning false.",
+   "verification": "downgraded"
+  },
+  {
+   "category": "logic",
+   "cluster": "C-d0a55a6d",
+   "cluster_size": 2,
+   "commits": [
+    "22b56b4"
+   ],
+   "confidence": "high",
+   "dedupe_group": "D-d0a55a6d",
+   "dedupe_rep": "8cdf5396acc9",
+   "dedupe_size": 2,
+   "evidence": "Line 709 says: \"a failed rebuild below leaves the old head: the tick toggle block re-attaches to it\". But the new lines 711-713 call destroyCreature(s, \"character change\") before allocCreature/readApp/gate checks. destroyCreature (lines 524-534) frees the creature and sets s->creature = nullptr, s->built = false, s->real = 0. So any later failure (allocCreature at 714, readApp at 716, gate at 724, vtable check at 727) returns false with no old head left, contradicting the comment.",
+   "files": [
+    "patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp"
+   ],
+   "id": "8cdf5396acc9",
+   "lines": "709-713",
+   "packet_ids": [
+    "code-001"
+   ],
+   "root_cause": "The character-change branch in the preview build path calls destroyCreature() before the allocation, readApp and gate checks, so any later failure or zero gate leaves the panel with no creature and no rebuild.",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Read the tick toggle block that uses helmApplied (around lines 680-705 and the tick caller of buildPreview). Confirm what it does when s->creature is null after a failed buildPreview. Then either update the comment or move destroyCreature after the readApp/gate checks so a failure keeps the old creature.",
+   "verification": "unverified"
+  },
+  {
+   "category": "logic",
+   "cluster": "C-d0a55a6d",
+   "cluster_size": 2,
+   "commits": [
+    "22b56b4"
+   ],
+   "confidence": "medium",
+   "dedupe_group": "D-d0a55a6d",
+   "dedupe_rep": "8cdf5396acc9",
+   "dedupe_size": 2,
+   "evidence": "if (s->creature && s->real != real) { destroyCreature(s, \"character change\"); } is placed before the gate check \"if (!gate) { logf(\"build: gate 009f42b4 is zero, skipping\"); return false; }\" at line 724. When the gate is zero, the old preview is torn down and nothing is rebuilt, so the panel goes blank. Before this change the old creature stayed in place when the build was skipped.",
+   "files": [
+    "patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp"
+   ],
+   "id": "8f21ec108c65",
+   "lines": "711-713",
+   "packet_ids": [
+    "code-001"
+   ],
+   "root_cause": "The character-change branch in the preview build path calls destroyCreature() before the allocation, readApp and gate checks, so any later failure or zero gate leaves the panel with no creature and no rebuild.",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check how the caller of buildPreview handles a false return and whether a later tick retries the build. Compare the on-screen result when sceneview::gateOpen returns zero before and after this change. Consider moving the destroy after the gate and readApp checks.",
+   "verification": "unverified"
+  },
+  {
+   "category": "logic",
+   "cluster": "C-54203116",
+   "cluster_size": 1,
+   "commits": [
+    "0fd1151",
+    "39144b7"
+   ],
+   "confidence": "high",
+   "dedupe_group": "D-54203116",
+   "dedupe_rep": "0c57ad0882af",
+   "dedupe_size": 1,
+   "evidence": "reloadPlay() non-force path: `if (!filewatch::changed(g_ptPoll, PtName, GetTickCount(), false, &st)) return;` then `const bool changed = !g_ptPoll.primed || (st != g_ptPoll.last);`. FileWatch.h:82-83 sets p.last = s and p.primed = true inside changed() before it returns true, so the local `changed` is always false on this path. Line 1429 gates the 'PLAYTHROUGH loaded/missing' log on it.",
+   "files": [
+    "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp"
+   ],
+   "id": "0c57ad0882af",
+   "lines": "1412-1414",
+   "packet_ids": [
+    "code-002"
+   ],
+   "root_cause": "changed() sets the primed and last state before returning true, so the caller's recomputed 'changed' flag is always false when it reaches the log gate.",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Compute `changed` from the result of the changed() call (true on this path) or drop the second compare. Check the log in a host run: start with a playthrough file present, and confirm a PLAYTHROUGH line appears on first load and after an edit.",
+   "verification": "unverified"
+  },
+  {
+   "category": "style-risk",
+   "cluster": "C-b99f4488",
+   "cluster_size": 1,
+   "commits": [
+    "0fd1151",
+    "39144b7"
+   ],
+   "confidence": "high",
+   "dedupe_group": "D-b99f4488",
+   "dedupe_rep": "e1ee6713f3aa",
+   "dedupe_size": 1,
+   "evidence": "`// Note: retains MOVEFILE_WRITE_THROUGH (flush to disk before rename returns) per LevelUpOverride save safety.` / `// Propose additive writeThrough parameter to filewatch::atomicWrite for Common owner adoption in Chunk C9.` ptWriteText keeps the hand-rolled MoveFileExA with MOVEFILE_WRITE_THROUGH on line 1441, but FileWatch.h:113-135 atomicWrite has no write-through flag (it uses fsync/_commit and a plain MoveFileExA with REPLACE_EXISTING).",
+   "files": [
+    "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp"
+   ],
+   "id": "e1ee6713f3aa",
+   "lines": "1434-1435",
+   "packet_ids": [
+    "code-002"
+   ],
+   "root_cause": "ptWriteText keeps a hand-rolled MoveFileExA with MOVEFILE_WRITE_THROUGH because the shared atomicWrite has no write-through option, so the save path does not use the shared helper.",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Confirm nothing calls filewatch::atomicWrite for levelup_playthroughs.ini. Move the planning note to the design doc, or keep a comment next to the call that says the write-through flag is required.",
+   "verification": "unverified"
+  },
+  {
+   "category": "logic",
+   "cluster": "C-c264d85d",
+   "cluster_size": 1,
+   "commits": [
+    "0fd1151",
+    "39144b7"
+   ],
+   "confidence": "medium",
+   "dedupe_group": "D-c264d85d",
+   "dedupe_rep": "7cf902d24841",
+   "dedupe_size": 1,
+   "evidence": "Snapshot leaderCreature(): `const uintptr_t tbl = party::table(); const uintptr_t m = tbl ? party::member(tbl, 0) : 0; return m ? party::serverCreature(m) : 0;`. The removed code (packet o2040-o2042) read app, then `client = *(app+4)`, and obtained the party table by calling the engine ClientPartyTable function `g_eng.tableGet(client)`. party::table() in _shared_src/Party.h:36-39 instead walks app -> *(app+4) -> *(a+4) -> *(b+0x270) by raw offsets and never calls the engine function.",
+   "files": [
+    "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp"
+   ],
+   "id": "7cf902d24841",
+   "lines": "2043-2048",
+   "packet_ids": [
+    "code-002"
+   ],
+   "root_cause": "leaderCreature() now derives the party table from the party helper walk instead of the engine ClientPartyTable call, so its result may differ from the removed code path.",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Disassemble the engine ClientPartyTable at 0x73FB90 (Steam and GOG builds) and confirm it returns *(*(arg+4)+0x270) with arg = the client value from [[AppGlobal]+4]. Check that the K2Addr table values used by party::table (AppGlobal) match the old g_eng.appGlobal for each build. In a host test, compare old and new leader results using the arena stubs.",
+   "verification": "unverified"
+  },
+  {
+   "candidate_ids": [
+    "S-034ac7fa33"
+   ],
+   "category": "test",
+   "cluster": "C-bb2f641e",
+   "cluster_size": 1,
+   "commits": [
+    "0fd1151",
+    "39144b7"
+   ],
+   "confidence": "high",
+   "dedupe_group": "D-bb2f641e",
+   "dedupe_rep": "3fb47e9bdf68",
+   "dedupe_size": 1,
+   "evidence": "`LCHECK(\"party::table function exists\", static_cast<uintptr_t(*)(party::Fail*)>(&party::table) != nullptr);` (same form on lines 164-165). A function's address is never null, so the runtime half of each check is always true.",
+   "files": [
+    "patch_manager_mods/level_up_override_src/common_contract_test.cpp"
+   ],
+   "id": "3fb47e9bdf68",
+   "lines": "163-165",
+   "packet_ids": [
+    "code-002"
+   ],
+   "root_cause": "Test assertions are either always true (taking the address of a function and comparing with nullptr) or depend on file-stamp timing that the test does not control, so they cannot fail as written.",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Keep the casts as signature checks and drop the always-true comparison, or rename the messages to say they check the signature. No runtime behaviour is at stake.",
+   "verification": "unverified"
+  },
+  {
+   "candidate_ids": [
+    "S-9323c467b2"
+   ],
+   "category": "other",
+   "cluster": "C-46b027cb",
+   "cluster_size": 1,
+   "commits": [
+    "0fd1151",
+    "39144b7"
+   ],
+   "confidence": "low",
+   "evidence": "[scanner pointer-math] uintptr_t-cast | LCHECK(\"party::serverCreature function exists\", static_cast<uintptr_t(*)(uintptr_t)>(&party::serverCreature) != nullptr);",
+   "files": [
+    "patch_manager_mods/level_up_override_src/common_contract_test.cpp"
+   ],
+   "id": "a9aaccbed7c4",
+   "lines": "165",
+   "packet_ids": [],
+   "severity": "low",
+   "source": "scanner",
+   "suggested_investigation": "Confirm or dismiss this scanner candidate by reading the cited lines; no worker reported it.",
+   "verification": "unverified-scanner"
+  },
+  {
+   "candidate_ids": [
+    "S-b197154b98"
+   ],
+   "category": "other",
+   "cluster": "C-6130750b",
+   "cluster_size": 1,
+   "commits": [
+    "0fd1151",
+    "39144b7"
+   ],
+   "confidence": "low",
+   "evidence": "[scanner pointer-math] c-pointer-cast | party::g_serverCreature = [](void* m) -> uintptr_t { return (m == (void*)0x2000u) ? 0x3000u : 0u; };",
+   "files": [
+    "patch_manager_mods/level_up_override_src/common_contract_test.cpp"
+   ],
+   "id": "ffc4a3c91672",
+   "lines": "179",
+   "packet_ids": [],
+   "severity": "low",
+   "source": "scanner",
+   "suggested_investigation": "Confirm or dismiss this scanner candidate by reading the cited lines; no worker reported it.",
+   "verification": "unverified-scanner"
+  },
+  {
+   "category": "test",
+   "cluster": "C-febe1390",
+   "cluster_size": 1,
+   "commits": [
+    "0fd1151",
+    "39144b7"
+   ],
+   "confidence": "high",
+   "dedupe_group": "D-febe1390",
+   "dedupe_rep": "8af893ae7a19",
+   "dedupe_size": 1,
+   "evidence": "`LCHECK(\"filewatch::changed throttled within 1000ms\", !filewatch::changed(rp, tmpPath, 1500));` / `LCHECK(\"filewatch::changed quiet after throttle when unchanged\", !filewatch::changed(rp, tmpPath, 2500));` / `LCHECK(\"filewatch::changed force skips throttle if changed\", !filewatch::changed(rp, tmpPath, 2600, true));`. The file is never rewritten between the calls, so each expected `false` is also what a poll with no throttle at all, or with force ignored, would return.",
+   "files": [
+    "patch_manager_mods/level_up_override_src/common_contract_test.cpp"
+   ],
+   "id": "8af893ae7a19",
+   "lines": "196-199",
+   "packet_ids": [
+    "code-002"
+   ],
+   "root_cause": "Test assertions are either always true (taking the address of a function and comparing with nullptr) or depend on file-stamp timing that the test does not control, so they cannot fail as written.",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Rewrite the sequence so the file is modified between polls (for example, write a longer body after the 1000 ms window and check that changed() returns true, and that a poll inside the window returns false even after the modification). Verify by temporarily making changed() ignore throttleMs or force and confirming that the test fails.",
+   "verification": "unverified"
+  },
+  {
+   "candidate_ids": [
+    "S-59d8925ee7"
+   ],
+   "category": "other",
+   "cluster": "C-5fc23adb",
+   "cluster_size": 1,
+   "commits": [
+    "39144b7"
+   ],
+   "confidence": "low",
+   "evidence": "[scanner pointer-math] reinterpret_cast | *reinterpret_cast<uint32_t*>(app + 4) = (uint32_t)client;",
+   "files": [
+    "research/companion_levelup/tools/parity/gate_test.cpp"
+   ],
+   "id": "c95f980c3454",
+   "lines": "132",
+   "packet_ids": [],
+   "severity": "low",
+   "source": "scanner",
+   "suggested_investigation": "Confirm or dismiss this scanner candidate by reading the cited lines; no worker reported it.",
+   "verification": "unverified-scanner"
+  },
+  {
+   "candidate_ids": [
+    "S-547a0c6f10"
+   ],
+   "category": "other",
+   "cluster": "C-b3abda6a",
+   "cluster_size": 1,
+   "commits": [
+    "39144b7"
+   ],
+   "confidence": "low",
+   "evidence": "[scanner pointer-math] reinterpret_cast | *reinterpret_cast<uint32_t*>(client + 4) = (uint32_t)ci;",
+   "files": [
+    "research/companion_levelup/tools/parity/gate_test.cpp"
+   ],
+   "id": "18bad252eee4",
+   "lines": "133",
+   "packet_ids": [],
+   "severity": "low",
+   "source": "scanner",
+   "suggested_investigation": "Confirm or dismiss this scanner candidate by reading the cited lines; no worker reported it.",
+   "verification": "unverified-scanner"
+  },
+  {
+   "candidate_ids": [
+    "S-66e96cbe6f"
+   ],
+   "category": "other",
+   "cluster": "C-bc7199c7",
+   "cluster_size": 1,
+   "commits": [
+    "39144b7"
+   ],
+   "confidence": "low",
+   "evidence": "[scanner pointer-math] reinterpret_cast, hex-offset | *reinterpret_cast<uint32_t*>(ci + 0x270) = (uint32_t)partyTable;",
+   "files": [
+    "research/companion_levelup/tools/parity/gate_test.cpp"
+   ],
+   "id": "cea821a432d2",
+   "lines": "134",
+   "packet_ids": [],
+   "severity": "low",
+   "source": "scanner",
+   "suggested_investigation": "Confirm or dismiss this scanner candidate by reading the cited lines; no worker reported it.",
+   "verification": "unverified-scanner"
+  },
+  {
+   "candidate_ids": [
+    "S-206c54dc10"
+   ],
+   "category": "other",
+   "cluster": "C-7121ff95",
+   "cluster_size": 1,
+   "commits": [
+    "39144b7"
+   ],
+   "confidence": "low",
+   "evidence": "[scanner pointer-math] reinterpret_cast | *reinterpret_cast<int*>(partyTable) = 3;",
+   "files": [
+    "research/companion_levelup/tools/parity/gate_test.cpp"
+   ],
+   "id": "36762ad12a41",
+   "lines": "135",
+   "packet_ids": [],
+   "severity": "low",
+   "source": "scanner",
+   "suggested_investigation": "Confirm or dismiss this scanner candidate by reading the cited lines; no worker reported it.",
+   "verification": "unverified-scanner"
+  },
+  {
+   "candidate_ids": [
+    "S-64bcb23fa7"
+   ],
+   "category": "other",
+   "cluster": "C-059ce8a9",
+   "cluster_size": 1,
+   "commits": [
+    "39144b7"
+   ],
+   "confidence": "low",
+   "evidence": "[scanner pointer-math] reinterpret_cast | return (member == reinterpret_cast<void*>(0x1000F100)) ? reinterpret_cast<uintptr_t>(g_creatureRet) : 0u;",
+   "files": [
+    "research/companion_levelup/tools/parity/gate_test.cpp"
+   ],
+   "id": "129fec265f26",
+   "lines": "146",
+   "packet_ids": [],
+   "severity": "low",
+   "source": "scanner",
+   "suggested_investigation": "Confirm or dismiss this scanner candidate by reading the cited lines; no worker reported it.",
+   "verification": "unverified-scanner"
+  },
+  {
+   "candidate_ids": [
+    "S-d10b12339c"
+   ],
+   "category": "other",
+   "cluster": "C-1ebe1143",
+   "cluster_size": 1,
+   "commits": [
+    "39144b7"
+   ],
+   "confidence": "low",
+   "evidence": "[scanner pointer-math] reinterpret_cast | return (member == reinterpret_cast<void*>(0x1000F100) && g_leader) ? reinterpret_cast<uintptr_t>(g_leader->creature) : 0u;",
+   "files": [
+    "research/companion_levelup/tools/parity/scenario_test.cpp"
+   ],
+   "id": "7c24e67883b3",
+   "lines": "288",
+   "packet_ids": [],
+   "severity": "low",
+   "source": "scanner",
+   "suggested_investigation": "Confirm or dismiss this scanner candidate by reading the cited lines; no worker reported it.",
+   "verification": "unverified-scanner"
+  },
+  {
+   "category": "test",
+   "cluster": "C-49caf94d",
+   "cluster_size": 1,
+   "commits": [
+    "0fd1151"
+   ],
+   "confidence": "low",
+   "dedupe_group": "D-49caf94d",
+   "dedupe_rep": "62da1e460980",
+   "dedupe_size": 1,
+   "evidence": "snprintf(g_cfg.table, sizeof g_cfg.table, \"t.ini\"); g_tablePoll = {}; g_tableStamp = {}; g_tableOk = false; g_cfg.nTags = 0; ... reloadTable(true);  (previously g_tableStamp = ~0ULL, a value no real file stamp can equal)",
+   "files": [
+    "research/companion_levelup/tools/parity/unit_gap_test.cpp"
+   ],
+   "id": "62da1e460980",
+   "lines": "130",
+   "packet_ids": [
+    "other-002"
+   ],
+   "root_cause": "Test assertions are either always true (taking the address of a function and comparing with nullptr) or depend on file-stamp timing that the test does not control, so they cannot fail as written.",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Read reloadTable() and the stamp comparison it uses (its force parameter and the operator== of the stamp type that g_tableStamp/g_tablePoll use). Confirm that force=true reloads even when the stamp equals a default-constructed value. If it does not, restore a distinct non-matching sentinel for g_tableStamp. Also confirm that the lines 140 and 144 resets behave the same way.",
+   "verification": "unverified"
+  }
+ ],
+ "generated_by": "merge.py",
+ "human_only": [],
+ "recall": [],
+ "reduce_files": [
+  "domain_all.json"
+ ],
+ "snapshot_sha256": "75888807151121c222db744db9b59120895874ebc412a412f04f3d5ccaab73b9",
+ "warnings": []
+}

@@ -1,0 +1,2541 @@
+{
+ "calibration": {
+  "controls": [
+   {
+    "expected_final": [
+     "refuted"
+    ],
+    "expected_haiku": [
+     "refuted",
+     "intended-behaviour"
+    ],
+    "final": null,
+    "final_match": null,
+    "haiku": null,
+    "haiku_match": null,
+    "id": "7e6e690122c8",
+    "label": "rejected"
+   },
+   {
+    "expected_final": [
+     "refuted"
+    ],
+    "expected_haiku": [
+     "refuted",
+     "intended-behaviour"
+    ],
+    "final": null,
+    "final_match": null,
+    "haiku": null,
+    "haiku_match": null,
+    "id": "aae3fb4ec1a2",
+    "label": "rejected"
+   },
+   {
+    "expected_final": [
+     "refuted"
+    ],
+    "expected_haiku": [
+     "refuted",
+     "intended-behaviour"
+    ],
+    "final": null,
+    "final_match": null,
+    "haiku": null,
+    "haiku_match": null,
+    "id": "e23534b73f29",
+    "label": "rejected"
+   }
+  ],
+  "decoys": {
+   "adjudicated": 4,
+   "catch_rate": 1.0,
+   "caught": 4,
+   "confirmed_loud_failures": [],
+   "detail": [
+    {
+     "caught": true,
+     "final": "refuted",
+     "haiku": "refuted",
+     "haiku_fooled": false,
+     "id": "0ee3c2ce6684",
+     "label": "dcy-8",
+     "mode": "existing-reference"
+    },
+    {
+     "caught": null,
+     "final": null,
+     "haiku": null,
+     "haiku_fooled": null,
+     "id": "1f04e6823fc5",
+     "label": "dcy-1",
+     "mode": "guard-present"
+    },
+    {
+     "caught": true,
+     "final": "refuted",
+     "haiku": "refuted",
+     "haiku_fooled": false,
+     "id": "56935b7dee83",
+     "label": "dcy-7",
+     "mode": "checked-return"
+    },
+    {
+     "caught": true,
+     "final": "refuted",
+     "haiku": "refuted",
+     "haiku_fooled": false,
+     "id": "6e12b3081267",
+     "label": "dcy-5",
+     "mode": "guard-present"
+    },
+    {
+     "caught": null,
+     "final": null,
+     "haiku": null,
+     "haiku_fooled": null,
+     "id": "797aad6a288e",
+     "label": "dcy-6",
+     "mode": "bounded-loop"
+    },
+    {
+     "caught": null,
+     "final": null,
+     "haiku": null,
+     "haiku_fooled": null,
+     "id": "9337bf21a6e8",
+     "label": "dcy-3",
+     "mode": "checked-return"
+    },
+    {
+     "caught": true,
+     "final": "refuted",
+     "haiku": "refuted",
+     "haiku_fooled": false,
+     "id": "dd1a19219191",
+     "label": "dcy-4",
+     "mode": "existing-reference"
+    },
+    {
+     "caught": null,
+     "final": null,
+     "haiku": null,
+     "haiku_fooled": null,
+     "id": "eace9e256d97",
+     "label": "dcy-2",
+     "mode": "bounded-loop"
+    }
+   ],
+   "haiku_reproduced_decoys": [],
+   "refuted": 4,
+   "total": 8
+  },
+  "fabricated_quotes": {
+   "haiku": 0,
+   "haiku_trivial": 0,
+   "sonnet": 0
+  },
+  "haiku_quality_by_batch": {
+   "ok": 5,
+   "weak": 2
+  },
+  "haiku_vs_sonnet": {
+   "agreement_rate_all": 0.8444,
+   "agreement_rate_real": 0.8293,
+   "haiku_refuted_sonnet_confirmed": 5,
+   "haiku_reproduced_sonnet_refuted": 0,
+   "items_compared": 45,
+   "sonnet_self_reported_agree_rate": 0.8444
+  },
+  "key_recall": {},
+  "passed": true,
+  "per_specialty_agreement": {
+   "build-config": {
+    "agree": 1,
+    "n": 3,
+    "rate": 0.3333
+   },
+   "python-tooling": {
+    "agree": 7,
+    "n": 8,
+    "rate": 0.875
+   },
+   "source-logic": {
+    "agree": 20,
+    "n": 23,
+    "rate": 0.8696
+   },
+   "test-weakening": {
+    "agree": 10,
+    "n": 11,
+    "rate": 0.9091
+   }
+  }
+ },
+ "cost": {
+  "basis": "cli_reported_total_cost_usd (the only figure used for budgets and decisions)",
+  "estimate": {
+   "haiku_usd": 0.225594,
+   "label": "ESTIMATE ONLY: illustrative list rates, priced per request, never used for a decision",
+   "rates_usd_per_mtok": {
+    "haiku_gt_100k": {
+     "cache_read": 0.05,
+     "cache_write_5m": 0.625,
+     "input": 0.5,
+     "output": 2.5
+    },
+    "haiku_le_100k": {
+     "cache_read": 0.01,
+     "cache_write_5m": 0.125,
+     "input": 0.1,
+     "output": 0.5
+    },
+    "note": "Sonnet cache-write rate assumed 1.25x input",
+    "sonnet": {
+     "cache_read": 0.1,
+     "cache_write_5m": 2.5,
+     "input": 2.0,
+     "output": 10.0
+    }
+   },
+   "sonnet_usd": 1.425998,
+   "total_usd": 1.651592
+  },
+  "haiku_verifier": {
+   "attempts": 0,
+   "cache_creation_input_tokens": 1306268,
+   "cache_read_input_tokens": 6127145,
+   "calls": 45,
+   "cli_usd": 0.801955,
+   "input_tokens": 674,
+   "output_tokens": 1944
+  },
+  "sonnet_adjudicator": {
+   "attempts": 0,
+   "cache_creation_input_tokens": 495998,
+   "cache_read_input_tokens": 1833191,
+   "calls": 7,
+   "cli_usd": 0.285437,
+   "input_tokens": 82,
+   "output_tokens": 252
+  },
+  "total_cli_reported_usd": 1.087392
+ },
+ "counts": {
+  "CONFIRMED": 19,
+  "CONFIRMED-BY-SONNET-ONLY": 5,
+  "CONTESTED-NEEDS-HUMAN": 4,
+  "REFUTED": 13,
+  "real_items": 41
+ },
+ "counts_with_duplicates": {
+  "CONFIRMED": 23,
+  "CONFIRMED-BY-SONNET-ONLY": 6,
+  "CONTESTED-NEEDS-HUMAN": 5,
+  "REFUTED": 14,
+  "real_items": 48
+ },
+ "coverage": {
+  "complete": false,
+  "missing_adjudication": [
+   "5d721af23495",
+   "1406bc629c1d",
+   "f88d7b0ead99",
+   "eace9e256d97",
+   "536923d9352a",
+   "a498027bbd1b",
+   "9337bf21a6e8",
+   "c740372f2a81",
+   "797aad6a288e",
+   "cf5b237d5853",
+   "da9267c332a9",
+   "811a5531ca00",
+   "7ac1208a057d",
+   "111569cb3a6d",
+   "8545c7465dad",
+   "6001871962be",
+   "155e569b4449",
+   "d9187acd0c6d",
+   "572a431bf016",
+   "f05db6672105",
+   "1f04e6823fc5",
+   "b1b738da5be9",
+   "b2668ae7e31c",
+   "e23534b73f29",
+   "aae3fb4ec1a2",
+   "7e6e690122c8"
+  ],
+  "missing_verifier_result": [
+   "5d721af23495",
+   "1406bc629c1d",
+   "f88d7b0ead99",
+   "eace9e256d97",
+   "536923d9352a",
+   "a498027bbd1b",
+   "9337bf21a6e8",
+   "c740372f2a81",
+   "797aad6a288e",
+   "cf5b237d5853",
+   "da9267c332a9",
+   "811a5531ca00",
+   "7ac1208a057d",
+   "111569cb3a6d",
+   "8545c7465dad",
+   "6001871962be",
+   "155e569b4449",
+   "d9187acd0c6d",
+   "572a431bf016",
+   "f05db6672105",
+   "1f04e6823fc5",
+   "b1b738da5be9",
+   "b2668ae7e31c",
+   "e23534b73f29",
+   "aae3fb4ec1a2",
+   "7e6e690122c8"
+  ],
+  "queue_items": 71,
+  "waived_unverified": true
+ },
+ "generated_by": "verify/verify_merge.py",
+ "queue_source_master_sha256": "33b6535adb901d82c9dca0a1e52a2caef8d957c3181d5439f697c74f7bfe51e7",
+ "tiers": {
+  "CONFIRMED": [
+   {
+    "agrees_with_haiku": true,
+    "category": "logic",
+    "claim": "Line 116 reads every live table except planetary.2da (`if n != \"planetary.2da\"`), so the live file is never opened. Line 234 then does `write_2da(echoes_plan, LIVE_OVERRIDE / \"planetary.2da\")`, replacing the live table with the staging copy. Lines 235-236 likewise `shutil.copy2` genericdoors.2da and soundset.2da over the live versions. The module docstring (line 4) promises the run 'prevents any table wiping or truncation' and 'Preserves all 154 existing mods'.\n\nWhy it matters: Any rows that other installed mods added to the live planetary.2da (or changed in genericdoors/soundset) are dropped silently. The run then reports success, which contradicts the stated no-wipe contract.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "scripts/02_merge_2da_and_tlk.py",
+      "line": 116,
+      "text": "live = {n: read_2da(LIVE_OVERRIDE / n) for n in table_names if n != \"planetary.2da\"}"
+     },
+     {
+      "file": "scripts/02_merge_2da_and_tlk.py",
+      "line": 188,
+      "text": "echoes_plan = echoes[\"planetary.2da\"]"
+     },
+     {
+      "file": "scripts/02_merge_2da_and_tlk.py",
+      "line": 234,
+      "text": "write_2da(echoes_plan, LIVE_OVERRIDE / \"planetary.2da\")"
+     },
+     {
+      "file": "scripts/02_merge_2da_and_tlk.py",
+      "line": 4,
+      "text": "Preserves all 154 existing mods, prevents any table wiping or truncation,"
+     },
+     {
+      "file": "scripts/02_merge_2da_and_tlk.py",
+      "line": 61,
+      "text": "COPIED_2DAS = [\"genericdoors.2da\", \"soundset.2da\"]  # copied whole"
+     },
+     {
+      "file": "scripts/06_deploy_assets.py",
+      "line": 289,
+      "text": "# Anything already in override/ under any spelling also collides: the build's"
+     },
+     {
+      "file": "COMPATCH_PLAN_ECHOES_OF_THE_REPUBLIC.md",
+      "line": 56,
+      "text": "Monolith copies overwrite rows added by 50+ mods"
+     }
+    ],
+    "file": "scripts/02_merge_2da_and_tlk.py",
+    "final_severity": "high",
+    "final_verdict": "confirmed",
+    "haiku_confidence": "high",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "reproduced",
+    "human_check_steps": [
+     "On a real install, diff the rows of the live override planetary.2da against the staging Override planetary.2da and list rows from other mods that the staging copy lacks.",
+     "Confirm nothing in main() verifies the written tables, despite the 'VERIFIED' print at scripts/02_merge_2da_and_tlk.py:244.",
+     "Look in pykotor_patches/README.md patch #5 for why line 116 excludes planetary.2da from live reads."
+    ],
+    "id": "e606f41d177d",
+    "lines": "234",
+    "reasoning": "Read 02 lines 1-18, 100-135, 180-200, 219-248 and 06 lines 155-170, 283-320; COMPATCH plan line 56. Line 116 excludes planetary.2da from live reads, line 188 builds echoes_plan only from staging, and line 234 overwrites the live table. Step 11 is titled 'Merging' yet no live rows are merged. The plan says overwrites that drop rows from 50+ mods must be avoided, and planetary is listed. 06 protects the build's planetary.2da. Only genericdoors/soundset carry a 'copied whole' comment. Magnitude needs a live-install diff.",
+    "reduce_severity": "high",
+    "reduce_verification": "confirmed",
+    "sonnet_quotes_ok": "7/7",
+    "specialty": "python-tooling",
+    "suggested_investigation": "Before running, diff the live override planetary.2da, genericdoors.2da and soundset.2da against the staging copies (row count, labels, values). Check whether any installed mod adds planet rows or edits these tables. Confirm the post-run file matches the staging copy and that the pre-run live rows are gone.",
+    "tier": "CONFIRMED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "gate-integrity",
+    "claim": "run_tests() sets all_ok=False only when `res.returncode != 0` (lines 114-115) and otherwise returns True. It passes the filter as `-k tf` (line 107). In run_tests.py, main() applies -k as a bare substring filter (run_tests.py:861-862). Its 'no test item matched' check covers only --id and positional filters (run_tests.py:932-940), not -k. With zero matching items it prints '0 passed, 0 failed ... (0 items)' and returns 0 (run_tests.py:992, 1004). A mistyped --test value therefore yields test_ok=True and a PASS verdict. A selection that is all SKIP also returns 0.\n\nWhy it matters: The test gate can be satisfied without running any test. A typo in the filter an orchestrator passes produces a green PASS.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "scripts/run_tests.py",
+      "line": 862,
+      "text": "items = [i for i in items if a.k in i.id]"
+     },
+     {
+      "file": "scripts/run_tests.py",
+      "line": 885,
+      "text": "if a.list:"
+     },
+     {
+      "file": "scripts/run_tests.py",
+      "line": 932,
+      "text": "# Every requested id / filter must match something; --json output is not written on this exit-2 path."
+     },
+     {
+      "file": "scripts/run_tests.py",
+      "line": 937,
+      "text": "missing += sorted(s for s in pos_subs if not any(s in m for m in matched_ids)) if a.filters else []"
+     },
+     {
+      "file": "scripts/run_tests.py",
+      "line": 1004,
+      "text": "return 1 if counts[\"FAIL\"] or counts[\"ERROR\"] else 0"
+     },
+     {
+      "file": "scripts/agent_diff_check.py",
+      "line": 174,
+      "text": "test_ok, test_out = run_tests(args.test)"
+     },
+     {
+      "file": "scripts/agent_diff_check.py",
+      "line": 186,
+      "text": "passed = (len(scope_violations) == 0) and build_ok and test_ok"
+     }
+    ],
+    "file": "scripts/agent_diff_check.py",
+    "final_severity": "high",
+    "final_verdict": "confirmed",
+    "haiku_confidence": "high",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "reproduced",
+    "human_check_steps": [
+     "Run `python3 scripts/run_tests.py -k zz_no_such_item; echo $?` from the repo root and confirm exit 0 with a '(0 items)' summary line.",
+     "Read execute() in scripts/run_tests.py to check whether a selection of only SKIP items also returns 0 (the all-SKIP sub-claim).",
+     "Check whether any orchestrator reads test_ok or the PASS line without requiring a non-zero test count."
+    ],
+    "id": "1ce64f3b2759",
+    "lines": "106-117",
+    "reasoning": "Read run_tests.py 855-940 (the return 0 at 930 sits inside 'if a.list:' at 885), and 1004; agent_diff_check.py 174-209. Line 862 applies -k to items only. The 'no test item matched' check at 932-940 covers ids and positional filters, not -k. A -k that matches nothing therefore reaches the summary with '(0 items)' and returncode 0, so test_ok is True and the verdict can be PASS (line 186). Haiku's all-SKIP sub-claim is not verified: execute() was not read.",
+    "reduce_severity": "high",
+    "reduce_verification": "confirmed",
+    "sonnet_quotes_ok": "7/7",
+    "specialty": "python-tooling",
+    "suggested_investigation": "From the repo root run `python3 scripts/run_tests.py -k no_such_item_zz; echo rc=$?` and confirm rc=0 with '0 passed'. Then check whether any caller can pass a -k value that is misspelled or empty, and whether agent_diff_check's own verdict relies on that exit code alone.",
+    "tier": "CONFIRMED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "logic",
+    "claim": "Line 350 builds scoped_ident = f\"{doc_prefix}:{clean_ident}\" (e.g. '25:T4'), and lines 353-356 print it as the phase argument for delegate/resume/handoff/mark-done. cmd_mark_done matches table rows against the bare cell from parse_plan (line 206: ident = cells[id_col_idx], e.g. 'T4') using clean_ident == clean_target or clean_target in clean_ident (lines 531-533). '25:T4' matches neither; the checkbox regex (line 561) misses too, so control falls to lines 570-581, which append '- 25:T4 (done): verified' or '- [x] 25:T4 (completed)' and return. main (lines 785-809) then prints 'Completed: 25:T4' while the real phase row stays open, so the next-phase block still names T4.\n\nWhy it matters: The printed next-step commands are the normal way to advance a plan. For numbered plans, mark-done reports success but leaves the actual phase row unchanged and appends a bogus line, so the orchestrator keeps re-running the same phase and the plan state silently diverges. cmd_delegate's PASS path (line 488) passes the same string into cmd_mark_done.",
+    "duplicates": [
+     {
+      "file": "scripts/plan_manager.py",
+      "id": "a5dcf2744b60",
+      "lines": "348-350"
+     }
+    ],
+    "evidence_quotes": [
+     {
+      "file": "scripts/plan_manager.py",
+      "line": 750,
+      "text": "resolved_p, _ = resolve_plan_shorthand(args.phase)"
+     },
+     {
+      "file": "scripts/plan_manager.py",
+      "line": 786,
+      "text": "cmd_mark_done(plan, args.phase, commit_sha=args.commit, notes=args.notes, state=args.state)"
+     },
+     {
+      "file": "scripts/plan_manager.py",
+      "line": 533,
+      "text": "if clean_ident.lower() == clean_target.lower() or clean_target.lower() in clean_ident.lower():"
+     },
+     {
+      "file": "scripts/plan_manager.py",
+      "line": 579,
+      "text": "- [x] {target_str} (completed)"
+     },
+     {
+      "file": "patch_manager_mods/24_master_plan_status.md",
+      "line": 34,
+      "text": "| T4 | contract tests buff / shield / portrait | T1 | split | DONE |"
+     }
+    ],
+    "file": "scripts/plan_manager.py",
+    "final_severity": "high",
+    "final_verdict": "confirmed",
+    "haiku_confidence": "high",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "reproduced",
+    "human_check_steps": [
+     "In a disposable copy of the repo, run `python3 scripts/plan_manager.py mark-done \"24:T4\"` and diff patch_manager_mods/24_master_plan_status.md. Expect the T4 row unchanged and a new '- [x] 24:T4 (completed)' line.",
+     "Check git log -p for 24_master_plan_status.md around lines 153-164 to see whether the existing '- [x] M1 (completed)' lines came from this fallback.",
+     "Check AGENTS.md / CLAUDE.md to see whether the NN:Tn form is documented as valid mark-done input."
+    ],
+    "id": "119182a14fc2",
+    "lines": "349-356",
+    "reasoning": "Read plan_manager.py 68-141, 749-752, 786, 530-579. mark-done passes args.phase unchanged to cmd_mark_done; resolve_plan_shorthand's detail is discarded. The table match at 533 compares bare cell text, so '24:T4' misses; the live table uses bare ids ('| T4 |' at 24_master_plan_status.md:34), and no '24:T4' string exists in the plan. The fallback at 579 appends a bogus checkbox line. main then prints 'Completed' while the real phase stays open. The printed next-step command is the normal path, so high.",
+    "reduce_severity": "high",
+    "reduce_verification": "confirmed",
+    "sonnet_quotes_ok": "5/5",
+    "specialty": "python-tooling",
+    "suggested_investigation": "In a scratch copy of the repo (not the real plan or .claude dir), create a plan with a table row 'T4' (status PENDING) and a '## Execution log' section. Run `plan_manager.py mark-done T4` and `plan_manager.py mark-done '25:T4'` (with --no-handoff) and diff the status cell and appended lines. Also check phase matching for 'NN:Tn' keys in subagent_prompt.extract_phase_info (scripts/subagent_prompt.py:109) on the delegate path.",
+    "tier": "CONFIRMED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "logic",
+    "claim": "Loop reads: `uintptr_t mem = party::member(t, i); if (mem == c || (mem != 0 && creatureOid(mem) == oid)) { partySlot = i; break; }`. The OID clause has no guard for the invalid/sentinel ids 0 and 0xFFFFFFFF, and it breaks at the first OID-only match before later slots are checked by pointer. The comment at 381-382 says the Exile's id can read 0xFFFFFFFF for a whole session. The pre-change code (old lines 353-358) matched only by pointer. If the controlled creature is not the Exile but its id also reads 0xFFFFFFFF, slot 0 matches first, so isMember0 is true and HotbarLogic.h:90-93 returns \"objfffffffd\" (the Exile's bindings) where the old path refused with \"\" (HotbarLogic.h:92).\n\nWhy it matters: A controlled character that is not the Exile can be keyed to the Exile's hotbar, so one character's bindings are read or written under another's key. The failure only appears when the sentinel id is shared, which the comment says happens for a whole session.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp",
+      "line": 360,
+      "text": "if (mem == c || (mem != 0 && creatureOid(mem) == oid)) {"
+     },
+     {
+      "file": "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp",
+      "line": 381,
+      "text": "the id can read 0xFFFFFFFF for a whole session"
+     },
+     {
+      "file": "patch_manager_mods/action_hotbar_src/HotbarLogic.h",
+      "line": 92,
+      "text": "if (oid == 0xFFFFFFFFu && !(partyCount == 1 || isMember0 || partySlot == 0))"
+     },
+     {
+      "file": "patch_manager_mods/action_hotbar_src/HotbarLogic.h",
+      "line": 93,
+      "text": "return \"objfffffffd\";"
+     }
+    ],
+    "file": "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp",
+    "final_severity": "medium",
+    "final_verdict": "confirmed",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "reproduced",
+    "human_check_steps": [
+     "Check a session log for 'has invalid object id' (ActionHotbar.cpp:378) with slot=0 while the controlled creature pointer differs from party member 0's.",
+     "Check whether GetControlledCreature can return a non-Exile (Party.h:51-61) during control switches or cutscenes.",
+     "Confirm readCreatureTag fails for that creature in that state, since a readable tag bypasses the id logic."
+    ],
+    "id": "bc58247fd299",
+    "lines": "358-364",
+    "reasoning": "Read ActionHotbar.cpp 357-362 and 379-383, and HotbarLogic.h 76-93. The OID clause at 360 has no sentinel guard and breaks at the first match. If slot 0 also reads 0xFFFFFFFF, isMember0 becomes true and characterKeyFor returns 'objfffffffd' (HotbarLogic.h:92-93) for a non-Exile controlled creature, sharing the Exile's bindings. A readable tag wins first (83-85), which limits reach. It needs a non-Exile to be controlled while both ids read the sentinel. The pointer-only 'old' loop cannot be checked (no git).",
+    "reduce_severity": "medium",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "4/4",
+    "specialty": "source-logic",
+    "suggested_investigation": "In computeCharacterKey, log partySlot together with the match source (pointer or OID) whenever oid is 0xFFFFFFFF. Check whether a non-Exile controlled creature can read 0xFFFFFFFF in the same session as the Exile (Ebon Hawk case). Check whether the OID fallback should be skipped for oid 0 and 0xFFFFFFFF, or whether all pointer matches should be tried before any OID match. computeCharacterKey has no unit test (hotbar_logic_test.cpp covers only characterKeyFor), so a harness or in-game log check is needed.",
+    "tier": "CONFIRMED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "test",
+    "claim": "The new case routes wheel_subscribe to `fakeWheelSubNoWindow` (line 47: `{ ++g_subNoWinCalls; return -1; }`) through `g_fakeTableNoWindow` (line 139). The provider's changed branch (GuiInputProvider.cpp:158-161) never runs. The assertions at lines 142-144 (`noWinTok <= 0`, `g_subNoWinCalls == 1`) only show that the client forwards a -1 that the fake itself returns. Reverting the provider fix would leave this test green. The `<= 0` check also accepts 0. The fake's game_hwnd (fakeGameHwnd, line 39) still returns 0x12345678, so the comment 'game window not yet available' at line 137 describes a state the fake does not model.\n\nWhy it matters: The bug fix in GuiInputProvider.cpp has no test that can fail if it regresses. The test name ('wheel_subscribe without game window returns token <= 0') claims coverage the test does not provide. The `<= 0` check would also pass on the inert-provider 0 path, so even the client-side assertion is looser than its name.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/gui_input_src/gi_registry_test.cpp",
+      "line": 137,
+      "text": "// 7. Provider present but game window not yet available: wheel_subscribe fails"
+     },
+     {
+      "file": "patch_manager_mods/gui_input_src/gi_registry_test.cpp",
+      "line": 143,
+      "text": "GCHECK(\"wheel_subscribe without game window returns token <= 0\", noWinTok <= 0);"
+     },
+     {
+      "file": "patch_manager_mods/gui_input_src/gi_registry_test.cpp",
+      "line": 144,
+      "text": "GEQ(\"no-window subCalls count\", g_subNoWinCalls, 1);"
+     },
+     {
+      "file": "patch_manager_mods/gui_input_src/GuiInputProvider.cpp",
+      "line": 158,
+      "text": "if (!ensureSubclass()) {"
+     },
+     {
+      "file": "patch_manager_mods/gui_input_src/common_contract_test.cpp",
+      "line": 3,
+      "text": "// Pins semantics relied on by GuiInputProvider.cpp in WindowHook.h, KpLog.h, and GuiInput.h."
+     }
+    ],
+    "file": "patch_manager_mods/gui_input_src/gi_registry_test.cpp",
+    "final_severity": "medium",
+    "final_verdict": "confirmed",
+    "haiku_confidence": "high",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "reproduced",
+    "human_check_steps": [
+     "Confirm no host test target compiles or links GuiInputProvider.cpp (check the gui_input_src build configuration).",
+     "In a scratch copy, force ensureSubclass() to fail and run gi_registry_test; it should still pass, which confirms the gap."
+    ],
+    "id": "9e76e8f4642a",
+    "lines": "137-144",
+    "reasoning": "Read gi_registry_test.cpp:137-144 and :47, GuiInputProvider.cpp:156-160, GuiInput.h:49. The no-window case drives only a fake table. apiWheelSubscribe appears only in GuiInputProvider.cpp (Grep), and gui_input_src/common_contract_test.cpp:3 names the provider only in a comment, so the provider's no-window branch has no test that can fail. Sub-points rejected: the <= 0 check matches the documented failure range at GuiInput.h:49. Line 144 is GEQ (>= 1), not == 1 as the claim states.",
+    "reduce_severity": "medium",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "5/5",
+    "specialty": "test-weakening",
+    "suggested_investigation": "Read the test to confirm: step 7 only exercises the client wrapper (GuiInput.h, outside the packet) against a fake. For real coverage, drive apiWheelSubscribe itself in a host build with window discovery and the Hook install seam faked so that ensureSubclass returns false. Then assert exactly -1 and that g_disp.subscribe was not reached. As a cheap check, revert lines 158-161 in a scratch copy and run gi_registry_test. If it still passes, the gap is confirmed.",
+    "tier": "CONFIRMED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "logic",
+    "claim": "Header line 3 now reads: \"The only engine write is the sanitizeNorm path in ProbeMouseNorm (this+0x408/+0x40C), on by default (sanitize_norm=1 in [mouse_fix]...)\". The removed text (old lines 1-2) said \"STRICTLY READ-ONLY ... it never writes engine memory\". Lines 8-10 still promise behaviour that \"matches 0.1.0\". The default is confirmed in code: MouseProbe.cpp:139 `GetPrivateProfileIntA(\"mouse_fix\", \"sanitize_norm\", 1, ini)` and MouseFixLogic.h:12 `bool sanitizeNorm = true;`.\n\nWhy it matters: A diagnostics probe used to measure the camera/mouse bug now mutates the engine's normalised mouse input on every ProbeMouseNorm call by default. The read-only guarantee the investigation depends on is gone, the header and the 0.1.0-parity claim are now false, and nothing in the packet gates the write behind an explicit opt-in.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/mouse_probe_src/MouseProbe.cpp",
+      "line": 3,
+      "text": "The only engine write is the sanitizeNorm path in ProbeMouseNorm (this+0x408/+0x40C), on by default"
+     },
+     {
+      "file": "patch_manager_mods/mouse_probe_src/MouseProbe.cpp",
+      "line": 306,
+      "text": "*reinterpret_cast<int*>(msgp + 4) = clicklogic::MsgLDbl;"
+     },
+     {
+      "file": "patch_manager_mods/mouse_probe_src/MouseProbe.cpp",
+      "line": 140,
+      "text": "g_fixCfg.synthDblClk = GetPrivateProfileIntA("
+     },
+     {
+      "file": "patch_manager_mods/mouse_probe_src/MouseFixLogic.h",
+      "line": 69,
+      "text": "// Decision helper for double-click synthesis when Wine drops WM_LBUTTONDBLCLK under XWayland."
+     },
+     {
+      "file": "patch_manager_mods/mouse_probe_src/MouseProbe.cpp",
+      "line": 17,
+      "text": "live in ClickLogic.h (pure, tested)."
+     }
+    ],
+    "file": "patch_manager_mods/mouse_probe_src/MouseProbe.cpp",
+    "final_severity": "medium",
+    "final_verdict": "confirmed",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "reproduced",
+    "human_check_steps": [
+     "Confirm from version history outside this tree whether 0.1.0 wrote engine memory and what its removed header said.",
+     "Decide whether the header should list the SYNTHDBL write at MouseProbe.cpp:306 and whether default-on sanitize_norm is acceptable for a probe that measures the bug.",
+     "Check the deployed mouse_probe.ini (not in the tree) for sanitize_norm and synth_dblclk values."
+    ],
+    "id": "81dabb3f4f5e",
+    "lines": "1-3",
+    "reasoning": "Re-read MouseProbe.cpp 1-30, 56-146, 262-313 and MouseFixLogic.h. Header line 3 names sanitizeNorm as the only engine write, but line 306 stores clicklogic::MsgLDbl into msgp+4 whenever the synth_dblclk gate (default 1, line 140) passes, and the header's click paragraph (lines 12-17) never mentions it. Sanitize's default-on state is disclosed on line 3, so the defect is the false write-scope statement in a measurement probe. The removed 0.1.0 text and the parity sentence at line 10 (scoped to the log sink) cannot be checked from this tree.",
+    "reduce_severity": "medium",
+    "reduce_verification": "downgraded",
+    "sonnet_quotes_ok": "5/5",
+    "specialty": "source-logic",
+    "suggested_investigation": "Decide whether the sanitizer belongs in the diagnostics build at all. Compare doc 18 (patch_manager_mods/18_mouse_camera_investigation.md) and the shipped mouse_probe.ini / manifest.toml / test.toml in the packet directory for the intended default of sanitize_norm. Run the same scenario with sanitize_norm=0 and with the default, and diff the NORM/CAM log lines to see how much the probe changes the input it is measuring.",
+    "tier": "CONFIRMED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "bug",
+    "claim": "Line 193: `POINT cur = {0, 0}; if (dyn_GetCursorPos) dyn_GetCursorPos(&cur);`. The return value is discarded, so when the function is unresolved or returns FALSE, the origin (0,0) is used as the real cursor. It feeds computeSanitizedDelta (lines 196-199), checkEdgeWarp (line 209), and g_lastDragPos (line 202). Line 189 `rd(DragFlagAddr, 0, &drag);` also discards its result, so an unreadable flag silently becomes 0.\n\nWhy it matters: A failed GetCursorPos produces a one-frame saturated delta toward the origin (MouseFixLogic.h:38-39 clamp to +-1), which shows up as a camera spin. While dragging with the window at the screen origin, the (0,0) point matches the edge band (MouseFixLogic.h:59-60), so the sanitizer warps the cursor on every frame.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/mouse_probe_src/MouseProbe.cpp",
+      "line": 192,
+      "text": "POINT cur = {0, 0};"
+     },
+     {
+      "file": "patch_manager_mods/mouse_probe_src/MouseProbe.cpp",
+      "line": 193,
+      "text": "if (dyn_GetCursorPos) dyn_GetCursorPos(&cur);"
+     },
+     {
+      "file": "patch_manager_mods/mouse_probe_src/MouseProbe.cpp",
+      "line": 189,
+      "text": "rd(DragFlagAddr, 0, &drag);"
+     },
+     {
+      "file": "patch_manager_mods/mouse_probe_src/MouseProbe.cpp",
+      "line": 209,
+      "text": "if (mousefix::checkEdgeWarp(cur.x, cur.y, rc.left, rc.top, rc.right, rc.bottom, g_fixCfg.edgeMargin, wx, wy)) {"
+     },
+     {
+      "file": "patch_manager_mods/mouse_probe_src/MouseFixLogic.h",
+      "line": 59,
+      "text": "if (static_cast<long long>(curX) <= winLeft + m || static_cast<long long>(curX) >= winRight - m ||"
+     },
+     {
+      "file": "patch_manager_mods/mouse_probe_src/MouseProbe.cpp",
+      "line": 124,
+      "text": "HMODULE u32 = GetModuleHandleA(\"user32.dll\");"
+     }
+    ],
+    "file": "patch_manager_mods/mouse_probe_src/MouseProbe.cpp",
+    "final_severity": "medium",
+    "final_verdict": "confirmed",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "reproduced",
+    "human_check_steps": [
+     "Under Wine or Windows, force dyn_GetCursorPos to fail during an RMB camera drag and check the NORM SAT lines and the recentre after MouseProbe.cpp:193-221.",
+     "Count real GetCursorPos failures in a session to decide whether the spin is one frame or persistent."
+    ],
+    "id": "eee579216787",
+    "lines": "189-193",
+    "reasoning": "Re-read MouseProbe.cpp 124, 180-221 and MouseFixLogic.h 38-72. POINT is pre-zeroed at line 192, so when GetCursorPos is skipped or returns FALSE the origin is used as the real cursor. That origin feeds the drag delta (saturating to plus or minus 1), g_lastDragPos, and checkEdgeWarp, which fires a SetCursorPos recentre when the window origin is non-negative. The null-pointer branch is practically unreachable because user32 is always loaded, so the live path is the FALSE return. The discarded rd() at line 189 is benign. Real but rare-trigger edge case.",
+    "reduce_severity": "medium",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "6/6",
+    "specialty": "source-logic",
+    "suggested_investigation": "Find the conditions where GetCursorPos fails on the target (locked desktop, no input desktop, Wine under XWayland). Stub it to return FALSE while dragging and trace one frame of NORM and CAM output. Check whether the sanitizer should skip the frame and keep the last delta when the read fails, rather than use (0,0). Check the same for a failed DragFlagAddr read.",
+    "tier": "CONFIRMED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "memory-safety",
+    "claim": "Each tick re-reads srv = serverCreature(party::member(tbl,k)) (lines 720-721) and clears the buffer only when srv is 0 (line 723). Dispatch then probes and calls with the stored nextA.creature (lines 787-789 and 799-800) with no comparison to srv. Re-inject does the same with buf.activeAction.creature (745-747). saferead::probeRead(..., 4) only shows that the address is readable.\n\nWhy it matters: If slot k's creature changes to a different non-null object (companion swap, or an area load that recreates objects) before the slot ever reads as empty, a buffered action can call PerformCastSpell or PerformUseItem on a freed or reused object. The item path already behaves this way; the spell path copies it.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+      "line": 721,
+      "text": "uintptr_t srv = cli ? party::serverCreature(cli) : 0;"
+     },
+     {
+      "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+      "line": 723,
+      "text": "if (buf.count > 0 || buf.active) buf.clear();"
+     },
+     {
+      "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+      "line": 728,
+      "text": "if (!gatherFor(srv, s)) continue;"
+     },
+     {
+      "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+      "line": 758,
+      "text": "reinterpret_cast<void*>(buf.activeAction.creature),"
+     },
+     {
+      "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+      "line": 800,
+      "text": "reinterpret_cast<void*>(nextA.creature),"
+     }
+    ],
+    "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+    "final_severity": "medium",
+    "final_verdict": "confirmed",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "reproduced",
+    "human_check_steps": [
+     "At runtime, log nextA.creature (QueueHud.cpp:787-800) against party::member(tbl, k) (QueueHud.cpp:720) through a companion swap and an area load while buf.count > 0. Check whether slot k ever changes to a new non-null pointer without a null read.",
+     "Confirm which pointer the engine passes as `this` to PerformCastSpell and PerformUseItem, and whether those entry points reject a stale or freed object (PQ1.md:39 notes)."
+    ],
+    "id": "8ea1731f8816",
+    "lines": "720-799",
+    "reasoning": "Read QueueHud.cpp 706-745 and 795-809. Each tick re-reads slot k's creature (720-721) and gates the queue on that current creature via gatherFor(srv) (728). Buffer clear happens only on a null srv (723). Dispatch and re-inject pass the stored creature (758, 800) with no identity check against the slot. If the slot's pointer changes to a new non-null object without an intervening null read, a buffered action runs on the old creature while gating on the new one's queue. Use-after-free is not provable from the tree. Medium.",
+    "reduce_severity": "medium",
+    "reduce_verification": "downgraded",
+    "sonnet_quotes_ok": "5/5",
+    "specialty": "source-logic",
+    "suggested_investigation": "Trace party::member(tbl,k) and party::serverCreature across an area transition and a companion swap while items or spells are buffered. Check whether a different non-null creature can appear in slot k without an intervening null read. Compare nextA.creature and activeAction.creature with srv before the call. Check whether g_combat or inMenu clears the buffers during area load.",
+    "tier": "CONFIRMED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "hook",
+    "claim": "QueueHudPerformCastSpell returns early only on g_dispatching / !g_cfg.enabled / g_combat != 0 (line 974) and never checks party membership. Line 1013 `if (memberK < 0) memberK = 0;` assigns any non-party caster to member 0. Line 1016 decides on g_itemQueue[memberK]. DISPATCH_NOW stores makeSpellAction(clientCreature, ...) as member 0's activeAction and sets active (1018-1025). BUFFER pushes it and returns 1, so the original PerformCastSpell is skipped (1028-1036).\n\nWhy it matters: Out-of-combat casts by creatures outside the party (scripted or cutscene casts) can be swallowed or replayed later on that creature, and they block member 0's queue. The item hook has the same fallback (line 939), but the spell hook now applies it to a second action class, which widens its reach.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+      "line": 1006,
+      "text": "if (m && (m == static_cast<uintptr_t>(static_cast<uint32_t>(clientCreature)) ||"
+     },
+     {
+      "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+      "line": 1013,
+      "text": "if (memberK < 0) memberK = 0;"
+     },
+     {
+      "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+      "line": 939,
+      "text": "if (memberK < 0) memberK = 0;"
+     },
+     {
+      "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+      "line": 1032,
+      "text": "g_itemQueue[memberK].push(a);"
+     }
+    ],
+    "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+    "final_severity": "medium",
+    "final_verdict": "confirmed",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "reproduced",
+    "human_check_steps": [
+     "Xref or disassemble callers of CSWCCreature::PerformCastSpell (0x00775700, hook at 0x00775703) and look for non-party or AI-driven call sites.",
+     "Run with QLOG on and check whether 'buffered spell use for member %d' (QueueHud.cpp:1033) fires for a creature absent from the party table.",
+     "Check when party::table() returns 0. If only that failure path reaches the line 1013 fallback, the exposure is narrower than 'any non-party caster'."
+    ],
+    "id": "d682bb833922",
+    "lines": "973-1036",
+    "reasoning": "Read QueueHud.cpp 925-954 and 1000-1036. The claim's 'never checks party membership' is wrong: lines 1002-1012 match the caster against the party table. The real defect is the fallback at line 1013, which sends any unmatched caster to member 0, including every caster when party::table() fails. BUFFER then consumes the engine cast (1028-1035). The same fallback is at line 939. Whether non-party casts reach the client wrapper is not in the tree; PQ1 documents only UI callers. Medium, not high.",
+    "reduce_severity": "high",
+    "reduce_verification": "confirmed",
+    "sonnet_quotes_ok": "4/4",
+    "specialty": "source-logic",
+    "suggested_investigation": "Log clientCreature against the party table inside QueueHudPerformCastSpell during a cutscene or scripted NPC cast out of combat. Check whether the match loop at 1000-1012 ever finds a member for those calls, and whether the item fallback at line 939 has ever fired in a real session.",
+    "tier": "CONFIRMED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "logic",
+    "claim": "shouldReInject returns hasFollowLeader whenever the action is absent from the engine queue, the buffer is active, and it is not pending, cancelled or over the cap (lines 578-580). The caller takes that branch before the else-if that clears active after 500 ms (QueueHud.cpp:744 and 778). A spell that finished normally while a follow-leader entry (0x3D) is queued therefore looks the same as an eaten one. queue_hud_logic_test.cpp:885-888 labels this exact input state 'wipe' and has no completion signal.\n\nWhy it matters: Buffered spells are now recast up to kMaxReInjectCount (2) extra times when this misfire occurs. The cap limits the damage, but a completed spell can still be cast a second time.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/queue_hud_src/QueueHudLogic.h",
+      "line": 580,
+      "text": "return hasFollowLeader;"
+     },
+     {
+      "file": "patch_manager_mods/queue_hud_src/QueueHudLogic.h",
+      "line": 516,
+      "text": "bool reInjectPending = false;"
+     },
+     {
+      "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+      "line": 735,
+      "text": "if (s.e[i].type == 0x3D) hasFollowLeader = true; // AIActionFollowLeader"
+     },
+     {
+      "file": "patch_manager_mods/queue_hud_src/queue_hud_logic_test.cpp",
+      "line": 762,
+      "text": "// Follower AI 0x3D wiped queue -> re-inject!"
+     },
+     {
+      "file": "patch_manager_mods/30_queue_hud.md",
+      "line": 88,
+      "text": "Follower AI (`AIActionFollowLeader` 0x3D) cancels follower casting when leader moves."
+     }
+    ],
+    "file": "patch_manager_mods/queue_hud_src/QueueHudLogic.h",
+    "final_severity": "medium",
+    "final_verdict": "confirmed",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "reproduced",
+    "human_check_steps": [
+     "Inspect gatherFor (QueueHud.cpp:216-261) to confirm whether a completed spell can still appear in s.e, s.cur or s.rn on the tick it leaves the queue.",
+     "Live run with a follower present: cast a buffered spell that completes normally and check the log for 're-injecting eaten spell' (QueueHud.cpp:751) while a 0x3D entry is queued.",
+     "Consider a test for completion with hasFollowLeader=true, which none of the current tests cover."
+    ],
+    "id": "f77ae8184a09",
+    "lines": "575-580",
+    "reasoning": "Read QueueHudLogic.h 512-517 and 575-581, QueueHud.cpp 733-744, and tests 760-768 and 1186. ActionBuffer has no completion or 'seen in engine queue' field. So a buffered action that leaves the queue (finished, failed or eaten) while a 0x3D entry is present is indistinguishable and gets re-injected (QueueHudLogic.h:580), up to two times (578). The design (30_queue_hud.md:88) treats 0x3D as the wipe signal, and no test covers completion with 0x3D present. Whether that coexistence happens in play is runtime. Medium.",
+    "reduce_severity": "medium",
+    "reduce_verification": "downgraded",
+    "sonnet_quotes_ok": "5/5",
+    "specialty": "source-logic",
+    "suggested_investigation": "Trace a follower's engine queue across the tick a buffered spell leaves the queue. Check whether 0x3D is present on that tick after a normal finish, not only during a real wipe. Check whether the engine exposes a completion signal (cur/rn state, or a spell-slot or cost change) that could distinguish a completed action from an eaten one.",
+    "tier": "CONFIRMED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "test",
+    "claim": "Line 289: `// F4: the 0x740FC0 guarded read needs a readable ecx`. Line 299: `held -> real object (readable ecx: only the HOLD rule may refuse)`. Yet lines 301 (PC -> real object), 303 (unreadable creature -> real object), 307 (instant=0 -> real object) and 310 (log mode -> real object) all call LuoLeaderInstant_74F423(P(1), P(ebp)), i.e. with an unreadable ecx. The four assertions expect the real object, and the comment on 299 says that with an unreadable ecx some other rule, not the HOLD rule, makes the call return the real object.\n\nWhy it matters: If the guard on ecx returns the real object before the PC, unreadable-creature, instant=0 and log-mode decisions run, those four CHECKs pass whatever those rules do. They cannot fail, so the leader-instant gate does not test the rules their names describe. This is preexisting in the context lines, not introduced by the packet, but it weakens the gate.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "research/companion_levelup/tools/parity/gate_test.cpp",
+      "line": 301,
+      "text": "CHECK(LuoLeaderInstant_74F423(P(1), P(ebp)) == real, \"leader instant: PC -> real object\");"
+     },
+     {
+      "file": "research/companion_levelup/tools/parity/gate_test.cpp",
+      "line": 310,
+      "text": "CHECK(LuoLeaderInstant_74F423(P(1), P(ebp)) == real, \"leader instant: log mode -> real object\");"
+     },
+     {
+      "file": "research/companion_levelup/tools/parity/gate_test.cpp",
+      "line": 97,
+      "text": "static void* P(uintptr_t a) { return reinterpret_cast<void*>(a); }"
+     },
+     {
+      "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+      "line": 2037,
+      "text": "if (!probeRead(S_Chain, ecx, 8) || reinterpret_cast<CharChange_t>(g_eng.charChange)(ecx)) return p;"
+     },
+     {
+      "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+      "line": 2046,
+      "text": "return g_noCtl;"
+     },
+     {
+      "file": "patch_manager_mods/_shared_src/SafeRead.h",
+      "line": 101,
+      "text": "if (a < 0x10000 || a + len < a || !regionReadable(a, a + len)) { recordFail(site, a, len, caller); return false; }"
+     }
+    ],
+    "file": "research/companion_levelup/tools/parity/gate_test.cpp",
+    "final_severity": "medium",
+    "final_verdict": "confirmed",
+    "haiku_confidence": "high",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "reproduced",
+    "human_check_steps": [
+     "In a scratch copy, temporarily drop the mode check at LevelUpOverride.cpp:2024 and run gate_test; the CHECKs at gate_test.cpp:301-310 should still pass, which confirms they are vacuous.",
+     "Optionally check git history for gate_test.cpp:301-310 to see whether the P(1) ecx predates this packet (the tree has no .git)."
+    ],
+    "id": "035d6f241dd2",
+    "lines": "301-310",
+    "reasoning": "Read gate_test.cpp:270-310, P() at :97, LevelUpOverride.cpp:2021-2046 and SafeRead.h:97-101. For ecx=1, probeRead fails the a < 0x10000 test, so the guard at 2037 returns the real object before the dummy return at 2046. Every ecx=1 path returns real, so the PC, unreadable-creature, instant=0 and log-mode CHECKs (301-310) cannot fail. No other test covers log mode or PC with a readable ecx. The claim misreads the line-299 comment, which concerns a readable ecx.",
+    "reduce_severity": "medium",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "6/6",
+    "specialty": "test-weakening",
+    "suggested_investigation": "In LevelUpOverride.cpp, read LuoLeaderInstant_74F423 and the 0x740FC0 readability guard. Check whether an unreadable ecx returns the real object before the creature, PC, instant and mode checks. If it does, rerun lines 301, 303, 307 and 310 with the readable ctlEcxMem. Then confirm the test fails when the PC rule or the instant=0 rule is mutated in the handler.",
+    "tier": "CONFIRMED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "gate-integrity",
+    "claim": "Known facts record six CHECKs removed (old lines 48-57): logOpen below cap, logf stops at cap, one cap marker, counter == MaxLogLines, logOpen refuses at cap, logLine writes nothing at cap. Post-image line 48 now holds only the comment '// F1 log cap moved to KpLog.h (Common); pinned by KpLog's own tests.' The code those checks exercised no longer lives in LevelUpOverride.cpp: line 164 is 'inline bool logOpen() { return true; }', and logf/logLine (173-190) only call KP_LOG with no cap check. A grep of level_up_override_src finds no g_logLines or MaxLogLines. The only other cap coverage in the parity directory is scenario_test.cpp:408 ('logcap' step), and scenarios.py:173 lists decision expectations only. I did not read the scenario_test.cpp logcap body, so I cannot rule out a marker or line-count check there.\n\nWhy it matters: No test in this packet now fails if the cap stops at the wrong line, emits zero or two markers, or lets logLine write past the limit. If KpLog's own tests do not pin those exact properties, an F1 regression passes the gate unnoticed.",
+    "duplicates": [
+     {
+      "file": "research/companion_levelup/tools/parity/unit_gap_test.cpp",
+      "id": "32982de3d2be",
+      "lines": "48"
+     }
+    ],
+    "evidence_quotes": [
+     {
+      "file": "research/companion_levelup/tools/parity/unit_gap_test.cpp",
+      "line": 48,
+      "text": "// F1 log cap moved to KpLog.h (Common); pinned by KpLog's own tests."
+     },
+     {
+      "file": "scripts/luo_log_check.py",
+      "line": 155,
+      "text": "(\"LOG_CAP\", r\"== log line cap reached ==\", \"cpp:135\"),"
+     },
+     {
+      "file": "scripts/testdata/kplog/fallback_log.txt",
+      "line": 4,
+      "text": "--- log cap reached ---"
+     },
+     {
+      "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+      "line": 164,
+      "text": "inline bool logOpen() { return true; }"
+     }
+    ],
+    "file": "research/companion_levelup/tools/parity/unit_gap_test.cpp",
+    "final_severity": "medium",
+    "final_verdict": "confirmed",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "reproduced",
+    "human_check_steps": [
+     "Locate KpLog.h and its test file in the Common tree; confirm they assert exactly one cap marker, the cut-off line, and that writes past the cap emit nothing.",
+     "Check VCS history for the pre-change unit_gap_test.cpp lines 48-57 to confirm the six removed CHECKs.",
+     "Compare the LOG_CAP pattern in scripts/luo_log_check.py:155 with the text KpLog actually writes at the cap."
+    ],
+    "id": "d121f4a74209",
+    "lines": "48",
+    "reasoning": "Read unit_gap_test.cpp:33-63: line 48 holds only the comment, and no F1 cap CHECK remains in the packet. LevelUpOverride.cpp:164 shows the cap logic has left this tree, and KpLog.h and its tests are absent, so in-tree F1 cap coverage is zero. Corroborating: the in-tree LOG_CAP checker (luo_log_check.py:155) looks for '== log line cap reached ==', which no tree emitter writes; the fallback writes '--- log cap reached ---' (fallback_log.txt:4), so the only in-tree cap-marker check cannot fire. The six removed CHECKs cannot be compared without git.",
+    "reduce_severity": "high",
+    "reduce_verification": "confirmed",
+    "sonnet_quotes_ok": "4/4",
+    "specialty": "test-weakening",
+    "suggested_investigation": "Locate KpLog.h (included at LevelUpOverride.cpp:79) and its test file in the Common tree, which were outside this packet's allowed reads. Check that some test asserts: exactly MaxLogLines lines written, exactly one cap marker, and refusal of further writes. Also read scenario_test.cpp around line 408 for a marker or line-count assertion. Verification: temporarily change the cap constant in KpLog and see whether any test in the suite fails.",
+    "tier": "CONFIRMED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "gate-integrity",
+    "claim": "When the per-interface dumper is missing, `candidates = sorted((repo_root / \"tests/abi\").glob(\"abi_dump_*.cpp\"))` and `dumper_src = candidates[0]` take whichever dumper sorts first; the only new effect is a stderr line (367). The update branch (384-388) then does `toml_content = dump_to_toml_str(dumped_data)` and `g_path.write_text(...)` with no comparison of the dumped interface name to the golden. The interface-name check at diff_abi_golden line 157 only runs in non-update mode, so `--update` can overwrite golden X with the name and layout of another interface.\n\nWhy it matters: Rebaselining a golden from a different interface's dumper silently destroys the baseline for X, and later check runs then compare against the wrong contract. The only signal is a warning printed before 'Updated golden', and the `--header` guard added at 325-327 does not cover this path.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "scripts/abi_check.py",
+      "line": 366,
+      "text": "dumper_src = candidates[0]"
+     },
+     {
+      "file": "scripts/abi_check.py",
+      "line": 367,
+      "text": "sys.stderr.write(f\"No dumper for {iface_tag}; falling back to {dumper_src.name}"
+     },
+     {
+      "file": "scripts/abi_check.py",
+      "line": 384,
+      "text": "if args.update:"
+     },
+     {
+      "file": "scripts/abi_check.py",
+      "line": 386,
+      "text": "g_path.write_text(toml_content, encoding=\"utf-8\")"
+     },
+     {
+      "file": "scripts/abi_check.py",
+      "line": 388,
+      "text": "continue"
+     },
+     {
+      "file": "scripts/abi_check.py",
+      "line": 157,
+      "text": "if iface_dumped.get(\"name\") != name or iface_dumped.get(\"major\") != major:"
+     },
+     {
+      "file": "scripts/abi_check.py",
+      "line": 325,
+      "text": "if args.update and args.header:"
+     }
+    ],
+    "file": "scripts/abi_check.py",
+    "final_severity": "medium",
+    "final_verdict": "confirmed",
+    "haiku_confidence": "high",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "reproduced",
+    "human_check_steps": [
+     "In a scratch copy, rename a golden's interface to a name with no matching abi_dump file, run abi_check.py --update, and see whether the golden is rewritten with another interface's name.",
+     "Grep CI or hook configuration for abi_check.py --update invocations to judge whether the update path can run unattended."
+    ],
+    "id": "2bb645e71f18",
+    "lines": "362-367",
+    "reasoning": "Read abi_check.py 150-161, 296-330, 359-400. Lines 362-367 fall back to candidates[0] with only a stderr note. Lines 384-386 write dumped_data to golden X with no name check. The name check at 157 is in diff_abi_golden, reached only at 394, after the continue at 388, so update mode skips it. The --header guard at 325 does not cover this path. The defect is real but latent: the tree has one golden and one matching dumper, so the trigger needs a new golden without a dumper.",
+    "reduce_severity": "high",
+    "reduce_verification": "confirmed",
+    "sonnet_quotes_ok": "7/7",
+    "specialty": "python-tooling",
+    "suggested_investigation": "In a scratch copy of tests/abi, keep a golden whose interface has no abi_dump_<stem>.cpp and run `python3 scripts/abi_check.py --update`; diff the golden against its previous content and confirm the [interface] name came from the other dumper. Then check whether update mode should refuse when the dumped name/major differs from the golden, reusing the comparison at diff_abi_golden line 157, or whether the fallback should be removed.",
+    "tier": "CONFIRMED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "gate-integrity",
+    "claim": "is_game_running() wraps the ps probe in `except Exception: pass` and then `return False` (694-696). The only caller is the abort gate `if (args.deploy or args.rollback) and is_game_running():` at 1743-1745, so any failure of the probe (ps missing, non-zero exit from check_output, odd output) is read as 'game not running' and deploy/rollback proceed.\n\nWhy it matters: The module docstring promises 'Aborts deploy if swkotor2.exe is running'. A failing probe silently disables that protection, so --deploy can overwrite override/*.gui while the game holds them open or has them loaded.",
+    "duplicates": [
+     {
+      "file": "scripts/generate_ultrawide_gui_overrides.py",
+      "id": "601ca469508b",
+      "lines": "683-696"
+     }
+    ],
+    "evidence_quotes": [
+     {
+      "file": "scripts/generate_ultrawide_gui_overrides.py",
+      "line": 694,
+      "text": "except Exception:"
+     },
+     {
+      "file": "scripts/generate_ultrawide_gui_overrides.py",
+      "line": 1743,
+      "text": "if (args.deploy or args.rollback) and is_game_running():"
+     },
+     {
+      "file": "scripts/generate_ultrawide_textures.py",
+      "line": 2577,
+      "text": "or getattr(args, \"world_rollback\", False)) and is_game_running():"
+     }
+    ],
+    "file": "scripts/generate_ultrawide_gui_overrides.py",
+    "final_severity": "medium",
+    "final_verdict": "confirmed",
+    "haiku_confidence": "high",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "reproduced",
+    "human_check_steps": [
+     "On the deploy host, run the generator with ps removed from PATH and confirm --deploy proceeds while swkotor2.exe is running.",
+     "Confirm the same fail-open in generate_ultrawide_textures.py's deploy/rollback gate near line 2577.",
+     "Run `ps -eo pid,args` under wine and confirm the swkotor2.exe line matches the regex `[s]wkotor2\\.exe`."
+    ],
+    "id": "822afff6842c",
+    "lines": "694-696",
+    "reasoning": "Read 683-696 and the caller at 1743-1745. Any exception from the ps probe (missing binary or non-zero exit) is swallowed by 'except Exception' and returns False, so the deploy/rollback abort fails open as claimed. The 'only caller' detail is wrong: generate_ultrawide_textures.py:2577 uses the same probe as its own deploy/rollback gate, which widens the impact. No comment marks the fail-open as deliberate. Medium because it needs ps to fail.",
+    "reduce_severity": "high",
+    "reduce_verification": "confirmed",
+    "sonnet_quotes_ok": "3/3",
+    "specialty": "python-tooling",
+    "suggested_investigation": "Run the script with --deploy and a PATH where ps is absent (or a shim that exits 1) and confirm it proceeds past line 1743. Check whether the caller can distinguish 'probe failed' from 'not running'; from the code it cannot.",
+    "tier": "CONFIRMED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "gate-integrity",
+    "claim": "registration_check's `ok` is an always-true expression for any content_k in (0, 1]: `abs(fx(729) - fx(723)) <= 6*k` is exactly 6k, and the two portrait checks (`409 < 583 < 716`, `530 < 583 < 636`) are strict orderings that fx(x,k) = 400 + (x-400)*k preserves for every k > 0. Separately, main discards the boolean at 1835 (`reg, _ = registration_check(content_k)`), so even a real MISMATCH would not affect the deploy.\n\nWhy it matters: The report header prints 'registration: OK' as if overlay registration had been verified, but the check cannot return MISMATCH for any content aspect. Its docstring says top_p 'must land' on the equip_p/inventory_p geometry, so the stated safety check is a no-op.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "scripts/generate_ultrawide_gui_overrides.py",
+      "line": 1681,
+      "text": "abs(f[\"top_p tabs anchor\"] - f[\"equip_p LB_DESC right edge\"]) <= 6 * k + 1e-9"
+     },
+     {
+      "file": "scripts/generate_ultrawide_gui_overrides.py",
+      "line": 607,
+      "text": "return 400.0 + (x - 400.0) * k"
+     },
+     {
+      "file": "scripts/generate_ultrawide_gui_overrides.py",
+      "line": 1835,
+      "text": "reg, _ = registration_check(content_k)"
+     }
+    ],
+    "file": "scripts/generate_ultrawide_gui_overrides.py",
+    "final_severity": "medium",
+    "final_verdict": "confirmed",
+    "haiku_confidence": "high",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "reproduced",
+    "human_check_steps": [
+     "Call registration_check(k) for k = 0.7407 and 0.5, and again with the portrait anchor moved to 750, to confirm ok only flips when a REGISTRATION constant is edited.",
+     "Confirm the printed header line reads 'registration: OK' for any valid --width/--height."
+    ],
+    "id": "6ccefb375bd5",
+    "lines": "1680-1684",
+    "reasoning": "Read 1675-1687, fx at 605-607, content_factor at 600-602, and the call at 1835. For k>0 the tabs term is exactly 6k, and fx is strictly increasing, so both portrait orderings hold. ok is therefore always True for valid inputs (k cannot reach 0 because aspect >= 4:3). main discards the boolean, so the 'registration: OK' header line is a check that cannot fail. It gates nothing, so medium.",
+    "reduce_severity": "high",
+    "reduce_verification": "confirmed",
+    "sonnet_quotes_ok": "3/3",
+    "specialty": "python-tooling",
+    "suggested_investigation": "Call registration_check with several values of k in (0, 1] (for example 0.1, 0.5, 0.74, 1.0) and confirm ok is always True. Then compare with what the check should measure, such as the engine's rendered positions, to decide whether it needs a different test or should be removed.",
+    "tier": "CONFIRMED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "logic",
+    "claim": "refreshCache sets `c0.have = 0 < cnt && v[0].ok;` (696) and clears only pk/apk when false (697). uiFrame then re-asserts `g_card0.have = true;` on every frame the slot exists (777). Nothing in the packet sets have back to false: hideAll (554-561) resets only seen and st. c0.m is never cleared, and c0.m.cur and c0.m.max feed resolveState at 829.\n\nWhy it matters: After the leader's party entry disappears (cnt==0 or v[0].ok false, e.g. during teardown or load), the leader button is still drawn with HP from the last good refresh. Clicks reach useNow, which refuses with 'member not in party' (307), so the button looks live but does nothing. The companion path (674-675) does honour its have gate, so the two paths diverge. The comment 'always have if slot exists' suggests the bypass is deliberate, but the stale data is not bounded.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+      "line": 696,
+      "text": "c0.have = 0 < cnt && v[0].ok;"
+     },
+     {
+      "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+      "line": 697,
+      "text": "if (!c0.have) { c0.pk = Pick(); c0.apk = Pick(); } else {"
+     },
+     {
+      "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+      "line": 777,
+      "text": "g_card0.have = true;"
+     },
+     {
+      "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+      "line": 891,
+      "text": "if (shui::clickAllowed(c.st)) {"
+     },
+     {
+      "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+      "line": 892,
+      "text": "if (c.st == shui::BtnState::NoItem) KP_LOG(chCall, \"CLICK member=%d noitem\", onBtn);"
+     },
+     {
+      "file": "patch_manager_mods/_shared_src/SelfHealUi.h",
+      "line": 56,
+      "text": "if (!havePick) return BtnState::NoItem;"
+     }
+    ],
+    "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+    "final_severity": "low",
+    "final_verdict": "confirmed",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "reproduced",
+    "human_check_steps": [
+     "Trace a frame where party::members returns 0 while the k==0 HUD slot is still matched. Record g_card0.st and the 'CLICK member=0 noitem' log line on a leader click.",
+     "Confirm no 'REFUSE member 0 not in party' line appears for the leader in that state, since the stale state resolves to NoItem."
+    ],
+    "id": "d74365c9d82d",
+    "lines": "696-697",
+    "reasoning": "Read CompanionSelfHeal.cpp 296-340, 696-698, 750, 770-780, 829, 889-894; SelfHealUi.h:53-62; Pick at :132-133. Stale have and c0.m are real: refreshCache sets have false but keeps c0.m, and line 777 re-asserts have. Haiku's mechanism is wrong. refreshCache clears c0.pk to Pick() (pick -1), so resolveState returns NoItem (or FullHp). clickAllowed(NoItem) routes to the log-only branch at 892, so useNow and the 307 refusal are not reached. The result is a misleading no-item leader button with dead clicks, transient while the party read fails with the HUD open.",
+    "reduce_severity": "medium",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "6/6",
+    "specialty": "source-logic",
+    "suggested_investigation": "Check shui::resolveState with have=true, pk.pick<0 and cur==max (and with stale cur/max) to see which look is shown when the leader is gone. Check whether v[0].ok can be false while the HUD slot k==0 still exists. Compare with the companion have semantics at 674-675, and consider whether c0.m should be cleared when the refresh finds no leader.",
+    "tier": "CONFIRMED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "logic",
+    "claim": "Line 70: `constexpr int MaxWarnLines = 4000;` and lines 71-73: `void logw(...) { if (g_warnLines >= MaxWarnLines) return; ++g_warnLines;`. Once the counter reaches 4000 every later warning is dropped with no 'suppressed' marker. logw is shared by one-off H1 bind-time failures (lines 400, 447-453, 463, 465) and by per-call H2 warnings in ShowItem (lines 479, 485, 488, 503, which fire on every ShowItem while a slot is unusable, as the comment on line 70 says). Compare loge() (lines 77-80), which has no cap.\n\nWhy it matters: The H2 per-ShowItem spam can spend the shared warning budget. After that, a later bind-time H1 failure (the most diagnostic warning) is silently discarded, and the log gives no sign that anything was lost. The cap trades log size for silent loss of the most useful lines.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/inventory_3d_viewport_src/Inventory3DViewport.cpp",
+      "line": 70,
+      "text": "constexpr int MaxWarnLines = 4000;  // warnings can fire per ShowItem call while a slot stays unusable"
+     },
+     {
+      "file": "patch_manager_mods/inventory_3d_viewport_src/Inventory3DViewport.cpp",
+      "line": 72,
+      "text": "if (g_warnLines >= MaxWarnLines) return;"
+     },
+     {
+      "file": "patch_manager_mods/inventory_3d_viewport_src/Inventory3DViewport.cpp",
+      "line": 447,
+      "text": "if (id != ExpectedControlId) { logw(\"H1: GUI control missing (id=%d), slot unusable\", id); return; }"
+     },
+     {
+      "file": "patch_manager_mods/inventory_3d_viewport_src/Inventory3DViewport.cpp",
+      "line": 479,
+      "text": "if (!s->usable) { logw(\"H2: slot unusable (panel=%08x)\", panel); return; }"
+     },
+     {
+      "file": "patch_manager_mods/inventory_3d_viewport_src/Inventory3DViewport.cpp",
+      "line": 83,
+      "text": "void dlogf(const char* fmt, ...) {  // debug-only, own cap so it cannot starve the bind/error/drag lines"
+     }
+    ],
+    "file": "patch_manager_mods/inventory_3d_viewport_src/Inventory3DViewport.cpp",
+    "final_severity": "low",
+    "final_verdict": "confirmed",
+    "haiku_confidence": "high",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "reproduced",
+    "human_check_steps": [
+     "In a long session log (inventory-3d-viewport_log.txt, not in the tree), count 'H2: slot unusable' lines against the 4000 cap and check whether any later 'H1' line is missing.",
+     "Check how often the item-selection hook (0x008A8172) fires on an unusable slot in a real session."
+    ],
+    "id": "6adfec63f6fb",
+    "lines": "70-73",
+    "reasoning": "Read Inventory3DViewport.cpp 55-88 and 395-480. Confirmed: logw has one shared 4000-line cap (70-72) with no suppressed marker. H1 bind failures (447-465) and per-call H2 warnings (479-503) both use it, while loge (77-80) is uncapped. The author's dlogf comment (83) shows bind lines were meant to be protected from starvation, which logw does not do. The trigger needs thousands of ShowItem calls on an unusable slot. ShowItem is an item-selection hook, so the rate is human-driven and the cap is rarely reached. Silent loss is real but edge-case.",
+    "reduce_severity": "medium",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "5/5",
+    "specialty": "source-logic",
+    "suggested_investigation": "Check how many logw() calls one unusable slot produces per ShowItem (H2 path, lines 479-503) and whether a long session can reach 4000 before an H1 failure (lines 400-465) occurs. Check whether the cap path ever writes a marker line. Compare with the logf() cap at lines 60-68, which is also silent, to see whether this follows an existing pattern or adds a new failure mode. Verify in the log file that the last warning before silence is an H2 line.",
+    "tier": "CONFIRMED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "memory-safety",
+    "claim": "Line 184 only rejects a null pointer: `if (!rd(ebp, -0x28, &self) || self == 0) return;`. Lines 220-221 then store through that pointer with no readability or writability check: `*reinterpret_cast<float*>(self + 0x408) = fixedNx;` / `... self + 0x40C = fixedNy;`. This runs by default (line 139). The only SafeRead-checked access to the same addresses is the read-back at line 226, after the store. Header line 2 says every hook access goes through SafeRead.\n\nWhy it matters: If [ebp-0x28] holds a stale, freed or garbage pointer on any call of this hook, a per-frame store lands in arbitrary memory and can crash the game or corrupt the engine's input object. Before this change, every access in the probe was guarded.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/mouse_probe_src/MouseProbe.cpp",
+      "line": 184,
+      "text": "if (!rd(ebp, -0x28, &self) || self == 0) return;"
+     },
+     {
+      "file": "patch_manager_mods/mouse_probe_src/MouseProbe.cpp",
+      "line": 220,
+      "text": "*reinterpret_cast<float*>(self + 0x408) = fixedNx;"
+     },
+     {
+      "file": "patch_manager_mods/mouse_probe_src/MouseProbe.cpp",
+      "line": 226,
+      "text": "if (!rd(self, 0x408, &nx) || !rd(self, 0x40C, &ny)) return;"
+     },
+     {
+      "file": "patch_manager_mods/mouse_probe_src/MouseProbe.cpp",
+      "line": 2,
+      "text": "Hooks read engine memory through SafeRead and"
+     },
+     {
+      "file": "patch_manager_mods/18_mouse_camera_investigation.md",
+      "line": 212,
+      "text": "end of PollMouseDelta (success + failure paths merge): this+0x408/+0x40C = final normalised floats, this=[ebp-0x28]"
+     },
+     {
+      "file": "patch_manager_mods/18_mouse_camera_investigation.md",
+      "line": 184,
+      "text": "On GetDeviceState failure both are 0."
+     },
+     {
+      "file": "patch_manager_mods/_shared_src/SafeRead.h",
+      "line": 107,
+      "text": "__attribute__((noinline, unused)) static bool probeWrite(unsigned site, void* p, size_t len) {"
+     }
+    ],
+    "file": "patch_manager_mods/mouse_probe_src/MouseProbe.cpp",
+    "final_severity": "low",
+    "final_verdict": "confirmed",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "reproduced",
+    "human_check_steps": [
+     "Disassemble PollMouseDelta (around 0x0072F110) and confirm this+0x408/+0x40C is stored on every path before the hook at 0x0072F2EC, so self is always engine-live there.",
+     "Confirm no path reaches the 0x0072F2EC detour without the engine having dereferenced [ebp-0x28] first."
+    ],
+    "id": "ff23d43b210c",
+    "lines": "220-221",
+    "reasoning": "Re-read MouseProbe.cpp 2, 180-230, SafeRead.h 107, and doc 18 lines 184 and 212. The stores at 220-221 are unchecked, and the header's SafeRead statement covers reads only, so the write gap is real. The hook sits at the PollMouseDelta merge point, where the engine has just written this+0x408/+0x40C on both paths (doc 18 says both are 0 on failure), so self is engine-live and already dereferenced in the same function. The stale-pointer scenario is therefore unlikely. probeWrite exists but is unused by this probe.",
+    "reduce_severity": "medium",
+    "reduce_verification": "downgraded",
+    "sonnet_quotes_ok": "7/7",
+    "specialty": "source-logic",
+    "suggested_investigation": "At the hook site 0x72F2EC (doc 18), confirm that [ebp-0x28] always holds a live engine object on every call, including load, menu and world transitions where the object may be recreated. Check that the object is at least 0x410 bytes. Check saferead.h for a write-checked helper and whether the read at line 226 could be moved before the store. Run with sanitize_norm=0 on the same build and compare crash or hang behaviour.",
+    "tier": "CONFIRMED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "build",
+    "claim": "parity.py:33 adds `\"-I\", os.path.expanduser(\"~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common\")` to the g++ argv of every build() call (gate, apply, ui, playthrough, m32). The base line had no such -I. gate_test.cpp:21 and apply_test.cpp:86 `#include \"TestHarness.h\"`, but Glob `**/TestHarness.h` under the parity tree returns nothing, and literal probes of stub/_shared/TestHarness.h and stub/inc/TestHarness.h also return nothing. build() at parity.py:35-36 calls sys.exit(stderr) on a compile failure.\n\nWhy it matters: A machine-specific absolute home-directory path is now on the build line of the gate. If that path is the only thing that supplies TestHarness.h, parity.py cannot compile gate_test.cpp on any other checkout or CI runner, and the gate depends on an unversioned file outside the repository. The R10 builds at parity.py:524 and 533 use a repo-relative `tests/include` instead, which shows the in-repo convention.",
+    "duplicates": [
+     {
+      "file": "research/companion_levelup/tools/parity/parity.py",
+      "id": "6fdc7c29d62d",
+      "lines": "32-34"
+     }
+    ],
+    "evidence_quotes": [
+     {
+      "file": "research/companion_levelup/tools/parity/parity.py",
+      "line": 33,
+      "text": "os.path.expanduser(\"~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common\")"
+     },
+     {
+      "file": "research/companion_levelup/tools/parity/parity.py",
+      "line": 36,
+      "text": "sys.exit(r.stderr)"
+     },
+     {
+      "file": "research/companion_levelup/tools/parity/gate_test.cpp",
+      "line": 22,
+      "text": "#include \"TestHarness.h\""
+     },
+     {
+      "file": "research/companion_levelup/tools/parity/parity.py",
+      "line": 430,
+      "text": "build(GATE_EXE, \"gate_test.cpp\")"
+     },
+     {
+      "file": "research/companion_levelup/tools/parity/parity.py",
+      "line": 524,
+      "text": "os.path.join(os.path.dirname(os.path.dirname(ROOT)), \"tests\", \"include\"),"
+     }
+    ],
+    "file": "research/companion_levelup/tools/parity/parity.py",
+    "final_severity": "low",
+    "final_verdict": "confirmed",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "reproduced",
+    "human_check_steps": [
+     "Inspect the workspace Patches/Common directory: does it hold TestHarness.h at its top level? tests/include/TestHarness.h says it is synced from Patches/Common/test/, which is a different path from the -I target.",
+     "Run the gate's build line with the home path absent (for example `g++ -std=c++17 -fsyntax-only` with the stub dirs) to confirm the compile failure on gate_test.cpp."
+    ],
+    "id": "b5a7154f89eb",
+    "lines": "33",
+    "reasoning": "Read parity.py 32-36, 424-436 and 518-536; gate_test.cpp 17-25; a tree-wide Glob for TestHarness.h. build() adds the expanduser Patches/Common -I to every compile (line 33) and exits on failure (36). gate_test.cpp:22 includes TestHarness.h. The only TestHarness.h in the tree is tests/include/TestHarness.h, which the gate's -I list omits, while the R10 builds (524, 533) add it. So the gate cannot compile gate_test.cpp on a clean checkout. The failure is loud and the workspace-bound layout looks deliberate, so low.",
+    "reduce_severity": "medium",
+    "reduce_verification": "downgraded",
+    "sonnet_quotes_ok": "5/5",
+    "specialty": "python-tooling",
+    "suggested_investigation": "On a checkout without the ~/Games tree, rebuild gate_test.cpp with the exact argv that build() produces (drop only the home -I) and confirm the first error is 'TestHarness.h: No such file'. Then locate where TestHarness.h is actually versioned and point the -I at a repo-relative directory. Caveat: my probes of the repo-root tests/include and patch_manager_mods locations used '..' glob patterns, so their negative results may be unreliable; the stub/ probes and the **/ search are reliable.",
+    "tier": "CONFIRMED"
+   }
+  ],
+  "CONFIRMED-BY-SONNET-ONLY": [
+   {
+    "agrees_with_haiku": false,
+    "category": "gate-integrity",
+    "claim": "scenario_test.cpp:408-409 is `} else if (a == \"logcap\") {` whose only body line is a comment: 'nothing to force here, the scenario still checks the gate is unaffected'. The base line (o408) was `g_logLines = MaxLogLines;`, so the 20000-line cap is no longer forced anywhere in this path. The branch is empty, so the unknown-action guard never fires and the action silently succeeds. scenarios.py:172-173 (X13_log_capped) still runs ['load', 'logcap', 'tick atton', 'auto atton'] and expects only atton.canLevelUp=PASS and atton.pending=REWRITTEN. Both expectations are log-independent: the 'auto' branch comments its pending check as 'log-independent'. mutate.py:63-65 (LG01 'F1 regression: capped log disables the rewrite', LG02 'log cap never reached', LG03 'logOpen ignores the cap') can only be detected when the cap is actually reached.\n\nWhy it matters: X13 exists to catch the F1 log-cap regression. After this edit it passes whether or not the cap is enforced, so LG01-LG03 are likely to SURVIVE through the scenario gate. The cap check moved to KpLog.h, whose tests are outside this packet, so nothing visible here proves LevelUpOverride still behaves correctly when the log is capped.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "research/companion_levelup/tools/parity/scenario_test.cpp",
+      "line": 408,
+      "text": "} else if (a == \"logcap\") {   // the 20000-line log cap reached (F1)"
+     },
+     {
+      "file": "research/companion_levelup/tools/parity/scenario_test.cpp",
+      "line": 409,
+      "text": "// the 20000-line cap moved to KpLog.h (Common) and is pinned by its own tests; nothing to force here, the scenario still checks the gate is unaffected"
+     },
+     {
+      "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+      "line": 164,
+      "text": "inline bool logOpen() { return true; }"
+     },
+     {
+      "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+      "line": 1576,
+      "text": "logOpen();   // F1: the log is diagnostics only - logf never gates the decision and rewrite below (logOpen is a no-op here)"
+     },
+     {
+      "file": "research/companion_levelup/tools/parity/mutate.py",
+      "line": 258,
+      "text": "raise SystemExit(\"STALE mutation %s: regex matches %d times in %s (need exactly 1): %s\" % (mid, len(found), f, rx))"
+     },
+     {
+      "file": "research/companion_levelup/tools/parity/mutate.py",
+      "line": 65,
+      "text": "m(\"LG02\", CPP, r\"if \\(!g_f \\|\\| g_logLines >= MaxLogLines\\) return;\", \"if (!g_f) return;\", \"log cap never reached\")"
+     }
+    ],
+    "file": "research/companion_levelup/tools/parity/scenario_test.cpp",
+    "final_severity": "medium",
+    "final_verdict": "confirmed",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "intended-behaviour",
+    "human_check_steps": [
+     "Run mutate.py against this tree (or --only LG02) and confirm it exits with 'STALE mutation LG02' before any mutant runs.",
+     "Read KpLog.h and its tests in the Common tree to see whether the 20000-line cap is pinned there.",
+     "Decide whether X13_log_capped should be renamed or dropped, and whether LG01-LG03 should be removed."
+    ],
+    "id": "d2c66b77d42f",
+    "lines": "408-409",
+    "reasoning": "Read scenario_test.cpp:406-411, LevelUpOverride.cpp:164,1576, and mutate.py:23-28,64-66,254-262,326-329. The logcap branch is empty as claimed, but the cap is no longer in this tree: logOpen() is constant true and no g_logLines/MaxLogLines remain, so X13 asserts nothing about the cap. The survival wording is wrong: LG02/LG03 match zero times, and apply() raises SystemExit on any pattern not matching exactly once, so the staleness pass aborts the whole mutation run. LG01 matches line 1576 but is equivalent.",
+    "reduce_severity": "high",
+    "reduce_verification": "downgraded",
+    "sonnet_quotes_ok": "6/6",
+    "specialty": "test-weakening",
+    "suggested_investigation": "Run `python3 tools/parity/mutate.py --only LG01` (then LG02, LG03) and check whether each reports SURVIVED or STALE. Grep the parity tests for any other driver of the cap (unit_gap_test.cpp:48 and scenario_test.cpp:409 both say it is 'pinned by its own tests'; check that claim against KpLog's test files). Confirm whether LevelUpOverride.cpp still contains g_logLines / MaxLogLines, since mutate.py:64-65 patterns depend on it. If nothing else covers the cap, the logcap action should drive the cap through the KpLog API instead of being an empty branch.",
+    "tier": "CONFIRMED-BY-SONNET-ONLY"
+   },
+   {
+    "agrees_with_haiku": false,
+    "category": "other",
+    "claim": "Entry 1 notes (line 10): \"When attempting to run this executable, Windows/your antivirus might attempt to block it, because it's an unsigned executable ... please feel assured that this program is safe, and you can override Windows/your AV and run it.\" The same entry tells users to run an executable that rewrites their game binary (\"select your game's executable and choose to apply all patches\"), gives no hash or signature to check, and the source link is the bare word \"HERE\" with no URL.\n\nWhy it matters: Published install guidance that tells readers to bypass an antivirus warning on an unsigned executable that modifies the game binary weakens a user-side safety check, and gives readers no way to verify the download.",
+    "duplicates": [
+     {
+      "file": "neocities_mods_detailed.json",
+      "id": "20f906aab1cd",
+      "lines": "10"
+     }
+    ],
+    "evidence_quotes": [
+     {
+      "file": "neocities_mods_detailed.json",
+      "line": 10,
+      "text": "When attempting to run this executable, Windows/your antivirus might attempt to block it, because it's an unsigned executable."
+     },
+     {
+      "file": "neocities_mods_detailed.json",
+      "line": 10,
+      "text": "the source code is publicly available HERE --please feel assured that this program is safe"
+     },
+     {
+      "file": "neocities_mods_detailed.json",
+      "line": 10,
+      "text": "you can override Windows/your AV and run it."
+     },
+     {
+      "file": "neocities_mods_detailed.json",
+      "line": 10,
+      "text": "select your game's executable and choose to apply all patches except the borderless windowed patch"
+     }
+    ],
+    "file": "neocities_mods_detailed.json",
+    "final_severity": "low",
+    "final_verdict": "confirmed",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "intended-behaviour",
+    "human_check_steps": [
+     "Open the live guide entry for 3C-FD and check whether 'HERE' links anywhere; compare with the export that produced neocities_mods_detailed.json.",
+     "Check the deadlystream file 2734 page for a published SHA-256 or signature and for a linked source repository.",
+     "Decide editorially whether telling readers to override an AV block on an unsigned binary should stay."
+    ],
+    "id": "6a2684bd832c",
+    "lines": "10",
+    "reasoning": "Read neocities_mods_detailed.json:10 (the whole entry note). The tree has the text verbatim: an unsigned executable that rewrites the game binary, 'you can override Windows/your AV and run it', no hash or signature, and the source only as 'HERE' with no URL in the file. Haiku is right that the wording is deliberate, but deliberate editorial guidance still weakens a user-side check. Low severity: it is advice, and the missing link may be an export artifact.",
+    "reduce_severity": "medium",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "4/4",
+    "specialty": "build-config",
+    "suggested_investigation": "Compare this notes paragraph with the source guide it was copied from to confirm the AV-override sentence is intended as published text. Check whether the 3C-FD source page publishes a hash or signature that the guide could cite. This is a content review; no code path is involved.",
+    "tier": "CONFIRMED-BY-SONNET-ONLY"
+   },
+   {
+    "agrees_with_haiku": false,
+    "category": "build",
+    "claim": "test.toml:4 adds \"-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common\" to the committed [common_contract_test] cxxflags. This is a per-user absolute location outside this repo; the in-repo shared headers are the first entry (\"-I../_shared_src\"). The comment at test.toml:1 says the test needs 'the shared headers and the host Win32 stub' and does not mention a Patches/Common include dir. TOML strings are literal, so the file itself does not expand $HOME. The identical literal appears at patch_manager_mods/shield_bar_src/test.toml:6, whose comment says the Common dir supplies PortraitSlots.h -> kpatch_api.h. A Glob for **/kpatch_api.h under patch_manager_mods/_shared_src returned no files.\n\nWhy it matters: On any other checkout or CI machine the -I either resolves to nothing (gcc/clang silently ignore a missing -I dir) or to a literal directory named '$HOME' if the runner does not shell-expand. If kpatch_api.h is needed and not found, -Werror builds fail. On the author's machine the contract test can compile against an external copy of the shared headers outside this repo, so it may pass while testing code that differs from what is committed here, which defeats the 'any edit to the shared headers re-runs it' purpose stated in common_contract_test.cpp:5.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/level_up_override_src/test.toml",
+      "line": 4,
+      "text": "cxxflags = [\"-I../_shared_src\", \"-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common\", \"-I../../research/companion_levelup/tools/parity/stub\", \"-DGUIKIT_HOST\", \"-Werror\"]"
+     },
+     {
+      "file": "patch_manager_mods/level_up_override_src/test.toml",
+      "line": 1,
+      "text": "# Per-test table: the Common contract test needs the shared headers and the host Win32 stub (mirrors shield_bar_src/test.toml)."
+     },
+     {
+      "file": "patch_manager_mods/level_up_override_src/common_contract_test.cpp",
+      "line": 11,
+      "text": "#include \"GuiTip.h\""
+     },
+     {
+      "file": "patch_manager_mods/_shared_src/GuiKit.h",
+      "line": 25,
+      "text": "#include \"WindowHook.h\""
+     },
+     {
+      "file": "patch_manager_mods/_shared_src/WindowHook.h",
+      "line": 10,
+      "text": "#include <windows.h>"
+     },
+     {
+      "file": "patch_manager_mods/_shared_src/K2Addr.h",
+      "line": 19,
+      "text": "#include \"GameAddr.h\""
+     }
+    ],
+    "file": "patch_manager_mods/level_up_override_src/test.toml",
+    "final_severity": "low",
+    "final_verdict": "confirmed",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "refuted",
+    "human_check_steps": [
+     "On a clean checkout without the Patches/Common directory, build common_contract_test with the test.toml flags and -Werror to confirm it compiles.",
+     "Ask the author whether the Patches/Common entry was copied from shield_bar_src/test.toml on purpose, since this test has no PortraitSlots.h dependency."
+    ],
+    "id": "ce3f285cbcb0",
+    "lines": "4",
+    "reasoning": "Read test.toml 1-4, common_contract_test.cpp 1-20, and the #include lines of GuiTip, GuiKit, GameAddr, K2Addr, Party, SafeRead, FileWatch and WindowHook. Line 4 commits a per-user $HOME Patches/Common -I, copied from shield_bar_src. No header in this test's direct include closure is in Patches/Common, and no kpatch_api.h is reached, so the test does not need the path. Haiku's $HOME expansion point is right (run_tests.py expand), but the committed per-user path is still a hygiene defect. Low.",
+    "reduce_severity": "medium",
+    "reduce_verification": "downgraded",
+    "sonnet_quotes_ok": "6/6",
+    "specialty": "build-config",
+    "suggested_investigation": "Find the test runner's handling of cxxflags: does it run through a shell or expand environment variables, or does it pass argv directly? Do a clean checkout without the external KOTOR2_Mod_Workspace tree and build common_contract_test with -Werror; see whether kpatch_api.h or any other header that only Patches/Common provides is missing. Check whether kpatch_api.h exists anywhere under patch_manager_mods/ (the glob of _shared_src found nothing). Diff the external Patches/Common headers against the in-repo _shared_src headers that common_contract_test.cpp includes (GuiTip.h, GameAddr.h, Party.h, FileWatch.h). Check whether the comment at test.toml:1 should be updated to name the Common dir.",
+    "tier": "CONFIRMED-BY-SONNET-ONLY"
+   },
+   {
+    "agrees_with_haiku": false,
+    "category": "memory-safety",
+    "claim": "Lines 288-290 validate msgp only through reads: `rd(msgp, 4, &id)` and `rd(msgp, 0xC, &lp)`. Line 306 then stores through the same pointer: `*reinterpret_cast<int*>(msgp + 4) = clicklogic::MsgLDbl;`. The gate at line 305 is enabled by default (line 140 `synth_dblclk` defaults to 1). Header line 3 says the sanitizeNorm path is \"the only engine write\", which this contradicts. The file-wide grep found no other stores to engine memory besides lines 220, 221 and 306.\n\nWhy it matters: This is a second, undocumented engine write into a game-owned message struct. A read-only mapping, a struct the game reuses after dispatch, or a pointer that changes between the read and the store would fault or push a forged message id into the game.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/mouse_probe_src/MouseProbe.cpp",
+      "line": 286,
+      "text": "if (!rd(ebp, 8, &msgp)) return;"
+     },
+     {
+      "file": "patch_manager_mods/mouse_probe_src/MouseProbe.cpp",
+      "line": 288,
+      "text": "if (!rd(msgp, 4, &id) || !clicklogic::isMouseButtonMsg(id)) return;"
+     },
+     {
+      "file": "patch_manager_mods/mouse_probe_src/MouseProbe.cpp",
+      "line": 306,
+      "text": "*reinterpret_cast<int*>(msgp + 4) = clicklogic::MsgLDbl;"
+     },
+     {
+      "file": "patch_manager_mods/mouse_probe_src/MouseProbe.cpp",
+      "line": 17,
+      "text": "live in ClickLogic.h (pure, tested)."
+     },
+     {
+      "file": "patch_manager_mods/mouse_probe_src/MouseFixLogic.h",
+      "line": 69,
+      "text": "// Decision helper for double-click synthesis when Wine drops WM_LBUTTONDBLCLK under XWayland."
+     },
+     {
+      "file": "patch_manager_mods/18_mouse_camera_investigation.md",
+      "line": 178,
+      "text": "builds {msg, wParam, lParam with y flipped"
+     }
+    ],
+    "file": "patch_manager_mods/mouse_probe_src/MouseProbe.cpp",
+    "final_severity": "low",
+    "final_verdict": "confirmed",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "intended-behaviour",
+    "human_check_steps": [
+     "Disassemble WndProc 0x40A750 and OnMouseMessage 0x72E030 to confirm the message struct at [ebp+8] is a per-call writable local.",
+     "Check whether the engine re-reads msg+4 after the 0x72E039 hook, which decides whether the rewrite reaches dispatch.",
+     "Run with synth_dblclk=1 on a Wine session that drops WM_LBUTTONDBLCLK and check the SYNTHDBL log lines and any access violation at the hook."
+    ],
+    "id": "ed6f9f335c3f",
+    "lines": "305-306",
+    "reasoning": "Re-read MouseProbe.cpp 281-313, MouseFixLogic.h 69-72 and doc 18 line 178. The synthesis is deliberate (MouseFixLogic.h:69, default-on, logged as SYNTHDBL), so the rewrite itself is intended. Two parts of the claim hold: the file header's click paragraph (lines 12-17) does not mention the write, and the store at 306 has no writability check. The message struct is built per call by the engine's WndProc, so it is likely a writable local and the practical risk is low. Haiku's intended-behaviour verdict misses the undocumented and unchecked points.",
+    "reduce_severity": "medium",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "6/6",
+    "specialty": "source-logic",
+    "suggested_investigation": "At 0x72E039 (OnMouseMessage), check that ebp+8 points to writable memory owned by the dispatcher for the duration of the call, and whether msg+4 is read again after the probe returns. Confirm clicklogic::MsgLDbl equals 0x203 in ClickLogic.h. Confirm the gate at line 305 (shouldSynthesizeDblClick in MouseFixLogic.h:70-72) can only fire for id 0x201. Correct the header claim in line 3.",
+    "tier": "CONFIRMED-BY-SONNET-ONLY"
+   },
+   {
+    "agrees_with_haiku": false,
+    "category": "logic",
+    "claim": "actionInQueue is set for any T_CAST_SPELL engine entry (line 734), for cur.subType 9 (line 737) and for rn subType 9 (line 739). It feeds shouldReInject (QueueHudLogic.h:579 `if (actionInQueue) return false;`) and the else-if clear (line 778). The item-only predicate became spell-inclusive, and the subType 9 = cast-spell mapping appears only in the comment on line 737.\n\nWhy it matters: Any spell the same creature casts itself (a manual cast by the player) keeps buf.active set and suppresses recovery of an eaten buffered action. That recovery loss happens in normal use.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+      "line": 734,
+      "text": "if (s.e[i].type == qh::T_USE_ITEM || s.e[i].type == qh::T_CAST_SPELL) actionInQueue = true;"
+     },
+     {
+      "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+      "line": 737,
+      "text": "if (s.haveCur && (s.cur.subType == 9 || s.cur.subType == 10)) actionInQueue = true;"
+     },
+     {
+      "file": "patch_manager_mods/queue_hud_src/QueueHudLogic.h",
+      "line": 579,
+      "text": "if (actionInQueue) return false;"
+     },
+     {
+      "file": "patch_manager_mods/queue_hud_src/QueueHudLogic.h",
+      "line": 74,
+      "text": "if (n.subType == 9) id = n.spellId;"
+     },
+     {
+      "file": "patch_manager_mods/30_queue_hud.md",
+      "line": 81,
+      "text": "must detect both `subType == 9` (spell)"
+     }
+    ],
+    "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+    "final_severity": "low",
+    "final_verdict": "confirmed",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "intended-behaviour",
+    "human_check_steps": [
+     "Inspect actq::read to confirm whether the same creature's engine queue holds player-issued casts as T_CAST_SPELL entries.",
+     "During a manual cast with buf.active set, log actionInQueue (QueueHud.cpp:734-740) and the shouldReInject result (QueueHud.cpp:744), and check whether re-inject stays blocked after the manual cast ends.",
+     "Check version history outside this tree for when line 734 widened from item-only, to see whether own-cast suppression was considered."
+    ],
+    "id": "9059eb31f144",
+    "lines": "734-739",
+    "reasoning": "Read QueueHud.cpp 706-745, QueueHudLogic.h 572-586 and 60-84, and 30_queue_hud.md 76-90. The predicate is identity-blind: any T_CAST_SPELL or subType 9/10 entry in the creature's queue blocks re-inject (QueueHudLogic.h:579) and the 500 ms clear. The design doc (line 81) asks for type-level detection, so the mechanism is intended, but its effect on the player's own manual casts is not discussed. Permanent loss needs the follow entry to clear during the overlap, so low. The claim's 'mapping only in a comment' part is wrong: QueueHudLogic.h:74 maps subType 9 to spellId.",
+    "reduce_severity": "medium",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "5/5",
+    "specialty": "source-logic",
+    "suggested_investigation": "Confirm the subType enum (9 = cast spell, 10 = use item) in the engine or actq header. Then reproduce: buffer a spell, cast a different spell manually while the buffered one is eaten, and check whether re-inject is skipped and buf.active stays true.",
+    "tier": "CONFIRMED-BY-SONNET-ONLY"
+   }
+  ],
+  "CONTESTED-NEEDS-HUMAN": [
+   {
+    "agrees_with_haiku": false,
+    "category": "logic",
+    "claim": "Line 192 takes the first `[a-zA-Z0-9_]+_src` token in all_context; lines 211-212 `elif \"companion\" in ctx_lower:` set `companion_ai_src`; the path test `if \"companion_levelup\" in plan_str or \"level_up\" in plan_str:` (217-218) now runs last, only when mod_scope is still empty. The pre-change code (o131-o133) tested the plan path first and returned `level_up_override_src/` directly.\n\nWhy it matters: A level-up plan whose text mentions 'companion' but names no *_src token gets the wrong STRICT boundary (companion_ai_src) and is told NEVER to edit other mods, which excludes the mod the phase is meant to change. A plan that names another mod first in its text also gets that mod. The scope string is injected into the subagent prompt as the edit boundary.",
+    "duplicates": [
+     {
+      "file": "scripts/subagent_prompt.py",
+      "id": "9f94f6db6294",
+      "lines": "199-200"
+     }
+    ],
+    "evidence_quotes": [
+     {
+      "file": "scripts/subagent_prompt.py",
+      "line": 211,
+      "text": "elif \"companion\" in ctx_lower:"
+     },
+     {
+      "file": "scripts/subagent_prompt.py",
+      "line": 214,
+      "text": "# 5d. Plan-level fallback"
+     },
+     {
+      "file": "scripts/subagent_prompt.py",
+      "line": 217,
+      "text": "if \"companion_levelup\" in plan_str or \"level_up\" in plan_str:"
+     },
+     {
+      "file": "research/companion_levelup/MASTER_PLAN.md",
+      "line": 11,
+      "text": "User converts every convertible KOTOR II companion to Jedi with a fixed feat"
+     }
+    ],
+    "file": "scripts/subagent_prompt.py",
+    "final_severity": "medium",
+    "final_verdict": "needs-human",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "reproduced",
+    "human_check_steps": [
+     "Run extract_phase_info on a real level-up phase (research/companion_levelup MASTER or PHASE plans) and print mod_scope; check whether 'companion' appears with no *_src token.",
+     "Ask the author whether keyword precedence over the plan-path fallback is intended.",
+     "Check git history outside this tree for the o131-o133 ordering the claim cites."
+    ],
+    "id": "66c1305db6f7",
+    "lines": "192-218",
+    "reasoning": "Read subagent_prompt.py 140-218. The keyword tests at 209-212 ('companion') run before the plan-path test at 217-218, which is labelled '# 5d. Plan-level fallback', so precedence is deliberate-looking. A level-up plan that mentions companion with no *_src token would get companion_ai_src; the level-up MASTER_PLAN is companion-heavy, so the trigger is plausible. The old path-first ordering cannot be checked (no git). Whether real phase sections hit this needs extract_phase_info output.",
+    "reduce_severity": "high",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "4/4",
+    "specialty": "python-tooling",
+    "suggested_investigation": "Build a fixture plan under a path containing companion_levelup whose body mentions 'companion' and no *_src token; call extract_phase_info and inspect the fifth return value. Check whether the precedence change in 31aa40c/054ee19 was intended (commit messages are not in this snapshot).",
+    "tier": "CONTESTED-NEEDS-HUMAN"
+   },
+   {
+    "agrees_with_haiku": false,
+    "category": "logic",
+    "claim": "Removed code (old lines 146-165): MaxLogLines = 20000 and g_logLines; old logOpen() returned false at 'if (g_logLines >= MaxLogLines)' and opened the file with fopen per hook call; old logClose() called fclose; old logf wrote only when 'g_f && g_logLines < MaxLogLines' and emitted '== log line cap reached =='. New code: 'inline bool logOpen() { return true; }' (164) and 'inline void logClose() {}' (165); logf (173-180) now formats into a 2048-byte buffer and calls KP_LOG(chLevelUp, '%s', buf) with no count, cap, or flush step in this file. The only remaining bounding is rotateIfLarge(), which runs once per process and only when !KpLog_HasCore() (lines 1217-1220).\n\nWhy it matters: The per-process 20000-line cap and the per-call open/close (which flushed each level-up dump when the hook returned) are both gone from this file. If the KpLog core or fallback sink does not enforce an equivalent size or line cap, and does not flush per line, the log can grow without bound during a session and the last dump lines can be lost on a crash.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+      "line": 162,
+      "text": "const bool g_fallbackSet = (KpLog_SetFallbackFile(LogName), true);"
+     },
+     {
+      "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+      "line": 179,
+      "text": "KP_LOG(chLevelUp, \"%s\", buf);"
+     },
+     {
+      "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+      "line": 1217,
+      "text": "if (!KpLog_HasCore()) {"
+     },
+     {
+      "file": "patch_manager_mods/07b_hotbar_logging_map.md",
+      "line": 350,
+      "text": "the new core rotates by size (`max_bytes`) instead."
+     }
+    ],
+    "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+    "final_severity": "low",
+    "final_verdict": "needs-human",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "intended-behaviour",
+    "human_check_steps": [
+     "Read the KpLog.h fallback line-count path and the core max_bytes rotation, and confirm whether each KP_LOG write is flushed before return.",
+     "Kill a game session just after a level-up dump and check whether the last dump lines survive in levelup_override_log.txt or the core log."
+    ],
+    "id": "843bd1103025",
+    "lines": "164-180",
+    "reasoning": "Read LevelUpOverride.cpp 149-195 and 1205-1225. The in-file cap is gone and logf calls KP_LOG directly. Growth looks bounded by design in the shared library: the 07b doc says the fallback sink has a 60000-line default and the core rotates by max_bytes, and LevelUpOverride calls KpLog_SetFallbackFile (162). KpLog.h is not in the tree, so the core's rotation and whether each KP_LOG line reaches disk before a crash cannot be read here. Unbounded growth is mitigated by design; the flush-on-crash question needs the library source or a live run.",
+    "reduce_severity": "medium",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "4/4",
+    "specialty": "source-logic",
+    "suggested_investigation": "Read KpLog.h and its implementation (not in this packet; I could not find KpLog.h at patch_manager_mods/_shared/, _shared/, or one level around the packet directory). Check: (1) whether KP_LOG or the fallback sink enforces a line or byte cap and rotates the file; (2) whether it flushes after each line; (3) whether KP_LOG evaluates its arguments when the channel level filters the line out. Then run a verbose=1 session (or a loop of logf calls) and compare levelup_override_log.txt growth with the old 20000-line cap.",
+    "tier": "CONTESTED-NEEDS-HUMAN"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "test",
+    "claim": "scenario_test.cpp:177 defines clearLog() as luoHostLogReset('levelup_override_log.txt'). stub/LuoLogHost.h:9 implements that as std::remove(path) followed by KpLog_SetFallbackFile(path). The stub comment (line 3) says KpLog keeps the fallback file open across remove(), so later writes land in the unlinked inode unless the file is reopened. readLog() (scenario_test.cpp:175-176) reads the path with a fresh fopen. If KpLog_SetFallbackFile returns early when the path string is unchanged, each clearLog() leaves an empty visible log. Every negative check then passes vacuously, for example the ABSENT patterns of X11_no_ini at scenarios.py:166 and the seg.find() branches that fall back to 'NONE'. The same stub is used by ui_test.cpp:163 and gate_test.cpp:110.\n\nWhy it matters: Negative assertions (ABSENT events, logHas() == false, count == 0) would stay green if log lines silently stopped reaching the file. That would hide real regressions in the HOLD and DECIDE paths.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "research/companion_levelup/tools/parity/stub/LuoLogHost.h",
+      "line": 9,
+      "text": "static inline void luoHostLogReset(const char* path) { std::remove(path); KpLog_SetFallbackFile(path); }"
+     },
+     {
+      "file": "research/companion_levelup/tools/parity/stub/LuoLogHost.h",
+      "line": 3,
+      "text": "KpLog also keeps the fallback file open, so remove()ing it leaves later writes on an"
+     },
+     {
+      "file": "research/companion_levelup/tools/parity/scenario_test.cpp",
+      "line": 177,
+      "text": "static void clearLog() { luoHostLogReset(\"levelup_override_log.txt\"); }"
+     },
+     {
+      "file": "research/companion_levelup/tools/parity/scenarios.py",
+      "line": 166,
+      "text": "events=[r\"^CONFIG missing \\(defaults\\) mode=rewrite\"], absent=[r\"^DECIDE\", r\"^APPLIED\", r\"^HOLD\", r\"^INSTANT\"],"
+     },
+     {
+      "file": "research/companion_levelup/tools/parity/scenario_test.cpp",
+      "line": 476,
+      "text": "for (auto& e : s.events) CHECK(logRe(e), \"expected event /%s/ not in log:"
+     }
+    ],
+    "file": "research/companion_levelup/tools/parity/scenario_test.cpp",
+    "final_severity": "low",
+    "final_verdict": "needs-human",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "inconclusive",
+    "human_check_steps": [
+     "Read KpLog_SetFallbackFile in KpLog.h (outside this tree) and check whether it reopens the file when the path is unchanged after remove().",
+     "Run scenario_test on X11_no_ini and inspect levelup_override_log.txt after clearLog(); confirm the '^CONFIG missing' line is present.",
+     "Find any scenario with only ABSENT or NONE expectations and no EVENT check, since only those could pass on an empty log."
+    ],
+    "id": "5a447a280525",
+    "lines": "177",
+    "reasoning": "Read stub/LuoLogHost.h:1-10, scenario_test.cpp:175-177 and 470-477, scenarios.py:162-167. The reset depends on KpLog_SetFallbackFile, which is absent from the tree, so whether it reopens after remove() cannot be settled here. The cited example is wrong: X11_no_ini has an EVENT check (scenarios.py:166), and scenario_test.cpp:476 runs it with CHECK(logRe(e)), so an empty log turns the run red, not silently green. A silent-pass risk remains only for negative-only checks, which the tree does not show.",
+    "reduce_severity": "medium",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "5/5",
+    "specialty": "test-weakening",
+    "suggested_investigation": "Read KpLog_SetFallbackFile in the Common KpLog.h (not in this snapshot) for an early return when the path is unchanged. unit_gap_test.cpp:20 says the reopen is required, which supports the concern. Add a positive control to one scenario: after clearLog(), a line the mod is known to write must appear in readLog(). Then confirm that X11_no_ini's ABSENT checks fail when the file is removed without reopening.",
+    "tier": "CONTESTED-NEEDS-HUMAN"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "logic",
+    "claim": "Lines 3-4 say: \"KpLog also keeps the fallback file open, so remove()ing it leaves later writes on an unlinked inode: reset through the public API instead.\" Line 9 still does `static inline void luoHostLogReset(const char* path) { std::remove(path); KpLog_SetFallbackFile(path); }`, so it calls the remove() that the comment warns against, before the public call.\n\nWhy it matters: If KpLog_SetFallbackFile() returns early or reuses the existing FILE* when the path is unchanged, the unlink at line 9 detaches the file the logger still writes to. Later INFO lines then go to an unlinked inode, the file at `path` stays empty or missing, and tests that grep it either fail spuriously or, if they assert absence of a line, pass without proving anything. Either the comment or the code is wrong, and the test-host reset is the only thing that makes these log-grep tests deterministic.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "research/companion_levelup/tools/parity/stub/LuoLogHost.h",
+      "line": 3,
+      "text": "KpLog also keeps the fallback file open, so remove()ing it leaves later writes on an"
+     },
+     {
+      "file": "research/companion_levelup/tools/parity/stub/LuoLogHost.h",
+      "line": 9,
+      "text": "static inline void luoHostLogReset(const char* path) { std::remove(path); KpLog_SetFallbackFile(path); }"
+     },
+     {
+      "file": "patch_manager_mods/19e_phase2_plan.md",
+      "line": 106,
+      "text": "Uses the fallback file if one was set, opened lazily."
+     },
+     {
+      "file": "patch_manager_mods/robustness_fixes_src/common_contract_test.cpp",
+      "line": 124,
+      "text": "KpLog_SetFallbackFile only stores the path, no I/O (safe from a static initialiser)"
+     }
+    ],
+    "file": "research/companion_levelup/tools/parity/stub/LuoLogHost.h",
+    "final_severity": "low",
+    "final_verdict": "needs-human",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "inconclusive",
+    "human_check_steps": [
+     "Check out feat/kplog-header (KpLog.h, about 462 lines, per 19e_phase2_plan.md:282) and read KpLog_SetFallbackFile. See whether it closes the previous FILE* and resets lazy-open state when the path is unchanged, or returns early.",
+     "Run research/companion_levelup/tools/parity gate_test or scenario_test. Compare 'ls -li' on levelup_override_log.txt before and after clearLog() plus one INFO line, to see whether later writes land on the unlinked inode."
+    ],
+    "id": "e3ae385c8f94",
+    "lines": "9",
+    "reasoning": "Read LuoLogHost.h (9 lines), 19e_phase2_plan.md:106 and robustness common_contract_test.cpp:124. Line 9 calls std::remove() before KpLog_SetFallbackFile(), which is exactly what the comment at lines 3-4 warns against, so comment and code contradict each other. Whether this leaves writes on an unlinked inode depends on KpLog.h, which is not in the snapshot (no KpLog file under research/companion_levelup). The impact is limited to host parity tests; shipped code is not touched.",
+    "reduce_severity": "medium",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "4/4",
+    "specialty": "source-logic",
+    "suggested_investigation": "Locate KpLog.h (it is not in this packet directory; find it through the include in LevelUpOverride.cpp) and read KpLog_SetFallbackFile(). Check whether it fcloses the previous handle and fopens `path` fresh on every call, including when `path` equals the currently configured path. If it does not reopen in that case, the remove() at line 9 orphans the log and the reset is broken. If it does reopen unconditionally, the remove() only clears old content and the comment at lines 3-4 is misleading; then fix the comment or drop the redundant order dependency. To check the impact, find the tests that call luoHostLogReset and see whether any assert on the absence of a log line or on an empty file, and run one such test with a log path that already exists from a previous run.",
+    "tier": "CONTESTED-NEEDS-HUMAN"
+   }
+  ],
+  "REFUTED": [
+   {
+    "agrees_with_haiku": true,
+    "category": "other",
+    "claim": "Line 69: `constexpr uintptr_t PerformCastSpell = 0x00775700;`. Lines 3-6 say: 'K2Addr.h defines struct K2AddrTable (one field per name here, same spelling ...)', 'kGog (unfilled, all zero)', and 'zero field = unknown = do nothing'. K2Addr.h lines 185-187 list the neighbouring hotbar fields (HudSyncStance, HudInvokeGroup, PerformUseItem) but no PerformCastSpell. A grep of _shared_src finds PerformCastSpell only in GameAddr.h. k2addr_test.cpp checks kSteam against a literal field list (checkSteamFields), so a missing field is not caught.\n\nWhy it matters: The header says per-version code must read these names through K2AddrTable, because the GOG column is not filled in. A new Steam-only constant with no table field gives any caller that uses the gameaddr:: path a hard-coded Steam address. On a GOG install that address may point at unrelated code, and calling it could crash or corrupt the game. The completeness test does not cover this name, so the gap would not show up in a test run.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/_shared_src/GameAddr.h",
+      "line": 3,
+      "text": "code that must also run on GOG Aspyr reads the same"
+     },
+     {
+      "file": "patch_manager_mods/_shared_src/GameAddr.h",
+      "line": 69,
+      "text": "constexpr uintptr_t PerformCastSpell = 0x00775700;"
+     },
+     {
+      "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+      "line": 58,
+      "text": "// Steam Aspyr addresses / offsets (RE.md; the manifest supports the Steam exe only)."
+     }
+    ],
+    "file": "patch_manager_mods/_shared_src/GameAddr.h",
+    "final_severity": "none",
+    "final_verdict": "refuted",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "refuted",
+    "human_check_steps": [
+     "Confirm no build target or manifest compiles queue_hud_src against the GOG Aspyr exe (the manifest cited at QueueHud.cpp:58 is not in the tree).",
+     "If a GOG port is planned, check the PerformCastSpell row in patch_manager_mods/ghidra_knowledge/gog_map_mods678.tsv and add a table field first."
+    ],
+    "id": "6572c3d2f7ca",
+    "lines": "69",
+    "reasoning": "Read GameAddr.h 1-10 and 66-69, QueueHud.cpp 56-60, and the queue_hud_src hooks glob (only kotor2-steam-aspyr.hooks.toml). The header limits the K2AddrTable requirement to code that must also run on GOG. QueueHud is documented Steam-only, so no GOG-running caller uses PerformCastSpell today. The name appears only at GameAddr.h:69. The gap is latent and would matter only if a GOG queue_hud build were added.",
+    "reduce_severity": "medium",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "3/3",
+    "specialty": "source-logic",
+    "suggested_investigation": "Grep the consuming mods (outside this packet) for PerformCastSpell and gameaddr::PerformCastSpell. If anything calls the constant directly, check whether it is guarded by the version SHA. Check whether K2Addr.h should get a matching field with a zero GOG value, and whether checkSteamFields in k2addr_test.cpp should list it. Confirm the address 0x00775700 against the Steam exe: it should start a thiscall with RET 0x1C right after PerformUseItem at 0x00775600. The packet gives no verification tag for it, unlike the neighbouring constants at lines 80, 89 and 94.",
+    "tier": "REFUTED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "logic",
+    "claim": "Line 48: `return Rect{card.x, card.y, 58, 58};`. The size is a fixed 58 and the anchor is the top-left corner of the input. Other geometry helpers in this file scale with height: buttonRect (lines 25-31) uses s = clamp(round(h*0.25), 16, 24), gap = round(2*h/36), and vertical centring; ringRect (lines 359-363) uses 1.5*h. selfheal_ui_test.cpp has cases for buttonRect and isLeaderVit (lines 10-27), but a grep finds no test that mentions leaderButtonRect.\n\nWhy it matters: The 58 px size does not follow the height-based scaling used everywhere else in this file, and the top-left anchor does not match the documented placement (left of the bar, vertically centred, lines 19-20). If the result is drawn over a leader vitality bar (103x208 at 3840x1600), the button can sit on the bar. The function has no unit test, so none of this is checked.",
+    "duplicates": [
+     {
+      "file": "patch_manager_mods/_shared_src/SelfHealUi.h",
+      "id": "c1437e3479e9",
+      "lines": "46-48"
+     }
+    ],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/_shared_src/SelfHealUi.h",
+      "line": 19,
+      "text": "// Button sits left of the vitality bar, vertically centred."
+     },
+     {
+      "file": "patch_manager_mods/_shared_src/SelfHealUi.h",
+      "line": 48,
+      "text": "return Rect{card.x, card.y, 58, 58};"
+     },
+     {
+      "file": "patch_manager_mods/27_companion_selfheal.md",
+      "line": 278,
+      "text": "Anchor a 58x58 px health button at top-left of player portrait"
+     },
+     {
+      "file": "patch_manager_mods/33_ui_queue_hotbar_fixes.md",
+      "line": 240,
+      "text": "| SH2 | [SelfHeal] Leader 58px health button at top-left of leader portrait | DONE |"
+     }
+    ],
+    "file": "patch_manager_mods/_shared_src/SelfHealUi.h",
+    "final_severity": "none",
+    "final_verdict": "refuted",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "intended-behaviour",
+    "human_check_steps": [
+     "At 3840x1600 with live Slot_CardRect (0x54C) and Slot_VitRect (0x694) values, render the leader card and check whether the 58x58 button covers part of the leader vitality bar.",
+     "Decide whether any overlap is acceptable, and confirm SH2 in doc 33 is the current design rather than doc 27:76 ('Leader card gets no button')."
+    ],
+    "id": "97f5356f31c8",
+    "lines": "46-49",
+    "reasoning": "Read SelfHealUi.h 15-32 and 44-49. The 'left of the vitality bar, vertically centred' comment at 19-20 is explicitly scoped to small companion cards, i.e. buttonRect, not leaderButtonRect. Docs 27:278 and 33:240 (SH2, DONE) specify a 58x58 button at the leader portrait's top-left, so the fixed size and anchor are deliberate and documented. The overlap risk with the leader vit bar is a visual question the docs do not address, not a source defect, so the placement claim is refuted.",
+    "reduce_severity": "medium",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "4/4",
+    "specialty": "source-logic",
+    "suggested_investigation": "Read the draw code in the consuming mod that calls leaderButtonRect and confirm whether it passes the vitality bar or the whole card. Compare the 58x58 output with a leader bar at the probe size (x 3511, y 1386, w 103, h 208, from selfheal_ui_test.cpp line 21). Confirm that 58 is a deliberate constant and not a placeholder. Then check whether selfheal_ui_test.cpp needs a case for leaderButtonRect.",
+    "tier": "REFUTED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "logic",
+    "claim": "restoreFromSave adds the currentSaveFolder fallback (1811-1813), then `if (!dir || !*dir) { KP_LOGV(chCfg, KPLOG_WARN, \"persave: %s: save folder not recognised ('%s'), live hotbar kept\", ...); return; }` with no pending state. snapshotToSave handles the same unresolved-folder condition by deferring (1766-1771: g_pendingSaveSnapshot = true), and HotbarHudTick retries it (2038-2059). onSaveEvent sends K2SE_LOAD_REQUEST straight to restoreFromSave (ActionHotbar.cpp:1881).\n\nWhy it matters: If the save folder is unresolved when LOAD_REQUEST is dispatched, the previous session's bar stays live and no retry is scheduled. The save path was given a deferral for this case; the restore path was not, so the two paths now behave differently for the same condition.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/save_events_src/SeDispatch.h",
+      "line": 139,
+      "text": "if (!folder || !*folder) return -1;"
+     },
+     {
+      "file": "patch_manager_mods/save_events_src/SaveEventsProvider.cpp",
+      "line": 110,
+      "text": "if (abs.empty()) {"
+     },
+     {
+      "file": "patch_manager_mods/save_events_src/SaveEventsProvider.cpp",
+      "line": 111,
+      "text": "save folder not recognised ('%.80s'), not dispatched"
+     },
+     {
+      "file": "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp",
+      "line": 1814,
+      "text": "if (!dir || !*dir) {"
+     }
+    ],
+    "file": "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp",
+    "final_severity": "none",
+    "final_verdict": "refuted",
+    "haiku_confidence": "high",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "refuted",
+    "human_check_steps": [
+     "In a live log, search for LOAD_REQUEST lines followed by 'save folder not recognised ... not dispatched' (SaveEventsProvider.cpp:111).",
+     "Confirm every 'persave: save loading' line carries a non-empty folder."
+    ],
+    "id": "fc0796ea9fce",
+    "lines": "1809-1817",
+    "reasoning": "Read SeDispatch.h 129-145, SaveEventsProvider.cpp 104-116, and ActionHotbar.cpp 1809-1817. Unresolved folders are dropped before dispatch: emitFolder returns at 110-113, and Hub::emit rejects empty folders for non-NEW_GAME kinds (SeDispatch.h:139). So restoreFromSave's empty-folder branch cannot be reached from LOAD_REQUEST, and the claimed 'previous bar stays live with no retry' path does not occur. The save-side deferral covers a missing directory, a different condition the claim does not name.",
+    "reduce_severity": "medium",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "4/4",
+    "specialty": "source-logic",
+    "suggested_investigation": "Find when save-events fills ev->folder and when currentSaveFolder first returns a non-empty path for LOAD_REQUEST compared with SAVED. Add a temporary log in the !dir branch of restoreFromSave, load a save, and compare the bar shown after the load with that save's snapshot. Check whether the pending/retry mechanism used by snapshotToSave should also cover restore.",
+    "tier": "REFUTED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "logic",
+    "claim": "`bool isExile = ((oid >= 0xFFFFFFF0u && oid <= 0xFFFFFFFEu) || partyCount == 1 || isMember0 || partySlot == 0);` The range term has no party-slot condition. For a companion (partySlot 1, partyCount 2 or more) with an id in the range, the branch at 90-93 returns \"objfffffffd\", the Exile's canonical key. The pre-change predicate (old line 88) matched only 0xFFFFFFFD and 0xFFFFFFFE. The new tests (hotbar_logic_test.cpp:227-233) use partySlot -1 or 0 only, so the companion-plus-sentinel case is not exercised.\n\nWhy it matters: A companion whose id falls in the widened range shares the Exile's key and therefore the Exile's bindings. The header comment (73-75) lists sentinel ids as a standalone Exile criterion, so this may be intended; the companion case is untested either way.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/action_hotbar_src/HotbarLogic.h",
+      "line": 73,
+      "text": "// 2. Player character (Exile): recognized by party slot 0 / isMember0, partyCount == 1, tag \"player\"/\"exile\","
+     },
+     {
+      "file": "patch_manager_mods/action_hotbar_src/HotbarLogic.h",
+      "line": 89,
+      "text": "bool isExile = ((oid >= 0xFFFFFFF0u && oid <= 0xFFFFFFFEu) || partyCount == 1 || isMember0 || partySlot == 0);"
+     },
+     {
+      "file": "patch_manager_mods/action_hotbar_src/hotbar_logic_test.cpp",
+      "line": 227,
+      "text": "// AH3: full Odyssey negative player sentinel range 0xFFFFFFF0..0xFFFFFFFE maps to canonical Exile key"
+     }
+    ],
+    "file": "patch_manager_mods/action_hotbar_src/HotbarLogic.h",
+    "final_severity": "none",
+    "final_verdict": "refuted",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "intended-behaviour",
+    "human_check_steps": [
+     "In a live session, grep the companion log lines and the 'character: creature ... invalid object id' KP_LOG lines and confirm companion creature ids never read 0xFFFFFFF0..0xFFFFFFFE.",
+     "Confirm from engine object-id allocation that companion creatures never take ids in that range. If they can, the Exile criterion at HotbarLogic.h:89 is the place to examine."
+    ],
+    "id": "10750a5a4474",
+    "lines": "89-93",
+    "reasoning": "Read HotbarLogic.h:60-110 and hotbar_logic_test.cpp:215-233. The sentinel range is a deliberate, documented Exile criterion: the header lists sentinel ids as a standalone rule (73-75) and test AH3 (227) pins it. The companion-with-sentinel combination is untested (rows use partySlot -1 or 0), a real coverage gap. The tree gives no evidence that a companion ever holds an id in 0xFFFFFFF0..0xFFFFFFFE, so this is an untested assumption, not a demonstrated defect.",
+    "reduce_severity": "medium",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "3/3",
+    "specialty": "source-logic",
+    "suggested_investigation": "Add a case to hotbar_logic_test.cpp with partyCount 3, partySlot 1 and oid 0xFFFFFFF9, and record what the function returns. Confirm from the research note 07_force_power_hotbar.md (outside this packet) whether any companion object id can fall in 0xFFFFFFF0..0xFFFFFFFE. If none can, restrict the range term to the player-recognition case.",
+    "tier": "REFUTED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "logic",
+    "claim": "Leader branch: `if (k == 0) { g_card0.have = true; g_card0.k = k; g_card0.vit = vit; g_card0.seen = true;` has no identity check against v[0]. The companion branch (770-772) requires `cr` to equal `c.m.client` or `c.m.server` and sets `c.seen = !isLeader`. `isLeader` is computed at 766 and never consulted in the leader branch. common_contract_test.cpp:249 documents that the leader bar is w>=70 (103 wide) versus 47 for companion bars, so the discriminator exists.\n\nWhy it matters: The leader's button, HP state and placement come from whatever occupies HUD slot k==0. The heal itself goes through useNow (296-336), which re-reads party::members and uses v[0] (306-308). If slot k==0 is not the leader's portrait in some state, the card the player sees and the creature that gets healed differ.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+      "line": 759,
+      "text": "for (int kk = 0; kk < 3; ++kk) if ((uintptr_t)slot - SlotFromHud - (uintptr_t)kk * SlotStride == g_hud) { k = kk; break; }"
+     },
+     {
+      "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+      "line": 772,
+      "text": "c.k = k; c.vit = vit; c.seen = !isLeader;"
+     },
+     {
+      "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+      "line": 776,
+      "text": "if (k == 0) {"
+     },
+     {
+      "file": "patch_manager_mods/08_shield_bar.md",
+      "line": 413,
+      "text": "- Log analysis: slot->creature table is correct for every leader choice"
+     },
+     {
+      "file": "patch_manager_mods/27_companion_selfheal.md",
+      "line": 21,
+      "text": "for every portrait slot (never `k=none`) -> confirms slot->HUD formula."
+     }
+    ],
+    "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+    "final_severity": "none",
+    "final_verdict": "refuted",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "intended-behaviour",
+    "human_check_steps": [
+     "In a live session with a leader swap, compare the 'P3 slot[i] ... k=' line for the k=0 slot with the creature that useNow reports as member 0 ('USE member=0' line).",
+     "The 'MAP member=0' log (CompanionSelfHeal.cpp:785) does not log cr, so use the P3 line for this check."
+    ],
+    "id": "f0b28bacd0ef",
+    "lines": "775-780",
+    "reasoning": "Read CompanionSelfHeal.cpp 740-790 and SelfHealUi.h. The leader card is chosen by fixed HUD index: k is derived from the slot address minus g_hud (759), and the k==0 branch sets g_card0 without an identity or isLeader check (776-780). The companion branch does use isLeader (772), an asymmetry but not a shown defect. Tree docs record that the slot->creature mapping was log-checked for every leader choice (08_shield_bar.md:413) and that the P3 log confirms the slot-to-HUD formula (27:21). Nothing in the tree shows a mismatch.",
+    "reduce_severity": "medium",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "5/5",
+    "specialty": "source-logic",
+    "suggested_investigation": "Confirm on a live HUD, or from the MAP log at line 785, that the slot with k==0 always has cr equal to v[0].client or v[0].server and leader-width vit. Check PortraitSlots.h (outside this packet) for whether slot index 0 is fixed to the leader. If not guaranteed, compare with the companion identity and isLeaderVit gating used at 766-772.",
+    "tier": "REFUTED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "logic",
+    "claim": "Pre-image line o158 was a bare `ensureSubclass();` whose bool result was ignored, so g_disp.subscribe ran regardless. Now lines 158-161 `if (!ensureSubclass()) { ...; return -1; }` return before `int32_t tok = g_disp.subscribe(cb, user);` at line 162. ensureSubclass() (lines 116-127) is the only code that calls Hook::install, and it is called only from apiWheelSubscribe (grep of the packet directory shows lines 116 and 158 only). wheelProc (lines 79-114) dispatches to g_disp only once the hook is installed. Under the old code a subscriber made before the game window exists kept its token and began receiving wheel events when a later subscribe installed the hook. Under the new code that subscriber is never registered and nothing re-registers it.\n\nWhy it matters: The fix turns a late-binding subscription into a permanent failure for early subscribers, and the provider has no retry or deferred registration. A mod that subscribes once during init, before the game window exists, and does not retry will silently lose wheel events once another mod later installs the hook. The old code delivered those events.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/_shared_src/GuiInput.h",
+      "line": 49,
+      "text": "/* Subscribe to mouse wheel events. Returns token > 0 on success, <= 0 on failure (null cb, table full, or game window not yet available). */"
+     },
+     {
+      "file": "patch_manager_mods/gui_input_src/GuiInputProvider.cpp",
+      "line": 158,
+      "text": "if (!ensureSubclass()) {"
+     },
+     {
+      "file": "patch_manager_mods/gui_input_src/GuiInputProvider.cpp",
+      "line": 162,
+      "text": "int32_t tok = g_disp.subscribe(cb, user);"
+     },
+     {
+      "file": "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp",
+      "line": 1172,
+      "text": "if (!subscribed) {"
+     },
+     {
+      "file": "patch_manager_mods/_shared_src/GuiKit.h",
+      "line": 670,
+      "text": "// exists (retry; gameWindow() throttles its own lookups to 2 s)."
+     },
+     {
+      "file": "patch_manager_mods/_shared_src/GuiKit.h",
+      "line": 677,
+      "text": "if (!subOk) {"
+     }
+    ],
+    "file": "patch_manager_mods/gui_input_src/GuiInputProvider.cpp",
+    "final_severity": "none",
+    "final_verdict": "refuted",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "intended-behaviour",
+    "human_check_steps": [
+     "In a live session, confirm ActionHotbar's ensureWheelHook (ActionHotbar.cpp:1321) and GuiKit's wheelInstall run every frame, so the retry actually happens.",
+     "Search outside this tree for other k2.guiinput wheel_subscribe callers that subscribe once and never retry on a failure token."
+    ],
+    "id": "d56064e2a823",
+    "lines": "158-162",
+    "reasoning": "Read GuiInputProvider.cpp 76-127 and 156-165, GuiInput.h:49, ActionHotbar.cpp 1168-1179, GuiKit.h 669-680. The shared contract (GuiInput.h:49) lists 'game window not yet available' as a failure return, so the new early return matches the documented contract. The old code returned a token before any hook existed, which the contract did not promise. In-tree consumers retry: ActionHotbar gates on !subscribed and runs per pass, and GuiKit wheelInstall retries while subOk is false. Loss applies only to an out-of-tree caller that ignores the documented failure.",
+    "reduce_severity": "medium",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "6/6",
+    "specialty": "source-logic",
+    "suggested_investigation": "Check k2input::Client::wheel_subscribe in GuiInput.h (outside this packet, not read) and the mod callers for retry on <= 0. Then reproduce with two subscribers: subscribe A while findGameWindow returns null, then subscribe B after a window exists. Compare whether A's callback fires on the diff base 22b56b4 versus the current tree. Confirm whether dropping A is intended, and whether the commit message or a changelog says so.",
+    "tier": "REFUTED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "logic",
+    "claim": "void guidLoad(void* table, int result) { ... if (table && guidEngineOk()) readGuid(table, &g, &found); g_guid = found == 32 ? g : 0; ... KP_LOG(chPlay, 'GUID load g%08x found=%d/32 result=%d table=%08x', ...). The 'result' parameter is used only in that log line; no branch checks it. The hook note at line 37 says eax = load result of LoadFromSave 0x656710.\n\nWhy it matters: The GUID is adopted from the live globals table whether or not LoadFromSave reported success. If a failed load leaves the table with bits from the previous session or partly loaded bits, the handler binds the loaded state to another playthrough's section (ptApply, rebuildPtCfg and the gates then use that section's tags).",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+      "line": 1544,
+      "text": "g_guid = found == 32 ? g : 0;   // a partial set (1..31 names) is not a GUID we wrote: treat as none (logged below)"
+     },
+     {
+      "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+      "line": 1543,
+      "text": "if (table && guidEngineOk()) readGuid(table, &g, &found);"
+     },
+     {
+      "file": "patch_manager_mods/level_up_override_src/kotor2-steam-aspyr.hooks.toml",
+      "line": 340,
+      "text": "# 0x51C450 itself and returns its EAX (nothing after the site reads EAX; ecx is reloaded from [ebp-0xC]). Every new game / load passes here."
+     }
+    ],
+    "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+    "final_severity": "none",
+    "final_verdict": "refuted",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "refuted",
+    "human_check_steps": [
+     "Confirm the autosave-restore path (0x8529E0) also reaches 0x401BC0 and so starts with a zeroed globals table.",
+     "Confirm the CServerExoApp constructor zeroes the globals table at +0x100FC before LoadFromSave runs, using the engine or a live log."
+    ],
+    "id": "89fc8d95002c",
+    "lines": "1539-1545",
+    "reasoning": "Read LevelUpOverride.cpp 1305-1360 and 1539-1556, plus the hook notes at hooks.toml 321-345. A GUID is adopted only when readGuid finds all 32 names (1543-1544); partial sets are rejected. The new-server hook note states that every new game or load passes through a fresh CServerExoApp, so the globals table starts empty. A 32/32 read can then only come from the load being reported, so the adopted GUID is that save's own identity, not another playthrough's. The result parameter is logged only, which is harmless here.",
+    "reduce_severity": "medium",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "3/3",
+    "specialty": "source-logic",
+    "suggested_investigation": "Check the success value of the LoadFromSave return (0x656710) and whether a failed load can still reach the post-load hook at 0x65675B. Check whether the globals table is cleared before the save's globals are read, so a failed or partial load cannot leave the previous GUID's 32 bits in place. If the answer is yes, the handler should use 'result' before readGuid; confirm with a save file that fails to load while a playthrough GUID is active.",
+    "tier": "REFUTED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "build",
+    "claim": "common_contract_test.cpp:15 is #include \"check.h\". No check.h exists in level_up_override_src (glob **/check.h empty), at the top level of ../_shared_src (glob found only Party, GuiTip, SafeRead, GuiKit, GameAddr, K2Addr .h), or in research/companion_levelup/tools/parity/stub (windows.h, m3_win_shim.h, LuoLogHost.h only). test.toml:4 cxxflags adds -I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common, the only include path left that could supply kt::Check, CheckEq, Report and KT_STR.\n\nWhy it matters: The contract gate that pins GuiTip, GuiKit, GameAddr, Party and FileWatch semantics only compiles when a developer's home-directory workspace exists. On a clean checkout, or on a runner that does not expand $HOME in cxxflags, the test fails to compile, so the gate cannot run. The header comment's claim that edits to those headers re-run it cannot be enforced from this repository.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/level_up_override_src/common_contract_test.cpp",
+      "line": 15,
+      "text": "#include \"check.h\""
+     },
+     {
+      "file": "tests/include/check.h",
+      "line": 1,
+      "text": "// check.h - forwarder; canonical header is TestHarness.h (doc 24 T9b)."
+     },
+     {
+      "file": "tests/include/check.h",
+      "line": 3,
+      "text": "#include \"TestHarness.h\""
+     },
+     {
+      "file": "scripts/run_tests.py",
+      "line": 278,
+      "text": "flags = [\"-std=c++17\", \"-O1\", \"-Wall\", \"-Wextra\", \"-I\", str(d), \"-I\", str(REPO / \"tests\" / \"include\")]"
+     }
+    ],
+    "file": "patch_manager_mods/level_up_override_src/common_contract_test.cpp",
+    "final_severity": "none",
+    "final_verdict": "refuted",
+    "haiku_confidence": "high",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "refuted",
+    "human_check_steps": [
+     "Run scripts/run_tests.py for common_contract_test in a copy where $HOME/Games/KOTOR2_Mod_Workspace is absent, and confirm it compiles and passes.",
+     "Confirm the windows.h include at FileWatch.h:13-16 sits behind a _WIN32 guard or is supplied by the stub directory."
+    ],
+    "id": "3a122c1e3473",
+    "lines": "15",
+    "reasoning": "Read common_contract_test.cpp:15, tests/include/check.h:1-3 and scripts/run_tests.py:278-287. check.h exists in tests/include as a forwarder to TestHarness.h, and run_tests.py:278 adds -I tests/include to every host C++ test before the test's own cxxflags. The claim's premise that check.h is missing and kt::Check is reachable only via $HOME is false. Not checked: the windows.h include in FileWatch.h and whether the stub holds windows.h. A clean-checkout build would settle those.",
+    "reduce_severity": "medium",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "4/4",
+    "specialty": "test-weakening",
+    "suggested_investigation": "From a clean clone (or with HOME pointing elsewhere), build common_contract_test with test.toml's [common_contract_test] cxxflags and see whether check.h resolves. Check whether Patches/Common exists anywhere in the repo tree or only in the author's workspace, and whether other test.toml tables use the same $HOME path. Confirm where check.h is actually defined and whether it should be vendored or referenced by a repo-relative path.",
+    "tier": "REFUTED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "test",
+    "claim": "test.toml registers only [common_contract_test] (line 3) and [r10_probe_test] (line 7). The packet directory also contains r10_filter_test.cpp and r10_page_test.cpp (Glob of level_up_override_src), and neither has a table here. The [common_contract_test] table (lines 3-4) also has no covers key, while the sibling shield_bar_src/test.toml:7 sets covers = [\"k2.portraitslots@1\"] for its Common contract test.\n\nWhy it matters: If the runner only builds and runs tests that have a table in test.toml, the R10 filter and R10 page tests never run and the gate passes without them. A missing covers key may also leave the contract test unlinked from the contract it is meant to enforce. Both are gate-coverage gaps, not confirmed failures, because the runner's discovery logic is outside this packet.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/level_up_override_src/test.toml",
+      "line": 11,
+      "text": "[r10_page_test]"
+     },
+     {
+      "file": "patch_manager_mods/level_up_override_src/test.toml",
+      "line": 15,
+      "text": "[r10_filter_test]"
+     },
+     {
+      "file": "scripts/run_tests.py",
+      "line": 287,
+      "text": "cov = cfg.get(\"covers\", [])"
+     }
+    ],
+    "file": "patch_manager_mods/level_up_override_src/test.toml",
+    "final_severity": "none",
+    "final_verdict": "refuted",
+    "haiku_confidence": "high",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "refuted",
+    "human_check_steps": [
+     "Run the runner's verbose or listing mode and confirm cpp:r10_page_test and cpp:r10_filter_test appear as items, not SKIP or excluded."
+    ],
+    "id": "6ef957c705fd",
+    "lines": "3-7",
+    "reasoning": "Read level_up_override_src/test.toml in full (18 lines). Tables [r10_page_test] (line 11) and [r10_filter_test] (line 15) exist, alongside [r10_probe_test] (line 7). Glob confirms r10_page_test.cpp and r10_filter_test.cpp are in the packet. The covers point is weak: run_tests.py:287 defaults covers to [], and the packet requires no k2.portraitslots interface, so a missing covers key has no consumer here. Not a defect.",
+    "reduce_severity": "medium",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "3/3",
+    "specialty": "test-weakening",
+    "suggested_investigation": "Find how the test runner discovers tests: by glob over *_test.cpp, or only by test.toml tables. Run it on this directory and check whether r10_filter_test and r10_page_test appear in the executed list. Check whether the runner uses the covers key for contract accounting and whether a contract test without covers is accepted.",
+    "tier": "REFUTED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "build",
+    "claim": "Line 27: `#include \"../_shared/SafeRead.h\"`. A Glob for `../_shared/SafeRead*` from mouse_probe_src returned no files. The directory listing (MouseFixLogic.h, MouseProbe.cpp, ClickLogic.h, common_contract_test.cpp, exports.def, manifest.toml, test.toml, kotor2-steam-aspyr.hooks.toml) has no SafeRead.h, and KpLog.h (line 24) is also absent from it.\n\nWhy it matters: If patch_manager_mods/_shared/SafeRead.h is not in the repository at 7020d54, MouseProbe.cpp cannot compile, and saferead::beginScope and saferead::readAt (lines 66 and 85) are undefined. The snapshot may just be partial, so the confidence is low.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "scripts/build_check.py",
+      "line": 10,
+      "text": "(+ a sibling _shared/ copied from patch_manager_mods/_shared_src,"
+     },
+     {
+      "file": "scripts/build_check.py",
+      "line": 229,
+      "text": "shared = key_dir / \"_shared\""
+     },
+     {
+      "file": "patch_manager_mods/_shared_src/SafeRead.h",
+      "line": 37,
+      "text": "inline void beginScope() {"
+     },
+     {
+      "file": "patch_manager_mods/_shared_src/SafeRead.h",
+      "line": 115,
+      "text": "template <typename T> bool readAt(unsigned site, uintptr_t base, int off, T* out) {"
+     },
+     {
+      "file": "patch_manager_mods/mouse_probe_src/test.toml",
+      "line": 4,
+      "text": "the Common contract test needs the shared headers (SafeRead.h), the KPM checkout's Patches/Common (KpLog.h)"
+     }
+    ],
+    "file": "patch_manager_mods/mouse_probe_src/MouseProbe.cpp",
+    "final_severity": "none",
+    "final_verdict": "refuted",
+    "haiku_confidence": "high",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "refuted",
+    "human_check_steps": [
+     "Run scripts/build_check.py for mouse_probe_src with KPM_DIR set and confirm the staged _shared/SafeRead.h is present and the compile succeeds.",
+     "Confirm the KPM checkout's Patches/Common contains KpLog.h at the path given in mouse_probe_src/test.toml."
+    ],
+    "id": "0fc98e09742d",
+    "lines": "27",
+    "reasoning": "Re-read scripts/build_check.py:10 and stage_mod (209-232), SafeRead.h 37 and 115, and mouse_probe_src/test.toml:4. The build copies patch_manager_mods/_shared_src into a sibling _shared/ directory so that ../_shared/SafeRead.h resolves, and SafeRead.h defines both beginScope and readAt, so the claimed undefined symbols are not the case. The absent committed _shared/ directory is by design. KpLog.h is external per test.toml:4 and is outside this claim. A real compile still needs a build with the KPM checkout.",
+    "reduce_severity": "medium",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "5/5",
+    "specialty": "source-logic",
+    "suggested_investigation": "In the real repository at HEAD 7020d54, run `git ls-files | grep -E 'SafeRead\\.h|KpLog\\.h'` and check whether the build adds a shared include root. If the header is tracked elsewhere, drop this finding.",
+    "tier": "REFUTED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "logic",
+    "claim": "QueueHud.cpp:744 passes s.paused into qh::shouldReInject. QueueHudLogic.h:576 discards it with (void)paused, and the re-inject return at 580 ignores pause. queue_hud_logic_test.cpp:1173 asserts shouldReInject(...paused=true) is still true, with the comment 'paused/now are ignored by the header'. The paused-false-blocks checks at 799-802 pass hasFollowLeader=false, so they do not exercise the pause path. Why it matters: The caller passes a pause state that the predicate drops, and the test enshrines that behaviour, so a paused party with a follow-leader entry can still re-inject a spell or item. The test suite would not catch a regression in either direction because the pause cases are only checked where re-inject is already false.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/queue_hud_src/QueueHudLogic.h",
+      "line": 576,
+      "text": "(void)paused; (void)now;"
+     },
+     {
+      "file": "patch_manager_mods/queue_hud_src/queue_hud_logic_test.cpp",
+      "line": 1173,
+      "text": "// paused/now are ignored by the header"
+     },
+     {
+      "file": "patch_manager_mods/queue_hud_src/queue_hud_logic_test.cpp",
+      "line": 782,
+      "text": "no infinite pause re-inject loop"
+     },
+     {
+      "file": "patch_manager_mods/queue_hud_src/QueueHudLogic.h",
+      "line": 584,
+      "text": "return !buf.active && !buf.empty() && engineQueueLen == 0 && !haveCur && nrn == 0;"
+     }
+    ],
+    "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+    "final_severity": "none",
+    "final_verdict": "refuted",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "intended-behaviour",
+    "human_check_steps": [
+     "Optional: build and run queue_hud_logic_test to confirm the line 1173 assertion passes.",
+     "Optional: check in the engine whether AddrPerformCastSpell holds a re-injected action until unpause. This only matters if the deliberate pause-ignoring is later reconsidered."
+    ],
+    "id": "3c032fcc205b",
+    "lines": "744",
+    "reasoning": "Read QueueHud.cpp 744, QueueHudLogic.h 575-584, and the logic tests at 760-802 and 1172-1174. The caller does pass s.paused and the header drops it with (void)paused, but this is deliberate. Test line 1173 says 'paused/now are ignored by the header', and test line 782 records 'no infinite pause re-inject loop'. shouldDispatchNext (QueueHudLogic.h:584) also ignores pause, so buffered dispatch is not pause-gated either. Line 1173 directly pins the paused=true case, so the claim's coverage complaint is wrong.",
+    "reduce_severity": "medium",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "4/4",
+    "specialty": "source-logic",
+    "suggested_investigation": "Check git history of QueueHudLogic.h shouldReInject for a removed pause guard. Confirm whether re-inject during pause is intended. If it is not, add a test where paused=true and hasFollowLeader=true with an inactive engine queue, and check how often 0x3D entries appear while the game is paused.",
+    "tier": "REFUTED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "logic",
+    "claim": "shouldDispatchNext now also requires !haveCur && nrn == 0 (line 584). The caller passes s.haveCur and s.nrn from the engine snapshot (QueueHud.cpp:784). The previous gate was engineQueueLen == 0 alone; the comment at QueueHud.cpp:783 documents the change. queue_hud_logic_test.cpp:1199-1212 checks each term only in isolation, with a synthetic buffer.\n\nWhy it matters: If a current action or round node is present while the member is otherwise idle, buffered items and spells never dispatch and the buffer fills to DROP_FULL. This changes the existing item path as well.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/queue_hud_src/QueueHudLogic.h",
+      "line": 584,
+      "text": "return !buf.active && !buf.empty() && engineQueueLen == 0 && !haveCur && nrn == 0;"
+     },
+     {
+      "file": "patch_manager_mods/30_queue_hud.md",
+      "line": 79,
+      "text": "Dispatching while `haveCur` is true causes server"
+     },
+     {
+      "file": "patch_manager_mods/30_queue_hud.md",
+      "line": 80,
+      "text": "must strictly require `engineQueueLen == 0 && !haveCur && nrn == 0`"
+     },
+     {
+      "file": "patch_manager_mods/queue_hud_src/queue_hud_logic_test.cpp",
+      "line": 1210,
+      "text": "KT_CHECK(!shouldDispatchNext(b, 0, /*haveCur=*/true, 0));"
+     }
+    ],
+    "file": "patch_manager_mods/queue_hud_src/QueueHudLogic.h",
+    "final_severity": "none",
+    "final_verdict": "refuted",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "intended-behaviour",
+    "human_check_steps": [
+     "Log s.haveCur and s.nrn in tickItemQueues (QueueHud.cpp:720-784) over a buffered action after a cast completes, to confirm both clear within about 3000 ms when the creature is idle.",
+     "Check whether any state leaves haveCur or nrn set indefinitely while the engine queue is empty."
+    ],
+    "id": "b5a62bbbd646",
+    "lines": "583-584",
+    "reasoning": "Read QueueHudLogic.h 583-585 and the tests at 1199-1212, plus 30_queue_hud.md 79-80. The haveCur and nrn terms are documented (QH4a): dispatching while haveCur is true makes the server's ClearAllActions wipe the in-flight action. The wait is therefore the intended trade-off, bounded by the 3000 ms round node the doc describes. The claim's 'never dispatch' is not supported by the tree; a permanent stall would need haveCur or nrn to stick, which is runtime. Tests 1210 and 1212 cover both terms in isolation.",
+    "reduce_severity": "medium",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "4/4",
+    "specialty": "source-logic",
+    "suggested_investigation": "Log haveCur and nrn for each party member while items are buffered and the member is idle out of combat. Check whether a follow-leader or other persistent current action keeps haveCur true, which would starve the buffer.",
+    "tier": "REFUTED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "hook",
+    "claim": "Line 29 hardcodes `address = 0x00775703` for the new H10 detour. The same hook is described in QueueHud.cpp:972 as \"gameaddr::PerformCastSpell + 3; address in hooks.toml\", and the queue's own re-dispatch goes through `AddrPerformCastSpell = gameaddr::PerformCastSpell` (QueueHud.cpp:78, called at 757 and 799). The packet does not contain the gameaddr value, so the TOML literal and the gameaddr symbol are two unlinked sources for the same address.\n\nWhy it matters: If gameaddr::PerformCastSpell is not 0x00775700, the detour is installed at a different place than the one the queue dispatches through. That would either leave the spell path unhooked, or patch mid-instruction. The domain has no visible check tying original_bytes to the binary, so a drift would not be caught here.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/_shared_src/GameAddr.h",
+      "line": 69,
+      "text": "constexpr uintptr_t PerformCastSpell = 0x00775700;"
+     },
+     {
+      "file": "patch_manager_mods/queue_hud_src/kotor2-steam-aspyr.hooks.toml",
+      "line": 29,
+      "text": "address = 0x00775703"
+     },
+     {
+      "file": "patch_manager_mods/queue_hud_src/kotor2-steam-aspyr.hooks.toml",
+      "line": 32,
+      "text": "original_bytes = [0x83, 0xEC, 0x0C, 0x89, 0x4D, 0xF4]"
+     },
+     {
+      "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+      "line": 972,
+      "text": "// H10: PerformCastSpell detour hook (gameaddr::PerformCastSpell + 3; address in hooks.toml)."
+     },
+     {
+      "file": "patch_manager_mods/07_force_power_hotbar_evidence/target_modes/disasm_775700.txt",
+      "line": 37,
+      "text": "00775703  83 ec 0c"
+     },
+     {
+      "file": "scripts/verify_steam_hooks.py",
+      "line": 14,
+      "text": "BYTES     original_bytes == exe bytes at `address`"
+     }
+    ],
+    "file": "patch_manager_mods/queue_hud_src/kotor2-steam-aspyr.hooks.toml",
+    "final_severity": "none",
+    "final_verdict": "refuted",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "refuted",
+    "human_check_steps": [
+     "Run scripts/verify_steam_hooks.py against the vanilla Steam swkotor2.exe with the Steam hooks.toml and confirm the BYTES and BOUNDARY checks pass at 0x00775703.",
+     "Search for any local release or build script that invokes verify_steam_hooks.py or check_hook_bytes.py, since no CI workflow exists in the tree."
+    ],
+    "id": "7326b0db3b09",
+    "lines": "29",
+    "reasoning": "Read hooks.toml 25-33, GameAddr.h 62-72, QueueHud.cpp 968-976, disasm 33-39, verify_steam_hooks.py 1-30. The values agree: GameAddr PerformCastSpell 0x00775700 + 3 = 0x00775703, and the comment at QueueHud.cpp:972 says so. The disasm shows SUB ESP,0xc at 0x775703, matching original_bytes. The claim's 'no visible check' is wrong: verify_steam_hooks' BYTES check ties address and original_bytes to the exe, though it is manual and not in CI. What remains is hand-synced constants, a latent drift risk, not a present defect.",
+    "reduce_severity": "medium",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "6/6",
+    "specialty": "build-config",
+    "suggested_investigation": "Open GameAddr.h (included at QueueHud.cpp:39, not in this packet and not read) and confirm gameaddr::PerformCastSpell == 0x00775700 (so +3 == 0x00775703) and gameaddr::PerformUseItem == 0x00775600 (H9 uses 0x00775603). Then, against the target binary, confirm bytes at 0x00775703 equal [83 EC 0C 89 4D F4] and that 0x0077574C is the MOV ESP,EBP / POP EBP / RET 0x1C epilogue. Check whether the hook loader verifies original_bytes at install time.",
+    "tier": "REFUTED"
+   }
+  ]
+ }
+}

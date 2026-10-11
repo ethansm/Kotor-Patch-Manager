@@ -1,0 +1,456 @@
+{
+ "duplicate_hunk_ids": [],
+ "errors": [],
+ "files_examined_warnings": [],
+ "gaps": [],
+ "passed": true,
+ "per_file": {
+  "patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 5,
+   "skipped": 0
+  },
+  "patch_manager_mods/equipment_3d_character_src/PULL_REQUEST.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 2,
+   "reviewed": 14,
+   "skipped": 0
+  },
+  "patch_manager_mods/level_up_override_src/LevelUpUi.h": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "patch_manager_mods/level_up_override_src/common_contract_test.cpp": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 4,
+   "skipped": 0
+  },
+  "research/companion_levelup/PHASE7_COMMON_MASTER.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "research/companion_levelup/phase6_evidence/A3_mutation_report.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "research/companion_levelup/phase7_evidence/C5_party_adoption.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "research/companion_levelup/phase7_evidence/C6_filewatch_adoption.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "research/companion_levelup/tools/parity/gate_test.cpp": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 5,
+   "skipped": 0
+  },
+  "research/companion_levelup/tools/parity/scenario_test.cpp": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 3,
+   "skipped": 0
+  },
+  "research/companion_levelup/tools/parity/ui_test.cpp": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "research/companion_levelup/tools/parity/unit_gap_test.cpp": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 3,
+   "skipped": 0
+  }
+ },
+ "requeue": [],
+ "snapshot_sha256": "75888807151121c222db744db9b59120895874ebc412a412f04f3d5ccaab73b9",
+ "unit_count": 43,
+ "units": [
+  {
+   "file": "patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp",
+   "hunk_id": "h-0345cce62400",
+   "planned": "review",
+   "range": "-163,0 +165,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp",
+   "hunk_id": "h-441fbb59fc06",
+   "planned": "review",
+   "range": "-133,0 +134,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp",
+   "hunk_id": "h-8d4a10599bd8",
+   "planned": "review",
+   "range": "-143,1 +144,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp",
+   "hunk_id": "h-d21eb2ef18aa",
+   "planned": "review",
+   "range": "-594,3 +596,6",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp",
+   "hunk_id": "h-e48f83168a28",
+   "planned": "review",
+   "range": "-705,0 +711,3",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/equipment_3d_character_src/PULL_REQUEST.md",
+   "hunk_id": "h-6346901612da",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-08425aa841dc",
+   "planned": "review",
+   "range": "-2180,0 +2169,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-0b3738454c63",
+   "planned": "review",
+   "range": "-1370,3 +1354,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-2309279317e8",
+   "planned": "mechanical",
+   "range": "-2038,1 +2030,1",
+   "reason": "classifier verdict",
+   "verdict": "mechanical"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-26b3ed3d738d",
+   "planned": "review",
+   "range": "-1416,1 +1406,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-2cb272d63364",
+   "planned": "review",
+   "range": "-83,0 +84,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-41035c6d33f7",
+   "planned": "review",
+   "range": "-338,1 +323,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-444d230ac23f",
+   "planned": "review",
+   "range": "-257,4 +244,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-5f2fe833d278",
+   "planned": "mechanical",
+   "range": "-1430,0 +1421,2",
+   "reason": "classifier verdict",
+   "verdict": "mechanical"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-6c165327d504",
+   "planned": "review",
+   "range": "-379,1 +364,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-7eb4d671da75",
+   "planned": "review",
+   "range": "-2040,7 +2032,3",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-89bdcf6990f9",
+   "planned": "review",
+   "range": "-217,17 +219,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-a5fdbadc5844",
+   "planned": "review",
+   "range": "-2163,1 +2151,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-ab242aaaccb6",
+   "planned": "review",
+   "range": "-1426,1 +1416,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-b5befbc96317",
+   "planned": "review",
+   "range": "-2175,1 +2163,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-da0aebfba2ed",
+   "planned": "review",
+   "range": "-1408,4 +1391,11",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-ffd12aa7bbe0",
+   "planned": "review",
+   "range": "-628,3 +613,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpUi.h",
+   "hunk_id": "h-173663bf76ea",
+   "planned": "review",
+   "range": "-117,1 +117,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/common_contract_test.cpp",
+   "hunk_id": "h-4a984a037854",
+   "planned": "review",
+   "range": "-156,0 +161,46",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/common_contract_test.cpp",
+   "hunk_id": "h-64a7bba231ca",
+   "planned": "review",
+   "range": "-12,0 +13,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/common_contract_test.cpp",
+   "hunk_id": "h-8be8e65306be",
+   "planned": "review",
+   "range": "-15,0 +18,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/common_contract_test.cpp",
+   "hunk_id": "h-94a479aa05dd",
+   "planned": "review",
+   "range": "-16,0 +20,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/PHASE7_COMMON_MASTER.md",
+   "hunk_id": "h-050d400ce1c4",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "research/companion_levelup/phase6_evidence/A3_mutation_report.md",
+   "hunk_id": "h-e6dbb6375a8d",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "research/companion_levelup/phase7_evidence/C5_party_adoption.md",
+   "hunk_id": "h-ec3a97965f45",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "research/companion_levelup/phase7_evidence/C6_filewatch_adoption.md",
+   "hunk_id": "h-3c25ca7bbc6a",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/gate_test.cpp",
+   "hunk_id": "h-14b8752904d0",
+   "planned": "review",
+   "range": "-130,1 +132,4",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/gate_test.cpp",
+   "hunk_id": "h-62d0c93ce09e",
+   "planned": "review",
+   "range": "-131,0 +137,11",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/gate_test.cpp",
+   "hunk_id": "h-9a5d071e68f2",
+   "planned": "review",
+   "range": "-33,0 +34,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/gate_test.cpp",
+   "hunk_id": "h-af9fa6eca4a7",
+   "planned": "review",
+   "range": "-306,1 +322,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/gate_test.cpp",
+   "hunk_id": "h-d28e5dca1434",
+   "planned": "review",
+   "range": "-127,2 +129,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/scenario_test.cpp",
+   "hunk_id": "h-300da7a81cf5",
+   "planned": "review",
+   "range": "-279,0 +280,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/scenario_test.cpp",
+   "hunk_id": "h-a015df92765e",
+   "planned": "review",
+   "range": "-281,0 +283,7",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/scenario_test.cpp",
+   "hunk_id": "h-f71f9d3aef73",
+   "planned": "review",
+   "range": "-276,2 +276,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/ui_test.cpp",
+   "hunk_id": "h-cbd4ee3ef3b4",
+   "planned": "review",
+   "range": "-791,1 +791,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/unit_gap_test.cpp",
+   "hunk_id": "h-9fd788963d6b",
+   "planned": "review",
+   "range": "-130,1 +130,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/unit_gap_test.cpp",
+   "hunk_id": "h-a16e7b89b474",
+   "planned": "review",
+   "range": "-144,1 +144,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/unit_gap_test.cpp",
+   "hunk_id": "h-fab79ab2a454",
+   "planned": "review",
+   "range": "-140,1 +140,1",
+   "reason": "",
+   "verdict": "reviewed"
+  }
+ ],
+ "verdict_counts": {
+  "excluded": 0,
+  "gap": 0,
+  "mechanical": 2,
+  "reviewed": 36,
+  "skipped": 5
+ }
+}

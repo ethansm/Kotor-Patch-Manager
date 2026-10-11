@@ -1,0 +1,540 @@
+{
+ "cost": {
+  "attempts_total": 0,
+  "basis": "cli_reported_total_cost_usd (the only figure used for budgets and decisions)",
+  "calls": 16,
+  "calls_with_cli_cost": 16,
+  "cli_reported_total_cost_usd": 0.093377,
+  "estimate": {
+   "calls_with_usage": 16,
+   "estimated_api_equivalent_usd": 0.039494,
+   "label": "ESTIMATE ONLY: illustrative list rates, never used for a budget or a decision",
+   "rate_model": "haiku-5.5",
+   "rates_usd_per_mtok": {
+    "gt_100k": {
+     "cache_read": 0.05,
+     "cache_write_5m": 0.625,
+     "input": 0.5,
+     "output": 2.5
+    },
+    "le_100k": {
+     "cache_read": 0.01,
+     "cache_write_5m": 0.125,
+     "input": 0.1,
+     "output": 0.5
+    }
+   },
+   "requests_over_100k": 0
+  },
+  "reduce_calls": 1,
+  "reduce_cli_reported_total_cost_usd": 0.002785,
+  "tokens": {
+   "cache_creation": 264316,
+   "cache_read": 632728,
+   "input": 76,
+   "output": 240
+  }
+ },
+ "coverage_passed": true,
+ "dedupe": {
+  "duplicates_folded": 0,
+  "groups": 10
+ },
+ "findings": [
+  {
+   "category": "bug",
+   "cluster": "C-091b4fbd",
+   "cluster_size": 1,
+   "commits": [
+    "22b56b4"
+   ],
+   "confidence": "medium",
+   "corroborated": false,
+   "dedupe_group": "D-091b4fbd",
+   "dedupe_rep": "9dd171cb3452",
+   "dedupe_size": 1,
+   "evidence": "Line 164: `g_cfg = c; ++g_cfgGen; syncWheelCfg();` copies g_cfg.screenW/screenH into guikit::g_wheel.iniW/iniH. Line 165 (new): `syncScreen();` runs afterwards, and syncScreen (lines 245-247) rewrites `g_cfg.screenW = (float)w; g_cfg.screenH = (float)h;` when guikit::syncScreen succeeds. The wheel's cached iniW/iniH therefore keep the pre-sync size. The not-found path at line 144 has the same order (syncWheelCfg() before syncScreen()).",
+   "files": [
+    "patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp"
+   ],
+   "id": "9dd171cb3452",
+   "lenses": [
+    "state"
+   ],
+   "lines": "144-165",
+   "packet_ids": [
+    "code-001"
+   ],
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check whether the per-tick path calls syncWheelCfg() before any wheel use. If it does not, move the syncScreen() call before syncWheelCfg() in both loadIni branches, or call syncWheelCfg() again after it. Verify by logging guikit::g_wheel.iniW/iniH and g_cfg.screenW right after loadIni on a non-default resolution.",
+   "verification": "unverified"
+  },
+  {
+   "category": "logic",
+   "cluster": "C-4916bced",
+   "cluster_size": 1,
+   "commits": [
+    "22b56b4"
+   ],
+   "confidence": "high",
+   "corroborated": false,
+   "dedupe_group": "D-4916bced",
+   "dedupe_rep": "a81b5d039ec1",
+   "dedupe_size": 1,
+   "evidence": "animLen now ends with `*len = 2.0f; // Safe 2.0s fallback ...` and `return true;` (596-601). The old code returned false when the name was not in the table (old 595-596). The only caller, playFlourish at line 762, has `else if (!animLen(s, name, &len)) { ... return false; }`, so that skip branch can no longer be taken. Rows whose table is empty (row 3/538/539, where animTable sets *n = 0 at line 592) also now return true with len 2.0.",
+   "files": [
+    "patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp"
+   ],
+   "id": "a81b5d039ec1",
+   "lenses": [
+    "logic"
+   ],
+   "lines": "595-601",
+   "packet_ids": [
+    "code-001"
+   ],
+   "root_cause": "animLen was changed to return true with a 2.0s fallback for names missing from the table, but its only caller in playFlourish still treats false as the not-in-table case, so that branch is now dead and the table-miss behaviour changed silently.",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check whether playFlourish or any other caller relied on a false return for unknown names. Confirm which rows reach the n==0 path via animTable (rows 3, 538, 539) and whether a 2.0 s playback there is intended. If the fallback is wanted, decide whether it belongs in playFlourish rather than in the lookup, and make sure the 'not in table' log at line 762 is still reachable.",
+   "verification": "unverified"
+  },
+  {
+   "category": "api-break",
+   "cluster": "C-0c9ddbf4",
+   "cluster_size": 1,
+   "commits": [
+    "22b56b4"
+   ],
+   "confidence": "high",
+   "corroborated": false,
+   "dedupe_group": "D-0c9ddbf4",
+   "dedupe_rep": "3c9acfeb0b55",
+   "dedupe_size": 1,
+   "evidence": "animLen now ends with `*len = 2.0f; // Safe 2.0s fallback ...` and `return true;` unconditionally (601). The old body returned false when the name was not in the table. The only caller in the packet, playFlourish at line 762, still uses the old convention: `else if (!animLen(s, name, &len)) { dlogf(\"flourish: '%s' not in table for row %d\", ...); return false; }`. That branch is now unreachable.",
+   "files": [
+    "patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp"
+   ],
+   "id": "3c9acfeb0b55",
+   "lenses": [
+    "contract"
+   ],
+   "lines": "596-601",
+   "packet_ids": [
+    "code-001"
+   ],
+   "root_cause": "animLen was changed to return true with a 2.0s fallback for names missing from the table, but its only caller in playFlourish still treats false as the not-in-table case, so that branch is now dead and the table-miss behaviour changed silently.",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check whether any other caller of animLen exists outside this file. Then decide whether the fallback should live in playFlourish instead, keeping animLen's false-on-unknown contract. Confirm by tracing playFlourish for row 3/538/539 and for an unmapped name: the old code logged 'not in table' and returned false; the new code calls playPart with len=2.0.",
+   "verification": "unverified"
+  },
+  {
+   "category": "logic",
+   "cluster": "C-463fefc4",
+   "cluster_size": 1,
+   "commits": [
+    "22b56b4"
+   ],
+   "confidence": "medium",
+   "corroborated": true,
+   "dedupe_group": "D-463fefc4",
+   "dedupe_rep": "6d18e325826a",
+   "dedupe_size": 1,
+   "evidence": "Line 709 comment: \"a failed rebuild below leaves the old head: the tick toggle block re-attaches to it\". But the new block at 711-713 runs `destroyCreature(s, \"character change\")` before the build. destroyCreature (524-535) sets s->creature = nullptr, s->built = false, s->real = 0. A later failure at 716 (readApp), 724 (gate 009f42b4 zero) or 727 (bad vtable/scene) returns false with a freshly allocated, unbuilt creature in s->creature, and the old head is already gone.",
+   "files": [
+    "patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp"
+   ],
+   "id": "6d18e325826a",
+   "lenses": [
+    "contract",
+    "logic"
+   ],
+   "lines": "709-714",
+   "packet_ids": [
+    "code-001"
+   ],
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Trace the tick and toggle code that reads s->creature, s->built and s->helmApplied after buildPreview returns false, and check whether it assumes the old head still exists. Also check whether the early returns at 716, 724 and 727 should leave s->creature null, or whether the destroy at 711-713 should be moved after the gate and readApp checks. Confirm that the fresh allocation in allocCreature (537-552) is not leaked when the function returns false.",
+   "verification": "unverified"
+  },
+  {
+   "category": "logic",
+   "cluster": "C-6d44a05f",
+   "cluster_size": 1,
+   "commits": [
+    "0fd1151",
+    "39144b7"
+   ],
+   "confidence": "high",
+   "corroborated": true,
+   "dedupe_group": "D-6d44a05f",
+   "dedupe_rep": "380b0153b1a8",
+   "dedupe_size": 1,
+   "evidence": "Non-forced path at 1392-1393: `if (!filewatch::changed(g_ptPoll, PtName, GetTickCount(), false, &st)) return;` then 1399: `const bool changed = !g_ptPoll.primed || (st != g_ptPoll.last);`. In FileWatch.h:82-83 `changed()` already sets `p.last = s; p.primed = true;` before returning true, so at line 1399 `primed` is always true and `st != last` is always false on this path. The local `changed` is therefore always false here, and the `if (changed) logLine(\"PLAYTHROUGH %s...\")` at 1416 is never reached for a reload triggered by the file watcher. The first load at startup is also silent, whereas the pre-adoption code (`st != g_ptStamp` with g_ptStamp=~0) logged it.",
+   "files": [
+    "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp"
+   ],
+   "id": "380b0153b1a8",
+   "lenses": [
+    "contract",
+    "logic",
+    "state"
+   ],
+   "lines": "1391-1402",
+   "packet_ids": [
+    "code-002"
+   ],
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Compare the logged output of a session that starts with levelup_playthroughs.ini present and then edits it. The expected PLAYTHROUGH line is absent. Fix idea to verify, not apply: compute `changed` from the poll state before calling filewatch::changed(), or use the return value of changed() directly on the non-forced path.",
+   "verification": "unverified"
+  },
+  {
+   "candidate_ids": [
+    "S-034ac7fa33"
+   ],
+   "category": "logic",
+   "cluster": "C-5558f557",
+   "cluster_size": 1,
+   "commits": [
+    "39144b7"
+   ],
+   "confidence": "high",
+   "corroborated": false,
+   "dedupe_group": "D-5558f557",
+   "dedupe_rep": "a9cf75e9ba64",
+   "dedupe_size": 1,
+   "evidence": "`LCHECK(\"party::table function exists\", static_cast<uintptr_t(*)(party::Fail*)>(&party::table) != nullptr);` (same pattern at 164 and 165). The address of a named non-weak function is never null, so each condition is always true and these three checks cannot fail. Party.h:33, 80 and 89 define the functions inline, so the cast always yields a valid pointer.",
+   "files": [
+    "patch_manager_mods/level_up_override_src/common_contract_test.cpp"
+   ],
+   "id": "a9cf75e9ba64",
+   "lenses": [
+    "logic"
+   ],
+   "lines": "163-165",
+   "packet_ids": [
+    "code-002"
+   ],
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Confirm that the test passes with these lines removed and that the build fails when a Party.h function is renamed. If a real signature check is wanted, assert on behaviour (e.g. party::member(0, 0) == 0 and party::table with a null app global returns 0 with F_App), not on the function's address.",
+   "verification": "unverified"
+  },
+  {
+   "candidate_ids": [
+    "S-9323c467b2"
+   ],
+   "category": "other",
+   "cluster": "C-46b027cb",
+   "cluster_size": 1,
+   "commits": [
+    "0fd1151",
+    "39144b7"
+   ],
+   "confidence": "low",
+   "evidence": "[scanner pointer-math] uintptr_t-cast | LCHECK(\"party::serverCreature function exists\", static_cast<uintptr_t(*)(uintptr_t)>(&party::serverCreature) != nullptr);",
+   "files": [
+    "patch_manager_mods/level_up_override_src/common_contract_test.cpp"
+   ],
+   "id": "a9aaccbed7c4",
+   "lines": "165",
+   "packet_ids": [],
+   "severity": "low",
+   "source": "scanner",
+   "suggested_investigation": "Confirm or dismiss this scanner candidate by reading the cited lines; no worker reported it.",
+   "verification": "unverified-scanner"
+  },
+  {
+   "candidate_ids": [
+    "S-b197154b98"
+   ],
+   "category": "other",
+   "cluster": "C-6130750b",
+   "cluster_size": 1,
+   "commits": [
+    "0fd1151",
+    "39144b7"
+   ],
+   "confidence": "low",
+   "evidence": "[scanner pointer-math] c-pointer-cast | party::g_serverCreature = [](void* m) -> uintptr_t { return (m == (void*)0x2000u) ? 0x3000u : 0u; };",
+   "files": [
+    "patch_manager_mods/level_up_override_src/common_contract_test.cpp"
+   ],
+   "id": "ffc4a3c91672",
+   "lines": "179",
+   "packet_ids": [],
+   "severity": "low",
+   "source": "scanner",
+   "suggested_investigation": "Confirm or dismiss this scanner candidate by reading the cited lines; no worker reported it.",
+   "verification": "unverified-scanner"
+  },
+  {
+   "category": "test",
+   "cluster": "C-ec29b3f5",
+   "cluster_size": 1,
+   "commits": [
+    "0fd1151",
+    "39144b7"
+   ],
+   "confidence": "high",
+   "corroborated": false,
+   "dedupe_group": "D-ec29b3f5",
+   "dedupe_rep": "18f79695128b",
+   "dedupe_size": 1,
+   "evidence": "LCHECK(\"filewatch::changed force skips throttle if changed\", !filewatch::changed(rp, tmpPath, 2600, true));  The file is not modified between the 2500 check at line 198 and this call, so the assertion expects false for an unchanged file.",
+   "files": [
+    "patch_manager_mods/level_up_override_src/common_contract_test.cpp"
+   ],
+   "id": "18f79695128b",
+   "lenses": [
+    "contract"
+   ],
+   "lines": "195-199",
+   "packet_ids": [
+    "code-002"
+   ],
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Modify tmpPath (for example write more bytes) between the 2500 check and a forced call at a time inside the throttle window (e.g. 2600), then assert true. Confirm with FileWatch.h changed() lines 78 and 82 that force skips the throttle branch and that the size change alters the stamp.",
+   "verification": "unverified"
+  },
+  {
+   "candidate_ids": [
+    "S-59d8925ee7"
+   ],
+   "category": "other",
+   "cluster": "C-5fc23adb",
+   "cluster_size": 1,
+   "commits": [
+    "39144b7"
+   ],
+   "confidence": "low",
+   "evidence": "[scanner pointer-math] reinterpret_cast | *reinterpret_cast<uint32_t*>(app + 4) = (uint32_t)client;",
+   "files": [
+    "research/companion_levelup/tools/parity/gate_test.cpp"
+   ],
+   "id": "c95f980c3454",
+   "lines": "132",
+   "packet_ids": [],
+   "severity": "low",
+   "source": "scanner",
+   "suggested_investigation": "Confirm or dismiss this scanner candidate by reading the cited lines; no worker reported it.",
+   "verification": "unverified-scanner"
+  },
+  {
+   "candidate_ids": [
+    "S-547a0c6f10"
+   ],
+   "category": "other",
+   "cluster": "C-b3abda6a",
+   "cluster_size": 1,
+   "commits": [
+    "39144b7"
+   ],
+   "confidence": "low",
+   "evidence": "[scanner pointer-math] reinterpret_cast | *reinterpret_cast<uint32_t*>(client + 4) = (uint32_t)ci;",
+   "files": [
+    "research/companion_levelup/tools/parity/gate_test.cpp"
+   ],
+   "id": "18bad252eee4",
+   "lines": "133",
+   "packet_ids": [],
+   "severity": "low",
+   "source": "scanner",
+   "suggested_investigation": "Confirm or dismiss this scanner candidate by reading the cited lines; no worker reported it.",
+   "verification": "unverified-scanner"
+  },
+  {
+   "candidate_ids": [
+    "S-66e96cbe6f"
+   ],
+   "category": "other",
+   "cluster": "C-bc7199c7",
+   "cluster_size": 1,
+   "commits": [
+    "39144b7"
+   ],
+   "confidence": "low",
+   "evidence": "[scanner pointer-math] reinterpret_cast, hex-offset | *reinterpret_cast<uint32_t*>(ci + 0x270) = (uint32_t)partyTable;",
+   "files": [
+    "research/companion_levelup/tools/parity/gate_test.cpp"
+   ],
+   "id": "cea821a432d2",
+   "lines": "134",
+   "packet_ids": [],
+   "severity": "low",
+   "source": "scanner",
+   "suggested_investigation": "Confirm or dismiss this scanner candidate by reading the cited lines; no worker reported it.",
+   "verification": "unverified-scanner"
+  },
+  {
+   "candidate_ids": [
+    "S-206c54dc10"
+   ],
+   "category": "other",
+   "cluster": "C-7121ff95",
+   "cluster_size": 1,
+   "commits": [
+    "39144b7"
+   ],
+   "confidence": "low",
+   "evidence": "[scanner pointer-math] reinterpret_cast | *reinterpret_cast<int*>(partyTable) = 3;",
+   "files": [
+    "research/companion_levelup/tools/parity/gate_test.cpp"
+   ],
+   "id": "36762ad12a41",
+   "lines": "135",
+   "packet_ids": [],
+   "severity": "low",
+   "source": "scanner",
+   "suggested_investigation": "Confirm or dismiss this scanner candidate by reading the cited lines; no worker reported it.",
+   "verification": "unverified-scanner"
+  },
+  {
+   "candidate_ids": [
+    "S-64bcb23fa7"
+   ],
+   "category": "other",
+   "cluster": "C-059ce8a9",
+   "cluster_size": 1,
+   "commits": [
+    "39144b7"
+   ],
+   "confidence": "low",
+   "evidence": "[scanner pointer-math] reinterpret_cast | return (member == reinterpret_cast<void*>(0x1000F100)) ? reinterpret_cast<uintptr_t>(g_creatureRet) : 0u;",
+   "files": [
+    "research/companion_levelup/tools/parity/gate_test.cpp"
+   ],
+   "id": "129fec265f26",
+   "lines": "146",
+   "packet_ids": [],
+   "severity": "low",
+   "source": "scanner",
+   "suggested_investigation": "Confirm or dismiss this scanner candidate by reading the cited lines; no worker reported it.",
+   "verification": "unverified-scanner"
+  },
+  {
+   "category": "test",
+   "cluster": "C-e9215ec0",
+   "cluster_size": 1,
+   "commits": [
+    "39144b7"
+   ],
+   "confidence": "medium",
+   "corroborated": true,
+   "dedupe_group": "D-e9215ec0",
+   "dedupe_rep": "d9d1f418193b",
+   "dedupe_size": 1,
+   "evidence": "Base assertion removed at old line 306: CHECK(g_lastTableEcx == P(0x10001234), \"table-get ECX must be [[appGlobal]+4]...\"). Its nearest replacement at line 322 is CHECK(g_lastPartyTable == P(partyTable) && g_lastPartyIdx == 0, \"party::member table must be partyTable...\"), which checks a different call (party::member via g_member), not tableGet. After the change, fakeTableGet (line 40) still writes g_lastTableEcx, but a grep of the parity directory finds no CHECK that reads g_lastTableEcx anymore. The assertion_delta shows 164 -> 164 CHECKs, so the count hides the swap.",
+   "files": [
+    "research/companion_levelup/tools/parity/gate_test.cpp"
+   ],
+   "id": "d9d1f418193b",
+   "lenses": [
+    "contract",
+    "state"
+   ],
+   "lines": "320-322",
+   "packet_ids": [
+    "other-001"
+   ],
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "In gate_test.cpp, grep the parity directory for g_lastTableEcx and tableGet to confirm no CHECK reads g_lastTableEcx. Then confirm what the real table-get caller passes as ECX (the value that should equal the client pointer read via [[appGlobal]+4], i.e. the client object at app+4 in the new chain) and restore a CHECK on g_lastTableEcx against P(client). If the party::member check was meant to replace it, state that in the commit and check that tableGet is covered elsewhere.",
+   "verification": "unverified"
+  },
+  {
+   "candidate_ids": [
+    "S-d10b12339c"
+   ],
+   "category": "other",
+   "cluster": "C-1ebe1143",
+   "cluster_size": 1,
+   "commits": [
+    "39144b7"
+   ],
+   "confidence": "low",
+   "evidence": "[scanner pointer-math] reinterpret_cast | return (member == reinterpret_cast<void*>(0x1000F100) && g_leader) ? reinterpret_cast<uintptr_t>(g_leader->creature) : 0u;",
+   "files": [
+    "research/companion_levelup/tools/parity/scenario_test.cpp"
+   ],
+   "id": "7c24e67883b3",
+   "lines": "288",
+   "packet_ids": [],
+   "severity": "low",
+   "source": "scanner",
+   "suggested_investigation": "Confirm or dismiss this scanner candidate by reading the cited lines; no worker reported it.",
+   "verification": "unverified-scanner"
+  },
+  {
+   "category": "test",
+   "cluster": "C-ce300838",
+   "cluster_size": 1,
+   "commits": [
+    "0fd1151"
+   ],
+   "confidence": "high",
+   "corroborated": false,
+   "dedupe_group": "D-ce300838",
+   "dedupe_rep": "74362fd5891c",
+   "dedupe_size": 1,
+   "evidence": "auto put = [](const char* name, const char* rules) { FILE* f = fopen(name, \"wb\"); fprintf(f, \"[classskills]\\ncs2=11111111\\n...\", rules); fclose(f); };  The fopen result is used with no null check before fprintf and fclose.",
+   "files": [
+    "research/companion_levelup/tools/parity/unit_gap_test.cpp"
+   ],
+   "id": "74362fd5891c",
+   "lenses": [
+    "state"
+   ],
+   "lines": "111-115",
+   "packet_ids": [
+    "other-002"
+   ],
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Confirm that fopen(\"t.ini\", \"wb\") can fail in the test's working directory (the mkdtemp dir from line 29-30). Add a null check that returns a nonzero exit or a CHECK failure before fprintf, then rerun unit_gap_test to see the failure reported cleanly.",
+   "verification": "unverified"
+  },
+  {
+   "category": "test",
+   "cluster": "C-6abb165a",
+   "cluster_size": 1,
+   "commits": [
+    "0fd1151"
+   ],
+   "confidence": "medium",
+   "corroborated": false,
+   "dedupe_group": "D-6abb165a",
+   "dedupe_rep": "e3a9cfa43da6",
+   "dedupe_size": 1,
+   "evidence": "Line 130 resets only g_tablePoll, g_tableStamp, g_tableOk and g_cfg.nTags before reloadTable(true). Line 136 then asserts !g_rules && !g_fr[3].present && !g_pr[10].present && !g_pr[11].present. No good table with [featrules]/[powerrules] is loaded before the loop, and the rule globals are not reset in the loop, so they start from whatever the previous process state was.",
+   "files": [
+    "research/companion_levelup/tools/parity/unit_gap_test.cpp"
+   ],
+   "id": "e3a9cfa43da6",
+   "lenses": [
+    "state"
+   ],
+   "lines": "127-136",
+   "packet_ids": [
+    "other-002"
+   ],
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "In reloadTable, check whether a rule-parse failure clears g_rules, g_fr[] and g_pr[] or only sets g_ruleBadLine. Then make the test falsifiable: load a good table with rules first (as the control at lines 139-142 does), assert the rules are present, then run the bad table and assert they are cleared. Also reset g_rules, g_fr and g_pr alongside the other globals at line 130 so each case starts from a known state.",
+   "verification": "unverified"
+  }
+ ],
+ "generated_by": "merge.py",
+ "human_only": [],
+ "recall": [],
+ "reduce_files": [
+  "domain_all.json"
+ ],
+ "snapshot_sha256": "329681bddfb70723d9a26007bf03800e78dd90ad79bdd59b5e9fb20adc4ef3a3",
+ "warnings": []
+}

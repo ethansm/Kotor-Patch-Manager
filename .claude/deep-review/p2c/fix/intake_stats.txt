@@ -1,0 +1,6 @@
+intake: 23 fixable findings -> 23 tasks (0 duplicates merged), 0 co-located distinct findings grouped, 18 files, 2 waves
+  tasks by class   : {'needs-design': 13, 'auto-fixable': 3, 'human-only': 7}
+  findings by class: {'needs-design': 13, 'auto-fixable': 3, 'human-only': 7}
+  fixer tasks by specialty: {'source-logic': 6, 'build-config': 2, 'python-tooling': 4, 'test-weakening': 4}
+  flags: relocate 2, needs_live_check 0, gate_semantics 1, sandbox_tests_only 2
+  human list: 4 contested + 7 human-only tasks; refuted skim: 1

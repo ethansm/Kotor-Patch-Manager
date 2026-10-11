@@ -1,0 +1,4809 @@
+{
+ "duplicate_hunk_ids": [],
+ "errors": [],
+ "files_examined_warnings": [
+  {
+   "missing_files": [
+    "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp"
+   ],
+   "packet_id": "code-003",
+   "problem": "files_examined misses packet files"
+  },
+  {
+   "missing_files": [
+    "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+    "patch_manager_mods/level_up_override_src/common_contract_test.cpp"
+   ],
+   "packet_id": "code-007",
+   "problem": "files_examined misses packet files"
+  },
+  {
+   "missing_files": [
+    "research/companion_levelup/tools/parity/unit_gap_test.cpp"
+   ],
+   "packet_id": "other-011",
+   "problem": "files_examined misses packet files"
+  },
+  {
+   "missing_files": [
+    "scripts/compat_graph.py",
+    "scripts/crash_triage.py",
+    "scripts/dedup_tga_tpc.py"
+   ],
+   "packet_id": "other-020",
+   "problem": "files_examined misses packet files"
+  },
+  {
+   "missing_files": [
+    "scripts/generate_ultrawide_gui_overrides.py"
+   ],
+   "packet_id": "other-023",
+   "problem": "files_examined misses packet files"
+  },
+  {
+   "missing_files": [
+    "scripts/generate_ultrawide_textures.py"
+   ],
+   "packet_id": "other-024",
+   "problem": "files_examined misses packet files"
+  },
+  {
+   "missing_files": [
+    "scripts/install_echoes_compatch.py",
+    "scripts/install_echoes_compatch.sh",
+    "scripts/kotor2_logs.py"
+   ],
+   "packet_id": "other-027",
+   "problem": "files_examined misses packet files"
+  },
+  {
+   "missing_files": [
+    "scripts/kotor2_toolset.py",
+    "scripts/kpm_hotswap.py",
+    "scripts/master_ledger.py"
+   ],
+   "packet_id": "other-028",
+   "problem": "files_examined misses packet files"
+  },
+  {
+   "missing_files": [
+    "scripts/plan_manager.py"
+   ],
+   "packet_id": "other-029",
+   "problem": "files_examined misses packet files"
+  },
+  {
+   "missing_files": [
+    "scripts/router_eval.py",
+    "scripts/run_tests.py"
+   ],
+   "packet_id": "other-031",
+   "problem": "files_examined misses packet files"
+  },
+  {
+   "missing_files": [
+    "scripts/run_tests.py",
+    "scripts/scaffold_mod.py",
+    "scripts/selfheal_log_check.py"
+   ],
+   "packet_id": "other-032",
+   "problem": "files_examined misses packet files"
+  },
+  {
+   "missing_files": [
+    "scripts/subagent_prompt.py",
+    "scripts/swarm_argv_probe.py",
+    "scripts/symlink_pass.py"
+   ],
+   "packet_id": "other-034",
+   "problem": "files_examined misses packet files"
+  }
+ ],
+ "gaps": [],
+ "passed": true,
+ "per_file": {
+  ".agents/skills/hot-swap/SKILL.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  ".agents/skills/resume/SKILL.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  ".claude/handoffs/10_engine_optimization_research.handoff.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  ".claude/handoffs/18_mouse_camera_investigation.handoff.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  ".claude/handoffs/22_compat_check_plan.handoff.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  ".claude/handoffs/31_combat_action_hotbar.handoff.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  ".claude/handoffs/33_ui_queue_hotbar_fixes.handoff.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  ".claude/handoffs/35_clef_systemone_matcher_and_ledger.handoff.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  ".claude/handoffs/PHASE7_COMMON_MASTER.handoff.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  ".claude/handoffs/swarm_m2_safety.handoff.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  ".claude/plans/swarm_library_architecture.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  ".claude/plans/swarm_review_2026-10-10/claims.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  ".claude/plans/swarm_review_2026-10-10/corrections.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  ".claude/plans/swarm_review_2026-10-10/design_draft.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  ".claude/plans/swarm_review_2026-10-10/out/K1.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  ".claude/plans/swarm_review_2026-10-10/out/K2.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  ".claude/plans/swarm_review_2026-10-10/out/K3.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  ".claude/plans/swarm_review_2026-10-10/out/K4.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  ".claude/plans/swarm_review_2026-10-10/out/K5.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  ".claude/plans/swarm_review_2026-10-10/out/K6.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  ".claude/plans/swarm_review_2026-10-10/out/V1.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  ".claude/plans/swarm_review_2026-10-10/out/V2.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  ".claude/plans/swarm_review_2026-10-10/out/V3.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  ".claude/plans/swarm_review_2026-10-10/out/V4.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "AGENTS.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "CLAUDE.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "COMMUNITY_COMPATCH_GUIDE_ECHOES_OF_THE_REPUBLIC.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "COMPATCH_PLAN_ECHOES_OF_THE_REPUBLIC.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "LEGACY_MOVIES_UPSCALING_PIPELINE.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "kotor2_ghidra_knowledge.db": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "neocities_mods.json": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "neocities_mods_detailed.json": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "patch_manager_mods/00_code_review_feedback_2026-09-29.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "patch_manager_mods/00_code_review_feedback_2026-09-30.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "patch_manager_mods/00_ui_queue_hotbar_feedback_2026-10-06.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "patch_manager_mods/01_inventory_3d_viewport_feedback.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "patch_manager_mods/10_engine_optimization_research.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "patch_manager_mods/10_equipment_3d_character_feedback.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "patch_manager_mods/11_inventory_sort_filter_feedback.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "patch_manager_mods/13_ranged_ai_spacing.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "patch_manager_mods/13_ranged_ai_spacing_feedback.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "patch_manager_mods/18_mouse_camera_investigation.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "patch_manager_mods/19b_cross_patch_sharing_survey.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "patch_manager_mods/27_companion_selfheal.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "patch_manager_mods/30_queue_hud.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "patch_manager_mods/33_ui_queue_hotbar_fixes.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "patch_manager_mods/35_clef_systemone_matcher_and_ledger.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "patch_manager_mods/_shared_src/GameAddr.h": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "patch_manager_mods/_shared_src/GuiInput.h": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 1,
+   "reviewed": 0,
+   "skipped": 0
+  },
+  "patch_manager_mods/_shared_src/SelfHealUi.h": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 2,
+   "skipped": 0
+  },
+  "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 2,
+   "reviewed": 9,
+   "skipped": 0
+  },
+  "patch_manager_mods/action_hotbar_src/HotbarLogic.h": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 1,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "patch_manager_mods/action_hotbar_src/PULL_REQUEST.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "patch_manager_mods/action_hotbar_src/hotbar_logic_test.cpp": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "patch_manager_mods/action_hotbar_src/manifest.toml": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "patch_manager_mods/activation_fix_src/PULL_REQUEST.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "patch_manager_mods/active_effects_panel_src/PULL_REQUEST.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "patch_manager_mods/buff_duration_hud_src/PULL_REQUEST.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "patch_manager_mods/companion_ai_src/PULL_REQUEST.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 39,
+   "skipped": 0
+  },
+  "patch_manager_mods/equip_icon_fix_src/PULL_REQUEST.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "patch_manager_mods/gui_input_src/GuiInputProvider.cpp": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "patch_manager_mods/gui_input_src/gi_registry_test.cpp": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 4,
+   "skipped": 0
+  },
+  "patch_manager_mods/gui_input_src/kotor2-gog-aspyr.hooks.toml": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "patch_manager_mods/inventory_3d_viewport_src/Inventory3DViewport.cpp": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 7,
+   "skipped": 0
+  },
+  "patch_manager_mods/inventory_3d_viewport_src/PULL_REQUEST.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "patch_manager_mods/inventory_sort_filter_src/PULL_REQUEST.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 2,
+   "reviewed": 63,
+   "skipped": 0
+  },
+  "patch_manager_mods/level_up_override_src/PULL_REQUEST.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "patch_manager_mods/level_up_override_src/common_contract_test.cpp": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 1,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "patch_manager_mods/level_up_override_src/exports.def": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "patch_manager_mods/level_up_override_src/manifest.toml": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "patch_manager_mods/level_up_override_src/test.toml": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "patch_manager_mods/mouse_probe_src/MouseFixLogic.h": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "patch_manager_mods/mouse_probe_src/MouseProbe.cpp": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 1,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "patch_manager_mods/mouse_probe_src/common_contract_test.cpp": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 1,
+   "reviewed": 0,
+   "skipped": 0
+  },
+  "patch_manager_mods/queue_hud_src/QueueHud.cpp": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 24,
+   "skipped": 0
+  },
+  "patch_manager_mods/queue_hud_src/QueueHudLogic.h": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 2,
+   "reviewed": 15,
+   "skipped": 0
+  },
+  "patch_manager_mods/queue_hud_src/exports.def": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "patch_manager_mods/queue_hud_src/kotor2-steam-aspyr.hooks.toml": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "patch_manager_mods/queue_hud_src/queue_hud_logic_test.cpp": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 2,
+   "reviewed": 2,
+   "skipped": 0
+  },
+  "patch_manager_mods/ranged_ai_src/PULL_REQUEST.md": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "patch_manager_mods/shield_bar_src/ShieldBar.cpp": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 1,
+   "reviewed": 0,
+   "skipped": 0
+  },
+  "research/companion_levelup/logs/live/levelup_override_log_run3_20261002.txt": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "research/companion_levelup/phase4_evidence/M1_tags.txt": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "research/companion_levelup/tools/parity/apply_test.cpp": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "research/companion_levelup/tools/parity/gate_test.cpp": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 4,
+   "skipped": 0
+  },
+  "research/companion_levelup/tools/parity/parity.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "research/companion_levelup/tools/parity/scenario_test.cpp": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 1,
+   "reviewed": 6,
+   "skipped": 0
+  },
+  "research/companion_levelup/tools/parity/scenarios.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "research/companion_levelup/tools/parity/stub/LuoLogHost.h": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "research/companion_levelup/tools/parity/ui_test.cpp": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 3,
+   "skipped": 0
+  },
+  "research/companion_levelup/tools/parity/unit_gap_test.cpp": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 11,
+   "skipped": 0
+  },
+  "scripts/01_sanitize_textures.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/02_merge_2da_and_tlk.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/03_compile_galaxy_map.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/04_merge_modules.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/05_merge_dlgs_and_jrl.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/06_deploy_assets.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/_common.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/abi_check.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 5,
+   "skipped": 0
+  },
+  "scripts/agent_contract.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 2,
+   "skipped": 0
+  },
+  "scripts/agent_diff_check.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/agent_usage.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/agent_usage_rates.json": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/case_dedup.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/check_ncs_arg_order.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/check_txi_cycles.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/clef_dataset.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/clef_matcher.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/compat_check.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 6,
+   "skipped": 0
+  },
+  "scripts/compat_graph.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 5,
+   "skipped": 0
+  },
+  "scripts/crash_triage.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/dedup_tga_tpc.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/generate_diversity_2da.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 4,
+   "skipped": 0
+  },
+  "scripts/generate_ultrawide_gui_overrides.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/generate_ultrawide_textures.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/gpu_mode.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/install_echoes_compatch.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/install_echoes_compatch.sh": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/kotor2_ghidra_knowledge.db": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 0,
+   "skipped": 1
+  },
+  "scripts/kotor2_logs.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 1,
+   "reviewed": 6,
+   "skipped": 0
+  },
+  "scripts/kotor2_toolset.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/kpm_hotswap.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 3,
+   "skipped": 0
+  },
+  "scripts/master_ledger.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/normalize_diversity_textures.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 3,
+   "skipped": 0
+  },
+  "scripts/plan_manager.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 8,
+   "skipped": 0
+  },
+  "scripts/pre_install_gate.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 3,
+   "skipped": 0
+  },
+  "scripts/query_ghidra.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 3,
+   "skipped": 0
+  },
+  "scripts/router_eval.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/run_tests.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 12,
+   "skipped": 0
+  },
+  "scripts/scaffold_mod.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 8,
+   "skipped": 0
+  },
+  "scripts/selfheal_log_check.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 5,
+   "skipped": 0
+  },
+  "scripts/shadow_replay.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/snapshot_live.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/subagent_prompt.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 2,
+   "reviewed": 29,
+   "skipped": 0
+  },
+  "scripts/swarm_argv_probe.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/symlink_pass.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/test_abi_check.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/test_agent_usage.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/test_clef_matcher.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/test_compat_check.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/test_compat_check_rc.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/test_compat_graph.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/test_crash_triage.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/test_kotor2_logs.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/test_master_ledger.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/test_plan_manager.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 8,
+   "skipped": 0
+  },
+  "scripts/test_router_eval.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/test_run_tests_select.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/test_selfheal_log_check.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/test_subagent_tools.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/upscale_legacy_movies.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/verify_2da.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "scripts/verify_all_compatch.py": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "swkotor2.ini": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "tests/benchmarks/transcript_prompt_eval.json": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  },
+  "tests/static/subclassers.toml": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 3,
+   "skipped": 0
+  },
+  "tests/suites.toml": {
+   "excluded": 0,
+   "gap": 0,
+   "mechanical": 0,
+   "reviewed": 1,
+   "skipped": 0
+  }
+ },
+ "requeue": [],
+ "snapshot_sha256": "33b6535adb901d82c9dca0a1e52a2caef8d957c3181d5439f697c74f7bfe51e7",
+ "unit_count": 446,
+ "units": [
+  {
+   "file": ".agents/skills/hot-swap/SKILL.md",
+   "hunk_id": "h-9a9f4d441942",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "out-of-scope part .agents",
+   "verdict": "skipped"
+  },
+  {
+   "file": ".agents/skills/resume/SKILL.md",
+   "hunk_id": "h-6db7075d7422",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "out-of-scope part .agents",
+   "verdict": "skipped"
+  },
+  {
+   "file": ".claude/handoffs/10_engine_optimization_research.handoff.md",
+   "hunk_id": "h-bd44ed53e744",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "out-of-scope part .claude",
+   "verdict": "skipped"
+  },
+  {
+   "file": ".claude/handoffs/18_mouse_camera_investigation.handoff.md",
+   "hunk_id": "h-fd8d3077ea10",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "out-of-scope part .claude",
+   "verdict": "skipped"
+  },
+  {
+   "file": ".claude/handoffs/22_compat_check_plan.handoff.md",
+   "hunk_id": "h-f03767260791",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "out-of-scope part .claude",
+   "verdict": "skipped"
+  },
+  {
+   "file": ".claude/handoffs/31_combat_action_hotbar.handoff.md",
+   "hunk_id": "h-4719ad582727",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "out-of-scope part .claude",
+   "verdict": "skipped"
+  },
+  {
+   "file": ".claude/handoffs/33_ui_queue_hotbar_fixes.handoff.md",
+   "hunk_id": "h-c245b22931c3",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "out-of-scope part .claude",
+   "verdict": "skipped"
+  },
+  {
+   "file": ".claude/handoffs/35_clef_systemone_matcher_and_ledger.handoff.md",
+   "hunk_id": "h-8f3257a9940a",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "out-of-scope part .claude",
+   "verdict": "skipped"
+  },
+  {
+   "file": ".claude/handoffs/PHASE7_COMMON_MASTER.handoff.md",
+   "hunk_id": "h-b1cf71e07b94",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "out-of-scope part .claude",
+   "verdict": "skipped"
+  },
+  {
+   "file": ".claude/handoffs/swarm_m2_safety.handoff.md",
+   "hunk_id": "h-b93975e0a704",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "out-of-scope part .claude",
+   "verdict": "skipped"
+  },
+  {
+   "file": ".claude/plans/swarm_library_architecture.md",
+   "hunk_id": "h-e69017bd046c",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "out-of-scope part .claude",
+   "verdict": "skipped"
+  },
+  {
+   "file": ".claude/plans/swarm_review_2026-10-10/claims.md",
+   "hunk_id": "h-93e66fb972b5",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "out-of-scope part .claude",
+   "verdict": "skipped"
+  },
+  {
+   "file": ".claude/plans/swarm_review_2026-10-10/corrections.md",
+   "hunk_id": "h-426648ecf8cf",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "out-of-scope part .claude",
+   "verdict": "skipped"
+  },
+  {
+   "file": ".claude/plans/swarm_review_2026-10-10/design_draft.md",
+   "hunk_id": "h-28d2c6b09c03",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "out-of-scope part .claude",
+   "verdict": "skipped"
+  },
+  {
+   "file": ".claude/plans/swarm_review_2026-10-10/out/K1.md",
+   "hunk_id": "h-16af7c2b7724",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "out-of-scope part .claude",
+   "verdict": "skipped"
+  },
+  {
+   "file": ".claude/plans/swarm_review_2026-10-10/out/K2.md",
+   "hunk_id": "h-ba87a7e8d411",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "out-of-scope part .claude",
+   "verdict": "skipped"
+  },
+  {
+   "file": ".claude/plans/swarm_review_2026-10-10/out/K3.md",
+   "hunk_id": "h-f959e9291d9b",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "out-of-scope part .claude",
+   "verdict": "skipped"
+  },
+  {
+   "file": ".claude/plans/swarm_review_2026-10-10/out/K4.md",
+   "hunk_id": "h-98f0ef507fd0",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "out-of-scope part .claude",
+   "verdict": "skipped"
+  },
+  {
+   "file": ".claude/plans/swarm_review_2026-10-10/out/K5.md",
+   "hunk_id": "h-0d2667ccc2f6",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "out-of-scope part .claude",
+   "verdict": "skipped"
+  },
+  {
+   "file": ".claude/plans/swarm_review_2026-10-10/out/K6.md",
+   "hunk_id": "h-804bda4918e4",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "out-of-scope part .claude",
+   "verdict": "skipped"
+  },
+  {
+   "file": ".claude/plans/swarm_review_2026-10-10/out/V1.md",
+   "hunk_id": "h-171af236f23e",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "out-of-scope part .claude",
+   "verdict": "skipped"
+  },
+  {
+   "file": ".claude/plans/swarm_review_2026-10-10/out/V2.md",
+   "hunk_id": "h-3d3326a79e7f",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "out-of-scope part .claude",
+   "verdict": "skipped"
+  },
+  {
+   "file": ".claude/plans/swarm_review_2026-10-10/out/V3.md",
+   "hunk_id": "h-038390221109",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "out-of-scope part .claude",
+   "verdict": "skipped"
+  },
+  {
+   "file": ".claude/plans/swarm_review_2026-10-10/out/V4.md",
+   "hunk_id": "h-739eb9bd5a07",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "out-of-scope part .claude",
+   "verdict": "skipped"
+  },
+  {
+   "file": "AGENTS.md",
+   "hunk_id": "h-3024de074098",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "CLAUDE.md",
+   "hunk_id": "h-cbb3ae797262",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "COMMUNITY_COMPATCH_GUIDE_ECHOES_OF_THE_REPUBLIC.md",
+   "hunk_id": "h-332f8a8df275",
+   "planned": "skipped",
+   "range": "-0,0 +1,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "COMPATCH_PLAN_ECHOES_OF_THE_REPUBLIC.md",
+   "hunk_id": "h-3d159040d1ff",
+   "planned": "skipped",
+   "range": "-0,0 +1,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "LEGACY_MOVIES_UPSCALING_PIPELINE.md",
+   "hunk_id": "h-9749c46b1358",
+   "planned": "skipped",
+   "range": "-0,0 +1,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "kotor2_ghidra_knowledge.db",
+   "hunk_id": "h-14c46452adbc",
+   "planned": "skipped",
+   "range": "-0,0 +1,0",
+   "reason": "binary",
+   "verdict": "skipped"
+  },
+  {
+   "file": "neocities_mods.json",
+   "hunk_id": "h-caad788cc5fd",
+   "planned": "review",
+   "range": "-0,0 +1,1542",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "neocities_mods_detailed.json",
+   "hunk_id": "h-fc5e68a47835",
+   "planned": "review",
+   "range": "-0,0 +1,1542",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/00_code_review_feedback_2026-09-29.md",
+   "hunk_id": "h-a3f200e1eb6a",
+   "planned": "skipped",
+   "range": "-0,0 +1,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "patch_manager_mods/00_code_review_feedback_2026-09-30.md",
+   "hunk_id": "h-ac60a84370e1",
+   "planned": "skipped",
+   "range": "-0,0 +1,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "patch_manager_mods/00_ui_queue_hotbar_feedback_2026-10-06.md",
+   "hunk_id": "h-3df0c4dda924",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "patch_manager_mods/01_inventory_3d_viewport_feedback.md",
+   "hunk_id": "h-569e39765eb9",
+   "planned": "skipped",
+   "range": "-0,0 +1,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "patch_manager_mods/10_engine_optimization_research.md",
+   "hunk_id": "h-9917d7e837a6",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "patch_manager_mods/10_equipment_3d_character_feedback.md",
+   "hunk_id": "h-a5d057f7f83d",
+   "planned": "skipped",
+   "range": "-0,0 +1,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "patch_manager_mods/11_inventory_sort_filter_feedback.md",
+   "hunk_id": "h-612fe654c0b1",
+   "planned": "skipped",
+   "range": "-0,0 +1,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "patch_manager_mods/13_ranged_ai_spacing.md",
+   "hunk_id": "h-7dcdb50c6576",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "patch_manager_mods/13_ranged_ai_spacing_feedback.md",
+   "hunk_id": "h-e63aba60fc64",
+   "planned": "skipped",
+   "range": "-0,0 +1,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "patch_manager_mods/18_mouse_camera_investigation.md",
+   "hunk_id": "h-2af30638ad42",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "patch_manager_mods/19b_cross_patch_sharing_survey.md",
+   "hunk_id": "h-3b94c97063d4",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "patch_manager_mods/27_companion_selfheal.md",
+   "hunk_id": "h-b8044f2d78ec",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "patch_manager_mods/30_queue_hud.md",
+   "hunk_id": "h-c6b901b0f33a",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "patch_manager_mods/33_ui_queue_hotbar_fixes.md",
+   "hunk_id": "h-5b7b1402b421",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "patch_manager_mods/35_clef_systemone_matcher_and_ledger.md",
+   "hunk_id": "h-3a853e680da2",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "patch_manager_mods/_shared_src/GameAddr.h",
+   "hunk_id": "h-d2f7c8c5817f",
+   "planned": "review",
+   "range": "-68,0 +69,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/_shared_src/GuiInput.h",
+   "hunk_id": "h-c921bcb8cbcf",
+   "planned": "mechanical",
+   "range": "-49,1 +49,1",
+   "reason": "classifier verdict",
+   "verdict": "mechanical"
+  },
+  {
+   "file": "patch_manager_mods/_shared_src/SelfHealUi.h",
+   "hunk_id": "h-653169fb1bf0",
+   "planned": "review",
+   "range": "-21,0 +22,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/_shared_src/SelfHealUi.h",
+   "hunk_id": "h-9462869f8a6d",
+   "planned": "review",
+   "range": "-44,0 +46,4",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp",
+   "hunk_id": "h-0a9cabd870f4",
+   "planned": "review",
+   "range": "-1827,1 +1854,0",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp",
+   "hunk_id": "h-467021365a44",
+   "planned": "review",
+   "range": "-1756,1 +1762,11",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp",
+   "hunk_id": "h-559f6262b37d",
+   "planned": "review",
+   "range": "-256,1 +256,6",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp",
+   "hunk_id": "h-81671ef79e29",
+   "planned": "review",
+   "range": "-1818,0 +1845,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp",
+   "hunk_id": "h-8bd97d7867c5",
+   "planned": "review",
+   "range": "-2032,1 +2082,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp",
+   "hunk_id": "h-912363bf3642",
+   "planned": "review",
+   "range": "-1758,1 +1774,7",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp",
+   "hunk_id": "h-988402ba79b1",
+   "planned": "review",
+   "range": "-353,6 +358,7",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp",
+   "hunk_id": "h-b82073f55405",
+   "planned": "mechanical",
+   "range": "-7,2 +7,2",
+   "reason": "classifier verdict",
+   "verdict": "mechanical"
+  },
+  {
+   "file": "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp",
+   "hunk_id": "h-bd89d82bd487",
+   "planned": "review",
+   "range": "-1787,0 +1810,4",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp",
+   "hunk_id": "h-c3152c3c004f",
+   "planned": "mechanical",
+   "range": "-5,1 +5,1",
+   "reason": "classifier verdict",
+   "verdict": "mechanical"
+  },
+  {
+   "file": "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp",
+   "hunk_id": "h-e30a76cf185e",
+   "planned": "review",
+   "range": "-2010,0 +2038,23",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/action_hotbar_src/HotbarLogic.h",
+   "hunk_id": "h-94f79de11b79",
+   "planned": "review",
+   "range": "-88,1 +89,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/action_hotbar_src/HotbarLogic.h",
+   "hunk_id": "h-ce1b77fff575",
+   "planned": "mechanical",
+   "range": "-74,1 +74,2",
+   "reason": "classifier verdict",
+   "verdict": "mechanical"
+  },
+  {
+   "file": "patch_manager_mods/action_hotbar_src/PULL_REQUEST.md",
+   "hunk_id": "h-31f7d9adfa7f",
+   "planned": "skipped",
+   "range": "-0,0 +0,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "patch_manager_mods/action_hotbar_src/hotbar_logic_test.cpp",
+   "hunk_id": "h-22841322916f",
+   "planned": "review",
+   "range": "-226,0 +227,7",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/action_hotbar_src/manifest.toml",
+   "hunk_id": "h-da6818e8e70d",
+   "planned": "review",
+   "range": "-6,1 +6,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/activation_fix_src/PULL_REQUEST.md",
+   "hunk_id": "h-b312f90a4a44",
+   "planned": "skipped",
+   "range": "-0,0 +1,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "patch_manager_mods/active_effects_panel_src/PULL_REQUEST.md",
+   "hunk_id": "h-57a6bc4a95b4",
+   "planned": "skipped",
+   "range": "-0,0 +1,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "patch_manager_mods/buff_duration_hud_src/PULL_REQUEST.md",
+   "hunk_id": "h-040a2a418c21",
+   "planned": "skipped",
+   "range": "-0,0 +1,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "patch_manager_mods/companion_ai_src/PULL_REQUEST.md",
+   "hunk_id": "h-f42717e7acc0",
+   "planned": "skipped",
+   "range": "-0,0 +1,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-01a99eadd788",
+   "planned": "review",
+   "range": "-294,1 +302,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-07b3c2164ba3",
+   "planned": "review",
+   "range": "-518,0 +532,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-12ba9a4f7f6a",
+   "planned": "review",
+   "range": "-910,1 +1023,0",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-13fb0f94f21f",
+   "planned": "review",
+   "range": "-289,1 +297,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-1890b0077e4e",
+   "planned": "review",
+   "range": "-62,1 +62,0",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-1dc3c5d8eac8",
+   "planned": "review",
+   "range": "-504,1 +517,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-1fa4c3307af8",
+   "planned": "review",
+   "range": "-908,0 +1021,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-24d580ccbafe",
+   "planned": "review",
+   "range": "-325,4 +333,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-2565aa2c8583",
+   "planned": "review",
+   "range": "-440,1 +446,8",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-2853b611b257",
+   "planned": "review",
+   "range": "-881,0 +990,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-2ee393960323",
+   "planned": "review",
+   "range": "-898,0 +1010,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-4005ccbe59b9",
+   "planned": "review",
+   "range": "-718,0 +775,12",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-4510e7b90b1e",
+   "planned": "review",
+   "range": "-783,2 +889,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-4fb86bf67c48",
+   "planned": "review",
+   "range": "-768,3 +872,4",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-54af1d4e2a30",
+   "planned": "review",
+   "range": "-737,1 +805,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-56c301fb5fce",
+   "planned": "review",
+   "range": "-698,0 +754,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-5ecdfeb3da5f",
+   "planned": "review",
+   "range": "-880,1 +988,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-6e3457f5b2d9",
+   "planned": "review",
+   "range": "-765,0 +864,6",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-6e91644c5f1a",
+   "planned": "review",
+   "range": "-796,1 +902,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-7580acf38e8b",
+   "planned": "review",
+   "range": "-542,0 +559,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-75d761970cfb",
+   "planned": "review",
+   "range": "-752,0 +821,30",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-834606dedccf",
+   "planned": "review",
+   "range": "-890,1 +999,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-95931b0b5da3",
+   "planned": "review",
+   "range": "-548,0 +567,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-97a8e854aaaf",
+   "planned": "review",
+   "range": "-280,0 +281,8",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-adb9440a0de1",
+   "planned": "review",
+   "range": "-798,2 +904,3",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-b74e3313eb0f",
+   "planned": "review",
+   "range": "-522,0 +537,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-b986276b9812",
+   "planned": "review",
+   "range": "-757,1 +855,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-bf5c42b57585",
+   "planned": "review",
+   "range": "-894,0 +1004,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-c32376f87280",
+   "planned": "review",
+   "range": "-660,0 +694,22",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-cbd17a236142",
+   "planned": "review",
+   "range": "-568,0 +588,14",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-d59859cc5045",
+   "planned": "review",
+   "range": "-323,1 +331,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-d7b34d077319",
+   "planned": "review",
+   "range": "-789,1 +895,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-df6598ad8780",
+   "planned": "review",
+   "range": "-56,0 +57,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-dff786a4e63d",
+   "planned": "review",
+   "range": "-524,0 +540,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-e0d708a9034a",
+   "planned": "review",
+   "range": "-780,1 +885,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-f25f0e7a006c",
+   "planned": "review",
+   "range": "-896,0 +1007,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-fe9584ca0498",
+   "planned": "review",
+   "range": "-541,1 +557,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-ff70d4945e0b",
+   "planned": "review",
+   "range": "-809,0 +917,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "hunk_id": "h-ffd2df8b8811",
+   "planned": "review",
+   "range": "-791,2 +897,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/equip_icon_fix_src/PULL_REQUEST.md",
+   "hunk_id": "h-9db33687dc4e",
+   "planned": "skipped",
+   "range": "-0,0 +1,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "patch_manager_mods/gui_input_src/GuiInputProvider.cpp",
+   "hunk_id": "h-b49f5302101f",
+   "planned": "review",
+   "range": "-158,1 +158,4",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/gui_input_src/gi_registry_test.cpp",
+   "hunk_id": "h-0e35f18009c8",
+   "planned": "review",
+   "range": "-57,0 +60,9",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/gui_input_src/gi_registry_test.cpp",
+   "hunk_id": "h-298f8d1e4c36",
+   "planned": "review",
+   "range": "-34,0 +35,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/gui_input_src/gi_registry_test.cpp",
+   "hunk_id": "h-56163e8cc49a",
+   "planned": "review",
+   "range": "-125,0 +137,9",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/gui_input_src/gi_registry_test.cpp",
+   "hunk_id": "h-ca4569a8d147",
+   "planned": "review",
+   "range": "-45,0 +47,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/gui_input_src/kotor2-gog-aspyr.hooks.toml",
+   "hunk_id": "h-93195708c5a0",
+   "planned": "review",
+   "range": "-0,0 +1,5",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/inventory_3d_viewport_src/Inventory3DViewport.cpp",
+   "hunk_id": "h-1dfadc603063",
+   "planned": "review",
+   "range": "-68,0 +69,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/inventory_3d_viewport_src/Inventory3DViewport.cpp",
+   "hunk_id": "h-2f759589b0e0",
+   "planned": "review",
+   "range": "-285,0 +292,7",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/inventory_3d_viewport_src/Inventory3DViewport.cpp",
+   "hunk_id": "h-6bd5c2160400",
+   "planned": "review",
+   "range": "-69,0 +72,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/inventory_3d_viewport_src/Inventory3DViewport.cpp",
+   "hunk_id": "h-9518ea0b5f14",
+   "planned": "review",
+   "range": "-117,1 +122,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/inventory_3d_viewport_src/Inventory3DViewport.cpp",
+   "hunk_id": "h-afba073461d4",
+   "planned": "review",
+   "range": "-107,0 +112,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/inventory_3d_viewport_src/Inventory3DViewport.cpp",
+   "hunk_id": "h-b7724a7298c4",
+   "planned": "review",
+   "range": "-138,0 +144,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/inventory_3d_viewport_src/Inventory3DViewport.cpp",
+   "hunk_id": "h-c896699d61cb",
+   "planned": "review",
+   "range": "-300,5 +312,0",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/inventory_3d_viewport_src/PULL_REQUEST.md",
+   "hunk_id": "h-121731db29fa",
+   "planned": "skipped",
+   "range": "-0,0 +1,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "patch_manager_mods/inventory_sort_filter_src/PULL_REQUEST.md",
+   "hunk_id": "h-12b05686cb88",
+   "planned": "skipped",
+   "range": "-0,0 +1,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-01c334a58d1c",
+   "planned": "review",
+   "range": "-2025,1 +2044,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-0337eb34c539",
+   "planned": "review",
+   "range": "-1480,1 +1499,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-098ef1c87102",
+   "planned": "review",
+   "range": "-1446,1 +1465,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-16eb12ee20a5",
+   "planned": "review",
+   "range": "-1533,1 +1552,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-176845f695c9",
+   "planned": "review",
+   "range": "-1515,1 +1534,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-1c5c3746391c",
+   "planned": "review",
+   "range": "-1924,1 +1943,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-1d5e53b63ad9",
+   "planned": "review",
+   "range": "-1386,1 +1406,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-20f57b20f635",
+   "planned": "review",
+   "range": "-1469,1 +1488,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-2b3917c87ffe",
+   "planned": "review",
+   "range": "-1500,1 +1519,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-32dabf2871ad",
+   "planned": "review",
+   "range": "-167,7 +184,6",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-35ea026a19c9",
+   "planned": "review",
+   "range": "-1200,1 +1217,4",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-378eb0e71199",
+   "planned": "review",
+   "range": "-635,1 +652,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-384d796785cc",
+   "planned": "review",
+   "range": "-1444,1 +1463,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-3a81c1e96466",
+   "planned": "review",
+   "range": "-323,4 +340,4",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-3c53e8c55e6b",
+   "planned": "review",
+   "range": "-152,4 +167,3",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-3cac9bfe61b1",
+   "planned": "review",
+   "range": "-1518,1 +1537,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-469e2ca0cfc3",
+   "planned": "review",
+   "range": "-78,0 +79,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-4721002546d9",
+   "planned": "review",
+   "range": "-101,0 +107,9",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-4c6e7167f019",
+   "planned": "review",
+   "range": "-1934,1 +1953,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-4cdbfba2a62d",
+   "planned": "review",
+   "range": "-2181,1 +2200,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-50af9a31fbe3",
+   "planned": "review",
+   "range": "-1801,2 +1820,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-515f1f9bd79a",
+   "planned": "review",
+   "range": "-1920,1 +1939,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-58495afdecb6",
+   "planned": "review",
+   "range": "-2169,1 +2188,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-5d3864e84676",
+   "planned": "review",
+   "range": "-1526,1 +1545,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-6054b00e0261",
+   "planned": "review",
+   "range": "-2253,1 +2272,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-65c35e67c375",
+   "planned": "review",
+   "range": "-1930,1 +1949,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-727d5ffaeea3",
+   "planned": "review",
+   "range": "-1434,1 +1453,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-738eea530a14",
+   "planned": "review",
+   "range": "-93,0 +95,4",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-74e0207448b9",
+   "planned": "review",
+   "range": "-1739,1 +1758,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-77fdbb3fd61b",
+   "planned": "review",
+   "range": "-2261,1 +2280,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-7bac2ee37543",
+   "planned": "mechanical",
+   "range": "-165,1 +181,2",
+   "reason": "classifier verdict",
+   "verdict": "mechanical"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-7c898b510476",
+   "planned": "review",
+   "range": "-157,1 +171,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-7f155f7e4810",
+   "planned": "review",
+   "range": "-2171,1 +2190,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-7fabeda9d6a6",
+   "planned": "review",
+   "range": "-1399,1 +1419,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-85c983b77e9d",
+   "planned": "review",
+   "range": "-2265,1 +2284,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-8993e74aba64",
+   "planned": "review",
+   "range": "-1382,1 +1402,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-8eef1d46bc49",
+   "planned": "review",
+   "range": "-1939,1 +1958,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-96931e7310cd",
+   "planned": "review",
+   "range": "-1506,1 +1525,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-96d347582eb4",
+   "planned": "review",
+   "range": "-1927,1 +1946,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-990288ac8869",
+   "planned": "mechanical",
+   "range": "-1422,1 +1441,0",
+   "reason": "classifier verdict",
+   "verdict": "mechanical"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-a0d35f7b14c8",
+   "planned": "review",
+   "range": "-630,4 +647,4",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-a2457aa4f487",
+   "planned": "review",
+   "range": "-2008,1 +2027,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-a2e43a308cbb",
+   "planned": "review",
+   "range": "-159,5 +174,6",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-a5e44dcceecb",
+   "planned": "review",
+   "range": "-1854,1 +1873,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-a699e8a1f42e",
+   "planned": "review",
+   "range": "-2175,1 +2194,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-b80175eb7e11",
+   "planned": "review",
+   "range": "-1892,1 +1911,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-ba53686587ce",
+   "planned": "review",
+   "range": "-99,1 +104,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-bbda2f1a9784",
+   "planned": "review",
+   "range": "-149,2 +162,4",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-c013fae0a9fb",
+   "planned": "review",
+   "range": "-2064,1 +2083,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-c7491a0400f8",
+   "planned": "review",
+   "range": "-2084,1 +2103,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-c809b8279d94",
+   "planned": "review",
+   "range": "-1557,1 +1576,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-cbea675e13e8",
+   "planned": "review",
+   "range": "-266,1 +282,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-d3dc74e7780b",
+   "planned": "review",
+   "range": "-1496,1 +1515,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-d830c300e6fb",
+   "planned": "review",
+   "range": "-1946,1 +1965,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-d932bdb08f22",
+   "planned": "review",
+   "range": "-146,1 +159,0",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-db5fe95ef76c",
+   "planned": "review",
+   "range": "-1416,1 +1436,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-de657fbfb5a0",
+   "planned": "review",
+   "range": "-319,0 +336,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-e03bc9973e69",
+   "planned": "review",
+   "range": "-2184,1 +2203,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-e50cab5a6bcc",
+   "planned": "review",
+   "range": "-1482,1 +1501,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-e96cdc61bc7f",
+   "planned": "review",
+   "range": "-1297,1 +1317,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-eeb6251e1be9",
+   "planned": "review",
+   "range": "-2052,1 +2071,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-f1403355d6ee",
+   "planned": "review",
+   "range": "-1204,1 +1224,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-f3941d268ed1",
+   "planned": "review",
+   "range": "-2237,1 +2256,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-f91a1fc083a4",
+   "planned": "review",
+   "range": "-1454,1 +1473,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "hunk_id": "h-f98dcee37a71",
+   "planned": "review",
+   "range": "-1988,1 +2007,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/PULL_REQUEST.md",
+   "hunk_id": "h-bf6e69719004",
+   "planned": "skipped",
+   "range": "-0,0 +1,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/common_contract_test.cpp",
+   "hunk_id": "h-0a77ef814e30",
+   "planned": "mechanical",
+   "range": "-5,1 +5,1",
+   "reason": "classifier verdict",
+   "verdict": "mechanical"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/common_contract_test.cpp",
+   "hunk_id": "h-d2d937e42f54",
+   "planned": "review",
+   "range": "-199,1 +199,3",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/exports.def",
+   "hunk_id": "h-436db39e3632",
+   "planned": "review",
+   "range": "-34,0 +35,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/manifest.toml",
+   "hunk_id": "h-82d247708ec8",
+   "planned": "review",
+   "range": "-4,1 +4,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/level_up_override_src/test.toml",
+   "hunk_id": "h-8066015a4811",
+   "planned": "review",
+   "range": "-4,1 +4,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/mouse_probe_src/MouseFixLogic.h",
+   "hunk_id": "h-6fc1ccd6eefa",
+   "planned": "review",
+   "range": "-52,2 +52,9",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/mouse_probe_src/MouseProbe.cpp",
+   "hunk_id": "h-870945a6487a",
+   "planned": "mechanical",
+   "range": "-1,3 +1,3",
+   "reason": "classifier verdict",
+   "verdict": "mechanical"
+  },
+  {
+   "file": "patch_manager_mods/mouse_probe_src/MouseProbe.cpp",
+   "hunk_id": "h-f594872a50ba",
+   "planned": "review",
+   "range": "-184,1 +184,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/mouse_probe_src/common_contract_test.cpp",
+   "hunk_id": "h-b54b03752a14",
+   "planned": "mechanical",
+   "range": "-9,0 +10,1",
+   "reason": "classifier verdict",
+   "verdict": "mechanical"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+   "hunk_id": "h-0bfece95a6a4",
+   "planned": "review",
+   "range": "-712,1 +719,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+   "hunk_id": "h-16a17369820d",
+   "planned": "review",
+   "range": "-770,1 +791,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+   "hunk_id": "h-2db7ad51ca64",
+   "planned": "review",
+   "range": "-372,2 +379,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+   "hunk_id": "h-334425854d19",
+   "planned": "review",
+   "range": "-743,2 +750,4",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+   "hunk_id": "h-3c67c6c622be",
+   "planned": "review",
+   "range": "-913,6 +947,3",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+   "hunk_id": "h-3f5f0a2bc85e",
+   "planned": "review",
+   "range": "-375,1 +382,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+   "hunk_id": "h-4c47c7f43ac9",
+   "planned": "review",
+   "range": "-723,2 +730,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+   "hunk_id": "h-56030013cbe3",
+   "planned": "review",
+   "range": "-944,0 +972,74",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+   "hunk_id": "h-56a44bd95057",
+   "planned": "review",
+   "range": "-730,1 +737,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+   "hunk_id": "h-5bac63b14473",
+   "planned": "review",
+   "range": "-244,1 +246,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+   "hunk_id": "h-5f45b04aa62f",
+   "planned": "review",
+   "range": "-363,3 +370,3",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+   "hunk_id": "h-6d9838135062",
+   "planned": "review",
+   "range": "-762,3 +783,3",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+   "hunk_id": "h-71db239e7f55",
+   "planned": "review",
+   "range": "-174,3 +176,3",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+   "hunk_id": "h-724d2caf497b",
+   "planned": "review",
+   "range": "-737,1 +744,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+   "hunk_id": "h-77e83bb94c41",
+   "planned": "review",
+   "range": "-732,1 +739,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+   "hunk_id": "h-887f3a74b056",
+   "planned": "review",
+   "range": "-76,0 +77,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+   "hunk_id": "h-9ef291926f6b",
+   "planned": "review",
+   "range": "-246,2 +248,7",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+   "hunk_id": "h-a02c7ee8de14",
+   "planned": "review",
+   "range": "-776,6 +798,18",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+   "hunk_id": "h-a3c33890f145",
+   "planned": "review",
+   "range": "-727,1 +734,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+   "hunk_id": "h-ad14be057379",
+   "planned": "review",
+   "range": "-908,1 +942,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+   "hunk_id": "h-c8cbb2176017",
+   "planned": "review",
+   "range": "-747,6 +756,18",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+   "hunk_id": "h-cb2dc66e0c6a",
+   "planned": "review",
+   "range": "-72,2 +72,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+   "hunk_id": "h-de9c380e7f42",
+   "planned": "review",
+   "range": "-924,7 +955,3",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+   "hunk_id": "h-f929de18408d",
+   "planned": "review",
+   "range": "-757,1 +778,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHudLogic.h",
+   "hunk_id": "h-070e6b6dfd44",
+   "planned": "review",
+   "range": "-496,1 +549,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHudLogic.h",
+   "hunk_id": "h-1b338a145cd1",
+   "planned": "review",
+   "range": "-469,2 +522,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHudLogic.h",
+   "hunk_id": "h-4b398046fa96",
+   "planned": "review",
+   "range": "-523,2 +583,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHudLogic.h",
+   "hunk_id": "h-4d72b44c19a5",
+   "planned": "review",
+   "range": "-467,1 +520,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHudLogic.h",
+   "hunk_id": "h-4d8b67448eed",
+   "planned": "review",
+   "range": "-516,1 +571,5",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHudLogic.h",
+   "hunk_id": "h-4db6df2102d0",
+   "planned": "review",
+   "range": "-452,0 +458,7",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHudLogic.h",
+   "hunk_id": "h-5f8d98563d23",
+   "planned": "review",
+   "range": "-448,2 +453,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHudLogic.h",
+   "hunk_id": "h-660bc65d468e",
+   "planned": "review",
+   "range": "-445,2 +445,7",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHudLogic.h",
+   "hunk_id": "h-70aaef16e542",
+   "planned": "review",
+   "range": "-509,1 +564,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHudLogic.h",
+   "hunk_id": "h-728dc4a458e9",
+   "planned": "review",
+   "range": "-454,5 +466,46",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHudLogic.h",
+   "hunk_id": "h-768544252c79",
+   "planned": "mechanical",
+   "range": "-527,0 +588,1",
+   "reason": "classifier verdict",
+   "verdict": "mechanical"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHudLogic.h",
+   "hunk_id": "h-7eb131cfb0ff",
+   "planned": "review",
+   "range": "-502,0 +556,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHudLogic.h",
+   "hunk_id": "h-a8551245753e",
+   "planned": "review",
+   "range": "-476,1 +529,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHudLogic.h",
+   "hunk_id": "h-c7828a92eba4",
+   "planned": "review",
+   "range": "-487,1 +540,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHudLogic.h",
+   "hunk_id": "h-dce3d23b3e18",
+   "planned": "mechanical",
+   "range": "-186,2 +186,2",
+   "reason": "classifier verdict",
+   "verdict": "mechanical"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHudLogic.h",
+   "hunk_id": "h-f0fdf07859bf",
+   "planned": "review",
+   "range": "-461,1 +514,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/QueueHudLogic.h",
+   "hunk_id": "h-f4444b87596a",
+   "planned": "review",
+   "range": "-519,1 +578,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/exports.def",
+   "hunk_id": "h-b2b09c9e87da",
+   "planned": "review",
+   "range": "-5,0 +6,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/kotor2-steam-aspyr.hooks.toml",
+   "hunk_id": "h-344a84e7c7c6",
+   "planned": "review",
+   "range": "-23,0 +24,19",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/queue_hud_logic_test.cpp",
+   "hunk_id": "h-69b610ebec53",
+   "planned": "review",
+   "range": "-1058,0 +1059,156",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/queue_hud_logic_test.cpp",
+   "hunk_id": "h-794f56e48312",
+   "planned": "mechanical",
+   "range": "-565,1 +565,1",
+   "reason": "classifier verdict",
+   "verdict": "mechanical"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/queue_hud_logic_test.cpp",
+   "hunk_id": "h-8aa6f30eaac2",
+   "planned": "mechanical",
+   "range": "-1001,1 +1001,1",
+   "reason": "classifier verdict",
+   "verdict": "mechanical"
+  },
+  {
+   "file": "patch_manager_mods/queue_hud_src/queue_hud_logic_test.cpp",
+   "hunk_id": "h-8e4f4f5a3a57",
+   "planned": "review",
+   "range": "-1090,0 +1247,5",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "patch_manager_mods/ranged_ai_src/PULL_REQUEST.md",
+   "hunk_id": "h-ce56b40e7ec7",
+   "planned": "skipped",
+   "range": "-0,0 +1,0",
+   "reason": "docs-out-of-scope",
+   "verdict": "skipped"
+  },
+  {
+   "file": "patch_manager_mods/shield_bar_src/ShieldBar.cpp",
+   "hunk_id": "h-e83ebf2abae3",
+   "planned": "mechanical",
+   "range": "-283,2 +283,2",
+   "reason": "classifier verdict",
+   "verdict": "mechanical"
+  },
+  {
+   "file": "research/companion_levelup/logs/live/levelup_override_log_run3_20261002.txt",
+   "hunk_id": "h-813065a8bb88",
+   "planned": "skipped",
+   "range": "-0,0 +1,0",
+   "reason": "unclassified type '.txt' (not code)",
+   "verdict": "skipped"
+  },
+  {
+   "file": "research/companion_levelup/phase4_evidence/M1_tags.txt",
+   "hunk_id": "h-e0a8d1ca2216",
+   "planned": "skipped",
+   "range": "-0,0 +1,0",
+   "reason": "unclassified type '.txt' (not code)",
+   "verdict": "skipped"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/apply_test.cpp",
+   "hunk_id": "h-151b25866358",
+   "planned": "review",
+   "range": "-90,1 +90,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/gate_test.cpp",
+   "hunk_id": "h-2b91aad0d0c6",
+   "planned": "review",
+   "range": "-24,3 +25,4",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/gate_test.cpp",
+   "hunk_id": "h-79523a9b56c8",
+   "planned": "review",
+   "range": "-108,1 +110,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/gate_test.cpp",
+   "hunk_id": "h-bbe0ebcb4a82",
+   "planned": "review",
+   "range": "-22,0 +23,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/gate_test.cpp",
+   "hunk_id": "h-f1411cfd6df9",
+   "planned": "review",
+   "range": "-115,0 +118,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/parity.py",
+   "hunk_id": "h-74d6ceb58797",
+   "planned": "review",
+   "range": "-33,1 +33,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/scenario_test.cpp",
+   "hunk_id": "h-050b7e51f001",
+   "planned": "review",
+   "range": "-176,1 +177,15",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/scenario_test.cpp",
+   "hunk_id": "h-4fba436d00ee",
+   "planned": "review",
+   "range": "-408,1 +419,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/scenario_test.cpp",
+   "hunk_id": "h-b68ee728d60d",
+   "planned": "review",
+   "range": "-184,3 +199,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/scenario_test.cpp",
+   "hunk_id": "h-c1eaabce8aa9",
+   "planned": "mechanical",
+   "range": "-178,1 +193,1",
+   "reason": "classifier verdict",
+   "verdict": "mechanical"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/scenario_test.cpp",
+   "hunk_id": "h-c9e6227d3891",
+   "planned": "review",
+   "range": "-32,0 +33,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/scenario_test.cpp",
+   "hunk_id": "h-ee064a7a34dd",
+   "planned": "review",
+   "range": "-197,3 +210,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/scenario_test.cpp",
+   "hunk_id": "h-f3ab4a807aa8",
+   "planned": "review",
+   "range": "-646,0 +658,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/scenarios.py",
+   "hunk_id": "h-fcf4640044a8",
+   "planned": "review",
+   "range": "-42,1 +42,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/stub/LuoLogHost.h",
+   "hunk_id": "h-f01e7549a490",
+   "planned": "review",
+   "range": "-0,0 +1,9",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/ui_test.cpp",
+   "hunk_id": "h-8b69a574a8c6",
+   "planned": "review",
+   "range": "-230,0 +232,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/ui_test.cpp",
+   "hunk_id": "h-bc70b72ed76c",
+   "planned": "review",
+   "range": "-162,1 +163,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/ui_test.cpp",
+   "hunk_id": "h-d24526f35539",
+   "planned": "review",
+   "range": "-24,0 +25,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/unit_gap_test.cpp",
+   "hunk_id": "h-01dac6b5e96f",
+   "planned": "review",
+   "range": "-30,0 +34,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/unit_gap_test.cpp",
+   "hunk_id": "h-3cfaeead3793",
+   "planned": "review",
+   "range": "-18,0 +20,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/unit_gap_test.cpp",
+   "hunk_id": "h-463c5aaf2769",
+   "planned": "review",
+   "range": "-85,1 +74,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/unit_gap_test.cpp",
+   "hunk_id": "h-467d8724d02c",
+   "planned": "review",
+   "range": "-75,1 +64,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/unit_gap_test.cpp",
+   "hunk_id": "h-5e74f94042e1",
+   "planned": "review",
+   "range": "-144,1 +133,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/unit_gap_test.cpp",
+   "hunk_id": "h-65ff54e440db",
+   "planned": "review",
+   "range": "-99,1 +88,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/unit_gap_test.cpp",
+   "hunk_id": "h-b9023b8fede4",
+   "planned": "review",
+   "range": "-44,16 +48,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/unit_gap_test.cpp",
+   "hunk_id": "h-c74879bc1266",
+   "planned": "review",
+   "range": "-140,1 +129,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/unit_gap_test.cpp",
+   "hunk_id": "h-d66f62fbbc58",
+   "planned": "review",
+   "range": "-7,0 +8,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/unit_gap_test.cpp",
+   "hunk_id": "h-f1f840403d2b",
+   "planned": "review",
+   "range": "-63,1 +52,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "research/companion_levelup/tools/parity/unit_gap_test.cpp",
+   "hunk_id": "h-f890aad8a72b",
+   "planned": "review",
+   "range": "-129,1 +118,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/01_sanitize_textures.py",
+   "hunk_id": "h-90e91914ea13",
+   "planned": "review",
+   "range": "-0,0 +1,92",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/02_merge_2da_and_tlk.py",
+   "hunk_id": "h-320da60e743e",
+   "planned": "review",
+   "range": "-0,0 +1,248",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/03_compile_galaxy_map.py",
+   "hunk_id": "h-7cc9a065f2ee",
+   "planned": "review",
+   "range": "-0,0 +1,151",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/04_merge_modules.py",
+   "hunk_id": "h-33de8fdbe8c6",
+   "planned": "review",
+   "range": "-0,0 +1,408",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/05_merge_dlgs_and_jrl.py",
+   "hunk_id": "h-290cfdefcce0",
+   "planned": "review",
+   "range": "-0,0 +1,203",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/06_deploy_assets.py",
+   "hunk_id": "h-742ac1f99ba9",
+   "planned": "review",
+   "range": "-0,0 +1,375",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/_common.py",
+   "hunk_id": "h-112aa4e9461d",
+   "planned": "review",
+   "range": "-0,0 +1,64",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/abi_check.py",
+   "hunk_id": "h-4a25bde37934",
+   "planned": "review",
+   "range": "-360,1 +364,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/abi_check.py",
+   "hunk_id": "h-62c442de4185",
+   "planned": "review",
+   "range": "-68,1 +68,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/abi_check.py",
+   "hunk_id": "h-898078744178",
+   "planned": "review",
+   "range": "-323,0 +325,3",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/abi_check.py",
+   "hunk_id": "h-95ceabfac7d1",
+   "planned": "review",
+   "range": "-377,1 +382,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/abi_check.py",
+   "hunk_id": "h-ac11679eacff",
+   "planned": "review",
+   "range": "-362,0 +367,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/agent_contract.py",
+   "hunk_id": "h-3b5521a7b4ae",
+   "planned": "review",
+   "range": "-28,0 +29,5",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/agent_contract.py",
+   "hunk_id": "h-e2bbc1aa2850",
+   "planned": "review",
+   "range": "-311,0 +317,7",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/agent_diff_check.py",
+   "hunk_id": "h-384ab450237e",
+   "planned": "review",
+   "range": "-0,0 +1,252",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/agent_usage.py",
+   "hunk_id": "h-a2025f99d79d",
+   "planned": "review",
+   "range": "-0,0 +1,399",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/agent_usage_rates.json",
+   "hunk_id": "h-2c3da1688e45",
+   "planned": "review",
+   "range": "-0,0 +1,15",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/case_dedup.py",
+   "hunk_id": "h-0c1ee1aebedb",
+   "planned": "review",
+   "range": "-0,0 +1,131",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/check_ncs_arg_order.py",
+   "hunk_id": "h-5a0d97dd7b6c",
+   "planned": "review",
+   "range": "-0,0 +1,156",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/check_txi_cycles.py",
+   "hunk_id": "h-0d6a8360670e",
+   "planned": "review",
+   "range": "-0,0 +1,116",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/clef_dataset.py",
+   "hunk_id": "h-152b70be660b",
+   "planned": "review",
+   "range": "-0,0 +1,350",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/clef_matcher.py",
+   "hunk_id": "h-cc190a90f6a0",
+   "planned": "review",
+   "range": "-0,0 +1,458",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/compat_check.py",
+   "hunk_id": "h-200aae0f7b4b",
+   "planned": "review",
+   "range": "-1113,3 +1129,0",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/compat_check.py",
+   "hunk_id": "h-21f3b50c9ccb",
+   "planned": "review",
+   "range": "-1052,0 +1053,16",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/compat_check.py",
+   "hunk_id": "h-4d5f611be65c",
+   "planned": "review",
+   "range": "-622,2 +622,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/compat_check.py",
+   "hunk_id": "h-9fc7ffbd432e",
+   "planned": "review",
+   "range": "-1116,0 +1131,3",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/compat_check.py",
+   "hunk_id": "h-ac9040c6a792",
+   "planned": "review",
+   "range": "-1094,1 +1111,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/compat_check.py",
+   "hunk_id": "h-d491ed9cf45b",
+   "planned": "review",
+   "range": "-1089,1 +1105,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/compat_graph.py",
+   "hunk_id": "h-1f0c816fe6c1",
+   "planned": "review",
+   "range": "-289,1 +289,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/compat_graph.py",
+   "hunk_id": "h-25c7af6b5024",
+   "planned": "review",
+   "range": "-412,1 +412,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/compat_graph.py",
+   "hunk_id": "h-7e680536d8ed",
+   "planned": "review",
+   "range": "-518,1 +518,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/compat_graph.py",
+   "hunk_id": "h-d3c8cfb73cd1",
+   "planned": "review",
+   "range": "-528,0 +529,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/compat_graph.py",
+   "hunk_id": "h-d408cf2f6706",
+   "planned": "review",
+   "range": "-509,1 +509,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/crash_triage.py",
+   "hunk_id": "h-6d91711ac24e",
+   "planned": "review",
+   "range": "-0,0 +1,240",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/dedup_tga_tpc.py",
+   "hunk_id": "h-42fa396fa870",
+   "planned": "review",
+   "range": "-0,0 +1,68",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/generate_diversity_2da.py",
+   "hunk_id": "h-473e94b63b02",
+   "planned": "review",
+   "range": "-343,1 +343,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/generate_diversity_2da.py",
+   "hunk_id": "h-7bac0262f82c",
+   "planned": "review",
+   "range": "-351,1 +351,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/generate_diversity_2da.py",
+   "hunk_id": "h-8e3bfb67caf5",
+   "planned": "review",
+   "range": "-367,1 +367,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/generate_diversity_2da.py",
+   "hunk_id": "h-fec60c5b70e5",
+   "planned": "review",
+   "range": "-359,1 +359,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/generate_ultrawide_gui_overrides.py",
+   "hunk_id": "h-35ff2b80c3b0",
+   "planned": "review",
+   "range": "-0,0 +1,1882",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/generate_ultrawide_textures.py",
+   "hunk_id": "h-cbc49958398e",
+   "planned": "review",
+   "range": "-0,0 +1,2615",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/gpu_mode.py",
+   "hunk_id": "h-dd277eb4bad2",
+   "planned": "review",
+   "range": "-0,0 +1,195",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/install_echoes_compatch.py",
+   "hunk_id": "h-f9eb2dcb9510",
+   "planned": "review",
+   "range": "-0,0 +1,312",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/install_echoes_compatch.sh",
+   "hunk_id": "h-b6f9087e8198",
+   "planned": "review",
+   "range": "-0,0 +1,32",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/kotor2_ghidra_knowledge.db",
+   "hunk_id": "h-3be092115798",
+   "planned": "skipped",
+   "range": "-0,0 +1,0",
+   "reason": "binary",
+   "verdict": "skipped"
+  },
+  {
+   "file": "scripts/kotor2_logs.py",
+   "hunk_id": "h-12e72f780985",
+   "planned": "review",
+   "range": "-210,1 +220,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/kotor2_logs.py",
+   "hunk_id": "h-26055d1db13b",
+   "planned": "review",
+   "range": "-208,0 +213,6",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/kotor2_logs.py",
+   "hunk_id": "h-57b169cab8bf",
+   "planned": "review",
+   "range": "-40,0 +41,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/kotor2_logs.py",
+   "hunk_id": "h-5f8c9fbf3e08",
+   "planned": "review",
+   "range": "-122,0 +125,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/kotor2_logs.py",
+   "hunk_id": "h-a300dae741d8",
+   "planned": "review",
+   "range": "-43,0 +45,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/kotor2_logs.py",
+   "hunk_id": "h-c8ea3b227ba6",
+   "planned": "review",
+   "range": "-214,1 +225,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/kotor2_logs.py",
+   "hunk_id": "h-cc7dbc171866",
+   "planned": "mechanical",
+   "range": "-42,1 +43,1",
+   "reason": "classifier verdict",
+   "verdict": "mechanical"
+  },
+  {
+   "file": "scripts/kotor2_toolset.py",
+   "hunk_id": "h-831dd0c2b7ad",
+   "planned": "review",
+   "range": "-0,0 +1,215",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/kpm_hotswap.py",
+   "hunk_id": "h-372f4130ef17",
+   "planned": "review",
+   "range": "-34,0 +35,4",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/kpm_hotswap.py",
+   "hunk_id": "h-9cd0e9890f80",
+   "planned": "review",
+   "range": "-475,0 +485,7",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/kpm_hotswap.py",
+   "hunk_id": "h-ab0b9ce21155",
+   "planned": "review",
+   "range": "-334,0 +339,5",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/master_ledger.py",
+   "hunk_id": "h-414ab40de90d",
+   "planned": "review",
+   "range": "-0,0 +1,531",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/normalize_diversity_textures.py",
+   "hunk_id": "h-2707537f8725",
+   "planned": "review",
+   "range": "-112,2 +111,3",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/normalize_diversity_textures.py",
+   "hunk_id": "h-746572e507b0",
+   "planned": "review",
+   "range": "-212,1 +211,0",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/normalize_diversity_textures.py",
+   "hunk_id": "h-78173dd997ec",
+   "planned": "review",
+   "range": "-29,1 +28,0",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/plan_manager.py",
+   "hunk_id": "h-06056a79c411",
+   "planned": "review",
+   "range": "-489,1 +498,4",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/plan_manager.py",
+   "hunk_id": "h-5e48f24c0b51",
+   "planned": "review",
+   "range": "-799,0 +812,3",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/plan_manager.py",
+   "hunk_id": "h-6f018928ef1f",
+   "planned": "review",
+   "range": "-790,1 +802,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/plan_manager.py",
+   "hunk_id": "h-b11b1e4b2166",
+   "planned": "review",
+   "range": "-801,1 +816,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/plan_manager.py",
+   "hunk_id": "h-ba44b568cb12",
+   "planned": "review",
+   "range": "-346,0 +347,4",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/plan_manager.py",
+   "hunk_id": "h-d04c9b95c401",
+   "planned": "review",
+   "range": "-349,4 +353,4",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/plan_manager.py",
+   "hunk_id": "h-e3de5797d01c",
+   "planned": "review",
+   "range": "-86,1 +86,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/plan_manager.py",
+   "hunk_id": "h-fce23d3d8223",
+   "planned": "review",
+   "range": "-442,2 +446,7",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/pre_install_gate.py",
+   "hunk_id": "h-18b7dc957283",
+   "planned": "review",
+   "range": "-254,0 +261,6",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/pre_install_gate.py",
+   "hunk_id": "h-2759367c0d06",
+   "planned": "review",
+   "range": "-44,0 +45,6",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/pre_install_gate.py",
+   "hunk_id": "h-e107081efe73",
+   "planned": "review",
+   "range": "-260,0 +273,7",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/query_ghidra.py",
+   "hunk_id": "h-0295b110702f",
+   "planned": "review",
+   "range": "-211,0 +240,4",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/query_ghidra.py",
+   "hunk_id": "h-6798597e633f",
+   "planned": "review",
+   "range": "-178,0 +206,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/query_ghidra.py",
+   "hunk_id": "h-beca92af293f",
+   "planned": "review",
+   "range": "-146,0 +147,27",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/router_eval.py",
+   "hunk_id": "h-3c344ed06715",
+   "planned": "review",
+   "range": "-0,0 +1,1054",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/run_tests.py",
+   "hunk_id": "h-05bff6b8e5d7",
+   "planned": "review",
+   "range": "-804,0 +804,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/run_tests.py",
+   "hunk_id": "h-238e369a9e7b",
+   "planned": "review",
+   "range": "-857,1 +858,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/run_tests.py",
+   "hunk_id": "h-3305e88b7f9c",
+   "planned": "review",
+   "range": "-861,0 +863,7",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/run_tests.py",
+   "hunk_id": "h-34c3af507cfd",
+   "planned": "review",
+   "range": "-665,1 +664,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/run_tests.py",
+   "hunk_id": "h-66c38b9873ba",
+   "planned": "review",
+   "range": "-646,4 +646,3",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/run_tests.py",
+   "hunk_id": "h-7b65ebd9baf2",
+   "planned": "review",
+   "range": "-67,0 +68,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/run_tests.py",
+   "hunk_id": "h-9646da3b1419",
+   "planned": "review",
+   "range": "-854,1 +854,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/run_tests.py",
+   "hunk_id": "h-97404c70f603",
+   "planned": "review",
+   "range": "-619,2 +620,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/run_tests.py",
+   "hunk_id": "h-a181fd8e85ac",
+   "planned": "review",
+   "range": "-872,1 +880,3",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/run_tests.py",
+   "hunk_id": "h-bb27bd72289a",
+   "planned": "review",
+   "range": "-642,3 +643,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/run_tests.py",
+   "hunk_id": "h-e0454a5d7176",
+   "planned": "review",
+   "range": "-921,0 +932,10",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/run_tests.py",
+   "hunk_id": "h-e198644a2636",
+   "planned": "review",
+   "range": "-624,1 +625,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/scaffold_mod.py",
+   "hunk_id": "h-061ba216abf0",
+   "planned": "review",
+   "range": "-43,0 +47,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/scaffold_mod.py",
+   "hunk_id": "h-218af5c7d94d",
+   "planned": "review",
+   "range": "-245,0 +254,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/scaffold_mod.py",
+   "hunk_id": "h-3fec3df93846",
+   "planned": "review",
+   "range": "-51,0 +57,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/scaffold_mod.py",
+   "hunk_id": "h-90533e663b84",
+   "planned": "review",
+   "range": "-121,1 +128,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/scaffold_mod.py",
+   "hunk_id": "h-a200d0852489",
+   "planned": "review",
+   "range": "-38,0 +39,3",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/scaffold_mod.py",
+   "hunk_id": "h-b83f2b50b5e8",
+   "planned": "review",
+   "range": "-250,4 +259,7",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/scaffold_mod.py",
+   "hunk_id": "h-c6998af90a8f",
+   "planned": "review",
+   "range": "-242,0 +250,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/scaffold_mod.py",
+   "hunk_id": "h-df8cb7098b6c",
+   "planned": "review",
+   "range": "-118,1 +125,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/selfheal_log_check.py",
+   "hunk_id": "h-022d7fde1185",
+   "planned": "review",
+   "range": "-10,1 +10,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/selfheal_log_check.py",
+   "hunk_id": "h-11d80d68283f",
+   "planned": "review",
+   "range": "-48,0 +50,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/selfheal_log_check.py",
+   "hunk_id": "h-72334261a9bc",
+   "planned": "review",
+   "range": "-137,1 +145,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/selfheal_log_check.py",
+   "hunk_id": "h-e5e801969e83",
+   "planned": "review",
+   "range": "-27,1 +28,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/selfheal_log_check.py",
+   "hunk_id": "h-f68c420d185f",
+   "planned": "review",
+   "range": "-121,0 +124,6",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/shadow_replay.py",
+   "hunk_id": "h-3f1031f19668",
+   "planned": "review",
+   "range": "-0,0 +1,349",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/snapshot_live.py",
+   "hunk_id": "h-016f874e4144",
+   "planned": "review",
+   "range": "-0,0 +1,254",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-0a1d55412f2c",
+   "planned": "review",
+   "range": "-29,1 +33,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-0f75d58b9dc8",
+   "planned": "review",
+   "range": "-218,0 +435,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-16aeb335e6e4",
+   "planned": "review",
+   "range": "-131,6 +183,37",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-1b2eb85fe108",
+   "planned": "review",
+   "range": "-115,1 +164,4",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-1bd4cdc21aa6",
+   "planned": "review",
+   "range": "-158,4 +310,5",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-2381cc6ec229",
+   "planned": "review",
+   "range": "-35,0 +41,44",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-422461ef5e8c",
+   "planned": "review",
+   "range": "-34,1 +39,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-4d85442dfecf",
+   "planned": "review",
+   "range": "-104,1 +153,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-56c8c8ba94ef",
+   "planned": "review",
+   "range": "-49,1 +98,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-5940bd1f3203",
+   "planned": "review",
+   "range": "-171,21 +342,52",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-59fc3e913f6e",
+   "planned": "review",
+   "range": "-13,2 +16,3",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-6019ce4a4a98",
+   "planned": "mechanical",
+   "range": "-192,0 +395,1",
+   "reason": "classifier verdict",
+   "verdict": "mechanical"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-6094efc94008",
+   "planned": "review",
+   "range": "-194,1 +397,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-68837be8a4d4",
+   "planned": "review",
+   "range": "-152,1 +264,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-723527786c63",
+   "planned": "review",
+   "range": "-201,0 +406,3",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-7b4aa4fe2d94",
+   "planned": "review",
+   "range": "-5,1 +5,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-84c22aab4041",
+   "planned": "review",
+   "range": "-138,8 +221,38",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-8996d416344c",
+   "planned": "mechanical",
+   "range": "-155,0 +268,1",
+   "reason": "classifier verdict",
+   "verdict": "mechanical"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-8b2921983a1f",
+   "planned": "review",
+   "range": "-214,0 +429,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-b65917cbf2aa",
+   "planned": "review",
+   "range": "-208,1 +415,4",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-b98b2c445bbd",
+   "planned": "review",
+   "range": "-216,0 +432,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-c1ae178ee576",
+   "planned": "review",
+   "range": "-210,1 +420,5",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-c934d39e2129",
+   "planned": "review",
+   "range": "-149,1 +261,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-cd2e190d3969",
+   "planned": "review",
+   "range": "-147,1 +259,0",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-d18b319965ef",
+   "planned": "review",
+   "range": "-62,1 +111,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-d8d00fe043e2",
+   "planned": "review",
+   "range": "-9,1 +9,4",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-e0999a94ccc7",
+   "planned": "review",
+   "range": "-169,0 +334,7",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-e27e3af023da",
+   "planned": "review",
+   "range": "-165,4 +318,15",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-e5ae19b7aec7",
+   "planned": "review",
+   "range": "-30,0 +35,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-fa63b969ae63",
+   "planned": "review",
+   "range": "-225,1 +442,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/subagent_prompt.py",
+   "hunk_id": "h-ff1277332251",
+   "planned": "review",
+   "range": "-156,0 +270,39",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/swarm_argv_probe.py",
+   "hunk_id": "h-2e051e971c0f",
+   "planned": "review",
+   "range": "-0,0 +1,219",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/symlink_pass.py",
+   "hunk_id": "h-7de19e61ad14",
+   "planned": "review",
+   "range": "-0,0 +1,62",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/test_abi_check.py",
+   "hunk_id": "h-d37d6d502aa2",
+   "planned": "review",
+   "range": "-95,0 +96,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/test_agent_usage.py",
+   "hunk_id": "h-9c67cd6e6615",
+   "planned": "review",
+   "range": "-0,0 +1,590",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/test_clef_matcher.py",
+   "hunk_id": "h-3ee1204eebab",
+   "planned": "review",
+   "range": "-0,0 +1,161",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/test_compat_check.py",
+   "hunk_id": "h-8d30e6e45d62",
+   "planned": "review",
+   "range": "-392,2 +392,3",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/test_compat_check_rc.py",
+   "hunk_id": "h-0d9823596734",
+   "planned": "review",
+   "range": "-0,0 +1,102",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/test_compat_graph.py",
+   "hunk_id": "h-6cfe68828791",
+   "planned": "review",
+   "range": "-52,1 +52,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/test_crash_triage.py",
+   "hunk_id": "h-5542813cfe77",
+   "planned": "review",
+   "range": "-0,0 +1,95",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/test_kotor2_logs.py",
+   "hunk_id": "h-4b8a892c1dd8",
+   "planned": "review",
+   "range": "-73,0 +74,10",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/test_master_ledger.py",
+   "hunk_id": "h-aa50cf053fe8",
+   "planned": "review",
+   "range": "-0,0 +1,141",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/test_plan_manager.py",
+   "hunk_id": "h-11a76b06c16b",
+   "planned": "review",
+   "range": "-163,1 +166,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/test_plan_manager.py",
+   "hunk_id": "h-2aa0f7752830",
+   "planned": "review",
+   "range": "-54,1 +56,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/test_plan_manager.py",
+   "hunk_id": "h-5da2a2ed1ab7",
+   "planned": "review",
+   "range": "-14,0 +15,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/test_plan_manager.py",
+   "hunk_id": "h-8512e6165c78",
+   "planned": "review",
+   "range": "-213,0 +217,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/test_plan_manager.py",
+   "hunk_id": "h-b536275383e5",
+   "planned": "review",
+   "range": "-215,5 +220,6",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/test_plan_manager.py",
+   "hunk_id": "h-d7d693d8e68e",
+   "planned": "review",
+   "range": "-245,0 +256,13",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/test_plan_manager.py",
+   "hunk_id": "h-eea5eaa87feb",
+   "planned": "review",
+   "range": "-221,0 +228,4",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/test_plan_manager.py",
+   "hunk_id": "h-ef7a9cb884d5",
+   "planned": "review",
+   "range": "-236,1 +246,1",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/test_router_eval.py",
+   "hunk_id": "h-4692322196ab",
+   "planned": "review",
+   "range": "-0,0 +1,345",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/test_run_tests_select.py",
+   "hunk_id": "h-bd1bb4877fa9",
+   "planned": "review",
+   "range": "-119,0 +120,14",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/test_selfheal_log_check.py",
+   "hunk_id": "h-3bb69bd37f8b",
+   "planned": "review",
+   "range": "-190,0 +191,17",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/test_subagent_tools.py",
+   "hunk_id": "h-f9fe0317204e",
+   "planned": "review",
+   "range": "-0,0 +1,114",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/upscale_legacy_movies.py",
+   "hunk_id": "h-cc9208960665",
+   "planned": "review",
+   "range": "-0,0 +1,270",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/verify_2da.py",
+   "hunk_id": "h-b0d1cad3980b",
+   "planned": "review",
+   "range": "-0,0 +1,133",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "scripts/verify_all_compatch.py",
+   "hunk_id": "h-ec65089c1ce1",
+   "planned": "review",
+   "range": "-0,0 +1,192",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "swkotor2.ini",
+   "hunk_id": "h-9ef74ee00c2c",
+   "planned": "review",
+   "range": "-0,0 +1,16",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "tests/benchmarks/transcript_prompt_eval.json",
+   "hunk_id": "h-b09b4280be13",
+   "planned": "review",
+   "range": "-0,0 +1,302",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "tests/static/subclassers.toml",
+   "hunk_id": "h-32b12a22d1b5",
+   "planned": "review",
+   "range": "-33,2 +33,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "tests/static/subclassers.toml",
+   "hunk_id": "h-d3da433ea8aa",
+   "planned": "review",
+   "range": "-25,2 +25,2",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "tests/static/subclassers.toml",
+   "hunk_id": "h-f11237b20877",
+   "planned": "review",
+   "range": "-41,0 +42,9",
+   "reason": "",
+   "verdict": "reviewed"
+  },
+  {
+   "file": "tests/suites.toml",
+   "hunk_id": "h-e5bc9fa6a08f",
+   "planned": "review",
+   "range": "-151,0 +152,56",
+   "reason": "",
+   "verdict": "reviewed"
+  }
+ ],
+ "verdict_counts": {
+  "excluded": 0,
+  "gap": 0,
+  "mechanical": 18,
+  "reviewed": 370,
+  "skipped": 58
+ },
+ "waived": [
+  {
+   "packet_id": "other-024",
+   "reason": "truncated=true accepted by profile [coverage] accept_truncated"
+  },
+  {
+   "packet_id": "other-035",
+   "reason": "truncated=true accepted by profile [coverage] accept_truncated"
+  }
+ ]
+}

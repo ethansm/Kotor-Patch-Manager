@@ -1,0 +1,537 @@
+{
+ "calibration": {
+  "controls": [],
+  "decoys": {
+   "adjudicated": 8,
+   "catch_rate": 1.0,
+   "caught": 8,
+   "confirmed_loud_failures": [],
+   "detail": [
+    {
+     "caught": true,
+     "final": "refuted",
+     "haiku": "refuted",
+     "haiku_fooled": false,
+     "id": "02162b06718b",
+     "label": "dcy-1",
+     "mode": "guard-present"
+    },
+    {
+     "caught": true,
+     "final": "refuted",
+     "haiku": "refuted",
+     "haiku_fooled": false,
+     "id": "2ca880206f46",
+     "label": "dcy-3",
+     "mode": "checked-return"
+    },
+    {
+     "caught": true,
+     "final": "refuted",
+     "haiku": "refuted",
+     "haiku_fooled": false,
+     "id": "421113ec75ef",
+     "label": "dcy-6",
+     "mode": "bounded-loop"
+    },
+    {
+     "caught": true,
+     "final": "refuted",
+     "haiku": "refuted",
+     "haiku_fooled": false,
+     "id": "7c1e6dcb009d",
+     "label": "dcy-4",
+     "mode": "existing-reference"
+    },
+    {
+     "caught": true,
+     "final": "refuted",
+     "haiku": "refuted",
+     "haiku_fooled": false,
+     "id": "9559ab68fb92",
+     "label": "dcy-2",
+     "mode": "bounded-loop"
+    },
+    {
+     "caught": true,
+     "final": "refuted",
+     "haiku": "refuted",
+     "haiku_fooled": false,
+     "id": "d244664391c5",
+     "label": "dcy-5",
+     "mode": "guard-present"
+    },
+    {
+     "caught": true,
+     "final": "refuted",
+     "haiku": "refuted",
+     "haiku_fooled": false,
+     "id": "dc047ad4f0bb",
+     "label": "dcy-8",
+     "mode": "existing-reference"
+    },
+    {
+     "caught": true,
+     "final": "refuted",
+     "haiku": "refuted",
+     "haiku_fooled": false,
+     "id": "e0af660b3d28",
+     "label": "dcy-7",
+     "mode": "checked-return"
+    }
+   ],
+   "haiku_reproduced_decoys": [],
+   "refuted": 8,
+   "total": 8
+  },
+  "fabricated_quotes": {
+   "haiku": 0,
+   "haiku_trivial": 0,
+   "sonnet": 0
+  },
+  "haiku_quality_by_batch": {
+   "ok": 2
+  },
+  "haiku_vs_sonnet": {
+   "agreement_rate_all": 1.0,
+   "agreement_rate_real": 1.0,
+   "haiku_refuted_sonnet_confirmed": 0,
+   "haiku_reproduced_sonnet_refuted": 0,
+   "items_compared": 16,
+   "sonnet_self_reported_agree_rate": 1.0
+  },
+  "key_recall": {},
+  "passed": true,
+  "per_specialty_agreement": {
+   "source-logic": {
+    "agree": 8,
+    "n": 8,
+    "rate": 1.0
+   },
+   "test-weakening": {
+    "agree": 8,
+    "n": 8,
+    "rate": 1.0
+   }
+  }
+ },
+ "cost": {
+  "basis": "cli_reported_total_cost_usd (the only figure used for budgets and decisions)",
+  "estimate": {
+   "haiku_usd": 0.024972,
+   "label": "ESTIMATE ONLY: illustrative list rates, priced per request, never used for a decision",
+   "rates_usd_per_mtok": {
+    "haiku_gt_100k": {
+     "cache_read": 0.05,
+     "cache_write_5m": 0.625,
+     "input": 0.5,
+     "output": 2.5
+    },
+    "haiku_le_100k": {
+     "cache_read": 0.01,
+     "cache_write_5m": 0.125,
+     "input": 0.1,
+     "output": 0.5
+    },
+    "note": "Sonnet cache-write rate assumed 1.25x input",
+    "sonnet": {
+     "cache_read": 0.1,
+     "cache_write_5m": 2.5,
+     "input": 2.0,
+     "output": 10.0
+    }
+   },
+   "sonnet_usd": 0.180552,
+   "total_usd": 0.205524
+  },
+  "haiku_verifier": {
+   "attempts": 0,
+   "cache_creation_input_tokens": 135928,
+   "cache_read_input_tokens": 762004,
+   "calls": 16,
+   "cli_usd": 0.060196,
+   "input_tokens": 142,
+   "output_tokens": 694
+  },
+  "sonnet_adjudicator": {
+   "attempts": 0,
+   "cache_creation_input_tokens": 66486,
+   "cache_read_input_tokens": 137888,
+   "calls": 2,
+   "cli_usd": 0.025812,
+   "input_tokens": 14,
+   "output_tokens": 52
+  },
+  "total_cli_reported_usd": 0.086008
+ },
+ "counts": {
+  "CONFIRMED": 6,
+  "CONFIRMED-BY-SONNET-ONLY": 0,
+  "CONTESTED-NEEDS-HUMAN": 0,
+  "REFUTED": 2,
+  "real_items": 8
+ },
+ "counts_with_duplicates": {
+  "CONFIRMED": 7,
+  "CONFIRMED-BY-SONNET-ONLY": 0,
+  "CONTESTED-NEEDS-HUMAN": 0,
+  "REFUTED": 2,
+  "real_items": 9
+ },
+ "coverage": {
+  "complete": true,
+  "missing_adjudication": [],
+  "missing_verifier_result": [],
+  "queue_items": 16
+ },
+ "generated_by": "verify/verify_merge.py",
+ "queue_source_master_sha256": "75888807151121c222db744db9b59120895874ebc412a412f04f3d5ccaab73b9",
+ "tiers": {
+  "CONFIRMED": [
+   {
+    "agrees_with_haiku": true,
+    "category": "logic",
+    "claim": "Rows 3, 538 and 539 return *n = 0 and nullptr on line 592, meaning no animations. The old animLen (old lines 594-596) returned false when the name was not found. The new code (lines 596-601) returns true and sets *len = 2.0f in every case, including when t is null or n is 0: \"*len = 2.0f; // Safe 2.0s fallback for unmapped supermodels/animations\". The caller at line 762 is \"else if (!animLen(s, name, &len)) { dlogf(\\\"flourish: '%s' not in table for row %d\\\"...); return false; }\", and that false path is now unreachable.\n\nWhy it matters: Rows that were intentionally given no flourish animations now get fake 2.0 s flourishes, and the 'not in table' rejection is dead code. The fallback hides missing data instead of failing, and the comment's claim of a safe fallback does not match what the table lookup used to guarantee.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp",
+      "line": 592,
+      "text": "if (row == 3 || row == 538 || row == 539) { *n = 0; return nullptr; }"
+     },
+     {
+      "file": "patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp",
+      "line": 600,
+      "text": "*len = 2.0f; // Safe 2.0s fallback for unmapped supermodels/animations"
+     },
+     {
+      "file": "patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp",
+      "line": 762,
+      "text": "else if (!animLen(s, name, &len)) { dlogf(\"flourish: '%s' not in table for row %d\", name, appRow(s)); return false; }"
+     }
+    ],
+    "file": "patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp",
+    "final_severity": "low",
+    "final_verdict": "confirmed",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "reproduced",
+    "human_check_steps": [
+     "Check the prior version of animLen (git history or backup) to confirm it returned false for unknown names, which is the regression claimed.",
+     "Run a row 3/538/539 supermodel with a flourish list configured and confirm whether a 2.0 s clip with a missing animation is played or is harmless."
+    ],
+    "id": "ba03658d665e",
+    "lines": "592-601",
+    "reasoning": "Read EquipCharPreview.cpp:589-601, 757-763. animTable returns null/0 for rows 3/538/539 and animLen then unconditionally returns true with *len=2.0f, so the 'not in table' branch in playFlourish (line 762) is unreachable. Scheduled flourishes from config names therefore play a 2.0 s guess on those rows instead of being skipped. The fallback is documented as deliberate in the comment at 600, so this is a behaviour risk rather than an accident. The old-code regression itself cannot be checked here.",
+    "reduce_severity": "medium",
+    "reduce_verification": "downgraded",
+    "sonnet_quotes_ok": "3/3",
+    "specialty": "source-logic",
+    "suggested_investigation": "Check the flourish scheduler around line 762 and the rows that map to animTable returning nullptr or n=0. Confirm whether any flourish is now scheduled on rows 3, 538 or 539, or on unmapped supermodels, that previously was skipped. Then decide whether the 2.0 s default should apply only when the row has a table, or the function should keep returning false.",
+    "tier": "CONFIRMED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "logic",
+    "claim": "Line 709 says: \"a failed rebuild below leaves the old head: the tick toggle block re-attaches to it\". But the new lines 711-713 call destroyCreature(s, \"character change\") before allocCreature/readApp/gate checks. destroyCreature (lines 524-534) frees the creature and sets s->creature = nullptr, s->built = false, s->real = 0. So any later failure (allocCreature at 714, readApp at 716, gate at 724, vtable check at 727) returns false with no old head left, contradicting the comment.\n\nWhy it matters: The comment documents a recovery path that no longer exists. The tick code that re-attaches the helmet to the 'old head' now operates on a null or rebuilt creature, so the failure-recovery reasoning is wrong and could mislead later changes.",
+    "duplicates": [
+     {
+      "file": "patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp",
+      "id": "8f21ec108c65",
+      "lines": "711-713"
+     }
+    ],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp",
+      "line": 709,
+      "text": "// a failed rebuild below leaves the old head: the tick toggle block re-attaches to it"
+     },
+     {
+      "file": "patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp",
+      "line": 534,
+      "text": "s->creature = nullptr; s->built = false; s->real = 0; s->flourishActive = false; s->baseModels = -1;"
+     },
+     {
+      "file": "patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp",
+      "line": 712,
+      "text": "destroyCreature(s, \"character change\");"
+     }
+    ],
+    "file": "patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp",
+    "final_severity": "low",
+    "final_verdict": "confirmed",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "reproduced",
+    "human_check_steps": [
+     "Trigger a character change whose readApp or gate fails and check the log for 'no head part' from attachHelmet, to confirm the tick path skips cleanly.",
+     "Check partGob returns null when s->creature is null."
+    ],
+    "id": "8cdf5396acc9",
+    "lines": "709-713",
+    "reasoning": "Read EquipCharPreview.cpp:706-728 and 520-535 and tick block 967-970. destroyCreature runs when the character changes and sets s->creature to null, s->built to false and s->real to 0, so a later failure at allocCreature, readApp, the gate or the vtable check leaves no old head. The comment at 709 describes a recovery path that exists only on the same-character path, where the creature is kept. Effect is a misleading comment and a tick re-attach on a null creature, not a crash.",
+    "reduce_severity": "medium",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "3/3",
+    "specialty": "source-logic",
+    "suggested_investigation": "Read the tick toggle block that uses helmApplied (around lines 680-705 and the tick caller of buildPreview). Confirm what it does when s->creature is null after a failed buildPreview. Then either update the comment or move destroyCreature after the readApp/gate checks so a failure keeps the old creature.",
+    "tier": "CONFIRMED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "logic",
+    "claim": "reloadPlay() non-force path: `if (!filewatch::changed(g_ptPoll, PtName, GetTickCount(), false, &st)) return;` then `const bool changed = !g_ptPoll.primed || (st != g_ptPoll.last);`. FileWatch.h:82-83 sets p.last = s and p.primed = true inside changed() before it returns true, so the local `changed` is always false on this path. Line 1429 gates the 'PLAYTHROUGH loaded/missing' log on it.\n\nWhy it matters: The playthrough load log line is never printed on a normal reload or on the first load. Only the forced path logs it. This is a diagnostics regression from the shared-library conversion, not a data problem.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/_shared_src/FileWatch.h",
+      "line": 83,
+      "text": "p.last = s; p.primed = true;"
+     },
+     {
+      "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+      "line": 1412,
+      "text": "const bool changed = !g_ptPoll.primed || (st != g_ptPoll.last);"
+     },
+     {
+      "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+      "line": 1429,
+      "text": "if (changed) KP_LOG(chPlay, \"PLAYTHROUGH %s: %d section(s)%s\""
+     }
+    ],
+    "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+    "final_severity": "low",
+    "final_verdict": "confirmed",
+    "haiku_confidence": "high",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "reproduced",
+    "human_check_steps": [
+     "Run a polled reload and a first load through the non-force caller (near LevelUpOverride.cpp:1763 or 2256) and confirm the PLAYTHROUGH log line is absent."
+    ],
+    "id": "0c57ad0882af",
+    "lines": "1412-1414",
+    "reasoning": "Read FileWatch.h:77-85 and LevelUpOverride.cpp:1403-1414. changed() stores p.last and sets p.primed before returning true. reloadPlay's non-force path then computes changed = !primed || st != last, and both terms are false, so the local is always false. The 'PLAYTHROUGH loaded/missing' log at 1429 never fires on that path, including the first load. Diagnostics only; no data impact.",
+    "reduce_severity": "low",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "3/3",
+    "specialty": "source-logic",
+    "suggested_investigation": "Compute `changed` from the result of the changed() call (true on this path) or drop the second compare. Check the log in a host run: start with a playthrough file present, and confirm a PLAYTHROUGH line appears on first load and after an edit.",
+    "tier": "CONFIRMED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "style-risk",
+    "claim": "`// Note: retains MOVEFILE_WRITE_THROUGH (flush to disk before rename returns) per LevelUpOverride save safety.` / `// Propose additive writeThrough parameter to filewatch::atomicWrite for Common owner adoption in Chunk C9.` ptWriteText keeps the hand-rolled MoveFileExA with MOVEFILE_WRITE_THROUGH on line 1441, but FileWatch.h:113-135 atomicWrite has no write-through flag (it uses fsync/_commit and a plain MoveFileExA with REPLACE_EXISTING).\n\nWhy it matters: The write-through guarantee holds today because ptWriteText was not converted. The planning note reads as a to-do for a future change, and if someone switches ptWriteText to atomicWrite the save loses the flush-before-rename guarantee without any warning.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+      "line": 1441,
+      "text": "ok = ok && MoveFileExA(PtTmp, PtName, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);"
+     },
+     {
+      "file": "patch_manager_mods/_shared_src/FileWatch.h",
+      "line": 128,
+      "text": "ok = MoveFileExA(tmp.c_str(), path, MOVEFILE_REPLACE_EXISTING) != 0;"
+     }
+    ],
+    "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+    "final_severity": "low",
+    "final_verdict": "confirmed",
+    "haiku_confidence": "medium",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "reproduced",
+    "human_check_steps": [
+     "If the conversion is planned, test on Windows whether a rename without MOVEFILE_WRITE_THROUGH survives a forced power-off right after a level-up save."
+    ],
+    "id": "e1ee6713f3aa",
+    "lines": "1434-1435",
+    "reasoning": "Read LevelUpOverride.cpp:1433-1444 and FileWatch.h:113-135. ptWriteText uses MOVEFILE_WRITE_THROUGH on its rename. atomicWrite has no write-through option, and it calls _commit or fsync before a plain REPLACE_EXISTING rename. The planning note is accurate. The real loss on conversion would be rename durability across a crash, not the file-data flush, so the claim's wording is slightly overstated. This is a latent risk.",
+    "reduce_severity": "low",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "2/2",
+    "specialty": "source-logic",
+    "suggested_investigation": "Confirm nothing calls filewatch::atomicWrite for levelup_playthroughs.ini. Move the planning note to the design doc, or keep a comment next to the call that says the write-through flag is required.",
+    "tier": "CONFIRMED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "test",
+    "claim": "`LCHECK(\"party::table function exists\", static_cast<uintptr_t(*)(party::Fail*)>(&party::table) != nullptr);` (same form on lines 164-165). A function's address is never null, so the runtime half of each check is always true.\n\nWhy it matters: The cast does give a compile-time signature check, so a mismatched signature will fail the build. The `!= nullptr` part adds nothing, and the message says 'exists' as if it tested presence. Readers may take these as runtime coverage. This is the confirmed scanner pattern; the other two scanner hits (S-9323c467b2, S-b197154b98) are the same compile-time casts or host test stubs and are harmless.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/level_up_override_src/common_contract_test.cpp",
+      "line": 163,
+      "text": "LCHECK(\"party::table function exists\", static_cast<uintptr_t(*)(party::Fail*)>(&party::table) != nullptr);"
+     },
+     {
+      "file": "patch_manager_mods/level_up_override_src/common_contract_test.cpp",
+      "line": 175,
+      "text": "LEQ(\"party::table walks app -> client -> ci -> partyTable\", party::table(&why), partyTable);"
+     }
+    ],
+    "file": "patch_manager_mods/level_up_override_src/common_contract_test.cpp",
+    "final_severity": "low",
+    "final_verdict": "confirmed",
+    "haiku_confidence": "high",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "reproduced",
+    "human_check_steps": [
+     "Compile with -Wall -Wextra and look for -Waddress warnings on lines 163-165.",
+     "Confirm party::table, member and serverCreature are not declared weak in the party header, which is not in this tree."
+    ],
+    "id": "3fb47e9bdf68",
+    "lines": "163-165",
+    "reasoning": "Read common_contract_test.cpp lines 163-165. Each LCHECK compares a function address cast to a function-pointer type against nullptr. A non-weak function's address is never null, so the runtime half is always true. The cast does give a compile-time signature check, and the behavioural checks at lines 175-180 do real work, so the impact is misleading naming rather than lost coverage.",
+    "reduce_severity": "low",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "2/2",
+    "specialty": "test-weakening",
+    "suggested_investigation": "Keep the casts as signature checks and drop the always-true comparison, or rename the messages to say they check the signature. No runtime behaviour is at stake.",
+    "tier": "CONFIRMED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "test",
+    "claim": "`LCHECK(\"filewatch::changed throttled within 1000ms\", !filewatch::changed(rp, tmpPath, 1500));` / `LCHECK(\"filewatch::changed quiet after throttle when unchanged\", !filewatch::changed(rp, tmpPath, 2500));` / `LCHECK(\"filewatch::changed force skips throttle if changed\", !filewatch::changed(rp, tmpPath, 2600, true));`. The file is never rewritten between the calls, so each expected `false` is also what a poll with no throttle at all, or with force ignored, would return.\n\nWhy it matters: FileWatch.h is shared by several mods and this contract test is the gate for it. Lines 197-199 cannot fail on the throttle or force behaviour they are named for, and the test never asserts a detected change after the initial load (no write between the stamps), so the reload path itself is untested here. The test name claims more than the assertions prove.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/level_up_override_src/common_contract_test.cpp",
+      "line": 197,
+      "text": "LCHECK(\"filewatch::changed throttled within 1000ms\", !filewatch::changed(rp, tmpPath, 1500));"
+     },
+     {
+      "file": "patch_manager_mods/_shared_src/FileWatch.h",
+      "line": 82,
+      "text": "if (p.primed && s == p.last) return false;"
+     }
+    ],
+    "file": "patch_manager_mods/level_up_override_src/common_contract_test.cpp",
+    "final_severity": "low",
+    "final_verdict": "confirmed",
+    "haiku_confidence": "high",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "reproduced",
+    "human_check_steps": [
+     "Mutate FileWatch.h to drop the throttle check (line 78) or the force bypass, then run common_contract_test; confirm it still passes.",
+     "Check whether this contract test is the only FileWatch gate for level_up_override."
+    ],
+    "id": "8af893ae7a19",
+    "lines": "196-199",
+    "reasoning": "Read common_contract_test.cpp lines 196-200. Lines 197-199 expect `!changed(...)` on an unchanged file after the initial load. Per FileWatch.h, changed() returns false whenever primed and the stamp matches, so these would also pass with the throttle or force removed. The sibling filewatch_test.cpp covers throttle, force and post-load change detection, which lowers practical risk. The contract gate itself is weak.",
+    "reduce_severity": "medium",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "2/2",
+    "specialty": "test-weakening",
+    "suggested_investigation": "Rewrite the sequence so the file is modified between polls (for example, write a longer body after the 1000 ms window and check that changed() returns true, and that a poll inside the window returns false even after the modification). Verify by temporarily making changed() ignore throttleMs or force and confirming that the test fails.",
+    "tier": "CONFIRMED"
+   }
+  ],
+  "CONFIRMED-BY-SONNET-ONLY": [],
+  "CONTESTED-NEEDS-HUMAN": [],
+  "REFUTED": [
+   {
+    "agrees_with_haiku": true,
+    "category": "logic",
+    "claim": "Snapshot leaderCreature(): `const uintptr_t tbl = party::table(); const uintptr_t m = tbl ? party::member(tbl, 0) : 0; return m ? party::serverCreature(m) : 0;`. The removed code (packet o2040-o2042) read app, then `client = *(app+4)`, and obtained the party table by calling the engine ClientPartyTable function `g_eng.tableGet(client)`. party::table() in _shared_src/Party.h:36-39 instead walks app -> *(app+4) -> *(a+4) -> *(b+0x270) by raw offsets and never calls the engine function.\n\nWhy it matters: The leader (PC) creature drives the instant gate, the hold GUI guards and Auto OK backstop. If the raw offset walk does not match what the engine function 0x73FB90 returns (it may take a different link or read a different field), the leader lookup returns a different creature or 0 for every call, with no log line. The change is a silent behaviour swap, not a rename.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/_shared_src/GameAddr.h",
+      "line": 36,
+      "text": "constexpr uintptr_t ClientPartyTable = 0x0073FB90;      // FUN_0073fb90(A) = *(*(A+4)+0x270), the party table getter"
+     },
+     {
+      "file": "patch_manager_mods/_shared_src/Party.h",
+      "line": 38,
+      "text": "if (!saferead::readAt<uint32_t>(SiteBase, a, 4, &b) || !b) return fail(F_A4);"
+     },
+     {
+      "file": "patch_manager_mods/_shared_src/Party.h",
+      "line": 39,
+      "text": "if (!saferead::readAt<uint32_t>(SiteBase, b, 0x270, &t) || !t) return fail(F_Table);"
+     }
+    ],
+    "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+    "final_severity": "none",
+    "final_verdict": "refuted",
+    "haiku_confidence": "high",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "refuted",
+    "human_check_steps": [
+     "In a debugger on the Steam and GOG exes, compare party::table() with the engine getter's return for the controlled player.",
+     "Confirm the GOG ClientPartyTable function body matches the Steam dump's *(*(A+4)+0x270)."
+    ],
+    "id": "7cf902d24841",
+    "lines": "2043-2048",
+    "reasoning": "Read Party.h:33-42 and GameAddr.h:36. party::table() walks app=*(appGlobal), a=*(app+4), b=*(a+4), t=*(b+0x270). The engine getter documented as FUN_0073fb90(A) = *(*(A+4)+0x270) applied to client=*(app+4) gives *(*(client+4)+0x270), which is the same chain. The raw walk therefore matches the engine getter's documented body. Residual risk is only that the GOG build's getter address differs, which the tree does not show to differ in body.",
+    "reduce_severity": "medium",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "3/3",
+    "specialty": "source-logic",
+    "suggested_investigation": "Disassemble the engine ClientPartyTable at 0x73FB90 (Steam and GOG builds) and confirm it returns *(*(arg+4)+0x270) with arg = the client value from [[AppGlobal]+4]. Check that the K2Addr table values used by party::table (AppGlobal) match the old g_eng.appGlobal for each build. In a host test, compare old and new leader results using the arena stubs.",
+    "tier": "REFUTED"
+   },
+   {
+    "agrees_with_haiku": true,
+    "category": "test",
+    "claim": "snprintf(g_cfg.table, sizeof g_cfg.table, \"t.ini\"); g_tablePoll = {}; g_tableStamp = {}; g_tableOk = false; g_cfg.nTags = 0; ... reloadTable(true);  (previously g_tableStamp = ~0ULL, a value no real file stamp can equal)\n\nWhy it matters: The old reset used ~0ULL, a sentinel that can never match a real file stamp, so each bad-table case was guaranteed to reload. A default-constructed stamp ({}) may compare equal to a zeroed or unset stamp. If reloadTable(true) does not bypass the stamp comparison, a case could skip the reload and the CARRY-disabled assertions (lines 134-137) would be checked against stale state, making them pass or fail for the wrong reason.",
+    "duplicates": [],
+    "evidence_quotes": [
+     {
+      "file": "patch_manager_mods/_shared_src/FileWatch.h",
+      "line": 82,
+      "text": "if (p.primed && s == p.last) return false;"
+     },
+     {
+      "file": "patch_manager_mods/_shared_src/FileWatch.h",
+      "line": 65,
+      "text": "bool primed = false;            // a stamp has been seen / accepted"
+     },
+     {
+      "file": "research/companion_levelup/tools/parity/unit_gap_test.cpp",
+      "line": 130,
+      "text": "snprintf(g_cfg.table, sizeof g_cfg.table, \"t.ini\"); g_tablePoll = {}; g_tableStamp = {}; g_tableOk = false; g_cfg.nTags = 0;"
+     }
+    ],
+    "file": "research/companion_levelup/tools/parity/unit_gap_test.cpp",
+    "final_severity": "none",
+    "final_verdict": "refuted",
+    "haiku_confidence": "high",
+    "haiku_disagrees": false,
+    "haiku_fabricated_quotes": 0,
+    "haiku_quote_ok_ratio": 1.0,
+    "haiku_verdict": "refuted",
+    "human_check_steps": [
+     "Optionally check git history of unit_gap_test.cpp to confirm the old ~0ULL sentinel; this does not change the verdict."
+    ],
+    "id": "62da1e460980",
+    "lines": "130",
+    "reasoning": "FileWatch.h changed() (lines 77-85) skips the throttle only when p.checked is set, and skips the stamp comparison only when p.primed is set. Resetting g_tablePoll = {} clears both, so reloadTable(true) always reaches the reload path. The stamp g_tableStamp is only written, never compared. The stale-stamp concern does not apply. The line citation is slightly off: the CARRY checks are at 136-137.",
+    "reduce_severity": "low",
+    "reduce_verification": "unverified",
+    "sonnet_quotes_ok": "3/3",
+    "specialty": "test-weakening",
+    "suggested_investigation": "Read reloadTable() and the stamp comparison it uses (its force parameter and the operator== of the stamp type that g_tableStamp/g_tablePoll use). Confirm that force=true reloads even when the stamp equals a default-constructed value. If it does not, restore a distinct non-matching sentinel for g_tableStamp. Also confirm that the lines 140 and 144 resets behave the same way.",
+    "tier": "REFUTED"
+   }
+  ]
+ }
+}

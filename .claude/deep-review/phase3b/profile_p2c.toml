@@ -1,0 +1,85 @@
+# Review run p2c profile (clean-scope rebuild, run id p2c): base 22b56b4, dirty included, protected files OFF (ledger drift trap), effort pinned, ladder OFF, HOME hidden.
+# Budgets are placeholders (total <= $2.00).
+[run]
+repo = "../../.."
+base = "22b56b4"
+head = "HEAD"
+include_dirty = true
+slug = "kotor2-p2"
+out_dir = ".claude/deep-review"
+
+[exclude]
+path_suffixes = ["tests/static/raw_addresses.toml"]
+path_parts = ["sunshine/credentials/"]
+name_globs = [".env*", "*.pem"]
+
+[tree]
+strip = [".claude", ".claude/review", ".claude/reviews", ".claude/skills", ".claude/hooks", ".claude/agents", ".claude/deep-review", ".agents", ".opencode", "tests/.cache", "logs"]
+docs_globs = ["**/*.md", "docs/**"]
+out_of_scope_parts = ["/.claude/", "/.agents/", "tests/.cache/", "patch_manager_mods/mods678_research/", "patch_manager_mods/issue_drafts/", "patch_manager_mods/new_issue_drafts/", "patch_manager_mods/steam_db_pr3/"]
+
+[[domain]]
+key = "code"
+title = "Mod sources and shared headers"
+note = "@../pilot/notes/code.md"
+reduce_group = "code"
+
+[[domain]]
+key = "other"
+title = "Tests, config and tooling"
+note = "@../pilot/notes/other.md"
+reduce_group = "other"
+
+[[assign]]
+domain = "code"
+paths = ["patch_manager_mods/**/*.cpp", "patch_manager_mods/**/*.h"]
+
+# 2026-10-11 (user: ceiling $3.40): the single "all" group (300 findings) hit the $0.10 call cap at xhigh ($0.17, no output); split per domain
+[[reduce_group]]
+name = "code"
+domains = ["code"]
+
+[[reduce_group]]
+name = "other"
+domains = ["other"]
+
+[protected]
+files = []
+forbidden_commands = ["--apply", "git push", "git add", "git commit", "kpm_hotswap"]
+
+[budgets]
+map_total = 1.75  # raised 2026-10-10 by user ("finish everything, $2.50 total ceiling"); counted on whole-run spend
+reduce_call = 0.20
+verify_total = 0.80  # 2026-10-11: user ceiling $3.40; queue narrowed to 60 medium+ findings (+controls, decoys)
+adjudicate_total = 0.32
+adjudicate_call = 0.10
+refute_total = 0.18
+
+[sandbox]
+hide_home = true
+
+[models]
+reduce = "claude-haiku-5-5"
+adjudicate = "claude-haiku-5-5"
+
+[ladder]
+adjudicate_styles = []
+
+# pinned explicitly (L0: unset inherits global modelSettings); by model: Haiku stages xhigh (map, verify, adjudicate, compare, lens, reduce), Sonnet stages high (escalate, refute)
+[effort]
+default = ""
+map = "xhigh"
+verify = "xhigh"
+adjudicate = "xhigh"
+compare = "xhigh"
+lens = "xhigh"
+reduce = "high"   # 2026-10-11: lowered from xhigh (15k thinking tokens on the first attempt blew the call cap)
+escalate = "high"
+refute = "high"
+
+[coverage]
+# 2026-10-11, user "yes": both runs are valid but the worker self-flagged truncated. other-024 is lines 1-948 of a 2615-line
+# file (the model looked past its range; other-025/026 hold the rest); other-035 overran the tool-call cap (15 of 12) after
+# producing 4 findings. Retrying truncated again ($0.25 wasted). Merge lists both under "Waived".
+accept_truncated = ["other-024", "other-035"]
+allow_unverified = true

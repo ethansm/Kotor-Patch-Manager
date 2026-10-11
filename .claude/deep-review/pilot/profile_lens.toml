@@ -1,0 +1,54 @@
+# Pilot profile: last 5 commits of this repo, committed changes only (docs out of scope).
+[run]
+repo = "/tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/e2823ef2-338b-4df0-b0ba-f14c841c6f09/scratchpad/wt_l3"
+base = "902b770"
+head = "22b56b4"
+include_dirty = false
+slug = "kotor2-pilot-lens"
+out_dir = "/home/ethansm/orca/workspaces/local-setup/KOTOR-II/.claude/deep-review"
+
+[exclude]
+path_suffixes = ["tests/static/raw_addresses.toml"]
+path_parts = ["sunshine/credentials/"]
+
+[tree]
+strip = [".claude/review", ".claude/reviews", ".claude/skills", ".claude/hooks", ".claude/agents", ".claude/deep-review", ".agents", ".opencode", "tests/.cache", "logs"]
+docs_globs = ["**/*.md", "docs/**"]
+
+[[domain]]
+key = "code"
+title = "Mod sources and shared headers"
+note = "@notes/code.md"
+reduce_group = "all"
+
+[[domain]]
+key = "other"
+title = "Tests, config and tooling"
+note = "@notes/other.md"
+reduce_group = "all"
+
+[[assign]]
+domain = "code"
+paths = ["patch_manager_mods/**/*.cpp", "patch_manager_mods/**/*.h"]
+
+[[reduce_group]]
+name = "all"
+domains = ["code", "other"]
+
+[protected]
+files = []
+forbidden_commands = ["--apply", "git push", "git add", "git commit", "kpm_hotswap"]
+
+[budgets]
+map_total = 0.12
+reduce_call = 0.03
+verify_total = 0.0
+adjudicate_total = 0.0
+refute_total = 0.0
+
+[models]
+reduce = "claude-haiku-5-5"
+adjudicate = "claude-haiku-5-5"
+
+[lenses]
+names = ["logic", "state", "contract", "security"]

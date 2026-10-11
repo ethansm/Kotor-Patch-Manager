@@ -1,0 +1,62 @@
+# Phase 3c ladder-replay profile (scratch runs rl1/rl2): copy of the pilot profile; protected files OFF (ledger drift trap); scratch run only replays 8 stored adjudicate batches.
+[run]
+repo = "../../.."
+base = "902b770"
+head = "HEAD"
+include_dirty = false
+slug = "kotor2-pilot"
+out_dir = ".claude/deep-review"
+
+[exclude]
+path_suffixes = ["tests/static/raw_addresses.toml"]
+path_parts = ["sunshine/credentials/"]
+
+[tree]
+strip = [".claude/review", ".claude/reviews", ".claude/skills", ".claude/hooks", ".claude/agents", ".claude/deep-review", ".agents", ".opencode", "tests/.cache", "logs"]
+docs_globs = ["**/*.md", "docs/**"]
+
+[[domain]]
+key = "code"
+title = "Mod sources and shared headers"
+note = "@../pilot/notes/code.md"
+reduce_group = "all"
+
+[[domain]]
+key = "other"
+title = "Tests, config and tooling"
+note = "@../pilot/notes/other.md"
+reduce_group = "all"
+
+[[assign]]
+domain = "code"
+paths = ["patch_manager_mods/**/*.cpp", "patch_manager_mods/**/*.h"]
+
+[[reduce_group]]
+name = "all"
+domains = ["code", "other"]
+
+[protected]
+files = []
+forbidden_commands = ["--apply", "git push", "git add", "git commit", "kpm_hotswap"]
+
+[budgets]
+map_total = 0.30
+reduce_call = 0.60
+verify_total = 0.20
+adjudicate_call = 0.20
+adjudicate_total = 0.55
+escalate_total = 0.25
+refute_total = 0.15
+
+[models]
+reduce = "claude-haiku-5-5"
+adjudicate = "claude-haiku-5-5"
+
+[ladder]
+adjudicate_styles = ["skeptic", "advocate", "evidence"]
+compare_judges = 2
+escalate = true
+escalate_subagents = false
+
+[effort]
+# config A: nothing passed (inherit; L0 suggests the global xhigh leaks)

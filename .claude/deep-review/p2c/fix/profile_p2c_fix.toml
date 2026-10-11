@@ -1,0 +1,133 @@
+# Review run p2c profile (clean-scope rebuild, run id p2c): base 22b56b4, dirty included, protected files OFF (ledger drift trap), effort pinned, ladder OFF, HOME hidden.
+# Budgets are placeholders (total <= $2.00).
+[run]
+repo = "../../../.."
+base = "22b56b4"
+head = "HEAD"
+include_dirty = true
+slug = "kotor2-p2"
+out_dir = ".claude/deep-review"
+
+[exclude]
+path_suffixes = ["tests/static/raw_addresses.toml"]
+path_parts = ["sunshine/credentials/"]
+name_globs = [".env*", "*.pem"]
+
+[tree]
+strip = [".claude", ".claude/review", ".claude/reviews", ".claude/skills", ".claude/hooks", ".claude/agents", ".claude/deep-review", ".agents", ".opencode", "tests/.cache", "logs"]
+docs_globs = ["**/*.md", "docs/**"]
+out_of_scope_parts = ["/.claude/", "/.agents/", "tests/.cache/", "patch_manager_mods/mods678_research/", "patch_manager_mods/issue_drafts/", "patch_manager_mods/new_issue_drafts/", "patch_manager_mods/steam_db_pr3/"]
+
+[[domain]]
+key = "code"
+title = "Mod sources and shared headers"
+note = "@../../pilot/notes/code.md"
+reduce_group = "code"
+
+[[domain]]
+key = "other"
+title = "Tests, config and tooling"
+note = "@../../pilot/notes/other.md"
+reduce_group = "other"
+
+[[assign]]
+domain = "code"
+paths = ["patch_manager_mods/**/*.cpp", "patch_manager_mods/**/*.h"]
+
+# 2026-10-11 (user: ceiling $3.40): the single "all" group (300 findings) hit the $0.10 call cap at xhigh ($0.17, no output); split per domain
+[[reduce_group]]
+name = "code"
+domains = ["code"]
+
+[[reduce_group]]
+name = "other"
+domains = ["other"]
+
+[protected]
+files = []
+forbidden_commands = ["--apply", "git push", "git add", "git commit", "kpm_hotswap"]
+
+[budgets]
+map_total = 1.75  # raised 2026-10-10 by user ("finish everything, $2.50 total ceiling"); counted on whole-run spend
+reduce_call = 0.20
+verify_total = 0.80  # 2026-10-11: user ceiling $3.40; queue narrowed to 60 medium+ findings (+controls, decoys)
+adjudicate_total = 0.32
+adjudicate_call = 0.10
+refute_total = 0.18
+
+[sandbox]
+hide_home = true
+
+[models]
+reduce = "claude-haiku-5-5"
+adjudicate = "claude-haiku-5-5"
+
+[ladder]
+adjudicate_styles = []
+
+# pinned explicitly (L0: unset inherits global modelSettings); by model: Haiku stages xhigh (map, verify, adjudicate, compare, lens, reduce), Sonnet stages high (escalate, refute)
+[effort]
+default = ""
+map = "xhigh"
+verify = "xhigh"
+adjudicate = "xhigh"
+compare = "xhigh"
+lens = "xhigh"
+reduce = "high"   # 2026-10-11: lowered from xhigh (15k thinking tokens on the first attempt blew the call cap)
+escalate = "high"
+refute = "high"
+
+[coverage]
+# 2026-10-11, user "yes": both runs are valid but the worker self-flagged truncated. other-024 is lines 1-948 of a 2615-line
+# file (the model looked past its range; other-025/026 hold the rest); other-035 overran the tool-call cap (15 of 12) after
+# producing 4 findings. Retrying truncated again ($0.25 wasted). Merge lists both under "Waived".
+accept_truncated = ["other-024", "other-035"]
+allow_unverified = true
+
+# ---- appended from phase3f/fix_section_kotor2.toml (fix_total is a PLACEHOLDER; ceiling is the user's to set)
+
+# ---- [fix] section for the KOTOR2 fix half (phase 3f item 8). Values come from the fix session's hardcoded
+# constants (.claude/review/fix/fcommon.py, fix_intake.py, fix_settings.py) and the fix handoff. Append to a copy of a
+# review profile (profile_fix_kotor2.toml is that composite; regenerate with build_profile.sh).
+[fix]
+never_edit = ["scripts/kpm_hotswap.py", "scripts/pre_install_gate.py", "scripts/pre_install_gate.sh",
+              "scripts/*install*", "scripts/*deploy*", "*.db", "*.sqlite", "tests/static/raw_addresses.toml",
+              ".claude/*", ".agents/*", ".opencode/*", ".mcp.json", ".github/*", "AGENTS.md", "CLAUDE.md",
+              "*sunshine/credentials/*"]
+human_only = ["*.md"]
+design_specialties = ["hook-asm", "build-config", "gate-integrity"]
+sandbox_tests_only = ["scripts/shadow_replay.py", "scripts/clef_dataset.py"]
+# gate-integrity specialty in the fix session: patches to the gate/test tooling need explicit human sign-off.
+gate_semantics = ["scripts/build_check.py", "scripts/run_tests.py", "scripts/compat_check.py", "scripts/agent_diff_check.py",
+                  "scripts/pre_install_gate*", "tests/include/*"]
+# Gate pins (swarm M2 D1): sha256-recorded in base.json at build-base, verified by fixgate.sh before every verb but reset. The four gate
+# entrypoints plus their local-import closure (`fcommon.py pin-closure --root <repo> scripts/{run_tests,build_check,compat_check,agent_diff_check}.py`),
+# and the suite list run_tests.py reads (data, not an import).
+pinned = ["scripts/run_tests.py", "scripts/build_check.py", "scripts/compat_check.py", "scripts/agent_diff_check.py",
+          "scripts/_common.py", "scripts/_static_common.py", "scripts/check_exports.py", "scripts/compat_graph.py",
+          "scripts/master_ledger.py", "scripts/agent_contract.py", "tests/suites.toml"]
+live_check = ["*.hooks.toml", "*exports.def"]
+live_check_specialties = ["hook-asm"]
+live_claim_regex = "(?i)(live_override|steamapps|game dir|live game|Override/|KOTOR2_ROOT|_diversity_premerge_backup)"
+shared_regex = "^patch_manager_mods/_shared_src/"
+shared_globs = ["patch_manager_mods/_shared_src/*"]
+unit_regex = "^patch_manager_mods/([^/]+)/"
+apply_order = ["^patch_manager_mods/_shared_src/", "^patch_manager_mods/", "^scripts/", "^tests/"]
+# KPM checkout the nested gate sandbox must be able to read (fix handoff bug 12).
+visible_dirs = ["~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager", "~/.cache/deep_haiku_review/kotor2-adapters"]
+ledger = ".claude/master_ledger.jsonl"
+# Other sessions append housekeeping events to the shared ledger while a fix run is live; only these may appear
+# after our baseline, and only when they do not mention the fix tooling (fix handoff Phase D tripwire).
+ledger_benign_events = ["CONTRACT_CHECK", "SESSION_HANDOFF"]
+ledger_suspect_substr = ["fix_pipeline", "kotor2_review", ".claude/review"]
+diag_noise_regex = "^build_check:"
+max_lines = { auto = 40, review = 60, design = 120 }
+
+[fix.gates]
+# Templates run with cwd = the gate clone; {unit}/{tmp}/{rt_json}/{compat_json} are filled by fixgate.sh.
+build = ["python3", "scripts/build_check.py", "--mod", "{unit}", "--repo", ".", "--build-root", "{tmp}/build"]
+test = ["python3", "scripts/run_tests.py", "{unit}", "--jobs", "4", "--json", "{rt_json}"]
+# compat_check needs --list in plan mode (DR_GATE_PLAN=1) and emits ids build_check:<mod>; the adapter turns those
+# into plan entries {kind: build, unit: <mod>} that fix_checks.plan_mods reads. The gate clone carries no untracked
+# files and the live repo is hidden, so build_profile.sh installs the adapter under ~/.cache (listed in visible_dirs).
+compat = ["python3", "/home/ethansm/.cache/deep_haiku_review/kotor2-adapters/kotor2_compat_adapter.py", "--jobs", "4", "--json", "{compat_json}", "{unit}"]

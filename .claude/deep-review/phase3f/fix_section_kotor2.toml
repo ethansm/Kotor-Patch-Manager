@@ -1,0 +1,46 @@
+
+# ---- [fix] section for the KOTOR2 fix half (phase 3f item 8). Values come from the fix session's hardcoded
+# constants (.claude/review/fix/fcommon.py, fix_intake.py, fix_settings.py) and the fix handoff. Append to a copy of a
+# review profile (profile_fix_kotor2.toml is that composite; regenerate with build_profile.sh).
+[fix]
+never_edit = ["scripts/kpm_hotswap.py", "scripts/pre_install_gate.py", "scripts/pre_install_gate.sh",
+              "scripts/*install*", "scripts/*deploy*", "*.db", "*.sqlite", "tests/static/raw_addresses.toml",
+              ".claude/*", ".agents/*", ".opencode/*", ".mcp.json", ".github/*", "AGENTS.md", "CLAUDE.md",
+              "*sunshine/credentials/*"]
+human_only = ["*.md"]
+design_specialties = ["hook-asm", "build-config", "gate-integrity"]
+sandbox_tests_only = ["scripts/shadow_replay.py", "scripts/clef_dataset.py"]
+# gate-integrity specialty in the fix session: patches to the gate/test tooling need explicit human sign-off.
+gate_semantics = ["scripts/build_check.py", "scripts/run_tests.py", "scripts/compat_check.py", "scripts/agent_diff_check.py",
+                  "scripts/pre_install_gate*", "tests/include/*"]
+# Gate pins (swarm M2 D1): sha256-recorded in base.json at build-base, verified by fixgate.sh before every verb but reset. The four gate
+# entrypoints plus their local-import closure (`fcommon.py pin-closure --root <repo> scripts/{run_tests,build_check,compat_check,agent_diff_check}.py`),
+# and the suite list run_tests.py reads (data, not an import).
+pinned = ["scripts/run_tests.py", "scripts/build_check.py", "scripts/compat_check.py", "scripts/agent_diff_check.py",
+          "scripts/_common.py", "scripts/_static_common.py", "scripts/check_exports.py", "scripts/compat_graph.py",
+          "scripts/master_ledger.py", "scripts/agent_contract.py", "tests/suites.toml"]
+live_check = ["*.hooks.toml", "*exports.def"]
+live_check_specialties = ["hook-asm"]
+live_claim_regex = "(?i)(live_override|steamapps|game dir|live game|Override/|KOTOR2_ROOT|_diversity_premerge_backup)"
+shared_regex = "^patch_manager_mods/_shared_src/"
+shared_globs = ["patch_manager_mods/_shared_src/*"]
+unit_regex = "^patch_manager_mods/([^/]+)/"
+apply_order = ["^patch_manager_mods/_shared_src/", "^patch_manager_mods/", "^scripts/", "^tests/"]
+# KPM checkout the nested gate sandbox must be able to read (fix handoff bug 12).
+visible_dirs = ["~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager", "~/.cache/deep_haiku_review/kotor2-adapters"]
+ledger = ".claude/master_ledger.jsonl"
+# Other sessions append housekeeping events to the shared ledger while a fix run is live; only these may appear
+# after our baseline, and only when they do not mention the fix tooling (fix handoff Phase D tripwire).
+ledger_benign_events = ["CONTRACT_CHECK", "SESSION_HANDOFF"]
+ledger_suspect_substr = ["fix_pipeline", "kotor2_review", ".claude/review"]
+diag_noise_regex = "^build_check:"
+max_lines = { auto = 40, review = 60, design = 120 }
+
+[fix.gates]
+# Templates run with cwd = the gate clone; {unit}/{tmp}/{rt_json}/{compat_json} are filled by fixgate.sh.
+build = ["python3", "scripts/build_check.py", "--mod", "{unit}", "--repo", ".", "--build-root", "{tmp}/build"]
+test = ["python3", "scripts/run_tests.py", "{unit}", "--jobs", "4", "--json", "{rt_json}"]
+# compat_check needs --list in plan mode (DR_GATE_PLAN=1) and emits ids build_check:<mod>; the adapter turns those
+# into plan entries {kind: build, unit: <mod>} that fix_checks.plan_mods reads. The gate clone carries no untracked
+# files and the live repo is hidden, so build_profile.sh installs the adapter under ~/.cache (listed in visible_dirs).
+compat = ["python3", "/home/ethansm/.cache/deep_haiku_review/kotor2-adapters/kotor2_compat_adapter.py", "--jobs", "4", "--json", "{compat_json}", "{unit}"]

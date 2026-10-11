@@ -1,0 +1,64 @@
+{
+ "clusters": [
+  {
+   "finding_ids": [
+    "8cdf5396acc9",
+    "8f21ec108c65"
+   ],
+   "root_cause": "The character-change branch in the preview build path calls destroyCreature() before the allocation, readApp and gate checks, so any later failure or zero gate leaves the panel with no creature and no rebuild.",
+   "tag": "destroy-before-gate"
+  },
+  {
+   "finding_ids": [
+    "ba03658d665e"
+   ],
+   "root_cause": "animLen() was changed to return true with a 2.0s default for every name, which removes the caller's 'not in table' rejection path for rows with no static animation list.",
+   "tag": "unmapped-anim-fallback"
+  },
+  {
+   "finding_ids": [
+    "0c57ad0882af"
+   ],
+   "root_cause": "changed() sets the primed and last state before returning true, so the caller's recomputed 'changed' flag is always false when it reaches the log gate.",
+   "tag": "reloadplay-changed-flag"
+  },
+  {
+   "finding_ids": [
+    "7cf902d24841"
+   ],
+   "root_cause": "leaderCreature() now derives the party table from the party helper walk instead of the engine ClientPartyTable call, so its result may differ from the removed code path.",
+   "tag": "party-leader-lookup"
+  },
+  {
+   "finding_ids": [
+    "3fb47e9bdf68",
+    "8af893ae7a19",
+    "62da1e460980"
+   ],
+   "root_cause": "Test assertions are either always true (taking the address of a function and comparing with nullptr) or depend on file-stamp timing that the test does not control, so they cannot fail as written.",
+   "tag": "tautological-or-unthrottled-tests"
+  },
+  {
+   "finding_ids": [
+    "e1ee6713f3aa"
+   ],
+   "root_cause": "ptWriteText keeps a hand-rolled MoveFileExA with MOVEFILE_WRITE_THROUGH because the shared atomicWrite has no write-through option, so the save path does not use the shared helper.",
+   "tag": "writethrough-not-shared"
+  }
+ ],
+ "cross_file": [],
+ "domain": "all",
+ "notes": "Only one finding in the bundle was high or critical (ba03658d665e), so it is the only verdict. It was downgraded to medium because the old animLen behaviour is not in the snapshot. The remaining medium and low findings were not re-verified, as the rules require. Cluster membership groups findings by suspected root cause from the bundle text, not by reading their code. The 'domain' field echoes the bundle header value 'all'. No cross-file findings were produced because the reads were limited to the one verified finding.",
+ "verdicts": [
+  {
+   "cited_lines_checked": "patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp:581-602, 757-773",
+   "confidence": "medium",
+   "finding_id": "ba03658d665e",
+   "local_id": null,
+   "packet_id": null,
+   "reason": "Confirmed that animTable() returns nullptr with n=0 for rows 3, 538 and 539 (EquipCharPreview.cpp:592), and that animLen() now returns true with *len=2.0f on every path (lines 596-601). The caller at line 762 therefore never takes its 'not in table' branch, so unmapped flourishes now play with a 2.0s guess. The claimed regression from the old code (which returned false) cannot be checked in this snapshot because the old lines are not present. Whether playing a clip the supermodel may lack is harmful is unverified, so this is a behaviour change worth review rather than a proven defect.",
+   "severity": "medium",
+   "status": "downgraded"
+  }
+ ]
+}

@@ -1,0 +1,9 @@
+| arm | output_tokens | cost | duration_ms | turns | subtype | model |
+|---|---|---|---|---|---|---|
+| none | 245 | 0.0015477 | 1352 | 2 | success | claude-haiku-5-5 |
+| low | 65 | 0.00042710000000000003 | 1732 | 3 | success | claude-haiku-5-5 |
+| medium | 143 | 0.00014295000000000003 | 1262 | 2 | success | claude-haiku-5-5 |
+| xhigh | 262 | 0.00032310000000000005 | 1686 | 2 | success | claude-haiku-5-5 |
+
+--effort honoured? yes (monotonic hint: output_tokens non-decreasing none<low<medium<xhigh: no)
+recorded env: CLAUDE_CODE_EFFORT_LEVEL=<unset>

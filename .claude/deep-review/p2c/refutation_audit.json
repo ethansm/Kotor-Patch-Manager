@@ -1,0 +1,236 @@
+{
+ "cost": {
+  "calls": 1,
+  "cli_reported_usd": 0.234879
+ },
+ "counts": {
+  "audited": 6,
+  "design-risk": 1,
+  "evidence_unverified": 0,
+  "real": 0,
+  "refute-holds": 5
+ },
+ "coverage": {
+  "complete": false,
+  "items_expected": 11,
+  "missing_batches": [
+   "batch_02"
+  ],
+  "missing_items": [
+   "0fc98e09742d",
+   "3c032fcc205b",
+   "89fc8d95002c",
+   "b5a62bbbd646",
+   "d56064e2a823"
+  ]
+ },
+ "generated_by": "verify/refute_audit.py",
+ "hard_specialties": [
+  "build-config",
+  "source-logic"
+ ],
+ "items": [
+  {
+   "batch": "batch_01",
+   "category": "other",
+   "duplicates": [],
+   "evidence_quotes": [
+    {
+     "file": "patch_manager_mods/_shared_src/GameAddr.h",
+     "line": 4,
+     "text": "names from the per-version table instead: K2Addr.h defines struct K2AddrTable (one field per name here, same spelling, plus the"
+    },
+    {
+     "file": "patch_manager_mods/_shared_src/GameAddr.h",
+     "line": 69,
+     "text": "constexpr uintptr_t PerformCastSpell = 0x00775700;"
+    }
+   ],
+   "evidence_verified": true,
+   "file": "patch_manager_mods/_shared_src/GameAddr.h",
+   "human_check_steps": [
+    "Compare the GameAddr.h names against the K2AddrTable fields and the k2addr_test.cpp coverage.",
+    "Confirm no GOG-targeted mod references gameaddr::PerformCastSpell."
+   ],
+   "id": "6572c3d2f7ca",
+   "lines": "69",
+   "prior_final_severity": "none",
+   "prior_haiku_verdict": "refuted",
+   "quotes_ok": "2/2",
+   "reasoning": "Read GameAddr.h 1-10 and 66-69, plus a grep of PerformCastSpell and PerformUseItem. The header promises one K2AddrTable field per name, spelled the same. PerformUseItem has K2Addr.h entries (lines 187, 361, 526) and a k2addr_test check. PerformCastSpell appears only in GameAddr.h and QueueHud.cpp, with no table field or test. QueueHud is Steam-only, so there is no present GOG crash. The gap matters if GOG-capable code later uses gameaddr::PerformCastSpell directly.",
+   "severity": "low",
+   "specialty": "source-logic",
+   "verdict": "design-risk"
+  },
+  {
+   "batch": "batch_01",
+   "category": "logic",
+   "duplicates": [
+    "c1437e3479e9"
+   ],
+   "evidence_quotes": [
+    {
+     "file": "patch_manager_mods/_shared_src/SelfHealUi.h",
+     "line": 48,
+     "text": "return Rect{card.x, card.y, 58, 58};"
+    },
+    {
+     "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+     "line": 824,
+     "text": "c0.btn = c0.seen ? (c0.card.w > 0 ? shui::leaderButtonRect(c0.card) : shui::Rect{ c0.vit.x - 58 - 4, c0.vit.y, 58, 58 }) : shui::Rect{ 0, 0, 0, 0 };"
+    }
+   ],
+   "evidence_verified": true,
+   "file": "patch_manager_mods/_shared_src/SelfHealUi.h",
+   "human_check_steps": [
+    "Check in-game at 3840x1600 that the 58 px leader button does not overlap the 103x208 leader vitality bar."
+   ],
+   "id": "97f5356f31c8",
+   "lines": "46-49",
+   "prior_final_severity": "none",
+   "prior_haiku_verdict": "intended-behaviour",
+   "quotes_ok": "2/2",
+   "reasoning": "Read SelfHealUi.h 44-49 and the leaderButtonRect grep. The 'left of the vitality bar, vertically centred' comment describes the companion buttonRect, not leaderButtonRect. The docs (27_companion_selfheal.md:278 and 33 SH2, DONE) specify a fixed 58x58 button at the leader portrait's top-left. The one caller (CompanionSelfHeal.cpp:824) uses the same 58 px size in its fallback. The behaviour is deliberate and documented. Missing unit-test coverage is hygiene only.",
+   "severity": "none",
+   "specialty": "source-logic",
+   "verdict": "refute-holds"
+  },
+  {
+   "batch": "batch_01",
+   "category": "logic",
+   "duplicates": [],
+   "evidence_quotes": [
+    {
+     "file": "patch_manager_mods/save_events_src/SeDispatch.h",
+     "line": 139,
+     "text": "if (!folder || !*folder) return -1;"
+    },
+    {
+     "file": "patch_manager_mods/save_events_src/SaveEventsProvider.cpp",
+     "line": 110,
+     "text": "if (abs.empty()) {"
+    },
+    {
+     "file": "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp",
+     "line": 1814,
+     "text": "if (!dir || !*dir) {"
+    }
+   ],
+   "evidence_verified": true,
+   "file": "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp",
+   "human_check_steps": [
+    "Confirm restoreFromSave has no callers besides the K2SE_LOAD_REQUEST case.",
+    "Check that absFolder returns empty only for unrecognised raw names."
+   ],
+   "id": "fc0796ea9fce",
+   "lines": "1809-1817",
+   "prior_final_severity": "none",
+   "prior_haiku_verdict": "refuted",
+   "quotes_ok": "3/3",
+   "reasoning": "Read ActionHotbar.cpp 1809-1817, SeDispatch.h 120-145 and SaveEventsProvider.cpp 102-159. emitFolder drops events whose folder is unrecognised (abs.empty()) before dispatch. Hub::emit also returns -1 for an empty folder on non-NEW_GAME kinds. So LOAD_REQUEST never reaches restoreFromSave with an empty folder. restoreFromSave is called only at line 1881. Its empty-dir branch is a defensive guard and not a reachable lost-restore path.",
+   "severity": "none",
+   "specialty": "source-logic",
+   "verdict": "refute-holds"
+  },
+  {
+   "batch": "batch_01",
+   "category": "logic",
+   "duplicates": [],
+   "evidence_quotes": [
+    {
+     "file": "patch_manager_mods/action_hotbar_src/HotbarLogic.h",
+     "line": 74,
+     "text": "//    or sentinel IDs 0xFFFFFFF0..0xFFFFFFFE (the Odyssey negative player sentinel range,"
+    },
+    {
+     "file": "patch_manager_mods/action_hotbar_src/HotbarLogic.h",
+     "line": 89,
+     "text": "bool isExile = ((oid >= 0xFFFFFFF0u && oid <= 0xFFFFFFFEu) || partyCount == 1 || isMember0 || partySlot == 0);"
+    }
+   ],
+   "evidence_verified": true,
+   "file": "patch_manager_mods/action_hotbar_src/HotbarLogic.h",
+   "human_check_steps": [
+    "Consider adding a test row with a sentinel oid and partySlot > 0 to document the intended result."
+   ],
+   "id": "10750a5a4474",
+   "lines": "89-93",
+   "prior_final_severity": "none",
+   "prior_haiku_verdict": "intended-behaviour",
+   "quotes_ok": "2/2",
+   "reasoning": "Read HotbarLogic.h 73-105. The header comment lists the sentinel range 0xFFFFFFF0..0xFFFFFFFE as a standalone Exile criterion, and test AH3 pins it. Companions with tags are handled earlier by the tag branch. Dynamic companion ids are obj8000xxxx per the docs. Nothing in the tree shows a companion holding a sentinel id. The untested combination is a coverage gap, not a defect.",
+   "severity": "none",
+   "specialty": "source-logic",
+   "verdict": "refute-holds"
+  },
+  {
+   "batch": "batch_01",
+   "category": "logic",
+   "duplicates": [],
+   "evidence_quotes": [
+    {
+     "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+     "line": 759,
+     "text": "for (int kk = 0; kk < 3; ++kk) if ((uintptr_t)slot - SlotFromHud - (uintptr_t)kk * SlotStride == g_hud) { k = kk; break; }"
+    },
+    {
+     "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+     "line": 776,
+     "text": "if (k == 0) {"
+    }
+   ],
+   "evidence_verified": true,
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "human_check_steps": [
+    "Check the MAP member=0 log line against party::members()[0] after changing the party leader in-game."
+   ],
+   "id": "f0b28bacd0ef",
+   "lines": "775-780",
+   "prior_final_severity": "none",
+   "prior_haiku_verdict": "intended-behaviour",
+   "quotes_ok": "2/2",
+   "reasoning": "Read CompanionSelfHeal.cpp 735-795. k is derived from the slot's position relative to the HUD (line 759), so k==0 is the first HUD portrait slot, which by construction is party position 0 and the leader. The companion branch needs a creature match because member indices 1 and 2 can map to any slot. The leader card is keyed on position, which is the same indexing useNow uses (v[0]). Docs record the slot->creature mapping as log-verified. No mismatch is demonstrated.",
+   "severity": "none",
+   "specialty": "source-logic",
+   "verdict": "refute-holds"
+  },
+  {
+   "batch": "batch_01",
+   "category": "hook",
+   "duplicates": [],
+   "evidence_quotes": [
+    {
+     "file": "patch_manager_mods/queue_hud_src/kotor2-steam-aspyr.hooks.toml",
+     "line": 29,
+     "text": "address = 0x00775703"
+    },
+    {
+     "file": "patch_manager_mods/_shared_src/GameAddr.h",
+     "line": 69,
+     "text": "constexpr uintptr_t PerformCastSpell = 0x00775700;"
+    }
+   ],
+   "evidence_verified": true,
+   "file": "patch_manager_mods/queue_hud_src/kotor2-steam-aspyr.hooks.toml",
+   "human_check_steps": [
+    "Run scripts/verify_steam_hooks.py or check_hook_bytes.py against the Steam exe to confirm the bytes at 0x775703."
+   ],
+   "id": "7326b0db3b09",
+   "lines": "29",
+   "prior_final_severity": "none",
+   "prior_haiku_verdict": "refuted",
+   "quotes_ok": "2/2",
+   "reasoning": "Read hooks.toml 25-42, GameAddr.h 69 and the QueueHud.cpp grep. 0x00775700 + 3 = 0x00775703, which matches the TOML address and the comment at QueueHud.cpp:972. The 6 original_bytes start with 83 EC 0C (SUB ESP,0xC), the instruction after the prologue. The values agree today. The hand-synced duplication is a latent drift risk only, and the repo has byte-verification scripts for it.",
+   "severity": "none",
+   "specialty": "build-config",
+   "verdict": "refute-holds"
+  }
+ ],
+ "note": "Advisory only. This report never changes the ledger, the tiers or verified_findings.*; a human promotes items.",
+ "prior_refutation_quality_by_batch": {
+  "sound": 1
+ },
+ "promote_candidates": [
+  "6572c3d2f7ca"
+ ]
+}

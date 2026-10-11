@@ -1,0 +1,60 @@
+# Review run p2 profile: base 22b56b4, include dirty worktree. Protected files OFF (ledger drift trap).
+# Budgets are placeholders (total <= $2.00). Effort left empty for comparability with p1.
+[run]
+repo = "../../.."
+base = "22b56b4"
+head = "HEAD"
+include_dirty = true
+slug = "kotor2-p2"
+out_dir = ".claude/deep-review"
+
+[exclude]
+path_suffixes = ["tests/static/raw_addresses.toml"]
+path_parts = ["sunshine/credentials/"]
+name_globs = [".env*", "*.pem"]
+
+[tree]
+strip = [".claude/review", ".claude/reviews", ".claude/skills", ".claude/hooks", ".claude/agents", ".claude/deep-review", ".agents", ".opencode", "tests/.cache", "logs"]
+docs_globs = ["**/*.md", "docs/**"]
+
+[[domain]]
+key = "code"
+title = "Mod sources and shared headers"
+note = "@../pilot/notes/code.md"
+reduce_group = "all"
+
+[[domain]]
+key = "other"
+title = "Tests, config and tooling"
+note = "@../pilot/notes/other.md"
+reduce_group = "all"
+
+[[assign]]
+domain = "code"
+paths = ["patch_manager_mods/**/*.cpp", "patch_manager_mods/**/*.h"]
+
+[[reduce_group]]
+name = "all"
+domains = ["code", "other"]
+
+[protected]
+files = []
+forbidden_commands = ["--apply", "git push", "git add", "git commit", "kpm_hotswap"]
+
+[budgets]
+map_total = 0.60
+reduce_call = 0.60
+verify_total = 0.30
+adjudicate_call = 0.20
+adjudicate_total = 0.50
+refute_total = 0.15
+
+[models]
+reduce = "claude-haiku-5-5"
+adjudicate = "claude-haiku-5-5"
+
+[ladder]
+adjudicate_styles = []
+
+[effort]
+# left empty on purpose (comparable with p1; user decides pinning)

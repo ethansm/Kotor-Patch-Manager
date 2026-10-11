@@ -1,0 +1,63 @@
+{
+ "cost": {
+  "calls": 1,
+  "cli_reported_usd": 0.068162
+ },
+ "counts": {
+  "audited": 1,
+  "design-risk": 0,
+  "evidence_unverified": 0,
+  "real": 0,
+  "refute-holds": 1
+ },
+ "coverage": {
+  "complete": true,
+  "items_expected": 1,
+  "missing_batches": [],
+  "missing_items": []
+ },
+ "generated_by": "verify/refute_audit.py",
+ "hard_specialties": [
+  "build-config",
+  "source-logic"
+ ],
+ "items": [
+  {
+   "batch": "batch_01",
+   "category": "logic",
+   "duplicates": [],
+   "evidence_quotes": [
+    {
+     "file": "patch_manager_mods/_shared_src/Party.h",
+     "line": 37,
+     "text": "if (!saferead::readAt<uint32_t>(SiteBase, app, 4, &a) || !a) return fail(F_App4);"
+    },
+    {
+     "file": "patch_manager_mods/_shared_src/Party.h",
+     "line": 39,
+     "text": "if (!saferead::readAt<uint32_t>(SiteBase, b, 0x270, &t) || !t) return fail(F_Table);"
+    }
+   ],
+   "evidence_verified": true,
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "human_check_steps": [
+    "Check the disassembly of FUN_0073fb90 in steam_r1.txt and confirm it reads [[A+4]+0x270].",
+    "Run party::table() against a live game and compare it with the engine getter's return value."
+   ],
+   "id": "7cf902d24841",
+   "lines": "2043-2048",
+   "prior_final_severity": "none",
+   "prior_haiku_verdict": "refuted",
+   "quotes_ok": "2/2",
+   "reasoning": "I read Party.h table() and the GameAddr.h getter note. table() reads app=*appGlobal, a=*(app+4) (the client), b=*(a+4), then t=*(b+0x270). The engine getter FUN_0073fb90(A) is documented as *(*(A+4)+0x270). With A=client=a, that equals *(*(a+4)+0x270), the same chain. The raw walk is equivalent, and each link is safe-read with a failure code. I did not re-read the getter's disassembly myself. The remaining risk is that the getter body differs on another build.",
+   "severity": "none",
+   "specialty": "source-logic",
+   "verdict": "refute-holds"
+  }
+ ],
+ "note": "Advisory only. This report never changes the ledger, the tiers or verified_findings.*; a human promotes items.",
+ "prior_refutation_quality_by_batch": {
+  "sound": 1
+ },
+ "promote_candidates": []
+}

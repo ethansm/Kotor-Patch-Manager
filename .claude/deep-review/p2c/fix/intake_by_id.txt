@@ -1,0 +1,27 @@
+e606f41d177d None human-only ['evidence cites a never-edit or excluded path'] scripts/02_merge_2da_and_tlk.py
+1ce64f3b2759 None human-only ['never-edit path ([fix].never_edit)', 'evidence cites a never-edit or excluded path'] scripts/agent_diff_check.py
+119182a14fc2 None human-only ['evidence cites a never-edit or excluded path'] scripts/plan_manager.py
+bc58247fd299 None needs-design ['evidence spans files'] nager_mods/action_hotbar_src/ActionHotbar.cpp
+9e76e8f4642a None needs-design ['evidence spans files'] nager_mods/gui_input_src/gi_registry_test.cpp
+81dabb3f4f5e None needs-design ['evidence spans files'] h_manager_mods/mouse_probe_src/MouseProbe.cpp
+eee579216787 None needs-design ['evidence spans files'] h_manager_mods/mouse_probe_src/MouseProbe.cpp
+d682bb833922 None needs-design ['span > 40 lines'] patch_manager_mods/queue_hud_src/QueueHud.cpp
+f77ae8184a09 None human-only ['evidence cites a never-edit or excluded path'] ch_manager_mods/queue_hud_src/QueueHudLogic.h
+035d6f241dd2 None needs-design ['evidence spans files'] /companion_levelup/tools/parity/gate_test.cpp
+d121f4a74209 None needs-design ['evidence spans files'] panion_levelup/tools/parity/unit_gap_test.cpp
+2bb645e71f18 None auto-fixable ['small, local'] scripts/abi_check.py
+822afff6842c None needs-design ['evidence spans files', 'writes the live game dir or the ledger (deploy-adjacent)'] scripts/generate_ultrawide_gui_overrides.py
+6ccefb375bd5 None auto-fixable ['small, local'] scripts/generate_ultrawide_gui_overrides.py
+d74365c9d82d None needs-design ['evidence spans files'] /companion_selfheal_src/CompanionSelfHeal.cpp
+6adfec63f6fb None auto-fixable ['small, local'] ntory_3d_viewport_src/Inventory3DViewport.cpp
+ff23d43b210c None human-only ['evidence cites a never-edit or excluded path'] h_manager_mods/mouse_probe_src/MouseProbe.cpp
+b5a7154f89eb None needs-design ['evidence spans files'] arch/companion_levelup/tools/parity/parity.py
+d2c66b77d42f None needs-design ['evidence spans files'] panion_levelup/tools/parity/scenario_test.cpp
+6a2684bd832c None needs-design ['specialty build-config'] neocities_mods_detailed.json
+ce3f285cbcb0 None needs-design ['specialty build-config', 'config/manifest file', 'evidence spans files'] _manager_mods/level_up_override_src/test.toml
+ed6f9f335c3f None human-only ['evidence cites a never-edit or excluded path'] h_manager_mods/mouse_probe_src/MouseProbe.cpp
+9059eb31f144 None human-only ['evidence cites a never-edit or excluded path'] patch_manager_mods/queue_hud_src/QueueHud.cpp
+66c1305db6f7 CONTESTED human-list scripts/subagent_prompt.py
+843bd1103025 CONTESTED human-list ods/level_up_override_src/LevelUpOverride.cpp
+5a447a280525 CONTESTED human-list panion_levelup/tools/parity/scenario_test.cpp
+e3ae385c8f94 CONTESTED human-list panion_levelup/tools/parity/stub/LuoLogHost.h

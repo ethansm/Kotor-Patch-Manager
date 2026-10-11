@@ -1,0 +1,5 @@
+{"note": "scratch answer key for the 4 replay control ids; never copy into a run tree",
+ "e0a8aa228b90": {"label": "decoy", "batch": "10", "expected_final": ["refuted", "needs-human"]},
+ "279efdfe2ece": {"label": "K2", "batch": "03", "expected_final": ["confirmed"]},
+ "257c4b579141": {"label": "K3a", "batch": "01", "expected_final": ["confirmed", "needs-human"]},
+ "7bc29377aa57": {"label": "rejected", "batch": "08", "expected_final": ["refuted"]}}

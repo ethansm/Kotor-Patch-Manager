@@ -1,0 +1,323 @@
+{
+ "clusters": [
+  {
+   "finding_ids": [
+    "ce3f285cbcb0",
+    "b5a7154f89eb"
+   ],
+   "root_cause": "Build configs add a home-directory Patches/Common include path that a clean checkout does not have, so test builds depend on one user's workspace layout.",
+   "tag": "per-user-common-include"
+  },
+  {
+   "finding_ids": [
+    "1cbacdcd03bc",
+    "1ea820031439"
+   ],
+   "root_cause": "narrow_plan_to_gog_scoping clears plan.gaps, which are graph-wide, so a K2Addr-only change drops gap reporting that --strict reads.",
+   "tag": "gog-narrow-clears-gaps"
+  },
+  {
+   "finding_ids": [
+    "d2c66b77d42f",
+    "d121f4a74209"
+   ],
+   "root_cause": "The 20000-line log-cap coverage was moved to KpLog tests that are not in this snapshot, so the cap has no check in this tree.",
+   "tag": "log-cap-untested-here"
+  },
+  {
+   "finding_ids": [
+    "822afff6842c",
+    "57af67597f2b"
+   ],
+   "root_cause": "is_game_running() returns False on any ps exception, so a failed probe reads as 'game not running' and the guard fails open.",
+   "tag": "fail-open-ps-probe"
+  },
+  {
+   "finding_ids": [
+    "9922de6547ae",
+    "96d2527bd58e",
+    "21a7b90bd94e"
+   ],
+   "root_cause": "These gate scripts return exit 0 when nothing was scanned or found, or silently skip an input, so an empty run looks like a pass.",
+   "tag": "zero-scan-exit-0"
+  },
+  {
+   "finding_ids": [
+    "119182a14fc2",
+    "a5dcf2744b60"
+   ],
+   "root_cause": "plan_manager prints a 'NN:ident' or 'STEM:ident' string as the next command, but mark-done does not parse it and resolve_plan_shorthand cannot resolve the non-numbered form.",
+   "tag": "scoped-ident-mismatch"
+  }
+ ],
+ "cross_file": [
+  {
+   "category": "build",
+   "confidence": "medium",
+   "evidence": "parity.py build() passes -I for stub, stub/_shared and stub/inc, plus the home-directory Patches/Common. It does not pass the repo's tests/include directory. Glob **/TestHarness.h returns only tests/include/TestHarness.h. Per the bundle, gate_test.cpp:21 includes \"TestHarness.h\".",
+   "files": [
+    "research/companion_levelup/tools/parity/parity.py",
+    "research/companion_levelup/tools/parity/gate_test.cpp",
+    "tests/include/TestHarness.h"
+   ],
+   "lines": "32-34",
+   "severity": "medium",
+   "suggested_investigation": "In a clean clone with no ~/Games workspace, run the parity build argv for gate_test.cpp and see whether TestHarness.h resolves. Then check whether stub/ or tests/include/ was meant to be on the -I path.",
+   "why_it_matters": "The gate binary may not find its test harness from the repo alone. If it resolves only through the per-user Patches/Common path, a clean checkout cannot run the parity gate, and the failure is a build error rather than a pass."
+  }
+ ],
+ "domain": "other",
+ "notes": "Re-verified only the high and critical findings; medium and low were not checked. Items I could not settle from the snapshot: (1) main() call sites for registration_check (line 1835 was read) and for is_game_running (generate_ultrawide 1743 was not read); (2) the zero-item output path of run_tests.py for -k; (3) whether run_tests.py parses tests/suites.toml and fails loudly, which would mitigate 4811f0e7ead8. The KpLog test files cited as pinning the log cap are not in the snapshot (Glob **/*KpLog* returned nothing). e23534b73f29 is rejected because scenarios.py:40-44 has no home-directory -I; the same -I exists in parity.py:33. The two parity build() functions therefore use different include paths and may not build the same way; worth a check. No secrets or excluded paths were read.",
+ "verdicts": [
+  {
+   "cited_lines_checked": "patch_manager_mods/level_up_override_src/test.toml:1-4",
+   "confidence": "high",
+   "finding_id": "ce3f285cbcb0",
+   "local_id": null,
+   "packet_id": null,
+   "reason": "test.toml:4 does add the per-user -I $HOME/Games/KOTOR2_Mod_Workspace/.../Patches/Common path, and the header comment at line 1 does not mention it. Downgraded because the failure mode is a loud build error on a clean checkout, not a weakened or skipped check, and the impact depends on whether anything in that directory is actually needed.",
+   "severity": "medium",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "research/companion_levelup/tools/parity/parity.py:32-34; Glob **/TestHarness.h -> tests/include/TestHarness.h",
+   "confidence": "medium",
+   "finding_id": "b5a7154f89eb",
+   "local_id": null,
+   "packet_id": null,
+   "reason": "parity.py:32-34 does add the expanduser Patches/Common -I to every g++ build. The only TestHarness.h in the snapshot is tests/include/TestHarness.h (Glob), which this build does not add to -I. So a repo-only build fails loudly; it does not pass silently. Downgraded from high for that reason.",
+   "severity": "medium",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "research/companion_levelup/tools/parity/scenarios.py:40-44",
+   "confidence": "high",
+   "finding_id": "e23534b73f29",
+   "local_id": null,
+   "packet_id": null,
+   "reason": "scenarios.py:40-44 builds g++ with only tree-relative -I paths (stub, stub/_shared, stub/inc) and -include m3_win_shim.h. There is no expanduser and no Patches/Common path on line 42. The home-directory -I the worker describes is in parity.py:33 (see b5a7154f89eb), so the finding appears to be mis-attributed to the wrong file.",
+   "severity": "low",
+   "status": "rejected"
+  },
+  {
+   "cited_lines_checked": "scripts/02_merge_2da_and_tlk.py:109-128, 208-213, 232-240",
+   "confidence": "medium",
+   "finding_id": "aae3fb4ec1a2",
+   "local_id": null,
+   "packet_id": null,
+   "reason": "Staging GFFs are written at lines 238-239, after the live appearance.2da write at line 233. So any run that changed the staging utps has already written live appearance.2da, and already_applied (125-128) refuses a re-run. The in-memory re-map of staging utps cannot double-apply in a normal sequence.",
+   "severity": "low",
+   "status": "rejected"
+  },
+  {
+   "cited_lines_checked": "scripts/02_merge_2da_and_tlk.py:4, 110-116, 187-198, 232-236",
+   "confidence": "medium",
+   "finding_id": "e606f41d177d",
+   "local_id": null,
+   "packet_id": null,
+   "reason": "Line 188 sets echoes_plan from the staging copy, and line 116 skips reading the live planetary.2da. Line 234 replaces the live table with that copy, and nothing merges the live rows in. The docstring at line 4 says the run 'prevents any table wiping', which this contradicts for any live planetary rows. The file does not show whether replacement is intended.",
+   "severity": "high",
+   "status": "confirmed"
+  },
+  {
+   "cited_lines_checked": "scripts/06_deploy_assets.py:209-222",
+   "confidence": "medium",
+   "finding_id": "8545c7465dad",
+   "local_id": null,
+   "packet_id": null,
+   "reason": "Lines 215-222 copy each staged module over the existing spelling with no skip-if-exists branch, and the comment at 219 says re-runs overwrite 'its own module' without any way to tell it apart from a community module. The only guard is the COLLIDING_MODULES name list at 215. Real overwrite path, but it needs a name collision outside that list, so medium.",
+   "severity": "medium",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "scripts/abi_check.py:359-388",
+   "confidence": "medium",
+   "finding_id": "2bb645e71f18",
+   "local_id": null,
+   "packet_id": null,
+   "reason": "Lines 362-367 fall back to the first sorted abi_dump_*.cpp when the per-interface dumper is missing, and only write a stderr note. Lines 384-388 then write dumped_data to the golden for iface_name with no check of which interface that dumper covers. A --update run can therefore overwrite a golden with another interface's ABI.",
+   "severity": "high",
+   "status": "confirmed"
+  },
+  {
+   "cited_lines_checked": "scripts/agent_diff_check.py:62-73, 86-97",
+   "confidence": "high",
+   "finding_id": "155e569b4449",
+   "local_id": null,
+   "packet_id": null,
+   "reason": "EXCLUDED_MODS at line 62 is applied only in auto-detection (line 71). The constant has no comment, and an explicit --mod would still build perf_lab_src. Whether the exclusion is intended is a policy question the file does not answer, so the bypass depends on intent. Downgraded from high.",
+   "severity": "medium",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "scripts/agent_diff_check.py:100-117; scripts/run_tests.py:855-871, 932-940",
+   "confidence": "medium",
+   "finding_id": "1ce64f3b2759",
+   "local_id": null,
+   "packet_id": null,
+   "reason": "run_tests() returns True whenever returncode is 0 (lines 114-115). run_tests.py:861-862 applies -k as a bare substring filter. The exit-2 'no test item matched' check at run_tests.py:932-940 covers --id and positional filters only, not -k. A -k that matches nothing can therefore finish with rc 0. I did not read the zero-item output path itself.",
+   "severity": "high",
+   "status": "confirmed"
+  },
+  {
+   "cited_lines_checked": "scripts/check_ncs_arg_order.py:108-123, 146-152",
+   "confidence": "medium",
+   "finding_id": "9922de6547ae",
+   "local_id": null,
+   "packet_id": null,
+   "reason": "Lines 114-115 return silently when Modules/ is missing, and lines 120-123 drop an unreadable .mod/.erf with continue. But line 111 iterdir() on override/ raises for a missing override directory, so a wrong game_dir gives a traceback, not a silent pass. The silent zero-scan needs an empty override plus no Modules directory.",
+   "severity": "medium",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "scripts/check_txi_cycles.py:60-64, 100-112",
+   "confidence": "medium",
+   "finding_id": "96d2527bd58e",
+   "local_id": null,
+   "packet_id": null,
+   "reason": "Lines 63-64 return an empty dict when texpacks is missing. main() at 107 derives the default from override.parent, and line 111 prints the checked count, so a zero count is visible in the output. The exit code is still 0 when nothing is found (line 112). Real silent-pass path, but visible.",
+   "severity": "medium",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "scripts/verify_2da.py:104-109",
+   "confidence": "high",
+   "finding_id": "21a7b90bd94e",
+   "local_id": null,
+   "packet_id": null,
+   "reason": "Lines 106-109 print 'No .2da files found' and return 0. The message is visible, but an automated caller sees exit 0 for an empty scan. Downgraded from high because the failure is announced.",
+   "severity": "medium",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "scripts/generate_ultrawide_gui_overrides.py:683-696",
+   "confidence": "medium",
+   "finding_id": "822afff6842c",
+   "local_id": null,
+   "packet_id": null,
+   "reason": "Lines 683-696 catch any exception from the ps call and return False, so a failing ps is read as 'game not running'. The deploy and rollback guard is the only caller of this check (the caller at 1743 was not read). That makes the guard fail open.",
+   "severity": "high",
+   "status": "confirmed"
+  },
+  {
+   "cited_lines_checked": "scripts/snapshot_live.py:52-58",
+   "confidence": "high",
+   "finding_id": "57af67597f2b",
+   "local_id": null,
+   "packet_id": null,
+   "reason": "Lines 54-57 return False on any ps failure, which is a fail-open probe. The impact here is that a snapshot is labelled complete when ps fails, a mislabel of a read-only copy rather than a risky write. Downgraded from high.",
+   "severity": "medium",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "scripts/generate_ultrawide_gui_overrides.py:1665-1666, 1675-1687, 1835",
+   "confidence": "high",
+   "finding_id": "6ccefb375bd5",
+   "local_id": null,
+   "packet_id": null,
+   "reason": "REGISTRATION sets 'top_p tabs anchor' to 729 and 'equip_p LB_DESC right edge' to 723 (lines 1665-1666), so the tabs term is exactly 6k and the '<= 6*k + 1e-9' test is always true for k>0. Both portrait orderings are strict and preserved by fx(x,k)=400+(x-400)k for k>0. main() discards the boolean at line 1835 (reg, _ = ...). The check cannot report MISMATCH.",
+   "severity": "high",
+   "status": "confirmed"
+  },
+  {
+   "cited_lines_checked": "scripts/verify_all_compatch.py:80-93",
+   "confidence": "medium",
+   "finding_id": "e15120e5d7fa",
+   "local_id": null,
+   "packet_id": null,
+   "reason": "Lines 89-93 are bare asserts, which python -O strips. The installer runs the verifier without -O, so the bypass needs an optimised interpreter. Real design weakness but not a current bypass, so medium.",
+   "severity": "medium",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "research/companion_levelup/tools/parity/scenario_test.cpp:406-411",
+   "confidence": "medium",
+   "finding_id": "d2c66b77d42f",
+   "local_id": null,
+   "packet_id": null,
+   "reason": "Lines 408-409 are an empty else-if branch whose comment says the 20000-line cap is pinned by KpLog's own tests. The logcap action no longer forces the cap, so this scenario checks nothing about it. But the KpLog tests the comment relies on are not in the snapshot (Glob **/*KpLog* found nothing). Downgraded from critical: the scenario still passes green on the rest of its checks, and the cap has no gate in this tree.",
+   "severity": "high",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "research/companion_levelup/tools/parity/unit_gap_test.cpp:46-50; Glob **/*KpLog* -> none",
+   "confidence": "medium",
+   "finding_id": "d121f4a74209",
+   "local_id": null,
+   "packet_id": null,
+   "reason": "Line 48 is a comment in the post-image where the log-cap CHECK block used to be, and the post-image has no cap assertions. The comment says KpLog's tests pin the cap, but no KpLog test file exists in this snapshot (Glob **/*KpLog* returned nothing). The cap is untested in this tree. The removed CHECKs themselves are not visible in the snapshot.",
+   "severity": "high",
+   "status": "confirmed"
+  },
+  {
+   "cited_lines_checked": "scripts/compat_check.py:336-359",
+   "confidence": "medium",
+   "finding_id": "1cbacdcd03bc",
+   "local_id": null,
+   "packet_id": null,
+   "reason": "Lines 357-359 clear plan.gaps and append an info note inside narrow_plan_to_gog_scoping, which is documented as narrowing for GOG-only K2Addr.h changes. The clear is deliberate and visible in info_notes. It does also drop the graph-wide contract gaps that the strict path reads (per the bundle; the strict call site was not read). Downgraded because it is an explicit scoping decision.",
+   "severity": "medium",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "scripts/compat_check.py:336-359",
+   "confidence": "medium",
+   "finding_id": "1ea820031439",
+   "local_id": null,
+   "packet_id": null,
+   "reason": "Same code as 1cbacdcd03bc (lines 357-359): plan.gaps.clear() and the info note in a deliberate GOG-only narrowing. Duplicate of the same root cause; downgraded for the same reason.",
+   "severity": "medium",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "scripts/compat_graph.py:440-449",
+   "confidence": "medium",
+   "finding_id": "4811f0e7ead8",
+   "local_id": null,
+   "packet_id": null,
+   "reason": "Lines 444-447 return silently on a TOML parse error, so affected() gets no suite items from that file. I did not verify whether run_tests.py parses the same file and fails loudly, which would mitigate this. Downgraded from high pending that check.",
+   "severity": "medium",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "scripts/clef_matcher.py:444-455",
+   "confidence": "high",
+   "finding_id": "bc8be186d7ca",
+   "local_id": null,
+   "packet_id": null,
+   "reason": "Lines 452-454 print PASS for every prompt, with no comparison of the expected role or mod and no non-zero exit path. The defect is confirmed. Downgraded to medium because it is a manual self-test subcommand, not the build gate.",
+   "severity": "medium",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "scripts/plan_manager.py:340-356, 494-500, 522-537; Grep ':' split -> none",
+   "confidence": "medium",
+   "finding_id": "119182a14fc2",
+   "local_id": null,
+   "packet_id": null,
+   "reason": "The scoped ident '25:T4' (lines 349-350) is printed as the mark-done argument (line 356). cmd_mark_done matches the row cell by exact or substring comparison (plan_manager.py:530-533), and no ':' split appears anywhere in plan_manager.py (Grep). A '25:T4' target matches no row. I did not confirm how main() passes args.phase into cmd_mark_done.",
+   "severity": "high",
+   "status": "confirmed"
+  },
+  {
+   "cited_lines_checked": "scripts/plan_manager.py:68-91, 347-350",
+   "confidence": "high",
+   "finding_id": "a5dcf2744b60",
+   "local_id": null,
+   "packet_id": null,
+   "reason": "resolve_plan_shorthand (plan_manager.py:68-91) has no branch for 'PHASE7_COMMON_MASTER:T4'. Step 1b looks for a file named with the whole token, and step 2 requires a leading digit. So for a non-numbered plan stem the printed delegate and resume commands cannot resolve. Real, but it only affects non-numbered plan stems and is a tooling error, so medium.",
+   "severity": "medium",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "scripts/compat_check.py:1092-1132; scripts/run_tests.py:862-871, 932-940",
+   "confidence": "medium",
+   "finding_id": "7e6e690122c8",
+   "local_id": null,
+   "packet_id": null,
+   "reason": "run_tests.py:934-940 exits 2 before writing any --json output when a requested id has no match, and compat_check.py:1131-1132 fails closed ('No usable runner output') when the runner wrote nothing. The silent-drop case in the finding is covered by that fail-closed branch.",
+   "severity": "low",
+   "status": "rejected"
+  }
+ ]
+}
