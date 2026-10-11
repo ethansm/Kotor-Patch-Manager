@@ -379,7 +379,15 @@ struct CPending { bool on = false; int n = 0; };
 CPending g_cpend[3];
 bool g_cancelMissLogged = false;
 
-void cwShow(CW& w, bool on) {   // clickable only while visible (a shown control swallows the click; hidden = click-through)
+// VIS log (identical format in 4 mods): `VIS <what> shown=%d why=%s rect=[x,y,w,h]`, INFO on chMain, change-gated by the caller, cap 64 per process.
+void visLog(const char* what, bool shown, const char* why, const qh::Rect& r) {
+    static int n = 0;
+    if (!g_logOn || n > 64) return;
+    if (n == 64) { ++n; KP_LOG(chMain, "VIS cap reached"); return; }
+    ++n;
+    KP_LOG(chMain, "VIS %s shown=%d why=%s rect=[%d,%d,%d,%d]", what, shown ? 1 : 0, why ? why : "?", r.x, r.y, r.w, r.h);
+}
+void cwShow(CW& w, bool on, const char* why = "?") {   // clickable only while visible (a shown control swallows the click; hidden = click-through)
     if (!w.c) return;
     const int v = on ? 1 : 0;
     if (w.vis == v) return;
@@ -387,8 +395,11 @@ void cwShow(CW& w, bool on) {   // clickable only while visible (a shown control
     guikit::setVisible(w.c, on);
     w.vis = v;
     if (!on) { w.hover = false; w.fill = -1; }
+    static const char* const kName[3] = { "cancel0", "cancel1", "cancel2" };
+    const int idx = static_cast<int>(&w - g_cw);
+    visLog(idx >= 0 && idx < 3 ? kName[idx] : "cancel?", on, why, w.r);
 }
-void cwHideAll() { for (CW& w : g_cw) cwShow(w, false); }
+void cwHideAll(const char* why = "?") { for (CW& w : g_cw) cwShow(w, false, why); }
 
 void cwLookLeader(CW& w) {
     static const float cream[3] = { 0.80f, 0.80f, 0.698f };
@@ -434,13 +445,13 @@ void cwApply() {
         CW& w = g_cw[k];
         if (!w.c) continue;
         const CWant& d = g_want[k];
-        if (!g_cfg.cancel || !d.show || d.r.w <= 0) { cwShow(w, false); continue; }
+        if (!g_cfg.cancel || !d.show || d.r.w <= 0) { cwShow(w, false, !g_cfg.cancel ? "cancel-off" : "no-queue"); continue; }
         if (!w.rectSet || w.r.x != d.r.x || w.r.y != d.r.y || w.r.w != d.r.w || w.r.h != d.r.h) {
             if (guikit::setRect(w.c, d.r.x, d.r.y, d.r.w, d.r.h)) { w.r = d.r; w.rectSet = true; }
-            else { cwShow(w, false); continue; }
+            else { cwShow(w, false, "strip-slot-missing"); continue; }
         }
         cwLook(w, k);
-        cwShow(w, true);
+        cwShow(w, true, "queue");
     }
 }
 
@@ -493,6 +504,7 @@ void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
         if (g_cw[k].c) ++n;
     }
     KP_LOGV(chCancel, n == 3 ? KPLOG_INFO : KPLOG_WARN, "BUILD panel=%08x cancel labels n=%d/3 why=%d,%d,%d", (unsigned)panel, n, why[0], why[1], why[2]);
+    visLog("build", n == 3, n == 3 ? "ok" : "labels-missing", qh::Rect{ 0, 0, 0, 0 });
 }
 
 void onHudConnect(bool ok, const char* why) { QLOGV(chMain, ok ? KPLOG_INFO : KPLOG_WARN, "hud-host: %s (%s)", ok ? "connected" : "NOT connected (no Cancel controls)", why ? why : ""); }
@@ -1413,7 +1425,7 @@ void KPATCH_CALL onFrameBegin(const K2PsContext* ctx, void*) {
     for (int k = 0; k < 3; ++k)
         if (g_cpend[k].on) { g_cpend[k].on = false; QLOG(chCancel, "CANCEL done member=%d n=%d", k, queueCountOf(k)); }
     if (!g_cfg.cancel || inMenu || g_combat != 0) {
-        cwHideAll();
+        cwHideAll(inMenu ? "hud-inactive" : g_combat != 0 ? "combat" : "cancel-off");
     } else {
         for (int k = 0; k < 3; ++k) {
             CW& w = g_cw[k];

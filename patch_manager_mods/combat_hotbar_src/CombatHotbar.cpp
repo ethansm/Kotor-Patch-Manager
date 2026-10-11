@@ -291,6 +291,26 @@ int g_flagLast = -1;
 int g_contState[3] = { -1, -1, -1 };          // -1 never logged, 0 tint read failed, 1 tint read ok (log on change only)
 float g_contLog[3][4] = { { 0 }, { 0 }, { 0 } };   // last logged tint rgb + alpha per group
 
+// VIS diagnostics: one INFO line per visibility state CHANGE of an item (shown, why, rect), capped at 64 lines per process (the 65th call emits one cap line).
+struct VisState { bool set; int shown; char why[24]; int r[4]; };
+VisState g_visGroup[3];
+VisState g_visButtons;
+int g_visCount = 0; bool g_visCapped = false;
+bool visBudget() {
+    if (g_visCount < 64) { ++g_visCount; return true; }
+    if (!g_visCapped) { g_visCapped = true; KP_LOGV(chMain, KPLOG_INFO, "VIS cap reached"); }
+    return false;
+}
+void visReset() { memset(g_visGroup, 0, sizeof(g_visGroup)); memset(&g_visButtons, 0, sizeof(g_visButtons)); }
+void visLog(VisState& st, const char* what, int shown, const char* why, const ch::Rect& r) {
+    if (st.set && st.shown == shown && st.r[0] == r.x && st.r[1] == r.y && st.r[2] == r.w && st.r[3] == r.h && strncmp(st.why, why, sizeof(st.why) - 1) == 0) return;
+    st.set = true; st.shown = shown; st.r[0] = r.x; st.r[1] = r.y; st.r[2] = r.w; st.r[3] = r.h;
+    strncpy(st.why, why, sizeof(st.why) - 1); st.why[sizeof(st.why) - 1] = 0;
+    if (!visBudget()) return;
+    KP_LOGV(chMain, KPLOG_INFO, "VIS %s shown=%d why=%s rect=[%d,%d,%d,%d]", what, shown, why, r.x, r.y, r.w, r.h);
+}
+void visGroup(int g, int shown, const char* why, const ch::Rect& r) { char nm[16]; snprintf(nm, sizeof(nm), "group%d", g); visLog(g_visGroup[g], nm, shown, why, r); }
+
 // GUI sound by index (mirrors guikit::playHoverSound, which is idx 1): idx < 0 = off. False when the manager is null.
 bool playGuiSound(int idx) {
     if (idx < 0) return false;
@@ -354,6 +374,7 @@ struct ProjGuard {
 void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
     for (Btn& b : g_btn) b = Btn();
     for (Wid& w : g_cont) w = Wid();
+    visReset();
     for (int g = 0; g < 3; ++g) { g_contState[g] = -1; for (int k = 0; k < 4; ++k) g_contLog[g][k] = 0.f; }
     memset(g_lastCont, 0, sizeof(g_lastCont));
     memset(g_lastSig, 0, sizeof(g_lastSig));
@@ -364,16 +385,16 @@ void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
     const uintptr_t panel = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->panel));
     const int per = g_cfg.cols * g_cfg.maxRows, total = 3 * per;
     ProjGuard pg;
-    int n = 0, failAlloc = 0, failVt = 0, failTpl = 0, failOther = 0, failAppend = 0;
+    int n = 0, failAlloc = 0, failVt = 0, failTpl = 0, failOther = 0, failAppend = 0, failAppendCont = 0;
     uint32_t badVt = 0;
     int nCont = 0;
     for (int g = 0; g < 3; ++g) {   // pill containers first: the panel list is the draw order, so they sit behind every button label
         int why = guikit::CF_None; uint32_t bv = 0;
         uintptr_t c = guikit::createLabelFromTemplate(panel, "LBL_QUEUE1", &why, &bv);
-        if (!c) { KP_LOGV(chMain, KPLOG_WARN, "BUILD: container g%d create failed (why=%d vtable=%08x)", g, why, (unsigned)bv); continue; }
+        if (!c) { visGroup(g, 0, "create-failed", ch::Rect{ 0, 0, 0, 0 }); KP_LOGV(chMain, KPLOG_WARN, "BUILD: container g%d create failed (why=%d vtable=%08x)", g, why, (unsigned)bv); continue; }
         guikit::setVisible(c, false);
         guikit::setClickable(c, false);
-        if (!guikit::appendToPanel(panel, c)) { KP_LOGV(chMain, KPLOG_WARN, "BUILD: container g%d append failed, control %08x left hidden + click-through", g, (unsigned)c); continue; }
+        if (!guikit::appendToPanel(panel, c)) { ++failAppendCont; visGroup(g, 0, "append-failed", ch::Rect{ 0, 0, 0, 0 }); KP_LOGV(chMain, KPLOG_WARN, "BUILD: container g%d append failed, control %08x left hidden + click-through", g, (unsigned)c); continue; }
         g_cont[g].c = c; g_cont[g].vis = 0;
         ++nCont;
     }
@@ -401,9 +422,13 @@ void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
     g_nBtn = total < MaxBtn ? total : MaxBtn; g_per = per;
     if (n == total) KP_LOGV(chMain, KPLOG_INFO, "BUILD buttons created=%d/%d slots x2 labels (panel=%08x cols=%d rows=%d)", n, total, (unsigned)panel, g_cfg.cols, g_cfg.maxRows);
     else KP_LOGV(chMain, KPLOG_WARN, "BUILD buttons created=%d/%d alloc=%d vtable=%d(%08x) template=%d append=%d other=%d", n, total, failAlloc, failVt, (unsigned)badVt, failTpl, failAppend, failOther);
+    if (visBudget()) KP_LOGV(chMain, KPLOG_INFO, "VIS build controls=%d failAppend=%d", nCont + 2 * n, failAppend + failAppendCont);
 }
 
-void hideAllButtons() {
+void hideAllButtons(const char* why) {
+    const ch::Rect zero = { 0, 0, 0, 0 };
+    for (int g = 0; g < 3; ++g) if (g_cont[g].c) visGroup(g, 0, why, zero);
+    if (g_nBtn > 0) visLog(g_visButtons, "buttons", 0, why, zero);
     for (Wid& w : g_cont) widHide(w);
     for (int i = 0; i < g_nBtn; ++i) {
         Btn& b = g_btn[i];
@@ -450,12 +475,15 @@ void updateButtons(const K2HudContext* ctx) {
     const uintptr_t menu = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->menu));
     const bool replace = g_cfg.btnEnabled && g_cfg.replace;
     if (!replace && g_replaced) restoreVanilla(menu);
-    if (!g_cfg.btnEnabled || g_nBtn == 0 || g_per == 0) return;
+    if (!g_cfg.btnEnabled || g_nBtn == 0 || g_per == 0) {
+        visLog(g_visButtons, "buttons", 0, !g_cfg.btnEnabled ? "disabled" : "not-built", ch::Rect{ 0, 0, 0, 0 });
+        return;
+    }
     const uintptr_t hud = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->hud));
     const int8_t type = static_cast<int8_t>(ctx->targetType);
     // Click edge is sampled every frame so a press that started while the buttons were hidden never fires when they appear.
     const bool click = guikit::clickEdge(g_click);
-    if (!ctx->target || type < 0 || type > 3) { hideAllButtons(); return; }
+    if (!ctx->target || type < 0 || type > 3) { hideAllButtons(!ctx->target ? "no-target" : "bad-type"); return; }
 
     if (replace) hideVanilla(menu);
 
@@ -468,6 +496,7 @@ void updateButtons(const K2HudContext* ctx) {
     int ox = 0, oy = 0, ow = 0, oh = 0;
     bool ok = sw >= 320 && sh >= 200 && saferead::readAt(S_BtnRd, menu, 0x1648, &ox) && saferead::readAt(S_BtnRd, menu, 0x164C, &oy) &&
               saferead::readAt(S_BtnRd, menu, 0x1650, &ow) && saferead::readAt(S_BtnRd, menu, 0x1654, &oh);
+    const char* failWhy = !ok ? (sw >= 320 && sh >= 200 ? "rect-fail-origin" : "rect-fail-screen") : "rect-fail-extent";
 
     ch::GroupView gv[3]; uintptr_t base[3] = { 0, 0, 0 };
     readGroups(menu, gv, base);
@@ -539,10 +568,10 @@ void updateButtons(const K2HudContext* ctx) {
     }
     if (ok) {
         int nx = 0, ny = 0, nw = 0, nh = 0, hx = 0, hy = 0, hw = 0, hh = 0;
-        if (!guikit::getExtent(menu + 0x1668, &nx, &ny, &nw, &nh) || !guikit::getExtent(menu + 0x1A40, &hx, &hy, &hw, &hh)) ok = false;
+        if (!guikit::getExtent(menu + 0x1668, &nx, &ny, &nw, &nh) || !guikit::getExtent(menu + 0x1A40, &hx, &hy, &hw, &hh)) { ok = false; failWhy = "rect-fail-banner"; }
         else { const ch::Rect a = { fx + nx, fy + ny, nw, nh }, b = { fx + hx, fy + hy, hw, hh }; banner = unionRect(a, b); }
     }
-    if (!ok) { hideAllButtons(); return; }
+    if (!ok) { hideAllButtons(failWhy); return; }
 
     ch::Rect rects[MaxBtn]; int outN[3] = { 0, 0, 0 }; ch::Rect cont[3];
     const int btnPx = g_cfg.btnPx > 0 ? g_cfg.btnPx : boxes[0].w / 2;
@@ -629,9 +658,9 @@ void updateButtons(const K2HudContext* ctx) {
             CH_VLOG(chTarget, KPLOG_INFO, "container g%d tint=(%.2f,%.2f,%.2f) alpha=%.2f", g, tint[g][0], tint[g][1], tint[g][2], aOk[g] ? alp[g] : -1.f);
         }
         Wid& c = g_cont[g];
-        if (!c.c) continue;
-        if (!replace) { widHide(c); continue; }   // Replace=0: the vanilla pills are still drawn, never stack ours on them
-        if (cont[g].w == 0 || cont[g].h == 0) { widHide(c); continue; }   // CH4e: empty group, no pill
+        if (!c.c) { visGroup(g, 0, "no-container", ch::Rect{ 0, 0, 0, 0 }); continue; }
+        if (!replace) { widHide(c); visGroup(g, 0, "replace-off", ch::Rect{ 0, 0, 0, 0 }); continue; }   // Replace=0: the vanilla pills are still drawn, never stack ours on them
+        if (cont[g].w == 0 || cont[g].h == 0) { widHide(c); visGroup(g, 0, "empty-group", ch::Rect{ 0, 0, 0, 0 }); continue; }   // CH4e: empty group, no pill
         widRect(c, cont[g]);
         // Use g_imgHi (cream border in lbl_miscroll_hi) so red tint produces vibrant red (lbl_miscroll_f has teal baked in)
         void* contImg = g_imgHi ? g_imgHi : g_imgFrame;
@@ -639,14 +668,16 @@ void updateButtons(const K2HudContext* ctx) {
         if (tOk[g]) widTint(c, tint[g]);
         if (aOk[g]) widAlpha(c, alp[g]);
         widShow(c, true);
+        visGroup(g, 1, "ok", cont[g]);
     }
 
+    int visBtn = 0, noCtl = 0;
     for (int g = 0; g < 3; ++g) {
         for (int k = 0; k < per; ++k) {
             const int s = g * per + k;
             if (s >= g_nBtn) break;
             Btn& b = g_btn[s];
-            if (!b.bg.c) continue;
+            if (!b.bg.c) { if (k < outN[g]) ++noCtl; continue; }
             if (k >= outN[g]) {
                 if (b.bg.vis != 0 || b.icon.vis != 0) { widHide(b.bg); widHide(b.icon); b.tipSet = false; }
                 continue;
@@ -669,6 +700,7 @@ void updateButtons(const K2HudContext* ctx) {
             widAlpha(b.bg, (s == g_hover) ? 1.0f : (aOk[g] ? alp[g] : 0.85f));
             widAlpha(b.icon, e.usable ? 1.0f : 0.35f);
             widShow(b.bg, true); widShow(b.icon, false);
+            ++visBtn;
 
             if (!b.tipSet || b.tipKey != e.key) {
                 const char* name = g_names[g][ord[g][k]];
@@ -676,6 +708,12 @@ void updateButtons(const K2HudContext* ctx) {
                 b.tipKey = e.key; b.tipSet = true;
             }
         }
+    }
+
+    {
+        ch::Rect u = { 0, 0, 0, 0 }; bool anyU = false;
+        for (int g = 0; g < 3; ++g) if (cont[g].w > 0 && cont[g].h > 0) { u = anyU ? unionRect(u, cont[g]) : cont[g]; anyU = true; }
+        visLog(g_visButtons, "buttons", visBtn > 0 ? 1 : 0, visBtn > 0 ? "ok" : (noCtl > 0 ? "append-failed" : "empty-groups"), u);
     }
 
     if (click && reflow) KP_LOGV(chTarget, KPLOG_INFO, "click ignored: layout reflow");

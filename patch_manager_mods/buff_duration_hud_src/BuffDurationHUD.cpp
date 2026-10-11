@@ -77,6 +77,77 @@ template <typename T> bool readAt(int base, int off, T* out) {
 // state saved by hook 2 for hook 3
 struct Saved { bool active; int border; int origImage; int width; int height; int widthOff, heightOff; } g_saved;
 
+// ---- VIS diagnostics (visibility trace): `VIS <what> shown=%d why=%s rect=[x,y,w,h]`, written through logf (the mod's main channel,
+// so it needs buffhud_debug.txt like every other line here), ONLY when (shown, why-category, count, rect) changes for that item.
+// At most VisMaxLines lines per process, then one `VIS cap reached` and silence. Pure logging: no effect on hooks or drawing.
+enum VisCat { VisNone = 0, VisNoSlot, VisGateClosed, VisKill, VisNoTable, VisBadCard, VisNoBuffs, VisNoFit, VisDrawn };
+constexpr int VisMaxLines = 64;
+int g_visLines = 0;
+void visLine(const char* fmt, ...) {
+    if (!g_debugLog || g_visLines > VisMaxLines) return;
+    if (g_visLines == VisMaxLines) { ++g_visLines; logf("VIS cap reached"); return; }
+    ++g_visLines;
+    char buf[256];
+    va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof(buf), fmt, ap); va_end(ap);
+    buf[sizeof(buf) - 1] = 0;
+    logf("%s", buf);
+}
+struct VisSlot {
+    int slotPtr, cat, count, rect[4];
+    int drawn[2], tracked[2], rc[2][4];       // per column (0 = buff, 1 = debuff): icons drawn / tracked effects / bounding rect
+};
+VisSlot g_vis[4];                              // K2PS_MAX_SLOTS entries, claimed in first-seen order: slot0, slot1, ...
+int visIndex(int slotPtr) {
+    if (slotPtr == 0) return -1;
+    for (int i = 0; i < 4; ++i) if (g_vis[i].slotPtr == slotPtr) return i;
+    for (int i = 0; i < 4; ++i) if (g_vis[i].slotPtr == 0) { g_vis[i] = {}; g_vis[i].slotPtr = slotPtr; return i; }
+    return -1;
+}
+void visSet(int idx, int cat, int count, const int* rect, int flags) {
+    VisSlot& v = g_vis[idx];
+    static const int zero[4] = {};
+    if (!rect) rect = zero;
+    if (v.cat == cat && v.count == count && memcmp(v.rect, rect, sizeof(v.rect)) == 0) return;
+    v.cat = cat; v.count = count; memcpy(v.rect, rect, sizeof(v.rect));
+    char why[48];
+    switch (cat) {
+        case VisNoSlot:     snprintf(why, sizeof(why), "no-slot"); break;
+        case VisGateClosed: snprintf(why, sizeof(why), "gate-closed(flags=%08x)", flags); break;
+        case VisKill:       snprintf(why, sizeof(why), "killswitch"); break;
+        case VisNoTable:    snprintf(why, sizeof(why), "no-table"); break;
+        case VisBadCard:    snprintf(why, sizeof(why), "bad-card"); break;
+        case VisNoBuffs:    snprintf(why, sizeof(why), "no-buffs"); break;
+        case VisNoFit:      snprintf(why, sizeof(why), "no-fit tracked=%d", count); break;
+        default:            snprintf(why, sizeof(why), "drawn count=%d", count); break;
+    }
+    visLine("VIS slot%d shown=%d why=%s rect=[%d,%d,%d,%d]", idx, cat == VisDrawn ? 1 : 0, why, rect[0], rect[1], rect[2], rect[3]);
+}
+// Rejections decided before any column is laid out (kill switch, no table, closed gate, no creature).
+void visReject(int slotPtr, int cat, int flags) {
+    int i = visIndex(slotPtr);
+    if (i >= 0) visSet(i, cat, 0, nullptr, flags);
+}
+// One column of a HUD slot was laid out (drawN icons of `tracked` effects, bounding rect x,y,w,h or null). Merged with the other column.
+void visColumn(int slotPtr, bool debuff, int tracked, int drawN, const int* rect) {
+    int i = visIndex(slotPtr);
+    if (i < 0) return;
+    VisSlot& v = g_vis[i];
+    const int c = debuff ? 1 : 0;
+    v.drawn[c] = drawN; v.tracked[c] = tracked;
+    for (int q = 0; q < 4; ++q) v.rc[c][q] = (drawN > 0 && rect) ? rect[q] : 0;
+    int l = 0, t = 0, r = 0, b = 0; bool any = false;
+    for (int k = 0; k < 2; ++k) {
+        if (v.drawn[k] <= 0) continue;
+        int x0 = v.rc[k][0], y0 = v.rc[k][1], x1 = x0 + v.rc[k][2], y1 = y0 + v.rc[k][3];
+        if (!any) { l = x0; t = y0; r = x1; b = y1; any = true; }
+        else { if (x0 < l) l = x0; if (y0 < t) t = y0; if (x1 > r) r = x1; if (y1 > b) b = y1; }
+    }
+    const int total = v.drawn[0] + v.drawn[1], trk = v.tracked[0] + v.tracked[1];
+    const int rc[4] = { l, t, r - l, b - t };
+    if (total > 0) visSet(i, VisDrawn, total, rc, 0);
+    else visSet(i, trk > 0 ? VisNoFit : VisNoBuffs, trk, nullptr, 0);
+}
+
 
 // ---- shared probe log: OFF unless "shieldprobe.txt" exists in the game dir. ARROWS / ICONCACHE / GLINIT / CAPFIX lines go to
 // shieldprobe_log.txt, the same file the shield-bar patch writes (one game thread: lines interleave in call order). ----
@@ -163,7 +234,7 @@ void __cdecl RestoreBuffIcon() {
 static void drawColumnCore(int slotPtr, int creature, int iconWidget, int isLarge, int whichRow, int cardW, int cardH) {
     const bool debuff = whichRow == 0;
     const K2AddrTable* T = k2addr::get();
-    if (!featureOk(bh::columnFieldsOk(T), "icon columns")) return;
+    if (!featureOk(bh::columnFieldsOk(T), "icon columns")) { if (iconWidget) visReject(slotPtr, VisNoTable, 0); return; }
     static int callNo = 0; ++callNo;
     int day = 0, ms = 0;
     bool haveTime = currentTime(&day, &ms);
@@ -171,7 +242,7 @@ static void drawColumnCore(int slotPtr, int creature, int iconWidget, int isLarg
     int n = collectBuffs(creature, day, ms, haveTime, buffs, 16, debuff);
     int nOther = collectBuffs(creature, day, ms, haveTime, other, 16, !debuff);
 
-    if (cardW < 1 || cardH < 1) return;         // degenerate card (F23): nothing sensible to lay out
+    if (cardW < 1 || cardH < 1) { if (iconWidget) visReject(slotPtr, VisBadCard, 0); return; }         // degenerate card (F23): nothing sensible to lay out
     float scale = gui2d::hudScale();
     // both columns share one icon size; preferred size shrunk so all fit down the column, else another column (bh::columnLayout)
     const bh::ColumnLayout lay = bh::columnLayout(n, nOther, isLarge, cardW, cardH, scale);
@@ -183,6 +254,17 @@ static void drawColumnCore(int slotPtr, int creature, int iconWidget, int isLarg
     bool logIt = callNo <= 30 || sigChanged;
     if (logIt) logf("COLUMN#%d %s slot=%08x large=%d card=%dx%d scale=%.3f tracked=%d cols=%d fit=%d draw=%d size=%d gap=%d",
                     callNo, debuff ? "DEBUFF" : "buff", slotPtr, isLarge, cardW, cardH, scale, n, cols, fit, drawN, size, gap);
+    if (iconWidget) {                           // HUD slot (menu companion columns have iconWidget 0 and are traced in onMenuOverlay)
+        int vr[4] = {}, *vrp = nullptr;
+        if (drawN > 0 && lay.perCol > 0) {
+            const int colsUsed = (drawN - 1) / lay.perCol + 1, rows = drawN < lay.perCol ? drawN : lay.perCol;
+            const bh::IconPos p0 = bh::iconPos(lay, 0, debuff, cardW), pc = bh::iconPos(lay, (colsUsed - 1) * lay.perCol, debuff, cardW);
+            const bh::IconPos pr = bh::iconPos(lay, rows - 1, debuff, cardW);
+            const int x0 = p0.x < pc.x ? p0.x : pc.x, x1 = (p0.x > pc.x ? p0.x : pc.x) + size;
+            vr[0] = x0; vr[1] = p0.y; vr[2] = x1 - x0; vr[3] = pr.y + size - p0.y; vrp = vr;
+        }
+        visColumn(slotPtr, debuff, n, drawN, vrp);
+    }
     if (drawN <= 0) return;
 
     CapGuard capGuard;                          // same GL_LIGHTING leak as the shield bar: flush/pushClip toggle caps, put them back on exit
@@ -229,6 +311,7 @@ static void drawColumnCore(int slotPtr, int creature, int iconWidget, int isLarg
 }
 
 void __cdecl DrawBuffColumn(int slotPtr, int iconWidget, int isLarge, int whichRow, int cardW, int cardH) {
+    static bool visFirst = true; if (visFirst) { visFirst = false; visLine("VIS hud column first call"); }
     saferead::beginScope();                     // engine code between hook calls can free memory: drop the cached readable regions
     g_ps.poll();                                // portrait-slots loaded after us (config order): register late
     RestoreBuffIcon();                          // debuff arrows are hidden without a restore hook (also when the kill switch flips mid-row)
@@ -251,15 +334,15 @@ ArrowRaw g_arrowRaw[8];
 ArrowRaw* arrowRawFor(int slotPtr) { return bh::arrowRawFor(g_arrowRaw, 8, slotPtr); }
 
 void ForceArrowCounters(int slotPtr) {
-    if (g_noBuff) return;
+    if (g_noBuff) { visReject(slotPtr, VisKill, 0); return; }
     const K2AddrTable* T = k2addr::get();
-    if (!featureOk(bh::arrowFieldsOk(T), "arrow counters")) return;
+    if (!featureOk(bh::arrowFieldsOk(T), "arrow counters")) { visReject(slotPtr, VisNoTable, 0); return; }
     int gate = 0;
-    if (!readAt(slotPtr, T->Slot_Flags, &gate) || !bh::arrowGateOpen(gate)) return;              // engine's own "row visible" bit (also excludes the creature-less mirror slot)
+    if (!readAt(slotPtr, T->Slot_Flags, &gate) || !bh::arrowGateOpen(gate)) { visReject(slotPtr, VisGateClosed, gate); return; }              // engine's own "row visible" bit (also excludes the creature-less mirror slot)
     unsigned char rawBuff = 0, rawDebuff = 0;
     if (!readAt(slotPtr, T->Slot_ArrowBuff, &rawBuff) || !readAt(slotPtr, T->Slot_ArrowDebuff, &rawDebuff)) return;
     int creature = creatureForSlot(slotPtr);
-    if (!creature) return;
+    if (!creature) { visReject(slotPtr, VisNoSlot, 0); return; }
     ArrowRaw* raw = arrowRawFor(slotPtr);
     int overlay[3] = {};                                                    // FUN_00744f00: mask&2 -> +0x1b8, mask&1 -> +0x300, mask&4 -> +0x448 (bit 1 = shown)
     readAt(slotPtr, T->Slot_Overlay0, &overlay[0]); readAt(slotPtr, T->Slot_Overlay1, &overlay[1]); readAt(slotPtr, T->Slot_Overlay2, &overlay[2]);
@@ -271,6 +354,10 @@ void ForceArrowCounters(int slotPtr) {
         Buff tmp[16];
         nBuff = collectBuffs(creature, day, ms, haveTime, tmp, 16, false);
         nDebuff = collectBuffs(creature, day, ms, haveTime, tmp, 16, true);
+    }
+    {   // gate open again after a rejection: nothing tracked means no column call will follow, so close the stale state here
+        const int vi = visIndex(slotPtr);
+        if (vi >= 0 && g_vis[vi].cat != VisNone && g_vis[vi].cat < VisNoBuffs && nBuff + nDebuff == 0) visSet(vi, VisNoBuffs, 0, nullptr, 0);
     }
     const bh::ArrowCounters ctr = bh::bumpArrowCounters(rawBuff, rawDebuff, nBuff, nDebuff, hidden);   // never lowers an engine value
     unsigned char newBuff = (unsigned char)ctr.buff, newDebuff = (unsigned char)ctr.debuff;
@@ -327,20 +414,33 @@ static void KPATCH_CALL onFrameBegin(const K2PsContext* c, void*) {
 // the 2D batch and pushed the panel clip (panel-local coordinates); the shield bar (prio 100) has already moved and decorated them.
 static void KPATCH_CALL onMenuOverlay(const K2PsContext* c, void*) {
     g_frame = int(c->frame);
+    static bool visFirst = true; if (visFirst) { visFirst = false; visLine("VIS overlay first call"); }
     if (g_noBuff) return;
     const K2AddrTable* T = k2addr::get();
     if (!featureOk(bh::menuFieldsOk(T), "menu companion columns")) return;
     const int rectOff[4] = { T->Ctl_X, T->Ctl_Y, T->Ctl_W, T->Ctl_H };      // control extent: x, y, w, h
     int cols = 0;
+    static int visSt[2] = { -1, -1 }, visRect[2][4] = {};
     for (int k = 0; k < 2; ++k) {
         int comp = c->companions[k], ctrl = c->companionCtrl[k], fl = 0, r[4] = {};
-        if (!comp || !readAt(ctrl, T->Ctl_Flags, &fl) || !bh::menuPortraitVisible(fl)) continue;
-        for (int q = 0; q < 4; ++q) readAt(ctrl, rectOff[q], &r[q]);
-        if (!bh::menuRectOk(r[2], r[3])) continue;
-        if (gui2d::pushClip(r[0], r[1], r[2], r[3])) {
-            drawColumnCore(ctrl, comp, 0, 0, 1, r[2], r[3]);     // buffs: left edge
-            drawColumnCore(ctrl, comp, 0, 0, 0, r[2], r[3]);     // debuffs: right edge
-            gui2d::popClip(); ++cols;
+        int st = 0; const char* why = "no-slot";
+        if (comp) {
+            if (!readAt(ctrl, T->Ctl_Flags, &fl) || !bh::menuPortraitVisible(fl)) { st = 1; why = "portrait-hidden"; }
+            else {
+                for (int q = 0; q < 4; ++q) readAt(ctrl, rectOff[q], &r[q]);
+                if (!bh::menuRectOk(r[2], r[3])) { st = 2; why = "bad-rect"; }
+                else if (gui2d::pushClip(r[0], r[1], r[2], r[3])) {
+                    drawColumnCore(ctrl, comp, 0, 0, 1, r[2], r[3]);     // buffs: left edge
+                    drawColumnCore(ctrl, comp, 0, 0, 0, r[2], r[3]);     // debuffs: right edge
+                    gui2d::popClip(); ++cols;
+                    st = 3; why = "drawn";
+                } else { st = 4; why = "clip-refused"; }
+            }
+        }
+        const int vr[4] = { st >= 2 ? r[0] : 0, st >= 2 ? r[1] : 0, st >= 2 ? r[2] : 0, st >= 2 ? r[3] : 0 };
+        if (st != visSt[k] || memcmp(vr, visRect[k], sizeof(vr)) != 0) {
+            visSt[k] = st; memcpy(visRect[k], vr, sizeof(vr));
+            visLine("VIS menu%d shown=%d why=%s rect=[%d,%d,%d,%d]", k, st == 3 ? 1 : 0, why, vr[0], vr[1], vr[2], vr[3]);
         }
     }
     static int lastCols = -2;

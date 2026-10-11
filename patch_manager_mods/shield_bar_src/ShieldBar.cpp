@@ -24,7 +24,9 @@
 #include "Gui2D.h"
 #include "GuiKit.h"
 #include "PortraitSlots.h"
+#include "KpLog.h"
 
+KP_LOG_PATCH("shield-bar");
 
 namespace {
 
@@ -65,6 +67,25 @@ void probeLog(const char* fmt, ...) {
     fprintf(f, "[t=%lu f=%d] ", GetTickCount(), g_frame);
     va_list ap; va_start(ap, fmt); vfprintf(f, fmt, ap); va_end(ap);
     fputc('\n', f); fclose(f);
+}
+
+// ---- VIS log (visibility diagnostics, logging only): "VIS <what> shown=%d why=%s rect=[x,y,w,h]" to kpatch.log (INFO, channel
+// "shield-bar/main"), written only when (shown, why, rect) of that item changes. At most 64 VIS lines per process; the 65th attempt
+// writes "VIS cap reached" and nothing more. why = no-slot | no-shield | card-rect-zero | drawn. ----
+KP_CHANNEL(chMain, "main");
+struct VisState { bool seen; int shown; char why[16]; int rect[4]; };
+int g_visLines = 0;
+bool visAllow() {   // true = one more VIS line may be written (counts it); false = cap hit (the 65th attempt wrote the cap line)
+    if (g_visLines >= 65) return false;
+    if (g_visLines == 64) { ++g_visLines; KP_LOG(chMain, "VIS cap reached"); return false; }
+    ++g_visLines; return true;
+}
+void visLog(VisState& s, const char* what, int idx, int shown, const char* why, const int* rect) {
+    int r[4] = { 0, 0, 0, 0 }; if (rect) for (int k = 0; k < 4; ++k) r[k] = rect[k];
+    if (s.seen && s.shown == shown && strcmp(s.why, why) == 0 && memcmp(s.rect, r, sizeof(r)) == 0) return;
+    s.seen = true; s.shown = shown; strncpy(s.why, why, sizeof(s.why) - 1); s.why[sizeof(s.why) - 1] = 0; memcpy(s.rect, r, sizeof(r));
+    if (!visAllow()) return;
+    KP_LOG(chMain, "VIS %s%d shown=%d why=%s rect=[%d,%d,%d,%d]", what, idx, shown, why, r[0], r[1], r[2], r[3]);
 }
 
 // A feature runs only when the exe's address table has every field it needs (K2Addr.h; null table / 0 = unknown). The first feature that
@@ -501,6 +522,7 @@ void KPATCH_CALL onSlot(const K2PsContext* c, void*) {
 void KPATCH_CALL onMenuOverlay(const K2PsContext* c, void*) {
     g_frame = int(c->frame);
     noteMenuState(true);
+    { static bool first = true; if (first) { first = false; if (visAllow()) KP_LOG(chMain, "VIS overlay first call"); } }
     if (g_noDraw) return;
     const K2AddrTable* T = k2addr::get();
     const bool haveVit = featureOk(sb::vitRectOk(T), "menu shield bar");          // top-bar portrait's health-bar rect
@@ -518,6 +540,8 @@ void KPATCH_CALL onMenuOverlay(const K2PsContext* c, void*) {
     CapGuard capGuard;
     int shown = 0, bars = 0;
     if (pools > 0) shown = DrawShieldPools(creature, v[0], v[1], v[2], v[3], scale, slotPtr, false);
+    { static VisState vs0; const bool rectOk = v[2] >= 1 && v[2] <= 2000 && v[3] >= 1 && v[3] <= 2000;   // menu leader (top-bar) bar
+      visLog(vs0, "mbar", 0, shown > 0, !creature ? "no-slot" : !rectOk ? "card-rect-zero" : shown > 0 ? "drawn" : "no-shield", v); }
     if (g_probe && haveMenu) { int q[2][4] = {}; for (int k = 0; k < 2; ++k) readCtlRect(c->companionCtrl[k], q[k]);
         static int lastQ = -1; int sq = q[0][0] * 3 ^ q[1][0] * 7 ^ q[0][1] ^ q[1][2];
         static int pc = 0; if (sq != lastQ || (++pc % 120) == 0) { lastQ = sq; probeLog("MENUPRE c2=(%d,%d,%d,%d) c3=(%d,%d,%d,%d) panel=%08x", q[0][0], q[0][1], q[0][2], q[0][3], q[1][0], q[1][1], q[1][2], q[1][3], panel); } }
@@ -528,18 +552,20 @@ void KPATCH_CALL onMenuOverlay(const K2PsContext* c, void*) {
     }
     for (int k = 0; haveMenu && k < 2; ++k) {
         int ctrl = c->companionCtrl[k], fl = 0, r[4] = {};
-        if (!comp[k] || !readAt(ctrl, T->Ctl_Flags, &fl) || !(fl & 2)) continue;
+        static VisState vsM[2];   // menu companion bars -> VIS mbar1 / mbar2 (unreadable vitals count as no-slot)
+        if (!comp[k] || !readAt(ctrl, T->Ctl_Flags, &fl) || !(fl & 2)) { visLog(vsM[k], "mbar", k + 1, 0, "no-slot", nullptr); continue; }
         readCtlRect(ctrl, r);
-        if (r[2] < 1 || r[3] < 1 || r[2] > 2000 || r[3] > 2000) continue;
+        if (r[2] < 1 || r[3] < 1 || r[2] > 2000 || r[3] > 2000) { visLog(vsM[k], "mbar", k + 1, 0, "card-rect-zero", r); continue; }
         int hp = 0, hpMax = 0, fp = 0, fpMax = 0;
-        if (!readVitals(comp[k], &hp, &hpMax, &fp, &fpMax)) continue;
+        if (!readVitals(comp[k], &hp, &hpMax, &fp, &fpMax)) { visLog(vsM[k], "mbar", k + 1, 0, "no-slot", r); continue; }
         // bars around the portrait: visible health edge on the card's left edge, force edge on its right edge, art rows flush with the
         // card's top / bottom (sb::menuBars, art columns measured from the override TGAs); shield beside the health bar
         const sb::MenuBars mb = sb::menuBars(r[0], r[1], r[2], r[3]);
         const int vx = mb.vx, fx = mb.fx, by = mb.by, bw = mb.bw, bwF = mb.bwF, bh = mb.bh;
         drawGauge(HealthBarTexture, vx, by, bw, bh, HealthFillRed, hp, hpMax);
         drawGauge(ForceBarTexture, fx, by, bwF, bh, ForceFillCyan, fp, fpMax);
-        DrawShieldPools(comp[k], vx, by, bw, bh, scale, ctrl, false);
+        const int nShield = DrawShieldPools(comp[k], vx, by, bw, bh, scale, ctrl, false);
+        { const int br[4] = { vx, by, bw, bh }; visLog(vsM[k], "mbar", k + 1, nShield > 0, nShield > 0 ? "drawn" : "no-shield", br); }
         ++bars;
         static int lastV[2] = { -1, -1 }; int vs = hp * 7 + hpMax * 13 + fp * 17 + fpMax * 19;
         if (lastV[k] != vs) { lastV[k] = vs; probeLog("MENUCOMP k=%d creature=%08x hp=%d/%d fp=%d/%d card=(%d,%d,%d,%d) vit=(%d,%d,%d,%d) force=(%d,%d,%d,%d)", k, comp[k], hp, hpMax, fp, fpMax, r[0], r[1], r[2], r[3], vx, by, bw, bh, fx, by, bwF, bh); }
@@ -567,11 +593,13 @@ void KPATCH_CALL onHudDraw(const K2PsContext* c, void*) {
     struct PostDump { int* d; ~PostDump() { if (*d > 0) { glDump("POST"); --*d; } } } postDump{ &dumpFrames };
     for (int i = 0; i < K2PS_MAX_SLOTS; ++i) {
         int32_t slot = 0, cr = 0;
-        if (!g_ps.slotAt(i, &slot, &cr)) continue;
+        static VisState vsH[3];   // HUD bars: slot 0 = leader, 1-2 = companions -> VIS bar0 / bar1 / bar2
+        if (!g_ps.slotAt(i, &slot, &cr)) { if (i < 3) visLog(vsH[i], "bar", i, 0, "no-slot", nullptr); continue; }
         int v[4] = {};
         for (int k = 0; k < 4; ++k) readAt(slot, T->Slot_VitRect + 4 * k, &v[k]);
-        if (v[2] < 1 || v[2] > 400 || v[3] < 1 || v[3] > 400) continue;
+        if (v[2] < 1 || v[2] > 400 || v[3] < 1 || v[3] > 400) { if (i < 3) visLog(vsH[i], "bar", i, 0, "card-rect-zero", v); continue; }
         int n = DrawShieldPools(cr, v[0], v[1], v[2], v[3], scale, slot);
+        if (i < 3) visLog(vsH[i], "bar", i, n > 0, n > 0 ? "drawn" : "no-shield", v);
         int effCount = 0; if (effCountOff) readAt(cr, effCountOff, &effCount);
         unsigned char arrowBuff = 0, arrowDebuff = 0;
         if (arrowBuffOff) readAt(slot, arrowBuffOff, &arrowBuff);
@@ -592,6 +620,7 @@ void KPATCH_CALL onHudDraw(const K2PsContext* c, void*) {
 extern "C" {
 
 void __cdecl KPatchInit(const KPatchApi* api) {
+    KpLog_Init(api);
     g_ps.init(api, "shield-bar");
     g_ps.onConnect = onConnect;
     g_ps.add(K2PS_SNAPSHOT, K2PS_PRIO_SHIELD, onSnapshot);
