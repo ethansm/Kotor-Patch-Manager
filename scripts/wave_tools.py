@@ -18,7 +18,7 @@ Layout, all under <root>/.claude/waves/<wave_id>/ (paths inside manifest.json ar
 Repo root: --repo-root, else $WAVE_REPO_ROOT, else the parent of scripts/.
 Entries are repo-relative `path` or `path:lo-hi`. Budgets come from wave_budget.py (WAVE_OVERHEAD_TOKENS honoured).
 check: runs agent_contract.py check on each unit's reply. The worktree is shared, so a changed path outside every
-  scope is WARN, not FAIL, unless the reply claims it or it sits under one of the unit's entry directories and no
+  scope is WARN, not FAIL, unless the reply claims it or it is one of the unit's own entry files and no
   unit owns it. A missing or empty reply is MISSING. Exit 1 if any unit is FAIL or MISSING.
 report: per unit, est_tokens vs the peak context of the matching agent_usage row (matched by description; a row
   with the 40-char '...' cut still matches). Peak > 60000 is FAIL (exit 1) and prints a suggested overhead.
@@ -315,6 +315,12 @@ def entry_dir(entry):
     return posixpath.dirname(posixpath.normpath(m.group(1) if m else entry))
 
 
+def entry_path(entry):
+    """File path of a repo-relative `path` or `path:lo-hi` entry."""
+    m = re.fullmatch(RANGE_RE, entry, re.DOTALL)
+    return posixpath.normpath(m.group(1) if m else entry)
+
+
 def under_dir(path, directory):
     return directory == "" or path.startswith(directory + "/")
 
@@ -322,13 +328,13 @@ def under_dir(path, directory):
 def out_of_scope_level(path, unit, claimed, all_scopes):
     """Level of a changed path outside the unit's scope.
 
-    The worktree is shared with other sessions and sibling units, so an unclaimed path is FAIL only when it sits under
-    one of this unit's entry directories and no unit in the wave owns it. A path the reply claims is always FAIL.
+    The worktree is shared with other sessions and sibling units, so an unclaimed path is FAIL only when it is one of
+    this unit's own entry files (an agent that edits what it was reading) and no unit in the wave owns it. A path the reply claims is always FAIL.
     """
     if path in claimed:
         return "FAIL"
     owned = any(fnmatch.fnmatch(path, g) for g in all_scopes)
-    if not owned and any(under_dir(path, entry_dir(e)) for e in unit["entries"]):
+    if not owned and any(entry_path(e) == path for e in unit["entries"]):
         return "FAIL"
     return "WARN"
 
@@ -341,6 +347,10 @@ def finding_text(fails, warns):
     else:
         text = "clean"
     return " ".join(text.split()[:FINDING_WORDS])
+
+
+def nonempty_file(path):
+    return path.is_file() and path.stat().st_size > 0
 
 
 def check_unit(root, kind, baseline, unit, all_scopes):
@@ -359,6 +369,12 @@ def check_unit(root, kind, baseline, unit, all_scopes):
         for k in ("CREATED", "MODIFIED", "OUTPUT"):
             if k in fields:
                 claimed.update(ac.split_paths(fields[k][0]))
+        # .claude/waves/ is gitignored, so git cannot see the unit's own files: drop the git-based findings for paths
+        # inside the wave dir and verify claimed ones by existence instead
+        wave_dir = posixpath.dirname(unit["reply"]) + "/"
+        probs = [p for p in probs if not (p[1] in ("NOT_DIRTY", OUT_OF_SCOPE) and wave_dir in p[2])]
+        probs += [("FAIL", "WAVE_FILE_MISSING", f"{c} claimed but missing or empty")
+                  for c in sorted(claimed) if c.startswith(wave_dir) and not nonempty_file(root / c)]
         recomputed = []
         for level, code, detail in probs:
             if code == OUT_OF_SCOPE:

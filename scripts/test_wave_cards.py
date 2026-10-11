@@ -98,6 +98,11 @@ class VerifyTests(Fixture):
         self.assertEqual(proc.returncode, 1)
         self.assertIn("quote for src/a.py:10 not within 5 lines", self.card_line(proc, "wave.md#Task 1"))
 
+    def test_closing_backtick_of_anchor_does_not_open_a_quote(self):
+        # regression from the live acceptance run: "`src/a.py:10`) does not define `x`" must not read ") does not define " as a quote
+        proc = self.run_one(card_text(1, objective="Use `_c` (`src/a.py:10`) which does not define `--json`."))
+        self.assertEqual(proc.returncode, 0, proc.stdout)
+
     def test_anchor_beyond_eof(self):
         proc = self.run_one(card_text(1, objective="See `src/a.py:99`."))
         self.assertEqual(proc.returncode, 1)

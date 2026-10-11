@@ -9,7 +9,7 @@ entry     `path` or `path:lo-hi` (1-based inclusive line range; hi clamps to EOF
           Estimate = ceil(bytes/4) for .md/.txt, ceil(bytes/3.5) otherwise. Bytes are raw (CRLF counts).
 check     prints `total=<n> per_entry=[...] verdict=OK|OVER (<reasons>)`.
           total = overhead + ceil(brief_bytes/4) + sum(entries). Budget: total <= 60000, each entry <= 12000
-          tokens, at most 3 entries. overhead defaults to 10000 and is read from WAVE_OVERHEAD_TOKENS at call time.
+          tokens, at most 3 entries. overhead defaults to 45000 and is read from WAVE_OVERHEAD_TOKENS at call time.
           Exit 0 ok, 1 over budget, 2 usage or missing file.
 windows   prints contiguous `path:lo-hi` windows covering the whole file, each <= 12000 tokens (a single
           line over the cap cannot be split and gets its own window). Exit 0, 2 on a missing file.
@@ -28,7 +28,7 @@ from pathlib import Path
 TOTAL_CAP = 60000
 PER_ENTRY_CAP = 12000
 MAX_ENTRIES = 3
-DEFAULT_OVERHEAD = 10000
+DEFAULT_OVERHEAD = 45000  # measured on the ACC1 live waves: fixed Haiku context was 46-56k before any entry is read
 PROSE_SUFFIXES = (".md", ".txt")
 _ENTRY_RE = re.compile(r"(.*):(\d+)-(\d+)", re.DOTALL)
 

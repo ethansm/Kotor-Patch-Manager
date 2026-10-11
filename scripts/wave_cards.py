@@ -37,7 +37,7 @@ WINDOW_RE = re.compile(r"(.+):(\d+)-(\d+)")
 # path.ext:NNN anchor; `path:lo-hi` ranges are excluded by the lookaheads.
 ANCHOR_RE = re.compile(r"(?<![\w./-])((?:[\w.-]+/)*[\w.-]+\.[A-Za-z0-9_]+):(\d+)(?!\d)(?!-\d)")
 # Backticked quote right after an anchor, optionally after a closing backtick and separators.
-QUOTE_AFTER_RE = re.compile(r"`?[\s:,;()\-–—]*`([^`\n]+)`")
+QUOTE_AFTER_RE = re.compile(r"[\s:,;()\-–—]*`([^`\n]+)`")
 PATHLIKE_RE = re.compile(r"[\w./-]+\.\w+(?::\d+(?:-\d+)?)?")
 
 
@@ -210,7 +210,9 @@ def _check_anchors(card, root, cache):
             if not 1 <= lineno <= len(lines):
                 reasons.append(f"anchor {label} outside file ({len(lines)} lines)")
                 continue
-            quote_match = QUOTE_AFTER_RE.match(line[m.end():])
+            rest = line[m.end():]
+            # a backtick right after the anchor closes the anchor's own span; it never opens the quote
+            quote_match = QUOTE_AFTER_RE.match(rest[1:] if rest.startswith("`") else rest)
             if not quote_match:
                 continue
             quote = _squash(quote_match.group(1))

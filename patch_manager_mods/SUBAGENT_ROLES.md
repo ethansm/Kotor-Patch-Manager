@@ -91,7 +91,7 @@ Backend in Claude Code: native `Agent` calls with `model: haiku`. No `oc-*` back
 
 **Budget gate**
 - Per task: <= 60k tokens. Hard ceiling 100k (measured Haiku peaks hit ~98k).
-- Estimate: `E = 10000 overhead + brief_bytes/4 + sum(entry est)`. Entry est: code 3.5 bytes/token, prose 4 bytes/token.
+- Estimate: `E = 45000 overhead (measured fixed Haiku context on the ACC1 live waves: 46-56k peak with 0.6-1.7k of entries; override with WAVE_OVERHEAD_TOKENS) + brief_bytes/4 + sum(entry est)`. Entry est: code 3.5 bytes/token, prose 4 bytes/token.
 - Limits: <= 3 entries per unit; each entry <= 12k tokens.
 - Tools: `python3 scripts/wave_budget.py check <entry>...`; `python3 scripts/wave_budget.py windows <path>`.
 

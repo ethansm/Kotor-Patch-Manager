@@ -149,7 +149,7 @@ class CheckTests(Fixture):
             self.assertEqual(W.check([p])["total"], 20010)
         with mock.patch.dict(os.environ):
             os.environ.pop("WAVE_OVERHEAD_TOKENS", None)
-            self.assertEqual(W.check([p])["total"], 10010)
+            self.assertEqual(W.check([p])["total"], W.DEFAULT_OVERHEAD + 10)
 
     def test_check_missing_file_raises(self):
         with self.assertRaises(FileNotFoundError):

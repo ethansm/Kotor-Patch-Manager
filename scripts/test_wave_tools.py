@@ -293,6 +293,23 @@ class WaveToolsTest(unittest.TestCase):
                       units["u01"]["problems"])
         self.assertEqual(units["u02"]["status"], "PASS")
 
+    def test_gitignored_wave_dir_outputs_are_checked_by_existence(self):
+        # regression from the live acceptance run: .claude/waves/ is gitignored, so git shows no change for a drafter's card
+        self.write(".gitignore", "/.claude/waves/\n")
+        self.assertEqual(self.cli("new", "w1", "--kind", "worker")[0], 0)
+        card = ".claude/waves/w1/cards/a.md"
+        self.assertEqual(self.cli("add", "w1", "--id", "u01", "--task", "Draft the card for a",
+                                  "--entries", "src/a.py:1-10", "--scope", card)[0], 0)
+        reply = f"CREATED: {card}, .claude/waves/w1/u01.reply.txt\nMODIFIED: None\nTESTS: None\nNOTES: None\nSTATUS: PASS\n"
+        self.reply("u01", reply)
+        _, units, _ = self.check_json()
+        self.assertEqual(units["u01"]["status"], "FAIL")
+        self.assertIn("WAVE_FILE_MISSING", [p["code"] for p in units["u01"]["problems"]])
+        self.write(card, "### Task a: x\n")
+        code, units, rerun = self.check_json()
+        self.assertEqual((code, rerun), (0, []))
+        self.assertEqual(units["u01"]["status"], "PASS")
+
     def test_unrelated_dirty_path_only_warns(self):
         self.start_worker_wave()
         self.write("src/b.py")
@@ -305,6 +322,19 @@ class WaveToolsTest(unittest.TestCase):
         self.assertEqual(rerun, [])
         self.assertEqual(units["u01"]["status"], "PASS")
         self.assertIn({"level": "WARN", "code": "OUT_OF_SCOPE", "detail": "scratch/other.txt outside src/b.py"},
+                      units["u01"]["problems"])
+
+    def test_other_session_edit_in_entry_dir_only_warns(self):
+        # regression from the live acceptance run: a file another session edits next to the entries is not the unit's fault
+        self.start_worker_wave()
+        self.write("src/b.py")
+        self.write("src/c.py")
+        self.write("src/other_session.py")
+        self.reply("u01", worker_reply("src/b.py"))
+        self.reply("u02", worker_reply("src/c.py"))
+        code, units, _ = self.check_json()
+        self.assertEqual(code, 0)
+        self.assertIn({"level": "WARN", "code": "OUT_OF_SCOPE", "detail": "src/other_session.py outside src/b.py"},
                       units["u01"]["problems"])
 
     def test_sibling_unit_edit_under_entry_dir_is_not_a_failure(self):
