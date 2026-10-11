@@ -34,6 +34,10 @@ kdb_backup_*.db
 /.claude/review/verify/adjudications/
 /.claude/review/raw/
 /.claude/review/packets/
+# work/ is written by the review writers; phaseG/ and phaseH/ hold hand-written recon notes that handoffs cite
+/.claude/review/work/*
+!/.claude/review/work/phaseG/
+!/.claude/review/work/phaseH/
 /tests/.cache/
 /.claude/contract_baseline.tsv
 /.claude/master_ledger_facts.json
