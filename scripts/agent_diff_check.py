@@ -97,6 +97,27 @@ def run_build_checks(mods):
     return res.returncode == 0, res.stdout + res.stderr
 
 
+_SUMMARY_RE = re.compile(r"(\d+) passed, (\d+) failed, (\d+) error, (\d+) skipped \((\d+) items\)")
+
+
+def tests_ran_ok(returncode, output):
+    """Requires evidence that tests ran and passed: `run_tests.py -k` exits 0 on a 0-item match.
+
+    Returns (ok, reason); reason is empty when ok.
+    """
+    if returncode != 0:
+        return False, f"exit code {returncode}"
+    matches = _SUMMARY_RE.findall(output)
+    if not matches:
+        return False, "no run_tests summary line"
+    passed, _failed, _error, _skipped, items = (int(x) for x in matches[-1])
+    if items == 0:
+        return False, "filter matched 0 test items"
+    if passed == 0:
+        return False, "no test passed (all skipped)"
+    return True, ""
+
+
 def run_tests(test_filters):
     """Runs run_tests.py for given filters. Returns (ok, output)."""
     if not test_filters:
@@ -111,9 +132,12 @@ def run_tests(test_filters):
             all_ok = False
             outputs.append(f"run_tests.py -k {tf} timed out after {CMD_TIMEOUT_SECS}s")
             continue
-        if res.returncode != 0:
+        out = res.stdout + res.stderr
+        ok, reason = tests_ran_ok(res.returncode, out)
+        if not ok:
             all_ok = False
-        outputs.append(res.stdout + res.stderr)
+            outputs.append(f"FAIL -k {tf}: {reason}")
+        outputs.append(out)
     return all_ok, "\n".join(outputs)
 
 
@@ -133,7 +157,7 @@ def main():
     parser = argparse.ArgumentParser(description="Subagent diff, scope, and build validator.")
     parser.add_argument("--scope", nargs="+", default=None, help="Allowed glob patterns for changed files")
     parser.add_argument("--mod", nargs="+", default=None, help="Explicit mod src targets (e.g. queue_hud_src)")
-    parser.add_argument("--test", nargs="+", default=None, help="Test substrings to run via run_tests.py")
+    parser.add_argument("--test", nargs="+", default=None, help="Test substrings to run via run_tests.py -k; a filter matching 0 tests or passing none fails the gate")
     parser.add_argument("--baseline", default=None, help="Baseline snapshot file (default: .claude/contract_baseline.tsv if present)")
     parser.add_argument("--patch-out", default=None, help="Path to write revert patch (default: .claude/subagent_runs/latest.patch)")
     parser.add_argument("--subagent", help="Subagent role or identity being verified (e.g. opencode:code)")
