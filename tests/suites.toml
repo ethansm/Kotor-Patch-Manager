@@ -208,6 +208,30 @@ requires = ["~/.claude/skills/deep-haiku-review/bundle/engine/prep.py"]
 timeout_s = 120
 
 [[suite]]
+name = "swarm-bundle-record-run"
+cmd = ["python3", "-I", "~/.claude/skills/deep-haiku-review/bundle/engine/tools/record_run.py", "--self-test"]
+requires = ["~/.claude/skills/deep-haiku-review/bundle/engine/tools/record_run.py"]
+timeout_s = 120
+
+[[suite]]
+name = "swarm-bundle-schema-min"
+cmd = ["python3", "-I", "~/.claude/skills/deep-haiku-review/bundle/engine/tools/schema_min.py", "--self-test"]
+requires = ["~/.claude/skills/deep-haiku-review/bundle/engine/tools/schema_min.py"]
+timeout_s = 120
+
+[[suite]]
+name = "swarm-bundle-budget"
+cmd = ["python3", "-I", "~/.claude/skills/deep-haiku-review/bundle/engine/tools/budget.py", "--self-test"]
+requires = ["~/.claude/skills/deep-haiku-review/bundle/engine/tools/budget.py"]
+timeout_s = 120
+
+[[suite]]
+name = "swarm-lib-runner-hardening"
+cmd = ["python3", "-I", "~/.claude/swarm/tests/test_runner_hardening.py"]
+requires = ["~/.claude/swarm/tests/test_runner_hardening.py", "~/.claude/skills/deep-haiku-review/bundle/engine/run_map.sh"]
+timeout_s = 600
+
+[[suite]]
 name = "swarm-fix-fcommon"
 cmd = ["python3", "-I", "fcommon.py", "--self-test"]
 cwd = "$REPO/.claude/review/fix"
