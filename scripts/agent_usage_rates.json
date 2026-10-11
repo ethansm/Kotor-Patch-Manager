@@ -1,15 +1,43 @@
 {
-  "as_of": "2026-10-10",
+  "as_of": "2026-10-11",
   "tier_threshold_tokens": 100000,
   "currency": "USD per million tokens",
   "note": "Estimates only. Priced per request; tier picked by that request's own prompt size (input + cache write + cache read).",
   "models": [
     {
       "match": "^claude-haiku-5-5(-\\d{8})?$",
-      "source": "input, output, cache_write_5m, cache_read mirrored from ~/.claude/skills/deep-haiku-review/bundle/engine/merge.py:33-45; cache_write_1h is not in merge.py (third-party listing, 2x input); no rate verified against an Anthropic price page",
-      "verified": {"input": false, "output": false, "cache_write_5m": false, "cache_write_1h": false, "cache_read": false},
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing, read 2026-10-11 (Claude Haiku 5.5 rows: up to 100,000 tokens = low, over 100,000 = high)",
+      "verified": {"input": true, "output": true, "cache_write_5m": true, "cache_write_1h": true, "cache_read": true},
       "low": {"input": 0.10, "output": 0.50, "cache_write_5m": 0.125, "cache_write_1h": 0.20, "cache_read": 0.01},
       "high": {"input": 0.50, "output": 2.50, "cache_write_5m": 0.625, "cache_write_1h": 1.00, "cache_read": 0.05}
+    },
+    {
+      "match": "^claude-sonnet-5-5(-\\d{8})?$",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing, read 2026-10-11 (Claude Sonnet 5.5 row; cache hit 0.05x input; no long-prompt tier)",
+      "verified": {"input": true, "output": true, "cache_write_5m": true, "cache_write_1h": true, "cache_read": true},
+      "low": {"input": 2.00, "output": 10.00, "cache_write_5m": 2.50, "cache_write_1h": 4.00, "cache_read": 0.10},
+      "high": {"input": 2.00, "output": 10.00, "cache_write_5m": 2.50, "cache_write_1h": 4.00, "cache_read": 0.10}
+    },
+    {
+      "match": "^claude-opus-5-5(-\\d{8})?$",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing, read 2026-10-11 (Claude Opus 5.5 row; cache hit 0.05x input; no long-prompt tier)",
+      "verified": {"input": true, "output": true, "cache_write_5m": true, "cache_write_1h": true, "cache_read": true},
+      "low": {"input": 4.00, "output": 20.00, "cache_write_5m": 5.00, "cache_write_1h": 8.00, "cache_read": 0.20},
+      "high": {"input": 4.00, "output": 20.00, "cache_write_5m": 5.00, "cache_write_1h": 8.00, "cache_read": 0.20}
+    },
+    {
+      "match": "^claude-sonnet-5(-\\d{8})?$",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing, read 2026-10-11 (Claude Sonnet 5 row; $2/$10 is now standard price; cache hit 0.1x input; no long-prompt tier)",
+      "verified": {"input": true, "output": true, "cache_write_5m": true, "cache_write_1h": true, "cache_read": true},
+      "low": {"input": 2.00, "output": 10.00, "cache_write_5m": 2.50, "cache_write_1h": 4.00, "cache_read": 0.20},
+      "high": {"input": 2.00, "output": 10.00, "cache_write_5m": 2.50, "cache_write_1h": 4.00, "cache_read": 0.20}
+    },
+    {
+      "match": "^claude-haiku-4-5(-\\d{8})?$",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing, read 2026-10-11 (Claude Haiku 4.5 row; cache hit 0.1x input; no long-prompt tier)",
+      "verified": {"input": true, "output": true, "cache_write_5m": true, "cache_write_1h": true, "cache_read": true},
+      "low": {"input": 1.00, "output": 5.00, "cache_write_5m": 1.25, "cache_write_1h": 2.00, "cache_read": 0.10},
+      "high": {"input": 1.00, "output": 5.00, "cache_write_5m": 1.25, "cache_write_1h": 2.00, "cache_read": 0.10}
     }
   ]
 }

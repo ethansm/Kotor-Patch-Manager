@@ -129,7 +129,7 @@ class Pricing(Base):
         by_id = {a["id"]: a for a in json.loads(self.cli("--json")[1])["agents"]}
         self.assertFalse(by_id["cccc1111"]["flagged"])
         self.assertTrue(by_id["cccc2222"]["flagged"])
-        self.assertIsNone(by_id["cccc2222"]["cost_usd"])
+        self.assertIsNotNone(by_id["cccc2222"]["cost_usd"])
 
     def test_alias_meta_ignored_usage_model_wins(self):
         self.agent("dddd1111", [rec("r1", "claude-haiku-4-5-20251001", 10)], meta={"agentType": "x", "model": "haiku"})
@@ -284,7 +284,7 @@ class Filters(Base):
 
     def test_legend_only_when_flag_or_na(self):
         self.assertNotIn("rates as of", self.cli()[1])
-        self.agent("yyyy1111", [rec("r1", "claude-sonnet-5-5", 10)])
+        self.agent("yyyy1111", [rec("r1", "claude-unknown-9-9", 10)])
         self.assertIn("rates as of", self.cli()[1])
 
     def test_no_message_text_leaks(self):
@@ -376,19 +376,21 @@ class SurvivorGaps(Base):
         self.assertNotIn("n/a =", out)
 
     def test_legend_na_only_has_no_flag_clause(self):
-        self.agent("n1000000", [rec("r1", "claude-sonnet-5-5", 10)])
+        self.agent("n1000000", [rec("r1", "claude-unknown-9-9", 10)])
         out = self.cli()[1]
         self.assertIn("n/a = no rate on file", out)
         self.assertNotIn("exceeded", out)
 
     def test_legend_quality_follows_verified_flags(self):
         self.agent("f3000000", [rec("r1", HAIKU, 150000)])
-        self.assertIn("unverified estimate", self.cli()[1])
         raw = json.loads(Path(A.RATES_PATH).read_text(encoding="utf-8"))
-        raw["models"][0]["verified"] = {k: True for k in A.RATE_KEYS}
         path = self.root / "rates.json"
+        raw["models"][0]["verified"] = {k: False for k in A.RATE_KEYS}
         path.write_text(json.dumps(raw), encoding="utf-8")
         A.RATES_PATH = path
+        self.assertIn("unverified estimate", self.cli()[1])
+        raw["models"][0]["verified"] = {k: True for k in A.RATE_KEYS}
+        path.write_text(json.dumps(raw), encoding="utf-8")
         out = self.cli()[1]
         self.assertIn(", estimate.", out)
         self.assertNotIn("unverified", out)
