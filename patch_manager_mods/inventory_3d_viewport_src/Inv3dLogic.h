@@ -214,4 +214,17 @@ inline bool rectContainsTop(float x, float y, int rx, float top, int rw, int rh)
     return x >= rx && x < rx + rw && y >= top && y < top + rh;
 }
 
+// ---------------------------------------------------------------- warning log budget (BG19)
+// Each gate allows `cap` warning lines, then exactly one marker line, then drops everything.
+enum WarnDecision { WarnEmit = 0, WarnMarker, WarnDrop };
+struct WarnGate {
+    int cap; int used = 0; bool markerDone = false;
+    explicit WarnGate(int c) : cap(c) {}
+};
+inline WarnDecision warnGate(WarnGate& g) {
+    if (g.used < g.cap) { ++g.used; return WarnEmit; }
+    if (!g.markerDone) { g.markerDone = true; return WarnMarker; }
+    return WarnDrop;
+}
+
 }  // namespace inv3d

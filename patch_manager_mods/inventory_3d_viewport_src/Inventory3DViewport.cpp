@@ -66,14 +66,18 @@ void logf(const char* fmt, ...) {
     char buf[600]; va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
     KP_LOGV(chMain, KPLOG_INFO, "%s", buf);
 }
-int g_warnLines = 0;
-constexpr int MaxWarnLines = 4000;  // warnings can fire per ShowItem call while a slot stays unusable
-void logw(const char* fmt, ...) {
-    if (g_warnLines >= MaxWarnLines) return;
-    ++g_warnLines;
-    char buf[600]; va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
-    KP_LOGV(chMain, KPLOG_WARN, "%s", buf);
+constexpr int MaxWarnLines = 4000;  // H1 bind-time warnings (one-off); shared budget
+constexpr int MaxH2WarnLines = 64;  // H2 per-ShowItem warnings get their own budget so they cannot starve H1 (BG19)
+inv3d::WarnGate g_warnAll(MaxWarnLines), g_warnH2(MaxH2WarnLines);
+void emitWarn(inv3d::WarnGate& g, const char* fmt, va_list ap) {
+    switch (inv3d::warnGate(g)) {
+    case inv3d::WarnEmit: { char buf[600]; vsnprintf(buf, sizeof buf, fmt, ap); KP_LOGV(chMain, KPLOG_WARN, "%s", buf); break; }
+    case inv3d::WarnMarker: KP_LOGV(chMain, KPLOG_WARN, "warning log cap reached; further warnings suppressed"); break;
+    default: break;
+    }
 }
+void logw(const char* fmt, ...) { va_list ap; va_start(ap, fmt); emitWarn(g_warnAll, fmt, ap); va_end(ap); }
+void logwH2(const char* fmt, ...) { va_list ap; va_start(ap, fmt); emitWarn(g_warnH2, fmt, ap); va_end(ap); }
 void loge(const char* fmt, ...) {
     char buf[600]; va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
     KP_LOGV(chMain, KPLOG_ERR, "%s", buf);
@@ -476,16 +480,16 @@ extern "C" void __cdecl ShowItem(int item, int panel) {
     static int repeatLogs = 0, detailLogs = 0;
     Slot* s = findSlot(panel);
     if (!s) { logf("H2: no slot for panel=%08x", panel); return; }
-    if (!s->usable) { logw("H2: slot unusable (panel=%08x)", panel); return; }
+    if (!s->usable) { logwH2("H2: slot unusable (panel=%08x)", panel); return; }
     if (!item) { logf("H2: null item"); return; }
     unsigned char* view = s->block;
 
     int id = -1; unsigned char v0 = 0, v1 = 0;
     if (!readAt<int>(item, 0xc, &id) || !readAt<unsigned char>(item, ItemVarOff, &v0) || !readAt<unsigned char>(item, ItemVarOff + 2, &v1)) {
-        logw("H2: item %08x unreadable", item); return;
+        logwH2("H2: item %08x unreadable", item); return;
     }
     int var = v0 | (v1 << 8);
-    if (id < 0 || id >= kItemRows) { logw("H2: base item id %d out of range", id); return; }
+    if (id < 0 || id >= kItemRows) { logwH2("H2: base item id %d out of range", id); return; }
     int cat = kItemCategory[id];
     if ((g_cfg.onlyWeaponsArmor) && !kIsWeaponOrArmor[id]) cat = 0;
     if (item == s->lastItem && id == s->lastBase && var == s->lastVar) {
@@ -500,7 +504,7 @@ extern "C" void __cdecl ShowItem(int item, int panel) {
         logf("H2: item %08x base=%d var=%04x cat=0 (no preview), models %d -> %d", item, id, var, n, modelCount(view));
         return;
     }
-    if (n < 1) { logw("H2: light model gone (count=%d), slot unusable", n); s->usable = false; return; }
+    if (n < 1) { logwH2("H2: light model gone (count=%d), slot unusable", n); s->usable = false; return; }
 
     // Design 4: missing/EMPTY variation -> substitute var 1 (item bytes restored on every path)
     int effVar = v0; bool substituted = false;

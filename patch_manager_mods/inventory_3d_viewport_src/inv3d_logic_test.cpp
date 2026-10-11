@@ -534,7 +534,38 @@ static void testRects() {
     KT_CHECK(!rectContainsTop(150, 1500, 100, top, 200, 300) && !rectContainsTop(150, 150, 100, top, 200, 300));
 }
 
+// ---- warning log budget (BG19) -------------------------------------------------------------------------------------
+static void testWarnGate() {
+    WarnGate g(3);
+    KT_CHECK(warnGate(g) == WarnEmit); KT_CHECK(warnGate(g) == WarnEmit); KT_CHECK(warnGate(g) == WarnEmit);
+    KT_CHECK(warnGate(g) == WarnMarker);                       // cap reached: marker exactly once
+    for (int i = 0; i < 100; ++i) KT_CHECK(warnGate(g) == WarnDrop);
+    KT_CHECK(g.used == 3 && g.markerDone);
+}
+static void testWarnGateMarkerOnce() {
+    WarnGate g(1);
+    int markers = 0, emits = 0;
+    for (int i = 0; i < 50; ++i) {
+        WarnDecision d = warnGate(g);
+        if (d == WarnMarker) ++markers; else if (d == WarnEmit) ++emits;
+    }
+    KT_CHECK_EQ(markers, 1); KT_CHECK_EQ(emits, 1);
+}
+static void testWarnGateH1NotStarved() {
+    // H2 spam on its own gate must leave the H1 gate's full budget untouched.
+    WarnGate h1(4000), h2(64);
+    for (int i = 0; i < 10000; ++i) warnGate(h2);
+    KT_CHECK(h2.markerDone && h2.used == 64);
+    KT_CHECK(!h1.markerDone && h1.used == 0);
+    int h1Emits = 0;
+    for (int i = 0; i < 100; ++i) if (warnGate(h1) == WarnEmit) ++h1Emits;
+    KT_CHECK_EQ(h1Emits, 100);
+}
+
 int main() {
+    testWarnGate();
+    testWarnGateMarkerOnce();
+    testWarnGateH1NotStarved();
     testTrim();
     testParseFloats();
     testSplitIniLine();
