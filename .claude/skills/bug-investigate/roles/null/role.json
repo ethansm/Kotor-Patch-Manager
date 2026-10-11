@@ -1,0 +1,7 @@
+{
+  "name": "null",
+  "model": "claude-haiku-5-5",
+  "effort": null,
+  "tools": [],
+  "tier": "haiku"
+}

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "bug-investigate verify output",
+  "description": "A verdict on ONE hypothesis, with cited reasons. reasons may be empty here on purpose: the quote checker, not this schema, rejects uncited reasons.",
+  "type": "object",
+  "required": ["unit_id", "hypothesis_id", "verdict", "reasons"],
+  "additionalProperties": false,
+  "properties": {
+    "unit_id": {"type": "string", "minLength": 1},
+    "hypothesis_id": {"type": "string", "minLength": 1},
+    "verdict": {"type": "string", "enum": ["supported", "rejected", "inconclusive"]},
+    "reasons": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["text", "evidence_id", "quote"],
+        "additionalProperties": false,
+        "properties": {
+          "text": {"type": "string", "minLength": 1},
+          "evidence_id": {"type": "string", "minLength": 1},
+          "quote": {"type": "string"}
+        }
+      }
+    }
+  }
+}

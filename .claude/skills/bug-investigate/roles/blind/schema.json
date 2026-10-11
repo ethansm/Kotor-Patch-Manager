@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "bug-investigate blind output",
+  "description": "Up to 5 log-grounded hypotheses. evidence may be empty here on purpose: the quote checker, not this schema, rejects uncited hypotheses.",
+  "type": "object",
+  "required": ["unit_id", "hypotheses"],
+  "additionalProperties": false,
+  "properties": {
+    "unit_id": {"type": "string", "minLength": 1},
+    "hypotheses": {
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "required": ["id", "claim", "mechanism", "evidence", "confidence", "falsifier"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,15}$"},
+          "claim": {"type": "string", "minLength": 1},
+          "mechanism": {"type": "string", "minLength": 1},
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["evidence_id", "quote"],
+              "additionalProperties": false,
+              "properties": {
+                "evidence_id": {"type": "string", "minLength": 1},
+                "quote": {"type": "string"}
+              }
+            }
+          },
+          "confidence": {"type": "string", "enum": ["low", "medium", "high"]},
+          "falsifier": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}
