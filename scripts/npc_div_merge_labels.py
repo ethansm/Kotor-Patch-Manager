@@ -30,7 +30,17 @@ OUT = REPO / "patch_manager_mods/npc_diversity_src/texture_labels.json"
 UV_MIN = 0.25
 VANILLA_SLOTS = range(1, 12)
 # Orchestrator adjudications (recorded, reviewed in the human spot-check): slot -> {family: verdict}.
-ADJUDICATED = {"n_commm34": {"FatM": "yes"}}   # fat-native provenance (n_fatcomm01) + uv 0.41; the vote was unsure only because the fat atlas differs
+ADJUDICATED = {"n_commm34": {"FatM": "yes"},
+               "n_commm16": {"M": "yes"},   # user liked it in the spot-check; plain MD mesh, uv 0.27: trial slot, check at Gate 2
+               "n_commf17": {"F": "yes"}}   # same: plain FD mesh, uv 0.20, vote unsure: trial slot, check at Gate 2   # fat-native provenance (n_fatcomm01) + uv 0.41; the vote was unsure only because the fat atlas differs
+# Textures authored for OTHER body meshes (user liked them: robes, armor, uniforms). Not valid on the plain N_CommM/F mesh;
+# usable through appearance rows that use that mesh (row remap, later tier). provenance prefix -> (mesh, rows).
+ALT_BODY = {
+    "n_ondcomm": ("N_OndComM1", [472, 473, 474, 475, 476, 477, 478]),
+    "n_ondcomf": ("N_OndComF1", [502, 503, 504, 505, 506]),
+    "n_sithcomm": ("N_SithComM", [43, 296, 297, 298, 299, 300, 302]),
+    "n_sithcomf": ("N_SithComF", [42, 291, 292, 293, 294, 295, 301]),
+}
 FLAGGED = {"dirty_poor": ("ragged", "blood", "tattered", "rags")}
 
 
@@ -89,7 +99,8 @@ def decide(slot_no, gender, src, uv, votes):
     adj = ADJUDICATED.get(("n_comm%s%02d" % (gender.lower(), slot_no)), {})
     for k, verdict in adj.items():
         fam[k] = verdict
-    return {"category": cat, "layout_ok": fam, "uv_corr": uv, "outfit": outfit, "min_conf": min_conf,
+    alt = next(({"mesh": m, "rows": r} for pre, (m, r) in ALT_BODY.items() if (src or "").startswith(pre)), None)
+    return {"alt_body": alt, "category": cat, "layout_ok": fam, "uv_corr": uv, "outfit": outfit, "min_conf": min_conf,
             "source": src, "fat_native": fat, "vanilla": vanilla, "flags": flags, "review": review,
             "adjudicated": adj,
             "keep": bool(vanilla or any(x in ("yes", "unsure") for x in fam.values()))}

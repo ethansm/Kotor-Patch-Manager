@@ -17,7 +17,8 @@
     13,
     14,
     15,
-    16
+    16,
+    17
    ],
    "FatF": [
     35
@@ -40,12 +41,12 @@
     12,
     13,
     14,
-    15
+    15,
+    16
    ]
   },
   "pool_files": 70,
   "rejected_files": [
-   "n_commf17",
    "n_commf18",
    "n_commf19",
    "n_commf20",
@@ -92,6 +93,7 @@
  "slots": {
   "n_commf01": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -113,6 +115,7 @@
   },
   "n_commf02": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -134,6 +137,7 @@
   },
   "n_commf03": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -155,6 +159,7 @@
   },
   "n_commf04": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -176,6 +181,7 @@
   },
   "n_commf05": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -197,6 +203,7 @@
   },
   "n_commf06": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -218,6 +225,7 @@
   },
   "n_commf07": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -239,6 +247,7 @@
   },
   "n_commf08": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -260,6 +269,7 @@
   },
   "n_commf09": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -281,6 +291,7 @@
   },
   "n_commf10": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -302,6 +313,7 @@
   },
   "n_commf11": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -323,6 +335,7 @@
   },
   "n_commf12": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -344,6 +357,7 @@
   },
   "n_commf13": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -365,6 +379,7 @@
   },
   "n_commf14": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -386,6 +401,7 @@
   },
   "n_commf15": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -407,6 +423,7 @@
   },
   "n_commf16": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -427,16 +444,19 @@
    "vanilla": false
   },
   "n_commf17": {
-   "adjudicated": {},
+   "adjudicated": {
+    "F": "yes"
+   },
+   "alt_body": null,
    "category": "blank_garbled",
    "fat_native": false,
    "flags": [
     "dirty_poor"
    ],
    "gender": "F",
-   "keep": false,
+   "keep": true,
    "layout_ok": {
-    "F": "no",
+    "F": "yes",
     "FatF": "no",
     "FatM": "no",
     "M": "no"
@@ -455,6 +475,7 @@
   },
   "n_commf18": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "face_head",
    "fat_native": false,
    "flags": [],
@@ -476,6 +497,7 @@
   },
   "n_commf19": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "face_head",
    "fat_native": false,
    "flags": [],
@@ -497,6 +519,7 @@
   },
   "n_commf20": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "face_head",
    "fat_native": false,
    "flags": [],
@@ -518,6 +541,7 @@
   },
   "n_commf21": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "face_head",
    "fat_native": false,
    "flags": [],
@@ -539,6 +563,7 @@
   },
   "n_commf22": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "face_head",
    "fat_native": false,
    "flags": [],
@@ -560,6 +585,7 @@
   },
   "n_commf23": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "face_head",
    "fat_native": false,
    "flags": [],
@@ -581,6 +607,7 @@
   },
   "n_commf24": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "face_head",
    "fat_native": false,
    "flags": [],
@@ -602,6 +629,7 @@
   },
   "n_commf25": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "face_head",
    "fat_native": false,
    "flags": [],
@@ -623,6 +651,7 @@
   },
   "n_commf26": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "face_head",
    "fat_native": false,
    "flags": [],
@@ -644,6 +673,7 @@
   },
   "n_commf27": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "face_head",
    "fat_native": false,
    "flags": [],
@@ -665,6 +695,7 @@
   },
   "n_commf28": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "face_head",
    "fat_native": false,
    "flags": [],
@@ -686,6 +717,7 @@
   },
   "n_commf29": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "face_head",
    "fat_native": false,
    "flags": [],
@@ -707,6 +739,7 @@
   },
   "n_commf30": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "face_head",
    "fat_native": false,
    "flags": [],
@@ -728,6 +761,7 @@
   },
   "n_commf31": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "face_head",
    "fat_native": false,
    "flags": [],
@@ -749,6 +783,7 @@
   },
   "n_commf32": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "face_head",
    "fat_native": false,
    "flags": [],
@@ -770,6 +805,16 @@
   },
   "n_commf33": {
    "adjudicated": {},
+   "alt_body": {
+    "mesh": "N_OndComF1",
+    "rows": [
+     502,
+     503,
+     504,
+     505,
+     506
+    ]
+   },
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -791,6 +836,18 @@
   },
   "n_commf34": {
    "adjudicated": {},
+   "alt_body": {
+    "mesh": "N_SithComF",
+    "rows": [
+     42,
+     291,
+     292,
+     293,
+     294,
+     295,
+     301
+    ]
+   },
    "category": "uniform",
    "fat_native": false,
    "flags": [],
@@ -812,6 +869,7 @@
   },
   "n_commf35": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": true,
    "flags": [],
@@ -833,6 +891,7 @@
   },
   "n_commm01": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -854,6 +913,7 @@
   },
   "n_commm02": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -875,6 +935,7 @@
   },
   "n_commm03": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -896,6 +957,7 @@
   },
   "n_commm04": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -917,6 +979,7 @@
   },
   "n_commm05": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -938,6 +1001,7 @@
   },
   "n_commm06": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -959,6 +1023,7 @@
   },
   "n_commm07": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -980,6 +1045,7 @@
   },
   "n_commm08": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -1001,6 +1067,7 @@
   },
   "n_commm09": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -1022,6 +1089,7 @@
   },
   "n_commm10": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -1043,6 +1111,7 @@
   },
   "n_commm11": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -1064,6 +1133,7 @@
   },
   "n_commm12": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -1085,6 +1155,7 @@
   },
   "n_commm13": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -1106,6 +1177,7 @@
   },
   "n_commm14": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -1127,6 +1199,7 @@
   },
   "n_commm15": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
@@ -1147,7 +1220,10 @@
    "vanilla": false
   },
   "n_commm16": {
-   "adjudicated": {},
+   "adjudicated": {
+    "M": "yes"
+   },
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [
@@ -1159,7 +1235,7 @@
     "F": "no",
     "FatF": "no",
     "FatM": "no",
-    "M": "unsure"
+    "M": "yes"
    },
    "min_conf": 3,
    "outfit": "ragged blood-stained tan and rust clothes",
@@ -1173,6 +1249,7 @@
   },
   "n_commm17": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "face_head",
    "fat_native": false,
    "flags": [],
@@ -1194,6 +1271,7 @@
   },
   "n_commm18": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "face_head",
    "fat_native": false,
    "flags": [],
@@ -1215,6 +1293,7 @@
   },
   "n_commm19": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "face_head",
    "fat_native": false,
    "flags": [],
@@ -1236,6 +1315,7 @@
   },
   "n_commm20": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "face_head",
    "fat_native": false,
    "flags": [],
@@ -1257,6 +1337,7 @@
   },
   "n_commm21": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "face_head",
    "fat_native": false,
    "flags": [],
@@ -1278,6 +1359,7 @@
   },
   "n_commm22": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "face_head",
    "fat_native": false,
    "flags": [],
@@ -1299,6 +1381,7 @@
   },
   "n_commm23": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "face_head",
    "fat_native": false,
    "flags": [],
@@ -1320,6 +1403,7 @@
   },
   "n_commm24": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "face_head",
    "fat_native": false,
    "flags": [],
@@ -1341,6 +1425,7 @@
   },
   "n_commm25": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "face_head",
    "fat_native": false,
    "flags": [],
@@ -1362,6 +1447,7 @@
   },
   "n_commm26": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "face_head",
    "fat_native": false,
    "flags": [],
@@ -1383,6 +1469,7 @@
   },
   "n_commm27": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "face_head",
    "fat_native": false,
    "flags": [],
@@ -1404,6 +1491,18 @@
   },
   "n_commm28": {
    "adjudicated": {},
+   "alt_body": {
+    "mesh": "N_OndComM1",
+    "rows": [
+     472,
+     473,
+     474,
+     475,
+     476,
+     477,
+     478
+    ]
+   },
    "category": "robe",
    "fat_native": false,
    "flags": [],
@@ -1425,6 +1524,18 @@
   },
   "n_commm29": {
    "adjudicated": {},
+   "alt_body": {
+    "mesh": "N_OndComM1",
+    "rows": [
+     472,
+     473,
+     474,
+     475,
+     476,
+     477,
+     478
+    ]
+   },
    "category": "robe",
    "fat_native": false,
    "flags": [],
@@ -1446,6 +1557,18 @@
   },
   "n_commm30": {
    "adjudicated": {},
+   "alt_body": {
+    "mesh": "N_OndComM1",
+    "rows": [
+     472,
+     473,
+     474,
+     475,
+     476,
+     477,
+     478
+    ]
+   },
    "category": "robe",
    "fat_native": false,
    "flags": [],
@@ -1467,6 +1590,7 @@
   },
   "n_commm31": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "armor",
    "fat_native": false,
    "flags": [],
@@ -1488,6 +1612,7 @@
   },
   "n_commm32": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "armor",
    "fat_native": false,
    "flags": [],
@@ -1509,6 +1634,7 @@
   },
   "n_commm33": {
    "adjudicated": {},
+   "alt_body": null,
    "category": "armor",
    "fat_native": false,
    "flags": [],
@@ -1532,6 +1658,7 @@
    "adjudicated": {
     "FatM": "yes"
    },
+   "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": true,
    "flags": [],
@@ -1557,6 +1684,18 @@
   },
   "n_commm35": {
    "adjudicated": {},
+   "alt_body": {
+    "mesh": "N_SithComM",
+    "rows": [
+     43,
+     296,
+     297,
+     298,
+     299,
+     300,
+     302
+    ]
+   },
    "category": "uniform",
    "fat_native": false,
    "flags": [],

@@ -45,9 +45,19 @@ class DecideTests(unittest.TestCase):
         self.assertEqual(d["layout_ok"]["M"], "no")
 
     def test_ragged_outfit_held_back(self):
-        d = M.decide(16, "M", "n_commmd01", 0.27, [vote(outfit="ragged blood-stained clothes", conf=3)])
-        self.assertEqual(d["layout_ok"]["M"], "unsure")
+        d = M.decide(30, "F", "n_commfx", 0.27, [vote(outfit="ragged blood-stained clothes", conf=3)])
+        self.assertEqual(d["layout_ok"]["F"], "unsure")
         self.assertTrue(d["flags"])
+
+    def test_alt_body_recorded_for_other_meshes(self):
+        d = M.decide(28, "M", "n_ondcomm01", -0.09, [vote("no", "robe", 4)])
+        self.assertFalse(d["keep"])
+        self.assertEqual(d["alt_body"]["mesh"], "N_OndComM1")
+        self.assertIn(472, d["alt_body"]["rows"])
+
+    def test_user_trial_slots_allowed(self):
+        self.assertEqual(M.decide(16, "M", "n_commmd01", 0.27, [vote(outfit="ragged clothes", conf=3)])["layout_ok"]["M"], "yes")
+        self.assertEqual(M.decide(17, "F", "n_commfd01", 0.20, [vote("unsure", "blank_garbled", 2)])["layout_ok"]["F"], "yes")
 
     def test_adjudication_applies(self):
         d = M.decide(34, "M", "n_fatcomm01", 0.41, [vote("unsure", conf=2)])
