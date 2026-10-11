@@ -44,7 +44,7 @@ static Hook pOnSize, pSetTop, pSetBottom, pW1, pW2, pW3, pW5;
 static Hook2 pW4;
 static KPatchInitFn pInit;
 static bool g_isProbe;
-static const char* g_ver;       // "1.0.2" or "1.0.2-probe"
+static const char* g_ver;       // "0.1.0" or "0.1.0-probe"
 static uint8_t* g_mgr;          // heap, 0x100 bytes
 static uint8_t* g_frame;        // heap, 0x80 bytes
 static uint8_t* g_lb;           // heap, 0x100 bytes
@@ -466,7 +466,7 @@ int main(int argc, char** argv) {
     pW1 = (Hook)GetProcAddress(m, "dlbProbeW1"); pW2 = (Hook)GetProcAddress(m, "dlbProbeW2"); pW3 = (Hook)GetProcAddress(m, "dlbProbeW3");
     pW4 = (Hook2)GetProcAddress(m, "dlbProbeW4"); pW5 = (Hook)GetProcAddress(m, "dlbProbeW5");
     g_isProbe = pW1 != nullptr;
-    g_ver = g_isProbe ? "1.0.2-probe" : "1.0.2";
+    g_ver = g_isProbe ? "0.1.0-probe" : "0.1.0";
     printf("variant: %s (version %s)\n", g_isProbe ? "probe" : "shipping", g_ver);
     if (probeMode && !g_isProbe) { printf("SKIP %s: shipping DLL (no dlbProbeW1 export)\n", mode); return 0; }
     if (g_isProbe) {

@@ -33,6 +33,15 @@ Python for the gate is `.venv/bin/python` (the .sh wrapper picks it). kpm_status
 
 Intentional states today (do not "fix"): NOT-LIVE for `k2-wrap-measure-fix`, `load-hang-probe`, `save-events`; LIVE-OTHER for `mouse-probe`, `portrait-slots`. `kpm_hotswap.py` refuses a batch containing NOT-LIVE, DIRTY, REINSTALL or LIVE-OTHER mods before writing anything; LIVE mods are skipped; MIRROR and REBUILD need `--prepare`.
 
+## 2b. Versioning (pre-1.0)
+
+- Format: `0.MINOR.PATCH`, plus an existing suffix while in flight (`-dev`, `-probe`, `-rc`).
+- Stay below `1.0.0` until the PR into `LaneDibello/Kotor-Patch-Manager` is opened. `1.0.0` means upstream-ready.
+- Bump MINOR (`0.x.0`) for big jumps or new features. Bump PATCH (`0.x.y`) for fixes and small changes.
+- One-time migration (2026-10-11): every pre-1.0 `X.Y.Z` was mapped to `0.X.Y` (drop Z), e.g. `1.4.1` → `0.1.4`, `2.0.1` → `0.2.0`. Suffixes kept. The dialogue-letterbox probe folder is `0.1.0-probe2`, so it does not clash with the shipping probe build's `0.1.0-probe`. `kpm_status` picks one dir per id: the one matching the KPM copy, else the newest non-`-probe` dir, and `-probe` dirs only when no release dir exists.
+- Source of truth: `version` in `patch_manager_mods/<mod>_src/manifest.toml`. `kpm_status.py` shows it per id.
+- Before install, the version must match the expected version string in the mod's log (section 7).
+
 ## 3. Build
 
 | Step | Command | Notes |

@@ -715,7 +715,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID) {
         auto nt = reinterpret_cast<const IMAGE_NT_HEADERS*>(g_exeLo + dos->e_lfanew);
         g_exeHi = g_exeLo + nt->OptionalHeader.SizeOfImage;
         if (FILE* cf = fopen("hangprobe_debug.txt", "r")) { char l[64]; while (fgets(l, sizeof l, cf)) { if (!strncmp(l, "fix=auto", 8)) g_fixAuto = true; if (!strncmp(l, "fixdelay=", 9)) { long v = atol(l + 9); if (v >= 1000 && v <= 60000) g_fixDelayMs = (DWORD)v; } } fclose(cf); }
-        logf("load-hang-probe 1.4.1 loaded: attach tid=%lu exe=%08x-%08x fix=%s fixdelay=%lums", GetCurrentThreadId(), (unsigned)g_exeLo, (unsigned)g_exeHi, g_fixAuto ? "auto" : "off (log only)", g_fixDelayMs);
+        logf("load-hang-probe 0.1.4 loaded: attach tid=%lu exe=%08x-%08x fix=%s fixdelay=%lums", GetCurrentThreadId(), (unsigned)g_exeLo, (unsigned)g_exeHi, g_fixAuto ? "auto" : "off (log only)", g_fixDelayMs);
         {   // 1.2.0 file-I/O capture; "io=0" in hangprobe_debug.txt disables it
             bool ioWanted = true;
             if (FILE* cf = fopen("hangprobe_debug.txt", "r")) { char l[64]; while (fgets(l, sizeof l, cf)) if (!strncmp(l, "io=0", 4)) ioWanted = false; fclose(cf); }

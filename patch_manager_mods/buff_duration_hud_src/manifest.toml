@@ -1,7 +1,7 @@
 [patch]
 id = "buff-duration-hud"
 name = "Buff Duration HUD"
-version = "2.0.1"
+version = "0.2.0"
 author = "local"
 description = "Party HUD buff/debuff icon columns with duration drain (HUD cards and the menu companion portraits). Needs portrait-slots; the shield bar is the separate shield-bar patch since 2.0.0."
 

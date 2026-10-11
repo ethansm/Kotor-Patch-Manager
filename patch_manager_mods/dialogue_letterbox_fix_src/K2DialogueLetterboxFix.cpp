@@ -53,9 +53,9 @@ KP_LOG_PATCH("k2-dialogue-letterbox-fix");
 namespace {
 
 #ifdef DLB_PROBE
-const char* const kVersion = "1.0.2-probe";
+const char* const kVersion = "0.1.0-probe";
 #else
-const char* const kVersion = "1.0.2";
+const char* const kVersion = "0.1.0";
 #endif
 constexpr uintptr_t kConstVA = 0x009A7D30;
 const uint8_t kVanilla[8] = { 0x00, 0x00, 0x00, 0x80, 0xAA, 0xAA, 0x02, 0x40 };

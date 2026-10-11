@@ -1,7 +1,7 @@
 [patch]
 id = "k2-wrap-measure-fix"
 name = "K2 Wrap Measure Fix"
-version = "1.0.0"
+version = "0.1.0"
 author = "ethansm"
 description = "Fixes word-wrap measurement in CAurGUIStringInternal::WrapStrings so wrapped lines no longer under-measure by about 0.25 px per character"
 

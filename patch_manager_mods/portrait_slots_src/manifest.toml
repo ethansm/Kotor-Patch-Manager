@@ -1,7 +1,7 @@
 [patch]
 id = "portrait-slots"
 name = "Portrait Slots (shared party-portrait hooks)"
-version = "1.0.0"
+version = "0.1.0"
 kind = "library"
 provides = ["k2.portraitslots@1"]
 author = "local"

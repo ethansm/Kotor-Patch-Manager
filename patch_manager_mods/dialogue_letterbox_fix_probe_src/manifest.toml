@@ -1,7 +1,7 @@
 [patch]
 id = "k2-dialogue-letterbox-fix"
 name = "K2 Dialogue Letterbox Fix"
-version = "1.0.1-probe"
+version = "0.1.0-probe2"
 author = "ethansm"
 description = "PROBE BUILD (log-only windows W1-W5, INI probe=1; default off). Restores the dialogue letterbox bars on ultrawide resolutions (at 3840x1600 the vanilla bar height is negative and the bars vanish). Rewrites the 2.3333 aspect constant at 0x009A7D30 whenever the screen size changes so the bars are H/6 tall. Config: dialogue_letterbox_fix.ini (enabled, mode=h6|clamp|vanilla, log) in the game folder; log: dialogue_letterbox_fix_log.txt."
 

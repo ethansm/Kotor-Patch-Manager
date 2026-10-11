@@ -590,7 +590,7 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
         if (g_state[g] == 1) ++patched;
     }
     bool refused = false; for (int g = 0; g < G_COUNT; ++g) if (g_state[g] < 0) refused = true;
-    setLoad(refused ? KPLOG_WARN : KPLOG_INFO, "k2-robustness-fixes 1.3.0 loaded: %d/%d groups patched:%s cave=%p pid=%lu", patched, G_COUNT, buf, (void*)g_cave, GetCurrentProcessId());
+    setLoad(refused ? KPLOG_WARN : KPLOG_INFO, "k2-robustness-fixes 0.1.3 loaded: %d/%d groups patched:%s cave=%p pid=%lu", patched, G_COUNT, buf, (void*)g_cave, GetCurrentProcessId());
     for (int g = 0; g < G_COUNT; ++g) if (g_state[g] == -1) {
         char hex[100]; int h = 0; for (int i = 0; i < g_seenN[g] && i < 24; ++i) h += snprintf(hex + h, sizeof(hex) - h, "%02x ", g_seen[g][i]);
         snprintf(g_refLine[g], sizeof g_refLine[g], "  %s REFUSED: bytes at 0x%08x are %s(group untouched)", GroupKey[g], (unsigned)g_badAt[g], hex);

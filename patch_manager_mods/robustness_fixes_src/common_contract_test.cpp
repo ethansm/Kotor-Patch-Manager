@@ -123,11 +123,11 @@ int main() {
         KpLog_SetFallbackFile(path); KpLog_SetFallbackLevel(KPLOG_INFO);
         CCHECK("KpLog_SetFallbackFile only stores the path, no I/O (safe from a static initialiser)", access(path, F_OK) != 0);
         CCHECK("fallback level INFO enables INFO on the main channel (the load line is INFO)", KP_ENABLED(chMain, KPLOG_INFO));
-        KP_LOGV(chMain, KPLOG_INFO, "%s", "k2-robustness-fixes 1.3.0 loaded: probe tick=1");
+        KP_LOGV(chMain, KPLOG_INFO, "%s", "k2-robustness-fixes 0.1.3 loaded: probe tick=1");
         std::string t; if (FILE* f = fopen(path, "r")) { char b[512]; size_t n; while ((n = fread(b, 1, sizeof b, f)) > 0) t.append(b, n); fclose(f); }
         size_t sp = t.find(' ');
         CCHECK("fallback line starts with a decimal tick count", sp != std::string::npos && sp > 0 && t.find_first_not_of("0123456789") == sp);
-        CCHECK("fallback line has the prefix \"<ms> k2-robustness-fixes/main \" then the text unchanged", t.substr(sp) == " k2-robustness-fixes/main k2-robustness-fixes 1.3.0 loaded: probe tick=1\n");
+        CCHECK("fallback line has the prefix \"<ms> k2-robustness-fixes/main \" then the text unchanged", t.substr(sp) == " k2-robustness-fixes/main k2-robustness-fixes 0.1.3 loaded: probe tick=1\n");
         KP_LOGV(chMain, KPLOG_WARN, "%s", "REFUSED probe");
         std::string u; if (FILE* f = fopen(path, "r")) { char b[512]; size_t n; while ((n = fread(b, 1, sizeof b, f)) > 0) u.append(b, n); fclose(f); }
         CCHECK("a WARN line carries the WARN tag (REFUSED / FAILED lines)", u.find(" k2-robustness-fixes/main WARN REFUSED probe\n") != std::string::npos);

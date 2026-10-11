@@ -101,7 +101,7 @@ namespace {
 using saferead::readAt;
 using saferead::probeRead;
 
-constexpr const char* Version = "1.6.0-dev";
+constexpr const char* Version = "0.1.6-dev";
 constexpr bool ApplyEnabled = true;    // build-level switch; runtime switches are mode=rewrite + apply=1
 
 KP_CHANNEL(chMain, "main");

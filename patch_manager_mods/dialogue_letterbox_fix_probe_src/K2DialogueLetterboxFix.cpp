@@ -24,7 +24,7 @@
 
 namespace {
 
-const char* const kVersion = "k2-dialogue-letterbox-fix 1.0.1-probe";
+const char* const kVersion = "k2-dialogue-letterbox-fix 0.1.0-probe2";
 constexpr uintptr_t kConstVA = 0x009A7D30;
 const uint8_t kVanilla[8] = { 0x00, 0x00, 0x00, 0x80, 0xAA, 0xAA, 0x02, 0x40 };
 constexpr double kNudge = 1.0 - 1e-9;   // keeps trunc(W/c) from landing one below 2H/3 when 2H/3 is an integer (V7 Q5)

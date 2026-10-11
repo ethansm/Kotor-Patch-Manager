@@ -235,9 +235,9 @@ int main(int argc, char** argv) {
     check(pW1 && pW2 && pW3 && pW4 && pW5, "exports dlbProbeW1..W5 present");
     if (!(pW1 && pW2 && pW3 && pW4 && pW5)) return 3;
     if (!strcmp(mode, "foreign"))
-        check(logHas("k2-dialogue-letterbox-fix 1.0.1-probe loaded:") && logHas("00 00 00 00 00 00 00 40"), "log: load line with version and the pre-existing 2.0 bytes");
+        check(logHas("k2-dialogue-letterbox-fix 0.1.0-probe2 loaded:") && logHas("00 00 00 00 00 00 00 40"), "log: load line with version and the pre-existing 2.0 bytes");
     else
-        check(logHas("k2-dialogue-letterbox-fix 1.0.1-probe loaded:") && logHas("2.3333330154418945") && logHas("00 00 00 80 aa aa 02 40"), "log: load line with version and vanilla bytes/value");
+        check(logHas("k2-dialogue-letterbox-fix 0.1.0-probe2 loaded:") && logHas("2.3333330154418945") && logHas("00 00 00 80 aa aa 02 40"), "log: load line with version and vanilla bytes/value");
 
     if (!strcmp(mode, "h6")) {
         check(logHas("enabled=1 mode=h6 log=1"), "log: load line shows enabled=1 mode=h6 log=1");
