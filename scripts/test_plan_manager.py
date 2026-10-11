@@ -290,6 +290,19 @@ class TestPlanManager(unittest.TestCase):
         finally:
             test_plan.unlink(missing_ok=True)
 
+    def test_delegate_dry_run_strips_scoped_id(self):
+        """delegate "NN:ID" (the form resume prints) resolves the real phase spec, not an empty 'Phase NN:ID'."""
+        test_plan = _SANDBOX_DIR / "99_temp_delegate_scoped_plan.md"
+        test_plan.write_text("# Temp Plan\n| Id | Batch | Status |\n|---|---|---|\n| DG1 | Do the thing | TODO |\n", encoding="utf-8")
+        try:
+            res = self.run_cli("--plan", str(test_plan), "delegate", "99:DG1", "--dry-run")
+            self.assertEqual(res.returncode, 0, f"Stderr: {res.stderr}")
+            self.assertIn("DRY-RUN DELEGATION PROMPT FOR PHASE DG1", res.stdout)
+            self.assertIn("Do the thing", res.stdout)
+            self.assertNotIn("Phase 99:DG1", res.stdout)
+        finally:
+            test_plan.unlink(missing_ok=True)
+
     # ---- wrong-plan / wrong-spot handoff regressions -------------------------------------------
 
     def test_handoff_honors_handoffs_dir_env(self):

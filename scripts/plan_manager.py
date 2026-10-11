@@ -596,6 +596,7 @@ def cmd_delegate(plan: dict, target_phase: str = "", mode: str = "auto", dry_run
             print("All phases in active plan are complete. Nothing to delegate.")
             return 0
         target_phase = remaining[0]["ident"]
+    target_phase = split_phase_arg(target_phase)
 
     sys.path.insert(0, str(REPO_ROOT / "scripts"))
     import subagent_prompt as sap
