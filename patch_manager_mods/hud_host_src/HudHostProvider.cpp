@@ -15,6 +15,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include <stddef.h>
+#include <string.h>
 #include <stdint.h>
 
 #include "kpatch_api.h"
@@ -88,6 +89,45 @@ void probeAfterConsumer(const char* owner, void*) {
     g_probeLast = now;
 }
 
+// Probe 3: raw dump of the panel's first 0x60 bytes (24 dwords, 8 per line); "????????" = unreadable dword.
+void probeDumpPanel(uintptr_t panel) {
+    for (int row = 0; row < 3; ++row) {
+        char line[8 * 9 + 1] = {};
+        for (int i = 0; i < 8; ++i) {
+            uint32_t v = 0;
+            if (saferead::readAt(S_BuildProbe, panel, 0x20 * row + 4 * i, &v)) snprintf(line + 9 * i, 10, "%08x ", (unsigned)v);
+            else memcpy(line + 9 * i, "???????? ", 9);
+        }
+        line[72] = 0;
+        KP_LOG(chCore, "BUILD48 dump panel=%08x +0x%02x %s", (unsigned)panel, 0x20 * row, line);
+    }
+}
+
+// Probe 2: per-frame watch of HUD +0x40..+0x4F; logs only on change (and when g_hud changes), capped at 64 lines per process.
+void watchHud48(int32_t hud, unsigned frame) {
+    static int32_t lastHud = 0;
+    static uint32_t last[4] = {};
+    static bool haveLast = false;
+    static int lines = 0;
+    constexpr int Cap = 64;
+    if (lines > Cap) return;
+    const bool hudChanged = hud != lastHud;
+    uint32_t d[4] = {};
+    bool ok = true;
+    for (int i = 0; i < 4; ++i) ok = saferead::readAt(S_BuildProbe, uintptr_t(hud), BuildProbeOff + 4 * i, &d[i]) && ok;
+    const bool changed = ok && (!haveLast || memcmp(d, last, sizeof d) != 0);
+    if (!hudChanged && !changed) return;
+    if (lines == Cap) { ++lines; KP_LOG(chCore, "HUD48 cap reached"); return; }
+    if (hudChanged) { ++lines; KP_LOG(chCore, "HUD48 hud=%08x (was %08x)", (unsigned)hud, (unsigned)lastHud); lastHud = hud; }
+    if (changed) {
+        if (lines >= Cap) { ++lines; KP_LOG(chCore, "HUD48 cap reached"); return; }
+        ++lines;
+        KP_LOG(chCore, "HUD48 frame=%u +0x40 %08x %08x %08x %08x", frame, (unsigned)d[0], (unsigned)d[1], (unsigned)d[2], (unsigned)d[3]);
+        memcpy(last, d, sizeof d);
+        haveLast = true;
+    }
+}
+
 const K2HudApi g_api = { sizeof(K2HudApi), apiRegister, apiUnregister, apiHud, apiFrame, apiStripSlot };
 
 } // namespace
@@ -115,6 +155,7 @@ __declspec(dllexport) void __cdecl HH_TargetMenuPopulate(void* menuPtr, void* le
         uint32_t v = 0;
         if (saferead::readAt(S_BuildProbe, uintptr_t(g_hud), BuildProbeOff + 8, &v)) KP_LOG(chCore, "BUILD48 frame0 +0x48 %08x", (unsigned)v);
     }
+    if (g_hud) watchHud48(g_hud, (unsigned)g_frame);
     static bool first = true;
     if (first) {
         first = false;
@@ -167,6 +208,7 @@ __declspec(dllexport) void __cdecl HH_LayoutClosing(void* panelPtr) {
     }
     if (g_buildProbe < BuildProbeMax) {
         ++g_buildProbe;
+        if (g_buildProbe <= 2) probeDumpPanel(panel);
         uint32_t d[4] = {};
         bool ok = true;
         for (int i = 0; i < 4; ++i) ok = saferead::readAt(S_BuildProbe, panel, BuildProbeOff + 4 * i, &d[i]) && ok;

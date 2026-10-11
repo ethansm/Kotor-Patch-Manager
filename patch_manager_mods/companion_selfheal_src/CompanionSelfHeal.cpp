@@ -57,7 +57,7 @@ constexpr int MaxCands = 64;
 constexpr int Slot_CardRect = 0x54C;                      // portrait card rect (screen px)
 constexpr int Slot_VitRect = 0x694;                       // K2Addr Slot_VitRect: 4 ints x,y,w,h (screen px)
 constexpr int Hud_Manager = 0x1C, Mgr_Panels = 0x88, Mgr_PanelCount = 0x8C, Mgr_Modals = 0x94, Mgr_ModalCount = 0x98;
-constexpr int Cr_Tag = 0x18, PanelIgnoredByInput = 0x600;
+constexpr int Cr_Tag = 0x18, PanelIgnoredByInput = 0x600, GateLogCap = 64;
 // Panels that do not block gameplay hotkeys (RTTI vtables): messages, fade, pause, auto-pause
 constexpr uintptr_t PanelWhitelist[] = { gameaddr::MessagesPanelVtable, gameaddr::FadePanelVtable, gameaddr::PausePanelVtable, gameaddr::AutoPausePanelVtable };
 constexpr DWORD CacheMs = 250;
@@ -227,23 +227,45 @@ bool isWhitelisted(uintptr_t panel) {
     for (uintptr_t w : PanelWhitelist) if (vt == w) return true;
     return false;
 }
-bool gameplayHudActive(uintptr_t hud) {
-    uintptr_t mgr; if (!hud || !rd<uintptr_t>(hud, Hud_Manager, &mgr) || !mgr) return false;
+// Diagnostic only: why the gate is open/closed. Filled by gateEval, logged on change by gateLog (never per frame).
+struct GateInfo { bool open = false; const char* why = "other"; uintptr_t hud = 0, top = 0; uint32_t f48 = 0, topF48 = 0; };
+void gateLog(const GateInfo& g) {
+    static GateInfo last; static bool have = false; static int lines = 0;
+    if (have && last.open == g.open && strcmp(last.why, g.why) == 0 && last.hud == g.hud && last.f48 == g.f48 && last.top == g.top && last.topF48 == g.topF48) return;
+    last = g; have = true;
+    if (lines > GateLogCap) return;
+    if (lines == GateLogCap) { ++lines; KP_LOG(chHud, "GATE cap reached"); return; }
+    ++lines;
+    KP_LOG(chHud, "GATE open=%d why=%s hud=%08x f48=%08x bits=%03x top=%08x topf48=%08x", (int)g.open, g.why, (unsigned)g.hud, (unsigned)g.f48, (unsigned)(g.f48 & PanelIgnoredByInput), (unsigned)g.top, (unsigned)g.topF48);
+}
+bool gateEval(uintptr_t hud, GateInfo& g) {
+    g = GateInfo(); g.hud = hud;
+    if (!hud) { g.why = "no-hud"; return false; }
+    g.f48 = (uint32_t)rdInt(hud, Panel_Flags);
+    uintptr_t mgr; if (!rd<uintptr_t>(hud, Hud_Manager, &mgr) || !mgr) return false;
     int modals = rdInt(mgr, Mgr_Modals), modalCount = rdInt(mgr, Mgr_ModalCount);
     if (modalCount < 0 || modalCount > 64) return false;
     for (int i = modalCount - 1; i >= 0; --i) {
         uintptr_t p; if (!rd<uintptr_t>((uintptr_t)modals, i * 4, &p) || !p) return false;
-        if (!isIgnored(p)) return false;
+        if (!isIgnored(p)) { g.why = "modal-open"; g.top = p; g.topF48 = (uint32_t)rdInt(p, Panel_Flags); return false; }
     }
     int panels = rdInt(mgr, Mgr_Panels), panelCount = rdInt(mgr, Mgr_PanelCount);
     if (panelCount < 0 || panelCount > 256) return false;
+    bool sawHudIgnored = false;
     for (int i = panelCount - 1; i >= 0; --i) {
         uintptr_t p; if (!rd<uintptr_t>((uintptr_t)panels, i * 4, &p) || !p) return false;
-        if (isIgnored(p)) continue;
-        if (p == hud) return true;
-        if (!isWhitelisted(p)) return false;
+        if (isIgnored(p)) { if (p == hud) sawHudIgnored = true; continue; }
+        if (!g.top) { g.top = p; g.topF48 = (uint32_t)rdInt(p, Panel_Flags); }   // first non-ignored panel from the top
+        if (p == hud) { g.why = "open"; g.open = true; return true; }
+        if (!isWhitelisted(p)) { g.why = "other-panel-on-top"; g.top = p; g.topF48 = (uint32_t)rdInt(p, Panel_Flags); return false; }
     }
+    g.why = sawHudIgnored ? "hud-ignored" : "not-found";
     return false;
+}
+bool gameplayHudActive(uintptr_t hud) {
+    GateInfo g; bool r = gateEval(hud, g);
+    gateLog(g);
+    return r;
 }
 
 // Tag of a creature (CExoString {char*, len} at +0x18); false = unreadable (the PC has an empty tag, recognized as "player").

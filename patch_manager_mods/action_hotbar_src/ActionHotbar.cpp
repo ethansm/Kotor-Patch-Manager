@@ -288,23 +288,46 @@ bool isWhitelisted(uintptr_t panel) {
     return false;
 }
 const char* g_gateWhy = "";
-bool gameplayHudActive(uintptr_t hud) {
+// Diagnostic only: structured gate reason, logged on change by gateLog (never per frame, capped).
+struct GateInfo { bool open = false; const char* why = "other"; uintptr_t hud = 0, top = 0; uint32_t f48 = 0, topF48 = 0; };
+constexpr int GateLogCap = 64;
+void gateLog(const GateInfo& g) {
+    static GateInfo last; static bool have = false; static int lines = 0;
+    if (have && last.open == g.open && strcmp(last.why, g.why) == 0 && last.hud == g.hud && last.f48 == g.f48 && last.top == g.top && last.topF48 == g.topF48) return;
+    last = g; have = true;
+    if (lines > GateLogCap) return;
+    if (lines == GateLogCap) { ++lines; KP_LOG(chGate, "GATE cap reached"); return; }
+    ++lines;
+    KP_LOG(chGate, "GATE open=%d why=%s hud=%08x f48=%08x bits=%03x top=%08x topf48=%08x", (int)g.open, g.why, (unsigned)g.hud, (unsigned)g.f48, (unsigned)(g.f48 & PanelIgnoredByInput), (unsigned)g.top, (unsigned)g.topF48);
+}
+bool gateEval(uintptr_t hud, GateInfo& g) {
+    g = GateInfo(); g.hud = hud;
+    if (!hud) { g.why = "no-hud"; g_gateWhy = "no hud"; return false; }
+    g.f48 = (uint32_t)rdInt(S_Hud, hud, Panel_Flags);
     uintptr_t mgr; if (!saferead::readAt(S_Hud, hud, Hud_Manager, &mgr) || !mgr) { g_gateWhy = "no manager"; return false; }
     int modals = rdInt(S_Hud, mgr, Mgr_Modals), modalCount = rdInt(S_Hud, mgr, Mgr_ModalCount);
     if (modalCount < 0 || modalCount > 64) { g_gateWhy = "bad modal count"; return false; }
     for (int i = modalCount - 1; i >= 0; --i) {
         uintptr_t p; if (!saferead::readAt(S_Hud, (uintptr_t)modals, i * 4, &p) || !p) { g_gateWhy = "bad modal ptr"; return false; }
-        if (!isIgnored(p)) { g_gateWhy = "modal open"; return false; }
+        if (!isIgnored(p)) { g.why = "modal-open"; g.top = p; g.topF48 = (uint32_t)rdInt(S_Hud, p, Panel_Flags); g_gateWhy = "modal open"; return false; }
     }
     int panels = rdInt(S_Hud, mgr, Mgr_Panels), panelCount = rdInt(S_Hud, mgr, Mgr_PanelCount);
     if (panelCount < 0 || panelCount > 256) { g_gateWhy = "bad panel count"; return false; }
+    bool sawHudIgnored = false;
     for (int i = panelCount - 1; i >= 0; --i) {
         uintptr_t p; if (!saferead::readAt(S_Hud, (uintptr_t)panels, i * 4, &p) || !p) { g_gateWhy = "bad panel ptr"; return false; }
-        if (isIgnored(p)) continue;
-        if (p == hud) { g_gateWhy = "hud on top"; return true; }
-        if (!isWhitelisted(p)) { g_gateWhy = "other panel on top"; return false; }
+        if (isIgnored(p)) { if (p == hud) sawHudIgnored = true; continue; }
+        if (!g.top) { g.top = p; g.topF48 = (uint32_t)rdInt(S_Hud, p, Panel_Flags); }   // first non-ignored panel from the top
+        if (p == hud) { g.why = "open"; g.open = true; g_gateWhy = "hud on top"; return true; }
+        if (!isWhitelisted(p)) { g.why = "other-panel-on-top"; g.top = p; g.topF48 = (uint32_t)rdInt(S_Hud, p, Panel_Flags); g_gateWhy = "other panel on top"; return false; }
     }
+    g.why = sawHudIgnored ? "hud-ignored" : "not-found";
     g_gateWhy = "hud not in list"; return false;
+}
+bool gameplayHudActive(uintptr_t hud) {
+    GateInfo g; bool r = gateEval(hud, g);
+    gateLog(g);
+    return r;
 }
 
 void logPanels(uintptr_t hud) {
