@@ -289,14 +289,17 @@ bool isWhitelisted(uintptr_t panel) {
 }
 const char* g_gateWhy = "";
 // Diagnostic only: structured gate reason, logged on change by gateLog (never per frame, capped).
-struct GateInfo { bool open = false; const char* why = "other"; uintptr_t hud = 0, top = 0; uint32_t f48 = 0, topF48 = 0; };
+struct GateInfo { bool open = false; const char* why = "other"; uintptr_t hud = 0, top = 0; uint32_t f48 = 0, topF48 = 0; bool f48Bad = false; };
+// A genuine panel flags dword is small (0x45/0x47/0x145); the first HUD build of a process can carry stale heap garbage (0xFF8FB4xx) that keeps bit 0x400 set forever.
+bool hudFlagsPlausible(uint32_t f48) { return (f48 >> 12) == 0; }
 constexpr int GateLogCap = 64;
 void gateLog(const GateInfo& g) {
     static GateInfo last; static bool have = false; static int lines = 0;
-    if (have && last.open == g.open && strcmp(last.why, g.why) == 0 && last.hud == g.hud && last.f48 == g.f48 && last.top == g.top && last.topF48 == g.topF48) return;
+    if (have && last.open == g.open && strcmp(last.why, g.why) == 0 && last.hud == g.hud && last.f48 == g.f48 && last.f48Bad == g.f48Bad && last.top == g.top && last.topF48 == g.topF48) return;
     last = g; have = true;
     if (lines > GateLogCap) return;
     if (lines == GateLogCap) { ++lines; KP_LOG(chGate, "GATE cap reached"); return; }
+    if (g.f48Bad) { ++lines; KP_LOG(chGate, "GATE hud flags implausible f48=%08x -> treated as not ignored", (unsigned)g.f48); if (lines >= GateLogCap) return; }
     ++lines;
     KP_LOG(chGate, "GATE open=%d why=%s hud=%08x f48=%08x bits=%03x top=%08x topf48=%08x", (int)g.open, g.why, (unsigned)g.hud, (unsigned)g.f48, (unsigned)(g.f48 & PanelIgnoredByInput), (unsigned)g.top, (unsigned)g.topF48);
 }
@@ -316,7 +319,8 @@ bool gateEval(uintptr_t hud, GateInfo& g) {
     bool sawHudIgnored = false;
     for (int i = panelCount - 1; i >= 0; --i) {
         uintptr_t p; if (!saferead::readAt(S_Hud, (uintptr_t)panels, i * 4, &p) || !p) { g_gateWhy = "bad panel ptr"; return false; }
-        if (isIgnored(p)) { if (p == hud) sawHudIgnored = true; continue; }
+        if (p == hud && !hudFlagsPlausible(g.f48)) g.f48Bad = true;   // garbage flags dword: do not trust the ignore bits (read-only; no engine write)
+        else if (isIgnored(p)) { if (p == hud) sawHudIgnored = true; continue; }
         if (!g.top) { g.top = p; g.topF48 = (uint32_t)rdInt(S_Hud, p, Panel_Flags); }   // first non-ignored panel from the top
         if (p == hud) { g.why = "open"; g.open = true; g_gateWhy = "hud on top"; return true; }
         if (!isWhitelisted(p)) { g.why = "other-panel-on-top"; g.top = p; g.topF48 = (uint32_t)rdInt(S_Hud, p, Panel_Flags); g_gateWhy = "other panel on top"; return false; }

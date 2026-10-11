@@ -241,7 +241,7 @@ int main() {
     QCHECK("hudkit ids Frame/FrameHi/Cancel/CancelHi = 0..3 (tex::Frame.. aliases), 5 kit textures, kit_frame / kit_cancel_hi resrefs",
            hudkit::Frame == 0 && hudkit::FrameHi == 1 && hudkit::Cancel == 2 && hudkit::CancelHi == 3 && hudkit::Count == 5 && !strcmp(hudkit::resref(hudkit::Frame), "kit_frame") && !strcmp(hudkit::resref(hudkit::CancelHi), "kit_cancel_hi"));
     QCHECK("the 5 kit textures fit the embtex slot table", embtex::MaxTex >= hudkit::Count);
-    QCHECK("shui::buttonRect(Rect) -> Rect: the slim strip icon size is its width (24 on the live 47x96 vit)", shui::buttonRect(shui::Rect{ 3671, 1285, 47, 96 }).w == 24);
+    QCHECK("shui::buttonRect(Rect) -> Rect: the cross button is 2/3 of the disc (39 px, disc 58 = queue icon on the live 47x96 vit)", shui::buttonRect(shui::Rect{ 3671, 1285, 47, 96 }).w == 39);
     QCHECK("embtex::g_log is a printf-style sink pointer (tex::logLine)", static_cast<void (**)(const char*, ...)>(&embtex::g_log) != nullptr);
     QCHECK("guikit::createLabelFromTemplate(panel, template, int* why, uint32_t* badVt) -> uintptr_t", static_cast<uintptr_t(*)(uintptr_t, const char*, int*, uint32_t*)>(&guikit::createLabelFromTemplate) != nullptr);
     QCHECK("guikit::appendToPanel(panel, ctl) -> bool", static_cast<bool(*)(uintptr_t, uintptr_t)>(&guikit::appendToPanel) != nullptr);

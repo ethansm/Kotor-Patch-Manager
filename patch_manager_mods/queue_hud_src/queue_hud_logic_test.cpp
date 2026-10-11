@@ -582,11 +582,11 @@ void testStripLeftLive() {
     const shui::Rect leaderVit{ 3511, 1386, 103, 208 }, leaderCard{ 3591, 1394, 191, 192 }, leaderForce{ 3762, 1386, 103, 208 };
     KT_CHECK_EQ(stripIconSize(vit2, c), 58);                    // auto: vit.h * 0.60 = 58 (was 38)
     KT_CHECK_EQ(stripIconSize(vit2, c), autoIconPx(vit2.h));
-    KT_CHECK_EQ(shui::stripReserve(shui::Rect{ vit2.x, vit2.y, vit2.w, vit2.h }), 38);                    // gap 6 + button 24 + ring overhang 6 + 2
+    KT_CHECK_EQ(shui::stripReserve(shui::Rect{ vit2.x, vit2.y, vit2.w, vit2.h }), 66);                    // gap 6 + disc 58 (= queue icon) + 2 (H3)
     KT_CHECK_EQ(stripRects(card2, vit2, 1, c, out), 1);
-    KT_CHECK_EQ(out[0].x, 3671 - 38 - 58); KT_CHECK_EQ(out[0].y, 1285 + 19); KT_CHECK_EQ(out[0].w, 58);   // y centres 58 px on the 96 px bar (1285 + (96-58)/2 = 1285 + 19)
+    KT_CHECK_EQ(out[0].x, 3671 - 66 - 58); KT_CHECK_EQ(out[0].y, 1285 + 19); KT_CHECK_EQ(out[0].w, 58);   // y centres 58 px on the 96 px bar (1285 + (96-58)/2 = 1285 + 19)
     KT_CHECK_EQ(stripRects(card2, vit2, 4, c, out), 4);
-    KT_CHECK_EQ(out[3].x + out[3].w, 3671 - 38); KT_CHECK_EQ(out[0].x, 3633 - 4 * 58 - 3 * 2);   // queue order left to right
+    KT_CHECK_EQ(out[3].x + out[3].w, 3671 - 66); KT_CHECK_EQ(out[0].x, 3605 - 4 * 58 - 3 * 2);   // queue order left to right
     const Rect* vits[] = { &vit2, &vit3 }; const Rect* cards[] = { &card2, &card3 };
     for (int k = 0; k < 2; ++k) {
         KT_CHECK_EQ(stripRects(*cards[k], *vits[k], 4, c, out), 4);
@@ -612,13 +612,10 @@ void testStripLeftLive() {
 
 // ---- CS10: hud-host strip slots. With selfheal registered at order 0 (width = shui::stripReserve) and queue-hud at order 1 (width =
 // the row), the row lands exactly where the old hard-coded formula put it; without selfheal the row moves flush to the vit bar.
-int oldSelfHealReserve(Rect vit) {   // the pre-CS10 qh::selfHealReserve, verbatim
-    int sb = (vit.h + 2) / 4;
-    sb = sb < 16 ? 16 : (sb > 24 ? 24 : sb);
+int oldSelfHealReserve(Rect vit) {   // the fallback reserve formula (H3: disc-based, was button + ring overhang): gap + disc/ring side + kStripGap
     int gap = (vit.h + 17) / 18;
     if (gap < 2) gap = 2;
-    const int ring = ((sb * 3 + 2) / 4) * 2;
-    return gap + sb + (ring - sb + 1) / 2 + kStripGap;
+    return gap + shui::ringSideFor(shui::btnSizeForDisc(shui::discDiameter(vit.h))) + kStripGap;
 }
 
 // What QueueHud.cpp does on the left side: register, then reserve = vit.x - slot.x - rowW.
@@ -636,13 +633,13 @@ void testStripHudHostSlots() {
     hh::Strip st;
     hh::Box sh{};
     KT_CHECK_EQ(st.slot(0, hh::Box{ vit.x, vit.y, vit.w, vit.h }, shui::stripReserve(shui::Rect{ vit.x, vit.y, vit.w, vit.h }), 24, &sh), 1);   // selfheal, order 0
-    KT_CHECK_EQ(oldSelfHealReserve(vit), 38);
-    KT_CHECK_EQ(slotReserve(st, vit, 3, c), 38);
+    KT_CHECK_EQ(oldSelfHealReserve(vit), 66);
+    KT_CHECK_EQ(slotReserve(st, vit, 3, c), 66);
     for (int n = 1; n <= 4; ++n) {
         KT_CHECK_EQ(qh::stripRects(card, vit, n, c, oldOut, 0, oldSelfHealReserve(vit)), n);
         KT_CHECK_EQ(qh::stripRects(card, vit, n, c, newOut, 0, slotReserve(st, vit, n, c)), n);
         for (int i = 0; i < n; ++i) { KT_CHECK_EQ(newOut[i].x, oldOut[i].x); KT_CHECK_EQ(newOut[i].y, oldOut[i].y); KT_CHECK_EQ(newOut[i].w, oldOut[i].w); }
-        KT_CHECK_EQ(newOut[0].x, vit.x - 38 - (n * 58 + (n - 1) * 2));   // the literal live value: 3633 - rowW
+        KT_CHECK_EQ(newOut[0].x, vit.x - 66 - (n * 58 + (n - 1) * 2));   // the literal live value: 3605 - rowW
     }
     // every bar height: the slot path is the old formula
     for (int h = 8; h <= 400; ++h) {
@@ -1175,7 +1172,7 @@ void testStripCancel() {
         for (const shui::Rect& o : { leaderVit, leaderCard, leaderForce }) KT_CHECK(!ov(cr, Rect{ o.x, o.y, o.w, o.h }));
     }
     { Rect icons[4]; stripRects(card2, vit2, 1, c, icons, 3840);
-      KT_CHECK(rectEq(stripCancelRect(icons, 1, kSideLeft, 3840), 3575 - 14 - 58, 1285 + 19, 58, 58)); }
+      KT_CHECK(rectEq(stripCancelRect(icons, 1, kSideLeft, 3840), 3671 - 66 - 58 - 14 - 58, 1285 + 19, 58, 58)); }
     // left: no room left of the row (x < 0) -> no cancel, never moved into the selfheal reserve
     { const Rect icons[1] = { Rect{ 20, 100, 38, 38 } };
       KT_CHECK(rectEq(stripCancelRect(icons, 1, kSideLeft, 3840), 0, 0, 0, 0)); }

@@ -188,7 +188,7 @@ int main() {
         HCHECK("k2hud::Client::stripSlot() is false before connect", !sc.stripSlot("companion-selfheal", 0, K2HudRect{ sv.x, sv.y, sv.w, sv.h }, stripReserve(sv), sb.h, &r) && g_stripCalls == 0);
         HCHECK("connect() succeeds", sc.connect());
         HCHECK("stripSlot(\"companion-selfheal\", 0, vit, stripReserve(vit), btn.h) reaches the provider with those args", sc.stripSlot("companion-selfheal", 0, K2HudRect{ sv.x, sv.y, sv.w, sv.h }, stripReserve(sv), sb.h, &r) && g_stripCalls == 1 && g_stripOwner == "companion-selfheal" && g_stripOrder == 0 && g_stripW == stripReserve(sv) && g_stripH == sb.h);
-        HEQ("shui::stripReserve(live companion vit 47x96) == 38 (gap 6 + button 24 + ring overhang 6 + kReserveGap 2)", stripReserve(sv), 38);
+        HEQ("shui::stripReserve(live companion vit 47x96) == 66 (gap 6 + disc 58 + kReserveGap 2)", stripReserve(sv), 66);
         HCHECK("stripReserve covers the real button + ring at every bar height (wastes at most 3 px)", [] { for (int h = 8; h <= 400; ++h) { const shui::Rect bt = buttonRect(shui::Rect{ 1000, 100, 47, h }); if (bt.w <= 0) continue; const shui::Rect rg = ringRect(bt); const int need = 1000 - (bt.x < rg.x ? bt.x : rg.x); const int rs = stripReserve(shui::Rect{ 1000, 100, 47, h }); if (rs - shui::kReserveGap < need || rs - shui::kReserveGap > need + 3) return false; } return true; }());
         const uint32_t full = g_huApi.struct_size;
         g_huApi.struct_size = (uint32_t)(offsetof(K2HudApi, Frame) + sizeof(K2HudApi::Frame));
@@ -245,10 +245,10 @@ int main() {
     Rect vit{ 3671, 1285, 47, 96 };   // live small (companion) card vit, 3840x1600 (doc 08 probe 1)
     const Rect none{ 0, 0, 0, 0 }, leaderVit{ 3511, 1386, 103, 208 };   // live leader vit
     Rect br = buttonRect(vit);
-    HCHECK("shui::buttonRect(live companion vit 47x96) is a 16..24 px square left of the bar", br.w == br.h && br.w >= 16 && br.w <= 24 && br.x + br.w < vit.x);
+    HCHECK("shui::buttonRect(live companion vit 47x96) is a 32..48 px square (2/3 of the 48..72 px disc) left of the bar", br.w == br.h && br.w >= 32 && br.w <= 48 && br.x + br.w < vit.x);
     HCHECK("shui::buttonRect of the leader bar (w >= 70) is the empty rect; isLeaderVit splits 103 vs 47", buttonRect(leaderVit) == none && isLeaderVit(leaderVit) && !isLeaderVit(vit));
-    HCHECK("shui::resolveState priority: hidden > full > noitem > pending > auto > normal", resolveState(true, false, 10, 10, true, false, false) == BtnState::FullHp && resolveState(true, false, 5, 10, false, false, false) == BtnState::NoItem && resolveState(true, false, 5, 10, true, true, true) == BtnState::Pending && resolveState(true, false, 5, 10, true, false, true) == BtnState::AutoOn && resolveState(true, true, 5, 10, true, false, false) == BtnState::Hidden);
-    HCHECK("shui::clickAllowed false for Hidden/FullHp/Pending, true for NoItem (it logs) and Normal; clickMinCount is 1", !clickAllowed(BtnState::Pending) && !clickAllowed(BtnState::FullHp) && clickAllowed(BtnState::NoItem) && clickAllowed(BtnState::Normal) && clickMinCount(BtnState::AutoOn) == 1);
+    HCHECK("shui::resolveState priority: hidden > down > full > noitem > pending > auto > normal", resolveState(true, false, 10, 10, true, false, false) == BtnState::FullHp && resolveState(true, false, 5, 10, false, false, false) == BtnState::NoItem && resolveState(true, false, 5, 10, true, true, true) == BtnState::Pending && resolveState(true, false, 5, 10, true, false, true) == BtnState::AutoOn && resolveState(true, true, 5, 10, true, false, false) == BtnState::Hidden && resolveState(true, false, 0, 10, true, true, true, true) == BtnState::Down);
+    HCHECK("shui::clickAllowed false for Hidden/FullHp/Pending/Down, true for NoItem (it logs) and Normal; clickMinCount is 1", !clickAllowed(BtnState::Pending) && !clickAllowed(BtnState::Down) && !clickAllowed(BtnState::FullHp) && clickAllowed(BtnState::NoItem) && clickAllowed(BtnState::Normal) && clickMinCount(BtnState::AutoOn) == 1);
     PopLayout L = popoverLayout(br, 3840);
     HCHECK("shui::popoverLayout: bg first, items inside the bg, left of the button", L.r[0].x + L.r[0].w <= br.x && L.r[1].y == L.r[0].y && L.r[5].x + L.r[5].w == L.r[0].x + L.r[0].w);
     HEQ("shui::popoverHit on item 3 (HpPlus) centre", (int)popoverHit(L, L.r[3].x + 1, L.r[3].y + 1), (int)PopItem::HpPlus);
@@ -270,7 +270,7 @@ int main() {
         HCHECK("shui::lookFor: ring only when autoOn and not Hidden; Hidden alpha 0; FullHp/NoItem grey+dim", g.ring && !n.ring && !h.ring && h.alpha == 0.0f && d.alpha < 1.0f && d.r == d.g && d.g == d.b);
         HCHECK("shui::lookFor: cross untinted (1,1,1) when auto, gold kRingR>kRingG>kRingB, ringFrame in [0,kRingFrames) and advances every kRingFrameMs", g.r == 1.0f && g.g == 1.0f && g.b == 1.0f && kRingR > kRingG && kRingG > kRingB && lookFor(BtnState::Normal, true, 90 * 3 + 5).ringFrame == 3 && lookFor(BtnState::Normal, true, 0xFFFFFFF0u).ringFrame < kRingFrames);
         Rect rr = ringRect(br);
-        HCHECK("shui::ringRect is a square larger than the button and centred on it; empty for h<=0", rr.w == rr.h && rr.w > br.w && rr.x + rr.w / 2 == br.x + br.w / 2 && ringRect(none) == none);
+        HCHECK("shui::ringRect is a square larger than the button and centred on it (+/-1 px); empty for h<=0", rr.w == rr.h && rr.w > br.w && std::abs((rr.x + rr.w / 2) - (br.x + br.w / 2)) <= 1 && ringRect(none) == none);
     }
     HCHECK("guikit::setFill(ctl, image, tint) -> bool and guikit::imageFor(resref) -> void*", static_cast<bool(*)(uintptr_t, void*, const float*)>(&guikit::setFill) != nullptr && static_cast<void*(*)(const char*, bool*, int*)>(&guikit::imageFor) != nullptr);
     HEQ("gameaddr::TexBasicCtor/EngineNewArr/TexListAdd/TexReset (embedded-texture recipe)", (long long)gameaddr::TexBasicCtor + gameaddr::EngineNewArr + gameaddr::TexListAdd + gameaddr::TexReset, 0x423000LL + 0x91D288LL + 0x4491C0LL + 0x423990LL);

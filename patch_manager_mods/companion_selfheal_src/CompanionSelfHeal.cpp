@@ -228,13 +228,16 @@ bool isWhitelisted(uintptr_t panel) {
     return false;
 }
 // Diagnostic only: why the gate is open/closed. Filled by gateEval, logged on change by gateLog (never per frame).
-struct GateInfo { bool open = false; const char* why = "other"; uintptr_t hud = 0, top = 0; uint32_t f48 = 0, topF48 = 0; };
+struct GateInfo { bool open = false; const char* why = "other"; uintptr_t hud = 0, top = 0; uint32_t f48 = 0, topF48 = 0; bool f48Bad = false; };
+// A genuine panel flags dword is small (0x45/0x47/0x145); the first HUD build of a process can carry stale heap garbage (0xFF8FB4xx) that keeps bit 0x400 set forever.
+bool hudFlagsPlausible(uint32_t f48) { return (f48 >> 12) == 0; }
 void gateLog(const GateInfo& g) {
     static GateInfo last; static bool have = false; static int lines = 0;
-    if (have && last.open == g.open && strcmp(last.why, g.why) == 0 && last.hud == g.hud && last.f48 == g.f48 && last.top == g.top && last.topF48 == g.topF48) return;
+    if (have && last.open == g.open && strcmp(last.why, g.why) == 0 && last.hud == g.hud && last.f48 == g.f48 && last.f48Bad == g.f48Bad && last.top == g.top && last.topF48 == g.topF48) return;
     last = g; have = true;
     if (lines > GateLogCap) return;
     if (lines == GateLogCap) { ++lines; KP_LOG(chHud, "GATE cap reached"); return; }
+    if (g.f48Bad) { ++lines; KP_LOG(chHud, "GATE hud flags implausible f48=%08x -> treated as not ignored", (unsigned)g.f48); if (lines >= GateLogCap) return; }
     ++lines;
     KP_LOG(chHud, "GATE open=%d why=%s hud=%08x f48=%08x bits=%03x top=%08x topf48=%08x", (int)g.open, g.why, (unsigned)g.hud, (unsigned)g.f48, (unsigned)(g.f48 & PanelIgnoredByInput), (unsigned)g.top, (unsigned)g.topF48);
 }
@@ -254,7 +257,8 @@ bool gateEval(uintptr_t hud, GateInfo& g) {
     bool sawHudIgnored = false;
     for (int i = panelCount - 1; i >= 0; --i) {
         uintptr_t p; if (!rd<uintptr_t>((uintptr_t)panels, i * 4, &p) || !p) return false;
-        if (isIgnored(p)) { if (p == hud) sawHudIgnored = true; continue; }
+        if (p == hud && !hudFlagsPlausible(g.f48)) g.f48Bad = true;   // garbage flags dword: do not trust the ignore bits (read-only; no engine write)
+        else if (isIgnored(p)) { if (p == hud) sawHudIgnored = true; continue; }
         if (!g.top) { g.top = p; g.topF48 = (uint32_t)rdInt(p, Panel_Flags); }   // first non-ignored panel from the top
         if (p == hud) { g.why = "open"; g.open = true; return true; }
         if (!isWhitelisted(p)) { g.why = "other-panel-on-top"; g.top = p; g.topF48 = (uint32_t)rdInt(p, Panel_Flags); return false; }
@@ -571,6 +575,9 @@ bool wFrame(W& w, bool hover) {
 }
 void wTip(W& w, const std::string& t) { if (!w.c || w.tip == t || !guitip::nativeSupported()) return; if (guitip::setNative(w.c, t.c_str())) w.tip = t; }
 
+// Unconscious button: not clickable (the engine neither hovers nor tooltips it); wShow(true) restores clickability the frame it wakes.
+void wInert(W& w) { if (w.c && w.clk != 0) { guikit::setClickable(w.c, false); w.clk = 0; } w.hover = false; }
+
 int g_popMi = -1;                      // member whose popover is open (-1 = closed, 0 = leader, 1..2 = companions)
 guikit::ClickEdge g_lmb, g_rmb;
 DWORD g_cacheMs = 0, g_cfgCheckMs = 0;
@@ -814,6 +821,33 @@ void popDiag(bool popOpen) {
     }
 }
 
+const char* stName(shui::BtnState st) {
+    switch (st) {
+        case shui::BtnState::Hidden: return "Hidden"; case shui::BtnState::FullHp: return "FullHp"; case shui::BtnState::NoItem: return "NoItem";
+        case shui::BtnState::Pending: return "Pending"; case shui::BtnState::AutoOn: return "AutoOn"; case shui::BtnState::Normal: return "Normal";
+        case shui::BtnState::Down: return "Down";
+    }
+    return "?";
+}
+// Edge-triggered (state changes only, capped): proves Down / wake transitions in the play log.
+void stateLog(int mi, shui::BtnState st, const Card& c) {
+    static shui::BtnState last[3] = { shui::BtnState::Hidden, shui::BtnState::Hidden, shui::BtnState::Hidden };
+    static int lines = 0;
+    if (last[mi] == st) return;
+    const shui::BtnState old = last[mi]; last[mi] = st;
+    if (lines >= 64) return;
+    ++lines;
+    KP_LOG(chUi, "STATE member=%d %s->%s hp=%d/%d", mi, stName(old), stName(st), c.m.cur, c.m.max);
+}
+// One line per distinct leader rect (placement proof for the next play log).
+void leaderRectLog(const shui::Rect& btn, const shui::Rect& card, const shui::Rect& vit, int diameter, int reserve) {
+    static shui::Rect last{ -1, -1, -1, -1 }; static int lines = 0;
+    if (btn == last || lines >= 16) return;
+    last = btn; ++lines;
+    const shui::Rect rg = shui::ringRect(btn);
+    KP_LOG(chUi, "LEADERBTN rect=[%d,%d,%d,%d] ring=[%d,%d,%d,%d] card=[%d,%d,%d,%d] vit=[%d,%d,%d,%d] disc=%d reserve=%d", btn.x, btn.y, btn.w, btn.h, rg.x, rg.y, rg.w, rg.h, card.x, card.y, card.w, card.h, vit.x, vit.y, vit.w, vit.h, diameter, reserve);
+}
+
 void uiFrame(const K2PsContext* ctx, DWORD now) {
     // INI hot reload (1 s throttle inside changed())
     if (filewatch::changed(g_cfgPoll, IniPath, now)) loadCfg();
@@ -872,8 +906,10 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
             K2HudRect sr{};
             g_hudc.stripSlot("companion-selfheal", 0, K2HudRect{ c.vit.x, c.vit.y, c.vit.w, c.vit.h }, shui::stripReserve(c.vit), c.btn.h, &sr);
         }
-        c.st = shui::resolveState(c.have && c.seen, false, c.m.cur, c.m.max, c.pk.pick >= 0, g_pend[mi].on, c.cfg.autoOn);
+        c.st = shui::resolveState(c.have && c.seen, false, c.m.cur, c.m.max, c.pk.pick >= 0, g_pend[mi].on, c.cfg.autoOn, c.m.down);
         if (c.btn.w <= 0) c.st = shui::BtnState::Hidden;
+        stateLog(mi, c.st, c);
+        if (c.st == shui::BtnState::Down && g_popMi == mi) g_popMi = -1;   // unconscious: no popover
         W& ring = g_w[W_Ring0 + mi - 1];
         W& disc = g_w[W_Disc0 + mi - 1];
         W& frm = g_w[W_Frame0 + mi - 1];
@@ -892,19 +928,24 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
         } else wVis(ring, false);
         wTip(b, tipFor(c));
         wShow(b, true);
+        if (c.st == shui::BtnState::Down) wInert(b);
     }
     // Member 0 (leader) button
     Card& c0 = g_card0;
     W& b0 = g_w[W_BtnLeader];
     // Geometry source: the portrait card rect; fallback (card unreadable) = the vit rect through the same formula.
     const shui::Rect geo0 = c0.card.w > 0 ? c0.card : c0.vit;
-    c0.btn = c0.seen ? shui::leaderButtonRect(geo0) : shui::Rect{ 0, 0, 0, 0 };
+    // Disc size = the companion disc (queue icon size); the leader's own vit.h (208) would hit the 72 px cap.
+    const int leaderDiam = (g_card[1].seen && g_card[1].vit.h > 0) ? shui::discDiameter(g_card[1].vit.h) : (g_card[2].seen && g_card[2].vit.h > 0 ? shui::discDiameter(g_card[2].vit.h) : shui::kDefaultDisc);
+    c0.btn = c0.seen ? shui::leaderButtonRect(geo0, c0.vit, leaderDiam) : shui::Rect{ 0, 0, 0, 0 };
     if (c0.btn.w > 0) {   // hud-host strip slot order 0 (doc 24 CS10): registration only, the button is still drawn at shui::leaderButtonRect
         K2HudRect sr{};
-        g_hudc.stripSlot("companion-selfheal", 0, K2HudRect{ geo0.x, geo0.y, geo0.w, geo0.h }, shui::leaderStripReserve(geo0), c0.btn.h, &sr);
+        g_hudc.stripSlot("companion-selfheal", 0, K2HudRect{ geo0.x, geo0.y, geo0.w, geo0.h }, shui::leaderStripReserve(geo0, c0.vit, leaderDiam), c0.btn.h, &sr);
+        leaderRectLog(c0.btn, geo0, c0.vit, leaderDiam, shui::leaderStripReserve(geo0, c0.vit, leaderDiam));
     }
-    c0.st = shui::resolveState(c0.have && c0.seen, false, c0.m.cur, c0.m.max, c0.pk.pick >= 0, g_pend0.on, c0.cfg.autoOn);
+    c0.st = shui::resolveState(c0.have && c0.seen, false, c0.m.cur, c0.m.max, c0.pk.pick >= 0, g_pend0.on, c0.cfg.autoOn, c0.m.down);
     if (c0.btn.w <= 0) c0.st = shui::BtnState::Hidden;
+    stateLog(0, c0.st, c0);
     W& ring0 = g_w[W_RingLeader];
     W& disc0 = g_w[W_DiscLeader];
     W& frm0  = g_w[W_FrameLeader];
@@ -924,6 +965,7 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
         } else wVis(ring0, false);
         wTip(b0, tipFor(c0));
         wShow(b0, true);
+        if (c0.st == shui::BtnState::Down) wInert(b0);
     }
 
     // input
@@ -933,14 +975,14 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
     if (haveCur) {
         for (int mi = 1; mi <= 2; ++mi) {
             W& b = g_w[W_Btn0 + mi - 1];
-            bool h = g_card[mi].st != shui::BtnState::Hidden && guikit::hit(b.c, cx, cy);
+            bool h = g_card[mi].st != shui::BtnState::Hidden && g_card[mi].st != shui::BtnState::Down && guikit::hit(b.c, cx, cy);   // Down: no hover sound, tooltip, click or popover
             if (h) onBtn = mi;
             if (h && !b.hover) guikit::playHoverSound();
             b.hover = h;
         }
         // Member 0 (leader) button
         W& b0 = g_w[W_BtnLeader];
-        bool h0 = g_card0.st != shui::BtnState::Hidden && guikit::hit(b0.c, cx, cy);
+        bool h0 = g_card0.st != shui::BtnState::Hidden && g_card0.st != shui::BtnState::Down && guikit::hit(b0.c, cx, cy);
         if (h0) onBtn = 0;
         if (h0 && !b0.hover) guikit::playHoverSound();
         b0.hover = h0;
@@ -949,7 +991,7 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
     Card& popCard = (g_popMi == 0) ? g_card0 : g_card[g_popMi >= 0 ? g_popMi : 1];
     bool popOpen = g_popMi >= 0 && popCard.btn.w > 0;
     if (!popOpen) g_popMi = -1;
-    if (popOpen) L = shui::popoverLayout(popCard.btn, screenW);
+    if (popOpen) L = shui::popoverLayout(shui::ringRect(popCard.btn), screenW, shui::popUnit(popCard.btn));
     bool inPop = popOpen && haveCur && cx >= L.r[0].x && cx < L.r[0].x + L.r[0].w && cy >= L.r[0].y && cy < L.r[0].y + L.r[0].h;
     if (haveCur && ledge) {
         if (inPop) {   // popover click: edit config only, NEVER useNow
@@ -965,7 +1007,7 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
             }
         } else if (onBtn >= 0) {
             if (onBtn == 0) {   // leader button: LMB toggles auto only (no useNow, no popover)
-                if (g_card0.st != shui::BtnState::Hidden) {
+                if (g_card0.st != shui::BtnState::Hidden && g_card0.st != shui::BtnState::Down) {
                     if (filewatch::changed(g_cfgPoll, IniPath, now, true)) loadCfg();   // pick up a hand edit before overwriting
                     shui::CompCfg nc = shui::lookup(g_cfg, "slot0");
                     nc.autoOn = !nc.autoOn;
@@ -989,7 +1031,7 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
     popOpen = g_popMi >= 0;
     if (popOpen) {
         Card& pc = (g_popMi == 0) ? g_card0 : g_card[g_popMi];
-        L = shui::popoverLayout(pc.btn, screenW);
+        L = shui::popoverLayout(shui::ringRect(pc.btn), screenW, shui::popUnit(pc.btn));
         const shui::CompCfg& cfg = pc.cfg;
         wRect(g_w[W_PopBg], L.r[0]);
         const int items[5] = { W_Auto, W_HpM, W_HpP, W_KeepM, W_KeepP };

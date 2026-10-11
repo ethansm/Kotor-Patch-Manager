@@ -8,23 +8,24 @@ static bool parse(const char* l, std::string& k, CompCfg& c) { return parseLine(
 
 int main() {
     // ---- buttonRect ----
-    { Rect r = buttonRect({100, 50, 47, 36}); KT_CHECK(r == (Rect{100 - 2 - 16, 50 + (36 - 16) / 2, 16, 16})); }   // s=9->16, gap 2
-    { Rect r = buttonRect({100, 50, 47, 64}); KT_CHECK_EQ(r.w, 16); KT_CHECK_EQ(r.h, 16); KT_CHECK_EQ(r.x, 100 - 4 - 16); KT_CHECK_EQ(r.y, 50 + 24); }   // gap round(3.56)=4
-    { Rect r = buttonRect({100, 50, 47, 96}); KT_CHECK_EQ(r.w, 24); KT_CHECK_EQ(r.h, 24); KT_CHECK_EQ(r.x, 100 - 5 - 24); KT_CHECK_EQ(r.y, 50 + 36); }   // gap round(5.33)=5
-    { Rect r = buttonRect({100, 0, 47, 200}); KT_CHECK_EQ(r.w, 24); KT_CHECK_EQ(r.x, 100 - 11 - 24); KT_CHECK_EQ(r.y, 88); }   // gap round(11.1)=11
-    { Rect r = buttonRect({100, 0, 47, 80}); KT_CHECK_EQ(r.w, 20); KT_CHECK_EQ(r.x, 100 - 4 - 20); }   // s=20 unclamped, gap round(4.44)=4
-    { Rect r = buttonRect({100, 0, 47, 82}); KT_CHECK_EQ(r.w, 21); }   // round(20.5)=21
-    { Rect r = buttonRect({100, 0, 47, 81}); KT_CHECK_EQ(r.w, 20); }   // round(20.25)=20
-    { Rect r = buttonRect({100, 0, 47, 400}); KT_CHECK_EQ(r.w, 24); KT_CHECK_EQ(r.x, 100 - 22 - 24); }   // h=400 allowed
-    { Rect z{0, 0, 0, 0}; KT_CHECK(buttonRect({100, 50, 70, 36}) == z); KT_CHECK(buttonRect({100, 50, 103, 208}) == z); KT_CHECK(buttonRect({100, 50, 0, 36}) == z); KT_CHECK(!(buttonRect({100, 50, 69, 36}) == z)); }   // leader (w >= 70) / empty; 69 = small card
-    { Rect r = buttonRect({3671, 1285, 47, 96}); KT_CHECK(r == (Rect{3642, 1321, 24, 24})); }   // live small card, 3840x1600 (doc 08 probe 1)
+    // ---- discDiameter / buttonRect: disc square = queue strip icon (autoIconPx), cross button = 2/3 of it, disc right edge `gap` left of vit.x ----
+    KT_CHECK_EQ(discDiameter(96), 58); KT_CHECK_EQ(discDiameter(36), 48); KT_CHECK_EQ(discDiameter(64), 48); KT_CHECK_EQ(discDiameter(80), 48);
+    KT_CHECK_EQ(discDiameter(200), 72); KT_CHECK_EQ(discDiameter(0), 48); KT_CHECK_EQ(discDiameter(1000), 72);
+    { Rect r = buttonRect({3671, 1285, 47, 96}); KT_CHECK(r == (Rect{3617, 1313, 39, 39}));   // live small card, 3840x1600 (doc 08 probe 1)
+      Rect rg = ringRect(r); KT_CHECK_EQ(rg.w, 58); KT_CHECK_EQ(rg.h, 58); KT_CHECK_EQ(rg.x + rg.w + 5, 3671);   // disc = 58 px, gap round(5.33)=5
+      KT_CHECK_EQ(rg.y + rg.h / 2, 1285 + 96 / 2); }                                                          // centred on the bar
+    for (int h = 1; h <= 400; ++h) {
+        Rect r = buttonRect({1000, 100, 47, h}); if (r.w <= 0) continue;
+        Rect rg = ringRect(r);
+        KT_CHECK(rg.w - discDiameter(h) >= -1 && rg.w - discDiameter(h) <= 1);      // ring square == disc diameter (+/-1)
+        KT_CHECK(r.w == r.h); KT_CHECK(rg.x + rg.w <= 1000 - 2);                    // clear of the bar, gap >= 2
+    }
+    { Rect r = buttonRect({100, 0, 47, 400}); KT_CHECK_EQ(r.w, 48); KT_CHECK_EQ(ringRect(r).w, 72); }   // h=400 allowed, capped at 72
+    { Rect z{0, 0, 0, 0}; KT_CHECK(buttonRect({100, 50, 70, 36}) == z); KT_CHECK(buttonRect({100, 50, 103, 208}) == z); KT_CHECK(buttonRect({100, 50, 0, 36}) == z); KT_CHECK(!(buttonRect({100, 50, 69, 96}) == z)); }   // leader (w >= 70) / empty; 69 = small card
     { KT_CHECK(isLeaderVit({3511, 1386, 103, 208})); KT_CHECK(!isLeaderVit({3671, 1285, 47, 96})); }
     { Rect z{0, 0, 0, 0}; KT_CHECK(buttonRect({100, 50, 47, 0}) == z); KT_CHECK(buttonRect({100, 50, 47, -5}) == z); KT_CHECK(buttonRect({100, 50, 47, 401}) == z); }
-    { Rect z{0, 0, 0, 0}; KT_CHECK(buttonRect({17, 50, 47, 36}) == z); KT_CHECK(!(buttonRect({18, 50, 47, 36}) == z)); }   // x = 18-2-16 = 0 ok; 17 -> -1
-    { Rect r = buttonRect({18, 50, 47, 36}); KT_CHECK_EQ(r.x, 0); }
-    { Rect r = buttonRect({100, 50, 47, 1}); KT_CHECK_EQ(r.w, 16); KT_CHECK_EQ(r.x, 100 - 2 - 16); }   // tiny h: gap floor 2
-    { Rect r = buttonRect({100, 50, 47, 18}); KT_CHECK_EQ(r.x, 100 - 2 - 16); }   // raw gap round(1.0)=1 -> floored to 2
-    { Rect r = buttonRect({100, 50, 47, 27}); KT_CHECK_EQ(r.x, 100 - 2 - 16); }   // raw gap 2 (round 1.5) -> 2
+    { Rect z{0, 0, 0, 0}; KT_CHECK(buttonRect({49, 50, 47, 36}) == z); KT_CHECK(!(buttonRect({50, 50, 47, 36}) == z)); }   // disc 48 + gap 2: left edge 0 ok, -1 refused
+    { Rect r = buttonRect({50, 50, 47, 36}); KT_CHECK_EQ(ringRect(r).x, 0); }
 
     // ---- resolveState priority ----
     // args: hasCreature,isLeader,cur,max,havePick,pending,autoOn
@@ -39,9 +40,17 @@ int main() {
     KT_CHECK(resolveState(true, false, 9, 10, true, false, true) == BtnState::AutoOn);
     KT_CHECK(resolveState(true, false, 9, 10, true, false, false) == BtnState::Normal);
     KT_CHECK(resolveState(true, false, 1, 1, true, false, false) == BtnState::FullHp);
+    // down (unconscious) beats everything except Hidden; waking restores the previous state (cfg untouched)
+    KT_CHECK(resolveState(true, false, 0, 10, true, true, true, true) == BtnState::Down);
+    KT_CHECK(resolveState(true, false, 0, 10, false, false, false, true) == BtnState::Down);
+    KT_CHECK(resolveState(true, false, 10, 10, true, false, false, true) == BtnState::Down);
+    KT_CHECK(resolveState(false, false, 0, 10, true, false, false, true) == BtnState::Hidden);
+    KT_CHECK(resolveState(true, true, 0, 10, true, false, false, true) == BtnState::Hidden);
+    KT_CHECK(resolveState(true, false, 0, 0, true, false, false, true) == BtnState::Hidden);
+    KT_CHECK(resolveState(true, false, 4, 10, true, false, true, false) == BtnState::AutoOn);   // awake again: previous look
 
     // ---- click ----
-    KT_CHECK(!clickAllowed(BtnState::Hidden)); KT_CHECK(!clickAllowed(BtnState::FullHp)); KT_CHECK(!clickAllowed(BtnState::Pending));
+    KT_CHECK(!clickAllowed(BtnState::Hidden)); KT_CHECK(!clickAllowed(BtnState::FullHp)); KT_CHECK(!clickAllowed(BtnState::Pending)); KT_CHECK(!clickAllowed(BtnState::Down));
     KT_CHECK(clickAllowed(BtnState::NoItem)); KT_CHECK(clickAllowed(BtnState::AutoOn)); KT_CHECK(clickAllowed(BtnState::Normal));
     KT_CHECK_EQ(clickMinCount(BtnState::Normal), 1); KT_CHECK_EQ(clickMinCount(BtnState::AutoOn), 1);
 
@@ -220,12 +229,14 @@ int main() {
             {BtnState::FullHp, false, 0.55f, 0.55f, 0.55f, 0.40f, false}, {BtnState::FullHp, true, 0.55f, 0.55f, 0.55f, 0.40f, true},
             {BtnState::NoItem, false, 0.55f, 0.55f, 0.55f, 0.40f, false}, {BtnState::NoItem, true, 0.55f, 0.55f, 0.55f, 0.40f, true},
             {BtnState::Hidden, false, 1.0f, 1.0f, 1.0f, 0.0f, false}, {BtnState::Hidden, true, 1.0f, 1.0f, 1.0f, 0.0f, false},
+            {BtnState::Down, false, 0.55f, 0.55f, 0.55f, 0.40f, false}, {BtnState::Down, true, 0.55f, 0.55f, 0.55f, 0.40f, false},   // no ring even with auto ON
         };
         for (const C& c : cs) {
             Look l = lookFor(c.st, c.au, 0);
             KT_CHECK(l.r == c.r); KT_CHECK(l.g == c.g); KT_CHECK(l.b == c.b); KT_CHECK(l.alpha == c.a); KT_CHECK(l.ring == c.ring);
         }
     }
+    for (uint32_t t : {0u, 90u, 450u, 12345u}) KT_CHECK_EQ(lookFor(BtnState::Down, true, t).ringFrame, 0);   // Down: no animation
     KT_CHECK(kRingR == 1.00f && kRingG == 0.80f && kRingB == 0.25f);   // ring stays gold
     KT_CHECK_EQ(kRingFrames, 8); KT_CHECK_EQ((int)kRingFrameMs, 90);
     KT_CHECK_EQ(lookFor(BtnState::Normal, true, 0).ringFrame, 0);
@@ -249,29 +260,38 @@ int main() {
     KT_CHECK(ringRect({100, 50, 1, 1}) == (Rect{100, 50, 2, 2}));     // 1.5 -> 2; (1-2)/2 truncates to 0
     KT_CHECK_EQ(ringRect({0, 0, 3, 3}).w, 4);    // 4.5 -> 4 (not 6)
     KT_CHECK_EQ(ringRect({0, 0, 7, 7}).w, 10);   // 10.5 -> 10 (not 12)
-    // ---- leaderButtonRect: OUTSIDE, left of the portrait card, top edges aligned (gap = lround(2*h/36), s = clamp(lround(h/4), 16, 24)) ----
-    { Rect card{100, 500, 106, 106}; Rect r = leaderButtonRect(card);
-      KT_CHECK(r == (Rect{70, 500, 24, 24}));
-      KT_CHECK_EQ(r.y, card.y);
-      KT_CHECK_EQ(r.x + r.w + 6, card.x);
-      KT_CHECK(leaderStripReserve(card) > r.w);
-      KT_CHECK_EQ(leaderStripReserve(card), 6 + 24 + (36 - 24 + 1) / 2 + kReserveGap); }
-    { Rect z{0, 0, 0, 0}; KT_CHECK(leaderButtonRect({20, 500, 106, 106}) == z); KT_CHECK(leaderButtonRect({0, 500, 106, 106}) == z);   // would fall off the left edge
-      KT_CHECK(leaderButtonRect({100, 500, 0, 106}) == z); KT_CHECK(leaderButtonRect({100, 500, 106, 0}) == z);
-      KT_CHECK(!(leaderButtonRect({36, 500, 106, 106}) == z)); }   // x = 36-6-24 = 6 >= 0
-    { Rect r = leaderButtonRect({100, 50, 20, 20}); KT_CHECK_EQ(r.w, 16); KT_CHECK_EQ(r.x + r.w + 2, 100); }   // small card: min size 16, gap floor 2
+    // ---- leaderButtonRect(card, vit, diameter): disc left of the leader vit bar (starts 80 px left of the card), kLeaderClear left of the shield bar, top aligned with card.y ----
+    { Rect card{3591, 1394, 191, 192}, vit{3511, 1386, 103, 208}; Rect r = leaderButtonRect(card, vit, 58);   // live leader (MAP member=0)
+      KT_CHECK(r == (Rect{3445, 1403, 39, 39}));
+      Rect rg = ringRect(r); KT_CHECK_EQ(rg.w, 58); KT_CHECK_EQ(rg.y, card.y);
+      KT_CHECK_EQ(rg.x + rg.w + 11 + kLeaderClear, vit.x);                       // gap lround(2*192/36)=11, then the clear margin
+      KT_CHECK(rg.x + rg.w < vit.x);                                              // never overlaps the shield/vitality bars
+      KT_CHECK_EQ(leaderStripReserve(card, vit, 58), 80 + 11 + kLeaderClear + 58 + kReserveGap);
+      KT_CHECK(leaderButtonRect(card, vit) == r);                                 // diameter 0 = default 58
+      KT_CHECK_EQ(ringRect(leaderButtonRect(card, vit, 1000)).w, 72); KT_CHECK_EQ(ringRect(leaderButtonRect(card, vit, 10)).w, 48); }   // diameter clamped
+    { Rect card{100, 500, 106, 106}; Rect r = leaderButtonRect(card, Rect{0, 0, 0, 0}, 58);   // no/invalid vit: anchor = card.x
+      KT_CHECK_EQ(ringRect(r).x + 58 + 6 + kLeaderClear, 100);
+      KT_CHECK_EQ(leaderStripReserve(card, Rect{0, 0, 0, 0}, 58), 6 + kLeaderClear + 58 + kReserveGap);
+      Rect r2 = leaderButtonRect(card, Rect{150, 500, 80, 100}, 58); KT_CHECK(r2 == r); }   // vit right of the card: anchor = card.x
+    { Rect z{0, 0, 0, 0}; Rect nv{0, 0, 0, 0}; KT_CHECK(leaderButtonRect({20, 500, 106, 106}, nv) == z); KT_CHECK(leaderButtonRect({0, 500, 106, 106}, nv) == z);   // would fall off the left edge
+      KT_CHECK(leaderButtonRect({100, 500, 0, 106}, nv) == z); KT_CHECK(leaderButtonRect({100, 500, 106, 0}, nv) == z);
+      KT_CHECK(!(leaderButtonRect({70, 500, 106, 106}, nv) == z)); KT_CHECK(leaderButtonRect({69, 500, 106, 106}, nv) == z); }   // ring left edge 70-6-6-58 = 0 ok, -1 refused
 
-    // ---- stripReserve (moved from queue-hud's selfHealReserve, math unchanged): live companion vit 47x96, bounds, covers button + ring ----
-    KT_CHECK_EQ(stripReserve({3671, 1285, 47, 96}), 38);     // gap 6 + button 24 + ring overhang 6 + kReserveGap 2
-    KT_CHECK_EQ(stripReserve({0, 0, 47, 8}), 2 + 16 + 4 + kReserveGap);   // minimum button 16, gap floor 2
+    // ---- stripReserve: gap (ceil) + disc diameter + kReserveGap; covers the real disc at every bar height (wastes at most 1 gap px) ----
+    KT_CHECK_EQ(stripReserve({3671, 1285, 47, 96}), 66);     // gap 6 + disc 58 + kReserveGap 2
+    KT_CHECK_EQ(stripReserve({0, 0, 47, 8}), 2 + 48 + kReserveGap);   // gap floor 2, disc floor 48
     for (int h = 8; h <= 400; ++h) {
         const Rect bt = buttonRect({1000, 100, 47, h});
         if (bt.w <= 0) continue;
         const Rect rg = ringRect(bt);
         const int need = 1000 - (bt.x < rg.x ? bt.x : rg.x);
         const int rs = stripReserve({1000, 100, 47, h});
-        KT_CHECK(rs - kReserveGap >= need && rs - kReserveGap <= need + 3);
+        KT_CHECK(rs - kReserveGap >= need - 1 && rs - kReserveGap <= need + 3);
     }
+    // popover keeps its pre-disc size: popUnit(btn) = 24 for the live 39 px button; unit overrides b.h
+    KT_CHECK_EQ(popUnit(Rect{0, 0, 39, 39}), 24); KT_CHECK_EQ(popUnit(Rect{0, 0, 10, 10}), 16); KT_CHECK_EQ(popUnit(Rect{0, 0, 90, 90}), 24);
+    { PopLayout L = popoverLayout(Rect{400, 50, 58, 58}, 1920, 24); KT_CHECK_EQ(L.r[0].w, 192); KT_CHECK_EQ(L.r[0].h, 72); KT_CHECK_EQ(L.r[0].x + L.r[0].w + 6, 400);
+      KT_CHECK(L.r[0].y == 50); KT_CHECK(popoverLayout(Rect{400, 50, 58, 58}, 1920) .r[0].w == 8 * 58); }   // unit 0 = legacy b.h
     KT_CHECK(ringRect({100, 50, 18, 18}) == (Rect{95, 45, 28, 28}));   // 27 -> 28 (half rounds up)
     // pendingDone2 / useAllowed (CS12)
     {

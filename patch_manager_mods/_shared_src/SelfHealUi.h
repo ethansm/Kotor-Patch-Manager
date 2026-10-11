@@ -20,51 +20,55 @@ inline int clampi(int v, int lo, int hi) { return v < lo ? lo : (v > hi ? hi : v
 // Small (companion) cards only: live vits are 47x96 small vs 103x208 leader at 3840x1600 (doc 08 probe 1); w >= 70 = leader.
 inline bool isLeaderVit(Rect vit) { return vit.w >= 70; }
 inline bool isLeaderVitForButton(Rect vit) { return vit.w >= 70; }
+// Disc ("circle") diameter: same math as queue-hud autoIconPx (clamp(0.6 * vit.h, 48, 72); live companion vit.h 96 -> 58) so the
+// self-heal circle matches the queue squares next to the companion portraits. btnSizeForDisc inverts ringRect (side ~1.5 * button).
+inline int discDiameter(int vitH) { return clampi((vitH * 6 + 5) / 10, 48, 72); }
+inline int btnSizeForDisc(int d) { return (d * 2 + 1) / 3; }
+inline int ringSideFor(int btnH) { return ((btnH * 3 + 2) / 4) * 2; }   // ringRect side (defined below)
+constexpr int kDefaultDisc = 58;
+inline int gapFor(int h) { int g = (int)std::lround(2 * h / 36.0); return g < 2 ? 2 : g; }
+// The disc/ring square sits left of the vitality bar (its right edge `gap` from vit.x), the cross button is centred in it, both vertically
+// centred on the bar. {0,0,0,0} = do not draw.
 inline Rect buttonRect(Rect vit) {
     if (vit.w <= 0 || isLeaderVit(vit) || vit.h <= 0 || vit.h > 400) return Rect{0, 0, 0, 0};
-    double pxu = vit.h / 36.0;
-    int s = clampi((int)std::lround(vit.h * 0.25), 16, 24);
-    int gap = (int)std::lround(2 * pxu);
-    if (gap < 2) gap = 2;
-    int x = vit.x - gap - s;
-    if (x < 0) return Rect{0, 0, 0, 0};
-    return Rect{x, vit.y + (vit.h - s) / 2, s, s};
+    const int d = discDiameter(vit.h), s = btnSizeForDisc(d);
+    const int rx = vit.x - gapFor(vit.h) - d;   // ring/disc left edge
+    if (rx < 0) return Rect{0, 0, 0, 0};
+    return Rect{rx + (d - s) / 2, vit.y + (vit.h - s) / 2, s, s};
 }
 
-// Width left of vit.x kept free for the selfheal button + its ring (buttonRect / ringRect: button 16..24 px = h/4, gap 2*h/36, ring side
-// ~1.5x button), rounded up, plus kReserveGap. This is the width companion-selfheal registers at hud-host strip order 0 (doc 24 CS10);
-// queue-hud falls back to it when hud-host / selfheal is absent. Moved from queue-hud's selfHealReserve, math unchanged.
+// Width left of vit.x kept free for the disc: gap (rounded up) + disc/ring side + kReserveGap. This is the width companion-selfheal
+// registers at hud-host strip order 0 (doc 24 CS10); queue-hud falls back to it when hud-host / selfheal is absent.
 constexpr int kReserveGap = 2;
 inline int stripReserve(Rect vit) {
-    int sb = (vit.h + 2) / 4;
-    sb = sb < 16 ? 16 : (sb > 24 ? 24 : sb);
     int gap = (vit.h + 17) / 18;
     if (gap < 2) gap = 2;
-    const int ring = ((sb * 3 + 2) / 4) * 2;
-    return gap + sb + (ring - sb + 1) / 2 + kReserveGap;
+    return gap + ringSideFor(btnSizeForDisc(discDiameter(vit.h))) + kReserveGap;   // ring side = disc diameter +/-1
 }
-// Leader (party-leader card) button: OUTSIDE, left of the portrait card, top edges aligned. Same size/gap rules as buttonRect, keyed on card.h.
-// {0,0,0,0} = do not draw (invalid card, or it would fall off the left screen edge).
-inline int leaderBtnSize(Rect card) { return clampi((int)std::lround(card.h * 0.25), 16, 24); }
-inline int leaderBtnGap(Rect card) { int g = (int)std::lround(2 * card.h / 36.0); return g < 2 ? 2 : g; }
-inline Rect leaderButtonRect(Rect card) {
+// Leader (party-leader card) button: OUTSIDE, left of the leader's vitality bar (which starts left of the portrait card) and clear of
+// the shield bar (kLeaderClear). `diameter` is the companion disc size (the leader's own vit.h would give the 72 px cap), 0 = default.
+// The disc's top edge is aligned with card.y. {0,0,0,0} = do not draw (invalid card, or it would fall off the left screen edge).
+constexpr int kLeaderClear = 6;
+inline int leaderDisc(int diameter) { return diameter > 0 ? clampi(diameter, 48, 72) : kDefaultDisc; }
+inline int leaderAnchorX(Rect card, Rect vit) { return (vit.w > 0 && vit.x < card.x) ? vit.x : card.x; }
+inline Rect leaderButtonRect(Rect card, Rect vit, int diameter = 0) {
     if (card.w <= 0 || card.h <= 0) return Rect{0, 0, 0, 0};
-    const int s = leaderBtnSize(card);
-    const int x = card.x - leaderBtnGap(card) - s;
-    if (x < 0) return Rect{0, 0, 0, 0};
-    return Rect{x, card.y, s, s};
+    const int d = leaderDisc(diameter), s = btnSizeForDisc(d);
+    const int rx = leaderAnchorX(card, vit) - gapFor(card.h) - kLeaderClear - d;
+    if (rx < 0) return Rect{0, 0, 0, 0};
+    return Rect{rx + (d - s) / 2, card.y + (d - s) / 2, s, s};
 }
-// Width left of card.x kept free for the leader button + its ring (mirrors stripReserve).
-inline int leaderStripReserve(Rect card) {
-    const int s = leaderBtnSize(card);
-    const int ring = ((s * 3 + 2) / 4) * 2;
-    return leaderBtnGap(card) + s + (ring - s + 1) / 2 + kReserveGap;
+// Width left of card.x kept free for the leader disc (mirrors stripReserve).
+inline int leaderStripReserve(Rect card, Rect vit, int diameter = 0) {
+    return (card.x - leaderAnchorX(card, vit)) + gapFor(card.h) + kLeaderClear + leaderDisc(diameter) + kReserveGap;
 }
 
-enum class BtnState { Hidden, FullHp, NoItem, Pending, AutoOn, Normal };
+enum class BtnState { Hidden, FullHp, NoItem, Pending, AutoOn, Normal, Down };
 
-inline BtnState resolveState(bool hasCreature, bool isLeader, int cur, int max, bool havePick, bool pending, bool autoOn) {
+// `down` = unconscious (cur <= 0): always Down (dim, no ring, no click). cfg is untouched, so waking restores the previous Normal/AutoOn look.
+inline BtnState resolveState(bool hasCreature, bool isLeader, int cur, int max, bool havePick, bool pending, bool autoOn, bool down = false) {
     if (!hasCreature || isLeader || max <= 0) return BtnState::Hidden;
+    if (down) return BtnState::Down;
     if (cur >= max) return BtnState::FullHp;
     if (!havePick) return BtnState::NoItem;
     if (pending) return BtnState::Pending;
@@ -72,7 +76,7 @@ inline BtnState resolveState(bool hasCreature, bool isLeader, int cur, int max, 
     return BtnState::Normal;
 }
 
-inline bool clickAllowed(BtnState s) { return s != BtnState::Hidden && s != BtnState::FullHp && s != BtnState::Pending; }
+inline bool clickAllowed(BtnState s) { return s != BtnState::Hidden && s != BtnState::FullHp && s != BtnState::Pending && s != BtnState::Down; }
 inline int clickMinCount(BtnState) { return 1; }   // manual click ignores the keep reserve
 
 inline int stepHpPct(int v, int dir) { return clampi(v + (dir > 0 ? 5 : (dir < 0 ? -5 : 0)), 5, 95); }
@@ -149,8 +153,10 @@ struct PopLayout {
 
 // Panel is 8*h wide, 3*h tall (h = button.h), top-aligned with the button and placed to its LEFT with a gap of h/4.
 // Clamped so x+w <= screenW (when screenW > 0), then x >= 0 (left clamp wins).
-inline PopLayout popoverLayout(Rect b, int screenW) {
-    int h = b.h, w = 8 * h, gap = h / 4;
+// `unit` (> 0) overrides the item height (the button grew with the disc, the popover keeps its size: popUnit).
+inline int popUnit(Rect btn) { return clampi((btn.h * 5 + 4) / 8, 16, 24); }
+inline PopLayout popoverLayout(Rect b, int screenW, int unit = 0) {
+    int h = unit > 0 ? unit : b.h, w = 8 * h, gap = h / 4;
     int x = b.x - gap - w;
     if (screenW > 0 && x + w > screenW) x = screenW - w;
     if (x < 0) x = 0;
@@ -360,6 +366,7 @@ inline Look lookFor(BtnState st, bool autoOn, uint32_t now) {
     // The cross is a pre-shaded texture drawn untinted (white tint); auto mode is signalled by the gold ring (kRingR/G/B), not the cross.
     switch (st) {
         case BtnState::Hidden: l.alpha = 0.0f; break;
+        case BtnState::Down: l.r = l.g = l.b = 0.55f; l.alpha = 0.40f; l.ring = false; l.ringFrame = 0; break;   // unconscious: no ring, no animation
         case BtnState::FullHp:
         case BtnState::NoItem: l.r = l.g = l.b = 0.55f; l.alpha = 0.40f; break;
         case BtnState::Pending: l.alpha = 0.65f; break;
@@ -371,7 +378,7 @@ inline Look lookFor(BtnState st, bool autoOn, uint32_t now) {
 // Square ring centred on the button, side = 1.5 * h rounded to the nearest even number.
 inline Rect ringRect(Rect btn) {
     if (btn.h <= 0) return Rect{0, 0, 0, 0};
-    int side = ((btn.h * 3 + 2) / 4) * 2;
+    int side = ringSideFor(btn.h);
     return Rect{btn.x + (btn.w - side) / 2, btn.y + (btn.h - side) / 2, side, side};
 }
 
