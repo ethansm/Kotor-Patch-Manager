@@ -48,3 +48,8 @@ Checker: RESULT FAIL (banner pre=nosha), WARN tag empty on all 43 RMP, 0 TEX lin
 - `scripts/test_compat_breakage.py` fails tree-wide (not this mod; unwaived).
 ## Verification commands
 python3 scripts/run_tests.py diversity generate_diversity_2da check_diversity_assets check_hook_sources npc_div_log_check kotor2_logs ; python3 scripts/build_check.py --mod npc_diversity_src ; python3 scripts/kpm_status.py --only npc-diversity ; python3 scripts/kotor2_logs.py check npc-diversity_log.txt --new
+
+## Wave 5 progress (2026-10-11 13:26)
+- Tasks 1-6 DONE: commit 1d945c9 (KPM mirror faee02e). `0.1.2-probe` LIVE (fdf5137f); hook 2 writes textureVar from (oid, final app), hook 1 log-only, banner probes code bytes.
+- Rollback: `python3 scripts/kpm_hotswap.py --rollback npc-diversity_swap_20261011_132556` (back to 0.1.1-probe d2c590ef).
+- NEXT: Task 7 (user: Telos play, reload same save, enter 201TEL again), then Task 8 `python3 scripts/kotor2_logs.py check npc-diversity_log.txt --new`; branches in the plan section 2 Task 8.
