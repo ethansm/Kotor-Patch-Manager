@@ -58,6 +58,7 @@ The mock engine skips the runner section (`if kind != "real"`), so the mock coun
 - Verified for this patch on the scratch copy: quick 230/230, full 238/238.
 - **Session B close**: commit the patch. Preferred: stage only the patch's hunks in the index, then commit without pathspec, since `engine/run_map.sh` in the live tree also holds another session's uncommitted edits. Or apply and commit once that session commits. Blocked on the shared tree; the user has not chosen yet.
 - After the commit: run the three selftests on the live tree once the other session's `lens_done` edit is fixed, then update this section's status.
+- Open, not swarm work: `AGENTS.md` agy backend line (Subagent Contracts, after the Claude Code policy line) was removed from the working tree after my edit. HEAD `fdf9aff` has the Claude Code line only. Decision pending: re-add the agy line (OpenCode subagents allowed, ask the user before each launch) and commit, or leave it.
 - Then Session C (C1 scrubber in LIB, C2 forbidden union, C3 scrub in bundle), then Session D, then §7 canary with the user's go.
 
 ## Session B: B1 done (bundle `~/.claude/skills/deep-haiku-review/bundle`)
