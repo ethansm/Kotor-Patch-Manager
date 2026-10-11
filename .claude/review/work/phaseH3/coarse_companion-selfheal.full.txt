@@ -1,0 +1,6 @@
+member USE->DONE: hp-delta stack-delta timeout
+  m2 "Medpac (12)" src=click hp+2 stack-1 timeout=0 queued=0
+CS12: KICK=1 skipped=1 starved=0 REFUSE-queued=0 TIMEOUT-unqueued=0
+KICK skipped: paused=1 x1
+AUTO=0 CLICK-noitem=0 CFG save=7 reload=1
+SELFHEAL P1=PASS P3=PASS DUMP=0 blocks USE=1 DONE=1 TIMEOUT=0 VERDICT=PASS

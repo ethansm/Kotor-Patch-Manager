@@ -1,0 +1,49 @@
+QUEUE-HUD lines=517 parsed=356 skipped=0 cmds=12 qj=115
+DECLINES 98: active=63 no_leader=18 in_queue=13 engine_busy=4
+COMMANDS 12
+  cmd 1 m=0 spell dec=dispatch_now -> reinject-declined:no_leader -> reinject-declined:in_queue -> reinject-declined:no_leader -> VANISH:eaten_paused -> REINJECT#1 -> VANISH:eaten_paused -> REINJECT#2 -> VANISH:eaten_paused -> REINJECT#3 -> VANISH:eaten_paused -> REINJECT#4 -> VANISH:eaten_paused -> REINJECT#5 -> VANISH:eaten_paused -> REINJECT#6 -> DROP why=reinject_exhausted n=1
+  cmd 2 m=0 spell dec=buffer -> wait:active x4 -> dispatch -> VANISH:eaten_paused -> REINJECT#1 -> VANISH:eaten_paused -> REINJECT#2 -> VANISH:eaten_paused -> REINJECT#3 -> VANISH:eaten_paused -> REINJECT#4 -> VANISH:eaten_paused -> REINJECT#5 -> VANISH:eaten_paused -> REINJECT#6 -> DROP why=reinject_exhausted n=1
+  cmd 3 m=0 item dec=buffer -> wait:active x4 -> dispatch -> reinject-declined:in_queue -> reinject-declined:no_leader -> VANISH:eaten_paused -> REINJECT#1 -> reinject-declined:in_queue -> reinject-declined:no_leader -> VANISH:eaten_paused -> REINJECT#2 -> reinject-declined:in_queue -> reinject-declined:no_leader -> VANISH:eaten_paused -> REINJECT#3 -> reinject-declined:in_queue -> reinject-declined:no_leader -> VANISH:executed -> RESOLVE seen=1 reinj=0 age=43451
+  cmd 4 m=0 spell dec=buffer -> wait:active x6 -> wait:engine_busy x2 -> dispatch -> reinject-declined:no_leader -> VANISH:unseen -> RESOLVE seen=0 reinj=0 age=8060
+  cmd 5 m=0 spell dec=buffer -> wait:active -> dispatch -> VANISH:unseen -> RESOLVE seen=0 reinj=0 age=7637
+  cmd 6 m=0 item dec=dispatch_now -> reinject-declined:no_leader -> reinject-declined:in_queue -> no outcome
+  cmd 7 m=0 item dec=dispatch_now -> reinject-declined:no_leader -> reinject-declined:in_queue -> reinject-declined:no_leader -> VANISH:eaten_paused -> REINJECT#1 -> reinject-declined:in_queue -> reinject-declined:no_leader -> VANISH:executed -> RESOLVE seen=1 reinj=0 age=46803
+  cmd 8 m=0 item dec=buffer -> wait:active x44 -> wait:engine_busy x2 -> dispatch -> reinject-declined:in_queue -> no outcome
+  cmd 9 m=0 spell dec=dispatch_now -> reinject-declined:no_leader -> reinject-declined:in_queue -> reinject-declined:no_leader -> VANISH:executed -> RESOLVE seen=1 reinj=0 age=839
+  cmd 10 m=0 spell dec=dispatch_now -> reinject-declined:no_leader -> reinject-declined:in_queue -> reinject-declined:no_leader -> VANISH:eaten_paused -> REINJECT#1 -> VANISH:eaten_paused -> REINJECT#2 -> VANISH:eaten_paused -> REINJECT#3 -> VANISH:eaten_paused -> REINJECT#4 -> VANISH:eaten_paused -> REINJECT#5 -> VANISH:eaten_paused -> REINJECT#6 -> DROP why=reinject_exhausted n=1
+  cmd 11 m=0 item dec=buffer -> wait:active x4 -> dispatch -> reinject-declined:in_queue -> reinject-declined:no_leader -> no outcome
+  cmd 12 m=0 item dec=dispatch_now -> reinject-declined:no_leader -> reinject-declined:in_queue -> reinject-declined:no_leader -> no outcome
+DROPS 3
+  L66 cmd=1 m=0 reinject_exhausted n=1
+  L85 cmd=2 m=0 reinject_exhausted n=1
+  L404 cmd=10 m=0 reinject_exhausted n=1
+EDGES 32
+  L30 paused 0->1 src=hud buf=0,0,0
+  L125 paused 1->0 src=hud buf=2,0,0
+  L150 paused 0->1 src=hud buf=0,0,0
+  L151 paused 1->0 src=hud buf=0,0,0
+  L159 combat 0->1 src=hud buf=0,0,0
+  L164 paused 0->1 src=hud buf=0,0,0
+  L166 combat 1->0 src=hud buf=0,0,0
+  L170 paused 1->0 src=hud buf=0,0,0
+  ... +24 more
+HANDOFFS 4 (clear x2)
+  L160 m=0 active=6 buffered=0 cmds=- -> HANDOFF_ONE x0
+  L271 m=0 active=8 buffered=0 cmds=- -> HANDOFF_ONE x0
+  ... +2 more
+ROUNDS 26
+  L418 m=0 n=0 subs=- cur=- ne=0 types=-
+  L420 m=0 n=1 subs=10 cur=- ne=1 types=3f
+  L422 m=0 n=2 subs=10,1 cur=- ne=1 types=3f
+  L424 m=0 n=0 subs=- cur=- ne=0 types=-
+  ... +22 more
+VANISHES 27
+  executed=3 unseen=2 eaten_paused=22 eaten_wait=0
+STALE_CUR 0
+  (none)
+FLAGS 5
+  D L54 cmd=1 m=0 VANISH kind=eaten_paused x6
+  D L77 cmd=2 m=0 VANISH kind=eaten_paused x6
+  A L362 m=1 follower 0x3d wiped (was L304, ours=external)
+  A L363 m=2 follower 0x3d wiped (was L354, ours=external)
+  D L396 cmd=10 m=0 VANISH kind=eaten_paused x6

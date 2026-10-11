@@ -1,0 +1,24 @@
+FILE hud-host_log.txt | 4756 B | 58 lines
+launches: 1 (showing #1, lines 1-58)
+# kplog session 2026-10-11 18:06:39 | kpatch.log v1 | patcher ABI 1
+patterns: 26 unique of 58 lines
+6  20  hud-host/core BUILD# dump panel=# +# # # # # # # # #
+6  30  hud-host/core HUD# frame=# +# # # # #
+4  23  hud-host/core BUILD# entry +# # # # #
+4  24  hud-host/core BUILD# owner=action-hotbar +# # -> #
+4  25  hud-host/core BUILD# owner=companion-selfheal +# # -> #
+4  26  hud-host/core BUILD# owner=combat-hotbar +# # -> #
+4  27  hud-host/core BUILD# owner=queue-hud +# # -> #
+4  29  hud-host/core HUD# hud=# (was #)
+3  11  hud-host/core register phase=# prio=# owner=combat-hotbar -> #
+2  15  hud-host/core register phase=# prio=# owner=queue-hud -> #
+2  17  hud-host/core register phase=# prio=# owner=action-hotbar -> #
+1  1  # kplog session ### #:#:# | kpatch.log v# | patcher ABI #
+tail:
+T=482507.008 f=- hud-host/core BUILD48 owner=queue-hud +0x48 00000047 -> 00000047
+T=487039.906 f=- hud-host/core HUD48 hud=3878bb40 (was 38a19880)
+T=487039.909 f=- hud-host/core HUD48 frame=34091 +0x40 00000000 00000000 00000045 3f800000
+T=602614.852 f=- hud-host/core HUD48 hud=386ab650 (was 3878bb40)
+T=602614.855 f=- hud-host/core HUD48 frame=39363 +0x40 00000000 00000000 aaa83c45 ba553d00
+VERDICT: CLEAN  launches=1 lines=58
+hint: scripts/kplog_parse.py <file> --stats for structured kplog fields

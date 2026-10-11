@@ -1,0 +1,26 @@
+FILE action-hotbar_log.txt | 193485 B | 1874 lines
+launches: 1 (showing #1, lines 1-1874)
+# kplog session 2026-10-11 18:06:39 | kpatch.log v1 | patcher ABI 1
+patterns: 161 unique of 1874 lines
+130  54  action-hotbar/slots btn[#].qty key #: hidden -> hidden (hud not active) flags #->#
+130  55  action-hotbar/slots btn[#].tgt key #: hidden -> hidden (hud not active) flags #->#
+102  51  action-hotbar/slots btn[#].bg key #: hidden -> hidden (hud not active) flags #->#
+102  52  action-hotbar/slots btn[#].ic key #: hidden -> hidden (hud not active) flags #->#
+102  53  action-hotbar/slots btn[#].num key #: hidden -> hidden (hud not active) flags #->#
+81  195  action-hotbar/input hover: cursor=(#,#) over=#
+54  155  action-hotbar/slots btn[#].bg key #: hidden -> hidden (unassigned) flags #->#
+54  156  action-hotbar/slots btn[#].ic key #: hidden -> hidden (unassigned) flags #->#
+54  157  action-hotbar/slots btn[#].num key #: hidden -> hidden (unassigned) flags #->#
+54  158  action-hotbar/slots btn[#].qty key #: hidden -> hidden (unassigned) flags #->#
+54  159  action-hotbar/slots btn[#].tgt key #: hidden -> hidden (unassigned) flags #->#
+53  47  action-hotbar/gate panel[#]=# vt=# flags=#
+alerts:
+1  1552  action-hotbar/char character: creature 0bf59d30 has invalid object id ffffffff (party members=3 s...
+tail:
+T=663549.699 f=- action-hotbar/gate panels: hud=386ab650 hudvt=0099dcc4 mgr=06b40260 modals=0 panels=4
+T=663549.699 f=- action-hotbar/gate panel[0]=089a7e28 vt=009a701c flags=3e10944d
+T=663549.702 f=- action-hotbar/gate panel[1]=0c8dd0c0 vt=009a044c flags=656b6045
+T=663549.702 f=- action-hotbar/gate panel[2]=087b9360 vt=0099e454 flags=ff010045
+T=663549.703 f=- action-hotbar/gate panel[3]=0849ab20 vt=0099e6a4 flags=20145
+VERDICT: ALERTS(1)  launches=1 lines=1874
+hint: scripts/kplog_parse.py <file> --stats for structured kplog fields
