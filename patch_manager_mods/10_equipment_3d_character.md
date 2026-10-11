@@ -2,6 +2,26 @@
 
 # Mod Idea 5: Equipment screen live 3D character (+ flourish animation)
 
+## Phase table (for `plan_manager`; rebuilt 2026-10-11)
+Statuses come from this doc's own status blocks, the git log of `equipment_3d_character_src/`, and the 2026-10-05 install notes. `CHECK` = status not verified; confirm before relying on it. Only user-confirmed results are `DONE`.
+
+| Id | Batch | Status | Commit | Notes |
+|---|---|---|---|---|
+| EQ1 | Probe stages 0-5: preview creature, live gear refresh, idle + flourishes, drag/zoom, Layout A | DONE | | User-tested "working", 19 ids live (STATUS BLOCK) |
+| EQ2 | Weapons in hands, engine wield-style rule, flourishes with weapons | BUILT | 34cb100 | Dual-wield visual result never reported (SESSION 3); F17 pins the style table |
+| EQ3 | Animation cross-fade (jumps at trigger/finish) | DONE | | Accepted 2026-09-30 ~18:00 (SESSION 4, Phase 0) |
+| EQ4 | Toolbar column: Animate, Spin (split play/pause + Reset), Weapons, Emotes pop-up | BUILT | KPM 8ba37be | Installed dcbdfde3; user test of the toolbar never recorded |
+| EQ5 | Headgear-loss fix (attachHelmet from the item model) | DONE | | User PASS 2026-10-02 ~02:40; DLL 962f9e22 |
+| EQ6 | Doc 20 extraction: Equip3dLogic.h, host test, F14-F19 clamps and INI hygiene | CHECK | 1d0ccab 47be017 14d905a | BF2 commits say source-only; shipped state not confirmed |
+| EQ7 | Common extraction: saferead C3a, SceneView C3b, vertical pan C3c | BUILT | e180af1 ba361f8 e77e64c | Installed 2026-10-05 (b6eeee09, d954782a); combined play test pending |
+| EQ8 | MG4/MG6/MG7: KpLog, IniKit, PanelSlots, GuiKit, WindowHook, gameaddr; T5e contract test | BUILT | d2fd8cc 1af7130 aa63ec8 | equip3d 0.2.0-probe installed 2026-10-05 20:55; play check pending |
+| EQ9 | Track P gui-input adoption; creature destroy on character change, anim fallback, screen sync | CHECK | 7aeb296 22b56b4 | 2026-10-08/09 commits; install state not recorded |
+| EQ10 | Phase 2: holstered / combat-stance toggle | TODO | | Research gate first (SESSION 4 remaining plan) |
+| EQ11 | Per-weapon extras: saber blade/effects, forms g2r2..g2r7 | TODO | | Untested (STATUS BLOCK Open/next) |
+| EQ12 | Phase 3 / Track M: mirror the CHARACTER page | TODO | | SESSION 4 remaining plan |
+| EQ13 | Doc 19/19b shared state and code: registry A-ids, Common B-ids, kplog.ini | PARTIAL | d2fd8cc | Doc says nothing built (2026-10-02); MG4 landed part; rest unverified |
+| EQ14 | Finalise doc, DB, memory; FINAL independent Opus review (user-required, run last) | TODO | | After EQ10-EQ13 |
+
 ## 2026-10-02 ~02:40: headgear-loss FIX USER-CONFIRMED (world helmets stay on after closing the page, party switch, equip/unequip on the page). Fix installed 01:05 (READ THIS FIRST) - see "Headgear missing after equip page" at the end (root cause, own-model helmet, DLL md5 `962f9e22`, rollback)
 
 ## SESSION 4 UPDATE (2026-09-30 evening) - READ THIS FIRST; supersedes SESSION 3 "Next" and the toolbar description below
