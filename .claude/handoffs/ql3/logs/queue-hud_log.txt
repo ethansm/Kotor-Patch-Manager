@@ -1,0 +1,453 @@
+# kplog session 2026-10-11 13:02:54 | kpatch.log v1 | patcher ABI 1
+# KOTOR_VERSION_SHA=6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF
+# interfaces:
+#   k2.guiinput v1 by gui-input
+#   k2.hud v1 by hud-host
+#   k2.portraitslots v1 by portrait-slots
+#   k2.rangedai v1 by ranged-ai
+#   k2.saveevents v1 by save-events
+#   kpatch.log v1 by patcher
+T=120.550 f=- queue-hud/main 0.4.0-dev: kit=1 frame_alpha=0.90 cancel=1 enabled=1 waiting_dim=1 border_px=2 log=1 companions=1 strip_icon_px=0 strip_side=left strip_max=4
+T=120.551 f=- queue-hud/main pause_reinject=1 handoff_on_combat=1 handoff_clear_first=1 show_in_combat=1
+T=120.554 f=- queue-hud/main portraitslots: connected (registered)
+T=120.556 f=- queue-hud/main hud-host: connected (registered)
+T=16817.410 f=- queue-hud/main tex kit_frame: created, 64x64 RGBA queued for upload (basic 08b7df88, pending 65)
+T=16817.434 f=- queue-hud/main tex kit_frame_hi: created, 64x64 RGBA queued for upload (basic 08b7e088, pending 66)
+T=16817.449 f=- queue-hud/main tex kit_cancel: created, 64x64 RGBA queued for upload (basic 08b7e188, pending 67)
+T=16817.464 f=- queue-hud/main tex kit_cancel_hi: created, 64x64 RGBA queued for upload (basic 08b7e288, pending 68)
+T=16817.472 f=- queue-hud/main tex kit_disc: created, 48x48 RGBA queued for upload (basic 08b7e388, pending 69)
+T=16817.586 f=- queue-hud/cancel BUILD panel=08ab23c0 cancel labels n=3/3 why=0,0,0
+T=16817.587 f=- queue-hud/main VIS build shown=1 why=ok rect=[0,0,0,0]
+T=21867.261 f=- queue-hud/cap hud=08ab23c0 flags=00000000 combat=0
+T=23725.092 f=- queue-hud/draw hidden (empty queue) age=9 menu=0
+T=23725.112 f=- queue-hud/draw strip k=1 hidden n=0 types=[] rect=(0,0,0,0)
+T=23725.112 f=- queue-hud/draw strip k=2 hidden n=0 types=[] rect=(0,0,0,0)
+T=23725.113 f=- queue-hud/main VIS cancel0 shown=0 why=no-queue rect=[0,0,0,0]
+T=23725.113 f=- queue-hud/main VIS cancel1 shown=0 why=no-queue rect=[0,0,0,0]
+T=23725.114 f=- queue-hud/main VIS cancel2 shown=0 why=no-queue rect=[0,0,0,0]
+T=50381.993 f=- queue-hud/trace EDGE what=paused old=0 new=1 src=hud buf=0,0,0
+T=50876.949 f=- queue-hud/trace CMD#1 m=0 cr=36e8d370 kind=item id=3d1 tgt=fffffff6 dec=dispatch_now fb=0 engq=0 buf=0 paused=1 combat=0
+T=50883.107 f=- queue-hud/trace REINJECT_NO cmd=1 m=0 why=no_leader
+T=50883.147 f=- queue-hud/icon resolved key=db6ee89f type=0x2E param0=000003d1 node=00000000 -> 'ii_frarmbnds_005'
+T=50883.152 f=- queue-hud/draw shown slots=1 drawn=1 entries=1 round=0 cur=0 waiting=1 paused=1 [0x2E/-1] slot0=(2005,1389,106,106) hudScale=2.00
+T=50886.924 f=- queue-hud/main VIS cancel0 shown=1 why=queue rect=[1700,1519,440,64]
+T=50898.953 f=- queue-hud/trace REINJECT_NO cmd=1 m=0 why=in_queue
+T=50899.003 f=- queue-hud/icon resolved key=a91dc414 type=0x3F param0=00000001 node=36e7fd28 -> 'ii_frarmbnds_005'
+T=50899.009 f=- queue-hud/draw changed slots=1 drawn=1 entries=1 round=1 cur=0 waiting=1 paused=1 [0x3F/0] slot0=(2005,1389,106,106) hudScale=2.00
+T=50915.511 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=1 cur=- aa8=0 ab8=0 paused=1 combat=0 ours=hook@34ms
+T=52366.257 f=- queue-hud/trace REINJECT_NO cmd=1 m=0 why=no_leader
+T=52366.297 f=- queue-hud/draw changed slots=1 drawn=1 entries=1 round=0 cur=0 waiting=1 paused=1 [0x2E/-1] slot0=(2005,1389,106,106) hudScale=2.00
+T=52382.081 f=- queue-hud/trace QJ m=0 ne=0 types=[] round=0 cur=- aa8=0 ab8=0 paused=1 combat=0 ours=hook@1498ms
+T=52521.057 f=- queue-hud/trace VANISH cmd=1 m=0 kind=eaten_paused paused=1 exec=0 ne=0 round=0 cur=- aa8=0 ab8=0 age=1638
+T=52521.060 f=- queue-hud/main re-injecting eaten item action for member 0 (id=000003d1, target=fffffff6, attempt=1) cmd=1 why=eaten_paused
+T=52538.759 f=- queue-hud/trace REINJECT_NO cmd=1 m=0 why=in_queue
+T=52538.809 f=- queue-hud/draw changed slots=1 drawn=1 entries=1 round=1 cur=0 waiting=1 paused=1 [0x3F/0] slot0=(2005,1389,106,106) hudScale=2.00
+T=52587.886 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=1 cur=- aa8=0 ab8=0 paused=1 combat=0 ours=reinject@67ms
+T=53749.277 f=- queue-hud/trace CMD#2 m=0 cr=36e8d370 kind=item id=475 tgt=fffffff6 dec=buffer fb=0 engq=1 buf=0 paused=1 combat=0
+T=53749.279 f=- queue-hud/main buffered item use for member 0 (item=00000475, target=fffffff6, count=1) cmd=2
+T=53754.931 f=- queue-hud/trace WAIT cmd=2 m=0 why=active buf=1 engNe=1 age=1
+T=53754.970 f=- queue-hud/icon resolved key=7248cffa type=0x2E param0=00000475 node=00000000 -> 'ii_adrnaline_002'
+T=53754.976 f=- queue-hud/draw changed slots=2 drawn=2 entries=2 round=1 cur=0 waiting=1 paused=1 [0x3F/0,0x2E/-1] slot0=(2005,1389,106,106) hudScale=2.00
+T=54755.858 f=- queue-hud/trace WAIT cmd=2 m=0 why=active buf=1 engNe=1 age=1005
+T=55762.724 f=- queue-hud/trace WAIT cmd=2 m=0 why=active buf=1 engNe=1 age=2008
+T=56668.721 f=- queue-hud/trace REINJECT_NO cmd=1 m=0 why=no_leader
+T=56668.769 f=- queue-hud/draw changed slots=2 drawn=2 entries=2 round=0 cur=0 waiting=1 paused=1 [0x2E/-1,0x2E/-1] slot0=(2005,1389,106,106) hudScale=2.00
+T=56685.331 f=- queue-hud/trace QJ m=0 ne=0 types=[] round=0 cur=- aa8=0 ab8=0 paused=1 combat=0 ours=external
+T=56768.703 f=- queue-hud/trace WAIT cmd=2 m=0 why=active buf=1 engNe=0 age=3013
+T=56813.950 f=- queue-hud/trace VANISH cmd=1 m=0 kind=eaten_paused paused=1 exec=0 ne=0 round=0 cur=- aa8=0 ab8=0 age=5937
+T=56813.953 f=- queue-hud/main re-injecting eaten item action for member 0 (id=000003d1, target=fffffff6, attempt=1) cmd=1 why=eaten_paused
+T=56826.247 f=- queue-hud/trace REINJECT_NO cmd=1 m=0 why=in_queue
+T=56826.298 f=- queue-hud/draw changed slots=2 drawn=2 entries=2 round=1 cur=0 waiting=1 paused=1 [0x3F/0,0x2E/-1] slot0=(2005,1389,106,106) hudScale=2.00
+T=56889.378 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=1 cur=- aa8=0 ab8=0 paused=1 combat=0 ours=reinject@76ms
+T=57776.955 f=- queue-hud/trace WAIT cmd=2 m=0 why=active buf=1 engNe=1 age=4021
+T=57802.760 f=- queue-hud/trace CMD#3 m=0 cr=36e8d370 kind=item id=476 tgt=fffffff6 dec=buffer fb=0 engq=1 buf=1 paused=1 combat=0
+T=57802.762 f=- queue-hud/main buffered item use for member 0 (item=00000476, target=fffffff6, count=2) cmd=3
+T=57813.185 f=- queue-hud/icon resolved key=2ae6f691 type=0x2E param0=00000476 node=00000000 -> 'ii_adrnaline_003'
+T=57813.193 f=- queue-hud/draw changed slots=3 drawn=3 entries=3 round=1 cur=0 waiting=1 paused=1 [0x3F/0,0x2E/-1,0x2E/-1] slot0=(2005,1389,106,106) hudScale=2.00
+T=58783.018 f=- queue-hud/trace WAIT cmd=2 m=0 why=active buf=2 engNe=1 age=5027
+T=59782.947 f=- queue-hud/trace WAIT cmd=2 m=0 why=active buf=2 engNe=1 age=6029
+T=60783.757 f=- queue-hud/trace WAIT cmd=2 m=0 why=active buf=2 engNe=1 age=7033
+T=61077.165 f=- queue-hud/trace REINJECT_NO cmd=1 m=0 why=no_leader
+T=61077.205 f=- queue-hud/draw changed slots=3 drawn=3 entries=3 round=0 cur=0 waiting=1 paused=1 [0x2E/-1,0x2E/-1,0x2E/-1] slot0=(2005,1389,106,106) hudScale=2.00
+T=61167.228 f=- queue-hud/trace QJ m=0 ne=0 types=[] round=0 cur=- aa8=0 ab8=0 paused=1 combat=0 ours=external
+T=61234.900 f=- queue-hud/trace VANISH cmd=1 m=0 kind=eaten_paused paused=1 exec=0 ne=0 round=0 cur=- aa8=0 ab8=0 age=10355
+T=61234.903 f=- queue-hud/main re-injecting eaten item action for member 0 (id=000003d1, target=fffffff6, attempt=1) cmd=1 why=eaten_paused
+T=61250.291 f=- queue-hud/trace REINJECT_NO cmd=1 m=0 why=in_queue
+T=61250.334 f=- queue-hud/draw changed slots=3 drawn=3 entries=3 round=1 cur=0 waiting=1 paused=1 [0x3F/0,0x2E/-1,0x2E/-1] slot0=(2005,1389,106,106) hudScale=2.00
+T=61269.631 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=1 cur=- aa8=0 ab8=0 paused=1 combat=0 ours=reinject@38ms
+T=61788.971 f=- queue-hud/trace WAIT cmd=2 m=0 why=active buf=2 engNe=1 age=8040
+T=62804.842 f=- queue-hud/trace WAIT cmd=2 m=0 why=active buf=2 engNe=1 age=9056
+T=63815.824 f=- queue-hud/trace WAIT cmd=2 m=0 why=active buf=2 engNe=1 age=10067
+T=64425.117 f=- queue-hud/trace EDGE what=paused old=1 new=0 src=hud buf=2,0,0
+T=64425.170 f=- queue-hud/draw changed slots=3 drawn=3 entries=4 round=0 cur=0 waiting=1 paused=0 [0x2E/-1,0x2E/-1,0x2E/-1] slot0=(2005,1389,106,106) hudScale=2.00
+T=64442.750 f=- queue-hud/trace QJ m=0 ne=2 types=[2e,3f] round=0 cur=- aa8=1 ab8=0 paused=0 combat=0 ours=external
+T=64827.724 f=- queue-hud/trace WAIT cmd=2 m=0 why=active buf=2 engNe=2 age=11071
+T=65043.354 f=- queue-hud/trace QJ m=0 ne=2 types=[2e,3f] round=0 cur=- aa8=1 ab8=1 paused=0 combat=0 ours=external
+T=65430.311 f=- queue-hud/trace REINJECT_NO cmd=1 m=0 why=no_leader
+T=65463.335 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=0 cur=- aa8=0 ab8=1 paused=0 combat=0 ours=external
+T=65579.782 f=- queue-hud/trace VANISH cmd=1 m=0 kind=executed paused=0 exec=1 ne=1 round=0 cur=- aa8=0 ab8=1 age=14698
+T=65579.785 f=- queue-hud/trace RESOLVE cmd=1 m=0 seen=1 reinj=0 age=14698
+T=65579.787 f=- queue-hud/trace WAIT cmd=2 m=0 why=engine_busy buf=2 engNe=1 age=11826
+T=65579.861 f=- queue-hud/draw changed slots=2 drawn=2 entries=3 round=0 cur=0 waiting=1 paused=0 [0x2E/-1,0x2E/-1] slot0=(2005,1389,106,106) hudScale=2.00
+T=66265.443 f=- queue-hud/trace EDGE what=paused old=0 new=1 src=hud buf=2,0,0
+T=66581.984 f=- queue-hud/trace WAIT cmd=2 m=0 why=engine_busy buf=2 engNe=1 age=12832
+T=67581.908 f=- queue-hud/main dispatching buffered item for member 0 (id=00000475, target=fffffff6, remaining=1) cmd=2
+T=67597.701 f=- queue-hud/trace REINJECT_NO cmd=2 m=0 why=in_queue
+T=67597.703 f=- queue-hud/trace WAIT cmd=3 m=0 why=active buf=1 engNe=1 age=9789
+T=67597.775 f=- queue-hud/icon resolved key=0514443d type=0x3F param0=00000001 node=36e80478 -> 'ii_adrnaline_002'
+T=67597.781 f=- queue-hud/draw changed slots=2 drawn=2 entries=2 round=1 cur=0 waiting=1 paused=1 [0x3F/0,0x2E/-1] slot0=(2005,1389,106,106) hudScale=2.00
+T=67615.897 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=1 cur=- aa8=0 ab8=1 paused=1 combat=0 ours=dispatch@33ms
+T=68591.948 f=- queue-hud/trace WAIT cmd=3 m=0 why=active buf=1 engNe=1 age=10789
+T=69611.516 f=- queue-hud/trace WAIT cmd=3 m=0 why=active buf=1 engNe=1 age=11803
+T=70613.412 f=- queue-hud/trace WAIT cmd=3 m=0 why=active buf=1 engNe=1 age=12811
+T=71447.962 f=- queue-hud/trace REINJECT_NO cmd=2 m=0 why=no_leader
+T=71448.068 f=- queue-hud/draw changed slots=2 drawn=2 entries=2 round=0 cur=0 waiting=1 paused=1 [0x2E/-1,0x2E/-1] slot0=(2005,1389,106,106) hudScale=2.00
+T=71496.919 f=- queue-hud/trace QJ m=0 ne=0 types=[] round=0 cur=- aa8=0 ab8=1 paused=1 combat=0 ours=external
+T=71596.848 f=- queue-hud/trace VANISH cmd=2 m=0 kind=eaten_paused paused=1 exec=0 ne=0 round=0 cur=- aa8=0 ab8=1 age=17848
+T=71596.853 f=- queue-hud/main re-injecting eaten item action for member 0 (id=00000475, target=fffffff6, attempt=1) cmd=2 why=eaten_paused
+T=71622.914 f=- queue-hud/trace REINJECT_NO cmd=2 m=0 why=in_queue
+T=71622.916 f=- queue-hud/trace WAIT cmd=3 m=0 why=active buf=1 engNe=1 age=13820
+T=71622.988 f=- queue-hud/draw changed slots=2 drawn=2 entries=2 round=1 cur=0 waiting=1 paused=1 [0x3F/0,0x2E/-1] slot0=(2005,1389,106,106) hudScale=2.00
+T=71707.302 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=1 cur=- aa8=0 ab8=1 paused=1 combat=0 ours=reinject@111ms
+T=72639.900 f=- queue-hud/trace WAIT cmd=3 m=0 why=active buf=1 engNe=1 age=14833
+T=73034.151 f=- queue-hud/trace EDGE what=paused old=1 new=0 src=hud buf=1,0,0
+T=73660.862 f=- queue-hud/trace WAIT cmd=3 m=0 why=active buf=1 engNe=1 age=15857
+T=74211.060 f=- queue-hud/draw changed slots=2 drawn=2 entries=3 round=0 cur=0 waiting=1 paused=0 [0x2E/-1,0x2E/-1] slot0=(2005,1389,106,106) hudScale=2.00
+T=74227.167 f=- queue-hud/trace QJ m=0 ne=2 types=[2e,3f] round=0 cur=- aa8=1 ab8=0 paused=0 combat=0 ours=external
+T=74670.251 f=- queue-hud/trace WAIT cmd=3 m=0 why=active buf=1 engNe=2 age=16863
+T=74972.957 f=- queue-hud/trace QJ m=0 ne=2 types=[2e,3f] round=0 cur=- aa8=1 ab8=1 paused=0 combat=0 ours=external
+T=75674.397 f=- queue-hud/trace WAIT cmd=3 m=0 why=active buf=1 engNe=2 age=17866
+T=75707.710 f=- queue-hud/trace REINJECT_NO cmd=2 m=0 why=no_leader
+T=75728.832 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=0 cur=- aa8=0 ab8=1 paused=0 combat=0 ours=external
+T=75862.829 f=- queue-hud/trace VANISH cmd=2 m=0 kind=executed paused=0 exec=1 ne=1 round=0 cur=- aa8=0 ab8=1 age=22109
+T=75862.831 f=- queue-hud/trace RESOLVE cmd=2 m=0 seen=1 reinj=0 age=22109
+T=75862.832 f=- queue-hud/trace WAIT cmd=3 m=0 why=engine_busy buf=1 engNe=1 age=18055
+T=75862.898 f=- queue-hud/draw changed slots=1 drawn=1 entries=2 round=0 cur=0 waiting=1 paused=0 [0x2E/-1] slot0=(2005,1389,106,106) hudScale=2.00
+T=76875.970 f=- queue-hud/trace WAIT cmd=3 m=0 why=engine_busy buf=1 engNe=1 age=19069
+T=77211.737 f=- queue-hud/main dispatching buffered item for member 0 (id=00000476, target=fffffff6, remaining=0) cmd=3
+T=77211.823 f=- queue-hud/draw changed slots=1 drawn=1 entries=1 round=0 cur=0 waiting=0 paused=0 [0x2E/-1] slot0=(2005,1389,106,106) hudScale=2.00
+T=77226.581 f=- queue-hud/trace REINJECT_NO cmd=3 m=0 why=in_queue
+T=77226.651 f=- queue-hud/draw changed slots=1 drawn=1 entries=2 round=0 cur=0 waiting=1 paused=0 [0x2E/-1] slot0=(2005,1389,106,106) hudScale=2.00
+T=77243.451 f=- queue-hud/trace QJ m=0 ne=2 types=[2e,3f] round=0 cur=- aa8=1 ab8=0 paused=0 combat=0 ours=dispatch@33ms
+T=78008.068 f=- queue-hud/trace QJ m=0 ne=2 types=[2e,3f] round=0 cur=- aa8=1 ab8=1 paused=0 combat=0 ours=dispatch@797ms
+T=78752.561 f=- queue-hud/trace REINJECT_NO cmd=3 m=0 why=no_leader
+T=78817.505 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=0 cur=- aa8=0 ab8=1 paused=0 combat=0 ours=dispatch@1610ms
+T=78911.453 f=- queue-hud/trace VANISH cmd=3 m=0 kind=executed paused=0 exec=1 ne=1 round=0 cur=- aa8=0 ab8=1 age=21109
+T=78911.455 f=- queue-hud/trace RESOLVE cmd=3 m=0 seen=1 reinj=0 age=21109
+T=79310.972 f=- queue-hud/draw hidden (empty queue) age=0 menu=0
+T=79310.987 f=- queue-hud/main VIS cancel0 shown=0 why=no-queue rect=[1700,1519,440,64]
+T=80264.355 f=- queue-hud/trace QJ m=0 ne=0 types=[] round=0 cur=- aa8=0 ab8=0 paused=0 combat=0 ours=resolve@1350ms
+T=87669.490 f=- queue-hud/trace EDGE what=paused old=0 new=1 src=hud buf=0,0,0
+T=87669.492 f=- queue-hud/trace EDGE what=menu old=0 new=1 src=hud buf=0,0,0
+T=92804.139 f=- queue-hud/trace EDGE what=paused old=1 new=0 src=hud buf=0,0,0
+T=92804.139 f=- queue-hud/trace EDGE what=menu old=1 new=0 src=hud buf=0,0,0
+T=93817.524 f=- queue-hud/cancel BUILD panel=08ab23c0 cancel labels n=3/3 why=0,0,0
+T=93817.525 f=- queue-hud/main VIS build shown=1 why=ok rect=[0,0,0,0]
+T=98467.141 f=- queue-hud/trace QJ m=1 ne=1 types=[3f] round=0 cur=- aa8=0 ab8=1 paused=0 combat=0 ours=external
+T=98467.153 f=- queue-hud/trace QJ m=2 ne=5 types=[1e,1,11,c,3f] round=0 cur=1 aa8=0 ab8=0 paused=0 combat=0 ours=external
+T=98467.375 f=- queue-hud/icon resolved key=72d56f3f type=0x0C param0=00000000 node=08841770 -> 'i_attack'
+T=98467.377 f=- queue-hud/draw strip k=2 shown n=1 types=[0x0C/-2] rect=(3570,1200,58,58)
+T=98468.531 f=- queue-hud/main VIS cancel0 shown=0 why=no-queue rect=[0,0,0,0]
+T=98468.532 f=- queue-hud/main VIS cancel1 shown=0 why=no-queue rect=[0,0,0,0]
+T=98468.559 f=- queue-hud/main VIS cancel2 shown=1 why=queue rect=[3498,1200,58,58]
+T=98672.049 f=- queue-hud/trace QJ m=2 ne=4 types=[1,11,c,3f] round=0 cur=1 aa8=0 ab8=0 paused=0 combat=0 ours=external
+T=99441.283 f=- queue-hud/draw strip k=2 shown n=1 types=[0x0C/-2] rect=(3570,1200,58,58)
+T=99463.343 f=- queue-hud/icon WARN blank icon: type=0x3F param0=00000001 node=0ab9b470 key=9bd17ae3
+T=99463.359 f=- queue-hud/draw strip k=2 shown n=1 types=[0x3F/-2] rect=(3570,1200,58,58)
+T=99509.340 f=- queue-hud/trace QJ m=2 ne=1 types=[3f] round=1 cur=1 aa8=1 ab8=0 paused=0 combat=0 ours=external
+T=99661.986 f=- queue-hud/icon resolved key=255a7846 type=0x0C param0=00000000 node=0ab9b350 -> 'if_sshot01'
+T=99661.999 f=- queue-hud/draw strip k=1 shown n=1 types=[0x0C/-2] rect=(3570,1304,58,58)
+T=99665.340 f=- queue-hud/main VIS cancel1 shown=1 why=queue rect=[3498,1304,58,58]
+T=99686.082 f=- queue-hud/draw strip k=1 shown n=1 types=[0x3F/-2] rect=(3570,1304,58,58)
+T=99726.869 f=- queue-hud/trace QJ m=1 ne=1 types=[3f] round=0 cur=b aa8=1 ab8=1 paused=0 combat=0 ours=external
+T=99884.170 f=- queue-hud/trace EDGE what=paused old=0 new=1 src=hud buf=0,0,0
+T=137916.545 f=- queue-hud/trace CMD#4 m=0 cr=36a50040 kind=item id=c9 tgt=ffffffff dec=dispatch_now fb=0 engq=0 buf=0 paused=1 combat=0
+T=137925.270 f=- queue-hud/trace REINJECT_NO cmd=4 m=0 why=no_leader
+T=137925.415 f=- queue-hud/icon resolved key=9bb79472 type=0x2E param0=000000c9 node=00000000 -> 'ii_frarmbnds_005'
+T=137925.420 f=- queue-hud/draw shown slots=1 drawn=1 entries=1 round=0 cur=0 waiting=1 paused=1 [0x2E/-1] slot0=(2005,1389,106,106) hudScale=2.00
+T=137925.466 f=- queue-hud/main VIS cancel0 shown=1 why=queue rect=[1700,1519,440,64]
+T=137940.410 f=- queue-hud/trace REINJECT_NO cmd=4 m=0 why=in_queue
+T=137940.561 f=- queue-hud/icon resolved key=e9f7c78d type=0x3F param0=00000001 node=0ab9b590 -> 'ii_frarmbnds_005'
+T=137940.566 f=- queue-hud/draw changed slots=1 drawn=1 entries=1 round=1 cur=0 waiting=1 paused=1 [0x3F/0] slot0=(2005,1389,106,106) hudScale=2.00
+T=138024.783 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=1 cur=- aa8=0 ab8=0 paused=1 combat=0 ours=hook@101ms
+T=139829.773 f=- queue-hud/trace REINJECT_NO cmd=4 m=0 why=no_leader
+T=139829.935 f=- queue-hud/draw changed slots=1 drawn=1 entries=2 round=0 cur=0 waiting=1 paused=1 [0x2E/-1] slot0=(2005,1389,106,106) hudScale=2.00
+T=139847.710 f=- queue-hud/main VIS cancel0 shown=0 why=combat rect=[1700,1519,440,64]
+T=139847.712 f=- queue-hud/main VIS cancel1 shown=0 why=combat rect=[3498,1304,58,58]
+T=139847.713 f=- queue-hud/main VIS cancel2 shown=0 why=combat rect=[3498,1200,58,58]
+T=139847.719 f=- queue-hud/trace EDGE what=combat old=0 new=1 src=hud buf=0,0,0
+T=139847.751 f=- queue-hud/trace QJ m=2 ne=4 types=[1,13,11,c] round=1 cur=1 aa8=1 ab8=0 paused=1 combat=1 ours=external
+T=139847.763 f=- queue-hud/trace HANDOFF m=0 active=4 buffered=0 cmds=-
+T=139847.777 f=- queue-hud/trace HANDOFF_CLEAR m=0 cmd=4 ne=1 round=1
+T=139847.792 f=- queue-hud/trace HANDOFF_ONE cmd=4 m=0 seq=1/1
+T=139847.801 f=- queue-hud/trace ROUND m=0 n=0 subs=- cur=- ne=0 types=-
+T=139847.962 f=- queue-hud/draw hidden (combat) age=1 menu=0
+T=139847.988 f=- queue-hud/draw strip k=2 shown n=1 types=[0x0C/-2] rect=(3570,1200,58,58)
+T=139866.164 f=- queue-hud/trace ROUND m=0 n=1 subs=10 cur=- ne=1 types=3f
+T=140076.487 f=- queue-hud/trace QJ m=2 ne=4 types=[1e,13,11,c] round=1 cur=1 aa8=1 ab8=0 paused=1 combat=1 ours=external
+T=147116.379 f=- queue-hud/trace ROUND m=0 n=2 subs=10,1 cur=- ne=1 types=3f
+T=147138.556 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=2 cur=- aa8=0 ab8=0 paused=1 combat=1 ours=external
+T=157286.241 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=1 cur=- aa8=0 ab8=0 paused=1 combat=1 ours=external
+T=158411.189 f=- queue-hud/trace EDGE what=combat old=1 new=0 src=hud buf=0,0,0
+T=158411.352 f=- queue-hud/draw hidden (empty queue) age=0 menu=0
+T=158411.395 f=- queue-hud/main VIS cancel1 shown=1 why=queue rect=[3498,1304,58,58]
+T=158411.396 f=- queue-hud/main VIS cancel2 shown=1 why=queue rect=[3498,1200,58,58]
+T=158460.377 f=- queue-hud/trace QJ m=0 ne=0 types=[] round=0 cur=- aa8=0 ab8=0 paused=1 combat=0 ours=external
+T=159972.247 f=- queue-hud/trace CMD#5 m=0 cr=36a50040 kind=item id=c9 tgt=ffffffff dec=dispatch_now fb=0 engq=0 buf=0 paused=1 combat=0
+T=159980.393 f=- queue-hud/trace REINJECT_NO cmd=5 m=0 why=no_leader
+T=159980.551 f=- queue-hud/draw shown slots=1 drawn=1 entries=1 round=0 cur=0 waiting=1 paused=1 [0x2E/-1] slot0=(2005,1389,106,106) hudScale=2.00
+T=159980.604 f=- queue-hud/main VIS cancel0 shown=1 why=queue rect=[1700,1519,440,64]
+T=159996.688 f=- queue-hud/trace REINJECT_NO cmd=5 m=0 why=in_queue
+T=159996.845 f=- queue-hud/draw changed slots=1 drawn=1 entries=1 round=1 cur=0 waiting=1 paused=1 [0x3F/0] slot0=(2005,1389,106,106) hudScale=2.00
+T=160034.784 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=1 cur=- aa8=0 ab8=0 paused=1 combat=0 ours=hook@55ms
+T=162314.123 f=- queue-hud/cancel CANCEL member=0 n=1 route=ServerClearAll
+T=162314.125 f=- queue-hud/trace DROP cmd=5 m=0 why=cancel n=1
+T=162327.699 f=- queue-hud/cancel CANCEL done member=0 n=0
+T=162368.595 f=- queue-hud/trace QJ m=0 ne=0 types=[] round=0 cur=- aa8=0 ab8=0 paused=1 combat=0 ours=cancel@48ms
+T=162694.859 f=- queue-hud/draw hidden (empty queue) age=1 menu=0
+T=162694.894 f=- queue-hud/main VIS cancel0 shown=0 why=no-queue rect=[1700,1519,440,64]
+T=164135.870 f=- queue-hud/trace CMD#6 m=0 cr=36a50040 kind=item id=c9 tgt=ffffffff dec=dispatch_now fb=0 engq=0 buf=0 paused=1 combat=0
+T=164147.479 f=- queue-hud/trace REINJECT_NO cmd=6 m=0 why=no_leader
+T=164147.689 f=- queue-hud/draw shown slots=1 drawn=1 entries=1 round=0 cur=0 waiting=1 paused=1 [0x2E/-1] slot0=(2005,1389,106,106) hudScale=2.00
+T=164147.746 f=- queue-hud/main VIS cancel0 shown=1 why=queue rect=[1700,1519,440,64]
+T=164172.628 f=- queue-hud/trace REINJECT_NO cmd=6 m=0 why=in_queue
+T=164172.797 f=- queue-hud/draw changed slots=1 drawn=1 entries=1 round=1 cur=0 waiting=1 paused=1 [0x3F/0] slot0=(2005,1389,106,106) hudScale=2.00
+T=164196.114 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=1 cur=- aa8=0 ab8=0 paused=1 combat=0 ours=hook@58ms
+T=164800.912 f=- queue-hud/trace REINJECT_NO cmd=6 m=0 why=no_leader
+T=164801.075 f=- queue-hud/draw changed slots=1 drawn=1 entries=1 round=0 cur=0 waiting=1 paused=1 [0x2E/-1] slot0=(2005,1389,106,106) hudScale=2.00
+T=164882.220 f=- queue-hud/trace QJ m=0 ne=0 types=[] round=0 cur=- aa8=0 ab8=0 paused=1 combat=0 ours=hook@746ms
+T=164953.620 f=- queue-hud/trace VANISH cmd=6 m=0 kind=eaten_paused paused=1 exec=0 ne=0 round=0 cur=- aa8=0 ab8=0 age=818
+T=164953.624 f=- queue-hud/main re-injecting eaten item action for member 0 (id=000000c9, target=ffffffff, attempt=1) cmd=6 why=eaten_paused
+T=164969.303 f=- queue-hud/trace REINJECT_NO cmd=6 m=0 why=in_queue
+T=164969.470 f=- queue-hud/draw changed slots=1 drawn=1 entries=1 round=1 cur=0 waiting=1 paused=1 [0x3F/0] slot0=(2005,1389,106,106) hudScale=2.00
+T=164995.231 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=1 cur=- aa8=0 ab8=0 paused=1 combat=0 ours=reinject@41ms
+T=165994.269 f=- queue-hud/trace CMD#7 m=0 cr=36a50040 kind=item id=1eb tgt=ffffffff dec=buffer fb=0 engq=1 buf=0 paused=1 combat=0
+T=165994.271 f=- queue-hud/main buffered item use for member 0 (item=000001eb, target=ffffffff, count=1) cmd=7
+T=166001.749 f=- queue-hud/trace WAIT cmd=7 m=0 why=active buf=1 engNe=1 age=1
+T=166001.910 f=- queue-hud/icon resolved key=3fcdabbb type=0x2E param0=000001eb node=00000000 -> 'ii_adrnaline_002'
+T=166001.915 f=- queue-hud/draw changed slots=2 drawn=2 entries=2 round=1 cur=0 waiting=1 paused=1 [0x3F/0,0x2E/-1] slot0=(2005,1389,106,106) hudScale=2.00
+T=167019.114 f=- queue-hud/trace WAIT cmd=7 m=0 why=active buf=1 engNe=1 age=1025
+T=167527.637 f=- queue-hud/trace REINJECT_NO cmd=6 m=0 why=no_leader
+T=167527.801 f=- queue-hud/draw changed slots=2 drawn=2 entries=3 round=0 cur=0 waiting=1 paused=1 [0x2E/-1,0x2E/-1] slot0=(2005,1389,106,106) hudScale=2.00
+T=167544.538 f=- queue-hud/main VIS cancel0 shown=0 why=combat rect=[1700,1519,440,64]
+T=167544.541 f=- queue-hud/main VIS cancel1 shown=0 why=combat rect=[3498,1304,58,58]
+T=167544.541 f=- queue-hud/main VIS cancel2 shown=0 why=combat rect=[3498,1200,58,58]
+T=167544.548 f=- queue-hud/trace EDGE what=combat old=0 new=1 src=hud buf=1,0,0
+T=167544.563 f=- queue-hud/trace HANDOFF m=0 active=6 buffered=1 cmds=7
+T=167544.577 f=- queue-hud/trace HANDOFF_CLEAR m=0 cmd=6 ne=1 round=1
+T=167544.599 f=- queue-hud/trace HANDOFF_ONE cmd=6 m=0 seq=1/2
+T=167544.612 f=- queue-hud/trace ROUND m=0 n=0 subs=- cur=- ne=1 types=2e
+T=167544.784 f=- queue-hud/draw hidden (combat) age=1 menu=0
+T=167563.217 f=- queue-hud/trace HANDOFF_ONE cmd=7 m=0 seq=2/2
+T=167563.231 f=- queue-hud/trace ROUND m=0 n=1 subs=10 cur=- ne=1 types=3f
+T=167579.423 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=2 cur=- aa8=0 ab8=0 paused=1 combat=1 ours=handoff@17ms
+T=167579.460 f=- queue-hud/trace ROUND m=0 n=2 subs=10,10 cur=- ne=1 types=3f
+T=168127.097 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=3 cur=- aa8=0 ab8=0 paused=1 combat=1 ours=handoff@560ms
+T=168127.134 f=- queue-hud/trace ROUND m=0 n=3 subs=10,10,1 cur=- ne=1 types=3f
+T=197956.072 f=- queue-hud/trace EDGE what=paused old=1 new=0 src=hud buf=0,0,0
+T=197974.606 f=- queue-hud/trace QJ m=0 ne=2 types=[2e,3f] round=2 cur=- aa8=1 ab8=0 paused=0 combat=1 ours=external
+T=198619.152 f=- queue-hud/trace QJ m=0 ne=2 types=[2e,3f] round=2 cur=- aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=199035.117 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=2 cur=- aa8=0 ab8=1 paused=0 combat=1 ours=external
+T=199051.997 f=- queue-hud/draw strip k=2 shown n=1 types=[0x0C/-2] rect=(3570,1200,58,58)
+T=199137.002 f=- queue-hud/trace QJ m=2 ne=4 types=[1e,13,11,c] round=1 cur=1 aa8=0 ab8=0 paused=0 combat=1 ours=external
+T=199353.063 f=- queue-hud/trace QJ m=1 ne=1 types=[3f] round=0 cur=- aa8=0 ab8=1 paused=0 combat=1 ours=external
+T=199687.121 f=- queue-hud/draw strip k=1 hidden n=0 types=[] rect=(0,0,0,0)
+T=200566.243 f=- queue-hud/trace QJ m=2 ne=1 types=[3f] round=1 cur=- aa8=1 ab8=0 paused=0 combat=1 ours=external
+T=200566.508 f=- queue-hud/icon resolved key=df4260cf type=0x3F param0=00000000 node=08c602b0 -> 'ip_speedburst'
+T=200566.511 f=- queue-hud/draw strip k=2 shown n=1 types=[0x3F/0] rect=(3570,1200,58,58)
+T=200799.242 f=- queue-hud/draw strip k=1 shown n=2 types=[0x3F/-2,0x3F/0] rect=(3510,1304,58,58)
+T=200826.491 f=- queue-hud/draw strip k=1 shown n=1 types=[0x3F/-2] rect=(3570,1304,58,58)
+T=200887.945 f=- queue-hud/trace QJ m=1 ne=1 types=[3f] round=0 cur=b aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=200984.041 f=- queue-hud/draw strip k=2 shown n=1 types=[0x3F/0] rect=(3570,1200,58,58)
+T=201006.929 f=- queue-hud/trace QJ m=0 ne=2 types=[2e,3f] round=1 cur=- aa8=1 ab8=0 paused=0 combat=1 ours=external
+T=201006.947 f=- queue-hud/trace QJ m=2 ne=1 types=[3f] round=2 cur=- aa8=1 ab8=0 paused=0 combat=1 ours=external
+T=201766.453 f=- queue-hud/trace QJ m=0 ne=2 types=[2e,3f] round=1 cur=- aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=202057.061 f=- queue-hud/draw strip k=2 shown n=1 types=[0x3F/0] rect=(3570,1200,58,58)
+T=202080.942 f=- queue-hud/icon resolved key=ed665482 type=0x0F param0=00000008 node=00000000 -> 'ip_speedburst'
+T=202080.945 f=- queue-hud/draw strip k=2 shown n=1 types=[0x0F/-1] rect=(3570,1200,58,58)
+T=202123.019 f=- queue-hud/trace QJ m=2 ne=2 types=[f,3f] round=1 cur=- aa8=1 ab8=0 paused=0 combat=1 ours=external
+T=202362.186 f=- queue-hud/trace QJ m=1 ne=1 types=[3f] round=0 cur=- aa8=0 ab8=1 paused=0 combat=1 ours=external
+T=202362.199 f=- queue-hud/trace QJ m=2 ne=2 types=[f,3f] round=1 cur=- aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=202582.229 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=1 cur=- aa8=0 ab8=1 paused=0 combat=1 ours=external
+T=202736.820 f=- queue-hud/draw strip k=1 hidden n=0 types=[] rect=(0,0,0,0)
+T=203008.109 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=2 cur=- aa8=0 ab8=1 paused=0 combat=1 ours=external
+T=203008.124 f=- queue-hud/trace QJ m=2 ne=4 types=[1,13,11,c] round=1 cur=- aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=203336.365 f=- queue-hud/trace QJ m=2 ne=4 types=[1e,1,11,c] round=1 cur=- aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=203407.040 f=- queue-hud/draw strip k=2 hidden n=0 types=[] rect=(0,0,0,0)
+T=203656.708 f=- queue-hud/trace QJ m=2 ne=1 types=[3f] round=2 cur=- aa8=1 ab8=0 paused=0 combat=1 ours=external
+T=203833.255 f=- queue-hud/draw strip k=1 shown n=2 types=[0x3F/-2,0x3F/0] rect=(3510,1304,58,58)
+T=203884.524 f=- queue-hud/trace QJ m=1 ne=1 types=[3f] round=0 cur=b aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=203884.703 f=- queue-hud/draw strip k=1 shown n=1 types=[0x3F/-2] rect=(3570,1304,58,58)
+T=204013.985 f=- queue-hud/trace QJ m=0 ne=5 types=[1,13,11,c,3f] round=1 cur=1 aa8=0 ab8=0 paused=0 combat=1 ours=external
+T=213323.265 f=- queue-hud/trace EDGE what=combat old=1 new=0 src=hud buf=0,0,0
+T=213323.275 f=- queue-hud/trace QJ m=0 ne=0 types=[] round=0 cur=1 aa8=0 ab8=0 paused=0 combat=0 ours=external
+T=213323.282 f=- queue-hud/trace QJ m=1 ne=0 types=[] round=0 cur=- aa8=0 ab8=0 paused=0 combat=0 ours=external
+T=213323.289 f=- queue-hud/trace QJ m=2 ne=0 types=[] round=0 cur=- aa8=0 ab8=0 paused=0 combat=0 ours=external
+T=213323.432 f=- queue-hud/draw hidden (empty queue) age=1 menu=0
+T=213323.450 f=- queue-hud/draw strip k=1 hidden n=0 types=[] rect=(0,0,0,0)
+T=213387.433 f=- queue-hud/icon resolved key=28ca5a2d type=0x3F param0=00000001 node=36cbf898 -> 'ip_battlemed01'
+T=213387.436 f=- queue-hud/draw strip k=2 shown n=1 types=[0x3F/0] rect=(3570,1200,58,58)
+T=213387.718 f=- queue-hud/main VIS cancel2 shown=1 why=queue rect=[3498,1200,58,58]
+T=213435.138 f=- queue-hud/trace QJ m=2 ne=1 types=[3f] round=1 cur=- aa8=1 ab8=0 paused=0 combat=0 ours=external
+T=213449.560 f=- queue-hud/trace EDGE what=paused old=0 new=1 src=hud buf=0,0,0
+T=215268.397 f=- queue-hud/trace CMD#8 m=0 cr=36a50040 kind=item id=1db tgt=800001b5 dec=dispatch_now fb=0 engq=0 buf=0 paused=1 combat=0
+T=215269.223 f=- queue-hud/trace STALE_CUR m=0 sub=1 since=0 aa8=0 ab8=0 paused=1
+T=215269.225 f=- queue-hud/trace REINJECT_NO cmd=8 m=0 why=no_leader
+T=215269.346 f=- queue-hud/icon resolved key=3781d88b type=0x2E param0=000001db node=0ab9b6b0 -> 'iw_sonicgren_001'
+T=215269.351 f=- queue-hud/draw shown slots=1 drawn=1 entries=1 round=0 cur=1 waiting=1 paused=1 [0x2E/-2] slot0=(2005,1389,106,106) hudScale=2.00
+T=215269.399 f=- queue-hud/main VIS cancel0 shown=1 why=queue rect=[1700,1519,440,64]
+T=215288.556 f=- queue-hud/main VIS cancel0 shown=0 why=combat rect=[1700,1519,440,64]
+T=215288.558 f=- queue-hud/main VIS cancel2 shown=0 why=combat rect=[3498,1200,58,58]
+T=215288.565 f=- queue-hud/trace EDGE what=combat old=0 new=1 src=hud buf=0,0,0
+T=215288.582 f=- queue-hud/trace HANDOFF m=0 active=8 buffered=0 cmds=-
+T=215288.719 f=- queue-hud/draw hidden (combat) age=1 menu=0
+T=215358.630 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=1 cur=1 aa8=0 ab8=0 paused=1 combat=1 ours=handoff@71ms
+T=217953.018 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=2 cur=1 aa8=0 ab8=0 paused=1 combat=1 ours=external
+T=217953.026 f=- queue-hud/trace QJ m=1 ne=1 types=[c] round=0 cur=- aa8=0 ab8=0 paused=1 combat=1 ours=external
+T=217953.036 f=- queue-hud/trace QJ m=2 ne=4 types=[1,13,11,c] round=1 cur=- aa8=1 ab8=0 paused=1 combat=1 ours=external
+T=218357.139 f=- queue-hud/draw strip k=2 hidden n=0 types=[] rect=(0,0,0,0)
+T=218884.188 f=- queue-hud/trace EDGE what=paused old=1 new=0 src=hud buf=0,0,0
+T=218913.969 f=- queue-hud/trace QJ m=0 ne=2 types=[2e,3f] round=1 cur=- aa8=1 ab8=0 paused=0 combat=1 ours=external
+T=218913.977 f=- queue-hud/trace QJ m=1 ne=0 types=[] round=0 cur=- aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=219669.589 f=- queue-hud/trace QJ m=0 ne=2 types=[2e,3f] round=1 cur=- aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=219770.110 f=- queue-hud/trace QJ m=2 ne=1 types=[c] round=1 cur=- aa8=1 ab8=0 paused=0 combat=1 ours=external
+T=220421.417 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=1 cur=- aa8=0 ab8=1 paused=0 combat=1 ours=external
+T=220421.426 f=- queue-hud/trace QJ m=1 ne=0 types=[] round=0 cur=- aa8=0 ab8=1 paused=0 combat=1 ours=external
+T=220421.436 f=- queue-hud/trace QJ m=2 ne=0 types=[] round=1 cur=- aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=220437.922 f=- queue-hud/draw strip k=2 shown n=2 types=[0x3F/0,0x3F/1] rect=(3510,1200,58,58)
+T=220522.708 f=- queue-hud/trace QJ m=2 ne=1 types=[3f] round=2 cur=- aa8=1 ab8=0 paused=0 combat=1 ours=external
+T=220941.418 f=- queue-hud/trace QJ m=1 ne=1 types=[3f] round=1 cur=- aa8=0 ab8=1 paused=0 combat=1 ours=external
+T=220941.558 f=- queue-hud/draw strip k=1 shown n=1 types=[0x3F/0] rect=(3570,1304,58,58)
+T=221843.558 f=- queue-hud/draw strip k=2 shown n=2 types=[0x3F/0,0x3F/1] rect=(3510,1200,58,58)
+T=221860.077 f=- queue-hud/icon resolved key=632d5ee0 type=0x0F param0=0000008a node=00000000 -> 'ip_battlemed01'
+T=221860.080 f=- queue-hud/draw strip k=2 shown n=2 types=[0x0F/-1,0x3F/0] rect=(3510,1200,58,58)
+T=221877.101 f=- queue-hud/draw strip k=2 shown n=1 types=[0x0F/-1] rect=(3570,1200,58,58)
+T=221893.889 f=- queue-hud/trace QJ m=0 ne=5 types=[1,13,11,c,3f] round=0 cur=b aa8=0 ab8=0 paused=0 combat=1 ours=external
+T=221893.899 f=- queue-hud/trace QJ m=1 ne=2 types=[c,3f] round=1 cur=1 aa8=0 ab8=0 paused=0 combat=1 ours=external
+T=221893.907 f=- queue-hud/trace QJ m=2 ne=2 types=[f,3f] round=1 cur=- aa8=1 ab8=0 paused=0 combat=1 ours=external
+T=221894.026 f=- queue-hud/draw strip k=1 shown n=2 types=[0x0C/-2,0x3F/0] rect=(3510,1304,58,58)
+T=221912.442 f=- queue-hud/draw strip k=1 shown n=2 types=[0x3F/-2,0x3F/0] rect=(3510,1304,58,58)
+T=221945.317 f=- queue-hud/draw strip k=2 shown n=1 types=[0x0F/-1] rect=(3570,1200,58,58)
+T=221961.343 f=- queue-hud/draw strip k=2 shown n=1 types=[0x0F/-1] rect=(3570,1200,58,58)
+T=221993.894 f=- queue-hud/trace QJ m=1 ne=1 types=[3f] round=1 cur=1 aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=222094.512 f=- queue-hud/trace QJ m=2 ne=2 types=[f,3f] round=1 cur=- aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=222719.353 f=- queue-hud/trace QJ m=2 ne=1 types=[3f] round=2 cur=- aa8=1 ab8=0 paused=0 combat=1 ours=external
+T=222719.486 f=- queue-hud/draw strip k=2 shown n=1 types=[0x3F/1] rect=(3570,1200,58,58)
+T=222938.505 f=- queue-hud/trace QJ m=0 ne=4 types=[13,11,c,3f] round=0 cur=b aa8=0 ab8=0 paused=0 combat=1 ours=external
+T=223051.360 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=0 cur=b aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=223418.776 f=- queue-hud/draw strip k=1 shown n=1 types=[0x3F/0] rect=(3570,1304,58,58)
+T=223451.661 f=- queue-hud/draw strip k=2 shown n=1 types=[0x3F/1] rect=(3570,1200,58,58)
+T=223471.250 f=- queue-hud/trace QJ m=1 ne=1 types=[3f] round=1 cur=- aa8=0 ab8=1 paused=0 combat=1 ours=external
+T=223471.261 f=- queue-hud/trace QJ m=2 ne=1 types=[3f] round=0 cur=1 aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=223471.384 f=- queue-hud/draw strip k=2 shown n=1 types=[0x3F/-2] rect=(3570,1200,58,58)
+T=223957.716 f=- queue-hud/draw strip k=2 shown n=2 types=[0x3F/-2,0x3F/0] rect=(3510,1200,58,58)
+T=224019.168 f=- queue-hud/trace QJ m=2 ne=1 types=[3f] round=1 cur=1 aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=224535.723 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=0 cur=- aa8=0 ab8=1 paused=0 combat=1 ours=external
+T=224924.725 f=- queue-hud/draw strip k=1 shown n=3 types=[0x3F/-2,0x3F/0,0x3F/1] rect=(3450,1304,58,58)
+T=224943.247 f=- queue-hud/draw strip k=1 shown n=2 types=[0x3F/-2,0x3F/0] rect=(3510,1304,58,58)
+T=224958.468 f=- queue-hud/trace QJ m=1 ne=1 types=[3f] round=1 cur=1 aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=224976.226 f=- queue-hud/draw strip k=2 shown n=1 types=[0x3F/0] rect=(3570,1200,58,58)
+T=225075.448 f=- queue-hud/trace QJ m=2 ne=1 types=[3f] round=1 cur=- aa8=0 ab8=1 paused=0 combat=1 ours=external
+T=226044.251 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=0 cur=1 aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=226442.177 f=- queue-hud/draw strip k=1 shown n=1 types=[0x3F/0] rect=(3570,1304,58,58)
+T=226479.234 f=- queue-hud/trace QJ m=1 ne=1 types=[3f] round=1 cur=- aa8=0 ab8=1 paused=0 combat=1 ours=external
+T=226479.244 f=- queue-hud/trace QJ m=2 ne=1 types=[3f] round=2 cur=1 aa8=0 ab8=0 paused=0 combat=1 ours=external
+T=226479.370 f=- queue-hud/draw strip k=2 shown n=3 types=[0x3F/-2,0x3F/0,0x3F/1] rect=(3450,1200,58,58)
+T=226514.457 f=- queue-hud/draw strip k=2 shown n=2 types=[0x3F/-2,0x3F/0] rect=(3510,1200,58,58)
+T=226582.198 f=- queue-hud/trace QJ m=2 ne=1 types=[3f] round=1 cur=1 aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=226967.231 f=- queue-hud/draw strip k=2 shown n=3 types=[0x3F/-2,0x3F/0,0x3F/1] rect=(3450,1200,58,58)
+T=227000.550 f=- queue-hud/trace QJ m=2 ne=1 types=[3f] round=2 cur=1 aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=227525.297 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=0 cur=- aa8=0 ab8=1 paused=0 combat=1 ours=external
+T=227950.090 f=- queue-hud/trace QJ m=1 ne=1 types=[3f] round=1 cur=1 aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=227950.101 f=- queue-hud/trace QJ m=2 ne=1 types=[3f] round=3 cur=1 aa8=1 ab8=0 paused=0 combat=1 ours=external
+T=227950.221 f=- queue-hud/draw strip k=1 shown n=2 types=[0x3F/-2,0x3F/0] rect=(3510,1304,58,58)
+T=227950.221 f=- queue-hud/draw strip k=2 shown n=4 types=[0x3F/-2,0x3F/0,0x3F/1,0x3F/2] rect=(3390,1200,58,58)
+T=229047.262 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=0 cur=1 aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=229447.721 f=- queue-hud/draw strip k=1 shown n=1 types=[0x3F/0] rect=(3570,1304,58,58)
+T=229447.723 f=- queue-hud/draw strip k=2 shown n=4 types=[0x3F/-2,0x3F/0,0x3F/1,0x3F/2] rect=(3390,1200,58,58)
+T=229465.785 f=- queue-hud/trace QJ m=1 ne=1 types=[3f] round=1 cur=- aa8=0 ab8=1 paused=0 combat=1 ours=external
+T=229465.794 f=- queue-hud/trace QJ m=2 ne=1 types=[3f] round=2 cur=1 aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=229465.916 f=- queue-hud/draw strip k=2 shown n=3 types=[0x3F/-2,0x3F/0,0x3F/1] rect=(3450,1200,58,58)
+T=230520.105 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=0 cur=- aa8=0 ab8=1 paused=0 combat=1 ours=external
+T=230963.655 f=- queue-hud/trace QJ m=1 ne=1 types=[3f] round=2 cur=1 aa8=0 ab8=0 paused=0 combat=1 ours=external
+T=230963.778 f=- queue-hud/draw strip k=1 shown n=3 types=[0x3F/-2,0x3F/0,0x3F/1] rect=(3450,1304,58,58)
+T=230982.398 f=- queue-hud/draw strip k=1 shown n=2 types=[0x3F/-2,0x3F/0] rect=(3510,1304,58,58)
+T=230982.400 f=- queue-hud/draw strip k=2 shown n=2 types=[0x3F/0,0x3F/1] rect=(3510,1200,58,58)
+T=231063.239 f=- queue-hud/trace QJ m=1 ne=1 types=[3f] round=1 cur=1 aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=231063.249 f=- queue-hud/trace QJ m=2 ne=1 types=[3f] round=2 cur=- aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=232012.984 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=0 cur=1 aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=232485.319 f=- queue-hud/draw strip k=2 shown n=3 types=[0x3F/0,0x3F/1,0x3F/2] rect=(3450,1200,58,58)
+T=232506.306 f=- queue-hud/draw strip k=1 shown n=1 types=[0x3F/0] rect=(3570,1304,58,58)
+T=232506.309 f=- queue-hud/draw strip k=2 shown n=4 types=[0x0C/-2,0x3F/0,0x3F/1,0x3F/2] rect=(3390,1200,58,58)
+T=232543.203 f=- queue-hud/draw strip k=2 shown n=4 types=[0x3F/-2,0x3F/0,0x3F/1,0x3F/2] rect=(3390,1200,58,58)
+T=232558.117 f=- queue-hud/trace QJ m=1 ne=1 types=[3f] round=1 cur=- aa8=0 ab8=1 paused=0 combat=1 ours=external
+T=232558.131 f=- queue-hud/trace QJ m=2 ne=1 types=[3f] round=3 cur=1 aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=233544.422 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=0 cur=- aa8=0 ab8=1 paused=0 combat=1 ours=external
+T=233970.950 f=- queue-hud/trace QJ m=1 ne=1 types=[3f] round=2 cur=- aa8=0 ab8=1 paused=0 combat=1 ours=external
+T=233971.073 f=- queue-hud/draw strip k=1 shown n=2 types=[0x3F/0,0x3F/1] rect=(3510,1304,58,58)
+T=233986.472 f=- queue-hud/draw strip k=1 shown n=3 types=[0x0C/-2,0x3F/0,0x3F/1] rect=(3450,1304,58,58)
+T=234004.120 f=- queue-hud/draw strip k=1 shown n=3 types=[0x3F/-2,0x3F/0,0x3F/1] rect=(3450,1304,58,58)
+T=234055.369 f=- queue-hud/draw strip k=2 shown n=3 types=[0x3F/0,0x3F/1,0x3F/2] rect=(3450,1200,58,58)
+T=234089.661 f=- queue-hud/trace QJ m=1 ne=1 types=[3f] round=2 cur=b aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=234089.671 f=- queue-hud/trace QJ m=2 ne=1 types=[3f] round=3 cur=- aa8=0 ab8=1 paused=0 combat=1 ours=external
+T=234176.115 f=- queue-hud/trace EDGE what=paused old=0 new=1 src=hud buf=0,0,0
+T=235961.502 f=- queue-hud/trace EDGE what=paused old=1 new=0 src=hud buf=0,0,0
+T=236730.783 f=- queue-hud/trace EDGE what=paused old=0 new=1 src=hud buf=0,0,0
+T=245397.148 f=- queue-hud/trace EDGE what=paused old=1 new=0 src=hud buf=0,0,0
+T=245539.238 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=0 cur=1 aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=246005.341 f=- queue-hud/icon resolved key=4471c4cd type=0x3F param0=00000001 node=36ceeac0 -> 'ip_resistenergy1'
+T=246005.344 f=- queue-hud/draw strip k=1 shown n=2 types=[0x3F/0,0x3F/1] rect=(3510,1304,58,58)
+T=246005.344 f=- queue-hud/draw strip k=2 shown n=4 types=[0x3F/0,0x3F/1,0x3F/2,0x3F/3] rect=(3390,1200,58,58)
+T=246071.712 f=- queue-hud/trace QJ m=1 ne=1 types=[3f] round=2 cur=- aa8=0 ab8=1 paused=0 combat=1 ours=external
+T=246071.724 f=- queue-hud/trace QJ m=2 ne=1 types=[3f] round=4 cur=- aa8=1 ab8=0 paused=0 combat=1 ours=external
+T=247051.519 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=0 cur=- aa8=0 ab8=1 paused=0 combat=1 ours=external
+T=247499.158 f=- queue-hud/draw strip k=1 shown n=4 types=[0x3F/-2,0x3F/0,0x3F/1,0x3F/2] rect=(3390,1304,58,58)
+T=247515.141 f=- queue-hud/draw strip k=1 shown n=3 types=[0x3F/-2,0x3F/0,0x3F/1] rect=(3450,1304,58,58)
+T=247515.143 f=- queue-hud/draw strip k=2 shown n=4 types=[0x3F/0,0x3F/1,0x3F/2,0x3F/3] rect=(3390,1200,58,58)
+T=247534.070 f=- queue-hud/draw strip k=2 shown n=4 types=[0x3F/-2,0x3F/0,0x3F/1,0x3F/2] rect=(3390,1200,58,58)
+T=247582.722 f=- queue-hud/trace QJ m=1 ne=1 types=[3f] round=2 cur=1 aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=247582.733 f=- queue-hud/trace QJ m=2 ne=1 types=[3f] round=3 cur=1 aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=248535.309 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=0 cur=1 aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=249022.984 f=- queue-hud/draw strip k=1 shown n=2 types=[0x3F/0,0x3F/1] rect=(3510,1304,58,58)
+T=249040.361 f=- queue-hud/draw strip k=2 shown n=3 types=[0x3F/0,0x3F/1,0x3F/2] rect=(3450,1200,58,58)
+T=249092.732 f=- queue-hud/trace QJ m=1 ne=1 types=[3f] round=2 cur=- aa8=0 ab8=1 paused=0 combat=1 ours=external
+T=249092.743 f=- queue-hud/trace QJ m=2 ne=1 types=[3f] round=3 cur=- aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=249569.019 f=- queue-hud/trace EDGE what=paused old=0 new=1 src=hud buf=0,0,0
+T=249640.325 f=- queue-hud/trace QJ m=2 ne=0 types=[] round=3 cur=- aa8=0 ab8=0 paused=1 combat=1 ours=external
+T=249948.272 f=- queue-hud/draw strip k=2 hidden n=0 types=[] rect=(0,0,0,0)
+T=254619.122 f=- queue-hud/trace EDGE what=paused old=1 new=0 src=hud buf=0,0,0
+T=255154.492 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=0 cur=- aa8=0 ab8=1 paused=0 combat=1 ours=external
+T=255589.193 f=- queue-hud/draw strip k=1 shown n=3 types=[0x3F/-2,0x3F/0,0x3F/1] rect=(3450,1304,58,58)
+T=255623.980 f=- queue-hud/draw strip k=2 shown n=4 types=[0x3F/0,0x3F/1,0x3F/2,0x3F/3] rect=(3390,1200,58,58)
+T=255692.152 f=- queue-hud/trace QJ m=1 ne=1 types=[3f] round=2 cur=b aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=255692.160 f=- queue-hud/trace QJ m=2 ne=0 types=[] round=0 cur=- aa8=0 ab8=0 paused=0 combat=1 ours=external
+T=256026.340 f=- queue-hud/draw strip k=2 hidden n=0 types=[] rect=(0,0,0,0)
+T=256676.272 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=0 cur=1 aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=257097.677 f=- queue-hud/draw strip k=1 shown n=2 types=[0x3F/0,0x3F/1] rect=(3510,1304,58,58)
+T=257200.116 f=- queue-hud/trace QJ m=1 ne=1 types=[3f] round=2 cur=- aa8=0 ab8=1 paused=0 combat=1 ours=external
+T=257534.281 f=- queue-hud/trace EDGE what=paused old=0 new=1 src=hud buf=0,0,0
+T=265902.846 f=- queue-hud/trace EDGE what=paused old=1 new=0 src=hud buf=0,0,0
+T=266571.599 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=0 cur=- aa8=0 ab8=1 paused=0 combat=1 ours=external
+T=266980.433 f=- queue-hud/draw strip k=1 shown n=4 types=[0x3F/-2,0x3F/0,0x3F/1,0x3F/2] rect=(3390,1304,58,58)
+T=266997.879 f=- queue-hud/trace QJ m=1 ne=1 types=[3f] round=2 cur=1 aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=266997.937 f=- queue-hud/draw strip k=1 shown n=3 types=[0x3F/-2,0x3F/0,0x3F/1] rect=(3450,1304,58,58)
+T=267047.552 f=- queue-hud/draw strip k=2 shown n=1 types=[0x3F/0] rect=(3570,1200,58,58)
+T=267449.113 f=- queue-hud/draw strip k=2 hidden n=0 types=[] rect=(0,0,0,0)
+T=268079.189 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=0 cur=1 aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=268507.756 f=- queue-hud/trace QJ m=1 ne=1 types=[3f] round=2 cur=- aa8=0 ab8=1 paused=0 combat=1 ours=external
+T=268507.808 f=- queue-hud/draw strip k=1 shown n=2 types=[0x3F/0,0x3F/1] rect=(3510,1304,58,58)
+T=269559.973 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=0 cur=- aa8=0 ab8=1 paused=0 combat=1 ours=external
+T=270012.044 f=- queue-hud/draw strip k=1 shown n=4 types=[0x3F/-2,0x3F/0,0x3F/1,0x3F/2] rect=(3390,1304,58,58)
+T=270033.215 f=- queue-hud/draw strip k=1 shown n=3 types=[0x3F/-2,0x3F/0,0x3F/1] rect=(3450,1304,58,58)
+T=270064.744 f=- queue-hud/draw strip k=2 shown n=1 types=[0x3F/0] rect=(3570,1200,58,58)
+T=270079.737 f=- queue-hud/trace QJ m=1 ne=1 types=[3f] round=2 cur=1 aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=270471.866 f=- queue-hud/draw strip k=2 hidden n=0 types=[] rect=(0,0,0,0)
+T=271065.199 f=- queue-hud/draw strip k=1 shown n=4 types=[0x3F/-2,0x3F/0,0x3F/1,0x3F/2] rect=(3390,1304,58,58)
+T=271127.043 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=0 cur=1 aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=271127.055 f=- queue-hud/trace QJ m=1 ne=1 types=[3f] round=3 cur=1 aa8=1 ab8=1 paused=0 combat=1 ours=external
+T=271545.780 f=- queue-hud/draw strip k=1 shown n=3 types=[0x3F/0,0x3F/1,0x3F/2] rect=(3450,1304,58,58)
+T=271568.342 f=- queue-hud/trace QJ m=1 ne=1 types=[3f] round=3 cur=- aa8=0 ab8=1 paused=0 combat=1 ours=external
+T=272611.690 f=- queue-hud/trace QJ m=0 ne=1 types=[3f] round=0 cur=- aa8=0 ab8=1 paused=0 combat=1 ours=external
+T=272927.185 f=- queue-hud/trace EDGE what=paused old=0 new=1 src=hud buf=0,0,0
+T=272927.187 f=- queue-hud/trace EDGE what=menu old=0 new=1 src=hud buf=0,0,0
+T=272927.197 f=- queue-hud/trace QJ m=0 ne=0 types=[] round=0 cur=- aa8=0 ab8=1 paused=1 combat=1 ours=external

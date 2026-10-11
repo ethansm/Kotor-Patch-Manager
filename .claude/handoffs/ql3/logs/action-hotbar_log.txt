@@ -1,0 +1,603 @@
+# kplog session 2026-10-11 13:02:54 | kpatch.log v1 | patcher ABI 1
+# KOTOR_VERSION_SHA=6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF
+# interfaces:
+#   k2.guiinput v1 by gui-input
+#   k2.hud v1 by hud-host
+#   k2.portraitslots v1 by portrait-slots
+#   k2.rangedai v1 by ranged-ai
+#   k2.saveevents v1 by save-events
+#   kpatch.log v1 by patcher
+T=213.209 f=- action-hotbar/build hud-host: connected (registered)
+T=213.211 f=- action-hotbar/cfg save-events: connected (registered)
+T=16085.742 f=- action-hotbar/main action-hotbar 0.1.3-dev loaded; pid=312 ini=action_hotbar.ini core=1
+T=16085.747 f=- action-hotbar/main cwd[0]=S:\steamapps\common\Knights of the Old Republic II
+T=16085.748 f=- action-hotbar/main addresses: invoke=00751750 kbdevGlobal=0099c884 app=00a1b4a4 getCreature=007e5d80 whitelist=0099e5ec,009a044c,009a7bac,009a8fcc
+T=16086.013 f=- action-hotbar/cfg persave: save loading: absent (live hotbar kept): source=cloudsaves/62703561/000008 - game7/action_hotbar.ini
+T=16807.811 f=- action-hotbar/build H3 build: panel=08ab23c0 vtable=0099dcc4 controls=111 gff=08520f78 (previous bar panel=00000000 built=0)
+T=16807.820 f=- action-hotbar/build H3: projection flag 00a1b9f0 = 1 read=ok (cleared for the binds, restored after)
+T=16807.867 f=- action-hotbar/build H3: window 000800c2 client=3840x1600 ref=800x600 -> x correction 0.5556
+T=16807.922 f=- action-hotbar/build tex fph_slot: created, 128x128 RGBA queued for upload (basic 08b0b0a0, pending 43)
+T=16807.950 f=- action-hotbar/tip img: loaded 'fph_slot' -> 08b11940 (pool 1)
+T=16808.001 f=- action-hotbar/build tex fph_slot_hi: created, 128x128 RGBA queued for upload (basic 08b0b1a0, pending 44)
+T=16808.018 f=- action-hotbar/tip img: loaded 'fph_slot_hi' -> 08b11a00 (pool 2)
+T=16808.050 f=- action-hotbar/build tex fph_edit: created, 72x128 RGBA queued for upload (basic 08b0b2a0, pending 45)
+T=16808.066 f=- action-hotbar/tip img: loaded 'fph_edit' -> 08b11ac0 (pool 3)
+T=16808.097 f=- action-hotbar/build tex fph_edit_hi: created, 72x128 RGBA queued for upload (basic 08b0b3a0, pending 46)
+T=16808.112 f=- action-hotbar/tip img: loaded 'fph_edit_hi' -> 08b11b80 (pool 4)
+T=16808.120 f=- action-hotbar/build tex fph_tgt_lowhp: created, 32x32 RGBA queued for upload (basic 08b0b4a0, pending 47)
+T=16808.137 f=- action-hotbar/tip img: loaded 'fph_tgt_lowhp' -> 08b11c40 (pool 5)
+T=16808.143 f=- action-hotbar/build tex fph_tgt_self: created, 32x32 RGBA queued for upload (basic 08b0b5a0, pending 48)
+T=16808.158 f=- action-hotbar/tip img: loaded 'fph_tgt_self' -> 08b45248 (pool 6)
+T=16808.186 f=- action-hotbar/build tex fph_mode: created, 72x128 RGBA queued for upload (basic 08b0b6a0, pending 49)
+T=16808.202 f=- action-hotbar/tip img: loaded 'fph_mode' -> 08b45308 (pool 7)
+T=16808.246 f=- action-hotbar/build tex fph_mode_hi: created, 72x128 RGBA queued for upload (basic 08b0b7a0, pending 50)
+T=16808.261 f=- action-hotbar/tip img: loaded 'fph_mode_hi' -> 08b453c8 (pool 8)
+T=16813.325 f=- action-hotbar/build H3: 86/86 controls created (indices 111..196) buttons=10/10 editor=25/25 -> editor ENABLED frame=0
+T=16813.329 f=- action-hotbar/build H3: picker background rect [11,960,1120,298]
+T=21866.812 f=- action-hotbar/gate tick: first HUD tick hud=08ab23c0 kbdev=0
+T=21866.813 f=- action-hotbar/gate tick: hud pointer now 08ab23c0
+T=21867.157 f=- action-hotbar/cfg cfg: Verbose=1 only applies without the kpatch.log core; use kplog.ini [action-hotbar] level=debug
+T=21867.158 f=- action-hotbar/cfg cfg: loaded action_hotbar.ini: invoke=1 verbose=1 kbdev=-1 profiles=9 warnings=0
+T=21867.159 f=- action-hotbar/cfg cfg: TargetProbe=2
+T=21867.163 f=- action-hotbar/cfg cfg: profile for character '' -> 0/10 slots bound
+T=21867.169 f=- action-hotbar/gate GATE open=0 why=modal-open hud=08ab23c0 f48=ff8fb44d bits=400 top=06c12200 topf48=4d0a3045
+T=21867.170 f=- action-hotbar/gate gate: inactive (modal open)
+T=21867.171 f=- action-hotbar/gate panels: hud=08ab23c0 hudvt=0099dcc4 mgr=06b40260 modals=1 panels=1
+T=21867.172 f=- action-hotbar/gate modal[0]=06c12200 vt=009a5c84 flags=4d0a3045
+T=21867.172 f=- action-hotbar/gate panel[0]=06c12200 vt=009a5c84 flags=4d0a3045
+T=21867.184 f=- action-hotbar/char character: '' -> 'atton'
+T=21867.186 f=- action-hotbar/cfg cfg: profile for character 'atton' -> 0/10 slots bound
+T=21867.189 f=- action-hotbar/slots eff: character 'atton' autofill=0 explicit=0 auto=0
+T=21867.192 f=- action-hotbar/slots btn[0].bg key 1: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.192 f=- action-hotbar/slots btn[0].ic key 1: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.193 f=- action-hotbar/slots btn[0].num key 1: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.194 f=- action-hotbar/slots btn[0].qty key 1: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.195 f=- action-hotbar/slots btn[0].tgt key 1: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.196 f=- action-hotbar/slots btn[1].bg key 2: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.196 f=- action-hotbar/slots btn[1].ic key 2: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.197 f=- action-hotbar/slots btn[1].num key 2: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.197 f=- action-hotbar/slots btn[1].qty key 2: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.198 f=- action-hotbar/slots btn[1].tgt key 2: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.199 f=- action-hotbar/slots btn[2].bg key 3: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.199 f=- action-hotbar/slots btn[2].ic key 3: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.200 f=- action-hotbar/slots btn[2].num key 3: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.201 f=- action-hotbar/slots btn[2].qty key 3: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.201 f=- action-hotbar/slots btn[2].tgt key 3: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.202 f=- action-hotbar/slots btn[3].bg key 4: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.202 f=- action-hotbar/slots btn[3].ic key 4: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.203 f=- action-hotbar/slots btn[3].num key 4: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.204 f=- action-hotbar/slots btn[3].qty key 4: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.204 f=- action-hotbar/slots btn[3].tgt key 4: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.205 f=- action-hotbar/slots btn[4].bg key 5: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.205 f=- action-hotbar/slots btn[4].ic key 5: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.206 f=- action-hotbar/slots btn[4].num key 5: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.206 f=- action-hotbar/slots btn[4].qty key 5: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.207 f=- action-hotbar/slots btn[4].tgt key 5: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.208 f=- action-hotbar/slots btn[5].bg key 6: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.208 f=- action-hotbar/slots btn[5].ic key 6: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.209 f=- action-hotbar/slots btn[5].num key 6: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.209 f=- action-hotbar/slots btn[5].qty key 6: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.210 f=- action-hotbar/slots btn[5].tgt key 6: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.211 f=- action-hotbar/slots btn[6].bg key 7: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.211 f=- action-hotbar/slots btn[6].ic key 7: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.212 f=- action-hotbar/slots btn[6].num key 7: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.212 f=- action-hotbar/slots btn[6].qty key 7: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.213 f=- action-hotbar/slots btn[6].tgt key 7: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.214 f=- action-hotbar/slots btn[7].bg key 8: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.214 f=- action-hotbar/slots btn[7].ic key 8: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.215 f=- action-hotbar/slots btn[7].num key 8: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.216 f=- action-hotbar/slots btn[7].qty key 8: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.216 f=- action-hotbar/slots btn[7].tgt key 8: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.217 f=- action-hotbar/slots btn[8].bg key 9: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.217 f=- action-hotbar/slots btn[8].ic key 9: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.218 f=- action-hotbar/slots btn[8].num key 9: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.218 f=- action-hotbar/slots btn[8].qty key 9: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.219 f=- action-hotbar/slots btn[8].tgt key 9: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.220 f=- action-hotbar/slots btn[9].bg key 0: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.220 f=- action-hotbar/slots btn[9].ic key 0: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.221 f=- action-hotbar/slots btn[9].num key 0: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.221 f=- action-hotbar/slots btn[9].qty key 0: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.222 f=- action-hotbar/slots btn[9].tgt key 0: hidden -> hidden (hud not active) flags 00000028->00000028
+T=21867.223 f=- action-hotbar/input hover: slot -2 -> -1 cursor=(0,0)
+T=21867.240 f=- action-hotbar/input wheel: subscribed to k2.guiinput (token 1)
+T=21867.249 f=- action-hotbar/edit edit: toggle alpha -1.00 -> 1.00
+T=21867.252 f=- action-hotbar/edit edit: mode alpha -1.00 -> 0.35
+T=23644.237 f=- action-hotbar/char character: 'atton' -> 'objfffffffd'
+T=23644.245 f=- action-hotbar/cfg cfg: profile for character 'objfffffffd' -> 4/10 slots bound
+T=23644.247 f=- action-hotbar/cfg cfg:   Bottom1 = spell:10
+T=23644.247 f=- action-hotbar/cfg cfg:   Bottom2 = spell:34
+T=23644.248 f=- action-hotbar/cfg cfg:   Bottom3 = spell:22
+T=23644.249 f=- action-hotbar/cfg cfg:   Bottom4 = spell:42
+T=23644.258 f=- action-hotbar/slots eff: character 'objfffffffd' autofill=0 explicit=4 auto=0
+T=23644.259 f=- action-hotbar/slots eff:   Bottom1 = spell:10
+T=23644.259 f=- action-hotbar/slots eff:   Bottom2 = spell:34
+T=23644.260 f=- action-hotbar/slots eff:   Bottom3 = spell:22
+T=23644.260 f=- action-hotbar/slots eff:   Bottom4 = spell:42
+T=23715.923 f=- action-hotbar/gate GATE open=0 why=hud-ignored hud=08ab23c0 f48=ff8fb445 bits=400 top=0881ab18 topf48=656b6045
+T=23715.923 f=- action-hotbar/gate gate: inactive (hud not in list)
+T=23715.925 f=- action-hotbar/gate panels: hud=08ab23c0 hudvt=0099dcc4 mgr=06b40260 modals=0 panels=2
+T=23715.930 f=- action-hotbar/gate panel[0]=08ab23c0 vt=0099dcc4 flags=ff8fb445
+T=23715.931 f=- action-hotbar/gate panel[1]=0881ab18 vt=009a044c flags=656b6045
+T=25272.284 f=- action-hotbar/build tex fph_slot (frame 120): gl=4191 constructed=1 missing=0 pixels=00000000 128x128
+T=25272.287 f=- action-hotbar/build tex fph_slot_hi (frame 120): gl=4190 constructed=1 missing=0 pixels=00000000 128x128
+T=25272.288 f=- action-hotbar/build tex fph_edit (frame 120): gl=4189 constructed=1 missing=0 pixels=00000000 72x128
+T=25272.288 f=- action-hotbar/build tex fph_edit_hi (frame 120): gl=4188 constructed=1 missing=0 pixels=00000000 72x128
+T=25272.289 f=- action-hotbar/build tex fph_tgt_lowhp (frame 120): gl=4187 constructed=1 missing=0 pixels=00000000 32x32
+T=25272.289 f=- action-hotbar/build tex fph_tgt_self (frame 120): gl=4186 constructed=1 missing=0 pixels=00000000 32x32
+T=25272.290 f=- action-hotbar/build tex fph_mode (frame 120): gl=4185 constructed=1 missing=0 pixels=00000000 72x128
+T=25272.291 f=- action-hotbar/build tex fph_mode_hi (frame 120): gl=4184 constructed=1 missing=0 pixels=00000000 72x128
+T=50381.632 f=- action-hotbar/gate GATE open=0 why=hud-ignored hud=08ab23c0 f48=ff8fb445 bits=400 top=0856f088 topf48=00000045
+T=54579.776 f=- action-hotbar/main heartbeat: frame=1800 gate=0 char='objfffffffd' ring=0 invoke=1 cfgMtime=1791518926855
+T=54579.780 f=- action-hotbar/main heartbeat: bar panel=08ab23c0 built=10 vis=0000000000 wfaults=0 pfaults=0 efaults=0 ifaults=0 gateflaps=2
+T=64424.743 f=- action-hotbar/gate GATE open=0 why=hud-ignored hud=08ab23c0 f48=ff8fb445 bits=400 top=0881ab18 topf48=656b6045
+T=66265.030 f=- action-hotbar/gate GATE open=0 why=hud-ignored hud=08ab23c0 f48=ff8fb445 bits=400 top=0856f088 topf48=00000045
+T=73033.601 f=- action-hotbar/gate GATE open=0 why=hud-ignored hud=08ab23c0 f48=ff8fb445 bits=400 top=0881ab18 topf48=656b6045
+T=87542.922 f=- action-hotbar/main heartbeat: frame=3600 gate=0 char='objfffffffd' ring=0 invoke=1 cfgMtime=1791518926855
+T=87542.927 f=- action-hotbar/main heartbeat: bar panel=08ab23c0 built=10 vis=0000000000 wfaults=0 pfaults=0 efaults=0 ifaults=0 gateflaps=2
+T=87665.705 f=- action-hotbar/input cap: dev=0 dik=01 down mods=--- -> pass(edit closed)
+T=87671.494 f=- action-hotbar/gate GATE open=0 why=other-panel-on-top hud=08ab23c0 f48=ff8fb445 bits=400 top=08560550 topf48=00000045
+T=87671.494 f=- action-hotbar/gate gate: inactive (other panel on top)
+T=87671.496 f=- action-hotbar/gate panels: hud=08ab23c0 hudvt=0099dcc4 mgr=06b40260 modals=0 panels=3
+T=87671.496 f=- action-hotbar/gate panel[0]=08bd3008 vt=009a701c flags=4d
+T=87671.497 f=- action-hotbar/gate panel[1]=0881ab18 vt=009a044c flags=656b6045
+T=87671.497 f=- action-hotbar/gate panel[2]=08560550 vt=0099e454 flags=45
+T=87732.654 f=- action-hotbar/input cap: dev=0 dik=01 up mods=--- -> pass
+T=88942.148 f=- action-hotbar/gate GATE open=0 why=modal-open hud=08ab23c0 f48=ff8fb445 bits=400 top=08799c28 topf48=fff3004d
+T=88942.150 f=- action-hotbar/gate gate: inactive (modal open)
+T=88942.151 f=- action-hotbar/gate panels: hud=08ab23c0 hudvt=0099dcc4 mgr=06b40260 modals=1 panels=4
+T=88942.152 f=- action-hotbar/gate modal[0]=08799c28 vt=009a3fbc flags=fff3004d
+T=88942.152 f=- action-hotbar/gate panel[0]=08bd3008 vt=009a701c flags=d
+T=88942.153 f=- action-hotbar/gate panel[1]=0881ab18 vt=009a044c flags=656b6005
+T=88942.155 f=- action-hotbar/gate panel[2]=08560550 vt=0099e454 flags=5
+T=88942.155 f=- action-hotbar/gate panel[3]=08799c28 vt=009a3fbc flags=fff3004d
+T=90954.133 f=- action-hotbar/gate GATE open=0 why=modal-open hud=08ab23c0 f48=ff8fb445 bits=400 top=0849ab20 topf48=00020045
+T=92791.694 f=- action-hotbar/gate GATE open=0 why=other-panel-on-top hud=08ab23c0 f48=ff8fb445 bits=400 top=06c12200 topf48=4d0a3045
+T=92791.696 f=- action-hotbar/gate gate: inactive (other panel on top)
+T=92791.697 f=- action-hotbar/gate panels: hud=08ab23c0 hudvt=0099dcc4 mgr=06b40260 modals=0 panels=5
+T=92791.697 f=- action-hotbar/gate panel[0]=08bd3008 vt=009a701c flags=d
+T=92791.699 f=- action-hotbar/gate panel[1]=0881ab18 vt=009a044c flags=656b6005
+T=92791.701 f=- action-hotbar/gate panel[2]=08560550 vt=0099e454 flags=5
+T=92791.702 f=- action-hotbar/gate panel[3]=08799c28 vt=009a3fbc flags=fff3024d
+T=92791.702 f=- action-hotbar/gate panel[4]=06c12200 vt=009a5c84 flags=4d0a3045
+T=92817.910 f=- action-hotbar/cfg persave: save loading: absent (live hotbar kept): source=cloudsaves/62703561/000007 - game6/action_hotbar.ini
+T=93810.373 f=- action-hotbar/build H3 build: panel=08ab23c0 vtable=0099dcc4 controls=111 gff=08c0fe70 (previous bar panel=08ab23c0 built=10)
+T=93810.374 f=- action-hotbar/build H3: replacing bar of old HUD 08ab23c0 (its labels stay leaked, never freed)
+T=93810.382 f=- action-hotbar/build H3: projection flag 00a1b9f0 = 1 read=ok (cleared for the binds, restored after)
+T=93810.404 f=- action-hotbar/build H3: window 000800c2 client=3840x1600 ref=800x600 -> x correction 0.5556
+T=93814.347 f=- action-hotbar/build H3: 86/86 controls created (indices 111..196) buttons=10/10 editor=25/25 -> editor ENABLED frame=3857
+T=93814.350 f=- action-hotbar/build H3: picker background rect [11,960,1120,298]
+T=96406.524 f=- action-hotbar/gate tick: gap of 3614 ms since previous HUD tick (load/menu/HUD destroyed?)
+T=96406.551 f=- action-hotbar/gate GATE open=0 why=other-panel-on-top hud=08ab23c0 f48=00000045 bits=000 top=06c12200 topf48=4d0a3045
+T=96406.562 f=- action-hotbar/char character: 'objfffffffd' -> 'atton'
+T=96406.565 f=- action-hotbar/cfg cfg: profile for character 'atton' -> 0/10 slots bound
+T=96406.569 f=- action-hotbar/slots eff: character 'atton' autofill=0 explicit=0 auto=0
+T=96406.572 f=- action-hotbar/slots btn[0].bg key 1: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.573 f=- action-hotbar/slots btn[0].ic key 1: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.574 f=- action-hotbar/slots btn[0].num key 1: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.575 f=- action-hotbar/slots btn[0].qty key 1: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.578 f=- action-hotbar/slots btn[0].tgt key 1: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.579 f=- action-hotbar/slots btn[1].bg key 2: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.579 f=- action-hotbar/slots btn[1].ic key 2: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.580 f=- action-hotbar/slots btn[1].num key 2: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.581 f=- action-hotbar/slots btn[1].qty key 2: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.582 f=- action-hotbar/slots btn[1].tgt key 2: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.583 f=- action-hotbar/slots btn[2].bg key 3: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.583 f=- action-hotbar/slots btn[2].ic key 3: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.585 f=- action-hotbar/slots btn[2].num key 3: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.585 f=- action-hotbar/slots btn[2].qty key 3: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.586 f=- action-hotbar/slots btn[2].tgt key 3: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.587 f=- action-hotbar/slots btn[3].bg key 4: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.588 f=- action-hotbar/slots btn[3].ic key 4: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.588 f=- action-hotbar/slots btn[3].num key 4: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.589 f=- action-hotbar/slots btn[3].qty key 4: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.590 f=- action-hotbar/slots btn[3].tgt key 4: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.591 f=- action-hotbar/slots btn[4].bg key 5: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.592 f=- action-hotbar/slots btn[4].ic key 5: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.592 f=- action-hotbar/slots btn[4].num key 5: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.593 f=- action-hotbar/slots btn[4].qty key 5: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.594 f=- action-hotbar/slots btn[4].tgt key 5: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.595 f=- action-hotbar/slots btn[5].bg key 6: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.601 f=- action-hotbar/slots btn[5].ic key 6: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.602 f=- action-hotbar/slots btn[5].num key 6: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.602 f=- action-hotbar/slots btn[5].qty key 6: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.603 f=- action-hotbar/slots btn[5].tgt key 6: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.603 f=- action-hotbar/slots btn[6].bg key 7: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.604 f=- action-hotbar/slots btn[6].ic key 7: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.605 f=- action-hotbar/slots btn[6].num key 7: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.605 f=- action-hotbar/slots btn[6].qty key 7: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.606 f=- action-hotbar/slots btn[6].tgt key 7: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.607 f=- action-hotbar/slots btn[7].bg key 8: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.607 f=- action-hotbar/slots btn[7].ic key 8: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.608 f=- action-hotbar/slots btn[7].num key 8: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.608 f=- action-hotbar/slots btn[7].qty key 8: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.609 f=- action-hotbar/slots btn[7].tgt key 8: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.609 f=- action-hotbar/slots btn[8].bg key 9: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.610 f=- action-hotbar/slots btn[8].ic key 9: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.613 f=- action-hotbar/slots btn[8].num key 9: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.613 f=- action-hotbar/slots btn[8].qty key 9: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.614 f=- action-hotbar/slots btn[8].tgt key 9: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.614 f=- action-hotbar/slots btn[9].bg key 0: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.615 f=- action-hotbar/slots btn[9].ic key 0: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.615 f=- action-hotbar/slots btn[9].num key 0: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.616 f=- action-hotbar/slots btn[9].qty key 0: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.616 f=- action-hotbar/slots btn[9].tgt key 0: hidden -> hidden (hud not active) flags 00000028->00000028
+T=96406.617 f=- action-hotbar/input hover: slot -2 -> -1 cursor=(0,0)
+T=96406.625 f=- action-hotbar/edit edit: toggle alpha -1.00 -> 1.00
+T=96406.627 f=- action-hotbar/edit edit: mode alpha -1.00 -> 0.35
+T=98396.730 f=- action-hotbar/char character: creature 36a50040 has invalid object id ffffffff (party members=3 slot=0 tag='')
+T=98396.733 f=- action-hotbar/char character: 'atton' -> 'objfffffffd'
+T=98396.738 f=- action-hotbar/cfg cfg: profile for character 'objfffffffd' -> 4/10 slots bound
+T=98396.739 f=- action-hotbar/cfg cfg:   Bottom1 = spell:10
+T=98396.740 f=- action-hotbar/cfg cfg:   Bottom2 = spell:34
+T=98396.741 f=- action-hotbar/cfg cfg:   Bottom3 = spell:22
+T=98396.742 f=- action-hotbar/cfg cfg:   Bottom4 = spell:42
+T=98396.751 f=- action-hotbar/slots eff: character 'objfffffffd' autofill=0 explicit=4 auto=0
+T=98396.752 f=- action-hotbar/slots eff:   Bottom1 = spell:10
+T=98396.753 f=- action-hotbar/slots eff:   Bottom2 = spell:34
+T=98396.753 f=- action-hotbar/slots eff:   Bottom3 = spell:22
+T=98396.753 f=- action-hotbar/slots eff:   Bottom4 = spell:42
+T=98455.038 f=- action-hotbar/gate GATE open=1 why=open hud=08ab23c0 f48=00000045 bits=000 top=0a981200 topf48=656b6045
+T=98455.040 f=- action-hotbar/gate gate: ACTIVE (hud on top)
+T=98455.064 f=- action-hotbar/slots btn[0].bg key 1: hidden -> shown (usable) flags 00000028->0000000a
+T=98455.064 f=- action-hotbar/slots btn[0].ic key 1: hidden -> shown (usable) flags 00000028->0000002a
+T=98455.065 f=- action-hotbar/slots btn[0].num key 1: hidden -> shown (usable) flags 00000028->0000002a
+T=98455.066 f=- action-hotbar/slots btn[0].qty key 1: hidden -> hidden (single item / not an item) flags 00000028->00000028
+T=98455.071 f=- action-hotbar/slots btn[0].bg key 1: alpha -1.00 -> 1.00
+T=98455.231 f=- action-hotbar/tip img: loaded 'ip_cure' -> 08635658 (pool 9)
+T=98455.233 f=- action-hotbar/slots btn[0].ic key 1: fill '' -> 'ip_cure' image=08635658 (old fill 00000000) border w=82 h=82
+T=98455.235 f=- action-hotbar/slots btn[0].ic key 1: alpha -1.00 -> 1.00
+T=98455.236 f=- action-hotbar/slots btn[0].tgt key 1: hidden -> hidden (not an item) flags 00000028->00000028
+T=98455.237 f=- action-hotbar/slots btn[1].bg key 2: hidden -> shown (usable) flags 00000028->0000000a
+T=98455.238 f=- action-hotbar/slots btn[1].ic key 2: hidden -> shown (usable) flags 00000028->0000002a
+T=98455.238 f=- action-hotbar/slots btn[1].num key 2: hidden -> shown (usable) flags 00000028->0000002a
+T=98455.239 f=- action-hotbar/slots btn[1].qty key 2: hidden -> hidden (single item / not an item) flags 00000028->00000028
+T=98455.240 f=- action-hotbar/slots btn[1].bg key 2: alpha -1.00 -> 1.00
+T=98455.400 f=- action-hotbar/tip img: loaded 'ip_knightspeed' -> 06b9a108 (pool 10)
+T=98455.402 f=- action-hotbar/slots btn[1].ic key 2: fill '' -> 'ip_knightspeed' image=06b9a108 (old fill 00000000) border w=82 h=82
+T=98455.403 f=- action-hotbar/slots btn[1].ic key 2: alpha -1.00 -> 1.00
+T=98455.404 f=- action-hotbar/slots btn[1].tgt key 2: hidden -> hidden (not an item) flags 00000028->00000028
+T=98455.405 f=- action-hotbar/slots btn[2].bg key 3: hidden -> shown (usable) flags 00000028->0000000a
+T=98455.406 f=- action-hotbar/slots btn[2].ic key 3: hidden -> shown (usable) flags 00000028->0000002a
+T=98455.406 f=- action-hotbar/slots btn[2].num key 3: hidden -> shown (usable) flags 00000028->0000002a
+T=98455.407 f=- action-hotbar/slots btn[2].qty key 3: hidden -> hidden (single item / not an item) flags 00000028->00000028
+T=98455.408 f=- action-hotbar/slots btn[2].bg key 3: alpha -1.00 -> 1.00
+T=98456.600 f=- action-hotbar/tip img: loaded 'ip_mind' -> 06b9a1c8 (pool 11)
+T=98456.602 f=- action-hotbar/slots btn[2].ic key 3: fill '' -> 'ip_mind' image=06b9a1c8 (old fill 00000000) border w=82 h=82
+T=98456.605 f=- action-hotbar/slots btn[2].ic key 3: alpha -1.00 -> 1.00
+T=98456.606 f=- action-hotbar/slots btn[2].tgt key 3: hidden -> hidden (not an item) flags 00000028->00000028
+T=98456.607 f=- action-hotbar/slots btn[3].bg key 4: hidden -> shown (usable) flags 00000028->0000000a
+T=98456.608 f=- action-hotbar/slots btn[3].ic key 4: hidden -> shown (usable) flags 00000028->0000002a
+T=98456.609 f=- action-hotbar/slots btn[3].num key 4: hidden -> shown (usable) flags 00000028->0000002a
+T=98456.610 f=- action-hotbar/slots btn[3].qty key 4: hidden -> hidden (single item / not an item) flags 00000028->00000028
+T=98456.612 f=- action-hotbar/slots btn[3].bg key 4: alpha -1.00 -> 1.00
+T=98456.803 f=- action-hotbar/tip img: loaded 'ip_resistenergy1' -> 06b9a2a8 (pool 12)
+T=98456.804 f=- action-hotbar/slots btn[3].ic key 4: fill '' -> 'ip_resistenergy1' image=06b9a2a8 (old fill 00000000) border w=82 h=82
+T=98456.807 f=- action-hotbar/slots btn[3].ic key 4: alpha -1.00 -> 1.00
+T=98456.808 f=- action-hotbar/slots btn[3].tgt key 4: hidden -> hidden (not an item) flags 00000028->00000028
+T=98456.809 f=- action-hotbar/slots btn[4].bg key 5: hidden -> hidden (unassigned) flags 00000028->00000028
+T=98456.810 f=- action-hotbar/slots btn[4].ic key 5: hidden -> hidden (unassigned) flags 00000028->00000028
+T=98456.811 f=- action-hotbar/slots btn[4].num key 5: hidden -> hidden (unassigned) flags 00000028->00000028
+T=98456.812 f=- action-hotbar/slots btn[4].qty key 5: hidden -> hidden (unassigned) flags 00000028->00000028
+T=98456.813 f=- action-hotbar/slots btn[4].tgt key 5: hidden -> hidden (unassigned) flags 00000028->00000028
+T=98456.814 f=- action-hotbar/slots btn[5].bg key 6: hidden -> hidden (unassigned) flags 00000028->00000028
+T=98456.815 f=- action-hotbar/slots btn[5].ic key 6: hidden -> hidden (unassigned) flags 00000028->00000028
+T=98456.815 f=- action-hotbar/slots btn[5].num key 6: hidden -> hidden (unassigned) flags 00000028->00000028
+T=98456.816 f=- action-hotbar/slots btn[5].qty key 6: hidden -> hidden (unassigned) flags 00000028->00000028
+T=98456.817 f=- action-hotbar/slots btn[5].tgt key 6: hidden -> hidden (unassigned) flags 00000028->00000028
+T=98456.818 f=- action-hotbar/slots btn[6].bg key 7: hidden -> hidden (unassigned) flags 00000028->00000028
+T=98456.819 f=- action-hotbar/slots btn[6].ic key 7: hidden -> hidden (unassigned) flags 00000028->00000028
+T=98456.819 f=- action-hotbar/slots btn[6].num key 7: hidden -> hidden (unassigned) flags 00000028->00000028
+T=98456.825 f=- action-hotbar/slots btn[6].qty key 7: hidden -> hidden (unassigned) flags 00000028->00000028
+T=98456.826 f=- action-hotbar/slots btn[6].tgt key 7: hidden -> hidden (unassigned) flags 00000028->00000028
+T=98456.827 f=- action-hotbar/slots btn[7].bg key 8: hidden -> hidden (unassigned) flags 00000028->00000028
+T=98456.827 f=- action-hotbar/slots btn[7].ic key 8: hidden -> hidden (unassigned) flags 00000028->00000028
+T=98456.828 f=- action-hotbar/slots btn[7].num key 8: hidden -> hidden (unassigned) flags 00000028->00000028
+T=98456.829 f=- action-hotbar/slots btn[7].qty key 8: hidden -> hidden (unassigned) flags 00000028->00000028
+T=98456.830 f=- action-hotbar/slots btn[7].tgt key 8: hidden -> hidden (unassigned) flags 00000028->00000028
+T=98456.831 f=- action-hotbar/slots btn[8].bg key 9: hidden -> hidden (unassigned) flags 00000028->00000028
+T=98456.832 f=- action-hotbar/slots btn[8].ic key 9: hidden -> hidden (unassigned) flags 00000028->00000028
+T=98456.832 f=- action-hotbar/slots btn[8].num key 9: hidden -> hidden (unassigned) flags 00000028->00000028
+T=98456.833 f=- action-hotbar/slots btn[8].qty key 9: hidden -> hidden (unassigned) flags 00000028->00000028
+T=98456.834 f=- action-hotbar/slots btn[8].tgt key 9: hidden -> hidden (unassigned) flags 00000028->00000028
+T=98456.835 f=- action-hotbar/slots btn[9].bg key 0: hidden -> hidden (unassigned) flags 00000028->00000028
+T=98456.836 f=- action-hotbar/slots btn[9].ic key 0: hidden -> hidden (unassigned) flags 00000028->00000028
+T=98456.836 f=- action-hotbar/slots btn[9].num key 0: hidden -> hidden (unassigned) flags 00000028->00000028
+T=98456.837 f=- action-hotbar/slots btn[9].qty key 0: hidden -> hidden (unassigned) flags 00000028->00000028
+T=98456.840 f=- action-hotbar/slots btn[9].tgt key 0: hidden -> hidden (unassigned) flags 00000028->00000028
+T=98456.845 f=- action-hotbar/input hover: game window 000800c2 client=3840x1600
+T=98456.858 f=- action-hotbar/edit edit: toggle hidden -> shown flags 00000028->0000000a
+T=99883.592 f=- action-hotbar/gate GATE open=1 why=open hud=08ab23c0 f48=00000045 bits=000 top=0a984240 topf48=00000045
+T=101296.993 f=- action-hotbar/input hover: cursor=(1379,1116) over=-1
+T=104135.490 f=- action-hotbar/input hover: cursor=(152,1372) over=-1
+T=104151.146 f=- action-hotbar/input hover: slot -1 -> 0 cursor=(144,1366)
+T=104151.192 f=- action-hotbar/tip sound: hover (slot) mgr=06b40260
+T=104151.195 f=- action-hotbar/slots btn[0].bg key 1: fill 'fph_slot' -> 'fph_slot_hi' image=08b11a00 (old fill 08b11940) border w=93 h=93
+T=104610.429 f=- action-hotbar/tip tip: override/spells.2da -> ok source=override (cols=60 rows=287)
+T=104610.554 f=- action-hotbar/tip tip: dialog.tlk -> ok (strings=136540)
+T=104610.889 f=- action-hotbar/tip tip: spell row 10 fp='30' range='T' desc strref='136478'
+T=104610.908 f=- action-hotbar/tip tip: show slot 0 lines=6 maxLen=34 rect=[77,1026,758,236] client=3840x1600 textHeight(engine)=192
+T=104610.912 f=- action-hotbar/tip tip: text[0] "Heal"
+T=104610.913 f=- action-hotbar/tip tip: text[1] "Key: 1   Force Power"
+T=104610.913 f=- action-hotbar/tip tip: text[2] "Force Points: 30"
+T=104610.913 f=- action-hotbar/tip tip: text[3] "Range: Target"
+T=104610.914 f=- action-hotbar/tip tip: text[4] "This power heals all party members"
+T=104610.914 f=- action-hotbar/tip tip: text[5] "within a 15 meter radius."
+T=104665.915 f=- action-hotbar/input hover: slot 0 -> -1 cursor=(171,1326)
+T=104665.917 f=- action-hotbar/tip tip: hide slot 0 (hover changed)
+T=104665.921 f=- action-hotbar/slots btn[0].bg key 1: fill 'fph_slot_hi' -> 'fph_slot' image=08b11940 (old fill 08b11a00) border w=93 h=93
+T=104749.530 f=- action-hotbar/input hover: slot -1 -> 1 cursor=(184,1326)
+T=104749.578 f=- action-hotbar/tip sound: hover (slot) mgr=06b40260
+T=104749.581 f=- action-hotbar/slots btn[1].bg key 2: fill 'fph_slot' -> 'fph_slot_hi' image=08b11a00 (old fill 08b11940) border w=93 h=93
+T=105079.563 f=- action-hotbar/input hover: slot 1 -> -1 cursor=(279,1317)
+T=105079.569 f=- action-hotbar/slots btn[1].bg key 2: fill 'fph_slot_hi' -> 'fph_slot' image=08b11940 (old fill 08b11a00) border w=93 h=93
+T=105119.817 f=- action-hotbar/input hover: slot -1 -> 2 cursor=(300,1315)
+T=105119.863 f=- action-hotbar/tip sound: hover (slot) mgr=06b40260
+T=105119.866 f=- action-hotbar/slots btn[2].bg key 3: fill 'fph_slot' -> 'fph_slot_hi' image=08b11a00 (old fill 08b11940) border w=93 h=93
+T=105345.006 f=- action-hotbar/input hover: slot 2 -> -1 cursor=(387,1313)
+T=105345.011 f=- action-hotbar/slots btn[2].bg key 3: fill 'fph_slot_hi' -> 'fph_slot' image=08b11940 (old fill 08b11a00) border w=93 h=93
+T=105391.073 f=- action-hotbar/input hover: slot -1 -> 3 cursor=(399,1313)
+T=105391.137 f=- action-hotbar/tip sound: hover (slot) mgr=06b40260
+T=105391.141 f=- action-hotbar/slots btn[3].bg key 4: fill 'fph_slot' -> 'fph_slot_hi' image=08b11a00 (old fill 08b11940) border w=93 h=93
+T=105826.603 f=- action-hotbar/input hover: slot 3 -> -1 cursor=(390,1309)
+T=105826.609 f=- action-hotbar/slots btn[3].bg key 4: fill 'fph_slot_hi' -> 'fph_slot' image=08b11940 (old fill 08b11a00) border w=93 h=93
+T=105854.079 f=- action-hotbar/input hover: slot -1 -> 2 cursor=(344,1303)
+T=105854.136 f=- action-hotbar/tip sound: hover (slot) mgr=06b40260
+T=105854.140 f=- action-hotbar/slots btn[2].bg key 3: fill 'fph_slot' -> 'fph_slot_hi' image=08b11a00 (old fill 08b11940) border w=93 h=93
+T=105921.589 f=- action-hotbar/input hover: slot 2 -> -1 cursor=(287,1302)
+T=105921.596 f=- action-hotbar/slots btn[2].bg key 3: fill 'fph_slot_hi' -> 'fph_slot' image=08b11940 (old fill 08b11a00) border w=93 h=93
+T=105941.004 f=- action-hotbar/input hover: slot -1 -> 1 cursor=(273,1302)
+T=105941.066 f=- action-hotbar/tip sound: hover (slot) mgr=06b40260
+T=105941.070 f=- action-hotbar/slots btn[1].bg key 2: fill 'fph_slot' -> 'fph_slot_hi' image=08b11a00 (old fill 08b11940) border w=93 h=93
+T=106130.552 f=- action-hotbar/input hover: slot 1 -> -1 cursor=(181,1307)
+T=106130.557 f=- action-hotbar/slots btn[1].bg key 2: fill 'fph_slot_hi' -> 'fph_slot' image=08b11940 (old fill 08b11a00) border w=93 h=93
+T=106168.218 f=- action-hotbar/input hover: slot -1 -> 0 cursor=(156,1307)
+T=106168.267 f=- action-hotbar/tip sound: hover (slot) mgr=06b40260
+T=106168.270 f=- action-hotbar/slots btn[0].bg key 1: fill 'fph_slot' -> 'fph_slot_hi' image=08b11a00 (old fill 08b11940) border w=93 h=93
+T=106289.608 f=- action-hotbar/input hover: slot 0 -> -1 cursor=(65,1308)
+T=106289.613 f=- action-hotbar/slots btn[0].bg key 1: fill 'fph_slot_hi' -> 'fph_slot' image=08b11940 (old fill 08b11a00) border w=93 h=93
+T=106289.759 f=- action-hotbar/edit edit: toggle fill 'fph_edit' -> 'fph_edit_hi' image=08b11b80
+T=106289.764 f=- action-hotbar/edit edit: toggle hover 0 -> 1
+T=106289.822 f=- action-hotbar/tip sound: hover (toggle) mgr=06b40260
+T=106535.475 f=- action-hotbar/input hover: cursor=(39,1312) over=-1
+T=106558.034 f=- action-hotbar/edit edit: toggle fill 'fph_edit_hi' -> 'fph_edit' image=08b11ac0
+T=106558.038 f=- action-hotbar/edit edit: toggle hover 1 -> 0
+T=106584.442 f=- action-hotbar/input hover: slot -1 -> 0 cursor=(111,1314)
+T=106584.500 f=- action-hotbar/tip sound: hover (slot) mgr=06b40260
+T=106584.503 f=- action-hotbar/slots btn[0].bg key 1: fill 'fph_slot' -> 'fph_slot_hi' image=08b11a00 (old fill 08b11940) border w=93 h=93
+T=106623.838 f=- action-hotbar/input hover: slot 0 -> 1 cursor=(219,1298)
+T=106623.853 f=- action-hotbar/tip sound: hover (slot) mgr=06b40260
+T=106623.856 f=- action-hotbar/slots btn[0].bg key 1: fill 'fph_slot_hi' -> 'fph_slot' image=08b11940 (old fill 08b11a00) border w=93 h=93
+T=106623.857 f=- action-hotbar/slots btn[1].bg key 2: fill 'fph_slot' -> 'fph_slot_hi' image=08b11a00 (old fill 08b11940) border w=93 h=93
+T=106642.990 f=- action-hotbar/input hover: slot 1 -> -1 cursor=(282,1288)
+T=106642.996 f=- action-hotbar/slots btn[1].bg key 2: fill 'fph_slot_hi' -> 'fph_slot' image=08b11940 (old fill 08b11a00) border w=93 h=93
+T=106668.133 f=- action-hotbar/input hover: slot -1 -> 2 cursor=(365,1276)
+T=106668.148 f=- action-hotbar/tip sound: hover (slot) mgr=06b40260
+T=106668.151 f=- action-hotbar/slots btn[2].bg key 3: fill 'fph_slot' -> 'fph_slot_hi' image=08b11a00 (old fill 08b11940) border w=93 h=93
+T=106681.092 f=- action-hotbar/input hover: slot 2 -> -1 cursor=(406,1272)
+T=106681.097 f=- action-hotbar/slots btn[2].bg key 3: fill 'fph_slot_hi' -> 'fph_slot' image=08b11940 (old fill 08b11a00) border w=93 h=93
+T=124276.508 f=- action-hotbar/main heartbeat: frame=5400 gate=1 char='objfffffffd' ring=0 invoke=1 cfgMtime=1791518926855
+T=124276.512 f=- action-hotbar/main heartbeat: bar panel=08ab23c0 built=10 vis=1111000000 wfaults=0 pfaults=0 efaults=0 ifaults=0 gateflaps=6
+T=135114.386 f=- action-hotbar/input hover: cursor=(1919,1526) over=-1
+T=137413.801 f=- action-hotbar/input hover: cursor=(297,1473) over=-1
+T=155089.626 f=- action-hotbar/main heartbeat: frame=7200 gate=1 char='objfffffffd' ring=0 invoke=1 cfgMtime=1791518926855
+T=155089.629 f=- action-hotbar/main heartbeat: bar panel=08ab23c0 built=10 vis=1111000000 wfaults=0 pfaults=0 efaults=0 ifaults=0 gateflaps=6
+T=156210.725 f=- action-hotbar/input hover: cursor=(1981,1131) over=-1
+T=158693.950 f=- action-hotbar/input hover: cursor=(1937,1549) over=-1
+T=160963.566 f=- action-hotbar/input hover: cursor=(1769,1180) over=-1
+T=163362.780 f=- action-hotbar/input hover: cursor=(317,1493) over=-1
+T=165688.106 f=- action-hotbar/input hover: cursor=(3688,1544) over=-1
+T=186662.752 f=- action-hotbar/main heartbeat: frame=9000 gate=1 char='objfffffffd' ring=0 invoke=1 cfgMtime=1791518926855
+T=186662.756 f=- action-hotbar/main heartbeat: bar panel=08ab23c0 built=10 vis=1111000000 wfaults=0 pfaults=0 efaults=0 ifaults=0 gateflaps=6
+T=197955.389 f=- action-hotbar/gate GATE open=1 why=open hud=08ab23c0 f48=00000045 bits=000 top=0a981200 topf48=656b6045
+T=204740.356 f=- action-hotbar/gate GATE open=0 why=other-panel-on-top hud=08ab23c0 f48=00000045 bits=000 top=0855b360 topf48=00000045
+T=204740.357 f=- action-hotbar/gate gate: inactive (other panel on top)
+T=204740.359 f=- action-hotbar/gate panels: hud=08ab23c0 hudvt=0099dcc4 mgr=06b40260 modals=0 panels=5
+T=204740.361 f=- action-hotbar/gate panel[0]=0a981200 vt=009a044c flags=656b6045
+T=204740.363 f=- action-hotbar/gate panel[1]=37117170 vt=009a7cbc flags=696c6045
+T=204740.364 f=- action-hotbar/gate panel[2]=37116ca0 vt=009a7cbc flags=45
+T=204740.366 f=- action-hotbar/gate panel[3]=371170c0 vt=009a7cbc flags=696c6045
+T=204740.367 f=- action-hotbar/gate panel[4]=0855b360 vt=009a7dcc flags=45
+T=204740.383 f=- action-hotbar/slots btn[0].bg key 1: shown -> hidden (hud not active) flags 0000000a->00000028
+T=204740.384 f=- action-hotbar/slots btn[0].ic key 1: shown -> hidden (hud not active) flags 0000002a->00000028
+T=204740.385 f=- action-hotbar/slots btn[0].num key 1: shown -> hidden (hud not active) flags 0000002a->00000028
+T=204740.386 f=- action-hotbar/slots btn[0].qty key 1: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.386 f=- action-hotbar/slots btn[0].tgt key 1: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.387 f=- action-hotbar/slots btn[1].bg key 2: shown -> hidden (hud not active) flags 0000000a->00000028
+T=204740.388 f=- action-hotbar/slots btn[1].ic key 2: shown -> hidden (hud not active) flags 0000002a->00000028
+T=204740.388 f=- action-hotbar/slots btn[1].num key 2: shown -> hidden (hud not active) flags 0000002a->00000028
+T=204740.389 f=- action-hotbar/slots btn[1].qty key 2: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.389 f=- action-hotbar/slots btn[1].tgt key 2: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.390 f=- action-hotbar/slots btn[2].bg key 3: shown -> hidden (hud not active) flags 0000000a->00000028
+T=204740.390 f=- action-hotbar/slots btn[2].ic key 3: shown -> hidden (hud not active) flags 0000002a->00000028
+T=204740.391 f=- action-hotbar/slots btn[2].num key 3: shown -> hidden (hud not active) flags 0000002a->00000028
+T=204740.391 f=- action-hotbar/slots btn[2].qty key 3: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.392 f=- action-hotbar/slots btn[2].tgt key 3: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.393 f=- action-hotbar/slots btn[3].bg key 4: shown -> hidden (hud not active) flags 0000000a->00000028
+T=204740.393 f=- action-hotbar/slots btn[3].ic key 4: shown -> hidden (hud not active) flags 0000002a->00000028
+T=204740.394 f=- action-hotbar/slots btn[3].num key 4: shown -> hidden (hud not active) flags 0000002a->00000028
+T=204740.394 f=- action-hotbar/slots btn[3].qty key 4: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.395 f=- action-hotbar/slots btn[3].tgt key 4: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.396 f=- action-hotbar/slots btn[4].bg key 5: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.396 f=- action-hotbar/slots btn[4].ic key 5: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.397 f=- action-hotbar/slots btn[4].num key 5: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.397 f=- action-hotbar/slots btn[4].qty key 5: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.398 f=- action-hotbar/slots btn[4].tgt key 5: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.398 f=- action-hotbar/slots btn[5].bg key 6: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.399 f=- action-hotbar/slots btn[5].ic key 6: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.399 f=- action-hotbar/slots btn[5].num key 6: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.400 f=- action-hotbar/slots btn[5].qty key 6: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.400 f=- action-hotbar/slots btn[5].tgt key 6: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.401 f=- action-hotbar/slots btn[6].bg key 7: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.402 f=- action-hotbar/slots btn[6].ic key 7: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.402 f=- action-hotbar/slots btn[6].num key 7: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.403 f=- action-hotbar/slots btn[6].qty key 7: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.403 f=- action-hotbar/slots btn[6].tgt key 7: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.404 f=- action-hotbar/slots btn[7].bg key 8: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.404 f=- action-hotbar/slots btn[7].ic key 8: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.405 f=- action-hotbar/slots btn[7].num key 8: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.405 f=- action-hotbar/slots btn[7].qty key 8: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.406 f=- action-hotbar/slots btn[7].tgt key 8: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.407 f=- action-hotbar/slots btn[8].bg key 9: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.407 f=- action-hotbar/slots btn[8].ic key 9: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.408 f=- action-hotbar/slots btn[8].num key 9: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.408 f=- action-hotbar/slots btn[8].qty key 9: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.409 f=- action-hotbar/slots btn[8].tgt key 9: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.409 f=- action-hotbar/slots btn[9].bg key 0: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.410 f=- action-hotbar/slots btn[9].ic key 0: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.410 f=- action-hotbar/slots btn[9].num key 0: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.411 f=- action-hotbar/slots btn[9].qty key 0: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.411 f=- action-hotbar/slots btn[9].tgt key 0: hidden -> hidden (hud not active) flags 00000028->00000028
+T=204740.416 f=- action-hotbar/edit edit: toggle shown -> hidden flags 0000000a->00000028
+T=206548.465 f=- action-hotbar/gate GATE open=0 why=other-panel-on-top hud=08ab23c0 f48=00000045 bits=000 top=0aabf418 topf48=c14ba045
+T=209763.867 f=- action-hotbar/gate GATE open=0 why=other-panel-on-top hud=08ab23c0 f48=00000045 bits=000 top=0855b360 topf48=00000045
+T=210406.382 f=- action-hotbar/gate GATE open=0 why=other-panel-on-top hud=08ab23c0 f48=00000045 bits=000 top=0aabf418 topf48=c14ba045
+T=211840.697 f=- action-hotbar/gate GATE open=0 why=other-panel-on-top hud=08ab23c0 f48=00000045 bits=000 top=0855b360 topf48=00000045
+T=213321.770 f=- action-hotbar/gate GATE open=1 why=open hud=08ab23c0 f48=00000045 bits=000 top=0a981200 topf48=656b6045
+T=213321.772 f=- action-hotbar/gate gate: ACTIVE (hud on top)
+T=213321.792 f=- action-hotbar/slots btn[0].bg key 1: hidden -> shown (usable) flags 00000028->0000000a
+T=213321.793 f=- action-hotbar/slots btn[0].ic key 1: hidden -> shown (usable) flags 00000028->0000002a
+T=213321.794 f=- action-hotbar/slots btn[0].num key 1: hidden -> shown (usable) flags 00000028->0000002a
+T=213321.795 f=- action-hotbar/slots btn[0].qty key 1: hidden -> hidden (single item / not an item) flags 00000028->00000028
+T=213321.796 f=- action-hotbar/slots btn[0].tgt key 1: hidden -> hidden (not an item) flags 00000028->00000028
+T=213321.797 f=- action-hotbar/slots btn[1].bg key 2: hidden -> shown (usable) flags 00000028->0000000a
+T=213321.798 f=- action-hotbar/slots btn[1].ic key 2: hidden -> shown (usable) flags 00000028->0000002a
+T=213321.798 f=- action-hotbar/slots btn[1].num key 2: hidden -> shown (usable) flags 00000028->0000002a
+T=213321.799 f=- action-hotbar/slots btn[1].qty key 2: hidden -> hidden (single item / not an item) flags 00000028->00000028
+T=213321.799 f=- action-hotbar/slots btn[1].tgt key 2: hidden -> hidden (not an item) flags 00000028->00000028
+T=213321.800 f=- action-hotbar/slots btn[2].bg key 3: hidden -> shown (usable) flags 00000028->0000000a
+T=213321.801 f=- action-hotbar/slots btn[2].ic key 3: hidden -> shown (usable) flags 00000028->0000002a
+T=213321.801 f=- action-hotbar/slots btn[2].num key 3: hidden -> shown (usable) flags 00000028->0000002a
+T=213321.802 f=- action-hotbar/slots btn[2].qty key 3: hidden -> hidden (single item / not an item) flags 00000028->00000028
+T=213321.802 f=- action-hotbar/slots btn[2].tgt key 3: hidden -> hidden (not an item) flags 00000028->00000028
+T=213321.804 f=- action-hotbar/slots btn[3].bg key 4: hidden -> shown (usable) flags 00000028->0000000a
+T=213321.804 f=- action-hotbar/slots btn[3].ic key 4: hidden -> shown (usable) flags 00000028->0000002a
+T=213321.805 f=- action-hotbar/slots btn[3].num key 4: hidden -> shown (usable) flags 00000028->0000002a
+T=213321.805 f=- action-hotbar/slots btn[3].qty key 4: hidden -> hidden (single item / not an item) flags 00000028->00000028
+T=213321.806 f=- action-hotbar/slots btn[3].tgt key 4: hidden -> hidden (not an item) flags 00000028->00000028
+T=213321.807 f=- action-hotbar/slots btn[4].bg key 5: hidden -> hidden (unassigned) flags 00000028->00000028
+T=213321.808 f=- action-hotbar/slots btn[4].ic key 5: hidden -> hidden (unassigned) flags 00000028->00000028
+T=213321.808 f=- action-hotbar/slots btn[4].num key 5: hidden -> hidden (unassigned) flags 00000028->00000028
+T=213321.809 f=- action-hotbar/slots btn[4].qty key 5: hidden -> hidden (unassigned) flags 00000028->00000028
+T=213321.809 f=- action-hotbar/slots btn[4].tgt key 5: hidden -> hidden (unassigned) flags 00000028->00000028
+T=213321.810 f=- action-hotbar/slots btn[5].bg key 6: hidden -> hidden (unassigned) flags 00000028->00000028
+T=213321.811 f=- action-hotbar/slots btn[5].ic key 6: hidden -> hidden (unassigned) flags 00000028->00000028
+T=213321.811 f=- action-hotbar/slots btn[5].num key 6: hidden -> hidden (unassigned) flags 00000028->00000028
+T=213321.812 f=- action-hotbar/slots btn[5].qty key 6: hidden -> hidden (unassigned) flags 00000028->00000028
+T=213321.812 f=- action-hotbar/slots btn[5].tgt key 6: hidden -> hidden (unassigned) flags 00000028->00000028
+T=213321.813 f=- action-hotbar/slots btn[6].bg key 7: hidden -> hidden (unassigned) flags 00000028->00000028
+T=213321.813 f=- action-hotbar/slots btn[6].ic key 7: hidden -> hidden (unassigned) flags 00000028->00000028
+T=213321.814 f=- action-hotbar/slots btn[6].num key 7: hidden -> hidden (unassigned) flags 00000028->00000028
+T=213321.814 f=- action-hotbar/slots btn[6].qty key 7: hidden -> hidden (unassigned) flags 00000028->00000028
+T=213321.815 f=- action-hotbar/slots btn[6].tgt key 7: hidden -> hidden (unassigned) flags 00000028->00000028
+T=213321.815 f=- action-hotbar/slots btn[7].bg key 8: hidden -> hidden (unassigned) flags 00000028->00000028
+T=213321.816 f=- action-hotbar/slots btn[7].ic key 8: hidden -> hidden (unassigned) flags 00000028->00000028
+T=213321.817 f=- action-hotbar/slots btn[7].num key 8: hidden -> hidden (unassigned) flags 00000028->00000028
+T=213321.817 f=- action-hotbar/slots btn[7].qty key 8: hidden -> hidden (unassigned) flags 00000028->00000028
+T=213321.818 f=- action-hotbar/slots btn[7].tgt key 8: hidden -> hidden (unassigned) flags 00000028->00000028
+T=213321.818 f=- action-hotbar/slots btn[8].bg key 9: hidden -> hidden (unassigned) flags 00000028->00000028
+T=213321.819 f=- action-hotbar/slots btn[8].ic key 9: hidden -> hidden (unassigned) flags 00000028->00000028
+T=213321.819 f=- action-hotbar/slots btn[8].num key 9: hidden -> hidden (unassigned) flags 00000028->00000028
+T=213321.820 f=- action-hotbar/slots btn[8].qty key 9: hidden -> hidden (unassigned) flags 00000028->00000028
+T=213321.820 f=- action-hotbar/slots btn[8].tgt key 9: hidden -> hidden (unassigned) flags 00000028->00000028
+T=213321.821 f=- action-hotbar/slots btn[9].bg key 0: hidden -> hidden (unassigned) flags 00000028->00000028
+T=213321.821 f=- action-hotbar/slots btn[9].ic key 0: hidden -> hidden (unassigned) flags 00000028->00000028
+T=213321.822 f=- action-hotbar/slots btn[9].num key 0: hidden -> hidden (unassigned) flags 00000028->00000028
+T=213321.822 f=- action-hotbar/slots btn[9].qty key 0: hidden -> hidden (unassigned) flags 00000028->00000028
+T=213321.823 f=- action-hotbar/slots btn[9].tgt key 0: hidden -> hidden (unassigned) flags 00000028->00000028
+T=213321.830 f=- action-hotbar/input hover: cursor=(457,1398) over=-1
+T=213321.834 f=- action-hotbar/edit edit: toggle hidden -> shown flags 00000028->0000000a
+T=213448.966 f=- action-hotbar/gate GATE open=1 why=open hud=08ab23c0 f48=00000045 bits=000 top=0a984240 topf48=00000045
+T=214013.162 f=- action-hotbar/input hover: slot -1 -> 3 cursor=(482,1328)
+T=214013.426 f=- action-hotbar/tip sound: hover (slot) mgr=06b40260
+T=214013.430 f=- action-hotbar/slots btn[3].bg key 4: fill 'fph_slot' -> 'fph_slot_hi' image=08b11a00 (old fill 08b11940) border w=93 h=93
+T=214023.908 f=- action-hotbar/input hover: slot 3 -> -1 cursor=(498,1305)
+T=214023.912 f=- action-hotbar/slots btn[3].bg key 4: fill 'fph_slot_hi' -> 'fph_slot' image=08b11940 (old fill 08b11a00) border w=93 h=93
+T=218425.254 f=- action-hotbar/main heartbeat: frame=10800 gate=1 char='objfffffffd' ring=0 invoke=1 cfgMtime=1791518926855
+T=218425.259 f=- action-hotbar/main heartbeat: bar panel=08ab23c0 built=10 vis=1111000000 wfaults=0 pfaults=0 efaults=0 ifaults=0 gateflaps=8
+T=218883.564 f=- action-hotbar/gate GATE open=1 why=open hud=08ab23c0 f48=00000045 bits=000 top=0a981200 topf48=656b6045
+T=234175.510 f=- action-hotbar/gate GATE open=1 why=open hud=08ab23c0 f48=00000045 bits=000 top=0a984240 topf48=00000045
+T=235960.895 f=- action-hotbar/gate GATE open=1 why=open hud=08ab23c0 f48=00000045 bits=000 top=0a981200 topf48=656b6045
+T=236730.165 f=- action-hotbar/gate GATE open=1 why=open hud=08ab23c0 f48=00000045 bits=000 top=0a984240 topf48=00000045
+T=243880.509 f=- action-hotbar/input hover: cursor=(1904,1523) over=-1
+T=245396.533 f=- action-hotbar/gate GATE open=1 why=open hud=08ab23c0 f48=00000045 bits=000 top=0a981200 topf48=656b6045
+T=249135.052 f=- action-hotbar/main heartbeat: frame=12600 gate=1 char='objfffffffd' ring=0 invoke=1 cfgMtime=1791518926855
+T=249135.056 f=- action-hotbar/main heartbeat: bar panel=08ab23c0 built=10 vis=1111000000 wfaults=0 pfaults=0 efaults=0 ifaults=0 gateflaps=8
+T=249567.337 f=- action-hotbar/gate GATE open=1 why=open hud=08ab23c0 f48=00000045 bits=000 top=0a984240 topf48=00000045
+T=254618.178 f=- action-hotbar/gate GATE open=1 why=open hud=08ab23c0 f48=00000045 bits=000 top=0a981200 topf48=656b6045
+T=257533.471 f=- action-hotbar/gate GATE open=1 why=open hud=08ab23c0 f48=00000045 bits=000 top=0a984240 topf48=00000045
+T=265093.800 f=- action-hotbar/input hover: cursor=(1911,1529) over=-1
+T=265902.236 f=- action-hotbar/gate GATE open=1 why=open hud=08ab23c0 f48=00000045 bits=000 top=0a981200 topf48=656b6045
+T=272920.104 f=- action-hotbar/input cap: dev=0 dik=01 down mods=--- -> pass(edit closed)
+T=272930.585 f=- action-hotbar/gate GATE open=0 why=other-panel-on-top hud=08ab23c0 f48=00000045 bits=000 top=36e9b030 topf48=ffff0045
+T=272930.586 f=- action-hotbar/gate gate: inactive (other panel on top)
+T=272930.587 f=- action-hotbar/gate panels: hud=08ab23c0 hudvt=0099dcc4 mgr=06b40260 modals=0 panels=3
+T=272930.589 f=- action-hotbar/gate panel[0]=36b05f30 vt=009a701c flags=4d
+T=272930.591 f=- action-hotbar/gate panel[1]=0a981200 vt=009a044c flags=656b6045
+T=272930.591 f=- action-hotbar/gate panel[2]=36e9b030 vt=0099e454 flags=ffff0045
+T=272930.599 f=- action-hotbar/slots btn[0].bg key 1: shown -> hidden (hud not active) flags 0000000a->00000028
+T=272930.600 f=- action-hotbar/slots btn[0].ic key 1: shown -> hidden (hud not active) flags 0000002a->00000028
+T=272930.601 f=- action-hotbar/slots btn[0].num key 1: shown -> hidden (hud not active) flags 0000002a->00000028
+T=272930.601 f=- action-hotbar/slots btn[0].qty key 1: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.602 f=- action-hotbar/slots btn[0].tgt key 1: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.603 f=- action-hotbar/slots btn[1].bg key 2: shown -> hidden (hud not active) flags 0000000a->00000028
+T=272930.603 f=- action-hotbar/slots btn[1].ic key 2: shown -> hidden (hud not active) flags 0000002a->00000028
+T=272930.604 f=- action-hotbar/slots btn[1].num key 2: shown -> hidden (hud not active) flags 0000002a->00000028
+T=272930.604 f=- action-hotbar/slots btn[1].qty key 2: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.605 f=- action-hotbar/slots btn[1].tgt key 2: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.606 f=- action-hotbar/slots btn[2].bg key 3: shown -> hidden (hud not active) flags 0000000a->00000028
+T=272930.606 f=- action-hotbar/slots btn[2].ic key 3: shown -> hidden (hud not active) flags 0000002a->00000028
+T=272930.607 f=- action-hotbar/slots btn[2].num key 3: shown -> hidden (hud not active) flags 0000002a->00000028
+T=272930.607 f=- action-hotbar/slots btn[2].qty key 3: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.608 f=- action-hotbar/slots btn[2].tgt key 3: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.609 f=- action-hotbar/slots btn[3].bg key 4: shown -> hidden (hud not active) flags 0000000a->00000028
+T=272930.609 f=- action-hotbar/slots btn[3].ic key 4: shown -> hidden (hud not active) flags 0000002a->00000028
+T=272930.610 f=- action-hotbar/slots btn[3].num key 4: shown -> hidden (hud not active) flags 0000002a->00000028
+T=272930.610 f=- action-hotbar/slots btn[3].qty key 4: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.611 f=- action-hotbar/slots btn[3].tgt key 4: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.611 f=- action-hotbar/slots btn[4].bg key 5: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.612 f=- action-hotbar/slots btn[4].ic key 5: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.613 f=- action-hotbar/slots btn[4].num key 5: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.613 f=- action-hotbar/slots btn[4].qty key 5: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.614 f=- action-hotbar/slots btn[4].tgt key 5: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.614 f=- action-hotbar/slots btn[5].bg key 6: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.615 f=- action-hotbar/slots btn[5].ic key 6: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.615 f=- action-hotbar/slots btn[5].num key 6: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.616 f=- action-hotbar/slots btn[5].qty key 6: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.616 f=- action-hotbar/slots btn[5].tgt key 6: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.617 f=- action-hotbar/slots btn[6].bg key 7: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.617 f=- action-hotbar/slots btn[6].ic key 7: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.618 f=- action-hotbar/slots btn[6].num key 7: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.619 f=- action-hotbar/slots btn[6].qty key 7: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.619 f=- action-hotbar/slots btn[6].tgt key 7: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.620 f=- action-hotbar/slots btn[7].bg key 8: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.620 f=- action-hotbar/slots btn[7].ic key 8: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.621 f=- action-hotbar/slots btn[7].num key 8: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.621 f=- action-hotbar/slots btn[7].qty key 8: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.622 f=- action-hotbar/slots btn[7].tgt key 8: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.622 f=- action-hotbar/slots btn[8].bg key 9: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.623 f=- action-hotbar/slots btn[8].ic key 9: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.623 f=- action-hotbar/slots btn[8].num key 9: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.624 f=- action-hotbar/slots btn[8].qty key 9: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.624 f=- action-hotbar/slots btn[8].tgt key 9: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.625 f=- action-hotbar/slots btn[9].bg key 0: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.625 f=- action-hotbar/slots btn[9].ic key 0: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.626 f=- action-hotbar/slots btn[9].num key 0: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.626 f=- action-hotbar/slots btn[9].qty key 0: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.627 f=- action-hotbar/slots btn[9].tgt key 0: hidden -> hidden (hud not active) flags 00000028->00000028
+T=272930.630 f=- action-hotbar/edit edit: toggle shown -> hidden flags 0000000a->00000028
+T=273037.936 f=- action-hotbar/input cap: dev=0 dik=01 up mods=--- -> pass
+T=277897.618 f=- action-hotbar/gate GATE open=0 why=modal-open hud=08ab23c0 f48=00000045 bits=000 top=0849ab20 topf48=00020045
+T=277897.620 f=- action-hotbar/gate gate: inactive (modal open)
+T=277897.622 f=- action-hotbar/gate panels: hud=08ab23c0 hudvt=0099dcc4 mgr=06b40260 modals=1 panels=4
+T=277897.622 f=- action-hotbar/gate modal[0]=0849ab20 vt=0099e6a4 flags=20045
+T=277897.624 f=- action-hotbar/gate panel[0]=36b05f30 vt=009a701c flags=4d
+T=277897.626 f=- action-hotbar/gate panel[1]=0a981200 vt=009a044c flags=656b6045
+T=277897.627 f=- action-hotbar/gate panel[2]=36e9b030 vt=0099e454 flags=ffff0045
+T=277897.627 f=- action-hotbar/gate panel[3]=0849ab20 vt=0099e6a4 flags=20045
+T=278922.102 f=- action-hotbar/gate GATE open=0 why=other-panel-on-top hud=08ab23c0 f48=00000045 bits=000 top=0849ab20 topf48=00020145
+T=278922.103 f=- action-hotbar/gate gate: inactive (other panel on top)
+T=278922.104 f=- action-hotbar/gate panels: hud=08ab23c0 hudvt=0099dcc4 mgr=06b40260 modals=0 panels=4
+T=278922.107 f=- action-hotbar/gate panel[0]=36b05f30 vt=009a701c flags=4d
+T=278922.109 f=- action-hotbar/gate panel[1]=0a981200 vt=009a044c flags=656b6045
+T=278922.110 f=- action-hotbar/gate panel[2]=36e9b030 vt=0099e454 flags=ffff0045
+T=278922.110 f=- action-hotbar/gate panel[3]=0849ab20 vt=0099e6a4 flags=20145

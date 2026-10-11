@@ -1,0 +1,42 @@
+# kplog session 2026-10-11 13:02:54 | kpatch.log v1 | patcher ABI 1
+# KOTOR_VERSION_SHA=6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF
+# interfaces:
+#   k2.guiinput v1 by gui-input
+#   k2.hud v1 by hud-host
+#   k2.portraitslots v1 by portrait-slots
+#   k2.rangedai v1 by ranged-ai
+#   k2.saveevents v1 by save-events
+#   kpatch.log v1 by patcher
+T=102.263 f=- hud-host/core provided k2.hud v1
+T=114.828 f=- hud-host/core register phase=1 prio=100 owner=combat-hotbar -> 1
+T=114.829 f=- hud-host/core register phase=2 prio=100 owner=combat-hotbar -> 2
+T=114.830 f=- hud-host/core register phase=3 prio=300 owner=combat-hotbar -> 3
+T=118.205 f=- hud-host/core register phase=3 prio=200 owner=companion-selfheal -> 4
+T=120.555 f=- hud-host/core register phase=0 prio=300 owner=queue-hud -> 5
+T=120.556 f=- hud-host/core register phase=3 prio=300 owner=queue-hud -> 6
+T=213.207 f=- hud-host/core register phase=0 prio=100 owner=action-hotbar -> 7
+T=213.208 f=- hud-host/core register phase=3 prio=100 owner=action-hotbar -> 8
+T=16807.795 f=- hud-host/core first BUILD dispatch: panel=08ab23c0 consumers build=4
+T=16807.800 f=- hud-host/core BUILD48 dump panel=08ab23c0 +0x00 0099dcc4 00000000 00000000 00000f00 00000640 ff040601 00000001 06b40260 
+T=16807.801 f=- hud-host/core BUILD48 dump panel=08ab23c0 +0x20 00000000 08a76838 0000006f 00000080 08520f78 00000000 544e4f43 534c4f52 
+T=16807.802 f=- hud-host/core BUILD48 dump panel=08ab23c0 +0x40 00000000 00000000 ff8fb44f ff90b500 3f800000 bf800000 bf800000 bf800000 
+T=16807.803 f=- hud-host/core BUILD48 entry +0x40 00000000 00000000 ff8fb44f ff90b500
+T=16813.332 f=- hud-host/core BUILD48 owner=action-hotbar +0x48 ff8fb44f -> ff8fb44f
+T=16815.002 f=- hud-host/core BUILD48 owner=companion-selfheal +0x48 ff8fb44f -> ff8fb44f
+T=16817.339 f=- hud-host/core BUILD48 owner=combat-hotbar +0x48 ff8fb44f -> ff8fb44f
+T=16817.588 f=- hud-host/core BUILD48 owner=queue-hud +0x48 ff8fb44f -> ff8fb44f
+T=21866.802 f=- hud-host/core BUILD48 frame0 +0x48 ff8fb44d
+T=21866.803 f=- hud-host/core HUD48 hud=08ab23c0 (was 00000000)
+T=21866.803 f=- hud-host/core HUD48 frame=1 +0x40 00000000 00000000 ff8fb44d ff90b500
+T=21866.805 f=- hud-host/core first dispatch: menu=08ab248c hud=08ab23c0 leader=0aa402c0 target=00000000 type=-1 consumers frame=2 pre=1
+T=21867.552 f=- hud-host/core first POST dispatch: menu=08ab248c frame=1 consumers post=1
+T=23715.908 f=- hud-host/core HUD48 frame=27 +0x40 00000000 00000000 ff8fb445 ff90b500
+T=93810.361 f=- hud-host/core BUILD48 dump panel=08ab23c0 +0x00 0099dcc4 00000000 00000000 00000f00 00000640 00000d2b 00000001 06b40260 
+T=93810.364 f=- hud-host/core BUILD48 dump panel=08ab23c0 +0x20 00000000 08c0af48 0000006f 00000080 08c0fe70 00000000 544e4f43 534c4f52 
+T=93810.365 f=- hud-host/core BUILD48 dump panel=08ab23c0 +0x40 00000000 00000000 00000047 00000000 3f800000 bf800000 bf800000 bf800000 
+T=93810.366 f=- hud-host/core BUILD48 entry +0x40 00000000 00000000 00000047 00000000
+T=93814.353 f=- hud-host/core BUILD48 owner=action-hotbar +0x48 00000047 -> 00000047
+T=93815.227 f=- hud-host/core BUILD48 owner=companion-selfheal +0x48 00000047 -> 00000047
+T=93817.341 f=- hud-host/core BUILD48 owner=combat-hotbar +0x48 00000047 -> 00000047
+T=93817.526 f=- hud-host/core BUILD48 owner=queue-hud +0x48 00000047 -> 00000047
+T=96406.518 f=- hud-host/core HUD48 frame=3858 +0x40 00000000 00000000 00000045 00000000

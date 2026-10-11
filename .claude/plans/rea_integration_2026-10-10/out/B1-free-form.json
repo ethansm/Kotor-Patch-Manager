@@ -1,0 +1,46 @@
+{
+  "entry": "0x00775700",
+  "name": "FUN_00775700",
+  "signature": "undefined FUN_00775700()",
+  "body_range": "0x775700-0x775751 (82 bytes, 3 basic blocks)",
+  "first_12_bytes_at_entry": "558bec83ec0c894df4a1a4b4",
+  "calling_convention": "UNKNOWN as a named convention (tools report no label). Observed: 7 dword stack args at [EBP+0x8] through [EBP+0x20]; callee cleans stack via RET 0x1c. ECX on entry is saved to [EBP-0xc] at 0x775706 and never read again (dead store).",
+  "ret_immediate": "0x1c (28 bytes = 7 dwords), at 0x77574f",
+  "stack_arg_count": 7,
+  "callees": ["0x73f810", "0x87a5c0"],
+  "callers": ["0x7791a0", "0x899270"],
+  "caller_containing_entries": {
+    "0x7791a0": "0x7791a0 (FUN_007791a0, body 0x7791a0-0x7794dd)",
+    "0x899270": "0x899270 (FUN_00899270, body 0x899270-0x8992f3)"
+  },
+  "decompilation_excerpt": [
+    "void FUN_00775700(undefined4 param_1,undefined4 param_2,undefined4 param_3,undefined1 param_4,",
+    "                 undefined1 param_5,undefined1 param_6,undefined4 param_7)",
+    "{",
+    "  int iVar1;",
+    "  iVar1 = FUN_0073f810();",
+    "  if (iVar1 != 0) {",
+    "    FUN_0087a5c0(param_1,param_4,param_5,param_6,param_7,param_3,param_2);",
+    "  }",
+    "  return;",
+    "}"
+  ],
+  "observed_notes": [
+    "Assembly 0x775709-0x775714 loads global 0x00a1b4a4 (unnamed by tools), reads field +0x4, and passes it as ECX to callee 0x73f810 (0x775717).",
+    "Callee 0x87a5c0 receives ECX = return value of 0x73f810 (0x775744-0x775747) plus 7 stack args."
+  ],
+  "tool_calls": [
+    {"tool": "mcp__rea__open_binary", "args": {"path": "/tmp/claude-1000/rea_probe/swkotor2.exe", "provider_id": "ghidra"}, "ms": "not reported", "ok": true},
+    {"tool": "mcp__rea__procedure_info", "args": {"procedure": "0x00775700"}, "ms": "not reported", "ok": true},
+    {"tool": "mcp__rea__read_bytes", "args": {"address": "0x00775700", "length": 12}, "ms": "not reported", "ok": true},
+    {"tool": "mcp__rea__procedure_callees", "args": {"procedure": "0x00775700"}, "ms": "not reported", "ok": true},
+    {"tool": "mcp__rea__procedure_callers", "args": {"procedure": "0x00775700"}, "ms": "not reported", "ok": true},
+    {"tool": "mcp__rea__procedure_pseudo_code", "args": {"procedure": "0x00775700"}, "ms": "not reported", "ok": true},
+    {"tool": "mcp__rea__procedure_assembly", "args": {"procedure": "0x00775700"}, "ms": "not reported", "ok": true},
+    {"tool": "mcp__rea__resolve_containing_procedure", "args": {"address": "0x007791a0"}, "ms": "not reported", "ok": true},
+    {"tool": "mcp__rea__resolve_containing_procedure", "args": {"address": "0x00899270"}, "ms": "not reported", "ok": true},
+    {"tool": "mcp__rea__close_binary", "args": {}, "ms": "not reported", "ok": true}
+  ],
+  "sha256": "6a522e71631dcee93467bd2010f3b23d9145326e1e2e89305f13ab104dbbffef",
+  "provider": "ghidra 12.1.4"
+}

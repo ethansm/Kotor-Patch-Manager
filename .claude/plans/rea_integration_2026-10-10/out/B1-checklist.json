@@ -1,0 +1,44 @@
+{
+  "entry": "0x00775700",
+  "first_12_bytes_at_entry": "558bec83ec0c894df4a1a4b4",
+  "calling_convention": "UNKNOWN (not confirmed). Callee pops 0x1c bytes (ret 0x1c at 0x77574f), which is consistent with stdcall. ECX is spilled to [ebp-0xc] at 0x775706 and never read again. Ghidra signature has no register parameter. Whether callers pass ECX is unconfirmed.",
+  "ret_immediate": "0x1c",
+  "stack_arg_count": 7,
+  "callees": [
+    "0x73f810",
+    "0x87a5c0"
+  ],
+  "callers": [
+    "0x7791a0",
+    "0x899270"
+  ],
+  "callers_containing_function_entry": [
+    "0x7791a0",
+    "0x899270"
+  ],
+  "callers_note": "Tool returned entry addresses of FUN_007791a0 and FUN_00899270 (resolve_containing_procedure: address equals entry). Call-site addresses were not returned by any tool, so they are UNKNOWN.",
+  "decompilation_excerpt": [
+    "void FUN_00775700(undefined4 param_1,undefined4 param_2,undefined4 param_3,undefined1 param_4,",
+    "                 undefined1 param_5,undefined1 param_6,undefined4 param_7)",
+    "{",
+    "  int iVar1;",
+    "  iVar1 = FUN_0073f810();",
+    "  if (iVar1 != 0) {",
+    "    FUN_0087a5c0(param_1,param_4,param_5,param_6,param_7,param_3,param_2);",
+    "  }",
+    "  return;",
+    "}"
+  ],
+  "tool_calls": [
+    {"tool": "mcp__rea__open_binary", "args": {"path": "/tmp/claude-1000/rea_probe/swkotor2.exe", "provider_id": "ghidra"}, "ms": null, "ok": true},
+    {"tool": "mcp__rea__procedure_info", "args": {"procedure": "0x00775700"}, "ms": null, "ok": true},
+    {"tool": "mcp__rea__read_bytes", "args": {"address": "0x00775700", "length": 12}, "ms": null, "ok": true},
+    {"tool": "mcp__rea__procedure_callees", "args": {"procedure": "0x00775700"}, "ms": null, "ok": true},
+    {"tool": "mcp__rea__procedure_callers", "args": {"procedure": "0x00775700"}, "ms": null, "ok": true},
+    {"tool": "mcp__rea__procedure_pseudo_code", "args": {"procedure": "0x00775700"}, "ms": null, "ok": true},
+    {"tool": "mcp__rea__read_bytes", "args": {"address": "0x00775700", "length": 82}, "ms": null, "ok": true},
+    {"tool": "mcp__rea__resolve_containing_procedure", "args": {"address": "0x007791a0"}, "ms": null, "ok": true},
+    {"tool": "mcp__rea__resolve_containing_procedure", "args": {"address": "0x00899270"}, "ms": null, "ok": true},
+    {"tool": "mcp__rea__close_binary", "args": {}, "ms": null, "ok": true}
+  ]
+}
