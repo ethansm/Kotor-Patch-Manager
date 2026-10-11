@@ -152,7 +152,6 @@ requires = ["which:g++"]
 
 # ---- swarm library (M2.1, ~/.claude/swarm, stdlib only) and fix-sandbox self-tests (M2.2+) ----
 # Run one group: run_tests.py swarm-lib   |   run_tests.py swarm-fix
-# swarm-bundle-wrapper is RED BY DESIGN until M2 Session B1 (run it alone: run_tests.py swarm-bundle-wrapper)
 
 [[suite]]
 name = "swarm-lib-invariants"
@@ -184,7 +183,6 @@ cmd = ["python3", "-I", "~/.claude/swarm/tests/test_vendor_parity.py"]
 requires = ["~/.claude/swarm/tests/test_vendor_parity.py"]
 timeout_s = 120
 
-# RED BY DESIGN until Session B1 (M2 safety): known gaps env_clean, run_dir_hidden, custom non-stub claude binary
 [[suite]]
 name = "swarm-bundle-wrapper"
 cmd = ["python3", "-I", "~/.claude/swarm/tests/test_bundle_wrapper.py"]

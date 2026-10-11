@@ -1,6 +1,26 @@
+# Swarm M2 safety: current state (Session B, B1 done, 2026-10-10 late)
+
+Resume next: `swarm M2 safety, Session B (B2)`. Plan: Swarm M2 safety re-scope (post phase 3d), §4 Session B onward.
+
+## Session B: B1 done (bundle `~/.claude/skills/deep-haiku-review/bundle`)
+- Bundle commits: `a42a422` baseline, `1926dcf` vendor hygiene, `6cb7c09` B1a hygiene args after the HOME tmpfs, `9441ced` B1b fail-closed gate and stub-by-`--version`, `12c5421` B1c `claude_state` rw|ro (default rw), `61dfbc8` B1d selftests and export fix.
+- Verified after B1d: mock 128/128, real quick 203/203, real full 211/211 (A0 baselines 115 / 190 / 198). `swarm-bundle-wrapper` GREEN (7/7).
+- Bugs found and fixed in B1: `dr_sandbox_gate` was missing from `export -f` (xargs children of a stub run exited 1, map stage failed). Unprimed parents (`run_map`, `run_reduce`, `canary_test`, `subagent_probe`) ran unwrapped and silent when bwrap was broken; `dr_sandbox_prefix` now runs the gate itself and exits 1.
+- Deviations from plan: B1 item 5 (`DR_SANDBOX_HANDLED=1` exported by `run_fix*.sh`) moved to B3 (its scope). `DR_CLAUDE_STATE` is env-wins in `sandbox_env`, unlike `DR_HIDE_HOME` (profile-wins). The `DR_SANDBOX=none` dry-run check now passes `DR_ALLOW_UNSANDBOXED=1`, the explicit opt-out.
+- Still open from B1: the mutation check (revert the hygiene step in a scratch copy of the bundle, the wrapper suite must go red) has NOT been run. First task of the next phase.
+- Residual: `/var/tmp/dr_hygiene.*` cache files are not removed at exit (one small file per process tree).
+- Residual: `fix_settings.py` bwrap does not read `claude_state` (B3 item 1).
+
+## Next phase: B2 to B4 (then C, D, final report)
+- B2 canary and run gate, B3 fix half and deny lists, B4 close. Plan §4 onward.
+- Gate before any bundle edit: `pgrep -af 'run_fix|run_map|run_integrate|fix_checks' | grep -v pgrep` prints nothing.
+- No paid calls. Final canary (§7) needs the user's go.
+
+---
+
 # Swarm M2 safety: Session A handoff (2026-10-10)
 
-Resume next: `swarm M2 safety, Session B (B1)`. Plan: Swarm M2 safety re-scope (post phase 3d), §4 Session B.
+Resume (historical): `swarm M2 safety, Session B (B1)`. Plan: Swarm M2 safety re-scope (post phase 3d), §4 Session B.
 
 ## Commits
 - Bundle baseline (own git repo, `~/.claude/skills/deep-haiku-review/bundle`): `a42a422` ("baseline before M2 re-scope (includes phase 3d)"). Tarball: `~/.claude/swarm/backups/bundle_20261010_224532.tgz`.
