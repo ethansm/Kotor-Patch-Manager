@@ -35,5 +35,5 @@ source = "ecx"
 type = "pointer"
 
 [[hooks.parameters]]
-source = "esp+4"
+source = "[esp+4]"
 type = "pointer"

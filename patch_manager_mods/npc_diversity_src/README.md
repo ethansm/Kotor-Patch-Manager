@@ -33,6 +33,14 @@ python3 scripts/run_tests.py diversity
 python3 scripts/run_tests.py suite:check-hook-bytes
 ```
 
+## Prerequisites
+
+1. **Echoes/TSLRCM-edited base 2DAs are not shipped as base.** `scripts/generate_diversity_2da.py` appends rows to the live `appearance.2da` and `heads.2da`. The shipped copies in `override/` are built on the author's base, so installing them over Echoes or TSLRCM table edits replaces those edits.
+2. **HD Twi'lek assets come from another mod.** `P_TwiHNGreen` and `P_TwiHTRed` (models) and `P_TwiNGreen`, `P_TwiNBlue`, `P_TwiToneRed` (textures) back heads 198, 200 and 204 (rows 809-811). Dancer textures `N_TwiDanceA01` and `N_TwiDanceB01` (rows 809-810) are also live-only. Without them those heads and textures are missing (expected at runtime: missing head or texture, not tested). `scripts/check_diversity_assets.py` reports them as `LIVE-ONLY (prerequisite)`.
+3. **`N_CommM10` is a TGA.** It is a valid uncompressed 32-bit 512x512 TGA with a TGA 2.0 footer, so the engine can load it as shipped.
+4. **Commoner textures are large.** 15 of the `N_Comm*` textures are 2048x2048 DXT5, about 4x the VRAM of the 1024x1024 set.
+5. **GOG note.** GOG hook 1 at `0x0048E691` collides with `k2-class-menu-clothes` (see the `conflicts` entry in `manifest.toml`).
+
 ## Packaging (.kpatch)
 
 KPM package `NpcDiversity.kpatch` is built via `Patches/create-patch.py` under the KPM tree (`$K/Patches/NpcDiversity`):

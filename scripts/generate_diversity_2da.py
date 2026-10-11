@@ -7,8 +7,10 @@ Expands appearance.2da and heads.2da with non-destructive, idempotent rows:
   - Czerka_Officer_Female (N_CzerkaOff mesh + N_CzerkaOff texture)
   - Ashton/Leilukin Twi'lek Male combinations (llk_ahrnell..luposhar heads)
   - Lily Twi'lek Female dancer variants (N_TwiDance_Boot, N_TwiDance, N_TwiUnd)
-  - Alien Kel Dor & Iridorian mercenary variants
-  - Restored / custom heads in heads.2da (up to 256 byte limit)
+  - Restored / custom heads in heads.2da (up to 254 usable head ids; the engine stores the id in one byte)
+
+Base tables: when <game-override>/_diversity_premerge_backup/*.2da.bak exists, that pre-merge snapshot is the
+base (the live files are only verified against it). Otherwise the live files are the base.
 
 Generates:
   - <out-dir>/appearance.2da
@@ -18,11 +20,13 @@ Generates:
 
 Usage:
   .venv/bin/python scripts/generate_diversity_2da.py [--game-override DIR] [--out-dir DIR] [--dry-run]
+  .venv/bin/python scripts/generate_diversity_2da.py --apply [--force-base]   (verifies the live base first)
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import logging
 import os
@@ -68,6 +72,12 @@ NEW_HEADS = [
     {"head": "llk_DahnisH", "alttexture": "llk_DahnisH"},
 ]
 
+# The engine stores the head id in one byte; 255 is not a valid id, so the table may hold at most 254 rows.
+MAX_HEAD_ROWS = 254
+
+# Pre-merge snapshot of the live tables, written by the first --apply. It pins the base the rows were built on.
+PREMERGE_BACKUP_DIRNAME = "_diversity_premerge_backup"
+
 # Base template models to inherit common movement, sound, and animation attributes
 MALE_COMM_TEMPLATE = {
     "race": "N_CommM",
@@ -78,7 +88,7 @@ MALE_COMM_TEMPLATE = {
     "driveanimrun_xbox": "3.96",
     "modeltype": "B",
     "normalhead": "84",
-    "backuphead": "****",
+    "backuphead": "",
     "modela": "N_CommM",
     "texa": "N_CommM",
     "modelb": "N_CommM",
@@ -141,7 +151,7 @@ FEMALE_COMM_TEMPLATE = {
     "driveanimrun_xbox": "3.96",
     "modeltype": "B",
     "normalhead": "85",
-    "backuphead": "****",
+    "backuphead": "",
     "modela": "N_CommF",
     "texa": "N_CommF",
     "modelb": "N_CommF",
@@ -204,7 +214,7 @@ CZERKA_OFF_F_TEMPLATE = {
     "driveanimrun_xbox": "3.96",
     "modeltype": "B",
     "normalhead": "83",
-    "backuphead": "****",
+    "backuphead": "",
     "modela": "N_CzerkaOff",
     "texa": "N_CzerkaOff",
     "modelb": "N_CzerkaOff",
@@ -256,51 +266,6 @@ CZERKA_OFF_F_TEMPLATE = {
     "prefatckdist": "1.4",
     "groundtilt": "0",
     "body_bag": "1",
-}
-
-ALIEN_TEMPLATE = {
-    "race": "N_Weeq",
-    "walkdist": "1.813",
-    "rundist": "3.66",
-    "driveanimwalk": "1.813",
-    "driveanimrun_pc": "3.66",
-    "driveanimrun_xbox": "3.96",
-    "modeltype": "S",
-    "normalhead": "****",
-    "backuphead": "****",
-    "modela": "N_Weeq",
-    "texa": "N_Weeq",
-    "modelb": "N_Weeq",
-    "texb": "N_Weeq",
-    "modelc": "****",
-    "texc": "****",
-    "envmap": "DEFAULT",
-    "bloodcolr": "R",
-    "wing_tail_scale": "1",
-    "moverate": "NORM",
-    "driveaccl": "50",
-    "drivemaxspeed": "5.4",
-    "hitradius": "0.25",
-    "perspace": "0.35",
-    "creperspace": "0.4",
-    "height": "1",
-    "targetheight": "l",
-    "abortonparry": "0",
-    "racialtype": "20",
-    "haslegs": "1",
-    "hasarms": "1",
-    "footstepvolume": "1",
-    "sizecategory": "3",
-    "perceptiondist": "9",
-    "footsteptype": "0",
-    "soundapptype": "0",
-    "headtrack": "1",
-    "head_arc_h": "30",
-    "head_arc_v": "15",
-    "hitdist": "1",
-    "prefatckdist": "1.4",
-    "groundtilt": "0",
-    "body_bag": "3",
 }
 
 # Specification of rows to append to appearance.2da
@@ -368,13 +333,17 @@ DIVERSITY_APPEARANCES: List[Dict[str, Any]] = [
             "race": "N_CommM",
         },
     },
+    # Dancer texa/texb follow the vanilla Twi'lek dancer rows (texb == texa there). N_TwiDance_Boot and N_TwiDance
+    # both carry the N_TwiDanceA01 placeholder; vanilla rows 47/325 use A and 270 uses B. N_TwiUnd has no vanilla
+    # row, so the underwear row keeps the human N_CommF texture set.
     {
         "label": "Twilek_Female_Dancer_Boot",
         "base": FEMALE_COMM_TEMPLATE,
         "overrides": {
             "modela": "N_TwiDance_Boot",
             "modelb": "N_TwiDance_Boot",
-            "texa": "N_CommF",
+            "texa": "N_TwiDanceA",
+            "texb": "N_TwiDanceA",
             "normalhead": "198",
         },
     },
@@ -384,7 +353,8 @@ DIVERSITY_APPEARANCES: List[Dict[str, Any]] = [
         "overrides": {
             "modela": "N_TwiDance",
             "modelb": "N_TwiDance",
-            "texa": "N_CommF",
+            "texa": "N_TwiDanceB",
+            "texb": "N_TwiDanceB",
             "normalhead": "200",
         },
     },
@@ -396,50 +366,6 @@ DIVERSITY_APPEARANCES: List[Dict[str, Any]] = [
             "modelb": "N_TwiUnd",
             "texa": "N_CommF",
             "normalhead": "204",
-        },
-    },
-    {
-        "label": "Alien_KelDor_01",
-        "base": ALIEN_TEMPLATE,
-        "overrides": {
-            "modela": "N_KelDor",
-            "modelb": "N_KelDor",
-            "texa": "N_KelDor",
-            "texb": "N_KelDor",
-            "race": "N_KelDor",
-        },
-    },
-    {
-        "label": "Alien_KelDor_02",
-        "base": ALIEN_TEMPLATE,
-        "overrides": {
-            "modela": "N_KelDor",
-            "modelb": "N_KelDor",
-            "texa": "N_KelDor02",
-            "texb": "N_KelDor02",
-            "race": "N_KelDor",
-        },
-    },
-    {
-        "label": "Alien_Iridorian_01",
-        "base": ALIEN_TEMPLATE,
-        "overrides": {
-            "modela": "N_Iridorian",
-            "modelb": "N_Iridorian",
-            "texa": "N_Iridorian01",
-            "texb": "N_Iridorian01",
-            "race": "N_Iridorian",
-        },
-    },
-    {
-        "label": "Alien_Iridorian_02",
-        "base": ALIEN_TEMPLATE,
-        "overrides": {
-            "modela": "N_Iridorian",
-            "modelb": "N_Iridorian",
-            "texa": "N_Iridorian02",
-            "texb": "N_Iridorian02",
-            "race": "N_Iridorian",
         },
     },
 ]
@@ -483,12 +409,15 @@ def merge_heads_table(heads_2da: TwoDA) -> Tuple[Dict[str, int], List[str]]:
             mapping[name] = existing
             actions.append(f"Head '{name}' already present at row {existing}")
         else:
-            if heads_2da.get_height() >= 256:
-                raise RuntimeError(f"heads.2da exceeds engine byte limit (256 rows)! Cannot add '{name}'.")
+            if heads_2da.get_height() + 1 > MAX_HEAD_ROWS:
+                raise RuntimeError(
+                    f"heads.2da would exceed the engine head-id limit ({MAX_HEAD_ROWS} rows; ids are one byte). "
+                    f"Cannot add '{name}' at height {heads_2da.get_height()}."
+                )
             idx = heads_2da.add_row()
             heads_2da.set_label(idx, str(idx))
             for h in heads_2da.get_headers():
-                heads_2da.set_cell(idx, h, head_spec.get(h, "****"))
+                heads_2da.set_cell(idx, h, head_spec.get(h, ""))
             mapping[name] = idx
             actions.append(f"Appended head '{name}' at row {idx}")
 
@@ -517,7 +446,7 @@ def merge_appearance_table(app_2da: TwoDA, head_mapping: Dict[str, int]) -> Tupl
         # Build full row values
         row_vals: Dict[str, str] = {}
         for h in headers:
-            row_vals[h] = "****"
+            row_vals[h] = ""  # vanilla blank cells read back as '' (no literal "****")
         row_vals["label"] = label
 
         # Copy from base template
@@ -545,7 +474,83 @@ def merge_appearance_table(app_2da: TwoDA, head_mapping: Dict[str, int]) -> Tupl
     return mapping, actions
 
 
-def generate_cpp_header(app_mapping: Dict[str, int], head_mapping: Dict[str, int], out_path: Path) -> None:
+def _row_digest(twoda: TwoDA, labels: List[str], i: int) -> str:
+    row = twoda.get_row(i)
+    cells = [labels[i]] + [row.get_string(h) for h in twoda.get_headers()]
+    return hashlib.sha256("\x1f".join(cells).encode("utf-8")).hexdigest()
+
+
+def _index_of(twoda: TwoDA, column: str, value: str) -> Optional[int]:
+    wanted = value.lower()
+    for i in range(twoda.get_height()):
+        if twoda.get_row(i).get_string(column).lower() == wanted:
+            return i
+    return None
+
+
+def verify_base_unchanged(live_override: Path, backup_dir: Path) -> List[str]:
+    """Check that the live tables still hold the pre-merge base. Returns problems; [] means safe to write.
+
+    Rows 0..N-1 (N = rows in the backup) must match the backup cell by cell, row label included. Past N the live
+    table may only hold this generator's own rows, so its first extra row must be the first row the generator
+    would append: appearance Commoner_Fat_Male at N; heads the first NEW_HEADS entry missing from the backup.
+    """
+    problems: List[str] = []
+    tables = (
+        ("appearance.2da", [spec["label"] for spec in DIVERSITY_APPEARANCES], "label"),
+        ("heads.2da", [spec["head"] for spec in NEW_HEADS], "head"),
+    )
+    for fname, wanted_names, key_col in tables:
+        live_path = live_override / fname
+        bak_path = backup_dir / (fname + ".bak")
+        if not live_path.is_file() or not bak_path.is_file():
+            problems.append(f"{fname}: live or backup file missing")
+            continue
+        live = read_2da(live_path)
+        bak = read_2da(bak_path)
+        if live.get_headers() != bak.get_headers():
+            problems.append(f"{fname}: column headers differ from the pre-merge backup")
+            continue
+        n = bak.get_height()
+        live_labels = live.get_labels()
+        bak_labels = bak.get_labels()
+        diff = [
+            i for i in range(n)
+            if i >= live.get_height() or _row_digest(live, live_labels, i) != _row_digest(bak, bak_labels, i)
+        ]
+        if diff:
+            problems.append(
+                f"{fname}: {len(diff)} of {n} base rows differ from the pre-merge backup; first 5 rows: {diff[:5]}"
+            )
+        first_new = next((name for name in wanted_names if _index_of(bak, key_col, name) is None), None)
+        if live.get_height() > n:
+            if first_new is None:
+                problems.append(f"{fname}: {live.get_height() - n} row(s) past the backup's {n}, none expected")
+            else:
+                got = live.get_row(n).get_string(key_col)
+                if got.lower() != first_new.lower():
+                    problems.append(f"{fname}: row {n} is {got!r}, expected the first appended row {first_new!r}")
+    return problems
+
+
+def backup_once(src: Path, dst: Path) -> bool:
+    """Copy src to dst only when dst does not exist yet, so the first pre-merge snapshot is never overwritten."""
+    if dst.exists():
+        return False
+    shutil.copy2(src, dst)
+    return True
+
+
+def generate_cpp_header(
+    app_mapping: Dict[str, int],
+    head_mapping: Dict[str, int],
+    out_path: Path,
+    *,
+    app_first: int,
+    app_count: int,
+    head_first: int,
+    head_count: int,
+) -> None:
     lines = [
         "// Auto-generated by scripts/generate_diversity_2da.py - DO NOT EDIT MANUALLY",
         "#pragma once",
@@ -569,6 +574,16 @@ def generate_cpp_header(app_mapping: Dict[str, int], head_mapping: Dict[str, int
         lines.append(f"constexpr uint8_t {const_name} = {row_idx};")
 
     lines.extend([
+        "",
+        "// Table bounds: first row past the pre-merge base, and total row count after this generator run.",
+        f"constexpr uint16_t APP_FIRST_APPENDED = {app_first};",
+        f"constexpr uint16_t APP_COUNT = {app_count};",
+        f"constexpr uint16_t HEAD_FIRST_APPENDED = {head_first};",
+        f"constexpr uint16_t HEAD_COUNT = {head_count};",
+        "static_assert(APP_COMMONER_FAT_MALE == APP_FIRST_APPENDED, "
+        "\"Fat male commoner must be the first appended appearance row\");",
+        "static_assert(APP_TWILEK_FEMALE_UNDERWEAR < APP_COUNT, "
+        "\"Appended appearance rows must lie below APP_COUNT\");",
         "",
         "} // namespace NpcDiversity",
         "",
@@ -607,22 +622,47 @@ def main() -> None:
         action="store_true",
         help="Simulate the merge without writing any files",
     )
+    parser.add_argument(
+        "--force-base",
+        action="store_true",
+        help="With --apply: write even when the live base differs from the pre-merge backup",
+    )
     args = parser.parse_args()
 
     live_override = args.game_override
     out_dir = args.out_dir
     src_dir = args.src_dir
 
-    print(f"Loading base 2DA files from: {live_override}")
-    heads_path = live_override / "heads.2da"
-    app_path = live_override / "appearance.2da"
+    backup_dir = live_override / PREMERGE_BACKUP_DIRNAME
+    have_backup = (backup_dir / "heads.2da.bak").is_file() and (backup_dir / "appearance.2da.bak").is_file()
 
-    if not heads_path.is_file() or not app_path.is_file():
-        print(f"Error: heads.2da or appearance.2da not found in {live_override}", file=sys.stderr)
+    if args.apply and have_backup:
+        problems = verify_base_unchanged(live_override, backup_dir)
+        for problem in problems:
+            print(f"BASE CHECK: {problem}", file=sys.stderr)
+        if problems and not args.force_base:
+            print("Refusing to --apply: nothing written. Re-run with --force-base to override.", file=sys.stderr)
+            sys.exit(3)
+        if problems:
+            print("WARNING: --force-base given; continuing despite the base mismatch.")
+        else:
+            print(f"Base check OK: live tables match the pre-merge backup in {backup_dir}")
+
+    if have_backup:
+        heads_src = backup_dir / "heads.2da.bak"
+        app_src = backup_dir / "appearance.2da.bak"
+        print(f"Base: pre-merge backup {backup_dir}")
+    else:
+        heads_src = live_override / "heads.2da"
+        app_src = live_override / "appearance.2da"
+        print(f"Base: live files in {live_override} (no pre-merge backup yet)")
+
+    if not heads_src.is_file() or not app_src.is_file():
+        print(f"Error: base heads.2da or appearance.2da not found ({heads_src.parent})", file=sys.stderr)
         sys.exit(1)
 
-    heads_2da = read_2da(heads_path)
-    app_2da = read_2da(app_path)
+    heads_2da = read_2da(heads_src)
+    app_2da = read_2da(app_src)
 
     orig_heads_count = heads_2da.get_height()
     orig_app_count = app_2da.get_height()
@@ -631,6 +671,14 @@ def main() -> None:
 
     head_mapping, head_actions = merge_heads_table(heads_2da)
     app_mapping, app_actions = merge_appearance_table(app_2da, head_mapping)
+
+    # Appended rows must start exactly at the base height (add_row appends, so this guards a changed base).
+    new_app_rows = sorted(i for i in app_mapping.values() if i >= orig_app_count)
+    if new_app_rows and new_app_rows[0] != orig_app_count:
+        raise RuntimeError(f"appearance.2da: first appended row {new_app_rows[0]} != base height {orig_app_count}")
+    new_head_rows = sorted(i for i in head_mapping.values() if i >= orig_heads_count)
+    if new_head_rows and new_head_rows[0] != orig_heads_count:
+        raise RuntimeError(f"heads.2da: first appended row {new_head_rows[0]} != base height {orig_heads_count}")
 
     print("\n--- Heads Summary ---")
     for act in head_actions:
@@ -660,7 +708,15 @@ def main() -> None:
 
     # Generate C++ header
     cpp_header = src_dir / "DiversityRows.h"
-    generate_cpp_header(app_mapping, head_mapping, cpp_header)
+    generate_cpp_header(
+        app_mapping,
+        head_mapping,
+        cpp_header,
+        app_first=orig_app_count,
+        app_count=app_2da.get_height(),
+        head_first=orig_heads_count,
+        head_count=heads_2da.get_height(),
+    )
     print(f"Wrote C++ constants header to {cpp_header}")
 
     # Generate JSON mapping
@@ -675,14 +731,20 @@ def main() -> None:
     print(f"Wrote mapping JSON to {json_mapping}")
 
     if args.apply:
-        backup_dir = live_override / "_diversity_premerge_backup"
+        live_heads = live_override / "heads.2da"
+        live_app = live_override / "appearance.2da"
         backup_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(heads_path, backup_dir / "heads.2da.bak")
-        shutil.copy2(app_path, backup_dir / "appearance.2da.bak")
-        print(f"Backed up live 2DAs to {backup_dir}")
+        backed_up = [
+            backup_once(live_heads, backup_dir / "heads.2da.bak"),
+            backup_once(live_app, backup_dir / "appearance.2da.bak"),
+        ]
+        if any(backed_up):
+            print(f"Backed up live 2DAs to {backup_dir}")
+        else:
+            print(f"Kept existing pre-merge backup in {backup_dir} (never overwritten)")
 
-        shutil.copy2(staged_heads, heads_path)
-        shutil.copy2(staged_app, app_path)
+        shutil.copy2(staged_heads, live_heads)
+        shutil.copy2(staged_app, live_app)
         print(f"Applied merged 2DAs to {live_override}")
 
     print("\nPhase 1 2DA generation completed successfully!")

@@ -75,6 +75,12 @@ requires = ["${KOTOR2_ROOT}/patch_config.toml", "${KPM_DIR}/Patches"]
 timeout_s = 60
 
 [[suite]]
+name = "check-hook-sources"
+# Fails on unbracketed stack sources (esp+4 instead of [esp+4]) in any hooks.toml: KPM passes the slot address, not its value.
+cmd = ["python", "scripts/check_hook_sources.py"]
+timeout_s = 30
+
+[[suite]]
 name = "check-exports"
 # Detour `function`s must be in exports.def and in the PE export table of the DLL inside the KPM .kpatch.
 cmd = ["python", "scripts/check_exports.py", "--quiet"]

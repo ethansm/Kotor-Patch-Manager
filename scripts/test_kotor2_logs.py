@@ -81,6 +81,15 @@ class Routing(Tmp):
         rc = K.check("selfheal", [], self.g)
         self.assertEqual(rc, 0)
 
+    def test_npc_diversity(self):
+        a = self.argv("npc-diversity_log.txt")
+        self.assertTrue(a[1].endswith("scripts/npc_div_log_check.py"))
+        self.assertEqual(a[2], os.path.join(self.g, "npc-diversity_log.txt"))
+        self.assertEqual(K.kind_of(a[2]), "npcdiv")
+        self.assertTrue(K.is_live_log("npc-diversity_log.txt"))
+        self.assertEqual(K.ALIASES["npc-diversity"], "npc-diversity_log.txt")
+        self.assertEqual(K.ALIASES["npcdiv"], "npc-diversity_log.txt")
+
     def test_runs_class(self):
         for n in ("perflab_log.txt", "perflab_metrics.txt", "robustnessfixes_log.txt", "texmem_log.txt", "activationfix_log.txt",
                   "equipiconfix_log.txt", "k2-texture-memory-release_log.txt", "k2-activation-fix_log.txt", "k2-equip-icon-fix_log.txt",
