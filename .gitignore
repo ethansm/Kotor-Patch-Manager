@@ -19,3 +19,26 @@ kdb_backup_*.db
 
 # Handoff backup copy (regenerated each /plan-handoff)
 .claude/session_handoff.prev.md
+
+# Regenerable review-pipeline output and caches (code under fix/ and verify/ is not ignored)
+/.claude/review/fix/raw/
+/.claude/review/fix/results/
+/.claude/review/fix/reviews/
+/.claude/review/fix/checks/
+/.claude/review/fix/patches/
+/.claude/review/fix/integ/
+/.claude/review/fix/judge/
+/.claude/review/verify/results/
+/.claude/review/verify/raw/
+/.claude/review/verify/adj_raw/
+/.claude/review/verify/adjudications/
+/.claude/review/raw/
+/.claude/review/packets/
+/tests/.cache/
+/.claude/contract_baseline.tsv
+/.claude/master_ledger_facts.json
+/.claude/clef_priors.json
+/.claude/router_eval/runs/
+/.claude/deep-review/phase3b/l0/out/
+/.claude/deep-review/phase3b/replay_src/**/*.out
+/.claude/**/*.err
