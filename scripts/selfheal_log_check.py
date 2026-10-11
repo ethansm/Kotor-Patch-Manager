@@ -13,6 +13,11 @@ Checks (0.4.0-dev adds): BUILD n=N/D (FAIL if N<D without why=), ICON fallback a
 0.6.0-dev (CS12): REFUSE already queued, KICK member=N before=[..] after=[..] k=K route=rotate, KICK skipped member=N (gate=v),
 KICK starved member=N, DONE ... queued=Q, TIMEOUT unqueued member=N. `KICK starved` and `TIMEOUT unqueued` are WARN (never FAIL): a timeout while
 queued cannot happen by design, so an unqueued timeout means the use never entered the queue or was dropped.
+0.7.0-dev (popalign10+disc2): TEX takes both the legacy `TEX <res> queued|refilled|giving up` and the EmbedTex.h lines
+`tex <res>: <why>, WxH RGBA queued for upload (...)`; `giving up`, `slot table full`, `allocation failed` are WARN. SETFAIL is WARN (counted).
+P4 popover rows (7 text items auto,hpm,hpp,keepm,keepp,hpval,keepval: tobj=1, rend!=0, extOk=1, rectSet=1, vis=1, ext w>0 h>0; bg exempt),
+INFO `rows h=<min> screen=<WxH>`. P5 discs (TEXSET disc and dischi != 0 else FAIL, ensure=1 else WARN; every DISC img!=0 and setfill=1),
+INFO `discs slots=N/M DISC=n hover=h`. P4/P5 are NOT-SEEN (not FAIL) when their lines are absent. STATE lookA and BUILD proj/cleared are optional.
 Checks: P1 (>=1 `P1 hud built ... layoutOpen=1`, ctlCount 1..4096), P3 (every `P3 slot[i]=` has k=0|1|2),
 DUMP blocks (hp cur<=max, heal-row cand {64,65,66,84,127,128} has heal>0 and only those have heal>0, a pick line, routeA idOk=1 when a pick exists).
 """
@@ -25,16 +30,27 @@ from pathlib import Path
 
 DEFAULT_LOG = Path.home() / ".local/share/Steam/steamapps/common/Knights of the Old Republic II/companion-selfheal_log.txt"
 
-PREFIX_RE = re.compile(r"^(?:T=\d+(?:\.\d+)? f=(?:\d+|-)|\d+)\s+[\w.-]+/\w+\s+(?:(?:ERR|WARN)\s+)?(.*)$")
+# KpLog.h writes "%u %s/%s %s" then the text: exactly one space after the channel, so DUMP sub-line indentation survives.
+PREFIX_RE = re.compile(r"^(?:T=\d+(?:\.\d+)? f=(?:\d+|-)|\d+)\s+[\w.-]+/\w+ (?:(?:ERR|WARN) )?(.*)$")
 P1_RE = re.compile(r"^P1 hud built .*?\blayoutOpen=(\S+) .*?\bctlCount=(\S+)\s*$")
 P3_RE = re.compile(r"^P3 slot\[(\d+)\]=\S+ .*?\bk=(\S+)\s*$")
 MEMBER_RE = re.compile(r"^member (\d+) .*?\bhp=(\S+?)/(\S+?) ")
 CAND_RE = re.compile(r"^\s+cand \"(.*)\" .*?\brow=(\S+) heal=(\S+) count=(\S+)")
 PICK_RE = re.compile(r"^\s+pick missing=(\S+) -> (?:\"(.*)\" row=(\S+) heal=(\S+) count=(\S+)|none)")
 ROUTE_RE = re.compile(r"^\s+routeA \(not called\):.*\bidOk=(\S+)")
-BUILD_RE = re.compile(r"^BUILD n=(\S+)/(\d+)(?:\s+why=(.*))?$")   # 0.3.0: /10, 0.4.0-dev: /12 (+2 ring labels)
+BUILD_RE = re.compile(r"^BUILD n=(\S+)/(\d+)(?:\s+why=(.*?))?(?:\s+proj=(\S+) cleared=(\S+))?\s*$")   # 0.3.0: /10, 0.4.0-dev: /12 (+2 ring labels), 0.7.0-dev: proj= cleared=
 ICON_RE = re.compile(r"^ICON fallback member=(\S+)")
-TEX_RE = re.compile(r"^TEX (\S+) (queued|refilled|giving up)\b")
+TEX_OLD_RE = re.compile(r"^TEX (\S+) (queued|refilled|giving up)\b")   # 0.4.0..0.6.0
+TEX_RE = re.compile(r"^tex (\S+): (.*?)\s*$")   # 0.7.0-dev, EmbedTex.h: `tex <res>: <why>, WxH RGBA queued for upload (basic p, pending n)`
+ALLOC_FAIL_RE = re.compile(r"allocation failed|malloc\(\S*\) failed")
+VERSION_RE = re.compile(r"^(\d+\.\d+\.\d+(?:-\w+)?)(?: ui=(\S+))?: probe call=")   # `0.5.0-dev: probe call=` and `0.7.0-dev ui=popalign10+disc2: probe call=`
+POP_RE = re.compile(r"^POP open m=(\S+) screen=(\S+?)x(\S+) unit=(\S+) btn=\[([^\]]*)\] align=(\S+)\s*$")
+POPNULL_RE = re.compile(r"^POPROW m=(\S+) item=(\S+) null\s*$")
+POPROW_RE = re.compile(r'^POPROW m=(\S+) item=(\S+) ext=\[([^\]]*)\] extOk=(\S+) vis=(\S+) txt="(.*?)" tobj=(\S+) rend=(\S+) rgb=\S+ rgbOk=(\S+) rectSet=(\S+)\s*$')
+TEXSET_RE = re.compile(r"^TEXSET ensure=(\S+) supported=(\S+) ready=(\S+) cross=(\S+) disc=(\S+) dischi=(\S+) ring0=(\S+) slots=(\S+?)/(\S+)\s*$")
+DISC_RE = re.compile(r"^DISC m=(\S+) hover=(\S+) img=(\S+) setfill=(\S+)\s*$")
+SETFAIL_RE = re.compile(r"^SETFAIL op=(\S+)(?: .*)?$")
+STATE_RE = re.compile(r"^STATE member=(\S+) (\S+?)->(\S+) hp=(\S+)(?: lookA=(\S+))?\s*$")
 USE_RE = re.compile(r"^USE member=(\S+) item=(\S+) \"(.*)\" heal=(\S+) hp=(\S+?)/(\S+) src=(\S+)\s*$")
 REFUSE_RE = re.compile(r"^REFUSE\s*(.*?)\s*$")
 DONE_RE = re.compile(r"^DONE member=(\S+) hp(\S+) stack(\S+) timeout=(\S+)\s*$")
@@ -48,6 +64,13 @@ KICKSTARVED_RE = re.compile(r"^KICK starved member=(\S+)\s*$")
 TIMEOUT_RE = re.compile(r"^TIMEOUT unqueued member=(\S+)\s*$")
 CLICK_RE = re.compile(r"^CLICK member=(\S+) noitem\s*$")
 DIAGPOP_RE = re.compile(r"^DIAG pop item=(\S+) .*?rgbOk=(\d+) alphaOk=(\d+)")
+# POPROW items that carry text; "bg" has txt="" and tobj=0 by design, so P4 skips it.
+TEXT_ITEMS = ("auto", "hpm", "hpp", "keepm", "keepp", "hpval", "keepval")
+TEX_WARN = {
+    "giving up": "TEX %s giving up (art missing, labels still work)",
+    "slot full": "TEX %s slot table full (texture not uploaded)",
+    "alloc failed": "TEX %s allocation failed (texture not uploaded)",
+}
 ROWS = {64, 65, 66, 84, 127, 128}
 FAMILY = {64: "organic medpac(10+1*TI)", 65: "organic medpac(20+2*TI)", 66: "organic medpac(30+3*TI)",
           84: "droid repair(15+1*Rep)", 127: "droid repair(25+2*Rep)", 128: "droid repair(35+3*Rep)"}
@@ -60,9 +83,39 @@ def to_int(s):
         return None
 
 
+def hexval(s):
+    try:
+        return int(s, 16)
+    except (TypeError, ValueError):
+        return None
+
+
 def strip(raw):
     m = PREFIX_RE.match(raw)
     return m.group(1) if m else raw
+
+
+def tex_event(t):
+    """(res, kind) for a texture line in either format, else None.
+    kind: queued | refilled | giving up | slot full | alloc failed | other (other = informational, never WARN)."""
+    m = TEX_OLD_RE.match(t)
+    if m:
+        return m.group(1), m.group(2)
+    m = TEX_RE.match(t)
+    if not m:
+        return None
+    res, why = m.group(1), m.group(2)
+    if "giving up" in why:
+        kind = "giving up"
+    elif "slot table full" in why:
+        kind = "slot full"
+    elif ALLOC_FAIL_RE.search(why):
+        kind = "alloc failed"
+    elif "queued for upload" in why:
+        kind = "refilled" if why.startswith("refilled") else "queued"
+    else:
+        kind = "other"
+    return res, kind
 
 
 def v030_line(v, n, t):
@@ -70,16 +123,15 @@ def v030_line(v, n, t):
     m = BUILD_RE.match(t)
     if m:
         k, den, why = to_int(m.group(1)), to_int(m.group(2)), (m.group(3) or "").strip()
-        v["build"].append((n, k, why))
+        v["build"].append((n, k, why, to_int(m.group(4)), to_int(m.group(5))))
         if k is None or (k < den and not why):
             v["fail"].append((n, "BUILD n=%s/%s without why" % (m.group(1), m.group(2))))
     elif ICON_RE.match(t):
         v["warn"].append((n, "ICON fallback member=%s (cross texture not usable, \"+\" text shown)" % ICON_RE.match(t).group(1)))
-    elif TEX_RE.match(t):
-        g = TEX_RE.match(t).groups()
-        v["tex"][g[1]] = v["tex"].get(g[1], 0) + 1
-        if g[1] == "giving up":
-            v["warn"].append((n, "TEX %s giving up (art missing, labels still work)" % g[0]))
+    elif (tx := tex_event(t)):
+        v["tex"][tx[1]] = v["tex"].get(tx[1], 0) + 1
+        if tx[1] in TEX_WARN:
+            v["warn"].append((n, TEX_WARN[tx[1]] % tx[0]))
     elif USE_RE.match(t):
         g = USE_RE.match(t).groups()
         v["use"].append({"line": n, "member": g[0], "item": g[1], "name": g[2], "heal": to_int(g[3]), "src": g[6]})
@@ -138,12 +190,104 @@ def v030_line(v, n, t):
     return True
 
 
+def v070_line(v, n, t):
+    """Parse one 0.7.0-dev line (version, popover rows, TEXSET/DISC, SETFAIL, STATE) into v; True if it was one."""
+    m = VERSION_RE.match(t)
+    if m:
+        v["version"] = (m.group(1), m.group(2))
+        return True
+    if (m := POP_RE.match(t)):
+        v["pop_open"].append({"line": n, "m": m.group(1), "screen": (m.group(2), m.group(3))})
+    elif (m := POPNULL_RE.match(t)):
+        v["pop_rows"].append({"line": n, "m": m.group(1), "item": m.group(2), "null": True})
+    elif (m := POPROW_RE.match(t)):
+        g = m.groups()
+        v["pop_rows"].append({"line": n, "m": g[0], "item": g[1], "null": False, "ext": g[2], "extOk": g[3], "vis": g[4],
+                              "txt": g[5], "tobj": g[6], "rend": g[7], "rectSet": g[9]})
+    elif (m := TEXSET_RE.match(t)):
+        g = m.groups()
+        v["texset"].append({"line": n, "ensure": g[0], "supported": g[1], "ready": g[2], "cross": g[3], "disc": g[4],
+                            "dischi": g[5], "ring0": g[6], "slots": g[7], "max": g[8]})
+    elif (m := DISC_RE.match(t)):
+        v["disc"].append({"line": n, "m": m.group(1), "hover": m.group(2), "img": m.group(3), "setfill": m.group(4)})
+    elif (m := SETFAIL_RE.match(t)):
+        v["setfail"].append((n, m.group(1)))
+    elif (m := STATE_RE.match(t)):
+        # STATE does not count as "seen": legacy logs with only STATE lines keep their old verdict.
+        v["state"].append({"line": n, "member": m.group(1), "old": m.group(2), "new": m.group(3), "hp": m.group(4), "lookA": m.group(5)})
+        return True
+    else:
+        return False
+    v["seen"] = True
+    return True
+
+
+def pop_check(v):
+    """P4 popover rows -> (status, [(line, msg)], info). NOT-SEEN when no POP/POPROW line is in range."""
+    rows, opens = v["pop_rows"], v["pop_open"]
+    if not rows and not opens:
+        return "NOT-SEEN", [], None
+    fails, heights = [], []
+    for row in rows:
+        if row["item"] not in TEXT_ITEMS:
+            continue
+        if row["null"]:
+            fails.append((row["line"], "POPROW m=%s item=%s null (text item has no row)" % (row["m"], row["item"])))
+            continue
+        bad = []
+        if to_int(row["tobj"]) != 1:
+            bad.append("tobj=%s" % row["tobj"])
+        if not hexval(row["rend"]):
+            bad.append("rend=%s" % row["rend"])
+        if to_int(row["extOk"]) != 1:
+            bad.append("extOk=%s" % row["extOk"])
+        if to_int(row["rectSet"]) != 1:
+            bad.append("rectSet=%s" % row["rectSet"])
+        if to_int(row["vis"]) != 1:
+            bad.append("vis=%s" % row["vis"])
+        e = [to_int(x) for x in row["ext"].split(",")]
+        if len(e) != 4 or None in e or e[2] <= 0 or e[3] <= 0:
+            bad.append("ext=[%s] (need w>0 h>0)" % row["ext"])
+        else:
+            heights.append(e[3])
+        if bad:
+            fails.append((row["line"], "POPROW m=%s item=%s: %s" % (row["m"], row["item"], ", ".join(bad))))
+    screen = ("%sx%s" % opens[0]["screen"]) if opens else "unknown"
+    info = "rows h=%s screen=%s" % (min(heights) if heights else "none", screen)
+    return ("FAIL" if fails else "PASS"), fails, info
+
+
+def disc_check(v):
+    """P5 discs/TEXSET -> (status, [(line, msg)] fails, [(line, msg)] warns, info). NOT-SEEN when no TEXSET/DISC line is in range."""
+    texset, discs = v["texset"], v["disc"]
+    if not texset and not discs:
+        return "NOT-SEEN", [], [], None
+    fails, warns = [], []
+    for t in texset:
+        for key in ("disc", "dischi"):
+            if not hexval(t[key]):
+                fails.append((t["line"], "TEXSET %s=%s (disc texture missing)" % (key, t[key])))
+        if to_int(t["ensure"]) != 1:
+            warns.append((t["line"], "P5 TEXSET ensure=%s (disc textures not ensured)" % t["ensure"]))
+    for d in discs:
+        if not hexval(d["img"]):
+            fails.append((d["line"], "DISC m=%s img=%s (no disc image)" % (d["m"], d["img"])))
+        if to_int(d["setfill"]) != 1:
+            fails.append((d["line"], "DISC m=%s setfill=%s (fill not applied)" % (d["m"], d["setfill"])))
+    hover = sum(1 for d in discs if to_int(d["hover"]) == 1)
+    slots = ("%s/%s" % (texset[-1]["slots"], texset[-1]["max"])) if texset else "none"
+    info = "discs slots=%s DISC=%d hover=%d" % (slots, len(discs), hover)
+    return ("FAIL" if fails else "PASS"), fails, warns, info
+
+
 def check(lines, lo=1, hi=None):
     r = {"p1": "MISSING", "p1_fail": [], "p1_ok": 0, "p3": "PASS", "p3_fail": [], "p3_n": 0,
          "blocks": [], "dump_fail": [], "table": [],
+         "p4": "NOT-SEEN", "p4_fail": [], "p4_info": None, "p5": "NOT-SEEN", "p5_fail": [], "p5_info": None,
          "v": {"build": [], "use": [], "done": [], "auto": [], "refuse": {}, "cfg_save": [], "cfg_reload": [], "click_noitem": 0,
                "fail": [], "warn": [], "tex": {}, "seen": False, "diag_pop": [],
-               "kick": [], "kick_skip": {}, "kick_starved": 0, "timeout_unq": 0, "refuse_queued": 0}}
+               "kick": [], "kick_skip": {}, "kick_starved": 0, "timeout_unq": 0, "refuse_queued": 0,
+               "version": None, "pop_open": [], "pop_rows": [], "texset": [], "disc": [], "setfail": [], "state": []}}
     v = r["v"]
     cur = None  # current DUMP block
     mem = None  # current member dict in the block
@@ -181,7 +325,7 @@ def check(lines, lo=1, hi=None):
             if m.group(2) not in ("0", "1", "2"):
                 r["p3_fail"].append((n, "slot[%s] k=%s" % (m.group(1), m.group(2))))
             continue
-        if v030_line(v, n, t):
+        if v030_line(v, n, t) or v070_line(v, n, t):
             continue
         if t.startswith("DUMP begin"):
             if cur is not None:
@@ -247,7 +391,17 @@ def check(lines, lo=1, hi=None):
         r["p3"] = "FAIL"
     if v["use"] and v["done"] and all(d["timeout"] == 1 and not d.get("new") for d in v["done"]):
         v["fail"].append((v["use"][0]["line"], "route A never lands: %d USE, every DONE has timeout=1" % len(v["use"])))
+    r["p4"], r["p4_fail"], r["p4_info"] = pop_check(v)
+    r["p5"], r["p5_fail"], p5_warn, r["p5_info"] = disc_check(v)
+    v["warn"].extend(p5_warn)
+    if v["setfail"]:
+        ops = {}
+        for _, op in v["setfail"]:
+            ops[op] = ops.get(op, 0) + 1
+        v["warn"].append((v["setfail"][0][0], "SETFAIL x%d: %s (a widget property did not apply)" % (
+            len(v["setfail"]), ", ".join("op=%s x%d" % kv for kv in sorted(ops.items())))))
     bad = (bool(v["fail"]) or r["p1"] == "FAIL" or r["p3"] == "FAIL" or bool(r["dump_fail"])
+           or r["p4"] == "FAIL" or r["p5"] == "FAIL"
            or (r["p1"] == "MISSING" and (r["blocks"] or r["p3_n"])))
     r["verdict"] = "FAIL" if bad else ("PASS" if (r["blocks"] or v["seen"]) else "INCOMPLETE")
     return r
@@ -266,7 +420,8 @@ def fmt(r):
                 ('"%s" row=%s' % (p[0], p[1])) if p else "none", p[2] if p else "-", p[3] if p else "-", m["block"]))
     v = r["v"]
     if v["seen"]:
-        o.append("member USE->DONE: hp-delta stack-delta timeout")
+        if v["use"] or v["done"]:
+            o.append("member USE->DONE: hp-delta stack-delta timeout")
         pend = {}
         for ev in sorted(v["use"] + v["done"], key=lambda e: e["line"]):
             if "src" in ev:
@@ -292,12 +447,24 @@ def fmt(r):
             o.append("WARN line %d: %s" % (n, msg))
         for n, msg in v["fail"]:
             o.append("FAIL 0.3.0 line %d: %s" % (n, msg))
-    for tag, key in (("P1", "p1_fail"), ("P3", "p3_fail"), ("DUMP", "dump_fail")):
+    for tag, key in (("P1", "p1_fail"), ("P3", "p3_fail"), ("P4", "p4_fail"), ("P5", "p5_fail"), ("DUMP", "dump_fail")):
         for n, msg in r[key]:
             o.append("FAIL %s line %d: %s" % (tag, n, msg))
+    # 0.7.0-dev block: printed only when its lines are present, so legacy logs keep their exact output.
+    new70 = bool(v["pop_open"] or v["pop_rows"] or v["texset"] or v["disc"] or (v["version"] and v["version"][1]))
+    if new70:
+        if v["version"]:
+            ver, ui = v["version"]
+            o.append("version %s%s" % (ver, (" ui=%s" % ui) if ui else ""))
+        if r["p4_info"]:
+            o.append(r["p4_info"])
+        if r["p5_info"]:
+            o.append(r["p5_info"])
     extra = ""
     if v["seen"]:
         extra = " USE=%d DONE=%d TIMEOUT=%d" % (len(v["use"]), len(v["done"]), sum(1 for d in v["done"] if d["timeout"] == 1))
+    if new70:
+        extra += " P4=%s P5=%s" % (r["p4"], r["p5"])
     o.append("SELFHEAL P1=%s P3=%s DUMP=%d blocks%s VERDICT=%s" % (r["p1"], r["p3"], len(r["blocks"]), extra, r["verdict"]))
     return "\n".join(o)
 

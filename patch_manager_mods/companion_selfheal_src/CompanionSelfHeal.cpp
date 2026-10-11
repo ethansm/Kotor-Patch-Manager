@@ -476,13 +476,15 @@ void logLine(const char* fmt, ...) {   // embtex::g_log sink
 }
 void ensureTextures() {   // once per process; the textures outlive every HUD (never freed)
     if (g_texInit) return;
-    g_texInit = true;
     embtex::g_log = logLine;
-    embtex::ensure(kSelfHealTextures, Count);   // create + fill + queue (idempotent); heal() below refills after a GL reset
+    const bool ensured = embtex::ensure(kSelfHealTextures, Count);   // create + fill + queue (idempotent); heal() below refills after a GL reset
+    g_texInit = ensured;   // not ready / partial: retried on the next HUD build (was set unconditionally, a not-ready first call left the discs null forever)
     for (int i = 0; i < Count; ++i) {
         void* im = guikit::imageFor(kSelfHealTextures[i].resref);   // a pooled GUI handle that is never released keeps the texture alive
         if (i == 0) g_crossImg = im; else if (i <= 2) g_discImg[i - 1] = im; else g_ringImg[i - 3] = im;
     }
+    KP_LOG(chUi, "TEXSET ensure=%d supported=%d ready=%d cross=%08x disc=%08x dischi=%08x ring0=%08x slots=%d/%d", (int)ensured, (int)embtex::supported(), (int)embtex::detail::engineReady(),
+           (unsigned)reinterpret_cast<uintptr_t>(g_crossImg), (unsigned)reinterpret_cast<uintptr_t>(g_discImg[0]), (unsigned)reinterpret_cast<uintptr_t>(g_discImg[1]), (unsigned)reinterpret_cast<uintptr_t>(g_ringImg[0]), embtex::slotCount(), (int)embtex::MaxTex);
 }
 void healTextures() { embtex::heal(); }   // every frame (GL reset + missing rebuild, 20-refill give-up per texture; DB lesson 290)
 }  // namespace tex
@@ -513,7 +515,15 @@ W g_w[NWidgets];
 // Phase G bisect (HUD +0x48 = 0xFF8FB44F hides hotbar + self-heal): false = the 4 SH2 leader widgets are not created. true = leader auto toggle button (outside, left of the portrait).
 constexpr bool kLeaderWidgets = true;
 
-void wRect(W& w, const shui::Rect& r) { if (!w.c || (w.rectSet && w.r == r)) return; if (guikit::setRect(w.c, r.x, r.y, r.w, r.h)) { w.r = r; w.rectSet = true; } }
+// First failure per (widget, op) is logged once (setRect / setText / setFill retry every frame otherwise silently).
+void setFail(const W& w, int op, const char* name) {
+    static unsigned char seen[NWidgets][3];
+    const int i = static_cast<int>(&w - g_w);
+    if (i < 0 || i >= NWidgets || seen[i][op]) return;
+    seen[i][op] = 1;
+    KP_LOGV(chUi, KPLOG_WARN, "SETFAIL op=%s item=%d", name, i);
+}
+void wRect(W& w, const shui::Rect& r) { if (!w.c || (w.rectSet && w.r == r)) return; if (guikit::setRect(w.c, r.x, r.y, r.w, r.h)) { w.r = r; w.rectSet = true; } else setFail(w, 0, "rect"); }
 bool isPopText(const W& w) { int i = static_cast<int>(&w - g_w); return i == W_Auto || i == W_HpM || i == W_HpP || i == W_KeepM || i == W_KeepP || i == W_HpVal || i == W_KeepVal; }
 void popStyle(W& w) {
     if (!w.c || !isPopText(w)) return;
@@ -530,7 +540,7 @@ void wShow(W& w, bool on) {
     else { if (w.clk != 0) { guikit::setClickable(w.c, false); w.clk = 0; } if (w.vis != 0) { guikit::setVisible(w.c, false); w.vis = 0; } w.hover = false; w.alpha = -1.f; w.tr = w.tg = w.tb = -1.f; w.frame = -1; w.filled = false; if (isPopText(w)) w.txt.clear(); }   // popover text re-applied on the next show (button "+"/"" state is tracked separately)
 }
 void wVis(W& w, bool on) { if (!w.c || w.vis == (on ? 1 : 0)) return; guikit::setVisible(w.c, on); w.vis = on ? 1 : 0; }   // visibility only: rings are NEVER clickable
-void wText(W& w, const std::string& t) { if (!w.c || w.txt == t) return; if (guikit::setText(w.c, t.c_str())) w.txt = t; }
+void wText(W& w, const std::string& t) { if (!w.c || w.txt == t) return; if (guikit::setText(w.c, t.c_str())) w.txt = t; else setFail(w, 1, "text"); }
 bool g_iconFbLogged[3] = {};
 void wAlpha(W& w, float a) { if (w.alpha != a) { guikit::setAlpha(w.c, a); w.alpha = a; } }
 // Button look: the cross image tinted rgb (change-gated); if the image is missing or setFill is refused, the "+" text coloured via setTextColor.
@@ -561,7 +571,10 @@ bool wDisc(W& w, bool hover) {
     if (w.frame == want) return true;
     void* img = tex::g_discImg[want];
     float rgb[3] = { 1.f, 1.f, 1.f };
-    if (!img || !guikit::setFill(w.c, img, rgb)) return false;
+    const bool ok = img && guikit::setFill(w.c, img, rgb);
+    static int lines = 0;   // edge-gated (hover swap, first draw): proves the circular disc + hover halo fill
+    if (lines < 48) { ++lines; const int i = static_cast<int>(&w - g_w); KP_LOG(chUi, "DISC m=%d hover=%d img=%08x setfill=%d", i == W_DiscLeader ? 0 : i - W_Disc0 + 1, want, (unsigned)reinterpret_cast<uintptr_t>(img), (int)ok); }
+    if (!ok) { setFail(w, 2, "fill"); return false; }
     w.frame = want;
     return true;
 }
@@ -813,6 +826,33 @@ void popDiag(bool popOpen) {
     }
 }
 
+// Popover geometry + per-row readback on every closed->open edge or member change (cap 16): proves or refutes the invisible-text theory
+// (engine Draw 0x47B500 drops a vertically-centred single line when box h < line h) and the align-10 fix. ext = engine px, tobj/rend = text object gate + renderer ptr.
+shui::Rect g_dbgBtn{ 0, 0, 0, 0 }; int g_dbgUnit = 0;
+void popRowLog(bool popOpen, int mi, int screenW) {
+    static int lastMi = -2, lines = 0;
+    const int cur = popOpen ? mi : -1;
+    if (cur == lastMi) return;
+    lastMi = cur;
+    if (!popOpen || lines >= 16) return;
+    ++lines;
+    int screenH = 0;
+    if (guikit::g_gk.screenHAddr) guikit::detail::rdInt(guikit::g_gk.screenHAddr, 0, &screenH);
+    KP_LOG(chUi, "POP open m=%d screen=%dx%d unit=%d btn=[%d,%d,%d,%d] align=10", mi, screenW, screenH, g_dbgUnit, g_dbgBtn.x, g_dbgBtn.y, g_dbgBtn.w, g_dbgBtn.h);
+    static const char* const names[8] = { "bg", "auto", "hpm", "hpp", "keepm", "keepp", "hpval", "keepval" };
+    const int items[8] = { W_PopBg, W_Auto, W_HpM, W_HpP, W_KeepM, W_KeepP, W_HpVal, W_KeepVal };
+    const int oTx = guikit::detail::off(&K2AddrTable::Label_Text), oRn = guikit::detail::off(&K2AddrTable::Text_Renderer);
+    for (int i = 0; i < 8; ++i) {
+        const W& w = g_w[items[i]];
+        if (!w.c) { KP_LOG(chUi, "POPROW m=%d item=%s null", mi, names[i]); continue; }
+        int e[4] = { -1, -1, -1, -1 }; const bool ge = guikit::getExtent(w.c, &e[0], &e[1], &e[2], &e[3]);
+        float rgb[3] = { -1.f, -1.f, -1.f }; const bool gc = guikit::getTextColor(w.c, rgb);
+        uint32_t rend = 0; if (oTx && oRn) guikit::detail::rd32(w.c + oTx, oRn, &rend);
+        KP_LOG(chUi, "POPROW m=%d item=%s ext=[%d,%d,%d,%d] extOk=%d vis=%d txt=\"%s\" tobj=%d rend=%08x rgb=%.2f,%.2f,%.2f rgbOk=%d rectSet=%d",
+               mi, names[i], e[0], e[1], e[2], e[3], (int)ge, (int)guikit::isVisible(w.c), w.txt.c_str(), (int)guikit::detail::textObjOk(w.c), rend, rgb[0], rgb[1], rgb[2], (int)gc, (int)w.rectSet);
+    }
+}
+
 const char* stName(shui::BtnState st) {
     switch (st) {
         case shui::BtnState::Hidden: return "Hidden"; case shui::BtnState::FullHp: return "FullHp"; case shui::BtnState::NoItem: return "NoItem";
@@ -822,14 +862,14 @@ const char* stName(shui::BtnState st) {
     return "?";
 }
 // Edge-triggered (state changes only, capped): proves Down / wake transitions in the play log.
-void stateLog(int mi, shui::BtnState st, const Card& c) {
+void stateLog(int mi, shui::BtnState st, const Card& c, float lookAlpha) {
     static shui::BtnState last[3] = { shui::BtnState::Hidden, shui::BtnState::Hidden, shui::BtnState::Hidden };
-    static int lines = 0;
+    static int lines[3] = {};   // per member so a busy companion cannot starve the others
     if (last[mi] == st) return;
     const shui::BtnState old = last[mi]; last[mi] = st;
-    if (lines >= 64) return;
-    ++lines;
-    KP_LOG(chUi, "STATE member=%d %s->%s hp=%d/%d", mi, stName(old), stName(st), c.m.cur, c.m.max);
+    if (lines[mi] >= 24) return;
+    ++lines[mi];
+    KP_LOG(chUi, "STATE member=%d %s->%s hp=%d/%d lookA=%.2f", mi, stName(old), stName(st), c.m.cur, c.m.max, lookAlpha);
 }
 // One line per distinct leader rect (placement proof for the next play log).
 void leaderRectLog(const shui::Rect& btn, const shui::Rect& card, const shui::Rect& vit, int diameter, int reserve) {
@@ -900,7 +940,7 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
         }
         c.st = shui::resolveState(c.have && c.seen, false, c.m.cur, c.m.max, c.pk.pick >= 0, g_pend[mi].on, c.cfg.autoOn, c.m.down);
         if (c.btn.w <= 0) c.st = shui::BtnState::Hidden;
-        stateLog(mi, c.st, c);
+        stateLog(mi, c.st, c, shui::lookFor(c.st, c.cfg.autoOn, now).alpha);
         if (c.st == shui::BtnState::Down && g_popMi == mi) g_popMi = -1;   // unconscious: no popover
         W& ring = g_w[W_Ring0 + mi - 1];
         W& disc = g_w[W_Disc0 + mi - 1];
@@ -935,7 +975,7 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
     }
     c0.st = shui::resolveState(c0.have && c0.seen, false, c0.m.cur, c0.m.max, c0.pk.pick >= 0, g_pend0.on, c0.cfg.autoOn, c0.m.down);
     if (c0.btn.w <= 0) c0.st = shui::BtnState::Hidden;
-    stateLog(0, c0.st, c0);
+    stateLog(0, c0.st, c0, shui::lookFor(c0.st, c0.cfg.autoOn, now).alpha);
     W& ring0 = g_w[W_RingLeader];
     W& disc0 = g_w[W_DiscLeader];
     W& frm0  = g_w[W_FrameLeader];
@@ -1019,7 +1059,8 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
     popOpen = g_popMi >= 0;
     if (popOpen) {
         Card& pc = (g_popMi == 0) ? g_card0 : g_card[g_popMi];
-        L = shui::popoverLayout(shui::ringRect(pc.btn), screenW, shui::popUnit(pc.btn));
+        g_dbgBtn = pc.btn; g_dbgUnit = shui::popUnit(pc.btn);
+        L = shui::popoverLayout(shui::ringRect(pc.btn), screenW, g_dbgUnit);
         const shui::CompCfg& cfg = pc.cfg;
         wRect(g_w[W_PopBg], L.r[0]);
         const int items[5] = { W_Auto, W_HpM, W_HpP, W_KeepM, W_KeepP };
@@ -1029,6 +1070,7 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
     }
     for (int i = W_PopBg; i < W_Ring0; ++i) wShow(g_w[i], popOpen);
     popDiag(popOpen);
+    popRowLog(popOpen, g_popMi, screenW);
     int ns = 0;   // rects the RMB camera hook must not turn into a camera drag: buttons, rings, popover bg
     for (int mi = 1; mi <= 2; ++mi) if (g_card[mi].st != shui::BtnState::Hidden && g_card[mi].btn.w > 0) { g_shown[ns++] = g_card[mi].btn; g_shown[ns++] = shui::ringRect(g_card[mi].btn); }   // disc and ring share ringRect (outer extent)
     if (g_card0.st != shui::BtnState::Hidden && g_card0.btn.w > 0) { g_shown[ns++] = g_card0.btn; g_shown[ns++] = shui::ringRect(g_card0.btn); }
@@ -1086,8 +1128,8 @@ uintptr_t makeLabel(uintptr_t panel, const char* tmpl, const char* text, bool fo
     uintptr_t c = guikit::createLabelFromTemplate(panel, tmpl, &why, &badVt);
     *whyOut = why;
     if (!c) return 0;
-    if (font) { guikit::setFont(c, "dialogfont10x10"); guikit::setAlign(c, align); }
-    if (text) guikit::setText(c, text);
+    const bool fOk = !font || guikit::setFont(c, "dialogfont10x10"), aOk = !font || guikit::setAlign(c, align), tOk = !text || guikit::setText(c, text);
+    if (!(fOk && aOk && tOk)) KP_LOGV(chHud, KPLOG_WARN, "SETFAIL op=build tmpl=%s font=%d align=%d text=%d", tmpl, (int)fOk, (int)aOk, (int)tOk);
     guikit::setVisible(c, false);
     guikit::setClickable(c, false);
     if (!guikit::appendToPanel(panel, c)) {   // no destroy helper in GuiKit: the control stays hidden + click-through and unreferenced
@@ -1111,7 +1153,7 @@ void buildWidgets(uintptr_t panel) {
     auto add = [&](int idx, const char* tmpl, const char* text, bool font, const char* name) {
         if (!kLeaderWidgets && (idx == W_DiscLeader || idx == W_FrameLeader || idx == W_BtnLeader || idx == W_RingLeader)) { ++n; return; }
         int why = 0;
-        // Popover rows are shorter than the 10x10 line: engine Draw 0x47B500 drops a centred (0x10) single line when box h < line h (V3.md F3), so they are top-aligned (10 = 0x08 top | 2 centre-h; 17 = 0x11 still has the 0x10 vertical-centre bit), which never drops.
+        // Popover rows are 16-24 px; engine Draw 0x47B500 drops a vertically-centred (0x10) single line when box h < line h (V3.md F3, SPECULATIVE at this px/unit), so they are top-aligned (10 = 0x08 top | 2 centre-h; 17 = 0x11 still has the 0x10 bit). POP/POPROW log lines prove or refute this.
         const unsigned al = (idx >= W_Auto && idx <= W_KeepVal) ? 10u : 18u;
         uintptr_t c = makeLabel(panel, tmpl, text, font, &why, al);
         if (!c && !strcmp(tmpl, "LBL_MOULDING3")) { c = makeLabel(panel, "LBL_QUEUE1", text, font, &why, al); if (c) whys += std::string(name) + ":moulding3 fallback ";}
@@ -1139,7 +1181,7 @@ void buildWidgets(uintptr_t panel) {
     add(W_Ring0, "LBL_QUEUE1", nullptr, false, "ring0");   // after the buttons: drawn on top
     add(W_Ring1, "LBL_QUEUE1", nullptr, false, "ring1");
     add(W_RingLeader, "LBL_QUEUE1", nullptr, false, "ringLeader");   // Leader ring
-    KP_LOGV(chHud, n == NWidgets ? KPLOG_INFO : KPLOG_WARN, "BUILD n=%d/%d why=%s", n, (int)NWidgets, whys.c_str());
+    KP_LOGV(chHud, n == NWidgets ? KPLOG_INFO : KPLOG_WARN, "BUILD n=%d/%d why=%s proj=%d cleared=%d", n, (int)NWidgets, whys.c_str(), pg.saved, (int)pg.cleared);
     for (W& w : g_w) popStyle(w);
 }
 
@@ -1183,7 +1225,7 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     loadIni();
     loadCfg();
     filewatch::accept(g_cfgPoll, IniPath);
-    KP_LOG(chMain, "0.7.0-dev: probe call=%d CallKey=0x%02X kick=%d cfg rows=%d", g_probeCall, g_callKey, (int)g_kick, (int)g_cfg.rows.size());
+    KP_LOG(chMain, "0.7.0-dev ui=popalign10+disc2: probe call=%d CallKey=0x%02X kick=%d cfg rows=%d", g_probeCall, g_callKey, (int)g_kick, (int)g_cfg.rows.size());
     g_ps.init(api, "companion-selfheal");
     g_ps.onConnect = onConnect;
     g_ps.add(K2PS_FRAME_BEGIN, 300, onFrameBegin);

@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
-"""Tests for scripts/selfheal_log_check.py (fixtures in scripts/testdata/selfheal/). Run: python3 -m pytest scripts/test_selfheal_log_check.py -q"""
+"""Tests for scripts/selfheal_log_check.py (fixtures in scripts/testdata/selfheal/).
+Run: .venv/bin/python -B -m unittest scripts/test_selfheal_log_check.py   (or python3 -m pytest where pytest is installed)"""
+import contextlib
+import io
 import sys
+import tempfile
+import unittest
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -70,17 +75,22 @@ def test_bare_lines_without_prefix():
     assert r["verdict"] == "PASS"
 
 
-def test_missing_file(tmp_path, capsys):
-    p = tmp_path / "nope.txt"
-    assert S.main([str(p)]) == 2
-    assert capsys.readouterr().out.strip() == "no log: %s" % p
+def test_missing_file():
+    with tempfile.TemporaryDirectory() as d:
+        p = Path(d) / "nope.txt"
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            assert S.main([str(p)]) == 2
+        assert out.getvalue().strip() == "no log: %s" % p
 
 
-def test_main_exit_codes(capsys):
-    assert S.main(["--log", str(FX / "pass.txt")]) == 0
-    assert S.main([str(FX / "fail_knone.txt")]) == 1
-    assert S.main(["--log", str(FX / "pass.txt"), "--from", "99"]) == 0
-    assert "VERDICT=INCOMPLETE" in capsys.readouterr().out
+def test_main_exit_codes():
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+        assert S.main(["--log", str(FX / "pass.txt")]) == 0
+        assert S.main([str(FX / "fail_knone.txt")]) == 1
+        assert S.main(["--log", str(FX / "pass.txt"), "--from", "99"]) == 0
+    assert "VERDICT=INCOMPLETE" in out.getvalue()
 
 
 def v30(extra):
@@ -205,3 +215,146 @@ def test_kplog_v1_prefix_and_diag_pop():
     assert r["v"]["diag_pop"][0][2] == 1  # rgbOk
     assert r["v"]["diag_pop"][0][3] == 1  # alphaOk
     assert r["verdict"] == "PASS"
+
+
+# ---- 0.7.0-dev: popalign10 + disc2 (P4 popover rows, P5 discs/TEXSET, SETFAIL, new tex lines, BUILD proj/cleared, STATE lookA)
+
+HPM = 'POPROW m=1 item=hpm ext=[1712,1140,96,24] extOk=1 vis=1 txt="HP -" tobj=1 rend=0b2d1000 rgb=0.85,0.95,0.85 rgbOk=1 rectSet=1'
+BG = 'POPROW m=1 item=bg ext=[1700,1100,220,300] extOk=1 vis=1 txt="" tobj=0 rend=00000000 rgb=-1.00,-1.00,-1.00 rgbOk=0 rectSet=1'
+
+
+def swap(L, old, new):
+    """Replace the message part of each fixture line that ends with `old` (lines carry a T= prefix)."""
+    assert any(l.endswith(old) for l in L), "fixture row not found: %s" % old[:60]
+    return [l[:-len(old)] + new if l.endswith(old) else l for l in L]
+
+
+def test_v070_pass():
+    r = S.check(lines("v070.txt"))
+    v = r["v"]
+    assert (r["p1"], r["p3"], r["p4"], r["p5"], r["verdict"]) == ("PASS", "PASS", "PASS", "PASS", "PASS")
+    assert not v["fail"] and not v["warn"] and not r["p4_fail"] and not r["p5_fail"]
+    assert v["version"] == ("0.7.0-dev", "popalign10+disc2")
+    assert r["p4_info"] == "rows h=24 screen=3840x1600" and r["p5_info"] == "discs slots=11/16 DISC=3 hover=1"
+    assert len(v["pop_rows"]) == 8 and len(v["disc"]) == 3 and len(v["texset"]) == 1
+    assert v["build"][0][1:3] == (16, "") and v["build"][0][3:] == (1, 0)     # proj=1 cleared=0 parsed, not leaked into why
+    assert v["state"][0]["lookA"] == "0.50" and v["tex"] == {"queued": 2, "refilled": 1}
+    assert S.fmt(r).splitlines()[-1] == "SELFHEAL P1=PASS P3=PASS DUMP=0 blocks USE=0 DONE=0 TIMEOUT=0 P4=PASS P5=PASS VERDICT=PASS"
+
+
+def test_v070_popalign_fail():
+    r = S.check(lines("fail_popalign.txt"))
+    assert r["p4"] == "FAIL" and r["verdict"] == "FAIL" and r["p5"] == "PASS"
+    assert len(r["p4_fail"]) == 1 and "item=hpm: tobj=0, rend=00000000" in r["p4_fail"][0][1]   # the bg row (tobj=0) is exempt
+    assert S.fmt(r).splitlines()[-1].endswith("P4=FAIL P5=PASS VERDICT=FAIL")
+
+
+def test_v070_popalign_row_rules():
+    for name, new, want in [
+        ("null text row", "POPROW m=1 item=hpm null", "null (text item has no row)"),
+        ("vis=0", HPM.replace("vis=1", "vis=0"), "vis=0"),
+        ("extOk=0", HPM.replace("extOk=1", "extOk=0"), "extOk=0"),
+        ("rectSet=0", HPM.replace("rectSet=1", "rectSet=0"), "rectSet=0"),
+        ("ext h=0", HPM.replace("96,24]", "96,0]"), "ext=[1712,1140,96,0]"),
+    ]:
+        r = S.check(swap(lines("v070.txt"), HPM, new))
+        assert r["p4"] == "FAIL" and r["verdict"] == "FAIL", name
+        assert any(want in m for _, m in r["p4_fail"]), name
+    assert S.check(swap(lines("v070.txt"), BG, "POPROW m=1 item=bg null"))["p4"] == "PASS"   # bg is never a text check
+    r = S.check([l.replace("ext=[1712,1226,196,24]", "ext=[1712,1226,196,14]") for l in lines("v070.txt")])
+    assert r["p4"] == "PASS" and r["p4_info"] == "rows h=14 screen=3840x1600"       # min row height is reported, no line-height check
+
+
+def test_v070_disc_null_fail():
+    r = S.check(lines("fail_disc_null.txt"))
+    msgs = " ".join(m for _, m in r["p5_fail"])
+    assert r["p5"] == "FAIL" and r["verdict"] == "FAIL" and r["p4"] == "PASS"
+    assert "TEXSET disc=00000000" in msgs and "DISC m=2 img=00000000" in msgs and "DISC m=2 setfill=0" in msgs
+    assert S.fmt(r).splitlines()[-1].endswith("P4=PASS P5=FAIL VERDICT=FAIL")
+
+
+def test_v070_ensure_zero_is_warn_only():
+    r = S.check([l.replace("ensure=1", "ensure=0") if "TEXSET" in l else l for l in lines("v070.txt")])
+    assert r["p5"] == "PASS" and r["verdict"] == "PASS"
+    assert any(l.startswith("WARN") and "ensure=0" in l for l in S.fmt(r).splitlines())
+
+
+def test_v070_tex_new_format_warns():
+    extra = [
+        "T=9.700 f=- companion-selfheal/ui tex csh_ring3: giving up after 20 failed refills (built=1 missing=1 pixels=00000000); art missing, labels still work",
+        "T=9.710 f=- companion-selfheal/ui tex csh_ring4: slot table full (16)",
+        "T=9.720 f=- companion-selfheal/ui tex csh_ring5: allocation failed",
+        "T=9.730 f=- companion-selfheal/ui tex csh_ring6: engine malloc(4096) failed",
+        "T=9.740 f=- companion-selfheal/ui tex bad_type: embedded TGA not uncompressed 32-bit, skipped",
+    ]
+    r = S.check(lines("v070.txt") + extra)
+    out = S.fmt(r).splitlines()
+    assert r["verdict"] == "PASS" and not r["v"]["fail"]
+    assert r["v"]["tex"] == {"queued": 2, "refilled": 1, "giving up": 1, "slot full": 1, "alloc failed": 2, "other": 1}
+    assert any(l.startswith("WARN") and "TEX csh_ring3 giving up" in l for l in out)
+    assert any(l.startswith("WARN") and "TEX csh_ring4 slot table full" in l for l in out)
+    assert any(l.startswith("WARN") and "TEX csh_ring5 allocation failed" in l for l in out)
+    assert any(l.startswith("WARN") and "TEX csh_ring6 allocation failed" in l for l in out)
+    assert not any("bad_type" in l for l in out)     # informational, never WARN
+
+
+def test_v070_setfail_counted_as_warn():
+    L = lines("v070.txt") + ["T=11.000 f=- companion-selfheal/ui WARN SETFAIL op=rect item=3",
+                             "T=11.001 f=- companion-selfheal/ui SETFAIL op=rect item=5",
+                             "T=11.002 f=- companion-selfheal/hud SETFAIL op=build tmpl=csh_cross font=0 align=1 text=1"]
+    r = S.check(L)
+    out = S.fmt(r)
+    first = len(lines("v070.txt")) + 1
+    assert r["verdict"] == "PASS" and len(r["v"]["setfail"]) == 3
+    assert "WARN line %d: SETFAIL x3: op=build x1, op=rect x2" % first in out
+
+
+def test_v070_build_proj_cleared_and_why():
+    assert S.check(v30(["BUILD n=10/10 why= proj=1 cleared=0"]))["verdict"] == "PASS"
+    r = S.check(v30(["BUILD n=4/10 why= proj=0 cleared=1"]))       # empty why with proj/cleared still needs a reason
+    assert r["verdict"] == "FAIL" and any("n=4/10 without why" in m for _, m in r["v"]["fail"])
+    r = S.check(v30(["BUILD n=4/10 why=no slot proj=1 cleared=0"]))
+    assert r["verdict"] == "PASS" and r["v"]["build"][-1][2] == "no slot" and r["v"]["build"][-1][3:] == (1, 0)
+    r = S.check(v30(["BUILD n=10/12 why=ring failed"]))            # legacy line: proj/cleared absent
+    assert r["v"]["build"][-1][2:] == ("ring failed", None, None)
+
+
+def test_v070_state_look_optional():
+    r = S.check(["T=1.000 f=- companion-selfheal/ui STATE member=2 Normal->Down hp=5/30 lookA=0.25",
+                 "9000 companion-selfheal/ui STATE member=2 Down->Normal hp=30/30"])
+    assert [(s["member"], s["old"], s["new"], s["hp"], s["lookA"]) for s in r["v"]["state"]] == [
+        ("2", "Normal", "Down", "5/30", "0.25"), ("2", "Down", "Normal", "30/30", None)]
+    assert not r["v"]["seen"] and r["verdict"] == "INCOMPLETE"
+
+
+def test_v070_version_both_forms():
+    assert S.VERSION_RE.match("0.5.0-dev: probe call=0 CallKey=0x4A cfg rows=3").groups() == ("0.5.0-dev", None)
+    assert S.VERSION_RE.match("0.7.0-dev ui=popalign10+disc2: probe call=3 CallKey=0x4A kick=1 cfg rows=3").groups() == (
+        "0.7.0-dev", "popalign10+disc2")
+    assert S.check(lines("v050.txt"))["v"]["version"] == ("0.5.0-dev", None)
+
+
+def test_v070_not_seen_for_legacy_logs():
+    for name in ("pass.txt", "v030.txt", "v040.txt", "v050.txt"):
+        r = S.check(lines(name))
+        assert (r["p4"], r["p5"], r["p4_fail"], r["p5_fail"]) == ("NOT-SEEN", "NOT-SEEN", [], []), name
+        assert " P4=" not in S.fmt(r) and r["verdict"] == "PASS", name
+    assert S.check(["P1 hud built layoutOpen=1 ctlCount=212"])["p4"] == "NOT-SEEN"
+
+
+def test_v070_main_exit_codes():
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+        assert S.main([str(FX / "v070.txt")]) == 0
+        assert S.main([str(FX / "fail_popalign.txt")]) == 1
+        assert S.main([str(FX / "fail_disc_null.txt")]) == 1
+    assert "P4=FAIL P5=PASS VERDICT=FAIL" in out.getvalue() and "P4=PASS P5=FAIL VERDICT=FAIL" in out.getvalue()
+
+
+def load_tests(loader, tests, pattern):
+    """`python -m unittest` collects only TestCase classes; wrap the plain test_ functions so it runs them too."""
+    suite = unittest.TestSuite(tests)
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            suite.addTest(unittest.FunctionTestCase(fn))
+    return suite
