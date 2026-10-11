@@ -1,0 +1,119 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.01312789,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 25330,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 25330,
+   "cache_read_input_tokens": 49129,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 6,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 8393,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 8393,
+     "cache_read_input_tokens": 24733,
+     "input_tokens": 2,
+     "output_tokens": 8956,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 15140,
+   "output_tokens_details": {
+    "thinking_tokens": 11487
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/action_hotbar_src/HotbarConfig.h",
+  "patch_manager_mods/action_hotbar_src/exports.def",
+  "patch_manager_mods/action_hotbar_src/kotor2-steam-aspyr.hooks.toml",
+  "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp",
+  "patch_manager_mods/action_hotbar_src/HotbarLogic.h"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "ec95c98"
+   ],
+   "confidence": "medium",
+   "evidence": "Removed L1b detour (pre-image o87-o95): \"L1b: LoadAutosaveSlot (0x008529E0) entry: PCAUTOSAVE entries load through here instead of LoadGame (folder \\\"000001 - AUTOSAVE\\\")\". Replaced by comment \"Per-save hotbar hooks (0x00534527, 0x0053C5AA, 0x0052FD1E, 0x008529E0, 0x008FACA0) migrated to save-events library k2.saveevents@1\". ActionHotbar.cpp:1877-1880 maps only K2SE_SAVED, K2SE_AUTOSAVED, K2SE_LOAD_REQUEST and K2SE_NEW_GAME, with no autosave-slot distinction.",
+   "file": "patch_manager_mods/action_hotbar_src/kotor2-steam-aspyr.hooks.toml",
+   "lines": "25-26",
+   "local_id": "f1",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "In the k2.saveevents library source (outside this packet), check whether a detour on 0x008529E0 (LoadAutosaveSlot) fires K2SE_LOAD_REQUEST with folder \"000001 - AUTOSAVE\". If it does not, confirm by reading the library's hook list. The contract test common_contract_test.cpp:897-925 covers only the event mask and callback, not this path.",
+   "why_it_matters": "The old LoadAutosaveSlot detour was the only hook on the PCAUTOSAVE load path, which bypasses LoadGame. If k2.saveevents only emits LOAD_REQUEST from LoadGame, loading a module autosave entry no longer restores that save's hotbar profile, so the bar keeps the previous session's live profile. This is a silent regression in a normal play path."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "ec95c98"
+   ],
+   "confidence": "medium",
+   "evidence": "KP_LOGV(chBuild, ok ? KPLOG_INFO : KPLOG_WARN, \"hud-host: %s (%s)\", ok ? \"connected\" : \"NOT connected\", why ? why : \"\");  The hud-host connect callback only logs. The direct detours for HotbarHudTick and HotbarBuildButtons were removed from the hooks file (hooks file lines 22-23).",
+   "file": "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp",
+   "lines": "1855",
+   "local_id": "f2",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check whether KPM enforces manifest.toml requires_interfaces (manifest.toml:9) and refuses to load ActionHotbar when k2.hud@1 is missing. If KPM only warns, the HUD silently disappears. Also check whether the HUD ctor build (HotbarBuildButtons) tolerates running after the bar has been connected late.",
+   "why_it_matters": "Previously the HUD detours were installed directly by KPM and did not depend on another mod. Now, if hud-host is absent or fails to connect, the bar and its controls silently stop rendering or updating. The only signal is a log line. This is a behaviour change when that dependency is missing."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "ec95c98"
+   ],
+   "confidence": "medium",
+   "evidence": "if (!p && characterKey == \"objfffffffd\") { p = find(\"player\"); if (!p) p = find(\"exile\"); }  HotbarLogic.h:85 maps both \"player\" and \"exile\" to the same canonical key \"objfffffffd\".",
+   "file": "patch_manager_mods/action_hotbar_src/HotbarConfig.h",
+   "lines": "271-273",
+   "local_id": "f3",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check how profiles named \"Player\" versus \"Exile\" are created (the editor and the Parse path in HotbarConfig.h:353-359) and whether both can coexist in one file. Then add a case to config_roundtrip_test.cpp or hotbar_logic_test.cpp covering both profiles present, to confirm which one wins and whether that is intended.",
+   "why_it_matters": "When a save has both a \"Player\" and an \"Exile\" profile, both map to one character. The fallback here only consults the \"exile\" profile when \"player\" is absent, so the \"Exile\" bindings are silently ignored. The fallback also applies only when the exact lowercase key is missing, so a profile written under the other name never gets used."
+  },
+  {
+   "candidate_id": null,
+   "category": "other",
+   "commits": [
+    "ec95c98"
+   ],
+   "confidence": "high",
+   "evidence": "bool g_pendingReload = false;   // set by load/new-game hooks, consumed by HotbarHudTick ... bool g_pendingSaveSnapshot = false;   // set by save hook if save folder is deferred/unresolved",
+   "file": "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp",
+   "lines": "256-257",
+   "local_id": "f4",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Update or confirm the comments at ActionHotbar.cpp:256-257 and 1790 so they name the save-events callbacks. Then check that every path that sets g_pendingReload (replaceLiveProfiles) is reached from onSaveEvent.",
+   "why_it_matters": "The load, new-game and save hooks no longer exist (the hooks file and exports.def removed them). The flags are now set from save-events callbacks (ActionHotbar.cpp:1769-1802, 1877-1880). Stale comments make it harder to audit which path sets the flags, especially for the reload regression in f1."
+  }
+ ],
+ "no_issue_files": [
+  "patch_manager_mods/action_hotbar_src/exports.def"
+ ],
+ "notes": "Scanner candidate S-cb9369daf7 checked and found harmless. The [[hooks.parameters]] block at hooks lines 18-21 is the second parameter table for the CaptureHotbarKey hook at lines 6-12, which takes two parameters, so it is not orphaned. exports.def: the removed exports (HotbarOnSaved, HotbarOnAutosaved, HotbarOnLoadRequest, HotbarOnAutosaveSlotLoad, HotbarOnNewGame) have no remaining definitions in the packet directory. The kept exports HotbarHudTick and HotbarBuildButtons are defined at ActionHotbar.cpp:2007 and 1950 with matching signatures. CaptureHotbarKey is defined at 1906. The HotbarConfig.h parser changes (Parse CR/LF handling, Profile section handling, Serialize) look correct on read, and I found no defect there beyond f3. Gate facts: the run_tests output reports '0 passed, 0 failed ... (0 items)' with rc 0 on the scratch copy. That means the test runner executed nothing, so the gate could not fail on that copy. Re-run in a full tree before relying on it. check_hook_spans and check_hook_bytes read the live patch_config.toml and the vanilla exe, which is read-only but makes the gate depend on local install state (out of this packet's scope). The mod directory has only a Steam hooks file and no GOG counterpart, while the CaptureHotbarKey comment cites a GOG address. Confirm whether GOG is intentionally unsupported. The k2.saveevents and hud-host library sources are outside the packet and were not read. Tool calls used: 4 of 12.\"}",
+ "packet_id": "wp4-002",
+ "truncated": false
+}

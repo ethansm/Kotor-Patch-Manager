@@ -1,0 +1,175 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.014851840000000002,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 34698,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 34698,
+   "cache_read_input_tokens": 41784,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 4,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 8506,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 8506,
+     "cache_read_input_tokens": 33988,
+     "input_tokens": 2,
+     "output_tokens": 7371,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 14988,
+   "output_tokens_details": {
+    "thinking_tokens": 10945
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "scripts/plan_manager.py",
+  "scripts/test_plan_manager.py",
+  "scripts/master_ledger.py",
+  "scripts/agent_diff_check.py"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "392f13a",
+    "8395275"
+   ],
+   "confidence": "high",
+   "evidence": "Removed: self.assertIn(\"/plan-handoff M1\", res.stdout) (old line 54). Replaced at line 56 with self.assertIn(\"/plan-handoff\", res.stdout). plan_manager.py line 355 now prints `/plan-handoff \"{scoped_ident}\"` where scoped_ident is '<stem>:M1', so the old exact check no longer matched and was loosened to a bare prefix. The bare prefix is also emitted by the unconditional 'Handoff / Plan Mode' line, so the check no longer verifies that the next phase is M1.",
+   "file": "scripts/test_plan_manager.py",
+   "lines": "54-56",
+   "local_id": "f1",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Update the test to assert the exact new string, e.g. the full `/plan-handoff \"<stem>:M1\"` form produced at plan_manager.py:355, and run `python3 scripts/test_plan_manager.py -k test_resume_upcoming_batches_text` to confirm it fails if the target is changed to M2.",
+   "why_it_matters": "The assertion that the resume output names the correct next phase was weakened to a check that passes for any phase. A real regression in the next-phase target would not fail this test."
+  },
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "392f13a",
+    "8395275"
+   ],
+   "confidence": "high",
+   "evidence": "test_mark_done_auto_resolves_plan_from_phase runs `self.run_cli(\"mark-done\", \"AR1\", \"--notes\", \"auto resolved\")` with no --plan and no --handoff-dir. In plan_manager.py main(), mark-done then rewrites ACTIVE_PLAN_FILE (lines 784-786) and calls cmd_handoff with the default directory (line 796), which writes the repo's .claude/session_handoff.md and .claude/handoffs/<stem>.handoff.md. The test's finally block (line 223) only unlinks the temp plan; it does not restore .claude/active_plan.txt or remove the handoff artifacts.",
+   "file": "scripts/test_plan_manager.py",
+   "lines": "206-223",
+   "local_id": "f2",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Snapshot .claude/active_plan.txt and the .claude handoff files before the test, pass --handoff-dir (or set an env override) so writes go to a temp directory, and restore or delete them in finally. Then run the test suite and diff .claude/ before and after.",
+   "why_it_matters": "Running the test suite changes the live repository's active-plan pointer and leaves handoff files behind. This affects later `resume`/`handoff` runs in the real worktree, so test runs are not side-effect free."
+  },
+  {
+   "candidate_id": null,
+   "category": "bug",
+   "commits": [
+    "f036a63",
+    "4369884",
+    "392f13a",
+    "8395275"
+   ],
+   "confidence": "medium",
+   "evidence": "`res = subprocess.run(flow_cmd, ...)`; `if res.returncode != 0:` then `if mode == \"start\" and recent_plans and (time.time() - recent_plans[0].stat().st_mtime < 120):` prints a WARN and falls through to `return 0` (line 476-482). Any *_plan.md file modified in the last 120 s under .claude/subagent_runs is accepted as success, whatever oc-flow's exit code was.",
+   "file": "scripts/plan_manager.py",
+   "lines": "465-474",
+   "local_id": "f3",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check whether oc-flow can exit non-zero after writing a partial plan, and whether the recovered file's session ID matches this invocation. Consider requiring a file newer than the start timestamp taken before subprocess.run, and confirm that the WARN path is visible to the orchestrator.",
+   "why_it_matters": "A non-zero exit from the delegation tool is treated as success when an unrelated or partial plan file is recent. The orchestrator then gets a [PLAN GENERATED] message and may proceed to fork-build on a broken session."
+  },
+  {
+   "candidate_id": null,
+   "category": "bug",
+   "commits": [
+    "8395275"
+   ],
+   "confidence": "high",
+   "evidence": "In main(), mark-done builds `target_h_dir = Path(h_dir).resolve() if h_dir else HANDOFFS_DIR` and `plan_handoff_file = target_h_dir / f\"{plan_stem}.handoff.md\"`, then prints that path as 'Handoff'. With --handoff-dir set, cmd_handoff actually writes to `target_dir / \"handoffs\" / f\"{plan_stem}.handoff.md\"` (lines 585, 669-672). The printed path omits the `handoffs/` segment, so it names a file that is not written.",
+   "file": "scripts/plan_manager.py",
+   "lines": "799-800",
+   "local_id": "f4",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Run `mark-done M1 --handoff-dir <tmp>` and compare the printed Handoff path with the files on disk under <tmp>. Align the printed path with cmd_handoff's `handoffs` subdirectory, or have cmd_handoff return the path it wrote. test_mark_done_auto_handoff_and_saved_state (test_plan_manager.py:160-170) checks the on-disk path but not the printed one, so it does not catch this.",
+   "why_it_matters": "The SAVED STATE block tells the next session where the handoff is. With a custom handoff directory that path does not exist, and `resume` (which reads HANDOFFS_DIR, line 287) will not find the file either."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "f036a63",
+    "4369884",
+    "392f13a",
+    "8395275"
+   ],
+   "confidence": "medium",
+   "evidence": "Step 1b: `stem_token = token[:-3] if token.endswith(\".md\") else token` then `for cand in sorted(REPO_ROOT.glob(f\"**/{stem_token}.md\")): ... return cand.resolve(), \"\"`. The token is unrestricted glob text; a token such as `*` or `?` matches an arbitrary repository markdown file, and the first sorted match is returned. Callers then treat it as the owning plan: main() sets explicit_plan from it (lines 746-749, 752-755, 758-761) and overwrites ACTIVE_PLAN_FILE (lines 769-771).",
+   "file": "scripts/plan_manager.py",
+   "lines": "84-88",
+   "local_id": "f5",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Run `python3 scripts/plan_manager.py mark-done '*'` in a scratch copy of the repo and check which file is selected and whether ACTIVE_PLAN_FILE changes. Consider rejecting glob metacharacters before the step 1b glob.",
+   "why_it_matters": "A wildcard phase or direction token can silently retarget mark-done, next, or delegate to an unrelated document and rewrite the active plan pointer. Because the match is a plain glob, it also scans the entire repo on every call."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "f036a63",
+    "4369884",
+    "392f13a",
+    "8395275"
+   ],
+   "confidence": "high",
+   "evidence": "`clean_ident = ident.strip(\"*_ \")` and `clean_target = target_str.strip(\"*_ \")`, then `if clean_ident.lower() == clean_target.lower() or clean_target.lower() in clean_ident.lower():`. If target_str is made only of stripped characters (e.g. '**', '_', ' '), clean_target is '' and `'' in clean_ident` is True, so the first table row is marked done.",
+   "file": "scripts/plan_manager.py",
+   "lines": "529-530",
+   "local_id": "f6",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Reject empty clean_target before the table loop (exit non-zero with a message), then check `mark-done '**'` against a three-row table and confirm no row changes.",
+   "why_it_matters": "A malformed phase argument marks the first pending row DONE instead of failing. The old code had the same empty-substring behaviour for '' only; the new stripping makes it reachable from markup-only inputs."
+  },
+  {
+   "candidate_id": null,
+   "category": "other",
+   "commits": [
+    "8395275"
+   ],
+   "confidence": "medium",
+   "evidence": "The removed handoff read-policy lines (old lines 459-462) were 'Do NOT run broad ls, find commands, or cat entire source files', 'Do NOT read past markdown docs', 'Targeted Reads Only', and 'Fresh Session Bootstrap'. The new block at lines 648-650 keeps only the bootstrap line, with `resume {resume_target}`, and no longer tells the next agent to avoid broad reads.",
+   "file": "scripts/plan_manager.py",
+   "lines": "648-650",
+   "local_id": "f7",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Confirm whether these guardrails are now provided elsewhere (for example in the agent contract or AGENTS policy). If not, restore the removed lines in cmd_handoff and add a test that asserts the policy section is present in the generated handoff.",
+   "why_it_matters": "The context-budget guardrails that the handoff gives to every subsequent agent were dropped without replacement. This loosens agent read policy in generated handoffs, although it is not a test gate."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Two tool calls used on checks outside the diff. (1) scripts/master_ledger.py lines 77 and 181 honour MASTER_LEDGER_TEST=1 and route test writes away from the default ledger, so the test-file env setting (test_plan_manager.py:16) does isolate the ledger. (2) scripts/agent_diff_check.py runs build_check.py and the test suite (lines 9, 85-89, 158-174), so the delegate post-execution gate is not diff-only as its label might suggest; I did not raise a finding for it. Not checked: whether cmd_delegate's 'oc-flow' binary exists or what it does; not run: the test suite itself, so all findings rest on reading. No scanner candidates were supplied, so candidate_id is null everywhere.",
+ "packet_id": "wp1-010",
+ "truncated": false
+}

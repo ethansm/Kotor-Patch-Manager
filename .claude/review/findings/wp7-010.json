@@ -1,0 +1,120 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.0071478,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 12854,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 12854,
+   "cache_read_input_tokens": 39340,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 6,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 3433,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 3433,
+     "cache_read_input_tokens": 17217,
+     "input_tokens": 2,
+     "output_tokens": 2515,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 8366,
+   "output_tokens_details": {
+    "thinking_tokens": 3399
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "scripts/clef_dataset.py",
+  "scripts/master_ledger.py (canonical_mod_name, lines 46-58)"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "bug",
+   "commits": [],
+   "confidence": "high",
+   "evidence": "try: rec = json.loads(line) except Exception: continue\n...\ntotal_events += 1\nevent = rec.get(\"event\", \"\").upper()",
+   "file": "scripts/clef_dataset.py",
+   "lines": "116-122",
+   "local_id": "f1",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Feed extract_ledger_facts a temp ledger (passed via --ledger, not the live .claude ledger) containing a line '[1]' and a line '{\"event\": null}' and confirm the traceback. Then check whether the rest of the file is skipped. Fix belongs in the parser, not here.",
+   "why_it_matters": "The try/except only guards json.loads. If a ledger line parses to a non-dict JSON value (array, number, string), rec.get raises AttributeError. If a dict has \"event\": null, .get returns None and .upper() raises AttributeError. Both are outside any handler, so one malformed line aborts the whole summary/json/prior command for every mod."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [],
+   "confidence": "high",
+   "evidence": "f = float(s)\nif f < 100.0:\n    return f * 1000.0\n...and at line 149: dur = parse_duration_ms(rec.get(\"duration_ms\") or rec.get(\"duration\"))",
+   "file": "scripts/clef_dataset.py",
+   "lines": "52-54",
+   "local_id": "f2",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check which ledger events write duration_ms as a bare number versus a string with 's' or 'ms' suffix. If bare numbers under 100 occur under duration_ms, the key should bypass the seconds heuristic. Compare a few parsed values against the raw ledger lines.",
+   "why_it_matters": "The same heuristic that treats bare numbers as seconds is applied to the duration_ms key at line 149. A record with duration_ms as a bare number below 100 (already in milliseconds) is multiplied by 1000. For example, 45 becomes 45000 ms. That inflates avg_duration_ms and the per-role and per-mod priors the router uses."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [],
+   "confidence": "high",
+   "evidence": "global_avg_dur = round(sum(all_durations) / len(all_durations), 1) if all_durations else 45000.0; later at lines 256-257 \"global_prior\": {\"avg_duration_ms\": 3500.0,",
+   "file": "scripts/clef_dataset.py",
+   "lines": "205",
+   "local_id": "f3",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Confirm which value the clef-flash router reads from global_prior. If it should be data-driven, use global_avg_dur at line 256. If the constant is deliberate, the dead variable at line 205 and the mismatched fallbacks should be reconciled or commented.",
+   "why_it_matters": "global_avg_dur is computed but never used. The emitted global_prior.avg_duration_ms is a hardcoded 3500.0, while the no-ledger fallback at line 67 uses 3200 and the empty-data default at line 205 uses 45000. The reported prior therefore does not reflect the ledger data it was built from, and the three defaults disagree."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [],
+   "confidence": "medium",
+   "evidence": "cache_path = path.parent / \"clef_priors.json\"\nif not force_refresh and cache_path.is_file():\n    try:\n        if cache_path.stat().st_mtime >= path.stat().st_mtime:\n            with open(cache_path, \"r\", encoding=\"utf-8\") as f:\n                return json.load(f)",
+   "file": "scripts/clef_dataset.py",
+   "lines": "76-81",
+   "local_id": "f4",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check the cache path when --ledger points at a file in another directory, and what happens after a copy that preserves mtime. Confirm whether json.load output is validated before return. Verify whether DEFAULT_CACHE is meant to be the cache path.",
+   "why_it_matters": "The cache is keyed only on the ledger's directory and on mtime. It is not keyed on the ledger's content or path. A ledger replaced by a copy or restore that keeps an older mtime, or a --ledger override that shares a directory with another ledger, returns the other ledger's priors with no warning. A cache with a different schema (missing 'mods' or 'global_prior') also flows straight into main() at lines 311 and 307 and raises KeyError. DEFAULT_CACHE at line 27 is defined but never used, so the actual cache location is not the one the constant names."
+  },
+  {
+   "candidate_id": null,
+   "category": "style-risk",
+   "commits": [],
+   "confidence": "medium",
+   "evidence": "try:\n    tmp_cache = cache_path.with_suffix(\".tmp\")\n    ...\n    tmp_cache.replace(cache_path)\nexcept Exception:\n    pass",
+   "file": "scripts/clef_dataset.py",
+   "lines": "265-271",
+   "local_id": "f5",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Confirm that a failed write (read-only directory, full disk) leaves no visible trace. Check whether the ledger-derived results are re-read on the next run.",
+   "why_it_matters": "A broad except around the cache write silently discards every failure. Write or rename errors leave the stale cache in place with no signal, and this combines with the mtime check at lines 79-81 to keep serving old priors."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Only the packet file and the cited callee canonical_mod_name (scripts/master_ledger.py:46-58) were read. canonical_mod_name can return None, but line 144 filters falsy values, so None does not leak into mod_stats. Hygiene items not raised as findings: unused import 'os' (line 16), unused DEFAULT_CACHE (line 27), and float|None annotations (line 42) that need Python 3.10+. The demo-pollution filter at line 125 only matches the exact mod names 'demo' and 'demo_src'; I did not check whether ledger entries for demo swaps use other names. The pass_rate Laplace formula at line 220 matches its comment (prior 0.95, weight 2). No secrets or credential paths were accessed. The packet is one untracked file, so commits is empty.",
+ "packet_id": "wp7-010",
+ "truncated": false
+}

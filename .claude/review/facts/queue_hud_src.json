@@ -1,0 +1,31 @@
+{
+ "build_check": {
+  "lines": [
+   "FAIL build: queue_hud_src (QueueHud): compile/link failed after 2.5s",
+   "  | collect2: error: ld returned 1 exit status",
+   "build_check: FAIL=1 WARN=0 INFO=2 PASS=0 SKIP=0"
+  ],
+  "rc": 1
+ },
+ "depends_on_live_install": "check_hook_spans reads the live patch_config.toml; check_hook_bytes reads the vanilla exe",
+ "hook_checkers_mentions": {
+  "check_hook_bytes": [],
+  "check_hook_spans": []
+ },
+ "mod": "queue_hud_src",
+ "provisional": "until WP1 is reduced; scratch copy has no git history and no binaries",
+ "run_tests": {
+  "lines": [
+   "PASS   cpp:patch_manager_mods/queue_hud_src/common_contract_test.cpp  2.2s",
+   "PASS   cpp:queue_hud_logic_test  2.6s",
+   "",
+   "2 passed, 0 failed, 0 error, 0 skipped (2 items) in 2.7s"
+  ],
+  "rc": 0
+ },
+ "skipped": {
+  "agent_diff_check.py": "needs-git-history",
+  "check-raw-addresses": "needs excluded tests/static/raw_addresses.toml (human-only gap)",
+  "compat_check.py": "needs-git-history"
+ }
+}

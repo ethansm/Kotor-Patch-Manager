@@ -1,0 +1,70 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.006138459999999999,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 17635,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 17635,
+   "cache_read_input_tokens": 54386,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 6,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 1020,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 1020,
+     "cache_read_input_tokens": 24411,
+     "input_tokens": 2,
+     "output_tokens": 2436,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 4134,
+   "output_tokens_details": {
+    "thinking_tokens": 2082
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp",
+  "patch_manager_mods/equipment_3d_character_src/manifest.toml",
+  "patch_manager_mods/_shared_src/GuiInput.h",
+  "patch_manager_mods/_shared_src/GuiKit.h"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "7aeb296"
+   ],
+   "confidence": "high",
+   "evidence": "animLen() now ends with `*len = 2.0f; // Safe 2.0s fallback for unmapped supermodels/animations` and `return true;`, and the table branch is guarded by `if (t) {...}`. Previously the function returned false for names not in the table and for rows with n == 0 (animTable returns nullptr for rows 3, 538, 539 at line 592). The only caller, flourish scheduling at line 762 (`else if (!animLen(s, name, &len)) { dlogf(\"flourish: '%s' not in table for row %d\" ...); return false; }`), therefore never takes its refusal branch any more, so flourishes are scheduled for rows that have no animation table and for animation names that the table does not list.",
+   "file": "patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp",
+   "lines": "595-602",
+   "local_id": "f1",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Read the flourish scheduler around EquipCharPreview.cpp:752-790 and confirm what happens after animLen returns true for an empty table (n == 0) and for an unknown name. Check whether the engine ignores an unknown animation name or falls back to the idle pose. Then decide whether the fallback should stay only for mapped rows, or whether the refusal path at line 762 should be restored. A test for rows 3/538/539 in the Equip3dLogic tests would pin this.",
+   "why_it_matters": "Flourish animations for supermodels with no known animations (rows 3, 538, 539) or for unmapped names will now be played with an assumed 2.0 s length. If those animation names do not exist on that body, the engine plays nothing or a wrong animation, and the scheduler's timing is wrong. The change also turns the existing 'not in table' log and refusal path into dead code, and the commit does not say that this behaviour change was intended."
+  }
+ ],
+ "no_issue_files": [
+  "patch_manager_mods/equipment_3d_character_src/manifest.toml"
+ ],
+ "notes": "Scanner candidates checked and judged harmless, so none are reported as findings. S-256f9925b7 (line 547) and S-9c41b62632 (line 504) are only the logf-to-logw level change. S-915bd3ed02 (line 712): buildPreview now calls destroyCreature when s->real differs from the new real. This is ordered before allocCreature and the gate check; the destroy clears creature/built/real, so no stale pointer is used afterwards. creatureBad is not reset, which matches the earlier design. The KPatchInit change (line 841) calls guikit::initGuiInput, which is defined at GuiKit.h:571 and uses k2input::init (GuiInput.h:80), which returns through onConnect when the provider is missing, so the new requires = [\"gui-input\"] is not a hard crash path. Not in this packet: GuiKit.h uses the k2input symbols, and EquipCharPreview.cpp includes GuiInput.h at line 28 before GuiKit.h at line 29. Other consumers that include GuiKit.h without GuiInput.h could fail to compile. Check that in their own packets. The hooks file for this mod is not in the packet, so the manifest's requires change could not be checked against a hook file. The logw/loge additions, the bindCover and attachHelmet log changes, and the BindEquipView null-block change were read and look correct.\"}",
+ "packet_id": "wp4-006",
+ "truncated": false
+}

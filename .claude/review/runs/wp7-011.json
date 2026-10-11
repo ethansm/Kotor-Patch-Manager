@@ -1,0 +1,68 @@
+{
+ "attempts": 1,
+ "cost_usd": 0.0059628599999999995,
+ "duration_s": 39.0,
+ "ended": "2026-10-10T09:13:36Z",
+ "exit_code": 0,
+ "files": [
+  "scripts/clef_matcher.py"
+ ],
+ "first_turn_prompt_tokens": 16599,
+ "num_turns": 2,
+ "packet_id": "wp7-011",
+ "prompt_bytes": 22302,
+ "rate_limit_hits": 0,
+ "raw": "raw/wp7-011.a1.out",
+ "result_subtype": "success",
+ "schema_errors": [],
+ "schema_valid": true,
+ "started": "2026-10-10T09:12:57Z",
+ "status": "ok",
+ "truncated": false,
+ "turn_prompt_tokens": [
+  16599
+ ],
+ "turn_usage": [
+  {
+   "cache_creation_input_tokens": 8801,
+   "cache_read_input_tokens": 7796,
+   "input_tokens": 2,
+   "output_tokens": 2
+  }
+ ],
+ "turns_over_100k": 0,
+ "usage": {
+  "cache_creation": {
+   "ephemeral_1h_input_tokens": 8801,
+   "ephemeral_5m_input_tokens": 0
+  },
+  "cache_creation_input_tokens": 8801,
+  "cache_read_input_tokens": 7796,
+  "fallback_credit": null,
+  "inference_geo": "global",
+  "input_tokens": 2,
+  "iterations": [
+   {
+    "cache_creation": {
+     "ephemeral_1h_input_tokens": 8801,
+     "ephemeral_5m_input_tokens": 0
+    },
+    "cache_creation_input_tokens": 8801,
+    "cache_read_input_tokens": 7796,
+    "input_tokens": 2,
+    "output_tokens": 8249,
+    "type": "message"
+   }
+  ],
+  "output_tokens": 8249,
+  "output_tokens_details": {
+   "thinking_tokens": 5442
+  },
+  "server_tool_use": {
+   "web_fetch_requests": 0,
+   "web_search_requests": 0
+  },
+  "service_tier": "standard",
+  "speed": "standard"
+ }
+}

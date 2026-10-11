@@ -1,0 +1,168 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.006334660000000001,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 12455,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 12455,
+   "cache_read_input_tokens": 21976,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 4,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 6071,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 6071,
+     "cache_read_input_tokens": 14180,
+     "input_tokens": 2,
+     "output_tokens": 4632,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 7247,
+   "output_tokens_details": {
+    "thinking_tokens": 3812
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "scripts/scaffold_mod.py"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "bug",
+   "commits": [
+    "b5b5aba",
+    "3d1c2b9"
+   ],
+   "confidence": "high",
+   "evidence": "clean_name = to_snake_case(mod_name).removesuffix(\"_src\") (line 38); mod_path = REPO_ROOT / \"patch_manager_mods\" / mod_dir_name (line 41). to_snake_case only replaces '-' and lowercases, so a name such as '../evil' keeps '/' and '.' and the path escapes patch_manager_mods. Lines 242-245 then mkdir(parents=True) and write_text into that location.",
+   "file": "scripts/scaffold_mod.py",
+   "lines": "38-41",
+   "local_id": "f1",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Run `python3 -I scripts/scaffold_mod.py '../tmp_probe' --dry-run` and confirm the printed target path leaves patch_manager_mods/. Then check whether a name validation regex exists anywhere in the script (none is visible in lines 37-41).",
+   "why_it_matters": "A typo or a crafted name can make the scaffolder create and write files outside the mods tree, including under the repo root or other directories. Nothing validates the name against a [a-z0-9_] pattern."
+  },
+  {
+   "candidate_id": null,
+   "category": "bug",
+   "commits": [
+    "b5b5aba",
+    "3d1c2b9"
+   ],
+   "confidence": "high",
+   "evidence": "manifest_toml = f\"\"\"[patch] ... name = \"{display_title}\" ... description = \"{display_title} for KOTOR II\"\"\" (lines 116-121). display_title = title or f\"{pascal_name} Mod\" (line 43) is inserted without escaping. The title is also placed in a C++ // comment (line 61) and a C string (line 132).",
+   "file": "scripts/scaffold_mod.py",
+   "lines": "116-121",
+   "local_id": "f2",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Run the scaffolder with --title 'Foo \"Bar\"' --dry-run in a scratch copy and parse the generated manifest with tomllib. Confirm the parse fails. Then check whether build_check.py or the KPM manifest reader validates the title.",
+   "why_it_matters": "A --title containing a double quote or backslash produces an invalid manifest.toml, which the KPM build then rejects. A newline in the title breaks the // comment in the generated .cpp and can inject code."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "b5b5aba",
+    "3d1c2b9"
+   ],
+   "confidence": "medium",
+   "evidence": "__declspec(dllexport) void LuoProbe_Init() {{ (line 82); the same name is hardcoded in exports_def (line 100) and in the hooks template comment (line 111). None of these use {clean_name} or {pascal_name}.",
+   "file": "scripts/scaffold_mod.py",
+   "lines": "82-82",
+   "local_id": "f3",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check how KPM resolves the export named in manifest.toml [build] exports and the hooks file, and whether it tolerates duplicate export names across DLLs. Compare with an existing mod's exports.def under patch_manager_mods/ to see whether the 'Luo' prefix is intentional for every mod.",
+   "why_it_matters": "Every scaffolded mod exports the same symbol name, LuoProbe_Init, regardless of its name. If two scaffolded mods are loaded into one process, or KPM resolves exports by name, the collision is silent. The 'Luo' prefix also gives every new mod a misleading identity."
+  },
+  {
+   "candidate_id": null,
+   "category": "style-risk",
+   "commits": [
+    "b5b5aba",
+    "3d1c2b9"
+   ],
+   "confidence": "medium",
+   "evidence": "# Example hook detour entry:\n# [[detour]]\n# address = 0x0073F450\n# function = \"LuoProbe_Init\" (lines 108-111 of the hooks_toml template).",
+   "file": "scripts/scaffold_mod.py",
+   "lines": "108-111",
+   "local_id": "f4",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Confirm 0x0073F450 is not in any existing *.hooks.toml or the raw-address allowlist. If it is not, replace the example with a placeholder such as a comment that asks for a symbol lookup. Do not change the template without that check.",
+   "why_it_matters": "The template embeds a concrete raw address in every new hooks file. The repo rule says raw addresses need a prior symbol lookup before they are used. Anyone who uncomments the example gets an unverified address that may hook the wrong function."
+  },
+  {
+   "candidate_id": null,
+   "category": "other",
+   "commits": [
+    "b5b5aba",
+    "3d1c2b9"
+   ],
+   "confidence": "medium",
+   "evidence": "hooks_toml = ... \"# kotor2-steam-aspyr.hooks.toml -- Steam Windows hooks for {clean_name}\" / target_binary = \"swkotor2.exe\" / target_version = \"Steam Aspyr 2015\" (lines 104-106). Only the Steam file is created (line 229, 'kotor2-steam-aspyr.hooks.toml').",
+   "file": "scripts/scaffold_mod.py",
+   "lines": "104-106",
+   "local_id": "f5",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check how existing mods in patch_manager_mods/ handle the GOG hooks file, and whether the build or KPM stage gate requires a GOG entry. If one is required, the scaffold should either create it or record the reason in the manifest.",
+   "why_it_matters": "The Steam vs GOG parity rule requires each hooks file to have a matching entry or a stated reason. The scaffold creates a Steam-only hooks file with no GOG counterpart and no note saying why, so new mods start out non-compliant with that rule."
+  },
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "b5b5aba",
+    "3d1c2b9"
+   ],
+   "confidence": "high",
+   "evidence": "print(\"\\nMod scaffolding complete and verified compliant with:\") / print(\"  \u2713 Standard Include Style ...\") / print(\"  \u2713 Common Contract Testing ...\") (lines 250-253). These lines print unconditionally, after the loop at lines 243-248 that may skip every file with '[EXISTS] ... (skipped)'.",
+   "file": "scripts/scaffold_mod.py",
+   "lines": "250-253",
+   "local_id": "f6",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Run the scaffolder twice on the same name, which exercises the [EXISTS] branch, and check whether the 'verified compliant' banner still prints. Confirm that no build_check or run_tests call backs the claim. Consider changing the wording or the exit status when files are skipped.",
+   "why_it_matters": "The output claims 'verified compliant' without running any check, and it still reports success when every file was skipped. A human or agent reading the log could treat an unverified scaffold as a passing gate."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "b5b5aba",
+    "3d1c2b9"
+   ],
+   "confidence": "high",
+   "evidence": "doc_id = args.doc_id (line 261 default None, used at line 45-53 without normalization). plan_filename = f\"{doc_id}_{clean_name}.md\" (line 53). Auto-numbering at line 48 only counts files that match ^(\\d{2})_.",
+   "file": "scripts/scaffold_mod.py",
+   "lines": "45-53",
+   "local_id": "f7",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Run `python3 scripts/scaffold_mod.py probe --doc-id 5 --dry-run` and check the printed plan filename. Then check whether any other script or the plan manager expects a zero-padded two-digit doc ID.",
+   "why_it_matters": "A user-supplied --doc-id such as '5' produces '5_name.md', which the auto-numbering regex ignores. The next auto-assigned ID can then reuse or skip a number, and the plan filename does not match the repo's two-digit convention."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Only scripts/scaffold_mod.py was in scope and was read from the packet content. Two tool calls were used for cross-checks. A Glob of scripts/*.py listed build_check.py and others, but the output was capped at 100 entries, so run_tests.py, kpm_status.py, agent_diff_check.py and plan_manager.py (all referenced in the generated plan and commands) were not confirmed to exist. Not checked: SafeRead.h's readAt/probeRead signatures and check.h's kt::Check, kt::Report and KT_STR macro, which the generated contract test calls. A Grep of patch_manager_mods/_shared_src confirmed kt::Report, kt::Check and g_stubVirtualQueryAll exist in other tests, but KT_STR was not found in the capped output. Nothing in this packet touched secrets or the live game directory. The scaffolder writes only inside the repo tree, subject to f1.",
+ "packet_id": "wp7-016",
+ "truncated": false
+}

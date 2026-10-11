@@ -1,0 +1,107 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00514415,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 9221,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 9221,
+   "cache_read_input_tokens": 60345,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 10,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 1629,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 1629,
+     "cache_read_input_tokens": 15388,
+     "input_tokens": 2,
+     "output_tokens": 2716,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 5391,
+   "output_tokens_details": {
+    "thinking_tokens": 2567
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "tests/compat.toml",
+  "scripts/compat_check.py (lines 536-560 read; grep for covers/generator/writes/toml)",
+  "scripts/ (glob gen_*.py and test_luo_scenario/test_luo_log_check/test_kotor_save_forge.py)"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "8d17773",
+    "f633a1f"
+   ],
+   "confidence": "medium",
+   "evidence": "Seven [[generator]] entries (script/writes pairs, e.g. lines 70-72 'script = \"scripts/gen_debuff_icon_table.py\"', 'writes = [\"patch_manager_mods/_shared_src/DebuffIconTable.inc\"]') are declared, but the cited consumer scripts/compat_check.py has no reference to 'generator' or 'writes' (grep found none); its only read of compat.toml is the covers loop at compat_check.py:552-557.",
+   "file": "tests/compat.toml",
+   "lines": "70-96",
+   "local_id": "f1",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Grep the whole scripts/ directory (the packet's own tooling directory) for 'compat.toml' and '[[generator]]' or the key 'generator' to find the actual reader. If none exists, confirm that no gate depends on these entries; if one exists, check that it fails hard when a generator script is missing or its output file is stale.",
+   "why_it_matters": "The header on line 1 says these mappings are for compat_check.py. If no reader consumes them, the generator-to-include mapping is inert: nothing checks that the generated .inc files are regenerated or match their generator output, so the declared mapping gives a false sense of coverage."
+  },
+  {
+   "candidate_id": null,
+   "category": "test",
+   "commits": [
+    "8d17773",
+    "f633a1f"
+   ],
+   "confidence": "medium",
+   "evidence": "'suite:levelup-scenarios' (lines 37-41) and 'suite:levelup-scenarios-m32' (lines 44-48) declare identical paths: \"research/companion_levelup/levelup_rules.py\" and \"tests/luo_scenarios/**\".",
+   "file": "tests/compat.toml",
+   "lines": "36-48",
+   "local_id": "f2",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check the suite ids in the covers_map consumer (compat_check.py around line 697) and any test.toml that names 'suite:levelup-scenarios-m32'. Confirm whether the m32 suite should have its own paths (for example a m32 fixture directory). If the duplicate is intentional, a comment in compat.toml would settle it.",
+   "why_it_matters": "If the m32 variant was meant to cover different inputs or a different build target, identical path sets mean its coverage is only a duplicate. Changes that affect the m32 path would not be attributed to a distinct suite, and the m32 suite's id would appear to exercise coverage that it does not add."
+  },
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "8d17773",
+    "f633a1f"
+   ],
+   "confidence": "medium",
+   "evidence": "'matches = list(repo_root.glob(p))' followed by 'if not matches: warnings.append(f\"WARN stale covers pattern in tests/compat.toml: {p}\")' \u2014 a covers path that matches nothing only produces a WARN, not a failure.",
+   "file": "scripts/compat_check.py",
+   "lines": "553-557",
+   "local_id": "f3",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Confirm that research/companion_levelup/levelup_rules.py, options_twin.py, wizard_twin.py, tools/, runtime/levelup_paths.ini and tests/luo_scenarios/ exist (ranged Glob from the research directory). Also check whether the stale-covers check runs in the default gate or only in lint mode (compat_check.py main, around line 765, help text 'Run lint mode'), and whether lint warnings can fail the gate.",
+   "why_it_matters": "The new covers entries in compat.toml (lines 7-11, 17-19, 25-27, 33, 39-40, 46-47, 54, 60, 66) reference research/ paths I could not check in this packet. If one of those paths is renamed or missing, the suite it covers silently stops being reached, and the gate only prints a warning. This is pre-existing checker behaviour, not part of the diff."
+  }
+ ],
+ "no_issue_files": [
+  "scripts/gen_debuff_icon_table.py (existence confirmed by glob only)",
+  "scripts/test_luo_scenario.py (existence confirmed by glob only)",
+  "scripts/test_luo_log_check.py (existence confirmed by glob only)",
+  "scripts/test_kotor_save_forge.py (existence confirmed by glob only)"
+ ],
+ "notes": "The packet is a declarative TOML file with no executable code, so the findings are limited to what compat_check.py does with it. All seven generator scripts named in the [[generator]] entries and the three test scripts named in covers exist (Glob results). The research/companion_levelup/* paths and the tests/luo_scenarios/** directory were not checked because they are outside the allowed read scope; f3 lists them as the next thing to verify. The 'writes' .inc targets under patch_manager_mods/ were not checked either. I did not open any secret or credential paths. Used 6 of 12 tool calls. No Steam/GOG, install-path, or live-game-directory concerns appear in this packet.",
+ "packet_id": "wp1-014",
+ "truncated": false
+}

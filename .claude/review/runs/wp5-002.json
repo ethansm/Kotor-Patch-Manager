@@ -1,0 +1,98 @@
+{
+ "attempts": 1,
+ "cost_usd": 0.01506397,
+ "duration_s": 87.0,
+ "ended": "2026-10-10T09:10:01Z",
+ "exit_code": 0,
+ "files": [
+  "patch_manager_mods/npc_diversity_src/exports.def",
+  "patch_manager_mods/npc_diversity_src/kotor2-gog-aspyr.hooks.toml",
+  "patch_manager_mods/npc_diversity_src/kotor2-steam-aspyr.hooks.toml"
+ ],
+ "first_turn_prompt_tokens": 15628,
+ "num_turns": 8,
+ "packet_id": "wp5-002",
+ "prompt_bytes": 14595,
+ "rate_limit_hits": 0,
+ "raw": "raw/wp5-002.a1.out",
+ "result_subtype": "success",
+ "schema_errors": [],
+ "schema_valid": true,
+ "started": "2026-10-10T09:08:34Z",
+ "status": "ok",
+ "truncated": false,
+ "turn_prompt_tokens": [
+  15628,
+  18932,
+  21541,
+  25778,
+  31242
+ ],
+ "turn_usage": [
+  {
+   "cache_creation_input_tokens": 7830,
+   "cache_read_input_tokens": 7796,
+   "input_tokens": 2,
+   "output_tokens": 8
+  },
+  {
+   "cache_creation_input_tokens": 3304,
+   "cache_read_input_tokens": 15626,
+   "input_tokens": 2,
+   "output_tokens": 3
+  },
+  {
+   "cache_creation_input_tokens": 2609,
+   "cache_read_input_tokens": 18930,
+   "input_tokens": 2,
+   "output_tokens": 6
+  },
+  {
+   "cache_creation_input_tokens": 4237,
+   "cache_read_input_tokens": 21539,
+   "input_tokens": 2,
+   "output_tokens": 8
+  },
+  {
+   "cache_creation_input_tokens": 5464,
+   "cache_read_input_tokens": 25776,
+   "input_tokens": 2,
+   "output_tokens": 8
+  }
+ ],
+ "turns_over_100k": 0,
+ "usage": {
+  "cache_creation": {
+   "ephemeral_1h_input_tokens": 23444,
+   "ephemeral_5m_input_tokens": 0
+  },
+  "cache_creation_input_tokens": 23444,
+  "cache_read_input_tokens": 89667,
+  "fallback_credit": null,
+  "inference_geo": "global",
+  "input_tokens": 10,
+  "iterations": [
+   {
+    "cache_creation": {
+     "ephemeral_1h_input_tokens": 5464,
+     "ephemeral_5m_input_tokens": 0
+    },
+    "cache_creation_input_tokens": 5464,
+    "cache_read_input_tokens": 25776,
+    "input_tokens": 2,
+    "output_tokens": 12502,
+    "type": "message"
+   }
+  ],
+  "output_tokens": 18955,
+  "output_tokens_details": {
+   "thinking_tokens": 13573
+  },
+  "server_tool_use": {
+   "web_fetch_requests": 0,
+   "web_search_requests": 0
+  },
+  "service_tier": "standard",
+  "speed": "standard"
+ }
+}

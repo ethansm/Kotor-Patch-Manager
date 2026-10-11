@@ -1,0 +1,70 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00602257,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 15181,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 15181,
+   "cache_read_input_tokens": 26797,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 4,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 3976,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 3976,
+     "cache_read_input_tokens": 19001,
+     "input_tokens": 2,
+     "output_tokens": 1521,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 5436,
+   "output_tokens_details": {
+    "thinking_tokens": 3944
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/gui_input_src/common_contract_test.cpp",
+  "patch_manager_mods/gui_input_src/gi_dispatch_test.cpp",
+  "patch_manager_mods/gui_input_src/gi_registry_test.cpp"
+ ],
+ "findings": [
+  {
+   "candidate_id": "S-794ac01642",
+   "category": "gate-integrity",
+   "commits": [
+    "15c9bfd"
+   ],
+   "confidence": "high",
+   "evidence": "`#if UINTPTR_MAX == 0xffffffff` wraps every K2GuiInputApi layout check (`static_assert(sizeof(K2GuiInputApi) == 24, ...)` and the five `offsetof(K2GuiInputApi, ...)` checks at lines 9-15). On any 64-bit host build the whole block is compiled out, so the ABI layout of K2GuiInputApi is not asserted at all by this test; only the K2WheelEvent asserts (lines 18-26) run unconditionally.",
+   "file": "patch_manager_mods/gui_input_src/gi_registry_test.cpp",
+   "lines": "8-16",
+   "local_id": "f1",
+   "severity": "low",
+   "source": "both",
+   "suggested_investigation": "Check how run_tests builds cpp tests (target arch / -m32 flag) and whether any build of gi_registry_test.cpp runs with UINTPTR_MAX == 0xffffffff. If not, consider whether the layout block should be exercised in a 32-bit build or should fail loudly when skipped. Verify by compiling gi_registry_test.cpp on a 64-bit host and confirming the K2GuiInputApi asserts are absent from the translation unit.",
+   "why_it_matters": "The mod ships as 32-bit, but if the test harness builds or runs on a 64-bit host (the default on most Linux/Windows CI) the struct-layout gate for the provider table silently passes with zero checks. A future field reorder in GuiInput.h would not be caught there."
+  }
+ ],
+ "no_issue_files": [
+  "patch_manager_mods/gui_input_src/common_contract_test.cpp",
+  "patch_manager_mods/gui_input_src/gi_dispatch_test.cpp"
+ ],
+ "notes": "Assertion delta is zero for all three files (new files, nothing removed), so no dropped assertions to trace. Scanner pointer-cast candidates S-f177e9b356 (line 43), S-d8b2d5ed16 (line 47), S-e163f9a271 (line 62), S-5911715edb (line 108) are `(void*)` casts of string literals used as opaque user data; the callbacks read them back as const char*, so they are harmless in a host test. Not confirmed as findings. Harness exit path not verified: check.h (kt::Check, kt::CheckEq, kt::Report) is not in patch_manager_mods/gui_input_src, and I did not search outside the packet directory, so I could not confirm that failures are counted and reflected in the return code of ::kt::Report. The checker's run_tests rc=0 with 1 passed is consistent with that but does not prove it. GuiInput.h and WindowHook.h were not read, so the 256-poll cadence in gi_registry_test.cpp lines 118-124 and the WindowHook semantics in common_contract_test.cpp were not verified against source. Test lines 8-16 are the only file-level concern; common_contract_test.cpp and gi_dispatch_test.cpp read clean on their own terms. No secrets or live-install paths were touched.\"}",
+ "packet_id": "wp6-003",
+ "truncated": false
+}

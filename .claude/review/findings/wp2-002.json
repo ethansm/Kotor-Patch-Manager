@@ -1,0 +1,51 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00267619,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 4553,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 4553,
+   "cache_read_input_tokens": 28299,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 6,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 1631,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 1631,
+     "cache_read_input_tokens": 10718,
+     "input_tokens": 2,
+     "output_tokens": 819,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 2964,
+   "output_tokens_details": {
+    "thinking_tokens": 992
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/gui_input_src/kotor2-gog-aspyr.hooks.toml",
+  "patch_manager_mods/gui_input_src/kotor2-steam-aspyr.hooks.toml (grep hit only)"
+ ],
+ "findings": [],
+ "no_issue_files": [
+  "patch_manager_mods/gui_input_src/kotor2-gog-aspyr.hooks.toml"
+ ],
+ "notes": "Packet mismatch: the domain notes describe a new PerformCastSpell detour at 0x00775703 (6 stolen bytes, exit 0x0077574C, eax excluded from restore, handler in exports.def), but the packet file has no detour. Line 5 is `hooks = []`, and a grep of the whole gui_input_src directory finds no PerformCastSpell, 775703, or 774C. So the detour cannot be audited from this packet. Either it lives in a file outside wp2-002 (which would need its own packet), or the notes are stale. Nothing here verifies the stolen bytes, RET cleanup, EBP frame, or the exports.def definition. The sibling kotor2-steam-aspyr.hooks.toml also has `hooks = []` at line 5, so Steam/GOG parity holds for this file. Scanner candidates S-6cce48e112, S-bc928cc472 and S-dabd1d06bf are false positives: the TOML is valid, and the 'non-block line' hits are the normal [metadata] keys. Dismissed, not confirmed. Not verified: the target_versions hash on line 3 has no source in the packet, so it cannot be checked against the vanilla exe. Also, `hooks = []` sits under [metadata] (line 2), not at top level. The Steam file uses the same layout, which suggests a repo convention, but I did not read the manifest loader to confirm it. Checker facts (build_check PASS, common_contract_test PASS) are consistent with the file. check_hook_spans reads the live patch_config.toml, so its result is provisional as stated.",
+ "packet_id": "wp2-002",
+ "truncated": false
+}

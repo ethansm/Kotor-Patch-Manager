@@ -1,0 +1,151 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.009800060000000001,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 20282,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 20282,
+   "cache_read_input_tokens": 7796,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 2,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 20282,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 20282,
+     "cache_read_input_tokens": 7796,
+     "input_tokens": 2,
+     "output_tokens": 11331,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 11331,
+   "output_tokens_details": {
+    "thinking_tokens": 7315
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "776de4c",
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "Line 333: `if (mi >= 0 && mi <= 2) g_lastUseMs[mi] = now;` followed by line 334 `else if (mi == 0) g_lastUseMs0 = now;`. Line 336: `if (mi >= 0 && mi <= 2) { g_pend[mi] = ...; g_auto[mi].lastUseMs = now; g_auto[mi].pending = true; }` followed by line 337 `else if (mi == 0) { g_pend0 = ...; g_auto0.lastUseMs = now; g_auto0.pending = true; }`. Because the first predicate already accepts mi == 0, every leader use takes the companion-array branch, and the `else if (mi == 0)` branches are unreachable.",
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "lines": "333-337",
+   "local_id": "f1",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Trace useNow() for mi == 0: the guard at line 333 and line 336 both evaluate true, so confirm the else-if branches are never taken. Confirm g_pend0.on and g_auto0.pending stay false after a leader use (add a temporary log or read the existing 'DONE member=0' / 'AUTO member=0' log lines: 'DONE member=0' should never appear). Check heal::shouldAutoUse in the heal header for how it reads AutoState.pending and lastUseMs. Check whether the leader auto-heal can fire twice within the 2 s debounce window.",
+   "why_it_matters": "Leader uses never set g_pend0, g_pendKey0, g_auto0.pending or g_auto0.lastUseMs. pendingTick's leader block (lines 591-604) and the `any` gate at line 570 therefore never engage, so the leader's pending/DONE/TIMEOUT tracking and button pending state never run. The leader auto-heal cooldown (g_auto0, read by heal::shouldAutoUse at line 713) is never armed after a successful use, so the leader can be re-used on later cache ticks, limited only by the 2 s debounce. The leader's stored state is written to the companion slot g_pend[0]/g_auto[0] instead, which nothing reads."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "776de4c",
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "Line 303: `if (mi >= 0 && mi <= 2 && g_lastUseMs[mi] && now - g_lastUseMs[mi] < DebounceMs) REFUSEF(...)` then line 304: `else if (mi == 0 && g_lastUseMs0 && now - g_lastUseMs0 < DebounceMs) REFUSEF(\"REFUSE debounce member=0 ...\", ...)`. For mi == 0 the first condition is the only one that can match, so the else branch is dead, and g_lastUseMs0 (declared at line 282) is only ever written in the dead branch at line 334.",
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "lines": "303-304",
+   "local_id": "f2",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Same root cause as the finding on lines 333-337: the `mi >= 0 && mi <= 2` predicate shadows the `mi == 0` branches. Check every g_lastUseMs0 / g_pend0 / g_auto0 reference in the file for a write or read that is reachable, and decide whether the intended design is a shared array slot or a separate member-0 state.",
+   "why_it_matters": "The leader debounce is effectively tested against g_lastUseMs[0], which is written at line 333. The g_lastUseMs0 variable and its refusal log line are dead code, which makes the leader's debounce state look separate from what it actually is and makes future edits to it likely to miss the live path."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "776de4c",
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "Line 837: `if (c0.st == shui::BtnState::Hidden) { wShow(b0, false); wShow(ring0, false); wShow(disc0, false); wShow(frm0, false); if (g_popMi == 0) g_popMi = -1; return; }`. The `return` is inside uiFrame, and the code after it (lines 853-920: companion input, popover handling, popover widgets, popDiag, and the g_shown/g_nShown rebuild) is skipped whenever the leader button is hidden.",
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "lines": "837-837",
+   "local_id": "f3",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Confirm the Hidden path for the leader in gameplay: a party with only companions visible, or a leader card that is absent from slotAt(). Then check that the companion loop at lines 795-823 ran but lines 853-920 did not. Check whether this should be a visibility-only branch that continues to the rest of uiFrame instead of returning, and whether g_nShown is cleared on that path.",
+   "why_it_matters": "The leader button is Hidden whenever the leader's slot is absent or its button rect is zero (lines 803-804 pattern, and line 832-833 for member 0). In those frames the companion 1 and 2 buttons, their clicks and popover, and the popover widgets are not processed. g_nShown also keeps its value from the last frame that reached the end, so the RMB camera exclusion rects go stale. This means the companion buttons stop responding whenever the leader card is not visible, and the hide-the-leader case is not a no-op for the companions."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "776de4c",
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "Line 993: `int n = 0, why[3] = {};`. Line 996 inside the lambda declares `int why = 0;`, which shadows the outer array. Line 1001: `if (c) ++n; else whys += ...;`. The former final diagnostic `KP_LOGV(chHud, n == NWidgets ? KPLOG_INFO : KPLOG_WARN, \"BUILD n=%d/%d why=%s\", ...)` was removed (old line 893 deleted, no replacement in the hunk).",
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "lines": "993-1001",
+   "local_id": "f4",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check whether any other code or docs depend on the 'BUILD n=' log line. Compile the mod with -Wall -Wextra (and -Werror if the build uses it) to see the unused-variable and unused-but-set warnings for `why` and `n`. Confirm that a makeLabel failure for W_BtnLeader or W_RingLeader still leaves a trace in the logs, since the BUILD line that used to report it is now gone.",
+   "why_it_matters": "With the BUILD log gone, a widget that fails to build (for example a new leader label failing in makeLabel) is no longer reported at all, and the widget count no longer has a visible check against NWidgets. The new widget count is 20 (enum at lines 449-456), so a silent shortfall is more likely. The unused `why[3]` array and the write-only `n` also look like leftovers from the removal and may trigger -Wunused warnings under a strict build."
+  },
+  {
+   "candidate_id": null,
+   "category": "other",
+   "commits": [
+    "776de4c",
+    "WORKTREE"
+   ],
+   "confidence": "medium",
+   "evidence": "Line 57: `constexpr int Slot_CardRect = 0x54C;                      // portrait card rect (screen px)`. Compare line 58, which cites its source (`// K2Addr Slot_VitRect: 4 ints x,y,w,h`). The new offset has no source reference, and it is read at line 786 as four ints from the slot struct.",
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "lines": "57-57",
+   "local_id": "f5",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Find the source for 0x54C: the K2Addr or struct notes for the slot object, or a dump of the portrait card rect in the slot struct. Check that the four ints at 0x54C are x, y, w, h in screen px and that they differ from the vit rect at 0x694. If there is no source, the offset needs a symbol or struct-dump lookup before it is trusted.",
+   "why_it_matters": "An invented struct offset read as a screen rect feeds leaderButtonRect at line 827. A wrong offset that still yields positive w and h would place the leader button at the wrong screen location and pass the cd[2] > 0 && cd[3] > 0 check at line 787, so the fallback at line 827 would not run."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "776de4c",
+    "WORKTREE"
+   ],
+   "confidence": "medium",
+   "evidence": "Line 780: `g_card0.have = true;` set inside uiFrame whenever slot k == 0 exists, with no check of v[0].ok. refreshCache (lines 699-700) sets `c0.have = 0 < cnt && v[0].ok` and clears pk/apk when false, and leaves c0.m unchanged. Line 783 sets `g_card0.seen = true` on the same condition. g_card0.card (line 787) is only overwritten when the read succeeds, so a stale rect persists.",
+   "file": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "lines": "780-783",
+   "local_id": "f6",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check party::members() and the ok flag: when can v[0].ok be false while slotAt(0) still returns a slot? Confirm whether g_card0.have should be gated on the same condition used in refreshCache, and whether g_card0.card should be cleared when the card read fails.",
+   "why_it_matters": "The per-frame slot scan can override refreshCache's validity decision. A leader whose party entry is not ok, or whose vitals are stale, can have have == true while c0.m holds old or zeroed values, so resolveState at line 832 may show a state for a dead or absent leader."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Only CompanionSelfHeal.cpp was in scope; I made no tool calls and worked from the packet hunks. Scanner candidate S-8b5f3f1422 (uintptr_t cast at line 786) is the same slot-read pattern as the existing Slot_VitRect loop at line 766 and is not a finding on its own. Not verified: the KpLog_SetFallbackFile / KpLog_SetFallbackLevel API used at line 74 (the claim that it does no I/O is unchecked; the shared KpLog header was not opened). The LevelUpOverride.cpp logger port and version-string checks named in the domain notes are outside this packet and were not examined. The build-flag and include-path portability items in the domain notes (manifest.toml, test.toml) are also not in this packet. The known facts say build_check and run_tests pass, but those runs do not exercise uiFrame's leader paths, so they do not rule out f1 or f3.",
+ "packet_id": "wp3-002",
+ "truncated": false
+}

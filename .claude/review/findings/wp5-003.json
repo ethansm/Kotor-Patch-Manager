@@ -1,0 +1,153 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.007866090000000001,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 13924,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 13924,
+   "cache_read_input_tokens": 70579,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 10,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 1922,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 1922,
+     "cache_read_input_tokens": 19798,
+     "input_tokens": 2,
+     "output_tokens": 5852,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 8749,
+   "output_tokens_details": {
+    "thinking_tokens": 4824
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/npc_diversity_src/manifest.toml",
+  "patch_manager_mods/npc_diversity_src/test.toml",
+  "patch_manager_mods/npc_diversity_src/kotor2-gog-aspyr.hooks.toml",
+  "patch_manager_mods/npc_diversity_src/NpcDiversityDispatcher.cpp (lines 40-100)",
+  "patch_manager_mods/npc_diversity_src/ directory listing",
+  "patch_manager_mods/npc_diversity_src/README.md and DiversityLogic.h (grep hits only)"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "bug",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "medium",
+   "evidence": "RemapNpcAppearance is declared `__cdecl RemapNpcAppearance(void* pCreature, AppearanceDesc* pDesc)` (two stack arguments), but kotor2-gog-aspyr.hooks.toml lines 33-39 declare its parameters as `source = \"ecx\"` followed by `source = \"esp+4\"`, i.e. the first argument comes from a register (thiscall-style) and only the second from the stack.",
+   "file": "patch_manager_mods/npc_diversity_src/NpcDiversityDispatcher.cpp",
+   "lines": "84-84",
+   "local_id": "f1",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Check how KPM's detour loader interprets `parameters` entries with source ecx / esp+N and whether it rewrites them into the handler's declared signature. Compare with the Steam hooks file entry for the same function and with the vanilla calling convention at the GOG address 0x00419070 (confirm `this` is in ECX and the original prologue `55 8B EC 83 EC 74` is a __thiscall method).",
+   "why_it_matters": "If KPM marshals hook parameters literally, pCreature receives the wrong value (or pDesc is read from the wrong stack slot), so the remap writes into arbitrary memory or fails on every NPC spawn."
+  },
+  {
+   "candidate_id": null,
+   "category": "build",
+   "commits": [
+    "83354c0",
+    "57837e0"
+   ],
+   "confidence": "medium",
+   "evidence": "Line 15 lists `kotor2_gog_aspyr` as a supported version and line 20 sets `hooks = \"kotor2-steam-aspyr.hooks.toml\"`; the only hooks file the build references is the Steam one, while kotor2-gog-aspyr.hooks.toml (with its own target_versions for the GOG hash) sits unreferenced in the same directory.",
+   "file": "patch_manager_mods/npc_diversity_src/manifest.toml",
+   "lines": "13-20",
+   "local_id": "f2",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Read the KPM build step that consumes `[build].hooks` and check whether it supports per-version hook selection. If not, the manifest needs a way to name both files, or the GOG omission needs a stated reason. Confirm the hook addresses in the Steam file match the README table (Steam 0x0085E601, GOG 0x0048E691).",
+   "why_it_matters": "Steam vs GOG parity: a GOG build may ship without the texture and remap detours, or the build may silently pick the wrong hooks file, so the mod claims GOG support it does not actually provide."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "high",
+   "evidence": "The hash is computed as `HashDescriptor(pDesc->appearance, pDesc->gender, pDesc->textureVar, static_cast<uint32_t>(reinterpret_cast<uintptr_t>(resolverFrame)))`, so the seed includes the address of the resolver frame. The README says the hash is over the creature's spawn coordinates (X, Y), area ResRef and tag.",
+   "file": "patch_manager_mods/npc_diversity_src/NpcDiversityDispatcher.cpp",
+   "lines": "65-71",
+   "local_id": "f3",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check HashDescriptor in DiversityLogic.h and whether it uses the frame value at all. Then compare with the spawn-coordinate hash in RemapNpcAppearance (cpp lines 96-110) and the test in diversity_logic_test.cpp to see whether any test pins the frame-address seed.",
+   "why_it_matters": "The stack/frame address is not a creature property. The same NPC can get a different clothing texture on each spawn or area reload, which breaks the 'deterministic' goal and is inconsistent with the documentation."
+  },
+  {
+   "candidate_id": null,
+   "category": "memory-safety",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "medium",
+   "evidence": "`ResRef* pTexture = *ppTexture;` followed by `std::memset(pTexture->value, 0, ResRefLength);` and `std::memcpy(pTexture->value, newTex, len);` writes the diversified name in place into the object the game's frame points to, not into a local copy.",
+   "file": "patch_manager_mods/npc_diversity_src/NpcDiversityDispatcher.cpp",
+   "lines": "55-80",
+   "local_id": "f4",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Confirm the ownership of the ResRef at frame+0x10 for GetBTypeModelAndTextureResRef, either by reading the vanilla function at 0x0048E691 or the Steam equivalent, or by checking whether the caller copies it. Check whether a second call on the same frame sees the already-diversified name.",
+   "why_it_matters": "If that ResRef is a shared or cached vanilla texture name (for example one owned by the appearance table), the change persists beyond this call and affects other creatures or later lookups, and it can change save-relevant data."
+  },
+  {
+   "candidate_id": null,
+   "category": "test",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "high",
+   "evidence": "`cxxflags = [\"-I../_shared_src\", \"-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common\", \"-I../../research/companion_levelup/tools/parity/stub\", \"-Werror\"]` puts an unrelated mod's research `stub` directory on the include path of common_contract_test.",
+   "file": "patch_manager_mods/npc_diversity_src/test.toml",
+   "lines": "4-4",
+   "local_id": "f5",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check which header `SafeRead.h` and the other Common APIs resolve to when the test compiles, by viewing the build's include search order and the stub header's contents. Confirm that removing the stub path breaks the build or changes the result.",
+   "why_it_matters": "The contract test that is meant to pin the shared Common APIs may compile against a stub header from another research directory instead of the real _shared_src/Common headers, so it can pass while the real API has changed. Gate Invariant asks that contract tests be falsifiable."
+  },
+  {
+   "candidate_id": null,
+   "category": "build",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "high",
+   "evidence": "`-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common` is a machine-specific path under $HOME. Build flags in test.toml are passed as literal strings, so `$HOME` is not expanded unless the runner does it.",
+   "file": "patch_manager_mods/npc_diversity_src/test.toml",
+   "lines": "4-4",
+   "local_id": "f6",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check whether the test runner expands `$HOME` in cxxflags. Then check whether `-I../_shared_src` alone is enough to build common_contract_test.cpp, and whether the $HOME include is needed.",
+   "why_it_matters": "The test only works on a machine with this exact workspace layout. It also points into the live tool workspace rather than the in-repo `../_shared_src`, which breaks the portability rule for include paths."
+  }
+ ],
+ "no_issue_files": [
+  "patch_manager_mods/npc_diversity_src/override/ (binary .tpc assets not read; referenced dynamically via snprintf in DiversityLogic.h:156-158, so unreferenced literal names are expected)"
+ ],
+ "notes": "Packet scope was manifest.toml and test.toml. I also read the GOG hooks file and NpcDiversityDispatcher.cpp lines 40-100 (the packet's own directory). Not read: the Steam hooks file, DiversityLogic.h beyond grep hits, diversity_logic_test.cpp, and exports.def, so the exports-to-definition check was not done. Known facts say no recorded gate run names this mod and the checker's hook spans came from a scratch copy, so the PASS result does not cover the GOG hook signature in f1. Stack-offset and stolen-bytes checks on the GOG entries (0x0048E691: C6 45 FC 00 | 8D 4D B4; 0x00419070: 55 8B EC 83 EC 74) look like whole instructions, but I could not check them against the vanilla binary. No scanner candidates were supplied. The 35-slot texture range in README/DiversityLogic is not checked against the 2DA mapping JSON or the full asset list, because the known-facts list is truncated.",
+ "packet_id": "wp5-003",
+ "truncated": false
+}

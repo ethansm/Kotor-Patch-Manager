@@ -1,0 +1,69 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00346715,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 8062,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 8062,
+   "cache_read_input_tokens": 19385,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 4,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 4269,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 4269,
+     "cache_read_input_tokens": 11589,
+     "input_tokens": 2,
+     "output_tokens": 3016,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 3321,
+   "output_tokens_details": {
+    "thinking_tokens": 2150
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "tests/abi/abi_dump_portraitslots.cpp",
+  "tests/abi/k2.portraitslots@1.toml",
+  "patch_manager_mods/_shared_src/PortraitSlots.h"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "3de985d"
+   ],
+   "confidence": "low",
+   "evidence": "The golden file states \"Verified with gcc -m32 for plain C ABI rules.\" (line 2) and its values are typed by hand, e.g. \"K2PS_MAX_SLOTS = 4\" (line 22). The dump program abi_dump_portraitslots.cpp prints the same names from macros (lines 17-28), but nothing in the packet generates the golden from the dump or compares the two.",
+   "file": "tests/abi/k2.portraitslots@1.toml",
+   "lines": "10-22",
+   "local_id": "f1",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Find the script or test runner that consumes tests/abi/*.toml and compares it against the output of abi_dump_portraitslots. Confirm it runs at -m32, checks a nonzero exit code and a full diff in both directions (missing and extra fields/constants), and fails on mismatch. Then regenerate the dump and diff it against the golden to confirm they match.",
+   "why_it_matters": "If the golden is only hand-maintained, a later header change can drift from it while the ABI gate still reports PASS, unless the comparator that consumes this TOML is strict and actually runs. The comparator is outside this packet, so I cannot confirm the gate can fail."
+  }
+ ],
+ "no_issue_files": [
+  "tests/abi/abi_dump_portraitslots.cpp"
+ ],
+ "notes": "I checked the golden against PortraitSlots.h by hand, with the header's #pragma pack(8) and 32-bit field sizes. Every constant matches (K2PS_SNAPSHOT..K2PS_PHASE_COUNT = 0..6, PRIO 100/200, MAX_SLOTS 4). K2PsContext: 13 fields at offsets 0,4,...,64 with sizeof 72. K2PortraitSlotsApi: 6 fields at 0..20 with sizeof 24. The dump lists every field of both structs, so no field is missing from the golden. The dump's printf return values are ignored and main always returns 0, but the failure is caught by whatever compares the output. That comparator is not in this packet, so the gate's strength is unverified. The header has no static_assert(sizeof(void*)==4), so the -m32 requirement is enforced only by the build flag. A non-32-bit build would change the function-pointer sizes and fail the golden loudly, not silently. Tool use: 1 of 12 calls (header read).\"]",
+ "packet_id": "wp1-015",
+ "truncated": false
+}

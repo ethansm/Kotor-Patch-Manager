@@ -1,0 +1,197 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00924616,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 15335,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 15335,
+   "cache_read_input_tokens": 7796,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 2,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 15335,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 15335,
+     "cache_read_input_tokens": 7796,
+     "input_tokens": 2,
+     "output_tokens": 12202,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 12202,
+   "output_tokens_details": {
+    "thinking_tokens": 7838
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/npc_diversity_src/DiversityLogic.h",
+  "patch_manager_mods/npc_diversity_src/DiversityRows.h",
+  "patch_manager_mods/npc_diversity_src/NpcDiversityDispatcher.cpp"
+ ],
+ "findings": [
+  {
+   "candidate_id": "S-49d4e23099",
+   "category": "logic",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "medium",
+   "evidence": "Comment at line 65 says the hash is 'deterministic', but line 70 passes `static_cast<uint32_t>(reinterpret_cast<uintptr_t>(resolverFrame))` as the seed to HashDescriptor. The seed is the address of the per-call resolver frame, which the function receives as a pointer argument and which DiversityLogic.h:115-119 mixes into the hash. That value depends on the call stack, not on the NPC, so the same creature can get a different texture slot on each spawn, save load or area load.",
+   "file": "patch_manager_mods/npc_diversity_src/NpcDiversityDispatcher.cpp",
+   "lines": "65-70",
+   "local_id": "f1",
+   "severity": "high",
+   "source": "both",
+   "suggested_investigation": "Check the hooked call site's disassembly to see what resolverFrame points to (stack or heap, and whether it changes per call). Then load the same area twice and compare the N_CommF slot chosen for one NPC. Replace the seed with an NPC-stable input such as the creature's objectId or tag if the frame address varies.",
+   "why_it_matters": "The texture diversification is meant to be stable per NPC. If the seed is a stack or frame address, NPC clothing can change between loads, and identical NPCs in one area can get the same or different textures by accident."
+  },
+  {
+   "candidate_id": "S-35873f52f2",
+   "category": "memory-safety",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "medium",
+   "evidence": "`auto** ppDesc = reinterpret_cast<const AppearanceDesc**>(static_cast<char*>(resolverFrame) + 0x08);` and `auto** ppTexture = reinterpret_cast<ResRef**>(static_cast<char*>(resolverFrame) + 0x10);`. The 0x08 and 0x10 offsets into the resolver frame have no citation or derivation in the packet. The null checks at line 52 only test the pointers that were read, not whether the offsets are right.",
+   "file": "patch_manager_mods/npc_diversity_src/NpcDiversityDispatcher.cpp",
+   "lines": "49-50",
+   "local_id": "f2",
+   "severity": "high",
+   "source": "both",
+   "suggested_investigation": "Compare the stolen-bytes window and the register or stack layout at the CSWCCreatureAppearance::GetBTypeModelAndTextureResRef hook site in the vanilla disassembly. Confirm that frame+0x08 holds the AppearanceDesc* and frame+0x10 holds the ResRef* for that exact call.",
+   "why_it_matters": "If the offsets are wrong, the hook reads and writes unrelated memory in the game process, which can corrupt state or crash."
+  },
+  {
+   "candidate_id": "S-502dab0a35",
+   "category": "logic",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "medium",
+   "evidence": "`const char* tagStr = *reinterpret_cast<const char* const*>(static_cast<const char*>(pCreature) + 0x18);` and `uint32_t tagLen = *reinterpret_cast<const uint32_t*>(static_cast<const char*>(pCreature) + 0x1C);` followed by `if (tagStr && tagLen > 0 && NpcDiversity::IsExcludedFromDiversification(tagStr)) { return; }`. The exclusion for companions and story NPCs only runs when the length field at +0x1C is non-zero. The offsets are not sourced in the packet.",
+   "file": "patch_manager_mods/npc_diversity_src/NpcDiversityDispatcher.cpp",
+   "lines": "89-94",
+   "local_id": "f3",
+   "severity": "high",
+   "source": "both",
+   "suggested_investigation": "Verify the creature tag pointer and length offsets against the vanilla CSWCCreature layout. Check whether tagLen is ever 0 for Atton, Kreia or HK-47 at runtime. Consider whether the tagLen > 0 condition is needed at all, since IsExcludedFromDiversification already handles a null string.",
+   "why_it_matters": "If the length offset is wrong or the field is 0 for named NPCs, the companion and story-NPC exclusion is skipped without any error, and those characters get remapped appearances."
+  },
+  {
+   "candidate_id": "S-d298e83cf4",
+   "category": "memory-safety",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "low",
+   "evidence": "`float x = *(const float*)((const char*)pCreature + 0x24);`, `float y = *(const float*)((const char*)pCreature + 0x28);`, `uint32_t objectId = *(const uint32_t*)((const char*)pCreature + 0x04);`. These creature field offsets are hardcoded with no source in the packet.",
+   "file": "patch_manager_mods/npc_diversity_src/NpcDiversityDispatcher.cpp",
+   "lines": "97-99",
+   "local_id": "f4",
+   "severity": "medium",
+   "source": "both",
+   "suggested_investigation": "Check the x, y and objectId offsets against the vanilla creature object layout (for example, the position getter or the objectId member). Confirm that they are float and uint32 at those offsets on the 32-bit build.",
+   "why_it_matters": "If the offsets are wrong, the position and objectId hash inputs are garbage. The remap then looks deterministic but is wrong, and an unexpected offset could read past the object."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "medium",
+   "evidence": "`// Test ranges` followed by `case 300: case 301: ... case 310:` in IsGenericMaleCommoner, and similar `// Test ranges` blocks at 350-360, 500-510 and 550-560 in the other predicates. The appended rows in DiversityRows.h:13-22 start at 802, which implies that the vanilla appearance.2da rows are below 802. Rows 300-310 and the other test ranges therefore fall inside the vanilla range.",
+   "file": "patch_manager_mods/npc_diversity_src/DiversityLogic.h",
+   "lines": "164-168",
+   "local_id": "f5",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Open the vanilla appearance.2da and check what rows 300-310, 350-360, 500-510 and 550-560 are. Remove or justify any of these that map to non-commoner or story NPCs. Check whether the test ranges are needed in the shipped build at all.",
+   "why_it_matters": "If these row numbers are real vanilla appearances, RemapAppearance changes the look of ordinary NPCs that were never meant to be diversified, and that happens outside the intended commoner set."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "low",
+   "evidence": "`StartsWithCaseInsensitive(p, \"mira\") ||` ... `StartsWithCaseInsensitive(p, \"visas\") ||` ... `StartsWithCaseInsensitive(p, \"player\")`, and in the story-NPC block `\"moza\"`, `\"ralon\"`, `\"geeda\"`. The check is a prefix match with no word boundary, so any tag that starts with one of these letter sequences is excluded.",
+   "file": "patch_manager_mods/npc_diversity_src/DiversityLogic.h",
+   "lines": "43-59",
+   "local_id": "f6",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "List the vanilla creature tags that start with each exclusion prefix (for example mira, moza, visas, luxa) and check whether any ordinary NPC is excluded. Consider exact-match or a stricter boundary test.",
+   "why_it_matters": "Ordinary NPCs whose tags happen to begin with a companion or story name are silently excluded from diversification, and this can be hard to notice in play."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "low",
+   "evidence": "`if (pDesc->bodyClass != 0) return;` followed by the texture copy and `ShouldDiversifyTexture(curTex, hash, newTex, sizeof(newTex))` at line 74. OverrideNpcTexture never calls IsExcludedFromDiversification. That check only runs in RemapNpcAppearance (line 92).",
+   "file": "patch_manager_mods/npc_diversity_src/NpcDiversityDispatcher.cpp",
+   "lines": "57-62",
+   "local_id": "f7",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check whether any excluded companion or story NPC uses an N_CommF or N_CommM texture with bodyClass 0. If so, apply the same exclusion to the texture path or document why it is safe.",
+   "why_it_matters": "A companion or story NPC that wears bodyClass 0 clothing with an N_Comm texture would have its texture swapped even though it is excluded from appearance remapping. The two paths would then disagree."
+  },
+  {
+   "candidate_id": null,
+   "category": "other",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "low",
+   "evidence": "`std::snprintf(outTex, outSize, \"N_CommF%02d\", slot);` for female and `std::snprintf(outTex, outSize, \"N_CommM%02d\", slot);` for male, with slot in [1, 35]. The Known facts list shows only N_CommF override assets, and that list is cut off before any N_CommM entries appear.",
+   "file": "patch_manager_mods/npc_diversity_src/DiversityLogic.h",
+   "lines": "156-158",
+   "local_id": "f8",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "List patch_manager_mods/npc_diversity_src/override/ and confirm that N_CommM01 to N_CommM35 and N_CommF01 to N_CommF35 all exist. Check the generator script's output for the same names.",
+   "why_it_matters": "If any N_CommM01 to N_CommM35 or N_CommF slot is missing from the override folder, male or female NPCs get a missing or fallback texture for part of their hash range."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "low",
+   "evidence": "`uint16_t newApp = NpcDiversity::RemapAppearance(pDesc->appearance, hash);` followed by `if (newApp != pDesc->appearance) { pDesc->appearance = newApp; }`. The hook writes the new appearance into the AppearanceDesc it was given, in place.",
+   "file": "patch_manager_mods/npc_diversity_src/NpcDiversityDispatcher.cpp",
+   "lines": "101-105",
+   "local_id": "f9",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check the caller of RemapNpcAppearance and whether the AppearanceDesc is per creature or pooled. If it is shared, consider computing the remapped value into a local or per-creature copy instead of writing it back.",
+   "why_it_matters": "If that descriptor is shared or cached across creatures, one creature's hash changes the appearance for every creature that uses it, and the change can persist into later loads or saves."
+  }
+ ],
+ "no_issue_files": [
+  "patch_manager_mods/npc_diversity_src/DiversityRows.h"
+ ],
+ "notes": "Packet was reviewed from the inline content only; I made no tool calls. The hooks TOML for this mod, exports.def and common_contract_test.cpp are not in the packet, so the hook spans, stolen bytes, Steam/GOG parity and the export names could not be verified. Checker facts show check_hook_bytes and check_hook_spans with no mention of this mod, and no recorded gate run names it. That is a gate-coverage gap, not a code defect, so it is not listed as a finding. Binary .tpc assets were not read. The known-facts list is truncated, so the existence of N_CommM assets and the full N_CommF range are unconfirmed (f8). The scanner candidates S-397c3dd073 (line 50), S-673c634fa7 (line 91), S-9390d22394 (line 98) and S-c3bf42d12e (line 99) are covered by the same unsourced-offset concern as f2 to f4 but were not confirmed separately. DiversityRows.h matches the appended-row values used in DiversityLogic.h, and the row numbers are internally consistent (802 to 815).",
+ "packet_id": "wp5-001",
+ "truncated": false
+}

@@ -1,0 +1,177 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.0059203599999999995,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 7846,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 7846,
+   "cache_read_input_tokens": 7796,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 2,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 7846,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 7846,
+     "cache_read_input_tokens": 7796,
+     "input_tokens": 2,
+     "output_tokens": 8546,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 8546,
+   "output_tokens_details": {
+    "thinking_tokens": 5061
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "scripts/shadow_replay.py"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "Synthetic cases are labelled as the baseline: \"baseline_engine\": \"clef-flash (synthetic)\", \"baseline_role\": expected_role (a hand-written label from test_benchmarks). Transcript cases (lines 169-170) use \"transcript (real)\" with baseline_role set by a keyword heuristic, not a clef-flash output. Yet the report at lines 225-226, 232 and 306-307 is headed 'clef-flash' and prints 'Top-1 Agreement (Kev-4B vs clef-flash)'.",
+   "file": "scripts/shadow_replay.py",
+   "lines": "120-126",
+   "local_id": "f1",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Run the script with --source transcripts and inspect the case dicts (--export to a temp dir) to confirm baseline_engine is not clef-flash. Then check that the summary header and metric labels name the actual baseline source per case.",
+   "why_it_matters": "The printed agreement numbers claim to measure agreement with clef-flash, but for the default --source transcripts run (line 198/197) the 'baseline' is a keyword guess. A reader could take the metric as evidence that a model matches the production router when it only matches the heuristic."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "\"baseline_latency_ms\": 160.0 is hardcoded for synthetic cases (line 125), and the transcript path does the same (line 173). Line 301 averages these into avg_base_lat, and lines 310-312 print \"Kev-0.8B Speedup over clef-flash: {speedup:.1f}x faster\" from avg_base_lat / avg_08b_lat.",
+   "file": "scripts/shadow_replay.py",
+   "lines": "125-126",
+   "local_id": "f2",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check whether any case in the run carries a measured latency_ms (ledger source, lines 97 and 173). Compute the speedup only over cases with a measured baseline latency, and omit the line when there are none.",
+   "why_it_matters": "The speedup figure divides a measured 0.8B latency by a constant 160 ms that was never measured for the baseline. For transcript and synthetic cases the 'clef-flash' latency is invented, so the speedup claim has no measured basis. The wording 'x faster' is also misleading when the ratio is below 1."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "expected_role = \"code\" if any(w in p_lower for w in [\"fix\", \"implement\", \"tweak\", \"replace\", \"add\"]) else \"review\"",
+   "file": "scripts/shadow_replay.py",
+   "lines": "165",
+   "local_id": "f3",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Count how many transcript prompts that contain 'address' or 'prefix' get role 'code'. Switch to word-boundary matching (for example a regex with \\b) and compare the agreement numbers before and after.",
+   "why_it_matters": "The keyword test is a raw substring match on the lowercased prompt, so 'add' matches 'address', 'padding', and 'ladder', and 'fix' matches 'prefix' and 'suffix'. Mislabelled baseline roles shift the agreement percentages (lines 297-298) for the default transcript source. The labels are inputs to the metric, so this affects the result."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "except Exception as e: elapsed_ms = ...; return None, elapsed_ms. Then lines 274-275 call parse_answer(...) when res is None, which returns (\"unknown\", 0.0, 1.0), and lines 297-298 count every zip pair, including 'unknown', against total = len(cases).",
+   "file": "scripts/shadow_replay.py",
+   "lines": "62-68",
+   "local_id": "f4",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Run with KEV_4B_URL pointed at a closed port and check the summary line for Kev-4B vs clef-flash. Then decide whether to exclude unavailable cases from the denominator and report a separate availability count.",
+   "why_it_matters": "An endpoint that is down, times out, or returns a non-JSON body is recorded as a role disagreement rather than excluded. The top-1 percentages therefore fall with endpoint availability, not with model quality. The run still exits 0 with all rows showing OFF, so an operator can misread the summary."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "When the live call fails, the code loads .claude/kev_4b_benchmark.json and sets res_4b = {\"answers\": {\"role\": c_entry}}, lat_4b = c_entry.get(\"latency_ms\", 185.0). Lines 288 and 291 then print lat_4b as the live '4B ms' value, and line 282 adds it to kev4b_lats.",
+   "file": "scripts/shadow_replay.py",
+   "lines": "259-267",
+   "local_id": "f5",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Run with the 4B endpoint down and a cache file present. Check whether the table and the mean latency distinguish cached rows. Add a source marker per row or keep cached rows out of the live latency list.",
+   "why_it_matters": "Cached benchmark answers and latencies from an earlier run are shown and averaged as if they were live results. The 'Kev-4B' column and the 'Mean Latency' figure can therefore reflect stale data with no marker, and the fallback default of 185.0 is also an unmeasured constant."
+  },
+  {
+   "candidate_id": null,
+   "category": "bug",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "medium",
+   "evidence": "\"baseline_role\": rec.get(\"decision\") or rec.get(\"clef_output\", {}).get(\"role\"), and the same pattern on lines 95-96. These run outside the try at lines 81-84. A record with \"clef_output\": null, or a non-dict clef_output, raises AttributeError.",
+   "file": "scripts/shadow_replay.py",
+   "lines": "91-98",
+   "local_id": "f6",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check the ledger for CLEF_ROUTE lines where clef_output is null or missing and decision is empty. Confirm whether the crash reproduces, then guard the field access with an isinstance check.",
+   "why_it_matters": "One malformed CLEF_ROUTE record in master_ledger.jsonl aborts extract_evaluation_cases, and main() does not catch it, so the whole --source ledger/both run crashes. Whether such records exist depends on the ledger, which I did not read."
+  },
+  {
+   "candidate_id": null,
+   "category": "bug",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "for t in brain_transcripts: try: ... for line in f: rec = json.loads(line) ... content = rec.get(\"content\", \"\").strip() ... except Exception: pass (lines 178-179)",
+   "file": "scripts/shadow_replay.py",
+   "lines": "145-179",
+   "local_id": "f7",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Log the file path and exception in the except block, and move the try inside the per-line loop so one bad line does not drop the rest of the file. Compare the case count before and after on the same transcripts.",
+   "why_it_matters": "The broad except inside the per-file loop discards the rest of a transcript file on the first malformed line or non-string content. Extraction then silently returns fewer cases with no warning. This hides data loss and makes the case count hard to interpret."
+  },
+  {
+   "candidate_id": null,
+   "category": "style-risk",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "medium",
+   "evidence": "# Strict PII redaction / p = re.sub(r\"[\\w\\.-]+@[\\w\\.-]+\\.\\w+\", \"[EMAIL]\", p) / p = re.sub(r\"password[:\\s=]+[^\\s]+\", \"[REDACTED]\", p, flags=re.I)",
+   "file": "scripts/shadow_replay.py",
+   "lines": "157-159",
+   "local_id": "f8",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Confirm which secret-like strings appear in exported transcript cases. Either narrow the comment to what is redacted or extend the redaction. Decide whether --export should be restricted to a known directory.",
+   "why_it_matters": "The comment says 'Strict PII redaction', but only email addresses and 'password' assignments are scrubbed. Tokens, API keys, and other secrets in user prompts are not redacted. With --export (lines 213-218) those prompts are written to an arbitrary file path."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Single-file packet, reviewed from the whole-file content in the packet; no tool calls used. The script only sends prompts to loopback ports by default (lines 24-25). If KEV_4B_URL or KEV_08B_URL is overridden to a remote host, transcript prompts would leave the machine; this is configuration-dependent and not reported as a finding. Line 107 hardcodes a GameAddr (0x005bda40) inside a benchmark prompt string. It is not used as code or an allowlist entry, so I did not flag it. I did not read .claude/master_ledger.jsonl or .claude/kev_4b_benchmark.json (outside the packet), so f6 and the cache-format assumptions in f5 are unverified. No gate or test is affected: this is a benchmark script, not a gate, so the exit-code concern does not apply.",
+ "packet_id": "wp7-018",
+ "truncated": false
+}

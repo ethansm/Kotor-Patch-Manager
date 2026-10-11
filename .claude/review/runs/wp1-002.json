@@ -1,0 +1,76 @@
+{
+ "attempts": 1,
+ "cost_usd": 0.00839495,
+ "duration_s": 45.0,
+ "ended": "2026-10-10T09:04:05Z",
+ "exit_code": 0,
+ "files": [
+  "scripts/abi_check.py",
+  "scripts/test_abi_check.py"
+ ],
+ "first_turn_prompt_tokens": 18391,
+ "num_turns": 3,
+ "packet_id": "wp1-002",
+ "prompt_bytes": 24301,
+ "rate_limit_hits": 0,
+ "raw": "raw/wp1-002.a1.out",
+ "result_subtype": "success",
+ "schema_errors": [],
+ "schema_valid": true,
+ "started": "2026-10-10T09:03:20Z",
+ "status": "ok",
+ "truncated": false,
+ "turn_prompt_tokens": [
+  18391,
+  24994
+ ],
+ "turn_usage": [
+  {
+   "cache_creation_input_tokens": 10593,
+   "cache_read_input_tokens": 7796,
+   "input_tokens": 2,
+   "output_tokens": 9
+  },
+  {
+   "cache_creation_input_tokens": 6603,
+   "cache_read_input_tokens": 18389,
+   "input_tokens": 2,
+   "output_tokens": 5
+  }
+ ],
+ "turns_over_100k": 0,
+ "usage": {
+  "cache_creation": {
+   "ephemeral_1h_input_tokens": 17196,
+   "ephemeral_5m_input_tokens": 0
+  },
+  "cache_creation_input_tokens": 17196,
+  "cache_read_input_tokens": 26185,
+  "fallback_credit": null,
+  "inference_geo": "global",
+  "input_tokens": 4,
+  "iterations": [
+   {
+    "cache_creation": {
+     "ephemeral_1h_input_tokens": 6603,
+     "ephemeral_5m_input_tokens": 0
+    },
+    "cache_creation_input_tokens": 6603,
+    "cache_read_input_tokens": 18389,
+    "input_tokens": 2,
+    "output_tokens": 2966,
+    "type": "message"
+   }
+  ],
+  "output_tokens": 9387,
+  "output_tokens_details": {
+   "thinking_tokens": 6439
+  },
+  "server_tool_use": {
+   "web_fetch_requests": 0,
+   "web_search_requests": 0
+  },
+  "service_tier": "standard",
+  "speed": "standard"
+ }
+}

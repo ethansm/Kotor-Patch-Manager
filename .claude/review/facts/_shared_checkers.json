@@ -1,0 +1,21 @@
+{
+ "check_hook_bytes": {
+  "lines": [
+   "WARN stale-kpatch: BuffDurationHUD.kpatch: embedded kotor2-gog-aspyr.hooks.toml holds 3 hooks, source 3 (3 only in the .kpatch, 3 only in source)",
+   "WARN stale-kpatch: HudHost.kpatch: embedded kotor2-gog-aspyr.hooks.toml holds 3 hooks, source 3 (3 only in the .kpatch, 3 only in source)",
+   "WARN stale-kpatch: LevelUpOverride.kpatch: manifest version '1.5.0-dev' != source '1.6.0-dev'",
+   "WARN stale-kpatch: NpcDiversity.kpatch: embedded kotor2-gog-aspyr.hooks.toml holds 2 hooks, source 2 (2 only in the .kpatch, 2 only in source)",
+   "WARN stale-kpatch: PortraitSlots.kpatch: embedded kotor2-gog-aspyr.hooks.toml holds 3 hooks, source 3 (3 only in the .kpatch, 3 only in source)",
+   "WARN stale-kpatch: QueueHud.kpatch: embedded kotor2-steam-aspyr.hooks.toml holds 1 hooks, source 2 (0 only in the .kpatch, 1 only in source)",
+   "WARN stale-kpatch: ShieldBar.kpatch: embedded kotor2-gog-aspyr.hooks.toml holds 1 hooks, source 1 (1 only in the .kpatch, 1 only in source)",
+   "check_hook_bytes: FAIL=0 WARN=7 INFO=25 PASS=240 SKIP=4"
+  ],
+  "rc": 0
+ },
+ "check_hook_spans": {
+  "lines": [
+   "check_hook_spans: FAIL=0 WARN=0 INFO=5 PASS=1 SKIP=1"
+  ],
+  "rc": 0
+ }
+}

@@ -1,0 +1,66 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.0036964599999999995,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 9156,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 9156,
+   "cache_read_input_tokens": 34166,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 6,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 1047,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 1047,
+     "cache_read_input_tokens": 15905,
+     "input_tokens": 2,
+     "output_tokens": 1767,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 3046,
+   "output_tokens_details": {
+    "thinking_tokens": 1698
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "scripts/kotor2_logs.py",
+  "scripts/selfheal_log_check.py"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "medium",
+   "evidence": "check() forwards every extra argument unchanged: `argv = argv + list(extra)` (line 228) for the selfheal route, while CHECK_USAGE (lines 235-240) documents log_triage-only flags such as --new, --no-advance, --all-launches and --launch N. selfheal_log_check.py main() (lines 305-310) defines only a positional log_pos plus --log, --from and --to, so passing a documented triage flag to the selfheal route makes argparse fail with exit 2.",
+   "file": "scripts/kotor2_logs.py",
+   "lines": "213-232",
+   "local_id": "f1",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Run `kotor2_logs.py check companion-selfheal --new` against a sample log and confirm the argparse error and exit code 2. Then decide whether check() should reject or strip triage-only flags for non-triage routes, or whether the usage text should say which flags apply to which route. Compare with how the engfix and luo routes already handle extra args.",
+   "why_it_matters": "The dispatcher is meant to be the single entry point agents use. A triage flag typed against the companion-selfheal log gives an argparse error rather than the documented behaviour. It fails loudly (non-zero exit, not silent), so the impact is usability, not correctness."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "The packet's logic checks out. ROUTES and route() entries for selfheal match the callee's path-based interface: selfheal_log_check.py accepts a positional log path (line 306), and the file exists at scripts/selfheal_log_check.py. The companion-selfheal_log.txt name passes is_live_log (no archive marker matches). ALIASES are resolved before the existence check in check(), and the resolved name is passed to route(), so the alias path is consistent. One minor inconsistency: route() called directly with the bare alias \"selfheal\" falls through to log_triage, because aliases are only resolved in check(). Nothing in the packet calls route() that way, so I did not file it. The unrelated \"--game-dir\" passthrough in the dispatcher and the playlogs/status code paths were not in the hunks, so I did not assess them.",
+ "packet_id": "wp7-013",
+ "truncated": false
+}

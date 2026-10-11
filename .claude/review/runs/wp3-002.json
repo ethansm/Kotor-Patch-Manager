@@ -1,0 +1,68 @@
+{
+ "attempts": 1,
+ "cost_usd": 0.009800060000000001,
+ "duration_s": 53.0,
+ "ended": "2026-10-10T09:06:37Z",
+ "exit_code": 0,
+ "files": [
+  "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp"
+ ],
+ "first_turn_prompt_tokens": 28080,
+ "num_turns": 2,
+ "packet_id": "wp3-002",
+ "prompt_bytes": 39562,
+ "rate_limit_hits": 0,
+ "raw": "raw/wp3-002.a1.out",
+ "result_subtype": "success",
+ "schema_errors": [],
+ "schema_valid": true,
+ "started": "2026-10-10T09:05:43Z",
+ "status": "ok",
+ "truncated": false,
+ "turn_prompt_tokens": [
+  28080
+ ],
+ "turn_usage": [
+  {
+   "cache_creation_input_tokens": 20282,
+   "cache_read_input_tokens": 7796,
+   "input_tokens": 2,
+   "output_tokens": 2
+  }
+ ],
+ "turns_over_100k": 0,
+ "usage": {
+  "cache_creation": {
+   "ephemeral_1h_input_tokens": 20282,
+   "ephemeral_5m_input_tokens": 0
+  },
+  "cache_creation_input_tokens": 20282,
+  "cache_read_input_tokens": 7796,
+  "fallback_credit": null,
+  "inference_geo": "global",
+  "input_tokens": 2,
+  "iterations": [
+   {
+    "cache_creation": {
+     "ephemeral_1h_input_tokens": 20282,
+     "ephemeral_5m_input_tokens": 0
+    },
+    "cache_creation_input_tokens": 20282,
+    "cache_read_input_tokens": 7796,
+    "input_tokens": 2,
+    "output_tokens": 11331,
+    "type": "message"
+   }
+  ],
+  "output_tokens": 11331,
+  "output_tokens_details": {
+   "thinking_tokens": 7315
+  },
+  "server_tool_use": {
+   "web_fetch_requests": 0,
+   "web_search_requests": 0
+  },
+  "service_tier": "standard",
+  "speed": "standard"
+ }
+}

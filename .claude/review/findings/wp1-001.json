@@ -1,0 +1,147 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.0062169600000000005,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 9879,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 9879,
+   "cache_read_input_tokens": 7796,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 2,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 9879,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 9879,
+     "cache_read_input_tokens": 7796,
+     "input_tokens": 2,
+     "output_tokens": 8326,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 8326,
+   "output_tokens_details": {
+    "thinking_tokens": 5479
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "AGENTS.md",
+  "CLAUDE.md"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "b5b5aba",
+    "3d1c2b9",
+    "e5d32e1",
+    "392f13a",
+    "8395275"
+   ],
+   "confidence": "medium",
+   "evidence": "Line 14 (unchanged context): \"Ask the user for GO before `kpm_hotswap.py --apply` (game closed).\" Line 76 (added): \"The orchestrator MUST run the full plan/review/build delegation chain to completion in a single turn without pausing midway to ask the human for approval. The human ADHD rules apply ONLY to the final user-facing response.\" Line 23 (unchanged): \"Never post comments, create issues, or submit PRs without the user's explicit, conversational approval in chat.\"",
+   "file": "AGENTS.md",
+   "lines": "14-14",
+   "local_id": "f1",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Compare AGENTS.md line 76 against lines 14 and 23 and decide whether the exemption should exclude kpm_hotswap.py --apply and GitHub posting. Check whether any orchestrator or delegate tooling (scripts/plan_manager.py delegate, oc-flow) reads this text and skips the GO prompt. Verify by checking that scripts/kpm_hotswap.py --apply still requires interactive confirmation.",
+   "why_it_matters": "The new exemption tells orchestrating agents not to pause for human approval, with no carve-out for the install/apply step or outward-facing actions. Read literally or by an agent that treats it as the governing rule, it can override the explicit GO requirement before --apply (live game install) and the approval requirement for GitHub actions. This weakens a human safety check that the rest of the file keeps."
+  },
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "e5d32e1",
+    "392f13a"
+   ],
+   "confidence": "medium",
+   "evidence": "CLAUDE.md contains no mention of pre_install_gate.sh, \"GATE PASS\", the Gate Invariant, or the \"ask for GO before --apply\" rule. The KPM install route on line 5 only says: \"KPM install, DLL hot-swap, staging ... \u2192 `kotor2-kpm-install` skill (reference: `patch_manager_mods/BUILD_AND_INSTALL.md`)\". Those rules appear only in AGENTS.md lines 6-14.",
+   "file": "CLAUDE.md",
+   "lines": "3-8",
+   "local_id": "f2",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Confirm that the kotor2-kpm-install skill file (not in this packet) restates the gate invariant and the GO-before-apply rule. If it does not, add the rule to CLAUDE.md or add a pointer to AGENTS.md. Check whether the packet's commits 392f13a and e5d32e1 removed any gate text from CLAUDE.md.",
+   "why_it_matters": "CLAUDE.md is the file Claude Code loads. If the Gate Invariant (a failure is a hard stop; rebuilt .kpatch needs a fresh PASS) and the GO requirement live only in AGENTS.md, a Claude Code session may not see them and may apply a hot-swap without a fresh gate PASS."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "b5b5aba",
+    "3d1c2b9",
+    "e5d32e1",
+    "392f13a",
+    "8395275"
+   ],
+   "confidence": "high",
+   "evidence": "The removed text (old lines o36-o41) said: \"Switch to built-in plan mode so the user can select 'Clear context and approve (bypass mode)'. Do NOT prematurely exit plan mode with `ExitPlanMode` when waiting for context-clear approval.\" Lines 45-55 of the new section contain no plan-mode or ExitPlanMode instruction. CLAUDE.md line 8 still has the \"do NOT ExitPlanMode early\" rule.",
+   "file": "AGENTS.md",
+   "lines": "45-55",
+   "local_id": "f3",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check whether AGENTS.md is read by any agent that does not also load CLAUDE.md. If so, restore the plan-mode approval rule in the Context Management section of AGENTS.md.",
+   "why_it_matters": "A process guardrail was dropped from AGENTS.md during the rewrite. Agents that read only AGENTS.md could exit plan mode before the user approves a plan, which bypasses a human checkpoint. Risk is limited because CLAUDE.md keeps the rule."
+  },
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "b5b5aba",
+    "3d1c2b9",
+    "e5d32e1",
+    "392f13a",
+    "8395275"
+   ],
+   "confidence": "low",
+   "evidence": "Line 91: \"**Scoped Test Execution:** NEVER run bare `python3 scripts/run_tests.py` without a filter. Bare runs execute all 156 repository suites (>60s, background detach). Always scope test runs to the active feature (e.g. `python3 scripts/run_tests.py <name|filter>` or `-k <filter>`).\" Line 7 requires re-verification after every edit, and line 9 requires a fresh pre_install_gate.sh PASS.",
+   "file": "AGENTS.md",
+   "lines": "91-91",
+   "local_id": "f4",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Read scripts/run_tests.py selection logic (the filter path and -k handling) and confirm that pre_install_gate.sh always runs the full suite set regardless of any filter. Confirm the file text makes clear that a filtered run is not a gate PASS. The hard-coded suite count '156' may also go stale.",
+   "why_it_matters": "The policy steers agents toward filtered test runs, which can be read as the verification step. A filtered run that drops suites would then count as verification. The full gate should stay the only pass/fail source for install. Whether the filter silently drops suites cannot be checked from the packet."
+  },
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "b5b5aba",
+    "3d1c2b9",
+    "e5d32e1",
+    "392f13a",
+    "8395275"
+   ],
+   "confidence": "low",
+   "evidence": "Line 92: \"**Execute CLI Prompts Directly:** If the user's prompt begins with or consists of a console command (e.g. `python3 scripts/...`, ... `python3 scripts/plan_manager.py delegate ...`), immediately execute it via `run_command` on turn 1 without asking for confirmation or explaining the command.\"",
+   "file": "AGENTS.md",
+   "lines": "92-92",
+   "local_id": "f5",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Decide whether the direct-execution rule should exclude install and apply commands (kpm_hotswap.py --apply, pre_install_gate.sh bypass flags). Check whether any script named in the rule has a side effect on the live game directory.",
+   "why_it_matters": "The rule removes the confirmation step for any script invocation that begins a prompt, which could include kpm_hotswap.py --apply. The user did type the command, so this is likely intended, but the rule is not limited to read-only or gate commands, and it sits next to the GO requirement on line 14."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Both files were provided in full in the packet, so no tool calls were needed (0 of 12 used). Not verified because they sit outside the packet's allowed reads: the semantics of `pre_install_gate.sh --skip-default` (line 6), the selection logic in `run_tests.py` (line 91), and whether `kpm_hotswap.py --apply` still requires interactive confirmation. The kotor2-kpm-install skill file, which may restate the gate rules, was also not read. No secrets or credential paths were touched. The Ghidra credential policy text is unchanged and looks sound. The new text on lines 6-11 (Gate Invariant, fresh PASS after --prepare, re-verify after each edit) strengthens the gate rules and needs no finding.",
+ "packet_id": "wp1-001",
+ "truncated": false
+}

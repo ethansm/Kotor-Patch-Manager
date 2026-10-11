@@ -1,0 +1,70 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00185306,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 2557,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 2557,
+   "cache_read_input_tokens": 7796,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 2,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 2557,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 2557,
+     "cache_read_input_tokens": 7796,
+     "input_tokens": 2,
+     "output_tokens": 2527,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 2527,
+   "output_tokens_details": {
+    "thinking_tokens": 1361
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/gui_input_src/kotor2-steam-aspyr.hooks.toml",
+  "patch_manager_mods/gui_input_src/manifest.toml",
+  "patch_manager_mods/gui_input_src/test.toml"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "style-risk",
+   "commits": [
+    "15c9bfd"
+   ],
+   "confidence": "high",
+   "evidence": "Line 1: cxxflags = [\"-I../_shared_src\", \"-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common\", \"-Werror\"]; line 4 repeats the same $HOME/Games/KOTOR2_Mod_Workspace path under [common_contract_test].",
+   "file": "patch_manager_mods/gui_input_src/test.toml",
+   "lines": "1-4",
+   "local_id": "f1",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check whether the patch build tool performs environment-variable expansion on cxxflags entries (search its flag-processing code for the cxxflags reader). Then run the common_contract_test build with HOME pointed at a different directory, or on a clean checkout without the Games/ workspace, and confirm whether the -I path resolves. Compare against the other mods' test.toml files to see whether they use a repo-relative Common path instead.",
+   "why_it_matters": "The include path is hard-wired to one developer's workspace layout under $HOME. TOML does not expand $HOME, so unless the build tool expands it, the include silently points at a nonexistent directory on any other machine and the contract test fails to compile. Even where it expands, the path bypasses the repo's standard -I Common / -I../_shared_src include style, and the Common location is outside this repository."
+  }
+ ],
+ "no_issue_files": [
+  "patch_manager_mods/gui_input_src/kotor2-steam-aspyr.hooks.toml",
+  "patch_manager_mods/gui_input_src/manifest.toml"
+ ],
+ "notes": "Scanner candidates S-3738fd628f, S-c71e8257d8 and S-ddfebfa63f all point at ordinary TOML structure in kotor2-steam-aspyr.hooks.toml (the [metadata] table, target_versions, and hooks = []). They are harmless and were not confirmed. The hooks file has no detours, so there are no calling-convention, stolen-byte or relocation concerns. Possible parity gap, not raised as a finding: manifest.toml lists a GOG hash (777BEE...) in supported_versions, but no kotor2-gog-aspyr.hooks.toml exists in this packet. The hooks file's first-line comment states the reason (DLL-only, no engine hooks), so the gap is covered by a stated reason. Known facts report build_check PASS/INFO with rc 0 and run_tests PASS with rc 0 on a scratch copy, which is provisional and does not exercise the $HOME include path. No tool calls were made; the packet's own content was sufficient.",
+ "packet_id": "wp4-008",
+ "truncated": false
+}

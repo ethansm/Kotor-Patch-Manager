@@ -1,0 +1,113 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.0029589600000000005,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 4144,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 4144,
+   "cache_read_input_tokens": 7796,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 2,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 4144,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 4144,
+     "cache_read_input_tokens": 7796,
+     "input_tokens": 2,
+     "output_tokens": 4104,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 4104,
+   "output_tokens_details": {
+    "thinking_tokens": 2166
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "scripts/gpu_mode.py"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "bug",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "`rc, out = run_cmd([lms_bin, \"load\", target_model], timeout=30.0)` followed by `if rc != 0: print(f\"[gpu-mode] Warning during lms load: {out}\", file=sys.stderr)` and then `cmd_status()` / `return 0`. A failed model load is reported only as a warning and the process exits 0 via `sys.exit(cmd_lms(args.model))` at line 179.",
+   "file": "scripts/gpu_mode.py",
+   "lines": "138-143",
+   "local_id": "f1",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Run `gpu-mode lms <bad-id>` with a non-existent identifier and check `echo $?`. Confirm whether the return value of cmd_lms is ever checked by a wrapper or hook that calls gpu-mode.",
+   "why_it_matters": "Any caller or script that runs `gpu-mode lms` cannot detect that the model failed to load (for example a timeout after 30s or a bad identifier). The profile switch appears successful."
+  },
+  {
+   "candidate_id": null,
+   "category": "bug",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "After the 25-iteration health loop: `print(\"[gpu-mode] Warning: Service started but port 8101 not yet responding.\", file=sys.stderr)` then `cmd_status()` and `return 0`. The `kev` path exits 0 even when the daemon never answered.",
+   "file": "scripts/gpu_mode.py",
+   "lines": "123-125",
+   "local_id": "f2",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Stop the router, or point KEV_HEALTH_URL at a closed port, run `gpu-mode kev`, and check the exit status. Decide whether a non-zero code is wanted on this path.",
+   "why_it_matters": "The same exit-code masking as cmd_lms: the kev/clef profile reports success when the router is not serving on port 8101, so automation cannot detect a broken daemon."
+  },
+  {
+   "candidate_id": null,
+   "category": "bug",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "`run_cmd([lms_bin, \"unload\", \"-a\"])` at line 152 has its return value discarded. `get_gpu_memory_mb()` returns `(0, 0)` on any failure (lines 46-53), and cmd_game then prints `f\"[gpu-mode] OK: VRAM ready. {free_mb} MiB VRAM free for KOTOR II / games.\"` at line 163 and returns 0. The 0.5 s sleep at line 160 is also the only wait for VRAM to be released after an unload.",
+   "file": "scripts/gpu_mode.py",
+   "lines": "146-164",
+   "local_id": "f3",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Simulate a missing or failing nvidia-smi (for example run with PATH lacking nvidia-smi) and run `gpu-mode game`. Check whether the output says OK with 0 MiB. Also check whether the 0.5 s sleep is enough for VRAM to drop after `lms unload -a` on the target hardware.",
+   "why_it_matters": "When the unload fails or nvidia-smi cannot be parsed, the tool still prints 'OK: VRAM ready' with 0 MiB free and exits 0. A user could launch KOTOR II while models still hold VRAM, and the report is misleading."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "medium",
+   "evidence": "`parser.add_argument(\"mode\", choices=[\"status\", \"kev\", \"clef\", \"lms\", \"game\"], ...)` and `elif args.mode in (\"kev\", \"clef\"): sys.exit(cmd_kev())`. The module docstring usage (lines 9-13) lists only status, kev, lms and game.",
+   "file": "scripts/gpu_mode.py",
+   "lines": "169-176",
+   "local_id": "f4",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check whether `clef` is referenced anywhere else in the repo (a grep limited to the scripts directory or a README) and whether it should be removed or documented.",
+   "why_it_matters": "`clef` is an undocumented alias that starts the kev service. It is a leftover or hidden behaviour that a user may not expect, and it is not in the help text or the docstring."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Whole-file review of scripts/gpu_mode.py from the packet content only; no tool calls were needed, so none were used. No scanner candidates were supplied. Checked run_cmd exception handling (nvidia-smi missing and timeouts are caught and returned as rc 1), the urllib health loop (HTTPError and URLError are caught by the broad except), and the lms path lookup. Nothing else looked unsafe. Not verified: whether lms ps output contains header lines beyond \"Loaded Models\"/\"IDENTIFIER\" that would be parsed as model names; the code uses `list[str]` and `str | None` annotations, so it needs Python 3.10 or newer, which was not checked against the target environment.",
+ "packet_id": "wp7-012",
+ "truncated": false
+}

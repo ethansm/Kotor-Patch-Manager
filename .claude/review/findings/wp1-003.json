@@ -1,0 +1,66 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.0028024,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 5262,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 5262,
+   "cache_read_input_tokens": 41170,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 8,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 898,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 898,
+     "cache_read_input_tokens": 12160,
+     "input_tokens": 2,
+     "output_tokens": 1729,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 2675,
+   "output_tokens_details": {
+    "thinking_tokens": 1204
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "scripts/agent_contract.py",
+  "scripts/master_ledger.py"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "test",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "low",
+   "evidence": "`if ml: ml.log_event(\"CONTRACT_CHECK\", {...})` runs on every `main()` check. In scripts/master_ledger.py:181 the test-isolation guard only suppresses the write when `is_test_environment()` is true (MASTER_LEDGER_TEST=1 or PYTEST_CURRENT_TEST set) and no ledger_path or MASTER_LEDGER_PATH is given; otherwise the event is appended to the production ledger at DEFAULT_LEDGER (.claude/master_ledger.jsonl, master_ledger.py:34).",
+   "file": "scripts/agent_contract.py",
+   "lines": "317-323",
+   "local_id": "f1",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check the tests for agent_contract (e.g. tests that call main() or run the script via subprocess) and confirm they run under pytest or set MASTER_LEDGER_TEST=1/MASTER_LEDGER_PATH. Then run the test suite with those variables unset and diff .claude/master_ledger.jsonl before and after to see whether CONTRACT_CHECK lines are appended. Also check whether the `try: import master_ledger` at lines 29-32 resolves to scripts/master_ledger.py when agent_contract is imported from outside scripts/ (sys.path dependent).",
+   "why_it_matters": "Any test or tooling run that drives agent_contract.main() under a runner that does not set PYTEST_CURRENT_TEST or MASTER_LEDGER_TEST will write CONTRACT_CHECK records into the real ledger, polluting the audit trail that the gate/milestone tooling relies on. The new call is unconditional in agent_contract.py, so the isolation depends entirely on the environment of the caller."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "The added ledger hook is non-fatal: master_ledger.log_event never raises (master_ledger.py:161, 191-192), so it cannot change the exit code at line 324 or the PASS/FAIL verdict. The check verdict and return value (lines 305-324) are unchanged, so no gate was weakened. The `except ImportError` at lines 29-32 silently disables logging if the module is missing, which is a fragility rather than a gate weakening. Did not read any test files (not in the packet); the finding in f1 depends on how those tests invoke main(). No secret or credential paths were accessed. Tool calls used: 3 of 12.",
+ "packet_id": "wp1-003",
+ "truncated": false
+}

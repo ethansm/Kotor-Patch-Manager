@@ -1,0 +1,150 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.009176630000000002,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 16977,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 16977,
+   "cache_read_input_tokens": 24883,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 4,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 7686,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 7686,
+     "cache_read_input_tokens": 17087,
+     "input_tokens": 2,
+     "output_tokens": 3557,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 11064,
+   "output_tokens_details": {
+    "thinking_tokens": 4274
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/mouse_probe_src/MouseFixLogic.h",
+  "patch_manager_mods/mouse_probe_src/MouseProbe.cpp",
+  "patch_manager_mods/mouse_probe_src/manifest.toml"
+ ],
+ "findings": [
+  {
+   "candidate_id": "S-80a4163960",
+   "category": "memory-safety",
+   "commits": [
+    "20eafed",
+    "b33db1b"
+   ],
+   "confidence": "high",
+   "evidence": "Lines 183-184: `uintptr_t self = 0;` / `if (!rd(ebp, -0x28, &self)) return;` only checks that the read of the stack slot succeeded, not that `self` is non-null or a valid object. Lines 220-221 then do raw writes: `*reinterpret_cast<float*>(self + 0x408) = fixedNx;` and `*reinterpret_cast<float*>(self + 0x40C) = fixedNy;`. The header comment (lines 2-3) says 'Every hook only reads (through SafeRead) ... it never writes engine memory', which these lines contradict.",
+   "file": "patch_manager_mods/mouse_probe_src/MouseProbe.cpp",
+   "lines": "220-221",
+   "local_id": "f1",
+   "severity": "high",
+   "source": "both",
+   "suggested_investigation": "Confirm what [ebp-0x28] holds at the 0x72F2EC hook site (the object whose +0x408/+0x40C are the normalised deltas). Check whether a null/invalid self is possible at that point. Check whether the write can be done through a validated write helper, and whether the file header and the packet's read-only claims are updated to match the new behaviour.",
+   "why_it_matters": "The probe previously read engine memory only through SafeRead. These unchecked stores into an engine object will crash the game if the slot holds 0 or a stale pointer, and they change engine state from a diagnostic hook. The read-only contract that reviewers rely on is no longer true."
+  },
+  {
+   "candidate_id": "S-a5a8205866",
+   "category": "memory-safety",
+   "commits": [
+    "20eafed",
+    "b33db1b"
+   ],
+   "confidence": "medium",
+   "evidence": "Line 305-306: `if (mousefix::shouldSynthesizeDblClick(id, v == clicklogic::Verdict::MissedDbl, ...)) { *reinterpret_cast<int*>(msgp + 4) = clicklogic::MsgLDbl;`. `msgp` was obtained at line 286 from `[ebp+8]` and only the id at `msgp+4` was read via rd(), with no check that the message struct is writable or owned by the probe. The write mutates the game's input message in place.",
+   "file": "patch_manager_mods/mouse_probe_src/MouseProbe.cpp",
+   "lines": "304-307",
+   "local_id": "f2",
+   "severity": "medium",
+   "source": "both",
+   "suggested_investigation": "Check the OnMouseMessage 0x72E039 call site to see whether the msg struct lives on the stack for that call only, and whether any later code reads the original 0x201. Confirm that the write is not done when the id is not 0x201 and that the rewrite is what the game expects for 0x203 handling. Verify with a Wine run that no double-click is delivered twice.",
+   "why_it_matters": "Rewriting the message id of an engine-owned struct is a state change made from a probe, not a read. If the message struct is shared, const, or reused after the call, the rewrite can alter later dispatch in ways that are hard to attribute. It also breaks the header's read-only promise."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "b33db1b"
+   ],
+   "confidence": "medium",
+   "evidence": "`if (!dragging || !wasDragging) { outNx = 0.0f; outNy = 0.0f; return; }` combined with MouseProbe.cpp lines 186-190 and 220-221, which overwrite the engine's +0x408/+0x40C deltas every frame whenever `g_fixCfg.enabled && g_fixCfg.sanitizeNorm` is true (default 1 at line 139).",
+   "file": "patch_manager_mods/mouse_probe_src/MouseFixLogic.h",
+   "lines": "29-33",
+   "local_id": "f3",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Find what writes and reads this+0x408/+0x40C besides DirectInput mouse (the 0x72F2EC site and its callers). Test in-game with the default config for keyboard or controller camera movement. If other sources use the same fields, the sanitizer should only zero the mouse-derived component.",
+   "why_it_matters": "Outside a drag (`dragging` is `drag != 0 || g_rmbDown`), every frame zeroes the normalised camera deltas the engine uses. If those fields are also fed by keyboard, gamepad or other non-drag camera input, the fix silently disables that input by default. The design note only says it kills spurious pitch lock."
+  },
+  {
+   "candidate_id": null,
+   "category": "other",
+   "commits": [
+    "20eafed",
+    "b33db1b"
+   ],
+   "confidence": "high",
+   "evidence": "Line 1: `// Mouse Probe 0.3.0 -- STRICTLY READ-ONLY diagnostics`, while patch_manager_mods/mouse_probe_src/manifest.toml line 4 now says `version = \"0.4.0\"`. The line 1-3 header also says the code never writes engine memory, and the new 0.4.0 'mouse fix' block (lines 104-146, 182-222) is not described in the 0.3.0 logging notes at lines 5-18.",
+   "file": "patch_manager_mods/mouse_probe_src/MouseProbe.cpp",
+   "lines": "1-3",
+   "local_id": "f4",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Update the header version and the read-only statement to match 0.4.0 and the write behaviour. Grep the mod directory for other '0.3.0' strings and confirm the manifest version is the only source of truth.",
+   "why_it_matters": "Version strings and the documented contract disagree across files, which makes it hard for reviewers and the KPM install metadata to tell what is actually shipped. The stale 'read-only' claim can mislead anyone who relies on it when judging the probe's safety."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "b33db1b"
+   ],
+   "confidence": "medium",
+   "evidence": "`if (curX <= winLeft + margin || curX >= winRight - margin || curY <= winTop + margin || curY >= winBottom - margin)` with `margin` taken unbounded from INI at MouseProbe.cpp lines 144-145 (`if (margin > 0) g_fixCfg.edgeMargin = margin;`).",
+   "file": "patch_manager_mods/mouse_probe_src/MouseFixLogic.h",
+   "lines": "51-53",
+   "local_id": "f5",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Clamp edge_margin in loadFixConfig to a sane range, or compute the bounds in 64-bit. Add a unit test in a host test file for MouseFixLogic.h with a huge margin and a margin larger than half the window.",
+   "why_it_matters": "A large margin (near INT_MAX) overflows `winLeft + margin` as signed int (undefined behaviour). A margin larger than half the window makes the warp trigger on every drag frame, so the cursor is recentred constantly and drag stops working. Neither case is clamped."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "b33db1b"
+   ],
+   "confidence": "low",
+   "evidence": "`const char* ini = \".\\\\mouse_probe.ini\";` with `GetPrivateProfileIntA(\"mouse_fix\", \"enabled\", 1, ini)`, and `FixConfig` defaults at MouseFixLogic.h lines 11-14 set `enabled`, `sanitizeNorm`, `synthDblClk`, `edgeWarp` all to true.",
+   "file": "patch_manager_mods/mouse_probe_src/MouseProbe.cpp",
+   "lines": "137-145",
+   "local_id": "f6",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check how KPM sets the working directory for the injected DLL and whether the game dir is the CWD. Decide whether the defaults should be off outside Wine, and document the chosen default in the manifest description.",
+   "why_it_matters": "The INI path is relative to the process working directory, so the config may not load depending on how KPM launches the game. The fix is also on by default for every install, including native Windows, where the synthesised double-click and edge warp are not needed."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Scanner candidates S-21dc79d86e, S-230f2c42a8, S-2e8e5a1283, S-31454d1cc3 (lines 127-130) are the usual GetProcAddress reinterpret_cast idiom for FARPROC-to-function-pointer. They are harmless; no finding. Candidate S-00d1515f91 (line 221) is the same write as f1; f1 covers both lines 220-221 and confirms S-80a4163960. S-a5a8205866 (line 306) is confirmed as f2. The packet has no test file for MouseFixLogic.h, although the header says it is host-testable; the known run_tests result covers only common_contract_test.cpp. The packet also includes no hooks TOML entry for the new 0.4.0 write sites, so check_hook_spans/check_hook_bytes do not cover them (the checker mentions are empty). The known facts are provisional (scratch copy, no git history), so no gate result was used as evidence. No tool calls were made; all findings come from the packet's own text, with the 183-184 null-check gap cited inside f1's evidence.",
+ "packet_id": "wp7-006",
+ "truncated": false
+}

@@ -1,0 +1,65 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00173982,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 2794,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 2794,
+   "cache_read_input_tokens": 17412,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 4,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 974,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 974,
+     "cache_read_input_tokens": 9616,
+     "input_tokens": 2,
+     "output_tokens": 1697,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 2013,
+   "output_tokens_details": {
+    "thinking_tokens": 915
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/action_hotbar_src/manifest.toml"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "other",
+   "commits": [
+    "ec95c98"
+   ],
+   "confidence": "high",
+   "evidence": "Line 6 description says: \"Self-contained: the DLL creates its controls, art and INI.\" Lines 8-9 now add hard dependencies: requires = [\"save-events\", \"hud-host\", \"gui-input\"] and requires_interfaces = [\"k2.saveevents@1\", \"k2.hud@1\", \"k2.guiinput@1\"].",
+   "file": "patch_manager_mods/action_hotbar_src/manifest.toml",
+   "lines": "6-9",
+   "local_id": "f1",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Confirm whether the three providers are truly needed by the DLL (check the hooks/imports the action_hotbar source actually uses for save events, HUD host and GUI input). If they are needed, update the description's 'Self-contained' sentence. If they are not, drop the unused entries. Also confirm the provider names and interface IDs match the ones the provider manifests declare, using a targeted Grep on the provider manifests only.",
+   "why_it_matters": "The user-facing description claims the mod is self-contained, but the manifest now declares three required providers. Either the description is stale or the new requires list is broader than needed. If KPM enforces requires, the mod will refuse to load when any of these providers is missing, which contradicts what the description tells users."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Only the manifest hunk (lines 5-12 post-image) was in scope; I read the whole manifest (16 lines). Items not verified: (1) whether providers 'save-events', 'hud-host', 'gui-input' and interfaces 'k2.saveevents@1', 'k2.hud@1', 'k2.guiinput@1' exist and match the provider manifests. Checking this needs a Grep scoped to the provider packet's own directory, which I did not have a cited path for, so I did not run it. (2) Line 13 comment points to a local worktree path outside the repository ('local-setup/KOTOR-II worktree'). That is a machine-specific reference and a documentation-hygiene concern, not a runtime risk; I did not raise it as a finding. The checker facts (build_check PASS/INFO, run_tests 0 items, no hook-span mentions) do not contradict the manifest change. Checker fact that check_hook_spans and check_hook_bytes depend on the live install was noted and not used.\"}]",
+ "packet_id": "wp4-003",
+ "truncated": false
+}

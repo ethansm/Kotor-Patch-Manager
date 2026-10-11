@@ -1,0 +1,100 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.007272469999999999,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 17062,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 17062,
+   "cache_read_input_tokens": 48297,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 6,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 2688,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 2688,
+     "cache_read_input_tokens": 22170,
+     "input_tokens": 2,
+     "output_tokens": 1813,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 6753,
+   "output_tokens_details": {
+    "thinking_tokens": 2903
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/combat_hotbar_src/CombatHotbar.cpp"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "776de4c",
+    "48c9298"
+   ],
+   "confidence": "high",
+   "evidence": "Line 614 comment: \"Sanity gates (the hidden-BTN tint is UNVERIFIED): pure black or a near-zero alpha would make the pills vanish, so keep the defaults instead.\" Line 615 computes tOk[g] from getBorderTint and the non-black check, but line 618 resets tint to (0.85,0.15,0.15) and line 619 unconditionally sets tOk[g] = true. The vanilla tint read result is therefore discarded, and the `if (!tOk[g])` branch at line 621 can never be taken.",
+   "file": "patch_manager_mods/combat_hotbar_src/CombatHotbar.cpp",
+   "lines": "614-622",
+   "local_id": "f1",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Confirm the forced red theme at lines 617-619 is intended. If so, remove or reword the stale comment at line 614 and drop the dead tOk/getBorderTint path at 615 and the unreachable branch at 621. Check the hot-swap/hide path in restoreVanilla is unaffected.",
+   "why_it_matters": "The comment describes a black-tint guard that no longer exists, so a future reader will believe the pill colour is protected by a sanity check when it is hard-coded. The getBorderTint call is now dead work. This is a behaviour choice (forced combat red), but the stale gate and comment hide that it is intentional."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "776de4c",
+    "48c9298"
+   ],
+   "confidence": "high",
+   "evidence": "Line 620: `if (!aOk[g]) { alp[g] = 0.95f; aOk[g] = true; }` forces aOk true for every group. Line 666: `widAlpha(b.bg, (s == g_hover) ? 1.0f : (aOk[g] ? alp[g] : 0.85f));` tests aOk[g] again, so the 0.85f fallback is unreachable.",
+   "file": "patch_manager_mods/combat_hotbar_src/CombatHotbar.cpp",
+   "lines": "620-620",
+   "local_id": "f2",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Decide whether the default alpha is 0.95 (pill default) or 0.85 (button fallback). Then either drop the aOk ternary at line 666 or stop forcing aOk at line 620 so that the read result is honoured.",
+   "why_it_matters": "The 0.85 fallback in the button alpha is dead code that suggests a failure path exists when none does. Its value also disagrees with the 0.95 default set at line 612/620, which makes the intended alpha ambiguous."
+  },
+  {
+   "candidate_id": null,
+   "category": "other",
+   "commits": [
+    "776de4c",
+    "48c9298"
+   ],
+   "confidence": "low",
+   "evidence": "Line 76: `const bool g_fallbackSet = (KpLog_SetFallbackFile(\"combat-hotbar_log.txt\"), KpLog_SetFallbackLevel(KPLOG_INFO), true);` is a namespace-scope dynamic initializer. The comment at line 75 claims it only stores values and does no I/O, but the setter's definition is not in this packet.",
+   "file": "patch_manager_mods/combat_hotbar_src/CombatHotbar.cpp",
+   "lines": "75-76",
+   "local_id": "f3",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Find the KpLog_SetFallbackFile and KpLog_SetFallbackLevel definitions in the shared logging source (Common/_shared_src) and check that they only assign plain globals with constant initialisation (no std::string or other constructed statics), so static init order cannot matter. Verify the log file name is not written before main.",
+   "why_it_matters": "If KpLog's fallback state lives in another translation unit with its own static initialisers, the call order is unspecified and the setters can run before that state is constructed. The comment's safety claim is unverified here."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Checked the two hunks (72-80 and 446-690) plus a full-file grep for g_per, MaxBtn, g_lastRect and g_btn. Buffer bounds look sound: MaxBtn = 3*4*8 = 96 covers 3*per for per up to 32, and the memcpy at line 550 is bounded by sizeof(g_lastRect). The hover freeze, reflow gating and click-edge sampling look internally consistent. I did not read the KpLog or guikit sources, so f3 is unverified. The hover image/tint change (lines 657-666) is intentional by inspection. No scanner candidates were supplied. The checker's run_tests and build_check results are provisional and were not re-run.",
+ "packet_id": "wp4-005",
+ "truncated": false
+}

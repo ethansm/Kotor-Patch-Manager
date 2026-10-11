@@ -1,0 +1,950 @@
+{
+ "assets": [
+  {
+   "blob": "469c832d02a6",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF01.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "ceb9e854f7a2",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF02.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "d07203a57b1e",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF03.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "42172816e35b",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF04.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "e3aa8d4bc66f",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF05.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "aacfb5cd32af",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF06.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "449402c7bde4",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF07.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "17cd93abc0e0",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF08.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "89c85d9cd1b4",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF09.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "2c48870397d4",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF10.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "cb14172e9a6e",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF11.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "d19709241b79",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF12.tpc",
+   "size": 349680
+  },
+  {
+   "blob": "8aaff4568c2d",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF13.tpc",
+   "size": 349680
+  },
+  {
+   "blob": "2ac66aa2309c",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF14.tpc",
+   "size": 349680
+  },
+  {
+   "blob": "068067a0b1a5",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF15.tpc",
+   "size": 349680
+  },
+  {
+   "blob": "a1ed16fa60eb",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF16.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "c437f3454fe1",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF17.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "508a2baf906c",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF18.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "c9eccbf7a7c2",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF19.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "528cb8bf7ffd",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF20.tpc",
+   "size": 5592591
+  },
+  {
+   "blob": "1949095cbd6e",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF21.tpc",
+   "size": 5592591
+  },
+  {
+   "blob": "441e12fed25e",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF22.tpc",
+   "size": 5592591
+  },
+  {
+   "blob": "27ac3b2ce484",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF23.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "452cdc4839dd",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF24.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "aabf8ec5186a",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF25.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "84a6196ae27f",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF26.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "2a5078a5cd03",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF27.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "5c96eeea75d0",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF28.tpc",
+   "size": 5592591
+  },
+  {
+   "blob": "b437d320e33e",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF29.tpc",
+   "size": 5592591
+  },
+  {
+   "blob": "9f1e533ad7e4",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF30.tpc",
+   "size": 5592591
+  },
+  {
+   "blob": "b6b94e9f82fd",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF31.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "16681bd46fae",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF32.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "bf125624a20d",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF33.tpc",
+   "size": 5592581
+  },
+  {
+   "blob": "562162dc925a",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF34.tpc",
+   "size": 5592581
+  },
+  {
+   "blob": "06386a23a2a3",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF35.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "d5f31b12fe1e",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF_Fat.mdl",
+   "size": 202803
+  },
+  {
+   "blob": "0b9b52749522",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommF_Fat.mdx",
+   "size": 144672
+  },
+  {
+   "blob": "40771019e467",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM01.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "ac196b1fc5d9",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM02.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "5a00e971f1b0",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM03.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "5ff4cf3086ef",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM04.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "b361268ef02b",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM05.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "7e696fc8a86f",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM06.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "e2681139fa55",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM07.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "1c36294b26ee",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM08.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "7995e532cbca",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM09.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "612e9db8e433",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM10.tga",
+   "size": 1048620
+  },
+  {
+   "blob": "8156125c5d4a",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM11.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "c67752ee1d30",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM12.tpc",
+   "size": 349680
+  },
+  {
+   "blob": "b3daa7d84cad",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM13.tpc",
+   "size": 349680
+  },
+  {
+   "blob": "25ca1e826de0",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM14.tpc",
+   "size": 349680
+  },
+  {
+   "blob": "56591e6c8d34",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM15.tpc",
+   "size": 349680
+  },
+  {
+   "blob": "49b6ebda72c1",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM16.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "548f276ed63c",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM17.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "7e7a98676e48",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM18.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "f5d49e274ccd",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM19.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "dbabe64d158b",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM20.tpc",
+   "size": 5592591
+  },
+  {
+   "blob": "ff263aa5d8a6",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM21.tpc",
+   "size": 5592591
+  },
+  {
+   "blob": "79a5d48e1b55",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM22.tpc",
+   "size": 5592591
+  },
+  {
+   "blob": "4fdbb2929176",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM23.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "4eefc61d13e5",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM24.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "3db831fedf8b",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM25.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "1377c55be0f0",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM26.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "d59473d48318",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM27.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "5fe9ad4d6599",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM28.tpc",
+   "size": 5592581
+  },
+  {
+   "blob": "9f5ac321c3ea",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM29.tpc",
+   "size": 5592581
+  },
+  {
+   "blob": "03504bf9e817",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM30.tpc",
+   "size": 5592581
+  },
+  {
+   "blob": "5ff26e105b95",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM31.tpc",
+   "size": 1398284
+  },
+  {
+   "blob": "34e88529a2f0",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM32.tpc",
+   "size": 1398284
+  },
+  {
+   "blob": "0ceb95767ac4",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM33.tpc",
+   "size": 1398284
+  },
+  {
+   "blob": "8ff5b7eb4217",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": false,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM34.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "3bb6706b9b94",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM35.tpc",
+   "size": 5592581
+  },
+  {
+   "blob": "1054296bff78",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM_Fat.mdl",
+   "size": 165037
+  },
+  {
+   "blob": "b73c26c59eb6",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CommM_Fat.mdx",
+   "size": 139792
+  },
+  {
+   "blob": "c3c6ba2202cf",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CzerkaOff.mdl",
+   "size": 167663
+  },
+  {
+   "blob": "ba6ef00926c8",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CzerkaOff.mdx",
+   "size": 151504
+  },
+  {
+   "blob": "81c95be7de44",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CzerkaOff01.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "2955944c0923",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_CzerkaOffC01.tpc",
+   "size": 1398256
+  },
+  {
+   "blob": "d5f31b12fe1e",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_FatComF.mdl",
+   "size": 202803
+  },
+  {
+   "blob": "0b9b52749522",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_FatComF.mdx",
+   "size": 144672
+  },
+  {
+   "blob": "1054296bff78",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_FatComM.mdl",
+   "size": 165037
+  },
+  {
+   "blob": "b73c26c59eb6",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_FatComM.mdx",
+   "size": 139792
+  },
+  {
+   "blob": "c5d8e2ccb8f8",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_TwiDance.mdl",
+   "size": 216556
+  },
+  {
+   "blob": "00f5f8e69ef8",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_TwiDance.mdx",
+   "size": 142016
+  },
+  {
+   "blob": "07a5f2b7f539",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_TwiDance_Boot.mdl",
+   "size": 203472
+  },
+  {
+   "blob": "1f87cac7d6ba",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_TwiDance_Boot.mdx",
+   "size": 150208
+  },
+  {
+   "blob": "f48cf36c9464",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_TwiUnd.mdl",
+   "size": 219478
+  },
+  {
+   "blob": "cab5b2bb9890",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/N_TwiUnd.mdx",
+   "size": 154712
+  },
+  {
+   "blob": "a19e56d653e7",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/appearance.2da",
+   "size": 181341
+  },
+  {
+   "blob": "6072be4aa15b",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/heads.2da",
+   "size": 9207
+  },
+  {
+   "blob": "527a49f3e748",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/llk_ahrnell.mdl",
+   "size": 103774
+  },
+  {
+   "blob": "6844ebcbacf1",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/llk_ahrnell.tpc",
+   "size": 2796410
+  },
+  {
+   "blob": "288355c92cc7",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/llk_harra.mdl",
+   "size": 103774
+  },
+  {
+   "blob": "b2ff21db8386",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/llk_harra.tpc",
+   "size": 2796410
+  },
+  {
+   "blob": "6c40a588f30e",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/llk_kehvehn.mdl",
+   "size": 103774
+  },
+  {
+   "blob": "bfa5e0898b89",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/llk_kehvehn.tpc",
+   "size": 2796410
+  },
+  {
+   "blob": "6e5d8afac710",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/llk_luposhar.mdl",
+   "size": 103774
+  },
+  {
+   "blob": "7cd6ce5fe7e7",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/llk_luposhar.tpc",
+   "size": 2796410
+  },
+  {
+   "blob": "95196113932e",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/n_brnmodulh.mdx",
+   "size": 55264
+  },
+  {
+   "blob": "883b3124da70",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/n_daraalah.mdx",
+   "size": 59104
+  },
+  {
+   "blob": "58c9adbb3f60",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/pfhc01.mdl",
+   "size": 93972
+  },
+  {
+   "blob": "03abb9a945a9",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/pfhc01.mdx",
+   "size": 66720
+  },
+  {
+   "blob": "c1311754b478",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/pfhc03.mdx",
+   "size": 66208
+  },
+  {
+   "blob": "c4855a2a4a5d",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/pmhc04.mdx",
+   "size": 55840
+  },
+  {
+   "blob": "e624df834ede",
+   "commits": [
+    "57837e0"
+   ],
+   "name_referenced_in_code_or_generators": true,
+   "path": "patch_manager_mods/npc_diversity_src/override/pmhh01.mdx",
+   "size": 50336
+  }
+ ],
+ "note": "deterministic; sizes from git at the pinned HEAD"
+}

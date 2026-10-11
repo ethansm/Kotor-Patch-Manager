@@ -1,0 +1,52 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.006210210000000001,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 14782,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 14782,
+   "cache_read_input_tokens": 65481,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 10,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 4295,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 4295,
+     "cache_read_input_tokens": 18283,
+     "input_tokens": 2,
+     "output_tokens": 1229,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 5196,
+   "output_tokens_details": {
+    "thinking_tokens": 3558
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "scripts/test_kotor2_logs.py",
+  "scripts/kotor2_logs.py",
+  "scripts/selfheal_log_check.py"
+ ],
+ "findings": [],
+ "no_issue_files": [
+  "scripts/test_kotor2_logs.py"
+ ],
+ "notes": "Assertion delta checked: removed=[] and per-macro counts (assertEqual +2, assertTrue +1) match the three assertions added by test_selfheal (assertTrue, assertEqual) and test_alias_selfheal (assertEqual); no assertion was dropped. Routing: route() at kotor2_logs.py:125-126 sends companion-selfheal_log.txt to scripts/selfheal_log_check.py with the bare path as a[2], which matches test_selfheal's expectations. Alias: check() at kotor2_logs.py:219-232 resolves \"selfheal\" via ALIASES, runs the real selfheal_log_check.py in a subprocess, and returns its exit code, so test_alias_selfheal's assertEqual(rc, 0) is a real failure signal. I traced the fixture line through PREFIX_RE/P1_RE in selfheal_log_check.py:27-28 and 164-175: it strips to a P1 line with layoutOpen=1 and ctlCount=212, which passes the 1..4096 check. I did not execute the verdict logic, so the full rc==0 outcome is inferred, not run. All test I/O is in a tempdir (Tmp.setUp), so nothing touches the live game directory. Low-priority coverage gap, not a defect: test_routes_table_printed (lines 112-118) does not assert that the new companion-selfheal_log.txt line appears in the printed table; the sorted-order check still covers it.\"",
+ "packet_id": "wp6-014",
+ "truncated": false
+}

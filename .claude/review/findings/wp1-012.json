@@ -1,0 +1,137 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00854649,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 19776,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 19776,
+   "cache_read_input_tokens": 29689,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 4,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 5679,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 5679,
+     "cache_read_input_tokens": 21893,
+     "input_tokens": 2,
+     "output_tokens": 3857,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 8588,
+   "output_tokens_details": {
+    "thinking_tokens": 5277
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "scripts/run_tests.py",
+  "scripts/build_check.py (grep only)",
+  "scripts/master_ledger.py (grep only)",
+  "scripts/test_plan_manager.py (grep only)"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "ea85883",
+    "0b91725"
+   ],
+   "confidence": "high",
+   "evidence": "Line 856: `include_build_tier = a.build or a.wine or any(x == \"suite:build-check\" for x in target_ids)` and line 859: `include_wine = a.wine or any(x.startswith(\"wine:\") for x in target_ids)`, both evaluated before discover() and wine_plan(). Positional filters are only merged into target_ids later, at lines 864-868 (`target_ids.update(pos_exact)`), after the tier and wine decisions were already made. So `run_tests.py suite:build-check` or `run_tests.py wine:<smoke>` never includes the build tier or the wine plan, the filter at 871-872 then matches nothing, and the run exits 0 (see f2).",
+   "file": "scripts/run_tests.py",
+   "lines": "856-872",
+   "local_id": "f1",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Run `python3 scripts/run_tests.py --list suite:build-check` and `python3 scripts/run_tests.py --list wine:<name>` (with a real smoke name from harness/smokes.toml) and confirm the build/wine items are absent. Then move the pos_exact computation ahead of the include_build_tier/include_wine decisions, or fold positional IDs into target_ids before line 856, and re-check.",
+   "why_it_matters": "The positional form documented in the help text (`e.g. suite:check-hook-bytes`) silently fails to run tier=\"build\" suites or Wine smokes that the user explicitly named. A gate the user asked for is skipped with no FAIL/ERROR, which weakens the gate."
+  },
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "ea85883",
+    "0b91725"
+   ],
+   "confidence": "high",
+   "evidence": "Line 871-872: `if target_ids: items = [i for i in items if i.id in target_ids]`. No check that any item survived. The result counts at 982-984 and the return at 995 (`return 1 if counts[\"FAIL\"] or counts[\"ERROR\"] else 0`) do not count an empty selection as a failure. An `--id` typo, an `--ids-file` with stale ids, or a positional that matches nothing therefore produces `0 passed, 0 failed` and exit code 0.",
+   "file": "scripts/run_tests.py",
+   "lines": "871-872",
+   "local_id": "f2",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Run `python3 scripts/run_tests.py --id cpp:does_not_exist; echo $?` and confirm exit 0 with zero items. Fix by returning non-zero (or an ERROR result) when a requested id/filter selects no items, and check that the same holds for the pre-existing `-k` path.",
+   "why_it_matters": "A test-selection mistake reads as a green gate. Callers that rely on the exit code (the Gate Invariant requires a hard stop on failure) can be told that tests passed when none ran."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "ea85883",
+    "0b91725"
+   ],
+   "confidence": "medium",
+   "evidence": "Line 620-621: `except Exception:\\n        pass` around the manifest lookup, then line 622-626: `for d in (REPO / \"patch_manager_mods\").iterdir(): ... clean = d.name.replace(\"_src\", \"\")...; if clean and (clean in stem or stem in clean): return d`. The substring match is order-dependent (iterdir order is filesystem-defined) and a short cleaned name such as a 2-3 letter directory can match an unrelated kpatch stem. The `_extract_dll` path (line 671-675) then builds and copies whichever DLL this returns.",
+   "file": "scripts/run_tests.py",
+   "lines": "604-627",
+   "local_id": "f3",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check the directory names under patch_manager_mods/ for short names that are substrings of other kpatch stems. Then call resolve_mod_for_smoke with a kpatch whose stem is a real mod name and one that matches two dirs, and see which dir comes back. Also temporarily break the `_static_common` import and see whether resolution changes. Prefer failing with RuntimeError over the substring fallback unless the match is unique.",
+   "why_it_matters": "With `dll_from = \"build\"`, a Wine smoke can be fed a DLL from a different mod and report PASS. The broad except also hides a failing `_static_common` import, which silently pushes resolution onto the fuzzy path."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "ea85883",
+    "0b91725"
+   ],
+   "confidence": "medium",
+   "evidence": "Line 641-655: rebuild_needed is decided only by mtimes of files with suffix in (\".cpp\", \".h\", \".hpp\", \".inc\", \".def\") under mod_dir and _shared_src, compared against `dll_candidates[0]` only. Line 639 and 662 glob `*/build/*.dll` and take the first hit. Changes to tests/include headers, build flags, CMake/Makefile or other suffixes, or a newer build of a different candidate, do not trigger a rebuild.",
+   "file": "scripts/run_tests.py",
+   "lines": "630-666",
+   "local_id": "f4",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Touch tests/include/SafeRead.h (or another include used by the harness) with a newer mtime than the cached DLL, run `--wine --dll-from build` on one smoke, and check whether build_check --keep is re-invoked. Also check whether the glob can return more than one DLL under build/<key>/*/build/.",
+   "why_it_matters": "A cached build DLL can be stale. `smoke_build` then tests and reports PASS against a binary that does not match the current sources, which is a gate that can pass on the wrong code."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "ea85883",
+    "0b91725"
+   ],
+   "confidence": "medium",
+   "evidence": "Line 798-799: `ap.add_argument(\"--json\", nargs=\"?\", const=\"-\", default=None, ...)` alongside line 806: `ap.add_argument(\"filters\", nargs=\"*\", ...)`. And lines 983-994: the human summary line (983-984) is printed to stdout first, then `if a.json == \"-\": print(out_str)` writes the JSON to the same stdout.",
+   "file": "scripts/run_tests.py",
+   "lines": "798-799",
+   "local_id": "f5",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Run `python3 scripts/run_tests.py --json --list` and `python3 scripts/run_tests.py --json suite:check-hook-bytes` and inspect the output and any files created in the cwd. Consider putting the summary on stderr when `--json -` is used.",
+   "why_it_matters": "`run_tests.py --json suite:x` makes argparse consume `suite:x` as the JSON output path, so the filter is dropped and a file is written. `--json` alone with no path prints the summary text and the JSON together on stdout, which is not parseable as JSON by consumers."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Checked the callee build_check.py by grep: it stages copies only under the TMP build directory (shutil.rmtree/copy2 within key_dir) and does not reference the Steam/game directory, so `_ensure_built_dll` does not reach an install path. The `MASTER_LEDGER_TEST=1` global env set at run_tests.py:68 matches the same pattern in scripts/test_plan_manager.py:16 and is consistent with scripts/master_ledger.py:77, so it is not reported. The `RuntimeError` -> FAIL reclassification in smoke_build (line 710-711) is a judgement call, not a gate weakening, and is not reported. No secrets or credential paths were accessed. Lines 65-102, 247-399 (covers/consumer metadata) and 555-714 beyond the findings were read as diff hunks only; I did not read the rest of run_tests.py (execute, run_cmd, report), so exit-code handling inside those helpers is unverified.",
+ "packet_id": "wp1-012",
+ "truncated": false
+}

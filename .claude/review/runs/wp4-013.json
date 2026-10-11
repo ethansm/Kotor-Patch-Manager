@@ -1,0 +1,82 @@
+{
+ "attempts": 1,
+ "cost_usd": 0.00534226,
+ "duration_s": 27.0,
+ "ended": "2026-10-10T09:09:01Z",
+ "exit_code": 0,
+ "files": [
+  "patch_manager_mods/queue_hud_src/QueueHudLogic.h"
+ ],
+ "first_turn_prompt_tokens": 11512,
+ "num_turns": 5,
+ "packet_id": "wp4-013",
+ "prompt_bytes": 6834,
+ "rate_limit_hits": 0,
+ "raw": "raw/wp4-013.a1.out",
+ "result_subtype": "success",
+ "schema_errors": [],
+ "schema_valid": true,
+ "started": "2026-10-10T09:08:34Z",
+ "status": "ok",
+ "truncated": false,
+ "turn_prompt_tokens": [
+  11512,
+  16972,
+  19185
+ ],
+ "turn_usage": [
+  {
+   "cache_creation_input_tokens": 3714,
+   "cache_read_input_tokens": 7796,
+   "input_tokens": 2,
+   "output_tokens": 5
+  },
+  {
+   "cache_creation_input_tokens": 5460,
+   "cache_read_input_tokens": 11510,
+   "input_tokens": 2,
+   "output_tokens": 3
+  },
+  {
+   "cache_creation_input_tokens": 2213,
+   "cache_read_input_tokens": 16970,
+   "input_tokens": 2,
+   "output_tokens": 3
+  }
+ ],
+ "turns_over_100k": 0,
+ "usage": {
+  "cache_creation": {
+   "ephemeral_1h_input_tokens": 11387,
+   "ephemeral_5m_input_tokens": 0
+  },
+  "cache_creation_input_tokens": 11387,
+  "cache_read_input_tokens": 36276,
+  "fallback_credit": null,
+  "inference_geo": "global",
+  "input_tokens": 6,
+  "iterations": [
+   {
+    "cache_creation": {
+     "ephemeral_1h_input_tokens": 2213,
+     "ephemeral_5m_input_tokens": 0
+    },
+    "cache_creation_input_tokens": 2213,
+    "cache_read_input_tokens": 16970,
+    "input_tokens": 2,
+    "output_tokens": 2384,
+    "type": "message"
+   }
+  ],
+  "output_tokens": 5403,
+  "output_tokens_details": {
+   "thinking_tokens": 3005
+  },
+  "server_tool_use": {
+   "web_fetch_requests": 0,
+   "web_search_requests": 0
+  },
+  "service_tier": "standard",
+  "speed": "standard"
+ }
+}

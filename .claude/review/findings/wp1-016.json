@@ -1,0 +1,89 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00445453,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 8154,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 8154,
+   "cache_read_input_tokens": 53073,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 10,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 3416,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 3416,
+     "cache_read_input_tokens": 12534,
+     "input_tokens": 2,
+     "output_tokens": 2621,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 4584,
+   "output_tokens_details": {
+    "thinking_tokens": 2241
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "tests/static/subclassers.toml",
+  "patch_manager_mods/gui_input_src/GuiInputProvider.cpp",
+  "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp (grep only)",
+  "patch_manager_mods/_shared_src/GuiKit.h (grep only)",
+  "scripts/check_subclassers.py"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "other",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "install_hint = 1182 / restore_hint = 2060 for ActionHotbar.cpp, but the actual calls are at ActionHotbar.cpp:1188 (`WheelHook::install(g_gameWnd, &wheelProc);`) and ActionHotbar.cpp:2108 (`WheelHook::uninstall(&wheelProc);`). The hints were refreshed in this change but still do not match the file.",
+   "file": "tests/static/subclassers.toml",
+   "lines": "25-26",
+   "local_id": "f1",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Run `python3 scripts/check_subclassers.py` (read-only) and confirm the INFO drift line for ActionHotbar.cpp reports install line 1188 and restore line 2108. Then correct the two hint values to the regex-matched lines so the INFO output is clean.",
+   "why_it_matters": "The hints are informational only and are never checked by check_subclassers.py (drift is reported as INFO). Wrong hints are a hygiene problem: they make the INFO drift output misleading and suggest the values were typed rather than taken from the file."
+  },
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "medium",
+   "evidence": "New entry for GuiInputProvider.cpp uses unanchored patterns `install = 'Hook::install\\s*\\('` and `restore = 'Hook::uninstall\\s*\\('`. The file has `using Hook = kp::WindowHook<GuiInputTag>;` (line 33), `bool ok = Hook::install(h, wheelProc);` (line 120) and `Hook::uninstall(&wheelProc);` (line 198).",
+   "file": "tests/static/subclassers.toml",
+   "lines": "46-47",
+   "local_id": "f2",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Confirm GuiInputProvider.cpp's uninstall at line 198 is reachable on unload (the function containing it is called from the DLL detach path). Optionally tighten the registry pattern to the actual call site, but only if the other entries are tightened the same way.",
+   "why_it_matters": "The patterns only prove that some install and some uninstall call exist in the file. They do not check that the uninstall sits on the same path as the install, or that it is not dead code. The check passes for any file that has both calls. Other registry entries have the same looseness, so this is a weak gate rather than a current bypass. The current file does satisfy the check: the `WindowHook<` rule passes at line 33 and both patterns match."
+  }
+ ],
+ "no_issue_files": [
+  "patch_manager_mods/_shared_src/GuiKit.h",
+  "patch_manager_mods/gui_input_src/GuiInputProvider.cpp",
+  "scripts/check_subclassers.py"
+ ],
+ "notes": "The gate logic in scripts/check_subclassers.py was verified against the new entry. The GuiInputProvider.cpp entry satisfies the uses=\"WindowHook\" rule (`WindowHook<` at line 33), and both install and restore patterns match, so the gate would PASS for this file. The GuiKit.h hints (686, 700) match the file exactly. The ActionHotbar.cpp hints are stale (f1). Other entries and the ActionHotbar.cpp file itself were checked by grep only, not in full. No secrets or credential paths were touched.",
+ "packet_id": "wp1-016",
+ "truncated": false
+}

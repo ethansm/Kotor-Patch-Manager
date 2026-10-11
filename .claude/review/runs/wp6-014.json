@@ -1,0 +1,96 @@
+{
+ "attempts": 1,
+ "cost_usd": 0.006210210000000001,
+ "duration_s": 25.0,
+ "ended": "2026-10-10T09:12:57Z",
+ "exit_code": 0,
+ "files": [
+  "scripts/test_kotor2_logs.py"
+ ],
+ "first_turn_prompt_tokens": 10463,
+ "num_turns": 8,
+ "packet_id": "wp6-014",
+ "prompt_bytes": 4726,
+ "rate_limit_hits": 0,
+ "raw": "raw/wp6-014.a1.out",
+ "result_subtype": "success",
+ "schema_errors": [],
+ "schema_valid": true,
+ "started": "2026-10-10T09:12:32Z",
+ "status": "ok",
+ "truncated": false,
+ "turn_prompt_tokens": [
+  10463,
+  13079,
+  15866,
+  18285,
+  22580
+ ],
+ "turn_usage": [
+  {
+   "cache_creation_input_tokens": 2665,
+   "cache_read_input_tokens": 7796,
+   "input_tokens": 2,
+   "output_tokens": 2
+  },
+  {
+   "cache_creation_input_tokens": 2616,
+   "cache_read_input_tokens": 10461,
+   "input_tokens": 2,
+   "output_tokens": 4
+  },
+  {
+   "cache_creation_input_tokens": 2787,
+   "cache_read_input_tokens": 13077,
+   "input_tokens": 2,
+   "output_tokens": 7
+  },
+  {
+   "cache_creation_input_tokens": 2419,
+   "cache_read_input_tokens": 15864,
+   "input_tokens": 2,
+   "output_tokens": 2
+  },
+  {
+   "cache_creation_input_tokens": 4295,
+   "cache_read_input_tokens": 18283,
+   "input_tokens": 2,
+   "output_tokens": 8
+  }
+ ],
+ "turns_over_100k": 0,
+ "usage": {
+  "cache_creation": {
+   "ephemeral_1h_input_tokens": 14782,
+   "ephemeral_5m_input_tokens": 0
+  },
+  "cache_creation_input_tokens": 14782,
+  "cache_read_input_tokens": 65481,
+  "fallback_credit": null,
+  "inference_geo": "global",
+  "input_tokens": 10,
+  "iterations": [
+   {
+    "cache_creation": {
+     "ephemeral_1h_input_tokens": 4295,
+     "ephemeral_5m_input_tokens": 0
+    },
+    "cache_creation_input_tokens": 4295,
+    "cache_read_input_tokens": 18283,
+    "input_tokens": 2,
+    "output_tokens": 1229,
+    "type": "message"
+   }
+  ],
+  "output_tokens": 5196,
+  "output_tokens_details": {
+   "thinking_tokens": 3558
+  },
+  "server_tool_use": {
+   "web_fetch_requests": 0,
+   "web_search_requests": 0
+  },
+  "service_tier": "standard",
+  "speed": "standard"
+ }
+}

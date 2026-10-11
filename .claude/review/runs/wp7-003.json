@@ -1,0 +1,75 @@
+{
+ "attempts": 1,
+ "cost_usd": 0.0046210700000000006,
+ "duration_s": 11.0,
+ "ended": "2026-10-10T09:12:43Z",
+ "exit_code": 0,
+ "files": [
+  "patch_manager_mods/combat_hotbar_src/CombatLogic.h"
+ ],
+ "first_turn_prompt_tokens": 9603,
+ "num_turns": 4,
+ "packet_id": "wp7-003",
+ "prompt_bytes": 2594,
+ "rate_limit_hits": 0,
+ "raw": "raw/wp7-003.a1.out",
+ "result_subtype": "success",
+ "schema_errors": [],
+ "schema_valid": true,
+ "started": "2026-10-10T09:12:32Z",
+ "status": "ok",
+ "truncated": false,
+ "turn_prompt_tokens": [
+  9603,
+  24899
+ ],
+ "turn_usage": [
+  {
+   "cache_creation_input_tokens": 1805,
+   "cache_read_input_tokens": 7796,
+   "input_tokens": 2,
+   "output_tokens": 6
+  },
+  {
+   "cache_creation_input_tokens": 15296,
+   "cache_read_input_tokens": 9601,
+   "input_tokens": 2,
+   "output_tokens": 3
+  }
+ ],
+ "turns_over_100k": 0,
+ "usage": {
+  "cache_creation": {
+   "ephemeral_1h_input_tokens": 17101,
+   "ephemeral_5m_input_tokens": 0
+  },
+  "cache_creation_input_tokens": 17101,
+  "cache_read_input_tokens": 17397,
+  "fallback_credit": null,
+  "inference_geo": "global",
+  "input_tokens": 4,
+  "iterations": [
+   {
+    "cache_creation": {
+     "ephemeral_1h_input_tokens": 15296,
+     "ephemeral_5m_input_tokens": 0
+    },
+    "cache_creation_input_tokens": 15296,
+    "cache_read_input_tokens": 9601,
+    "input_tokens": 2,
+    "output_tokens": 1494,
+    "type": "message"
+   }
+  ],
+  "output_tokens": 2053,
+  "output_tokens_details": {
+   "thinking_tokens": 1000
+  },
+  "server_tool_use": {
+   "web_fetch_requests": 0,
+   "web_search_requests": 0
+  },
+  "service_tier": "standard",
+  "speed": "standard"
+ }
+}

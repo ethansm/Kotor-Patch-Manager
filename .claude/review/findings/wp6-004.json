@@ -1,0 +1,106 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00659818,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 15807,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 15807,
+   "cache_read_input_tokens": 45118,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 6,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 3417,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 3417,
+     "cache_read_input_tokens": 20186,
+     "input_tokens": 2,
+     "output_tokens": 2758,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 5970,
+   "output_tokens_details": {
+    "thinking_tokens": 3857
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/level_up_override_src/common_contract_test.cpp",
+  "patch_manager_mods/_shared_src/FileWatch.h"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "test",
+   "commits": [
+    "0fd1151",
+    "39144b7",
+    "7159269"
+   ],
+   "confidence": "high",
+   "evidence": "Line 199: LCHECK(\"filewatch::changed force skips throttle if changed\", !filewatch::changed(rp, tmpPath, 2600, true)); the file is never modified between line 198 and 199. In _shared_src/FileWatch.h:77-85, changed() returns false whenever the stamp equals p.last, and with force=false the throttle at line 78 would also return false at 2600 (2600-2500=100 < 1000). So the assertion is false both when force works and when force is ignored (it is ignored and the throttle applies, still false). The test cannot detect a broken force path.",
+   "file": "patch_manager_mods/level_up_override_src/common_contract_test.cpp",
+   "lines": "193-199",
+   "local_id": "f1",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "In the test, rewrite the arrangement so the file actually changes inside the throttle window (e.g. append bytes with fopen/fwrite after the 2500 check, then call changed(rp, tmpPath, 2600, true) and assert true; then call without force at 2700 and assert false). Confirm the test fails when the force parameter is ignored by temporarily stubbing the throttle check on a scratch copy.",
+   "why_it_matters": "The test name and comment claim to pin the force-bypasses-throttle contract that the FileWatch docs say callers rely on before overwriting a file (FileWatch.h:74-75). A regression that drops the force flag would pass this gate, so the gate is weaker than its label says."
+  },
+  {
+   "candidate_id": "S-034ac7fa33",
+   "category": "test",
+   "commits": [
+    "0fd1151",
+    "39144b7",
+    "7159269"
+   ],
+   "confidence": "high",
+   "evidence": "LCHECK(\"party::table function exists\", static_cast<uintptr_t(*)(party::Fail*)>(&party::table) != nullptr); the same pattern is used for party::member (line 164) and party::serverCreature (line 165, scanner S-9323c467b2). Taking the address of a non-weak function is never null, so the runtime check is always true. Existence is already proven at compile time by the cast; the runtime check adds no falsifiable information.",
+   "file": "patch_manager_mods/level_up_override_src/common_contract_test.cpp",
+   "lines": "163-165",
+   "local_id": "f2",
+   "severity": "low",
+   "source": "both",
+   "suggested_investigation": "Either remove these three lines (the compile-time cast already enforces existence) or replace them with behavioural assertions. Check the reported check count from run_tests before and after to confirm the count change is only these three always-true checks.",
+   "why_it_matters": "These lines look like behavioural checks in the gate output but cannot fail, which inflates the pass count reported by kt::Report and can mask that no real behaviour was tested for these three functions."
+  },
+  {
+   "candidate_id": null,
+   "category": "other",
+   "commits": [
+    "0fd1151",
+    "39144b7",
+    "7159269"
+   ],
+   "confidence": "medium",
+   "evidence": "Header comment lines 3-5 says the file pins GuiTip.h and GuiKit.h and that 'any edit to GuiTip.h / GuiKit.h / K2Addr.h re-runs it'. The packet adds includes of GameAddr.h, Party.h and FileWatch.h (lines 12-14), and FileWatch.h lives in _shared_src; the new sections at lines 153-206 test those headers, but the comment does not mention them.",
+   "file": "patch_manager_mods/level_up_override_src/common_contract_test.cpp",
+   "lines": "3-5",
+   "local_id": "f3",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check test.toml for the actual input list of this test and update the header comment to match, or confirm that the rerun trigger already covers the new headers.",
+   "why_it_matters": "The stated rerun-trigger scope is wrong, so an edit to FileWatch.h or Party.h could be assumed not to affect the contract, and reviewers would misjudge which changes need this gate re-run."
+  }
+ ],
+ "no_issue_files": [
+  "patch_manager_mods/_shared_src/FileWatch.h"
+ ],
+ "notes": "Assertion delta is 0 removed, so no dropped assertions. The harness still returns kt::Report on failure, and the mmap failure path returns 5, so failures still reach the exit code. Scanner S-b197154b98 (line 179, (void*)0x2000u cast) is harmless: it is a test stub on a 64-bit host and only compares sentinel values. GameAddr.h and Party.h were not read (not in the packet and outside the call budget), so the address literals at lines 154-160 and the offset 0x270 at line 171 are unverified against their sources. The FileWatch.h read confirmed the stamp, changed, and accept semantics used at lines 192-204. The tmp file is removed at line 202 even when earlier checks fail, because checks do not abort. The fixed /tmp prefix with mkstemp is acceptable. The write() return value is discarded at line 189-190; it is harmless for a 4-byte test write.",
+ "packet_id": "wp6-004",
+ "truncated": false
+}

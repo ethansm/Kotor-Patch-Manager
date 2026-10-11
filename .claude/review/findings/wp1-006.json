@@ -1,0 +1,238 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.01454303,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 33983,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 33983,
+   "cache_read_input_tokens": 38853,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 4,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 10722,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 10722,
+     "cache_read_input_tokens": 31057,
+     "input_tokens": 2,
+     "output_tokens": 4446,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 14715,
+   "output_tokens_details": {
+    "thinking_tokens": 6247
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "scripts/compat_check.py"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "a734895",
+    "ecd0e33",
+    "ea85883",
+    "b756482",
+    "8d17773",
+    "f633a1f"
+   ],
+   "confidence": "high",
+   "evidence": "run_build_mods() runs b_proc = subprocess.run(b_cmd, ..., check=False) at 1007-1015 but never reads b_proc.returncode. Results are derived only from regex matches of PASS/FAIL lines in stdout (1019-1051). A build_check.py crash, or any non-zero exit that prints no 'FAIL build:' line, adds no FAIL and no ERROR to counts, so the RESULT line and the exit code at 1176 report success.",
+   "file": "scripts/compat_check.py",
+   "lines": "1007-1051",
+   "local_id": "f1",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Check scripts/build_check.py exit codes on failure paths (e.g. an exception before any per-mod line is printed). Then run compat_check.py with a build_check stub that exits 1 without printing FAIL lines and confirm the overall exit code is 0 today. Verify whether a non-zero returncode should add an ERROR result for each build mod.",
+   "why_it_matters": "The build leg of the gate can pass when the build tool itself failed. The exit code of the subprocess is the authoritative signal and is discarded."
+  },
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "a734895",
+    "ecd0e33",
+    "ea85883",
+    "b756482",
+    "8d17773",
+    "f633a1f"
+   ],
+   "confidence": "high",
+   "evidence": "json_tmp_path is created by NamedTemporaryFile(delete=False) at 1068-1069, so the file always exists before run_tests.py starts. The check at 1089 'if Path(json_tmp_path).is_file():' is therefore always true. If run_tests.py crashes or exits before writing JSON, the file is empty; json.loads at 1091 raises and the broad 'except Exception: pass' at 1112-1113 swallows it. The 'else' branch at 1114-1116 that adds counts['ERROR'] for a non-zero returncode is unreachable.",
+   "file": "scripts/compat_check.py",
+   "lines": "1068-1116",
+   "local_id": "f2",
+   "severity": "critical",
+   "source": "worker",
+   "suggested_investigation": "Reproduce by pointing run_tests.py at a stub that exits 2 without writing its --json file, then run compat_check.py --since HEAD with a test item in the plan and check the RESULT line and exit code. Confirm that the empty-file case reaches the except at 1112. Fix direction: treat a missing or unparseable JSON as ERROR for every requested id, and use the returncode in that decision.",
+   "why_it_matters": "A test runner that dies before reporting produces zero results and zero FAIL/ERROR counts, so the compat gate exits 0 with no tests run. This is a gate that can no longer fail on runner crash."
+  },
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "a734895",
+    "ecd0e33",
+    "ea85883",
+    "b756482",
+    "8d17773",
+    "f633a1f"
+   ],
+   "confidence": "medium",
+   "evidence": "Line 1094 reads 'st = r.get(\"status\", \"PASS\")' so any runner result that lacks a status key is counted as PASS in counts[st] at 1095. Result entries are appended to all_results unchanged (1093), so the JSON output shows them as well.",
+   "file": "scripts/compat_check.py",
+   "lines": "1092-1095",
+   "local_id": "f3",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Check scripts/run_tests.py result-writing code to see whether every result always has a 'status' key. Also compare len(results) with len(test_suite_ids) after parsing. The default should be an error state, not PASS.",
+   "why_it_matters": "A fail-open default turns malformed or partial runner output into a PASS. Nothing else in the file cross-checks that the number of PASS results matches the number of requested ids."
+  },
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "a734895",
+    "ecd0e33",
+    "ea85883",
+    "b756482",
+    "8d17773",
+    "f633a1f"
+   ],
+   "confidence": "low",
+   "evidence": "Counts are accumulated with counts[st] = counts.get(st, 0) + 1 for any status string (1095), but the exit decision at 1176 uses only fail_cnt (FAIL) and err_cnt (ERROR). Any other status value from the runner (for example TIMEOUT or CRASH, if run_tests.py emits them) is recorded but never causes exit 1.",
+   "file": "scripts/compat_check.py",
+   "lines": "1176-1177",
+   "local_id": "f4",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Enumerate every status value that scripts/run_tests.py can write to its JSON. If any value other than PASS, SKIP, FAIL or ERROR exists, make the exit decision reject it.",
+   "why_it_matters": "Non-PASS, non-SKIP outcomes that are not spelled FAIL or ERROR would be silently accepted by the gate."
+  },
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "a734895",
+    "ecd0e33",
+    "ea85883",
+    "b756482",
+    "8d17773",
+    "f633a1f"
+   ],
+   "confidence": "medium",
+   "evidence": "narrow_plan_to_gog_scoping keeps only items of kind 'build' and the cpp:k2addr_test test (341-346), drops every other test, suite, wine and static item, then runs 'plan.gaps.clear()' (358). It also appends the note 'GOG-only: Steam runtime unchanged' (359) without running any Steam check. It is invoked at 918-923 whenever K2Addr.h is the only non-test touched file and is_k2addr_gog_only_diff returns True.",
+   "file": "scripts/compat_check.py",
+   "lines": "337-359",
+   "local_id": "f5",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Check which plan items come from K2Addr.h dependents (Steam-variant tests, static raw-address and allowlist checks, wine smokes) using compat_graph.py. Confirm they are dropped by narrow_plan_to_gog_scoping. Then test a K2Addr.h change in a Steam-only constant that falls inside the makeGog..kGog line range and check whether the narrowed plan still runs the Steam tests.",
+   "why_it_matters": "A K2Addr.h change that the diff heuristic classifies as GOG-only silently removes Steam-facing and static checks and clears the GAP list that --strict uses at 953 and 1180. The printed claim that Steam is unchanged is not verified by this code."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "a734895",
+    "ecd0e33",
+    "ea85883",
+    "b756482",
+    "8d17773",
+    "f633a1f"
+   ],
+   "confidence": "medium",
+   "evidence": "The docstring (230) says the check verifies that hunks 'touch only the kGog initializer'. The code (256-259) only verifies that each hunk's old and new line ranges fall inside the span from the 'makeGog()' constexpr line to the first 'kGog =' line (209-222). Any edit to other lines in that span, such as a change to the makeGog() body or another constant between those lines, passes and triggers the GOG-only narrowing.",
+   "file": "scripts/compat_check.py",
+   "lines": "225-261",
+   "local_id": "f6",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Read K2Addr.h around the makeGog() block to see what lines fall between 'makeGog()' and 'kGog ='. Make a test edit to a line in that span that is not the kGog initializer and check whether is_k2addr_gog_only_diff returns True. Tighten the check to compare the changed line text against the kGog initializer pattern.",
+   "why_it_matters": "The narrowing is a safety reduction. Its precondition is weaker than its documentation, so non-GOG-specific edits can reduce test coverage."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "a734895",
+    "ecd0e33",
+    "ea85883",
+    "b756482",
+    "8d17773",
+    "f633a1f"
+   ],
+   "confidence": "low",
+   "evidence": "When a smoke has no 'mod' key and mods_by_stem has no match, the fallback loops over (repo_root / 'patch_manager_mods').iterdir() without sorting and takes the first directory where 'clean in stem or stem in clean' (423). The chosen directory decides candidate_sources (436-439). If the wrong directory is chosen, or a directory with old mtimes is chosen, the newest-source comparison at 444-448 can report a stale kpatch as fresh and skip the STALE marking.",
+   "file": "scripts/compat_check.py",
+   "lines": "406-425",
+   "local_id": "f7",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "List the smokes in perf_lab_src/harness/smokes.toml that lack a 'mod' key and check which directory the fallback selects for each. Check whether any of them has a short clean name that matches the wrong mod. Make the directory iteration order deterministic and prefer an exact match.",
+   "why_it_matters": "The stale-kpatch check that protects smoke results from older DLLs depends on a substring match that is not deterministic and can select an unrelated mod."
+  },
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "a734895",
+    "ecd0e33",
+    "ea85883",
+    "b756482",
+    "8d17773",
+    "f633a1f"
+   ],
+   "confidence": "medium",
+   "evidence": "Stale wine smokes are recorded as status 'SKIP' with reason 'unverified (stale kpatch)' (981-989). The exit logic returns 1 only for FAIL or ERROR (1176-1177) and returns 3 for SKIP only when --strict is given (1180-1181). Without --strict, a run whose only unverified items are stale smokes exits 0.",
+   "file": "scripts/compat_check.py",
+   "lines": "979-991",
+   "local_id": "f8",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Run compat_check.py --wine on a case where a smoke's kpatch is older than its source, without --strict, and confirm the exit code is 0. Check the policy text that tells agents whether skipped or unverified items block a downstream step.",
+   "why_it_matters": "The repository rule that a rebuilt .kpatch needs a fresh gate PASS before install is not enforced by the default exit code. A stale kpatch is reported as a warning only."
+  },
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "a734895",
+    "ecd0e33",
+    "ea85883",
+    "b756482",
+    "8d17773",
+    "f633a1f"
+   ],
+   "confidence": "medium",
+   "evidence": "Lint parses each test.toml inside 'try: ... except Exception: pass' (601-623), so a malformed test.toml drops its covers silently. run_lint always returns 0 (715), and main returns 3 only with --strict (850-851).",
+   "file": "scripts/compat_check.py",
+   "lines": "603-623",
+   "local_id": "f9",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Add a malformed test.toml fixture and run --lint to see whether any warning is produced. Check whether lint is referenced as a required gate in the policy docs. If so, the exit code should reflect warnings.",
+   "why_it_matters": "Broad exception handling can hide malformed test manifests from --lint. Without --strict, lint warnings never fail the command."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Analysis is from the packet content only; no tool calls were made. Not verified: scripts/build_check.py and scripts/run_tests.py output and exit-code behaviour, and compat_graph.py (plan contents, and whether graph.kpm_dir can be None, which would make check_stale_wine_smokes raise at line 978 when --wine is set). Install or live-game reachability through --kpm-dir (passed to build_check at 1002-1003) could not be assessed without reading build_check.py. No secrets or credential paths were touched.",
+ "packet_id": "wp1-006",
+ "truncated": false
+}

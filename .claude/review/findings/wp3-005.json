@@ -1,0 +1,119 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.013453620000000001,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 30535,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 30535,
+   "cache_read_input_tokens": 146192,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 12,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 2073,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 2073,
+     "cache_read_input_tokens": 36258,
+     "input_tokens": 2,
+     "output_tokens": 4996,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 11767,
+   "output_tokens_details": {
+    "thinking_tokens": 6944
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+  "patch_manager_mods/level_up_override_src/exports.def",
+  "patch_manager_mods/level_up_override_src/manifest.toml",
+  "patch_manager_mods/level_up_override_src/common_contract_test.cpp"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "other",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "The KpLog port is incomplete: r10LogSource still calls logLine(\"R10 config source=%s ...\") at 2250, and r10Dim still calls logLine(\"R10 dim skip ...\") at 2266 and 2274 and logLine(\"R10 dim kind=%s ...\") at 2278. logLine (177-183) routes to chUi, while the other R10 lines in the same file use chR10 (2097, 2182-2197) and the R10 level-up warnings use KP_LOGV.",
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "lines": "2250-2278",
+   "local_id": "f1",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Confirm the KP_LOG channel definitions near LevelUpOverride.cpp:105-115 and the logLine users (grep logLine in the packet dir). Convert the four R10 call sites to KP_LOG(chR10, ...) or KP_LOGV with the appropriate level, then re-run the cpp test and check that logLine is still needed for LevelUpUi.h call sites.",
+   "why_it_matters": "The domain note says every old call site was converted. These R10 lines still go to the UI channel and skip the R10 channel and warning-level handling, so channel filters and log triage for the R10 probe miss them."
+  },
+  {
+   "candidate_id": null,
+   "category": "build",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "low",
+   "evidence": "leaderCreature calls `const uintptr_t tbl = party::table();` with no arguments, while common_contract_test.cpp:163 takes its address as `uintptr_t(*)(party::Fail*)` and :175 calls `party::table(&why)`.",
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "lines": "2045",
+   "local_id": "f2",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Open the Party.h header included at LevelUpOverride.cpp:85 and check the declaration of party::table. If it has no default, pass a party::Fail local as the test does, or give it a default. Then rebuild LevelUpOverride.cpp with the manifest's include flags to confirm it compiles.",
+   "why_it_matters": "The zero-argument call only compiles if Party.h gives party::table a default argument for the Fail* parameter. Party.h is not in the packet directory (Glob for **/Party.h returned nothing), so this could not be checked. If there is no default, the Steam/GOG build breaks even though the contract test (which passes Fail*) would still compile."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "low",
+   "evidence": "The old leaderCreature walked g_eng.appGlobal, g_eng.tableGet, g_eng.partyGet and g_eng.getCreature (old lines 2039-2045). The new version calls party::table(), party::member() and party::serverCreature(), which use the party module's own address source (test sets party::g_appGlobal at common_contract_test.cpp:173). The g_eng fields (1051-1052) still feed other call sites.",
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "lines": "2045-2047",
+   "local_id": "f3",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check where party's g_appGlobal and the gameaddr constants are set (Party.h / GameAddr.h) and whether g_eng values can differ from them. Confirm that the leader path's null and unreadable checks match the old readAt-guarded chain.",
+   "why_it_matters": "The leader path now reads engine addresses from a second source. An override or a build-specific address in g_eng would apply to the GUI guards and not to the leader path, and the two could drift apart."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "low",
+   "evidence": "g_r10TagsStamp changed from `uint64_t g_r10TagsStamp = ~0ULL;` to `filewatch::Stamp g_r10TagsStamp;` (2164), and r10TagsReady still compares `if (st == g_r10TagsStamp && !strcmp(path, g_r10TagsPath)) return g_r10TagsOk;` (2177). The old ~0ULL sentinel could never equal a real stamp.",
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "lines": "2162-2177",
+   "local_id": "f4",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Read the Stamp struct and its operator== in FileWatch.h (included at LevelUpOverride.cpp:86). Check whether a default Stamp equals stamp::missing. Test a path change from a missing file to an existing file, and a missing r10_tags.ini after a successful load, and confirm the table reloads each time.",
+   "why_it_matters": "A default-constructed Stamp may compare equal to the stamp of a missing file. The path check at 2177 is what stops a false cache hit on the first call, so the behaviour relies on the path-string guard and on how Stamp's default value and operator== are defined in FileWatch.h."
+  }
+ ],
+ "no_issue_files": [
+  "patch_manager_mods/level_up_override_src/exports.def",
+  "patch_manager_mods/level_up_override_src/manifest.toml"
+ ],
+ "notes": "Scanner candidates S-115423e7f2, S-290d7f860e, S-525da969b4, S-55325cd843, S-65335e4a70, S-653387b48b, S-6e10212b11, S-900d4edf34, S-adf6f1a06b, S-b16acc5dda, S-b34a32e0aa, S-c32c93082d, S-cc876e7955, S-cdca47349d, S-d31df96489, S-fd7bf7ccf7 are false positives. Every LuoHold_*/LuoInstant_* name in exports.def is generated by the LUO_HOLD / LUO_INSTANT macros at LevelUpOverride.cpp:2296-2300 inside the extern \"C\" block at 2286-2346. The other exports are defined at 2302-2344 (LuoLeaderInstant, LuoR10*, LuoR10Dim_*, LuoUiPanelCtor, LuoGuard*, LuoAutoOk, LuoGuid*), and LevelUpOverrideEntry at 2289 and KPatchInit at 97 are also defined, so exports.def resolves. Manifest version 1.6.0-dev matches Version = \\\"1.6.0-dev\\\" at LevelUpOverride.cpp:104. The common_contract_test.cpp:163-181 party assertions and the logLine-to-KP_LOG conversion at lines 173, 182, 197 and 2097 were checked. Not verified: Party.h, FileWatch.h, GameAddr.h and KpLog.h are outside the packet directory and were not read. The checker's build_check and run_tests passed (rc 0), but that does not cover the f2 default-argument question. Not read: any secrets or credentials files.\"}]",
+ "packet_id": "wp3-005",
+ "truncated": false
+}

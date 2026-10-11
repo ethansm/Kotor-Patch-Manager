@@ -1,0 +1,88 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00534226,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 11387,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 11387,
+   "cache_read_input_tokens": 36276,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 6,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 2213,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 2213,
+     "cache_read_input_tokens": 16970,
+     "input_tokens": 2,
+     "output_tokens": 2384,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 5403,
+   "output_tokens_details": {
+    "thinking_tokens": 3005
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/queue_hud_src/QueueHudLogic.h",
+  "patch_manager_mods/queue_hud_src/QueueHud.cpp (grep hits only)",
+  "patch_manager_mods/queue_hud_src/queue_hud_logic_test.cpp (grep hits only)",
+  "patch_manager_mods/queue_hud_src/exports.def (grep hit only)"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "776de4c",
+    "48c9298"
+   ],
+   "confidence": "high",
+   "evidence": "Comment at 186-187 says 'Auto, left side: 40% of vit height clamped [32, 48] (~38 px on the live 47x96 small vit)'. But autoIconPx at 180-183 was changed to 'vit.h * 0.60f ... clamped [48, 72]' and stripIconSize at 191-192 calls autoIconPx(vit.h) for kSideLeft. So the left-side auto icon jumps from ~38 px to ~58 px on the live 96 px vit; the comment now contradicts the code.",
+   "file": "patch_manager_mods/queue_hud_src/QueueHudLogic.h",
+   "lines": "180-187",
+   "local_id": "f1",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Confirm the intended left-side size with the 0.3.0 kit-frame layout notes or the live screenshot (47x96 small vit). Compare the stripIconSize(vit,c) result for vit.h=96 before and after the commit. Add a literal-value assertion (e.g. vit.h=96 -> expected px) in queue_hud_logic_test.cpp near line 573 so the test does not depend on the function under test.",
+   "why_it_matters": "The commit silently enlarges left-side strip icons in normal play (about 1.5x). The only test touching this, queue_hud_logic_test.cpp:573 (KT_CHECK_EQ(stripIconSize(vit2, c), autoIconPx(vit2.h))), compares the function to itself, so it passes whatever the constant is and cannot catch the change. The 'Above/below' branch (194) keeps its own 60% formula, so the left side was apparently meant to keep 40%/[32,48] and was changed by mistake."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "776de4c",
+    "48c9298"
+   ],
+   "confidence": "medium",
+   "evidence": "shouldReInject now has `(void)paused; (void)now;` at 517 and returns `return hasFollowLeader;` at 520. The removed branch was `return hasFollowLeader || (paused && elapsed < 3000);` (old lines 497-498). Callers still pass paused and now (QueueHud.cpp:737 passes s.paused, now), so the signature looks unchanged but the paused re-inject behaviour is gone.",
+   "file": "patch_manager_mods/queue_hud_src/QueueHudLogic.h",
+   "lines": "516-521",
+   "local_id": "f2",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check the 0.3.0 changelog or the design notes for whether pause-triggered re-inject was meant to be dropped. Check the caller at QueueHud.cpp:737 and the buffer state while paused. Confirm queue_hud_logic_test.cpp:764 (`!shouldReInject(b, false, false, true, 1500)`) and the test block at 799-802 match the intended behaviour, and that the dead parameters are either documented or removed.",
+   "why_it_matters": "A removed behaviour path with no comment or changelog entry: while paused for under 3 s after an active item started, the queued item was previously re-injected and is now not. If that was not intended it is a silent regression in pause handling. The packet notes only say 'consumer migrations', so the removal may be deliberate, but nothing in the diff records it. The two parameters are now dead, which hides the change from callers."
+  }
+ ],
+ "no_issue_files": [
+  "patch_manager_mods/queue_hud_src/QueueHudLogic.h (combatBgRect at 242-250 and ItemBuffer/cancel/clear/push at 457-500 checked: the combatBgRect arithmetic matches the vanilla offsets 122/23 and 180/90 for a 40x40 slot, and userCancelled is reset in push and clear)"
+ ],
+ "notes": "Checker fact not localized: build_check reports the queue_hud_src link step failing (collect2/ld returned 1). The packet does not include the link inputs. I did not read exports.def or QueueHud.cpp in full, so I could not pin the undefined symbol. Next step: run the build in the scratch copy and read the ld 'undefined reference' lines. This failure blocks any gate PASS for this packet, so it should be triaged before the findings above. Other notes: combatBgRect is used at QueueHud.cpp:533 and tested at queue_hud_logic_test.cpp:711-719; cancel() is called at QueueHud.cpp:694 and userCancelled is cleared at QueueHud.cpp:911, both consistent with the header. The check_hook_spans and check_hook_bytes checkers reported no mentions for this mod, and the live patch_config.toml was not read. No candidates from the scanner were provided.",
+ "packet_id": "wp4-013",
+ "truncated": false
+}

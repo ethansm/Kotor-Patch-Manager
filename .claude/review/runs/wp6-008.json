@@ -1,0 +1,103 @@
+{
+ "attempts": 1,
+ "cost_usd": 0.01352234,
+ "duration_s": 56.0,
+ "ended": "2026-10-10T09:12:32Z",
+ "exit_code": 0,
+ "files": [
+  "patch_manager_mods/ranged_ai_src/common_contract_test.cpp"
+ ],
+ "first_turn_prompt_tokens": 12880,
+ "num_turns": 13,
+ "packet_id": "wp6-008",
+ "prompt_bytes": 9423,
+ "rate_limit_hits": 0,
+ "raw": "raw/wp6-008.a1.out",
+ "result_subtype": "success",
+ "schema_errors": [],
+ "schema_valid": true,
+ "started": "2026-10-10T09:11:36Z",
+ "status": "ok",
+ "truncated": false,
+ "turn_prompt_tokens": [
+  12880,
+  19279,
+  21044,
+  24832,
+  33703,
+  38415
+ ],
+ "turn_usage": [
+  {
+   "cache_creation_input_tokens": 5082,
+   "cache_read_input_tokens": 7796,
+   "input_tokens": 2,
+   "output_tokens": 5
+  },
+  {
+   "cache_creation_input_tokens": 6399,
+   "cache_read_input_tokens": 12878,
+   "input_tokens": 2,
+   "output_tokens": 5
+  },
+  {
+   "cache_creation_input_tokens": 1765,
+   "cache_read_input_tokens": 19277,
+   "input_tokens": 2,
+   "output_tokens": 8
+  },
+  {
+   "cache_creation_input_tokens": 3788,
+   "cache_read_input_tokens": 21042,
+   "input_tokens": 2,
+   "output_tokens": 3
+  },
+  {
+   "cache_creation_input_tokens": 8871,
+   "cache_read_input_tokens": 24830,
+   "input_tokens": 2,
+   "output_tokens": 4
+  },
+  {
+   "cache_creation_input_tokens": 4712,
+   "cache_read_input_tokens": 33701,
+   "input_tokens": 2,
+   "output_tokens": 2
+  }
+ ],
+ "turns_over_100k": 0,
+ "usage": {
+  "cache_creation": {
+   "ephemeral_1h_input_tokens": 30617,
+   "ephemeral_5m_input_tokens": 0
+  },
+  "cache_creation_input_tokens": 30617,
+  "cache_read_input_tokens": 119524,
+  "fallback_credit": null,
+  "inference_geo": "global",
+  "input_tokens": 12,
+  "iterations": [
+   {
+    "cache_creation": {
+     "ephemeral_1h_input_tokens": 4712,
+     "ephemeral_5m_input_tokens": 0
+    },
+    "cache_creation_input_tokens": 4712,
+    "cache_read_input_tokens": 33701,
+    "input_tokens": 2,
+    "output_tokens": 2646,
+    "type": "message"
+   }
+  ],
+  "output_tokens": 12405,
+  "output_tokens_details": {
+   "thinking_tokens": 9291
+  },
+  "server_tool_use": {
+   "web_fetch_requests": 0,
+   "web_search_requests": 0
+  },
+  "service_tier": "standard",
+  "speed": "standard"
+ }
+}

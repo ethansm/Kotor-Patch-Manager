@@ -1,0 +1,97 @@
+{
+ "attempts": 1,
+ "cost_usd": 0.008005350000000001,
+ "duration_s": 39.0,
+ "ended": "2026-10-10T09:13:36Z",
+ "exit_code": 0,
+ "files": [
+  "patch_manager_mods/portrait_slots_src/PortraitSlotsProvider.cpp",
+  "patch_manager_mods/portrait_slots_src/test.toml"
+ ],
+ "first_turn_prompt_tokens": 11422,
+ "num_turns": 9,
+ "packet_id": "wp7-007",
+ "prompt_bytes": 6469,
+ "rate_limit_hits": 0,
+ "raw": "raw/wp7-007.a1.out",
+ "result_subtype": "success",
+ "schema_errors": [],
+ "schema_valid": true,
+ "started": "2026-10-10T09:12:57Z",
+ "status": "ok",
+ "truncated": false,
+ "turn_prompt_tokens": [
+  11422,
+  13507,
+  14722,
+  16886,
+  20796
+ ],
+ "turn_usage": [
+  {
+   "cache_creation_input_tokens": 3624,
+   "cache_read_input_tokens": 7796,
+   "input_tokens": 2,
+   "output_tokens": 5
+  },
+  {
+   "cache_creation_input_tokens": 2085,
+   "cache_read_input_tokens": 11420,
+   "input_tokens": 2,
+   "output_tokens": 6
+  },
+  {
+   "cache_creation_input_tokens": 1215,
+   "cache_read_input_tokens": 13505,
+   "input_tokens": 2,
+   "output_tokens": 8
+  },
+  {
+   "cache_creation_input_tokens": 2164,
+   "cache_read_input_tokens": 14720,
+   "input_tokens": 2,
+   "output_tokens": 10
+  },
+  {
+   "cache_creation_input_tokens": 3910,
+   "cache_read_input_tokens": 16884,
+   "input_tokens": 2,
+   "output_tokens": 24
+  }
+ ],
+ "turns_over_100k": 0,
+ "usage": {
+  "cache_creation": {
+   "ephemeral_1h_input_tokens": 12998,
+   "ephemeral_5m_input_tokens": 0
+  },
+  "cache_creation_input_tokens": 12998,
+  "cache_read_input_tokens": 64325,
+  "fallback_credit": null,
+  "inference_geo": "global",
+  "input_tokens": 10,
+  "iterations": [
+   {
+    "cache_creation": {
+     "ephemeral_1h_input_tokens": 3910,
+     "ephemeral_5m_input_tokens": 0
+    },
+    "cache_creation_input_tokens": 3910,
+    "cache_read_input_tokens": 16884,
+    "input_tokens": 2,
+    "output_tokens": 2582,
+    "type": "message"
+   }
+  ],
+  "output_tokens": 9523,
+  "output_tokens_details": {
+   "thinking_tokens": 3629
+  },
+  "server_tool_use": {
+   "web_fetch_requests": 0,
+   "web_search_requests": 0
+  },
+  "service_tier": "standard",
+  "speed": "standard"
+ }
+}

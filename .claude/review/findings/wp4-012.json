@@ -1,0 +1,105 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.01428837,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 27934,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 27934,
+   "cache_read_input_tokens": 76977,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 8,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 7731,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 7731,
+     "cache_read_input_tokens": 27999,
+     "input_tokens": 2,
+     "output_tokens": 4547,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 15862,
+   "output_tokens_details": {
+    "thinking_tokens": 12126
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/perf_lab_src/perflab/kotor2-steam-aspyr.hooks.toml",
+  "patch_manager_mods/perf_lab_src/perflab/manifest.toml",
+  "patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp",
+  "patch_manager_mods/perf_lab_src/perflab/exports.def",
+  "patch_manager_mods/perf_lab_src/harness/smoke_perflab.cpp",
+  "patch_manager_mods/perf_lab_src/harness/smoke_saveevents.cpp",
+  "patch_manager_mods/perf_lab_src/perflab/common_contract_test.cpp"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "build",
+   "commits": [
+    "7aeb296"
+   ],
+   "confidence": "medium",
+   "evidence": "smoke_perflab.cpp:7 is `#include \"check.h\"` and smoke_saveevents.cpp:34 is `#include \"FakeKPatchApi.h\"`, yet build_check reports `fatal error: check.h: No such file or directory` and `FakeKPatchApi.h: No such file or directory` for all eight harness smoke files (rc 1, FAIL=1). The same `#include \"check.h\"` at perflab/common_contract_test.cpp:34 compiles and passes in run_tests (rc 0), so the include path is set for one target but not the harness target.",
+   "file": "patch_manager_mods/perf_lab_src/harness/smoke_perflab.cpp",
+   "lines": "7",
+   "local_id": "f1",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Compare the compile flags for the harness target against those used for common_contract_test.cpp (the -I entries for check.h and FakeKPatchApi.h). Confirm whether FakeKPatchApi.h and check.h exist in the snapshot at the paths the build expects. Re-run build_check in a fresh copy that has git history and binaries. Do not record the failure as pre-existing without a written waiver.",
+   "why_it_matters": "The perf_lab_src build gate fails, so the smoke harnesses (perflab, portraitslots, queuehud, saveevents, selfheal, probes) cannot run. Under the Gate Invariant this is a hard stop and cannot be waved off as a scratch-copy artifact without evidence."
+  },
+  {
+   "candidate_id": null,
+   "category": "hook",
+   "commits": [
+    "7aeb296"
+   ],
+   "confidence": "low",
+   "evidence": "Heavy post hook: `address = 0x0051D9C1` with `original_bytes = [0x3B, 0x05, 0xB8, 0x44, 0x99, 0x00]` (CMP EAX,[0x9944B8]) and `[[hooks.parameters]] source = \"eax\"`, bound to `void __cdecl PerfLabAiHeavyPost(int res)` (PerfLab.cpp:1756). Every hook in this block has `exclude_from_restore = []`. The stolen CMP sets the flags that the following Jcc consumes, and the handler is a compiled C++ cdecl function that can clobber EAX/ECX/EDX/EFLAGS.",
+   "file": "patch_manager_mods/perf_lab_src/perflab/kotor2-steam-aspyr.hooks.toml",
+   "lines": "756-765",
+   "local_id": "f2",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Read the KPM detour trampoline generator to confirm it saves and restores all general-purpose registers and EFLAGS around the cdecl handler call, and that the stolen instruction runs after the handler returns. Check that the parameter `eax` is captured before the handler runs. Then confirm that the same convention holds for the entry hook PerfLabToLower, which reads `ecx`, at 0x734690.",
+   "why_it_matters": "If the KPM detour trampoline does not save and restore EAX, ECX, EDX and EFLAGS around the handler call, the mid-function hooks at 0x51D9AB, 0x51D9C1 and 0x51D9F1 can change the comparison result or the AI update control flow in normal play. That would be a behaviour change in a perf-only patch."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "7aeb296"
+   ],
+   "confidence": "medium",
+   "evidence": "The manifest description says the diagnostics are \"inert unless perflab_debug.txt exists\", but the hooks file installs unconditional detours on hot paths: `address = 0x00734690` (CExoString::ToLower, kotor2-steam-aspyr.hooks.toml:806-812), `address = 0x004999F4` (FocusGob strcmp, lines 797-803), and the texture-id scan entry and exit at 0x427970 and 0x427A51 (lines 779-794). The `g_m`/`g_cfg.metrics` gate is only inside the handlers (PerfLab.cpp:1809-1812, 1803-1805).",
+   "file": "patch_manager_mods/perf_lab_src/perflab/manifest.toml",
+   "lines": "6",
+   "local_id": "f3",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check how KPM and the perf-lab init path decide which hooks to install. Confirm whether the 0.6.0 hooks are installed only when perflab_debug.txt exists. If they are installed unconditionally, measure the baseline cost of an idle trampoline on CExoString::ToLower and strcmp.",
+   "why_it_matters": "If the detours are installed even when the debug file is absent, every ToLower, strcmp and texture scan pays a trampoline cost. That conflicts with the documented inert default, and the measured timings would then include the instrumentation overhead."
+  }
+ ],
+ "no_issue_files": [
+  "patch_manager_mods/perf_lab_src/perflab/exports.def"
+ ],
+ "notes": "Checked the 24 scanner candidates (S-*) in kotor2-steam-aspyr.hooks.toml. Each `original_bytes` sequence decodes to whole instructions with no relative branch or call, and the byte counts and EBP offsets match the comments. The hook ranges do not overlap. The `[[hooks.parameters]]` candidates are harmless: this file has no `name =` keys at all, so the absence is consistent. Handlers exist with matching names in PerfLab.cpp:1593-1814 and are exported in exports.def:60-74. The 0.6.0 manifest version matches the description. The description also mentions an \"abreserve\" experiment and a GUI modal RTTI sampler (state=). Neither appears in this packet's hooks or in the lines I read, so I could not verify them. Raw addresses added in code: 0x00A1BC70, 0x00A1BC4C and 0x00A1BB84 (PerfLab.cpp:1787, 1798, 1799), plus the new hook addresses. The check-raw-addresses gate was skipped (human-only gap), so the symbol-lookup requirement cannot be verified here. The packet gives commit hashes only for the two hooks/manifest files, so the harness finding uses the batch commit 7aeb296. Steam-only hooks file: no GOG counterpart appears in perflab/, so parity is unverified. Checker facts for check_hook_spans and check_hook_bytes were not run (they depend on the live install). Minor, not reported: AiScanBegin/End, AiHeavyPre/Post and TexScan arm/disarm state can go stale on early return, which only skews measurements. Tool calls used: 7 of 12. Not truncated.\"]",
+ "packet_id": "wp4-012",
+ "truncated": false
+}

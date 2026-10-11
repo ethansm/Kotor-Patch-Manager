@@ -1,0 +1,132 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00992392,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 21454,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 21454,
+   "cache_read_input_tokens": 28972,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 4,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 8074,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 8074,
+     "cache_read_input_tokens": 21176,
+     "input_tokens": 2,
+     "output_tokens": 2908,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 10686,
+   "output_tokens_details": {
+    "thinking_tokens": 5117
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "scripts/master_ledger.py",
+  "scripts/test_master_ledger.py"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "KNOWN_MOD_ALIASES iterates in insertion order and matches by substring: `for alias, canonical in KNOWN_MOD_ALIASES.items(): if alias in low and not low.endswith(\"_src\"): return canonical`. The \"companion\" key (line 41) precedes \"selfheal\" (line 42), so the input `companion-selfheal` (or `companion_selfheal`) matches \"companion\" first and canonicalizes to `companion_ai_src` instead of `companion_selfheal_src`.",
+   "file": "scripts/master_ledger.py",
+   "lines": "36-59",
+   "local_id": "f1",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Call canonical_mod_name('companion-selfheal') and canonical_mod_name('companion_selfheal') and compare with canonical_mod_name('companion_selfheal_src'). Then run cmd_check_collision for companion_selfheal_src after logging a HOTSWAP_APPLY with mod='companion-selfheal' using a temp ledger. Consider whether the alias match should prefer the longest alias or require a whole-token match; add a test for this case in test_master_ledger.py.",
+   "why_it_matters": "Events logged with the hyphenated or unsuffixed selfheal mod name are recorded against companion_ai_src. cmd_check_collision for companion_selfheal_src then reports CLEAN even when another agent is hot-swapping or locking that mod, so the collision guard silently misses real conflicts."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "log_event catches all write errors: `except Exception as e: sys.stderr.write(f\"WARN [master_ledger]: Failed to write ledger event ...\")` and returns the record. The CLI `log` branch (lines 515-517) then calls `log_event(args.event, payload, ledger_path)`, prints \"Logged event ... to ...\", and returns 0.",
+   "file": "scripts/master_ledger.py",
+   "lines": "185-192",
+   "local_id": "f2",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Run `master_ledger.py --ledger /nonexistent/dir/x.jsonl log BUILD_GATE verdict=pass` (or on a read-only directory) and check the printed message and `echo $?`. Then check whether any caller of the `log` subcommand (outside this packet) tests the exit code. Consider having log_event return a success flag that the CLI turns into a nonzero exit.",
+   "why_it_matters": "A failed write (permissions, full disk, bad path) is reported to the caller as success with exit code 0. If a gate or build step records BUILD_GATE or HOTSWAP_APPLY through this CLI and checks only the exit code, a missing audit record passes silently, weakening the audit trail the gate relies on."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "medium",
+   "evidence": "`if \"unittest\" in sys.modules: for arg in sys.argv: if \"test\" in arg.lower(): return True` (lines 86-89), and in log_event (lines 180-182): `if is_test_environment() and ledger_path is None and \"MASTER_LEDGER_PATH\" not in os.environ: return record`. The early return is silent, with no stderr warning.",
+   "file": "scripts/master_ledger.py",
+   "lines": "75-91",
+   "local_id": "f3",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Search the callers of log_event outside this packet (for example the gate runner and hot-swap scripts) for calls that omit ledger_path, then check whether those callers can run under a test-named __main__ or with 'test' in argv. Consider printing a notice to stderr when the isolation guard drops an event.",
+   "why_it_matters": "Any in-process caller that logs real events without an explicit path is silently dropped when the heuristic fires, for example a process whose __main__ is named run_tests.py or whose argv contains a substring like 'test' while unittest is imported. A real gate or hot-swap event then disappears from the ledger with no trace."
+  },
+  {
+   "candidate_id": null,
+   "category": "bug",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "medium",
+   "evidence": "read_events: `records.append(json.loads(line))` with no type check, after `except json.JSONDecodeError: continue` (lines 207-210). format_event_line: `ts = rec.get(\"ts\", \"\")[:19]` (line 215). cmd_status: `e.get('ts')[:19]` (line 408).",
+   "file": "scripts/master_ledger.py",
+   "lines": "207-216",
+   "local_id": "f4",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Write a temp ledger containing the line `[]` followed by a valid event, then run `master_ledger.py --ledger <tmp> tail` and `status`. Consider filtering read_events to dict records and defaulting ts safely in cmd_status.",
+   "why_it_matters": "A valid-JSON but non-object line (for example `123` or `[]`) or a record without `ts` raises AttributeError or TypeError in tail, filter, status or check-collision. The ledger viewer then crashes on a single bad line instead of skipping it."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "medium",
+   "evidence": "is_test_pollution: `if any(pat in plan for pat in (\"test_plan\", \"test_saved_state\", \"autoresolve_test\", \"tmp\")): return True` (line 431), and `if mod in (\"demo\", \"demo_src\") ...: return True` (line 424). cmd_prune_test_data appends matches to master_ledger.test_archive.jsonl and then atomically rewrites the main ledger without them. There is no dry-run or confirmation.",
+   "file": "scripts/master_ledger.py",
+   "lines": "420-467",
+   "local_id": "f5",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Run prune-test-data against a copy of a realistic ledger and inspect which records are moved. Check whether any real plan paths contain 'tmp' as a substring or whether 'demo' is a legitimate mod. Consider a --dry-run flag and anchored plan-name matching. Confirm that the default DEFAULT_LEDGER path is not used unless intended.",
+   "why_it_matters": "The ledger is the audit trail. The bare substring 'tmp' and the 'demo' mod match can classify real records as test pollution, and the prune command removes them from the live ledger in one step. Archiving limits the loss, but the active audit view changes without review."
+  }
+ ],
+ "no_issue_files": [
+  "scripts/test_master_ledger.py"
+ ],
+ "notes": "Both files were judged from the whole-file content in the packet, so no tool calls were used. The assertion delta is pure addition (no assertions removed). Test-coverage gaps, not findings: test_test_isolation_guard (lines 113-120) passes trivially when DEFAULT_LEDGER does not exist, so it does not prove the guard works. No test covers the companion-selfheal alias collision (f1), log-write failure (f2), or prune of non-test records (f5). test_collision_detection and test_metrics_and_parent_agent restore env vars correctly. Nothing in either file touches the live game directory, install paths or hot-swap scripts, and no secrets or credential paths were referenced. The collision check's exit code 1 is advisory, and I found no gate that treats it as a pass/fail signal inside this packet.",
+ "packet_id": "wp1-009",
+ "truncated": false
+}

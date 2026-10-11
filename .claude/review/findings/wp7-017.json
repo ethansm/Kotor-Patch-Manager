@@ -1,0 +1,83 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00528264,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 11766,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 11766,
+   "cache_read_input_tokens": 21954,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 4,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 5404,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 5404,
+     "cache_read_input_tokens": 14158,
+     "input_tokens": 2,
+     "output_tokens": 2483,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 5419,
+   "output_tokens_details": {
+    "thinking_tokens": 3708
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "scripts/selfheal_log_check.py"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "medium",
+   "evidence": "DIAGPOP_RE = re.compile(r\"^DIAG pop item=(\\S+) .*?rgbOk=(\\d+) alphaOk=(\\d+)\") only accepts unsigned digits. A line such as `DIAG pop item=X ... rgbOk=-1 alphaOk=1` (or any non-digit value) does not match; v030_line (lines 123-135) then falls through to `return False`, and check() (lines 183-199) silently drops the line when outside a DUMP block or ignores it inside one. The `rgb_ok != 1 or alpha_ok != 1` failure branch at line 127-128 is therefore never reached for malformed or negative values, so the new colour/alpha gate fails open.",
+   "file": "scripts/selfheal_log_check.py",
+   "lines": "49",
+   "local_id": "f1",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check the emitter in patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp for the DIAG pop format (the rgbOk/alphaOk value domain). Then feed the checker a synthetic log with a DIAG pop line using rgbOk=-1, rgbOk=?, and a line missing alphaOk, and confirm the verdict is FAIL. Consider whether unmatched lines starting with `DIAG pop` should be recorded as failures rather than dropped by v030_line returning False.",
+   "why_it_matters": "The DIAG pop check was added as a gate: a colour/alpha failure should make verdict FAIL (line 249 uses bool(v[\"fail\"])). If the emitter ever writes a negative or non-numeric rgbOk/alphaOk, or omits one field, the probe reports PASS for a broken render path. This weakens the gate exactly for the new check."
+  },
+  {
+   "candidate_id": null,
+   "category": "style-risk",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "The docstring says lines are prefixed with \"<ms> companion-selfheal/<chan> [ERR |WARN ]\", but the new PREFIX_RE at line 27 also accepts a `T=<secs> f=<frame|->` prefix form that is not documented anywhere in the module docstring (lines 2-17).",
+   "file": "scripts/selfheal_log_check.py",
+   "lines": "9-10",
+   "local_id": "f2",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Compare the prefix formats emitted by KpLog.h / CompanionSelfHeal.cpp with PREFIX_RE on line 27 and update the module docstring (lines 9-10) to describe both prefix forms.",
+   "why_it_matters": "The prefix grammar is now wider than the documented contract. A future maintainer relying on the docstring may not know that T=/f= lines are accepted, or may change the emitter's T=/f= format without updating the regex, causing silent non-matching (see f1 for how unmatched lines are dropped)."
+  }
+ ],
+ "no_issue_files": [
+  "scripts/selfheal_log_check.py: lines 27 (PREFIX_RE rewrite), 46-48, 50-52, 67-122, 129-137, 140-252 otherwise look correct; verdict wiring (line 249) still includes v[\"fail\"], and the removed-line/added diag_pop key at line 144 is consistent."
+ ],
+ "notes": "Only one file in the packet. The emitter (CompanionSelfHeal.cpp, KpLog.h) is outside the packet and was not read, so the DIAG pop value domain in f1 is unverified; the fall-through path is proven from the checker code alone. PREFIX_RE changes (line 27): the new T=/f= alternative and \\s+ separators do not break the bare-line or ERR/WARN paths I traced. The new DIAG pop branch does not require at least one DIAG pop line to appear, so a log without them still PASSes; this is consistent with the other optional probes and is not reported as a finding. No secrets or credential paths were accessed. Tool calls used: 1.",
+ "packet_id": "wp7-017",
+ "truncated": false
+}

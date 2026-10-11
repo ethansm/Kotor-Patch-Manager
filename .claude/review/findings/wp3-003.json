@@ -1,0 +1,87 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.0089595,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 23197,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 23197,
+   "cache_read_input_tokens": 110060,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 10,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 1294,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 1294,
+     "cache_read_input_tokens": 29699,
+     "input_tokens": 2,
+     "output_tokens": 2869,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 6437,
+   "output_tokens_details": {
+    "thinking_tokens": 3208
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/inventory_3d_viewport_src/Inventory3DViewport.cpp",
+  "patch_manager_mods/_shared_src/GuiInput.h",
+  "patch_manager_mods/_shared_src/GuiKit.h"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "build",
+   "commits": [
+    "acf927a",
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "Line 36 is `#define INV3D_DRAG 1`, and the definition of `void syncScreen()` at line 303 sits inside the `#if INV3D_DRAG` block opened at line 289 and closed by `#endif` at line 332. Line 108 forward-declares `void syncScreen();` unconditionally, and it is called unconditionally from `loadIni()` at lines 118 and 140. With INV3D_DRAG set to 0 (the file's own documented toggle, line 36 comment) the declaration has no definition, so the build links with an unresolved `syncScreen` and the INI loader depends on a symbol that the flag removes.",
+   "file": "patch_manager_mods/inventory_3d_viewport_src/Inventory3DViewport.cpp",
+   "lines": "36-36",
+   "local_id": "f1",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Compile Inventory3DViewport.cpp with -DINV3D_DRAG=0 (or temporarily edit line 36) and check for an undefined reference to syncScreen. Then check whether the screen-sync function should live outside the #if INV3D_DRAG block (lines 303-306 moved above line 289), or whether loadIni's calls at lines 118 and 140 should be guarded the same way.",
+   "why_it_matters": "The new syncScreen call sites were added in the uncommitted v2 change to loadIni, which is outside any INV3D_DRAG guard. Any non-drag build (the flag is documented as a switch back to no mouse polling) will fail at link time or, if the symbol is supplied elsewhere, silently drop the screen sync. The flag is a documented toggle, so the dependency is a portability regression."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "acf927a",
+    "WORKTREE"
+   ],
+   "confidence": "medium",
+   "evidence": "logf (lines 63-68) increments `++g_logLines` and returns when `g_logLines >= MaxLogLines`, but the new `logw` at lines 69-72 and `loge` at lines 73-76 call `KP_LOGV` directly with no counter. Warning sites that fire on every hover event are therefore uncapped, e.g. line 473 `logw(\"H2: slot unusable (panel=%08x)\", panel)` and line 479/482 in ShowItem, which run per ShowItem call.",
+   "file": "patch_manager_mods/inventory_3d_viewport_src/Inventory3DViewport.cpp",
+   "lines": "69-72",
+   "local_id": "f2",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check whether KpLog itself rate-limits or caps lines (look at KpLog.h / KP_LOGV). If it does not, decide whether logw/loge should share the g_logLines counter (or a separate warn cap) and confirm by counting log lines from a session that repeatedly hovers an item whose slot is unusable (ShowItem, around lines 471-473).",
+   "why_it_matters": "The cap exists to stop the log from being starved or flooded. The ported warning paths sit on per-event code, so a persistent unusable-slot or out-of-range condition could emit unbounded lines into the core log file on every item hover, which the cap was meant to prevent."
+  }
+ ],
+ "no_issue_files": [
+  "patch_manager_mods/_shared_src/GuiInput.h"
+ ],
+ "notes": "Checked the packet's uncommitted hunks end to end inside the file. Confirmed: the new include `GuiInput.h` exists under patch_manager_mods/_shared_src; `guikit::initGuiInput` is defined inline in GuiKit.h:571 and is called unconditionally in KPatchInit (line 411); `syncScreen` is defined at line 303 and its guikit::syncScreen target is defined at GuiKit.h:440. The VarGuard/subst restore logic in ShowItem (lines 500-529) restores the item variation word on all exit paths I could trace, so no finding there. bindCover's logw conversion (393-394) and the BindInventoryView conversions (426, 441-459) are consistent with the old logf call sites. Old logf calls that remain on non-error paths (e.g. 422 null panel, 474 null item, 531 still-no-model) are a judgment call and not flagged. Not checked: manifest.toml/test.toml include-path flags and version strings in the other files (outside this packet's cited files; the checker facts already report build_check PASS and the contract test passing). The checker fact that the contract test passes does not cover the INV3D_DRAG=0 build in f1. The scanner candidates list was empty. No secret or credential paths were accessed.\"}",
+ "packet_id": "wp3-003",
+ "truncated": false
+}

@@ -1,0 +1,75 @@
+{
+ "attempts": 1,
+ "cost_usd": 0.00452146,
+ "duration_s": 26.0,
+ "ended": "2026-10-10T09:11:19Z",
+ "exit_code": 0,
+ "files": [
+  "patch_manager_mods/npc_diversity_src/override/diversity_2da_mapping.json"
+ ],
+ "first_turn_prompt_tokens": 12662,
+ "num_turns": 5,
+ "packet_id": "wp5-004",
+ "prompt_bytes": 8884,
+ "rate_limit_hits": 0,
+ "raw": "raw/wp5-004.a1.out",
+ "result_subtype": "success",
+ "schema_errors": [],
+ "schema_valid": true,
+ "started": "2026-10-10T09:10:53Z",
+ "status": "ok",
+ "truncated": false,
+ "turn_prompt_tokens": [
+  12662,
+  15953
+ ],
+ "turn_usage": [
+  {
+   "cache_creation_input_tokens": 4864,
+   "cache_read_input_tokens": 7796,
+   "input_tokens": 2,
+   "output_tokens": 6
+  },
+  {
+   "cache_creation_input_tokens": 3291,
+   "cache_read_input_tokens": 12660,
+   "input_tokens": 2,
+   "output_tokens": 7
+  }
+ ],
+ "turns_over_100k": 0,
+ "usage": {
+  "cache_creation": {
+   "ephemeral_1h_input_tokens": 8155,
+   "ephemeral_5m_input_tokens": 0
+  },
+  "cache_creation_input_tokens": 8155,
+  "cache_read_input_tokens": 20456,
+  "fallback_credit": null,
+  "inference_geo": "global",
+  "input_tokens": 4,
+  "iterations": [
+   {
+    "cache_creation": {
+     "ephemeral_1h_input_tokens": 3291,
+     "ephemeral_5m_input_tokens": 0
+    },
+    "cache_creation_input_tokens": 3291,
+    "cache_read_input_tokens": 12660,
+    "input_tokens": 2,
+    "output_tokens": 3099,
+    "type": "message"
+   }
+  ],
+  "output_tokens": 5371,
+  "output_tokens_details": {
+   "thinking_tokens": 3155
+  },
+  "server_tool_use": {
+   "web_fetch_requests": 0,
+   "web_search_requests": 0
+  },
+  "service_tier": "standard",
+  "speed": "standard"
+ }
+}

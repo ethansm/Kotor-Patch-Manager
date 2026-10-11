@@ -1,0 +1,53 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00483916,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 15505,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 15505,
+   "cache_read_input_tokens": 29076,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 4,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 2021,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 2021,
+     "cache_read_input_tokens": 21280,
+     "input_tokens": 2,
+     "output_tokens": 1411,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 2894,
+   "output_tokens_details": {
+    "thinking_tokens": 1658
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "research/companion_levelup/tools/parity/ui_test.cpp",
+  "research/companion_levelup/tools/parity/unit_gap_test.cpp",
+  "research/companion_levelup/tools/parity/scenario_test.cpp (grep hit only)"
+ ],
+ "findings": [],
+ "no_issue_files": [
+  "research/companion_levelup/tools/parity/ui_test.cpp",
+  "research/companion_levelup/tools/parity/unit_gap_test.cpp"
+ ],
+ "notes": "Assertion delta checked. ui_test.cpp: the one removed CHECK (old line 540, `CHECK(lo >= 3 && lo <= 5, \"lo %d\");`) is replaced by the same condition at line 544 with the missing `lo` argument supplied, so nothing was dropped. unit_gap_test.cpp: 37 -> 37 CHECKs, none removed. Every former `++g_fail; fprintf(...)` site (ui_test.cpp:181, 195) now routes through CHECK, and a grep of the parity directory finds no remaining g_fail or g_checks references in ui_test or unit_gap_test. The CHECK macro still evaluates its condition once. Harness: the packet does not contain TestHarness.h, and Glob under the parity directory did not find it. I could not read kt::Check or kt::Report, so I could not confirm that kt::Report returns nonzero when failures are recorded (both mains now end with `return kt::Report(...)`, replacing `return g_fail ? 1 : 0`). This is unverified, not a finding. A follow-up would be to read TestHarness.h and confirm Report returns a nonzero exit code when failures > 0. scenario_test.cpp (outside the packet, grep hit only) uses kt::g_checks and kt::g_failures and returns `kt::g_failures ? 1 : 0`, which suggests the harness exposes that counter. Production-side symbols g_tablePoll and g_tableStamp (now a struct with an mtime member, per ui_test.cpp:791) are assigned in the tests; their definitions are outside the packet and were not checked.\"]",
+ "packet_id": "wp6-012",
+ "truncated": false
+}

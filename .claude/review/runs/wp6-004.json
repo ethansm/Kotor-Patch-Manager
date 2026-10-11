@@ -1,0 +1,82 @@
+{
+ "attempts": 1,
+ "cost_usd": 0.00659818,
+ "duration_s": 30.0,
+ "ended": "2026-10-10T09:11:23Z",
+ "exit_code": 0,
+ "files": [
+  "patch_manager_mods/level_up_override_src/common_contract_test.cpp"
+ ],
+ "first_turn_prompt_tokens": 17138,
+ "num_turns": 4,
+ "packet_id": "wp6-004",
+ "prompt_bytes": 18805,
+ "rate_limit_hits": 0,
+ "raw": "raw/wp6-004.a1.out",
+ "result_subtype": "success",
+ "schema_errors": [],
+ "schema_valid": true,
+ "started": "2026-10-10T09:10:53Z",
+ "status": "ok",
+ "truncated": false,
+ "turn_prompt_tokens": [
+  17138,
+  20188,
+  23605
+ ],
+ "turn_usage": [
+  {
+   "cache_creation_input_tokens": 9340,
+   "cache_read_input_tokens": 7796,
+   "input_tokens": 2,
+   "output_tokens": 2
+  },
+  {
+   "cache_creation_input_tokens": 3050,
+   "cache_read_input_tokens": 17136,
+   "input_tokens": 2,
+   "output_tokens": 3
+  },
+  {
+   "cache_creation_input_tokens": 3417,
+   "cache_read_input_tokens": 20186,
+   "input_tokens": 2,
+   "output_tokens": 8
+  }
+ ],
+ "turns_over_100k": 0,
+ "usage": {
+  "cache_creation": {
+   "ephemeral_1h_input_tokens": 15807,
+   "ephemeral_5m_input_tokens": 0
+  },
+  "cache_creation_input_tokens": 15807,
+  "cache_read_input_tokens": 45118,
+  "fallback_credit": null,
+  "inference_geo": "global",
+  "input_tokens": 6,
+  "iterations": [
+   {
+    "cache_creation": {
+     "ephemeral_1h_input_tokens": 3417,
+     "ephemeral_5m_input_tokens": 0
+    },
+    "cache_creation_input_tokens": 3417,
+    "cache_read_input_tokens": 20186,
+    "input_tokens": 2,
+    "output_tokens": 2758,
+    "type": "message"
+   }
+  ],
+  "output_tokens": 5970,
+  "output_tokens_details": {
+   "thinking_tokens": 3857
+  },
+  "server_tool_use": {
+   "web_fetch_requests": 0,
+   "web_search_requests": 0
+  },
+  "service_tier": "standard",
+  "speed": "standard"
+ }
+}

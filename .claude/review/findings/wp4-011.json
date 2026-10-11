@@ -1,0 +1,135 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.028777329999999997,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 60178,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 60178,
+   "cache_read_input_tokens": 174293,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 8,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 2350,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 2350,
+     "cache_read_input_tokens": 65624,
+     "input_tokens": 2,
+     "output_tokens": 10724,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 29996,
+   "output_tokens_details": {
+    "thinking_tokens": 25768
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp (post-image 1-77, 93-99, 283-361, 529-607, 780-848, 1027-1110, 1195-1249, 1265-1328, 1588-1631, 1726-1818, 1851-1916, plus grep of 1677-1776)",
+  "patch_manager_mods/perf_lab_src/perflab/code_patches.toml (27-40)",
+  "patch_manager_mods/perf_lab_src/perflab/exports.def (2-80)",
+  "patch_manager_mods/perf_lab_src/perflab/kotor2-steam-aspyr.hooks.toml (655-819)"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "bug",
+   "commits": [
+    "7aeb296"
+   ],
+   "confidence": "medium",
+   "evidence": "ABRESERVE cave template: the reuse path loops esi from old count [this+4] up to n (0x39 FE / 0x7D 18 / ... 0x46 / EB EA), then runs `FF 05 <g_abReuse>; 5F 5E; E9 <back to 0x58C412>`. No instruction in the cave stores the new count (no `mov [ecx+4], edi`/`mov [ecx+4], eax`) before jumping back, while the stolen window is only the call at 0x58C40E and the grow path is taken only when n > capacity.",
+   "file": "patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp",
+   "lines": "812-815",
+   "local_id": "f1",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Disassemble the original SetSize around 0x58C406-0x58C440 (and the code at 0x58C412 onward) in the vanilla exe. Confirm where the count at [this+4] is written on the non-grow path. Then, with perflab_debug.txt abreserve=1, compare the count before and after SetSize(n) for n <= capacity (ABRESERVE log line and a unit/harness test that reads the array count).",
+   "why_it_matters": "If the original SetSize writes the new count after the grow call (at or after 0x58C412) rather than inside the grow routine 0x58C540, every reuse-path call leaves [this+4] at the old count while ActionEntry elements up to n were Reset. Array length would then disagree with the elements actually in use, causing wrong iteration, lost actions or save-data corruption, and it only shows up when the flag abreserve=1 is set."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "7aeb296"
+   ],
+   "confidence": "low",
+   "evidence": "Grow path in the cave computes new capacity (`mov edx,[ecx+8]; add edx,edx; ... cmp edx,4 ... cmp edx,eax ... mov edx,eax`) then pushes it (`0x52` push edx) and calls the grow routine at 0x58C540. The stolen original (line 808, `0x50` = push eax) pushed the requested count n, not a capacity.",
+   "file": "patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp",
+   "lines": "816-818",
+   "local_id": "f2",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Identify the calling convention and argument meaning of 0x58C540 from the vanilla exe (what it does with its stack argument: set count, set capacity, or only allocate). Check whether the cave should pass n as the original did. Verify with a harness that calls SetSize growing from capacity 0 and from capacity k and checks the count afterward.",
+   "why_it_matters": "If 0x58C540 treats its stack argument as the requested size (as the original call with push eax implies), passing max(2*cap, 4, n) changes the array length or allocation size. That changes engine behaviour for every grow in ActionEntry arrays, and it is only gated by the abreserve flag."
+  },
+  {
+   "candidate_id": null,
+   "category": "style-risk",
+   "commits": [
+    "7aeb296"
+   ],
+   "confidence": "high",
+   "evidence": "Header comment: \"the only behaviour changes are the flag-gated experiments tx=1 / g1skip=1 / hwmip=1 (off by default)\", but the same commit adds the abreserve=1 experiment (applyAbReserve at lines 807-834 rewrites the CExoArray<ActionEntry>::SetSize prologue), and the experiment list at lines 49-55 also omits abreserve.",
+   "file": "patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp",
+   "lines": "1-2",
+   "local_id": "f3",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Add abreserve=0 to the flag list in the header and the config comment block (lines 49-55), or otherwise correct the claim that only tx, g1skip and hwmip change behaviour.",
+   "why_it_matters": "The file header is the statement that the mod is diagnostics-only with a fixed list of behaviour-changing flags. An unlisted engine-behaviour patch makes that claim false for anyone auditing the mod from its header."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "7aeb296"
+   ],
+   "confidence": "low",
+   "evidence": "Old estimator PerfLabAiTick still does `if (m.aiTickT0 && m.aiLastPost > m.aiTickT0) { ... InterlockedIncrement(&m.aiTickHist[b]); }`, and the new PerfLabAiTickEnd (1770-1776) also increments `m.aiTickHist[b]` for the same tick and clears aiTickT0.",
+   "file": "patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp",
+   "lines": "1677-1681",
+   "local_id": "f4",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check that the old estimator's histogram write is removed or guarded, and confirm that every return path of UpdateState reaches the 0x51DF9D hook (compare the vanilla exe's exit points for 0x51D790 and the hook site).",
+   "why_it_matters": "The new commit says the exact tick time 'replaces' the entry-to-last-post estimate, but the old histogram write still exists. Both writers feed the same aiTickHist. In the normal order they do not double count, because the end hook clears aiTickT0. If the 0x51DF9D end hook is skipped on some path, the old estimator fills the same histogram, and the tick_hist buckets mix two definitions."
+  },
+  {
+   "candidate_id": null,
+   "category": "style-risk",
+   "commits": [
+    "7aeb296"
+   ],
+   "confidence": "low",
+   "evidence": "PerfLabFocusGobStrcmp: `if (!g_m || !g_cfg.metrics) return; MTimer t(HkFocusStrcmp); InterlockedIncrement64(&g_m->focusGobStrcmp);` and the hook (kotor2-steam-aspyr.hooks.toml:796-803) sits on a PUSH 0x0098BB30 inside the per-object FocusGob lookup, so the MTimer runs on every strcmp in that loop.",
+   "file": "patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp",
+   "lines": "1803-1807",
+   "local_id": "f5",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Measure FrameMs with metrics=1 and with the focus-strcmp detour removed, or drop the MTimer from this handler (a counter increment needs no timing) and compare the per-frame numbers.",
+   "why_it_matters": "An MTimer with timestamp reads on a hot string-compare path adds cost to the function being measured, so the FocusStrcmp numbers and the frame timings that include it are inflated. The HOOKCOST line only reports the probe itself."
+  }
+ ],
+ "no_issue_files": [
+  "patch_manager_mods/perf_lab_src/perflab/exports.def",
+  "patch_manager_mods/perf_lab_src/perflab/code_patches.toml"
+ ],
+ "notes": "Scanner candidates S-02a2e90573, S-287b98c468, S-36999b13fc, S-43ea58178a, S-4a3ece7ce0, S-55b747aecf, S-71226f4771, S-77b464c319, S-7b642fd2e6, S-8629a63f25, S-aa46d70b42, S-b7396789de, S-cde2e5855f were all the mechanical hits on the ABRESERVE cave offsets, the g_txSeen/g_abSeen log printfs and the uintptr_t casts. I checked the cave template: its 97 bytes are whole instructions, and each rel32 (0x27, 0x37, 0x58, 0x5D) and absolute address (0x30, 0x52) falls on the intended field. The printf argument counts match their format strings. The hook-window checks in kotor2-steam-aspyr.hooks.toml (lines 662-812) found each original_bytes window to be whole instructions with no relative branch, and each new exported handler is defined in the extern \"C\" block (line 1330 onward). So I did not raise the scanner pointer-math hits as findings. The ToLower hook reads its arguments as ecx and [esp+0] at entry, which is consistent with the cdecl(str, ra) signature at PerfLab.cpp:1809, so I did not flag it. Not verified: the vanilla bytes after 0x58C412 and the callee at 0x58C540 (outside the packet; f1 and f2 depend on them). Build gate: the checker's build_check reports FAIL rc=1 (missing check.h and FakeKPatchApi.h in the harness smoke files). Those files are not in this packet, so I cannot attribute the failure to a line here. Under the gate invariant it is still a hard stop until it is explained, and the harness include paths should be checked. The raw-address allowlist changes (new addresses 0x0058C406/0x58C412/0x58C540/0x7ECFA0 and the 0.6.0 hook addresses) are outside the packet; a symbol lookup should be confirmed before any allowlist edit. Only kotor2-steam-aspyr.hooks.toml exists in the perflab directory, so Steam/GOG parity for the 0.6.0 hooks cannot be confirmed from this packet; the GOG hooks file, if one exists, lies outside it. No new test covers the abreserve cave template, and PerfLab.cpp's harness tests cannot run until the build gate passes.\"}]",
+ "packet_id": "wp4-011",
+ "truncated": false
+}

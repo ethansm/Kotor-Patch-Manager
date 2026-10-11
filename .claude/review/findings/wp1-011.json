@@ -1,0 +1,66 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00206786,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 4288,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 4288,
+   "cache_read_input_tokens": 17836,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 4,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 2044,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 2044,
+     "cache_read_input_tokens": 10040,
+     "input_tokens": 2,
+     "output_tokens": 1605,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 2063,
+   "output_tokens_details": {
+    "thinking_tokens": 813
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "scripts/pre_install_gate.py",
+  "scripts/master_ledger.py (existence only, via Glob)"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "sys.path.insert(0, str(REPO / \"scripts\"))\ntry:\n    import master_ledger as ml\nexcept ImportError:\n    ml = None",
+   "file": "scripts/pre_install_gate.py",
+   "lines": "45-49",
+   "local_id": "f1",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check whether any downstream step (stage_and_verify_install.py verify or the ledger reader) requires a BUILD_GATE record for a PASS; if so, the silent fallback is a gate weakening. Verify by making master_ledger unimportable (e.g. run with -I or a temporary rename in a scratch copy, never against the live game dir) and confirming whether the gate prints any warning. Consider whether ImportError should be a hard stop or at least a WARN line. Read scripts/master_ledger.py to confirm log_event's failure modes (it is not read in this packet).",
+   "why_it_matters": "The gate's audit trail is optional: if master_ledger fails to import for any ImportError reason (missing file, broken dependency inside the module, path shadowing), ml is set to None and every later `if ml:` block silently skips the BUILD_GATE PASS/FAIL record while the gate still prints GATE PASS. Nothing warns the operator that the ledger record was dropped. Also, inserting REPO/scripts at position 0 at import time lets any same-named module in that directory shadow stdlib or sibling imports for this process."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Reviewed the packet hunks at lines 42-53 and 232-282 plus the module header (lines 1-60). The BUILD_GATE logging calls (261-266, 273-279) are guarded by `if ml:` and only log; they do not change the return codes, so the gate verdict logic itself (return 1 on GateFail, return 0 on PASS) is unchanged. The main concern is the silent ImportError fallback (f1). Not verified: whether log_event can raise (e.g. OSError on write), which would make the PASS path exit nonzero after printing GATE PASS; that is fail-safe rather than a weakening, so no finding. git_head() is called inside the failure handler and was not read. master_ledger.py exists at scripts/master_ledger.py but its contents were not read (outside the packet's budget of callees).",
+ "packet_id": "wp1-011",
+ "truncated": false
+}

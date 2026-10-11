@@ -1,0 +1,161 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00876618,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 20775,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 20775,
+   "cache_read_input_tokens": 31628,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 4,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 4739,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 4739,
+     "cache_read_input_tokens": 23832,
+     "input_tokens": 2,
+     "output_tokens": 4077,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 8589,
+   "output_tokens_details": {
+    "thinking_tokens": 5236
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "scripts/generate_diversity_2da.py"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "medium",
+   "evidence": "Twilek rows hard-code normalhead values (\"normalhead\": \"192\",  # llk_Ahrnell, 193 llk_Harra, 194 llk_KehVehn, 195 llk_LupoShar; dancer rows 198/200/204 with no comment). The indices are literals, not read from head_mapping returned by merge_heads_table (lines 479-493), which appends heads at idx = heads_2da.add_row(). The only remap, lines 534-536 (`if normalhead_val in head_mapping`), compares a numeric string such as \"192\" against head_mapping keys that are head names like \"llk_Ahrnell\", so it can never match and is dead code.",
+   "file": "scripts/generate_diversity_2da.py",
+   "lines": "343-346",
+   "local_id": "f1",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Confirm the vanilla heads.2da row count and the index each NEW_HEADS entry receives on a dry run (`--dry-run` against a copy of the override dir, not the live one). Compare with normalhead values in the emitted appearance.2da rows. Check whether the remap at lines 534-536 was meant to look up the head name and fix it or remove it.",
+   "why_it_matters": "If the live heads.2da does not have exactly 192 rows before the append, the appended llk_* heads land at different indices than the appearance rows reference, so Twi'lek NPCs would render the wrong head or an empty one. The generated C++ HEAD_* constants (generate_cpp_header, line 567-569) would then disagree with the appearance normalhead values."
+  },
+  {
+   "candidate_id": null,
+   "category": "other",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "high",
+   "evidence": "`live_override = args.game_override` with default `Path(DEFAULT_GAME_OVERRIDE)` (line 585), where DEFAULT_GAME_OVERRIDE is the Steam install override dir (lines 43-47). Lines 617-618 read heads.2da and appearance.2da from that live directory. Lines 677-686 (`if args.apply:` ... `shutil.copy2(staged_heads, heads_path)`, `shutil.copy2(staged_app, app_path)`) overwrite the live game files in place.",
+   "file": "scripts/generate_diversity_2da.py",
+   "lines": "612-618",
+   "local_id": "f2",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Check whether any test, gate, Makefile or CI step calls this script or passes --apply (search the scripts and test directories only). Confirm that --apply is the only path that writes to live_override, and consider whether the default --game-override should point at a staging copy. Verify no gate or test invokes it with --apply.",
+   "why_it_matters": "The repository rules say install and hot-swap paths must never be triggered by tests or tooling runs. This script is a tooling path that can write directly into the live game override directory via --apply, and its default target is that directory. A mistaken invocation would modify the installed game without going through the KPM build and gate flow."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "high",
+   "evidence": "`backup_dir = live_override / \"_diversity_premerge_backup\"` then unconditionally `shutil.copy2(heads_path, backup_dir / \"heads.2da.bak\")` and `shutil.copy2(app_path, backup_dir / \"appearance.2da.bak\")`. The backup is created on every --apply run, with no existence check.",
+   "file": "scripts/generate_diversity_2da.py",
+   "lines": "677-682",
+   "local_id": "f3",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Confirm that re-running --apply on an already-merged override overwrites heads.2da.bak and appearance.2da.bak. Check whether the backup should be skipped when it already exists, or should be made write-once.",
+   "why_it_matters": "After the first successful --apply, the live files already contain the merged tables. A second --apply run overwrites the 'premerge' backup with the merged state, so the only copy of the original vanilla 2DAs is lost. Recovery then depends on reinstalling the game."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "medium",
+   "evidence": "Rows reference textures by base names only: texa/texb \"N_CommF\" (lines 146, 325-326, 387, 397, 407), \"N_CommM\" (lines 83-85, 314-315). A grep of this script for `N_CommF[0-9]` or `N_CommM[0-9]` returns no matches. The Known facts list N_CommF01..N_CommF32 .tpc files in the override directory, and mark only N_CommF01 as referenced.",
+   "file": "scripts/generate_diversity_2da.py",
+   "lines": "146-146",
+   "local_id": "f4",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Find which component references N_CommF01..N_CommF32 (only the cited mod files and the C++ detour source, not the binaries). Check the blob-to-name mapping for N_CommF01 and verify the claimed reference. Confirm whether the orphaned .tpc files are needed at all.",
+   "why_it_matters": "Roughly 30 staged .tpc binaries (about 1.4 to 5.6 MB each) are not referenced by any row this generator writes. Either they are dead assets shipped with the mod or they are referenced by a component outside this packet. The Known facts claim of a reference for N_CommF01 is not supported by this script."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "medium",
+   "evidence": "`shutil.copy2(staged_heads, heads_path)` followed by `shutil.copy2(staged_app, app_path)`, with no temp-file or rollback step between them.",
+   "file": "scripts/generate_diversity_2da.py",
+   "lines": "684-685",
+   "local_id": "f5",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check whether the copies can be made atomic (write to a temp name in the same directory, then rename both) or whether the backup can restore both files on failure. Test with a simulated exception between the two copies on a scratch directory.",
+   "why_it_matters": "If the process is interrupted or the second copy fails, the live override holds a merged heads.2da with a vanilla appearance.2da (or the reverse). The two tables reference each other through normalhead and head row indices, so this mismatch can break NPC heads."
+  },
+  {
+   "candidate_id": null,
+   "category": "style-risk",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "high",
+   "evidence": "`logging.disable(logging.CRITICAL)` at module import, before any logging call.",
+   "file": "scripts/generate_diversity_2da.py",
+   "lines": "34-34",
+   "local_id": "f6",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check whether pykotor reports parse or write problems through logging during read_2da or write_2da. Consider scoping the silence to the pykotor calls, or removing it, and confirm the staged 2DAs round-trip correctly.",
+   "why_it_matters": "This disables all logging in the process, including pykotor warnings during read_2da and write_2da. A malformed input table can then be merged without any visible warning."
+  },
+  {
+   "candidate_id": null,
+   "category": "build",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "high",
+   "evidence": "`os.path.expanduser(\"~/.local/share/Steam/steamapps/common/Knights of the Old Republic II\")` as the KOTOR2_ROOT fallback.",
+   "file": "scripts/generate_diversity_2da.py",
+   "lines": "43-46",
+   "local_id": "f7",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Confirm the default is only a fallback and is overridden by the KOTOR2_ROOT env var or --game-override. Check that no build or gate script relies on this default.",
+   "why_it_matters": "The default depends on one machine's Steam layout and a home-directory path. On other machines it resolves to a path that may not exist or may point at the wrong install, which can lead to the live-directory risk in f2."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Only scripts/generate_diversity_2da.py was in the packet as a file; the DiversityRows.h header, the hooks file, the manifest and the .tpc binaries were not read, and no secrets were accessed. Known facts for the .tpc files were used as given, not read. Not reported: CZERKA_OFF_F_TEMPLATE uses body_bag \\\"1\\\" while the other templates use \\\"3\\\" (line 258); this is unexplained but may be intentional, so no finding was raised. The `--dry-run` path (lines 646-648) returns before any writes, so it is safe for inspection. The mesh/texture names N_CommM_Fat and N_CzerkaOff, and the head names llk_*, were not checked against any shipped asset list, because the packet did not include one.",
+ "packet_id": "wp5-005",
+ "truncated": false
+}

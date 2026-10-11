@@ -1,0 +1,84 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.005696110000000001,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 12777,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 12777,
+   "cache_read_input_tokens": 23681,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 4,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 4688,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 4688,
+     "cache_read_input_tokens": 15885,
+     "input_tokens": 2,
+     "output_tokens": 3827,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 5807,
+   "output_tokens_details": {
+    "thinking_tokens": 3979
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/active_effects_panel_src/CharEffectsPanel.cpp",
+  "patch_manager_mods/active_effects_panel_src/manifest.toml"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "api-break",
+   "commits": [
+    "7aeb296"
+   ],
+   "confidence": "low",
+   "evidence": "KPatchInit now calls `guikit::initGuiInput(api, \"character-effects-panel\");` (line 864) before `ensureInit()`, and line 39 adds `#include \"GuiInput.h\"`. Neither the definition nor the declaration is in the packet, and a Glob for GuiInput.h under the packet directory returned nothing, so the signature, the idempotence and the failure behaviour of initGuiInput are unverified.",
+   "file": "patch_manager_mods/active_effects_panel_src/CharEffectsPanel.cpp",
+   "lines": "862-866",
+   "local_id": "f1",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Locate GuiInput.h via the include path (-I Common or -I../_shared_src) and check the declaration and definition of guikit::initGuiInput: its parameter types, whether a second call from another mod is a no-op, and what it does when the gui-input provider is absent. Check whether common_contract_test.cpp pins this new shared API, since the packet does not show an update to that file.",
+   "why_it_matters": "KPatchInit runs inside the game's init path. If initGuiInput is not idempotent, or fails silently, or is not declared with this (const KPatchApi*, const char*) signature, the panel or other mods that share the input layer could break at load time. The packet does not show that the call is safe."
+  },
+  {
+   "candidate_id": null,
+   "category": "other",
+   "commits": [
+    "7aeb296"
+   ],
+   "confidence": "medium",
+   "evidence": "The manifest changes `requires = []` to `requires = [\"gui-input\"]` and adds `requires_interfaces = [\"k2.guiinput@1\"]` (lines 8-9). The mod now hard-depends on a second mod and on an interface version.",
+   "file": "patch_manager_mods/active_effects_panel_src/manifest.toml",
+   "lines": "8-9",
+   "local_id": "f2",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Confirm the loader treats a missing `requires` entry or a missing `requires_interfaces` version as a clean skip, not a crash or a silent half-load of the panel's hooks. Confirm that a gui-input manifest providing k2.guiinput@1 exists in the repo, and that the hook file for this mod does not register its detours before the dependency is satisfied.",
+   "why_it_matters": "This is a deliberate consumer migration, but it changes load behaviour for every user. Without the gui-input mod installed, the character-page panel may fail to load outright, where before it loaded standalone. A version mismatch on k2.guiinput@1 could also block it."
+  }
+ ],
+ "no_issue_files": [
+  "patch_manager_mods/active_effects_panel_src/CharEffectsPanel.cpp (tag table, T_S0/T_MORE enum and NumTags==82 static_assert, and the bindLabel tag-name loop at 884-888 agree with each other; the S block is bound through \"DINTS\"[4]; the logw/loge/whyLog level changes at 96-115 are consistent)"
+ ],
+ "notes": "Checked the tag enum (lines 66-69), the bind loop (884-888) and the tail array order against the enum; the S block is bound through the \\\"DINTS\\\" index, so no unbound STAT column. The log-level refactor (96-115) is consistent. The hooks file for this mod (H-C1/H-C3/H-C4) is not in the packet, so hook byte spans, Steam/GOG parity and detour registration/unregistration were not audited. checker facts show build_check PASS and the contract test passing, which does not cover initGuiInput. Glob for GuiInput.h under the packet directory found nothing; the shared header is outside the packet and was not read, so f1 stays low confidence. No secrets were accessed.",
+ "packet_id": "wp4-004",
+ "truncated": false
+}

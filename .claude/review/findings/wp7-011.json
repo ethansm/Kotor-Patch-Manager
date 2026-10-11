@@ -1,0 +1,145 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.0059628599999999995,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 8801,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 8801,
+   "cache_read_input_tokens": 7796,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 2,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 8801,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 8801,
+     "cache_read_input_tokens": 7796,
+     "input_tokens": 2,
+     "output_tokens": 8249,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 8249,
+   "output_tokens_details": {
+    "thinking_tokens": 5442
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "scripts/clef_matcher.py"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "test",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "elif args.command == \"test\": ... for p, m in test_prompts: d = route_task(p, explicit_mod=m, log_telemetry=False); print(f\"PASS: '{p[:40]}...' -> role={d['role']} backend={d['backend']} mod={d['active_mod']}\"). The expected mod/role values in test_prompts (lines 422-428) are never compared to the decision, and no non-zero exit or failure branch exists.",
+   "file": "scripts/clef_matcher.py",
+   "lines": "419-431",
+   "local_id": "f1",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Check each test_prompts entry against an expected role/mod tuple, print FAIL and exit non-zero on mismatch. Run `python3 -I scripts/clef_matcher.py test` with the local daemon stopped and with it running, and confirm the exit code changes when an expectation is deliberately wrong.",
+   "why_it_matters": "The 'test' self-test prints PASS for every prompt regardless of what was routed and always exits 0. It cannot fail, so any regression in routing (wrong role, wrong mod, wrong scope) goes unnoticed while the output claims PASS."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "for mod in existing_mods: base = mod.replace(\"_src\", \"\").replace(\"_\", \"\"); ... if mod.lower() in prompt_lower or clean_mod.lower() in prompt_lower or base.lower() in prompt_lower: return mod. existing_mods is a set (line 61-64) and the first substring hit wins.",
+   "file": "scripts/clef_matcher.py",
+   "lines": "80-85",
+   "local_id": "f2",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Run `route` several times with a prompt that contains two mod names under different PYTHONHASHSEED values and compare active_mod. List existing *_src directories under patch_manager_mods and check whether any base name (underscores removed) is a substring of ordinary words. Consider sorting candidates and preferring exact or longest matches.",
+   "why_it_matters": "Set iteration order for strings depends on hash randomization, so when a prompt matches more than one mod the chosen active_mod changes between runs. Substring matching on short bases (e.g. a short mod name contained in common words) can also select the wrong write scope, which sanitize_write_scope (lines 159-161) then grants to the subagent."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "top_role = sorted_probs[0][0] if sorted_probs else role_ans.get(\"choice\", \"code\") ... role = top_role ... backend = backend_ans.get(\"choice\", \"cloud\") ... model = model_ans.get(\"choice\", ...) ... scope = sanitize_write_scope(role, active_mod). VALID_ROLES (line 34) and VALID_BACKENDS (line 35) are defined but never referenced in the file.",
+   "file": "scripts/clef_matcher.py",
+   "lines": "321-343",
+   "local_id": "f3",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Confirm that VALID_ROLES and VALID_BACKENDS have no uses elsewhere in the file. Feed a fake daemon response with role 'unknown' and an active mod, then check the returned write_scope. The fix should validate role, backend and model before sanitize_write_scope runs and map invalid values to the deterministic fallback or the ambiguous path.",
+   "why_it_matters": "Role, backend and model returned by the daemon are accepted without checking them against the declared sets. An unknown role falls through sanitize_write_scope (lines 159-165) and receives patch_manager_mods/<mod>/* write scope, so an unvalidated model answer can widen what a subagent may write."
+  },
+  {
+   "candidate_id": null,
+   "category": "bug",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "medium",
+   "evidence": "if clef_resp and \"answers\" in clef_resp: ans = clef_resp[\"answers\"]; role_ans = ans.get(\"role\", {}) ... probs = role_ans.get(\"probabilities\", {}); sorted_probs = sorted(probs.items(), key=lambda x: x[1], reverse=True) ... top_conf = sorted_probs[0][1]. No try/except wraps this block.",
+   "file": "scripts/clef_matcher.py",
+   "lines": "315-325",
+   "local_id": "f4",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Call route_task with query_clef_engine monkeypatched to return {'answers': {'role': {'probabilities': ['x']}}}, {'answers': 'bad'}, and {'answers': {'role': {'probabilities': {'scout': 'high'}}}}. Check whether an exception escapes. Wrap the parse step and fall back on malformed shapes.",
+   "why_it_matters": "If the daemon returns a non-dict answer, a list where a dict is expected, or non-numeric probabilities, route_task raises instead of falling back to deterministic_fallback_routing (lines 370-372). The command then fails with no contract, which breaks the offline-safe path the docstring promises."
+  },
+  {
+   "candidate_id": null,
+   "category": "other",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "medium",
+   "evidence": "Docstring: \"output calibrated subagent execution contracts in <45ms.\" Fallback comment at line 203: \"(<5ms latency)\". query_clef_engine uses timeout_sec: float = 1.0 (line 168) and urlopen timeout=timeout_sec (line 177).",
+   "file": "scripts/clef_matcher.py",
+   "lines": "2-5",
+   "local_id": "f5",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Time route_task with a daemon that accepts the connection and never responds, then compare with the documented budget. Either correct the comments or lower the timeout.",
+   "why_it_matters": "A hung daemon adds up to a second before the fallback runs, so the latency claims in the docstring and comments do not hold. Agents that rely on the stated budget may misjudge timing."
+  },
+  {
+   "candidate_id": null,
+   "category": "other",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "medium",
+   "evidence": "CLEF_HEALTH_URL = os.environ.get(\"CLEF_HEALTH_URL\", \"http://127.0.0.1:8101/docs\") is defined at line 31 and no later line in the file reads it.",
+   "file": "scripts/clef_matcher.py",
+   "lines": "30-31",
+   "local_id": "f6",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Confirm no references to CLEF_HEALTH_URL exist in the scripts that call this module. Either implement the health check or remove the constant.",
+   "why_it_matters": "Unused configuration suggests a health check that was planned but not implemented. Callers may assume the daemon is checked before routing when it is not."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Single-file packet; reviewed the whole of scripts/clef_matcher.py from the packet content. I did not open the callees clef_dataset.py (extract_ledger_facts, get_mod_prior) or master_ledger.py (log_event, canonical_mod_name), so the prior's shape and the ledger write behaviour are unverified. Ruled out: git subprocess timeouts are caught by the broad except (lines 103-119, 126-146); the cooldown lookup in get_cooled_down_models catches malformed telemetry; the ambiguity guard divides only when second_conf > 0. The file is untracked, so commits is WORKTREE. No tool calls were used.",
+ "packet_id": "wp7-011",
+ "truncated": false
+}

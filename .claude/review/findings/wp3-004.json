@@ -1,0 +1,167 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.01812001,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 48214,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 48214,
+   "cache_read_input_tokens": 136991,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 8,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 6252,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 6252,
+     "cache_read_input_tokens": 49758,
+     "input_tokens": 2,
+     "output_tokens": 6856,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 14213,
+   "output_tokens_details": {
+    "thinking_tokens": 9366
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+  "patch_manager_mods/level_up_override_src/manifest.toml",
+  "patch_manager_mods/level_up_override_src/test.toml",
+  "patch_manager_mods/_shared_src/GameAddr.h",
+  "patch_manager_mods/_shared_src/FileWatch.h"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "Non-forced path: `if (!filewatch::changed(g_ptPoll, PtName, GetTickCount(), false, &st)) return;` then `const bool changed = !g_ptPoll.primed || (st != g_ptPoll.last);` followed by `g_ptPoll.last = st; g_ptPoll.primed = true;`. FileWatch.h:77-85 `changed()` already sets `p.last = s; p.primed = true;` before returning true, so by line 1412 `changed` is always false on the non-forced path. The `if (changed) KP_LOG(chPlay, \"PLAYTHROUGH %s: ...\")` at line 1429 therefore never fires on throttled reloads (including the first load).",
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "lines": "1404-1414",
+   "local_id": "f1",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Compare the value of changed with the stamp returned by filewatch::changed (FileWatch.h:77-85) in a host test: edit levelup_playthroughs.ini while the game runs and check levelup_override_log.txt for a PLAYTHROUGH loaded line. Fix direction for the author: take the changed result from filewatch::changed rather than recomputing it after the poll has already recorded the stamp.",
+   "why_it_matters": "The 'PLAYTHROUGH loaded/missing' diagnostic that the port was meant to keep is silently lost for every real file change seen by the poll; only forced reloads (ptApply/ptSetPc/ptRemove) log it. Reload behaviour itself is unaffected because rebuildPtCfg runs unconditionally."
+  },
+  {
+   "candidate_id": null,
+   "category": "other",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "Comment: `// F1: the log is diagnostics only - a closed/capped/unopenable log (g_f == nullptr) makes logf a no-op` above `logOpen();`, while the port defines `inline bool logOpen() { return true; }` and `inline void logClose() {}` (lines 164-165) and removes g_f and the line cap entirely (line 162 area / 1628-1729 logf calls).",
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "lines": "1570-1570",
+   "local_id": "f2",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Confirm that no g_f or MaxLogLines reference remains (a grep of the file for g_f, MaxLogLines and logOpen shows only the stubs at lines 164-165 and the call at 1570), then update or remove the stale F1 comment once the logging port is settled.",
+   "why_it_matters": "The comment describes a g_f/capped-log mechanism that no longer exists, so a future reader will believe the log can be closed or capped and that logf depends on g_f. This is a comment that contradicts the code."
+  },
+  {
+   "candidate_id": null,
+   "category": "other",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "Header line 1: `// Level-Up Override 1.0.0 (Steam Aspyr build ...)` and line 14: `// 1.0.0 cleanup: mode=rewrite is the default ...`, while line 104 of the post-image sets `constexpr const char* Version = \"1.6.0-dev\";` and manifest.toml:4 has `version = \"1.6.0-dev\"`. The history block (lines 6-14) also ends at 1.0.0 with no 1.5.0 or 1.6.0 entry, although the version was bumped from 1.5.0-dev in this change.",
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "lines": "1-1",
+   "local_id": "f3",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Grep the file header and the Version constant for version strings; decide whether 1.6.0-dev is the intended version and add a history entry for the 1.5.0 to 1.6.0 port, or correct the header. Check the manifest and the banner log line (ensureHeader, KP_LOG chMain) show the same string.",
+   "why_it_matters": "The version in the file's own documentation disagrees with the version the DLL logs in its banner and with the manifest. The domain notes ask for version strings to agree across files."
+  },
+  {
+   "candidate_id": null,
+   "category": "build",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "`cxxflags = [\"-I../_shared_src\", \"-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common\", ...]` in the [common_contract_test] table. This file is not in the packet's diff hunks, so I could not tell whether the line was changed in this work.",
+   "file": "patch_manager_mods/level_up_override_src/test.toml",
+   "lines": "4-4",
+   "local_id": "f4",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check whether the line is new in the worktree (compare with the previous test.toml or with shield_bar_src/test.toml, which the file comment says it mirrors). If it is new, the Common include should be a repository-relative path or a build-time variable; run the common_contract_test on a clean checkout to confirm it fails or passes independent of $HOME.",
+   "why_it_matters": "A $HOME-rooted include path to a personal workspace makes the common_contract_test build depend on one machine's layout. On any other machine the contract test cannot compile, which weakens the gate, and it also points at a Common directory outside the repository."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "low",
+   "evidence": "`char buf[2048]; ... vsnprintf(buf, sizeof buf, fmt, ap); ... KP_LOG(chLevelUp, \"%s\", buf);` in logf (lines 168-174) and the same pattern in logLine (lines 177-183). The previous code wrote with vfprintf to the file with no fixed buffer.",
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "lines": "169-182",
+   "local_id": "f5",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check the Buf capacity used for the list fields (b.s, f.s, s.s, h.s, d.s, cb.s, fb.s in the 1009-1025 and 1693-1697 range) and the worst-case length of one dump line. If the sum can exceed 2047 characters, add a truncation marker or split the dump into several KP_LOG lines.",
+   "why_it_matters": "Dump lines longer than 2048 bytes (for example the feat or power lists in the per-call dump at lines 1628-1697) are now truncated silently. The diagnostic for a large pending struct could be cut off without any marker."
+  },
+  {
+   "candidate_id": null,
+   "category": "other",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "Comment added above ptWriteText: `// Propose additive writeThrough parameter to filewatch::atomicWrite for Common owner adoption in Chunk C9.` The FileWatch.h shared header (`atomicWrite(const char* path, const std::string& text, bool makeBakOnce)`, FileWatch.h:113) has no writeThrough parameter, and ptWriteText does not call filewatch::atomicWrite.",
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "lines": "1434-1435",
+   "local_id": "f6",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Confirm that no code path calls filewatch::atomicWrite for levelup_playthroughs.ini; if none does, move the proposal into the design notes and keep only a short comment on the MOVEFILE_WRITE_THROUGH flag in ptWriteText.",
+   "why_it_matters": "This is a planning note that describes an API change to a shared Common header inside a mod source file. It refers to a parameter that does not exist, and a future reader may assume that filewatch::atomicWrite already gives the write-through guarantee that ptWriteText provides itself."
+  },
+  {
+   "candidate_id": null,
+   "category": "bug",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "low",
+   "evidence": "`const char* LogName = \"levelup_override_log.txt\";` followed by `const bool g_fallbackSet = (KpLog_SetFallbackFile(LogName), true);`, a namespace-scope dynamic initializer that runs when the DLL loads, before KPatchInit (line 97) hands over the API.",
+   "file": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "lines": "161-162",
+   "local_id": "f7",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Read KpLog_SetFallbackFile in the KpLog source (not in this packet) to confirm it only stores the pointer and does no I/O. If it does more, move the call into KPatchInit or ensureHeader and check that the unused g_fallbackSet can go.",
+   "why_it_matters": "A call into the KpLog library from a static initializer runs before KPatchInit and possibly under the loader lock. If KpLog_SetFallbackFile does more than store a pointer, this can cause init-order or deadlock problems. The variable is also unused apart from its initializer."
+  }
+ ],
+ "no_issue_files": [
+  "patch_manager_mods/level_up_override_src/manifest.toml"
+ ],
+ "notes": "Checked the logging port: no fprintf, vfprintf, g_f or g_logLines remain in LevelUpOverride.cpp; the logf/logLine call sites all route through KP_LOG/KP_LOGV, and the fopen calls left are config/table/playthrough file reads (lines 258, 520, 1192, 1420, 1437, 2183), not log writes. Engine address constants moved to gameaddr:: (lines 1051-1054, 1059) match _shared_src/GameAddr.h values (AppGlobal 0xA1B4A4, ExoCtor/ExoDtor, PtrListAdd 0x83EA60, PartyGetAt 0x7E5DA0, MemberServerCreature 0x77D800, ClientPartyTable 0x73FB90); no finding. Scanner candidates S-5455269ad7 (line 1539) and S-c5d35cb505 (line 1531) are harmless: the uintptr_t cast is printed as (unsigned) with %08x on a 32-bit build; not confirmed. The domain note's leader heal button is not in this packet's hunks, so it was not verified. The ensureHeader change (rotateIfLarge now runs only when KpLog_HasCore() is false, lines 1210-1213) is a behaviour change I could not check against KpLog's rotation. The main DLL build flags (manifest.toml has no cxxflags or -I entries for the new KpLog.h/FileWatch.h/GameAddr.h includes) were not confirmed; the build-check PASS fact suggests the tool supplies them. Known facts (build_check PASS, run_tests PASS) were not contradicted by anything I read. The packet is provisional per the checker facts; the live-install dependencies were not touched by this audit.\"]",
+ "packet_id": "wp3-004",
+ "truncated": false
+}

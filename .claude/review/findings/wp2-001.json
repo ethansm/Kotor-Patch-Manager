@@ -1,0 +1,85 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00444897,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 12077,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 12077,
+   "cache_read_input_tokens": 18317,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 4,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 9352,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 9352,
+     "cache_read_input_tokens": 10521,
+     "input_tokens": 2,
+     "output_tokens": 2792,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 3700,
+   "output_tokens_details": {
+    "thinking_tokens": 1799
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/_shared_src/SelfHealUi.h",
+  "patch_manager_mods/_shared_src/GameAddr.h (grep only)",
+  "patch_manager_mods/_shared_src/selfheal_ui_test.cpp (grep only)"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "style-risk",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "Line 21: `inline bool isLeaderVit(Rect vit) { return vit.w >= 70; }` and line 22: `inline bool isLeaderVitForButton(Rect vit) { return vit.w >= 70; }`. The new predicate is a byte-for-byte duplicate of isLeaderVit. A grep of _shared_src finds no caller of isLeaderVitForButton; buttonRect (line 24) still calls isLeaderVit. The comment at lines 19-20 describes the leader/companion rule for the button, but the new name is not used.",
+   "file": "patch_manager_mods/_shared_src/SelfHealUi.h",
+   "lines": "21-22",
+   "local_id": "f1",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Grep the whole mod tree (and any other mod that includes SelfHealUi.h) for isLeaderVitForButton. If there are no callers, the agent left a stray duplicate. If there are callers, confirm they want the same threshold, and add a test in selfheal_ui_test.cpp that pins the new name.",
+   "why_it_matters": "Two predicates with the same body will drift if one threshold is later changed. A reader may assume buttonRect uses the 'ForButton' variant, or that the two have different semantics. The test file pins only isLeaderVit, so the duplicate is untested."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "medium",
+   "evidence": "`inline Rect leaderButtonRect(Rect card) { if (card.w <= 0 || card.h <= 0) return Rect{0, 0, 0, 0}; return Rect{card.x, card.y, 58, 58}; }` The size is a fixed 58x58 with no link to card.h. It places the button at the card's top-left corner (card.x, card.y), not left of the card with a gap. This differs from buttonRect (lines 23-31), which scales the button to h/4 clamped to 16..24, places it at vit.x - gap - s, and rejects h > 400. No caller exists in the snapshot.",
+   "file": "patch_manager_mods/_shared_src/SelfHealUi.h",
+   "lines": "46-49",
+   "local_id": "f2",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Grep the mod tree for leaderButtonRect and its callers. Check whether the leader button is meant to use this geometry. Compare the 58 px size against the leader card dimensions cited in lines 20 (103x208 at 3840x1600). If it is not used, remove it or add a source comment and a test in selfheal_ui_test.cpp.",
+   "why_it_matters": "This is an unused helper with geometry that contradicts the design documented in lines 34-36 and in buttonRect. If it is wired into the leader card path later, the button would overlap the card and would not scale with resolution. The magic number 58 has no source comment."
+  }
+ ],
+ "no_issue_files": [
+  "patch_manager_mods/_shared_src/GameAddr.h"
+ ],
+ "notes": "GameAddr.h: the PerformCastSpell constant at line 69 is consistent with its own signature comment (7 four-byte args gives RET 0x1C). The domain note's detour at 0x00775703 is 3 bytes past this function entry (0x00775700). I could not verify the stolen window, the 6 original bytes, the consumed exit 0x0077574C, the EBP frame, or the handler definition and exports.def entry. Those live in the hooks TOML and exports.def, which are not in this packet and were not read. This needs a separate packet or a byte-level check against the vanilla exe. The packet's checker facts show check_hook_bytes and check_hook_spans with no hook mentions, so they do not cover this detour. Shared-header behaviour change: none observed. buttonRect and stripReserve are unchanged. Only additions were made. The raw-address allowlist was not in scope and was not read.",
+ "packet_id": "wp2-001",
+ "truncated": false
+}

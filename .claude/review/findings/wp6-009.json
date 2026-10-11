@@ -1,0 +1,83 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.010698949999999999,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 33764,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 33764,
+   "cache_read_input_tokens": 45475,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 4,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 3881,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 3881,
+     "cache_read_input_tokens": 37679,
+     "input_tokens": 2,
+     "output_tokens": 3367,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 6982,
+   "output_tokens_details": {
+    "thinking_tokens": 4617
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "research/companion_levelup/tools/parity/apply_test.cpp",
+  "research/companion_levelup/tools/parity/gate_test.cpp"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "test",
+   "commits": [
+    "39144b7",
+    "d8438c6"
+   ],
+   "confidence": "high",
+   "evidence": "New CHECK macro formats the message with `char _detail[512]; std::snprintf(_detail, sizeof(_detail), __VA_ARGS__);`, while many call sites pass whole log dumps as the message, e.g. `CHECK(logHas(...), \"banner crc32 / missing-ini defaults ...:\\n%s\", readLog().c_str());` (line 180) and the same pattern at lines 200, 219, 401, 466. The old macro wrote these with fprintf and no size limit.",
+   "file": "research/companion_levelup/tools/parity/gate_test.cpp",
+   "lines": "23-27",
+   "local_id": "f1",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Run gate_test with a deliberately failing check whose readLog() output exceeds 512 bytes (e.g. add a temporary CHECK(false, \"%s\", readLog().c_str()) after a few HOLD/INSTANT lines) and confirm the printed detail is truncated. If so, consider sizing the detail buffer to the message or streaming it to stderr, but do not change the harness without a fresh gate PASS.",
+   "why_it_matters": "On a failing check, any log dump longer than ~511 bytes is cut off silently (snprintf truncates without error). The failure is still counted, so the exit code is not affected, but the diagnostic output that the log-dump messages exist to show is lost exactly when it is needed."
+  },
+  {
+   "candidate_id": null,
+   "category": "test",
+   "commits": [
+    "d8438c6"
+   ],
+   "confidence": "high",
+   "evidence": "`#define CHECK(c, ...) do { ... char _what[128]; std::snprintf(_what, sizeof(_what), \"%s:%d: %s\", tag, key, #c); ::kt::Check(_what, ...` \u2014 the stringified condition is embedded in a 128-byte buffer alongside tag (up to 47 chars) and key. The long condition at line 131, `before.ok && before.featsOk && before.spellsOk && before.deltasOk && samePend(before.pd, in)`, is about 90 characters, so tag + key + condition exceeds 128 bytes.",
+   "file": "research/companion_levelup/tools/parity/apply_test.cpp",
+   "lines": "87-93",
+   "local_id": "f2",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Force a failure at line 131 (for example by corrupting the fake pending record) and check whether the printed check name is cut before the condition's end. If truncation is confirmed, the buffer size in the CHECK macro is the place to look; the kt::Check implementation (TestHarness.h, not in this packet's directory and not verified here) should be checked for how it prints the name.",
+   "why_it_matters": "The check name reported on failure is truncated, which can make it harder to tell which of several similar assertions failed (line 131 and 136 share prefixes). The pass/fail result itself is unaffected, so this is a diagnostic-quality risk, not a gate weakening."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Assertion delta checked. apply_test.cpp: CHECK count unchanged (15 to 15), and the harness keeps the count via kt::Check and returns kt::Report(\"apply_test\") in place of g_fail ? 1 : 0. gate_test.cpp: CHECK count unchanged (164 to 164). The one removed assertion at old line 302, `g_lastTableEcx == P(0x10001234)`, has a same-file replacement at post-image line 322 (`g_lastPartyTable == P(partyTable) && g_lastPartyIdx == 0`). The replacement is falsifiable: the g_member fake returns a non-zero member only for tbl != nullptr && idx == 0, and g_serverCreature returns g_creatureRet only for that member, so a wrong table pointer or index changes the result. Not flagged as dropped. A grep of both files shows no remaining references to the removed g_fail/g_checks globals, so no compile break in the unseen lines. Scanner candidates S-206c54dc10, S-547a0c6f10, S-59d8925ee7, S-64bcb23fa7 and S-66e96cbe6f (reinterpret_cast/uint32 truncation in gate_test.cpp 132-146) were checked and judged harmless: arenaAlloc draws from a MAP_32BIT mapping, so every stored pointer fits in 32 bits, and the fake addresses are never dereferenced. Unverified: TestHarness.h is not in the packet directory (Glob found nothing there), so kt::Check, kt::Report and KT_STR could not be read. Whether Report returns non-zero on any failure, and whether KT_STR is defined, are unconfirmed; the exit-code claim rests on the call sites only. Tool budget used: 3 of 12.\"",
+ "packet_id": "wp6-009",
+ "truncated": false
+}

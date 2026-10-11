@@ -1,0 +1,103 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00567958,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 12246,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 12246,
+   "cache_read_input_tokens": 23798,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 4,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 4040,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 4040,
+     "cache_read_input_tokens": 16002,
+     "input_tokens": 2,
+     "output_tokens": 3120,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 5984,
+   "output_tokens_details": {
+    "thinking_tokens": 3413
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/gui_input_src/GiDispatch.h",
+  "patch_manager_mods/gui_input_src/GuiInputProvider.cpp",
+  "patch_manager_mods/gui_input_src/exports.def",
+  "patch_manager_mods/gui_input_src/common_contract_test.cpp (grep only)"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "15c9bfd"
+   ],
+   "confidence": "medium",
+   "evidence": "apiWheelSubscribe calls `ensureSubclass();` at line 158 and discards its bool result, then returns `tok` from `g_disp.subscribe(cb, user)` as success. ensureSubclass (lines 116-127) returns false when findGameWindow() finds no window or Hook::install fails. Hook::install is only attempted from this call site (grep shows no other ensureSubclass caller in the packet), so a subscriber registered before the game window exists gets a positive token but the WM_MOUSEWHEEL subclass is never installed.",
+   "file": "patch_manager_mods/gui_input_src/GuiInputProvider.cpp",
+   "lines": "156-162",
+   "local_id": "f1",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check whether any consumer calls apiWheelSubscribe before the game window is shown (e.g. during KPatchInit or early patch init). Confirm that no later path (timer, wheelProc, apiForeground, apiGameHwnd) calls ensureSubclass. Consider verifying in a host test that subscribe returns >0 while findGameWindow returns null, and that no later event triggers install. Also check whether the return value should drive a retry or a distinct error code.",
+   "why_it_matters": "Consumers receive a valid token and assume wheel events will be delivered. If the window is not yet visible (findGameWindow requires a visible client area >320x240) or the subclass fails, the callback silently never fires, and nothing retries installation later because wheelProc is the only path that would dispatch and it is never attached."
+  },
+  {
+   "candidate_id": null,
+   "category": "memory-safety",
+   "commits": [
+    "15c9bfd"
+   ],
+   "confidence": "low",
+   "evidence": "apiWheelSubscribe (line 159) and apiWheelUnsubscribe (line 166) mutate g_disp (entries/count) with no lock, while wheelProc (line 107) calls g_disp.dispatch on the window-proc thread. The Dispatcher header (GiDispatch.h lines 19-22, 75-79) has no synchronization.",
+   "file": "patch_manager_mods/gui_input_src/GuiInputProvider.cpp",
+   "lines": "156-168",
+   "local_id": "f2",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Determine which thread(s) call the exported apiWheelSubscribe/apiWheelUnsubscribe in the consumer mods (e.g. KPatchInit thread vs game main thread). If any call is off the UI thread, check whether the window proc and API calls can run concurrently and whether a critical section is needed around g_disp.",
+   "why_it_matters": "If other mods call subscribe/unsubscribe from a thread other than the game's UI/message thread, dispatch can memcpy a half-shifted entry array or read a stale count, potentially calling a freed callback or a torn entry."
+  },
+  {
+   "candidate_id": null,
+   "category": "hook",
+   "commits": [
+    "15c9bfd"
+   ],
+   "confidence": "medium",
+   "evidence": "DllMain handles DLL_PROCESS_DETACH by calling `Hook::uninstall(&wheelProc);` (line 198), which performs a SetWindowLongPtr-style call on the game window from inside the loader lock.",
+   "file": "patch_manager_mods/gui_input_src/GuiInputProvider.cpp",
+   "lines": "196-201",
+   "local_id": "f3",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check WindowHook.h's uninstall implementation for any dependency on other DLLs or thread waits. Confirm the existing KPM hook-removal path (or a non-DllMain shutdown hook) is the intended place for unsubscribing, and compare with how other gui/hook mods handle detach.",
+   "why_it_matters": "Window API calls from DllMain can deadlock if the detaching thread or the window's owner thread waits on the loader lock. This is a hygiene risk at process exit or DLL unload, and it is not exercised by the host tests."
+  }
+ ],
+ "no_issue_files": [
+  "patch_manager_mods/gui_input_src/GiDispatch.h",
+  "patch_manager_mods/gui_input_src/exports.def"
+ ],
+ "notes": "Scope: packet files only, plus grep of common_contract_test.cpp and a directory glob. Confirmed exports.def's only export KPatchInit is defined at GuiInputProvider.cpp:189 with extern \"C\" and __declspec(dllexport). GiDispatch.h's unsubscribe compaction loop (lines 40-50) and dispatch snapshot (lines 75-86) are correct; the snapshot means an entry unsubscribed mid-dispatch still gets called once in that dispatch, which the header comment does not state (not reported as a finding). The header's claim that gi_dispatch_test.cpp hosts the dispatcher tests is true: that file exists in the directory. Scanner candidates S-84ccfd24e1, S-de38befa59 (EnumCtx via LPARAM round-trip), S-fe9260e282 (HWND to intptr_t, fits 32-bit), and the logging casts S-a8fcd8c2c9, S-a9118e4b11, S-c16a24a2cb, S-c69f27b0df, S-e8873ec745 were checked and found harmless (log-only %p casts or pointer round-trips that are width-safe); they are not confirmed as findings. Not verified: K2GuiInputApi layout in GuiInput.h (not in packet), so whether g_apiTable matches the struct beyond its first field and five function pointers is unchecked. WindowHook.h's Hook::install/uninstall/active/forward bodies were not read, so the hook-failure path and passthrough semantics are taken from the test's assertions only. The checker run lines in known facts cover only common_contract_test.cpp, not gi_dispatch_test.cpp or gi_registry_test.cpp; those were not run per the facts.\"}",
+ "packet_id": "wp4-007",
+ "truncated": false
+}

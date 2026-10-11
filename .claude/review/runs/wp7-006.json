@@ -1,0 +1,77 @@
+{
+ "attempts": 1,
+ "cost_usd": 0.009176630000000002,
+ "duration_s": 46.0,
+ "ended": "2026-10-10T09:13:43Z",
+ "exit_code": 0,
+ "files": [
+  "patch_manager_mods/mouse_probe_src/MouseFixLogic.h",
+  "patch_manager_mods/mouse_probe_src/MouseProbe.cpp",
+  "patch_manager_mods/mouse_probe_src/manifest.toml"
+ ],
+ "first_turn_prompt_tokens": 17089,
+ "num_turns": 3,
+ "packet_id": "wp7-006",
+ "prompt_bytes": 17431,
+ "rate_limit_hits": 0,
+ "raw": "raw/wp7-006.a1.out",
+ "result_subtype": "success",
+ "schema_errors": [],
+ "schema_valid": true,
+ "started": "2026-10-10T09:12:57Z",
+ "status": "ok",
+ "truncated": false,
+ "turn_prompt_tokens": [
+  17089,
+  24775
+ ],
+ "turn_usage": [
+  {
+   "cache_creation_input_tokens": 9291,
+   "cache_read_input_tokens": 7796,
+   "input_tokens": 2,
+   "output_tokens": 6
+  },
+  {
+   "cache_creation_input_tokens": 7686,
+   "cache_read_input_tokens": 17087,
+   "input_tokens": 2,
+   "output_tokens": 7
+  }
+ ],
+ "turns_over_100k": 0,
+ "usage": {
+  "cache_creation": {
+   "ephemeral_1h_input_tokens": 16977,
+   "ephemeral_5m_input_tokens": 0
+  },
+  "cache_creation_input_tokens": 16977,
+  "cache_read_input_tokens": 24883,
+  "fallback_credit": null,
+  "inference_geo": "global",
+  "input_tokens": 4,
+  "iterations": [
+   {
+    "cache_creation": {
+     "ephemeral_1h_input_tokens": 7686,
+     "ephemeral_5m_input_tokens": 0
+    },
+    "cache_creation_input_tokens": 7686,
+    "cache_read_input_tokens": 17087,
+    "input_tokens": 2,
+    "output_tokens": 3557,
+    "type": "message"
+   }
+  ],
+  "output_tokens": 11064,
+  "output_tokens_details": {
+   "thinking_tokens": 4274
+  },
+  "server_tool_use": {
+   "web_fetch_requests": 0,
+   "web_search_requests": 0
+  },
+  "service_tier": "standard",
+  "speed": "standard"
+ }
+}

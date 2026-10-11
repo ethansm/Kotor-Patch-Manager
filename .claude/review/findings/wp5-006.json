@@ -1,0 +1,161 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.0055166600000000005,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 9220,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 9220,
+   "cache_read_input_tokens": 7796,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 2,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 9220,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 9220,
+     "cache_read_input_tokens": 7796,
+     "input_tokens": 2,
+     "output_tokens": 7189,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 7189,
+   "output_tokens_details": {
+    "thinking_tokens": 4092
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "scripts/normalize_diversity_textures.py"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "high",
+   "evidence": "Line 212 prints the literal \"SUCCESS: Zero name collisions. All slots 01..35 verified.\" unconditionally after the summary. Nothing in main() or normalize_assets() checks for collisions, counts verified slots, or inspects MODEL_INGEST_MAP warnings; the only failure path is a raised FileNotFoundError for a missing texture slot (lines 142-143, 154-155).",
+   "file": "scripts/normalize_diversity_textures.py",
+   "lines": "207-212",
+   "local_id": "f1",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Run the script with --dry-run against a search root that lacks some optional models and confirm the SUCCESS line still prints with exit 0. Check whether any doc or gate reads this output as evidence of verification.",
+   "why_it_matters": "The tool reports a verification result it never computed. Any caller or log reader that trusts the SUCCESS line (for example a Phase 0 verification record) would accept an unverified asset set. The exit code is 0 even when optional models are missing (see f7)."
+  },
+  {
+   "candidate_id": null,
+   "category": "bug",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "high",
+   "evidence": "Full-name keys use first-wins (`if lkey not in catalog:`), while texture base keys use last-tpc-wins (`if base not in catalog or ext == \".tpc\": catalog[base] = ...`). os.walk() is called without sorting, so when the same basename appears twice (same root or across roots), the chosen source depends on filesystem directory order.",
+   "file": "scripts/normalize_diversity_textures.py",
+   "lines": "116-123",
+   "local_id": "f2",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Use --dry-run with a debug print of catalog[key] for each slot on two filesystems, or create a temporary duplicate basename in two search roots and compare the chosen path. Check whether os.walk is sorted anywhere else in the repo's tooling.",
+   "why_it_matters": "The generated N_CommXX set can differ between machines or runs even with identical inputs, so the output is not reproducible. The two key policies also disagree about which duplicate wins, which makes the chosen source hard to predict."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "medium",
+   "evidence": "DEFAULT_SEARCH_DIRS begins with os.path.expanduser(\"~/.local/share/Steam/steamapps/common/Knights of the Old Republic II/override\"), the live game override folder, and build_catalog() gives it priority for .tpc base keys (lines 122-123). Slots N_CommM/F are keyed by their own lowercase names (lines 42-62).",
+   "file": "scripts/normalize_diversity_textures.py",
+   "lines": "28-30",
+   "local_id": "f3",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check whether the game override folder contains files named N_CommM*/N_CommF* or the model/head keys from MODEL_INGEST_MAP. Run --dry-run with a debug print of catalog[key] and confirm each chosen path is under a raw extraction root, not the game override directory.",
+   "why_it_matters": "If an earlier run of this mod (or KPM) placed N_CommXX textures in the game override folder, those installed outputs can be picked up as source for the next normalization. The output then no longer comes from the raw mod assets, and the result is self-referential and hard to trace."
+  },
+  {
+   "candidate_id": null,
+   "category": "bug",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "medium",
+   "evidence": "`_, ext = os.path.splitext(src_path)`; `dest_name = f\"N_CommM{idx:02d}{ext.lower()}\"`; `shutil.copy2(src_path, dest_path)`. The output directory is never cleaned, and the extension is taken from whichever source file won.",
+   "file": "scripts/normalize_diversity_textures.py",
+   "lines": "145-149",
+   "local_id": "f4",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Run the script twice with different catalog contents (or remove a .tpc source) and list patch_manager_mods/npc_diversity_src/override for duplicate N_CommXX stems with different extensions. Check how the packager collects this directory.",
+   "why_it_matters": "If a slot was first written as N_CommM05.tpc and a later run picks N_CommM05.tga (or the reverse), both files stay in the override directory. The engine may load the stale copy, so the build would show old textures even though the script ran successfully."
+  },
+  {
+   "candidate_id": null,
+   "category": "build",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "high",
+   "evidence": "DEFAULT_SEARCH_DIRS hardcodes \"~/Games/KOTOR2_Mod_Workspace/01_extracted/nexus_mod144_uco_redux\" and six more roots under the same personal workspace path. build_catalog() silently skips missing directories (lines 110-111).",
+   "file": "scripts/normalize_diversity_textures.py",
+   "lines": "29-35",
+   "local_id": "f5",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Confirm that no other config or env variable overrides these roots. Consider whether the defaults should come from a documented setting or the --out-dir style argument. Check the failure message on a machine without the workspace.",
+   "why_it_matters": "The script only works on a machine with this exact workspace layout. Elsewhere it fails at the first missing texture slot with a generic error, so the mod cannot be rebuilt from a clean checkout without editing the script."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "low",
+   "evidence": "Known facts list the N_CommF slots in three size classes (1398256, 349680, 5592591 bytes). N_CommF12-15 are 349680 bytes and N_CommF20-22 and F28-30 are 5592591 bytes. The script copies each slot unchanged from its winning source with no resolution or format normalization (lines 153-162).",
+   "file": "scripts/normalize_diversity_textures.py",
+   "lines": "141-150",
+   "local_id": "f6",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Run --dry-run with a debug print of catalog[key] for N_CommF12-15, F20-22 and F28-30, then compare the source extensions and file headers (header only, not the full binary) against F01.",
+   "why_it_matters": "A name called \"normalize\" that does not normalize leaves slot resolution and format to whichever raw mod won the catalog lookup. Mixed sizes can produce mismatched in-game appearance, and the output contains no record of which source was used."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "high",
+   "evidence": "`print(f\"Warning: optional asset {src_key} not found in catalog, skipping.\")` followed by `continue` (lines 166-168). `copied_models += 1` runs once per dest name (lines 170-174), so keys with two dest names (for example n_fatcomm.mdl -> N_FatComM.mdl and N_CommM_Fat.mdl, lines 68-71) are counted twice in the \"Total Assets Ingested\" sum (line 211).",
+   "file": "scripts/normalize_diversity_textures.py",
+   "lines": "165-176",
+   "local_id": "f7",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Remove one optional model from a test search root and confirm the exit code is 0. Check whether any downstream check reads the 'Supporting Models/Heads' count as a completeness signal.",
+   "why_it_matters": "Missing supporting models only produce a warning and the run still exits 0, so an incomplete ingest looks the same as a full one. The double count also makes the total a copy count, not an asset count."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Only the post-image script was in the packet. I did not open any other file (the hooks, 2DA generator, manifest, or the 83354c0 follow-up). Slot counts check out: MALE_SLOTS and FEMALE_SLOTS each have 35 entries, so the 01..35 range is correct. Known facts show name_referenced_in_code_or_generators=false for most N_CommF entries, but the script creates them with an f-string (line 158), so that flag looks like a checker artifact, not a missing reference. No binary files were read. No gate run names this mod. The script itself does not write to the game directory; the only write target is DEFAULT_OUT_DIR inside the repo (line 39). Tool calls used: 0.",
+ "packet_id": "wp5-006",
+ "truncated": false
+}

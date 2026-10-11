@@ -1,0 +1,68 @@
+{
+ "attempts": 1,
+ "cost_usd": 0.0055166600000000005,
+ "duration_s": 35.0,
+ "ended": "2026-10-10T09:11:28Z",
+ "exit_code": 0,
+ "files": [
+  "scripts/normalize_diversity_textures.py"
+ ],
+ "first_turn_prompt_tokens": 17018,
+ "num_turns": 2,
+ "packet_id": "wp5-006",
+ "prompt_bytes": 17629,
+ "rate_limit_hits": 0,
+ "raw": "raw/wp5-006.a1.out",
+ "result_subtype": "success",
+ "schema_errors": [],
+ "schema_valid": true,
+ "started": "2026-10-10T09:10:53Z",
+ "status": "ok",
+ "truncated": false,
+ "turn_prompt_tokens": [
+  17018
+ ],
+ "turn_usage": [
+  {
+   "cache_creation_input_tokens": 9220,
+   "cache_read_input_tokens": 7796,
+   "input_tokens": 2,
+   "output_tokens": 2
+  }
+ ],
+ "turns_over_100k": 0,
+ "usage": {
+  "cache_creation": {
+   "ephemeral_1h_input_tokens": 9220,
+   "ephemeral_5m_input_tokens": 0
+  },
+  "cache_creation_input_tokens": 9220,
+  "cache_read_input_tokens": 7796,
+  "fallback_credit": null,
+  "inference_geo": "global",
+  "input_tokens": 2,
+  "iterations": [
+   {
+    "cache_creation": {
+     "ephemeral_1h_input_tokens": 9220,
+     "ephemeral_5m_input_tokens": 0
+    },
+    "cache_creation_input_tokens": 9220,
+    "cache_read_input_tokens": 7796,
+    "input_tokens": 2,
+    "output_tokens": 7189,
+    "type": "message"
+   }
+  ],
+  "output_tokens": 7189,
+  "output_tokens_details": {
+   "thinking_tokens": 4092
+  },
+  "server_tool_use": {
+   "web_fetch_requests": 0,
+   "web_search_requests": 0
+  },
+  "service_tier": "standard",
+  "speed": "standard"
+ }
+}

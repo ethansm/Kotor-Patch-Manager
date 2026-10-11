@@ -1,0 +1,121 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.0232924,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 50180,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 50180,
+   "cache_read_input_tokens": 215370,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 12,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 2358,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 2358,
+     "cache_read_input_tokens": 55618,
+     "input_tokens": 2,
+     "output_tokens": 2816,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 22203,
+   "output_tokens_details": {
+    "thinking_tokens": 15129
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/ranged_ai_src/RangedAI.cpp",
+  "patch_manager_mods/ranged_ai_src/manifest.toml",
+  "patch_manager_mods/ranged_ai_src/test.toml",
+  "patch_manager_mods/_shared_src/RangedAI.h",
+  "patch_manager_mods/_shared_src/HudHost.h (grep only: KPatchApi require-guard pattern)",
+  "patch_manager_mods/ranged_ai_src/common_contract_test.cpp (grep only)",
+  "patch_manager_mods/ranged_ai_src/RangedAiLogic.h (grep only)"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "a6e7e08"
+   ],
+   "confidence": "medium",
+   "evidence": "RaiMapsToRanged: 'if (raw != KiteStance || !g_cfg.rangedRules) return 0; if (!g_cfg.kiteApproach || !ebp) return 1;' while a failed frame read returns 0 (line 351). So ebp=0 yields 1 (stance maps to vanilla Ranged, no approach) even with a melee weapon or an out-of-range target, but an unreadable live frame yields 0 (Aggressive approach). RangedAI.h:32-33 documents the return as 'under current weapon/range conditions' and says ebp=0 is a stance-only check.",
+   "file": "patch_manager_mods/ranged_ai_src/RangedAI.cpp",
+   "lines": "341-345",
+   "local_id": "f1",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Find the MapsToRanged consumer (companion_ai_src A1 hook, per RangedAI.h:4-6) and check which ebp it passes when no frame is available. Decide whether ebp=0 should return the weapon/range answer or 0, and make the unreadable-frame and ebp=0 paths agree. Then check whether the common contract test's fake provider (common_contract_test.cpp:221) is the only thing exercising this rule.",
+   "why_it_matters": "kite_approach exists because Ranged's no-approach rule re-queued attacks forever for melee or out-of-range party members (E-H3 comment, lines 327-330). A public-API caller that passes ebp=0 (the documented stance-only path) gets the no-approach answer and reintroduces that stall. The two failure paths also disagree."
+  },
+  {
+   "candidate_id": null,
+   "category": "bug",
+   "commits": [
+    "a6e7e08"
+   ],
+   "confidence": "low",
+   "evidence": "KPatchInit: 'if (api && api->struct_size >= offsetof(KPatchApi, require) + sizeof(api->require) && api->provide) { api->provide(K2RAI_IFACE, K2RAI_VERSION, &g_raiApi); }'. The size guard is computed from the require field, but the code dereferences and calls provide. The HudHost.h guard pattern (require-only check) is the same, so this is only safe if provide sits before require in KPatchApi.",
+   "file": "patch_manager_mods/ranged_ai_src/RangedAI.cpp",
+   "lines": "403-405",
+   "local_id": "f2",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Locate struct KPatchApi in kpatch_api.h (Common, outside this packet; not found under _shared_src) and compare offsetof(KPatchApi, provide) with offsetof(KPatchApi, require). If provide comes later, guard on offsetof(provide) + sizeof(provide) instead.",
+   "why_it_matters": "If provide is declared after require in kpatch_api.h, an older patcher whose struct_size covers require but not provide makes this read past struct_size, which is a bad read inside the game process at init."
+  },
+  {
+   "candidate_id": null,
+   "category": "build",
+   "commits": [
+    "a6e7e08"
+   ],
+   "confidence": "high",
+   "evidence": "cxxflags = [\"-I../_shared_src\", \"-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common\", ..., \"-I../../tests/include\", \"-DGUIKIT_HOST\", \"-Werror\"]. The $HOME include path is kept in the line this commit edited, and the new -I../../tests/include entry was added next to it.",
+   "file": "patch_manager_mods/ranged_ai_src/test.toml",
+   "lines": "6",
+   "local_id": "f3",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Confirm that a machine-independent location for the Common headers exists (for example a relative path from the repo root, or the same variable the other mods' test.toml files use) and that ../../tests/include exists relative to patch_manager_mods/ranged_ai_src. Compare with _shared_src/test.toml, which this table claims to mirror.",
+   "why_it_matters": "The $HOME path only resolves on the author's machine, so the contract test does not build elsewhere. The new entry is also not verified to exist (no glob was run outside the packet)."
+  },
+  {
+   "candidate_id": null,
+   "category": "test",
+   "commits": [
+    "a6e7e08"
+   ],
+   "confidence": "medium",
+   "evidence": "[common_contract_test] cxxflags = [...]; covers = [\"k2.rangedai@1\"]. The only test table in this file builds common_contract_test.cpp. The checker facts show PASS for that file alone. RangedAI.cpp (the k2.rangedai provider, KPatchInit, RaiMapsToRanged, RangedAiStanceRules) is not compiled by any table here.",
+   "file": "patch_manager_mods/ranged_ai_src/test.toml",
+   "lines": "5-7",
+   "local_id": "f4",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check whether any gate compiles RangedAI.cpp (for example a Windows or host-stub build of the DLL source) and whether common_contract_test.cpp ever calls the real RaiMapsToRanged/RaiKiteStance. If not, the covers claim is not backed by a gate; decide whether to add a build-only gate for RangedAI.cpp or narrow the claim.",
+   "why_it_matters": "covers = [\"k2.rangedai@1\"] implies the provider is tested, but the RangedAI.cpp provider and its guard logic can change without any gate failing. The contract test exercises a fake provider (common_contract_test.cpp:221-230) rather than RangedAI.cpp."
+  }
+ ],
+ "no_issue_files": [
+  "patch_manager_mods/ranged_ai_src/manifest.toml"
+ ],
+ "notes": "Read RangedAI.cpp in full (421 lines). Verified: the SafeRead/IniKit/RangedAI.h includes resolve to _shared_src. The trim calls match common_contract_test.cpp:163-181. The K2RangedAiApi layout matches the static_asserts at common_contract_test.cpp:186-188. The version 0.4.0 matches in manifest.toml and the DllMain load line. The HudHost/SaveEvents require-guard pattern is the same as RangedAI.cpp. The checker facts' rc 0 covers only common_contract_test.cpp. Not verified: the KPatchApi field order (kpatch_api.h is outside the packet and not under _shared_src); whether RangedAiLogic.h's inWeaponRange matches cai::inWeaponRange (rai_logic_test.cpp covers this); whether a double saferead::beginScope() call (RangedAiStanceRules -> RaiMapsToRanged) is harmless (saferead internals not read; no finding raised). The hooks file kotor2-steam-aspyr.hooks.toml is not in the packet, so the E-H3 stack-argument layout was not checked. Known fact: check_hook_spans and check_hook_bytes do not reference this file. The tool budget was 7 of 12 calls, and no secret or credential paths were opened.\"]",
+ "packet_id": "wp7-008",
+ "truncated": false
+}

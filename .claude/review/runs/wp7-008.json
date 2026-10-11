@@ -1,0 +1,105 @@
+{
+ "attempts": 1,
+ "cost_usd": 0.0232924,
+ "duration_s": 99.0,
+ "ended": "2026-10-10T09:14:36Z",
+ "exit_code": 0,
+ "files": [
+  "patch_manager_mods/ranged_ai_src/RangedAI.cpp",
+  "patch_manager_mods/ranged_ai_src/manifest.toml",
+  "patch_manager_mods/ranged_ai_src/test.toml"
+ ],
+ "first_turn_prompt_tokens": 15975,
+ "num_turns": 11,
+ "packet_id": "wp7-008",
+ "prompt_bytes": 15821,
+ "rate_limit_hits": 0,
+ "raw": "raw/wp7-008.a1.out",
+ "result_subtype": "success",
+ "schema_errors": [],
+ "schema_valid": true,
+ "started": "2026-10-10T09:12:57Z",
+ "status": "ok",
+ "truncated": false,
+ "turn_prompt_tokens": [
+  15975,
+  38010,
+  47073,
+  50906,
+  55620,
+  57978
+ ],
+ "turn_usage": [
+  {
+   "cache_creation_input_tokens": 8177,
+   "cache_read_input_tokens": 7796,
+   "input_tokens": 2,
+   "output_tokens": 5
+  },
+  {
+   "cache_creation_input_tokens": 22035,
+   "cache_read_input_tokens": 15973,
+   "input_tokens": 2,
+   "output_tokens": 3
+  },
+  {
+   "cache_creation_input_tokens": 9063,
+   "cache_read_input_tokens": 38008,
+   "input_tokens": 2,
+   "output_tokens": 4
+  },
+  {
+   "cache_creation_input_tokens": 3833,
+   "cache_read_input_tokens": 47071,
+   "input_tokens": 2,
+   "output_tokens": 3
+  },
+  {
+   "cache_creation_input_tokens": 4714,
+   "cache_read_input_tokens": 50904,
+   "input_tokens": 2,
+   "output_tokens": 2
+  },
+  {
+   "cache_creation_input_tokens": 2358,
+   "cache_read_input_tokens": 55618,
+   "input_tokens": 2,
+   "output_tokens": 25
+  }
+ ],
+ "turns_over_100k": 0,
+ "usage": {
+  "cache_creation": {
+   "ephemeral_1h_input_tokens": 50180,
+   "ephemeral_5m_input_tokens": 0
+  },
+  "cache_creation_input_tokens": 50180,
+  "cache_read_input_tokens": 215370,
+  "fallback_credit": null,
+  "inference_geo": "global",
+  "input_tokens": 12,
+  "iterations": [
+   {
+    "cache_creation": {
+     "ephemeral_1h_input_tokens": 2358,
+     "ephemeral_5m_input_tokens": 0
+    },
+    "cache_creation_input_tokens": 2358,
+    "cache_read_input_tokens": 55618,
+    "input_tokens": 2,
+    "output_tokens": 2816,
+    "type": "message"
+   }
+  ],
+  "output_tokens": 22203,
+  "output_tokens_details": {
+   "thinking_tokens": 15129
+  },
+  "server_tool_use": {
+   "web_fetch_requests": 0,
+   "web_search_requests": 0
+  },
+  "service_tier": "standard",
+  "speed": "standard"
+ }
+}

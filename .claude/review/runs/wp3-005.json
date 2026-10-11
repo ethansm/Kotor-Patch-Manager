@@ -1,0 +1,105 @@
+{
+ "attempts": 1,
+ "cost_usd": 0.013453620000000001,
+ "duration_s": 66.0,
+ "ended": "2026-10-10T09:06:50Z",
+ "exit_code": 0,
+ "files": [
+  "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+  "patch_manager_mods/level_up_override_src/exports.def",
+  "patch_manager_mods/level_up_override_src/manifest.toml"
+ ],
+ "first_turn_prompt_tokens": 16863,
+ "num_turns": 13,
+ "packet_id": "wp3-005",
+ "prompt_bytes": 18227,
+ "rate_limit_hits": 0,
+ "raw": "raw/wp3-005.a1.out",
+ "result_subtype": "success",
+ "schema_errors": [],
+ "schema_valid": true,
+ "started": "2026-10-10T09:05:44Z",
+ "status": "ok",
+ "truncated": false,
+ "turn_prompt_tokens": [
+  16863,
+  25606,
+  28970,
+  30707,
+  36260,
+  38333
+ ],
+ "turn_usage": [
+  {
+   "cache_creation_input_tokens": 9065,
+   "cache_read_input_tokens": 7796,
+   "input_tokens": 2,
+   "output_tokens": 5
+  },
+  {
+   "cache_creation_input_tokens": 8743,
+   "cache_read_input_tokens": 16861,
+   "input_tokens": 2,
+   "output_tokens": 3
+  },
+  {
+   "cache_creation_input_tokens": 3364,
+   "cache_read_input_tokens": 25604,
+   "input_tokens": 2,
+   "output_tokens": 3
+  },
+  {
+   "cache_creation_input_tokens": 1737,
+   "cache_read_input_tokens": 28968,
+   "input_tokens": 2,
+   "output_tokens": 8
+  },
+  {
+   "cache_creation_input_tokens": 5553,
+   "cache_read_input_tokens": 30705,
+   "input_tokens": 2,
+   "output_tokens": 3
+  },
+  {
+   "cache_creation_input_tokens": 2073,
+   "cache_read_input_tokens": 36258,
+   "input_tokens": 2,
+   "output_tokens": 8
+  }
+ ],
+ "turns_over_100k": 0,
+ "usage": {
+  "cache_creation": {
+   "ephemeral_1h_input_tokens": 30535,
+   "ephemeral_5m_input_tokens": 0
+  },
+  "cache_creation_input_tokens": 30535,
+  "cache_read_input_tokens": 146192,
+  "fallback_credit": null,
+  "inference_geo": "global",
+  "input_tokens": 12,
+  "iterations": [
+   {
+    "cache_creation": {
+     "ephemeral_1h_input_tokens": 2073,
+     "ephemeral_5m_input_tokens": 0
+    },
+    "cache_creation_input_tokens": 2073,
+    "cache_read_input_tokens": 36258,
+    "input_tokens": 2,
+    "output_tokens": 4996,
+    "type": "message"
+   }
+  ],
+  "output_tokens": 11767,
+  "output_tokens_details": {
+   "thinking_tokens": 6944
+  },
+  "server_tool_use": {
+   "web_fetch_requests": 0,
+   "web_search_requests": 0
+  },
+  "service_tier": "standard",
+  "speed": "standard"
+ }
+}

@@ -1,0 +1,65 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00161496,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 1794,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 1794,
+   "cache_read_input_tokens": 7796,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 2,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 1794,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 1794,
+     "cache_read_input_tokens": 7796,
+     "input_tokens": 2,
+     "output_tokens": 2356,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 2356,
+   "output_tokens_details": {
+    "thinking_tokens": 1160
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/level_up_override_src/test.toml"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "build",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "Line 4: cxxflags = [\"-I../_shared_src\", \"-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common\", \"-I../../research/companion_levelup/tools/parity/stub\", \"-DGUIKIT_HOST\", \"-Werror\"]. The old line 4 had no $HOME-based path. The new entry hardcodes a path under one developer's home directory and relies on $HOME being expanded by the build driver, which a TOML string does not do by itself.",
+   "file": "patch_manager_mods/level_up_override_src/test.toml",
+   "lines": "4-4",
+   "local_id": "f1",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check how the test driver builds cxxflags for test.toml: whether it expands $HOME (for example via os.path.expandvars or a shell) or passes the string through literally. Then compare the path with the relative include style used by shield_bar_src/test.toml and the other mods' test.toml files, and check whether the Common headers this test needs are all present under ../_shared_src. If they are, the $HOME include can be removed. If they are not, the correct relative location should be used. Also confirm the build_check and run_tests results against a machine without this home-directory layout, because the checker results were produced in a scratch copy.",
+   "why_it_matters": "The [common_contract_test] table is the only test that pins Common APIs. On any machine without this exact checkout layout, the include path either expands to nothing or to a missing directory, so the contract test fails to compile (or, if the driver passes '$HOME' literally, always fails). Because -I../_shared_src comes first, the Common path only supplies headers that are absent from _shared_src. A stale or divergent copy under the home directory could therefore be picked up silently for those headers, which weakens the contract pin. The file's own comment (line 1) and the shield_bar_src pattern it cites do not mention a Common path, so this is an undocumented deviation from the repo's include style (-I Common / -I../_shared_src with relative paths)."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Only one file is in the packet. The rest of test.toml (the r10_probe_test table starting at line 7) is outside the changed hunk and was not reviewed beyond the packet excerpt. Known facts report build_check PASS (INFO=2, FAIL=0) and run_tests PASS (1 passed), but both ran in a scratch copy with no git history and no binaries, so they do not show that the $HOME include resolves on a clean machine. The packet's depends_on_live_install note concerns check_hook_spans and check_hook_bytes, which do not apply to this test.toml change. I did not open the build driver or shield_bar_src/test.toml, which would have settled how $HOME is expanded. I kept to the packet excerpt, so that is left as the suggested investigation. No secrets or credential paths were touched.",
+ "packet_id": "wp3-006",
+ "truncated": false
+}

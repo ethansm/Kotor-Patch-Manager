@@ -1,0 +1,101 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.005734890000000001,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 13191,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 13191,
+   "cache_read_input_tokens": 19579,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 4,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 9204,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 9204,
+     "cache_read_input_tokens": 11783,
+     "input_tokens": 2,
+     "output_tokens": 4439,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 5801,
+   "output_tokens_details": {
+    "thinking_tokens": 3194
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/perf_lab_src/harness/smokes.toml",
+  "patch_manager_mods/perf_lab_src/harness/ (grep for FakeKPatchApi.h, check.h, KPM_DIR, $HOME)"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "build",
+   "commits": [
+    "0a5efd9",
+    "ea85883"
+   ],
+   "confidence": "high",
+   "evidence": "Line 180 (portraitslots row): cxxflags = [\"-static\", \"-I../../_shared_src\", \"-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common\"]. The same row's sibling smokes in the file (letterbox, lines 245 and 256) use \"-I$KPM_DIR/Patches/Common\", and the header (line 14) says paths are relative to $KPM_DIR. The row has no comment explaining the change; the explanatory comment at lines 187-189 covers only queuehud/selfheal/saveevents. Known fact: build_check reports 'FakeKPatchApi.h: No such file or directory' at smoke_portraitslots.cpp:37, which is the file this row builds.",
+   "file": "patch_manager_mods/perf_lab_src/harness/smokes.toml",
+   "lines": "180",
+   "local_id": "f1",
+   "severity": "medium",
+   "source": "both",
+   "suggested_investigation": "Confirm whether the runner expands $HOME and $KPM_DIR in cxxflags (scripts/run_tests.py, not in this packet). Then run `python3 scripts/run_tests.py --wine` with the scratch KPM_DIR and check whether portraitslots still resolves FakeKPatchApi.h and whether the header path is the intended one. Compare with the letterbox rows at lines 245/256.",
+   "why_it_matters": "A hardcoded per-user home path makes this row unbuildable on any other checkout and silently breaks it when the workspace moves. It also changes the include root for this row without a stated reason, unlike the other rows."
+  },
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "0a5efd9",
+    "ea85883"
+   ],
+   "confidence": "medium",
+   "evidence": "Lines 198, 217 and 231 (queuehud, selfheal, saveevents) and line 180 (portraitslots) all use \"-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common\". The comment at lines 188-189 says this is needed because \"pre_install_gate.py points KPM_DIR at a scratch tree that has no Patches/Common\". So the gate's smoke build will take Common headers from the live checkout under $HOME rather than from the tree being gated.",
+   "file": "patch_manager_mods/perf_lab_src/harness/smokes.toml",
+   "lines": "180-198",
+   "local_id": "f2",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Read pre_install_gate.py (not in packet) to see how KPM_DIR is set and whether the scratch tree can be given its own Patches/Common copy. Check whether a gate PASS for queuehud/selfheal/saveevents changes when the live checkout's Common headers are edited. Prefer a KPM_DIR-relative include backed by a scratch copy of Common over the absolute path.",
+   "why_it_matters": "A gate PASS for these smokes can then reflect the live checkout's headers instead of the snapshot under test, which breaks the rule that a rebuilt artifact needs a fresh gate PASS against its own sources. Using the live checkout also makes the result depend on uncommitted state outside the repo."
+  },
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "0a5efd9",
+    "ea85883"
+   ],
+   "confidence": "medium",
+   "evidence": "Lines 119-120 (texmem row): dll_from = \"build\" and mod = \"texture_memory_release_src\". Line 117 still sets kpatch = \"TextureMemoryRelease/TextureMemoryRelease.kpatch\", but the header at lines 16-17 says dll_from = \"build\" uses \"the DLL produced by build_check --keep from current sources instead of extracting from the .kpatch archive\".",
+   "file": "patch_manager_mods/perf_lab_src/harness/smokes.toml",
+   "lines": "119-120",
+   "local_id": "f3",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check in scripts/run_tests.py that dll_from = \"build\" is honoured and that the build_check --keep output exists before the texmem row runs (the runner should fail, not fall back to kpatch, if it is missing). Check that the built DLL's md5 matches the shipped kpatch's binaries/windows_x86.dll, or that the gate records which artifact was tested.",
+   "why_it_matters": "The texmem smoke now tests a DLL built from source, not the shipped .kpatch binary. A PASS no longer shows that the installed artifact works, and the kpatch field is misleading because it is no longer used for the DLL. Mixing the two also depends on build_check --keep producing the DLL before this row runs."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Only smokes.toml was in the packet; I did not read the harness .cpp files or the runner (scripts/run_tests.py, pre_install_gate.py), which are outside the packet's cited files, so runner behaviour (variable expansion, dll_from handling, --keep) is unverified. Known-fact checker run is provisional (scratch copy, no git history, no binaries). Its build failures are not all explained by this packet: check.h failures (smoke_perflab, smoke_probe11, smoke_probe12) come from rows whose cxxflags do not use the $HOME path, so they are a separate include-path problem. The FakeKPatchApi.h failures (portraitslots, queuehud, saveevents, selfheal) match the hardcoded $HOME path at lines 180/198/217/231, but the scratch copy also lacks tests/include, so this is not proven. The hook_checkers mentions and the run_tests PASS facts do not cover these smoke rows. Scanner candidates: none supplied. The new dll_from/mod keys are documented in the header (lines 16-18), so I found no mismatch there. The raw-address allowlist was not touched in this file.",
+ "packet_id": "wp4-010",
+ "truncated": false
+}

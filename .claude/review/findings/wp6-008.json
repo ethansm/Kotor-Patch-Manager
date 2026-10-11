@@ -1,0 +1,71 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.01352234,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 30617,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 30617,
+   "cache_read_input_tokens": 119524,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 12,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 4712,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 4712,
+     "cache_read_input_tokens": 33701,
+     "input_tokens": 2,
+     "output_tokens": 2646,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 12405,
+   "output_tokens_details": {
+    "thinking_tokens": 9291
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/ranged_ai_src/common_contract_test.cpp",
+  "patch_manager_mods/ranged_ai_src/RangedAiLogic.h",
+  "patch_manager_mods/ranged_ai_src/test.toml",
+  "patch_manager_mods/ranged_ai_src/RangedAI.cpp (grep only: offset constants and provider lines)",
+  "patch_manager_mods/_shared_src/RangedAI.h",
+  "patch_manager_mods/_shared_src/IniKit.h",
+  "tests/include (Glob only: FakeKPatchApi.h, check.h present)"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "test",
+   "commits": [
+    "a6e7e08"
+   ],
+   "confidence": "medium",
+   "evidence": "Test hard-codes the frame offsets and re-implements the provider decision: `readAt<int>(3, ebp, -0x164, &ranged)`, `readAt<float>(3, ebp, -0x2C, &maxR)`, `readAt<float>(3, ebp, -0xBC, &dist2)`, then `return (ranged != 0 && rai::inWeaponRange(maxR, dist2)) ? 1 : 0;`. The mod's real offsets are named constants in RangedAI.cpp (F_RangedFlag = -0x164, F_Max = -0x2C, F_Dist2 = -0xBC, RangedAI.cpp:65-67) and its real provider is the separate function ending in the same return at RangedAI.cpp:353, registered as g_raiApi at RangedAI.cpp:356. The test includes neither RangedAI.cpp nor those constants.",
+   "file": "patch_manager_mods/ranged_ai_src/common_contract_test.cpp",
+   "lines": "216-221",
+   "local_id": "f1",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Confirm that RangedAI.cpp's provider (around line 340-356) matches the test's fakeMapsToRanged branch by branch (raw==11, raw!=16/rangedRules, kiteApproach/ebp==0, the three readAt offsets). Then decide whether the contract should be pinned against the real provider (e.g. a host-compilable seam or the RangedAiLogic.h helper that owns the decision) or whether the test should at least reference the F_* constants. Run the test after deliberately editing one offset in a scratch copy of RangedAI.cpp to see whether it fails.",
+   "why_it_matters": "The section is named as the contract for what ranged_ai relies on, and its HEQ/HCHECK messages say so, but the assertions in lines 245-261 exercise a copy of the provider. If RangedAI.cpp changes a frame offset, the read order, the kite-approach branch, or the ebp==0 handling, rangedai_contract still passes, so the gate cannot fail for that drift. This is the kind of unfalsifiable check the Gate Invariant forbids."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Assertion delta is 0 removed, so no replacement hunt was needed. Lines 1-160 and 163-287 of common_contract_test.cpp were otherwise checked by reading. inikit_contract (163-182) matches IniKit.h: trim strips CRLF and spaces (IniKit.h:23-27), and splitIniLine cuts at ';' or '#', lower-cases the key and returns IniLineKeyValue (IniKit.h:48-58). The static_asserts at 186-188 hold on both 32-bit and 64-bit layouts for K2RangedAiApi (RangedAI.h:28-35). The in-range numbers at 250 and 258-261 agree with rai::inWeaponRange (RangedAiLogic.h:21-24). The new includes resolve: IniKit.h, RangedAI.h and SafeRead.h are in _shared_src; FakeKPatchApi.h and check.h are in tests/include. KpLog.h was not located in either directory, so it likely comes from the Common or stub include path, which I did not verify. Test run (rc 0, 1 passed) is consistent with this reading. Out-of-packet observation, not a finding: test.toml:6 uses a machine-specific `-I$HOME/Games/KOTOR2_Mod_Workspace/...` path and `-I../../research/...` paths, which are portability risks for the build. check.h's Report/exit-code behaviour was not read, so the claim that failures reach the exit code rests on the run_tests rc only.\"}",
+ "packet_id": "wp6-008",
+ "truncated": false
+}

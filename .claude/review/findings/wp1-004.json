@@ -1,0 +1,209 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.008544280000000001,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 12933,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 12933,
+   "cache_read_input_tokens": 20578,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 4,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 7947,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 7947,
+     "cache_read_input_tokens": 12782,
+     "input_tokens": 2,
+     "output_tokens": 4012,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 11503,
+   "output_tokens_details": {
+    "thinking_tokens": 4039
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "scripts/agent_diff_check.py"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "Scope is only checked `if args.scope:` (line 151). With no --scope, scope_violations stays [] and line 173 `passed = (len(scope_violations) == 0) and build_ok and test_ok` can still be True. The PASS message at line 194 then prints \"scope clean\" even though no scope check ran.",
+   "file": "scripts/agent_diff_check.py",
+   "lines": "151-194",
+   "local_id": "f1",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Run `python3 -I scripts/agent_diff_check.py` with no --scope on a tree containing an edit outside the intended mod and confirm verdict PASS. Check whether any agent policy or wrapper invokes the script without --scope. Consider whether a missing scope should be a FAIL or a loud 'scope not checked' message.",
+   "why_it_matters": "Running the validator without --scope yields PASS with zero scope enforcement, and the output claims the scope was verified. Any out-of-scope edit (including to shared headers, allowlists or gate files) passes silently when the caller omits the flag."
+  },
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "run_tests returns `(True, \"No specific tests requested.\")` when no --test is given (lines 98-99). main sets test_ok from that (line 161), so the verdict passes (line 173). Line 194 prints \"tests passing\" regardless.",
+   "file": "scripts/agent_diff_check.py",
+   "lines": "98-194",
+   "local_id": "f2",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Run the script with no --test and confirm PASS with the 'tests passing' text. Decide whether an empty test selection should be FAIL, or should print an explicit 'tests not run' status that is not counted as passing.",
+   "why_it_matters": "The default invocation reports PASS and claims tests passed when no test ran at all. This conflicts with the Gate Invariant that test results must be real before downstream steps."
+  },
+  {
+   "candidate_id": null,
+   "category": "other",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "The module docstring says step 4 \"Static invariants: Checks for raw address anti-patterns or broken includes.\" The main() flow (lines 149-173) contains only scope, mod resolution, build and test steps. No raw-address or include check exists in this file.",
+   "file": "scripts/agent_diff_check.py",
+   "lines": "10-11",
+   "local_id": "f3",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Grep the file for 'raw', 'include' or 'address' to confirm no such logic exists. Check whether a separate script enforces those invariants and whether this docstring should be corrected or the check implemented.",
+   "why_it_matters": "Readers and agents are told that raw-address and include-path invariants are enforced by this gate. They are not, so the raw-address allowlist rule and include-style rule have no automated check here, and a passing verdict implies a check that never ran."
+  },
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "`EXCLUDED_MODS = {\"perf_lab_src\"}` (line 61) and `if m and m.group(1) not in EXCLUDED_MODS:` (line 70) drop perf_lab_src from the mods list. Build checks then never run for it, and the verdict still passes.",
+   "file": "scripts/agent_diff_check.py",
+   "lines": "61-70",
+   "local_id": "f4",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check the rationale for the exclusion in repo docs or history. Confirm whether perf_lab_src has its own build gate. If not, edit a perf_lab_src file to a non-compiling state and confirm the validator still returns PASS. Consider printing skipped mods.",
+   "why_it_matters": "Edits to perf_lab_src that break compilation are not caught by the build gate. The exclusion is silent: no message reports that the mod was skipped."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "`target_mods = list(args.mod) if args.mod else get_changed_mods(changed_paths)` replaces the auto-detected changed mods with the --mod list. A mod that was actually changed but not named in --mod is never built.",
+   "file": "scripts/agent_diff_check.py",
+   "lines": "155",
+   "local_id": "f5",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Modify two mods, then run with `--mod one_mod` only and confirm the other mod's build is skipped while the verdict is PASS. Consider taking the union of detected and requested mods.",
+   "why_it_matters": "Passing a partial --mod list narrows the build gate silently, and the PASS output reports only the named mods as verified."
+  },
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "medium",
+   "evidence": "Line 79 `fnmatch.fnmatch(p, s)` lets `*` match across '/' separators, so a glob such as `patch_manager_mods/x_src/*.cpp` also matches nested paths. Lines 55-56 keep only the new path of a rename, so the old path (a deletion outside scope) is never checked.",
+   "file": "scripts/agent_diff_check.py",
+   "lines": "55-79",
+   "local_id": "f6",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Test check_scope with a nested path such as `patch_manager_mods/x_src/sub/evil.cpp` against a `*.cpp` scope glob. Test a `git mv` of a shared header out of scope and confirm no violation is reported. Compare the pattern semantics with what build and contract docs promise.",
+   "why_it_matters": "Scope globs match more than they appear to, and rename or move operations can remove files outside scope without a violation."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "medium",
+   "evidence": "The revert patch is built from `git diff -- changed_paths` (line 168). Untracked files are not in `git diff` output, yet the printed advice at line 198 says to revert with `git apply -R`. Line 185 and line 197 check `patch_file.exists()`, which is also true for a stale latest.patch left by an earlier run when this run produced no diff (lines 169-170).",
+   "file": "scripts/agent_diff_check.py",
+   "lines": "166-198",
+   "local_id": "f7",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Create a new untracked file inside a mod, run the validator, and inspect .claude/subagent_runs/latest.patch. Then run it with a clean diff after a previous patch exists and check whether the stale path is reported.",
+   "why_it_matters": "The audit/revert artifact may omit new files, and it may point to an old patch as if it belonged to the current run, so a revert could be incomplete or wrong."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "medium",
+   "evidence": "`except ImportError: ac = None` (lines 34-37) and `if baseline_file and Path(baseline_file).is_file() and ac:` (line 141) fall back to `get_git_status()` with no warning when agent_contract is missing. Similarly `ml = None` (line 32) silently disables the ledger event at line 216.",
+   "file": "scripts/agent_diff_check.py",
+   "lines": "29-37",
+   "local_id": "f8",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Run with agent_contract.py temporarily unimportable and a baseline file present. Confirm whether the change set silently differs and whether SUBAGENT_DIFF_CHECK is still logged. Consider failing or printing a warning on ImportError.",
+   "why_it_matters": "If the optional module fails to import, the baseline-based change set is replaced with a different one and the audit log is dropped, with no sign in the output that either happened."
+  },
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "low",
+   "evidence": "`res = subprocess.run(cmd, ...)` with `cmd = [\"python3\", \"scripts/run_tests.py\", \"-k\", tf]` is accepted when `res.returncode == 0`. Nothing checks that any test actually ran for the filter.",
+   "file": "scripts/agent_diff_check.py",
+   "lines": "104-107",
+   "local_id": "f9",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Read scripts/run_tests.py and run `python3 -I scripts/run_tests.py -k no_such_filter_xyz` and check the exit code. If it returns 0, the validator needs to require a nonzero collected count.",
+   "why_it_matters": "If run_tests.py exits 0 when a filter matches no tests, a misspelled --test name yields a PASS. Whether this happens depends on run_tests.py, which I did not read."
+  },
+  {
+   "candidate_id": null,
+   "category": "other",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "medium",
+   "evidence": "`subprocess.run(cmd, cwd=..., capture_output=True, text=True)` at line 92 (and line 104) has no timeout. Line 224 `except Exception: pass` hides ledger read errors.",
+   "file": "scripts/agent_diff_check.py",
+   "lines": "92",
+   "local_id": "f10",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check whether the orchestrator wraps this script with its own timeout. Consider a timeout on the subprocess calls and narrowing the except clause at line 224.",
+   "why_it_matters": "A hung build or test blocks the gate indefinitely, and ledger read failures are swallowed without any trace."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Analysis is from the whole-file content in the packet. I did not open the cited callees (scripts/build_check.py, scripts/run_tests.py, agent_contract.py, master_ledger.py), so f9 is low confidence and f8's impact depends on those modules. No secrets or credential paths were accessed. No install or hot-swap paths are reachable from this file as shown. The default invocation with no --scope and no --test returns PASS (f1, f2), which is the most important gate-integrity issue here.",
+ "packet_id": "wp1-004",
+ "truncated": false
+}

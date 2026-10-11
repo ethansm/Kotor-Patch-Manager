@@ -1,0 +1,96 @@
+{
+ "attempts": 1,
+ "cost_usd": 0.00514415,
+ "duration_s": 27.0,
+ "ended": "2026-10-10T09:05:01Z",
+ "exit_code": 0,
+ "files": [
+  "tests/compat.toml"
+ ],
+ "first_turn_prompt_tokens": 10416,
+ "num_turns": 9,
+ "packet_id": "wp1-014",
+ "prompt_bytes": 4370,
+ "rate_limit_hits": 0,
+ "raw": "raw/wp1-014.a1.out",
+ "result_subtype": "success",
+ "schema_errors": [],
+ "schema_valid": true,
+ "started": "2026-10-10T09:04:34Z",
+ "status": "ok",
+ "truncated": false,
+ "turn_prompt_tokens": [
+  10416,
+  12733,
+  14018,
+  15390,
+  17019
+ ],
+ "turn_usage": [
+  {
+   "cache_creation_input_tokens": 2618,
+   "cache_read_input_tokens": 7796,
+   "input_tokens": 2,
+   "output_tokens": 3
+  },
+  {
+   "cache_creation_input_tokens": 2317,
+   "cache_read_input_tokens": 10414,
+   "input_tokens": 2,
+   "output_tokens": 3
+  },
+  {
+   "cache_creation_input_tokens": 1285,
+   "cache_read_input_tokens": 12731,
+   "input_tokens": 2,
+   "output_tokens": 3
+  },
+  {
+   "cache_creation_input_tokens": 1372,
+   "cache_read_input_tokens": 14016,
+   "input_tokens": 2,
+   "output_tokens": 3
+  },
+  {
+   "cache_creation_input_tokens": 1629,
+   "cache_read_input_tokens": 15388,
+   "input_tokens": 2,
+   "output_tokens": 4
+  }
+ ],
+ "turns_over_100k": 0,
+ "usage": {
+  "cache_creation": {
+   "ephemeral_1h_input_tokens": 9221,
+   "ephemeral_5m_input_tokens": 0
+  },
+  "cache_creation_input_tokens": 9221,
+  "cache_read_input_tokens": 60345,
+  "fallback_credit": null,
+  "inference_geo": "global",
+  "input_tokens": 10,
+  "iterations": [
+   {
+    "cache_creation": {
+     "ephemeral_1h_input_tokens": 1629,
+     "ephemeral_5m_input_tokens": 0
+    },
+    "cache_creation_input_tokens": 1629,
+    "cache_read_input_tokens": 15388,
+    "input_tokens": 2,
+    "output_tokens": 2716,
+    "type": "message"
+   }
+  ],
+  "output_tokens": 5391,
+  "output_tokens_details": {
+   "thinking_tokens": 2567
+  },
+  "server_tool_use": {
+   "web_fetch_requests": 0,
+   "web_search_requests": 0
+  },
+  "service_tier": "standard",
+  "speed": "standard"
+ }
+}

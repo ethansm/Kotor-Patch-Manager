@@ -1,0 +1,85 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.007023360000000001,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 15443,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 15443,
+   "cache_read_input_tokens": 116356,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 12,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 418,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 418,
+     "cache_read_input_tokens": 22821,
+     "input_tokens": 2,
+     "output_tokens": 2516,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 5540,
+   "output_tokens_details": {
+    "thinking_tokens": 2931
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/npc_diversity_src/common_contract_test.cpp",
+  "patch_manager_mods/npc_diversity_src/diversity_logic_test.cpp",
+  "patch_manager_mods/npc_diversity_src/DiversityRows.h"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "test",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "high",
+   "evidence": "testDescriptorOffsets() defines its own local `struct AppearanceDesc` (lines 26-35) and then checks `offsetof(AppearanceDesc, textureVar)` against literal 0x01, `bodyClass` against 0x14, `appearance` against 0x18, `headOverride` against 0x1A, `gender` against 0x1B, `phenotype` against 0x1C (lines 38-43). The struct is declared in the test itself, so the check only confirms that the test's struct matches the numbers written in its own comments. It never touches the engine's descriptor type or any DiversityLogic/DiversityRows header.",
+   "file": "patch_manager_mods/npc_diversity_src/common_contract_test.cpp",
+   "lines": "24-44",
+   "local_id": "f1",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check whether DiversityLogic.h or another mod header defines the real appearance descriptor struct. If it does, the test should use that type (for example with static_assert or offsetof on the real type). If no such type exists, the test should be renamed or the gap recorded. Run the npc_diversity common contract test and confirm it passes even after a deliberate field reorder in a scratch copy of the local struct.",
+   "why_it_matters": "The test name and the 'contract' framing suggest the engine descriptor layout is pinned, but a layout change in the real mod code would not fail this test. That gives false assurance in the gate for a layout the hooks depend on."
+  },
+  {
+   "candidate_id": null,
+   "category": "test",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "high",
+   "evidence": "testCreatureOffsets() declares `constexpr size_t OffsetObjectID = 0x04;` (line 48), `OffsetTag = 0x18` (49), `OffsetTagLen = 0x1C` (50), `OffsetPositionX = 0x24` (51), `OffsetPositionY = 0x28` (52), `OffsetPositionZ = 0x2C` (53), then asserts `CEQ(..., OffsetObjectID, 0x04)` and the same literal for each of the others (lines 55-60). Each check compares a constant with the same literal value, so the check always passes unless someone edits both places.",
+   "file": "patch_manager_mods/npc_diversity_src/common_contract_test.cpp",
+   "lines": "46-60",
+   "local_id": "f2",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Confirm where the creature offsets are actually used (for example the tag and position reads in the hook code) and whether those reads go through these constants or through separate literals. If separate literals are used, make the test assert the constants the code uses, or drop the claim that the test validates the CSWCObject layout. Verify by changing one literal in the code path in a scratch copy and checking whether any test fails.",
+   "why_it_matters": "These are labelled 'CSWCObject ... offset' checks, but they verify nothing about the engine object layout. A wrong offset in the mod code that reads these fields would not be caught by this test, so the gate can no longer fail for this layout."
+  }
+ ],
+ "no_issue_files": [
+  "patch_manager_mods/npc_diversity_src/diversity_logic_test.cpp"
+ ],
+ "notes": "Assertion delta: no assertions removed in either file (common_contract_test base 0 / new 0; diversity_logic_test base 0 / new 135 with KT_CHECK 127 and KT_CHECK_EQ 8, all new). The row-index pins in common_contract_test.cpp lines 14-21 match DiversityRows.h (APP_COMMONER_FAT_MALE=802, APP_COMMONER_FAT_FEMALE=803, APP_CZERKA_OFFICER_FEMALE=804, APP_TWILEK_COMMONER_M_02_A=805, APP_TWILEK_FEMALE_DANCER=810, APP_ALIEN_KELDOR_01=812, APP_ALIEN_IRIDORIAN_01=814, HEAD_LLK_AHRNELL=192). I did not read DiversityLogic.h, so the expected return values in diversity_logic_test.cpp were not checked against the implementation. Not verified: check.h (not found at patch_manager_mods/npc_diversity_src, patch_manager_mods/_shared_src, or _shared_src within the worktree). So I could not confirm that kt::Report returns nonzero on failure, or that KT_STR and kt::CheckEq exist as used. The exit-code requirement in the domain notes is therefore unverified. Checker facts (run_tests rc 0, build_check rc 0, no hook-checker mentions) are consistent with the files. The live-install dependency in the checker facts belongs to WP1 and is not in this packet's code. Tool calls used: 5 of 12.\"]",
+ "packet_id": "wp6-006",
+ "truncated": false
+}

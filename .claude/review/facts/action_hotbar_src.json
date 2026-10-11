@@ -1,0 +1,27 @@
+{
+ "build_check": {
+  "lines": [
+   "build_check: FAIL=0 WARN=0 INFO=2 PASS=1 SKIP=0"
+  ],
+  "rc": 0
+ },
+ "depends_on_live_install": "check_hook_spans reads the live patch_config.toml; check_hook_bytes reads the vanilla exe",
+ "hook_checkers_mentions": {
+  "check_hook_bytes": [],
+  "check_hook_spans": []
+ },
+ "mod": "action_hotbar_src",
+ "provisional": "until WP1 is reduced; scratch copy has no git history and no binaries",
+ "run_tests": {
+  "lines": [
+   "",
+   "0 passed, 0 failed, 0 error, 0 skipped (0 items) in 0.1s"
+  ],
+  "rc": 0
+ },
+ "skipped": {
+  "agent_diff_check.py": "needs-git-history",
+  "check-raw-addresses": "needs excluded tests/static/raw_addresses.toml (human-only gap)",
+  "compat_check.py": "needs-git-history"
+ }
+}

@@ -1,0 +1,90 @@
+{
+ "attempts": 1,
+ "cost_usd": 0.01428837,
+ "duration_s": 71.0,
+ "ended": "2026-10-10T09:09:45Z",
+ "exit_code": 0,
+ "files": [
+  "patch_manager_mods/perf_lab_src/perflab/kotor2-steam-aspyr.hooks.toml",
+  "patch_manager_mods/perf_lab_src/perflab/manifest.toml"
+ ],
+ "first_turn_prompt_tokens": 17561,
+ "num_turns": 8,
+ "packet_id": "wp4-012",
+ "prompt_bytes": 17697,
+ "rate_limit_hits": 0,
+ "raw": "raw/wp4-012.a1.out",
+ "result_subtype": "success",
+ "schema_errors": [],
+ "schema_valid": true,
+ "started": "2026-10-10T09:08:34Z",
+ "status": "ok",
+ "truncated": false,
+ "turn_prompt_tokens": [
+  17561,
+  23625,
+  28001,
+  35732
+ ],
+ "turn_usage": [
+  {
+   "cache_creation_input_tokens": 9763,
+   "cache_read_input_tokens": 7796,
+   "input_tokens": 2,
+   "output_tokens": 8
+  },
+  {
+   "cache_creation_input_tokens": 6064,
+   "cache_read_input_tokens": 17559,
+   "input_tokens": 2,
+   "output_tokens": 3
+  },
+  {
+   "cache_creation_input_tokens": 4376,
+   "cache_read_input_tokens": 23623,
+   "input_tokens": 2,
+   "output_tokens": 8
+  },
+  {
+   "cache_creation_input_tokens": 7731,
+   "cache_read_input_tokens": 27999,
+   "input_tokens": 2,
+   "output_tokens": 5
+  }
+ ],
+ "turns_over_100k": 0,
+ "usage": {
+  "cache_creation": {
+   "ephemeral_1h_input_tokens": 27934,
+   "ephemeral_5m_input_tokens": 0
+  },
+  "cache_creation_input_tokens": 27934,
+  "cache_read_input_tokens": 76977,
+  "fallback_credit": null,
+  "inference_geo": "global",
+  "input_tokens": 8,
+  "iterations": [
+   {
+    "cache_creation": {
+     "ephemeral_1h_input_tokens": 7731,
+     "ephemeral_5m_input_tokens": 0
+    },
+    "cache_creation_input_tokens": 7731,
+    "cache_read_input_tokens": 27999,
+    "input_tokens": 2,
+    "output_tokens": 4547,
+    "type": "message"
+   }
+  ],
+  "output_tokens": 15862,
+  "output_tokens_details": {
+   "thinking_tokens": 12126
+  },
+  "server_tool_use": {
+   "web_fetch_requests": 0,
+   "web_search_requests": 0
+  },
+  "service_tier": "standard",
+  "speed": "standard"
+ }
+}

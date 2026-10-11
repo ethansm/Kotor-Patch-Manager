@@ -1,0 +1,88 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00776162,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 14719,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 14719,
+   "cache_read_input_tokens": 137772,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 16,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 679,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 679,
+     "cache_read_input_tokens": 21836,
+     "input_tokens": 2,
+     "output_tokens": 3212,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 6877,
+   "output_tokens_details": {
+    "thinking_tokens": 4229
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "research/companion_levelup/tools/parity/guikit_test.cpp",
+  "research/companion_levelup/tools/parity/guikit_test.py",
+  "research/companion_levelup/tools/parity/parity.py",
+  "research/companion_levelup/tools/parity/.gitignore",
+  "research/companion_levelup/tools/parity/stub/_shared/TestHarness.h",
+  "patch_manager_mods/_shared_src/TestHarness.h"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "build",
+   "commits": [
+    "d8438c6"
+   ],
+   "confidence": "medium",
+   "evidence": "Line 12: `#include \"TestHarness.h\"`; lines 13-17 define CHECK as `::kt::Check(__FILE__ \":\" KT_STR(__LINE__) \": \" #c, static_cast<bool>(c), _detail);`. The include is resolved only through the -I paths added in guikit_test.py:6 (`stub/_shared`). A Glob of the parity directory finds no `stub/_shared*` entry, and Read of both `stub/_shared/TestHarness.h` and `patch_manager_mods/_shared_src/TestHarness.h` returns 'File does not exist'. The same header is included by ui_test.cpp:24, gate_test.cpp:22, apply_test.cpp:86 and others, so every harness now depends on it.",
+   "file": "research/companion_levelup/tools/parity/guikit_test.cpp",
+   "lines": "12-17",
+   "local_id": "f1",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "In the real worktree, run `ls -l research/companion_levelup/tools/parity/stub/` and confirm `_shared` is a committed symlink to the _shared_src headers. Confirm `TestHarness.h` resolves through it. Then build guikit_test.py and check it compiles. Also check that the symlink is not a dangling target.",
+   "why_it_matters": "If TestHarness.h (or the stub/_shared symlink that exposes it) is missing from a checkout, guikit_test does not compile. guikit_test.py then calls sys.exit(r.stderr), so the failure is loud, but the host test cannot run and the GuiKit check is lost. If kt::Check/kt::Report live somewhere other than the snapshot, the whole CHECK path is unverifiable here."
+  },
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "d8438c6"
+   ],
+   "confidence": "low",
+   "evidence": "The old exit path was `return g_fail ? 1 : 0;` with a local g_fail counter. It is now `return kt::Report(\"guikit_test\");` (line 158). The counting and exit-code logic now lives in TestHarness.h, which could not be read in this snapshot. The assertion delta is 49 CHECK before and 49 after, with none removed.",
+   "file": "research/companion_levelup/tools/parity/guikit_test.cpp",
+   "lines": "158",
+   "local_id": "f2",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Read TestHarness.h (in the real tree). Confirm kt::Report returns a nonzero value when any kt::Check was false, and that kt::Check records failures that survive to Report. Then temporarily break one CHECK in a scratch copy (not the live tree) and confirm guikit_test exits nonzero. Also read the rest of guikit_test.py, which is outside the post-image lines shown, to confirm it checks the returncode of the run.",
+   "why_it_matters": "The domain requires failures to stay counted and reflected in the exit code. If kt::Report does not return nonzero when any check fails, guikit_test.py can report PASS on a failing run. That would weaken the gate without any visible diff in this file."
+  }
+ ],
+ "no_issue_files": [
+  "research/companion_levelup/tools/parity/parity.py"
+ ],
+ "notes": "Assertion delta: the CHECK count is 49 before and 49 after, with none removed. The macro was replaced with a delegation to kt::Check, and the summary print plus the g_fail return were replaced with kt::Report. Each replacement is accounted for, subject to f2. The `#include \"../../../../patch_manager_mods/_shared_src/GuiKit.h\"` was changed to `#include \"GuiKit.h\"`, which follows the repo's include-path rule. The GuiKit.h resolution now depends on `-I stub/_shared` in guikit_test.py:6 and parity.py:33. That directory was not found in the snapshot (see f1), so this is unverified. The CHECK detail buffer is 512 bytes via std::snprintf, which is fine for these messages. The header uses <stdio.h> while calling std::snprintf; whether <cstdio> is pulled in depends on TestHarness.h, which I could not read. This is not raised as a finding. The rest of guikit_test.py (below line 9) is outside the packet and was not read. The packet's CHECK calls each have at least one format argument, so the empty-__VA_ARGS__ case does not arise. No secrets or credential paths were touched.\"]",
+ "packet_id": "wp6-010",
+ "truncated": false
+}

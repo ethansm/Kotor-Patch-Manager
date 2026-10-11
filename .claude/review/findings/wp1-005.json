@@ -1,0 +1,81 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00301646,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 7629,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 7629,
+   "cache_read_input_tokens": 7796,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 2,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 7629,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 7629,
+     "cache_read_input_tokens": 7796,
+     "input_tokens": 2,
+     "output_tokens": 2825,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 2825,
+   "output_tokens_details": {
+    "thinking_tokens": 1492
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "scripts/test_compat_breakage.py"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "build",
+   "commits": [
+    "a734895"
+   ],
+   "confidence": "high",
+   "evidence": "shutil.copytree(\"/home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager\", fake_kpm, symlinks=True,) hardcodes a absolute path under one developer's home directory and an external workspace outside the repository.",
+   "file": "scripts/test_compat_breakage.py",
+   "lines": "147-149",
+   "local_id": "f1",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check whether the KPM tool location can be derived from REPO_ROOT or an env var/argument (as build_check.py's --kpm-dir already accepts). Confirm test_2 fails cleanly or skips with a stated reason when the path is absent, rather than erroring on copytree. Verify no other file in the packet or repo hardcodes /home/ethansm.",
+   "why_it_matters": "On any other machine or CI runner the test errors out in test_2 (or, if the path exists, silently depends on an external tree that is not versioned with this repo). This is a machine-specific path in a committed gate, which the build-portability rules forbid."
+  },
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "a734895"
+   ],
+   "confidence": "medium",
+   "evidence": "for item in REPO_ROOT.iterdir(): if item.name not in (\"scripts\", \"patch_manager_mods\", \".git\") ...: os.symlink(item, tmp_path / item.name). The docstring (lines 5-6) says scenarios run in isolated scratch copies and 'never mutating the live repository', but every other top-level item is only symlinked, and the scripts are run with cwd=scratch (e.g. lines 87-99, 156-168).",
+   "file": "scripts/test_compat_breakage.py",
+   "lines": "57-61",
+   "local_id": "f2",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "List the top-level entries of the repo root and check which ones are written to by run_tests.py --build, build_check.py, and compat_check.py (look for output dirs, cache dirs, or symlinks to the game directory). If any are written to, either copy them or symlink only read-only inputs. Also confirm whether the run_tests.py build writes its object files under TMPDIR (set at lines 83-85) or under the repo tree.",
+   "why_it_matters": "Any build or test step that writes to a top-level output directory (build outputs, .kpatch, caches, or the live game directory if one is linked at top level) follows the symlink and mutates the live repo or install area. That contradicts the isolation claim and the rule that tests/tooling must never reach the live game or install paths."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Assertion delta is additive (34 assertions, none removed), so no weakened-assertion finding. The test asserts on exact compiler/tool output strings (e.g. 'PsDispatch.h: No such file or directory', 'hotbar relies on: readExo accepts an 80-char name'); those are fragile to toolchain message changes but are not gate weakening. test_5's assertNotIn('BUILD', stdout) is a substring check that may be brittle, not a defect. I did not read run_tests.py, build_check.py, compat_check.py, or abi_check.py, so f2 depends on what those scripts write and where; that is why it is medium confidence. No secrets or credential paths were touched. No tool calls were used because the full file was in the packet.",
+ "packet_id": "wp1-005",
+ "truncated": false
+}

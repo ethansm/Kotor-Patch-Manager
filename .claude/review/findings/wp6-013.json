@@ -1,0 +1,66 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00254009,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 5574,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 5574,
+   "cache_read_input_tokens": 19789,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 4,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 1377,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 1377,
+     "cache_read_input_tokens": 11993,
+     "input_tokens": 2,
+     "output_tokens": 1557,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 2454,
+   "output_tokens_details": {
+    "thinking_tokens": 1195
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "scripts/test_clef_matcher.py",
+  "scripts/clef_matcher.py (grep only: query_clef_engine, route_task, inkling model references)"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "test",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "medium",
+   "evidence": "test_route_task_contract calls route_task(\"Fix pointer math in QueueHud hook detour\", explicit_mod=\"queue_hud_src\", log_telemetry=False) with no @patch on clef_matcher.query_clef_engine, while the offline and tie tests at lines 106-110 and 137-152 do patch it. clef_matcher.py:168 defines query_clef_engine(payload, timeout_sec=1.0) as a live daemon call. The assertions at 96-104 accept any engine in a set, so the test passes whether the live daemon answers or the fallback runs.",
+   "file": "scripts/test_clef_matcher.py",
+   "lines": "92-104",
+   "local_id": "f1",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Run `python3 -I scripts/test_clef_matcher.py` once with the clef daemon stopped and once with it running, and compare which engine branch executes. Check whether route_task's daemon path at clef_matcher.py:270-380 can hit the network with the 1.0s timeout. Consider whether the contract test should patch query_clef_engine to return None, as the offline test does, to make it deterministic.",
+   "why_it_matters": "The test's outcome depends on whether a local clef daemon is running at test time, so results can differ between machines and runs. It also means the unit suite can reach a live service, which the test-only rule does not expect. The contract check is still valid for either path, so the risk is nondeterminism rather than a silent pass."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Assertion delta: 0 removed, 45 added, so no removed-assertion replacement check is needed. unittest.main() is the entry point and exits non-zero on failure by default, so failures still reach the exit code. Mock targets clef_matcher.query_clef_engine and route_task exist in clef_matcher.py (lines 168 and 270). The model name \"inkling\" used at lines 154 is present in clef_matcher.py at lines 221-351, so the assertion matches the code. Not verified: the body of route_task's tie/fallback logic (confidence floor 0.32 and role \"review\" at line 153) was not read, so that expected value is unconfirmed. TestClefDataset tests (lines 35-53) read the live ledger via extract_ledger_facts() and assert total_events > 0; that depends on a master ledger file existing, which I did not check, since clef_dataset.py was outside the callee allowance I used. No secrets were accessed.",
+ "packet_id": "wp6-013",
+ "truncated": false
+}

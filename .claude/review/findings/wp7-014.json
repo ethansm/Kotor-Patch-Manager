@@ -1,0 +1,84 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00391181,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 8638,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 8638,
+   "cache_read_input_tokens": 35111,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 6,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 1328,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 1328,
+     "cache_read_input_tokens": 15106,
+     "input_tokens": 2,
+     "output_tokens": 2429,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 3665,
+   "output_tokens_details": {
+    "thinking_tokens": 1631
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "scripts/kpm_hotswap.py",
+  "scripts/master_ledger.py"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "medium",
+   "evidence": "try:\n    import master_ledger as ml\nexcept ImportError:\n    ml = None",
+   "file": "scripts/kpm_hotswap.py",
+   "lines": "35-38",
+   "local_id": "f1",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Confirm master_ledger.py is always present beside kpm_hotswap.py in the scripts directory. Consider printing a one-line WARN to stderr in the except branch so the audit gap is visible. Run the hotswap script with master_ledger hidden (e.g. a temporary rename in a copy of the scripts dir, not the live tree) and check whether the apply/rollback still prints its summary.",
+   "why_it_matters": "If master_ledger cannot be imported, ml is silently set to None and every later `if ml:` guard (lines 339, 485) skips the HOTSWAP_ROLLBACK and HOTSWAP_APPLY audit events with no warning on stderr. Swaps and rollbacks of live game DLLs then go unrecorded in the ledger without anyone being told."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "medium",
+   "evidence": "if ml:\n        ml.log_event(\"HOTSWAP_ROLLBACK\", {\n            \"backup\": snap.name,\n            \"mods\": [p[0] for p in todo],\n        })\n    return 0",
+   "file": "scripts/kpm_hotswap.py",
+   "lines": "339-344",
+   "local_id": "f2",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Compare the per-mod got/old MD5 results from the loop at lines 326-329 with the event payload. Consider recording per-mod match status and the config_restored boolean in the event data, and check whether rollback should return non-zero on MD5 mismatch. Verify the ledger record shape with `python3 -I scripts/master_ledger.py` read commands rather than by hand-editing the ledger.",
+   "why_it_matters": "The event is written unconditionally after the DLL restore loop, but the loop only prints 'MD5 MISMATCH vs snapshot' (line 329) and the function still returns 0. The ledger therefore records HOTSWAP_ROLLBACK as a clean success even when a restored DLL does not match its snapshot MD5, or when config was not restored (line 337-338). The event carries no outcome field to distinguish these cases."
+  }
+ ],
+ "no_issue_files": [
+  "scripts/master_ledger.py"
+ ],
+ "notes": "Checked the new ml.log_event calls against master_ledger.log_event (scripts/master_ledger.py:156-194). The signature matches (event, data dict), and it swallows write errors internally, so an exception from the logger cannot abort rollback or apply. swap_batch (kpm_hotswap.py:287) returns a dict with backup, meta and plan keys, so rec[\"plan\"], rec[\"backup\"].name and rec[\"meta\"].get(...) in the HOTSWAP_APPLY hunk (lines 485-491) resolve. Not checked: swap_batch's Path type for \"backup\" beyond the return line, and whether test runs of main(--apply) reach the live ledger. The master_ledger test-isolation guard (line 181) suppresses writes only when is_test_environment() holds and MASTER_LEDGER_PATH is unset, so tests that call main() with --apply would need a separate check. The rest of the hunks (rollback guard, list/refuse paths) were read and not flagged. No secrets were accessed.",
+ "packet_id": "wp7-014",
+ "truncated": false
+}

@@ -1,0 +1,72 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.01540903,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 43682,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 43682,
+   "cache_read_input_tokens": 184813,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 10,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 1643,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 1643,
+     "cache_read_input_tokens": 49835,
+     "input_tokens": 2,
+     "output_tokens": 3937,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 9647,
+   "output_tokens_details": {
+    "thinking_tokens": 6971
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "research/companion_levelup/tools/parity/playthrough_test.cpp",
+  "research/companion_levelup/tools/parity/scenario_test.cpp",
+  "research/companion_levelup/tools/parity/scenarios.py",
+  "research/companion_levelup/tools/parity/parity.py",
+  "research/companion_levelup/tools/parity/stub/_shared/TestHarness.h (absent)"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "build",
+   "commits": [
+    "d8438c6"
+   ],
+   "confidence": "medium",
+   "evidence": "scenarios.py:42 adds `\"-I\", os.path.join(HERE, \"stub\", \"_shared\")` and the changed sources now `#include \"TestHarness.h\"` (playthrough_test.cpp:6, scenario_test.cpp:32). A Glob for `**/TestHarness.h` under tools/parity returns nothing, `stub/**` lists only windows.h, m3_win_shim.h and inc/.keep, and `stub/_shared*` matches no entry. Reading stub/_shared/TestHarness.h fails with 'File does not exist'. parity.py:33 uses the same missing `stub/_shared` include dir for playthrough_test.cpp, ui_test.cpp, unit_gap_test.cpp, gate_test.cpp, apply_test.cpp and guikit_test.cpp.",
+   "file": "research/companion_levelup/tools/parity/scenarios.py",
+   "lines": "40-44",
+   "local_id": "f1",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check whether TestHarness.h exists in the real worktree outside this snapshot (for example under the shared-source directory that the repo rules name, ../_shared_src, or under tests/include). Check whether stub/_shared is a tracked symlink or ignored/untracked directory. Then run `python3 tools/parity/scenarios.py` from research/companion_levelup and confirm the build line finds TestHarness.h without errors; confirm kt::Report and kt::Check exist and that kt::Report returns nonzero on any failure.",
+   "why_it_matters": "If TestHarness.h is not shipped with the snapshot or under the include dir the build passes, every harness-based test fails to compile. The gate then stops with COMPILE FAILED rather than passing silently, so this is a build break, not a weakened gate. It is still a portability and reproducibility problem: the header the new harness depends on is not resolvable from the tree that the build flags point at."
+  }
+ ],
+ "no_issue_files": [
+  "research/companion_levelup/tools/parity/playthrough_test.cpp",
+  "research/companion_levelup/tools/parity/scenario_test.cpp"
+ ],
+ "notes": "Assertion delta is zero for both files (playthrough_test.cpp 117 CHECK -> 117 CHECK; scenario_test.cpp 39 -> 39), and no g_fail or g_checks references remain in the parity directory. Exit codes are preserved: playthrough_test returns kt::Report(...), scenario runner returns kt::g_failures ? 1 : 0, and the --unit path returns kt::Report(...). I could not read TestHarness.h, so kt::Check, kt::Report, kt::g_checks, kt::g_failures and KT_STR are unverified; that is the basis of f1. Scanner candidate S-d10b12339c (scenario_test.cpp:288) is harmless: member is void*, and reinterpret_cast<uintptr_t> of g_leader->creature (a uintptr_t, line 48) is a same-type cast the standard allows. The party::g_member and party::g_serverCreature hooks used at lines 284-289 are not defined in the packet, so I did not verify their signatures. CHECK label buffers (128 chars) and detail buffers (512 chars) can truncate output silently, but failures are still counted, so I did not report this. scenarios.py exit handling (fails counter and return code) is unchanged in the packet.\"}]",
+ "packet_id": "wp6-011",
+ "truncated": false
+}

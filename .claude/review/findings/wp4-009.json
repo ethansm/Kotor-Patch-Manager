@@ -1,0 +1,72 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00942152,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 21021,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 21021,
+   "cache_read_input_tokens": 41572,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 6,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 7965,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 7965,
+     "cache_read_input_tokens": 20852,
+     "input_tokens": 2,
+     "output_tokens": 4575,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 9602,
+   "output_tokens_details": {
+    "thinking_tokens": 7373
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/hud_host_src/HudHostProvider.cpp",
+  "patch_manager_mods/hud_host_src/kotor2-gog-aspyr.hooks.toml",
+  "patch_manager_mods/hud_host_src/manifest.toml",
+  "patch_manager_mods/_shared_src/GameAddr.h",
+  "patch_manager_mods/hud_host_src/kotor2-steam-aspyr.hooks.toml (existence and handler names only, via Glob/Grep)"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "bug",
+   "commits": [
+    "7daaec6"
+   ],
+   "confidence": "medium",
+   "evidence": "HH_LayoutClosing checks `if (!hhd::isHudPanel(vtbl, uint32_t(gameaddr::HudVtable))) return;` (line 136). GameAddr.h:2-3 states every constant in gameaddr is the STEAM Aspyr column, and line 72 defines `HudVtable = 0x0099DCC4`. GameAddr.h:3-6 says code that must also run on GOG should read names from k2addr::get(), and kGog is unfilled (all zero). The GOG hooks file (kotor2-gog-aspyr.hooks.toml:55-57) enables the same handler at a different GOG address (0x0090DA20 vs Steam 0x0040F5A0), so the GOG panel vtable read at line 135 is compared against the Steam HUD vtable constant.",
+   "file": "patch_manager_mods/hud_host_src/HudHostProvider.cpp",
+   "lines": "131-137",
+   "local_id": "f1",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Confirm the GOG value of the CSWGuiInGame RTTI vtable (Ghidra database k2_win_gog_aspyr_swkotor2.exe, or the vtable pointer stored at the HUD panel in a GOG run). Check whether k2addr::get() / K2AddrTable exposes a HudVtable field and whether it is populated for GOG. Check that hhd::isHudPanel is a plain equality test. Then confirm by logging the panel vtable on a GOG build: the 'first BUILD dispatch' KP_LOG at line 142 should appear if the test passes. Do not run this against the live install; use a scratch copy.",
+   "why_it_matters": "On GOG the HUD-vtable test will almost certainly never match, so K2HUD_BUILD is silently never dispatched. Consumers such as combat-hotbar that create labels at BUILD would never run on GOG. The manifest (manifest.toml:13-16) now advertises kotor2_gog_aspyr as supported, and the early return at line 136 gives no log line, so the failure is invisible in normal play."
+  }
+ ],
+ "no_issue_files": [
+  "patch_manager_mods/hud_host_src/kotor2-gog-aspyr.hooks.toml",
+  "patch_manager_mods/hud_host_src/manifest.toml"
+ ],
+ "notes": "Hook byte windows check out. original_bytes are whole instructions: 55 8B EC 83 EC 38 and 55 8B EC 83 EC 10 are push/mov/sub; 5E 8B E5 5D C2 0C 00 is pop/mov/pop/ret 0xC, 7 bytes. None contains a relative branch. Addresses match the comments: 0x514B40=5327680, 0x514E47=5328455, 0x90DA20=9493024. The Steam and GOG hooks files name the same three handlers, and exports.def exports all three, each defined in HudHostProvider.cpp at lines 87, 107 and 131. The target_versions hash matches manifest.toml:16. Scanner candidates S-133d16f886, S-41e7ef904b, S-461e4de16a, S-5860ece344, S-6a42a8dd80, S-7e507157fe, S-853498c824, S-a80dfa7a22, S-98f913cd2d and S-9f4d626a23 are parser artifacts from nested [[hooks.parameters]] tables and a [metadata] line; they were checked and are harmless. S-76117a1e73, S-865b4184a8 and S-90924e1329 are the hook entries I verified above. Not verified: the static-initialiser claim at HudHostProvider.cpp:38-39 that KpLog_SetFallbackFile does no I/O and does not depend on uninitialised statics. KpLog's source is outside this packet's allowed reads, so this is unchecked. Also unverified: the calling convention of the detours (the trampoline passes ecx and stack args into the cdecl handlers), which lives in the KPM loader. The engine HUD vtable constant from GameAddr.h is the main open question for GOG parity, see f1.\"}",
+ "packet_id": "wp4-009",
+ "truncated": false
+}

@@ -1,0 +1,52 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00231886,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 5596,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 5596,
+   "cache_read_input_tokens": 30606,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 6,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 691,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 691,
+     "cache_read_input_tokens": 12701,
+     "input_tokens": 2,
+     "output_tokens": 716,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 1786,
+   "output_tokens_details": {
+    "thinking_tokens": 552
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/combat_hotbar_src/combat_logic_test.cpp",
+  "patch_manager_mods/combat_hotbar_src/CombatLogic.h",
+  "patch_manager_mods/combat_hotbar_src/CombatHotbar.cpp"
+ ],
+ "findings": [],
+ "no_issue_files": [
+  "patch_manager_mods/combat_hotbar_src/combat_logic_test.cpp"
+ ],
+ "notes": "Added lines 48-52 pin kDefaultPad=8, kDefaultGroupGap=10, kDefaultSidePad=16, kDefaultCapPad=16. All four constants are defined in CombatLogic.h:10-13 under namespace ch (available via `using namespace ch;` at line 10) with matching values, and CombatHotbar.cpp:100-105,137-142 uses them as defaults. The new checks sit inside ch6Contracts() (line 39), which is called from line 194 in the test body; the test file's main is at line 786. Assertion delta from the known facts: no assertions removed; KT_CHECK_EQ count rose 427->431 and KT_CHECK stayed at 248, so nothing was dropped. Checker facts: run_tests rc=0 for common_contract_test.cpp only (combat_logic_test.cpp itself was not reported as run in the facts); build_check rc=0. I did not verify that main() propagates KT_CHECK_EQ failures into its exit code (kt harness lives in check.h, outside the packet), so that remains unverified. Not a finding: the pinned default values match the header, and clamp ranges in CombatHotbar.cpp are not pinned by the new tests but that is coverage, not a defect.\"]",
+ "packet_id": "wp6-002",
+ "truncated": false
+}

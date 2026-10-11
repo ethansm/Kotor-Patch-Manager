@@ -1,0 +1,89 @@
+{
+ "attempts": 1,
+ "cost_usd": 0.01812001,
+ "duration_s": 65.0,
+ "ended": "2026-10-10T09:06:48Z",
+ "exit_code": 0,
+ "files": [
+  "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp"
+ ],
+ "first_turn_prompt_tokens": 37032,
+ "num_turns": 9,
+ "packet_id": "wp3-004",
+ "prompt_bytes": 60928,
+ "rate_limit_hits": 0,
+ "raw": "raw/wp3-004.a1.out",
+ "result_subtype": "success",
+ "schema_errors": [],
+ "schema_valid": true,
+ "started": "2026-10-10T09:05:43Z",
+ "status": "ok",
+ "truncated": false,
+ "turn_prompt_tokens": [
+  37032,
+  42409,
+  49760,
+  56012
+ ],
+ "turn_usage": [
+  {
+   "cache_creation_input_tokens": 29234,
+   "cache_read_input_tokens": 7796,
+   "input_tokens": 2,
+   "output_tokens": 5
+  },
+  {
+   "cache_creation_input_tokens": 5377,
+   "cache_read_input_tokens": 37030,
+   "input_tokens": 2,
+   "output_tokens": 7
+  },
+  {
+   "cache_creation_input_tokens": 7351,
+   "cache_read_input_tokens": 42407,
+   "input_tokens": 2,
+   "output_tokens": 8
+  },
+  {
+   "cache_creation_input_tokens": 6252,
+   "cache_read_input_tokens": 49758,
+   "input_tokens": 2,
+   "output_tokens": 10
+  }
+ ],
+ "turns_over_100k": 0,
+ "usage": {
+  "cache_creation": {
+   "ephemeral_1h_input_tokens": 48214,
+   "ephemeral_5m_input_tokens": 0
+  },
+  "cache_creation_input_tokens": 48214,
+  "cache_read_input_tokens": 136991,
+  "fallback_credit": null,
+  "inference_geo": "global",
+  "input_tokens": 8,
+  "iterations": [
+   {
+    "cache_creation": {
+     "ephemeral_1h_input_tokens": 6252,
+     "ephemeral_5m_input_tokens": 0
+    },
+    "cache_creation_input_tokens": 6252,
+    "cache_read_input_tokens": 49758,
+    "input_tokens": 2,
+    "output_tokens": 6856,
+    "type": "message"
+   }
+  ],
+  "output_tokens": 14213,
+  "output_tokens_details": {
+   "thinking_tokens": 9366
+  },
+  "server_tool_use": {
+   "web_fetch_requests": 0,
+   "web_search_requests": 0
+  },
+  "service_tier": "standard",
+  "speed": "standard"
+ }
+}

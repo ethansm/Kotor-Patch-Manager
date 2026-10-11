@@ -1,0 +1,147 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00839495,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 17196,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 17196,
+   "cache_read_input_tokens": 26185,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 4,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 6603,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 6603,
+     "cache_read_input_tokens": 18389,
+     "input_tokens": 2,
+     "output_tokens": 2966,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 9387,
+   "output_tokens_details": {
+    "thinking_tokens": 6439
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "scripts/abi_check.py",
+  "scripts/test_abi_check.py",
+  "patch_manager_mods/_shared_src/PortraitSlots.h"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "test",
+   "commits": [
+    "3de985d"
+   ],
+   "confidence": "medium",
+   "evidence": "appended = self.header_content.replace(\"    int32_t companionCtrl[2];/* LBL_CHAR2 / LBL_CHAR3 controls (panel + 0x3134 / 0x36DC) */\", ...newTrailingField...) with no check that the replacement changed anything; the test then asserts returncode 0 and 'PASS abi_check' (lines 109-111). If the anchor string drifts, the scratch header equals the live header and the test passes without exercising the append-only rule. The swapped-field test (lines 63-66, 80) is guarded because its no-match case makes the returncode-1 assertion fail, but this one is not.",
+   "file": "scripts/test_abi_check.py",
+   "lines": "92-111",
+   "local_id": "f1",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Add an assertion that the replacement actually inserted the new field (e.g. assert the scratch text differs from self.header_content, or that 'newTrailingField' appears in the written file) before running the script. Then confirm the test fails when the anchor line is edited.",
+   "why_it_matters": "A test named 'appended field passes' that can pass on an unmodified header gives false assurance about the append-only gate. The anchor currently exists (PortraitSlots.h:65), so this is latent, not an active failure."
+  },
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "3de985d"
+   ],
+   "confidence": "high",
+   "evidence": "if args.update:\n    toml_content = dump_to_toml_str(dumped_data)\n    g_path.write_text(toml_content, encoding=\"utf-8\")\n    print(f\"Updated golden {g_path}\")\n    continue",
+   "file": "scripts/abi_check.py",
+   "lines": "379-383",
+   "local_id": "f2",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Run abi_check.py --update --header <scratch .h with a swapped field> against a copy of the repo and confirm the golden is overwritten with exit 0. Then decide whether --update should run diff_abi_golden first, refuse when args.header is set, and require an explicit waiver for breaking changes.",
+   "why_it_matters": "--update rewrites the committed golden with whatever the current dump is, without running the append-only diff (diff_abi_golden is skipped on this path) and without refusing when --header points to a scratch header (args.header is applied at line 369 and nothing stops the write). It also leaves overall_exit at 0. A breaking layout can therefore be rebaselined silently, and a scratch-header run can overwrite tests/abi goldens."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "3de985d"
+   ],
+   "confidence": "medium",
+   "evidence": "candidates = list((repo_root / \"tests/abi\").glob(f\"abi_dump_*.cpp\"))\nif candidates:\n    dumper_src = candidates[0]",
+   "file": "scripts/abi_check.py",
+   "lines": "360-362",
+   "local_id": "f3",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check whether tests/abi contains more than one abi_dump_*.cpp. If it does, confirm which one is selected on two different filesystems. Consider making the fallback an error instead of picking candidates[0].",
+   "why_it_matters": "When the expected abi_dump_<stem>.cpp is missing, the script silently falls back to whichever dumper glob returns first. The glob is unsorted, so the choice is filesystem-dependent. A mismatched dumper usually fails closed via the interface-name check, but the selection is nondeterministic and can hide a missing dumper for the right interface."
+  },
+  {
+   "candidate_id": null,
+   "category": "bug",
+   "commits": [
+    "3de985d"
+   ],
+   "confidence": "high",
+   "evidence": "try:\n    data = tomllib.loads(mfile.read_text(encoding=\"utf-8\"))\n    ...\nexcept Exception:\n    continue",
+   "file": "scripts/abi_check.py",
+   "lines": "64-69",
+   "local_id": "f4",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Make a malformed patch_manager_mods/*/manifest.toml appear in the output (warning to stderr or a consumers-unknown note). Check whether any current manifest fails to parse.",
+   "why_it_matters": "A manifest that fails to parse is dropped without a message, so the 'Consumers reading <tag>' list printed in a BREAKING ABI report (line 242) can be incomplete with no indication. This does not turn a failure into a pass, but it weakens the diagnostic the append-only rule depends on."
+  },
+  {
+   "candidate_id": null,
+   "category": "build",
+   "commits": [
+    "3de985d"
+   ],
+   "confidence": "high",
+   "evidence": "default_path = Path.home() / \"Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager\"",
+   "file": "scripts/abi_check.py",
+   "lines": "50",
+   "local_id": "f5",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Confirm whether the test runner sets KPM_DIR or passes --kpm-dir. Consider making the KPM location a documented required setting, and confirm the tests do not touch any install or hot-swap path while resolving it.",
+   "why_it_matters": "The gate's default KPM include root is a machine-specific home-relative path. On any other machine the g++ compile fails with a missing header. That fails closed (exit 2), so it is not a silent pass, but the gate only runs on the author's machine unless KPM_DIR or --kpm-dir is set. The live-golden and dump tests depend on this path too."
+  },
+  {
+   "candidate_id": null,
+   "category": "bug",
+   "commits": [
+    "3de985d"
+   ],
+   "confidence": "medium",
+   "evidence": "if args.dump_only:\n    print(dump_to_toml_str(dumped_data))\n    return 0",
+   "file": "scripts/abi_check.py",
+   "lines": "375-377",
+   "local_id": "f6",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Run --dump-only with two golden files where the first one has no dumper, and check the exit code. Decide whether dump-only should return overall_exit.",
+   "why_it_matters": "--dump-only returns 0 on the first successfully dumped golden, discarding overall_exit=2 set by an earlier golden that failed to compile or parse (lines 364-373). Dump-only is not the pass/fail gate, but its exit code is misleading when run across several goldens."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Checked the packet's inline content. The anchor string used by test_appended_field_passes exists in patch_manager_mods/_shared_src/PortraitSlots.h:65 and the swapped-field anchor exists at lines 53-54, so both tests currently exercise what they name; f1 is latent. The gate exit paths for the default check are sound: compile and run failures set exit 2, a breaking diff sets exit 1, and subprocess return codes are checked. Nothing in the packet reaches the live game directory or install paths; the only external path is the KPM include root (f5). No removed assertions: the known-facts delta shows base 0 and no removals. Not read: tests/abi goldens, the other tests/abi dumpers, the manifests, and KPM Common headers, since they are outside the packet's allowed reads. The f-string without placeholders at line 360 and the unpinned tomli fallback at lines 34-37 are style-only and not reported.",
+ "packet_id": "wp1-002",
+ "truncated": false
+}

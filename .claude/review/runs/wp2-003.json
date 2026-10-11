@@ -1,0 +1,84 @@
+{
+ "attempts": 1,
+ "cost_usd": 0.01138299,
+ "duration_s": 46.0,
+ "ended": "2026-10-10T09:06:29Z",
+ "exit_code": 0,
+ "files": [
+  "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+  "patch_manager_mods/queue_hud_src/exports.def",
+  "patch_manager_mods/queue_hud_src/kotor2-steam-aspyr.hooks.toml"
+ ],
+ "first_turn_prompt_tokens": 24878,
+ "num_turns": 6,
+ "packet_id": "wp2-003",
+ "prompt_bytes": 34951,
+ "rate_limit_hits": 0,
+ "raw": "raw/wp2-003.a1.out",
+ "result_subtype": "success",
+ "schema_errors": [],
+ "schema_valid": true,
+ "started": "2026-10-10T09:05:43Z",
+ "status": "ok",
+ "truncated": false,
+ "turn_prompt_tokens": [
+  24878,
+  29289,
+  35047
+ ],
+ "turn_usage": [
+  {
+   "cache_creation_input_tokens": 17080,
+   "cache_read_input_tokens": 7796,
+   "input_tokens": 2,
+   "output_tokens": 5
+  },
+  {
+   "cache_creation_input_tokens": 4411,
+   "cache_read_input_tokens": 24876,
+   "input_tokens": 2,
+   "output_tokens": 8
+  },
+  {
+   "cache_creation_input_tokens": 5758,
+   "cache_read_input_tokens": 29287,
+   "input_tokens": 2,
+   "output_tokens": 3
+  }
+ ],
+ "turns_over_100k": 0,
+ "usage": {
+  "cache_creation": {
+   "ephemeral_1h_input_tokens": 27249,
+   "ephemeral_5m_input_tokens": 0
+  },
+  "cache_creation_input_tokens": 27249,
+  "cache_read_input_tokens": 61959,
+  "fallback_credit": null,
+  "inference_geo": "global",
+  "input_tokens": 6,
+  "iterations": [
+   {
+    "cache_creation": {
+     "ephemeral_1h_input_tokens": 5758,
+     "ephemeral_5m_input_tokens": 0
+    },
+    "cache_creation_input_tokens": 5758,
+    "cache_read_input_tokens": 29287,
+    "input_tokens": 2,
+    "output_tokens": 2522,
+    "type": "message"
+   }
+  ],
+  "output_tokens": 10626,
+  "output_tokens_details": {
+   "thinking_tokens": 5242
+  },
+  "server_tool_use": {
+   "web_fetch_requests": 0,
+   "web_search_requests": 0
+  },
+  "service_tier": "standard",
+  "speed": "standard"
+ }
+}

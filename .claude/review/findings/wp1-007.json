@@ -1,0 +1,170 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.006398000000000001,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 15651,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 15651,
+   "cache_read_input_tokens": 29190,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 4,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 2053,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 2053,
+     "cache_read_input_tokens": 21394,
+     "input_tokens": 2,
+     "output_tokens": 4531,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 5951,
+   "output_tokens_details": {
+    "thinking_tokens": 2596
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "scripts/test_compat_check.py",
+  "scripts/compat_check.py (grep only: lines 210-230, 269-270, 338, 530-621, 880-884, 915-917)"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "test",
+   "commits": [
+    "ecd0e33",
+    "ea85883",
+    "b756482",
+    "8d17773",
+    "f633a1f"
+   ],
+   "confidence": "high",
+   "evidence": "test_safety_guardrail_refusal runs `compat_check.py --since HEAD` with no --yes and asserts returncode 2, with the comment \"Because worktree has ~161 uncommitted files, it must exit 2 unless restricted\" (line 170). compat_check.py:880 only refuses when len(touched_records) > 25, so the assertion depends on the live worktree's uncommitted-file count, not on the guardrail logic.",
+   "file": "scripts/test_compat_check.py",
+   "lines": "160-172",
+   "local_id": "f1",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Build a temporary git repo fixture with 26+ changed files (or monkeypatch the record list) and assert exit 2; separately assert exit 0 with --yes on a small fixture. Check that compat_check.py:876-890 is exercised by the fixture rather than the live tree.",
+   "why_it_matters": "Once the worktree is committed or cleaned (fewer than 26 touched files), this test fails for reasons unrelated to the guardrail; conversely the guardrail itself could be broken and the test would still pass only while the worktree stays dirty. The gate's pass/fail then tracks repo state rather than tool behaviour."
+  },
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "ecd0e33",
+    "ea85883",
+    "b756482",
+    "8d17773",
+    "f633a1f"
+   ],
+   "confidence": "high",
+   "evidence": "test_cli_scratch_diff_make_gog_narrows and test_cli_scratch_diff_make_steam_stays_full_fanout call self.k2addr_path.write_text(modified) on the real patch_manager_mods/_shared_src/K2Addr.h (lines 526, 557), and restore the original only in a `finally` block (lines 546, 572). The replace() targets are literal addresses (\"t.AppGlobal = 0x00A11C04;\", \"0x00A1B4A4\"), so if an address changes the write silently becomes a no-op.",
+   "file": "scripts/test_compat_check.py",
+   "lines": "517-572",
+   "local_id": "f2",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Rewrite both tests to copy the repo (or K2Addr.h plus the tests needed) into a tempdir and run compat_check against that copy, or drive find_k2addr_gog_range/is_k2addr_gog_only_diff directly with a synthetic diff. Add an assertion that the replace() actually changed the content before writing.",
+   "why_it_matters": "The suite mutates a tracked source header in place. A killed or interrupted run (Ctrl-C between write and finally is handled, but SIGKILL or a crash is not) leaves a modified K2Addr.h in the worktree, which then feeds into every later compat/build gate and can be committed. Concurrent gate runs also read the mutated header. A no-op replace makes the scratch assertions test the unmodified file without noticing."
+  },
+  {
+   "candidate_id": null,
+   "category": "test",
+   "commits": [
+    "ecd0e33",
+    "ea85883",
+    "b756482",
+    "8d17773",
+    "f633a1f"
+   ],
+   "confidence": "high",
+   "evidence": "test_breaking_for_mod_detection_mock does `match = re.search(r\"(([a-zA-Z0-9_\\-]+)\\s+relies on:[^\\r\\n]*)\", sample_tail)` inline and asserts on that local match. No function or constant from compat_check or compat_graph is imported or called for this check (imports at lines 37-45 do not include a BREAKING parser).",
+   "file": "scripts/test_compat_check.py",
+   "lines": "275-278",
+   "local_id": "f3",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Locate the production BREAKING/'relies on' parser in compat_check.py (grep 'relies on' within scripts/) and either import it into the test or drive run_tests/compat_check with a fixture failure output and assert the BREAKING line. Confirm the regex in the test matches the production one.",
+   "why_it_matters": "The test is named for the BREAKING-for-<mod> detection in the tool but tests a copy of the regex. If the production parser in compat_check.py changes or breaks, this test still passes, so the gate for that feature is unfalsifiable against the real code."
+  },
+  {
+   "candidate_id": null,
+   "category": "test",
+   "commits": [
+    "ecd0e33",
+    "ea85883",
+    "b756482",
+    "8d17773",
+    "f633a1f"
+   ],
+   "confidence": "medium",
+   "evidence": "test_wine_smoke_stale_kpatch_detection asserts \"STALE:\" appears (line 364) based on the comment \"SafeRead.h is newer than the kpatch binaries in KPM\" (line 363). test_run_tests_wine_fresh_build (lines 368-378) runs `scripts/run_tests.py --wine -k texmem` and asserts \"4 passed\". Both depend on file mtimes and on Wine/KPM install state outside the repo.",
+   "file": "scripts/test_compat_check.py",
+   "lines": "351-378",
+   "local_id": "f4",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check run_tests.py --wine for any path under the KPM or game install directory and whether it copies, installs or hot-swaps DLLs. Confirm whether the STALE assertion holds after a fresh checkout (mtime-based). Replace the mtime-dependent check with a fixture that sets explicit mtimes.",
+   "why_it_matters": "These are environment-dependent: the STALE assertion flips when someone touches or rebuilds the kpatch binaries, and the Wine run may reach the KPM/game install area, which the gate rules forbid for tests. Neither the test file nor the cited lines show a guard that keeps run_tests.py from touching live install paths; this could not be verified from the packet."
+  },
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "ecd0e33",
+    "ea85883",
+    "b756482",
+    "8d17773",
+    "f633a1f"
+   ],
+   "confidence": "medium",
+   "evidence": "test_lint_mode asserts specific known GAP/WARN strings exist (\"GAP dialogue_letterbox_fix_src includes Common headers\", \"GAP action_hotbar_src requires interface k2.hud@1\", \"WARN activation_fix_src has no reaching host test\", lines 205-207), and test_lint_strict_fails_on_gaps asserts exit code 3 (line 219).",
+   "file": "scripts/test_compat_check.py",
+   "lines": "205-219",
+   "local_id": "f5",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Decide whether these should be asserted via a fixture with known gaps instead of the live graph. Check whether any allowlist or waiver file is consulted by run_lint (compat_check.py:530-621) that could silence these gaps.",
+   "why_it_matters": "The tests pin the current set of gaps as the expected output. Fixing a real gap makes the suite fail, which pushes agents toward editing the test or allowlist rather than the cause. Conversely, if the lint stopped reporting these gaps, the test would fail rather than report, so the check is only as strong as the hard-coded list."
+  },
+  {
+   "candidate_id": null,
+   "category": "test",
+   "commits": [
+    "ecd0e33",
+    "ea85883",
+    "b756482",
+    "8d17773",
+    "f633a1f"
+   ],
+   "confidence": "medium",
+   "evidence": "test_find_k2addr_gog_range_real asserts `self.assertEqual(start, 378)` and `self.assertEqual(end, 532)` against the live K2Addr.h.",
+   "file": "scripts/test_compat_check.py",
+   "lines": "392-393",
+   "local_id": "f6",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Assert on the makeGog/kGog marker lines (e.g. that the start line contains 'makeGog()' and the end line contains 'kGog') instead of fixed numbers.",
+   "why_it_matters": "Any edit above line 378 of K2Addr.h, even an unrelated comment, fails this test. Combined with f2 this couples a unit test to literal line numbers in a shared header that other agents edit, which encourages agents to change the test rather than investigate."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Only the packet's test file was read in full; compat_check.py was checked by one grep (lines 880-884 confirm the >25 guardrail with exit-2 refusal). Not verified: run_tests.py --wine behaviour (f4) and whether compat_check.py contains a BREAKING parser (f3), because those files were outside the read budget. The packet reports 110 assertions added and none removed, so no removed-assertion finding applies. Live K2Addr.h is mutated by two tests (f2); nothing in the packet shows them being run in a sandboxed copy.",
+ "packet_id": "wp1-007",
+ "truncated": false
+}

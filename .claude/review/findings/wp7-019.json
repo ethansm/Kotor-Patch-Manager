@@ -1,0 +1,157 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00631856,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 9857,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 9857,
+   "cache_read_input_tokens": 7796,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 2,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 9857,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 9857,
+     "cache_read_input_tokens": 7796,
+     "input_tokens": 2,
+     "output_tokens": 8538,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 8538,
+   "output_tokens_details": {
+    "thinking_tokens": 5571
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "scripts/subagent_prompt.py"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "bug",
+   "commits": [
+    "13c6ca9",
+    "f036a63",
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "words = re.findall(r\"[\\w\\./-]+\\.(?:cpp|h|hpp|c|py|ini|md|sh)\", combined_text) \u2014 the alternation tries `h` before `hpp`, and there is no trailing boundary, so 'Foo.hpp' matches as 'Foo.h' and the 'pp' is dropped. The cleaned path then fails the exists() check at line 156 and the header is silently omitted from the prompt's file list.",
+   "file": "scripts/subagent_prompt.py",
+   "lines": "151-151",
+   "local_id": "f1",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Run the extraction regex on a string containing 'Common/Foo.hpp' (python3 -I -c) and confirm the result is 'Common/Foo.h'. Then check whether any mod's plan section cites a .hpp file and whether it appears in the --json 'files' output. Fix direction: order the alternation longest-first or add a \\b / lookahead after the extension.",
+   "why_it_matters": "Any plan section that targets a .hpp header never gets it into 'Target Files' / 'Relevant Files to Inspect', so the zero-read subagent is not told about the header it must edit or inspect. The failure is silent."
+  },
+  {
+   "candidate_id": null,
+   "category": "bug",
+   "commits": [
+    "13c6ca9",
+    "f036a63",
+    "WORKTREE"
+   ],
+   "confidence": "medium",
+   "evidence": "for cand in [plan_path.parent / clean, plan_path.parent / \"tools\" / clean, ...]: if cand.exists() and cand.is_file(): rel = str(cand.relative_to(REPO_ROOT))  \u2014 no try/except around relative_to.",
+   "file": "scripts/subagent_prompt.py",
+   "lines": "160-162",
+   "local_id": "f2",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Call the script with --plan /tmp/somewhere/plan.md where /tmp/somewhere/ contains a plan that mentions a file that exists beside it (e.g. helper.py). Confirm the traceback originates at line 162. Also check whether the plan_path.parent-relative branch is ever meant to accept out-of-repo plans; if not, guard the relative_to call or skip non-repo candidates.",
+   "why_it_matters": "If --plan (or active_plan.txt) points to a plan outside REPO_ROOT and a cited filename exists next to it, Path.relative_to raises ValueError and the whole generator crashes instead of emitting a prompt."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "13c6ca9",
+    "f036a63",
+    "WORKTREE"
+   ],
+   "confidence": "medium",
+   "evidence": "m_ctx = re.search(r\"(?:patch_manager_mods/)?([a-zA-Z0-9_]+_src)\", all_context) \u2014 the optional prefix is not required, and '_shared_src' matches [a-zA-Z0-9_]+_src. Line 215-217 has the same unanchored pattern over the whole plan text.",
+   "file": "scripts/subagent_prompt.py",
+   "lines": "187-189",
+   "local_id": "f3",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Feed extract_phase_info a plan whose only _src reference is _shared_src (or a path like ../_shared_src) and print the mod_scope value. Check for patch_manager_mods/_shared_src/ existence. Consider requiring the match to be preceded by 'patch_manager_mods/' or validating the candidate directory exists before accepting it.",
+   "why_it_matters": "A plan or context that only mentions the shared library (for example '-I../_shared_src' or 'Common/_shared_src') can make mod_scope become 'patch_manager_mods/_shared_src/', a path that does not exist. That scope is then injected into the prompt as the 'CRITICAL' owning-mod boundary, so the subagent is told to confine work to the wrong place."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "13c6ca9",
+    "f036a63",
+    "WORKTREE"
+   ],
+   "confidence": "medium",
+   "evidence": "if \"queue hud\" in ctx_lower or \"queue_hud\" in ctx_lower or \"queue\" in ctx_lower: mod_scope = \"patch_manager_mods/queue_hud_src/\" ... elif \"diversity\" in ctx_lower or \"npc\" in ctx_lower: ... elif \"companion\" in ctx_lower: ...",
+   "file": "scripts/subagent_prompt.py",
+   "lines": "194-207",
+   "local_id": "f4",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Run extract_phase_info on a few existing plan sections that contain the words 'queue', 'npc', 'companion' or 'hotbar' without naming a mod, and compare mod_scope with the intended owner. Consider preferring explicit _src names from step 5a/5b and restricting keyword matches to the phase's own table row or section.",
+   "why_it_matters": "These are bare substring checks over the title, description and verification commands. Any plan that mentions 'queue' (for example a message queue or a generic 'npc' string) gets assigned to an unrelated mod, and that scope is written into the prompt as the mandatory owning-mod boundary. The bare 'queue' test also makes the earlier 'queue hud' checks redundant."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "13c6ca9",
+    "f036a63",
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "if not plan_path or not plan_path.exists(): active_txt = REPO_ROOT / \".claude\" / \"active_plan.txt\" ... plan_path = p if p.is_absolute() else REPO_ROOT / p \u2014 this runs even when args.plan was given explicitly.",
+   "file": "scripts/subagent_prompt.py",
+   "lines": "96-103",
+   "local_id": "f5",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Run with --plan pointing to a nonexistent file while .claude/active_plan.txt names another plan, and check whether the printed prompt uses the active plan's content. Consider failing or warning when an explicit --plan does not exist.",
+   "why_it_matters": "A mistyped or missing --plan path silently falls back to whichever plan is currently active. The prompt is then built for a different plan's content with no warning, which can send a subagent to the wrong phase."
+  },
+  {
+   "candidate_id": null,
+   "category": "style-risk",
+   "commits": [
+    "13c6ca9",
+    "f036a63",
+    "WORKTREE"
+   ],
+   "confidence": "medium",
+   "evidence": "try: import agent_contract as ac / except ImportError: ac = None ; later: if ac: prompt_lines.append(ac.template(contract_type))",
+   "file": "scripts/subagent_prompt.py",
+   "lines": "31-39",
+   "local_id": "f6",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Temporarily break agent_contract.py (or run from a directory where it is not on sys.path) and check whether the generated prompt lacks the WORKER/recon schema block with no warning. Consider printing a stderr warning on ImportError.",
+   "why_it_matters": "If agent_contract or plan_manager fails to import (for example a broken module or a path problem), the script still runs and silently omits the required output schema from every prompt, or falls back to basic plan resolution. Nothing signals the degraded output."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Single-file packet. The full post-image content was supplied in the packet, so no tool calls were made. The file was not re-read from the snapshot. Checked and found harmless: query_ghidra_symbol_info (argv list, no shell, timeout and returncode checked; splitlines()[0] at line 299 is safe because stdout is non-empty); the section regex at line 137 (re.escape used, and the [:\\s] delimiter stops QH3 matching QH30); the --run path (launches oc-flow with the prompt as argv, does not touch the game directory, install or hot-swap paths, or tests). WORKER_ROLES (line 42) is defined but never referenced in the packet, which is dead code and not a finding. No scanner candidates were supplied. No gate, allowlist or test files are in this packet. No secret or credential paths were accessed.",
+ "packet_id": "wp7-019",
+ "truncated": false
+}

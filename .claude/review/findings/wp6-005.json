@@ -1,0 +1,69 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.0054942,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 15661,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 15661,
+   "cache_read_input_tokens": 50790,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 6,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 1590,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 1590,
+     "cache_read_input_tokens": 21867,
+     "input_tokens": 2,
+     "output_tokens": 2893,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 3707,
+   "output_tokens_details": {
+    "thinking_tokens": 2004
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/mouse_probe_src/common_contract_test.cpp",
+  "patch_manager_mods/mouse_probe_src/MouseFixLogic.h",
+  "patch_manager_mods/mouse_probe_src/ClickLogic.h"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "style-risk",
+   "commits": [
+    "b33db1b"
+   ],
+   "confidence": "high",
+   "evidence": "Header comment line 3-4 says the file 'pins the semantics THIS mod relies on' for Patches/Common APIs and line 9 says '0.3.0 adds area (5)' listing only areas (1)-(4) and (5). The new section at lines 315-357 ('// ================= 6. mousefix logic (MouseFixLogic.h)') tests mod-local MouseFixLogic.h, which is not a Patches/Common API, and the header comment never mentions area (6).",
+   "file": "patch_manager_mods/mouse_probe_src/common_contract_test.cpp",
+   "lines": "1-9",
+   "local_id": "f1",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Compare the header comment (lines 1-12) with the sections in main() (lines 83, 135, 225, 267, 287, 315). Decide whether section 6 should be documented in the header as an area, or moved to a mod-local test file next to MouseFixLogic.h as the 'tests live next to the code they test' rule suggests.",
+   "why_it_matters": "The file's documented contract no longer matches its contents. A future reader who trusts the header will not know the mousefix checks exist or why they live in a Common-contract file, and the 'every message starts with mouse_probe relies on' rule is being applied to tests that do not pin Common semantics. Low risk, but it weakens the audit trail the contract-test rule depends on."
+  }
+ ],
+ "no_issue_files": [
+  "patch_manager_mods/mouse_probe_src/MouseFixLogic.h"
+ ],
+ "notes": "Assertion delta is empty (0 removed, 0 replaced), so no dropped assertions. The new section 6 expectations were checked by hand against MouseFixLogic.h: computeSanitizedDelta(true,true,120,210,100,200,0.05f) gives (-1.0,-0.5); the extreme case (dx=500, dy=-500) clamps to (-1,1); checkEdgeWarp(30,800,0,0,3840,1600,50) returns true with warp (1920,800); the mid-screen point does not warp; shouldSynthesizeDblClick matches its four asserts. All of them match the header's logic. The new block uses HCHECK/HEQ, so failures go through the same kt::Check/kt::Report path. I did not read check.h, so I did not confirm the exit-code mapping directly; the checker run (rc 0, '1 passed, 0 failed') is consistent with it. The include of MouseFixLogic.h is the packet's own include line and resolves to a file in the same directory. The `fabsf` calls get <math.h> via MouseFixLogic.h. Scanner candidates: none supplied. Checker facts were not contradicted by the code I read.\"}",
+ "packet_id": "wp6-005",
+ "truncated": false
+}

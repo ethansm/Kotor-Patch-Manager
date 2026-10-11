@@ -1,0 +1,98 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00452146,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 8155,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 8155,
+   "cache_read_input_tokens": 20456,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 4,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 3291,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 3291,
+     "cache_read_input_tokens": 12660,
+     "input_tokens": 2,
+     "output_tokens": 3099,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 5371,
+   "output_tokens_details": {
+    "thinking_tokens": 3155
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/npc_diversity_src/override/diversity_2da_mapping.json",
+  "patch_manager_mods/npc_diversity_src/ (directory listing and grep for diversity_2da_mapping|appearance_count|heads_count)"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "low",
+   "evidence": "The mapping hardcodes appearance row IDs 802-815 (e.g. \"Commoner_Fat_Male\": 802 ... \"Alien_Iridorian_02\": 815) with no source or derivation in the file. Nothing in this packet shows that 802 is the first free row in the vanilla appearance.2da, so the IDs could collide with existing rows.",
+   "file": "patch_manager_mods/npc_diversity_src/override/diversity_2da_mapping.json",
+   "lines": "3-16",
+   "local_id": "f1",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Compare the 802-815 range with the vanilla appearance.2da row count from the game's override or install data (not the live install). Also confirm DiversityRows.h and NpcDiversityDispatcher.cpp use the same numbers as this JSON.",
+   "why_it_matters": "If these row numbers overlap vanilla or other mods' appearance.2da rows, the dispatcher would reassign or overwrite real NPC appearances in normal play."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "medium",
+   "evidence": "\"heads_count\": 249 and \"appearance_count\": 816 are hardcoded. A grep of npc_diversity_src finds no reader of either field other than this JSON. The two counts also use different conventions: appearance_count equals max ID + 1 (815 + 1), while heads lists only IDs 192-196, so heads_count cannot be checked against the mapping.",
+   "file": "patch_manager_mods/npc_diversity_src/override/diversity_2da_mapping.json",
+   "lines": "25-26",
+   "local_id": "f2",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Find the code that reads diversity_2da_mapping.json (it may be outside this packet, e.g. the dispatcher or a generator). Confirm whether heads_count and appearance_count are used for bounds checks. If they are not read anywhere, check whether any gate validates them.",
+   "why_it_matters": "Unread metadata can drift from the real 2DA row counts without any check failing, which gives a false sense of validation."
+  },
+  {
+   "candidate_id": null,
+   "category": "other",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "medium",
+   "evidence": "The mapping names 14 appearances but never references any texture. The known facts list N_CommF01.tpc as the only N_CommF*.tpc asset referenced by code or generators (name_referenced_in_code_or_generators true). N_CommF02 through N_CommF32 and the other texture blobs are marked false, so they are not referenced by name in the code or the generators.",
+   "file": "patch_manager_mods/npc_diversity_src/override/diversity_2da_mapping.json",
+   "lines": "1-27",
+   "local_id": "f3",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check whether the override 2DA rows (appearance.2da, when present) point at N_CommF02-N_CommF32. If they do not, check whether the generator script that wrote the .tpc files was meant to emit a mapping. Compare the referenced set with the full list of N_CommF*.tpc blobs in the commit.",
+   "why_it_matters": "Large unreferenced texture assets (1.4 MB and 5.6 MB each) add package weight and could mean a generator or appearance row was dropped, leaving some NPCs without the intended textures."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Scope was limited to the single packet file. The JSON parses as valid JSON (no trailing commas, closing brace present). Only the JSON was in the packet. The directory listing shows the mod also contains NpcDiversityDispatcher.cpp, DiversityLogic.h, DiversityRows.h, diversity_logic_test.cpp, manifest.toml, test.toml, exports.def and two hooks.toml files. These were out of this packet's file scope, so the dispatcher, hooks and manifest were not reviewed. Gate-integrity observations, not filed as findings because the packet gives no file to cite: (1) The checker facts show run_tests executing only common_contract_test.cpp (1 item), while diversity_logic_test.cpp exists in the same directory. Check test.toml and whether the logic test is excluded. (2) hook_checkers_mentions is empty for both check_hook_bytes and check_hook_spans, so the hook gates did not cover this mod's two hooks files. (3) The checker runs depend on the live install (check_hook_spans reads the live patch_config.toml), and the scratch copy has no binaries or git history, so the PASS result is provisional. No secrets were opened. Tool calls used: 3 of 12.\"]",
+ "packet_id": "wp5-004",
+ "truncated": false
+}

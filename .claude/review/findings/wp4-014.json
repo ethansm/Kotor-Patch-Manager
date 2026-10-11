@@ -1,0 +1,82 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.0029021000000000003,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 6145,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 6145,
+   "cache_read_input_tokens": 17770,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 4,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 3967,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 3967,
+     "cache_read_input_tokens": 9974,
+     "input_tokens": 2,
+     "output_tokens": 2027,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 2990,
+   "output_tokens_details": {
+    "thinking_tokens": 1095
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/save_events_src/SaveEventsProvider.cpp",
+  "patch_manager_mods/save_events_src/manifest.toml"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "f19df9a"
+   ],
+   "confidence": "medium",
+   "evidence": "Line 11 is now `conflicts = []` (the `conflicts = [\"action-hotbar\"]` entry and its removal comment were deleted), but line 14 still reads \"Never install alongside Action Hotbar 1.2.1 or older: it owns the same five addresses and KPM rejects the duplicate hooks.\" The removed comment said the entry must be removed only in the same commit as the hotbar migration (doc 22 section 4.1a) dropping its five hooks. Nothing in this packet shows that migration landed.",
+   "file": "patch_manager_mods/save_events_src/manifest.toml",
+   "lines": "11-14",
+   "local_id": "f1",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Confirm in the hotbar mod's manifest and hooks toml (its own packet/worktree) whether its five detours were removed. If not, the conflict entry should be restored until the migration commit. Then check that the KPM conflict resolution honours `conflicts` on the Steam build, and that check_hook_spans treats the overlap as a hard failure, not INFO, once the entry is gone.",
+   "why_it_matters": "With the conflict gone, KPM will no longer refuse to install save-events alongside an un-migrated Action Hotbar 1.2.1. Both would then hook 0x00534527, 0x0053C5AA, 0x0052FD1E, 0x008529E0 and 0x008FACA0, which the manifest itself says causes duplicate-hook rejection. The safety check that prevents this is weakened, and the in-file comment now contradicts the manifest."
+  },
+  {
+   "candidate_id": null,
+   "category": "bug",
+   "commits": [
+    "f19df9a"
+   ],
+   "confidence": "low",
+   "evidence": "`const bool g_fallbackSet = (KpLog_SetFallbackFile(\"save-events_log.txt\"), KpLog_SetFallbackLevel(KPLOG_INFO), true);` runs at namespace scope during DLL load, and the comment says it is \"safe from a static initialiser\" because it does \"no I/O\". The callees are not in this packet, so that claim is unverified.",
+   "file": "patch_manager_mods/save_events_src/SaveEventsProvider.cpp",
+   "lines": "39-40",
+   "local_id": "f2",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Locate the definitions of KpLog_SetFallbackFile and KpLog_SetFallbackLevel (KpLog.h / KpLog.cpp in Common or _shared_src, a cited callee). Check whether they only assign a static char buffer or a POD and whether any global they touch has a non-trivial constructor. If so, move the call into the KPatchInit / registration path, which runs after static init.",
+   "why_it_matters": "A namespace-scope initializer that calls into the logging library runs in static-init order, so it can run before the logger's own statics (fallback file/level storage, critical sections, the kpatch log handle) are constructed. If KpLog_SetFallbackFile touches any such state, or allocates a std::string, the result is undefined and can fail only at load time. The `g_fallbackSet` value is also never read, so the side effect is the only purpose."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Checker facts: build_check and run_tests pass; the hook checkers report no mentions of save-events, and the skipped gates (agent_diff_check, compat_check, check-raw-addresses) are unrelated to this packet's changes. check_hook_spans reads the live patch_config.toml, which I did not open. Whether the hotbar migration has landed is the open question behind f1. I did not read the KpLog implementation (it is outside my budget and the packet), so f2 stays low confidence. No raw-address allowlist or secret files were touched.",
+ "packet_id": "wp4-014",
+ "truncated": false
+}

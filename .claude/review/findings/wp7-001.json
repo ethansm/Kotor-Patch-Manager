@@ -1,0 +1,65 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00484559,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 8407,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 8407,
+   "cache_read_input_tokens": 34209,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 6,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 1308,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 1308,
+     "cache_read_input_tokens": 14895,
+     "input_tokens": 2,
+     "output_tokens": 1141,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 5643,
+   "output_tokens_details": {
+    "thinking_tokens": 3322
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/_shared_src/RangedAI.h"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "a6e7e08"
+   ],
+   "confidence": "medium",
+   "evidence": "Lines 94-95: `rai = p;` / `connected = true;` cache the provider's table pointer. The only code that clears `rai`/`connected` is `init()` (lines 71-72). Nothing re-validates or drops the cached pointer afterwards, and `poll()` (line 100) returns early once `connected` is true, so `require()` is never called again.",
+   "file": "patch_manager_mods/_shared_src/RangedAI.h",
+   "lines": "94-95",
+   "local_id": "f1",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check how KPatchApi::require() hands out K2RangedAiApi (static table in the provider DLL vs. heap). Then check whether any consumer of k2rai::Client (companion AI A1 hook, ranged-ai provider) calls init() on DLL unload or reload, and whether a provider unload can happen while a consumer is still running. kpatch_api.h is not in the packet and was not found under _shared_src, so the require() signature and lifetime rules could not be verified here.",
+   "why_it_matters": "If the ranged-ai provider DLL is unloaded or hot-swapped (the KPM install/hot-swap path), a consumer that keeps this Client alive will call KiteStance/MapsToRanged through a dangling function-pointer table. The header has no disconnect or revalidation step to prevent that."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Only one file in the packet. The static asserts (lines 49-54) hold for both 32-bit (offsets 4 and 8, size 12) and 64-bit layouts, given the uint32_t struct_size followed by pointer members under pack(8). The bounds checks in connect() (line 83) and usable() (line 78) compare unsigned values correctly. The ebp=0 path in MapsToRanged (lines 32-33) is documented; the provider's handling of it is outside this packet. Not verified because they are outside the packet: kpatch_api.h (KPatchApi::require signature, struct_size type, KPATCH_CALL definition; a Glob under _shared_src found nothing), the design docs cited in the header comment (13_ranged_ai_spacing.md:235, 19b_cross_patch_sharing_survey.md:20), the E-H3 and A1 hook references, and whether common_contract_test.cpp pins this header. Checker facts: build_check and run_tests have rc null and no output, so nothing was run. The depends_on_live_install note concerns patch_config.toml and the vanilla exe, which this header does not touch. No scanner candidates were supplied. One Glob was used; no other tool calls.",
+ "packet_id": "wp7-001",
+ "truncated": false
+}

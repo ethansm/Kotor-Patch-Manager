@@ -1,0 +1,51 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00157328,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 2908,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 2908,
+   "cache_read_input_tokens": 27208,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 6,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 614,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 614,
+     "cache_read_input_tokens": 10090,
+     "input_tokens": 2,
+     "output_tokens": 849,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 1438,
+   "output_tokens_details": {
+    "thinking_tokens": 547
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/inventory_3d_viewport_src/manifest.toml",
+  "patch_manager_mods/gui_input_src/manifest.toml"
+ ],
+ "findings": [],
+ "no_issue_files": [
+  "patch_manager_mods/inventory_3d_viewport_src/manifest.toml"
+ ],
+ "notes": "The packet's only change adds requires = [\"gui-input\"] and requires_interfaces = [\"k2.guiinput@1\"] to the inventory-3d-viewport manifest. I checked the required side: patch_manager_mods/gui_input_src/manifest.toml has id = \"gui-input\" and provides = [\"k2.guiinput@1\"], so the dependency name and interface string match exactly. No issue found. Two things I did not verify: (1) that KPM resolves requires_interfaces and loads gui-input before this mod (that needs the KPM loader source, which is outside this packet); (2) gui-input lists both kotor2_steam_aspyr and kotor2_gog_aspyr while this mod lists only the Steam hash. That is narrower and not a conflict, but it means the mod will not load on GOG, which is consistent with the Steam-only supported_versions. The checker facts (build_check PASS, common_contract_test PASS) do not exercise manifest dependency resolution. No secrets were touched.",
+ "packet_id": "wp7-004",
+ "truncated": false
+}

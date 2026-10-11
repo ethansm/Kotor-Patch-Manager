@@ -1,0 +1,159 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.022222110000000003,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 49020,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 49020,
+   "cache_read_input_tokens": 140831,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 8,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 5492,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 5492,
+     "cache_read_input_tokens": 51324,
+     "input_tokens": 2,
+     "output_tokens": 9102,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 22018,
+   "output_tokens_details": {
+    "thinking_tokens": 16596
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp",
+  "patch_manager_mods/action_hotbar_src/HotbarLogic.h",
+  "patch_manager_mods/_shared_src/SaveEvents.h",
+  "patch_manager_mods/_shared_src/HudHost.h (grep only)",
+  "patch_manager_mods/action_hotbar_src/hotbar_logic_test.cpp (grep only)",
+  "patch_manager_mods/action_hotbar_src/kotor2-steam-aspyr.hooks.toml (grep only)"
+ ],
+ "findings": [
+  {
+   "candidate_id": "S-b91ee141c6",
+   "category": "logic",
+   "commits": [
+    "ec95c98",
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "Line 80: `bool bad = (oid == 0xFFFFFFFFu || oid == 0); if (invalid) *invalid = bad;` then lines 83-87: `if (tag && *tag) { ... return t; }` runs BEFORE any use of `bad`. The header comment at line 76 says \"3. Transient invalid IDs (0 / 0xFFFFFFFF): returns \\\"\\\" (load in progress).\" and ActionHotbar.cpp:374-375 says \"invalid object id: transient during loads, never a real character\". computeCharacterKey (ActionHotbar.cpp:373-384) returns `key` unconditionally after only logging when invalid. So an invalid id (0 or 0xFFFFFFFF) with a readable tag returns the tag as a live character key. hotbar_logic_test.cpp:213-217 pin the invalid+no-tag case to \"\" but no test covers invalid+tag.",
+   "file": "patch_manager_mods/action_hotbar_src/HotbarLogic.h",
+   "lines": "80-87",
+   "local_id": "f1",
+   "severity": "medium",
+   "source": "both",
+   "suggested_investigation": "Decide whether a tag should override an invalid id. If not, check `bad` before the tag branch in characterKeyFor and add a test like characterKeyFor(0xFFFFFFFFu, 3, &bad, false, \"atton\", 1) in hotbar_logic_test.cpp near line 221. Then trace computeCharacterKey -> g_charKey churn during a save load with a transient id.",
+   "why_it_matters": "During loads the id is transient; the key can flip to a tag name, triggering charChanged -> recomputeBound/refreshEffective (ActionHotbar.cpp:2083) and then flip back when the id resolves, binding the wrong per-character slots in the meantime. This contradicts the documented contract the rest of the code relies on."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "ec95c98",
+    "WORKTREE"
+   ],
+   "confidence": "medium",
+   "evidence": "Lines 358-361: `for (int i = 0; i < g_partyCount && i < 3; ++i) { uintptr_t mem = party::member(t, i); if (mem == c || (mem != 0 && creatureOid(mem) == oid)) { partySlot = i; break; } }`. The comment at 381-382 says the Exile's id can read 0xFFFFFFFF for a whole session. If the controlled creature is a companion whose id also reads 0xFFFFFFFF (or 0), the loop hits i=0 first, matches the Exile by OID, and sets partySlot=0 / isMember0=true.",
+   "file": "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp",
+   "lines": "356-367",
+   "local_id": "f2",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Confirm the transient-id scenario: check whether two party members can both read 0xFFFFFFFF. Consider requiring a pointer match before an OID match, or skipping the OID match when oid is 0 or 0xFFFFFFFF. Test: a party table with member 0 and member 1 both reporting 0xFFFFFFFF, controlled creature = member 1, serverCreature tag unreadable, expect slot1 not objfffffffd.",
+   "why_it_matters": "A companion can then be classified as the Exile (\"objfffffffd\", line 85-94 of HotbarLogic.h) and share the Exile's bindings, whenever the companion's tag read fails (tag wins only when readable, HotbarLogic.h:83)."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "ec95c98",
+    "WORKTREE"
+   ],
+   "confidence": "medium",
+   "evidence": "`void KPATCH_CALL onHudFrame(const K2HudContext* ctx, void*) { if (!ctx || !ctx->hud) return; g_se.poll(); HotbarHudTick(...ctx->hud); }` with registration at 1890 `g_hudc.add(K2HUD_FRAME, 100, onHudFrame);`. The old hook was on CSWGuiMainInterface::Draw (0x0074B3F0, per the header comment at line 7 which still says so). HudHost.h:13 documents K2HUD_FRAME as dispatched \"on every PopulateMenus call (0x00743540)\". No menu / targetType check is made.",
+   "file": "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp",
+   "lines": "1862-1866",
+   "local_id": "f3",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check hud-host's K2HUD_FRAME source in the hud-host implementation: is PopulateMenus called once per frame during gameplay, and is ctx->hud the HUD panel on every dispatch (ctx->menu / ctx->targetType ignored here)? Compare tick counts over a minute of gameplay before and after, and confirm the pending save snapshot still fires within 60 ticks.",
+   "why_it_matters": "The per-frame HUD tick (gate, character key, action-bar resync, ring drain, pending-save retries counted in frames at ActionHotbar.cpp:2048/2053, and 60-retry limits) now runs at PopulateMenus cadence, not Draw cadence. If PopulateMenus is not called every gameplay frame, or is called for other panels/menus, gate timing, retry windows and heartbeat intervals all change silently."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "ec95c98",
+    "WORKTREE"
+   ],
+   "confidence": "low",
+   "evidence": "`case K2SE_AUTOSAVED: snapshotToSave(ev->folder, \"module autosave written\");` and `case K2SE_LOAD_REQUEST: restoreFromSave(ev->folder, ...)`; the old code used the fixed AutosaveFolder \"000001 - AUTOSAVE\" and saveDirFor() added the root. SaveEvents.h:13 documents K2SE_AUTOSAVED folder as \"000001 - AUTOSAVE\" under the save root, while SaveEvents.h:17-19 documents K2SaveEvent.folder as root-qualified (\"saves/...\" or \"cloudsaves/<id>/...\"). restoreFromSave/snapshotToSave now use the folder verbatim (ActionHotbar.cpp:1809-1815, 1761-1781) with no root join.",
+   "file": "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp",
+   "lines": "1876-1879",
+   "local_id": "f4",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Read the save-events provider's dispatch for K2SE_AUTOSAVED and the autosave-slot LOAD_REQUEST and log the folder string actually passed (the hotbar's own KP_LOGV 'save folder not recognised' / 'folder not found' lines are the signal). If it is bare, either join the root in the consumer or fix the provider contract text.",
+   "why_it_matters": "If the autosave event folder is the bare name, GetFileAttributesA fails, the snapshot is deferred and dropped after 60 ticks (ActionHotbar.cpp:2053-2056), and the autosave-slot load (L1b) finds no snapshot in the folder and keeps the live hotbar. Per-save hotbars would then silently fail for autosaves."
+  },
+  {
+   "candidate_id": null,
+   "category": "other",
+   "commits": [
+    "ec95c98",
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "The startup banner `KP_LOG(chMain, \"action-hotbar %s loaded; pid=%lu ini=%s core=%d\", Version, ...)` and `logChunks(chMain, KPLOG_INFO, \"cwd\", cwd)` were removed from startOnce(); only the addresses line remains at 1845. The only other occurrence of the `Version` identifier in the packet dir is its definition at ActionHotbar.cpp:43 (`constexpr const char* Version = \"1.3.0-dev\";`), so it is now unused.",
+   "file": "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp",
+   "lines": "1843-1846",
+   "local_id": "f5",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Grep the mod directory for `Version` and `loaded;` to confirm no replacement line exists; if the banner was removed by accident, restore it using the KpLog_HasCore path that already exists in startOnce.",
+   "why_it_matters": "The loaded version and working directory are no longer logged at startup, which the support log workflow relies on; the version constant is dead. No other place logs it, so bug reports cannot identify the build."
+  },
+  {
+   "candidate_id": null,
+   "category": "other",
+   "commits": [
+    "ec95c98",
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "Header says \"Hooks (8 cdecl detours ...)\" and lists `0x0074B3F0 CSWGuiMainInterface::Draw HotbarHudTick(hud)` and `0x00748502 HUD ctor ... HotbarBuildButtons(panel)`. The code now registers these through hud-host (ActionHotbar.cpp:1889-1891; kotor2-steam-aspyr.hooks.toml:22-23 says \"migrated to hud-host\"), and the save hooks through save-events (ActionHotbar.cpp:1758). The comment at 1948-1949 still says the build runs \"between the last InitControl and StopLoadFromLayout\" at the old address.",
+   "file": "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp",
+   "lines": "5-11",
+   "local_id": "f6",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Update the header comment to list the hud-host (K2HUD_FRAME/K2HUD_BUILD) and save-events registrations; confirm against kotor2-steam-aspyr.hooks.toml that no raw detour for 0x0074B3F0 or 0x00748502 remains (a remaining one would double-tick).",
+   "why_it_matters": "The doc block is the first place a reviewer checks hook addresses and counts; it now gives a wrong hook count, wrong dispatch sites and wrong addresses for two hooks."
+  }
+ ],
+ "no_issue_files": [
+  "patch_manager_mods/action_hotbar_src/HotbarLogic.h (pickSnapshot/snapStatus change, lines 581-589, consistent with hotbar_logic_test.cpp:717-722)",
+  "patch_manager_mods/action_hotbar_src/kotor2-steam-aspyr.hooks.toml (grep only: no HotbarOn* handler names remain; migration comments only)"
+ ],
+ "notes": "Scanner candidates dispositions: S-08b1ae9571 and S-c1acaaa8ab (probeRead/memcpy in readCreatureTag): harmless, len is checked against cap before the probe and memcpy, out[len] is within cap. S-1d062fa344 (%s with tag buffer of 64, NUL-terminated): harmless. S-cab2c21c43 and S-cc8e739532 (HWND/LPARAM casts): standard EnumWindows pattern; the game_hwnd() return type is in GuiInput.h, not read, so the HWND cast width is unverified. S-f44e549fc6 (ctx->hud to void*): 32-bit, harmless, same as before. Sentinel-range candidates (S-306e606adf, S-a0104b16b8, S-453e7edd7e, S-59937b4e62, S-cd509115eb): the 0xFFFFFFF0..0xFFFFFFFE range is deliberate and pinned by hotbar_logic_test.cpp:228-233; widening a companion with a sentinel-range id to the Exile key is intended per the tests. The clause at HotbarLogic.h:92 is unreachable, since isExile already requires the same disjunction (harmless redundancy). Not reported: per-frame recompute when the key is a slot fallback (ActionHotbar.cpp:2080), which is a performance cost only. Removed identifiers (AutosaveFolder, saveDirFor, normalizeSaveFolder, joinSaveDir, HotbarOn*) have no dangling references in the packet directory. Not in this packet: the leader heal button and LevelUpOverride.cpp KpLog port named in the domain notes; no hunks for them were supplied, so they were not audited. The save-events provider and GuiInput.h were not read (outside the tool budget or outside the packet scope).\"}]",
+ "packet_id": "wp3-001",
+ "truncated": false
+}

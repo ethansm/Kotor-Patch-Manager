@@ -1,0 +1,37 @@
+{
+ "build_check": {
+  "lines": [
+   "FAIL build: perf_lab_src (perf_lab_src): compile/link failed after 10.9s",
+   "  | /home/ethansm/.cache/kotor2_review/factrun/build/perf_lab_src/perf_lab_src/harness/smoke_perflab.cpp:7:10: fatal error: check.h: No such file or directory",
+   "  | /home/ethansm/.cache/kotor2_review/factrun/build/perf_lab_src/perf_lab_src/harness/smoke_portraitslots.cpp:37:10: fatal error: FakeKPatchApi.h: No such file or directory",
+   "  | /home/ethansm/.cache/kotor2_review/factrun/build/perf_lab_src/perf_lab_src/harness/smoke_probe11.cpp:13:10: fatal error: check.h: No such file or directory",
+   "  | /home/ethansm/.cache/kotor2_review/factrun/build/perf_lab_src/perf_lab_src/harness/smoke_probe12.cpp:6:10: fatal error: check.h: No such file or directory",
+   "  | /home/ethansm/.cache/kotor2_review/factrun/build/perf_lab_src/perf_lab_src/harness/smoke_queuehud.cpp:51:10: fatal error: FakeKPatchApi.h: No such file or directory",
+   "  | /home/ethansm/.cache/kotor2_review/factrun/build/perf_lab_src/perf_lab_src/harness/smoke_saveevents.cpp:34:10: fatal error: FakeKPatchApi.h: No such file or directory",
+   "  | /home/ethansm/.cache/kotor2_review/factrun/build/perf_lab_src/perf_lab_src/harness/smoke_selfheal.cpp:30:10: fatal error: FakeKPatchApi.h: No such file or directory",
+   "build_check: FAIL=1 WARN=0 INFO=2 PASS=0 SKIP=0"
+  ],
+  "rc": 1
+ },
+ "depends_on_live_install": "check_hook_spans reads the live patch_config.toml; check_hook_bytes reads the vanilla exe",
+ "hook_checkers_mentions": {
+  "check_hook_bytes": [],
+  "check_hook_spans": []
+ },
+ "mod": "perf_lab_src",
+ "provisional": "until WP1 is reduced; scratch copy has no git history and no binaries",
+ "run_tests": {
+  "lines": [
+   "PASS   py:patch_manager_mods/perf_lab_src/test_analyze_runs.py  0.3s",
+   "PASS   cpp:patch_manager_mods/perf_lab_src/perflab/common_contract_test.cpp  0.8s",
+   "",
+   "2 passed, 0 failed, 0 error, 0 skipped (2 items) in 0.9s"
+  ],
+  "rc": 0
+ },
+ "skipped": {
+  "agent_diff_check.py": "needs-git-history",
+  "check-raw-addresses": "needs excluded tests/static/raw_addresses.toml (human-only gap)",
+  "compat_check.py": "needs-git-history"
+ }
+}

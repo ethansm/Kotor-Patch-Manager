@@ -1,0 +1,85 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00359127,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 6520,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 6520,
+   "cache_read_input_tokens": 45097,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 8,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 894,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 894,
+     "cache_read_input_tokens": 13422,
+     "input_tokens": 2,
+     "output_tokens": 2177,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 3671,
+   "output_tokens_details": {
+    "thinking_tokens": 1770
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "scripts/test_subagent_tools.py",
+  "scripts/agent_diff_check.py",
+  "scripts/subagent_prompt.py"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "test",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "medium",
+   "evidence": "cmd = [sys.executable, str(REPO_ROOT / \"scripts\" / \"agent_diff_check.py\"), \"--mod\", \"queue_hud_src\", \"--patch-out\", ...]; res = subprocess.run(cmd, cwd=str(REPO_ROOT), ...); self.assertEqual(res.returncode, 0, ...). In agent_diff_check.py, main passes --mod targets to run_build_checks (line 158), which runs scripts/build_check.py against the live working tree (lines 85-93).",
+   "file": "scripts/test_subagent_tools.py",
+   "lines": "103-105",
+   "local_id": "f1",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Run `python3 -I scripts/test_subagent_tools.py -k diff_check` on a clean tree and check how long it takes and whether build_check.py runs. Consider whether the test should use --no-patch and a fixture baseline, or mock run_build_checks, so it tests only the JSON output contract.",
+   "why_it_matters": "A unit test named test_diff_check_baseline_and_patch silently becomes a full build of queue_hud_src plus a baseline/test run against the live tree. Its result depends on build toolchain state and on uncommitted work in other files, so the test is slow and can fail for reasons unrelated to the diff checker logic. It also has no --no-patch or --baseline isolation."
+  },
+  {
+   "candidate_id": null,
+   "category": "test",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "self.assertIn(\"verdict\", data) / self.assertIn(\"changed_files\", data) \u2014 the verdict value is never checked.",
+   "file": "scripts/test_subagent_tools.py",
+   "lines": "107-108",
+   "local_id": "f2",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Compare the verdict values that agent_diff_check.py --json can emit (see the verdict construction in agent_diff_check.py main, around lines 158-200) and assert the expected value for a clean tree versus a known violation.",
+   "why_it_matters": "The only verdict check is key presence, so a checker that always reports a non-PASS or always PASS verdict would still pass this test. The test does not exercise the gate outcome it is named after."
+  }
+ ],
+ "no_issue_files": [
+  "scripts/subagent_prompt.py"
+ ],
+ "notes": "Assertion delta checked: base_count 0 and removed is empty, so no assertion was removed or replaced; all 31 assertions are new. Scanner candidates: none were provided. Verified by reading agent_diff_check.py: get_changed_mods returns sorted output (test_get_changed_mods expectation holds), and check_scope uses fnmatch with a non-match becoming a violation (test_scope_checker expectation holds). The subagent_prompt.py functions are defined at the expected names, but I did not read their bodies, so the prompt-content assertions (for example \"Output Schema: WORKER\", \"Owning Mod & Scope Boundary\") are unverified. test_subagent_prompt_phase_resolution (lines 37-49) depends on the QH3 phase existing in a repo plan document and on the title text \"Queue HUD\". This is fragile test coupling to docs content, not a defect in the test file. Harness exit code: unittest.main() propagates failures, and the subprocess returncode is asserted, so failures are counted.",
+ "packet_id": "wp6-016",
+ "truncated": false
+}

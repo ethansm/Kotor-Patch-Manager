@@ -1,0 +1,187 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.01506397,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 23444,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 23444,
+   "cache_read_input_tokens": 89667,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 10,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 5464,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 5464,
+     "cache_read_input_tokens": 25776,
+     "input_tokens": 2,
+     "output_tokens": 12502,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 18955,
+   "output_tokens_details": {
+    "thinking_tokens": 13573
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/npc_diversity_src/exports.def",
+  "patch_manager_mods/npc_diversity_src/kotor2-gog-aspyr.hooks.toml",
+  "patch_manager_mods/npc_diversity_src/kotor2-steam-aspyr.hooks.toml",
+  "patch_manager_mods/npc_diversity_src/NpcDiversityDispatcher.cpp",
+  "patch_manager_mods/npc_diversity_src/DiversityLogic.h"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "bug",
+   "commits": [
+    "57837e0",
+    "83354c0"
+   ],
+   "confidence": "medium",
+   "evidence": "OverrideNpcTexture(void* resolverFrame) computes `ppDesc = frame + 0x08` and `ppTexture = frame + 0x10` and then dereferences them as pointers-to-pointers (`*ppDesc`, `*ppTexture`, then `pDesc->bodyClass`, `pTexture->value`). The offsets are not sourced in the packet; the only guard is a null check on the derived pointers.",
+   "file": "patch_manager_mods/npc_diversity_src/NpcDiversityDispatcher.cpp",
+   "lines": "46-55",
+   "local_id": "f1",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Disassemble CSWCCreatureAppearance::GetBTypeModelAndTextureResRef at 0x0048E691 (GOG) and 0x0085E601 (Steam) and confirm which values sit at [ebp+8] and [ebp+0x10] at the hook point and whether they are the AppearanceDesc* and ResRef* the handler expects (one level of indirection each). Check the README for the source of these offsets.",
+   "why_it_matters": "The hook passes EBP (source=\"ebp\" in the hooks file) into a function that treats EBP-relative slots as a struct. If [ebp+8] or [ebp+0x10] at the hook point holds an argument or local rather than a descriptor/ResRef pointer, every commoner clothing lookup dereferences a bogus address, which is a crash or memory write into game heap."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "57837e0",
+    "83354c0"
+   ],
+   "confidence": "medium",
+   "evidence": "`uint32_t hash = NpcDiversity::HashDescriptor(pDesc->appearance, pDesc->gender, pDesc->textureVar, static_cast<uint32_t>(reinterpret_cast<uintptr_t>(resolverFrame)));` uses the frame address as the hash seed, and HashDescriptor mixes the seed bytes whenever seed != 0 (DiversityLogic.h:115-120).",
+   "file": "patch_manager_mods/npc_diversity_src/NpcDiversityDispatcher.cpp",
+   "lines": "66-71",
+   "local_id": "f2",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check whether resolverFrame varies for the same creature across two sessions or two different callers of GetBTypeModelAndTextureResRef. If it does, the seed should come from creature/object data instead of the frame address.",
+   "why_it_matters": "The stack address of the caller frame depends on call depth and thread stack layout, not only on the creature. The same NPC can get a different clothing texture across loads or call paths, which contradicts the 'deterministic hash' the domain notes and header comment claim."
+  },
+  {
+   "candidate_id": null,
+   "category": "memory-safety",
+   "commits": [
+    "57837e0",
+    "83354c0"
+   ],
+   "confidence": "medium",
+   "evidence": "`const char* tagStr = *reinterpret_cast<const char* const*>(pCreature + 0x18); uint32_t tagLen = *reinterpret_cast<const uint32_t*>(pCreature + 0x1C); if (tagStr && tagLen > 0 && NpcDiversity::IsExcludedFromDiversification(tagStr))` \u2014 the length is only checked for > 0, and the pointer is then handed to a C-string routine (DiversityLogic.h:31-40). Offsets 0x04, 0x18, 0x1C, 0x24 and 0x28 are read with no struct definition or static_assert in the file.",
+   "file": "patch_manager_mods/npc_diversity_src/NpcDiversityDispatcher.cpp",
+   "lines": "89-105",
+   "local_id": "f3",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Verify the creature-object layout for CSWCCreature at +0x04 (objectId), +0x18/+0x1C (tag pointer/length), and +0x24/+0x28 (x/y) against a reference or a disassembly of CSWCCreature::SetAppearance at 0x00419070 (GOG) / 0x0076D200 (Steam). Check whether the tag buffer is guaranteed NUL-terminated, and if not, pass the length to the matcher.",
+   "why_it_matters": "If the tag is not NUL-terminated, or the offsets are wrong for this build, the exclusion check reads past the tag or gets garbage. Companions and story NPCs could be remapped (wrong behaviour), or the read could fault. Position and objectId are also read from unverified offsets."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "medium",
+   "evidence": "Hook comment: \"Detour inside CSWCCreatureAppearance::GetBTypeModelAndTextureResRef to diversify clothing texture\" at address 0x0048E691, stolen bytes `C6 45 FC 00` (mov byte [ebp-4],0) and `8D 4D B4` (lea ecx,[ebp-0x4C]). The handler comment at NpcDiversityDispatcher.cpp:45 says it runs \"after vanilla texture lookup\".",
+   "file": "patch_manager_mods/npc_diversity_src/kotor2-gog-aspyr.hooks.toml",
+   "lines": "6-14",
+   "local_id": "f4",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Disassemble from 0x0048E691 onward in the GOG exe and find the first store into the ResRef pointed to by the [ebp+0x10] slot. If that store occurs after the hook point, move the hook to just after it, or call the handler after the store (the handler's comment and the hook placement must agree).",
+   "why_it_matters": "The stolen window is the start of the function body, before any texture lookup is likely to run. If the vanilla lookup writes the ResRef after the detour point, the handler's rewrite is overwritten and the feature silently does nothing. The Steam entry at 0x0085E601 has the same placement."
+  },
+  {
+   "candidate_id": null,
+   "category": "hook",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "low",
+   "evidence": "RemapNpcAppearance hook at 0x00419070 has stolen bytes `0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x74` (push ebp; mov ebp,esp; sub esp,0x74), parameters `source = \"ecx\"` and `source = \"esp+4\"`, and no `exits` or stack-cleanup entry. The handler is declared `__cdecl` with two args (NpcDiversityDispatcher.cpp:84), while the target is a member function that receives `this` in ECX.",
+   "file": "patch_manager_mods/npc_diversity_src/kotor2-gog-aspyr.hooks.toml",
+   "lines": "33-39",
+   "local_id": "f5",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Confirm in the hook framework when `source` values are captured relative to the stolen bytes, and confirm the original function's RET n so the detour's stack cleanup matches. Repeat the check for the Steam entry at 0x0076D200 (kotor2-steam-aspyr.hooks.toml:33-39).",
+   "why_it_matters": "The 'esp+4' capture is only correct if it is taken at function entry, before the stolen push ebp moves ESP by 4. Because the target is thiscall-style and the handler is cdecl, a mismatch in stack cleanup or argument capture could corrupt the stack on every SetAppearance call."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "57837e0",
+    "83354c0"
+   ],
+   "confidence": "low",
+   "evidence": "`uint16_t newApp = NpcDiversity::RemapAppearance(pDesc->appearance, hash); if (newApp != pDesc->appearance) { pDesc->appearance = newApp; }` writes the result back into the descriptor that SetAppearance receives, and the hash input is that same field.",
+   "file": "patch_manager_mods/npc_diversity_src/NpcDiversityDispatcher.cpp",
+   "lines": "101-105",
+   "local_id": "f6",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check whether pDesc is a per-call temporary or a persistent appearance record owned by the creature. If it is persistent, test a second SetAppearance call on the same creature and confirm the appearance id is stable.",
+   "why_it_matters": "The remap is not idempotent. If SetAppearance runs again on a descriptor that was already remapped, the hash changes and the result can differ. Output IDs are mostly outside the generic input sets, so the practical risk is small, but it depends on whether the descriptor is shared or persistent."
+  },
+  {
+   "candidate_id": null,
+   "category": "bug",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "low",
+   "evidence": "`int slot = ComputeSlot(hash, 1, 35); if (isFemale) { snprintf(outTex, outSize, \"N_CommF%02d\", slot); } else { snprintf(outTex, outSize, \"N_CommM%02d\", slot); }` \u2014 every slot 1..35 is written as a texture name with no check that the file exists.",
+   "file": "patch_manager_mods/npc_diversity_src/DiversityLogic.h",
+   "lines": "154-158",
+   "local_id": "f7",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "List patch_manager_mods/npc_diversity_src/override/ for N_CommM01-N_CommM35 and N_CommF33-N_CommF35. Compare against the 1..35 range in ComputeSlot and confirm the male set exists, or narrow the range to the shipped set.",
+   "why_it_matters": "The known facts list shipped N_CommF01 through N_CommF32 (list truncated) and no N_CommM names. If male names or F33-F35 are not in the override folder, the game requests a missing texture for those NPCs, which can render wrong or fail to load."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "57837e0"
+   ],
+   "confidence": "medium",
+   "evidence": "`StartsWithCaseInsensitive(p, \"mira\")`, `\"visas\"`, `\"luxa\"`, `\"moza\"` and `\"player\"` are prefix tests, so any tag starting with those strings matches the exclusion list.",
+   "file": "patch_manager_mods/npc_diversity_src/DiversityLogic.h",
+   "lines": "43-59",
+   "local_id": "f8",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "List the creature tags in the module data that start with these prefixes and check which non-story NPCs get excluded. Consider exact matches if the tags are known.",
+   "why_it_matters": "Ordinary NPC tags that share a prefix are excluded from diversification. This narrows the feature and does not create a safety issue, but it is wider than the stated intent of exact companion and story names."
+  }
+ ],
+ "no_issue_files": [
+  "patch_manager_mods/npc_diversity_src/exports.def"
+ ],
+ "notes": "Scanner candidates: all 22 are TOML parser-pattern hits on the two hooks files. S-133eb202ad and S-a95daa9d4f (and the GOG/Steam RemapNpcAppearance entries) were checked: addresses 4296816 = 0x00419070 and 7787008 = 0x0076D200 match the README table, and the stolen bytes are whole instructions with no relative branches. None is confirmed as a separate finding. Exports: OverrideNpcTexture, RemapNpcAppearance and NpcDiversity_Init are all defined with extern \"C\" and __declspec(dllexport) in NpcDiversityDispatcher.cpp:41, 46 and 84. The GOG and Steam hooks files have the same structure and the same two hook functions, so parity holds at the entry level. Gate coverage: checker run_tests shows only common_contract_test.cpp PASS. diversity_logic_test.cpp is not in the recorded run, so the logic behind f7 and f8 has no recorded gate run. manifest.toml, test.toml, README.md, DiversityRows.h, the generator scripts and the binary assets are not in this packet and were not reviewed. Only the Known facts summary was used for assets; the summary is truncated at N_CommF32.",
+ "packet_id": "wp5-002",
+ "truncated": false
+}

@@ -1,0 +1,82 @@
+{
+ "attempts": 1,
+ "cost_usd": 0.00157328,
+ "duration_s": 9.0,
+ "ended": "2026-10-10T09:12:41Z",
+ "exit_code": 0,
+ "files": [
+  "patch_manager_mods/inventory_3d_viewport_src/manifest.toml"
+ ],
+ "first_turn_prompt_tokens": 9324,
+ "num_turns": 5,
+ "packet_id": "wp7-004",
+ "prompt_bytes": 2021,
+ "rate_limit_hits": 0,
+ "raw": "raw/wp7-004.a1.out",
+ "result_subtype": "success",
+ "schema_errors": [],
+ "schema_valid": true,
+ "started": "2026-10-10T09:12:32Z",
+ "status": "ok",
+ "truncated": false,
+ "turn_prompt_tokens": [
+  9324,
+  10092,
+  10706
+ ],
+ "turn_usage": [
+  {
+   "cache_creation_input_tokens": 1526,
+   "cache_read_input_tokens": 7796,
+   "input_tokens": 2,
+   "output_tokens": 6
+  },
+  {
+   "cache_creation_input_tokens": 768,
+   "cache_read_input_tokens": 9322,
+   "input_tokens": 2,
+   "output_tokens": 2
+  },
+  {
+   "cache_creation_input_tokens": 614,
+   "cache_read_input_tokens": 10090,
+   "input_tokens": 2,
+   "output_tokens": 2
+  }
+ ],
+ "turns_over_100k": 0,
+ "usage": {
+  "cache_creation": {
+   "ephemeral_1h_input_tokens": 2908,
+   "ephemeral_5m_input_tokens": 0
+  },
+  "cache_creation_input_tokens": 2908,
+  "cache_read_input_tokens": 27208,
+  "fallback_credit": null,
+  "inference_geo": "global",
+  "input_tokens": 6,
+  "iterations": [
+   {
+    "cache_creation": {
+     "ephemeral_1h_input_tokens": 614,
+     "ephemeral_5m_input_tokens": 0
+    },
+    "cache_creation_input_tokens": 614,
+    "cache_read_input_tokens": 10090,
+    "input_tokens": 2,
+    "output_tokens": 849,
+    "type": "message"
+   }
+  ],
+  "output_tokens": 1438,
+  "output_tokens_details": {
+   "thinking_tokens": 547
+  },
+  "server_tool_use": {
+   "web_fetch_requests": 0,
+   "web_search_requests": 0
+  },
+  "service_tier": "standard",
+  "speed": "standard"
+ }
+}

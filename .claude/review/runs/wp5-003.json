@@ -1,0 +1,97 @@
+{
+ "attempts": 1,
+ "cost_usd": 0.007866090000000001,
+ "duration_s": 42.0,
+ "ended": "2026-10-10T09:11:35Z",
+ "exit_code": 0,
+ "files": [
+  "patch_manager_mods/npc_diversity_src/manifest.toml",
+  "patch_manager_mods/npc_diversity_src/test.toml"
+ ],
+ "first_turn_prompt_tokens": 12778,
+ "num_turns": 7,
+ "packet_id": "wp5-003",
+ "prompt_bytes": 9132,
+ "rate_limit_hits": 0,
+ "raw": "raw/wp5-003.a1.out",
+ "result_subtype": "success",
+ "schema_errors": [],
+ "schema_valid": true,
+ "started": "2026-10-10T09:10:53Z",
+ "status": "ok",
+ "truncated": false,
+ "turn_prompt_tokens": [
+  12778,
+  14650,
+  15563,
+  19800,
+  21722
+ ],
+ "turn_usage": [
+  {
+   "cache_creation_input_tokens": 4980,
+   "cache_read_input_tokens": 7796,
+   "input_tokens": 2,
+   "output_tokens": 3
+  },
+  {
+   "cache_creation_input_tokens": 1872,
+   "cache_read_input_tokens": 12776,
+   "input_tokens": 2,
+   "output_tokens": 6
+  },
+  {
+   "cache_creation_input_tokens": 913,
+   "cache_read_input_tokens": 14648,
+   "input_tokens": 2,
+   "output_tokens": 2
+  },
+  {
+   "cache_creation_input_tokens": 4237,
+   "cache_read_input_tokens": 15561,
+   "input_tokens": 2,
+   "output_tokens": 7
+  },
+  {
+   "cache_creation_input_tokens": 1922,
+   "cache_read_input_tokens": 19798,
+   "input_tokens": 2,
+   "output_tokens": 8
+  }
+ ],
+ "turns_over_100k": 0,
+ "usage": {
+  "cache_creation": {
+   "ephemeral_1h_input_tokens": 13924,
+   "ephemeral_5m_input_tokens": 0
+  },
+  "cache_creation_input_tokens": 13924,
+  "cache_read_input_tokens": 70579,
+  "fallback_credit": null,
+  "inference_geo": "global",
+  "input_tokens": 10,
+  "iterations": [
+   {
+    "cache_creation": {
+     "ephemeral_1h_input_tokens": 1922,
+     "ephemeral_5m_input_tokens": 0
+    },
+    "cache_creation_input_tokens": 1922,
+    "cache_read_input_tokens": 19798,
+    "input_tokens": 2,
+    "output_tokens": 5852,
+    "type": "message"
+   }
+  ],
+  "output_tokens": 8749,
+  "output_tokens_details": {
+   "thinking_tokens": 4824
+  },
+  "server_tool_use": {
+   "web_fetch_requests": 0,
+   "web_search_requests": 0
+  },
+  "service_tier": "standard",
+  "speed": "standard"
+ }
+}

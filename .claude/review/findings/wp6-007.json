@@ -1,0 +1,101 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.01060346,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 30485,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 30485,
+   "cache_read_input_tokens": 75436,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 6,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 1293,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 1293,
+     "cache_read_input_tokens": 36988,
+     "input_tokens": 2,
+     "output_tokens": 4817,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 7503,
+   "output_tokens_details": {
+    "thinking_tokens": 5062
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/queue_hud_src/queue_hud_logic_test.cpp",
+  "patch_manager_mods/queue_hud_src/QueueHudLogic.h"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "test",
+   "commits": [
+    "776de4c",
+    "48c9298"
+   ],
+   "confidence": "high",
+   "evidence": "const uint32_t nowDone = 1610; if (nowDone - buf.activeStartTick > 500) { buf.active = false; } KT_CHECK(!buf.active);",
+   "file": "patch_manager_mods/queue_hud_src/queue_hud_logic_test.cpp",
+   "lines": "909-914",
+   "local_id": "f1",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Confirm where the active flag is cleared in production (QueueHud.cpp near the shouldReInject call at line 737 and the dispatch path at line 763). Then replace the inline if-block with a check against that real code path, or drop the assertion and its comment so the test does not claim coverage it lacks.",
+   "why_it_matters": "The 500ms completion rule is re-implemented inline in the test, and the assertion checks the value the test itself just assigned. The check can never fail, so it does not exercise any production completion logic. The production shouldReInject (QueueHudLogic.h:516-521) does not implement a 500ms window at all, so the 'Natural item completion' scenario in testFollowerWipeProtection is not testing the code it names."
+  },
+  {
+   "candidate_id": null,
+   "category": "test",
+   "commits": [
+    "776de4c",
+    "48c9298"
+   ],
+   "confidence": "high",
+   "evidence": "// Simulate 60 Hz paused ticker across 3000ms: ... for (uint32_t t = 1000; t <= 4000; t += 16) { KT_CHECK(!shouldReInject(buf, false, false, true, t)); ...",
+   "file": "patch_manager_mods/queue_hud_src/queue_hud_logic_test.cpp",
+   "lines": "798-803",
+   "local_id": "f2",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Read QueueHudLogic.h:516-521 and confirm that paused and now are unused. If the timing-based pause behaviour is meant to be tested, the test needs a production function that uses those inputs; otherwise reword the comment so it does not claim a 3000ms paused-loop check.",
+   "why_it_matters": "The loop is named as a paused-timing regression test, but shouldReInject ignores both the paused and now arguments (QueueHudLogic.h:517 '(void)paused; (void)now;'). Every iteration therefore reduces to hasFollowLeader == false, so the loop adds no timing coverage. The test name and comment overstate what is verified."
+  },
+  {
+   "candidate_id": null,
+   "category": "other",
+   "commits": [
+    "776de4c",
+    "48c9298"
+   ],
+   "confidence": "high",
+   "evidence": "// left (the default) on the live 3840x1600 layout (doc 08 probe 1): auto 38 px icons centred on the 96 px bar, ending 38 px left of",
+   "file": "patch_manager_mods/queue_hud_src/queue_hud_logic_test.cpp",
+   "lines": "565-566",
+   "local_id": "f3",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Update the comments at lines 565 and 1001 to 58 px so they match the assertions at lines 572-578 and 1003-1022. Grep the test file for other '38 px' comments that refer to icon size, but not to strip reserve (the reserve stays 38 at line 574).",
+   "why_it_matters": "The icon size is now 58 px (asserted at line 572 as 'vit.h * 0.60 = 58'). The header comment for testStripLeftLive still describes 38 px icons, which contradicts the code. Line 1001 in testStripCancel has the same stale '38 px icons' comment."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Assertion delta: every removed assertion has a replacement in the same file. The 38->58 icon-size values are updated consistently (stripRowWidth, stripCancelRect gap 14 and x 3503, stripRects row x 3575). The removed paused re-inject checks (old lines 753-756) are replaced by lines 763-768 and 798-803. The replacement for the 3000ms paused-wipe re-inject case is the loop at 798-803, which is weak (see f2). I checked the new assertions in testItemBuffer, testPausedItemQueueing, testPausedCancelClick, testFollowerWipeProtection (except the inline block in f1) and testMixedForcePowersAndItems against ItemBuffer, shouldReInject and shouldDispatchNext in QueueHudLogic.h:460-525. Each expected value matches the production logic. combatBgRect expectations (lines 712-719) are consistent with a uniform scale of the 40 px base case. The arithmetic was not checked beyond that. Test-harness exit path: main() returns kt::Report(...) at line 1091 and the new test functions are registered at lines 1085-1088, so they are counted. Checker facts conflict: build_check reports FAIL (collect2: ld returned 1) for queue_hud_src in the scratch copy, while run_tests reports queue_hud_logic_test PASS (rc 0). The checker says it is provisional and the scratch copy has no binaries, so I could not resolve this from the snapshot. Under the Gate Invariant, the build failure needs a real rebuild before this packet can be considered clean. Minor: the comment at line 478 says '36 * 0.6 = 21', but the value is 21.6. The assertion (clamped to 48) is unaffected.\"}",
+ "packet_id": "wp6-007",
+ "truncated": false
+}

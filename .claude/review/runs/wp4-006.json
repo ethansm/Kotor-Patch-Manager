@@ -1,0 +1,83 @@
+{
+ "attempts": 1,
+ "cost_usd": 0.006138459999999999,
+ "duration_s": 21.0,
+ "ended": "2026-10-10T09:07:47Z",
+ "exit_code": 0,
+ "files": [
+  "patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp",
+  "patch_manager_mods/equipment_3d_character_src/manifest.toml"
+ ],
+ "first_turn_prompt_tokens": 22181,
+ "num_turns": 6,
+ "packet_id": "wp4-006",
+ "prompt_bytes": 29454,
+ "rate_limit_hits": 0,
+ "raw": "raw/wp4-006.a1.out",
+ "result_subtype": "success",
+ "schema_errors": [],
+ "schema_valid": true,
+ "started": "2026-10-10T09:07:26Z",
+ "status": "ok",
+ "truncated": false,
+ "turn_prompt_tokens": [
+  22181,
+  24413,
+  25433
+ ],
+ "turn_usage": [
+  {
+   "cache_creation_input_tokens": 14383,
+   "cache_read_input_tokens": 7796,
+   "input_tokens": 2,
+   "output_tokens": 2
+  },
+  {
+   "cache_creation_input_tokens": 2232,
+   "cache_read_input_tokens": 22179,
+   "input_tokens": 2,
+   "output_tokens": 2
+  },
+  {
+   "cache_creation_input_tokens": 1020,
+   "cache_read_input_tokens": 24411,
+   "input_tokens": 2,
+   "output_tokens": 8
+  }
+ ],
+ "turns_over_100k": 0,
+ "usage": {
+  "cache_creation": {
+   "ephemeral_1h_input_tokens": 17635,
+   "ephemeral_5m_input_tokens": 0
+  },
+  "cache_creation_input_tokens": 17635,
+  "cache_read_input_tokens": 54386,
+  "fallback_credit": null,
+  "inference_geo": "global",
+  "input_tokens": 6,
+  "iterations": [
+   {
+    "cache_creation": {
+     "ephemeral_1h_input_tokens": 1020,
+     "ephemeral_5m_input_tokens": 0
+    },
+    "cache_creation_input_tokens": 1020,
+    "cache_read_input_tokens": 24411,
+    "input_tokens": 2,
+    "output_tokens": 2436,
+    "type": "message"
+   }
+  ],
+  "output_tokens": 4134,
+  "output_tokens_details": {
+   "thinking_tokens": 2082
+  },
+  "server_tool_use": {
+   "web_fetch_requests": 0,
+   "web_search_requests": 0
+  },
+  "service_tier": "standard",
+  "speed": "standard"
+ }
+}

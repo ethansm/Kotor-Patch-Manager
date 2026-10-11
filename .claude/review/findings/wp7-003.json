@@ -1,0 +1,52 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.0046210700000000006,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 17101,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 17101,
+   "cache_read_input_tokens": 17397,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 4,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 15296,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 15296,
+     "cache_read_input_tokens": 9601,
+     "input_tokens": 2,
+     "output_tokens": 1494,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 2053,
+   "output_tokens_details": {
+    "thinking_tokens": 1000
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/combat_hotbar_src/CombatLogic.h",
+  "patch_manager_mods/combat_hotbar_src/combat_logic_test.cpp (grep hits, lines 49-52)",
+  "patch_manager_mods/combat_hotbar_src/CombatHotbar.cpp (grep hits, lines 100-142)"
+ ],
+ "findings": [],
+ "no_issue_files": [
+  "patch_manager_mods/combat_hotbar_src/CombatLogic.h"
+ ],
+ "notes": "Checked the changed sizing constants (kDefaultPad 8, kDefaultGroupGap 10, kDefaultSidePad 16, kDefaultCapPad 16) for their consumers. The layout helpers in CombatLogic.h derive button size from these values and clamp it (fit min 1, btn min 1), and the banner/pill/grid helpers shift their boxes back on screen, so the larger padding cannot push geometry out of bounds or divide by zero. CombatHotbar.cpp (outside the packet) reads the same defaults as fallbacks for the INI keys with clamps of 0..32 for Pad and 0..64 for the others, which accept the new values. combat_logic_test.cpp:49-52 pins the new values, so the constant change is covered by a test. Cosmetic only: the \"was N\" comments in CombatHotbar.cpp:100-105 (for example \"was 4\") and in CombatLogic.h:10-13 will drift as history notes; not a risk. Scanner facts: build_check PASS (FAIL=0), run_tests PASS, and check_hook_spans / check_hook_bytes have no mentions. No scanner candidates were supplied. The skipped gates (agent_diff_check, compat_check, check-raw-addresses) are gate-coverage gaps the packet does not change; not evaluated here. Facts are provisional per the checker note.\"",
+ "packet_id": "wp7-003",
+ "truncated": false
+}

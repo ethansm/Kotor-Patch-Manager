@@ -1,0 +1,51 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.0037205299999999997,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 10591,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 10591,
+   "cache_read_input_tokens": 48453,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 8,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 2385,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 2385,
+     "cache_read_input_tokens": 16002,
+     "input_tokens": 2,
+     "output_tokens": 1072,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 2234,
+   "output_tokens_details": {
+    "thinking_tokens": 1253
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "scripts/test_selfheal_log_check.py",
+  "scripts/selfheal_log_check.py"
+ ],
+ "findings": [],
+ "no_issue_files": [
+  "scripts/test_selfheal_log_check.py"
+ ],
+ "notes": "Assertion delta confirmed: 60 to 67 asserts, nothing removed. The only change is the added test_kplog_v1_prefix_and_diag_pop (lines 193-207). Checked its dependencies in scripts/selfheal_log_check.py: PREFIX_RE (line 27) accepts the 'T=<t> f=-' prefix; P1_RE (28), P3_RE (29), BUILD_RE (34) and DIAGPOP_RE (49) match the fixture lines; diag_pop tuples are (n, item, rgb_ok, alpha_ok) at line 126, so indices [2] and [3] are correct; v['build'] is populated at line 72. Not verified: the exact PASS criteria for p1 and p3 (the test assumes they pass on these two lines alone), and the DIAG rgbOk=0 failure path (line 128) has no test. Harness exit-code behaviour (main, lines 79-83 of the test file) was not changed by this packet. Scope: I read only the module's regex and dict-construction region, not its check() body.",
+ "packet_id": "wp6-015",
+ "truncated": false
+}

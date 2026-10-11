@@ -1,0 +1,113 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00323195,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 5740,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 5740,
+   "cache_read_input_tokens": 18755,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 4,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 2577,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 2577,
+     "cache_read_input_tokens": 10959,
+     "input_tokens": 2,
+     "output_tokens": 2499,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 3792,
+   "output_tokens_details": {
+    "thinking_tokens": 1535
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "scripts/query_ghidra.py"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "format_cpp_struct emits one line per DB row with only a comment carrying the offset: `lines.append(f\"    /* 0x{off:04x} */ {c_type:10s} {clean_name};\")` (line 167). No padding or gap fields are emitted when an offset skips bytes, and no size from the row is used. The compiler will lay the declared members out contiguously, so the struct's real offsets diverge from the 0x comments as soon as there is a gap or a width mismatch.",
+   "file": "scripts/query_ghidra.py",
+   "lines": "147-169",
+   "local_id": "f1",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Run `python3 -I scripts/query_ghidra.py struct CSWSCreature --cpp --limit 200` against a DB that has gaps between offsets, then compile a small test with a static_assert on offsetof for one field past a gap. Check whether the tool emits any padding or a static_assert; if not, the output is only a comment listing.",
+   "why_it_matters": "The output is presented as an auto-generated struct layout for reverse-engineered KOTOR II classes. A consumer that trusts the struct (sizeof, member access) gets silently wrong field offsets, which can corrupt game memory in a patch."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "The SQL is `WHERE class = ? OR class LIKE ? ... ORDER BY offset ASC LIMIT ?` with `f\"%{class_name}%\"`. Rows from every class whose name contains the substring are returned, ordered only by offset. format_cpp_struct (lines 159-169) never reads the row's `class` field, so rows from different classes are merged into one `struct {class_name}` with interleaved offsets.",
+   "file": "scripts/query_ghidra.py",
+   "lines": "130-137",
+   "local_id": "f2",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Check the struct_fields table for class names that contain another class name as a substring. Run the --cpp path on that name and confirm whether members whose `class` differs from the requested name appear in the output. A fix would filter on the exact class or emit one struct per class; the investigation is to confirm the merge happens.",
+   "why_it_matters": "For a substring like CSWSCreature, a related class such as CSWSCreatureStats would contribute members to the same struct. The generated layout then describes no real class, and fields at the same offset from different classes are emitted as separate members."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "`c_type = type_map.get(t_raw, \"uint32_t\")` maps every type that is not in the 8-entry table to a 4-byte uint32_t, while the row's `size` column (selected at line 133) is never used. A 1-byte or 2-byte field with an unknown type name (for example a type string not in the map) is emitted as a 4-byte member.",
+   "file": "scripts/query_ghidra.py",
+   "lines": "160-162",
+   "local_id": "f3",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "List the distinct `type` values in struct_fields (SELECT DISTINCT type FROM struct_fields) and compare them with the keys of type_map at lines 149-158. For each unmapped value, check the row's size against the 4 bytes the fallback assigns.",
+   "why_it_matters": "A wrong member width shifts every later member in the generated declaration. The fallback is silent, so the output looks authoritative."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "WORKTREE"
+   ],
+   "confidence": "high",
+   "evidence": "The parent parser sets `--limit` default to 25 (line 187), and the struct branch passes it straight through: `results = query_struct(con, args.class_name, limit=args.limit)` (line 217). The new `--cpp` path (lines 237-238) then formats whatever came back with no warning that the list was cut off.",
+   "file": "scripts/query_ghidra.py",
+   "lines": "187-217",
+   "local_id": "f4",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Run `struct <class> --cpp` on a class with more than 25 rows in struct_fields and compare the member count with `SELECT COUNT(*) FROM struct_fields WHERE class = ?`. Check whether --cpp should default to no limit or print a truncation comment.",
+   "why_it_matters": "A class with more than 25 fields produces a truncated C++ struct whose later members are missing. The user gets a plausible but incomplete layout, and the missing tail is never flagged."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "Read scripts/query_ghidra.py lines 13-19 (imports; `re` is imported, so the re.sub call at line 164 is fine), 130-145 (query_struct, which returns the offset, size, type, name and class columns), and 118-147 for context. Not checked: whether the DB type column holds values outside type_map. Not checked: whether name can be NULL (which would make re.sub at line 164 raise TypeError); this is low-impact and was not raised as a finding. No secrets were accessed. The database was not opened, so the findings rest on the code and the SQL text, not on live query output.",
+ "packet_id": "wp7-015",
+ "truncated": false
+}

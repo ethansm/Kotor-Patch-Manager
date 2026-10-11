@@ -1,0 +1,228 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.012694559999999999,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 24047,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 24047,
+   "cache_read_input_tokens": 7796,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 2,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 24047,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 24047,
+     "cache_read_input_tokens": 7796,
+     "input_tokens": 2,
+     "output_tokens": 15614,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 15614,
+   "output_tokens_details": {
+    "thinking_tokens": 11298
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "scripts/compat_graph.py",
+  "scripts/test_compat_graph.py"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "bug",
+   "commits": [
+    "b756482",
+    "3de985d",
+    "40b47d2"
+   ],
+   "confidence": "high",
+   "evidence": "Line 232 sets \"name\": patch.get(\"name\", \"\"), so a manifest without a name yields m_name == \"\". Lines 509 and 518 test `token_clean in m_id or token_clean in m_name or m_id in token_clean or m_name in token_clean` and then `break`. In Python `\"\" in s` is always True, so a nameless manifest matches every smoke token of the same probe parity and the first such mod in dict order wins.",
+   "file": "scripts/compat_graph.py",
+   "lines": "504-520",
+   "local_id": "f1",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Build a fixture with two mods: one manifest with only `id` (no `name`) listed before a real mod, plus a smokes.toml entry for the real mod. Call affected([...real mod source], include_wine=True) and inspect mod_to_smokes and plan.smokes(). Confirm the smoke is missing. Check that empty name/id strings are rejected before the substring tests.",
+   "why_it_matters": "Wine smokes are attached to the wrong mod (mod_to_smokes at line 523). When the real owning mod is touched, its smoke is never scheduled, and the plan reports no smoke for it. That silently drops a gate item. The test fixtures in test_compat_graph.py (lines 65, 84, 97) write manifests with only an id, so this path is reachable in normal fixture-style manifests."
+  },
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "b756482",
+    "3de985d",
+    "40b47d2"
+   ],
+   "confidence": "high",
+   "evidence": "`try: cfg = tomllib.loads(suites_toml.read_text(encoding=\"utf-8\")) except Exception: return`. The same silent-fallback pattern appears for smokes.toml (lines 485-488, `except Exception: return`) and for tests/compat.toml (lines 569-570, `except Exception: pass`), which drops all covers and generator edges.",
+   "file": "scripts/compat_graph.py",
+   "lines": "444-447",
+   "local_id": "f2",
+   "severity": "high",
+   "source": "worker",
+   "suggested_investigation": "Copy the fixture repo, corrupt tests/suites.toml with a syntax error, and call affected() on a .cpp that a suite references. Verify that plan.suites() is empty and that no error or non-zero exit surfaces. Then check the calling gate script's exit handling for CompatGraph construction and check whether it treats an empty plan as a pass.",
+   "why_it_matters": "A malformed suites.toml, smokes.toml or compat.toml produces an empty mapping with no error and no non-zero exit. Plan items for suites, wine smokes and covers then disappear while the gate can still report PASS. This is a selection gate, so under-selection is a silent weakening of the check."
+  },
+  {
+   "candidate_id": null,
+   "category": "gate-integrity",
+   "commits": [
+    "b756482",
+    "3de985d",
+    "40b47d2"
+   ],
+   "confidence": "high",
+   "evidence": "`try: data = tomllib.loads(mfile.read_text(...)) ... self.manifests[rel_mod] = {...} except Exception: continue`. A manifest that fails to parse is skipped without any record.",
+   "file": "scripts/compat_graph.py",
+   "lines": "240-241",
+   "local_id": "f3",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Put a deliberately invalid manifest.toml in a fixture mod and touch one of its sources. Confirm the plan has no build item and no unclassified entry for it. Consider whether the plan should record a gap or an info note for unparsable manifests.",
+   "why_it_matters": "A mod with a broken manifest.toml disappears from mod_dirs and manifests. Its build_check, colocated tests, library fan-out and smokes are then never scheduled, and _is_classified no longer recognizes its files. Nothing in the plan reports the failure."
+  },
+  {
+   "candidate_id": null,
+   "category": "build",
+   "commits": [
+    "b756482",
+    "3de985d",
+    "40b47d2"
+   ],
+   "confidence": "high",
+   "evidence": "`self.kpm_dir = (Path.home() / \"Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager\").resolve()` is the fallback when neither the kpm_dir argument nor KPM_DIR is set.",
+   "file": "scripts/compat_graph.py",
+   "lines": "122-122",
+   "local_id": "f4",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Run the graph on a machine without that directory, with and without KPM_DIR set, and compare plan.kpm_consumers and unresolved includes. Decide whether a missing KPM directory should warn or fail rather than silently degrade.",
+   "why_it_matters": "The default is a machine-specific path under one developer's home directory. On other machines the KPM consumer and Patches/Common resolution silently becomes empty, so the plan's kpm_consumers and E1 external includes differ by machine."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "b756482",
+    "3de985d",
+    "40b47d2"
+   ],
+   "confidence": "medium",
+   "evidence": "Comment at line 694 says \"(a) does not apply inside _shared_src\", but line 695 tests `if not is_test and not from_shared:` and line 702 tests `and not from_shared and mod_dir in self.library_consumers`. from_shared is set once per touched path (line 613) and carried unchanged into every queued node (lines 698, 718-724, 746, 750). It therefore suppresses colocated tests and library consumer fan-out for every mod node reached through a shared header, not only nodes inside _shared_src.",
+   "file": "scripts/compat_graph.py",
+   "lines": "694-702",
+   "local_id": "f5",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Create a fixture where a _shared_src header is included by a library mod's source, and that library's consumer has a colocated test. Touch the header and check whether the consumer build and test appear in plan.items. Decide whether the propagated flag or the comment reflects the intended design, and align them.",
+   "why_it_matters": "A shared header change that reaches a library module through an include will not schedule its consumers' builds or colocated tests, although the code comment describes a narrower exclusion. This can under-select tests in a gate. The E1 include chain may cover some cases, but not library consumers that link the library."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "b756482",
+    "3de985d",
+    "40b47d2"
+   ],
+   "confidence": "medium",
+   "evidence": "`if stem not in self.py_stem_map: self.py_stem_map[stem] = rel_p`, where candidate_files is built from unsorted os.walk results (lines 219, 280, 404). Test ID assignment at lines 294-300 has the same first-wins shape, and the docstring at line 17 says \"Plans deterministically\".",
+   "file": "scripts/compat_graph.py",
+   "lines": "417-418",
+   "local_id": "f6",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "In a fixture, create scripts/util.py and tests/util.py and a module importing util. Run the graph several times, or on filesystems with different enumeration order, and compare reverse_imports. Check whether sorting the walk output removes the variance.",
+   "why_it_matters": "When two Python files or two *_test.cpp files share a stem, which one receives the bare stem binding (and so the import edges or the cpp:<stem> test ID) depends on filesystem enumeration order. Results can differ across machines or checkouts, contrary to the deterministic-plan claim."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "b756482",
+    "3de985d",
+    "40b47d2"
+   ],
+   "confidence": "high",
+   "evidence": "`for root, dirs, files in os.walk(self.repo_root / \"patch_manager_mods\"): if \"test.toml\" in files:` has no _is_pruned check. _scan_manifests applies `if _is_pruned(rpath): continue` at line 221 and PRUNE_DIRS includes \"retired\".",
+   "file": "scripts/compat_graph.py",
+   "lines": "528-530",
+   "local_id": "f7",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Place a test.toml with a covers entry under patch_manager_mods/retired/ in a fixture and check whether affected() on the covered path emits an item for it.",
+   "why_it_matters": "test.toml files under retired/ or node_modules/ still contribute covers_map entries, which can add test or suite items for retired code. This is inconsistent with the rest of the scanner and can produce spurious plan items."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "b756482",
+    "3de985d",
+    "40b47d2"
+   ],
+   "confidence": "high",
+   "evidence": "`if lib_id in reqs or (provides and req_ifaces.intersection(provides))` at line 254 and `if token_clean in m_id ...` at line 509 both operate on manifest id/name values that default to \"\" or to a relative path (line 231 default rel_mod is applied only to id).",
+   "file": "scripts/compat_graph.py",
+   "lines": "230-233",
+   "local_id": "f8",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check which manifests in patch_manager_mods lack a name field, and confirm whether the empty-name case in f1 is reachable in the real repository.",
+   "why_it_matters": "Lower-impact companion to f1: empty or defaulted identifiers flow into set and substring logic without validation, which makes matches depend on defaults rather than declared values."
+  },
+  {
+   "candidate_id": null,
+   "category": "test",
+   "commits": [
+    "40b47d2"
+   ],
+   "confidence": "high",
+   "evidence": "The test creates a symlink `research/companion_levelup/stub/_shared/Common.h` to the shared header, then writes `tests/dummy_test.cpp` with `#include \"Common.h\"`. Include resolution step 2 (compat_graph.py lines 340-347) finds `shared_root / \"Common.h\"` directly, so the symlink path is never resolved. The test asserts only that cpp:dummy_test appears.",
+   "file": "scripts/test_compat_graph.py",
+   "lines": "41-56",
+   "local_id": "f9",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Make the include resolve only through the symlinked directory (for example, a header that exists only at the symlink location, or an includer under research/ with the stub search path). Then assert that the canonical node appears once in reverse_includes, and confirm the test fails when _safe_realpath is bypassed.",
+   "why_it_matters": "The test name and docstring claim symlink realpath deduplication is verified, but it passes without any symlink handling. A regression in symlink canonicalization would not be caught by this test."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "b756482",
+    "3de985d",
+    "40b47d2"
+   ],
+   "confidence": "medium",
+   "evidence": "`inc_target = f\"patch_manager_mods/_shared_src/{match}\"` is applied to every .inc name found in the first 1000 characters of scripts/gen_*.py, regardless of where the generator actually writes its output.",
+   "file": "scripts/compat_graph.py",
+   "lines": "580-582",
+   "local_id": "f10",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check each scripts/gen_*.py output path against the _shared_src assumption, and check whether the INFO notes appear for the .inc files that generators actually write.",
+   "why_it_matters": "A generator that writes its .inc outside _shared_src gets a dead edge in inc_to_generator. The INFO regenerate-notice at line 628 then never fires for that file, and the hand-edit warning is lost."
+  }
+ ],
+ "no_issue_files": [],
+ "notes": "No tool calls were made; both files were supplied in full in the packet. Nothing in the packet touches the live game directory, install paths or secrets. The KPM directory is only read, never written (line 122 is a read-only default). Not verified because the consuming gate script is outside the packet: whether an empty plan, unclassified entries or the _detect_contract_gaps gaps list (lines 847-852) fail the gate or only print. The assertion_delta shows no assertions removed (40 added, 0 removed), so no removed-assertion finding. The golden tests (lines 188-267) depend on the live repo and the default KPM path; they were not run. No scanner candidates were supplied, so candidate_id is null throughout.",
+ "packet_id": "wp1-008",
+ "truncated": false
+}

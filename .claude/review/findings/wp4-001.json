@@ -1,0 +1,84 @@
+{
+ "_usage": {
+  "status": "ok",
+  "total_cost_usd": 0.00471916,
+  "usage": {
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 9916,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "cache_creation_input_tokens": 9916,
+   "cache_read_input_tokens": 23056,
+   "fallback_credit": null,
+   "inference_geo": "global",
+   "input_tokens": 4,
+   "iterations": [
+    {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 2452,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 2452,
+     "cache_read_input_tokens": 15260,
+     "input_tokens": 2,
+     "output_tokens": 2903,
+     "type": "message"
+    }
+   ],
+   "output_tokens": 5010,
+   "output_tokens_details": {
+    "thinking_tokens": 3236
+   },
+   "server_tool_use": {
+    "web_fetch_requests": 0,
+    "web_search_requests": 0
+   },
+   "service_tier": "standard",
+   "speed": "standard"
+  }
+ },
+ "files_examined": [
+  "patch_manager_mods/_shared_src/GuiInput.h",
+  "patch_manager_mods/_shared_src/GuiKit.h"
+ ],
+ "findings": [
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "c5c67f8"
+   ],
+   "confidence": "medium",
+   "evidence": "`static bool subOk = false;` is set true once `wheel_subscribe` returns tok > 0 (lines 676-679), and is never reset. `wheelUninstall` (lines 695-698) calls `g_gkInput.wheel_unsubscribe(detail::guikitWheelCb)` but leaves `subOk` true, so a later `wheelInstall()` returns `subOk` at line 683 without re-subscribing.",
+   "file": "patch_manager_mods/_shared_src/GuiKit.h",
+   "lines": "673-684",
+   "local_id": "f1",
+   "severity": "medium",
+   "source": "worker",
+   "suggested_investigation": "Check whether wheelInstall() can be called again after wheelUninstall() in the same DLL lifetime (callers of guikit wheel install/uninstall in the consuming mods and the KPatchInit/unload hooks). If yes, verify that after the sequence install -> uninstall -> install the provider's subscription table no longer contains guikitWheelCb (provider-side WheelSubscribe/WheelUnsubscribe in the gui-input patch). Also check whether the subscribed flag should be cleared in the unsubscribe path.",
+   "why_it_matters": "After an uninstall followed by a reinstall while the provider stays connected, the mod is silently left with no wheel subscription: the callback is never delivered, the function reports success, and no retry happens. The legacy path at lines 686-690 does re-install on reinstall, so the two paths behave differently."
+  },
+  {
+   "candidate_id": null,
+   "category": "logic",
+   "commits": [
+    "c5c67f8"
+   ],
+   "confidence": "medium",
+   "evidence": "When `g_gkInput.connected` is true, the function returns `subOk` (line 683) and never reaches the legacy subclass path at lines 686-690. If `wheel_subscribe` keeps failing (line 678-679, e.g. the provider table is full, which the header documents at GuiInput.h:49), `wheelInstall()` returns false every time.",
+   "file": "patch_manager_mods/_shared_src/GuiKit.h",
+   "lines": "673-684",
+   "local_id": "f2",
+   "severity": "low",
+   "source": "worker",
+   "suggested_investigation": "Check the provider-side table limit and what the callers of wheelInstall() do when it returns false (retry cadence, logging). Decide whether a connected-but-unsubscribed state should fall back to the subclass path. Verify by reading the callers in the consuming mods, not by changing code.",
+   "why_it_matters": "Once the provider is connected, the mod has no fallback for wheel input. A failed subscribe (for example, a full table) leaves the mod with no wheel handling at all, even though the old per-window subclass could still have worked. This is a silent loss of the feature, not a crash."
+  }
+ ],
+ "no_issue_files": [
+  "patch_manager_mods/_shared_src/GuiInput.h"
+ ],
+ "notes": "Scanner candidates S-a16bd760e9 (GuiKit.h:617) and S-c8b739e474 (GuiKit.h:681) are reinterpret_cast of intptr_t handle values to HWND. This is the normal handle conversion on 32-bit, so they are harmless and get no finding. The new callback guikitWheelCb (GuiKit.h:579-601) and the legacy wheelProc both call saferead::beginScope() with no matching endScope in the visible text. The legacy path at line 659 already does this, so it is existing behaviour, not a regression from this packet; not flagged. Not verified: the provider-side implementation of k2.guiinput (registration, table limit, thread the wheel callback runs on, unload order), kpatch_api.h (KPATCH_CALL, KPatchApi layout), and the saferead scope semantics. Thread safety of g_wheel.gate/inside/onEvent in guikitWheelCb cannot be judged from this packet. GuiInput.h: struct layouts, struct_size checks in connect(), and the poll() retry path look consistent with the header's stated ABI rules. Checker facts show no build or test run results (rc null), so they neither confirm nor refute anything here.\"]",
+ "packet_id": "wp4-001",
+ "truncated": false
+}
