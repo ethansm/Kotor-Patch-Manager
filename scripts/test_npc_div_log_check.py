@@ -24,12 +24,17 @@ GOLD_TEX = ("TEX pd=0a1b2c3d fr=00001234 ret=00abcdef app=805 g=1 tv=1 dm=0 hd=0
 GOLD_RMP = ("RMP this=12345678 pd=0a1b2c3d oid=000003e9 tp=00000010 tl=6 tag=Bastila xy=12.5,-3.5 "
             "xyb=41480000,c0600000 app=805>806 tv=1>2 h=06c232b2 why=ok")
 GOLD_RMP_OLD = GOLD_RMP.replace(" tv=1>2", "")          # pre-0.1.2 grammar: no tv=
+GOLD_TEX_EXT = GOLD_TEX + " stype=3 oid=000003e9"          # 0.1.3 grammar
+GOLD_RMP_EXT = GOLD_RMP + " stype=3"
+GOLD_PTR = ("PTR this=12345678 off=01c p=0a8363d0 hex="
+            "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+            "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f")
 GOLD_CEN_TEX = "CEN k=tex app=805 g=1 tv=1 dm=0 cur=n_commm01"
 GOLD_CEN_REMAP = "CEN k=remap app=805 g=1 tv=1 tag=Bastila"
 GOLD_STAT_TEX = ("STAT tex calls=10 nullg=0 unread=1 bcskip=2 nonc=3 comm=4 swap=5 frd=6 retd=7 skiprow=8 "
                  "stashhit=9 stashmiss=10")
 GOLD_STAT_REMAP = ("STAT remap calls=11 nullg=0 unread=1 bcskip=2 excl=3 tagun=4 chg=5 nochg=6 oidd=7 skiprow=8 skipg=9 "
-                   "tvchg=10")
+                   "tvchg=10 tvarmor=11")
 GOLD_STAT_ABI = "STAT abi app=1 g=2 dm=3"
 GOLD_STAT_XY = "STAT xy x=-3.5..12.5 y=0.0..100.5"
 GOLD_STAT_SLOT0 = "STAT slot g=0 00:3 01:0 02:0 03:0 04:0 05:7 06:0 07:0 08:0 09:0 10:0 11:0"
@@ -51,7 +56,7 @@ GOLD_DUMP = "DUMP trigger=file path=npc-diversity.dump"
 GOLDEN = [GOLD_BANNER0, GOLD_BANNER_HOOK, GOLD_BANNER_ROWS, GOLD_TEX, GOLD_RMP, GOLD_CEN_TEX, GOLD_CEN_REMAP,
           GOLD_STAT_TEX, GOLD_STAT_REMAP, GOLD_STAT_ABI, GOLD_STAT_XY, GOLD_STAT_SLOT0, GOLD_STAT_APP,
           GOLD_STAT_READ, GOLD_STAT_CENSUS, GOLD_DSC0, GOLD_CRE0, GOLD_CRE0_40, GOLD_HOOKBYTES, GOLD_ABI, GOLD_READ,
-          GOLD_DUMP]
+          GOLD_DUMP, GOLD_TEX_EXT, GOLD_RMP_EXT, GOLD_PTR]
 # Golden line -> the kind the checker gives it (None = not a checked kind, ignored).
 GOLD_KIND = {GOLD_BANNER0: "BANNER:v", GOLD_BANNER_HOOK: "BANNER:hook", GOLD_BANNER_ROWS: None, GOLD_TEX: "TEX",
              GOLD_RMP: "RMP", GOLD_CEN_TEX: "CEN", GOLD_CEN_REMAP: "CEN", GOLD_STAT_TEX: "STAT:tex",
@@ -59,7 +64,8 @@ GOLD_KIND = {GOLD_BANNER0: "BANNER:v", GOLD_BANNER_HOOK: "BANNER:hook", GOLD_BAN
              GOLD_STAT_SLOT0: "STAT:slot", GOLD_STAT_APP: "STAT:app", GOLD_STAT_READ: "STAT:read",
              GOLD_STAT_CENSUS: "STAT:census", GOLD_DSC0: "DSC0", GOLD_CRE0: "CRE0", GOLD_CRE0_40: "CRE0",
              GOLD_HOOKBYTES: "HOOKBYTES",
-             GOLD_ABI: "ABI", GOLD_READ: "READ", GOLD_DUMP: "DUMP"}
+             GOLD_ABI: "ABI", GOLD_READ: "READ", GOLD_DUMP: "DUMP",
+             GOLD_TEX_EXT: "TEX", GOLD_RMP_EXT: "RMP", GOLD_PTR: "PTR"}
 
 
 def stamped(body, n=0, level=""):

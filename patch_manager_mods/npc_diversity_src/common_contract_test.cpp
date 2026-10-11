@@ -41,11 +41,15 @@ void testDescriptorOffsets() {
 
 void testCreatureOffsets() {
     CEQ("CSWCObject m_nObjectID offset (VERIFIED play-test)", L::kCreOffObjectId, 0x04);
-    CEQ("CSWCObject +0x18 pointer offset (NOT a CExoString; tag unresolved)", L::kCreOffTagPtr, 0x18);
-    CEQ("CSWCObject +0x1C pointer offset (NOT a CExoString; tag unresolved)", L::kCreOffTagLen, 0x1C);
-    CEQ("CSWCObject m_vPosition.x offset (VERIFIED CRE0 dump)", L::kCreOffPosX, 0x20);
-    CEQ("CSWCObject m_vPosition.y offset (VERIFIED CRE0 dump)", L::kCreOffPosY, 0x24);
-    CEQ("CSWCObject m_vPosition.z offset (VERIFIED CRE0 dump)", L::kCreOffPosZ, 0x28);
+    CEQ("CSWCObject +0x1C pointer offset (sibling object; NOT a tag)", L::kCreOffPtr1C, 0x1C);
+    CEQ("CSWCObject +0x20 pointer offset (separate alloc; tag unresolved)", L::kCreOffPtr20, 0x20);
+    CEQ("CSWCObject +0x5C candidate pointer offset (probe only)", L::kCreOffPtr5C, 0x5C);
+    CEQ("CSWCObject +0x6C candidate pointer offset (probe only)", L::kCreOffPtr6C, 0x6C);
+    CEQ("CSWCObject m_vPosition.x offset (VERIFIED raw CRE0 bytes)", L::kCreOffPosX, 0x24);
+    CEQ("CSWCObject m_vPosition.y offset (VERIFIED raw CRE0 bytes)", L::kCreOffPosY, 0x28);
+    CEQ("CSWCObject m_vPosition.z offset (VERIFIED raw CRE0 bytes)", L::kCreOffPosZ, 0x2C);
+    CEQ("AppearanceDesc subType offset", L::kDescOffSubType, 0x00);
+    CEQ("subType guard: max commoner subType", static_cast<size_t>(L::kDescSubTypeMaxCommoner), 2);
     CEQ("CSWCCreature pending appearance counter offset (UNVERIFIED)", L::kCreOffAppCounter, 0x328);
 }
 

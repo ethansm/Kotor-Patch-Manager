@@ -12,6 +12,8 @@ Usage: npc_div_log_check.py [LOG | --log LOG] [--new [--no-advance] [--state PAT
 Grammar: GOLDEN block at the top of patch_manager_mods/npc_diversity_src/diversity_log_test.cpp (authoritative), formatters in
 NpcDivLog.h, background in .claude/review/npc_div/E_logging.md 4.2. The KpLog prefix and fallback sink shapes are parsed by
 scripts/kplog_parse.py parse_line; a bare body is accepted as-is.
+0.1.3-probe additions (all optional, old logs still parse): TEX `stype=<int> oid=<hex>`, RMP `stype=<int>`, STAT remap
+`tvarmor=`, PTR `this= off= p= hex=` one-shot pointer dumps.
 0.1.2-probe additions: RMP `tv=<b>><a>` (after app=; absent on older lines), CRE0 `off=<hex>` (absent = 000), STAT remap
 `tvchg=`. BANNER sha= is a label (steam|gog|none) or a hash in new builds, an 8-hex value in old ones; it is not checked.
 """
@@ -54,7 +56,7 @@ EXCLUDED_TAG = re.compile(
 DEC = r"-?\d+"
 HEXV = r"[0-9a-fA-F]+"
 PAIR_RE = re.compile(r"(\d+):(\d+)")
-KEYWORDS = ("BANNER", "TEX", "RMP", "CEN", "STAT", "ABI", "READ", "HOOKBYTES", "DSC0", "CRE0", "DUMP")
+KEYWORDS = ("BANNER", "TEX", "RMP", "CEN", "STAT", "ABI", "READ", "HOOKBYTES", "DSC0", "CRE0", "PTR", "DUMP")
 SUBBED = ("STAT", "BANNER")       # heads whose second word is a sub-kind (STAT tex, BANNER rows)
 # kind -> req: keys that must be present; dec: keys read as decimal ("*" = all); hx: keys read as hex.
 # Values are kept as strings in rec["f"] and converted in rec["v"]. Lines with a kind not listed here are ignored.
@@ -62,10 +64,10 @@ SCHEMA = {
     "BANNER:v": dict(req=("v", "kpl", "sha", "base", "ts"), dec=("kpl",), hx=("base", "ts")),
     "BANNER:hook": dict(req=("hook", "addr", "pre"), dec=(), hx=("addr",)),
     "TEX": dict(req=("pd", "fr", "ret", "app", "g", "tv", "dm", "hd", "ph", "cur", "h", "st", "slot", "new", "sw"),
-                dec=("app", "g", "tv", "dm", "hd", "ph", "st", "slot", "sw"), hx=("pd", "fr", "ret", "h")),
+                dec=("app", "g", "tv", "dm", "hd", "ph", "st", "slot", "sw", "stype"), hx=("pd", "fr", "ret", "h", "oid")),
     # tv (0.1.2) is optional and read in _typed; g is read as decimal only when a line carries it (no RMP line has g today).
     "RMP": dict(req=("this", "pd", "oid", "tp", "tl", "tag", "xy", "xyb", "app", "h", "why"),
-                dec=("tl", "g"), hx=("this", "pd", "oid", "tp", "h")),
+                dec=("tl", "g", "stype"), hx=("this", "pd", "oid", "tp", "h")),
     "CEN": dict(req=("k", "app", "g", "tv"), dec=("app", "g", "tv", "dm"), hx=()),
     "STAT:tex": dict(req=("calls", "comm", "swap", "frd", "retd"), dec="*", hx=()),
     "STAT:remap": dict(req=("calls", "chg", "nochg", "excl", "tagun"), dec="*", hx=()),
@@ -80,6 +82,7 @@ SCHEMA = {
     "HOOKBYTES": dict(req=("addr", "want", "got"), dec=(), hx=("addr",)),
     "DSC0": dict(req=("pd", "hex"), dec=(), hx=("pd",)),
     "CRE0": dict(req=("this", "hex"), dec=(), hx=("this", "off")),
+    "PTR": dict(req=("this", "off", "p", "hex"), dec=(), hx=("this", "off", "p")),
     "DUMP": dict(req=("trigger", "path"), dec=(), hx=()),
 }
 

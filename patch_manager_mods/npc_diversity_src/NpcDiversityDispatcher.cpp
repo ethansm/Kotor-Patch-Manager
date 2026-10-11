@@ -1,10 +1,13 @@
-// NpcDiversityDispatcher.cpp -- Master NPC Diversity Dispatcher runtime detour hooks (0.1.2-probe).
+// NpcDiversityDispatcher.cpp -- Master NPC Diversity Dispatcher runtime detour hooks (0.1.3-probe).
 //
 // Strategy B (confirmed by the 0.1.1 play-test: the engine builds N_Comm?NN from descriptor textureVar):
 // Hook 2 RemapNpcAppearance: CSWCCreature::SetAppearance entry (Steam 0x76D200), args ecx=this,
 //   [esp+4]=pDesc. Remaps the appearance row (fat / Czerka / Twi'lek variants), then writes
 //   pDesc->textureVar = PickTextureVar(oid, finalAppearance) so every engine caller builds the same clothing.
 //   Seed = (creature oid, appearance) only: position and `this` are not stable.
+// 0.1.3: creature position offsets corrected to +0x24/+0x28/+0x2C; hook 2 never writes tv when pDesc.subType >= 3
+//   (armor body path); TEX lines carry stype/oid and log pmb*/pfb* body requests for creatures hook 2 saw;
+//   one-shot PTR dumps (64 bytes behind the pointers at +0x1C/+0x20/+0x5C/+0x6C) look for the creature tag.
 // Hook 1 OverrideNpcTexture: inside CSWCCreatureAppearance::GetBTypeModelAndTextureResRef, after the
 //   texture ResRef copy (Steam 0x85E601). LOG-ONLY in this build: it counts and logs what the engine requests.
 //
@@ -38,13 +41,13 @@ namespace {
 using namespace NpcDiversity;
 namespace nl = NpcDiversity::log;
 
-constexpr const char* kVersion = "0.1.2-probe";
+constexpr const char* kVersion = "0.1.3-probe";
 constexpr size_t kResRefLen = 16;
 
 // SafeRead site ids (counted in Counts::fail, printed by STAT read).
 enum : unsigned {
     S_FRAME_DESC = 1, S_FRAME_TEX = 2, S_FRAME_RET = 3, S_DESC = 4, S_TEXRES = 5,
-    S_CRE_TAGPTR = 6, S_CRE_OID = 7, S_CRE_XY = 8, S_CRE_TAGSTR = 9, S_DUMP = 10, S_HOOKBYTES = 11,
+    S_CRE_PTR = 6, S_CRE_OID = 7, S_CRE_XY = 8, S_CRE_UNUSED9 = 9, S_DUMP = 10, S_HOOKBYTES = 11,
 };
 
 KP_CHANNEL(chInit, "init");
@@ -60,7 +63,7 @@ const bool g_fallbackSet = (KpLog_SetFallbackFile("npc-diversity_log.txt"), KpLo
 
 nl::Counts g_c;
 nl::U32Set<256> g_frSet, g_retSet, g_oidSet, g_cenTexSet, g_cenRemSet;
-nl::Budget g_bTex, g_bRmp, g_bAbi;
+nl::Budget g_bTex, g_bRmp, g_bAbi, g_bArm;
 uint32_t g_readBudget[nl::kSiteCount + 1] = {};
 bool g_inited = false;
 bool g_dsc0Done = false;
@@ -72,12 +75,26 @@ constexpr uint32_t kCreDumpOffs[] = {0x40, 0x80, 0xC0, 0x100, 0x140, 0x180, 0x1C
 constexpr unsigned kCreDumpCount = sizeof kCreDumpOffs / sizeof kCreDumpOffs[0];
 unsigned g_creDumpDone = 0;  // bitmask over kCreDumpOffs
 
+// Pointer fields whose targets are dumped once each (tag-route probe).
+constexpr uint32_t kPtrDumpOffs[] = {layout::kCreOffPtr1C, layout::kCreOffPtr20, layout::kCreOffPtr5C, layout::kCreOffPtr6C};
+constexpr unsigned kPtrDumpCount = sizeof kPtrDumpOffs / sizeof kPtrDumpOffs[0];
+unsigned g_ptrDumpDone = 0;  // bitmask over kPtrDumpOffs
+
+// pDesc -> creature oid, written by hook 2 and read by hook 1 (the descriptor is rebuilt per call, so entries can go
+// stale; a stale hit only mislabels a probe log line). Direct-mapped, 256 entries.
+struct PdOid { uint32_t pd, oid; };
+PdOid g_pdOid[256];
+unsigned pdSlot(uint32_t pd) { return (pd >> 3) & 0xFFu; }
+void pdOidPut(uint32_t pd, uint32_t oid) { g_pdOid[pdSlot(pd)] = PdOid{pd, oid}; }
+uint32_t pdOidGet(uint32_t pd) { const PdOid& e = g_pdOid[pdSlot(pd)]; return e.pd == pd ? e.oid : 0u; }
+
 void logBanner();
 
 void ensureInit() {
     if (g_inited) return;
     g_inited = true;
     g_c.reset();
+    std::memset(g_pdOid, 0, sizeof g_pdOid);
     g_frSet.reset(); g_retSet.reset(); g_oidSet.reset(); g_cenTexSet.reset(); g_cenRemSet.reset();
     saferead::enableRing(true);
     logBanner();  // first hook call: never under the loader lock
@@ -240,6 +257,30 @@ void oneShotCreDumps(uint32_t self) {
     }
 }
 
+// Dumps 64 bytes behind the pointer stored at self+off, once per offset per session.
+void onePtrDumps(uint32_t self) {
+    if (!KP_ENABLED(chProbe)) return;
+    for (unsigned i = 0; i < kPtrDumpCount; ++i) {
+        if (g_ptrDumpDone & (1u << i)) continue;
+        uint32_t p = 0;
+        if (!saferead::readAt(S_CRE_PTR, self, static_cast<int>(kPtrDumpOffs[i]), &p)) continue;
+        g_ptrDumpDone |= 1u << i;
+        uint8_t bytes[64] = {};
+        char b[nl::kLineMax];
+        if (p && saferead::probeRead(S_DUMP, reinterpret_cast<const void*>(static_cast<uintptr_t>(p)), sizeof bytes)) {
+            std::memcpy(bytes, reinterpret_cast<const void*>(static_cast<uintptr_t>(p)), sizeof bytes);
+        }
+        nl::FormatPtrN(b, sizeof b, self, kPtrDumpOffs[i], p, bytes);
+        logLine(chProbe, b);
+    }
+}
+
+bool isArmorBodyRes(const char* cur) {
+    const unsigned char a = static_cast<unsigned char>(cur[0]) | 0x20u, b = static_cast<unsigned char>(cur[1]) | 0x20u,
+                        c = static_cast<unsigned char>(cur[2]) | 0x20u;
+    return a == 'p' && (b == 'm' || b == 'f') && c == 'b';
+}
+
 uint32_t floatBits(float f) { uint32_t u; std::memcpy(&u, &f, 4); return u; }
 
 bool plausibleCoord(float v) { return v == v && v > -1.0e5f && v < 1.0e5f; }
@@ -299,14 +340,27 @@ __declspec(dllexport) void __cdecl OverrideNpcTexture(void* frame) {
     }
 
     bool isFemaleTex = false;
-    if (!IsCommonerTexture(cur, isFemaleTex)) { ++g_c.texNonCommoner; return; }
+    if (!IsCommonerTexture(cur, isFemaleTex)) {
+        ++g_c.texNonCommoner;
+        // Armor-style body parts (pmb*/pfb*) requested for a creature hook 2 saw: log them (probe only).
+        const uint32_t armOid = pdOidGet(pdPtr);
+        if (armOid && isArmorBodyRes(cur) && KP_ENABLED(chTex) && g_bArm.take(200, 500)) {
+            char b[nl::kLineMax];
+            nl::FormatTexExt(b, sizeof b, pdPtr, static_cast<uint32_t>(fr), ret, d.appearance, d.gender,
+                             d.textureVar, d.descMode14, d.headOverride, d.phenotype, cur, std::strlen(cur), 0u, 0,
+                             0u, "0", 0, d.subType, armOid);
+            logLine(chTex, b);
+        }
+        return;
+    }
     ++g_c.texCommoner;
     if (d.appearance < nl::kAppCount) ++g_c.appTex[d.appearance]; else ++g_c.appOvf;
 
     if (KP_ENABLED(chTex) && g_bTex.take(300, 500)) {
         char b[nl::kLineMax];
-        nl::FormatTex(b, sizeof b, pdPtr, static_cast<uint32_t>(fr), ret, d.appearance, d.gender, d.textureVar,
-                      d.descMode14, d.headOverride, d.phenotype, cur, std::strlen(cur), 0u, 0, 0u, "0", 0);
+        nl::FormatTexExt(b, sizeof b, pdPtr, static_cast<uint32_t>(fr), ret, d.appearance, d.gender, d.textureVar,
+                         d.descMode14, d.headOverride, d.phenotype, cur, std::strlen(cur), 0u, 0, 0u, "0", 0,
+                         d.subType, pdOidGet(pdPtr));
         logLine(chTex, b);
     }
 }
@@ -329,21 +383,21 @@ __declspec(dllexport) void __cdecl RemapNpcAppearance(void* pCreature, layout::A
     abiCheck(d, pd, "remap");
     oneShotDsc0(pd);
     oneShotCreDumps(static_cast<uint32_t>(self));
+    onePtrDumps(static_cast<uint32_t>(self));
 
-    // Creature facts. oid (+0x04) and position (+0x20/+0x24, log only) are verified; the tag offset is not
-    // (+0x18/+0x1C are pointers), so the tag read is best-effort and an empty tag falls back to row gating.
-    uint32_t oid = 0, tagPtr = 0;
-    int32_t tagLen = 0;
+    // Creature facts. oid (+0x04) and position (+0x24/+0x28, log only) are verified. The tag is NOT readable yet:
+    // +0x1C/+0x20 are pointers and the tag offset is unresolved (PTR dumps), so tag stays empty and protection comes
+    // from the row tables only.
+    uint32_t oid = 0;
     float x = 0.0f, y = 0.0f;
     const bool okOid = saferead::readAt(S_CRE_OID, self, layout::kCreOffObjectId, &oid);
-    const bool okTag = saferead::readAt(S_CRE_TAGPTR, self, layout::kCreOffTagPtr, &tagPtr) &&
-                       saferead::readAt(S_CRE_TAGPTR, self, layout::kCreOffTagLen, &tagLen);
     const bool okXy = saferead::readAt(S_CRE_XY, self, layout::kCreOffPosX, &x) &&
                       saferead::readAt(S_CRE_XY, self, layout::kCreOffPosY, &y);
-    char tag[40] = {};
-    int tagN = 0;
-    if (okTag) tagN = saferead::readExoLoose(S_CRE_TAGSTR, tagPtr, tagLen, tag, 33);
-    if (okOid) g_oidSet.insert(oid);
+    const char tag[1] = {};
+    const int tagN = 0;
+    const uint32_t tagPtr = 0;
+    const int32_t tagLen = 0;
+    if (okOid) { g_oidSet.insert(oid); pdOidPut(pd, oid); }
     const bool xyOk = okXy && plausibleCoord(x) && plausibleCoord(y);
     if (xyOk) {
         if (x < g_c.xMin) g_c.xMin = x;
@@ -352,7 +406,7 @@ __declspec(dllexport) void __cdecl RemapNpcAppearance(void* pCreature, layout::A
         if (y > g_c.yMax) g_c.yMax = y;
     }
 
-    if (KP_ENABLED(chCensus) && g_cenRemSet.insert(nl::detail::Fmix(d.appearance * 977u + d.gender * 31u + d.textureVar + (tagN > 0 ? charVal(tag[0]) * 131u + charVal(tag[tagN > 3 ? 3 : 0]) * 17u : 0u)))) {
+    if (KP_ENABLED(chCensus) && g_cenRemSet.insert(nl::detail::Fmix(d.appearance * 977u + d.gender * 31u + d.textureVar + 0u))) {
         char b[nl::kLineMax];
         nl::FormatCenRemap(b, sizeof b, d.appearance, d.gender, d.textureVar, tag, tagN > 0 ? static_cast<size_t>(tagN) : 0);
         logLine(chCensus, b);
@@ -364,10 +418,8 @@ __declspec(dllexport) void __cdecl RemapNpcAppearance(void* pCreature, layout::A
     uint8_t newTv = d.textureVar;
 
     const SkipReason skip = ShouldSkipDescriptor(d.descMode14, d.gender, d.appearance);
-    const bool tagUsable = okTag && tagN > 0;
     ExcludeKind kind = ExcludeKind::None;
-    if (tagUsable) kind = ClassifyExclusion(tag);
-    else ++g_c.remTagUnread;
+    ++g_c.remTagUnread;
 
     if (kind != ExcludeKind::None) {
         // Companions and story NPCs keep their appearance and clothing.
@@ -400,8 +452,12 @@ __declspec(dllexport) void __cdecl RemapNpcAppearance(void* pCreature, layout::A
             ++g_c.remSkipRow;
         }
         // Texture variant for the final row. Idempotent: the seed ignores the old textureVar.
+        // subType >= 3 builds PMB/PFB armor parts, whose variants are not N_Comm slots: never write tv there.
         const uint8_t want = PickTextureVar(oid, newApp);
-        if (want != 0 && want != d.textureVar) {
+        if (static_cast<int>(d.subType) > layout::kDescSubTypeMaxCommoner) {
+            ++g_c.remTvArmor;
+            if (why[0] == 'n') why = "tvarmor";
+        } else if (want != 0 && want != d.textureVar) {
             if (saferead::regionWritable(pd + layout::kDescOffTextureVar, pd + layout::kDescOffTextureVar + 1)) {
                 pDesc->textureVar = want;
                 newTv = want;
@@ -411,14 +467,14 @@ __declspec(dllexport) void __cdecl RemapNpcAppearance(void* pCreature, layout::A
                 why = "unread:desc";
             }
         }
-        if (why[0] == 'n' && (newApp != d.appearance || newTv != d.textureVar)) why = "ok";
+        if ((why[0] == 'n' || why[0] == 't') && (newApp != d.appearance || newTv != d.textureVar)) why = "ok";
     }
 
     if (KP_ENABLED(chRemap) && g_bRmp.take(300, 500)) {
         char b[nl::kLineMax];
-        nl::FormatRmp(b, sizeof b, static_cast<uint32_t>(self), pd, oid, tagPtr, tagLen, tag,
-                      tagN > 0 ? static_cast<size_t>(tagN) : 0, x, y, floatBits(x), floatBits(y), d.appearance,
-                      newApp, d.textureVar, newTv, hash, why);
+        nl::FormatRmpExt(b, sizeof b, static_cast<uint32_t>(self), pd, oid, tagPtr, tagLen, tag, 0, x, y,
+                         floatBits(x), floatBits(y), d.appearance, newApp, d.textureVar, newTv, hash, why,
+                         d.subType);
         logLine(chRemap, b);
     }
 }

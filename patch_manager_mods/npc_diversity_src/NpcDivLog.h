@@ -65,6 +65,15 @@ inline size_t AppendEntry(char* out, size_t cap, size_t len, uint32_t idx, uint3
     return len + (n < cap - len ? n : cap - len - 1);
 }
 
+// Appends a pre-formatted tail (with its leading space) at out[len]; truncates to cap-1. Returns the new length.
+inline size_t AppendTail(char* out, size_t cap, size_t len, const char* tail) {
+    if (len + 1 >= cap) return len;
+    const int r = std::snprintf(out + len, cap - len, "%s", tail);
+    if (r < 0) return len;
+    const size_t n = static_cast<size_t>(r);
+    return len + (n < cap - len ? n : cap - len - 1);
+}
+
 // Lowercase hex of n bytes. dst needs 2*n+1 bytes.
 inline void HexInto(char* dst, const uint8_t* src, size_t n) {
     static const char kDigits[] = "0123456789abcdef";
@@ -129,6 +138,7 @@ struct Counts {
     uint32_t remNoChange;
     uint32_t remSkipRow;
     uint32_t remSkipGender;
+    uint32_t remTvArmor;  // tv write withheld: pDesc.subType >= 3 (armor body path)
 
     uint32_t abiBadApp;
     uint32_t abiBadGender;
@@ -254,8 +264,21 @@ inline int FormatTex(char* out, size_t cap, uint32_t pd, uint32_t fr, uint32_t r
     return detail::Stored(out, cap, r);
 }
 
+
+// 0.1.3 grammar: the TEX line plus the descriptor subType and the creature oid (0 = oid unknown for this pDesc).
+inline int FormatTexExt(char* out, size_t cap, uint32_t pd, uint32_t fr, uint32_t ret, uint32_t app, uint32_t g,
+                        uint32_t tv, int dm, int hd, uint32_t ph, const char* cur, size_t curLen, uint32_t h,
+                        int st, uint32_t slot, const char* newFlag, int sw, int stype, uint32_t oid) {
+    cap = detail::ClampCap(cap);
+    if (!out || cap == 0) return 0;
+    const int base = FormatTex(out, cap, pd, fr, ret, app, g, tv, dm, hd, ph, cur, curLen, h, st, slot, newFlag, sw);
+    char tail[40];
+    std::snprintf(tail, sizeof tail, " stype=%d oid=%08x", stype, oid);
+    return static_cast<int>(detail::AppendTail(out, cap, static_cast<size_t>(base), tail));
+}
+
 // why: ok, nochg, excl:comp, excl:story, excl:notag, skip:dm, skip:gender, skip:row,
-//      unread:desc, unread:tag, unread:oid, unread:xy. skip:dm is no longer produced; it stays in this list.
+//      unread:desc, unread:tag, unread:oid, unread:xy, tvarmor (0.1.3). skip:dm is no longer produced; it stays in this list.
 // xb and yb are the float bit patterns of x and y. app and tv print as before>after (tv right after app).
 inline int FormatRmp(char* out, size_t cap, uint32_t self, uint32_t pd, uint32_t oid, uint32_t tp, int tl,
                      const char* tag, size_t tagLen, float x, float y, uint32_t xb, uint32_t yb,
@@ -271,6 +294,20 @@ inline int FormatRmp(char* out, size_t cap, uint32_t self, uint32_t pd, uint32_t
                                 self, pd, oid, tp, tl, SafeMem(tg, tag, tagLen, 32), x, y, xb, yb, appBefore,
                                 appAfter, tvBefore, tvAfter, h, SafeStr(wy, why, 16));
     return detail::Stored(out, cap, r);
+}
+
+// 0.1.3 grammar: the RMP line plus the descriptor subType (stype) the tv guard looked at.
+inline int FormatRmpExt(char* out, size_t cap, uint32_t self, uint32_t pd, uint32_t oid, uint32_t tp, int tl,
+                        const char* tag, size_t tagLen, float x, float y, uint32_t xb, uint32_t yb,
+                        uint32_t appBefore, uint32_t appAfter, uint32_t tvBefore, uint32_t tvAfter, uint32_t h,
+                        const char* why, int stype) {
+    cap = detail::ClampCap(cap);
+    if (!out || cap == 0) return 0;
+    const int base = FormatRmp(out, cap, self, pd, oid, tp, tl, tag, tagLen, x, y, xb, yb, appBefore, appAfter,
+                               tvBefore, tvAfter, h, why);
+    char tail[24];
+    std::snprintf(tail, sizeof tail, " stype=%d", stype);
+    return static_cast<int>(detail::AppendTail(out, cap, static_cast<size_t>(base), tail));
 }
 
 inline int FormatCenTex(char* out, size_t cap, uint32_t app, uint32_t g, uint32_t tv, int dm, const char* cur,
@@ -312,10 +349,10 @@ inline int FormatStatRemap(char* out, size_t cap, const Counts& c) {
     if (!out || cap == 0) return 0;
     const int r = std::snprintf(out, cap,
                                 "STAT remap calls=%u nullg=%u unread=%u bcskip=%u excl=%u tagun=%u chg=%u "
-                                "nochg=%u oidd=%u skiprow=%u skipg=%u tvchg=%u",
+                                "nochg=%u oidd=%u skiprow=%u skipg=%u tvchg=%u tvarmor=%u",
                                 c.remCalls, c.remNullGuard, c.remUnread, c.remBodySkip, c.remExcluded,
                                 c.remTagUnread, c.remChanged, c.remNoChange, c.oidDistinct, c.remSkipRow,
-                                c.remSkipGender, c.remTvChg);
+                                c.remSkipGender, c.remTvChg, c.remTvArmor);
     return detail::Stored(out, cap, r);
 }
 
@@ -413,6 +450,16 @@ inline int FormatCreN(char* out, size_t cap, uint32_t self, uint32_t off, const 
     char hx[129];
     detail::HexInto(hx, bytes, 64);
     const int r = std::snprintf(out, cap, "CRE0 this=%08x off=%03x hex=%s", self, off, hx);
+    return detail::Stored(out, cap, r);
+}
+
+// 64 bytes behind the pointer stored at this+off (0.1.3 tag-route probe). p is the pointer value.
+inline int FormatPtrN(char* out, size_t cap, uint32_t self, uint32_t off, uint32_t p, const uint8_t (&bytes)[64]) {
+    cap = detail::ClampCap(cap);
+    if (!out || cap == 0) return 0;
+    char hx[129];
+    detail::HexInto(hx, bytes, 64);
+    const int r = std::snprintf(out, cap, "PTR this=%08x off=%03x p=%08x hex=%s", self, off, p, hx);
     return detail::Stored(out, cap, r);
 }
 

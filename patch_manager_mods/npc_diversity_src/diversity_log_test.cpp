@@ -20,6 +20,16 @@ constexpr const char* kGoldTex =
 constexpr const char* kGoldRmp =
     "RMP this=12345678 pd=0a1b2c3d oid=000003e9 tp=00000010 tl=6 tag=Bastila xy=12.5,-3.5 "
     "xyb=41480000,c0600000 app=805>806 tv=1>2 h=06c232b2 why=ok";
+constexpr const char* kGoldTexExt =
+    "TEX pd=0a1b2c3d fr=00001234 ret=00abcdef app=805 g=1 tv=1 dm=0 hd=0 ph=2 cur=n_commm01 "
+    "h=06c232b2 st=1 slot=09 new=1 sw=1 stype=3 oid=000003e9";
+constexpr const char* kGoldRmpExt =
+    "RMP this=12345678 pd=0a1b2c3d oid=000003e9 tp=00000010 tl=6 tag=Bastila xy=12.5,-3.5 "
+    "xyb=41480000,c0600000 app=805>806 tv=1>2 h=06c232b2 why=ok stype=3";
+constexpr const char* kGoldPtr =
+    "PTR this=12345678 off=01c p=0a8363d0 hex="
+    "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+    "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f";
 constexpr const char* kGoldCenTex = "CEN k=tex app=805 g=1 tv=1 dm=0 cur=n_commm01";
 constexpr const char* kGoldCenRemap = "CEN k=remap app=805 g=1 tv=1 tag=Bastila";
 constexpr const char* kGoldStatTex =
@@ -27,7 +37,7 @@ constexpr const char* kGoldStatTex =
     "stashhit=9 stashmiss=10";
 constexpr const char* kGoldStatRemap =
     "STAT remap calls=11 nullg=0 unread=1 bcskip=2 excl=3 tagun=4 chg=5 nochg=6 oidd=7 skiprow=8 skipg=9 "
-    "tvchg=10";
+    "tvchg=10 tvarmor=11";
 constexpr const char* kGoldStatAbi = "STAT abi app=1 g=2 dm=3";
 constexpr const char* kGoldStatXy = "STAT xy x=-3.5..12.5 y=0.0..100.5";
 constexpr const char* kGoldStatSlot0 =
@@ -105,6 +115,21 @@ void testLogFormatGolden() {
                       0x41480000u, 0xC0600000u, 805u, 806u, 1u, 2u, 0x06C232B2u, "ok");
     ExpectLine(r, b, kGoldRmp);
 
+    r = nl::FormatTexExt(b, sizeof b, 0x0A1B2C3Du, 0x00001234u, 0x00ABCDEFu, 805u, 1u, 1u, 0, 0, 2u, "n_commm01",
+                         9u, 0x06C232B2u, 1, 9u, "1", 1, 3, 0x3E9u);
+    ExpectLine(r, b, kGoldTexExt);
+
+    r = nl::FormatRmpExt(b, sizeof b, 0x12345678u, 0x0A1B2C3Du, 0x3E9u, 0x10u, 6, "Bastila", 7u, 12.5f, -3.5f,
+                         0x41480000u, 0xC0600000u, 805u, 806u, 1u, 2u, 0x06C232B2u, "ok", 3);
+    ExpectLine(r, b, kGoldRmpExt);
+
+    {
+        uint8_t pb[64];
+        for (int i = 0; i < 64; ++i) pb[i] = static_cast<uint8_t>(i);
+        r = nl::FormatPtrN(b, sizeof b, 0x12345678u, 0x1Cu, 0x0A8363D0u, pb);
+        ExpectLine(r, b, kGoldPtr);
+    }
+
     r = nl::FormatCenTex(b, sizeof b, 805u, 1u, 1u, 0, "n_commm01", 9u);
     ExpectLine(r, b, kGoldCenTex);
 
@@ -139,6 +164,7 @@ void testLogFormatGolden() {
     c.remSkipRow = 8;
     c.remSkipGender = 9;
     c.remTvChg = 10;
+    c.remTvArmor = 11;
     r = nl::FormatStatRemap(b, sizeof b, c);
     ExpectLine(r, b, kGoldStatRemap);
 

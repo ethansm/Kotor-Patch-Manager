@@ -25,6 +25,7 @@ struct AppearanceDesc {
 };
 #pragma pack(pop)
 
+constexpr size_t kDescOffSubType = 0x00;
 constexpr size_t kDescOffTextureVar = 0x01;
 constexpr size_t kDescOffMode14 = 0x14;      // observed 1 for in-world commoners, 0 for uniformed officer rows; never use as a gate
 constexpr size_t kDescOffAppearance = 0x18;
@@ -32,6 +33,7 @@ constexpr size_t kDescOffHeadOverride = 0x1A;
 constexpr size_t kDescOffGender = 0x1B;
 constexpr size_t kDescOffPhenotype = 0x1C;
 
+static_assert(offsetof(AppearanceDesc, subType) == kDescOffSubType, "AppearanceDesc::subType offset");
 static_assert(offsetof(AppearanceDesc, textureVar) == kDescOffTextureVar, "AppearanceDesc::textureVar offset");
 static_assert(offsetof(AppearanceDesc, descMode14) == kDescOffMode14, "AppearanceDesc::descMode14 offset");
 static_assert(offsetof(AppearanceDesc, appearance) == kDescOffAppearance, "AppearanceDesc::appearance offset");
@@ -42,12 +44,17 @@ static_assert(sizeof(AppearanceDesc) >= 0x1D, "AppearanceDesc must cover +0x00..
 
 // Creature (CSWCCreature / CSWCObject) offsets, relative to the creature `this`.
 constexpr size_t kCreOffObjectId = 0x04;     // VERIFIED by play-test: stable per creature (27 distinct oids, same oid reappears with a new this)
-constexpr size_t kCreOffTagPtr = 0x18;       // NOT a CExoString: +0x18/+0x1C hold pointers (observed 0x0a8363d0 / 0x08834488); tag offset unresolved -- see CRE dumps
-constexpr size_t kCreOffTagLen = 0x1C;       // NOT a CExoString: +0x18/+0x1C hold pointers (observed 0x0a8363d0 / 0x08834488); tag offset unresolved -- see CRE dumps
-constexpr size_t kCreOffPosX = 0x20;         // VERIFIED by the CRE0 play-test dump: float values 30.9/-15.5/10.2 at these offsets
-constexpr size_t kCreOffPosY = 0x24;         // VERIFIED by the CRE0 play-test dump: float values 30.9/-15.5/10.2 at these offsets
-constexpr size_t kCreOffPosZ = 0x28;         // VERIFIED by the CRE0 play-test dump: float values 30.9/-15.5/10.2 at these offsets
+constexpr size_t kCreOffPtr1C = 0x1C;        // POINTER (sibling object, this-0x2E0 in the CRE0 dump), not a tag; tag offset unresolved
+constexpr size_t kCreOffPtr20 = 0x20;        // POINTER (separate heap allocation); candidate tag/name holder, unresolved -- see PTR dumps
+constexpr size_t kCreOffPtr5C = 0x5C;        // candidate pointer (this-0x7150 in the CRE0 dump); PTR probe only
+constexpr size_t kCreOffPtr6C = 0x6C;        // candidate pointer (this-0x3C0 in the CRE0 dump); PTR probe only
+constexpr size_t kCreOffPosX = 0x24;         // VERIFIED from raw CRE0 bytes (floats 30.95/-15.53/10.20 at +0x24/+0x28/+0x2C); 0.1.2 had 0x20 (wrong)
+constexpr size_t kCreOffPosY = 0x28;         // VERIFIED, see kCreOffPosX
+constexpr size_t kCreOffPosZ = 0x2C;         // VERIFIED, see kCreOffPosX
 constexpr size_t kCreOffAppCounter = 0x328;  // UNVERIFIED: pending-appearance counter per A1 f12; writer not decoded
+
+// Descriptor subType values 1..2 build N_Comm%02d; 3 and up build PMB/PFB armor bodies (UNVERIFIED, A1 f6): tv is never written there.
+constexpr int kDescSubTypeMaxCommoner = 2;
 
 // Hook 1 (0x85E601) stack frame, offsets from EBP at hook entry (A1 f1).
 constexpr size_t kFrameOffPDesc = 0x08;       // [EBP+0x08] = pDesc (VERIFIED)
