@@ -23,7 +23,7 @@ from PIL import Image  # noqa: E402
 sys.path.insert(0, str(HERE))
 import gen_selfheal_textures as gt  # noqa: E402
 
-EXPECTED = {"csh_cross": (32, 32), **{f"csh_ring{k}": (48, 48) for k in range(8)}}
+EXPECTED = {"csh_cross": (32, 32), "csh_disc": (48, 48), "csh_disc_hi": (48, 48), **{f"csh_ring{k}": (48, 48) for k in range(8)}}
 
 
 def gen():
@@ -69,13 +69,56 @@ class GenSelfHealTextures(unittest.TestCase):
         ys = [y for y in range(32) for x in range(32) if im.getpixel((x, y))[3] >= 250]
         self.assertLessEqual(max(ys) - min(ys) + 1, 24)
 
-    def test_inc_order_and_count(self):   # the disc moved to the shared HUD kit (scripts/gen_hud_kit_textures.py, kit_disc)
+    def test_inc_order_and_count(self):
         t = gt.INC.read_text()
         names = re.findall(r'^    \{ "(csh_\w+)", SHTex_', t, re.M)
-        self.assertEqual(names[-1], "csh_ring7")
-        self.assertNotIn("csh_disc", names)
-        self.assertEqual(names[0], "csh_cross")
+        self.assertEqual(names, ["csh_cross", "csh_disc", "csh_disc_hi"] + [f"csh_ring{k}" for k in range(8)])
         self.assertIn(f"kSelfHealTextureCount = {len(names)}u", t)
+
+    def test_disc_corners_transparent(self):
+        blobs = dict(gen())
+        for name in ("csh_disc", "csh_disc_hi"):
+            im = img(blobs[name])
+            for xy in ((0, 0), (47, 0), (0, 47), (47, 47)):
+                self.assertEqual(im.getpixel(xy)[3], 0, (name, xy))
+
+    def test_disc_circular(self):
+        # Pixel-band checks keep every sub-sample inside one radial zone, so they hold at any angle (0 and 45 deg included).
+        blobs = dict(gen())
+        norm, hi = img(blobs["csh_disc"]), img(blobs["csh_disc_hi"])
+        rc = lambda x, y: math.hypot(x + 0.5 - 24, y + 0.5 - 24)
+        for x in range(48):
+            for y in range(48):
+                r = rc(x, y)
+                if 19.8 <= r <= 20.2:   # rim band: fully opaque in both discs
+                    self.assertEqual(norm.getpixel((x, y))[3], 255, (x, y))
+                    self.assertEqual(hi.getpixel((x, y))[3], 255, (x, y))
+                elif r <= 18.2:         # fill: 175 in both discs
+                    self.assertEqual(norm.getpixel((x, y))[3], 175, (x, y))
+                    self.assertEqual(hi.getpixel((x, y))[3], 175, (x, y))
+                elif r >= 21.8:         # outside the normal disc
+                    self.assertEqual(norm.getpixel((x, y))[3], 0, (x, y))
+                if 21.8 <= r <= 23.2:   # hi halo: linear 200 -> 0 over r 21..24, beige
+                    p = hi.getpixel((x, y))
+                    self.assertLessEqual(abs(p[3] - 200 * (24 - r) / 3), 4, (x, y, r))
+                    self.assertTrue(all(abs(p[i] - t) <= 3 for i, t in enumerate((208, 204, 170))), (x, y, p))
+
+    def test_disc_hi_centre_matches_normal(self):
+        blobs = dict(gen())
+        norm, hi = img(blobs["csh_disc"]), img(blobs["csh_disc_hi"])
+        for xy in ((23, 23), (24, 23), (23, 24), (24, 24)):
+            self.assertEqual(hi.getpixel(xy), norm.getpixel(xy), xy)
+        self.assertEqual(hi.getpixel((24, 24)), (0, 0, 0, 175))
+
+    def test_disc_rim_colours(self):
+        blobs = dict(gen())
+        rc = lambda x, y: math.hypot(x + 0.5 - 24, y + 0.5 - 24)
+        for name, colour in (("csh_disc", (10, 96, 80)), ("csh_disc_hi", (208, 204, 170))):
+            im = img(blobs[name])
+            rim = [im.getpixel((x, y)) for x in range(48) for y in range(48) if 19.8 <= rc(x, y) <= 20.2]
+            self.assertTrue(rim, name)
+            for p in rim:
+                self.assertTrue(all(abs(p[i] - t) <= 3 for i, t in enumerate(colour)), (name, p))
 
     def test_ring_frames_differ(self):
         b = [d for n, d in gen() if n.startswith("csh_ring")]

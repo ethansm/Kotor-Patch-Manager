@@ -459,16 +459,16 @@ bool saveIni(const std::string& key, const shui::CompCfg& c) {
     return ok;
 }
 
-// ---- embedded textures (cross + 8 ring frames; the kit frame + disc come from the shared HudKit.h) ----
+// ---- embedded textures (cross + circular disc (normal/hover) + 8 ring frames) ----
 // Copy of hotbar embedded-texture recipe; Common candidate (19b section D).
 // A CAurTextureBasic registered under our name (like the engine's own "NormCubeMap") with the decoded pixels already in place and +0xE4
 // "constructed" set, so the engine never asks the resource manager for it; the texture tick uploads it and frees the buffer.
 namespace tex {
 #include "SelfHealTextures.inc"
-constexpr int Count = 1 + shui::kRingFrames;   // csh_cross, csh_ring0..7 (the backing disc is hudkit kit_disc)
+constexpr int Count = 3 + shui::kRingFrames;   // csh_cross, csh_disc, csh_disc_hi, csh_ring0..7
 bool g_texInit = false;
-void* g_crossImg = nullptr; void* g_ringImg[shui::kRingFrames] = {};
-static_assert(sizeof kSelfHealTextures / sizeof kSelfHealTextures[0] == Count, "csh_cross + csh_ring0..7");
+void* g_crossImg = nullptr; void* g_discImg[2] = {}; void* g_ringImg[shui::kRingFrames] = {};
+static_assert(sizeof kSelfHealTextures / sizeof kSelfHealTextures[0] == Count, "csh_cross + csh_disc + csh_disc_hi + csh_ring0..7");
 
 void logLine(const char* fmt, ...) {   // embtex::g_log sink
     char buf[256]; va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
@@ -479,10 +479,9 @@ void ensureTextures() {   // once per process; the textures outlive every HUD (n
     g_texInit = true;
     embtex::g_log = logLine;
     embtex::ensure(kSelfHealTextures, Count);   // create + fill + queue (idempotent); heal() below refills after a GL reset
-    hudkit::ensure();                           // shared kit frame + disc, same pattern
     for (int i = 0; i < Count; ++i) {
         void* im = guikit::imageFor(kSelfHealTextures[i].resref);   // a pooled GUI handle that is never released keeps the texture alive
-        if (i == 0) g_crossImg = im; else g_ringImg[i - 1] = im;
+        if (i == 0) g_crossImg = im; else if (i <= 2) g_discImg[i - 1] = im; else g_ringImg[i - 3] = im;
     }
 }
 void healTextures() { embtex::heal(); }   // every frame (GL reset + missing rebuild, 20-refill give-up per texture; DB lesson 290)
@@ -554,20 +553,13 @@ bool wRing(W& w, const shui::Look& L) {
     if (w.frame != L.ringFrame) { float rgb[3] = { shui::kRingR, shui::kRingG, shui::kRingB }; if (!guikit::setFill(w.c, img, rgb)) return false; w.frame = L.ringFrame; }
     return true;
 }
-// Disc backdrop: hudkit::disc() (kit_disc) untinted (change-gated). False = no image / fill refused (caller hides the disc).
-bool wDisc(W& w) {
-    void* img = w.c ? hudkit::disc() : nullptr;
-    if (!img) return false;
-    if (!w.filled) { float rgb[3] = { 1.f, 1.f, 1.f }; if (!guikit::setFill(w.c, img, rgb)) return false; w.filled = true; }
-    return true;
-}
-// Button background: hudkit::frame(hover) (kit_frame / kit_frame_hi) untinted, under the cross (change-gated on hover; w.frame = 0 / 1).
-// False = no image / fill refused (caller hides the frame; the cross and disc still draw).
-bool wFrame(W& w, bool hover) {
+// Circular button backdrop: csh_disc / csh_disc_hi (beige rim + halo on hover), untinted (change-gated on hover; w.frame = 0 / 1).
+// A missing hover image falls back to the normal disc. False = no image / fill refused (caller hides the disc).
+bool wDisc(W& w, bool hover) {
     if (!w.c) return false;
-    const int want = hover ? 1 : 0;
+    int want = (hover && tex::g_discImg[1]) ? 1 : 0;
     if (w.frame == want) return true;
-    void* img = hudkit::frame(hover);
+    void* img = tex::g_discImg[want];
     float rgb[3] = { 1.f, 1.f, 1.f };
     if (!img || !guikit::setFill(w.c, img, rgb)) return false;
     w.frame = want;
@@ -916,11 +908,9 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
         if (c.st == shui::BtnState::Hidden) { wShow(b, false); wShow(ring, false); wShow(disc, false); wShow(frm, false); if (g_popMi == mi) g_popMi = -1; continue; }
         wRect(b, c.btn);
         wRect(disc, shui::ringRect(c.btn));
-        wVis(disc, wDisc(disc));
+        wVis(disc, wDisc(disc, b.hover));
         const shui::Look L = shui::lookFor(c.st, c.cfg.autoOn, now);
-        wRect(frm, c.btn);   // kit frame behind the cross (hover = last frame's cursor test), dimmed with the cross
-        wVis(frm, wFrame(frm, b.hover));
-        if (frm.c) wAlpha(frm, L.alpha);
+        if (disc.c) wAlpha(disc, L.alpha);   // disc dims with the cross
         wIcon(b, mi, L);
         if (L.ring) {
             wRect(ring, shui::ringRect(c.btn));
@@ -953,11 +943,9 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
     else {
         wRect(b0, c0.btn);
         wRect(disc0, shui::ringRect(c0.btn));
-        wVis(disc0, wDisc(disc0));
+        wVis(disc0, wDisc(disc0, b0.hover));
         const shui::Look L0 = shui::lookFor(c0.st, c0.cfg.autoOn, now);
-        wRect(frm0, c0.btn);   // kit frame behind the cross (hover = last frame's cursor test), dimmed with the cross
-        wVis(frm0, wFrame(frm0, b0.hover));
-        if (frm0.c) wAlpha(frm0, L0.alpha);
+        if (disc0.c) wAlpha(disc0, L0.alpha);
         wIcon(b0, 0, L0);
         if (L0.ring) {
             wRect(ring0, shui::ringRect(c0.btn));
@@ -1093,12 +1081,12 @@ struct ProjGuard {
 };
 
 // Creates one hidden + click-through label; null on failure (only that widget is disabled).
-uintptr_t makeLabel(uintptr_t panel, const char* tmpl, const char* text, bool font, int* whyOut) {
+uintptr_t makeLabel(uintptr_t panel, const char* tmpl, const char* text, bool font, int* whyOut, unsigned align = 18) {
     int why = guikit::CF_None; uint32_t badVt = 0;
     uintptr_t c = guikit::createLabelFromTemplate(panel, tmpl, &why, &badVt);
     *whyOut = why;
     if (!c) return 0;
-    if (font) { guikit::setFont(c, "dialogfont10x10"); guikit::setAlign(c, 18); }
+    if (font) { guikit::setFont(c, "dialogfont10x10"); guikit::setAlign(c, align); }
     if (text) guikit::setText(c, text);
     guikit::setVisible(c, false);
     guikit::setClickable(c, false);
@@ -1123,8 +1111,10 @@ void buildWidgets(uintptr_t panel) {
     auto add = [&](int idx, const char* tmpl, const char* text, bool font, const char* name) {
         if (!kLeaderWidgets && (idx == W_DiscLeader || idx == W_FrameLeader || idx == W_BtnLeader || idx == W_RingLeader)) { ++n; return; }
         int why = 0;
-        uintptr_t c = makeLabel(panel, tmpl, text, font, &why);
-        if (!c && !strcmp(tmpl, "LBL_MOULDING3")) { c = makeLabel(panel, "LBL_QUEUE1", text, font, &why); if (c) whys += std::string(name) + ":moulding3 fallback ";}
+        // Popover rows are shorter than the 10x10 line: engine Draw 0x47B500 drops a centred (0x10) single line when box h < line h (V3.md F3), so they are top-aligned (10 = 0x08 top | 2 centre-h; 17 = 0x11 still has the 0x10 vertical-centre bit), which never drops.
+        const unsigned al = (idx >= W_Auto && idx <= W_KeepVal) ? 10u : 18u;
+        uintptr_t c = makeLabel(panel, tmpl, text, font, &why, al);
+        if (!c && !strcmp(tmpl, "LBL_MOULDING3")) { c = makeLabel(panel, "LBL_QUEUE1", text, font, &why, al); if (c) whys += std::string(name) + ":moulding3 fallback ";}
         g_w[idx].c = c; g_w[idx].txt = text ? text : "";
         if ((idx >= W_Ring0 || idx <= W_FrameLeader) && c) { g_w[idx].vis = 0; g_w[idx].clk = 0; }   // discs + frames + rings start hidden + click-through and stay non-clickable
         if (c) ++n; else whys += std::string(name) + ":" + std::to_string(why) + " ";
