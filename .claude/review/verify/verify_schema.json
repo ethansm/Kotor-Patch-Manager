@@ -1,0 +1,154 @@
+{
+ "additionalProperties": false,
+ "properties": {
+  "claim_restated": {
+   "minLength": 10,
+   "type": "string"
+  },
+  "confidence": {
+   "enum": [
+    "high",
+    "medium",
+    "low"
+   ],
+   "type": "string"
+  },
+  "counter_evidence_searched": {
+   "items": {
+    "additionalProperties": false,
+    "properties": {
+     "hits": {
+      "type": "integer"
+     },
+     "note": {
+      "type": "string"
+     },
+     "pattern": {
+      "type": "string"
+     },
+     "scope": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "pattern",
+     "scope",
+     "hits",
+     "note"
+    ],
+    "type": "object"
+   },
+   "type": "array"
+  },
+  "finding_id": {
+   "type": "string"
+  },
+  "impact_if_real": {
+   "type": "string"
+  },
+  "not_verifiable_without_running": {
+   "type": "string"
+  },
+  "refutation_quotes": {
+   "items": {
+    "additionalProperties": false,
+    "properties": {
+     "file": {
+      "type": "string"
+     },
+     "line": {
+      "type": "integer"
+     },
+     "text": {
+      "minLength": 3,
+      "type": "string"
+     }
+    },
+    "required": [
+     "file",
+     "line",
+     "text"
+    ],
+    "type": "object"
+   },
+   "type": "array"
+  },
+  "residual_questions": {
+   "items": {
+    "type": "string"
+   },
+   "type": "array"
+  },
+  "supporting_quotes": {
+   "items": {
+    "additionalProperties": false,
+    "properties": {
+     "file": {
+      "type": "string"
+     },
+     "line": {
+      "type": "integer"
+     },
+     "text": {
+      "minLength": 3,
+      "type": "string"
+     }
+    },
+    "required": [
+     "file",
+     "line",
+     "text"
+    ],
+    "type": "object"
+   },
+   "type": "array"
+  },
+  "tool_trace": {
+   "items": {
+    "additionalProperties": false,
+    "properties": {
+     "purpose": {
+      "type": "string"
+     },
+     "target": {
+      "type": "string"
+     },
+     "tool": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "tool",
+     "target",
+     "purpose"
+    ],
+    "type": "object"
+   },
+   "type": "array"
+  },
+  "verdict": {
+   "enum": [
+    "reproduced",
+    "refuted",
+    "inconclusive",
+    "intended-behaviour"
+   ],
+   "type": "string"
+  }
+ },
+ "required": [
+  "finding_id",
+  "verdict",
+  "claim_restated",
+  "tool_trace",
+  "supporting_quotes",
+  "counter_evidence_searched",
+  "refutation_quotes",
+  "impact_if_real",
+  "confidence",
+  "not_verifiable_without_running",
+  "residual_questions"
+ ],
+ "title": "Verify worker output (one finding)",
+ "type": "object"
+}

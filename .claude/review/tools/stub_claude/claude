@@ -1,0 +1,266 @@
+#!/usr/bin/env python3
+"""Stub of the `claude` CLI for Fix-pipeline self-tests. NEVER makes a model call and never touches the network.
+
+Parses the flags run_fix.sh / run_fix_review.sh / fix_canary.sh pass, reads the prompt on stdin, and emits
+stream-json (system init with the --tools list + StructuredOutput, assistant events with usage, one result event).
+Refuses (exit 9) when the working directory is inside the real repo this stub ships in.
+
+STUB_MODE (default fix-good):
+  fix-good        replace the first occurrence of STUB_FIND by STUB_REPLACE in the first allowed file
+                  (no STUB_FIND: append a line "# stub-fix"), report every finding fixed
+  fix-scope       fix-good plus a new file stub_extra.txt (scope violation)
+  fix-notfixable  edit nothing, every finding not-fixable
+  fix-scope-request  edit nothing, every finding needs-wider-scope; scope_request names stub_wider_scope.h
+  judge-pick-a    judge prompt -> pick A, ranking = candidate labels found in "## Candidate X" headers
+  review-accept | review-reject | review-revise | review-fabricate   (fabricate = accept with a quote that does not exist)
+  integrate-keep  keep every task id found in the prompt, in order
+  budget          result event error_max_budget_usd (no structured output)
+  ratelimit       first STUB_N (default 2) calls: exit 1 with "429 rate limit" on stderr; then STUB_AFTER (default fix-good)
+  schema-retry    first call: error_max_structured_output_retries; then STUB_AFTER
+  canary-fixer    well-behaved locked-down fixer probe (edits canary_target.txt only); STUB_LEAK=1 leaks .env content
+                  in a tool result, STUB_WRITE_OUTSIDE=1 writes ../outside_write.txt
+  canary-integ    runs the allow-listed gate wrapper with `status` once (STUB_INTEG_BAD=1: twice)
+STUB_COUNTER = counter file for the call-count modes. STUB_LOG = file receiving one JSON line per call (argv, cwd).
+A --max-budget-usd below 0.001 always yields error_max_budget_usd (the canary budget probe).
+"""
+import json
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+VAL_FLAGS = {"--model", "--settings", "--tools", "--permission-mode", "--max-budget-usd", "--json-schema",
+             "--mcp-config", "--output-format", "--append-system-prompt", "--allowedTools", "--disallowedTools",
+             "--add-dir", "--system-prompt"}
+REPO = Path(__file__).resolve().parents[4]
+if not (REPO / ".claude" / "review").is_dir():          # stub copied outside the repo (e.g. into a sandbox-visible bin dir)
+    REPO = Path(os.environ.get("STUB_REAL_REPO", str(Path.home() / "orca/workspaces/local-setup/KOTOR-II")))
+
+
+def parse(argv):
+    opt, bools, i = {}, set(), 0
+    while i < len(argv):
+        a = argv[i]
+        if a in VAL_FLAGS and i + 1 < len(argv):
+            opt[a] = argv[i + 1]
+            i += 2
+        else:
+            bools.add(a)
+            i += 1
+    return opt, bools
+
+
+def bump(path):
+    n = 0
+    try:
+        n = int(Path(path).read_text().strip() or 0)
+    except (OSError, ValueError):
+        pass
+    Path(path).write_text(str(n + 1))
+    return n + 1
+
+
+def emit(events, fmt):
+    if fmt == "json":
+        print(json.dumps(events[-1]))
+    else:
+        for e in events:
+            print(json.dumps(e))
+    sys.stdout.flush()
+
+
+def usage(n=1):
+    return {"input_tokens": 3, "cache_creation_input_tokens": 120 * n, "cache_read_input_tokens": 40, "output_tokens": 25}
+
+
+def tool_use(i, name, inp):
+    return {"type": "assistant", "message": {"id": f"msg{i}", "usage": usage(), "content": [
+        {"type": "tool_use", "id": f"tu{i}", "name": name, "input": inp}]}}
+
+
+def result_ev(structured, model, subtype="success", is_error=False, cost=0.0123, turns=3):
+    ev = {"type": "result", "subtype": subtype, "is_error": is_error, "num_turns": turns, "total_cost_usd": cost,
+          "usage": {"input_tokens": 9, "output_tokens": 70}, "modelUsage": {model: {}}}
+    if structured is not None:
+        ev["result"] = json.dumps(structured)
+        ev["structured_output"] = structured
+    else:
+        ev["result"] = ""
+    return ev
+
+
+def excerpt_quote(prompt):
+    """First numbered excerpt line (>= 6 chars) after a '#### <path> (lines a-b)' header -> quote dict."""
+    path = None
+    for ln in prompt.splitlines():
+        m = re.match(r"^#### (\S+) \(lines \d+-\d+\)", ln)
+        if m:
+            path = m.group(1)
+            continue
+        m = re.match(r"^\s*(\d+) \| (.*)$", ln)
+        if m and path and len(m.group(2).strip()) >= 6:
+            return {"file": path, "line": int(m.group(1)), "text": m.group(2)}
+    return {"file": "none", "line": 1, "text": "no excerpt available"}
+
+
+def finding_ids(prompt):
+    out = []
+    for m in re.finditer(r"^### Finding (\S+)", prompt, re.M):
+        if m.group(1) not in out:
+            out.append(m.group(1))
+    return out
+
+
+def allowed_files(prompt):
+    return re.findall(r"^- (\S+)   \(editable\)", prompt, re.M)
+
+
+def main():
+    cwd = Path.cwd().resolve()
+    if cwd == REPO or REPO in cwd.parents:
+        print(f"stub claude: refusing to run inside the real repo ({cwd})", file=sys.stderr)
+        return 9
+    opt, bools = parse(sys.argv[1:])
+    if os.environ.get("STUB_LOG"):
+        with open(os.environ["STUB_LOG"], "a") as fh:
+            fh.write(json.dumps({"argv": sys.argv[1:], "cwd": str(cwd), "mode": os.environ.get("STUB_MODE")}) + "\n")
+    prompt = sys.stdin.read() if not sys.stdin.isatty() else ""
+    model = opt.get("--model", "stub-model")
+    fmt = opt.get("--output-format", "text")
+    tools = [t for t in opt.get("--tools", "").split(",") if t]
+    mode = os.environ.get("STUB_MODE", "fix-good")
+    n = bump(os.environ["STUB_COUNTER"]) if os.environ.get("STUB_COUNTER") else 1
+    if mode == "ratelimit":
+        if n <= int(os.environ.get("STUB_N", "2")):
+            print("API Error: 429 rate limit exceeded", file=sys.stderr)
+            return 1
+        mode = os.environ.get("STUB_AFTER", "fix-good")
+    init = {"type": "system", "subtype": "init", "cwd": str(cwd), "tools": tools + ["StructuredOutput"], "mcp_servers": [],
+            "model": model, "permissionMode": opt.get("--permission-mode"), "slash_commands": [], "skills": [], "agents": [],
+            "apiKeySource": "stub"}
+    try:
+        budget = float(opt.get("--max-budget-usd", "1"))
+    except ValueError:
+        budget = 1.0
+    if mode == "budget" or budget < 0.001:
+        emit([init, result_ev(None, model, "error_max_budget_usd", True, 0.0009, 1)], fmt)
+        return 1
+    if mode == "schema-retry":
+        if n <= 1:
+            emit([init, result_ev(None, model, "error_max_structured_output_retries", True, 0.02, 4)], fmt)
+            return 1
+        mode = os.environ.get("STUB_AFTER", "fix-good")
+    m = re.search(r"^task_id: (T[0-9a-f]{10})", prompt, re.M)
+    tid = m.group(1) if m else "T0000000000"
+    events = [init]
+    so = None
+    if mode in ("fix-good", "fix-scope", "fix-notfixable", "fix-scope-request"):
+        fids = finding_ids(prompt)
+        files = allowed_files(prompt)
+        events.append(tool_use(1, "Read", {"file_path": files[0] if files else "?"}))
+        changed = []
+        if mode not in ("fix-notfixable", "fix-scope-request") and files:
+            fp = cwd / files[0]
+            txt = fp.read_text()
+            find, rep = os.environ.get("STUB_FIND"), os.environ.get("STUB_REPLACE", "")
+            if find:
+                if find in txt:
+                    fp.write_text(txt.replace(find, rep, 1))
+                    changed = [files[0]]
+            else:
+                ms = re.search(r"^style: (\S+)", prompt, re.M)   # ladder variants: one distinct patch per style
+                fp.write_text(txt + ("# stub-fix " + ms.group(1) + "\n" if ms else "# stub-fix\n"))
+                changed = [files[0]]
+            events.append(tool_use(2, "Edit", {"file_path": files[0]}))
+        if mode == "fix-scope":
+            (cwd / "stub_extra.txt").write_text("scope violation\n")
+            events.append(tool_use(3, "Write", {"file_path": "stub_extra.txt"}))
+        if mode == "fix-scope-request":
+            status = "needs-wider-scope"
+        else:
+            status = "fixed" if changed else "not-fixable"
+        q = excerpt_quote(prompt)
+        so = {"task_id": tid, "findings": [{"finding_id": f, "status": status, "actual_lines": "1", "note": "stub"} for f in fids],
+              "files_changed": changed, "rationale": "STUB RATIONALE: this text must never reach a reviewer prompt.",
+              "test_plan": "STUB TEST PLAN", "risk": "low", "needs_live_check": False, "location_quotes": [q]}
+        if mode == "fix-scope-request":
+            so["scope_request"] = {"files": ["stub_wider_scope.h"], "reason": "stub: honest fix needs a file outside allowed_files"}
+        elif not changed:
+            so["not_fixable_reason"] = "stub: nothing changed"
+    elif mode == "judge-pick-a":
+        labels = list(dict.fromkeys(re.findall(r"^## Candidate ([A-Z])\b", prompt, re.M))) or ["A"]
+        events.append(tool_use(1, "Read", {"file_path": "."}))
+        so = {"pick": "A", "ranking": labels,
+              "per_candidate": [{"label": l, "defect_fixed": "yes" if l == "A" else "partial", "risks": []} for l in labels],
+              "improve_notes": "stub judge"}
+    elif mode.startswith("review-"):
+        fids = finding_ids(prompt)
+        q = excerpt_quote(prompt)
+        verdict = {"review-accept": "accept", "review-reject": "reject", "review-revise": "revise", "review-fabricate": "accept"}[mode]
+        if mode == "review-fabricate":
+            q = dict(q, text="THIS QUOTE IS FABRICATED AND APPEARS NOWHERE IN THE FILE")
+        events.append(tool_use(1, "Read", {"file_path": q["file"]}))
+        so = {"task_id": tid, "verdict": verdict,
+              "per_finding": [{"finding_id": f, "defect_fixed": "yes" if verdict == "accept" else "no", "why": "stub"} for f in fids],
+              "checks": {k: False for k in ("regression_risk", "scope_creep", "weakened_tests", "hook_abi_risk", "unchecked_returns", "boundary_change")},
+              "issues": [] if verdict == "accept" else [{"severity": "blocker", "description": "stub objection"}],
+              "quotes": [q], "revise_instructions": "stub: change X" if verdict == "revise" else ""}
+    elif mode == "integrate-keep":
+        mb = re.search(r"batch_[0-9]{2}", prompt)
+        ids = []
+        for t in re.findall(r"\bT[0-9a-f]{10}\b", prompt):
+            if t not in ids:
+                ids.append(t)
+        so = {"batch": mb.group(0) if mb else "batch_00", "series": [{"task_id": t, "attempt": 1, "action": "keep", "reason": "stub"} for t in ids],
+              "gates_run": [], "notes": "stub"}
+    elif mode == "canary-fixer":
+        i = 0
+        probes = [("Read", {"file_path": p}) for p in (".env", "x.pem", "tests/static/raw_addresses.toml", "../outside_marker.txt")] \
+            + [("Grep", {"pattern": "CANARYMARK"}), ("Glob", {"pattern": "**/*credential*"}), ("Write", {"file_path": "../outside_write.txt"}),
+               ("Write", {"file_path": "new_file.txt"}), ("Edit", {"file_path": "context_ro.txt"}), ("Read", {"file_path": "context_ro.txt"}),
+               ("Read", {"file_path": "canary_target.txt"}), ("Edit", {"file_path": "canary_target.txt"}), ("Bash", {"command": "id"})]
+        for name, inp in probes:
+            i += 1
+            events.append(tool_use(i, name, inp))
+            if name == "Read" and os.environ.get("STUB_LEAK") == "1" and inp["file_path"] == ".env" and (cwd / ".env").exists():
+                events.append({"type": "user", "message": {"content": [{"type": "tool_result", "tool_use_id": f"tu{i}",
+                                                                      "content": (cwd / ".env").read_text()}]}})
+        tgt = cwd / "canary_target.txt"
+        if tgt.exists():
+            tgt.write_text(tgt.read_text().replace("ORIGINAL_LINE", "EDITED_BY_CANARY"))
+        if os.environ.get("STUB_WRITE_OUTSIDE") == "1":
+            (cwd.parent / "canary_outside_write.txt").write_text("x")
+        so = {"task_id": tid, "findings": [], "files_changed": ["canary_target.txt"], "rationale": "stub canary probe", "test_plan": "",
+              "risk": "low", "needs_live_check": False, "location_quotes": []}
+    elif mode == "canary-integ":
+        wrapper = None
+        try:
+            s = json.loads(Path(opt["--settings"]).read_text())
+            for rule in (s.get("permissions") or {}).get("allow") or []:
+                mm = re.match(r"^Bash\((.+?):\*\)$", rule)
+                if mm:
+                    wrapper = mm.group(1)
+        except (OSError, ValueError, KeyError):
+            pass
+        runs = 2 if os.environ.get("STUB_INTEG_BAD") == "1" else 1
+        # a well-behaved locked-down model attempts every step; only the allow-listed call actually runs
+        for k, cmd in enumerate(["cat /dev/null/marker", "ls ~", f"{wrapper} status; cat /dev/null/marker", "echo $(cat /dev/null/marker)", "cat .env"]):
+            events.append(tool_use(k + 1, "Bash", {"command": cmd}))
+        for k in range(runs if wrapper else 0):
+            r = subprocess.run([wrapper, "status"], capture_output=True, text=True)
+            events.append(tool_use(10 + k, "Bash", {"command": f"{wrapper} status"}))
+            events.append({"type": "user", "message": {"content": [{"type": "tool_result", "tool_use_id": f"tu{10 + k}", "content": r.stdout}]}})
+        so = {"task_id": tid, "findings": [], "files_changed": [], "rationale": "stub canary integ probe", "test_plan": "", "risk": "low",
+              "needs_live_check": False, "location_quotes": []}
+    else:
+        print(f"stub claude: unknown STUB_MODE {mode}", file=sys.stderr)
+        return 2
+    events.append({"type": "assistant", "message": {"id": "msg_last", "usage": usage(2), "content": [{"type": "text", "text": "done"}]}})
+    events.append(result_ev(so, model))
+    emit(events, fmt)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

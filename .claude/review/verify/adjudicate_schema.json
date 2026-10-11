@@ -1,0 +1,116 @@
+{
+ "additionalProperties": false,
+ "properties": {
+  "batch": {
+   "type": "string"
+  },
+  "haiku_quality": {
+   "additionalProperties": false,
+   "properties": {
+    "rating": {
+     "enum": [
+      "ok",
+      "weak",
+      "unreliable"
+     ],
+     "type": "string"
+    },
+    "reason": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "rating",
+    "reason"
+   ],
+   "type": "object"
+  },
+  "items": {
+   "items": {
+    "additionalProperties": false,
+    "properties": {
+     "agrees_with_haiku": {
+      "type": "boolean"
+     },
+     "evidence_quotes": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "file": {
+         "type": "string"
+        },
+        "line": {
+         "type": "integer"
+        },
+        "text": {
+         "minLength": 3,
+         "type": "string"
+        }
+       },
+       "required": [
+        "file",
+        "line",
+        "text"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "final_severity": {
+      "enum": [
+       "critical",
+       "high",
+       "medium",
+       "low",
+       "none"
+      ],
+      "type": "string"
+     },
+     "final_verdict": {
+      "enum": [
+       "confirmed",
+       "refuted",
+       "needs-human"
+      ],
+      "type": "string"
+     },
+     "finding_id": {
+      "type": "string"
+     },
+     "human_check_steps": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array"
+     },
+     "reasoning": {
+      "minLength": 10,
+      "type": "string"
+     }
+    },
+    "required": [
+     "finding_id",
+     "final_verdict",
+     "final_severity",
+     "agrees_with_haiku",
+     "reasoning",
+     "human_check_steps",
+     "evidence_quotes"
+    ],
+    "type": "object"
+   },
+   "type": "array"
+  },
+  "notes": {
+   "type": "string"
+  }
+ },
+ "required": [
+  "batch",
+  "haiku_quality",
+  "items",
+  "notes"
+ ],
+ "title": "Adjudicator output (one batch)",
+ "type": "object"
+}
