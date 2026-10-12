@@ -654,7 +654,7 @@ def close_manual(a, st, wi):
     if live and not st.is_stale(live):
         raise DriverError(f"{wi.id} has a live claim (session {live['session']}); release it first")
     dirty = set(ac.git_dirty(root))
-    clean = [p for p in a.paths if p not in dirty]
+    clean = [p for p in a.paths if p not in dirty and not any(d.startswith(p.rstrip('/') + '/') for d in dirty)]
     if clean:
         raise DriverError(f"not changed, nothing to commit: {', '.join(clean[:3])}")
     message = f"{wi.id}: {wi.title} (manual close)\n\nReason: {a.reason[:300]}\nPaths: {len(a.paths)}\n\n{TRAILER}\n"

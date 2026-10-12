@@ -663,6 +663,15 @@ class RescueTests(Base):
         self.assertEqual(again.returncode, 1)
         self.assertIn("already done", again.stderr)
 
+    def test_close_manual_accepts_a_dirty_directory(self):
+        self.park_on_fail()
+        self.write("docs/plan.md", "# Plan\n\nedited\n")
+        (self.root / "notes").mkdir()
+        (self.root / "notes" / "r1.md").write_text("x\n", encoding="utf-8")
+        r = self.drv("close", "WI-01", "--manual", "--paths", "docs/plan.md", "notes/", "--reason", "dir")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("notes/r1.md", sh(self.root, "git", "show", "--name-only", "--format=", "HEAD").stdout)
+
     def test_close_manual_needs_paths_reason_and_changes(self):
         self.park_on_fail()
         self.assertEqual(self.drv("close", "WI-01", "--manual").returncode, 1)
