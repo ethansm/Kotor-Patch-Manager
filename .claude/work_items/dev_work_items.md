@@ -15,7 +15,7 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | done | # | WI | P | state | size | after | title | rows | files | why |
 |---|---|---|---|---|---|---|---|---|---|---|
 | [x] | 1 | WI-48 | P0 | verify-only | S | - | Bug board: verify BG19 and BG13; defer BG24 and BG20 | 5 | 2 | Bug board: verify BG19 and BG13, defer BG24; 5 open. |
-| [ ] | 2 | WI-33 | P0 | verify-only | S | - | Hotbar save-events migration verify (row 4.1a) | 1 | 4 | Hotbar save-events migration verify; blocked on owner GO. |
+| [x] | 2 | WI-33 | P0 | verify-only | S | - | Hotbar save-events migration verify (row 4.1a) | 1 | 4 | Hotbar save-events migration verify; blocked on owner GO. |
 | [ ] | 3 | WI-10 | P0 | ready | M | - | Force Power Hotbar polish and config round-trip | 7 | 4 | Force Power Hotbar polish and config round-trip; 6 open, ready. |
 | [x] | 4 | WI-01 | P0 | verify-only | S | - | Level-up override: KpLog verify and BG20 close | 1 | 2 | Level-up verify plus bug-board BG20 close; verify-only, 1 open. |
 | [ ] | 5 | WI-10b | P0 | ready | S | WI-10 | Force Power Hotbar EKC hook move and arrow art (split from W | 3 | 2 | Hotbar EKC hook move and arrow art; 3 open, ready. |
