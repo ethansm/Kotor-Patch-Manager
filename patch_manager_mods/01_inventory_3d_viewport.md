@@ -549,7 +549,7 @@ resolution → 3D render for a standalone item:
 3. **Render call**: the `CUI3DView` init/update function as called by
    `upgrade_p` for the selected item.
 
-**Branch B — armor/robes (PC-own-appearance-row lookup, new).** No
+**Branch B — armor/robes (PC-own-appearance-row lookup; possible v2 only, not v1: a PC-specific body would call `008cd060` directly).** No
 standalone model exists (see above), so this branch needs different
 addresses, likely from the *Character/Equipment screen's* own render path
 (the one place the engine already does a live "PC wearing X" render) rather
@@ -578,10 +578,12 @@ than the workbench:
 3. `hooks.toml`: detour on the inventory listbox-selection trigger.
    `skip_original_bytes = false` — the inventory must keep updating its 2D
    icon as before; we're augmenting, not replacing.
+   WI-03 recon: `hooks.toml:18` (`address = 0x008A8172`) is the inventory entry event-0 handler (`008a8100`) right after `GetItemByObjectId`; the match to the listbox-selection trigger is by source comment only, not re-verified against Ghidra.
 4. C++ detour: read selected item's `baseitems.2da` row → branch on
    `bodyvar` → (Branch A) resolve `.mdl` string directly, or (Branch B)
    resolve PC's own `modelX`/`texX` via `bodyvar` index → call the render
    function with our control ID either way.
+   *Implementation note (WI-03 recon):* `bodyvar` is folded into `kItemCategory == 4` by `scripts/gen_inventory_3dview_table.py:40-41` at generation time (`modeltype == '1'` or `bodyvar` not in `('', '****')`). The runtime `ShowItem` (`Inventory3DViewport.cpp:477`) reads only `kItemCategory[id]` (line 493), and the `cat == 4` branch (line 269, outside `ShowItem`) tests `cat` only, so no `bodyvar` value reaches runtime and no 2DA reader exists in `inventory_3d_viewport_src/`. `FnRender` `0x008cd2c0` is `fastcall(fakeThis)` with no control-ID parameter, so "call the render with our control ID" is realised by the fake-this/view offset (`FakeThisDelta`), not an argument.
 5. Build via `create-patch.py`/`.bat` → `.kpatch`.
 
 ### Phase 4 — runtime verification
@@ -599,8 +601,7 @@ the fallback, not a crash).
   renders 3D views at real pixel aspect." A new inventory 3D view will hit
   the exact same overshoot problem and needs the same fix pattern (content
   vs. margin classification), not a fresh one.
-- **Model availability.** Armor/robes are now handled by Branch B (see
-  above), not a missing-model edge case. The remaining gap is items with
+- **Model availability.** Armor/robes are not a v1 case: v1 uses the Workbench's fixed row 137, and Branch B (see above) is a possible v2 that would call `008cd060` directly. The remaining gap is items with
   neither a direct model nor a `bodyvar` — stacked consumables (medpacs,
   grenades) that may only have icon art. Need a fallback (hide the 3D
   control, or show nothing) rather than crashing on a null result from
