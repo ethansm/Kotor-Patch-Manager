@@ -78,3 +78,9 @@ Verification commands:
 - Shared-header workflow used: hand-copy to KPM `Patches/Common/` + forwarder via `check_shared_headers.forwarder()` (no --sync), `check_shared_headers.py` => 0 drifted at that time.
 - Gate 10-12: failing = test_agent_contract, test_compat_breakage (known), check-shared-headers (another session's uncommitted `SelfHealUi.h` drift), test_kpm_hotswap (21 fails; other session's uncommitted `scripts/kpm_hotswap.py`; cause not confirmed). None from this work.
 - OPEN: (1) Task 4 force-power gaps in gen_debuff_icon_table.py hostile rule (rows 141-143 ip_battlemed01-03, 201/269 ip_scram01/03; 14 DOMINATE / 6 AFFECT_MIND stay out) only on user "cover the 4 gaps"; (2) DBGMISS diag can be removed or kept (capped, debug-gated); (3) Effects Panel not rebuilt (unaffected functionally).
+
+## 6. Force-power icon gaps: LANDED (10-12 17:42)
+- `buff-duration-hud` 0.2.2 LIVE md5 `61561573`. Repo `0ad0f70` (generator FORCE_INCLUDE {201,269} + ICON_FALLBACK 141-143 -> ip_battlemed01-03; DebuffIconTable.inc; effects_test cases; manifest). KPM `7788422` (manifest + Common/DebuffIconTable.inc).
+- Rollback to 0.2.1: `python3 scripts/kpm_hotswap.py --rollback buff-duration-hud_swap_20261012_174250`.
+- User removed the `kpm_hotswap.py` deny rule from `.claude/settings.json` (agents may now run it; `--apply` still needs game closed + explicit GO).
+- Awaiting play check: Battle Meditation enemy / droid trick / droid confusion debuff icons on enemies.

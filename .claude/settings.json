@@ -22,7 +22,6 @@
       "Bash(git clean:*)",
       "Bash(git stash:*)",
       "Bash(gh:*)",
-      "Bash(python3 scripts/kpm_hotswap.py:*)",
       "Bash(kill:*)",
       "Bash(pkill:*)",
       "Bash(steam:*)"
