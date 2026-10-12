@@ -1257,6 +1257,7 @@ void testUnifiedActionMake() {
 
 void testDecideBranches() {
     ActionBuffer idle;                               // inactive, empty
+    KT_CHECK(!isPartyCaster(-1)); KT_CHECK(isPartyCaster(0)); KT_CHECK(isPartyCaster(2)); KT_CHECK(!isPartyCaster(3));
     KT_CHECK_EQ((int)decideAction(idle, false, 0), (int)DECIDE_DISPATCH_NOW);   // idle + nothing queued in engine
     KT_CHECK_EQ((int)decideAction(idle, false, 1), (int)DECIDE_BUFFER);         // engine queue busy
     KT_CHECK_EQ((int)decideAction(idle, false, 3), (int)DECIDE_BUFFER);
@@ -1557,6 +1558,13 @@ void testLogFormatGolden() {
     e.cmdId = 4294967295u; e.m = 2; e.cr = 0xffffffffu; e.kind = 5; e.dec = "drop_full"; e.engq = 3; e.buf = 3;
     fmtCmd(out, sizeof out, e);
     KT_CHECK_EQ(out, "CMD#4294967295 m=2 cr=ffffffff kind=? id=- tgt=- dec=drop_full fb=0 engq=3 buf=3 paused=0 combat=0");
+
+    CmdLine f;
+    f.cmdId = 9; f.m = -1; f.cr = 0x1a2b; f.kind = (int)ActionKind::Spell;
+    f.hasId = true; f.id = 0x55; f.hasTgt = true; f.tgt = 7;
+    f.dec = "pass_nonparty"; f.fb = true; f.engq = 0; f.buf = 0; f.paused = false; f.combat = false;
+    fmtCmd(out, sizeof out, f);
+    KT_CHECK_EQ(out, "CMD#9 m=? cr=1a2b kind=spell id=55 tgt=7 dec=pass_nonparty fb=1 engq=0 buf=0 paused=0 combat=0");
 
     fmtWait(out, sizeof out, 5, 0, DS_ENGINE_BUSY, 2, 1, 120);
     KT_CHECK_EQ(out, "WAIT cmd=5 m=0 why=engine_busy buf=2 engNe=1 age=120");

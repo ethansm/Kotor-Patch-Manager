@@ -1623,7 +1623,7 @@ void __cdecl QueueHudCapture(int hud) {
     }
 }
 
-// H9: PerformUseItem detour hook. Consumes and buffers out-of-combat item actions when queue busy.
+// H9: PerformUseItem detour hook. Consumes and buffers out-of-combat item actions of party members only when queue busy.
 int __cdecl QueueHudPerformUseItem(int clientCreature, int ebp) {
     if (g_dispatching || !g_cfg.enabled) return 0;   // re-entry from our own dispatch logs nothing here
     const uint32_t cmd = ++g_cmdSeq;
@@ -1665,8 +1665,11 @@ int __cdecl QueueHudPerformUseItem(int clientCreature, int ebp) {
             }
         }
     }
-    const bool fb = memberK < 0;
-    if (fb) memberK = 0;
+    if (!qh::isPartyCaster(memberK)) {
+        traceCmd(cmd, -1, crPtr, qh::ActionKind::Item, true, itemId, targetId, "pass_nonparty", true, 0, 0, false);
+        return 0;
+    }
+    const bool fb = false;
 
     const int engineQ = queueCountOf(memberK);
     const int engqLog = engineQ < 0 ? -1 : engineQ;
@@ -1705,7 +1708,7 @@ int __cdecl QueueHudPerformUseItem(int clientCreature, int ebp) {
     return 0;
 }
 
-// H10: PerformCastSpell detour hook (gameaddr::PerformCastSpell + 3; address in hooks.toml). Consumes and buffers out-of-combat spell actions when queue busy.
+// H10: PerformCastSpell detour hook (gameaddr::PerformCastSpell + 3; address in hooks.toml). Consumes and buffers out-of-combat spell actions of party members only when queue busy.
 int __cdecl QueueHudPerformCastSpell(int clientCreature, int ebp) {
     if (g_dispatching || !g_cfg.enabled) return 0;   // re-entry from our own dispatch logs nothing here
     const uint32_t cmd = ++g_cmdSeq;
@@ -1753,8 +1756,11 @@ int __cdecl QueueHudPerformCastSpell(int clientCreature, int ebp) {
             }
         }
     }
-    const bool fb = memberK < 0;
-    if (fb) memberK = 0;
+    if (!qh::isPartyCaster(memberK)) {
+        traceCmd(cmd, -1, crPtr, qh::ActionKind::Spell, true, spellId, targetId, "pass_nonparty", true, 0, 0, false);
+        return 0;
+    }
+    const bool fb = false;
 
     const int engineQ = queueCountOf(memberK);
     const int engqLog = engineQ < 0 ? -1 : engineQ;

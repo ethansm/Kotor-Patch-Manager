@@ -694,6 +694,9 @@ enum ActionDecision : int {
     DECIDE_DROP_FULL = 2
 };
 
+// A caster the party table does not list (scripted NPC, cutscene, unreadable table) is not ours to buffer: pass it to the engine.
+inline bool isPartyCaster(int memberK) { return memberK >= 0 && memberK < 3; }
+
 inline ActionDecision decideAction(const ActionBuffer& buf, bool inCombat, int engineQueueLen) {
     if (inCombat) return DECIDE_DISPATCH_NOW;
     if (engineQueueLen == 0 && !buf.active && buf.empty()) return DECIDE_DISPATCH_NOW;
@@ -871,7 +874,7 @@ struct CmdLine {
     int kind = -1;                           // ActionKind value; anything but Item/Spell prints '?'
     bool hasId = false;  uint32_t id = 0;    // id=<hex|->
     bool hasTgt = false; uint32_t tgt = 0;   // tgt=<hex|->
-    const char* dec = "?";                   // dispatch_now|buffer|drop_full|pass_combat|pass_unreadable
+    const char* dec = "?";                   // dispatch_now|buffer|drop_full|pass_combat|pass_unreadable|pass_nonparty
     bool fb = false;
     int engq = 0;                            // queue length; < 0 prints 'unreadable'
     int buf = 0;
