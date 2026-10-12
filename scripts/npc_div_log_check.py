@@ -496,6 +496,26 @@ def check_changed_share(sess):
     return _emit(13, "changed share", [(WARN, "changed share %s, outside the 25-45%% target" % text)], "", [])
 
 
+def check_row_remaps(sess):
+    """17 row remaps (INFO only): distinct oids whose RMP app change landed on a fat (802/803), Czerka (804) or Twi'lek
+    (805-808, 811) row, over distinct oids whose BEFORE app is a commoner row. Never FAIL/WARN."""
+    rmp = _of(sess, "RMP")
+    den = {r["v"]["oid"] for r in rmp if r["v"]["before"] in COMMONER_APPS}
+    groups = {"fatM": {802}, "fatF": {803}, "czerka": {804}, "twilek": {805, 806, 807, 808, 811}}
+    seen = {k: set() for k in groups}
+    for r in rmp:
+        v = r["v"]
+        if v["before"] == v["after"]:
+            continue
+        for k, apps in groups.items():
+            if v["after"] in apps:
+                seen[k].add(v["oid"])
+    text = "row remaps: " + " ".join("%s=%d" % (k, len(seen[k])) for k in groups) + ", of %d commoner oid(s)" % len(den)
+    if len(den) < 60:
+        text += " (too few commoner oids to judge; need 60+)"
+    return INFO, ["INFO 17 " + text]
+
+
 def check_keep_unchanged(sess):
     """14 keep: no RMP line with why=keep may show an app or tv change."""
     keep = [r for r in _of(sess, "RMP") if r["f"]["why"] == "keep"]
@@ -618,7 +638,7 @@ def render(recs, bad, nlines, note, new_mode):
                check_tex(sess, swap), check_excluded(sess), check_cen(sess), check_last_stat(sess),
                check_gate(sess), check_tv_spread(sess), check_tv_determinism(sess), check_tv_allowlist(sess),
                check_changed_share(sess), check_keep_unchanged(sess), check_stype_no_tv_write(sess),
-               check_cross_launch_map(recs)]
+               check_row_remaps(sess), check_cross_launch_map(recs)]
     levels = [lv for lv, _ in results]
     nf, nw = levels.count(FAIL), levels.count(WARN)
     word = FAIL if nf else WARN if nw else PASS

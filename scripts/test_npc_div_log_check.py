@@ -582,6 +582,19 @@ class Rules012Tests(unittest.TestCase):
         self.assertEqual(rc, 1, out)
         self.assertIn("FAIL 13 changed share: changed share 0.0% (0 changed oid(s) / 10 commoner-row oid(s)), outside 10-60%", out)
 
+    def test_row_remaps_counts_fat_czerka_twilek(self):
+        rows = (_rows(2, base=0x100, before=190, after=802) + _rows(1, base=0x200, before=190, after=804)
+                + _rows(3, base=0x300, before=17, after=17, tv=(1, 1)))
+        rc, out = run_bodies(_head(*rows))
+        self.assertIn("INFO 17 row remaps: fatM=2 fatF=0 czerka=1 twilek=0, of 6 commoner oid(s) "
+                      "(too few commoner oids to judge; need 60+)", out)
+
+    def test_row_remaps_none_reports_zero_and_never_changes_result(self):
+        rc, out = run_bodies(_head(*_rows(10, base=0x100, before=17, after=17, tv=(1, 2))))
+        self.assertIn("INFO 17 row remaps: fatM=0 fatF=0 czerka=0 twilek=0, of 10 commoner oid(s) "
+                      "(too few commoner oids to judge; need 60+)", out)
+        self.assertFalse(any(l.startswith(("FAIL 17", "WARN 17")) for l in out))
+
     def test_keep_row_with_a_change_fails(self):
         rc, out = run_bodies(healthy() + [rmp_line(oid=0x4100, before=805, after=806, tv=(1, 2), why="keep")])
         self.assertEqual(rc, 1, out)
