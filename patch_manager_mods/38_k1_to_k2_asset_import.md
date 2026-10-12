@@ -104,8 +104,11 @@ Voice: skip for now. Drop-in path fails (claim 11). TLK vs VO_ResRef precedence 
 | T12 | Risk mitigation: loader recon, MDLOps diff, scratch-save probe, converter hardening | BUILT |
 | T13 | Commit `k1_port/` + doc 38 + evidence by explicit paths (needs user "commit") | DONE |
 | T14 | Probe build: `k1_port_probe_build.py` makes stage `probe_T12h/override/{appearance.2da,c_ithorian003.utc}` (10-11 retarget: Ithorian Compound greeter in `204tel`, appearance 72 -> 812, literal name "K1 Probe Citizen"; test from `Game9`, 204tel unvisited; a save made inside 204tel would hold the old creature, so it cannot be used); probe tool gets save-slot backup; `plan` turns green | BUILT |
-| T15 | Probe install (user GO, game closed; test NPC at x=-43.6 y=-27.5 in the Ithorian Compound, `npc_div_whatis.py -43.6 -27.5`): `k1_port_probe.py install --yes`, manifest verified | TODO |
+| T15 | Probe install (user GO, game closed; test NPC at x=-43.6 y=-27.5 in the Ithorian Compound, `npc_div_whatis.py -43.6 -27.5`): `k1_port_probe.py install --yes`, manifest verified | INSTALLED |
 | T16 | Probe play test (user) + log check; KEEP or ROLLBACK; result into this doc and doc 34 item 10 | TODO |
+| T17 | Spawn-hook RE (static, read-only, rea-recon): how `CreateObject`/`LoadFromTemplate`/`AddToArea` build and place a creature; safe call timing after area load from a save; how a save-loaded area avoids re-spawn; where the display name is read | DONE |
+| T18 | Spawn-hook probe build (Route A2): KPM hook spawns the K1 probe NPC (UTC from override, literal name) once in `204tel` at the Ithorian Compound plant room, guarded against double spawn; heavy logging; host tests + build gate | BUILT |
+| T19 | Spawn-hook install (user GO, hot-swap) + plant-room save play test (user) | TODO |
 
 ## 8. Licence policy and tooling (10-11)
 
@@ -127,3 +130,22 @@ Voice: skip for now. Drop-in path fails (claim 11). TLK vs VO_ResRef precedence 
 - **T12i** `k1_port_probe.py plan|install --yes|rollback --yes|status` (validator + prune gate + game-not-running + foreign-file refusal + sha manifest). Real-stage `plan` is BLOCKED only on the unbuilt `probe_T12h/override/appearance.2da` + `per_miner_002.utc` (design doc section 3 build step).
 - **T7a** MDLOps inputs exported (read-only) to `~/Games/KOTOR2_Mod_Workspace/mdlops_t7/inputs/` (n_commm, s_female02/01, s_male02/01); `T7a_inputs.md`. T7 itself waits for user GO.
 - **T7** MDLOps cross-check done (user GO 10-11): see `.claude/review/k1_import/T7_mdlops_result.md`. Its K2 output validates clean with equal MDX strides; it re-welds vertices (41/44 meshes) and swaps 6 bonemap entries, so it is not a per-vertex reference. Engine acceptance still needs the in-game probe.
+
+## 10. T17 spawn research and gate G1 (10-11, waves `.claude/waves/w2-38-T17/u01..u11`)
+
+All 11 Haiku units PASS the contract check; all but u01/u02 are PARTIAL. Opus gate decisions:
+
+- **Track S (script-only spawn, no DLL): GO.**
+  - Compiler: `nwnnsscomp.exe` under Proton wine (`script_recompile_20260924/tools/compile.sh <out.ncs> <src.nss> [includes]`, vanilla sources in `tools/vanilla/` incl. `nwscript.nss`); compiled a 3-line script to a valid 23-byte `NCS V1.0B`; exit code is 0 even on errors, so success = non-empty `.ncs`.
+  - API (vanilla `nwscript.nss`, re-checked by rg): `CreateObject(int, string, location, int=FALSE)`, `GetObjectByTag(string,int=0)`, `ExecuteScript`, `Location(vector,float)`, `Vector(x,y,z)`, `cos/sin`, `GetFirstPC`, `GetPosition`, `GetFacing`, `GetArea`. **K2 has no `GetLocalInt`/`SetLocalInt`, no `GetResRef`, no `GenerateNewLocation`** (use `GetLocalNumber`/`SetLocalNumber`, and gate on tag instead of area resref).
+  - Original `k_def_heartbt01.nss` is a one-liner: `ExecuteScript("k_ai_master", OBJECT_SELF, KOTOR_DEFAULT_EVENT_ON_HEARTBEAT);` (includes `k_inc_switch`, `k_inc_debug`). So the wrapper ends with that same call; **no `k1p_hb_orig.ncs` copy is needed** (7 install files, not 8).
+  - Conflicts (u02): neither `k_def_heartbt01` (in `Scripts.bif`) nor `k_204tel_enter` (in `Modules/204tel.mod`) exists in `override/` or in any installed mod: GO.
+  - Saves (u04): the saved `204tel` is a nested archive holding only `204tel.git/.are/Module.ifo`, no scripts. Saved creatures store `ScriptHeartbeat = k_def_heartbt01` (ResRef) in 17 of 18 entries; the area OnEnter `k_204tel_enter` is in the saved `.are`. Script resolution is by name at run time, so an override `.ncs` runs inside an already-saved area. Unverified: whether a saved GIT field or the UTC template wins (irrelevant for the heartbeat route, both name `k_def_heartbt01`).
+  - Trigger: wrapper over `k_def_heartbt01` gated on `GetTag(OBJECT_SELF) == "204_Ith_Rec"` (the Greeter) and `GetObjectByTag("k1p_probe_npc") == OBJECT_INVALID` (no local-number flag needed). Risk: the Greeter must be alive and heartbeating in the plant-room save.
+- **Track H (native hook): NO-GO for now, research only.** R5 could not identify the ExecuteScript handler or script-run routine (stripped binary), so the hybrid hook has no entry point. Anchored Steam facts, all by REA (names are Ghidra FUN_, labels UNVERIFIED unless noted):
+  - `0x0066f990` creature case: builds the object with `0x00561f30`, loads template `0x00572a70`, places via `0x00568bd0` (call at `0x0066fed8`); `0x00522bf0` is reached only from inside `0x00568bd0`; id from `0x0053dd20` (u07).
+  - `0x00572a70` thiscall, 2 stack args, `ret 8`, prologue `55 8b ec 6a ff 68 1e 0e 95 00 64 a1`; `0x00568bd0` thiscall, 6 stack args (area*, x, y, z, int, int), `ret 0x18`, prologue `55 8b ec 6a ff 68 c3 0a 95 00 64 a1`; position/orientation setter candidates `0x00543f50` / `0x00543f10` (u08).
+  - `0x005236b0` LoadArea `ret 4`, `this` in ECX; `0x00525f90` LoadCreatures `ret 16`; creatures are populated before LoadArea returns; only caller seen is `0x0055a585` (post-call hook point `0x0055a58a`); area resref offset unknown (u09).
+  - `0x005632f0` GetFirstName reads stats+0x34; `0x00574500` SaveCreature writes FirstName and Tag via `0x006b3d10`; area save `0x00529dd0` calls it; whether a runtime-spawned creature enters the saved list is unverified (u10).
+  - Hook skeleton (u05 + manual check): exports are `extern "C" __declspec(dllexport) void __cdecl Fn(void* ...)`, params mapped from `ecx` / `[esp+4]` / `ebp` in `kotor2-steam-aspyr.hooks.toml`; `test.toml` sections hold `cxxflags`. Toolchain: `i686-w64-mingw32-g++` present, x86_64 absent (u06).
+  - Next RE if S fails: R5 rerun starting from the CSWVirtualMachineCommands vtable `0x009940d0` / InitCommands `0x00665f50`.
