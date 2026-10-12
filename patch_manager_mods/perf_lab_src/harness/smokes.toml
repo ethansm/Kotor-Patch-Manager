@@ -251,7 +251,7 @@ timeout_s = 60
 [[smoke]]
 name = "letterbox_probe"
 src = "../../dialogue_letterbox_fix_src/smoke_dialogueletterbox.cpp"
-kpatch = "../letterbox_probe_stage/1.0.2-probe/K2DialogueLetterboxFixProbe.kpatch"
+kpatch = "../letterbox_probe_stage/0.1.0-probe/K2DialogueLetterboxFixProbe.kpatch"
 dll_name = "windows_x86.dll"
 cxxflags = ["-static-libgcc", "-static-libstdc++", "-I$KPM_DIR/Patches/Common"]
 runtime_dlls = false

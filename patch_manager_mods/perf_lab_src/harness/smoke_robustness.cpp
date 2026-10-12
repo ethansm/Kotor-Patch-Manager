@@ -67,7 +67,7 @@ static unsigned ebpAt() { return (unsigned)g_frame + 0x200; }
 static int& fr(int off) { return *(int*)(ebpAt() + off); }
 static char* g_log;
 static void readLog() { if (!g_log) g_log = (char*)malloc(16384); g_log[0] = 0; FILE* f = fopen("robustnessfixes_log.txt", "r"); if (!f) return; size_t k = fread(g_log, 1, 16383, f); g_log[k] = 0; fclose(f); }
-static void checkLoadOnce() { int n = 0; if (g_log) for (const char* p = g_log; (p = strstr(p, " 1.3.0 loaded: ")) != nullptr; ++p) ++n; check(n == 1, "log: load line appears exactly once"); }
+static void checkLoadOnce() { int n = 0; if (g_log) for (const char* p = g_log; (p = strstr(p, " 0.1.3 loaded: ")) != nullptr; ++p) ++n; check(n == 1, "log: load line appears exactly once"); }
 
 // --- scenarios: each returns a small result struct the reference/patched checks compare -------------------------
 static unsigned vmid(int id) { fr(8) = id; return run(0x668FD9, 0, 0, 0, ebpAt()); }
@@ -405,7 +405,7 @@ int main(int argc, char** argv) {
     if (isRun || isFs2 || isMovon) dumpCaves(mode, st);
     int npatched = 0; for (int g = 0; g < 13; ++g) if (want[g] == 1) ++npatched;
     char loaded[400]; snprintf(loaded, sizeof loaded, "%d/13 groups patched:%s", npatched, ""); check(strstr(g_log, loaded) != NULL, "log: loaded line count");
-    check(strstr(g_log, "k2-robustness-fixes 1.3.0 loaded") != NULL, "log: version 1.3.0");
+    check(strstr(g_log, "k2-robustness-fixes 0.1.3 loaded") != NULL, "log: version 0.1.3");
     checkLoadOnce();
     if (isRun || isFs2 || isMovon || isRef2) {
         char exp[400]; int k = 0; for (int g = 0; g < 13; ++g) {
