@@ -95,9 +95,9 @@ class Base(unittest.TestCase):
     def write(self, rel, text):
         (self.root / rel).write_text(text, encoding="utf-8")
 
-    def worker_reply(self, wave, modified):
+    def worker_reply(self, wave, modified, created="None"):
         d = self.root / ".claude" / "waves" / wave
-        (d / "u01.reply.txt").write_text(f"CREATED: None\nMODIFIED: {modified}\nTESTS: None\nNOTES: None\nSTATUS: PASS\n", encoding="utf-8")
+        (d / "u01.reply.txt").write_text(f"CREATED: {created}\nMODIFIED: {modified}\nTESTS: None\nNOTES: None\nSTATUS: PASS\n", encoding="utf-8")
 
     def checker_reply(self, wave, verdict="CONFIRMED"):
         d = self.root / ".claude" / "waves" / wave
@@ -396,7 +396,7 @@ class FlowTests(Base):
         self.drv("next", "WI-07")
         self.write("src/g.txt", "golf edited\n")
         self.write("src/new_g.txt", "brand new\n")
-        self.worker_reply(self.claim_wave("WI-07"), "src/g.txt")
+        self.worker_reply(self.claim_wave("WI-07"), "src/g.txt", created="src/new_g.txt")  # unlisted, it would count as a stray
         self.assertEqual(self.drv("verify", "WI-07").returncode, 0)
         self.checker_reply(self.st.read_claim("WI-07")["checker_wave"])
         self.assertEqual(self.drv("docs", "WI-07").returncode, 0)
@@ -493,6 +493,62 @@ class FlowTests(Base):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertNotIn("not CONFIRMED", r.stdout)
         self.assertIn("| DONE |", (self.root / "docs/plan.md").read_text())
+
+
+    def test_foreign_edit_mid_run_is_noted_not_failed(self):
+        wid = "WI-01"
+        wi = wm.load_all(self.root)[wid]
+        self.drv("next", wid)
+        self.write("src/a.txt", "alpha edited\n")
+        self.worker_reply(self.claim_wave(wid), "src/a.txt")
+        self.write("src/z.txt", "another session, mid-run\n")  # outside WI-01's lockset and not in its reply
+        chk = wd.wave_check(self.st, self.claim_wave(wid), wi)
+        self.assertEqual((chk["status"], chk["finding"]), ("PASS", "clean"))
+        self.assertEqual(self.drv("verify", wid).returncode, 0)
+        self.checker_reply(self.st.read_claim(wid)["checker_wave"])
+        self.write("src/y.txt", "yet another session, after the checker baseline\n")
+        chk = wd.wave_check(self.st, self.st.read_claim(wid)["checker_wave"], wi)
+        self.assertEqual((chk["status"], chk["finding"]), ("PASS", "clean"))  # not downgraded to PARTIAL
+        self.assertEqual(self.drv("docs", wid).returncode, 0)
+        self.assertEqual(self.drv("close", wid).returncode, 0)
+        self.assertIn("src/z.txt", self.st.runs()[-1]["foreign_paths"])
+        self.assertIn("src/z.txt", sh(self.root, "git", "status", "--porcelain").stdout)  # noted, not committed
+
+    def test_stray_edit_inside_lockset_still_counts(self):
+        wid = "WI-01"
+        self.drv("next", wid)
+        self.write("src/a.txt", "alpha edited\n")
+        self.write("docs/plan.md", "# stray write inside WI-01's lockset\n")  # in the lockset, not in the reply
+        self.worker_reply(self.claim_wave(wid), "src/a.txt")
+        r = self.drv("verify", wid)
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn("FAIL WI-01: worker reply PARTIAL", r.stdout)
+        self.assertIn("docs/plan.md", r.stdout)
+
+
+class ForeignPathTests(Base):
+    """Changed paths outside the item lockset and unlisted by the reply are foreign; everything else is kept."""
+    REPLY = "CREATED: None\nMODIFIED: src/a.txt\nTESTS: None\nNOTES: None\nSTATUS: PASS\n"
+
+    def test_unowned_paths_are_foreign(self):
+        wi = wm.load_all(self.root)["WI-01"]
+        probs = [("WARN", "UNCLAIMED", "src/z.txt changed since baseline but is not listed"),
+                 ("WARN", "OUT_OF_SCOPE", "src/z.txt outside src/a.txt"),
+                 ("FAIL", "OUT_OF_SCOPE", "src/y.txt outside src/a.txt")]
+        self.assertEqual(wd.filter_foreign(probs, wi, self.REPLY, "worker"), ([], ["src/y.txt", "src/z.txt"]))
+
+    def test_lockset_and_listed_paths_and_other_codes_are_kept(self):
+        wi = wm.load_all(self.root)["WI-01"]
+        in_lock = ("WARN", "UNCLAIMED", "docs/plan.md changed since baseline but is not listed")
+        listed = ("WARN", "UNCLAIMED", "src/z.txt changed since baseline but is not listed")
+        reply = self.REPLY.replace("MODIFIED: src/a.txt", "MODIFIED: src/a.txt, src/z.txt")
+        other = [("FAIL", "NOT_DIRTY", "MODIFIED src/a.txt shows no change"), ("FAIL", "CONTRACT_ERROR", "bad line"),
+                 ("WARN", "ORDER", "got TESTS,STATUS, want STATUS")]
+        kept, foreign = wd.filter_foreign([in_lock, listed] + other, wi, reply, "worker")
+        self.assertEqual(kept, [in_lock, listed] + other)
+        self.assertEqual(foreign, [])
+        kept, foreign = wd.filter_foreign([in_lock], wi, self.REPLY, "worker")
+        self.assertEqual((kept, foreign), ([in_lock], []))
 
 
 class AuditAndBacklogTests(Base):

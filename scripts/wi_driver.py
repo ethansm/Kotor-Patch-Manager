@@ -292,14 +292,75 @@ def run_gate_cmd(root, cmd, tmpdir):
     return {"cmd": cmd, "status": status, "secs": secs, "detail": detail}
 
 
-def wave_check(st, wave_id):
+# wave_tools/agent_contract codes for a changed path that the reply does not claim (see wave_tools.check_unit)
+FOREIGN_CODES = ("UNCLAIMED", "OUT_OF_SCOPE")
+
+
+def problem_path(code, detail):
+    """Repo-relative path named by a changed-path problem: '<path> changed since baseline ...' or '<path> outside ...'."""
+    return detail.split(" changed since baseline", 1)[0] if code == "UNCLAIMED" else detail.split(" outside ", 1)[0]
+
+
+def wave_reply_text(root, wave_id):
+    """Text of the wave's single unit reply, found through the wave manifest ('' when unreadable)."""
+    try:
+        manifest = json.loads((root / ".claude" / "waves" / wave_id / "manifest.json").read_text(encoding="utf-8"))
+        return (root / manifest["units"][0]["reply"]).read_text(encoding="utf-8", errors="replace")
+    except (OSError, ValueError, KeyError, IndexError, TypeError):
+        return ""
+
+
+def filter_foreign(problems, wi, reply_text, kind):
+    """Split a wave check's problems [(level, code, detail)] into (kept, foreign paths).
+
+    Other sessions edit the shared worktree while a unit runs. A changed path is FOREIGN when this item does not own
+    it: it is outside the item lockset and the reply does not list it (CREATED, MODIFIED or OUTPUT). Foreign problems
+    are noise, not worker failures. Everything else is kept: contract errors, NOT_DIRTY, NO_PATH, and any changed path
+    that is inside the lockset or listed in the reply."""
+    _, fields, _ = ac.parse(reply_text, kind)
+    listed = set()
+    for key in ("CREATED", "MODIFIED", "OUTPUT"):
+        if key in fields:
+            listed.update(ac.split_paths(fields[key][0]))
+    locks = wm.lockset(wi)
+    kept, foreign = [], []
+    for level, code, detail in problems:
+        if code in FOREIGN_CODES:
+            path = problem_path(code, detail)
+            if path not in listed and not any(wm.paths_overlap(path, lk) for lk in locks):
+                foreign.append(path)
+                continue
+        kept.append((level, code, detail))
+    return kept, sorted(set(foreign))
+
+
+def wave_check(st, wave_id, wi):
+    """The wave's unit check from wave_tools, with foreign changed paths filtered out (see filter_foreign).
+
+    Status: FAIL when a FAIL remains; PARTIAL when an in-lockset or self-listed stray edit remains (WARN); else PASS."""
     r = wave_cmd(st.root, "check", wave_id, "--json")
     try:
         data = json.loads(r.stdout)
     except ValueError:
         return {"status": "ERROR", "verdict": "-", "finding": last_lines(r.stderr or r.stdout, 3), "problems": []}
     u = data["units"][0] if data.get("units") else {"status": "MISSING", "verdict": "-", "finding": "no units", "problems": []}
-    return u
+    if not any(p["code"] in FOREIGN_CODES for p in u.get("problems", [])):
+        return u
+    probs = [(p["level"], p["code"], p["detail"]) for p in u["problems"]]
+    kept, foreign = filter_foreign(probs, wi, wave_reply_text(st.root, wave_id), data.get("kind", "worker"))
+    if foreign:
+        st.trace(wi.id, "foreign", "NOTE", "not this item's, ignored: " + ", ".join(foreign), paths=foreign)
+    fails = [p for p in kept if p[0] == "FAIL"]
+    warns = [p for p in kept if p[0] == "WARN"]
+    stray = [p for p in warns if p[1] in FOREIGN_CODES]
+    if fails:
+        status, finding = "FAIL", "; ".join(f"{code} {detail}" for _, code, detail in fails)
+    elif warns:
+        status, finding = ("PARTIAL" if stray else "PASS"), f"no FAIL; {len(warns)} WARN, first: {warns[0][1]} {warns[0][2]}"
+    else:
+        status, finding = "PASS", "clean"
+    return {**u, "status": status, "finding": " ".join(finding.split()[:25]),
+            "problems": [{"level": lvl, "code": code, "detail": detail} for lvl, code, detail in kept]}
 
 
 def fail_path(st, wi, claim, reason, excerpt, session):
@@ -328,7 +389,7 @@ def cmd_verify(a, st):
     session = claim["session"]
     if claim["stage"] not in ("worker", "gated"):
         raise DriverError(f"{wi.id} is at stage {claim['stage']}; verify runs after the worker (stage worker)")
-    chk = wave_check(st, claim["wave"])
+    chk = wave_check(st, claim["wave"], wi)
     if chk["status"] == "PASS" and chk.get("verdict") == "FAIL":
         # the reply is well-formed, but the worker itself reported STATUS: FAIL
         chk = {**chk, "status": "FAIL", "finding": "worker STATUS: FAIL"}
@@ -415,8 +476,9 @@ def cmd_docs(a, st):
     claim = need_claim(st, wi.id)
     if claim["stage"] != "gated":
         raise DriverError(f"{wi.id} is at stage {claim['stage']}; docs runs after verify (stage gated)")
-    chk = wave_check(st, claim["checker_wave"])
-    if chk["status"] in ("MISSING", "FAIL", "ERROR"):
+    chk = wave_check(st, claim["checker_wave"], wi)
+    claim = st.read_claim(wi.id)  # wave_check may have traced a foreign-path note into the claim
+    if chk["status"] in ("MISSING", "FAIL", "ERROR", "PARTIAL"):
         if claim.get("checker_reruns", 0) < 1 and not a.dry_run:
             claim["checker_reruns"] = claim.get("checker_reruns", 0) + 1
             st.write_claim(wi.id, claim)
@@ -540,6 +602,7 @@ def run_record(st, wi, claim, outcome, **extra):
             "gates": [{"cmd": t["detail"].split(" :: ")[0][:120], "status": t["status"], "secs": t.get("secs", 0),
                        "detail": t["detail"].split(" :: ", 1)[1][:160] if " :: " in t["detail"] else ""} for t in tr if t["phase"] == "gate"],
             "failures": [{"detail": t["detail"][:200]} for t in tr if t["phase"] in ("fail", "check") and t["status"] != "OK"],
+            "foreign_paths": sorted({p for t in tr if t["phase"] == "foreign" for p in t.get("paths", [])}),
             "docs_marked": len(claim.get("docs_marked") or []), "docs_unresolved": len(claim.get("docs_unresolved") or []),
             "skipped_at_claim": claim.get("skipped_at_claim", []), "checker_verdict": claim.get("checker_verdict"),
             "usage": usage_summary(st.root, claim["claimed_at"]), **extra}
@@ -554,7 +617,8 @@ def cmd_close(a, st):
     if claim["stage"] != "docs":
         raise DriverError(f"{wi.id} is at stage {claim['stage']}; close runs after docs (stage docs)")
     if claim.get("docs_wave"):
-        chk = wave_check(st, claim["docs_wave"])
+        chk = wave_check(st, claim["docs_wave"], wi)
+        claim = st.read_claim(wi.id)  # wave_check may have traced a foreign-path note into the claim
         if chk["status"] != "PASS":
             st.trace(wi.id, "check", chk["status"], f"docs wave: {chk['finding']}")
             print(f"DOCS WORKER {chk['status']}: {chk['finding']}\nFix: rerun the docs spawn once, or skip it with: release the CHANGELOG by reverting it, then close.")
