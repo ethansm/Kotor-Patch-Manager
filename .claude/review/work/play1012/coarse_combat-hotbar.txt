@@ -1,0 +1,24 @@
+FILE combat-hotbar_log.txt | 21341 B | 229 lines
+launches: 1 (showing #1, lines 1-229)
+# kplog session 2026-10-12 00:16:23 | kpatch.log v1 | patcher ABI 1
+patterns: 25 unique of 229 lines
+65  21  combat-hotbar/target pills: visible=# cols=# usedCols=# rows=# pill=[#,#] btn=#
+26  16  combat-hotbar/main VIS group# shown=# why=no-target rect=[#,#,#,#]
+26  139  combat-hotbar/target click g=# idx=# src=# key=#
+26  140  combat-hotbar/target invoke g#: pre idx=# key=# oldSel=ffffffff owner=# usable=# type=# count=# slot
+26  141  combat-hotbar/target invoke g#: returned selAfter=# restored=#
+21  22  combat-hotbar/main VIS group# shown=# why=empty-group rect=[#,#,#,#]
+8  19  combat-hotbar/main VIS buttons shown=# why=no-target rect=[#,#,#,#]
+7  25  combat-hotbar/main VIS buttons shown=# why=empty-groups rect=[#,#,#,#]
+4  13  combat-hotbar/main BUILD: containers=#/#
+4  14  combat-hotbar/main BUILD buttons created=#/# slots x# labels (panel=# cols=# rows=#)
+2  15  combat-hotbar/main VIS build controls=# failAppend=#
+1  1  # kplog session ### #:#:# | kpatch.log v# | patcher ABI #
+tail:
+T=1015129.993 f=- combat-hotbar/target invoke g0: returned selAfter=000003eb restored=1
+T=1015269.433 f=- combat-hotbar/target click g=0 idx=1 src=1 key=000003eb
+T=1015269.435 f=- combat-hotbar/target invoke g0: pre idx=1 key=000003eb oldSel=ffffffff owner=800001b5 usable=1 type=3 count=1 slot=38636914
+T=1015269.453 f=- combat-hotbar/target invoke g0: returned selAfter=000003eb restored=1
+T=1030394.202 f=- combat-hotbar/target pills: visible=000 cols=0 usedCols=0 rows=0 pill=[0,0] btn=0
+VERDICT: CLEAN  launches=1 lines=229
+hint: scripts/kplog_parse.py <file> --stats for structured kplog fields

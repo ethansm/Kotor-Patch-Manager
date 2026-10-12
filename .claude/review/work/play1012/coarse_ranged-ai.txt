@@ -1,0 +1,2 @@
+- Anomalies: 0 FAIL, 0 WARN, 1 INFO
+- Checklist: 0 PASS, 0 FAIL, 33 needs observation

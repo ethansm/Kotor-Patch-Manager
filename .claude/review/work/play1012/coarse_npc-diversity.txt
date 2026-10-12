@@ -1,0 +1,31 @@
+NPC-DIV-LOG launches=3 (last shown) v=0.1.4-probe lines=882 parsed=875 malformed=0
+PASS 1 banner: v=0.1.4-probe, 2 hooks pre ok/jmp
+  version v=0.1.4-probe kpl=0 sha=steam
+  hooks tex=jmp remap=jmp
+PASS 2 READ/ABI: no READ or ABI lines
+PASS 3 HOOKBYTES: no HOOKBYTES lines
+WARN 4 RMP: tag offset unverified: tag empty on all 120 RMP lines
+  n=120 chg=12 (10.0%) why: skip:vary=74 nochg=18 ok=12 keep=7 skip:gender=7 tvarmor=2
+  oid distinct=49 xy distinct=73 tag non-empty 0/120 (0%)
+PASS 5 TEX: n=88 sw=1=0
+  n=88 sw=1:0 st=1:0.0% fr distinct=6 ret distinct=2
+  hook 1 is log-only in this build (banner v>=0.1.2): sw=1 not expected
+PASS 6 excluded-tag safety: 0 changed excluded-tag rows
+INFO 7 CEN: tex-side (app,g,tv)=20, app in final STAT app k=tex=5 (CEN k=tex lines=25)
+INFO 8 last STAT: tex calls=40 comm=16 swap=0 | remap calls=24 chg=0 nochg=1 excl=0 tagun=24 tvchg=1
+PASS 9 gate: 12 of 120 RMP lines changed (app or tv)
+INFO 10 tv spread: not judged (no app group with >=20 RMP lines carrying tv=; tv lines=120)
+FAIL 11 tv determinism: 1 oid(s) got different tv after-values for the same final app
+  oid=7f000000 app=452 tv=1,102
+PASS 12 tv allowlist: 45 RMP tv after-value(s) inside their family's slot list
+  not judged: 75 line(s) with a final app outside the known families
+PASS 13 changed share: changed share 29.4% (5 changed oid(s) / 17 commoner-row oid(s))
+PASS 14 keep unchanged: 0 keep rows show a change (keep rows=7)
+PASS 15 stype tv writes: 0 tv writes on 7 RMP line(s) with stype>=3
+FAIL 16 cross-launch map: 23 (oid, before) key(s) map to different (after, tv) across launches
+  pair oid=7f000000 app=452 -> 452/1,452/102
+  pair oid=80000002 app=188 -> 188/9,188/23
+  pair oid=80000009 app=185 -> 185/7,185/19
+  pair oid=8000000b app=185 -> 185/4,185/14
+  pair oid=8000000c app=610 -> 610/9,610/24
+RESULT FAIL (2 FAIL, 1 WARN)

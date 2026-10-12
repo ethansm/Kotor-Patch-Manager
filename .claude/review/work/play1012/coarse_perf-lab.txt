@@ -1,0 +1,16 @@
+# perf-lab run analysis
+
+Game dir: `/home/ethansm/.local/share/Steam/steamapps/common/Knights of the Old Republic II`
+
+Launches found: 29 (29 with metrics, 0 attach-only stubs).
+
+## Summary (last 1 of 29 launches)
+
+| # | start | pid | ver | hwmip | texmem | loads | first load ms | hang | other_tpc_ret | ctrl_tpc_ret | run B gate | KT still_in_demand | KT uaf_write | TPC MB | heap UP MB (1st) | heap DOWN MB (1st) | robust FIRED | act IGN/PASS | S1 | S2 | S3 | SNDRI | VA min largest MB |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 29 | 07:15:42 | 324 | 0.6.0 | 0 | DISABLED | 4 | 8991 | no | 0 | 1 | PASS | 0 | 0 | 434.6 | 6.8 | 765.7 | 0 | 1/0 | covered | not covered | not covered | not toggled | 718 |
+
+**Overall run B gate (other_tpc_retained == 0 in every launch) [all 29 launches]: PASS (29 launches)**
+**Hangs (UP without DOWN) [all 29 launches]: none**
+
+VERDICT: PASS launches=29 hangs=0 gateB=PASS

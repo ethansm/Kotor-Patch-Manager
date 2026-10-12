@@ -1,0 +1,24 @@
+FILE inventory-3d-viewport_log.txt | 12715 B | 121 lines
+launches: 1 (showing #1, lines 1-121) (trimmed)
+# kplog session 2026-10-12 00:16:23 | kpatch.log v1 | patcher ABI 1
+patterns: 66 unique of 121 lines
+16  39  inventory#d-viewport/main dump view +#: # # # # # # # #
+5  104  inventory#d-viewport/main H# tick ## panel=# slot=usable
+5  107  inventory#d-viewport/debug apply(spin): gob=# yaw=# pitch=# roll=# zoom=# D=# q=(# # # #) pos=(# # #
+4  37  inventory#d-viewport/main H# BindInventoryView panel=# controls=# gate=# stack=#
+4  38  inventory#d-viewport/main H#: block=# control id=# (expect #) extent=[#,#,#,#] aspect=# controls now
+4  43  inventory#d-viewport/main dump view +#: # # # # # #
+4  44  inventory#d-viewport/main H#: scene # initialised (gui#D_room)
+4  45  inventory#d-viewport/main H#: rig 'inv#d_light' model=#, scene model count=#
+4  46  inventory#d-viewport/main H#: camera=# vtable=# (expect #)
+4  47  inventory#d-viewport/main H# cover LBL_BEVEL: ctl=# id=# (expect #) extent=[#,#,#,#] flags=# -> #
+4  48  inventory#d-viewport/main H# cover LBL_BEVEL#: ctl=# id=# (expect #) extent=[#,#,#,#] flags=# -> #
+4  49  inventory#d-viewport/main H#: slot # ready (panel=# seq=# rigFallback=#)
+tail:
+T=615290.709 f=- inventory-3d-viewport/main H3: tick gap 54.64s (inventory re...
+T=615290.777 f=- inventory-3d-viewport/debug apply(spin): gob=385db778 yaw=-9...
+T=616302.440 f=- inventory-3d-viewport/debug apply(spin): gob=385db778 yaw=-1...
+T=617304.305 f=- inventory-3d-viewport/debug apply(spin): gob=385db778 yaw=-2...
+T=618063.659 f=- inventory-3d-viewport/main DRAG: press #2 L=1 R=0 M=0 shift=...
+VERDICT: CLEAN  launches=1 lines=121
+hint: scripts/kplog_parse.py <file> --stats for structured kplog fields

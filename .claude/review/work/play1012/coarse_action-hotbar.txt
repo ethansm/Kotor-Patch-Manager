@@ -1,0 +1,23 @@
+FILE action-hotbar_log.txt | 257165 B | 2461 lines
+launches: 1 (showing #1, lines 1-2461) (trimmed)
+# kplog session 2026-10-12 00:16:23 | kpatch.log v1 | patcher ABI 1
+patterns: 163 unique of 2461 lines
+160  54  action-hotbar/slots btn[#].qty key #: hidden -> hidden (hud not active) flags #->#
+160  55  action-hotbar/slots btn[#].tgt key #: hidden -> hidden (hud not active) flags #->#
+121  195  action-hotbar/input hover: cursor=(#,#) over=#
+116  51  action-hotbar/slots btn[#].bg key #: hidden -> hidden (hud not active) flags #->#
+116  52  action-hotbar/slots btn[#].ic key #: hidden -> hidden (hud not active) flags #->#
+116  53  action-hotbar/slots btn[#].num key #: hidden -> hidden (hud not active) flags #->#
+96  158  action-hotbar/slots btn[#].qty key #: hidden -> hidden (unassigned) flags #->#
+96  159  action-hotbar/slots btn[#].tgt key #: hidden -> hidden (unassigned) flags #->#
+88  155  action-hotbar/slots btn[#].bg key #: hidden -> hidden (unassigned) flags #->#
+88  156  action-hotbar/slots btn[#].ic key #: hidden -> hidden (unassigned) flags #->#
+88  157  action-hotbar/slots btn[#].num key #: hidden -> hidden (unassigned) flags #->#
+60  119  action-hotbar/slots btn[#].bg key #: hidden -> shown (usable) flags #->#
+alerts:
+1  1562  action-hotbar/char character: creature 0c256878 has invalid object id ffffffff (party members=3 s...
+tail:
+T=1039164.901 f=- action-hotbar/gate panel[2]=08855820 vt=0099e454 flags=ffff...
+T=1039164.902 f=- action-hotbar/gate panel[3]=084dab20 vt=0099e6a4 flags=20145
+VERDICT: ALERTS(1)  launches=1 lines=2461
+hint: scripts/kplog_parse.py <file> --stats for structured kplog fields

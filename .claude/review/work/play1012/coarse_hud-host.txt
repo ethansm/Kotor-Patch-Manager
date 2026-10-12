@@ -1,0 +1,24 @@
+FILE hud-host_log.txt | 4417 B | 54 lines
+launches: 1 (showing #1, lines 1-54)
+# kplog session 2026-10-12 00:16:23 | kpatch.log v1 | patcher ABI 1
+patterns: 26 unique of 54 lines
+6  20  hud-host/core BUILD# dump panel=# +# # # # # # # # #
+4  23  hud-host/core BUILD# entry +# # # # #
+4  24  hud-host/core BUILD# owner=action-hotbar +# # -> #
+4  25  hud-host/core BUILD# owner=companion-selfheal +# # -> #
+4  26  hud-host/core BUILD# owner=combat-hotbar +# # -> #
+4  27  hud-host/core BUILD# owner=queue-hud +# # -> #
+3  11  hud-host/core register phase=# prio=# owner=combat-hotbar -> #
+3  29  hud-host/core HUD# hud=# (was #)
+3  30  hud-host/core HUD# frame=# +# # # # #
+2  15  hud-host/core register phase=# prio=# owner=queue-hud -> #
+2  17  hud-host/core register phase=# prio=# owner=action-hotbar -> #
+1  1  # kplog session ### #:#:# | kpatch.log v# | patcher ABI #
+tail:
+T=546056.146 f=- hud-host/core BUILD48 owner=action-hotbar +0x48 00000047 -> 00000047
+T=546057.284 f=- hud-host/core BUILD48 owner=companion-selfheal +0x48 00000047 -> 00000047
+T=546060.009 f=- hud-host/core BUILD48 owner=combat-hotbar +0x48 00000047 -> 00000047
+T=546060.166 f=- hud-host/core BUILD48 owner=queue-hud +0x48 00000047 -> 00000047
+T=548582.968 f=- hud-host/core HUD48 hud=38636800 (was 0870a368)
+VERDICT: CLEAN  launches=1 lines=54
+hint: scripts/kplog_parse.py <file> --stats for structured kplog fields

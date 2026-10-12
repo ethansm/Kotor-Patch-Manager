@@ -1,0 +1,10 @@
+member USE->DONE: hp-delta stack-delta timeout
+  m1 "Medpac (8)" src=auto hp+10 stack-1 timeout=0 queued=0
+REFUSE: already queued member=1 (auto) x1, already queued member=2 (auto) x4
+CS12: KICK=0 skipped=0 starved=0 REFUSE-queued=5 TIMEOUT-unqueued=0
+AUTO=6 CLICK-noitem=0 CFG save=9 reload=1
+TEX queued x11
+version 0.7.0-dev ui=popalign10+disc2
+rows h=24 screen=3840x1600
+discs slots=11/16 DISC=48 hover=19
+SELFHEAL P1=PASS P3=PASS DUMP=0 blocks USE=1 DONE=1 TIMEOUT=0 P4=PASS P5=PASS VERDICT=PASS

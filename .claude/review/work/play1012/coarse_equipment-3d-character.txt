@@ -1,0 +1,24 @@
+FILE equipment-3d-character_log.txt | 31876 B | 266 lines
+launches: 1 (showing #1, lines 1-266) (trimmed)
+# kplog session 2026-10-12 00:16:23 | kpatch.log v1 | patcher ABI 1
+patterns: 91 unique of 266 lines
+80  54  equipment#d-character/main H# cover LBL_E#D_M#: ctl=# id=# (expect #) extent=[#,#,#,#] flags=# -> #
+16  38  equipment#d-character/main dump view +#: # # # # # # # #
+6  237  equipment#d-character/main INPUT: press ## L=# M=# cursor=(#,#) rect=[#,#,#,#] top=# inside=# fg=#
+5  207  equipment#d-character/main H# tick ## panel=# slot=usable
+4  36  equipment#d-character/main H# BindEquipView panel=# controls=# gate=# enabled=# stage=#
+4  37  equipment#d-character/main H#: block=# control id=# (expect #) extent=[#,#,#,#] aspect=# controls no
+4  42  equipment#d-character/main dump view +#: # # # # # #
+4  43  equipment#d-character/main H#: scene # initialised (gui#D_room)
+4  44  equipment#d-character/main H#: rig 'charrec_light' model=#, scene model count=#
+4  45  equipment#d-character/main H#: camera=# vtable=# (expect #)
+4  46  equipment#d-character/main H#: camera attached to 'camerahook', fov=#
+4  47  equipment#d-character/main H# cover LBL_BEVEL: ctl=# id=# (expect #) extent=[#,#,#,#] flags=# -> #
+tail:
+T=815021.029 f=- equipment-3d-character/main INPUT: press #6 L=1 M=0 cursor=(...
+T=815704.045 f=- equipment-3d-character/main flourish: play 'bow' (scheduled)...
+T=1039529.604 f=- equipment-3d-character/main H4 EquipDestroy panel=08792e30 ...
+T=1039529.714 f=- equipment-3d-character/main helmet: detached+freed 386ea2b8...
+T=1039529.718 f=- equipment-3d-character/main creature: destroy 0bbb94c0 (pan...
+VERDICT: CLEAN  launches=1 lines=266
+hint: scripts/kplog_parse.py <file> --stats for structured kplog fields

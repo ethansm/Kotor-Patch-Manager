@@ -1,0 +1,26 @@
+FILE mouse-probe_log.txt | 413964 B | 5976 lines
+launches: 1 (showing #1, lines 1-5976)
+# kplog session 2026-10-12 00:16:27 | kpatch.log v1 | patcher ABI 1
+patterns: 24 unique of 5976 lines
+3995  11  mouse-probe/raw RAW # # # #
+988  12  mouse-probe/polls POLLS n=# zero=# maxgap=#ms
+447  28  mouse-probe/click CLICK msg=# x=# y=# guard#EC=# dtLmbDown=# dpos=# movept_bg=#
+209  25  mouse-probe/click DBLACT isDbl=# hov=# sel=# last=# vec=(#,#,#)
+139  119  mouse-probe/cam CAM dx=# dy=# scale=# drag=# mode=# yaw=# pitch=# ctl#=# ctl#=#
+94  512  mouse-probe/norm NORM # #
+49  1083  mouse-probe/click MOVEPT caller=# obj=#
+21  477  mouse-probe/click WORLDCLICK hov=# sel=# last=# nact=# branch=A
+11  118  mouse-probe/drag DRAGSTATE # -> # rmbDown=#
+5  1663  mouse-probe/click WORLDCLICK hov=# sel=# last=# nact=# branch=B
+5  1664  mouse-probe/click DEFACT fn=# arg=# type=# actor=# hov=#
+1  1  # kplog session ### #:#:# | kpatch.log v# | patcher ABI #
+alerts:
+1  744  mouse-probe/click SYNTHDBL 0x203 synthesized from dropped 0x201 (dt=345 dpos=4.0)
+tail:
+T=1041076.965 f=- mouse-probe/raw RAW -2393 -1118 0 00000080
+T=1041077.007 f=- mouse-probe/click DBLACT isDbl=0 hov=0x800001ba sel=0x7f000000 last=0x7f000000 vec=(0.000,0.000,0.000)
+T=1041110.148 f=- mouse-probe/raw RAW 0 0 0 00000080
+T=1041159.774 f=- mouse-probe/click CLICK msg=0x202 x=2393 y=480 guard3EC=0 dtLmbDown=83 dpos=0.0 movept_bg=0
+T=1041159.933 f=- mouse-probe/raw RAW -2393 -1118 0 00000000
+VERDICT: ALERTS(1)  launches=1 lines=5976
+hint: scripts/kplog_parse.py <file> --stats for structured kplog fields

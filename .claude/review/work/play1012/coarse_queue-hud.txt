@@ -1,0 +1,55 @@
+QUEUE-HUD lines=1721 parsed=1135 skipped=10 cmds=54 qj=410
+SKIPPED 10: L166 CANCEL missing cmd; L170 CANCEL bare token 'done'; L545 CANCEL missing cmd ; ... +7 more
+DECLINES 160: active=67 no_leader=44 in_queue=26 engine_busy=12 flags=11
+COMMANDS 54
+  cmd 1 m=0 spell dec=dispatch_now -> reinject-declined:no_leader -> reinject-declined:in_queue -> reinject-declined:no_leader -> VANISH:eaten_wait -> REINJECT#1 -> VANISH:unseen -> RESOLVE seen=1 reinj=0 age=11116
+  cmd 2 m=0 item dec=buffer -> wait:active x10 -> dispatch -> reinject-declined:in_queue -> reinject-declined:no_leader -> VANISH:executed -> RESOLVE seen=1 reinj=0 age=10822
+  cmd 3 m=0 item dec=buffer -> wait:active x2 -> wait:engine_busy x2 -> dispatch -> reinject-declined:in_queue -> reinject-declined:no_leader -> VANISH:executed -> RESOLVE seen=1 reinj=0 age=11553
+  cmd 4 m=0 spell dec=buffer -> wait:active x2 -> wait:engine_busy x2 -> dispatch -> reinject-declined:no_leader -> VANISH:unseen -> RESOLVE seen=0 reinj=0 age=10104
+  cmd 5 m=0 spell dec=dispatch_now -> reinject-declined:no_leader -> reinject-declined:in_queue -> reinject-declined:no_leader -> VANISH:eaten_wait -> reinject-declined:no_leader -> DROP why=cancel n=0
+  cmd 6 m=0 spell dec=buffer -> wait:active x14 -> DROP why=cancel n=0
+  cmd 7 m=0 spell dec=buffer -> DROP why=cancel n=0
+  cmd 8 m=0 item dec=dispatch_now -> reinject-declined:no_leader -> reinject-declined:in_queue -> DROP why=combat_clear n=1
+  cmd 9 m=0 spell dec=dispatch_now -> reinject-declined:no_leader -> reinject-declined:in_queue -> reinject-declined:no_leader -> VANISH:executed -> RESOLVE seen=1 reinj=0 age=8246
+  cmd 10 m=0 spell dec=dispatch_now -> reinject-declined:no_leader -> reinject-declined:in_queue -> reinject-declined:no_leader -> VANISH:executed -> RESOLVE seen=1 reinj=0 age=1161
+  cmd 11 m=0 spell dec=dispatch_now -> reinject-declined:no_leader -> reinject-declined:in_queue -> reinject-declined:no_leader -> VANISH:executed -> RESOLVE seen=1 reinj=0 age=4225
+  cmd 12 m=0 spell dec=buffer -> wait:active -> dispatch -> VANISH:eaten_wait -> REINJECT#1 -> VANISH:executed -> RESOLVE seen=0 reinj=0 age=3341
+  ... +42 more
+DROPS 5
+  L167 cmd=6 m=2 cancel n=0
+  L168 cmd=7 m=2 cancel n=0
+  L169 cmd=5 m=2 cancel n=0
+  L224 cmd=8 m=0 combat_clear n=1
+  L1130 cmd=28 m=0 cancel n=1
+EDGES 98
+  L29 paused 0->1 src=hud buf=0,0,0
+  L69 paused 1->0 src=hud buf=3,0,0
+  L113 paused 0->1 src=hud buf=0,0,0
+  L192 paused 1->0 src=hud buf=0,0,0
+  L194 paused 0->1 src=hud buf=0,0,0
+  L206 combat 0->1 src=hud buf=0,0,0
+  L216 paused 1->0 src=hud buf=0,0,0
+  L223 combat 1->0 src=hud buf=0,0,0
+  ... +90 more
+HANDOFFS 5 (IDENT_SWAP x1) (clear x2)
+  L210 m=0 active=8 buffered=0 cmds=- -> HANDOFF_ONE x0
+  L707 m=0 active=- buffered=1 cmds=19 -> HANDOFF_ONE x1
+  ... +3 more
+ROUNDS 128
+  L211 m=0 n=1 subs=10 cur=- ne=1 types=3f
+  L212 m=1 n=0 subs=- cur=- ne=2 types=3d,3d
+  L213 m=2 n=0 subs=- cur=- ne=1 types=3d
+  L217 m=0 n=0 subs=- cur=- ne=5 types=01,11,13,2e,3f
+  ... +124 more
+VANISHES 30
+  executed=21 unseen=4 eaten_paused=0 eaten_wait=5
+STALE_CUR 2
+  m=0 x2 first L1413
+FLAGS 7
+  I L210 m=0 HANDOFF active=8 never re-sent (trigger lost at hand-off)
+  A L234 m=1 follower 0x3d wiped (was L155, ours=external)
+  A L422 m=1 follower 0x3d wiped (was L362, ours=external)
+  A L423 m=2 follower 0x3d wiped (was L405, ours=external)
+  B L552 m=2 orphan-round round 1 -> 2 after ours=cancel (L550)
+  B L596 m=1 orphan-round round 1 -> 2 after ours=cancel (L590)
+  B L606 m=1 orphan-round round 2 -> 2 after ours=cancel (L596)

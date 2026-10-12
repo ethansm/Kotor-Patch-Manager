@@ -1,0 +1,21 @@
+FILE character-effects-panel_log.txt | 87360 B | 676 lines
+launches: 1 (showing #1, lines 1-676) (trimmed)
+# kplog session 2026-10-12 00:16:23 | kpatch.log v1 | patcher ABI 1
+patterns: 202 unique of 676 lines
+56  42  character-effects-panel/main H# LBL_EFX_D#: ctl=# id=# (expect #) extent=[#,#,#,#] flags=# -> #
+56  56  character-effects-panel/main H# LBL_EFX_I#: ctl=# id=# (expect #) extent=[#,#,#,#] flags=# -> #
+56  70  character-effects-panel/main H# LBL_EFX_N#: ctl=# id=# (expect #) extent=[#,#,#,#] flags=# -> #
+56  84  character-effects-panel/main H# LBL_EFX_T#: ctl=# id=# (expect #) extent=[#,#,#,#] flags=# -> #
+56  98  character-effects-panel/main H# LBL_EFX_S#: ctl=# id=# (expect #) extent=[#,#,#,#] flags=# -> #
+32  403  character-effects-panel/main eff[#] # type=# sub=# spell=# iconRow=# ints=[#,#,#,#,#,#,#,#] dur=# te
+20  401  character-effects-panel/main eff[#] # type=# sub=# spell=# iconRow=# ints=[#,#,#,#,#,#,#,#] dur=# PE
+11  509  character-effects-panel/main H# beat: client=# server=# entries=# first=# over=# stage=#
+6  484  character-effects-panel/debug label #: text "" -> "#:#"
+5  396  character-effects-panel/main H# tick ## panel=# slot=bound
+4  37  character-effects-panel/main H# BindCharEffects panel=# controls=# enabled=# stage=#
+4  38  character-effects-panel/main H# LBL_EFX_BACK: ctl=# id=# (expect #) extent=[#,#,#,#] flags=# -> #
+tail:
+T=611722.517 f=- character-effects-panel/main H3 beat: client=0c256878 server...
+T=1039540.488 f=- character-effects-panel/main H4 CharEffectsDestroy panel=38...
+VERDICT: CLEAN  launches=1 lines=676
+hint: scripts/kplog_parse.py <file> --stats for structured kplog fields

@@ -1,0 +1,17 @@
+FILE area_hook_probe_log.txt | 1665 B | 15 lines
+launches: 1 (showing #1, lines 1-15)
+[3653161794 t0] area-hook-probe 0.1.0 attached: H1 0x00533830 CServerExoAppInternal::MainLoop | H2 0x0055A460 CSWSModule::LoadModuleInProgress | H3 0x005582F...
+patterns: 6 unique of 15 lines
+4  4  H# saved module load: CSWSModule::LoadModuleStart module=#
+4  5  H# fresh area load: CSWSModule::LoadModuleInProgress module=#
+4  6  H# area changed: area=# id=# resref="#tel" prev_area_calls=# total_adds=# (last load hook: H# fresh)
+1  1  area-hook-probe #.# attached: H# # CServerExoAppInternal::MainLoop | H# # CSWSModule::LoadModuleInPr
+1  2  H# first MainLoop call: this=#
+1  3  H# latch this+#: none -> # (last load hook: none, ms since attach #)
+tail:
+[3653597327 t21089] H2 fresh area load: CSWSModule::LoadModuleInProgress module=0bf4ae00
+[3653597332 t21089] H4 area changed: area=0c5d4420 id=00000001 resref="204tel" prev_area_calls=301 total_adds=477 (last load hook: H2 fresh)
+[3653706778 t26653] H3 saved module load: CSWSModule::LoadModuleStart module=0bf4ae00
+[3653706795 t26654] H2 fresh area load: CSWSModule::LoadModuleInProgress module=0bf4ae00
+[3653706799 t26654] H4 area changed: area=0c5d4420 id=00000001 resref="208tel" prev_area_calls=286 total_adds=764 (last load hook: H2 fresh)
+VERDICT: CLEAN  launches=1 lines=15

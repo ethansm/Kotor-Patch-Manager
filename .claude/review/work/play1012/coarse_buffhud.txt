@@ -1,0 +1,23 @@
+FILE buffhud_log.txt | 365022 B | 4131 lines
+launches: 18 (showing #18, lines 3729-4131)
+buffhud loaded
+patterns: 22 unique of 403 lines
+80  3734  COLUMN## buff slot=# large=# card=#x# scale=# tracked=# cols=# fit=# draw=# size=# gap=#
+59  3730  ARROWS slot=# creature=# raw=(#,#) tracked=(#,#) -> counters=(#,#) overlay=(#,#,#)
+45  3736  icon[#] ip_knightspeed rect=(#,#,#,#) ratio=# bright=# dimAlpha=#
+40  3732  arrow row=# slot=# idx=# tracked=# -> suppress
+36  3863  icon[#] ii_frarmbnds_# rect=(#,#,#,#) ratio=# bright=# dimAlpha=#
+34  3743  icon[#] ip_resistenergy# rect=(#,#,#,#) ratio=# bright=# dimAlpha=#
+26  3864  icon[#] ii_adrnaline_# rect=(#,#,#,#) ratio=# bright=# dimAlpha=#
+20  3946  DBGMISS i=# spell=# type=# sub=# dur=# creator=# debuffIcon=- buffIcon=-
+15  3948  DBGMISS i=# spell=# type=# sub=# dur=# creator=# debuffIcon=- buffIcon=ip_resistenergy#
+10  4073  icon[#] ii_cmbtshot_# rect=(#,#,#,#) ratio=# bright=# dimAlpha=#
+9  3940  COLUMN## DEBUFF slot=# large=# card=#x# scale=# tracked=# cols=# fit=# draw=# size=# gap=#
+8  3962  icon[#] ip_mind rect=(#,#,#,#) ratio=# bright=# dimAlpha=#
+tail:
+  icon[0] ii_frarmbnds_003 rect=(2,2,18,18) ratio=0.540 bright=10 dimAlpha=0.35
+  icon[1] ii_cmbtshot_001 rect=(2,22,18,18) ratio=0.749 bright=13 dimAlpha=0.35
+  icon[2] ii_adrnaline_002 rect=(2,42,18,18) ratio=0.799 bright=14 dimAlpha=0.35
+  icon[3] ii_adrnaline_001 rect=(2,62,18,18) ratio=0.774 bright=14 dimAlpha=0.35
+COLUMN#80911 DEBUFF slot=08858954 large=0 card=96x96 scale=2.000 tracked=0 cols=1 fit=4 draw=0 size=18 gap=2
+VERDICT: CLEAN  launches=18 lines=403

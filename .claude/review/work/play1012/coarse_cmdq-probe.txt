@@ -1,0 +1,25 @@
+CMDQ-PROBE lines=836 parsed=826 unknown=10 malformed=0
+CHANNELS PAUSE=74 CMD=149 FIRE=44 ROUND=364 CLR=195 REEQ=0 MED=0
+FLAGS M1=0 M2=0 C1=93
+MALFORMED 0
+UNKNOWN 10
+  L1 #
+  L2 #
+  L3 #
+  ... +7 more
+M1 medpack-refused 0
+M2 item-never-fired 0
+C1 combat-start-wipe 93
+  L94 t=548588.450 ROUND ev=start round=0x38788618 owner=0xcb6a748: CLR L93 t=548588.370 caller=0x66f392 victim=0xcb6a748 (dt=0.080 ms)
+  L95 t=548588.454 ROUND ev=start round=0x8690f20 owner=0xc6c0020: CLR L93 t=548588.370 caller=0x66f392 victim=0xcb6a748 (dt=0.084 ms)
+  L114 t=635051.519 ROUND ev=start round=0x38788618 owner=0xcb6a748: CLR L113 t=635051.478 caller=0x66f392 victim=0xcb6a748 (dt=0.041 ms)
+  L115 t=635051.522 ROUND ev=start round=0x8690f20 owner=0xc6c0020: CLR L113 t=635051.478 caller=0x66f392 victim=0xcb6a748 (dt=0.044 ms)
+  L119 t=635287.490 ROUND ev=start round=0x8984640 owner=0x87ad2f8: CLR L118 t=635269.195 caller=0x66f392 victim=0x87ad2f8 (dt=18.295 ms)
+  L130 t=638066.513 ROUND ev=start round=0x38788618 owner=0xcb6a748: CLR L129 t=638066.461 caller=0x66f392 victim=0xcb6a748 (dt=0.052 ms)
+  L131 t=638066.517 ROUND ev=start round=0x8690f20 owner=0xc6c0020: CLR L129 t=638066.461 caller=0x66f392 victim=0xcb6a748 (dt=0.056 ms)
+  L136 t=638318.111 ROUND ev=start round=0x8984640 owner=0x87ad2f8: CLR L135 t=638300.146 caller=0x66f392 victim=0x87ad2f8 (dt=17.965 ms)
+  L137 t=638399.470 ROUND ev=start round=0xca9d778 owner=0xcaf2ea0: CLR L135 t=638300.146 caller=0x66f392 victim=0x87ad2f8 (dt=99.324 ms)
+  L148 t=645892.490 ROUND ev=start round=0x868c2e8 owner=0x868f6b8: CLR L147 t=645825.697 caller=0x6cf710 victim=0xc1dda10 (dt=66.793 ms)
+  L149 t=645892.495 ROUND ev=start round=0x8984640 owner=0x87ad2f8: CLR L147 t=645825.697 caller=0x6cf710 victim=0xc1dda10 (dt=66.798 ms)
+  L169 t=651011.012 ROUND ev=start round=0x8690f20 owner=0xc6c0020: CLR L167 t=650995.203 caller=0x66f392 victim=0x87ad2f8 (dt=15.809 ms)
+  ... +81 more
