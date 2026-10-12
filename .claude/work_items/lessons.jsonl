@@ -1,0 +1,2 @@
+{"key": "plan-row-hygiene", "scope": "audit", "text": "5 items closed with unresolved plan rows", "ts": "2026-10-12T21:14:29Z"}
+{"key": "token-overrun", "scope": "global", "text": "A worker exceeded the 60k budget: split the item, or read only the listed line ranges.", "ts": "2026-10-12T21:14:29Z"}

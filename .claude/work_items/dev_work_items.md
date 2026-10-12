@@ -114,3 +114,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 98 | WI-32 | P3 | hold | M | - | Compat-check --sync contract-test gate | 1 | 1 | Compat-check --sync contract-test gate; hold, suite names unknown. |
 | [ ] | 99 | WI-20c | P3 | hold | S | - | RB keep-nodes patch at 0x4957AA (target unknown, C112) | 1 | 0 | RB keep-nodes patch at 0x4957AA; target file unknown, research. |
 | [ ] | 100 | WI-22 | P3 | hold | L | - | Empty-container indicators (Mod 7, cancelled) | 7 | 1 | Empty-container indicators; cancelled, all 7 rows parked. |
+| [ ] | 101 | WI-69 | P3 | hold | S | - | Add plan ids to Source rows that have none [audit:plan-row-hygiene] | 0 | 0 | 5 closed items left plan rows unresolved |
