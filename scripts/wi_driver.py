@@ -50,6 +50,8 @@ GATE_TIMEOUT = 1500
 DOC_PAD_LINES = 15  # context lines kept around each cited plan-doc row in a brief entry
 DOC_MAX_SPAN = 150
 RESCUE_UNITS = 7
+MAX_RESCUE_ROUNDS = 2
+ROUND2_UNITS = ("gap", "spec", "code", "tests")
 WAVE_TOOLS = SCRIPTS_DIR / "wave_tools.py"
 PLAN_MANAGER = SCRIPTS_DIR / "plan_manager.py"
 RUN_TESTS_SUMMARY = re.compile(r"(\d+) passed, (\d+) failed, (\d+) error, (\d+) skipped \((\d+) items\)")
@@ -411,7 +413,9 @@ def fail_path(st, wi, claim, reason, excerpt, session):
         print(f"THEN: python3 scripts/wi_driver.py verify {wi.id}")
         return 1
     print(f"FAIL {wi.id}: {reason}\n{excerpt}")
-    return park(st, wi, claim, f"{reason}: {excerpt}"[:200], session, rescue=reason.startswith("worker reply FAIL"))
+    worker_fail = reason.startswith("worker reply FAIL")
+    return park(st, wi, claim, f"{reason}: {excerpt}"[:200], session,
+                rescue=worker_fail and rescue_rounds(st, wi) < MAX_RESCUE_ROUNDS, capped=worker_fail and rescue_rounds(st, wi) >= MAX_RESCUE_ROUNDS)
 
 
 def cmd_verify(a, st):
@@ -648,7 +652,7 @@ def close_manual(a, st, wi):
     if not a.paths or not a.reason:
         raise DriverError("close --manual needs --paths P [P ...] and --reason TEXT")
     done, _ = st.state_maps()
-    if wi.id in done:
+    if wi.id in done and not rescue_rounds(st, wi):
         raise DriverError(f"{wi.id} is already done")
     live = st.read_claim(wi.id)
     if live and not st.is_stale(live):
@@ -794,7 +798,7 @@ def cmd_report(a, st):
 
 
 # ---------------------------------------------------------------- park / release / status
-def park(st, wi, claim, reason, session, commit=True, rescue=False):
+def park(st, wi, claim, reason, session, commit=True, rescue=False, capped=False):
     """Record a park event, release the claim, commit state files. Partial edits stay in the tree and are reported."""
     root = st.root
     partial = []
@@ -832,6 +836,8 @@ def park(st, wi, claim, reason, session, commit=True, rescue=False):
         print(f"Partial edits left uncommitted in the working tree ({len(partial)}): {', '.join(partial[:4])}. Review or revert them by hand; the driver never reverts.")
     if rescue:
         print(f"THEN: python3 scripts/wi_driver.py rescue {wi.id}")
+    elif capped:
+        print(f"{MAX_RESCUE_ROUNDS} rescue rounds used: stop and ask the user")
     else:
         print("Safe to /clear (or /exit). Next Resume Command: /next-dev-work-item")
     return 2
@@ -860,8 +866,60 @@ def sibling_items(items, wi):
     return out
 
 
-def rescue_units(st, wi, items):
-    """The recon units of the rescue swarm: [(key, title, task, entries)], at most RESCUE_UNITS, generic over any work item."""
+def rescue_dir(wi):
+    return f".claude/research/{wi.id.lower().replace('-', '')}_rescue"
+
+
+def rescue_rounds(st, wi):
+    """Rescue rounds already started for this item (one `rescue` event per round)."""
+    return sum(1 for e in st.events() if e["wi"] == wi.id and e["ev"] == "rescue")
+
+
+def reparked_since_rescue(st, wi):
+    """True when a `park` event follows the item's latest `rescue` event."""
+    seen_rescue = False
+    parked_after = False
+    for e in st.events():
+        if e["wi"] != wi.id:
+            continue
+        if e["ev"] == "rescue":
+            seen_rescue, parked_after = True, False
+        elif e["ev"] == "park" and seen_rescue:
+            parked_after = True
+    return parked_after
+
+
+OPEN_MARKER = "[OPEN {wi}"
+
+
+def open_markers(st, wi):
+    """[(path, line_no, text)] of `[OPEN WI-NN` markers in the item's plan docs."""
+    pat = re.compile(re.escape(OPEN_MARKER.format(wi=wi.id)) + r"(?![0-9A-Za-z])")
+    out = []
+    for d in wm.doc_paths(wi):
+        p = st.root / d
+        if not p.is_file():
+            continue
+        for n, line in enumerate(p.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
+            if pat.search(line):
+                out.append((d, n, line.strip()[:120]))
+    return out
+
+
+def unresolved_plan_rows(st, wi):
+    closed = st.claims / f"{wi.id}.closed.json"
+    if not closed.is_file():
+        return []
+    try:
+        return list(json.loads(closed.read_text(encoding="utf-8")).get("unresolved") or [])
+    except ValueError:
+        return []
+
+
+def rescue_units(st, wi, items, round_no=1, blocker=""):
+    """The recon units of the rescue swarm: [(key, title, task, entries)], at most RESCUE_UNITS, generic over any work item.
+
+    round_no=2 returns only the ROUND2_UNITS, each opening with the round-2 context and listing the round-1 decision note."""
     root = st.root
     wi_md = f"{wm.WORK_DIR.as_posix()}/{wi.id}.md"
     files = [f for f in wi.files if (root / f).is_file()]
@@ -872,16 +930,21 @@ def rescue_units(st, wi, items):
     attempts = sorted((root / ".claude" / "waves").glob(f"{wi.id}-a*/u01.brief.md"))
     gap = [attempts[-1].relative_to(root).as_posix()] if attempts else []
     gap += [p.replace("brief.md", "reply.txt") for p in gap if (Path(root) / p.replace("brief.md", "reply.txt")).is_file()]
+    # round 2: when the write-scope file is itself a plan doc, read the cited row windows, not the whole file
+    code_files = docs if round_no > 1 and files and files[0] in wm.doc_paths(wi) else files[:1]
     sibs = sibling_items(items, wi)
     sib_md = [f"{wm.WORK_DIR.as_posix()}/{w.id}.md" for w in sibs][:2]
     ctx = f"{wi.id} ({wi.title}) was parked after its Haiku worker replied FAIL twice. Find out why and what would make it finishable."
-    return [
+    if round_no > 1:
+        ctx = (f"Round {round_no}: the round-{round_no - 1} outputs and decision are listed; find what still blocks the item. "
+               f"{wi.id} ({wi.title}) {blocker or 'is not finished'}.")
+    units = [
         ("spec", "spec in cited doc rows", f"{ctx} Spec check: for each source row ({rows}) state what the cited plan doc really requires, "
          f"whether it is in scope for the current version (watch words like v2, possible, later, if), and where the Steps in {wi_md} disagree with the doc." + tail,
          [wi_md] + docs),
         ("code", "code flow at the files", f"{ctx} Code flow: in the Write Scope files ({flist}) locate the functions, hooks and call sites the Steps name. "
          f"Give path:line anchors, the current state of each row (present, absent, partial) and the exact place an edit would go. Use rg and sed -n ranges." + tail,
-         [wi_md] + files[:1]),
+         [wi_md] + code_files),
         ("data", "data and table sources", f"{ctx} Data sources: for the files ({flist}) find generators (scripts/gen_*), tables (*.inc, 2DA, toml) and runtime readers that feed them. "
          f"Which fields exist today, which the Steps need, and who owns each. Use rg." + tail,
          [wi_md] + files[:1]),
@@ -897,31 +960,99 @@ def rescue_units(st, wi, items):
         ("gap", "brief gap analysis", f"{ctx} Brief gap: read the failed attempt's brief and reply. List every contradiction between the Steps and the brief "
          f"(steps needing files outside the Write Scope, missing read entries, unreachable rows) and the cheapest brief that would work." + tail,
          [wi_md] + gap),
-    ][:RESCUE_UNITS]
+    ]
+    if round_no > 1:
+        decision = f"{rescue_dir(wi)}/decision_r{round_no - 1}.md"
+        by_key = {u[0]: u for u in units}
+        units = [(k, t, task, [e[0], decision, *e[1:]]) for k, t, task, e in (by_key[k] for k in ROUND2_UNITS)]
+    return units[:RESCUE_UNITS]
 
 
-def rescue_wave_id(wi):
-    return f"{wi.id}-rescue"
+def rescue_wave_id(wi, round_no=1):
+    return f"{wi.id}-rescue" if round_no <= 1 else f"{wi.id}-rescue{round_no}"
+
+
+def residual_rows(st, wi):
+    """Residual-work signals as text lines: [OPEN WI-NN markers in the item's docs and plan rows the close left unresolved."""
+    rows = [f"{d}:{n} {t}" for d, n, t in open_markers(st, wi)]
+    rows += [f"unresolved plan row: {r}" for r in unresolved_plan_rows(st, wi)]
+    return rows
+
+
+def rescue_status(st, wi):
+    """Print rounds used/left, item state and residual signals. Mutates nothing."""
+    done, parked = st.state_maps()
+    rounds = rescue_rounds(st, wi)
+    live = st.read_claim(wi.id)
+    state = "done" if wi.id in done else f"parked ({parked[wi.id][:80]})" if wi.id in parked else "claimed" if live and not st.is_stale(live) else "claimable"
+    reparked = reparked_since_rescue(st, wi)
+    markers = open_markers(st, wi)
+    unresolved = unresolved_plan_rows(st, wi)
+    print(f"RESCUE STATUS {wi.id}: {rounds} of {MAX_RESCUE_ROUNDS} rounds used, {max(MAX_RESCUE_ROUNDS - rounds, 0)} left; item is {state}")
+    print(f"  (a) re-parked after the last rescue: {'yes' if reparked else 'no'}")
+    print(f"  (b) [OPEN {wi.id}] markers in plan docs: {len(markers)}")
+    for d, n, t in markers[:5]:
+        print(f"      {d}:{n} {t}")
+    print(f"  (c) unresolved plan rows from the close: {len(unresolved)}")
+    for r in unresolved[:5]:
+        print(f"      {r}")
+    worker_fail = wi.id in parked and parked[wi.id].startswith("worker reply FAIL")
+    if rounds >= MAX_RESCUE_ROUNDS and (reparked or markers or unresolved):
+        then = f"{MAX_RESCUE_ROUNDS} rescue rounds used: stop and ask the user"
+    elif rounds == 0:
+        then = f"python3 scripts/wi_driver.py rescue {wi.id}" if worker_fail else "no rescue round used and no worker-FAIL park; nothing to rescue"
+    elif reparked and worker_fail:
+        then = f"python3 scripts/wi_driver.py rescue {wi.id}"
+    elif markers or unresolved:
+        then = f"python3 scripts/wi_driver.py rescue {wi.id} --residual"
+    elif reparked:
+        then = f"{wi.id} was re-parked for a non-FAIL reason; ask the user"
+    else:
+        then = "no residual work; report"
+    print(f"THEN: {then}")
+    return 0
 
 
 def cmd_rescue(a, st):
     root = st.root
     items = wm.load_all(root)
     wi = get_item(items, a.wi)
-    wave_id = rescue_wave_id(wi)
-    wdir = root / ".claude" / "waves" / wave_id
+    if a.status:
+        return rescue_status(st, wi)
+    rounds = rescue_rounds(st, wi)
     if a.collect:
-        return rescue_collect(st, wi, wave_id, wdir)
+        round_no = max(rounds, 1)
+        return rescue_collect(st, wi, rescue_wave_id(wi, round_no), root / ".claude" / "waves" / rescue_wave_id(wi, round_no), round_no)
+    if rounds >= MAX_RESCUE_ROUNDS:
+        raise DriverError(f"{wi.id}: {MAX_RESCUE_ROUNDS} rounds used; needs you")
+    round_no = rounds + 1
+    wave_id = rescue_wave_id(wi, round_no)
+    wdir = root / ".claude" / "waves" / wave_id
     done, parked = st.state_maps()
-    if wi.id not in parked:
-        raise DriverError(f"{wi.id} is not parked; rescue only runs on a parked item")
-    if not parked[wi.id].startswith("worker reply FAIL"):
-        raise DriverError(f"{wi.id} park reason is not a worker FAIL ({parked[wi.id][:60]}); rescue handles worker-FAIL parks only")
-    if any(e["wi"] == wi.id and e["ev"] == "rescue" for e in st.events()):
-        raise DriverError(f"{wi.id} was already rescued once; collect with: rescue {wi.id} --collect")
-    units = rescue_units(st, wi, items)
+    blocker = ""
+    if round_no == 1:
+        if a.residual:
+            raise DriverError(f"{wi.id} has no finished rescue round; --residual follows a round 1")
+        if wi.id not in parked:
+            raise DriverError(f"{wi.id} is not parked; rescue only runs on a parked item")
+        if not parked[wi.id].startswith("worker reply FAIL"):
+            raise DriverError(f"{wi.id} park reason is not a worker FAIL ({parked[wi.id][:60]}); rescue handles worker-FAIL parks only")
+    elif a.residual:
+        residual = residual_rows(st, wi)
+        if not residual:
+            raise DriverError(f"{wi.id} has no residual rows; nothing for round {round_no}")
+        blocker = "has residual rows: " + "; ".join(residual[:6])[:600]
+    else:
+        if not reparked_since_rescue(st, wi):
+            raise DriverError(f"{wi.id} was already rescued; collect with: rescue {wi.id} --collect (round {round_no} needs a new park after the rescue, or --residual)")
+        if wi.id not in parked or not parked[wi.id].startswith("worker reply FAIL"):
+            raise DriverError(f"{wi.id} is not parked on a worker FAIL; round {round_no} follows a re-park with a worker FAIL, or use --residual")
+        blocker = f"was re-parked after the round-{rounds} attempt: {parked[wi.id][:300]}"
+    if round_no > 1 and not (root / rescue_dir(wi) / f"decision_r{rounds}.md").is_file():
+        print(f"WARNING: {rescue_dir(wi)}/decision_r{rounds}.md is missing; the briefs will not list a decision note")
+    units = rescue_units(st, wi, items, round_no, blocker)
     if a.dry_run:
-        print(f"DRY RUN rescue {wi.id}: {len(units)} recon unit(s)")
+        print(f"DRY RUN rescue {wi.id} round {round_no}: {len(units)} recon unit(s)")
         for i, (key, title, task, entries) in enumerate(units, 1):
             present = [e for e in entries if (root / e.split(":")[0]).is_file()]
             res = wave_budget.check([wave_tools.resolve_entry(root, e) for e in present], brief_bytes=len(task.encode("utf-8")) + 1500)
@@ -936,10 +1067,10 @@ def cmd_rescue(a, st):
         spawns.append(spawn_lines(desc, prompt))
     with st.flock("commit.flock"):
         state_p = ws.STATE_FILE.as_posix()
-        st.append_event(wi.id, "rescue", session_id(), f"{len(units)} recon briefs in {wave_id}")
+        st.append_event(wi.id, "rescue", session_id(), f"round {round_no}: {len(units)} recon briefs in {wave_id}")
         git_commit(st, f"{wi.id}: rescue recon briefs written\n\n{TRAILER}\n", [state_p])
     ledger(root, "WI_RESCUE", wi=wi.id, units=len(units))
-    print(f"RESCUE {wi.id}: {len(units)} recon briefs in .claude/waves/{wave_id}/ (outputs uNN.md next to each brief)")
+    print(f"RESCUE {wi.id} round {round_no} of {MAX_RESCUE_ROUNDS}: {len(units)} recon briefs in .claude/waves/{wave_id}/ (outputs uNN.md next to each brief)")
     print(f"Spawn all {len(spawns)} in ONE message, model haiku, exactly as printed:")
     for lines in spawns:
         print("\n".join(lines))
@@ -950,7 +1081,7 @@ def cmd_rescue(a, st):
 RESCUE_READ_ORDER = ("gap", "spec", "code", "data", "tests", "rows", "siblings")
 
 
-def rescue_collect(st, wi, wave_id, wdir):
+def rescue_collect(st, wi, wave_id, wdir, round_no=1):
     root = st.root
     if not (wdir / "manifest.json").is_file():
         raise DriverError(f"no rescue wave for {wi.id}; run: python3 scripts/wi_driver.py rescue {wi.id}")
@@ -960,7 +1091,7 @@ def rescue_collect(st, wi, wave_id, wdir):
         results = {u["id"]: u for u in json.loads(r.stdout)["units"]}
     except (ValueError, KeyError):
         raise DriverError(f"wave_tools check {wave_id} failed: {last_lines(r.stderr or r.stdout, 3)}")
-    keys = ["spec", "code", "data", "tests", "rows", "siblings", "gap"]
+    keys = list(ROUND2_UNITS) if round_no > 1 else ["spec", "code", "data", "tests", "rows", "siblings", "gap"]
     bad = []
     print(f"COLLECT {wi.id}: {len(results)} recon unit(s)")
     for u in manifest["units"]:
@@ -1264,9 +1395,11 @@ def build_parser():
     p.add_argument("wi")
     p.add_argument("--reason", required=True)
     p.add_argument("--dry-run", action="store_true")
-    p = sub.add_parser("rescue", help="after a worker-FAIL park: write the recon swarm briefs (once), or --collect their outputs")
+    p = sub.add_parser("rescue", help="after a worker-FAIL park: write the recon swarm briefs (up to 2 rounds), --collect their outputs, or --status")
     p.add_argument("wi")
     p.add_argument("--collect", action="store_true", help="check the swarm replies and print the plan reading order")
+    p.add_argument("--status", action="store_true", help="print rounds used, item state and residual signals; changes nothing")
+    p.add_argument("--residual", action="store_true", help="round 2 for residual rows ([OPEN WI-NN markers, unresolved plan rows) without a re-park")
     p.add_argument("--dry-run", action="store_true")
     p = sub.add_parser("unpark", help="reverse a park: clear the [!] cell so the item is claimable again")
     p.add_argument("wi")

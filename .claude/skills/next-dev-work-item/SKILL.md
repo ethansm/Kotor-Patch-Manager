@@ -7,7 +7,7 @@ description: >-
 
 # Next Dev Work Item
 
-One fresh session = one finished, committed work item. You are the orchestrator (Sonnet); every worker, checker and docs agent is Haiku (`model: haiku`). A Sonnet worker is allowed only after one Haiku retry has failed, and `wi_driver.py` already schedules that retry. This overrides the Opus-lead note in plan-handoff. Never read the per-item detail files under `.claude/work_items/` or the source files yourself: the driver prints what you need and the workers read the rest. The one exception is the rescue route (Section 1a): read only the recon OUTPUT files that `rescue --collect` lists.
+One fresh session = one finished, committed work item. You are the orchestrator (Sonnet); every worker, checker and docs agent is Haiku (`model: haiku`). A Sonnet worker is allowed only after one Haiku retry has failed, and `wi_driver.py` already schedules that retry. This overrides the Opus-lead note in plan-handoff. Never read the per-item detail files under `.claude/work_items/` or the source files yourself: the driver prints what you need and the workers read the rest. The one exception is the rescue route (Section 1a): read only the recon OUTPUT files that `rescue --collect` lists, and write the decision note `decision_r<N>.md`.
 
 User input: $ARGUMENTS
 
@@ -18,7 +18,7 @@ User input: $ARGUMENTS
 - `backlog ...`: pass the arguments to `python3 scripts/wi_driver.py backlog` (add, list, promote).
 
 ## 1. The loop (8 calls)
-Run each command with Bash from the repo root. Each prints the next command under `THEN:`; follow it. Spawn exactly the agents it prints (`SPAWN 1 agent ...`), with the printed description and prompt, and nothing more (the rescue route prints up to 7 recon spawns at once).
+Run each command with Bash from the repo root. Each prints the next command under `THEN:`; follow it. Spawn exactly the agents it prints (`SPAWN 1 agent ...`), with the printed description and prompt, and nothing more (the rescue route prints up to 7 recon spawns at once: 7 in round 1, 4 in round 2).
 
 1. `python3 scripts/wi_driver.py next [WI-NN]`: claims the item and prints one Haiku worker spawn. If it prints `NOTHING CLAIMABLE`, show its reasons (max 5 lines) and stop. A `STALE claim` line is the user's call: offer `next WI-NN --adopt` or `release WI-NN --force`, never take it silently.
 2. Spawn the worker. The driver already gave you the Agent description and prompt.
@@ -32,13 +32,16 @@ Run each command with Bash from the repo root. Each prints the next command unde
 If a step fails twice or the item cannot be finished: `python3 scripts/wi_driver.py park WI-NN --reason "<one line>"`. Parking records the reason, frees the claim, and never reverts files. A park caused by a worker `STATUS: FAIL` continues in Section 1a instead of ending the turn.
 
 ## 1a. Rescue route (worker FAIL parked the item)
-Runs once per item, only when `PARKED` printed `THEN: python3 scripts/wi_driver.py rescue WI-NN`. Nothing is edited before the plan is approved.
-1. `python3 scripts/wi_driver.py rescue WI-NN`: writes up to 7 recon briefs and prints one `SPAWN` per brief. It refuses a non-FAIL park and a second run.
+Runs for up to 2 rounds per item, starting when `PARKED` printed `THEN: python3 scripts/wi_driver.py rescue WI-NN`. Nothing is edited before the plan of each round is approved.
+1. `python3 scripts/wi_driver.py rescue WI-NN`: writes up to 7 recon briefs and prints one `SPAWN` per brief. Round 1 writes 7 briefs; it refuses a non-FAIL park. A second run is refused until a new park follows the rescue (or `--residual`, see step 8).
 2. Spawn all printed recon agents in ONE message, all `model: haiku`, exactly as printed.
 3. `python3 scripts/wi_driver.py rescue WI-NN --collect`: flags missing or malformed replies (respawn only those, then collect again) and prints the reading order.
 4. Read only the OUTPUT files it lists.
 5. Run `/plan-handoff WI-NN`. It enters plan mode and writes a self-contained plan. The plan picks exactly one outcome: split into sub-items (`backlog add`), a docs-only closure (`close WI-NN --manual --paths ... --reason ...`), a defer to an existing item, or a code plan whose steps touch at most 3 files each.
-6. Stop at the approval gate. After approval the work runs through the normal loop or the manual close; then `report`.
+6. Stop at the approval gate. After approval the work runs through the normal loop or the manual close (allowed on a done item that had a rescue).
+7. Write `.claude/research/<wi>_rescue/decision_r<N>.md` (N = round just finished, e.g. `wi03_rescue`): the outcome plus the residual rows, at most 15 lines.
+8. Run `python3 scripts/wi_driver.py rescue WI-NN --status` (read-only) and follow its `THEN:` line: `rescue WI-NN` (re-parked on a worker FAIL), `rescue WI-NN --residual` (`[OPEN WI-NN` doc markers or unresolved plan rows), or "no residual work; report" then `report`. Round 2 writes 4 briefs (gap, spec, code, tests), lists the decision note, and ends at the same plan-mode gate via `/plan-handoff WI-NN`.
+9. After 2 rounds the driver refuses a third and prints "2 rescue rounds used: stop and ask the user". Stop and ask; do not run `report` or claim "Safe to /clear".
 
 ## 2. Backlog and audit
 - A worker reply whose OPEN field names real follow-up work: push it with `python3 scripts/wi_driver.py backlog add --title "..." --why "..." --origin WI-NN`. New items start on hold; the user promotes them.

@@ -679,6 +679,143 @@ class RescueTests(Base):
         self.assertEqual(r.returncode, 1)
         self.assertIn("nothing to commit", r.stderr)
 
+    # ---- multi-round rescue
+    def wave_dir2(self, wid="WI-01"):
+        return self.root / ".claude" / "waves" / f"{wid}-rescue2"
+
+    def finish_round_one(self):
+        self.park_on_fail()
+        self.assertEqual(self.drv("rescue", "WI-01").returncode, 0)
+
+    def repark(self):
+        self.assertEqual(self.drv("unpark", "WI-01", "--reason", "round 1 fix applied").returncode, 0)
+        self.park_on_fail()
+
+    def test_second_rescue_needs_a_new_park(self):
+        self.finish_round_one()
+        r = self.drv("rescue", "WI-01")
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("already rescued", r.stderr)
+        self.assertFalse(self.wave_dir2().exists())
+        self.assertFalse(wd.reparked_since_rescue(self.st, wm.load_all(self.root)["WI-01"]))
+
+    def test_round_two_writes_four_briefs_with_decision_note(self):
+        self.finish_round_one()
+        note = ".claude/research/wi01_rescue/decision_r1.md"
+        (self.root / note).parent.mkdir(parents=True)
+        (self.root / note).write_text("outcome: code plan\nresidual: none\n", encoding="utf-8")
+        self.repark()
+        self.assertEqual(wd.rescue_rounds(self.st, wm.load_all(self.root)["WI-01"]), 1)
+        r = self.drv("rescue", "WI-01")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertEqual(r.stdout.count("SPAWN 1 agent: model=haiku"), 4)
+        self.assertIn("round 2 of 2", r.stdout)
+        manifest = json.loads((self.wave_dir2() / "manifest.json").read_text(encoding="utf-8"))
+        self.assertEqual(len(manifest["units"]), 4)
+        for u in manifest["units"]:
+            brief = (self.root / u["brief"]).read_text(encoding="utf-8")
+            self.assertIn(note, brief)
+            self.assertIn("Round 2: the round-1 outputs and decision are listed", brief)
+            self.assertTrue(u["out"].startswith(".claude/waves/WI-01-rescue2/"))
+        self.assertIn("round 2", [e for e in self.st.events() if e["ev"] == "rescue"][-1]["reason"])
+
+    def test_round_two_collect_names_the_round_two_units(self):
+        self.finish_round_one()
+        self.repark()
+        self.drv("rescue", "WI-01")
+        r = self.drv("rescue", "WI-01", "--collect")
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertEqual(r.stdout.count("RERUN"), 4)
+        self.assertIn("gap", r.stdout)
+        manifest = json.loads((self.wave_dir2() / "manifest.json").read_text(encoding="utf-8"))
+        for u in manifest["units"]:
+            (self.root / u["out"]).write_text("evidence\n", encoding="utf-8")
+            (self.root / u["reply"]).write_text(f"OUTPUT: {u['out']}\nEVIDENCE: src/a.txt:1\nFINDING: ok\nOPEN: None\nVERDICT: CONFIRMED\n", encoding="utf-8")
+        r = self.drv("rescue", "WI-01", "--collect")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("/plan-handoff WI-01", r.stdout)
+
+    def test_round_three_is_refused(self):
+        self.finish_round_one()
+        self.repark()
+        self.assertEqual(self.drv("rescue", "WI-01").returncode, 0)
+        self.repark()
+        r = self.drv("rescue", "WI-01")
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("2 rounds used; needs you", r.stderr)
+        self.assertFalse((self.root / ".claude" / "waves" / "WI-01-rescue3").exists())
+
+    def test_status_flags_repark_open_marker_and_clean_item(self):
+        self.finish_round_one()
+        clean = self.drv("rescue", "WI-01", "--status")
+        self.assertEqual(clean.returncode, 0, clean.stdout + clean.stderr)
+        self.assertIn("1 of 2 rounds used, 1 left", clean.stdout)
+        self.assertIn("THEN: no residual work; report", clean.stdout)
+        self.drv("unpark", "WI-01", "--reason", "fix applied")
+        self.write("docs/plan.md", "# Plan\n\nrow [OPEN WI-01 C001: still unverified] here\n")
+        marked = self.drv("rescue", "WI-01", "--status")
+        self.assertIn("[OPEN WI-01] markers in plan docs: 1", marked.stdout)
+        self.assertIn("THEN: python3 scripts/wi_driver.py rescue WI-01 --residual", marked.stdout)
+        self.write("docs/plan.md", "# Plan\n")
+        self.park_on_fail()
+        reparked = self.drv("rescue", "WI-01", "--status")
+        self.assertIn("re-parked after the last rescue: yes", reparked.stdout)
+        self.assertIn("THEN: python3 scripts/wi_driver.py rescue WI-01\n", reparked.stdout)
+        self.assertEqual(len([e for e in self.st.events() if e["ev"] == "rescue"]), 1)  # --status mutates nothing
+
+    def test_residual_round_two_on_an_unparked_item(self):
+        self.finish_round_one()
+        self.drv("unpark", "WI-01", "--reason", "fix applied")
+        refused = self.drv("rescue", "WI-01", "--residual")
+        self.assertEqual(refused.returncode, 1)
+        self.assertIn("no residual rows", refused.stderr)
+        self.write("docs/plan.md", "# Plan\n\nrow [OPEN WI-01 C001: still unverified] here\n")
+        dry = self.drv("rescue", "WI-01", "--residual", "--dry-run")
+        self.assertEqual(dry.returncode, 0, dry.stdout + dry.stderr)
+        self.assertEqual(dry.stdout.count("OK"), 4)
+        r = self.drv("rescue", "WI-01", "--residual")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertEqual(r.stdout.count("SPAWN 1 agent: model=haiku"), 4)
+        brief = (self.wave_dir2() / "u01.brief.md").read_text(encoding="utf-8")
+        self.assertIn("still unverified", brief)
+
+    def test_residual_needs_a_finished_round_one(self):
+        self.park_on_fail()
+        r = self.drv("rescue", "WI-01", "--residual")
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("follows a round 1", r.stderr)
+
+    def test_fail_path_stops_pointing_to_rescue_at_the_cap(self):
+        for n in (1, 2):
+            self.st.append_event("WI-01", "rescue", "s", f"round {n}")
+        self.drv("next", "WI-01")
+        for _ in range(2):
+            self.write("src/a.txt", "edit\n")
+            self.worker_reply(self.claim_wave("WI-01"), "src/a.txt")
+            reply = self.root / ".claude" / "waves" / self.claim_wave("WI-01") / "u01.reply.txt"
+            reply.write_text(reply.read_text(encoding="utf-8").replace("STATUS: PASS", "STATUS: FAIL"), encoding="utf-8")
+            r = self.drv("verify", "WI-01")
+        self.assertIn("PARKED WI-01", r.stdout)
+        self.assertNotIn("THEN: python3 scripts/wi_driver.py rescue", r.stdout)
+        self.assertNotIn("Safe to /clear", r.stdout)
+        self.assertIn("2 rescue rounds used: stop and ask the user", r.stdout)
+
+    def test_close_manual_after_rescue_on_a_done_item(self):
+        self.finish_round_one()
+        self.write("docs/plan.md", "# Plan\n\nfirst\n")
+        self.assertEqual(self.drv("close", "WI-01", "--manual", "--paths", "docs/plan.md", "--reason", "one").returncode, 0)
+        self.write("docs/plan.md", "# Plan\n\nsecond\n")
+        r = self.drv("close", "WI-01", "--manual", "--paths", "docs/plan.md", "--reason", "follow-up")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+
+    def test_close_manual_refused_on_a_done_item_without_a_rescue(self):
+        self.run_flow_to_docs()
+        self.assertEqual(self.drv("close", "WI-01").returncode, 0)
+        self.write("docs/plan.md", "# Plan\n\nlate edit\n")
+        r = self.drv("close", "WI-01", "--manual", "--paths", "docs/plan.md", "--reason", "x")
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("already done", r.stderr)
+
 
 class AuditAndBacklogTests(Base):
     def test_analyze_is_pure_and_idempotent(self):
