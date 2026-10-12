@@ -340,6 +340,29 @@ int main() {
         KT_CHECK_EQ(o[1].resref, "ii_drdutldev_003"); KT_CHECK(o[1].item);
         // ... and in buff mode spells 4 / 116 are not tracked
         KT_CHECK_EQ((long long)collectBuffs(makeCreature({ d1, d2 }), BuffDay, tNow, true, o, 8), 0ll);
+
+        // script SetEffectIcon (type 0x43, ints[0] = effecticon.2da row): a harmful row is a debuff icon even with spell -1 (Slow = row 28)
+        auto iconFx = [&](int row, int spell, int nInts) {
+            uintptr_t e = buff(); at<unsigned short>(e, Effect_Type) = 0x43; at<int>(e, Effect_SpellId) = spell;
+            intsOf(e)[0] = row; at<int>(e, Effect_IntCount) = nInts; return e; };
+        uintptr_t slowIcon = iconFx(28, -1, 1);
+        n = collectBuffs(makeCreature({ none, slowIcon }), BuffDay, tNow, true, o, 8, true);
+        KT_CHECK_EQ((long long)n, 1ll); KT_CHECK_EQ(o[0].resref, "ip_slow"); KT_CHECK(!o[0].item);
+        KT_CHECK_EQ((long long)collectBuffs(makeCreature({ slowIcon }), BuffDay, tNow, true, o, 8), 0ll);   // never in the buff column
+        // same icon via the spell-45 effect and the row, either order, and repeated rows: one entry
+        uintptr_t slow45 = buff(); at<int>(slow45, Effect_SpellId) = 45;
+        KT_CHECK_EQ((long long)collectBuffs(makeCreature({ slowIcon, slow45 }), BuffDay, tNow, true, o, 8, true), 1ll);
+        KT_CHECK_EQ((long long)collectBuffs(makeCreature({ slow45, slowIcon, iconFx(28, -1, 1) }), BuffDay, tNow, true, o, 8, true), 1ll);
+        // beneficial row (2 = speed burst, good 1), out of range, row 0, negative, no ints: nothing
+        KT_CHECK_EQ((long long)collectBuffs(makeCreature({ iconFx(2, -1, 1) }), BuffDay, tNow, true, o, 8, true), 0ll);
+        KT_CHECK_EQ((long long)collectBuffs(makeCreature({ iconFx(kEffectIconRowCount, -1, 1), iconFx(5000, -1, 1), iconFx(0, -1, 1), iconFx(-3, -1, 1) }), BuffDay, tNow, true, o, 8, true), 0ll);
+        KT_CHECK_EQ((long long)collectBuffs(makeCreature({ iconFx(28, -1, 0) }), BuffDay, tNow, true, o, 8, true), 0ll);
+        // a non-0x43 effect whose first int happens to be 28 is not an icon row
+        uintptr_t fake = buff(); intsOf(fake)[0] = 28;
+        KT_CHECK_EQ((long long)collectBuffs(makeCreature({ fake }), BuffDay, tNow, true, o, 8, true), 0ll);
+        // another harmful row mixes with spell debuffs, order kept (row 5 = ip_droiddestroy)
+        n = collectBuffs(makeCreature({ d1, iconFx(28, -1, 1), iconFx(5, -1, 1) }), BuffDay, tNow, true, o, 8, true);
+        KT_CHECK_EQ((long long)n, 3ll); KT_CHECK_EQ(o[0].resref, "ip_advlsthrow"); KT_CHECK_EQ(o[1].resref, "ip_slow"); KT_CHECK_EQ(o[2].resref, "ip_droiddestroy");
     }
 
     return kt::Report("effects_test");

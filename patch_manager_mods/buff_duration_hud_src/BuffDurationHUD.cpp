@@ -355,15 +355,33 @@ void logUntrackedDebuff(int creature, int rawDebuff) {
     g_missSeen[slot].sig = sig;
     ++g_missLogged;
     logf("DBGMISS creature=%08x raw=%d listOk=%d count=%d", creature, rawDebuff, ok ? 1 : 0, count);
-    for (int i = 0, lines = 0; ok && arr && i < count && i < k2fx::MaxEffects && lines < 12; ++i) {
-        int eff = 0, spell = -1, creator = 0; unsigned short type = 0, sub = 0; float dur = 0.0f; bool item = false;
-        if (!readAt(arr, i * 4, &eff) || !eff) continue;
+    // Pass A: every EffectIcon effect (type 0x43; ints[0] = effecticon.2da row, the Slow case). Pass B: the rest, one line per distinct (spell,type,sub) with x<count>.
+    constexpr int MaxLines = 40;
+    struct Key { int spell; int type; int sub; int first; int n; };
+    static Key keys[k2fx::MaxEffects];
+    int nKeys = 0, lines = 0;
+    auto dump = [&](int i, int eff, int n) {
+        int spell = -1, creator = 0, nInts = 0, ip = 0, row = -1; unsigned short type = 0, sub = 0; float dur = 0.0f; bool item = false;
         readAt(eff, k2fx::Effect_SpellId, &spell); readAt(eff, k2fx::Effect_Type, &type); readAt(eff, k2fx::Effect_Subtype, &sub);
+        if (type == k2fx::EffType_Icon && readAt(eff, k2fx::Effect_IntCount, &nInts) && nInts > 0 && readAt(eff, k2fx::Effect_Ints, &ip) && ip) readAt(ip, 0, &row);
         readAt(eff, k2fx::Effect_Duration, &dur); readAt(eff, k2fx::Effect_Creator, &creator);
         const char* dRes = k2fx::iconForSpell(spell, true, &item);
         const char* bRes = k2fx::iconForSpell(spell, false, &item);
-        logf("DBGMISS   i=%d spell=%d type=%d sub=%d dur=%.1f creator=%08x debuffIcon=%s buffIcon=%s", i, spell, type, sub, dur, creator, dRes ? dRes : "-", bRes ? bRes : "-");
+        const char* rRes = type == k2fx::EffType_Icon && row > 0 && row < kEffectIconRowCount ? kEffectIconRows[row].resref : nullptr;
+        logf("DBGMISS   i=%d spell=%d type=%d sub=%d row=%d n=%d dur=%.1f creator=%08x debuffIcon=%s buffIcon=%s rowIcon=%s", i, spell, type, sub, row, n, dur, creator, dRes ? dRes : "-", bRes ? bRes : "-", rRes ? rRes : "-");
         ++lines;
+    };
+    for (int i = 0; ok && arr && i < count && i < k2fx::MaxEffects; ++i) {
+        int eff = 0, spell = -1; unsigned short type = 0, sub = 0;
+        if (!readAt(arr, i * 4, &eff) || !eff) continue;
+        readAt(eff, k2fx::Effect_SpellId, &spell); readAt(eff, k2fx::Effect_Type, &type); readAt(eff, k2fx::Effect_Subtype, &sub);
+        if (type == k2fx::EffType_Icon) { if (lines < MaxLines) dump(i, eff, 1); continue; }   // pass A: print as met
+        int k = 0; while (k < nKeys && !(keys[k].spell == spell && keys[k].type == type && keys[k].sub == sub)) ++k;
+        if (k < nKeys) ++keys[k].n; else keys[nKeys++] = { spell, type, sub, i, 1 };            // pass B: collapse repeats
+    }
+    for (int k = 0; k < nKeys && lines < MaxLines; ++k) {
+        int eff = 0;
+        if (readAt(arr, keys[k].first * 4, &eff) && eff) dump(keys[k].first, eff, keys[k].n);
     }
 }
 
