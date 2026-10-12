@@ -3,7 +3,7 @@
 // log through KpLog.h. There are two engine writes, both gated by [mouse_fix] enabled in mouse_probe.ini and
 // on by default: (1) sanitizeNorm (sanitize_norm=1) in ProbeMouseNorm, which overwrites the normalised
 // delta at this+0x408/+0x40C; (2) SYNTHDBL (synth_dblclk=1) at OnMouseMessage, which rewrites the message id
-// at msg+4 to WM_LBUTTONDBLCLK when Wine drops the double click. Every other hook only reads through SafeRead.
+// at msg+4 to WM_LBUTTONDBLCLK when Wine drops the double click. Both stores are probeWrite-guarded (skipped + logged when not writable). Every other hook only reads through SafeRead.
 //
 // Logging (0.2.0): channels main (START), raw (RAW), polls (POLLS), norm (NORM), drag (DRAGSTATE,
 // STUCKDRAG? at WARN), cam (CAM). On a core with the kpatch.log service, kplog.ini [mouse-probe]
@@ -37,6 +37,8 @@ namespace {
 
 constexpr uintptr_t DragFlagAddr = 0x00A7FCBC;   // DAT_00A7FCBC, camera right-drag hold flag (int)
 constexpr double StuckSeconds = 5.0;
+constexpr unsigned SiteMsgWrite = 2;   // saferead failure-ring ids: 1 = reads (rd), 2 = SYNTHDBL msg+4 store, 3 = sanitize norm store
+constexpr unsigned SiteNormWrite = 3;
 
 KP_CHANNEL(chMain, "main");
 KP_CHANNEL(chRaw, "raw");
@@ -210,8 +212,12 @@ void __cdecl ProbeMouseNorm(uintptr_t ebp) {
                     }
                 }
             }
-            *reinterpret_cast<float*>(self + 0x408) = fixedNx;
-            *reinterpret_cast<float*>(self + 0x40C) = fixedNy;
+            if (saferead::probeWrite(SiteNormWrite, reinterpret_cast<void*>(self + 0x408), 8)) {
+                *reinterpret_cast<float*>(self + 0x408) = fixedNx;
+                *reinterpret_cast<float*>(self + 0x40C) = fixedNy;
+            } else {
+                KP_LOG_EVERY(chNorm, 100, "NORMWRITE self+0x408 not writable; sanitize skipped");
+            }
         } else {
             KP_LOG_EVERY(chNorm, 100, "CURSORFAIL GetCursorPos unavailable/failed; sanitize skipped (engine delta kept)");
         }
@@ -298,10 +304,12 @@ void __cdecl ProbeMouseMsg(uintptr_t ebp) {
         g_moveptBg = 0;
     }
     loadFixConfig();
-    if (mousefix::shouldSynthesizeDblClick(id, v == clicklogic::Verdict::MissedDbl, g_fixCfg.enabled && g_fixCfg.synthDblClk)) {
+    bool synth = mousefix::shouldSynthesizeDblClick(id, v == clicklogic::Verdict::MissedDbl, g_fixCfg.enabled && g_fixCfg.synthDblClk);
+    if (synth && saferead::probeWrite(SiteMsgWrite, reinterpret_cast<void*>(msgp + 4), 4)) {
         *reinterpret_cast<int*>(msgp + 4) = clicklogic::MsgLDbl;
         KP_LOG(chClick, "SYNTHDBL 0x203 synthesized from dropped 0x201 (dt=%.0f dpos=%.1f)", g_click.dtMs, g_click.dpos);
     } else if (v == clicklogic::Verdict::MissedDbl) {
+        if (synth) KP_LOGV(chClick, KPLOG_WARN, "SYNTHDBL skipped: msg+4 not writable");
         KP_LOGV(chClick, KPLOG_WARN, "MISSEDDBL dt=%.0f dpos=%.1f", g_click.dtMs, g_click.dpos);
     }
     if (v == clicklogic::Verdict::DblGuard)
