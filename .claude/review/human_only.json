@@ -1,0 +1,9 @@
+{
+ "items": [
+  {
+   "commit": "83354c0",
+   "path": "tests/static/raw_addresses.toml"
+  }
+ ],
+ "note": "names only; content never read"
+}

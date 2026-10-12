@@ -1,0 +1,183 @@
+{
+ "additionalProperties": false,
+ "properties": {
+  "clusters": {
+   "items": {
+    "additionalProperties": false,
+    "properties": {
+     "finding_ids": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array"
+     },
+     "root_cause": {
+      "type": "string"
+     },
+     "tag": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "tag",
+     "finding_ids",
+     "root_cause"
+    ],
+    "type": "object"
+   },
+   "type": "array"
+  },
+  "cross_file": {
+   "items": {
+    "additionalProperties": false,
+    "properties": {
+     "category": {
+      "enum": [
+       "bug",
+       "memory-safety",
+       "hook",
+       "logic",
+       "test",
+       "build",
+       "api-break",
+       "gate-integrity",
+       "style-risk",
+       "other"
+      ],
+      "type": "string"
+     },
+     "confidence": {
+      "enum": [
+       "high",
+       "medium",
+       "low"
+      ],
+      "type": "string"
+     },
+     "evidence": {
+      "type": "string"
+     },
+     "files": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array"
+     },
+     "lines": {
+      "type": "string"
+     },
+     "severity": {
+      "enum": [
+       "critical",
+       "high",
+       "medium",
+       "low"
+      ],
+      "type": "string"
+     },
+     "suggested_investigation": {
+      "type": "string"
+     },
+     "why_it_matters": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "files",
+     "lines",
+     "category",
+     "severity",
+     "confidence",
+     "evidence",
+     "why_it_matters",
+     "suggested_investigation"
+    ],
+    "type": "object"
+   },
+   "type": "array"
+  },
+  "domain": {
+   "type": "string"
+  },
+  "notes": {
+   "type": "string"
+  },
+  "verdicts": {
+   "items": {
+    "additionalProperties": false,
+    "properties": {
+     "cited_lines_checked": {
+      "type": "string"
+     },
+     "confidence": {
+      "enum": [
+       "high",
+       "medium",
+       "low"
+      ],
+      "type": "string"
+     },
+     "finding_id": {
+      "type": [
+       "string",
+       "null"
+      ]
+     },
+     "local_id": {
+      "type": [
+       "string",
+       "null"
+      ]
+     },
+     "packet_id": {
+      "type": [
+       "string",
+       "null"
+      ]
+     },
+     "reason": {
+      "type": "string"
+     },
+     "severity": {
+      "enum": [
+       "critical",
+       "high",
+       "medium",
+       "low"
+      ],
+      "type": "string"
+     },
+     "status": {
+      "enum": [
+       "confirmed",
+       "downgraded",
+       "rejected"
+      ],
+      "type": "string"
+     }
+    },
+    "required": [
+     "finding_id",
+     "packet_id",
+     "local_id",
+     "status",
+     "severity",
+     "confidence",
+     "reason",
+     "cited_lines_checked"
+    ],
+    "type": "object"
+   },
+   "type": "array"
+  }
+ },
+ "required": [
+  "domain",
+  "verdicts",
+  "cross_file",
+  "clusters",
+  "notes"
+ ],
+ "title": "Reduce session output",
+ "type": "object"
+}

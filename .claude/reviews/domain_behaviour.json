@@ -1,0 +1,464 @@
+{
+ "clusters": [
+  {
+   "finding_ids": [
+    "2a8fe6b54917",
+    "0b8542f94a46",
+    "1ac4d22b5460",
+    "3c54dbdfe169",
+    "dde64cf1888f",
+    "968ad73e0353",
+    "134a3086d544",
+    "06e4180ffac6",
+    "c801f5a68656",
+    "51e16d27564c"
+   ],
+   "root_cause": "test.toml and smokes.toml hardcode `-I$HOME/Games/KOTOR2_Mod_Workspace/.../Patches/Common`, which depends on the developer's machine and the shell expanding $HOME, and bypasses the gate's scratch tree.",
+   "tag": "home-path-includes"
+  },
+  {
+   "finding_ids": [
+    "706d9597de93",
+    "c5ac3c1e7f41"
+   ],
+   "root_cause": "The `mi <= 2` predicate already accepts member 0, so the member-0-specific else-if branches (g_pend0, g_auto0, g_lastUseMs0) never run.",
+   "tag": "selfheal-mi0-dead-branch"
+  },
+  {
+   "finding_ids": [
+    "0176a0c6a864",
+    "490f5978a4bb",
+    "e4acee7e4b5f"
+   ],
+   "root_cause": "OverrideNpcTexture seeds the diversity hash with the resolver frame address, which is not a stable per-NPC value.",
+   "tag": "npc-hash-seed-frame"
+  },
+  {
+   "finding_ids": [
+    "5359996416eb",
+    "f38ba788fcaa",
+    "a4d3ea1e8949",
+    "0f9681f8b5ff",
+    "b3f067c49476",
+    "f7a27f21e42e"
+   ],
+   "root_cause": "The dispatcher dereferences hardcoded frame and creature offsets that have no cited source.",
+   "tag": "npc-unsourced-offsets"
+  },
+  {
+   "finding_ids": [
+    "22ca465a3ac9",
+    "349a479f4b63",
+    "0cdd2f2333fb"
+   ],
+   "root_cause": "DiversityLogic predicates include 'test' appearance ids and loose prefix tags that overlap vanilla rows or unrelated tags.",
+   "tag": "npc-test-ranges"
+  },
+  {
+   "finding_ids": [
+    "88ff1df7a2b5",
+    "7941be60710e",
+    "3eeba9effd7f",
+    "b5863254a4c7",
+    "a88b2633d45c"
+   ],
+   "root_cause": "Namespace-scope initializers call KpLog_SetFallback* before KPatchInit, and some set INFO level unconditionally.",
+   "tag": "kplog-static-init"
+  },
+  {
+   "finding_ids": [
+    "67cb68d27f60",
+    "91e22b300496",
+    "b80850db20c7",
+    "f1593c4cda30"
+   ],
+   "root_cause": "The 0.4.0 mouse fix writes engine memory (deltas, message id) from a probe described as strictly read-only.",
+   "tag": "mouseprobe-engine-writes"
+  },
+  {
+   "finding_ids": [
+    "d6884359c134",
+    "31dbea3bb647",
+    "e8226bdd7840"
+   ],
+   "root_cause": "The new abreserve experiment's hand-assembled cave skips the original SetSize call without a verifiable count store, and the header describes it as off-by-default only.",
+   "tag": "perflab-abreserve-cave"
+  },
+  {
+   "finding_ids": [
+    "84feba8b978e",
+    "b3054dfc8338",
+    "56a4a57fdee6",
+    "efac576de524"
+   ],
+   "root_cause": "shadow_replay reports 'clef-flash' agreement and speedup from hand-written labels and constant latencies.",
+   "tag": "shadow-replay-baseline"
+  },
+  {
+   "finding_ids": [
+    "9220b8b3d005",
+    "173adb0152c9",
+    "95df47aa90e6",
+    "327bda7cf27a"
+   ],
+   "root_cause": "The --cpp struct output merges classes by substring, ignores size, offset gaps and the row limit, so offsets are not trustworthy.",
+   "tag": "query-ghidra-struct"
+  },
+  {
+   "finding_ids": [
+    "89fa0b697ea6",
+    "ab754f787bab",
+    "f4c64b710f23",
+    "08c967e0d1d6",
+    "eeb893285c08",
+    "dd59bb259ba4",
+    "e8226bdd7840",
+    "f1593c4cda30"
+   ],
+   "root_cause": "Comments and headers were not updated after behavior or version changes.",
+   "tag": "stale-comments"
+  },
+  {
+   "finding_ids": [
+    "8ecf00c612d7",
+    "1253daf87963",
+    "18ac9997c652",
+    "dd59bb259ba4"
+   ],
+   "root_cause": "Hotbar save hooks moved to the save-events library, leaving folder-form and conflict metadata differences.",
+   "tag": "hotbar-save-events-migration"
+  }
+ ],
+ "cross_file": [
+  {
+   "category": "build",
+   "confidence": "medium",
+   "evidence": "The smokes.toml header says the runner always adds `-I tests/include`, a cwd-relative path. check.h and FakeKPatchApi.h exist only under tests/include. The tables that add their own includes use `../../_shared_src` (relative to the harness dir). build_check reports 'check.h: No such file' for all 8 smoke files.",
+   "files": [
+    "patch_manager_mods/perf_lab_src/harness/smokes.toml",
+    "tests/include/check.h",
+    "tests/include/FakeKPatchApi.h",
+    "patch_manager_mods/perf_lab_src/harness/smoke_perflab.cpp"
+   ],
+   "lines": "20",
+   "severity": "medium",
+   "suggested_investigation": "Read build_check.py to see how `tests/include` is resolved and from which cwd it compiles the harness. Compare with run_tests, which compiles perflab/common_contract_test.cpp from a different directory. Check whether the 'FAIL=1' row is tied to this path error.",
+   "why_it_matters": "All harness smokes fail to compile, so the smoke gate row is a build-environment failure that hides whether the smokes would pass."
+  },
+  {
+   "category": "hook",
+   "confidence": "medium",
+   "evidence": "The OverrideNpcTexture hook passes 'ebp' as a pointer, and the handler reads [ebp+8] and [ebp+0x10] as pointers to the descriptor and ResRef. The hook sits at 0x48E691 on setup-looking stolen bytes. The hash is seeded by the frame address (the 'ebp' value), and is only reproducible if the frame is identical. The manifest pins only the Steam hooks file, although both Steam and GOG are declared supported.",
+   "files": [
+    "patch_manager_mods/npc_diversity_src/NpcDiversityDispatcher.cpp",
+    "patch_manager_mods/npc_diversity_src/DiversityLogic.h",
+    "patch_manager_mods/npc_diversity_src/kotor2-steam-aspyr.hooks.toml",
+    "patch_manager_mods/npc_diversity_src/kotor2-gog-aspyr.hooks.toml",
+    "patch_manager_mods/npc_diversity_src/manifest.toml"
+   ],
+   "lines": "46-71",
+   "severity": "high",
+   "suggested_investigation": "Run query_ghidra.py address 0x0048E691 and check the stack frame layout and whether the texture ResRef is already written. Compare the Steam hook file's addresses and original_bytes against the GOG one. Replace the frame seed with a stable NPC key in a test to see whether the slot varies.",
+   "why_it_matters": "The texture slot is non-deterministic per call, and the hook's position relative to the vanilla lookup, the frame layout and the GOG addresses are all unverified in the snapshot."
+  },
+  {
+   "category": "logic",
+   "confidence": "low",
+   "evidence": "The hotbar's five save/load hooks (0x00534527, 0x0053C5AA, 0x0052FD1E, 0x008529E0, 0x008FACA0) moved to save-events. The hotbar maps only K2SE_SAVED, K2SE_AUTOSAVED, K2SE_LOAD_REQUEST and one more case, and earlier findings flagged the autosave folder form and the removed L1b path. The save-events manifest dropped `conflicts = [\"action-hotbar\"]`.",
+   "files": [
+    "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp",
+    "patch_manager_mods/action_hotbar_src/kotor2-steam-aspyr.hooks.toml",
+    "patch_manager_mods/save_events_src/kotor2-steam-aspyr.hooks.toml",
+    "patch_manager_mods/save_events_src/manifest.toml"
+   ],
+   "lines": "1876-1880",
+   "severity": "medium",
+   "suggested_investigation": "Compare the folder strings in SaveEvents.h with how snapshotToSave and restoreFromSave build paths. Check that the L1b autosave-load event reaches the hotbar. Check KPM's duplicate-hook rejection for an old hotbar install.",
+   "why_it_matters": "Autosave and load restore paths may use a different folder (root-qualified or not) than the old hard-coded one, and a stale hotbar install would clash with the duplicate hooks."
+  }
+ ],
+ "domain": "behaviour",
+ "notes": "I re-verified 30 high findings. Several verdicts are low-confidence because the Ghidra offsets and addresses (NPC frame offsets, the perflab cave callee) are not in the snapshot. Per the withheld leads, none of the py:x BUILD_GATE FAIL rows were treated as findings. The leads on subclassers.toml, HotbarLogic.h isExile and the normalizeSaveFolder test move were not checked. The kpatch md5 and raw_addresses.toml items are for the human ledger.",
+ "verdicts": [
+  {
+   "cited_lines_checked": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp:296-340, 560-610 (grep), 832",
+   "confidence": "high",
+   "finding_id": "706d9597de93",
+   "local_id": "f1",
+   "packet_id": "wp3-002",
+   "reason": "Confirmed that `if (mi >= 0 && mi <= 2)` also accepts mi==0, so the `else if (mi == 0)` branches that set g_lastUseMs0/g_pend0/g_auto0 are dead. g_pend0.on is read for the leader state (832) and completion (592), so the leader never shows pending or completes. Debounce still works through g_lastUseMs[0], so impact is leader UI/auto state, not a crash.",
+   "severity": "medium",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp:760-864",
+   "confidence": "medium",
+   "finding_id": "8fec75004d35",
+   "local_id": "f3",
+   "packet_id": "wp3-002",
+   "reason": "The `return` at 837 sits inside uiFrame. When the leader button resolves Hidden (including `c0.btn.w <= 0`), everything after it (853+: cursor hit tests, popover, companion input) is skipped, so the companion buttons 1 and 2 lose input handling although their widgets were already shown at 795-823.",
+   "severity": "high",
+   "status": "confirmed"
+  },
+  {
+   "cited_lines_checked": "patch_manager_mods/hud_host_src/HudHostProvider.cpp:120-149; grep of hud_host_src hooks files",
+   "confidence": "medium",
+   "finding_id": "4fe4dfe1361f",
+   "local_id": "f1",
+   "packet_id": "wp4-009",
+   "reason": "The Steam vtable constant is used in HH_LayoutClosing, but the GOG hooks file in hud_host_src does not hook 0x0040F5A0 (only hud_host_src/kotor2-steam-aspyr.hooks.toml:59 does), so this handler never runs on GOG. The result is that the BUILD dispatch is missing on GOG, not a wrong-vtable mismatch.",
+   "severity": "low",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "patch_manager_mods/mouse_probe_src/MouseFixLogic.h:1-67; MouseProbe.cpp:179-224",
+   "confidence": "medium",
+   "finding_id": "b80850db20c7",
+   "local_id": "f3",
+   "packet_id": "wp7-006",
+   "reason": "computeSanitizedDelta does zero the output when !dragging or on the first drag frame, and MouseProbe.cpp:186-221 overwrites the engine's +0x408/+0x40C every call with default enabled=true. This is the intended camera fix, but it is default-on and replaces engine input. Whether it breaks non-mouse camera input is unverified, and the severity is overstated.",
+   "severity": "medium",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "patch_manager_mods/mouse_probe_src/MouseProbe.cpp:179-224",
+   "confidence": "medium",
+   "finding_id": "67cb68d27f60",
+   "local_id": "f1",
+   "packet_id": "wp7-006",
+   "reason": "`self` is only checked for a successful stack read, not for null, before raw writes at self+0x408/0x40C. In the hook context `this` at [ebp-0x28] is almost certainly valid, so a crash is unlikely. The real issue is that the 'strictly read-only' probe now writes engine memory without SafeRead protection.",
+   "severity": "medium",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "patch_manager_mods/npc_diversity_src/DiversityLogic.h:163-210",
+   "confidence": "medium",
+   "finding_id": "22ca465a3ac9",
+   "local_id": "f5",
+   "packet_id": "wp5-001",
+   "reason": "The `// Test ranges` cases 300-310, 350-360 and 500-510 sit in production predicates next to the vanilla row ids. Appended rows start at 802, so the test ids are vanilla appearance.2da rows and would be remapped as commoners or Twi'leks. I could not confirm what those vanilla rows are.",
+   "severity": "high",
+   "status": "confirmed"
+  },
+  {
+   "cited_lines_checked": "patch_manager_mods/npc_diversity_src/NpcDiversityDispatcher.cpp:46-81; kotor2-gog-aspyr.hooks.toml:1-20",
+   "confidence": "low",
+   "finding_id": "5359996416eb",
+   "local_id": "f1",
+   "packet_id": "wp5-002",
+   "reason": "The +0x08 and +0x10 offsets from the 'ebp' hook parameter would be the first and third stack args of the hooked function. That is plausible but not sourced anywhere in the packet, and nothing validates the pointers beyond a null check. The code writes into the pointed-to ResRef.",
+   "severity": "medium",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "patch_manager_mods/npc_diversity_src/NpcDiversityDispatcher.cpp:46-55",
+   "confidence": "low",
+   "finding_id": "f38ba788fcaa",
+   "local_id": "f2",
+   "packet_id": "wp5-001",
+   "reason": "Duplicate of 5359996416eb. Same unsourced +0x08/+0x10 frame offsets, with only null checks and no evidence that they are wrong.",
+   "severity": "medium",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "patch_manager_mods/npc_diversity_src/NpcDiversityDispatcher.cpp:60-80; DiversityLogic.h:108-122",
+   "confidence": "high",
+   "finding_id": "0176a0c6a864",
+   "local_id": "f1",
+   "packet_id": "wp5-001",
+   "reason": "Line 70 seeds HashDescriptor with the resolver frame's address. HashDescriptor mixes the seed bytes whenever seed != 0 (DiversityLogic.h:115-120), so the chosen N_Comm slot depends on stack position and not on the NPC. The same NPC can get different textures across calls, which contradicts the 'deterministic' comment and the README.",
+   "severity": "high",
+   "status": "confirmed"
+  },
+  {
+   "cited_lines_checked": "patch_manager_mods/npc_diversity_src/NpcDiversityDispatcher.cpp:84-106; kotor2-gog-aspyr.hooks.toml:22-39",
+   "confidence": "medium",
+   "finding_id": "7bc29377aa57",
+   "local_id": "f1",
+   "packet_id": "wp5-003",
+   "reason": "The hooks file passes ecx then esp+4 as parameters to a detour, and the handler takes (pCreature, pDesc) in that order. The parameter list is what defines the detour's cdecl arguments, so ecx as the first and the first stack arg as the second is consistent with a thiscall target. No mismatch is shown.",
+   "severity": "high",
+   "status": "rejected"
+  },
+  {
+   "cited_lines_checked": "patch_manager_mods/npc_diversity_src/NpcDiversityDispatcher.cpp:84-106",
+   "confidence": "low",
+   "finding_id": "a4d3ea1e8949",
+   "local_id": "f3",
+   "packet_id": "wp5-001",
+   "reason": "The tag pointer and length at +0x18/+0x1C are read from an unsourced offset, and the pointer is passed to a C-string routine after only a `tagLen > 0` check. It is plausibly a CExoString layout and can fail only if the offsets are wrong, which is unverified.",
+   "severity": "medium",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "patch_manager_mods/npc_diversity_src/NpcDiversityDispatcher.cpp:89-105",
+   "confidence": "low",
+   "finding_id": "0f9681f8b5ff",
+   "local_id": "f3",
+   "packet_id": "wp5-002",
+   "reason": "Same unsourced creature offsets (0x04, 0x18, 0x1C, 0x24, 0x28) read without SafeRead, as in a4d3ea1e8949. Real but unverified risk, with no concrete failure shown.",
+   "severity": "medium",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "patch_manager_mods/npc_diversity_src/kotor2-gog-aspyr.hooks.toml:1-20; NpcDiversityDispatcher.cpp:45",
+   "confidence": "low",
+   "finding_id": "059abeb02986",
+   "local_id": "f4",
+   "packet_id": "wp5-002",
+   "reason": "The stolen bytes `mov byte [ebp-4],0; lea ecx,[ebp-0x4C]` look like early-function setup, which would put the hook before the texture lookup, against the handler comment 'after vanilla texture lookup'. This can't be confirmed from the snapshot without Ghidra.",
+   "severity": "medium",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "patch_manager_mods/npc_diversity_src/manifest.toml:1-21; Glob of npc_diversity_src",
+   "confidence": "medium",
+   "finding_id": "c91f2491ec3f",
+   "local_id": "f2",
+   "packet_id": "wp5-003",
+   "reason": "The manifest lists kotor2_gog_aspyr as supported but pins `hooks = \"kotor2-steam-aspyr.hooks.toml\"`. The GOG hooks file exists and is unreferenced. A GOG install would get Steam hooks or none, depending on how KPM resolves it. The hud_host manifest has no `hooks =` line, which suggests per-version auto-discovery. A real inconsistency, but its effect depends on KPM.",
+   "severity": "medium",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "patch_manager_mods/perf_lab_src/harness/smokes.toml:10-25,170-260; Glob tests/include (via grep)",
+   "confidence": "medium",
+   "finding_id": "f43b531d500c",
+   "local_id": "f1",
+   "packet_id": "wp4-012",
+   "reason": "check.h and FakeKPatchApi.h exist in tests/include. The smokes.toml header (line 20) says the runner adds `-I tests/include`, a path relative to cwd, whereas the other tables use `-I../../...`. The failure is an include-path or cwd resolution problem in the runner and not a bad #include at line 7.",
+   "severity": "medium",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "patch_manager_mods/perf_lab_src/harness/smokes.toml:170-260",
+   "confidence": "medium",
+   "finding_id": "c801f5a68656",
+   "local_id": "f2",
+   "packet_id": "wp4-010",
+   "reason": "Four smoke tables hardcode `-I$HOME/Games/KOTOR2_Mod_Workspace/.../Patches/Common`, and the comment at 188-189 admits the gate's scratch KPM_DIR lacks Patches/Common. The gate therefore compiles against the live checkout's headers. That weakens gate isolation and reproducibility but does not break the gate, and the choice is documented.",
+   "severity": "medium",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp:805-834",
+   "confidence": "medium",
+   "finding_id": "d6884359c134",
+   "local_id": "f1",
+   "packet_id": "wp4-011",
+   "reason": "I decoded the cave template. The reuse path ends with a loop that calls Reset (0x7ECFA0) on each new element (offset 0x27), then `inc [g_abReuse]; pop edi; pop esi; jmp 0x58C412`. It stores no new count to [this+4], and it skips the original call to 0x58C540, which may have set it. Whether a caller sets the count afterwards can't be checked without the disassembly.",
+   "severity": "high",
+   "status": "confirmed"
+  },
+  {
+   "cited_lines_checked": "patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp:807-834",
+   "confidence": "low",
+   "finding_id": "31dbea3bb647",
+   "local_id": "f2",
+   "packet_id": "wp4-011",
+   "reason": "The grow path computes max(2*cap, 4, n) and pushes that to 0x58C540, while the original pushed n. This could be fine if 0x58C540 is a reserve routine, and it would be wrong only if that routine also sets the size from its argument. The callee isn't in the snapshot.",
+   "severity": "medium",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "patch_manager_mods/perf_lab_src/perflab/kotor2-steam-aspyr.hooks.toml:735-775",
+   "confidence": "low",
+   "finding_id": "a43054c7d728",
+   "local_id": "f2",
+   "packet_id": "wp4-012",
+   "reason": "The entry has `skip_original_bytes = false`, and every other detour in this block uses the same pattern, so KPM re-executes the stolen CMP after the handler. The claimed flags clobbering is the generic detour contract, and nothing specific to this hook is shown.",
+   "severity": "low",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "Glob **/KpLog.h; smokes.toml:170-260",
+   "confidence": "medium",
+   "finding_id": "9f974fcb6fac",
+   "local_id": "f1",
+   "packet_id": "wp7-007",
+   "reason": "KpLog.h is not in the snapshot (glob found no KpLog.h anywhere). Other tests use `-I$HOME/.../Patches/Common`, which is the likely home of KpLog.h, so the include probably resolves through that path. The build gate result was not provided.",
+   "severity": "low",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "patch_manager_mods/queue_hud_src/QueueHudLogic.h:172-196",
+   "confidence": "high",
+   "finding_id": "f4c64b710f23",
+   "local_id": "f1",
+   "packet_id": "wp4-013",
+   "reason": "The comment at 186-187 (40%, [32,48]) contradicts autoIconPx at 180-184 (60%, [48,72]), which stripIconSize uses for the left side. The code is internally consistent and its own comment at 180 matches it, so this is a stale comment. The size change itself is a visible behavior change.",
+   "severity": "low",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "patch_manager_mods/save_events_src/manifest.toml:1-17; grep of hook addresses across hooks.toml files",
+   "confidence": "medium",
+   "finding_id": "18ac9997c652",
+   "local_id": "f1",
+   "packet_id": "wp4-014",
+   "reason": "The conflicts entry was dropped and the manifest line 14 still says never to install with Action Hotbar 1.2.1 or older. The hotbar's hooks file now has those five addresses removed (action_hotbar hooks.toml:25), so the conflict only applies to old hotbar installs. The text and metadata differ, but the risk is limited to legacy installs.",
+   "severity": "low",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "scripts/clef_matcher.py:419-431",
+   "confidence": "high",
+   "finding_id": "a7a82da4b958",
+   "local_id": "f1",
+   "packet_id": "wp7-011",
+   "reason": "The `test` command prints 'PASS' for each prompt with no comparison against an expected value and no non-zero exit. The self-test therefore cannot fail. It is a CLI self-test and not a gating script, so medium.",
+   "severity": "medium",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "scripts/generate_diversity_2da.py:336-352,476-545",
+   "confidence": "medium",
+   "finding_id": "8fb7d6f5d1d3",
+   "local_id": "f1",
+   "packet_id": "wp5-005",
+   "reason": "The Twi'lek `normalhead` values are literals (\"192\" etc., with names only in comments), while the remap at 534-536 only triggers for head-name keys, so it never fires. The literals match the 192-196 mapping JSON only if the base heads.2da height is exactly what they assume. This is fragile, not a demonstrated mismatch.",
+   "severity": "medium",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "scripts/generate_diversity_2da.py:580-692",
+   "confidence": "high",
+   "finding_id": "14b323b7d09f",
+   "local_id": "f2",
+   "packet_id": "wp5-005",
+   "reason": "The live override is written only with the explicit `--apply` flag, and the originals are copied to _diversity_premerge_backup first. A --dry-run mode exists. This is documented, opt-in behavior with a backup, and the weakness is that the backup is overwritten on re-run (a0df4d71e13d).",
+   "severity": "low",
+   "status": "downgraded"
+  },
+  {
+   "cited_lines_checked": "scripts/query_ghidra.py:130-169",
+   "confidence": "high",
+   "finding_id": "9220b8b3d005",
+   "local_id": "f2",
+   "packet_id": "wp7-015",
+   "reason": "The query uses `class = ? OR class LIKE %name%` ordered by offset, and format_cpp_struct never reads the row's class. Fields from different classes whose names contain the substring are merged into one struct with interleaved offsets.",
+   "severity": "high",
+   "status": "confirmed"
+  },
+  {
+   "cited_lines_checked": "scripts/query_ghidra.py:147-169",
+   "confidence": "high",
+   "finding_id": "173adb0152c9",
+   "local_id": "f1",
+   "packet_id": "wp7-015",
+   "reason": "format_cpp_struct emits one member per row with the offset only in a comment. It adds no padding for gaps, ignores the size column, and maps unknown types to uint32_t. The generated struct's real offsets diverge from the comments whenever bytes are skipped.",
+   "severity": "high",
+   "status": "confirmed"
+  },
+  {
+   "cited_lines_checked": "scripts/shadow_replay.py:105-129",
+   "confidence": "high",
+   "finding_id": "84feba8b978e",
+   "local_id": "f1",
+   "packet_id": "wp7-018",
+   "reason": "Synthetic cases use hand-written expected_role labels as the 'baseline' (baseline_engine \"clef-flash (synthetic)\"), and the report is headed as agreement with clef-flash. The metric therefore compares against labels and not a clef-flash output. The synthetic tag is visible in the data, so the misleading effect is on the report headline.",
+   "severity": "medium",
+   "status": "downgraded"
+  }
+ ]
+}

@@ -1,0 +1,912 @@
+{
+ "boundary_utc": "2026-10-07T01:05:42Z",
+ "head": "22b56b427125e12bb7b2914d96b820973d06c445",
+ "base_commit": "11e1284",
+ "commit_count": 61,
+ "commits": [
+  {
+   "hash": "48c9298",
+   "author_date": "2026-10-06T21:13:40-04:00",
+   "subject": "combat-hotbar, queue-hud: red pill borders and padding, dark teal combat queue backdrop, 58px companion icons",
+   "stat": "7 files changed, 69 insertions(+), 31 deletions(-)"
+  },
+  {
+   "hash": "b33db1b",
+   "author_date": "2026-10-06T21:27:55-04:00",
+   "subject": "fix(mouse-probe): implement camera delta sanitization and double-click synthesis (v0.4.0)",
+   "stat": "4 files changed, 186 insertions(+), 6 deletions(-)"
+  },
+  {
+   "hash": "20eafed",
+   "author_date": "2026-10-06T21:35:16-04:00",
+   "subject": "fix(mouse-probe): resolve user32 functions dynamically for hot-swap compatibility",
+   "stat": "1 file changed, 30 insertions(+), 5 deletions(-)"
+  },
+  {
+   "hash": "95945d4",
+   "author_date": "2026-10-06T21:36:05-04:00",
+   "subject": "docs(18): record mouse-probe 0.4.0 hot-swap installation",
+   "stat": "1 file changed, 14 insertions(+), 1 deletion(-)"
+  },
+  {
+   "hash": "0b91725",
+   "author_date": "2026-10-07T13:18:57-04:00",
+   "subject": "feat(compat): runner hooks for test selection and metadata (Doc 22 U2)",
+   "stat": "2 files changed, 284 insertions(+), 16 deletions(-)"
+  },
+  {
+   "hash": "a91872e",
+   "author_date": "2026-10-07T13:19:56-04:00",
+   "subject": "docs(compat): mark U2 done in 22_compat_check_plan.md",
+   "stat": "1 file changed, 40 insertions(+), 15 deletions(-)"
+  },
+  {
+   "hash": "8395275",
+   "author_date": "2026-10-07T14:08:36-04:00",
+   "subject": "feat(plan): feature-scoped handoff isolation, auto-resolving mark-done, and plan list",
+   "stat": "4 files changed, 218 insertions(+), 32 deletions(-)"
+  },
+  {
+   "hash": "40b47d2",
+   "author_date": "2026-10-07T14:24:17-04:00",
+   "subject": "feat(compat): dependency graph builder and test suite (Doc 22 U1)",
+   "stat": "2 files changed, 1134 insertions(+)"
+  },
+  {
+   "hash": "f633a1f",
+   "author_date": "2026-10-07T14:24:20-04:00",
+   "subject": "feat(compat): compat_check CLI and test suite (Doc 22 U3)",
+   "stat": "3 files changed, 1005 insertions(+)"
+  },
+  {
+   "hash": "775c94c",
+   "author_date": "2026-10-07T14:24:36-04:00",
+   "subject": "docs(compat): record U1 and U3 completion in 22_compat_check_plan.md",
+   "stat": "1 file changed, 4 insertions(+), 2 deletions(-)"
+  },
+  {
+   "hash": "963f7f6",
+   "author_date": "2026-10-07T14:27:38-04:00",
+   "subject": "docs(compat): mark U4 done in 22_compat_check_plan.md",
+   "stat": "1 file changed, 1 insertion(+), 1 deletion(-)"
+  },
+  {
+   "hash": "8d17773",
+   "author_date": "2026-10-07T14:30:10-04:00",
+   "subject": "feat(compat): covers annotations and generator mappings (Doc 22 U5)",
+   "stat": "3 files changed, 142 insertions(+), 8 deletions(-)"
+  },
+  {
+   "hash": "d404fd2",
+   "author_date": "2026-10-07T14:30:17-04:00",
+   "subject": "docs(compat): mark U5 done in 22_compat_check_plan.md",
+   "stat": "1 file changed, 1 insertion(+), 1 deletion(-)"
+  },
+  {
+   "hash": "3de985d",
+   "author_date": "2026-10-07T18:18:06-04:00",
+   "subject": "feat(compat): ABI golden check, portraitslots golden, and consumer covers (Doc 22 U6)",
+   "stat": "8 files changed, 639 insertions(+), 1 deletion(-)"
+  },
+  {
+   "hash": "e188b49",
+   "author_date": "2026-10-07T18:18:13-04:00",
+   "subject": "docs(compat): mark U6 done in 22_compat_check_plan.md",
+   "stat": "1 file changed, 1 insertion(+), 1 deletion(-)"
+  },
+  {
+   "hash": "b756482",
+   "author_date": "2026-10-07T18:36:23-04:00",
+   "subject": "feat(compat): implement --lint checks in compat_check.py (Phase U7)",
+   "stat": "3 files changed, 250 insertions(+), 61 deletions(-)"
+  },
+  {
+   "hash": "0cdaf71",
+   "author_date": "2026-10-07T18:36:29-04:00",
+   "subject": "docs(compat): mark U7 done in 22_compat_check_plan.md",
+   "stat": "1 file changed, 1 insertion(+), 1 deletion(-)"
+  },
+  {
+   "hash": "392f13a",
+   "author_date": "2026-10-07T18:51:30-04:00",
+   "subject": "feat(plan): auto-generate handoffs and output Saved State banner on mark-done",
+   "stat": "4 files changed, 83 insertions(+), 2 deletions(-)"
+  },
+  {
+   "hash": "ea85883",
+   "author_date": "2026-10-07T19:08:23-04:00",
+   "subject": "feat(compat): wine smokes on fresh DLL with dll_from='build' and stale kpatch check (U8)",
+   "stat": "4 files changed, 352 insertions(+), 73 deletions(-)"
+  },
+  {
+   "hash": "f1d0a03",
+   "author_date": "2026-10-07T19:42:57-04:00",
+   "subject": "docs(compat): draft upstream PR for affected-patches.py (U9)",
+   "stat": "1 file changed, 61 insertions(+)"
+  },
+  {
+   "hash": "5dafe75",
+   "author_date": "2026-10-07T19:43:08-04:00",
+   "subject": "docs(plan): mark U9 complete in 22_compat_check_plan.md",
+   "stat": "1 file changed, 2 insertions(+), 2 deletions(-)"
+  },
+  {
+   "hash": "e5d32e1",
+   "author_date": "2026-10-07T20:47:22-04:00",
+   "subject": "docs(compat): document compat_check.py in doc 20, CLAUDE.md, and AGENTS.md (U10)",
+   "stat": "3 files changed, 11 insertions(+), 1 deletion(-)"
+  },
+  {
+   "hash": "9f028ae",
+   "author_date": "2026-10-07T20:47:31-04:00",
+   "subject": "docs(plan): mark U10 complete in 22_compat_check_plan.md",
+   "stat": "1 file changed, 1 insertion(+), 1 deletion(-)"
+  },
+  {
+   "hash": "ecd0e33",
+   "author_date": "2026-10-07T23:12:03-04:00",
+   "subject": "feat(compat): implement U11 GOG-only K2Addr.h version scoping",
+   "stat": "2 files changed, 370 insertions(+), 1 deletion(-)"
+  },
+  {
+   "hash": "efaf305",
+   "author_date": "2026-10-07T23:12:16-04:00",
+   "subject": "docs(plan): mark U11 complete in 22_compat_check_plan.md",
+   "stat": "1 file changed, 1 insertion(+), 1 deletion(-)"
+  },
+  {
+   "hash": "4369884",
+   "author_date": "2026-10-07T23:56:59-04:00",
+   "subject": "scripts(plan): support plan stems, research plans, and active-plan phase resolution in plan_manager",
+   "stat": "1 file changed, 88 insertions(+), 5 deletions(-)"
+  },
+  {
+   "hash": "a734895",
+   "author_date": "2026-10-08T00:01:52-04:00",
+   "subject": "test(compat): add proof by deliberate breakage suite (Doc 22 U12)",
+   "stat": "2 files changed, 341 insertions(+), 1 deletion(-)"
+  },
+  {
+   "hash": "d0d6c7b",
+   "author_date": "2026-10-08T00:02:02-04:00",
+   "subject": "docs(plan): mark U12 complete in 22_compat_check_plan.md",
+   "stat": "1 file changed, 1 insertion(+), 1 deletion(-)"
+  },
+  {
+   "hash": "db49b1d",
+   "author_date": "2026-10-08T00:53:46-04:00",
+   "subject": "docs(levelup): complete Phase 7 Chunk C1 integration audit baseline",
+   "stat": "3 files changed, 103 insertions(+), 34 deletions(-)"
+  },
+  {
+   "hash": "d8438c6",
+   "author_date": "2026-10-08T01:17:40-04:00",
+   "subject": "refactor(levelup): complete Phase 7 Chunk C3 include style and parity stub alignment",
+   "stat": "39 files changed, 142 insertions(+), 41 deletions(-)"
+  },
+  {
+   "hash": "b37fcb9",
+   "author_date": "2026-10-08T01:17:51-04:00",
+   "subject": "docs(levelup): record Phase 7 Chunk C3 completion in master plan and handoff",
+   "stat": "2 files changed, 52 insertions(+), 16 deletions(-)"
+  },
+  {
+   "hash": "8d6b663",
+   "author_date": "2026-10-08T10:19:40-04:00",
+   "subject": "docs(levelup): annotate Phase 7 master plan and handoff with oc-subagent roles",
+   "stat": "2 files changed, 17 insertions(+), 1 deletion(-)"
+  },
+  {
+   "hash": "f036a63",
+   "author_date": "2026-10-08T10:28:29-04:00",
+   "subject": "fix(tooling): add plan artifact recovery on oc-flow exit and inject owning mod scope in subagent prompt",
+   "stat": "2 files changed, 241 insertions(+), 2 deletions(-)"
+  },
+  {
+   "hash": "3d1c2b9",
+   "author_date": "2026-10-08T11:46:19-04:00",
+   "subject": "feat(tooling): add scaffold_mod.py and document turnkey mod compliance standard",
+   "stat": "3 files changed, 311 insertions(+), 1 deletion(-)"
+  },
+  {
+   "hash": "13c6ca9",
+   "author_date": "2026-10-08T12:18:07-04:00",
+   "subject": "docs(plans): annotate active plans 24 and 31 with oc-subagent roles and enhance prompt extraction",
+   "stat": "3 files changed, 39 insertions(+), 6 deletions(-)"
+  },
+  {
+   "hash": "b5b5aba",
+   "author_date": "2026-10-08T12:31:06-04:00",
+   "subject": "docs: centralize role-based subagent catalog in SUBAGENT_ROLES.md and link across active plans",
+   "stat": "7 files changed, 90 insertions(+), 4 deletions(-)"
+  },
+  {
+   "hash": "57837e0",
+   "author_date": "2026-10-08T17:14:14-04:00",
+   "subject": "feat(npc-diversity): master NPC diversity dispatcher (.kpatch & asset pool)",
+   "stat": "121 files changed, 2173 insertions(+)"
+  },
+  {
+   "hash": "c5c67f8",
+   "author_date": "2026-10-08T18:15:25-04:00",
+   "subject": "_shared_src: GuiInput.h (new), GuiKit.h for gui-input/MG4/MG5",
+   "stat": "2 files changed, 202 insertions(+)"
+  },
+  {
+   "hash": "15c9bfd",
+   "author_date": "2026-10-08T18:16:10-04:00",
+   "subject": "gui-input: initial provider (k2.guiinput@1)",
+   "stat": "9 files changed, 675 insertions(+)"
+  },
+  {
+   "hash": "7daaec6",
+   "author_date": "2026-10-08T18:16:17-04:00",
+   "subject": "hud-host 0.5.0-dev: k2.hud@1 provider (Steam + GOG hooks)",
+   "stat": "3 files changed, 72 insertions(+), 1 deletion(-)"
+  },
+  {
+   "hash": "f19df9a",
+   "author_date": "2026-10-08T18:16:50-04:00",
+   "subject": "save-events: k2.saveevents@1 provider (5 detours)",
+   "stat": "2 files changed, 4 insertions(+), 3 deletions(-)"
+  },
+  {
+   "hash": "ec95c98",
+   "author_date": "2026-10-08T18:16:56-04:00",
+   "subject": "action-hotbar 1.3.0-dev: migrate to k2.saveevents@1, k2.hud@1, k2.guiinput@1",
+   "stat": "10 files changed, 354 insertions(+), 212 deletions(-)"
+  },
+  {
+   "hash": "776de4c",
+   "author_date": "2026-10-08T18:17:14-04:00",
+   "subject": "Doc 33: UI/Queue polish \u2014 queue-hud, combat-hotbar, companion-selfheal",
+   "stat": "8 files changed, 403 insertions(+), 83 deletions(-)"
+  },
+  {
+   "hash": "7aeb296",
+   "author_date": "2026-10-08T18:17:21-04:00",
+   "subject": "Track P: perf-lab 0.6.0 + MG4/MG5 gui-input adoption",
+   "stat": "9 files changed, 511 insertions(+), 40 deletions(-)"
+  },
+  {
+   "hash": "83354c0",
+   "author_date": "2026-10-08T18:20:14-04:00",
+   "subject": "Fix gate failures: NpcDiversity kind=patch, add perf-lab raw addresses",
+   "stat": "2 files changed, 2 insertions(+), 2 deletions(-)"
+  },
+  {
+   "hash": "39ee196",
+   "author_date": "2026-10-08T20:20:49-04:00",
+   "subject": "fix(buff-duration-hud): add diagnostic logging for unreadable border or vtable mismatch",
+   "stat": "1 file changed, 4 insertions(+), 1 deletion(-)"
+  },
+  {
+   "hash": "acf927a",
+   "author_date": "2026-10-08T20:20:51-04:00",
+   "subject": "feat(inv3d): adopt k2.guiinput@1 and clean diagnostic log levels",
+   "stat": "2 files changed, 29 insertions(+), 15 deletions(-)"
+  },
+  {
+   "hash": "7159269",
+   "author_date": "2026-10-08T20:20:54-04:00",
+   "subject": "refactor(level-up-override): adopt GameAddr.h constants",
+   "stat": "2 files changed, 14 insertions(+), 4 deletions(-)"
+  },
+  {
+   "hash": "b37dc39",
+   "author_date": "2026-10-08T20:20:57-04:00",
+   "subject": "refactor(portrait-slots): adopt KpLog.h and fallback file",
+   "stat": "1 file changed, 8 insertions(+), 12 deletions(-)"
+  },
+  {
+   "hash": "a6e7e08",
+   "author_date": "2026-10-08T20:21:00-04:00",
+   "subject": "feat(ranged-ai): provide k2.rangedai@1 interface with inikit & common contract tests",
+   "stat": "5 files changed, 286 insertions(+), 12 deletions(-)"
+  },
+  {
+   "hash": "f32c8dc",
+   "author_date": "2026-10-08T20:21:02-04:00",
+   "subject": "fix(shield-bar): add one-shot warning when shield bar texture unresolved",
+   "stat": "1 file changed, 5 insertions(+), 1 deletion(-)"
+  },
+  {
+   "hash": "0a5efd9",
+   "author_date": "2026-10-08T20:23:49-04:00",
+   "subject": "fix(perf-lab): use absolute Common path for portraitslots smoke",
+   "stat": "1 file changed, 1 insertion(+), 1 deletion(-)"
+  },
+  {
+   "hash": "7e72e02",
+   "author_date": "2026-10-08T20:26:58-04:00",
+   "subject": "docs(plan-24): mark phase CS9 DONE with textured cross v3 & kit disc",
+   "stat": "3 files changed, 171 insertions(+), 63 deletions(-)"
+  },
+  {
+   "hash": "c70fc1c",
+   "author_date": "2026-10-08T20:49:57-04:00",
+   "subject": "docs(levelup): record Phase 7 Chunk C4 evidence and master plan status",
+   "stat": "2 files changed, 52 insertions(+), 1 deletion(-)"
+  },
+  {
+   "hash": "1757da0",
+   "author_date": "2026-10-08T22:16:32-04:00",
+   "subject": "docs(tooling): add H6-H10 end-to-end automation specs to doc 36, doc 24, MASTER_KEY, and BUILD_AND_INSTALL",
+   "stat": "4 files changed, 361 insertions(+), 8 deletions(-)"
+  },
+  {
+   "hash": "902b770",
+   "author_date": "2026-10-08T22:36:04-04:00",
+   "subject": "docs(tooling): add safeguards 6-8 (asset pools, worktree lock, gpg pinentry) to doc 36",
+   "stat": "1 file changed, 80 insertions(+)"
+  },
+  {
+   "hash": "39144b7",
+   "author_date": "2026-10-08T22:50:09-04:00",
+   "subject": "refactor(level-up-override): adopt Party.h helpers for leader lookup",
+   "stat": "5 files changed, 104 insertions(+), 14 deletions(-)"
+  },
+  {
+   "hash": "abf390a",
+   "author_date": "2026-10-08T22:50:29-04:00",
+   "subject": "docs(levelup): record Phase 7 Chunk C5 completion in master plan",
+   "stat": "1 file changed, 1 insertion(+), 1 deletion(-)"
+  },
+  {
+   "hash": "0fd1151",
+   "author_date": "2026-10-08T23:40:45-04:00",
+   "subject": "refactor(level-up-override): adopt FileWatch.h for config, table, and playthrough polling",
+   "stat": "7 files changed, 105 insertions(+), 43 deletions(-)"
+  },
+  {
+   "hash": "2667e71",
+   "author_date": "2026-10-08T23:40:53-04:00",
+   "subject": "docs(levelup): record Phase 7 Chunk C6 completion in master plan",
+   "stat": "1 file changed, 1 insertion(+), 1 deletion(-)"
+  },
+  {
+   "hash": "22b56b4",
+   "author_date": "2026-10-09T10:07:16-04:00",
+   "subject": "fix(equip3d): destroy creature on character change, add anim fallback, sync screen",
+   "stat": "2 files changed, 54 insertions(+), 4 deletions(-)"
+  }
+ ],
+ "dirty_after_boundary": [
+  {
+   "status": "??",
+   "path": ".agents/skills/resume/SKILL.md",
+   "mtime": "2026-10-08T23:05"
+  },
+  {
+   "status": "??",
+   "path": ".claude/active_plan.txt",
+   "mtime": "2026-10-09T10:15"
+  },
+  {
+   "status": "??",
+   "path": ".claude/clef_priors.json",
+   "mtime": "2026-10-09T10:10"
+  },
+  {
+   "status": "??",
+   "path": ".claude/contract_baseline.tsv",
+   "mtime": "2026-10-09T10:07"
+  },
+  {
+   "status": "??",
+   "path": ".claude/handoffs/10_engine_optimization_research.handoff.md",
+   "mtime": "2026-10-07T14:21"
+  },
+  {
+   "status": "??",
+   "path": ".claude/handoffs/10_equipment_3d_character.handoff.md",
+   "mtime": "2026-10-09T10:15"
+  },
+  {
+   "status": "??",
+   "path": ".claude/handoffs/22_compat_check_plan.handoff.md",
+   "mtime": "2026-10-08T00:01"
+  },
+  {
+   "status": "M",
+   "path": ".claude/handoffs/31_combat_action_hotbar.handoff.md",
+   "mtime": "2026-10-07T13:07"
+  },
+  {
+   "status": "??",
+   "path": ".claude/handoffs/33_ui_queue_hotbar_fixes.handoff.md",
+   "mtime": "2026-10-09T10:13"
+  },
+  {
+   "status": "??",
+   "path": ".claude/handoffs/35_clef_systemone_matcher_and_ledger.handoff.md",
+   "mtime": "2026-10-08T17:13"
+  },
+  {
+   "status": "??",
+   "path": ".claude/handoffs/99_temp_autoresolve_test_plan.handoff.md",
+   "mtime": "2026-10-09T10:10"
+  },
+  {
+   "status": "M",
+   "path": ".claude/handoffs/PHASE7_COMMON_MASTER.handoff.md",
+   "mtime": "2026-10-08T23:40"
+  },
+  {
+   "status": "??",
+   "path": ".claude/handoffs/tmp1jyfzd8j_plan.handoff.md",
+   "mtime": "2026-10-08T20:21"
+  },
+  {
+   "status": "??",
+   "path": ".claude/handoffs/tmp1x1voptl_plan.handoff.md",
+   "mtime": "2026-10-08T18:51"
+  },
+  {
+   "status": "??",
+   "path": ".claude/handoffs/tmp25mk6jg3_plan.handoff.md",
+   "mtime": "2026-10-09T10:10"
+  },
+  {
+   "status": "??",
+   "path": ".claude/handoffs/tmphoy2y6jl_plan.handoff.md",
+   "mtime": "2026-10-08T17:14"
+  },
+  {
+   "status": "??",
+   "path": ".claude/handoffs/tmpjjqmvfux_plan.handoff.md",
+   "mtime": "2026-10-08T18:52"
+  },
+  {
+   "status": "??",
+   "path": ".claude/handoffs/tmpkv92_3dy_plan.handoff.md",
+   "mtime": "2026-10-09T10:08"
+  },
+  {
+   "status": "??",
+   "path": ".claude/handoffs/tmpmoko8gms_plan.handoff.md",
+   "mtime": "2026-10-08T18:18"
+  },
+  {
+   "status": "??",
+   "path": ".claude/handoffs/tmpqs9pion0_plan.handoff.md",
+   "mtime": "2026-10-08T23:06"
+  },
+  {
+   "status": "??",
+   "path": ".claude/handoffs/tmps3uco3kg_plan.handoff.md",
+   "mtime": "2026-10-08T20:24"
+  },
+  {
+   "status": "??",
+   "path": ".claude/handoffs/tmpsyqeyt3y_plan.handoff.md",
+   "mtime": "2026-10-08T18:20"
+  },
+  {
+   "status": "??",
+   "path": ".claude/kev_4b_benchmark.json",
+   "mtime": "2026-10-08T17:13"
+  },
+  {
+   "status": "??",
+   "path": ".claude/master_ledger.jsonl",
+   "mtime": "2026-10-09T10:15"
+  },
+  {
+   "status": "??",
+   "path": ".claude/master_ledger.test_archive.jsonl",
+   "mtime": "2026-10-08T16:10"
+  },
+  {
+   "status": "??",
+   "path": ".claude/master_ledger_facts.json",
+   "mtime": "2026-10-08T16:02"
+  },
+  {
+   "status": "??",
+   "path": ".claude/review/post_quota_change_report.md",
+   "mtime": "2026-10-10T01:10"
+  },
+  {
+   "status": "??",
+   "path": ".claude/review/preflight_report.md",
+   "mtime": "2026-10-10T01:01"
+  },
+  {
+   "status": "??",
+   "path": ".claude/review/scope.json",
+   "mtime": "2026-10-10T00:59"
+  },
+  {
+   "status": "M",
+   "path": ".claude/session_handoff.md",
+   "mtime": "2026-10-09T10:15"
+  },
+  {
+   "status": "??",
+   "path": ".claude/subagent_runs/latest.patch",
+   "mtime": "2026-10-09T10:06"
+  },
+  {
+   "status": "??",
+   "path": ".claude/subagent_runs/ses_ee61df76fffeuKcFqJ7L927fAY_plan.md",
+   "mtime": "2026-10-08T01:06"
+  },
+  {
+   "status": "??",
+   "path": ".opencode/plans/pending-agent-review.md",
+   "mtime": "2026-10-10T00:27"
+  },
+  {
+   "status": "M",
+   "path": "AGENTS.md",
+   "mtime": "2026-10-08T23:05"
+  },
+  {
+   "status": "M",
+   "path": "CLAUDE.md",
+   "mtime": "2026-10-08T22:37"
+  },
+  {
+   "status": "??",
+   "path": "kotor2_ghidra_knowledge.db",
+   "mtime": "2026-10-08T12:55"
+  },
+  {
+   "status": "M",
+   "path": "patch_manager_mods/10_engine_optimization_research.md",
+   "mtime": "2026-10-07T14:20"
+  },
+  {
+   "status": "M",
+   "path": "patch_manager_mods/13_ranged_ai_spacing.md",
+   "mtime": "2026-10-08T17:32"
+  },
+  {
+   "status": "M",
+   "path": "patch_manager_mods/18_mouse_camera_investigation.md",
+   "mtime": "2026-10-08T10:18"
+  },
+  {
+   "status": "M",
+   "path": "patch_manager_mods/19b_cross_patch_sharing_survey.md",
+   "mtime": "2026-10-08T20:48"
+  },
+  {
+   "status": "M",
+   "path": "patch_manager_mods/27_companion_selfheal.md",
+   "mtime": "2026-10-08T20:29"
+  },
+  {
+   "status": "M",
+   "path": "patch_manager_mods/30_queue_hud.md",
+   "mtime": "2026-10-08T22:36"
+  },
+  {
+   "status": "M",
+   "path": "patch_manager_mods/33_ui_queue_hotbar_fixes.md",
+   "mtime": "2026-10-09T10:13"
+  },
+  {
+   "status": "??",
+   "path": "patch_manager_mods/35_clef_systemone_matcher_and_ledger.md",
+   "mtime": "2026-10-08T17:13"
+  },
+  {
+   "status": "M",
+   "path": "patch_manager_mods/_shared_src/GameAddr.h",
+   "mtime": "2026-10-08T23:45"
+  },
+  {
+   "status": "M",
+   "path": "patch_manager_mods/_shared_src/SelfHealUi.h",
+   "mtime": "2026-10-09T10:06"
+  },
+  {
+   "status": "M",
+   "path": "patch_manager_mods/action_hotbar_src/ActionHotbar.cpp",
+   "mtime": "2026-10-08T23:15"
+  },
+  {
+   "status": "M",
+   "path": "patch_manager_mods/action_hotbar_src/HotbarLogic.h",
+   "mtime": "2026-10-08T23:09"
+  },
+  {
+   "status": "M",
+   "path": "patch_manager_mods/action_hotbar_src/PULL_REQUEST.md",
+   "mtime": "2026-10-08T01:04"
+  },
+  {
+   "status": "M",
+   "path": "patch_manager_mods/action_hotbar_src/hotbar_logic_test.cpp",
+   "mtime": "2026-10-08T23:08"
+  },
+  {
+   "status": "M",
+   "path": "patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp",
+   "mtime": "2026-10-08T23:44"
+  },
+  {
+   "status": "??",
+   "path": "patch_manager_mods/gui_input_src/kotor2-gog-aspyr.hooks.toml",
+   "mtime": "2026-10-08T01:13"
+  },
+  {
+   "status": "M",
+   "path": "patch_manager_mods/inventory_3d_viewport_src/Inventory3DViewport.cpp",
+   "mtime": "2026-10-08T23:16"
+  },
+  {
+   "status": "M",
+   "path": "patch_manager_mods/level_up_override_src/LevelUpOverride.cpp",
+   "mtime": "2026-10-09T10:21"
+  },
+  {
+   "status": "M",
+   "path": "patch_manager_mods/level_up_override_src/exports.def",
+   "mtime": "2026-10-09T10:15"
+  },
+  {
+   "status": "M",
+   "path": "patch_manager_mods/level_up_override_src/manifest.toml",
+   "mtime": "2026-10-09T10:15"
+  },
+  {
+   "status": "M",
+   "path": "patch_manager_mods/level_up_override_src/test.toml",
+   "mtime": "2026-10-09T10:15"
+  },
+  {
+   "status": "M",
+   "path": "patch_manager_mods/queue_hud_src/QueueHud.cpp",
+   "mtime": "2026-10-09T10:18"
+  },
+  {
+   "status": "M",
+   "path": "patch_manager_mods/queue_hud_src/exports.def",
+   "mtime": "2026-10-09T10:17"
+  },
+  {
+   "status": "M",
+   "path": "patch_manager_mods/queue_hud_src/kotor2-steam-aspyr.hooks.toml",
+   "mtime": "2026-10-09T10:17"
+  },
+  {
+   "status": "M",
+   "path": "scripts/agent_contract.py",
+   "mtime": "2026-10-07T14:28"
+  },
+  {
+   "status": "??",
+   "path": "scripts/agent_diff_check.py",
+   "mtime": "2026-10-08T15:41"
+  },
+  {
+   "status": "??",
+   "path": "scripts/clef_dataset.py",
+   "mtime": "2026-10-08T16:06"
+  },
+  {
+   "status": "??",
+   "path": "scripts/clef_matcher.py",
+   "mtime": "2026-10-08T22:26"
+  },
+  {
+   "status": "??",
+   "path": "scripts/gpu_mode.py",
+   "mtime": "2026-10-08T17:23"
+  },
+  {
+   "status": "??",
+   "path": "scripts/kotor2_ghidra_knowledge.db",
+   "mtime": "2026-10-08T00:23"
+  },
+  {
+   "status": "M",
+   "path": "scripts/kotor2_logs.py",
+   "mtime": "2026-10-08T17:21"
+  },
+  {
+   "status": "M",
+   "path": "scripts/kpm_hotswap.py",
+   "mtime": "2026-10-07T14:28"
+  },
+  {
+   "status": "??",
+   "path": "scripts/master_ledger.py",
+   "mtime": "2026-10-08T16:10"
+  },
+  {
+   "status": "M",
+   "path": "scripts/plan_manager.py",
+   "mtime": "2026-10-08T16:59"
+  },
+  {
+   "status": "M",
+   "path": "scripts/pre_install_gate.py",
+   "mtime": "2026-10-07T14:28"
+  },
+  {
+   "status": "M",
+   "path": "scripts/query_ghidra.py",
+   "mtime": "2026-10-07T20:49"
+  },
+  {
+   "status": "M",
+   "path": "scripts/run_tests.py",
+   "mtime": "2026-10-08T16:09"
+  },
+  {
+   "status": "M",
+   "path": "scripts/selfheal_log_check.py",
+   "mtime": "2026-10-08T17:21"
+  },
+  {
+   "status": "??",
+   "path": "scripts/shadow_replay.py",
+   "mtime": "2026-10-08T17:08"
+  },
+  {
+   "status": "M",
+   "path": "scripts/subagent_prompt.py",
+   "mtime": "2026-10-08T17:01"
+  },
+  {
+   "status": "??",
+   "path": "scripts/test_clef_matcher.py",
+   "mtime": "2026-10-08T17:03"
+  },
+  {
+   "status": "M",
+   "path": "scripts/test_kotor2_logs.py",
+   "mtime": "2026-10-08T17:22"
+  },
+  {
+   "status": "??",
+   "path": "scripts/test_master_ledger.py",
+   "mtime": "2026-10-08T16:57"
+  },
+  {
+   "status": "M",
+   "path": "scripts/test_plan_manager.py",
+   "mtime": "2026-10-08T16:09"
+  },
+  {
+   "status": "M",
+   "path": "scripts/test_run_tests_select.py",
+   "mtime": "2026-10-08T14:30"
+  },
+  {
+   "status": "M",
+   "path": "scripts/test_selfheal_log_check.py",
+   "mtime": "2026-10-08T17:23"
+  },
+  {
+   "status": "??",
+   "path": "scripts/test_subagent_tools.py",
+   "mtime": "2026-10-08T17:01"
+  },
+  {
+   "status": "??",
+   "path": "tests/benchmarks/transcript_prompt_eval.json",
+   "mtime": "2026-10-08T17:08"
+  },
+  {
+   "status": "M",
+   "path": "tests/static/subclassers.toml",
+   "mtime": "2026-10-08T01:30"
+  }
+ ],
+ "dirty_at_or_before_boundary_count": 77,
+ "skipped": {
+  "cache": 42,
+  "dump": 46,
+  "nomtime": 0
+ },
+ "real_gate_rows": [
+  {
+   "ts": "2026-10-07T22:23:01Z",
+   "agent": "ethansm",
+   "verdict": "FAIL",
+   "head": "e188b4951f34",
+   "mods": null,
+   "error": "GATE FAIL 1 default: run_tests.py rc=1; failing: suite:check-exports, suite:check-raw-addresses"
+  },
+  {
+   "ts": "2026-10-08T22:18:50Z",
+   "agent": "opencode",
+   "verdict": "FAIL",
+   "head": "7aeb296284e0",
+   "mods": null,
+   "error": "GATE FAIL 1 default: run_tests.py rc=1; failing: suite:kpm-validate-patches, suite:check-exports, suite:check-raw-addresses"
+  },
+  {
+   "ts": "2026-10-08T22:21:43Z",
+   "agent": "opencode",
+   "verdict": "FAIL",
+   "head": "83354c06b07b",
+   "mods": null,
+   "error": "GATE FAIL 1 default: run_tests.py rc=1; failing: suite:check-exports, suite:kpm-validate-patches"
+  },
+  {
+   "ts": "2026-10-08T22:51:57Z",
+   "agent": "opencode",
+   "verdict": "FAIL",
+   "head": "83354c06b07b",
+   "mods": null,
+   "error": "GATE FAIL 1 default: run_tests.py rc=1; failing: suite:kpm-validate-patches"
+  },
+  {
+   "ts": "2026-10-08T22:54:57Z",
+   "agent": "opencode",
+   "verdict": "FAIL",
+   "head": "83354c06b07b",
+   "mods": null,
+   "error": "GATE FAIL 4 wine: wine:perflab2[run] FAIL 3.5s  exit 1"
+  },
+  {
+   "ts": "2026-10-09T00:23:10Z",
+   "agent": "antigravity:98d6ddca",
+   "verdict": "FAIL",
+   "head": "f32c8dca33c1",
+   "mods": null,
+   "error": "GATE FAIL 4 wine: wine:portraitslots FAIL 0.2s  build failed (exit 1)"
+  },
+  {
+   "ts": "2026-10-09T00:25:48Z",
+   "agent": "antigravity:98d6ddca",
+   "verdict": "PASS",
+   "head": "0a5efd9ee375",
+   "mods": [
+    "buff_duration_hud_src",
+    "inventory_3d_viewport_src",
+    "level_up_override_src",
+    "portrait_slots_src",
+    "ranged_ai_src",
+    "shield_bar_src"
+   ],
+   "error": null
+  },
+  {
+   "ts": "2026-10-09T03:45:13Z",
+   "agent": "antigravity:8e6ee335",
+   "verdict": "PASS",
+   "head": "2667e71e262b",
+   "mods": [
+    "equipment_3d_character_src"
+   ],
+   "error": null
+  },
+  {
+   "ts": "2026-10-09T14:07:28Z",
+   "agent": "antigravity:8e6ee335",
+   "verdict": "PASS",
+   "head": "22b56b427125",
+   "mods": [
+    "equipment_3d_character_src"
+   ],
+   "error": null
+  },
+  {
+   "ts": "2026-10-09T14:09:31Z",
+   "agent": "antigravity:8e6ee335",
+   "verdict": "FAIL",
+   "head": "22b56b427125",
+   "mods": null,
+   "error": "GATE FAIL 1 default: run_tests.py rc=1; failing: suite:check-shared-headers"
+  },
+  {
+   "ts": "2026-10-09T14:11:56Z",
+   "agent": "antigravity:8e6ee335",
+   "verdict": "PASS",
+   "head": "22b56b427125",
+   "mods": [
+    "equipment_3d_character_src"
+   ],
+   "error": null
+  }
+ ],
+ "fixture_gate_rows_py_x": 36,
+ "excluded_by_name": ".env .pem .credentials.json sunshine/credentials/* endpoint.env *credential* *secret*; raw_addresses.toml contents not read"
+}
