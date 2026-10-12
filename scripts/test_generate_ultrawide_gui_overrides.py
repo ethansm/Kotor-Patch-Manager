@@ -90,5 +90,31 @@ class MainHonorsRegistrationTests(unittest.TestCase):
         gen.deploy_file.assert_called_once()
 
 
+class IsGameRunningTests(unittest.TestCase):
+    """BG15: a failed process probe must assume the game is running (fail closed)."""
+
+    def _probe(self, **kwargs):
+        err = io.StringIO()
+        with mock.patch.object(gen.subprocess, "check_output", **kwargs), contextlib.redirect_stderr(err):
+            return gen.is_game_running(), err.getvalue()
+
+    def test_game_in_ps_output_is_running(self):
+        result, _ = self._probe(return_value="  99 init\n1234 Z:\\games\\swkotor2.exe\n")
+        self.assertTrue(result)
+
+    def test_game_absent_from_ps_output_is_not_running(self):
+        result, _ = self._probe(return_value="  99 init\n 100 bash\n")
+        self.assertFalse(result)
+
+    def test_missing_ps_fails_closed(self):
+        result, err = self._probe(side_effect=FileNotFoundError("ps"))
+        self.assertTrue(result)
+        self.assertIn("assuming it is running", err)
+
+    def test_ps_nonzero_exit_fails_closed(self):
+        result, _ = self._probe(side_effect=gen.subprocess.CalledProcessError(1, "ps"))
+        self.assertTrue(result)
+
+
 if __name__ == "__main__":
     unittest.main()

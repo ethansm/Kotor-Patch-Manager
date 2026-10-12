@@ -681,19 +681,17 @@ def bar_extent(left: int, width: int, k: float, e_left: int | None, rule: tuple)
 
 
 def is_game_running() -> bool:
-    """Check if swkotor2.exe process is currently active."""
+    """True when swkotor2.exe is active. Fails closed: if the process probe itself fails, assume it is running (deploy/rollback must not proceed blind)."""
     try:
         output = subprocess.check_output(
             ["ps", "-eo", "pid,args"],
             text=True,
             stderr=subprocess.DEVNULL,
         )
-        for line in output.splitlines():
-            if re.search(r"[s]wkotor2\.exe", line, re.IGNORECASE):
-                return True
-    except Exception:
-        pass
-    return False
+    except (OSError, subprocess.SubprocessError) as exc:
+        print(f"WARNING: cannot check for swkotor2.exe ({exc}); assuming it is running.", file=sys.stderr)
+        return True
+    return any(re.search(r"[s]wkotor2\.exe", line, re.IGNORECASE) for line in output.splitlines())
 
 
 def sha256(data: bytes) -> str:
