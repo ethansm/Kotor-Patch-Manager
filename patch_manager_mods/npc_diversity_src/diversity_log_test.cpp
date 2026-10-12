@@ -37,7 +37,7 @@ constexpr const char* kGoldStatTex =
     "stashhit=9 stashmiss=10";
 constexpr const char* kGoldStatRemap =
     "STAT remap calls=11 nullg=0 unread=1 bcskip=2 excl=3 tagun=4 chg=5 nochg=6 oidd=7 skiprow=8 skipg=9 "
-    "tvchg=10 tvarmor=11";
+    "tvchg=10 tvarmor=11 vary=12 novary=13 keep=14";
 constexpr const char* kGoldStatAbi = "STAT abi app=1 g=2 dm=3";
 constexpr const char* kGoldStatXy = "STAT xy x=-3.5..12.5 y=0.0..100.5";
 constexpr const char* kGoldStatSlot0 =
@@ -165,6 +165,9 @@ void testLogFormatGolden() {
     c.remSkipGender = 9;
     c.remTvChg = 10;
     c.remTvArmor = 11;
+    c.remVary = 12;
+    c.remNoVary = 13;
+    c.remKeep = 14;
     r = nl::FormatStatRemap(b, sizeof b, c);
     ExpectLine(r, b, kGoldStatRemap);
 

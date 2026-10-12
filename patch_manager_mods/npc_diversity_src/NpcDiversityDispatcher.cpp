@@ -1,4 +1,4 @@
-// NpcDiversityDispatcher.cpp -- Master NPC Diversity Dispatcher runtime detour hooks (0.1.3-probe).
+// NpcDiversityDispatcher.cpp -- Master NPC Diversity Dispatcher runtime detour hooks (0.1.4-probe).
 //
 // Strategy B (confirmed by the 0.1.1 play-test: the engine builds N_Comm?NN from descriptor textureVar):
 // Hook 2 RemapNpcAppearance: CSWCCreature::SetAppearance entry (Steam 0x76D200), args ecx=this,
@@ -8,6 +8,10 @@
 // 0.1.3: creature position offsets corrected to +0x24/+0x28/+0x2C; hook 2 never writes tv when pDesc.subType >= 3
 //   (armor body path); TEX lines carry stype/oid and log pmb*/pfb* body requests for creatures hook 2 saw;
 //   one-shot PTR dumps (64 bytes behind the pointers at +0x1C/+0x20/+0x5C/+0x6C) look for the creature tag.
+// 0.1.4: only kVaryPct (35%) of generic commoners change (ShouldVary), tv comes from the per-family slot lists
+//   (DiversitySlots.h), and named/merchant/uniformed NPCs keep their default (DiversityKeep.h). The creature tag is
+//   still unreadable, so keep-default is POSITION-ONLY (DiversityRoles.h kKeepPositions) and companions/story NPCs
+//   rely on the row tables.
 // Hook 1 OverrideNpcTexture: inside CSWCCreatureAppearance::GetBTypeModelAndTextureResRef, after the
 //   texture ResRef copy (Steam 0x85E601). LOG-ONLY in this build: it counts and logs what the engine requests.
 //
@@ -23,6 +27,7 @@
 
 #include "KpLog.h"
 #include "../_shared/SafeRead.h"
+#include "DiversityKeep.h"
 #include "DiversityLogic.h"
 #include "DiversityRows.h"
 #include "HookDecision.h"
@@ -41,7 +46,7 @@ namespace {
 using namespace NpcDiversity;
 namespace nl = NpcDiversity::log;
 
-constexpr const char* kVersion = "0.1.3-probe";
+constexpr const char* kVersion = "0.1.4-probe";
 constexpr size_t kResRefLen = 16;
 
 // SafeRead site ids (counted in Counts::fail, printed by STAT read).
@@ -428,10 +433,19 @@ __declspec(dllexport) void __cdecl RemapNpcAppearance(void* pCreature, layout::A
     } else if (skip == SkipReason::Gender) {
         ++g_c.remSkipGender;
         why = "skip:gender";
+    } else if (IsKeepDefault(tag, x, y, xyOk)) {
+        // Named / merchant / uniformed / plot NPCs (position list, plus the tag list once the tag is readable).
+        ++g_c.remKeep;
+        why = "keep";
     } else if (!okOid || oid == 0) {
         // The seed is the creature id; without it nothing is written (the creature stays vanilla).
         why = "unread:oid";
+    } else if (!ShouldVary(oid, d.appearance)) {
+        // Only kVaryPct of generic commoners change; the roll is a pure function of (oid, original row).
+        ++g_c.remNoVary;
+        why = "skip:vary";
     } else {
+        ++g_c.remVary;
         // Row remap: only rows in the generic commoner tables (a row already remapped is not in them).
         if (skip == SkipReason::None) {
             hash = HashCreatureId(oid, d.appearance);
@@ -453,7 +467,7 @@ __declspec(dllexport) void __cdecl RemapNpcAppearance(void* pCreature, layout::A
         }
         // Texture variant for the final row. Idempotent: the seed ignores the old textureVar.
         // subType >= 3 builds PMB/PFB armor parts, whose variants are not N_Comm slots: never write tv there.
-        const uint8_t want = PickTextureVar(oid, newApp);
+        const uint8_t want = PickTextureVar(oid, newApp, d.textureVar);
         if (static_cast<int>(d.subType) > layout::kDescSubTypeMaxCommoner) {
             ++g_c.remTvArmor;
             if (why[0] == 'n') why = "tvarmor";

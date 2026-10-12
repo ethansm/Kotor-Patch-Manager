@@ -1,6 +1,7 @@
 // common_contract_test.cpp -- Common CONTRACT test for Master NPC Diversity Dispatcher
 // Pins the engine layout constants (NpcDivLayout.h) and the Common row/exclusion APIs the mod relies on.
 #include "DiversityLogic.h"
+#include "DiversityRoles.h"
 #include "DiversityRows.h"
 #include "NpcDivLayout.h"
 #include "check.h"
@@ -67,6 +68,11 @@ void testExclusionContract() {
     CCHECK("Generic commoner tag allowed", !NpcDiversity::IsExcludedFromDiversification("citizen_m"));
 }
 
+void testKeepPosTolerance() {
+    // Keep-default position fallback tolerance (0.1 m units) that DiversityKeep.h relies on.
+    CEQ("keep-default position tolerance is 3 (0.3 m)", NpcDiversity::roles::kKeepPosTol10, 3);
+}
+
 } // namespace
 
 int main() {
@@ -75,5 +81,6 @@ int main() {
     testCreatureOffsets();
     testHookFrameOffsets();
     testExclusionContract();
+    testKeepPosTolerance();
     return kt::Report("npc_diversity_common_contract_test");
 }

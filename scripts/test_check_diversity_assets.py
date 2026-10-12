@@ -197,7 +197,23 @@ class RunChecksTests(unittest.TestCase):
         self.assertTrue(any(x.startswith("... and ") and x.endswith(" more FAIL lines") for x in lines))
 
 
-SLOTS = (1, 2, 10)  # small slot set keeps fixtures tiny; the real kCommonerSlots[] has 35 entries
+def make_slots_header(male=(1, 2, 6, 9), female=(1, 2, 6, 9), fat_m=(34,), fat_f=(35,), counts=None):
+    """Mini DiversitySlots.h in the generated layout. `counts` overrides the <name>Count value per array name."""
+    counts = counts or {}
+
+    def arr(name, slots):
+        body = ", ".join(str(s) for s in slots)
+        return (f"constexpr uint8_t {name}[] = {{{body}}};\n"
+                f"constexpr size_t {name}Count = {counts.get(name, len(slots))};\n")
+    return ("// DiversitySlots.h -- fixture\n#pragma once\nnamespace NpcDiversity {\n"
+            + arr("kMaleSlots", male) + arr("kFemaleSlots", female)
+            + arr("kFatMaleSlots", fat_m) + arr("kFatFemaleSlots", fat_f)
+            + "} // namespace NpcDiversity\n")
+
+
+# Small slot set keeps fixtures tiny. Its required set is the vanilla 1-11 plus the 17 (female array) and 34/35 (fat arrays).
+SLOTS_HEADER = make_slots_header(female=(1, 2, 6, 9, 17))
+SLOTS = tuple(range(1, 12)) + (17, 34, 35)
 HEAD_SPEC = {
     192: ("llk_Ahrnell", "llk_Ahrnell"), 193: ("llk_Harra", "llk_Harra"), 194: ("llk_KehVehn", "llk_KehVehn"),
     195: ("llk_LupoShar", "llk_LupoShar"), 196: ("llk_DahnisH", "llk_DahnisH"),
@@ -229,14 +245,57 @@ def full_set(exclude=()):
     return frozenset(out - {e.lower() for e in exclude})
 
 
-class ParseCommonerSlotsTests(unittest.TestCase):
-    def test_reads_array_and_ignores_commented_declaration(self):
-        text = ("// constexpr uint8_t kCommonerSlots[] = {99};\n"
-                "constexpr uint8_t kCommonerSlots[] = {\n    1,  2, 10,\n    11};\n")
-        self.assertEqual(cda.parse_commoner_slots(text), [1, 2, 10, 11])
+class ParseDiversitySlotsTests(unittest.TestCase):
+    def test_required_is_union_of_four_arrays_plus_vanilla(self):
+        slots, problems = cda.parse_diversity_slots(make_slots_header(male=(1, 6, 9, 16), female=(1, 6, 9, 17)))
+        self.assertEqual(problems, [])
+        self.assertEqual(slots, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 16, 17, 34, 35])
 
-    def test_missing_array_returns_empty(self):
-        self.assertEqual(cda.parse_commoner_slots("namespace X {}\n"), [])
+    def test_shared_fixture_matches_slots_constant(self):
+        self.assertEqual(cda.parse_diversity_slots(SLOTS_HEADER), (list(SLOTS), []))
+
+    def test_commented_declaration_is_ignored(self):
+        slots, problems = cda.parse_diversity_slots("// constexpr uint8_t kMaleSlots[] = {99};\n" + make_slots_header())
+        self.assertEqual(problems, [])
+        self.assertNotIn(99, slots)
+
+    def test_slot_zero_fails_and_is_not_required(self):
+        slots, problems = cda.parse_diversity_slots(make_slots_header(male=(0, 1, 6, 9)))
+        self.assertEqual(problems, ["DiversitySlots.h kMaleSlots: slot(s) outside 1..255: [0]"])
+        self.assertNotIn(0, slots)
+
+    def test_slot_300_fails(self):
+        slots, problems = cda.parse_diversity_slots(make_slots_header(female=(1, 6, 9, 300)))
+        self.assertEqual(problems, ["DiversitySlots.h kFemaleSlots: slot(s) outside 1..255: [300]"])
+        self.assertNotIn(300, slots)
+
+    def test_negative_slot_is_reported_not_dropped(self):
+        _, problems = cda.parse_diversity_slots(make_slots_header(fat_m=(-1, 34)))
+        self.assertEqual(problems, ["DiversitySlots.h kFatMaleSlots: slot(s) outside 1..255: [-1]"])
+
+    def test_slot_six_or_nine_missing_from_male_or_female_fails(self):
+        _, p_female = cda.parse_diversity_slots(make_slots_header(female=(1, 9)))
+        self.assertEqual(p_female, ["DiversitySlots.h kFemaleSlots: default tv slot(s) [6] missing (need 06 and 09)"])
+        _, p_male = cda.parse_diversity_slots(make_slots_header(male=(1, 6)))
+        self.assertEqual(p_male, ["DiversitySlots.h kMaleSlots: default tv slot(s) [9] missing (need 06 and 09)"])
+
+    def test_slot_six_nine_only_required_in_male_and_female(self):
+        _, problems = cda.parse_diversity_slots(make_slots_header(fat_m=(34,), fat_f=(35,)))
+        self.assertEqual(problems, [])
+
+    def test_count_must_match_array_length(self):
+        _, problems = cda.parse_diversity_slots(make_slots_header(counts={"kMaleSlots": 3}))
+        self.assertEqual(problems, ["DiversitySlots.h kMaleSlotsCount=3 but kMaleSlots has 4 entries"])
+
+    def test_missing_array_fails(self):
+        text = "\n".join(line for line in make_slots_header().splitlines() if "kFatFemaleSlots" not in line)
+        _, problems = cda.parse_diversity_slots(text)
+        self.assertEqual(problems, ["kFatFemaleSlots[] not parsed from DiversitySlots.h"])
+
+    def test_no_arrays_fails_for_each_and_still_requires_vanilla(self):
+        slots, problems = cda.parse_diversity_slots("namespace X {}\n")
+        self.assertEqual(slots, list(cda.VANILLA_SLOTS))
+        self.assertEqual(len(problems), 4)
 
 
 class FileStatusTests(unittest.TestCase):
@@ -330,6 +389,12 @@ class CheckResourcesTests(unittest.TestCase):
         self.assertIn("N_CommM02", rep.fails[0])
         self.assertIn("app802.texa", rep.fails[0])
 
+    def test_missing_fat_slot_texture_fails_under_union(self):
+        # 34 is only in kFatMaleSlots, but the union rule still requires N_CommM34 for the commoner base
+        rep = self.check({"patch": full_set(exclude={"N_CommM34.tpc", "N_CommM34.tga"}), "live": frozenset()})
+        self.assertEqual(len(rep.fails), 1)
+        self.assertIn("N_CommM34", rep.fails[0])
+
     def test_model_missing_mdx_fails(self):
         rep = self.check({"patch": full_set(exclude={"n_commm_fat.mdx"}), "live": frozenset()})
         self.assertEqual(len(rep.fails), 1)
@@ -367,7 +432,7 @@ class CheckResourcesTests(unittest.TestCase):
         self.assertIn("heads row 198 missing from heads.2da", rep.fails)
         self.assertIn("appearance row 805 missing from appearance.2da", rep.fails)
         rep2 = self.check({"patch": full_set(), "live": frozenset()}, slots=())
-        self.assertTrue(any("kCommonerSlots" in x for x in rep2.fails))
+        self.assertTrue(any("no slots parsed from DiversitySlots.h" in x for x in rep2.fails))
 
 
 class RunChecksResourceTests(unittest.TestCase):
@@ -388,6 +453,21 @@ class RunChecksResourceTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertTrue(any(x.startswith("FAIL N_CommM01 not found") for x in lines))
         self.assertEqual(lines[-1], "RESULT: FAIL (1 problem(s))")
+
+    def test_rejected_pool_file_in_override_is_ignored(self):
+        extra = frozenset({"n_commm20.tpc", "n_commf20.tga", "n_commf33.tpc"})  # in no slot array, so never checked
+        code, lines = self.run_it({"patch": full_set() | extra, "chitin": frozenset(), "live": frozenset()})
+        self.assertEqual(code, 0, "\n".join(lines))
+        self.assertFalse(any(x.startswith(("WARN", "FAIL", "LIVE-ONLY")) for x in lines), "\n".join(lines))
+
+    def test_slot_problem_from_diversity_slots_fails_the_run(self):
+        rows = {**good_rows(), **resource_rows()}
+        res = cda.ResourceInputs(rows=rows, heads=resource_heads(), slots=SLOTS,
+                                 slot_problems=["DiversitySlots.h kMaleSlots: slot(s) outside 1..255: [0]"],
+                                 sources={"patch": full_set(), "chitin": frozenset(), "live": frozenset()})
+        code, lines = cda.run_checks(make_tables(), make_rows_header(CONSTS[:2]), rows, False, res)
+        self.assertEqual(code, 1)
+        self.assertIn("FAIL DiversitySlots.h kMaleSlots: slot(s) outside 1..255: [0]", lines)
 
     def test_live_only_prerequisite_prints_but_run_passes(self):
         code, lines = self.run_it({"patch": full_set(exclude={"P_TwiHNGreen.mdl", "P_TwiHNGreen.mdx"}),

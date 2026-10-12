@@ -7,6 +7,7 @@
 #include <cstdio>
 
 #include "DiversityRows.h"
+#include "DiversitySlots.h"
 #include "DiversityExclusion.h"
 #include "DiversityTables.h"
 
@@ -22,15 +23,7 @@ constexpr uint32_t kTwilekMaleRemapPct = 80;  // male Twi'lek: remapped to 805..
 constexpr uint32_t kFatPct = 15;              // male and female commoners: fat body
 constexpr uint32_t kCzerkaPct = 5;            // female commoner: Czerka officer, after the fat band
 constexpr uint32_t kDancerPct = 20;           // female Twi'lek: dancer variants
-
-// Commoner clothing texture slots N_CommM%02d / N_CommF%02d. Any content works;
-// ComputeSlot indexes this array, so removing an entry only shrinks the pool.
-constexpr uint8_t kCommonerSlots[] = {
-    1,  2,  3,  4,  5,  6,  7,  8,  9,  10,
-    11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-    21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
-    31, 32, 33, 34, 35};
-constexpr size_t kCommonerSlotCount = sizeof(kCommonerSlots) / sizeof(kCommonerSlots[0]);
+constexpr uint32_t kVaryPct = 35;             // share of creatures that get a texture variant (ShouldVary)
 
 // Murmur3 32-bit finaliser (fmix32). Bijective, full avalanche: every input bit
 // flips about half the output bits. Used to turn a low-entropy FNV state into a
@@ -47,7 +40,7 @@ inline uint32_t Fmix32(uint32_t h) {
 // Salted draw: Mix(hash, salt) = Fmix32(hash ^ (salt * 0x9E3779B1)).
 // Each independent decision uses its own salt so draws do not share bits:
 //   salt 1 = band roll (BandRoll), 2 = Twi'lek male variant, 3 = female dancer variant,
-//   salt 4 = commoner texture slot (ComputeSlot).
+//   salt 4 = texture slot (PickTextureVar, ShouldDiversifyTexture), 5 = vary gate (ShouldVary).
 inline uint32_t Mix(uint32_t hash, uint32_t salt) {
     return Fmix32(hash ^ (salt * 0x9E3779B1u));
 }
@@ -85,11 +78,6 @@ inline uint32_t HashDescriptor(uint16_t appearance, uint8_t gender, uint8_t text
     return hash;
 }
 
-// Map a hash to a commoner texture slot (salt 4), chosen from kCommonerSlots
-inline int ComputeSlot(uint32_t hash) {
-    return static_cast<int>(kCommonerSlots[Mix(hash, 4) % kCommonerSlotCount]);
-}
-
 // Per-creature hash for the texture variant: FNV-1a over the 4 bytes of oid, then the 2 bytes of
 // appearance (each least significant byte first), finished with Fmix32.
 inline uint32_t HashCreatureId(uint32_t oid, uint16_t appearance) {
@@ -124,11 +112,52 @@ inline bool TexVarEligible(uint16_t finalApp) {
     }
 }
 
-// Texture variant for a creature: a value from kCommonerSlots (1..35), or 0 when no variant applies
-// (row not eligible, or oid 0 meaning no creature id).
-inline uint8_t PickTextureVar(uint32_t oid, uint16_t finalApp) {
-    if (oid == 0 || !TexVarEligible(finalApp)) return 0;
-    return static_cast<uint8_t>(ComputeSlot(HashCreatureId(oid, finalApp)));
+// Body family of a row, which selects the N_Comm slot allowlist (DiversitySlots.h).
+// The union of M, F, FatM and FatF is exactly the TexVarEligible rows; None means no variant.
+enum class SlotFamily : uint8_t { None, M, F, FatM, FatF };
+
+inline SlotFamily FamilyOf(uint16_t finalApp) {
+    if (IsGenericMaleCommoner(finalApp) || (finalApp >= APP_TWILEK_COMMONER_M_02_A && finalApp <= APP_TWILEK_COMMONER_M_02_D)) {
+        return SlotFamily::M;
+    }
+    if (IsGenericFemaleCommoner(finalApp) || finalApp == APP_TWILEK_FEMALE_UNDERWEAR) return SlotFamily::F;
+    if (finalApp == APP_COMMONER_FAT_MALE) return SlotFamily::FatM;
+    if (finalApp == APP_COMMONER_FAT_FEMALE) return SlotFamily::FatF;
+    return SlotFamily::None;
+}
+
+// Allowlist for a family. Sets n to its entry count (0 for SlotFamily::None, with a null pointer).
+inline const uint8_t* FamilySlots(SlotFamily family, size_t& n) {
+    switch (family) {
+        case SlotFamily::M:    n = kMaleSlotsCount;      return kMaleSlots;
+        case SlotFamily::F:    n = kFemaleSlotsCount;    return kFemaleSlots;
+        case SlotFamily::FatM: n = kFatMaleSlotsCount;   return kFatMaleSlots;
+        case SlotFamily::FatF: n = kFatFemaleSlotsCount; return kFatFemaleSlots;
+        default:               n = 0;                    return nullptr;
+    }
+}
+
+// Vary gate: whether a creature takes a texture variant at all. oid 0 (no creature id) never varies.
+// Appended rows 802..811 are mod-produced and always vary; any other row varies for kVaryPct% of
+// creatures, on the salt-5 draw of the per-creature hash.
+inline bool ShouldVary(uint32_t oid, uint16_t originalApp) {
+    if (oid == 0) return false;
+    if (originalApp >= APP_FIRST_APPENDED && originalApp < APP_COUNT) return true;
+    return Mix(HashCreatureId(oid, originalApp), 5) % 100u < kVaryPct;
+}
+
+// Texture variant for a creature: a slot from the family allowlist of finalApp, or 0 when no variant
+// applies (oid 0, a row outside every family, or an empty allowlist). The slot is the salt-4 draw
+// modulo the allowlist size. When that draw equals currentTv and the family has more than one slot,
+// the next allowlist entry is used, so the variant changes. FatM and FatF have one slot and are exempt.
+inline uint8_t PickTextureVar(uint32_t oid, uint16_t finalApp, uint8_t currentTv = 0) {
+    if (oid == 0) return 0;
+    size_t n = 0;
+    const uint8_t* allow = FamilySlots(FamilyOf(finalApp), n);
+    if (n == 0) return 0;
+    size_t idx = Mix(HashCreatureId(oid, finalApp), 4) % n;
+    if (allow[idx] == currentTv && n > 1) idx = (idx + 1) % n;
+    return allow[idx];
 }
 
 // Check if a texture ResRef belongs to generic commoner clothing
@@ -145,8 +174,10 @@ inline bool IsCommonerTexture(const char* resRef, bool& isFemale) {
     return false;
 }
 
-// Determines if texture should be diversified and writes the new ResRef name
-inline bool ShouldDiversifyTexture(const char* currentTex, uint32_t hash, char* outTex, size_t outSize) {
+// Determines if texture should be diversified and writes the new ResRef name. The slot is drawn (salt 4 of
+// hash) from the family allowlist of appearance; the N_CommM/N_CommF prefix follows currentTex. Returns false
+// when appearance has no family (SlotFamily::None).
+inline bool ShouldDiversifyTexture(const char* currentTex, uint16_t appearance, uint32_t hash, char* outTex, size_t outSize) {
     if (!currentTex || !outTex || outSize < 16) return false;
 
     bool isFemale = false;
@@ -154,7 +185,10 @@ inline bool ShouldDiversifyTexture(const char* currentTex, uint32_t hash, char* 
         return false;
     }
 
-    int slot = ComputeSlot(hash);
+    size_t n = 0;
+    const uint8_t* allow = FamilySlots(FamilyOf(appearance), n);
+    if (n == 0) return false;
+    const int slot = allow[Mix(hash, 4) % n];
     if (isFemale) {
         std::snprintf(outTex, outSize, "N_CommF%02d", slot);
     } else {

@@ -34,7 +34,7 @@ GOLD_CEN_REMAP = "CEN k=remap app=805 g=1 tv=1 tag=Bastila"
 GOLD_STAT_TEX = ("STAT tex calls=10 nullg=0 unread=1 bcskip=2 nonc=3 comm=4 swap=5 frd=6 retd=7 skiprow=8 "
                  "stashhit=9 stashmiss=10")
 GOLD_STAT_REMAP = ("STAT remap calls=11 nullg=0 unread=1 bcskip=2 excl=3 tagun=4 chg=5 nochg=6 oidd=7 skiprow=8 skipg=9 "
-                   "tvchg=10 tvarmor=11")
+                   "tvchg=10 tvarmor=11 vary=12 novary=13 keep=14")
 GOLD_STAT_ABI = "STAT abi app=1 g=2 dm=3"
 GOLD_STAT_XY = "STAT xy x=-3.5..12.5 y=0.0..100.5"
 GOLD_STAT_SLOT0 = "STAT slot g=0 00:3 01:0 02:0 03:0 04:0 05:7 06:0 07:0 08:0 09:0 10:0 11:0"
@@ -465,7 +465,7 @@ class Grammar012Tests(unittest.TestCase):
         rc, out = run_bodies(healthy() + comm)
         self.assertEqual(rc, 0, out)
         self.assertIn("WARN 4 RMP: skip:dm on 3 of 10 commoner-row RMP lines (30%, want <=20%)", out)
-        self.assertIn("RESULT WARN (0 FAIL, 1 WARN)", out)
+        self.assertIn("RESULT WARN (0 FAIL, 2 WARN)", out)     # 2nd WARN: check 13 changed share (healthy() 805 rows count)
 
     def test_skip_dm_at_one_in_five_passes(self):
         comm = _rows(8, base=0x500, before=17, after=17, tv=(1, 1), why="nochg") + \
@@ -531,6 +531,72 @@ class Grammar012Tests(unittest.TestCase):
         self.assertEqual(len(out), 12)
         self.assertEqual(out[-2], "... +%d more lines" % (len(full) - 1 - 10))
         self.assertTrue(out[-1].startswith("RESULT PASS"), out[-1])
+
+
+class Rules012Tests(unittest.TestCase):
+    """Checks 12-16 (tv allowlist, changed share, keep, stype, cross-launch map). Synthetic lines only."""
+
+    def test_tv_outside_family_slots_fails(self):
+        rc, out = run_bodies(healthy() + [rmp_line(oid=0x4000, before=805, after=806, tv=(1, 17))])
+        self.assertEqual(rc, 1, out)
+        self.assertIn("FAIL 12 tv allowlist: 1 RMP line(s) with a tv after-value outside their family's slot list", out)
+
+    def test_tv_17_is_allowed_for_female_final_app(self):
+        rc, out = run_bodies(healthy() + [rmp_line(oid=0x4000, before=805, after=811, tv=(1, 17))])
+        self.assertEqual(rc, 0, out)
+        self.assertIn("PASS 12 tv allowlist: 7 RMP tv after-value(s) inside their family's slot list", out)
+
+    def test_changed_share_in_band_passes(self):
+        rows = _rows(3, base=0x100, before=17, after=17, tv=(1, 2)) + _rows(7, base=0x200, before=17, after=17, tv=(1, 1))
+        rc, out = run_bodies(_head(*rows))
+        self.assertEqual(rc, 0, out)
+        self.assertIn("PASS 13 changed share: changed share 30.0% (3 changed oid(s) / 10 commoner-row oid(s))", out)
+
+    def test_changed_share_zero_fails(self):
+        rc, out = run_bodies(_head(*_rows(10, base=0x100, before=17, after=17, tv=(1, 1))))
+        self.assertEqual(rc, 1, out)
+        self.assertIn("FAIL 13 changed share: changed share 0.0% (0 changed oid(s) / 10 commoner-row oid(s)), outside 10-60%", out)
+
+    def test_keep_row_with_a_change_fails(self):
+        rc, out = run_bodies(healthy() + [rmp_line(oid=0x4100, before=805, after=806, tv=(1, 2), why="keep")])
+        self.assertEqual(rc, 1, out)
+        self.assertTrue(any(s.startswith("FAIL 14 keep unchanged: 1 RMP line(s) with why=keep show an app or tv change")
+                            for s in out), out)
+
+    def test_keep_rows_without_change_pass_and_histogram_shows_zero_keys(self):
+        rc, out = run_bodies(healthy() + [rmp_line(oid=0x4100, before=805, after=805, tv=(1, 1), why="keep")])
+        self.assertEqual(rc, 0, out)
+        self.assertIn("PASS 14 keep unchanged: 0 keep rows show a change (keep rows=1)", out)
+        rc, out = run_bodies(healthy())
+        self.assertIn("  n=6 chg=6 (100.0%) why: ok=6 keep=0 skip:vary=0", out)
+
+    def test_stype_three_with_tv_write_fails(self):
+        line = rmp_line(oid=0x5000, before=805, after=806, tv=(1, 2)) + " stype=3"
+        rc, out = run_bodies(healthy() + [line])
+        self.assertEqual(rc, 1, out)
+        self.assertTrue(any(s.startswith("FAIL 15 stype tv writes: 1 tv write(s) on RMP lines with stype>=3 (first L")
+                            for s in out), out)
+
+    def test_stype_three_without_tv_write_passes_and_absent_stype_is_info(self):
+        line = rmp_line(oid=0x5000, before=805, after=806, tv=(2, 2)) + " stype=3"
+        rc, out = run_bodies(healthy() + [line])
+        self.assertEqual(rc, 0, out)
+        self.assertIn("PASS 15 stype tv writes: 0 tv writes on 1 RMP line(s) with stype>=3", out)
+        rc, out = run_bodies(healthy())
+        self.assertIn("INFO 15 stype tv writes: not judged (no stype= on RMP lines)", out)
+
+    def test_same_oid_and_before_app_must_map_the_same_across_launches(self):
+        # healthy() maps oid 0x3E9 (before 805) to 806/2; the second launch re-logs it as 806/3.
+        a = healthy()
+        rc, out = run_bodies(a + healthy() + [rmp_line(oid=0x3E9, before=805, after=806, tv=(1, 3))])
+        self.assertEqual(rc, 1, out)
+        self.assertTrue(any(s.startswith("FAIL 16 cross-launch map: 1 (oid, before) key(s) map to different (after, tv)")
+                            for s in out), out)
+        self.assertIn("  pair oid=000003e9 app=805 -> 806/2,806/3", out)
+        rc, out = run_bodies(a + healthy() + [rmp_line(oid=0x3E9, before=805, after=806, tv=(1, 2))])
+        self.assertEqual(rc, 0, out)
+        self.assertTrue(any(s.startswith("PASS 16 cross-launch map: 6 repeated (oid, before) key(s) map to one")
+                            for s in out), out)
 
 
 if __name__ == "__main__":

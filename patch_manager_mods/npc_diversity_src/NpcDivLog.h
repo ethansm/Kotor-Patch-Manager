@@ -139,6 +139,9 @@ struct Counts {
     uint32_t remSkipRow;
     uint32_t remSkipGender;
     uint32_t remTvArmor;  // tv write withheld: pDesc.subType >= 3 (armor body path)
+    uint32_t remVary;     // creature passed the keep-default and vary gates (0.1.4)
+    uint32_t remNoVary;   // left vanilla by the ShouldVary roll (why=skip:vary)
+    uint32_t remKeep;     // left vanilla by the keep-default tag/position lists (why=keep)
 
     uint32_t abiBadApp;
     uint32_t abiBadGender;
@@ -278,7 +281,8 @@ inline int FormatTexExt(char* out, size_t cap, uint32_t pd, uint32_t fr, uint32_
 }
 
 // why: ok, nochg, excl:comp, excl:story, excl:notag, skip:dm, skip:gender, skip:row,
-//      unread:desc, unread:tag, unread:oid, unread:xy, tvarmor (0.1.3). skip:dm is no longer produced; it stays in this list.
+//      unread:desc, unread:tag, unread:oid, unread:xy, tvarmor (0.1.3), keep, skip:vary (0.1.4).
+//      skip:dm is no longer produced; it stays in this list.
 // xb and yb are the float bit patterns of x and y. app and tv print as before>after (tv right after app).
 inline int FormatRmp(char* out, size_t cap, uint32_t self, uint32_t pd, uint32_t oid, uint32_t tp, int tl,
                      const char* tag, size_t tagLen, float x, float y, uint32_t xb, uint32_t yb,
@@ -349,10 +353,10 @@ inline int FormatStatRemap(char* out, size_t cap, const Counts& c) {
     if (!out || cap == 0) return 0;
     const int r = std::snprintf(out, cap,
                                 "STAT remap calls=%u nullg=%u unread=%u bcskip=%u excl=%u tagun=%u chg=%u "
-                                "nochg=%u oidd=%u skiprow=%u skipg=%u tvchg=%u tvarmor=%u",
+                                "nochg=%u oidd=%u skiprow=%u skipg=%u tvchg=%u tvarmor=%u vary=%u novary=%u keep=%u",
                                 c.remCalls, c.remNullGuard, c.remUnread, c.remBodySkip, c.remExcluded,
                                 c.remTagUnread, c.remChanged, c.remNoChange, c.oidDistinct, c.remSkipRow,
-                                c.remSkipGender, c.remTvChg, c.remTvArmor);
+                                c.remSkipGender, c.remTvChg, c.remTvArmor, c.remVary, c.remNoVary, c.remKeep);
     return detail::Stored(out, cap, r);
 }
 

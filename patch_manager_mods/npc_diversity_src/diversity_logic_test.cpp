@@ -8,8 +8,7 @@
 
 namespace {
 
-using NpcDiversity::kCommonerSlots;
-using NpcDiversity::kCommonerSlotCount;
+using NpcDiversity::SlotFamily;
 
 constexpr uint32_t kDraws = 100000;
 
@@ -35,6 +34,46 @@ uint32_t HashWithBandRoll(uint32_t target) {
         if (NpcDiversity::BandRoll(h) == target) return h;
     }
     return 0;
+}
+
+// True when v is one of the first n entries of a generated allowlist (DiversitySlots.h).
+bool InAllow(const uint8_t* list, size_t n, uint8_t v) {
+    for (size_t k = 0; k < n; ++k) {
+        if (list[k] == v) return true;
+    }
+    return false;
+}
+
+// Draws kDraws creatures on one row: nothing outside the allowlist, every entry within +-25% of uniform.
+void CheckUniformOverList(const char* label, uint16_t row, const uint8_t* list, size_t n) {
+    long counts[256] = {};
+    for (uint32_t oid = 1; oid <= kDraws; ++oid) {
+        counts[NpcDiversity::PickTextureVar(oid, row)]++;
+    }
+    KT_CHECK_EQ(counts[0], 0L);
+
+    const double uniformPct = 100.0 / static_cast<double>(n);
+    long total = 0;
+    for (size_t k = 0; k < n; ++k) {
+        long c = counts[list[k]];
+        total += c;
+        KT_CHECK(ShareInRange(label, c, kDraws, uniformPct * 0.75, uniformPct * 1.25));
+    }
+    KT_CHECK_EQ(total, static_cast<long>(kDraws));  // no value outside the allowlist
+}
+
+// For every allowlist entry as the current variant, 2000 creatures on the row never get that entry back.
+void CheckNeverEqualCurrent(const char* label, uint16_t row, const uint8_t* list, size_t n) {
+    bool ok = true;
+    for (size_t k = 0; k < n; ++k) {
+        const uint8_t cur = list[k];
+        for (uint32_t oid = 1; oid <= 2000u; ++oid) {
+            const uint8_t v = NpcDiversity::PickTextureVar(oid, row, cur);
+            if (v == cur || !InAllow(list, n, v)) ok = false;
+        }
+    }
+    if (!ok) std::printf("  %s: returned the current variant or a value outside the allowlist\n", label);
+    KT_CHECK(ok);
 }
 
 bool IsTwilekMaleVariant(uint16_t v) { return v >= 805 && v <= 808; }
@@ -76,8 +115,14 @@ void testHashSeedFallback() {
     KT_CHECK(f1 != NpcDiversity::HashSeedFallback(0x1001u, 0x2000u));
 }
 
-void testComputeSlotGolden() {
-    KT_CHECK_EQ(NpcDiversity::ComputeSlot(12345u), 9);  // depends on kCommonerSlots content
+void testShouldVaryGolden() {
+    // Vary-gate draw: Mix(HashCreatureId(oid, row), 5) % 100 < kVaryPct (35).
+    KT_CHECK_EQ(NpcDiversity::Mix(NpcDiversity::HashCreatureId(1u, 190), 5), 0xA91B8E6Au);
+    KT_CHECK(NpcDiversity::ShouldVary(1u, 190));           // 34
+    KT_CHECK(!NpcDiversity::ShouldVary(2u, 190));          // 48
+    KT_CHECK(!NpcDiversity::ShouldVary(42u, 190));         // 70
+    KT_CHECK(!NpcDiversity::ShouldVary(1000u, 190));       // 91
+    KT_CHECK(NpcDiversity::ShouldVary(0xDEADBEEFu, 190));  // 22
 }
 
 void testIsCommonerTexture() {
@@ -104,35 +149,33 @@ void testIsCommonerTexture() {
 
 void testShouldDiversifyTexture() {
     char outTex[32] = {};
-    uint32_t hash = 123456789;
+    const uint32_t hash = 123456789u;
 
-    bool resM = NpcDiversity::ShouldDiversifyTexture("N_CommM01", hash, outTex, sizeof(outTex));
-    KT_CHECK(resM);
-    KT_CHECK(std::strncmp(outTex, "N_CommM", 7) == 0);
-    KT_CHECK(std::strlen(outTex) == 9); // N_CommM + 2 digits
+    // Golden: the prefix follows the texture, the slot is drawn from the row's family allowlist.
+    KT_CHECK(NpcDiversity::ShouldDiversifyTexture("N_CommM01", 190, hash, outTex, sizeof(outTex)));
+    KT_CHECK(std::strcmp(outTex, "N_CommM13") == 0);
+    KT_CHECK(NpcDiversity::ShouldDiversifyTexture("n_commf01", 185, hash, outTex, sizeof(outTex)));
+    KT_CHECK(std::strcmp(outTex, "N_CommF15") == 0);
 
-    bool resF = NpcDiversity::ShouldDiversifyTexture("n_commf01", hash, outTex, sizeof(outTex));
-    KT_CHECK(resF);
-    KT_CHECK(std::strncmp(outTex, "N_CommF", 7) == 0);
-    KT_CHECK(std::strlen(outTex) == 9);
+    // Fat rows have one slot each: 34 for male, 35 for female.
+    KT_CHECK(NpcDiversity::ShouldDiversifyTexture("N_CommM01", 802, hash, outTex, sizeof(outTex)));
+    KT_CHECK(std::strcmp(outTex, "N_CommM34") == 0);
+    KT_CHECK(NpcDiversity::ShouldDiversifyTexture("N_CommF01", 803, hash, outTex, sizeof(outTex)));
+    KT_CHECK(std::strcmp(outTex, "N_CommF35") == 0);
 
-    bool resNonComm = NpcDiversity::ShouldDiversifyTexture("P_AttonB", hash, outTex, sizeof(outTex));
-    KT_CHECK(!resNonComm);
+    // Non-commoner texture, row with no family (SlotFamily::None), null pointers, short buffer: no change.
+    KT_CHECK(!NpcDiversity::ShouldDiversifyTexture("P_AttonB", 190, hash, outTex, sizeof(outTex)));
+    KT_CHECK(!NpcDiversity::ShouldDiversifyTexture("N_CommM01", 300, hash, outTex, sizeof(outTex)));
+    KT_CHECK(!NpcDiversity::ShouldDiversifyTexture(nullptr, 190, hash, outTex, sizeof(outTex)));
+    KT_CHECK(!NpcDiversity::ShouldDiversifyTexture("N_CommM01", 190, hash, outTex, 15));
 
-    KT_CHECK(!NpcDiversity::ShouldDiversifyTexture(nullptr, hash, outTex, sizeof(outTex)));
-    KT_CHECK(!NpcDiversity::ShouldDiversifyTexture("N_CommM01", hash, outTex, 15));
-
-    // Every generated name is N_Comm{M,F}NN with NN drawn from kCommonerSlots
+    // Every generated name is N_CommF NN with NN drawn from kFemaleSlots.
     bool namesOk = true;
     for (uint32_t i = 0; i < 1000; ++i) {
-        bool ok = NpcDiversity::ShouldDiversifyTexture("N_CommF01", DrawHash(i, 185), outTex, sizeof(outTex));
-        if (!ok || std::strlen(outTex) != 9 || std::strncmp(outTex, "N_CommF", 7) != 0) namesOk = false;
-        int v = (outTex[7] - '0') * 10 + (outTex[8] - '0');
-        bool member = false;
-        for (size_t k = 0; k < kCommonerSlotCount; ++k) {
-            if (kCommonerSlots[k] == v) member = true;
-        }
-        if (!member) namesOk = false;
+        if (!NpcDiversity::ShouldDiversifyTexture("N_CommF01", 185, DrawHash(i, 185), outTex, sizeof(outTex))) namesOk = false;
+        if (std::strlen(outTex) != 9 || std::strncmp(outTex, "N_CommF", 7) != 0) namesOk = false;
+        const int v = (outTex[7] - '0') * 10 + (outTex[8] - '0');
+        if (!InAllow(NpcDiversity::kFemaleSlots, NpcDiversity::kFemaleSlotsCount, static_cast<uint8_t>(v))) namesOk = false;
     }
     KT_CHECK(namesOk);
 }
@@ -357,34 +400,10 @@ void testTwilekFemaleDistribution() {
     }
 }
 
-void testComputeSlotCoverage() {
-    constexpr uint32_t kSlotDraws = 10000;
-    int counts[256] = {};
-    for (uint32_t i = 0; i < kSlotDraws; ++i) {
-        int s = NpcDiversity::ComputeSlot(DrawHash(i, 190));
-        KT_CHECK(s >= 0 && s < 256);
-        if (s >= 0 && s < 256) counts[s]++;
-    }
-
-    bool member[256] = {};
-    for (size_t k = 0; k < kCommonerSlotCount; ++k) member[kCommonerSlots[k]] = true;
-
-    bool noneOutside = true;
-    int reached = 0;
-    for (int v = 0; v < 256; ++v) {
-        if (counts[v] > 0 && !member[v]) noneOutside = false;
-        if (member[v] && counts[v] > 0) ++reached;
-    }
-    KT_CHECK(noneOutside);
-    KT_CHECK_EQ(reached, static_cast<int>(kCommonerSlotCount));
-
-    // Roughly uniform: expected 10000 / 35 = 285.7 per slot, accept 171..400
-    bool uniform = true;
-    for (size_t k = 0; k < kCommonerSlotCount; ++k) {
-        int c = counts[kCommonerSlots[k]];
-        if (c < 171 || c > 400) uniform = false;
-    }
-    KT_CHECK(uniform);
+// Male and female family allowlists: every entry reached, nothing outside, each within +-25% of uniform.
+void testFamilySlotCoverage() {
+    CheckUniformOverList("texvar slot, M row 190", 190, NpcDiversity::kMaleSlots, NpcDiversity::kMaleSlotsCount);
+    CheckUniformOverList("texvar slot, F row 185", 185, NpcDiversity::kFemaleSlots, NpcDiversity::kFemaleSlotsCount);
 }
 
 // Golden values from an independent Python FNV-1a/fmix32 reference (bytes LSB first: oid, then appearance).
@@ -443,12 +462,13 @@ void testTexVarEligible() {
 }
 
 void testPickTextureVarGateAndGolden() {
-    // oid 0 means no creature id: always 0, even for eligible rows.
+    // oid 0 means no creature id: always 0, for any row and any current variant.
     KT_CHECK_EQ(NpcDiversity::PickTextureVar(0u, 190), 0);
     KT_CHECK_EQ(NpcDiversity::PickTextureVar(0u, 802), 0);
     KT_CHECK_EQ(NpcDiversity::PickTextureVar(0u, 0xFFFFu), 0);
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(0u, 190, 13), 0);
 
-    // Ineligible rows get 0 for any nonzero oid.
+    // Rows with no family (SlotFamily::None) get 0 for any nonzero oid.
     KT_CHECK_EQ(NpcDiversity::PickTextureVar(5u, 804), 0);
     KT_CHECK_EQ(NpcDiversity::PickTextureVar(5u, 809), 0);
     KT_CHECK_EQ(NpcDiversity::PickTextureVar(5u, 810), 0);
@@ -457,45 +477,157 @@ void testPickTextureVarGateAndGolden() {
     KT_CHECK_EQ(NpcDiversity::PickTextureVar(5u, 0), 0);
     KT_CHECK_EQ(NpcDiversity::PickTextureVar(5u, 0xFFFFu), 0);
 
-    // Golden picks (ComputeSlot of HashCreatureId; values from the Python reference).
-    KT_CHECK_EQ(NpcDiversity::PickTextureVar(1u, 190), 14);
-    KT_CHECK_EQ(NpcDiversity::PickTextureVar(0x12345678u, 802), 10);
-    KT_CHECK_EQ(NpcDiversity::PickTextureVar(0xDEADBEEFu, 811), 34);
-    KT_CHECK_EQ(NpcDiversity::PickTextureVar(1000u, 805), 20);
-    KT_CHECK_EQ(NpcDiversity::PickTextureVar(42u, 185), 25);
+    // Golden picks: Mix(HashCreatureId(oid, row), 4) % n indexes the family allowlist.
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(1u, 190), 13);          // M, index 12 of 16
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(1000u, 805), 13);       // M (Twi'lek variant row)
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(0x12345678u, 617), 1);  // M
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(42u, 185), 1);          // F
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(0xDEADBEEFu, 811), 8);  // F (underwear row)
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(0x12345678u, 802), 34); // FatM
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(0xDEADBEEFu, 803), 35); // FatF
+
+    // Current-variant skip: a draw equal to currentTv moves to the next allowlist entry.
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(1u, 190, 13), 14);
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(42u, 185, 1), 2);
 }
 
+// Each of the four families draws only from its own allowlist (rows: M 190/805, F 185/811, FatM 802, FatF 803).
 void testPickTextureVarRangeAndDeterminism() {
-    const uint16_t eligibleRows[] = {190, 185, 802, 803, 805, 806, 807, 808, 811};
-    for (uint16_t row : eligibleRows) {
-        bool inRange = true;
-        bool stable = true;
+    struct Case {
+        uint16_t row;
+        const uint8_t* list;
+        size_t n;
+    };
+    const Case cases[] = {
+        {190, NpcDiversity::kMaleSlots, NpcDiversity::kMaleSlotsCount},
+        {805, NpcDiversity::kMaleSlots, NpcDiversity::kMaleSlotsCount},
+        {185, NpcDiversity::kFemaleSlots, NpcDiversity::kFemaleSlotsCount},
+        {811, NpcDiversity::kFemaleSlots, NpcDiversity::kFemaleSlotsCount},
+        {802, NpcDiversity::kFatMaleSlots, NpcDiversity::kFatMaleSlotsCount},
+        {803, NpcDiversity::kFatFemaleSlots, NpcDiversity::kFatFemaleSlotsCount},
+    };
+    for (const Case& c : cases) {
+        bool inList = true;
         for (uint32_t oid = 1; oid <= 10000u; ++oid) {
-            uint8_t v = NpcDiversity::PickTextureVar(oid, row);
-            if (v < 1 || v > 35) inRange = false;
-            if (v != NpcDiversity::PickTextureVar(oid, row)) stable = false;
+            if (!InAllow(c.list, c.n, NpcDiversity::PickTextureVar(oid, c.row))) inList = false;
         }
-        KT_CHECK(inRange);
-        KT_CHECK(stable);
+        KT_CHECK(inList);
     }
 }
 
 void testPickTextureVarUniform() {
-    // 100k sequential oids for one eligible row: every slot is reached and each is within +-25% of uniform.
-    long counts[256] = {};
-    for (uint32_t oid = 1; oid <= kDraws; ++oid) {
-        counts[NpcDiversity::PickTextureVar(oid, 190)]++;
-    }
-    KT_CHECK_EQ(counts[0], 0L);
+    // Uniform over the family allowlist for the appended Twi'lek male (805) and underwear (811) rows.
+    CheckUniformOverList("texvar slot, row 805", 805, NpcDiversity::kMaleSlots, NpcDiversity::kMaleSlotsCount);
+    CheckUniformOverList("texvar slot, row 811", 811, NpcDiversity::kFemaleSlots, NpcDiversity::kFemaleSlotsCount);
+}
 
-    const double uniformPct = 100.0 / static_cast<double>(kCommonerSlotCount);  // 2.857% per slot
-    long total = 0;
-    for (size_t k = 0; k < kCommonerSlotCount; ++k) {
-        long c = counts[kCommonerSlots[k]];
-        total += c;
-        KT_CHECK(ShareInRange("texvar slot", c, kDraws, uniformPct * 0.75, uniformPct * 1.25));
+void testDeterminism() {
+    bool stable = true;
+    for (uint32_t oid = 1; oid <= 10000u; ++oid) {
+        if (NpcDiversity::PickTextureVar(oid, 190, 5) != NpcDiversity::PickTextureVar(oid, 190, 5)) stable = false;
+        if (NpcDiversity::ShouldVary(oid, 190) != NpcDiversity::ShouldVary(oid, 190)) stable = false;
     }
-    KT_CHECK_EQ(total, static_cast<long>(kDraws));  // no value outside kCommonerSlots
+    KT_CHECK(stable);
+
+    // The row feeds the hash: rows 190 and 805 share a family allowlist but pick differently for many creatures.
+    long differ = 0;
+    for (uint32_t oid = 1; oid <= 10000u; ++oid) {
+        if (NpcDiversity::PickTextureVar(oid, 190) != NpcDiversity::PickTextureVar(oid, 805)) ++differ;
+    }
+    KT_CHECK(differ > 5000);
+}
+
+void testFamilyOfMatchesTexVarEligible() {
+    KT_CHECK(NpcDiversity::FamilyOf(190) == SlotFamily::M);
+    KT_CHECK(NpcDiversity::FamilyOf(617) == SlotFamily::M);
+    KT_CHECK(NpcDiversity::FamilyOf(805) == SlotFamily::M);
+    KT_CHECK(NpcDiversity::FamilyOf(808) == SlotFamily::M);
+    KT_CHECK(NpcDiversity::FamilyOf(185) == SlotFamily::F);
+    KT_CHECK(NpcDiversity::FamilyOf(614) == SlotFamily::F);
+    KT_CHECK(NpcDiversity::FamilyOf(811) == SlotFamily::F);
+    KT_CHECK(NpcDiversity::FamilyOf(802) == SlotFamily::FatM);
+    KT_CHECK(NpcDiversity::FamilyOf(803) == SlotFamily::FatF);
+    KT_CHECK(NpcDiversity::FamilyOf(804) == SlotFamily::None);
+    KT_CHECK(NpcDiversity::FamilyOf(809) == SlotFamily::None);
+    KT_CHECK(NpcDiversity::FamilyOf(810) == SlotFamily::None);
+    KT_CHECK(NpcDiversity::FamilyOf(416) == SlotFamily::None);
+    KT_CHECK(NpcDiversity::FamilyOf(0xFFFFu) == SlotFamily::None);
+
+    // Over rows 0..815 a family exists exactly when TexVarEligible holds (57 rows in total).
+    bool agree = true;
+    long eligible = 0;
+    for (uint32_t a = 0; a <= 815u; ++a) {
+        const uint16_t row = static_cast<uint16_t>(a);
+        const bool hasFamily = NpcDiversity::FamilyOf(row) != SlotFamily::None;
+        if (hasFamily) ++eligible;
+        if (hasFamily != NpcDiversity::TexVarEligible(row)) agree = false;
+    }
+    KT_CHECK(agree);
+    KT_CHECK_EQ(eligible, 57L);
+
+    // The allowlist accessor returns the generated arrays and their sizes; None has none.
+    size_t n = 0;
+    KT_CHECK(NpcDiversity::FamilySlots(SlotFamily::M, n) == NpcDiversity::kMaleSlots);
+    KT_CHECK_EQ(static_cast<long>(n), 16L);
+    KT_CHECK(NpcDiversity::FamilySlots(SlotFamily::FatF, n) == NpcDiversity::kFatFemaleSlots);
+    KT_CHECK_EQ(static_cast<long>(n), 1L);
+    KT_CHECK(NpcDiversity::FamilySlots(SlotFamily::None, n) == nullptr);
+    KT_CHECK_EQ(static_cast<long>(n), 0L);
+}
+
+void testShouldVaryRate() {
+    long varied = 0;
+    for (uint32_t oid = 1; oid <= kDraws; ++oid) {
+        if (NpcDiversity::ShouldVary(oid, 190)) ++varied;
+    }
+    KT_CHECK(ShareInRange("vary gate share, row 190", varied, kDraws, 33.0, 37.0));
+    KT_CHECK(!NpcDiversity::ShouldVary(0u, 190));
+}
+
+void testShouldVaryAppendedRows() {
+    bool allVary = true;
+    for (uint16_t row = 802; row <= 811; ++row) {
+        for (uint32_t oid = 1; oid <= 1000u; ++oid) {
+            if (!NpcDiversity::ShouldVary(oid, row)) allVary = false;
+        }
+    }
+    KT_CHECK(allVary);
+    KT_CHECK(!NpcDiversity::ShouldVary(0u, 802));
+}
+
+void testFatRowsOnly() {
+    bool fatMOk = true;
+    bool fatFOk = true;
+    for (uint32_t oid = 1; oid <= kDraws; ++oid) {
+        if (NpcDiversity::PickTextureVar(oid, 802) != 34) fatMOk = false;
+        if (NpcDiversity::PickTextureVar(oid, 803) != 35) fatFOk = false;
+        // One slot each, so the change rule does not apply: the same value comes back.
+        if (NpcDiversity::PickTextureVar(oid, 802, 34) != 34) fatMOk = false;
+        if (NpcDiversity::PickTextureVar(oid, 803, 35) != 35) fatFOk = false;
+    }
+    KT_CHECK(fatMOk);
+    KT_CHECK(fatFOk);
+}
+
+void testSlots6And9Appear() {
+    long m6 = 0, m9 = 0, f6 = 0, f9 = 0;
+    for (uint32_t oid = 1; oid <= kDraws; ++oid) {
+        const uint8_t m = NpcDiversity::PickTextureVar(oid, 190);
+        const uint8_t f = NpcDiversity::PickTextureVar(oid, 185);
+        if (m == 6) ++m6;
+        if (m == 9) ++m9;
+        if (f == 6) ++f6;
+        if (f == 9) ++f9;
+    }
+    KT_CHECK(m6 > 0 && m9 > 0);
+    KT_CHECK(f6 > 0 && f9 > 0);
+}
+
+void testNeverEqualCurrent() {
+    CheckNeverEqualCurrent("M row 190", 190, NpcDiversity::kMaleSlots, NpcDiversity::kMaleSlotsCount);
+    CheckNeverEqualCurrent("M row 805", 805, NpcDiversity::kMaleSlots, NpcDiversity::kMaleSlotsCount);
+    CheckNeverEqualCurrent("F row 185", 185, NpcDiversity::kFemaleSlots, NpcDiversity::kFemaleSlotsCount);
+    CheckNeverEqualCurrent("F row 811", 811, NpcDiversity::kFemaleSlots, NpcDiversity::kFemaleSlotsCount);
 }
 
 } // namespace
@@ -505,8 +637,10 @@ int main() {
     testMixGoldenAndIndependence();
     testHashDescriptorGolden();
     testHashSeedFallback();
-    testComputeSlotGolden();
-    testComputeSlotCoverage();
+    testShouldVaryGolden();
+    testShouldVaryRate();
+    testShouldVaryAppendedRows();
+    testFamilySlotCoverage();
     testIsCommonerTexture();
     testShouldDiversifyTexture();
     testHashCreaturePosition();
@@ -519,8 +653,13 @@ int main() {
     testTwilekFemaleDistribution();
     testHashCreatureIdGolden();
     testTexVarEligible();
+    testFamilyOfMatchesTexVarEligible();
     testPickTextureVarGateAndGolden();
     testPickTextureVarRangeAndDeterminism();
     testPickTextureVarUniform();
+    testFatRowsOnly();
+    testSlots6And9Appear();
+    testNeverEqualCurrent();
+    testDeterminism();
     return kt::Report("diversity_logic_test");
 }

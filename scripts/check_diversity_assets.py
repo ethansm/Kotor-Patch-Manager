@@ -17,9 +17,12 @@ constants from DiversityRows.h, then checks them against the appearance.2da that
              texa, texb) and heads rows 192-196, 198, 200, 204 (head model, alttexture) must resolve in patch override/,
              the live Override (game dir /override) or chitin.
              - a model needs both .mdl and .mdx;
-             - a texture needs .tpc or .tga; an N_CommM / N_CommF base needs every slot of DiversityLogic.h
-               kCommonerSlots[] (N_CommMNN), any other appearance base needs variant 01 (engine fallback, D1 Method);
+             - a texture needs .tpc or .tga; an N_CommM / N_CommF base needs every slot in the union of the four arrays
+               of DiversitySlots.h plus vanilla 01-11 (N_CommMNN), any other appearance base needs variant 01 (engine
+               fallback, D1 Method);
              - heads alttexture names are looked up exactly (no NN suffix).
+             DiversitySlots.h is checked in the same run: each array present, slots 1..255, 06 and 09 in the male and
+             female arrays, each <name>Count equal to its array length. Extra override/ textures are never checked.
              Found only in the live Override -> LIVE-ONLY (prerequisite): reported, does not fail.
              Found nowhere -> FAIL. When the live Override or chitin is unavailable, an unresolved name is a WARN.
 
@@ -30,7 +33,7 @@ Exit 0 when nothing fails, 1 otherwise. Warnings and LIVE-ONLY lines never fail 
   .venv/bin/python scripts/check_diversity_assets.py --no-resources
   .venv/bin/python scripts/check_diversity_assets.py --appearance /path/to/appearance.2da
 
-Pure parsing and resolving (parse_tables, parse_app_constants, parse_commoner_slots, build_needs, check_resources,
+Pure parsing and resolving (parse_tables, parse_app_constants, parse_diversity_slots, build_needs, check_resources,
 run_checks) needs no pykotor; only load_appearance, load_heads and chitin_names do, and main() re-execs itself with the
 repo .venv when pykotor is not importable.
 """
@@ -50,7 +53,7 @@ SRC = REPO / "patch_manager_mods" / "npc_diversity_src"
 DEFAULT_APPEARANCE = SRC / "override" / "appearance.2da"
 DEFAULT_TABLES_HEADER = SRC / "DiversityTables.h"
 DEFAULT_ROWS_HEADER = SRC / "DiversityRows.h"
-DEFAULT_LOGIC_HEADER = SRC / "DiversityLogic.h"
+DEFAULT_SLOTS_HEADER = SRC / "DiversitySlots.h"
 DEFAULT_HEADS = SRC / "override" / "heads.2da"
 DEFAULT_OVERRIDE = SRC / "override"
 DEFAULT_GAME_DIR = Path.home() / ".local/share/Steam/steamapps/common/Knights of the Old Republic II"
@@ -81,11 +84,16 @@ APP_RESOURCE_ROWS = frozenset(range(802, 812))
 HEAD_ROWS = (192, 193, 194, 195, 196, 198, 200, 204)
 COMMONER_BASES = frozenset({"n_commm", "n_commf"})
 MAX_FAIL_LINES = 8
+SLOT_ARRAYS = ("kMaleSlots", "kFemaleSlots", "kFatMaleSlots", "kFatFemaleSlots")  # DiversitySlots.h
+VANILLA_SLOTS = tuple(range(1, 12))  # 01-11 ship in vanilla; 06 and 09 are the vanilla default tv
+DEFAULT_TV_SLOTS = (6, 9)  # must be in the male and female arrays
+SLOT_RANGE = (1, 255)
 
 _FUNC_RE = re.compile(r"inline\s+bool\s+(\w+)\s*\(\s*uint16_t\s+app\s*\)\s*\{")
 _CASE_RE = re.compile(r"\bcase\s+(\d+)\s*:")
 _APP_CONST_RE = re.compile(r"constexpr\s+uint(?:8|16|32)_t\s+(APP_\w+)\s*=\s*(\d+)\s*;")
-_SLOTS_RE = re.compile(r"kCommonerSlots\[\]\s*=\s*\{([^}]*)\}")
+_SLOT_ARRAY_RE = re.compile(r"constexpr\s+\w+\s+(k\w+Slots)\[\]\s*=\s*\{([^}]*)\}")
+_SLOT_COUNT_RE = re.compile(r"constexpr\s+\w+\s+(k\w+Slots)Count\s*=\s*(\d+)\s*;")
 
 Rows = Dict[int, Dict[str, str]]
 Sources = Mapping[str, Optional[AbstractSet[str]]]  # "patch", "live", "chitin"; None = source unavailable
@@ -122,10 +130,39 @@ def parse_app_constants(rows_text: str) -> Dict[str, int]:
             if m.group(1) not in APP_BOUND_CONSTS}
 
 
-def parse_commoner_slots(logic_text: str) -> List[int]:
-    """Return the slot numbers of `constexpr uint8_t kCommonerSlots[] = {...};` in DiversityLogic.h, in source order."""
-    m = _SLOTS_RE.search(_strip_line_comments(logic_text))
-    return [int(x) for x in re.findall(r"\d+", m.group(1))] if m else []
+def parse_diversity_slots(slots_text: str) -> Tuple[List[int], List[str]]:
+    """Read the four slot arrays of DiversitySlots.h. Returns (required slots, FAIL lines).
+
+    Required slots: the union of kMaleSlots / kFemaleSlots / kFatMaleSlots / kFatFemaleSlots (values in 1..255) plus
+    vanilla 01-11, sorted. FAIL lines: an array missing, a slot outside 1..255, 06 or 09 absent from the male or female
+    array, or a <name>Count that differs from its array length. Comments are stripped first; `-1` is read as a number so
+    it is reported rather than dropped.
+    """
+    text = _strip_line_comments(slots_text)
+    arrays: Dict[str, List[int]] = {m.group(1): [int(x) for x in re.findall(r"-?\d+", m.group(2))]
+                                    for m in _SLOT_ARRAY_RE.finditer(text)}
+    counts: Dict[str, int] = {m.group(1): int(m.group(2)) for m in _SLOT_COUNT_RE.finditer(text)}
+    lo, hi = SLOT_RANGE
+    problems: List[str] = []
+    for name in SLOT_ARRAYS:
+        if name not in arrays:
+            problems.append(f"{name}[] not parsed from DiversitySlots.h")
+            continue
+        slots = arrays[name]
+        bad = [s for s in slots if not lo <= s <= hi]
+        if bad:
+            problems.append(f"DiversitySlots.h {name}: slot(s) outside {lo}..{hi}: {bad}")
+        if name not in counts:
+            problems.append(f"DiversitySlots.h {name}Count not parsed")
+        elif counts[name] != len(slots):
+            problems.append(f"DiversitySlots.h {name}Count={counts[name]} but {name} has {len(slots)} entries")
+    for name in ("kMaleSlots", "kFemaleSlots"):
+        if name in arrays:
+            missing = [s for s in DEFAULT_TV_SLOTS if s not in arrays[name]]
+            if missing:
+                problems.append(f"DiversitySlots.h {name}: default tv slot(s) {missing} missing (need 06 and 09)")
+    union = {s for name in SLOT_ARRAYS for s in arrays.get(name, []) if lo <= s <= hi}
+    return sorted(union | set(VANILLA_SLOTS)), problems
 
 
 def _cell(value: Optional[str]) -> str:
@@ -277,6 +314,7 @@ class ResourceInputs:
     heads: Rows
     slots: Sequence[int]
     sources: Mapping[str, Optional[AbstractSet[str]]]
+    slot_problems: Sequence[str] = ()
 
 
 @dataclass
@@ -293,7 +331,8 @@ def _refs(refs: List[str]) -> str:
     return ", ".join(refs[:3]) + (f" +{extra} more" if extra > 0 else "")
 
 
-def check_resources(rows: Rows, heads: Rows, slots: Sequence[int], sources: Sources) -> ResourceReport:
+def check_resources(rows: Rows, heads: Rows, slots: Sequence[int], sources: Sources,
+                    slot_problems: Sequence[str] = ()) -> ResourceReport:
     rep = ResourceReport()
     for n in sorted(APP_RESOURCE_ROWS):
         if n not in rows:
@@ -301,8 +340,9 @@ def check_resources(rows: Rows, heads: Rows, slots: Sequence[int], sources: Sour
     for n in HEAD_ROWS:
         if n not in heads:
             rep.fails.append(f"heads row {n} missing from heads.2da")
+    rep.fails.extend(slot_problems)
     if not slots:
-        rep.fails.append("no kCommonerSlots[] parsed from DiversityLogic.h")
+        rep.fails.append("no slots parsed from DiversitySlots.h")
     unavailable = ", ".join(sorted(k for k, v in sources.items() if v is None))
     for need, refs in build_needs(rows, heads, slots):
         rep.checked += 1
@@ -383,7 +423,8 @@ def run_checks(tables_text: str, rows_text: str, rows: Rows, allow_known_broken:
     )
     prereq: List[str] = []
     if resources is not None:
-        rep = check_resources(resources.rows, resources.heads, resources.slots, resources.sources)
+        rep = check_resources(resources.rows, resources.heads, resources.slots, resources.sources,
+                              resources.slot_problems)
         out.append(
             f"RESOURCES: {rep.checked} refs, {rep.ok} OK, {len(rep.live)} LIVE-ONLY (prerequisite), "
             f"{len(rep.unknown)} UNVERIFIED, {len(rep.fails)} FAIL"
@@ -442,7 +483,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ap.add_argument("--resources", action=argparse.BooleanOptionalAction, default=True,
                     help="check that every model/texture named by rows 802-811 and heads 192-196,198,200,204 "
                          "resolves (default on; --no-resources skips)")
-    ap.add_argument("--logic-header", type=Path, default=DEFAULT_LOGIC_HEADER, help="DiversityLogic.h (kCommonerSlots)")
+    ap.add_argument("--slots-header", type=Path, default=DEFAULT_SLOTS_HEADER,
+                    help="DiversitySlots.h (per-family slot allowlists)")
     ap.add_argument("--heads", type=Path, default=DEFAULT_HEADS, help="heads.2da to check against")
     ap.add_argument("--override", type=Path, default=DEFAULT_OVERRIDE, help="patch override/ directory")
     ap.add_argument("--live-override", type=Path, default=DEFAULT_LIVE_OVERRIDE,
@@ -452,7 +494,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     required = [args.appearance, args.tables_header, args.rows_header]
     if args.resources:
-        required += [args.heads, args.logic_header]
+        required += [args.heads, args.slots_header]
     for p in required:
         if not p.is_file():
             print(f"Error: not found: {p}", file=sys.stderr)
@@ -462,10 +504,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     rows = load_appearance(args.appearance)
     resources: Optional[ResourceInputs] = None
     if args.resources:
+        slots, slot_problems = parse_diversity_slots(args.slots_header.read_text(encoding="utf-8"))
         resources = ResourceInputs(
             rows=rows,
             heads=load_heads(args.heads),
-            slots=parse_commoner_slots(args.logic_header.read_text(encoding="utf-8")),
+            slots=slots,
+            slot_problems=slot_problems,
             sources={
                 "patch": list_dir_names(args.override),
                 "live": list_dir_names(args.live_override),

@@ -42,12 +42,20 @@ TV_MIN_DISTINCT = 3               # distinct tv after-values a judged group must
 LIST_MAX = 5                      # groups / oids listed per FAIL
 # skip:dm allowed on commoner-row RMP lines: at most 1 in 5 (checked as 5 * skip_dm > rows, integers only).
 # Commoner rows = DiversityTables.h IsGenericMale/FemaleCommoner + IsGenericTwilekMale/Female (RMP app is the pre-remap row).
-COMMONER_APPS = frozenset(
+# Male = IsGenericMaleCommoner + IsGenericTwilekMale; female = IsGenericFemaleCommoner + IsGenericTwilekFemale.
+COMMONER_MALE = frozenset(
     [17, 190, 191, 192, 193, 194, 345, 346, 347, 348, 349, 423, 424, 428, 430, 591, 592, 593, 594, 595, 596, 615, 616, 617]
-    + [14, 185, 186, 187, 188, 189, 339, 340, 341, 342, 343, 344, 429, 431, 585, 586, 587, 588, 589, 590, 609, 610, 611,
-       612, 613, 614]
-    + [416, 417, 445, 449, 450, 606, 618, 619]
+    + [416, 417, 445, 449, 450, 606, 618, 619])
+COMMONER_FEMALE = frozenset(
+    [14, 185, 186, 187, 188, 189, 339, 340, 341, 342, 343, 344, 429, 431, 585, 586, 587, 588, 589, 590, 609, 610, 611,
+     612, 613, 614]
     + [280, 446, 447, 448, 620, 621, 622])
+COMMONER_APPS = COMMONER_MALE | COMMONER_FEMALE
+# Body family of a final app (remap targets); commoner rows take their family from the male/female sets.
+FAMILY_BY_APP = {802: "FatM", 803: "FatF", 805: "M", 806: "M", 807: "M", 808: "M", 811: "F"}
+DIVERSITY_SLOTS_H = HERE.parent / "patch_manager_mods/npc_diversity_src/DiversitySlots.h"
+SLOT_ARRAY_RE = re.compile(r"constexpr\s+uint8_t\s+(kMaleSlots|kFemaleSlots|kFatMaleSlots|kFatFemaleSlots)\s*\[\]\s*=\s*\{([^}]*)\}")
+SLOT_ARRAY_FAMILY = {"kMaleSlots": "M", "kFemaleSlots": "F", "kFatMaleSlots": "FatM", "kFatFemaleSlots": "FatF"}
 PASS, WARN, FAIL, INFO = "PASS", "WARN", "FAIL", "INFO"
 EXCLUDED_TAG = re.compile(
     r"^(\d{3}_)?(n_|npc_|c_)?(kreia|atton|bao_dur|baodur|mira|hanharr|mandalore|visas|disciple|handmaiden|t3m4|hk47|hk_47"
@@ -266,7 +274,10 @@ def check_rmp(sess):
     oids = len({r["f"]["oid"] for r in rmp})
     xys = len({r["f"]["xy"] for r in rmp})
     tagged = sum(1 for r in rmp if r["f"]["tag"])
-    why = " ".join("%s=%d" % kv for kv in Counter(r["f"]["why"] for r in rmp).most_common())
+    why_counts = Counter(r["f"]["why"] for r in rmp)
+    for w in ("keep", "skip:vary"):             # always shown, 0 when absent
+        why_counts.setdefault(w, 0)
+    why = " ".join("%s=%d" % kv for kv in why_counts.most_common())
     commoner = [r for r in rmp if r["v"]["before"] in COMMONER_APPS]
     skip_dm = sum(1 for r in commoner if r["f"]["why"] == "skip:dm")
     msgs = []
@@ -412,6 +423,124 @@ def check_tv_determinism(sess):
     return _emit(11, "tv determinism", msgs, "", details)
 
 
+def family_of(app):
+    """Body family of a final app: FatM / FatF / M / F, or None when the app is not a known family (not judged)."""
+    if app in FAMILY_BY_APP:
+        return FAMILY_BY_APP[app]
+    if app in COMMONER_MALE:
+        return "M"
+    if app in COMMONER_FEMALE:
+        return "F"
+    return None
+
+
+def load_slot_allow(path=DIVERSITY_SLOTS_H):
+    """{family: set of slot numbers} parsed from the generated DiversitySlots.h; None when missing or unparsed."""
+    try:
+        text = path.read_text()
+    except OSError:
+        return None
+    allow = {SLOT_ARRAY_FAMILY[name]: {int(x) for x in re.findall(r"\d+", body)}
+             for name, body in SLOT_ARRAY_RE.findall(text)}
+    return allow or None
+
+
+def check_tv_allowlist(sess):
+    """12 tv allowlist: every RMP tv after-value must be a slot of its final app's body family (DiversitySlots.h)."""
+    allow = load_slot_allow()
+    if allow is None:
+        return INFO, ["INFO 12 tv allowlist: not judged (DiversitySlots.h missing or unparsed)"]
+    judged, unknown, bad = 0, 0, []
+    for r in _of(sess, "RMP"):
+        v = r["v"]
+        if v["tv_after"] is None:
+            continue
+        fam = family_of(v["after"])
+        if fam is None:
+            unknown += 1
+            continue
+        judged += 1
+        if v["tv_after"] not in allow.get(fam, ()):
+            bad.append((r, fam))
+    if not judged:
+        return INFO, ["INFO 12 tv allowlist: not judged (no RMP line with tv= and a known final app family)"]
+    details = []
+    if unknown:
+        details.append("not judged: %d line(s) with a final app outside the known families" % unknown)
+    if not bad:
+        return _emit(12, "tv allowlist", [], "%d RMP tv after-value(s) inside their family's slot list" % judged, details)
+    msgs = [(FAIL, "%d RMP line(s) with a tv after-value outside their family's slot list" % len(bad))]
+    details += ["L%d app=%d family=%s tv=%d" % (r["line"], r["v"]["after"], fam, r["v"]["tv_after"]) for r, fam in bad[:LIST_MAX]]
+    return _emit(12, "tv allowlist", msgs, "", details)
+
+
+def check_changed_share(sess):
+    """13 changed share: distinct oids with an app or tv change / distinct oids whose BEFORE app is a commoner row.
+    Numerator counts every changed RMP oid (per spec), so it can include non-commoner rows."""
+    rmp = _of(sess, "RMP")
+    den = {r["v"]["oid"] for r in rmp if r["v"]["before"] in COMMONER_APPS}
+    if not den:
+        return INFO, ["INFO 13 changed share: not judged (no RMP line with a commoner-row BEFORE app)"]
+    num = {r["v"]["oid"] for r in rmp if _changed(r)}
+    pct = 100.0 * len(num) / len(den)
+    text = "%.1f%% (%d changed oid(s) / %d commoner-row oid(s))" % (pct, len(num), len(den))
+    if pct < 10 or pct > 60:
+        return _emit(13, "changed share", [(FAIL, "changed share %s, outside 10-60%%" % text)], "", [])
+    if 25 <= pct <= 45:
+        return _emit(13, "changed share", [], "changed share " + text, [])
+    return _emit(13, "changed share", [(WARN, "changed share %s, outside the 25-45%% target" % text)], "", [])
+
+
+def check_keep_unchanged(sess):
+    """14 keep: no RMP line with why=keep may show an app or tv change."""
+    keep = [r for r in _of(sess, "RMP") if r["f"]["why"] == "keep"]
+    hits = [r for r in keep if _changed(r)]
+    if hits:
+        h = hits[0]
+        msgs = [(FAIL, "%d RMP line(s) with why=keep show an app or tv change (first L%d oid=%08x app=%d>%d)" % (
+            len(hits), h["line"], h["v"]["oid"], h["v"]["before"], h["v"]["after"]))]
+        return _emit(14, "keep unchanged", msgs, "", [])
+    return _emit(14, "keep unchanged", [], "0 keep rows show a change (keep rows=%d)" % len(keep), [])
+
+
+def check_stype_no_tv_write(sess):
+    """15 stype: no tv write (tv before != after) on an RMP line with stype>=3. Absent stype = not judged."""
+    rmp = [r for r in _of(sess, "RMP") if "stype" in r["v"]]
+    if not rmp:
+        return INFO, ["INFO 15 stype tv writes: not judged (no stype= on RMP lines)"]
+    hot_lines = [r for r in rmp if r["v"]["stype"] >= 3]
+    if not hot_lines:
+        return INFO, ["INFO 15 stype tv writes: not judged (no RMP line with stype>=3; stype lines=%d)" % len(rmp)]
+    hits = [r for r in hot_lines if r["v"]["tv_before"] is not None and r["v"]["tv_before"] != r["v"]["tv_after"]]
+    if hits:
+        h = hits[0]
+        msgs = [(FAIL, "%d tv write(s) on RMP lines with stype>=3 (first L%d tv=%d>%d)" % (
+            len(hits), h["line"], h["v"]["tv_before"], h["v"]["tv_after"]))]
+        return _emit(15, "stype tv writes", msgs, "", [])
+    return _emit(15, "stype tv writes", [], "0 tv writes on %d RMP line(s) with stype>=3" % len(hot_lines), [])
+
+
+def check_cross_launch_map(recs):
+    """16 cross-launch: over ALL launches, one (oid, BEFORE app) must always map to one (after app, tv after).
+    Only lines carrying tv= are compared (pre-0.1.2 lines have no tv to compare)."""
+    per = {}
+    for r in _of(recs, "RMP"):
+        v = r["v"]
+        if v["tv_after"] is not None:
+            per.setdefault((v["oid"], v["before"]), []).append((v["after"], v["tv_after"]))
+    repeated = {k: vals for k, vals in per.items() if len(vals) >= 2}
+    if not repeated:
+        return INFO, ["INFO 16 cross-launch map: not judged (no oid seen twice with the same BEFORE app, tv= lines only)"]
+    bad = sorted(k for k, vals in repeated.items() if len(set(vals)) > 1)
+    if not bad:
+        return _emit(16, "cross-launch map", [], "%d repeated (oid, before) key(s) map to one (after, tv) across launches"
+                     % len(repeated), [])
+    msgs = [(FAIL, "%d (oid, before) key(s) map to different (after, tv) across launches" % len(bad))]
+    details = ["pair oid=%08x app=%d -> %s" % (oid, before, ",".join("%d/%d" % x for x in sorted(set(repeated[(oid, before)]))))
+               for oid, before in bad[:LIST_MAX]]
+    return _emit(16, "cross-launch map", msgs, "", details)
+
+
 def render(recs, bad, nlines, note, new_mode):
     """(output lines, FAIL count) for one window. The analysed unit is the last launch (from the last BANNER v= line)."""
     starts = [i for i, r in enumerate(recs) if r["kind"] == "BANNER:v"]
@@ -427,7 +556,9 @@ def render(recs, bad, nlines, note, new_mode):
         swap = "log_only" if vt >= LOG_ONLY_FROM else "expect"
     results = [check_banner(sess, new_mode), check_read_abi(sess), check_hookbytes(sess), check_rmp(sess),
                check_tex(sess, swap), check_excluded(sess), check_cen(sess), check_last_stat(sess),
-               check_gate(sess), check_tv_spread(sess), check_tv_determinism(sess)]
+               check_gate(sess), check_tv_spread(sess), check_tv_determinism(sess), check_tv_allowlist(sess),
+               check_changed_share(sess), check_keep_unchanged(sess), check_stype_no_tv_write(sess),
+               check_cross_launch_map(recs)]
     levels = [lv for lv, _ in results]
     nf, nw = levels.count(FAIL), levels.count(WARN)
     word = FAIL if nf else WARN if nw else PASS

@@ -68,3 +68,9 @@ Generated, byte-stable (`--check`): `DiversitySlots.h` (M 1-16, F 1-17, FatM 34,
 
 ### Verification commands
 `python3 scripts/run_tests.py diversity generate_diversity_slots generate_diversity_roles npc_div_merge_labels npc_div_registry npc_div_texture_sheets npc_div_log_check`; `python3 scripts/generate_diversity_slots.py --check`; `python3 scripts/generate_diversity_roles.py --check --report`; `python3 scripts/build_check.py --mod npc_diversity_src`; `python3 scripts/check_hook_bytes.py --mod npc-diversity`; `python3 scripts/check_hook_spans.py`; `python3 scripts/kpm_status.py --only npc-diversity`.
+
+## Update 10-11 (Wave A+B landed, 0.1.4-probe built, NOT installed)
+- Gate 1 NOT done: the last log is `0.1.2-probe`, no PTR lines. Tag route = default position-only keep (`DiversityKeep.h`); header comment says so. Re-run Task 6 only if the user plays 0.1.3 or 0.1.4 first (0.1.4 still logs PTR dumps).
+- Landed: family allowlists (`FamilyOf`, `ShouldVary` 35%, `PickTextureVar(oid, app, currentTv)`), `DiversityKeep.h`, dispatcher gates (`why=keep`, `why=skip:vary`), STAT remap `vary= novary= keep=`, checker rules 12-16 (tv allowlist, changed share, keep-unchanged, stype tv writes, cross-launch map), `scripts/npc_div_whatis.py`, assets checker reads `DiversitySlots.h`.
+- Known: checker R2 numerator counts every changed oid (incl. 805-808), so it can read a few % high.
+- Next: Task 9 hot-swap `0.1.4-probe` (`kpm_status.py --only npc-diversity`, `kpm_hotswap.py --mod npc-diversity --prepare`, commit KPM, `--apply`), then ask the override question, then Gate 2 play.
