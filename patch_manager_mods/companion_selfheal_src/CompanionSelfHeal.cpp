@@ -5,7 +5,7 @@
 // (Auto on/off, use-below %, keep reserve; persisted to companion_selfheal.ini); Auto mode uses items by itself (HealItems.h rules).
 // Route A is reachable ONLY through useNow(): HUD gate + commandable (+0xEC) + CanUseItem + per-member 2 s debounce. The popover never calls it.
 // Engine writes: label setters + the ProjectionFlag clear/restore around the creates + our own texture objects. Everything else is SafeRead.
-// Logs: P1/P3 (hook, slot map), DUMP (Ctrl+Shift+ProbeKey), BUILD, MAP, CLICK/USE/AUTO/DONE/REFUSE, CFG, KICK, QDIAG (queue trace, INI [queue] trace=0 to silence).
+// Logs: P1/P3 (hook, slot map), LEADER gone/back (leader party entry lost/regained), DUMP (Ctrl+Shift+ProbeKey), BUILD, MAP, CLICK/USE/AUTO/DONE/REFUSE, CFG, KICK, QDIAG (queue trace, INI [queue] trace=0 to silence).
 // CS12 (0.6.0-dev): a follower's queue is [0x3D FollowLeader] which re-adds itself at the head, so the 0x3F item use appended by route A starves.
 // kickTick() rotates the queue (pop head + append tail, k times) when the R8 gates hold; useNow() refuses a second use while one is queued; the pending
 // timeout only runs over a not-queued stretch. INI [queue] kick=1 (0 = no rotate). Never ClearAllActions, never 0x5648D0.
@@ -833,7 +833,9 @@ void refreshCache(const K2PsContext* ctx, DWORD now) {
     // Member 0 (leader)
     Card& c0 = g_card0;
     c0.have = 0 < cnt && v[0].ok;
-    if (!c0.have) { c0.pk = Pick(); c0.apk = Pick(); } else {
+    static bool leaderGone = false;
+    if (!c0.have != leaderGone) { leaderGone = !c0.have; KP_LOG(chUi, "LEADER %s (members=%d ok=%d)", leaderGone ? "gone" : "back", cnt, cnt > 0 ? (int)v[0].ok : 0); }
+    if (!c0.have) { c0.pk = Pick(); c0.apk = Pick(); c0.m = party::Vitals(); c0.cfg = shui::CompCfg(); } else {
         c0.m = v[0];
         char tag[64]; readCreatureTag(c0.m.server, tag, sizeof tag);
         c0.tag = tag;
@@ -973,9 +975,8 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
             c.k = k; c.vit = vit; c.seen = !isLeader;
             if (!g_mapLogged[mi]) { g_mapLogged[mi] = true; KP_LOG(chUi, "MAP member=%d slot=%d k=%d via=%s vit=[%d,%d,%d,%d] leader=%d", mi, i, k, byClient ? "client" : "server", vit.x, vit.y, vit.w, vit.h, (int)isLeader); }
         }
-        // Member 0 (leader) - always have if slot exists
-        if (k == 0) {
-            g_card0.have = true;
+        // Member 0 (leader): shown only while refreshCache found a readable party entry (c0.have)
+        if (k == 0 && g_card0.have) {
             g_card0.k = k;
             g_card0.vit = vit;
             g_card0.seen = true;
