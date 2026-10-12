@@ -110,5 +110,34 @@ class TestSubagentTools(unittest.TestCase):
             patch_path.unlink(missing_ok=True)
 
 
+class ModScopePrecedenceTests(unittest.TestCase):
+    """BG16: plan-path owner beats *_src/keyword text heuristics; --mod in verif cmd beats both."""
+
+    def _scope(self, subdir, desc, verif="-"):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp) / subdir
+            d.mkdir()
+            plan = d / "PLAN.md"
+            plan.write_text(f"| L1 | {desc} | TODO | {verif} |\n", encoding="utf-8")
+            return sap.extract_phase_info(plan, "L1")[4]
+
+    def test_levelup_path_beats_companion_keyword(self):
+        scope = self._scope("companion_levelup", "change companion level-up data")
+        self.assertIn("level_up_override_src", scope)
+
+    def test_levelup_path_beats_first_src_token(self):
+        scope = self._scope("companion_levelup", "change companion data via buff_duration_hud_src")
+        self.assertIn("level_up_override_src", scope)
+
+    def test_other_path_keeps_src_token(self):
+        scope = self._scope("other", "edit queue_hud_src data")
+        self.assertEqual(scope, "patch_manager_mods/queue_hud_src/")
+
+    def test_verif_mod_flag_still_wins(self):
+        scope = self._scope("companion_levelup", "change companion level-up data", verif="`python3 scripts/agent_diff_check.py --mod npc_diversity_src`")
+        self.assertEqual(scope, "patch_manager_mods/npc_diversity_src/")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -181,13 +181,19 @@ def extract_phase_info(plan_path: Path, phase_key: str):
     if m_cmd:
         mod_scope = f"patch_manager_mods/{m_cmd.group(1)}/"
 
-    # 5b. Check combined context for explicit mod directory
+    # 5b. Plan-path owner (strongest signal; beats text heuristics)
+    if not mod_scope:
+        plan_str = str(plan_path) if plan_path else ""
+        if "companion_levelup" in plan_str or "level_up" in plan_str:
+            mod_scope = "patch_manager_mods/level_up_override_src/ and research/companion_levelup/"
+
+    # 5c. Check combined context for explicit mod directory
     if not mod_scope:
         m_ctx = re.search(r"(?:patch_manager_mods/)?([a-zA-Z0-9_]+_src)", all_context)
         if m_ctx:
             mod_scope = f"patch_manager_mods/{m_ctx.group(1)}/"
 
-    # 5c. Check mod aliases / keywords in combined context
+    # 5d. Check mod aliases / keywords in combined context
     if not mod_scope:
         ctx_lower = all_context.lower()
         if "queue hud" in ctx_lower or "queue_hud" in ctx_lower or "queue" in ctx_lower:
@@ -204,16 +210,6 @@ def extract_phase_info(plan_path: Path, phase_key: str):
             mod_scope = "patch_manager_mods/companion_selfheal_src/"
         elif "companion" in ctx_lower:
             mod_scope = "patch_manager_mods/companion_ai_src/"
-
-    # 5d. Plan-level fallback
-    if not mod_scope:
-        plan_str = str(plan_path) if plan_path else ""
-        if "companion_levelup" in plan_str or "level_up" in plan_str:
-            mod_scope = "patch_manager_mods/level_up_override_src/ and research/companion_levelup/"
-        else:
-            m = re.search(r"(?:patch_manager_mods/)?([a-zA-Z0-9_]+_src)", text)
-            if m:
-                mod_scope = f"patch_manager_mods/{m.group(1)}/"
 
     return title, description, valid_paths, verif_cmds, mod_scope
 
