@@ -1346,6 +1346,21 @@ void testReInjectEachCondition() {
     KT_CHECK_EQ(kMaxReInjectCount, 2);
 }
 
+// BG23: any spell/item in the engine suppresses re-inject (intended, doc 30 QH4); the suppression is transient.
+void testReInjectForeignCastSuppressionTransient() {
+    const float pos[3] = { 0.f, 0.f, 0.f };
+    ActionBuffer a;
+    a.active = true;
+    a.activeAction = makeSpellAction(0x1000, 0x55, 0, 1, 0, 0, 0, pos, 1);
+    // Our action A was eaten (follow-leader wiped it) while an unrelated spell B holds the engine.
+    KT_CHECK(!shouldReInject(a, /*actionInQueue=*/true, /*hasFollowLeader=*/true));
+    KT_CHECK_EQ((int)reInjectWhy(a, true, true), (int)RI_IN_QUEUE);
+    // B ended without ever being seen executing: suppression lifts, A is re-injected (no lost action).
+    KT_CHECK(!a.sawExecuting);
+    KT_CHECK(shouldReInject(a, /*actionInQueue=*/false, /*hasFollowLeader=*/true));
+    KT_CHECK_EQ((int)reInjectWhy(a, false, true), (int)RI_OK);
+}
+
 void testReInjectNotAfterExecuting() {
     const float pos[3] = { 0.f, 0.f, 0.f };
     ActionBuffer b;
@@ -2162,6 +2177,7 @@ int main() {
     testDecideBranches();
     testFifoMixedKinds();
     testReInjectEachCondition();
+    testReInjectForeignCastSuppressionTransient();
     testReInjectNotAfterExecuting();
     testDispatchNextEachCondition();
     testWhyParityMatrix();

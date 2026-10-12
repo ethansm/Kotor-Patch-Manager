@@ -1260,7 +1260,8 @@ void tickItemQueues(DWORD now, bool inMenu) {
         }
         if (!gOk) continue;
 
-        // 1. Check if active action is present in server queue/round
+        // 1. Engine-busy test, deliberately NOT matched to buf.activeAction: dispatching while ANY spell/item holds the creature would ClearAllActions it (doc 30 QH4).
+        //    Known limit (BG23): an unrelated engine-initiated cast can look like our eaten action (AV_PRESENT) until it ends.
         bool actionInQueue = false;
         bool hasFollowLeader = false;
         for (int i = 0; i < s.engineNe; ++i) {
