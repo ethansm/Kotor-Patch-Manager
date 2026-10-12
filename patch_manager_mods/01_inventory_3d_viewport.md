@@ -575,7 +575,7 @@ than the workbench:
    story turns out to be; also see `05_build_plan.md`'s Phase 0 outcome —
    our live exe's LAA-patched hash currently matches no manifest entry,
    needs resolving before install regardless of this mod).
-3. [OPEN WI-03 C018: listbox match unverified; 0x008A8172 is in per-row handler FUN_008a8100, event key 0 semantics unconfirmed, see .claude/research/wi03_rescue/C018.md] `hooks.toml`: detour on the inventory listbox-selection trigger.
+3. [CLOSED WI-03 C018: 0x008A8172 is in CSWGuiInGameInventory::OnControlEntered (0x008a8100, steam-db-B0 verified); fires on entry hover/focus; live-accepted 2026-09-29/30] `hooks.toml`: detour on the inventory entry-entered trigger (hover or keyboard focus).
    `skip_original_bytes = false` — the inventory must keep updating its 2D
    icon as before; we're augmenting, not replacing.
    WI-03 recon: `hooks.toml:18` (`address = 0x008A8172`) is the inventory entry event-0 handler (`008a8100`) right after `GetItemByObjectId`; the match to the listbox-selection trigger is by source comment only, not re-verified against Ghidra.
