@@ -19,6 +19,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import shutil
 import sys
@@ -100,6 +101,19 @@ MODEL_INGEST_MAP: Dict[str, List[str]] = {
 }
 
 
+LABELS_JSON = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "patch_manager_mods",
+                           "npc_diversity_src", "texture_labels.json")
+# Rejected pool slots that the appended 2DA rows still name as their default texa/texb: they stay installed.
+ROW_REFERENCED = frozenset({"n_commm17", "n_commm35", "n_commf34"})
+
+
+def rejected_skip_set(labels_path: str = LABELS_JSON) -> frozenset:
+    """Lower-case stems of rejected pool slots that must NOT be regenerated (moved to rejected_pool/)."""
+    with open(labels_path, encoding="utf-8") as fh:
+        rejected = json.load(fh)["meta"]["rejected_files"]
+    return frozenset(r.lower() for r in rejected) - ROW_REFERENCED
+
+
 def build_catalog(search_dirs: List[str]) -> Dict[str, str]:
     """Scan search directories and map lowercased basename to file path.
     Prefers .tpc over .tga when both exist for textures.
@@ -131,6 +145,7 @@ def normalize_assets(
 ) -> Tuple[int, int, int]:
     """Normalize textures and copy supporting models into out_dir."""
     catalog = build_catalog(search_dirs)
+    skip = rejected_skip_set()
     os.makedirs(out_dir, exist_ok=True)
 
     copied_males = 0
@@ -143,6 +158,8 @@ def normalize_assets(
             raise FileNotFoundError(f"Missing source texture for male slot {idx:02d} ({key})")
         src_path = catalog[key]
         _, ext = os.path.splitext(src_path)
+        if f"n_commm{idx:02d}" in skip:
+            continue
         dest_name = f"N_CommM{idx:02d}{ext.lower()}"
         dest_path = os.path.join(out_dir, dest_name)
         if not dry_run:
@@ -155,6 +172,8 @@ def normalize_assets(
             raise FileNotFoundError(f"Missing source texture for female slot {idx:02d} ({key})")
         src_path = catalog[key]
         _, ext = os.path.splitext(src_path)
+        if f"n_commf{idx:02d}" in skip:
+            continue
         dest_name = f"N_CommF{idx:02d}{ext.lower()}"
         dest_path = os.path.join(out_dir, dest_name)
         if not dry_run:
