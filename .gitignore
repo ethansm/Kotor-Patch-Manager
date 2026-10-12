@@ -49,3 +49,6 @@ kdb_backup_*.db
 /.claude/deep-review/phase3b/replay_src/**/*.out
 /.claude/**/*.err
 /.claude/waves/
+
+/.claude/subagent_runs/
+/.claude/master_ledger*.jsonl
