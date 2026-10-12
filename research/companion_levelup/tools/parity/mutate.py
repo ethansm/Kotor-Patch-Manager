@@ -55,6 +55,9 @@ m("GT06", CPP, r"!readAt\(S_Opt, pa, 8, &flags\) \|\| \(flags & 1\) \|\|", "!rea
 m("GT07", CPP, r'(site\);\n        return )1;', r"\g<1>0;", "guiGuard no longer blocks a held leader")
 m("GT08", CPP, r'(GUARD autook[^\n]*\n        return )nullptr;', r"\g<1>c;", "autoOkBackstop no longer blocks")
 m("GT09", CPP, r"if \(!e\.ok \|\| !e\.cfg->instant \|\| e\.d == Decision::Hold\) return p;(?=\n    const uintptr_t pa)", "if (!e.ok || e.d == Decision::Hold) return p;", "instantGate ignores the instant=0 setting")
+m("GT10", CPP, r"\|\| g_cfg\.mode != Mode::Rewrite\) return p;(?=\n    if \(g_eng\.checkCode && !g_ctlEngState\))", ") return p;", "leaderInstant ignores mode!=rewrite")
+m("GT11", CPP, r"if \(!e\.ok \|\| !e\.cfg->instant \|\| e\.d == Decision::Hold\) return p;(?=\n    // F4)", "if (!e.ok || e.d == Decision::Hold) return p;", "leaderInstant ignores the instant=0 setting")
+m("GT12", CPP, r"\|\| !readAt\(S_Stats, cr, Cr_Stats, &stats\) (?=\|\| !stats\) return p;\n    Eval e = evalStats\(stats, cr\);\n    if \(!e\.ok \|\| !e\.cfg->instant \|\| e\.d == Decision::Hold\) return p;\n    // F4)", "", "leaderInstant dummies an unreadable creature")
 m("AN01", CPP, r"if \(!e\.cfg->instant\) return false;   // a non-instant", "if (false) return false;   // a non-instant", "apply-now levels a non-instant config")
 m("AN02", CPP, r"\|\| pcr\) \{", ") {", "apply-now ignores PlayerCreated")
 m("AN03", CPP, r"if \(g_cfg\.mode != Mode::Rewrite\) \{ logLine\(\"INSTANT apply-now WOULD", "if (false) { logLine(\"INSTANT apply-now WOULD", "apply-now acts in log mode")
@@ -324,7 +327,7 @@ def main():
     keep = "--keep" in a
     muts = [BY_ID[only]] if only else M
     # staleness check on the real sources first (read-only)
-    for mut in M:
+    for mut in muts:   # --only: check just the selected mutation (other IDs may be stale independently)
         with open(os.path.join(SRC, mut[1]), newline="") as fh:
             apply(mut, fh.read())
     root = os.path.join(os.environ.get("TMPDIR") or tempfile.gettempdir(), "kotor-mutate")

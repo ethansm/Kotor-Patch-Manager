@@ -286,7 +286,7 @@ int main(int argc, char** argv) {
     // 7b. leader instant 0x74F423: dummy controlled object only for a configured instant, not-held creature in rewrite mode
     {
         void* const real = g_ctlObj;
-        const uintptr_t ctlEcxMem = arenaAlloc(32);   // F4: the 0x740FC0 guarded read needs a readable ecx
+        const uintptr_t ctlEcxMem = arenaAlloc(32);   // F4: the 0x740FC0 guarded read needs a readable ecx (the unreadable-ecx fallback has its own CHECK below)
         snprintf(ini, sizeof ini, "mode=rewrite\npreset.atton=%s\nhold.atton=1\ninstant.atton=1", PRESET);
         setIni(ini, table); clearLog();
         memset(P(frame), 0, 0x200);
@@ -298,16 +298,16 @@ int main(int argc, char** argv) {
         *reinterpret_cast<uint32_t*>(ebp - 0x38) = (uint32_t)heldAtton.creature;
         CHECK(LuoLeaderInstant_74F423(P(ctlEcxMem), P(ebp)) == real, "leader instant: held -> real object (readable ecx: only the HOLD rule may refuse)");
         *reinterpret_cast<uint32_t*>(ebp - 0x38) = (uint32_t)pc.creature;
-        CHECK(LuoLeaderInstant_74F423(P(1), P(ebp)) == real, "leader instant: PC -> real object");
+        CHECK(LuoLeaderInstant_74F423(P(ctlEcxMem), P(ebp)) == real, "leader instant: PC -> real object");
         *reinterpret_cast<uint32_t*>(ebp - 0x38) = 0x20;
-        CHECK(LuoLeaderInstant_74F423(P(1), P(ebp)) == real, "leader instant: unreadable creature -> real object");
+        CHECK(LuoLeaderInstant_74F423(P(ctlEcxMem), P(ebp)) == real, "leader instant: unreadable creature -> real object");
         *reinterpret_cast<uint32_t*>(ebp - 0x38) = (uint32_t)onPath.creature;
         snprintf(ini, sizeof ini, "mode=rewrite\npreset.atton=%s\ninstant.atton=0", PRESET);
         setIni(ini, table);
-        CHECK(LuoLeaderInstant_74F423(P(1), P(ebp)) == real, "leader instant: instant=0 -> real object");
+        CHECK(LuoLeaderInstant_74F423(P(ctlEcxMem), P(ebp)) == real, "leader instant: instant=0 -> real object");
         snprintf(ini, sizeof ini, "mode=log\npreset.atton=%s\ninstant.atton=1", PRESET);
         setIni(ini, table);
-        CHECK(LuoLeaderInstant_74F423(P(1), P(ebp)) == real, "leader instant: log mode -> real object");
+        CHECK(LuoLeaderInstant_74F423(P(ctlEcxMem), P(ebp)) == real, "leader instant: log mode -> real object");
         // F4: 0x740FC0 (character change in progress) nonzero -> the real object, no INSTANT-LEADER; zero again -> dummy
         snprintf(ini, sizeof ini, "mode=rewrite\npreset.atton=%s\nhold.atton=1\ninstant.atton=1", PRESET);
         setIni(ini, table); clearLog();
@@ -315,6 +315,8 @@ int main(int argc, char** argv) {
         CHECK(LuoLeaderInstant_74F423(P(ctlEcxMem), P(ebp)) == real && !logHas("INSTANT-LEADER"), "leader instant: character change in progress -> real object, not logged");
         g_ccRet = 0;
         { void* r2 = LuoLeaderInstant_74F423(P(ctlEcxMem), P(ebp)); CHECK(r2 && r2 != real, "leader instant: no change in progress -> dummy again"); }
+        // the ecx guard itself: a configured instant, not-held creature in rewrite mode, but an unreadable ecx -> do not touch (real object)
+        CHECK(LuoLeaderInstant_74F423(P(1), P(ebp)) == real, "leader instant: unreadable ecx -> real object");
     }
 
     // 8. GUI guards + Auto OK backstop
