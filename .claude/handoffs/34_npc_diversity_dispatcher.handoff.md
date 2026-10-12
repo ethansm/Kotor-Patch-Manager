@@ -1,38 +1,35 @@
 # Session Handoff & Plan State: patch_manager_mods/34_npc_diversity_dispatcher.md
 
 ## 0. Next-Phase Direction
-Wave 6 remaining: Gate 1 play log + PTR dumps (Task 6 tag route), Task 8 policy 0.1.4-probe (ShouldVary 35%, family allowlists from DiversitySlots.h, keep-default via DiversityRoles.h), Task 9 hot-swap, Gate 2, Task 10 check, Task 11 cleanup; alien-commoner and alt-body-outfit follow-ons ready
+wave 2 - patch_manager_mods/34_npc_diversity_dispatcher.md.
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/34_npc_diversity_dispatcher.md`
-- **Branch:** `KOTOR-II` (c9b8064 feat(npc-diversity): slot and role header generators, user-adjusted texture labels)
-- **Generated:** 2026-10-11 19:49:42 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Waves:** .claude/waves/w1-34-W6/
+- **Branch:** `KOTOR-II` (3ad19bc docs(plan): NPC-add PoC wave 1 results (W1a-W1d))
+- **Generated:** 2026-10-11 22:56:54 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-c9b8064 feat(npc-diversity): slot and role header generators, user-adjusted texture labels
- .../npc_diversity_src/DiversityRoles.h             | 294 +++++++++++++++++++++
- .../npc_diversity_src/DiversitySlots.h             |  26 ++
- .../npc_diversity_src/texture_labels.json          | 155 ++++++++++-
- scripts/generate_diversity_roles.py                | 138 ++++++++++
- scripts/generate_diversity_slots.py                |  83 ++++++
- scripts/npc_div_merge_labels.py                    |  15 +-
- scripts/test_generate_diversity_roles.py           |  74 ++++++
- scripts/test_generate_diversity_slots.py           |  67 +++++
- scripts/test_npc_div_merge_labels.py               |  14 +-
- 9 files changed, 854 insertions(+), 12 deletions(-)
+3ad19bc docs(plan): NPC-add PoC wave 1 results (W1a-W1d)
+ .claude/plans/npc_add_poc.md                   |  9 +++++
+ .claude/research/npc_add/poc/W1a_engine.md     | 40 ++++++++++++++++++
+ .claude/research/npc_add/poc/W1b_rows.md       | 33 +++++++++++++++
+ .claude/research/npc_add/poc/W1c_walkmesh.md   | 56 ++++++++++++++++++++++++++
+ .claude/research/npc_add/poc/W1d_git_fields.md | 33 +++++++++++++++
+ 5 files changed, 171 insertions(+)
 ```
-- **Dirty Files (138):**
+- **Dirty Files (113):**
   - ` M .claude/handoffs/33_ui_queue_hotbar_fixes.handoff.md`
+  - ` M .claude/handoffs/38_k1_to_k2_asset_import.handoff.md`
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
   - ` M .claude/plans/swarm_library_architecture.md`
   - ` M patch_manager_mods/24_master_plan_status.md`
-  - ` M patch_manager_mods/34_npc_diversity_dispatcher.md`
+  - ` M patch_manager_mods/38_k1_to_k2_asset_import.md`
   - ` M patch_manager_mods/MASTER_KEY.md`
-  - ` M patch_manager_mods/activation_fix_src/ActivationFix.cpp`
-  - ` M patch_manager_mods/equip_icon_fix_src/EquipIconFix.cpp`
-  - ` M patch_manager_mods/perf_lab_src/harness/smoke_activationfix.cpp`
-  - ` M patch_manager_mods/perf_lab_src/harness/smoke_equipiconfix.cpp`
-  - ... +128 more (run `git status --short`)
+  - ` M patch_manager_mods/buff_duration_hud_src/BuffDurationHUD.cpp`
+  - ` M patch_manager_mods/perf_lab_src/harness/smoke_robustness.cpp`
+  - ` M patch_manager_mods/perf_lab_src/harness/smokes.toml`
+  - ... +103 more (run `git status --short`)
 
 ## 2. Immediate Objective (**Phase 2**)
 **Detour Hook Prototyping**
@@ -75,3 +72,9 @@ Generated, byte-stable (`--check`): `DiversitySlots.h` (M 1-16, F 1-17, FatM 34,
 - Known: checker R2 numerator counts every changed oid (incl. 805-808), so it can read a few % high.
 - Next: Task 9 hot-swap `0.1.4-probe` (`kpm_status.py --only npc-diversity`, `kpm_hotswap.py --mod npc-diversity --prepare`, commit KPM, `--apply`), then ask the override question, then Gate 2 play.
 - INSTALLED 10-11 20:24: `0.1.4-probe` LIVE (repo 9cf7b28, KPM 2062f71, DLL md5 2b697c78). Rollback: `python3 scripts/kpm_hotswap.py --rollback npc-diversity_swap_20261011_202423`. Awaiting Gate 2 play (also satisfies Gate 1: PTR dumps still logged). Open question to user: move the 35 rejected pool files out of the live override dir (reversible backup)?
+
+## Update 10-11 late (NPC-add PoC, a SEPARATE track from diversity Wave 6; "wave 2" in the Next-Phase Direction = NPC-add Wave 2)
+- Plan: `.claude/plans/npc_add_poc.md` (area DECIDED: 204TEL medical bed ward, Doctor Ganius `corteldc`). Recon: `.claude/research/npc_add/{R1..R5,00_summary.md}`, `poc/{P1..P6,W1a..W1d}`. Draft cards: `.claude/waves/w2-34-npcadd/cards/B1..B6.md` (untracked; `wave_cards.py verify` FAILs only on format: new files listed as Target Files, short anchor paths; content is fine).
+- Decisions taken at the Opus gate: B3 = pure helper module (no .mod write); B2 owns all GIT/MOD edits and consumes B1 UTCs + B3 helper (so B1,B3,B4,B5,B6 first, then B2); orientation = unit vector toward target (do not use W1c radians); waypoint TemplateResRef `npcwp_<key>_NN` (<=16), tag `WP_npcadd_<slug>_NN`; creature tag = resref = `npcadd_<slug>`; B4 adds P6 A5/A6 checks; per-species soundsets/Gender deferred to batch 2.
+- Dead ends: P1 walkmesh read failed because it looked up the module name (WOKs are keyed by room name, e.g. 204TELb, in chitin Models.bif); GIT model round trip is lossy (use GFF level); rea-recon overran budget (Q1-Q3 unresolved statically, so .mod precedence and spawn-script firing are play-test items).
+- Still needed from the user: which save (Game1/5/8 or fresh) for Gate 2; GO for the live 204tel.mod write (Gate 1). Diversity Gate 2 play of 0.1.4-probe is still pending.
