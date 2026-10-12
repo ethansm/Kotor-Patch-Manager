@@ -49,6 +49,7 @@ class SourceRow:
 class WorkItem:
     id: str
     title: str = ""
+    header_title: str = ""  # title from the WI-NN.md `# WI-NN title` line, kept after load_all overrides title
     rank: int = 0
     prio: str = ""
     state: str = "ready"  # ready | verify-only | hold | awaiting_user
@@ -105,7 +106,7 @@ def parse_wi_file(path):
     m = TITLE_RE.match(lines[0]) if lines else None
     if not m:
         raise ValueError(f"{path}: first line is not '# WI-NN title'")
-    wi = WorkItem(id=m.group(1), title=m.group(2).strip())
+    wi = WorkItem(id=m.group(1), title=m.group(2).strip(), header_title=m.group(2).strip())
     section = ""
     goal = []
     for line in lines[1:]:
@@ -376,6 +377,10 @@ def lint(items, root=REPO):
         if not wi.has_file:
             problems.append(("ERROR", wi.id, "index row has no WI file"))
             continue
+        it, ht = wi.title.strip(), wi.header_title.strip()
+        # index column truncates at 60 chars, so a strict prefix is allowed only for headers longer than 60
+        if it != ht and not (len(ht) > 60 and ht.startswith(it)):
+            problems.append(("WARN", wi.id, f"{wi.id}: index title differs from header title"))
         raw = wi.header_after if wi.header_after is not None else wi.index_after
         if wi.id in raw:
             problems.append(("ERROR", wi.id, "self-loop in after"))

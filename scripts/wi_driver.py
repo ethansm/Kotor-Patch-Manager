@@ -328,6 +328,9 @@ def cmd_verify(a, st):
     if claim["stage"] not in ("worker", "gated"):
         raise DriverError(f"{wi.id} is at stage {claim['stage']}; verify runs after the worker (stage worker)")
     chk = wave_check(st, claim["wave"])
+    if chk["status"] == "PASS" and chk.get("verdict") == "FAIL":
+        # the reply is well-formed, but the worker itself reported STATUS: FAIL
+        chk = {**chk, "status": "FAIL", "finding": "worker STATUS: FAIL"}
     if chk["status"] != "PASS":
         if a.dry_run:
             print(f"DRY RUN: wave check {chk['status']}: {chk['finding']}")
@@ -371,6 +374,20 @@ def cmd_verify(a, st):
 
 
 # ---------------------------------------------------------------- docs
+RANGE_ID_RE = re.compile(r"^([A-Za-z]+)(\d+)-([A-Za-z]+)(\d+)$")
+
+
+def expand_range_id(plan_id):
+    """`HP2-HP7` -> ['HP2'..'HP7'], `T6-T8` -> ['T6','T7','T8']. None when the id is not an ascending same-prefix range."""
+    m = RANGE_ID_RE.match(plan_id or "")
+    if not m or m.group(1).lower() != m.group(3).lower():
+        return None
+    lo, hi = int(m.group(2)), int(m.group(4))
+    if hi < lo:
+        return None
+    return [f"{m.group(1)}{n}" for n in range(lo, hi + 1)]
+
+
 def plan_table_ids(text):
     import plan_manager as pm
     ids, hdr = set(), None
@@ -408,8 +425,10 @@ def cmd_docs(a, st):
         if not a.dry_run:
             return park(st, wi, claim, f"checker {chk['status']} twice: {chk['finding']}"[:200], claim["session"])
     verdict = chk.get("verdict", "-")
-    if verdict == "REFUTED" and not a.dry_run:
-        return fail_path(st, wi, claim, "checker REFUTED", chk["finding"], claim["session"])
+    if verdict != "CONFIRMED" and not a.dry_run:
+        # PARTIAL, REFUTED or missing ("-") all stop here; only CONFIRMED lets docs mark the plan rows
+        print(f"CHECKER: {verdict} -> not CONFIRMED")
+        return fail_path(st, wi, claim, f"checker {verdict}", chk["finding"], claim["session"])
     base = ac.read_snapshot(root / claim["base"]) if claim.get("base") else {}
     marked, unresolved, skipped_dirty = [], [], []
     seen = set()
@@ -430,20 +449,29 @@ def cmd_docs(a, st):
             if not row.plan_id or not docp.is_file():
                 unresolved.append(f"{tag} (no plan id or doc)")
                 continue
-            if row.plan_id.lower() not in plan_table_ids(docp.read_text(encoding="utf-8")):
-                unresolved.append(f"{tag} (no table row)")
-                continue
-            if a.dry_run:
-                marked.append(tag)
+            table = plan_table_ids(docp.read_text(encoding="utf-8"))
+            targets = expand_range_id(row.plan_id)
+            if targets is None:
+                if row.plan_id.lower() not in table:
+                    unresolved.append(f"{tag} (no table row)")
+                    continue
+                targets = [row.plan_id]
+            elif not all(t.lower() in table for t in targets):
+                unresolved.append(f"{tag} (range id not in table)")
                 continue
             notes = f"{wi.id} verified".replace("|", "/")
-            r = run([sys.executable, str(PLAN_MANAGER), "mark-done", row.plan_id, "--plan", str(docp), "--state", "DONE",
-                     "--commit", "pending", "--notes", notes, "--no-handoff"], root)
-            ok = r.returncode == 0 and "Marked" in r.stdout
-            if ok:
-                marked.append(tag)
-            else:
-                unresolved.append(f"{tag} (mark-done: {last_lines(r.stdout + r.stderr, 1)})")
+            for pid in targets:
+                etag = f"{row.item}@{row.doc}:{pid}"
+                if a.dry_run:
+                    marked.append(etag)
+                    continue
+                r = run([sys.executable, str(PLAN_MANAGER), "mark-done", pid, "--plan", str(docp), "--state", "DONE",
+                         "--commit", "pending", "--notes", notes, "--no-handoff"], root)
+                ok = r.returncode == 0 and "Marked" in r.stdout
+                if ok:
+                    marked.append(etag)
+                else:
+                    unresolved.append(f"{etag} (mark-done: {last_lines(r.stdout + r.stderr, 1)})")
     lines = [f"DOCS {wi.id}: checker verdict {verdict}; marked {len(marked)} plan row(s), unresolved {len(unresolved)}, skipped-dirty {len(skipped_dirty)}"]
     lines += [f"  unresolved: {u}" for u in (unresolved + skipped_dirty)[:5]]
     spawn = []
@@ -543,9 +571,13 @@ def cmd_close(a, st):
         return 2
     msg_lines = [f"{wi.id}: {wi.title}", ""]
     rows = claim.get("docs_marked") or []
+    unres = claim.get("docs_unresolved") or []
     msg_lines += [f"Plan rows closed: {len(rows)}" + (" (" + ", ".join(r.split("@")[0] for r in rows[:6]) + ")" if rows else ""),
-                  f"Plan rows unresolved: {len(claim.get('docs_unresolved') or [])}",
-                  f"Gate: {sum(1 for t in claim['trace'] if t['phase'] == 'gate' and t['status'] == 'PASS')} command(s) PASS; "
+                  f"Plan rows unresolved: {len(unres)}"]
+    msg_lines += [f"  - {u}" for u in unres[:3]]
+    if len(unres) > 3:
+        msg_lines.append(f"  (+{len(unres) - 3} more)")
+    msg_lines += [f"Gate: {sum(1 for t in claim['trace'] if t['phase'] == 'gate' and t['status'] == 'PASS')} command(s) PASS; "
                   f"checker verdict {claim.get('checker_verdict')}; retries {claim['retries']}", "", TRAILER, ""]
     message = "\n".join(msg_lines)
     if a.dry_run:
@@ -771,6 +803,22 @@ def analyze(runs, events, claims_stale, existing_keys):
     if peaks and max(peaks) > 60000:
         add("token-overrun", "med", f"worker peak context reached {max(peaks)} tokens (cap 60000)",
             lesson="A worker exceeded the 60k budget: split the item, or read only the listed line ranges.")
+    closed_partial = [r for r in total if r.get("outcome") == "done" and r.get("checker_verdict") != "CONFIRMED"]
+    if closed_partial:
+        add("closed-on-partial", "med",
+            f"{len(closed_partial)} closed run(s) had checker verdict != CONFIRMED: {', '.join(r['wi'] for r in closed_partial)}",
+            lesson="Do not close on a PARTIAL checker verdict; park or retry.")
+    fail_closed = []
+    for r in total:
+        details = [x["detail"] for x in r.get("failures", [])]
+        if r.get("outcome") != "done":
+            continue
+        if any("STATUS: FAIL" in d for d in details) or (r.get("retries") and any("REFUTED" in d or "PARTIAL" in d for d in details)):
+            fail_closed.append(r)
+    if fail_closed:
+        add("worker-fail-closed", "med",
+            f"{len(fail_closed)} run(s) needed a retry after worker/checker failure: {', '.join(r['wi'] for r in fail_closed)}",
+            lesson="Fix the Steps or verify line after a worker/checker failure before retrying; do not re-run unchanged.")
     errs = [x["detail"] for r in total for x in r.get("failures", []) if "Traceback" in x["detail"] or "CONTRACT_ERROR" in x["detail"]]
     if errs:
         add("driver-errors", "high", f"{len(errs)} driver/contract error(s), first: {errs[0][:80]}",

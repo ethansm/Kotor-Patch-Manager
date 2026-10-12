@@ -201,6 +201,28 @@ class ModelTests(Base):
         self.assertEqual(none, [])
         self.assertIn("no gate derivable", why)
 
+    def test_expand_range_id(self):
+        self.assertEqual(wd.expand_range_id("HP2-HP7"), ["HP2", "HP3", "HP4", "HP5", "HP6", "HP7"])
+        self.assertEqual(wd.expand_range_id("T6-T8"), ["T6", "T7", "T8"])
+        self.assertIsNone(wd.expand_range_id("P1"))  # not a range
+        self.assertIsNone(wd.expand_range_id("WI-01"))
+        self.assertIsNone(wd.expand_range_id("HP2-T7"))  # mixed prefix
+        self.assertIsNone(wd.expand_range_id("T8-T6"))  # descending
+        self.assertIsNone(wd.expand_range_id(None))
+
+    def test_lint_title_mismatch_warning(self):
+        warn = "WI-01: index title differs from header title"
+        self.write(".claude/work_items/WI-01.md", wi_file("WI-01", "Alpha edit renamed", "ready", "src/a.txt", GATE_OK))
+        self.assertIn(("WARN", "WI-01", warn), wm.lint(wm.load_all(self.root), self.root))
+
+    def test_lint_allows_index_prefix_of_long_header(self):
+        warn = "WI-01: index title differs from header title"
+        long_header = "Alpha edit " + "x" * 60  # 71 chars, over the 60-char index limit
+        index_title = long_header[:60]
+        self.write(".claude/work_items/dev_work_items.md", INDEX.replace("Alpha edit", index_title))
+        self.write(".claude/work_items/WI-01.md", wi_file("WI-01", long_header, "ready", "src/a.txt", GATE_OK))
+        self.assertNotIn(("WARN", "WI-01", warn), wm.lint(wm.load_all(self.root), self.root))
+
 
 class GateTests(Base):
     def fake(self, name, body):
@@ -394,6 +416,57 @@ class FlowTests(Base):
         self.assertEqual(self.st.runs()[-1]["outcome"], "park")
         self.assertEqual(sh(self.root, "git", "log", "-1", "--format=%s").stdout.strip(), "WI-01: parked")
 
+    def test_worker_status_fail_goes_to_failure_path(self):
+        self.drv("next", "WI-01")
+
+        def worker_reports_fail():
+            self.write("src/a.txt", "edit\n")
+            self.worker_reply(self.claim_wave("WI-01"), "src/a.txt")
+            reply = self.root / ".claude" / "waves" / self.claim_wave("WI-01") / "u01.reply.txt"
+            reply.write_text(reply.read_text(encoding="utf-8").replace("STATUS: PASS", "STATUS: FAIL"), encoding="utf-8")
+
+        worker_reports_fail()
+        r = self.drv("verify", "WI-01")
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn("worker STATUS: FAIL", r.stdout)
+        self.assertIn("RETRY", r.stdout)
+        self.assertNotIn("GATE PASS", r.stdout)
+        claim = self.st.read_claim("WI-01")
+        self.assertEqual(claim["stage"], "worker")  # retry re-spawned the worker; no checker wave was created
+        self.assertIsNone(claim.get("checker_wave"))
+
+        worker_reports_fail()
+        r = self.drv("verify", "WI-01")
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertIn("PARKED WI-01", r.stdout)
+        self.assertNotIn("GATE PASS", r.stdout)
+        self.assertEqual(self.st.all_claims(), {})
+        _, parked = self.st.state_maps()
+        self.assertIn("WI-01", parked)
+
+    def test_partial_checker_verdict_blocks_docs(self):
+        self.drv("next", "WI-01")
+        self.write("src/a.txt", "alpha edited\n")
+        self.worker_reply(self.claim_wave("WI-01"), "src/a.txt")
+        self.assertEqual(self.drv("verify", "WI-01").returncode, 0)
+        self.checker_reply(self.st.read_claim("WI-01")["checker_wave"], "PARTIAL")
+        r = self.drv("docs", "WI-01")
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn("CHECKER: PARTIAL -> not CONFIRMED", r.stdout)
+        self.assertIn("RETRY", r.stdout)
+        self.assertNotIn("| DONE |", (self.root / "docs/plan.md").read_text())
+        self.assertIsNotNone(self.st.read_claim("WI-01"))
+
+        # control: the retry re-spawns the worker, and a CONFIRMED checker verdict lets docs proceed
+        self.write("src/a.txt", "alpha edited again\n")
+        self.worker_reply(self.claim_wave("WI-01"), "src/a.txt")
+        self.assertEqual(self.drv("verify", "WI-01").returncode, 0)
+        self.checker_reply(self.st.read_claim("WI-01")["checker_wave"])
+        r = self.drv("docs", "WI-01")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertNotIn("not CONFIRMED", r.stdout)
+        self.assertIn("| DONE |", (self.root / "docs/plan.md").read_text())
+
 
 class AuditAndBacklogTests(Base):
     def test_analyze_is_pure_and_idempotent(self):
@@ -402,8 +475,23 @@ class AuditAndBacklogTests(Base):
                  "failures": [], "usage": {"peak_ctx_max": 70000}}]
         found = wd.analyze(runs, events, ["WI-09"], set())
         keys = {f["key"] for f in found}
-        self.assertEqual(keys, {"repeat-park:WI-01", "gate-selects-nothing:WI-02", "token-overrun", "stale-claim:WI-09"})
+        self.assertEqual(keys, {"repeat-park:WI-01", "gate-selects-nothing:WI-02", "token-overrun", "stale-claim:WI-09", "closed-on-partial"})
         self.assertEqual(wd.analyze(runs, events, ["WI-09"], keys), [])
+
+    def test_analyze_flags_closed_on_partial(self):
+        partial = [{"wi": "WI-05", "outcome": "done", "duration_s": 5, "checker_verdict": "PARTIAL", "failures": []}]
+        found = {f["key"]: f for f in wd.analyze(partial, [], [], set())}
+        self.assertIn("closed-on-partial", found)
+        self.assertIn("WI-05", found["closed-on-partial"]["text"])
+        confirmed = [{"wi": "WI-06", "outcome": "done", "duration_s": 5, "checker_verdict": "CONFIRMED", "failures": []}]
+        self.assertNotIn("closed-on-partial", {f["key"] for f in wd.analyze(confirmed, [], [], set())})
+
+    def test_analyze_flags_worker_fail_closed(self):
+        run = [{"wi": "WI-07", "outcome": "done", "duration_s": 5, "retries": 1, "checker_verdict": "CONFIRMED",
+                "failures": [{"detail": "worker STATUS: FAIL"}]}]
+        found = {f["key"]: f for f in wd.analyze(run, [], [], set())}
+        self.assertIn("worker-fail-closed", found)
+        self.assertIn("WI-07", found["worker-fail-closed"]["text"])
 
     def test_audit_apply_holds_records_and_adds_backlog(self):
         for reason in ("first", "second"):
