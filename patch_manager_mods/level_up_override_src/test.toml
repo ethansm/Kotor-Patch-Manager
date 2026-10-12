@@ -1,7 +1,7 @@
 # Per-test table: the Common contract test needs the shared headers and the host Win32 stub (mirrors shield_bar_src/test.toml).
 # Per-test tables replace the top-level keys, so ../_shared_src is repeated.
 [common_contract_test]
-cxxflags = ["-I../_shared_src", "-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common", "-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HOST", "-Werror"]
+cxxflags = ["-I../_shared_src", "-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HOST", "-Werror"]
 
 # R10 probe state machine (pure header R10Probe.h); no shared headers needed.
 [r10_probe_test]
