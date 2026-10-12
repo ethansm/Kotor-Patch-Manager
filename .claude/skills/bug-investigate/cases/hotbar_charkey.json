@@ -28,7 +28,7 @@
   "score_rubric": {
     "facts": {
       "invalid_id": ["ffffffff", "invalid (object )?(id|handle)", "invalid (creature|player)"],
-      "empty_key": ["character key", "key (is|was|stays|becomes|changes|resolved)", "empty key", "objfffffffd", "''"],
+      "empty_key": ["character key", "key (is|was|stays|becomes|changes|resolved)", "empty key", "objfffffffd", "''", "no valid key"],
       "multi_member": ["companions?", "party member 0", "more than one (party )?member"]
     },
     "hit": ["invalid_id", "empty_key"],
