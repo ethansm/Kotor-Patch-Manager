@@ -25,6 +25,15 @@
     "patch_manager_mods/action_hotbar_src/",
     "git log / git show messages of 541d7d9, e360569, 25d4e42, ec95c98"
   ],
+  "score_rubric": {
+    "facts": {
+      "invalid_id": ["ffffffff", "invalid (object )?(id|handle)", "invalid (creature|player)"],
+      "empty_key": ["character key", "key (is|was|stays|becomes|changes|resolved)", "empty key", "objfffffffd", "''"],
+      "multi_member": ["companions?", "party member 0", "more than one (party )?member"]
+    },
+    "hit": ["invalid_id", "empty_key"],
+    "note": "Deterministic label, run on claim+mechanism only (never quotes or falsifier). HIT = invalid id AND empty/unresolved character key; PARTIAL = one of them; MISS = neither. multi_member is informational. A bare 'key' and 'not identified' are deliberately not matched (verb use / symptom text). This is a rubric label, not truth."
+  },
   "evidence_logs_available": true,
   "evidence_logs": [
     {
