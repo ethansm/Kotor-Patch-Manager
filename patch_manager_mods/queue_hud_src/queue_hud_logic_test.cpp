@@ -1345,6 +1345,34 @@ void testReInjectEachCondition() {
     KT_CHECK_EQ(kMaxReInjectCount, 2);
 }
 
+void testReInjectNotAfterExecuting() {
+    const float pos[3] = { 0.f, 0.f, 0.f };
+    ActionBuffer b;
+    b.active = true;
+    b.activeAction = makeSpellAction(0x1000, 0x55, 0, 1, 0, 0, 0, pos, 1);
+    KT_CHECK(shouldReInject(b, false, true));
+    b.sawExecuting = true;                                                    // the engine showed it executing: finished, not eaten
+    KT_CHECK(!shouldReInject(b, false, true));
+    KT_CHECK(reInjectWhy(b, false, true) == RI_EXECUTED);
+    b.markDispatched(10);                                                     // a fresh dispatch resets the flag
+    KT_CHECK(shouldReInject(b, false, true));
+    b.sawExecuting = true; b.cancel();
+    KT_CHECK(!b.sawExecuting);
+    b.sawExecuting = true; b.clear();
+    KT_CHECK(!b.sawExecuting);
+
+    // reInjectWhy == RI_OK <=> shouldReInject across every sawExecuting/inQueue/leader combination
+    for (int m = 0; m < 8; ++m) {
+        ActionBuffer c;
+        c.active = true;
+        c.activeAction = makeSpellAction(0x1000, 0x55, 0, 1, 0, 0, 0, pos, 1);
+        c.sawExecuting = (m & 1) != 0;
+        const bool inQ = (m & 2) != 0, lead = (m & 4) != 0;
+        KT_CHECK((reInjectWhy(c, inQ, lead) == RI_OK) == shouldReInject(c, inQ, lead));
+        if (m == 4) KT_CHECK(shouldReInject(c, inQ, lead));                  // only leader-queued, not executing, not in queue
+    }
+}
+
 void testDispatchNextEachCondition() {
     const float pos[3] = { 0.f, 0.f, 0.f };
     ActionBuffer b;
@@ -1417,6 +1445,7 @@ void testWhyNames() {
     KT_CHECK_EQ(whyName(RI_MAX), "max_reinject");
     KT_CHECK_EQ(whyName(RI_IN_QUEUE), "in_queue");
     KT_CHECK_EQ(whyName(RI_NO_LEADER), "no_leader");
+    KT_CHECK_EQ(whyName(RI_EXECUTED), "executed");
     KT_CHECK_EQ(whyName(DS_OK), "ok");
     KT_CHECK_EQ(whyName(DS_ACTIVE), "active");
     KT_CHECK_EQ(whyName(DS_EMPTY), "empty");
@@ -2125,6 +2154,7 @@ int main() {
     testDecideBranches();
     testFifoMixedKinds();
     testReInjectEachCondition();
+    testReInjectNotAfterExecuting();
     testDispatchNextEachCondition();
     testWhyParityMatrix();
     testWhyNames();

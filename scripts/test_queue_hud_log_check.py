@@ -84,7 +84,7 @@ def cancel(n, m=0):
     return _kw_line("CANCEL", n, m)
 
 
-REINJECT_NO_WHYS = ["ok", "inactive", "pending", "cancel", "max_reinject", "in_queue", "no_leader"]
+REINJECT_NO_WHYS = ["ok", "inactive", "pending", "cancel", "max_reinject", "in_queue", "no_leader", "executed"]
 EDGE_WHATS = ["combat", "paused", "menu", "party_table", "gather_m2", "creature", "journal_cap"]
 
 

@@ -21,7 +21,7 @@ these keywords are ignored; a keyword line with a missing or malformed field is 
   QJ m=<k> ne=<n> types=[<hex,...,+N>] round=<n> cur=<hex|-> aa8=<n> ab8=<n> paused=<0|1> combat=<0|1> ours=<tag>@<age>ms|external
   REINJECT|DISPATCH|CANCEL cmd=<n> [m=<k>] [why=<reason>] [attempt=<n>]   (REINJECT/DISPATCH: a why other than ok is a
     decline, except REINJECT why=eaten_paused, which is the re-inject reason and shows as REINJECT#<attempt>)
-  REINJECT_NO cmd=<n> m=<k> why=<ok|inactive|pending|cancel|max_reinject|in_queue|no_leader>   (a why other than ok is a decline)
+  REINJECT_NO cmd=<n> m=<k> why=<ok|inactive|pending|cancel|max_reinject|in_queue|no_leader|executed>   (a why other than ok is a decline)
   VANISH cmd=<n> m=<k> kind=<executed|unseen|eaten_paused|eaten_wait> paused=<0|1> exec=<0|1> ne=<n> round=<n>
     cur=<hex|-> aa8=<n> ab8=<n> age=<ms>
   HANDOFF m=<k> active=<n|-> buffered=<n> cmds=<n,n,...|->

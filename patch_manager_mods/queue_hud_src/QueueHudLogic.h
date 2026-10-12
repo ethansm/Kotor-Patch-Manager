@@ -709,6 +709,7 @@ inline bool shouldReInject(const ActionBuffer& buf, bool actionInQueue, bool has
     (void)paused; (void)now;
     if (!buf.active || buf.reInjectPending || buf.userCancelled || userCancelled) return false;
     if (buf.activeAction.reInjectCount >= kMaxReInjectCount) return false;
+    if (buf.sawExecuting) return false;   // engine showed it executing: it finished, it was not eaten
     if (actionInQueue) return false;
     return hasFollowLeader;
 }
@@ -746,7 +747,7 @@ struct FlagGate {
 
 // ---- Why-codes (LOG GRAMMAR). Reason order = check order of the bool predicate above.
 // reInjectWhy(...) == RI_OK  <=>  shouldReInject(...);   dispatchWhy(...) == DS_OK  <=>  shouldDispatchNext(...).
-enum ReInjectWhy : uint8_t { RI_OK, RI_INACTIVE, RI_PENDING, RI_CANCEL, RI_MAX, RI_IN_QUEUE, RI_NO_LEADER };
+enum ReInjectWhy : uint8_t { RI_OK, RI_INACTIVE, RI_PENDING, RI_CANCEL, RI_MAX, RI_IN_QUEUE, RI_NO_LEADER, RI_EXECUTED };
 enum DispatchWhy : uint8_t { DS_OK, DS_ACTIVE, DS_EMPTY, DS_ENGINE_BUSY, DS_CUR_BUSY, DS_NRN_BUSY, DS_FLAG_BUSY };
 enum DropWhy : uint8_t { DR_COMBAT_CLEAR, DR_NULL_CREATURE, DR_CANCEL, DR_BUFFER_FULL, DR_UNREADABLE_CREATURE, DR_REINJECT_EXHAUSTED, DR_EATEN_TIMEOUT, DR_IDENTITY_LOST };
 
@@ -756,6 +757,7 @@ inline ReInjectWhy reInjectWhy(const ActionBuffer& buf, bool actionInQueue, bool
     if (buf.reInjectPending) return RI_PENDING;
     if (buf.userCancelled || userCancelled) return RI_CANCEL;
     if (buf.activeAction.reInjectCount >= kMaxReInjectCount) return RI_MAX;
+    if (buf.sawExecuting) return RI_EXECUTED;
     if (actionInQueue) return RI_IN_QUEUE;
     return hasFollowLeader ? RI_OK : RI_NO_LEADER;
 }
@@ -779,6 +781,7 @@ inline const char* whyName(ReInjectWhy w) {
         case RI_MAX: return "max_reinject";
         case RI_IN_QUEUE: return "in_queue";
         case RI_NO_LEADER: return "no_leader";
+        case RI_EXECUTED: return "executed";
     }
     return "?";
 }
