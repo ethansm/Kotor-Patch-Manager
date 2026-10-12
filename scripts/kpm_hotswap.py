@@ -16,6 +16,7 @@ exact commit commands. It never repacks a kpatch (create-patch.py packs all targ
 """
 import argparse
 import datetime
+import difflib
 import hashlib
 import json
 import os
@@ -132,21 +133,35 @@ def load_live(game):
     return {p["id"]: p for p in tomllib.load(open(cfg, "rb")).get("patches", [])}
 
 
+def _unknown_mod(q, entries):
+    by_key = {k: e[0] for e in entries for k in e[2]}
+    msg = f"unknown mod '{q}'"
+    close = difflib.get_close_matches(canon(q), list(by_key), n=1, cutoff=0.6)
+    if close:
+        msg += f"\nDid you mean: '{by_key[close[0]]}'?"
+    return msg + f"\nAvailable mod IDs: {', '.join(sorted({e[0] for e in entries}))}"
+
+
 def resolve(queries, kmap):
-    """query -> manifest path of the repo mod, by patch id, src dir name or KPM folder name. Raises ValueError if unknown."""
+    """query -> manifest path of the repo mod, by patch id, src dir name, relative dir (x_src/sub), parent dir name or KPM folder
+    name. Raises ValueError if unknown, with a closest-id suggestion."""
     entries = []
-    for m in ks.pick_sources(sorted(MODS.glob("*_src/manifest.toml")), kmap):
+    for m in ks.pick_sources(ks.repo_manifests(), kmap):
         pid = tomllib.load(open(m, "rb"))["patch"]["id"]
         keys = {canon(pid), canon(m.parent.name)}
         if pid in kmap:
             keys.add(canon(kmap[pid].name))
-        entries.append((pid, m, keys))
+        rel = str(m.parent.relative_to(ks.MODS)).replace("\\", "/").lower()
+        entries.append((pid, m, keys, rel))
     out = {}
     for q in queries:
-        hit = [e for e in entries if canon(q) in e[2]]
+        qrel = q.replace("\\", "/").rstrip("/").lower()
+        hit = [e for e in entries if canon(q) in e[2] or qrel == e[3]]
         if not hit:
-            raise ValueError(f"unknown mod '{q}' (no patch_manager_mods/*_src with that id, dir or KPM folder name)")
-        out[hit[0][0]] = hit[0][1]
+            raise ValueError(_unknown_mod(q, entries))
+        exact = [e for e in hit if e[3] == qrel]  # several pids can share the parent alias (every nested 'probe'): exact dir wins
+        pick = (exact or hit)[0]
+        out[pick[0]] = pick[1]
     return out
 
 

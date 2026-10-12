@@ -6,6 +6,7 @@ import tempfile
 import time
 import unittest
 import zipfile
+from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import kpm_status as ks  # noqa: E402
@@ -159,6 +160,15 @@ class HelperTest(unittest.TestCase):
             os.utime(b / "manifest.toml", (t2, t2))
             got = ks.pick_sources([a / "manifest.toml", b / "manifest.toml"], {})
             self.assertEqual(got, [b / "manifest.toml"])
+
+    def test_repo_manifests_finds_nested_manifests_at_any_depth(self):
+        with tempfile.TemporaryDirectory() as t, mock.patch.object(ks, "MODS", pathlib.Path(t)):
+            rels = ["a_src/manifest.toml", "b_src/perflab/manifest.toml", "c_src/probe/manifest.toml", "d_src/x/y/manifest.toml"]
+            for rel in rels:
+                (ks.MODS / rel).parent.mkdir(parents=True, exist_ok=True)
+                (ks.MODS / rel).write_text('[patch]\nid = "x"\n')
+            got = [m.relative_to(ks.MODS).as_posix() for m in ks.repo_manifests()]
+            self.assertEqual(sorted(got), sorted(rels))
 
     def test_steam_hooks_name_skips_gog_and_ports(self):
         names = ["manifest.toml", "kotor2-gog-aspyr.hooks.toml", "kotor2-steam-aspyr.hooks.toml", "kotor2-steam-aspyr-linux.hooks.toml"]

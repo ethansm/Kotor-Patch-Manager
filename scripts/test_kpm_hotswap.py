@@ -75,6 +75,7 @@ class Base(unittest.TestCase):
         self.e = HEnv(self.tmp.name)
         self.running = False
         for p in (mock.patch.object(kh, "MODS", self.e.src.parent),
+                  mock.patch.object(ks, "MODS", self.e.src.parent),
                   mock.patch.object(ks, "git_dirty", lambda src: []),
                   mock.patch.object(kh, "is_game_running", lambda: self.running),
                   mock.patch.object(kh, "pe_imports", lambda b: PE[b][0]),
@@ -171,6 +172,47 @@ class RefusalTest(Base):
         self.assertEqual(self.backups(), [])
         rc, out = self.run_cli("--rollback", "latest")
         self.assertEqual(rc, 1)
+
+
+class NestedResolveTest(Base):
+    def add_mod(self, rel, pid):
+        d = self.e.src.parent / rel
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "manifest.toml").write_text(f'[patch]\nid = "{pid}"\nversion = "1.0.0"\n')
+        return d / "manifest.toml"
+
+    def test_nested_mod_resolves_by_id_reldir_and_parent_name(self):
+        want = self.add_mod("perf_lab_src/perflab", "perf-lab")
+        for q in ("perf-lab", "perf_lab_src/perflab", "perflab", "PerfLab"):
+            self.assertEqual(kh.resolve([q], {}), {"perf-lab": want}, q)
+
+    def test_depth_three_manifest_resolves_by_id(self):
+        want = self.add_mod("x_src/a/b", "deep-mod")
+        self.assertEqual(kh.resolve(["deep-mod"], {}), {"deep-mod": want})
+
+    def test_probe_dir_resolves_by_relative_dir_among_shared_parent_names(self):
+        self.add_mod("other_letterbox_src/probe", "other-probe")
+        want = self.add_mod("dialogue_letterbox_fix_src/probe", "letterbox-probe")
+        self.assertEqual(kh.resolve(["dialogue_letterbox_fix_src/probe"], {}), {"letterbox-probe": want})
+
+    def test_typo_gets_did_you_mean(self):
+        rc, out = self.run_cli("--mod", "demoo")
+        self.assertEqual(rc, 2, out)
+        self.assertIn("unknown mod 'demoo'", out)
+        self.assertIn("Did you mean: 'demo'?", out)
+        self.assertIn("Available mod IDs: demo", out)
+
+    def test_nonsense_name_has_no_suggestion(self):
+        rc, out = self.run_cli("--mod", "nope-mod")
+        self.assertEqual(rc, 2, out)
+        self.assertNotIn("Did you mean", out)
+        self.assertIn("Available mod IDs", out)
+
+    def test_hyphen_underscore_typo_suggests_real_id(self):
+        self.add_mod("action_hotbar_src", "action-hotbar")
+        rc, out = self.run_cli("--mod", "action_hotbr")
+        self.assertEqual(rc, 2, out)
+        self.assertIn("Did you mean: 'action-hotbar'?", out)
 
 
 class PrepareTest(Base):

@@ -92,6 +92,11 @@ def is_probe_manifest(m):
         return False
 
 
+def repo_manifests():
+    """Repo mod manifests: <x>_src/manifest.toml, plus nested ones at any depth such as perf_lab_src/perflab/manifest.toml."""
+    return sorted(MODS.glob("*_src/**/manifest.toml"))
+
+
 def pick_sources(manifests, kpm_map):
     """One repo dir per patch id. When several dirs share an id (an old probe dir next to the release dir), keep the one whose
     manifest.toml equals the KPM copy. Failing that, the newest non-probe dir by mtime; probe dirs only when no release dir exists."""
@@ -177,7 +182,7 @@ def main(argv=None):
     kmap = kpm_dirs(a.kpm)
     only = {x for x in a.only.split(",") if x}
     rows = []
-    for m in pick_sources(sorted(MODS.glob("*_src/manifest.toml")), kmap):
+    for m in pick_sources(repo_manifests(), kmap):
         try:
             r = status(m, kmap, live, a.game)
         except (KeyError, tomllib.TOMLDecodeError, zipfile.BadZipFile) as e:
