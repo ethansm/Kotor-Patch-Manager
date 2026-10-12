@@ -1,0 +1,1542 @@
+[
+  {
+    "index": 1,
+    "anchor": "3c-fd-patcher",
+    "name": "3C-FD Patcher",
+    "url": "https://deadlystream.com/files/file/2734-fog-fix-more-3c-fd-patcher/",
+    "author": "J",
+    "category": "Bugfix, Graphics Improvement / 1 - Essential",
+    "method": "Executable",
+    "instructions": ""
+  },
+  {
+    "index": 2,
+    "anchor": "water-restoration",
+    "name": "Water Restoration",
+    "url": "https://deadlystream.com/files/file/2758-water-restoration/",
+    "author": "J",
+    "category": "Bugfix, Graphics Improvement / 1 - Essential",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 3,
+    "anchor": "stutter-fix",
+    "name": "Stutter Fix and Force Cage Update",
+    "url": "https://deadlystream.com/files/file/2699-stutter-fix-and-force-cage-update/",
+    "author": "J",
+    "category": "Bugfix, Graphics Improvement / 1 - Essential",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 4,
+    "anchor": "4gb-patcher",
+    "name": "4GB Patcher",
+    "url": "https://ntcore.com/?page_id=371",
+    "author": "Daniel Pistelli",
+    "category": "Patch / 1 - Essential",
+    "method": "Executable",
+    "instructions": ""
+  },
+  {
+    "index": 5,
+    "anchor": "tslrcm",
+    "name": "The Sith Lords Restored Content Mod",
+    "url": "https://deadlystream.com/files/file/578-tsl-restored-content-mod/",
+    "author": "zbyl2, DarthStoney, Hassat Hunter &amp; VarsityPuppet",
+    "category": "Bugfix, Immersion, Mechanics Change &amp; Restored Content / 1 - Essential",
+    "method": "Executable",
+    "instructions": ""
+  },
+  {
+    "index": 6,
+    "anchor": "tslrcm-tweak-pack",
+    "name": "TSLRCM Tweak Pack",
+    "url": "http://deadlystream.com/files/file/296-unofficial-tslrcm-tweak-pack/",
+    "author": "Pavijan (update by Fair Strides)",
+    "category": "Patch / 1 - Essential",
+    "method": "Multi-Run TSLPatcher",
+    "instructions": ""
+  },
+  {
+    "index": 7,
+    "anchor": "silent-sion",
+    "name": "Silent Sion Restoration",
+    "url": "https://deadlystream.com/files/file/2426-silent-sion-restoration/",
+    "author": "Emperor Devon",
+    "category": "Immersion / 2 - Recommended",
+    "method": "Loose-File",
+    "instructions": ""
+  },
+  {
+    "index": 8,
+    "anchor": "thematic-kotor-2-companions",
+    "name": "Thematic KOTOR 2 Companions",
+    "url": "https://deadlystream.com/files/file/2662-thematic-kotor-2-companions/",
+    "author": "Sniggles &amp; JCarter426",
+    "category": "Mechanics Change / 2 - Recommended",
+    "method": "TSLPatcher",
+    "instructions": ""
+  },
+  {
+    "index": 9,
+    "anchor": "saving-throw-fixes",
+    "name": "Prestige Class Saving Throw Fixes",
+    "url": "http://deadlystream.com/files/file/828-tsl-prestige-class-saving-throw-fixes/",
+    "author": "Rovan",
+    "category": "Mechanics Change / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 10,
+    "anchor": "classic-class-attack",
+    "name": "Classic Class Attack Bonus",
+    "url": "https://deadlystream.com/files/file/2812-classic-class-attack-bonus/",
+    "author": "Crimson Knight",
+    "category": "Mechanics Change / 1 - Essential",
+    "method": "TSLPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 11,
+    "anchor": "robes-with-shadows",
+    "name": "Robes with Shadows for TSL",
+    "url": "https://deadlystream.com/files/file/2075-robes-with-shadows-for-tsl/",
+    "author": "PapaZinos",
+    "category": "Graphics Improvement / 3 - Suggested",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 12,
+    "anchor": "k2cp",
+    "name": "K2 Community Patch",
+    "url": "https://deadlystream.com/files/file/1280-kotor-2-community-patch/",
+    "author": "Multiple; A Future Pilot, JCarter426 Curates",
+    "category": "Graphics Improvement &amp; Bugfix / 1 - Essential",
+    "method": "TSLPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 13,
+    "anchor": "remote-tells-influence",
+    "name": "Remote Tells Influence",
+    "url": "https://www.gamefront.com/games/knights-of-the-old-republic-ii/file/remote-tells-influence",
+    "author": "tk102, patch by Leilukin",
+    "category": "Mechanics Change / 4 - Optional",
+    "method": "Loose-File Mod &amp; Patch",
+    "instructions": ""
+  },
+  {
+    "index": 14,
+    "anchor": "better-czerka-salvager",
+    "name": "Fixed / Better Czerka Salvager",
+    "url": "https://deadlystream.com/files/file/2576-fixed-better-czerka-salvager/",
+    "author": "OzilsEyes",
+    "category": "Bugfix / 2 - Recommended",
+    "method": "TSLPatcher",
+    "instructions": ""
+  },
+  {
+    "index": 15,
+    "anchor": "ultimate-hr-textures",
+    "name": "Ultimate High Resolution Texture Pack",
+    "url": "https://www.nexusmods.com/kotor2/mods/1100",
+    "author": "ShiningRedHD",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 16,
+    "anchor": "ultimate-character-overhaul",
+    "name": "Ultimate Character Overhaul",
+    "url": "https://www.nexusmods.com/kotor2/mods/1060",
+    "author": "ShiningRedHD",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 17,
+    "anchor": "ultimate-nar-shaddaa",
+    "name": "Ultimate Nar Shaddaa High Resolution",
+    "url": "https://www.nexusmods.com/kotor2/mods/1101",
+    "author": "ShiningRedHD",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 18,
+    "anchor": "ultimate-dantooine",
+    "name": "Ultimate Dantooine High Resolution",
+    "url": "https://www.nexusmods.com/kotor2/mods/1103",
+    "author": "ShiningRedHD",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 19,
+    "anchor": "ultimate-dxun",
+    "name": "Ultimate Dxun High Resolution",
+    "url": "https://www.nexusmods.com/kotor2/mods/1105",
+    "author": "ShiningRedHD",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 20,
+    "anchor": "ultimate-onderon",
+    "name": "Ultimate Onderon High Resolution",
+    "url": "https://www.nexusmods.com/kotor2/mods/1102",
+    "author": "ShiningRedHD",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 21,
+    "anchor": "ultimate-korriban",
+    "name": "Ultimate Korriban High Resolution",
+    "url": "https://www.nexusmods.com/kotor2/mods/1104",
+    "author": "ShiningRedHD",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 22,
+    "anchor": "ultimate-malachor",
+    "name": "Ultimate Malachor High Resolution",
+    "url": "https://www.nexusmods.com/kotor2/mods/1106",
+    "author": "ShiningRedHD",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 23,
+    "anchor": "korriban-sith-art",
+    "name": "Korriban Sith Art HD",
+    "url": "https://www.nexusmods.com/kotor/mods/1632",
+    "author": "MessesWithWolves",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 24,
+    "anchor": "ritual-and-water-textures",
+    "name": "Ritual and Water Textures",
+    "url": "https://deadlystream.com/files/file/2286-freedon-nadds-tomb-ritual-and-water-textures/",
+    "author": "Nehua",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 25,
+    "anchor": "pfhc06-fix",
+    "name": "PFHC06 Fix",
+    "url": "https://deadlystream.com/files/file/1442-pfhc06-fix/",
+    "author": "Ferc Kast",
+    "category": "Bugfix / 3 - Suggested",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 26,
+    "anchor": "droid-special-weapons-fix",
+    "name": "Droid Special Weapons Fix",
+    "url": "https://deadlystream.com/files/file/1860-droid-special-weapons-fix-for-tsl-v10/",
+    "author": "LoneWanderer",
+    "category": "Bugfix / 2 - Recommended",
+    "method": "TSLPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 27,
+    "anchor": "honest-merchant",
+    "name": "Honest Merchant",
+    "url": "https://deadlystream.com/files/file/1904-honest-merchant-tslrcm/",
+    "author": "TK-664",
+    "category": "Immersion / 4 - Optional",
+    "method": "TSLPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 28,
+    "anchor": "jcs-minor-fixes",
+    "name": "JC's Minor Fixes",
+    "url": "https://deadlystream.com/files/file/1215-jcs-minor-fixes-for-k2/",
+    "author": "JCarter426",
+    "category": "Bugfix &amp; Graphics Improvement &amp; Immersion / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 29,
+    "anchor": "maintenance-reskin",
+    "name": "Maintenance Officer Realistic Reskin",
+    "url": "https://deadlystream.com/files/file/165-maintenance-officer-realistic-reskin/",
+    "author": "Malkior",
+    "category": "Immersion / 4 - Optional",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 30,
+    "anchor": "hd-sign-placeable",
+    "name": "PLC_Sign",
+    "url": "https://deadlystream.com/files/file/2442-plc_sign/",
+    "author": "Dark Hope",
+    "category": "Graphics Improvement / 3 - Suggested",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 31,
+    "anchor": "hd-kiosk",
+    "name": "Kiosk HD",
+    "url": "https://deadlystream.com/files/file/2277-kiosk-hd/",
+    "author": "Dark Hope, patch by Marcus Ramikin",
+    "category": "Graphics Improvement / 3 - Suggested",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 32,
+    "anchor": "hd-desk",
+    "name": "PLC_Desk",
+    "url": "https://deadlystream.com/files/file/2441-plc_desk/",
+    "author": "Dark Hope",
+    "category": "Graphics Improvement / 3 - Suggested",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 33,
+    "anchor": "hires-beam-effects",
+    "name": "Hi-Res Beam Effects",
+    "url": "http://deadlystream.com/files/file/221-hi-res-beam-effects/",
+    "author": "InSidious",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 34,
+    "anchor": "fire-and-ice-hd",
+    "name": "Fire And Ice HD",
+    "url": "http://deadlystream.com/files/file/454-fire-and-ice-hd-whee/",
+    "author": "Cinder Skye",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 35,
+    "anchor": "animated-energy-shields",
+    "name": "Animated Energy Shields",
+    "url": "https://deadlystream.com/files/file/2193-animated-energy-shields/",
+    "author": "Dark Hope",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 36,
+    "anchor": "blaster-visual-effects",
+    "name": "Blaster Visual Effects",
+    "url": "https://deadlystream.com/files/file/1272-jcs-blaster-visual-effects-for-k2/",
+    "author": "JCarter426",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 37,
+    "anchor": "head-model-fixes",
+    "name": "TSL Head Model Fixes",
+    "url": "http://deadlystream.com/files/file/489-tsl-head-model-fixes/",
+    "author": "Redrob41",
+    "category": "Bugfix / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 38,
+    "anchor": "new-holocron-textures",
+    "name": "New Holocron Textures",
+    "url": "http://deadlystream.com/files/file/283-new-texture-of-holocrons-in-the-telos-secret-academy/",
+    "author": "Sith Holocron",
+    "category": "Graphics Improvement / 3 - Suggested",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 39,
+    "anchor": "thigh-high-boots-for-twilek",
+    "name": "Thigh-High Boots for Twi'lek",
+    "url": "http://deadlystream.com/files/file/1088-tsl-thigh-high-boots-for-female-twilek-body-modders-resource/",
+    "author": "DarthParametric",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 40,
+    "anchor": "better-twilek-heads",
+    "name": "Better Twi'lek Heads",
+    "url": "https://deadlystream.com/files/file/1432-tsl-better-male-twilek-heads/",
+    "author": "Ashton Scorpius",
+    "category": "Appearance Change / 3 - Suggested",
+    "method": "HoloPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 41,
+    "anchor": "twilek-male-diversity",
+    "name": "TSL Twi'lek Male NPC Diversity",
+    "url": "https://deadlystream.com/files/file/2242-tsl-twilek-male-npc-diversity/",
+    "author": "Leilukin",
+    "category": "Appearance Change / 3 - Suggested",
+    "method": "HoloPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 42,
+    "anchor": "dahnis-unique-look",
+    "name": "Dahnis Unique Look",
+    "url": "https://deadlystream.com/files/file/2198-dahnis-unique-look/",
+    "author": "Leilukin",
+    "category": "Appearance Change / 3 - Suggested",
+    "method": "HoloPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 43,
+    "anchor": "darth-malaks-armor",
+    "name": "Darth Malak's Armor",
+    "url": "http://www.nexusmods.com/kotor2/mods/9/?",
+    "author": "DarthParametric",
+    "category": "Graphics Improvement &amp; Immersion / 3 - Suggested",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 44,
+    "anchor": "supermodel-fix",
+    "name": "Supermodel Fix",
+    "url": "https://deadlystream.com/files/file/1141-jcs-supermodel-fix-for-k2/",
+    "author": "JCarter426",
+    "category": "Bugfix / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 45,
+    "anchor": "worn-out-mando-armor",
+    "name": "Mandalorian Worn-Out Armor",
+    "url": "https://mega.nz/#!1A4RCLha!Ro2GNVUPRfgot-woqh80jVaukixr-cnUmTdakuc0Ca4",
+    "author": "LordRevan999",
+    "category": "Appearance Change / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 46,
+    "anchor": "hd-npc-portraits",
+    "name": "HD NPC Portraits",
+    "url": "https://deadlystream.com/files/file/1770-hd-npc-portraits/",
+    "author": "ndix UR",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 47,
+    "anchor": "hd-pc-portraits",
+    "name": "HD PC Portraits",
+    "url": "https://deadlystream.com/files/file/1769-hd-pc-portraits/",
+    "author": "ndix UR",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 48,
+    "anchor": "stylized-portraits-tsl",
+    "name": "Stylized Portraits TSL",
+    "url": "https://deadlystream.com/files/file/1977-stylized-portraits-tsl-created-by-tinman888/",
+    "author": "Tinman888 &amp; Sdub",
+    "category": "Appearance Change / 4 - Option",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 49,
+    "anchor": "pfhc03-restoration",
+    "name": "PFHC03 Restoration",
+    "url": "https://deadlystream.com/files/file/2003-effixians-pfhc03-restoration/",
+    "author": "Effix",
+    "category": "Restored Content / 2 - Recommended",
+    "method": "TSLPatcher",
+    "instructions": ""
+  },
+  {
+    "index": 50,
+    "anchor": "4k-atton",
+    "name": "4k Atton",
+    "url": "http://deadlystream.com/files/file/441-4k-atton/",
+    "author": "Constar",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 51,
+    "anchor": "atton-with-scruff",
+    "name": "Atton Rand with Scruff",
+    "url": "http://deadlystream.com/files/file/528-atton-rand-with-scruff/",
+    "author": "felixfelicitas",
+    "category": "Appearance Change / 3 - Suggested",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 52,
+    "anchor": "rounder-g0-t0",
+    "name": "Rounder G0-T0",
+    "url": "https://www.nexusmods.com/kotor2/mods/1296",
+    "author": "dirigibalistic",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 53,
+    "anchor": "dark-harbinger",
+    "name": "Dark Harbinger",
+    "url": "https://mega.nz/#!kARxFSbS!wVaTMHT3LZ1Z2nFzjCiattphsim1p-0ReALIcb9h8pQ",
+    "author": "NiuHaka",
+    "category": "Appearance Change, Bugfix &amp; Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 54,
+    "anchor": "hd-vrook",
+    "name": "HD Vrook",
+    "url": "https://deadlystream.com/files/file/1504-vrook-hd-international-global-mod/",
+    "author": "Dark Hope",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 55,
+    "anchor": "hd-darth-nihilus",
+    "name": "HD Darth Nihilus",
+    "url": "http://deadlystream.com/files/file/367-darth-sapiens-presents-hd-darth-nihilus/",
+    "author": "Darth_Sapiens",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 56,
+    "anchor": "darth-sion-remake",
+    "name": "Darth Sion Remake",
+    "url": "https://deadlystream.com/files/file/1244-darth-sion-remake/",
+    "author": "FF97",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 57,
+    "anchor": "detrans-revan",
+    "name": "Detran's Revan",
+    "url": "https://deadlystream.com/files/file/2350-detrans-darth-revan/#",
+    "author": "Detran",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 58,
+    "anchor": "lore-friendly-mandalore",
+    "name": "Lore-Friendly Mandalore Mask",
+    "url": "https://deadlystream.com/files/file/1848-expanded-lore-friendly-mandalores-mask-with-matching-armor-and-icons-upscaled-high-quality-textures/",
+    "author": "constantinople33",
+    "category": "Immersion &amp; Appearance Change / 3 - Suggested",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 59,
+    "anchor": "visas-reduced-model-clipping",
+    "name": "Visas Reduced Model Clipping",
+    "url": "https://deadlystream.com/files/file/2299-visas-reduced-model-clipping/",
+    "author": "Feeling",
+    "category": "Bugfix / 3 - Suggested",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 60,
+    "anchor": "hd-visas-marr",
+    "name": "HD Visas Marr",
+    "url": "http://deadlystream.com/files/file/519-darth-sapiens-presents-hd-2k-visas-marr/",
+    "author": "Darth_Sapiens",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 61,
+    "anchor": "mira-unpoofed",
+    "name": "Mira Unpoofed",
+    "url": "https://deadlystream.com/files/file/1733-tsl-mira-unpoofed/",
+    "author": "Ashton Scorpius",
+    "category": "Appearance Change / 4 - Optional",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 62,
+    "anchor": "t3m4-hd-2k",
+    "name": "T3M4 HD 2K",
+    "url": "http://deadlystream.com/files/file/514-darth-sapiens-presents-t3m4-hd-2k/",
+    "author": "Darth_Sapiens",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 63,
+    "anchor": "hd-astromechs",
+    "name": "Refurbished Astromech Droids",
+    "url": "http://deadlystream.com/files/file/971-refurbished-astromech-droids/",
+    "author": "Darth_Sapiens and Sith Holocron",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 64,
+    "anchor": "war-droid-hd",
+    "name": "War Droid Mk.1",
+    "url": "https://deadlystream.com/files/file/2188-war-droid-mark-i-hd/",
+    "author": "Dark Hope",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 65,
+    "anchor": "hd-duros",
+    "name": "Duros HD",
+    "url": "https://deadlystream.com/files/file/2252-duros-hd/",
+    "author": "Dark Hope",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 66,
+    "anchor": "hd-ithorians",
+    "name": "Ithorians HD",
+    "url": "https://deadlystream.com/files/file/2382-ithorian-hd/",
+    "author": "Dark Hope",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 67,
+    "anchor": "noldamh01-hd",
+    "name": "N_oldAMH01 HD",
+    "url": "https://deadlystream.com/files/file/2806-n_oldamh01-hd/",
+    "author": "Dark Hope",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 68,
+    "anchor": "canonical-jedi-exile",
+    "name": "Canonical Jedi Exile",
+    "url": "http://deadlystream.com/files/file/170-canonical-jedi-exile/",
+    "author": "michaelfung2000",
+    "category": "Appearance Change / 4 - Optional",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 69,
+    "anchor": "lightsaber-visual-effects",
+    "name": "JC's Lightsaber Visual Effects",
+    "url": "https://deadlystream.com/files/file/1317-jcs-lightsaber-visual-effects-for-k2/",
+    "author": "JCarter426",
+    "category": "Appearance Change &amp; Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 70,
+    "anchor": "lightsaber-hilt-variety",
+    "name": "Enhanced Lightsaber Hilt Variety",
+    "url": "https://deadlystream.com/files/file/2794-enhanced-lightsaber-hilt-variety/",
+    "author": "J",
+    "category": "Appearance Change &amp; Graphics Improvement / 1 - Essential",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 71,
+    "anchor": "random-panels",
+    "name": "KOTOR 2 Random Panels",
+    "url": "https://deadlystream.com/files/file/2588-kotor2-random-panels/",
+    "author": "Sith Holocron",
+    "category": "Graphics Improvement / 3 - Suggested",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 72,
+    "anchor": "neglected-computer-panel",
+    "name": "Neglected Computer Panel",
+    "url": "https://deadlystream.com/files/file/2063-neglected-computer-panel/",
+    "author": "ScrierOne",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 73,
+    "anchor": "improved-peragus-asteroids",
+    "name": "Improved Peragus Asteroids",
+    "url": "http://deadlystream.com/files/file/321-improved-peragus-asteroid-fields/",
+    "author": "VasiliiZaytsev",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 74,
+    "anchor": "swoop-monitor-replacement",
+    "name": "Swoop Monitor Replacement Pack",
+    "url": "https://deadlystream.com/files/file/1252-tsl-swoop-monitors-replacement-pack/",
+    "author": "Sith Holocron",
+    "category": "Immersion / 4 - Optional",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 75,
+    "anchor": "hd-terminal-texture",
+    "name": "Terminal Texture",
+    "url": "https://deadlystream.com/files/file/1925-terminal-texture/",
+    "author": "Dark Hope",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 76,
+    "anchor": "animated-computer-panel",
+    "name": "Animated Computer Panel",
+    "url": "https://deadlystream.com/files/file/1385-tsl-animated-computer-panel/",
+    "author": "ebmar",
+    "category": "Graphics Improvement / 3 - Suggested",
+    "method": "TSLPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 77,
+    "anchor": "hd-workbench",
+    "name": "RepTab HD",
+    "url": "https://deadlystream.com/files/file/2222-reptab-hd/",
+    "author": "Dark Hope",
+    "category": "Graphics Improvement / 3 - Suggested",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 78,
+    "anchor": "backdrop-improvements",
+    "name": "TSL Backdrop Improvements",
+    "url": "http://deadlystream.com/files/file/949-tsl-backdrop-improvements/",
+    "author": "Kexikus",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 79,
+    "anchor": "citadel-station-backdrop",
+    "name": "JC's Citadel Station Backdrop",
+    "url": "https://deadlystream.com/files/file/1217-jcs-citadel-station-backdrop/",
+    "author": "JCarter426",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 80,
+    "anchor": "hq-skyboxes-ii",
+    "name": "HQ Skyboxes II",
+    "url": "https://deadlystream.com/files/file/1793-high-quality-skyboxes-ii/",
+    "author": "Kexikus",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "TSLPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 81,
+    "anchor": "ebon-hawk-cockpit-upgrade-i",
+    "name": "Ebon Hawk Cockpit Upgrade (LEH_Scre01)",
+    "url": "https://deadlystream.com/files/file/2258-ebon-hawk-cockpit-upgrade-leh_scre01-more-subtle-version/",
+    "author": "Sith Holocron",
+    "category": "Graphics Improvement / 3 - Suggested",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 82,
+    "anchor": "ebon-hawk-cockpit-upgrade-ii",
+    "name": "Ebon Hawk Cockpit Upgrade (LEH_Scre02)",
+    "url": "https://deadlystream.com/files/file/2247-ebon-hawk-cockpit-upgrade-leh_scre02/",
+    "author": "Sith Holocron",
+    "category": "Graphics Improvement / 3 - Suggested",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 83,
+    "anchor": "spark-effect",
+    "name": "Spark Effect - Ebon Hawk",
+    "url": "https://deadlystream.com/files/file/2314-spark-effect-ebon-hawk/",
+    "author": "PapaZinos",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 84,
+    "anchor": "transparent-cockpit-windows",
+    "name": "Transparent Cockpit Windows TSL",
+    "url": "https://deadlystream.com/files/file/2355-transparent-cockpit-windows-for-tsl/",
+    "author": "WildKarrde",
+    "category": "Graphics Improvement / 3 - Suggested",
+    "method": "TSLPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 85,
+    "anchor": "hd-cockpit-skyboxes",
+    "name": "HD Cockpit Skyboxes",
+    "url": "http://deadlystream.com/files/file/931-hd-cockpit-skyboxes/",
+    "author": "tjsase",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 86,
+    "anchor": "ftl-loop",
+    "name": "FTL Hyperspace Loop",
+    "url": "https://www.nexusmods.com/kotor2/mods/1161?tab=description",
+    "author": "Nym182",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 87,
+    "anchor": "aleema-ketos-robe-fix",
+    "name": "Aleema Keto's Robe Description Correction",
+    "url": "http://deadlystream.com/files/file/842-aleema-ketos-robe-description-correction/",
+    "author": "milestails",
+    "category": "Immersion / 4 - Optional",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 88,
+    "anchor": "short-term-memory-fix",
+    "name": "Vaklu Short-Term Memory Fix",
+    "url": "https://deadlystream.com/files/file/2654-vaklu-short-term-memory-fix/",
+    "author": "SuperChameau",
+    "category": "Immersion / 3 - Suggested",
+    "method": "HoloPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 89,
+    "anchor": "onderon-news-makes-sense",
+    "name": "Onderon News Make Sense",
+    "url": "https://deadlystream.com/files/file/2655-onderon-news-make-sense/",
+    "author": "SuperChameau",
+    "category": "Bugfix / 3 - Suggested",
+    "method": "HoloPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 90,
+    "anchor": "hawk-downloadable-map",
+    "name": "Ebon Hawk Downloadable Map",
+    "url": "https://deadlystream.com/files/file/1406-tsl-ebon-hawk-downloadable-map/",
+    "author": "Ashton Scorpius",
+    "category": "Immersion / 4 - Optional",
+    "method": "HoloPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 91,
+    "anchor": "kinrath-egg-crystal-drop",
+    "name": "Kinrath Egg Bash Crystal Drop Fix",
+    "url": "http://deadlystream.com/files/file/167-kinrath-egg-bash-crystal-drop/",
+    "author": "Hassat Hunter",
+    "category": "Immersion / 3 - Suggested",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 92,
+    "anchor": "thorium-charge-mod",
+    "name": "Thorium Charge Mod",
+    "url": "http://deadlystream.com/files/file/147-thorium-charge-mod/",
+    "author": "darth_gil",
+    "category": "Added Content / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 93,
+    "anchor": "kill-the-ithorian",
+    "name": "Kill the Ithorian",
+    "url": "http://deadlystream.com/files/file/10-kill-the-ithorian/",
+    "author": "Markus Ramikin",
+    "category": "Immersion / 3 - Suggested",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 94,
+    "anchor": "red-floating-lightsabers",
+    "name": "Red Floating Lightsabers",
+    "url": "https://deadlystream.com/files/file/2635-red-floating-lightsabers/",
+    "author": "Crimson Knight",
+    "category": "Appearance Change &amp; Bugfix / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 95,
+    "anchor": "mira-or-hanharr",
+    "name": "Choose Mira or Hanharr",
+    "url": "http://deadlystream.com/files/file/108-choose-mira-or-hanharr/",
+    "author": "Hassat Hunter",
+    "category": "Immersion &amp; Mechanics Change / 1 - Essential",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 96,
+    "anchor": "kreias-fall-cutscene",
+    "name": "Kreia's Fall Ingame Cutscene",
+    "url": "https://deadlystream.com/files/file/1228-kreias-fall-cutscene-in-game/",
+    "author": "danil-ch",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "TSLPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 97,
+    "anchor": "partyswap",
+    "name": "PartySwap",
+    "url": "https://deadlystream.com/files/file/544-partyswap/",
+    "author": "DarthTyren &amp; Leilukin",
+    "category": "Immersion &amp; Mechanics Change / 1 - Essential",
+    "method": "HoloPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 98,
+    "anchor": "extended-enclave",
+    "name": "Extended Enclave",
+    "url": "http://deadlystream.com/files/file/428-extended-enclave-tslrcm-add-on/",
+    "author": "danil-ch &amp; Darth Hayze",
+    "category": "Restored Content / 1 - Essential",
+    "method": "TSLPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 99,
+    "anchor": "partyswap-ee-compatch",
+    "name": "PartySwap/Extended Enclave Compatch",
+    "url": "https://deadlystream.com/files/file/1304-partyswap-and-extended-enclave-compatibility-patch/",
+    "author": "Leilukin",
+    "category": "Patch / 1 - Essential",
+    "method": "TSLPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 100,
+    "anchor": "extended-korriban-arrival",
+    "name": "Extended Korriban Arrival",
+    "url": "http://deadlystream.com/files/file/250-extended-korriban-arrival/",
+    "author": "danil-ch",
+    "category": "Restored Content / 3 - Suggested",
+    "method": "TSLPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 101,
+    "anchor": "prologue-item-recovery",
+    "name": "Prologue Item Recovery",
+    "url": "https://deadlystream.com/files/file/2211-prologue-item-recovery/",
+    "author": "Leilukin",
+    "category": "Immersion / 2 - Recommended",
+    "method": "TSLPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 102,
+    "anchor": "balance-tweak-pack",
+    "name": "Balance Tweak Pack",
+    "url": "https://deadlystream.com/files/file/1790-balance-tweak-pack/",
+    "author": "Pavijan",
+    "category": "Mechanics Change &amp; Patch / 2 - Recommended",
+    "method": "TSLPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 103,
+    "anchor": "mines-overhaul",
+    "name": "Mines Overhaul",
+    "url": "https://deadlystream.com/files/file/2753-mines-overhaul-tsl/",
+    "author": "offthegridmorty",
+    "category": "Mechanics Change / 2 - Recommended",
+    "method": "HoloPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 104,
+    "anchor": "no-health-regeneration",
+    "name": "No Health Regeneration",
+    "url": "https://deadlystream.com/files/file/2530-no-health-regeneration/",
+    "author": "offthegridmorty",
+    "category": "Mechanics Change / 2 - Recommended",
+    "method": "HoloPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 105,
+    "anchor": "thematic-sith-lords",
+    "name": "Thematic Sith Lords",
+    "url": "https://deadlystream.com/files/file/1535-thematic-sith-lords/",
+    "author": "Sniggles &amp; JCarter426",
+    "category": "Mechanics Change / 2 - Recommended",
+    "method": "TSLPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 106,
+    "anchor": "thematic-jedi-masters",
+    "name": "Thematic Jedi Masters",
+    "url": "https://deadlystream.com/files/file/2633-thematic-jedi-masters/",
+    "author": "Sniggles &amp; JCarter426",
+    "category": "Mechanics Change / 2 - Recommended",
+    "method": "TSLPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 107,
+    "anchor": "better-disciple-meditation",
+    "name": "Better Disciple Meditation",
+    "url": "https://deadlystream.com/files/file/2612-better-disciple-meditation/",
+    "author": "offthegridmorty",
+    "category": "Mechanics Change / 2 - Recommended",
+    "method": "TSLPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 108,
+    "anchor": "bao-dur-heavy-armor",
+    "name": "Bao-Dur Can Wear Heavy Armor",
+    "url": "https://deadlystream.com/files/file/2189-bao-dur-can-wear-heavy-armor/",
+    "author": "Effix",
+    "category": "Bugfix &amp; Immersion / 2 - Recommended",
+    "method": "TSLPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 109,
+    "anchor": "jcs-crystal-attunement",
+    "name": "JC's Crystal Attunement",
+    "url": "https://deadlystream.com/files/file/2269-jcs-crystal-attunement-for-k2/",
+    "author": "JCarter426",
+    "category": "Mechanics Change, Bugfix &amp; Immersion / 2 - Recommended",
+    "method": "TSLPatcher",
+    "instructions": ""
+  },
+  {
+    "index": 110,
+    "anchor": "jekkjekktarr-thugs",
+    "name": "Better Jekk'Jekk'Tarr Thugs",
+    "url": "https://deadlystream.com/files/file/2684-better-jekkjekk-tarr-thugs/",
+    "author": "SuperChameau",
+    "category": "Immersion / 2 - Recommended",
+    "method": "HoloPatcher",
+    "instructions": ""
+  },
+  {
+    "index": 111,
+    "anchor": "logical-jekkjekk-tarr",
+    "name": "Logical Jekk'Jekk'Tarr",
+    "url": "https://deadlystream.com/files/file/2790-logical-jekkjekk-tarr/",
+    "author": "N-DReW25",
+    "category": "Bugfix &amp; Immersion / 2 - Recommended",
+    "method": "HoloPatcher",
+    "instructions": ""
+  },
+  {
+    "index": 112,
+    "anchor": "miras-vanilla-escape",
+    "name": "Mira's Vanilla Escape for TSLRCM",
+    "url": "https://deadlystream.com/files/file/2671-miras-vanilla-escape-for-tslrcm/",
+    "author": "WildKarrde",
+    "category": "Restored Content / 2 - Recommended",
+    "method": "TSLPatcher",
+    "instructions": ""
+  },
+  {
+    "index": 113,
+    "anchor": "kreias-longsword",
+    "name": "Kreia's Lightsaber/Longsword",
+    "url": "https://deadlystream.com/files/file/1538-kreias-lightsaber-long-sword/",
+    "author": "bead-v",
+    "category": "Immersion / 3 - Suggested",
+    "method": "TSLPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 114,
+    "anchor": "harbinger-performance-fix",
+    "name": "Harbinger Arrival Performance Enhancement",
+    "url": "https://deadlystream.com/files/file/2027-harbingers-arrival-performance-enhancement-for-tslrcm/",
+    "author": "PapaZinos",
+    "category": "Bugfix / 2 - Recommended",
+    "method": "TSLPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 115,
+    "anchor": "visas-vo-tweak",
+    "name": "Visas Voiceover Tweak",
+    "url": "http://deadlystream.com/files/file/431-nihilusvisas-scene-vo-tweak/",
+    "author": "danil-ch",
+    "category": "Immersion / 3 - Suggested",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 116,
+    "anchor": "sion-and-a-male-exile",
+    "name": "Darth Sion and the Male Exile",
+    "url": "http://deadlystream.com/files/file/996-darth-sion-and-male-exile-mod/",
+    "author": "Leilukin",
+    "category": "Immersion / 2 - Recommended",
+    "method": "HoloPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 117,
+    "anchor": "assassins-with-lightsabers",
+    "name": "Sith Assassins with Lightsabers",
+    "url": "https://deadlystream.com/files/file/2631-sith-assassins-with-lightsabers/",
+    "author": "Lewok2007",
+    "category": "Mechanics Change / 2 - Recommended",
+    "method": "HoloPatcher",
+    "instructions": ""
+  },
+  {
+    "index": 118,
+    "anchor": "true-sith-assassins",
+    "name": "True Sith Assassins",
+    "url": "https://deadlystream.com/files/file/2649-true-sith-assassins-awareness-restoration/",
+    "author": "offthegridmorty",
+    "category": "Mechanics Change &amp; Immersion / 2 - Recommended",
+    "method": "Multi-Run HoloPatcher",
+    "instructions": ""
+  },
+  {
+    "index": 119,
+    "anchor": "for-mandalore",
+    "name": "For Mandalore!",
+    "url": "https://deadlystream.com/files/file/2666-for-mandalore/",
+    "author": "offthegridmorty",
+    "category": "Mechanics Change &amp; Immersion / 3 - Suggested",
+    "method": "HoloPatcher",
+    "instructions": ""
+  },
+  {
+    "index": 120,
+    "anchor": "peragus-medical-bay-enhancement",
+    "name": "Peragus Medical Bay Enhancement",
+    "url": "https://deadlystream.com/files/file/2513-peragus-medical-bay-enhancement/",
+    "author": "WildKarrde",
+    "category": "Immersion / 2 - Recommended",
+    "method": "TSLPatcher",
+    "instructions": ""
+  },
+  {
+    "index": 121,
+    "anchor": "hq-blasters",
+    "name": "High Quality Blasters",
+    "url": "http://deadlystream.com/files/file/915-high-quality-blasters/",
+    "author": "Sithspecter",
+    "category": "Graphics Improvement / 1 - Essential",
+    "method": "TSLPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 122,
+    "anchor": "droid-model-fix",
+    "name": "Droid Models Animation Fix",
+    "url": "https://deadlystream.com/files/file/2748-droid-models-animation-fix/",
+    "author": "CaptainSpoque",
+    "category": "Bugfix / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 123,
+    "anchor": "quarterstaff-replacements",
+    "name": "Quarterstaff Replacement Pack",
+    "url": "http://deadlystream.com/files/file/218-quarterstaff-replacement-pack/",
+    "author": "DeadMan",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "TSLPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 124,
+    "anchor": "upscaled-icon-overhaul",
+    "name": "AI Upscaled Icon Overhaul",
+    "url": "https://deadlystream.com/files/file/1536-tsl-ai-upscaled-icon-overhaul/",
+    "author": "Pramod Marlon",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 125,
+    "anchor": "rescaled-trandoshans",
+    "name": "Rescaled Trandoshans",
+    "url": "https://deadlystream.com/files/file/946-re-scaled-trandoshans/",
+    "author": "Schizo",
+    "category": "Immersion / 4 - Optional",
+    "method": "TSLPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 126,
+    "anchor": "visually-repair-hk",
+    "name": "Visually Repair HK-47",
+    "url": "https://deadlystream.com/files/file/1434-visually-repair-hk-47/",
+    "author": "Kexikus",
+    "category": "Added Content, Appearance Change &amp; Immersion / 2 - Recommended",
+    "method": "TSLPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 127,
+    "anchor": "expanded-ending",
+    "name": "TSL Expanded Ending",
+    "url": "https://deadlystream.com/files/file/2672-tsl-expanded-ending/",
+    "author": "WildKarrde",
+    "category": "Restored Content &amp; Immersion / 1 - Essential",
+    "method": "TSLPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 128,
+    "anchor": "consistent-bastila-recognition",
+    "name": "Consistent Bastila Recognition",
+    "url": "https://deadlystream.com/files/file/2695-consistent-bastila-recognition/",
+    "author": "Leilukin",
+    "category": "Immersion / 2 - Recommended",
+    "method": "HoloPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 129,
+    "anchor": "handmaiden-fit-model",
+    "name": "Handmaiden - Fit and Athletic",
+    "url": "http://deadlystream.com/files/file/846-handmaiden-fit-and-athletic/",
+    "author": "Fair Strides, patch by JCarter426",
+    "category": "Appearance Change / 2 - Recommended",
+    "method": "TSLPatcher Mod &amp; Loose-File Patch",
+    "instructions": ""
+  },
+  {
+    "index": 130,
+    "anchor": "jcs-handmaiden-sisters",
+    "name": "JC's Handmaiden Sisters",
+    "url": "https://deadlystream.com/files/file/810-jcs-handmaiden-sisters/",
+    "author": "JCarter426",
+    "category": "Restored Content &amp; Immersion / 2 - Recommended",
+    "method": "TSLPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 131,
+    "anchor": "replacement-loadscreens",
+    "name": "Replacement Loading Screens",
+    "url": "https://deadlystream.com/files/file/1255-replacement-loading-screens-for-kotor2-original-pack-with-or-without-tslrcm-part-1/",
+    "author": "Sith Holocron",
+    "category": "Graphical Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 132,
+    "anchor": "vibrocutter-changes",
+    "name": "Vibrocutter Changes",
+    "url": "https://deadlystream.com/files/file/2670-vibrocutter-changes/",
+    "author": "Lewok2007",
+    "category": "Immersion / 4 - Optional",
+    "method": "HoloPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 133,
+    "anchor": "peragus-monitor-adjust",
+    "name": "Peragus Large Monitor Adjustment",
+    "url": "http://deadlystream.com/files/file/317-peragus-large-monitor-adjustment/",
+    "author": "Sith Holocron",
+    "category": "Graphics Improvement / 3 - Suggested",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 134,
+    "anchor": "replacement-peragus-ii",
+    "name": "Replacement Peragus II Artwork",
+    "url": "http://deadlystream.com/files/file/361-replacement-peragus-ii-artwork-by-trench/",
+    "author": "Sith Holocron",
+    "category": "Graphics Improvement / 3 - Suggested",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 135,
+    "anchor": "tsl-galaxymap-fixpack",
+    "name": "TSL Galaxy Map Fix Pack",
+    "url": "http://deadlystream.com/files/file/1057-tsl-galaxy-map-fix-pack/",
+    "author": "bead-v, Kexikus, and Sith Holocron",
+    "category": "Graphics Improvement &amp; Immersion / 3 - Suggested",
+    "method": "TSLPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 136,
+    "anchor": "fixed-hologram-models",
+    "name": "Fixed Hologram Models &amp; Admiralty Redux",
+    "url": "https://deadlystream.com/files/file/1201-fixed-hologram-models-and-admiralty-redux-for-tslrcm/",
+    "author": "DarthParametric",
+    "category": "Bugfix &amp; Graphics Improvement &amp; Appearance Change / 1 - Essential",
+    "method": "TSLPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 137,
+    "anchor": "relighting-tsl",
+    "name": "Relighting TSL",
+    "url": "https://deadlystream.com/files/file/2752-relighting-tsl-early-release/",
+    "author": "J",
+    "category": "Bugfix &amp; Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 138,
+    "anchor": "companion-clothes",
+    "name": "Companion Starting Armors",
+    "url": "https://deadlystream.com/files/file/2145-k2-companion-starting-armors/",
+    "author": "Ol' Cappy",
+    "category": "Immersion / 3 - Suggested",
+    "method": "TSLPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 139,
+    "anchor": "improved-enlightenmentcorruption",
+    "name": "Improved LS Enlightenment &amp; DS Corruption Feats",
+    "url": "https://deadlystream.com/files/file/2577-improved-ls-enlightenment-ds-corruption-feats/",
+    "author": "offthegridmorty",
+    "category": "Mechanics Change / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 140,
+    "anchor": "repair-affects-stun-droid",
+    "name": "Repair Affects Stun Droid",
+    "url": "https://deadlystream.com/files/file/2436-repair-affects-stun-droid-tsl/",
+    "author": "offthegridmorty",
+    "category": "Mechanics Change / 2 - Recommended",
+    "method": "TSLPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 141,
+    "anchor": "improved-force-sight",
+    "name": "Improved Force Sight",
+    "url": "https://deadlystream.com/files/file/2651-improved-force-sight/",
+    "author": "offthegridmorty",
+    "category": "Mechanics Change / 2 - Recommended",
+    "method": "HoloPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 142,
+    "anchor": "alignment-affects-force-powers",
+    "name": "Alignment Affects Force Powers",
+    "url": "https://deadlystream.com/files/file/2815-alignment-affects-force-powers-tsl/",
+    "author": "offthegridmorty",
+    "category": "Mechanics Change &amp; Immersion / 1 - Essential",
+    "method": "TSLPatcher",
+    "instructions": ""
+  },
+  {
+    "index": 143,
+    "anchor": "ultimate-character-overhaul-patches",
+    "name": "Ultimate Character Overhaul Patches",
+    "url": "https://www.nexusmods.com/kotor2/mods/1060?tab=files",
+    "author": "ShiningRedHD",
+    "category": "Patch &amp; Graphics Improvement / 1 - Essential",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 144,
+    "anchor": "bao-durdarth-maul",
+    "name": "Bao-Dur/Darth Maul",
+    "url": "https://mega.nz/#!BJgCDJLY!miLH-LcFEgiRWlmfWixicFdn1o_uoFHb76g9NOo0CHM",
+    "author": "Nimduril",
+    "category": "Appearance Change / 3 - Suggested",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 145,
+    "anchor": "realistic-visual-effects",
+    "name": "Realistic Visual Effects",
+    "url": "http://deadlystream.com/files/file/735-realistic-visual-effects/",
+    "author": "Shem",
+    "category": "Appearance Change / 2 - Recommended",
+    "method": "TSLPatcher Mod",
+    "instructions": ""
+  },
+  {
+    "index": 146,
+    "anchor": "remove-duplicate-tgatpc",
+    "name": "Remove Duplicate TGA/TPC",
+    "url": "https://www.nexusmods.com/kotor/mods/1384",
+    "author": "Flachzangen, Malacand for the .sh script",
+    "category": "Patch / 1 - Essential",
+    "method": ".bat Patcher / .sh script",
+    "instructions": ""
+  },
+  {
+    "index": 147,
+    "anchor": "tomb",
+    "name": "Thematic Obscured Mausoleum Burial",
+    "url": "https://deadlystream.com/files/file/2663-thematic-obscured-mausoleum-burial/",
+    "author": "Sniggles &amp; JCarter426",
+    "category": "Mechanics Change / 2 - Recommended",
+    "method": "TSLPatcher",
+    "instructions": ""
+  },
+  {
+    "index": 148,
+    "anchor": "character-textures-model-fixes",
+    "name": "Character Textures &amp; Model Fixes",
+    "url": "https://deadlystream.com/files/file/2660-4x-upscale-character-textures-model-fixes-tsl/",
+    "author": "Redrob41",
+    "category": "Graphics Improvement / 1 - Essential",
+    "method": "Loose-File (with optional automation)",
+    "instructions": ""
+  },
+  {
+    "index": 149,
+    "anchor": "main-menu-fix",
+    "name": "Main Menu Fix for Widescreen",
+    "url": "https://deadlystream.com/files/file/1138-tsl-main-menu-model-fix-for-widescreen/",
+    "author": "DarthParametric",
+    "category": "Graphics Improvement &amp; Bugfix / 3 - Suggested",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 150,
+    "anchor": "k2-cutscenes-rescaled",
+    "name": "K2 Cutscenes Rescaled",
+    "url": "https://deadlystream.com/files/file/2503-k2-cutscenes-rescaled/",
+    "author": "Pops Maellard",
+    "category": "Graphics Improvement / 1 - Essential",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 151,
+    "anchor": "k2-remastered-cutscenes",
+    "name": "KOTOR 2 Remastered Cutscenes",
+    "url": "https://www.nexusmods.com/kotor2/mods/1066/",
+    "author": "naelavok",
+    "category": "Graphics Improvement / 1 - Essential",
+    "method": "Loose-File Components, possible .bat patcher",
+    "instructions": ""
+  },
+  {
+    "index": 152,
+    "anchor": "loading-screen-rescaled",
+    "name": "K2 Loading Screen Rescaled",
+    "url": "https://deadlystream.com/files/file/2622-k2-loading-screen-rescaled/",
+    "author": "Pops Maellard",
+    "category": "Graphics Improvement / 4 - Optional",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 153,
+    "anchor": "workbench-camera-tweak",
+    "name": "Workbench Upgrade Screen Camera Tweak",
+    "url": "https://deadlystream.com/files/file/1743-workbench-upgrade-screen-camera-tweak-for-tsl/",
+    "author": "DarthParametric",
+    "category": "Appearance Change / 3 - Suggested",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  },
+  {
+    "index": 154,
+    "anchor": "upscaled-maps",
+    "name": "Upscaled Maps",
+    "url": "https://www.nexusmods.com/kotor2/mods/1086",
+    "author": "Tunalex",
+    "category": "Graphics Improvement / 2 - Recommended",
+    "method": "Loose-File Mod",
+    "instructions": ""
+  }
+]

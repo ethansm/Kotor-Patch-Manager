@@ -1,0 +1,642 @@
+{
+  "Fix pointer math in QueueHud hook detour": {
+    "choice": "code",
+    "confidence": 0.2988,
+    "latency_ms": 823.2,
+    "probabilities": {
+      "scout": 0.0401,
+      "verify": 0.0239,
+      "gate": 0.0395,
+      "ghidra": 0.1521,
+      "code": 0.3767,
+      "test": 0.033,
+      "doc": 0.0355,
+      "review": 0.1143,
+      "deep": 0.1849
+    }
+  },
+  "Fix memory leak in NpcDiversityDispatcher": {
+    "choice": "code",
+    "confidence": 0.3208,
+    "latency_ms": 204.2,
+    "probabilities": {
+      "scout": 0.0359,
+      "verify": 0.0231,
+      "gate": 0.0228,
+      "ghidra": 0.0295,
+      "code": 0.3962,
+      "test": 0.0342,
+      "doc": 0.0353,
+      "review": 0.1902,
+      "deep": 0.2327
+    }
+  },
+  "Run scripts/build_check.py on NpcDiversityDispatcher and verify hooks.toml manifests": {
+    "choice": "gate",
+    "confidence": 0.7596,
+    "latency_ms": 203.7,
+    "probabilities": {
+      "scout": 0.0236,
+      "verify": 0.0348,
+      "gate": 0.7863,
+      "ghidra": 0.005,
+      "code": 0.0811,
+      "test": 0.0256,
+      "doc": 0.0098,
+      "review": 0.0214,
+      "deep": 0.0124
+    }
+  },
+  "audit GameAddr calling convention in Ghidra": {
+    "choice": "ghidra",
+    "confidence": 0.8142,
+    "latency_ms": 186.8,
+    "probabilities": {
+      "scout": 0.0114,
+      "verify": 0.0094,
+      "gate": 0.006,
+      "ghidra": 0.8348,
+      "code": 0.0312,
+      "test": 0.0081,
+      "doc": 0.0122,
+      "review": 0.0616,
+      "deep": 0.0253
+    }
+  },
+  "Audit GameAddr calling convention in Ghidra": {
+    "choice": "ghidra",
+    "confidence": 0.853,
+    "latency_ms": 183.9,
+    "probabilities": {
+      "scout": 0.0151,
+      "verify": 0.0088,
+      "gate": 0.0063,
+      "ghidra": 0.8694,
+      "code": 0.0187,
+      "test": 0.0062,
+      "doc": 0.0104,
+      "review": 0.0458,
+      "deep": 0.0193
+    }
+  },
+  "Run build gate across all 28 workspace mods": {
+    "choice": "gate",
+    "confidence": 0.7268,
+    "latency_ms": 185.0,
+    "probabilities": {
+      "scout": 0.0542,
+      "verify": 0.0548,
+      "gate": 0.7572,
+      "ghidra": 0.0043,
+      "code": 0.0388,
+      "test": 0.0246,
+      "doc": 0.025,
+      "review": 0.0207,
+      "deep": 0.0205
+    }
+  },
+  "Check combat hotbar logic test failure in combat_logic_test.cpp": {
+    "choice": "code",
+    "confidence": 0.1873,
+    "latency_ms": 184.1,
+    "probabilities": {
+      "scout": 0.0782,
+      "verify": 0.141,
+      "gate": 0.0305,
+      "ghidra": 0.0293,
+      "code": 0.2776,
+      "test": 0.1458,
+      "doc": 0.0228,
+      "review": 0.1595,
+      "deep": 0.1153
+    }
+  },
+  "Review memory safety of GuiInput detour wrapper": {
+    "choice": "review",
+    "confidence": 0.4944,
+    "latency_ms": 177.9,
+    "probabilities": {
+      "scout": 0.0316,
+      "verify": 0.0503,
+      "gate": 0.0494,
+      "ghidra": 0.0664,
+      "code": 0.1034,
+      "test": 0.0559,
+      "doc": 0.0255,
+      "review": 0.5506,
+      "deep": 0.0669
+    }
+  },
+  "Inspect Ghidra GameAddr for CharacterStats at 0x005bda40": {
+    "choice": "ghidra",
+    "confidence": 0.7098,
+    "latency_ms": 181.8,
+    "probabilities": {
+      "scout": 0.0702,
+      "verify": 0.0272,
+      "gate": 0.0159,
+      "ghidra": 0.7421,
+      "code": 0.0479,
+      "test": 0.0105,
+      "doc": 0.0155,
+      "review": 0.0371,
+      "deep": 0.0336
+    }
+  },
+  "Find all log files generated in latest play session": {
+    "choice": "scout",
+    "confidence": 0.5296,
+    "latency_ms": 183.6,
+    "probabilities": {
+      "scout": 0.5819,
+      "verify": 0.0737,
+      "gate": 0.0363,
+      "ghidra": 0.0116,
+      "code": 0.1095,
+      "test": 0.0304,
+      "doc": 0.0422,
+      "review": 0.0338,
+      "deep": 0.0808
+    }
+  },
+  "> do we have any sort of master ledger of changes being made by all the agents?  Some sort of jsonl that everyone pushes into in case there are ever issues, this could help provide details as to what happened": {
+    "choice": "deep",
+    "confidence": 0.1119,
+    "latency_ms": 1464.3,
+    "probabilities": {
+      "scout": 0.1111,
+      "verify": 0.1054,
+      "gate": 0.0819,
+      "ghidra": 0.006,
+      "code": 0.1513,
+      "test": 0.053,
+      "doc": 0.1938,
+      "review": 0.0869,
+      "deep": 0.2106
+    }
+  },
+  "check the master ledger, is it being populated by our recent sessions? What about OpenCode subagents?": {
+    "choice": "scout",
+    "confidence": 0.1755,
+    "latency_ms": 237.5,
+    "probabilities": {
+      "scout": 0.2671,
+      "verify": 0.2142,
+      "gate": 0.0799,
+      "ghidra": 0.0112,
+      "code": 0.1087,
+      "test": 0.0648,
+      "doc": 0.0899,
+      "review": 0.0749,
+      "deep": 0.0893
+    }
+  },
+  "analyze recent ledger entries and look for any gaps or missing metadata or attributions. I see a lot of the entries are marked as me (ethansm). Example that doesn't look clear to me: [2026-10-08 18:52:38] SUBAGENT_DIFF_CHECK (ethansm) mods=npc_diversity_src verdict=PASS": {
+    "choice": "scout",
+    "confidence": 0.3249,
+    "latency_ms": 228.1,
+    "probabilities": {
+      "scout": 0.3999,
+      "verify": 0.1916,
+      "gate": 0.0811,
+      "ghidra": 0.0089,
+      "code": 0.0584,
+      "test": 0.0307,
+      "doc": 0.0774,
+      "review": 0.0804,
+      "deep": 0.0716
+    }
+  },
+  "looking good.  Do another full pass review of our master ledger and integration with all applications and services.  Also review how clef-flash ingests this and look for any opportunities for improvements, feature enhancements or simplifications.": {
+    "choice": "deep",
+    "confidence": 0.1309,
+    "latency_ms": 218.1,
+    "probabilities": {
+      "scout": 0.0471,
+      "verify": 0.0878,
+      "gate": 0.0601,
+      "ghidra": 0.0063,
+      "code": 0.1117,
+      "test": 0.0807,
+      "doc": 0.1548,
+      "review": 0.224,
+      "deep": 0.2274
+    }
+  },
+  "mod idea to research and generate a detailed proposal for.  Currently there are buttons with arrows/scroll wheels under the targets name and health bar when in combat. Could we replace this UX with dedicated offensive action buttons similar to what we've dont for the action hotbar, but for combat?": {
+    "choice": "doc",
+    "confidence": 0.2272,
+    "latency_ms": 204.8,
+    "probabilities": {
+      "scout": 0.0835,
+      "verify": 0.0149,
+      "gate": 0.0341,
+      "ghidra": 0.044,
+      "code": 0.1828,
+      "test": 0.0327,
+      "doc": 0.3131,
+      "review": 0.0413,
+      "deep": 0.2536
+    }
+  },
+  "are these scoping and documentation requirements baked into all of our patches and mods?  Is it baked into our documentastion and processes so that new patches or mods will automatically configure them for the system to work properly and optimally?": {
+    "choice": "doc",
+    "confidence": 0.1148,
+    "latency_ms": 203.4,
+    "probabilities": {
+      "scout": 0.0984,
+      "verify": 0.08,
+      "gate": 0.1242,
+      "ghidra": 0.0129,
+      "code": 0.0865,
+      "test": 0.0927,
+      "doc": 0.2131,
+      "review": 0.1194,
+      "deep": 0.1727
+    }
+  },
+  "lets annotate these now:\n\u2022 Active Plans to Annotate When Resumed:\n    \u2022 24_master_plan_status.md (Pending batches: CS3, HL2)\n    \u2022 31_combat_action_hotbar.md (Pending batch: CH1c)": {
+    "choice": "doc",
+    "confidence": 0.1476,
+    "latency_ms": 197.7,
+    "probabilities": {
+      "scout": 0.1673,
+      "verify": 0.0863,
+      "gate": 0.0855,
+      "ghidra": 0.0527,
+      "code": 0.1067,
+      "test": 0.0483,
+      "doc": 0.2423,
+      "review": 0.0948,
+      "deep": 0.1161
+    }
+  },
+  "do our skills, documentation and template prompts already include instructions for the subagent to write exhaustive, detailed plans in plan mode?  Covering code changes, testing strategy and edge cases covered, documentation updates, tooling usage, etc...": {
+    "choice": "deep",
+    "confidence": 0.4225,
+    "latency_ms": 184.2,
+    "probabilities": {
+      "scout": 0.0242,
+      "verify": 0.0162,
+      "gate": 0.0262,
+      "ghidra": 0.0042,
+      "code": 0.1043,
+      "test": 0.05,
+      "doc": 0.2326,
+      "review": 0.0558,
+      "deep": 0.4866
+    }
+  },
+  "/plan-handoff 31:HL4 \u2014 Ranks 1 & 2: HUD Hook Consolidation & Level-Up Test Harness Alignment (31_combat_action_hotbar.md:132 + 24_master_plan_status.md:44). Migrates action-hotbar (0x748502, 0x74B3F0) and queue-hud (0x74C168) hooks\n  into hud-host library BUILD/FRAME phases, and aligns research/companion_levelup test macros onto TestHarness.h.": {
+    "choice": "deep",
+    "confidence": 0.2199,
+    "latency_ms": 191.0,
+    "probabilities": {
+      "scout": 0.0366,
+      "verify": 0.0211,
+      "gate": 0.0726,
+      "ghidra": 0.066,
+      "code": 0.2278,
+      "test": 0.096,
+      "doc": 0.1065,
+      "review": 0.0669,
+      "deep": 0.3066
+    }
+  },
+  "oc-flow start \"Implement Phase QH3 in patch_manager_mods/queue_hud_src/QueueHud.cpp: style leader Cancel button (w.c) with dark teal fill uibit_fill_2wt ({0.05, 0.25, 0.28}) and tealBorder ({0.10, 0.58, 0.62}); tint companion\n  kit_cancel with tealBorder/tealHover instead of white. Run build_check.\"": {
+    "choice": "code",
+    "confidence": 0.4593,
+    "latency_ms": 220.6,
+    "probabilities": {
+      "scout": 0.0918,
+      "verify": 0.0406,
+      "gate": 0.0742,
+      "ghidra": 0.0459,
+      "code": 0.5194,
+      "test": 0.0293,
+      "doc": 0.0286,
+      "review": 0.0748,
+      "deep": 0.0953
+    }
+  },
+  "I would like to attempt to fix as many low risk 2d assets as possible. Can these be patched over later as well?  map out a detailed implemntation plan for each element which we can transition to 24:10.  Search for anyone who may have already done this work so that we can use it as a base or learn lessons based on their efforts": {
+    "choice": "scout",
+    "confidence": 0.1857,
+    "latency_ms": 198.2,
+    "probabilities": {
+      "scout": 0.2762,
+      "verify": 0.0182,
+      "gate": 0.0357,
+      "ghidra": 0.0408,
+      "code": 0.1468,
+      "test": 0.0253,
+      "doc": 0.1814,
+      "review": 0.0434,
+      "deep": 0.2323
+    }
+  },
+  "should we make the same shifted action bar text description change.  Still holding off on risky HUD code for later?  Do we have visibility into the HUD code for planning/debugging/testing if we wanted to update it too?  Seems like you and Claude Code can figure it out": {
+    "choice": "code",
+    "confidence": 0.11,
+    "latency_ms": 191.1,
+    "probabilities": {
+      "scout": 0.093,
+      "verify": 0.0563,
+      "gate": 0.0418,
+      "ghidra": 0.0748,
+      "code": 0.2089,
+      "test": 0.0641,
+      "doc": 0.1151,
+      "review": 0.1486,
+      "deep": 0.1975
+    }
+  },
+  "can you search through looking for other artifacts that will get stretched which we might want to build a patch for?": {
+    "choice": "scout",
+    "confidence": 0.4407,
+    "latency_ms": 191.9,
+    "probabilities": {
+      "scout": 0.5029,
+      "verify": 0.0284,
+      "gate": 0.0348,
+      "ghidra": 0.0713,
+      "code": 0.096,
+      "test": 0.0333,
+      "doc": 0.0419,
+      "review": 0.0839,
+      "deep": 0.1074
+    }
+  },
+  "Interested in   ### 2. High-Performance Remote Streaming: Sunshine (Host) + Moonlight (Client) and  Feral GameMode (gamemode) with Lifecycle Hooks  I did already add some easy cosmic widget to turn off the voice server. (we should update that to control LMStudio via api as well)": {
+    "choice": "code",
+    "confidence": 0.1401,
+    "latency_ms": 197.5,
+    "probabilities": {
+      "scout": 0.0928,
+      "verify": 0.0689,
+      "gate": 0.0879,
+      "ghidra": 0.0187,
+      "code": 0.2356,
+      "test": 0.0776,
+      "doc": 0.1743,
+      "review": 0.0767,
+      "deep": 0.1675
+    }
+  },
+  "all local mods built, installed, enabled and ready for play testing?": {
+    "choice": "gate",
+    "confidence": 0.1791,
+    "latency_ms": 178.2,
+    "probabilities": {
+      "scout": 0.1607,
+      "verify": 0.2124,
+      "gate": 0.2703,
+      "ghidra": 0.0104,
+      "code": 0.0636,
+      "test": 0.1226,
+      "doc": 0.0689,
+      "review": 0.0502,
+      "deep": 0.041
+    }
+  },
+  "Next feature to pick up from the master plan.  Consider if/how oc-subagents can be levereged.\n3. Level-Up Override Phase 7: Common & Library Integration (C1, C3\u2013C9) (PHASE7_COMMON_MASTER.md:11-19)\n    \u2022 Engine address migration to GameAddr.h (C4), Party.h adoption (C5), FileWatch.h adoption (C6), and KpLog.h migration (C7).": {
+    "choice": "deep",
+    "confidence": 0.1164,
+    "latency_ms": 192.7,
+    "probabilities": {
+      "scout": 0.0497,
+      "verify": 0.0424,
+      "gate": 0.0591,
+      "ghidra": 0.1989,
+      "code": 0.2109,
+      "test": 0.03,
+      "doc": 0.1138,
+      "review": 0.0806,
+      "deep": 0.2145
+    }
+  },
+  "another feedback:\naction hotbar was not working for the main character, it kept saying no character detected.  WOrked for companions.": {
+    "choice": "deep",
+    "confidence": 0.2582,
+    "latency_ms": 199.9,
+    "probabilities": {
+      "scout": 0.0928,
+      "verify": 0.1384,
+      "gate": 0.0551,
+      "ghidra": 0.0199,
+      "code": 0.1856,
+      "test": 0.0577,
+      "doc": 0.0453,
+      "review": 0.0646,
+      "deep": 0.3407
+    }
+  },
+  "review all changes implemented this session, do we have thorough corresponding testing coverage?  Review and look for any possible misses, bugs or edge cases to handle.": {
+    "choice": "review",
+    "confidence": 0.2286,
+    "latency_ms": 195.9,
+    "probabilities": {
+      "scout": 0.0375,
+      "verify": 0.1276,
+      "gate": 0.0485,
+      "ghidra": 0.0071,
+      "code": 0.0563,
+      "test": 0.2911,
+      "doc": 0.0589,
+      "review": 0.3143,
+      "deep": 0.0586
+    }
+  },
+  "any recomended updates to test cases?": {
+    "choice": "test",
+    "confidence": 0.4338,
+    "latency_ms": 197.1,
+    "probabilities": {
+      "scout": 0.049,
+      "verify": 0.0709,
+      "gate": 0.0308,
+      "ghidra": 0.01,
+      "code": 0.1287,
+      "test": 0.4968,
+      "doc": 0.0837,
+      "review": 0.0824,
+      "deep": 0.0477
+    }
+  },
+  "crashes when I go to start a new game": {
+    "choice": "deep",
+    "confidence": 0.269,
+    "latency_ms": 217.5,
+    "probabilities": {
+      "scout": 0.1927,
+      "verify": 0.1157,
+      "gate": 0.056,
+      "ghidra": 0.0159,
+      "code": 0.0607,
+      "test": 0.0639,
+      "doc": 0.0548,
+      "review": 0.0902,
+      "deep": 0.3503
+    }
+  },
+  "still crashing when clicking new game.  Crashes on the loading screen": {
+    "choice": "deep",
+    "confidence": 0.2839,
+    "latency_ms": 234.0,
+    "probabilities": {
+      "scout": 0.1814,
+      "verify": 0.105,
+      "gate": 0.045,
+      "ghidra": 0.0241,
+      "code": 0.0802,
+      "test": 0.0544,
+      "doc": 0.0435,
+      "review": 0.1029,
+      "deep": 0.3635
+    }
+  },
+  "yes, generate thorough unit test coverage for all of our scripts to ensure there are no latent issues or bugs": {
+    "choice": "test",
+    "confidence": 0.7934,
+    "latency_ms": 227.6,
+    "probabilities": {
+      "scout": 0.0117,
+      "verify": 0.0238,
+      "gate": 0.0101,
+      "ghidra": 0.0019,
+      "code": 0.0612,
+      "test": 0.8163,
+      "doc": 0.0204,
+      "review": 0.0337,
+      "deep": 0.0209
+    }
+  },
+  "We should generate a README.md for the ehoes_compatch directory as well": {
+    "choice": "doc",
+    "confidence": 0.7877,
+    "latency_ms": 215.9,
+    "probabilities": {
+      "scout": 0.0447,
+      "verify": 0.0055,
+      "gate": 0.0244,
+      "ghidra": 0.0028,
+      "code": 0.0609,
+      "test": 0.0088,
+      "doc": 0.8113,
+      "review": 0.014,
+      "deep": 0.0273
+    }
+  },
+  "do a thorough review of all the recently implemented patches for the Kotor patch manager.  don't make any changes. just give me all the feedback": {
+    "choice": "review",
+    "confidence": 0.209,
+    "latency_ms": 204.2,
+    "probabilities": {
+      "scout": 0.1591,
+      "verify": 0.1275,
+      "gate": 0.0674,
+      "ghidra": 0.0219,
+      "code": 0.0508,
+      "test": 0.0812,
+      "doc": 0.1164,
+      "review": 0.2969,
+      "deep": 0.0788
+    }
+  },
+  "This next action did not correctly identify the project which \"Phase 5\" belongs to:\n\n### Next Action (under 2 minutes)\n\nExecute Phase 5 (Production Packaging & manifest finalization):\n\n  python3 scripts/plan_manager.py resume \"Phase 5\"": {
+    "choice": "code",
+    "confidence": 0.1729,
+    "latency_ms": 197.3,
+    "probabilities": {
+      "scout": 0.194,
+      "verify": 0.0937,
+      "gate": 0.1102,
+      "ghidra": 0.0172,
+      "code": 0.2648,
+      "test": 0.0324,
+      "doc": 0.1533,
+      "review": 0.0366,
+      "deep": 0.0978
+    }
+  },
+  "1. short pointer would shave some tokens off the context right?": {
+    "choice": "code",
+    "confidence": 0.0592,
+    "latency_ms": 198.5,
+    "probabilities": {
+      "scout": 0.1044,
+      "verify": 0.0936,
+      "gate": 0.0965,
+      "ghidra": 0.0126,
+      "code": 0.1638,
+      "test": 0.1063,
+      "doc": 0.1505,
+      "review": 0.1438,
+      "deep": 0.1286
+    }
+  },
+  "trim and also address this: \"Existing test hazard: test_handoff_rotation writes to the real .claude/session_handoff.md and rotates the old one out. It should use a temp dir.\"": {
+    "choice": "code",
+    "confidence": 0.136,
+    "latency_ms": 206.1,
+    "probabilities": {
+      "scout": 0.0667,
+      "verify": 0.0554,
+      "gate": 0.0465,
+      "ghidra": 0.0093,
+      "code": 0.232,
+      "test": 0.1201,
+      "doc": 0.0655,
+      "review": 0.2239,
+      "deep": 0.1806
+    }
+  },
+  "create a detailed implementation plan in the local repository for fuly implementing, testing and hardening.  Plan where these go for each, skills vs claude.md's": {
+    "choice": "doc",
+    "confidence": 0.2884,
+    "latency_ms": 217.8,
+    "probabilities": {
+      "scout": 0.0291,
+      "verify": 0.022,
+      "gate": 0.0299,
+      "ghidra": 0.008,
+      "code": 0.1952,
+      "test": 0.0796,
+      "doc": 0.3674,
+      "review": 0.0434,
+      "deep": 0.2254
+    }
+  },
+  "add detailed testing plannign documentation around all interactions and edge cases which must be covered for these since they're critical tooling": {
+    "choice": "test",
+    "confidence": 0.3778,
+    "latency_ms": 199.5,
+    "probabilities": {
+      "scout": 0.0282,
+      "verify": 0.0718,
+      "gate": 0.027,
+      "ghidra": 0.0114,
+      "code": 0.0829,
+      "test": 0.4469,
+      "doc": 0.1804,
+      "review": 0.0671,
+      "deep": 0.0843
+    }
+  },
+  "review the test coverage for our scripts and fix any gaps identified": {
+    "choice": "test",
+    "confidence": 0.3207,
+    "latency_ms": 223.4,
+    "probabilities": {
+      "scout": 0.0429,
+      "verify": 0.065,
+      "gate": 0.0392,
+      "ghidra": 0.012,
+      "code": 0.1671,
+      "test": 0.3962,
+      "doc": 0.052,
+      "review": 0.1377,
+      "deep": 0.0878
+    }
+  }
+}
