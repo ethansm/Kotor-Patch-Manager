@@ -1,0 +1,53 @@
+cid	verdict	canvases	cells	stage	scale	blend	score	caveat
+K001	DROP:no bare upper-arm skin on any canvas	-	-	-	-	-	1	Only hands are bare; no upper arm to tattoo
+K002	DROP:no bare chest skin on any canvas	-	-	-	-	-	1	Chest is cloth on every canvas
+K003	KEEP	n_commf03,n_commf09,n_commf11	D1,C1,D1	S1D	0.25	normal	3	Gold symbols simplified to rings and dots
+K004	KEEP	n_commm12	A1	S1D	0.12	normal	2	Only canvas with bare forearm; A1 patch is small
+K005	DROP:no bare upper-arm skin on any canvas	-	-	-	-	-	1	Scars need bare upper arm; canvases show cloth
+K006	KEEP	n_commm12	A1	S1D	0.12	normal	2	Dark green notches on forearm; shares A1 with K004
+K007	KEEP	n_commm01,n_commf35,n_commf03	D1,D1,D3	S1D	0.30	normal	3	Hem band cells; waves need a repeat stamp
+K008	MERGE:K038	-	-	-	-	-	1	Same thin black mourning band; K038 is clearer
+K009	KEEP	n_commm04	B2-B3	S1D	0.12	normal	2	Tier C invented; waist panel only, skip B2 tag
+K010	DROP:no visible wrist cloth; gloves and bracers cover cuffs	-	-	-	-	-	1	Wrist is glove or bracer on every canvas
+K011	KEEP	n_commf07,n_commf09,n_commm07	A4-B4,A4,A4-B4	S1W	0.25	multiply	3	Hip creases; keep off boot, pouch and corset cells
+K012	KEEP	n_commm07,n_commm02	C2-D2,C2	S1W	0.15	multiply	2	Honeycomb crease overlay; subtle at game distance
+K013	KEEP	n_commf03,n_commf05	D3,D3	S1D	0.14	normal	3	Female sleeve cell only; male sleeve cloth unverified
+K014	KEEP	n_commf01,n_commm12,n_commm13	C1-D1,D1,D1	S1D	0.30	normal	4	Fill indigo base first, then white grid lines
+K015	KEEP	n_commf03,n_commm02,n_commm11	A1,A1,A1-B1	S1W	0.10	multiply	3	Streak sits left of chest centre; check wrap fold
+K016	DROP:no visible cuff; gloves and bracers cover wrists	-	-	-	-	-	1	Same wrist problem as K010
+K017	DEFER:uniform	-	-	-	-	-	2	Officer collar and shoulder tabs need a uniform base
+K018	KEEP	n_commf01,n_commf05,n_commm11	A1,A1,A1-B1	S1D	0.14	normal	3	Block-letter chest stencil; also covers K032 numerals
+K019	KEEP	n_commf01,n_commf11,n_commm13	C1-D1,D1,C2	S1D	0.14	normal	3	Bright diamond on sleeve cloth; dark bases read best
+K020	KEEP	n_commf11,n_commf16,n_commm13	D1,D1,D1	S1W	0.30	screen	3	Bleached shoulders; light sand reads on dark bases only
+K021	KEEP	n_commf01,n_commf05,n_commm11	A1,A1,A1-B1	S1D	0.10	normal	3	Navy disc on chest; keep clear of V-neck B1
+K022	KEEP	n_commf03,n_commm05	D1,C1-D1	S1D	0.12	normal	2	Tier C invented; reads as civilian security patch
+K023	DEFER:uniform	-	-	-	-	-	1	Lieutenant cuff bands need a uniform sleeve base
+K024	DEFER:uniform	-	-	-	-	-	2	Naval collar stripes need a uniform collar base
+K025	KEEP	n_commf01,n_commf03,n_commm11	A1,A1,A1-B1	S1D	0.16	normal	3	Sigil sits at A1, off-centre; B1 is the V-neck
+K026	KEEP	n_commf01,n_commf03,n_commm13	C1-D1,D1,C2	S1D	0.14	normal	3	Left-arm armband on sleeve cloth; cell mapping unverified
+K027	KEEP	n_commf06,n_commm04,n_commm09	A3-B4,C2-D3,C2-D2	S1W	0.20	screen	3	Dust film on trouser legs; keep off boots and pouches
+K028	KEEP	n_commf01,n_commf03,n_commm11	A1+D1,A1+D1,A1+B1+D1	S1W	0.25	multiply	4	Soot on right shoulder and upper chest; feathered edges
+K029	MERGE:K013	-	-	-	-	-	1	Same boro-style forearm patch; K013 has more contrast
+K030	KEEP	n_commf03,n_commm02,n_commm09	C4,C2,C2	S1W	0.12	multiply	2	Reads as blood at distance; keep matte, low saturation
+K031	KEEP	n_commf01,n_commf04	A4,A4	S1D	0.12	normal	2	Tier C invented; small olive pouch on hip
+K032	MERGE:K018	-	-	-	-	-	2	Same black stencil ID idea; K018 covers chest letters
+K033	KEEP	n_commf03,n_commm11	A1,A1-B1	S1D	0.14	normal	3	Shoulder_L mapped to A1; verify placement in-game
+K034	KEEP	n_commf04,n_commf09	A4,A4	S1D	0.10	normal	2	Tier C invented; rust patch with one white letter
+K035	KEEP	n_commf06,n_commf07,n_commm09	A3-B4,A3-B4,C2-D2	S1D	0.04	normal	3	Two thin orange stripes; keep the black line thin
+K036	KEEP	n_commm07,n_commm02,n_commf03	C2-D3,C2-D3,C4	S1W	0.25	multiply	3	Soot and burnt hem; skip the C3 pouch and boots
+K037	KEEP	n_commm04,n_commm09,n_commf08	C2,C2,C3	S1D	0.14	normal	3	Knee patches; male cell is trouser top
+K038	KEEP	n_commf01,n_commf03,n_commm13	C1-D1,D1,C2	S1D	0.12	normal	3	Tier C mourning band; also serves K008 shoulder version
+K039	DROP:no visible cuff; sleeve ends hidden by gloves	-	-	-	-	-	1	Same wrist problem as K010
+K040	KEEP	n_commf09,n_commm13,n_commf05	C2,C2,D3	S1D	0.20	normal	2	Survey grid needs 3px lines at 1024; fine lines alias
+K041	KEEP	n_commf01,n_commf14,n_commm13	A4,A4-B4,A4	S1D	0.15	normal	2	Brown tally groups on hip cloth; not skin
+K042	KEEP	n_commf06,n_commm11,n_commf05	A1,A1-B1,A1	S1D	0.12	normal	3	Corporate badge; dark olive square, off-white mark
+K043	DEFER:uniform	-	-	-	-	-	2	Rank bars need a uniform chest base
+K044	KEEP	n_commf01,n_commf03,n_commf05,n_commm11	A1-D4,A1-D4,A1-D4,A1-D4	S1H	1.00	overlay	4	Keep folds; skip gloves, corset, belt, boots
+
+## NOTES
+- Cuff and wrist cards (K010, K016, K039) drop: gloves or bracers cover the wrist on every canvas.
+- Bare skin is hand-only on f13, f14, f35, m12-m14, m34; only m12 shows bare forearm (A1), so forearm skin goes there.
+- Chest-left A1 is shared by K015, K018, K021, K025, K033, K042; sleeve strip C1-D1 by K003, K019, K026, K038. Pick one per NPC.
+- Tier C KEEPs (K009, K022, K031, K034, K038) score low; K038 is the merge target for K008.
+- canvas_summary.md is cut off mid-line for several canvases (f10, f12 unused). Labels commm03/13/14/15/16/34 lack n_ prefix; normalised here.
+- canvases and cells are index-aligned; A1+D1 means two cells on one canvas.

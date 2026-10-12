@@ -139,3 +139,7 @@ Note: the install tool takes `--files` for a custom file set (see doc 38 §11 co
 | Gate lives in k1_port_textures.py | Wrong file: that is the stager. T1 is a new gate script that reuses its readers. |
 | Preserve alpha; AI touches RGB only | Agreed. T1/T2 rule: output alpha identical to parent alpha; composite RGB only. Our current atlas is opaque DXT1, so this protects other textures (specular/env in alpha). |
 | "Cleared to implement T1-T3" | Not an authorization. Only T3 was approved (user, 10-12); T1/T2 wait for the user. |
+
+## 11. Follow-up (10-12 night): add-on catalog and lore research
+
+`.claude/research/texture_diversity/CATALOG.md` (46 Haiku agents, 5 waves). 81 usable add-on cards for the 35 commoner atlases (60 deterministic S1D decals, 15 procedural wear, 6 recolours; 1 tattoo), 35 cards need uniform/armour bases, resolved lore table `w4/out/facts.md`, variant system draft `w4/out/system.md`. Fandom HTML is bot-blocked; `api.php` works (`tools/harvest.py`). Next unlock: annotate uniform/armour atlases (wave-2 method), then T1/T2 (gate, island masks) on user go.

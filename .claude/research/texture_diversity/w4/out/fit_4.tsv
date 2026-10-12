@@ -1,0 +1,51 @@
+cid	verdict	canvases	cells	stage	scale	blend	score	caveat
+K133	KEEP	n_commm12,commm34	A1,A2-A3	S1H	0.10	multiply	2	Hands only; body dye and linework invisible at game distance.
+K134	DROP:no bare back island	-	-	-	-	-	-	Fine linework needs AI painting; invisible at game distance.
+K135	DROP:no bare neck island	-	-	-	-	-	-	Collar cloth is not skin; no neck on any canvas.
+K136	KEEP	n_commf01,n_commf02,n_commf13,n_commf35,n_commm01,n_commm02,n_commm09,n_commm11	A1,C1-D2,A4-B4	S1W	0.50	multiply	2	Low contrast; light cloth only; skip gaps, trims, avoid zones.
+K137	KEEP	n_commf01,n_commf02,n_commf13,n_commf35,n_commm01,n_commm02,n_commm09,n_commm11	C1-D1	S1D	0.30	normal	2	Letters unreadable at distance; paint as stencil dash band.
+K138	DEFER:armor	-	-	-	-	-	-	Gold armour plates; needs armour base.
+K139	DEFER:armor	-	-	-	-	-	-	Blue and silver armour plates; needs armour base.
+K140	DEFER:armor	-	-	-	-	-	-	Two-block armour with sigil and glyph; needs armour base.
+K141	DEFER:armor	-	-	-	-	-	-	Shriek-hawk eyes on armour plate; needs armour base.
+K142	DEFER:armor	-	-	-	-	-	-	Vizsla silhouette on armour plate; needs armour base.
+K143	DEFER:armor	-	-	-	-	-	-	Generic hem band; re-triage for commoner hems later.
+K144	DEFER:uniform	-	-	-	-	-	-	Gold piping on uniform; needs uniform base.
+K145	DEFER:uniform	-	-	-	-	-	-	Dark tunic colour on uniform cut; needs uniform base.
+K146	DEFER:uniform	-	-	-	-	-	-	Shoulder wrap on uniform; needs uniform base.
+K147	DEFER:armor	-	-	-	-	-	-	Light-blue battle suit; needs armour base.
+K148	KEEP	n_commf04,n_commf11,n_commf12,commm04,commm06,commm13,commm14,commm15	A1	S1D	0.10	normal	3	Silver on navy; dark chest cloth, keep off V-neck.
+K149	KEEP	n_commf04,n_commf11,n_commf12,n_commf14,n_commf15,commm04,commm06,commm13	C1-D1	S1D	0.15	normal	2	Back view only; small at distance; use dark back bands.
+K150	DEFER:uniform	-	-	-	-	-	-	Sleeve badge; generic disc, re-triage for commoners later.
+K151	DEFER:armor	-	-	-	-	-	-	Red and yellow armour plates; needs armour base.
+K152	DEFER:robe	-	-	-	-	-	-	Chest charm on robe; generic emblem, re-triage later.
+K153	DEFER:armor	-	-	-	-	-	-	Silver Sith plating; needs armour base.
+K154	DEFER:armor	-	-	-	-	-	-	Red and copper Sith armour; needs armour base.
+K155	DEFER:robe	-	-	-	-	-	-	Red robe garment; needs robe base.
+K156	DEFER:robe	-	-	-	-	-	-	Green hem band on robe; generic trim, re-triage later.
+K157	DEFER:robe	-	-	-	-	-	-	Winged-blade crest on robe; needs robe base.
+K158	MERGE:K163	-	-	-	-	-	-	Near-duplicate of K163 (utility belt with pouches).
+K159	DEFER:robe	-	-	-	-	-	-	Plain grey robe; needs robe base.
+K160	DEFER:robe	-	-	-	-	-	-	Crest roundel on robe; needs robe base.
+K161	DROP:not visible at game distance	-	-	-	-	-	-	Faint forearm seams; not visible at game distance.
+K162	KEEP	n_commf01,n_commf02,n_commf13,n_commm02,commm07,n_commm11	A1,D1	S1D	0.25	normal	2	Neck cells approximate; no bare neck; check V-neck clearance.
+K163	KEEP	commm04,commm07	B2-B3	S1D	0.30	normal	2	Male plain waist bands only; female waists are corsets.
+K164	KEEP	n_commf01,n_commf02,n_commf05,n_commf08,n_commf09,commm13,commm15,n_commm11	A1,C1	S1D	0.30	normal	2	Dark webbing needs mid or light chest cloth.
+K165	KEEP	n_commf01,n_commf02,n_commf03,n_commf05,n_commm01,n_commm02,n_commm11,commm07	C1-D2,A4-B4	S1D	0.50	multiply	2	Diamond grid reads only at mid-scale; keep off gaps and avoid zones.
+K166	KEEP	n_commf01,n_commf05,n_commf08,n_commf09,n_commm01,n_commm09,commm13,n_commm11	A1,C1-D1	S1D	0.25	normal	2	Dark grey trim needs light or mid collars; avoid V-neck.
+K167	DEFER:uniform	-	-	-	-	-	-	Standard uniform colour block; needs uniform base.
+K168	KEEP	commm04,commm07	B2-B3	S1D	0.12	normal	1	Male plain waist bands only; marginal, two canvases.
+K169	DEFER:armor	-	-	-	-	-	-	Scrap-metal battle plate; needs armour base.
+K170	DEFER:robe	-	-	-	-	-	-	Bendu circle on robe; near-duplicate of K148 (cog).
+K171	KEEP	n_commf04,n_commf11,n_commf12,commm04,commm06,commm13,commm14	A1,C1	S1D	0.15	normal	3	Shoulder cells approximate; keep off avoid zones and V-neck.
+K172	KEEP	n_commf01,n_commf02,n_commf13,n_commf14,n_commm01,n_commm02	A4,B4	S1D	0.03	normal	1	Thin line may vanish at game distance; trouser seam only.
+K173	KEEP	n_commf04,n_commf11,n_commf12,commm04,commm06,commm13,commm14	A1	S1D	0.12	normal	3	Gold line on dark chest; small, reads at close range.
+K174	DEFER:robe	-	-	-	-	-	-	Cross on robe breast; needs robe base.
+
+## NOTES
+1. 24 of 42 DEFER by class (armor 11, uniform 5, robe 8). Cross-class near-dups: K148/K150/K170 spoke discs, K143/K156 hem bands.
+2. Generic DEFER cards (K143, K150, K152, K156, K170, K174) may fit commoner atlases in a later pass.
+3. Skin fits hand islands only: n_commm12 (A2-A3, A1 forearm), commm34 (A2-A3, A1 corner). No canvas shows a bare neck or back. n_commf14 hand skin unverified, unused.
+4. Cells are the union of each canvas's paint_zones; still apply that canvas's avoid list. Female waists are corsets or skirts, so belt and waist cards use only commm04 and commm07.
+5. Canvas IDs match summary headings (commm03-07, commm13-16, commm34 lack n_). Never usable here: commm16 (rags, WEAR/STAIN only), n_commf33 (cream vanishes), n_commf16 (orange straps near chest).
+6. Score "-" means not applicable on commoner atlases. Several palette_clash lines in canvas_summary.md are cut off; check before painting.

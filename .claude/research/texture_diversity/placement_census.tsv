@@ -1,0 +1,107 @@
+planet_code	generic creature name:count (top 25)
+004	Red Eclipse Slaver:25
+101	Damaged Mining Droid:15
+102	Mining Droid Mark I:24; Excavator Droid Mark I:8; Maintenance Droid:4
+103	Mining Droid Mark I:4; Maintenance Droid:4; Floating Mine:4; Excavator Droid Mark I:3; Mining Droid Mark II:2
+104	Darth Sion:1
+105	Fire Suppression Droid Mark I:6; Mining Droid Mark II:5; Automated Fire Extinguisher:4; Excavator Droid Mark I:3; Mining Droid Mark I:2; Maintenance Droid:1
+106	Mining Droid Mark I:9
+107	Sith Assassin:4
+152	Utility Droid:3
+154	Darth Sion:1
+202	Telosian:4; TSF Officer:3; Mercenary:2; Republic Officer:1
+203	Telosian:9; TSF Officer:1; Ithorian:1
+204	Telosian:6; Ithorian:5
+205	Republic Officer:3; TSF Officer:2; Lieutenant Grenn:1
+207	Telosian:8; Bith Musician:2; Twi'lek:2; Nahata:1; Matu:1; Aqualish:1; Patron:1
+208	Exchange Thug:2; Nahata:1; Benok:1; Matu:1
+220	TSF Officer:6
+221	TSF Officer:6; Sith Assassin:5
+222	Sith Commando:5; Republic Officer:5; Dark Jedi Apprentice:1; Sith Assassin:1; TSF Officer:1
+231	Mercenary:9; Cannok:9; Veteran Mercenary:2; Ithorian:2; Sentry Droid:1
+232	Telos Military Droid:23; Telos Turret:10; Czerka Corpse:5; Telos Ion Turret:2
+233	Mercenary:9; Veteran Mercenary:3; Sentry Droid:1; Warbot:1
+261	Bao-Dur:1
+262	Handmaiden Sister:5
+298	Telos Military Droid:8; Telos Sentry Droid:7; Telos Turret:4; Protocol Droid:3; HK-50:2
+299	HK-50:46; HK-51:20; Telos Turret:4
+301	Commoner:8; Exchange Thug:6; Thug:3; Thug Boss:1; Squik:1
+302	Exchange Thug:18; Serroco Thug:16; Refugee:11; Serroco Veteran:4; Saquesh Personal Guard:2
+303	Maintenance Droid:10; Mandalorian:2; T1-N1:1
+304	Gand:31; Bar Patron:12; Trandoshan Thug:9; Gand Findsman:8; Twi'lek Thug:6; Weequays Thug:6; Twi'lek Attendant:4
+305	Ubese Bounty Hunter:34; Kath Hound:6
+306	Patron:7; Twik's Thug:2; Duros:2; Vogga Thug:2; Twi'lek Dancer:2; Dancer:1
+307	Patron:7; Twik's Thug:2; Duros:2; Vogga Thug:2; Twi'lek Dancer:2; Dancer:1
+350	Zhug Brother:10; Gand:9; HK-50:6; Azanti Zhug:1
+351	Goto Droid Heavy Guardian:14; Defense Turret:14; Goto Guard Droid:10; Maintenance Droid:3; Sentry Droid Mark I:2
+352	HK-50:3; Gand:2
+401	Cannok:18; Maalraas:5; Remote Droid:3; Young Boma:1
+402	Cannok:12; Maalraas:11; Young Boma:7; HK-50 Assassin Droid:2; Boma:1; Captain:1; Scout:1
+403	Mandalorian Recruit:4; Colonel Tobin:1
+404	Construction Droid Mark I:16
+410	Boma:8; Sith Elite Trooper:6; Sith War Droid:6; Heavy Defense Turret:6; Chain Gun Turret:3; Sith Grenadier:2; Sith Lord:2; Sith Lieutenant:1; Sith Soldier:1; Dark Jedi Apprentice:1
+411	Sith Elite Trooper:18; Dark Jedi Apprentice:7; Sith War Droid:4; Dark Jedi Master:3; Sith Trooper:3; Sith Warrior:2; Sith Grenadier:2; Boma:2; Medical Droid:1; Sith Captain:1
+501	Iziz Citizen:5; Tame Boma:3; Onderon Soldier:2; Master Kavar:1
+502	Onderon Soldier:7; Defense Turret:7; Iziz Citizen:6; Crowd:5; Tame Boma:5; Vaklu Soldier:2; HK-50 Assassin Droid:2; Devaronian:1
+503	Thug:4; Patron:4
+504	Royalist Soldier:7
+506	Dead Soldier:6; Vaklu Soldier:4; Military Droid Mk II:3
+511	Dead Soldier:3; Master Kavar:1
+512	Thug:11; Beast-rider Thug:4; Thug Grenadier:2; Salvager:2; Master Kavar:1; Queen Talia:1
+601	Kinrath:7; Kath Hound:4; Viper Kinrath:1; Horn Kath Hound:1
+603	Defense Turret:3
+604	Viper Kinrath:12; Hive Kinrath:3
+605	Kath Hound:7; Salvager:4; Horn Kath Hound:4; HK-50 Assassin Droid:2; Mandalorian:1
+610	Laigrek:20; Deadly Laigrek:19; Protocol Droid:6; Dead Mercenary:2
+701	Tuk'ata:2; HK-50 Assassin Droid:2; Deadly Tuk'ata:1
+702	Deadly Tuk'ata:6; Starving Tuk'ata:5; Sith Assassin:2
+710	Deadly Tuk'ata:14; Hssiss:2
+711	Shyrack Wyrm:12; Shyrack Brood:10; Republic Soldier:5; Hssiss:1
+740	Shyrack Wyrm:7; Terantanak:7; Tuk'ata:4; Dire Tuk'ata:3; Sith Assassin:3; Wraid:3; Dark Jedi:1; Apprentice:1; Sith Apprentice:1
+743	Zombie Guard:2
+745	Sith Sentinel:7; Apprentice:6; Sith Commando:3; Dark Jedi:3; Proselyte:3; Utility Droid:2; Sith Templar:2; Medical Droid:1; Remote Droid:1; Construction Droid Mark I:1; Maintenance Droid:1; Elite Sith Assassin:1; Dark Jedi Master:1; Sith Captain:1
+746	Jolee:1
+747	Sith Sentinel:6; Sith Templar:2; Jolee:1
+748	Sith Templar:3
+770	Hssiss:4; Terentatek:2
+771	Rakghoul:5; Sith Ghost:2; Ancient Droid:2
+772	Sith Ghost:7; Tukata:6; Hssiss:3; Terentatek:2
+773	Tukata:5; Hssiss:4; Sith Pureblood:3; Terentatek:2
+789	Tukata:7; Rakghoul:5; Terentatek:4; Rancor:1; Hssiss:1
+790	Terentatek:3; Hssiss:3; Rakghoul:3
+791	Sith Pureblood:8
+851	Sith Commando:34; Sith Elite Trooper:6; Sith Soldier:4; Mandalorian:3; Sith Grenadier:2; Sith Lieutenant:2; Sith Captain:1
+852	Nihilus Slave:12; Sith Elite Trooper:6; Sith Heavy Trooper:6; Dark Jedi:4
+856	Sith Assassin:4; Nihilus Slave:2; Darth Sion:1
+901	Storm Beast:13
+902	Storm Beast:10
+903	Sith Assassin:56; Dark Jedi Apprentice:7; Dark Jedi:4; Elite Sith Assassin:1
+905	Sith Assassin:14; Sith Commando:13; Sith Marauder:5; Dark Jedi Apprentice:3; Sith Lord:3; Sith Apprentice:3; Dark Jedi:2
+906	Sith Commando:26; Sith Assassin:12; Heavy Defense Turret:8; Sith Marauder:6; Dark Jedi Apprentice:4; Dark Jedi:3; Sith Lord:3; Sith Apprentice:1
+910	Legion of Lettow:4; Zombie Guard:1
+950	Master Kavar:1
+955	Dancer:7
+956	Droid Sentry:6; Mandalorian Mercenary:5; Assassin Droid:5; Nikto Mercenary:3; Assault Droid Mark IV:2; Hired Gun:1
+959	Gang Member:5; Gang Lieutenant:4; Gang Thug:3; Gang Underboss:2; Assassin Droid:1
+960	Gang Member:13; Gang Lieutenant:6; Assassin Droid:2; Ubese Assassin:2; Gang Thug:1
+961	Gang Member:20
+963	Gammorean Thug:12; Combat Droid:10; Sentry Droid:5; Hired Gun:5; Assassin Droid:3; Smasher Droids:3
+964	Gammorean Thug:6; Hired Gun:4; Sentry Droid:3; Combat Droid:2; Assassin Droid:2; Smasher Droids:2
+965	Gang Member:11; Ubese Assassin:4; Gang Lieutenant:2; Gang Underboss:2; Assassin Droid:2
+969	Gang Member:6; Ubese Assassin:6; Gammorean Thug:5; Gang Underboss:2; Assassin Droid:2; Gang Thug:1; Gang Lieutenant:1
+970	Mercenary:5; Mandalorian Mercenary:2
+971	Mercenary:9; Mandalorian Mercenary:6
+bel	Ancient Droid:7; Deep Dweller:6; Smasher Droids:5; Stalker:4; Sith Warrior:2; Combat Droid:2; Sith Assassin:1; Dark Jedi Master:1
+cor	Hired Gun:3; Assault Droid Mark I:3; Smasher Droids:2; Mandalorian Mercenary:1; Nikto Mercenary:1
+gra	Sith Commando:16; Sith Captain:4; Dark Jedi:2; Sith Assassin:1
+kas	Tach:12; Viper Kinrath:9; Forest Kinrath:7; Mykal:4; Wookiee Guard:4
+kor	Sith Ghost:6; Terentatek:5; Rancor:2
+lev	Sith Commando:34; Combat Droid:13; Dark Jedi:8; Smasher Droids:6; Sith Captain:3; Sith Assassin:1; Sith Warrior:1
+m26	Republic Officer:3
+man	Sith Commando:16; Selkath:13; Cleaning Droid:9; Security Droid:8; Dark Jedi Master:5; Sith Captain:5; Dark Jedi:3; Mandalorian Mercenary:3; Selkath Mercenary:3; Sith Assassin:2; Sith Warrior:2; Combat Droid:1; Assault Droid Mark IV:1
+rhe	Sith Commando:12; Sith Soldier:11; Smasher Droid:8; Sith Warrior:6; Sith Assassin:3; Sith Marauder:2; Sith Lord:1
+sit	Sith Commando:23; Combat Droid:21; Sith Soldier:19; Smasher Droid:10; Assault Droid Mark I:7; Assault Droid Mark IV:6; Sith Captain:6; Sentry Droid:4; Sith Marauder:1
+sle	Gammorean Thug:28; Czerka Security:12; Dancer:6; Gammorean Guard:4; Hutt Enforcer:2; Bith Musician:2; Mandalorian Thug:2; Assassin Droid:2; Ubese Assassin:2; Twi'lek Slave:1; Rancor:1; Twi'lek Thug:1; Gang Member:1
+tat	Sand People Warrior:19; Ubese Assassin:11; Combat Droid:7; Jawa:6; Anchorhead Tradesman:5; Bantha:5; Gammorean Thug:5; Duros Miner:4; Citizen of Anchorhead:4; Dewback:4; Sand People Female:4; Gang Member:4; Smasher Droid:4; Utility Droid:3; Thug:3; Assassin Droid:2; Gang Lieutenant:1; Mandalorian Thug:1
+unk	Rakata:23; Rakatan Warrior:21; Elder Rakata:11; Ancient Droid:9; Gizka:8; Sith Acolyte:8; Young Rancor:6; Rakatan Elite Warrior:6; Heavy Defense Turret:6; Dark Jedi Master:6; Rancor:4; Wild Rancor:4; Elder Droid:4; Sith Warrior:4; Sith Captain:4; Elder Worshipper:3; Sith Commando:3; Combat Droid:3; Sith Assassin:3; Hssiss:3
+yav	Sith Commando:34; Terentatek:17; Hssiss:16; Sith Ghost:15; Stoneray:10; Rakghoul:10; Sith Captain:8; Sith Warrior:8; Kliknik:7; Dark Jedi Master:6; Sith Assassin:6; Dark Jedi:5; Mandalorian Mercenary:5; Ancient Droid:5; Assault Droid Mark I:3; Rancor:1; Gizka:1

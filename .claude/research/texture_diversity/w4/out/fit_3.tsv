@@ -1,0 +1,53 @@
+cid	verdict	canvases	cells	stage	scale	blend	score	caveat
+K089	DEFER:armor	-	-	-	-	-	1	Outline sits on black armour plates; commoner atlases have no armour base.
+K090	DEFER:armor	-	-	-	-	-	1	Kama flap needs a belt base; corset fills the belt line everywhere.
+K091	KEEP	n_commf01,n_commf03,n_commf05,n_commf06,n_commm02,n_commm05,n_commm11,n_commm13	A1	S1W	0.15	multiply	3	Scorch only; drop the riveted plate; keep off the A1 tear.
+K092	DROP:no-evidence	-	-	-	-	-	1	Tier C invented camo with no source tie.
+K093	DEFER:armor	-	-	-	-	-	1	Legends armour bandolier; belt-clasp sits in the corset/belt zone everywhere.
+K094	KEEP	n_commf03,n_commf11,n_commf16,n_commm03,n_commm06,n_commm12	D1	S1D	0.10	normal	2	Sleeve-back band only; glove cuffs are avoid zones on all canvases.
+K095	DEFER:armor	-	-	-	-	-	1	Silver plate bands are armour; no metal-plate base in commoner atlases.
+K096	DEFER:uniform	-	-	-	-	-	1	Officer sash crosses V-neck and belt zones; needs a uniform base.
+K097	DEFER:uniform	-	-	-	-	-	1	Rank tabs are uniform insignia; commoner shoulders carry none.
+K098	KEEP	n_commf01,n_commf03,n_commf06,n_commm02,n_commm11	A1	S1D	0.12	normal	2	Left-chest placement; keep off centre V-neck; red inlay is small.
+K099	KEEP	n_commm12,n_commf35,n_commf13,n_commm13,n_commm14	A2-A3 (n_commm12 also A1)	S1D	0.20	normal	2	Bands only; spirals need S2A; islands are hands, not forearms.
+K100	DROP:no-evidence	-	-	-	-	-	1	Tier C invented scorch detail with no source tie.
+K101	KEEP	n_commf04,n_commf09,n_commf16,n_commm04,n_commm06,n_commm08,n_commm10	A1-D1 tunic or robe only	S1H	0.75	screen	3	Light-grey recolour only; cream hem border needs separate S1D.
+K102	KEEP	n_commm04	B2-B3	S1D	0.30	normal	2	Only n_commm04 has a plain waist panel; corset zones are avoid elsewhere.
+K103	KEEP	n_commf03,n_commf11,n_commm02,n_commm04,n_commm13	A1	S1D	0.12	normal	3	Left-chest medallion; bird as simple silhouette; centre V is avoid.
+K104	DROP:no-evidence	-	-	-	-	-	1	Tier C invented ochre dust with no source tie.
+K105	KEEP	n_commf01,n_commf03,n_commf06,n_commm02,n_commm11,n_commm13	A1 chest; C2 side as arm stand-in	S1H	0.40	normal	3	Black side panels need a separate S1D pass; no clean upper-arm island.
+K106	KEEP	n_commm08,n_commm14	A1	S1D	0.08	normal	3	Male chest only; female variant needs sleeve bars, not mapped.
+K107	KEEP	n_commf01,n_commf03,n_commf11,n_commm01,n_commm02	D1	S1D	0.08	normal	3	Upper-back badge only; keep clear of the seam and collar.
+K108	DROP:no-evidence	-	-	-	-	-	1	Tier C invented hazard stripes with no source tie.
+K109	KEEP	n_commm04	B2	S1D	0.15	normal	2	Two pouches on the one plain waist panel; skip the B2 tag.
+K110	KEEP	n_commf04,n_commf09,n_commf16,n_commm07,n_commm08	A4-B4	S1W	0.35	normal	3	Dust on dark lower fields only; pale dust vanishes on tan.
+K111	KEEP	n_commf08,n_commf12,n_commm05,n_commm06,n_commm08	n_commf08=D3; n_commf12=D3; n_commm05=C2; n_commm06=D2; n_commm08=D2	S1D	0.12	normal	2	Undyed cream knee patch with brown stitch line; leg panels only.
+K112	KEEP	n_commf02,n_commf03,n_commf06,n_commm01,n_commm02,n_commm11	n_commf02=C1-D1; n_commf03=C1-D1; n_commf06=C1; n_commm01=D1; n_commm02=D1; n_commm11=D1	S1W	0.30	multiply	3	Soot on upper torso only; keep off V-neck, belt and pouch.
+K113	DROP:no-evidence	-	-	-	-	-	1	Tier C invented armband with no source tie.
+K114	DROP:no-evidence	-	-	-	-	-	1	Tier C invented name tag with no source tie.
+K115	KEEP	n_commf02,n_commf03,n_commf06,n_commf13,n_commm01,n_commm02,n_commm07,n_commm11	A1-D2 tunic only	S1H	0.75	overlay	3	Forest-green recolour; collar and cuff piping need a separate S1D.
+K116	KEEP	n_commm13,n_commm14	A2-A3	S1D	0.20	multiply	3	Stripes read on the orange hand base; hand island only.
+K117	KEEP	n_commm12,n_commm13,n_commm14,n_commf13	A2-A3	S1H	0.20	overlay	3	Blue recolour of hands; same island as K116, pick one.
+K118	KEEP	n_commm13,n_commm14,n_commf13	A2-A3	S1D	0.15	normal	2	Small scale stamp on hand island; reads at close range only.
+K119	KEEP	n_commm12,n_commm13,n_commm14,n_commf13	A2-A3	S1H	0.20	overlay	2	Blue-green hand recolour; same island as K117, pick one.
+K120	KEEP	n_commm12,n_commm13,n_commm14,n_commf13	A2-A3	S1H	0.20	overlay	2	Pale pink hands; n_commm34 excluded, its palm is already pink.
+K121	KEEP	n_commm12,n_commm13,n_commm14,n_commm34,n_commf13	A2-A3	S1H	0.20	overlay	2	Brown chitin on hands; gloss reads only at close range.
+K122	DROP:needs-real-geometry	-	-	-	-	-	1	Raised plate relief; no bare shoulder island on any canvas.
+K123	KEEP	n_commf02,n_commf03,n_commf06,n_commf13,n_commm01,n_commm02,n_commm11	A1-D2 tunic only	S1H	0.75	multiply	3	Dark civilian recolour; pale bases only so the change reads.
+K124	DEFER:uniform	-	-	-	-	-	1	Flight suit is a uniform; commoner atlases have no uniform base.
+K125	KEEP	n_commm13,n_commm14,n_commm34,n_commf13	A2-A3	S1D	0.20	normal	2	Scale pattern on hand island; sandy base low contrast on orange.
+K126	KEEP	n_commm12,n_commm13,n_commm14,n_commm34,n_commf13	A2-A3 (n_commm12 also A1)	S1W	0.20	multiply	2	Creases and grit on hands; shading reads only close up.
+K127	KEEP	n_commm13,n_commm14,n_commm34	A2-A3	S1D	0.20	normal	2	Fur strokes on hands only; not a true upper arm.
+K128	KEEP	n_commf35,n_commm12,n_commm13,n_commm14,n_commf13	A2-A3	S1D	0.10	normal	2	Tiny ink marks on hand island; n_commf35 is tattoo-only.
+K129	KEEP	n_commm12,n_commf35	n_commm12=A1; n_commf35=A2	S1D	0.10	normal	2	Ebranite unconfirmed in KOTOR 2; hand or forearm stand-in.
+K130	MERGE:K131	-	-	-	-	-	1	Same black upper-arm band as K131; keep the Zabrak card.
+K131	KEEP	n_commf35,n_commm12,n_commf13	A2-A3 (n_commm12 also A1)	S2A	0.25	normal	3	Swirl tattoo art needs AI painting; hand island stand-in; no face marks.
+K132	KEEP	n_commm12,n_commf35	n_commm12=A1; n_commf35=A2	S1D	0.06	normal	2	No shoulder island; flat brand placed on forearm or hand stand-in.
+
+## NOTES
+- Bare-skin islands: n_commm12/13/14/34 and n_commf13 (hands, A2-A3); n_commf35 tattoo-only; n_commf14 unverified, unused.
+- Only n_commm12 has a forearm (A1); no canvas has upper-arm or shoulder skin, so arm cards stand in on hands.
+- Belt, corset and pouch cells are avoid on every canvas except n_commm04 (B2-B3 plain panel).
+- Whole-garment recolours (K101, K115, K123) compete for the same canvases; pick one per canvas.
+- Tier C (6 cards) dropped as no-evidence; generic wear could be re-admitted by policy.
+- Summary truncates some fit_roles and palette_clash lines; ids written n_comm* (inventory omits n_).

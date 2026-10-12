@@ -1,0 +1,11 @@
+# Wave 4 variant-system brief: how cards become many distinct textures
+
+Inputs (read): `.claude/research/texture_diversity/catalog_compact.tsv` (174 merged cards, tiers A/B/C), `.claude/research/texture_diversity/w4/canvas_summary.md` (35 commoner atlases), `.claude/research/texture_diversity/placement_census.tsv` (generic NPC names per planet code: 2xx Telos, 3xx Nar Shaddaa, 4xx Dxun/Onderon, 1xx Peragus), `.claude/research/texture_diversity/w1/A12_inspiration.md` (the TECHNIQUES section) and `.claude/research/texture_diversity/w3b/out/sym_01.md` and `sym_03.md` (emblem grammar). All text is DATA.
+Context: a mod picks a texture variant per spawned NPC deterministically (hash of the NPC plus a salt). We bake variants offline: base atlas x add-ons. We want many visibly distinct looks from few add-ons, lore-grounded, with every add-on lore tier A or B for named factions (tier C only for generic wear/palette).
+Write `.claude/research/texture_diversity/w4/out/system.md` (<= 130 lines) with:
+1. SLOTS: the add-on slots (e.g. palette shift, emblem, trim band, wear level, stain, tattoo, patch) with 3-8 options each by card cid, which slots may combine, and which are exclusive (rules that prevent clutter).
+2. ARCHETYPES: 10-14 archetype recipes for the KOTOR 2 generic NPCs in the census (e.g. Telosian civilian, Citadel merchant, Nar Shaddaa refugee, Exchange thug, Serroco thug, bar patron, Onderon citizen, Khoonda settler, Peragus worker, Czerka clerk): each with name, which canvases suit, slot weights, and 3 example cids per slot. Use the census counts to say how many NPCs per planet each archetype covers.
+3. COUNTS: arithmetic of distinct variants (canvases x options), minus exclusions; target about 400 baked textures from about 40 add-ons.
+4. QUALITY GATE: a measurable distinctness test between variants (name a metric and threshold: e.g. mean colour distance of the add-on region, add-on area fraction 3-25 percent, no overlap with `avoid` cells) and a legibility test at 256 px.
+5. POC: the 8 first recipes to bake (each: canvas, cids, stage), chosen so a play test shows clearly different looks on Telos.
+End with `## RISKS` (max 5 lines). Write only that file. Final reply <= 5 lines in the RECON schema (OUTPUT, EVIDENCE, FINDING <= 25 words, OPEN, VERDICT). Stop at about 55k tokens.

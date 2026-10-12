@@ -1,0 +1,71 @@
+canvas	category	body	outfit	size	layout	skin
+commf01	commoner_clothing	female	tan wrap tunic, tan trousers, brown belt	1024x1024	layoutRef=yes	skin=0.554
+commf02	commoner_clothing	female	cream tunic, tan skirt panel, olive trousers	1024x1024	layoutRef=yes	skin=0.177
+commf03	commoner_clothing	female	grey tunic, olive trousers, brown belt	1024x1024	layoutRef=yes	skin=0.052
+commf04	commoner_clothing	female	dark teal jacket, olive skirt, brown boots	1024x1024	layoutRef=yes	skin=0.084
+commf05	commoner_clothing	female	brown wrap top, ochre belt, grey vest	1024x1024	layoutRef=yes	skin=0.106
+commf06	commoner_clothing	female	light grey shirt, blue top, purple trousers	1024x1024	layoutRef=yes	skin=0.119
+commf07	commoner_clothing	female	dark grey-brown wrap top and trousers	1024x1024	layoutRef=yes	skin=0.017
+commf08	commoner_clothing	female	olive green tunic, red-brown belt	1024x1024	layoutRef=yes	skin=0.071
+commf09	commoner_clothing	female	blue tunic, blue trousers, brown boots	1024x1024	layoutRef=yes	skin=0.003
+commf10	commoner_clothing	female	dark brown tunic, orange straps, olive trousers	1024x1024	layoutRef=yes	skin=0.08
+commf11	commoner_clothing	female	grey-blue wrap top, brown belt, olive trousers	1024x1024	layoutRef=yes	skin=0.0
+commf12	commoner_clothing	female	dark green jacket, olive skirt, mauve top	512x512	layoutRef=yes	skin=0.139
+commf13	commoner_clothing	female	grey top, red sash, blue trousers	512x512	layoutRef=yes	skin=0.171
+commf14	commoner_clothing	female	olive green tunic, brown corset, boots	512x512	layoutRef=yes	skin=0.122
+commf15	commoner_clothing	female	dark green jacket, olive top, brown corset	512x512	layoutRef=yes	skin=0.103
+commf16	commoner_clothing	female	dark grey-brown tunic, orange straps, olive trousers	1024x1024	layoutRef=yes	skin=0.08
+commf17	blank_garbled	female	tattered patchwork rags, muddled pattern	1024x1024	layoutRef=unsure	skin=0.038
+commf18	face_head	female	face with black hair, no clothing	1024x1024	layoutRef=no	skin=0.614
+commf19	face_head	female	face with auburn hair, no clothing	1024x1024	layoutRef=no	skin=0.61
+commf20	face_head	female	face and dark hair head map	2048x2048	layoutRef=no	skin=0.566
+commf21	face_head	female	face with black hair, no clothing	2048x2048	layoutRef=no	skin=0.61
+commf22	face_head	female	face with auburn hair, no clothing	2048x2048	layoutRef=no	skin=0.663
+commf23	face_head	female	face and black hair atlas	1024x1024	layoutRef=no	skin=0.581
+commf24	face_head	female	dark-skinned face with dark hair, no clothing	1024x1024	layoutRef=no	skin=0.178
+commf25	face_head	female	face with dark skin and hair, no clothing	1024x1024	layoutRef=no	skin=0.352
+commf26	face_head	female	face and brown hair atlas	1024x1024	layoutRef=no	skin=0.751
+commf27	face_head	female	pale face and blonde hair head map	1024x1024	layoutRef=no	skin=0.946
+commf28	face_head	female	face and hair head map	2048x2048	layoutRef=no	skin=0.515
+commf29	face_head	female	face and dark hair atlas	2048x2048	layoutRef=no	skin=0.342
+commf30	face_head	female	face with brown hair, no clothing	2048x2048	layoutRef=no	skin=0.502
+commf31	face_head	female	face and black hair atlas	1024x1024	layoutRef=no	skin=0.624
+commf32	face_head	female	face and braided auburn hair atlas	1024x1024	layoutRef=no	skin=0.653
+commf33	commoner_clothing	female	cream belted dress with hood, brown corset	2048x2048	layoutRef=no	skin=0.615
+commf34	uniform	female	grey jumpsuit with black straps, pouches	2048x2048	layoutRef=no	skin=0.006
+commf35	commoner_clothing	female	tan wrap top, olive vest, cream trousers	1024x1024	layoutRef=yes	skin=0.59
+commm01	commoner_clothing	male	tan wrap shirt, tan trousers, brown belt	1024x1024	layoutRef=yes	skin=0.61
+commm02	commoner_clothing	male	pale grey-white wrap shirt, orange trim	1024x1024	layoutRef=yes	skin=0.324
+commm03	commoner_clothing	male	rust red tunic and trousers, purple vest	1024x1024	layoutRef=yes	skin=0.466
+commm04	commoner_clothing	male	olive green coat, blue-grey trousers, boots	1024x1024	layoutRef=yes	skin=0.019
+commm05	commoner_clothing	male	red robe-like wrap shirt and trousers	1024x1024	layoutRef=yes	skin=0.092
+commm06	commoner_clothing	male	charcoal jacket, blue and pink sash, tan vest	1024x1024	layoutRef=yes	skin=0.054
+commm07	commoner_clothing	male	grey-brown wrap shirt, grey trousers	1024x1024	layoutRef=yes	skin=0.0
+commm08	commoner_clothing	male	dark green robe, orange striped sash	1024x1024	layoutRef=yes	skin=0.098
+commm09	commoner_clothing	male	light blue shirt, blue trousers, brown belt	1024x1024	layoutRef=yes	skin=0.053
+commm10	commoner_clothing	male	dark brown shirt, orange stripe, olive trousers	512x512	layoutRef=yes	skin=0.057
+commm11	commoner_clothing	male	beige wrap tunic, grey-tan trousers	1024x1024	layoutRef=yes	skin=0.042
+commm12	commoner_clothing	male	rust-red wrap coat, purple-grey trousers	512x512	layoutRef=yes	skin=0.535
+commm13	commoner_clothing	male	olive green jacket, blue trousers, dark shoes	512x512	layoutRef=yes	skin=0.088
+commm14	commoner_clothing	male	dark green robe, orange sash, skin hands	512x512	layoutRef=yes	skin=0.171
+commm15	commoner_clothing	male	olive green coat, blue-grey trousers	512x512	layoutRef=yes	skin=0.02
+commm16	commoner_clothing	male	ragged blood-stained tan and rust clothes	1024x1024	layoutRef=yes	skin=0.276
+commm17	face_head	male	face and black hair atlas	1024x1024	layoutRef=no	skin=0.537
+commm18	face_head	male	face and hair atlas, no clothing	1024x1024	layoutRef=no	skin=0.633
+commm19	face_head	male	bearded face and afro head map	1024x1024	layoutRef=no	skin=0.455
+commm20	face_head	male	face and hair close-up, no clothing	2048x2048	layoutRef=no	skin=0.676
+commm21	face_head	male	face and hair close-up, no clothing	2048x2048	layoutRef=no	skin=0.663
+commm22	face_head	male	face and brown hair close-up, no clothing	2048x2048	layoutRef=no	skin=0.685
+commm23	face_head	male	male face with black hair, no clothing	1024x1024	layoutRef=no	skin=0.631
+commm24	face_head	male	bearded face with brown hair, no clothing	1024x1024	layoutRef=no	skin=0.586
+commm25	face_head	male	dirty face, dark hair, scarf	1024x1024	layoutRef=no	skin=0.264
+commm26	face_head	male	face and black hair atlas	1024x1024	layoutRef=no	skin=0.7
+commm27	face_head	male	stubbled face with black hair, no clothing	1024x1024	layoutRef=no	skin=0.61
+commm28	robe	male	cream hooded robe with brown straps	2048x2048	layoutRef=no	skin=0.453
+commm29	robe	male	blue-grey hooded robe with straps	2048x2048	layoutRef=no	skin=0.0
+commm30	robe	male	brown hooded robe with straps	2048x2048	layoutRef=no	skin=0.202
+commm31	armor	male	white plated armor suit	1024x1024	layoutRef=no	skin=0.001
+commm32	armor	male	red plated armor with black parts	1024x1024	layoutRef=no	skin=0.243
+commm33	armor	male	grey plated armor suit	1024x1024	layoutRef=no	skin=0.0
+commm34	commoner_clothing	male	cream-olive wrap tunic, pink skin hands	1024x1024	layoutRef=unsure	skin=0.616
+commm35	uniform	male	grey tactical vest with pouches, black gear	2048x2048	layoutRef=no	skin=0.011

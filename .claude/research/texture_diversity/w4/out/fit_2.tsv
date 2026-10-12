@@ -1,0 +1,53 @@
+cid	verdict	canvases	cells	stage	scale	blend	score	caveat
+K045	KEEP	n_commf11,n_commf12,n_commf15,n_commm08,n_commm14	A1-B1+D1,A1-B1+D1,A1-B1+D1,A1-B1+D1,A1-B1+D1	S1D	0.06	normal	2	Thin light line; weak at distance; cuff cell unverified.
+K046	DROP:no evidence	-	-	-	-	-	-	Tier C invented; no source look.
+K047	DROP:no evidence	-	-	-	-	-	-	Tier C invented; no source look.
+K048	KEEP	n_commf08,n_commf13,n_commf14,n_commf06,n_commm02,n_commm07,n_commm11,n_commm34	A4,A4-B4,A4-B4,A4,C2,C2-D2,C2-D2,A4	S1W	0.25	multiply	3	Dark smears on trouser fields; keep off corset B2-B3.
+K049	KEEP	n_commf01,n_commf02,n_commf33,n_commf35,n_commm01,n_commm02,n_commm11,n_commm34	A4,A4,A3,C2,C2,C2,C2-D2,A4	S1W	0.30	multiply	3	Hem stain pools at bottom edge; keep off boot B4-C4.
+K050	KEEP	n_commf12,n_commf15,n_commf04,n_commm08,n_commm14	D3,D3,D3,D2,D3	S1D	0.10	normal	2	Small hip badge; hip cell unverified on atlas.
+K051	DROP:no evidence	-	-	-	-	-	-	Tier C invented; no source look.
+K052	MERGE:K080	-	-	-	-	-	-	Same dust and scuff wear as K080, which covers knees.
+K053	KEEP	n_commf02,n_commf13,n_commf35,n_commm01,n_commm02,n_commm09,n_commm11,n_commm34	D1,D1,D1,D1,D1,D1,D1,D1	S1D	0.06	normal	2	Dark cuff band; sleeve cell D1 assumed, unverified.
+K054	KEEP	n_commf02,n_commf09,n_commf13,n_commf35,n_commm01,n_commm02,n_commm11,n_commm34	C1-D1,C1,C1-D1,D1,D1,D1,D1,D1	S1D	0.10	normal	3	Dull chevrons read weakly; shoulder mapped to back band.
+K055	DROP:no evidence	-	-	-	-	-	-	Tier C invented; no source look.
+K056	DROP:no evidence	-	-	-	-	-	-	Tier C invented; no source look.
+K057	KEEP	n_commf11,n_commf12,n_commf15,n_commm06,n_commm08,n_commm10	C2-D2,C2-D2,C2-D2,D1,C1,D1	S1D	0.30	normal	4	Large crescent needs widest back panel; keep off straps.
+K058	DROP:no plain belt zone	-	-	-	-	-	-	Every commoner canvas has corset, sash or pouch at B2-C3.
+K059	KEEP	n_commf02,n_commf06,n_commf09,n_commm02,n_commm05,n_commm09	A1,A1,A1,A1,A1,B1	S1D	0.15	normal	3	Left-chest placement; keep off B1 V-neck.
+K060	KEEP	n_commf01,n_commf06,n_commf07,n_commf08,n_commf09,n_commm11,n_commm13	A1,A1,A1,A1,A1,A1,A1	S1W	0.20	multiply	2	Scrape ghost reads only on contrasting cloth; subtle.
+K061	MERGE:K049	-	-	-	-	-	-	Same black-brown fuel stain at hem; K049 is larger.
+K062	KEEP	n_commf12,n_commf15,n_commf16,n_commm06,n_commm08,n_commm14	D3,D3,D2,D2,D2,D3	S1D	0.08	normal	2	Small gold seal; hip cell unverified.
+K063	KEEP	n_commf01,n_commf05,n_commf07,n_commf11,n_commf16,n_commm01,n_commm07	C1,C1-D1,C1,D1,D1,D1,D1	S1D	0.08	normal	2	Upper-arm cell unverified; digits illegible at distance.
+K064	KEEP	n_commf01,n_commf07,n_commf35,n_commm01,n_commm07,n_commm11	A4,A4,C2,C2,C2-D2,C2-D2	S1D	0.30	normal	3	Stacks with K049 on shared hems; keep off boots.
+K065	KEEP	n_commf11,n_commf12,n_commf15,n_commf16,n_commm14	A1-B1,A1,A1,A1,B1	S1D	0.06	screen	4	Screen blend for glow; thin collar line; keep off straps.
+K066	KEEP	n_commf01,n_commf02,n_commf03,n_commf05,n_commm01,n_commm02,n_commm11,n_commm34	C1-D1,C1-D1,C2-D2,C1-D1,D1,D1,D1,D1	S1D	0.25	normal	3	Stencil blurs at distance; light and mid bases only.
+K067	KEEP	n_commf02,n_commf06,n_commf09,n_commm02,n_commm09,n_commm11	A1,A1,A1,A1,B1,A1	S1D	0.12	normal	3	Black ring reads on light chest panels only.
+K068	KEEP	n_commf11,n_commf12,n_commf15,n_commm06,n_commm09	D1,D1,D1,D1,D1	S1D	0.20	normal	4	Sleeve cells approximate; check stripe runs shoulder to cuff.
+K069	KEEP	n_commf02,n_commf33,n_commf35,n_commm01,n_commm02,n_commm11,n_commm34	A4,A3,C2,C2,C2,C2,A4	S1D	0.35	normal	3	Dark card faces read only on light trousers.
+K070	DROP:no evidence	-	-	-	-	-	-	Tier C invented; no source look.
+K071	DROP:no evidence	-	-	-	-	-	-	Tier C invented; no source look.
+K072	KEEP	n_commf02,n_commf06,n_commf35,n_commm02,n_commm07,n_commm11,n_commm34	A1,A1,A1,A1,A1,A1,A1	S1H	0.30	overlay	3	Purple left-chest panel; B1 V-neck kept; sheer edge optional.
+K073	DROP:no evidence	-	-	-	-	-	-	Tier C invented; no source look.
+K074	KEEP	n_commf03,n_commf06,n_commf09,n_commf13,n_commm02,n_commm06,n_commm09,n_commm14	C2-D2,C2-D2,C2-D2,C1-D1,C2,D1,D2,D2	S1H	0.40	overlay	3	Colour-only recolour, not a uniform cut; skip tan bases.
+K075	KEEP	n_commf01,n_commf02,n_commf14,n_commf33,n_commf35,n_commm01,n_commm11,n_commm34	A4,C1-D1,A4-B4,D3,C2,C2,C2-D2,A4	S1H	0.40	overlay	3	Colour-only recolour, not a uniform cut; light bases only.
+K076	KEEP	n_commf11,n_commf12,n_commf15,n_commf16,n_commm08,n_commm14	D1+A4,D1+D3,D1+D3,D1+A4,C1+D2,C1+D2	S1D	0.05	normal	3	Gold piping on dark bases only; cells approximate.
+K077	KEEP	n_commf11,n_commf12,n_commf15,n_commf16,n_commm06,n_commm08	D1,C1-D1,C1-D1,D1,C1-D1,C1-D1	S1D	0.20	normal	3	Wide white band; fold shading optional; shoulder cells approximate.
+K078	DEFER:armor	-	-	-	-	-	-	Armour panels need armour base; plain recolour adds little.
+K079	DROP:no evidence	-	-	-	-	-	-	Tier C invented; no source look.
+K080	KEEP	n_commf03,n_commf07,n_commf09,n_commf14,n_commm04,n_commm07	A1-D2+A4-B4,A1-D2+A4-B4,A1-D2+A4-B4,A1-D2+A4-B4,A1-D2+A4-B4,A1-D2+A4-B4	S1W	0.60	multiply	3	Whole-garment overlay; keep dust off gloves and boots.
+K081	KEEP	n_commf02,n_commf06,n_commf13,n_commf35,n_commm02,n_commm09,n_commm11,n_commm34	A1,A1,B1,A1,A1,B1,A1,A1	S1D	0.20	normal	4	Scale pattern; chest cell is left chest on females.
+K082	KEEP	n_commf04,n_commf11,n_commf16,n_commm06,n_commm08	A4-B4,A4-B4,A4-B4,C2-D3,D2	S1D	0.08	normal	3	Hem arches; cells approximate; keep off boots B4-C4.
+K083	KEEP	n_commm13,n_commm15	B2-B3,B2-B3	S1D	0.15	normal	2	Male waist only; purple low contrast on blue-grey.
+K084	DROP:no evidence	-	-	-	-	-	-	Tier C invented; no source look.
+K085	DEFER:armor	-	-	-	-	-	-	Plate seam shading needs armour base; cloth recolour only.
+K086	KEEP	n_commf11,n_commf12,n_commf15,n_commm06,n_commm08	D1,C1-D1,C1-D1,C1-D1,C1-D1	S1D	0.15	normal	3	Crimson shoulder band; cuff cells unverified.
+K087	KEEP	n_commf11,n_commf16,n_commm06,n_commm08,n_commm14	A1,A1,A1,A1,A1	S1D	0.15	normal	4	Eyes read on dark chest; keep off B1 V-neck.
+K088	KEEP	n_commf11,n_commf16,n_commm06,n_commm08,n_commm10,n_commm14	A1,A1,A1,A1,A1,A1	S1D	0.20	normal	4	Skull silhouette on dark chest; keep off B1 V-neck.
+
+## NOTES
+- Canvas ids normalised to n_commmNN; canvas_summary headers for commm03-07, 13-16, 34 lack the n_ prefix.
+- 10 tier-C (invented) cards dropped as no evidence: K046, K047, K051, K055, K056, K070, K071, K073, K079, K084.
+- Every female canvas has a corset, skirt or belt across B2-B3; only n_commm04, n_commm13, n_commm15 have a plain waist, so waist cards stay thin.
+- Red and crimson cards skip red bases (n_commm03, 05, 12, 16); orange cards skip orange-strap and orange-sash bases (n_commf10, n_commf16, n_commm08, n_commm10, n_commm14).
+- No kept card needs bare skin; hand islands (n_commf13, n_commf14, n_commf35, n_commm13, n_commm14, n_commm34) were skipped.
+- Armour cards K078 and K085 deferred: plate seam shading needs an armour base. "-" marks unused fields on DROP, DEFER and MERGE rows.
