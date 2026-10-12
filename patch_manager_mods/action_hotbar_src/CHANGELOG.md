@@ -14,6 +14,7 @@ Action Hotbar (id `action-hotbar`), formerly Force Power Hotbar.
 - Migrated 5 save/load/new-game detours to the `save-events` library (`k2.saveevents@1`, doc 22 §4.1a).
 - Internal: pure logic moved to `HotbarLogic.h` (HP5), named constants and cleanup (HP6), more tests.
 - WI-10: Force Power Hotbar polish and config round-trip.
+- WI-10b: Force Power Hotbar EKC hook move and arrow art (split from WI-10).
 
 ## 1.2.2-dev (2026-10-05)
 

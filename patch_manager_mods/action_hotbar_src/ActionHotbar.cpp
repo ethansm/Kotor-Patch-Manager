@@ -3,7 +3,7 @@
 // Research trail and every address: patch_manager_mods/07_force_power_hotbar.md (local-setup/KOTOR-II worktree).
 //
 // Hooks (cdecl detours, original bytes still run; see kotor2-steam-aspyr.hooks.toml; Draw and HUD ctor go through hud-host, save detours through save-events):
-//   0x0072CB63  CExoInputInternal::GetEvents+0x383  CaptureHotbarKey(record*, device)  -- swallow bound digits
+//   0x0072CB84  CExoInputInternal::GetEvents+0x3A4  CaptureHotbarKey(record*, device)  -- swallow bound digits (moved from 0x0072CB63 for EKC coexistence)
 //   0x0074B3F0  CSWGuiMainInterface::Draw           HotbarHudTick(hud) (hud-host)      -- gate, config, invoke, button state, vanilla action-bar resync
 //   0x00748502  HUD ctor (FUN_00747210), just before StopLoadFromLayout  HotbarBuildButtons(panel) (hud-host) -- create our ControlCount CSWGuiLabel
 //               controls at runtime (Layout[], copied from native template labels of the HUD layout) and append them to the panel's control
