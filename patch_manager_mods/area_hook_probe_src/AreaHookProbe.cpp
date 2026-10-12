@@ -1,15 +1,18 @@
-// Area Hook Probe 0.1.0 (Steam Aspyr build 6A522E71...). Diagnostics only: no gameplay change, spawns nothing.
+// Area Hook Probe 0.2.0 (Steam Aspyr build 6A522E71...). Diagnostics only: no gameplay change, spawns nothing.
 // Question: when a SAVED game loads into an already-visited area, which engine paths run, and can the area resref/id be read then?
 //
 // Hooks (detour, 5-byte prologue 55 8B EC 6A FF, handler reads ECX only):
-//   H1 0x00533830 CServerExoAppInternal::MainLoop (every tick). this+0x14 = area-ready latch (INFERRED).
+//   H1 0x00533830 CServerExoAppInternal::MainLoop (every tick). this+0x14 = area-ready latch (INFERRED, not a ready marker).
 //      Logged on change only. On each 0 -> nonzero latch transition: one block dumping 0x40 dwords of `this` (capped at 8).
+//      POP watch (armed by H2/H3): 30 consecutive ticks with no AddObjectToArea call (after at least one add) -> "H1 POP-STABLE" + one dump of `this`.
+//      No stable window within 1800 ticks -> "H1 POP-TIMEOUT". Each armed watch resolves once.
 //   H2 0x0055A460 CSWSModule::LoadModuleInProgress (FRESH area load: creates and loads the area).
 //   H3 0x005582F0 CSWSModule::LoadModuleStart (SAVED-game module load; does NOT call LoadArea).
-//   H4 0x00522BF0 CSWSArea::AddObjectToArea (ECX = area). Logged when the area pointer changes:
+//   H4 0x00522BF0 CSWSArea::AddObjectToArea (ECX = area). Logged when the area pointer changes. Not an end-of-population
+//      marker: it fires on the first add of each new area.
 //      area+0x124 = object id (CONFIRMED), area+0x110 = 16-byte resref (INFERRED), prev_area_calls = AddObjectToArea calls
 //      made for the previous area after its own log line, total_adds = all calls since attach.
-//   H2 and H3 forget the last logged area pointer, so a reload that reuses a freed address is still logged.
+//   H2 and H3 forget the last logged area pointer and arm the POP watch, so a reload that reuses a freed address is still logged.
 //
 // Output: area_hook_probe_log.txt in the game's working directory (same convention as load_hang_probe). Stack arguments
 // of the hooked functions are never read. Every memory read goes through SafeRead (no faults, no unvalidated derefs).
@@ -25,7 +28,7 @@ namespace {
 
 using saferead::readAt;
 
-constexpr const char* kVersion = "0.1.0";
+constexpr const char* kVersion = "0.2.0";
 constexpr const char* kLogName = "area_hook_probe_log.txt";
 constexpr int kMaxLogLines = 2000;
 constexpr int kMaxDumps = 8;
@@ -34,6 +37,8 @@ constexpr int kDumpDwords = 0x40;      // dwords of `this` dumped per 0 -> nonze
 constexpr int kAreaIdOff = 0x124;      // CSWSArea object id (CONFIRMED)
 constexpr int kAreaResrefOff = 0x110;  // CSWSArea resref, 16 bytes (INFERRED)
 constexpr int kResrefLen = 16;
+constexpr int kStableTicks = 30;       // POP watch: consecutive H1 ticks with no new AddObjectToArea call
+constexpr long kPopTimeoutTicks = 1800; // POP watch: H1 ticks after arming before POP-TIMEOUT
 
 // SafeRead site ids (the failure ring stays disabled; the ids only label the call site).
 constexpr unsigned kSiteLatch = 1, kSiteDump = 2, kSiteAreaId = 3, kSiteAreaResref = 4;
@@ -52,6 +57,14 @@ int g_latchVal = 0;                     // H1: last readable latch value
 uintptr_t g_lastArea = 0;               // H4: area pointer of the last logged distinct area (0 = none; reset by H2/H3)
 long g_addsSincePrev = 0;               // H4: calls for that area after its log line
 long g_addsTotal = 0;                   // H4: all calls since attach
+char g_lastAreaId[16] = "none";         // H4: id of the last logged area ("none" until H4 after a load hook)
+char g_lastAreaRef[128] = "none";       // H4: resref of the last logged area, fmtResref form
+
+// POP watch: armed by H2/H3 at each module load; H1 polls it every tick
+bool g_pendingArea = false;             // watch armed and not yet resolved
+long g_ticksSinceLoad = 0;              // H1 ticks since the arming hook
+long g_addsAtLastTick = 0;              // g_addsTotal as of the previous H1 tick
+int g_stableTicks = 0;                  // consecutive H1 ticks with no new AddObjectToArea call
 
 // ---- logging: one open/append/close per line, state changes only ----------------------------------------
 void logf(const char* fmt, ...) {
@@ -142,12 +155,39 @@ void __cdecl AreaHookProbeMainLoop(void* self) {
     g_latchKnown = true;
     g_latchOk = ok;
     g_latchVal = ok ? latch : 0;
+
+    if (g_pendingArea) {
+        ++g_ticksSinceLoad;
+        if (g_addsTotal == g_addsAtLastTick) {
+            ++g_stableTicks;
+        } else {
+            g_stableTicks = 0;
+            g_addsAtLastTick = g_addsTotal;
+        }
+        // g_lastArea != 0: H4 has seen at least one add since the load hook, so a quiet window means "done", not "not started".
+        if (g_stableTicks >= kStableTicks && g_lastArea != 0) {
+            g_pendingArea = false;
+            logf("H1 POP-STABLE area=%s id=%s adds_total=%ld ticks_since_load=%ld last_hook=%s",
+                 g_lastAreaRef, g_lastAreaId, g_addsTotal, g_ticksSinceLoad, g_lastLoadHook);
+            dumpThis(obj, latch);
+        } else if (g_ticksSinceLoad >= kPopTimeoutTicks) {
+            g_pendingArea = false;
+            logf("H1 POP-TIMEOUT area=%s id=%s adds_total=%ld ticks_since_load=%ld last_hook=%s",
+                 g_lastAreaRef, g_lastAreaId, g_addsTotal, g_ticksSinceLoad, g_lastLoadHook);
+        }
+    }
 }
 
 // H2: CSWSModule::LoadModuleInProgress (thiscall, ECX = module). Fresh area load. Rare.
 void __cdecl AreaHookProbeFreshLoad(void* module) {
     g_lastLoadHook = "H2 fresh";
     g_lastArea = 0;   // a new area may reuse a freed pointer: let the next AddObjectToArea log
+    g_pendingArea = true;
+    g_ticksSinceLoad = 0;
+    g_addsAtLastTick = g_addsTotal;
+    g_stableTicks = 0;
+    snprintf(g_lastAreaId, sizeof g_lastAreaId, "none");
+    snprintf(g_lastAreaRef, sizeof g_lastAreaRef, "none");
     logf("H2 fresh area load: CSWSModule::LoadModuleInProgress module=%08lx", static_cast<unsigned long>(reinterpret_cast<uintptr_t>(module)));
 }
 
@@ -155,6 +195,12 @@ void __cdecl AreaHookProbeFreshLoad(void* module) {
 void __cdecl AreaHookProbeSavedLoad(void* module) {
     g_lastLoadHook = "H3 saved";
     g_lastArea = 0;   // same reason as H2
+    g_pendingArea = true;
+    g_ticksSinceLoad = 0;
+    g_addsAtLastTick = g_addsTotal;
+    g_stableTicks = 0;
+    snprintf(g_lastAreaId, sizeof g_lastAreaId, "none");
+    snprintf(g_lastAreaRef, sizeof g_lastAreaRef, "none");
     logf("H3 saved module load: CSWSModule::LoadModuleStart module=%08lx", static_cast<unsigned long>(reinterpret_cast<uintptr_t>(module)));
 }
 
@@ -174,6 +220,8 @@ void __cdecl AreaHookProbeAddObject(void* area) {
     if (idOk) snprintf(idStr, sizeof idStr, "%08x", id);
     else snprintf(idStr, sizeof idStr, "unreadable");
     fmtResref(refStr, sizeof refStr, rfOk, rf);
+    snprintf(g_lastAreaId, sizeof g_lastAreaId, "%s", idStr);
+    snprintf(g_lastAreaRef, sizeof g_lastAreaRef, "%s", refStr);
     logf("H4 area changed: area=%08lx id=%s resref=%s prev_area_calls=%ld total_adds=%ld (last load hook: %s)",
          static_cast<unsigned long>(a), idStr, refStr, g_addsSincePrev, g_addsTotal, g_lastLoadHook);
     g_lastArea = a;

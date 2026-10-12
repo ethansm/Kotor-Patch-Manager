@@ -1,9 +1,9 @@
 [patch]
 id = "area-hook-probe"
 name = "Area Hook Probe"
-version = "0.1.0"
+version = "0.2.0"
 author = "local"
-description = "Diagnostics only (no gameplay change, spawns nothing). Logs which engine paths run when a SAVED game loads into an already-visited area: H3 CSWSModule::LoadModuleStart (saved branch) vs H2 CSWSModule::LoadModuleInProgress (fresh area load), the area-ready latch CServerExoAppInternal+0x14 (logged on change only, with a 0x40-dword dump of the server object on each 0 -> nonzero transition), and CSWSArea::AddObjectToArea area pointer, object id (+0x124) and resref (+0x110) when the area changes. Writes area_hook_probe_log.txt."
+description = "Diagnostics only (no gameplay change, spawns nothing). Logs which engine paths run when a SAVED game loads into an already-visited area: H3 CSWSModule::LoadModuleStart (saved branch) vs H2 CSWSModule::LoadModuleInProgress (fresh area load), the area-ready latch CServerExoAppInternal+0x14 (logged on change only, with a 0x40-dword dump of the server object on each 0 -> nonzero transition), a population-stable marker (H1 POP-STABLE after 30 ticks with no AddObjectToArea call, with one more dump; POP-TIMEOUT after 1800 ticks), and CSWSArea::AddObjectToArea area pointer, object id (+0x124) and resref (+0x110) when the area changes. Writes area_hook_probe_log.txt."
 
 requires = []
 conflicts = []

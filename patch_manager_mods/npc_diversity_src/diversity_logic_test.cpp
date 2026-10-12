@@ -489,6 +489,19 @@ void testPickTextureVarGateAndGolden() {
     // Current-variant skip: a draw equal to currentTv moves to the next allowlist entry.
     KT_CHECK_EQ(NpcDiversity::PickTextureVar(1u, 190, 13), 14);
     KT_CHECK_EQ(NpcDiversity::PickTextureVar(42u, 185, 1), 2);
+
+    // Dispatcher idempotence: the 2-arg pick is a pure function of (oid, final row), so re-applying a row
+    // returns the value already written (no write). Passing that value back as currentTv would move to the
+    // next slot, which is why the dispatcher must not pass currentTv.
+    {
+        const uint32_t oids[3] = {1u, 42u, 0x12345678u};
+        const uint16_t apps[3] = {190, 185, 617};
+        for (int i = 0; i < 3; ++i) {
+            const uint8_t a = NpcDiversity::PickTextureVar(oids[i], apps[i]);
+            KT_CHECK_EQ(NpcDiversity::PickTextureVar(oids[i], apps[i]), a);
+            KT_CHECK(NpcDiversity::PickTextureVar(oids[i], apps[i], a) != a);
+        }
+    }
 }
 
 // Each of the four families draws only from its own allowlist (rows: M 190/805, F 185/811, FatM 802, FatF 803).

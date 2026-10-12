@@ -72,6 +72,8 @@ Fallback route A (only if U1 fails or the GIT route cannot work): Override UTC w
 
 Route B side effect: every existing save that has not yet visited 204TEL also gets the NPC (P6 OPEN 4).
 
+Patch-only route (no `.mod` edit): hook H2 (`0x0055A460`, CSWSModule::LoadModuleInProgress), key on area resref (not area id or pointer), and wait about 30 ticks of unchanged add count (probe 0.2.0 POP-STABLE) before spawning. H2 fires on saved and fresh loads. R6's claim that 0x5582f0 never reaches 0x55a460 is REFUTED (see `.claude/research/npc_add/recon_hook/R7_probe_log_result.md`). Spawn mechanism and existence guard stay open (R7 O1-O2).
+
 ## Template recipe
 
 Clone vanilla `n_telf01` (202TEL). Set these fields:
@@ -156,3 +158,4 @@ Rollback (confirm each step with the user first):
 | U8 | Does Override UTC take precedence over `.mod` UTC? | Unproven; UTCs embedded in `.mod` | Route A decision |
 | U9 | Is the Tier 2 model path fine (blank modela)? | W1a: probably fine; unproven | Tier 2 batch |
 | U10 | Object count and frame cost at about 18 added creatures | Not measured (plan U3) | Gate 2 |
+| U11 | Patch-only route: spawn point after H2, existence guard, save persistence | H2 fires on saved and fresh loads (R7); area id, area pointer and H1 latch are dead keys; the 30-tick POP-STABLE delay is unverified until a 0.2.0 log exists | Probe 0.2.0 run, then Gate 2 |

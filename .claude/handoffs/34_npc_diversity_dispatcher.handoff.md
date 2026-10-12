@@ -1,35 +1,35 @@
 # Session Handoff & Plan State: patch_manager_mods/34_npc_diversity_dispatcher.md
 
 ## 0. Next-Phase Direction
-wave 2 - patch_manager_mods/34_npc_diversity_dispatcher.md.
+resume patch_manager_mods/34_npc_diversity_dispatcher.md
+- next step is log analysis:  read area_hook_probe_log.txt with kotor2_logs.py. It should show whether H3 (saved load) fires instead of H2 (fresh)
+- read general logs related to our npc diversity.  Bad textures are gone and the percentage math and exclusions looked good so far.
+Leverage Haiku subagent swarm for planning and in the plan.
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/34_npc_diversity_dispatcher.md`
 - **Waves:** .claude/waves/w1-34-W6/
-- **Branch:** `KOTOR-II` (3ad19bc docs(plan): NPC-add PoC wave 1 results (W1a-W1d))
-- **Generated:** 2026-10-11 22:56:54 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Waves:** .claude/waves/w2-34-npcadd/
+- **Branch:** `KOTOR-II` (e94a142 docs(37): mark BG23 fixed)
+- **Generated:** 2026-10-12 00:40:56 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-3ad19bc docs(plan): NPC-add PoC wave 1 results (W1a-W1d)
- .claude/plans/npc_add_poc.md                   |  9 +++++
- .claude/research/npc_add/poc/W1a_engine.md     | 40 ++++++++++++++++++
- .claude/research/npc_add/poc/W1b_rows.md       | 33 +++++++++++++++
- .claude/research/npc_add/poc/W1c_walkmesh.md   | 56 ++++++++++++++++++++++++++
- .claude/research/npc_add/poc/W1d_git_fields.md | 33 +++++++++++++++
- 5 files changed, 171 insertions(+)
+e94a142 docs(37): mark BG23 fixed
+ patch_manager_mods/37_bug_board.md | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 ```
-- **Dirty Files (113):**
+- **Dirty Files (114):**
   - ` M .claude/handoffs/33_ui_queue_hotbar_fixes.handoff.md`
   - ` M .claude/handoffs/38_k1_to_k2_asset_import.handoff.md`
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
   - ` M .claude/plans/swarm_library_architecture.md`
   - ` M patch_manager_mods/24_master_plan_status.md`
-  - ` M patch_manager_mods/38_k1_to_k2_asset_import.md`
   - ` M patch_manager_mods/MASTER_KEY.md`
-  - ` M patch_manager_mods/buff_duration_hud_src/BuffDurationHUD.cpp`
   - ` M patch_manager_mods/perf_lab_src/harness/smoke_robustness.cpp`
   - ` M patch_manager_mods/perf_lab_src/harness/smokes.toml`
-  - ... +103 more (run `git status --short`)
+  - ` M scripts/kpm_hotswap.py`
+  - ` M scripts/kpm_status.py`
+  - ... +104 more (run `git status --short`)
 
 ## 2. Immediate Objective (**Phase 2**)
 **Detour Hook Prototyping**
@@ -65,6 +65,10 @@ Generated, byte-stable (`--check`): `DiversitySlots.h` (M 1-16, F 1-17, FatM 34,
 
 ### Verification commands
 `python3 scripts/run_tests.py diversity generate_diversity_slots generate_diversity_roles npc_div_merge_labels npc_div_registry npc_div_texture_sheets npc_div_log_check`; `python3 scripts/generate_diversity_slots.py --check`; `python3 scripts/generate_diversity_roles.py --check --report`; `python3 scripts/build_check.py --mod npc_diversity_src`; `python3 scripts/check_hook_bytes.py --mod npc-diversity`; `python3 scripts/check_hook_spans.py`; `python3 scripts/kpm_status.py --only npc-diversity`.
+- NPC-add R7 (10-12): R6's claim that 0x5582f0 never reaches 0x55a460 is REFUTED. Probe 0.1.0 shows H2 firing one tick after H3 on the same module, including a save load. Detail: `.claude/research/npc_add/recon_hook/R7_probe_log_result.md`.
+- NPC-add R7: H1 latch (this+0x14), area+0x124 id (00000001 on both areas) and the area pointer (0c5d4420, reused) are dead keys. Key on area resref.
+- Diversity rule 11 bug (oid 7f000000, tv 1 vs 102): fixed in source 0.1.5-probe (`NpcDiversityDispatcher.cpp:470` is now a 2-arg `PickTextureVar`). Not built or installed in this task.
+- `log_triage` shows only the last 5 raw lines of a probe log. Lines 1-10 are hidden, so save-load vs door transition for 204tel at +435 s is unresolved. Probe 0.2.0 adds a POP-STABLE marker.
 
 ## Update 10-11 (Wave A+B landed, 0.1.4-probe built, NOT installed)
 - Gate 1 NOT done: the last log is `0.1.2-probe`, no PTR lines. Tag route = default position-only keep (`DiversityKeep.h`); header comment says so. Re-run Task 6 only if the user plays 0.1.3 or 0.1.4 first (0.1.4 still logs PTR dumps).

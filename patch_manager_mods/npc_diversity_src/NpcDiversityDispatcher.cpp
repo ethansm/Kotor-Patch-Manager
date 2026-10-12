@@ -1,4 +1,4 @@
-// NpcDiversityDispatcher.cpp -- Master NPC Diversity Dispatcher runtime detour hooks (0.1.4-probe).
+// NpcDiversityDispatcher.cpp -- Master NPC Diversity Dispatcher runtime detour hooks (0.1.5-probe).
 //
 // Strategy B (confirmed by the 0.1.1 play-test: the engine builds N_Comm?NN from descriptor textureVar):
 // Hook 2 RemapNpcAppearance: CSWCCreature::SetAppearance entry (Steam 0x76D200), args ecx=this,
@@ -46,7 +46,7 @@ namespace {
 using namespace NpcDiversity;
 namespace nl = NpcDiversity::log;
 
-constexpr const char* kVersion = "0.1.4-probe";
+constexpr const char* kVersion = "0.1.5-probe";
 constexpr size_t kResRefLen = 16;
 
 // SafeRead site ids (counted in Counts::fail, printed by STAT read).
@@ -465,9 +465,9 @@ __declspec(dllexport) void __cdecl RemapNpcAppearance(void* pCreature, layout::A
         } else {
             ++g_c.remSkipRow;
         }
-        // Texture variant for the final row. Idempotent: the seed ignores the old textureVar.
+        // Texture variant for the final row. Idempotent: the pick ignores the current textureVar, so re-application writes nothing (want == d.textureVar).
         // subType >= 3 builds PMB/PFB armor parts, whose variants are not N_Comm slots: never write tv there.
-        const uint8_t want = PickTextureVar(oid, newApp, d.textureVar);
+        const uint8_t want = PickTextureVar(oid, newApp);
         if (static_cast<int>(d.subType) > layout::kDescSubTypeMaxCommoner) {
             ++g_c.remTvArmor;
             if (why[0] == 'n') why = "tvarmor";
