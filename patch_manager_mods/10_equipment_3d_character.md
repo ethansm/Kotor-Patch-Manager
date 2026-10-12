@@ -8,7 +8,7 @@ Statuses come from this doc's own status blocks, the git log of `equipment_3d_ch
 | Id | Batch | Status | Commit | Notes |
 |---|---|---|---|---|
 | EQ1 | Probe stages 0-5: preview creature, live gear refresh, idle + flourishes, drag/zoom, Layout A | DONE | | User-tested "working", 19 ids live (STATUS BLOCK) |
-| EQ2 | Weapons in hands, engine wield-style rule, flourishes with weapons | REINSTALL | 05b4018 34cb100 | Reinstall to be safe: 34cb100 (Oct 5) install not confirmed; wield rule in 05b4018 per backup name (doc line 37); dual-wield never user-reported (SESSION 3) |
+| EQ2 | Weapons in hands, engine wield-style rule, flourishes with weapons | BUILT | 05b4018 34cb100 | 05b4018 installed with wield rule (backup bak_pre_style, doc line 37); 34cb100 in live build: KPM Equip3dLogic.h matches HEAD and kpm_status LIVE 5cc7c7ec (10-11); dual-wield never user-reported (SESSION 3) |
 | EQ3 | Animation cross-fade (jumps at trigger/finish) | DONE | | Accepted 2026-09-30 ~18:00 (SESSION 4, Phase 0) |
 | EQ4 | Toolbar column: Animate, Spin (split play/pause + Reset), Weapons, Emotes pop-up | BUILT | KPM 8ba37be | Installed dcbdfde3; spin row and Emotes not yet user-tested (SESSION 4); earlier build user-tested "working" (line 44) |
 | EQ5 | Headgear-loss fix (attachHelmet from the item model) | DONE | | User PASS 2026-10-02 ~02:40; DLL 962f9e22 |
