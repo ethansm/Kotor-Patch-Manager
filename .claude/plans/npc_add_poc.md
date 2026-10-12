@@ -2,7 +2,7 @@
 Status: PLAN (not started). Source recon: `.claude/research/npc_add/00_summary.md`, `R1..R5`, `poc/P1..P6`. Orchestrator Sonnet 5.5; bulk = Haiku waves (1 deliverable, <=3 files, <=60k tokens, 5-line contract). No OpenCode. No live writes without user GO.
 
 ## Decisions needed from the user (Gate 0)
-1. AREA: A = 204TEL (Residential West, north bed ward, 20 plc_bed1 at y 22-31; 16 creatures in module) or B = 205TEL (own module, 7 creatures, Republic office props, no beds). Default: A.
+1. AREA: DECIDED 10-11 = A (user: the room with the doctor NPC and the medical beds; registry: Doctor Ganius, tpl/tag corteldc, conv corteldc, plot role, 204tel at x -68.7 y 31.3). Options were A = 204TEL (Residential West, north bed ward, 20 plc_bed1 at y 22-31; 16 creatures in module) or B = 205TEL (own module, 7 creatures, Republic office props, no beds). Default: A.
 2. SAVE: the PoC needs a save made BEFORE 204TEL was first visited (visited modules are frozen in the save). Candidates by mtime only: Game1, Game5, Game8. User checks AREANAME in the load menu and names one; else we start a fresh game.
 3. Scope: stage the roster (canary of 4, then the rest) = default; or all at once.
 
