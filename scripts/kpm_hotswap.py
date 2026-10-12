@@ -479,15 +479,24 @@ def main(argv=None):
             print(f"prepared {pid}: mirrored {', '.join(copied) or 'nothing'}; rebuilt")
         rows = statuses(manifests, kmap, live, game)
         todo = {pid: r for pid, r in rows.items() if r["verdict"] != "LIVE"}
-        bad = {pid: f"{r['verdict']} {r['detail']}" for pid, r in todo.items() if r["verdict"] != "SWAP"}
-        if bad:
+        swappable = [pid for pid, r in todo.items() if r["verdict"] == "SWAP"]
+        reinstall = [pid for pid, r in todo.items() if r["verdict"] == "REINSTALL"]
+        bad = {pid: f"{r['verdict']} {r['detail']}" for pid, r in todo.items() if r["verdict"] not in ("SWAP", "REINSTALL")}
+        if bad or (reinstall and a.apply):   # other verdicts always fail; REINSTALL fails only when --apply was asked for
+            bad.update({pid: f"{todo[pid]['verdict']} {todo[pid]['detail']}" for pid in reinstall})
             print(f"FAILED: after --prepare these are not SWAP: {bad}"
-                  + ("  (REINSTALL = hooks changed: " + REINSTALL_DOC + ")" if any(v.startswith("REINSTALL") for v in bad.values()) else ""))
+                  + ("  (REINSTALL = hooks changed: " + REINSTALL_DOC + ")" if reinstall else ""))
             return 1
         print("after prepare: " + " ".join(f"{pid}={r['verdict']}" for pid, r in rows.items()))
+        print(f"PREPARE SUCCESS: {len(needs_prep)} mod(s) mirrored and rebuilt.")
+        if swappable:
+            print(f"  Ready for --apply (hot-swap): {', '.join(swappable)}")
+        if reinstall:
+            print(f"  Requires KPatchLauncher reinstall (hooks changed): {', '.join(reinstall)}  ({REINSTALL_DOC})")
     if not a.apply:
         print_commit_commands(rows, kpm)
-        print("\nNext: re-run with --apply (game closed)")
+        if any(r["verdict"] == "SWAP" for r in todo.values()):
+            print("\nNext: re-run with --apply (game closed)")
         return 0
     if not todo:
         print("nothing to swap after prepare")

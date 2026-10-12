@@ -242,6 +242,34 @@ class PrepareTest(Base):
         self.assertTrue(list(self.e.kd.glob("Demo.kpatch.*_pre.bak")))
         self.assertEqual(self.live_dll, b"DLL1")          # --prepare alone never touches the game dir
         self.assertIn("after prepare: demo=SWAP", out)
+        self.assertIn("PREPARE SUCCESS: 1 mod(s)", out)
+        self.assertIn("Ready for --apply (hot-swap): demo", out)
+
+    def _reinstall_build(self):
+        def fake_build(kd, kpm):
+            self.e.kpatch(b"DLL2", hooks=HOOKS.replace("0x401000", "0x402000"))
+            return 0, ""
+        return fake_build
+
+    def test_prepare_reinstall_exits_zero_with_summary(self):
+        (self.e.src / "Demo.cpp").write_text("int y;\n")
+        with mock.patch.object(kh, "run_create_patch", self._reinstall_build()):
+            rc, out = self.run_cli("--mod", "demo", "--prepare")
+        self.assertEqual(rc, 0, out)
+        self.assertIn("PREPARE SUCCESS: 1 mod(s)", out)
+        self.assertIn("Requires KPatchLauncher reinstall (hooks changed): demo", out)
+        self.assertNotIn("Ready for --apply", out)
+        self.assertNotIn("re-run with --apply", out)
+        self.assertEqual(self.live_dll, b"DLL1")
+
+    def test_prepare_apply_reinstall_still_refused(self):
+        (self.e.src / "Demo.cpp").write_text("int y;\n")
+        with mock.patch.object(kh, "run_create_patch", self._reinstall_build()):
+            rc, out = self.run_cli("--mod", "demo", "--prepare", "--apply")
+        self.assertEqual(rc, 1, out)
+        self.assertIn("REINSTALL", out)
+        self.assertEqual(self.live_dll, b"DLL1")
+        self.assertEqual(self.backups(), [])
 
     def test_apply_after_mirror_needs_prepare(self):
         (self.e.src / "Demo.cpp").write_text("int y;\n")
