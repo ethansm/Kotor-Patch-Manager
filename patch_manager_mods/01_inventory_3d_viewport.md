@@ -569,17 +569,17 @@ than the workbench:
 
 ### Phase 3 — hook construction (`.kpatch`)
 1. New patch directory under Patch Manager's `/Patches`.
-2. `manifest.toml` declaring K2 Steam/Aspyr build compatibility (confirm
+2. [CLOSED WI-03 C017: manifest.toml present; build-hash clause still open] `manifest.toml` declaring K2 Steam/Aspyr build compatibility (confirm
    whether this needs the *exact* build hash we're on — see
    `03_framework_research.md` for whatever the framework's version-pinning
    story turns out to be; also see `05_build_plan.md`'s Phase 0 outcome —
    our live exe's LAA-patched hash currently matches no manifest entry,
    needs resolving before install regardless of this mod).
-3. `hooks.toml`: detour on the inventory listbox-selection trigger.
+3. [OPEN WI-03 C018: listbox match unverified; 0x008A8172 is in per-row handler FUN_008a8100, event key 0 semantics unconfirmed, see .claude/research/wi03_rescue/C018.md] `hooks.toml`: detour on the inventory listbox-selection trigger.
    `skip_original_bytes = false` — the inventory must keep updating its 2D
    icon as before; we're augmenting, not replacing.
    WI-03 recon: `hooks.toml:18` (`address = 0x008A8172`) is the inventory entry event-0 handler (`008a8100`) right after `GetItemByObjectId`; the match to the listbox-selection trigger is by source comment only, not re-verified against Ghidra.
-4. C++ detour: read selected item's `baseitems.2da` row → branch on
+4. [DEFERRED to WI-71 (v2): Branch B not v1] C++ detour: read selected item's `baseitems.2da` row → branch on
    `bodyvar` → (Branch A) resolve `.mdl` string directly, or (Branch B)
    resolve PC's own `modelX`/`texX` via `bodyvar` index → call the render
    function with our control ID either way.

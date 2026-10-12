@@ -8,3 +8,4 @@
 {"ev": "park", "reason": "checker PARTIAL: no FAIL; 2 WARN, first: UNCLAIMED .claude/active_plan.txt changed since baseline but is not listed", "session": "bcc5c917-d648-4cbd-a9ef-c969377ed7ed", "ts": "2026-10-12T21:26:41Z", "wi": "WI-41"}
 {"ev": "park", "reason": "worker reply FAIL: worker STATUS: FAIL", "session": "ce33537d-4418-4978-9cbb-1df6b227d70a", "ts": "2026-10-12T21:44:11Z", "wi": "WI-03"}
 {"ev": "unpark", "reason": "parked by foreign-file scope warnings (test_wi_driver.py edits, active_plan.txt), not an item fault; retry", "session": "116031bf-9052-4cd6-83a0-f491ff8b868b", "ts": "2026-10-12T21:46:00Z", "wi": "WI-41"}
+{"ev": "done", "reason": "manual: docs-only closure after rescue: C017 closed, C018 open (recon UNSURE), C019 deferred to WI-71", "session": "c42fcd07-4e85-429e-a1d7-f3b451268ad8", "ts": "2026-10-12T22:04:56Z", "wi": "WI-03"}

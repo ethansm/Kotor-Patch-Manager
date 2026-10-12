@@ -19,7 +19,7 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [x] | 3 | WI-10 | P0 | ready | M | - | Force Power Hotbar polish and config round-trip | 7 | 4 | Force Power Hotbar polish and config round-trip; 6 open, ready. |
 | [x] | 4 | WI-01 | P0 | verify-only | S | - | Level-up override: KpLog verify and BG20 close | 1 | 2 | Level-up verify plus bug-board BG20 close; verify-only, 1 open. |
 | [x] | 5 | WI-10b | P0 | ready | S | WI-10 | Force Power Hotbar EKC hook move and arrow art (split from WI-10) | 3 | 2 | Hotbar EKC hook move and arrow art; 3 open, ready. |
-| [!] | 6 | WI-03 | P0 | hold | S | - | Inventory 3D viewport hook, manifest and bodyvar rows | 3 | 3 | Inventory 3D viewport hook and manifest; feature rows, 2 open. |
+| [x] | 6 | WI-03 | P0 | hold | S | - | Inventory 3D viewport hook, manifest and bodyvar rows | 3 | 3 | Inventory 3D viewport hook and manifest; feature rows, 2 open. |
 | [ ] | 7 | WI-41 | P0 | ready | M | - | Queue HUD open ToDos: dispatch gate, FIFO, flicker | 9 | 3 | Queue HUD dispatch, FIFO and flicker bugs; active plan, 6 open. |
 | [ ] | 8 | WI-18 | P0 | ready | S | - | Inventory sort filter logging on KpLog.h (C180) | 1 | 1 | Inventory sort filter logging on KpLog.h; logging only. |
 | [ ] | 9 | WI-06 | P0 | ready | L | - | Buff duration HUD open ToDos | 10 | 2 | Buff duration HUD: 8 open ToDos, 1 blocked; large and ready. |
