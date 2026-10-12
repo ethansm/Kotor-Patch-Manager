@@ -12,8 +12,9 @@ Pipeline (each step is one subcommand, all take --run DIR; a run dir never lives
   report   RUN/report.json + a short summary; exit 1 while a blind or null unit is incomplete
 
 Model phases go through ONE injectable function, run_stage(), that shells out to swarm_run.py map; unit state is read
-ONLY through read_status() (swarm_run.py status --out O --json), never from a glob of findings/. Only --engine stub
-is accepted: --engine real is refused (exit 2) before anything is written, until a paid canary batch has a human go.
+ONLY through read_status() (swarm_run.py status --out O --json), never from a glob of findings/. --engine real runs
+only with BOTH --claude-bin ABS and --yes-spend USD (after a swarm_run.py probe); --engine stub refuses both flags.
+Any other combination exits 2 before anything is written.
 The orchestrator never reads a case file's ground truth (true_root_cause); the case's blind_forbidden_terms refuse
 any blind/null unit prompt that contains one (case-insensitive). A human must review every report before a fix starts.
 
@@ -302,8 +303,15 @@ def list_units(units_dir) -> list:
 # ---------------------------------------------------------------- injectable runner (the ONLY place that starts swarm_run)
 
 def run_stage(role_dir, units_dir, out_dir, engine, cap_total, *, cap_call, stub_script, parallel, timeout,
-              backoff_scale, swarm_run) -> int:
-    """swarm_run.py map ...; -> its exit code. The env never carries a binary override or an effort level."""
+              backoff_scale, swarm_run, claude_bin=None, yes_spend=None) -> int:
+    """swarm_run.py map ...; -> its exit code. The env never carries a binary override or an effort level.
+    engine real: swarm_run.py probe first (exit != 0 is a StageError), then map with the explicit claude binary,
+    the probe record and the spend approval. engine stub takes neither claude_bin nor yes_spend."""
+    real = engine == "real"
+    if real and (not claude_bin or yes_spend is None):
+        raise StageError("engine real needs claude_bin and yes_spend")
+    if not real and (claude_bin is not None or yes_spend is not None):
+        raise StageError("only engine real takes claude_bin and yes_spend")
     cmd = [sys.executable, "-I", swarm_run, "map", "--role-dir", role_dir, "--units", units_dir, "--out", out_dir,
            "--engine", engine, "--cap-total", str(cap_total), "--cap-call", str(cap_call), "--parallel", str(parallel),
            "--timeout", str(timeout)]
@@ -311,6 +319,17 @@ def run_stage(role_dir, units_dir, out_dir, engine, cap_total, *, cap_call, stub
         cmd += ["--stub-script", stub_script]
     if backoff_scale is not None:
         cmd += ["--backoff-scale", str(backoff_scale)]
+    if real:
+        home_probe = os.path.join(out_dir, "work", "home_probe.json")
+        try:
+            os.makedirs(os.path.dirname(home_probe), exist_ok=True)
+            probe = subprocess.run([sys.executable, "-I", swarm_run, "probe", "--out", out_dir], env=clean_env(),
+                                   stdin=subprocess.DEVNULL).returncode
+        except OSError as e:
+            raise StageError("cannot start swarm_run probe: %s" % e)
+        if probe != 0:
+            raise StageError("swarm_run probe exited %d; the map was not started" % probe)
+        cmd += ["--claude-bin", claude_bin, "--home-probe", home_probe, "--yes-spend", str(yes_spend)]
     try:
         return subprocess.run(cmd, env=clean_env(), stdin=subprocess.DEVNULL).returncode
     except OSError as e:
@@ -500,9 +519,13 @@ def build_report(run, intake, bundle, swarm_run) -> dict:
 
 # ---------------------------------------------------------------- subcommands
 
-def refuse_real(args):
+def check_engine_flags(args):
+    """engine real needs both --claude-bin and --yes-spend (the human spend approval); engine stub takes neither."""
     if args.engine == "real":
-        raise Fail("--engine real is disabled until a paid canary batch has a human go; use --engine stub")
+        if args.claude_bin is None or args.yes_spend is None:
+            raise Fail("--engine real needs --claude-bin ABS and --yes-spend USD (the human spend approval)")
+    elif args.claude_bin is not None or args.yes_spend is not None:
+        raise Fail("--claude-bin and --yes-spend are for --engine real only; drop them for --engine stub")
 
 
 def default_run_dir(kind) -> str:
@@ -604,7 +627,8 @@ def run_units(args, run, stage, role, units: dict) -> int:
     rc = run_stage(str(role_dir), units_dir, out_dir, args.engine, args.cap_total, cap_call=args.cap_call,
                    stub_script=os.path.abspath(args.stub_script) if args.stub_script else None,
                    parallel=args.parallel, timeout=args.timeout, backoff_scale=args.backoff_scale,
-                   swarm_run=os.path.expanduser(args.swarm_run))
+                   swarm_run=os.path.expanduser(args.swarm_run), claude_bin=args.claude_bin,
+                   yes_spend=args.yes_spend)
     if rc not in (0, 1):
         raise StageError("swarm_run map exited %s for the %s stage" % (rc, stage))
     if rc == 1:
@@ -615,7 +639,7 @@ def run_units(args, run, stage, role, units: dict) -> int:
 
 def cmd_blind_or_null(args) -> int:
     stage = args.cmd
-    refuse_real(args)
+    check_engine_flags(args)
     run = existing_run(args.run)
     intake = load_intake(run)
     bundle = load_run_bundle(run)
@@ -656,7 +680,7 @@ def cmd_check(args) -> int:
 
 
 def cmd_verify(args) -> int:
-    refuse_real(args)
+    check_engine_flags(args)
     run = existing_run(args.run)
     intake = load_intake(run)
     bundle = load_run_bundle(run)
@@ -713,6 +737,12 @@ def _usd(s):
     return v
 
 
+def _abs_path(s):
+    if not os.path.isabs(s):
+        raise argparse.ArgumentTypeError("must be an absolute path: %r" % s)
+    return s
+
+
 def _posint(s):
     try:
         v = int(s)
@@ -740,13 +770,17 @@ def add_run(p, required=True):
 
 def add_stage_opts(p):
     p.add_argument("--engine", required=True, choices=("stub", "real"),
-                   help="stub only: real is refused (exit 2) until a paid canary batch has a human go")
+                   help="stub, or real (needs --claude-bin and --yes-spend; any other combination exits 2)")
     p.add_argument("--cap-total", required=True, type=_usd, metavar="USD", help="total budget cap for the stage")
     p.add_argument("--cap-call", type=_usd, default=0.30, metavar="USD", help="per-call cap (default 0.30)")
     p.add_argument("--parallel", type=_posint, default=4, metavar="N", help="parallel units (default 4)")
     p.add_argument("--timeout", type=_posint, default=900, metavar="SECONDS", help="per-call timeout (default 900)")
     p.add_argument("--stub-script", metavar="FILE", help="scripted stub answers (JSON), stub engine only")
     p.add_argument("--backoff-scale", type=_nonneg, metavar="N", help="scale the rate-limit backoff (tests use 0)")
+    p.add_argument("--claude-bin", type=_abs_path, metavar="ABS",
+                   help="absolute path of the claude binary; required with --engine real, refused with stub")
+    p.add_argument("--yes-spend", type=_usd, metavar="USD",
+                   help="spend approval for --engine real; required with real, refused with stub")
 
 
 def build_parser():

@@ -133,12 +133,13 @@ class FakeRunner:
         self.rc = 0
 
     def run_stage(self, role_dir, units_dir, out_dir, engine, cap_total, *, cap_call, stub_script, parallel,
-                  timeout, backoff_scale, swarm_run):
+                  timeout, backoff_scale, swarm_run, claude_bin=None, yes_spend=None):
         ids = sorted(p.stem for p in Path(units_dir).glob("*.json"))
         self.stage_calls.append({"role_dir": role_dir, "units_dir": units_dir, "out_dir": out_dir, "engine": engine,
                                  "cap_total": cap_total, "cap_call": cap_call, "stub_script": stub_script,
                                  "parallel": parallel, "timeout": timeout, "backoff_scale": backoff_scale,
-                                 "swarm_run": swarm_run, "units": ids})
+                                 "swarm_run": swarm_run, "claude_bin": claude_bin, "yes_spend": yes_spend,
+                                 "units": ids})
         out = Path(out_dir)
         (out / "findings").mkdir(parents=True, exist_ok=True)
         status = {}
@@ -605,6 +606,48 @@ class TestStages(Base):
         gone = os.path.join(self.tmp, "gone")
         self.assertEqual(self.cli("blind", "--run", gone, "--engine", "real", "--cap-total", "5")[0], 2)
         self.assertFalse(os.path.exists(gone))
+
+    def test_real_engine_needs_both_claude_bin_and_yes_spend(self):
+        self.new_run()
+        before = tree(self.run_dir)
+        cases = {"no flags": [], "only --yes-spend": ["--yes-spend", "5"],
+                 "only --claude-bin": ["--claude-bin", sys.executable]}
+        for label, extra in cases.items():
+            for sub in ("blind", "null", "verify"):
+                rc, out, err = self.cli(sub, "--run", self.run_dir, "--engine", "real", "--cap-total", "5", *extra)
+                self.assertEqual(rc, 2, (label, sub))
+                self.assertIn("real", err)
+                self.assertEqual(tree(self.run_dir), before, (label, sub))
+        self.assertEqual(self.fake.stage_calls, [])
+
+    def test_real_engine_with_both_flags_reaches_the_runner_once(self):
+        self.new_run()
+        rc, out, err = self.cli("blind", "--run", self.run_dir, "--engine", "real", "--cap-total", "5",
+                                "--claude-bin", sys.executable, "--yes-spend", "5")
+        self.assertEqual(rc, 0, err)
+        self.assertEqual(len(self.fake.stage_calls), 1)
+        c = self.fake.stage_calls[0]
+        self.assertEqual((c["engine"], c["claude_bin"], c["yes_spend"]), ("real", sys.executable, 5.0))
+
+    def test_stub_engine_refuses_claude_bin_and_yes_spend(self):
+        self.new_run()
+        before = tree(self.run_dir)
+        cases = {"--yes-spend": ["--yes-spend", "5"], "--claude-bin": ["--claude-bin", sys.executable]}
+        for label, extra in cases.items():
+            for sub in ("blind", "null", "verify"):
+                rc, out, err = self.stage(sub, *extra)
+                self.assertEqual(rc, 2, (label, sub))
+                self.assertIn("stub", err)
+                self.assertEqual(tree(self.run_dir), before, (label, sub))
+        self.assertEqual(self.fake.stage_calls, [])
+
+    def test_claude_bin_must_be_absolute_and_yes_spend_positive(self):
+        self.new_run()
+        for extra in (["--claude-bin", "claude"], ["--claude-bin", "./claude"], ["--yes-spend", "0"],
+                      ["--yes-spend", "nan"], ["--yes-spend", "-1"]):
+            rc, out, err = self.cli("blind", "--run", self.run_dir, "--engine", "real", "--cap-total", "5", *extra)
+            self.assertEqual(rc, 2, extra)
+        self.assertEqual(self.fake.stage_calls, [])
 
     def test_forbidden_term_refuses_blind_and_null_and_nothing_runs(self):
         leaky = make_bundle(extra_pairs=[(1, "this line mentions ZZLeak in the log")])
@@ -1237,6 +1280,72 @@ class TestRealRunner(unittest.TestCase):
             with self.assertRaises(bi.StageError):
                 bi.run_stage("/r", "/u", "/o", "stub", 1.0, cap_call=0.3, stub_script=None, parallel=1, timeout=1,
                              backoff_scale=None, swarm_run="/x/swarm_run.py")
+
+    def real_kw(self, **over):
+        kw = dict(cap_call=0.3, stub_script=None, parallel=2, timeout=60, backoff_scale=None,
+                  swarm_run="/x/swarm_run.py", claude_bin="/opt/claude", yes_spend=5.0)
+        kw.update(over)
+        return kw
+
+    def test_run_stage_stub_command_is_unchanged(self):
+        calls = []
+        with mock.patch.object(bi.subprocess, "run", self.fake_run(0, calls=calls)):
+            bi.run_stage("/r", "/u", "/o", "stub", 1.5, cap_call=0.3, stub_script="/s.json", parallel=2, timeout=60,
+                         backoff_scale=0, swarm_run="/x/swarm_run.py")
+        self.assertEqual(len(calls), 1)                                   # no probe for the stub engine
+        self.assertEqual(calls[0][0], [sys.executable, "-I", "/x/swarm_run.py", "map", "--role-dir", "/r", "--units", "/u",
+                                       "--out", "/o", "--engine", "stub", "--cap-total", "1.5", "--cap-call", "0.3",
+                                       "--parallel", "2", "--timeout", "60", "--stub-script", "/s.json",
+                                       "--backoff-scale", "0"])
+
+    def test_run_stage_real_probes_first_then_maps_with_the_approval(self):
+        tmp = tempfile.mkdtemp(prefix="bi_real_")
+        self.addCleanup(shutil.rmtree, tmp, True)
+        out = os.path.join(tmp, "out")
+        calls = []
+        env = {"DR_CLAUDE_BIN": "/evil", "CLAUDE_BIN": "/evil2", "CLAUDE_CODE_EFFORT_LEVEL": "max", "KEEP_ME": "1"}
+        with mock.patch.dict(os.environ, env), mock.patch.object(bi.subprocess, "run", self.fake_run(0, calls=calls)):
+            rc = bi.run_stage("/r", "/u", out, "real", 1.5, **self.real_kw())
+        self.assertEqual(rc, 0)
+        self.assertEqual([c[0][3] for c in calls], ["probe", "map"])
+        self.assertEqual(calls[0][0], [sys.executable, "-I", "/x/swarm_run.py", "probe", "--out", out])
+        cmd = calls[1][0]
+        self.assertEqual(cmd[:4], [sys.executable, "-I", "/x/swarm_run.py", "map"])
+        pairs = dict(zip(cmd[4::2], cmd[5::2]))
+        self.assertEqual(pairs, {"--role-dir": "/r", "--units": "/u", "--out": out, "--engine": "real",
+                                 "--cap-total": "1.5", "--cap-call": "0.3", "--parallel": "2", "--timeout": "60",
+                                 "--claude-bin": "/opt/claude", "--yes-spend": "5.0",
+                                 "--home-probe": os.path.join(out, "work", "home_probe.json")})
+        self.assertNotIn("--stub-script", cmd)
+        self.assertNotIn("--backoff-scale", cmd)
+        for kw in (calls[0][1], calls[1][1]):
+            for k in ("DR_CLAUDE_BIN", "CLAUDE_BIN", "CLAUDE_CODE_EFFORT_LEVEL"):
+                self.assertNotIn(k, kw["env"])
+            self.assertEqual(kw["env"].get("KEEP_ME"), "1")
+
+    def test_run_stage_real_probe_failure_stops_before_the_map(self):
+        tmp = tempfile.mkdtemp(prefix="bi_real_")
+        self.addCleanup(shutil.rmtree, tmp, True)
+        out = os.path.join(tmp, "out")
+        calls = []
+
+        def run(cmd, **kw):
+            calls.append(cmd)
+            return subprocess.CompletedProcess(cmd, 3 if cmd[3] == "probe" else 0, stdout="", stderr="")
+        with mock.patch.object(bi.subprocess, "run", run):
+            with self.assertRaises(bi.StageError):
+                bi.run_stage("/r", "/u", out, "real", 1.5, **self.real_kw())
+        self.assertEqual([c[3] for c in calls], ["probe"])
+
+    def test_run_stage_real_needs_both_flags_and_stub_takes_neither(self):
+        calls = []
+        with mock.patch.object(bi.subprocess, "run", self.fake_run(0, calls=calls)):
+            for engine, over in (("real", {"claude_bin": None}), ("real", {"yes_spend": None}),
+                                 ("stub", {"claude_bin": "/opt/claude", "yes_spend": None}),
+                                 ("stub", {"claude_bin": None, "yes_spend": 5.0})):
+                with self.assertRaises(bi.StageError, msg=(engine, over)):
+                    bi.run_stage("/r", "/u", "/o", engine, 1.0, **self.real_kw(**over))
+        self.assertEqual(calls, [])
 
 
 # ---------------------------------------------------------------- whole CLI as a child process, tiny fake swarm_run.py
