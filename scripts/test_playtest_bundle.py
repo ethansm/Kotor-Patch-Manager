@@ -22,6 +22,7 @@ from unittest import mock
 HERE = Path(__file__).resolve().parent
 sys.dont_write_bytecode = True  # python -I ignores PYTHONDONTWRITEBYTECODE; keep scripts/__pycache__ untouched
 sys.path.insert(0, str(HERE))
+import evidence_quote_check as EQC  # noqa: E402
 import log_triage as LT  # noqa: E402
 import playtest_bundle as PB  # noqa: E402
 
@@ -70,6 +71,30 @@ def heavy_lines(tag):
         for _ in range(2):
             L.append("[2 f2] note-%s ready" % word)
             L += ["[%d f1] tick %d pos=(0.5,0.5)" % (60 + j, j) for j in range(10)]
+    return L
+
+
+def adjacent_alert_lines():
+    """150 lines: a header, one tick signature, three distinct ERROR alerts on adjacent lines 99, 100 and 101."""
+    L = ["[1 f0] adj-mod 1.0.0 loaded; pid=1"]
+    L += ["[%d f1] tick %d pos=(0.5,0.5)" % (10 + i, i) for i in range(1, 98)]  # lines 2-98
+    L += ["[%d f3] ERROR %s bad value 0x%02X" % (500 + k, w, 17 * (k + 1))
+          for k, w in enumerate(("first", "second", "third"))]  # lines 99-101
+    L += ["[%d f1] tick %d pos=(0.5,0.5)" % (600 + i, i) for i in range(1, 50)]  # lines 102-150
+    return L
+
+
+def chain_lines():
+    """50 lines, one launch: ERROR alerts on lines 14, 22, 30 and 38 (8 apart) and a unique note on line 33 between them."""
+    L = ["[1 f0] chain-mod 1.0.0 loaded; pid=1"]
+    words = {14: "alpha", 22: "bravo", 30: "charlie", 38: "delta"}
+    for n in range(2, 51):
+        if n in words:
+            L.append("[%d f3] ERROR chain fail %s" % (n * 10, words[n]))
+        elif n == 33:
+            L.append("[%d f2] note-x ready" % (n * 10))
+        else:
+            L.append("[%d f1] tick %d pos=(0.5,0.5)" % (n * 10, n))
     return L
 
 
@@ -284,8 +309,8 @@ class Evidence(Base):
         self.mk("demo_log.txt", two_launch_lines())
         b, _ = self.build()
         got = [(ev["anchor"]["kind"], ev["anchor"]["line"]) for ev in b["evidence"]]
-        self.assertEqual(got, [("alert", 70), ("alert", 90), ("banner", 8), ("signature", 9), ("signature", 49),
-                               ("signature", 96)])
+        # signatures 9 and 96 are merged into the banner and alert 90 excerpts (their lines overlap), so only 49 stands alone
+        self.assertEqual(got, [("alert", 70), ("alert", 90), ("banner", 8), ("signature", 49)])
         tiers = [TIER[k] for k, _ in got]
         self.assertEqual(tiers, sorted(tiers))
         # the banner line number is smaller than the alerts', so this is priority order and not line order
@@ -296,8 +321,9 @@ class Evidence(Base):
         b, _ = self.build()
         by = {(ev["anchor"]["kind"], ev["anchor"]["line"]): ev for ev in b["evidence"]}
         self.assertEqual((by[("alert", 70)]["start"], by[("alert", 70)]["end"]), (66, 74))
-        self.assertEqual((by[("banner", 8)]["start"], by[("banner", 8)]["end"]), (8, 12))  # not 4..12: launch starts at 8
-        self.assertEqual(by[("signature", 96)]["end"], 96)
+        self.assertEqual((by[("banner", 8)]["start"], by[("banner", 8)]["end"]), (8, 13))  # not 4..13: launch starts at 8
+        self.assertEqual((by[("alert", 90)]["start"], by[("alert", 90)]["end"]), (86, 96))  # sig 96 merged in; end clamped
+        self.assertEqual(by[("alert", 90)]["merged_anchors"], [{"kind": "signature", "line": 96}])  # sig 90 is lossless-skipped
 
     def test_contained_signature_excerpts_are_not_duplicated(self):
         self.mk("demo_log.txt", two_launch_lines())
@@ -495,8 +521,9 @@ class Scrub(Base):
 
     def test_dropped_items_do_not_trip_residual(self):
         # the residual check is on the FINAL bundle bytes: a term only present in a dropped excerpt is not in the output
+        # line 50 sits only in the lowest-priority excerpt (signature 49, lines 45-53); line 95 is now inside the alert 90 excerpt
         lines = two_launch_lines()
-        lines[94] = "[800 f3] note PLANTED_residual_42 here"
+        lines[49] = "[850 f3] note PLANTED_residual_42 here"
         self.mk("demo_log.txt", lines)
         rc, so, se = self.cli(forbidden=["PLANTED_residual_42"])
         self.assertEqual(rc, 2, "without the byte cap the planted term is in the output: refused")
@@ -783,6 +810,118 @@ class CliProcess(Base):
         r = subprocess.run([sys.executable, str(TOOL), "--kind", "crash"], capture_output=True, text=True, timeout=10)
         self.assertEqual(r.returncode, 2)
         self.assertTrue(r.stderr.strip())
+
+
+class Overlap(Base):
+    def mk_all(self):
+        """The five heavy fixtures (enough excerpts to hit max_items) plus the demo, adjacent-alert and chain fixtures."""
+        names = []
+        for t in "abcde":
+            self.mk("heavy-%s_log.txt" % t, heavy_lines("heavy-" + t))
+            names.append("heavy-%s_log.txt" % t)
+        self.mk("demo_log.txt", two_launch_lines())
+        self.mk("adj_log.txt", adjacent_alert_lines())
+        self.mk("chain_log.txt", chain_lines())
+        return tuple(names + ["demo_log.txt@2", "adj_log.txt", "chain_log.txt"])
+
+    def test_three_anchors_on_adjacent_lines_give_one_excerpt(self):
+        self.mk("adj_log.txt", adjacent_alert_lines())
+        b, _ = self.build(logs=("adj_log.txt",))
+        holding = [ev for ev in b["evidence"] if ev["start"] <= 101 and 99 <= ev["end"]]
+        self.assertEqual(len(holding), 1, [(ev["start"], ev["end"]) for ev in holding])
+        ev = holding[0]
+        self.assertEqual(ev["anchor"], {"kind": "alert", "line": 99}, "the higher-priority anchor stays primary")
+        self.assertEqual((ev["start"], ev["end"]), (95, 105))
+        merged = {(m["kind"], m["line"]) for m in ev["merged_anchors"]}
+        self.assertTrue({("alert", 100), ("alert", 101)} <= merged, merged)
+
+    def test_overlap_chain_is_clipped_and_listed_as_overlap(self):
+        # alerts 14, 22, 30 merge into one 25-line excerpt (10-34); alert 38 would make the union 33 lines, so it is clipped to 35-42
+        self.mk("chain_log.txt", chain_lines())
+        b, _ = self.build(logs=("chain_log.txt",))
+        by = {(ev["anchor"]["kind"], ev["anchor"]["line"]): ev for ev in b["evidence"]}
+        self.assertEqual((by[("alert", 14)]["start"], by[("alert", 14)]["end"]), (10, 34))
+        merged_alerts = {(m["kind"], m["line"]) for m in by[("alert", 14)]["merged_anchors"] if m["kind"] == "alert"}
+        self.assertEqual(merged_alerts, {("alert", 22), ("alert", 30)})
+        self.assertEqual((by[("alert", 38)]["start"], by[("alert", 38)]["end"]), (35, 42))
+        overlap = {(d["anchor"]["kind"], d["anchor"]["line"]) for d in b["dropped"] if d["reason"] == "overlap"}
+        self.assertIn(("signature", 33), overlap, "a clipped candidate with no anchor line left is listed, not silently lost")
+        self.assertTrue(b["truncated"])
+
+    def test_no_two_kept_excerpts_of_one_launch_share_a_line(self):
+        logs = self.mk_all()
+        b, raw = self.build(logs=logs)
+        by_launch = {}
+        for ev in b["evidence"]:
+            by_launch.setdefault((ev["log"], ev["launch"]), []).append(ev)
+        self.assertGreaterEqual(len(by_launch), 5)  # heavy-a, heavy-b, demo @2, adj, chain
+        for key, evs in by_launch.items():
+            seen = set()
+            for ev in evs:
+                span = set(range(ev["start"], ev["end"] + 1))
+                self.assertFalse(span & seen, (key, ev["id"]))
+                seen |= span
+        for ev in b["evidence"]:
+            self.assertLessEqual(ev["end"] - ev["start"] + 1, PB.ITEM_LINES)
+            self.assertTrue(ev["start"] <= ev["anchor"]["line"] <= ev["end"])
+            tier = TIER[ev["anchor"]["kind"]]
+            for m in ev.get("merged_anchors", []):
+                self.assertTrue(ev["start"] <= m["line"] <= ev["end"], (ev["id"], m))
+                self.assertGreaterEqual(TIER[m["kind"]], tier, "a merged anchor never outranks the primary anchor")
+        # priority order: every max_items cut is at a tier at or below every kept excerpt's tier
+        kept_tiers = [TIER[ev["anchor"]["kind"]] for ev in b["evidence"]]
+        cut_tiers = [TIER[d["anchor"]["kind"]] for d in b["dropped"] if d["reason"] == "max_items"]
+        self.assertTrue(cut_tiers, "the heavy fixtures must exceed max_items")
+        self.assertLessEqual(max(kept_tiers), min(cut_tiers))
+        _, raw2 = self.build(logs=logs, out=os.path.join(self.outdir, "again.json"))
+        self.assertEqual(raw, raw2, "byte-identical double build")
+
+    def test_merged_excerpt_quote_verifies_in_quote_check(self):
+        self.mk("demo_log.txt", two_launch_lines())
+        b, _ = self.build()
+        banner = [ev for ev in b["evidence"] if ev["anchor"] == {"kind": "banner", "line": 8}]
+        self.assertEqual(len(banner), 1)
+        ev = banner[0]
+        self.assertEqual((ev["start"], ev["end"]), (8, 13))  # merged with the signature on line 9
+        # line 13 is only inside the merged excerpt (the old banner excerpt stopped at line 12)
+        out = {"unit_id": "u1", "hypotheses": [{"id": "H1", "evidence": [
+            {"evidence_id": ev["id"], "quote": "tick 5 pos=(1.5,1.5)"}]}]}
+        verdicts = EQC.check(b, out)
+        self.assertTrue(verdicts[0]["valid"], verdicts)
+        self.assertEqual(verdicts[0]["valid_evidence_ids"], [ev["id"]])
+
+
+class PreMergeCompat(unittest.TestCase):
+    """A bundle in the pre-merge shape (non-overlapping excerpts, no merged_anchors, hashes computed the old way) still verifies."""
+
+    def test_pre_merge_bundle_verifies_in_quote_check(self):
+        def excerpt(name, s, texts, kind, line):
+            digest = sha("\n".join(texts))
+            e = s + len(texts) - 1
+            return {"id": "ev:%s:L%d-%d:%s" % (name, s, e, digest[:8]), "log": name, "launch": 1,
+                    "anchor": {"kind": kind, "line": line}, "start": s, "end": e,
+                    "lines": [{"n": s + i, "text": t} for i, t in enumerate(texts)], "text_sha256": digest, "line_cut": False}
+        evidence = [excerpt("old_log.txt", 1, ["[1 f0] old-mod 1.0.0 loaded", "[2 f1] ERROR old failure one"], "banner", 1),
+                    excerpt("old_log.txt", 20, ["[20 f1] tick 1", "[21 f1] ERROR old failure two"], "alert", 21)]
+        body = {"format": PB.FORMAT,
+                "intake": {"symptom": "old", "kind": "logic", "mods": [], "save": None},
+                "logs": [{"name": "old_log.txt", "parser": "log_triage", "launch": 1, "start": 1, "end": 30, "total_lines": 30,
+                          "verdict_word": "ALERTS(1)", "alerts_total": 1, "file_sha256": "0" * 64,
+                          "mtime_utc": "2025-10-09T08:53:20Z", "stale": False}],
+                "evidence": evidence,
+                "caps": {"context": 4, "item_lines": 30, "line_chars": 240, "items_per_log": 12, "max_items": 40, "max_bytes": 49152},
+                "truncated": False, "dropped": [],
+                "scrub": {"lib": "scrub_text", "lines_scanned": 4, "lines_changed_lib": 0, "lines_changed_project": 0,
+                          "control_chars_replaced": 0, "intake_fields_changed": 0, "forbidden_terms_checked": 1,
+                          "residual_check": "pass"},
+                "gaps": ["no wall-clock window"]}
+        body["bundle_sha256"] = sha(canon(body))
+        bundle = json.loads(json.dumps(body))  # the file round trip
+        out = {"unit_id": "u1", "hypotheses": [{"id": "H1", "evidence": [
+            {"evidence_id": evidence[1]["id"], "quote": "ERROR old failure two"}]}]}
+        verdicts = EQC.check(bundle, out)
+        self.assertTrue(verdicts[0]["valid"], verdicts)
+        self.assertEqual(verdicts[0]["valid_evidence_ids"], [evidence[1]["id"]])
 
 
 if __name__ == "__main__":

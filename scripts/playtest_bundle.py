@@ -22,8 +22,12 @@ then a residual check of the final bytes against forbidden terms (the home dir a
 No absolute path is ever copied into the bundle.
 
 Priority and caps (frozen contract): alerts, then the banner, then top signatures; items_per_log 12, max_items 40 (fair share across
-logs, one tier at a time), max_bytes. Anything dropped by a cap is listed in dropped[] and sets truncated=true. Excerpts that lie
-fully inside an already kept excerpt of the same launch are skipped (lossless, not listed).
+logs, one tier at a time), max_bytes. Anything dropped by a cap is listed in dropped[] and sets truncated=true.
+Excerpts that lie fully inside an already kept excerpt of the same launch are skipped (lossless, not listed). No two kept excerpts
+of one launch share a line: a candidate that only partly overlaps a kept excerpt is merged into it when the union is at most 30
+lines (its anchor goes to that excerpt's merged_anchors); otherwise it is clipped to the part outside the kept excerpts and dropped
+(reason "overlap") if its own anchor line does not survive the clip. A cap that drops an excerpt also lists each anchor merged into
+it in dropped[].
 
 bundle_sha256 = sha256 of the canonical JSON (sort_keys, separators (",",":"), ensure_ascii=False, utf-8) of the bundle without that
 key. The file is that canonical JSON plus one newline. Evidence id: ev:<log>:L<a>-<b>:<sha8>.
@@ -176,6 +180,20 @@ def window(anchor, lo, hi, context, max_lines):
     return s, e
 
 
+def subtract(pieces, s, e):
+    """Remove the inclusive line range [s, e] from a list of inclusive (start, end) ranges."""
+    out = []
+    for a, b in pieces:
+        if b < s or e < a:
+            out.append((a, b))
+            continue
+        if a < s:
+            out.append((a, s - 1))
+        if e < b:
+            out.append((e + 1, b))
+    return out
+
+
 def split_lines(data):
     """Same line model as log_triage.read_lines (utf-8 replace, split on \\n, drop one trailing empty piece and trailing \\r)."""
     parts = data.decode("utf-8", errors="replace").split("\n")
@@ -288,18 +306,45 @@ def collect_log(name, launch_req, idx, game_dir, snapdir, state_path, triage_mai
         dropped.append({"log": name, "launch": launch, "reason": "alerts_over_triage_cap",
                         "count": alerts_total - len(L["alerts"])})
     cands = [("alert", r["line"]) for r in L["alerts"]] + [("banner", lo)] + [("signature", r["line"]) for r in L["top"]]
-    accepted = []  # (start, end)
-    per_tier = {0: 0, 1: 0, 2: 0}
+    # Kept windows of this launch: pairwise disjoint, so no two excerpts share a line. Each entry holds its anchors as
+    # (rank, kind, line); the lowest rank is the primary anchor.
+    kept = []
     for rank, (kind, line) in enumerate(cands):
         if not (lo <= line <= hi):
             raise Fail("log %s: anchor line %s is outside launch %s" % (name, line, launch))
         s, e = window(line, lo, hi, CONTEXT, ITEM_LINES)
-        if any(a <= s and e <= b for a, b in accepted):
-            continue  # fully inside a kept excerpt: lossless skip
-        if len(accepted) >= ITEMS_PER_LOG:
+        if any(w["s"] <= s and e <= w["e"] for w in kept):
+            continue  # fully inside a kept excerpt: lossless skip (not listed, as before)
+        hit = [w for w in kept if w["s"] <= e and s <= w["e"]]
+        if hit:
+            us = min([s] + [w["s"] for w in hit])
+            ue = max([e] + [w["e"] for w in hit])
+            if ue - us + 1 <= ITEM_LINES:
+                # merge: one excerpt over the union; the higher-priority anchor stays primary
+                gone = {id(w) for w in hit}
+                kept = [w for w in kept if id(w) not in gone]
+                kept.append({"s": us, "e": ue, "anchors": [(rank, kind, line)] + [a for w in hit for a in w["anchors"]]})
+                continue
+            # too big to merge: keep only the part outside the kept windows, and only if it still holds the anchor line
+            pieces = [(s, e)]
+            for w in hit:
+                pieces = subtract(pieces, w["s"], w["e"])
+            piece = next((p for p in pieces if p[0] <= line <= p[1]), None)
+            if piece is None:
+                dropped.append({"log": name, "launch": launch, "anchor": {"kind": kind, "line": line}, "reason": "overlap"})
+                continue
+            s, e = piece
+        if len(kept) >= ITEMS_PER_LOG:
             dropped.append({"log": name, "launch": launch, "anchor": {"kind": kind, "line": line}, "reason": "items_per_log"})
             continue
-        accepted.append((s, e))
+        kept.append({"s": s, "e": e, "anchors": [(rank, kind, line)]})
+
+    # Excerpts are built only after merging, so ids, hashes and per-tier indexes describe the final windows.
+    per_tier = {0: 0, 1: 0, 2: 0}
+    for w in sorted(kept, key=lambda w: min(a[0] for a in w["anchors"])):
+        s, e = w["s"], w["e"]
+        anchors = sorted(w["anchors"])
+        rank, kind, line = anchors[0]
         texts, cut_any = [], False
         ctrl = lib = proj = 0
         out_lines = []
@@ -317,6 +362,8 @@ def collect_log(name, launch_req, idx, game_dir, snapdir, state_path, triage_mai
         ev = {"id": "ev:%s:L%d-%d:%s" % (name, s, e, digest[:8]), "log": name, "launch": launch,
               "anchor": {"kind": kind, "line": line}, "start": s, "end": e, "lines": out_lines,
               "text_sha256": digest, "line_cut": cut_any}
+        if len(anchors) > 1:
+            ev["merged_anchors"] = [{"kind": k, "line": ln} for _, k, ln in anchors[1:]]
         tier = TIER[kind]
         items.append({"ev": ev, "tier": tier, "tier_idx": per_tier[tier], "rank": rank,
                       "sc": {"lines": len(out_lines), "ctrl": ctrl, "lib": lib, "proj": proj}})
@@ -336,6 +383,13 @@ BASE_GAPS = (
 def dropped_key(d):
     a = d.get("anchor")
     return (d["log"], d["launch"] or 0, a["line"] if a else 0, d["reason"])
+
+
+def drop_entries(item, reason):
+    """dropped[] rows for one excerpt removed by a cap: its primary anchor and every anchor merged into it."""
+    ev = item["ev"]
+    return [{"log": ev["log"], "launch": ev["launch"], "anchor": dict(a), "reason": reason}
+            for a in [ev["anchor"]] + ev.get("merged_anchors", [])]
 
 
 def assemble(intake, intake_changed, logs, kept, dropped, gaps, nterms, max_bytes):
@@ -431,8 +485,7 @@ def build_bundle(*, symptom, kind, log_specs, mods, save, game_dir, max_bytes, s
     ordered = sorted(all_items, key=prio)
     kept = ordered[:MAX_ITEMS]
     for it in ordered[MAX_ITEMS:]:
-        ev = it["ev"]
-        dropped.append({"log": ev["log"], "launch": ev["launch"], "anchor": ev["anchor"], "reason": "max_items"})
+        dropped += drop_entries(it, "max_items")
 
     while True:
         bundle, raw = assemble(intake, int(intake_changed), logs, kept, dropped, gaps, len(forbidden), max_bytes)
@@ -441,8 +494,7 @@ def build_bundle(*, symptom, kind, log_specs, mods, save, game_dir, max_bytes, s
         if not kept:
             raise Fail("--max-bytes %d is too small to hold even the bundle skeleton (%d bytes)" % (max_bytes, len(raw)))
         victim = kept.pop()  # lowest priority first
-        ev = victim["ev"]
-        dropped.append({"log": ev["log"], "launch": ev["launch"], "anchor": ev["anchor"], "reason": "max_bytes"})
+        dropped += drop_entries(victim, "max_bytes")
 
     hits = residual_hits(raw.decode("utf-8"), forbidden)
     if hits:
