@@ -99,8 +99,8 @@ typedef struct K2SaveEventsApi { uint32_t struct_size;
 
 ### 4.1a Hotbar migration to `k2.saveevents@1` (owner-gated)
 
-Status 2026-10-04: library `save-events` 0.1.0-dev is BUILT and smoked (L3), NOT installed, and the hotbar is NOT migrated. Everything below is
-the plan for the hotbar change; it needs an owner GO because it changes a live mod (hotbar 1.2.1 -> 1.3.0).
+Status 2026-10-12: DONE. Owner GO given; hotbar migrated in ec95c98 (1.3.0-dev); verified by WI-33. (Original 2026-10-04 status: library BUILT and smoked (L3), NOT installed, hotbar NOT migrated.) Everything below is
+the plan for the hotbar change, which changes a live mod (hotbar 1.2.1 -> 1.3.0).
 
 **Spec deviations (read first).** `K2SaveEvent.folder` is the save folder qualified with its save root, `saves/000012 - Game11` or
 `cloudsaves/<steam id>/000012 - Game11`, relative to the game directory (the process cwd), not a drive-absolute path. It is exactly what the
@@ -283,3 +283,5 @@ is the destination. The constants stay local in FPH, and this table is the hand-
      it (doc 19:126), so it would grow the hotbar PR.
   2. Is portrait click-to-target wanted for UB-U, or is the picker button enough for 1.0.0?
      (10-04: portrait-side buttons are now designed in doc 27 companion self-heal: FRAME_BEGIN click polling, no input swallow; a hotbar-owned click-absorbing label via `hud-host` would remove its click-through risk.)
+
+- [x] 4.1a DONE (owner GO confirmed 2026-10-12; migration landed in ec95c98 (2026-10-08); WI-33 verify PASS 1f1f032: 5 hooks gone, `k2se::Client` consumed, conflicts cleared, tests 4/4, build_check FAIL=0).
