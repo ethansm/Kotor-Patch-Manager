@@ -12,7 +12,7 @@ Statuses come from this doc's own status blocks, the git log of `equipment_3d_ch
 | EQ3 | Animation cross-fade (jumps at trigger/finish) | DONE | | Accepted 2026-09-30 ~18:00 (SESSION 4, Phase 0) |
 | EQ4 | Toolbar column: Animate, Spin (split play/pause + Reset), Weapons, Emotes pop-up | BUILT | KPM 8ba37be | Installed dcbdfde3; spin row and Emotes not yet user-tested (SESSION 4); earlier build user-tested "working" (line 44) |
 | EQ5 | Headgear-loss fix (attachHelmet from the item model) | DONE | | User PASS 2026-10-02 ~02:40; DLL 962f9e22 |
-| EQ6 | Doc 20 extraction: Equip3dLogic.h, host test, F14-F19 clamps and INI hygiene | CHECK | 1d0ccab 47be017 14d905a | BF2 commits say source-only; shipped state not confirmed |
+| EQ6 | Doc 20 extraction: Equip3dLogic.h, host test, F14-F19 clamps and INI hygiene | BUILT | 1d0ccab 47be017 14d905a | Extraction 1d0ccab and BF2 A/B (47be017, 14d905a) in live build: KPM Equip3dLogic.h matches HEAD; kpatch built 10-09 is newer than that copy; kpm_status LIVE. Play test not recorded |
 | EQ7 | Common extraction: saferead C3a, SceneView C3b, vertical pan C3c | BUILT | e180af1 ba361f8 e77e64c | Installed 2026-10-05 (b6eeee09, d954782a); combined play test pending |
 | EQ8 | MG4/MG6/MG7: KpLog, IniKit, PanelSlots, GuiKit, WindowHook, gameaddr; T5e contract test | BUILT | d2fd8cc 1af7130 aa63ec8 | equip3d 0.2.0-probe installed 2026-10-05 20:55; play check pending |
 | EQ9 | Track P gui-input adoption; creature destroy on character change, anim fallback, screen sync | CHECK | 7aeb296 22b56b4 | 2026-10-08/09 commits; install state not recorded |
