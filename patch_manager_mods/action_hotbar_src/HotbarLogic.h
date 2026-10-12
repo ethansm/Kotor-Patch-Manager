@@ -585,7 +585,10 @@ template <class E> inline unsigned pickerSignature(const std::vector<E>& entries
 // replaceLiveProfiles rule: keep the live [General], always have a Default profile, snapshot profiles overwrite.
 inline Config mergeSnapshot(const General& live, const Config* snap) {
     Config n; n.general = live; n.profile("Default");
-    if (snap) for (auto& kv : snap->profiles) n.profiles[kv.first] = kv.second;
+    if (snap) {
+        for (auto& kv : snap->profiles) n.profiles[kv.first] = kv.second;
+        n.unknownSections = snap->unknownSections;   // C049: unknown sections travel with the snapshot's profiles
+    }
     return n;
 }
 

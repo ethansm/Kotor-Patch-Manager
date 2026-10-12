@@ -978,7 +978,7 @@ void showTipText(Widget& anchor, const std::string& text, int s, int topAnchor =
         static int warnedBuild = -1; if (warnedBuild != g_buildSeq) { warnedBuild = g_buildSeq; KP_LOGV(chTip, KPLOG_WARN, "tip: slot %d: text object bad (vt=%08x renderer=%08x), tooltip skipped", s, (unsigned)rdInt(S_Border, tx, 0), (unsigned)rdInt(S_Border, tx, guikit::Text_Renderer)); }   // once per HUD build
         g_bar.tipSlot = s; return;
     }
-    guikit::setText(tc, text.c_str());
+    if (!guikit::setText(tc, text.c_str())) ++g_widgetFaults;   // result was ignored; counted for the heartbeat (wfaults=) like the other widget writes
     RECT cr = {0, 0, FallbackClientW, FallbackClientH}; if (g_gameWnd) GetClientRect(g_gameWnd, &cr);
     uintptr_t fc = reinterpret_cast<uintptr_t>(anchor.ctl); int fx = rdInt(S_Geom, fc, guikit::Ctl_X), fy = rdInt(S_Geom, fc, guikit::Ctl_Y);
     hb::TipRect tr = hb::tipLayout(text, fx, fy, topAnchor, (int)cr.right);   // size from the text, anchored above the frame (or the picker), clamped on screen

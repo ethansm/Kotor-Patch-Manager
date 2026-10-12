@@ -13,6 +13,7 @@ Action Hotbar (id `action-hotbar`), formerly Force Power Hotbar.
 - Heartbeat `wfaults=` also counts ignored widget setup results.
 - Migrated 5 save/load/new-game detours to the `save-events` library (`k2.saveevents@1`, doc 22 §4.1a).
 - Internal: pure logic moved to `HotbarLogic.h` (HP5), named constants and cleanup (HP6), more tests.
+- WI-10: Force Power Hotbar polish and config round-trip.
 
 ## 1.2.2-dev (2026-10-05)
 

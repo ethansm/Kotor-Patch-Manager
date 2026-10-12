@@ -11,8 +11,9 @@ int main(){
    "[Profile.Default]\nBottom1=spell:8 ; speed burst\nBottom0=spell:135\nLeft1=item:Medpac (3)\nRight3=other:1a\nBottom5=feat:12\nBottom6=garbage\nLeft2=\n"
    "[Profile.Atton]\nBottom1=spell:22\nBogus9=spell:1\n";
   Config a; a.Parse(sample);
-  if(!KT_CHECK_EQ(a.warnings.size(),2)) for(auto&w:a.warnings) printf("warn: %s\n",w.c_str());
+  if(!KT_CHECK_EQ(a.warnings.size(),1)) for(auto&w:a.warnings) printf("warn: %s\n",w.c_str());   // only Bottom6=garbage; Bogus9 is an unknown key, kept silently (C049)
   std::string s1=a.Serialize(); Config b; b.Parse(s1); std::string s2=b.Serialize();
+  KT_CHECK(s1.find("Bogus9=spell:1")!=std::string::npos);   // C049: unknown profile key survives Serialize
   KT_CHECK(s1==s2);
   KT_CHECK(b.warnings.empty());
   KT_CHECK(s1.find("Left")==std::string::npos && s1.find("Right")==std::string::npos);   // removed Ctrl/Alt rows: dropped silently
@@ -35,6 +36,17 @@ int main(){
     KT_CHECK_EQ(t.general.verbose,0);
     KT_CHECK(ts.find("Invoke=1\n")!=std::string::npos);
     KT_CHECK(ts.find("Verbose=0\n")!=std::string::npos); }
+  { // C049: an unknown [section] and an unknown key inside a profile survive Parse -> Serialize -> Save -> Load
+    Config u; u.Parse("[Profile.Bob]\nBottom1=spell:8\nMyKey=hello   ; kept\n[Custom Section]\nA=1\nB=two\n");
+    KT_CHECK(u.warnings.empty());
+    std::string us=u.Serialize();
+    KT_CHECK(us.find("MyKey=hello   ; kept\n")!=std::string::npos);
+    KT_CHECK(us.find("\n[Custom Section]\nA=1\nB=two\n")!=std::string::npos);
+    Config v; v.Parse(us); KT_CHECK(v.warnings.empty()); KT_CHECK(v.Serialize()==us);
+    std::string up=td.file("unknown_rt.ini");
+    KT_CHECK(u.Save(up));
+    Config w; KT_CHECK(w.Load(up)); KT_CHECK(w.warnings.empty()); KT_CHECK(w.Serialize()==us);
+    remove(up.c_str()); }
   KT_CHECK_EQ(StackCount(0x40000272,"Medpac (7)"),7);
   KT_CHECK_EQ(StackCount(0x40000273,"Repair Kit (19)"),19);
   KT_CHECK_EQ(StackCount(0x40000272,"Medpac"),0);
@@ -189,8 +201,8 @@ int main(){
     // structure oddities
     c=W("[General\nInvoke=0\n"); KT_CHECK_EQ(c.warnings.size(),2); KT_CHECK_EQ(c.general.invoke,1);   // unterminated section, then the key is outside any section
     c=W("Invoke=0\n[General]\nVerbose=1\n"); KT_CHECK_EQ(c.warnings.size(),1); KT_CHECK_EQ(c.general.invoke,1); KT_CHECK_EQ(c.general.verbose,1);
-    c=W("[]\nBottom1=spell:1\n"); KT_CHECK_EQ(c.warnings.size(),2); KT_CHECK(c.profiles.empty());
-    c=W("[Profile.]\nBottom1=spell:1\n"); KT_CHECK_EQ(c.warnings.size(),2); KT_CHECK(c.profiles.empty());
+    c=W("[]\nBottom1=spell:1\n"); KT_CHECK(c.warnings.empty()); KT_CHECK(c.profiles.empty()); KT_CHECK_EQ(c.unknownSections.size(),1); KT_CHECK_EQ(c.unknownSections[0].lines.size(),1);   // C049: unknown section kept verbatim, no warning
+    c=W("[Profile.]\nBottom1=spell:1\n"); KT_CHECK(c.warnings.empty()); KT_CHECK(c.profiles.empty()); KT_CHECK_EQ(c.unknownSections.size(),1);
     c=W("[Profile.X]\nBottom1 spell:1\n"); KT_CHECK_EQ(c.warnings.size(),1);   // no '='
     c=W("# comment\n; other comment\n   # indented\n[General]\n#Invoke=0\n;Verbose=1\n"); KT_CHECK(c.warnings.empty()); KT_CHECK_EQ(c.general.invoke,1); KT_CHECK_EQ(c.general.verbose,0);
     c=W("[General]\nInvoke=0\nInvoke=1\nFoo=a\nFoo=b\n[Profile.D]\nBottom1=spell:1\nBottom1=spell:2\n[profile.d]\nBottom1=spell:3\n");   // last wins, profile names case-insensitive
@@ -365,8 +377,8 @@ int main(){
   { // warning text clips long values (key/value/section) but keeps the line number and slot key
     Config c=W("[Profile.Long]\nBottom7=item:"+std::string(300,'x')+"@lowhp:0\n"); KT_CHECK_EQ(c.warnings.size(),1);
     if(!c.warnings.empty()) KT_CHECK_EQ(c.warnings[0].c_str(),("line 2: Bottom7: bad value 'item:"+std::string(95,'x')+"' (slot left empty)").c_str());
-    c=W("[Profile.Long]\n"+std::string(300,'k')+"=spell:1\n"); KT_CHECK_EQ(c.warnings.size(),1);
-    if(!c.warnings.empty()) KT_CHECK_EQ(c.warnings[0].c_str(),("line 2: unknown key '"+std::string(40,'k')+"' in [Profile.Long]").c_str()); }
+    c=W("[Profile.Long]\n"+std::string(300,'k')+"=spell:1\n"); KT_CHECK(c.warnings.empty());   // C049: unknown key kept, no warning
+    { const Profile* L=c.find("Long"); if(KT_CHECK(L!=nullptr)) KT_CHECK_EQ(L->extra.size(),1); } }
   { // Save never leaves a .bak (the hotbar makes its own backups) and replaces the file each time
     std::string path=td.file("test_save2.ini");
     remove(path.c_str()); remove((path+".bak").c_str()); remove((path+".tmp").c_str());   // stale files from an aborted earlier run must not matter
@@ -461,7 +473,7 @@ int main(){
     c=W("[General] junk here\nInvoke=0\n[Profile.X] more junk\nBottom1=spell:5\n[Profile.Y]] extra\nBottom1=spell:6\n[Profile.Z] ; note\nBottom1=spell:7\n");
     KT_CHECK(c.warnings.empty()); KT_CHECK_EQ(c.general.invoke,0); KT_CHECK_EQ(P(c,"X").slots[0][0].id,5); KT_CHECK_EQ(P(c,"Y").slots[0][0].id,6); KT_CHECK_EQ(P(c,"Z").slots[0][0].id,7);
     KT_CHECK(c.profiles.count("x")==1 && c.profiles.count("y")==1 && c.profiles.count("z")==1 && c.profiles.size()==3);
-    c=W("[Profile. ]\nBottom1=spell:1\n"); KT_CHECK_EQ(c.warnings.size(),2); KT_CHECK(c.profiles.empty()); }   // blank name after trim: unknown section, then the key is outside any section
+    c=W("[Profile. ]\nBottom1=spell:1\n"); KT_CHECK(c.warnings.empty()); KT_CHECK(c.profiles.empty()); KT_CHECK_EQ(c.unknownSections.size(),1); }   // blank name after trim: unknown section, its key kept verbatim (C049)
   { // HB19: normalizeItemName: identity = trimmed text before the first " (" (stack count / type suffix)
     KT_CHECK_EQ(normalizeItemName("Medpac (3)").c_str(),"Medpac"); KT_CHECK_EQ(normalizeItemName("Medpac (Type) (3)").c_str(),"Medpac");
     KT_CHECK_EQ(normalizeItemName("  Medpac \t").c_str(),"Medpac"); KT_CHECK_EQ(normalizeItemName("Medpac").c_str(),"Medpac");

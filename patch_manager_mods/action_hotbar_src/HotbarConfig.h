@@ -214,10 +214,21 @@ inline bool IsRemovedRowKey(const std::string& key) {
     return false;
 }
 
+// A key line the parser does not model (C049): an unknown key inside a [Profile.*], or any key inside an unknown [section].
+struct RawLine { std::string key, val, note; };
+inline std::string RawLineText(const RawLine& e) {
+    std::string o = e.key + "=" + e.val;
+    if (!e.note.empty()) o += "   ; " + e.note;
+    return o + "\n";
+}
+// An unknown [section] (neither [General] nor [Profile.*]) and its key lines, kept verbatim across Save.
+struct RawSection { std::string name; std::vector<RawLine> lines; };
+
 struct Profile {
     std::string name;
     ActionRef slots[Rows][Slots];
     std::string notes[Rows][Slots];   // trailing "; comment" per slot, preserved across Save
+    std::vector<RawLine> extra;       // unknown keys in this profile, preserved across Save (C049)
 };
 
 // Picking an action already on the bar MOVES it: every other slot holding `a` becomes explicit "none" (note "moved"),
@@ -252,6 +263,7 @@ inline bool effectiveFallbackSelf(const TargetSpec& t, const General& g) { retur
 struct Config {
     General general;
     std::map<std::string, Profile> profiles;   // key = lowercase profile name
+    std::vector<RawSection> unknownSections;   // unknown [sections] in file order, kept verbatim (C049)
     std::vector<std::string> warnings;
 
     Profile& profile(const std::string& name) {
@@ -298,7 +310,7 @@ struct Config {
     // Never throws; a malformed line adds a warning and leaves that slot empty.
     bool Parse(const std::string& text) {
         *this = Config();
-        std::string section; bool inGeneral = false; Profile* cur = nullptr;
+        std::string section; bool inGeneral = false; Profile* cur = nullptr; RawSection* curRaw = nullptr;
         size_t pos = 0; int lineNo = 0;
         if (text.size() >= 3 && (unsigned char)text[0] == 0xEF && (unsigned char)text[1] == 0xBB && (unsigned char)text[2] == 0xBF) pos = 3;
         while (pos <= text.size()) {
@@ -315,11 +327,11 @@ struct Config {
             char msg[200];   // every %s below is clipped (%.Ns) so the line number and key always survive
             if (line[0] == '[') {
                 size_t rb = line.find(']');
-                if (rb == std::string::npos) { snprintf(msg, sizeof msg, "line %d: unterminated section", lineNo); warnings.push_back(msg); cur = nullptr; inGeneral = false; continue; }
-                section = trim(line.substr(1, rb - 1)); inGeneral = false; cur = nullptr;
+                if (rb == std::string::npos) { snprintf(msg, sizeof msg, "line %d: unterminated section", lineNo); warnings.push_back(msg); cur = nullptr; curRaw = nullptr; inGeneral = false; continue; }
+                section = trim(line.substr(1, rb - 1)); inGeneral = false; cur = nullptr; curRaw = nullptr;
                 if (lower(section) == "general") inGeneral = true;
                 else if (lower(section).compare(0, 8, "profile.") == 0 && section.size() > 8) cur = &profile(trim(section.substr(8)));   // HB15: "[Profile. Bob ]" is profile "Bob"
-                else { snprintf(msg, sizeof msg, "line %d: unknown section [%.60s]", lineNo, section.c_str()); warnings.push_back(msg); }
+                else { unknownSections.push_back(RawSection{section, {}}); curRaw = &unknownSections.back(); }   // C049: kept verbatim, no warning (a warning would refuse every Save)
                 continue;
             }
             size_t eq = line.find('=');
@@ -353,10 +365,12 @@ struct Config {
             } else if (cur) {
                 int r, s;
                 if (IsRemovedRowKey(key)) continue;
-                if (!SlotFromKeyName(key, &r, &s)) { snprintf(msg, sizeof msg, "line %d: unknown key '%.40s' in [%.60s]", lineNo, key.c_str(), section.c_str()); warnings.push_back(msg); continue; }
+                if (!SlotFromKeyName(key, &r, &s)) { cur->extra.push_back(RawLine{key, val, note}); continue; }   // C049: unknown key kept verbatim, no warning
                 ActionRef ref;
                 if (!hb::Parse(val, &ref)) { snprintf(msg, sizeof msg, "line %d: %.40s: bad value '%.100s' (slot left empty)", lineNo, key.c_str(), val.c_str()); warnings.push_back(msg); }
                 cur->slots[r][s] = ref; cur->notes[r][s] = note;
+            } else if (curRaw) {
+                curRaw->lines.push_back(RawLine{key, val, note});   // C049: key of an unknown section, kept verbatim
             } else { snprintf(msg, sizeof msg, "line %d: key '%.40s' outside any section", lineNo, key.c_str()); warnings.push_back(msg); }
         }
         return true;
@@ -399,9 +413,14 @@ struct Config {
                 if (!p.notes[r][s].empty()) o += "   ; " + p.notes[r][s];
                 o += "\n";
             }
+            for (auto& e : p.extra) o += RawLineText(e);   // C049
         };
         if (const Profile* d = find("Default")) emit(*d);
         for (auto& kv : profiles) if (kv.first != "default") emit(kv.second);
+        for (auto& sec : unknownSections) {   // C049: unknown sections last, in file order
+            o += "\n[" + sec.name + "]\n";
+            for (auto& e : sec.lines) o += RawLineText(e);
+        }
         return o;
     }
 
