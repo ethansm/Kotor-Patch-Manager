@@ -531,7 +531,8 @@ def check_cross_launch_map(recs):
     FAIL: a (oid, BEFORE app) key maps to two (after, tv) inside one launch, or its mapping differs between two launches
     that carry the same raw banner version string (a probe suffix change is a new version).
     INFO, not a failure: the mapping differs between launches whose raw banner versions differ ("version changed A->B").
-    FAIL wins at the result level; the INFO line may be reported after it."""
+    A flip inside a launch whose version is not the latest log version is INFO "superseded version", not FAIL.
+    FAIL wins at the result level; the INFO lines may be reported after it."""
     launches = [(None, {})]          # (raw banner version, {key: set of (after, tv)}) per launch
     lines_per_key = Counter()
     for r in recs:
@@ -546,33 +547,42 @@ def check_cross_launch_map(recs):
     if not repeated:
         return INFO, ["INFO 16 cross-launch map: not judged (no oid seen twice with the same BEFORE app, tv= lines only)"]
 
+    latest = launches[-1][0]         # a flip inside an older version is superseded, not judged
     occ = {}                         # key -> [(version, mapping set)] in log order, one entry per launch carrying the key
     for ver, rows in launches:
         for key, mapping in rows.items():
             occ.setdefault(key, []).append((ver, mapping))
-    fail, changed = set(), {}        # changed: key -> [(version A, version B)] for differing launches with different versions
+    fail, changed, stale = set(), {}, {}   # changed: key -> [(A, B)] across versions; stale: key -> superseded version
     for key, rows in occ.items():
-        if any(len(mapping) > 1 for _, mapping in rows):
-            fail.add(key)           # within-launch flip
+        for ver, mapping in rows:
+            if len(mapping) > 1:     # within-launch flip
+                (fail.add(key) if ver == latest else stale.setdefault(key, ver))
+        if key in fail or key in stale:
             continue
         for i, (va, ma) in enumerate(rows):
             for vb, mb in rows[i + 1:]:
                 if ma == mb:
                     continue
-                if va == vb:
-                    fail.add(key)   # same banner version, different mapping
-                else:
+                if va != vb:
                     changed.setdefault(key, []).append((va, vb))
-    changed = {k: pairs for k, pairs in changed.items() if k not in fail}
+                elif va == latest:
+                    fail.add(key)    # same banner version as the latest launch, different mapping
+                else:
+                    stale.setdefault(key, va)
+    changed = {k: pairs for k, pairs in changed.items() if k not in fail and k not in stale}
 
     info = []
+    if stale:
+        vers = sorted({_ver_name(v) for v in stale.values()})
+        info.append("INFO 16 cross-launch map: not judged (superseded version %s, latest %s): %d (oid, before) key(s) flip there"
+                    % (",".join(vers), _ver_name(latest), len(stale)))
     if changed:
         pairs = []
         for k in sorted(changed):
             pairs += [p for p in changed[k] if p not in pairs]
         (va, vb), more = pairs[0], len(pairs) - 1
-        info = ["INFO 16 cross-launch map: not judged (version changed %s->%s%s): %d (oid, before) key(s) differ between versions"
-                % (_ver_name(va), _ver_name(vb), "; +%d more" % more if more else "", len(changed))]
+        info.append("INFO 16 cross-launch map: not judged (version changed %s->%s%s): %d (oid, before) key(s) differ between versions"
+                    % (_ver_name(va), _ver_name(vb), "; +%d more" % more if more else "", len(changed)))
     if fail:
         msgs = [(FAIL, "%d (oid, before) key(s) map to different (after, tv) across launches" % len(fail))]
         details = []

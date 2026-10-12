@@ -644,6 +644,19 @@ class Rules012Tests(unittest.TestCase):
         self.assertIn("INFO 16 cross-launch map: not judged (version changed 1.0.0->1.0.0-probe): "
                       "1 (oid, before) key(s) differ between versions", out)
 
+    def test_flip_in_superseded_version_is_info_not_fail(self):
+        # An older launch (1.0.0) flips oid 0x3E9 inside itself; the latest launch (1.0.1) is clean.
+        old = _launch("1.0.0") + [rmp_line(oid=0x3E9, before=805, after=806, tv=(1, 3))]
+        rc, out = run_bodies(old + _launch("1.0.1"))
+        self.assertEqual(rc, 0, out)
+        self.assertFalse(any(s.startswith("FAIL 16") for s in out), out)
+        self.assertIn("INFO 16 cross-launch map: not judged (superseded version 1.0.0, latest 1.0.1): "
+                      "1 (oid, before) key(s) flip there", out)
+        # Control: the same flip in the latest launch still FAILs.
+        rc, out = run_bodies(_launch("1.0.1") + _launch("1.0.0") + [rmp_line(oid=0x3E9, before=805, after=806, tv=(1, 3))])
+        self.assertEqual(rc, 1, out)
+        self.assertTrue(any(s.startswith("FAIL 16 cross-launch map") for s in out), out)
+
 
 if __name__ == "__main__":
     unittest.main()
