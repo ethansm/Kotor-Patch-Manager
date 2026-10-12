@@ -47,7 +47,7 @@ Doc 15 stays the register for *engine* bug candidates; this board is for defects
 ## Fix-half intake class (fix_intake.py --stats, 2026-10-11)
 - auto-fixable (swarm may take): BG13, BG14, BG19.
 - human-only (swarm will not touch; fix by hand): BG01, BG02, BG03, BG09, BG21, BG22, BG23.
-- needs-design (user decides the approach first): BG04, BG05, BG06, BG07, BG08, BG10, BG11, BG12, BG15, BG17, BG18, BG20, BG24.
+- needs-design (user decides the approach first): BG04, BG05, BG06, BG07, BG08, BG10, BG11, BG12, BG15, BG17, BG18, BG24.
 - contested (human list): BG16, BG25.
 
 ## Triaged out (not on the board)
