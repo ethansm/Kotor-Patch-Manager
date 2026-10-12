@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rg:*)",
+      "Bash(sed -n:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(python3 scripts/wi_driver.py:*)",
+      "Bash(python3 scripts/wave_tools.py:*)",
+      "Bash(python3 scripts/agent_contract.py:*)",
+      "Bash(python3 scripts/agent_usage.py:*)"
+    ],
+    "deny": [
+      "Bash(git add -A:*)",
+      "Bash(git add .:*)",
+      "Bash(git commit -a:*)",
+      "Bash(git commit --all:*)",
+      "Bash(git push:*)",
+      "Bash(git reset:*)",
+      "Bash(git checkout:*)",
+      "Bash(git clean:*)",
+      "Bash(git stash:*)",
+      "Bash(gh:*)",
+      "Bash(python3 scripts/kpm_hotswap.py:*)",
+      "Bash(kill:*)",
+      "Bash(pkill:*)",
+      "Bash(steam:*)"
+    ]
+  }
+}
