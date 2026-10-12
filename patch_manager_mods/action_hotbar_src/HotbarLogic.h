@@ -68,6 +68,19 @@ inline ActionRef decodeKey(int key, const std::string& name) {
 enum Tab { Tab_Power = 0, Tab_Item = 1, Tab_Mode = 2 };
 inline int tabOfKey(int key) { return (key & KeyItemFlag) ? Tab_Item : ((key & KeySpellFlag) ? Tab_Power : Tab_Mode); }
 
+// Party slot of the controlled creature: pointer match first, then object id (module loads may wrap the pointer),
+// but never by the transient ids 0 / 0xFFFFFFFF alone, except 0xFFFFFFFF held by exactly one member (the Exile on the Ebon Hawk).
+// ptrs/oids: the member pointers and ids for slots 0..count-1 (ptr 0 = empty slot). Returns -1 when unmatched or ambiguous.
+inline int pickPartySlot(uintptr_t controlled, unsigned oid, const uintptr_t* ptrs, const unsigned* oids, int count) {
+    if (count > 3) count = 3;
+    for (int i = 0; i < count; ++i) if (ptrs[i] != 0 && ptrs[i] == controlled) return i;
+    if (oid == 0) return -1;
+    int hit = -1, n = 0;
+    for (int i = 0; i < count; ++i) if (ptrs[i] != 0 && oids[i] == oid) { if (hit < 0) hit = i; ++n; }
+    if (oid == 0xFFFFFFFFu) return n == 1 ? hit : -1;
+    return hit;
+}
+
 // Character key from creature tag, party slot, or creature object id:
 // 1. Tag (if present and not player/exile): returns lowercase trimmed tag (e.g. "atton", "kreia").
 // 2. Player character (Exile): recognized by party slot 0 / isMember0, partyCount == 1, tag "player"/"exile",

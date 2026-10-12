@@ -384,13 +384,10 @@ std::string computeCharacterKey() {
     uintptr_t t = party::table(&why);
     int partySlot = -1;
     if (t != 0) {
-         for (int i = 0; i < g_partyCount && i < 3; ++i) {
-             uintptr_t mem = party::member(t, i);
-             if (mem == c || (mem != 0 && creatureOid(mem) == oid)) {   // match by pointer or by OID (module loads may wrap the creature pointer differently)
-                 partySlot = i;
-                 break;
-             }
-         }
+        uintptr_t ptrs[3] = {}; unsigned oids[3] = {};
+        const int n = g_partyCount < 3 ? g_partyCount : 3;
+        for (int i = 0; i < n; ++i) { ptrs[i] = party::member(t, i); if (ptrs[i]) oids[i] = creatureOid(ptrs[i]); }
+        partySlot = hb::pickPartySlot(c, oid, ptrs, oids, n);
     }
     if (partySlot == -1 && g_partyCount == 1) partySlot = 0;
     bool isMember0 = (partySlot == 0);

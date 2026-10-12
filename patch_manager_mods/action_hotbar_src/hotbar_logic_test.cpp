@@ -232,6 +232,29 @@ int main() {
     KT_CHECK_EQ(characterKeyFor(0xFFFFFFFEu, 1, &bad).c_str(), "objfffffffd"); KT_CHECK(!bad);
     KT_CHECK_EQ(characterKeyFor(0xFFFFFFFFu, 2, &bad, false).c_str(), ""); KT_CHECK(bad);   // 0xFFFFFFFF stays invalid (outside sentinel range)
   }
+  { // 2b. pickPartySlot (BG04): never match by 0 / 0xFFFFFFFF alone
+    const uintptr_t A = 0x1000, B = 0x2000, C = 0x3000, Z = 0x9000;
+    { uintptr_t p[3] = {A, B, C}; unsigned o[3] = {7, 7, 9};
+      KT_CHECK_EQ((int)pickPartySlot(B, 7, p, o, 3), 1); }                                   // pointer beats earlier OID hit
+    { uintptr_t p[2] = {A, B}; unsigned o[2] = {0xFFFFFFFFu, 0xFFFFFFFFu};
+      KT_CHECK_EQ((int)pickPartySlot(Z, 0xFFFFFFFFu, p, o, 2), -1);                          // shared sentinel, unknown pointer: ambiguous
+      KT_CHECK_EQ((int)pickPartySlot(B, 0xFFFFFFFFu, p, o, 2), 1); }                         // pointer match still wins
+    { uintptr_t p[2] = {A, B}; unsigned o[2] = {0xFFFFFFFFu, 0x80000042u};
+      KT_CHECK_EQ((int)pickPartySlot(Z, 0xFFFFFFFFu, p, o, 2), 0); }                         // Ebon Hawk rescue: one holder
+    { uintptr_t p[1] = {A}; unsigned o[1] = {0};
+      KT_CHECK_EQ((int)pickPartySlot(Z, 0, p, o, 1), -1); }                                  // id 0 never matches by OID
+    { uintptr_t p[2] = {A, B}; unsigned o[2] = {0xFFFFFFFDu, 0x80000042u};
+      KT_CHECK_EQ((int)pickPartySlot(Z, 0x80000042u, p, o, 2), 1); }                         // valid id, wrapped pointer
+    { uintptr_t p[2] = {0, B}; unsigned o[2] = {0xFFFFFFFFu, 5};
+      KT_CHECK_EQ((int)pickPartySlot(Z, 0xFFFFFFFFu, p, o, 2), -1); }                        // empty slot skipped
+    { uintptr_t p[3] = {A, B, C}; unsigned o[3] = {1, 2, 3};
+      KT_CHECK_EQ((int)pickPartySlot(Z, 3, p, o, 3), 2); }
+    // end to end with characterKeyFor
+    { bool bad = false; int pick = -1;
+      KT_CHECK_EQ(characterKeyFor(0xFFFFFFFFu, 2, &bad, pick == 0, nullptr, pick).c_str(), ""); KT_CHECK(bad);
+      pick = 0;
+      KT_CHECK_EQ(characterKeyFor(0xFFFFFFFFu, 2, &bad, pick == 0, nullptr, pick).c_str(), "objfffffffd"); }
+  }
   { // 3. AutoFill merge + FNV signature
     ActionRef cfg[Slots], eff[Slots]; bool isAuto[Slots];
     std::vector<ActionRef> autos = { mk(K_Spell, 1), mk(K_Spell, 2), mk(K_Item, 0, "Medpac"), mk(K_Spell, 4) };
