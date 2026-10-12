@@ -1,4 +1,4 @@
-// Queue HUD 0.4.0-dev (CS10 strip slot, CS11 kit art, slim strip) (Steam Aspyr build 6A522E71...). A GREEN copy of the vanilla combat action-queue panel (up to 4 icons), drawn
+// Queue HUD 0.4.1-dev (CS10 strip slot, CS11 kit art, slim strip) (Steam Aspyr build 6A522E71...). A GREEN copy of the vanilla combat action-queue panel (up to 4 icons), drawn
 // OUT of combat so a command given while paused (a use-item / cast-spell that waits for unpause) is visible.
 // Research: patch_manager_mods/30_queue_hud_evidence/RE.md (0x74DC80 panel filler, 0x74E0B0 icon resolver); logic: QueueHudLogic.h.
 //
@@ -13,6 +13,7 @@
 //            Out of combat only (the vanilla red Cancel Combat bar is untouched). No new hook: BUILD + FRAME_BEGIN are registry phases.
 //   CS11/12  the kit art (frame, Cancel X) is the shared HUD kit _shared_src/HudKit.h (kit_* textures, also used by companion-selfheal);
 //            the left-side strip icon auto size is the selfheal button side (QueueHudLogic.h stripIconSize), strip_icon_px still overrides.
+//   0.4.1    strip hidden for Down (HP<=0) companions; their queue journal poll is skipped too.
 // Every pointer deref goes through saferead (site ids 0x7100+, strips 0x7150+, cancel 0x7160+). The only engine write is the Cancel call.
 // Without portrait-slots (or an unknown exe) the mod is inert.
 #define WIN32_LEAN_AND_MEAN
@@ -625,6 +626,24 @@ void stripsHidden() {
     for (int k = 1; k <= 2; ++k) stripNote(k, false, 0, "", none, 0);
 }
 
+// Down companions (0.4.1): a party member at HP <= 0 shows no strip and its queue journal is not polled. Vitals come from party::vitals,
+// refreshed at most every kDownSampleMs per member or when its server creature changes; server 0 is never down.
+constexpr DWORD kDownSampleMs = 100;
+struct DownCache { DWORD tick = 0; bool known = false; bool down = false; uintptr_t server = 0; };
+DownCache g_down[3];
+
+bool memberDown(int k, uintptr_t server, DWORD now) {
+    if (!server || k < 0 || k > 2) return false;
+    DownCache& c = g_down[k];
+    if (!c.known || c.server != server || now - c.tick >= kDownSampleMs) {
+        party::Vitals v;
+        party::vitals(server, &v);
+        c.known = true; c.server = server; c.tick = now;
+        c.down = qh::stripHiddenForDown(v.ok, v.down);
+    }
+    return c.down;
+}
+
 struct StripDraw { qh::Rect r[qh::kMaxSlots]; qh::Style st[qh::kMaxSlots]; char rr[qh::kMaxSlots][17]; int n = 0; bool have = false; };
 // Last good strip per party index k (1-2): repainted for kPanelHoldMs on an empty queue, with its edge signature and type text so the log edge does not flip.
 struct HeldStrip { StripDraw d; DWORD tick = 0; uintptr_t creature = 0; uint32_t sig = 0; char types[48] = {}; };
@@ -637,6 +656,8 @@ void drawStrips(uintptr_t hud, DWORD now, bool inMenu) {
     const uintptr_t tbl = party::table(&why);
     uintptr_t cli[3] = {}, srv[3] = {};
     if (tbl) for (int k = 1; k <= 2; ++k) { cli[k] = party::member(tbl, k); srv[k] = cli[k] ? party::serverCreature(cli[k]) : 0; }
+    bool down[3] = {};
+    for (int k = 1; k <= 2; ++k) down[k] = memberDown(k, srv[k], now);   // a Down companion shows no strip (its engine pushes flicker the held repaint)
     int screenW = 0;
     if (const uintptr_t sw = k2addr::addr(&K2AddrTable::ScreenW)) rd(SiteStrip + 1, sw, 0, &screenW);
     if (screenW < 320 || screenW > 16384) screenW = 0;   // unknown: no right-edge clamp
@@ -650,6 +671,7 @@ void drawStrips(uintptr_t hud, DWORD now, bool inMenu) {
         for (int kk = 1; kk <= 2 && !k; ++kk)   // the slot's creature is the client or the server pointer (seen both ways); the leader (0) never matches
             if (cli[kk] && srv[kk] && (static_cast<uintptr_t>(static_cast<uint32_t>(cr)) == cli[kk] || static_cast<uintptr_t>(static_cast<uint32_t>(cr)) == srv[kk])) k = kk;
         if (!k || d[k].have) continue;
+        if (down[k]) { g_heldStrip[k] = HeldStrip(); continue; }   // Down: no gather and no held repaint; a stale held strip cannot flash on wake
         int vr[4] = {}, cd[4] = {};
         bool ok = true;
         for (int j = 0; j < 4; ++j) {
@@ -1134,6 +1156,7 @@ void roundWatchTick(DWORD now) {
         if (g_roundWatchUntil[k] == 0 || static_cast<int>(g_roundWatchUntil[k] - now) <= 0) continue;
         const uintptr_t cli = party::member(tbl, k);
         const uintptr_t srv = cli ? party::serverCreature(cli) : 0;
+        if (k > 0 && memberDown(k, srv, now)) continue;   // Down companion: no round watch until it is back up
         Snapshot s;
         if (!srv || !gatherFor(srv, s)) continue;
         const int nSub = s.nrn < qh::kMaxRound ? s.nrn : qh::kMaxRound;
@@ -1511,6 +1534,7 @@ void journalTick(DWORD now) {
         JournalMember& jm = g_jm[k];
         const uintptr_t m = tbl ? party::member(tbl, k) : 0;
         const uintptr_t srv = m ? party::serverCreature(m) : 0;
+        if (k > 0 && memberDown(k, srv, now)) { jm.haveSig = false; continue; }   // Down companion: not polled; the first poll after wake is a fresh baseline
         actq::Snapshot a;
         const bool ok = srv && actq::read(srv, &a, SiteQueue, SiteRound);
         const int8_t okv = ok ? 1 : 0;
@@ -1613,7 +1637,7 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     loadIni();
     g_logOn = g_cfg.log;
-    KP_LOG(chMain, "0.4.0-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax);
+    KP_LOG(chMain, "0.4.1-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax);
     QLOG(chMain, "pause_eaten_wait=%d dispatch_wait_flags=%d spell_replay_pos=%d", g_cfg.pauseEatenWait ? 1 : 0, g_cfg.dispatchWaitFlags ? 1 : 0, g_cfg.spellReplayPos ? 1 : 0);
     QLOG(chMain, "pause_reinject=%d handoff_on_combat=%d handoff_clear_first=%d handoff_resend_held=%d show_in_combat=%d",
          g_cfg.pauseReinject ? 1 : 0, g_cfg.handoffOnCombat ? 1 : 0, g_cfg.handoffClearFirst ? 1 : 0, g_cfg.handoffResendHeld ? 1 : 0, g_cfg.showInCombat ? 1 : 0);

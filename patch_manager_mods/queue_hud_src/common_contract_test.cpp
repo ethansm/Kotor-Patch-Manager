@@ -159,6 +159,9 @@ int main() {
     QEQ("no engine call for a null member", (unsigned long long)s_memSeen, 0ULL);
     party::g_serverCreature = nullptr;
     QEQ("serverCreature() is 0 when the engine function is unavailable (nullptr override)", (unsigned long long)party::serverCreature(A(0xA00)), 0ULL);
+    QCHECK("party::vitals(server, Vitals*) -> bool (the 0.4.1 Down check)", static_cast<bool(*)(uintptr_t, party::Vitals*)>(&party::vitals) != nullptr);
+    party::Vitals pv;
+    QCHECK("party::Vitals has ok/down (bool) and cur/max (int); a default Vitals is neither ok nor down", !pv.ok && !pv.down && pv.cur == 0 && pv.max == 0);
 
     // ===== 4. PortraitSlots: HUD_DRAW registration + context fields
     QEQ("K2PS_HUD_DRAW is phase 5 (the leader call in the HUD frame, clip stack empty)", K2PS_HUD_DRAW, 5);

@@ -1209,6 +1209,14 @@ void testCancelVisible() {
     KT_CHECK(!cancelVisible(true, false, false, false, 0, 1));    // cancel = 0
 }
 
+// ---- 0.4.1: a Down (HP <= 0) companion hides its strip; unknown vitals never hide it ----
+void testStripHiddenForDown() {
+    KT_CHECK(stripHiddenForDown(true, true));
+    KT_CHECK(!stripHiddenForDown(true, false));
+    KT_CHECK(!stripHiddenForDown(false, true));    // unknown vitals: the strip stays
+    KT_CHECK(!stripHiddenForDown(false, false));
+}
+
 // ---- Unified action buffer (doc 33 QH4/H10): item + spell actions share one ActionBuffer ----
 void fillBuf(ActionBuffer& b, int n) {
     for (int i = 0; i < n; ++i) KT_CHECK(b.push(makeItemAction(0x1000, 100 + i, 0, 1, nullptr, 1)));
@@ -2224,6 +2232,7 @@ int main() {
     testMixedForcePowersAndItems();
     testStripCancel();
     testCancelVisible();
+    testStripHiddenForDown();
     testUnifiedActionMake();
     testDecideBranches();
     testFifoMixedKinds();

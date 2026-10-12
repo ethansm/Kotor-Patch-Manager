@@ -345,6 +345,9 @@ inline bool cancelVisible(bool enabled, bool cancelOn, bool combat, bool inMenu,
     return cancelOn && shouldShow(enabled, combat, inMenu, ageMs, drawn);
 }
 
+// A companion's strip is hidden only for Down (HP <= 0) with readable vitals: unknown vitals (ok=false) keep the strip as before.
+inline bool stripHiddenForDown(bool vitalsOk, bool down) { return vitalsOk && down; }
+
 // ---- INI ----
 namespace detail {
 inline bool isSp(char ch) { return ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n'; }
