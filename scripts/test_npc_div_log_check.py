@@ -104,6 +104,14 @@ def healthy(remap_pre="ok", tag="Bastila", tv=True):
     return body
 
 
+def _launch(v="1.0.0", after=806, tv_after=2):
+    """healthy() re-bannered as version v. The oid 0x3E9 (before 805) RMP line is rewritten to after/tv_after;
+    the defaults equal healthy()'s own line, so a launch built with no arguments is identical to healthy() except the banner."""
+    body = [banner_v(v)] + healthy()[1:]
+    return [rmp_line(oid=0x3E9, xy=(10.0, -2.0), before=805, after=after, tv=(1, tv_after))
+            if s.startswith("RMP ") and "oid=000003e9 " in s else s for s in body]
+
+
 def run_lines(raw_lines, extra=()):
     """Write raw lines as npc-diversity_log.txt in a temp dir and run the checker (state file temp too)."""
     with tempfile.TemporaryDirectory() as d:
@@ -602,18 +610,39 @@ class Rules012Tests(unittest.TestCase):
         rc, out = run_bodies(healthy())
         self.assertIn("INFO 15 stype tv writes: not judged (no stype= on RMP lines)", out)
 
-    def test_same_oid_and_before_app_must_map_the_same_across_launches(self):
-        # healthy() maps oid 0x3E9 (before 805) to 806/2; the second launch re-logs it as 806/3.
-        a = healthy()
-        rc, out = run_bodies(a + healthy() + [rmp_line(oid=0x3E9, before=805, after=806, tv=(1, 3))])
+    def test_within_launch_flip_fails(self):
+        # healthy() maps oid 0x3E9 (before 805) to 806/2; the same launch then re-logs it as 806/3.
+        rc, out = run_bodies(healthy() + [rmp_line(oid=0x3E9, before=805, after=806, tv=(1, 3))])
         self.assertEqual(rc, 1, out)
         self.assertTrue(any(s.startswith("FAIL 16 cross-launch map: 1 (oid, before) key(s) map to different (after, tv)")
                             for s in out), out)
         self.assertIn("  pair oid=000003e9 app=805 -> 806/2,806/3", out)
-        rc, out = run_bodies(a + healthy() + [rmp_line(oid=0x3E9, before=805, after=806, tv=(1, 2))])
+
+    def test_same_version_cross_launch_flip_fails(self):
+        # Launch 1 maps oid 0x3E9 (before 805) to 806/2; launch 2 has the same banner version and maps it to 806/3.
+        rc, out = run_bodies(_launch() + _launch(after=806, tv_after=3))
+        self.assertEqual(rc, 1, out)
+        self.assertTrue(any(s.startswith("FAIL 16 cross-launch map: 1 (oid, before) key(s) map to different (after, tv)")
+                            for s in out), out)
+        self.assertIn("  pair oid=000003e9 app=805 -> 806/2,806/3", out)
+        self.assertFalse(any("version changed" in s for s in out), out)
+        # Control: the same two launches with a consistent mapping pass.
+        rc, out = run_bodies(_launch() + _launch(after=806, tv_after=2))
         self.assertEqual(rc, 0, out)
         self.assertTrue(any(s.startswith("PASS 16 cross-launch map: 6 repeated (oid, before) key(s) map to one")
                             for s in out), out)
+
+    def test_different_version_cross_launch_flip_is_info_not_fail(self):
+        rc, out = run_bodies(_launch("1.0.0") + _launch("1.0.1", after=806, tv_after=3))
+        self.assertEqual(rc, 0, out)
+        self.assertFalse(any(s.startswith("FAIL 16") for s in out), out)
+        self.assertIn("INFO 16 cross-launch map: not judged (version changed 1.0.0->1.0.1): "
+                      "1 (oid, before) key(s) differ between versions", out)
+        # A probe suffix change counts as a new version.
+        rc, out = run_bodies(_launch("1.0.0") + _launch("1.0.0-probe", after=806, tv_after=3))
+        self.assertEqual(rc, 0, out)
+        self.assertIn("INFO 16 cross-launch map: not judged (version changed 1.0.0->1.0.0-probe): "
+                      "1 (oid, before) key(s) differ between versions", out)
 
 
 if __name__ == "__main__":

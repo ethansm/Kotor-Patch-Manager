@@ -526,24 +526,69 @@ def check_stype_no_tv_write(sess):
 
 
 def check_cross_launch_map(recs):
-    """16 cross-launch: over ALL launches, one (oid, BEFORE app) must always map to one (after app, tv after).
-    Only lines carrying tv= are compared (pre-0.1.2 lines have no tv to compare)."""
-    per = {}
-    for r in _of(recs, "RMP"):
-        v = r["v"]
-        if v["tv_after"] is not None:
-            per.setdefault((v["oid"], v["before"]), []).append((v["after"], v["tv_after"]))
-    repeated = {k: vals for k, vals in per.items() if len(vals) >= 2}
+    """16 cross-launch, judged PER LAUNCH. A launch runs from one BANNER v= line to the next; RMP lines before the first
+    banner form launch 0 (version None, shown as "none"). Only lines carrying tv= are compared.
+    FAIL: a (oid, BEFORE app) key maps to two (after, tv) inside one launch, or its mapping differs between two launches
+    that carry the same raw banner version string (a probe suffix change is a new version).
+    INFO, not a failure: the mapping differs between launches whose raw banner versions differ ("version changed A->B").
+    FAIL wins at the result level; the INFO line may be reported after it."""
+    launches = [(None, {})]          # (raw banner version, {key: set of (after, tv)}) per launch
+    lines_per_key = Counter()
+    for r in recs:
+        if r["kind"] == "BANNER:v":
+            launches.append((r["f"]["v"], {}))
+        elif r["kind"] == "RMP" and r["v"]["tv_after"] is not None:
+            v = r["v"]
+            key = (v["oid"], v["before"])
+            lines_per_key[key] += 1
+            launches[-1][1].setdefault(key, set()).add((v["after"], v["tv_after"]))
+    repeated = [k for k, n in lines_per_key.items() if n >= 2]
     if not repeated:
         return INFO, ["INFO 16 cross-launch map: not judged (no oid seen twice with the same BEFORE app, tv= lines only)"]
-    bad = sorted(k for k, vals in repeated.items() if len(set(vals)) > 1)
-    if not bad:
-        return _emit(16, "cross-launch map", [], "%d repeated (oid, before) key(s) map to one (after, tv) across launches"
-                     % len(repeated), [])
-    msgs = [(FAIL, "%d (oid, before) key(s) map to different (after, tv) across launches" % len(bad))]
-    details = ["pair oid=%08x app=%d -> %s" % (oid, before, ",".join("%d/%d" % x for x in sorted(set(repeated[(oid, before)]))))
-               for oid, before in bad[:LIST_MAX]]
-    return _emit(16, "cross-launch map", msgs, "", details)
+
+    occ = {}                         # key -> [(version, mapping set)] in log order, one entry per launch carrying the key
+    for ver, rows in launches:
+        for key, mapping in rows.items():
+            occ.setdefault(key, []).append((ver, mapping))
+    fail, changed = set(), {}        # changed: key -> [(version A, version B)] for differing launches with different versions
+    for key, rows in occ.items():
+        if any(len(mapping) > 1 for _, mapping in rows):
+            fail.add(key)           # within-launch flip
+            continue
+        for i, (va, ma) in enumerate(rows):
+            for vb, mb in rows[i + 1:]:
+                if ma == mb:
+                    continue
+                if va == vb:
+                    fail.add(key)   # same banner version, different mapping
+                else:
+                    changed.setdefault(key, []).append((va, vb))
+    changed = {k: pairs for k, pairs in changed.items() if k not in fail}
+
+    info = []
+    if changed:
+        pairs = []
+        for k in sorted(changed):
+            pairs += [p for p in changed[k] if p not in pairs]
+        (va, vb), more = pairs[0], len(pairs) - 1
+        info = ["INFO 16 cross-launch map: not judged (version changed %s->%s%s): %d (oid, before) key(s) differ between versions"
+                % (_ver_name(va), _ver_name(vb), "; +%d more" % more if more else "", len(changed))]
+    if fail:
+        msgs = [(FAIL, "%d (oid, before) key(s) map to different (after, tv) across launches" % len(fail))]
+        details = []
+        for oid, before in sorted(fail)[:LIST_MAX]:
+            vals = set().union(*(mapping for _, mapping in occ[(oid, before)]))
+            details.append("pair oid=%08x app=%d -> %s" % (oid, before, ",".join("%d/%d" % x for x in sorted(vals))))
+        level, out = _emit(16, "cross-launch map", msgs, "", details)
+        return level, out + info
+    if info:
+        return INFO, info
+    return _emit(16, "cross-launch map", [], "%d repeated (oid, before) key(s) map to one (after, tv) across launches"
+                 % len(repeated), [])
+
+
+def _ver_name(v):
+    return "none" if v is None else v
 
 
 def render(recs, bad, nlines, note, new_mode):
