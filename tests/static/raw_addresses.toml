@@ -32,6 +32,9 @@ addresses = ["0x0040D69E", "0x0098646C"]
 [files."patch_manager_mods/active_effects_panel_src/CharEffectsPanel.cpp"]
 addresses = ["0x0084D871", "0x0084DEF0", "0x0084FBB0"]
 
+[files."patch_manager_mods/area_hook_probe_src/AreaHookProbe.cpp"]
+addresses = ["0x00522BF0", "0x00533830", "0x005582F0", "0x0055A460"]
+
 [files."patch_manager_mods/buff_duration_hud_src/BuffDurationHUD.cpp"]
 addresses = ["0x00745A84", "0x00745A97", "0x00745AEC"]
 
