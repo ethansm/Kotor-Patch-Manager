@@ -1,0 +1,58 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
+
+# Area Hook Probe 0.1.0. Every entry: type detour, 5-byte prologue 55 8B EC 6A FF = PUSH EBP / MOV EBP,ESP / PUSH -1
+# (whole instructions). All four functions are thiscall with ECX = object. The handlers read ECX only; stack args are never read.
+
+# H1: CServerExoAppInternal::MainLoop (runs every tick). ECX = this. Area-ready latch at this+0x14 (INFERRED).
+[[hooks]]
+address = 0x00533830
+type = "detour"
+function = "AreaHookProbeMainLoop"
+original_bytes = [0x55, 0x8B, 0xEC, 0x6A, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+# H2: CSWSModule::LoadModuleInProgress (FRESH area load: creates and loads the area). ECX = module.
+[[hooks]]
+address = 0x0055A460
+type = "detour"
+function = "AreaHookProbeFreshLoad"
+original_bytes = [0x55, 0x8B, 0xEC, 0x6A, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+# H3: CSWSModule::LoadModuleStart (SAVED-game module load; does NOT call LoadArea). ECX = module.
+[[hooks]]
+address = 0x005582F0
+type = "detour"
+function = "AreaHookProbeSavedLoad"
+original_bytes = [0x55, 0x8B, 0xEC, 0x6A, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+# H4: CSWSArea::AddObjectToArea. ECX = area. Logged when the area pointer changes; object id at area+0x124 (CONFIRMED),
+# resref at area+0x110, 16 bytes (INFERRED).
+[[hooks]]
+address = 0x00522BF0
+type = "detour"
+function = "AreaHookProbeAddObject"
+original_bytes = [0x55, 0x8B, 0xEC, 0x6A, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
