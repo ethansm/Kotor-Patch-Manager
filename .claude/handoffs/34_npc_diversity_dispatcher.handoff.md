@@ -78,3 +78,9 @@ Generated, byte-stable (`--check`): `DiversitySlots.h` (M 1-16, F 1-17, FatM 34,
 - Decisions taken at the Opus gate: B3 = pure helper module (no .mod write); B2 owns all GIT/MOD edits and consumes B1 UTCs + B3 helper (so B1,B3,B4,B5,B6 first, then B2); orientation = unit vector toward target (do not use W1c radians); waypoint TemplateResRef `npcwp_<key>_NN` (<=16), tag `WP_npcadd_<slug>_NN`; creature tag = resref = `npcadd_<slug>`; B4 adds P6 A5/A6 checks; per-species soundsets/Gender deferred to batch 2.
 - Dead ends: P1 walkmesh read failed because it looked up the module name (WOKs are keyed by room name, e.g. 204TELb, in chitin Models.bif); GIT model round trip is lossy (use GFF level); rea-recon overran budget (Q1-Q3 unresolved statically, so .mod precedence and spawn-script firing are play-test items).
 - Still needed from the user: which save (Game1/5/8 or fresh) for Gate 2; GO for the live 204tel.mod write (Gate 1). Diversity Gate 2 play of 0.1.4-probe is still pending.
+
+## NPC-add PoC Wave 2 (10-11, commit 84ca69a)
+- Built offline, nothing installed: `patch_manager_mods/npc_add_src/out/{override/*.utc (18 mirror), modules/204tel.mod (sha c7d53b92, 21 creatures/51 waypoints/193 res)}`; doc `patch_manager_mods/35_npc_add_poc.md`.
+- Tools: `scripts/npc_add_build_utc.py`, `npc_add_build_git.py`, `check_npc_add.py` (7 PASS/1 SKIP), `npc_add_install.py` (dry-run default; `--game`/`--game-dir`, `--apply`, `--rollback <stamp>`).
+- Next: Gate 1 (user GO, game closed, ask which save) `python3 scripts/npc_add_install.py --apply`; Gate 2 play (Wookiee, Twi'lek F, Bith idle, Rodian walking R1). Open: .mod-vs-.rim precedence, k_def_spawn01 walking, hostility.
+- Diversity track unchanged: `0.1.4-probe` LIVE 2b697c78, awaiting user Gate 2 play.
