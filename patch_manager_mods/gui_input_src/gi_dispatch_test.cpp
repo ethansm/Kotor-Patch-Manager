@@ -32,6 +32,11 @@ static int32_t KPATCH_CALL cbUnsubSelf(const K2WheelEvent*, void*) {
     return 0;
 }
 
+static int g_ensureCalls = 0;
+static bool ensureFail() { return false; }
+static bool ensureOk() { return true; }
+static bool ensureCounted() { ++g_ensureCalls; return true; }
+
 int main() {
     gid::Dispatcher d;
     GEQ("initially empty", d.empty(), true);
@@ -112,6 +117,28 @@ int main() {
     GCHECK("unsub_self ran", g_log[0] == "unsub_self");
     GCHECK("after_unsub ran", g_log[1] == "cb1:120:after_unsub");
     GEQ("cbUnsubSelf was removed", d.count, 1);
+
+    // 8. subscribeGated: the wheel_subscribe no-window gate (BG05)
+    {
+        gid::Dispatcher g;
+        g_ensureCalls = 0;
+        GEQ("gate: window not ready -> -1", gid::subscribeGated(g, ensureFail, cbLog1, nullptr), -1);
+        GEQ("gate: dispatcher untouched (count)", g.count, 0);
+        GEQ("gate: dispatcher untouched (nextToken)", g.nextToken, 1);
+        GEQ("gate: window ready -> token 1 (no burned token)", gid::subscribeGated(g, ensureOk, cbLog1, (void*)"u"), 1);
+        GEQ("gate: ready records one entry", g.count, 1);
+
+        GEQ("gate: null cb -> -1", gid::subscribeGated(g, ensureCounted, nullptr, nullptr), -1);
+        GEQ("gate: null cb does not call ensure", g_ensureCalls, 0);
+        GEQ("gate: null ensure fn -> -1", gid::subscribeGated(g, nullptr, cbLog1, nullptr), -1);
+        GEQ("gate: null ensure leaves count", g.count, 1);
+        GEQ("gate: ready calls ensure once", gid::subscribeGated(g, ensureCounted, cbLog2, nullptr) > 0, true);
+        GEQ("gate: ensure called once", g_ensureCalls, 1);
+
+        gid::Dispatcher full;
+        for (int i = 0; i < gid::MaxSubscribers; ++i) full.subscribe(cbLog1, nullptr);
+        GEQ("gate: table full still -2 when ready", gid::subscribeGated(full, ensureOk, cbLog1, nullptr), -2);
+    }
 
     return ::kt::Report("gi_dispatch_test");
 }

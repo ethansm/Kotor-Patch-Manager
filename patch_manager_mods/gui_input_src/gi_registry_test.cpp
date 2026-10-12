@@ -134,13 +134,13 @@ int main() {
     client.poll();
     GEQ("connected at poll 256", client.connected, true);
 
-    // 7. Provider present but game window not yet available: wheel_subscribe fails
+    // 7. Client forwards the provider's -1 (game window not yet available). The provider's gate itself is pinned in gi_dispatch_test (subscribeGated).
     fakekp::reset();
     fakekp::provide(K2GUIINPUT_IFACE, K2GUIINPUT_VERSION, &g_fakeTableNoWindow);
     client.init(fakekp::api(), "test_mod");
     GCHECK("connect with no-window provider succeeds", client.connect());
     int32_t noWinTok = client.wheel_subscribe(dummyCb, nullptr);
-    GCHECK("wheel_subscribe without game window returns token <= 0", noWinTok <= 0);
+    GEQ("client forwards the provider's -1", noWinTok, -1);
     GEQ("no-window subCalls count", g_subNoWinCalls, 1);
 
     return ::kt::Report("gi_registry_test");

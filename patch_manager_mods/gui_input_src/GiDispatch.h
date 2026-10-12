@@ -86,4 +86,13 @@ struct Dispatcher {
     }
 };
 
+// apiWheelSubscribe's decision, host-testable: no subscription is recorded until the game window is subclassed.
+// ensure() is the provider's ensureSubclass. Returns -1 for a null callback or when ensure() fails (dispatcher untouched),
+// else the Dispatcher::subscribe result (token > 0, or -2 table full).
+inline int32_t subscribeGated(Dispatcher& d, bool (*ensure)(), K2WheelCallback fn, void* user, const char* owner = "") {
+    if (!fn) return -1;
+    if (!ensure || !ensure()) return -1;
+    return d.subscribe(fn, user, owner);
+}
+
 } // namespace gid
