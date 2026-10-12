@@ -41,6 +41,20 @@ inline void computeSanitizedDelta(
     outNy = ny;
 }
 
+// Persistent state for the sanitize path (last drag cursor position, whether the previous frame was a drag).
+struct SanitizeState { bool wasDragging = false; int lastX = 0, lastY = 0; };
+enum class SanitizeResult { Skip, Write };
+
+// One ProbeMouseNorm frame. cursorOk=false (GetCursorPos unresolved or failed): Skip, state untouched, nothing is written,
+// so the engine keeps its own normalised delta and no (0,0) point reaches the delta math or the edge-warp check.
+inline SanitizeResult sanitizeFrame(SanitizeState& st, bool dragging, bool cursorOk, int curX, int curY,
+                                    float sensScale, float& outNx, float& outNy) {
+    if (!cursorOk) return SanitizeResult::Skip;
+    computeSanitizedDelta(dragging, st.wasDragging, curX, curY, st.lastX, st.lastY, sensScale, outNx, outNy);
+    if (dragging) { st.wasDragging = true; st.lastX = curX; st.lastY = curY; } else { st.wasDragging = false; }
+    return SanitizeResult::Write;
+}
+
 // Checks if the cursor is near the client boundary and calculates the window center warp point.
 inline bool checkEdgeWarp(
     int curX, int curY,

@@ -355,6 +355,38 @@ int main() {
         HCHECK("normal click does not synthesize", !shouldSynthesizeDblClick(0x201, false, true));
         HCHECK("disabled config does not synthesize", !shouldSynthesizeDblClick(0x201, true, false));
         HCHECK("other message id does not synthesize", !shouldSynthesizeDblClick(0x202, true, true));
+
+        // sanitizeFrame (BG07): a failed GetCursorPos skips the frame and leaves state and outputs alone
+        {
+            SanitizeState st;
+            nx = 99.0f; ny = 99.0f;
+            SanitizeResult r = sanitizeFrame(st, true, true, 100, 200, 0.05f, nx, ny);
+            HCHECK("first ok drag frame writes", r == SanitizeResult::Write);
+            HCHECK("first ok drag frame yields 0/0", fabsf(nx) < 0.0001f && fabsf(ny) < 0.0001f);
+            HCHECK("first ok drag frame arms state at cursor", st.wasDragging && st.lastX == 100 && st.lastY == 200);
+
+            nx = 99.0f; ny = 99.0f;
+            r = sanitizeFrame(st, true, false, 0, 0, 0.05f, nx, ny);
+            HCHECK("failed cursor read skips", r == SanitizeResult::Skip);
+            HCHECK("failed cursor read leaves outputs at the sentinel", nx == 99.0f && ny == 99.0f);
+            HCHECK("failed cursor read leaves state untouched", st.wasDragging && st.lastX == 100 && st.lastY == 200);
+
+            r = sanitizeFrame(st, true, true, 120, 210, 0.05f, nx, ny);
+            HCHECK("good frame after a failed one writes", r == SanitizeResult::Write);
+            HCHECK("delta is from the last good point (100,200), not from (0,0): nx=-1.0", fabsf(nx - (-1.0f)) < 0.0001f);
+            HCHECK("delta is from the last good point: ny=-0.5", fabsf(ny - (-0.5f)) < 0.0001f);
+            HCHECK("state follows the good frame", st.lastX == 120 && st.lastY == 210);
+
+            r = sanitizeFrame(st, false, true, 5, 5, 0.05f, nx, ny);
+            HCHECK("ok non-drag frame writes", r == SanitizeResult::Write);
+            HCHECK("ok non-drag frame yields 0/0", fabsf(nx) < 0.0001f && fabsf(ny) < 0.0001f);
+            HCHECK("ok non-drag frame clears wasDragging", !st.wasDragging);
+
+            SanitizeState cold;
+            nx = 99.0f; ny = 99.0f;
+            r = sanitizeFrame(cold, true, false, 0, 0, 0.05f, nx, ny);
+            HCHECK("failed read on a cold state skips and does not arm it", r == SanitizeResult::Skip && !cold.wasDragging && nx == 99.0f);
+        }
     }
 
     return kt::Report("common_contract_test (mouse_probe)");

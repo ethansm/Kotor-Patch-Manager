@@ -104,8 +104,7 @@ int g_moveptBg = 0;                // AddMoveToPointAction calls outside the 3 s
 // ---- mouse fix state (0.4.0) ----
 mousefix::FixConfig g_fixCfg;
 bool g_fixCfgLoaded = false;
-POINT g_lastDragPos = {0, 0};
-bool g_wasDragging = false;
+mousefix::SanitizeState g_sanState;
 
 typedef BOOL (WINAPI *pfn_GetCursorPos)(LPPOINT);
 typedef BOOL (WINAPI *pfn_SetCursorPos)(int, int);
@@ -186,39 +185,33 @@ void __cdecl ProbeMouseNorm(uintptr_t ebp) {
     if (g_fixCfg.enabled && g_fixCfg.sanitizeNorm) {
         resolveUser32();
         int drag = 0;
-        rd(DragFlagAddr, 0, &drag);
+        if (!rd(DragFlagAddr, 0, &drag))
+            KP_LOG_EVERY(chNorm, 100, "DRAGFLAG unreadable; g_rmbDown decides");
         bool dragging = (drag != 0) || g_rmbDown;
 
         POINT cur = {0, 0};
-        if (dyn_GetCursorPos) dyn_GetCursorPos(&cur);
+        bool curOk = dyn_GetCursorPos && dyn_GetCursorPos(&cur);
 
         float fixedNx = 0.0f, fixedNy = 0.0f;
-        mousefix::computeSanitizedDelta(
-            dragging, g_wasDragging,
-            cur.x, cur.y, g_lastDragPos.x, g_lastDragPos.y,
-            g_fixCfg.sensScale, fixedNx, fixedNy);
-
-        if (dragging) {
-            g_lastDragPos = cur;
-            g_wasDragging = true;
-            if (g_fixCfg.edgeWarp && dyn_GetForegroundWindow && dyn_GetWindowRect && dyn_SetCursorPos) {
+        if (mousefix::sanitizeFrame(g_sanState, dragging, curOk, cur.x, cur.y,
+                                    g_fixCfg.sensScale, fixedNx, fixedNy) == mousefix::SanitizeResult::Write) {
+            if (dragging && g_fixCfg.edgeWarp && dyn_GetForegroundWindow && dyn_GetWindowRect && dyn_SetCursorPos) {
                 HWND hwnd = dyn_GetForegroundWindow();
                 RECT rc;
                 if (hwnd && dyn_GetWindowRect(hwnd, &rc)) {
                     int wx = 0, wy = 0;
                     if (mousefix::checkEdgeWarp(cur.x, cur.y, rc.left, rc.top, rc.right, rc.bottom, g_fixCfg.edgeMargin, wx, wy)) {
                         dyn_SetCursorPos(wx, wy);
-                        g_lastDragPos.x = wx;
-                        g_lastDragPos.y = wy;
+                        g_sanState.lastX = wx;
+                        g_sanState.lastY = wy;
                     }
                 }
             }
+            *reinterpret_cast<float*>(self + 0x408) = fixedNx;
+            *reinterpret_cast<float*>(self + 0x40C) = fixedNy;
         } else {
-            g_wasDragging = false;
+            KP_LOG_EVERY(chNorm, 100, "CURSORFAIL GetCursorPos unavailable/failed; sanitize skipped (engine delta kept)");
         }
-
-        *reinterpret_cast<float*>(self + 0x408) = fixedNx;
-        *reinterpret_cast<float*>(self + 0x40C) = fixedNy;
     }
 
     if (!KP_ENABLED(chNorm)) return;
