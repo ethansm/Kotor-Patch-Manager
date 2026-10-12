@@ -58,6 +58,13 @@ class RealRuns(unittest.TestCase):
         self.assertEqual(r["kinds"].get("HOLD"), 2)
         self.assertEqual(r["kinds"].get("UNHOLD"), 1)
 
+    def test_log_cap_marker_parses_and_fails_v7(self):
+        # KpLog.h writes one raw `--- log cap reached ---` line (no timestamp); the old `== log line cap reached ==` grammar never matched it.
+        r = run("synth_log_cap.txt")
+        self.assertEqual(r["unknown_lines"], 0)
+        self.assertEqual(r["kinds"].get("LOG_CAP"), 1)
+        self.assertEqual(status(r, 7), "FAIL")
+
     def test_instant_apply_now_lines_parse(self):
         r = run("synth_apply_now.txt")
         self.assertEqual(r["unknown_lines"], 0)

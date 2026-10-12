@@ -98,7 +98,7 @@ V_RULES = {
         "with found!=32 or result!=1, a different guid than the last saved one, no source=playthrough after it, `GUID ENGINE "
         "mismatch`, or `GUID new:` refusal. NOT-EXERCISED: no GUID line."),
     7: ("No hang / leak (anomaly scan)",
-        "PASS: >=1 line in range and none of: `== log line cap reached ==`, `TABLE ERROR`, any `ENGINE ... differ`, `APPLY ABORTED`, "
+        "PASS: >=1 line in range and none of: `--- log cap reached ---`, `TABLE ERROR`, any `ENGINE ... differ`, `APPLY ABORTED`, "
         "`PLAYTHROUGH ... LOSSY/write refused`, `UI setText failed`, one normalized line repeated >200x, >300 GUARD-PROBE, "
         "tick going backwards inside one launch. FAIL: any of those. NOT-EXERCISED: empty range. (A true hang is only visible as the "
         "log going silent; this checks what the log can show.)"),
@@ -152,7 +152,7 @@ GRAMMAR = [
     ("INSTANT_APPLYNOW", r"INSTANT apply-now (?:(?:WOULD|skip) tag=(\S+) key=(-?\d+)(?: reason=(\S+))?|tag=(\S+) lvl (-?\d+)->(-?\d+))", "cpp:applyNowConsume (apply-now: menu arrow of an instant creature)"),
     ("INSTANT", r"INSTANT tag=(\S+) key=(-?\d+) site=(0x[0-9A-Fa-f]+)", "cpp:1512"),
     ("ENGINE_MISMATCH", r"ENGINE .*differ", "cpp:1330/1532"),
-    ("LOG_CAP", r"== log line cap reached ==", "cpp:135"),
+    ("LOG_CAP", r"--- log cap reached ---", "KpLog.h"),
     # indented (inside a call dump)
     ("DECIDE", r"\s+DECIDE tag=(\S+) preset=(\S+) key=(-?\d+) decision=(\S+) rec=(\S+)", "cpp:1274"),
     ("DRY", r"\s+DRY tag=(\S+) key=(-?\d+) status=(\S+)", "cpp:1278/formatDry"),

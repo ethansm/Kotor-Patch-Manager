@@ -45,7 +45,20 @@ int main() {
         CHECK(levelNow(ids, lv, 1, &p, 4, true, 0, &rec, &cl) == Decision::Path && cl == 4 && rec == &p.lv[4], "known record still matches");
     }
 
-    // F1 log cap moved to KpLog.h (Common); pinned by KpLog's own tests.
+    // ---- log cap (F1): the shared sink (KpLog.h, Common) stops at KP_LOG_FALLBACK_MAX_LINES, keeps ONE raw cap marker, then goes silent ----
+    {
+        static const char kCapMarker[] = "--- log cap reached ---\n";
+        const size_t markerLen = sizeof kCapMarker - 1;
+        resetLog(); ::kplog::detail::gFallbackLines.store(0);
+        for (uint32_t i = 0; i < KP_LOG_FALLBACK_MAX_LINES + 50u; ++i) KP_LOG(chGate, "cap filler %u", (unsigned)i);
+        std::string l = readLog();
+        CHECK(countStr(l, "--- log cap reached ---") == 1, "one cap marker");
+        CHECK(countStr(l, "cap filler") == (int)KP_LOG_FALLBACK_MAX_LINES && countStr(l, "\n") == (int)KP_LOG_FALLBACK_MAX_LINES + 1, "MAX lines then the marker: %d fillers, %d lines", countStr(l, "cap filler"), countStr(l, "\n"));
+        CHECK(l.size() >= markerLen && l.compare(l.size() - markerLen, markerLen, kCapMarker) == 0, "marker is the last line, nothing after");
+        KP_LOG(chGate, "cap late line");
+        CHECK(readLog() == l, "writes past the cap emit nothing");
+        resetLog(); ::kplog::detail::gFallbackLines.store(0);   // the counter is process-global: later blocks need a live sink
+    }
 
     // ---- HOLD/UNHOLD log rate limit (F14): a withheld transition is counted, printed on the next logged line, then reset ----
     {
