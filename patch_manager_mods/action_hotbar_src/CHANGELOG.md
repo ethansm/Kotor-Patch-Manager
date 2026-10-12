@@ -4,6 +4,7 @@ Action Hotbar (id `action-hotbar`), formerly Force Power Hotbar.
 
 ## 1.3.0-dev (2026-10-05)
 
+- Internal cleanup (no behavior change): spell description strref is parsed with a checked integer read, request-ring push is one tested helper, dead constant and magic numbers removed.
 - `spells.2da` no longer has to be in `override/`: without it the patch reads the base game's `chitin.key` -> `data/2da.bif` (HP7). The log line names the source.
 - `@self`/`@lowhp` on a `spell:`/`feat:` slot is refused with a warning (it only applies to items).
 - `[Profile. Name ]` section names are trimmed.

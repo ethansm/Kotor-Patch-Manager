@@ -7,6 +7,7 @@
 #include <memory>
 #include <cstring>
 using namespace hb;
+namespace { inline bool rectsOverlap(Rect4 a, Rect4 b) { return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h; } }
 
 static ActionRef mk(Kind k, int id, const char* name = "") { ActionRef r; r.kind = k; r.id = id; r.name = name; return r; }
 
@@ -617,6 +618,9 @@ int main() {
     for (int i = 0; i < 5; ++i) tail = ringNext(tail);
     KT_CHECK_EQ(ringCount(head, tail), RingSize - 6); KT_CHECK(!ringFull(head, tail));
     for (int i = 0; i < 40; ++i) { head = ringNext(head); tail = ringNext(tail); KT_CHECK(head >= 0 && head < RingSize && tail >= 0 && tail < RingSize); }
+    { int ring[RingSize] = {}; int h = RingSize - 1, t = 0;   // ringPush stores at head, advances, wraps at RingSize
+      ringPush(ring, h, 7); KT_CHECK_EQ(ring[RingSize - 1], 7); KT_CHECK_EQ(h, 0); KT_CHECK_EQ(ringCount(h, t), 0);
+      ringPush(ring, h, 9); KT_CHECK_EQ(ring[0], 9); KT_CHECK_EQ(h, 1); KT_CHECK_EQ(ringCount(h, t), 1); }
   }
   { // A25/A26 key + entry flag constants: bit layout the HUD uses, shared by decodeKey / tabOfKey / isKnownPowerKey / tipText
     KT_CHECK_EQ(KeyItemFlag, 0x40000000); KT_CHECK_EQ(KeySpellFlag, 0x20000000); KT_CHECK_EQ(KeyRowMask, 0x1FFFFFFF); KT_CHECK_EQ(EntryUsable, 1);

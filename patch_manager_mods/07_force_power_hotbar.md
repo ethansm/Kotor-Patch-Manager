@@ -1,10 +1,10 @@
 # Mod 3: Action Hotbar (formerly Force Power Hotbar)
 
 ## Status
-- **Action Hotbar 1.2.2-dev** (HP4 refactor of 1.2.1, no intended behavior change), KPM id `action-hotbar`, DLL md5 `eeb6144f` (framework `Patches/ActionHotbar/ActionHotbar.kpatch`). 8 hooks, 86 runtime controls.
+- **Action Hotbar 1.3.0-dev** (HP1-HP7 all DONE; 1.2.2-dev was the HP4 refactor of 1.2.1), KPM id `action-hotbar`, DLL md5 `eeb6144f` (framework `Patches/ActionHotbar/ActionHotbar.kpatch`). 8 hooks, 86 runtime controls.
 - **LIVE since 2026-10-05 18:23** (one-DLL hot-swap, KPM 9136ea5, backup `~/Games/KOTOR2_Mod_Workspace/backups/inst22_1005_1823`; rollback = its `patches/action-hotbar.dll` `131e407a` = 1.2.1 as rebuilt by the BD3 install 10-05 ~17:17; post-check 0 diffs). Awaiting the user's play test (checklist below); 1.2.x has not been played yet. Live smoke for HP4: log must match 1.2.1 behavior except per-HUD change-only lines repeating once per HUD rebuild.
 - `kpm_install_state.json` is stale (still lists the old id): the next full reinstall MUST use id `action-hotbar` (see "Install and rollback").
-- Next polish = doc 24 phases HP5-HP7 (HP1-HP4 done). Review list = `07_force_power_hotbar_evidence/POLISH_REVIEW_2026-10-04.md`.
+- Polish phases HP1-HP7 are DONE (HP5-HP7 landed 2026-10-05; WI-10 leftovers closed 2026-10-12). Review list = `07_force_power_hotbar_evidence/POLISH_REVIEW_2026-10-04.md`.
 - Player docs (link, not repeated here): [`action_hotbar_src/README.md`](action_hotbar_src/README.md), [`action_hotbar_src/CHANGELOG.md`](action_hotbar_src/CHANGELOG.md).
 - Older RESUME/STATUS blocks and the dated build logs are kept verbatim under [History](#history) (old paths and ids stay there on purpose).
 
@@ -77,13 +77,14 @@ Source: `07_force_power_hotbar_evidence/target_modes/EDGE_CASES.md` (B1, static,
 Re-triaged 2026-10-05 against 1.2.1 (the 2026-09-30/10-02 list had 8 items). Phases are rows of `24_master_plan_status` (doc 24).
 1. Hover-sound index 1 is assumed to be the native one (user did not object): still open, cosmetic, no phase.
 2. Companion key stability across DIFFERENT saves (`obj80000240`/`obj80000249` were identical across game sessions of one save): still unverified; needs a live check, no phase.
-3. Unknown INI keys: CLOSED for `[General]` (`General.extra` in `HotbarConfig.h` preserves them and writes them back on Save). Residual: an unknown SECTION or an unknown key inside a profile only warns (`unknown section`, `unknown key`) and is not preserved.
+3. Unknown INI keys: CLOSED for `[General]` (`General.extra` in `HotbarConfig.h` preserves them and writes them back on Save). **CLOSED (C049, commit 57c2d13):** unknown sections and unknown profile keys are preserved and written back on Save.
 4. Function-level statics survive a HUD rebuild (stale log lines only): open, covered by HP4 (per-HUD statics into `Bar`, A12). The HUD is also rebuilt on loads and area transitions and each rebuild orphans our labels (~25 KB per rebuild, harmless): a Phase F candidate, not scheduled.
 5. Arrow art is the text `<` `>` (`LBL_HOTBARPREV` / `LBL_HOTBARNEXT`): open, cosmetic, no phase.
-6. Test coverage: largely CLOSED (editor/DLL logic was extracted into `HotbarLogic.h`, 8 host tests incl. `hotbar_logic_test`, coverage HotbarLogic 97.7 / HotbarConfig 99.2); remaining extractions and hygiene = HP5 (freezeEffective, useRoute, collectAutos, classifyRow, pickerSignature/modeBtnWhy, fixture and Config edge cases).
-7. Dead code and heavy logging: CLOSED in Phase C (probe/catalog, `port<id>` key path deleted, Verbose tier). Residual dead code, constants, naming, ignored results = HP6.
+6. Test coverage: largely CLOSED (editor/DLL logic was extracted into `HotbarLogic.h`, 8 host tests incl. `hotbar_logic_test`, coverage HotbarLogic 97.7 / HotbarConfig 99.2); **CLOSED** (HP5 landed 10-05; WI-10 leftovers: `ringPush` helper extracted + tested, `rectsOverlap` moved into the test). Still open as backlog: picker tab filter / `Same` dedupe and panel box math (A11) not yet extracted.
+7. Dead code and heavy logging: CLOSED in Phase C (probe/catalog, `port<id>` key path deleted, Verbose tier). **CLOSED** (HP6 landed 10-05; WI-10 leftovers: dropped dead `App_SaveRequest`, `Ctl_X` offset and `KeyStateCount` named, `g_gateWhy` -> `g_gateDetail`, unchecked `atoi` -> `parseInt32`). A34 log tags: skipped, bare `KP_WARN` already logs on channel `main`.
 8. The doc was a long chronological log: CLOSED by the HP3 restructure (this layout).
-9. New: `spells.2da` is read from `override/` only; with no override file the Wine/Proton run has no fallback: HP7 (RE gate first, resource-manager read or WARN once).
+9b. HB12 (`@self`/`@lowhp`/`;` inside item names): kept as a documented, pinned limit (`config_roundtrip_test.cpp`); real item names cannot contain them.
+9. New: `spells.2da` is read from `override/` only; with no override file the Wine/Proton run has no fallback: **CLOSED** (HP7 landed 10-05: falls back to `chitin.key` -> `data/2da.bif`).
 10. New: Expanded Keyboard Control (EKC) coexistence (U4): both patches detour 0x72CB63 and 0x74B3F0 so they are mutually exclusive today. Gate B picked option (c) (move the hotbar hooks to 0x72CB84 and 0x74B3F5); not applied; needs a live check with both installed (`upstream_prs/ekc_hotbar_coexist/DESIGN.md` section 6).
 
 ### Layout and controls

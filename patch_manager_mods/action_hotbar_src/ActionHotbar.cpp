@@ -61,7 +61,7 @@ constexpr uintptr_t PerformUseItem = gameaddr::PerformUseItem;          // thisc
 constexpr int Client_ObjectId = 4, Client_Pos = 0x24;     // member client creature: object id, position float[3]
 constexpr uint32_t ItemKeyFlag = (uint32_t)hb::KeyItemFlag;   // HUD entry key of an item = object id | this
 constexpr int Creature_Stats = 0x1198, Creature_Form = 0x1110, Stats_Stance = 0x146;   // server creature: stats ptr; raw form word; stats +stance (u16). Same value as K2Addr Creature_Stats (0x1198)
-constexpr int App_SaveRequest = 0x14, App_ObjTable = 8;   // *(AppGlobal)+0x14 = server save/load request; +8 = server object table (0x77C7AA)
+constexpr int App_ObjTable = 8;   // *(AppGlobal)+8 = server object table (0x77C7AA)
 constexpr int Hud_ReadSize = 0x1CA0;                      // HUD tick readability probe: covers every hud field this mod touches (highest: Hud_ActiveGroup 0x1C98)
 constexpr int Panel_ReadSize = 0x40, Panel_Gff = 0x30;    // HUD ctor: panel prefix probe; open layout GFF pointer (log only)
 using itemread::Entry_Icon; using itemread::Item_PropCount; using itemread::Item_PropArray; using itemread::Prop_Type; using itemread::Prop_Row; using itemread::Prop_Usable;
@@ -277,7 +277,8 @@ enum ReqSrc { Src_Ring = 0, Src_Key, Src_Click };   // trigger source, logged on
 struct Req { int slot; int src; };
 const char* srcName(int src) { return src == Src_Key ? "key" : src == Src_Click ? "click" : "ring"; }
 Req g_ring[hb::RingSize]; int g_ringHead = 0, g_ringTail = 0;  // single producer (input) / consumer (tick) on the game thread
-bool g_downSwallowed[256];
+constexpr int KeyStateCount = 256;
+bool g_downSwallowed[KeyStateCount];
 bool g_ctrl = false, g_alt = false, g_shift = false;
 
 // ---- gate: gameplay HUD is the active panel (EKC IsGameplayHudActive port, guarded) -------------------
@@ -287,7 +288,7 @@ bool isWhitelisted(uintptr_t panel) {
     for (uintptr_t w : PanelWhitelist) if (vt == w) return true;
     return false;
 }
-const char* g_gateWhy = "";
+const char* g_gateDetail = "";
 // Diagnostic only: structured gate reason, logged on change by gateLog (never per frame, capped).
 struct GateInfo { bool open = false; const char* why = "other"; uintptr_t hud = 0, top = 0; uint32_t f48 = 0, topF48 = 0; bool f48Bad = false; };
 // A genuine panel flags dword is small (0x45/0x47/0x145); the first HUD build of a process can carry stale heap garbage (0xFF8FB4xx) that keeps bit 0x400 set forever.
@@ -305,28 +306,28 @@ void gateLog(const GateInfo& g) {
 }
 bool gateEval(uintptr_t hud, GateInfo& g) {
     g = GateInfo(); g.hud = hud;
-    if (!hud) { g.why = "no-hud"; g_gateWhy = "no hud"; return false; }
+    if (!hud) { g.why = "no-hud"; g_gateDetail = "no hud"; return false; }
     g.f48 = (uint32_t)rdInt(S_Hud, hud, Panel_Flags);
-    uintptr_t mgr; if (!saferead::readAt(S_Hud, hud, Hud_Manager, &mgr) || !mgr) { g_gateWhy = "no manager"; return false; }
+    uintptr_t mgr; if (!saferead::readAt(S_Hud, hud, Hud_Manager, &mgr) || !mgr) { g_gateDetail = "no manager"; return false; }
     int modals = rdInt(S_Hud, mgr, Mgr_Modals), modalCount = rdInt(S_Hud, mgr, Mgr_ModalCount);
-    if (modalCount < 0 || modalCount > 64) { g_gateWhy = "bad modal count"; return false; }
+    if (modalCount < 0 || modalCount > 64) { g_gateDetail = "bad modal count"; return false; }
     for (int i = modalCount - 1; i >= 0; --i) {
-        uintptr_t p; if (!saferead::readAt(S_Hud, (uintptr_t)modals, i * 4, &p) || !p) { g_gateWhy = "bad modal ptr"; return false; }
-        if (!isIgnored(p)) { g.why = "modal-open"; g.top = p; g.topF48 = (uint32_t)rdInt(S_Hud, p, Panel_Flags); g_gateWhy = "modal open"; return false; }
+        uintptr_t p; if (!saferead::readAt(S_Hud, (uintptr_t)modals, i * 4, &p) || !p) { g_gateDetail = "bad modal ptr"; return false; }
+        if (!isIgnored(p)) { g.why = "modal-open"; g.top = p; g.topF48 = (uint32_t)rdInt(S_Hud, p, Panel_Flags); g_gateDetail = "modal open"; return false; }
     }
     int panels = rdInt(S_Hud, mgr, Mgr_Panels), panelCount = rdInt(S_Hud, mgr, Mgr_PanelCount);
-    if (panelCount < 0 || panelCount > 256) { g_gateWhy = "bad panel count"; return false; }
+    if (panelCount < 0 || panelCount > 256) { g_gateDetail = "bad panel count"; return false; }
     bool sawHudIgnored = false;
     for (int i = panelCount - 1; i >= 0; --i) {
-        uintptr_t p; if (!saferead::readAt(S_Hud, (uintptr_t)panels, i * 4, &p) || !p) { g_gateWhy = "bad panel ptr"; return false; }
+        uintptr_t p; if (!saferead::readAt(S_Hud, (uintptr_t)panels, i * 4, &p) || !p) { g_gateDetail = "bad panel ptr"; return false; }
         if (p == hud && !hudFlagsPlausible(g.f48)) g.f48Bad = true;   // garbage flags dword: do not trust the ignore bits (read-only; no engine write)
         else if (isIgnored(p)) { if (p == hud) sawHudIgnored = true; continue; }
         if (!g.top) { g.top = p; g.topF48 = (uint32_t)rdInt(S_Hud, p, Panel_Flags); }   // first non-ignored panel from the top
-        if (p == hud) { g.why = "open"; g.open = true; g_gateWhy = "hud on top"; return true; }
-        if (!isWhitelisted(p)) { g.why = "other-panel-on-top"; g.top = p; g.topF48 = (uint32_t)rdInt(S_Hud, p, Panel_Flags); g_gateWhy = "other panel on top"; return false; }
+        if (p == hud) { g.why = "open"; g.open = true; g_gateDetail = "hud on top"; return true; }
+        if (!isWhitelisted(p)) { g.why = "other-panel-on-top"; g.top = p; g.topF48 = (uint32_t)rdInt(S_Hud, p, Panel_Flags); g_gateDetail = "other panel on top"; return false; }
     }
     g.why = sawHudIgnored ? "hud-ignored" : "not-found";
-    g_gateWhy = "hud not in list"; return false;
+    g_gateDetail = "hud not in list"; return false;
 }
 bool gameplayHudActive(uintptr_t hud) {
     GateInfo g; bool r = gateEval(hud, g);
@@ -940,7 +941,7 @@ std::string buildTipText(char digit, const Entry& e, bool verboseLog = true) {
         int row = e.key & hb::KeyRowMask;
         sp.fp = nullish(g_spells.Get(row, "forcepoints")); sp.range = g_spells.Get(row, "range");
         std::string dsc = nullish(g_spells.Get(row, "spelldesc"));
-        if (!dsc.empty()) sp.desc = g_tlk.Get((uint32_t)atoi(dsc.c_str()));
+        { int n; if (!dsc.empty() && hb::parseInt32(dsc, &n) && n >= 0) sp.desc = g_tlk.Get((uint32_t)n); }
         if (verboseLog) KP_LOGV(chTip, KPLOG_DEBUG, "tip: spell row %d fp='%s' range='%s' desc strref='%s'", row, sp.fp.c_str(), sp.range.c_str(), dsc.c_str());
     }
     return hb::tipText(digit, e.name, e.key, e.flags, sp);
@@ -1038,7 +1039,7 @@ void updateHover(bool gate) {
         else if (click && over >= 0) {
             bool ok = g_bar.b[over].avail;
             KP_LOG(chInput, "click: slot %d %s", over, ok ? "queued" : "ignored (no action)");
-            if (ok) { if (hb::ringFull(g_ringHead, g_ringTail)) KP_LOGV(chInput, KPLOG_WARN, "click: ring full, dropped"); else { g_ring[g_ringHead] = { over, Src_Click }; g_ringHead = hb::ringNext(g_ringHead); } }
+            if (ok) { if (hb::ringFull(g_ringHead, g_ringTail)) KP_LOGV(chInput, KPLOG_WARN, "click: ring full, dropped"); else { hb::ringPush(g_ring, g_ringHead, Req{ over, Src_Click }); } }
         }
     }
     if (over >= 0 && g_bar.b[over].avail && g_bar.tipSlot != over && GetTickCount() - g_bar.hoverStart >= TipDelayMs) showTipAt(g_bar.b[over].bg, g_bar.b[over].entry, over);
@@ -1958,14 +1959,14 @@ extern "C" void __cdecl CaptureHotbarKey(DIRecord* rec, int dev) {
     }
     hb::KeyEvent ke; ke.dik = dik; ke.down = down; ke.ctrl = g_ctrl; ke.alt = g_alt; ke.shift = g_shift;
     ke.hudActive = g_hudGateOk && (GetTickCount() - g_hudTick) < HudFreshMs; ke.editOpen = g_editOpen;
-    ke.downSwallowed = dik < 256 && g_downSwallowed[dik];
+    ke.downSwallowed = dik < KeyStateCount && g_downSwallowed[dik];
     ke.slotBound = isDigit && g_slotBound[dik - hb::kFirstDik];
     ke.ringFull = hb::ringFull(g_ringHead, g_ringTail);   // a bound key is ALWAYS swallowed: passing it on would switch party members (keys 1-3)
     hb::KeyAction ka = hb::decideKey(ke);   // the DIK -> slot decision table (HotbarLogic.h)
     if (ka.clearDown) g_downSwallowed[dik] = false;
     if (ka.markDown) g_downSwallowed[dik] = true;
     if (ka.escHit) g_escHit = true;
-    if (ka.enqueue) { g_ring[g_ringHead] = { ka.slot, Src_Key }; g_ringHead = hb::ringNext(g_ringHead); }
+    if (ka.enqueue) { hb::ringPush(g_ring, g_ringHead, Req{ ka.slot, Src_Key }); }
     if (ka.swallow) { rec->dwOfs = 0; rec->dwData = 0; }
     const char* decision = ka.decision;
     int decisionLvl = (ka.swallow && down) ? KPLOG_INFO : KPLOG_DEBUG;   // SWALLOW (key down) at INFO; PASS and the key-up release stay DEBUG
@@ -2017,7 +2018,7 @@ extern "C" void __cdecl HotbarBuildButtons(int panelArg) {
     for (int i = EditOff; i < EditOff + EditorControlCount; ++i) eb += widgetFor(g_bar, i)->ctl != nullptr;
     g_editOpen = false; g_escHit = false; g_pickRect[2] = 0; g_wheelAccum = 0;   // editor state is per HUD instance
     g_bar.editBound = (eb == EditorControlCount) ? 1 : 0;   // a partial editor UI would be confusing: all or nothing
-    if (g_bar.pbg.ctl) for (int i = 0; i < 4; ++i) g_bar.ed.pbgRect[i] = rdInt(S_Create, reinterpret_cast<uintptr_t>(g_bar.pbg.ctl), 4 + 4 * i);
+    if (g_bar.pbg.ctl) for (int i = 0; i < 4; ++i) g_bar.ed.pbgRect[i] = rdInt(S_Create, reinterpret_cast<uintptr_t>(g_bar.pbg.ctl), guikit::Ctl_X + 4 * i);
     if (savedFlag) {
         if (saferead::probeWrite(S_WrProjRestore, projFlag, 4)) *projFlag = savedFlag;
         else { projWriteFailed = true; KP_LOGV(chBuild, KPLOG_WARN, "H3: projection flag %08x restore failed (probeWrite), saved=%d; the HUD ctor clears it at 0x0074850D anyway", (unsigned)ProjectionFlag, savedFlag); }
@@ -2101,14 +2102,14 @@ extern "C" void __cdecl HotbarHudTick(void* hudPtr) {
     static bool lastGate = false; static const char* lastWhy = nullptr;
     bool gate = gameplayHudActive(hud);
     g_hudGateOk = gate; g_hudTick = GetTickCount();
-    if (gate != lastGate || lastWhy != g_gateWhy) {
+    if (gate != lastGate || lastWhy != g_gateDetail) {
         static DWORD flapStart = 0; static int flapEdges = 0;   // map R7: more than 20 edges in 10 s -> rate-limited line
         if (nowT - flapStart > FlapWindowMs) { flapStart = nowT; flapEdges = 0; }
         ++flapEdges; ++g_gateFlaps;
         bool wasGate = lastGate;
-        lastGate = gate; lastWhy = g_gateWhy;
-        if (flapEdges > FlapMaxEdges) KP_LOG_EVERY(chGate, 1000, "gate: flapping (%u edges so far) now %s (%s)", g_gateFlaps, gate ? "ACTIVE" : "inactive", g_gateWhy);
-        else KP_LOG(chGate, "gate: %s (%s)", gate ? "ACTIVE" : "inactive", g_gateWhy);
+        lastGate = gate; lastWhy = g_gateDetail;
+        if (flapEdges > FlapMaxEdges) KP_LOG_EVERY(chGate, 1000, "gate: flapping (%u edges so far) now %s (%s)", g_gateFlaps, gate ? "ACTIVE" : "inactive", g_gateDetail);
+        else KP_LOG(chGate, "gate: %s (%s)", gate ? "ACTIVE" : "inactive", g_gateDetail);
         if (!gate) { logPanels(hud); if (wasGate) dumpRing("gate closed"); }
     }
 
