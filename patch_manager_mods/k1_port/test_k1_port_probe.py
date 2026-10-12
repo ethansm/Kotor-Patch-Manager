@@ -285,6 +285,152 @@ def test_sha_drift_refuses_then_force(root):
     check((w["game"] / "override" / "appearance.2da").read_bytes() == BASE_2DA, "base restored after force")
 
 
+def make_saves(w: dict) -> dict:
+    """Fake Steam cloudsaves: one user dir with each slot as a directory of files. Returns slot -> src dir."""
+    out = {}
+    for slot in ("000000 - QUICKSAVE", "000001 - AUTOSAVE"):
+        d = w["game"] / "cloudsaves" / "76561198000000001" / slot
+        (d / "nested").mkdir(parents=True, exist_ok=True)
+        (d / "savegame.sav").write_bytes(f"save data {slot}".encode("utf-8"))
+        (d / "nested" / "screen.tga").write_bytes(b"\x00\x01" + slot.encode("utf-8"))
+        out[slot] = d
+    return out
+
+
+def tree_hash_of(root: Path) -> str:
+    """The spec restated: sha256 over 'relpath NUL file-sha256 LF' lines, sorted by relpath."""
+    rows = sorted((p.relative_to(root).as_posix(), sha_of(p.read_bytes()))
+                  for p in root.rglob("*") if p.is_file())
+    h = hashlib.sha256()
+    for rel, sha in rows:
+        h.update(f"{rel}\0{sha}\n".encode("utf-8"))
+    return h.hexdigest()
+
+
+def has_line(text: str, *needles: str) -> bool:
+    return any(all(n in line for n in needles) for line in text.splitlines())
+
+
+@test
+def test_save_backup_copies_verifies_and_records(root):
+    w = make_world(root)
+    slots = make_saves(w)
+    saves_before = snapshot(w["game"] / "cloudsaves")
+    r = run(root, "plan", *common(w), "--base-sha256", BASE_SHA)
+    check(r.returncode == 0 and all(has_line(r.stdout, "PASS", f"save slot {s}") for s in slots),
+          f"plan must PASS both save slots: {r.stdout}")
+    r = run(root, "install", *common(w), "--base-sha256", BASE_SHA, "--yes")
+    check(r.returncode == 0, f"install rc {r.returncode}: {r.stdout} {r.stderr}")
+    m = load_manifest(w)
+    by_slot = {s["slot"]: s for s in m.get("saves", [])}
+    check(sorted(by_slot) == sorted(slots), f"manifest saves: {m.get('saves')}")
+    bdir = manifest_of(w).parent
+    for slot, src in slots.items():
+        e = by_slot[slot]
+        check(e["src"] == str(src) and e["backup"] == f"saves/{slot}", f"save entry paths: {e}")
+        check(e["files"] == 2, f"save entry file count: {e}")
+        check(e["tree_sha256"] == tree_hash_of(src), f"manifest tree hash != source tree hash: {slot}")
+        check(tree_hash_of(bdir / "saves" / slot) == e["tree_sha256"], f"backup tree hash != source: {slot}")
+    check(snapshot(w["game"] / "cloudsaves") == saves_before, "install must leave the save source untouched")
+    check((w["game"] / "override" / "appearance.2da").read_bytes() == PROBE_2DA, "override install still happens")
+
+
+@test
+def test_status_reports_save_backups(root):
+    w = make_world(root)
+    slots = make_saves(w)
+    r = run(root, "install", *common(w), "--base-sha256", BASE_SHA, "--yes")
+    check(r.returncode == 0, f"install rc {r.returncode}: {r.stdout} {r.stderr}")
+    r = run(root, "status", *game_args(w))
+    check(all(has_line(r.stdout, "present", s) for s in slots), f"status must show both backups present: {r.stdout}")
+    shutil.rmtree(manifest_of(w).parent / "saves" / "000001 - AUTOSAVE")
+    r = run(root, "status", *game_args(w))
+    check(has_line(r.stdout, "MISSING", "000001 - AUTOSAVE") and has_line(r.stdout, "present", "000000 - QUICKSAVE"),
+          f"status must flag the removed backup: {r.stdout}")
+
+
+@test
+def test_save_absent_warns_and_install_succeeds(root):
+    w = make_world(root)  # no cloudsaves/ at all
+    r = run(root, "plan", *common(w), "--base-sha256", BASE_SHA)
+    check(r.returncode == 0 and "verdict: READY" in r.stdout and has_line(r.stdout, "WARN", "save slot 000000 - QUICKSAVE"),
+          f"absent cloudsaves must WARN and stay READY: {r.stdout}")
+    r = run(root, "install", *common(w), "--base-sha256", BASE_SHA, "--yes")
+    check(r.returncode == 0, f"install rc {r.returncode}: {r.stdout} {r.stderr}")
+    check(load_manifest(w).get("saves") == [], f"no save entries expected: {load_manifest(w)}")
+    check((w["game"] / "override" / "k1p_commm04.tpc").is_file(), "install must still copy the files")
+
+
+@test
+def test_rollback_leaves_saves_and_prints_cp_hints(root):
+    w = make_world(root)
+    slots = make_saves(w)
+    r = run(root, "install", *common(w), "--base-sha256", BASE_SHA, "--yes")
+    check(r.returncode == 0, f"install rc {r.returncode}: {r.stdout} {r.stderr}")
+    bdir = manifest_of(w).parent
+    saves_before = snapshot(w["game"] / "cloudsaves")
+    backups_before = snapshot(bdir / "saves")
+    hints = [f'cp -a "{bdir / "saves" / slot}" "{src.parent}/"' for slot, src in slots.items()]
+    r = run(root, "rollback", *game_args(w))  # dry run still prints the hints
+    check(r.returncode == 0 and all(h in r.stdout for h in hints), f"dry-run rollback hints: {r.stdout}")
+    r = run(root, "rollback", *game_args(w), "--yes")
+    check(r.returncode == 0 and all(h in r.stdout for h in hints),
+          f"rollback hints: rc {r.returncode} {r.stdout} {r.stderr}")
+    check(snapshot(w["game"] / "cloudsaves") == saves_before, "rollback must not touch the save slots")
+    check(snapshot(bdir / "saves") == backups_before, "rollback must not touch the save backups")
+    check(override_names(w) == {"appearance.2da", "bystander.utc"}, f"override after rollback: {override_names(w)}")
+
+
+@test
+def test_no_save_backup_skips(root):
+    w = make_world(root)
+    make_saves(w)
+    r = run(root, "plan", *common(w), "--base-sha256", BASE_SHA, "--no-save-backup")
+    check(r.returncode == 0 and "skipped by --no-save-backup" in r.stdout and "save slot 000000" not in r.stdout,
+          f"plan with --no-save-backup: {r.stdout}")
+    r = run(root, "install", *common(w), "--base-sha256", BASE_SHA, "--yes", "--no-save-backup")
+    check(r.returncode == 0, f"install rc {r.returncode}: {r.stdout} {r.stderr}")
+    check(not (manifest_of(w).parent / "saves").exists(), "--no-save-backup must not create a saves dir")
+    check(load_manifest(w).get("saves") == [], f"no save entries expected: {load_manifest(w)}")
+
+
+@test
+def test_failed_save_backup_aborts_before_any_override(root):
+    import k1_port_probe as kprobe  # in-process so the copy can be corrupted; the CLI path is covered above
+    w = make_world(root)
+    make_saves(w)
+    saves_before = snapshot(w["game"] / "cloudsaves")
+    override_before = snapshot(w["game"] / "override")
+    args = kprobe.build_parser().parse_args(["install", *common(w), "--base-sha256", BASE_SHA, "--yes"])
+    plan = kprobe.compute_plan(args, "20260101_0000")
+    check(not plan.failed() and len(plan.saves) == 2, f"plan must be clean with 2 save slots: {plan.checks}")
+    real_copytree = kprobe.shutil.copytree
+
+    def corrupting_copytree(src, dst, *a, **kw):
+        out = real_copytree(src, dst, *a, **kw)
+        if Path(src).name == "000001 - AUTOSAVE":  # the copy diverges from the source after the copy
+            (Path(dst) / "savegame.sav").write_bytes(b"corrupted during copy")
+        return out
+
+    kprobe.shutil.copytree = corrupting_copytree
+    try:
+        kprobe.install_files(plan, w["game"], w["stage"], plan.base)
+    except kprobe.ProbeError as e:
+        msg = str(e)
+    else:
+        raise AssertionError("a save copy that fails verification must abort the install")
+    finally:
+        kprobe.shutil.copytree = real_copytree
+    check("install undone after failure" in msg and "save backup of" in msg, f"abort message: {msg}")
+    check(override_names(w) == {"appearance.2da", "bystander.utc"}, f"no override file may be created: {override_names(w)}")
+    check(snapshot(w["game"] / "override") == override_before, "override/ must be untouched")
+    check(snapshot(w["game"] / "cloudsaves") == saves_before, "source saves must be untouched")
+    bdir = plan.backup_dir
+    check(not (bdir / "saves").exists() or not any((bdir / "saves").iterdir()), "failed save copies must be removed")
+    check(not (bdir / "manifest.json").exists() and not (w["game"] / "backups" / "k1p_probe_latest.json").exists(),
+          "no manifest or pointer may be written")
+
+
 def main() -> int:
     passed = 0
     for fn in TESTS:

@@ -102,7 +102,10 @@ Voice: skip for now. Drop-in path fails (claim 11). TLK vs VO_ResRef precedence 
 | T10 | Writer fidelity to vanilla K2 (skin order, unknown0, pointers, tangents) in the 19-hunk patch | BUILT |
 | T11 | Ingest `n_commm` (vanilla, HD flagged) and `llk_LenaH/B` (credit) into the stage | BUILT |
 | T12 | Risk mitigation: loader recon, MDLOps diff, scratch-save probe, converter hardening | BUILT |
-| T13 | Commit `k1_port/` + doc 38 + evidence by explicit paths (needs user "commit") | TODO |
+| T13 | Commit `k1_port/` + doc 38 + evidence by explicit paths (needs user "commit") | DONE |
+| T14 | Probe build: `k1_port_probe_build.py` makes stage `probe_T12h/override/{appearance.2da,per_miner_002.utc}`; probe tool gets save-slot backup; `plan` turns green | BUILT |
+| T15 | Probe install (user GO, game closed): `k1_port_probe.py install --yes`, manifest verified | TODO |
+| T16 | Probe play test (user) + log check; KEEP or ROLLBACK; result into this doc and doc 34 item 10 | TODO |
 
 ## 8. Licence policy and tooling (10-11)
 

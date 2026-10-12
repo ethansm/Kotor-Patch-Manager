@@ -20,6 +20,8 @@ Install prechecks (every one must pass; any failure refuses the copy):
      backed up first. A target that an active install manifest already lists is also refused.
 
 Backups: <game>/backups/k1p_probe_<YYYYMMDD_HHMM>/manifest.json, originals under original/.
+Save slots (<game>/cloudsaves/*/000000 - QUICKSAVE and 000001 - AUTOSAVE) are copied to saves/ and
+verified by tree sha256 before any override file is touched. Rollback never restores them; it prints cp hints.
 Pointer to the latest manifest: <game>/backups/k1p_probe_latest.json.
 
 Stdlib only. Runs under system python3 and python3 -I (this directory is put on sys.path below).
@@ -27,6 +29,7 @@ Exit: 0 ok or dry run, 1 refused / blocked / error, 2 bad arguments.
 """
 import argparse
 import contextlib
+import hashlib
 import io
 import json
 import os
@@ -57,7 +60,8 @@ PROCESS_PREFIX = "swkotor2"
 BACKUP_PREFIX = "k1p_probe_"
 POINTER_NAME = "k1p_probe_latest.json"
 MANIFEST_NAME = "manifest.json"
-SCHEMA = "k1p_probe/1"
+SCHEMA = "k1p_probe/1"  # manifest "saves" is optional on read: older manifests simply lack it
+SAVE_SLOTS = ("000000 - QUICKSAVE", "000001 - AUTOSAVE")  # <game>/cloudsaves/<user>/<slot>, backed up by install
 COMMANDS = ("plan", "install", "rollback", "status")
 SHA_RE = re.compile(r"[0-9a-f]{64}")
 
@@ -76,6 +80,29 @@ def now_stamp() -> str:
 
 def sha_of(path: Path) -> str:
     return kp.sha256_of(path)
+
+
+def tree_entries(root: Path) -> list:
+    """Sorted (posix relpath, sha256) for every regular file under root. A symlink or special file raises."""
+    entries = []
+    for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
+        d = Path(dirpath)
+        for name in dirnames:
+            if (d / name).is_symlink():
+                raise ProbeError(f"save tree has a symlink: {d / name}")
+        for name in filenames:
+            p = d / name
+            if p.is_symlink() or not p.is_file():
+                raise ProbeError(f"save tree entry is not a regular file: {p}")
+            entries.append((p.relative_to(root).as_posix(), sha_of(p)))
+    return sorted(entries)
+
+
+def tree_sha256(entries) -> str:
+    h = hashlib.sha256()
+    for rel, sha in entries:
+        h.update(f"{rel}\0{sha}\n".encode("utf-8"))
+    return h.hexdigest()
 
 
 def within(child: Path, parent: Path) -> bool:
@@ -215,13 +242,18 @@ def entry_state(game: Path, entry: dict) -> str:
 class Plan:
     def __init__(self):
         self.checks = []  # (ok, name, detail)
+        self.warnings = []  # (name, detail): reported as WARN, never blocks
         self.files = []   # dicts: name, src, src_rel, sha256, size, dest, rel, action, backup
+        self.saves = []   # dicts: slot, src (Path), backup (Path, under backup_dir/saves/)
         self.manifest = None
         self.backup_dir = None
         self.base = None
 
     def check(self, name, ok, detail=""):
         self.checks.append((bool(ok), name, detail))
+
+    def warn(self, name, detail=""):
+        self.warnings.append((name, detail))
 
     def failed(self):
         return [c for c in self.checks if not c[0]]
@@ -239,6 +271,33 @@ def active_targets(game: Path, plan: Plan) -> dict:
         for e in data.get("installed", []):
             active[str(e.get("rel"))] = str(mpath)
     return active
+
+
+def plan_saves(game: Path, plan: Plan, no_backup: bool) -> None:
+    """Fill plan.saves with one entry per save slot found. Ambiguous or non-directory slots block;
+    an absent slot or cloudsaves/ only warns, so install still runs."""
+    if no_backup:
+        plan.warn("save backup", "skipped by --no-save-backup: save slots are NOT backed up")
+        return
+    cloud = game / "cloudsaves"
+    for slot in SAVE_SLOTS:
+        hits = sorted(cloud.glob(f"*/{slot}")) if cloud.is_dir() else []
+        if not hits:
+            why = "no cloudsaves/*/ match" if cloud.is_dir() else "cloudsaves/ absent"
+            plan.warn(f"save slot {slot}", f"not found ({why}): not backed up, install continues")
+        elif len(hits) > 1:
+            plan.check(f"save slot {slot}", False, f"{len(hits)} matches under cloudsaves/*/: resolve which one first")
+        elif hits[0].is_symlink() or not hits[0].is_dir():
+            plan.check(f"save slot {slot}", False, f"{hits[0]} is not a plain directory")
+        else:
+            try:
+                tree_entries(hits[0])
+            except ProbeError as e:
+                plan.check(f"save slot {slot}", False, str(e))
+                continue
+            dst = plan.backup_dir / "saves" / slot
+            plan.check(f"save slot {slot}", True, f"found {hits[0]}; backup to {dst}")
+            plan.saves.append({"slot": slot, "src": hits[0], "backup": dst})
 
 
 def compute_plan(args, stamp: str) -> Plan:
@@ -318,6 +377,7 @@ def compute_plan(args, stamp: str) -> Plan:
     plan.backup_dir = mpath.parent
     plan.check("backup dir is new", not os.path.lexists(plan.backup_dir), str(plan.backup_dir))
     plan.check("manifest outside override/", not within(Path(os.path.abspath(mpath)), game / "override"), str(mpath))
+    plan_saves(game, plan, bool(getattr(args, "no_save_backup", False)))
 
     for f in plan.files:
         dest = game / "override" / f["name"]
@@ -353,10 +413,13 @@ def print_plan(plan: Plan, title: str) -> None:
     print("  checks:")
     for ok, name, detail in plan.checks:
         print(f"    {'PASS ' if ok else 'BLOCK'} {name}: {detail}")
+    for name, detail in plan.warnings:
+        print(f"    WARN  {name}: {detail}")
     if plan.failed():
         print(f"  verdict: BLOCKED ({len(plan.failed())} check(s) failed); install --yes would copy nothing")
     else:
-        print(f"  verdict: READY; install --yes would copy {len(plan.files)} file(s) into override/")
+        saves = f" and back up {len(plan.saves)} save slot(s)" if plan.saves else ""
+        print(f"  verdict: READY; install --yes would copy {len(plan.files)} file(s) into override/{saves}")
 
 
 def undo_install(undo) -> None:
@@ -365,17 +428,39 @@ def undo_install(undo) -> None:
             if kind == "delete":
                 if os.path.lexists(dest):
                     dest.unlink()
+            elif kind == "rmtree":
+                if os.path.lexists(dest):
+                    shutil.rmtree(dest)
             else:
                 shutil.copyfile(bak, dest)
         except OSError as e:
             print(f"undo failed for {dest}: {e}", file=sys.stderr)
 
 
+def backup_save(s: dict, undo: list) -> dict:
+    """Copy one save slot into the backup dir, then verify the copy's tree hash against the source.
+    The undo entry is added before the copy, so a failed or partial copy is removed on failure."""
+    src, dst = s["src"], s["backup"]
+    src_entries = tree_entries(src)
+    want = tree_sha256(src_entries)
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    undo.append(("rmtree", dst, None))
+    shutil.copytree(src, dst, symlinks=True)
+    got_entries = tree_entries(dst)
+    got = tree_sha256(got_entries)
+    if got != want or got_entries != src_entries:
+        raise ProbeError(f"save backup of {src} hashes {got}, expected {want}")
+    return {"slot": s["slot"], "src": str(src), "backup": f"saves/{s['slot']}",
+            "files": len(src_entries), "tree_sha256": want}
+
+
 def install_files(plan: Plan, game: Path, stage: Path, base) -> dict:
     bdir = plan.backup_dir
     bdir.mkdir(parents=True)  # raises if the dir exists: never clobber an earlier backup
-    undo, records = [], []
+    undo, records, save_records = [], [], []
     try:
+        for s in plan.saves:  # save slots first: no override file is touched until every save copy verifies
+            save_records.append(backup_save(s, undo))
         for f in plan.files:
             rec = {"name": f["name"], "rel": f["rel"], "source": f["src_rel"], "sha256": f["sha256"],
                    "size": f["size"], "action": "created", "backup": None, "backup_sha256": None}
@@ -395,7 +480,7 @@ def install_files(plan: Plan, game: Path, stage: Path, base) -> dict:
             if sha_of(f["dest"]) != f["sha256"]:
                 raise ProbeError(f"copy verify failed: {f['dest']}")
         manifest = {"schema": SCHEMA, "created": now_iso(), "game_dir": str(game), "stage": str(stage),
-                    "base_sha256": base, "backup_dir": str(bdir), "installed": records}
+                    "base_sha256": base, "backup_dir": str(bdir), "installed": records, "saves": save_records}
         write_json_atomic(plan.manifest, manifest)
         write_json_atomic(pointer_path(game), {"manifest": str(plan.manifest), "written": manifest["created"]})
         bad = [r["rel"] for r in records if entry_state(game, r) != "ok"]
@@ -461,6 +546,28 @@ def require_game(args) -> Path:
     return game
 
 
+def print_save_hints(data: dict, mpath: Path) -> None:
+    """Rollback never restores save slots. Print one manual copy command per backed-up slot."""
+    saves = data.get("saves") or []
+    if saves:
+        print("  saves are NOT restored by rollback. Manual restore, one line per slot:")
+    for s in saves:
+        bak = os.path.abspath(mpath.parent / str(s.get("backup", "")))
+        parent = Path(str(s.get("src", ""))).parent
+        print(f'    cp -a "{bak}" "{parent}/"')
+
+
+def print_save_status(data: dict, mpath: Path) -> None:
+    saves = data.get("saves") or []
+    if not saves:
+        print("  save backups: none recorded")
+        return
+    for s in saves:
+        bak = mpath.parent / str(s.get("backup", ""))
+        state = "present" if bak.is_dir() else "MISSING"
+        print(f"  save backup {state:<8} {s.get('slot')}  ({s.get('files')} file(s))  {bak}")
+
+
 def cmd_plan(args) -> int:
     plan = compute_plan(args, now_stamp())
     print("(dry run: nothing is written)")
@@ -481,6 +588,8 @@ def cmd_install(args) -> int:
         return 1
     manifest = install_files(plan, game, stage, plan.base)
     print(f"installed {len(manifest['installed'])} file(s). manifest: {plan.manifest}")
+    if manifest["saves"]:
+        print(f"saved {len(manifest['saves'])} save slot(s) under {plan.backup_dir / 'saves'} (tree sha256 verified)")
     return 0
 
 
@@ -502,6 +611,7 @@ def cmd_rollback(args) -> int:
         print(f"  {a['kind']:<8} {a['rel']}  ({a['note']})")
     for b in blockers:
         print(f"  BLOCK    {b}")
+    print_save_hints(data, mpath)
     if not args.yes:
         print("dry run: nothing removed or restored. Re-run with --yes to apply.")
         return 0
@@ -524,6 +634,7 @@ def cmd_status(args) -> int:
         return 0
     data = load_json(mpath)
     print(f"  manifest: {mpath}")
+    print_save_status(data, mpath)
     if data.get("rolled_back"):
         print(f"  state: NOT INSTALLED (rolled back {data['rolled_back']})")
         return 0
@@ -560,6 +671,8 @@ def build_parser() -> argparse.ArgumentParser:
                            help="staged files relative to --stage (default: the design-doc probe set)")
             p.add_argument("--base-sha256", metavar="HEX",
                            help="sha256 of the live override/appearance.2da that install replaces")
+            p.add_argument("--no-save-backup", action="store_true",
+                           help="skip the backup of cloudsaves QUICKSAVE/AUTOSAVE (tests, non-Steam installs)")
 
     p = sub.add_parser("plan", help="dry run: list what would be copied and every precheck (writes nothing)")
     common(p, staged=True)
