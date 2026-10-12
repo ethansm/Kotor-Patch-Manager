@@ -356,6 +356,83 @@ class NullQuotes(unittest.TestCase):
         self.assertFalse(eqc.check(BUNDLE, out)[0]["valid"])
 
 
+class ShortEvidenceIds(unittest.TestCase):
+    """`ev:<sha8>` resolves to the one excerpt whose id ends in `:<sha8>`; ambiguous or unknown otherwise."""
+    SHORT_A = "ev:" + ID_A.rsplit(":", 1)[-1]           # ev:a80f7613
+    SHORT_B = "ev:" + ID_B.rsplit(":", 1)[-1]
+
+    def twin(self):
+        # excerpt B replaced by a second excerpt with A's text under another log name: same sha8, other id
+        b = copy.deepcopy(BUNDLE)
+        b["evidence"][1] = make_excerpt("banner", 1, "alert", 13, A_LINES)
+        return finalize(b)
+
+    def test_short_id_one_match_resolves_to_full_id(self):
+        v = eqc.check(BUNDLE, blind(hyp("h1", [cit(self.SHORT_A, "Loaded 12 entries")])))
+        self.assertTrue(v[0]["valid"], v[0]["reason"])
+        self.assertEqual(v[0]["valid_evidence_ids"], [ID_A])
+        v = eqc.check(BUNDLE, blind(hyp("h1", [cit(self.SHORT_B, "Tick 99 done")])))
+        self.assertEqual(v[0]["valid_evidence_ids"], [ID_B])
+
+    def test_short_id_two_matches_is_ambiguous(self):
+        b = self.twin()
+        v = eqc.check(b, blind(hyp("h1", [cit(self.SHORT_A, "Loaded 12 entries")])))
+        self.assertFalse(v[0]["valid"])
+        self.assertEqual(v[0]["reason"], f"ambiguous evidence id {self.SHORT_A} (2 excerpts)")
+        self.assertEqual(v[0]["valid_evidence_ids"], [])
+        # the full ids of the two twins still resolve exactly
+        v = eqc.check(b, blind(hyp("h1", [cit(ID_A, "Loaded 12 entries")])))
+        self.assertTrue(v[0]["valid"])
+
+    def test_short_id_zero_matches_is_unknown(self):
+        v = eqc.check(BUNDLE, blind(hyp("h1", [cit("ev:00000000", "Loaded 12 entries")])))
+        self.assertFalse(v[0]["valid"])
+        self.assertEqual(v[0]["reason"], "unknown evidence id ev:00000000")
+
+    def test_malformed_short_ids_rejected_as_unknown(self):
+        bad = ("ev:" + self.SHORT_A[3:10],                  # ev: + 7 hex
+               "ev:" + self.SHORT_A[3:] + "a",              # ev: + 9 hex
+               "ev:" + self.SHORT_A[3:].upper(),            # uppercase hex
+               self.SHORT_A + ":extra")                     # trailing segment
+        for eid in bad:
+            v = eqc.check(BUNDLE, blind(hyp("h1", [cit(eid, "Loaded 12 entries")])))
+            self.assertFalse(v[0]["valid"], eid)
+            self.assertEqual(v[0]["reason"], f"unknown evidence id {eid}", eid)
+
+    def test_short_id_quote_not_in_that_excerpt_rejected(self):
+        # "Tick 99 done" is only in B; citing it under A's short id is fabricated
+        v = eqc.check(BUNDLE, blind(hyp("h1", [cit(self.SHORT_A, "Tick 99 done")])))
+        self.assertFalse(v[0]["valid"])
+        self.assertIn("not found verbatim", v[0]["reason"])
+        self.assertIn(ID_A, v[0]["reason"])                  # message names the resolved full id
+
+    def test_exact_full_id_behaves_as_before(self):
+        v = eqc.check(BUNDLE, blind(hyp("h1", [cit(ID_A, "Loaded 12 entries")])))
+        self.assertEqual((v[0]["valid"], v[0]["reason"], v[0]["valid_evidence_ids"]), (True, "", [ID_A]))
+        v = eqc.check(BUNDLE, blind(hyp("h1", [cit(ID_A, "Tick 99 done")])))
+        self.assertEqual(v[0]["reason"], f"{ID_A}: quote not found verbatim in that excerpt")
+
+    def test_blind_output_takes_resolver(self):
+        v = eqc.check(BUNDLE, blind(hyp("h1", [cit(self.SHORT_B, "Queue length 0")])))
+        self.assertEqual((v[0]["valid"], v[0]["valid_evidence_ids"]), (True, [ID_B]))
+
+    def test_null_output_takes_resolver(self):
+        v = eqc.check(BUNDLE, null("not_a_bug", reason(self.SHORT_B, "Queue length 0")))
+        self.assertEqual((v[0]["valid"], v[0]["valid_evidence_ids"]), (True, [ID_B]))
+
+    def test_verify_output_takes_resolver(self):
+        out = {"unit_id": "verify-blind-skeptic-h1", "hypothesis_id": "h1", "verdict": "supported",
+               "reasons": [reason(self.SHORT_A, "ERROR  null pointer in  handler")]}
+        v = eqc.check(BUNDLE, out)
+        self.assertEqual((v[0]["valid"], v[0]["valid_evidence_ids"]), (True, [ID_A]))
+
+    def test_hypothesis_with_short_and_full_ids_is_valid(self):
+        v = eqc.check(BUNDLE, blind(hyp("h1", [cit(self.SHORT_A, "Loaded 12 entries"),
+                                               cit(ID_B, "Tick 99 done")])))
+        self.assertTrue(v[0]["valid"], v[0]["reason"])
+        self.assertEqual(v[0]["valid_evidence_ids"], [ID_A, ID_B])
+
+
 class Tamper(unittest.TestCase):
     def good_output(self):
         return blind(hyp("h1", [cit(ID_A, "Loaded 12 entries")]))

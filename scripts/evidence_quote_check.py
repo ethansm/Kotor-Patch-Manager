@@ -10,7 +10,8 @@ Usage:
              output (same reasons shape). One verdict is printed per hypothesis / per reason.
   --json     print the verdict list as JSON instead of text lines.
 
-Rule: a citation is valid iff its evidence_id exists in the bundle AND its quote, after removing
+Rule: a citation is valid iff its evidence_id names an excerpt in the bundle (the full id, or a short
+`ev:<sha8>` that matches exactly one excerpt id; an ambiguous short id is rejected) AND its quote, after removing
 `L<n>| ` line prefixes (also in multi-line quotes) and normalising whitespace, is a substring of the
 whitespace-normalised text of that ONE excerpt AND the quote is at least 6 characters (MIN_CHARS; the
 same rule as the deep-haiku-review bundle's quote_check.py). A quote spanning two excerpts is fabricated.
@@ -36,6 +37,8 @@ MIN_CHARS = 6
 # `L<n>| ` as rendered by the prompt builder; only recognised at a token start so text such as
 # "tailL12| x" or "L12 | x" is left alone.
 _PREFIX = re.compile(r"(?<!\S)L\d+\|[ \t]?")
+# short evidence id `ev:<sha8>` (first 8 lowercase hex chars of an excerpt's text_sha256); see _resolve
+_SHORT_ID = re.compile(r"ev:[0-9a-f]{8}")
 # verdicts of a null/verify output that may legitimately come with no reasons
 _NO_REASON_OK = frozenset({"insufficient", "inconclusive"})
 _MISSING = object()
@@ -106,8 +109,22 @@ def index_bundle(bundle) -> dict:
     return texts
 
 
+def _resolve(eid: str, texts: dict):
+    """-> (full evidence id or None, reason). An exact key of texts wins. Otherwise a short `ev:<sha8>`
+    (lowercase hex, whole string) resolves iff exactly one excerpt id ends in `:<sha8>`."""
+    if eid in texts:
+        return eid, ""
+    if _SHORT_ID.fullmatch(eid):
+        hits = [k for k in texts if k.endswith(":" + eid[3:])]
+        if len(hits) == 1:
+            return hits[0], ""
+        if hits:
+            return None, f"ambiguous evidence id {eid} ({len(hits)} excerpts)"
+    return None, f"unknown evidence id {eid}"
+
+
 def _citation(cit, texts: dict):
-    """-> (ok, evidence_id or None, reason)."""
+    """-> (ok, evidence_id or None, reason). The returned id is the resolved full id when ok."""
     if not isinstance(cit, dict):
         return False, None, "citation is not an object"
     eid, quote = cit.get("evidence_id", _MISSING), cit.get("quote", _MISSING)
@@ -115,8 +132,10 @@ def _citation(cit, texts: dict):
         return False, None, "citation has no evidence_id"
     if not isinstance(quote, str):
         return False, eid, f"{eid}: citation has no quote"
-    if eid not in texts:
-        return False, eid, f"unknown evidence id {eid}"
+    full, why = _resolve(eid, texts)
+    if full is None:
+        return False, eid, why
+    eid = full
     want = norm_quote(quote)
     if len(want) < MIN_CHARS:
         return False, eid, f"{eid}: quote shorter than {MIN_CHARS} characters"
