@@ -470,6 +470,7 @@ namespace tex {
 constexpr int Count = 7 + shui::kRingFrames;   // csh_cross, csh_disc, csh_disc_hi, csh_tog_off, csh_tog_off_hi, csh_tog_on, csh_tog_on_hi, csh_ring0..7
 bool g_texInit = false;
 void* g_crossImg = nullptr; void* g_discImg[2] = {}; void* g_togImg[4] = {}; void* g_ringImg[shui::kRingFrames] = {};   // g_togImg: off, off_hi, on, on_hi
+void* g_arrowNeg = nullptr; void* g_arrowPos = nullptr;   // vanilla stepper glyphs uibit_arrowneg_p / uibit_arrowpos_p (engine textures, not embedded)
 static_assert(sizeof kSelfHealTextures / sizeof kSelfHealTextures[0] == Count, "csh_cross + csh_disc + csh_disc_hi + 4 csh_tog_* + csh_ring0..7");
 
 void logLine(const char* fmt, ...) {   // embtex::g_log sink
@@ -485,8 +486,20 @@ void ensureTextures() {   // once per process; the textures outlive every HUD (n
         void* im = guikit::imageFor(kSelfHealTextures[i].resref);   // a pooled GUI handle that is never released keeps the texture alive
         if (i == 0) g_crossImg = im; else if (i <= 2) g_discImg[i - 1] = im; else if (i <= 6) g_togImg[i - 3] = im; else g_ringImg[i - 7] = im;
     }
+    g_arrowNeg = guikit::imageFor("uibit_arrowneg_p");   // vanilla stepper glyphs (r1.md); pooled, never released
+    g_arrowPos = guikit::imageFor("uibit_arrowpos_p");
     KP_LOG(chUi, "TEXSET ensure=%d supported=%d ready=%d cross=%08x disc=%08x dischi=%08x tog=%08x,%08x,%08x,%08x ring0=%08x slots=%d/%d", (int)ensured, (int)embtex::supported(), (int)embtex::detail::engineReady(),
            (unsigned)reinterpret_cast<uintptr_t>(g_crossImg), (unsigned)reinterpret_cast<uintptr_t>(g_discImg[0]), (unsigned)reinterpret_cast<uintptr_t>(g_discImg[1]), (unsigned)reinterpret_cast<uintptr_t>(g_togImg[0]), (unsigned)reinterpret_cast<uintptr_t>(g_togImg[1]), (unsigned)reinterpret_cast<uintptr_t>(g_togImg[2]), (unsigned)reinterpret_cast<uintptr_t>(g_togImg[3]), (unsigned)reinterpret_cast<uintptr_t>(g_ringImg[0]), embtex::slotCount(), (int)embtex::MaxTex);
+    KP_LOG(chUi, "ARROW neg=%08x pos=%08x", (unsigned)reinterpret_cast<uintptr_t>(g_arrowNeg), (unsigned)reinterpret_cast<uintptr_t>(g_arrowPos));
+}
+// Vanilla arrow handles: ensureTextures resolves them once; if the engine had no handle yet (null), retry at most 10 times, 500 ms apart, on popover show.
+void resolveArrows(DWORD now) {
+    static DWORD last = 0; static int tries = 0;
+    if ((g_arrowNeg && g_arrowPos) || tries >= 10 || (last && now - last < 500)) return;
+    last = now; ++tries;
+    if (!g_arrowNeg) g_arrowNeg = guikit::imageFor("uibit_arrowneg_p");
+    if (!g_arrowPos) g_arrowPos = guikit::imageFor("uibit_arrowpos_p");
+    KP_LOG(chUi, "ARROW retry=%d neg=%08x pos=%08x", tries, (unsigned)reinterpret_cast<uintptr_t>(g_arrowNeg), (unsigned)reinterpret_cast<uintptr_t>(g_arrowPos));
 }
 void healTextures() { embtex::heal(); }   // every frame (GL reset + missing rebuild, 20-refill give-up per texture; DB lesson 290)
 }  // namespace tex
@@ -527,15 +540,19 @@ void setFail(const W& w, int op, const char* name) {
 }
 void wRect(W& w, const shui::Rect& r) { if (!w.c || (w.rectSet && w.r == r)) return; if (guikit::setRect(w.c, r.x, r.y, r.w, r.h)) { w.r = r; w.rectSet = true; } else setFail(w, 0, "rect"); }
 bool isPopText(const W& w) { int i = static_cast<int>(&w - g_w); return i == W_Auto || i == W_HpM || i == W_HpP || i == W_KeepM || i == W_KeepP || i == W_HpVal || i == W_KeepVal; }
+// Vanilla KOTOR II button colours (r1.md): text and arrows teal, hover cream; Auto-heal caption when OFF dim teal-grey (readable).
+constexpr float kTeal[3] = { 0.102f, 0.698f, 0.549f };
+constexpr float kCream[3] = { 0.800f, 0.800f, 0.698f };
+constexpr float kTealDim[3] = { 0.45f, 0.58f, 0.53f };
 void popStyle(W& w) {
     if (!w.c || !isPopText(w)) return;
-    guikit::setTextColor(w.c, 0.85f, 0.95f, 0.85f);
+    guikit::setTextColor(w.c, kTeal[0], kTeal[1], kTeal[2]);
     guikit::setAlpha(w.c, 1.0f);
     w.alpha = 1.0f;
     float rgb[3] = {};
     if (guikit::getTextColor(w.c, rgb)) { w.tr = rgb[0]; w.tg = rgb[1]; w.tb = rgb[2]; }
-    else { w.tr = 0.85f; w.tg = 0.95f; w.tb = 0.85f; }
-}   // popover text was invisible (CS8 R-pop): explicit light colour + alpha 1 on build and every show
+    else { w.tr = kTeal[0]; w.tg = kTeal[1]; w.tb = kTeal[2]; }
+}   // popover text was invisible (CS8 R-pop): explicit colour + alpha 1 on build and every show
 void wShow(W& w, bool on) {
     if (!w.c) return;
     if (on) { if (w.vis != 1) popStyle(w); if (w.clk != 1) { guikit::setClickable(w.c, true); w.clk = 1; } if (w.vis != 1) { guikit::setVisible(w.c, true); w.vis = 1; } }
@@ -599,19 +616,43 @@ void wTip(W& w, const std::string& t) { if (!w.c || w.tip == t || !guitip::nativ
 // Unconscious button: not clickable (the engine neither hovers nor tooltips it); wShow(true) restores clickability the frame it wakes.
 void wInert(W& w) { if (w.c && w.clk != 0) { guikit::setClickable(w.c, false); w.clk = 0; } w.hover = false; }
 
-// Native GUI button click (PlayGuiSound idx 0 = gui_click; hover is idx 1, GuiKit playHoverSound). False when the sound manager is null.
-bool playClickSound() {
+// Native GUI sound by guisounds.2da index (0 gui_click, 1 gui_scroll = hover, 3 gui_check). False when the sound manager is null.
+bool playGuiIdx(int idx) {
     uint32_t mgr = 0;
     if (!guikit::g_gk.playSound || !guikit::g_gk.guiSoundMgrAddr || !guikit::detail::rd32(guikit::g_gk.guiSoundMgrAddr, 0, &mgr) || !mgr) return false;
-    guikit::g_gk.playSound(reinterpret_cast<void*>(static_cast<uintptr_t>(mgr)), 0);
+    guikit::g_gk.playSound(reinterpret_cast<void*>(static_cast<uintptr_t>(mgr)), idx);
     return true;
 }
+bool playClickSound() { return playGuiIdx(0); }
 int g_popHover = -1;                   // popover row under the cursor (shui::PopRow, -1 = none), edge-gated hover sound/log
 int g_popMi = -1;                      // member whose popover is open (-1 = closed, 0 = leader, 1..2 = companions)
 guikit::ClickEdge g_lmb, g_rmb;
 DWORD g_cacheMs = 0, g_cfgCheckMs = 0;
 bool g_cacheValid = false;
 bool g_mapLogged[3] = {}, g_warnTag[3] = {};
+// Stepper arrow (vanilla BTN_DIFFLEFT/RIGHT look, r1.md): uibit_arrowneg_p (-) / uibit_arrowpos_p (+) white glyph tinted teal, cream on hover, alpha 0.35 at the bound.
+// Change-gated on the state edge: w.frame = hover, w.tr/tg/tb = tint sent (wShow(false) resets both). Fill refused or no image: the "-"/"+" text in the same colour.
+void wArrow(W& w, void* img, bool hover, bool dim) {
+    if (!w.c) return;
+    const int i = static_cast<int>(&w - g_w);
+    const float* rgb = hover ? kCream : kTeal;
+    const int want = hover ? 1 : 0;
+    if (w.frame != want || w.tr != rgb[0] || w.tg != rgb[1] || w.tb != rgb[2]) {
+        float tint[3] = { rgb[0], rgb[1], rgb[2] };
+        const bool ok = img && guikit::setFill(w.c, img, tint);
+        if (ok) {
+            w.tr = rgb[0]; w.tg = rgb[1]; w.tb = rgb[2];
+            if (guikit::setText(w.c, "")) w.txt.clear(); else setFail(w, 1, "text");   // direct: wShow(false) clears the text cache, not the control
+        } else {
+            wText(w, (i == W_HpM || i == W_KeepM) ? "-" : "+");
+            wTextColor(w, rgb[0], rgb[1], rgb[2]);
+        }
+        w.frame = want;
+        static int logs = 0;   // edge-gated (state change / show), capped
+        if (logs < 24) { ++logs; KP_LOG(chUi, "ARROW fill m=%d item=%d ok=%d img=%08x", g_popMi, i, (int)ok, (unsigned)reinterpret_cast<uintptr_t>(img)); }
+    }
+    wAlpha(w, dim ? 0.35f : 1.0f);
+}
 
 
 struct Card {
@@ -1091,12 +1132,14 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
             if (it != shui::PopItem::None) {
                 if (filewatch::changed(g_cfgPoll, IniPath, now, true)) loadCfg();   // pick up a hand edit before overwriting
                 std::string key = keyFor(g_popMi);
-                shui::CompCfg nc = shui::applyPop(shui::lookup(g_cfg, key), it);
+                const shui::CompCfg oldCfg = shui::lookup(g_cfg, key);   // copy: upsert below may move the row
+                shui::CompCfg nc = shui::applyPop(oldCfg, it);
                 shui::upsert(g_cfg, key, nc);
                 if (g_popMi == 0) g_card0.cfg = nc;
                 else g_card[g_popMi].cfg = nc;
                 saveIni(key, nc);
-                if (!playClickSound()) guikit::playHoverSound();
+                if (it == shui::PopItem::AutoToggle) { if (!playGuiIdx(3) && !playGuiIdx(0)) guikit::playHoverSound(); }   // vanilla checkbox sound on the pill
+                else if (!(nc == oldCfg)) { if (!playClickSound()) guikit::playHoverSound(); }   // stepper: gui_click only when the value moved (a bound is silent)
                 if (it == shui::PopItem::AutoToggle) KP_LOG(chUi, "TOGGLE member=%d auto=%d", g_popMi, (int)nc.autoOn);
                 static int clicks = 0;
                 if (clicks < 96) { ++clicks; KP_LOG(chUi, "POPCLICK m=%d row=%d", g_popMi, static_cast<int>(it)); }
@@ -1133,7 +1176,7 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
         wRect(g_w[W_Auto], shui::Rect{ ra.x + margin, ra.y, ra.w - pillW - 3 * margin, ra.h });
         wText(g_w[W_Auto], shui::popAutoCaption());
         const int items[4] = { W_HpM, W_HpP, W_KeepM, W_KeepP };
-        for (int i = 0; i < 4; ++i) { wRect(g_w[items[i]], L.r[i + 2]); wText(g_w[items[i]], shui::popLabel(static_cast<shui::PopItem>(i + 2), cfg)); }
+        for (int i = 0; i < 4; ++i) wRect(g_w[items[i]], L.r[i + 2]);   // stepper look (arrow fill / text fallback) is set by wArrow after the wShow loop
         wRect(g_w[W_HpVal], shui::popValueRect(L, 2)); wText(g_w[W_HpVal], shui::popValueLabel(2, cfg));
         wRect(g_w[W_KeepVal], shui::popValueRect(L, 3)); wText(g_w[W_KeepVal], shui::popValueLabel(3, cfg));
         wPill(g_w[W_AutoPill], cfg.autoOn, hoverRow == shui::Row_Auto);
@@ -1141,10 +1184,13 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
     for (int i = W_PopBg; i < W_Ring0; ++i) wShow(g_w[i], popOpen);
     if (popOpen) {   // after wShow: popStyle resets the text colour on every show
         const shui::CompCfg& cfg = (g_popMi == 0 ? g_card0 : g_card[g_popMi]).cfg;
-        if (cfg.autoOn) wTextColor(g_w[W_Auto], 140.f / 255.f, 1.f, 215.f / 255.f); else wTextColor(g_w[W_Auto], 0.62f, 0.67f, 0.64f);
+        if (cfg.autoOn) wTextColor(g_w[W_Auto], kTeal[0], kTeal[1], kTeal[2]); else wTextColor(g_w[W_Auto], kTealDim[0], kTealDim[1], kTealDim[2]);
         const int rowOf[4] = { shui::Row_HpM, shui::Row_HpP, shui::Row_KeepM, shui::Row_KeepP };
         const int itemOf[4] = { W_HpM, W_HpP, W_KeepM, W_KeepP };
-        for (int i = 0; i < 4; ++i) { if (hoverRow == rowOf[i]) wTextColor(g_w[itemOf[i]], 208.f / 255.f, 204.f / 255.f, 170.f / 255.f); else wTextColor(g_w[itemOf[i]], 0.85f, 0.95f, 0.85f); }
+        tex::resolveArrows(now);
+        const bool dimOf[4] = { cfg.hpPct <= 5, cfg.hpPct >= 95, cfg.keep <= 0, cfg.keep >= 20 };   // at the bound: dimmed arrow
+        void* const imgOf[4] = { tex::g_arrowNeg, tex::g_arrowPos, tex::g_arrowNeg, tex::g_arrowPos };
+        for (int i = 0; i < 4; ++i) wArrow(g_w[itemOf[i]], imgOf[i], hoverRow == rowOf[i], dimOf[i]);
     }
     if (hoverRow != g_popHover) {   // edge-gated hover sound + log (the engine does not hover our rects; we hit-test ourselves)
         g_popHover = hoverRow;
@@ -1311,7 +1357,7 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     loadIni();
     loadCfg();
     filewatch::accept(g_cfgPoll, IniPath);
-    KP_LOG(chMain, "0.8.0-dev ui=popsize+togglepill+leaderclick: probe call=%d CallKey=0x%02X kick=%d cfg rows=%d", g_probeCall, g_callKey, (int)g_kick, (int)g_cfg.rows.size());
+    KP_LOG(chMain, "0.8.1-dev ui=popsize+togglepill+leaderclick+vanillaarrows: probe call=%d CallKey=0x%02X kick=%d cfg rows=%d", g_probeCall, g_callKey, (int)g_kick, (int)g_cfg.rows.size());
     g_ps.init(api, "companion-selfheal");
     g_ps.onConnect = onConnect;
     g_ps.add(K2PS_FRAME_BEGIN, 300, onFrameBegin);

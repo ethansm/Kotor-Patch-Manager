@@ -122,7 +122,7 @@ class GenSelfHealTextures(unittest.TestCase):
             else:
                 self.assertGreater(left, right + 5, (name, left, right))   # knob on the left
             knob, far = ((112, 16), (16, 16)) if on else ((16, 16), (112, 16))
-            colour = (140, 255, 215) if on else (150, 160, 155)
+            colour = (26, 178, 140) if on else (150, 160, 155)
             p = im.getpixel(knob)
             self.assertEqual(p[3], 255, (name, knob))
             self.assertTrue(all(abs(p[i] - t) <= 3 for i, t in enumerate(colour)), (name, p))
@@ -130,8 +130,8 @@ class GenSelfHealTextures(unittest.TestCase):
 
     def test_toggle_rims(self):
         blobs = dict(gen())
-        expect = {"csh_tog_off": ((64, 0), (60, 90, 85)), "csh_tog_on": ((64, 0), (10, 96, 80)),
-                  "csh_tog_off_hi": ((64, 3), (208, 204, 170)), "csh_tog_on_hi": ((64, 3), (208, 204, 170))}
+        expect = {"csh_tog_off": ((64, 0), (13, 89, 69)), "csh_tog_on": ((64, 0), (13, 89, 69)),
+                  "csh_tog_off_hi": ((64, 3), (204, 204, 178)), "csh_tog_on_hi": ((64, 3), (204, 204, 178))}
         for name, (xy, colour) in expect.items():
             p = img(blobs[name]).getpixel(xy)
             self.assertEqual(p[3], 255, (name, xy))
@@ -141,9 +141,9 @@ class GenSelfHealTextures(unittest.TestCase):
         blobs = dict(gen())
         for name in ("csh_tog_off_hi", "csh_tog_on_hi"):
             im = img(blobs[name])
-            p = im.getpixel((64, 2))   # just outside the beige rim (pill edge at y=3): halo alpha ~82
+            p = im.getpixel((64, 2))   # just outside the cream rim (pill edge at y=3): halo alpha ~82
             self.assertTrue(40 <= p[3] <= 120, (name, p))
-            self.assertTrue(all(abs(p[i] - t) <= 6 for i, t in enumerate((208, 204, 170))), (name, p))
+            self.assertTrue(all(abs(p[i] - t) <= 6 for i, t in enumerate((204, 204, 178))), (name, p))
             for k in range(128):   # the halo fades out before the canvas edge, so nothing is clipped
                 for xy in ((k, 0), (k, 31)):
                     self.assertEqual(im.getpixel(xy)[3], 0, (name, xy))
@@ -153,12 +153,12 @@ class GenSelfHealTextures(unittest.TestCase):
 
     def test_toggle_hi_differs(self):
         blobs = dict(gen())
-        beige = lambda p: p[3] > 200 and all(abs(p[i] - t) <= 3 for i, t in enumerate((208, 204, 170)))
+        cream = lambda p: p[3] > 200 and all(abs(p[i] - t) <= 3 for i, t in enumerate((204, 204, 178)))
         pixels = lambda data: [img(data).getpixel((x, y)) for y in range(32) for x in range(128)]
         for base in ("csh_tog_off", "csh_tog_on"):
             self.assertNotEqual(blobs[base], blobs[base + "_hi"])
-            self.assertFalse(any(beige(p) for p in pixels(blobs[base])), base)
-            self.assertTrue(any(beige(p) for p in pixels(blobs[base + "_hi"])), base + "_hi")
+            self.assertFalse(any(cream(p) for p in pixels(blobs[base])), base)
+            self.assertTrue(any(cream(p) for p in pixels(blobs[base + "_hi"])), base + "_hi")
 
     def test_toggle_on_inner_glow(self):
         blobs = dict(gen())
