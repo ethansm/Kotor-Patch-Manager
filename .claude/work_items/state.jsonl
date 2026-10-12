@@ -3,3 +3,4 @@
 {"ev": "done", "session": "b2dd462c-effc-4fe4-a879-d728b6c9a72e", "ts": "2026-10-12T18:39:54Z", "wi": "WI-33"}
 {"ev": "done", "session": "eabb5072-7031-44ce-af58-382c683e8708", "ts": "2026-10-12T18:52:29Z", "wi": "WI-10"}
 {"ev": "done", "session": "bf9da580-9cdd-4618-a9eb-b07adb78716e", "ts": "2026-10-12T19:02:02Z", "wi": "WI-10b"}
+{"ev": "park", "reason": "worker reply FAIL: worker STATUS: FAIL", "session": "1d0b8079-fdaf-409f-ba3a-259a8b52be09", "ts": "2026-10-12T21:16:48Z", "wi": "WI-03"}
