@@ -9,13 +9,12 @@
   "blind_forbidden_terms": [
     "characterkeyfor", "computecharacterkey", "partycount", "ismember0", "partyslot",
     "party::member", "g_charkey", "creatureoid",
-    "fffffffd", "fffffffe", "fffffff9", "fffffff0",
     "sentinel", "one-member party", "single-member party", "exile key", "caching trap", "fast-travel",
     "doc 33", "doc33", "doc 00",
     "e360569", "25d4e42", "541d7d9", "94c9c55", "4519b96", "ec95c98", "hotbarlogic.h",
     "falls back to the exile key", "member 0", "regardless of partycount", "ebon hawk", "profile splitting"
   ],
-  "forbidden_terms_note": "Matched case-insensitively against the WHOLE unit prompt (symptom, style fragment, excerpts). The recon also proposed 'ffffffff' and 'ah1'/'ah2'/'ah3'; 'ffffffff' is dropped because it legitimately appears in the real log line 'invalid object id ffffffff' (that line is evidence, not a leak) and the AH ids need word-boundary matching, which the orchestrator's plain substring check does not do.",
+  "forbidden_terms_note": "Matched case-insensitively against the WHOLE unit prompt (symptom, style fragment, excerpts). The recon also proposed 'ffffffff' and 'ah1'/'ah2'/'ah3'; 'ffffffff' is dropped because it legitimately appears in the real log line 'invalid object id ffffffff' (that line is evidence, not a leak) and the AH ids need word-boundary matching, which the orchestrator's plain substring check does not do. The hex sentinels fffffffd, fffffffe, fffffff9 and fffffff0 are dropped too: they appear in the real log lines `character: '' -> 'objfffffffd'`, which is evidence, not a leak.",
   "exclude_from_blind": [
     "patch_manager_mods/00_ui_queue_hotbar_feedback_2026-10-06.md",
     "patch_manager_mods/33_ui_queue_hotbar_fixes.md",
