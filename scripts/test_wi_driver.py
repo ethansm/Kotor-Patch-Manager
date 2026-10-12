@@ -522,8 +522,8 @@ class FlowTests(Base):
         self.worker_reply(self.claim_wave(wid), "src/a.txt")
         r = self.drv("verify", wid)
         self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
-        self.assertIn("FAIL WI-01: worker reply PARTIAL", r.stdout)
-        self.assertIn("docs/plan.md", r.stdout)
+        self.assertIn("FAIL WI-01: worker reply FAIL", r.stdout)  # the cited doc rows are a read entry, so editing the doc is a hard FAIL
+        self.assertIn("OUT_OF_SCOPE docs/plan.md", r.stdout)
 
 
 class ForeignPathTests(Base):
@@ -549,6 +549,126 @@ class ForeignPathTests(Base):
         self.assertEqual(foreign, [])
         kept, foreign = wd.filter_foreign([in_lock], wi, self.REPLY, "worker")
         self.assertEqual((kept, foreign), ([in_lock], []))
+
+
+class RescueTests(Base):
+    FAIL_REASON = "worker reply FAIL: worker STATUS: FAIL"
+
+    def park_on_fail(self, wid="WI-01"):
+        self.drv("next", wid)
+        self.assertEqual(self.drv("park", wid, "--reason", self.FAIL_REASON).returncode, 2)
+
+    def wave_dir(self, wid="WI-01"):
+        return self.root / ".claude" / "waves" / f"{wid}-rescue"
+
+    def test_worker_wave_lists_doc_ranges_and_write_scope_files(self):
+        self.assertEqual(self.drv("next", "WI-01").returncode, 0)
+        brief = (self.root / ".claude/waves" / self.claim_wave("WI-01") / "u01.brief.md").read_text(encoding="utf-8")
+        self.assertIn("- docs/plan.md:1-5", brief)
+        self.assertIn("- src/a.txt", brief)
+        self.assertIn(".claude/work_items/WI-01.md", brief)
+
+    def test_doc_read_ranges_pad_and_clamp(self):
+        long_doc = "".join(f"line {n}\n" for n in range(1, 400))
+        self.write("docs/plan.md", long_doc)
+        wi = wm.load_all(self.root)["WI-01"]
+        wi.docs = "docs/plan.md:lines 100, 120 (steps)"
+        wi.source_rows = []
+        self.assertEqual(wd.doc_read_ranges(self.root, wi), ["docs/plan.md:85-135"])
+        wi.docs = "docs/plan.md:lines 100, 390"
+        self.assertEqual(wd.doc_read_ranges(self.root, wi), ["docs/plan.md:85-235"])  # span cap
+
+    def test_worker_fail_park_points_to_rescue(self):
+        self.drv("next", "WI-01")
+        for _ in range(2):
+            self.write("src/a.txt", "edit\n")
+            self.worker_reply(self.claim_wave("WI-01"), "src/a.txt")
+            reply = self.root / ".claude" / "waves" / self.claim_wave("WI-01") / "u01.reply.txt"
+            reply.write_text(reply.read_text(encoding="utf-8").replace("STATUS: PASS", "STATUS: FAIL"), encoding="utf-8")
+            r = self.drv("verify", "WI-01")
+        self.assertIn("PARKED WI-01", r.stdout)
+        self.assertIn("THEN: python3 scripts/wi_driver.py rescue WI-01", r.stdout)
+        self.assertNotIn("Safe to /clear", r.stdout)
+
+    def test_plain_park_does_not_point_to_rescue(self):
+        self.drv("next", "WI-01")
+        r = self.drv("park", "WI-01", "--reason", "needs design")
+        self.assertNotIn("rescue", r.stdout)
+        self.assertIn("Safe to /clear", r.stdout)
+
+    def test_rescue_refuses_non_fail_park_and_unparked_item(self):
+        r = self.drv("rescue", "WI-01")
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("not parked", r.stderr)
+        self.drv("next", "WI-01")
+        self.drv("park", "WI-01", "--reason", "needs design")
+        r = self.drv("rescue", "WI-01")
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("not a worker FAIL", r.stderr)
+        self.assertFalse(self.wave_dir().exists())
+
+    def test_rescue_writes_seven_output_only_briefs_once(self):
+        self.park_on_fail()
+        dry = self.drv("rescue", "WI-01", "--dry-run")
+        self.assertEqual(dry.returncode, 0, dry.stdout + dry.stderr)
+        self.assertEqual(dry.stdout.count("OK"), 7)
+        self.assertFalse(self.wave_dir().exists())  # dry run writes nothing
+        r = self.drv("rescue", "WI-01")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertEqual(r.stdout.count("SPAWN 1 agent: model=haiku"), 7)
+        self.assertIn("rescue WI-01 --collect", r.stdout)
+        manifest = json.loads((self.wave_dir() / "manifest.json").read_text(encoding="utf-8"))
+        self.assertEqual(manifest["kind"], "recon")
+        self.assertEqual(len(manifest["units"]), 7)
+        for u in manifest["units"]:
+            self.assertEqual(u["scope"], [u["out"]])
+            self.assertTrue(u["out"].startswith(".claude/waves/WI-01-rescue/"))
+            self.assertIn("Contract: recon", (self.root / u["brief"]).read_text(encoding="utf-8"))
+        self.assertIn("WI-01", self.st.state_maps()[1])  # the rescue marker leaves the item parked
+        again = self.drv("rescue", "WI-01")
+        self.assertEqual(again.returncode, 1)
+        self.assertIn("already rescued", again.stderr)
+
+    def test_rescue_collect_flags_missing_then_lists_reading_order(self):
+        self.park_on_fail()
+        self.drv("rescue", "WI-01")
+        r = self.drv("rescue", "WI-01", "--collect")
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertEqual(r.stdout.count("RERUN"), 7)
+        self.assertIn("SPAWN 1 agent", r.stdout)
+        manifest = json.loads((self.wave_dir() / "manifest.json").read_text(encoding="utf-8"))
+        for u in manifest["units"]:
+            (self.root / u["out"]).write_text("evidence\n", encoding="utf-8")
+            (self.root / u["reply"]).write_text(f"OUTPUT: {u['out']}\nEVIDENCE: src/a.txt:1\nFINDING: ok\nOPEN: None\nVERDICT: CONFIRMED\n", encoding="utf-8")
+        r = self.drv("rescue", "WI-01", "--collect")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("Read ONLY these OUTPUT files", r.stdout)
+        self.assertIn("/plan-handoff WI-01", r.stdout)
+        order = next(ln for ln in r.stdout.splitlines() if ln.startswith("Read ONLY"))
+        self.assertLess(order.index("u07.md"), order.index("u01.md"))  # brief-gap analysis is read first
+
+    def test_close_manual_commits_only_given_paths_and_marks_done(self):
+        self.park_on_fail()
+        self.write("docs/plan.md", "# Plan\n\nedited by hand\n")
+        self.write("src/z.txt", "foreign edit\n")
+        r = self.drv("close", "WI-01", "--manual", "--paths", "docs/plan.md", "--reason", "docs-only closure")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("WI-01", self.st.state_maps()[0])
+        self.assertEqual(self.st.runs()[-1]["outcome"], "manual-close")
+        files = sh(self.root, "git", "show", "--name-only", "--format=", "HEAD").stdout.split()
+        self.assertIn("docs/plan.md", files)
+        self.assertNotIn("src/z.txt", files)
+        self.assertIn("src/z.txt", sh(self.root, "git", "status", "--porcelain").stdout)
+        again = self.drv("close", "WI-01", "--manual", "--paths", "docs/plan.md", "--reason", "x")
+        self.assertEqual(again.returncode, 1)
+        self.assertIn("already done", again.stderr)
+
+    def test_close_manual_needs_paths_reason_and_changes(self):
+        self.park_on_fail()
+        self.assertEqual(self.drv("close", "WI-01", "--manual").returncode, 1)
+        r = self.drv("close", "WI-01", "--manual", "--paths", "docs/plan.md", "--reason", "x")
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("nothing to commit", r.stderr)
 
 
 class AuditAndBacklogTests(Base):

@@ -5,9 +5,10 @@ Usage:
   wi_driver.py next [WI-NN] [--adopt] [--dry-run] [--session S]
   wi_driver.py verify WI-NN [--dry-run]
   wi_driver.py docs WI-NN [--dry-run]
-  wi_driver.py close WI-NN [--dry-run]
+  wi_driver.py close WI-NN [--dry-run] | close WI-NN --manual --paths P [P ...] --reason TEXT
   wi_driver.py report WI-NN
   wi_driver.py park WI-NN --reason TEXT [--dry-run]
+  wi_driver.py rescue WI-NN [--collect] [--dry-run]
   wi_driver.py unpark WI-NN --reason TEXT [--dry-run]
   wi_driver.py release WI-NN [--force]
   wi_driver.py status
@@ -38,13 +39,17 @@ from pathlib import Path
 SCRIPTS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPTS_DIR))
 import agent_contract as ac  # noqa: E402
+import wave_budget  # noqa: E402
+import wave_tools  # noqa: E402
 import wi_model as wm  # noqa: E402
 import wi_state as ws  # noqa: E402
 
 TRAILER = "Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
 GATE_PROGRAMS = {"python3", "rg", "bash", "test", "sed", "wc", "stat"}
 GATE_TIMEOUT = 1500
-MAX_ENTRIES_FROM_FILES = 2
+DOC_PAD_LINES = 15  # context lines kept around each cited plan-doc row in a brief entry
+DOC_MAX_SPAN = 150
+RESCUE_UNITS = 7
 WAVE_TOOLS = SCRIPTS_DIR / "wave_tools.py"
 PLAN_MANAGER = SCRIPTS_DIR / "plan_manager.py"
 RUN_TESTS_SUMMARY = re.compile(r"(\d+) passed, (\d+) failed, (\d+) error, (\d+) skipped \((\d+) items\)")
@@ -109,23 +114,21 @@ def lessons_for(st, wi_id, limit=3):
     return out[-limit:]
 
 
-def make_wave(st, wi, claim, suffix, kind, task, entries, scope):
-    """Create wave <prefix>-<suffix> with one unit u01. Returns (wave_id, description, prompt_line) or raises DriverError."""
+def make_wave(st, wi, claim, suffix, kind, task, entries, scope, unit="u01", wave_id=None, create=True):
+    """Create wave <prefix>-<suffix> (or `wave_id`) and add unit `unit` to it. create=False adds a unit to an existing wave.
+
+    Returns (wave_id, description, prompt_line) or raises DriverError. When the entries bust the budget, trailing entries are dropped."""
     root = st.root
-    wave_id = f"{claim['wave_prefix']}-{suffix}"
-    r = wave_cmd(root, "new", wave_id, "--kind", kind)
-    if r.returncode != 0:
-        raise DriverError(f"wave_tools new {wave_id} failed: {last_lines(r.stderr or r.stdout, 3)}")
-    attempts = [list(entries), entries[:1]]
+    wave_id = wave_id or f"{claim['wave_prefix']}-{suffix}"
+    if create:
+        r = wave_cmd(root, "new", wave_id, "--kind", kind)
+        if r.returncode != 0:
+            raise DriverError(f"wave_tools new {wave_id} failed: {last_lines(r.stderr or r.stdout, 3)}")
+    present = [e for e in entries if (root / e.split(":")[0]).is_file()]
     out = None
-    for ent in attempts:
-        ent = [e for e in ent if (root / e.split(":")[0]).is_file()]
-        if not ent:
-            continue
-        cmd = ["add", wave_id, "--id", "u01", "--task", task, "--entries", *ent]
-        if kind == "worker":
-            cmd += ["--scope", *scope]
-        elif scope:
+    for k in range(len(present), 0, -1):
+        cmd = ["add", wave_id, "--id", unit, "--task", task, "--entries", *present[:k]]
+        if scope:
             cmd += ["--scope", *scope]
         out = wave_cmd(root, *cmd)
         if out.returncode == 0:
@@ -142,16 +145,46 @@ def spawn_lines(desc, prompt, model="haiku"):
             f"  description: {desc}", f"  prompt: {prompt}"]
 
 
+DOC_LINES_RE = re.compile(r"(\S+?\.md):lines? ([0-9][0-9, ]*)")
+
+
+def doc_read_ranges(root, wi, pad=DOC_PAD_LINES, span=DOC_MAX_SPAN):
+    """`path:lo-hi` read entries for the plan-doc rows this item cites (Source rows and `lines N, N` on the docs: header)."""
+    cited = {}
+    for r in wi.source_rows:
+        if r.line:
+            cited.setdefault(wm.norm_path(r.doc), []).append(r.line)
+    for path, nums in DOC_LINES_RE.findall(wi.docs):
+        cited.setdefault(wm.norm_path(path), []).extend(int(n) for n in re.findall(r"\d+", nums))
+    out = []
+    for path, lines in cited.items():
+        f = root / path
+        if not f.is_file():
+            continue
+        total = len(f.read_text(encoding="utf-8", errors="replace").splitlines())
+        lo = max(1, min(lines) - pad)
+        hi = min(total, max(lines) + pad, lo + span)
+        if lo <= hi:
+            out.append(f"{path}:{lo}-{hi}")
+    return out
+
+
 def worker_wave(st, wi, claim, retry_note=""):
     n = claim.get("attempt", 0) + 1
     claim["attempt"] = n
     kind = "recon" if wi.state == "verify-only" else "worker"
-    entries = [f"{wm.WORK_DIR.as_posix()}/{wi.id}.md"] + [f for f in wi.files if (st.root / f).is_file()][:MAX_ENTRIES_FROM_FILES]
+    wi_md = f"{wm.WORK_DIR.as_posix()}/{wi.id}.md"
+    files = [f for f in wi.files if (st.root / f).is_file()]
+    docs = doc_read_ranges(st.root, wi)[:1]
+    entries = ([wi_md] + docs + files)[:wave_budget.MAX_ENTRIES]  # the brief reader takes 3 entries; the cited doc rows outrank extra files
+    unread = [f for f in files if f not in entries]
     deferred = ",".join(wi.deferred) or "none"
     if kind == "worker":
         task = (f"Execute the Steps in {entries[0]} for {wi.id}: {wi.title}. Write only these files: {'; '.join(wi.files)}. "
                 f"Do not touch deferred rows: {deferred}. Do not install, hot-swap, commit or run the game. "
                 f"End by writing your 5-line reply to the reply file.")
+        if unread:
+            task += f" Write Scope files not in your read list (read only the ranges you need, with rg or sed -n): {'; '.join(unread)}."
         scope = list(wi.files)
     else:
         task = (f"Verify-only: run the Verify steps in {entries[0]} for {wi.id}: {wi.title}. Edit no repo file. "
@@ -378,7 +411,7 @@ def fail_path(st, wi, claim, reason, excerpt, session):
         print(f"THEN: python3 scripts/wi_driver.py verify {wi.id}")
         return 1
     print(f"FAIL {wi.id}: {reason}\n{excerpt}")
-    return park(st, wi, claim, f"{reason}: {excerpt}"[:200], session)
+    return park(st, wi, claim, f"{reason}: {excerpt}"[:200], session, rescue=reason.startswith("worker reply FAIL"))
 
 
 def cmd_verify(a, st):
@@ -609,10 +642,60 @@ def run_record(st, wi, claim, outcome, **extra):
 
 
 # ---------------------------------------------------------------- close
+def close_manual(a, st, wi):
+    """Close an item whose work was done by hand (docs-only closure after a rescue): commit exactly --paths plus the state files."""
+    root = st.root
+    if not a.paths or not a.reason:
+        raise DriverError("close --manual needs --paths P [P ...] and --reason TEXT")
+    done, _ = st.state_maps()
+    if wi.id in done:
+        raise DriverError(f"{wi.id} is already done")
+    live = st.read_claim(wi.id)
+    if live and not st.is_stale(live):
+        raise DriverError(f"{wi.id} has a live claim (session {live['session']}); release it first")
+    dirty = set(ac.git_dirty(root))
+    clean = [p for p in a.paths if p not in dirty]
+    if clean:
+        raise DriverError(f"not changed, nothing to commit: {', '.join(clean[:3])}")
+    message = f"{wi.id}: {wi.title} (manual close)\n\nReason: {a.reason[:300]}\nPaths: {len(a.paths)}\n\n{TRAILER}\n"
+    if a.dry_run:
+        print(f"DRY RUN close --manual {wi.id}: would commit {len(a.paths)} path(s) + state files")
+        print("\n".join(f"  {p}" for p in a.paths))
+        return 0
+    session = session_id()
+    with st.flock("commit.flock"):
+        state_p, runs_p, index_p = ws.STATE_FILE.as_posix(), ws.RUNS_FILE.as_posix(), ws.INDEX_FILE.as_posix()
+        sizes = {p: ((root / p).stat().st_size if (root / p).exists() else None) for p in (state_p, runs_p)}
+        index_text = (root / index_p).read_text(encoding="utf-8")
+        st.append_event(wi.id, "done", session, f"manual: {a.reason[:120]}")
+        now = ws.now_iso()
+        st.append_jsonl(ws.RUNS_FILE, {"wi": wi.id, "outcome": "manual-close", "session": session, "claimed_at": now, "closed_at": now,
+                                       "duration_s": 0, "reason": a.reason[:200], "paths": len(a.paths)})
+        st.render_index()
+        try:
+            sha = git_commit(st, message, list(a.paths) + [state_p, runs_p, index_p])
+        except DriverError:
+            for p, sz in sizes.items():
+                if sz is None:
+                    (root / p).unlink(missing_ok=True)
+                else:
+                    with open(root / p, "r+b") as fh:
+                        fh.truncate(sz)
+            (root / index_p).write_text(index_text, encoding="utf-8")
+            raise
+    if live:
+        st.release(wi.id)
+    ledger(root, "WI_DONE", wi=wi.id, sha=sha, manual=1)
+    print(f"COMMITTED {wi.id} {sha} (manual): {len(a.paths)} path(s) + state")
+    return 0
+
+
 def cmd_close(a, st):
     root = st.root
     items = wm.load_all(root)
     wi = get_item(items, a.wi)
+    if a.manual:
+        return close_manual(a, st, wi)
     claim = need_claim(st, wi.id)
     if claim["stage"] != "docs":
         raise DriverError(f"{wi.id} is at stage {claim['stage']}; close runs after docs (stage docs)")
@@ -711,7 +794,7 @@ def cmd_report(a, st):
 
 
 # ---------------------------------------------------------------- park / release / status
-def park(st, wi, claim, reason, session, commit=True):
+def park(st, wi, claim, reason, session, commit=True, rescue=False):
     """Record a park event, release the claim, commit state files. Partial edits stay in the tree and are reported."""
     root = st.root
     partial = []
@@ -747,7 +830,10 @@ def park(st, wi, claim, reason, session, commit=True):
     print(f"PARKED {wi.id} ({sha}): {reason[:160]}")
     if partial:
         print(f"Partial edits left uncommitted in the working tree ({len(partial)}): {', '.join(partial[:4])}. Review or revert them by hand; the driver never reverts.")
-    print("Safe to /clear (or /exit). Next Resume Command: /next-dev-work-item")
+    if rescue:
+        print(f"THEN: python3 scripts/wi_driver.py rescue {wi.id}")
+    else:
+        print("Safe to /clear (or /exit). Next Resume Command: /next-dev-work-item")
     return 2
 
 
@@ -759,6 +845,143 @@ def cmd_park(a, st):
         print(f"DRY RUN: would park {wi.id} ({a.reason}) and release its claim")
         return 0
     return park(st, wi, claim, a.reason, claim["session"] if claim else session_id())
+
+
+# ---------------------------------------------------------------- rescue
+def sibling_items(items, wi):
+    """Other items whose lockset overlaps this one's, or that order against it with `after:`."""
+    mine = wm.lockset(wi)
+    out = []
+    for w in items.values():
+        if w.id == wi.id:
+            continue
+        if wm.locksets_conflict(mine, wm.lockset(w)) or wi.id in w.after or w.id in wi.after:
+            out.append(w)
+    return out
+
+
+def rescue_units(st, wi, items):
+    """The recon units of the rescue swarm: [(key, title, task, entries)], at most RESCUE_UNITS, generic over any work item."""
+    root = st.root
+    wi_md = f"{wm.WORK_DIR.as_posix()}/{wi.id}.md"
+    files = [f for f in wi.files if (root / f).is_file()]
+    docs = doc_read_ranges(root, wi)[:1]
+    rows = ", ".join(f"{r.item} {r.doc}:{r.line}" for r in wi.source_rows) or "none listed"
+    flist = "; ".join(wi.files) or "none"
+    tail = " Recon only: edit no repo file. Write your findings (at most 60 lines, anchors as path:line) to your OUTPUT file, then end with the 5-line recon reply."
+    attempts = sorted((root / ".claude" / "waves").glob(f"{wi.id}-a*/u01.brief.md"))
+    gap = [attempts[-1].relative_to(root).as_posix()] if attempts else []
+    gap += [p.replace("brief.md", "reply.txt") for p in gap if (Path(root) / p.replace("brief.md", "reply.txt")).is_file()]
+    sibs = sibling_items(items, wi)
+    sib_md = [f"{wm.WORK_DIR.as_posix()}/{w.id}.md" for w in sibs][:2]
+    ctx = f"{wi.id} ({wi.title}) was parked after its Haiku worker replied FAIL twice. Find out why and what would make it finishable."
+    return [
+        ("spec", "spec in cited doc rows", f"{ctx} Spec check: for each source row ({rows}) state what the cited plan doc really requires, "
+         f"whether it is in scope for the current version (watch words like v2, possible, later, if), and where the Steps in {wi_md} disagree with the doc." + tail,
+         [wi_md] + docs),
+        ("code", "code flow at the files", f"{ctx} Code flow: in the Write Scope files ({flist}) locate the functions, hooks and call sites the Steps name. "
+         f"Give path:line anchors, the current state of each row (present, absent, partial) and the exact place an edit would go. Use rg and sed -n ranges." + tail,
+         [wi_md] + files[:1]),
+        ("data", "data and table sources", f"{ctx} Data sources: for the files ({flist}) find generators (scripts/gen_*), tables (*.inc, 2DA, toml) and runtime readers that feed them. "
+         f"Which fields exist today, which the Steps need, and who owns each. Use rg." + tail,
+         [wi_md] + files[:1]),
+        ("tests", "tests and gates", f"{ctx} Tests and gates: find colocated tests (*_test.cpp, test_*.py) for the files ({flist}), the scoped run_tests.py filter and any build_check.py "
+         f"arguments, and whether the Verify commands in {wi_md} work as written. Do not run builds, installs or the game." + tail,
+         [wi_md]),
+        ("rows", "plan-row closing mechanics", f"{ctx} Row closing: do the source rows ({rows}) have plan ids and table rows that plan_manager.py mark-done can mark "
+         f"(python3 scripts/plan_manager.py mark-done --help), or must they be edited by hand? Name the smallest safe edit and the Write Scope it needs." + tail,
+         [wi_md] + docs),
+        ("siblings", "sibling item conflicts", f"{ctx} Sibling items: {', '.join(w.id for w in sibs) or 'none found'} share files or order against this item. "
+         f"Which of their rows or edits overlap this item's, what order is safe, and what each needs from this item." + tail,
+         [wi_md] + sib_md),
+        ("gap", "brief gap analysis", f"{ctx} Brief gap: read the failed attempt's brief and reply. List every contradiction between the Steps and the brief "
+         f"(steps needing files outside the Write Scope, missing read entries, unreachable rows) and the cheapest brief that would work." + tail,
+         [wi_md] + gap),
+    ][:RESCUE_UNITS]
+
+
+def rescue_wave_id(wi):
+    return f"{wi.id}-rescue"
+
+
+def cmd_rescue(a, st):
+    root = st.root
+    items = wm.load_all(root)
+    wi = get_item(items, a.wi)
+    wave_id = rescue_wave_id(wi)
+    wdir = root / ".claude" / "waves" / wave_id
+    if a.collect:
+        return rescue_collect(st, wi, wave_id, wdir)
+    done, parked = st.state_maps()
+    if wi.id not in parked:
+        raise DriverError(f"{wi.id} is not parked; rescue only runs on a parked item")
+    if not parked[wi.id].startswith("worker reply FAIL"):
+        raise DriverError(f"{wi.id} park reason is not a worker FAIL ({parked[wi.id][:60]}); rescue handles worker-FAIL parks only")
+    if any(e["wi"] == wi.id and e["ev"] == "rescue" for e in st.events()):
+        raise DriverError(f"{wi.id} was already rescued once; collect with: rescue {wi.id} --collect")
+    units = rescue_units(st, wi, items)
+    if a.dry_run:
+        print(f"DRY RUN rescue {wi.id}: {len(units)} recon unit(s)")
+        for i, (key, title, task, entries) in enumerate(units, 1):
+            present = [e for e in entries if (root / e.split(":")[0]).is_file()]
+            res = wave_budget.check([wave_tools.resolve_entry(root, e) for e in present], brief_bytes=len(task.encode("utf-8")) + 1500)
+            print(f"  u{i:02d} {key}: {len(present)} entr{'y' if len(present) == 1 else 'ies'}, est {res['total']} tokens, {'OK' if res['ok'] else 'OVER BUDGET'}")
+        return 0
+    if wdir.exists():
+        raise DriverError(f"{wdir.relative_to(root).as_posix()} already exists but no rescue was recorded; remove that directory and rerun")
+    claim = {"wave_prefix": wi.id}
+    spawns = []
+    for i, (key, title, task, entries) in enumerate(units, 1):
+        _, desc, prompt = make_wave(st, wi, claim, "rescue", "recon", task, entries, [], unit=f"u{i:02d}", wave_id=wave_id, create=(i == 1))
+        spawns.append(spawn_lines(desc, prompt))
+    with st.flock("commit.flock"):
+        state_p = ws.STATE_FILE.as_posix()
+        st.append_event(wi.id, "rescue", session_id(), f"{len(units)} recon briefs in {wave_id}")
+        git_commit(st, f"{wi.id}: rescue recon briefs written\n\n{TRAILER}\n", [state_p])
+    ledger(root, "WI_RESCUE", wi=wi.id, units=len(units))
+    print(f"RESCUE {wi.id}: {len(units)} recon briefs in .claude/waves/{wave_id}/ (outputs uNN.md next to each brief)")
+    print(f"Spawn all {len(spawns)} in ONE message, model haiku, exactly as printed:")
+    for lines in spawns:
+        print("\n".join(lines))
+    print(f"THEN: python3 scripts/wi_driver.py rescue {wi.id} --collect")
+    return 0
+
+
+RESCUE_READ_ORDER = ("gap", "spec", "code", "data", "tests", "rows", "siblings")
+
+
+def rescue_collect(st, wi, wave_id, wdir):
+    root = st.root
+    if not (wdir / "manifest.json").is_file():
+        raise DriverError(f"no rescue wave for {wi.id}; run: python3 scripts/wi_driver.py rescue {wi.id}")
+    manifest = json.loads((wdir / "manifest.json").read_text(encoding="utf-8"))
+    r = wave_cmd(root, "check", wave_id, "--json")
+    try:
+        results = {u["id"]: u for u in json.loads(r.stdout)["units"]}
+    except (ValueError, KeyError):
+        raise DriverError(f"wave_tools check {wave_id} failed: {last_lines(r.stderr or r.stdout, 3)}")
+    keys = ["spec", "code", "data", "tests", "rows", "siblings", "gap"]
+    bad = []
+    print(f"COLLECT {wi.id}: {len(results)} recon unit(s)")
+    for u in manifest["units"]:
+        res = results.get(u["id"], {"status": "MISSING", "verdict": "-", "finding": "no result"})
+        out_ok = (root / u["out"]).is_file() and (root / u["out"]).stat().st_size > 0
+        flag = "" if res["status"] == "PASS" and out_ok else "  <-- RERUN"
+        if flag:
+            bad.append(u)
+        key = keys[int(u["id"][1:]) - 1] if int(u["id"][1:]) <= len(keys) else "?"
+        print(f"  {u['id']} {key:9} {res['status']:7} {res['verdict']:10} {u['out']}{'' if out_ok else ' (OUTPUT missing)'}{flag}")
+    if bad:
+        print(f"{len(bad)} unit(s) missing or not a clean 5-line reply. Respawn only these, same prompts:")
+        for u in bad:
+            print("\n".join(spawn_lines(u["description"], f"Follow the brief at {root / u['brief']} exactly. Final message: the 5-line schema only.")))
+        print(f"THEN: python3 scripts/wi_driver.py rescue {wi.id} --collect")
+        return 1
+    order = [u for k in RESCUE_READ_ORDER for u in manifest["units"] if keys[int(u["id"][1:]) - 1] == k]
+    print("Read ONLY these OUTPUT files, in this order: " + ", ".join(u["out"] for u in order))
+    print(f"THEN: /plan-handoff {wi.id}  (enter plan mode; the plan picks ONE outcome: split into sub-WIs via backlog add, docs-only closure, "
+          f"defer to an existing WI, or a code plan with Haiku-sized steps of at most 3 files each; edit nothing before approval)")
+    return 0
 
 
 def unpark(st, wi, reason, session):
@@ -1021,7 +1244,7 @@ def build_parser():
     ap = argparse.ArgumentParser(prog="wi_driver.py", description="Claim, run, verify, commit and audit one dev work item per call.")
     ap.add_argument("--repo-root", default=None, help="repo root (default: this checkout)")
     ap.add_argument("--claims-dir", default=None, help="claims directory override (tests)")
-    sub = ap.add_subparsers(dest="cmd", required=True, metavar="{next,verify,docs,close,report,park,unpark,release,status,lint,audit,backlog}")
+    sub = ap.add_subparsers(dest="cmd", required=True, metavar="{next,verify,docs,close,report,park,rescue,unpark,release,status,lint,audit,backlog}")
     p = sub.add_parser("next", help="claim the next eligible item and print the worker spawn")
     p.add_argument("wi", nargs="?")
     p.add_argument("--adopt", action="store_true", help="take over a stale claim on WI-NN")
@@ -1033,9 +1256,17 @@ def build_parser():
         p.add_argument("wi")
         if name != "report":
             p.add_argument("--dry-run", action="store_true", help="show what would happen")
+        if name == "close":
+            p.add_argument("--manual", action="store_true", help="no claim needed: commit --paths by hand after a rescue, mark the item done")
+            p.add_argument("--paths", nargs="+", default=[], metavar="PATH", help="with --manual: the exact repo paths to commit")
+            p.add_argument("--reason", default="", help="with --manual: why the item is closed")
     p = sub.add_parser("park", help="record a park, release the claim")
     p.add_argument("wi")
     p.add_argument("--reason", required=True)
+    p.add_argument("--dry-run", action="store_true")
+    p = sub.add_parser("rescue", help="after a worker-FAIL park: write the recon swarm briefs (once), or --collect their outputs")
+    p.add_argument("wi")
+    p.add_argument("--collect", action="store_true", help="check the swarm replies and print the plan reading order")
     p.add_argument("--dry-run", action="store_true")
     p = sub.add_parser("unpark", help="reverse a park: clear the [!] cell so the item is claimable again")
     p.add_argument("wi")
@@ -1070,7 +1301,7 @@ def build_parser():
 
 
 HANDLERS = {"next": cmd_next, "verify": cmd_verify, "docs": cmd_docs, "close": cmd_close, "report": cmd_report, "park": cmd_park,
-            "unpark": cmd_unpark, "release": cmd_release, "status": cmd_status, "lint": cmd_lint, "audit": cmd_audit, "backlog": cmd_backlog}
+            "rescue": cmd_rescue, "unpark": cmd_unpark, "release": cmd_release, "status": cmd_status, "lint": cmd_lint, "audit": cmd_audit, "backlog": cmd_backlog}
 
 
 def main(argv=None):

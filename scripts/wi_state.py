@@ -150,7 +150,8 @@ class Store:
         """(done set, parked {wi: reason}) from the last event per WI."""
         last = {}
         for e in self.events():
-            last[e["wi"]] = e
+            if e["ev"] != "rescue":  # a rescue marker never changes whether the item is parked or done
+                last[e["wi"]] = e
         done = {w for w, e in last.items() if e["ev"] == "done"}
         parked = {w: e.get("reason", "") for w, e in last.items() if e["ev"] == "park"}
         return done, parked
