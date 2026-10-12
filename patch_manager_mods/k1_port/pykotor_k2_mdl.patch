@@ -1,0 +1,257 @@
+--- a/pykotor/resource/formats/mdl/io_mdl.py
++++ b/pykotor/resource/formats/mdl/io_mdl.py
+@@ -806,7 +806,7 @@
+         #   bonemap (float32 * count)
+         #   qbones  (Vector4 * count)
+         #   tbones  (Vector3 * count)
+-        #   unknown0 (float32 * count) [currently unused]
++        #   unknown0 (uint32 * count)
+         if self.skin.bonemap_count and self.skin.bonemap:
+             for v in self.skin.bonemap[: self.skin.bonemap_count]:
+                 writer.write_single(float(v))
+@@ -817,9 +817,11 @@
+             for t in self.skin.tbones[: self.skin.tbones_count]:
+                 writer.write_vector3(t)
+         if self.skin.unknown0_count:
+-            # Not currently modeled; write zeros to match declared count.
+-            for _ in range(int(self.skin.unknown0_count)):
+-                writer.write_single(0.0)
++            # Pad with zeros if the kept list is shorter than the declared count (keeps size == skin_extra_size).
++            kept: list[int] = [int(v) & 0xFFFFFFFF for v in self.skin.unknown0[: self.skin.unknown0_count]]
++            unknown0_vals: list[int] = kept + [0] * (int(self.skin.unknown0_count) - len(kept))
++            for v in unknown0_vals:
++                writer.write_uint32(v)
+ 
+     def all_headers_size(
+         self,
+@@ -958,7 +960,7 @@
+         bonemap_bytes = int(self.skin.bonemap_count) * 4
+         qbones_bytes = int(self.skin.qbones_count) * 16
+         tbones_bytes = int(self.skin.tbones_count) * 12
+-        # unknown0 block currently not modeled; keep stable at 0 unless counts are set.
++        # unknown0: u32 per entry; the writer sets unknown0_count from the kept list (0 when empty).
+         unknown0_bytes = int(self.skin.unknown0_count) * 4
+         return bonemap_bytes + qbones_bytes + tbones_bytes + unknown0_bytes
+ 
+@@ -1309,8 +1311,6 @@
+             self.hologram_donotdraw = hologram_value == 1
+             # Store in tail fields for compatibility (not used in K2)
+             self.tail_short = 0
+-            self.k2_tail_long1 = reader.read_uint32()
+-            self.k2_tail_long2 = reader.read_uint32()
+         else:
+             self.tail_short = reader.read_uint16()
+         self.total_area = reader.read_single()
+@@ -1470,15 +1470,13 @@
+         writer.write_uint8(self.beaming)
+         writer.write_uint8(self.render)
+         if game == Game.K2:
+-            # K2 dirt fields replace tail_short (2 bytes) with CCssL (10 bytes) + 2 uint32s (8 bytes)
++            # K2 dirt fields replace tail_short (2 bytes) with CCssL (10 bytes)
+             #
+             writer.write_uint8(1 if self.dirt_enabled else 0)
+             writer.write_uint8(0)  # padding byte
+             writer.write_int16(self.dirt_texture if self.dirt_texture else 1)
+             writer.write_int16(self.dirt_worldspace if self.dirt_worldspace else 1)
+             writer.write_uint32(1 if self.hologram_donotdraw else 0)
+-            writer.write_uint32(self.k2_tail_long1)
+-            writer.write_uint32(self.k2_tail_long2)
+         else:
+             writer.write_uint16(self.tail_short)
+         writer.write_single(self.total_area)
+@@ -1584,6 +1582,7 @@
+             0  # Count of unknown array entries (uint32, documented as "Purpose unknown" in wiki)
+         )
+         self.unknown0_count2: int = 0  # Duplicate count of unknown array entries (uint32)
++        self.unknown0: list[int] = []  # Raw u32 entries of the unknown array (k1_port: kept, not dropped)
+         self.bones: tuple[int, ...] = tuple(-1 for _ in range(16))
+         # Reference: wiki/MDL-MDX-File-Format.md:456 - "Padding" at offset 428/436 (uint16)
+         # Note: Wiki documents uint16 padding, but code reads uint32. Structure may differ or wiki incomplete.
+@@ -1671,6 +1670,16 @@
+                 reader.seek(self.offset_to_qbones)
+                 self.qbones = [reader.read_vector4() for _ in range(self.qbones_count)]
+ 
++        # k1_port: keep the raw u32 unknown0 array (vanilla K1/K2 populate it; count == count2 == bonemap count).
++        if self.offset_to_unknown0 not in (0, 0xFFFFFFFF) and self.unknown0_count > 0:
++            unknown0_bytes = self.unknown0_count * 4
++            if (
++                self.offset_to_unknown0 <= reader.size()
++                and (self.offset_to_unknown0 + unknown0_bytes) <= reader.size()
++            ):
++                reader.seek(self.offset_to_unknown0)
++                self.unknown0 = [reader.read_uint32() for _ in range(self.unknown0_count)]
++
+     def write(
+         self,
+         writer: BinaryWriter,
+@@ -2844,6 +2853,14 @@
+ 
+             mdx_offset: int = bin_node.trimesh.mdx_data_offset
+             mdx_block_size: int = bin_node.trimesh.mdx_data_size
++            # Raw 36-byte tangent block per vertex (3 x vec3), kept as bytes so the writer can re-emit it.
++            tangent_on: bool = (
++                bool(bin_node.trimesh.mdx_data_bitmap & _MDXDataFlags.TANGENT_SPACE)
++                and bin_node.trimesh.mdx_tangent_offset != 0xFFFFFFFF
++                and self._reader_ext is not None
++                and self._reader_ext.size() > 0
++            )
++            node.mesh.tangent_block = [] if tangent_on else None
+             for i in range(vcount):
+                 if (
+                     bool(bin_node.trimesh.mdx_data_bitmap & _MDXDataFlags.NORMAL)
+@@ -2902,6 +2919,13 @@
+                     else:
+                         # Bounds check failed - use null UV
+                         node.mesh.vertex_uv2.append(Vector2(0.0, 0.0))
++                if tangent_on and node.mesh.tangent_block is not None:
++                    tan_pos = mdx_offset + i * mdx_block_size + bin_node.trimesh.mdx_tangent_offset
++                    if tan_pos + 36 <= self._reader_ext.size():
++                        self._reader_ext.seek(tan_pos)
++                        node.mesh.tangent_block.append(self._reader_ext.read_bytes(36))
++                    else:
++                        node.mesh.tangent_block.append(bytes(36))
+ 
+             # If we couldn't load normals (no MDX or no NORMAL flag), keep a sane default.
+             if node.mesh.vertex_normals is None:
+@@ -2984,6 +3008,7 @@
+             node.skin.bonemap = bin_node.skin.bonemap
+             node.skin.tbones = bin_node.skin.tbones
+             node.skin.qbones = bin_node.skin.qbones
++            node.skin.unknown0 = list(bin_node.skin.unknown0)
+ 
+             if self._reader_ext is not None and self._reader_ext.size() > 0:
+                 assert bin_node.trimesh is not None
+@@ -3252,6 +3277,8 @@
+                 # If the node has K2-specific fields that were read (even at defaults), it's K2
+                 # Check if these fields differ from defaults, or if hologram_donotdraw is set (K2-only)
+                 # Heuristic: K2-only mesh fields (dirt / hologram) imply KotOR II layout when writing.
++        if getattr(self, "force_game", None) is not None:
++            self.game = self.force_game
+ 
+         self._anim_offsets[:] = [0 for _ in self._bin_anims]
+         self._node_offsets[:] = [0 for _ in self._bin_nodes]
+@@ -3487,8 +3514,10 @@
+             bin_node.skin.qbones_count = bin_node.skin.qbones_count2 = len(bin_node.skin.qbones)
+             bin_node.skin.tbones_count = bin_node.skin.tbones_count2 = len(bin_node.skin.tbones)
+ 
+-            # Unknown0 block currently not modeled.
+-            bin_node.skin.unknown0_count = bin_node.skin.unknown0_count2 = 0
++            # unknown0 (u32 array, after tbones): kept from the source skin; count == count2 == len(list).
++            # An empty list writes count 0, as before. Offset is filled in _calc_skin_offsets().
++            bin_node.skin.unknown0 = [int(v) & 0xFFFFFFFF for v in skin.unknown0]
++            bin_node.skin.unknown0_count = bin_node.skin.unknown0_count2 = len(bin_node.skin.unknown0)
+             bin_node.skin.offset_to_unknown0 = 0
+ 
+             # Offsets to bonemap/qbones/tbones are filled in _calc_skin_offsets().
+@@ -3830,7 +3859,9 @@
+             )
+             suboffset += 8
+         elif (  # has_texture1
+-            mdl_node.mesh.texture_1 is not None
++            # k1_port: writer.synth_zero_uv = False keeps textured meshes without UV1 UV-less (byte-faithful).
++            getattr(self, "synth_zero_uv", True)
++            and mdl_node.mesh.texture_1 is not None
+             and mdl_node.mesh.texture_1.strip() != ""
+             and mdl_node.mesh.texture_1.upper() != "NULL"
+         ) and vcount > 0:
+@@ -3866,16 +3897,29 @@
+         # Tangent space flag (for bump/normal mapping)
+         # The TANGENT_SPACE flag is just a hint - actual tangent/bitangent vectors are calculated at runtime
+         # We just need to preserve the flag from the original binary
+-        if mdl_node.mesh.tangent_space:
++        # k1_port: a binary-sourced block that is entirely zero (llk_LenaH: 9 flagged meshes, 852 zero rows, no vanilla
++        # K1/K2 precedent) is dropped: flag cleared, no block, stride -36. writer.keep_zero_tangents = True keeps it.
++        tb_src = mdl_node.mesh.tangent_block
++        drop_zero_tangents: bool = (
++            bool(tb_src)
++            and all(b == 0 for row in tb_src for b in row)
++            and not getattr(self, "keep_zero_tangents", False)
++        )
++        if mdl_node.mesh.tangent_space and not drop_zero_tangents:
+             bin_node.trimesh.mdx_data_bitmap |= _MDXDataFlags.TANGENT_SPACE
+-            # NOTE: mdx_tangent_offset is not used when only the flag is set (tangent data is calculated, not stored)
++            if mdl_node.mesh.tangent_block is not None:
++                # Binary-sourced tangent block: 36 bytes per vertex, placed after the UV blocks (K1/K2 layout).
++                bin_node.trimesh.mdx_tangent_offset = suboffset
++                suboffset += 36
++            # Flag only (no block): mdx_tangent_offset stays 0xFFFFFFFF, as before.
+ 
+         # Skin nodes store per-vertex bone indices + weights (4 floats each) in MDX.
+         if mdl_node.skin is not None and bin_node.skin is not None:
+-            bin_node.skin.offset_to_mdx_bones = suboffset
+-            suboffset += 16
++            # k1_port: vanilla K1/K2 rows are weights (+base) then bone indices (+base+16); see K2v_layout_evidence.md.
+             bin_node.skin.offset_to_mdx_weights = suboffset
+             suboffset += 16
++            bin_node.skin.offset_to_mdx_bones = suboffset
++            suboffset += 16
+ 
+         # mdx_data_size is the size of ONE vertex's MDX data block (used for calculating offsets when reading)
+         # This includes all per-vertex data (normals, UVs, skin data) but NOT padding
+@@ -3917,6 +3961,11 @@
+                     else Vector2(0.0, 0.0)
+                 )
+                 self._writer_ext.write_vector2(uv2)
++            if bin_node.trimesh.mdx_tangent_offset != 0xFFFFFFFF:
++                # 36-byte tangent block; zero-filled only if the source had no per-vertex data for this row.
++                tb = mdl_node.mesh.tangent_block
++                block = tb[i] if (tb and i < len(tb) and len(tb[i]) == 36) else bytes(36)
++                self._writer_ext.write_bytes(block)
+ 
+             if mdl_node.skin and bin_node.skin is not None:
+                 # Bone indices/weights are stored as 4 floats each.
+@@ -3953,10 +4002,11 @@
+                         )
+                     else:
+                         wts = raw_weights
+-                for x in idxs:
+-                    self._writer_ext.write_single(float(x))
++                # Weights first, then bone indices (matches the offsets set above).
+                 for w in wts:
+                     self._writer_ext.write_single(float(w))
++                for x in idxs:
++                    self._writer_ext.write_single(float(x))
+ 
+         # MDX terminator row + alignment: mirror MDLOps
+         row_floats: int = max(0, int(bin_node.trimesh.mdx_data_size / 4))
+@@ -4176,12 +4226,12 @@
+         bin_node: _Node,
+     ) -> None:
+         assert bin_node.skin is not None, "Skin node is required"
+-        # Place skin variable payload blocks immediately after the vertex array.
+-        after_vertices: int = node_offset + bin_node.vertices_offset(self.game)
+-        if bin_node.trimesh is not None:
+-            after_vertices += bin_node.trimesh.vertices_size()
+-
+-        cur: int = after_vertices
++        # _write_trimesh_data writes indices_offsets, counters and vertindexes AFTER the vertex array,
++        # and _write_skin_extra writes the skin blocks after those (and after dangly extras).
++        # children_offsets_offset() already accounts for that order, so the skin blocks start at
++        # children_offsets_offset() minus the skin block size. The old code used the end of the
++        # vertex array, which left the pointers 1532 B (ArmL) short of the data.
++        cur: int = node_offset + bin_node.children_offsets_offset(self.game) - bin_node.skin_extra_size()
+         if bin_node.skin.bonemap_count:
+             bin_node.skin.offset_to_bonemap = cur
+             cur += int(bin_node.skin.bonemap_count) * 4
+--- a/pykotor/resource/formats/mdl/mdl_data.py
++++ b/pykotor/resource/formats/mdl/mdl_data.py
+@@ -2994,6 +2994,8 @@
+         # Tangent space for bump/normal mapping
+         # When True, the mesh uses tangent space calculations for bump mapping
+         self.tangent_space: bool = False
++        # Raw per-vertex MDX tangent block (36 bytes: 3 x vec3) from a binary read; None when absent.
++        self.tangent_block: list[bytes] | None = None
+ 
+         # Vertex data arrays
+ 
+@@ -3124,6 +3126,10 @@
+         # Critical for multi-part models where each part references the full skeleton
+         self.bonemap: list[int] = []
+ 
++        # Raw u32 entries of the skin unknown0 array (k1_port: kept so writes match vanilla K1/K2 layout).
++        # Empty list = no array written (count 0).
++        self.unknown0: list[int] = []
++
+         # Per-vertex skinning data: up to 4 bone influences per vertex
+         self.vertex_bones: list[MDLBoneVertex] = []
+ 

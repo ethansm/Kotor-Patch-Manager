@@ -1,0 +1,152 @@
+{
+  "schema": 1,
+  "classes": {
+    "vanilla": 0,
+    "open": 1,
+    "credit_required": 2,
+    "unknown": 8,
+    "personal_use_only": 9,
+    "permission_required": 10
+  },
+  "sources": {
+    "vanilla_k1": {
+      "name": "KotOR 1 vanilla game files (BioWare)",
+      "author": "BioWare",
+      "url": "https://store.steampowered.com/app/32370/",
+      "license_class": "vanilla",
+      "requires_author_approval": false,
+      "credits": [
+        "BioWare"
+      ],
+      "evidence": "user's own Steam install, appid 32370 (~/.local/share/Steam/steamapps/common/swkotor/32370_install.vdf)",
+      "local_dir": "~/.local/share/Steam/steamapps/common/swkotor",
+      "notes": "Converted locally from the user's own install at conversion time. Never committed or redistributed from the repo."
+    },
+    "leilukin_k1_twilek_f_2179": {
+      "name": "KotOR 1 Twi'lek Female NPC Diversity 1.1.0 (DeadlyStream file 2179)",
+      "author": "Leilukin",
+      "url": "https://deadlystream.com/files/file/2179-kotor-1-twilek-female-npc-diversity/",
+      "license_class": "credit_required",
+      "requires_author_approval": false,
+      "credits": [
+        "Leilukin",
+        "SpaceAlex",
+        "DarthParametric (optional boots)"
+      ],
+      "evidence": "\"You may use assets from this mod as part of your mod, however, both SpaceAlex and I should be credited accordingly\" (.claude/review/k1_import/T10_k1_sources.md item 4)",
+      "local_dir": "~/Games/KOTOR2_Mod_Workspace/k1_port_extract/twilek_f",
+      "notes": "SpaceAlex K1EP texture terms unverified (L1). Contains llk_* models only, no N_* resrefs."
+    },
+    "upscale_plus_v0.52": {
+      "name": "Upscale+ Character Fixes - KotOR V0.52 (4x tpc)",
+      "author": "RedRob41",
+      "url": null,
+      "license_class": "permission_required",
+      "requires_author_approval": true,
+      "credits": [
+        "RedRob41"
+      ],
+      "evidence": "readme 'Permission:' lines 113-121: \"This mod may NOT be uploaded or redistributed, in whole or in part, to any mod hosting site without my explicit permission.\" Derivatives allowed \"as long as their creation remains free to use (not for profit); and credit is given to me as the source of any modded files.\" (.claude/review/k1_import/L1_pack_licenses.md)",
+      "local_dir": "~/Games/KOTOR2_Mod_Workspace/k1_port_extract/upscale_plus",
+      "notes": "Flagged for removal until the author approves. Prefer any approval-free source for the same asset."
+    },
+    "effixians_k1_to_k2_heads": {
+      "name": "Effixian K1 to K2 Heads (PMHA05, PFHC01)",
+      "author": "Effix(ian)",
+      "url": null,
+      "license_class": "permission_required",
+      "requires_author_approval": true,
+      "credits": [
+        "Effix(ian)"
+      ],
+      "evidence": "readme DISTRIBUTION NOTES: \"You might: Use the material from this mod in your own mod if you simply ask me.\" (L1)",
+      "local_dir": null,
+      "notes": "Ask the author before shipping; flagged until then."
+    },
+    "k1_heads_port_1_0_1": {
+      "name": "K1 Heads Port 1.0.1",
+      "author": "Ferc Kast",
+      "url": null,
+      "license_class": "permission_required",
+      "requires_author_approval": true,
+      "credits": [
+        "Ferc Kast"
+      ],
+      "evidence": "README PERMISSIONS: \"You may not redistribute this mod on other sites without my permission. You may use this mod in your own if you ask me.\" (L1)",
+      "local_dir": null,
+      "notes": "Ask the author before shipping; flagged until then."
+    },
+    "carth_onasi_ds1133": {
+      "name": "Carth Onasi (DeadlyStream 1133) textures",
+      "author": null,
+      "url": null,
+      "license_class": "unknown",
+      "requires_author_approval": true,
+      "credits": [],
+      "evidence": "no license text found in the archive or collected pages (L1_pack_licenses.md)",
+      "local_dir": null,
+      "notes": "Unknown license: treated as requiring author approval, flagged for removal."
+    },
+    "npc_clothing_m_ds2516": {
+      "name": "NPC clothing M (DeadlyStream 2516) N_CommM01-08 textures",
+      "author": null,
+      "url": null,
+      "license_class": "unknown",
+      "requires_author_approval": true,
+      "credits": [],
+      "evidence": "no license text found in the archive or collected pages (L1_pack_licenses.md)",
+      "local_dir": null,
+      "notes": "Unknown license: treated as requiring author approval, flagged for removal."
+    },
+    "kotor2_to_kotor1_game_bridge": {
+      "name": "Kotor 2 to Kotor 1 Game Bridge (C_* textures)",
+      "author": null,
+      "url": null,
+      "license_class": "unknown",
+      "requires_author_approval": true,
+      "credits": [],
+      "evidence": "no license text found in the archive or collected pages (L1_pack_licenses.md)",
+      "local_dir": null,
+      "notes": "Unknown license: treated as requiring author approval, flagged for removal."
+    },
+    "uco_redux_tpc_1282": {
+      "name": "Ultimate Character Overhaul REDUX TPC (Nexus 1282)",
+      "author": "Red11BY",
+      "url": null,
+      "license_class": "unknown",
+      "requires_author_approval": true,
+      "credits": [
+        "Red11BY"
+      ],
+      "evidence": "no license text found in the archive or collected pages (L1_pack_licenses.md)",
+      "local_dir": null,
+      "notes": "Unknown license: treated as requiring author approval, flagged for removal."
+    },
+    "characters_revisited_creatures_addon": {
+      "name": "Characters Revisited Creatures Addon",
+      "author": "Laast (unverified)",
+      "url": null,
+      "license_class": "unknown",
+      "requires_author_approval": true,
+      "credits": [
+        "Laast (unverified)"
+      ],
+      "evidence": "no license text found in the archive or collected pages (L1_pack_licenses.md)",
+      "local_dir": null,
+      "notes": "Unknown license: treated as requiring author approval, flagged for removal."
+    },
+    "characters_revisited_updates": {
+      "name": "Characters Revisited Updates",
+      "author": "Laast (unverified)",
+      "url": null,
+      "license_class": "unknown",
+      "requires_author_approval": true,
+      "credits": [
+        "Laast (unverified)"
+      ],
+      "evidence": "no license text found in the archive or collected pages (L1_pack_licenses.md)",
+      "local_dir": null,
+      "notes": "Unknown license: treated as requiring author approval, flagged for removal."
+    }
+  }
+}

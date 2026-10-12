@@ -265,7 +265,7 @@ To minimize Gemini remote API consumption while avoiding code quality degradatio
 7. HIGH: "test range" rows 300-310/350-360/500-510/550-560 in IsGeneric* tables are Sith, Jedi, Mandalorians, droids, rancors, Krayt, and story NPCs; gender is ignored in RemapAppearance (C1-2).
 8. HIGH: story tags with area prefix (203_Lorso, 203_Chano, 203_b4d4, 202_Falt) bypass exclusion; 203_b4d4 gets a 100% Twi'lek-male remap (C1-3, C2-1).
 9. MED: staged appearance.2da/heads.2da are whole-file snapshots incl. Echoes/TSLRCM/HD-Twi'lek edits (115 vanilla rows changed), outside KPM ownership; no base pinning (D2-2).
-10. MED: llk_*.mdx, P_TwiH* heads, and llk_dahnish* exist only in the live Override, not the patch source (D1-2/3); N_CommM10 is TGA-only; 15 commoner textures are 2048x2048; fat rows' texa mismatches mesh slots; dancers use human N_CommF; literal `****` cells.
+10. MED: P_TwiH* heads and llk_dahnisb* exist only in the live Override, not the patch source (D1-2/3); the five `llk_*.mdx` (ahrnell, dahnish, harra, kehvehn, luposhar) are now present in `npc_diversity_src/override/` (rechecked 10-11, doc 38); N_CommM10 is TGA-only; 15 commoner textures are 2048x2048; fat rows' texa mismatches mesh slots; dancers use human N_CommF; literal `****` cells.
 11. MED: selector bias: hash%2 correlates with hash%100 (Kel 3:2), Twi'lek low-bit dependence, correlated draws (C1-5); HashCreatureSpawn is dead code; float->int quantisation UB on NaN/huge.
 12. MED: GOG hook 1 at 0x0048E691 collides with k2-class-menu-clothes; manifest now has conflicts = ["k2-class-menu-clothes"] (D2-9).
 13. LOW: NpcDiversity_Init never called (no KPatchInit), so no KpLog (E-1); contract test is tautological (C1-8); check_hook_bytes gives a false stale-kpatch WARN (F-5).

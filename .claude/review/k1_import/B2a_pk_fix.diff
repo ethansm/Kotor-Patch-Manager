@@ -1,0 +1,28 @@
+--- /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/2c3f74c1-88fa-49a4-8101-3e63d340c7c0/scratchpad/venv_pk/lib/python3.12/site-packages/pykotor/resource/formats/mdl/io_mdl.py	2026-10-11 13:54:40.916550634 -0400
++++ /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/2c3f74c1-88fa-49a4-8101-3e63d340c7c0/scratchpad/B2a/pk_fix/pykotor/resource/formats/mdl/io_mdl.py	2026-10-11 15:13:55.104436699 -0400
+@@ -1309,8 +1309,6 @@
+             self.hologram_donotdraw = hologram_value == 1
+             # Store in tail fields for compatibility (not used in K2)
+             self.tail_short = 0
+-            self.k2_tail_long1 = reader.read_uint32()
+-            self.k2_tail_long2 = reader.read_uint32()
+         else:
+             self.tail_short = reader.read_uint16()
+         self.total_area = reader.read_single()
+@@ -1470,15 +1468,13 @@
+         writer.write_uint8(self.beaming)
+         writer.write_uint8(self.render)
+         if game == Game.K2:
+-            # K2 dirt fields replace tail_short (2 bytes) with CCssL (10 bytes) + 2 uint32s (8 bytes)
++            # K2 dirt fields replace tail_short (2 bytes) with CCssL (10 bytes)
+             #
+             writer.write_uint8(1 if self.dirt_enabled else 0)
+             writer.write_uint8(0)  # padding byte
+             writer.write_int16(self.dirt_texture if self.dirt_texture else 1)
+             writer.write_int16(self.dirt_worldspace if self.dirt_worldspace else 1)
+             writer.write_uint32(1 if self.hologram_donotdraw else 0)
+-            writer.write_uint32(self.k2_tail_long1)
+-            writer.write_uint32(self.k2_tail_long2)
+         else:
+             writer.write_uint16(self.tail_short)
+         writer.write_single(self.total_area)
