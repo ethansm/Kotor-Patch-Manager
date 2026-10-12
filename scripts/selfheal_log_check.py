@@ -20,6 +20,8 @@ INFO `rows h=<min> screen=<WxH>`. P5 discs (TEXSET disc and dischi != 0 else FAI
 INFO `discs slots=N/M DISC=n hover=h`. P4/P5 are NOT-SEEN (not FAIL) when their lines are absent. STATE lookA and BUILD proj/cleared are optional.
 Checks: P1 (>=1 `P1 hud built ... layoutOpen=1`, ctlCount 1..4096), P3 (every `P3 slot[i]=` has k=0|1|2),
 DUMP blocks (hp cur<=max, heal-row cand {64,65,66,84,127,128} has heal>0 and only those have heal>0, a pick line, routeA idOk=1 when a pick exists).
+0.8.0-dev (popsize+togglepill+leaderclick): POPSIZE m= unit= panelW= widest= line= screen=WxH, POPHOVER m= row= (1 auto, 2 hp-, 3 hp+, 4 keep-, 5 keep+), POPCLICK m= row=, CLICK member=0 ok|noneed|noitem (leader click).
+P6 popover fit: each POPSIZE needs panelW >= widest+2*unit and line <= 1.5*unit, else FAIL; NOT-SEEN without POPSIZE. P7 interaction: INFO counts of POPHOVER, POPCLICK and CLICK member=0 ok/noneed/noitem; WARN (never FAIL) when a CLICK member=0 ok has no later USE member=0 or DONE member=0. P6/P7 NOT-SEEN when their lines are absent.
 """
 from __future__ import annotations
 
@@ -64,6 +66,11 @@ KICKSTARVED_RE = re.compile(r"^KICK starved member=(\S+)\s*$")
 TIMEOUT_RE = re.compile(r"^TIMEOUT unqueued member=(\S+)\s*$")
 CLICK_RE = re.compile(r"^CLICK member=(\S+) noitem\s*$")
 DIAGPOP_RE = re.compile(r"^DIAG pop item=(\S+) .*?rgbOk=(\d+) alphaOk=(\d+)")
+# 0.8.0-dev. CLICK_RE (0.3.0) also matches `CLICK member=0 noitem`; v080_line sees that line first and keeps its legacy count.
+POPSIZE_RE = re.compile(r"^POPSIZE m=(\S+) unit=(\S+) panelW=(\S+) widest=(\S+) line=(\S+) screen=(\S+)\s*$")
+POPHOVER_RE = re.compile(r"^POPHOVER m=(\S+) row=(\S+)\s*$")
+POPCLICK_RE = re.compile(r"^POPCLICK m=(\S+) row=(\S+)\s*$")
+CLICK0_RE = re.compile(r"^CLICK member=0 (ok|noneed|noitem)\s*$")
 # POPROW items that carry text; "bg" has txt="" and tobj=0 by design, so P4 skips it.
 TEXT_ITEMS = ("auto", "hpm", "hpp", "keepm", "keepp", "hpval", "keepval")
 TEX_WARN = {
@@ -222,6 +229,27 @@ def v070_line(v, n, t):
     return True
 
 
+def v080_line(v, n, t):
+    """Parse one 0.8.0-dev line (POPSIZE, POPHOVER, POPCLICK, leader CLICK member=0) into v; True if it was one."""
+    if (m := POPSIZE_RE.match(t)):
+        g = m.groups()
+        # "lh" is the POPSIZE line= value (row height); "line" stays the log line number.
+        v["popsize"].append({"line": n, "m": g[0], "unit": to_int(g[1]), "panelW": to_int(g[2]), "widest": to_int(g[3]),
+                             "lh": to_int(g[4]), "raw": g[1:5]})
+    elif (m := POPHOVER_RE.match(t)):
+        v["pop_hover"].append({"line": n, "m": m.group(1), "row": to_int(m.group(2))})
+    elif (m := POPCLICK_RE.match(t)):
+        v["pop_click"].append({"line": n, "m": m.group(1), "row": to_int(m.group(2))})
+    elif (m := CLICK0_RE.match(t)):
+        v["click0"].append({"line": n, "result": m.group(1)})
+        if m.group(1) == "noitem":
+            v["click_noitem"] += 1   # same legacy counter v030_line bumps for `CLICK member=N noitem`
+    else:
+        return False
+    v["seen"] = True
+    return True
+
+
 def pop_check(v):
     """P4 popover rows -> (status, [(line, msg)], info). NOT-SEEN when no POP/POPROW line is in range."""
     rows, opens = v["pop_rows"], v["pop_open"]
@@ -280,14 +308,55 @@ def disc_check(v):
     return ("FAIL" if fails else "PASS"), fails, warns, info
 
 
+def popsize_check(v):
+    """P6 popover fit -> (status, [(line, msg)] fails, info). NOT-SEEN when no POPSIZE line is in range.
+    Each POPSIZE: panelW >= widest + 2*unit (side slack) and line <= 1.5*unit (row height against the unit)."""
+    sizes = v["popsize"]
+    if not sizes:
+        return "NOT-SEEN", [], None
+    fails, slack = [], []
+    for s in sizes:
+        u, pw, wd, lh = s["unit"], s["panelW"], s["widest"], s["lh"]
+        if None in (u, pw, wd, lh):
+            fails.append((s["line"], "POPSIZE m=%s malformed (unit=%s panelW=%s widest=%s line=%s)" % ((s["m"],) + tuple(s["raw"]))))
+            continue
+        need = wd + 2 * u
+        slack.append(pw - need)
+        if pw < need:
+            fails.append((s["line"], "POPSIZE m=%s panelW=%d < widest+2*unit (%d+2*%d=%d): popover too narrow" % (s["m"], pw, wd, u, need)))
+        if lh > 1.5 * u:
+            fails.append((s["line"], "POPSIZE m=%s line=%d > 1.5*unit (1.5*%d=%g): rows too tall" % (s["m"], lh, u, 1.5 * u)))
+    info = "popsize n=%d min_slack=%s" % (len(sizes), min(slack) if slack else "none")
+    return ("FAIL" if fails else "PASS"), fails, info
+
+
+def interact_check(v):
+    """P7 popover/leader-click interaction -> (status, [(line, msg)] warns, info). NOT-SEEN when no POPHOVER, POPCLICK or
+    CLICK member=0 line is in range. Never FAIL: WARN when a `CLICK member=0 ok` has no later USE member=0 or DONE member=0."""
+    hover, clicks, c0 = v["pop_hover"], v["pop_click"], v["click0"]
+    if not (hover or clicks or c0):
+        return "NOT-SEEN", [], None
+    landed = [e["line"] for e in v["use"] + v["done"] if e["member"] == "0"]
+    lost = [c["line"] for c in c0 if c["result"] == "ok" and not any(x > c["line"] for x in landed)]
+    warns = []
+    if lost:
+        warns.append((lost[0], "P7 CLICK member=0 ok x%d with no later USE member=0 or DONE member=0 (leader click did nothing)" % len(lost)))
+    cnt = {k: sum(1 for c in c0 if c["result"] == k) for k in ("ok", "noneed", "noitem")}
+    info = "interact POPHOVER=%d POPCLICK=%d CLICK0 ok=%d noneed=%d noitem=%d" % (
+        len(hover), len(clicks), cnt["ok"], cnt["noneed"], cnt["noitem"])
+    return ("WARN" if warns else "PASS"), warns, info
+
+
 def check(lines, lo=1, hi=None):
     r = {"p1": "MISSING", "p1_fail": [], "p1_ok": 0, "p3": "PASS", "p3_fail": [], "p3_n": 0,
          "blocks": [], "dump_fail": [], "table": [],
          "p4": "NOT-SEEN", "p4_fail": [], "p4_info": None, "p5": "NOT-SEEN", "p5_fail": [], "p5_info": None,
+         "p6": "NOT-SEEN", "p6_fail": [], "p6_info": None, "p7": "NOT-SEEN", "p7_info": None,
          "v": {"build": [], "use": [], "done": [], "auto": [], "refuse": {}, "cfg_save": [], "cfg_reload": [], "click_noitem": 0,
                "fail": [], "warn": [], "tex": {}, "seen": False, "diag_pop": [],
                "kick": [], "kick_skip": {}, "kick_starved": 0, "timeout_unq": 0, "refuse_queued": 0,
-               "version": None, "pop_open": [], "pop_rows": [], "texset": [], "disc": [], "setfail": [], "state": []}}
+               "version": None, "pop_open": [], "pop_rows": [], "texset": [], "disc": [], "setfail": [], "state": [],
+               "popsize": [], "pop_hover": [], "pop_click": [], "click0": []}}
     v = r["v"]
     cur = None  # current DUMP block
     mem = None  # current member dict in the block
@@ -325,7 +394,7 @@ def check(lines, lo=1, hi=None):
             if m.group(2) not in ("0", "1", "2"):
                 r["p3_fail"].append((n, "slot[%s] k=%s" % (m.group(1), m.group(2))))
             continue
-        if v030_line(v, n, t) or v070_line(v, n, t):
+        if v080_line(v, n, t) or v030_line(v, n, t) or v070_line(v, n, t):
             continue
         if t.startswith("DUMP begin"):
             if cur is not None:
@@ -394,6 +463,9 @@ def check(lines, lo=1, hi=None):
     r["p4"], r["p4_fail"], r["p4_info"] = pop_check(v)
     r["p5"], r["p5_fail"], p5_warn, r["p5_info"] = disc_check(v)
     v["warn"].extend(p5_warn)
+    r["p6"], r["p6_fail"], r["p6_info"] = popsize_check(v)
+    r["p7"], p7_warn, r["p7_info"] = interact_check(v)
+    v["warn"].extend(p7_warn)
     if v["setfail"]:
         ops = {}
         for _, op in v["setfail"]:
@@ -401,7 +473,7 @@ def check(lines, lo=1, hi=None):
         v["warn"].append((v["setfail"][0][0], "SETFAIL x%d: %s (a widget property did not apply)" % (
             len(v["setfail"]), ", ".join("op=%s x%d" % kv for kv in sorted(ops.items())))))
     bad = (bool(v["fail"]) or r["p1"] == "FAIL" or r["p3"] == "FAIL" or bool(r["dump_fail"])
-           or r["p4"] == "FAIL" or r["p5"] == "FAIL"
+           or r["p4"] == "FAIL" or r["p5"] == "FAIL" or r["p6"] == "FAIL"
            or (r["p1"] == "MISSING" and (r["blocks"] or r["p3_n"])))
     r["verdict"] = "FAIL" if bad else ("PASS" if (r["blocks"] or v["seen"]) else "INCOMPLETE")
     return r
@@ -447,7 +519,7 @@ def fmt(r):
             o.append("WARN line %d: %s" % (n, msg))
         for n, msg in v["fail"]:
             o.append("FAIL 0.3.0 line %d: %s" % (n, msg))
-    for tag, key in (("P1", "p1_fail"), ("P3", "p3_fail"), ("P4", "p4_fail"), ("P5", "p5_fail"), ("DUMP", "dump_fail")):
+    for tag, key in (("P1", "p1_fail"), ("P3", "p3_fail"), ("P4", "p4_fail"), ("P5", "p5_fail"), ("P6", "p6_fail"), ("DUMP", "dump_fail")):
         for n, msg in r[key]:
             o.append("FAIL %s line %d: %s" % (tag, n, msg))
     # 0.7.0-dev block: printed only when its lines are present, so legacy logs keep their exact output.
@@ -460,11 +532,20 @@ def fmt(r):
             o.append(r["p4_info"])
         if r["p5_info"]:
             o.append(r["p5_info"])
+    # 0.8.0-dev block: printed only when its lines are present, so older logs keep their exact output.
+    new80 = bool(v["popsize"] or v["pop_hover"] or v["pop_click"] or v["click0"])
+    if new80:
+        if r["p6_info"]:
+            o.append(r["p6_info"])
+        if r["p7_info"]:
+            o.append(r["p7_info"])
     extra = ""
     if v["seen"]:
         extra = " USE=%d DONE=%d TIMEOUT=%d" % (len(v["use"]), len(v["done"]), sum(1 for d in v["done"] if d["timeout"] == 1))
     if new70:
         extra += " P4=%s P5=%s" % (r["p4"], r["p5"])
+    if new80:
+        extra += " P6=%s P7=%s" % (r["p6"], r["p7"])
     o.append("SELFHEAL P1=%s P3=%s DUMP=%d blocks%s VERDICT=%s" % (r["p1"], r["p3"], len(r["blocks"]), extra, r["verdict"]))
     return "\n".join(o)
 

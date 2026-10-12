@@ -171,6 +171,30 @@ inline PopLayout popoverLayout(Rect b, int screenW, int unit = 0) {
     return L;
 }
 
+// Item height that fits a label: max(btnUnit, ceil(1.5 * linePx)). maxLabelPx is accepted for the signature and does not affect the result.
+inline int popUnitForText(float /*maxLabelPx*/, float linePx, int btnUnit) {
+    const int need = (int)std::ceil(linePx * 1.5f);
+    return btnUnit > need ? btnUnit : need;
+}
+
+// Like popoverLayout, but the panel is panelW wide (not 8*unit) and every row is `unit` tall. Value span = panelW - 2*unit (popValueRect).
+// x = b.x - unit/4 - panelW, clamped to screenW (when > 0) then to x >= 0. unit <= 0 falls back to b.h, as in popoverLayout.
+inline PopLayout popoverLayoutW(Rect b, int screenW, int unit, int panelW) {
+    const int u = unit > 0 ? unit : b.h, w = panelW, gap = u / 4;
+    int x = b.x - gap - w;
+    if (screenW > 0 && x + w > screenW) x = screenW - w;
+    if (x < 0) x = 0;
+    const int y = b.y;
+    PopLayout L;
+    L.r[0] = Rect{x, y, w, 3 * u};
+    L.r[1] = Rect{x, y, w, u};
+    L.r[2] = Rect{x, y + u, u, u};
+    L.r[3] = Rect{x + w - u, y + u, u, u};
+    L.r[4] = Rect{x, y + 2 * u, u, u};
+    L.r[5] = Rect{x + w - u, y + 2 * u, u, u};
+    return L;
+}
+
 // Span between the minus and plus squares of row 2 (HP) or 3 (Keep); {0,0,0,0} for other rows.
 inline Rect popValueRect(const PopLayout& L, int row) {
     if (row != 2 && row != 3) return Rect{0, 0, 0, 0};
@@ -189,6 +213,19 @@ inline PopItem popoverHit(const PopLayout& L, int x, int y) {
     return PopItem::None;
 }
 
+// Row id for the popover; values 1..5 match PopItem 1..5 (Row_Auto..Row_KeepP). Value text spans and points outside the panel are Row_None.
+enum PopRow { Row_None, Row_Auto, Row_HpM, Row_HpP, Row_KeepM, Row_KeepP };
+inline PopRow popoverRowAt(const PopLayout& L, int x, int y) {
+    switch (popoverHit(L, x, y)) {
+        case PopItem::AutoToggle: return Row_Auto;
+        case PopItem::HpMinus: return Row_HpM;
+        case PopItem::HpPlus: return Row_HpP;
+        case PopItem::KeepMinus: return Row_KeepM;
+        case PopItem::KeepPlus: return Row_KeepP;
+        case PopItem::None: break;
+    }
+    return Row_None;
+}
 
 inline CompCfg applyPop(CompCfg c, PopItem it) {
     switch (it) {
@@ -217,6 +254,8 @@ inline std::string popValueLabel(int row, const CompCfg& c) {
     if (row == 3) return "Keep " + std::to_string(c.keep);
     return "";
 }
+
+inline const char* popAutoCaption() { return "Auto-heal"; }
 
 // ---- INI file model: [defaults] default=..., [companions] <tag>=... ; everything else is preserved verbatim on write ----
 struct CfgTable {

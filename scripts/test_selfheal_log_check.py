@@ -351,6 +351,107 @@ def test_v070_main_exit_codes():
     assert "P4=FAIL P5=PASS VERDICT=FAIL" in out.getvalue() and "P4=PASS P5=FAIL VERDICT=FAIL" in out.getvalue()
 
 
+# ---- 0.8.0-dev: popsize + togglepill + leaderclick (P6 popover fit, P7 popover/leader-click interaction; P7 never FAIL)
+
+V08_VERSION = ("0.8.0-dev", "popsize+togglepill+leaderclick")
+V08_POP = "POPSIZE m=1 unit=24 panelW=200 widest=140 line=14 screen=3840x1600"
+USE0 = 'USE member=0 item=0c000100 "Medical Supplies" heal=27 hp=12/40 src=click'
+DONE0 = "DONE member=0 hp+27 stack-1 queued=0"
+
+
+def test_v080_pass():
+    r = S.check(lines("v080.txt"))
+    v = r["v"]
+    assert (r["p1"], r["p3"], r["p4"], r["p5"], r["p6"], r["p7"], r["verdict"]) == ("PASS",) * 5 + ("PASS", "PASS")
+    assert not v["fail"] and not v["warn"] and not r["p6_fail"]
+    assert v["version"] == V08_VERSION
+    assert r["p6_info"] == "popsize n=1 min_slack=12"                      # 200 - (140 + 2*24)
+    assert r["p7_info"] == "interact POPHOVER=2 POPCLICK=1 CLICK0 ok=1 noneed=0 noitem=0"
+    assert len(v["popsize"]) == 1 and len(v["click0"]) == 1 and len(v["use"]) == 1 and len(v["done"]) == 1
+    assert S.fmt(r).splitlines()[-1] == (
+        "SELFHEAL P1=PASS P3=PASS DUMP=0 blocks USE=1 DONE=1 TIMEOUT=0 P4=PASS P5=PASS P6=PASS P7=PASS VERDICT=PASS")
+
+
+def test_v080_popsize_fail_names_the_rule():
+    r = S.check(lines("fail_popsize.txt"))
+    assert r["p6"] == "FAIL" and r["verdict"] == "FAIL" and r["p7"] == "PASS"
+    assert any("panelW=180 < widest+2*unit (140+2*24=188)" in m for _, m in r["p6_fail"])
+    out = S.fmt(r).splitlines()
+    assert any(l.startswith("FAIL P6 line 16") for l in out)
+    assert out[-1].endswith("P6=FAIL P7=PASS VERDICT=FAIL")
+
+
+def test_v080_popsize_boundaries_and_line_height():
+    L = lines("v080.txt")
+
+    def with_popsize(new):
+        return [l.replace(V08_POP, new) if "POPSIZE" in l else l for l in L]
+
+    assert S.check(with_popsize(V08_POP.replace("panelW=200", "panelW=188")))["p6"] == "PASS"   # equality passes
+    assert S.check(with_popsize(V08_POP.replace("panelW=200", "panelW=187")))["p6"] == "FAIL"
+    assert S.check(with_popsize(V08_POP.replace("line=14", "line=36")))["p6"] == "PASS"         # line == 1.5*unit passes
+    r = S.check(with_popsize(V08_POP.replace("line=14", "line=37")))
+    assert r["p6"] == "FAIL" and any("line=37 > 1.5*unit (1.5*24=36)" in m for _, m in r["p6_fail"])
+    assert S.check(["POPSIZE m=1 unit=x panelW=200 widest=140 line=14 screen=3840x1600"])["p6"] == "FAIL"  # malformed
+
+
+def test_v080_popsize_absent_is_not_seen():
+    r = S.check([l for l in lines("v080.txt") if "POPSIZE" not in l])
+    assert (r["p6"], r["p6_fail"], r["p6_info"]) == ("NOT-SEEN", [], None) and r["p7"] == "PASS"
+    assert "P6=NOT-SEEN P7=PASS VERDICT=PASS" in S.fmt(r)
+
+
+def test_v080_leader_click_without_use_warns_not_fails():
+    L = [l for l in lines("v080.txt") if "USE member=0" not in l and "DONE member=0" not in l]
+    r = S.check(L)
+    out = S.fmt(r).splitlines()
+    assert r["p7"] == "WARN" and r["verdict"] == "PASS" and not r["v"]["fail"] and r["p6"] == "PASS"
+    assert any(l.startswith("WARN line") and "CLICK member=0 ok x1 with no later USE member=0 or DONE member=0" in l for l in out)
+    assert out[-1].endswith("P6=PASS P7=WARN VERDICT=PASS")
+    with tempfile.TemporaryDirectory() as d:
+        p = Path(d) / "warn.txt"
+        p.write_text("\n".join(L) + "\n")
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            assert S.main([str(p)]) == 0                                       # WARN never changes the exit code
+    assert "VERDICT=PASS" in buf.getvalue()
+
+
+def test_v080_leader_click_landed_rules():
+    assert S.check(["CLICK member=0 ok", USE0])["p7"] == "PASS"
+    assert S.check(["CLICK member=0 ok", DONE0])["p7"] == "PASS"                    # a later DONE member=0 also counts
+    assert S.check([USE0, "CLICK member=0 ok"])["p7"] == "WARN"                    # a USE before the click does not
+    assert S.check(["CLICK member=0 ok", USE0.replace("member=0", "member=2")])["p7"] == "WARN"   # other members do not
+
+
+def test_v080_p7_counts_and_legacy_noitem():
+    r = S.check(v30(["CLICK member=0 ok", "CLICK member=0 noneed", "CLICK member=0 noitem", "POPHOVER m=1 row=1", "POPCLICK m=1 row=5"]))
+    assert r["p7_info"] == "interact POPHOVER=1 POPCLICK=1 CLICK0 ok=1 noneed=1 noitem=1"
+    assert r["v"]["click_noitem"] == 1 and r["p7"] == "WARN" and r["verdict"] == "PASS"   # ok with no later USE/DONE
+    r = S.check(v30(["CLICK member=2 noitem"]))                                       # legacy 0.3.0 form, other member
+    assert r["v"]["click_noitem"] == 1 and r["v"]["click0"] == [] and r["p7"] == "NOT-SEEN" and r["p7_info"] is None
+
+
+def test_v080_version_line_and_fixture():
+    assert S.VERSION_RE.match("0.8.0-dev ui=popsize+togglepill+leaderclick: probe call=1 CallKey=0x4A kick=0 cfg rows=3").groups() == V08_VERSION
+    assert S.check(lines("v080.txt"))["v"]["version"] == V08_VERSION
+
+
+def test_v080_not_seen_for_legacy_logs():
+    for name in ("pass.txt", "v030.txt", "v040.txt", "v050.txt", "v070.txt"):
+        r = S.check(lines(name))
+        assert (r["p6"], r["p7"], r["p6_fail"], r["p7_info"]) == ("NOT-SEEN", "NOT-SEEN", [], None), name
+        assert " P6=" not in S.fmt(r) and r["verdict"] == "PASS", name
+
+
+def test_v080_main_exit_codes():
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+        assert S.main([str(FX / "v080.txt")]) == 0
+        assert S.main([str(FX / "fail_popsize.txt")]) == 1
+    assert "P6=FAIL P7=PASS VERDICT=FAIL" in out.getvalue()
+
+
 def load_tests(loader, tests, pattern):
     """`python -m unittest` collects only TestCase classes; wrap the plain test_ functions so it runs them too."""
     suite = unittest.TestSuite(tests)

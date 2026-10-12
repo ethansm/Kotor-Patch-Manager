@@ -7,6 +7,13 @@ Writes patch_manager_mods/companion_selfheal_src/SelfHealTextures.inc: one uncom
                            8x8 supersampled, transparent outside ~22 px.
   csh_disc_hi              48x48 same shape and fill, beige (208,204,170) rim, plus a soft outer halo (same colour, alpha 200 just
                            outside r=21 fading linearly to 0 at r=24). Radial only, so exactly circular.
+  csh_tog_off              128x32 rounded-pill toggle track (radius 16), (0,0,0,175) fill, 2 px (60,90,85) rim, grey (150,160,155)
+                           knob r=12 at the LEFT cap centre (16,16). 8x8 supersampled, corners transparent.
+  csh_tog_off_hi           same knob and fill; beige (208,204,170) rim; pill inset 3 px (radius 13) so a 2 px faint beige halo
+                           (alpha 110 at the edge fading to 0) stays inside the canvas.
+  csh_tog_on               as csh_tog_off with a (10,96,80) rim, a faint mint inner glow (4 px inside the rim) and a mint
+                           (140,255,215) knob at the RIGHT cap centre (112,16).
+  csh_tog_on_hi            csh_tog_on with the csh_tog_off_hi beige rim and halo.
   csh_ring0 .. csh_ring7   48x48 busy-ring animation, 8 frames = one revolution: faint full ring + bright comet arc
                            (~70 deg, alpha 255 at the head fading to 0 along the tail) + soft sparkle dot at the head.
                            ANGLE CONVENTION: 0 deg = up (12 o'clock), increasing clockwise; the head of frame k is at
@@ -28,10 +35,22 @@ REPO = Path(__file__).resolve().parent.parent
 INC = REPO / "patch_manager_mods/companion_selfheal_src/SelfHealTextures.inc"
 CROSS = "csh_cross"
 DISC, DISC_HI = "csh_disc", "csh_disc_hi"
+TOG_OFF, TOG_OFF_HI, TOG_ON, TOG_ON_HI = "csh_tog_off", "csh_tog_off_hi", "csh_tog_on", "csh_tog_on_hi"
+TOGGLES = (TOG_OFF, TOG_OFF_HI, TOG_ON, TOG_ON_HI)
 RING_FRAMES = 8
 RING = tuple(f"csh_ring{k}" for k in range(RING_FRAMES))
-ALL_NAMES = (CROSS, DISC, DISC_HI) + RING
+ALL_NAMES = (CROSS, DISC, DISC_HI) + TOGGLES + RING
 RING_SIZE, CROSS_SIZE, DISC_SIZE = 48, 32, 48
+TOG_W, TOG_H = 128, 32
+TOG_RIM = 2.0                              # rim thickness, every toggle variant
+TOG_RIM_OFF, TOG_RIM_ON = (60, 90, 85), (10, 96, 80)
+TOG_FILL = (0, 0, 0, 175)
+TOG_KNOB_R, TOG_KNOB_Y = 12.0, TOG_H / 2
+TOG_KNOB_X_OFF, TOG_KNOB_X_ON = 16.0, 112.0   # knob centres = cap centres of the full-size pill (radius 16)
+TOG_KNOB_OFF, TOG_KNOB_ON = (150, 160, 155), (140, 255, 215)
+TOG_GLOW_RGB, TOG_GLOW_W, TOG_GLOW_PEAK = (40, 210, 170), 4.0, 90.0   # ON inner glow, starts just inside the rim, fades inward
+TOG_HI_INSET = 3.0                         # *_hi pills are inset so the halo has room inside the 128x32 canvas
+TOG_HALO_W, TOG_HALO_PEAK = 2.0, 110.0     # *_hi halo: alpha TOG_HALO_PEAK at the pill edge, 0 at TOG_HALO_W outside it
 CROSS_SPAN = 22   # tip-to-tip arm span of the cross glyph, px
 RING_RADIUS, RING_WIDTH = 21.0, 2.5
 ARC_DEG = 70.0
@@ -173,8 +192,76 @@ def make_disc(out: Path, name: str, hi: bool) -> Path:
     return p
 
 
+def _over(dst, src):
+    """Straight-alpha 'over' of two (rgb, alpha) layers, alpha in 0..1."""
+    (dc, da), (sc, sa) = dst, src
+    oa = sa + da * (1.0 - sa)
+    if oa <= 0.0:
+        return (0.0, 0.0, 0.0), 0.0
+    return tuple((sc[i] * sa + dc[i] * da * (1.0 - sa)) / oa for i in range(3)), oa
+
+
+def toggle_sample(x: float, y: float, on: bool, hi: bool) -> tuple[tuple[float, float, float], float]:
+    """Colour (0..255) and alpha (0..255) of a toggle track at pixel-space point (x, y). Layers bottom-up: halo (hi only), fill,
+    ON inner glow, rim, knob. The pill is a capsule (signed distance d, negative inside), so every edge is exact."""
+    i = TOG_HI_INSET if hi else 0.0
+    x0, x1 = i, TOG_W - i
+    y0, y1 = i, TOG_H - i
+    R = (y1 - y0) / 2                       # full height / 2 = corner radius
+    cy = (y0 + y1) / 2
+    qx = min(max(x, x0 + R), x1 - R)        # nearest point on the pill's core segment
+    d = math.hypot(x - qx, y - cy) - R
+    px = ((0.0, 0.0, 0.0), 0.0)
+    if d >= 0:
+        if hi and d < TOG_HALO_W:
+            px = _over(px, (HI_RGB, TOG_HALO_PEAK / 255.0 * (1.0 - d / TOG_HALO_W)))
+    else:
+        depth = -d
+        if depth < TOG_RIM:
+            px = _over(px, (HI_RGB if hi else (TOG_RIM_ON if on else TOG_RIM_OFF), 1.0))
+        else:
+            px = _over(px, (TOG_FILL[:3], TOG_FILL[3] / 255.0))
+            if on and depth < TOG_RIM + TOG_GLOW_W:
+                glow = TOG_GLOW_PEAK / 255.0 * (1.0 - (depth - TOG_RIM) / TOG_GLOW_W)
+                px = _over(px, (TOG_GLOW_RGB, glow))
+    kx = TOG_KNOB_X_ON if on else TOG_KNOB_X_OFF
+    if math.hypot(x - kx, y - TOG_KNOB_Y) <= TOG_KNOB_R:
+        px = _over(px, (TOG_KNOB_ON if on else TOG_KNOB_OFF, 1.0))
+    return px[0], px[1] * 255.0
+
+
+def make_toggle(out: Path, name: str, on: bool, hi: bool) -> Path:
+    """128x32 toggle track, 8x8 supersampled with the same accumulation as make_disc (colour weighted by alpha, alpha = mean coverage)."""
+    from PIL import Image
+    S = 8
+    im = Image.new("RGBA", (TOG_W, TOG_H), (0, 0, 0, 0))
+    px = im.load()
+    for y in range(TOG_H):
+        for x in range(TOG_W):
+            acc = [0.0, 0.0, 0.0]
+            aa = 0.0
+            for sy in range(S):
+                for sx in range(S):
+                    col, al = toggle_sample(x + (sx + 0.5) / S, y + (sy + 0.5) / S, on, hi)
+                    for c in range(3):
+                        acc[c] += col[c] * al
+                    aa += al
+            if aa:
+                px[x, y] = (int(round(acc[0] / aa)), int(round(acc[1] / aa)), int(round(acc[2] / aa)), int(round(aa / (S * S))))
+    p = out / f"{name}.tga"
+    im.save(p, format="TGA")
+    return p
+
+
+def make_toggles(out: Path) -> list[Path]:
+    """csh_tog_off, csh_tog_off_hi, csh_tog_on, csh_tog_on_hi (in that order)."""
+    return [make_toggle(out, TOG_OFF, False, False), make_toggle(out, TOG_OFF_HI, False, True),
+            make_toggle(out, TOG_ON, True, False), make_toggle(out, TOG_ON_HI, True, True)]
+
+
 def make_all(out: Path) -> list[Path]:
-    return make_cross(out) + [make_disc(out, DISC, False), make_disc(out, DISC_HI, True)] + make_ring_textures(out)
+    return (make_cross(out) + [make_disc(out, DISC, False), make_disc(out, DISC_HI, True)]
+            + make_toggles(out) + make_ring_textures(out))
 
 
 def render_inc(blobs) -> str:

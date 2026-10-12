@@ -139,6 +139,41 @@ int main() {
       KT_CHECK(popLabel(PopItem::HpPlus, c) == "+"); KT_CHECK(popLabel(PopItem::KeepPlus, c) == "+"); KT_CHECK(popLabel(PopItem::None, c) == ""); }
     { CompCfg c; KT_CHECK(popValueLabel(2, c) == "Use below 35%"); KT_CHECK(popValueLabel(3, c) == "Keep 2"); KT_CHECK(popValueLabel(1, c) == ""); KT_CHECK(popValueLabel(4, c) == ""); }
 
+    // ---- popover: text-fit unit, width-parameterised layout, row hit, auto caption ----
+    KT_CHECK_EQ(popUnitForText(0, 20, 16), 30); KT_CHECK_EQ(popUnitForText(0, 5, 16), 16);   // ceil(1.5*20)=30; ceil(7.5)=8 < 16
+    KT_CHECK_EQ(popUnitForText(100, 20, 16), 30);                                             // maxLabelPx does not change the result
+    KT_CHECK_EQ(popUnitForText(0, 14, 16), 21); KT_CHECK_EQ(popUnitForText(0, 11, 16), 17); KT_CHECK_EQ(popUnitForText(0, 10.5f, 16), 16);   // ceil(16.5)=17, ceil(15.75)=16
+    KT_CHECK_EQ(popUnitForText(0, 20, 40), 40); KT_CHECK_EQ(popUnitForText(0, 0, 0), 0);
+    { PopLayout L = popoverLayoutW(Rect{400, 50, 58, 58}, 1920, 24, 200);   // gap 24/4 = 6, x = 400 - 6 - 200 = 194
+      KT_CHECK(L.r[0] == (Rect{194, 50, 200, 72})); KT_CHECK(L.r[1] == (Rect{194, 50, 200, 24}));
+      KT_CHECK(L.r[2] == (Rect{194, 74, 24, 24})); KT_CHECK(L.r[3] == (Rect{370, 74, 24, 24}));
+      KT_CHECK(L.r[4] == (Rect{194, 98, 24, 24})); KT_CHECK(L.r[5] == (Rect{370, 98, 24, 24}));
+      KT_CHECK(popValueRect(L, 2) == (Rect{218, 74, 152, 24})); KT_CHECK(popValueRect(L, 3) == (Rect{218, 98, 152, 24}));   // span = 200 - 2*24
+      PopLayout a0 = popoverLayoutW(Rect{400, 50, 24, 24}, 1920, 0, 200), a1 = popoverLayoutW(Rect{400, 50, 24, 24}, 1920, 24, 200);
+      for (int i = 0; i < 6; ++i) KT_CHECK(a0.r[i] == a1.r[i]); }                              // unit 0 = b.h
+    { PopLayout L = popoverLayoutW(Rect{300, 5, 58, 58}, 250, 24, 200); KT_CHECK_EQ(L.r[0].x, 50); KT_CHECK_EQ(L.r[0].x + L.r[0].w, 250); KT_CHECK_EQ(L.r[3].x, 226); }   // right clamp: 94 + 200 > 250 -> 50
+    { PopLayout L = popoverLayoutW(Rect{50, 5, 58, 58}, 1920, 24, 200); KT_CHECK_EQ(L.r[0].x, 0); KT_CHECK_EQ(L.r[3].x, 176); }   // left clamp: 50-6-200 < 0 -> 0
+    { PopLayout L = popoverLayoutW(Rect{300, 5, 58, 58}, 100, 24, 200); KT_CHECK_EQ(L.r[0].x, 0); }   // left wins: 100 - 200 < 0 -> 0
+    { PopLayout L = popoverLayoutW(Rect{400, 50, 58, 58}, 1920, 24, 200);
+      KT_CHECK_EQ((int)popoverRowAt(L, 200, 55), (int)Row_Auto);      // r[1] Auto row
+      KT_CHECK_EQ((int)popoverRowAt(L, 206, 86), (int)Row_HpM);       // r[2] HP minus
+      KT_CHECK_EQ((int)popoverRowAt(L, 382, 86), (int)Row_HpP);       // r[3] HP plus
+      KT_CHECK_EQ((int)popoverRowAt(L, 206, 110), (int)Row_KeepM);    // r[4] Keep minus
+      KT_CHECK_EQ((int)popoverRowAt(L, 382, 110), (int)Row_KeepP);    // r[5] Keep plus
+      KT_CHECK_EQ((int)popoverRowAt(L, 300, 86), (int)Row_None);      // HP value span
+      KT_CHECK_EQ((int)popoverRowAt(L, 300, 110), (int)Row_None);     // Keep value span
+      KT_CHECK_EQ((int)popoverRowAt(L, 193, 60), (int)Row_None);      // left of panel
+      KT_CHECK_EQ((int)popoverRowAt(L, 394, 60), (int)Row_None);      // right of panel
+      KT_CHECK_EQ((int)popoverRowAt(L, 300, 49), (int)Row_None);      // above panel
+      KT_CHECK_EQ((int)popoverRowAt(L, 300, 122), (int)Row_None);     // below panel
+      KT_CHECK_EQ((int)popoverRowAt(L, 393, 73), (int)Row_Auto);      // last pixel inside r[1]
+      KT_CHECK_EQ((int)popoverRowAt(L, 393, 121), (int)Row_KeepP);    // last pixel inside r[5]
+      for (int x = 190; x <= 398; ++x) for (int y = 46; y <= 126; ++y)
+          KT_CHECK_EQ((int)popoverRowAt(L, x, y), (int)popoverHit(L, x, y));   // PopItem n == Row n, so same mapping everywhere
+    }
+    KT_CHECK_EQ((int)Row_None, 0); KT_CHECK_EQ((int)Row_KeepP, 5);
+    KT_CHECK(std::string(popAutoCaption()) == "Auto-heal");
+
     // ---- file model ----
     {
         const std::string orig =

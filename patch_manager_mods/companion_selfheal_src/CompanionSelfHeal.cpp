@@ -16,6 +16,7 @@
 #include <stdint.h>
 #include <stdarg.h>
 #include <string.h>
+#include <math.h>
 #include <vector>
 #include <string>
 #include <fstream>
@@ -35,6 +36,7 @@
 #include "ActQueue.h"
 #include "EmbedTex.h"
 #include "HudKit.h"
+#include "TextFit.h"
 
 KP_LOG_PATCH("companion-selfheal");
 
@@ -465,10 +467,10 @@ bool saveIni(const std::string& key, const shui::CompCfg& c) {
 // "constructed" set, so the engine never asks the resource manager for it; the texture tick uploads it and frees the buffer.
 namespace tex {
 #include "SelfHealTextures.inc"
-constexpr int Count = 3 + shui::kRingFrames;   // csh_cross, csh_disc, csh_disc_hi, csh_ring0..7
+constexpr int Count = 7 + shui::kRingFrames;   // csh_cross, csh_disc, csh_disc_hi, csh_tog_off, csh_tog_off_hi, csh_tog_on, csh_tog_on_hi, csh_ring0..7
 bool g_texInit = false;
-void* g_crossImg = nullptr; void* g_discImg[2] = {}; void* g_ringImg[shui::kRingFrames] = {};
-static_assert(sizeof kSelfHealTextures / sizeof kSelfHealTextures[0] == Count, "csh_cross + csh_disc + csh_disc_hi + csh_ring0..7");
+void* g_crossImg = nullptr; void* g_discImg[2] = {}; void* g_togImg[4] = {}; void* g_ringImg[shui::kRingFrames] = {};   // g_togImg: off, off_hi, on, on_hi
+static_assert(sizeof kSelfHealTextures / sizeof kSelfHealTextures[0] == Count, "csh_cross + csh_disc + csh_disc_hi + 4 csh_tog_* + csh_ring0..7");
 
 void logLine(const char* fmt, ...) {   // embtex::g_log sink
     char buf[256]; va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
@@ -481,10 +483,10 @@ void ensureTextures() {   // once per process; the textures outlive every HUD (n
     g_texInit = ensured;   // not ready / partial: retried on the next HUD build (was set unconditionally, a not-ready first call left the discs null forever)
     for (int i = 0; i < Count; ++i) {
         void* im = guikit::imageFor(kSelfHealTextures[i].resref);   // a pooled GUI handle that is never released keeps the texture alive
-        if (i == 0) g_crossImg = im; else if (i <= 2) g_discImg[i - 1] = im; else g_ringImg[i - 3] = im;
+        if (i == 0) g_crossImg = im; else if (i <= 2) g_discImg[i - 1] = im; else if (i <= 6) g_togImg[i - 3] = im; else g_ringImg[i - 7] = im;
     }
-    KP_LOG(chUi, "TEXSET ensure=%d supported=%d ready=%d cross=%08x disc=%08x dischi=%08x ring0=%08x slots=%d/%d", (int)ensured, (int)embtex::supported(), (int)embtex::detail::engineReady(),
-           (unsigned)reinterpret_cast<uintptr_t>(g_crossImg), (unsigned)reinterpret_cast<uintptr_t>(g_discImg[0]), (unsigned)reinterpret_cast<uintptr_t>(g_discImg[1]), (unsigned)reinterpret_cast<uintptr_t>(g_ringImg[0]), embtex::slotCount(), (int)embtex::MaxTex);
+    KP_LOG(chUi, "TEXSET ensure=%d supported=%d ready=%d cross=%08x disc=%08x dischi=%08x tog=%08x,%08x,%08x,%08x ring0=%08x slots=%d/%d", (int)ensured, (int)embtex::supported(), (int)embtex::detail::engineReady(),
+           (unsigned)reinterpret_cast<uintptr_t>(g_crossImg), (unsigned)reinterpret_cast<uintptr_t>(g_discImg[0]), (unsigned)reinterpret_cast<uintptr_t>(g_discImg[1]), (unsigned)reinterpret_cast<uintptr_t>(g_togImg[0]), (unsigned)reinterpret_cast<uintptr_t>(g_togImg[1]), (unsigned)reinterpret_cast<uintptr_t>(g_togImg[2]), (unsigned)reinterpret_cast<uintptr_t>(g_togImg[3]), (unsigned)reinterpret_cast<uintptr_t>(g_ringImg[0]), embtex::slotCount(), (int)embtex::MaxTex);
 }
 void healTextures() { embtex::heal(); }   // every frame (GL reset + missing rebuild, 20-refill give-up per texture; DB lesson 290)
 }  // namespace tex
@@ -507,7 +509,7 @@ enum {
     W_Disc0 = 0, W_Disc1, W_DiscLeader,
     W_Frame0, W_Frame1, W_FrameLeader,
     W_Btn0, W_Btn1, W_BtnLeader,
-    W_PopBg, W_Auto, W_HpM, W_HpP, W_KeepM, W_KeepP, W_HpVal, W_KeepVal,
+    W_PopBg, W_AutoPill, W_Auto, W_HpM, W_HpP, W_KeepM, W_KeepP, W_HpVal, W_KeepVal,
     W_Ring0, W_Ring1, W_RingLeader,
     NWidgets
 };
@@ -573,21 +575,44 @@ bool wDisc(W& w, bool hover) {
     float rgb[3] = { 1.f, 1.f, 1.f };
     const bool ok = img && guikit::setFill(w.c, img, rgb);
     static int lines = 0;   // edge-gated (hover swap, first draw): proves the circular disc + hover halo fill
-    if (lines < 48) { ++lines; const int i = static_cast<int>(&w - g_w); KP_LOG(chUi, "DISC m=%d hover=%d img=%08x setfill=%d", i == W_DiscLeader ? 0 : i - W_Disc0 + 1, want, (unsigned)reinterpret_cast<uintptr_t>(img), (int)ok); }
+    if (lines < 96) { ++lines; const int i = static_cast<int>(&w - g_w); KP_LOG(chUi, "DISC m=%d hover=%d img=%08x setfill=%d", i == W_DiscLeader ? 0 : i - W_Disc0 + 1, want, (unsigned)reinterpret_cast<uintptr_t>(img), (int)ok); }
     if (!ok) { setFail(w, 2, "fill"); return false; }
     w.frame = want;
     return true;
 }
+// Auto-heal toggle pill: csh_tog_off/on (+ _hi when the row is hovered), untinted, change-gated (w.frame = 0..3 = g_togImg index). A missing image keeps the last fill.
+void wPill(W& w, bool on, bool hover) {
+    if (!w.c) return;
+    const int want = (on ? 2 : 0) + (hover ? 1 : 0);
+    if (w.frame == want) return;
+    void* img = tex::g_togImg[want] ? tex::g_togImg[want] : tex::g_togImg[on ? 2 : 0];
+    float rgb[3] = { 1.f, 1.f, 1.f };
+    const bool ok = img && guikit::setFill(w.c, img, rgb);
+    static int lines = 0;
+    if (lines < 48) { ++lines; KP_LOG(chUi, "PILL on=%d hover=%d img=%08x setfill=%d", (int)on, (int)hover, (unsigned)reinterpret_cast<uintptr_t>(img), (int)ok); }
+    if (!ok) { setFail(w, 2, "fill"); return; }
+    w.frame = want;
+}
+void wTextColor(W& w, float r, float g, float b) { if (!w.c || (w.tr == r && w.tg == g && w.tb == b)) return; guikit::setTextColor(w.c, r, g, b); w.tr = r; w.tg = g; w.tb = b; }
 void wTip(W& w, const std::string& t) { if (!w.c || w.tip == t || !guitip::nativeSupported()) return; if (guitip::setNative(w.c, t.c_str())) w.tip = t; }
 
 // Unconscious button: not clickable (the engine neither hovers nor tooltips it); wShow(true) restores clickability the frame it wakes.
 void wInert(W& w) { if (w.c && w.clk != 0) { guikit::setClickable(w.c, false); w.clk = 0; } w.hover = false; }
 
+// Native GUI button click (PlayGuiSound idx 0 = gui_click; hover is idx 1, GuiKit playHoverSound). False when the sound manager is null.
+bool playClickSound() {
+    uint32_t mgr = 0;
+    if (!guikit::g_gk.playSound || !guikit::g_gk.guiSoundMgrAddr || !guikit::detail::rd32(guikit::g_gk.guiSoundMgrAddr, 0, &mgr) || !mgr) return false;
+    guikit::g_gk.playSound(reinterpret_cast<void*>(static_cast<uintptr_t>(mgr)), 0);
+    return true;
+}
+int g_popHover = -1;                   // popover row under the cursor (shui::PopRow, -1 = none), edge-gated hover sound/log
 int g_popMi = -1;                      // member whose popover is open (-1 = closed, 0 = leader, 1..2 = companions)
 guikit::ClickEdge g_lmb, g_rmb;
 DWORD g_cacheMs = 0, g_cfgCheckMs = 0;
 bool g_cacheValid = false;
 bool g_mapLogged[3] = {}, g_warnTag[3] = {};
+
 
 struct Card {
     bool have = false;
@@ -604,6 +629,34 @@ struct Card {
 };
 Card g_card[3];
 Card g_card0;   // Member 0 (leader)
+
+// Popover size from the actual text: dialogfont10x10 widths (TextFit.h) at the current screen height, so "Use below 95%" never wraps.
+constexpr float kPopTextK10 = 1.03f;   // CharEffectsPanel default text_k10 (measured for dialogfont10x10)
+struct PopMetrics { int unit = 0, panelW = 0, widest = 0, line = 0, margin = 0, pillW = 0, pillH = 0, screenW = 0, screenH = 0; };
+PopMetrics g_popMet;
+shui::PopLayout popLayoutFor(const Card& pc, int screenW, int screenH) {
+    const float sy = screenH > 0 ? screenH / 600.f : 1.f;
+    const textfit::TextCtx tc{ sy, kPopTextK10, 1.f };
+    auto px = [&](const char* t) { return textfit::textPx(tc, t, (int)strlen(t), textfit::F10); };
+    const float wHp = px("Use below 95%"), wKeep = px("Keep 20"), wCap = px(shui::popAutoCaption());
+    const float wVal = wHp > wKeep ? wHp : wKeep, wMax = wVal > wCap ? wVal : wCap;
+    const float lineEng = textfit::kFont10LineH * kPopTextK10 * sy;
+    PopMetrics m;
+    m.unit = shui::popUnitForText(wMax, lineEng, shui::popUnit(pc.btn));
+    m.margin = m.unit / 4 > 4 ? m.unit / 4 : 4;
+    m.pillH = m.unit - 4; m.pillW = m.pillH * 4;
+    m.widest = (int)std::ceil(wMax);
+    m.line = (int)std::ceil(lineEng);
+    int w = 8 * m.unit;
+    if (w < m.widest + 2 * m.unit) w = m.widest + 2 * m.unit;
+    const int wv = (int)std::ceil(wVal) + 2 * m.unit + 2 * m.margin;   // stepper squares + value text with a margin each side
+    if (w < wv) w = wv;
+    const int wc = (int)std::ceil(wCap) + m.pillW + 3 * m.margin;      // caption + pill on the toggle row
+    if (w < wc) w = wc;
+    m.panelW = w; m.screenW = screenW; m.screenH = screenH;
+    g_popMet = m;
+    return shui::popoverLayoutW(shui::ringRect(pc.btn), screenW, m.unit, m.panelW);
+}
 
 std::string keyFor(int mi) {
     if (mi == 0) return "slot0";
@@ -804,7 +857,13 @@ void refreshCache(const K2PsContext* ctx, DWORD now) {
 
 std::string tipFor(const Card& c) {
     char b[160];
-    if (&c == &g_card0) return c.cfg.autoOn ? "Auto medpacks: ON - click to toggle" : "Auto medpacks: OFF - click to toggle";   // leader button = auto toggle only
+    if (&c == &g_card0) {   // leader: click heals self, right-click opens the options popover
+        switch (c.st) {
+            case shui::BtnState::FullHp: return "Full health";
+            case shui::BtnState::NoItem: return "No healing item";
+            default: return "Heal self - right-click for options";
+        }
+    }
     switch (c.st) {
         case shui::BtnState::FullHp: return "Full health";
         case shui::BtnState::NoItem: return "No healing item";
@@ -839,6 +898,7 @@ void popRowLog(bool popOpen, int mi, int screenW) {
     int screenH = 0;
     if (guikit::g_gk.screenHAddr) guikit::detail::rdInt(guikit::g_gk.screenHAddr, 0, &screenH);
     KP_LOG(chUi, "POP open m=%d screen=%dx%d unit=%d btn=[%d,%d,%d,%d] align=10", mi, screenW, screenH, g_dbgUnit, g_dbgBtn.x, g_dbgBtn.y, g_dbgBtn.w, g_dbgBtn.h);
+    KP_LOG(chUi, "POPSIZE m=%d unit=%d panelW=%d widest=%d line=%d screen=%dx%d", mi, g_popMet.unit, g_popMet.panelW, g_popMet.widest, g_popMet.line, screenW, screenH);
     static const char* const names[8] = { "bg", "auto", "hpm", "hpp", "keepm", "keepp", "hpval", "keepval" };
     const int items[8] = { W_PopBg, W_Auto, W_HpM, W_HpP, W_KeepM, W_KeepP, W_HpVal, W_KeepVal };
     const int oTx = guikit::detail::off(&K2AddrTable::Label_Text), oRn = guikit::detail::off(&K2AddrTable::Text_Renderer);
@@ -928,6 +988,8 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
     }
     int screenW = 0;   // popover right clamp; 0 = unknown (no clamp)
     if (guikit::g_gk.screenWAddr) guikit::detail::rdInt(guikit::g_gk.screenWAddr, 0, &screenW);
+    int screenH = 0;   // popover text sizing (px per texel = screenH / 600)
+    if (guikit::g_gk.screenHAddr) guikit::detail::rdInt(guikit::g_gk.screenHAddr, 0, &screenH);
 
     // button state + look
     for (int mi = 1; mi <= 2; ++mi) {
@@ -976,6 +1038,7 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
     c0.st = shui::resolveState(c0.have && c0.seen, false, c0.m.cur, c0.m.max, c0.pk.pick >= 0, g_pend0.on, c0.cfg.autoOn, c0.m.down);
     if (c0.btn.w <= 0) c0.st = shui::BtnState::Hidden;
     stateLog(0, c0.st, c0, shui::lookFor(c0.st, c0.cfg.autoOn, now).alpha);
+    if (c0.st == shui::BtnState::Down && g_popMi == 0) g_popMi = -1;   // unconscious: no popover
     W& ring0 = g_w[W_RingLeader];
     W& disc0 = g_w[W_DiscLeader];
     W& frm0  = g_w[W_FrameLeader];
@@ -1019,7 +1082,7 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
     Card& popCard = (g_popMi == 0) ? g_card0 : g_card[g_popMi >= 0 ? g_popMi : 1];
     bool popOpen = g_popMi >= 0 && popCard.btn.w > 0;
     if (!popOpen) g_popMi = -1;
-    if (popOpen) L = shui::popoverLayout(shui::ringRect(popCard.btn), screenW, shui::popUnit(popCard.btn));
+    if (popOpen) L = popLayoutFor(popCard, screenW, screenH);
     bool inPop = popOpen && haveCur && cx >= L.r[0].x && cx < L.r[0].x + L.r[0].w && cy >= L.r[0].y && cy < L.r[0].y + L.r[0].h;
     if (haveCur && ledge) {
         if (inPop) {   // popover click: edit config only, NEVER useNow
@@ -1032,43 +1095,64 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
                 if (g_popMi == 0) g_card0.cfg = nc;
                 else g_card[g_popMi].cfg = nc;
                 saveIni(key, nc);
+                if (!playClickSound()) guikit::playHoverSound();
+                if (it == shui::PopItem::AutoToggle) KP_LOG(chUi, "TOGGLE member=%d auto=%d", g_popMi, (int)nc.autoOn);
+                static int clicks = 0;
+                if (clicks < 96) { ++clicks; KP_LOG(chUi, "POPCLICK m=%d row=%d", g_popMi, static_cast<int>(it)); }
             }
         } else if (onBtn >= 0) {
-            if (onBtn == 0) {   // leader button: LMB toggles auto only (no useNow, no popover)
-                if (g_card0.st != shui::BtnState::Hidden && g_card0.st != shui::BtnState::Down) {
-                    if (filewatch::changed(g_cfgPoll, IniPath, now, true)) loadCfg();   // pick up a hand edit before overwriting
-                    shui::CompCfg nc = shui::lookup(g_cfg, "slot0");
-                    nc.autoOn = !nc.autoOn;
-                    shui::upsert(g_cfg, "slot0", nc);
-                    g_card0.cfg = nc;
-                    saveIni("slot0", nc);
-                    KP_LOG(chUi, "TOGGLE member=0 auto=%d", (int)nc.autoOn);
-                }
+            if (onBtn == 0) {   // leader button: LMB uses a medpack on the leader (auto toggle lives in the RMB popover)
+                const shui::BtnState st0 = g_card0.st;
+                if (st0 == shui::BtnState::FullHp) KP_LOG(chCall, "CLICK member=0 noneed");
+                else if (st0 == shui::BtnState::NoItem) KP_LOG(chCall, "CLICK member=0 noitem");
+                else if (shui::clickAllowed(st0)) { KP_LOG(chCall, "CLICK member=0 ok"); useNow(ctx, now, 0, shui::clickMinCount(st0), "click"); }
             } else if (Card& c = g_card[onBtn]; shui::clickAllowed(c.st)) {
                 if (c.st == shui::BtnState::NoItem) KP_LOG(chCall, "CLICK member=%d noitem", onBtn);
                 else useNow(ctx, now, onBtn, shui::clickMinCount(c.st), "click");
             }
         } else if (popOpen) g_popMi = -1;
     } else if (haveCur && redge) {
-        if (onBtn == 0) { /* leader button: RMB does nothing, g_popMi never becomes 0 */ }
-        else if (onBtn > 0) g_popMi = (g_popMi == onBtn) ? -1 : onBtn;
+        if (onBtn >= 0) g_popMi = (g_popMi == onBtn) ? -1 : onBtn;   // 0 = leader, 1..2 = companions
         else if (popOpen && !inPop) g_popMi = -1;
     }
 
     // popover widgets
     popOpen = g_popMi >= 0;
+    int hoverRow = -1;
     if (popOpen) {
         Card& pc = (g_popMi == 0) ? g_card0 : g_card[g_popMi];
-        g_dbgBtn = pc.btn; g_dbgUnit = shui::popUnit(pc.btn);
-        L = shui::popoverLayout(shui::ringRect(pc.btn), screenW, g_dbgUnit);
+        L = popLayoutFor(pc, screenW, screenH);
+        g_dbgBtn = pc.btn; g_dbgUnit = g_popMet.unit;
         const shui::CompCfg& cfg = pc.cfg;
+        if (haveCur) { const int r = static_cast<int>(shui::popoverRowAt(L, cx, cy)); hoverRow = r != 0 ? r : -1; }
         wRect(g_w[W_PopBg], L.r[0]);
-        const int items[5] = { W_Auto, W_HpM, W_HpP, W_KeepM, W_KeepP };
-        for (int i = 0; i < 5; ++i) { wRect(g_w[items[i]], L.r[i + 1]); wText(g_w[items[i]], shui::popLabel(static_cast<shui::PopItem>(i + 1), cfg)); }
+        const shui::Rect& ra = L.r[1];
+        const int margin = g_popMet.margin, pillW = g_popMet.pillW, pillH = g_popMet.pillH;
+        wRect(g_w[W_AutoPill], shui::Rect{ ra.x + ra.w - pillW - margin, ra.y + (ra.h - pillH) / 2, pillW, pillH });
+        wRect(g_w[W_Auto], shui::Rect{ ra.x + margin, ra.y, ra.w - pillW - 3 * margin, ra.h });
+        wText(g_w[W_Auto], shui::popAutoCaption());
+        const int items[4] = { W_HpM, W_HpP, W_KeepM, W_KeepP };
+        for (int i = 0; i < 4; ++i) { wRect(g_w[items[i]], L.r[i + 2]); wText(g_w[items[i]], shui::popLabel(static_cast<shui::PopItem>(i + 2), cfg)); }
         wRect(g_w[W_HpVal], shui::popValueRect(L, 2)); wText(g_w[W_HpVal], shui::popValueLabel(2, cfg));
         wRect(g_w[W_KeepVal], shui::popValueRect(L, 3)); wText(g_w[W_KeepVal], shui::popValueLabel(3, cfg));
+        wPill(g_w[W_AutoPill], cfg.autoOn, hoverRow == shui::Row_Auto);
     }
     for (int i = W_PopBg; i < W_Ring0; ++i) wShow(g_w[i], popOpen);
+    if (popOpen) {   // after wShow: popStyle resets the text colour on every show
+        const shui::CompCfg& cfg = (g_popMi == 0 ? g_card0 : g_card[g_popMi]).cfg;
+        if (cfg.autoOn) wTextColor(g_w[W_Auto], 140.f / 255.f, 1.f, 215.f / 255.f); else wTextColor(g_w[W_Auto], 0.62f, 0.67f, 0.64f);
+        const int rowOf[4] = { shui::Row_HpM, shui::Row_HpP, shui::Row_KeepM, shui::Row_KeepP };
+        const int itemOf[4] = { W_HpM, W_HpP, W_KeepM, W_KeepP };
+        for (int i = 0; i < 4; ++i) { if (hoverRow == rowOf[i]) wTextColor(g_w[itemOf[i]], 208.f / 255.f, 204.f / 255.f, 170.f / 255.f); else wTextColor(g_w[itemOf[i]], 0.85f, 0.95f, 0.85f); }
+    }
+    if (hoverRow != g_popHover) {   // edge-gated hover sound + log (the engine does not hover our rects; we hit-test ourselves)
+        g_popHover = hoverRow;
+        if (hoverRow > 0) {
+            guikit::playHoverSound();
+            static int hovers = 0;
+            if (hovers < 48) { ++hovers; KP_LOG(chUi, "POPHOVER m=%d row=%d", g_popMi, hoverRow); }
+        }
+    }
     popDiag(popOpen);
     popRowLog(popOpen, g_popMi, screenW);
     int ns = 0;   // rects the RMB camera hook must not turn into a camera drag: buttons, rings, popover bg
@@ -1154,7 +1238,7 @@ void buildWidgets(uintptr_t panel) {
         if (!kLeaderWidgets && (idx == W_DiscLeader || idx == W_FrameLeader || idx == W_BtnLeader || idx == W_RingLeader)) { ++n; return; }
         int why = 0;
         // Popover rows are 16-24 px; engine Draw 0x47B500 drops a vertically-centred (0x10) single line when box h < line h (V3.md F3, SPECULATIVE at this px/unit), so they are top-aligned (10 = 0x08 top | 2 centre-h; 17 = 0x11 still has the 0x10 bit). POP/POPROW log lines prove or refute this.
-        const unsigned al = (idx >= W_Auto && idx <= W_KeepVal) ? 10u : 18u;
+        const unsigned al = idx == W_Auto ? 9u : ((idx > W_Auto && idx <= W_KeepVal) ? 10u : 18u);   // Auto-heal caption left-aligned (9 = top|left), other popover text 10 = top|centre-h
         uintptr_t c = makeLabel(panel, tmpl, text, font, &why, al);
         if (!c && !strcmp(tmpl, "LBL_MOULDING3")) { c = makeLabel(panel, "LBL_QUEUE1", text, font, &why, al); if (c) whys += std::string(name) + ":moulding3 fallback ";}
         g_w[idx].c = c; g_w[idx].txt = text ? text : "";
@@ -1171,6 +1255,7 @@ void buildWidgets(uintptr_t panel) {
     add(W_Btn1, "LBL_QUEUE1", "+", true, "btn1");
     add(W_BtnLeader, "LBL_QUEUE1", "+", true, "btnLeader");   // Leader button (member 0)
     add(W_PopBg, "LBL_MOULDING3", nullptr, false, "popbg");
+    add(W_AutoPill, "LBL_QUEUE1", nullptr, false, "autopill");   // toggle pill texture under the Auto-heal caption
     add(W_Auto, "LBL_QUEUE1", "Auto", true, "auto");
     add(W_HpM, "LBL_QUEUE1", "-", true, "hpm");
     add(W_HpP, "LBL_QUEUE1", "+", true, "hpp");
@@ -1225,7 +1310,7 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     loadIni();
     loadCfg();
     filewatch::accept(g_cfgPoll, IniPath);
-    KP_LOG(chMain, "0.7.0-dev ui=popalign10+disc2: probe call=%d CallKey=0x%02X kick=%d cfg rows=%d", g_probeCall, g_callKey, (int)g_kick, (int)g_cfg.rows.size());
+    KP_LOG(chMain, "0.8.0-dev ui=popsize+togglepill+leaderclick: probe call=%d CallKey=0x%02X kick=%d cfg rows=%d", g_probeCall, g_callKey, (int)g_kick, (int)g_cfg.rows.size());
     g_ps.init(api, "companion-selfheal");
     g_ps.onConnect = onConnect;
     g_ps.add(K2PS_FRAME_BEGIN, 300, onFrameBegin);

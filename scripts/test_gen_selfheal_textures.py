@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Tests for scripts/gen_selfheal_textures.py: names, TGA headers, cross/ring geometry, deterministic, committed .inc fresh."""
+"""Tests for scripts/gen_selfheal_textures.py: names, TGA headers, cross/disc/toggle/ring geometry, deterministic, committed .inc fresh."""
+import functools
 import io
 import math
 import os
@@ -23,12 +24,25 @@ from PIL import Image  # noqa: E402
 sys.path.insert(0, str(HERE))
 import gen_selfheal_textures as gt  # noqa: E402
 
-EXPECTED = {"csh_cross": (32, 32), "csh_disc": (48, 48), "csh_disc_hi": (48, 48), **{f"csh_ring{k}": (48, 48) for k in range(8)}}
+TOG = ("csh_tog_off", "csh_tog_off_hi", "csh_tog_on", "csh_tog_on_hi")
+EXPECTED = {"csh_cross": (32, 32), "csh_disc": (48, 48), "csh_disc_hi": (48, 48), **{n: (128, 32) for n in TOG},
+            **{f"csh_ring{k}": (48, 48) for k in range(8)}}
+ORDER = ["csh_cross", "csh_disc", "csh_disc_hi", *TOG, *[f"csh_ring{k}" for k in range(8)]]
+
+
+def _fresh():
+    with tempfile.TemporaryDirectory() as td:
+        return [(p.stem, p.read_bytes()) for p in gt.make_all(Path(td))]
+
+
+@functools.lru_cache(maxsize=None)
+def _cached():
+    return tuple(_fresh())
 
 
 def gen():
-    with tempfile.TemporaryDirectory() as td:
-        return [(p.stem, p.read_bytes()) for p in gt.make_all(Path(td))]
+    """Blobs in INC order. Rendered once per test run: the toggle and disc supersampling is the slow part."""
+    return _cached()
 
 
 def img(data):
@@ -72,8 +86,87 @@ class GenSelfHealTextures(unittest.TestCase):
     def test_inc_order_and_count(self):
         t = gt.INC.read_text()
         names = re.findall(r'^    \{ "(csh_\w+)", SHTex_', t, re.M)
-        self.assertEqual(names, ["csh_cross", "csh_disc", "csh_disc_hi"] + [f"csh_ring{k}" for k in range(8)])
+        self.assertEqual(names, ORDER)
+        self.assertEqual(names[-1], "csh_ring7")
         self.assertIn(f"kSelfHealTextureCount = {len(names)}u", t)
+
+    def test_toggle_corners_transparent(self):
+        blobs = dict(gen())
+        for name in TOG:
+            im = img(blobs[name])
+            for xy in ((0, 0), (127, 0), (0, 31), (127, 31)):
+                self.assertEqual(im.getpixel(xy)[3], 0, (name, xy))
+
+    def test_toggle_pill_shape(self):
+        blobs = dict(gen())
+        # full-size pill: the left and right end columns are rim at mid-height (the cap reaches the canvas edge)
+        for name in ("csh_tog_off", "csh_tog_on"):
+            im = img(blobs[name])
+            self.assertGreaterEqual(im.getpixel((0, 16))[3], 250, name)
+            self.assertGreaterEqual(im.getpixel((127, 16))[3], 250, name)
+        # hi pills are inset, so their end columns are empty
+        for name in ("csh_tog_off_hi", "csh_tog_on_hi"):
+            im = img(blobs[name])
+            self.assertEqual(im.getpixel((0, 16))[3], 0, name)
+            self.assertEqual(im.getpixel((127, 16))[3], 0, name)
+
+    def test_toggle_knob_side(self):
+        blobs = dict(gen())
+        for name in TOG:
+            on = name.startswith("csh_tog_on")
+            im = img(blobs[name])
+            half = lambda x0, x1: sum(im.getpixel((x, y))[3] for x in range(x0, x1) for y in range(32)) / ((x1 - x0) * 32)
+            left, right = half(0, 64), half(64, 128)
+            if on:
+                self.assertGreater(right, left + 5, (name, left, right))   # knob on the right
+            else:
+                self.assertGreater(left, right + 5, (name, left, right))   # knob on the left
+            knob, far = ((112, 16), (16, 16)) if on else ((16, 16), (112, 16))
+            colour = (140, 255, 215) if on else (150, 160, 155)
+            p = im.getpixel(knob)
+            self.assertEqual(p[3], 255, (name, knob))
+            self.assertTrue(all(abs(p[i] - t) <= 3 for i, t in enumerate(colour)), (name, p))
+            self.assertLess(im.getpixel(far)[3], 255, (name, far))   # no knob at the far cap
+
+    def test_toggle_rims(self):
+        blobs = dict(gen())
+        expect = {"csh_tog_off": ((64, 0), (60, 90, 85)), "csh_tog_on": ((64, 0), (10, 96, 80)),
+                  "csh_tog_off_hi": ((64, 3), (208, 204, 170)), "csh_tog_on_hi": ((64, 3), (208, 204, 170))}
+        for name, (xy, colour) in expect.items():
+            p = img(blobs[name]).getpixel(xy)
+            self.assertEqual(p[3], 255, (name, xy))
+            self.assertTrue(all(abs(p[i] - t) <= 3 for i, t in enumerate(colour)), (name, p))
+
+    def test_toggle_hi_halo(self):
+        blobs = dict(gen())
+        for name in ("csh_tog_off_hi", "csh_tog_on_hi"):
+            im = img(blobs[name])
+            p = im.getpixel((64, 2))   # just outside the beige rim (pill edge at y=3): halo alpha ~82
+            self.assertTrue(40 <= p[3] <= 120, (name, p))
+            self.assertTrue(all(abs(p[i] - t) <= 6 for i, t in enumerate((208, 204, 170))), (name, p))
+            for k in range(128):   # the halo fades out before the canvas edge, so nothing is clipped
+                for xy in ((k, 0), (k, 31)):
+                    self.assertEqual(im.getpixel(xy)[3], 0, (name, xy))
+            for k in range(32):
+                for xy in ((0, k), (127, k)):
+                    self.assertEqual(im.getpixel(xy)[3], 0, (name, xy))
+
+    def test_toggle_hi_differs(self):
+        blobs = dict(gen())
+        beige = lambda p: p[3] > 200 and all(abs(p[i] - t) <= 3 for i, t in enumerate((208, 204, 170)))
+        pixels = lambda data: [img(data).getpixel((x, y)) for y in range(32) for x in range(128)]
+        for base in ("csh_tog_off", "csh_tog_on"):
+            self.assertNotEqual(blobs[base], blobs[base + "_hi"])
+            self.assertFalse(any(beige(p) for p in pixels(blobs[base])), base)
+            self.assertTrue(any(beige(p) for p in pixels(blobs[base + "_hi"])), base + "_hi")
+
+    def test_toggle_on_inner_glow(self):
+        blobs = dict(gen())
+        self.assertEqual(img(blobs["csh_tog_off"]).getpixel((64, 4)), (0, 0, 0, 175))   # plain fill, no glow
+        r, g, b, a = img(blobs["csh_tog_on"]).getpixel((64, 4))
+        self.assertGreater(a, 175)
+        self.assertGreater(g, r + 15)
+        self.assertGreater(b, r)
 
     def test_disc_corners_transparent(self):
         blobs = dict(gen())
@@ -143,7 +236,7 @@ class GenSelfHealTextures(unittest.TestCase):
             self.assertLess(diff, 15, (name, ang))
 
     def test_deterministic(self):
-        self.assertEqual(gen(), gen())
+        self.assertEqual(list(gen()), _fresh())
 
     def test_private_names_in_inc(self):
         t = gt.INC.read_text()
