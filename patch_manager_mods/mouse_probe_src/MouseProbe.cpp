@@ -1,13 +1,16 @@
-// Mouse Probe 0.3.0 -- diagnostics for the Wine mouse/camera investigation
+// Mouse Probe 0.4.0 -- Wine mouse/camera fix + diagnostics
 // (patch_manager_mods/18_mouse_camera_investigation.md). Hooks read engine memory through SafeRead and
-// log through KpLog.h. The only engine write is the sanitizeNorm path in ProbeMouseNorm (this+0x408/+0x40C), on by default (sanitize_norm=1 in [mouse_fix]; set 0 in the ini to turn it off).
+// log through KpLog.h. There are two engine writes, both gated by [mouse_fix] enabled in mouse_probe.ini and
+// on by default: (1) sanitizeNorm (sanitize_norm=1) in ProbeMouseNorm, which overwrites the normalised
+// delta at this+0x408/+0x40C; (2) SYNTHDBL (synth_dblclk=1) at OnMouseMessage, which rewrites the message id
+// at msg+4 to WM_LBUTTONDBLCLK when Wine drops the double click. Every other hook only reads through SafeRead.
 //
 // Logging (0.2.0): channels main (START), raw (RAW), polls (POLLS), norm (NORM), drag (DRAGSTATE,
 // STUCKDRAG? at WARN), cam (CAM). On a core with the kpatch.log service, kplog.ini [mouse-probe]
 // switches them on and the lines land in mouse-probe_log.txt with the core's T=/f= prefix. On the old
 // core (no service, KPatchInit never runs) the header's fallback sink writes mouseprobe_log.txt as
 // before and the legacy flag file "mouseprobe.txt" (polled every ~30 hook calls; delete = kill switch)
-// toggles the fallback level, so behaviour matches 0.1.0 apart from the line prefix.
+// toggles the fallback level. With [mouse_fix] enabled=0 the probe behaves as 0.1.0 (read-only) apart from the line prefix.
 //
 // 0.3.0 adds the "click" channel (doc 18 "Double-click chain (traced)"): CLICK (every WM_*BUTTON* message at
 // OnMouseMessage 0x72E039, with the SetCursorPos guard this+0x3EC and time/distance since the last 0x201), DBLACT
