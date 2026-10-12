@@ -6,9 +6,22 @@
   "fix_commit": "da75b91e67c661204745f9311cc8101b002989c3",
   "true_root_cause": "QueueHudLogic::shouldReInject returned hasFollowLeader with no completion signal. A spell that had finished normally (the engine had shown it executing, then it left the queue) was treated as eaten and re-cast whenever a follower AI entry (0x3D) was queued for the member. Fixed in da75b91 by gating the re-inject on sawExecuting (AV_EXECUTED): once the engine showed the action executing, a later vanish is treated as completed, not re-cast.",
   "blind_forbidden_terms": [
-    "queuehudlogic", "shouldreinject", "hasfollowleader", "sawexecuting", "av_executed", "seeninqueue",
-    "queuehud.cpp", "queuehudlogic.h", "gatherfor", "da75b91", "7f83a08", "bg09", "doc 30", "doc30",
-    "37_bug_board", "queue_hud_src"
+    "queuehudlogic",
+    "shouldreinject",
+    "hasfollowleader",
+    "sawexecuting",
+    "av_executed",
+    "seeninqueue",
+    "queuehud.cpp",
+    "queuehudlogic.h",
+    "gatherfor",
+    "da75b91",
+    "7f83a08",
+    "bg09",
+    "doc 30",
+    "doc30",
+    "37_bug_board",
+    "queue_hud_src"
   ],
   "forbidden_terms_note": "Matched case-insensitively against the WHOLE unit prompt. Function/file names, the fix flag names, the commit ids and the board id only. Words that appear in real log lines (reinject, re-injecting, VANISH, follower, executed, eaten_paused) are evidence, not leaks, and are deliberately NOT forbidden.",
   "exclude_from_blind": [
@@ -28,11 +41,25 @@
   ],
   "score_rubric": {
     "facts": {
-      "completed_spell_recast": ["re-?inject", "re-?cast", "cast (a )?(second|twice|again)", "(finished|completed|executed|already (ran|cast)).{0,80}(again|re-?inject|re-?cast)", "(again|re-?inject|re-?cast).{0,80}(finished|completed|executed)"],
-      "follower_queue_entry": ["follower", "0x3d", "ai entry", "companion"]
+      "completed_spell_recast": [
+        "already (ran|run|cast|executed|finished|completed)",
+        "actually (executed|ran|run|cast|fired|completed)",
+        "(finished|completed) (normally|spell|cast)",
+        "(original|first) (action |cast |one )?(was|had been) (visibly )?(cast|executed|run|completed)",
+        "(had|has) (already )?(finished|completed|executed)"
+      ],
+      "follower_queue_entry": [
+        "follower",
+        "0x3d",
+        "ai entry",
+        "companion"
+      ]
     },
-    "hit": ["completed_spell_recast", "follower_queue_entry"],
-    "note": "Deterministic label, run on claim+mechanism only. HIT = a re-cast/re-inject of an already finished action AND the follower/companion queue entry; PARTIAL = one of them; MISS = neither. Rubric label, not truth. Caveat: the log's eaten_paused re-injects are a legitimate engine behaviour; only a re-inject after the action completed is the bug."
+    "hit": [
+      "completed_spell_recast",
+      "follower_queue_entry"
+    ],
+    "note": "Deterministic label, run on claim+mechanism only. HIT = a re-cast/re-inject of an already finished action AND the follower/companion queue entry; PARTIAL = one of them; MISS = neither. Rubric label, not truth. Caveat: the log's eaten_paused re-injects are a legitimate engine behaviour; only a re-inject after the action completed is the bug. Tightened 2026-10-12 after a 5/8 hand check: completed_spell_recast now requires the hypothesis to say the action had already run/finished, not just that a re-inject or a second cast can happen."
   },
   "notes": "Second known-answer case for the M4 measurement. Pre-fix log is queue-hud_log.txt (mtime 18:17, before the 20:17 fix). Multi-member condition (follower AI entry) is present, unlike the hotbar log. Ground truth may be only weakly visible in the log: the log shows eaten_paused re-injects and VANISH:executed with reinj=0, so 'insufficient' is a defensible answer. Rehearsal 2026-10-11 (stub, $0): no forbidden-term refusal, unit prompts about 11 KB, 10 excerpts with 3 hits of 're-injecting eaten spell' but NO follower/0x3d text in the excerpts (the follower condition is not visible to the blind units, so a HIT is hard); score on the mechanism (completed spell re-cast, follower entry)."
 }
