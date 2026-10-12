@@ -2,8 +2,8 @@
 name: bug-investigate
 description: >-
   Investigate a KOTOR II player bug report blind, from the mod logs alone: build a scrubbed evidence bundle, run
-  skeptic/advocate/evidence hypothesis units plus a "not a bug" null unit through the swarm runner (stub engine
-  only for now), quote-check every citation, verify the survivors, and write a ranked report for a human to review.
+  skeptic/advocate/evidence hypothesis units plus a "not a bug" null unit through the swarm runner (stub engine by
+  default; real Haiku only after an explicit spend yes), quote-check every citation, verify the survivors, and write a ranked report for a human to review.
   Use when a player reports a bug (crash, wrong behaviour, UI glitch, "it did X instead of Y") and mod logs exist,
   or when the user says "bug investigate", "blind investigation", "triage this report", or "what do the logs say
   about this bug". Not for reading raw logs by hand (use kotor2-log-analysis) or for crashes of the game process
@@ -59,7 +59,7 @@ Every report ends with "a human must review this report before any fix is starte
 
 ## 6. Safety
 
-- Stub only. `--engine real` exits 2 before anything is written, and stays disabled until a paid canary batch has a human go.
+- `--engine stub` is the default for rehearsal ($0). `--engine real` needs BOTH `--claude-bin ABS` and `--yes-spend USD` (>= `--cap-total`, `--cap-total` <= 1.00) or it exits 2 before anything is written; the orchestrator runs `swarm_run.py probe` first, which checks the sandbox and the login at $0. Spend only after the user says yes in chat with the ceiling named; pilot 2026-10-11 cost about $0.014 (see `swarm_m2_safety.handoff.md`, "M4"). Role schemas must not carry `$schema` (the claude CLI rejects draft 2020-12 offline).
 - Never `cat`, `tail` or `grep` a raw `*_log.txt`. The bundle builder is the only log reader; it scrubs paths and caps size.
 - No environment variable picks a binary or the runner. `--swarm-run` is explicit.
 - With a case, a unit prompt containing any `blind_forbidden_terms` entry is refused (case-insensitive) and nothing runs.
