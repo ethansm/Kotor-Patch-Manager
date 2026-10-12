@@ -113,19 +113,19 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason != DLL_PROCESS_ATTACH) return TRUE;
     if (!configEnabled()) {
         g_state = 0;
-        setLoad(KPLOG_INFO, "k2-activation-fix 1.1.0 loaded: DISABLED by activationfix.txt (site 0x%08x untouched) pid=%lu", (unsigned)SitePost, GetCurrentProcessId());
+        setLoad(KPLOG_INFO, "k2-activation-fix 0.1.1 loaded: DISABLED by activationfix.txt (site 0x%08x untouched) pid=%lu", (unsigned)SitePost, GetCurrentProcessId());
         return TRUE;
     }
     uint8_t repl[6] = { 0xE8, 0, 0, 0, 0, 0x90 };
     codepatch::putRel32(repl + 1, SitePost + 1, reinterpret_cast<uintptr_t>(&ActFixMoviePost));
     g_state = writeSite(SitePost, SiteOrig, repl, 6, g_seen);
     if (g_state == 1)
-        setLoad(KPLOG_INFO, "k2-activation-fix 1.1.0 loaded: site 0x%08x patched (CALL [PostMessageA] -> ActFixMoviePost %p) pid=%lu",
+        setLoad(KPLOG_INFO, "k2-activation-fix 0.1.1 loaded: site 0x%08x patched (CALL [PostMessageA] -> ActFixMoviePost %p) pid=%lu",
              (unsigned)SitePost, reinterpret_cast<void*>(&ActFixMoviePost), GetCurrentProcessId());
     else if (g_state == -1)
-        setLoad(KPLOG_WARN, "k2-activation-fix 1.1.0 loaded: REFUSED(bytes %02x %02x %02x %02x %02x %02x, expected ff 15 6c 64 98 00) site 0x%08x untouched pid=%lu",
+        setLoad(KPLOG_WARN, "k2-activation-fix 0.1.1 loaded: REFUSED(bytes %02x %02x %02x %02x %02x %02x, expected ff 15 6c 64 98 00) site 0x%08x untouched pid=%lu",
              g_seen[0], g_seen[1], g_seen[2], g_seen[3], g_seen[4], g_seen[5], (unsigned)SitePost, GetCurrentProcessId());
     else
-        setLoad(KPLOG_WARN, "k2-activation-fix 1.1.0 loaded: REFUSED(%s) site 0x%08x untouched pid=%lu", g_state == -2 ? "protect" : "unmapped", (unsigned)SitePost, GetCurrentProcessId());
+        setLoad(KPLOG_WARN, "k2-activation-fix 0.1.1 loaded: REFUSED(%s) site 0x%08x untouched pid=%lu", g_state == -2 ? "protect" : "unmapped", (unsigned)SitePost, GetCurrentProcessId());
     return TRUE;
 }

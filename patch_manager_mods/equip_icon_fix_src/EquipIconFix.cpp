@@ -165,7 +165,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) { KpLog_Init(api); emit
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason != DLL_PROCESS_ATTACH) return TRUE;
     if (!configEnabled()) {
-        setLoad(KPLOG_INFO, "k2-equip-icon-fix 1.1.0 loaded: DISABLED by equipiconfix.txt (8 sites untouched) pid=%lu", GetCurrentProcessId());
+        setLoad(KPLOG_INFO, "k2-equip-icon-fix 0.1.1 loaded: DISABLED by equipiconfix.txt (8 sites untouched) pid=%lu", GetCurrentProcessId());
         emitLoadLine();   // unpatched: nothing later emits it
         return TRUE;
     }
@@ -189,12 +189,12 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
         }
     }
     if (g_state == 1)
-        setLoad(KPLOG_INFO, "k2-equip-icon-fix 1.1.0 loaded: 8 sites patched (pass 0x8ABA8C, defer 0x8ADA08/0x8ADA81/0x8AE793, set x4) pid=%lu", GetCurrentProcessId());
+        setLoad(KPLOG_INFO, "k2-equip-icon-fix 0.1.1 loaded: 8 sites patched (pass 0x8ABA8C, defer 0x8ADA08/0x8ADA81/0x8AE793, set x4) pid=%lu", GetCurrentProcessId());
     else if (g_state == -1)
-        setLoad(KPLOG_WARN, "k2-equip-icon-fix 1.1.0 loaded: REFUSED(bytes %02x %02x %02x %02x %02x at 0x%08x) all sites untouched pid=%lu",
+        setLoad(KPLOG_WARN, "k2-equip-icon-fix 0.1.1 loaded: REFUSED(bytes %02x %02x %02x %02x %02x at 0x%08x) all sites untouched pid=%lu",
              g_seen[0], g_seen[1], g_seen[2], g_seen[3], g_seen[4], (unsigned)Sites[g_badSite].at, GetCurrentProcessId());
     else
-        setLoad(KPLOG_WARN, "k2-equip-icon-fix 1.1.0 loaded: REFUSED(%s at 0x%08x)%s pid=%lu", g_state == -2 ? "protect" : "unmapped", (unsigned)Sites[g_badSite].at,
+        setLoad(KPLOG_WARN, "k2-equip-icon-fix 0.1.1 loaded: REFUSED(%s at 0x%08x)%s pid=%lu", g_state == -2 ? "protect" : "unmapped", (unsigned)Sites[g_badSite].at,
              g_state == -2 && g_badSite > 0 ? " PARTIAL WRITE" : " all sites untouched", GetCurrentProcessId());
     // Unpatched: no thread or hook runs later to emit the line, so write it now (fallback sink, as 1.0.0 did).
     if (g_state == 1) CloseHandle(CreateThread(nullptr, 0, statsThread, nullptr, 0, nullptr));

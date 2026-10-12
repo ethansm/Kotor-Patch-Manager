@@ -19,7 +19,7 @@ static BOOL __stdcall FakePost(HWND h, UINT m, WPARAM w, LPARAM l) { ++g_posts; 
 static char* g_log;   // heap: a static buffer would sit in .bss in front of pad and push it past 0x40D692
 static void readLog() { if (!g_log) g_log = (char*)malloc(16384); g_log[0] = 0; FILE* f = fopen("activationfix_log.txt", "r"); if (!f) return; size_t k = fread(g_log, 1, 16383, f); g_log[k] = 0; fclose(f); }
 static int count(const char* s) { int n = 0; for (const char* p = g_log; (p = strstr(p, s)) != nullptr; ++p) ++n; return n; }
-static void checkLoadOnce() { int n = 0; if (g_log) for (const char* p = g_log; (p = strstr(p, " 1.1.0 loaded: ")) != nullptr; ++p) ++n; check(n == 1, "log: load line appears exactly once"); }
+static void checkLoadOnce() { int n = 0; if (g_log) for (const char* p = g_log; (p = strstr(p, " 0.1.1 loaded: ")) != nullptr; ++p) ++n; check(n == 1, "log: load line appears exactly once"); }
 // Calls the fake fragment and returns ESP after minus ESP before (0 = stack balanced, i.e. the replacement pops 16 bytes).
 static int callSite() {
     int delta;
@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
         if (fgOurs) check(g_posts == 0 && d3 == 0, "real foreground check (harness window in front): dropped");
         else printf("SKIP real foreground check: harness window is not foreground under this Wine session (posts=%d)\n", g_posts);
         readLog(); checkLoadOnce();
-        check(strstr(g_log, "k2-activation-fix 1.1.0 loaded: site 0x0040d69e patched") != nullptr, "log: patched line");
+        check(strstr(g_log, "k2-activation-fix 0.1.1 loaded: site 0x0040d69e patched") != nullptr, "log: patched line");
         check(count("IGNORED synthetic WM_ACTIVATEAPP(0,0)") == (fgOurs ? 2 : 1) && count("PASSED movie-thread post msg=001c") == 1, "log: IGNORED/PASSED lines");
         check(strstr(g_log, "a1b4e0=1 76c=1") != nullptr, "log: engine flags recorded");
     } else if (!strcmp(mode, "disabled")) {

@@ -27,7 +27,7 @@ static int g_ctrlObj;
 static int scenario(int tpc, int ctrl) { static Tex t; memset(&t, 0, sizeof t); t.vt = g_vt; t.isTpc = tpc; t.ctrl = ctrl ? &g_ctrlObj : 0; return runTail(&t); }
 static char* g_log;
 static void readLog() { if (!g_log) g_log = (char*)malloc(8192); g_log[0] = 0; FILE* f = fopen("texmem_log.txt", "r"); if (!f) return; size_t k = fread(g_log, 1, 8191, f); g_log[k] = 0; fclose(f); }
-static void checkLoadOnce() { int n = 0; if (g_log) for (const char* p = g_log; (p = strstr(p, " 1.1.0 loaded: ")) != nullptr; ++p) ++n; check(n == 1, "log: load line appears exactly once"); }
+static void checkLoadOnce() { int n = 0; if (g_log) for (const char* p = g_log; (p = strstr(p, " 0.1.1 loaded: ")) != nullptr; ++p) ++n; check(n == 1, "log: load line appears exactly once"); }
 typedef int (__cdecl *StFn)(); typedef void (__cdecl *CtFn)(long*);
 int main(int argc, char** argv) {
     const char* mode = argc > 1 ? argv[1] : "run";
@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
         check(scenario(1, 0) == 1, "TPC without controller: FREED (the fix)");
         check(scenario(1, 1) == 0, "TPC with controller: kept (guard)");
         ct(c); check(c[0] == 1 && c[1] == 1, "counters tpc_freed=1 tpc_kept_controller=1");
-        check(strstr(g_log, "k2-texture-memory-release 1.1.0 loaded: site 0x004261cf patched") != NULL, "log: patched line");
+        check(strstr(g_log, "k2-texture-memory-release 0.1.1 loaded: site 0x004261cf patched") != NULL, "log: patched line");
     } else if (!strcmp(mode, "disabled")) {
         check(st() == 0 && memcmp(s, before, 7) == 0, "disabled: site untouched");
         check(scenario(1, 0) == 0, "disabled: TPC kept (engine)");

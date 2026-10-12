@@ -116,18 +116,18 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) { KpLog_Init(api); emit
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason != DLL_PROCESS_ATTACH) return TRUE;
     if (!configEnabled()) {
-        setLoad(KPLOG_INFO, "k2-texture-memory-release 1.1.0 loaded: DISABLED by texmem.txt (site 0x004261cf untouched) pid=%lu", GetCurrentProcessId());
+        setLoad(KPLOG_INFO, "k2-texture-memory-release 0.1.1 loaded: DISABLED by texmem.txt (site 0x004261cf untouched) pid=%lu", GetCurrentProcessId());
         emitLoadLine();   // unpatched: nothing later emits it
         return TRUE;
     }
     g_state = apply();
     if (g_state == 1)
-        setLoad(KPLOG_INFO, "k2-texture-memory-release 1.1.0 loaded: site 0x004261cf patched (cave %p) pid=%lu", (void*)g_cave, GetCurrentProcessId());
+        setLoad(KPLOG_INFO, "k2-texture-memory-release 0.1.1 loaded: site 0x004261cf patched (cave %p) pid=%lu", (void*)g_cave, GetCurrentProcessId());
     else if (g_state == -1)
-        setLoad(KPLOG_WARN, "k2-texture-memory-release 1.1.0 loaded: REFUSED(bytes %02x %02x %02x %02x %02x %02x %02x at 0x004261cf; perf-lab tx=1 active?) site untouched pid=%lu",
+        setLoad(KPLOG_WARN, "k2-texture-memory-release 0.1.1 loaded: REFUSED(bytes %02x %02x %02x %02x %02x %02x %02x at 0x004261cf; perf-lab tx=1 active?) site untouched pid=%lu",
              g_seen[0], g_seen[1], g_seen[2], g_seen[3], g_seen[4], g_seen[5], g_seen[6], GetCurrentProcessId());
     else
-        setLoad(KPLOG_WARN, "k2-texture-memory-release 1.1.0 loaded: REFUSED(%s) site untouched pid=%lu", g_state == -2 ? "protect" : g_state == -3 ? "unmapped" : "cave alloc", GetCurrentProcessId());
+        setLoad(KPLOG_WARN, "k2-texture-memory-release 0.1.1 loaded: REFUSED(%s) site untouched pid=%lu", g_state == -2 ? "protect" : g_state == -3 ? "unmapped" : "cave alloc", GetCurrentProcessId());
     // Unpatched: no thread or hook runs later to emit the line, so write it now (fallback sink, as 1.0.0 did).
     if (g_state == 1) CloseHandle(CreateThread(nullptr, 0, helperThread, nullptr, 0, nullptr));
     else emitLoadLine();

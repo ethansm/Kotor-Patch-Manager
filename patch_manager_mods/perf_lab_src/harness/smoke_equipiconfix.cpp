@@ -105,7 +105,7 @@ static void putJmp(uintptr_t at, void* to) { unsigned char b[7] = { 0xB8, 0, 0, 
 static void putCall(uintptr_t at, uintptr_t target) { unsigned char b[6] = { 0xE8, 0, 0, 0, 0, 0xC3 }; int32_t d = (int32_t)(target - (at + 5)); memcpy(b + 1, &d, 4); memcpy((void*)at, b, 6); }
 static char* g_log;   // heap: static buffers in .bss sit in front of pad
 static void readLog() { if (!g_log) g_log = (char*)malloc(16384); g_log[0] = 0; FILE* f = fopen("equipiconfix_log.txt", "r"); if (!f) return; size_t k = fread(g_log, 1, 16383, f); g_log[k] = 0; fclose(f); }
-static void checkLoadOnce() { int n = 0; if (g_log) for (const char* p = g_log; (p = strstr(p, " 1.1.0 loaded: ")) != nullptr; ++p) ++n; check(n == 1, "log: load line appears exactly once"); }
+static void checkLoadOnce() { int n = 0; if (g_log) for (const char* p = g_log; (p = strstr(p, " 0.1.1 loaded: ")) != nullptr; ++p) ++n; check(n == 1, "log: load line appears exactly once"); }
 typedef int (__cdecl *GetSt)(); typedef void (__cdecl *GetCnt)(long*);
 int main(int argc, char** argv) {
     const char* mode = argc > 1 ? argv[1] : "run";
@@ -149,7 +149,7 @@ int main(int argc, char** argv) {
         printf("counters passes=%ld deferred=%ld cancelled=%ld applied=%ld sets=%ld outside=%ld replaced=%ld\n", c[0], c[1], c[2], c[3], c[4], c[5], c[6]);
         check(c[0] == NF && c[1] >= 2 * NF && c[2] + c[3] + c[6] == c[1] && c[5] == 0, "counters: one pass per frame, >= 2 deferred per pass, each cancelled, replaced or applied");
         Sleep(10500); readLog(); checkLoadOnce();
-        check(strstr(g_log, "k2-equip-icon-fix 1.1.0 loaded: 8 sites patched") != nullptr, "log: patched line");
+        check(strstr(g_log, "k2-equip-icon-fix 0.1.1 loaded: 8 sites patched") != nullptr, "log: patched line");
         check(strstr(g_log, "CANCEL ctl=") != nullptr && strstr(g_log, "deferred 'iweap_l' superseded by 'iw_vbroshort_001'") != nullptr, "log: CANCEL event names the alternation");
         check(strstr(g_log, "STATS passes=15") != nullptr, "log: STATS line");
     } else if (!strcmp(mode, "disabled")) {
