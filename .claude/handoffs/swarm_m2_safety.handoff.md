@@ -332,3 +332,9 @@ Plan: "Swarm library: next phases (M2 safety now; M3-M5 as stubs)". Updated 2026
 - Gate check (must print nothing): `pgrep -af 'run_fix|run_map|run_integrate|fix_checks' | grep -v pgrep`
 - Once clear: M2.0 step 1 (BUNDLE + FORK git repos, tarball to `~/.claude/swarm/backups/`), then step 2 baselines.
 - Do not edit `BUNDLE/engine/` or `.claude/review/fix/` while a run is live.
+
+## M4 measurement (2026-10-12, pilot scale)
+- Done: resolver `ac551e2`, scorer `63ecdb6`, cases + rubric `e4a188c` `fc03108` `58b1fda`. Paid $0.704 total (hotbar $0.041, BG09 $0.058, Sonnet verify $0.604); user yes at G1/G2 ($0.45 each) and G3 ($1.00).
+- Result and numbers: `.claude/reviews/bug_investigate_m4_measurement.md`. Headlines: hotbar precision_hit 0.277 [0.169, 0.418] (n=47), rank-1 HIT 5/5; BG09 0.063 [0.017, 0.201] (n=32), rank-1 HIT 0/5; null `insufficient` 10/10; advocate valid 27/28 with 0 short ids (pilot truncation did not recur; resolver never exercised live); verify layer covered only 28/79 hypotheses, rejected 2 (both MISS), abstained 22, about $0.022/unit.
+- D3 stays "layer 3 off". Verify per-call cap reservation left most units pending: fix the caps before any further verify run.
+- Run data in `~/.cache/bug_investigate/20261012T0400..0411Z-logic` (10 dirs, score.json each).
