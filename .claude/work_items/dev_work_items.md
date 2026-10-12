@@ -116,3 +116,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 100 | WI-22 | P3 | hold | L | - | Empty-container indicators (Mod 7, cancelled) | 7 | 1 | Empty-container indicators; cancelled, all 7 rows parked. |
 | [ ] | 101 | WI-69 | P3 | hold | S | - | Add plan ids to Source rows that have none [audit:plan-row-hygiene] | 0 | 0 | 5 closed items left plan rows unresolved |
 | [ ] | 102 | WI-70 | P3 | hold | S | - | Action Hotbar A11: extract picker tab filter/Same dedupe and panel box math | 0 | 3 | WI-10 leftover step 8 (optional M item) skipped; move ActionHotbar.cpp |
+| [ ] | 103 | WI-71 | P3 | hold | S | - | Inventory 3D viewport v2: PC-own-body armor/robe preview via 008cd060 (Branch B) | 0 | 0 | v1 uses the Workbench fixed row 137 and cat==4 (bodyvar folded in by g |
