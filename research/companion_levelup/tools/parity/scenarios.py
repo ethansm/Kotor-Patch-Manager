@@ -10,6 +10,8 @@ Exit 1 on any failure. --m32 builds and runs the 32-bit variant (T3); it is skip
 import os, subprocess, sys, tempfile, tomllib
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+KPM_DIR = os.path.expanduser(os.environ.get("KPM_DIR") or "~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager")
+COMMON_DIR = os.path.join(KPM_DIR, "Patches", "Common")  # KpLog.h + kpatch_api.h live only here (not vendored in-repo)
 ROOT = os.path.dirname(os.path.dirname(HERE))            # research/companion_levelup
 REPO = os.path.dirname(os.path.dirname(ROOT))
 TOML = os.path.join(REPO, "tests", "luo_scenarios", "saves.toml")
@@ -38,8 +40,10 @@ EXPECT_DECISIONS = {
 
 
 def build(exe, m32=False):
+    if not os.path.isdir(COMMON_DIR):
+        sys.exit("scenarios: missing %s (set KPM_DIR to the kotor-patch-manager checkout; KpLog.h/kpatch_api.h are not in this repo)" % COMMON_DIR)
     cmd = ["g++", "-std=c++17", "-O1", "-Wall", "-Wextra"] + (["-m32"] if m32 else []) + [
-        "-I", os.path.join(HERE, "stub"), "-I", os.path.join(HERE, "stub", "_shared"), "-I", os.path.join(HERE, "stub", "inc"), "-include", os.path.join(HERE, "stub", "m3_win_shim.h"), "-I", os.path.expanduser("~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common"), "-o", exe, SRC]
+        "-I", os.path.join(HERE, "stub"), "-I", os.path.join(HERE, "stub", "_shared"), "-I", os.path.join(HERE, "stub", "inc"), "-include", os.path.join(HERE, "stub", "m3_win_shim.h"), "-I", COMMON_DIR, "-o", exe, SRC]
     r = subprocess.run(cmd, capture_output=True, text=True)
     return r
 

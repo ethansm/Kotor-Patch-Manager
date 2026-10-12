@@ -9,6 +9,8 @@ diffs the DRY lines (cases keyed by preset id, with a Class-Skill-feat csExtraMa
 import os, random, subprocess, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
+KPM_DIR = os.path.expanduser(os.environ.get("KPM_DIR") or "~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager")
+COMMON_DIR = os.path.join(KPM_DIR, "Patches", "Common")  # KpLog.h + kpatch_api.h live only here (not vendored in-repo)
 sys.path.insert(0, ROOT)
 import simulate_rewrite as S
 
@@ -30,7 +32,9 @@ def case(tag, key, p, mask=0):
 
 
 def build(exe, src, m32=False):
-    r = subprocess.run(["g++", "-std=c++17", "-O1", "-Wall", "-Wextra"] + (["-m32"] if m32 else []) + ["-I", os.path.join(HERE, "stub"), "-I", os.path.join(HERE, "stub", "_shared"), "-I", os.path.join(HERE, "stub", "inc"), "-include", os.path.join(HERE, "stub", "m3_win_shim.h"), "-I", os.path.expanduser("~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common"), "-o", exe,
+    if not os.path.isdir(COMMON_DIR):
+        sys.exit("parity: missing %s (set KPM_DIR to the kotor-patch-manager checkout; KpLog.h/kpatch_api.h are not in this repo)" % COMMON_DIR)
+    r = subprocess.run(["g++", "-std=c++17", "-O1", "-Wall", "-Wextra"] + (["-m32"] if m32 else []) + ["-I", os.path.join(HERE, "stub"), "-I", os.path.join(HERE, "stub", "_shared"), "-I", os.path.join(HERE, "stub", "inc"), "-include", os.path.join(HERE, "stub", "m3_win_shim.h"), "-I", COMMON_DIR, "-o", exe,
                         os.path.join(HERE, src)], capture_output=True, text=True)
     if r.returncode:
         sys.exit(r.stderr)
