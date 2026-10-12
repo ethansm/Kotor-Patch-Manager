@@ -1,11 +1,11 @@
 # WI-68c Docs search cache refresh
 area: search-docs
 size: S
-ready: ready
+ready: hold
 items: C412
 files: .doc_search_cache.db
 out-of-repo: none
-blockers: Concrete search query: unknown (needed for Verify 3). STATE values unknown. Split from WI-68.
+blockers: Target .doc_search_cache.db is gitignored (.gitignore:12), so the refresh cannot be committed; hold until the item is re-scoped. Concrete search query: unknown (needed for Verify 3). STATE values unknown. Split from WI-68.
 docs: .claude/plans/swarm_library_architecture.md:C412 (R16, line 217; re-index gate in plan 8.4 item 2)
 
 ## Goal

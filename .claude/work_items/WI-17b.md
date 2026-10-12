@@ -2,6 +2,7 @@
 area: common-codepatch; common-inikit; perf-lab
 size: M
 ready: hold
+after: WI-17
 items: C102,C106,C123
 files: patch_manager_mods/_shared_src/CodePatch.h; patch_manager_mods/_shared_src/IniKit.h; patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp
 out-of-repo: none

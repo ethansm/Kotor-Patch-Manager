@@ -2,6 +2,7 @@
 area: menu-3d-shared
 size: S
 ready: hold
+after: WI-35b
 items: C205,C207
 files: patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp; patch_manager_mods/_shared_src/TextFit.h; patch_manager_mods/_shared_src/K2Addr.h
 out-of-repo: none

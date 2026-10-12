@@ -2,12 +2,16 @@
 area: deep-haiku-review-phase3d-impl
 size: S
 ready: ready
+after: WI-58, WI-60
 items: C354
 files: .claude/deep-review/phase3b/profile_p2.toml
 out-of-repo: /home/ethansm/.claude/skills/deep-haiku-review/bundle/engine/dr_profile.py
 blockers: after: WI-60 (C351 verify first). after: WI-58 (same file, `[effort]`; WI-58 is on hold for the L0/L2 decision, so reconcile the two pin sets before editing). Conflict: profile_p2.toml:59-60 says "left empty on purpose; user decides pinning", but phase3d:16 (D4) pins them; this WI follows D4 and records the conflict. dr.py effort-stage map (phase3d:49 scope): no change specified; unknown whether needed. Fix-stage pin values (fix, fix_review, fix_integrate): not specified; left empty. C355 deferred: run dir ~/.cache/deep_haiku_review/kotor2-p2/p2c already exists, and `.claude/deep-review/phase3b/recon/P2_prep.md` would be overwritten. CHANGELOG: unknown. mark-done phase id: unknown.
 docs: .claude/plans/deep_haiku_review_phase3d_impl.md (rows :49 A4, :53 A5)
 deferred: C355
+verify: python3 ~/.claude/skills/deep-haiku-review/bundle/engine/dr_profile.py check .claude/deep-review/phase3b/profile_p2.toml
+verify: rg -n -A8 "^\[effort\]" .claude/deep-review/phase3b/profile_p2.toml
+
 ## Goal
 Pin `[effort]` for profile_p2 per phase3d D4 (phase3d:16, :49). The fix keys already exist in code. Close A4 after the edit and verify. C355 (A5 p2c rebuild) is deferred.
 ## Steps

@@ -2,6 +2,7 @@
 area: queue-hud
 size: S
 ready: hold
+after: WI-41
 items: C229
 files: patch_manager_mods/queue_hud_src/QueueHud.cpp; patch_manager_mods/queue_hud_src/QueueHudLogic.h
 out-of-repo: none

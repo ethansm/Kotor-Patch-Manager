@@ -2,12 +2,14 @@
 area: deep-haiku-review-refute
 size: S
 ready: ready
+after: WI-59
 items: C350
 files: none
 out-of-repo: /home/ethansm/.claude/skills/deep-haiku-review/bundle/dr_lib/selftest.py; /home/ethansm/.claude/skills/deep-haiku-review/bundle/stub/claude
 blockers: after: WI-59 (same file, selftest.py; C348 must verify first, phase3c:97). The phase3c:103 spec is "stub + 3 checks" only; the three check names are unknown, so list the chosen names in NOTES before editing. The refute-audit stage already exists in stub/claude (:5, :41) and selftest.py (:23, :26, :347-349); leave those lines alone. Live refute test needs its own go (phase3c:103). CHANGELOG: unknown. mark-done phase id: unknown.
 docs: .claude/plans/deep_haiku_review_phase3c_impl.md:103 (R2 = C350)
 deferred: C330, C349
+
 ## Goal
 Add the R2 refute stub and its three selftest checks, stub-only, no live call. Close C350 only. Paths are relative to /home/ethansm/.claude/skills/deep-haiku-review/. C349 and C330 (refute ladder, R1) stay parked.
 ## Steps

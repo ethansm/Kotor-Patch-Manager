@@ -2,11 +2,15 @@
 area: agent-tooling-hardening
 size: M
 ready: ready
+after: WI-46
 items: C264,C266,C267
 files: NEW:scripts/kpm_commit.py; NEW:scripts/kpm_ship.py; NEW:scripts/kpm_reinstall.py
 out-of-repo: none
 blockers: after: WI-46 (H9 needs H3 and H6 from WI-46; no file overlap, order only). Reuse, no edits: `git_dirty()` (scripts/kpm_status.py:72), `is_game_running()` (scripts/kpm_hotswap.py:61), `CONFIG_FILES` (scripts/kpm_hotswap.py:45), `REINSTALL_DOC` (scripts/kpm_hotswap.py:48). Unknown: the KPatchLauncher reinstall command is not in repo (named only at scripts/kpm_status.py:14). Suite names unknown. All three files are new and do not exist yet. (after WI-46)
 docs: patch_manager_mods/36_agent_tooling_hardening.md:H7,H9,H10
+verify: python3 scripts/kpm_commit.py --help
+verify: python3 scripts/kpm_reinstall.py --help
+verify: python3 scripts/kpm_ship.py --help
 
 ## Goal
 Close plan rows H7, H9, H10 in patch_manager_mods/36_agent_tooling_hardening.md by creating three new scripts. H9 runs after WI-46 closes H3 and H6. No user input needed.

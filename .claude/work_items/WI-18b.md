@@ -2,6 +2,7 @@
 area: perf-lab; common-kplog
 size: M
 ready: hold
+after: WI-18, WI-19
 items: C122
 files: patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp
 out-of-repo: /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common/KpLog.h

@@ -2,6 +2,7 @@
 area: hotbar-shared-services
 size: S
 ready: hold
+after: WI-35c
 items: C201,C202
 files: patch_manager_mods/action_hotbar_src/HotbarLogic.h; NEW:patch_manager_mods/_shared_src/Items.h; patch_manager_mods/_shared_src/K2Addr.h
 out-of-repo: none

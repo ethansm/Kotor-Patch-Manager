@@ -2,6 +2,7 @@
 area: hotbar-shared-services
 size: M
 ready: hold
+after: WI-33
 items: C197,C198,C200
 files: patch_manager_mods/action_hotbar_src/ActionHotbar.cpp; patch_manager_mods/_shared_src/PortraitSlots.h; patch_manager_mods/_shared_src/GuiInput.h
 out-of-repo: none

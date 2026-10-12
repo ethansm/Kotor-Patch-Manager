@@ -2,6 +2,7 @@
 area: menu-3d-shared
 size: M
 ready: hold
+after: WI-35
 items: C203,C204,C209
 files: patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp; patch_manager_mods/equipment_3d_character_src/common_contract_test.cpp; patch_manager_mods/_shared_src/GuiKit.h
 out-of-repo: none

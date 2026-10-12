@@ -8,6 +8,10 @@ out-of-repo: /home/ethansm/.claude/skills/deep-haiku-review/bundle/engine/dr_pro
 blockers: C339 rl2 (profile_rl2.toml) is gated on L0 (phase3c:56, :66-68). The C339 row has no id and covers rl1 and rl2, so C339 stays open. C340 (L3) run steps 2-4 need the user's first-packet gate (phase3c:72); only the profile step is verified, so L3 stays open. Lens copy path resolved: `.claude/deep-review/pilot/profile_lens.toml` (phase3c:72) exists. profile_rl1.toml sets adjudicate_total 0.55 (line 47); phase3c:56 says 0.50: record in NOTES, do not fix. CHANGELOG: unknown. mark-done phase id: unknown.
 docs: .claude/plans/deep_haiku_review_phase3c_impl.md (rows :55 W2-C0b, :56 C339, :72 L3)
 deferred: C339-rl2
+verify: python3 -I -c "import ast,sys;[ast.parse(open(p).read(),p) for p in sys.argv[1:]]" .claude/deep-review/phase3b/replay/build_rl1.py .claude/deep-review/phase3b/replay/score_replay.py
+verify: python3 ~/.claude/skills/deep-haiku-review/bundle/engine/dr_profile.py check .claude/deep-review/phase3b/profile_rl1.toml
+verify: python3 ~/.claude/skills/deep-haiku-review/bundle/engine/dr_profile.py check .claude/deep-review/pilot/profile_lens.toml
+
 ## Goal
 Verify the replay and lens artifacts (C338, C339 rl1, C340 profile step) are present and correct. No edits. Close C338 only. Steps paths are relative to /home/ethansm/.claude/skills/deep-haiku-review/ for out-of-repo files and to the repo root otherwise.
 ## Steps

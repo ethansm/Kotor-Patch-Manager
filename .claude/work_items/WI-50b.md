@@ -2,12 +2,18 @@
 area: deep-haiku-review-* (build_dossiers, prep resize, lens mode, dr.py estimate)
 size: S
 ready: verify-only
+after: WI-50
 items: C288, C289
 files: none
 out-of-repo: ~/.claude/skills/deep-haiku-review/bundle/engine/verify/build_dossiers.py (verify only); ~/.claude/skills/deep-haiku-review/bundle/engine/prep.py (verify only); ~/.claude/skills/deep-haiku-review/bundle/templates/lens_*.md (verify only); ~/.claude/skills/deep-haiku-review/bundle/dr.py (C290, no edit)
 blockers: after: WI-50. Deferred C290 needs a user decision: keep the Sonnet UNIT_COST figures (dr.py:100, reduce 0.50, adjudicate 0.21; no measured source in PILOT_REPORT.md) or re-measure. The Haiku adjudicate figure disagrees: dr.py:106 has 0.022 (A/B, 8 batches) while PILOT_REPORT.md:13 implies about 0.013 (2 batches). Deferred C291 needs a user go for the live multi-lens run (spend, same as C322). The C288 `--only` flag is dropped: it is not a build_dossiers.py flag (docstring lines 19-21). The real-engine selftest (80/80) needs a user go (spend); only the offline check runs here. H3/H4 ids also exist in phase2_impl.md, so mark-done needs a doc qualifier: unknown.
 docs: .claude/plans/deep_haiku_review_next_phases.md:29, :30, :32, :69
 deferred: C290 (dr.py H6 estimate constants), C291 (multi-lens live run)
+verify: rg -n -m 3 "backup_stale\(" ~/.claude/skills/deep-haiku-review/bundle/engine/verify/build_dossiers.py
+verify: python3 ~/.claude/skills/deep-haiku-review/bundle/engine/verify/build_dossiers.py --self-test
+verify: python3 ~/.claude/skills/deep-haiku-review/bundle/engine/prep.py --self-test
+verify: rg -n -m 3 "WARNING: resize points degenerate" ~/.claude/skills/deep-haiku-review/bundle/engine/prep.py
+
 ## Goal
 Verify C288 and C289, which are already in the bundle, and record the two deferred rows for the user. No edits in this WI.
 ## Steps

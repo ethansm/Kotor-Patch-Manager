@@ -2,12 +2,14 @@
 area: dialogue-letterbox-and-wrap-fixes
 size: S
 ready: hold
+after: WI-30
 items: C157
 files: patch_manager_mods/dialogue_letterbox_fix_src/K2DialogueLetterboxFix.cpp
 out-of-repo: none
 blockers: User GO needed; doc 17 marks C157 out of scope. 5120+ visual check is user-only. Split from WI-26 (different patch). after: WI-30 (same file, K2DialogueLetterboxFix.cpp). Function anchor unknown; reply Y placement already exists at K2DialogueLetterboxFix.cpp lines 211-213 (replyY, replyMax).
 docs: patch_manager_mods/17_dialogue_letterbox_and_wrap_fixes.md: C157 (line 152, row id -)
 deferred: C157
+
 ## Goal
 Add the K1-style reply-panel stretch (C157) only after the user decides. Write no code until then.
 ## Steps

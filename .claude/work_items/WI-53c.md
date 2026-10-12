@@ -2,11 +2,11 @@
 area: deep-haiku-review-fix
 size: L
 ready: hold
+after: WI-53b
 items: C325,C326
 files: none
 out-of-repo: /home/ethansm/.claude/skills/deep-haiku-review/bundle/engine/fix/fix_series.py;/home/ethansm/.claude/skills/deep-haiku-review/bundle/engine/fix/run_fix_review.sh;/home/ethansm/.claude/skills/deep-haiku-review/bundle/engine/fix/fix_merge.py;/home/ethansm/.claude/skills/deep-haiku-review/bundle/engine/fix/fix_canary.sh;/home/ethansm/.claude/skills/deep-haiku-review/bundle/engine/fix/fix_settings.py;/home/ethansm/.claude/skills/deep-haiku-review/bundle/dr_lib/selftest.py
 blockers: after: WI-53b (fix_merge.py and dr_lib/selftest.py overlap). Hold until the user says the fix pilot report is ready and gives GO (phase2_impl.md:131 trigger). "P5" is not a literal row id in phase2_impl.md: line 131 is the section 7 heading, so close by doc:line. C326 anchor moved: the basename guards are at fix_canary.sh:186-187, not 174-175. Whether the leftover basename `--` (phase2_impl.md:22) still exists at 186-187 is unknown; check before editing. Live pilot needs a user trigger.
-
 docs: .claude/plans/deep_haiku_review_phase2_impl.md rows P5 (line 131), C326 (line 22)
 
 ## Goal

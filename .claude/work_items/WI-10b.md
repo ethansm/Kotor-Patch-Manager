@@ -2,12 +2,14 @@
 area: force-power-hotbar
 size: S
 ready: ready
+after: WI-10
 items: C051,C053,C056
 files: patch_manager_mods/action_hotbar_src/ActionHotbar.cpp; patch_manager_mods/action_hotbar_src/kotor2-steam-aspyr.hooks.toml
 out-of-repo: none
 blockers: after: WI-10 (both edit ActionHotbar.cpp); C051 has no arrow texture (`arrow` absent from HotbarTextures.inc and scripts/gen_hotbar_textures.py), art source unknown; if art is supplied later, add it in scripts/gen_hotbar_textures.py and regenerate HotbarTextures.inc, never hand-edit it; C056 premise stale: 0x0074B3F0 HotbarHudTick migrated to hud-host (kotor2-steam-aspyr.hooks.toml:22), so the 0x74B3F5 move has no detour to move; 0x72CB84 site not re-verified here (no REA run); WI-11 and WI-12 also edit ActionHotbar.cpp.
 docs: patch_manager_mods/07_force_power_hotbar.md (C051, C053, C056)
 deferred: C051,C056
+
 ## Goal
 Apply option (c) to the EKC coexistence detour at 0x0072CB63 (C053). C051 needs arrow art first. C056 needs a re-scope because its 0x74B3F5 target has no detour left.
 ## Steps

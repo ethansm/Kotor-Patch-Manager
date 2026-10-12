@@ -2,12 +2,16 @@
 area: kpm-tooling
 size: M
 ready: ready
+after: WI-02, WI-02c
 items: C007,C009,C008
 files: NEW:scripts/kpm_commit.py; NEW:scripts/kpm_reinstall.py; NEW:scripts/kpm_ship.py
 out-of-repo: none
 blockers: Needs WI-02 (H2, for C009) and WI-02c (H8, for C008) first. No shared files with those WIs. All three NEW paths are missing today (checked 10-12).
 docs: patch_manager_mods/24_master_plan_status.md:95 (H7), :98 (H10), :97 (H9); patch_manager_mods/36_agent_tooling_hardening.md (doc 36)
 deferred: none
+verify: python3 scripts/kpm_commit.py --help
+verify: python3 scripts/kpm_reinstall.py --help
+verify: python3 scripts/kpm_ship.py --help
 
 ## Goal
 Create H7, H10, H9 in that order. H9 runs last because it orchestrates the other tools.

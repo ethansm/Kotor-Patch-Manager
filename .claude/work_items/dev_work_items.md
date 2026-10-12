@@ -25,7 +25,7 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 9 | WI-06 | P0 | ready | L | - | Buff duration HUD open ToDos | 10 | 2 | Buff duration HUD: 8 open ToDos, 1 blocked; large and ready. |
 | [ ] | 10 | WI-42 | P0 | ready | S | - | Companion self-heal: IniPath check and BG18 stale HP | 6 | 1 | Companion self-heal IniPath check and stale BG18 row; bug board. |
 | [ ] | 11 | WI-15 | P0 | verify-only | S | - | Level-up F10 over-cap hold verify | 1 | 0 | Level-up F10 over-cap hold verify; single open row. |
-| [ ] | 12 | WI-11 | P0 | ready | L | - | Force Power Hotbar config and statics | 9 | 3 | Force Power Hotbar config and statics; large, 8 open, ready. |
+| [ ] | 12 | WI-11 | P0 | ready | L | WI-10 | Force Power Hotbar config and statics | 9 | 3 | Force Power Hotbar config and statics; large, 8 open, ready. |
 | [ ] | 13 | WI-05 | P1 | ready | S | WI-03 | Inventory 3D viewport no-preview fallback and build-hook ver | 4 | 2 | No-preview fallback and build rows; 1 open, 2 blocked. |
 | [ ] | 14 | WI-35 | P1 | ready | S | - | Equip menu-3d stale-claim cleanup (C206, C208) | 2 | 3 | Equip menu-3d stale-claim cleanup; ready, 2 doc rows. |
 | [ ] | 15 | WI-07 | P1 | ready | M | WI-06 | Buff HUD shared helpers and accessor | 5 | 4 | Buff HUD shared helpers and accessor; ready, after WI-06. |
@@ -33,23 +33,23 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 17 | WI-20b | P1 | verify-only | S | - | Robustness TD and GUIID fixes, verify only (C115, C116) | 2 | 1 | Robustness TD and GUIID fixes, verify only; target file present. |
 | [ ] | 18 | WI-38 | P1 | ready | L | - | Companion self-heal open rows: verify and build | 10 | 3 | Companion self-heal open rows: verify and build; 7 open, ready. |
 | [ ] | 19 | WI-02 | P1 | ready | M | - | KPM tooling H1-H6 build batch | 5 | 4 | KPM tooling batch; tooling, not game behavior. |
-| [ ] | 20 | WI-12 | P1 | ready | M | - | Force Power Hotbar arrow art and setFont check | 4 | 4 | Hotbar arrow art and setFont check; arrow spec unknown. |
+| [ ] | 20 | WI-12 | P1 | ready | M | WI-10 | Force Power Hotbar arrow art and setFont check | 4 | 4 | Hotbar arrow art and setFont check; arrow spec unknown. |
 | [ ] | 21 | WI-09 | P1 | ready | S | - | Ultrawide GUI and FullPartySelect follow-ups | 3 | 1 | Ultrawide GUI and FullPartySelect follow-ups; 1 open, ready. |
 | [ ] | 22 | WI-13 | P1 | verify-only | M | - | Level-up override verify and Configure nudge check | 10 | 0 | Level-up override verify and Configure nudge check; 9 open. |
-| [ ] | 23 | WI-50 | P1 | ready | S | WI-50 | deep-haiku-review H1/H2 backoff, verify scripts and ladder c | 4 | 0 | deep-haiku-review H1/H2 backoff and verify scripts; tooling. |
+| [ ] | 23 | WI-50 | P1 | ready | S | - | deep-haiku-review H1/H2 backoff, verify scripts and ladder c | 4 | 0 | deep-haiku-review H1/H2 backoff and verify scripts; tooling. |
 | [ ] | 24 | WI-44 | P1 | verify-only | S | - | NPC diversity selector bias and float guard | 1 | 0 | NPC diversity selector bias and float guard; 1 verify open. |
 | [ ] | 25 | WI-18c | P1 | ready | M | WI-18 | KpLog remainder: probe, companion AI, parser, design rows (C | 6 | 3 | KpLog remainder for probe, companion AI and parser rows; mostly parked |
 | [ ] | 26 | WI-14 | P1 | verify-only | L | - | Level-up override F-row verify and deferred items | 10 | 0 | Level-up F-row verify and deferred items; large, 8 open. |
 | [ ] | 27 | WI-30 | P1 | ready | L | - | Letterbox fix KpLog verify and analyzer cleanup | 9 | 4 | Letterbox fix KpLog verify and analyzer cleanup; 9 open, ready. |
-| [ ] | 28 | WI-46 | P1 | ready | M | WI-46 | Agent tooling hardening: kpm_hotswap, kpm_status, gate, raw  | 7 | 4 | Agent tooling hardening, incl. kpm_hotswap; tooling, 2 blocked. |
+| [ ] | 28 | WI-46 | P1 | ready | M | - | Agent tooling hardening: kpm_hotswap, kpm_status, gate, raw  | 7 | 4 | Agent tooling hardening, incl. kpm_hotswap; tooling, 2 blocked. |
 | [ ] | 29 | WI-02c | P1 | ready | S | - | Smoke harness include normalization (H8) | 0 | 1 | Smoke harness include normalization; test tooling, no blockers. |
 | [ ] | 30 | WI-23 | P1 | ready | M | - | Ranged AI a1_retarget strict range gate | 1 | 2 | Ranged AI a1_retarget strict range gate; 1 open, line numbers unknown. |
 | [ ] | 31 | WI-60 | P1 | verify-only | S | - | Phase3d scope fix and sandbox HOME verify | 4 | 0 | Phase3d scope fix and sandbox HOME verify; tooling, 3 blocked. |
-| [ ] | 32 | WI-47 | P1 | ready | S | - | KPM production filter, ledger lock, GPG flag | 3 | 2 | KPM production filter, ledger lock and GPG flag; ready, tooling. |
+| [ ] | 32 | WI-47 | P1 | ready | S | WI-46 | KPM production filter, ledger lock, GPG flag | 3 | 2 | KPM production filter, ledger lock and GPG flag; ready, tooling. |
 | [ ] | 33 | WI-08 | P1 | ready | M | - | Shield bar tooltip, probe, and logging ToDos | 8 | 2 | Shield bar tooltip, probe and logging ToDos; 8 open, ready. |
 | [ ] | 34 | WI-43 | P1 | ready | S | - | NPC diversity dispatcher open source fixes | 10 | 1 | NPC diversity dispatcher open source fixes; 10 open, ready. |
 | [ ] | 35 | WI-36 | P1 | ready | L | - | PC level-up in-panel Filter button | 1 | 2 | PC level-up in-panel Filter button; new feature, ready. |
-| [ ] | 36 | WI-02b | P2 | ready | M | - | KPM tooling H7, H10, H9 new scripts | 3 | 3 | New KPM tooling scripts; tooling only, after WI-02. |
+| [ ] | 36 | WI-02b | P2 | ready | M | WI-02,WI-02c | KPM tooling H7, H10, H9 new scripts | 3 | 3 | New KPM tooling scripts; tooling only, after WI-02. |
 | [ ] | 37 | WI-29 | P2 | verify-only | M | - | Portrait-slots verify and companion-AI KpLog scope | 2 | 0 | Portrait-slots verify and companion-AI KpLog scope; verify only. |
 | [ ] | 38 | WI-21 | P2 | ready | M | WI-18 | Inventory sort name tie-break (C132); rest deferred | 6 | 2 | Inventory sort name tie-break; 1 open, 5 parked. |
 | [ ] | 39 | WI-31 | P2 | ready | M | - | Portrait-slots split v1 decision comment | 4 | 2 | Portrait-slots split v1 decision comment; 2 open, 2 parked. |
@@ -78,8 +78,8 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 62 | WI-59b | P2 | ready | S | WI-59 | Deep-haiku-review refute stub and checks (R2) | 3 | 0 | deep-haiku-review refute stub and checks; tooling, 2 blocked. |
 | [ ] | 63 | WI-68b | P2 | ready | S | - | Mod scaffold kind selector | 1 | 1 | Mod scaffold kind selector; ready, tooling nice-to-have. |
 | [ ] | 64 | WI-61 | P2 | verify-only | M | - | deep-haiku-review skill tooling verify (G2-G9) | 10 | 0 | deep-haiku-review skill tooling verify G2-G9; 9 open. |
-| [ ] | 65 | WI-68c | P2 | ready | S | - | Docs search cache refresh | 1 | 1 | Docs search cache refresh; ready, tooling nice-to-have. |
-| [ ] | 66 | WI-17 | P3 | hold | M | WI-17 | A-id registry and enginestate provider (load-hang probe) | 3 | 3 | A-id registry and enginestate provider; hold, owner GO needed. |
+| [ ] | 65 | WI-68c | P2 | hold | S | - | Docs search cache refresh | 1 | 1 | Docs search cache refresh; ready, tooling nice-to-have. |
+| [ ] | 66 | WI-17 | P3 | hold | M | - | A-id registry and enginestate provider (load-hang probe) | 3 | 3 | A-id registry and enginestate provider; hold, owner GO needed. |
 | [ ] | 67 | WI-65 | P3 | ready | M | - | Swarm sandbox, scrub and runner safety fixes | 10 | 0 | Swarm sandbox, scrub and runner safety fixes; out-of-repo, 9 open. |
 | [ ] | 68 | WI-05b | P3 | hold | S | - | Shared providers: GuiInput, GuiKit, IniKit (A1, B2, B3) | 4 | 3 | Shared GuiInput, GuiKit, IniKit providers; all rows owner-gated. |
 | [ ] | 69 | WI-62 | P3 | ready | M | - | deep-haiku-review engine verify, SKILL.md router, R5 check | 6 | 0 | deep-haiku-review engine verify and SKILL.md router; tooling. |

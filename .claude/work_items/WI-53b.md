@@ -6,7 +6,6 @@ items: C309,C310
 files: none
 out-of-repo: /home/ethansm/.claude/skills/deep-haiku-review/bundle/engine/fix/fix_merge.py;/home/ethansm/.claude/skills/deep-haiku-review/bundle/dr.py;/home/ethansm/.claude/skills/deep-haiku-review/references/30-fix.md;/home/ethansm/.claude/skills/deep-haiku-review/bundle/fixture/make_fixture.py;/home/ethansm/.claude/skills/deep-haiku-review/bundle/dr_lib/selftest.py
 blockers: Hold until the user says the fix pilot report is ready and gives GO (next_phases.md:45 trigger). Apply-script path unknown: dr.py:95 names only `fix_series.py build` plus `git am --3way`, no apply script. dr.py is shared with WI-55 (C321): serialize. Unknown whether fix_merge.py main() returns 1 on gaps (gap check at fix_merge.py:647, `sys.exit(main(...))` at :674).
-
 docs: .claude/plans/deep_haiku_review_next_phases.md rows F-f,F-g (line 47)
 
 ## Goal

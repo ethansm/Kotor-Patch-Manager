@@ -2,6 +2,7 @@
 area: common-kplog; load-hang-probe; companion-ai; kplog-parser
 size: M
 ready: ready
+after: WI-18
 items: C103,C168,C169,C170,C172,C173
 files: patch_manager_mods/load_hang_probe_src/LoadHangProbe.cpp; patch_manager_mods/companion_ai_src/CompanionAI.cpp; scripts/kplog_parse.py
 out-of-repo: /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common/KpLog.h

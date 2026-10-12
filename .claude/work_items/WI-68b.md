@@ -7,6 +7,9 @@ files: scripts/scaffold_mod.py
 out-of-repo: none
 blockers: Files each kind generates (hook, data, ui): unknown beyond plan 8.4 item 6. If 8.4 does not define them, stop and write it in NOTES. Mark-done row id: R13. STATE values unknown. Split from WI-68.
 docs: .claude/plans/swarm_library_architecture.md:C409
+verify: python3 scripts/scaffold_mod.py probe_kind_hook --kind hook --dry-run
+verify: python3 scripts/scaffold_mod.py probe_kind_data --kind data --dry-run
+verify: python3 scripts/scaffold_mod.py probe_kind_ui --kind ui --dry-run
 
 ## Goal
 Add a `kind` selector (hook, data, ui) to the mod scaffold (R13). Keep the existing collision check. Plan 8.4 item 6 says the scaffold has no kind parameter and always emits a DLL detour scaffold.

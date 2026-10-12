@@ -2,6 +2,7 @@
 area: inventory-3d-viewport
 size: M
 ready: hold
+after: WI-03
 items: C011,C012,C014,C015,C016,C020,C021
 files: patch_manager_mods/inventory_3d_viewport_src/Inventory3DViewport.cpp; patch_manager_mods/inventory_3d_viewport_src/ItemModelTable.inc; scripts/add_inventory_3dview_control.py; scripts/generate_ultrawide_gui_overrides.py
 out-of-repo: none
