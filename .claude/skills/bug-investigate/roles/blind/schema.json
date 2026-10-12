@@ -1,5 +1,4 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "bug-investigate blind output",
   "description": "Up to 5 log-grounded hypotheses. evidence may be empty here on purpose: the quote checker, not this schema, rejects uncited hypotheses.",
   "type": "object",

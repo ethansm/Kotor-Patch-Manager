@@ -1,5 +1,4 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "bug-investigate verify output",
   "description": "A verdict on ONE hypothesis, with cited reasons. reasons may be empty here on purpose: the quote checker, not this schema, rejects uncited reasons.",
   "type": "object",

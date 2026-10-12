@@ -1382,6 +1382,15 @@ sys.exit(2)
 '''
 
 
+class TestRoleSchemas(unittest.TestCase):
+    def test_no_role_schema_carries_a_dollar_schema_key(self):
+        # the claude CLI validates --json-schema offline with draft-07 only: a "$schema" of draft 2020-12 is refused
+        # ("no schema with key or ref") before any model call, which made the first paid pilot fail 3 of 3 units
+        for role in ("blind", "null", "verify"):
+            schema = json.loads((ROLES / role / "schema.json").read_text(encoding="utf-8"))
+            self.assertNotIn("$schema", schema, role)
+
+
 class TestSubprocessCli(unittest.TestCase):
     """The real run_stage / read_status and `python3 -I scripts/bug_investigate.py` end to end, against a fake runner."""
 
