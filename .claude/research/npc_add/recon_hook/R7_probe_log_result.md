@@ -60,3 +60,32 @@ Rule 16 keys, all launches ([A2]): 77 repeated (oid, before) keys carry 2+ tv= l
 - **O5 22 cross-launch tv flips.** Oid reuse vs real tv change cannot be decided from the logs ([A2] Open).
 - **O6 STAT counter mismatch** (remap chg=0 vs 12 changed; tex calls 40 vs 88 TEX lines). Cause unverified.
 - **O7 H4 address** (banner truncated). AddObjectToArea mapping unverified.
+
+## Probe 0.2.0 play result (10-12)
+
+Source: `.claude/waves/w2-34/probe020_summary.txt` (49 lines, extracted from area_hook_probe_log.txt). Line refs (L..) are that file's numbers. Launch A = L16-28 (2 loads). Launch B = L29-55 (5 loads). Item 6 is not in that file. It comes from the dispatch brief (npc-diversity_log.txt, launch 5) and was not re-read here.
+
+1. [summary L22, L27, L35, L40, L45, L50, L55] `H1 POP-STABLE` fired on all 7 loads, at ticks_since_load 33 or 34. POP needs 30 quiet ticks, so the last counted add in each area was at tick 3-4 after H2.
+2. Per-area add counts. The probe's per-area counter is `prev_area_calls` on the NEXT area's H4 line, which counts the area being left (R7 item 8). The summary's labels are shifted: its "302 (204tel)" is 203tel, and its "287" values are all 204tel. Corrected:
+
+| Load (summary line) | resref | Adds in area (probe counter) | POP cross-check |
+|---|---|---|---|
+| Launch A, L21 | 204tel | 287 (H4 at L26) | POP L22 = 286 |
+| Launch A, L26 | 208tel | 165 | POP L27: 454 - 289 (last load) |
+| Launch B, L34 | 204tel | 287 (H4 at L39) | POP L35 = 286 |
+| Launch B, L39 | 204tel | 287 (H4 at L44) | POP L40: 575 - 289 = 286 |
+| Launch B, L44 | 203tel | 302 (H4 at L49) | POP L45: 878 - 577 = 301 |
+| Launch B, L49 | 204tel | 287 (H4 at L54) | POP L50: 1166 - 880 = 286 |
+| Launch B, L54 | 208tel | 165 | POP L55: 1333 - 1168 (last load) |
+
+   Population per area is 165 (208tel, 2 loads), 287 (204tel, 4 loads) or 302 (203tel, 1 load). It is not a uniform 285-300.
+   POP's count is 1 below the probe counter in all 5 checkable areas (286 vs 287, 301 vs 302). Either POP misses one add or one add lands after POP-STABLE. Unresolved. POP-STABLE is not proof that population is complete.
+3. H2 is the common hook. Every load shows H3 (LoadModuleStart), then H2 (LoadModuleInProgress) one tick later, then H4, on the same module pointer. This covers the 2 loads right after attach (L19, L32) and the 5 later loads (L24, L37, L42, L47, L52). So H2 fires for in-session area changes too. Launch A runs 204tel to 208tel. Launch B runs 204tel to 204tel to 203tel to 204tel to 208tel. The brief's string "204-208-204-203-204-208" does not match the file. The 204tel to 204tel step (L34 to L39) is a same-resref re-entry, so a resref change is not what triggers H2. The summary file does not label cause (save vs door). The in-session changes are door transitions per the play brief, not per the log.
+4. Keys. Area id +0x124 is 00000001 on every area again (dead, R7 item 5). The pointer changes on each load, even for the same resref (0863fdf8 for 204tel in both launches; 0a6c5030 for 204tel in launch B). It is not a key (R7 item 6 also). Key on resref at area+0x110 (R7 item 4). It read 204tel, 208tel and 203tel in this run.
+5. Spawn trigger: viable as a timing trigger, not yet a spawn. Arm on H2, read the resref on the H4 line, and act on POP-STABLE (33-34 ticks after H2). Nothing was spawned in probe 0.2.0. Acting earlier (about tick 5) is untested and conflicts with the one-add gap in item 2. Still open: O1 spawn mechanism, O2 existence guard, O3 persistence. O4 (save vs door) no longer changes the trigger, since H2 fires either way, but the cause label is still unknown.
+6. Diversity 0.1.5-probe (dispatch brief, npc-diversity_log.txt launch 5; not in the summary file):
+   - Banner v=0.1.5-probe.
+   - Rule 11 (tv determinism) PASS: 35 repeated oids stable. It was FAIL on 0.1.4-probe (oid 7f000000, tv 1 vs 102). The B1 fix is confirmed live. B1's "not built or installed" note is now outdated.
+   - 144 RMP lines, 15 changed (10.4%). 5 of 16 commoner-row oids changed (31.25%). Keep rows: 0 changed (8 keep rows).
+   - Rule 16 still FAIL (23 keys). It compares across launches (older mod versions), so it is not a new within-launch regression (see B2).
+   - NEW rule 10 FAIL: app=72, n=30, tv distinct=1. Under investigation (E1 wave). Not judged here.

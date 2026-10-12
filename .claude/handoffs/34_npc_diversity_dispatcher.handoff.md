@@ -69,6 +69,9 @@ Generated, byte-stable (`--check`): `DiversitySlots.h` (M 1-16, F 1-17, FatM 34,
 - NPC-add R7: H1 latch (this+0x14), area+0x124 id (00000001 on both areas) and the area pointer (0c5d4420, reused) are dead keys. Key on area resref.
 - Diversity rule 11 bug (oid 7f000000, tv 1 vs 102): fixed in source 0.1.5-probe (`NpcDiversityDispatcher.cpp:470` is now a 2-arg `PickTextureVar`). Not built or installed in this task.
 - `log_triage` shows only the last 5 raw lines of a probe log. Lines 1-10 are hidden, so save-load vs door transition for 204tel at +435 s is unresolved. Probe 0.2.0 adds a POP-STABLE marker.
+- NPC-add probe 0.2.0 (10-12): H2 fires for in-session area changes too (7/7 loads show H3, H2 one tick later, H4), and POP-STABLE fired on 7/7 loads at 33-34 ticks after load (verified). POP may miss one add (its count is 1 below the probe counter in 5/5 areas). Detail: `.claude/research/npc_add/recon_hook/R7_probe_log_result.md`.
+- Diversity rule 11 fix (0.1.5-probe) verified live: 35 repeated oids stable (FAIL on 0.1.4-probe). Rule 16 still FAIL but compares across launches, so it is not a within-launch regression.
+- Diversity rule 10 FAIL on the 0.1.5-probe launch (app=72, n=30, tv distinct=1): flagged, not yet investigated (E1 wave).
 
 ## Update 10-11 (Wave A+B landed, 0.1.4-probe built, NOT installed)
 - Gate 1 NOT done: the last log is `0.1.2-probe`, no PTR lines. Tag route = default position-only keep (`DiversityKeep.h`); header comment says so. Re-run Task 6 only if the user plays 0.1.3 or 0.1.4 first (0.1.4 still logs PTR dumps).

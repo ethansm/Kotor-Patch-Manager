@@ -484,7 +484,7 @@ class Grammar012Tests(unittest.TestCase):
         rc, out = run_bodies(_head(*rmp))
         self.assertEqual(rc, 1, out)
         self.assertIn("FAIL 10 tv spread: 1 app group(s) with >=20 RMP lines have <3 distinct tv after-values", out)
-        self.assertIn("  app=806 n=20 tv distinct=2", out)
+        self.assertIn("  app=806 n=20 tv distinct=2 oid distinct=20", out)
         self.assertIn("RESULT FAIL (1 FAIL, 1 WARN)", out)     # the 1-slot WARN is the existing H1 check on _head()'s TEX line
 
     def test_tv_spread_passes_with_three_values(self):
@@ -498,8 +498,25 @@ class Grammar012Tests(unittest.TestCase):
         self.assertEqual(rc, 0, out)
         self.assertIn("INFO 10 tv spread: not judged (no app group with >=20 RMP lines carrying tv=; tv lines=19)", out)
 
+    def test_tv_spread_single_tv_on_non_family_app_is_not_judged(self):
+        # app=72 (Alien_Ithorian_01) is in no texture family: PickTextureVar returns 0, so one tv is expected.
+        rmp = [rmp_line(oid=0x5000 + i, xy=(1.0 + i, 2.0), before=805, after=72, tv=(1, 2)) for i in range(20)]
+        rc, out = run_bodies(_head(*rmp))
+        self.assertEqual(rc, 0, out)
+        self.assertFalse([s for s in out if s.startswith("FAIL 10")], out)
+        self.assertIn("INFO 10 tv spread: not judged (no app group with >=20 RMP lines carrying tv=; tv lines=20)", out)
+        self.assertIn("  not judged: 20 line(s) with a final app outside the known families", out)
+
+    def test_tv_spread_single_tv_on_family_app_fails(self):
+        rmp = [rmp_line(oid=0x5100 + i, xy=(1.0 + i, 2.0), before=805, after=190, tv=(1, 2)) for i in range(20)]
+        rc, out = run_bodies(_head(*rmp))
+        self.assertEqual(rc, 1, out)
+        self.assertIn("FAIL 10 tv spread: 1 app group(s) with >=20 RMP lines have <3 distinct tv after-values", out)
+        self.assertIn("  app=190 n=20 tv distinct=1 oid distinct=20", out)
+
     def test_tv_spread_lists_at_most_five_groups(self):
-        rmp = [rmp_line(oid=0x2000 + 100 * g + i, xy=(1.0 + i, 2.0 + g), before=805, after=900 + g, tv=(1, 2))
+        family = [805, 806, 807, 808, 190, 191, 192]          # male family apps (FAMILY_BY_APP / COMMONER_MALE)
+        rmp = [rmp_line(oid=0x2000 + 100 * g + i, xy=(1.0 + i, 2.0 + g), before=805, after=family[g], tv=(1, 2))
                for g in range(7) for i in range(20)]
         rc, out = run_bodies(_head(*rmp))
         self.assertEqual(rc, 1)

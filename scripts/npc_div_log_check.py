@@ -385,25 +385,30 @@ def _tv_lines(sess):
 
 def check_tv_spread(sess):
     """10 tv spread: per final app (and g when a line has one), once TV_MIN_LINES tv-logged RMP lines exist,
-    the distinct tv after-values must number at least TV_MIN_DISTINCT."""
+    the distinct tv after-values must number at least TV_MIN_DISTINCT. Only groups whose final app is a known
+    family (family_of, as rule 12) are judged; the other tv lines are reported as not judged."""
     tv = _tv_lines(sess)
+    known = [v for v in tv if family_of(v["after"]) is not None]
+    unknown = len(tv) - len(known)
+    not_judged = ["not judged: %d line(s) with a final app outside the known families" % unknown] if unknown else []
     groups = {}
-    for v in tv:
-        groups.setdefault((v["after"], v.get("g")), []).append(v["tv_after"])
-    judged = sorted(((k, vals) for k, vals in groups.items() if len(vals) >= TV_MIN_LINES),
+    for v in known:
+        groups.setdefault((v["after"], v.get("g")), []).append(v)
+    judged = sorted(((k, vs) for k, vs in groups.items() if len(vs) >= TV_MIN_LINES),
                     key=lambda kv: (kv[0][0], -1 if kv[0][1] is None else kv[0][1]))
     if not judged:
-        return INFO, ["INFO 10 tv spread: not judged (no app group with >=%d RMP lines carrying tv=; tv lines=%d)" % (
-            TV_MIN_LINES, len(tv))]
-    bad = [(k, vals) for k, vals in judged if len(set(vals)) < TV_MIN_DISTINCT]
+        return _emit(10, "tv spread", [(INFO, "not judged (no app group with >=%d RMP lines carrying tv=; tv lines=%d)" % (
+            TV_MIN_LINES, len(tv)))], "", not_judged)
+    bad = [(k, vs) for k, vs in judged if len({v["tv_after"] for v in vs}) < TV_MIN_DISTINCT]
     if not bad:
         return _emit(10, "tv spread", [], "%d group(s) with >=%d RMP lines, all with >=%d distinct tv" % (
-            len(judged), TV_MIN_LINES, TV_MIN_DISTINCT), [])
+            len(judged), TV_MIN_LINES, TV_MIN_DISTINCT), not_judged)
     msgs = [(FAIL, "%d app group(s) with >=%d RMP lines have <%d distinct tv after-values" % (
         len(bad), TV_MIN_LINES, TV_MIN_DISTINCT))]
-    details = ["app=%d%s n=%d tv distinct=%d" % (k[0], "" if k[1] is None else " g=%d" % k[1], len(vals), len(set(vals)))
-               for k, vals in bad[:LIST_MAX]]
-    return _emit(10, "tv spread", msgs, "", details)
+    details = ["app=%d%s n=%d tv distinct=%d oid distinct=%d" % (
+        k[0], "" if k[1] is None else " g=%d" % k[1], len(vs), len({v["tv_after"] for v in vs}),
+        len({v["oid"] for v in vs})) for k, vs in bad[:LIST_MAX]]
+    return _emit(10, "tv spread", msgs, "", not_judged + details)
 
 
 def check_tv_determinism(sess):
