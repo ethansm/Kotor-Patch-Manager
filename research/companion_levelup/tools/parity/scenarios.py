@@ -170,7 +170,7 @@ EXTRA["X12_mode_garbage"] = _x("X12_mode_garbage", FIXTURE_GUID, [EARLY_CONV], [
     events=[r"^CONFIG WARNING unknown mode=on - using rewrite", r"^CONFIG loaded mode=rewrite", r"^APPLIED tag=atton__"],
     decisions=[("atton.autoLevel", "APPLIED")])
 EXTRA["X13_log_capped"] = _x("X13_log_capped", FIXTURE_GUID, [EARLY_CONV], INI_DEF, (FIXTURE_GUID, None),
-    ["load", "logcap", "tick atton", "auto atton"], decisions=[("atton.canLevelUp", "PASS"), ("atton.pending", "REWRITTEN")])
+    ["load", "logcap", "tick atton", "auto atton"], decisions=[("log.capped", "1"), ("atton.canLevelUp", "PASS"), ("atton.pending", "REWRITTEN")])
 EXTRA["X14_log_readonly"] = _x("X14_log_readonly", FIXTURE_GUID, [EARLY_CONV], INI_DEF, (FIXTURE_GUID, None),
     ["load", "logro", "tick atton", "auto atton"], decisions=[("atton.canLevelUp", "PASS"), ("atton.pending", "REWRITTEN")])
 EXTRA["X15_hold_flap"] = _x("X15_hold_flap", FIXTURE_GUID, ["CREATURE atton 2:7 28000 1 0"], INI_DEF, (FIXTURE_GUID, None),

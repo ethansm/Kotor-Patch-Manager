@@ -415,8 +415,11 @@ static bool act(const std::string& line, void* tabLoad, void* tabSave) {
             g_dec["ui.status"] = (r->shownMask >> C_STATUS) & 1 ? "1" : "0";
             if (r->c[C_STATUS]) g_dec["ui.statustext"] = g_text[r->c[C_STATUS]];
         }
-    } else if (a == "logcap") {   // the 20000-line log cap reached (F1)
-        // the 20000-line cap moved to KpLog.h (Common) and is pinned by its own tests; nothing to force here, the scenario still checks the gate is unaffected
+    } else if (a == "logcap") {   // the shared logger's fallback line cap reached (F1: a full log must never gate the rewrite)
+        // KpLog.h (Common) stops writing at KP_LOG_FALLBACK_MAX_LINES and keeps one "--- log cap reached ---" line; drive the REAL sink to it
+        for (uint32_t i = 0; ::kplog::detail::gFallbackLines.load() <= KP_LOG_FALLBACK_MAX_LINES && i < KP_LOG_FALLBACK_MAX_LINES + 16u; ++i)
+            KP_LOG(chGate, "logcap filler %u", (unsigned)i);
+        g_dec["log.capped"] = logHas("--- log cap reached ---") ? "1" : "0";
     } else if (a == "logro") {    // the log file cannot be opened for append (read-only; F1)
         if (geteuid() == 0) { fprintf(stderr, "logro: running as root, chmod 0444 does not stop fopen - scenario meaningless\n"); return false; }
         if (FILE* f = fopen(LogName, "a")) fclose(f);

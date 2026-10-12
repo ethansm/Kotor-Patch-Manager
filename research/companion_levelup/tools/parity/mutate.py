@@ -64,9 +64,7 @@ m("AN03", CPP, r"if \(g_cfg\.mode != Mode::Rewrite\) \{ logLine\(\"INSTANT apply
 m("AN04", CPP, r"g_applyNow\.pending = false;   // one-shot, also", "g_applyNow.pending = true;   // one-shot, also", "apply-now request never cleared (not one-shot)")
 m("AN05", CPP, r"if \(!held && g_applyNow\.pending && isMenuDrawSite", "if (g_applyNow.pending && isMenuDrawSite", "apply-now also levels a HELD creature")
 # ---- log cap (F1) / HOLD log rate limit (F14) -------------------------------------------------------------------------------------------
-m("LG01", CPP, r"    logOpen\(\);   // F1", "    if (!logOpen()) return;   // F1", "F1 regression: capped log disables the rewrite")
-m("LG02", CPP, r"if \(!g_f \|\| g_logLines >= MaxLogLines\) return;", "if (!g_f) return;", "log cap never reached")
-m("LG03", CPP, r"if \(g_logLines >= MaxLogLines\) return false;", "if (g_logLines > MaxLogLines + 100000) return false;", "logOpen ignores the cap")
+# LG01/LG02/LG03 retired: the 20000-line cap moved to KpLog.h (Common) and logOpen() is a constant true (LG01 SURVIVED as equivalent); X13_log_capped now drives the real sink to its cap (log.capped=1).
 m("LG04", CPP, r"if \(differs\) \+\+s->suppressed; return; \}", "return; }", "HOLD log: suppressed transitions not counted")
 m("LG05", CPP, r"s->everLogged = true; s->suppressed = 0;", "s->everLogged = true;", "HOLD log: suppressed counter never reset")
 m("LG06", CPP, r"if \(s->everLogged && now - s->lastLog < HoldLogGapMs\)", "if (false)", "HOLD log: rate limit off")
