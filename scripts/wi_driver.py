@@ -8,6 +8,7 @@ Usage:
   wi_driver.py close WI-NN [--dry-run]
   wi_driver.py report WI-NN
   wi_driver.py park WI-NN --reason TEXT [--dry-run]
+  wi_driver.py unpark WI-NN --reason TEXT [--dry-run]
   wi_driver.py release WI-NN [--force]
   wi_driver.py status
   wi_driver.py lint
@@ -696,6 +697,44 @@ def cmd_park(a, st):
     return park(st, wi, claim, a.reason, claim["session"] if claim else session_id())
 
 
+def unpark(st, wi, reason, session):
+    """Record an unpark event, re-render the index (clears the [!] cell), commit state files. Refuses unless WI is parked."""
+    root = st.root
+    with st.flock("commit.flock"):
+        state_p, index_p = ws.STATE_FILE.as_posix(), ws.INDEX_FILE.as_posix()
+        if wi.id not in st.state_maps()[1]:
+            raise DriverError(f"{wi.id} is not parked; nothing to unpark", 2)
+        size = (root / state_p).stat().st_size if (root / state_p).exists() else None
+        index_text = (root / index_p).read_text(encoding="utf-8")
+        st.append_event(wi.id, "unpark", session, reason)
+        st.render_index()
+        try:
+            sha = git_commit(st, f"{wi.id}: unparked\n\nReason: {reason[:300]}\n\n{TRAILER}\n", [state_p, index_p])
+        except DriverError:
+            if size is None:
+                (root / state_p).unlink(missing_ok=True)
+            else:
+                with open(root / state_p, "r+b") as fh:
+                    fh.truncate(size)
+            (root / index_p).write_text(index_text, encoding="utf-8")
+            raise
+    ledger(root, "WI_UNPARK", wi=wi.id, reason=reason[:80])
+    print(f"UNPARKED {wi.id} ({sha}): {reason[:160]}")
+    print(f"Claimable again: python3 scripts/wi_driver.py next {wi.id} (or /next-dev-work-item)")
+    return 0
+
+
+def cmd_unpark(a, st):
+    items = wm.load_all(st.root)
+    wi = get_item(items, a.wi)
+    if wi.id not in st.state_maps()[1]:
+        raise DriverError(f"{wi.id} is not parked; nothing to unpark", 2)
+    if a.dry_run:
+        print(f"DRY RUN: would unpark {wi.id} ({a.reason}) and clear its [!] cell")
+        return 0
+    return unpark(st, wi, a.reason, session_id())
+
+
 def cmd_release(a, st):
     claim = st.read_claim(a.wi)
     if not claim:
@@ -918,7 +957,7 @@ def build_parser():
     ap = argparse.ArgumentParser(prog="wi_driver.py", description="Claim, run, verify, commit and audit one dev work item per call.")
     ap.add_argument("--repo-root", default=None, help="repo root (default: this checkout)")
     ap.add_argument("--claims-dir", default=None, help="claims directory override (tests)")
-    sub = ap.add_subparsers(dest="cmd", required=True, metavar="{next,verify,docs,close,report,park,release,status,lint,audit,backlog}")
+    sub = ap.add_subparsers(dest="cmd", required=True, metavar="{next,verify,docs,close,report,park,unpark,release,status,lint,audit,backlog}")
     p = sub.add_parser("next", help="claim the next eligible item and print the worker spawn")
     p.add_argument("wi", nargs="?")
     p.add_argument("--adopt", action="store_true", help="take over a stale claim on WI-NN")
@@ -931,6 +970,10 @@ def build_parser():
         if name != "report":
             p.add_argument("--dry-run", action="store_true", help="show what would happen")
     p = sub.add_parser("park", help="record a park, release the claim")
+    p.add_argument("wi")
+    p.add_argument("--reason", required=True)
+    p.add_argument("--dry-run", action="store_true")
+    p = sub.add_parser("unpark", help="reverse a park: clear the [!] cell so the item is claimable again")
     p.add_argument("wi")
     p.add_argument("--reason", required=True)
     p.add_argument("--dry-run", action="store_true")
@@ -963,7 +1006,7 @@ def build_parser():
 
 
 HANDLERS = {"next": cmd_next, "verify": cmd_verify, "docs": cmd_docs, "close": cmd_close, "report": cmd_report, "park": cmd_park,
-            "release": cmd_release, "status": cmd_status, "lint": cmd_lint, "audit": cmd_audit, "backlog": cmd_backlog}
+            "unpark": cmd_unpark, "release": cmd_release, "status": cmd_status, "lint": cmd_lint, "audit": cmd_audit, "backlog": cmd_backlog}
 
 
 def main(argv=None):

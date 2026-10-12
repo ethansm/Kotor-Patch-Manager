@@ -416,6 +416,33 @@ class FlowTests(Base):
         self.assertEqual(self.st.runs()[-1]["outcome"], "park")
         self.assertEqual(sh(self.root, "git", "log", "-1", "--format=%s").stdout.strip(), "WI-01: parked")
 
+    def test_unpark_makes_parked_item_claimable_again(self):
+        index = self.root / ".claude/work_items/dev_work_items.md"
+        self.drv("next", "WI-01")
+        self.assertEqual(self.drv("park", "WI-01", "--reason", "needs design").returncode, 2)
+        self.assertIn("| [!] | 1 | WI-01 |", index.read_text())
+        self.assertEqual(self.drv("next", "WI-01", "--dry-run").returncode, 3)  # parked: not claimable
+        dry = self.drv("unpark", "WI-01", "--reason", "design settled", "--dry-run")
+        self.assertEqual(dry.returncode, 0, dry.stdout + dry.stderr)
+        self.assertIn("WI-01", self.st.state_maps()[1])  # dry run changes nothing
+        r = self.drv("unpark", "WI-01", "--reason", "design settled")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertNotIn("WI-01", self.st.state_maps()[1])
+        self.assertIn("| [ ] | 1 | WI-01 |", index.read_text())
+        self.assertEqual(sh(self.root, "git", "log", "-1", "--format=%s").stdout.strip(), "WI-01: unparked")
+        body = sh(self.root, "git", "log", "-1", "--format=%b").stdout
+        self.assertIn("Reason: design settled", body)
+        self.assertIn("Co-Authored-By: Claude Sonnet 5.5", body)
+        self.assertIn("CLAIM WI-01", self.drv("next", "WI-01", "--dry-run").stdout)
+        self.assertEqual(self.drv("unpark", "WI-01", "--reason", "again").returncode, 2)  # already unparked
+
+    def test_unpark_refuses_when_not_parked(self):
+        head = sh(self.root, "git", "rev-parse", "HEAD").stdout
+        r = self.drv("unpark", "WI-01", "--reason", "nothing to do")
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertIn("not parked", r.stderr)
+        self.assertEqual(sh(self.root, "git", "rev-parse", "HEAD").stdout, head)
+
     def test_worker_status_fail_goes_to_failure_path(self):
         self.drv("next", "WI-01")
 
