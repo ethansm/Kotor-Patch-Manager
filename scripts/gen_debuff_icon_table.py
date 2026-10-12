@@ -26,6 +26,10 @@ for f in glob.glob(game + "/TexturePacks/*.erf"):
 for f in os.listdir(game + "/override"):
     if f.lower().endswith(('.tpc', '.tga')): tex.add(f.rsplit('.', 1)[0].lower())
 EXCLUDE = {0, 1, 2, 3, 6, 10, 14, 21, 28, 134}
+# Hostile force powers the plain rule misses: spells.2da has no iconresref for BAT_MED_ENEMY (141-143, the ip_battlemed*
+# icons exist in override), and DROID_TRICK / DROID_CONFUSION (201, 269) carry neither forcehostile nor hostilesetting.
+FORCE_INCLUDE = {201, 269}
+ICON_FALLBACK = {141: 'ip_battlemed01', 142: 'ip_battlemed02', 143: 'ip_battlemed03'}
 item_icon = {}   # spell -> first existing ii_ icon of a granting item
 for r in inst.chitin_resources():
     if r.restype() != ResourceType.UTI: continue
@@ -42,8 +46,8 @@ rows, report = {}, []
 for i in range(sp.get_height()):
     if i in EXCLUDE: continue
     r = sp.get_row(i)
-    if not (r.get_string('forcehostile') or r.get_string('hostilesetting') not in ('', '0')): continue
-    ic = r.get_string('iconresref').lower()
+    if i not in FORCE_INCLUDE and not (r.get_string('forcehostile') or r.get_string('hostilesetting') not in ('', '0')): continue
+    ic = r.get_string('iconresref').lower() or ICON_FALLBACK.get(i, '')
     if ic and ic in tex: rows[i] = (ic, False)
     elif i in item_icon: rows[i] = (item_icon[i], True)
     else: report.append((i, r.get_string('label')))

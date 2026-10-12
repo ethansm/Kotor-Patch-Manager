@@ -288,6 +288,11 @@ int main() {
         KT_CHECK(iconForSpell(0, false, &item) == nullptr); KT_CHECK(!item);
         KT_CHECK_EQ(iconForSpell(4, true, &item), "ip_advlsthrow"); KT_CHECK(!item);
         KT_CHECK_EQ(iconForSpell(116, true, &item), "ii_drdutldev_003"); KT_CHECK(item);
+        KT_CHECK_EQ(iconForSpell(141, true, &item), "ip_battlemed01"); KT_CHECK(!item);   // BAT_MED_ENEMY: no iconresref in spells.2da
+        KT_CHECK_EQ(iconForSpell(143, true, &item), "ip_battlemed03"); KT_CHECK(!item);
+        KT_CHECK_EQ(iconForSpell(201, true, &item), "ip_scram01"); KT_CHECK(!item);      // DROID_TRICK: hs=0, fh empty
+        KT_CHECK_EQ(iconForSpell(269, true, &item), "ip_scram03"); KT_CHECK(!item);
+        KT_CHECK(iconForSpell(14, true, &item) == nullptr);           // DOMINATE stays out by design
         KT_CHECK(iconForSpell(69, true, &item) == nullptr);           // buff row is not a debuff
         KT_CHECK(iconForSpell(4, false, &item) == nullptr);           // debuff row is not a buff
         KT_CHECK(iconForSpell(-1, false, &item) == nullptr); KT_CHECK(!item);
