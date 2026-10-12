@@ -30,7 +30,7 @@ UPSCALE = "upscale_plus_v0.52"
 BASE_2DA = b"2DA V2.b\n\nlabel\n17 N_CommM\n"
 PROBE_2DA = b"2DA V2.b\n\nlabel\n17 N_CommM\n812 K1P_CommM_Probe\n"
 BASE_SHA = hashlib.sha256(BASE_2DA).hexdigest()
-CREATED = ["k1p_commm.mdl", "k1p_commm.mdx", "k1p_commm04.tpc", "per_miner_002.utc"]
+CREATED = ["k1p_commm.mdl", "k1p_commm.mdx", "k1p_commm04.tpc", "c_ithorian003.utc"]
 
 
 def test(fn):
@@ -61,7 +61,7 @@ def make_world(root: Path, *, tex="k1p_commm04", flagged=False, base=True) -> di
     (stage / "models" / "k1p_commm.mdx").write_bytes(mdx)
     (stage / "override" / "k1p_commm04.tpc").write_bytes(b"TPC probe texture bytes")
     (stage / "probe_T12h" / "override" / "appearance.2da").write_bytes(PROBE_2DA)
-    (stage / "probe_T12h" / "override" / "per_miner_002.utc").write_bytes(b"UTC probe npc")
+    (stage / "probe_T12h" / "override" / "c_ithorian003.utc").write_bytes(b"UTC probe npc")
     led = Ledger(stage / "ledger.json")
     for rel, kind in (("models/k1p_commm.mdl", "model"), ("models/k1p_commm.mdx", "model"),
                       ("override/k1p_commm04.tpc", "texture")):

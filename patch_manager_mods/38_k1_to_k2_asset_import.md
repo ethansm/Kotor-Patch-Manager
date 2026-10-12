@@ -103,8 +103,8 @@ Voice: skip for now. Drop-in path fails (claim 11). TLK vs VO_ResRef precedence 
 | T11 | Ingest `n_commm` (vanilla, HD flagged) and `llk_LenaH/B` (credit) into the stage | BUILT |
 | T12 | Risk mitigation: loader recon, MDLOps diff, scratch-save probe, converter hardening | BUILT |
 | T13 | Commit `k1_port/` + doc 38 + evidence by explicit paths (needs user "commit") | DONE |
-| T14 | Probe build: `k1_port_probe_build.py` makes stage `probe_T12h/override/{appearance.2da,per_miner_002.utc}`; probe tool gets save-slot backup; `plan` turns green | BUILT |
-| T15 | Probe install (user GO, game closed): `k1_port_probe.py install --yes`, manifest verified | TODO |
+| T14 | Probe build: `k1_port_probe_build.py` makes stage `probe_T12h/override/{appearance.2da,c_ithorian003.utc}` (10-11 retarget: Ithorian Compound greeter in `204tel`, appearance 72 -> 812, literal name "K1 Probe Citizen"; test from `Game9`, 204tel unvisited; a save made inside 204tel would hold the old creature, so it cannot be used); probe tool gets save-slot backup; `plan` turns green | BUILT |
+| T15 | Probe install (user GO, game closed; test NPC at x=-43.6 y=-27.5 in the Ithorian Compound, `npc_div_whatis.py -43.6 -27.5`): `k1_port_probe.py install --yes`, manifest verified | TODO |
 | T16 | Probe play test (user) + log check; KEEP or ROLLBACK; result into this doc and doc 34 item 10 | TODO |
 
 ## 8. Licence policy and tooling (10-11)

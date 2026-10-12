@@ -183,6 +183,19 @@ def test_texa_and_texture_var_args(root):
 
 
 @test
+def test_name_and_expect_appearance(root):
+    from pykotor.resource.generics.utc import read_utc
+    game = make_game(root)
+    out = root / "out"
+    kb.build(game, out, name="K1 Probe Citizen")
+    u = read_utc((out / "per_miner_002.utc").read_bytes())
+    check(u.first_name.stringref == -1 and u.first_name.get(0, 0) == "K1 Probe Citizen", "literal first name not set")
+    expect_refusal(lambda: kb.build(game, root / "o2", expect_appearance=72), "expected 72")
+    expect_refusal(lambda: kb.build(game, root / "o3", name=""), "name")
+    expect_refusal(lambda: kb.build(game, root / "o4", resref="Bad Name"), "resref")
+
+
+@test
 def test_utc_only_appearance_and_variation_change(root):
     from pykotor.resource.generics.utc import read_utc
     game = make_game(root)
@@ -266,13 +279,13 @@ def test_cli_json_and_plain_output(root):
     game = make_game(root)
     base = (game / "override" / "appearance.2da").read_bytes()
     out = root / "out"
-    r = run_cli("--game-dir", game, "--out", out, "--json")
+    r = run_cli("--game-dir", game, "--out", out, "--json", "--module", "201TEL", "--utc", "per_miner_002", "--expect-appearance", "17", "--name", "Test Name")
     check(r.returncode == 0, f"rc {r.returncode}: {r.stderr}")
     res = json.loads(r.stdout)
     check(res == {"appearance_2da": sha_of((out / "appearance.2da").read_bytes()),
                   "utc": sha_of((out / "per_miner_002.utc").read_bytes()),
                   "base_sha256": sha_of(base), "new_row": 812}, f"JSON result: {res}")
-    r2 = run_cli("--game-dir", game, "--out", root / "out2")
+    r2 = run_cli("--game-dir", game, "--out", root / "out2", "--module", "201TEL", "--utc", "per_miner_002", "--expect-appearance", "17", "--name", "Test Name")
     check(r2.returncode == 0, f"plain rc {r2.returncode}: {r2.stderr}")
     lines = r2.stdout.splitlines()
     check(lines[:3] == [f"appearance_2da: {res['appearance_2da']}", f"utc: {res['utc']}",
@@ -284,7 +297,7 @@ def test_cli_refusal_exit_1(root):
     game = make_game(root, rows=811)
     out = root / "out"
     before = tree_hash(game)
-    r = run_cli("--game-dir", game, "--out", out)
+    r = run_cli("--game-dir", game, "--out", out, "--module", "201TEL", "--utc", "per_miner_002", "--expect-appearance", "17", "--name", "Test Name")
     check(r.returncode == 1, f"rc {r.returncode}")
     check("error: live appearance.2da has 811 rows" in r.stderr, f"stderr: {r.stderr}")
     check(r.stdout == "" and not out.exists(), "refused CLI run must print no hashes and write nothing")
@@ -297,7 +310,7 @@ def test_cli_reexecs_from_base_python(root):
     base = getattr(sys, "_base_executable", None) or "/usr/bin/python3"
     game = make_game(root)
     out = root / "out"
-    r = run_cli("--game-dir", game, "--out", out, python=base)
+    r = run_cli("--game-dir", game, "--out", out, "--module", "201TEL", "--utc", "per_miner_002", "--expect-appearance", "17", "--name", "Test Name", python=base)
     check(r.returncode == 0, f"rc {r.returncode} under {base}: {r.stderr}")
     check(r.stdout.startswith("appearance_2da: "), f"stdout: {r.stdout}")
 

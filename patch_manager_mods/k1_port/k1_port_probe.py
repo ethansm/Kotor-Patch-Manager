@@ -50,7 +50,7 @@ import k1_port_validate as kv  # noqa: E402
 DEFAULT_STAGE = "~/Games/KOTOR2_Mod_Workspace/k1_port_stage"
 DEFAULT_FILES = (
     "probe_T12h/override/appearance.2da",
-    "probe_T12h/override/per_miner_002.utc",
+    "probe_T12h/override/c_ithorian003.utc",
     "models/k1p_commm.mdl",
     "models/k1p_commm.mdx",
     "override/k1p_commm04.tpc",

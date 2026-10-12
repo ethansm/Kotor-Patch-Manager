@@ -4,14 +4,16 @@
 Writes ONLY into --out:
   appearance.2da     live table + row 812 (copy of row 17, label K1P_CommM_Probe,
                      race/modela/modelb/texa/texb = texa)
-  per_miner_002.utc  the per_miner_002 UTC from modules/201TEL.mod with appearance_id 812 and
-                     texture_variation = texture_var
+  <resref>.utc       the target UTC from the module .mod (default per_miner_002 in 201TEL.mod; the CLI
+                     default is c_ithorian003 in 204tel.mod) with appearance_id 812,
+                     texture_variation = texture_var and, when given, a literal first name
 Every check runs before the first write. A refusal raises BuildError (CLI: 'error: ...' on stderr, exit 1).
 
 Needs pykotor. The CLI re-executes itself under the k1port venv (python -I) when pykotor is not
 importable. build() imports pykotor lazily and raises BuildError when it is missing.
 
-Usage: k1_port_probe_build.py --game-dir DIR [--out DIR] [--texa NAME] [--texture-var N] [--json]
+Usage: k1_port_probe_build.py --game-dir DIR [--out DIR] [--texa NAME] [--texture-var N]
+       [--module M] [--utc RESREF] [--expect-appearance N] [--name TEXT] [--json]
 Exit: 0 ok, 1 refused or error. argparse usage errors exit 2.
 """
 import argparse
@@ -38,6 +40,8 @@ DEFAULT_TEXA = "k1p_commm"
 DEFAULT_TEXTURE_VAR = 4
 TEXA_COLUMNS = ("race", "modela", "modelb", "texa", "texb")
 TEXA_RE = re.compile(r"[a-z0-9_]{1,16}")
+RESREF_RE = TEXA_RE
+PROBE_MODULE, PROBE_UTC, PROBE_EXPECT, PROBE_NAME = "204tel", "c_ithorian003", 72, "K1 Probe Citizen"
 
 
 class BuildError(ValueError):
@@ -84,8 +88,8 @@ def _resolve_dirs(game_dir, out_dir) -> tuple[Path, Path]:
     return game, out
 
 
-def _read_live(game: Path) -> tuple[bytes, bytes]:
-    app, mod = game / APPEARANCE_REL, game / MODULE_REL
+def _read_live(game: Path, module_rel: str) -> tuple[bytes, bytes]:
+    app, mod = game / APPEARANCE_REL, game / module_rel
     for p in (app, mod):
         if not p.is_file():
             raise BuildError(f"missing live file: {p}")
@@ -108,35 +112,48 @@ def _build_appearance(api: SimpleNamespace, app_live: bytes, texa: str, template
     return api.bytes_2da(t)
 
 
-def _build_utc(api: SimpleNamespace, mod_live: bytes, texture_var: int, template_row: int) -> bytes:
+def _build_utc(api: SimpleNamespace, mod_live: bytes, texture_var: int, expect_appearance: int,
+               resref: str, module_rel: str, name) -> bytes:
     erf = api.read_erf(mod_live)
-    hits = [r for r in erf if r.resref.get().lower() == UTC_NAME and r.restype == api.ResourceType.UTC]
+    hits = [r for r in erf if r.resref.get().lower() == resref and r.restype == api.ResourceType.UTC]
     if len(hits) != 1:
-        raise BuildError(f"expected one {UTC_NAME}.utc in {MODULE_REL}, found {len(hits)}")
+        raise BuildError(f"expected one {resref}.utc in {module_rel}, found {len(hits)}")
     u = api.read_utc(hits[0].data)
-    if u.appearance_id != template_row:
-        raise BuildError(f"{UTC_NAME}.utc appearance_id is {u.appearance_id}, expected {template_row}; refusing")
+    if u.appearance_id != expect_appearance:
+        raise BuildError(f"{resref}.utc appearance_id is {u.appearance_id}, expected {expect_appearance}; refusing")
     u.appearance_id = NEW_ROW
     u.texture_variation = texture_var
+    if name:
+        from pykotor.common.language import LocalizedString  # literal text, no tlk entry
+        u.first_name = LocalizedString.from_english(name)
     return api.bytes_utc(u)
 
 
 def build(game_dir, out_dir, texa: str = DEFAULT_TEXA, texture_var: int = DEFAULT_TEXTURE_VAR,
-          template_row: int = TEMPLATE_ROW) -> dict:
-    """Write <out_dir>/appearance.2da and <out_dir>/per_miner_002.utc from the live game (read only).
+          template_row: int = TEMPLATE_ROW, module_rel: str = MODULE_REL, resref: str = UTC_NAME,
+          expect_appearance=None, name=None) -> dict:
+    """Write <out_dir>/appearance.2da and <out_dir>/<resref>.utc from the live game (read only).
+
+    expect_appearance: the appearance_id the live UTC must have (default template_row).
+    name: literal first name for the NPC (default: keep the template's).
 
     Returns {"appearance_2da", "utc", "base_sha256", "new_row"}. Raises BuildError; writes nothing on refusal.
     """
     _check_args(texa, texture_var, template_row)
     game, out = _resolve_dirs(game_dir, out_dir)
     api = _pykotor()
-    app_live, mod_live = _read_live(game)
+    if not RESREF_RE.fullmatch(resref):
+        raise BuildError(f"resref must be 1-16 chars of [a-z0-9_], got {resref!r}")
+    if name is not None and not (1 <= len(name) <= 64 and name.isprintable()):
+        raise BuildError("name must be 1-64 printable characters")
+    app_live, mod_live = _read_live(game, module_rel)
     app_bytes = _build_appearance(api, app_live, texa, template_row)
-    utc_bytes = _build_utc(api, mod_live, texture_var, template_row)
+    utc_bytes = _build_utc(api, mod_live, texture_var, template_row if expect_appearance is None else expect_appearance,
+                           resref, module_rel, name)
     try:
         out.mkdir(parents=True, exist_ok=True)
         (out / "appearance.2da").write_bytes(app_bytes)
-        (out / f"{UTC_NAME}.utc").write_bytes(utc_bytes)
+        (out / f"{resref}.utc").write_bytes(utc_bytes)
     except OSError as exc:
         raise BuildError(f"cannot write into {out}: {exc}") from exc
     return {
@@ -164,18 +181,25 @@ def _reexec_under_venv(argv: list) -> None:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Build the k1p_commm probe appearance.2da row 812 and "
-                                             "per_miner_002.utc from the live game (game dir is read only).")
+                                             "probe NPC UTC from the live game (game dir is read only).")
     ap.add_argument("--game-dir", required=True, metavar="DIR", help="KOTOR II install dir (read only)")
     ap.add_argument("--out", default=DEFAULT_OUT, metavar="DIR", help="output dir (default: %(default)s)")
     ap.add_argument("--texa", default=DEFAULT_TEXA, metavar="NAME",
                     help="value for race/modela/modelb/texa/texb of row 812 (default: %(default)s)")
     ap.add_argument("--texture-var", type=int, default=DEFAULT_TEXTURE_VAR, metavar="N",
                     help="UTC texture_variation (default: %(default)s)")
+    ap.add_argument("--module", default=PROBE_MODULE, metavar="M", help="module capsule modules/<M>.mod (default: %(default)s)")
+    ap.add_argument("--utc", default=PROBE_UTC, metavar="RESREF", help="creature template to override (default: %(default)s)")
+    ap.add_argument("--expect-appearance", type=int, default=PROBE_EXPECT, metavar="N",
+                    help="appearance_id the live UTC must have (default: %(default)s)")
+    ap.add_argument("--name", default=PROBE_NAME, metavar="TEXT", help="literal NPC first name (default: %(default)r)")
     ap.add_argument("--json", action="store_true", help="print the result as JSON")
     args = ap.parse_args(argv)
     try:
         _reexec_under_venv(sys.argv[1:] if argv is None else list(argv))
-        res = build(args.game_dir, args.out, texa=args.texa, texture_var=args.texture_var)
+        res = build(args.game_dir, args.out, texa=args.texa, texture_var=args.texture_var,
+                    module_rel=f"modules/{args.module}.mod", resref=args.utc,
+                    expect_appearance=args.expect_appearance, name=args.name)
     except (BuildError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
