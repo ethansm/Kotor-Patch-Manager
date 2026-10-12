@@ -15,7 +15,7 @@ Statuses come from this doc's own status blocks, the git log of `equipment_3d_ch
 | EQ6 | Doc 20 extraction: Equip3dLogic.h, host test, F14-F19 clamps and INI hygiene | BUILT | 1d0ccab 47be017 14d905a | Extraction 1d0ccab and BF2 A/B (47be017, 14d905a) in live build: KPM Equip3dLogic.h matches HEAD; kpatch built 10-09 is newer than that copy; kpm_status LIVE. Play test not recorded |
 | EQ7 | Common extraction: saferead C3a, SceneView C3b, vertical pan C3c | BUILT | e180af1 ba361f8 e77e64c | Installed 2026-10-05 (b6eeee09, d954782a); combined play test pending |
 | EQ8 | MG4/MG6/MG7: KpLog, IniKit, PanelSlots, GuiKit, WindowHook, gameaddr; T5e contract test | BUILT | d2fd8cc 1af7130 aa63ec8 | equip3d 0.2.0-probe installed 2026-10-05 20:55; play check pending |
-| EQ9 | Track P gui-input adoption; creature destroy on character change, anim fallback, screen sync | CHECK | 7aeb296 22b56b4 | 2026-10-08/09 commits; install state not recorded |
+| EQ9 | Track P gui-input adoption; creature destroy on character change, anim fallback, screen sync | BUILT | 7aeb296 22b56b4 | 7aeb296 and 22b56b4 equip files (EquipCharPreview.cpp, manifest) in live build: KPM copy (10-08 23:16) matches HEAD; kpatch built 10-09 10:07; kpm_status LIVE. Play test not recorded |
 | EQ10 | Phase 2: holstered / combat-stance toggle | TODO | | Research gate first (SESSION 4 remaining plan) |
 | EQ11 | Per-weapon extras: saber blade/effects, forms g2r2..g2r7 | TODO | | Untested (STATUS BLOCK Open/next) |
 | EQ12 | Phase 3 / Track M: mirror the CHARACTER page | TODO | | SESSION 4 remaining plan |
