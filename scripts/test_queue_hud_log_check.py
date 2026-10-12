@@ -995,5 +995,26 @@ class SpellFlagTests(unittest.TestCase):
         self.assertIn("  K L1 cmd=4 m=0 " + K_MSG, out)
 
 
+# Synthetic BANNER goldens (spec line; not yet in queue_hud_logic_test.cpp).
+BANNER_GOLDEN = [
+    "BANNER act=hide soft=1 ctl=8 wr=8",
+    "BANNER act=restore soft=0 ctl=0 wr=0",
+    "BANNER act=forget soft=1 ctl=2 wr=5",
+    "BANNER act=reset soft=0 ctl=12 wr=3",
+]
+
+
+class BannerTraceTests(unittest.TestCase):
+    def test_banner_golden_lines_parse_exactly_and_malformed_act_is_skipped(self):
+        recs, skipped = parse(BANNER_GOLDEN)
+        self.assertEqual(skipped, [])
+        self.assertEqual([r["kw"] for r in recs], ["BANNER"] * 4)
+        self.assertEqual([r["f"]["act"] for r in recs], ["hide", "restore", "forget", "reset"])
+        self.assertEqual((recs[0]["f"]["soft"], recs[0]["f"]["ctl"], recs[0]["f"]["wr"]), ("1", "8", "8"))
+        self.assertEqual((recs[0]["cmd"], recs[0]["m"]), (None, None))
+        recs, skipped = parse(["BANNER act=bogus soft=1 ctl=8 wr=8"])
+        self.assertEqual((recs, len(skipped)), ([], 1))
+
+
 if __name__ == "__main__":
     unittest.main()

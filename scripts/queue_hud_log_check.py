@@ -37,6 +37,7 @@ these keywords are ignored; a keyword line with a missing or malformed field is 
     (spell arguments: where=hook is the dispatch_now cast, where=replay is a buffered cast re-issued from the queue)
   SPELL_OUT m=<k> cmd=<n> exec=<0|1> firstExecMs=<n|-> endMs=<n>   (outcome of the spell command in SPELL_ARGS; same cmd=)
   SOFT_CAND m=<k> hostile=<0|1> party=<0|1> none=<0|1> cr0=<n|?> cr1=<hex|?>   (soft-combat candidate per member; no cmd, no lifecycle)
+  BANNER act=<hide|restore|forget|reset> soft=<0|1> ctl=<n> wr=<n>   (banner event; no m=: dropped by --member; no lifecycle)
   STALE_CUR m=<k> sub=<n> since=<n> aa8=<n> ab8=<n> paused=<0|1>
   IDENT_SWAP from=<n> to=<n>   (no m=: dropped by --member)
 
@@ -108,10 +109,12 @@ FIELD_RE = {
     "where": r"hook|replay", "spell": HEXV, "spell_tgt": HEXV, "arg2": HEXV, "multi": r"-?\d+", "meta": r"-?\d+",
     "dom": r"-?\d+", "posptr": HEXV, "pos": r"orig|null|zero",
     "hostile": r"[01]", "party": r"[01]", "none": r"[01]", "cr0": r"\?|-?\d+", "cr1": r"\?|[0-9a-fA-F]+",
+    "banner_act": r"hide|restore|forget|reset", "soft": r"[01]", "ctl": r"\d+", "wr": r"\d+",
 }
 OVERRIDE = {("EDGE", "buf"): "buflist", ("VANISH", "kind"): "vanish_kind",
             ("ROUND", "types"): "hexlist", ("ROUND", "cur"): "roundcur",
-            ("SPELL_ARGS", "tgt"): "spell_tgt"}
+            ("SPELL_ARGS", "tgt"): "spell_tgt",
+            ("BANNER", "act"): "banner_act"}
 REQUIRED = {
     "CMD": ("m", "cr", "kind", "id", "tgt", "dec", "fb", "engq", "buf", "paused", "combat"),
     "WAIT": ("cmd", "m", "why", "buf", "engNe", "age"),
@@ -133,6 +136,7 @@ REQUIRED = {
     "SPELL_ARGS": ("where", "cmd", "m", "spell", "arg2", "tgt", "multi", "meta", "dom", "posptr", "pos"),
     "SPELL_OUT": ("m", "cmd", "exec", "firstExecMs", "endMs"),
     "SOFT_CAND": ("m", "hostile", "party", "none", "cr0", "cr1"),
+    "BANNER": ("act", "soft", "ctl", "wr"),
     "STALE_CUR": ("m", "sub", "since", "aa8", "ab8", "paused"),
     "IDENT_SWAP": ("from", "to"),
 }

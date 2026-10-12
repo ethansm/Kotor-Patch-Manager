@@ -193,6 +193,8 @@ struct Config {
     bool handoffClearFirst = true;  // handoff_clear_first: clear the engine queue before the first handoff send (default on)
     bool handoffResendHeld = true;  // handoff_resend_held: re-send an engine-held active command the engine wipes at combat start (default on)
     bool spellReplayPos = true;     // spell_replay_pos: replay a buffered spell with a NULL position when the engine's original was NULL (0 = always pass the zero-filled copy)
+    bool hideBannerSoft = true;     // hide_banner_soft: hide the top combat banner while combat is "soft" (only own-party targets, no hostile)
+    bool hideRedbarSoft = true;     // hide_redbar_soft: hide the bottom red combat bar (Cancel Combat) while combat is soft
 };
 
 struct Style { float bg[3], bgA, border[3], borderA, iconA, frameA; int borderPx; };
@@ -478,6 +480,8 @@ inline bool parseIniLine(Config& c, const char* line) {
     if (detail::keyEq(kb, ke, "handoff_clear_first")) return detail::parseBool(vb, ve, &c.handoffClearFirst);
     if (detail::keyEq(kb, ke, "handoff_resend_held")) return detail::parseBool(vb, ve, &c.handoffResendHeld);
     if (detail::keyEq(kb, ke, "spell_replay_pos")) return detail::parseBool(vb, ve, &c.spellReplayPos);
+    if (detail::keyEq(kb, ke, "hide_banner_soft")) return detail::parseBool(vb, ve, &c.hideBannerSoft);
+    if (detail::keyEq(kb, ke, "hide_redbar_soft")) return detail::parseBool(vb, ve, &c.hideRedbarSoft);
     return false;
 }
 
@@ -1149,6 +1153,36 @@ inline int fmtSoftCand(char* out, int cap, int m, const SoftCand& c, uint32_t cr
     w.s(" none="); w.c(c.allNone ? '1' : '0');
     w.s(" cr0="); if (ok0) w.u(cr0); else w.c('?');
     w.s(" cr1="); if (ok1) w.x8(cr1); else w.c('?');
+    return w.done();
+}
+
+// Soft combat = the engine says "in combat" but no member targets a hostile: at least one member targets a party id and none targets a
+// non-party id. All-none (nobody targets anything) counts as HARD so the banner stays (conservative).
+inline bool softCombat(bool combat, const SoftCand* c, int n) {
+    if (!combat || !c || n <= 0) return false;
+    bool party = false, hostile = false;
+    for (int i = 0; i < n; ++i) { if (c[i].anyParty) party = true; if (c[i].anyHostile) hostile = true; }
+    return party && !hostile;
+}
+
+// Banner/red-bar action for one frame. The engine sets the visible bits only on the combat-mode toggle, so a hide stays until we undo it.
+//   soft && combat            -> HIDE (idempotent; re-applied every frame in case the engine sets the bit again)
+//   hidden && combat && !soft -> RESTORE (real combat began while still in combat)
+//   otherwise NONE; when hidden && !combat the caller forgets `hidden` (the engine already hid the controls itself, never restore then).
+enum BannerAct { BA_NONE = 0, BA_HIDE = 1, BA_RESTORE = 2 };
+inline BannerAct bannerAct(bool hidden, bool combat, bool soft) {
+    if (soft && combat) return BA_HIDE;
+    if (hidden && combat && !soft) return BA_RESTORE;
+    return BA_NONE;
+}
+
+// BANNER act=<hide|restore|forget|reset> soft=<0|1> ctl=<n> wr=<n>   (ctl = controls managed, wr = flag dwords written this action)
+inline int fmtBanner(char* out, int cap, const char* act, int soft, int nCtl, int nWr) {
+    detail::LogWr w(out, cap);
+    w.s("BANNER act="); w.s(act);
+    w.s(" soft="); w.c(soft ? '1' : '0');
+    w.s(" ctl="); w.i(nCtl);
+    w.s(" wr="); w.i(nWr);
     return w.done();
 }
 

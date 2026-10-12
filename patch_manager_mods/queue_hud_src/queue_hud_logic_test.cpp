@@ -2131,6 +2131,56 @@ void testHeldHeadAction() {
         fmtSoftCand(o3, sizeof o3, -1, softCandidate(none3, 3, party3, 3), 0, false, 0, false);
         KT_CHECK_EQ(o3, "SOFT_CAND m=? hostile=0 party=0 none=1 cr0=? cr1=?");
     }
+    // softCombat / bannerAct / fmtBanner: soft = in combat with party-only targets (S3 case), hide/restore table, BANNER goldens
+    {
+        const uint32_t party3[3] = {0x800001afu, 0x800001b3u, 0x800001b5u};
+        const uint32_t pty1[1] = {0x800001afu};
+        const uint32_t hst1[1] = {0x800002c0u};
+        const uint32_t none1[1] = {0x7f000000u};
+        const uint32_t both3[3] = {0x7f000000u, 0x800002c0u, 0x800001afu};     // one member targets a hostile AND a party id
+        const SoftCand mPty = softCandidate(pty1, 1, party3, 3);
+        const SoftCand mHst = softCandidate(hst1, 1, party3, 3);
+        const SoftCand mNone = softCandidate(none1, 1, party3, 3);
+        const SoftCand mBoth = softCandidate(both3, 3, party3, 3);
+        const SoftCand s3[2] = {mPty, mNone};                                  // S3: member0 targets party only, member1 nothing
+        KT_CHECK(softCombat(true, s3, 2));
+        const SoftCand oneHostile[2] = {mNone, mHst};                          // one member targets a hostile
+        KT_CHECK(!softCombat(true, oneHostile, 2));
+        const SoftCand acrossMix[2] = {mPty, mHst};                            // party on member0, hostile on member1
+        KT_CHECK(!softCombat(true, acrossMix, 2));
+        const SoftCand withinMix[1] = {mBoth};                                 // party + hostile inside one member
+        KT_CHECK(!softCombat(true, withinMix, 1));
+        const SoftCand allNone[2] = {mNone, mNone};                            // nobody targets anything: counts as HARD
+        KT_CHECK(!softCombat(true, allNone, 2));
+        KT_CHECK(!softCombat(false, s3, 2));                                   // not in combat
+        KT_CHECK(!softCombat(false, nullptr, 0));
+        KT_CHECK(!softCombat(true, nullptr, 2));                               // null array
+        KT_CHECK(!softCombat(true, s3, 0));                                    // empty array
+        KT_CHECK(!softCombat(true, s3, -1));
+
+        // bannerAct(hidden, combat, soft): soft+combat hides (idempotent); hard combat while hidden restores; else none
+        KT_CHECK(bannerAct(false, false, false) == BA_NONE);
+        KT_CHECK(bannerAct(false, false, true) == BA_NONE);                    // soft but not in combat: nothing to hide
+        KT_CHECK(bannerAct(false, true, false) == BA_NONE);                    // hard combat, not hidden: leave banner alone
+        KT_CHECK(bannerAct(false, true, true) == BA_HIDE);                     // soft combat: hide
+        KT_CHECK(bannerAct(true, false, false) == BA_NONE);                    // combat over while hidden: no restore here
+        KT_CHECK(bannerAct(true, false, true) == BA_NONE);
+        KT_CHECK(bannerAct(true, true, false) == BA_RESTORE);                  // hard combat began while hidden: restore
+        KT_CHECK(bannerAct(true, true, true) == BA_HIDE);                      // still soft while hidden: re-hide
+
+        // BANNER act=<hide|restore|forget|reset> soft=<0|1> ctl=<n> wr=<n>
+        char ob[kLogLineMax];
+        fmtBanner(ob, sizeof ob, "hide", 1, 8, 8);
+        KT_CHECK_EQ(ob, "BANNER act=hide soft=1 ctl=8 wr=8");
+        fmtBanner(ob, sizeof ob, "restore", 0, 8, 8);
+        KT_CHECK_EQ(ob, "BANNER act=restore soft=0 ctl=8 wr=8");
+        fmtBanner(ob, sizeof ob, "forget", 0, 3, 0);
+        KT_CHECK_EQ(ob, "BANNER act=forget soft=0 ctl=3 wr=0");
+        fmtBanner(ob, sizeof ob, "reset", 0, 8, 8);
+        KT_CHECK_EQ(ob, "BANNER act=reset soft=0 ctl=8 wr=8");
+        fmtBanner(ob, sizeof ob, "hide", 5, 8, 0);                             // soft prints 0/1 only
+        KT_CHECK_EQ(ob, "BANNER act=hide soft=1 ctl=8 wr=0");
+    }
     // HANDOFF_HELD m=<k> cmd=<n> act=<resend|drop> ms=<n>
     char out[kLogLineMax];
     fmtHandoffHeld(out, sizeof out, 0, 8, HELD_RESEND, 70);
@@ -2150,6 +2200,14 @@ void testHeldHeadAction() {
     KT_CHECK(parseIniLine(c, "spell_replay_pos=0") && !c.spellReplayPos && c.handoffResendHeld);
     KT_CHECK(parseIniLine(c, "spell_replay_pos=1") && c.spellReplayPos);
     KT_CHECK(!parseIniLine(c, "spell_replay_pos=x") && c.spellReplayPos);
+    // hide_banner_soft / hide_redbar_soft: default on, bool parsing, each key independent of the other
+    KT_CHECK(c.hideBannerSoft && c.hideRedbarSoft);
+    KT_CHECK(parseIniLine(c, "hide_banner_soft=0") && !c.hideBannerSoft && c.hideRedbarSoft);
+    KT_CHECK(parseIniLine(c, "hide_redbar_soft=0") && !c.hideRedbarSoft && !c.hideBannerSoft);
+    KT_CHECK(parseIniLine(c, "hide_banner_soft=1") && c.hideBannerSoft && !c.hideRedbarSoft);
+    KT_CHECK(parseIniLine(c, "hide_redbar_soft=1") && c.hideRedbarSoft && c.hideBannerSoft);
+    KT_CHECK(!parseIniLine(c, "hide_banner_soft=x") && c.hideBannerSoft);
+    KT_CHECK(!parseIniLine(c, "hide_redbar_soft=x") && c.hideRedbarSoft);
 }
 
 // Cancel Queue colours: the leader is dark green-teal (not black), hover is brighter, companion keeps the teal border.

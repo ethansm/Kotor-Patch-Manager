@@ -84,6 +84,10 @@ constexpr uintptr_t AddrPerformCastSpell = gameaddr::PerformCastSpell;
 uintptr_t g_hud = 0;
 int g_combat = 0;
 bool g_combatUnreadable = false;   // last capture could not read the HUD flags (g_combat is then forced to 1)
+bool g_softCombat = false;         // softBannerTick verdict this frame: in combat but only own-party targets (false when not in combat)
+bool g_bannerHidden = false;       // we cleared the visible bit of >= 1 banner/red-bar control and have not restored it yet
+unsigned g_bannerMask = 0;         // which kBannerCtl[] entries WE cleared (restore sets only these)
+uintptr_t g_bannerHud = 0;         // hud the mask belongs to
 DWORD g_capTick = 0;
 
 template <typename T> bool rd(unsigned site, uintptr_t base, int off, T* out) { return saferead::readAt(site, base, off, out); }
@@ -568,8 +572,9 @@ void drawLeader(uintptr_t hud, DWORD now, DWORD age, const K2PsContext* ctx) {
     if (held.creature != s.creature) { held.nd = 0; held.tick = 0; held.creature = s.creature; }   // a Tab switch never shows the old queue
     qh::Slot slots[qh::kMaxSlots];
     const int n = qh::buildSlots(s.e, s.ne, s.rn, s.nrn, s.haveCur ? &s.cur : nullptr, slots);
-    if (!qh::shouldShow(g_cfg.enabled, g_combat != 0, ctx->inMenu != 0, age, n)) {
-        if (n == 0 && held.nd > 0 && qh::panelHold(held.tick, now, ctx->inMenu != 0, g_combat != 0)) { paintLeader(hud, held.d, held.nd, age, ctx); return; }
+    const bool hardCombat = g_combat != 0 && !g_softCombat;   // soft combat (ally-only targets) draws the strip like out of combat
+    if (!qh::shouldShow(g_cfg.enabled, hardCombat, ctx->inMenu != 0, age, n)) {
+        if (n == 0 && held.nd > 0 && qh::panelHold(held.tick, now, ctx->inMenu != 0, hardCombat)) { paintLeader(hud, held.d, held.nd, age, ctx); return; }
         noteHidden(g_combat != 0 ? "combat" : "empty queue");
         return;
     }
@@ -1184,6 +1189,29 @@ void roundWatchTick(DWORD now) {
 // attack / force power click shows as ROUND lines even when no hand-off happens. The watch never shortens a running one.
 constexpr DWORD kEdgeWatchMs = 8000;
 constexpr int CrCombatOff = 0x520, CrTgt550 = 0x550, CrTgt564 = 0x564, CrTgt568 = 0x568;
+
+// One member's three target fields (server creature +0x550/+0x564/+0x568) and whether each read succeeded.
+struct MemberTgt { uint32_t t[3] = {0, 0, 0}; bool ok[3] = {false, false, false}; };
+void readTargets(uintptr_t srv, MemberTgt& m) {
+    m.ok[0] = rd(SiteQueue, srv, CrTgt550, &m.t[0]);
+    m.ok[1] = rd(SiteQueue, srv, CrTgt564, &m.t[1]);
+    m.ok[2] = rd(SiteQueue, srv, CrTgt568, &m.t[2]);
+}
+// Party object ids (server creature +CrObjectId, k = 0..2); unreadable members stay 0 (ignored by softCandidate).
+void readPartyIds(uintptr_t tbl, uint32_t ids[3]) {
+    for (int j = 0; j < 3; ++j) {
+        ids[j] = 0;
+        const uintptr_t pc = party::member(tbl, j);
+        const uintptr_t ps = pc ? party::serverCreature(pc) : 0;
+        if (ps) rd(SiteCancel + 1, ps, CrObjectId, &ids[j]);
+    }
+}
+// Shared by the traced SOFT_CAND line and the live banner decision so the two cannot diverge. Unreadable targets count as none.
+qh::SoftCand softCandOf(const MemberTgt& m, const uint32_t partyIds[3]) {
+    const uint32_t tg[3] = {m.ok[0] ? m.t[0] : 0u, m.ok[1] ? m.t[1] : 0u, m.ok[2] ? m.t[2] : 0u};
+    return qh::softCandidate(tg, 3, partyIds, 3);
+}
+
 void combatEdgeTrace(DWORD now, const bool* edge) {
     bool any = false;
     for (int k = 0; k < 3; ++k) any = any || edge[k];
@@ -1203,20 +1231,15 @@ void combatEdgeTrace(DWORD now, const bool* edge) {
         uint32_t cr[qh::kCrCombatDwords] = {};
         bool crOk[qh::kCrCombatDwords] = {};
         for (int i = 0; i < qh::kCrCombatDwords; ++i) crOk[i] = rd(SiteQueue, srv, CrCombatOff + 4 * i, &cr[i]);
-        uint32_t t550 = 0, t564 = 0, t568 = 0;
-        const bool o550 = rd(SiteQueue, srv, CrTgt550, &t550), o564 = rd(SiteQueue, srv, CrTgt564, &t564), o568 = rd(SiteQueue, srv, CrTgt568, &t568);
+        MemberTgt mt;
+        readTargets(srv, mt);
         char line[200];
-        qh::fmtCmbtFields(line, sizeof line, k, cr, crOk, t550, o550, t564, o564, t568, o568);
+        qh::fmtCmbtFields(line, sizeof line, k, cr, crOk, mt.t[0], mt.ok[0], mt.t[1], mt.ok[1], mt.t[2], mt.ok[2]);
         QTRACE("%s", line);
-        // SOFT_CAND: do the target fields name a party member, a hostile, or nothing? (party ids = server creature +CrObjectId, k = 0..2)
-        uint32_t partyIds[3] = {};
-        for (int j = 0; j < 3; ++j) {
-            const uintptr_t pc = party::member(tbl, j);
-            const uintptr_t ps = pc ? party::serverCreature(pc) : 0;
-            if (ps) rd(SiteCancel + 1, ps, CrObjectId, &partyIds[j]);
-        }
-        const uint32_t tg[3] = {o550 ? t550 : 0u, o564 ? t564 : 0u, o568 ? t568 : 0u};
-        qh::fmtSoftCand(line, sizeof line, k, qh::softCandidate(tg, 3, partyIds, 3), cr[0], crOk[0], cr[1], crOk[1]);
+        // SOFT_CAND: do the target fields name a party member, a hostile, or nothing?
+        uint32_t partyIds[3];
+        readPartyIds(tbl, partyIds);
+        qh::fmtSoftCand(line, sizeof line, k, softCandOf(mt, partyIds), cr[0], crOk[0], cr[1], crOk[1]);
         QTRACE("%s", line);
     }
 }
@@ -1626,6 +1649,118 @@ void KPATCH_CALL onFrameBegin(const K2PsContext* ctx, void*) {
     tickItemQueues(now, inMenu);
 }
 
+// ---- soft-combat banner / red-bar hide ----
+// The engine (FUN_0074E910, every frame, acts only on a combat-mode toggle) sets/clears the visible bit (0x2 of the control flags dword at
+// control base + 0x48) of these controls. We clear OUR OWN visible bits while the combat is soft and restore them if a hostile appears
+// before combat ends. Never flip bit 1 of [hud+0xA904] (reruns the toggle: minimap slide, camera). Never touch hud+0x6E54: on leaving combat
+// 0x74E910 reads its bit to decide the panel slide-back. The vanilla queue slots (0x5F2C + i*0x148 + 0x48) are not ours either.
+constexpr int kBannerCtl[] = {
+    0x6F9C,   // LBL_CMBTMODEMSG flags (banner text)
+    0x70E4,   // LBL_CMBTMSGBG flags (banner background)
+    0x6494,   // LBL_COMBATBG2 flags (red bar)
+    0x65DC,   // LBL_COMBATBG3 flags (red bar)
+    0x6724,   // unnamed third combat BG flags (red bar candidate)
+    0x68E4,   // BTN_CLEARONE flags
+    0x6AB4,   // BTN_CLEARONE2 flags
+    0x6C84,   // BTN_CLEARALL flags
+};
+constexpr int kBannerCtlN = static_cast<int>(sizeof kBannerCtl / sizeof kBannerCtl[0]);
+constexpr int kBannerPair = 2;   // kBannerCtl[0..1] = hide_banner_soft, [2..] = hide_redbar_soft
+constexpr unsigned kVisibleBit = static_cast<unsigned>(guikit::FlagVisible);
+int g_bannerLastAct = -1;        // last BannerAct logged (change-only trace)
+bool g_bannerResetLogged = false;
+
+inline bool bannerCtlOn(int i) { return i < kBannerPair ? g_cfg.hideBannerSoft : g_cfg.hideRedbarSoft; }
+
+void bannerTrace(const char* act, bool soft, int nWr) {
+    if (!g_logOn || !g_cfg.traceQueue) return;
+    int nCtl = 0;
+    for (int i = 0; i < kBannerCtlN; ++i) nCtl += bannerCtlOn(i) ? 1 : 0;
+    char line[200];
+    qh::fmtBanner(line, sizeof line, act, soft ? 1 : 0, nCtl, nWr);
+    QTRACE("%s", line);
+}
+
+// One frame of the soft-combat decision; sets g_softCombat. Writes happen only while g_combat != 0 and the HUD flags are readable.
+void softBannerTick(uintptr_t hud) {
+    g_softCombat = false;
+    if (!g_cfg.hideBannerSoft && !g_cfg.hideRedbarSoft) return;
+    if (g_bannerHidden && hud != g_bannerHud) {   // HUD rebuilt (load): the old controls are gone
+        bannerTrace("forget", false, 0);
+        g_bannerHidden = false; g_bannerMask = 0; g_bannerLastAct = -1; g_bannerResetLogged = false;
+    }
+    if (g_combatUnreadable) return;               // no verdict, no writes; the state is kept
+    if (g_combat == 0) {
+        if (g_bannerHidden) {                     // combat ended: the engine hid the controls itself, do not restore
+            bannerTrace("forget", false, 0);
+            g_bannerHidden = false; g_bannerMask = 0; g_bannerResetLogged = false;
+        }
+        g_bannerLastAct = -1;
+        return;
+    }
+    bool soft = false;
+    {
+        party::Fail why = party::F_None;
+        const uintptr_t tbl = party::table(&why);
+        if (tbl) {
+            uint32_t partyIds[3];
+            readPartyIds(tbl, partyIds);
+            qh::SoftCand cands[3];
+            for (int k = 0; k < 3; ++k) {
+                const uintptr_t cli = party::member(tbl, k);
+                const uintptr_t srv = cli ? party::serverCreature(cli) : 0;
+                if (!srv) continue;               // no info for this member
+                MemberTgt mt;
+                readTargets(srv, mt);
+                cands[k] = softCandOf(mt, partyIds);
+            }
+            soft = qh::softCombat(true, cands, 3);
+        }
+    }
+    g_softCombat = soft;
+    const qh::BannerAct act = qh::bannerAct(g_bannerHidden, true, soft);
+    if (act == qh::BA_NONE) { g_bannerLastAct = act; return; }
+    uint32_t before[kBannerCtlN] = {}, after[kBannerCtlN] = {};
+    int nWr = 0;
+    bool engineReset = false;
+    for (int i = 0; i < kBannerCtlN; ++i) {
+        if (!bannerCtlOn(i)) continue;
+        volatile uint32_t* p = reinterpret_cast<volatile uint32_t*>(hud + static_cast<uintptr_t>(kBannerCtl[i]));
+        if (!saferead::probeWrite(SiteCancel + 0x20 + static_cast<unsigned>(i), const_cast<uint32_t*>(p), 4)) continue;
+        before[i] = *p;
+        if (act == qh::BA_HIDE) {
+            if (*p & kVisibleBit) {
+                if (g_bannerMask & (1u << i)) engineReset = true;   // we cleared it before and the engine set it again
+                *p &= ~kVisibleBit;
+                g_bannerMask |= 1u << i;
+                ++nWr;
+            }
+        } else if (g_bannerMask & (1u << i)) {                      // restore only what WE cleared
+            *p |= kVisibleBit;
+            ++nWr;
+        }
+        after[i] = *p;
+    }
+    if (act == qh::BA_HIDE) {
+        const bool first = !g_bannerHidden;
+        if (g_bannerMask) { g_bannerHidden = true; g_bannerHud = hud; }
+        if (first && nWr > 0) {
+            char line[200];
+            int n = snprintf(line, sizeof line, "banner flags before=");
+            for (int i = 0; i < kBannerCtlN && n < 150; ++i) n += snprintf(line + n, sizeof line - n, "%s%08x", i ? "," : "", (unsigned)before[i]);
+            n += snprintf(line + n, sizeof line - n, " after=");
+            for (int i = 0; i < kBannerCtlN && n < 190; ++i) n += snprintf(line + n, sizeof line - n, "%s%02x", i ? "," : "", (unsigned)(after[i] & 0xFF));
+            QLOG(chCancel, "%s", line);
+        }
+        if (engineReset && !g_bannerResetLogged) { g_bannerResetLogged = true; bannerTrace("reset", true, nWr); }
+        if (static_cast<int>(act) != g_bannerLastAct) bannerTrace("hide", true, nWr);
+    } else {
+        bannerTrace("restore", false, nWr);
+        g_bannerHidden = false; g_bannerMask = 0; g_bannerResetLogged = false;
+    }
+    g_bannerLastAct = static_cast<int>(act);
+}
+
 } // namespace
 
 extern "C" {
@@ -1655,7 +1790,7 @@ void __cdecl KPatchInit(const KPatchApi* api) {
 
 // K2HUD_FRAME callback: dispatches on every PopulateMenus via hud-host, captures hud & combat status without hook 0x74C168.
 void KPATCH_CALL onHudFrame(const K2HudContext* ctx, void*) {
-    if (ctx && ctx->hud) QueueHudCapture(ctx->hud);
+    if (ctx && ctx->hud) { QueueHudCapture(ctx->hud); softBannerTick(static_cast<uintptr_t>(static_cast<uint32_t>(ctx->hud))); }
 }
 
 // H8 0x0074C168 / K2HUD_FRAME handler: retains export for tests/smoke harness.
