@@ -7,12 +7,12 @@ Writes patch_manager_mods/companion_selfheal_src/SelfHealTextures.inc: one uncom
                            8x8 supersampled, transparent outside ~22 px.
   csh_disc_hi              48x48 same shape and fill, beige (208,204,170) rim, plus a soft outer halo (same colour, alpha 200 just
                            outside r=21 fading linearly to 0 at r=24). Radial only, so exactly circular.
-  csh_tog_off              128x32 rounded-pill toggle track (radius 16), (0,0,0,175) fill, 2 px (13,89,69) rim (vanilla frame teal),
+  csh_tog_off              64x32 rounded-pill toggle track (radius 16), (0,0,0,175) fill, 2 px (13,89,69) rim (vanilla frame teal),
                            grey (150,160,155) knob r=12 at the LEFT cap centre (16,16). 8x8 supersampled, corners transparent.
   csh_tog_off_hi           same knob and fill; cream (204,204,178) rim (vanilla highlight); pill inset 3 px (radius 13) so a 2 px
                            faint cream halo (alpha 110 at the edge fading to 0) stays inside the canvas.
   csh_tog_on               as csh_tog_off with the (13,89,69) rim, a faint teal (26,178,140) inner glow (4 px inside the rim) and a
-                           filled teal-bright (26,178,140) knob at the RIGHT cap centre (112,16).
+                           filled teal-bright (26,178,140) knob at the RIGHT cap centre (48,16).
   csh_tog_on_hi            csh_tog_on with the csh_tog_off_hi cream rim and halo.
   csh_ring0 .. csh_ring7   48x48 busy-ring animation, 8 frames = one revolution: faint full ring + bright comet arc
                            (~70 deg, alpha 255 at the head fading to 0 along the tail) + soft sparkle dot at the head.
@@ -41,16 +41,16 @@ RING_FRAMES = 8
 RING = tuple(f"csh_ring{k}" for k in range(RING_FRAMES))
 ALL_NAMES = (CROSS, DISC, DISC_HI) + TOGGLES + RING
 RING_SIZE, CROSS_SIZE, DISC_SIZE = 48, 32, 48
-TOG_W, TOG_H = 128, 32
+TOG_W, TOG_H = 64, 32
 TOG_RIM = 2.0                              # rim thickness, every toggle variant
 TOG_RIM_RGB = (13, 89, 69)                 # vanilla KOTOR II frame teal: OFF and ON normal rim
 TOG_HI_RGB = (204, 204, 178)               # vanilla HILIGHT cream: *_hi rim and halo (toggles only; discs keep HI_RGB)
 TOG_FILL = (0, 0, 0, 175)
 TOG_KNOB_R, TOG_KNOB_Y = 12.0, TOG_H / 2
-TOG_KNOB_X_OFF, TOG_KNOB_X_ON = 16.0, 112.0   # knob centres = cap centres of the full-size pill (radius 16)
+TOG_KNOB_X_OFF, TOG_KNOB_X_ON = 16.0, 48.0   # knob centres = cap centres of the full-size pill (radius 16)
 TOG_KNOB_OFF, TOG_KNOB_ON = (150, 160, 155), (26, 178, 140)   # ON knob = vanilla teal-bright
 TOG_GLOW_RGB, TOG_GLOW_W, TOG_GLOW_PEAK = (26, 178, 140), 4.0, 90.0   # ON inner glow, starts just inside the rim, fades inward
-TOG_HI_INSET = 3.0                         # *_hi pills are inset so the halo has room inside the 128x32 canvas
+TOG_HI_INSET = 3.0                         # *_hi pills are inset so the halo has room inside the 64x32 canvas
 TOG_HALO_W, TOG_HALO_PEAK = 2.0, 110.0     # *_hi halo: alpha TOG_HALO_PEAK at the pill edge, 0 at TOG_HALO_W outside it
 CROSS_SPAN = 22   # tip-to-tip arm span of the cross glyph, px
 RING_RADIUS, RING_WIDTH = 21.0, 2.5
@@ -232,7 +232,7 @@ def toggle_sample(x: float, y: float, on: bool, hi: bool) -> tuple[tuple[float, 
 
 
 def make_toggle(out: Path, name: str, on: bool, hi: bool) -> Path:
-    """128x32 toggle track, 8x8 supersampled with the same accumulation as make_disc (colour weighted by alpha, alpha = mean coverage)."""
+    """64x32 toggle track, 8x8 supersampled with the same accumulation as make_disc (colour weighted by alpha, alpha = mean coverage)."""
     from PIL import Image
     S = 8
     im = Image.new("RGBA", (TOG_W, TOG_H), (0, 0, 0, 0))

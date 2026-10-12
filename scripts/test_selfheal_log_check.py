@@ -452,6 +452,87 @@ def test_v080_main_exit_codes():
     assert "P6=FAIL P7=PASS VERDICT=FAIL" in out.getvalue()
 
 
+# ---- 0.8.2-dev: vanillaarrows + popocclude (ARROW handles/fills INFO + WARN, POPOCCLUDE count on P7; never FAIL)
+
+V82_VERSION = ("0.8.2-dev", "popsize+togglepill+leaderclick+vanillaarrows+pillnarrow+popocclude")
+V82_P7 = "interact POPHOVER=2 POPCLICK=1 CLICK0 ok=1 noneed=0 noitem=0"
+
+
+def with_arrow(extra):
+    """v082 with `extra` lines inserted right after the first ARROW neg= line (the arrow handle set-up)."""
+    L = lines("v082.txt")
+    i = next(k for k, l in enumerate(L) if "ARROW neg=" in l)
+    return L[:i + 1] + extra + L[i + 1:]
+
+
+def test_v082_pass():
+    r = S.check(lines("v082.txt"))
+    v = r["v"]
+    assert (r["p1"], r["p3"], r["p4"], r["p5"], r["p6"], r["p7"], r["arrow"], r["verdict"]) == ("PASS",) * 8
+    assert not v["fail"] and not v["warn"] and not r["p6_fail"]
+    assert v["version"] == V82_VERSION
+    assert r["arrow_info"] == "arrows neg=0b2c8000 pos=0b2c8800 fills ok=4/4 retries=0"
+    assert r["p7_info"] == V82_P7 + " POPOCCLUDE=3" and len(v["popocclude"]) == 3
+    assert len(v["arrow_hdr"]) == 1 and len(v["arrow_fill"]) == 4 and not v["arrow_retry"]
+    assert S.fmt(r).splitlines()[-1] == (
+        "SELFHEAL P1=PASS P3=PASS DUMP=0 blocks USE=1 DONE=1 TIMEOUT=0 P4=PASS P5=PASS P6=PASS P7=PASS ARROW=PASS VERDICT=PASS")
+
+
+def test_v082_warn_arrow_null():
+    r = S.check(lines("warn_arrow_null.txt"))
+    out = S.fmt(r).splitlines()
+    assert r["arrow"] == "WARN" and r["verdict"] == "PASS" and not r["v"]["fail"]
+    assert r["arrow_info"] == "arrows neg=00000000 pos=00000000 fills ok=0/4 retries=0"
+    assert any(l.startswith("WARN") and "ARROW neg=00000000 null handle" in l for l in out)
+    assert any(l.startswith("WARN") and "ARROW pos=00000000 null handle" in l for l in out)
+    assert any(l.startswith("WARN") and "ARROW fill ok=0 x4" in l for l in out)
+    assert out[-1].endswith("P7=PASS ARROW=WARN VERDICT=PASS")
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        assert S.main([str(FX / "warn_arrow_null.txt")]) == 0                  # WARN never changes the exit code
+    assert "ARROW=WARN VERDICT=PASS" in buf.getvalue()
+
+
+def test_v082_final_handles_come_from_last_retry():
+    r = S.check(with_arrow(["ARROW retry=1 neg=00000000 pos=0b2c8800", "ARROW retry=2 neg=0b2c9000 pos=0b2c9800"]))
+    assert r["arrow"] == "PASS" and r["verdict"] == "PASS"                    # a null first try is superseded by the last retry
+    assert r["arrow_info"] == "arrows neg=0b2c9000 pos=0b2c9800 fills ok=4/4 retries=2"
+    r = S.check(with_arrow(["ARROW retry=1 neg=0b2c9000 pos=0b2c9800", "ARROW retry=2 neg=00000000 pos=0b2c9800"]))
+    assert r["arrow"] == "WARN" and r["verdict"] == "PASS" and any("ARROW neg=00000000 null" in m for _, m in r["v"]["warn"])
+
+
+def test_v082_fill_ok0_warns_and_counts():
+    L = [l.replace("ARROW fill m=1 item=2 ok=1", "ARROW fill m=1 item=2 ok=0") for l in lines("v082.txt")]
+    assert L != lines("v082.txt")                                              # the fixture row was found
+    r = S.check(L)
+    assert r["arrow"] == "WARN" and r["verdict"] == "PASS"
+    assert r["arrow_info"] == "arrows neg=0b2c8000 pos=0b2c8800 fills ok=3/4 retries=0"
+    assert any("ARROW fill ok=0 x1" in m for _, m in r["v"]["warn"])
+
+
+def test_v082_arrow_absent_is_not_seen():
+    for name in ("pass.txt", "v030.txt", "v040.txt", "v050.txt", "v070.txt", "v080.txt"):
+        r = S.check(lines(name))
+        assert (r["arrow"], r["arrow_info"], r["verdict"]) == ("NOT-SEEN", None, "PASS"), name
+        assert not any(s in S.fmt(r) for s in (" ARROW=", "arrows neg=", "POPOCCLUDE")), name
+    r = S.check([l for l in lines("v082.txt") if "ARROW" not in l])            # no ARROW line at all
+    assert r["arrow"] == "NOT-SEEN" and r["arrow_info"] is None and r["verdict"] == "PASS"
+    assert " ARROW=" not in S.fmt(r)
+
+
+def test_v082_popocclude_is_count_only():
+    assert S.check(lines("v080.txt"))["p7_info"] == V82_P7                    # no POPOCCLUDE lines: no count on the line
+    r = S.check([l for l in lines("v082.txt") if "POPOCCLUDE" not in l])
+    assert r["p7"] == "PASS" and r["p7_info"] == V82_P7 and r["verdict"] == "PASS"
+    assert S.check(["POPOCCLUDE m=1 btn=2"])["p7"] == "NOT-SEEN"              # alone it never turns P7 on
+
+
+def test_v082_version_line():
+    assert S.VERSION_RE.match("0.8.2-dev ui=popsize+togglepill+leaderclick+vanillaarrows+pillnarrow+popocclude: probe call=1 "
+                              "CallKey=0x4A kick=0 cfg rows=3").groups() == V82_VERSION
+    assert S.check(lines("v082.txt"))["v"]["version"] == V82_VERSION
+
+
 def load_tests(loader, tests, pattern):
     """`python -m unittest` collects only TestCase classes; wrap the plain test_ functions so it runs them too."""
     suite = unittest.TestSuite(tests)

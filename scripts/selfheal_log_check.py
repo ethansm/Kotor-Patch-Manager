@@ -22,6 +22,10 @@ Checks: P1 (>=1 `P1 hud built ... layoutOpen=1`, ctlCount 1..4096), P3 (every `P
 DUMP blocks (hp cur<=max, heal-row cand {64,65,66,84,127,128} has heal>0 and only those have heal>0, a pick line, routeA idOk=1 when a pick exists).
 0.8.0-dev (popsize+togglepill+leaderclick): POPSIZE m= unit= panelW= widest= line= screen=WxH, POPHOVER m= row= (1 auto, 2 hp-, 3 hp+, 4 keep-, 5 keep+), POPCLICK m= row=, CLICK member=0 ok|noneed|noitem (leader click).
 P6 popover fit: each POPSIZE needs panelW >= widest+2*unit and line <= 1.5*unit, else FAIL; NOT-SEEN without POPSIZE. P7 interaction: INFO counts of POPHOVER, POPCLICK and CLICK member=0 ok/noneed/noitem; WARN (never FAIL) when a CLICK member=0 ok has no later USE member=0 or DONE member=0. P6/P7 NOT-SEEN when their lines are absent.
+0.8.2-dev (vanillaarrows+popocclude): ARROW neg=/pos= (once), ARROW retry=N neg= pos= and ARROW fill m= item= ok= img=; POPOCCLUDE m= btn=.
+INFO `arrows neg=<h> pos=<h> fills ok=<n>/<m> retries=<r>` (final handles = last retry line's, else the first ARROW neg/pos line).
+WARN (never FAIL) when the final neg or pos handle is 00000000 or any `ARROW fill ... ok=0` exists (text fallback in use). ARROW is
+NOT-SEEN when no ARROW line is in range. P7 INFO gains POPOCCLUDE=<n> only when POPOCCLUDE lines are present (count only, P7 status unchanged).
 """
 from __future__ import annotations
 
@@ -71,6 +75,11 @@ POPSIZE_RE = re.compile(r"^POPSIZE m=(\S+) unit=(\S+) panelW=(\S+) widest=(\S+) 
 POPHOVER_RE = re.compile(r"^POPHOVER m=(\S+) row=(\S+)\s*$")
 POPCLICK_RE = re.compile(r"^POPCLICK m=(\S+) row=(\S+)\s*$")
 CLICK0_RE = re.compile(r"^CLICK member=0 (ok|noneed|noitem)\s*$")
+# 0.8.2-dev: ARROW neg/pos (once), ARROW retry=N neg= pos= (per retry), ARROW fill m= item= ok= img= (per arrow), POPOCCLUDE m= btn=.
+ARROW_HDR_RE = re.compile(r"^ARROW neg=(\S+) pos=(\S+)\s*$")
+ARROW_RETRY_RE = re.compile(r"^ARROW retry=(\S+) neg=(\S+) pos=(\S+)\s*$")
+ARROW_FILL_RE = re.compile(r"^ARROW fill m=(\S+) item=(\S+) ok=(\S+) img=(\S+)\s*$")
+POPOCCLUDE_RE = re.compile(r"^POPOCCLUDE m=(\S+) btn=(\S+)\s*$")
 # POPROW items that carry text; "bg" has txt="" and tobj=0 by design, so P4 skips it.
 TEXT_ITEMS = ("auto", "hpm", "hpp", "keepm", "keepp", "hpval", "keepval")
 TEX_WARN = {
@@ -250,6 +259,22 @@ def v080_line(v, n, t):
     return True
 
 
+def v082_line(v, n, t):
+    """Parse one 0.8.2-dev line (ARROW neg/retry/fill, POPOCCLUDE) into v; True if it was one."""
+    if (m := ARROW_HDR_RE.match(t)):
+        v["arrow_hdr"].append({"line": n, "neg": m.group(1), "pos": m.group(2)})
+    elif (m := ARROW_RETRY_RE.match(t)):
+        v["arrow_retry"].append({"line": n, "tries": to_int(m.group(1)), "neg": m.group(2), "pos": m.group(3)})
+    elif (m := ARROW_FILL_RE.match(t)):
+        v["arrow_fill"].append({"line": n, "m": m.group(1), "item": m.group(2), "ok": m.group(3), "img": m.group(4)})
+    elif (m := POPOCCLUDE_RE.match(t)):
+        v["popocclude"].append({"line": n, "m": m.group(1), "btn": m.group(2)})
+    else:
+        return False
+    v["seen"] = True
+    return True
+
+
 def pop_check(v):
     """P4 popover rows -> (status, [(line, msg)], info). NOT-SEEN when no POP/POPROW line is in range."""
     rows, opens = v["pop_rows"], v["pop_open"]
@@ -342,8 +367,31 @@ def interact_check(v):
     if lost:
         warns.append((lost[0], "P7 CLICK member=0 ok x%d with no later USE member=0 or DONE member=0 (leader click did nothing)" % len(lost)))
     cnt = {k: sum(1 for c in c0 if c["result"] == k) for k in ("ok", "noneed", "noitem")}
-    info = "interact POPHOVER=%d POPCLICK=%d CLICK0 ok=%d noneed=%d noitem=%d" % (
-        len(hover), len(clicks), cnt["ok"], cnt["noneed"], cnt["noitem"])
+    occ = v["popocclude"]   # count only: POPOCCLUDE never changes P7 status, and is omitted from the line when absent
+    info = "interact POPHOVER=%d POPCLICK=%d CLICK0 ok=%d noneed=%d noitem=%d%s" % (
+        len(hover), len(clicks), cnt["ok"], cnt["noneed"], cnt["noitem"], (" POPOCCLUDE=%d" % len(occ)) if occ else "")
+    return ("WARN" if warns else "PASS"), warns, info
+
+
+def arrow_check(v):
+    """0.8.2-dev arrows -> (status, [(line, msg)] warns, info). NOT-SEEN when no ARROW line is in range.
+    Final handles = the last `ARROW retry=` line's, else the first `ARROW neg=/pos=` line's. Never FAIL: WARN when the final
+    neg or pos handle is 00000000 or any `ARROW fill ... ok=0` exists (text fallback in use)."""
+    hdr, retry, fills = v["arrow_hdr"], v["arrow_retry"], v["arrow_fill"]
+    if not (hdr or retry or fills):
+        return "NOT-SEEN", [], None
+    last = retry[-1] if retry else (hdr[0] if hdr else None)
+    neg, pos = (last["neg"], last["pos"]) if last else ("none", "none")
+    warns = []
+    if last:
+        for name, h in (("neg", neg), ("pos", pos)):
+            if hexval(h) == 0:
+                warns.append((last["line"], "ARROW %s=%s null handle (text fallback in use)" % (name, h)))
+    bad = [f for f in fills if to_int(f["ok"]) == 0]
+    if bad:
+        warns.append((bad[0]["line"], "ARROW fill ok=0 x%d (text fallback in use)" % len(bad)))
+    ok = sum(1 for f in fills if to_int(f["ok"]) == 1)
+    info = "arrows neg=%s pos=%s fills ok=%d/%d retries=%d" % (neg, pos, ok, len(fills), len(retry))
     return ("WARN" if warns else "PASS"), warns, info
 
 
@@ -352,11 +400,13 @@ def check(lines, lo=1, hi=None):
          "blocks": [], "dump_fail": [], "table": [],
          "p4": "NOT-SEEN", "p4_fail": [], "p4_info": None, "p5": "NOT-SEEN", "p5_fail": [], "p5_info": None,
          "p6": "NOT-SEEN", "p6_fail": [], "p6_info": None, "p7": "NOT-SEEN", "p7_info": None,
+         "arrow": "NOT-SEEN", "arrow_info": None,
          "v": {"build": [], "use": [], "done": [], "auto": [], "refuse": {}, "cfg_save": [], "cfg_reload": [], "click_noitem": 0,
                "fail": [], "warn": [], "tex": {}, "seen": False, "diag_pop": [],
                "kick": [], "kick_skip": {}, "kick_starved": 0, "timeout_unq": 0, "refuse_queued": 0,
                "version": None, "pop_open": [], "pop_rows": [], "texset": [], "disc": [], "setfail": [], "state": [],
-               "popsize": [], "pop_hover": [], "pop_click": [], "click0": []}}
+               "popsize": [], "pop_hover": [], "pop_click": [], "click0": [],
+               "arrow_hdr": [], "arrow_retry": [], "arrow_fill": [], "popocclude": []}}
     v = r["v"]
     cur = None  # current DUMP block
     mem = None  # current member dict in the block
@@ -394,7 +444,7 @@ def check(lines, lo=1, hi=None):
             if m.group(2) not in ("0", "1", "2"):
                 r["p3_fail"].append((n, "slot[%s] k=%s" % (m.group(1), m.group(2))))
             continue
-        if v080_line(v, n, t) or v030_line(v, n, t) or v070_line(v, n, t):
+        if v082_line(v, n, t) or v080_line(v, n, t) or v030_line(v, n, t) or v070_line(v, n, t):
             continue
         if t.startswith("DUMP begin"):
             if cur is not None:
@@ -466,6 +516,8 @@ def check(lines, lo=1, hi=None):
     r["p6"], r["p6_fail"], r["p6_info"] = popsize_check(v)
     r["p7"], p7_warn, r["p7_info"] = interact_check(v)
     v["warn"].extend(p7_warn)
+    r["arrow"], arrow_warn, r["arrow_info"] = arrow_check(v)
+    v["warn"].extend(arrow_warn)
     if v["setfail"]:
         ops = {}
         for _, op in v["setfail"]:
@@ -539,6 +591,10 @@ def fmt(r):
             o.append(r["p6_info"])
         if r["p7_info"]:
             o.append(r["p7_info"])
+    # 0.8.2-dev block: printed only when its ARROW lines are present (r["arrow_info"] is set exactly then).
+    new82 = bool(v["arrow_hdr"] or v["arrow_retry"] or v["arrow_fill"])
+    if new82 and r["arrow_info"]:
+        o.append(r["arrow_info"])
     extra = ""
     if v["seen"]:
         extra = " USE=%d DONE=%d TIMEOUT=%d" % (len(v["use"]), len(v["done"]), sum(1 for d in v["done"] if d["timeout"] == 1))
@@ -546,6 +602,8 @@ def fmt(r):
         extra += " P4=%s P5=%s" % (r["p4"], r["p5"])
     if new80:
         extra += " P6=%s P7=%s" % (r["p6"], r["p7"])
+    if new82:
+        extra += " ARROW=%s" % r["arrow"]
     o.append("SELFHEAL P1=%s P3=%s DUMP=%d blocks%s VERDICT=%s" % (r["p1"], r["p3"], len(r["blocks"]), extra, r["verdict"]))
     return "\n".join(o)
 

@@ -685,7 +685,7 @@ shui::PopLayout popLayoutFor(const Card& pc, int screenW, int screenH) {
     PopMetrics m;
     m.unit = shui::popUnitForText(wMax, lineEng, shui::popUnit(pc.btn));
     m.margin = m.unit / 4 > 4 ? m.unit / 4 : 4;
-    m.pillH = m.unit - 4; m.pillW = m.pillH * 4;
+    m.pillH = m.unit - 4; m.pillW = m.pillH * 2;
     m.widest = (int)std::ceil(wMax);
     m.line = (int)std::ceil(lineEng);
     int w = 8 * m.unit;
@@ -1105,27 +1105,42 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
     int cx = 0, cy = 0;
     bool haveCur = guikit::cursorEngine(&cx, &cy);
     int onBtn = -1;
-    if (haveCur) {
-        for (int mi = 1; mi <= 2; ++mi) {
-            W& b = g_w[W_Btn0 + mi - 1];
-            bool h = g_card[mi].st != shui::BtnState::Hidden && g_card[mi].st != shui::BtnState::Down && guikit::hit(b.c, cx, cy);   // Down: no hover sound, tooltip, click or popover
-            if (h) onBtn = mi;
-            if (h && !b.hover) guikit::playHoverSound();
-            b.hover = h;
-        }
-        // Member 0 (leader) button
-        W& b0 = g_w[W_BtnLeader];
-        bool h0 = g_card0.st != shui::BtnState::Hidden && g_card0.st != shui::BtnState::Down && guikit::hit(b0.c, cx, cy);
-        if (h0) onBtn = 0;
-        if (h0 && !b0.hover) guikit::playHoverSound();
-        b0.hover = h0;
-    }
     shui::PopLayout L{};
     Card& popCard = (g_popMi == 0) ? g_card0 : g_card[g_popMi >= 0 ? g_popMi : 1];
     bool popOpen = g_popMi >= 0 && popCard.btn.w > 0;
     if (!popOpen) g_popMi = -1;
     if (popOpen) L = popLayoutFor(popCard, screenW, screenH);
     bool inPop = popOpen && haveCur && cx >= L.r[0].x && cx < L.r[0].x + L.r[0].w && cy >= L.r[0].y && cy < L.r[0].y + L.r[0].h;
+    // A cursor inside the open popover never hovers a button beneath it (no sound, no halo, no onBtn).
+    static bool s_occLogged[3] = { false, false, false };
+    static int s_occPop = -1;
+    if (s_occPop != g_popMi) { s_occPop = g_popMi; s_occLogged[0] = s_occLogged[1] = s_occLogged[2] = false; }
+    static int s_occCount = 0;
+    auto noteOcclusion = [&](int mi) {
+        if (inPop && !s_occLogged[mi]) {
+            s_occLogged[mi] = true;
+            if (s_occCount < 24) { ++s_occCount; KP_LOG(chUi, "POPOCCLUDE m=%d btn=%d", g_popMi, mi); }
+        }
+    };
+    if (haveCur) {
+        for (int mi = 1; mi <= 2; ++mi) {
+            W& b = g_w[W_Btn0 + mi - 1];
+            const bool hitUnder = g_card[mi].st != shui::BtnState::Hidden && g_card[mi].st != shui::BtnState::Down && guikit::hit(b.c, cx, cy);   // Down: no hover sound, tooltip, click or popover
+            if (hitUnder) noteOcclusion(mi);
+            const bool h = hitUnder && !inPop;
+            if (h) onBtn = mi;
+            if (h && !b.hover) guikit::playHoverSound();
+            b.hover = h;
+        }
+        // Member 0 (leader) button
+        W& b0 = g_w[W_BtnLeader];
+        const bool hitUnder0 = g_card0.st != shui::BtnState::Hidden && g_card0.st != shui::BtnState::Down && guikit::hit(b0.c, cx, cy);
+        if (hitUnder0) noteOcclusion(0);
+        const bool h0 = hitUnder0 && !inPop;
+        if (h0) onBtn = 0;
+        if (h0 && !b0.hover) guikit::playHoverSound();
+        b0.hover = h0;
+    }
     if (haveCur && ledge) {
         if (inPop) {   // popover click: edit config only, NEVER useNow
             shui::PopItem it = shui::popoverHit(L, cx, cy);
@@ -1357,7 +1372,7 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     loadIni();
     loadCfg();
     filewatch::accept(g_cfgPoll, IniPath);
-    KP_LOG(chMain, "0.8.1-dev ui=popsize+togglepill+leaderclick+vanillaarrows: probe call=%d CallKey=0x%02X kick=%d cfg rows=%d", g_probeCall, g_callKey, (int)g_kick, (int)g_cfg.rows.size());
+    KP_LOG(chMain, "0.8.2-dev ui=popsize+togglepill+leaderclick+vanillaarrows+pillnarrow+popocclude: probe call=%d CallKey=0x%02X kick=%d cfg rows=%d", g_probeCall, g_callKey, (int)g_kick, (int)g_cfg.rows.size());
     g_ps.init(api, "companion-selfheal");
     g_ps.onConnect = onConnect;
     g_ps.add(K2PS_FRAME_BEGIN, 300, onFrameBegin);
