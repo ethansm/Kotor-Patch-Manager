@@ -42,6 +42,15 @@ Ordering: B1/B2/B4/B5/B6 parallel; B3 after B2.
 
 ### Wave 4 (after Gate 2): fix positions/rows from notes; if U1 failed -> switch to route A (Override UTC + spawn script); expand to the full roster (Tier 1, then Tier 2 rows that the W1a fallback answer allows); then phase 2 (one-line DLG or bark via appended dialog.tlk strref, Wookiee Shyriiwook subtitle convention).
 
+## Wave 1 RESULTS (10-11, DONE; reports `.claude/research/npc_add/poc/W1a..W1d`)
+- W1d: append works at GFF level (read_erf -> read_gff -> get_list copy -> add struct id 4 creature / 5 waypoint -> set_list -> bytes_gff -> set_data("204tel") -> bytes_erf MOD). Do NOT use the GIT model (lossy round trip). In-memory dry run: creatures 17->18, waypoints 48->49, other 8 lists bit-exact, 186/186 resources kept. Target is the live `204tel.mod` (differs from rim+_s.rim: 5 extra resources, 6 DLGs).
+- Precedence U1: engine path not found statically (W1a). Strong circumstantial evidence it prefers the .mod: Doctor Ganius (`corteldc`) exists only in the .mod GIT, not the .rim GIT, and the user sees him in game. Still confirm at Gate 2.
+- W1a: GIT creature loader (0x00525F90) reads ObjectId only on the instance path (default 0x7F000000, so omit it), TemplateResRef, X/Y/ZPosition, X/YOrientation. CreateObject (0x0066F990) calls no spawn dispatcher; spawn-script firing for created creatures UNRESOLVED, so route A (script spawn) is lower priority and GIT-placed NPCs are the PoC.
+- W1a Q3 (blank modela): the model routine has no race fallback, but vanilla rows 72/73/464/255/63 render in the base game with 13-54 placements, so Tier 2 is probably fine (model likely from the `race` column); keep Tier 2 for the second batch.
+- W1b: all 18 rows resolve (16 OK); rows 47 (Twi'lek F) and 464 (Trandoshan) rely on loose Override files our mod does not ship (fine on this install). Live `appearance.2da` == the diversity mod copy.
+- W1c: ward room = 204TELb; WOK vertices are world coords; 20/20 beds on walkable faces. 12 free walkable points + 3 routes in W1c_walkmesh.md; use picks x <= -66.45 (others sit between bed columns); a PWK footprint check for plc_bed1 is optional. Facings are toward the bed centroid (-63.35, 27.00).
+- Update to Wave 2: B2 reads the .mod (not the rim); new creatures omit ObjectId; add task B2b: PWK footprint check of the chosen points. Template UTCs must be placed in the .mod too (or Override; Override-vs-.mod precedence for UTC unproven: put UTCs in the .mod).
+
 ## Risks
 Visited-area freeze; creature doubling in one small interior (cap ~18 additions, canary 4 first); neutral NPCs becoming hostile if attacked (untested); `.mod` over `.rim` precedence; Tier 2 blank-modela rows; hook 2 does not remap or protect custom rows (tag unreadable) but our rows are outside the commoner tables so they are not remapped; D0 pause on live runs.
 
