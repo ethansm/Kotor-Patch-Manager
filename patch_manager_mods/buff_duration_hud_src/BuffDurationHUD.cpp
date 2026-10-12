@@ -333,6 +333,40 @@ ArrowRaw g_arrowRaw[8];
 
 ArrowRaw* arrowRawFor(int slotPtr) { return bh::arrowRawFor(g_arrowRaw, 8, slotPtr); }
 
+// DIAG DBGMISS (debuff triage, doc 02): the engine flags a debuff (raw debuff byte > 0) but the spell-id walk tracks none. Dump every effect on
+// the creature (spell id incl. -1, type, subtype, duration, creator, icon resolution) once per creature per change of its effect list, so the
+// spell id and source behind an unmapped debuff (power vs grenade vs mine vs script effect) lands in buffhud_log.txt. Remove after triage.
+struct MissSeen { int creature; int sig; };
+MissSeen g_missSeen[16];
+int g_missN = 0, g_missLogged = 0;
+void logUntrackedDebuff(int creature, int rawDebuff) {
+    int arr = 0, count = 0;
+    const bool ok = k2fx::readEffectList(static_cast<uintptr_t>(creature), &arr, &count);
+    int sig = count;
+    for (int i = 0; ok && arr && i < count && i < k2fx::MaxEffects; ++i) {
+        int eff = 0, spell = -1;
+        if (readAt(arr, i * 4, &eff) && eff && readAt(eff, k2fx::Effect_SpellId, &spell)) sig = sig * 31 + spell;
+    }
+    int slot = -1;
+    for (int k = 0; k < g_missN; ++k) if (g_missSeen[k].creature == creature) slot = k;
+    if (slot >= 0 && g_missSeen[slot].sig == sig) return;
+    if (slot < 0) { if (g_missN >= 16) return; slot = g_missN++; g_missSeen[slot].creature = creature; }
+    if (g_missLogged >= 40) return;
+    g_missSeen[slot].sig = sig;
+    ++g_missLogged;
+    logf("DBGMISS creature=%08x raw=%d listOk=%d count=%d", creature, rawDebuff, ok ? 1 : 0, count);
+    for (int i = 0, lines = 0; ok && arr && i < count && i < k2fx::MaxEffects && lines < 12; ++i) {
+        int eff = 0, spell = -1, creator = 0; unsigned short type = 0, sub = 0; float dur = 0.0f; bool item = false;
+        if (!readAt(arr, i * 4, &eff) || !eff) continue;
+        readAt(eff, k2fx::Effect_SpellId, &spell); readAt(eff, k2fx::Effect_Type, &type); readAt(eff, k2fx::Effect_Subtype, &sub);
+        readAt(eff, k2fx::Effect_Duration, &dur); readAt(eff, k2fx::Effect_Creator, &creator);
+        const char* dRes = k2fx::iconForSpell(spell, true, &item);
+        const char* bRes = k2fx::iconForSpell(spell, false, &item);
+        logf("DBGMISS   i=%d spell=%d type=%d sub=%d dur=%.1f creator=%08x debuffIcon=%s buffIcon=%s", i, spell, type, sub, dur, creator, dRes ? dRes : "-", bRes ? bRes : "-");
+        ++lines;
+    }
+}
+
 void ForceArrowCounters(int slotPtr) {
     if (g_noBuff) { visReject(slotPtr, VisKill, 0); return; }
     const K2AddrTable* T = k2addr::get();
@@ -354,6 +388,7 @@ void ForceArrowCounters(int slotPtr) {
         Buff tmp[16];
         nBuff = collectBuffs(creature, day, ms, haveTime, tmp, 16, false);
         nDebuff = collectBuffs(creature, day, ms, haveTime, tmp, 16, true);
+        if (g_debugLog && rawDebuff > 0 && nDebuff == 0) logUntrackedDebuff(creature, rawDebuff);
     }
     {   // gate open again after a rejection: nothing tracked means no column call will follow, so close the stale state here
         const int vi = visIndex(slotPtr);
