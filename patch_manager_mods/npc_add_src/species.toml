@@ -1,0 +1,168 @@
+# NPC-add species table (task B1). One [[species]] per UTC template -> out/override/npcadd_<slug>.utc.
+# Rows: .claude/research/npc_add/poc/P2_species.md (p2_line = that file's table line).
+# gender 0 is the default where P2 leaves gender unset (P2 OPEN 1; unverified).
+# behaviour: stand = ScriptSpawn blank + ScriptHeartbeat blank; walk = k_def_spawn01 + blank heartbeat;
+#            idle = k_def_ambient + k_def_heartbt01.
+# canary = built and checked first (canary set: twilekf, wookm, rodian, bith).
+
+[[species]]
+slug = "twilekf"
+appearance = 47
+race = 6
+gender = 1
+behaviour = "stand"
+canary = true
+p2_line = 15
+
+[[species]]
+slug = "wookm"
+appearance = 271
+race = 6
+gender = 0
+behaviour = "stand"
+canary = true
+p2_line = 16
+
+[[species]]
+slug = "rodian"
+appearance = 39
+race = 6
+gender = 0
+behaviour = "walk"
+canary = true
+p2_line = 18
+
+[[species]]
+slug = "bith"
+appearance = 12
+race = 6
+gender = 0
+behaviour = "idle"
+canary = true
+p2_line = 19
+
+[[species]]
+slug = "twilekm"
+appearance = 48
+race = 6
+gender = 0
+behaviour = "stand"
+canary = false
+p2_line = 14
+
+[[species]]
+slug = "wookf"
+appearance = 50
+race = 6
+gender = 1
+behaviour = "stand"
+canary = false
+p2_line = 17
+
+[[species]]
+slug = "duros"
+appearance = 24
+race = 6
+gender = 0
+behaviour = "stand"
+canary = false
+p2_line = 20
+
+[[species]]
+slug = "sullustan"
+appearance = 601
+race = 6
+gender = 0
+behaviour = "stand"
+canary = false
+p2_line = 21
+
+[[species]]
+slug = "gand"
+appearance = 569
+race = 6
+gender = 0
+behaviour = "stand"
+canary = false
+p2_line = 22
+
+[[species]]
+slug = "gran"
+appearance = 565
+race = 6
+gender = 0
+behaviour = "stand"
+canary = false
+p2_line = 23
+
+[[species]]
+slug = "quarren"
+appearance = 537
+race = 6
+gender = 0
+behaviour = "stand"
+canary = false
+p2_line = 24
+
+[[species]]
+slug = "selkath"
+appearance = 260
+race = 2
+gender = 0
+behaviour = "stand"
+canary = false
+p2_line = 25
+
+[[species]]
+slug = "devaron"
+appearance = 570
+race = 6
+gender = 0
+behaviour = "stand"
+canary = false
+p2_line = 26
+
+[[species]]
+slug = "ithorian"
+appearance = 72
+race = 6
+gender = 0
+behaviour = "stand"
+canary = false
+p2_line = 27
+
+[[species]]
+slug = "jawa"
+appearance = 73
+race = 6
+gender = 0
+behaviour = "stand"
+canary = false
+p2_line = 28
+
+[[species]]
+slug = "weequay"
+appearance = 599
+race = 6
+gender = 0
+behaviour = "stand"
+canary = false
+p2_line = 29
+
+[[species]]
+slug = "trandosh"
+appearance = 464
+race = 6
+gender = 0
+behaviour = "stand"
+canary = false
+p2_line = 30
+
+[[species]]
+slug = "protocol"
+appearance = 63
+race = 5
+gender = 0
+behaviour = "stand"
+canary = false
+p2_line = 34
