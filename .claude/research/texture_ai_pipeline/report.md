@@ -87,7 +87,7 @@ Stage 1, deterministic, no model (so no model licence):
 | S1 HSV shift under mask (recolor) | Design only, not run (u08 Q3). Decode mip 0 only (u04) | POC first |
 | S2 Decal alpha composite inside eroded island | Design only (u08 Q3) | Accessories and logos; POC second |
 
-## 6. Licence and provenance rule (PROPOSAL, no rule exists)
+## 6. Licence and provenance rule (DECIDED by the user 10-12: licence tags carry over to generated copies)
 
 Existing rules: approval needed for permission_required, personal_use_only and unknown (k1_port_sources.py:35; u12 CORRECTED 3). Upscale+ derivatives allowed if free and credited (sources.json:49; u12 ADDED 2). Local-only, and gate before copy (u02 facts 6, 8, 10). No AI rule exists (u12 ADDED 1).
 
@@ -125,7 +125,17 @@ Note: the install tool takes `--files` for a custom file set (see doc 38 §11 co
 
 - T1 (agent): output gate script: dims, mip count, DXT1, alpha, TXI absent, name rule; tests colocated with code (gap 1).
 - T2 (agent): move island-mask code from scratch/u15_probe2.py into `k1_port/` with tests; arms = ArmL+ArmR nodes only (gap 2).
-- T3 (agent): add AI fields to ledger (k1_port_sources.py:231-244) and parent_sha256 gate rule (k1_port_prune.py:243-279), after T4.
-- T4 (user): accept, change or reject the section 6 licence proposal.
+- T3 (agent) DONE 10-12: `Ledger.add_derived` + `k1_port_prune.py derive` (copy inherits source_id, class, flag, credits, approval; parent_sha256 fail-closed; AI fields tool/model_id/model_licence/seed/mask_sha256/ai_pixel_fraction; local_only). Gate needs no change: the copy is a ledger row, so the sha256 gate blocks it. Was: add AI fields to ledger (k1_port_sources.py:231-244) and parent_sha256 gate rule (k1_port_prune.py:243-279), after T4.
+- T4 (user) DONE 10-12: accepted. Was: accept, change or reject the section 6 licence proposal.
 - T5 (user): in-game V-flip test: torso, legs and arm masks painted in three colours on a copy of k1p_commm04.
 - T6 (agent): POC: torso recolor on a copy of k1p_commm04; stage the 04 and 01 pair; gate; install only after user go (game closed); then the Qwen timing run.
+
+## 10. External review (Gemini Web, 10-12) and our verdict
+
+| Gemini point | Verdict |
+|---|---|
+| Loose TPC/TGA in override/ needs no 2DA rebuild | Consistent with our probes (alias texture worked). No change. |
+| 4K community mod (Sept 2026) may put 4096 textures in the source dirs | UNVERIFIED, no source given. Design is resolution-agnostic anyway: T1 gate demands output dims, mip count and format EQUAL TO THE PARENT (not a fixed 512); erosion/feather scale as width/512 (8 px at 512, 64 px at 4096). Gemini option A. Option B (reject non-512) not needed. |
+| Gate lives in k1_port_textures.py | Wrong file: that is the stager. T1 is a new gate script that reuses its readers. |
+| Preserve alpha; AI touches RGB only | Agreed. T1/T2 rule: output alpha identical to parent alpha; composite RGB only. Our current atlas is opaque DXT1, so this protects other textures (specular/env in alpha). |
+| "Cleared to implement T1-T3" | Not an authorization. Only T3 was approved (user, 10-12); T1/T2 wait for the user. |

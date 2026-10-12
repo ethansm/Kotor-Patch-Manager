@@ -251,6 +251,25 @@ class Ledger:
             entries.append(entry)
         return copy.deepcopy(entry)
 
+    def add_derived(self, file, kind: str, parent_sha256: str, sha256: str, ai=None, **extra) -> dict:
+        """Register an edited copy (recolor, decal, AI edit) of a ledgered asset. The copy inherits the
+        parent's source_id, so license_class, approval requirement, removal_group, credits and any
+        recorded author approval carry over (mark_approved / prune act on the copy with its parent).
+        Fails closed: the parent's content hash must already be in the ledger. If several entries share it,
+        a flagged one wins. ai = optional dict (tool, model_id, model_licence, seed, mask_sha256,
+        ai_pixel_fraction); any ai or edited copy is local_only until a person signs it off."""
+        want = str(parent_sha256 or "").lower()
+        parents = self.find_by_sha(want) if want else []
+        if not parents:
+            raise SourceError(f"derived copy of {file}: parent sha256 {want[:12] or '<empty>'} is not in the ledger")
+        parents.sort(key=lambda e: 0 if e.get("removal_group") and not e.get("author_approved") else 1)
+        parent = parents[0]
+        info = dict(ai) if ai else None
+        entry = self.add(file, kind, parent["source_id"], sha256=sha256, **extra, derived=True,
+                         ai_derived=info is not None, local_only=True, parent_sha256=want,
+                         parent_file=parent["file"], **({"ai": info} if info else {}))
+        return entry
+
     def entries(self) -> list:
         return copy.deepcopy(self._data["entries"])
 

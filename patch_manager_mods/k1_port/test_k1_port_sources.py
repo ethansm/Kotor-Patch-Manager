@@ -288,6 +288,34 @@ def test_ledger_remove_and_find_by_sha(root):
 
 
 @test
+def test_ledger_add_derived_inherits_license(root):
+    led = Ledger(root / "ledger.json")
+    led.add("up/u.tpc", "texture", UPSCALE, sha256="ab" * 32)
+    ai = {"tool": "comfyui", "model_id": "Qwen/Qwen-Image-Edit", "model_licence": "Apache-2.0",
+          "seed": 7, "mask_sha256": "cd" * 32, "ai_pixel_fraction": 0.2}
+    d = led.add_derived("out/e.tpc", "texture", "AB" * 32, "ef" * 32, ai=ai)
+    check(d["source_id"] == UPSCALE and d["license_class"] == "permission_required", f"class must carry: {d}")
+    check(d["removal_group"] == "pending_author_approval" and d["requires_author_approval"], "flag must carry")
+    check(d["credits"] == ks.get_source(UPSCALE)["credits"], "credits must carry")
+    check(d["derived"] and d["ai_derived"] and d["local_only"], f"derived flags: {d}")
+    check(d["parent_sha256"] == "ab" * 32 and d["parent_file"] == "up/u.tpc", "parent link")
+    check(d["ai"]["model_licence"] == "Apache-2.0" and d["ai"]["seed"] == 7, "ai fields")
+    check(len(led.flagged()) == 2, "parent and copy are both flagged")
+    check(led.mark_approved(UPSCALE, "ok") == 2, "approving the source must clear parent and copy")
+    check(led.flagged() == [], "nothing flagged after approval")
+    d2 = led.add_derived("out/e2.tpc", "texture", "ef" * 32, "12" * 32)  # copy of a copy, no AI
+    check(d2["author_approved"] is True and d2["removal_group"] is None and d2["ai_derived"] is False,
+          f"approval must carry down the chain: {d2}")
+    check(d2["parent_file"] == "out/e.tpc", "chain parent link")
+    led.add("v/n.tpc", "texture", VANILLA, sha256="34" * 32)
+    v = led.add_derived("out/v.tpc", "texture", "34" * 32, "56" * 32)
+    check(v["removal_group"] is None and v["source_id"] == VANILLA, "vanilla parent stays unflagged")
+    e = expect_raises(SourceError, led.add_derived, "out/x.tpc", "texture", "99" * 32, "78" * 32)
+    check("not in the ledger" in str(e), f"unknown parent must fail closed: {e}")
+    expect_raises(SourceError, led.add_derived, "out/x.tpc", "texture", "", "78" * 32)
+
+
+@test
 def test_ledger_save_load_roundtrip(root):
     p = root / "deep" / "nested" / "ledger.json"
     led = Ledger(p)

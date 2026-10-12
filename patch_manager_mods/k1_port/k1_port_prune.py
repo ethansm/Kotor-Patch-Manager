@@ -13,6 +13,9 @@ Subcommands (all accept --ledger PATH; default env K1PORT_LEDGER, else the Ledge
   approve  --source-id ID --note TEXT
   gate     [--strict] PATH [PATH ...]
   adopt    --file PATH --kind texture|model|other --source-id ID
+  derive   --file PATH --kind texture|model|other --parent-sha256 SHA [--ai-tool T --ai-model M
+           --ai-model-licence L --seed N --mask-sha256 SHA --ai-pixel-fraction F]
+           register an edited/AI copy; it inherits the parent's licence class, flag and credits
   credits  [--json]
 
 Stage root = the ledger's own directory. Relative ledger entries are resolved against it.
@@ -303,6 +306,28 @@ def cmd_adopt(led: Ledger, stage: Path, args) -> int:
     return 0
 
 
+def cmd_derive(led: Ledger, stage: Path, args) -> int:
+    f = Path(args.file).expanduser()
+    if not f.is_file():
+        raise SourceError(f"not a regular file: {f}")
+    absf = Path(os.path.abspath(f))
+    real = absf.resolve()
+    if not is_under(real, stage):
+        raise SourceError(f"file is outside stage root {stage}: {real}")
+    ai = None
+    if args.ai_tool or args.ai_model:
+        if not (args.ai_tool and args.ai_model and args.ai_model_licence):
+            raise SourceError("AI copies need --ai-tool, --ai-model and --ai-model-licence together")
+        ai = {"tool": args.ai_tool, "model_id": args.ai_model, "model_licence": args.ai_model_licence,
+              "seed": args.seed, "mask_sha256": args.mask_sha256, "ai_pixel_fraction": args.ai_pixel_fraction}
+    sha = sha256_of(real)
+    entry = led.add_derived(str(absf), args.kind, args.parent_sha256, sha, ai=ai)
+    led.save()
+    print(f"derived {absf}  kind={args.kind} source={entry['source_id']} parent={entry['parent_file']} "
+          f"flagged={is_flagged(entry)} ai={ai is not None} sha256={sha[:12]}")
+    return 0
+
+
 def cmd_credits(led: Ledger, stage: Path, args) -> int:
     by_credit = {}
     with_credits, seen = set(), set()
@@ -333,7 +358,7 @@ def cmd_credits(led: Ledger, stage: Path, args) -> int:
 
 
 HANDLERS = {"list": cmd_list, "prune": cmd_prune, "approve": cmd_approve,
-            "gate": cmd_gate, "adopt": cmd_adopt, "credits": cmd_credits}
+            "gate": cmd_gate, "adopt": cmd_adopt, "derive": cmd_derive, "credits": cmd_credits}
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -365,6 +390,17 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--file", required=True)
     p.add_argument("--kind", required=True, choices=KINDS)
     p.add_argument("--source-id", required=True)
+
+    p = sub.add_parser("derive", parents=[common], help="register an edited or AI copy of a ledgered asset")
+    p.add_argument("--file", required=True)
+    p.add_argument("--kind", required=True, choices=KINDS)
+    p.add_argument("--parent-sha256", required=True)
+    p.add_argument("--ai-tool")
+    p.add_argument("--ai-model")
+    p.add_argument("--ai-model-licence")
+    p.add_argument("--seed", type=int)
+    p.add_argument("--mask-sha256")
+    p.add_argument("--ai-pixel-fraction", type=float)
 
     p = sub.add_parser("credits", parents=[common], help="unique credits across the ledger")
     p.add_argument("--json", action="store_true")

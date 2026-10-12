@@ -401,6 +401,33 @@ def test_gate_warns_unregistered(root):
 
 
 @test
+def test_derive_inherits_and_gates(root):
+    stage, led = new_stage(root)
+    up = stage / "up" / "u.tpc"
+    up.parent.mkdir(parents=True)
+    up.write_bytes(b"UUUU")
+    r = run_cli(root, "adopt", "--file", str(up), "--kind", "texture", "--source-id", UPSCALE)
+    check(r.returncode == 0, f"adopt rc {r.returncode}: {r.stderr}")
+    out = stage / "out" / "e.tpc"
+    out.parent.mkdir(parents=True)
+    out.write_bytes(b"EDIT")
+    r = run_cli(root, "derive", "--file", str(out), "--kind", "texture", "--parent-sha256", sha_of(b"UUUU"),
+                "--ai-tool", "comfyui", "--ai-model", "Qwen/Qwen-Image-Edit", "--ai-model-licence", "Apache-2.0",
+                "--seed", "3", "--ai-pixel-fraction", "0.25")
+    check(r.returncode == 0, f"derive rc {r.returncode}: {r.stderr}")
+    e = [x for x in raw_entries(stage / "ledger.json") if x["file"] == str(out)][0]
+    check(e["removal_group"] == "pending_author_approval" and e["source_id"] == UPSCALE, f"inherit: {e}")
+    check(e["ai"]["tool"] == "comfyui" and e["parent_sha256"] == sha_of(b"UUUU") and e["local_only"], f"fields: {e}")
+    r = run_cli(root, "gate", str(out))
+    check(r.returncode == 1 and "BLOCKED" in r.stdout, f"edited copy of a flagged asset must be blocked: {r.stdout}")
+    r = run_cli(root, "derive", "--file", str(out), "--kind", "texture", "--parent-sha256", "00" * 32)
+    check(r.returncode == 1 and "not in the ledger" in r.stderr, f"unknown parent: {r.stderr}")
+    r = run_cli(root, "derive", "--file", str(out), "--kind", "texture", "--parent-sha256", sha_of(b"UUUU"),
+                "--ai-tool", "comfyui")
+    check(r.returncode == 1 and "together" in r.stderr, f"partial ai fields: {r.stderr}")
+
+
+@test
 def test_adopt_registers_and_rejects(root):
     stage, led = new_stage(root)
     vn = stage / "vn" / "k.tpc"
