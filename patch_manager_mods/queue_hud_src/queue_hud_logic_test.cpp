@@ -1248,6 +1248,12 @@ void testUnifiedActionMake() {
     QueuedAction spNull = makeSpellAction(0x2000, 1, 0, 0, 0, 0, 0, nullptr, 0);
     KT_CHECK(spNull.pos[0] == 0.0f && spNull.pos[1] == 0.0f && spNull.pos[2] == 0.0f);
     KT_CHECK_EQ((int)spNull.kind, (int)ActionKind::Spell);
+    KT_CHECK(!spNull.hasPos && sp.hasPos && !it.hasPos);
+    // replayPos: only a spell whose engine original had a NULL position is replayed with NULL (and only with the flag on)
+    KT_CHECK(replayPos(spNull, true) == nullptr);
+    KT_CHECK(replayPos(spNull, false) == spNull.pos);
+    KT_CHECK(replayPos(sp, true) == sp.pos && replayPos(sp, false) == sp.pos);
+    KT_CHECK(replayPos(itNull, true) == itNull.pos && replayPos(it, true) == it.pos);
 
     // default-constructed action is an Item with no re-inject history
     QueuedAction def;
@@ -2077,6 +2083,46 @@ void testHeldHeadAction() {
     KT_CHECK_EQ(o2, "HANDOFF_OUT m=2 cmd=11 exec=0 firstExecMs=- endMs=8003");
     fmtHandoffOut(o2, sizeof o2, -1, 0, false, 5, 0);                  // exec=0 never prints a time
     KT_CHECK_EQ(o2, "HANDOFF_OUT m=? cmd=0 exec=0 firstExecMs=- endMs=0");
+    // SPELL_OUT: same fields, own keyword
+    fmtSpellOut(o2, sizeof o2, 1, 13, true, 340, 8001);
+    KT_CHECK_EQ(o2, "SPELL_OUT m=1 cmd=13 exec=1 firstExecMs=340 endMs=8001");
+    fmtSpellOut(o2, sizeof o2, 0, 4, false, 77, 8000);
+    KT_CHECK_EQ(o2, "SPELL_OUT m=0 cmd=4 exec=0 firstExecMs=- endMs=8000");
+    // SPELL_ARGS: hook with the engine's pointer, hook with NULL, replay of a zero copy, replay with NULL
+    fmtSpellArgs(o2, sizeof o2, false, 9, 0, 0x55, 3, 0xdbee74, 0, 2, 0, 0x12ab30, true);
+    KT_CHECK_EQ(o2, "SPELL_ARGS where=hook cmd=9 m=0 spell=55 arg2=3 tgt=dbee74 multi=0 meta=2 dom=0 posptr=12ab30 pos=orig");
+    fmtSpellArgs(o2, sizeof o2, false, 4, 2, 0x1a3, 0, 0xdbee74, 0, 0, 0, 0, false);
+    KT_CHECK_EQ(o2, "SPELL_ARGS where=hook cmd=4 m=2 spell=1a3 arg2=0 tgt=dbee74 multi=0 meta=0 dom=0 posptr=0 pos=null");
+    fmtSpellArgs(o2, sizeof o2, true, 4, 2, 0x1a3, 0, 0xdbee74, 0, 0, 0, 0x19f000, false);
+    KT_CHECK_EQ(o2, "SPELL_ARGS where=replay cmd=4 m=2 spell=1a3 arg2=0 tgt=dbee74 multi=0 meta=0 dom=0 posptr=19f000 pos=zero");
+    fmtSpellArgs(o2, sizeof o2, true, 4, -1, 0x1a3, -1, 0, 0, 0, 0, 0, false);
+    KT_CHECK_EQ(o2, "SPELL_ARGS where=replay cmd=4 m=? spell=1a3 arg2=ffffffff tgt=0 multi=0 meta=0 dom=0 posptr=0 pos=null");
+    // softCandidate: none / party / hostile, sentinel + zero, low-24-bit match, null-safety
+    {
+        const uint32_t party3[3] = {0x800001afu, 0x800001b3u, 0x800001b5u};
+        const uint32_t none3[3] = {0x7f000000u, 0u, 0x7f000000u};
+        SoftCand a = softCandidate(none3, 3, party3, 3);
+        KT_CHECK(a.allNone && !a.anyHostile && !a.anyParty);
+        const uint32_t ally3[3] = {0x1afu, 0x7f000000u, 0x800001b5u};           // low 24 bits match, mixed 0x8000.. prefix
+        a = softCandidate(ally3, 3, party3, 3);
+        KT_CHECK(!a.allNone && !a.anyHostile && a.anyParty);
+        const uint32_t foe3[3] = {0x7f000000u, 0x800002c0u, 0x800001afu};       // one hostile + one party
+        a = softCandidate(foe3, 3, party3, 3);
+        KT_CHECK(!a.allNone && a.anyHostile && a.anyParty);
+        a = softCandidate(foe3, 3, nullptr, 0);                                  // no party ids known: every real id is hostile
+        KT_CHECK(a.anyHostile && !a.anyParty);
+        const uint32_t zeroParty[1] = {0x80000000u};                             // low 24 bits 0 never matches
+        const uint32_t t1[1] = {0x80000000u};
+        a = softCandidate(t1, 1, zeroParty, 1);
+        KT_CHECK(a.anyHostile && !a.anyParty);
+        a = softCandidate(nullptr, 0, party3, 3);
+        KT_CHECK(a.allNone && !a.anyHostile && !a.anyParty);
+        char o3[kLogLineMax];
+        fmtSoftCand(o3, sizeof o3, 1, softCandidate(ally3, 3, party3, 3), 1, true, 0x2au, true);
+        KT_CHECK_EQ(o3, "SOFT_CAND m=1 hostile=0 party=1 none=0 cr0=1 cr1=0000002a");
+        fmtSoftCand(o3, sizeof o3, -1, softCandidate(none3, 3, party3, 3), 0, false, 0, false);
+        KT_CHECK_EQ(o3, "SOFT_CAND m=? hostile=0 party=0 none=1 cr0=? cr1=?");
+    }
     // HANDOFF_HELD m=<k> cmd=<n> act=<resend|drop> ms=<n>
     char out[kLogLineMax];
     fmtHandoffHeld(out, sizeof out, 0, 8, HELD_RESEND, 70);
@@ -2091,6 +2137,11 @@ void testHeldHeadAction() {
     KT_CHECK(parseIniLine(c, "handoff_resend_held=0") && !c.handoffResendHeld && c.handoffClearFirst && c.handoffOnCombat);
     KT_CHECK(parseIniLine(c, "Handoff_Resend_Held = yes") && c.handoffResendHeld);
     KT_CHECK(!parseIniLine(c, "handoff_resend_held=2") && c.handoffResendHeld);
+    // spell_replay_pos: default on, bool parsing
+    KT_CHECK(c.spellReplayPos);
+    KT_CHECK(parseIniLine(c, "spell_replay_pos=0") && !c.spellReplayPos && c.handoffResendHeld);
+    KT_CHECK(parseIniLine(c, "spell_replay_pos=1") && c.spellReplayPos);
+    KT_CHECK(!parseIniLine(c, "spell_replay_pos=x") && c.spellReplayPos);
 }
 
 // Cancel Queue colours: the leader is dark green-teal (not black), hover is brighter, companion keeps the teal border.

@@ -878,10 +878,20 @@ static void resolveActive(int k, qh::ActionBuffer& buf, DWORD now) {
     endAction(buf);
 }
 
-// Issue one queued command to the engine (our own call: the hooks pass it through via g_dispatching).
-void dispatchAction(const qh::QueuedAction& a) {
+void spellWatchArm(int k, uint32_t cmd, DWORD now);   // SPELL_OUT watch (defined with the HANDOFF_OUT watch below)
+
+// Issue one queued command to the engine (our own call: the hooks pass it through via g_dispatching). k = party member (-1 unknown).
+void dispatchAction(const qh::QueuedAction& a, int k) {
     g_dispatching = true;
     if (a.kind == qh::ActionKind::Spell) {
+        const float* pp = qh::replayPos(a, g_cfg.spellReplayPos);
+        if (g_logOn && g_cfg.traceQueue) {
+            char line[200];
+            qh::fmtSpellArgs(line, sizeof line, true, a.cmdId, k, a.spellId, a.arg2, a.targetId, a.multispell, a.metamagic, a.domain,
+                             static_cast<uint32_t>(reinterpret_cast<uintptr_t>(pp)), a.hasPos);
+            QTRACE("%s", line);
+        }
+        if (k >= 0) spellWatchArm(k, a.cmdId, GetTickCount());
         reinterpret_cast<PerformCastSpellFn>(AddrPerformCastSpell)(
             reinterpret_cast<void*>(a.creature),
             a.spellId,
@@ -890,7 +900,7 @@ void dispatchAction(const qh::QueuedAction& a) {
             a.multispell,
             a.metamagic,
             a.domain,
-            a.pos);
+            pp);
     } else {
         reinterpret_cast<PerformUseItemFn>(AddrPerformUseItem)(
             reinterpret_cast<void*>(a.creature),
@@ -944,31 +954,29 @@ bool execEvidence(const Snapshot& s) {
 
 // HANDOFF_OUT watch: 8 s per hand-off command, independent of buf.active (which goes false at the hand-off). Trace-gated.
 constexpr DWORD kHandoffOutMs = 8000;
-struct OutWatch { bool on = false; uint32_t cmd = 0; DWORD startAt = 0; bool exec = false; int firstExecMs = -1; } g_outWatch[3];
+// A second, independent set (g_spellWatch) does the same for every replayed Force power (SPELL_OUT), so neither flushes the other early.
+struct OutWatch { bool on = false; uint32_t cmd = 0; DWORD startAt = 0; bool exec = false; int firstExecMs = -1; } g_outWatch[3], g_spellWatch[3];
 
-void outWatchFlush(int k, DWORD now) {
-    OutWatch& w = g_outWatch[k];
+void outWatchFlush(OutWatch* arr, bool spell, int k, DWORD now) {
+    OutWatch& w = arr[k];
     if (!w.on) return;
     if (g_logOn && g_cfg.traceQueue) {
         char line[160];
-        qh::fmtHandoffOut(line, sizeof line, k, w.cmd, w.exec, w.firstExecMs, static_cast<int>(now - w.startAt));
+        (spell ? qh::fmtSpellOut : qh::fmtHandoffOut)(line, sizeof line, k, w.cmd, w.exec, w.firstExecMs, static_cast<int>(now - w.startAt));
         QTRACE("%s", line);
     }
     w = OutWatch{};
 }
-void outWatchArm(int k, uint32_t cmd, DWORD now) {
-    outWatchFlush(k, now);
-    OutWatch& w = g_outWatch[k];
+void outWatchArmIn(OutWatch* arr, bool spell, int k, uint32_t cmd, DWORD now) {
+    outWatchFlush(arr, spell, k, now);
+    OutWatch& w = arr[k];
     w.on = true; w.cmd = cmd; w.startAt = now; w.exec = false; w.firstExecMs = -1;
 }
-void outWatchTick(DWORD now) {
-    bool any = false;
-    for (int k = 0; k < 3; ++k) any = any || g_outWatch[k].on;
-    if (!any) return;
-    party::Fail why = party::F_None;
-    const uintptr_t tbl = party::table(&why);
+void outWatchArm(int k, uint32_t cmd, DWORD now) { outWatchArmIn(g_outWatch, false, k, cmd, now); }
+void spellWatchArm(int k, uint32_t cmd, DWORD now) { outWatchArmIn(g_spellWatch, true, k, cmd, now); }
+void outWatchTickIn(OutWatch* arr, bool spell, uintptr_t tbl, DWORD now) {
     for (int k = 0; k < 3; ++k) {
-        OutWatch& w = g_outWatch[k];
+        OutWatch& w = arr[k];
         if (!w.on) continue;
         if (tbl && !w.exec) {
             const uintptr_t cli = party::member(tbl, k);
@@ -976,8 +984,17 @@ void outWatchTick(DWORD now) {
             Snapshot s;
             if (srv && gatherFor(srv, s) && execEvidence(s)) { w.exec = true; w.firstExecMs = static_cast<int>(now - w.startAt); }
         }
-        if (now - w.startAt >= kHandoffOutMs) outWatchFlush(k, now);
+        if (now - w.startAt >= kHandoffOutMs) outWatchFlush(arr, spell, k, now);
     }
+}
+void outWatchTick(DWORD now) {
+    bool any = false;
+    for (int k = 0; k < 3; ++k) any = any || g_outWatch[k].on || g_spellWatch[k].on;
+    if (!any) return;
+    party::Fail why = party::F_None;
+    const uintptr_t tbl = party::table(&why);
+    outWatchTickIn(g_outWatch, false, tbl, now);
+    outWatchTickIn(g_spellWatch, true, tbl, now);
 }
 
 // Ends one member's hand-off. A held head that was never dispatched is logged as a DROP; the buffer is left alone.
@@ -1094,7 +1111,7 @@ void handoffTick(DWORD now, const bool* edge) {
             }
             ++h.sent;
             g_lastOurs[k].tag = "handoff"; g_lastOurs[k].tick = now;
-            dispatchAction(a);
+            dispatchAction(a, k);
             outWatchArm(k, a.cmdId, now);
             g_roundWatchUntil[k] = now + 15000;   // armed outside the trace gate: the watch runs with trace off too
             g_lastRound[k].n = -1;
@@ -1167,6 +1184,16 @@ void combatEdgeTrace(DWORD now, const bool* edge) {
         const bool o550 = rd(SiteQueue, srv, CrTgt550, &t550), o564 = rd(SiteQueue, srv, CrTgt564, &t564), o568 = rd(SiteQueue, srv, CrTgt568, &t568);
         char line[200];
         qh::fmtCmbtFields(line, sizeof line, k, cr, crOk, t550, o550, t564, o564, t568, o568);
+        QTRACE("%s", line);
+        // SOFT_CAND: do the target fields name a party member, a hostile, or nothing? (party ids = server creature +CrObjectId, k = 0..2)
+        uint32_t partyIds[3] = {};
+        for (int j = 0; j < 3; ++j) {
+            const uintptr_t pc = party::member(tbl, j);
+            const uintptr_t ps = pc ? party::serverCreature(pc) : 0;
+            if (ps) rd(SiteCancel + 1, ps, CrObjectId, &partyIds[j]);
+        }
+        const uint32_t tg[3] = {o550 ? t550 : 0u, o564 ? t564 : 0u, o568 ? t568 : 0u};
+        qh::fmtSoftCand(line, sizeof line, k, qh::softCandidate(tg, 3, partyIds, 3), cr[0], crOk[0], cr[1], crOk[1]);
         QTRACE("%s", line);
     }
 }
@@ -1328,7 +1355,7 @@ void tickItemQueues(DWORD now, bool inMenu) {
                          k, buf.activeAction.clientItem, buf.activeAction.targetId, buf.activeAction.reInjectCount,
                          (unsigned)buf.activeAction.cmdId);
                     buf.reInjectPending = true;
-                    dispatchAction(buf.activeAction);
+                    dispatchAction(buf.activeAction, k);
                     buf.activeStartTick = now;
                     buf.reInjectPending = false;
                 }
@@ -1377,7 +1404,7 @@ void tickItemQueues(DWORD now, bool inMenu) {
                              buf.activeAction.kind == qh::ActionKind::Spell ? "spell" : "item",
                              k, buf.activeAction.clientItem, buf.activeAction.targetId, buf.eatenReInjects,
                              (unsigned)buf.activeAction.cmdId);
-                        dispatchAction(buf.activeAction);
+                        dispatchAction(buf.activeAction, k);
                         buf.markDispatched(now);
                         break;
                     }
@@ -1439,7 +1466,7 @@ void tickItemQueues(DWORD now, bool inMenu) {
                     buf.active = true;
                     buf.activeAction = nextA;
                     buf.markDispatched(now);
-                    dispatchAction(nextA);
+                    dispatchAction(nextA, k);
                 }
             }
             g_flagGate[k].reset();
@@ -1587,7 +1614,7 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     loadIni();
     g_logOn = g_cfg.log;
     KP_LOG(chMain, "0.4.0-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax);
-    QLOG(chMain, "pause_eaten_wait=%d dispatch_wait_flags=%d", g_cfg.pauseEatenWait ? 1 : 0, g_cfg.dispatchWaitFlags ? 1 : 0);
+    QLOG(chMain, "pause_eaten_wait=%d dispatch_wait_flags=%d spell_replay_pos=%d", g_cfg.pauseEatenWait ? 1 : 0, g_cfg.dispatchWaitFlags ? 1 : 0, g_cfg.spellReplayPos ? 1 : 0);
     QLOG(chMain, "pause_reinject=%d handoff_on_combat=%d handoff_clear_first=%d handoff_resend_held=%d show_in_combat=%d",
          g_cfg.pauseReinject ? 1 : 0, g_cfg.handoffOnCombat ? 1 : 0, g_cfg.handoffClearFirst ? 1 : 0, g_cfg.handoffResendHeld ? 1 : 0, g_cfg.showInCombat ? 1 : 0);
     g_ps.init(api, "queue-hud");
@@ -1761,6 +1788,12 @@ int __cdecl QueueHudPerformCastSpell(int clientCreature, int ebp) {
         traceCmd(cmd, -1, crPtr, qh::ActionKind::Spell, true, spellId, targetId, "pass_nonparty", true, 0, 0, false);
         return 0;
     }
+    if (g_logOn && g_cfg.traceQueue) {
+        char line[200];
+        qh::fmtSpellArgs(line, sizeof line, false, cmd, memberK, spellId, arg2, targetId, multispell, metamagic, domain,
+                         static_cast<uint32_t>(posPtr), posPtr != 0);
+        QTRACE("%s", line);
+    }
     const bool fb = false;
 
     const int engineQ = queueCountOf(memberK);
@@ -1772,7 +1805,7 @@ int __cdecl QueueHudPerformCastSpell(int clientCreature, int ebp) {
         g_itemQueue[memberK].userCancelled = false;
         g_itemQueue[memberK].active = true;
         g_itemQueue[memberK].activeAction = qh::makeSpellAction(
-            crPtr, spellId, arg2, targetId, multispell, metamagic, domain, posVal, GetTickCount(), cmd);
+            crPtr, spellId, arg2, targetId, multispell, metamagic, domain, posPtr ? posVal : nullptr, GetTickCount(), cmd);
         g_itemQueue[memberK].markDispatched(GetTickCount());
         g_lastOurs[memberK].tag = "hook"; g_lastOurs[memberK].tick = GetTickCount();
         traceCmd(cmd, memberK, crPtr, qh::ActionKind::Spell, true, spellId, targetId, "dispatch_now", fb, engqLog, bufBefore, false);
@@ -1781,7 +1814,7 @@ int __cdecl QueueHudPerformCastSpell(int clientCreature, int ebp) {
 
     if (dec == qh::DECIDE_BUFFER) {
         qh::QueuedAction a = qh::makeSpellAction(
-            crPtr, spellId, arg2, targetId, multispell, metamagic, domain, posVal, GetTickCount(), cmd);
+            crPtr, spellId, arg2, targetId, multispell, metamagic, domain, posPtr ? posVal : nullptr, GetTickCount(), cmd);
         g_itemQueue[memberK].push(a);
         traceCmd(cmd, memberK, crPtr, qh::ActionKind::Spell, true, spellId, targetId, "buffer", fb, engqLog, bufBefore, false);
         QLOG(chMain, "buffered spell use for member %d (spell=%08x, target=%08x, count=%d) cmd=%u",

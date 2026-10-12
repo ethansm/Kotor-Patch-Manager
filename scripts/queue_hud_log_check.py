@@ -33,6 +33,10 @@ these keywords are ignored; a keyword line with a missing or malformed field is 
   HANDOFF_OUT m=<k> cmd=<n> exec=<0|1> firstExecMs=<n|-> endMs=<n>   (8 s ground truth per hand-off command; no lifecycle)
   CLICK t=<tick ms> x=<n|-> y=<n|->   (one per left-button press edge)
   CMBT_FIELDS m=<k> cr520=<hex|?,x12> t550=<hex|?> t564=<hex|?> t568=<hex|?>   (soft-combat evidence at a combat edge)
+  SPELL_ARGS where=<hook|replay> cmd=<n> m=<k> spell=<hex> arg2=<hex> tgt=<hex> multi=<n> meta=<n> dom=<n> posptr=<hex> pos=<orig|null|zero>
+    (spell arguments: where=hook is the dispatch_now cast, where=replay is a buffered cast re-issued from the queue)
+  SPELL_OUT m=<k> cmd=<n> exec=<0|1> firstExecMs=<n|-> endMs=<n>   (outcome of the spell command in SPELL_ARGS; same cmd=)
+  SOFT_CAND m=<k> hostile=<0|1> party=<0|1> none=<0|1> cr0=<n|?> cr1=<hex|?>   (soft-combat candidate per member; no cmd, no lifecycle)
   STALE_CUR m=<k> sub=<n> since=<n> aa8=<n> ab8=<n> paused=<0|1>
   IDENT_SWAP from=<n> to=<n>   (no m=: dropped by --member)
 
@@ -52,6 +56,9 @@ Flags:
   J combat-edge-silent (EDGE): what=combat new=1 with no ROUND line (any member) within 1500 ms after it (T= stamps; bare
     lines have none). The round watch is armed at every combat edge, so a silent edge means a build without that watch or
     members whose engine state was unreadable.
+  K buffered-spell-no-exec (SPELL_ARGS where=replay): a (m, cmd) with a SPELL_ARGS where=replay line and no SPELL_OUT
+    exec=1 for the same m and cmd (exec=0, or no SPELL_OUT at all). Anchored at the replay line. A log cut before the
+    outcome line is written looks the same as a spell that never ran.
 """
 from __future__ import annotations
 
@@ -75,6 +82,7 @@ HANDOFF_WINDOW_MS = 1500          # flag H: how long after a HANDOFF_ONE the fir
 ITEM_SUBTYPES = (9, 10)           # flag H: a first subtype outside these means an attack node is ahead of the item
 CMD_VIEW_MAX = 30
 CMD_KWS = ("CMD", "WAIT", "RESOLVE", "DROP", "REINJECT", "REINJECT_NO", "DISPATCH", "CANCEL", "VANISH")
+SPELL_KWS = ("SPELL_ARGS", "SPELL_OUT")   # per-command view only; not lifecycle keywords (build_cmds ignores them)
 VANISH_KINDS = ("executed", "unseen", "eaten_paused", "eaten_wait")
 EATEN_PAUSED = "eaten_paused"   # REINJECT why= that is the re-inject reason (not a decline)
 PREFIX_RE = re.compile(r"^T=(?P<t>\S+)\s+f=\S+\s+[\w.-]+/\w+\s+(?:(?:ERR|WARN)\s+)?(?P<body>.*)$")
@@ -97,9 +105,13 @@ FIELD_RE = {
     "firstExecMs": r"-|\d+", "endMs": r"-?\d+", "t": r"\d+", "x": r"-|-?\d+", "y": r"-|-?\d+",
     "cr520": r"(?:[0-9a-fA-F]{8}|\?)(?:,(?:[0-9a-fA-F]{8}|\?))*", "t550": r"\?|[0-9a-fA-F]{8}",
     "t564": r"\?|[0-9a-fA-F]{8}", "t568": r"\?|[0-9a-fA-F]{8}",
+    "where": r"hook|replay", "spell": HEXV, "spell_tgt": HEXV, "arg2": HEXV, "multi": r"-?\d+", "meta": r"-?\d+",
+    "dom": r"-?\d+", "posptr": HEXV, "pos": r"orig|null|zero",
+    "hostile": r"[01]", "party": r"[01]", "none": r"[01]", "cr0": r"\?|-?\d+", "cr1": r"\?|[0-9a-fA-F]+",
 }
 OVERRIDE = {("EDGE", "buf"): "buflist", ("VANISH", "kind"): "vanish_kind",
-            ("ROUND", "types"): "hexlist", ("ROUND", "cur"): "roundcur"}
+            ("ROUND", "types"): "hexlist", ("ROUND", "cur"): "roundcur",
+            ("SPELL_ARGS", "tgt"): "spell_tgt"}
 REQUIRED = {
     "CMD": ("m", "cr", "kind", "id", "tgt", "dec", "fb", "engq", "buf", "paused", "combat"),
     "WAIT": ("cmd", "m", "why", "buf", "engNe", "age"),
@@ -118,6 +130,9 @@ REQUIRED = {
     "HANDOFF_OUT": ("m", "cmd", "exec", "firstExecMs", "endMs"),
     "CLICK": ("t", "x", "y"),
     "CMBT_FIELDS": ("m", "cr520", "t550", "t564", "t568"),
+    "SPELL_ARGS": ("where", "cmd", "m", "spell", "arg2", "tgt", "multi", "meta", "dom", "posptr", "pos"),
+    "SPELL_OUT": ("m", "cmd", "exec", "firstExecMs", "endMs"),
+    "SOFT_CAND": ("m", "hostile", "party", "none", "cr0", "cr1"),
     "STALE_CUR": ("m", "sub", "since", "aa8", "ab8", "paused"),
     "IDENT_SWAP": ("from", "to"),
 }
@@ -419,6 +434,20 @@ def edge_silent_flags(recs):
     return out
 
 
+def spell_replay_flags(recs):
+    """[(line, text)] for flag K: a (m, cmd) with a SPELL_ARGS where=replay line and no SPELL_OUT exec=1 for the same
+    (m, cmd). Each such command is reported once, anchored at its first replay line."""
+    replays, executed = {}, set()
+    for r in recs:
+        if r["kw"] == "SPELL_ARGS" and r["f"]["where"] == "replay":
+            replays.setdefault((r["m"], r["cmd"]), r)
+        elif r["kw"] == "SPELL_OUT" and r["f"]["exec"] == "1":
+            executed.add((r["m"], r["cmd"]))
+    return [(r["line"], "K L%d cmd=%s m=%s buffered spell replayed, never executed (SPELL_OUT exec=0 or absent)" % (
+                r["line"], r["cmd"], _ms(r["m"])))
+            for key, r in replays.items() if key not in executed]
+
+
 def stale_flags(recs):
     """[(line, text)] for flag E: WAIT why=cur_busy with age >= 3000 for a member that has no STALE_CUR in the window."""
     stale_members = {r["m"] for r in recs if r["kw"] == "STALE_CUR"}
@@ -434,9 +463,10 @@ def stale_flags(recs):
 
 
 def all_flags(recs):
-    """Every flag as sorted [(line, text)]: A, B, C (qj_flags) plus D, E, F, G, H, I, J."""
+    """Every flag as sorted [(line, text)]: A, B, C (qj_flags) plus D, E, F, G, H, I, J, K."""
     return sorted(qj_flags(recs) + life_flags(build_cmds(recs)) + handoff_flags(recs) + stale_flags(recs)
-                  + handoff_order_flags(recs) + handoff_trigger_flags(recs) + edge_silent_flags(recs))
+                  + handoff_order_flags(recs) + handoff_trigger_flags(recs) + edge_silent_flags(recs)
+                  + spell_replay_flags(recs))
 
 
 def life_line(i):
@@ -530,7 +560,7 @@ def render_default(recs, skipped, nlines, meta):
 
 def render_cmd(recs, n):
     insts = [i for i in build_cmds(recs) if i["cmd"] == n]
-    rows = [r for r in recs if r["cmd"] == n and r["kw"] in CMD_KWS]
+    rows = [r for r in recs if r["cmd"] == n and r["kw"] in CMD_KWS + SPELL_KWS]
     lines = [life_line(i) for i in insts] + ["L%d %s" % (r["line"], r["body"]) for r in rows]
     if not lines:
         return ["cmd %d: no lines" % n]

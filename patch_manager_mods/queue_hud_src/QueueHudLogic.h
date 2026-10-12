@@ -192,6 +192,7 @@ struct Config {
     bool showInCombat = true;     // show_in_combat: keep the queue strip drawn during combat (default on)
     bool handoffClearFirst = true;  // handoff_clear_first: clear the engine queue before the first handoff send (default on)
     bool handoffResendHeld = true;  // handoff_resend_held: re-send an engine-held active command the engine wipes at combat start (default on)
+    bool spellReplayPos = true;     // spell_replay_pos: replay a buffered spell with a NULL position when the engine's original was NULL (0 = always pass the zero-filled copy)
 };
 
 struct Style { float bg[3], bgA, border[3], borderA, iconA, frameA; int borderPx; };
@@ -473,6 +474,7 @@ inline bool parseIniLine(Config& c, const char* line) {
     if (detail::keyEq(kb, ke, "show_in_combat")) return detail::parseBool(vb, ve, &c.showInCombat);
     if (detail::keyEq(kb, ke, "handoff_clear_first")) return detail::parseBool(vb, ve, &c.handoffClearFirst);
     if (detail::keyEq(kb, ke, "handoff_resend_held")) return detail::parseBool(vb, ve, &c.handoffResendHeld);
+    if (detail::keyEq(kb, ke, "spell_replay_pos")) return detail::parseBool(vb, ve, &c.spellReplayPos);
     return false;
 }
 
@@ -514,6 +516,7 @@ struct QueuedAction {
     int metamagic = 0;
     int domain = 0;
     int reInjectCount = 0;
+    bool hasPos = false;     // the engine's original call carried a non-null position pointer (Spell capture)
     uint32_t cmdId = 0;      // host command number (CMD#<n>); 0 = unassigned. Keep as the last member.
 };
 using QueuedItemAction = QueuedAction;
@@ -549,6 +552,7 @@ inline QueuedAction makeSpellAction(uintptr_t creature, uint32_t spellId, int ar
     if (pos) { a.pos[0] = pos[0]; a.pos[1] = pos[1]; a.pos[2] = pos[2]; }
     a.queueTime = queueTime;
     a.kind = ActionKind::Spell;
+    a.hasPos = (pos != nullptr);
     a.spellId = spellId;
     a.arg2 = arg2;
     a.multispell = multispell;
@@ -557,6 +561,12 @@ inline QueuedAction makeSpellAction(uintptr_t creature, uint32_t spellId, int ar
     a.reInjectCount = 0;
     a.cmdId = cmdId;
     return a;
+}
+
+// Position pointer for the replayed call: a spell the engine itself called with a NULL position is replayed with NULL
+// (useOrigPos), never with a pointer to the zero-filled copy; everything else keeps the stored copy.
+inline const float* replayPos(const QueuedAction& a, bool useOrigPos) {
+    return (a.kind == ActionKind::Spell && useOrigPos && !a.hasPos) ? nullptr : a.pos;
 }
 
 constexpr int kMaxActionQueue = 3;
@@ -1044,15 +1054,41 @@ inline int fmtHandoffHeld(char* out, int cap, int m, uint32_t cmdId, HeldHeadAct
     return w.done();
 }
 
-// HANDOFF_OUT m=<k> cmd=<n> exec=<0|1> firstExecMs=<n|-> endMs=<n>
-// Ground truth for a hand-off: watched for 8 s after the edge / send. exec = aa8/ab8 or a cur subtype 9/10 was seen unpaused.
-inline int fmtHandoffOut(char* out, int cap, int m, uint32_t cmdId, bool exec, int firstExecMs, int endMs) {
+// HANDOFF_OUT m=<k> cmd=<n> exec=<0|1> firstExecMs=<n|-> endMs=<n>   (SPELL_OUT has the same fields)
+// Ground truth for a hand-off / spell replay: watched for 8 s after the edge / send. exec = aa8/ab8 or a cur subtype 9/10 was seen unpaused.
+inline int fmtOutLine(char* out, int cap, const char* kw, int m, uint32_t cmdId, bool exec, int firstExecMs, int endMs) {
     detail::LogWr w(out, cap);
-    w.s("HANDOFF_OUT m="); w.mm(m);
+    w.s(kw); w.s(" m="); w.mm(m);
     w.s(" cmd="); w.u(cmdId);
     w.s(" exec="); w.c(exec ? '1' : '0');
     w.s(" firstExecMs="); if (exec && firstExecMs >= 0) w.i(firstExecMs); else w.c('-');
     w.s(" endMs="); w.i(endMs);
+    return w.done();
+}
+inline int fmtHandoffOut(char* out, int cap, int m, uint32_t cmdId, bool exec, int firstExecMs, int endMs) {
+    return fmtOutLine(out, cap, "HANDOFF_OUT", m, cmdId, exec, firstExecMs, endMs);
+}
+inline int fmtSpellOut(char* out, int cap, int m, uint32_t cmdId, bool exec, int firstExecMs, int endMs) {
+    return fmtOutLine(out, cap, "SPELL_OUT", m, cmdId, exec, firstExecMs, endMs);
+}
+
+// SPELL_ARGS where=<hook|replay> cmd=<n> m=<k> spell=<hex> arg2=<hex> tgt=<hex> multi=<n> meta=<n> dom=<n> posptr=<hex> pos=<orig|null|zero>
+// Every argument of a Force-power cast at capture (the engine's own call) and at replay (our call). posptr = the position pointer
+// passed (raw); pos = null (no pointer), orig (a copy of the engine's position) or zero (a pointer to our zero-filled copy).
+inline int fmtSpellArgs(char* out, int cap, bool replay, uint32_t cmdId, int m, uint32_t spellId, int arg2, uint32_t targetId,
+                        int multispell, int metamagic, int domain, uint32_t posPtrRaw, bool hasPos) {
+    detail::LogWr w(out, cap);
+    w.s("SPELL_ARGS where="); w.s(replay ? "replay" : "hook");
+    w.s(" cmd="); w.u(cmdId);
+    w.s(" m="); w.mm(m);
+    w.s(" spell="); w.x(spellId);
+    w.s(" arg2="); w.x(static_cast<uint32_t>(arg2));
+    w.s(" tgt="); w.x(targetId);
+    w.s(" multi="); w.i(multispell);
+    w.s(" meta="); w.i(metamagic);
+    w.s(" dom="); w.i(domain);
+    w.s(" posptr="); w.x(posPtrRaw);
+    w.s(" pos="); w.s(posPtrRaw == 0 ? "null" : hasPos ? "orig" : "zero");
     return w.done();
 }
 
@@ -1080,6 +1116,36 @@ inline int fmtCmbtFields(char* out, int cap, int m, const uint32_t* cr, const bo
     w.s(" t550="); if (ok550) w.x8(t550); else w.c('?');
     w.s(" t564="); if (ok564) w.x8(t564); else w.c('?');
     w.s(" t568="); if (ok568) w.x8(t568); else w.c('?');
+    return w.done();
+}
+
+// Soft-combat candidate test: which of a member's target fields (t550/t564/t568) name a hostile, a party member, or nothing.
+// "none" = 0 or the sentinel 0x7f000000; a party id matches on the LOW 24 bits (the log shows 1af for 0x800001af); any other id is hostile.
+constexpr uint32_t kNoTargetId = 0x7f000000u;
+struct SoftCand { bool anyHostile = false; bool anyParty = false; bool allNone = true; };
+inline SoftCand softCandidate(const uint32_t* tgt, int n, const uint32_t* partyIds, int np) {
+    SoftCand r;
+    for (int i = 0; tgt && i < n; ++i) {
+        const uint32_t t = tgt[i];
+        if (t == 0 || t == kNoTargetId) continue;
+        r.allNone = false;
+        bool party = false;
+        for (int j = 0; partyIds && j < np; ++j)
+            if ((partyIds[j] & 0xFFFFFFu) != 0 && (partyIds[j] & 0xFFFFFFu) == (t & 0xFFFFFFu)) party = true;
+        if (party) r.anyParty = true; else r.anyHostile = true;
+    }
+    return r;
+}
+
+// SOFT_CAND m=<k> hostile=<0|1> party=<0|1> none=<0|1> cr0=<n|?> cr1=<hex|?>   (cr0/cr1 = dword 0/1 of the cr520 block)
+inline int fmtSoftCand(char* out, int cap, int m, const SoftCand& c, uint32_t cr0, bool ok0, uint32_t cr1, bool ok1) {
+    detail::LogWr w(out, cap);
+    w.s("SOFT_CAND m="); w.mm(m);
+    w.s(" hostile="); w.c(c.anyHostile ? '1' : '0');
+    w.s(" party="); w.c(c.anyParty ? '1' : '0');
+    w.s(" none="); w.c(c.allNone ? '1' : '0');
+    w.s(" cr0="); if (ok0) w.u(cr0); else w.c('?');
+    w.s(" cr1="); if (ok1) w.x8(cr1); else w.c('?');
     return w.done();
 }
 

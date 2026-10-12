@@ -896,5 +896,104 @@ class T4TraceTests(unittest.TestCase):
         self.assertEqual(Q.edge_silent_flags(recs), [])
 
 
+def spell_args(n, where="hook", m=0, pos="orig"):
+    return ("SPELL_ARGS where=%s cmd=%d m=%d spell=2c arg2=0 tgt=00dbee74 multi=1 meta=0 dom=0 posptr=00a1b2c0 pos=%s"
+            % (where, n, m, pos))
+
+
+def spell_out(n, m=0, exec_=1, first="120", end=8000):
+    return "SPELL_OUT m=%d cmd=%d exec=%d firstExecMs=%s endMs=%d" % (m, n, exec_, first, end)
+
+
+# Synthetic goldens for the three spell and soft-combat forms (copied from the spec lines; not yet in queue_hud_logic_test.cpp).
+SPELL_GOLDEN = [
+    "SPELL_ARGS where=hook cmd=9 m=0 spell=2c arg2=0 tgt=00dbee74 multi=1 meta=0 dom=0 posptr=00a1b2c0 pos=orig",
+    "SPELL_ARGS where=replay cmd=4 m=0 spell=2c arg2=0 tgt=00dbee74 multi=1 meta=0 dom=0 posptr=00a1b2c0 pos=null",
+    "SPELL_ARGS where=replay cmd=13 m=2 spell=1f arg2=ffffffff tgt=0 multi=0 meta=2 dom=0 posptr=0 pos=zero",
+    "SPELL_OUT m=0 cmd=4 exec=0 firstExecMs=- endMs=8000",
+    "SPELL_OUT m=2 cmd=13 exec=1 firstExecMs=120 endMs=8003",
+    "SOFT_CAND m=0 hostile=1 party=0 none=0 cr0=3 cr1=000000ab",
+    "SOFT_CAND m=1 hostile=0 party=0 none=1 cr0=0 cr1=0",
+    "SOFT_CAND m=2 hostile=0 party=0 none=1 cr0=? cr1=?",
+]
+K_MSG = "buffered spell replayed, never executed (SPELL_OUT exec=0 or absent)"
+
+
+class SpellTraceTests(unittest.TestCase):
+    def test_spell_and_soft_cand_golden_lines_parse_exactly(self):
+        recs, skipped = parse(SPELL_GOLDEN)
+        self.assertEqual(skipped, [])
+        self.assertEqual([r["kw"] for r in recs], ["SPELL_ARGS"] * 3 + ["SPELL_OUT"] * 2 + ["SOFT_CAND"] * 3)
+        self.assertEqual((recs[1]["f"]["where"], recs[1]["f"]["pos"], recs[1]["f"]["tgt"]), ("replay", "null", "00dbee74"))
+        self.assertEqual((recs[2]["cmd"], recs[2]["m"], recs[2]["f"]["pos"]), (13, 2, "zero"))
+        self.assertEqual((recs[3]["f"]["exec"], recs[3]["f"]["firstExecMs"], recs[4]["f"]["endMs"]), ("0", "-", "8003"))
+        self.assertEqual((recs[5]["f"]["cr1"], recs[5]["cmd"]), ("000000ab", None))
+
+    def test_spell_and_soft_cand_golden_lines_parse_when_stamped(self):
+        recs, skipped = Q.parse_lines([(i + 1, at(1000 + i, b)) for i, b in enumerate(SPELL_GOLDEN)])
+        self.assertEqual(skipped, [])
+        self.assertEqual(len(recs), len(SPELL_GOLDEN))
+
+    def test_spell_bad_forms_are_skipped_not_fatal(self):
+        bad = [
+            "SPELL_ARGS where=cast cmd=4 m=0 spell=2c arg2=0 tgt=0 multi=1 meta=0 dom=0 posptr=0 pos=orig",
+            "SPELL_ARGS where=replay cmd=4 m=0 spell=zz arg2=0 tgt=0 multi=1 meta=0 dom=0 posptr=0 pos=orig",
+            "SPELL_ARGS where=replay cmd=4 m=0 spell=2c arg2=0 tgt=- multi=1 meta=0 dom=0 posptr=0 pos=orig",
+            "SPELL_ARGS where=replay cmd=4 m=0 spell=2c arg2=0 tgt=0 multi=1 meta=0 dom=0 posptr=0 pos=bad",
+            "SPELL_ARGS where=hook cmd=9 m=0 spell=2c arg2=0 tgt=0 multi=1 meta=0 dom=0 posptr=0",
+            "SPELL_OUT m=0 cmd=4 exec=2 firstExecMs=- endMs=8000",
+            "SPELL_OUT m=0 cmd=4 exec=1 firstExecMs=-",
+            "SOFT_CAND m=0 hostile=2 party=0 none=0 cr0=3 cr1=0",
+            "SOFT_CAND m=0 hostile=1 party=0 none=0 cr0=3 cr1=xyz",
+        ]
+        recs, skipped = parse(bad)
+        self.assertEqual(recs, [])
+        self.assertEqual(len(skipped), len(bad))
+
+    def test_cmd_view_shows_spell_lines_of_that_command_only(self):
+        rc, out = run_log([cmd(4), spell_args(4, "replay"), spell_out(4, exec_=0, first="-"),
+                           spell_args(9, "hook"), spell_out(9, exec_=1)], ("--cmd", "4"))
+        self.assertEqual(rc, 0)
+        self.assertTrue(out[0].startswith("cmd 4 "))
+        self.assertTrue(out[1].startswith("L1 CMD#4 "))   # existing raw CMD row, then the spell rows in log order
+        self.assertEqual(out[2:], ["L2 " + spell_args(4, "replay"), "L3 " + spell_out(4, exec_=0, first="-")])
+
+    def test_spell_lines_add_no_command_lifecycle(self):
+        rc, out = run_log([spell_args(9, "hook"), spell_out(9, exec_=1), SPELL_GOLDEN[-1]])
+        self.assertIn("cmds=0", out[0])
+        self.assertIn("COMMANDS 0", out)
+        rc, out = run_log([spell_args(9, "hook"), spell_out(9, exec_=1)], ("--cmd", "9"))
+        self.assertEqual(out, ["L1 " + spell_args(9, "hook"), "L2 " + spell_out(9, exec_=1)])
+
+
+class SpellFlagTests(unittest.TestCase):
+    # K: SPELL_ARGS where=replay with no SPELL_OUT exec=1 for the same (m, cmd)
+    def test_K_fires_on_replay_with_exec_0(self):
+        self.assertEqual(all_flags_of([spell_args(4, "replay"), spell_out(4, exec_=0, first="-")]),
+                         [(1, "K L1 cmd=4 m=0 " + K_MSG)])
+
+    def test_K_fires_on_replay_with_no_spell_out(self):
+        self.assertEqual(all_flags_of([spell_args(4, "replay")]), [(1, "K L1 cmd=4 m=0 " + K_MSG)])
+
+    def test_K_quiet_on_replay_with_exec_1(self):
+        self.assertEqual(all_flags_of([spell_args(4, "replay"), spell_out(4, exec_=1)]), [])
+
+    def test_K_quiet_on_hook_only_dispatch_now(self):
+        self.assertEqual(all_flags_of([spell_args(9, "hook")]), [])
+        self.assertEqual(all_flags_of([spell_args(9, "hook"), spell_out(9, exec_=1)]), [])
+
+    def test_K_keyed_by_member_and_cmd(self):
+        self.assertEqual(all_flags_of([spell_args(4, "replay", m=0), spell_out(4, m=1, exec_=1)]),
+                         [(1, "K L1 cmd=4 m=0 " + K_MSG)])
+
+    def test_K_reported_once_per_command_at_first_replay(self):
+        self.assertEqual(all_flags_of([spell_args(4, "replay"), spell_args(4, "replay")]), [(1, "K L1 cmd=4 m=0 " + K_MSG)])
+
+    def test_K_listed_in_flags_section(self):
+        rc, out = run_log([spell_args(4, "replay"), spell_out(4, exec_=0, first="-")])
+        self.assertIn("FLAGS 1", out)
+        self.assertIn("  K L1 cmd=4 m=0 " + K_MSG, out)
+
+
 if __name__ == "__main__":
     unittest.main()
