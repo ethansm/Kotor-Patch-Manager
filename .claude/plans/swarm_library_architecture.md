@@ -279,8 +279,8 @@ Constraints: bundle `5a8be20` and LIB `651047e` stay untouched unless the row sa
 
 | Id | Package and item | Evidence (file:line) | Paid | Status |
 |---|---|---|---|---|
-| R1.1 | verify preflight: refuse (real engine) when units x cap_call > cap_total, print the cap needed | `bug_investigate.py:693-699`, `swarm_run.py:296-297` | $0 | TODO |
-| R1.2 | pending verify units make decision `incomplete`, nonzero exit, listed in summary as "budget deferred" (not "no record") | `bug_investigate.py:499-515`, `:725`, `swarm_run.py:786-787` | $0 | TODO |
+| R1.1 | verify preflight: refuse (real engine) when units x cap_call > cap_total, print the cap needed | `bug_investigate.py:693-699`, `swarm_run.py:296-297` | $0 | DONE 0bcbfad |
+| R1.2 | pending verify units make decision `incomplete`, nonzero exit, listed in summary as "budget deferred" (not "no record") | `bug_investigate.py:499-515`, `:725`, `swarm_run.py:786-787` | $0 | DONE 0bcbfad |
 | R1.3 | verify order: ranked/round-robin by role so no role starves (skeptic got 0 of 25) | `bug_investigate.py:693` | $0 | DROPPED: new unit ids would orphan 10 recorded verify runs; preflight (R1.1) makes order irrelevant, per-style coverage reported (R4.4) |
 | R1.4 | same preflight inside the runner (`check_spend_flags`) | `swarm_run.py:282-297` | $0 | TODO, LIB, needs go |
 | R2.1 | run `probe` before `write_units`; write into a fresh/archived `out/` | `bug_investigate.py:626-627`, `:331` | $0 | DROPPED: runner status recomputes unit_sha256 from the current unit file (swarm_run.py:814-850), stale findings already incomplete |
@@ -291,13 +291,13 @@ Constraints: bundle `5a8be20` and LIB `651047e` stay untouched unless the row sa
 | R3.1 | null unit needs non-empty verdicts (`all([])` is True today) | `bug_investigate.py:495`, `:503` | $0 | PLAN: pin test only (null not_a_bug with empty reasons is already rejected in _reasons) |
 | R3.2 | malformed complete units (hypotheses not a list, missing id) become incomplete with a reason | `bug_investigate.py:428-439`, `:490-492` | $0 | TODO |
 | R3.3 | forbidden-term check: NFKC, strip zero-width, collapse whitespace and `_`/`-`, match on joined excerpt text, whole-word for alnum edges; apply to verify units and to the symptom at `new` | `bug_investigate.py:655-660`, `:682-699` | $0 | PLAN: narrowed to blind and null prompts plus symptom check at new; verify prompts stay unchecked |
-| R3.4 | rank on distinct `text_sha256`; dedupe `valid_evidence_ids` | `bug_investigate.py:478`, `evidence_quote_check.py:156-157` | $0 | TODO |
-| R3.5 | validate `L<n>\|` markers against the excerpt line range; `MIN_CHARS` on letters/digits after stripping tag/timestamp; hint `ev:<sha8>` form on truncated ids; catch lone surrogate in CLI | `evidence_quote_check.py:57`, `:140`, `:123`, `:246` | $0 | TODO |
-| R4.1 | scorer: negation window (not/never/no/n't/without within ~6 words), hedge flag | `bug_investigate_score.py:117-119` | $0 | TODO |
-| R4.2 | scorer: strip the symptom sentence and quoted evidence before matching (rubric `companion`/`follower` echo) | `queue_reinject_bg09.json:44-56` | $0 | TODO |
+| R3.4 | rank on distinct `text_sha256`; dedupe `valid_evidence_ids` | `bug_investigate.py:478`, `evidence_quote_check.py:156-157` | $0 | PARTIAL: producer side DONE b7ecd02 (distinct_texts); rank consumer in B3 |
+| R3.5 | validate `L<n>\|` markers against the excerpt line range; `MIN_CHARS` on letters/digits after stripping tag/timestamp; hint `ev:<sha8>` form on truncated ids; catch lone surrogate in CLI | `evidence_quote_check.py:57`, `:140`, `:123`, `:246` | $0 | DONE b7ecd02 |
+| R4.1 | scorer: negation window (not/never/no/n't/without within ~6 words), hedge flag | `bug_investigate_score.py:117-119` | $0 | DONE a589b90 |
+| R4.2 | scorer: strip the symptom sentence and quoted evidence before matching (rubric `companion`/`follower` echo) | `queue_reinject_bg09.json:44-56` | $0 | DONE a589b90 |
 | R4.3 | rank-1: None top counts as miss; assert top equals report `ranked[0]`; use producer rank key after R3.4; report rank-1 under reversed unit order | `bug_investigate_score.py:154-157`, `:327-330` | $0 | TODO |
 | R4.4 | per-run proportions with run-cluster CI beside pooled Wilson; all-label rate (incl. quote-invalid); per-style breakdown | `bug_investigate_score.py:319-337` | $0 | TODO |
-| R4.5 | one-case assertion in `aggregate`, reject empty regex, `cost_complete` needs expected unit count, stamp rubric sha256 in `score.json` | `bug_investigate_score.py:104-105`, `:164-194`, `:408-411` | $0 | TODO |
+| R4.5 | one-case assertion in `aggregate`, reject empty regex, `cost_complete` needs expected unit count, stamp rubric sha256 in `score.json` | `bug_investigate_score.py:104-105`, `:164-194`, `:408-411` | $0 | PARTIAL: matcher side DONE a589b90 (rubric sha, empty regex, case_id); aggregate checks in S1b |
 | R5.1 | correct the M4 note: 2 of 28 verified, "rubric label" wording, null saturation, in-sample agreement | `bug_investigate_m4_measurement.md:27,38,39,43` | $0 | TODO |
 | R5.2 | freeze both rubrics; hand-label >= 20 fresh hypotheses by another agent or the user; report kappa; no rubric edit on that set | `hotbar_charkey.json:28-36`, `queue_reinject_bg09.json:42-63` | $0 | TODO, needs user input |
 | R5.3 | design 1 to 2 not-a-bug control bundles for the null unit (design only; building needs a go) | measurement note :43 | $0 | TODO |
