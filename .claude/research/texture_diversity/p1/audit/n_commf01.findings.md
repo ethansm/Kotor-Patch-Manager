@@ -1,0 +1,9 @@
+SUMMARY: n_commf01 painted 54.5% of content; the main gap is unpainted tan cloth at C2-D3 and A3-B3, while gloves, corset and the A2-B3 pouch strip stay correctly excluded.
+GAP | C2 right, C3 right, D2-D3 middle | tan back-body/sleeve cloth, skin-like colour, 0% painted under rarm | rarm (large green block, top-right) | action: y-range mask on C2-D3 first; whole-island add only after OPEN is resolved | confidence 2
+GAP | A3-B3 lower band (y ~325-384) | tan skirt/trouser top band, cloth, unpainted (yellow strip) | legs or torso (not resolved) | action: add region mask for A3-B3 lower band; keep A3/B3 cells excluded | confidence 2
+GAP | A2-B2 top edge (y ~128-150) | tan tunic hem above gloves and corset | torso (purple, top-right) | action: add region mask for hem only; keep gloves and corset excluded | confidence 2
+OVERPAINT | D3 right edge (x ~470-512, y ~220-375) | dark brown belt pouch strip beside tan panel, painted green | torso (purple, top-right right edge) | action: add D3 right-edge strip to colorize avoid | confidence 3
+OVERPAINT | D1 top-right corner (x ~465-512, y ~10-65) | small dark brown pouch or holster with flap, painted green | torso (purple, top-right D1 corner) | action: add D1 corner to colorize avoid | confidence 2
+OVERPAINT | C1 top band (y ~0-40) | dark brown band, leather yoke, strap or cloth, painted green | torso (purple, top-right C1) | action: check; keep if cloth | confidence 1
+MISID | D3, D4 | annotation calls them black gaps (41-46% black); image: D3 86% content (tan cloth), D4 75% content, painted 95% | none | action: fix annotation, D3/D4 are cloth not gaps | confidence 4
+MISID | B4-C4 | annotation calls them brown boots; image shows tan trouser/leg cloth with light V at B4, painted 96-98% | legs (not resolved) | action: fix annotation, B4-C4 is leg cloth; boot avoid unverified | confidence 2

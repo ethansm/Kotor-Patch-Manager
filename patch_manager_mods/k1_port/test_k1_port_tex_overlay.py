@@ -243,6 +243,41 @@ def test_colorize_tints_grey_and_keeps_detail():
 
 
 @test
+def test_colorize_min_luma_keeps_dark_pixels():
+    img = np.zeros((H, W, 3), dtype=np.float32)
+    img[:, W // 2:] = 0.8
+    reg = np.ones((H, W), dtype=np.float32)
+    out = ov.colorize(img, reg, "#b5651d", strength=1.0, min_luma=0.2)
+    check(np.array_equal(out[:, :W // 2], img[:, :W // 2]), "dark half changed despite min_luma")
+    check(not np.array_equal(out[:, W // 2:], img[:, W // 2:]), "bright half unchanged")
+
+
+@test
+def test_colorize_keep_skin_skips_skin_pixels():
+    img = np.zeros((H, W, 3), dtype=np.float32)
+    img[:, :W // 2] = to_f(np.array([200, 140, 110], dtype=np.uint8))  # skin-like
+    img[:, W // 2:] = to_f(np.array([120, 120, 125], dtype=np.uint8))  # grey plate
+    reg = np.ones((H, W), dtype=np.float32)
+    out = ov.colorize(img, reg, "#336699", strength=1.0, keep_skin=True)
+    check(np.array_equal(out[:, :W // 2], img[:, :W // 2]), "skin-like pixels changed")
+    check(not np.array_equal(out[:, W // 2:], img[:, W // 2:]), "plate unchanged")
+
+
+@test
+def test_avoid_rects_carve_region_and_validate():
+    full = {"all": np.ones((H, W), dtype=bool)}
+    reg = ov.region(W, H, ["A1", "B1", "C1", "D1"], full, ["all"], avoid_rects=[[0.5, 0.0, 1.0, 0.25]])
+    check(reg[2, 2] > 0.99 and reg[2, W - 2] == 0.0, "rect did not carve the right half of row 1")
+    base = {"id": "x", "atlas": "a", "model": "m",
+            "layers": [{"kind": "recolor", "op": "tint", "cells": ["A1"], "params": {"colour": "#102030"}}]}
+    check(ov.validate_recipe(base) == [], "baseline recipe invalid")
+    for bad in ([[0.5, 0, 0.4, 1]], [[0, 0, 1.5, 1]], [[0, 0, 1]], "x"):
+        r = json.loads(json.dumps(base))
+        r["layers"][0]["avoid_rects"] = bad
+        check(any("avoid_rect" in p for p in ov.validate_recipe(r)), f"bad rects accepted: {bad!r}")
+
+
+@test
 def test_ops_table():
     check(set(ov.OPS) == {"recolor_hsv", "band", "decal", "wear", "tint", "colorize"}, "OPS keys")
     check(ov.EMBLEM_OPS == {"decal"}, "EMBLEM_OPS")

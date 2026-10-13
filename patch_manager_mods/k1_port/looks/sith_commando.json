@@ -5,37 +5,57 @@
   "atlas": "n_sithcom01",
   "model": "n_sithcommando",
   "seed": 11,
-  "note": "SITHJ copper recolour of the light plates only (A1 shoulder, B2 chest, D3 forearm, A4/B4 greaves); black cowl, belt B3, joint disc C3, D4 buckle, clasp D1 excluded. B2 emblem sits on the chest plate and is tinted with it (check sheet). Colorize because the plates are near-grey.",
+  "note": "SITHJ plate recolour over every plate island (audit: B1, A2, A3, B3, C4, D1, D2 plates were missed); black cowl, boots and leather stay dark through min_luma, B3 emblem and C2 joint disc excluded by rect. Colour card SITHJ1.",
   "layers": [
    {
     "kind": "recolor",
     "op": "colorize",
     "cells": [
      "A1",
+     "B1",
+     "C1",
+     "D1",
+     "A2",
      "B2",
+     "C2",
+     "D2",
+     "A3",
+     "B3",
+     "C3",
      "D3",
      "A4",
-     "B4"
+     "B4",
+     "C4",
+     "D4"
     ],
     "islands": [
      "body",
      "legs",
-     "torso_arm"
+     "head",
+     "torso_arm",
+     "arms"
     ],
-    "avoid_cells": [
-     "B3",
-     "C3",
-     "D4",
-     "D1",
-     "C1",
-     "C2",
-     "D2"
-    ],
+    "avoid_cells": [],
     "card": "SITHJ1",
     "params": {
      "colour": "#b0622a",
-     "strength": 0.8
-    }
+     "strength": 0.8,
+     "min_luma": 0.3
+    },
+    "avoid_rects": [
+     [
+      0.29,
+      0.5,
+      0.41,
+      0.64
+     ],
+     [
+      0.44,
+      0.27,
+      0.62,
+      0.45
+     ]
+    ]
    },
    {
     "kind": "wear",
@@ -66,37 +86,57 @@
   "atlas": "n_sithcom01",
   "model": "n_sithcommando",
   "seed": 12,
-  "note": "SITHJ crimson plates, same cells as SC-copper, plus a scuff pass on the shoulder and chest plates.",
+  "note": "SITHJ plate recolour over every plate island (audit: B1, A2, A3, B3, C4, D1, D2 plates were missed); black cowl, boots and leather stay dark through min_luma, B3 emblem and C2 joint disc excluded by rect. Colour card SITHJ2.",
   "layers": [
    {
     "kind": "recolor",
     "op": "colorize",
     "cells": [
      "A1",
+     "B1",
+     "C1",
+     "D1",
+     "A2",
      "B2",
+     "C2",
+     "D2",
+     "A3",
+     "B3",
+     "C3",
      "D3",
      "A4",
-     "B4"
+     "B4",
+     "C4",
+     "D4"
     ],
     "islands": [
      "body",
      "legs",
-     "torso_arm"
+     "head",
+     "torso_arm",
+     "arms"
     ],
-    "avoid_cells": [
-     "B3",
-     "C3",
-     "D4",
-     "D1",
-     "C1",
-     "C2",
-     "D2"
-    ],
+    "avoid_cells": [],
     "card": "SITHJ2",
     "params": {
      "colour": "#a21f24",
-     "strength": 0.85
-    }
+     "strength": 0.85,
+     "min_luma": 0.3
+    },
+    "avoid_rects": [
+     [
+      0.29,
+      0.5,
+      0.41,
+      0.64
+     ],
+     [
+      0.44,
+      0.27,
+      0.62,
+      0.45
+     ]
+    ]
    },
    {
     "kind": "wear",
@@ -127,37 +167,57 @@
   "atlas": "n_sithcom01",
   "model": "n_sithcommando",
   "seed": 13,
-  "note": "SITHJ gunmetal-navy plates (navy reads on the light plates per palette_clash), same cells.",
+  "note": "SITHJ plate recolour over every plate island (audit: B1, A2, A3, B3, C4, D1, D2 plates were missed); black cowl, boots and leather stay dark through min_luma, B3 emblem and C2 joint disc excluded by rect. Colour card SITHJ3.",
   "layers": [
    {
     "kind": "recolor",
     "op": "colorize",
     "cells": [
      "A1",
+     "B1",
+     "C1",
+     "D1",
+     "A2",
      "B2",
+     "C2",
+     "D2",
+     "A3",
+     "B3",
+     "C3",
      "D3",
      "A4",
-     "B4"
+     "B4",
+     "C4",
+     "D4"
     ],
     "islands": [
      "body",
      "legs",
-     "torso_arm"
+     "head",
+     "torso_arm",
+     "arms"
     ],
-    "avoid_cells": [
-     "B3",
-     "C3",
-     "D4",
-     "D1",
-     "C1",
-     "C2",
-     "D2"
-    ],
+    "avoid_cells": [],
     "card": "SITHJ3",
     "params": {
      "colour": "#34496e",
-     "strength": 0.8
-    }
+     "strength": 0.8,
+     "min_luma": 0.3
+    },
+    "avoid_rects": [
+     [
+      0.29,
+      0.5,
+      0.41,
+      0.64
+     ],
+     [
+      0.44,
+      0.27,
+      0.62,
+      0.45
+     ]
+    ]
    }
   ]
  }

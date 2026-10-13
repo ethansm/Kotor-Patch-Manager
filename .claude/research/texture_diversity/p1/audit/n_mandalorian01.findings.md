@@ -1,0 +1,9 @@
+SUMMARY: n_mandalorian01 painted 83% of content; green covers most cloth and plate, but recolour layers ignore their avoid lists (bottom belt strap painted) and small gaps are too fine to name at 1024px.
+OVERPAINT | B4-C4 | brown belt strap along bottom edge of row 4 (leather, not plate or cloth) | torso (pink in top-right panel) | action: add avoid B4,C4 to recolor_hsv in MD-crimson, MD-green, MD-amber (avoid=[] today) | confidence 2
+MISID | A4-C4 | annotation puts the belt at top of row 4; image shows the strap at the bottom edge | torso | action: fix annotation layout line | confidence 2
+OVERPAINT | B4 | silver clasp at bottom of the oval plate (hardware) | yellow oval island (label not legible at 1024px) | action: keep excluded; add clasp to avoid for recolor layers | confidence 1
+GAP | B4 | oval plate with dark recess (knee plate; annotation says avoid) | yellow oval island (label not legible) | action: if oval is plate (guide: plates yes) fix annotation, else keep excluded | confidence 1
+GAP | A4 | pale grey-blue shin plate, left block (A4 painted 0.777; annotation lists shin plates as avoid) | grey island at A4 left (label not legible) | action: fix annotation; confirm painted coverage at higher res | confidence 1
+GAP | D2-D4 | steel-blue side and hip plates, lower right (D2 0.752, D3 0.781, D4 0.750 painted) | blue and light-purple islands (labels not legible) | action: check at higher res before widening cells | confidence 1
+OVERPAINT | A2 | small grey ornament at left edge, annotation says avoid; green panel shows it painted | orange island at A2 left edge | action: keep excluded if pouch or hardware; confirm at higher res | confidence 1
+OVERPAINT | A1, C1 | small dark framed rectangles at top edge, possibly buckles or hardware, painted torso pink | torso | action: keep excluded if hardware; confirm at higher res | confidence 1

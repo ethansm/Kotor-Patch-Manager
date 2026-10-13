@@ -1,0 +1,125 @@
+{
+ "atlas": "n_commf05",
+ "size": [
+  512,
+  512
+ ],
+ "model": "n_commf",
+ "looks": [
+  "P2-f05",
+  "P4-f05"
+ ],
+ "content_fraction": 0.94,
+ "painted_of_content": 0.441,
+ "unpainted_nonskin_of_content": 0.512,
+ "unpainted_skin_like_of_content": 0.047,
+ "content_outside_every_island": 0.282,
+ "islands": {
+  "arms": {
+   "texels_of_atlas": 0.147,
+   "painted_by_looks": 0.0
+  },
+  "larm": {
+   "texels_of_atlas": 0.147,
+   "painted_by_looks": 0.0
+  },
+  "legs": {
+   "texels_of_atlas": 0.224,
+   "painted_by_looks": 0.711
+  },
+  "rarm": {
+   "texels_of_atlas": 0.147,
+   "painted_by_looks": 0.0
+  },
+  "torso": {
+   "texels_of_atlas": 0.564,
+   "painted_by_looks": 0.734
+  },
+  "torso_arm": {
+   "texels_of_atlas": 0.006,
+   "painted_by_looks": 1.0
+  }
+ },
+ "cells": {
+  "A1": {
+   "content": 0.837,
+   "painted": 0.802,
+   "skin_like": 0.0
+  },
+  "B1": {
+   "content": 0.906,
+   "painted": 0.772,
+   "skin_like": 0.004
+  },
+  "C1": {
+   "content": 0.953,
+   "painted": 0.744,
+   "skin_like": 0.016
+  },
+  "D1": {
+   "content": 0.964,
+   "painted": 0.428,
+   "skin_like": 0.097
+  },
+  "A2": {
+   "content": 0.719,
+   "painted": 0.01,
+   "skin_like": 0.034
+  },
+  "B2": {
+   "content": 0.961,
+   "painted": 0.011,
+   "skin_like": 0.05
+  },
+  "C2": {
+   "content": 0.97,
+   "painted": 0.338,
+   "skin_like": 0.05
+  },
+  "D2": {
+   "content": 0.965,
+   "painted": 0.232,
+   "skin_like": 0.133
+  },
+  "A3": {
+   "content": 0.847,
+   "painted": 0.008,
+   "skin_like": 0.112
+  },
+  "B3": {
+   "content": 0.984,
+   "painted": 0.014,
+   "skin_like": 0.04
+  },
+  "C3": {
+   "content": 0.973,
+   "painted": 0.255,
+   "skin_like": 0.009
+  },
+  "D3": {
+   "content": 0.983,
+   "painted": 0.232,
+   "skin_like": 0.129
+  },
+  "A4": {
+   "content": 0.993,
+   "painted": 0.686,
+   "skin_like": 0.15
+  },
+  "B4": {
+   "content": 0.986,
+   "painted": 0.853,
+   "skin_like": 0.413
+  },
+  "C4": {
+   "content": 0.995,
+   "painted": 0.832,
+   "skin_like": 0.342
+  },
+  "D4": {
+   "content": 0.997,
+   "painted": 0.716,
+   "skin_like": 0.315
+  }
+ }
+}

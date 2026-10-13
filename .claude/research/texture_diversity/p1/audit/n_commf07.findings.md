@@ -1,0 +1,7 @@
+SUMMARY: n_commf07 painted 55% of content; gloves, ammo pouch strap and corset are correctly kept out, but the plain cloth block at C2-D3 and the wrap hem at A2-B2 are unpainted gaps.
+GAP | C2 (right part), D2, C3 (right part), D3 | plain dark-brown tunic sleeve/back cloth, solid red in gap map | UNSURE: green block in islands panel, not torso or legs; arms/larm/rarm show 0.0 painted in stats | action: add that arm island to colorize islands (looks paint torso,legs only) | confidence 3
+GAP | A2 top strip, B2 top strip (wrap hem, about atlas y 128-160) | taupe cloth hem of the wrap, red band above glove and corset | torso (purple band continuous with A1-B1) | action: widen cells or switch avoid to pixel-level; cell-wide avoid on A2/B2 blocks this hem | confidence 3
+GAP | B2, B3 | laced dark-brown bodice with studs, red with black speckles | torso | action: keep excluded if corset counts as belt; else paint as torso garment | confidence 2
+OVERPAINT | D1 top-right corner (panel px x465-505 y10-65) | dark strap or holster-like object, painted green | UNSURE: legend overlaps this corner of islands panel | action: check whether it is a pouch or holster; if so exclude those pixels | confidence 2
+OVERPAINT | B4, C4, D4 | trouser cloth; stats show skin_like 0.15-0.19 but no skin is visible in image | UNSURE (legs or torso) | action: keep painted; check skin_like threshold on dark cloth | confidence 1
+GAP | A4 (panel px x88-113 y418-478) | small skin-like sliver beside trouser front slit, yellow in gap map | none (skin) | action: keep excluded | confidence 2

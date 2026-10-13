@@ -1,0 +1,9 @@
+SUMMARY: n_commf05 painted 44% of content; the trouser and wrap cloth is mostly covered, glove, pouch strip and corset are correctly excluded, but the A3/B3 lower band and D2-D3 field stay unpainted and a D1 box is overpainted.
+OVERPAINT | D1 top-right corner (x 445-512, y 0-60) | dark brown box-shaped hardware or pouch, not cloth; painted green in bottom-left panel | torso (purple in UV panel; label not legible) | action: keep excluded, add rect avoid x>=440 y<=64 to colorize, decal and wear | confidence 3
+GAP | A3-B3 lower band (x 8-256, y 320-384, below pink strap) | plain rust-brown trouser/tunic cloth, unpainted | same purple island as A4-B4 (label not legible; likely torso or legs) | action: widen cells, keep A3/B3 avoid only for y<320 | confidence 3
+GAP | D2 lower + D3 (x 384-473, y 178-378) | plain rust cloth field, unpainted; right-edge strip x 473-508 is painted | green UV island, not in looks islands torso/legs (arms/larm/rarm painted 0.0) | action: confirm island label, then add it to islands | confidence 2
+MISID | A4 (x 83-113, y 428-478) | dark leather pouch sits in A4, not D4 | none | action: fix annotation, move pouch to A4 | confidence 3
+MISID | D4 corner (x 445-512, y 440-500) | annotated bag corner is plain rust cloth, no pouch | none | action: fix annotation, drop D4 bag | confidence 3
+MISID | A1-B1 (x 0-256, y 0-128) | grey-blue cloth; annotation calls A1 rust wrap and A4-B4 grey-blue, but A4-B4 are rust-brown | none | action: fix annotation base colours | confidence 3
+GAP | C3-D3 ochre patch (x 335-440, y 330-375) | ochre strip, cannot tell pouch from cloth at this scale | unknown | action: check at full resolution before changing avoid | confidence 1
+GAP | C2-C3 right side (x 300-384, y 128-320) | plain rust cloth, unpainted in bottom-left panel; gap map unclear | unknown | action: check at full resolution | confidence 1

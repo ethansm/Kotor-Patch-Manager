@@ -1,0 +1,138 @@
+{
+ "atlas": "n_mandalorian01",
+ "size": [
+  512,
+  512
+ ],
+ "model": "n_mandalorian",
+ "looks": [
+  "MD-crimson",
+  "MD-green",
+  "MD-amber"
+ ],
+ "content_fraction": 0.8,
+ "painted_of_content": 0.83,
+ "unpainted_nonskin_of_content": 0.168,
+ "unpainted_skin_like_of_content": 0.001,
+ "content_outside_every_island": 0.206,
+ "islands": {
+  "arms": {
+   "texels_of_atlas": 0.098,
+   "painted_by_looks": 1.0
+  },
+  "head": {
+   "texels_of_atlas": 0.077,
+   "painted_by_looks": 1.0
+  },
+  "larm": {
+   "texels_of_atlas": 0.085,
+   "painted_by_looks": 1.0
+  },
+  "legs": {
+   "texels_of_atlas": 0.125,
+   "painted_by_looks": 1.0
+  },
+  "lshldrpad": {
+   "texels_of_atlas": 0.027,
+   "painted_by_looks": 1.0
+  },
+  "rarm": {
+   "texels_of_atlas": 0.08,
+   "painted_by_looks": 1.0
+  },
+  "rshldrpad": {
+   "texels_of_atlas": 0.02,
+   "painted_by_looks": 1.0
+  },
+  "torso": {
+   "texels_of_atlas": 0.526,
+   "painted_by_looks": 1.0
+  },
+  "torso_arm": {
+   "texels_of_atlas": 0.099,
+   "painted_by_looks": 1.0
+  }
+ },
+ "cells": {
+  "A1": {
+   "content": 0.609,
+   "painted": 0.914,
+   "skin_like": 0.009
+  },
+  "B1": {
+   "content": 0.676,
+   "painted": 0.908,
+   "skin_like": 0.005
+  },
+  "C1": {
+   "content": 0.665,
+   "painted": 0.838,
+   "skin_like": 0.009
+  },
+  "D1": {
+   "content": 0.534,
+   "painted": 0.833,
+   "skin_like": 0.013
+  },
+  "A2": {
+   "content": 0.705,
+   "painted": 0.861,
+   "skin_like": 0.002
+  },
+  "B2": {
+   "content": 0.783,
+   "painted": 0.818,
+   "skin_like": 0.012
+  },
+  "C2": {
+   "content": 0.842,
+   "painted": 0.933,
+   "skin_like": 0.003
+  },
+  "D2": {
+   "content": 0.982,
+   "painted": 0.752,
+   "skin_like": 0.017
+  },
+  "A3": {
+   "content": 0.909,
+   "painted": 0.811,
+   "skin_like": 0.001
+  },
+  "B3": {
+   "content": 0.965,
+   "painted": 0.952,
+   "skin_like": 0.019
+  },
+  "C3": {
+   "content": 0.841,
+   "painted": 0.857,
+   "skin_like": 0.004
+  },
+  "D3": {
+   "content": 0.899,
+   "painted": 0.781,
+   "skin_like": 0.005
+  },
+  "A4": {
+   "content": 0.952,
+   "painted": 0.777,
+   "skin_like": 0.015
+  },
+  "B4": {
+   "content": 0.789,
+   "painted": 0.764,
+   "skin_like": 0.066
+  },
+  "C4": {
+   "content": 0.963,
+   "painted": 0.778,
+   "skin_like": 0.005
+  },
+  "D4": {
+   "content": 0.682,
+   "painted": 0.75,
+   "skin_like": 0.001
+  }
+ }
+}

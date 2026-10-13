@@ -227,6 +227,7 @@ def _bake_one(rec: dict, out: Path, alloc: dict, prev: dict, pool_dir: Path, mas
     return {
         "id": rid,
         "family": str(rec.get("family", "")),
+        "model": model,
         "recipe_sha256": _recipe_sha(rec),
         "parent": atlas,
         "parent_sha256": _sha256(parent_bytes),

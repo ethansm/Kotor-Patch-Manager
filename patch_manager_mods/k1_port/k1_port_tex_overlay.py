@@ -66,10 +66,19 @@ def _box3(a):
     return acc / np.float32(9.0)
 
 
-def region(w, h, cells, islands, island_labels, avoid_cells=()):
-    """Float32 (h,w) region: cells AND union(islands[label]) AND NOT avoid_cells, then a 1-px feather.
+def rect_mask(w, h, rects):
+    """Bool (h,w) union of rectangles given as [x0,y0,x1,y1] fractions of the atlas (0..1, y down, stored order)."""
+    mask = np.zeros((h, w), dtype=bool)
+    for x0, y0, x1, y1 in rects:
+        mask[int(round(y0 * h)):int(round(y1 * h)), int(round(x0 * w)):int(round(x1 * w))] = True
+    return mask
 
-    An empty island_labels means no island restriction. An unknown label raises KeyError.
+
+def region(w, h, cells, islands, island_labels, avoid_cells=(), avoid_rects=()):
+    """Float32 (h,w) region: cells AND union(islands[label]) AND NOT avoid cells/rects, then a 1-px feather.
+
+    An empty island_labels means no island restriction. An unknown label raises KeyError. avoid_rects are
+    [x0,y0,x1,y1] atlas fractions, for hardware that does not line up with the 4x4 cells.
     """
     reg = cell_mask(w, h, cells)
     if island_labels:
@@ -79,6 +88,8 @@ def region(w, h, cells, islands, island_labels, avoid_cells=()):
         reg &= inside
     if avoid_cells:
         reg &= ~cell_mask(w, h, avoid_cells)
+    if avoid_rects:
+        reg &= ~rect_mask(w, h, avoid_rects)
     return _box3(reg.astype(np.float32))
 
 
@@ -247,17 +258,24 @@ def tint(rgb, reg, colour, strength=0.3):
     return _blend(rgb, reg * np.float32(strength), _colour_rgb(colour))
 
 
-def colorize(rgb, reg, colour, strength=0.8, contrast=1.0):
+def colorize(rgb, reg, colour, strength=0.8, contrast=1.0, min_luma=0.0, keep_skin=False):
     """Re-colour near-grey plates: the colour scaled by the pixel's own luminance, so plate detail survives.
 
-    recolor_hsv cannot do this because grey has no saturation to rotate.
+    recolor_hsv cannot do this because grey has no saturation to rotate. Pixels darker than min_luma (0..1) fade
+    out over 0.12 luminance, so black cowls, boots and glass stay dark when a whole island is recoloured. keep_skin
+    skips skin-like pixels (hands, bare arms) the same way recolor_hsv does.
     """
     if not 0.0 <= strength <= 1.0:
         raise ValueError("colorize strength must be in 0..1")
-    lum = rgb @ np.array([0.299, 0.587, 0.114], dtype=np.float32)
-    lum = np.clip((lum - lum.mean()) * np.float32(contrast) + lum.mean(), 0.0, 1.0)
+    raw = rgb @ np.array([0.299, 0.587, 0.114], dtype=np.float32)
+    lum = np.clip((raw - raw.mean()) * np.float32(contrast) + raw.mean(), 0.0, 1.0)
     new = _colour_rgb(colour) * (np.float32(0.25) + np.float32(1.1) * lum)[..., None]
-    return _blend(rgb, reg * np.float32(strength), new)
+    weight = reg * np.float32(strength)
+    if keep_skin:
+        weight = weight * (~skin_guard(_to_u8(rgb))).astype(np.float32)
+    if min_luma > 0:
+        weight = weight * np.clip((raw - np.float32(min_luma)) / np.float32(0.12), 0.0, 1.0)
+    return _blend(rgb, weight, new)
 
 
 OPS = {"recolor_hsv": recolor_hsv, "band": band, "decal": decal, "wear": wear, "tint": tint, "colorize": colorize}
@@ -287,6 +305,16 @@ def _layer_problems(i, layer):
         problems.append(f"{where}: kind {kind!r} not in {', '.join(LAYER_KINDS)}")
     if not isinstance(op, str) or op not in OPS:
         problems.append(f"{where}: unknown op {op!r}")
+    rects = layer.get("avoid_rects", [])
+    if not isinstance(rects, list):
+        problems.append(f"{where}: avoid_rects must be a list")
+    else:
+        for rect in rects:
+            ok = (isinstance(rect, list) and len(rect) == 4
+                  and all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in rect)
+                  and 0 <= rect[0] < rect[2] <= 1 and 0 <= rect[1] < rect[3] <= 1)
+            if not ok:
+                problems.append(f"{where}: bad avoid_rect {rect!r}: want [x0,y0,x1,y1] fractions with x0<x1, y0<y1")
     for key in ("cells", "avoid_cells"):
         names = layer.get(key, [])
         if not isinstance(names, list):
@@ -361,7 +389,7 @@ def render_recipe(recipe, parent_rgb_u8, islands):
     union = np.zeros((h, w), dtype=bool)
     for i, layer in enumerate(recipe["layers"]):
         reg = region(w, h, layer.get("cells", []), islands, layer.get("islands", []),
-                     layer.get("avoid_cells", []))
+                     layer.get("avoid_cells", []), layer.get("avoid_rects", []))
         union |= reg > 0
         params = dict(layer.get("params", {}))
         if layer["op"] == "wear":

@@ -1,0 +1,10 @@
+SUMMARY: n_commm06 painted 34% of content; the tan tunic front and torso cloth are covered, but the charcoal trouser interior and the lower row-3 band stay bare, while the glove, sash and left-edge pouches are correctly excluded.
+GAP | C2-lower, C3, D2-lower, D3 | charcoal trouser legs, flat cloth, unpainted (red in gap map) | green trouser shapes in top-right; legend label not legible, likely legs | widen: check legs island mask covers trouser interior (cells already listed) | 2
+GAP | A3-lower to C3-lower (row-3 bottom band) | charcoal flat cloth band, unpainted (red in gap map) | purple torso band under row 3 (top-right) | add island torso sub-range or widen cells; keep A3 glove excluded | 2
+GAP | C4, D4 | dark flat charcoal cloth; no boot or pouch outline seen | torso (purple at C4-D4, top-right) | fix annotation (C4/D4 avoid suspect); if cloth, add island torso | 2
+MISID | B2, B3 | pink ruched sash is B3 (B3 skin_like 0.513, yellow gap); navy striped band is B2 (red gap) | torso_arm (orange, B2-B3) | fix annotation: swap B2/B3 labels; no paint change, both already avoided | 4
+MISID | A1-B1 (not A4-B4) | tan wrinkled tunic/vest is top row A1-B1 (already painted); A4-B4 are charcoal with navy V | torso (A1-B1) | fix annotation: move tan vest from A4-B4 to A1-B1 | 4
+OVERPAINT | D1 upper-right corner | grey box with clasp, hardware or pouch, painted green by band look | torso (D1 top-right corner) | keep excluded: carve corner out of band cells or add avoid | 3
+OVERPAINT | D2-D3 right edge (atlas x~464-512) | blue-grey ridged bracer or strap strip, painted green by colorize | torso (right-edge purple) | keep excluded: add right-edge strip to avoid | 2
+OVERPAINT | C2 right part (atlas x~330-385, y~135-175) | small blue-grey rounded object, likely pouch, under green chevron | unconfirmed (C2-D2 area) | keep excluded: add avoid sub-rect | 2
+OVERPAINT | A4 lower-left (atlas x 0-60, y 440-512) | blue-grey patch, possible boot or pouch, painted green | torso | confirm, then keep excluded if pouch or boot | 1
