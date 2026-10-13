@@ -59,6 +59,26 @@ def _title(im, text):
     return im
 
 
+def gap_texture(rgb, painted, skin, any_island):
+    """uint8 (h,w,3) gap image: dimmed atlas, red = unpainted content, yellow = unpainted skin-like, cyan = outside islands."""
+    content = _luma(rgb.astype(np.float32)) > BG_LUMA
+    gap = (rgb * 0.3).astype(np.uint8)
+    unpaint = content & ~painted
+    gap[unpaint & ~skin] = (255, 40, 40)
+    gap[unpaint & skin] = (255, 220, 0)
+    gap[unpaint & ~any_island] = (0, 230, 230)
+    return gap
+
+
+def recipe_models(looks_dir: Path) -> dict:
+    """id -> model from the shipped recipes; older bake.json files do not record the model."""
+    out = {}
+    for f in sorted(Path(looks_dir).glob("*.json")):
+        for rec in json.loads(f.read_text()):
+            out[rec["id"]] = rec["model"]
+    return out
+
+
 def audit_atlas(atlas: str, run: Path, looks: list[dict], out: Path, masks_root: Path | None = None) -> dict:
     parent = (run / "parents" / f"{atlas}.tpc").read_bytes()
     rgb = np.ascontiguousarray(tp.decode_mip(parent, tp.parse(parent), 0)[:, :, :3])
@@ -91,11 +111,8 @@ def audit_atlas(atlas: str, run: Path, looks: list[dict], out: Path, masks_root:
     pnt = (rgb * 0.35).astype(np.uint8)
     pnt[painted] = (rgb[painted] * 0.4 + np.array([60, 255, 60]) * 0.6).astype(np.uint8)
     p3 = _title(_grid(_tile(pnt), h, w), "green = painted by a look")
-    gap = (rgb * 0.3).astype(np.uint8)
     unpaint = content & ~painted
-    gap[unpaint & ~skin] = (255, 40, 40)
-    gap[unpaint & skin] = (255, 220, 0)
-    gap[unpaint & ~any_island] = (0, 230, 230)
+    gap = gap_texture(rgb, painted, skin, any_island)
     p4 = _title(_grid(_tile(gap), h, w), "red gap, yellow skin-like gap, cyan outside every island")
     sheet = Image.new("RGB", (2 * PANEL, 2 * PANEL))
     for k, im in enumerate((p1, p2, p3, p4)):
@@ -138,12 +155,9 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
     run, out = Path(args.bake).expanduser(), Path(args.out).expanduser()
     looks = json.loads((run / "bake.json").read_text())["looks"]
-    recipe_models = {}  # older bake.json files do not record the model: fall back to the shipped recipes
-    for f in sorted((HERE / "looks").glob("*.json")):
-        for rec in json.loads(f.read_text()):
-            recipe_models[rec["id"]] = rec["model"]
+    models = recipe_models(HERE / "looks")
     for e in looks:
-        e["model"] = e.get("model") or recipe_models.get(e["id"])
+        e["model"] = e.get("model") or models.get(e["id"])
     out.mkdir(parents=True, exist_ok=True)
     by_atlas: dict[str, list[dict]] = {}
     for e in looks:

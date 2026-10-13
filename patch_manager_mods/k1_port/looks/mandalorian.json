@@ -166,7 +166,7 @@
   "atlas": "n_mandalorian01",
   "model": "n_mandalorian",
   "seed": 23,
-  "note": "Plate recolour to amber/ochre with a chevron emblem on the right chest C2 and a stain wear on the plates; Jaig eyes kept for MD-crimson only. Tuned: plate+cloth recolour over rows 1-3 (colourway), every armour island incl. helmet shell and visor strip (head) and arm plates; dark visor glass barely shifts, skin guard stays on.",
+  "note": "Plate recolour to amber/ochre with a chevron emblem on the right chest C2 and a stain wear on the plates; Jaig eyes kept for MD-crimson only. Tuned: plate+cloth recolour over rows 1-3 (colourway), every armour island incl. helmet shell and visor strip (head) and arm plates; dark visor glass barely shifts, skin guard stays on. | 3D fix: hue -194 for amber (was -165, read yellow-green); chevrons moved to the front chest plate B3.",
   "layers": [
    {
     "kind": "recolor",
@@ -201,7 +201,7 @@
     "avoid_cells": [],
     "card": "MAND-1",
     "params": {
-     "hue_shift_deg": -165,
+     "hue_shift_deg": -194,
      "sat_scale": 1.35,
      "val_scale": 1.05
     }
@@ -210,21 +210,18 @@
     "kind": "emblem",
     "op": "decal",
     "cells": [
-     "C2"
+     "B3"
     ],
     "islands": [
      "torso"
     ],
-    "avoid_cells": [
-     "B1",
-     "C4"
-    ],
+    "avoid_cells": [],
     "card": "MAND-6",
     "params": {
      "name": "chevrons3",
-     "cx": 320,
-     "cy": 190,
-     "size_px": 44,
+     "cx": 215,
+     "cy": 320,
+     "size_px": 60,
      "colour": "#2a2a2a",
      "opacity": 0.9
     }

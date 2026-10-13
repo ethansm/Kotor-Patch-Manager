@@ -5,7 +5,7 @@
   "atlas": "n_sithcom01",
   "model": "n_sithcommando",
   "seed": 11,
-  "note": "SITHJ plate recolour over every plate island (audit: B1, A2, A3, B3, C4, D1, D2 plates were missed); black cowl, boots and leather stay dark through min_luma, B3 emblem and C2 joint disc excluded by rect. Colour card SITHJ1.",
+  "note": "SITHJ plate recolour over every plate island (audit: B1, A2, A3, B3, C4, D1, D2 plates were missed); black cowl, boots and leather stay dark through min_luma, B3 emblem and C2 joint disc excluded by rect. Colour card SITHJ1. | 3D fix: no avoid rects (the C2 shoulder disc and B3 chest emblem plate were white in 3D); min_luma keeps emblem relief dark.",
   "layers": [
    {
     "kind": "recolor",
@@ -41,21 +41,7 @@
      "colour": "#b0622a",
      "strength": 0.8,
      "min_luma": 0.3
-    },
-    "avoid_rects": [
-     [
-      0.29,
-      0.5,
-      0.41,
-      0.64
-     ],
-     [
-      0.44,
-      0.27,
-      0.62,
-      0.45
-     ]
-    ]
+    }
    },
    {
     "kind": "wear",
@@ -86,7 +72,7 @@
   "atlas": "n_sithcom01",
   "model": "n_sithcommando",
   "seed": 12,
-  "note": "SITHJ plate recolour over every plate island (audit: B1, A2, A3, B3, C4, D1, D2 plates were missed); black cowl, boots and leather stay dark through min_luma, B3 emblem and C2 joint disc excluded by rect. Colour card SITHJ2.",
+  "note": "SITHJ plate recolour over every plate island (audit: B1, A2, A3, B3, C4, D1, D2 plates were missed); black cowl, boots and leather stay dark through min_luma, B3 emblem and C2 joint disc excluded by rect. Colour card SITHJ2. | 3D fix: no avoid rects (the C2 shoulder disc and B3 chest emblem plate were white in 3D); min_luma keeps emblem relief dark.",
   "layers": [
    {
     "kind": "recolor",
@@ -122,21 +108,7 @@
      "colour": "#a21f24",
      "strength": 0.85,
      "min_luma": 0.3
-    },
-    "avoid_rects": [
-     [
-      0.29,
-      0.5,
-      0.41,
-      0.64
-     ],
-     [
-      0.44,
-      0.27,
-      0.62,
-      0.45
-     ]
-    ]
+    }
    },
    {
     "kind": "wear",
@@ -167,7 +139,7 @@
   "atlas": "n_sithcom01",
   "model": "n_sithcommando",
   "seed": 13,
-  "note": "SITHJ plate recolour over every plate island (audit: B1, A2, A3, B3, C4, D1, D2 plates were missed); black cowl, boots and leather stay dark through min_luma, B3 emblem and C2 joint disc excluded by rect. Colour card SITHJ3.",
+  "note": "SITHJ plate recolour over every plate island (audit: B1, A2, A3, B3, C4, D1, D2 plates were missed); black cowl, boots and leather stay dark through min_luma, B3 emblem and C2 joint disc excluded by rect. Colour card SITHJ3. | 3D fix: no avoid rects (the C2 shoulder disc and B3 chest emblem plate were white in 3D); min_luma keeps emblem relief dark.",
   "layers": [
    {
     "kind": "recolor",
@@ -203,21 +175,7 @@
      "colour": "#34496e",
      "strength": 0.8,
      "min_luma": 0.3
-    },
-    "avoid_rects": [
-     [
-      0.29,
-      0.5,
-      0.41,
-      0.64
-     ],
-     [
-      0.44,
-      0.27,
-      0.62,
-      0.45
-     ]
-    ]
+    }
    }
   ]
  }

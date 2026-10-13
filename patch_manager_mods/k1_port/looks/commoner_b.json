@@ -4,7 +4,7 @@
   "family": "commoner",
   "atlas": "n_commf02",
   "model": "n_commf",
-  "note": "Bar patron. Purple tint C1,D1,C2; gold diagonal sabacc on A4,C2; red trim on C1,D1 (collar approx). A1, B1, D2 dropped as avoid; K065 rule cells A1-B1 all avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather.",
+  "note": "Bar patron. Purple tint C1,D1,C2; gold diagonal sabacc on A4,C2; red trim on C1,D1 (collar approx). A1, B1, D2 dropped as avoid; K065 rule cells A1-B1 all avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather. | 3D fix: bands moved onto the sleeve (arms) island, gloves and pouches avoided with the base layer's rects (the old C1/D1 cells were tiny shoulder-seam islands).",
   "seed": 1,
   "layers": [
    {
@@ -40,7 +40,7 @@
      "colour": "#6a2f86",
      "strength": 0.5,
      "min_luma": 0.1,
-     "keep_skin": true
+     "keep_skin": false
     },
     "avoid_rects": [
      [
@@ -91,69 +91,159 @@
     "kind": "trim",
     "op": "band",
     "cells": [
-     "A4",
-     "C2"
-    ],
-    "islands": [
-     "torso",
-     "legs"
-    ],
-    "avoid_cells": [
      "A1",
      "B1",
-     "B2",
-     "B3",
+     "C1",
+     "D1",
      "A2",
-     "A3",
-     "B4",
-     "C3",
-     "C4",
+     "B2",
+     "C2",
      "D2",
+     "A3",
+     "B3",
+     "C3",
+     "D3",
+     "A4",
+     "B4",
+     "C4",
      "D4"
     ],
+    "islands": [
+     "arms"
+    ],
+    "avoid_cells": [],
     "card": "K069",
     "params": {
-     "orientation": "diagonal",
-     "period_px": 40,
+     "orientation": "vertical",
+     "period_px": 72,
      "width_px": 10,
      "colour": "#c9a227",
-     "opacity": 0.85,
+     "opacity": 0.95,
      "angle_deg": 0
-    }
+    },
+    "avoid_rects": [
+     [
+      0,
+      0.29,
+      0.5,
+      0.63
+     ],
+     [
+      0.86,
+      0,
+      1,
+      0.13
+     ],
+     [
+      0.65,
+      0.26,
+      0.86,
+      0.34
+     ],
+     [
+      0.92,
+      0.42,
+      1,
+      0.74
+     ],
+     [
+      0.09,
+      0.82,
+      0.24,
+      0.97
+     ],
+     [
+      0.65,
+      0.64,
+      0.86,
+      0.74
+     ],
+     [
+      0.42,
+      0,
+      0.59,
+      0.12
+     ]
+    ]
    },
    {
     "kind": "trim",
     "op": "band",
     "cells": [
-     "C1",
-     "D1"
-    ],
-    "islands": [
-     "torso",
-     "legs"
-    ],
-    "avoid_cells": [
      "A1",
      "B1",
-     "B2",
-     "B3",
+     "C1",
+     "D1",
      "A2",
-     "A3",
-     "B4",
-     "C3",
-     "C4",
+     "B2",
+     "C2",
      "D2",
+     "A3",
+     "B3",
+     "C3",
+     "D3",
+     "A4",
+     "B4",
+     "C4",
      "D4"
     ],
+    "islands": [
+     "arms"
+    ],
+    "avoid_cells": [],
     "card": "K065",
     "params": {
      "orientation": "horizontal",
-     "period_px": 48,
-     "width_px": 10,
+     "period_px": 128,
+     "width_px": 12,
      "colour": "#a3151f",
-     "opacity": 0.85,
+     "opacity": 0.95,
      "angle_deg": 0
-    }
+    },
+    "avoid_rects": [
+     [
+      0,
+      0.29,
+      0.5,
+      0.63
+     ],
+     [
+      0.86,
+      0,
+      1,
+      0.13
+     ],
+     [
+      0.65,
+      0.26,
+      0.86,
+      0.34
+     ],
+     [
+      0.92,
+      0.42,
+      1,
+      0.74
+     ],
+     [
+      0.09,
+      0.82,
+      0.24,
+      0.97
+     ],
+     [
+      0.65,
+      0.64,
+      0.86,
+      0.74
+     ],
+     [
+      0.42,
+      0,
+      0.59,
+      0.12
+     ]
+    ]
    }
   ]
  },
@@ -162,7 +252,7 @@
   "family": "commoner",
   "atlas": "n_commf07",
   "model": "n_commf",
-  "note": "Bar patron. Purple tint C1,C2; gold diagonal sabacc on A4,C2; red trim on C1 (collar approx). A1 dropped (tear avoid); A2-A3, B2-B4, C3-C4, D4 avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather.",
+  "note": "Bar patron. Purple tint C1,C2; gold diagonal sabacc on A4,C2; red trim on C1 (collar approx). A1 dropped (tear avoid); A2-A3, B2-B4, C3-C4, D4 avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather. | 3D fix: bands moved onto the sleeve (arms) island, gloves and pouches avoided with the base layer's rects (the old C1/D1 cells were tiny shoulder-seam islands).",
   "seed": 1,
   "layers": [
    {
@@ -198,7 +288,7 @@
      "colour": "#6a2f86",
      "strength": 0.5,
      "min_luma": 0.1,
-     "keep_skin": true
+     "keep_skin": false
     },
     "avoid_rects": [
      [
@@ -249,64 +339,159 @@
     "kind": "trim",
     "op": "band",
     "cells": [
-     "A4",
-     "C2"
-    ],
-    "islands": [
-     "torso",
-     "legs"
-    ],
-    "avoid_cells": [
      "A1",
+     "B1",
+     "C1",
+     "D1",
      "A2",
-     "A3",
      "B2",
+     "C2",
+     "D2",
+     "A3",
      "B3",
-     "B4",
      "C3",
+     "D3",
+     "A4",
+     "B4",
      "C4",
      "D4"
     ],
+    "islands": [
+     "arms"
+    ],
+    "avoid_cells": [],
     "card": "K069",
     "params": {
-     "orientation": "diagonal",
-     "period_px": 40,
+     "orientation": "vertical",
+     "period_px": 72,
      "width_px": 10,
      "colour": "#c9a227",
-     "opacity": 0.85,
+     "opacity": 0.95,
      "angle_deg": 0
-    }
+    },
+    "avoid_rects": [
+     [
+      0,
+      0.29,
+      0.5,
+      0.63
+     ],
+     [
+      0.86,
+      0,
+      1,
+      0.13
+     ],
+     [
+      0.65,
+      0.26,
+      0.86,
+      0.34
+     ],
+     [
+      0.92,
+      0.42,
+      1,
+      0.74
+     ],
+     [
+      0.09,
+      0.82,
+      0.24,
+      0.97
+     ],
+     [
+      0.65,
+      0.64,
+      0.86,
+      0.74
+     ],
+     [
+      0.42,
+      0,
+      0.59,
+      0.12
+     ]
+    ]
    },
    {
     "kind": "trim",
     "op": "band",
     "cells": [
-     "C1"
-    ],
-    "islands": [
-     "torso",
-     "legs"
-    ],
-    "avoid_cells": [
      "A1",
+     "B1",
+     "C1",
+     "D1",
      "A2",
-     "A3",
      "B2",
+     "C2",
+     "D2",
+     "A3",
      "B3",
-     "B4",
      "C3",
+     "D3",
+     "A4",
+     "B4",
      "C4",
      "D4"
     ],
+    "islands": [
+     "arms"
+    ],
+    "avoid_cells": [],
     "card": "K065",
     "params": {
      "orientation": "horizontal",
-     "period_px": 48,
-     "width_px": 10,
+     "period_px": 128,
+     "width_px": 12,
      "colour": "#a3151f",
-     "opacity": 0.85,
+     "opacity": 0.95,
      "angle_deg": 0
-    }
+    },
+    "avoid_rects": [
+     [
+      0,
+      0.29,
+      0.5,
+      0.63
+     ],
+     [
+      0.86,
+      0,
+      1,
+      0.13
+     ],
+     [
+      0.65,
+      0.26,
+      0.86,
+      0.34
+     ],
+     [
+      0.92,
+      0.42,
+      1,
+      0.74
+     ],
+     [
+      0.09,
+      0.82,
+      0.24,
+      0.97
+     ],
+     [
+      0.65,
+      0.64,
+      0.86,
+      0.74
+     ],
+     [
+      0.42,
+      0,
+      0.59,
+      0.12
+     ]
+    ]
    }
   ]
  },
@@ -315,7 +500,7 @@
   "family": "commoner",
   "atlas": "n_commm07",
   "model": "n_commm",
-  "note": "Bar patron. Purple tint D1,A4,B4 (back panel and vest); gold diagonal on A4; red trim on B1 (V-neck edge). A1, C3-C4, D3, D4 and A2-A3, B2-B3 dropped as avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather.",
+  "note": "Bar patron. Purple tint D1,A4,B4 (back panel and vest); gold diagonal on A4; red trim on B1 (V-neck edge). A1, C3-C4, D3, D4 and A2-A3, B2-B3 dropped as avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather. | 3D fix: bands moved onto the sleeve (arms) island, gloves and pouches avoided with the base layer's rects (the old C1/D1 cells were tiny shoulder-seam islands).",
   "seed": 1,
   "layers": [
    {
@@ -351,7 +536,7 @@
      "colour": "#6a2f86",
      "strength": 0.5,
      "min_luma": 0.1,
-     "keep_skin": true
+     "keep_skin": false
     },
     "avoid_rects": [
      [
@@ -390,63 +575,135 @@
     "kind": "trim",
     "op": "band",
     "cells": [
-     "A4"
-    ],
-    "islands": [
-     "torso",
-     "legs"
-    ],
-    "avoid_cells": [
      "A1",
+     "B1",
+     "C1",
+     "D1",
      "A2",
-     "A3",
      "B2",
+     "C2",
+     "D2",
+     "A3",
      "B3",
      "C3",
-     "C4",
      "D3",
+     "A4",
+     "B4",
+     "C4",
      "D4"
     ],
+    "islands": [
+     "arms"
+    ],
+    "avoid_cells": [],
     "card": "K069",
     "params": {
-     "orientation": "diagonal",
-     "period_px": 40,
+     "orientation": "vertical",
+     "period_px": 72,
      "width_px": 10,
      "colour": "#c9a227",
-     "opacity": 0.85,
+     "opacity": 0.95,
      "angle_deg": 0
-    }
+    },
+    "avoid_rects": [
+     [
+      0,
+      0.29,
+      0.5,
+      0.63
+     ],
+     [
+      0.86,
+      0,
+      1,
+      0.13
+     ],
+     [
+      0.65,
+      0.26,
+      0.86,
+      0.34
+     ],
+     [
+      0.92,
+      0.42,
+      1,
+      0.74
+     ],
+     [
+      0.09,
+      0.82,
+      0.24,
+      0.97
+     ]
+    ]
    },
    {
     "kind": "trim",
     "op": "band",
     "cells": [
-     "B1"
-    ],
-    "islands": [
-     "torso",
-     "legs"
-    ],
-    "avoid_cells": [
      "A1",
+     "B1",
+     "C1",
+     "D1",
      "A2",
-     "A3",
      "B2",
+     "C2",
+     "D2",
+     "A3",
      "B3",
      "C3",
-     "C4",
      "D3",
+     "A4",
+     "B4",
+     "C4",
      "D4"
     ],
+    "islands": [
+     "arms"
+    ],
+    "avoid_cells": [],
     "card": "K065",
     "params": {
      "orientation": "horizontal",
-     "period_px": 48,
-     "width_px": 10,
+     "period_px": 128,
+     "width_px": 12,
      "colour": "#a3151f",
-     "opacity": 0.85,
+     "opacity": 0.95,
      "angle_deg": 0
-    }
+    },
+    "avoid_rects": [
+     [
+      0,
+      0.29,
+      0.5,
+      0.63
+     ],
+     [
+      0.86,
+      0,
+      1,
+      0.13
+     ],
+     [
+      0.65,
+      0.26,
+      0.86,
+      0.34
+     ],
+     [
+      0.92,
+      0.42,
+      1,
+      0.74
+     ],
+     [
+      0.09,
+      0.82,
+      0.24,
+      0.97
+     ]
+    ]
    }
   ]
  },
@@ -455,7 +712,7 @@
   "family": "commoner",
   "atlas": "n_commf03",
   "model": "n_commf",
-  "note": "Onderon citizen. Brown tint D1,C2,D2,D3; white shoulder band on D1. K076 gold dropped (dark-base only; base is mid-grey). A1 dropped (skin-sliver avoid). | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather.",
+  "note": "Onderon citizen. Brown tint D1,C2,D2,D3; white shoulder band on D1. K076 gold dropped (dark-base only; base is mid-grey). A1 dropped (skin-sliver avoid). | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather. | 3D fix: bands moved onto the sleeve (arms) island, gloves and pouches avoided with the base layer's rects (the old C1/D1 cells were tiny shoulder-seam islands).",
   "seed": 1,
   "layers": [
    {
@@ -491,7 +748,7 @@
      "colour": "#7a5230",
      "strength": 0.6,
      "min_luma": 0.1,
-     "keep_skin": true
+     "keep_skin": false
     },
     "avoid_rects": [
      [
@@ -542,32 +799,80 @@
     "kind": "trim",
     "op": "band",
     "cells": [
-     "D1"
-    ],
-    "islands": [
-     "torso",
-     "legs"
-    ],
-    "avoid_cells": [
      "A1",
+     "B1",
+     "C1",
+     "D1",
      "A2",
-     "A3",
      "B2",
+     "C2",
+     "D2",
+     "A3",
      "B3",
-     "B4",
      "C3",
+     "D3",
+     "A4",
+     "B4",
      "C4",
      "D4"
     ],
+    "islands": [
+     "arms"
+    ],
+    "avoid_cells": [],
     "card": "K077",
     "params": {
      "orientation": "horizontal",
-     "period_px": 48,
-     "width_px": 10,
+     "period_px": 96,
+     "width_px": 12,
      "colour": "#f2efe6",
-     "opacity": 0.85,
+     "opacity": 0.95,
      "angle_deg": 0
-    }
+    },
+    "avoid_rects": [
+     [
+      0,
+      0.29,
+      0.5,
+      0.63
+     ],
+     [
+      0.86,
+      0,
+      1,
+      0.13
+     ],
+     [
+      0.65,
+      0.26,
+      0.86,
+      0.34
+     ],
+     [
+      0.92,
+      0.42,
+      1,
+      0.74
+     ],
+     [
+      0.09,
+      0.82,
+      0.24,
+      0.97
+     ],
+     [
+      0.65,
+      0.64,
+      0.86,
+      0.74
+     ],
+     [
+      0.42,
+      0,
+      0.59,
+      0.12
+     ]
+    ]
    }
   ]
  },
@@ -576,7 +881,7 @@
   "family": "commoner",
   "atlas": "n_commf09",
   "model": "n_commf",
-  "note": "Onderon citizen. Brown tint C1,C2,A4; white shoulder band C1; gold hem band A4 (dark blue-violet base). A1 dropped (tear avoid), B1 (collar piping), D2 (leather strap) dropped. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather. | parent is blue, strength raised to 0.85 so the brown reads.",
+  "note": "Onderon citizen. Brown tint C1,C2,A4; white shoulder band C1; gold hem band A4 (dark blue-violet base). A1 dropped (tear avoid), B1 (collar piping), D2 (leather strap) dropped. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather. | parent is blue, strength raised to 0.85 so the brown reads. | 3D fix: bands moved onto the sleeve (arms) island, gloves and pouches avoided with the base layer's rects (the old C1/D1 cells were tiny shoulder-seam islands).",
   "seed": 1,
   "layers": [
    {
@@ -612,7 +917,7 @@
      "colour": "#7a5230",
      "strength": 0.85,
      "min_luma": 0.1,
-     "keep_skin": true
+     "keep_skin": false
     },
     "avoid_rects": [
      [
@@ -663,65 +968,159 @@
     "kind": "trim",
     "op": "band",
     "cells": [
-     "C1"
-    ],
-    "islands": [
-     "torso",
-     "legs"
-    ],
-    "avoid_cells": [
      "A1",
-     "A2",
-     "A3",
      "B1",
+     "C1",
+     "D1",
+     "A2",
      "B2",
+     "C2",
+     "D2",
+     "A3",
      "B3",
      "C3",
+     "D3",
+     "A4",
+     "B4",
      "C4",
-     "D2",
      "D4"
     ],
+    "islands": [
+     "arms"
+    ],
+    "avoid_cells": [],
     "card": "K077",
     "params": {
      "orientation": "horizontal",
-     "period_px": 48,
-     "width_px": 10,
+     "period_px": 96,
+     "width_px": 12,
      "colour": "#f2efe6",
-     "opacity": 0.85,
+     "opacity": 0.95,
      "angle_deg": 0
-    }
+    },
+    "avoid_rects": [
+     [
+      0,
+      0.29,
+      0.5,
+      0.63
+     ],
+     [
+      0.86,
+      0,
+      1,
+      0.13
+     ],
+     [
+      0.65,
+      0.26,
+      0.86,
+      0.34
+     ],
+     [
+      0.92,
+      0.42,
+      1,
+      0.74
+     ],
+     [
+      0.09,
+      0.82,
+      0.24,
+      0.97
+     ],
+     [
+      0.65,
+      0.64,
+      0.86,
+      0.74
+     ],
+     [
+      0.42,
+      0,
+      0.59,
+      0.12
+     ]
+    ]
    },
    {
     "kind": "trim",
     "op": "band",
     "cells": [
-     "A4"
-    ],
-    "islands": [
-     "torso",
-     "legs"
-    ],
-    "avoid_cells": [
      "A1",
-     "A2",
-     "A3",
      "B1",
+     "C1",
+     "D1",
+     "A2",
      "B2",
+     "C2",
+     "D2",
+     "A3",
      "B3",
      "C3",
+     "D3",
+     "A4",
+     "B4",
      "C4",
-     "D2",
      "D4"
     ],
+    "islands": [
+     "arms"
+    ],
+    "avoid_cells": [],
     "card": "K076",
     "params": {
-     "orientation": "horizontal",
-     "period_px": 48,
-     "width_px": 10,
+     "orientation": "vertical",
+     "period_px": 72,
+     "width_px": 6,
      "colour": "#c9a227",
-     "opacity": 0.85,
+     "opacity": 0.95,
      "angle_deg": 0
-    }
+    },
+    "avoid_rects": [
+     [
+      0,
+      0.29,
+      0.5,
+      0.63
+     ],
+     [
+      0.86,
+      0,
+      1,
+      0.13
+     ],
+     [
+      0.65,
+      0.26,
+      0.86,
+      0.34
+     ],
+     [
+      0.92,
+      0.42,
+      1,
+      0.74
+     ],
+     [
+      0.09,
+      0.82,
+      0.24,
+      0.97
+     ],
+     [
+      0.65,
+      0.64,
+      0.86,
+      0.74
+     ],
+     [
+      0.42,
+      0,
+      0.59,
+      0.12
+     ]
+    ]
    }
   ]
  },
@@ -730,7 +1129,7 @@
   "family": "commoner",
   "atlas": "n_commf11",
   "model": "n_commf",
-  "note": "Onderon citizen. Brown tint C2,D1 (khaki A4 left unpainted, tan base); white shoulder band D1; gold piping D2 on dark grey vest. A1 dropped (tear avoid), B4 dropped (boot shaft avoid). | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather.",
+  "note": "Onderon citizen. Brown tint C2,D1 (khaki A4 left unpainted, tan base); white shoulder band D1; gold piping D2 on dark grey vest. A1 dropped (tear avoid), B4 dropped (boot shaft avoid). | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather. | 3D fix: bands moved onto the sleeve (arms) island, gloves and pouches avoided with the base layer's rects (the old C1/D1 cells were tiny shoulder-seam islands).",
   "seed": 1,
   "layers": [
    {
@@ -766,7 +1165,7 @@
      "colour": "#7a5230",
      "strength": 0.6,
      "min_luma": 0.1,
-     "keep_skin": true
+     "keep_skin": false
     },
     "avoid_rects": [
      [
@@ -817,65 +1216,159 @@
     "kind": "trim",
     "op": "band",
     "cells": [
-     "D1"
-    ],
-    "islands": [
-     "torso",
-     "legs"
-    ],
-    "avoid_cells": [
      "A1",
+     "B1",
+     "C1",
+     "D1",
      "A2",
-     "A3",
      "B2",
+     "C2",
+     "D2",
+     "A3",
      "B3",
-     "B4",
      "C3",
-     "C4",
      "D3",
+     "A4",
+     "B4",
+     "C4",
      "D4"
     ],
+    "islands": [
+     "arms"
+    ],
+    "avoid_cells": [],
     "card": "K077",
     "params": {
      "orientation": "horizontal",
-     "period_px": 48,
-     "width_px": 10,
+     "period_px": 96,
+     "width_px": 12,
      "colour": "#f2efe6",
-     "opacity": 0.85,
+     "opacity": 0.95,
      "angle_deg": 0
-    }
+    },
+    "avoid_rects": [
+     [
+      0,
+      0.29,
+      0.5,
+      0.63
+     ],
+     [
+      0.86,
+      0,
+      1,
+      0.13
+     ],
+     [
+      0.65,
+      0.26,
+      0.86,
+      0.34
+     ],
+     [
+      0.92,
+      0.42,
+      1,
+      0.74
+     ],
+     [
+      0.09,
+      0.82,
+      0.24,
+      0.97
+     ],
+     [
+      0.65,
+      0.64,
+      0.86,
+      0.74
+     ],
+     [
+      0.42,
+      0,
+      0.59,
+      0.12
+     ]
+    ]
    },
    {
     "kind": "trim",
     "op": "band",
     "cells": [
-     "D2"
-    ],
-    "islands": [
-     "torso",
-     "legs"
-    ],
-    "avoid_cells": [
      "A1",
+     "B1",
+     "C1",
+     "D1",
      "A2",
-     "A3",
      "B2",
+     "C2",
+     "D2",
+     "A3",
      "B3",
-     "B4",
      "C3",
-     "C4",
      "D3",
+     "A4",
+     "B4",
+     "C4",
      "D4"
     ],
+    "islands": [
+     "arms"
+    ],
+    "avoid_cells": [],
     "card": "K076",
     "params": {
-     "orientation": "horizontal",
-     "period_px": 48,
-     "width_px": 10,
+     "orientation": "vertical",
+     "period_px": 72,
+     "width_px": 6,
      "colour": "#c9a227",
-     "opacity": 0.85,
+     "opacity": 0.95,
      "angle_deg": 0
-    }
+    },
+    "avoid_rects": [
+     [
+      0,
+      0.29,
+      0.5,
+      0.63
+     ],
+     [
+      0.86,
+      0,
+      1,
+      0.13
+     ],
+     [
+      0.65,
+      0.26,
+      0.86,
+      0.34
+     ],
+     [
+      0.92,
+      0.42,
+      1,
+      0.74
+     ],
+     [
+      0.09,
+      0.82,
+      0.24,
+      0.97
+     ],
+     [
+      0.65,
+      0.64,
+      0.86,
+      0.74
+     ],
+     [
+      0.42,
+      0,
+      0.59,
+      0.12
+     ]
+    ]
    }
   ]
  },
@@ -884,7 +1377,7 @@
   "family": "commoner",
   "atlas": "n_commm08",
   "model": "n_commm",
-  "note": "Czerka staff. Off-white cog8 emblem on A1 chest (K042); light-grey trim lines on A4 vest (K045). K050 badge dropped: only one decal op allowed. B1 unpainted (V-collar). | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather.",
+  "note": "Czerka staff. Off-white cog8 emblem on A1 chest (K042); light-grey trim lines on A4 vest (K045). K050 badge dropped: only one decal op allowed. B1 unpainted (V-collar). | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather. | 3D fix: bands moved onto the sleeve (arms) island, gloves and pouches avoided with the base layer's rects (the old C1/D1 cells were tiny shoulder-seam islands). | 3D fix: decal moved to B4 (196,440), the character's right chest on both commoner models (it sat on the knees or back thighs).",
   "seed": 1,
   "layers": [
    {
@@ -920,7 +1413,7 @@
      "colour": "#5d6b3c",
      "strength": 0.5,
      "min_luma": 0.1,
-     "keep_skin": true
+     "keep_skin": false
     },
     "avoid_rects": [
      [
@@ -959,27 +1452,17 @@
     "kind": "emblem",
     "op": "decal",
     "cells": [
-     "A1"
+     "B4"
     ],
     "islands": [
-     "torso",
-     "legs"
+     "torso"
     ],
-    "avoid_cells": [
-     "A2",
-     "A3",
-     "B2",
-     "B3",
-     "C2",
-     "C3",
-     "D3",
-     "D4"
-    ],
+    "avoid_cells": [],
     "card": "K042",
     "params": {
      "name": "cog8",
-     "cx": 64,
-     "cy": 64,
+     "cx": 196,
+     "cy": 440,
      "size_px": 56,
      "rotation_deg": 0,
      "colour": "#e6e2c8",
@@ -991,31 +1474,68 @@
     "kind": "trim",
     "op": "band",
     "cells": [
-     "A4"
-    ],
-    "islands": [
-     "torso",
-     "legs"
-    ],
-    "avoid_cells": [
+     "A1",
+     "B1",
+     "C1",
+     "D1",
      "A2",
-     "A3",
      "B2",
-     "B3",
      "C2",
+     "D2",
+     "A3",
+     "B3",
      "C3",
      "D3",
+     "A4",
+     "B4",
+     "C4",
      "D4"
     ],
+    "islands": [
+     "arms"
+    ],
+    "avoid_cells": [],
     "card": "K045",
     "params": {
      "orientation": "horizontal",
-     "period_px": 48,
-     "width_px": 10,
+     "period_px": 64,
+     "width_px": 12,
      "colour": "#c3cbd1",
-     "opacity": 0.85,
+     "opacity": 0.95,
      "angle_deg": 0
-    }
+    },
+    "avoid_rects": [
+     [
+      0,
+      0.29,
+      0.5,
+      0.63
+     ],
+     [
+      0.86,
+      0,
+      1,
+      0.13
+     ],
+     [
+      0.65,
+      0.26,
+      0.86,
+      0.34
+     ],
+     [
+      0.92,
+      0.42,
+      1,
+      0.74
+     ],
+     [
+      0.09,
+      0.82,
+      0.24,
+      0.97
+     ]
+    ]
    }
   ]
  },
@@ -1024,7 +1544,7 @@
   "family": "commoner",
   "atlas": "n_commf01",
   "model": "n_commf",
-  "note": "Peragus miner. Green recolor C1,D1,C2 (tunic only); fuel stain A4,C2. K110 dust dropped: needs dark lower field and A4 is tan. A1, B1 dropped as avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather. | n_commf01 tan cloth is skin-toned, so keep_skin is off here (gloves, pouch and corset are excluded by rect and luma instead).",
+  "note": "Peragus miner. Green recolor C1,D1,C2 (tunic only); fuel stain A4,C2. K110 dust dropped: needs dark lower field and A4 is tan. A1, B1 dropped as avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather. | n_commf01 tan cloth is skin-toned, so keep_skin is off here (gloves, pouch and corset are excluded by rect and luma instead). | 3D fix: keep_skin off on the base layer (beige cloth read as skin, leaving a camouflage pattern on trousers); hands are still protected by avoid_rects.",
   "seed": 1,
   "layers": [
    {
@@ -1144,7 +1664,7 @@
   "family": "commoner",
   "atlas": "n_commf02",
   "model": "n_commf",
-  "note": "Peragus miner. Green recolor C1,D1,C2 (tunic only); fuel stain A4,C2. K110 dropped: lower legs khaki and cream, not dark. A1, D2 dropped as avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather.",
+  "note": "Peragus miner. Green recolor C1,D1,C2 (tunic only); fuel stain A4,C2. K110 dropped: lower legs khaki and cream, not dark. A1, D2 dropped as avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather. | 3D fix: keep_skin off on the base layer (beige cloth read as skin, leaving a camouflage pattern on trousers); hands are still protected by avoid_rects.",
   "seed": 1,
   "layers": [
    {
@@ -1180,7 +1700,7 @@
      "colour": "#3f7a46",
      "strength": 0.55,
      "min_luma": 0.1,
-     "keep_skin": true
+     "keep_skin": false
     },
     "avoid_rects": [
      [
@@ -1265,7 +1785,7 @@
   "family": "commoner",
   "atlas": "n_commf03",
   "model": "n_commf",
-  "note": "Peragus miner. Green tint D1,C2,D2 (mid-grey base, so tint not hue shift); fuel stain A4,C2,D2. K110 dropped: no dark lower field. A1 dropped (skin-sliver avoid). | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather.",
+  "note": "Peragus miner. Green tint D1,C2,D2 (mid-grey base, so tint not hue shift); fuel stain A4,C2,D2. K110 dropped: no dark lower field. A1 dropped (skin-sliver avoid). | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather. | 3D fix: keep_skin off on the base layer (beige cloth read as skin, leaving a camouflage pattern on trousers); hands are still protected by avoid_rects.",
   "seed": 1,
   "layers": [
    {
@@ -1301,7 +1821,7 @@
      "colour": "#3f7a46",
      "strength": 0.55,
      "min_luma": 0.1,
-     "keep_skin": true
+     "keep_skin": false
     },
     "avoid_rects": [
      [

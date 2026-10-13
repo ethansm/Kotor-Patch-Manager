@@ -4,7 +4,7 @@
   "family": "commoner",
   "atlas": "n_commf03",
   "model": "n_commf",
-  "note": "Telos dust on A4 trouser front and D3 lower panel; sprout emblem on D1 band (K033 A1 mapping avoided). A1 dropped: skin sliver avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather.",
+  "note": "Telos dust on A4 trouser front and D3 lower panel; sprout emblem on D1 band (K033 A1 mapping avoided). A1 dropped: skin sliver avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather. | 3D fix: keep_skin off on the base layer (beige cloth read as skin, leaving a camouflage pattern on trousers); hands are still protected by avoid_rects. | 3D fix: decal moved to B4 (196,440), the character's right chest on both commoner models (it sat on the knees or back thighs). | 3D fix: sprout colour #e6e0c0 (the dark green was invisible on the olive cloth).",
   "seed": 1,
   "layers": [
    {
@@ -40,7 +40,7 @@
      "colour": "#8c8a5a",
      "strength": 0.5,
      "min_luma": 0.1,
-     "keep_skin": true
+     "keep_skin": false
     },
     "avoid_rects": [
      [
@@ -91,31 +91,20 @@
     "kind": "emblem",
     "op": "decal",
     "cells": [
-     "D1"
+     "B4"
     ],
     "islands": [
-     "torso",
-     "legs"
+     "torso"
     ],
-    "avoid_cells": [
-     "A1",
-     "A2",
-     "A3",
-     "B2",
-     "B3",
-     "B4",
-     "C3",
-     "C4",
-     "D4"
-    ],
+    "avoid_cells": [],
     "card": "K033",
     "params": {
      "name": "sprout",
-     "cx": 448,
-     "cy": 64,
+     "cx": 196,
+     "cy": 440,
      "size_px": 50,
      "rotation_deg": 0,
-     "colour": "#5c6b2f",
+     "colour": "#e6e0c0",
      "opacity": 1.0,
      "blend": "normal"
     }
@@ -156,7 +145,7 @@
   "family": "commoner",
   "atlas": "n_commm11",
   "model": "n_commm",
-  "note": "Dust on A4-B4 vest; sprout on A1 chest-left (K033 shoulder_L mapping). B1 dropped: V-wrap fold avoid. D2 dropped: frayed hem avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather.",
+  "note": "Dust on A4-B4 vest; sprout on A1 chest-left (K033 shoulder_L mapping). B1 dropped: V-wrap fold avoid. D2 dropped: frayed hem avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather. | 3D fix: keep_skin off on the base layer (beige cloth read as skin, leaving a camouflage pattern on trousers); hands are still protected by avoid_rects. | 3D fix: decal moved to B4 (196,440), the character's right chest on both commoner models (it sat on the knees or back thighs). | 3D fix: sprout colour #e6e0c0 (the dark green was invisible on the olive cloth).",
   "seed": 1,
   "layers": [
    {
@@ -192,7 +181,7 @@
      "colour": "#8c8a5a",
      "strength": 0.5,
      "min_luma": 0.1,
-     "keep_skin": true
+     "keep_skin": false
     },
     "avoid_rects": [
      [
@@ -231,33 +220,20 @@
     "kind": "emblem",
     "op": "decal",
     "cells": [
-     "A1"
+     "B4"
     ],
     "islands": [
-     "torso",
-     "legs"
+     "torso"
     ],
-    "avoid_cells": [
-     "A2",
-     "A3",
-     "B1",
-     "B2",
-     "B3",
-     "C1",
-     "C2",
-     "C3",
-     "C4",
-     "D2",
-     "D4"
-    ],
+    "avoid_cells": [],
     "card": "K033",
     "params": {
      "name": "sprout",
-     "cx": 64,
-     "cy": 64,
+     "cx": 196,
+     "cy": 440,
      "size_px": 50,
      "rotation_deg": 0,
-     "colour": "#5c6b2f",
+     "colour": "#e6e0c0",
      "opacity": 1.0,
      "blend": "normal"
     }
@@ -300,7 +276,7 @@
   "family": "commoner",
   "atlas": "n_commf01",
   "model": "n_commf",
-  "note": "Knee scuff on A4 trouser front; bar-stack sleeve tag on D1. K020 dropped: pale sand fade reads on dark bases only and this tan base is light. A1 dropped: corner avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather. | n_commf01 tan cloth is skin-toned, so keep_skin is off here (gloves, pouch and corset are excluded by rect and luma instead).",
+  "note": "Knee scuff on A4 trouser front; bar-stack sleeve tag on D1. K020 dropped: pale sand fade reads on dark bases only and this tan base is light. A1 dropped: corner avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather. | n_commf01 tan cloth is skin-toned, so keep_skin is off here (gloves, pouch and corset are excluded by rect and luma instead). | 3D fix: keep_skin off on the base layer (beige cloth read as skin, leaving a camouflage pattern on trousers); hands are still protected by avoid_rects. | 3D fix: decal moved to B4 (196,440), the character's right chest on both commoner models (it sat on the knees or back thighs).",
   "seed": 1,
   "layers": [
    {
@@ -387,29 +363,17 @@
     "kind": "emblem",
     "op": "decal",
     "cells": [
-     "D1"
+     "B4"
     ],
     "islands": [
-     "torso",
-     "legs"
+     "torso"
     ],
-    "avoid_cells": [
-     "A1",
-     "A2",
-     "A3",
-     "B1",
-     "B2",
-     "B3",
-     "B4",
-     "C4",
-     "D3",
-     "D4"
-    ],
+    "avoid_cells": [],
     "card": "K063",
     "params": {
      "name": "bar_stack",
-     "cx": 448,
-     "cy": 64,
+     "cx": 196,
+     "cy": 440,
      "size_px": 48,
      "rotation_deg": 0,
      "colour": "#2a2a2a",
@@ -453,7 +417,7 @@
   "family": "commoner",
   "atlas": "n_commf05",
   "model": "n_commf",
-  "note": "Sun fade on C1-D1 shoulders, knee scuff on A4, off-white sleeve tag on D1. A1 dropped: top-left strap sliver avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather.",
+  "note": "Sun fade on C1-D1 shoulders, knee scuff on A4, off-white sleeve tag on D1. A1 dropped: top-left strap sliver avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather. | 3D fix: keep_skin off on the base layer (beige cloth read as skin, leaving a camouflage pattern on trousers); hands are still protected by avoid_rects. | 3D fix: decal moved to B4 (196,440), the character's right chest on both commoner models (it sat on the knees or back thighs).",
   "seed": 1,
   "layers": [
    {
@@ -489,7 +453,7 @@
      "colour": "#7a6f60",
      "strength": 0.55,
      "min_luma": 0.1,
-     "keep_skin": true
+     "keep_skin": false
     },
     "avoid_rects": [
      [
@@ -540,27 +504,17 @@
     "kind": "emblem",
     "op": "decal",
     "cells": [
-     "D1"
+     "B4"
     ],
     "islands": [
-     "torso",
-     "legs"
+     "torso"
     ],
-    "avoid_cells": [
-     "A1",
-     "A2",
-     "A3",
-     "B1",
-     "B2",
-     "B3",
-     "C3",
-     "D4"
-    ],
+    "avoid_cells": [],
     "card": "K063",
     "params": {
      "name": "bar_stack",
-     "cx": 448,
-     "cy": 64,
+     "cx": 196,
+     "cy": 440,
      "size_px": 48,
      "rotation_deg": 0,
      "colour": "#efe9dc",
@@ -603,7 +557,7 @@
   "family": "commoner",
   "atlas": "n_commf07",
   "model": "n_commf",
-  "note": "Sun fade on C1, knee scuff on A4, off-white sleeve tag on C2 (D1 not paintable here). A1 dropped: tear avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather.",
+  "note": "Sun fade on C1, knee scuff on A4, off-white sleeve tag on C2 (D1 not paintable here). A1 dropped: tear avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather. | 3D fix: keep_skin off on the base layer (beige cloth read as skin, leaving a camouflage pattern on trousers); hands are still protected by avoid_rects. | 3D fix: decal moved to B4 (196,440), the character's right chest on both commoner models (it sat on the knees or back thighs).",
   "seed": 1,
   "layers": [
    {
@@ -639,7 +593,7 @@
      "colour": "#7a6f60",
      "strength": 0.55,
      "min_luma": 0.1,
-     "keep_skin": true
+     "keep_skin": false
     },
     "avoid_rects": [
      [
@@ -690,28 +644,17 @@
     "kind": "emblem",
     "op": "decal",
     "cells": [
-     "C2"
+     "B4"
     ],
     "islands": [
-     "torso",
-     "legs"
+     "torso"
     ],
-    "avoid_cells": [
-     "A1",
-     "A2",
-     "A3",
-     "B2",
-     "B3",
-     "B4",
-     "C3",
-     "C4",
-     "D4"
-    ],
+    "avoid_cells": [],
     "card": "K063",
     "params": {
      "name": "bar_stack",
-     "cx": 320,
-     "cy": 192,
+     "cx": 196,
+     "cy": 440,
      "size_px": 48,
      "rotation_deg": 0,
      "colour": "#efe9dc",
@@ -754,7 +697,7 @@
   "family": "commoner",
   "atlas": "n_commm05",
   "model": "n_commm",
-  "note": "Stain on A4-B4 beige vest; orange diagonal stripes on C1-D1 red back; black patch on B4 light vest. A1 kept off the K091 tear. C2 unused. C3, C4, D2, D3, D4 avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather.",
+  "note": "Stain on A4-B4 beige vest; orange diagonal stripes on C1-D1 red back; black patch on B4 light vest. A1 kept off the K091 tear. C2 unused. C3, C4, D2, D3, D4 avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather. | 3D fix: bands moved onto the sleeve (arms) island, gloves and pouches avoided with the base layer's rects (the old C1/D1 cells were tiny shoulder-seam islands).",
   "seed": 1,
   "layers": [
    {
@@ -790,7 +733,7 @@
      "colour": "#3a3f4a",
      "strength": 0.6,
      "min_luma": 0.1,
-     "keep_skin": true
+     "keep_skin": false
     },
     "avoid_rects": [
      [
@@ -862,33 +805,68 @@
     "kind": "trim",
     "op": "band",
     "cells": [
+     "A1",
+     "B1",
      "C1",
-     "D1"
-    ],
-    "islands": [
-     "torso",
-     "legs"
-    ],
-    "avoid_cells": [
+     "D1",
      "A2",
-     "A3",
      "B2",
+     "C2",
+     "D2",
+     "A3",
      "B3",
      "C3",
-     "C4",
-     "D2",
      "D3",
+     "A4",
+     "B4",
+     "C4",
      "D4"
     ],
+    "islands": [
+     "arms"
+    ],
+    "avoid_cells": [],
     "card": "K068",
     "params": {
-     "orientation": "diagonal",
-     "period_px": 48,
-     "width_px": 10,
+     "orientation": "vertical",
+     "period_px": 64,
+     "width_px": 14,
      "colour": "#e0702a",
-     "opacity": 0.85,
+     "opacity": 0.95,
      "angle_deg": 0
-    }
+    },
+    "avoid_rects": [
+     [
+      0,
+      0.29,
+      0.5,
+      0.63
+     ],
+     [
+      0.86,
+      0,
+      1,
+      0.13
+     ],
+     [
+      0.65,
+      0.26,
+      0.86,
+      0.34
+     ],
+     [
+      0.92,
+      0.42,
+      1,
+      0.74
+     ],
+     [
+      0.09,
+      0.82,
+      0.24,
+      0.97
+     ]
+    ]
    }
   ]
  },
@@ -897,7 +875,7 @@
   "family": "commoner",
   "atlas": "n_commm06",
   "model": "n_commm",
-  "note": "Stain on A4-B4 tan vest; orange diagonal stripes on D1-D2 charcoal; black patch on B4 vest. C1 dropped: V-neck trim avoid. A1 kept off the K091 tear. Right-edge bracer strip has no cell code, so D1/D2 may touch it. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather.",
+  "note": "Stain on A4-B4 tan vest; orange diagonal stripes on D1-D2 charcoal; black patch on B4 vest. C1 dropped: V-neck trim avoid. A1 kept off the K091 tear. Right-edge bracer strip has no cell code, so D1/D2 may touch it. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather. | 3D fix: bands moved onto the sleeve (arms) island, gloves and pouches avoided with the base layer's rects (the old C1/D1 cells were tiny shoulder-seam islands).",
   "seed": 1,
   "layers": [
    {
@@ -933,7 +911,7 @@
      "colour": "#3a3f4a",
      "strength": 0.6,
      "min_luma": 0.1,
-     "keep_skin": true
+     "keep_skin": false
     },
     "avoid_rects": [
      [
@@ -1006,34 +984,68 @@
     "kind": "trim",
     "op": "band",
     "cells": [
-     "D1",
-     "D2"
-    ],
-    "islands": [
-     "torso",
-     "legs"
-    ],
-    "avoid_cells": [
-     "A2",
-     "A3",
+     "A1",
      "B1",
-     "B2",
-     "B3",
      "C1",
+     "D1",
+     "A2",
+     "B2",
+     "C2",
+     "D2",
+     "A3",
+     "B3",
      "C3",
-     "C4",
      "D3",
+     "A4",
+     "B4",
+     "C4",
      "D4"
     ],
+    "islands": [
+     "arms"
+    ],
+    "avoid_cells": [],
     "card": "K068",
     "params": {
-     "orientation": "diagonal",
-     "period_px": 48,
-     "width_px": 10,
+     "orientation": "vertical",
+     "period_px": 64,
+     "width_px": 14,
      "colour": "#e0702a",
-     "opacity": 0.85,
+     "opacity": 0.95,
      "angle_deg": 0
-    }
+    },
+    "avoid_rects": [
+     [
+      0,
+      0.29,
+      0.5,
+      0.63
+     ],
+     [
+      0.86,
+      0,
+      1,
+      0.13
+     ],
+     [
+      0.65,
+      0.26,
+      0.86,
+      0.34
+     ],
+     [
+      0.92,
+      0.42,
+      1,
+      0.74
+     ],
+     [
+      0.09,
+      0.82,
+      0.24,
+      0.97
+     ]
+    ]
    }
   ]
  },
@@ -1042,7 +1054,7 @@
   "family": "commoner",
   "atlas": "n_commm11",
   "model": "n_commm",
-  "note": "Stain on A4-B4 vest; orange diagonal stripes on D1 back band (C1 avoid); black patch on B4 vest (A1 kept off the K091 tear). B1, C2, D2 dropped: avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather.",
+  "note": "Stain on A4-B4 vest; orange diagonal stripes on D1 back band (C1 avoid); black patch on B4 vest (A1 kept off the K091 tear). B1, C2, D2 dropped: avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather. | 3D fix: bands moved onto the sleeve (arms) island, gloves and pouches avoided with the base layer's rects (the old C1/D1 cells were tiny shoulder-seam islands).",
   "seed": 1,
   "layers": [
    {
@@ -1078,7 +1090,7 @@
      "colour": "#3a3f4a",
      "strength": 0.6,
      "min_luma": 0.1,
-     "keep_skin": true
+     "keep_skin": false
     },
     "avoid_rects": [
      [
@@ -1152,34 +1164,68 @@
     "kind": "trim",
     "op": "band",
     "cells": [
-     "D1"
-    ],
-    "islands": [
-     "torso",
-     "legs"
-    ],
-    "avoid_cells": [
-     "A2",
-     "A3",
+     "A1",
      "B1",
-     "B2",
-     "B3",
      "C1",
+     "D1",
+     "A2",
+     "B2",
      "C2",
-     "C3",
-     "C4",
      "D2",
+     "A3",
+     "B3",
+     "C3",
+     "D3",
+     "A4",
+     "B4",
+     "C4",
      "D4"
     ],
+    "islands": [
+     "arms"
+    ],
+    "avoid_cells": [],
     "card": "K068",
     "params": {
-     "orientation": "diagonal",
-     "period_px": 48,
-     "width_px": 10,
+     "orientation": "vertical",
+     "period_px": 64,
+     "width_px": 14,
      "colour": "#e0702a",
-     "opacity": 0.85,
+     "opacity": 0.95,
      "angle_deg": 0
-    }
+    },
+    "avoid_rects": [
+     [
+      0,
+      0.29,
+      0.5,
+      0.63
+     ],
+     [
+      0.86,
+      0,
+      1,
+      0.13
+     ],
+     [
+      0.65,
+      0.26,
+      0.86,
+      0.34
+     ],
+     [
+      0.92,
+      0.42,
+      1,
+      0.74
+     ],
+     [
+      0.09,
+      0.82,
+      0.24,
+      0.97
+     ]
+    ]
    }
   ]
  },
@@ -1188,7 +1234,7 @@
   "family": "commoner",
   "atlas": "n_commf02",
   "model": "n_commf",
-  "note": "Charcoal cuff band on C1-D1; dark chevrons3 on D1. K066 crate stencil dropped: one decal per recipe. A1 dropped: seam avoid. D2 dropped: gold strip avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather.",
+  "note": "Charcoal cuff band on C1-D1; dark chevrons3 on D1. K066 crate stencil dropped: one decal per recipe. A1 dropped: seam avoid. D2 dropped: gold strip avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather. | 3D fix: bands moved onto the sleeve (arms) island, gloves and pouches avoided with the base layer's rects (the old C1/D1 cells were tiny shoulder-seam islands). | 3D fix: decal moved to B4 (196,440), the character's right chest on both commoner models (it sat on the knees or back thighs).",
   "seed": 1,
   "layers": [
    {
@@ -1224,7 +1270,7 @@
      "colour": "#55606a",
      "strength": 0.55,
      "min_luma": 0.1,
-     "keep_skin": true
+     "keep_skin": false
     },
     "avoid_rects": [
      [
@@ -1275,30 +1321,17 @@
     "kind": "emblem",
     "op": "decal",
     "cells": [
-     "D1"
+     "B4"
     ],
     "islands": [
-     "torso",
-     "legs"
+     "torso"
     ],
-    "avoid_cells": [
-     "A1",
-     "A2",
-     "A3",
-     "B1",
-     "B2",
-     "B3",
-     "B4",
-     "C3",
-     "C4",
-     "D2",
-     "D4"
-    ],
+    "avoid_cells": [],
     "card": "K054",
     "params": {
      "name": "chevrons3",
-     "cx": 448,
-     "cy": 64,
+     "cx": 196,
+     "cy": 440,
      "size_px": 56,
      "rotation_deg": 0,
      "colour": "#2b2b2b",
@@ -1310,35 +1343,80 @@
     "kind": "trim",
     "op": "band",
     "cells": [
-     "C1",
-     "D1"
-    ],
-    "islands": [
-     "torso",
-     "legs"
-    ],
-    "avoid_cells": [
      "A1",
-     "A2",
-     "A3",
      "B1",
+     "C1",
+     "D1",
+     "A2",
      "B2",
-     "B3",
-     "B4",
-     "C3",
-     "C4",
+     "C2",
      "D2",
+     "A3",
+     "B3",
+     "C3",
+     "D3",
+     "A4",
+     "B4",
+     "C4",
      "D4"
     ],
+    "islands": [
+     "arms"
+    ],
+    "avoid_cells": [],
     "card": "K053",
     "params": {
      "orientation": "horizontal",
-     "period_px": 48,
-     "width_px": 10,
+     "period_px": 64,
+     "width_px": 12,
      "colour": "#3a3d42",
-     "opacity": 0.85,
+     "opacity": 0.95,
      "angle_deg": 0
-    }
+    },
+    "avoid_rects": [
+     [
+      0,
+      0.29,
+      0.5,
+      0.63
+     ],
+     [
+      0.86,
+      0,
+      1,
+      0.13
+     ],
+     [
+      0.65,
+      0.26,
+      0.86,
+      0.34
+     ],
+     [
+      0.92,
+      0.42,
+      1,
+      0.74
+     ],
+     [
+      0.09,
+      0.82,
+      0.24,
+      0.97
+     ],
+     [
+      0.65,
+      0.64,
+      0.86,
+      0.74
+     ],
+     [
+      0.42,
+      0,
+      0.59,
+      0.12
+     ]
+    ]
    }
   ]
  },
@@ -1347,7 +1425,7 @@
   "family": "commoner",
   "atlas": "n_commf03",
   "model": "n_commf",
-  "note": "Charcoal cuff band and chevrons3 both on D1 (only paintable upper cell). K066 crate stencil dropped: one decal per recipe. A1 dropped: skin sliver avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather.",
+  "note": "Charcoal cuff band and chevrons3 both on D1 (only paintable upper cell). K066 crate stencil dropped: one decal per recipe. A1 dropped: skin sliver avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather. | 3D fix: bands moved onto the sleeve (arms) island, gloves and pouches avoided with the base layer's rects (the old C1/D1 cells were tiny shoulder-seam islands). | 3D fix: decal moved to B4 (196,440), the character's right chest on both commoner models (it sat on the knees or back thighs).",
   "seed": 1,
   "layers": [
    {
@@ -1383,7 +1461,7 @@
      "colour": "#55606a",
      "strength": 0.55,
      "min_luma": 0.1,
-     "keep_skin": true
+     "keep_skin": false
     },
     "avoid_rects": [
      [
@@ -1434,28 +1512,17 @@
     "kind": "emblem",
     "op": "decal",
     "cells": [
-     "D1"
+     "B4"
     ],
     "islands": [
-     "torso",
-     "legs"
+     "torso"
     ],
-    "avoid_cells": [
-     "A1",
-     "A2",
-     "A3",
-     "B2",
-     "B3",
-     "B4",
-     "C3",
-     "C4",
-     "D4"
-    ],
+    "avoid_cells": [],
     "card": "K054",
     "params": {
      "name": "chevrons3",
-     "cx": 448,
-     "cy": 64,
+     "cx": 196,
+     "cy": 440,
      "size_px": 56,
      "rotation_deg": 0,
      "colour": "#1a1a1a",
@@ -1467,32 +1534,80 @@
     "kind": "trim",
     "op": "band",
     "cells": [
-     "D1"
-    ],
-    "islands": [
-     "torso",
-     "legs"
-    ],
-    "avoid_cells": [
      "A1",
+     "B1",
+     "C1",
+     "D1",
      "A2",
-     "A3",
      "B2",
+     "C2",
+     "D2",
+     "A3",
      "B3",
-     "B4",
      "C3",
+     "D3",
+     "A4",
+     "B4",
      "C4",
      "D4"
     ],
+    "islands": [
+     "arms"
+    ],
+    "avoid_cells": [],
     "card": "K053",
     "params": {
      "orientation": "horizontal",
-     "period_px": 48,
-     "width_px": 10,
+     "period_px": 64,
+     "width_px": 12,
      "colour": "#3a3d42",
-     "opacity": 0.85,
+     "opacity": 0.95,
      "angle_deg": 0
-    }
+    },
+    "avoid_rects": [
+     [
+      0,
+      0.29,
+      0.5,
+      0.63
+     ],
+     [
+      0.86,
+      0,
+      1,
+      0.13
+     ],
+     [
+      0.65,
+      0.26,
+      0.86,
+      0.34
+     ],
+     [
+      0.92,
+      0.42,
+      1,
+      0.74
+     ],
+     [
+      0.09,
+      0.82,
+      0.24,
+      0.97
+     ],
+     [
+      0.65,
+      0.64,
+      0.86,
+      0.74
+     ],
+     [
+      0.42,
+      0,
+      0.59,
+      0.12
+     ]
+    ]
    }
   ]
  },
@@ -1501,7 +1616,7 @@
   "family": "commoner",
   "atlas": "n_commf05",
   "model": "n_commf",
-  "note": "Charcoal cuff band on C1-D1; dark chevrons3 on D1. K066 crate stencil dropped: one decal per recipe. A1 dropped: top-left sliver avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather.",
+  "note": "Charcoal cuff band on C1-D1; dark chevrons3 on D1. K066 crate stencil dropped: one decal per recipe. A1 dropped: top-left sliver avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet. | Audit fix: base layer also covers the arms/torso_arm islands (sleeve and back-leg panels live there), sub-cell avoid_rects replace whole-cell avoids (gloves+corset block, D1 corner pouch, ochre pouch, side strap, A4 pouch), skin guard and min_luma keep hands and dark leather. | 3D fix: bands moved onto the sleeve (arms) island, gloves and pouches avoided with the base layer's rects (the old C1/D1 cells were tiny shoulder-seam islands). | 3D fix: decal moved to B4 (196,440), the character's right chest on both commoner models (it sat on the knees or back thighs).",
   "seed": 1,
   "layers": [
    {
@@ -1537,7 +1652,7 @@
      "colour": "#55606a",
      "strength": 0.55,
      "min_luma": 0.1,
-     "keep_skin": true
+     "keep_skin": false
     },
     "avoid_rects": [
      [
@@ -1588,27 +1703,17 @@
     "kind": "emblem",
     "op": "decal",
     "cells": [
-     "D1"
+     "B4"
     ],
     "islands": [
-     "torso",
-     "legs"
+     "torso"
     ],
-    "avoid_cells": [
-     "A1",
-     "A2",
-     "A3",
-     "B1",
-     "B2",
-     "B3",
-     "C3",
-     "D4"
-    ],
+    "avoid_cells": [],
     "card": "K054",
     "params": {
      "name": "chevrons3",
-     "cx": 448,
-     "cy": 64,
+     "cx": 196,
+     "cy": 440,
      "size_px": 56,
      "rotation_deg": 0,
      "colour": "#1a1a1a",
@@ -1620,32 +1725,80 @@
     "kind": "trim",
     "op": "band",
     "cells": [
-     "C1",
-     "D1"
-    ],
-    "islands": [
-     "torso",
-     "legs"
-    ],
-    "avoid_cells": [
      "A1",
-     "A2",
-     "A3",
      "B1",
+     "C1",
+     "D1",
+     "A2",
      "B2",
+     "C2",
+     "D2",
+     "A3",
      "B3",
      "C3",
+     "D3",
+     "A4",
+     "B4",
+     "C4",
      "D4"
     ],
+    "islands": [
+     "arms"
+    ],
+    "avoid_cells": [],
     "card": "K053",
     "params": {
      "orientation": "horizontal",
-     "period_px": 48,
-     "width_px": 10,
+     "period_px": 64,
+     "width_px": 12,
      "colour": "#3a3d42",
-     "opacity": 0.85,
+     "opacity": 0.95,
      "angle_deg": 0
-    }
+    },
+    "avoid_rects": [
+     [
+      0,
+      0.29,
+      0.5,
+      0.63
+     ],
+     [
+      0.86,
+      0,
+      1,
+      0.13
+     ],
+     [
+      0.65,
+      0.26,
+      0.86,
+      0.34
+     ],
+     [
+      0.92,
+      0.42,
+      1,
+      0.74
+     ],
+     [
+      0.09,
+      0.82,
+      0.24,
+      0.97
+     ],
+     [
+      0.65,
+      0.64,
+      0.86,
+      0.74
+     ],
+     [
+      0.42,
+      0,
+      0.59,
+      0.12
+     ]
+    ]
    }
   ]
  }
