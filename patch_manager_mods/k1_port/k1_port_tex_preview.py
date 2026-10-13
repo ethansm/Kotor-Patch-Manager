@@ -7,6 +7,9 @@
   ~/Games/KOTOR2_Mod_Workspace/venvs/k1port/bin/python k1_port_tex_preview.py mesh --models n_commm n_commf --out DIR
   .venv/bin/python -I k1_port_tex_preview.py render --bake RUN --meshes DIR --out DIR [--ids A B] [--views 0 180 90 35]
         [--mode gap] [--gif]            quick yaw sheets + contact sheets
+  .venv/bin/python -I k1_port_tex_preview.py helmets --meshes DIR --out DIR [--appearances ROWS] [--items MODELS]
+        head-item previews: per appearance row a sheet (bare head, then one row per helmet model) + a family wall;
+        `mesh --textures` first for the bodies, heads and I_Mask_* models (needs hooks: headhook, GoggleHook)
   .venv/bin/python -I k1_port_tex_preview.py dossier --bake RUN --meshes DIR --out DIR [--ids A B] [--shots ...]
         [--wall ...] [--size big] [--mode gap]    <id>_dossier.png (10 zooms/angles, parent above look) + wall_<family>_<shot>.png
 
@@ -53,31 +56,55 @@ def _compose(parent, pos, quat):
     return r, t
 
 
-def dump_model(model: str, game: Path) -> dict:
-    import k1_port_uvmask as uvm  # noqa: E402  pure python, needs pykotor only for load_pykotor
+def open_install(game: Path):
+    """(pykotor namespace, Installation): the index build is the slow part, so `mesh` shares one across models."""
+    import k1_port_uvmask as uvm  # noqa: E402
 
     pk = uvm.load_pykotor()
-    inst = pk.Installation(str(game))
+    return pk, pk.Installation(str(game))
+
+
+def _texture_get(pk, inst, name: str, rtype):
+    """Like uvmask.install_get, then the TexturePacks (most character skins live in swpc_tex_tpa/tpb/tpc)."""
+    import k1_port_uvmask as uvm  # noqa: E402
+
+    res = uvm.install_get(pk, inst, name, rtype)
+    if res is None:
+        sl = pk.SearchLocation
+        res = inst.resource(name, rtype, [sl.TEXTURES_TPA, sl.TEXTURES_TPB, sl.TEXTURES_TPC])
+    return res
+
+
+def dump_model(model: str, game: Path, tex_dir: Path | None = None, install=None,
+               keep_wrapped: bool = False) -> dict:
+    """Textured meshes (world space, UV set 1) plus `hooks`: every mesh-less node as {R, t} in model space
+    (GoggleHook, headhook, ...). With tex_dir, each used texture is copied there as raw <resref>.tpc/.tga bytes
+    (decoded later in the numpy venv by load_texture); the doc lists them under `textures`."""
+    import k1_port_uvmask as uvm  # noqa: E402  pure python, needs pykotor only for load_pykotor
+
+    pk, inst = install or open_install(game)
     mdl_res = uvm.install_get(pk, inst, model, pk.ResourceType.MDL)
     mdx_res = uvm.install_get(pk, inst, model, pk.ResourceType.MDX)
     if mdl_res is None or mdx_res is None:
         raise SystemExit(f"{model}: MDL/MDX not found in {game}")
     mdx = bytes(mdx_res.data)
     mdl = pk.read_mdl(bytes(mdl_res.data), source_ext=mdx, size_ext=len(mdx))
-    nodes, skipped = [], []
+    nodes, skipped, hooks = [], [], {}
     ident = ([[1, 0, 0], [0, 1, 0], [0, 0, 1]], [0.0, 0.0, 0.0])
 
     def walk(node, parent):
         p, o = node.position, node.orientation
         world = _compose(parent, (p.x, p.y, p.z), (o.x, o.y, o.z, o.w))
         mesh = getattr(node, "mesh", None)
-        if mesh is not None:
-            name = str(node.name)
+        name = str(node.name)
+        if mesh is None:
+            hooks.setdefault(name, {"R": [list(map(float, row)) for row in world[0]], "t": [float(x) for x in world[1]]})
+        else:
             tex = str(getattr(mesh, "texture_1", "") or "").strip()
             pos, uvs, faces = list(mesh.vertex_positions or []), list(mesh.vertex_uv1 or []), list(mesh.faces or [])
             if not faces or not uvs or tex.lower() in ("", "null"):
                 skipped.append({"node": name, "reason": "no faces, uv or texture"})
-            elif not all(0.0 <= t.x <= 1.0 and 0.0 <= t.y <= 1.0 for t in uvs):
+            elif not keep_wrapped and not all(0.0 <= t.x <= 1.0 and 0.0 <= t.y <= 1.0 for t in uvs):
                 skipped.append({"node": name, "reason": "uv out of range"})
             elif len(pos) < len(uvs):
                 skipped.append({"node": name, "reason": "fewer positions than uvs"})
@@ -85,26 +112,42 @@ def dump_model(model: str, game: Path) -> dict:
                 r, t = world
                 wp = [[sum(r[i][k] * v[k] for k in range(3)) + t[i] for i in range(3)]
                       for v in ((q.x, q.y, q.z) for q in pos[:len(uvs)])]
-                nodes.append({"name": name, "texture": tex, "positions": wp,
-                              "uvs": [[u.x, u.y] for u in uvs], "faces": [[f.v1, f.v2, f.v3] for f in faces]})
+                node_doc = {"name": name, "texture": tex, "positions": wp,
+                            "uvs": [[u.x, u.y] for u in uvs], "faces": [[f.v1, f.v2, f.v3] for f in faces]}
+                if not all(0.0 <= t.x <= 1.0 and 0.0 <= t.y <= 1.0 for t in uvs):
+                    node_doc["uv_wrap"] = True  # tiling UVs: load_parts wraps them, the atlas loaders skip the node
+                nodes.append(node_doc)
         for child in node.children:
             walk(child, world)
 
     walk(mdl.root, ident)
-    return {"model": model, "nodes": nodes, "skipped": skipped}
+    doc = {"model": model, "nodes": nodes, "skipped": skipped, "hooks": hooks, "textures": {}}
+    for tex in sorted({n["texture"].lower() for n in nodes}):
+        for ext, rtype in (("tga", pk.ResourceType.TGA), ("tpc", pk.ResourceType.TPC)):
+            res = _texture_get(pk, inst, tex, rtype)
+            if res is not None:
+                doc["textures"][tex] = ext
+                if tex_dir is not None:
+                    tex_dir.mkdir(parents=True, exist_ok=True)
+                    (tex_dir / f"{tex}.{ext}").write_bytes(bytes(res.data))
+                break
+    return doc
 
 
 def cmd_mesh(args) -> int:
     out = Path(args.out).expanduser()
     out.mkdir(parents=True, exist_ok=True)
+    install = open_install(Path(args.game).expanduser())
     for model in args.models:
-        doc = dump_model(model, Path(args.game).expanduser())
+        doc = dump_model(model, Path(args.game).expanduser(), out / "tex" if args.textures else None, install,
+                         keep_wrapped=args.textures)
         (out / f"{model}.json").write_text(json.dumps(doc), encoding="utf-8")
         tris = sum(len(n["faces"]) for n in doc["nodes"])
         reasons: dict = {}
         for sk in doc["skipped"]:
             reasons[sk["reason"]] = reasons.get(sk["reason"], 0) + 1
-        print(f"{model}: {len(doc['nodes'])} textured nodes, {tris} triangles, skipped {reasons or 0}")
+        print(f"{model}: {len(doc['nodes'])} textured nodes, {tris} triangles, {len(doc['hooks'])} hooks, "
+              f"skipped {reasons or 0}")
     return 0
 
 
@@ -123,6 +166,8 @@ def load_mesh(path: Path):
     doc = json.loads(Path(path).read_text(encoding="utf-8"))
     pos, uvs, faces, base = [], [], [], 0
     for node in doc["nodes"]:
+        if node.get("uv_wrap"):
+            continue
         pos += node["positions"]
         uvs += node["uvs"]
         faces += [[a + base, b + base, c + base] for a, b, c in node["faces"]]
@@ -146,65 +191,152 @@ def _sample(tex, u, v):
 
 def render(mesh, tex_rgb_u8, yaw_deg: float, width: int = TILE_W, height: int = TILE_H, bounds=None):
     """Render one view; returns an (height, width, 3) uint8 image. bounds = (x0, x1, z0, z1) fixes the framing."""
-    np = _np()
     pos, uvs, faces = mesh
-    tex = np.asarray(tex_rgb_u8, dtype=np.float64) / 255.0
+    return render_scene([(pos, uvs, faces, tex_rgb_u8)], yaw_deg, width, height, bounds)
+
+
+def render_scene(parts, yaw_deg: float, width: int = TILE_W, height: int = TILE_H, bounds=None):
+    """Render several (positions, uvs, faces, tex_rgb_u8) parts into one image with a shared z-buffer."""
+    np = _np()
     a = math.radians(yaw_deg)
     ca, sa = math.cos(a), math.sin(a)
-    px = pos[:, 0] * ca - pos[:, 1] * sa  # rotate about z (up)
-    py = pos[:, 0] * sa + pos[:, 1] * ca  # py = depth towards the camera at yaw 0 (character faces +y)
-    pz = pos[:, 2]
-    sx_world = -px  # viewer at +y sees the character's right on the viewer's left
+    prep = []
+    for pos, uvs, faces, tex_u8 in parts:
+        px = pos[:, 0] * ca - pos[:, 1] * sa  # rotate about z (up)
+        py = pos[:, 0] * sa + pos[:, 1] * ca  # py = depth towards the camera at yaw 0 (character faces +y)
+        prep.append((px, py, pos[:, 2], uvs, faces, np.asarray(tex_u8, dtype=np.float64) / 255.0))
     if bounds is None:
-        bounds = (sx_world.min(), sx_world.max(), pz.min(), pz.max())
+        sxs = np.concatenate([-p[0] for p in prep])
+        zs = np.concatenate([p[2] for p in prep])
+        bounds = (sxs.min(), sxs.max(), zs.min(), zs.max())  # viewer at +y sees the character's right on the left
     x0, x1, z0, z1 = bounds
     W, H = width * SS, height * SS
     scale = 0.92 * min(W / max(x1 - x0, 1e-6), H / max(z1 - z0, 1e-6))
     cx, cz = (x0 + x1) / 2, (z0 + z1) / 2
-    sx = (sx_world - cx) * scale + W / 2
-    sy = H / 2 - (pz - cz) * scale
     img = np.zeros((H, W, 3), dtype=np.float64)
     img[:] = np.linspace(0.30, 0.18, H)[:, None, None]  # soft vertical backdrop
     zbuf = np.full((H, W), -1e9)
     light = np.array([-0.35, 0.8, 0.5])
     light /= np.linalg.norm(light)
-    p3 = np.stack([-px, py, pz], axis=1)
-    for f in faces:
-        i0, i1, i2 = f
-        xs, ys = sx[[i0, i1, i2]], sy[[i0, i1, i2]]
-        bx0, bx1 = max(int(math.floor(xs.min())), 0), min(int(math.ceil(xs.max())), W - 1)
-        by0, by1 = max(int(math.floor(ys.min())), 0), min(int(math.ceil(ys.max())), H - 1)
-        if bx1 < bx0 or by1 < by0:
-            continue
-        d = (ys[1] - ys[2]) * (xs[0] - xs[2]) + (xs[2] - xs[1]) * (ys[0] - ys[2])
-        if abs(d) < 1e-9:
-            continue
-        gx, gy = np.meshgrid(np.arange(bx0, bx1 + 1) + 0.5, np.arange(by0, by1 + 1) + 0.5)
-        l0 = ((ys[1] - ys[2]) * (gx - xs[2]) + (xs[2] - xs[1]) * (gy - ys[2])) / d
-        l1 = ((ys[2] - ys[0]) * (gx - xs[2]) + (xs[0] - xs[2]) * (gy - ys[2])) / d
-        l2 = 1 - l0 - l1
-        inside = (l0 >= -1e-4) & (l1 >= -1e-4) & (l2 >= -1e-4)
-        if not inside.any():
-            continue
-        depth = l0 * p3[i0, 1] + l1 * p3[i1, 1] + l2 * p3[i2, 1]
-        sub = zbuf[by0:by1 + 1, bx0:bx1 + 1]
-        win = inside & (depth > sub)
-        if not win.any():
-            continue
-        u = (l0 * uvs[i0, 0] + l1 * uvs[i1, 0] + l2 * uvs[i2, 0])[win]
-        v = (l0 * uvs[i0, 1] + l1 * uvs[i1, 1] + l2 * uvs[i2, 1])[win]
-        n = np.cross(p3[i1] - p3[i0], p3[i2] - p3[i0])
-        nn = np.linalg.norm(n)
-        shade = 0.55
-        if nn > 1e-12:
-            n = n / nn
-            if n[1] < 0:
-                n = -n  # double-sided: face the camera
-            shade = 0.5 + 0.5 * max(0.0, float(n @ light))
-        sub[win] = depth[win]
-        img[by0:by1 + 1, bx0:bx1 + 1][win] = np.clip(_sample(tex, u, v) * shade * 1.12, 0, 1)
+    for px, py, pz, uvs, faces, tex in prep:
+        sx = (-px - cx) * scale + W / 2
+        sy = H / 2 - (pz - cz) * scale
+        p3 = np.stack([-px, py, pz], axis=1)
+        fx, fy = sx[faces], sy[faces]  # drop faces entirely outside the image before the python loop
+        keep = ~((fx.max(axis=1) < 0) | (fx.min(axis=1) > W) | (fy.max(axis=1) < 0) | (fy.min(axis=1) > H))
+        for f in faces[keep]:
+            i0, i1, i2 = f
+            xs, ys = sx[[i0, i1, i2]], sy[[i0, i1, i2]]
+            bx0, bx1 = max(int(math.floor(xs.min())), 0), min(int(math.ceil(xs.max())), W - 1)
+            by0, by1 = max(int(math.floor(ys.min())), 0), min(int(math.ceil(ys.max())), H - 1)
+            if bx1 < bx0 or by1 < by0:
+                continue
+            d = (ys[1] - ys[2]) * (xs[0] - xs[2]) + (xs[2] - xs[1]) * (ys[0] - ys[2])
+            if abs(d) < 1e-9:
+                continue
+            gx, gy = np.meshgrid(np.arange(bx0, bx1 + 1) + 0.5, np.arange(by0, by1 + 1) + 0.5)
+            l0 = ((ys[1] - ys[2]) * (gx - xs[2]) + (xs[2] - xs[1]) * (gy - ys[2])) / d
+            l1 = ((ys[2] - ys[0]) * (gx - xs[2]) + (xs[0] - xs[2]) * (gy - ys[2])) / d
+            l2 = 1 - l0 - l1
+            inside = (l0 >= -1e-4) & (l1 >= -1e-4) & (l2 >= -1e-4)
+            if not inside.any():
+                continue
+            depth = l0 * p3[i0, 1] + l1 * p3[i1, 1] + l2 * p3[i2, 1]
+            sub = zbuf[by0:by1 + 1, bx0:bx1 + 1]
+            win = inside & (depth > sub)
+            if not win.any():
+                continue
+            u = (l0 * uvs[i0, 0] + l1 * uvs[i1, 0] + l2 * uvs[i2, 0])[win]
+            v = (l0 * uvs[i0, 1] + l1 * uvs[i1, 1] + l2 * uvs[i2, 1])[win]
+            n = np.cross(p3[i1] - p3[i0], p3[i2] - p3[i0])
+            nn = np.linalg.norm(n)
+            shade = 0.55
+            if nn > 1e-12:
+                n = n / nn
+                if n[1] < 0:
+                    n = -n  # double-sided: face the camera
+                shade = 0.5 + 0.5 * max(0.0, float(n @ light))
+            sub[win] = depth[win]
+            img[by0:by1 + 1, bx0:bx1 + 1][win] = np.clip(_sample(tex, u, v) * shade * 1.12, 0, 1)
     out = img.reshape(height, SS, width, SS, 3).mean(axis=(1, 3))
     return np.clip(out * 255 + 0.5, 0, 255).astype(np.uint8)
+
+
+# ------------------------------------------------------------------ scene parts (several models, own textures)
+
+
+def load_texture(tex_dir: Path, resref: str):
+    """(h, w, 3) uint8 from <tex_dir>/<resref>.tga|.tpc as written by `mesh --textures`; None when absent or
+    unsupported (the caller draws a flat grey instead)."""
+    np = _np()
+    base = Path(tex_dir) / resref.lower()
+    tga, tpc = base.with_suffix(".tga"), base.with_suffix(".tpc")
+    if tga.is_file():
+        from PIL import Image
+
+        return np.asarray(Image.open(tga).convert("RGB"))
+    if tpc.is_file():
+        blob = tpc.read_bytes()
+        try:
+            return _Textures._rgb(blob)
+        except ValueError:
+            pass
+        w, h, ptype = int.from_bytes(blob[8:10], "little"), int.from_bytes(blob[10:12], "little"), blob[12]
+        bpp = {2: 3, 4: 4}.get(ptype)
+        if int.from_bytes(blob[0:4], "little") == 0 and bpp and len(blob) >= 128 + w * h * bpp:
+            raw = np.frombuffer(blob, dtype=np.uint8, count=w * h * bpp, offset=128).reshape(h, w, bpp)
+            return np.ascontiguousarray(raw[:, :, :3])
+    return None
+
+
+def load_parts(path: Path, tex_dir: Path | None, transform=None, fallback=(150, 150, 150)):
+    """One (positions, uvs, faces, tex) part per textured node of a mesh dump. transform = (R, t) places the
+    model: pos' = R @ pos + t. A node whose texture is missing gets a flat `fallback` colour texture."""
+    np = _np()
+    doc = json.loads(Path(path).read_text(encoding="utf-8"))
+    parts, cache = [], {}
+    for node in doc["nodes"]:
+        pos = np.asarray(node["positions"], dtype=np.float64)
+        if transform is not None:
+            r, t = np.asarray(transform[0], dtype=np.float64), np.asarray(transform[1], dtype=np.float64)
+            pos = pos @ r.T + t
+        name = node["texture"].lower()
+        if name not in cache:
+            tex = load_texture(tex_dir, name) if tex_dir else None
+            cache[name] = tex if tex is not None else np.full((4, 4, 3), fallback, dtype=np.uint8)
+        uvs = np.asarray(node["uvs"], dtype=np.float64)
+        if node.get("uv_wrap"):
+            uvs = uvs % 1.0
+        parts.append((pos, uvs, np.asarray(node["faces"], dtype=np.int64), cache[name]))
+    return parts
+
+
+def hook_transform(path: Path, names):
+    """(R, t) of the first of `names` found among the dump's hooks (case-insensitive), else None."""
+    hooks = {k.lower(): v for k, v in json.loads(Path(path).read_text(encoding="utf-8")).get("hooks", {}).items()}
+    for n in names:
+        if n.lower() in hooks:
+            return hooks[n.lower()]["R"], hooks[n.lower()]["t"]
+    return None
+
+
+def compose_transforms(outer, inner):
+    """(R, t) applying `inner` first, then `outer`."""
+    np = _np()
+    ro, to = np.asarray(outer[0], dtype=np.float64), np.asarray(outer[1], dtype=np.float64)
+    ri, ti = np.asarray(inner[0], dtype=np.float64), np.asarray(inner[1], dtype=np.float64)
+    return (ro @ ri).tolist(), (ro @ ti + to).tolist()
+
+
+def parts_bounds(parts, yaw_deg: float, pad: float = 0.12):
+    """Framing (x0, x1, z0, z1) around the union of the parts for one yaw, padded by a fraction of the larger side."""
+    np = _np()
+    a = math.radians(yaw_deg)
+    sx = np.concatenate([-(p[0][:, 0] * math.cos(a) - p[0][:, 1] * math.sin(a)) for p in parts])
+    z = np.concatenate([p[0][:, 2] for p in parts])
+    w, h = float(sx.max() - sx.min()), float(z.max() - z.min())
+    m = pad * max(w, h, 1e-6)
+    return (float(sx.min()) - m, float(sx.max()) + m, float(z.min()) - m, float(z.max()) + m)
 
 
 def view_bounds(mesh, yaws):
@@ -279,6 +411,174 @@ def render_shots(mesh, tex_rgb_u8, shots, scale: int = 1) -> dict:
         yaw, bounds = shot_bounds(mesh, s)
         out[s] = render(mesh, tex_rgb_u8, yaw, SHOT_W * scale, SHOT_H * scale, bounds)
     return out
+
+
+# ------------------------------------------------------------------ helmets on heads (scene kit + sheets)
+
+HELM_SHOTS = {"helm_front": 0.0, "helm_3q": 35.0, "helm_side": 90.0}  # name: yaw degrees
+HELM_TILE_W, HELM_TILE_H = 170, 210
+HEAD_FRAME_PAD = 0.30
+GOGGLE_NODES = ("GoggleHook",)
+HEAD_NODES = ("headhook",)
+NO_HELMET, OK, NO_NODE, ATTACH_UNKNOWN = "none", "OK", "NO_NODE", "ATTACH_UNKNOWN"
+
+
+class HelmetKit:
+    """Loads mesh dumps (from `mesh --textures`) once and builds head-and-helmet scenes.
+
+    modeltype B: head model sits at the body's headhook; the helmet is the item model reparented to the head's
+    GoggleHook (status NO_NODE when the head has none: the engine drops the item). Modeltypes F and L have no
+    separate head and no known attach path (ATTACH_UNKNOWN): drawn without a helmet.
+    """
+
+    def __init__(self, meshes: Path, tex_dir: Path | None = None):
+        self.meshes = Path(meshes)
+        self.tex_dir = Path(tex_dir) if tex_dir else self.meshes / "tex"
+        self._parts: dict = {}
+
+    def has(self, model: str) -> bool:
+        return (self.meshes / f"{model.lower()}.json").is_file()
+
+    def parts(self, model: str):
+        key = model.lower()
+        if key not in self._parts:
+            self._parts[key] = load_parts(self.meshes / f"{key}.json", self.tex_dir)
+        return self._parts[key]
+
+    def hook(self, model: str, names):
+        return hook_transform(self.meshes / f"{model.lower()}.json", names)
+
+    @staticmethod
+    def _place(parts, tf):
+        if tf is None:
+            return list(parts)
+        np = _np()
+        r, t = np.asarray(tf[0], dtype=np.float64), np.asarray(tf[1], dtype=np.float64)
+        return [(pos @ r.T + t, uvs, faces, tex) for pos, uvs, faces, tex in parts]
+
+    def scene(self, modeltype: str, body: str, head: str, mask: str | None):
+        """(parts, head_parts, status). head_parts frame the shot; status is one of NO_HELMET, OK, NO_NODE,
+        ATTACH_UNKNOWN. The helmet is drawn only when status is OK."""
+        body_parts = self.parts(body) if self.has(body) else []
+        if modeltype != "B" or not head or not self.has(head):
+            return body_parts, self._top_region(body_parts), (NO_HELMET if mask is None else ATTACH_UNKNOWN)
+        head_tf = self.hook(body, HEAD_NODES)
+        head_parts = self._place(self.parts(head), head_tf)
+        parts = body_parts + head_parts
+        if mask is None:
+            return parts, head_parts, NO_HELMET
+        goggle = self.hook(head, GOGGLE_NODES)
+        if goggle is None or not self.has(mask):
+            return parts, head_parts, NO_NODE
+        item_tf = compose_transforms(head_tf, goggle) if head_tf is not None else goggle
+        return parts + self._place(self.parts(mask), item_tf), head_parts, OK
+
+    @staticmethod
+    def _top_region(parts, depth: float = 0.28):
+        """Vertices of the parts within `depth` metres of the top: the framing target when there is no head model."""
+        np = _np()
+        if not parts:
+            return []
+        zmax = max(float(p[0][:, 2].max()) for p in parts)
+        out = []
+        for pos, uvs, faces, tex in parts:
+            sel = pos[pos[:, 2] >= zmax - depth]
+            if len(sel):
+                out.append((sel, uvs, faces, tex))
+        return out
+
+
+def helmet_tile(kit: HelmetKit, row: dict, mask: str | None, shot: str, scale: int = 1):
+    """One tile (uint8 image, status) of an appearance row with `mask` (None = bare head) from a HELM_SHOTS shot."""
+    parts, head_parts, status = kit.scene(row["modeltype"], row["body_model"], row["head_model"], mask)
+    yaw = HELM_SHOTS[shot]
+    if not parts:
+        np = _np()
+        return np.zeros((HELM_TILE_H * scale, HELM_TILE_W * scale, 3), np.uint8), status
+    # frame on the bare head so every row of a sheet shares one camera
+    bare, bare_head, _ = kit.scene(row["modeltype"], row["body_model"], row["head_model"], None)
+    bounds = parts_bounds(bare_head or bare, yaw, HEAD_FRAME_PAD)
+    tile = render_scene(parts, yaw, HELM_TILE_W * scale, HELM_TILE_H * scale, bounds)
+    return tile, status
+
+
+def read_tsv(path: Path) -> list[dict]:
+    import csv
+
+    with open(path, newline="", encoding="utf-8") as fh:
+        return list(csv.DictReader(fh, delimiter="\t"))
+
+
+def helmet_models(items_tsv: Path, baseitem: str = "44") -> list[str]:
+    """Distinct model_resref (lower-case, sorted) of the K2 UTIs of one base item."""
+    return sorted({r["model_resref"].lower() for r in read_tsv(items_tsv)
+                   if r["baseitem_id"] == baseitem and r["model_resref"]})
+
+
+def head_rows(wear_tsv: Path, ids=None) -> list[dict]:
+    """Appearance rows that have a head-item template (n_utc_with_head_item > 0), optionally limited to `ids`."""
+    rows = [r for r in read_tsv(wear_tsv) if int(r["n_utc_with_head_item"] or 0) > 0]
+    if ids:
+        want = {str(i) for i in ids}
+        rows = [r for r in rows if r["row"] in want]
+    return rows
+
+
+def helmet_label(row: dict, status: str) -> str:
+    base = f"{row['row']} {row['label']} [{row['modeltype']}]"
+    note = {OK: "", NO_NODE: " NO_NODE (engine drops it)", ATTACH_UNKNOWN: " ATTACH UNKNOWN"}.get(status, "")
+    return base + note
+
+
+def render_helmet_sheets(meshes: Path, rows: list[dict], masks: list[str], out: Path, tex_dir: Path | None = None,
+                         shots=tuple(HELM_SHOTS), wall_item: str | None = None, wall_cols: int = 8,
+                         scale: int = 1) -> list[Path]:
+    """<row>_helmets.png per appearance (row 0 = bare head, then one row per mask model, columns = shots) and
+    wall_helmets.png (one tile per appearance wearing `wall_item`, shot helm_3q, status in the label)."""
+    from PIL import Image, ImageDraw
+
+    out.mkdir(parents=True, exist_ok=True)
+    kit = HelmetKit(meshes, tex_dir)
+    W, H = HELM_TILE_W * scale, HELM_TILE_H * scale
+    written: list[Path] = []
+    wall: list = []
+    for row in rows:
+        if not kit.has(row["body_model"]):
+            print(f"skip {row['row']}: no mesh dump for body {row['body_model']}", file=sys.stderr)
+            continue
+        status0 = kit.scene(row["modeltype"], row["body_model"], row["head_model"], masks[0] if masks else None)[2]
+        # F/L: no attach path is known, so no helmet is drawn and every item row would repeat the bare head
+        variants = [None] if status0 == ATTACH_UNKNOWN else [None] + list(masks)
+        sheet = Image.new("RGB", (len(shots) * W, 16 + len(variants) * H), (30, 30, 30))
+        d = ImageDraw.Draw(sheet)
+        d.text((4, 2), f"{helmet_label(row, status0)}  body {row['body_model']} head {row['head_model']}",
+               fill=(255, 255, 0))
+        for r, mask in enumerate(variants):
+            for c, shot in enumerate(shots):
+                tile, _ = helmet_tile(kit, row, mask, shot, scale)
+                sheet.paste(Image.fromarray(tile), (c * W, 16 + r * H))
+            _label(d, (2, 18 + r * H), mask or "bare head")
+        path = out / f"{row['row']}_helmets.png"
+        sheet.save(path)
+        written.append(path)
+        print(f"{row['row']}: {path}")
+        if wall_item and kit.has(wall_item):
+            tile, status = helmet_tile(kit, row, wall_item, "helm_3q", scale)
+            wall.append((f"{row['row']} {row['label']}", f"[{row['modeltype']}] {status}", tile))
+    if wall:
+        rowsn = (len(wall) + wall_cols - 1) // wall_cols
+        sheet = Image.new("RGB", (wall_cols * W, rowsn * H), (30, 30, 30))
+        d = ImageDraw.Draw(sheet)
+        fit = int((W - 6) / 6)
+        for k, (lab, st, tile) in enumerate(wall):
+            x, y = (k % wall_cols) * W, (k // wall_cols) * H
+            sheet.paste(Image.fromarray(tile), (x, y))
+            _label(d, (x + 2, y + 2), lab[:fit])
+            _label(d, (x + 2, y + 15), st[:fit], fill=(255, 255, 0) if st.endswith(OK) else (255, 140, 60))
+        path = out / f"wall_helmets_{wall_item}.png"
+        sheet.save(path)
+        written.append(path)
+    return written
 
 
 # ------------------------------------------------------------------ look + texture sources
@@ -518,6 +818,18 @@ def cmd_dossier(args) -> int:
     return 0 if paths else 2
 
 
+def cmd_helmets(args) -> int:
+    meshes = Path(args.meshes).expanduser()
+    rows = head_rows(Path(args.wear), None if args.appearances in (None, ["all54"]) else args.appearances)
+    masks = ([m.lower() for m in args.items] if args.items and args.items != ["distinct-models"]
+             else helmet_models(Path(args.items_tsv)))
+    paths = render_helmet_sheets(meshes, rows, masks, Path(args.out).expanduser(),
+                                 Path(args.tex).expanduser() if args.tex else None,
+                                 wall_item=(args.wall_item or "").lower() or None, scale=2 if args.size == "big" else 1)
+    print(f"wrote {len(paths)} files ({len(rows)} appearances x {len(masks)} helmet models)")
+    return 0 if paths else 2
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -525,6 +837,7 @@ def build_parser() -> argparse.ArgumentParser:
     m.add_argument("--models", nargs="+", required=True)
     m.add_argument("--out", required=True)
     m.add_argument("--game", default=str(DEFAULT_GAME), help="K2 install, read only")
+    m.add_argument("--textures", action="store_true", help="also copy each used texture to <out>/tex/ as raw bytes")
     for name, helptext in (("render", "quick parent-vs-look sheets by yaw, plus contact sheets (run with .venv)"),
                            ("dossier", "many zooms and angles per look, plus per-family close-up walls (run with .venv)")):
         r = sub.add_parser(name, help=helptext)
@@ -542,12 +855,22 @@ def build_parser() -> argparse.ArgumentParser:
             r.add_argument("--shots", nargs="+", default=list(DOSSIER), help=f"from {sorted(SHOTS)}")
             r.add_argument("--wall", nargs="*", default=list(WALL), help="shots for the per-family walls ([] = none)")
             r.add_argument("--size", choices=("normal", "big"), default="normal", help="big = 2x tiles")
+    h = sub.add_parser("helmets", help="head-item previews: appearance rows x helmet models (run with .venv)")
+    h.add_argument("--meshes", required=True, help="dir of `mesh --textures` dumps (bodies, heads, helmets)")
+    h.add_argument("--tex", default=None, help="texture dir (default <meshes>/tex)")
+    h.add_argument("--out", required=True)
+    h.add_argument("--wear", default=str(HERE.parents[1] / ".claude/research/npc_equipment/head_wearability.tsv"))
+    h.add_argument("--items-tsv", default=str(HERE.parents[1] / ".claude/research/k1_items/items_k2.tsv"))
+    h.add_argument("--appearances", nargs="*", default=None, help="appearance rows, or all54 (default)")
+    h.add_argument("--items", nargs="*", default=None, help="helmet model resrefs, or distinct-models (default)")
+    h.add_argument("--wall-item", default="i_mask_007", help="helmet model drawn on the family wall ('' = no wall)")
+    h.add_argument("--size", choices=("normal", "big"), default="normal")
     return ap
 
 
 def main(argv=None) -> int:
     args = build_parser().parse_args(argv)
-    return {"mesh": cmd_mesh, "render": cmd_render, "dossier": cmd_dossier}[args.cmd](args)
+    return {"mesh": cmd_mesh, "render": cmd_render, "dossier": cmd_dossier, "helmets": cmd_helmets}[args.cmd](args)
 
 
 if __name__ == "__main__":
