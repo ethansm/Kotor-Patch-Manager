@@ -4,7 +4,7 @@ Status: RESEARCH ONLY. No game file, no repo code, no live install touched. Foll
 
 ## 1. Bottom line
 1. **81 usable add-on cards** for the 35 commoner atlases (21 tier A, 56 tier B, 4 tier C; 60 are deterministic S1D decals, 15 procedural wear, 6 HSV recolours). Only 1 tattoo survives: bare skin exists only on a few hand islands.
-2. **The commoner pool supports civilians, refugees, thugs, patrons, workers, not uniformed roles.** 35 cards need uniform, armour or robe bases (Republic officer, TSF, Czerka staff, Onderon soldier, Sith, Mandalorian) and 32 need species bodies. Next unlock = annotate the uniform/armour atlases (n_czerkaoff01, pmb*/pfb* sets), same method as wave 2.
+2. **The commoner pool supports civilians, refugees, thugs, patrons, workers, not uniformed roles.** 35 cards need uniform, armour or robe bases (Republic officer, TSF, Czerka staff, Onderon soldier, Sith, Mandalorian) and 32 need species bodies. Wave 5 (section 12) annotated 51 uniform/armour/robe atlases and unlocked 30 of those cards.
 3. **Gemini concepts: 0 of 14 confirmed outright, 8 partly right, 6 unsourced, none provably wrong except the Old Sith hex.** Resolved forms in `w4/out/facts.md` (23 claims, quotes grep-checked).
 4. **Source access:** Fandom HTML is Cloudflare-blocked (HTTP 402/403 for bots), but `api.php` works (`action=parse`, categories). TextExtracts is not installed. Our harvester (`tools/harvest.py`, no model tokens) pulled 320 pages; Haiku read local text only.
 5. **Lore is thin for KOTOR 2 civilian dress.** Real sourced looks: Onderon uniforms, Republic cog, Mandalorian marks, Sith trooper/commando colours. Everything else is INFERRED or INVENTED and tagged. Named factions use tier A/B only; tier C is allowed for generic wear/palette.
@@ -266,3 +266,59 @@ Columns: canvases = agent pick / rule upper bound. Tier = evidence tier + divers
 - SPECIES-LOCKED (32): K001, K002, K003, K004, K005, K006, K007, K008, K009, K010, K116, K117, K118, K119, K120, K121, K122, K123, K124, K125, K126, K127, K128, K129, K130, K131, K132, K133, K134, K135, K136, K169
 - HOLD (1): K105
 - DROP/MERGE: see `catalog_final.json` status_note.
+
+## 12. Uniform, armour and robe add-ons (wave 5, 10-12)
+
+Wave 5 = 9 Haiku atlas annotators (51 vanilla atlases) + 4 fit agents on the 35 cards that were DEFER. Result: **30 cards usable on uniform/armour/robe atlases (KEEP-UNI), 3 merged, 2 dropped (already in vanilla).** Data: `w5/out/H1..H9.md` (atlas annotations), `w5/fit_merged.tsv`, `catalog_final.json` (`w5` key per card, `status` KEEP-UNI), `tools/merge_w5.py`.
+
+### 12.1 Atlas facts (checked deterministically by the orchestrator)
+- Vanilla uniform/armour atlases are **256 or 512 px, not 1024**; a 0.05 patch is 13-26 px. Decals need to be authored at atlas size.
+- `n_repofff01` is pixel-identical to `n_repoff01`; `n_tsfcmdr_f01` is identical to `n_tsfcmdr01` (no separate female art). `n_darkjmidf01` differs from `n_darkjmidm01` by mean 0.1/255 (near-duplicate).
+- `n_sithsoldier_b` is a normal map (mean RGB 128,128,254): never paint. `n_medoff01`, `n_dockofd01`, `n_r_off_f01` are head sheets, not body uniforms.
+- **10 atlases have non-opaque alpha** (n_sithsoldier01-03, n_sithcom01-03, n_sithassn01, n_sithappren01, pmbd02, pfbd02; 8-68% of pixels). Alpha likely carries gloss or cutout: composite RGB only and keep alpha byte-identical (output gate G-alpha).
+- Layouts differ per family, so the 4x4 cell rule is only a hint: the T2 island-mask tool matters more here. All cell maps are eyeballed (confidence 2-4); 256 px edges are about one cell off.
+- Family map: Czerka pair (`n_czerkaoff01`, `c01` recolour grey-olive); Republic officer `n_repoff01` (+ 256 px low variants); TSF navy `n_tsfoff01/_f01`, `n_tsfcmdr01`; Onderon `n_ondsoldm1`, `n_ond_off`; Sith plate `n_sithsoldier01-03`, Sith cloth `n_sithcomf01-03` / `n_sithcomm01-03`; Mandalorian plate mosaic `n_mandalorian01-03` (blue/red/gold, one UV); Jedi robes `n_jedicoun*`, `n_jedimem*`, `n_jedirobem`; player outfits `pmbc01` etc. (no bare skin).
+
+### 12.2 KEEP-UNI cards (30)
+
+| id | card | atlases | stage | score | caveat |
+|---|---|---|---|---|---|
+| A6-05 | Vaklu light blue battle armour | n_ond_off, pmbc01, n_ondsoldm1 | S1H | 4 | Vaklu unmapped; neutral picks; Onderon names conf 3; pmbc01 is player atlas. |
+| A7-05 | Clan Wren yellow outline shoulders | n_mandalorian01 | S1D | 4 | Assumes black armour; 01 base is steel blue. Right shoulder cell unconfirmed. |
+| A7-09 | Ubese bandolier and belt-clasp | n_mandalorian01, n_mandalorian02 | S1D | 4 | Tier B. Ubese faction unverified; clasp position approximate. |
+| A8-02 | Crimson officer sash | n_sithcomf01,n_sithcomf02,n_sithcomf03,n_sithoff_low_m | S1D | 4 | Sith officer: grey cloth; cream vanishes; sithoff_low conf 2 |
+| A8-03 | Officer rank tabs and collar marks | n_sithcomf01,n_sithcomf02,n_sithcomf03,n_sithoff_low_m | S1D | 4 | Sith officer tabs; sithcomf conf 4, sithoff_low conf 2 |
+| MAND-1 | Neo-Crusader gold and crimson officer armour | n_mandalorian01 | S1H | 4 | S1H plates; crimson band (S1D) on D2 edge; visor B1 avoided. |
+| MAND-2 | Neo-Crusader blue and silver rank-and-file a | n_mandalorian02, n_mandalorian03 | S1H | 4 | Blue replaces red/gold base; silver band weak on 02 cream trim. |
+| MAND-3 | Mandalorian personal paint scheme and glyph | n_mandalorian01, n_mandalorian02, n_mandalorian03 | S2A | 4 | Choose two of gold, crimson, blue, silver not on base. |
+| MAND-4 | Jaig eyes honour sigil | n_mandalorian01 | S1D | 4 | Steel-blue plate is mid-tone; eyes read; centre bars may cut. |
+| MAND-5 | Clan Vizsla shriek-hawk emblem | n_mandalorian02, n_mandalorian03 | S1D | 4 | Silver-grey wanted; 02 B2 pale but red stripes; 03 B2 gold-cream. |
+| ONDER-1 | Onderon soldier gold piping | n_ondsoldm1 | S1D | 4 | Onderon label name-inferred; cuff zone unconfirmed |
+| REPUB-3 | Khoonda nine-spoke emblem | n_repsold01,n_repoff01,n_tsfoff01,n_tsfoff_f01,n_czerkaoff01,n_tsfcmdr01 | S1D | 4 | Design palette; side unverified; off-white only on navy or maroon |
+| SITHJ1-2 | Sith trooper silver-white plating | n_sithsoldier02 | S1H | 4 | Silver-white on red plates; sithsoldier01 already white, skipped. |
+| SITHJ1-6 | Jedi Order winged-blade crest | n_jedirobem,n_jedimemm01 | S2A | 4 | Gold weak on caramel; robe A2 off-centre; needs AI painting. |
+| STRAT1-5 | Standard-issue uniform colour block | pmbc01,pfbc01,n_repsold01 | S1H | 4 | Recolours jacket cells only; collar and cuff greys unmapped |
+| SYM1-1 | Bendu eight-spoke circle | n_jedimemm01,n_jedirobem | S1D | 4 | Ivory ring on caramel; dark-grey base absent; memm01 conf 2. |
+| A12-07 | Rank pips and shoulder metal tabs | n_czerkaoff01,pfbd02,pmbc01,n_tsfoff01,n_tsfoff_f01 | S1D | 3 | Collar not covered; silver tabs weak on grey panels |
+| A1-03 | Lieutenant cuff bands | n_tsfoff01,n_tsfoff_f01 | S1D | 3 | TSF Lieutenant: officer atlas, not commander; tier C |
+| A1-04 | Navy collar stripes | n_tsfoff01,n_tsfoff_f01,n_repoff01 | S1D | 3 | Republic Navy: not Czerka; collar cells unverified |
+| A3-02 | Paramilitary rank bars | n_czerkaoff01,n_czerkaoffc01 | S1D | 3 | Czerka only; upper-arm cells unmapped |
+| A7-06 | Kama belt flap | n_mandalorian01, n_mandalorian02, n_mandalorian03 | S1D | 3 | Tier B. Dark brown on 02/03; rust only on 01. |
+| A8-01 | Silver plate bands (Sith Trooper) | n_sithsoldier03, n_sithcom03 | S1D | 3 | Conf 3; avoid D1 arch outline; command atlas lacks right shoulder. |
+| MAND-6 | Kama coloured hem trim | n_mandalorian02, n_mandalorian03 | S1D | 3 | Hem sits near row 3/4 seam; belt strap avoided; verify overlay. |
+| REPUB-4 | Republic trooper red and yellow armour | n_repoff01, n_czerkaoffc01, n_tsfoff01 | S1H | 3 | Officer atlas for trooper; tsfoff01 conf 2; orange piping clashes yellow. |
+| SITHJ1-1 | Sith assassin hex charm | n_sithsoldier01,n_sithcomf01 | S1D | 3 | Black charm needs light plate; sithassn01 black base vanishes; conf 3-4. |
+| SITHJ1-3 | Sith Commando red and copper armor | n_sithsoldier01, n_sithsoldier03 | S1H | 3 | Skip sithsoldier02 (already red); copper seams need S1D pass. |
+| SITHJ1-4 | Jedi Master red robe | n_jedirobem,n_jedicounm01,n_jedimemm01 | S1H | 3 | Whole-robe hue shift keeping fold value; skip belt, hem, pouch cells. |
+| SITHJ1-8 | Gray Jedi gray robe | n_jedirobem,n_jedicounm01,n_jedimemm01 | S1H | 3 | Whole-robe grey recolour keeping fold value; skip belt, hem, pouch cells. |
+| SYM1-5 | Cross of Healing | n_jedirobem,n_repoff01 | S1D | 3 | Pale grey cross, no red; faction unverified; B1 is rank-bar slot. |
+| SITHJ1-5 | Covenant purple robe, green hem | n_jedicounf01 | S1D | 2 | Lilac skirt stands in for purple; hem edge unverified; faction unverified. |
+
+Merged: A7-01 -> MAND-2; ONDER-4 -> A6-05; SITHJ2-1 -> SYM1-1. Dropped (vanilla already shows it): ONDER-2 (n_ond_off is already near-black slate), ONDER-3 (white drape present).
+
+### 12.3 Corrections and risks
+- Orchestrator fixed 5 faction mismatches from the fit agents (A8-02/A8-03 Sith officer -> `n_sithcomf0x`/`n_sithoff_low_m`; A1-03/A1-04 Republic/TSF only; A3-02 Czerka only). Override list is in `tools/merge_w5.py`.
+- **Faction-to-atlas mapping is by filename and look only.** No spawn-table check yet: Vaklu has no faction atlas; Covenant (SITHJ1-5) has no source atlas; Sith trooper/commando to `n_sithsoldier`/`n_sithcom` and Republic trooper to `n_repoff01` are name-inferred. Ground truth = which NPC templates use each atlas (registry/UTC), a cheap deterministic follow-up.
+- Shared cells (`n_jedirobem` A2, `n_mandalorian0x` B2/C2, `n_sithsoldier03`): one card per cell per look.
+- A7-05 assumes black armour but `n_mandalorian01` is steel blue; MAND-5 and MAND-4 are both chest emblems: split across atlases.
+- Variant-system archetypes that were blocked (officer, TSF, Czerka, Onderon soldier) are now buildable from these cards; the POC set in section 5 still stands for commoners.

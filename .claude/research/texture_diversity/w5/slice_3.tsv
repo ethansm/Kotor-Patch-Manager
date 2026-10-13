@@ -1,0 +1,7 @@
+id	name	type	zone	tier	palette	painting_prompt
+A6-05	Vaklu light blue battle armour	COLOR	whole_garment	A	light blue, dark grey	Recolor the garment light sky blue, matte, with armour-like panels. Plain surface, no patterns, no emblems or markings.
+A8-01	Silver plate bands (Sith Trooper)	TRIM	chest_center, shoulder_L, shoulder_R	A	silver, charcoal, black	Bright silver metal plate bands across the chest and shoulders, riveted edges, dark gaps between plates, flat painted metallic sheen.
+ONDER-4	Vaklu officer light-blue battle suit	COLOR	whole_garment	A	light blue, grey	Light blue battle suit, flat even paint, subtle seam lines, dull matte finish.
+REPUB-4	Republic trooper red and yellow armour	COLOR	whole_garment	A	red, yellow, black	Flat painted armour colour scheme: red and yellow plates with hard edges over a black underlayer, bold blocks, no shading, no lettering.
+SITHJ1-2	Sith trooper silver-white plating	COLOR	whole_garment	A	silver, white, black	Silver armor plates with white panels and black padded seams, flat front view, clean edges, no helmet, no text.
+SITHJ1-3	Sith Commando red and copper armor	COLOR	whole_garment	A	scarlet red, copper	Scarlet red armor plates with copper bands along the seams, flat front view, dark red shadows, no helmet, no text.

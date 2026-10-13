@@ -1,0 +1,16 @@
+id	verdict	atlases	cells	stage	scale	blend	score	caveat
+SITHJ1-1	KEEP	n_sithsoldier01,n_sithcomf01	C1;B2	S1D	0.12w	normal	3	Black charm needs light plate; sithassn01 black base vanishes; conf 3-4.
+SITHJ1-4	KEEP	n_jedirobem,n_jedicounm01,n_jedimemm01	A2,A3,B1,B3,C3,D1,D2;A1,A2,B3;A3,B2,C1,D2	S1H	1.00w	normal	3	Whole-robe hue shift keeping fold value; skip belt, hem, pouch cells.
+SITHJ1-5	KEEP	n_jedicounf01	B4	S1D	0.25w,0.05h	normal	2	Lilac skirt stands in for purple; hem edge unverified; faction unverified.
+SITHJ1-6	KEEP	n_jedirobem,n_jedimemm01	A2;B2	S2A	0.22w	normal	4	Gold weak on caramel; robe A2 off-centre; needs AI painting.
+SITHJ1-8	KEEP	n_jedirobem,n_jedicounm01,n_jedimemm01	A2,A3,B1,B3,C3,D1,D2;A1,A2,B3;A3,B2,C1,D2	S1H	1.00w	normal	3	Whole-robe grey recolour keeping fold value; skip belt, hem, pouch cells.
+SITHJ2-1	MERGE:SYM1-1	-	-	-	-	-	-	Ring-and-mark roundel is the same design as SYM1-1; keep SYM1-1.
+SYM1-1	KEEP	n_jedimemm01,n_jedirobem	B2;A2	S1D	0.20w	normal	4	Ivory ring on caramel; dark-grey base absent; memm01 conf 2.
+SYM1-5	KEEP	n_jedirobem,n_repoff01	A2;B1	S1D	0.18w	normal	3	Pale grey cross, no red; faction unverified; B1 is rank-bar slot.
+
+## NOTES
+- Robe COLOR cards (SITHJ1-4, SITHJ1-8) use the same three Jedi robe atlases; pick one colour per atlas.
+- Never usable here: n_sithassn01 (charcoal vanishes black), n_sithsoldier02 (red plate swallows crimson), n_sithsoldier_b (normal map), n_darkjmidm01 and n_darkjedim01 (Dark Jedi, not Jedi), n_repofff01 (duplicate).
+- Shared cells: n_jedirobem A2 is claimed by SITHJ1-6, SYM1-1 and SYM1-5; n_jedimemm01 B2 by SITHJ1-6 and SYM1-1. Pick one card per cell.
+- H8 names the robe atlas "n_jedirobem" with no 01 suffix; confirm the PNG filename before use.
+- Ground truth needed: SITHJ1-5 purple body and Covenant faction (n_darkjedim01 C2-D3 purple robe is the fallback); SYM1-1 and SYM1-5 faction.

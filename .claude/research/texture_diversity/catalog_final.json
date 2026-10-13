@@ -828,8 +828,8 @@
   "blend": "-",
   "score": "2",
   "caveat": "Officer collar and shoulder tabs need a uniform base",
-  "status": "DEFER",
-  "status_note": "needs uniform base",
+  "status": "KEEP-UNI",
+  "status_note": "w5 fit: KEEP",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -864,7 +864,17 @@
    "B1",
    "C1",
    "D1"
-  ]
+  ],
+  "w5": {
+   "verdict": "KEEP",
+   "atlases": "n_czerkaoff01,pfbd02,pmbc01,n_tsfoff01,n_tsfoff_f01",
+   "cells": "n_czerkaoff01:D2;pfbd02:D1;pmbc01:D1;n_tsfoff01:C1;n_tsfoff_f01:D1",
+   "stage": "S1D",
+   "scale": "0.06",
+   "blend": "normal",
+   "score": "3",
+   "caveat": "Collar not covered; silver tabs weak on grey panels"
+  }
  },
  {
   "id": "A12-08",
@@ -1180,8 +1190,8 @@
   "blend": "-",
   "score": "1",
   "caveat": "Lieutenant cuff bands need a uniform sleeve base",
-  "status": "DEFER",
-  "status_note": "needs uniform base",
+  "status": "KEEP-UNI",
+  "status_note": "w5 fit: KEEP",
   "canvas_rule": [
    "n_commf02",
    "n_commf03",
@@ -1196,7 +1206,18 @@
   "rule_cells": [
    "C3",
    "D3"
-  ]
+  ],
+  "w5": {
+   "verdict": "KEEP",
+   "atlases": "n_tsfoff01,n_tsfoff_f01",
+   "cells": "cuff cell unverified",
+   "stage": "S1D",
+   "scale": "0.12",
+   "blend": "normal",
+   "score": "3",
+   "caveat": "TSF Lieutenant: officer atlas, not commander; tier C",
+   "override": "orchestrator faction fix"
+  }
  },
  {
   "id": "A1-04",
@@ -1225,8 +1246,8 @@
   "blend": "-",
   "score": "2",
   "caveat": "Naval collar stripes need a uniform collar base",
-  "status": "DEFER",
-  "status_note": "needs uniform base",
+  "status": "KEEP-UNI",
+  "status_note": "w5 fit: KEEP",
   "canvas_rule": [
    "n_commf13",
    "n_commm07",
@@ -1234,7 +1255,18 @@
   ],
   "rule_cells": [
    "B1"
-  ]
+  ],
+  "w5": {
+   "verdict": "KEEP",
+   "atlases": "n_tsfoff01,n_tsfoff_f01,n_repoff01",
+   "cells": "n_tsfoff_f01:C3;n_tsfoff01:C1;n_repoff01:B1",
+   "stage": "S1D",
+   "scale": "0.10",
+   "blend": "normal",
+   "score": "3",
+   "caveat": "Republic Navy: not Czerka; collar cells unverified",
+   "override": "orchestrator faction fix"
+  }
  },
  {
   "id": "A1-05",
@@ -2333,8 +2365,8 @@
   "blend": "-",
   "score": "2",
   "caveat": "Rank bars need a uniform chest base",
-  "status": "DEFER",
-  "status_note": "needs uniform base",
+  "status": "KEEP-UNI",
+  "status_note": "w5 fit: KEEP",
   "canvas_rule": [
    "n_commf02",
    "n_commf03",
@@ -2366,7 +2398,18 @@
    "B1",
    "C3",
    "D3"
-  ]
+  ],
+  "w5": {
+   "verdict": "KEEP",
+   "atlases": "n_czerkaoff01,n_czerkaoffc01",
+   "cells": "n_czerkaoffc01:B2;n_czerkaoff01:B2",
+   "stage": "S1D",
+   "scale": "0.15",
+   "blend": "normal",
+   "score": "3",
+   "caveat": "Czerka only; upper-arm cells unmapped",
+   "override": "orchestrator faction fix"
+  }
  },
  {
   "id": "A3-03",
@@ -4494,8 +4537,8 @@
   "blend": "-",
   "score": "-",
   "caveat": "Armour panels need armour base; plain recolour adds little.",
-  "status": "DEFER",
-  "status_note": "needs armor base",
+  "status": "KEEP-UNI",
+  "status_note": "w5 fit: KEEP",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -4540,7 +4583,17 @@
    "B4",
    "C1",
    "D1"
-  ]
+  ],
+  "w5": {
+   "verdict": "KEEP",
+   "atlases": "n_ond_off;pmbc01;n_ondsoldm1",
+   "cells": "n_ond_off=C3,C4,D2,D3,A4;pmbc01=A3,B3,C3,B4,D1;n_ondsoldm1=A4,C4,D1",
+   "stage": "S1H",
+   "scale": "1.0",
+   "blend": "normal",
+   "score": "4",
+   "caveat": "Vaklu unmapped; neutral picks; Onderon names conf 3; pmbc01 is player atlas."
+  }
  },
  {
   "id": "A6-06",
@@ -4907,8 +4960,8 @@
   "blend": "-",
   "score": "-",
   "caveat": "Plate seam shading needs armour base; cloth recolour only.",
-  "status": "DEFER",
-  "status_note": "needs armor base",
+  "status": "MERGE",
+  "status_note": "w5 fit: MERGE:MAND-2",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -4953,7 +5006,17 @@
    "C3",
    "D1",
    "D3"
-  ]
+  ],
+  "w5": {
+   "verdict": "MERGE:MAND-2",
+   "atlases": "-",
+   "cells": "-",
+   "stage": "-",
+   "scale": "-",
+   "blend": "-",
+   "score": "2",
+   "caveat": "Blue plate look duplicates MAND-2; paint once there."
+  }
  },
  {
   "id": "A7-02",
@@ -5201,8 +5264,8 @@
   "blend": "-",
   "score": "1",
   "caveat": "Outline sits on black armour plates; commoner atlases have no armour base.",
-  "status": "DEFER",
-  "status_note": "needs armor base",
+  "status": "KEEP-UNI",
+  "status_note": "w5 fit: KEEP",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -5236,7 +5299,17 @@
   "rule_cells": [
    "C1",
    "D1"
-  ]
+  ],
+  "w5": {
+   "verdict": "KEEP",
+   "atlases": "n_mandalorian01",
+   "cells": "01:A1,D2",
+   "stage": "S1D",
+   "scale": "0.25",
+   "blend": "normal",
+   "score": "4",
+   "caveat": "Assumes black armour; 01 base is steel blue. Right shoulder cell unconfirmed."
+  }
  },
  {
   "id": "A7-06",
@@ -5266,8 +5339,8 @@
   "blend": "-",
   "score": "1",
   "caveat": "Kama flap needs a belt base; corset fills the belt line everywhere.",
-  "status": "DEFER",
-  "status_note": "needs armor base",
+  "status": "KEEP-UNI",
+  "status_note": "w5 fit: KEEP",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -5306,7 +5379,17 @@
    "B2",
    "B3",
    "B4"
-  ]
+  ],
+  "w5": {
+   "verdict": "KEEP",
+   "atlases": "n_mandalorian01;n_mandalorian02;n_mandalorian03",
+   "cells": "01:D3;02:D3;03:D3",
+   "stage": "S1D",
+   "scale": "0.25",
+   "blend": "normal",
+   "score": "3",
+   "caveat": "Tier B. Dark brown on 02/03; rust only on 01."
+  }
  },
  {
   "id": "A7-07",
@@ -5481,8 +5564,8 @@
   "blend": "-",
   "score": "1",
   "caveat": "Legends armour bandolier; belt-clasp sits in the corset/belt zone everywhere.",
-  "status": "DEFER",
-  "status_note": "needs armor base",
+  "status": "KEEP-UNI",
+  "status_note": "w5 fit: KEEP",
   "canvas_rule": [
    "n_commf06",
    "n_commf08",
@@ -5507,7 +5590,17 @@
    "B1",
    "B2",
    "B3"
-  ]
+  ],
+  "w5": {
+   "verdict": "KEEP",
+   "atlases": "n_mandalorian01;n_mandalorian02",
+   "cells": "01:B2,C2,D3;02:B2,C2,D3",
+   "stage": "S1D",
+   "scale": "0.5",
+   "blend": "normal",
+   "score": "4",
+   "caveat": "Tier B. Ubese faction unverified; clasp position approximate."
+  }
  },
  {
   "id": "A7-10",
@@ -5584,8 +5677,8 @@
   "blend": "-",
   "score": "1",
   "caveat": "Silver plate bands are armour; no metal-plate base in commoner atlases.",
-  "status": "DEFER",
-  "status_note": "needs armor base",
+  "status": "KEEP-UNI",
+  "status_note": "w5 fit: KEEP",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -5625,7 +5718,17 @@
    "B1",
    "C1",
    "D1"
-  ]
+  ],
+  "w5": {
+   "verdict": "KEEP",
+   "atlases": "n_sithsoldier03;n_sithcom03",
+   "cells": "n_sithsoldier03=A1,B1,C1,D1;n_sithcom03=A1,B2",
+   "stage": "S1D",
+   "scale": "0.25",
+   "blend": "normal",
+   "score": "3",
+   "caveat": "Conf 3; avoid D1 arch outline; command atlas lacks right shoulder."
+  }
  },
  {
   "id": "A8-02",
@@ -5655,8 +5758,8 @@
   "blend": "-",
   "score": "1",
   "caveat": "Officer sash crosses V-neck and belt zones; needs a uniform base.",
-  "status": "DEFER",
-  "status_note": "needs uniform base",
+  "status": "KEEP-UNI",
+  "status_note": "w5 fit: KEEP",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -5696,7 +5799,18 @@
    "B1",
    "C1",
    "D1"
-  ]
+  ],
+  "w5": {
+   "verdict": "KEEP",
+   "atlases": "n_sithcomf01,n_sithcomf02,n_sithcomf03,n_sithoff_low_m",
+   "cells": "n_sithcomf0x:B2+C2;n_sithoff_low_m:A2",
+   "stage": "S1D",
+   "scale": "0.50",
+   "blend": "normal",
+   "score": "4",
+   "caveat": "Sith officer: grey cloth; cream vanishes; sithoff_low conf 2",
+   "override": "orchestrator faction fix"
+  }
  },
  {
   "id": "A8-03",
@@ -5727,8 +5841,8 @@
   "blend": "-",
   "score": "1",
   "caveat": "Rank tabs are uniform insignia; commoner shoulders carry none.",
-  "status": "DEFER",
-  "status_note": "needs uniform base",
+  "status": "KEEP-UNI",
+  "status_note": "w5 fit: KEEP",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -5763,7 +5877,18 @@
    "B1",
    "C1",
    "D1"
-  ]
+  ],
+  "w5": {
+   "verdict": "KEEP",
+   "atlases": "n_sithcomf01,n_sithcomf02,n_sithcomf03,n_sithoff_low_m",
+   "cells": "n_sithcomf0x:D1+B2;n_sithoff_low_m:B2",
+   "stage": "S1D",
+   "scale": "0.05",
+   "blend": "normal",
+   "score": "4",
+   "caveat": "Sith officer tabs; sithcomf conf 4, sithoff_low conf 2",
+   "override": "orchestrator faction fix"
+  }
  },
  {
   "id": "A8-04",
@@ -6986,7 +7111,7 @@
   "lore": "",
   "era": "TIMELESS",
   "canvas_class": "skin",
-  "evidence": "\"Green\u2014but sometimes red, yellow, or turquoise\u2014scales covered their bodies\" (Rodian)",
+  "evidence": "\"Green—but sometimes red, yellow, or turquoise—scales covered their bodies\" (Rodian)",
   "note": "flat paint shows scale colour only; the pebbled skin texture in the chunk cannot be painted.",
   "tier": "A",
   "zones": [
@@ -8039,7 +8164,7 @@
   "lore": "",
   "era": "TIMELESS",
   "canvas_class": "commoner",
-  "evidence": "\"Anytime, anywhere\u2026 we're there.\" (Czerka Arms/Legends)",
+  "evidence": "\"Anytime, anywhere… we're there.\" (Czerka Arms/Legends)",
   "note": "Motto text is the only sourced fact; chunk never says it appears on uniforms. Check readability at distance.",
   "tier": "A",
   "zones": [
@@ -8123,8 +8248,8 @@
   "blend": "-",
   "score": "-",
   "caveat": "Gold armour plates; needs armour base.",
-  "status": "DEFER",
-  "status_note": "needs armor base",
+  "status": "KEEP-UNI",
+  "status_note": "w5 fit: KEEP",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -8169,7 +8294,17 @@
    "B4",
    "C1",
    "D1"
-  ]
+  ],
+  "w5": {
+   "verdict": "KEEP",
+   "atlases": "n_mandalorian01",
+   "cells": "01:A1,B2,C2,D2",
+   "stage": "S1H",
+   "scale": "0.5",
+   "blend": "overlay",
+   "score": "4",
+   "caveat": "S1H plates; crimson band (S1D) on D2 edge; visor B1 avoided."
+  }
  },
  {
   "id": "MAND-2",
@@ -8198,8 +8333,8 @@
   "blend": "-",
   "score": "-",
   "caveat": "Blue and silver armour plates; needs armour base.",
-  "status": "DEFER",
-  "status_note": "needs armor base",
+  "status": "KEEP-UNI",
+  "status_note": "w5 fit: KEEP",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -8244,7 +8379,17 @@
    "B4",
    "C1",
    "D1"
-  ]
+  ],
+  "w5": {
+   "verdict": "KEEP",
+   "atlases": "n_mandalorian02;n_mandalorian03",
+   "cells": "02:A1,B2,C2,D2;03:B2,C2,D3",
+   "stage": "S1H",
+   "scale": "0.5",
+   "blend": "overlay",
+   "score": "4",
+   "caveat": "Blue replaces red/gold base; silver band weak on 02 cream trim."
+  }
  },
  {
   "id": "MAND-3",
@@ -8273,8 +8418,8 @@
   "blend": "-",
   "score": "-",
   "caveat": "Two-block armour with sigil and glyph; needs armour base.",
-  "status": "DEFER",
-  "status_note": "needs armor base",
+  "status": "KEEP-UNI",
+  "status_note": "w5 fit: KEEP",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -8318,7 +8463,17 @@
    "B4",
    "C1",
    "D1"
-  ]
+  ],
+  "w5": {
+   "verdict": "KEEP",
+   "atlases": "n_mandalorian01;n_mandalorian02;n_mandalorian03",
+   "cells": "01:B2,C2,D2;02:B2,C2,D2;03:B2,C2",
+   "stage": "S2A",
+   "scale": "0.25",
+   "blend": "normal",
+   "score": "4",
+   "caveat": "Choose two of gold, crimson, blue, silver not on base."
+  }
  },
  {
   "id": "MAND-4",
@@ -8347,8 +8502,8 @@
   "blend": "-",
   "score": "-",
   "caveat": "Shriek-hawk eyes on armour plate; needs armour base.",
-  "status": "DEFER",
-  "status_note": "needs armor base",
+  "status": "KEEP-UNI",
+  "status_note": "w5 fit: KEEP",
   "canvas_rule": [
    "n_commf06",
    "n_commf08",
@@ -8371,7 +8526,17 @@
   "rule_cells": [
    "A1",
    "B1"
-  ]
+  ],
+  "w5": {
+   "verdict": "KEEP",
+   "atlases": "n_mandalorian01",
+   "cells": "01:B2",
+   "stage": "S1D",
+   "scale": "0.15",
+   "blend": "normal",
+   "score": "4",
+   "caveat": "Steel-blue plate is mid-tone; eyes read; centre bars may cut."
+  }
  },
  {
   "id": "MAND-5",
@@ -8400,8 +8565,8 @@
   "blend": "-",
   "score": "-",
   "caveat": "Vizsla silhouette on armour plate; needs armour base.",
-  "status": "DEFER",
-  "status_note": "needs armor base",
+  "status": "KEEP-UNI",
+  "status_note": "w5 fit: KEEP",
   "canvas_rule": [
    "n_commf06",
    "n_commf08",
@@ -8424,7 +8589,17 @@
   "rule_cells": [
    "A1",
    "B1"
-  ]
+  ],
+  "w5": {
+   "verdict": "KEEP",
+   "atlases": "n_mandalorian02;n_mandalorian03",
+   "cells": "02:B2;03:B2",
+   "stage": "S1D",
+   "scale": "0.3",
+   "blend": "normal",
+   "score": "4",
+   "caveat": "Silver-grey wanted; 02 B2 pale but red stripes; 03 B2 gold-cream."
+  }
  },
  {
   "id": "MAND-6",
@@ -8453,8 +8628,8 @@
   "blend": "-",
   "score": "-",
   "caveat": "Generic hem band; re-triage for commoner hems later.",
-  "status": "DEFER",
-  "status_note": "needs armor base",
+  "status": "KEEP-UNI",
+  "status_note": "w5 fit: KEEP",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -8492,7 +8667,17 @@
    "B4",
    "C4",
    "D4"
-  ]
+  ],
+  "w5": {
+   "verdict": "KEEP",
+   "atlases": "n_mandalorian02;n_mandalorian03",
+   "cells": "02:A3,B3,C3;03:A3,B3,C3",
+   "stage": "S1D",
+   "scale": "0.25",
+   "blend": "normal",
+   "score": "3",
+   "caveat": "Hem sits near row 3/4 seam; belt strap avoided; verify overlay."
+  }
  },
  {
   "id": "ONDER-1",
@@ -8521,8 +8706,8 @@
   "blend": "-",
   "score": "-",
   "caveat": "Gold piping on uniform; needs uniform base.",
-  "status": "DEFER",
-  "status_note": "needs uniform base",
+  "status": "KEEP-UNI",
+  "status_note": "w5 fit: KEEP",
   "canvas_rule": [
    "n_commf02",
    "n_commf03",
@@ -8537,7 +8722,17 @@
   "rule_cells": [
    "C3",
    "D3"
-  ]
+  ],
+  "w5": {
+   "verdict": "KEEP",
+   "atlases": "n_ondsoldm1",
+   "cells": "n_ondsoldm1:D1+A4",
+   "stage": "S1D",
+   "scale": "0.30",
+   "blend": "normal",
+   "score": "4",
+   "caveat": "Onderon label name-inferred; cuff zone unconfirmed"
+  }
  },
  {
   "id": "ONDER-2",
@@ -8566,8 +8761,8 @@
   "blend": "-",
   "score": "-",
   "caveat": "Dark tunic colour on uniform cut; needs uniform base.",
-  "status": "DEFER",
-  "status_note": "needs uniform base",
+  "status": "DROP",
+  "status_note": "w5 fit: DROP:navy-grey vanishes on near-black slate of n_ond_off",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -8612,7 +8807,17 @@
    "B4",
    "C1",
    "D1"
-  ]
+  ],
+  "w5": {
+   "verdict": "DROP:navy-grey vanishes on near-black slate of n_ond_off",
+   "atlases": "-",
+   "cells": "-",
+   "stage": "-",
+   "scale": "-",
+   "blend": "-",
+   "score": "1",
+   "caveat": "n_ond_off already near-black slate; n_ondsoldm1 is soldier role"
+  }
  },
  {
   "id": "ONDER-3",
@@ -8641,8 +8846,8 @@
   "blend": "-",
   "score": "-",
   "caveat": "Shoulder wrap on uniform; needs uniform base.",
-  "status": "DEFER",
-  "status_note": "needs uniform base",
+  "status": "DROP",
+  "status_note": "w5 fit: DROP:white drape already present on Onderon atlases",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -8683,7 +8888,17 @@
   "rule_cells": [
    "C1",
    "D1"
-  ]
+  ],
+  "w5": {
+   "verdict": "DROP:white drape already present on Onderon atlases",
+   "atlases": "-",
+   "cells": "-",
+   "stage": "-",
+   "scale": "-",
+   "blend": "-",
+   "score": "1",
+   "caveat": "n_ondsoldm1 cream and n_ond_off white drapes already there"
+  }
  },
  {
   "id": "ONDER-4",
@@ -8712,8 +8927,8 @@
   "blend": "-",
   "score": "-",
   "caveat": "Light-blue battle suit; needs armour base.",
-  "status": "DEFER",
-  "status_note": "needs armor base",
+  "status": "MERGE",
+  "status_note": "w5 fit: MERGE:A6-05",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -8758,7 +8973,17 @@
    "B4",
    "C1",
    "D1"
-  ]
+  ],
+  "w5": {
+   "verdict": "MERGE:A6-05",
+   "atlases": "-",
+   "cells": "-",
+   "stage": "-",
+   "scale": "-",
+   "blend": "-",
+   "score": "-",
+   "caveat": "Same light-blue Vaklu suit as A6-05; officer name only."
+  }
  },
  {
   "id": "REPUB-1",
@@ -8910,8 +9135,8 @@
   "blend": "-",
   "score": "-",
   "caveat": "Sleeve badge; generic disc, re-triage for commoners later.",
-  "status": "DEFER",
-  "status_note": "needs uniform base",
+  "status": "KEEP-UNI",
+  "status_note": "w5 fit: KEEP",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -8945,7 +9170,17 @@
   "rule_cells": [
    "C1",
    "D1"
-  ]
+  ],
+  "w5": {
+   "verdict": "KEEP",
+   "atlases": "n_repsold01,n_repoff01,n_tsfoff01,n_tsfoff_f01,n_czerkaoff01,n_tsfcmdr01",
+   "cells": "n_repsold01:D1;n_repoff01:A1;n_tsfoff01:C1;n_tsfoff_f01:B1;n_czerkaoff01:D2;n_tsfcmdr01:D2",
+   "stage": "S1D",
+   "scale": "0.12",
+   "blend": "normal",
+   "score": "4",
+   "caveat": "Design palette; side unverified; off-white only on navy or maroon"
+  }
  },
  {
   "id": "REPUB-4",
@@ -8974,8 +9209,8 @@
   "blend": "-",
   "score": "-",
   "caveat": "Red and yellow armour plates; needs armour base.",
-  "status": "DEFER",
-  "status_note": "needs armor base",
+  "status": "KEEP-UNI",
+  "status_note": "w5 fit: KEEP",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -9020,7 +9255,17 @@
    "B4",
    "C1",
    "D1"
-  ]
+  ],
+  "w5": {
+   "verdict": "KEEP",
+   "atlases": "n_repoff01;n_czerkaoffc01;n_tsfoff01",
+   "cells": "n_repoff01=B1,C2,A3,B3,B4,D1;n_czerkaoffc01=A2,B2,C1,C2;n_tsfoff01=C1,A3,C4",
+   "stage": "S1H",
+   "scale": "1.0",
+   "blend": "normal",
+   "score": "3",
+   "caveat": "Officer atlas for trooper; tsfoff01 conf 2; orange piping clashes yellow."
+  }
  },
  {
   "id": "SITHJ1-1",
@@ -9049,8 +9294,8 @@
   "blend": "-",
   "score": "-",
   "caveat": "Chest charm on robe; generic emblem, re-triage later.",
-  "status": "DEFER",
-  "status_note": "needs robe base",
+  "status": "KEEP-UNI",
+  "status_note": "w5 fit: KEEP",
   "canvas_rule": [
    "n_commf06",
    "n_commf08",
@@ -9073,7 +9318,17 @@
   "rule_cells": [
    "A1",
    "B1"
-  ]
+  ],
+  "w5": {
+   "verdict": "KEEP",
+   "atlases": "n_sithsoldier01,n_sithcomf01",
+   "cells": "C1;B2",
+   "stage": "S1D",
+   "scale": "0.12w",
+   "blend": "normal",
+   "score": "3",
+   "caveat": "Black charm needs light plate; sithassn01 black base vanishes; conf 3-4."
+  }
  },
  {
   "id": "SITHJ1-2",
@@ -9102,8 +9357,8 @@
   "blend": "-",
   "score": "-",
   "caveat": "Silver Sith plating; needs armour base.",
-  "status": "DEFER",
-  "status_note": "needs armor base",
+  "status": "KEEP-UNI",
+  "status_note": "w5 fit: KEEP",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -9148,7 +9403,17 @@
    "B4",
    "C1",
    "D1"
-  ]
+  ],
+  "w5": {
+   "verdict": "KEEP",
+   "atlases": "n_sithsoldier02",
+   "cells": "n_sithsoldier02=A1,B1,C1,D1,D2,A3,B3,C3,A4,B4",
+   "stage": "S1H",
+   "scale": "1.0",
+   "blend": "normal",
+   "score": "4",
+   "caveat": "Silver-white on red plates; sithsoldier01 already white, skipped."
+  }
  },
  {
   "id": "SITHJ1-3",
@@ -9177,8 +9442,8 @@
   "blend": "-",
   "score": "-",
   "caveat": "Red and copper Sith armour; needs armour base.",
-  "status": "DEFER",
-  "status_note": "needs armor base",
+  "status": "KEEP-UNI",
+  "status_note": "w5 fit: KEEP",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -9223,7 +9488,17 @@
    "B4",
    "C1",
    "D1"
-  ]
+  ],
+  "w5": {
+   "verdict": "KEEP",
+   "atlases": "n_sithsoldier01;n_sithsoldier03",
+   "cells": "n_sithsoldier01=A1,B1,C1,D1,D2,A3,B3,C3,A4,B4;n_sithsoldier03=A1,B1,C1,D1,D2,A3,B3,C3,A4,B4",
+   "stage": "S1H",
+   "scale": "1.0",
+   "blend": "normal",
+   "score": "3",
+   "caveat": "Skip sithsoldier02 (already red); copper seams need S1D pass."
+  }
  },
  {
   "id": "SITHJ1-4",
@@ -9252,8 +9527,8 @@
   "blend": "-",
   "score": "-",
   "caveat": "Red robe garment; needs robe base.",
-  "status": "DEFER",
-  "status_note": "needs robe base",
+  "status": "KEEP-UNI",
+  "status_note": "w5 fit: KEEP",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -9298,7 +9573,17 @@
    "B4",
    "C1",
    "D1"
-  ]
+  ],
+  "w5": {
+   "verdict": "KEEP",
+   "atlases": "n_jedirobem,n_jedicounm01,n_jedimemm01",
+   "cells": "A2,A3,B1,B3,C3,D1,D2;A1,A2,B3;A3,B2,C1,D2",
+   "stage": "S1H",
+   "scale": "1.00w",
+   "blend": "normal",
+   "score": "3",
+   "caveat": "Whole-robe hue shift keeping fold value; skip belt, hem, pouch cells."
+  }
  },
  {
   "id": "SITHJ1-5",
@@ -9327,8 +9612,8 @@
   "blend": "-",
   "score": "-",
   "caveat": "Green hem band on robe; generic trim, re-triage later.",
-  "status": "DEFER",
-  "status_note": "needs robe base",
+  "status": "KEEP-UNI",
+  "status_note": "w5 fit: KEEP",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -9366,7 +9651,17 @@
    "B4",
    "C4",
    "D4"
-  ]
+  ],
+  "w5": {
+   "verdict": "KEEP",
+   "atlases": "n_jedicounf01",
+   "cells": "B4",
+   "stage": "S1D",
+   "scale": "0.25w,0.05h",
+   "blend": "normal",
+   "score": "2",
+   "caveat": "Lilac skirt stands in for purple; hem edge unverified; faction unverified."
+  }
  },
  {
   "id": "SITHJ1-6",
@@ -9395,8 +9690,8 @@
   "blend": "-",
   "score": "-",
   "caveat": "Winged-blade crest on robe; needs robe base.",
-  "status": "DEFER",
-  "status_note": "needs robe base",
+  "status": "KEEP-UNI",
+  "status_note": "w5 fit: KEEP",
   "canvas_rule": [
    "n_commf06",
    "n_commf08",
@@ -9419,7 +9714,17 @@
   "rule_cells": [
    "A1",
    "B1"
-  ]
+  ],
+  "w5": {
+   "verdict": "KEEP",
+   "atlases": "n_jedirobem,n_jedimemm01",
+   "cells": "A2;B2",
+   "stage": "S2A",
+   "scale": "0.22w",
+   "blend": "normal",
+   "score": "4",
+   "caveat": "Gold weak on caramel; robe A2 off-centre; needs AI painting."
+  }
  },
  {
   "id": "SITHJ1-7",
@@ -9486,8 +9791,8 @@
   "blend": "-",
   "score": "-",
   "caveat": "Plain grey robe; needs robe base.",
-  "status": "DEFER",
-  "status_note": "needs robe base",
+  "status": "KEEP-UNI",
+  "status_note": "w5 fit: KEEP",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -9532,7 +9837,17 @@
    "B4",
    "C1",
    "D1"
-  ]
+  ],
+  "w5": {
+   "verdict": "KEEP",
+   "atlases": "n_jedirobem,n_jedicounm01,n_jedimemm01",
+   "cells": "A2,A3,B1,B3,C3,D1,D2;A1,A2,B3;A3,B2,C1,D2",
+   "stage": "S1H",
+   "scale": "1.00w",
+   "blend": "normal",
+   "score": "3",
+   "caveat": "Whole-robe grey recolour keeping fold value; skip belt, hem, pouch cells."
+  }
  },
  {
   "id": "SITHJ2-1",
@@ -9561,8 +9876,8 @@
   "blend": "-",
   "score": "-",
   "caveat": "Crest roundel on robe; needs robe base.",
-  "status": "DEFER",
-  "status_note": "needs robe base",
+  "status": "MERGE",
+  "status_note": "w5 fit: MERGE:SYM1-1",
   "canvas_rule": [
    "n_commf06",
    "n_commf08",
@@ -9585,7 +9900,17 @@
   "rule_cells": [
    "A1",
    "B1"
-  ]
+  ],
+  "w5": {
+   "verdict": "MERGE:SYM1-1",
+   "atlases": "-",
+   "cells": "-",
+   "stage": "-",
+   "scale": "-",
+   "blend": "-",
+   "score": "-",
+   "caveat": "Ring-and-mark roundel is the same design as SYM1-1; keep SYM1-1."
+  }
  },
  {
   "id": "SITHJ2-2",
@@ -9900,8 +10225,8 @@
   "blend": "-",
   "score": "-",
   "caveat": "Standard uniform colour block; needs uniform base.",
-  "status": "DEFER",
-  "status_note": "needs uniform base",
+  "status": "KEEP-UNI",
+  "status_note": "w5 fit: KEEP",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -9946,7 +10271,17 @@
    "B4",
    "C1",
    "D1"
-  ]
+  ],
+  "w5": {
+   "verdict": "KEEP",
+   "atlases": "pmbc01,pfbc01,n_repsold01",
+   "cells": "pmbc01:D1;pfbc01:A2;n_repsold01:D1",
+   "stage": "S1H",
+   "scale": "0.25",
+   "blend": "overlay",
+   "score": "4",
+   "caveat": "Recolours jacket cells only; collar and cuff greys unmapped"
+  }
  },
  {
   "id": "STRAT1-6",
@@ -10066,8 +10401,8 @@
   "blend": "-",
   "score": "-",
   "caveat": "Bendu circle on robe; near-duplicate of K148 (cog).",
-  "status": "DEFER",
-  "status_note": "needs robe base",
+  "status": "KEEP-UNI",
+  "status_note": "w5 fit: KEEP",
   "canvas_rule": [
    "n_commf06",
    "n_commf08",
@@ -10090,7 +10425,17 @@
   "rule_cells": [
    "A1",
    "B1"
-  ]
+  ],
+  "w5": {
+   "verdict": "KEEP",
+   "atlases": "n_jedimemm01,n_jedirobem",
+   "cells": "B2;A2",
+   "stage": "S1D",
+   "scale": "0.20w",
+   "blend": "normal",
+   "score": "4",
+   "caveat": "Ivory ring on caramel; dark-grey base absent; memm01 conf 2."
+  }
  },
  {
   "id": "SYM1-2",
@@ -10304,8 +10649,8 @@
   "blend": "-",
   "score": "-",
   "caveat": "Cross on robe breast; needs robe base.",
-  "status": "DEFER",
-  "status_note": "needs robe base",
+  "status": "KEEP-UNI",
+  "status_note": "w5 fit: KEEP",
   "canvas_rule": [
    "n_commf06",
    "n_commf08",
@@ -10328,6 +10673,16 @@
   "rule_cells": [
    "A1",
    "B1"
-  ]
+  ],
+  "w5": {
+   "verdict": "KEEP",
+   "atlases": "n_jedirobem,n_repoff01",
+   "cells": "A2;B1",
+   "stage": "S1D",
+   "scale": "0.18w",
+   "blend": "normal",
+   "score": "3",
+   "caveat": "Pale grey cross, no red; faction unverified; B1 is rank-bar slot."
+  }
  }
 ]

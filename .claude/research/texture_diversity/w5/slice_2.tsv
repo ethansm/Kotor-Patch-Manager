@@ -1,0 +1,11 @@
+id	name	type	zone	tier	palette	painting_prompt
+A7-01	Battle Circle blue armour recolour	COLOR	chest_center, upper_arm, shoulder_L, shoulder_R	A	steel blue, navy	Matte steel-blue recolour over chest and upper arms, with darker navy edge shading on plate seams. Flat paint, no gloss.
+A7-05	Clan Wren yellow outline shoulders	TRIM	shoulder_L, shoulder_R	A	bright yellow, black	Thin uniform yellow outline framing both shoulder plates, sharp corners, on black armour. Flat paint, no gradient.
+A7-06	Kama belt flap	HARDWARE	belt, hip_pocket	B	dark brown, rust	Flat dark-brown leather flap hanging across the hips, three painted horizontal bands, stitched edges, centred buckle. Matte paint.
+A7-09	Ubese bandolier and belt-clasp	HARDWARE	chest_center, belt	B	brass gold, dark leather	Diagonal flat-painted bandolier across the chest with six small brass pouch shapes, and a round brass belt-clasp at centre waist.
+MAND-1	Neo-Crusader gold and crimson officer armour	COLOR	whole_garment	A	gold, crimson	Flat painted gold armour plates for an officer's chest piece, with a crimson rank band along one edge; hard-edged, no faces, no helmets.
+MAND-2	Neo-Crusader blue and silver rank-and-file armour	COLOR	whole_garment	A	blue, silver	Matte blue armour plates for rank-and-file warriors, with a thin silver band for veterans; flat paint, no faces, no helmets.
+MAND-3	Mandalorian personal paint scheme and glyph	PATTERN	whole_garment	A	free choice, chunk names no colour here (use two of gold, crimson, blue, silver)	Armour plates in two colour blocks, one small clan sigil and one personal glyph added on the chest; flat paint, no faces, no helmets.
+MAND-4	Jaig eyes honour sigil	EMBLEM	chest_center	A	yellow, red	Small pair of stylized shriek-hawk eyes, bold outline, flat paint, centred on a dark armour plate; no helmet, no face.
+MAND-5	Clan Vizsla shriek-hawk emblem	EMBLEM	chest_center	A	black, silver (unsourced, chunk names no colour)	Single bold stylized shriek-hawk silhouette in flat black paint on a silver-grey armour plate, centred on the chest; no face.
+MAND-6	Kama coloured hem trim	TRIM	hem	A	grey, yellow, blue	Edge trim band along the hem of a flexible leather kilt-like skirt, contrasting colour, with one small personal marking; flat paint, no legs visible.

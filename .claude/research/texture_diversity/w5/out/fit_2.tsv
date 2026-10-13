@@ -1,0 +1,19 @@
+id	verdict	atlases	cells	stage	scale	blend	score	caveat
+A7-01	MERGE:MAND-2	-	-	-	-	-	2	Blue plate look duplicates MAND-2; paint once there.
+A7-05	KEEP	n_mandalorian01	01:A1,D2	S1D	0.25	normal	4	Assumes black armour; 01 base is steel blue. Right shoulder cell unconfirmed.
+A7-06	KEEP	n_mandalorian01;n_mandalorian02;n_mandalorian03	01:D3;02:D3;03:D3	S1D	0.25	normal	3	Tier B. Dark brown on 02/03; rust only on 01.
+A7-09	KEEP	n_mandalorian01;n_mandalorian02	01:B2,C2,D3;02:B2,C2,D3	S1D	0.5	normal	4	Tier B. Ubese faction unverified; clasp position approximate.
+MAND-1	KEEP	n_mandalorian01	01:A1,B2,C2,D2	S1H	0.5	overlay	4	S1H plates; crimson band (S1D) on D2 edge; visor B1 avoided.
+MAND-2	KEEP	n_mandalorian02;n_mandalorian03	02:A1,B2,C2,D2;03:B2,C2,D3	S1H	0.5	overlay	4	Blue replaces red/gold base; silver band weak on 02 cream trim.
+MAND-3	KEEP	n_mandalorian01;n_mandalorian02;n_mandalorian03	01:B2,C2,D2;02:B2,C2,D2;03:B2,C2	S2A	0.25	normal	4	Choose two of gold, crimson, blue, silver not on base.
+MAND-4	KEEP	n_mandalorian01	01:B2	S1D	0.15	normal	4	Steel-blue plate is mid-tone; eyes read; centre bars may cut.
+MAND-5	KEEP	n_mandalorian02;n_mandalorian03	02:B2;03:B2	S1D	0.3	normal	4	Silver-grey wanted; 02 B2 pale but red stripes; 03 B2 gold-cream.
+MAND-6	KEEP	n_mandalorian02;n_mandalorian03	02:A3,B3,C3;03:A3,B3,C3	S1D	0.25	normal	3	Hem sits near row 3/4 seam; belt strap avoided; verify overlay.
+
+## NOTES
+- Faction: A7 cards have no faction field; Mandalorian atlases assumed from clan and kama names. Confirm before painting.
+- Mandalorian 01/02/03 host every KEEP card; B2 and C2 are shared, so paint one scheme per atlas.
+- Skipped: Sith, Republic, TSF, Czerka, Jedi and Dark Jedi atlases (faction mismatch or cloth-only); heads and n_sithsoldier_b excluded.
+- All three Mandalorian atlases are confidence 3; cells are from 512 px previews on a plate-mosaic UV.
+- Ground truth needed: right shoulder (A7-05), hip D3 (A7-06, A7-09 clasp), and whether 02 A1 is shoulder (MAND-2).
+- MAND-4 and MAND-5 are both shriek-hawk chest emblems; split across 01 and 02/03 to avoid stacking.

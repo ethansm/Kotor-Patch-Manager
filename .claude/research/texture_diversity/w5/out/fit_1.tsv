@@ -1,0 +1,19 @@
+id	verdict	atlases	cells	stage	scale	blend	score	caveat
+A12-07	KEEP	n_czerkaoff01,pfbd02,pmbc01,n_tsfoff01,n_tsfoff_f01	n_czerkaoff01:D2;pfbd02:D1;pmbc01:D1;n_tsfoff01:C1;n_tsfoff_f01:D1	S1D	0.06	normal	3	Collar not covered; silver tabs weak on grey panels
+A1-03	KEEP	n_tsfcmdr01	n_tsfcmdr01:D1	S1D	0.12	normal	3	Tier C invented; cuff UV unverified; commander is senior rank
+A1-04	KEEP	n_czerkaoff01,n_czerkaoffc01,n_tsfoff_f01	n_czerkaoff01:D2;n_czerkaoffc01:D2;n_tsfoff_f01:C3	S1D	0.10	normal	3	Navy tab skipped on TSF navy; D2 and C3 touch plate edges
+A3-02	KEEP	n_repoff01,n_czerkaoffc01,n_tsfoff01,n_tsfoff_f01,n_tsfcmdr01	n_repoff01:B1;n_czerkaoffc01:B2;n_tsfoff01:C1;n_tsfoff_f01:C2;n_tsfcmdr01:D2	S1D	0.15	normal	3	Chest only; upper-arm cells unmapped; no dark-green base
+A8-02	KEEP	n_tsfoff01,n_tsfoff_f01,n_czerkaoff01,n_ond_off	n_tsfoff01:C1+D1;n_tsfoff_f01:C2+D1;n_czerkaoff01:B2;n_ond_off:D2(right edge)+C4	S1D	0.50	normal	4	Faction not stated; gold edges weak on light-grey panels
+A8-03	KEEP	n_tsfoff_f01,n_tsfoff01,n_ond_off	n_tsfoff_f01:B1+C3+D1;n_tsfoff01:B1+D1;n_ond_off:D1	S1D	0.05	normal	4	Tabs weak on slate; gold bars read; collar marks TSF only
+ONDER-1	KEEP	n_ondsoldm1	n_ondsoldm1:D1+A4	S1D	0.30	normal	4	Onderon label name-inferred; cuff zone unconfirmed
+ONDER-2	DROP:navy-grey vanishes on near-black slate of n_ond_off	-	-	-	-	-	1	n_ond_off already near-black slate; n_ondsoldm1 is soldier role
+ONDER-3	DROP:white drape already present on Onderon atlases	-	-	-	-	-	1	n_ondsoldm1 cream and n_ond_off white drapes already there
+REPUB-3	KEEP	n_repsold01,n_repoff01,n_tsfoff01,n_tsfoff_f01,n_czerkaoff01,n_tsfcmdr01	n_repsold01:D1;n_repoff01:A1;n_tsfoff01:C1;n_tsfoff_f01:B1;n_czerkaoff01:D2;n_tsfcmdr01:D2	S1D	0.12	normal	4	Design palette; side unverified; off-white only on navy or maroon
+STRAT1-5	KEEP	pmbc01,pfbc01,n_repsold01	pmbc01:D1;pfbc01:A2;n_repsold01:D1	S1H	0.25	overlay	4	Recolours jacket cells only; collar and cuff greys unmapped
+## NOTES
+- Not used as duplicates: n_repofff01 (= n_repoff01), n_tsfcmdr_f01 (= n_tsfcmdr01). Excluded head sheets: n_r_off_f01, n_medoff01, n_dockofd01; normal map n_sithsoldier_b.
+- Sith, Mandalorian, Jedi and Dark Jedi atlases unused: no clean faction match. A8-02 and A8-03 faction is not stated; check before any Sith atlas.
+- Czerka sleeve arc B3 is the leather plate, so no clean Czerka cuff cell for A1-03. Collar fields exist only on n_czerkaoff01 and n_czerkaoffc01 (D2) and n_tsfoff_f01 (C3).
+- Player outfits pmbc01, pfbc01 are neutral fields used for A12-07 and STRAT1-5; STRAT1-5 "standard issue" faction is unverified.
+- Near-duplicate check: ONDER-1 (gold piping, brown) and A1-03 (gold and navy bands) differ in colour and atlas; not merged. A12-07 and A8-03 differ in palette; not merged.
+- Ground truth needed: REPUB-3 shoulder side (UV mirror), all collar cells, and 256 px cell edges (about one cell).

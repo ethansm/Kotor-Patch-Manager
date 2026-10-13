@@ -1,0 +1,15 @@
+id	verdict	atlases	cells	stage	scale	blend	score	caveat
+A6-05	KEEP	n_ond_off;pmbc01;n_ondsoldm1	n_ond_off=C3,C4,D2,D3,A4;pmbc01=A3,B3,C3,B4,D1;n_ondsoldm1=A4,C4,D1	S1H	1.0	normal	4	Vaklu unmapped; neutral picks; Onderon names conf 3; pmbc01 is player atlas.
+ONDER-4	MERGE:A6-05	-	-	-	-	-	-	Same light-blue Vaklu suit as A6-05; officer name only.
+A8-01	KEEP	n_sithsoldier03;n_sithcom03	n_sithsoldier03=A1,B1,C1,D1;n_sithcom03=A1,B2	S1D	0.25	normal	3	Conf 3; avoid D1 arch outline; command atlas lacks right shoulder.
+SITHJ1-2	KEEP	n_sithsoldier02	n_sithsoldier02=A1,B1,C1,D1,D2,A3,B3,C3,A4,B4	S1H	1.0	normal	4	Silver-white on red plates; sithsoldier01 already white, skipped.
+SITHJ1-3	KEEP	n_sithsoldier01;n_sithsoldier03	n_sithsoldier01=A1,B1,C1,D1,D2,A3,B3,C3,A4,B4;n_sithsoldier03=A1,B1,C1,D1,D2,A3,B3,C3,A4,B4	S1H	1.0	normal	3	Skip sithsoldier02 (already red); copper seams need S1D pass.
+REPUB-4	KEEP	n_repoff01;n_czerkaoffc01;n_tsfoff01	n_repoff01=B1,C2,A3,B3,B4,D1;n_czerkaoffc01=A2,B2,C1,C2;n_tsfoff01=C1,A3,C4	S1H	1.0	normal	3	Officer atlas for trooper; tsfoff01 conf 2; orange piping clashes yellow.
+
+## NOTES
+- Vaklu faction is absent from the H files; A6-05 uses neutral Onderon and player atlases, so ground truth is needed.
+- Never usable here: n_repsold01 and n_repsold_f01 (red base swallows red), n_sithsoldier_b (normal map), and head sheets n_medoff01, n_dockofd01, n_r_off_f01.
+- Duplicates not used: n_repofff01 (= n_repoff01) and n_tsfcmdr_f01 (= n_tsfcmdr01).
+- n_sithsoldier03 is claimed by both A8-01 and SITHJ1-3; assign one slot each to avoid stacking recolours.
+- Name-only mapping is unverified in game data: Sith Trooper to sithsoldier, Commando to sithcom, Republic trooper to repoff01.
+- Cell maps are eyeballed from 512 px previews (H1-H9); confirm with a 4x4 overlay before painting.

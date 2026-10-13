@@ -1,0 +1,36 @@
+id	name	type	zone	tier	palette	painting_prompt
+A12-07	Rank pips and shoulder metal tabs	HARDWARE	collar, shoulder_L, shoulder_R	B	dull silver, dark grey	Small flat painted metal tabs on the collar and both shoulders, dull silver with a dark edge. Plain, no bright highlights.
+A1-03	Lieutenant cuff bands	TRIM	cuff	C	gold, navy	Two thick gold stripes circling each cuff, with a narrow navy stripe between them. Flat painted bands, crisp edges.
+A1-04	Navy collar stripes	TRIM	collar	B	white, navy	Two white stripes running along the collar edge, plus one navy tab at the front. Flat, sharp, painted on.
+A3-02	Paramilitary rank bars	TRIM	chest_center, upper_arm	B	pale grey, dark green	Two to four short horizontal bars stacked on the chest, pale grey on dark green fabric. Bars show rank. Plain flat stripes, no text.
+A6-05	Vaklu light blue battle armour	COLOR	whole_garment	A	light blue, dark grey	Recolor the garment light sky blue, matte, with armour-like panels. Plain surface, no patterns, no emblems or markings.
+A7-01	Battle Circle blue armour recolour	COLOR	chest_center, upper_arm, shoulder_L, shoulder_R	A	steel blue, navy	Matte steel-blue recolour over chest and upper arms, with darker navy edge shading on plate seams. Flat paint, no gloss.
+A7-05	Clan Wren yellow outline shoulders	TRIM	shoulder_L, shoulder_R	A	bright yellow, black	Thin uniform yellow outline framing both shoulder plates, sharp corners, on black armour. Flat paint, no gradient.
+A7-06	Kama belt flap	HARDWARE	belt, hip_pocket	B	dark brown, rust	Flat dark-brown leather flap hanging across the hips, three painted horizontal bands, stitched edges, centred buckle. Matte paint.
+A7-09	Ubese bandolier and belt-clasp	HARDWARE	chest_center, belt	B	brass gold, dark leather	Diagonal flat-painted bandolier across the chest with six small brass pouch shapes, and a round brass belt-clasp at centre waist.
+A8-01	Silver plate bands (Sith Trooper)	TRIM	chest_center, shoulder_L, shoulder_R	A	silver, charcoal, black	Bright silver metal plate bands across the chest and shoulders, riveted edges, dark gaps between plates, flat painted metallic sheen.
+A8-02	Crimson officer sash	TRIM	shoulder_R, chest_center	A	crimson, gold, black	Diagonal crimson sash running from right shoulder down across the chest, narrow gold edging on both sides.
+A8-03	Officer rank tabs and collar marks	EMBLEM	shoulder_L, shoulder_R, collar	A	dark red, gold, black	Small dark-red rank tabs with two gold bars on each shoulder; tiny red and gold marks at both collar points.
+MAND-1	Neo-Crusader gold and crimson officer armour	COLOR	whole_garment	A	gold, crimson	Flat painted gold armour plates for an officer's chest piece, with a crimson rank band along one edge; hard-edged, no faces, no helmets.
+MAND-2	Neo-Crusader blue and silver rank-and-file armour	COLOR	whole_garment	A	blue, silver	Matte blue armour plates for rank-and-file warriors, with a thin silver band for veterans; flat paint, no faces, no helmets.
+MAND-3	Mandalorian personal paint scheme and glyph	PATTERN	whole_garment	A	free choice, chunk names no colour here (use two of gold, crimson, blue, silver)	Armour plates in two colour blocks, one small clan sigil and one personal glyph added on the chest; flat paint, no faces, no helmets.
+MAND-4	Jaig eyes honour sigil	EMBLEM	chest_center	A	yellow, red	Small pair of stylized shriek-hawk eyes, bold outline, flat paint, centred on a dark armour plate; no helmet, no face.
+MAND-5	Clan Vizsla shriek-hawk emblem	EMBLEM	chest_center	A	black, silver (unsourced, chunk names no colour)	Single bold stylized shriek-hawk silhouette in flat black paint on a silver-grey armour plate, centred on the chest; no face.
+MAND-6	Kama coloured hem trim	TRIM	hem	A	grey, yellow, blue	Edge trim band along the hem of a flexible leather kilt-like skirt, contrasting colour, with one small personal marking; flat paint, no legs visible.
+ONDER-1	Onderon soldier gold piping	TRIM	cuff	A	gold, brown	Thin gold piping lines along the edges of a brown military uniform, crisp straight trim, flat paint.
+ONDER-2	Onderon officer blue-grey tunic	COLOR	whole_garment	A	very dark blue-grey, gold	Very dark blue-grey officer tunic, flat solid colour, faint fabric weave, matte finish.
+ONDER-3	Onderon soldier white shoulder wrap	COLOR	shoulder_L	A	white	Pale white wrap draped over both shoulders, soft folds, flat fabric shading, no pattern.
+ONDER-4	Vaklu officer light-blue battle suit	COLOR	whole_garment	A	light blue, grey	Light blue battle suit, flat even paint, subtle seam lines, dull matte finish.
+REPUB-3	Khoonda nine-spoke emblem	EMBLEM	shoulder_L	A	charcoal, off-white (design pick; no Khoonda colours in chunk)	Flat painted emblem: a central disc with spokes radiating from it, charcoal and off-white, sleeve-badge size, crisp edges, transparent background, no lettering.
+REPUB-4	Republic trooper red and yellow armour	COLOR	whole_garment	A	red, yellow, black	Flat painted armour colour scheme: red and yellow plates with hard edges over a black underlayer, bold blocks, no shading, no lettering.
+SITHJ1-1	Sith assassin hex charm	EMBLEM	chest_center	A	black, crimson	Small dark charm emblem with angular outline, centred on the chest, flat front view, black with crimson inlay, no text.
+SITHJ1-2	Sith trooper silver-white plating	COLOR	whole_garment	A	silver, white, black	Silver armor plates with white panels and black padded seams, flat front view, clean edges, no helmet, no text.
+SITHJ1-3	Sith Commando red and copper armor	COLOR	whole_garment	A	scarlet red, copper	Scarlet red armor plates with copper bands along the seams, flat front view, dark red shadows, no helmet, no text.
+SITHJ1-4	Jedi Master red robe	COLOR	whole_garment	A	deep red, crimson	Deep red Jedi robe in plain cloth, flat front view, soft fold shading, no emblem, no hood, no text.
+SITHJ1-5	Covenant purple robe, green hem	TRIM	hem	A	green, purple	Narrow green band along the bottom hem of a purple robe, flat front view, plain fabric, no emblem, no text.
+SITHJ1-6	Jedi Order winged-blade crest	EMBLEM	chest_center	A	gold, white	Gold winged blade of light emblem centred on the chest, flat front view, sunrise-shaped wings, white glow edge, no text.
+SITHJ1-8	Gray Jedi gray robe	COLOR	whole_garment	A	gray, charcoal	Plain gray Jedi robe, flat front view, soft fabric folds, muted gray tone, no emblem, no text.
+SITHJ2-1	Jedi crest roundel	EMBLEM	chest_center	A	cream, slate grey	Flat chest roundel: a thin ring around a simple centred mark, cream on slate grey, crisp edges, no shading.
+STRAT1-5	Standard-issue uniform colour block	COLOR	whole_garment	A	olive drab, dark grey	Plain standard-issue jacket in olive drab, matching dark grey collar and cuffs, no insignia, flat matte cloth.
+SYM1-1	Bendu eight-spoke circle	EMBLEM	chest_center	A	ivory, dark grey (design choice; chunk gives no colour)	Small flat emblem, a ring with eight even spokes radiating from its centre, ivory paint on dark grey robe fabric, crisp edges
+SYM1-5	Cross of Healing	EMBLEM	chest_left	A	pale grey, dark brown (design choice)	Equal-arm Swiss-style cross, flat painted pale grey on a dark brown robe breast, crisp edges, no red

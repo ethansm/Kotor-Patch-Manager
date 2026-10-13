@@ -1,0 +1,12 @@
+id	name	type	zone	tier	palette	painting_prompt
+A12-07	Rank pips and shoulder metal tabs	HARDWARE	collar, shoulder_L, shoulder_R	B	dull silver, dark grey	Small flat painted metal tabs on the collar and both shoulders, dull silver with a dark edge. Plain, no bright highlights.
+A1-03	Lieutenant cuff bands	TRIM	cuff	C	gold, navy	Two thick gold stripes circling each cuff, with a narrow navy stripe between them. Flat painted bands, crisp edges.
+A1-04	Navy collar stripes	TRIM	collar	B	white, navy	Two white stripes running along the collar edge, plus one navy tab at the front. Flat, sharp, painted on.
+A3-02	Paramilitary rank bars	TRIM	chest_center, upper_arm	B	pale grey, dark green	Two to four short horizontal bars stacked on the chest, pale grey on dark green fabric. Bars show rank. Plain flat stripes, no text.
+A8-02	Crimson officer sash	TRIM	shoulder_R, chest_center	A	crimson, gold, black	Diagonal crimson sash running from right shoulder down across the chest, narrow gold edging on both sides.
+A8-03	Officer rank tabs and collar marks	EMBLEM	shoulder_L, shoulder_R, collar	A	dark red, gold, black	Small dark-red rank tabs with two gold bars on each shoulder; tiny red and gold marks at both collar points.
+ONDER-1	Onderon soldier gold piping	TRIM	cuff	A	gold, brown	Thin gold piping lines along the edges of a brown military uniform, crisp straight trim, flat paint.
+ONDER-2	Onderon officer blue-grey tunic	COLOR	whole_garment	A	very dark blue-grey, gold	Very dark blue-grey officer tunic, flat solid colour, faint fabric weave, matte finish.
+ONDER-3	Onderon soldier white shoulder wrap	COLOR	shoulder_L	A	white	Pale white wrap draped over both shoulders, soft folds, flat fabric shading, no pattern.
+REPUB-3	Khoonda nine-spoke emblem	EMBLEM	shoulder_L	A	charcoal, off-white (design pick; no Khoonda colours in chunk)	Flat painted emblem: a central disc with spokes radiating from it, charcoal and off-white, sleeve-badge size, crisp edges, transparent background, no lettering.
+STRAT1-5	Standard-issue uniform colour block	COLOR	whole_garment	A	olive drab, dark grey	Plain standard-issue jacket in olive drab, matching dark grey collar and cuffs, no insignia, flat matte cloth.

@@ -1,0 +1,9 @@
+id	name	type	zone	tier	palette	painting_prompt
+SITHJ1-1	Sith assassin hex charm	EMBLEM	chest_center	A	black, crimson	Small dark charm emblem with angular outline, centred on the chest, flat front view, black with crimson inlay, no text.
+SITHJ1-4	Jedi Master red robe	COLOR	whole_garment	A	deep red, crimson	Deep red Jedi robe in plain cloth, flat front view, soft fold shading, no emblem, no hood, no text.
+SITHJ1-5	Covenant purple robe, green hem	TRIM	hem	A	green, purple	Narrow green band along the bottom hem of a purple robe, flat front view, plain fabric, no emblem, no text.
+SITHJ1-6	Jedi Order winged-blade crest	EMBLEM	chest_center	A	gold, white	Gold winged blade of light emblem centred on the chest, flat front view, sunrise-shaped wings, white glow edge, no text.
+SITHJ1-8	Gray Jedi gray robe	COLOR	whole_garment	A	gray, charcoal	Plain gray Jedi robe, flat front view, soft fabric folds, muted gray tone, no emblem, no text.
+SITHJ2-1	Jedi crest roundel	EMBLEM	chest_center	A	cream, slate grey	Flat chest roundel: a thin ring around a simple centred mark, cream on slate grey, crisp edges, no shading.
+SYM1-1	Bendu eight-spoke circle	EMBLEM	chest_center	A	ivory, dark grey (design choice; chunk gives no colour)	Small flat emblem, a ring with eight even spokes radiating from its centre, ivory paint on dark grey robe fabric, crisp edges
+SYM1-5	Cross of Healing	EMBLEM	chest_left	A	pale grey, dark brown (design choice)	Equal-arm Swiss-style cross, flat painted pale grey on a dark brown robe breast, crisp edges, no red
