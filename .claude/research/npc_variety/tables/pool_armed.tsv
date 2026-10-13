@@ -1,0 +1,72 @@
+resref	n_items	weapon_slot_filled	item_resrefs
+c_brith	1	true	g_w_crslash001
+c_ithorian	0	false	
+c_jawa	0	false	
+g_ithorian01	0	false	
+g_jawa01	0	false	
+n_bith	0	false	
+n_devaronian01	0	false	
+n_duros	0	false	
+n_gand	1	false	a_helmet_02
+n_gran	0	false	
+n_quarren01	0	false	
+n_rodian	0	false	
+n_sullustan01	0	false	
+n_trandobrn	0	false	
+n_trandogrn	0	false	
+n_tuskenf01	0	false	
+n_twilekf	0	false	
+n_twilekm	0	false	
+n_walrusman	0	false	
+n_weequay01	0	false	
+n_wookief	0	false	
+n_wookiem	0	false	
+n_repoff	0	false	
+n_repsold	0	false	
+n_repsold_bh01	0	false	
+n_tsfcmdr	0	false	
+n_tsfoff	0	false	
+n_czerkaoff	0	false	
+c_bantha	1	true	g_w_crslash005
+c_dewback	1	true	g_w_crslash005
+c_drexl_amb	1	true	g_w_crslash001
+c_firixa	1	true	g_w_crslash001
+c_hutt	0	false	
+c_iriaz	1	true	g_w_crslash001
+c_lightsaber	1	true	g_w_lghtsbr05
+c_ronto	1	true	g_w_crslash005
+c_seabeast	1	true	g_w_crslash001
+c_twohead	2	true	g_w_crslash001,g_w_crslash001
+g_bantha01	1	true	g_w_crslash005
+g_brith01	1	true	g_w_crslash001
+g_darkjedi005	1	true	g_w_drkjdisbr001
+g_dewback01	1	true	g_w_crslash005
+g_drexl_amb01	1	true	g_w_crslash001
+g_firixa01	1	true	g_w_crslash001
+g_hutt01	0	false	
+g_iriaz01	1	true	g_w_crslash001
+g_ronto01	1	true	g_w_crslash005
+g_seabeast01	1	true	g_w_crslash001
+g_thug01	3	true	g_a_class4001,g_w_blstrpstl001,g_w_stunbaton01
+g_thug03	3	true	g_a_class5001,g_w_blstrrfl001,g_w_stunbaton01
+n_admrlsaulkar	0	false	
+n_azkulh	0	false	
+n_calonord	9	true	g_a_class8005,g_w_hvyblstr04,g_w_hldoblstr03,g_a_class8005,g_w_hvyblstr03,g_w_vbroswrd03,g_i_medeqpmnt03,g_i_medeqpmnt03,g_i_medeqpmnt03
+n_coltobin	0	false	
+n_commf	0	false	
+n_commkidf	0	false	
+n_commkidm	0	false	
+n_commm	0	false	
+n_fatcomf	0	false	
+n_fatcomm	0	false	
+n_hussef	0	false	
+n_jedicounf	1	true	g_w_lghtsbr01
+n_jedicounm	1	true	g_w_lghtsbr03
+n_jedimemf	1	true	g_w_lghtsbr04
+n_jedimemm	1	true	g_w_lghtsbr05
+n_opochanno	0	false	
+n_repcap01	0	false	
+n_smuggler	1	false	g_a_clothes06
+n_stuntsaber01	0	false	
+ond_officer	3	true	g_a_class9001,g_w_rptnblstr01,g_w_vbroswrd01
+ond_soldier	3	true	g_a_class8001,g_w_hvyblstr01,g_w_lngswrd01

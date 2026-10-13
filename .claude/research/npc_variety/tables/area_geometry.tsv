@@ -1,0 +1,7 @@
+module	n_waypoints	n_creatures	n_wok	walkable_faces	notes
+302nar	50	69	35	739	GIT from .mod; rim GIT wp=24 cre=67; LYT rooms=35; faces total=3429; WOK from Override=1
+301nar	135	41	12	578	GIT from .mod; rim GIT wp=129 cre=34; LYT rooms=12; faces total=1631; WOK from Override=1
+682dan	21	2	21	559	GIT from .mod; LYT rooms=21; faces total=1767; WOK from Override=21
+207tel	17	32	2	196	GIT from .mod; LYT rooms=2; faces total=526; WOK from Override=2
+203tel	93	20	16	371	GIT from .mod; LYT rooms=16; faces total=1691; WOK from Override=14
+204tel	48	17	7	344	GIT from .mod; rim GIT wp=48 cre=16; LYT rooms=7; faces total=801; WOK from Override=6

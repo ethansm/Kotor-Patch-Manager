@@ -1,7 +1,7 @@
 # 40 NPC behaviour variety: extra walkers, scripted encounters, animation
 
 ## Status
-- **State: research phase V0 done (2026-10-13); nothing built, nothing installed.** Next: V1 (static gap closing, no game).
+- **State: V0 and V1 done (2026-10-13); nothing built, nothing installed.** Next: V4 (visit salt, host build) or V2 (live probe, needs user GO).
 - Origin (user, 10-12/13): doc 34 only changes how generic commoners look. Goal: a section should not feel the same every pass. (a) randomize NPC animations/actions; (b) randomly add walking aliens, TSF agents, Czerka NPCs among plain commoners; (c) later, small random scripted events (example: TSF agents chasing and shooting at an outlaw across the station; runner and chasers invincible, hasted, combat disabled), possibly with K1 NPC audio/dialog.
 - Evidence: Haiku wave `w9-npcvar` (12 recon units, all PARTIAL), raw findings copied to `.claude/research/npc_variety/u01..u12.md`, animation inventories `u03_anims.txt` and `u03b_target_rows.txt`. Web prior-art searches (10-13) summarized in section 5. Memory: `kotor2-npc-behaviour-variety-idea`.
 - Related docs: 34 (appearance dispatcher), 35 (`35_npc_add_poc.md`, spawn routes U1-U11), 38 (K1 import, native spawn probe T25, licence policy section 8), `.claude/research/npc_add/` (R1-R6, poc/).
@@ -50,10 +50,49 @@
 | ID | Phase | State |
 |---|---|---|
 | V0 | Research wave w9-npcvar (12 Haiku units), web prior art, this doc | DONE |
-| V1 | Close static gaps with Haiku recon (no game): vanilla script animation calls and flag meanings, UTC ItemList armed status for the pool, waypoint/walkmesh counts for candidate areas, quest-script tag scan, `+0x11AC` persistence decode and save-load path (REA) | TODO |
+| V1 | Close static gaps with Haiku recon (no game): vanilla script animation calls and flag meanings, UTC ItemList armed status for the pool, waypoint/walkmesh counts for candidate areas, quest-script tag scan, `+0x11AC` persistence decode and save-load path (REA) | DONE (section 7) |
 | V2 | Live probe design and build (needs user GO): OID stability across loads, hook-spawn persistence in saves, save-load reset, object count and frame cost | TODO |
 | V3 | Pool and roster spec: group pools, area eligibility table, spawn budget, per-species walk speeds | TODO |
 | V4 | Visit-salt change in doc 34 code (host tests, build only) and doc 34 section 3.2.2 update | TODO |
 | V5 | Scripted-encounter feasibility: can the patch run or trigger scripts, effect/flag building blocks, K1 audio licence and format path | TODO |
 | V6 | Animation randomization feasibility: script (flag 109 / local 29) versus native (`Gob::PlayAnimation 004e3270`) | TODO |
 | V7 | Opus gate: choose build order, write the master plan, retire or merge the doc 35 routes | TODO |
+
+## 7. V1 results (2026-10-13; static, no game, nothing installed)
+Evidence: wave `w10-40-V1` (copies in `.claude/research/npc_variety/v1/u01..u06.md`), tables `.claude/research/npc_variety/tables/*.tsv`, tools `scripts/dump_game_scripts.py`, `scripts/npcvar_tables.py`, `scripts/npcvar_utc_geom.py`. Scratch (untracked): `.claude/scratch_npcvar/nss` (13 core scripts), `nss_all` (638 sources), `nwscript/nwscript.nss`.
+
+### 7.1 Ground truth changed: real NSS sources exist
+`Scripts.bif` ships the original `.nss` (all `k_inc_*`, 638 scripts). `dump_game_scripts.py` reads them as-is; the 192 NCS-only scripts cannot be decompiled (this venv's pykotor lacks the `dencs` package). Earlier "no `.nss` on disk" is wrong; everything below cites source lines.
+
+### 7.2 Answers to the OPENs
+| OPEN | Answer | Evidence |
+|---|---|---|
+| Animation ids vanilla plays | Ambient pause = random d8 per waypoint (`GN_PlayWalkWaysAnimation`): FIREFORGET_PAUSE_BORED 103, SCRATCH_HEAD 102, LOOPING_PAUSE2 1 (3 s or 5 s), LOOPING_PAUSE3 24 (male 20.4 s, female 13.3 s), HEAD_TURN_LEFT/RIGHT 100/101. Friend-nearby: TALK_NORMAL 5, TALK_LAUGHING 8, TALK_FORCEFUL 7. Mobile: PAUSE2 2 s, TAUNT 107, VICTORY1 108, else ActionRandomWalk. Also SALUTE 104, BOW 105, GREETING 106 exist. | `k_inc_walkways.nss:608-659`, `k_inc_generic.nss:3162-3254`, `nwscript.nss:1274-1342` |
+| Ids vs `animations.2da` | `ANIMATION_*` value = `animations.2da` row (LOOPING 0-46, FIREFORGET 100+). Row-to-name check against the 2da is still unverified. | `nwscript.nss` |
+| Per-waypoint animation | Flag 109 `SW_FLAG_USE_WAYPOINT_ANIMATION` + `SetLocalNumber(self, 29, animId)` -> `ActionPlayAnimation(GetLocalNumber(self,29), 1.0, nRand)` queued behind the move; else `ActionWait`. Local 29 and flag 29 `AMBIENT_ANIMATIONS` share a key (author warns). | `k_inc_walkways.nss:275-291`, `k_def_spawn01.nss:52-58` |
+| What clears queued anims | The walkways path never clears; `k_inc_generic` clears (`ClearAllActions`) before friend-nearby and mobile anims (3162, 3234); move helpers use `AssignCommand(o, ClearAllActions())` (walkways 387/440/493). | as listed |
+| Flag meanings (live set) | Stored as `SetLocalBoolean(self, flagNumber)`. 29 AMBIENT_ANIMATIONS, 65 AMBIENT_ANIMATIONS_MOBILE, 98 START_AT_NEAREST, 99 WALK_ONCE, 100 CIRCULAR, 101 PATH, 102 PAUSE_SHORT (1-3 s), 103 WALK_RANDOM, 104 RUN, 105 DIRECTION, 106 DEACTIVATE (set by the walker itself after WALK_ONCE), 107 PAUSE_LONG (4-6 s per spawn01; ambient.nss says 6-12, unresolved), 108 PAUSE_RANDOM, 109 USE_WAYPOINT_ANIMATION. The "duplicate" numbers (30, 34-39, 41-42, 46-47, 73) sit in a commented block. Generic AI flags: 85 COMMONER_BEHAVIOR, 86 SPECTATOR_STATE, 87 AI_OFF (the 60-62 set is in a commented block). | `k_inc_walkways.nss:15-52`, `k_inc_generic.nss:59-119` |
+| UTC VarTable preset of those locals | OPEN (engine side): needs proof that a UTC VarTable Int/bool entry lands in the store `GetLocalBoolean` reads. Probe item P1. `k_def_spawn01` calls `GN_WalkWayPoints()` unconditionally and sets no walk flags (documented default: repeat forever, waypoints named by creature tag). | `k_def_spawn01.nss:31-65,113` |
+| Blank conversation | `k_def_dialogue01` forwards to `k_ai_master` event 1004, which calls `BeginConversation()` with no resref check (ActionStartConversation only when the COMPUTER flag is set). Engine result with a blank resref: OPEN, probe P2. | `k_ai_master.nss:181-262` |
+| Attack on a faction-5 creature | Scripts never change faction/reputation. 1005 always shouts GEN_I_WAS_ATTACKED, then (commandable, not AI_OFF, idle) calls `GN_DetermineCombatRound`, which attacks only the nearest REPUTATION_TYPE_ENEMY or the given intruder, and does nothing at all if COMMONER_BEHAVIOR, SPECTATOR_STATE or AI_OFF is set. 1006 approaches only a `GetIsEnemy` damager. No flee branch. So a neutral stays neutral in script; whether the engine flips faction/reputation on attack is OPEN (probe P3, doc 35 U4). Death shouts GEN_I_AM_DEAD, nothing else. | `k_ai_master.nss:266-380`, `k_inc_generic.nss:261-330` |
+| Combat-off for scripted actors | Set flag 87 AI_OFF (or 85 COMMONER_BEHAVIOR) on the actor: `GN_DetermineCombatRound` is skipped. Fits "chase scene, combat off". | `k_inc_generic.nss:281-285` |
+
+### 7.3 Scripted-encounter building blocks (K2 routine table, ids = list index)
+DelayCommand 7, ExecuteScript 8, ActionAttack 37, PlaySound 46, SetFacingPoint 143, SetCommandable 162, ChangeFaction 173, ApplyEffectToObject 220 (nDurationType, eEffect, oTarget, fDuration), ActionSpeakStringByStrRef 240 (nStrRef, nTalkVolume), DestroyObject 241, CreateObject 243 (nObjectType, sTemplate, lLocation, bUseAppearAnimation), EffectHaste 270, SetIsDestroyable 323, ActionForceMoveToLocation 382 (lDestination, bRun, fTimeout), SoundObjectPlay 413, SetPlotFlag 456, ActionCastFakeSpellAtObject 501, CutsceneAttack 503. `SetImmortal` does not exist in K2: use `SetPlotFlag(o, TRUE)` (456) or `SetMinOneHP` (716, params oObject, nMinOneHP). Source: `u04.md`.
+
+### 7.4 Tables (pool, armed, geometry)
+- `pool_candidates.tsv`: 71 chitin faction-5 blank-conversation templates (22 alien, 5 tsf, 1 czerka, 43 other; the "other" group contains `g_*`/`c_*` creatures, filter them out in V3 by humanoid body).
+- `pool_armed.tsv`: 28 of 71 have a weapon slot filled; 16 have `CLAW3` (natural weapon), so true armed status needs a weapon-slot-only filter in V3. No pool UTC uses the TSL-only second-hand slots.
+- `area_commoners.tsv` matches u08 for the 6 target modules (strict commoner counts 302nar 19, 301nar 11, 207tel 12, 203tel 8, 204tel 5, 682dan 15).
+- `area_geometry.tsv` (waypoints / creatures / walkable faces): 302nar 50/69/739, 301nar 135/41/578, 682dan 21/2/559, 207tel 17/32/196, 203tel 93/20/371, 204tel 48/17/344. The `.mod` GIT is the live one (302nar rim GIT has 24 waypoints vs 50 in the `.mod`). 301nar and 203tel have the most waypoints to piggyback on for script-free walking; 207tel is geometry-poor (196 walkable faces).
+
+### 7.5 Native questions (REA + local DB)
+- VERIFIED: `SaveCreatures` (0x0052A600) writes a creature only when `[obj+0x11AC]==0` and `[obj+0x11FC]==0`; either nonzero = skipped on save (field meanings OPEN). The save-resume path in 0x00533830 calls `LoadModuleInProgress` (0x0055A460) directly; the copy path (0x531BE0 -> 0x556670 -> 0x5582F0) does not.
+- OPEN: RemoveFromArea/destroy function and convention; whether runtime-created creatures join the `SaveCreatures` list (CreateObject 0x0066F990 passes area+position to 0x00568BD0, not the new creature; area save 0x00529DD0 builds its list from area+0x194/+0x198); native run-script-by-resref and apply-effect entry points. The Steam address of `ExecuteCommandExecuteScript` is 0x00679050 (the local DB maps it to GOG 0x0078e630); `RunScript` is known only at GOG 0x00640af0/0x00645549 (needs Steam mapping). `Gob::PlayAnimation` 0x004E3270 is `(char* name, float, uint flags, float)`, thiscall; its only direct caller is 0x0045A190 (clear with "NULL"); the VM `ActionPlayAnimation` handler and default-idle setter (candidate FUN_00918420, "pause1" at 0x0099F35C) are unconfirmed. REA cost: E1 154k, E2 149k tokens (both blocked once on path/session, rerun). Stop REA here; V2 probes cover the rest empirically.
+- Audio (u05): repo policy says vanilla K1 files stay local, never committed or redistributed; unknown licence counts as needing approval; no audio ingest path exists. A subtitle-only bark = `ActionSpeakStringByStrRef(strref, vol)` with a strref appended via `scripts/append_ranged_kite_tlk.py`, script compiled with `compile.sh`, shipped as an override `.ncs` (pattern proven for `k_def_heartbt01`, T19). Appended-strref playback untested. `.wav/.lip/.ssf` formats and paths are OPEN.
+
+### 7.6 Revised V2 probe list (needs user GO + pre-visit save)
+P1 VarTable-preset walker with a stock `k_def_spawn01` OnSpawn (no script change): does it walk the area's `WP_<tag>_NN` waypoints. P2 blank-conversation template: click it. P3 shoot a spawned faction-5 template: does it turn hostile. P4 hook-spawned creature across save/load (OID, persistence, `+0x11AC/+0x11FC` values). P5 AI_OFF (87) on a spawned actor plus `SetPlotFlag`/`EffectHaste`/`ActionForceMoveToLocation` from a script. P6 `ActionSpeakStringByStrRef` with an appended strref. P7 RemoveFromArea on a spawned creature when the area exits.
+
+### 7.7 Recon caveats
+Haiku units u01-u03, u05, u06 all returned PARTIAL (they stay inside the read ranges); I closed the gaps from source myself (flag blocks, ANIMATION constants, `GN_DetermineCombatRound`). u04 failed on a bad entry range; I answered it directly. T3 peaked at 115k tokens (over the 100k ceiling).
