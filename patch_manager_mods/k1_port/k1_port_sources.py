@@ -34,7 +34,7 @@ HERE = Path(__file__).resolve().parent
 SCHEMA = 1
 APPROVAL_CLASSES = frozenset({"permission_required", "personal_use_only", "unknown"})
 REMOVAL_PENDING = "pending_author_approval"
-KINDS = ("texture", "model", "other")
+KINDS = ("texture", "model", "audio", "other")
 DEFAULT_LEDGER = "~/Games/KOTOR2_Mod_Workspace/k1_port_stage/ledger.json"
 
 

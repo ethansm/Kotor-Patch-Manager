@@ -36,7 +36,7 @@ sys.path.insert(0, str(HERE))
 import k1_port_sources as ks  # noqa: E402
 from k1_port_sources import KINDS, REMOVAL_PENDING, Ledger, SourceError  # noqa: E402
 
-ASSET_SUFFIXES = (".tpc", ".tga", ".mdl", ".mdx")
+ASSET_SUFFIXES = (".tpc", ".tga", ".mdl", ".mdx", ".wav", ".mp3", ".lip", ".ssf")
 FORBIDDEN_PARTS = ("steamapps/common", "compatdata")
 
 

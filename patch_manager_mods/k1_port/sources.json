@@ -22,6 +22,20 @@
       "local_dir": "~/.local/share/Steam/steamapps/common/swkotor",
       "notes": "Converted locally from the user's own install at conversion time. Never committed or redistributed from the repo."
     },
+    "vanilla_k2": {
+      "name": "KotOR 2 vanilla game files (Obsidian/Aspyr)",
+      "author": "Obsidian Entertainment",
+      "url": "https://store.steampowered.com/app/208580/",
+      "license_class": "vanilla",
+      "requires_author_approval": false,
+      "credits": [
+        "Obsidian Entertainment",
+        "Aspyr"
+      ],
+      "evidence": "user's own Steam install, appid 208580",
+      "local_dir": "~/.local/share/Steam/steamapps/common/Knights of the Old Republic II",
+      "notes": "Source for derived voice/audio clips (kvoice). Derivatives of vanilla audio are personal-use only: kvoice forces personal_only/local_only on any ledger row whose parent is vanilla_*. Never committed or redistributed from the repo."
+    },
     "leilukin_k1_twilek_f_2179": {
       "name": "KotOR 1 Twi'lek Female NPC Diversity 1.1.0 (DeadlyStream file 2179)",
       "author": "Leilukin",
