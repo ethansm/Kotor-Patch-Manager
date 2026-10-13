@@ -1,5 +1,6 @@
 # 35 NPC-add PoC: one custom NPC per species in Telos Residential West
 
+Status (10-13, V7): superseded as the spawn route by doc 40 section 11.2. The .mod GIT route and Route A are retired; the patch-only H2 route (U11) is the adopted one. U1-U3/U8 retired, U4->P3, U5->V2b, U10->capacity stage. Builders and tests stay as a fallback toolbox. Gate 1 not given, nothing installed.
 Status (10-11): Wave 1 recon done. Wave 2 build in progress (scripts below are not on disk yet). Nothing installed. Gate 1 (user GO for the live write) not given.
 Sources: `.claude/plans/npc_add_poc.md`, `.claude/research/npc_add/00_summary.md`, `.claude/research/npc_add/poc/P6_test_verify.md`, Wave 1 results in the plan (lines 45-52).
 Unknowns are marked OPEN. Nothing here is verified in game.

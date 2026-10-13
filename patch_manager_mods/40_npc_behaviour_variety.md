@@ -1,7 +1,7 @@
 # 40 NPC behaviour variety: extra walkers, scripted encounters, animation
 
 ## Status
-- **State: V0, V1, V3, V4, V5 and V6 done (2026-10-13); V5 = scripted-encounter feasibility in section 10 (data-first route: Plot/Min1HP UTC templates plus faction pair 11/12 plus engine AI; fallback user-installed override `.ncs`; probes P11-P15; host-only, nothing installed); V6 = animation feasibility in section 9 (native `PlayAnimation` injector recommended, two generated tables, no DLL); V3 = pool and roster spec in section 8 (host-only, tables + 2 tested scripts, no DLL); V4 = visitSalt in doc 34 hash, host tests + build only, salt unwired, option `visit_variety` in npc-diversity.ini (default 0 = same look), nothing installed.** Next: V2 live probe (needs user GO and a pre-visit save; now includes P8-P15) or V7 build order (host-only).
+- **State: V0, V1, V3, V4, V5, V6 and V7 done (2026-10-13); V7 = master plan in section 11 (build order NB1-NB5, doc 35 merged); V5 = scripted-encounter feasibility in section 10 (data-first route: Plot/Min1HP UTC templates plus faction pair 11/12 plus engine AI; fallback user-installed override `.ncs`; probes P11-P15; host-only, nothing installed); V6 = animation feasibility in section 9 (native `PlayAnimation` injector recommended, two generated tables, no DLL); V3 = pool and roster spec in section 8 (host-only, tables + 2 tested scripts, no DLL); V4 = visitSalt in doc 34 hash, host tests + build only, salt unwired, option `visit_variety` in npc-diversity.ini (default 0 = same look), nothing installed.** Next: V2a (host-only combined probe build, extends `k1_spawn_probe_src`), then V2b (live; needs user GO and a pre-visit save).
 - Origin (user, 10-12/13): doc 34 only changes how generic commoners look. Goal: a section should not feel the same every pass. (a) randomize NPC animations/actions; (b) randomly add walking aliens, TSF agents, Czerka NPCs among plain commoners; (c) later, small random scripted events (example: TSF agents chasing and shooting at an outlaw across the station; runner and chasers invincible, hasted, combat disabled), possibly with K1 NPC audio/dialog.
 - Evidence: Haiku wave `w9-npcvar` (12 recon units, all PARTIAL), raw findings copied to `.claude/research/npc_variety/u01..u12.md`, animation inventories `u03_anims.txt` and `u03b_target_rows.txt`. Web prior-art searches (10-13) summarized in section 5. Memory: `kotor2-npc-behaviour-variety-idea`.
 - Related docs: 34 (appearance dispatcher), 35 (`35_npc_add_poc.md`, spawn routes U1-U11), 38 (K1 import, native spawn probe T25, licence policy section 8), `.claude/research/npc_add/` (R1-R6, poc/).
@@ -51,12 +51,17 @@
 |---|---|---|
 | V0 | Research wave w9-npcvar (12 Haiku units), web prior art, this doc | DONE |
 | V1 | Close static gaps with Haiku recon (no game): vanilla script animation calls and flag meanings, UTC ItemList armed status for the pool, waypoint/walkmesh counts for candidate areas, quest-script tag scan, `+0x11AC` persistence decode and save-load path (REA) | DONE (section 7) |
-| V2 | Live probe design and build (needs user GO): OID stability across loads, hook-spawn persistence in saves, save-load reset, object count and frame cost | TODO |
+| V2 | Live probe design and build (needs user GO): OID stability across loads, hook-spawn persistence in saves, save-load reset, object count and frame cost | TODO (V2a host build, V2b live; stages P1-P15 + capacity; see section 11) |
 | V3 | Pool and roster spec: group pools, area eligibility table, spawn budget, per-species walk speeds | DONE (section 8) |
 | V4 | Visit-salt change in doc 34 code (host tests, build only) and doc 34 section 3.2.2 update | DONE (host tests + build; salt unwired, V4b = area-entry source after V2) |
 | V5 | Scripted-encounter feasibility: can the patch run or trigger scripts, effect/flag building blocks, K1 audio licence and format path (audio/voice side researched 2026-10-13: see doc 41) | DONE (section 10; data-first route, override-`.ncs` fallback, P11-P15 added to V2) |
 | V6 | Animation randomization feasibility: script (flag 109 / local 29) versus native (`Gob::PlayAnimation 004e3270`) | DONE (section 9; native route recommended, P8-P10 added to V2) |
-| V7 | Opus gate: choose build order, write the master plan, retire or merge the doc 35 routes | TODO |
+| V7 | Opus gate: choose build order, write the master plan, retire or merge the doc 35 routes | DONE (section 11; build order NB1-NB5, doc 35 merged) |
+| NB1 | Visit salt wiring (V4b): `visit_variety` source = area-entry latch | TODO |
+| NB2 | Animation injector (`anim_variety`) | TODO |
+| NB3 | Extra walkers (`walker_variety`) | TODO |
+| NB4 | Scripted encounter, route (a) (`encounter_variety`) | TODO |
+| NB5 | Encounter fallback, override `.ncs` (only if P12/P14 fail) | TODO (conditional) |
 
 ## 7. V1 results (2026-10-13; static, no game, nothing installed)
 Evidence: wave `w10-40-V1` (copies in `.claude/research/npc_variety/v1/u01..u06.md`), tables `.claude/research/npc_variety/tables/*.tsv`, tools `scripts/dump_game_scripts.py`, `scripts/npcvar_tables.py`, `scripts/npcvar_utc_geom.py`. Scratch (untracked): `.claude/scratch_npcvar/nss` (13 core scripts), `nss_all` (638 sources), `nwscript/nwscript.nss`.
@@ -199,3 +204,69 @@ Voice and barks for the event are owned by doc 41 (sections 3 and 6: architectur
 
 ### 10.6 Open (not claimed)
 Calling convention of `0x006FD8D0` (one `rea-recon` run, T6 skipped; P11 answers it empirically). Whether KPM ships a new `.utc` or only chitin-pool resrefs. Behaviour of predator/prey AI. Module scripts (not in the corpus) may still contain `FAI_*` users; regenerate with `scripts/dump_game_scripts.py --out <dir> --all` if that matters.
+
+## 11. V7 results (2026-10-13; docs only, nothing installed)
+Opus gate. Origin order was a (animation), b (walkers), c (events); built in value x risk order below. One probe DLL, one detour set per address (`0x568BD0/0x55A460/0x533830`): extend `k1_spawn_probe_src`, never a second DLL.
+
+### 11.1 Build order
+| Phase | Goal | Gate probes | ini switch | Size | Rollback |
+|---|---|---|---|---|---|
+| V2a | Combined probe DLL: P1-P15 + capacity as ini-selected stages (host tests + build gate only) | none (host) | stage key in probe ini | ~1-2 days | not installed |
+| V2b | Run the stages live; results fill 11.4 | needs user GO | probe ini | ~1 play session | remove probe mod, restore `npc-diversity` |
+| NB1 | Visit salt wiring: salt from area-entry latch (H2 + POP-STABLE ~33 ticks, 7/7 loads) | none beyond proven latch | `visit_variety` | ~0.5 day | switch 0 |
+| NB2 | Animation: native `PlayAnimation 0x004E3270` injector, new Mix salts 11+ | P8, P9, P10 | `anim_variety` | ~1-2 days | switch 0 |
+| NB3 | Extra walkers: hook spawn from pool, cap 4 until capacity measured | P1, P2, P3, P4, P7, capacity | `walker_variety` | ~2-3 days | switch 0 |
+| NB4 | Scripted encounter, route (a) of section 10 (Plot/Min1HP templates + faction 11/12 + engine AI) | P12, P14, P15 | `encounter_variety` | ~2 days | switch 0 |
+| NB5 | Encounter fallback, route (c): user-installed override `.ncs` (T19 pattern), not KPM-shippable; only if P12 or P14 fails, user decides then | P5, P13 | `encounter_variety` | ~2 days | delete override |
+| Audio | Doc 41 V-C / E1-E8 and kvoice, own track; joins NB4 only after the E-ladder passes, else subtitle-only | E1-E8 | doc 41 | per doc 41 | per doc 41 |
+
+New Mix salts: V3 salts start at 7 (1-6 used); animation uses 11+.
+
+### 11.2 Doc 35 disposition (MERGE, nothing deleted)
+| Route | Fate | Reason | Its U-questions |
+|---|---|---|---|
+| `.mod` GIT edit ("C hybrid", builders `npc_add_build_git.py`, `npc_add_build_utc.py`, `npc_add_waypoints.py`, `npc_add_install.py`, `check_npc_add.py`, wave 2 build 84ca69a) | Retired as primary; kept as fallback toolbox (UTC and waypoint builders reused for NB3/NB4 templates) | Fixed per install and per save-visit (no per-visit variety), writes the user's `Modules/204tel.mod`, needs U1/U2/U8 answers, gives every unvisited save the NPCs | U1, U2, U3, U8 RETIRED (reopen only if P4 shows hook spawns do not survive) |
+| Route A (override UTC `k_def_spawn01` CreateObject) | Retired | Not KPM-shippable (R5), spawn-script firing unresolved | same |
+| Patch-only H2 hook (U11) | Adopted = doc 40 spawn route (NB3) | Per-visit variety, KPM-shippable, latch proven | U11 -> P1/P4/P7 |
+
+Other mappings: U4 -> P3; U5 -> V2b pre-visit save; U6 -> packaging item in NB3 (loose Override files, Twi'lek F 47 / Trandoshan 464); U7 -> UTC soundset check in NB3 (soundset 35); U9 -> NB3 Tier 2 model path; U10 -> capacity stage. Doc 35 Gate 1 (live `.mod` write) stays NOT GIVEN and is now moot.
+
+### 11.3 Probe to phase map
+- NB3: P1 (VarTable walker with stock `k_def_spawn01`), P2 (blank-conversation click), P3 (shoot a faction-5 spawn), P4 (hook-spawn across save/load: OID, `+0x11AC/+0x11FC`), P7 (RemoveFromArea on area exit), capacity 1/6/18.
+- NB2: P8-P10 (section 9.5).
+- NB4: P12, P14, P15 (section 10.4).
+- NB5 or later: P5 (AI_OFF + plot + haste from script), P6 (`ActionSpeakStringByStrRef` strref), P11, P13.
+- P1/P4 also decide whether doc 35 U1-U3 reopen.
+
+### 11.4 V2b result slots (fill after the live run)
+| Probe | Result (true/false) | Evidence |
+|---|---|---|
+| P1 | | |
+| P2 | | |
+| P3 | | |
+| P4 | | |
+| P5 | | |
+| P6 | | |
+| P7 | | |
+| P8 | | |
+| P9 | | |
+| P10 | | |
+| P11 | | |
+| P12 | | |
+| P13 | | |
+| P14 | | |
+| P15 | | |
+| Capacity 1/6/18 | | |
+
+### 11.5 Live-step gates
+- User GO (never inferred).
+- Game closed for any install or hot-swap.
+- D0 pause lifted: OPEN, the repo has no record it is lifted.
+- Pre-visit save slot named by the user (none proven; candidates Game1/5/8).
+- Play tests belong to the user, not the agent.
+
+### 11.6 Residual risks
+- TSF/Czerka hostile at plot moments: spawned creatures are forced to faction 5 and areas are whitelisted; covered by P3.
+- Mod conflicts: Doodmane444, Drew, Leilukin, Kreia robes (section 2).
+- `261tel` AddToArea branch differs from `204tel`.
+- One detour set per address: probe and `npc-diversity` hooks cannot be live together on `0x568BD0/0x55A460/0x533830` (`area-hook-probe` was removed in T26 for this reason).
