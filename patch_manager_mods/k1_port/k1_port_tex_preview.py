@@ -282,7 +282,12 @@ def load_texture(tex_dir: Path, resref: str):
     if tga.is_file():
         from PIL import Image
 
-        return np.asarray(Image.open(tga).convert("RGB"))
+        arr = np.asarray(Image.open(tga).convert("RGB"))
+        # PIL returns top-row-first, undoing a bottom-origin TGA's row order; sampling expects the stored order
+        # (same as a TPC), so put a bottom-origin file back (descriptor bit 5 clear)
+        with tga.open("rb") as fh:
+            head = fh.read(18)
+        return arr if len(head) == 18 and head[17] & 0x20 else np.ascontiguousarray(arr[::-1])
     if tpc.is_file():
         blob = tpc.read_bytes()
         try:

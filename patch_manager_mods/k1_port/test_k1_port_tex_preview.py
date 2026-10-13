@@ -436,6 +436,18 @@ def test_compare_sheets_end_to_end_and_placeholder():
         assert (out / "cli" / "compare_00.png").is_file()
 
 
+def test_load_texture_tga_origin_uses_stored_row_order():
+    """Rows are returned as stored, whichever origin flag the TGA has (the TPC convention); a bottom-origin
+    file used to come back flipped, which scrambled every head and body skin shipped as TGA."""
+    with tempfile.TemporaryDirectory() as td:
+        for name, desc in (("bottom", 0x00), ("top", 0x20)):
+            hdr = bytes([0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 24, desc])
+            rows = bytes([0, 0, 255] * 2) + bytes([255, 0, 0] * 2)  # stored row 0 = red (BGR), row 1 = blue
+            (Path(td) / f"{name}.tga").write_bytes(hdr + rows)
+            got = pv.load_texture(Path(td), name)
+            assert tuple(got[0, 0]) == RED and tuple(got[1, 0]) == BLUE, (name, got.tolist())
+
+
 def test_dump_model_signature_keeps_old_keys():
     import inspect
 
@@ -474,6 +486,7 @@ TESTS = [
     test_helmet_sheets_cli_inputs_and_end_to_end,
     test_dump_model_signature_keeps_old_keys,
     test_fl_rows_get_one_bare_row,
+    test_load_texture_tga_origin_uses_stored_row_order,
     test_compare_rows_verdicts,
     test_compare_sheets_end_to_end_and_placeholder,
 ]
