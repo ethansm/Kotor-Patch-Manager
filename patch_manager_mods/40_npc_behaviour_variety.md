@@ -1,7 +1,7 @@
 # 40 NPC behaviour variety: extra walkers, scripted encounters, animation
 
 ## Status
-- **State: V0, V1, V3, V4 and V6 done (2026-10-13); V6 = animation feasibility in section 9 (native `PlayAnimation` injector recommended, two generated tables, no DLL); V3 = pool and roster spec in section 8 (host-only, tables + 2 tested scripts, no DLL); V4 = visitSalt in doc 34 hash, host tests + build only, salt unwired, option `visit_variety` in npc-diversity.ini (default 0 = same look), nothing installed.** Next: V2 live probe (needs user GO and a pre-visit save; now includes P8-P10) or V5 scripted-encounter feasibility (host-only).
+- **State: V0, V1, V3, V4, V5 and V6 done (2026-10-13); V5 = scripted-encounter feasibility in section 10 (data-first route: Plot/Min1HP UTC templates plus faction pair 11/12 plus engine AI; fallback user-installed override `.ncs`; probes P11-P15; host-only, nothing installed); V6 = animation feasibility in section 9 (native `PlayAnimation` injector recommended, two generated tables, no DLL); V3 = pool and roster spec in section 8 (host-only, tables + 2 tested scripts, no DLL); V4 = visitSalt in doc 34 hash, host tests + build only, salt unwired, option `visit_variety` in npc-diversity.ini (default 0 = same look), nothing installed.** Next: V2 live probe (needs user GO and a pre-visit save; now includes P8-P15) or V7 build order (host-only).
 - Origin (user, 10-12/13): doc 34 only changes how generic commoners look. Goal: a section should not feel the same every pass. (a) randomize NPC animations/actions; (b) randomly add walking aliens, TSF agents, Czerka NPCs among plain commoners; (c) later, small random scripted events (example: TSF agents chasing and shooting at an outlaw across the station; runner and chasers invincible, hasted, combat disabled), possibly with K1 NPC audio/dialog.
 - Evidence: Haiku wave `w9-npcvar` (12 recon units, all PARTIAL), raw findings copied to `.claude/research/npc_variety/u01..u12.md`, animation inventories `u03_anims.txt` and `u03b_target_rows.txt`. Web prior-art searches (10-13) summarized in section 5. Memory: `kotor2-npc-behaviour-variety-idea`.
 - Related docs: 34 (appearance dispatcher), 35 (`35_npc_add_poc.md`, spawn routes U1-U11), 38 (K1 import, native spawn probe T25, licence policy section 8), `.claude/research/npc_add/` (R1-R6, poc/).
@@ -54,7 +54,7 @@
 | V2 | Live probe design and build (needs user GO): OID stability across loads, hook-spawn persistence in saves, save-load reset, object count and frame cost | TODO |
 | V3 | Pool and roster spec: group pools, area eligibility table, spawn budget, per-species walk speeds | DONE (section 8) |
 | V4 | Visit-salt change in doc 34 code (host tests, build only) and doc 34 section 3.2.2 update | DONE (host tests + build; salt unwired, V4b = area-entry source after V2) |
-| V5 | Scripted-encounter feasibility: can the patch run or trigger scripts, effect/flag building blocks, K1 audio licence and format path (audio/voice side researched 2026-10-13: see doc 41) | TODO |
+| V5 | Scripted-encounter feasibility: can the patch run or trigger scripts, effect/flag building blocks, K1 audio licence and format path (audio/voice side researched 2026-10-13: see doc 41) | DONE (section 10; data-first route, override-`.ncs` fallback, P11-P15 added to V2) |
 | V6 | Animation randomization feasibility: script (flag 109 / local 29) versus native (`Gob::PlayAnimation 004e3270`) | DONE (section 9; native route recommended, P8-P10 added to V2) |
 | V7 | Opus gate: choose build order, write the master plan, retire or merge the doc 35 routes | TODO |
 
@@ -92,7 +92,7 @@ DelayCommand 7, ExecuteScript 8, ActionAttack 37, PlaySound 46, SetFacingPoint 1
 - Audio (u05): repo policy says vanilla K1 files stay local, never committed or redistributed; unknown licence counts as needing approval; no audio ingest path exists. A subtitle-only bark = `ActionSpeakStringByStrRef(strref, vol)` with a strref appended via `scripts/append_ranged_kite_tlk.py`, script compiled with `compile.sh`, shipped as an override `.ncs` (pattern proven for `k_def_heartbt01`, T19). Appended-strref playback untested. `.wav/.lip/.ssf` formats and paths are OPEN.
 
 ### 7.6 Revised V2 probe list (needs user GO + pre-visit save)
-P1 VarTable-preset walker with a stock `k_def_spawn01` OnSpawn (no script change): does it walk the area's `WP_<tag>_NN` waypoints. P2 blank-conversation template: click it. P3 shoot a spawned faction-5 template: does it turn hostile. P4 hook-spawned creature across save/load (OID, persistence, `+0x11AC/+0x11FC` values). P5 AI_OFF (87) on a spawned actor plus `SetPlotFlag`/`EffectHaste`/`ActionForceMoveToLocation` from a script. P6 `ActionSpeakStringByStrRef` with an appended strref. P7 RemoveFromArea on a spawned creature when the area exits. P8-P10 (animation, added by V6): see section 9.5.
+P1 VarTable-preset walker with a stock `k_def_spawn01` OnSpawn (no script change): does it walk the area's `WP_<tag>_NN` waypoints. P2 blank-conversation template: click it. P3 shoot a spawned faction-5 template: does it turn hostile. P4 hook-spawned creature across save/load (OID, persistence, `+0x11AC/+0x11FC` values). P5 AI_OFF (87) on a spawned actor plus `SetPlotFlag`/`EffectHaste`/`ActionForceMoveToLocation` from a script. P6 `ActionSpeakStringByStrRef` with an appended strref. P7 RemoveFromArea on a spawned creature when the area exits. P8-P10 (animation, added by V6): see section 9.5. P11-P15 (scripted encounter, added by V5): see section 10.4.
 
 ### 7.7 Recon caveats
 Haiku units u01-u03, u05, u06 all returned PARTIAL (they stay inside the read ranges); I closed the gaps from source myself (flag blocks, ANIMATION constants, `GN_DetermineCombatRound`). u04 failed on a bad entry range; I answered it directly. T3 peaked at 115k tokens (over the 100k ceiling).
@@ -163,3 +163,39 @@ P8 `PlayAnimation` on an idle world commoner: obtain the Gob from the creature o
 
 ### 9.6 Open (not claimed)
 Creature object -> Gob field, and how to read "creature is idle" natively (V2 P8, or one `rea-recon` run; skipped here as P8 answers it empirically). Script constant -> animation row translation (only needed if the script route is revived).
+
+## 10. V5 results (2026-10-13; host-only, no game running, nothing installed)
+Evidence files: `.claude/research/npc_variety/tables/script_primitives.tsv` (from `scripts/npcvar_script_scan.py`), `.claude/research/npc_variety/tables/faction_matrix.tsv` (from `scripts/npcvar_faction_matrix.py`), `.claude/research/npc_variety/v5/t3_native_script_entry.md`, `.claude/research/npc_variety/v5/t4_vanilla_patterns.md`.
+
+### 10.1 What the evidence says
+- **Vanilla corpus has no chase/shoot script.** In 637 scanned scripts (120 use a tracked primitive; module scripts are not in the corpus) `CutsceneAttack` has 0 live calls (one hit, a comment at `k_inc_fakecombat.nss:49`; the "2 scripts" in the V5 plan was wrong), `ActionCastFakeSpellAtObject` 0, `EffectHaste` 0, `ChangeFaction` 0, `ActionForceMoveToLocation` 2 (`a_move_party`, `k_inc_utility:1181`), `SetPlotFlag` 1 (a door lock, `k_inc_utility:2118`). The only entry script of the three examined is `a_move_party` and it moves party slots 0-2 only (`t4`, E2). `FAI_*` fake combat and `UT_PlotMoveLocation` are include-only; no other corpus script uses them (`rg`).
+- **Vanilla fake attack is a real attack:** `FAI_PerformFakeAttack` = `EffectAssuredHit` + real `ActionAttack`, with `SetMinOneHP(target, TRUE)` as the damage floor and the target on a chosen standard faction (`k_inc_fakecombat.nss:21-26,53-54`). So "shooting that cannot kill" is a Min1HP/Plot target plus a real attack, not a cutscene effect.
+- **Template fields already carry invincibility.** Our UTC tooling confirms `Plot`, `Min1HP`, `NoPermDeath`, `Interruptable`, `WalkRate` as UTC fields (`scripts/npc_add_build_utc.py:6`); pool templates currently use Plot 0 / Min1HP 0. A template with Plot=1 needs no script (UNVERIFIED in game: P12).
+- **Native script entry is not usable yet.** `0x006FD8D0` takes (CExoString-like*, objid, flag); calling convention, ECX, retn size and string layout are all unproven, and no safe call site exists (`t3` sections 1, 2, 4). A native call would also only reach chitin scripts, and none does the choreography.
+- **KPM cannot ship a new `.ncs`.** The proven workaround is a user-installed override `.ncs` (T19 `k_def_heartbt01`, play-verified spawn without DLL, doc 38 lines 150 and 164); it ships as override files installed by the user (`t3` section 3).
+
+### 10.2 Faction conclusion (`faction_matrix.tsv`, 21 factions, rule hostile = repute < 50; values are only 0/50/100 except Player->SELF_LOATHING 9)
+- **Candidate chaser/outlaw pair: Predator (11) and Prey (12).** 11->12 and 12->11 are 0 (hostile); both are 50 (neutral) to the player (row 0), to commoners (5) and to themselves. Other mutually hostile pairs that are not hostile to the player: Gizka_1/Gizka_2 (16, 17), (2, 4), (4, 8), (2, 15).
+- **Caveat:** engine AI for predator/prey creatures (animals) may behave differently from humanoids (flee, no ranged weapon use): P14.
+- No OUTLAW/TSF standard faction exists in `nwscript`; vanilla TSF/Czerka factions are non-standard ids and are hostile at some plot moments (section 3), so avoid them.
+
+### 10.3 Verdict: three routes
+| | (a) Data-first: UTC templates (Plot/Min1HP, WalkRate) + faction pair 11/12 + engine AI | (b) Native-driven (DLL calls RunScript or action entries) | (c) Hybrid with a user-installed override `.ncs` (T19 pattern) |
+|---|---|---|---|
+| Shipping | Data only, if KPM can ship the new UTC (UNVERIFIED; doc 38 shipped it as override files under user GO) | DLL only | User-installed override files, not KPM-shippable |
+| Chase | Engine AI hostility chase (UNVERIFIED, P14); no waypoint path | Needs action-queue entries, unproven | `ActionForceMoveToLocation` along waypoints, vanilla `UT_PlotMoveLocation` pattern (`t4` E3) |
+| Invincible + hasted | Plot/Min1HP via template (P12); haste only through a WalkRate row (P12) | Unknown struct offsets | `SetPlotFlag`, `EffectHaste` (routines 456, 270) |
+| Fake shooting | Real fight between armed templates, damage floor from Plot | Unknown | `FAI_PerformFakeAttack` pattern: real `ActionAttack` + assured hit on a Min1HP target; `ActionCastFakeSpellAtObject` never used in vanilla (P13) |
+| Control | Weakest (spawn, then AI decides) | Strongest if it works | High, proven by T19, per-event logic |
+| Status | Most promising; unknowns are P12/P14 | NO-GO until P11 (convention unproven; only reaches chitin scripts anyway) | Reliable fallback |
+
+### 10.4 Recommendation and probes
+- **First route: (a).** The DLL spawns two of our own templates (an armed chaser, an outlaw) at area waypoints with unique tags, factions 11 and 12, Plot=1, a fast WalkRate row, with engine AI doing the chase. **Fallback: (c)**, one user-installed override script on the spawned creature's heartbeat/OnSpawn doing waypoint moves and the fake attack. **(b) only if P11 passes**, and then mainly to call the (c) script without relying on the heartbeat.
+- **Encounter hygiene vs route:** area whitelist, once per visit, no spawn near the player on load, and cleanup on exit are enforced by the DLL in every route. Abort on combat or dialog start: the DLL checks player state and removes the creatures (P15). Route (a) cannot stop a running AI fight mid-way except by removing the creatures.
+- **Probes added to the V2 list (7.6), each yes/no:** P11 call RunScript natively with a chitin resref on a live creature (convention from one REA run or a safe trial in a tick hook). P12 a Plot=1 template survives real hits, and a fast WalkRate row (or `EffectHaste`+`SetPlotFlag` via script in route c) hastes a spawned actor, then a chase over `ActionForceMoveToLocation` or engine AI. P13 `ActionCastFakeSpellAtObject` gives visible fake shooting with no damage (route c only). P14 faction pair 11/12 (then 16/17 as the second choice): the two chase/fight each other and nobody engages the player or commoners. P15 cleanup via `DestroyObject` or area-exit removal leaves no stray creature (extends P7). P5 and P6 stay as listed.
+
+### 10.5 Audio
+Voice and barks for the event are owned by doc 41 (sections 3 and 6: architecture, test ladder E1-E8); this phase adds no audio work. Subtitle-only barks (blank VO_ResRef, `ActionSpeakStringByStrRef` or a DLG node) remain the fallback and are independent of the route chosen.
+
+### 10.6 Open (not claimed)
+Calling convention of `0x006FD8D0` (one `rea-recon` run, T6 skipped; P11 answers it empirically). Whether KPM ships a new `.utc` or only chitin-pool resrefs. Behaviour of predator/prey AI. Module scripts (not in the corpus) may still contain `FAI_*` users; regenerate with `scripts/dump_game_scripts.py --out <dir> --all` if that matters.
