@@ -35,6 +35,7 @@ ROLES = REPO / ".claude" / "skills" / "bug-investigate" / "roles"
 REAL_CASE = REPO / ".claude" / "skills" / "bug-investigate" / "cases" / "hotbar_charkey.json"
 FAKE_SWARM = "/nonexistent/swarm_run.py"
 CACHE_ROOT = os.path.expanduser("~/.cache/bug_investigate")
+NO_STUB_SCRIPT = "the stub engine needs --stub-script FILE; without it every unit ends error_no_script"
 
 # ---------------------------------------------------------------- fixture bundle (exact id/hash scheme)
 A_LINES = [(10, "Mod init ok"), (11, "Loaded 12 entries"), (12, "WARN slot  3 missing   texture"),
@@ -212,6 +213,8 @@ class Base(unittest.TestCase):
         self.tmp = tempfile.mkdtemp(prefix="bi_test_")
         self.addCleanup(shutil.rmtree, self.tmp, True)
         self.run_dir = os.path.join(self.tmp, "run")
+        self.stub_script = os.path.join(self.tmp, "stub.json")      # R6.1: every stub stage needs a script
+        write_json(self.stub_script, {})
         self.fake = FakeRunner()
         for name, fn in (("run_stage", self.fake.run_stage), ("read_status", self.fake.read_status)):
             p = mock.patch.object(bi, name, fn)
@@ -253,8 +256,9 @@ class Base(unittest.TestCase):
         rc, out, err = self.cli("bundle", "--run", self.run_dir, "--from", src)
         self.assertEqual(rc, 0, err)
 
-    def stage(self, sub, *extra):
-        return self.cli(sub, "--run", self.run_dir, "--engine", "stub", "--cap-total", "1.0", *extra)
+    def stage(self, sub, *extra):      # R6.1: the stub engine is always given a script here
+        return self.cli(sub, "--run", self.run_dir, "--engine", "stub", "--cap-total", "1.0",
+                        "--stub-script", self.stub_script, *extra)
 
     def blind(self):
         return self.stage("blind")
@@ -331,12 +335,15 @@ class TestHelp(unittest.TestCase):
         self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
         self.assertIn("CHILD-OK", p.stdout)
 
-    def test_blind_requires_engine_and_cap_total(self):
+    def test_blind_requires_engine_and_cap_total(self):      # R6.1: stub calls pass a script, so only argparse fails
         self.assertEqual(run_cli(["blind", "--run", "/tmp/x", "--cap-total", "1"])[0], 2)
-        self.assertEqual(run_cli(["blind", "--run", "/tmp/x", "--engine", "stub"])[0], 2)
-        self.assertEqual(run_cli(["blind", "--run", "/tmp/x", "--engine", "stub", "--cap-total", "-1"])[0], 2)
-        self.assertEqual(run_cli(["blind", "--run", "/tmp/x", "--engine", "stub", "--cap-total", "nan"])[0], 2)
-        self.assertEqual(run_cli(["blind", "--engine", "stub", "--cap-total", "1"])[0], 2)   # --run is required
+        self.assertEqual(run_cli(["blind", "--run", "/tmp/x", "--engine", "stub", "--stub-script", "/s.json"])[0], 2)
+        self.assertEqual(run_cli(["blind", "--run", "/tmp/x", "--engine", "stub", "--cap-total", "-1",
+                                  "--stub-script", "/s.json"])[0], 2)
+        self.assertEqual(run_cli(["blind", "--run", "/tmp/x", "--engine", "stub", "--cap-total", "nan",
+                                  "--stub-script", "/s.json"])[0], 2)
+        self.assertEqual(run_cli(["blind", "--engine", "stub", "--cap-total", "1", "--stub-script", "/s.json"])[0], 2)
+        # --run is required
 
     def test_no_environment_variable_selects_a_binary_or_the_runner(self):
         src = SCRIPT.read_text(encoding="utf-8")
@@ -432,7 +439,8 @@ class TestNew(Base):
                                 "--log", "a_log.txt")
         self.assertEqual(rc, 2)
         self.assertFalse((REPO / "scripts" / "zz_run").exists())
-        for sub in (["blind", "--engine", "stub", "--cap-total", "1"], ["check"], ["report"]):
+        stub_blind = ["blind", "--engine", "stub", "--cap-total", "1", "--stub-script", "/s.json"]   # R6.1
+        for sub in (stub_blind, ["check"], ["report"]):
             rc, out, err = self.cli(sub[0], "--run", str(REPO / "scripts"), *sub[1:])
             self.assertEqual(rc, 2, sub)
             self.assertIn("repo", err.lower())
@@ -447,7 +455,8 @@ class TestNew(Base):
 
     def test_other_subcommands_need_an_existing_run(self):
         missing = os.path.join(self.tmp, "no_such_run")
-        for sub in (["check"], ["report"], ["bundle"], ["blind", "--engine", "stub", "--cap-total", "1"]):
+        for sub in (["check"], ["report"], ["bundle"],          # R6.1: the stub blind call carries a script
+                    ["blind", "--engine", "stub", "--cap-total", "1", "--stub-script", "/s.json"]):
             self.assertEqual(self.cli(sub[0], "--run", missing, *sub[1:])[0], 2, sub)
         self.assertFalse(os.path.exists(missing))
 
@@ -649,6 +658,46 @@ class TestStages(Base):
                 self.assertIn("stub", err)
                 self.assertEqual(tree(self.run_dir), before, (label, sub))
         self.assertEqual(self.fake.stage_calls, [])
+
+    def test_stub_blind_without_stub_script_is_refused_before_anything_is_written(self):      # R6.1
+        self.new_run()
+        before = tree(self.run_dir)
+        rc, out, err = self.cli("blind", "--run", self.run_dir, "--engine", "stub", "--cap-total", "1.0")
+        self.assertEqual(rc, 2, err)
+        self.assertIn(NO_STUB_SCRIPT, err)
+        self.assertEqual(tree(self.run_dir), before)
+        self.assertEqual(self.fake.stage_calls, [])
+
+    def test_stub_null_without_stub_script_is_refused_before_anything_is_written(self):       # R6.1
+        self.new_run()
+        before = tree(self.run_dir)
+        rc, out, err = self.cli("null", "--run", self.run_dir, "--engine", "stub", "--cap-total", "1.0")
+        self.assertEqual(rc, 2, err)
+        self.assertIn(NO_STUB_SCRIPT, err)
+        self.assertEqual(tree(self.run_dir), before)
+        self.assertEqual(self.fake.stage_calls, [])
+
+    def test_stub_verify_without_stub_script_is_refused_before_anything_is_written(self):    # R6.1
+        self.new_run()
+        before = tree(self.run_dir)
+        rc, out, err = self.cli("verify", "--run", self.run_dir, "--engine", "stub", "--cap-total", "1.0")
+        self.assertEqual(rc, 2, err)
+        self.assertIn(NO_STUB_SCRIPT, err)
+        self.assertEqual(tree(self.run_dir), before)
+        self.assertEqual(self.fake.stage_calls, [])
+
+    def test_stub_blind_with_a_stub_script_is_accepted(self):                                # R6.1
+        self.new_run()
+        rc, out, err = self.cli("blind", "--run", self.run_dir, "--engine", "stub", "--cap-total", "1.0",
+                                "--stub-script", "/s.json")
+        self.assertEqual(rc, 0, err)
+        self.assertEqual(self.fake.calls_for("blind")[0]["stub_script"], os.path.abspath("/s.json"))
+
+    def test_refused_stub_blind_leaves_no_blind_units_dir(self):                             # R6.1
+        self.new_run()
+        self.assertEqual(self.cli("blind", "--run", self.run_dir, "--engine", "stub", "--cap-total", "1.0")[0], 2)
+        self.assertFalse(os.path.exists(os.path.join(self.run_dir, "blind", "units")))
+        self.assertFalse(os.path.exists(os.path.join(self.run_dir, "blind")))
 
     def test_claude_bin_must_be_absolute_and_yes_spend_positive(self):
         self.new_run()
@@ -1416,10 +1465,10 @@ class TestBudgetPreflight(Base):
         self.assertIn("--allow-partial", err)
         self.assertEqual(self.fake.calls_for("verify"), [])
 
-    def test_stub_engine_is_warned_never_refused(self):
+    def test_stub_engine_is_warned_never_refused(self):      # R6.1: a script is given; only the warning is tested
         self.many_survivors(8)
         rc, out, err = self.cli("verify", "--run", self.run_dir, "--engine", "stub", "--cap-total", "0.10",
-                                "--cap-call", "0.05")
+                                "--cap-call", "0.05", "--stub-script", self.stub_script)
         self.assertEqual(rc, 0, err)
         self.assertIn("warning", err)
         self.assertEqual(len(self.fake.calls_for("verify")), 1)
@@ -1453,7 +1502,8 @@ class TestBudgetPreflight(Base):
 
     def test_allow_partial_is_a_verify_only_flag(self):
         self.new_run()
-        rc, out, err = self.cli("blind", "--run", self.run_dir, "--engine", "stub", "--cap-total", "1", "--allow-partial")
+        rc, out, err = self.cli("blind", "--run", self.run_dir, "--engine", "stub", "--cap-total", "1",   # R6.1
+                                "--stub-script", self.stub_script, "--allow-partial")
         self.assertEqual(rc, 2)
         self.assertEqual(self.fake.stage_calls, [])
 

@@ -14,6 +14,7 @@ Pipeline (each step is one subcommand, all take --run DIR; a run dir never lives
 Model phases go through ONE injectable function, run_stage(), that shells out to swarm_run.py map; unit state is read
 ONLY through read_status() (swarm_run.py status --out O --json), never from a glob of findings/. --engine real runs
 only with BOTH --claude-bin ABS and --yes-spend USD (after a swarm_run.py probe); --engine stub refuses both flags.
+--engine stub needs --stub-script FILE, and blind, null and verify refuse it without one.
 Any other combination exits 2 before anything is written.
 The orchestrator never reads a case file's ground truth (true_root_cause); the case's blind_forbidden_terms refuse
 any blind/null unit prompt that contains one (matched after norm_terms: case, spacing, underscores, hyphens,
@@ -681,12 +682,15 @@ def build_report(run, intake, bundle, swarm_run) -> dict:
 # ---------------------------------------------------------------- subcommands
 
 def check_engine_flags(args):
-    """engine real needs both --claude-bin and --yes-spend (the human spend approval); engine stub takes neither."""
+    """engine real needs both --claude-bin and --yes-spend (the human spend approval); engine stub takes neither
+    and needs --stub-script. Called before any stage file is written, so a refusal leaves no stage dir."""
     if args.engine == "real":
         if args.claude_bin is None or args.yes_spend is None:
             raise Fail("--engine real needs --claude-bin ABS and --yes-spend USD (the human spend approval)")
     elif args.claude_bin is not None or args.yes_spend is not None:
         raise Fail("--claude-bin and --yes-spend are for --engine real only; drop them for --engine stub")
+    elif args.stub_script is None:
+        raise Fail("the stub engine needs --stub-script FILE; without it every unit ends error_no_script")
 
 
 def default_run_dir(kind) -> str:
