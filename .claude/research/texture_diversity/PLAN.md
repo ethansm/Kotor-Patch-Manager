@@ -55,6 +55,9 @@ Skipped as low value: Jedi robes (4 spawns), Ubese (1 card), Onderon until a Vak
 | P3 | agent | Qwen timing run (T6), L5/L6/L7 on 3 pilot recipes, compare with stage-1 only | s/image and quality known |
 | P4 | Haiku waves | one agent per family writes recipe JSON (1 deliverable each); bake; gates | ~100-500 gated variants |
 | P5 | agent + user | B7 dispatcher scoping and RE, then install and census (`kotor2_logs.py`) | variants seen in game |
+| HA | agent | helmet previews on the 54 head-item appearances (`k1_port_tex_preview.py helmets`) | **DONE 10-13** (6c36ef5); user approves framing before any Haiku vision pass |
+| HB | agent | dispatcher helmet allow-list (`DiversityHeadItems.h`, generator + invariants, no C++) | **DONE 10-13** (f2629e4); dispatcher use needs design + user go |
+| HC | agent + user | K1 item swarm: asset diff DONE 10-13 (`k1_items/ASSET_DIFF_FINDINGS.md`); C2 triage (~4 Haiku units proposed), C3 vision, C4 shortlist | waits for user go on spend |
 
 ## 7. Decisions (answered by the user 10-12)
 1. **P0 (B0 gate + B1 masks): YES.** Next step is a plan for P0 (plan mode), then build. Adds scripts and tests only.
