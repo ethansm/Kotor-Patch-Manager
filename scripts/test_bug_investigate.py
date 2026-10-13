@@ -130,6 +130,7 @@ class FakeRunner:
         self.stale = {}         # unit_id -> raw text written to findings/<id>.json even though incomplete
         self.stage_calls = []
         self.status_calls = []
+        self.spent = 0.0        # what read_spent answers (USD already spent in the stage's out dir)
         self.rc = 0
 
     def run_stage(self, role_dir, units_dir, out_dir, engine, cap_total, *, cap_call, stub_script, parallel,
@@ -164,6 +165,9 @@ class FakeRunner:
         units = [{"unit_id": u, "complete": c, "reason": r} for u, (c, r) in sorted(data.items())]
         done = sum(1 for u in units if u["complete"])
         return {"units": units, "complete": done, "total": len(units), "all_complete": done == len(units)}
+
+    def read_spent(self, out_dir, cap_call, swarm_run):
+        return self.spent
 
     def calls_for(self, role):
         return [c for c in self.stage_calls if c["role_dir"].rstrip("/").endswith("roles/" + role)]
@@ -211,6 +215,9 @@ class Base(unittest.TestCase):
             p = mock.patch.object(bi, name, fn)
             p.start()
             self.addCleanup(p.stop)
+        p = mock.patch.object(bi, "read_spent", self.fake.read_spent)
+        p.start()
+        self.addCleanup(p.stop)
         p = mock.patch.object(bi, "ROOT", os.path.join(self.tmp, "cache_root"))
         p.start()
         self.addCleanup(p.stop)
@@ -1165,7 +1172,7 @@ class TestVerify(Base):
         self.fake.findings["verify-blind-skeptic-h1"] = verify_out("verify-blind-skeptic-h1", "h1", "inconclusive")
         self.fake.incomplete["verify-blind-advocate-h1"] = "timed out"
         self.assertEqual(self.verify()[0], 0)
-        self.assertEqual(self.report()[0], 0)
+        self.assertEqual(self.report()[0], 1)           # B1/R1.2: a verify unit with no verdict makes report exit 1
         rep = self.report_json()
         self.assertEqual(sorted(rep["ranked"]), ["blind-advocate:H1", "blind-skeptic:h1"])
         self.assertEqual(self.hyp_by_id(rep, "blind-advocate:H1")["verifier"]["complete"], False)
@@ -1175,7 +1182,7 @@ class TestVerify(Base):
         self.fake.findings["verify-blind-skeptic-h1"] = verify_out(
             "verify-blind-skeptic-h1", "h9", "rejected", reason(ID_A, Q_A2))
         self.assertEqual(self.verify()[0], 0)
-        self.assertEqual(self.report()[0], 0)
+        self.assertEqual(self.report()[0], 1)           # B1/R1.2: verify-blind-advocate-h1 has no verdict -> exit 1
         self.assertEqual(self.hyp_by_id(self.report_json(), "blind-skeptic:h1")["status"], "supported")
 
     def test_no_survivors_means_nothing_to_run(self):
@@ -1218,6 +1225,143 @@ class TestVerify(Base):
         rc, out, err = self.verify()
         self.assertEqual(rc, 0, err)
         self.assertEqual(self.fake.stage_calls, [])
+
+
+# ---------------------------------------------------------------- B1/R1.2 budget preflight and partial-verify visibility
+class TestBudgetPreflight(Base):
+    def many_survivors(self, n):
+        sc = self.empty_blind()
+        sc["blind-skeptic"] = blind_out("blind-skeptic", *[hyp("h%d" % i, [(ID_A, Q_A1)], "high") for i in range(1, n + 1)])
+        self.run_all(sc)
+
+    def real_verify(self, cap_total, cap_call, *extra):
+        return self.cli("verify", "--run", self.run_dir, "--engine", "real", "--claude-bin", sys.executable,
+                        "--yes-spend", str(cap_total), "--cap-total", str(cap_total), "--cap-call", str(cap_call), *extra)
+
+    def finish_verify(self, n_complete, n_total):
+        for i in range(1, n_complete + 1):
+            self.fake.findings["verify-blind-skeptic-h%d" % i] = verify_out(
+                "verify-blind-skeptic-h%d" % i, "h%d" % i, "supported", reason(ID_A, Q_A1))
+        self.assertEqual(self.stage("verify")[0], 0)
+
+    def test_real_verify_below_the_minimum_cap_is_refused_before_the_runner(self):
+        self.many_survivors(8)
+        rc, out, err = self.real_verify(0.10, 0.05)
+        self.assertEqual(rc, 2, err)
+        self.assertIn("8 pending", err)
+        self.assertIn("0.33", err)
+        self.assertIn("--allow-partial", err)
+        self.assertEqual(self.fake.calls_for("verify"), [])
+
+    def test_allow_partial_runs_the_stage_and_says_how_many_units_will_run(self):
+        self.many_survivors(8)
+        rc, out, err = self.real_verify(0.10, 0.05, "--allow-partial")
+        self.assertEqual(rc, 0, err)
+        self.assertEqual(len(self.fake.calls_for("verify")), 1)
+        self.assertIn("partial: at most 2 of 8 units will run", out)
+
+    def test_partial_count_is_not_fooled_by_float_division(self):
+        self.many_survivors(8)
+        rc, out, err = self.real_verify(0.30, 0.10, "--allow-partial")
+        self.assertEqual(rc, 0, err)
+        self.assertIn("partial: at most 3 of 8 units will run", out)
+
+    def test_real_verify_with_enough_cap_is_accepted_without_a_partial_note(self):
+        self.many_survivors(8)
+        rc, out, err = self.real_verify(0.40, 0.05)
+        self.assertEqual(rc, 0, err)
+        self.assertEqual(len(self.fake.calls_for("verify")), 1)
+        self.assertNotIn("partial", out)
+
+    def test_units_already_spent_count_toward_the_minimum(self):
+        self.many_survivors(3)
+        self.fake.spent = 0.06
+        rc, out, err = self.real_verify(0.18, 0.05)
+        self.assertEqual(rc, 2, err)
+        self.assertIn("0.19", err)
+        self.assertEqual(self.fake.calls_for("verify"), [])
+        rc, out, err = self.real_verify(0.19, 0.05)
+        self.assertEqual(rc, 0, err)
+        self.assertEqual(len(self.fake.calls_for("verify")), 1)
+
+    def test_need_above_the_real_ceiling_is_refused(self):
+        self.many_survivors(2)
+        self.fake.spent = 0.95
+        rc, out, err = self.real_verify(2.0, 0.30)
+        self.assertEqual(rc, 2, err)
+        self.assertIn("1.00", err)
+        self.assertIn("--allow-partial", err)
+        self.assertEqual(self.fake.calls_for("verify"), [])
+
+    def test_stub_engine_is_warned_never_refused(self):
+        self.many_survivors(8)
+        rc, out, err = self.cli("verify", "--run", self.run_dir, "--engine", "stub", "--cap-total", "0.10",
+                                "--cap-call", "0.05")
+        self.assertEqual(rc, 0, err)
+        self.assertIn("warning", err)
+        self.assertEqual(len(self.fake.calls_for("verify")), 1)
+
+    def test_complete_units_do_not_count_toward_the_minimum(self):
+        self.many_survivors(8)
+        self.finish_verify(5, 8)                                  # 5 complete, 3 pending in the runner's status
+        Path(self.run_dir, "verify", "out", "work").mkdir(parents=True)
+        write_json(Path(self.run_dir, "verify", "out", "work", "manifest.json"), {})
+        rc, out, err = self.real_verify(0.12, 0.05)               # 3 pending: need 0.05 + 2 x 0.04 = 0.13
+        self.assertEqual(rc, 2, err)
+        self.assertIn("0.13", err)
+        self.assertIn("3 pending", err)
+        rc, out, err = self.real_verify(0.13, 0.05)
+        self.assertEqual(rc, 0, err)
+
+    def test_real_blind_below_the_minimum_cap_is_refused(self):
+        self.new_run()
+        rc, out, err = self.cli("blind", "--run", self.run_dir, "--engine", "real", "--cap-total", "0.04",
+                                "--cap-call", "0.03", "--claude-bin", sys.executable, "--yes-spend", "0.04")
+        self.assertEqual(rc, 2, err)
+        self.assertIn("0.042", err)
+        self.assertEqual(self.fake.calls_for("blind"), [])
+
+    def test_real_blind_with_the_m4_flags_is_accepted(self):
+        self.new_run()
+        rc, out, err = self.cli("blind", "--run", self.run_dir, "--engine", "real", "--cap-total", "0.06",
+                                "--cap-call", "0.03", "--claude-bin", sys.executable, "--yes-spend", "0.06")
+        self.assertEqual(rc, 0, err)
+        self.assertEqual(len(self.fake.calls_for("blind")), 1)
+
+    def test_allow_partial_is_a_verify_only_flag(self):
+        self.new_run()
+        rc, out, err = self.cli("blind", "--run", self.run_dir, "--engine", "stub", "--cap-total", "1", "--allow-partial")
+        self.assertEqual(rc, 2)
+        self.assertEqual(self.fake.stage_calls, [])
+
+    def test_partial_verify_is_visible_in_the_report_and_exits_1(self):
+        self.many_survivors(8)
+        self.finish_verify(5, 8)
+        rc, out, err = self.report()
+        self.assertEqual(rc, 1, err)
+        self.assertIn("VERIFY PARTIAL: 5 of 8 verify units ran; the rest keep status supported without a verdict", out)
+        v = self.report_json()["verify"]
+        self.assertEqual((v["queued"], v["complete"]), (8, 5))
+        self.assertEqual([p["unit_id"] for p in v["pending"]],
+                         ["verify-blind-skeptic-h%d" % i for i in (6, 7, 8)])
+        self.assertEqual({p["reason"] for p in v["pending"]}, {"not run (cap reached or stage unfinished)"})
+
+    def test_all_verify_units_complete_is_exit_0_with_no_verify_line(self):
+        self.many_survivors(8)
+        self.finish_verify(8, 8)
+        rc, out, err = self.report()
+        self.assertEqual(rc, 0, err)
+        self.assertNotIn("VERIFY", out)
+        self.assertIn("verify", self.report_json())
+        v = self.report_json()["verify"]
+        self.assertEqual((v["queued"], v["complete"], v["pending"]), (8, 8, []))
+
+    def test_verify_with_no_record_at_all_is_verify_not_run(self):
+        self.many_survivors(2)
+        self.assertEqual(self.stage("verify")[0], 0)
+        rc, out, err = self.report()
+        self.assertEqual(rc, 1, err)
+        self.assertIn("VERIFY NOT RUN", out)
 
 
 # ---------------------------------------------------------------- real run_stage / read_status (subprocess patched)
@@ -1272,6 +1416,21 @@ class TestRealRunner(unittest.TestCase):
         with mock.patch.object(bi.subprocess, "run", self.fake_run(0, "[1, 2]")):
             with self.assertRaises(bi.StageError):
                 bi.read_status("/o", "/x/swarm_run.py")
+
+    def test_read_spent_is_zero_before_the_first_map_and_parses_the_runner(self):
+        with mock.patch.object(bi.subprocess, "run", side_effect=AssertionError("no runner call before a map")):
+            self.assertEqual(bi.read_spent("/nonexistent/out", 0.05, "/x/swarm_run.py"), 0.0)
+        with tempfile.TemporaryDirectory() as d:
+            os.makedirs(os.path.join(d, "work"))
+            Path(d, "work", "manifest.json").write_text("{}", encoding="utf-8")
+            calls = []
+            with mock.patch.object(bi.subprocess, "run", self.fake_run(0, "0.06\n", calls)):
+                self.assertEqual(bi.read_spent(d, 0.05, "/x/swarm_run.py"), 0.06)
+            self.assertEqual(calls[0][0], [sys.executable, "-I", "/x/swarm_run.py", "spent", "--out", d, "--cap-call", "0.05"])
+            for rc, stdout in ((1, ""), (0, "lots\n"), (0, "nan\n"), (0, "-1\n"), (0, "")):
+                with mock.patch.object(bi.subprocess, "run", self.fake_run(rc, stdout)):
+                    with self.assertRaises(bi.StageError, msg=repr((rc, stdout))):
+                        bi.read_spent(d, 0.05, "/x/swarm_run.py")
 
     def test_missing_runner_script_is_a_stage_error_not_a_traceback(self):
         with mock.patch.object(bi.subprocess, "run", side_effect=OSError("no such file")):

@@ -9,7 +9,7 @@ Pipeline (each step is one subcommand, all take --run DIR; a run dir never lives
   null     1 null-hypothesis unit ("is this a bug at all?")      -> RUN/null/{units,out}
   check    quote-check every complete blind/null output against the bundle -> RUN/check.json
   verify   one verify unit per hypothesis that survived the quote check -> RUN/verify/{units,out}
-  report   RUN/report.json + a short summary; exit 1 while a blind or null unit is incomplete
+  report   RUN/report.json + a short summary; exit 1 while a blind or null unit is incomplete or a verify unit has no verdict
 
 Model phases go through ONE injectable function, run_stage(), that shells out to swarm_run.py map; unit state is read
 ONLY through read_status() (swarm_run.py status --out O --json), never from a glob of findings/. --engine real runs
@@ -39,6 +39,11 @@ REPO = HERE.parent
 ROOT = os.path.expanduser("~/.cache/bug_investigate")
 DEFAULT_SWARM_RUN = "~/.claude/swarm/lib/swarm_run.py"
 ROLES = REPO / ".claude" / "skills" / "bug-investigate" / "roles"
+# B1/R1.2: expected USD per real call per stage (M4 measurement) for the budget preflight; REAL_STAGE_CEILING mirrors
+# the runner's REAL_MAX_TOTAL_USD (swarm_run.py) for --cap-total on --engine real.
+EXPECT_CALL = {"blind": 0.006, "null": 0.004, "verify": 0.04}
+REAL_STAGE_CEILING = 1.00
+NOT_RUN_REASON = "not run (cap reached or stage unfinished)"
 
 KINDS = ("crash", "logic", "visual", "ux")
 HUMAN_KINDS = frozenset(("visual", "ux"))
@@ -355,6 +360,36 @@ def read_status(out_dir, swarm_run) -> dict:
     return payload
 
 
+def read_spent(out_dir, cap_call, swarm_run) -> float:
+    """swarm_run.py spent --out O --cap-call X -> USD already spent in this stage's out dir; 0.0 before the first map
+    (no work/manifest.json yet). Runner exit != 0 or a number that is not finite and >= 0 is a StageError."""
+    if not os.path.isfile(os.path.join(out_dir, "work", "manifest.json")):
+        return 0.0
+    cmd = [sys.executable, "-I", swarm_run, "spent", "--out", out_dir, "--cap-call", str(cap_call)]
+    try:
+        p = subprocess.run(cmd, capture_output=True, text=True, env=clean_env(), stdin=subprocess.DEVNULL, timeout=120)
+    except (OSError, subprocess.TimeoutExpired) as e:
+        raise StageError("cannot run swarm_run spent: %s" % e)
+    if p.returncode != 0:
+        why = ((p.stderr or "").strip().splitlines() or [""])[-1][:200]
+        raise StageError("swarm_run spent exited %d: %s" % (p.returncode, why))
+    try:
+        spent = float(((p.stdout or "").strip().splitlines() or [""])[0])
+    except ValueError:
+        raise StageError("swarm_run spent printed no number")
+    if not math.isfinite(spent) or spent < 0:
+        raise StageError("swarm_run spent printed %r, not a USD amount" % spent)
+    return spent
+
+
+def pending_units(out_dir, units, swarm_run) -> int:
+    """How many of the stage's units the runner does not hold as complete (all of them before the first map)."""
+    if not os.path.isfile(os.path.join(out_dir, "work", "manifest.json")):
+        return len(units)
+    status = parse_status(read_status(out_dir, swarm_run))
+    return sum(1 for uid in units if not status.get(uid, (False, ""))[0])
+
+
 def parse_status(payload) -> dict:
     """-> {unit_id: (complete, reason)}. Anything malformed is a StageError (fail closed)."""
     if not isinstance(payload, dict) or not isinstance(payload.get("units"), list):
@@ -513,6 +548,9 @@ def build_report(run, intake, bundle, swarm_run) -> dict:
         "null_valid": null_valid, "incomplete": incomplete,
         "verify_incomplete": [{"unit_id": uid, "reason": r["reason"]} for uid, r in sorted(verify.items())
                               if not r["complete"]],
+        "verify": {"queued": len(verify), "complete": sum(1 for r in verify.values() if r["complete"]),
+                   "pending": [{"unit_id": uid, "reason": NOT_RUN_REASON if r["reason"] == "no record" else r["reason"]}
+                               for uid, r in sorted(verify.items()) if not r["complete"]]},
         "bundle_sha256": _s(bundle.get("bundle_sha256")),
     }
 
@@ -616,18 +654,58 @@ def cmd_bundle(args) -> int:
     return 0
 
 
+def _usd_text(x) -> str:
+    """A USD amount rounded UP to 4 places without trailing zeros (0.33, 0.042, 1)."""
+    return ("%.4f" % (math.ceil(x * 10000 - 1e-6) / 10000)).rstrip("0").rstrip(".")
+
+
+def _fits(total, per_call) -> int:
+    """How many calls of per_call USD fit in total USD. The 1e-9 keeps 0.30 / 0.10 at 3 (float // gives 2)."""
+    return int(math.floor(total / per_call + 1e-9))
+
+
+def preflight_cap(args, stage, n_pending, spent):
+    """B1/R1.2: cap-total must cover the pending units' expected cost plus one per-call cap. On --engine real a short
+    cap (or a need above REAL_STAGE_CEILING) is a Fail before the runner starts, unless --allow-partial (verify only)
+    runs what the cap covers. On --engine stub it is a warning on stderr only."""
+    need = spent + max(0, n_pending - 1) * EXPECT_CALL[stage] + args.cap_call
+    short = args.cap_total + 1e-9 < need
+    if args.engine != "real":
+        if short:
+            print("warning: %s: --cap-total %s is below the %s USD a real run would need (stub engine runs anyway)"
+                  % (stage, _usd_text(args.cap_total), _usd_text(need)), file=sys.stderr)
+        return
+    allow = stage == "verify" and bool(getattr(args, "allow_partial", False))
+    hint = " or add --allow-partial to run only what the cap covers" if stage == "verify" else ""
+    if short and not allow:
+        raise Fail("refused: %s stage has %d pending unit(s) and %s USD already spent; --cap-total %s is below the "
+                   "minimum %s (spent + %d x %s expected + --cap-call %s). Raise --cap-total to %s%s."
+                   % (stage, n_pending, _usd_text(spent), _usd_text(args.cap_total), _usd_text(need),
+                      max(0, n_pending - 1), EXPECT_CALL[stage], _usd_text(args.cap_call), _usd_text(need), hint))
+    if need > REAL_STAGE_CEILING + 1e-9 and not allow:
+        raise Fail("refused: %s stage needs %s USD, above the real-engine ceiling of %.2f USD per stage; split the "
+                   "stage into smaller runs%s." % (stage, _usd_text(need), REAL_STAGE_CEILING, hint))
+    if short:
+        print("partial: at most %d of %d units will run"
+              % (min(max(_fits(args.cap_total - spent, args.cap_call), 0), n_pending), n_pending))
+
+
 def run_units(args, run, stage, role, units: dict) -> int:
-    """Write the stage's unit files, then run the stage through the injectable run_stage."""
+    """Write the stage's unit files, preflight the budget (real and stub), then run the stage through run_stage."""
     role_dir = ROLES / role
     if not role_dir.is_dir():
         raise Fail("role dir %s not found" % role_dir)
     units_dir = os.path.join(run, stage, "units")
     out_dir = os.path.join(run, stage, "out")
     write_units(units_dir, units)
+    swarm_run = os.path.expanduser(args.swarm_run)
+    n_pending = pending_units(out_dir, units, swarm_run)
+    if n_pending:                                           # nothing pending means nothing to refuse
+        preflight_cap(args, stage, n_pending, read_spent(out_dir, args.cap_call, swarm_run))
     rc = run_stage(str(role_dir), units_dir, out_dir, args.engine, args.cap_total, cap_call=args.cap_call,
                    stub_script=os.path.abspath(args.stub_script) if args.stub_script else None,
                    parallel=args.parallel, timeout=args.timeout, backoff_scale=args.backoff_scale,
-                   swarm_run=os.path.expanduser(args.swarm_run), claude_bin=args.claude_bin,
+                   swarm_run=swarm_run, claude_bin=args.claude_bin,
                    yes_spend=args.yes_spend)
     if rc not in (0, 1):
         raise StageError("swarm_run map exited %s for the %s stage" % (rc, stage))
@@ -711,6 +789,12 @@ def summary(rep: dict) -> str:
                                                   str(rep["null_valid"]).lower()))
     for i in rep["incomplete"]:
         lines.append("INCOMPLETE %s unit %s: %s" % (i["stage"], i["unit_id"], i["reason"]))
+    v = rep["verify"]
+    if 0 < v["complete"] < v["queued"]:
+        lines.append("VERIFY PARTIAL: %d of %d verify units ran; the rest keep status supported without a verdict"
+                     % (v["complete"], v["queued"]))
+    elif v["complete"] == 0 < v["queued"]:
+        lines.append("VERIFY NOT RUN")
     lines.append("human gate: " + rep["human_gate"])
     return "\n".join(lines)
 
@@ -722,7 +806,7 @@ def cmd_report(args) -> int:
     rep = build_report(run, intake, bundle, os.path.expanduser(args.swarm_run))
     write_atomic(os.path.join(run, "report.json"), dumps(rep))
     print(json.dumps(rep, sort_keys=True, indent=1) if args.json else summary(rep))
-    return 1 if rep["incomplete"] else 0
+    return 1 if rep["incomplete"] or rep["verify"]["pending"] else 0
 
 
 # ---------------------------------------------------------------- CLI
@@ -820,6 +904,9 @@ def build_parser():
     p = sub.add_parser("verify", help="build and run one verify unit per surviving hypothesis")
     add_run(p)
     add_stage_opts(p)
+    p.add_argument("--allow-partial", action="store_true",
+                   help="real engine: when --cap-total cannot cover every unit, run what it covers and say how many "
+                        "(the rest keep status supported without a verdict)")
     p.set_defaults(func=cmd_verify)
 
     p = sub.add_parser("report", help="write report.json and print a summary (exit 1 while units are incomplete)")
