@@ -1,16 +1,16 @@
 id	status	atlases	cells	stage	scale	blend	score	caveat
-A12-07	KEEP-UNI	n_czerkaoff01,pfbd02,pmbc01,n_tsfoff01,n_tsfoff_f01	n_czerkaoff01:D2;pfbd02:D1;pmbc01:D1;n_tsfoff01:C1;n_tsfoff_f01:D1	S1D	0.06	normal	3	Collar not covered; silver tabs weak on grey panels
-A1-03	KEEP-UNI	n_tsfoff01,n_tsfoff_f01	cuff cell unverified	S1D	0.12	normal	3	TSF Lieutenant: officer atlas, not commander; tier C
+A12-07	KEEP-UNI	n_czerkaoff01,n_tsfoff01,n_tsfoff_f01	n_czerkaoff01:D2;n_tsfoff01:C1;n_tsfoff_f01:D1	S1D	0.06	normal	3	Player atlases dropped; collar not covered; silver weak on grey
+A1-03	KEEP-UNI	n_tsfcmdr01	n_tsfcmdr01:D1	S1D	0.12	normal	3	Grenn uses tsfcmdr01 (4 spawns); cuff cell unverified; tier C
 A1-04	KEEP-UNI	n_tsfoff01,n_tsfoff_f01,n_repoff01	n_tsfoff_f01:C3;n_tsfoff01:C1;n_repoff01:B1	S1D	0.10	normal	3	Republic Navy: not Czerka; collar cells unverified
 A3-02	KEEP-UNI	n_czerkaoff01,n_czerkaoffc01	n_czerkaoffc01:B2;n_czerkaoff01:B2	S1D	0.15	normal	3	Czerka only; upper-arm cells unmapped
-A6-05	KEEP-UNI	n_ond_off;pmbc01;n_ondsoldm1	n_ond_off=C3,C4,D2,D3,A4;pmbc01=A3,B3,C3,B4,D1;n_ondsoldm1=A4,C4,D1	S1H	1.0	normal	4	Vaklu unmapped; neutral picks; Onderon names conf 3; pmbc01 is player atlas.
+A6-05	KEEP-UNI	n_ondsoldm1,n_ond_off	n_ondsoldm1:A4,C4,D1;n_ond_off:C3,C4,D2,D3,A4	S1H	1.0	normal	4	Vaklu spawns use Onderon soldier/officer models (14); needs its own appearance row or texture variant
 A7-01	MERGE	-	-	-	-	-	2	Blue plate look duplicates MAND-2; paint once there.
 A7-05	KEEP-UNI	n_mandalorian01	01:A1,D2	S1D	0.25	normal	4	Assumes black armour; 01 base is steel blue. Right shoulder cell unconfirmed.
 A7-06	KEEP-UNI	n_mandalorian01;n_mandalorian02;n_mandalorian03	01:D3;02:D3;03:D3	S1D	0.25	normal	3	Tier B. Dark brown on 02/03; rust only on 01.
-A7-09	KEEP-UNI	n_mandalorian01;n_mandalorian02	01:B2,C2,D3;02:B2,C2,D3	S1D	0.5	normal	4	Tier B. Ubese faction unverified; clasp position approximate.
-A8-01	KEEP-UNI	n_sithsoldier03;n_sithcom03	n_sithsoldier03=A1,B1,C1,D1;n_sithcom03=A1,B2	S1D	0.25	normal	3	Conf 3; avoid D1 arch outline; command atlas lacks right shoulder.
-A8-02	KEEP-UNI	n_sithcomf01,n_sithcomf02,n_sithcomf03,n_sithoff_low_m	n_sithcomf0x:B2+C2;n_sithoff_low_m:A2	S1D	0.50	normal	4	Sith officer: grey cloth; cream vanishes; sithoff_low conf 2
-A8-03	KEEP-UNI	n_sithcomf01,n_sithcomf02,n_sithcomf03,n_sithoff_low_m	n_sithcomf0x:D1+B2;n_sithoff_low_m:B2	S1D	0.05	normal	4	Sith officer tabs; sithcomf conf 4, sithoff_low conf 2
+A7-09	KEEP-UNI	n_sithassn01	n_sithassn01:B2+D3	S1D	0.5	normal	4	Ubese Bounty Hunter model (57 spawns); hard plate, charcoal needs light paint; conf 2
+A8-01	KEEP-UNI	n_sithsoldier03	n_sithsoldier03:A1,B1,C1,D1	S1D	0.25	normal	3	Sith Soldier/Elite Trooper body (66 spawns); commando atlas dropped; avoid D1 arch outline
+A8-02	KEEP-UNI	n_sithcomm01,n_sithcomm02,n_sithcomm03,n_sithcomf01,n_sithcomf02,n_sithcomf03	n_sithcomm0x:A2+D2;n_sithcomf0x:B2+C2	S1D	0.50	normal	4	Sith Captain atlases (36 spawns); cream vanishes on grey; sash cells by H5/H6
+A8-03	KEEP-UNI	n_sithcomm01,n_sithcomm02,n_sithcomm03,n_sithcomf01,n_sithcomf02,n_sithcomf03	n_sithcomm0x:D2;n_sithcomf0x:D1+B2	S1D	0.05	normal	4	Sith Captain atlases (36 spawns); avoid pouches and zip
 MAND-1	KEEP-UNI	n_mandalorian01	01:A1,B2,C2,D2	S1H	0.5	overlay	4	S1H plates; crimson band (S1D) on D2 edge; visor B1 avoided.
 MAND-2	KEEP-UNI	n_mandalorian02;n_mandalorian03	02:A1,B2,C2,D2;03:B2,C2,D3	S1H	0.5	overlay	4	Blue replaces red/gold base; silver band weak on 02 cream trim.
 MAND-3	KEEP-UNI	n_mandalorian01;n_mandalorian02;n_mandalorian03	01:B2,C2,D2;02:B2,C2,D2;03:B2,C2	S2A	0.25	normal	4	Choose two of gold, crimson, blue, silver not on base.
@@ -22,15 +22,15 @@ ONDER-2	DROP	-	-	-	-	-	1	n_ond_off already near-black slate; n_ondsoldm1 is sold
 ONDER-3	DROP	-	-	-	-	-	1	n_ondsoldm1 cream and n_ond_off white drapes already there
 ONDER-4	MERGE	-	-	-	-	-	-	Same light-blue Vaklu suit as A6-05; officer name only.
 REPUB-3	KEEP-UNI	n_repsold01,n_repoff01,n_tsfoff01,n_tsfoff_f01,n_czerkaoff01,n_tsfcmdr01	n_repsold01:D1;n_repoff01:A1;n_tsfoff01:C1;n_tsfoff_f01:B1;n_czerkaoff01:D2;n_tsfcmdr01:D2	S1D	0.12	normal	4	Design palette; side unverified; off-white only on navy or maroon
-REPUB-4	KEEP-UNI	n_repoff01;n_czerkaoffc01;n_tsfoff01	n_repoff01=B1,C2,A3,B3,B4,D1;n_czerkaoffc01=A2,B2,C1,C2;n_tsfoff01=C1,A3,C4	S1H	1.0	normal	3	Officer atlas for trooper; tsfoff01 conf 2; orange piping clashes yellow.
+REPUB-4	KEEP-UNI	n_repsold01,n_repsold_f01	n_repsold01:D1,B2,D3	S1D	1.0	normal	3	Republic Soldier body (31 spawns) is already red; add yellow accents only; cells unverified
 SITHJ1-1	KEEP-UNI	n_sithsoldier01,n_sithcomf01	C1;B2	S1D	0.12w	normal	3	Black charm needs light plate; sithassn01 black base vanishes; conf 3-4.
 SITHJ1-2	KEEP-UNI	n_sithsoldier02	n_sithsoldier02=A1,B1,C1,D1,D2,A3,B3,C3,A4,B4	S1H	1.0	normal	4	Silver-white on red plates; sithsoldier01 already white, skipped.
-SITHJ1-3	KEEP-UNI	n_sithsoldier01;n_sithsoldier03	n_sithsoldier01=A1,B1,C1,D1,D2,A3,B3,C3,A4,B4;n_sithsoldier03=A1,B1,C1,D1,D2,A3,B3,C3,A4,B4	S1H	1.0	normal	3	Skip sithsoldier02 (already red); copper seams need S1D pass.
-SITHJ1-4	KEEP-UNI	n_jedirobem,n_jedicounm01,n_jedimemm01	A2,A3,B1,B3,C3,D1,D2;A1,A2,B3;A3,B2,C1,D2	S1H	1.00w	normal	3	Whole-robe hue shift keeping fold value; skip belt, hem, pouch cells.
-SITHJ1-5	KEEP-UNI	n_jedicounf01	B4	S1D	0.25w,0.05h	normal	2	Lilac skirt stands in for purple; hem edge unverified; faction unverified.
-SITHJ1-6	KEEP-UNI	n_jedirobem,n_jedimemm01	A2;B2	S2A	0.22w	normal	4	Gold weak on caramel; robe A2 off-centre; needs AI painting.
-SITHJ1-8	KEEP-UNI	n_jedirobem,n_jedicounm01,n_jedimemm01	A2,A3,B1,B3,C3,D1,D2;A1,A2,B3;A3,B2,C1,D2	S1H	1.00w	normal	3	Whole-robe grey recolour keeping fold value; skip belt, hem, pouch cells.
+SITHJ1-3	KEEP-UNI	n_sithcom01,n_sithcom03	n_sithcom0x:A1,B2,D3,A4 plates	S1H	1.0	normal	3	Sith Commando body (182 spawns); sithcom02 already red; copper seams via S1D; avoid cowl C1-D2
+SITHJ1-4	KEEP-UNI	n_jedirobem,n_jedicounm01,n_jedimemm01	A2,A3,B1,B3,C3,D1,D2;A1,A2,B3;A3,B2,C1,D2	S1H	1.00w	normal	3	Whole-robe hue shift keeping fold value; skip belt, hem, pouch cells.; few NPC users (jedicoun 4 spawns, jedimem/jedirobem 0): needs new spawns; few NPC users (jedicoun 4 spawns, jedimem/jedirobem 0):
+SITHJ1-5	KEEP-UNI	n_jedicounf01	B4	S1D	0.25w,0.05h	normal	2	Covenant has 0 spawns in registry; lilac skirt stand-in only; low value
+SITHJ1-6	KEEP-UNI	n_jedirobem,n_jedimemm01	A2;B2	S2A	0.22w	normal	4	Gold weak on caramel; robe A2 off-centre; needs AI painting.; few NPC users (jedicoun 4 spawns, jedimem/jedirobem 0): needs new spawns; few NPC users (jedicoun 4 spawns, jedimem/jedirobem 0): needs ne
+SITHJ1-8	KEEP-UNI	n_jedirobem,n_jedicounm01,n_jedimemm01	A2,A3,B1,B3,C3,D1,D2;A1,A2,B3;A3,B2,C1,D2	S1H	1.00w	normal	3	Whole-robe grey recolour keeping fold value; skip belt, hem, pouch cells.; few NPC users (jedicoun 4 spawns, jedimem/jedirobem 0): needs new spawns; few NPC users (jedicoun 4 spawns, jedimem/jedirobem
 SITHJ2-1	MERGE	-	-	-	-	-	-	Ring-and-mark roundel is the same design as SYM1-1; keep SYM1-1.
-STRAT1-5	KEEP-UNI	pmbc01,pfbc01,n_repsold01	pmbc01:D1;pfbc01:A2;n_repsold01:D1	S1H	0.25	overlay	4	Recolours jacket cells only; collar and cuff greys unmapped
-SYM1-1	KEEP-UNI	n_jedimemm01,n_jedirobem	B2;A2	S1D	0.20w	normal	4	Ivory ring on caramel; dark-grey base absent; memm01 conf 2.
-SYM1-5	KEEP-UNI	n_jedirobem,n_repoff01	A2;B1	S1D	0.18w	normal	3	Pale grey cross, no red; faction unverified; B1 is rank-bar slot.
+STRAT1-5	KEEP-UNI	n_repsold01,n_repoff01	n_repsold01:D1;n_repoff01:B1	S1H	0.25	overlay	4	Player atlases dropped (0 NPC spawns); jacket cells only
+SYM1-1	KEEP-UNI	n_jedimemm01,n_jedirobem	B2;A2	S1D	0.20w	normal	4	Ivory ring on caramel; dark-grey base absent; memm01 conf 2.; few NPC users (jedicoun 4 spawns, jedimem/jedirobem 0): needs new spawns; few NPC users (jedicoun 4 spawns, jedimem/jedirobem 0): needs ne
+SYM1-5	KEEP-UNI	n_jedirobem,n_repoff01	A2;B1	S1D	0.18w	normal	3	Pale grey cross, no red; faction unverified; B1 is rank-bar slot.; few NPC users (jedicoun 4 spawns, jedimem/jedirobem 0): needs new spawns; few NPC users (jedicoun 4 spawns, jedimem/jedirobem 0): nee

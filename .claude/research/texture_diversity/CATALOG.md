@@ -279,15 +279,15 @@ Wave 5 = 9 Haiku atlas annotators (51 vanilla atlases) + 4 fit agents on the 35 
 - Layouts differ per family, so the 4x4 cell rule is only a hint: the T2 island-mask tool matters more here. All cell maps are eyeballed (confidence 2-4); 256 px edges are about one cell off.
 - Family map: Czerka pair (`n_czerkaoff01`, `c01` recolour grey-olive); Republic officer `n_repoff01` (+ 256 px low variants); TSF navy `n_tsfoff01/_f01`, `n_tsfcmdr01`; Onderon `n_ondsoldm1`, `n_ond_off`; Sith plate `n_sithsoldier01-03`, Sith cloth `n_sithcomf01-03` / `n_sithcomm01-03`; Mandalorian plate mosaic `n_mandalorian01-03` (blue/red/gold, one UV); Jedi robes `n_jedicoun*`, `n_jedimem*`, `n_jedirobem`; player outfits `pmbc01` etc. (no bare skin).
 
-### 12.2 KEEP-UNI cards (30)
+### 12.2 KEEP-UNI cards (30, targets corrected with spawn ground truth, see 12.4)
 
 | id | card | atlases | stage | score | caveat |
 |---|---|---|---|---|---|
-| A6-05 | Vaklu light blue battle armour | n_ond_off, pmbc01, n_ondsoldm1 | S1H | 4 | Vaklu unmapped; neutral picks; Onderon names conf 3; pmbc01 is player atlas. |
+| A6-05 | Vaklu light blue battle armour | n_ondsoldm1,n_ond_off | S1H | 4 | Vaklu spawns use Onderon soldier/officer models (14); needs its own appearance row or texture variant |
 | A7-05 | Clan Wren yellow outline shoulders | n_mandalorian01 | S1D | 4 | Assumes black armour; 01 base is steel blue. Right shoulder cell unconfirmed. |
-| A7-09 | Ubese bandolier and belt-clasp | n_mandalorian01, n_mandalorian02 | S1D | 4 | Tier B. Ubese faction unverified; clasp position approximate. |
-| A8-02 | Crimson officer sash | n_sithcomf01,n_sithcomf02,n_sithcomf03,n_sithoff_low_m | S1D | 4 | Sith officer: grey cloth; cream vanishes; sithoff_low conf 2 |
-| A8-03 | Officer rank tabs and collar marks | n_sithcomf01,n_sithcomf02,n_sithcomf03,n_sithoff_low_m | S1D | 4 | Sith officer tabs; sithcomf conf 4, sithoff_low conf 2 |
+| A7-09 | Ubese bandolier and belt-clasp | n_sithassn01 | S1D | 4 | Ubese Bounty Hunter model (57 spawns); hard plate, charcoal needs light paint; conf 2 |
+| A8-02 | Crimson officer sash | n_sithcomm01,n_sithcomm02,n_sithcomm03,n_sithcomf01,n_sithcomf02,n_sithcomf03 | S1D | 4 | Sith Captain atlases (36 spawns); cream vanishes on grey; sash cells by H5/H6 |
+| A8-03 | Officer rank tabs and collar marks | n_sithcomm01,n_sithcomm02,n_sithcomm03,n_sithcomf01,n_sithcomf02,n_sithcomf03 | S1D | 4 | Sith Captain atlases (36 spawns); avoid pouches and zip |
 | MAND-1 | Neo-Crusader gold and crimson officer armour | n_mandalorian01 | S1H | 4 | S1H plates; crimson band (S1D) on D2 edge; visor B1 avoided. |
 | MAND-2 | Neo-Crusader blue and silver rank-and-file a | n_mandalorian02, n_mandalorian03 | S1H | 4 | Blue replaces red/gold base; silver band weak on 02 cream trim. |
 | MAND-3 | Mandalorian personal paint scheme and glyph | n_mandalorian01, n_mandalorian02, n_mandalorian03 | S2A | 4 | Choose two of gold, crimson, blue, silver not on base. |
@@ -296,23 +296,23 @@ Wave 5 = 9 Haiku atlas annotators (51 vanilla atlases) + 4 fit agents on the 35 
 | ONDER-1 | Onderon soldier gold piping | n_ondsoldm1 | S1D | 4 | Onderon label name-inferred; cuff zone unconfirmed |
 | REPUB-3 | Khoonda nine-spoke emblem | n_repsold01,n_repoff01,n_tsfoff01,n_tsfoff_f01,n_czerkaoff01,n_tsfcmdr01 | S1D | 4 | Design palette; side unverified; off-white only on navy or maroon |
 | SITHJ1-2 | Sith trooper silver-white plating | n_sithsoldier02 | S1H | 4 | Silver-white on red plates; sithsoldier01 already white, skipped. |
-| SITHJ1-6 | Jedi Order winged-blade crest | n_jedirobem,n_jedimemm01 | S2A | 4 | Gold weak on caramel; robe A2 off-centre; needs AI painting. |
-| STRAT1-5 | Standard-issue uniform colour block | pmbc01,pfbc01,n_repsold01 | S1H | 4 | Recolours jacket cells only; collar and cuff greys unmapped |
-| SYM1-1 | Bendu eight-spoke circle | n_jedimemm01,n_jedirobem | S1D | 4 | Ivory ring on caramel; dark-grey base absent; memm01 conf 2. |
-| A12-07 | Rank pips and shoulder metal tabs | n_czerkaoff01,pfbd02,pmbc01,n_tsfoff01,n_tsfoff_f01 | S1D | 3 | Collar not covered; silver tabs weak on grey panels |
-| A1-03 | Lieutenant cuff bands | n_tsfoff01,n_tsfoff_f01 | S1D | 3 | TSF Lieutenant: officer atlas, not commander; tier C |
+| SITHJ1-6 | Jedi Order winged-blade crest | n_jedirobem,n_jedimemm01 | S2A | 4 | Gold weak on caramel; robe A2 off-centre; needs AI painting.; few NPC users (jedicoun 4 spawns, jedimem/jedirobem 0): needs new spawns; few NPC users (jedicoun 4 spawns, jedimem/jedirobem 0): needs ne |
+| STRAT1-5 | Standard-issue uniform colour block | n_repsold01,n_repoff01 | S1H | 4 | Player atlases dropped (0 NPC spawns); jacket cells only |
+| SYM1-1 | Bendu eight-spoke circle | n_jedimemm01,n_jedirobem | S1D | 4 | Ivory ring on caramel; dark-grey base absent; memm01 conf 2.; few NPC users (jedicoun 4 spawns, jedimem/jedirobem 0): needs new spawns; few NPC users (jedicoun 4 spawns, jedimem/jedirobem 0): needs ne |
+| A12-07 | Rank pips and shoulder metal tabs | n_czerkaoff01,n_tsfoff01,n_tsfoff_f01 | S1D | 3 | Player atlases dropped; collar not covered; silver weak on grey |
+| A1-03 | Lieutenant cuff bands | n_tsfcmdr01 | S1D | 3 | Grenn uses tsfcmdr01 (4 spawns); cuff cell unverified; tier C |
 | A1-04 | Navy collar stripes | n_tsfoff01,n_tsfoff_f01,n_repoff01 | S1D | 3 | Republic Navy: not Czerka; collar cells unverified |
 | A3-02 | Paramilitary rank bars | n_czerkaoff01,n_czerkaoffc01 | S1D | 3 | Czerka only; upper-arm cells unmapped |
 | A7-06 | Kama belt flap | n_mandalorian01, n_mandalorian02, n_mandalorian03 | S1D | 3 | Tier B. Dark brown on 02/03; rust only on 01. |
-| A8-01 | Silver plate bands (Sith Trooper) | n_sithsoldier03, n_sithcom03 | S1D | 3 | Conf 3; avoid D1 arch outline; command atlas lacks right shoulder. |
+| A8-01 | Silver plate bands (Sith Trooper) | n_sithsoldier03 | S1D | 3 | Sith Soldier/Elite Trooper body (66 spawns); commando atlas dropped; avoid D1 arch outline |
 | MAND-6 | Kama coloured hem trim | n_mandalorian02, n_mandalorian03 | S1D | 3 | Hem sits near row 3/4 seam; belt strap avoided; verify overlay. |
-| REPUB-4 | Republic trooper red and yellow armour | n_repoff01, n_czerkaoffc01, n_tsfoff01 | S1H | 3 | Officer atlas for trooper; tsfoff01 conf 2; orange piping clashes yellow. |
+| REPUB-4 | Republic trooper red and yellow armour | n_repsold01,n_repsold_f01 | S1D | 3 | Republic Soldier body (31 spawns) is already red; add yellow accents only; cells unverified |
 | SITHJ1-1 | Sith assassin hex charm | n_sithsoldier01,n_sithcomf01 | S1D | 3 | Black charm needs light plate; sithassn01 black base vanishes; conf 3-4. |
-| SITHJ1-3 | Sith Commando red and copper armor | n_sithsoldier01, n_sithsoldier03 | S1H | 3 | Skip sithsoldier02 (already red); copper seams need S1D pass. |
-| SITHJ1-4 | Jedi Master red robe | n_jedirobem,n_jedicounm01,n_jedimemm01 | S1H | 3 | Whole-robe hue shift keeping fold value; skip belt, hem, pouch cells. |
-| SITHJ1-8 | Gray Jedi gray robe | n_jedirobem,n_jedicounm01,n_jedimemm01 | S1H | 3 | Whole-robe grey recolour keeping fold value; skip belt, hem, pouch cells. |
-| SYM1-5 | Cross of Healing | n_jedirobem,n_repoff01 | S1D | 3 | Pale grey cross, no red; faction unverified; B1 is rank-bar slot. |
-| SITHJ1-5 | Covenant purple robe, green hem | n_jedicounf01 | S1D | 2 | Lilac skirt stands in for purple; hem edge unverified; faction unverified. |
+| SITHJ1-3 | Sith Commando red and copper armor | n_sithcom01,n_sithcom03 | S1H | 3 | Sith Commando body (182 spawns); sithcom02 already red; copper seams via S1D; avoid cowl C1-D2 |
+| SITHJ1-4 | Jedi Master red robe | n_jedirobem,n_jedicounm01,n_jedimemm01 | S1H | 3 | Whole-robe hue shift keeping fold value; skip belt, hem, pouch cells.; few NPC users (jedicoun 4 spawns, jedimem/jedirobem 0): needs new spawns; few NPC users (jedicoun 4 spawns, jedimem/jedirobem 0): |
+| SITHJ1-8 | Gray Jedi gray robe | n_jedirobem,n_jedicounm01,n_jedimemm01 | S1H | 3 | Whole-robe grey recolour keeping fold value; skip belt, hem, pouch cells.; few NPC users (jedicoun 4 spawns, jedimem/jedirobem 0): needs new spawns; few NPC users (jedicoun 4 spawns, jedimem/jedirobem |
+| SYM1-5 | Cross of Healing | n_jedirobem,n_repoff01 | S1D | 3 | Pale grey cross, no red; faction unverified; B1 is rank-bar slot.; few NPC users (jedicoun 4 spawns, jedimem/jedirobem 0): needs new spawns; few NPC users (jedicoun 4 spawns, jedimem/jedirobem 0): nee |
+| SITHJ1-5 | Covenant purple robe, green hem | n_jedicounf01 | S1D | 2 | Covenant has 0 spawns in registry; lilac skirt stand-in only; low value |
 
 Merged: A7-01 -> MAND-2; ONDER-4 -> A6-05; SITHJ2-1 -> SYM1-1. Dropped (vanilla already shows it): ONDER-2 (n_ond_off is already near-black slate), ONDER-3 (white drape present).
 
@@ -322,3 +322,12 @@ Merged: A7-01 -> MAND-2; ONDER-4 -> A6-05; SITHJ2-1 -> SYM1-1. Dropped (vanilla 
 - Shared cells (`n_jedirobem` A2, `n_mandalorian0x` B2/C2, `n_sithsoldier03`): one card per cell per look.
 - A7-05 assumes black armour but `n_mandalorian01` is steel blue; MAND-5 and MAND-4 are both chest emblems: split across atlases.
 - Variant-system archetypes that were blocked (officer, TSF, Czerka, Onderon soldier) are now buildable from these cards; the POC set in section 5 still stands for commoners.
+
+### 12.4 Spawn ground truth (registry x appearance.2da; `tools/map_atlases.py`, `w5/atlas_users.md`, `w5/faction_probe.tsv`)
+Body textures resolve as appearance `texa`/`racetex` + a 2-digit UTC variant; the registry has no per-spawn variant, so counts are per atlas family.
+- **Heavy users (worth the effort):** Sith Commando `n_sithcom01-03` 199 spawns; Sith Soldier/Trooper `n_sithsoldier` 124; Mandalorian `n_mandalorian01-03` 61; Dark Jedi/Sith Warrior `n_darkjmidm` 52; Ubese Bounty Hunter/Assassin = model `n_sithassn` (59, the atlas name is misleading); Czerka `n_czerkaoff` 30; Republic Soldier `n_repsold` 27+4; TSF officer `n_tsfoff` 20+6.
+- **Mappings confirmed:** Sith Captain = `n_sithcomm`/`n_sithcomf` (36 spawns, so officer sash/tabs go there). Lieutenant Grenn = `n_tsfcmdr01`. TSF officers wear the Republic *soldier* model with `N_TSFOff` texture. Czerka Captain = `n_czerkaoffc01` (1 spawn). Republic Officer `n_repoff` (10 incl. females).
+- **Vaklu has no atlas of its own:** Vaklu-named spawns (14) use the Onderon soldier/officer models, so a Vaklu look needs a new appearance row or texture variant, not just a recolour of the shared atlas.
+- **Not used by NPCs:** player outfits `pmbc01/pfbc01/pmbd02/pfbd02` (0 spawns; dropped from all assignments), `n_sithoff_low_*` and `n_repoff_low_*` (0), `n_jedimemm/f`, `n_jedirobem` (0), Jedi counselors 4. Robe cards (SITHJ1-4/6/8, SYM1-1/5) therefore have few existing users and need new spawns.
+- **No spawns:** Covenant (0), Khoonda NPCs (only turrets), Telos Security by that name (TSF is the name). Exchange spawns mostly sit on species bodies (gammorean, Trandoshan, Rodian) and the commoner atlases.
+- Corrections to the fit agents: A1-03 back to `n_tsfcmdr01`; A8-02/03 now on the Sith Captain atlases (not `n_sithoff_low_m`); SITHJ1-3 Commando moved to `n_sithcom` (not `n_sithsoldier`); A7-09 Ubese moved to `n_sithassn01`; REPUB-4 on `n_repsold01` as yellow accents (red base already). Script: `tools/apply_w5_groundtruth.py`.

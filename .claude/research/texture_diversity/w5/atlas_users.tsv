@@ -1,0 +1,42 @@
+family	atlases	app_rows	kinds	spawns	names	factions	modules
+n_czerkaoff	01	18,195,196,197,198,199,377,558,679,804	texa	30	Czerka Employee(8); Czerka Trade Officer(4); Czerka Corpse{1}(3); Czerka Corpse{2}(2); Czerka Security(2); Czerka Employee{M}(1)	5:18,2:9,1:3	232tel:6,972cor:4,endor2:4,tatm17aa:4
+n_czerkaoffc	01	425	texa	1	Czerka Captain(1)	2:1	endor1:1
+n_darkjedim	01	20,370,379,421,422,792	model,texa	22	Sith Marauder(7); Legion of Lettow(4); Sith Acolyte(4); Sith Ghost(2); Dark Jedi(2); Dark Teacher(1)	1:14,5:7,2:1	906mal:4,910dag:4,unkm44aa:4,905mal:3
+n_darkjlowf	01	525,526,527	racetex	3	Apprentice(2); Dark Jedi Apprentice{Fuel}(1)	5:2,16:1	745kor:2,222tel:1
+n_darkjmidf	01	531,532,533	racetex	11	Dark Jedi Apprentice{Female 2}(8); Dark Jedi{Female}(2); Apprentice(1)	1:10,5:1	903mal:4,852nih:2,905mal:2,906mal:2
+n_darkjmidm	01	534,535,536,784	racetex	52	Sith Warrior(24); Dark Jedi Apprentice(8); Dark Jedi Apprentice{Male 2}(6); Sith Apprentice(4); Sith Assassin(3); Dark Jedi{Male}(2)	1:50,16:1,5:1	411dxn:9,905mal:4,rhenvar3:4,rhenvar4:4
+n_dockofd	01			0			
+n_jedicounf	01	30,200,201,202,203,204,205,206,207,208,209,210,211,212,213,306,307,308	texa	2	Nisotsa(1); Cariaga Sin(1)	5:2	711kor:2
+n_jedicounm	01	31,214,215,216,217,218,219,220,221,222,223,224,225,226,227,303,304,305,380	texa	2	Talvon Esan(1); Xaset Terep(1)	5:2	711kor:2
+n_jedimemf	01	33	texa	0			
+n_jedimemm	01	34	texa	0			
+n_jedirobem	n_jedirobem			0			
+n_mandalorian	01,02,03	35,351,352,788	racetex,texa	61	Mandalorian Mercenary(22); Mandalorian Recruit(4); Mandalorian{CS}(3); Mandalorian Thug(3); Xarga(3); Mandalorian(2)	5:28,1:26,2:7	403dxn:17,971cor:7,yavhide1:6,956cor:5
+n_medoff	01			0			
+n_ond_off	n_ond_off	492,493,494,495,496,602,626	model-guess	11	Colonel Tobin(4); Captain Kadron(2); Captain Gelesi(1); Captain{Cut Scene}(1); Captain Riiken(1); Captain Bostuco(1)	5:11	502ond:3,506ond:3,402dxn:2,511ond:1
+n_ondsoldm	1			0			
+n_r_off_f	01			0			
+n_repoff	01	37,287,288,289,290,598	texa	7	Republic Officer(3); Captain Galare(2); Captain Castin(1); Republic Soldier(1)	2:4,5:3	m26mg:3,kasm22aa:2,rcz1:1,955cor:1
+n_repoff_f	01	360,361,362,363,367	texa	3	Republic Captain(1); Republic Officer(1); Republic Soldier(1)	5:2,2:1	711kor:1,202tel:1,955cor:1
+n_repoff_low_f	n_repoff_low_f	322	racetex	0			
+n_repoff_low_m	n_repoff_low_m	321	racetex	0			
+n_repofff	01			0			
+n_repsold	01	38,283,284,285,286,355,378,597	texa	27	Republic Soldier(17); Republic Officer(5); Ensign Riggs(1); Republic Mechanic(1); Quartermaster(1); Republic Officer{Grenn Escort}(1)	2:18,5:9	man_m26ae:5,711kor:5,222tel:4,205tel:3
+n_repsold_f	01	356,357,358,359,364	texa	4	Republic Soldier(3); Republic Officer(1)	2:4	222tel:1,966cor:1,967cor:1,kasm22aa:1
+n_sithappren	01	41	texa	4	Sith Apprentice(1); Apprentice(1); Dark Jedi(1); Sith Warrior(1)	1:2,2:1,16:1	740kor:1,745kor:1,mansith2:1,rhenvar3:1
+n_sithassn	01	459	model	59	Ubese Bounty Hunter(32); Ubese Assassin(25); Ubese Bounty Hunter{305Alarm1}(1); Ubese Bounty Hunter{305Alarm2}(1)	1:57,5:2	305nar:34,tatruins2:11,969cor:6,965cor:4
+n_sithcom	01,02,03	508,509,510	racetex	199	Sith Commando(182); Sith Sentinel(6); Sith Commando{Fuel}(4); Sith Commando{CS}(3); Sith Commando{Explosion}(3); Sith Commando{TSF Door}(1)	1:180,5:16,2:3	851nih:34,906mal:26,yavtomb1:17,yavbase1:13
+n_sithcomf	01,02,03	42,291,292,293,294,295,301,434,772,773	model,texa	22	Sith Captain(16); Sith Lieutenant(3); Security Chief Rain(1); Sith Soldier(1); Proselyte(1)	1:18,2:3,5:1	851nih:2,mansith2:2,410dxn:1,gra801:1
+n_sithcomm	01,02,03	43,296,297,298,299,300,302,376,415,433,435,442	texa	27	Sith Captain(20); Sith Diplomat(1); Sith Soldier(1); Viglo(1); Proselyte(1); Dock Officer(1)	1:20,2:5,5:2	411dxn:2,745kor:2,manm26ab:2,mansithb1:2
+n_sithoff_low_f	n_sithoff_low_f	331	racetex	0			
+n_sithoff_low_m	n_sithoff_low_m	332	racetex	0			
+n_sithsoldier	01,02,03	28,44,261	racetex,texa	124	Sith Soldier(35); Sith Elite Trooper(31); Sith Commando(26); Sith Sentinel(8); Sith Heavy Trooper(6); Sith Grenadier(4)	1:108,5:13,2:3	411dxn:24,851nih:14,852nih:12,410dxn:9
+n_sithsoldier_b	n_sithsoldier_b			0			
+n_tsfcmdr	01	485,486,625	texa	5	Lieutenant Grenn(4); TSF Officer{Leader}(1)	5:4,2:1	220tel:1,202tel:1,203tel:1,205tel:1
+n_tsfcmdr_f	01	487,488	texa	1	Bay Control(1)	5:1	201tel:1
+n_tsfoff	01	479,480,481,482	texa	20	TSF Officer{Male}(4); TSF Officer(4); TSF Officer{Female}(3); TSF Officer{Dock Guard}(2); TSF Officer{1}(2); TSF Officer{Generic Male}(2)	2:13,5:7	220tel:6,221tel:6,201tel:3,202tel:3
+n_tsfoff_f	01	483,484	texa	6	TSF Officer{2}(2); TSF Officer{Generic Female}(1); TSF Officer{Standing Female}(1); TSF Officer{Female}(1); TSF Officer {Bay}(1)	5:6	202tel:3,203tel:1,205tel:1,222tel:1
+pfbc	01			0			
+pfbd	02			0			
+pmbc	01			0			
+pmbd	02			0			

@@ -867,13 +867,14 @@
   ],
   "w5": {
    "verdict": "KEEP",
-   "atlases": "n_czerkaoff01,pfbd02,pmbc01,n_tsfoff01,n_tsfoff_f01",
-   "cells": "n_czerkaoff01:D2;pfbd02:D1;pmbc01:D1;n_tsfoff01:C1;n_tsfoff_f01:D1",
+   "atlases": "n_czerkaoff01,n_tsfoff01,n_tsfoff_f01",
+   "cells": "n_czerkaoff01:D2;n_tsfoff01:C1;n_tsfoff_f01:D1",
    "stage": "S1D",
    "scale": "0.06",
    "blend": "normal",
    "score": "3",
-   "caveat": "Collar not covered; silver tabs weak on grey panels"
+   "caveat": "Player atlases dropped; collar not covered; silver weak on grey",
+   "groundtruth": "registry x appearance.2da"
   }
  },
  {
@@ -1209,14 +1210,15 @@
   ],
   "w5": {
    "verdict": "KEEP",
-   "atlases": "n_tsfoff01,n_tsfoff_f01",
-   "cells": "cuff cell unverified",
+   "atlases": "n_tsfcmdr01",
+   "cells": "n_tsfcmdr01:D1",
    "stage": "S1D",
    "scale": "0.12",
    "blend": "normal",
    "score": "3",
-   "caveat": "TSF Lieutenant: officer atlas, not commander; tier C",
-   "override": "orchestrator faction fix"
+   "caveat": "Grenn uses tsfcmdr01 (4 spawns); cuff cell unverified; tier C",
+   "override": "orchestrator faction fix",
+   "groundtruth": "registry x appearance.2da"
   }
  },
  {
@@ -4586,13 +4588,14 @@
   ],
   "w5": {
    "verdict": "KEEP",
-   "atlases": "n_ond_off;pmbc01;n_ondsoldm1",
-   "cells": "n_ond_off=C3,C4,D2,D3,A4;pmbc01=A3,B3,C3,B4,D1;n_ondsoldm1=A4,C4,D1",
+   "atlases": "n_ondsoldm1,n_ond_off",
+   "cells": "n_ondsoldm1:A4,C4,D1;n_ond_off:C3,C4,D2,D3,A4",
    "stage": "S1H",
    "scale": "1.0",
    "blend": "normal",
    "score": "4",
-   "caveat": "Vaklu unmapped; neutral picks; Onderon names conf 3; pmbc01 is player atlas."
+   "caveat": "Vaklu spawns use Onderon soldier/officer models (14); needs its own appearance row or texture variant",
+   "groundtruth": "registry x appearance.2da"
   }
  },
  {
@@ -5593,13 +5596,14 @@
   ],
   "w5": {
    "verdict": "KEEP",
-   "atlases": "n_mandalorian01;n_mandalorian02",
-   "cells": "01:B2,C2,D3;02:B2,C2,D3",
+   "atlases": "n_sithassn01",
+   "cells": "n_sithassn01:B2+D3",
    "stage": "S1D",
    "scale": "0.5",
    "blend": "normal",
    "score": "4",
-   "caveat": "Tier B. Ubese faction unverified; clasp position approximate."
+   "caveat": "Ubese Bounty Hunter model (57 spawns); hard plate, charcoal needs light paint; conf 2",
+   "groundtruth": "registry x appearance.2da"
   }
  },
  {
@@ -5721,13 +5725,14 @@
   ],
   "w5": {
    "verdict": "KEEP",
-   "atlases": "n_sithsoldier03;n_sithcom03",
-   "cells": "n_sithsoldier03=A1,B1,C1,D1;n_sithcom03=A1,B2",
+   "atlases": "n_sithsoldier03",
+   "cells": "n_sithsoldier03:A1,B1,C1,D1",
    "stage": "S1D",
    "scale": "0.25",
    "blend": "normal",
    "score": "3",
-   "caveat": "Conf 3; avoid D1 arch outline; command atlas lacks right shoulder."
+   "caveat": "Sith Soldier/Elite Trooper body (66 spawns); commando atlas dropped; avoid D1 arch outline",
+   "groundtruth": "registry x appearance.2da"
   }
  },
  {
@@ -5802,14 +5807,15 @@
   ],
   "w5": {
    "verdict": "KEEP",
-   "atlases": "n_sithcomf01,n_sithcomf02,n_sithcomf03,n_sithoff_low_m",
-   "cells": "n_sithcomf0x:B2+C2;n_sithoff_low_m:A2",
+   "atlases": "n_sithcomm01,n_sithcomm02,n_sithcomm03,n_sithcomf01,n_sithcomf02,n_sithcomf03",
+   "cells": "n_sithcomm0x:A2+D2;n_sithcomf0x:B2+C2",
    "stage": "S1D",
    "scale": "0.50",
    "blend": "normal",
    "score": "4",
-   "caveat": "Sith officer: grey cloth; cream vanishes; sithoff_low conf 2",
-   "override": "orchestrator faction fix"
+   "caveat": "Sith Captain atlases (36 spawns); cream vanishes on grey; sash cells by H5/H6",
+   "override": "orchestrator faction fix",
+   "groundtruth": "registry x appearance.2da"
   }
  },
  {
@@ -5880,14 +5886,15 @@
   ],
   "w5": {
    "verdict": "KEEP",
-   "atlases": "n_sithcomf01,n_sithcomf02,n_sithcomf03,n_sithoff_low_m",
-   "cells": "n_sithcomf0x:D1+B2;n_sithoff_low_m:B2",
+   "atlases": "n_sithcomm01,n_sithcomm02,n_sithcomm03,n_sithcomf01,n_sithcomf02,n_sithcomf03",
+   "cells": "n_sithcomm0x:D2;n_sithcomf0x:D1+B2",
    "stage": "S1D",
    "scale": "0.05",
    "blend": "normal",
    "score": "4",
-   "caveat": "Sith officer tabs; sithcomf conf 4, sithoff_low conf 2",
-   "override": "orchestrator faction fix"
+   "caveat": "Sith Captain atlases (36 spawns); avoid pouches and zip",
+   "override": "orchestrator faction fix",
+   "groundtruth": "registry x appearance.2da"
   }
  },
  {
@@ -9258,13 +9265,14 @@
   ],
   "w5": {
    "verdict": "KEEP",
-   "atlases": "n_repoff01;n_czerkaoffc01;n_tsfoff01",
-   "cells": "n_repoff01=B1,C2,A3,B3,B4,D1;n_czerkaoffc01=A2,B2,C1,C2;n_tsfoff01=C1,A3,C4",
-   "stage": "S1H",
+   "atlases": "n_repsold01,n_repsold_f01",
+   "cells": "n_repsold01:D1,B2,D3",
+   "stage": "S1D",
    "scale": "1.0",
    "blend": "normal",
    "score": "3",
-   "caveat": "Officer atlas for trooper; tsfoff01 conf 2; orange piping clashes yellow."
+   "caveat": "Republic Soldier body (31 spawns) is already red; add yellow accents only; cells unverified",
+   "groundtruth": "registry x appearance.2da"
   }
  },
  {
@@ -9491,13 +9499,14 @@
   ],
   "w5": {
    "verdict": "KEEP",
-   "atlases": "n_sithsoldier01;n_sithsoldier03",
-   "cells": "n_sithsoldier01=A1,B1,C1,D1,D2,A3,B3,C3,A4,B4;n_sithsoldier03=A1,B1,C1,D1,D2,A3,B3,C3,A4,B4",
+   "atlases": "n_sithcom01,n_sithcom03",
+   "cells": "n_sithcom0x:A1,B2,D3,A4 plates",
    "stage": "S1H",
    "scale": "1.0",
    "blend": "normal",
    "score": "3",
-   "caveat": "Skip sithsoldier02 (already red); copper seams need S1D pass."
+   "caveat": "Sith Commando body (182 spawns); sithcom02 already red; copper seams via S1D; avoid cowl C1-D2",
+   "groundtruth": "registry x appearance.2da"
   }
  },
  {
@@ -9582,7 +9591,8 @@
    "scale": "1.00w",
    "blend": "normal",
    "score": "3",
-   "caveat": "Whole-robe hue shift keeping fold value; skip belt, hem, pouch cells."
+   "caveat": "Whole-robe hue shift keeping fold value; skip belt, hem, pouch cells.; few NPC users (jedicoun 4 spawns, jedimem/jedirobem 0): needs new spawns; few NPC users (jedicoun 4 spawns, jedimem/jedirobem 0):",
+   "groundtruth": "few users"
   }
  },
  {
@@ -9660,7 +9670,8 @@
    "scale": "0.25w,0.05h",
    "blend": "normal",
    "score": "2",
-   "caveat": "Lilac skirt stands in for purple; hem edge unverified; faction unverified."
+   "caveat": "Covenant has 0 spawns in registry; lilac skirt stand-in only; low value",
+   "groundtruth": "registry x appearance.2da"
   }
  },
  {
@@ -9723,7 +9734,8 @@
    "scale": "0.22w",
    "blend": "normal",
    "score": "4",
-   "caveat": "Gold weak on caramel; robe A2 off-centre; needs AI painting."
+   "caveat": "Gold weak on caramel; robe A2 off-centre; needs AI painting.; few NPC users (jedicoun 4 spawns, jedimem/jedirobem 0): needs new spawns; few NPC users (jedicoun 4 spawns, jedimem/jedirobem 0): needs ne",
+   "groundtruth": "few users"
   }
  },
  {
@@ -9846,7 +9858,8 @@
    "scale": "1.00w",
    "blend": "normal",
    "score": "3",
-   "caveat": "Whole-robe grey recolour keeping fold value; skip belt, hem, pouch cells."
+   "caveat": "Whole-robe grey recolour keeping fold value; skip belt, hem, pouch cells.; few NPC users (jedicoun 4 spawns, jedimem/jedirobem 0): needs new spawns; few NPC users (jedicoun 4 spawns, jedimem/jedirobem",
+   "groundtruth": "few users"
   }
  },
  {
@@ -10274,13 +10287,14 @@
   ],
   "w5": {
    "verdict": "KEEP",
-   "atlases": "pmbc01,pfbc01,n_repsold01",
-   "cells": "pmbc01:D1;pfbc01:A2;n_repsold01:D1",
+   "atlases": "n_repsold01,n_repoff01",
+   "cells": "n_repsold01:D1;n_repoff01:B1",
    "stage": "S1H",
    "scale": "0.25",
    "blend": "overlay",
    "score": "4",
-   "caveat": "Recolours jacket cells only; collar and cuff greys unmapped"
+   "caveat": "Player atlases dropped (0 NPC spawns); jacket cells only",
+   "groundtruth": "registry x appearance.2da"
   }
  },
  {
@@ -10434,7 +10448,8 @@
    "scale": "0.20w",
    "blend": "normal",
    "score": "4",
-   "caveat": "Ivory ring on caramel; dark-grey base absent; memm01 conf 2."
+   "caveat": "Ivory ring on caramel; dark-grey base absent; memm01 conf 2.; few NPC users (jedicoun 4 spawns, jedimem/jedirobem 0): needs new spawns; few NPC users (jedicoun 4 spawns, jedimem/jedirobem 0): needs ne",
+   "groundtruth": "few users"
   }
  },
  {
@@ -10682,7 +10697,8 @@
    "scale": "0.18w",
    "blend": "normal",
    "score": "3",
-   "caveat": "Pale grey cross, no red; faction unverified; B1 is rank-bar slot."
+   "caveat": "Pale grey cross, no red; faction unverified; B1 is rank-bar slot.; few NPC users (jedicoun 4 spawns, jedimem/jedirobem 0): needs new spawns; few NPC users (jedicoun 4 spawns, jedimem/jedirobem 0): nee",
+   "groundtruth": "few users"
   }
  }
 ]

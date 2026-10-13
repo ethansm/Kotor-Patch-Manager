@@ -1,0 +1,45 @@
+# Atlas family -> creature users
+
+Source: override/appearance.2da x npc_div/registry.jsonl. Variant digit unknown per spawn, so counts are per family.
+
+- **n_czerkaoff** (n_czerkaoff01): 30 spawns via rows [18, 195, 196, 197, 198, 199] [texa]: Czerka Employee x8, Czerka Trade Officer x4, Czerka Corpse{1} x3, Czerka Corpse{2} x2, Czerka Security x2
+- **n_czerkaoffc** (n_czerkaoffc01): 1 spawns via rows [425] [texa]: Czerka Captain x1
+- **n_darkjedim** (n_darkjedim01): 22 spawns via rows [20, 370, 379, 421, 422, 792] [model,texa]: Sith Marauder x7, Legion of Lettow x4, Sith Acolyte x4, Sith Ghost x2, Dark Jedi x2
+- **n_darkjlowf** (n_darkjlowf01): 3 spawns via rows [525, 526, 527] [racetex]: Apprentice x2, Dark Jedi Apprentice{Fuel} x1
+- **n_darkjmidf** (n_darkjmidf01): 11 spawns via rows [531, 532, 533] [racetex]: Dark Jedi Apprentice{Female 2} x8, Dark Jedi{Female} x2, Apprentice x1
+- **n_darkjmidm** (n_darkjmidm01): 52 spawns via rows [534, 535, 536, 784] [racetex]: Sith Warrior x24, Dark Jedi Apprentice x8, Dark Jedi Apprentice{Male 2} x6, Sith Apprentice x4, Sith Assassin x3
+- **n_dockofd** (n_dockofd01): 0 spawns via rows [] [NO ROW]: none
+- **n_jedicounf** (n_jedicounf01): 2 spawns via rows [30, 200, 201, 202, 203, 204] [texa]: Nisotsa x1, Cariaga Sin x1
+- **n_jedicounm** (n_jedicounm01): 2 spawns via rows [31, 214, 215, 216, 217, 218] [texa]: Talvon Esan x1, Xaset Terep x1
+- **n_jedimemf** (n_jedimemf01): 0 spawns via rows [33] [texa]: none
+- **n_jedimemm** (n_jedimemm01): 0 spawns via rows [34] [texa]: none
+- **n_jedirobem** (n_jedirobem): 0 spawns via rows [] [NO ROW]: none
+- **n_mandalorian** (n_mandalorian01, n_mandalorian02, n_mandalorian03): 61 spawns via rows [35, 351, 352, 788] [racetex,texa]: Mandalorian Mercenary x22, Mandalorian Recruit x4, Mandalorian{CS} x3, Mandalorian Thug x3, Xarga x3
+- **n_medoff** (n_medoff01): 0 spawns via rows [] [NO ROW]: none
+- **n_ond_off** (n_ond_off): 11 spawns via rows [492, 493, 494, 495, 496, 602] [model-guess]: Colonel Tobin x4, Captain Kadron x2, Captain Gelesi x1, Captain{Cut Scene} x1, Captain Riiken x1
+- **n_ondsoldm** (n_ondsoldm1): 0 spawns via rows [] [NO ROW]: none
+- **n_r_off_f** (n_r_off_f01): 0 spawns via rows [] [NO ROW]: none
+- **n_repoff** (n_repoff01): 7 spawns via rows [37, 287, 288, 289, 290, 598] [texa]: Republic Officer x3, Captain Galare x2, Captain Castin x1, Republic Soldier x1
+- **n_repoff_f** (n_repoff_f01): 3 spawns via rows [360, 361, 362, 363, 367] [texa]: Republic Captain x1, Republic Officer x1, Republic Soldier x1
+- **n_repoff_low_f** (n_repoff_low_f): 0 spawns via rows [322] [racetex]: none
+- **n_repoff_low_m** (n_repoff_low_m): 0 spawns via rows [321] [racetex]: none
+- **n_repofff** (n_repofff01): 0 spawns via rows [] [NO ROW]: none
+- **n_repsold** (n_repsold01): 27 spawns via rows [38, 283, 284, 285, 286, 355] [texa]: Republic Soldier x17, Republic Officer x5, Ensign Riggs x1, Republic Mechanic x1, Quartermaster x1
+- **n_repsold_f** (n_repsold_f01): 4 spawns via rows [356, 357, 358, 359, 364] [texa]: Republic Soldier x3, Republic Officer x1
+- **n_sithappren** (n_sithappren01): 4 spawns via rows [41] [texa]: Sith Apprentice x1, Apprentice x1, Dark Jedi x1, Sith Warrior x1
+- **n_sithassn** (n_sithassn01): 59 spawns via rows [459] [model]: Ubese Bounty Hunter x32, Ubese Assassin x25, Ubese Bounty Hunter{305Alarm1} x1, Ubese Bounty Hunter{305Alarm2} x1
+- **n_sithcom** (n_sithcom01, n_sithcom02, n_sithcom03): 199 spawns via rows [508, 509, 510] [racetex]: Sith Commando x182, Sith Sentinel x6, Sith Commando{Fuel} x4, Sith Commando{CS} x3, Sith Commando{Explosion} x3
+- **n_sithcomf** (n_sithcomf01, n_sithcomf02, n_sithcomf03): 22 spawns via rows [42, 291, 292, 293, 294, 295] [model,texa]: Sith Captain x16, Sith Lieutenant x3, Security Chief Rain x1, Sith Soldier x1, Proselyte x1
+- **n_sithcomm** (n_sithcomm01, n_sithcomm02, n_sithcomm03): 27 spawns via rows [43, 296, 297, 298, 299, 300] [texa]: Sith Captain x20, Sith Diplomat x1, Sith Soldier x1, Viglo x1, Proselyte x1
+- **n_sithoff_low_f** (n_sithoff_low_f): 0 spawns via rows [331] [racetex]: none
+- **n_sithoff_low_m** (n_sithoff_low_m): 0 spawns via rows [332] [racetex]: none
+- **n_sithsoldier** (n_sithsoldier01, n_sithsoldier02, n_sithsoldier03): 124 spawns via rows [28, 44, 261] [racetex,texa]: Sith Soldier x35, Sith Elite Trooper x31, Sith Commando x26, Sith Sentinel x8, Sith Heavy Trooper x6
+- **n_sithsoldier_b** (n_sithsoldier_b): 0 spawns via rows [] [NO ROW]: none
+- **n_tsfcmdr** (n_tsfcmdr01): 5 spawns via rows [485, 486, 625] [texa]: Lieutenant Grenn x4, TSF Officer{Leader} x1
+- **n_tsfcmdr_f** (n_tsfcmdr_f01): 1 spawns via rows [487, 488] [texa]: Bay Control x1
+- **n_tsfoff** (n_tsfoff01): 20 spawns via rows [479, 480, 481, 482] [texa]: TSF Officer{Male} x4, TSF Officer x4, TSF Officer{Female} x3, TSF Officer{Dock Guard} x2, TSF Officer{1} x2
+- **n_tsfoff_f** (n_tsfoff_f01): 6 spawns via rows [483, 484] [texa]: TSF Officer{2} x2, TSF Officer{Generic Female} x1, TSF Officer{Standing Female} x1, TSF Officer{Female} x1, TSF Officer {Bay} x1
+- **pfbc** (pfbc01): 0 spawns via rows [] [NO ROW]: none
+- **pfbd** (pfbd02): 0 spawns via rows [] [NO ROW]: none
+- **pmbc** (pmbc01): 0 spawns via rows [] [NO ROW]: none
+- **pmbd** (pmbd02): 0 spawns via rows [] [NO ROW]: none
