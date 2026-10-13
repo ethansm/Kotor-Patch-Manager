@@ -1,7 +1,7 @@
 # 40 NPC behaviour variety: extra walkers, scripted encounters, animation
 
 ## Status
-- **State: V0, V1, V3 and V4 done (2026-10-13); V3 = pool and roster spec in section 8 (host-only, tables + 2 tested scripts, no DLL); V4 = visitSalt in doc 34 hash, host tests + build only, salt unwired, option `visit_variety` in npc-diversity.ini (default 0 = same look), nothing installed.** Next: V2 live probe (needs user GO and a pre-visit save) or V6 animation feasibility (host-only research).
+- **State: V0, V1, V3, V4 and V6 done (2026-10-13); V6 = animation feasibility in section 9 (native `PlayAnimation` injector recommended, two generated tables, no DLL); V3 = pool and roster spec in section 8 (host-only, tables + 2 tested scripts, no DLL); V4 = visitSalt in doc 34 hash, host tests + build only, salt unwired, option `visit_variety` in npc-diversity.ini (default 0 = same look), nothing installed.** Next: V2 live probe (needs user GO and a pre-visit save; now includes P8-P10) or V5 scripted-encounter feasibility (host-only).
 - Origin (user, 10-12/13): doc 34 only changes how generic commoners look. Goal: a section should not feel the same every pass. (a) randomize NPC animations/actions; (b) randomly add walking aliens, TSF agents, Czerka NPCs among plain commoners; (c) later, small random scripted events (example: TSF agents chasing and shooting at an outlaw across the station; runner and chasers invincible, hasted, combat disabled), possibly with K1 NPC audio/dialog.
 - Evidence: Haiku wave `w9-npcvar` (12 recon units, all PARTIAL), raw findings copied to `.claude/research/npc_variety/u01..u12.md`, animation inventories `u03_anims.txt` and `u03b_target_rows.txt`. Web prior-art searches (10-13) summarized in section 5. Memory: `kotor2-npc-behaviour-variety-idea`.
 - Related docs: 34 (appearance dispatcher), 35 (`35_npc_add_poc.md`, spawn routes U1-U11), 38 (K1 import, native spawn probe T25, licence policy section 8), `.claude/research/npc_add/` (R1-R6, poc/).
@@ -55,7 +55,7 @@
 | V3 | Pool and roster spec: group pools, area eligibility table, spawn budget, per-species walk speeds | DONE (section 8) |
 | V4 | Visit-salt change in doc 34 code (host tests, build only) and doc 34 section 3.2.2 update | DONE (host tests + build; salt unwired, V4b = area-entry source after V2) |
 | V5 | Scripted-encounter feasibility: can the patch run or trigger scripts, effect/flag building blocks, K1 audio licence and format path (audio/voice side researched 2026-10-13: see doc 41) | TODO |
-| V6 | Animation randomization feasibility: script (flag 109 / local 29) versus native (`Gob::PlayAnimation 004e3270`) | TODO |
+| V6 | Animation randomization feasibility: script (flag 109 / local 29) versus native (`Gob::PlayAnimation 004e3270`) | DONE (section 9; native route recommended, P8-P10 added to V2) |
 | V7 | Opus gate: choose build order, write the master plan, retire or merge the doc 35 routes | TODO |
 
 ## 7. V1 results (2026-10-13; static, no game, nothing installed)
@@ -92,7 +92,7 @@ DelayCommand 7, ExecuteScript 8, ActionAttack 37, PlaySound 46, SetFacingPoint 1
 - Audio (u05): repo policy says vanilla K1 files stay local, never committed or redistributed; unknown licence counts as needing approval; no audio ingest path exists. A subtitle-only bark = `ActionSpeakStringByStrRef(strref, vol)` with a strref appended via `scripts/append_ranged_kite_tlk.py`, script compiled with `compile.sh`, shipped as an override `.ncs` (pattern proven for `k_def_heartbt01`, T19). Appended-strref playback untested. `.wav/.lip/.ssf` formats and paths are OPEN.
 
 ### 7.6 Revised V2 probe list (needs user GO + pre-visit save)
-P1 VarTable-preset walker with a stock `k_def_spawn01` OnSpawn (no script change): does it walk the area's `WP_<tag>_NN` waypoints. P2 blank-conversation template: click it. P3 shoot a spawned faction-5 template: does it turn hostile. P4 hook-spawned creature across save/load (OID, persistence, `+0x11AC/+0x11FC` values). P5 AI_OFF (87) on a spawned actor plus `SetPlotFlag`/`EffectHaste`/`ActionForceMoveToLocation` from a script. P6 `ActionSpeakStringByStrRef` with an appended strref. P7 RemoveFromArea on a spawned creature when the area exits.
+P1 VarTable-preset walker with a stock `k_def_spawn01` OnSpawn (no script change): does it walk the area's `WP_<tag>_NN` waypoints. P2 blank-conversation template: click it. P3 shoot a spawned faction-5 template: does it turn hostile. P4 hook-spawned creature across save/load (OID, persistence, `+0x11AC/+0x11FC` values). P5 AI_OFF (87) on a spawned actor plus `SetPlotFlag`/`EffectHaste`/`ActionForceMoveToLocation` from a script. P6 `ActionSpeakStringByStrRef` with an appended strref. P7 RemoveFromArea on a spawned creature when the area exits. P8-P10 (animation, added by V6): see section 9.5.
 
 ### 7.7 Recon caveats
 Haiku units u01-u03, u05, u06 all returned PARTIAL (they stay inside the read ranges); I closed the gaps from source myself (flag blocks, ANIMATION constants, `GN_DetermineCombatRound`). u04 failed on a bad entry range; I answered it directly. T3 peaked at 115k tokens (over the 100k ceiling).
@@ -133,3 +133,33 @@ Use the template's own appearance `walkdist` unchanged. Speed class: slow < 1.5,
 - V2: capacity cap, persistence and save-load behaviour, P1 VarTable-walker proof (do the extras actually walk `WP_<tag>_NN`).
 - V7: TSF and Czerka hostility at plot moments (TSF walkers in the wrong storyline state), build order.
 - Resolved: armed status = weapon slot only (section 7.4 caveat closed).
+
+## 9. V6 results (2026-10-13; host-only, no game running, nothing installed)
+Tables: `.claude/research/npc_variety/tables/anim_pool.tsv` (`scripts/npcvar_anim_pool.py`, 13 target models, 272 rows, 7 ambient flourish names) and `anim_ids.tsv` (`scripts/npcvar_anim_ids.py`, 58 rows, ids 0-46 and 100-110). Both have colocated tests (`run_tests.py npcvar` = 6 suites PASS).
+
+### 9.1 T1 pool facts
+- Every one of the 13 models has all 7 idles (`pause1 pause2 pause3 standstill neutral good evil`) and all 7 `ambient` flourishes (`pausesh scanning shrug rolleyes touchheart nodyes greeting`; lengths 1.3-5.1 s). `military` = `salute` only (1.6 s; 1.7 s on the female and Twi'lek bodies). Everything else (`victory taunt bow point equip itemequip`) is `excluded`.
+- Chain depth: `N_Bith` 3 (297 anims), `N_CzerkaOff` 5, `PFBCM` 6 (460). Flourishes are therefore the same set for all targets, so one list per class is enough (no per-model table needed in the DLL).
+
+### 9.2 T2 result: `ANIMATION_*` is NOT an `animations.2da` row id
+All 11 V1 claims fail when the script constant is used as a row index: 1 -> `walkinj`, 24 -> `meditate`, 100-108 -> `c2p2 c2p3 c2p4 c2p5 c2d1 c2d2 c2d3 c2d4 c2d5` (rows 100+ are weapon-stance animations, listed as "stance-like" in `u03_anims.txt`). The 2da has 571 rows (0-570) and its row names do line up with the constants by NAME (`pause2` row 7, `salute` row 16, `bow` 19, `greeting` 31, `taunt` 33, `victory` 17), so the engine must translate script constants to 2da rows through an internal table we have not read. Consequences:
+- Which name a script ID really plays (V1 claims for 102 scratch head, 103 bored, 104 salute, ...) is UNVERIFIED; the V1 sentence "104 = salute" rests on the constant name only. Do not rely on it for the script route.
+- The native route is unaffected: it passes the animation NAME string (`pausesh`, `salute`, ...) which the model chain resolves by itself.
+- Id 42 has no nwscript constant (DIVE_ROLL line is commented out).
+
+### 9.3 Verdict: script versus native
+| | Script (flag 109 + local 29) | Native (`Gob::PlayAnimation 0x004E3270`) |
+|---|---|---|
+| Reach | Only creatures running the walkways include, at waypoint pauses; widens the existing d8 pause set | Any creature, including stationary commoners |
+| Shipping | Needs an override `.ncs` (KPM cannot ship it; user-installed copy only) and P1 (VarTable preset reaching `GetLocalNumber`) | Part of the existing `npc-diversity` DLL, no script |
+| ID mapping | Needs the unread constant-to-row translation (9.2) | Uses names, already proven in Mod 10 (flourish recipe: speed +1.0, flags 0, timer ends 60 ms before wrap, re-issue idle `(name,1.0,2,0)`) |
+| Hazards | Queue clears (section 3), flag 87 + 29 conflict | Needs creature -> Gob and an "idle" test (open), idle state machine may overwrite |
+
+### 9.4 Recommendation
+Native injector inside `npc-diversity`, behind ini switch `anim_variety=0|1` (default 0, own key like `visit_variety`). Classes from `anim_pool.tsv`: `ambient` for all, `military` only for TSF bodies; minimum 20 s between plays per creature; only when the creature has no action and is not in conversation or combat; pick via the salted `HashCreatureId` family (next free `Mix` salt: 11 or higher, V3 starts at 7). The script route stays the fallback only if P1 passes AND P8 fails.
+
+### 9.5 Probes added to the V2 list (7.6)
+P8 `PlayAnimation` on an idle world commoner: obtain the Gob from the creature object, check whether the idle state machine resumes or overwrites afterwards. P9 flourish during a walk (expect snap or overwrite; restrict to idle only if so). P10 cost of the existence probe `vt[0x1c](name,&len)` per creature per tick (returns -1.0 when missing).
+
+### 9.6 Open (not claimed)
+Creature object -> Gob field, and how to read "creature is idle" natively (V2 P8, or one `rea-recon` run; skipped here as P8 answers it empirically). Script constant -> animation row translation (only needed if the script route is revived).

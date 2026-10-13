@@ -1,0 +1,59 @@
+id	name	nwscript_constant	fireforget	looping	stationary	v1_claim_ok
+0	walk	ANIMATION_LOOPING_PAUSE	false	false	false	
+1	walkinj	ANIMATION_LOOPING_PAUSE2	false	false	false	false
+2	run	ANIMATION_LOOPING_LISTEN	false	false	false	
+3	runds	ANIMATION_LOOPING_MEDITATE	false	false	false	
+4	runinj	ANIMATION_LOOPING_WORSHIP	false	false	false	
+5	stealth	ANIMATION_LOOPING_TALK_NORMAL	false	true	true	
+6	pause1	ANIMATION_LOOPING_TALK_PLEADING	false	true	true	
+7	pause2	ANIMATION_LOOPING_TALK_FORCEFUL	false	true	true	
+8	pauseinj	ANIMATION_LOOPING_TALK_LAUGHING	false	true	true	
+9	pausestl	ANIMATION_LOOPING_TALK_SAD	false	true	true	
+10	hturnr	ANIMATION_LOOPING_GET_LOW	true	false	true	
+11	hturnl	ANIMATION_LOOPING_GET_MID	true	false	true	
+12	pausesh	ANIMATION_LOOPING_PAUSE_TIRED	true	false	true	
+13	pausebrd	ANIMATION_LOOPING_PAUSE_DRUNK	true	false	true	
+14	pausetrd	ANIMATION_LOOPING_FLIRT	false	true	true	
+15	pausepsn	ANIMATION_LOOPING_USE_COMPUTER	false	true	true	
+16	salute	ANIMATION_LOOPING_DANCE	true	false	true	
+17	victory	ANIMATION_LOOPING_DANCE1	true	false	true	
+18	listen	ANIMATION_LOOPING_HORROR	false	true	true	
+19	bow	ANIMATION_LOOPING_READY	true	false	true	
+20	sitdown	ANIMATION_LOOPING_DEACTIVATE	true	false	true	
+21	sit	ANIMATION_LOOPING_SPASM	false	true	true	
+22	standup	ANIMATION_LOOPING_SLEEP	true	false	true	
+23	kneel	ANIMATION_LOOPING_PRONE	true	false	true	
+24	meditate	ANIMATION_LOOPING_PAUSE3	false	true	true	false
+25	tlknorm	ANIMATION_LOOPING_WELD	false	true	true	
+26	tlkforce	ANIMATION_LOOPING_DEAD	false	true	true	
+27	tlkplead	ANIMATION_LOOPING_TALK_INJURED	false	true	true	
+28	tlksad	ANIMATION_LOOPING_LISTEN_INJURED	false	true	true	
+29	tlklaugh	ANIMATION_LOOPING_TREAT_INJURED	false	true	true	
+30	talk	ANIMATION_LOOPING_DEAD_PRONE	false	false	true	
+31	greeting	ANIMATION_LOOPING_KNEEL_TALK_ANGRY	true	false	true	
+32	flirt	ANIMATION_LOOPING_KNEEL_TALK_SAD	false	true	true	
+33	taunt	ANIMATION_LOOPING_CHECK_BODY	true	false	true	
+34	treatinj	ANIMATION_LOOPING_UNLOCK_DOOR	true	false	true	
+35	treatinjlp	ANIMATION_LOOPING_SIT_AND_MEDITATE	false	true	true	
+36	treatinjstand	ANIMATION_LOOPING_SIT_CHAIR	true	false	true	
+37	inject	ANIMATION_LOOPING_SIT_CHAIR_DRINK	true	false	true	
+38	activate	ANIMATION_LOOPING_SIT_CHAIR_PAZAK	true	false	true	
+39	equip	ANIMATION_LOOPING_SIT_CHAIR_COMP1	true	false	true	
+40	getfromgnd	ANIMATION_LOOPING_SIT_CHAIR_COMP2	true	false	true	
+41	getfromtbl	ANIMATION_LOOPING_RAGE	true	false	true	
+42	getfromcntr		true	false	true	
+43	usecomp	ANIMATION_LOOPING_CLOSED	true	false	true	
+44	usecomplp	ANIMATION_LOOPING_STEALTH	false	true	true	
+45	handheld	ANIMATION_LOOPING_CHOKE_WORKING	true	false	true	
+46	handheldlp	ANIMATION_LOOPING_MEDITATE_STAND	false	true	true	
+100	c2p2	ANIMATION_FIREFORGET_HEAD_TURN_LEFT	true	false	true	false
+101	c2p3	ANIMATION_FIREFORGET_HEAD_TURN_RIGHT	true	false	true	false
+102	c2p4	ANIMATION_FIREFORGET_PAUSE_SCRATCH_HEAD	true	false	true	false
+103	c2p5	ANIMATION_FIREFORGET_PAUSE_BORED	true	false	true	false
+104	c2d1	ANIMATION_FIREFORGET_SALUTE	true	false	true	false
+105	c2d2	ANIMATION_FIREFORGET_BOW	true	false	true	false
+106	c2d3	ANIMATION_FIREFORGET_GREETING	true	false	true	false
+107	c2d4	ANIMATION_FIREFORGET_TAUNT	true	false	true	false
+108	c2d5	ANIMATION_FIREFORGET_VICTORY1	true	false	true	false
+109	c2n1	ANIMATION_FIREFORGET_VICTORY2	true	false	true	
+110	c2n2	ANIMATION_FIREFORGET_VICTORY3	true	false	true	
