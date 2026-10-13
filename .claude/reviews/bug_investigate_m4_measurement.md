@@ -72,4 +72,4 @@ Matcher v2 versus v1 on the 10 M4 runs (copies, original `score.json` untouched;
 | BG09 | A | 2 / 32 (0.062) | 1 / 32 (0.031) |
 | BG09 | B | 2 / 30 (0.067) | 1 / 30 (0.033) |
 
-Other: rank-1 mismatch runs 0; tie-break decides the rank-1 label in 1 run per case. The cluster interval over runs is wider than the pooled Wilson interval for BG09 only at the low end (hotbar v2 A: cluster [0.174, 0.292], Wilson [0.136, 0.372]).
+Other: rank-1 mismatch runs 0; tie-break decides the rank-1 label in 1 run per case. The cluster-bootstrap interval over 5 runs is not wider than the pooled Wilson one here (hotbar v2 A: cluster [0.174, 0.292], Wilson [0.136, 0.372]); with only 5 runs per case the bootstrap is itself unstable, so treat both as optimistic.
