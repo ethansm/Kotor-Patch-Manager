@@ -1164,7 +1164,11 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
                 const shui::BtnState st0 = g_card0.st;
                 if (st0 == shui::BtnState::FullHp) KP_LOG(chCall, "CLICK member=0 noneed");
                 else if (st0 == shui::BtnState::NoItem) KP_LOG(chCall, "CLICK member=0 noitem");
-                else if (shui::clickAllowed(st0)) { KP_LOG(chCall, "CLICK member=0 ok"); useNow(ctx, now, 0, shui::clickMinCount(st0), "click"); }
+                else if (shui::clickAllowed(st0)) {
+                    KP_LOG(chCall, "CLICK member=0 ok");
+                    // BG18: a refused click invalidates the cache so the next frame re-reads the leader HP/pick instead of waiting up to CacheMs
+                    if (!useNow(ctx, now, 0, shui::clickMinCount(st0), "click")) g_cacheValid = false;
+                }
             } else if (Card& c = g_card[onBtn]; shui::clickAllowed(c.st)) {
                 if (c.st == shui::BtnState::NoItem) KP_LOG(chCall, "CLICK member=%d noitem", onBtn);
                 else useNow(ctx, now, onBtn, shui::clickMinCount(c.st), "click");

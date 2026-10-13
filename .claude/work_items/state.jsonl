@@ -18,3 +18,4 @@
 {"ev": "unpark", "reason": "Goal now states empty diff is the expected result; checker PARTIAL x2 was evidence-scope, not a defect", "session": "8234197b-06e5-42f4-bd17-d5ba35bb2bd7", "ts": "2026-10-13T03:39:32Z", "wi": "WI-06"}
 {"ev": "done", "session": "8234197b-06e5-42f4-bd17-d5ba35bb2bd7", "ts": "2026-10-13T03:45:16Z", "wi": "WI-06"}
 {"ev": "park", "reason": "checker PARTIAL: clean", "session": "5a63ecf0-adfc-498b-986b-ce042f134c25", "ts": "2026-10-13T03:52:04Z", "wi": "WI-42"}
+{"ev": "done", "reason": "manual: BG18 forced cache refresh on refused click; C240 verified", "session": "5a63ecf0-adfc-498b-986b-ce042f134c25", "ts": "2026-10-13T03:57:28Z", "wi": "WI-42"}
