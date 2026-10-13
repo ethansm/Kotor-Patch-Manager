@@ -1,0 +1,67 @@
+# Session Handoff & Plan State: .claude/research/texture_diversity/PLAN.md
+
+## 0. Next-Phase Direction
+texture_diversity_research helmet previews + dispatcher helmet allow-list + K1 item import research
+
+## 1. Active State & Provenance
+- **Master Plan:** `.claude/research/texture_diversity/PLAN.md`
+- **Branch:** `KOTOR-II` (b35db90 research(k1 items): static K1-vs-K2 item inventory (810 K1 UTI, 586 K1-only, models all present in K2))
+- **Generated:** 2026-10-13 01:56:19 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Last Landed Commit:**
+```
+b35db90 research(k1 items): static K1-vs-K2 item inventory (810 K1 UTI, 586 K1-only, models all present in K2)
+ .claude/research/k1_items/SUMMARY.md         |   74 ++
+ .claude/research/k1_items/baseitems_diff.tsv |  109 ++
+ .claude/research/k1_items/baseitems_k1.tsv   |   93 ++
+ .claude/research/k1_items/baseitems_k2.tsv   |  110 ++
+ .claude/research/k1_items/items_k1.tsv       |  811 ++++++++++++++
+ .claude/research/k1_items/items_k1_only.tsv  |  587 ++++++++++
+ .claude/research/k1_items/items_k2.tsv       | 1528 ++++++++++++++++++++++++++
+ scripts/k1_item_inventory.py                 |  654 +++++++++++
+ 8 files changed, 3966 insertions(+)
+```
+- **Dirty Files (1693):**
+  - ` A .claude/active_plan.txt`
+  - ` A .claude/fixes/batch_01/0001-T837a1ca36b.patch`
+  - ` A .claude/fixes/batch_01/0002-Tf3fc96cfd2.patch`
+  - ` A .claude/fixes/batch_01/0003-T3aed4377cc.patch`
+  - ` A .claude/fixes/batch_01/0004-T30def762ad.patch`
+  - ` A .claude/fixes/batch_01/0005-T26197ffe58.patch`
+  - ` A .claude/fixes/batch_01/series.json`
+  - ` A .claude/fixes/batch_02/0001-T39945544b1.patch`
+  - ` A .claude/fixes/batch_02/0002-Td08ab70ec8.patch`
+  - ` A .claude/fixes/batch_02/0003-Tbbca7ddcf8.patch`
+  - ... +1683 more (run `git status --short`)
+
+## 3. Strict Context Budget & Read Policy
+- **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume .claude/research/texture_diversity/PLAN.md`.
+
+## 5. Dead Ends & Verification (manual)
+State (10-13): P1 DONE and audited. Commits 773df47 (engine), 04593ad (27 recipes), 8377a93 (Mandalorian helmet), 1e8fd76 (audit tool, avoid_rects, island-wide palette layers). 27/27 looks gate-ok in `~/Games/KOTOR2_Mod_Workspace/tex_looks/run1/` (`bake.json`, `tpc/`, `parents/`, `masks/<model>/`, `sheets/index.png`, `audit2/<atlas>.png`). Docs: `.claude/research/texture_diversity/p1/audit/SUMMARY.md`, `P1_INTERFACES.md`. Tools (all `patch_manager_mods/k1_port/`): `k1_port_tex_bake.py masks|bake|sheets`, `k1_port_tex_audit.py`, `k1_port_tex_overlay.py` (ops recolor_hsv, colorize, band, decal, wear, tint; layer keys cells, islands, avoid_cells, avoid_rects), recipes in `looks/*.json`.
+
+NEXT (user request 10-13): render the baked looks on the 3D character offline so the user can judge stripes/decals in context. DRAFT `k1_port_tex_preview.py` is on disk, UNCOMMITTED and UNTESTED (mesh dump under k1port venv + numpy software rasteriser). Facts it relies on (verified): n_commm visible body = three skinned meshes `torso`, `ArmL`, `ArmR` (tex N_CommM04, vertices already model space, z up ~0..1.9, character faces +y); `*_g` bone nodes have texture NULL; heads are separate models (no head in preview); mesh node transforms are identity for those three.
+
+Dead ends / traps:
+- Haiku audit units given the PNG only via the brief's read list could not read it (budget tool counts PNG bytes as text tokens: ~300k est); fix = list the PNG in the TASK text as an explicit extra permitted read, not as an entry.
+- `rm -f $VAR/*.x` is blocked by the safety check; use `"${D:?}"/*.x`.
+- Annotation cell zones (w2/w4/w5) are eyeballed and often wrong; decide from island masks + audit images (see SUMMARY.md). Island `arms` holds sleeve/back-leg cloth as well as hands.
+- Skin guard blocks tan cloth (n_commf01): use `keep_skin: false` there.
+- Mask labels come from node-name rules; `head` island on the Mandalorian = helmet shell; recolour must include it.
+- Do not edit existing P0 behaviour without a test; `splice_colour` now keeps a DXT1 parent block whose colour mode would flip (alpha invariant).
+- Another session has ~140 dirty files in this worktree: commit explicit paths only.
+
+Verification commands:
+- `python3 scripts/run_tests.py -k k1_port_tex` (8 suites, all PASS, 0 skip)
+- `.venv/bin/python -I patch_manager_mods/k1_port/k1_port_tex_bake.py bake --recipes patch_manager_mods/k1_port/looks --masks $R --out $R` (R=`~/Games/KOTOR2_Mod_Workspace/tex_looks/run1`; expect 27 `gate PASS`)
+- `.venv/bin/python -I patch_manager_mods/k1_port/k1_port_tex_audit.py --bake $R --out $R/audit2`
+
+Open for P2 (install, needs user go): dispatcher allowlist covers commoner M 1-16, F 1-17, fat 34/35 only (new NN >= 36 needs allowlist change or reused slot); Sith Commando and Mandalorian use racetex rows (own appearance rows needed); N_CommM10 pool parent is TGA (not bakeable); in-game V orientation still the user's T5 test; no ledger entries written.
+
+Probe (10-13, after the draft was written, nothing committed): `k1_port_tex_preview.py mesh --models n_commm n_commf n_sithcommando n_mandalorian --out $R/mesh` works under the k1port venv (textured nodes: n_commm torso/ArmL/ArmR 1210 tris; n_commf torso/ArmL/ArmR 1148; n_sithcommando body/head/larm/rarm 1934; n_mandalorian Torso/RArm/RShldrPad/LShldrPad/LArm/Head 2225; 41-46 NULL-texture bone nodes skipped). `render --bake $R --meshes $R/mesh --out $R/preview_probe --only SC-copper` took 2.9 s and produced a correct 4-view parent-vs-look sheet (front, back, side, 3/4; character faces the camera, framing shared between parent and look). Finding from it: Sith Commando SHOULDER plates are still white in 3D on SC-copper (shoulder/upper-arm plates map to UV areas the recipe still skips): the 3D view exposes gaps the flat atlas hides. Outputs live in `~/Games/KOTOR2_Mod_Workspace/tex_looks/run1/{mesh,preview_probe}/` (outside repo). Still to do: tests (`test_k1_port_tex_preview.py`, synthetic quad mesh), per-family contact sheets over all 27 looks, a turntable GIF per chosen look, commit the tool, add the render command to the handoff/README.
+
+## 6. UPDATE 10-13 (supersedes the NEXT/draft lines above): 3D preview LANDED, equipment + K1 item research started
+- Landed: 04154c4 (preview tool `dossier`/`render`, 11 tests, 3D-driven recipe fixes), 43f5805 (docs), 8a28e4f + 988d9d8 (equipment research), b35db90 (K1 item inventory). Haiku vision pilot works (see texture_diversity_research.handoff.md "3D preview"). R = `~/Games/KOTOR2_Mod_Workspace/tex_looks/run1`.
+- Equipment facts (all in `.claude/research/npc_equipment/`): CanEquipItem (Steam 0x005bd6a0) has NO appearance/model block; spawn path 0x00573950 runs Equip_ItemList through it; checks = UTI NonEquippable bit, baseitems EquipableSlots + proficiency, item properties (alignment/class/race/gender/feat/tag/min stat), baseitems row +0xB4 race rule and +0xB8 gender mask, Bao-Dur base-item list (35,36,37,97-100,102). GoggleHook attach (0x0085B703) runs only for head type 3 (appearance column via FUN_0085C150); other head types swap the head variant; 28 head-item appearances have no GoggleHook. `appearance.2da` has helmet_scale_m / helmet_scale_f. Mask base item 44 -> I_Mask_NNN models are small goggle/visor meshes in head-local coords (probe: i_mask_001 = Infragoggles, i_mask_008 = AuralAmp); full helmets such as a_helmet_04 need their own model/variant path (NOT yet understood).
+- K1 inventory facts (`.claude/research/k1_items/SUMMARY.md`): 810 K1 UTI vs 1527 K2; 586 K1-only resrefs but EVERY K1-only item whose model loads (382) already has that model resref in K2; 107 have no derivable model, 97 no model. So K1-only items are mostly new templates (stats/names), not new meshes. Real novelty must come from a resource-level model/texture diff, not UTI-driven.
+- User request (10-13): (a) helmet previews on the 54 head-item appearances, (b) dispatcher helmet allow-list from baseitems race/gender rules, (c) include K1-item swarm next steps. Plan written in plan mode after this handoff.
+- Dead ends/traps added: rea-recon cannot overwrite an existing file (no Read tool): give it a NEW output filename; it needs the exe path in the brief (`swkotor2.exe.unpatched_vanilla`) and STEAM addresses, GOG addresses in the old knowledge map were wrong for CanEquipWeapon/2 (real branches 0x5bd1d0/0x5bd3e0/0x5bd610); GoggleHook-on-head is NOT necessary for a helmet to show; Haiku scan helpers reuse `scripts/npc_equip_scan.py` pattern.
