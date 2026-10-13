@@ -247,6 +247,7 @@ def main(argv: list[str] | None = None) -> int:
             root = read_gff(r.data()).root
             appearance = parse_int(root.acquire("Appearance_Type", 0))
             race = parse_int(root.acquire("Race", 0))
+            gender = parse_int(root.acquire("Gender", 0))
             tag = str(root.acquire("Tag", ""))
             equip_list = root.get_list("Equip_ItemList") or []
             entries = []
@@ -286,6 +287,7 @@ def main(argv: list[str] | None = None) -> int:
             "appearance": appearance,
             "appearance_label": app_label.get(appearance, f"UNKNOWN_row{appearance}"),
             "race": race,
+            "gender": gender,
             "entries": entries,
             "has_head": bool(head_via),
             "head_via": "+".join(sorted(head_via)),
@@ -316,11 +318,13 @@ def main(argv: list[str] | None = None) -> int:
             ";".join(f"{slot}:{item}" for slot, item, _l, _h in entries),
             ";".join(f"{slot}:{label}" for slot, _i, label, _h in entries),
             ";".join(head_refs),
+            d["gender"],
         ])
     write_tsv(
         out / "utc_equip.tsv",
         ["module", "container", "resref", "tag", "appearance_type", "appearance_label", "race",
-         "equip_count", "has_head_item", "head_via", "equip", "equip_baseitems", "head_item_resrefs"],
+         "equip_count", "has_head_item", "head_via", "equip", "equip_baseitems", "head_item_resrefs",
+         "gender"],
         equip_rows,
     )
 

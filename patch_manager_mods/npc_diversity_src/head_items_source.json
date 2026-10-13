@@ -1,0 +1,1376 @@
+{
+  "appearances": {
+    "122": {
+      "genders": [
+        0
+      ],
+      "has_goggle_hook": "yes",
+      "head_items": [
+        "a_helmet_30"
+      ],
+      "label": "P_FEM_C_MED_01",
+      "modeltype": "B",
+      "n_utc": 1,
+      "races": [
+        6
+      ]
+    },
+    "123": {
+      "genders": [
+        0,
+        1,
+        2
+      ],
+      "has_goggle_hook": "yes",
+      "head_items": [
+        "a_helmet_24"
+      ],
+      "label": "P_FEM_C_LRG_01",
+      "modeltype": "B",
+      "n_utc": 5,
+      "races": [
+        6
+      ]
+    },
+    "132": {
+      "genders": [
+        0,
+        1
+      ],
+      "has_goggle_hook": "yes",
+      "head_items": [
+        "a_helmet_07"
+      ],
+      "label": "P_FEM_C_LRG_04",
+      "modeltype": "B",
+      "n_utc": 5,
+      "races": [
+        6
+      ]
+    },
+    "140": {
+      "genders": [
+        0
+      ],
+      "has_goggle_hook": "yes",
+      "head_items": [
+        "a_helmet_09"
+      ],
+      "label": "P_MAL_A_MED_02",
+      "modeltype": "B",
+      "n_utc": 3,
+      "races": [
+        6
+      ]
+    },
+    "146": {
+      "genders": [
+        0
+      ],
+      "has_goggle_hook": "yes",
+      "head_items": [
+        "a_helmet_09"
+      ],
+      "label": "P_MAL_A_MED_04",
+      "modeltype": "B",
+      "n_utc": 1,
+      "races": [
+        6
+      ]
+    },
+    "155": {
+      "genders": [
+        0,
+        2
+      ],
+      "has_goggle_hook": "yes",
+      "head_items": [
+        "a_helmet_07",
+        "a_helmet_09"
+      ],
+      "label": "P_MAL_B_MED_02",
+      "modeltype": "B",
+      "n_utc": 3,
+      "races": [
+        6
+      ]
+    },
+    "164": {
+      "genders": [
+        0
+      ],
+      "has_goggle_hook": "yes",
+      "head_items": [
+        "a_helmet_09"
+      ],
+      "label": "P_MAL_B_MED_05",
+      "modeltype": "B",
+      "n_utc": 1,
+      "races": [
+        6
+      ]
+    },
+    "165": {
+      "genders": [
+        2
+      ],
+      "has_goggle_hook": "yes",
+      "head_items": [
+        "a_helmet_29"
+      ],
+      "label": "P_MAL_B_LRG_05",
+      "modeltype": "B",
+      "n_utc": 1,
+      "races": [
+        6
+      ]
+    },
+    "166": {
+      "genders": [
+        0,
+        4
+      ],
+      "has_goggle_hook": "yes",
+      "head_items": [
+        "a_helmet_19"
+      ],
+      "label": "P_MAL_C_SML_01",
+      "modeltype": "B",
+      "n_utc": 2,
+      "races": [
+        6
+      ]
+    },
+    "167": {
+      "genders": [
+        0
+      ],
+      "has_goggle_hook": "yes",
+      "head_items": [
+        "a_helmet_19"
+      ],
+      "label": "P_MAL_C_MED_01",
+      "modeltype": "B",
+      "n_utc": 2,
+      "races": [
+        6
+      ]
+    },
+    "168": {
+      "genders": [
+        0,
+        2
+      ],
+      "has_goggle_hook": "yes",
+      "head_items": [
+        "a_helmet_09",
+        "a_helmet_19",
+        "a_helmet_28",
+        "a_helmet_29"
+      ],
+      "label": "P_MAL_C_LRG_01",
+      "modeltype": "B",
+      "n_utc": 9,
+      "races": [
+        6
+      ]
+    },
+    "17": {
+      "genders": [
+        0,
+        2,
+        4
+      ],
+      "has_goggle_hook": "no",
+      "head_items": [
+        "a_helmet_02",
+        "a_helmet_08"
+      ],
+      "label": "Commoner_Mal_Asian_01_A",
+      "modeltype": "B",
+      "n_utc": 23,
+      "races": [
+        2,
+        6
+      ]
+    },
+    "171": {
+      "genders": [
+        0,
+        2
+      ],
+      "has_goggle_hook": "yes",
+      "head_items": [
+        "a_helmet_09",
+        "a_helmet_28",
+        "a_helmet_29"
+      ],
+      "label": "P_MAL_C_LRG_02",
+      "modeltype": "B",
+      "n_utc": 3,
+      "races": [
+        6
+      ]
+    },
+    "172": {
+      "genders": [
+        2
+      ],
+      "has_goggle_hook": "yes",
+      "head_items": [
+        "a_helmet_13",
+        "a_helmet_22"
+      ],
+      "label": "P_MAL_C_SML_03",
+      "modeltype": "B",
+      "n_utc": 2,
+      "races": [
+        6
+      ]
+    },
+    "173": {
+      "genders": [
+        0
+      ],
+      "has_goggle_hook": "yes",
+      "head_items": [
+        "a_helmet_07",
+        "a_helmet_21"
+      ],
+      "label": "P_MAL_C_MED_03",
+      "modeltype": "B",
+      "n_utc": 9,
+      "races": [
+        6
+      ]
+    },
+    "174": {
+      "genders": [
+        0,
+        2,
+        4
+      ],
+      "has_goggle_hook": "yes",
+      "head_items": [
+        "a_helmet_09",
+        "a_helmet_11",
+        "a_helmet_28",
+        "a_helmet_30"
+      ],
+      "label": "P_MAL_C_LRG_03",
+      "modeltype": "B",
+      "n_utc": 16,
+      "races": [
+        6
+      ]
+    },
+    "177": {
+      "genders": [
+        0
+      ],
+      "has_goggle_hook": "yes",
+      "head_items": [
+        "a_helmet_09"
+      ],
+      "label": "P_MAL_C_LRG_04",
+      "modeltype": "B",
+      "n_utc": 8,
+      "races": [
+        6
+      ]
+    },
+    "178": {
+      "genders": [
+        2
+      ],
+      "has_goggle_hook": "yes",
+      "head_items": [
+        "a_helmet_19"
+      ],
+      "label": "P_MAL_C_SML_05",
+      "modeltype": "B",
+      "n_utc": 1,
+      "races": [
+        6
+      ]
+    },
+    "236": {
+      "genders": [
+        0,
+        4
+      ],
+      "has_goggle_hook": "no",
+      "head_items": [
+        "d_tool_06"
+      ],
+      "label": "Droid_War_02",
+      "modeltype": "L",
+      "n_utc": 7,
+      "races": [
+        5,
+        6
+      ]
+    },
+    "237": {
+      "genders": [
+        4
+      ],
+      "has_goggle_hook": "no",
+      "head_items": [
+        "d_tool_06"
+      ],
+      "label": "Droid_War_03",
+      "modeltype": "L",
+      "n_utc": 2,
+      "races": [
+        5
+      ]
+    },
+    "238": {
+      "genders": [
+        4
+      ],
+      "has_goggle_hook": "no",
+      "head_items": [
+        "d_tool_06"
+      ],
+      "label": "Droid_War_04",
+      "modeltype": "L",
+      "n_utc": 4,
+      "races": [
+        5
+      ]
+    },
+    "270": {
+      "genders": [
+        0,
+        1,
+        2
+      ],
+      "has_goggle_hook": "no",
+      "head_items": [
+        "a_helmet_29"
+      ],
+      "label": "Twilek_Female_02_B",
+      "modeltype": "B",
+      "n_utc": 12,
+      "races": [
+        2,
+        6
+      ]
+    },
+    "35": {
+      "genders": [
+        0,
+        2
+      ],
+      "has_goggle_hook": "no",
+      "head_items": [
+        "a_helmet_29"
+      ],
+      "label": "Alien_Mandalorian_01",
+      "modeltype": "F",
+      "n_utc": 32,
+      "races": [
+        6
+      ]
+    },
+    "351": {
+      "genders": [
+        0,
+        2
+      ],
+      "has_goggle_hook": "no",
+      "head_items": [
+        "a_helmet_29"
+      ],
+      "label": "Alien_Mandalorian_02",
+      "modeltype": "F",
+      "n_utc": 22,
+      "races": [
+        6
+      ]
+    },
+    "352": {
+      "genders": [
+        0,
+        2
+      ],
+      "has_goggle_hook": "no",
+      "head_items": [
+        "a_helmet_29"
+      ],
+      "label": "Alien_Mandalorian_03",
+      "modeltype": "F",
+      "n_utc": 12,
+      "races": [
+        6
+      ]
+    },
+    "366": {
+      "genders": [
+        1,
+        2
+      ],
+      "has_goggle_hook": "no",
+      "head_items": [
+        "a_helmet_08",
+        "a_helmet_29"
+      ],
+      "label": "Twilek_Female_03_C",
+      "modeltype": "B",
+      "n_utc": 12,
+      "races": [
+        6
+      ]
+    },
+    "387": {
+      "genders": [
+        1
+      ],
+      "has_goggle_hook": "no",
+      "head_items": [
+        "a_helmet_04"
+      ],
+      "label": "Unique_Zaerdra",
+      "modeltype": "B",
+      "n_utc": 2,
+      "races": [
+        6
+      ]
+    },
+    "425": {
+      "genders": [
+        0
+      ],
+      "has_goggle_hook": "no",
+      "head_items": [
+        "a_helmet_04"
+      ],
+      "label": "Czerka_Commander",
+      "modeltype": "B",
+      "n_utc": 4,
+      "races": [
+        6
+      ]
+    },
+    "464": {
+      "genders": [
+        0,
+        2
+      ],
+      "has_goggle_hook": "no",
+      "head_items": [
+        "a_helmet_28"
+      ],
+      "label": "Alien_Trandoshan_01",
+      "modeltype": "F",
+      "n_utc": 23,
+      "races": [
+        6
+      ]
+    },
+    "465": {
+      "genders": [
+        0,
+        2
+      ],
+      "has_goggle_hook": "no",
+      "head_items": [
+        "a_helmet_28"
+      ],
+      "label": "Alien_Trandoshan_02",
+      "modeltype": "F",
+      "n_utc": 13,
+      "races": [
+        6
+      ]
+    },
+    "472": {
+      "genders": [
+        0,
+        1,
+        2
+      ],
+      "has_goggle_hook": "yes",
+      "head_items": [
+        "a_helmet_27"
+      ],
+      "label": "Onderon_Commoner_Mal_01",
+      "modeltype": "B",
+      "n_utc": 7,
+      "races": [
+        6
+      ]
+    },
+    "498": {
+      "genders": [
+        1,
+        2
+      ],
+      "has_goggle_hook": "yes",
+      "head_items": [
+        "a_helmet_07"
+      ],
+      "label": "Unique_Lala",
+      "modeltype": "B",
+      "n_utc": 4,
+      "races": [
+        6
+      ]
+    },
+    "537": {
+      "genders": [
+        0
+      ],
+      "has_goggle_hook": "no",
+      "head_items": [
+        "a_helmet_29"
+      ],
+      "label": "Alien_Quarren_01",
+      "modeltype": "F",
+      "n_utc": 7,
+      "races": [
+        6
+      ]
+    },
+    "555": {
+      "genders": [
+        4
+      ],
+      "has_goggle_hook": "no",
+      "head_items": [
+        "d_tool_10"
+      ],
+      "label": "Droid_Construction_Medium",
+      "modeltype": "L",
+      "n_utc": 8,
+      "races": [
+        5
+      ]
+    },
+    "56": {
+      "genders": [
+        4
+      ],
+      "has_goggle_hook": "no",
+      "head_items": [
+        "d_tool_06"
+      ],
+      "label": "Droid_Assassin",
+      "modeltype": "L",
+      "n_utc": 17,
+      "races": [
+        5
+      ]
+    },
+    "565": {
+      "genders": [
+        0
+      ],
+      "has_goggle_hook": "no",
+      "head_items": [
+        "a_helmet_02"
+      ],
+      "label": "Alien_Gran_01",
+      "modeltype": "F",
+      "n_utc": 17,
+      "races": [
+        2,
+        6
+      ]
+    },
+    "569": {
+      "genders": [
+        0
+      ],
+      "has_goggle_hook": "no",
+      "head_items": [
+        "a_helmet_02"
+      ],
+      "label": "Alien_Gand_01",
+      "modeltype": "F",
+      "n_utc": 23,
+      "races": [
+        6
+      ]
+    },
+    "570": {
+      "genders": [
+        0
+      ],
+      "has_goggle_hook": "yes",
+      "head_items": [
+        "a_helmet_19",
+        "a_helmet_28"
+      ],
+      "label": "Alien_Devaronian_01",
+      "modeltype": "B",
+      "n_utc": 13,
+      "races": [
+        6
+      ]
+    },
+    "579": {
+      "genders": [
+        0
+      ],
+      "has_goggle_hook": "yes",
+      "head_items": [
+        "a_helmet_09"
+      ],
+      "label": "P_MAL_H_MED_02",
+      "modeltype": "B",
+      "n_utc": 1,
+      "races": [
+        6
+      ]
+    },
+    "580": {
+      "genders": [
+        0,
+        2
+      ],
+      "has_goggle_hook": "yes",
+      "head_items": [
+        "a_helmet_29"
+      ],
+      "label": "P_MAL_H_LRG_02",
+      "modeltype": "B",
+      "n_utc": 2,
+      "races": [
+        6
+      ]
+    },
+    "591": {
+      "genders": [
+        0,
+        2,
+        4
+      ],
+      "has_goggle_hook": "no",
+      "head_items": [
+        "a_helmet_04",
+        "a_helmet_06"
+      ],
+      "label": "Commoner_Mal_Asian_01_B",
+      "modeltype": "B",
+      "n_utc": 14,
+      "races": [
+        6
+      ]
+    },
+    "592": {
+      "genders": [
+        0,
+        2,
+        4
+      ],
+      "has_goggle_hook": "no",
+      "head_items": [
+        "a_helmet_02"
+      ],
+      "label": "Commoner_Mal_Black_01_B",
+      "modeltype": "B",
+      "n_utc": 13,
+      "races": [
+        6
+      ]
+    },
+    "595": {
+      "genders": [
+        0
+      ],
+      "has_goggle_hook": "no",
+      "head_items": [
+        "a_helmet_04"
+      ],
+      "label": "Commoner_Mal_Old_White_01_B",
+      "modeltype": "B",
+      "n_utc": 4,
+      "races": [
+        6
+      ]
+    },
+    "596": {
+      "genders": [
+        0,
+        2,
+        4
+      ],
+      "has_goggle_hook": "no",
+      "head_items": [
+        "a_helmet_04"
+      ],
+      "label": "Commoner_Mal_White_01_B",
+      "modeltype": "B",
+      "n_utc": 24,
+      "races": [
+        6
+      ]
+    },
+    "606": {
+      "genders": [
+        0,
+        2
+      ],
+      "has_goggle_hook": "no",
+      "head_items": [
+        "a_helmet_29"
+      ],
+      "label": "Twilek_Commoner_M_01_F",
+      "modeltype": "B",
+      "n_utc": 6,
+      "races": [
+        6
+      ]
+    },
+    "612": {
+      "genders": [
+        0,
+        1,
+        2
+      ],
+      "has_goggle_hook": "no",
+      "head_items": [
+        "a_helmet_02"
+      ],
+      "label": "Commoner_Fem_Hispanic_01_B",
+      "modeltype": "B",
+      "n_utc": 7,
+      "races": [
+        6
+      ]
+    },
+    "614": {
+      "genders": [
+        0,
+        1
+      ],
+      "has_goggle_hook": "no",
+      "head_items": [
+        "a_helmet_04"
+      ],
+      "label": "Commoner_Fem_White_01_C",
+      "modeltype": "B",
+      "n_utc": 3,
+      "races": [
+        6
+      ]
+    },
+    "647": {
+      "genders": [
+        0
+      ],
+      "has_goggle_hook": "yes",
+      "head_items": [
+        "a_helmet_08"
+      ],
+      "label": "Unique_Dopak",
+      "modeltype": "B",
+      "n_utc": 1,
+      "races": [
+        6
+      ]
+    },
+    "66": {
+      "genders": [
+        4
+      ],
+      "has_goggle_hook": "no",
+      "head_items": [
+        "d_tool_06"
+      ],
+      "label": "Droid_War_01",
+      "modeltype": "L",
+      "n_utc": 11,
+      "races": [
+        2,
+        5
+      ]
+    },
+    "665": {
+      "genders": [
+        0,
+        1,
+        2
+      ],
+      "has_goggle_hook": "yes",
+      "head_items": [
+        "a_helmet_04",
+        "a_helmet_24"
+      ],
+      "label": "P_FEM_H_LRG_01",
+      "modeltype": "B",
+      "n_utc": 5,
+      "races": [
+        6
+      ]
+    },
+    "668": {
+      "genders": [
+        2
+      ],
+      "has_goggle_hook": "yes",
+      "head_items": [
+        "a_helmet_29"
+      ],
+      "label": "P_FEM_H_LRG_02",
+      "modeltype": "B",
+      "n_utc": 1,
+      "races": [
+        6
+      ]
+    },
+    "695": {
+      "genders": [
+        0
+      ],
+      "has_goggle_hook": "yes",
+      "head_items": [
+        "admiralhat",
+        "jedihood1"
+      ],
+      "label": "DP_Republic_Admiral_Cede",
+      "modeltype": "F",
+      "n_utc": 3,
+      "races": [
+        6
+      ]
+    },
+    "701": {
+      "genders": [
+        0
+      ],
+      "has_goggle_hook": "no",
+      "head_items": [
+        "darkhood"
+      ],
+      "label": "DP_Republic_Doctor_Fem_B01",
+      "modeltype": "F",
+      "n_utc": 17,
+      "races": [
+        6
+      ]
+    },
+    "727": {
+      "genders": [
+        1
+      ],
+      "has_goggle_hook": "no",
+      "head_items": [
+        "a_helmet_08"
+      ],
+      "label": "Unique_Droidmaster",
+      "modeltype": "B",
+      "n_utc": 1,
+      "races": [
+        6
+      ]
+    }
+  },
+  "baseitems": {
+    "44": {
+      "droid": false,
+      "equipableslots": "0x00001",
+      "gender_mask": 0,
+      "label": "Mask",
+      "race_rule": 1,
+      "req_feats": []
+    },
+    "69": {
+      "droid": true,
+      "equipableslots": "0x00001",
+      "gender_mask": 0,
+      "label": "Droid_Search_Scope_x",
+      "race_rule": 2,
+      "req_feats": []
+    },
+    "70": {
+      "droid": true,
+      "equipableslots": "0x00001",
+      "gender_mask": 0,
+      "label": "Droid_Motion_Sensors_x",
+      "race_rule": 2,
+      "req_feats": []
+    },
+    "71": {
+      "droid": true,
+      "equipableslots": "0x00001",
+      "gender_mask": 0,
+      "label": "Droid_Sonic_Sensors_x",
+      "race_rule": 2,
+      "req_feats": []
+    },
+    "72": {
+      "droid": true,
+      "equipableslots": "0x00001",
+      "gender_mask": 0,
+      "label": "Droid_Targeting_Computers",
+      "race_rule": 2,
+      "req_feats": []
+    }
+  },
+  "items": {
+    "100_mask01": {
+      "baseitem": 44,
+      "model": "i_mask_008",
+      "restrictions": []
+    },
+    "a_helmet_01": {
+      "baseitem": 44,
+      "model": "i_mask_008",
+      "restrictions": []
+    },
+    "a_helmet_02": {
+      "baseitem": 44,
+      "model": "i_mask_006",
+      "restrictions": []
+    },
+    "a_helmet_03": {
+      "baseitem": 44,
+      "model": "i_mask_008",
+      "restrictions": []
+    },
+    "a_helmet_04": {
+      "baseitem": 44,
+      "model": "i_mask_007",
+      "restrictions": [
+        {
+          "subtype": 5,
+          "type": 57
+        }
+      ]
+    },
+    "a_helmet_05": {
+      "baseitem": 44,
+      "model": "i_mask_007",
+      "restrictions": [
+        {
+          "subtype": 5,
+          "type": 57
+        }
+      ]
+    },
+    "a_helmet_06": {
+      "baseitem": 44,
+      "model": "i_mask_003",
+      "restrictions": [
+        {
+          "subtype": 5,
+          "type": 57
+        }
+      ]
+    },
+    "a_helmet_07": {
+      "baseitem": 44,
+      "model": "i_mask_011",
+      "restrictions": []
+    },
+    "a_helmet_08": {
+      "baseitem": 44,
+      "model": "i_mask_007",
+      "restrictions": []
+    },
+    "a_helmet_09": {
+      "baseitem": 44,
+      "model": "i_mask_010",
+      "restrictions": [
+        {
+          "subtype": 6,
+          "type": 57
+        }
+      ]
+    },
+    "a_helmet_10": {
+      "baseitem": 44,
+      "model": "i_mask_009",
+      "restrictions": []
+    },
+    "a_helmet_11": {
+      "baseitem": 44,
+      "model": "i_mask_014",
+      "restrictions": []
+    },
+    "a_helmet_12": {
+      "baseitem": 44,
+      "model": "i_mask_009",
+      "restrictions": []
+    },
+    "a_helmet_13": {
+      "baseitem": 44,
+      "model": "i_mask_004",
+      "restrictions": [
+        {
+          "subtype": 5,
+          "type": 57
+        }
+      ]
+    },
+    "a_helmet_14": {
+      "baseitem": 44,
+      "model": "i_mask_010",
+      "restrictions": [
+        {
+          "subtype": 6,
+          "type": 57
+        }
+      ]
+    },
+    "a_helmet_15": {
+      "baseitem": 44,
+      "model": "i_mask_009",
+      "restrictions": []
+    },
+    "a_helmet_16": {
+      "baseitem": 44,
+      "model": "i_mask_009",
+      "restrictions": [
+        {
+          "subtype": 46,
+          "type": 57
+        },
+        {
+          "subtype": 47,
+          "type": 57
+        }
+      ]
+    },
+    "a_helmet_17": {
+      "baseitem": 44,
+      "model": "i_mask_010",
+      "restrictions": [
+        {
+          "subtype": 6,
+          "type": 57
+        }
+      ]
+    },
+    "a_helmet_18": {
+      "baseitem": 44,
+      "model": "i_mask_006",
+      "restrictions": [
+        {
+          "subtype": 6,
+          "type": 57
+        }
+      ]
+    },
+    "a_helmet_19": {
+      "baseitem": 44,
+      "model": "i_mask_013",
+      "restrictions": []
+    },
+    "a_helmet_20": {
+      "baseitem": 44,
+      "model": "i_mask_010",
+      "restrictions": []
+    },
+    "a_helmet_21": {
+      "baseitem": 44,
+      "model": "i_mask_013",
+      "restrictions": [
+        {
+          "subtype": 4,
+          "type": 57
+        }
+      ]
+    },
+    "a_helmet_22": {
+      "baseitem": 44,
+      "model": "i_mask_012",
+      "restrictions": [
+        {
+          "subtype": 6,
+          "type": 57
+        }
+      ]
+    },
+    "a_helmet_23": {
+      "baseitem": 44,
+      "model": "i_mask_009",
+      "restrictions": []
+    },
+    "a_helmet_24": {
+      "baseitem": 44,
+      "model": "i_mask_009",
+      "restrictions": []
+    },
+    "a_helmet_25": {
+      "baseitem": 44,
+      "model": "i_mask_014",
+      "restrictions": [
+        {
+          "subtype": 2,
+          "type": 43
+        }
+      ]
+    },
+    "a_helmet_26": {
+      "baseitem": 44,
+      "model": "i_mask_008",
+      "restrictions": []
+    },
+    "a_helmet_27": {
+      "baseitem": 44,
+      "model": "i_mask_010",
+      "restrictions": [
+        {
+          "subtype": 6,
+          "type": 57
+        }
+      ]
+    },
+    "a_helmet_28": {
+      "baseitem": 44,
+      "model": "i_mask_010",
+      "restrictions": []
+    },
+    "a_helmet_29": {
+      "baseitem": 44,
+      "model": "i_mask_003",
+      "restrictions": [
+        {
+          "subtype": 5,
+          "type": 57
+        }
+      ]
+    },
+    "a_helmet_30": {
+      "baseitem": 44,
+      "model": "i_mask_011",
+      "restrictions": []
+    },
+    "a_helmet_43": {
+      "baseitem": 44,
+      "model": "i_mask_043",
+      "restrictions": []
+    },
+    "d_g0t0_02": {
+      "baseitem": 72,
+      "model": "i_drdtrgcom_003",
+      "restrictions": [
+        {
+          "subtype": 9,
+          "type": 62
+        }
+      ]
+    },
+    "d_hk47_03": {
+      "baseitem": 72,
+      "model": "i_drdtrgcom_002",
+      "restrictions": [
+        {
+          "subtype": 5,
+          "type": 62
+        }
+      ]
+    },
+    "d_tool_01": {
+      "baseitem": 72,
+      "model": "i_drdtrgcom_005",
+      "restrictions": [
+        {
+          "subtype": 78,
+          "type": 57
+        }
+      ]
+    },
+    "d_tool_02": {
+      "baseitem": 72,
+      "model": "i_drdtrgcom_003",
+      "restrictions": [
+        {
+          "subtype": 78,
+          "type": 57
+        }
+      ]
+    },
+    "d_tool_03": {
+      "baseitem": 72,
+      "model": "i_drdtrgcom_004",
+      "restrictions": [
+        {
+          "subtype": 78,
+          "type": 57
+        }
+      ]
+    },
+    "d_tool_04": {
+      "baseitem": 72,
+      "model": "i_drdtrgcom_005",
+      "restrictions": [
+        {
+          "subtype": 79,
+          "type": 57
+        }
+      ]
+    },
+    "d_tool_05": {
+      "baseitem": 72,
+      "model": "i_drdtrgcom_001",
+      "restrictions": [
+        {
+          "subtype": 78,
+          "type": 57
+        }
+      ]
+    },
+    "d_tool_06": {
+      "baseitem": 72,
+      "model": "i_drdtrgcom_003",
+      "restrictions": [
+        {
+          "subtype": 80,
+          "type": 57
+        }
+      ]
+    },
+    "d_tool_07": {
+      "baseitem": 72,
+      "model": "i_drdtrgcom_002",
+      "restrictions": [
+        {
+          "subtype": 78,
+          "type": 57
+        }
+      ]
+    },
+    "d_tool_08": {
+      "baseitem": 72,
+      "model": "i_drdtrgcom_005",
+      "restrictions": [
+        {
+          "subtype": 80,
+          "type": 57
+        }
+      ]
+    },
+    "d_tool_09": {
+      "baseitem": 72,
+      "model": "i_drdtrgcom_004",
+      "restrictions": [
+        {
+          "subtype": 78,
+          "type": 57
+        }
+      ]
+    },
+    "d_tool_10": {
+      "baseitem": 72,
+      "model": "i_drdtrgcom_002",
+      "restrictions": [
+        {
+          "subtype": 79,
+          "type": 57
+        }
+      ]
+    },
+    "d_tool_11": {
+      "baseitem": 72,
+      "model": "i_drdtrgcom_002",
+      "restrictions": [
+        {
+          "subtype": 80,
+          "type": 57
+        }
+      ]
+    },
+    "d_tool_12": {
+      "baseitem": 72,
+      "model": "i_drdtrgcom_002",
+      "restrictions": [
+        {
+          "subtype": 79,
+          "type": 57
+        }
+      ]
+    },
+    "d_tool_13": {
+      "baseitem": 72,
+      "model": "i_drdtrgcom_002",
+      "restrictions": [
+        {
+          "subtype": 79,
+          "type": 57
+        }
+      ]
+    },
+    "d_tool_14": {
+      "baseitem": 72,
+      "model": "i_drdtrgcom_002",
+      "restrictions": [
+        {
+          "subtype": 79,
+          "type": 57
+        }
+      ]
+    },
+    "d_tool_15": {
+      "baseitem": 72,
+      "model": "i_drdtrgcom_005",
+      "restrictions": [
+        {
+          "subtype": 80,
+          "type": 57
+        }
+      ]
+    },
+    "darkhood": {
+      "baseitem": 44,
+      "model": "i_mask_222",
+      "restrictions": []
+    },
+    "g_band": {
+      "baseitem": 44,
+      "model": "i_mask_011",
+      "restrictions": []
+    },
+    "helmtulak1": {
+      "baseitem": 44,
+      "model": "i_mask_127",
+      "restrictions": []
+    },
+    "jedihood1": {
+      "baseitem": 44,
+      "model": "i_mask_221",
+      "restrictions": []
+    },
+    "kor38b_mask": {
+      "baseitem": 44,
+      "model": "i_mask_014",
+      "restrictions": [
+        {
+          "subtype": 3,
+          "type": 43
+        }
+      ]
+    },
+    "mandaloreshelmet": {
+      "baseitem": 44,
+      "model": "i_mask_010",
+      "restrictions": [
+        {
+          "subtype": 6,
+          "type": 45
+        }
+      ]
+    },
+    "mandaloriantacti": {
+      "baseitem": 44,
+      "model": "i_mask_009",
+      "restrictions": []
+    },
+    "onderonmotiongog": {
+      "baseitem": 44,
+      "model": "i_mask_001",
+      "restrictions": []
+    },
+    "tar08_davikmask": {
+      "baseitem": 44,
+      "model": "i_mask_007",
+      "restrictions": []
+    }
+  },
+  "schema": 1
+}
