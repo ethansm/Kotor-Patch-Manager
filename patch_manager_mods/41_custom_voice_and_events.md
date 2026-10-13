@@ -91,7 +91,7 @@ Event-system prerequisites P1-P7 are listed in `w3/b2.md`. Free evidence first: 
 |---|---|---|
 | V-A | Research waves w10-voice (35 unit reports: W1 12, W2 11, W3 12; the v10 report is missing, its data is in the catalog TSV) + wave-4 fact-check (c1-c6, 6 units), this doc | DONE |
 | V-B | `kvoice` host build: container/loudness/lip/ledger/verifier + tests (no game); `audio` kind, ONE source id `vanilla_k2` (b9 chosen) and `.wav .mp3 .lip .ssf` prune suffixes added to `k1_port`. KPM test-hook build step moved to V-C. Code: `patch_manager_mods/kvoice/`, commit d111b7a | DONE |
-| V-C | Live tests E1-E8 incl. E5, E6, plus T-SSF and T-TIMER, with a tiny probe (needs user GO and the D0 pause lifted) | PARTIAL (host prep done; live run awaits GO) |
+| V-C | Live tests E1-E8 incl. E5, E6, plus T-SSF and T-TIMER, with a tiny probe (needs user GO and the D0 pause lifted) | PARTIAL |
 | V-D | Silent-commoner SSF fix (needs T-SSF) and murmur bed prototype (ideas 1-2) | TODO (after V-C) |
 | V-E | Voice spike: Qwen3 VoiceDesign speed/VRAM, 200-line consistency, FX chain, RVC timing on the 5070, Day-5 sound-alike screen (`w3/b5.md` 5-day plan) | TODO |
 | V-F | Event system (cast from the diversity pool, cooldowns, templates T4, T3, then movement templates T1; b2 ranking) merged into doc 40 V5/V3 | TODO |

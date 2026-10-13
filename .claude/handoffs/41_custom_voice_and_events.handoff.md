@@ -1,7 +1,7 @@
 # Session Handoff & Plan State: patch_manager_mods/41_custom_voice_and_events.md
 
 ## 0. Next-Phase Direction
-Execute V-C: design (host-only) a tiny KPM probe firing E1/E2/E3/E4/E7/E8 with kvoice-built clips; build and run need explicit user GO
+Execute V-C: Live tests E1-E8 incl. E5, E6, plus T-SSF and T-TIMER, with a tiny probe (needs user GO and the D0 pause lifted)
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/41_custom_voice_and_events.md`
@@ -10,16 +10,43 @@ Execute V-C: design (host-only) a tiny KPM probe firing E1/E2/E3/E4/E7/E8 with k
 - **Waves:** .claude/waves/WI-41-b1/
 - **Waves:** .claude/waves/WI-41-b2/
 - **Waves:** .claude/waves/w11-41-VB/
-- **Branch:** `KOTOR-II` (3a7b274 docs(41): V-B kvoice host build DONE, state and handoff)
-- **Generated:** 2026-10-13 01:28:20 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (145565f feat(41:V-C): host prep for live voice probe (E-matrix builder, PlaySound logger, probe scripts, runbook))
+- **Generated:** 2026-10-13 01:37:14 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-3a7b274 docs(41): V-B kvoice host build DONE, state and handoff
- .../handoffs/41_custom_voice_and_events.handoff.md | 98 ++++++++--------------
- patch_manager_mods/41_custom_voice_and_events.md   |  4 +-
- 2 files changed, 36 insertions(+), 66 deletions(-)
+145565f feat(41:V-C): host prep for live voice probe (E-matrix builder, PlaySound logger, probe scripts, runbook)
+ .../handoffs/41_custom_voice_and_events.handoff.md |  42 ++--
+ patch_manager_mods/41_custom_voice_and_events.md   |   4 +-
+ patch_manager_mods/kvoice/V-C_RUNBOOK.md           |  81 ++++++++
+ patch_manager_mods/kvoice/kvoice_ematrix.py        | 213 +++++++++++++++++++++
+ patch_manager_mods/kvoice/test_kvoice_ematrix.py   | 209 ++++++++++++++++++++
+ patch_manager_mods/voice_probe_src/VoiceProbe.cpp  |  74 +++++++
+ patch_manager_mods/voice_probe_src/exports.def     |   3 +
+ .../voice_probe_src/kotor2-steam-aspyr.hooks.toml  |  18 ++
+ patch_manager_mods/voice_probe_src/manifest.toml   |  13 ++
+ patch_manager_mods/voice_probe_src/nss/README.md   |  18 ++
+ .../voice_probe_src/nss/build/kpv_e1.ncs           | Bin 0 -> 76 bytes
+ .../voice_probe_src/nss/build/kpv_e2a.ncs          | Bin 0 -> 77 bytes
+ .../voice_probe_src/nss/build/kpv_e2b.ncs          | Bin 0 -> 77 bytes
+ .../voice_probe_src/nss/build/kpv_e2c.ncs          | Bin 0 -> 77 bytes
+ .../voice_probe_src/nss/build/kpv_e2d.ncs          | Bin 0 -> 77 bytes
+ .../voice_probe_src/nss/build/kpv_e4.ncs           | Bin 0 -> 337 bytes
+ .../voice_probe_src/nss/build/kpv_e7a.ncs          | Bin 0 -> 110 bytes
+ .../voice_probe_src/nss/build/kpv_e7b.ncs          | Bin 0 -> 185 bytes
+ .../voice_probe_src/nss/build/kpv_e8.ncs           | Bin 0 -> 217 bytes
+ patch_manager_mods/voice_probe_src/nss/kpv_e1.nss  |   8 +
+ patch_manager_mods/voice_probe_src/nss/kpv_e2a.nss |   7 +
+ patch_manager_mods/voice_probe_src/nss/kpv_e2b.nss |   7 +
+ patch_manager_mods/voice_probe_src/nss/kpv_e2c.nss |   7 +
+ patch_manager_mods/voice_probe_src/nss/kpv_e2d.nss |   7 +
+ patch_manager_mods/voice_probe_src/nss/kpv_e4.nss  |  23 +++
+ patch_manager_mods/voice_probe_src/nss/kpv_e7a.nss |   9 +
+ patch_manager_mods/voice_probe_src/nss/kpv_e7b.nss |  14 ++
+ patch_manager_mods/voice_probe_src/nss/kpv_e8.nss  |  17 ++
+ patch_manager_mods/voice_probe_src/voice_probe.ini |   4 +
+ 29 files changed, 749 insertions(+), 29 deletions(-)
 ```
-- **Dirty Files (144):**
+- **Dirty Files (153):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/24_master_plan_status.handoff.md`
   - ` M .claude/handoffs/27_companion_selfheal.handoff.md`
@@ -30,12 +57,12 @@ Execute V-C: design (host-only) a tiny KPM probe firing E1/E2/E3/E4/E7/E8 with k
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
   - ` M .claude/plans/swarm_library_architecture.md`
   - ` M patch_manager_mods/24_master_plan_status.md`
-  - ... +134 more (run `git status --short`)
+  - ... +143 more (run `git status --short`)
 
 ## 2. Immediate Objective (V-C)
 **Live tests E1-E8 incl. E5, E6, plus T-SSF and T-TIMER, with a tiny probe (needs user GO and the D0 pause lifted)**
 
-Status: TODO
+Status: PARTIAL
 Task: Live tests E1-E8 incl. E5, E6, plus T-SSF and T-TIMER, with a tiny probe (needs user GO and the D0 pause lifted)
 
 ## 2b. Upcoming Batches in Pipeline
