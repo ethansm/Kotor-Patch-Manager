@@ -371,7 +371,25 @@ def write_units(units_dir, units: dict):
             if name.endswith(".json") and name[:-5] not in units:
                 os.unlink(os.path.join(units_dir, name))
     for uid, unit in sorted(units.items()):
+        if legacy_unit_kept(os.path.join(units_dir, uid + ".json"), unit):
+            continue
         write_atomic(os.path.join(units_dir, uid + ".json"), json.dumps(unit, sort_keys=True).encode("ascii"))
+
+
+def legacy_unit_kept(path, unit) -> bool:
+    """True when `path` holds a unit built before the bundle/claim stamps existed (no bundle_sha256 in its meta) that
+    equals `unit` apart from the stamps. Its bytes stay, so the runner's record (keyed on the unit file's sha256) stays
+    complete: rewriting would make a resumed run re-run and re-pay every finished unit."""
+    try:
+        old = load_json_file(path, MAX_UNIT_BYTES)
+    except (OSError, ValueError, RecursionError):
+        return False
+    if not isinstance(old, dict) or not isinstance(old.get("meta"), dict) or "bundle_sha256" in old["meta"]:
+        return False
+    stamps = ("bundle_sha256", "claim_sha256")
+    strip = lambda u: {k: v for k, v in u.items() if k != "meta"} | {
+        "meta": {k: v for k, v in u["meta"].items() if k not in stamps}}
+    return strip(old) == strip(unit)
 
 
 def list_units(units_dir) -> list:

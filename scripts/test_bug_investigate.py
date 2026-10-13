@@ -1689,6 +1689,51 @@ class TestStageIntegrity(Base):
         self.assertEqual([f for f in tree(self.run_dir) if f != "intake.json"], [])
 
 
+class TestLegacyUnitKept(unittest.TestCase):
+    """A unit file built before the bundle/claim stamps existed keeps its bytes when rebuilt with the same prompt, so the
+    runner (which keys completion on the unit file's sha256) still holds its record as complete. Found when planning
+    the verify resume of the M4 runs: rewriting the 28 finished verify units would have re-run and re-paid them."""
+
+    def setUp(self):
+        self.dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.dir, True)
+        self.units = os.path.join(self.dir, "units")
+        self.path = os.path.join(self.units, "verify-a-h1.json")
+
+    def unit(self, prompt, meta):
+        return {"unit_id": "verify-a-h1", "prompt": prompt, "meta": meta}
+
+    def read(self):
+        with open(self.path, "rb") as f:
+            return f.read()
+
+    def test_legacy_unit_with_same_prompt_is_not_rewritten(self):
+        bi.write_units(self.units, {"verify-a-h1": self.unit("P", {"stage": "verify"})})
+        before = self.read()
+        stamped = self.unit("P", {"stage": "verify", "bundle_sha256": "a" * 64, "claim_sha256": "b" * 64})
+        bi.write_units(self.units, {"verify-a-h1": stamped})
+        self.assertEqual(self.read(), before)
+
+    def test_legacy_unit_with_another_prompt_is_rewritten(self):
+        bi.write_units(self.units, {"verify-a-h1": self.unit("P", {"stage": "verify"})})
+        stamped = self.unit("Q", {"stage": "verify", "bundle_sha256": "a" * 64})
+        bi.write_units(self.units, {"verify-a-h1": stamped})
+        self.assertEqual(json.loads(self.read()), stamped)
+
+    def test_stamped_unit_is_always_rewritten_to_the_new_stamps(self):
+        old = self.unit("P", {"stage": "verify", "bundle_sha256": "a" * 64})
+        bi.write_units(self.units, {"verify-a-h1": old})
+        new = self.unit("P", {"stage": "verify", "bundle_sha256": "c" * 64})
+        bi.write_units(self.units, {"verify-a-h1": new})
+        self.assertEqual(json.loads(self.read()), new)
+
+    def test_other_meta_change_on_a_legacy_unit_is_rewritten(self):
+        bi.write_units(self.units, {"verify-a-h1": self.unit("P", {"stage": "verify", "hypothesis_id": "h1"})})
+        new = self.unit("P", {"stage": "verify", "hypothesis_id": "h2", "bundle_sha256": "a" * 64})
+        bi.write_units(self.units, {"verify-a-h1": new})
+        self.assertEqual(json.loads(self.read()), new)
+
+
 class TestRunLock(Base):
     def test_a_held_run_lock_refuses_every_locked_command_with_exit_2(self):
         self.new_run()
