@@ -73,3 +73,22 @@ Matcher v2 versus v1 on the 10 M4 runs (copies, original `score.json` untouched;
 | BG09 | B | 2 / 30 (0.067) | 1 / 30 (0.033) |
 
 Other: rank-1 mismatch runs 0; tie-break decides the rank-1 label in 1 run per case. The cluster-bootstrap interval over 5 runs is not wider than the pooled Wilson one here (hotbar v2 A: cluster [0.174, 0.292], Wilson [0.136, 0.372]); with only 5 runs per case the bootstrap is itself unstable, so treat both as optimistic.
+
+## Addendum 2 (2026-10-13): full-coverage Sonnet verify, gate G-R1 option (a)
+Approved in chat: all 51 pending units, ceiling $2.60. Done on the 10 existing runs (`verify --engine real`, Sonnet 5.5, same frozen role, `--cap-call 0.05`, `--parallel 2`, cap-total = the preflight number per run; the 28 earlier records were kept: the legacy-unit fix `2d88ece` keeps unstamped unit files byte-identical, otherwise the resume would have re-run and re-paid all 79). **Actual new spend $1.060** (51 units, about $0.021 each); cumulative verify spend $1.664. No process left. Original run `report.json` and `score.json` in `~/.cache/bug_investigate/` were not rewritten; the post-resume report and v2 score were produced on copies (the verify records themselves live in the run dirs).
+
+Coverage is now 79 of 79 quote-valid hypotheses, all three styles (advocate 27, evidence 27, skeptic 25).
+
+| | hotbar (5 runs) | BG09 (5 runs) |
+|---|---|---|
+| quote-valid | 47 | 32 |
+| verdicts supported / inconclusive / rejected | 12 / 28 / 7 | 1 / 25 / 6 |
+| rejected by rubric label (v2) | 6 MISS, 1 PARTIAL, 0 HIT | 4 MISS, 2 PARTIAL, 0 HIT |
+| precision_hit v2, A (no verify) -> B (verify) | 0.234 -> 0.275 | 0.031 -> 0.038 |
+| rank-1 HIT, A and B | 5 of 5 | 0 of 5 |
+
+Reading:
+- The verifier rejects 13 of 79 (16%), abstains (`inconclusive`) on 53 of 79 (67%), and supports 13. It removed no hypothesis the rubric calls HIT. Precision rises only because rejected hypotheses leave the denominator; the gain is small and rests on a rubric the held-out check does not trust.
+- Against the held-out consensus labels (38 labelled hypotheses): hotbar rejections were 2 consensus-MISS; BG09 rejections were 2 consensus-HIT and 1 consensus-PARTIAL. If the consensus is right that is 2 false rejections of 10 BG09 HITs. The three BG09 claims (`...040930Z-logic/blind-evidence:h2`, `...041037Z-logic/blind-evidence:h1`, `...041135Z-logic/blind-skeptic:h3`) describe a repeated re-injection of an `eaten_paused` action and do not name the follower entry or a missing "saw executing" signal; Opus reads them as PARTIAL, so the verifier rejection is defensible and the consensus HIT label looks lenient. This is unresolved without a human reading of those labels (the 8-label spot-check).
+- Cost: $1.664 for 79 verify units against about $0.14 for the 30 blind and null Haiku units of the 10 runs, roughly 10x per unit.
+- Decision: D3 stays **"layer 3 off"**. Two cases, an untrusted rubric, a 67% abstention rate, and a 10x unit cost do not meet "overwhelming"; the open question is whether the rejections are right, which needs more known-answer cases and a trusted label set, not more of the same two. D1 and D4 still await a human answer.
