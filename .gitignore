@@ -40,6 +40,7 @@ kdb_backup_*.db
 !/.claude/review/work/phaseH/
 !/.claude/review/work/phaseH3/
 !/.claude/review/work/play1012/
+!/.claude/review/work/logfix/
 /tests/.cache/
 /.claude/contract_baseline.tsv
 /.claude/master_ledger_facts.json
