@@ -51,7 +51,7 @@
 |---|---|---|
 | V0 | Research wave w9-npcvar (12 Haiku units), web prior art, this doc | DONE |
 | V1 | Close static gaps with Haiku recon (no game): vanilla script animation calls and flag meanings, UTC ItemList armed status for the pool, waypoint/walkmesh counts for candidate areas, quest-script tag scan, `+0x11AC` persistence decode and save-load path (REA) | DONE (section 7) |
-| NB0 | Shared library `npc-world` (owns H1/H2/H3, provides `k2.npcworld@1`, section 12); moves the hooks and native spawn out of `k1_spawn_probe_src`; V2a and NB1-NB4 become its clients | IN PROGRESS, host build complete (section 12.6: `npc_world_src` 0.1.0-dev, 4 test suites + build gate PASS; live check = old T26 play check through the library, needs REINSTALL and user GO) |
+| NB0 | Shared library `npc-world` (owns H1/H2/H3, provides `k2.npcworld@1`, section 12); moves the hooks and native spawn out of `k1_spawn_probe_src`; V2a and NB1-NB4 become its clients | PARTIAL (section 12.6, host build 1e58d6e: `npc_world_src` 0.1.0-dev, 4 test suites + build gate PASS; live check = old T26 play check through the library, needs REINSTALL and user GO) |
 | V2 | Live probe design and build (needs user GO): OID stability across loads, hook-spawn persistence in saves, save-load reset, object count and frame cost | TODO (V2a host build, V2b live; stages P1-P15 + capacity; see section 11) |
 | V3 | Pool and roster spec: group pools, area eligibility table, spawn budget, per-species walk speeds | DONE (section 8) |
 | V4 | Visit-salt change in doc 34 code (host tests, build only) and doc 34 section 3.2.2 update | DONE (host tests + build; salt unwired, V4b = area-entry source after V2) |
