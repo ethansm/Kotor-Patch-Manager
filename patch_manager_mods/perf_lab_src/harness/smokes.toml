@@ -18,6 +18,7 @@
 #   mod           (optional) source dir under patch_manager_mods/ (e.g. "texture_memory_release_src").
 #   extra_dlls    (optional) list of further {kpatch, dll_name} tables for smokes that need more than one DLL (portraitslots)
 #   cxxflags      link-style flags and libs ONLY; the runner always adds `i686-w64-mingw32-g++ -std=c++17 -O1 -I <this dir> -I tests/include`
+#                 plus the canonical `_shared_src` and KPM `Patches/Common` include dirs (run_tests.py canonical_include_flags(); KPM_COMMON_DIR overrides)
 #   runtime_dlls  true = copy the 3 MinGW runtime DLLs next to the exe (the exe links libstdc++/libgcc dynamically)
 #   modes         argv[1] values, one run each, every one must exit 0; empty list = run once with no argument
 #   needs_display true = needs a display (DISPLAY set): the smoke creates a real window and calls SetForegroundWindow. probe14 and
@@ -177,15 +178,15 @@ extra_dlls = [
   { kpatch = "../split_build/BuffDurationHUD.kpatch", dll_name = "buff-duration-hud.dll" },
   { kpatch = "../split_build/ShieldBar.kpatch", dll_name = "shield-bar.dll" },
 ]
-cxxflags = ["-static", "-I../../_shared_src", "-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common"]
+cxxflags = ["-static"]
 runtime_dlls = false
 modes = ["wire", "late", "inert", "order"]
 needs_display = false
 timeout_s = 60
 
 # queue-hud 0.3.0-dev: out-of-combat action-queue copy, loaded with the real portrait-slots provider. Tripwires on every engine draw /
-# resolver address; the kpatch lives in split_build/ like the other portrait-slots clients (kept out of Patches/). Common headers use the
-# absolute KPM checkout path, not $KPM_DIR (0.3.0: image base moved down to 0x120000 so the 10 MB .bss pad also covers the embtex engine
+# resolver address; the kpatch lives in split_build/ like the other portrait-slots clients (kept out of Patches/). Common headers come from
+# run_tests.py canonical_include_flags(), not $KPM_DIR (0.3.0: image base moved down to 0x120000 so the 10 MB .bss pad also covers the embtex engine
 # stubs at 0x423000 / 0x423990, which lie below where the default-base exe's own .text/.bss would end): pre_install_gate.py points KPM_DIR at a scratch tree that has no Patches/Common.
 [[smoke]]
 name = "queuehud"
@@ -195,7 +196,7 @@ dll_name = "queue-hud.dll"
 extra_dlls = [
   { kpatch = "../split_build/PortraitSlots.kpatch", dll_name = "portrait-slots.dll" },
 ]
-cxxflags = ["-static", "-Wl,--image-base=0x120000", "-I../../_shared_src", "-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common"]
+cxxflags = ["-static", "-Wl,--image-base=0x120000"]
 runtime_dlls = false
 modes = ["wire", "combat", "nocreature", "badhud", "badchain", "strips", "cancel", "inert"]
 needs_display = false
@@ -214,7 +215,7 @@ extra_dlls = [
   { kpatch = "../split_build/PortraitSlots.kpatch", dll_name = "portrait-slots.dll" },
   { kpatch = "../split_build/HudHost.kpatch", dll_name = "hud-host.dll" },
 ]
-cxxflags = ["-static", "-Wl,--image-base=0x120000", "-I../../_shared_src", "-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common"]
+cxxflags = ["-static", "-Wl,--image-base=0x120000"]
 runtime_dlls = false
 modes = ["wire", "inert", "badchain", "kick-off"]
 needs_display = false
@@ -228,7 +229,7 @@ name = "saveevents"
 src = "smoke_saveevents.cpp"
 kpatch = "../split_build/SaveEvents.kpatch"
 dll_name = "save-events.dll"
-cxxflags = ["-static", "-I../../_shared_src", "-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common"]
+cxxflags = ["-static"]
 runtime_dlls = false
 modes = ["wire", "dispatch", "inert"]
 needs_display = false
@@ -242,7 +243,7 @@ name = "letterbox"
 src = "../../dialogue_letterbox_fix_src/smoke_dialogueletterbox.cpp"
 kpatch = "../../../stage_lb_102/K2DialogueLetterboxFix.kpatch"
 dll_name = "windows_x86.dll"
-cxxflags = ["-static-libgcc", "-static-libstdc++", "-I$KPM_DIR/Patches/Common"]
+cxxflags = ["-static-libgcc", "-static-libstdc++"]
 runtime_dlls = false
 modes = ["h6", "clamp", "vanilla", "disabled", "foreign", "unchanged", "late", "ini", "log0", "default", "core"]
 needs_display = false
@@ -253,7 +254,7 @@ name = "letterbox_probe"
 src = "../../dialogue_letterbox_fix_src/smoke_dialogueletterbox.cpp"
 kpatch = "../letterbox_probe_stage/0.1.0-probe/K2DialogueLetterboxFixProbe.kpatch"
 dll_name = "windows_x86.dll"
-cxxflags = ["-static-libgcc", "-static-libstdc++", "-I$KPM_DIR/Patches/Common"]
+cxxflags = ["-static-libgcc", "-static-libstdc++"]
 runtime_dlls = false
 modes = ["h6", "clamp", "vanilla", "disabled", "foreign", "unchanged", "late", "ini", "log0", "default", "core", "probe", "probe0", "probelog0"]
 needs_display = false

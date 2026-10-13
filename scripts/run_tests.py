@@ -111,6 +111,14 @@ class Result:
 
 # ---------------------------------------------------------------- helpers
 
+def canonical_include_flags() -> list[str]:
+    """Header dirs every wine smoke needs: repo _shared_src, then the canonical KPM Common (KPM_COMMON_DIR overrides).
+    Independent of KPM_DIR, which pre_install_gate points at a scratch tree without Patches/Common."""
+    common = Path(os.environ.get("KPM_COMMON_DIR") or "~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common").expanduser()
+    dirs = [REPO / "patch_manager_mods" / "_shared_src", common]
+    return [f"-I{d}" for d in dirs if d.is_dir()]
+
+
 def expand(s: str) -> str:
     """Expand ${VAR:-default}, $VAR and ~ (REPO, KPM_DIR, KOTOR2_ROOT are always defined)."""
     env = {"REPO": str(REPO), "KPM_DIR": str(KPM_DIR), "KOTOR2_ROOT": str(_GAME_DIR), **os.environ}
@@ -691,6 +699,7 @@ def smoke_build(s) -> Result:
             shutil.rmtree(bdir)
         bdir.mkdir(parents=True)
         cmd = (["i686-w64-mingw32-g++", "-std=c++17", "-O1", "-I", str(HARNESS), "-I", str(REPO / "tests" / "include")]
+               + canonical_include_flags()
                + [str(HARNESS / s["src"]), "-o", str(bdir / f"{name}.exe")] + [expand(f) for f in s.get("cxxflags", [])])
         st, why, out = run_cmd(cmd, HARNESS, None, 600)
         if st != "OK":
