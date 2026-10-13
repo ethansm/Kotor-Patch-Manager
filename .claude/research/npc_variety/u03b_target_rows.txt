@@ -1,0 +1,89 @@
+# Creature animation inventory (R5). candidates: idles=['pause1', 'pause2', 'pause3', 'cpause1', 'cpause2', 'standstill', 'neutral', 'good', 'evil'] flourishes=['pausesh', 'scanning', 'salute', 'victory', 'bow', 'greeting', 'taunt', 'powerup', 'touchheart', 'rolleyes', 'shrug', 'nodyes', 'point', 'itemequip', 'equip']
+# animations.2da flags for flourishes: (fireforget, hideequippeditems, stationary)
+#   pausesh    ff=1 hide=0 stat=1 loop=0
+#   scanning   ff=1 hide=0 stat=1 loop=0
+#   salute     ff=1 hide=0 stat=1 loop=0
+#   victory    ff=1 hide=0 stat=1 loop=0
+#   bow        ff=1 hide=0 stat=1 loop=0
+#   greeting   ff=1 hide=0 stat=1 loop=0
+#   taunt      ff=1 hide=0 stat=1 loop=0
+#   powerup    ff=1 hide=0 stat=1 loop=0
+#   touchheart ff=1 hide=0 stat=1 loop=0
+#   rolleyes   ff=1 hide=0 stat=1 loop=0
+#   shrug      ff=1 hide=0 stat=1 loop=0
+#   nodyes     ff=1 hide=0 stat=1 loop=0
+#   point      ff=1 hide=0 stat=1 loop=0
+#   itemequip  ff=1 hide=0 stat=1 loop=0
+#   equip      ff=1 hide=0 stat=1 loop=0
+
+## Per appearance row (model chosen = race column, else modela)
+row  12 Alien_Bith_01                type=F model=N_Bith         chain=[n_bith > s_male02 > s_male01] n_anims=297
+        idles: pause1, pause2, pause3, standstill, neutral, good, evil
+        flourish: pausesh(2.0s), scanning(5.1s), salute(1.6s), victory(1.3s), bow(2.0s), greeting(1.5s), taunt(1.4s), touchheart(2.8s), rolleyes(2.3s), shrug(1.6s), nodyes(1.5s), point(2.0s), equip(1.0s)
+row  18 Czerka_Officer_Asian         type=B model=N_CzerkaOff    chain=[n_czerkaoff > s_female02 > s_female01 > s_male02 > s_male01] n_anims=460
+        idles: pause1, pause2, pause3, standstill, neutral, good, evil
+        flourish: pausesh(2.0s), scanning(5.1s), salute(1.6s), victory(1.3s), bow(2.0s), greeting(1.5s), taunt(1.4s), touchheart(2.8s), rolleyes(2.3s), shrug(1.6s), nodyes(1.5s), point(2.0s), itemequip(1.3s), equip(1.0s)
+row  24 Alien_Duros_01               type=F model=N_Duros        chain=[n_duros > s_female02 > s_female01 > s_male02 > s_male01] n_anims=460
+        idles: pause1, pause2, pause3, standstill, neutral, good, evil
+        flourish: pausesh(2.0s), scanning(5.1s), salute(1.6s), victory(1.3s), bow(2.0s), greeting(1.5s), taunt(1.4s), touchheart(2.8s), rolleyes(2.3s), shrug(1.6s), nodyes(1.5s), point(2.0s), itemequip(1.3s), equip(1.0s)
+row  39 Alien_Rodian_01              type=F model=N_Rodian       chain=[n_rodian > s_female02 > s_female01 > s_male02 > s_male01] n_anims=460
+        idles: pause1, pause2, pause3, standstill, neutral, good, evil
+        flourish: pausesh(2.0s), scanning(5.1s), salute(1.6s), victory(1.3s), bow(2.0s), greeting(1.5s), taunt(1.4s), touchheart(2.8s), rolleyes(2.3s), shrug(1.6s), nodyes(1.5s), point(2.0s), itemequip(1.3s), equip(1.0s)
+row  47 Twilek_Female_01_A           type=B model=N_TwiDance_Boot chain=[n_twidance_boot > sm_twifem > s_female03 > s_female02 > s_female01 > s_male02 > s_male01] n_anims=460
+        idles: pause1, pause2, pause3, standstill, neutral, good, evil
+        flourish: pausesh(2.0s), scanning(5.1s), salute(1.7s), victory(1.0s), bow(2.5s), greeting(1.3s), taunt(1.0s), touchheart(2.8s), rolleyes(2.3s), shrug(1.6s), nodyes(1.5s), point(2.0s), itemequip(1.3s), equip(1.0s)
+row  47 Twilek_Female_01_A           type=B model=PFBCM          chain=[pfbcm > s_female03 > s_female02 > s_female01 > s_male02 > s_male01] n_anims=460
+        idles: pause1, pause2, pause3, standstill, neutral, good, evil
+        flourish: pausesh(2.0s), scanning(5.1s), salute(1.7s), victory(1.0s), bow(2.5s), greeting(1.3s), taunt(1.0s), touchheart(2.8s), rolleyes(2.3s), shrug(1.6s), nodyes(1.5s), point(2.0s), itemequip(1.3s), equip(1.0s)
+row 185 Commoner_Fem_White_01_A      type=B model=N_CommF        chain=[n_commf > s_female03 > s_female02 > s_female01 > s_male02 > s_male01] n_anims=460
+        idles: pause1, pause2, pause3, standstill, neutral, good, evil
+        flourish: pausesh(2.0s), scanning(5.1s), salute(1.7s), victory(1.0s), bow(2.5s), greeting(1.3s), taunt(1.0s), touchheart(2.8s), rolleyes(2.3s), shrug(1.6s), nodyes(1.5s), point(2.0s), itemequip(1.3s), equip(1.0s)
+row 185 Commoner_Fem_White_01_A      type=B model=PFBCM          chain=[pfbcm > s_female03 > s_female02 > s_female01 > s_male02 > s_male01] n_anims=460
+        idles: pause1, pause2, pause3, standstill, neutral, good, evil
+        flourish: pausesh(2.0s), scanning(5.1s), salute(1.7s), victory(1.0s), bow(2.5s), greeting(1.3s), taunt(1.0s), touchheart(2.8s), rolleyes(2.3s), shrug(1.6s), nodyes(1.5s), point(2.0s), itemequip(1.3s), equip(1.0s)
+row 190 Commoner_Mal_White_01_A      type=B model=N_CommM        chain=[n_commm > s_female02 > s_female01 > s_male02 > s_male01] n_anims=460
+        idles: pause1, pause2, pause3, standstill, neutral, good, evil
+        flourish: pausesh(2.0s), scanning(5.1s), salute(1.6s), victory(1.3s), bow(2.0s), greeting(1.5s), taunt(1.4s), touchheart(2.8s), rolleyes(2.3s), shrug(1.6s), nodyes(1.5s), point(2.0s), itemequip(1.3s), equip(1.0s)
+row 190 Commoner_Mal_White_01_A      type=B model=PMBCM          chain=[pmbcm > s_female02 > s_female01 > s_male02 > s_male01] n_anims=460
+        idles: pause1, pause2, pause3, standstill, neutral, good, evil
+        flourish: pausesh(2.0s), scanning(5.1s), salute(1.6s), victory(1.3s), bow(2.0s), greeting(1.5s), taunt(1.4s), touchheart(2.8s), rolleyes(2.3s), shrug(1.6s), nodyes(1.5s), point(2.0s), itemequip(1.3s), equip(1.0s)
+row 479 TSF_Officer_Mal_01           type=B model=N_RepSold      chain=[n_repsold > s_female02 > s_female01 > s_male02 > s_male01] n_anims=460
+        idles: pause1, pause2, pause3, standstill, neutral, good, evil
+        flourish: pausesh(2.0s), scanning(5.1s), salute(1.6s), victory(1.3s), bow(2.0s), greeting(1.5s), taunt(1.4s), touchheart(2.8s), rolleyes(2.3s), shrug(1.6s), nodyes(1.5s), point(2.0s), itemequip(1.3s), equip(1.0s)
+row 485 TSF_Commander_Mal_01         type=B model=N_RepOff       chain=[n_repoff > s_female02 > s_female01 > s_male02 > s_male01] n_anims=460
+        idles: pause1, pause2, pause3, standstill, neutral, good, evil
+        flourish: pausesh(2.0s), scanning(5.1s), salute(1.6s), victory(1.3s), bow(2.0s), greeting(1.5s), taunt(1.4s), touchheart(2.8s), rolleyes(2.3s), shrug(1.6s), nodyes(1.5s), point(2.0s), itemequip(1.3s), equip(1.0s)
+row 569 Alien_Gand_01                type=F model=N_Gand         chain=[n_gand > s_female02 > s_female01 > s_male02 > s_male01] n_anims=462
+        idles: pause1, pause2, pause3, standstill, neutral, good, evil
+        flourish: pausesh(2.0s), scanning(5.1s), salute(1.6s), victory(1.3s), bow(2.0s), greeting(1.5s), taunt(1.4s), touchheart(2.8s), rolleyes(2.3s), shrug(1.6s), nodyes(1.5s), point(2.0s), itemequip(1.3s), equip(1.0s)
+row 601 Alien_Sullustan              type=F model=N_Sullustan    chain=[n_sullustan > s_female02 > s_female01 > s_male02 > s_male01] n_anims=460
+        idles: pause1, pause2, pause3, standstill, neutral, good, evil
+        flourish: pausesh(2.0s), scanning(5.1s), salute(1.6s), victory(1.3s), bow(2.0s), greeting(1.5s), taunt(1.4s), touchheart(2.8s), rolleyes(2.3s), shrug(1.6s), nodyes(1.5s), point(2.0s), itemequip(1.3s), equip(1.0s)
+
+## Per supermodel chain: union of candidate names and other stance-like names
+chain [n_bith > s_male02 > s_male01]: 297 anims; idles=['pause1', 'pause2', 'pause3', 'standstill', 'neutral', 'good', 'evil']; flourish=['pausesh', 'scanning', 'salute', 'victory', 'bow', 'greeting', 'taunt', 'touchheart', 'rolleyes', 'shrug', 'nodyes', 'point', 'equip']
+     stance-like: c10a1, c10a2, c10a3, c10a4, c10a5, c10d1, c10d2, c10d3, c10d4, c10d5, c10n1, c10n2, c10p1, c10p2, c10p3, c10p4, c10p5, c2a1, c2a2, c2a3, c2a4, c2a5, c2d1, c2d2, c2d3, c2d4, c2d5, c2n1, c2n2, c2p1, c2p2, c2p3, c2p4, c2p5, g10a1, g10a2, g10a3, g10a4, g10a5, g10d1
+chain [n_czerkaoff > s_female02 > s_female01 > s_male02 > s_male01]: 460 anims; idles=['pause1', 'pause2', 'pause3', 'standstill', 'neutral', 'good', 'evil']; flourish=['pausesh', 'scanning', 'salute', 'victory', 'bow', 'greeting', 'taunt', 'touchheart', 'rolleyes', 'shrug', 'nodyes', 'point', 'itemequip', 'equip']
+     stance-like: c10a1, c10a2, c10a3, c10a4, c10a5, c10d1, c10d2, c10d3, c10d4, c10d5, c10n1, c10n2, c10p1, c10p2, c10p3, c10p4, c10p5, c2a1, c2a2, c2a3, c2a4, c2a5, c2a6, c2d1, c2d2, c2d3, c2d4, c2d5, c2n1, c2n2, c2p1, c2p2, c2p3, c2p4, c2p5, c3a1, c3a2, c3a3, c3a4, c3a5
+chain [n_duros > s_female02 > s_female01 > s_male02 > s_male01]: 460 anims; idles=['pause1', 'pause2', 'pause3', 'standstill', 'neutral', 'good', 'evil']; flourish=['pausesh', 'scanning', 'salute', 'victory', 'bow', 'greeting', 'taunt', 'touchheart', 'rolleyes', 'shrug', 'nodyes', 'point', 'itemequip', 'equip']
+     stance-like: c10a1, c10a2, c10a3, c10a4, c10a5, c10d1, c10d2, c10d3, c10d4, c10d5, c10n1, c10n2, c10p1, c10p2, c10p3, c10p4, c10p5, c2a1, c2a2, c2a3, c2a4, c2a5, c2a6, c2d1, c2d2, c2d3, c2d4, c2d5, c2n1, c2n2, c2p1, c2p2, c2p3, c2p4, c2p5, c3a1, c3a2, c3a3, c3a4, c3a5
+chain [n_rodian > s_female02 > s_female01 > s_male02 > s_male01]: 460 anims; idles=['pause1', 'pause2', 'pause3', 'standstill', 'neutral', 'good', 'evil']; flourish=['pausesh', 'scanning', 'salute', 'victory', 'bow', 'greeting', 'taunt', 'touchheart', 'rolleyes', 'shrug', 'nodyes', 'point', 'itemequip', 'equip']
+     stance-like: c10a1, c10a2, c10a3, c10a4, c10a5, c10d1, c10d2, c10d3, c10d4, c10d5, c10n1, c10n2, c10p1, c10p2, c10p3, c10p4, c10p5, c2a1, c2a2, c2a3, c2a4, c2a5, c2a6, c2d1, c2d2, c2d3, c2d4, c2d5, c2n1, c2n2, c2p1, c2p2, c2p3, c2p4, c2p5, c3a1, c3a2, c3a3, c3a4, c3a5
+chain [n_twidance_boot > sm_twifem > s_female03 > s_female02 > s_female01 > s_male02 > s_male01]: 460 anims; idles=['pause1', 'pause2', 'pause3', 'standstill', 'neutral', 'good', 'evil']; flourish=['pausesh', 'scanning', 'salute', 'victory', 'bow', 'greeting', 'taunt', 'touchheart', 'rolleyes', 'shrug', 'nodyes', 'point', 'itemequip', 'equip']
+     stance-like: c10a1, c10a2, c10a3, c10a4, c10a5, c10d1, c10d2, c10d3, c10d4, c10d5, c10n1, c10n2, c10p1, c10p2, c10p3, c10p4, c10p5, c2a1, c2a2, c2a3, c2a4, c2a5, c2a6, c2d1, c2d2, c2d3, c2d4, c2d5, c2n1, c2n2, c2p1, c2p2, c2p3, c2p4, c2p5, c3a1, c3a2, c3a3, c3a4, c3a5
+chain [pfbcm > s_female03 > s_female02 > s_female01 > s_male02 > s_male01]: 460 anims; idles=['pause1', 'pause2', 'pause3', 'standstill', 'neutral', 'good', 'evil']; flourish=['pausesh', 'scanning', 'salute', 'victory', 'bow', 'greeting', 'taunt', 'touchheart', 'rolleyes', 'shrug', 'nodyes', 'point', 'itemequip', 'equip']
+     stance-like: c10a1, c10a2, c10a3, c10a4, c10a5, c10d1, c10d2, c10d3, c10d4, c10d5, c10n1, c10n2, c10p1, c10p2, c10p3, c10p4, c10p5, c2a1, c2a2, c2a3, c2a4, c2a5, c2a6, c2d1, c2d2, c2d3, c2d4, c2d5, c2n1, c2n2, c2p1, c2p2, c2p3, c2p4, c2p5, c3a1, c3a2, c3a3, c3a4, c3a5
+chain [n_commf > s_female03 > s_female02 > s_female01 > s_male02 > s_male01]: 460 anims; idles=['pause1', 'pause2', 'pause3', 'standstill', 'neutral', 'good', 'evil']; flourish=['pausesh', 'scanning', 'salute', 'victory', 'bow', 'greeting', 'taunt', 'touchheart', 'rolleyes', 'shrug', 'nodyes', 'point', 'itemequip', 'equip']
+     stance-like: c10a1, c10a2, c10a3, c10a4, c10a5, c10d1, c10d2, c10d3, c10d4, c10d5, c10n1, c10n2, c10p1, c10p2, c10p3, c10p4, c10p5, c2a1, c2a2, c2a3, c2a4, c2a5, c2a6, c2d1, c2d2, c2d3, c2d4, c2d5, c2n1, c2n2, c2p1, c2p2, c2p3, c2p4, c2p5, c3a1, c3a2, c3a3, c3a4, c3a5
+chain [n_commm > s_female02 > s_female01 > s_male02 > s_male01]: 460 anims; idles=['pause1', 'pause2', 'pause3', 'standstill', 'neutral', 'good', 'evil']; flourish=['pausesh', 'scanning', 'salute', 'victory', 'bow', 'greeting', 'taunt', 'touchheart', 'rolleyes', 'shrug', 'nodyes', 'point', 'itemequip', 'equip']
+     stance-like: c10a1, c10a2, c10a3, c10a4, c10a5, c10d1, c10d2, c10d3, c10d4, c10d5, c10n1, c10n2, c10p1, c10p2, c10p3, c10p4, c10p5, c2a1, c2a2, c2a3, c2a4, c2a5, c2a6, c2d1, c2d2, c2d3, c2d4, c2d5, c2n1, c2n2, c2p1, c2p2, c2p3, c2p4, c2p5, c3a1, c3a2, c3a3, c3a4, c3a5
+chain [pmbcm > s_female02 > s_female01 > s_male02 > s_male01]: 460 anims; idles=['pause1', 'pause2', 'pause3', 'standstill', 'neutral', 'good', 'evil']; flourish=['pausesh', 'scanning', 'salute', 'victory', 'bow', 'greeting', 'taunt', 'touchheart', 'rolleyes', 'shrug', 'nodyes', 'point', 'itemequip', 'equip']
+     stance-like: c10a1, c10a2, c10a3, c10a4, c10a5, c10d1, c10d2, c10d3, c10d4, c10d5, c10n1, c10n2, c10p1, c10p2, c10p3, c10p4, c10p5, c2a1, c2a2, c2a3, c2a4, c2a5, c2a6, c2d1, c2d2, c2d3, c2d4, c2d5, c2n1, c2n2, c2p1, c2p2, c2p3, c2p4, c2p5, c3a1, c3a2, c3a3, c3a4, c3a5
+chain [n_repsold > s_female02 > s_female01 > s_male02 > s_male01]: 460 anims; idles=['pause1', 'pause2', 'pause3', 'standstill', 'neutral', 'good', 'evil']; flourish=['pausesh', 'scanning', 'salute', 'victory', 'bow', 'greeting', 'taunt', 'touchheart', 'rolleyes', 'shrug', 'nodyes', 'point', 'itemequip', 'equip']
+     stance-like: c10a1, c10a2, c10a3, c10a4, c10a5, c10d1, c10d2, c10d3, c10d4, c10d5, c10n1, c10n2, c10p1, c10p2, c10p3, c10p4, c10p5, c2a1, c2a2, c2a3, c2a4, c2a5, c2a6, c2d1, c2d2, c2d3, c2d4, c2d5, c2n1, c2n2, c2p1, c2p2, c2p3, c2p4, c2p5, c3a1, c3a2, c3a3, c3a4, c3a5
+chain [n_repoff > s_female02 > s_female01 > s_male02 > s_male01]: 460 anims; idles=['pause1', 'pause2', 'pause3', 'standstill', 'neutral', 'good', 'evil']; flourish=['pausesh', 'scanning', 'salute', 'victory', 'bow', 'greeting', 'taunt', 'touchheart', 'rolleyes', 'shrug', 'nodyes', 'point', 'itemequip', 'equip']
+     stance-like: c10a1, c10a2, c10a3, c10a4, c10a5, c10d1, c10d2, c10d3, c10d4, c10d5, c10n1, c10n2, c10p1, c10p2, c10p3, c10p4, c10p5, c2a1, c2a2, c2a3, c2a4, c2a5, c2a6, c2d1, c2d2, c2d3, c2d4, c2d5, c2n1, c2n2, c2p1, c2p2, c2p3, c2p4, c2p5, c3a1, c3a2, c3a3, c3a4, c3a5
+chain [n_gand > s_female02 > s_female01 > s_male02 > s_male01]: 462 anims; idles=['pause1', 'pause2', 'pause3', 'standstill', 'neutral', 'good', 'evil']; flourish=['pausesh', 'scanning', 'salute', 'victory', 'bow', 'greeting', 'taunt', 'touchheart', 'rolleyes', 'shrug', 'nodyes', 'point', 'itemequip', 'equip']
+     stance-like: c10a1, c10a2, c10a3, c10a4, c10a5, c10d1, c10d2, c10d3, c10d4, c10d5, c10n1, c10n2, c10p1, c10p2, c10p3, c10p4, c10p5, c2a1, c2a2, c2a3, c2a4, c2a5, c2a6, c2d1, c2d2, c2d3, c2d4, c2d5, c2n1, c2n2, c2p1, c2p2, c2p3, c2p4, c2p5, c3a1, c3a2, c3a3, c3a4, c3a5
+chain [n_sullustan > s_female02 > s_female01 > s_male02 > s_male01]: 460 anims; idles=['pause1', 'pause2', 'pause3', 'standstill', 'neutral', 'good', 'evil']; flourish=['pausesh', 'scanning', 'salute', 'victory', 'bow', 'greeting', 'taunt', 'touchheart', 'rolleyes', 'shrug', 'nodyes', 'point', 'itemequip', 'equip']
+     stance-like: c10a1, c10a2, c10a3, c10a4, c10a5, c10d1, c10d2, c10d3, c10d4, c10d5, c10n1, c10n2, c10p1, c10p2, c10p3, c10p4, c10p5, c2a1, c2a2, c2a3, c2a4, c2a5, c2a6, c2d1, c2d2, c2d3, c2d4, c2d5, c2n1, c2n2, c2p1, c2p2, c2p3, c2p4, c2p5, c3a1, c3a2, c3a3, c3a4, c3a5
