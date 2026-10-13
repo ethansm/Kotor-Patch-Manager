@@ -291,7 +291,11 @@ class CompatGraph:
             self.all_cpp_files.add(rel_src)
 
             # Assign test item ID if it's a test file
-            if src.name.endswith("_test.cpp") and "selftest" not in src.parts:
+            # research/**/parity/*_test.cpp are built by parity.py, not discovered by run_tests.py:
+            # an id for them (e.g. a duplicate-stem fallback) makes run_tests exit 2 and fails the whole batch.
+            rel_parts = Path(rel_src).parts
+            is_parity = "research" in rel_parts and "parity" in rel_parts
+            if src.name.endswith("_test.cpp") and "selftest" not in src.parts and not is_parity:
                 stem = src.stem
                 if stem in seen_stems:
                     item_id = f"cpp:{rel_src}"
