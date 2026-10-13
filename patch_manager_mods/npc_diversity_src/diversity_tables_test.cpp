@@ -1,5 +1,6 @@
 // diversity_tables_test.cpp -- unit tests for DiversityTables.h
 #include "DiversityTables.h"
+#include "DiversityRows.h"
 #include "check.h"
 
 #include <cstddef>
@@ -37,8 +38,8 @@ void testGenericAppearanceChecks() {
         KT_CHECK(!NpcDiversity::IsGenericTwilekFemale(app));
     }
 
-    // Custom rows 802-815 (APP_* constants) are not diversification sources and must match no table.
-    for (uint16_t app = 802; app <= 815; ++app) {
+    // Custom rows 802..APP_COUNT-1 (APP_* constants) are not diversification sources and must match no table.
+    for (uint16_t app = NpcDiversity::APP_FIRST_APPENDED; app < NpcDiversity::APP_COUNT; ++app) {
         KT_CHECK(!NpcDiversity::IsGenericMaleCommoner(app));
         KT_CHECK(!NpcDiversity::IsGenericFemaleCommoner(app));
         KT_CHECK(!NpcDiversity::IsGenericTwilekMale(app));

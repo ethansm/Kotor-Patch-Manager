@@ -60,17 +60,19 @@ class MergeAppearanceTests(unittest.TestCase):
         self.head_map = {}
         self.mapping, _ = g.merge_appearance_table(self.app, self.head_map)
 
-    def test_appended_rows_are_802_to_811_without_alien_rows(self):
-        self.assertEqual(self.app.get_height(), 812)
-        self.assertEqual(sorted(self.mapping.values()), list(range(802, 812)))
+    def test_appended_rows_are_802_to_817_without_alien_rows(self):
+        self.assertEqual(self.app.get_height(), 818)
+        self.assertEqual(sorted(self.mapping.values()), list(range(802, 818)))
         self.assertEqual(self.mapping["Commoner_Fat_Male"], 802)
         self.assertEqual(self.mapping["Twilek_Female_Underwear"], 811)
+        self.assertEqual(self.mapping["Commoner_Dirty_Male"], 812)
+        self.assertEqual(self.mapping["Twilek_Female_Tone_C"], 817)
         for label in ALIEN_LABELS:
             self.assertNotIn(label, self.mapping)
             self.assertIsNone(g._index_of(self.app, "label", label))
 
     def test_appended_cells_are_blank_not_literal_stars(self):
-        for i in range(802, 812):
+        for i in range(802, 818):
             row = self.app.get_row(i)
             for h in self.app.get_headers():
                 self.assertNotEqual(row.get_string(h), "****", f"row {i} column {h}")
@@ -85,10 +87,28 @@ class MergeAppearanceTests(unittest.TestCase):
         self.assertEqual(texa["Twilek_Female_Underwear"], "N_CommF")  # no vanilla N_TwiUnd row: unchanged
         self.assertEqual(self.app.get_row(self.mapping["Twilek_Female_Dancer"]).get_string("texb"), "N_TwiDanceB")
 
+    def test_track_a_rows_use_k1_origin_textures(self):
+        def cell(label, col):
+            return self.app.get_row(self.mapping[label]).get_string(col)
+        for label, model, tex, head in (
+            ("Commoner_Dirty_Male", "N_CommM", "N_CommMD", "9"),
+            ("Commoner_Dirty_Female", "N_CommF", "N_CommFD", "8"),
+            ("Czerka_Protocol_Officer_Female", "N_CommF", "N_CommFC", "83"),
+            ("Twilek_Female_Tone_A", "N_TwilekF", "N_TwilekFA", "61"),
+            ("Twilek_Female_Tone_B", "N_TwilekF", "N_TwilekFB", "61"),
+            ("Twilek_Female_Tone_C", "N_TwilekF", "N_TwilekFC", "61"),
+        ):
+            self.assertEqual(cell(label, "modela"), model, label)
+            self.assertEqual(cell(label, "modelb"), model, label)
+            self.assertEqual(cell(label, "texa"), tex, label)
+            self.assertEqual(cell(label, "texb"), tex, label)
+            self.assertEqual(cell(label, "normalhead"), head, label)
+        self.assertEqual(cell("Twilek_Female_Tone_A", "race"), "N_TwilekF")
+
     def test_generated_header_has_no_alien_rows_and_checked_bounds(self):
         with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp) / "DiversityRows.h"
-            g.generate_cpp_header(self.mapping, self.head_map, out, app_first=802, app_count=812,
+            g.generate_cpp_header(self.mapping, self.head_map, out, app_first=802, app_count=818,
                                   head_first=249, head_count=249)
             text = out.read_text()
         self.assertIn("Auto-generated", text)
@@ -96,12 +116,14 @@ class MergeAppearanceTests(unittest.TestCase):
         self.assertNotIn("KELDOR", text)
         self.assertNotIn("IRIDORIAN", text)
         self.assertIn("constexpr uint16_t APP_FIRST_APPENDED = 802;", text)
-        self.assertIn("constexpr uint16_t APP_COUNT = 812;", text)
+        self.assertIn("constexpr uint16_t APP_COUNT = 818;", text)
         self.assertIn("constexpr uint16_t HEAD_FIRST_APPENDED = 249;", text)
         self.assertIn("constexpr uint16_t HEAD_COUNT = 249;", text)
         self.assertIn("static_assert(APP_COMMONER_FAT_MALE == APP_FIRST_APPENDED", text)
         self.assertIn("static_assert(APP_TWILEK_FEMALE_UNDERWEAR < APP_COUNT", text)
         self.assertIn("constexpr uint16_t APP_TWILEK_FEMALE_UNDERWEAR = 811;", text)
+        self.assertIn("constexpr uint16_t APP_COMMONER_DIRTY_MALE = 812;", text)
+        self.assertIn("constexpr uint16_t APP_TWILEK_FEMALE_TONE_C = 817;", text)
 
 
 class HeadCapTests(unittest.TestCase):

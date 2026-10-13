@@ -78,6 +78,14 @@ void CheckNeverEqualCurrent(const char* label, uint16_t row, const uint8_t* list
 
 bool IsTwilekMaleVariant(uint16_t v) { return v >= 805 && v <= 808; }
 bool IsDancer(uint16_t v) { return v >= 809 && v <= 811; }
+bool IsTwilekTone(uint16_t v) {
+    return v == NpcDiversity::APP_TWILEK_FEMALE_TONE_A || v == NpcDiversity::APP_TWILEK_FEMALE_TONE_B ||
+           v == NpcDiversity::APP_TWILEK_FEMALE_TONE_C;
+}
+bool IsFemaleOnlyRow(uint16_t v) {
+    return v == NpcDiversity::APP_COMMONER_FAT_FEMALE || v == NpcDiversity::APP_CZERKA_OFFICER_FEMALE ||
+           v == NpcDiversity::APP_COMMONER_DIRTY_FEMALE || v == NpcDiversity::APP_CZERKA_PROTOCOL_OFFICER_FEMALE;
+}
 
 void testFmix32Golden() {
     KT_CHECK_EQ(NpcDiversity::Fmix32(0u), 0x00000000u);
@@ -218,23 +226,27 @@ void testQuantizeCoordGuards() {
 
 // Band edges: a raw hash whose BandRoll equals target must select the expected branch.
 void testBandEdges() {
-    // Male commoner 190: 0..14 fat, 15..99 unchanged
+    // Male commoner 190: 0..14 fat, 15..24 dirty, 25..99 unchanged
     const uint32_t maleTargets[] = {0, 14, 15, 19, 20, 24, 25, 99};
     for (uint32_t t : maleTargets) {
         uint32_t h = HashWithBandRoll(t);
         KT_CHECK_EQ(NpcDiversity::BandRoll(h), t);
-        uint16_t want = (t < NpcDiversity::kFatPct) ? NpcDiversity::APP_COMMONER_FAT_MALE : 190;
+        uint16_t want = 190;
+        if (t < NpcDiversity::kFatPct) want = NpcDiversity::APP_COMMONER_FAT_MALE;
+        else if (t < NpcDiversity::kFatPct + NpcDiversity::kDirtyPct) want = NpcDiversity::APP_COMMONER_DIRTY_MALE;
         KT_CHECK_EQ(NpcDiversity::RemapAppearance(190, 0, h), want);
     }
 
-    // Female commoner 185: 0..14 fat, 15..19 czerka, 20..99 unchanged
-    const uint32_t femaleTargets[] = {0, 14, 15, 19, 20, 24, 25, 99};
+    // Female commoner 185: 0..14 fat, 15..19 czerka, 20..29 dirty, 30..34 protocol officer, 35..99 unchanged
+    const uint32_t femaleTargets[] = {0, 14, 15, 19, 20, 24, 25, 29, 30, 34, 35, 99};
     for (uint32_t t : femaleTargets) {
         uint32_t h = HashWithBandRoll(t);
         KT_CHECK_EQ(NpcDiversity::BandRoll(h), t);
         uint16_t want = 185;
         if (t < NpcDiversity::kFatPct) want = NpcDiversity::APP_COMMONER_FAT_FEMALE;
         else if (t < NpcDiversity::kFatPct + NpcDiversity::kCzerkaPct) want = NpcDiversity::APP_CZERKA_OFFICER_FEMALE;
+        else if (t < 20 + NpcDiversity::kDirtyPct) want = NpcDiversity::APP_COMMONER_DIRTY_FEMALE;
+        else if (t < 30 + NpcDiversity::kProtocolPct) want = NpcDiversity::APP_CZERKA_PROTOCOL_OFFICER_FEMALE;
         KT_CHECK_EQ(NpcDiversity::RemapAppearance(185, 1, h), want);
     }
 
@@ -251,14 +263,16 @@ void testBandEdges() {
         }
     }
 
-    // Female Twi'lek 446: 0..19 dancer (809..811), 20..99 unchanged
-    const uint32_t twiFemTargets[] = {0, 14, 19, 20, 24, 25, 99};
+    // Female Twi'lek 446: 0..19 dancer (809..811), 20..49 tone A/B/C (815..817), 50..99 unchanged
+    const uint32_t twiFemTargets[] = {0, 14, 19, 20, 24, 25, 49, 50, 99};
     for (uint32_t t : twiFemTargets) {
         uint32_t h = HashWithBandRoll(t);
         KT_CHECK_EQ(NpcDiversity::BandRoll(h), t);
         uint16_t got = NpcDiversity::RemapAppearance(446, 1, h);
         if (t < NpcDiversity::kDancerPct) {
             KT_CHECK(IsDancer(got));
+        } else if (t < NpcDiversity::kDancerPct + NpcDiversity::kTwilekToneRemapPct) {
+            KT_CHECK(IsTwilekTone(got));
         } else {
             KT_CHECK_EQ(got, 446);
         }
@@ -300,23 +314,25 @@ void testGenderMismatchReturnsInput() {
 }
 
 void testMaleCommonerDistribution() {
-    long fat = 0, unchanged = 0, other = 0, alien = 0;
+    long fat = 0, dirty = 0, unchanged = 0, other = 0, femaleOnly = 0;
     long fatEven = 0, evenTotal = 0, fatOdd = 0, oddTotal = 0;
     for (uint32_t i = 0; i < kDraws; ++i) {
         uint32_t h = DrawHash(i, 190);
         uint16_t r = NpcDiversity::RemapAppearance(190, 0, h);
         bool isFat = (r == NpcDiversity::APP_COMMONER_FAT_MALE);
         if (isFat) ++fat;
+        else if (r == NpcDiversity::APP_COMMONER_DIRTY_MALE) ++dirty;
         else if (r == 190) ++unchanged;
         else ++other;
-        if (r >= 812 && r <= 815) ++alien;  // Kel Dor / Iridorian rows must never be produced
+        if (IsFemaleOnlyRow(r)) ++femaleOnly;  // gender guard: a male commoner never becomes a female-only row
         if (h & 1u) { ++oddTotal; if (isFat) ++fatOdd; }
         else        { ++evenTotal; if (isFat) ++fatEven; }
     }
     KT_CHECK(ShareInRange("male fat", fat, kDraws, 14.0, 16.0));
-    KT_CHECK(ShareInRange("male unchanged", unchanged, kDraws, 84.0, 86.0));
+    KT_CHECK(ShareInRange("male dirty", dirty, kDraws, 8.0, 12.0));
+    KT_CHECK(ShareInRange("male unchanged", unchanged, kDraws, 74.0, 76.0));
     KT_CHECK_EQ(other, 0L);
-    KT_CHECK_EQ(alien, 0L);
+    KT_CHECK_EQ(femaleOnly, 0L);
 
     // Fat share holds on each parity of the hash (no dependence on the low bit)
     KT_CHECK(ShareInRange("male fat, even hash", fatEven, evenTotal, 14.0, 16.0));
@@ -324,17 +340,21 @@ void testMaleCommonerDistribution() {
 }
 
 void testFemaleCommonerDistribution() {
-    long fat = 0, czerka = 0, unchanged = 0, other = 0;
+    long fat = 0, czerka = 0, dirty = 0, protocol = 0, unchanged = 0, other = 0;
     for (uint32_t i = 0; i < kDraws; ++i) {
         uint16_t r = NpcDiversity::RemapAppearance(185, 1, DrawHash(i, 185));
         if (r == NpcDiversity::APP_COMMONER_FAT_FEMALE) ++fat;
+        else if (r == NpcDiversity::APP_COMMONER_DIRTY_FEMALE) ++dirty;
+        else if (r == NpcDiversity::APP_CZERKA_PROTOCOL_OFFICER_FEMALE) ++protocol;
         else if (r == NpcDiversity::APP_CZERKA_OFFICER_FEMALE) ++czerka;
         else if (r == 185) ++unchanged;
         else ++other;
     }
     KT_CHECK(ShareInRange("female fat", fat, kDraws, 14.0, 16.0));
     KT_CHECK(ShareInRange("female czerka", czerka, kDraws, 4.3, 5.7));
-    KT_CHECK(ShareInRange("female unchanged", unchanged, kDraws, 79.0, 81.0));
+    KT_CHECK(ShareInRange("female dirty", dirty, kDraws, 8.0, 12.0));
+    KT_CHECK(ShareInRange("female protocol officer", protocol, kDraws, 3.0, 7.0));
+    KT_CHECK(ShareInRange("female unchanged", unchanged, kDraws, 64.0, 66.0));
     KT_CHECK_EQ(other, 0L);
 }
 
@@ -378,13 +398,17 @@ void testTwilekMaleDistribution() {
 }
 
 void testTwilekFemaleDistribution() {
-    long dancers = 0, unchanged = 0, other = 0;
+    long dancers = 0, tones = 0, unchanged = 0, other = 0;
     long variant[3] = {0, 0, 0};
+    long toneVariant[3] = {0, 0, 0};
     for (uint32_t i = 0; i < kDraws; ++i) {
         uint16_t r = NpcDiversity::RemapAppearance(446, 1, DrawHash(i, 446));
         if (IsDancer(r)) {
             ++dancers;
             ++variant[r - 809];
+        } else if (IsTwilekTone(r)) {
+            ++tones;
+            ++toneVariant[r - NpcDiversity::APP_TWILEK_FEMALE_TONE_A];
         } else if (r == 446) {
             ++unchanged;
         } else {
@@ -392,8 +416,12 @@ void testTwilekFemaleDistribution() {
         }
     }
     KT_CHECK(ShareInRange("twi'lek female dancers", dancers, kDraws, 19.0, 21.0));
-    KT_CHECK(ShareInRange("twi'lek female unchanged", unchanged, kDraws, 79.0, 81.0));
+    KT_CHECK(ShareInRange("twi'lek female tones", tones, kDraws, 28.0, 32.0));
+    KT_CHECK(ShareInRange("twi'lek female unchanged", unchanged, kDraws, 49.0, 51.0));
     KT_CHECK_EQ(other, 0L);
+    for (int k = 0; k < 3; ++k) {
+        KT_CHECK(ShareInRange("tone variant share", toneVariant[k], tones, 100.0 / 3.0 - 3.0, 100.0 / 3.0 + 3.0));
+    }
     for (int k = 0; k < 3; ++k) {
         // 1/3 of the dancers, +/- 3 points
         KT_CHECK(ShareInRange("dancer variant share", variant[k], dancers, 100.0 / 3.0 - 3.0, 100.0 / 3.0 + 3.0));
@@ -566,10 +594,10 @@ void testFamilyOfMatchesTexVarEligible() {
     KT_CHECK(NpcDiversity::FamilyOf(416) == SlotFamily::None);
     KT_CHECK(NpcDiversity::FamilyOf(0xFFFFu) == SlotFamily::None);
 
-    // Over rows 0..815 a family exists exactly when TexVarEligible holds (57 rows in total).
+    // Over rows 0..APP_COUNT-1 a family exists exactly when TexVarEligible holds (57 rows in total).
     bool agree = true;
     long eligible = 0;
-    for (uint32_t a = 0; a <= 815u; ++a) {
+    for (uint32_t a = 0; a < NpcDiversity::APP_COUNT; ++a) {
         const uint16_t row = static_cast<uint16_t>(a);
         const bool hasFamily = NpcDiversity::FamilyOf(row) != SlotFamily::None;
         if (hasFamily) ++eligible;
@@ -599,13 +627,50 @@ void testShouldVaryRate() {
 
 void testShouldVaryAppendedRows() {
     bool allVary = true;
-    for (uint16_t row = 802; row <= 811; ++row) {
+    for (uint16_t row = NpcDiversity::APP_FIRST_APPENDED; row < NpcDiversity::APP_COUNT; ++row) {
         for (uint32_t oid = 1; oid <= 1000u; ++oid) {
             if (!NpcDiversity::ShouldVary(oid, row)) allVary = false;
         }
     }
     KT_CHECK(allVary);
     KT_CHECK(!NpcDiversity::ShouldVary(0u, 802));
+}
+
+// Track A rows 812..817: one texture file each, so never TexVar-eligible, no family, slot 0, but always vary-gated.
+void testTrackARows() {
+    const uint16_t rows[] = {
+        NpcDiversity::APP_COMMONER_DIRTY_MALE, NpcDiversity::APP_COMMONER_DIRTY_FEMALE,
+        NpcDiversity::APP_CZERKA_PROTOCOL_OFFICER_FEMALE, NpcDiversity::APP_TWILEK_FEMALE_TONE_A,
+        NpcDiversity::APP_TWILEK_FEMALE_TONE_B, NpcDiversity::APP_TWILEK_FEMALE_TONE_C};
+    KT_CHECK_EQ(NpcDiversity::APP_COMMONER_DIRTY_MALE, 812);
+    KT_CHECK_EQ(NpcDiversity::APP_TWILEK_FEMALE_TONE_C, 817);
+    for (uint16_t row : rows) {
+        KT_CHECK(!NpcDiversity::TexVarEligible(row));
+        KT_CHECK(NpcDiversity::FamilyOf(row) == SlotFamily::None);
+        bool zero = true, vary = true;
+        for (uint32_t oid = 1; oid <= 500u; ++oid) {
+            if (NpcDiversity::PickTextureVar(oid, row) != 0) zero = false;
+            if (!NpcDiversity::ShouldVary(oid, row)) vary = false;
+        }
+        KT_CHECK(zero);
+        KT_CHECK(vary);
+        // Not a diversification source: a new row is never remapped again.
+        KT_CHECK_EQ(NpcDiversity::RemapAppearance(row, 0, HashWithBandRoll(0)), row);
+        KT_CHECK_EQ(NpcDiversity::RemapAppearance(row, 1, HashWithBandRoll(0)), row);
+    }
+
+    // Determinism and gender guard over many hashes.
+    bool det = true, maleOk = true, femaleOk = true;
+    for (uint32_t i = 0; i < 5000u; ++i) {
+        uint32_t h = DrawHash(i, 190);
+        if (NpcDiversity::RemapAppearance(190, 0, h) != NpcDiversity::RemapAppearance(190, 0, h)) det = false;
+        if (NpcDiversity::RemapAppearance(446, 1, h) != NpcDiversity::RemapAppearance(446, 1, h)) det = false;
+        if (IsFemaleOnlyRow(NpcDiversity::RemapAppearance(190, 0, h))) maleOk = false;
+        if (NpcDiversity::RemapAppearance(185, 0, h) != 185 || NpcDiversity::RemapAppearance(446, 0, h) != 446) femaleOk = false;
+    }
+    KT_CHECK(det);
+    KT_CHECK(maleOk);
+    KT_CHECK(femaleOk);
 }
 
 void testFatRowsOnly() {
@@ -671,6 +736,7 @@ int main() {
     testPickTextureVarRangeAndDeterminism();
     testPickTextureVarUniform();
     testFatRowsOnly();
+    testTrackARows();
     testSlots6And9Appear();
     testNeverEqualCurrent();
     testDeterminism();

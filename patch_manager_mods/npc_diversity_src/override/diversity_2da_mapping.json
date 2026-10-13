@@ -9,7 +9,13 @@
     "Twilek_Commoner_M_02_D": 808,
     "Twilek_Female_Dancer_Boot": 809,
     "Twilek_Female_Dancer": 810,
-    "Twilek_Female_Underwear": 811
+    "Twilek_Female_Underwear": 811,
+    "Commoner_Dirty_Male": 812,
+    "Commoner_Dirty_Female": 813,
+    "Czerka_Protocol_Officer_Female": 814,
+    "Twilek_Female_Tone_A": 815,
+    "Twilek_Female_Tone_B": 816,
+    "Twilek_Female_Tone_C": 817
   },
   "heads": {
     "llk_Ahrnell": 192,
@@ -19,5 +25,5 @@
     "llk_DahnisH": 196
   },
   "heads_count": 249,
-  "appearance_count": 812
+  "appearance_count": 818
 }

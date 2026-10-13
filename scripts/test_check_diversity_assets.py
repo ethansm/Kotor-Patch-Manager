@@ -2,6 +2,7 @@
 """Tests for scripts/check_diversity_assets.py. Pure stdlib: every input is an in-memory fixture (a mini
 DiversityTables.h text, a mini DiversityRows.h text, and a dict of appearance rows), so no pykotor or game dir is needed."""
 import sys
+from unittest import mock
 import unittest
 from pathlib import Path
 
@@ -42,9 +43,8 @@ def good_rows():
         416: row("Twilek_Commoner_M_01_A", "N_CommM"),
         280: row("Twilek_Commoner_F_01_D", "N_CommF"),
     }
-    for n in range(802, 812):
+    for n in range(802, 818):
         rows[n] = row(f"Custom_{n}", "N_CommM", "N_CommM")
-    rows[812] = row("Alien_KelDor_01", "N_KelDor", "N_KelDor")
     return rows
 
 
@@ -143,6 +143,7 @@ class RunChecksTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertTrue(any("IsGenericTwilekFemale" in x and "no `case N:` rows" in x for x in lines))
 
+    @mock.patch.object(cda, "KNOWN_BROKEN_APP_ROWS", frozenset({812}))
     def test_known_broken_row_fails_by_default(self):
         code, lines = self.run_it(rows_text=make_rows_header(CONSTS))
         self.assertEqual(code, 1)
@@ -150,6 +151,7 @@ class RunChecksTests(unittest.TestCase):
                             for x in lines))
         self.assertEqual(lines[-1], "RESULT: FAIL (1 problem(s))")
 
+    @mock.patch.object(cda, "KNOWN_BROKEN_APP_ROWS", frozenset({812}))
     def test_known_broken_row_passes_with_flag(self):
         code, lines = self.run_it(rows_text=make_rows_header(CONSTS), allow=True)
         self.assertEqual(code, 0)
@@ -177,6 +179,7 @@ class RunChecksTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("FAIL APP_COMMONER_FAT_MALE: row 802 has empty modela", lines)
 
+    @mock.patch.object(cda, "KNOWN_BROKEN_APP_ROWS", frozenset({812}))
     def test_empty_texa_on_known_broken_row_is_not_a_second_failure(self):
         rows = good_rows()
         rows[812]["texa"] = ""
@@ -223,7 +226,7 @@ HEAD_SPEC = {
 
 def resource_rows():
     """Appearance rows 802-811 with the columns the resource check reads (same model/texture names as the real rows)."""
-    spec = {n: ("N_CommM", "N_CommM") for n in range(802, 812)}
+    spec = {n: ("N_CommM", "N_CommM") for n in range(802, 818)}
     spec[802] = ("N_CommM_Fat", "N_CommM")
     spec[803] = ("N_CommF_Fat", "N_CommF")
     spec[804] = ("N_CzerkaOff", "N_CzerkaOff")

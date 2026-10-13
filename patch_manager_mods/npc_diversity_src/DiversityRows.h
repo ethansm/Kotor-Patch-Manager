@@ -6,15 +6,21 @@
 namespace NpcDiversity {
 
 // Appended appearance.2da row indices
+constexpr uint16_t APP_COMMONER_DIRTY_FEMALE = 813;
+constexpr uint16_t APP_COMMONER_DIRTY_MALE = 812;
 constexpr uint16_t APP_COMMONER_FAT_FEMALE = 803;
 constexpr uint16_t APP_COMMONER_FAT_MALE = 802;
 constexpr uint16_t APP_CZERKA_OFFICER_FEMALE = 804;
+constexpr uint16_t APP_CZERKA_PROTOCOL_OFFICER_FEMALE = 814;
 constexpr uint16_t APP_TWILEK_COMMONER_M_02_A = 805;
 constexpr uint16_t APP_TWILEK_COMMONER_M_02_B = 806;
 constexpr uint16_t APP_TWILEK_COMMONER_M_02_C = 807;
 constexpr uint16_t APP_TWILEK_COMMONER_M_02_D = 808;
 constexpr uint16_t APP_TWILEK_FEMALE_DANCER = 810;
 constexpr uint16_t APP_TWILEK_FEMALE_DANCER_BOOT = 809;
+constexpr uint16_t APP_TWILEK_FEMALE_TONE_A = 815;
+constexpr uint16_t APP_TWILEK_FEMALE_TONE_B = 816;
+constexpr uint16_t APP_TWILEK_FEMALE_TONE_C = 817;
 constexpr uint16_t APP_TWILEK_FEMALE_UNDERWEAR = 811;
 
 // Appended heads.2da row indices
@@ -26,7 +32,7 @@ constexpr uint8_t HEAD_LLK_LUPOSHAR = 195;
 
 // Table bounds: first row past the pre-merge base, and total row count after this generator run.
 constexpr uint16_t APP_FIRST_APPENDED = 802;
-constexpr uint16_t APP_COUNT = 812;
+constexpr uint16_t APP_COUNT = 818;
 constexpr uint16_t HEAD_FIRST_APPENDED = 249;
 constexpr uint16_t HEAD_COUNT = 249;
 static_assert(APP_COMMONER_FAT_MALE == APP_FIRST_APPENDED, "Fat male commoner must be the first appended appearance row");

@@ -368,6 +368,77 @@ DIVERSITY_APPEARANCES: List[Dict[str, Any]] = [
             "normalhead": "204",
         },
     },
+    # Track A (doc 38 T28): K2 models with K1-origin texture names K2 already ships (single texture file each, so
+    # never TextureVar-eligible). No vanilla K2 row uses these texa values; heads copy vanilla rows 345/339/426/446.
+    {
+        "label": "Commoner_Dirty_Male",
+        "base": MALE_COMM_TEMPLATE,
+        "overrides": {
+            "modela": "N_CommM",
+            "modelb": "N_CommM",
+            "texa": "N_CommMD",
+            "texb": "N_CommMD",
+            "normalhead": "9",
+        },
+    },
+    {
+        "label": "Commoner_Dirty_Female",
+        "base": FEMALE_COMM_TEMPLATE,
+        "overrides": {
+            "modela": "N_CommF",
+            "modelb": "N_CommF",
+            "texa": "N_CommFD",
+            "texb": "N_CommFD",
+            "normalhead": "8",
+        },
+    },
+    {
+        "label": "Czerka_Protocol_Officer_Female",
+        "base": FEMALE_COMM_TEMPLATE,
+        "overrides": {
+            "modela": "N_CommF",
+            "modelb": "N_CommF",
+            "texa": "N_CommFC",
+            "texb": "N_CommFC",
+            "normalhead": "83",
+        },
+    },
+    {
+        "label": "Twilek_Female_Tone_A",
+        "base": FEMALE_COMM_TEMPLATE,
+        "overrides": {
+            "modela": "N_TwilekF",
+            "modelb": "N_TwilekF",
+            "texa": "N_TwilekFA",
+            "texb": "N_TwilekFA",
+            "race": "N_TwilekF",
+            "normalhead": "61",
+        },
+    },
+    {
+        "label": "Twilek_Female_Tone_B",
+        "base": FEMALE_COMM_TEMPLATE,
+        "overrides": {
+            "modela": "N_TwilekF",
+            "modelb": "N_TwilekF",
+            "texa": "N_TwilekFB",
+            "texb": "N_TwilekFB",
+            "race": "N_TwilekF",
+            "normalhead": "61",
+        },
+    },
+    {
+        "label": "Twilek_Female_Tone_C",
+        "base": FEMALE_COMM_TEMPLATE,
+        "overrides": {
+            "modela": "N_TwilekF",
+            "modelb": "N_TwilekF",
+            "texa": "N_TwilekFC",
+            "texb": "N_TwilekFC",
+            "race": "N_TwilekF",
+            "normalhead": "61",
+        },
+    },
 ]
 
 

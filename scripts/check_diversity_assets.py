@@ -10,10 +10,10 @@ constants from DiversityRows.h, then checks them against the appearance.2da that
                  Twilek_Commoner_M_ / Twilek_Commoner_F_ (Twi'lek tables)                 -> WARN (listed with actual labels)
              (c) modela starts with N_CommM (male tables) or N_CommF (female tables)     -> FAIL
                  appearance.2da has no gender column; modela is the model-family gender marker (190 = N_CommM, 185 = N_CommF).
-  rows       every APP_* constant in DiversityRows.h: row exists and modela is non-empty; rows 802-811 also need texa.
-             Rows 812-815 are KNOWN-BROKEN (to be dropped by the generator): reported, and they fail the run unless
+  rows       every APP_* constant in DiversityRows.h: row exists and modela is non-empty; rows 802-817 also need texa.
+             Rows in KNOWN_BROKEN_APP_ROWS (none now) are reported, and they fail the run unless
              --allow-known-broken is passed.
-  resources  (default on, --no-resources skips) every model and texture named by appearance rows 802-811 (modela, modelb,
+  resources  (default on, --no-resources skips) every model and texture named by appearance rows 802-817 (modela, modelb,
              texa, texb) and heads rows 192-196, 198, 200, 204 (head model, alttexture) must resolve in patch override/,
              the live Override (game dir /override) or chitin.
              - a model needs both .mdl and .mdx;
@@ -78,9 +78,9 @@ LABEL_PREFIX: Dict[Tuple[str, str], str] = {
 MODEL_PREFIX: Dict[str, str] = {"male": "N_CommM", "female": "N_CommF"}
 
 APP_BOUND_CONSTS = frozenset({"APP_FIRST_APPENDED", "APP_COUNT"})
-KNOWN_BROKEN_APP_ROWS = frozenset({812, 813, 814, 815})
-TEXA_REQUIRED_APP_ROWS = frozenset(range(802, 812))
-APP_RESOURCE_ROWS = frozenset(range(802, 812))
+KNOWN_BROKEN_APP_ROWS: frozenset = frozenset()  # was 812-815 (retired alien rows); 812-817 are now the Track A rows
+TEXA_REQUIRED_APP_ROWS = frozenset(range(802, 818))
+APP_RESOURCE_ROWS = frozenset(range(802, 818))
 HEAD_ROWS = (192, 193, 194, 195, 196, 198, 200, 204)
 COMMONER_BASES = frozenset({"n_commm", "n_commf"})
 MAX_FAIL_LINES = 8
@@ -265,7 +265,7 @@ def need_status(need: Need, sources: Sources) -> str:
 
 
 def build_needs(rows: Rows, heads: Rows, slots: Sequence[int]) -> List[Tuple[Need, List[str]]]:
-    """Return [(Need, [where it is referenced])] for appearance rows 802-811 and the heads rows in HEAD_ROWS.
+    """Return [(Need, [where it is referenced])] for appearance rows 802-817 and the heads rows in HEAD_ROWS.
 
     Texture bases N_CommM / N_CommF expand to every slot; other appearance texture bases use variant 01. Duplicate
     file sets collapse into one Need with all of their references.
@@ -479,9 +479,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ap.add_argument("--tables-header", type=Path, default=DEFAULT_TABLES_HEADER, help="DiversityTables.h")
     ap.add_argument("--rows-header", type=Path, default=DEFAULT_ROWS_HEADER, help="DiversityRows.h")
     ap.add_argument("--allow-known-broken", action="store_true",
-                    help="KNOWN-BROKEN APP rows (812-815) are reported but do not fail the run")
+                    help="KNOWN-BROKEN APP rows (KNOWN_BROKEN_APP_ROWS, currently none) are reported but do not fail the run")
     ap.add_argument("--resources", action=argparse.BooleanOptionalAction, default=True,
-                    help="check that every model/texture named by rows 802-811 and heads 192-196,198,200,204 "
+                    help="check that every model/texture named by rows 802-817 and heads 192-196,198,200,204 "
                          "resolves (default on; --no-resources skips)")
     ap.add_argument("--slots-header", type=Path, default=DEFAULT_SLOTS_HEADER,
                     help="DiversitySlots.h (per-family slot allowlists)")

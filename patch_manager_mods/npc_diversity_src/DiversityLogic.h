@@ -23,6 +23,9 @@ constexpr uint32_t kTwilekMaleRemapPct = 80;  // male Twi'lek: remapped to 805..
 constexpr uint32_t kFatPct = 15;              // male and female commoners: fat body
 constexpr uint32_t kCzerkaPct = 5;            // female commoner: Czerka officer, after the fat band
 constexpr uint32_t kDancerPct = 20;           // female Twi'lek: dancer variants
+constexpr uint32_t kDirtyPct = 10;            // male and female commoners: dirty clothes, after the earlier bands
+constexpr uint32_t kProtocolPct = 5;          // female commoner: Czerka protocol officer, after the dirty band
+constexpr uint32_t kTwilekToneRemapPct = 30;  // female Twi'lek: skin tone A/B/C, after the dancer band
 constexpr uint32_t kVaryPct = 35;             // share of creatures that get a texture variant (ShouldVary)
 
 // Murmur3 32-bit finaliser (fmix32). Bijective, full avalanche: every input bit
@@ -40,7 +43,8 @@ inline uint32_t Fmix32(uint32_t h) {
 // Salted draw: Mix(hash, salt) = Fmix32(hash ^ (salt * 0x9E3779B1)).
 // Each independent decision uses its own salt so draws do not share bits:
 //   salt 1 = band roll (BandRoll), 2 = Twi'lek male variant, 3 = female dancer variant,
-//   salt 4 = texture slot (PickTextureVar, ShouldDiversifyTexture), 5 = vary gate (ShouldVary).
+//   salt 4 = texture slot (PickTextureVar, ShouldDiversifyTexture), 5 = vary gate (ShouldVary),
+//   salt 6 = female Twi'lek skin tone.
 inline uint32_t Mix(uint32_t hash, uint32_t salt) {
     return Fmix32(hash ^ (salt * 0x9E3779B1u));
 }
@@ -94,8 +98,10 @@ inline uint32_t HashCreatureId(uint32_t oid, uint16_t appearance) {
 // True for rows that take a commoner texture variant: the generic male and female commoner tables,
 // plus the appended rows 802 APP_COMMONER_FAT_MALE, 803 APP_COMMONER_FAT_FEMALE,
 // 805..808 APP_TWILEK_COMMONER_M_02_A..D (male Twi'lek commoner variants) and
-// 811 APP_TWILEK_FEMALE_UNDERWEAR. Excluded: 804 APP_CZERKA_OFFICER_FEMALE and
-// 809/810 APP_TWILEK_FEMALE_DANCER_BOOT/APP_TWILEK_FEMALE_DANCER (dancers). Every other row is excluded.
+// 811 APP_TWILEK_FEMALE_UNDERWEAR. Excluded: 804 APP_CZERKA_OFFICER_FEMALE,
+// 809/810 APP_TWILEK_FEMALE_DANCER_BOOT/APP_TWILEK_FEMALE_DANCER (dancers) and the Track A rows 812..817
+// (APP_COMMONER_DIRTY_MALE/FEMALE, APP_CZERKA_PROTOCOL_OFFICER_FEMALE, APP_TWILEK_FEMALE_TONE_A..C), which
+// ship one texture file each. Every other row is excluded.
 inline bool TexVarEligible(uint16_t finalApp) {
     if (IsGenericMaleCommoner(finalApp) || IsGenericFemaleCommoner(finalApp)) return true;
     switch (finalApp) {
@@ -138,7 +144,7 @@ inline const uint8_t* FamilySlots(SlotFamily family, size_t& n) {
 }
 
 // Vary gate: whether a creature takes a texture variant at all. oid 0 (no creature id) never varies.
-// Appended rows 802..811 are mod-produced and always vary; any other row varies for kVaryPct% of
+// Appended rows (APP_FIRST_APPENDED..APP_COUNT-1) are mod-produced and always vary; any other row varies for kVaryPct% of
 // creatures, on the salt-5 draw of the per-creature hash.
 inline bool ShouldVary(uint32_t oid, uint16_t originalApp) {
     if (oid == 0) return false;
@@ -238,8 +244,10 @@ inline uint32_t HashCreaturePosition(float x, float y, uint32_t objectId, uint16
 inline uint16_t RemapAppearance(uint16_t currentApp, uint8_t gender, uint32_t hash) {
     if (IsGenericMaleCommoner(currentApp)) {
         if (gender != 0) return currentApp;
-        // kFatPct% fat, rest unchanged
-        if (BandRoll(hash) < kFatPct) return APP_COMMONER_FAT_MALE;
+        // kFatPct% fat, then kDirtyPct% dirty clothes, rest unchanged
+        uint32_t roll = BandRoll(hash);
+        if (roll < kFatPct) return APP_COMMONER_FAT_MALE;
+        if (roll < kFatPct + kDirtyPct) return APP_COMMONER_DIRTY_MALE;
         return currentApp;
     }
     if (IsGenericFemaleCommoner(currentApp)) {
@@ -247,6 +255,8 @@ inline uint16_t RemapAppearance(uint16_t currentApp, uint8_t gender, uint32_t ha
         uint32_t roll = BandRoll(hash);
         if (roll < kFatPct) return APP_COMMONER_FAT_FEMALE;
         if (roll < kFatPct + kCzerkaPct) return APP_CZERKA_OFFICER_FEMALE;
+        if (roll < kFatPct + kCzerkaPct + kDirtyPct) return APP_COMMONER_DIRTY_FEMALE;
+        if (roll < kFatPct + kCzerkaPct + kDirtyPct + kProtocolPct) return APP_CZERKA_PROTOCOL_OFFICER_FEMALE;
         return currentApp;
     }
     if (IsGenericTwilekMale(currentApp)) {
@@ -261,12 +271,22 @@ inline uint16_t RemapAppearance(uint16_t currentApp, uint8_t gender, uint32_t ha
     }
     if (IsGenericTwilekFemale(currentApp)) {
         if (gender != 1) return currentApp;
-        if (BandRoll(hash) >= kDancerPct) return currentApp;
-        switch (Mix(hash, 3) % 3u) {
-            case 0: return APP_TWILEK_FEMALE_DANCER_BOOT;
-            case 1: return APP_TWILEK_FEMALE_DANCER;
-            default: return APP_TWILEK_FEMALE_UNDERWEAR;
+        uint32_t roll = BandRoll(hash);
+        if (roll < kDancerPct) {
+            switch (Mix(hash, 3) % 3u) {
+                case 0: return APP_TWILEK_FEMALE_DANCER_BOOT;
+                case 1: return APP_TWILEK_FEMALE_DANCER;
+                default: return APP_TWILEK_FEMALE_UNDERWEAR;
+            }
         }
+        if (roll < kDancerPct + kTwilekToneRemapPct) {
+            switch (Mix(hash, 6) % 3u) {
+                case 0: return APP_TWILEK_FEMALE_TONE_A;
+                case 1: return APP_TWILEK_FEMALE_TONE_B;
+                default: return APP_TWILEK_FEMALE_TONE_C;
+            }
+        }
+        return currentApp;
     }
     // Any other appearance: unchanged
     return currentApp;
