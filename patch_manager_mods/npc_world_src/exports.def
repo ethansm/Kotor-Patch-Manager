@@ -1,0 +1,6 @@
+LIBRARY NpcWorld
+EXPORTS
+    KPatchInit
+    NW_OnLoad
+    NW_OnAddToArea
+    NW_OnTick

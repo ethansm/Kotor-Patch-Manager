@@ -51,7 +51,7 @@
 |---|---|---|
 | V0 | Research wave w9-npcvar (12 Haiku units), web prior art, this doc | DONE |
 | V1 | Close static gaps with Haiku recon (no game): vanilla script animation calls and flag meanings, UTC ItemList armed status for the pool, waypoint/walkmesh counts for candidate areas, quest-script tag scan, `+0x11AC` persistence decode and save-load path (REA) | DONE (section 7) |
-| NB0 | Shared library `npc-world` (owns H1/H2/H3, provides `k2.npcworld@1`, section 12); moves the hooks and native spawn out of `k1_spawn_probe_src`; V2a and NB1-NB4 become its clients | TODO |
+| NB0 | Shared library `npc-world` (owns H1/H2/H3, provides `k2.npcworld@1`, section 12); moves the hooks and native spawn out of `k1_spawn_probe_src`; V2a and NB1-NB4 become its clients | HOST DONE (section 12.6: `npc_world_src` 0.1.0-dev, 4 test suites + build gate PASS; live check = old T26 play check through the library, needs REINSTALL and user GO) |
 | V2 | Live probe design and build (needs user GO): OID stability across loads, hook-spawn persistence in saves, save-load reset, object count and frame cost | TODO (V2a host build, V2b live; stages P1-P15 + capacity; see section 11) |
 | V3 | Pool and roster spec: group pools, area eligibility table, spawn budget, per-species walk speeds | DONE (section 8) |
 | V4 | Visit-salt change in doc 34 code (host tests, build only) and doc 34 section 3.2.2 update | DONE (host tests + build; salt unwired, V4b = area-entry source after V2) |
@@ -321,3 +321,18 @@ Services (table functions, all safe no-ops on a bad arg):
 - Hook moves are REINSTALL, not SWAP: any later address addition costs a launcher reinstall. Put all three addresses plus the future `PlayAnimation` call (a call, not a detour) in at NB0.
 - Registry needs a KotorPatcher with `KPatchInit` (already true for `save-events`).
 - Spawned OIDs differ per load (P4 decides whether persisted state could ever key on them); consumers must key on tag, not OID.
+
+### 12.6 NB0 host build results (2026-10-13; nothing installed)
+Files: `_shared_src/NpcWorld.h` (interface + `k2nw::Client`), `npc_world_src/` (`NwCore.h` pure core, `NpcWorldProvider.cpp` engine side, `manifest.toml` 0.1.0-dev, `exports.def`, `kotor2-steam-aspyr.hooks.toml`, `test.toml`). Tests (run `python3 scripts/run_tests.py npc_world_src nw_registry_test nw_world_test npcworld_client_test`): `nw_registry_test` (5079 checks), `nw_world_test` (126), `npcworld_client_test` (86), `common_contract_test` (pins SafeRead offsets, `gameaddr::New`, KpLog). `python3 scripts/build_check.py --mod npc_world_src` PASS (4 exports, 3 detours). The header was copied into the KPM clone with `check_shared_headers.py --sync` (only NpcWorld.h drifted); that sync is outside the repo and must be repeated on any other machine.
+
+Changes against the 12.2 sketch (decided while building):
+- **Salt is chosen at `AREA_LOAD`** (H2), not at `AREA_STABLE`, and `VisitSalt()` is valid from then on: `npc-diversity`'s SetAppearance runs during the load, before the 30-tick latch. NB1 therefore reads `VisitSalt()` directly; no callback needed.
+- **`ForEachCreature` and `PlayAnimation` and `Remove` are NOT in v1.** A raw pointer list of seen creatures can dangle once the engine frees an object, so enumeration waits for NB2 (it needs a pointer-validity rule); the table grows through `struct_size`. v1 services: `Register/Unregister`, `VisitSalt`, `VisitSeq`, `CurrentArea`, `TagPresent`, `Spawn`, `SpawnedCount`, `SpawnCap`.
+- `Spawn` refuses before the current visit is stable, on a duplicate tag, over the cap (`npc_world.ini [world] spawn_cap`, default 4, max 32), and from inside its own re-entrant add callback. Library-spawned adds are delivered as `CREATURE_ADDED` with `origin = LIB` and never reset the stable gate.
+- Seen-tag table: 256 tags, case-insensitive on 32 chars; on overflow `TagPresent` answers true (unknown counts as present, so nobody double-spawns).
+- Ini: `npc_world.ini [world] enabled=1|0` (0 = hooks stay passive: no events, salt or spawns), `spawn_cap`, `verbose` (per-AddToArea DEBUG lines). Log file `npc-world_log.txt`.
+
+Open items before NB0 can be called DONE:
+1. **Live check** (needs user GO, game closed, REINSTALL because the hook owner changes: remove `k1-spawn-probe`, add `npc-world`): `c_drdmouse01` and `k1p_native_npc` must appear once in `204tel` and not duplicate after save/load. The roster moves to the V2a probe client, so for this check use a tiny throw-away client or run the V2a stage `T26-equivalent`.
+2. **Allowlist review** (human/Opus): `tests/static/raw_addresses.toml` needs a block for `patch_manager_mods/npc_world_src/NpcWorldProvider.cpp` with `0x00533830, 0x00543F10, 0x0055A460, 0x00561F30, 0x00568BD0, 0x00572A70, 0x00710840` (same set as `K1SpawnProbe.cpp` plus the two hook sites already allowlisted for the area probe; `query_ghidra.py address` verifies all but `0x00710840`, which returns no row). The file has uncommitted peer edits, so it was not touched; `suite:check-raw-addresses` fails on these lines until then.
+3. `suite:check-hook-spans` still FAILs on `area-hook-probe` vs `k1-spawn-probe` (same three sites; neither manifest declares the conflict). Not caused by NB0 (`npc-world` declares both conflicts and is not flagged); it resolves when the probe's hooks are removed in V2a.
