@@ -1,0 +1,7 @@
+module	strict	n_waypoints	walkable_faces	eligible	reason	budget	region
+203tel	8	93	371	true	ok	2	telos
+204tel	5	48	344	true	ok	1	telos
+207tel	12	17	196	false	waypoints<40+faces<300	0	telos
+301nar	11	135	578	true	ok	2	nar_shaddaa
+302nar	19	50	739	true	ok	4	nar_shaddaa
+682dan	0	21	559	false	strict<5+waypoints<40	0	dantooine

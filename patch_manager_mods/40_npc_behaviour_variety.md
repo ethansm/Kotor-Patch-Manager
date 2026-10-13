@@ -1,7 +1,7 @@
 # 40 NPC behaviour variety: extra walkers, scripted encounters, animation
 
 ## Status
-- **State: V0, V1 and V4 done (2026-10-13); V4 = visitSalt in doc 34 hash, host tests + build only, salt unwired, option `visit_variety` in npc-diversity.ini (default 0 = same look), nothing installed.** Next: V2 live probe (needs user GO and a pre-visit save) or V3 pool spec.
+- **State: V0, V1, V3 and V4 done (2026-10-13); V3 = pool and roster spec in section 8 (host-only, tables + 2 tested scripts, no DLL); V4 = visitSalt in doc 34 hash, host tests + build only, salt unwired, option `visit_variety` in npc-diversity.ini (default 0 = same look), nothing installed.** Next: V2 live probe (needs user GO and a pre-visit save) or V6 animation feasibility (host-only research).
 - Origin (user, 10-12/13): doc 34 only changes how generic commoners look. Goal: a section should not feel the same every pass. (a) randomize NPC animations/actions; (b) randomly add walking aliens, TSF agents, Czerka NPCs among plain commoners; (c) later, small random scripted events (example: TSF agents chasing and shooting at an outlaw across the station; runner and chasers invincible, hasted, combat disabled), possibly with K1 NPC audio/dialog.
 - Evidence: Haiku wave `w9-npcvar` (12 recon units, all PARTIAL), raw findings copied to `.claude/research/npc_variety/u01..u12.md`, animation inventories `u03_anims.txt` and `u03b_target_rows.txt`. Web prior-art searches (10-13) summarized in section 5. Memory: `kotor2-npc-behaviour-variety-idea`.
 - Related docs: 34 (appearance dispatcher), 35 (`35_npc_add_poc.md`, spawn routes U1-U11), 38 (K1 import, native spawn probe T25, licence policy section 8), `.claude/research/npc_add/` (R1-R6, poc/).
@@ -52,7 +52,7 @@
 | V0 | Research wave w9-npcvar (12 Haiku units), web prior art, this doc | DONE |
 | V1 | Close static gaps with Haiku recon (no game): vanilla script animation calls and flag meanings, UTC ItemList armed status for the pool, waypoint/walkmesh counts for candidate areas, quest-script tag scan, `+0x11AC` persistence decode and save-load path (REA) | DONE (section 7) |
 | V2 | Live probe design and build (needs user GO): OID stability across loads, hook-spawn persistence in saves, save-load reset, object count and frame cost | TODO |
-| V3 | Pool and roster spec: group pools, area eligibility table, spawn budget, per-species walk speeds | TODO |
+| V3 | Pool and roster spec: group pools, area eligibility table, spawn budget, per-species walk speeds | DONE (section 8) |
 | V4 | Visit-salt change in doc 34 code (host tests, build only) and doc 34 section 3.2.2 update | DONE (host tests + build; salt unwired, V4b = area-entry source after V2) |
 | V5 | Scripted-encounter feasibility: can the patch run or trigger scripts, effect/flag building blocks, K1 audio licence and format path (audio/voice side researched 2026-10-13: see doc 41) | TODO |
 | V6 | Animation randomization feasibility: script (flag 109 / local 29) versus native (`Gob::PlayAnimation 004e3270`) | TODO |
@@ -96,3 +96,40 @@ P1 VarTable-preset walker with a stock `k_def_spawn01` OnSpawn (no script change
 
 ### 7.7 Recon caveats
 Haiku units u01-u03, u05, u06 all returned PARTIAL (they stay inside the read ranges); I closed the gaps from source myself (flag blocks, ANIMATION constants, `GN_DetermineCombatRound`). u04 failed on a bad entry range; I answered it directly. T3 peaked at 115k tokens (over the 100k ceiling).
+
+## 8. V3 results (2026-10-13; host-only, no game, nothing installed)
+Tables (generated, read-only inputs are the V1 tables): `.claude/research/npc_variety/tables/roster_pool.tsv` (`scripts/npcvar_roster_pool.py`, test `scripts/test_npcvar_roster_pool.py`) and `roster_areas.tsv` (`scripts/npcvar_roster_areas.py`, test `scripts/test_npcvar_roster_areas.py`). Values are design defaults; V2 measures capacity and may change the cap.
+
+### 8.1 Group pools
+Eligible template = resref starts with `n_` AND group in {alien, tsf, czerka} AND `weapon_slot_filled` false (`CLAW3`-only creatures count as unarmed; `n_items` alone is wrong). This drops `c_*`/`g_*` creatures, named NPCs and group "other" without a hand filter. Result: 23 of 71.
+| Group | n | Templates |
+|---|---|---|
+| alien | 17 | `n_bith n_devaronian01 n_duros n_gand n_gran n_quarren01 n_rodian n_sullustan01 n_trandobrn n_trandogrn n_tuskenf01 n_twilekf n_twilekm n_walrusman n_weequay01 n_wookief n_wookiem` |
+| tsf | 5 | `n_repoff n_repsold n_repsold_bh01 n_tsfcmdr n_tsfoff` |
+| czerka | 1 | `n_czerkaoff` |
+
+Region weights (design default, tunable): `telos` alien 50 / tsf 30 / czerka 20; `nar_shaddaa` alien 70 / czerka 30 / tsf 0 (TSF is Telos security). Pick order per spawn: group by weight, then template uniformly inside the group, using the salted `HashCreatureId` family (new `Mix` salts start at 7).
+
+### 8.2 Area table
+Eligible iff strict commoners >= 5 AND waypoints >= 40 AND walkable faces >= 300 (`hostile` is not a gate: it counts creature templates, not area danger).
+| Module | strict | waypoints | faces | Eligible | Budget |
+|---|---|---|---|---|---|
+| 302nar | 19 | 50 | 739 | yes | 4 |
+| 301nar | 11 | 135 | 578 | yes | 2 |
+| 203tel | 8 | 93 | 371 | yes | 2 |
+| 204tel | 5 | 48 | 344 | yes | 1 |
+| 207tel | 12 | 17 | 196 | no (`waypoints<40+faces<300`) | 0 |
+| 682dan | 0 | 21 | 559 | no (`strict<5+waypoints<40`) | 0 |
+
+Total 9 extras maximum across the four areas, one area per visit. `205tel` and hostile, ship and cutscene areas stay excluded per section 2. Note: u08's "682dan strict 15" is the `loose` count; the strict column is 0.
+
+### 8.3 Spawn budget
+`budget = min(cap, max(1, strict // 4))` for eligible areas, else 0. `cap = 4` is a placeholder until V2 measures 1, 6 and 18 extra creatures. Extras are counted per visit and never persisted. Gated by ini switch `walker_variety=0|1` (default 0), to be added together with the hook (not yet present). Each later feature gets its own default-off switch, same pattern as `visit_variety` (doc 34 section 3.2).
+
+### 8.4 Walk speed
+Use the template's own appearance `walkdist` unchanged. Speed class: slow < 1.5, normal 1.5..2.2, fast > 2.2. All 23 eligible are normal (1.6..2.0, TSF/Czerka/most aliens 1.813) except `n_tuskenf01` 1.2 = slow (accepted: reads as an old or limping Tusken); none are fast. Never set run for walkers (flag 104 off).
+
+### 8.5 Open items carried forward
+- V2: capacity cap, persistence and save-load behaviour, P1 VarTable-walker proof (do the extras actually walk `WP_<tag>_NN`).
+- V7: TSF and Czerka hostility at plot moments (TSF walkers in the wrong storyline state), build order.
+- Resolved: armed status = weapon slot only (section 7.4 caveat closed).
