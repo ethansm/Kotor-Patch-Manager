@@ -165,21 +165,10 @@ All 11 assets have been verified on DeadlyStream with author permissions, asset 
    - Reuse the battle-tested `CSWCCreatureAppearance::GetBTypeModelAndTextureResRef` detour pattern from `K2ClassMenuClothes` (Steam `0x0085E4E4` / `0x0085E601`, GOG `0x0048E574` / `0x0048E691`).
    - Secondary hook: `CSWCCreature::SetAppearance` (Steam `0x0076D200`, GOG `0x00419070`) for body/head appearance remapping.
 2. **Deterministic Hash Function**:
-   ```cpp
-   uint32_t HashCreatureSpawn(const char* areaResRef, float x, float y, const char* tag) {
-       uint32_t hash = 2166136261u; // FNV-1a
-       auto hash_str = [&](const char* s) {
-           while (*s) { hash = (hash ^ (uint8_t)*s++) * 16777619u; }
-       };
-       hash_str(areaResRef ? areaResRef : "");
-       hash_str(tag ? tag : "");
-       int32_t qx = static_cast<int32_t>(x * 10.0f);
-       int32_t qy = static_cast<int32_t>(y * 10.0f);
-       hash = (hash ^ (qx & 0xFFFF)) * 16777619u;
-       hash = (hash ^ (qy & 0xFFFF)) * 16777619u;
-       return hash;
-   }
-   ```
+   The per-creature hash is `HashCreatureId(oid, appearance, visitSalt = 0)` in `DiversityLogic.h`: FNV-1a (offset `0x811C9DC5`, prime `0x01000193`) over the 4 bytes of `oid`, then the 2 bytes of `appearance` (each LSB first), then, only if `visitSalt != 0`, the 4 bytes of `visitSalt` (LSB first), finished with `Fmix32`. `visitSalt == 0` takes no extra step, so it is bit-identical to the pre-salt hash.
+   - `Mix(hash, salt)` salts 1-6 draw from this hash (salt 4 = texture slot in `PickTextureVar`, salt 5 = vary gate in `ShouldVary`, the rest = look/model draws). `visitSalt` is a separate input of the hash and consumes no `Mix` salt number.
+   - `visitSalt` is 0 until doc 40 phase V4b wires an area-entry source (`g_visitSalt` in `NpcDiversityDispatcher.cpp`). When used it must be nonzero (`MakeVisitSalt(entropy)` never returns 0) and is held constant for one visit, so the idempotent re-application of `RemapNpcAppearance` stays stable; a new visit takes a new salt, so the same creature can get a different look.
+   - **Option:** `npc-diversity.ini` in the game dir, `[NpcDiversity] visit_variety=0|1`. `0` (default, also when the file or key is missing) = the same look on every visit; `1` = a new look per visit. `ActiveVisitSalt(visitVariety, visitSalt)` returns 0 when off, so off is bit-identical to the pre-salt hash. Read once at first hook call. Until V4b supplies a salt source, `1` changes nothing (the log says so).
 3. **Exclusion Guard (Story / Named NPC Protection)**:
    Any creature matching the exclusion list is immediately passed through unchanged:
    - Companions (Kreia, Atton, Bao-Dur, Mira, Hanharr, Mandalore, Visas, Disciple, Handmaiden).
