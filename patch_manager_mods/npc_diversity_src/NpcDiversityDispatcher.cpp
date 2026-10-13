@@ -1,4 +1,4 @@
-// NpcDiversityDispatcher.cpp -- Master NPC Diversity Dispatcher runtime detour hooks (0.1.5-probe).
+// NpcDiversityDispatcher.cpp -- Master NPC Diversity Dispatcher runtime detour hooks (0.1.6-probe).
 //
 // Strategy B (confirmed by the 0.1.1 play-test: the engine builds N_Comm?NN from descriptor textureVar):
 // Hook 2 RemapNpcAppearance: CSWCCreature::SetAppearance entry (Steam 0x76D200), args ecx=this,
@@ -46,7 +46,7 @@ namespace {
 using namespace NpcDiversity;
 namespace nl = NpcDiversity::log;
 
-constexpr const char* kVersion = "0.1.5-probe";
+constexpr const char* kVersion = "0.1.6-probe";
 constexpr size_t kResRefLen = 16;
 
 // SafeRead site ids (counted in Counts::fail, printed by STAT read).
@@ -62,6 +62,47 @@ KP_CHANNEL(chStat, "stat");
 KP_CHANNEL(chCensus, "census");
 KP_CHANNEL(chProbe, "probe");
 KP_CHANNEL(chRead, "read");
+
+// Debug mode: one REMAP line per row change, at KPLOG_DEBUG. With the logging core, kplog.ini `[npc-diversity]
+// level=debug` is the switch. Without it (probe builds), the flag file npc-diversity_debug.txt in the game dir raises
+// the fallback sink to DEBUG; deleting it drops back to INFO. Polled on every 30th remap call.
+constexpr const char* kDebugFlagFile = "npc-diversity_debug.txt";
+bool g_debugFlagOn = false;
+uint32_t g_debugPoll = 0;
+nl::Budget g_bDbg;
+
+void pollDebugFlag() {
+    if (KpLog_HasCore()) return;
+    if (g_debugPoll++ % 30u != 0u) return;
+    const bool want = GetFileAttributesA(kDebugFlagFile) != INVALID_FILE_ATTRIBUTES;
+    if (want == g_debugFlagOn) return;
+    g_debugFlagOn = want;
+    KpLog_SetFallbackLevel(want ? KPLOG_DEBUG : KPLOG_INFO);
+    KP_LOG(chInit, "debug mode %s (flag file %s)", want ? "ON" : "OFF", kDebugFlagFile);
+}
+
+// Label of a mod-produced appearance row for the REMAP line.
+const char* appLabel(uint16_t app) {
+    switch (app) {
+        case APP_COMMONER_FAT_MALE: return "Commoner_Fat_Male";
+        case APP_COMMONER_FAT_FEMALE: return "Commoner_Fat_Female";
+        case APP_CZERKA_OFFICER_FEMALE: return "Czerka_Officer_Female";
+        case APP_TWILEK_COMMONER_M_02_A: return "Twilek_Commoner_M_02_A";
+        case APP_TWILEK_COMMONER_M_02_B: return "Twilek_Commoner_M_02_B";
+        case APP_TWILEK_COMMONER_M_02_C: return "Twilek_Commoner_M_02_C";
+        case APP_TWILEK_COMMONER_M_02_D: return "Twilek_Commoner_M_02_D";
+        case APP_TWILEK_FEMALE_DANCER_BOOT: return "Twilek_Female_Dancer_Boot";
+        case APP_TWILEK_FEMALE_DANCER: return "Twilek_Female_Dancer";
+        case APP_TWILEK_FEMALE_UNDERWEAR: return "Twilek_Female_Underwear";
+        case APP_COMMONER_DIRTY_MALE: return "Commoner_Dirty_Male";
+        case APP_COMMONER_DIRTY_FEMALE: return "Commoner_Dirty_Female";
+        case APP_CZERKA_PROTOCOL_OFFICER_FEMALE: return "Czerka_Protocol_Officer_F";
+        case APP_TWILEK_FEMALE_TONE_A: return "Twilek_Female_Tone_A";
+        case APP_TWILEK_FEMALE_TONE_B: return "Twilek_Female_Tone_B";
+        case APP_TWILEK_FEMALE_TONE_C: return "Twilek_Female_Tone_C";
+        default: return "-";
+    }
+}
 
 // Only stores the path (no I/O); old core: same file name the checker expects.
 const bool g_fallbackSet = (KpLog_SetFallbackFile("npc-diversity_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
@@ -375,6 +416,7 @@ __declspec(dllexport) void __cdecl RemapNpcAppearance(void* pCreature, layout::A
     saferead::beginScope();
     ensureInit();
     ++g_c.remCalls;
+    pollDebugFlag();
     maybeDump();
     if (!pCreature || !pDesc) { ++g_c.remNullGuard; return; }
 
@@ -490,6 +532,12 @@ __declspec(dllexport) void __cdecl RemapNpcAppearance(void* pCreature, layout::A
                          floatBits(x), floatBits(y), d.appearance, newApp, d.textureVar, newTv, hash, why,
                          d.subType);
         logLine(chRemap, b);
+    }
+
+    if (newApp != d.appearance && KP_ENABLED(chRemap, KPLOG_DEBUG) && g_bDbg.take(5000, 0)) {
+        char b[nl::kLineMax];
+        nl::FormatRemapDbg(b, sizeof b, oid, d.appearance, newApp, appLabel(newApp), d.textureVar, newTv, hash, why);
+        KP_LOGV(chRemap, KPLOG_DEBUG, "%s", b);
     }
 }
 

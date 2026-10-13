@@ -115,6 +115,9 @@ void testLogFormatGolden() {
                       0x41480000u, 0xC0600000u, 805u, 806u, 1u, 2u, 0x06C232B2u, "ok");
     ExpectLine(r, b, kGoldRmp);
 
+    r = nl::FormatRemapDbg(b, sizeof b, 0x3E9u, 190u, 812u, "Commoner_Dirty_Male", 0u, 0u, 0x06C232B2u, "ok");
+    ExpectLine(r, b, "REMAP oid=000003e9 app=190>812 row=Commoner_Dirty_Male tv=0>0 h=06c232b2 why=ok");
+
     r = nl::FormatTexExt(b, sizeof b, 0x0A1B2C3Du, 0x00001234u, 0x00ABCDEFu, 805u, 1u, 1u, 0, 0, 2u, "n_commm01",
                          9u, 0x06C232B2u, 1, 9u, "1", 1, 3, 0x3E9u);
     ExpectLine(r, b, kGoldTexExt);

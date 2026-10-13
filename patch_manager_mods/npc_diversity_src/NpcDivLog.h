@@ -314,6 +314,19 @@ inline int FormatRmpExt(char* out, size_t cap, uint32_t self, uint32_t pd, uint3
     return static_cast<int>(detail::AppendTail(out, cap, static_cast<size_t>(base), tail));
 }
 
+// Debug-mode line (0.1.6): one per creature whose appearance row was changed. Not parsed by npc_div_log_check.py.
+// row is the label of the new row ("-" when it is not a mod-produced row).
+inline int FormatRemapDbg(char* out, size_t cap, uint32_t oid, uint32_t appBefore, uint32_t appAfter,
+                          const char* row, uint32_t tvBefore, uint32_t tvAfter, uint32_t h, const char* why) {
+    cap = detail::ClampCap(cap);
+    if (!out || cap == 0) return 0;
+    char rw[40];
+    char wy[17];
+    const int r = std::snprintf(out, cap, "REMAP oid=%08x app=%u>%u row=%s tv=%u>%u h=%08x why=%s", oid, appBefore,
+                                appAfter, SafeStr(rw, row, 39), tvBefore, tvAfter, h, SafeStr(wy, why, 16));
+    return detail::Stored(out, cap, r);
+}
+
 inline int FormatCenTex(char* out, size_t cap, uint32_t app, uint32_t g, uint32_t tv, int dm, const char* cur,
                         size_t curLen) {
     cap = detail::ClampCap(cap);
