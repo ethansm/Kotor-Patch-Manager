@@ -77,7 +77,7 @@ Automated alternative (doc 36 Phase H10): `python3 scripts/kpm_reinstall.py --mo
 Prepare:
 
 1. `python3 scripts/kpm_status.py`. Note the verdict per id you want to ship.
-2. Commit the repo mod with explicit paths: `git commit -m "<msg>" -- patch_manager_mods/<x>_src/<files>`. DIRTY must clear.
+2. Commit the repo mod with explicit paths: `git commit -m "<msg>" -- patch_manager_mods/<x>_src/<files>`. DIRTY must clear. Or run `python3 scripts/kpm_commit.py [--dry-run] [--mod <x>]`: it runs the mod's tests (`run_tests.py -k <x>`), then commits only its production files; run it only when the dirty files are yours (it commits every dirty mod without `--mod`).
 3. Pre-mirror build check: `scripts/pre_install_gate.sh --skip-default --mod <x>_src [--mod <y>_src ...]`. Verifies fresh compilation and unit tests without tripping on stale KPM kpatch exports.
 4. `python3 scripts/kpm_hotswap.py --mod <id> [<id> ...] --prepare`. Mirrors production files, auto-creates canonical KPM folders, backs up old kpatches, and rebuilds. If hooks changed, its post-prepare verdict is `REINSTALL` (requires launcher reinstall); pure DLL changes become `SWAP`.
 5. Commit KPM with explicit paths: `git -C "$K" commit -m "<msg>" -- Patches/<X>/<files>` (use the exact commit command that `--prepare` printed; kpatch and `.bak` files are not committed). Or pass `--commit-kpm` to step 4 and the script runs that KPM commit for you (explicit paths; aborts before `--apply` on failure).
