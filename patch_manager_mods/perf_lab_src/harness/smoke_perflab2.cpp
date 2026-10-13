@@ -26,7 +26,7 @@ template <typename T> T fn(const char* n) { T f = (T)GetProcAddress(g_dll, n); i
 
 static int g_fail = 0;
 static void check(bool ok, const char* what) { printf("%s %s\n", ok ? "PASS" : "FAIL", what); if (!ok) ++g_fail; }
-static void checkLoadOnce(const std::string& log) { int n = 0; for (size_t p = 0; (p = log.find("perf-lab 0.5.1 attach", p)) != std::string::npos; ++p) ++n; check(n == 1, "log: attach (load) line appears exactly once"); }
+static void checkLoadOnce(const std::string& log) { int n = 0; for (size_t p = 0; (p = log.find("perf-lab 0.6.0 attach", p)) != std::string::npos; ++p) ++n; check(n == 1, "log: attach (load) line appears exactly once"); }
 
 // Fake CRes (R1 layout): +4 u16 refcount, +8 source (>>30), +0xC flags, +0x10 data, +0x14 key entry (restype u16 at +0x1A), +0x18 size.
 struct FakeRes { char b[0x40]; char key[0x20]; };

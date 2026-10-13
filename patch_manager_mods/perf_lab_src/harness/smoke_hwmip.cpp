@@ -21,7 +21,7 @@
 
 static int g_fail = 0;
 static void check(bool ok, const char* what) { printf("%s %s\n", ok ? "PASS" : "FAIL", what); if (!ok) ++g_fail; }
-static void checkLoadOnce(const std::string& log) { int n = 0; for (size_t p = 0; (p = log.find("perf-lab 0.5.1 attach", p)) != std::string::npos; ++p) ++n; check(n == 1, "log: attach (load) line appears exactly once"); }
+static void checkLoadOnce(const std::string& log) { int n = 0; for (size_t p = 0; (p = log.find("perf-lab 0.6.0 attach", p)) != std::string::npos; ++p) ++n; check(n == 1, "log: attach (load) line appears exactly once"); }
 
 static HMODULE g_dll;
 template <typename T> T fn(const char* n) { T f = (T)GetProcAddress(g_dll, n); if (!f) { printf("missing export %s\n", n); exit(3); } return f; }
@@ -127,7 +127,7 @@ int main(int argc, char** argv) {
     checkLoadOnce(log0);
 
     // ---- install / ordering ----
-    check(log0.find("perf-lab 0.5.1 attach") != std::string::npos, "0.5.1 version in the attach line");
+    check(log0.find("perf-lab 0.6.0 attach") != std::string::npos, "0.6.0 version in the attach line");
     check(log0.find(hw ? "hwmip=ON" : "hwmip=OFF") != std::string::npos, hw ? "attach line records hwmip=ON" : "attach line records hwmip=OFF");
     if (bare) {
         check(rglu() == nullptr, "bare: neither metrics nor hwmip -> GLU IAT slot untouched (rGluMip NULL)");

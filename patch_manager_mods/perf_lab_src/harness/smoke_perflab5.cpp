@@ -29,7 +29,7 @@ template <typename T> T fn(const char* n) { T f = (T)GetProcAddress(g_dll, n); i
 
 static int g_fail = 0;
 static void check(bool ok, const char* what) { printf("%s %s\n", ok ? "PASS" : "FAIL", what); if (!ok) ++g_fail; }
-static void checkLoadOnce(const std::string& log) { int n = 0; for (size_t p = 0; (p = log.find("perf-lab 0.5.1 attach", p)) != std::string::npos; ++p) ++n; check(n == 1, "log: attach (load) line appears exactly once"); }
+static void checkLoadOnce(const std::string& log) { int n = 0; for (size_t p = 0; (p = log.find("perf-lab 0.6.0 attach", p)) != std::string::npos; ++p) ++n; check(n == 1, "log: attach (load) line appears exactly once"); }
 
 static std::string fileText(const char* name) {
     FILE* f = fopen(name, "r"); if (!f) return ""; std::string s; char b[4096]; size_t n; while ((n = fread(b, 1, sizeof b, f)) > 0) s.append(b, n); fclose(f); return s;
@@ -51,6 +51,8 @@ static long long field(const std::string& l, const char* key) {   // "key=123" p
     size_t p = l.find(std::string(" ") + key + "="); if (p == std::string::npos) return -999999;
     return atoll(l.c_str() + p + strlen(key) + 2);
 }
+// 0.6.0 appends " state=<s> abreserve=<n>" after module=, so compare the module= field itself, not the end of the header.
+static std::string moduleOf(const std::string& h) { size_t p = h.find(" module="); if (p == std::string::npos) return "<none>"; p += 8; return h.substr(p, h.find(' ', p) - p); }
 static bool endsWith(const std::string& s, const char* suf) { size_t n = strlen(suf); return s.size() >= n && !s.compare(s.size() - n, n, suf); }
 
 // ---- metrics file helpers: blocks are "#METRICS <n> <EVENT> tick=..." ... "#END <n>" ----
@@ -182,26 +184,26 @@ int main(int argc, char** argv) {
     // ======================================================================================================== run / noev
     std::string log0 = fileText("perflab_log.txt");
     checkLoadOnce(log0);
-    check(log0.find("perf-lab 0.5.1 attach") != std::string::npos, "0.5.1 version in the attach line");
+    check(log0.find("perf-lab 0.6.0 attach") != std::string::npos, "0.6.0 version in the attach line");
     check(log0.find(noev ? "ev=0" : "ev=1") != std::string::npos, noev ? "attach line records ev=0" : "attach line records ev=1");
     check(log0.find("GlobalMemoryStatus=1") != std::string::npos, "GlobalMemoryStatus IAT hook installed (the exe imports it)");
     check(log0.find(noev ? "tpctop=0" : "tpctop=1") != std::string::npos, noev ? "ev=0: TPCTOP table not allocated" : "TPCTOP table allocated");
 
     // ---- MOD: module name in the header, per block ----
     std::string b1 = manual(); std::string h1 = b1.substr(0, b1.find('\n'));
-    check(endsWith(h1, " module=testmod_a") && h1.find(" hwmip=") != std::string::npos && h1.find(" module=") == h1.rfind(" module="), "MOD: header ends with module=testmod_a (existing fields untouched before it)");
+    check(moduleOf(h1) == "testmod_a" && h1.find(" hwmip=") != std::string::npos && h1.find(" module=") == h1.rfind(" module="), "MOD: header carries module=testmod_a (existing fields untouched before it)");
     *(void**)(modobj + 0x38) = (void*)nameB; *(int*)(modobj + 0x3C) = sizeof nameB;
     std::string b2 = manual();
-    check(endsWith(b2.substr(0, b2.find('\n')), " module=testmod_b"), "MOD: module changes with the engine state (module=testmod_b)");
+    check(moduleOf(b2.substr(0, b2.find('\n'))) == "testmod_b", "MOD: module changes with the engine state (module=testmod_b)");
     *(void**)(internal + 0x18) = nullptr;
     std::string b3 = manual();
-    check(endsWith(b3.substr(0, b3.find('\n')), " module=-"), "MOD: NULL module (main menu) -> module=-");
+    check(moduleOf(b3.substr(0, b3.find('\n'))) == "-", "MOD: NULL module (main menu) -> module=-");
     *(void**)(internal + 0x18) = modobj; *(void**)(modobj + 0x38) = (void*)"A_VERY_LONG_MODULE_NAME_THAT_EXCEEDS_THIRTY_ONE_CHARS"; *(int*)(modobj + 0x3C) = 54;
     std::string b3b = manual(); std::string h3b = b3b.substr(0, b3b.find('\n'));
-    check(endsWith(h3b, " module=A_VERY_LONG_MODULE_NAME_THAT_EX"), "MOD: names are cut at 31 characters");
+    check(moduleOf(h3b) == "A_VERY_LONG_MODULE_NAME_THAT_EX", "MOD: names are cut at 31 characters");
     G(0xA1B4A4) = 0;
     std::string b3c = manual();
-    check(endsWith(b3c.substr(0, b3c.find('\n')), " module=?"), "MOD: unreadable chain (app NULL) -> module=?");
+    check(moduleOf(b3c.substr(0, b3c.find('\n'))) == "?", "MOD: unreadable chain (app NULL) -> module=?");
     G(0xA1B4A4) = (uint32_t)(uintptr_t)app; *(void**)(modobj + 0x38) = (void*)nameA; *(int*)(modobj + 0x3C) = sizeof nameA;
 
     // ---- VA: every block, also with vq=0 ----
@@ -342,7 +344,7 @@ int main(int argc, char** argv) {
         for (int i = 0; i < 10; ++i) freed(arr[i].b, (void*)0x00712245);
         std::string un = unload();
         check(un.size() > 0 && un.find("\nTPCTOP") == std::string::npos && un.find("\nRESTOP") == std::string::npos && un.find("\nEVT") == std::string::npos, "noev: UNLOAD block has no TPCTOP / RESTOP / EVT lines");
-        check(endsWith(un.substr(0, un.find('\n')), " module=testmod_a") && line(un, "VA ").size(), "noev: MOD and VA still written");
+        check(moduleOf(un.substr(0, un.find('\n'))) == "testmod_a" && line(un, "VA ").size(), "noev: MOD and VA still written");
     }
 
     // ---- HWV (hwmip=1, GL stubs) ----
