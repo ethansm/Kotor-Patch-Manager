@@ -1,0 +1,109 @@
+label	status	k1_row_id	k2_row_id	k1_label	k2_label	k1_defaultmodel	k2_defaultmodel	k1_itemclass	k2_itemclass	k1_modeltype	k2_modeltype	k1_name	k2_name
+Adhesive_Grenade	SAME	31	31	Adhesive_Grenade	Adhesive_Grenade	w_AdhsvGren_001	w_AdhsvGren_001	w_AdhsvGren	w_AdhsvGren	0	0	Adhesive Grenade	Adhesive Grenade
+Adrenaline	SAME	53	53	Adrenaline	Adrenaline	I_Null	I_Null	I_Adrnaline	I_Adrnaline	0	0	Adrenaline	Adrenaline
+Adv_Mining_Laser	K2_ONLY		105		Adv_Mining_Laser		w_BlstrRfl_001		w_Blstrrfl		0		Advanced Mining Laser
+Aesthetic_Item	SAME	65	65	Aesthetic_Item	Aesthetic_Item	I_Null	I_Null	p_PltUseItm	p_PltUseItm	0	0	Aesthetic Item	Aesthetic Item
+Armor_Armd_Flight_Suit	K2_ONLY		98		Armor_Armd_Flight_Suit		I_Null		a_ClassFlt		1		Armored Flight Suit
+Armor_Class_4	SAME	38	38	Armor_Class_4	Armor_Class_4	I_Null	I_Null	a_Class4	a_Class4	1	1	Defense Bonus 4	Defense Bonus 4
+Armor_Class_5	SAME	39	39	Armor_Class_5	Armor_Class_5	I_Null	I_Null	a_Class5	a_Class5	1	1	Defense Bonus 5	Defense Bonus 5
+Armor_Class_6	SAME	40	40	Armor_Class_6	Armor_Class_6	I_Null	I_Null	a_Class6	a_Class6	1	1	Defense Bonus 6	Defense Bonus 6
+Armor_Class_7	SAME	41	41	Armor_Class_7	Armor_Class_7	I_Null	I_Null	a_Class7	a_Class7	1	1	Defense Bonus 7	Defense Bonus 7
+Armor_Class_8	SAME	42	42	Armor_Class_8	Armor_Class_8	I_Null	I_Null	a_Class8	a_Class8	1	1	Defense Bonus 8	Defense Bonus 8
+Armor_Class_9	SAME	43	43	Armor_Class_9	Armor_Class_9	I_Null	I_Null	a_Class9	a_Class9	1	1	Defense Bonus 9	Defense Bonus 9
+Armor_Zeison_Sha	K2_ONLY		102		Armor_Zeison_Sha		I_Null		a_ClassZS		1		Zeison Sha Armor
+Basic_Clothing	SAME	85	85	Basic_Clothing	Basic_Clothing	I_Null	I_Null	a_cloths	a_cloths	1	1	Basic Clothing	Basic Clothing
+Belt	SAME	47	47	Belt	Belt	I_Null	I_Null	I_Belt	I_Belt	0	0	Belt	Belt
+Blaster_Carbine	SAME	20	20	Blaster_Carbine	Blaster_Carbine	w_BlstrCrbn_001	w_BlstrCrbn_001	w_BlstrCrbn	w_BlstrCrbn	0	0	Blaster Carbine	Blaster Carbine
+Blaster_Pistol	SAME	12	12	Blaster_Pistol	Blaster_Pistol	w_BlstrPstl_001	w_BlstrPstl_001	w_BlstrPstl	w_BlstrPstl	0	0	Blaster Pistol	Blaster Pistol
+Blaster_Rifle	SAME	77	77	Blaster_Rifle	Blaster_Rifle	w_BlstrRfl_001	w_BlstrRfl_001	w_Blstrrfl	w_Blstrrfl	0	0	Blaster Rifle	Blaster Rifle
+Bowcaster	SAME	19	19	Bowcaster	Bowcaster	w_BowCstr_001	w_BowCstr_001	w_BowCstr	w_BowCstr	0	0	Bowcaster	Bowcaster
+Chemicals	K2_ONLY		95		Chemicals		I_Null		I_Credits		0		Credits
+Collar_Light	SAME	62	62	Collar_Light	Collar_Light	I_Null	I_Null	I_CollarLgt	I_CollarLgt	0	0	Collar Light	Collar Light
+Combat_Shots	SAME	54	54	Combat_Shots	Combat_Shots	I_Null	I_Null	I_CmbtShot	I_CmbtShot	0	0	Combat Shots	Combat Shots
+Components	K2_ONLY		96		Components		I_Null		I_Credits		0		Credits
+Creature_Hide_Item	SAME	84	84	Creature_Hide_Item	Creature_Hide_Item	I_Null	I_Null	w_crhide	w_crhide	0	0	Creature_Hide_Item	Creature_Hide_Item
+Creature_Item_Pierce	SAME	82	82	Creature_Item_Pierce	Creature_Item_Pierce	I_Null	I_Null	w_crpierce	w_crpierce	0	0	Creature Weapon Piercing	Creature Weapon Piercing
+Creature_Item_Slash	SAME	81	81	Creature_Item_Slash	Creature_Item_Slash	I_Null	I_Null	w_crslash	w_crslash	0	0	Creature Weapon Slashing	Creature Weapon Slashing
+Creature_Weapon_Sl_Prc	SAME	83	83	Creature_Weapon_Sl_Prc	Creature_Weapon_Sl_Prc	I_Null	I_Null	w_crbite	w_crbite	0	0	Creature Weapon Slashing Piercing	Creature Weapon Slashing Piercing
+Credits	SAME	57	57	Credits	Credits	I_Null	I_Null	I_Credits	I_Credits	0	0	Credits	Credits
+Cryoban_Grenade	SAME	32	32	Cryoban_Grenade	Cryoban_Grenade	w_CryobGren_001	w_CryobGren_001	w_CryobGren	w_CryobGren	0	0	Cryoban Grenade	Cryoban Grenade
+Data_Pad	SAME	52	52	Data_Pad	Data_Pad	I_Null	I_Null	I_DataPad	I_DataPad	0	0	Datapad	Datapad
+Disguise_Item	SAME	90	90	Disguise_Item	Disguise_Item	I_Null	I_Null	a_disguise	a_disguise	0	0	Disguise	Disguise
+Disrupter_Pistol	SAME	16	16	Disrupter_Pistol	Disrupter_Pistol	w_DsrptPstl_001	w_DsrptPstl_001	w_DsrptPstl	w_DsrptPstl	0	0	Disruptor Pistol	Disruptor Pistol
+Disrupter_Rifle	SAME	21	21	Disrupter_Rifle	Disrupter_Rifle	w_DsrptRfl_001	w_DsrptRfl_001	w_DsrptRfl	w_DsrptRfl	0	0	Disruptor Rifle	Disruptor Rifle
+DM_ElectroStaff	K2_ONLY		107		DM_ElectroStaff		w_Qtrstaff_001		w_Qtrstaff		0		Quarter Staff
+Double_Bladed_Lightsaber	SAME	9	9	Double_Bladed_Lightsaber	Double_Bladed_Lightsaber	w_Dblsbr_001	w_Dblsbr_001	w_Dblsbr	w_Dblsbr	0	0	Double-Bladed Lightsaber	Double-Bladed Lightsaber
+Double_Bladed_Sword	SAME	6	6	Double_Bladed_Sword	Double_Bladed_Sword	w_Dblswrd_001	w_Dblswrd_001	w_Dblswrd	w_Dblswrd	0	0	Double-Bladed Sword	Double-Bladed Sword
+Droid_Computer_Spike_Mount_x	SAME	73	73	Droid_Computer_Spike_Mount_x	Droid_Computer_Spike_Mount_x	I_Null	I_Null	I_DrdComSpk	I_DrdComSpk	0	0	Droid Computer Spike Mount	Droid Computer Spike Mount
+Droid_Heavy_Plating	SAME	68	68	Droid_Heavy_Plating	Droid_Heavy_Plating	I_Null	I_Null	I_DrdHvPlat	I_DrdHvPlat	0	0	Droid Heavy Plating	Droid Heavy Plating
+Droid_Light_Plating	SAME	66	66	Droid_Light_Plating	Droid_Light_Plating	I_Null	I_Null	I_DrdLtPlat	I_DrdLtPlat	0	0	Droid Light Plating	Droid Light Plating
+Droid_Medium_Plating	SAME	67	67	Droid_Medium_Plating	Droid_Medium_Plating	I_Null	I_Null	I_DrdMdPlat	I_DrdMdPlat	0	0	Droid Medium Plating	Droid Medium Plating
+Droid_Motion_Sensors_x	SAME	70	70	Droid_Motion_Sensors_x	Droid_Motion_Sensors_x	I_Null	I_Null	I_DrdMtnSen	I_DrdMtnSen	0	0	Droid Motion Sensors	Droid Motion Sensors
+Droid_Repair_Equipment	SAME	56	56	Droid_Repair_Equipment	Droid_Repair_Equipment	I_Null	I_Null	I_DrdRepEqp	I_DrdRepEqp	0	0	Droid Repair Equipment	Droid Repair Equipment
+Droid_Search_Scope_x	SAME	69	69	Droid_Search_Scope_x	Droid_Search_Scope_x	I_Null	I_Null	I_DrdSrcScp	I_DrdSrcScp	0	0	Droid Search Scope	Droid Search Scope
+Droid_Security_Spike_Mount	SAME	74	74	Droid_Security_Spike_Mount	Droid_Security_Spike_Mount	I_Null	I_Null	I_DrdSecSpk	I_DrdSecSpk	0	0	Droid Security Spike Mount	Droid Security Spike Mount
+Droid_Shield	SAME	75	75	Droid_Shield	Droid_Shield	I_Null	I_Null	I_DrdShld	I_DrdShld	0	0	Droid Shield	Droid Shield
+Droid_Sonic_Sensors_x	SAME	71	71	Droid_Sonic_Sensors_x	Droid_Sonic_Sensors_x	I_Null	I_Null	I_DrdSncSen	I_DrdSncSen	0	0	Droid Sonic Sensors	Droid Sonic Sensors
+Droid_Targeting_Computers	SAME	72	72	Droid_Targeting_Computers	Droid_Targeting_Computers	I_Null	I_Null	I_DrdTrgCom	I_DrdTrgCom	0	0	Droid Targeting Computers	Droid Targeting Computers
+Droid_Utility_Device	SAME	76	76	Droid_Utility_Device	Droid_Utility_Device	I_Null	I_Null	I_DrdUtlDev	I_DrdUtlDev	0	0	Droid Utility Device	Droid Utility Device
+Fire_Grenade	SAME	33	33	Fire_Grenade	Fire_Grenade	w_FireGren_001	w_FireGren_001	w_FireGren	w_FireGren	0	0	Fire Grenade	Fire Grenade
+Flash_Grenade	SAME	29	29	Flash_Grenade	Flash_Grenade	w_FlashGren_001	w_FlashGren_001	w_FlashGren	w_FlashGren	0	0	Flash Grenade	Flash Grenade
+Force_Pike	K2_ONLY		93		Force_Pike		w_ForcePike_01		w_ForcePike		0		Force Pike
+Forearm_Bands	SAME	46	46	Forearm_Bands	Forearm_Bands	I_Null	I_Null	I_FrArmBnds	I_FrArmBnds	0	0	Forearm Bands	Forearm Bands
+Fragmentation_Grenades	SAME	25	25	Fragmentation_Grenades	Fragmentation_Grenades	w_FragGren_001	w_FragGren_001	w_FragGren	w_FragGren	0	0	Frag Grenade	Frag Grenade
+Gammorean_Battleaxe	SAME	80	80	Gammorean_Battleaxe	Gammorean_Battleaxe	w_Shortswrd_001	w_Shortswrd_001	w_waraxe	w_waraxe	0	0	Gamorrean Battleaxe	Gamorrean Battleaxe
+Gauntlets	SAME	45	45	Gauntlets	Gauntlets	I_Null	I_Null	I_Gauntlet	I_Gauntlet	0	0	Gauntlets	Gauntlets
+Ghaffi_Stick	SAME	78	78	Ghaffi_Stick	Ghaffi_Stick	w_Shortswrd_001	w_Shortswrd_001	w_gaffi	w_gaffi	0	0	Gaffi Stick	Gaffi Stick
+Glow_Rod	SAME	61	61	Glow_Rod	Glow_Rod	I_Null	I_Null	I_GlowRod	I_GlowRod	0	0	Glow Rod	Glow Rod
+Heavy_Blaster	SAME	13	13	Heavy_Blaster	Heavy_Blaster	w_HvyBlstr_001	w_HvyBlstr_001	w_HvyBlstr	w_HvyBlstr	0	0	Heavy Blaster	Heavy Blaster
+Heavy_Repeating_Blaster	SAME	24	24	Heavy_Repeating_Blaster	Heavy_Repeating_Blaster	w_HvRptBltr_001	w_HvRptBltr_001	w_HvRptBltr	w_HvRptBltr	0	0	Heavy Repeating Blaster	Heavy Repeating Blaster
+Hold_Out_Blaster	SAME	14	14	Hold_Out_Blaster	Hold_Out_Blaster	w_HldOBlst_001	w_HldOBlst_001	w_HldOBlst	w_HldOBlst	0	0	Hold Out Blaster	Hold Out Blaster
+Implant_1	SAME	48	48	Implant_1	Implant_1	I_Null	I_Null	I_Implant1	I_Implant1	0	0	Implant 1	Implant 1
+Implant_2	SAME	49	49	Implant_2	Implant_2	I_Null	I_Null	I_Implant2	I_Implant2	0	0	Implant 2	Implant 2
+Implant_3	SAME	50	50	Implant_3	Implant_3	I_Null	I_Null	I_Implant3	I_Implant3	0	0	Implant 3	Implant 3
+Ion_Blaster	SAME	15	15	Ion_Blaster	Ion_Blaster	w_IonBlstr_001	w_IonBlstr_001	w_IonBlstr	w_IonBlstr	0	0	Ion Blaster	Ion Blaster
+Ion_Grenade	SAME	34	34	Ion_Grenade	Ion_Grenade	w_IonGren_001	w_IonGren_001	w_IonGren	w_IonGren	0	0	Ion Grenade	Ion Grenade
+Ion_Rifle	SAME	18	18	Ion_Rifle	Ion_Rifle	w_IonRfl_001	w_IonRfl_001	w_IonRfl	w_IonRfl	0	0	Ion Rifle	Ion Rifle
+Jedi_Knight_Robe	DIFF_ITEMCLASS	36	36	Jedi_Knight_Robe	Jedi_Knight_Robe	I_Null	I_Null	a_KghtRobe	a_MstrRobe	1	1	Jedi Knight Robe	Jedi Knight Robe
+Jedi_Master_Robe	SAME	37	37	Jedi_Master_Robe	Jedi_Master_Robe	I_Null	I_Null	a_MstrRobe	a_MstrRobe	1	1	Jedi Master Robe	Jedi Master Robe
+Jedi_Robe	SAME	35	35	Jedi_Robe	Jedi_Robe	I_Null	I_Null	a_JediRobe	a_JediRobe	1	1	Jedi Robe	Jedi Robe
+Lightsaber	SAME	8	8	Lightsaber	Lightsaber	w_Lghtsbr_001	w_Lghtsbr_001	w_Lghtsbr	w_Lghtsbr	0	0	Lightsaber	Lightsaber
+Lightsaber_Crystals	SAME	11	11	Lightsaber_Crystals	Lightsaber_Crystals	it_bag_001	it_bag_001	w_SbrCrstl	w_SbrCrstl	0	0	Lightsaber Crystals	Lightsaber Crystals
+Lightsaber_No_Sound	K2_ONLY		106		Lightsaber_No_Sound		w_Lghtsbr_001		w_Lghtsbr		0		Lightsaber
+Long_Sword	SAME	2	2	Long_Sword	Long_Sword	w_Lngswrd_001	w_Lngswrd_001	w_Lngswrd	w_Lngswrd	0	0	Long Sword	Long Sword
+Mask	SAME	44	44	Mask	Mask	I_Mask_001	I_Mask_001	I_Mask	I_Mask	0	0	Mask	Mask
+Medical_Equipment	SAME	55	55	Medical_Equipment	Medical_Equipment	I_Null	I_Null	I_MedEqpmnt	I_MedEqpmnt	0	0	Medical Equipment	Medical Equipment
+Miner_Uniform	K2_ONLY		103		Miner_Uniform		I_Null		a_class4		1		Miner Uniform
+Mining_Laser	K2_ONLY		104		Mining_Laser		w_BlstrPstl_001		w_BlstrPstl		0		Mining Laser
+OTGM_Forearm_Bands	K2_ONLY		108		OTGM_Forearm_Bands		I_Null		I_otgmBnds		0		Forearm Bands
+Pazaak_Card	SAME	86	86	Pazaak_Card	Pazaak_Card	I_Null	I_Null	I_PazCard	I_PazCard	0	0	Pazaak Card	Pazaak Card
+Pazaak_Sideboard	SAME	87	87	Pazaak_Sideboard	Pazaak_Sideboard	I_Null	I_Null	p_PltUseItm	p_PltUseItm	0	0	Pazaak Side Deck	Pazaak Side Deck
+Plot_Useable_Items	SAME	64	64	Plot_Useable_Items	Plot_Useable_Items	I_Null	I_Null	p_PltUseItm	p_PltUseItm	0	0	Plot Useable Items	Plot Useable Items
+Poison_Grenade	SAME	28	28	Poison_Grenade	Poison_Grenade	w_PoisnGren_001	w_PoisnGren_001	w_PoisnGren	w_PoisnGren	0	0	Poison Grenade	Poison Grenade
+Programming_Spikes	SAME	60	60	Programming_Spikes	Programming_Spikes	I_Null	I_Null	I_ProgSpike	I_ProgSpike	0	0	Programming Spikes	Parts and Programming Spikes
+Quarter_Staff	SAME	0	0	Quarter_Staff	Quarter_Staff	w_Qtrstaff_001	w_Qtrstaff_001	w_Qtrstaff	w_Qtrstaff	0	0	Quarter Staff	Quarter Staff
+Repeating_Blaster	SAME	23	23	Repeating_Blaster	Repeating_Blaster	w_RptnBlstr_001	w_RptnBlstr_001	w_RptnBlstr	w_RptnBlstr	0	0	Repeating Blaster	Repeating Blaster
+Restrictive_Jedi_Robe	K2_ONLY		99		Restrictive_Jedi_Robe		I_Null		a_JediRobe		1		Restrictive Robe
+Revan_Armor	SAME	89	89	Revan_Armor	Revan_Armor	I_Null	I_Null	a_revan	a_revan	1	1		
+Rocket	K2_ONLY		92		Rocket		I_Null		w_rocket		0		Rocket
+Security_Spikes	SAME	59	59	Security_Spikes	Security_Spikes	I_Null	I_Null	I_SecSpike	I_SecSpike	0	0	Security Spikes	Security Spikes
+Short_Lightsaber	SAME	10	10	Short_Lightsaber	Short_Lightsaber	w_ShortSbr_001	w_ShortSbr_001	w_ShortSbr	w_ShortSbr	0	0	Short Lightsaber	Short Lightsaber
+Short_Sword	SAME	4	4	Short_Sword	Short_Sword	w_Shortswrd_001	w_Shortswrd_001	w_Shortswrd	w_Shortswrd	0	0	Short Sword	Short Sword
+Slave_Outfit	K2_ONLY		100		Slave_Outfit		I_Null		a_slave		1		Slave Outfit
+Sonic_Grenade	SAME	30	30	Sonic_Grenade	Sonic_Grenade	w_SonicGren_001	w_SonicGren_001	w_SonicGren	w_SonicGren	0	0	Sonic Grenade	Sonic Grenade
+Sonic_Grenade_Type2	K2_ONLY		97		Sonic_Grenade_Type2		w_SonicGren_001		w_SonicGren		0		Sonic Grenade Type 2
+Sonic_Pistol	SAME	17	17	Sonic_Pistol	Sonic_Pistol	w_SonicPstl_001	w_SonicPstl_001	w_SonicPstl	w_SonicPstl	0	0	Sonic Pistol	Sonic Pistol
+Sonic_Rifle	SAME	22	22	Sonic_Rifle	Sonic_Rifle	w_SonicRfl_001	w_SonicRfl_001	w_SonicRfl	w_SonicRfl	0	0	Sonic Rifle	Sonic Rifle
+Squad_Recovery_kit	SAME	91	94	Squad_Recovery_kit	Squad_Recovery_kit	I_Null	I_Null	I_MedEqpmnt	I_MedEqpmnt	0	0	Squad Recovery Kit	Squad Recovery Kit
+Stealth_Unit	SAME	88	88	Stealth_Unit	Stealth_Unit	I_Null	I_Null	I_Belt	I_Belt	0	0	Belt	Belt
+Stun_Baton	SAME	1	1	Stun_Baton	Stun_Baton	w_Stunbaton_001	w_Stunbaton_001	w_Stunbaton	w_Stunbaton	0	0	Stun Baton	Stun Baton
+Stun_Grenades	SAME	26	26	Stun_Grenades	Stun_Grenades	w_StunGren_001	w_StunGren_001	w_StunGren	w_StunGren	0	0	Stun Grenade	Stun Grenade
+Thermal_Detonator	SAME	27	27	Thermal_Detonator	Thermal_Detonator	w_ThermlDet_001	w_ThermlDet_001	w_ThermDet	w_ThermDet	0	0	Thermal Detonator	Thermal Detonator
+Torch	SAME	63	63	Torch	Torch	I_Null	I_Null	I_Torch	I_Torch	0	0	Torch	Torch
+Trap_Kit	SAME	58	58	Trap_Kit	Trap_Kit	I_Null	I_Null	I_TrapKit	I_TrapKit	0	0	Trap Kit	Trap Kit
+Upgrade_Items	K2_ONLY		101		Upgrade_Items		I_Null		I_upgrade		0		Upgrades
+Vibro_Blade	SAME	5	5	Vibro_Blade	Vibro_Blade	w_Vbroshort_001	w_Vbroshort_001	w_Vbroshort	w_Vbroshort	0	0	Vibro Blade	Vibro Blade
+Vibro_Double_Blade	SAME	7	7	Vibro_Double_Blade	Vibro_Double_Blade	w_VbrDblswd_001	w_VbrDblswd_001	w_VbrDblswd	w_VbrDblswd	0	0	Vibro Double-Blade	Vibro Double-Blade
+Vibro_Sword	SAME	3	3	Vibro_Sword	Vibro_Sword	w_Vbroswrd_001	w_Vbroswrd_001	w_Vbroswrd	w_Vbroswrd	0	0	Vibro Sword	Vibro Sword
+Wookie_Warblade	DIFF_DEFAULTMODEL	79	79	Wookie_Warblade	Wookie_Warblade	w_Shortswrd_001	w_Dblswrd_001	w_warblade	w_warblade	0	0	Wookiee Warblade	Wookiee Warblade
+Wrist_Launcher	K2_ONLY		91		Wrist_Launcher		I_Null		I_FrArmBnds		0		Wrist Launcher
