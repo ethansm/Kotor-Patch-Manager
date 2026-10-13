@@ -1,0 +1,164 @@
+[
+ {
+  "id": "SC-copper",
+  "family": "sith_commando",
+  "atlas": "n_sithcom01",
+  "model": "n_sithcommando",
+  "seed": 11,
+  "note": "SITHJ copper recolour of the light plates only (A1 shoulder, B2 chest, D3 forearm, A4/B4 greaves); black cowl, belt B3, joint disc C3, D4 buckle, clasp D1 excluded. B2 emblem sits on the chest plate and is tinted with it (check sheet). Colorize because the plates are near-grey.",
+  "layers": [
+   {
+    "kind": "recolor",
+    "op": "colorize",
+    "cells": [
+     "A1",
+     "B2",
+     "D3",
+     "A4",
+     "B4"
+    ],
+    "islands": [
+     "body",
+     "legs",
+     "torso_arm"
+    ],
+    "avoid_cells": [
+     "B3",
+     "C3",
+     "D4",
+     "D1",
+     "C1",
+     "C2",
+     "D2"
+    ],
+    "card": "SITHJ1",
+    "params": {
+     "colour": "#b0622a",
+     "strength": 0.8
+    }
+   },
+   {
+    "kind": "wear",
+    "op": "wear",
+    "cells": [
+     "A4",
+     "D3"
+    ],
+    "islands": [
+     "legs",
+     "torso_arm"
+    ],
+    "avoid_cells": [
+     "D4"
+    ],
+    "card": "L4",
+    "params": {
+     "kind": "dust",
+     "strength": 0.3,
+     "direction": "down"
+    }
+   }
+  ]
+ },
+ {
+  "id": "SC-crimson",
+  "family": "sith_commando",
+  "atlas": "n_sithcom01",
+  "model": "n_sithcommando",
+  "seed": 12,
+  "note": "SITHJ crimson plates, same cells as SC-copper, plus a scuff pass on the shoulder and chest plates.",
+  "layers": [
+   {
+    "kind": "recolor",
+    "op": "colorize",
+    "cells": [
+     "A1",
+     "B2",
+     "D3",
+     "A4",
+     "B4"
+    ],
+    "islands": [
+     "body",
+     "legs",
+     "torso_arm"
+    ],
+    "avoid_cells": [
+     "B3",
+     "C3",
+     "D4",
+     "D1",
+     "C1",
+     "C2",
+     "D2"
+    ],
+    "card": "SITHJ2",
+    "params": {
+     "colour": "#a21f24",
+     "strength": 0.85
+    }
+   },
+   {
+    "kind": "wear",
+    "op": "wear",
+    "cells": [
+     "A1",
+     "B2"
+    ],
+    "islands": [
+     "body"
+    ],
+    "avoid_cells": [
+     "B3",
+     "C3"
+    ],
+    "card": "L4",
+    "params": {
+     "kind": "scuff",
+     "strength": 0.35,
+     "direction": "none"
+    }
+   }
+  ]
+ },
+ {
+  "id": "SC-navy",
+  "family": "sith_commando",
+  "atlas": "n_sithcom01",
+  "model": "n_sithcommando",
+  "seed": 13,
+  "note": "SITHJ gunmetal-navy plates (navy reads on the light plates per palette_clash), same cells.",
+  "layers": [
+   {
+    "kind": "recolor",
+    "op": "colorize",
+    "cells": [
+     "A1",
+     "B2",
+     "D3",
+     "A4",
+     "B4"
+    ],
+    "islands": [
+     "body",
+     "legs",
+     "torso_arm"
+    ],
+    "avoid_cells": [
+     "B3",
+     "C3",
+     "D4",
+     "D1",
+     "C1",
+     "C2",
+     "D2"
+    ],
+    "card": "SITHJ3",
+    "params": {
+     "colour": "#34496e",
+     "strength": 0.8
+    }
+   }
+  ]
+ }
+]

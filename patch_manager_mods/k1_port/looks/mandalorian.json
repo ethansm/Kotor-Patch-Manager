@@ -1,0 +1,251 @@
+[
+ {
+  "id": "MD-crimson",
+  "family": "mandalorian",
+  "atlas": "n_mandalorian01",
+  "model": "n_mandalorian",
+  "seed": 21,
+  "note": "MAND-1 recolour of the steel-blue plate (A1 shoulder, B2 chest, C2 right chest, D2 side plates) to crimson, MAND-4 Jaig eyes on the chest centre B2, A7-06 hip hardware D3 tint. Visor B1 and row 4 excluded; navy cloth A3-C3 untouched. Tuned: plate+cloth recolour over rows 1-3 (colourway), visor B1 and row 4 excluded.",
+  "layers": [
+   {
+    "kind": "recolor",
+    "op": "recolor_hsv",
+    "cells": [
+     "A1",
+     "C1",
+     "D1",
+     "A2",
+     "B2",
+     "C2",
+     "D2",
+     "A3",
+     "B3",
+     "C3",
+     "D3"
+    ],
+    "islands": [
+     "torso",
+     "torso_arm",
+     "lshldrpad",
+     "rshldrpad",
+     "legs"
+    ],
+    "avoid_cells": [
+     "B1",
+     "A4",
+     "B4",
+     "C4",
+     "D4"
+    ],
+    "card": "MAND-1",
+    "params": {
+     "hue_shift_deg": 150,
+     "sat_scale": 1.35,
+     "val_scale": 1.0
+    }
+   },
+   {
+    "kind": "emblem",
+    "op": "decal",
+    "cells": [
+     "B2"
+    ],
+    "islands": [
+     "torso"
+    ],
+    "avoid_cells": [
+     "B1",
+     "B4"
+    ],
+    "card": "MAND-4",
+    "params": {
+     "name": "jaig_eyes",
+     "cx": 192,
+     "cy": 190,
+     "size_px": 56,
+     "colour": "#e8dcc0",
+     "opacity": 0.95
+    }
+   },
+   {
+    "kind": "trim",
+    "op": "tint",
+    "cells": [
+     "D3"
+    ],
+    "islands": [
+     "torso",
+     "legs"
+    ],
+    "avoid_cells": [
+     "D4"
+    ],
+    "card": "A7-06",
+    "params": {
+     "colour": "#c9a24a",
+     "strength": 0.3
+    }
+   }
+  ]
+ },
+ {
+  "id": "MD-green",
+  "family": "mandalorian",
+  "atlas": "n_mandalorian01",
+  "model": "n_mandalorian",
+  "seed": 22,
+  "note": "Plate recolour to forest green, dust on the navy thigh cloth A3, no emblem. Tuned: plate+cloth recolour over rows 1-3 (colourway), visor B1 and row 4 excluded.",
+  "layers": [
+   {
+    "kind": "recolor",
+    "op": "recolor_hsv",
+    "cells": [
+     "A1",
+     "C1",
+     "D1",
+     "A2",
+     "B2",
+     "C2",
+     "D2",
+     "A3",
+     "B3",
+     "C3",
+     "D3"
+    ],
+    "islands": [
+     "torso",
+     "torso_arm",
+     "lshldrpad",
+     "rshldrpad",
+     "legs"
+    ],
+    "avoid_cells": [
+     "B1",
+     "A4",
+     "B4",
+     "C4",
+     "D4"
+    ],
+    "card": "MAND-1",
+    "params": {
+     "hue_shift_deg": -95,
+     "sat_scale": 1.35,
+     "val_scale": 1.0
+    }
+   },
+   {
+    "kind": "wear",
+    "op": "wear",
+    "cells": [
+     "A3",
+     "B3"
+    ],
+    "islands": [
+     "legs"
+    ],
+    "avoid_cells": [
+     "A4",
+     "B4",
+     "C4",
+     "D4"
+    ],
+    "card": "L4",
+    "params": {
+     "kind": "dust",
+     "strength": 0.35,
+     "direction": "down"
+    }
+   }
+  ]
+ },
+ {
+  "id": "MD-amber",
+  "family": "mandalorian",
+  "atlas": "n_mandalorian01",
+  "model": "n_mandalorian",
+  "seed": 23,
+  "note": "Plate recolour to amber/ochre with a chevron emblem on the right chest C2 and a stain wear on the plates; Jaig eyes kept for MD-crimson only. Tuned: plate+cloth recolour over rows 1-3 (colourway), visor B1 and row 4 excluded.",
+  "layers": [
+   {
+    "kind": "recolor",
+    "op": "recolor_hsv",
+    "cells": [
+     "A1",
+     "C1",
+     "D1",
+     "A2",
+     "B2",
+     "C2",
+     "D2",
+     "A3",
+     "B3",
+     "C3",
+     "D3"
+    ],
+    "islands": [
+     "torso",
+     "torso_arm",
+     "lshldrpad",
+     "rshldrpad",
+     "legs"
+    ],
+    "avoid_cells": [
+     "B1",
+     "A4",
+     "B4",
+     "C4",
+     "D4"
+    ],
+    "card": "MAND-1",
+    "params": {
+     "hue_shift_deg": -165,
+     "sat_scale": 1.35,
+     "val_scale": 1.05
+    }
+   },
+   {
+    "kind": "emblem",
+    "op": "decal",
+    "cells": [
+     "C2"
+    ],
+    "islands": [
+     "torso"
+    ],
+    "avoid_cells": [
+     "B1",
+     "C4"
+    ],
+    "card": "MAND-6",
+    "params": {
+     "name": "chevrons3",
+     "cx": 320,
+     "cy": 190,
+     "size_px": 44,
+     "colour": "#2a2a2a",
+     "opacity": 0.9
+    }
+   },
+   {
+    "kind": "wear",
+    "op": "wear",
+    "cells": [
+     "B2",
+     "C2"
+    ],
+    "islands": [
+     "torso"
+    ],
+    "avoid_cells": [
+     "B1"
+    ],
+    "card": "L4",
+    "params": {
+     "kind": "stain",
+     "strength": 0.3,
+     "direction": "down"
+    }
+   }
+  ]
+ }
+]

@@ -1,0 +1,981 @@
+[
+ {
+  "id": "P5-f02",
+  "family": "commoner",
+  "atlas": "n_commf02",
+  "model": "n_commf",
+  "note": "Bar patron. Purple tint C1,D1,C2; gold diagonal sabacc on A4,C2; red trim on C1,D1 (collar approx). A1, B1, D2 dropped as avoid; K065 rule cells A1-B1 all avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet.",
+  "seed": 1,
+  "layers": [
+   {
+    "kind": "recolor",
+    "op": "colorize",
+    "cells": [
+     "A1",
+     "B1",
+     "C1",
+     "D1",
+     "A2",
+     "B2",
+     "C2",
+     "D2",
+     "A3",
+     "B3",
+     "C3",
+     "D3",
+     "A4",
+     "B4",
+     "C4",
+     "D4"
+    ],
+    "islands": [
+     "torso",
+     "legs"
+    ],
+    "avoid_cells": [
+     "A2",
+     "A3",
+     "B2",
+     "B3"
+    ],
+    "card": "PAL",
+    "params": {
+     "colour": "#6a2f86",
+     "strength": 0.5
+    }
+   },
+   {
+    "kind": "trim",
+    "op": "band",
+    "cells": [
+     "A4",
+     "C2"
+    ],
+    "islands": [
+     "torso",
+     "legs"
+    ],
+    "avoid_cells": [
+     "A1",
+     "B1",
+     "B2",
+     "B3",
+     "A2",
+     "A3",
+     "B4",
+     "C3",
+     "C4",
+     "D2",
+     "D4"
+    ],
+    "card": "K069",
+    "params": {
+     "orientation": "diagonal",
+     "period_px": 40,
+     "width_px": 10,
+     "colour": "#c9a227",
+     "opacity": 0.85,
+     "angle_deg": 0
+    }
+   },
+   {
+    "kind": "trim",
+    "op": "band",
+    "cells": [
+     "C1",
+     "D1"
+    ],
+    "islands": [
+     "torso",
+     "legs"
+    ],
+    "avoid_cells": [
+     "A1",
+     "B1",
+     "B2",
+     "B3",
+     "A2",
+     "A3",
+     "B4",
+     "C3",
+     "C4",
+     "D2",
+     "D4"
+    ],
+    "card": "K065",
+    "params": {
+     "orientation": "horizontal",
+     "period_px": 48,
+     "width_px": 10,
+     "colour": "#a3151f",
+     "opacity": 0.85,
+     "angle_deg": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "P5-f07",
+  "family": "commoner",
+  "atlas": "n_commf07",
+  "model": "n_commf",
+  "note": "Bar patron. Purple tint C1,C2; gold diagonal sabacc on A4,C2; red trim on C1 (collar approx). A1 dropped (tear avoid); A2-A3, B2-B4, C3-C4, D4 avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet.",
+  "seed": 1,
+  "layers": [
+   {
+    "kind": "recolor",
+    "op": "colorize",
+    "cells": [
+     "A1",
+     "B1",
+     "C1",
+     "D1",
+     "A2",
+     "B2",
+     "C2",
+     "D2",
+     "A3",
+     "B3",
+     "C3",
+     "D3",
+     "A4",
+     "B4",
+     "C4",
+     "D4"
+    ],
+    "islands": [
+     "torso",
+     "legs"
+    ],
+    "avoid_cells": [
+     "A2",
+     "A3",
+     "B2",
+     "B3"
+    ],
+    "card": "PAL",
+    "params": {
+     "colour": "#6a2f86",
+     "strength": 0.5
+    }
+   },
+   {
+    "kind": "trim",
+    "op": "band",
+    "cells": [
+     "A4",
+     "C2"
+    ],
+    "islands": [
+     "torso",
+     "legs"
+    ],
+    "avoid_cells": [
+     "A1",
+     "A2",
+     "A3",
+     "B2",
+     "B3",
+     "B4",
+     "C3",
+     "C4",
+     "D4"
+    ],
+    "card": "K069",
+    "params": {
+     "orientation": "diagonal",
+     "period_px": 40,
+     "width_px": 10,
+     "colour": "#c9a227",
+     "opacity": 0.85,
+     "angle_deg": 0
+    }
+   },
+   {
+    "kind": "trim",
+    "op": "band",
+    "cells": [
+     "C1"
+    ],
+    "islands": [
+     "torso",
+     "legs"
+    ],
+    "avoid_cells": [
+     "A1",
+     "A2",
+     "A3",
+     "B2",
+     "B3",
+     "B4",
+     "C3",
+     "C4",
+     "D4"
+    ],
+    "card": "K065",
+    "params": {
+     "orientation": "horizontal",
+     "period_px": 48,
+     "width_px": 10,
+     "colour": "#a3151f",
+     "opacity": 0.85,
+     "angle_deg": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "P5-m07",
+  "family": "commoner",
+  "atlas": "n_commm07",
+  "model": "n_commm",
+  "note": "Bar patron. Purple tint D1,A4,B4 (back panel and vest); gold diagonal on A4; red trim on B1 (V-neck edge). A1, C3-C4, D3, D4 and A2-A3, B2-B3 dropped as avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet.",
+  "seed": 1,
+  "layers": [
+   {
+    "kind": "recolor",
+    "op": "colorize",
+    "cells": [
+     "A1",
+     "B1",
+     "C1",
+     "D1",
+     "A2",
+     "B2",
+     "C2",
+     "D2",
+     "A3",
+     "B3",
+     "C3",
+     "D3",
+     "A4",
+     "B4",
+     "C4",
+     "D4"
+    ],
+    "islands": [
+     "torso",
+     "legs"
+    ],
+    "avoid_cells": [
+     "A2",
+     "A3",
+     "B2",
+     "B3",
+     "C4",
+     "D4"
+    ],
+    "card": "PAL",
+    "params": {
+     "colour": "#6a2f86",
+     "strength": 0.5
+    }
+   },
+   {
+    "kind": "trim",
+    "op": "band",
+    "cells": [
+     "A4"
+    ],
+    "islands": [
+     "torso",
+     "legs"
+    ],
+    "avoid_cells": [
+     "A1",
+     "A2",
+     "A3",
+     "B2",
+     "B3",
+     "C3",
+     "C4",
+     "D3",
+     "D4"
+    ],
+    "card": "K069",
+    "params": {
+     "orientation": "diagonal",
+     "period_px": 40,
+     "width_px": 10,
+     "colour": "#c9a227",
+     "opacity": 0.85,
+     "angle_deg": 0
+    }
+   },
+   {
+    "kind": "trim",
+    "op": "band",
+    "cells": [
+     "B1"
+    ],
+    "islands": [
+     "torso",
+     "legs"
+    ],
+    "avoid_cells": [
+     "A1",
+     "A2",
+     "A3",
+     "B2",
+     "B3",
+     "C3",
+     "C4",
+     "D3",
+     "D4"
+    ],
+    "card": "K065",
+    "params": {
+     "orientation": "horizontal",
+     "period_px": 48,
+     "width_px": 10,
+     "colour": "#a3151f",
+     "opacity": 0.85,
+     "angle_deg": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "P6-f03",
+  "family": "commoner",
+  "atlas": "n_commf03",
+  "model": "n_commf",
+  "note": "Onderon citizen. Brown tint D1,C2,D2,D3; white shoulder band on D1. K076 gold dropped (dark-base only; base is mid-grey). A1 dropped (skin-sliver avoid). | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet.",
+  "seed": 1,
+  "layers": [
+   {
+    "kind": "recolor",
+    "op": "colorize",
+    "cells": [
+     "A1",
+     "B1",
+     "C1",
+     "D1",
+     "A2",
+     "B2",
+     "C2",
+     "D2",
+     "A3",
+     "B3",
+     "C3",
+     "D3",
+     "A4",
+     "B4",
+     "C4",
+     "D4"
+    ],
+    "islands": [
+     "torso",
+     "legs"
+    ],
+    "avoid_cells": [
+     "A2",
+     "A3",
+     "B2",
+     "B3"
+    ],
+    "card": "PAL",
+    "params": {
+     "colour": "#7a5230",
+     "strength": 0.6
+    }
+   },
+   {
+    "kind": "trim",
+    "op": "band",
+    "cells": [
+     "D1"
+    ],
+    "islands": [
+     "torso",
+     "legs"
+    ],
+    "avoid_cells": [
+     "A1",
+     "A2",
+     "A3",
+     "B2",
+     "B3",
+     "B4",
+     "C3",
+     "C4",
+     "D4"
+    ],
+    "card": "K077",
+    "params": {
+     "orientation": "horizontal",
+     "period_px": 48,
+     "width_px": 10,
+     "colour": "#f2efe6",
+     "opacity": 0.85,
+     "angle_deg": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "P6-f09",
+  "family": "commoner",
+  "atlas": "n_commf09",
+  "model": "n_commf",
+  "note": "Onderon citizen. Brown tint C1,C2,A4; white shoulder band C1; gold hem band A4 (dark blue-violet base). A1 dropped (tear avoid), B1 (collar piping), D2 (leather strap) dropped. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet.",
+  "seed": 1,
+  "layers": [
+   {
+    "kind": "recolor",
+    "op": "colorize",
+    "cells": [
+     "A1",
+     "B1",
+     "C1",
+     "D1",
+     "A2",
+     "B2",
+     "C2",
+     "D2",
+     "A3",
+     "B3",
+     "C3",
+     "D3",
+     "A4",
+     "B4",
+     "C4",
+     "D4"
+    ],
+    "islands": [
+     "torso",
+     "legs"
+    ],
+    "avoid_cells": [
+     "A2",
+     "A3",
+     "B2",
+     "B3"
+    ],
+    "card": "PAL",
+    "params": {
+     "colour": "#7a5230",
+     "strength": 0.6
+    }
+   },
+   {
+    "kind": "trim",
+    "op": "band",
+    "cells": [
+     "C1"
+    ],
+    "islands": [
+     "torso",
+     "legs"
+    ],
+    "avoid_cells": [
+     "A1",
+     "A2",
+     "A3",
+     "B1",
+     "B2",
+     "B3",
+     "C3",
+     "C4",
+     "D2",
+     "D4"
+    ],
+    "card": "K077",
+    "params": {
+     "orientation": "horizontal",
+     "period_px": 48,
+     "width_px": 10,
+     "colour": "#f2efe6",
+     "opacity": 0.85,
+     "angle_deg": 0
+    }
+   },
+   {
+    "kind": "trim",
+    "op": "band",
+    "cells": [
+     "A4"
+    ],
+    "islands": [
+     "torso",
+     "legs"
+    ],
+    "avoid_cells": [
+     "A1",
+     "A2",
+     "A3",
+     "B1",
+     "B2",
+     "B3",
+     "C3",
+     "C4",
+     "D2",
+     "D4"
+    ],
+    "card": "K076",
+    "params": {
+     "orientation": "horizontal",
+     "period_px": 48,
+     "width_px": 10,
+     "colour": "#c9a227",
+     "opacity": 0.85,
+     "angle_deg": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "P6-f11",
+  "family": "commoner",
+  "atlas": "n_commf11",
+  "model": "n_commf",
+  "note": "Onderon citizen. Brown tint C2,D1 (khaki A4 left unpainted, tan base); white shoulder band D1; gold piping D2 on dark grey vest. A1 dropped (tear avoid), B4 dropped (boot shaft avoid). | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet.",
+  "seed": 1,
+  "layers": [
+   {
+    "kind": "recolor",
+    "op": "colorize",
+    "cells": [
+     "A1",
+     "B1",
+     "C1",
+     "D1",
+     "A2",
+     "B2",
+     "C2",
+     "D2",
+     "A3",
+     "B3",
+     "C3",
+     "D3",
+     "A4",
+     "B4",
+     "C4",
+     "D4"
+    ],
+    "islands": [
+     "torso",
+     "legs"
+    ],
+    "avoid_cells": [
+     "A2",
+     "A3",
+     "B2",
+     "B3"
+    ],
+    "card": "PAL",
+    "params": {
+     "colour": "#7a5230",
+     "strength": 0.6
+    }
+   },
+   {
+    "kind": "trim",
+    "op": "band",
+    "cells": [
+     "D1"
+    ],
+    "islands": [
+     "torso",
+     "legs"
+    ],
+    "avoid_cells": [
+     "A1",
+     "A2",
+     "A3",
+     "B2",
+     "B3",
+     "B4",
+     "C3",
+     "C4",
+     "D3",
+     "D4"
+    ],
+    "card": "K077",
+    "params": {
+     "orientation": "horizontal",
+     "period_px": 48,
+     "width_px": 10,
+     "colour": "#f2efe6",
+     "opacity": 0.85,
+     "angle_deg": 0
+    }
+   },
+   {
+    "kind": "trim",
+    "op": "band",
+    "cells": [
+     "D2"
+    ],
+    "islands": [
+     "torso",
+     "legs"
+    ],
+    "avoid_cells": [
+     "A1",
+     "A2",
+     "A3",
+     "B2",
+     "B3",
+     "B4",
+     "C3",
+     "C4",
+     "D3",
+     "D4"
+    ],
+    "card": "K076",
+    "params": {
+     "orientation": "horizontal",
+     "period_px": 48,
+     "width_px": 10,
+     "colour": "#c9a227",
+     "opacity": 0.85,
+     "angle_deg": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "P7-m08",
+  "family": "commoner",
+  "atlas": "n_commm08",
+  "model": "n_commm",
+  "note": "Czerka staff. Off-white cog8 emblem on A1 chest (K042); light-grey trim lines on A4 vest (K045). K050 badge dropped: only one decal op allowed. B1 unpainted (V-collar). | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet.",
+  "seed": 1,
+  "layers": [
+   {
+    "kind": "recolor",
+    "op": "colorize",
+    "cells": [
+     "A1",
+     "B1",
+     "C1",
+     "D1",
+     "A2",
+     "B2",
+     "C2",
+     "D2",
+     "A3",
+     "B3",
+     "C3",
+     "D3",
+     "A4",
+     "B4",
+     "C4",
+     "D4"
+    ],
+    "islands": [
+     "torso",
+     "legs"
+    ],
+    "avoid_cells": [
+     "A2",
+     "A3",
+     "B2",
+     "B3",
+     "C4",
+     "D4"
+    ],
+    "card": "PAL",
+    "params": {
+     "colour": "#5d6b3c",
+     "strength": 0.5
+    }
+   },
+   {
+    "kind": "emblem",
+    "op": "decal",
+    "cells": [
+     "A1"
+    ],
+    "islands": [
+     "torso",
+     "legs"
+    ],
+    "avoid_cells": [
+     "A2",
+     "A3",
+     "B2",
+     "B3",
+     "C2",
+     "C3",
+     "D3",
+     "D4"
+    ],
+    "card": "K042",
+    "params": {
+     "name": "cog8",
+     "cx": 64,
+     "cy": 64,
+     "size_px": 56,
+     "rotation_deg": 0,
+     "colour": "#e6e2c8",
+     "opacity": 1.0,
+     "blend": "normal"
+    }
+   },
+   {
+    "kind": "trim",
+    "op": "band",
+    "cells": [
+     "A4"
+    ],
+    "islands": [
+     "torso",
+     "legs"
+    ],
+    "avoid_cells": [
+     "A2",
+     "A3",
+     "B2",
+     "B3",
+     "C2",
+     "C3",
+     "D3",
+     "D4"
+    ],
+    "card": "K045",
+    "params": {
+     "orientation": "horizontal",
+     "period_px": 48,
+     "width_px": 10,
+     "colour": "#c3cbd1",
+     "opacity": 0.85,
+     "angle_deg": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "P8-f01",
+  "family": "commoner",
+  "atlas": "n_commf01",
+  "model": "n_commf",
+  "note": "Peragus miner. Green recolor C1,D1,C2 (tunic only); fuel stain A4,C2. K110 dust dropped: needs dark lower field and A4 is tan. A1, B1 dropped as avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet.",
+  "seed": 1,
+  "layers": [
+   {
+    "kind": "recolor",
+    "op": "colorize",
+    "cells": [
+     "A1",
+     "B1",
+     "C1",
+     "D1",
+     "A2",
+     "B2",
+     "C2",
+     "D2",
+     "A3",
+     "B3",
+     "C3",
+     "D3",
+     "A4",
+     "B4",
+     "C4",
+     "D4"
+    ],
+    "islands": [
+     "torso",
+     "legs"
+    ],
+    "avoid_cells": [
+     "A2",
+     "A3",
+     "B2",
+     "B3"
+    ],
+    "card": "PAL",
+    "params": {
+     "colour": "#3f7a46",
+     "strength": 0.55
+    }
+   },
+   {
+    "kind": "wear",
+    "op": "wear",
+    "cells": [
+     "A4",
+     "C2"
+    ],
+    "islands": [
+     "torso",
+     "legs"
+    ],
+    "avoid_cells": [
+     "A1",
+     "B1",
+     "B2",
+     "B3",
+     "A2",
+     "A3",
+     "B4",
+     "C4",
+     "D3",
+     "D4"
+    ],
+    "card": "K049",
+    "params": {
+     "kind": "stain",
+     "strength": 0.7,
+     "direction": "down"
+    }
+   }
+  ]
+ },
+ {
+  "id": "P8-f02",
+  "family": "commoner",
+  "atlas": "n_commf02",
+  "model": "n_commf",
+  "note": "Peragus miner. Green recolor C1,D1,C2 (tunic only); fuel stain A4,C2. K110 dropped: lower legs khaki and cream, not dark. A1, D2 dropped as avoid. | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet.",
+  "seed": 1,
+  "layers": [
+   {
+    "kind": "recolor",
+    "op": "colorize",
+    "cells": [
+     "A1",
+     "B1",
+     "C1",
+     "D1",
+     "A2",
+     "B2",
+     "C2",
+     "D2",
+     "A3",
+     "B3",
+     "C3",
+     "D3",
+     "A4",
+     "B4",
+     "C4",
+     "D4"
+    ],
+    "islands": [
+     "torso",
+     "legs"
+    ],
+    "avoid_cells": [
+     "A2",
+     "A3",
+     "B2",
+     "B3"
+    ],
+    "card": "PAL",
+    "params": {
+     "colour": "#3f7a46",
+     "strength": 0.55
+    }
+   },
+   {
+    "kind": "wear",
+    "op": "wear",
+    "cells": [
+     "A4",
+     "C2"
+    ],
+    "islands": [
+     "torso",
+     "legs"
+    ],
+    "avoid_cells": [
+     "A1",
+     "B1",
+     "B2",
+     "B3",
+     "A2",
+     "A3",
+     "B4",
+     "C3",
+     "C4",
+     "D2",
+     "D4"
+    ],
+    "card": "K049",
+    "params": {
+     "kind": "stain",
+     "strength": 0.7,
+     "direction": "down"
+    }
+   }
+  ]
+ },
+ {
+  "id": "P8-f03",
+  "family": "commoner",
+  "atlas": "n_commf03",
+  "model": "n_commf",
+  "note": "Peragus miner. Green tint D1,C2,D2 (mid-grey base, so tint not hue shift); fuel stain A4,C2,D2. K110 dropped: no dark lower field. A1 dropped (skin-sliver avoid). | Tuned (Opus): colorize base over the torso+legs islands (gloves, belt band, boot, pouch cells excluded), trim/emblem enlarged; narrow card zones were too faint on the sheet.",
+  "seed": 1,
+  "layers": [
+   {
+    "kind": "recolor",
+    "op": "colorize",
+    "cells": [
+     "A1",
+     "B1",
+     "C1",
+     "D1",
+     "A2",
+     "B2",
+     "C2",
+     "D2",
+     "A3",
+     "B3",
+     "C3",
+     "D3",
+     "A4",
+     "B4",
+     "C4",
+     "D4"
+    ],
+    "islands": [
+     "torso",
+     "legs"
+    ],
+    "avoid_cells": [
+     "A2",
+     "A3",
+     "B2",
+     "B3"
+    ],
+    "card": "PAL",
+    "params": {
+     "colour": "#3f7a46",
+     "strength": 0.55
+    }
+   },
+   {
+    "kind": "wear",
+    "op": "wear",
+    "cells": [
+     "A4",
+     "C2",
+     "D2"
+    ],
+    "islands": [
+     "torso",
+     "legs"
+    ],
+    "avoid_cells": [
+     "A1",
+     "A2",
+     "A3",
+     "B2",
+     "B3",
+     "B4",
+     "C3",
+     "C4",
+     "D4"
+    ],
+    "card": "K049",
+    "params": {
+     "kind": "stain",
+     "strength": 0.7,
+     "direction": "down"
+    }
+   }
+  ]
+ }
+]

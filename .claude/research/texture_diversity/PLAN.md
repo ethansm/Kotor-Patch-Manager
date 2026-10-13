@@ -50,7 +50,7 @@ Skipped as low value: Jedi robes (4 spawns), Ubese (1 card), Onderon until a Vak
 | Phase | Owner | Work | Exit |
 |---|---|---|---|
 | P0 | agent | B0 + B1 on 3 pilot atlases, tests colocated | gate passes on unchanged parents; overlay images show masks |
-| P1 | agent | B2 + B3 + B4; bake 8 commoner looks + Sith Commando + Mandalorian looks, stage 1 only | local review sheets |
+| P1 | agent | B2 + B3 + B4; bake 8 commoner looks + Sith Commando + Mandalorian looks, stage 1 only | local review sheets. **DONE 10-13** (773df47): 27 gated looks, `~/Games/KOTOR2_Mod_Workspace/tex_looks/run1/sheets/index.png` |
 | P2 | user | look at sheets (about 5 min), pick winners; game-closed install of 2-3 files, screenshot (T5) | go/no-go on style |
 | P3 | agent | Qwen timing run (T6), L5/L6/L7 on 3 pilot recipes, compare with stage-1 only | s/image and quality known |
 | P4 | Haiku waves | one agent per family writes recipe JSON (1 deliverable each); bake; gates | ~100-500 gated variants |
