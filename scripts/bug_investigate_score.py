@@ -10,10 +10,19 @@ aggregate reads each RUN/score.json, pools the hypotheses, and writes nothing.
 Exit codes: 0 ok; 1 score.json could not be written; 2 usage or input error (nothing written).
 
 Labels: HIT = every fact named in score_rubric.hit matched; PARTIAL = at least one hit fact matched; MISS = none.
-Fact regexes are case-insensitive and run on claim + "\\n" + mechanism only. Informational facts (not in hit)
-are recorded in `facts` but never change the label.
+Informational facts (not in hit) are recorded in `facts` but never change the label.
+
+Matchers (score --matcher v2|v1, default v2; score.json records which one ran):
+  v1: the original matcher. Fact regexes are case-insensitive and run on claim + "\\n" + mechanism only.
+  v2: the same regexes, run after (a) an echo mask: every run of ECHO_RUN or more words that also occurs as a
+      word window of the case's symptom_text is blanked to spaces; (b) a negation check per regex match: the
+      WINDOW_WORDS words before it, back to the sentence start, containing not/no/never/without/cannot/nor/
+      neither or an n't word discards that match; a fact matches when at least one match survives. (c) A surviving
+      match with might/may/could/possibly/perhaps/maybe/seems/appears in that same window lists its fact in
+      `hedged_facts` (informational; the label is unchanged).
 """
 import argparse
+import hashlib
 import json
 import math
 import os
@@ -30,6 +39,15 @@ STATUSES = ("supported", "rejected")
 # Same ordering as bug_investigate.py's rank key (copied, not imported, so this scorer stays independent).
 CONFIDENCE = {"high": 3, "medium": 2, "low": 1}
 Z = 1.96
+MATCHERS = ("v2", "v1")
+DEFAULT_MATCHER = "v2"
+ECHO_RUN = 4        # words: a run this long that also occurs in the symptom is masked
+WINDOW_WORDS = 6    # words before a match, back to the sentence start, checked for negators and hedges
+SENTENCE_END = ".;!?\n"
+NEGATORS = frozenset(("not", "no", "never", "without", "cannot", "nor", "neither"))
+HEDGES = frozenset(("might", "may", "could", "possibly", "perhaps", "maybe", "seems", "appears"))
+WORD_RE = re.compile(r"\w+")
+WINDOW_WORD_RE = re.compile(r"[\w']+")   # keeps apostrophes, so "doesn't" stays one word
 
 
 class InputError(Exception):
@@ -101,6 +119,8 @@ def load_rubric(case_path):
     for name, pats in facts.items():
         if not isinstance(pats, list) or not all(isinstance(p, str) for p in pats):
             raise InputError("score_rubric.facts[%r] must be a list of regex strings" % name)
+        if any(not p.strip() for p in pats):
+            raise InputError("score_rubric.facts[%r] has an empty or whitespace-only pattern" % name)
         try:
             compiled[name] = [re.compile(p, re.IGNORECASE) for p in pats]
         except re.error as e:
@@ -111,12 +131,69 @@ def load_rubric(case_path):
     unknown = sorted(set(hit) - set(compiled))
     if unknown:
         raise InputError("score_rubric.hit names facts that are not in facts: %s" % ", ".join(unknown))
-    return compiled, frozenset(hit)
+    return compiled, frozenset(hit), case
 
 
-def match_facts(compiled, claim, mechanism):
+def match_facts_v1(compiled, claim, mechanism):
     text = claim + "\n" + mechanism
     return sorted(name for name, pats in compiled.items() if any(p.search(text) for p in pats))
+
+
+def _word_spans(text):
+    """(lower-cased word, start, end) for every \\w+ run, with offsets into the original text."""
+    return [(m.group(0).lower(), m.start(), m.end()) for m in WORD_RE.finditer(text)]
+
+
+def echo_masked(text, symptom):
+    """Blank to spaces (same length) every word run of ECHO_RUN+ words that also occurs in the symptom."""
+    sym = [w for w, _, _ in _word_spans(symptom)]
+    windows = {tuple(sym[i:i + ECHO_RUN]) for i in range(len(sym) - ECHO_RUN + 1)}
+    if not windows:
+        return text
+    toks = _word_spans(text)
+    covered = [False] * len(toks)
+    for i in range(len(toks) - ECHO_RUN + 1):
+        if tuple(w for w, _, _ in toks[i:i + ECHO_RUN]) in windows:
+            covered[i:i + ECHO_RUN] = [True] * ECHO_RUN
+    chars = list(text)
+    for (_, start, end), hit in zip(toks, covered):
+        if hit:
+            chars[start:end] = " " * (end - start)
+    return "".join(chars)
+
+
+def _window_words(text, pos):
+    """The last WINDOW_WORDS words between the sentence start and pos, lower-cased."""
+    start = max(text.rfind(c, 0, pos) for c in SENTENCE_END) + 1
+    words = WINDOW_WORD_RE.findall(text[start:pos].lower().replace(chr(0x2019), "'"))
+    return words[-WINDOW_WORDS:]
+
+
+def _negated(words):
+    return any(w in NEGATORS or w.endswith("n't") for w in words)
+
+
+def _hedged(words):
+    return any(w in HEDGES for w in words)
+
+
+def match_facts(compiled, claim, mechanism, symptom=""):
+    """v2. Returns (matched, hedged): sorted fact names with at least one surviving match, and the subset whose
+    surviving match has a hedge word in its window. Runs on the echo-masked claim + "\\n" + mechanism."""
+    text = echo_masked(claim + "\n" + mechanism, symptom)
+    matched, hedged = [], []
+    for name, pats in compiled.items():
+        survivors = []
+        for p in pats:
+            for m in p.finditer(text):
+                words = _window_words(text, m.start())
+                if not _negated(words):
+                    survivors.append(_hedged(words))
+        if survivors:
+            matched.append(name)
+            if any(survivors):
+                hedged.append(name)
+    return sorted(matched), sorted(hedged)
 
 
 def label_for(matched, hit_names):
@@ -195,19 +272,31 @@ def cost_summary(units):
 
 
 # ---------------------------------------------------------------- score one run
-def score_run(run, case_path):
-    compiled, hit_names = load_rubric(case_path)
+def score_run(run, case_path, matcher=DEFAULT_MATCHER):
+    if matcher not in MATCHERS:
+        raise InputError("unknown matcher %r (use one of %s)" % (matcher, ", ".join(MATCHERS)))
+    compiled, hit_names, case = load_rubric(case_path)
+    rubric = case["score_rubric"]
+    symptom = _text(case.get("symptom_text"))
+    cid = case.get("case_id")
     rep = load_report(run)
     rows = []
     for h in rep["hypotheses"]:
-        matched = match_facts(compiled, _text(h.get("claim")), _text(h.get("mechanism")))
+        claim, mech = _text(h.get("claim")), _text(h.get("mechanism"))
+        if matcher == "v1":
+            matched, hedged = match_facts_v1(compiled, claim, mech), None
+        else:
+            matched, hedged = match_facts(compiled, claim, mech, symptom)
         ver = h.get("verifier")
         verdict = _text(ver.get("verdict")) if isinstance(ver, dict) else ""
-        rows.append({"id": h["id"], "label": label_for(set(matched), hit_names), "facts": matched,
-                     "quote_valid": h["quote_valid"],
-                     "status_A": "supported" if h["quote_valid"] else "rejected",
-                     "status_B": h["status"], "verifier_verdict": verdict or None,
-                     "evidence_ids": distinct_evidence(h)})
+        row = {"id": h["id"], "label": label_for(set(matched), hit_names), "facts": matched,
+               "quote_valid": h["quote_valid"],
+               "status_A": "supported" if h["quote_valid"] else "rejected",
+               "status_B": h["status"], "verifier_verdict": verdict or None,
+               "evidence_ids": distinct_evidence(h)}
+        if hedged is not None:
+            row["hedged_facts"] = hedged
+        rows.append(row)
     # Canonical order: the report's rank key over every hypothesis. A ranks quote-valid ones; B ranks
     # verifier-surviving ones, so a verifier-rejected top entry falls through to the next supported one.
     ordered = [row for _, row in sorted(zip(rep["hypotheses"], rows), key=lambda pair: rank_key(pair[0]))]
@@ -221,8 +310,11 @@ def score_run(run, case_path):
         return {lab: sum(1 for r in sel if r["label"] == lab) for lab in LABELS}
 
     valid = sum(1 for r in rows if r["quote_valid"])
+    rubric_sha = hashlib.sha256(json.dumps(rubric, sort_keys=True, separators=(",", ":")).encode("utf-8"))
     return {
         "format": SCORE_FORMAT, "case": os.path.basename(case_path),
+        "case_id": cid if isinstance(cid, str) and cid else None,
+        "matcher": matcher, "rubric_sha256": rubric_sha.hexdigest(),
         "run_id": _text(rep.get("run_id")) or os.path.basename(run),
         "decision": rep.get("decision"), "null_verdict": rep.get("null_verdict"),
         "null_valid": rep.get("null_valid"), "ranked": list(rep["ranked"]),
@@ -280,7 +372,7 @@ def cmd_score(args):
     run = args.run
     if not os.path.isdir(run):
         raise InputError("run dir not found: %s" % run)
-    s = score_run(run, args.case)
+    s = score_run(run, args.case, matcher=args.matcher)
     data = dump_bytes(s)
     write_score(run, data)
     if args.json:
@@ -424,6 +516,8 @@ def main(argv=None):
     ps = sub.add_parser("score", help="score one run and write RUN/score.json")
     ps.add_argument("--run", required=True, help="run dir holding report.json")
     ps.add_argument("--case", required=True, help="case JSON holding score_rubric")
+    ps.add_argument("--matcher", choices=MATCHERS, default=DEFAULT_MATCHER,
+                    help="fact matcher: v2 (echo mask, negation, hedge flag; default) or v1 (original)")
     ps.add_argument("--json", action="store_true", help="print the score JSON instead of a summary")
     pa = sub.add_parser("aggregate", help="pool several runs' score.json files (writes nothing)")
     pa.add_argument("--run", action="append", dest="runs", required=True, help="run dir (repeat per run)")

@@ -8,6 +8,7 @@ Every run dir and case lives in a temp dir. No model call, no network, and bug_i
 """
 import builtins
 import contextlib
+import hashlib
 import io
 import json
 import math
@@ -536,6 +537,216 @@ class TestCli(Base):
         self.assertEqual(p2.returncode, 0, p2.stderr)
         self.assertNotIn("{", p2.stdout.strip()[:1])
         self.assertIn(os.path.basename(run), p2.stdout)
+
+
+# ---------------------------------------------------------------- matcher v2: echo mask, negation, hedge, guards
+GOLDEN_RUBRIC = {"facts": {"invalid_id": [r"invalid\s+id", r"ffffffff"],
+                           "follower_queue_entry": ["companion", "queue"],
+                           "recast": [r"already\s+cast"], "info": ["retry"]},
+                 "hit": ["invalid_id", "recast"], "note": "synthetic"}
+GOLDEN_SYMPTOM = "When a companion is in my party and I queue a spell"
+NEW_KEYS = ("matcher", "rubric_sha256", "case_id")
+# score.json written by the pre-change (v1-only) scorer for golden_hyps() + GOLDEN_RUBRIC, compact form.
+GOLDEN_V1 = (
+    '{"case":"case.json","cost":{"cost_complete":true,"total_cost_usd":0.0,"units":[]},'
+    '"counts":{"all":{"HIT":0,"MISS":0,"PARTIAL":4},"quote_valid":{"HIT":0,"MISS":0,"PARTIAL":3}},'
+    '"decision":"ranked","format":"bug-investigate-score/1","hypotheses":['
+    '{"evidence_ids":1,"facts":["invalid_id"],"id":"blind-skeptic:h1","label":"PARTIAL","quote_valid":true,'
+    '"status_A":"supported","status_B":"supported","verifier_verdict":null},'
+    '{"evidence_ids":2,"facts":["follower_queue_entry","info","invalid_id"],"id":"blind-skeptic:h2",'
+    '"label":"PARTIAL","quote_valid":true,"status_A":"supported","status_B":"supported","verifier_verdict":null},'
+    '{"evidence_ids":1,"facts":["follower_queue_entry","recast"],"id":"blind-skeptic:h3","label":"PARTIAL",'
+    '"quote_valid":true,"status_A":"supported","status_B":"rejected","verifier_verdict":"rejected"},'
+    '{"evidence_ids":0,"facts":["invalid_id"],"id":"blind-null:n1","label":"PARTIAL","quote_valid":false,'
+    '"status_A":"rejected","status_B":"rejected","verifier_verdict":null}],'
+    '"null_valid":true,"null_verdict":"not_a_bug","quote_valid":{"rate":0.75,"total":4,"valid":3},'
+    '"ranked":["blind-skeptic:h1","blind-skeptic:h2"],"run_id":"golden_run",'
+    '"top_ranked":{"A":{"id":"blind-skeptic:h2","label":"PARTIAL"},"B":{"id":"blind-skeptic:h2","label":"PARTIAL"}}}'
+)
+
+
+def canon(obj):
+    return json.dumps(obj, sort_keys=True, indent=2) + "\n"
+
+
+def by_id(obj):
+    return {h["id"]: h for h in obj["hypotheses"]}
+
+
+def golden_hyps():
+    return [
+        hyp("h1", claim="is not an invalid id for the slot", confidence="medium", evidence=("ev:a",)),
+        hyp("h2", claim="the loader returns an invalid id on retry", mechanism="the queue entry keeps the stale value",
+            confidence="high", evidence=("ev:b", "ev:a")),
+        hyp("h3", claim="the companion queue entry might have already cast", confidence="low", evidence=("ev:c",),
+            status="rejected", verifier=verdict("rejected", True)),
+        hyp("n1", claim="this was never ffffffff", unit="blind-null", confidence="low", quote_valid=False),
+    ]
+
+
+class TestMatcherV2(Base):
+    def set_case(self, rubric, symptom=None, case_id=None):
+        body = {"score_rubric": rubric}
+        if symptom is not None:
+            body["symptom_text"] = symptom
+        if case_id is not None:
+            body["case_id"] = case_id
+        write_json(self.case, body)
+
+    def scored(self, hyps, rubric, symptom=None, matcher=None, case_id=None, name="run"):
+        self.set_case(rubric, symptom=symptom, case_id=case_id)
+        run = self.report(self.new_run(name), hyps)
+        argv = ["score", "--run", run, "--case", self.case, "--json"]
+        if matcher is not None:
+            argv += ["--matcher", matcher]
+        code, out, err = self.call(*argv)
+        self.assertEqual(code, 0, err)
+        return json.loads(out)
+
+    def test_negated_match_is_discarded(self):
+        rubric = {"facts": {"invalid_id": [r"invalid\s+id", r"ffffffff"]}, "hit": ["invalid_id"]}
+        hyps = [
+            hyp("n1", claim="is not an invalid id"),
+            hyp("n2", claim="this was never ffffffff"),
+            hyp("p1", claim="returns an invalid id"),
+        ]
+        obj = self.scored(hyps, rubric)
+        rows = by_id(obj)
+        self.assertEqual(rows["blind-skeptic:n1"]["facts"], [])
+        self.assertEqual(rows["blind-skeptic:n1"]["label"], "MISS")
+        self.assertEqual(rows["blind-skeptic:n2"]["facts"], [])
+        self.assertEqual(rows["blind-skeptic:p1"]["facts"], ["invalid_id"])
+        self.assertEqual(rows["blind-skeptic:p1"]["label"], "HIT")
+        self.assertEqual(obj["matcher"], "v2")
+        v1 = by_id(self.scored(hyps, rubric, matcher="v1", name="neg_v1"))
+        self.assertEqual(v1["blind-skeptic:n1"]["facts"], ["invalid_id"])
+
+    def test_negation_window_is_one_sentence_and_six_words(self):
+        rubric = {"facts": {"invalid_id": [r"invalid\s+id"]}, "hit": ["invalid_id"]}
+        obj = self.scored([
+            hyp("s1", claim="No retry here. The loader returns an invalid id"),
+            hyp("s2", claim="not a single retry happened before the loader returned an invalid id"),
+            hyp("s3", claim="it doesn't return an invalid id"),
+            hyp("s4", claim="not an invalid id. An invalid id was returned"),
+        ], rubric)
+        rows = by_id(obj)
+        self.assertEqual(rows["blind-skeptic:s1"]["label"], "HIT")
+        self.assertEqual(rows["blind-skeptic:s2"]["label"], "HIT")
+        self.assertEqual(rows["blind-skeptic:s3"]["facts"], [])
+        self.assertEqual(rows["blind-skeptic:s3"]["label"], "MISS")
+        self.assertEqual(rows["blind-skeptic:s4"]["facts"], ["invalid_id"])
+        self.assertEqual(obj["matcher"], "v2")
+
+    def test_echo_of_the_symptom_is_masked_before_matching(self):
+        rubric = {"facts": {"follower_queue_entry": ["companion", "queue"]}, "hit": ["follower_queue_entry"]}
+        symptom = "When a companion is in my party and I queue a spell"
+        hyps = [
+            hyp("e1", claim="when a companion is in my party and I queue a spell it recasts"),
+            hyp("e2", claim="the companion queue entry"),
+        ]
+        obj = self.scored(hyps, rubric, symptom=symptom)
+        rows = by_id(obj)
+        self.assertEqual(rows["blind-skeptic:e1"]["facts"], [])
+        self.assertEqual(rows["blind-skeptic:e1"]["label"], "MISS")
+        self.assertEqual(rows["blind-skeptic:e2"]["facts"], ["follower_queue_entry"])
+        self.assertEqual(rows["blind-skeptic:e2"]["label"], "HIT")
+        self.assertEqual(obj["matcher"], "v2")
+        v1 = by_id(self.scored(hyps, rubric, symptom=symptom, matcher="v1", name="echo_v1"))
+        self.assertEqual(v1["blind-skeptic:e1"]["facts"], ["follower_queue_entry"])
+
+    def test_echo_mask_needs_a_four_word_run(self):
+        rubric = {"facts": {"queue": [r"queue"]}, "hit": ["queue"]}
+        rows = by_id(self.scored([
+            hyp("t1", claim="queue a spell"),
+            hyp("t2", claim="queue a spell now"),
+        ], rubric, symptom="queue a spell now"))
+        self.assertEqual(rows["blind-skeptic:t1"]["facts"], ["queue"])
+        self.assertEqual(rows["blind-skeptic:t2"]["facts"], [])
+
+    def test_hedge_flag_is_informational_and_listed(self):
+        rubric = {"facts": {"recast": [r"already\s+cast"]}, "hit": ["recast"]}
+        obj = self.scored([
+            hyp("g1", claim="the spell might have already cast"),
+            hyp("g2", claim="the spell has already cast"),
+            hyp("g3", claim="the spell may be unrelated. The spell already cast"),
+            hyp("g4", claim="it might not have already cast"),
+        ], rubric)
+        rows = by_id(obj)
+        self.assertEqual(rows["blind-skeptic:g1"]["label"], "HIT")
+        self.assertEqual(rows["blind-skeptic:g1"]["facts"], ["recast"])
+        self.assertEqual(rows["blind-skeptic:g1"].get("hedged_facts"), ["recast"])
+        self.assertEqual(rows["blind-skeptic:g2"]["label"], "HIT")
+        self.assertEqual(rows["blind-skeptic:g2"].get("hedged_facts"), [])
+        self.assertEqual(rows["blind-skeptic:g3"]["label"], "HIT")
+        self.assertEqual(rows["blind-skeptic:g3"].get("hedged_facts"), [])
+        self.assertEqual(rows["blind-skeptic:g4"]["facts"], [])
+        self.assertEqual(rows["blind-skeptic:g4"]["label"], "MISS")
+        self.assertEqual(obj["matcher"], "v2")
+
+    def test_empty_or_blank_pattern_exits_2_and_writes_nothing(self):
+        run = self.report(self.new_run("blank"), [hyp("h1", claim="stale slot queue length")])
+        for facts in ({"a": [""]}, {"a": ["   "]}, {"a": ["x", "\t"]}):
+            with self.subTest(facts=facts):
+                self.set_case({"facts": facts, "hit": ["a"]})
+                before = listing(run)
+                p = self.cli("score", "--run", run, "--case", self.case)
+                self.assertEqual(p.returncode, 2, p.stderr)
+                self.assertIn("pattern", p.stderr)
+                self.assertFalse(os.path.exists(os.path.join(run, "score.json")))
+                self.assertEqual(listing(run), before)
+
+    def test_matcher_flag_defaults_to_v2_and_rejects_other_names(self):
+        run = self.report(self.new_run("mflag"), [hyp("h1", claim="stale slot queue length")])
+        self.set_rubric(RUBRIC)
+        s = self.score(run)
+        self.assertEqual(s.get("matcher"), "v2")
+        p = self.cli("score", "--run", run, "--case", self.case, "--matcher", "v3")
+        self.assertEqual(p.returncode, 2, p.stderr)
+
+    def test_v1_output_matches_pre_change_golden(self):
+        self.set_case(GOLDEN_RUBRIC, symptom=GOLDEN_SYMPTOM, case_id="golden_synthetic")
+        run = self.report(self.new_run("golden_run"), golden_hyps())
+        code, out, err = self.call("score", "--run", run, "--case", self.case, "--matcher", "v1", "--json")
+        self.assertEqual(code, 0, err)
+        obj = json.loads(out)
+        self.assertEqual(obj["matcher"], "v1")
+        for h in obj["hypotheses"]:
+            self.assertNotIn("hedged_facts", h)
+        stripped = {k: v for k, v in obj.items() if k not in NEW_KEYS}
+        self.assertEqual(canon(stripped), canon(json.loads(GOLDEN_V1)))
+
+    def test_v2_is_byte_identical_across_calls_and_default(self):
+        self.set_case(GOLDEN_RUBRIC, symptom=GOLDEN_SYMPTOM)
+        hyps = golden_hyps() + [hyp("e1", claim="when a companion is in my party and I queue a spell it recasts")]
+        run = self.report(self.new_run("v2det"), hyps)
+        first = self.cli("score", "--run", run, "--case", self.case, "--matcher", "v2", "--json")
+        self.assertEqual(first.returncode, 0, first.stderr)
+        b1 = open(os.path.join(run, "score.json"), "rb").read()
+        second = self.cli("score", "--run", run, "--case", self.case, "--matcher", "v2", "--json")
+        self.assertEqual(second.returncode, 0, second.stderr)
+        b2 = open(os.path.join(run, "score.json"), "rb").read()
+        self.assertEqual(b1, b2)
+        self.assertEqual(first.stdout, second.stdout)
+        default = self.cli("score", "--run", run, "--case", self.case, "--json")
+        self.assertEqual(default.returncode, 0, default.stderr)
+        self.assertEqual(open(os.path.join(run, "score.json"), "rb").read(), b1)
+
+    def test_rubric_sha256_is_the_canonical_json_hash(self):
+        rubric_a = {"facts": {"stale": [r"stale\s+slot"], "queue": [r"queue"]}, "hit": ["stale", "queue"]}
+        rubric_b = {"hit": ["stale", "queue"], "facts": {"queue": [r"queue"], "stale": [r"stale\s+slot"]}}
+        expected = hashlib.sha256(
+            json.dumps(rubric_a, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+        obj = self.scored([hyp("h1", claim="stale slot")], rubric_a)
+        self.assertEqual(obj.get("rubric_sha256"), expected)
+        obj_b = self.scored([hyp("h1", claim="stale slot")], rubric_b, name="sha_b")
+        self.assertEqual(obj_b.get("rubric_sha256"), expected)
+
+    def test_case_id_comes_from_the_case_file_or_is_null(self):
+        obj = self.scored([hyp("h1", claim="stale slot")], RUBRIC, case_id="hotbar_case_1")
+        self.assertEqual(obj.get("case_id"), "hotbar_case_1")
+        bare = self.scored([hyp("h1", claim="stale slot")], RUBRIC, name="no_case_id")
+        self.assertIn("case_id", bare)
+        self.assertIsNone(bare["case_id"])
 
 
 def main():
