@@ -17,12 +17,18 @@ only with BOTH --claude-bin ABS and --yes-spend USD (after a swarm_run.py probe)
 Any other combination exits 2 before anything is written.
 The orchestrator never reads a case file's ground truth (true_root_cause); the case's blind_forbidden_terms refuse
 any blind/null unit prompt that contains one (case-insensitive). A human must review every report before a fix starts.
+bundle, blind, null, verify, check and report hold RUN/.lock (flock, non-blocking): a second one on the same run exits 2.
+Each unit records the bundle_sha256 it was built from (a verify unit also its claim_sha256); a stage built from another
+bundle reads as incomplete. `bundle` refuses a run that already has stage data, and a bundle with no excerpts.
 
 Exit: 0 ok; 1 report/units incomplete; 2 refused, bad input, tampered bundle or runner failure.
 """
 from __future__ import annotations
 
 import argparse
+import contextlib
+import fcntl
+import hashlib
 import json
 import math
 import os
@@ -44,6 +50,8 @@ ROLES = REPO / ".claude" / "skills" / "bug-investigate" / "roles"
 EXPECT_CALL = {"blind": 0.006, "null": 0.004, "verify": 0.04}
 REAL_STAGE_CEILING = 1.00
 NOT_RUN_REASON = "not run (cap reached or stage unfinished)"
+LOCK_NAME = ".lock"                  # RUN/.lock: created by `new` (the run claim), flocked by every locked command
+LOCKED_CMDS = frozenset(("bundle", "blind", "null", "verify", "check", "report"))
 
 KINDS = ("crash", "logic", "visual", "ux")
 HUMAN_KINDS = frozenset(("visual", "ux"))
@@ -106,6 +114,21 @@ def write_atomic(path, data: bytes):
     finally:
         if os.path.exists(tmp):
             os.unlink(tmp)
+
+
+@contextlib.contextmanager
+def run_lock(run):
+    """Hold RUN/.lock (exclusive, non-blocking flock) for one command. A second command on the same run is refused
+    (exit 2) instead of interleaving its writes. The lock file is never removed, only released (no unlink race)."""
+    fd = os.open(os.path.join(run, LOCK_NAME), os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise Fail("another bug_investigate command is running on this run") from None
+        yield
+    finally:
+        os.close(fd)
 
 
 def load_json_file(path, limit):
@@ -202,6 +225,35 @@ def verify_bundle(bundle):
     except eqc.BundleTampered as e:
         raise Fail("bundle tampered or malformed: %s" % e)
     return bundle
+
+
+def require_excerpts(bundle) -> dict:
+    if not bundle["evidence"]:
+        raise Fail("bundle has no excerpts: the log is missing or the launch number does not exist")
+    return bundle
+
+
+def stage_data_present(run) -> bool:
+    """True once a stage has written into the run: blind/units, blind/out, or anything under null/ or verify/."""
+    if os.path.exists(os.path.join(run, "blind", "units")) or os.path.exists(os.path.join(run, "blind", "out")):
+        return True
+    return any(os.listdir(os.path.join(run, s)) for s in ("null", "verify") if os.path.isdir(os.path.join(run, s)))
+
+
+def claim_run_dir(run):
+    """Create the run dir for `new`. A fresh path is made with mkdir, so of two racing calls only one gets it. An
+    existing EMPTY dir is still accepted. Either way the O_EXCL create of RUN/.lock is the claim: a racer that sees the
+    dir empty before the winner has written its intake still loses."""
+    os.makedirs(os.path.dirname(run), mode=0o700, exist_ok=True)
+    try:
+        os.mkdir(run, 0o700)
+    except FileExistsError:
+        if not os.path.isdir(run) or os.listdir(run):
+            raise Fail("run dir %s already exists and is not empty" % run) from None
+    try:
+        os.close(os.open(os.path.join(run, LOCK_NAME), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600))
+    except FileExistsError:
+        raise Fail("run dir %s was claimed by another `new` call" % run) from None
 
 
 def load_run_bundle(run) -> dict:
@@ -303,6 +355,16 @@ def list_units(units_dir) -> list:
     if not os.path.isdir(units_dir):
         return []
     return sorted(n[:-5] for n in os.listdir(units_dir) if n.endswith(".json") and UNIT_ID_RE.match(n[:-5]))
+
+
+def unit_meta(units_dir, uid):
+    """The meta object of a unit file, or None when the file cannot be read or has no meta object."""
+    try:
+        unit = load_json_file(os.path.join(units_dir, uid + ".json"), MAX_UNIT_BYTES)
+    except (OSError, ValueError, RecursionError):
+        return None
+    meta = unit.get("meta") if isinstance(unit, dict) else None
+    return meta if isinstance(meta, dict) else None
 
 
 # ---------------------------------------------------------------- injectable runner (the ONLY place that starts swarm_run)
@@ -414,9 +476,11 @@ def run_builder(cmd):
 # ---------------------------------------------------------------- stage evaluation (status -> findings -> quote check)
 
 def evaluate_stage(run, stage, expected, bundle, swarm_run) -> dict:
-    """-> {unit_id: {complete, reason, verdicts, output}} for the stage's units plus the `expected` ones.
+    """-> {unit_id: {complete, reason, verdicts, output, meta}} for the stage's units plus the `expected` ones.
 
-    Unit state comes ONLY from read_status(). The findings file of an incomplete unit is never opened."""
+    Unit state comes ONLY from read_status(). The findings file of an incomplete unit is never opened. A complete unit
+    whose meta stamps another bundle's bundle_sha256 is incomplete; a unit without that stamp (built before stamps
+    existed) is accepted."""
     units_dir = os.path.join(run, stage, "units")
     out_dir = os.path.join(run, stage, "out")
     present = list_units(units_dir)
@@ -430,7 +494,7 @@ def evaluate_stage(run, stage, expected, bundle, swarm_run) -> dict:
             # built but never started: no out dir, so the runner has no manifest to report on
     result = {}
     for uid in sorted(set(present) | set(expected)):
-        entry = {"complete": False, "reason": "", "verdicts": [], "output": None}
+        entry = {"complete": False, "reason": "", "verdicts": [], "output": None, "meta": {}}
         if uid not in present:
             entry["reason"] = "unit file missing (stage not built)"
         elif uid not in status:
@@ -438,21 +502,33 @@ def evaluate_stage(run, stage, expected, bundle, swarm_run) -> dict:
         elif not status[uid][0]:
             entry["reason"] = status[uid][1] or "incomplete"
         else:
-            path = os.path.join(out_dir, "findings", uid + ".json")
-            try:
-                output = load_json_file(path, MAX_FINDINGS_BYTES)
-            except (OSError, ValueError, RecursionError) as e:
-                entry["reason"] = "findings unreadable: %s" % e
+            meta = unit_meta(units_dir, uid)
+            if meta is None:
+                entry["reason"] = "unit file unreadable"
+            elif "bundle_sha256" in meta and meta["bundle_sha256"] != bundle["bundle_sha256"]:
+                entry["reason"] = "unit built from another bundle"
             else:
-                if not isinstance(output, dict):
-                    entry["reason"] = "findings is not a JSON object"
-                elif output.get("unit_id") != uid:
-                    entry["reason"] = "findings unit_id %r != %s" % (output.get("unit_id"), uid)
+                entry["meta"] = meta
+                path = os.path.join(out_dir, "findings", uid + ".json")
+                try:
+                    output = load_json_file(path, MAX_FINDINGS_BYTES)
+                except (OSError, ValueError, RecursionError) as e:
+                    entry["reason"] = "findings unreadable: %s" % e
                 else:
-                    entry.update(complete=True, reason=status[uid][1], output=output,
-                                 verdicts=quote_check(bundle, output))
+                    if not isinstance(output, dict):
+                        entry["reason"] = "findings is not a JSON object"
+                    elif output.get("unit_id") != uid:
+                        entry["reason"] = "findings unit_id %r != %s" % (output.get("unit_id"), uid)
+                    else:
+                        entry.update(complete=True, reason=status[uid][1], output=output,
+                                     verdicts=quote_check(bundle, output))
         result[uid] = entry
     return result
+
+
+def claim_hash(h) -> str:
+    """sha256 of one hypothesis's claim, mechanism and falsifier: a verify unit stamped with another hash is stale."""
+    return hashlib.sha256((h["claim"] + "\x1f" + h["mechanism"] + "\x1f" + h["falsifier"]).encode("utf-8")).hexdigest()
 
 
 def collect_hypotheses(blind: dict) -> list:
@@ -499,8 +575,11 @@ def apply_verifiers(hyps: list, verify: dict):
             out = r["output"]
             ver["verdict"] = _s(out.get("verdict")) or None
             ver["quote_valid"] = all(v["valid"] for v in r["verdicts"])
+            meta = r.get("meta") or {}
             if out.get("hypothesis_id") != h["hypothesis_id"]:
                 ver["reason"] = "verifier answered for another hypothesis"
+            elif "claim_sha256" in meta and meta["claim_sha256"] != claim_hash(h):
+                ver["reason"] = "verifier answered for an older claim (stale)"
             elif ver["verdict"] == "rejected" and r["verdicts"] and ver["quote_valid"]:
                 ver["applied"] = True
                 h["status"], h["reason"] = "rejected", "verifier rejected"
@@ -599,7 +678,7 @@ def cmd_new(args) -> int:
     run = resolve_run(args.run if args.run else default_run_dir(kind))
     if os.path.exists(run) and (not os.path.isdir(run) or os.listdir(run)):
         raise Fail("run dir %s already exists and is not empty" % run)
-    os.makedirs(run, mode=0o700, exist_ok=True)
+    claim_run_dir(run)
     intake = {"format": "bug-investigate-intake/1", "created": utc_now().strftime("%Y-%m-%dT%H:%M:%SZ"), "kind": kind,
               "symptom": symptom, "case": os.path.abspath(args.case) if args.case else None, "logs": list(args.log),
               "mods": list(args.mod), "save": args.save, "game_dir": args.game_dir}
@@ -612,6 +691,8 @@ def cmd_bundle(args) -> int:
     run = existing_run(args.run)
     intake = load_intake(run)
     dest = os.path.join(run, "bundle.json")
+    if stage_data_present(run):       # a rebuilt bundle would leave the stage units stamped with the old one
+        raise Fail("this run already has stage data; create a new run with `new`")
     if args.from_file:
         try:
             with open(args.from_file, "rb") as f:
@@ -621,7 +702,7 @@ def cmd_bundle(args) -> int:
             bundle = json.loads(data.decode("utf-8"))
         except (OSError, ValueError, RecursionError) as e:
             raise Fail("cannot read bundle %s: %s" % (args.from_file, e))
-        verify_bundle(bundle)
+        require_excerpts(verify_bundle(bundle))
         write_atomic(dest, data)
         print("bundle: imported %s (%d excerpt(s))" % (dest, len(bundle["evidence"])))
         return 0
@@ -645,7 +726,7 @@ def cmd_bundle(args) -> int:
             bundle = json.loads(data.decode("utf-8"))
         except (OSError, ValueError, RecursionError) as e:
             raise Fail("playtest_bundle wrote no usable bundle: %s" % e)
-        verify_bundle(bundle)
+        require_excerpts(verify_bundle(bundle))
         os.replace(tmp, dest)
     finally:
         if os.path.exists(tmp):
@@ -723,12 +804,15 @@ def cmd_blind_or_null(args) -> int:
     bundle = load_run_bundle(run)
     terms = run_terms(intake)
     excerpts = render_excerpts(bundle)
+    stamp = bundle["bundle_sha256"]
     if stage == "blind":
         units = {"blind-" + s: make_unit("blind-" + s, blind_prompt(intake["symptom"], s, excerpts, "blind-" + s),
-                                         {"stage": "blind", "style": s}) for s in BLIND_STYLES}
+                                         {"stage": "blind", "style": s, "bundle_sha256": stamp})
+                 for s in BLIND_STYLES}
         role = "blind"
     else:
-        units = {NULL_ID: make_unit(NULL_ID, null_prompt(intake["symptom"], excerpts, NULL_ID), {"stage": "null"})}
+        units = {NULL_ID: make_unit(NULL_ID, null_prompt(intake["symptom"], excerpts, NULL_ID),
+                                    {"stage": "null", "bundle_sha256": stamp})}
         role = "null"
     if terms is not None:                       # all units are checked before anything is written or run
         for uid, unit in sorted(units.items()):
@@ -769,7 +853,8 @@ def cmd_verify(args) -> int:
         uid = verify_uid(h["unit_id"], h["hypothesis_id"])
         excerpts = render_excerpts(bundle, set(h["evidence_ids"]))
         units[uid] = make_unit(uid, verify_prompt(intake["symptom"], excerpts, h, uid),
-                               {"stage": "verify", "hypothesis_unit": h["unit_id"], "hypothesis_id": h["hypothesis_id"]})
+                               {"stage": "verify", "hypothesis_unit": h["unit_id"], "hypothesis_id": h["hypothesis_id"],
+                                "bundle_sha256": bundle["bundle_sha256"], "claim_sha256": claim_hash(h)})
     if not units:
         write_units(os.path.join(run, "verify", "units"), {})
         print("verify: no surviving hypothesis, nothing to run")
@@ -919,6 +1004,9 @@ def build_parser():
 def main(argv=None) -> int:
     args = build_parser().parse_args(argv)
     try:
+        if args.cmd in LOCKED_CMDS:
+            with run_lock(existing_run(args.run)):
+                return args.func(args)
         return args.func(args)
     except (Fail, StageError, OSError) as e:
         print("bug_investigate: error: %s" % e, file=sys.stderr)

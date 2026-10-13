@@ -10,6 +10,7 @@ module-level ROOT is patched so nothing can reach ~/.cache/bug_investigate/ (the
 """
 import contextlib
 import copy
+import fcntl
 import hashlib
 import io
 import json
@@ -184,11 +185,12 @@ def run_cli(args):
 
 
 def tree(path):
-    """All file paths below path (relative), [] when it does not exist."""
+    """All file paths below path (relative), [] when it does not exist. The run's .lock file is left out: it is the
+    flock target of every locked command (TestRunLock checks it directly), not stage data."""
     p = Path(path)
     if not p.exists():
         return []
-    return sorted(str(q.relative_to(p)) for q in p.rglob("*"))
+    return sorted(str(q.relative_to(p)) for q in p.rglob("*") if str(q.relative_to(p)) != ".lock")
 
 
 _CACHE_BEFORE = None
@@ -1362,6 +1364,206 @@ class TestBudgetPreflight(Base):
         rc, out, err = self.report()
         self.assertEqual(rc, 1, err)
         self.assertIn("VERIFY NOT RUN", out)
+
+
+# ---------------------------------------------------------------- stage integrity: stamps, refusals, stale verdicts
+def claim_sha(h):
+    """The verify unit's claim stamp, recomputed here (not through the implementation)."""
+    return sha(h["claim"] + "\x1f" + h["mechanism"] + "\x1f" + h["falsifier"])
+
+
+def rebuilt_bundle():
+    """A valid bundle with other content (a different intake symptom, so a different bundle_sha256)."""
+    b = copy.deepcopy(BUNDLE)
+    b["intake"]["symptom"] = "a rebuilt bundle with other content"
+    return finalize(b)
+
+
+class TestStageIntegrity(Base):
+    def claim_a(self, claim="claim A"):
+        return {"blind-skeptic": blind_out("blind-skeptic", hyp("h1", [(ID_A, Q_A1)], "high", claim=claim)),
+                "blind-advocate": blind_out("blind-advocate"),
+                "blind-evidence": blind_out("blind-evidence")}
+
+    def unit_meta(self, stage, uid):
+        return read_json(os.path.join(self.run_dir, stage, "units", uid + ".json"))["meta"]
+
+    def write_bundle_file(self, bundle):
+        write_json(os.path.join(self.run_dir, "bundle.json"), bundle)
+
+    def test_units_carry_the_bundle_hash_and_verify_units_the_claim_hash(self):
+        self.run_all(self.claim_a())
+        self.assertEqual(self.verify()[0], 0)
+        for uid in ("blind-advocate", "blind-evidence", "blind-skeptic"):
+            self.assertEqual(self.unit_meta("blind", uid).get("bundle_sha256"), BUNDLE["bundle_sha256"], uid)
+        self.assertEqual(self.unit_meta("null", "null-1").get("bundle_sha256"), BUNDLE["bundle_sha256"])
+        vm = self.unit_meta("verify", "verify-blind-skeptic-h1")
+        self.assertEqual(vm.get("bundle_sha256"), BUNDLE["bundle_sha256"])
+        self.assertEqual(vm.get("claim_sha256"), claim_sha(hyp("h1", [], claim="claim A")))
+
+    def test_bundle_rebuilt_with_other_content_after_blind_makes_those_units_incomplete(self):
+        self.run_all(self.claim_a())
+        self.write_bundle_file(rebuilt_bundle())       # `bundle` refuses now, so the rebuild is written on disk
+        self.assertEqual(self.cli("check", "--run", self.run_dir)[0], 0)
+        chk = read_json(os.path.join(self.run_dir, "check.json"))
+        for uid in ("blind-advocate", "blind-evidence", "blind-skeptic", "null-1"):
+            self.assertEqual((chk[uid]["complete"], chk[uid]["reason"]), (False, "unit built from another bundle"), uid)
+        self.assertEqual(self.report()[0], 1)
+        rep = self.report_json()
+        self.assertEqual(rep["decision"], "incomplete")
+        self.assertEqual(sorted(i["unit_id"] for i in rep["incomplete"]),
+                         ["blind-advocate", "blind-evidence", "blind-skeptic", "null-1"])
+        self.assertEqual({i["reason"] for i in rep["incomplete"]}, {"unit built from another bundle"})
+        self.assertEqual(rep["hypotheses"], [])
+
+    def test_bundle_rewritten_with_the_same_content_keeps_every_unit_complete(self):
+        self.run_all(self.claim_a())
+        self.write_bundle_file(copy.deepcopy(BUNDLE))
+        self.assertEqual(self.cli("check", "--run", self.run_dir)[0], 0)
+        chk = read_json(os.path.join(self.run_dir, "check.json"))
+        for uid in ("blind-advocate", "blind-evidence", "blind-skeptic", "null-1"):
+            self.assertTrue(chk[uid]["complete"], uid)
+
+    def test_unreadable_unit_file_of_a_complete_unit_is_incomplete(self):
+        self.run_all(self.claim_a())
+        Path(self.run_dir, "blind", "units", "blind-skeptic.json").write_text("{not json", encoding="utf-8")
+        self.assertEqual(self.cli("check", "--run", self.run_dir)[0], 0)
+        chk = read_json(os.path.join(self.run_dir, "check.json"))
+        self.assertEqual((chk["blind-skeptic"]["complete"], chk["blind-skeptic"]["reason"]),
+                         (False, "unit file unreadable"))
+        self.assertTrue(chk["blind-advocate"]["complete"])
+
+    def test_legacy_units_without_the_new_stamps_are_still_accepted(self):
+        self.run_all(self.claim_a())
+        self.fake.findings["verify-blind-skeptic-h1"] = verify_out("verify-blind-skeptic-h1", "h1", "rejected",
+                                                                   reason(ID_A, Q_A1))
+        self.assertEqual(self.verify()[0], 0)
+        for stage, uid in (("blind", "blind-advocate"), ("blind", "blind-evidence"), ("blind", "blind-skeptic"),
+                           ("null", "null-1"), ("verify", "verify-blind-skeptic-h1")):
+            path = os.path.join(self.run_dir, stage, "units", uid + ".json")
+            unit = read_json(path)
+            unit["meta"].pop("bundle_sha256", None)
+            unit["meta"].pop("claim_sha256", None)
+            write_json(path, unit)
+        self.assertEqual(self.cli("check", "--run", self.run_dir)[0], 0)
+        chk = read_json(os.path.join(self.run_dir, "check.json"))
+        for uid in ("blind-advocate", "blind-evidence", "blind-skeptic", "null-1"):
+            self.assertTrue(chk[uid]["complete"], uid)
+        self.assertEqual(self.report()[0], 0)
+        self.assertEqual(self.hyp_by_id(self.report_json(), "blind-skeptic:h1")["status"], "rejected")
+
+    def test_verify_verdict_for_an_older_claim_is_not_applied(self):
+        self.run_all(self.claim_a("claim A"))
+        self.fake.findings["verify-blind-skeptic-h1"] = verify_out("verify-blind-skeptic-h1", "h1", "rejected",
+                                                                   reason(ID_A, Q_A1))
+        self.assertEqual(self.verify()[0], 0)
+        self.fake.findings["blind-skeptic"] = self.claim_a("claim B")["blind-skeptic"]
+        self.assertEqual(self.blind()[0], 0)           # the same hypothesis id now carries claim B
+        self.assertEqual(self.report()[0], 0)
+        h = self.hyp_by_id(self.report_json(), "blind-skeptic:h1")
+        self.assertEqual(h["claim"], "claim B")
+        self.assertEqual(h["status"], "supported")
+        self.assertFalse(h["verifier"]["applied"])
+        self.assertEqual(h["verifier"]["reason"], "verifier answered for an older claim (stale)")
+
+    def test_bundle_is_refused_once_the_run_has_stage_data_and_bundle_json_stays_unchanged(self):
+        self.run_all(self.claim_a())
+        before = Path(self.run_dir, "bundle.json").read_bytes()
+        src = os.path.join(self.tmp, "other.json")
+        write_json(src, rebuilt_bundle())
+        rc, out, err = self.cli("bundle", "--run", self.run_dir, "--from", src)
+        self.assertEqual(rc, 2)
+        self.assertIn("this run already has stage data; create a new run with `new`", err)
+        self.assertEqual(Path(self.run_dir, "bundle.json").read_bytes(), before)
+        called = []
+        with mock.patch.object(bi, "run_builder", lambda cmd: called.append(cmd) or (0, "")):
+            self.assertEqual(self.cli("bundle", "--run", self.run_dir)[0], 2)
+        self.assertEqual(called, [])
+        self.assertEqual(Path(self.run_dir, "bundle.json").read_bytes(), before)
+
+    def test_bundle_is_refused_for_each_stage_location_that_holds_data(self):
+        src = os.path.join(self.tmp, "other.json")
+        write_json(src, rebuilt_bundle())
+        for rel in (("blind", "units"), ("blind", "out"), ("null", "units"), ("null", "out"), ("verify", "units")):
+            with self.subTest(rel=rel):
+                shutil.rmtree(self.run_dir, True)
+                self.new_run()
+                os.makedirs(os.path.join(self.run_dir, *rel))
+                rc, out, err = self.cli("bundle", "--run", self.run_dir, "--from", src)
+                self.assertEqual(rc, 2, err)
+                self.assertIn("already has stage data", err)
+
+    def test_bundle_with_no_excerpts_is_refused_from_a_file_and_from_the_builder(self):
+        self.assertEqual(self.cli("new", "--run", self.run_dir, "--kind", "logic", "--symptom", "s",
+                                  "--log", "a_log.txt")[0], 0)
+        empty = copy.deepcopy(BUNDLE)
+        empty["evidence"] = []
+        finalize(empty)
+        src = os.path.join(self.tmp, "empty.json")
+        write_json(src, empty)
+        rc, out, err = self.cli("bundle", "--run", self.run_dir, "--from", src)
+        self.assertEqual(rc, 2)
+        self.assertIn("bundle has no excerpts: the log is missing or the launch number does not exist", err)
+        self.assertFalse(os.path.exists(os.path.join(self.run_dir, "bundle.json")))
+
+        def empty_builder(cmd):
+            out = [a for a in cmd if a.startswith("--out=")][0][len("--out="):]
+            Path(out).write_text(json.dumps(empty), encoding="utf-8")
+            return 0, ""
+        with mock.patch.object(bi, "run_builder", empty_builder):
+            rc, out, err = self.cli("bundle", "--run", self.run_dir)
+        self.assertEqual(rc, 2)
+        self.assertIn("bundle has no excerpts", err)
+        self.assertFalse(os.path.exists(os.path.join(self.run_dir, "bundle.json")))
+        self.assertEqual([f for f in tree(self.run_dir) if f != "intake.json"], [])
+
+
+class TestRunLock(Base):
+    def test_a_held_run_lock_refuses_every_locked_command_with_exit_2(self):
+        self.new_run()
+        fd = os.open(os.path.join(self.run_dir, ".lock"), os.O_RDWR | os.O_CREAT, 0o600)
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            rc, out, err = self.blind()
+            self.assertEqual(rc, 2, err)
+            self.assertIn("another bug_investigate command is running on this run", err)
+            self.assertFalse(os.path.exists(os.path.join(self.run_dir, "blind")))
+            self.assertEqual(self.null()[0], 2)
+            self.assertEqual(self.verify()[0], 2)
+            self.assertEqual(self.cli("check", "--run", self.run_dir)[0], 2)
+            self.assertEqual(self.report()[0], 2)
+            src = os.path.join(self.tmp, "other.json")
+            write_json(src, rebuilt_bundle())
+            self.assertEqual(self.cli("bundle", "--run", self.run_dir, "--from", src)[0], 2)
+            self.assertFalse(os.path.exists(os.path.join(self.run_dir, "check.json")))
+        finally:
+            os.close(fd)
+        self.assertEqual(self.blind()[0], 0)                              # released once the holder lets go
+        self.assertEqual(self.cli("check", "--run", self.run_dir)[0], 0)  # and released again when a command ends
+
+    def test_two_new_calls_racing_for_one_fresh_path_leave_exactly_one_run(self):
+        target = os.path.realpath(self.run_dir)
+        real_mkdir = os.mkdir
+        rivals, busy = [], [False]
+
+        def racing_mkdir(path, *args, **kwargs):
+            real_mkdir(path, *args, **kwargs)              # this `new` creates the directory ...
+            if not busy[0] and os.path.realpath(path) == target:
+                busy[0] = True
+                try:                                       # ... and a rival `new` runs before this one writes intake
+                    rivals.append(self.cli("new", "--run", self.run_dir, "--kind", "logic", "--symptom", "rival",
+                                           "--log", "a_log.txt"))
+                finally:
+                    busy[0] = False
+
+        with mock.patch.object(os, "mkdir", racing_mkdir):
+            rc, out, err = self.cli("new", "--run", self.run_dir, "--kind", "logic", "--symptom", "outer",
+                                    "--log", "a_log.txt")
+        self.assertEqual(len(rivals), 1, "the race was not exercised")
+        rival_rc = rivals[0][0]
+        self.assertEqual(sorted([rc, rival_rc]), [0, 2], (rc, err, rivals[0]))
+        winner = "rival" if rival_rc == 0 else "outer"
+        self.assertEqual(read_json(os.path.join(self.run_dir, "intake.json"))["symptom"], winner)
 
 
 # ---------------------------------------------------------------- real run_stage / read_status (subprocess patched)
