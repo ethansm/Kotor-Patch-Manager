@@ -73,7 +73,7 @@ def git_head(directory):
 
 def git_pending(directory, pathspec):
     """(untracked, modified) paths relative to `directory` under `pathspec`, ignoring *.bak and *.kpatch."""
-    r = subprocess.run(["git", "-C", str(directory), "status", "--porcelain", "--", pathspec], capture_output=True, text=True)
+    r = subprocess.run(["git", "-C", str(directory), "status", "--porcelain", "-uall", "--", pathspec], capture_output=True, text=True)
     untracked, modified = [], []
     for line in r.stdout.splitlines():
         path = line[3:].strip().strip('"')
@@ -424,7 +424,7 @@ def action_for(row):
 
 
 def print_commit_commands(rows, kpm):
-    print("\nCommit commands (this script never commits; run them yourself):")
+    print("\nCommit commands (run them yourself; --commit-kpm commits the KPM side for you):")
     for pid, row in rows.items():
         src = REPO / row["src"] if not Path(row["src"]).is_absolute() else Path(row["src"])
         try:
@@ -452,6 +452,33 @@ def print_commit_commands(rows, kpm):
                 print(f"  kpm  {pid}: clean at {git_head(kpm)}, nothing to commit")
 
 
+def commit_kpm(pids, rows, kpm):
+    """--commit-kpm: commit the mirrored files of each prepared mod in $KPM (explicit paths, never -a). Returns False on any git failure."""
+    for pid in pids:
+        row = rows[pid]
+        if not row.get("kpm"):
+            continue
+        kd = Path(row["kpm"])
+        try:
+            pathspec = str(kd.relative_to(kpm))
+        except ValueError:
+            continue
+        untr, mod = git_pending(kpm, pathspec)
+        paths = untr + mod
+        if not paths:
+            print(f"  kpm  {pid}: clean at {git_head(kpm)}, nothing to commit")
+            continue
+        msg = f"Patches/{kd.name}: {pid} {row['version']} (repo {git_head(REPO)})"
+        steps = ([["git", "-C", str(kpm), "add", "--"] + untr] if untr else []) + [["git", "-C", str(kpm), "commit", "-m", msg, "--"] + paths]
+        for cmd in steps:
+            p = subprocess.run(cmd, capture_output=True, text=True)
+            if p.returncode != 0:
+                print(f"FAILED kpm commit for {pid} (rc={p.returncode}): {(p.stdout + p.stderr).strip()[-400:]}")
+                return False
+        print(f"  kpm  {pid}: committed {git_head(kpm)}")
+    return True
+
+
 # ---------------------------------------------------------------- main
 
 def main(argv=None):
@@ -459,6 +486,7 @@ def main(argv=None):
     ap.add_argument("--mod", nargs="+", action="extend", default=[], metavar="MOD", help="patch id, src dir name or KPM folder name")
     ap.add_argument("--prepare", action="store_true", help="mirror production files to KPM and rebuild MIRROR/REBUILD mods")
     ap.add_argument("--apply", action="store_true", help="swap the DLLs from the kpatches into the live game (game must be closed)")
+    ap.add_argument("--commit-kpm", action="store_true", help="with --prepare: commit the mirrored files in the KPM checkout (explicit paths); abort before --apply if the commit fails")
     ap.add_argument("--rollback", metavar="latest|DIR", help="restore the DLLs of a swap backup")
     ap.add_argument("--list-backups", action="store_true", help="list *_swap_* backups, newest first")
     ap.add_argument("--game-dir", type=Path, default=GAME, help=f"default {GAME}")
@@ -474,6 +502,9 @@ def main(argv=None):
         return rollback(a.rollback, game)
     if not a.mod:
         print("usage error: --mod, --rollback or --list-backups is required", file=sys.stderr)
+        return 2
+    if a.commit_kpm and not a.prepare:
+        print("usage error: --commit-kpm needs --prepare", file=sys.stderr)
         return 2
     if not (game / "patch_config.toml").is_file():
         print(f"no {game / 'patch_config.toml'}", file=sys.stderr)
@@ -535,6 +566,8 @@ def main(argv=None):
             print(f"  Ready for --apply (hot-swap): {', '.join(swappable)}")
         if reinstall:
             print(f"  Requires KPatchLauncher reinstall (hooks changed): {', '.join(reinstall)}  ({REINSTALL_DOC})")
+        if a.commit_kpm and not commit_kpm(needs_prep, rows, kpm):
+            return 1
     if not a.apply:
         print_commit_commands(rows, kpm)
         if any(r["verdict"] == "SWAP" for r in todo.values()):

@@ -80,7 +80,7 @@ Prepare:
 2. Commit the repo mod with explicit paths: `git commit -m "<msg>" -- patch_manager_mods/<x>_src/<files>`. DIRTY must clear.
 3. Pre-mirror build check: `scripts/pre_install_gate.sh --skip-default --mod <x>_src [--mod <y>_src ...]`. Verifies fresh compilation and unit tests without tripping on stale KPM kpatch exports.
 4. `python3 scripts/kpm_hotswap.py --mod <id> [<id> ...] --prepare`. Mirrors production files, auto-creates canonical KPM folders, backs up old kpatches, and rebuilds. If hooks changed, its post-prepare verdict is `REINSTALL` (requires launcher reinstall); pure DLL changes become `SWAP`.
-5. Commit KPM with explicit paths: `git -C "$K" commit -m "<msg>" -- Patches/<X>/<files>` (use the exact commit command that `--prepare` printed; kpatch and `.bak` files are not committed).
+5. Commit KPM with explicit paths: `git -C "$K" commit -m "<msg>" -- Patches/<X>/<files>` (use the exact commit command that `--prepare` printed; kpatch and `.bak` files are not committed). Or pass `--commit-kpm` to step 4 and the script runs that KPM commit for you (explicit paths; aborts before `--apply` on failure).
 
 Gate & Verify:
 

@@ -7,6 +7,7 @@ import json
 import os
 import pathlib
 import struct
+import subprocess
 import sys
 import tempfile
 import time
@@ -16,6 +17,7 @@ from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import kpm_hotswap as kh  # noqa: E402
+REAL_PENDING, REAL_HEAD = kh.git_pending, kh.git_head
 import kpm_status as ks  # noqa: E402
 from test_kpm_status import Env, MANIFEST, HOOKS  # noqa: E402
 
@@ -215,7 +217,30 @@ class NestedResolveTest(Base):
         self.assertIn("Did you mean: 'action-hotbar'?", out)
 
 
-class PrepareTest(Base):
+class NewModMixin:
+    def new_mod(self, pid="save-events", src="save_events_src"):
+        """A repo mod with no KPM folder, live in the config (no live DLL, so it ends as SWAP)."""
+        d = self.e.src.parent / src
+        d.mkdir()
+        (d / "manifest.toml").write_text(f'[patch]\nid = "{pid}"\nversion = "1.0.0"\n')
+        (d / "SaveEvents.cpp").write_text("int z;\n")
+        self.e.live[pid] = {"id": pid, "dll": f"patches/{pid}.dll", "hooks": []}
+        self.e.write_config()
+
+    def new_build(self, calls):
+        def fake_build(kd, kpm):
+            calls.append(kd)
+            with zipfile.ZipFile(kd / "SaveEvents.kpatch", "w") as z:
+                z.writestr("manifest.toml", (kd / "manifest.toml").read_bytes())
+                z.writestr("binaries/windows_x86.dll", b"DLL2")
+            t = time.time() + 5
+            os.utime(kd / "SaveEvents.kpatch", (t, t))
+            return 0, ""
+        return fake_build
+
+
+class PrepareTest(NewModMixin, Base):
+    # ---- H4: canonical KPM folder creation (helpers in NewModMixin)
     def test_prepare_mirrors_only_production_files_and_never_touches_common(self):
         (self.e.src / "Demo.cpp").write_text("int y;\n")
         (self.e.src / "demo_test.cpp").write_text("t\n")
@@ -244,27 +269,6 @@ class PrepareTest(Base):
         self.assertIn("after prepare: demo=SWAP", out)
         self.assertIn("PREPARE SUCCESS: 1 mod(s)", out)
         self.assertIn("Ready for --apply (hot-swap): demo", out)
-
-    # ---- H4: canonical KPM folder creation
-    def new_mod(self, pid="save-events", src="save_events_src"):
-        """A repo mod with no KPM folder, live in the config (no live DLL, so it ends as SWAP)."""
-        d = self.e.src.parent / src
-        d.mkdir()
-        (d / "manifest.toml").write_text(f'[patch]\nid = "{pid}"\nversion = "1.0.0"\n')
-        (d / "SaveEvents.cpp").write_text("int z;\n")
-        self.e.live[pid] = {"id": pid, "dll": f"patches/{pid}.dll", "hooks": []}
-        self.e.write_config()
-
-    def new_build(self, calls):
-        def fake_build(kd, kpm):
-            calls.append(kd)
-            with zipfile.ZipFile(kd / "SaveEvents.kpatch", "w") as z:
-                z.writestr("manifest.toml", (kd / "manifest.toml").read_bytes())
-                z.writestr("binaries/windows_x86.dll", b"DLL2")
-            t = time.time() + 5
-            os.utime(kd / "SaveEvents.kpatch", (t, t))
-            return 0, ""
-        return fake_build
 
     def test_pascal_dir(self):
         self.assertEqual(kh.pascal_dir("save-events"), "SaveEvents")
@@ -390,6 +394,86 @@ class PrepareTest(Base):
         self.assertEqual(seen["cwd"], self.e.kd)
         self.assertTrue(seen["cmd"][1].endswith("Patches/create-patch.py"))
         self.assertNotIn("--sync", " ".join(seen["cmd"]))
+
+
+class CommitKpmTest(NewModMixin, Base):
+    """--commit-kpm against a throwaway git repo as the KPM checkout (real git_pending/git_head)."""
+
+    def setUp(self):
+        super().setUp()
+        self.kpm = self.e.root / "kpm"
+        self.git("init", "-q")
+        self.git("config", "user.email", "t@example.invalid")
+        self.git("config", "user.name", "t")
+        self.git("add", "-A")
+        self.git("commit", "-q", "-m", "init")
+        for name, real in (("git_pending", REAL_PENDING), ("git_head", REAL_HEAD)):
+            p = mock.patch.object(kh, name, real)
+            p.start()
+            self.addCleanup(p.stop)
+        self.new_mod()
+
+    def git(self, *args):
+        p = subprocess.run(["git", "-C", str(self.kpm), *args], capture_output=True, text=True)
+        self.assertEqual(p.returncode, 0, p.stderr)
+        return p.stdout
+
+    def commits(self):
+        return int(self.git("rev-list", "--count", "HEAD"))
+
+    def prepare(self, *flags):
+        with mock.patch.object(kh, "run_create_patch", self.new_build([])):
+            return self.run_cli("--mod", "save-events", "--prepare", *flags)
+
+    def test_commit_kpm_commits_new_dir(self):
+        rc, out = self.prepare("--commit-kpm")
+        self.assertEqual(rc, 0, out)
+        self.assertIn("committed", out)
+        self.assertTrue(self.git("log", "-1", "--format=%s").startswith("Patches/SaveEvents: save-events 1.0.0 (repo "))
+        self.assertNotIn("SaveEvents.cpp", self.git("status", "--porcelain"))
+        self.assertNotIn("manifest.toml", self.git("status", "--porcelain"))
+
+    def test_commit_kpm_untracked_files_staged(self):
+        rc, out = self.prepare("--commit-kpm")
+        self.assertEqual(rc, 0, out)
+        stat = self.git("show", "--stat", "--format=", "HEAD")
+        self.assertIn("SaveEvents.cpp", stat)
+        self.assertIn("manifest.toml", stat)
+        self.assertNotIn(".kpatch", stat)
+
+    def test_commit_kpm_clean_is_noop(self):
+        self.assertEqual(self.prepare("--commit-kpm")[0], 0)
+        n = self.commits()
+        rc, out = self.prepare("--commit-kpm")
+        self.assertEqual(rc, 0, out)
+        self.assertEqual(self.commits(), n)
+
+    def test_commit_kpm_failure_aborts_before_apply(self):
+        self.running = False
+        real_run = subprocess.run
+
+        def fake_run(cmd, *a, **kw):
+            if isinstance(cmd, list) and cmd[:1] == ["git"] and "commit" in cmd:
+                return mock.Mock(returncode=1, stdout="", stderr="hook rejected")
+            return real_run(cmd, *a, **kw)
+        with mock.patch.object(kh, "run_create_patch", self.new_build([])), \
+                mock.patch.object(kh.subprocess, "run", fake_run):
+            rc, out = self.run_cli("--mod", "save-events", "--prepare", "--apply", "--commit-kpm")
+        self.assertEqual(rc, 1, out)
+        self.assertIn("FAILED kpm commit", out)
+        self.assertEqual(self.backups(), [])
+        self.assertFalse((self.e.game / "patches/save-events.dll").exists())
+
+    def test_commit_kpm_requires_prepare(self):
+        rc, out = self.run_cli("--mod", "demo", "--apply", "--commit-kpm")
+        self.assertEqual(rc, 2, out)
+        self.assertIn("--commit-kpm needs --prepare", out)
+
+    def test_prepare_without_flag_never_commits(self):
+        n = self.commits()
+        rc, out = self.prepare()
+        self.assertEqual(rc, 0, out)
+        self.assertEqual(self.commits(), n)
 
 
 class SwapTest(Base):
