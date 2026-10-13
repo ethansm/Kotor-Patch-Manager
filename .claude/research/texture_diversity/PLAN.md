@@ -56,12 +56,12 @@ Skipped as low value: Jedi robes (4 spawns), Ubese (1 card), Onderon until a Vak
 | P4 | Haiku waves | one agent per family writes recipe JSON (1 deliverable each); bake; gates | ~100-500 gated variants |
 | P5 | agent + user | B7 dispatcher scoping and RE, then install and census (`kotor2_logs.py`) | variants seen in game |
 
-## 7. Decisions needed from the user (max 5)
-1. **Go for P0** (B0 + B1)? No game or repo-code change; adds scripts and tests only.
-2. **Named-faction emblems** (Czerka, TSF, Exchange have no text source): use our own labelled "inspired" shapes now, or wait for in-game ground truth? Recommend own shapes.
-3. **Tattoos**: only one human field exists (`pmbama01` torso). Accept thin coverage or drop the slot?
-4. **Dispatcher extension** for uniform families: scope it after P2 as a new work item?
-5. **Qwen setup** (about 12 GB download, ComfyUI or diffusers): go/no-go before P3.
+## 7. Decisions (answered by the user 10-12)
+1. **P0 (B0 gate + B1 masks): YES.** Next step is a plan for P0 (plan mode), then build. Adds scripts and tests only.
+2. **Named-faction emblems: YES, own labelled "inspired" shapes** now; no wait for in-game ground truth.
+3. **Tattoos: ACCEPTED thin coverage** (one human field, `pmbama01` torso).
+4. **Dispatcher extension for uniform families: YES, scope it after P2** as a new work item (B7).
+5. **Qwen setup: user asked "is my graphics card big enough?"** Answer: RTX 5070 has 12 GB (12227 MiB total, 7140 MiB already used by other apps at check time) and the box has 31 GB RAM. Qwen-Image-Edit 20B at Q4 is a ~11.9 GB file plus a text encoder, so it does NOT fit in VRAM alone; it needs CPU-RAM offload (ComfyUI or diffusers). Feasible but slow (minutes per 512 px edit, UNVERIFIED) and the game and other GPU apps must be closed. Go/no-go is deferred to the P3 timing run (T6). Stage 1 needs no GPU. No torch/ComfyUI is installed yet (`import torch` fails in system python).
 
 ## 8. Risks and unverified items
 - Cell maps are eyeballed (confidence 2-4); T2 must confirm every one before a bake.
