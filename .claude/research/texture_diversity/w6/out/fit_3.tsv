@@ -1,0 +1,17 @@
+id	verdict	atlases	cells	stage	scale	blend	score	caveat
+ALIEN1-7	DROP:no body texture	none	-	-	-	-	1	n_gand 64 spawns, no resolvable body TPC (missing.md).
+ALIEN2-1	KEEP	p_trndoshan;p_trndoshan02	A2,D2	S1H	0.5	multiply	4	Clean cloth at A2, D2; silver straps sit at A3-B3, D3.
+ALIEN2-2	KEEP	p_trndoshan;p_trndoshan02	A2,D2	S1H	0.5	normal	4	Dark base reads olive; yellow-green scale panels clash; jacket cells only.
+ALIEN2-3	KEEP	p_trndoshan;p_trndoshan02	B3,B4,C4,D4	S2A	0.75	overlay	4	Scale panels stand in for forearm; skin vs cloth unverified.
+ALIEN2-4	DROP:no body texture	none	-	-	-	-	1	n_weeq01 39 spawns, no body TPC resolved (missing.md).
+ALIEN2-5	DROP:species not annotated	none	-	-	-	-	1	Devaronian has no atlas in any G file (missing.md).
+ALIEN2-6	DROP:species not annotated	none	-	-	-	-	1	Devaronian prisoner: no body atlas in any G file (missing.md).
+ALIEN3-1	DROP:species not annotated	none	-	-	-	-	1	Ebranite unconfirmed as species; no body atlas in any G file.
+
+## NOTES
+- Trandoshan match is by filename only (G5: "named from filenames, not confirmed by the art"); p_trndoshan 37 and p_trndoshan02 17 spawns, one shared layout.
+- Score = spawn tier of matched atlases (>=50 total 5, 25-49 4, 10-24 3, 3-9 2, else 1), minus 1 when annotation confidence is 2 (Trandoshan 54 spawns gives 4).
+- ALIEN2-1 and ALIEN2-2 target the same cells (A2, D2): alternative colourways, pick one per atlas.
+- scale = span of used columns / 4 (A2,D2 spans A and D = 0.5; B3-D4 spans B to D = 0.75).
+- 5 DROP: Gand, Weequay, Devaronian x2, Ebranite have no body atlas in G1-G11 or missing.md.
+- Largest DROP losses: n_gand 64 and n_weeq01 39 spawns; re-check after the MDL-embedded texture name is read.

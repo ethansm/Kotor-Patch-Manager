@@ -1,0 +1,13 @@
+id	status	atlases	cells	stage	scale	blend	score	caveat
+A11-03	KEEP-SPEC	n_twidanceb01,n_twiundpca01,n_twiundpcc01	C1+D1;C2;C2	S1D	0.25	normal	4	Gold symbols vanish on orange skin; add dark outline
+A11-06	KEEP-SPEC	p_trndoshan,p_trndoshan02	B4+D4;B4+D4	S1D	0.20	normal	4	Scale versus woven panel unclear; verify at 2048 px
+A11-07	KEEP-SPEC	n_walrusman02,n_walrusman01,n_walrusman04,n_walrusman03	D3+D4;D3+D4;D4;D4	S1D	0.25	normal	3	Guard costume bodies, not civilian Ando; orange piping on 02
+ALIEN1-1	KEEP-SPEC	n_twidanceb01,n_twiundpca01,n_twiundpcc01	C1-D1,C2,C2	S1D	0.5,0.25,0.25	multiply	4	Dancer B arm has teal stripes; undp arms are peach, check contrast.
+ALIEN1-2	KEEP-SPEC	n_twidanceb01,n_twiundpca01,n_twiundpcc01	C1-D1,C2,C2	S1H	0.5,0.25,0.25	overlay	4	Arm cells only; torso skin keeps original tone.
+ALIEN1-3	KEEP-SPEC	n_rodian01,n_rodian02,n_rodian03,n_rodian04,n_rodian05	C2	S1D	0.25	normal	4	C2 scaled arm skin vs armour unconfirmed (G6 OPEN).
+ALIEN1-4	KEEP-SPEC	n_duros01,n_duros02,n_duros03,n_duros04,n_duros05	B2-C3+B4-C4	S1H	0.5	overlay	4	No isolated forearm; recolours head and hands too.
+ALIEN1-5	KEEP-SPEC	n_bith01	D2-D3	S1H	0.25	overlay	2	Arm in D2-D3, low confidence; head and face stay orange.
+ALIEN2-1	KEEP-SPEC	p_trndoshan;p_trndoshan02	A2,D2	S1H	0.5	multiply	4	Clean cloth at A2, D2; silver straps sit at A3-B3, D3.
+ALIEN2-2	KEEP-SPEC	p_trndoshan;p_trndoshan02	A2,D2	S1H	0.5	normal	4	Dark base reads olive; yellow-green scale panels clash; jacket cells only.
+ALIEN2-3	KEEP-SPEC	p_trndoshan;p_trndoshan02	B3,B4,C4,D4	S2A	0.75	overlay	4	Scale panels stand in for forearm; skin vs cloth unverified.
+ALIEN3-5	KEEP-SPEC	pmbama01;pmbamc01;pmbamb01	C1-D2;B1	S2A	0.5	multiply	4	Human male torso skin; dye and micro-linework read low contrast

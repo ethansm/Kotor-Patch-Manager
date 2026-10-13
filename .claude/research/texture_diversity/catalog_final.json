@@ -27,14 +27,17 @@
   "score": "1",
   "caveat": "Only hands are bare; no upper arm to tattoo",
   "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status_note": "w6: DROP:species not annotated (Zabrak, no body atlas)",
   "canvas_rule": [
    "n_commm12"
   ],
   "rule_cells": [
    "C3",
    "D3"
-  ]
+  ],
+  "w6": {
+   "verdict": "DROP:species not annotated (Zabrak, no body atlas)"
+  }
  },
  {
   "id": "A11-02",
@@ -64,7 +67,7 @@
   "score": "1",
   "caveat": "Chest is cloth on every canvas",
   "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status_note": "w6: DROP:no bare chest skin (Rodian torso is vest)",
   "canvas_rule": [
    "n_commf13",
    "n_commf35",
@@ -75,7 +78,10 @@
   "rule_cells": [
    "A1",
    "B1"
-  ]
+  ],
+  "w6": {
+   "verdict": "DROP:no bare chest skin (Rodian torso is vest)"
+  }
  },
  {
   "id": "A11-03",
@@ -104,8 +110,8 @@
   "blend": "normal",
   "score": "3",
   "caveat": "Gold symbols simplified to rings and dots",
-  "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status": "KEEP-SPEC",
+  "status_note": "w6 fit: species atlas found",
   "canvas_rule": [
    "n_commf02",
    "n_commf03",
@@ -120,7 +126,17 @@
   "rule_cells": [
    "C3",
    "D3"
-  ]
+  ],
+  "w6": {
+   "verdict": "KEEP",
+   "atlases": "n_twidanceb01,n_twiundpca01,n_twiundpcc01",
+   "cells": "C1+D1;C2;C2",
+   "stage": "S1D",
+   "scale": "0.25",
+   "blend": "normal",
+   "score": "4",
+   "caveat": "Gold symbols vanish on orange skin; add dark outline"
+  }
  },
  {
   "id": "A11-04",
@@ -150,14 +166,17 @@
   "score": "2",
   "caveat": "Only canvas with bare forearm; A1 patch is small",
   "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status_note": "w6: DROP:species body unresolved (Gand, n_gand)",
   "canvas_rule": [
    "n_commm12"
   ],
   "rule_cells": [
    "C3",
    "D3"
-  ]
+  ],
+  "w6": {
+   "verdict": "DROP:species body unresolved (Gand, n_gand)"
+  }
  },
  {
   "id": "A11-05",
@@ -187,14 +206,17 @@
   "score": "1",
   "caveat": "Scars need bare upper arm; canvases show cloth",
   "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status_note": "w6: DROP:species not annotated (Gamorrean)",
   "canvas_rule": [
    "n_commm12"
   ],
   "rule_cells": [
    "C3",
    "D3"
-  ]
+  ],
+  "w6": {
+   "verdict": "DROP:species not annotated (Gamorrean)"
+  }
  },
  {
   "id": "A11-06",
@@ -223,15 +245,25 @@
   "blend": "normal",
   "score": "2",
   "caveat": "Dark green notches on forearm; shares A1 with K004",
-  "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status": "KEEP-SPEC",
+  "status_note": "w6 fit: species atlas found",
   "canvas_rule": [
    "n_commm12"
   ],
   "rule_cells": [
    "C3",
    "D3"
-  ]
+  ],
+  "w6": {
+   "verdict": "KEEP",
+   "atlases": "p_trndoshan,p_trndoshan02",
+   "cells": "B4+D4;B4+D4",
+   "stage": "S1D",
+   "scale": "0.20",
+   "blend": "normal",
+   "score": "4",
+   "caveat": "Scale versus woven panel unclear; verify at 2048 px"
+  }
  },
  {
   "id": "A11-07",
@@ -260,8 +292,8 @@
   "blend": "normal",
   "score": "3",
   "caveat": "Hem band cells; waves need a repeat stamp",
-  "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status": "KEEP-SPEC",
+  "status_note": "w6 fit: species atlas found",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -299,7 +331,17 @@
    "B4",
    "C4",
    "D4"
-  ]
+  ],
+  "w6": {
+   "verdict": "KEEP",
+   "atlases": "n_walrusman02,n_walrusman01,n_walrusman04,n_walrusman03",
+   "cells": "D3+D4;D3+D4;D4;D4",
+   "stage": "S1D",
+   "scale": "0.25",
+   "blend": "normal",
+   "score": "3",
+   "caveat": "Guard costume bodies, not civilian Ando; orange piping on 02"
+  }
  },
  {
   "id": "A11-08",
@@ -329,7 +371,7 @@
   "score": "1",
   "caveat": "Same thin black mourning band; K038 is clearer",
   "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status_note": "w6: Ubese body is n_sithassn01 (annotated, hard plate, conf 2, 59 spawns); tier C so left locked",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -363,7 +405,10 @@
   "rule_cells": [
    "C1",
    "D1"
-  ]
+  ],
+  "w6": {
+   "verdict": "DROP:species not annotated; tier C (Ubese, n_sithassn)"
+  }
  },
  {
   "id": "A11-09",
@@ -393,7 +438,7 @@
   "score": "2",
   "caveat": "Tier C invented; waist panel only, skip B2 tag",
   "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status_note": "w6: DROP:no body texture (n_weeq01 39 spawns unresolved)",
   "canvas_rule": [
    "n_commf06",
    "n_commm04"
@@ -401,7 +446,10 @@
   "rule_cells": [
    "B2",
    "B3"
-  ]
+  ],
+  "w6": {
+   "verdict": "DROP:no body texture (n_weeq01 39 spawns unresolved)"
+  }
  },
  {
   "id": "A11-10",
@@ -431,7 +479,7 @@
   "score": "1",
   "caveat": "Wrist is glove or bracer on every canvas",
   "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status_note": "w6: DROP:species not annotated (Devaronian)",
   "canvas_rule": [
    "n_commf02",
    "n_commf03",
@@ -446,7 +494,10 @@
   "rule_cells": [
    "C3",
    "D3"
-  ]
+  ],
+  "w6": {
+   "verdict": "DROP:species not annotated (Devaronian)"
+  }
  },
  {
   "id": "A12-01",
@@ -7016,8 +7067,8 @@
   "blend": "multiply",
   "score": "3",
   "caveat": "Stripes read on the orange hand base; hand island only.",
-  "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status": "KEEP-SPEC",
+  "status_note": "w6 fit: species atlas found",
   "canvas_rule": [
    "n_commf02",
    "n_commf03",
@@ -7032,7 +7083,17 @@
   "rule_cells": [
    "C3",
    "D3"
-  ]
+  ],
+  "w6": {
+   "verdict": "KEEP",
+   "atlases": "n_twidanceb01,n_twiundpca01,n_twiundpcc01",
+   "cells": "C1-D1,C2,C2",
+   "stage": "S1D",
+   "scale": "0.5,0.25,0.25",
+   "blend": "multiply",
+   "score": "4",
+   "caveat": "Dancer B arm has teal stripes; undp arms are peach, check contrast."
+  }
  },
  {
   "id": "ALIEN1-2",
@@ -7061,8 +7122,8 @@
   "blend": "overlay",
   "score": "3",
   "caveat": "Blue recolour of hands; same island as K116, pick one.",
-  "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status": "KEEP-SPEC",
+  "status_note": "w6 fit: species atlas found",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -7103,7 +7164,17 @@
   "rule_cells": [
    "C3",
    "D3"
-  ]
+  ],
+  "w6": {
+   "verdict": "KEEP",
+   "atlases": "n_twidanceb01,n_twiundpca01,n_twiundpcc01",
+   "cells": "C1-D1,C2,C2",
+   "stage": "S1H",
+   "scale": "0.5,0.25,0.25",
+   "blend": "overlay",
+   "score": "4",
+   "caveat": "Arm cells only; torso skin keeps original tone."
+  }
  },
  {
   "id": "ALIEN1-3",
@@ -7132,8 +7203,8 @@
   "blend": "normal",
   "score": "2",
   "caveat": "Small scale stamp on hand island; reads at close range only.",
-  "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status": "KEEP-SPEC",
+  "status_note": "w6 fit: species atlas found",
   "canvas_rule": [
    "n_commf02",
    "n_commf03",
@@ -7148,7 +7219,17 @@
   "rule_cells": [
    "C3",
    "D3"
-  ]
+  ],
+  "w6": {
+   "verdict": "KEEP",
+   "atlases": "n_rodian01,n_rodian02,n_rodian03,n_rodian04,n_rodian05",
+   "cells": "C2",
+   "stage": "S1D",
+   "scale": "0.25",
+   "blend": "normal",
+   "score": "4",
+   "caveat": "C2 scaled arm skin vs armour unconfirmed (G6 OPEN)."
+  }
  },
  {
   "id": "ALIEN1-4",
@@ -7177,8 +7258,8 @@
   "blend": "overlay",
   "score": "2",
   "caveat": "Blue-green hand recolour; same island as K117, pick one.",
-  "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status": "KEEP-SPEC",
+  "status_note": "w6 fit: species atlas found",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -7219,7 +7300,17 @@
   "rule_cells": [
    "C3",
    "D3"
-  ]
+  ],
+  "w6": {
+   "verdict": "KEEP",
+   "atlases": "n_duros01,n_duros02,n_duros03,n_duros04,n_duros05",
+   "cells": "B2-C3+B4-C4",
+   "stage": "S1H",
+   "scale": "0.5",
+   "blend": "overlay",
+   "score": "4",
+   "caveat": "No isolated forearm; recolours head and hands too."
+  }
  },
  {
   "id": "ALIEN1-5",
@@ -7248,8 +7339,8 @@
   "blend": "overlay",
   "score": "2",
   "caveat": "Pale pink hands; n_commm34 excluded, its palm is already pink.",
-  "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status": "KEEP-SPEC",
+  "status_note": "w6 fit: species atlas found",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -7290,7 +7381,17 @@
   "rule_cells": [
    "C3",
    "D3"
-  ]
+  ],
+  "w6": {
+   "verdict": "KEEP",
+   "atlases": "n_bith01",
+   "cells": "D2-D3",
+   "stage": "S1H",
+   "scale": "0.25",
+   "blend": "overlay",
+   "score": "2",
+   "caveat": "Arm in D2-D3, low confidence; head and face stay orange."
+  }
  },
  {
   "id": "ALIEN1-6",
@@ -7320,7 +7421,7 @@
   "score": "2",
   "caveat": "Brown chitin on hands; gloss reads only at close range.",
   "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status_note": "w6: DROP:no body texture (n_gand 64 spawns unresolved)",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -7361,7 +7462,10 @@
   "rule_cells": [
    "C3",
    "D3"
-  ]
+  ],
+  "w6": {
+   "verdict": "DROP:no body texture (n_gand 64 spawns unresolved)"
+  }
  },
  {
   "id": "ALIEN1-7",
@@ -7391,7 +7495,7 @@
   "score": "1",
   "caveat": "Raised plate relief; no bare shoulder island on any canvas.",
   "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status_note": "w6: DROP:no body texture",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -7425,7 +7529,10 @@
   "rule_cells": [
    "C1",
    "D1"
-  ]
+  ],
+  "w6": {
+   "verdict": "DROP:no body texture"
+  }
  },
  {
   "id": "ALIEN2-1",
@@ -7454,8 +7561,8 @@
   "blend": "multiply",
   "score": "3",
   "caveat": "Dark civilian recolour; pale bases only so the change reads.",
-  "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status": "KEEP-SPEC",
+  "status_note": "w6 fit: species atlas found",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -7500,7 +7607,17 @@
    "B4",
    "C1",
    "D1"
-  ]
+  ],
+  "w6": {
+   "verdict": "KEEP",
+   "atlases": "p_trndoshan;p_trndoshan02",
+   "cells": "A2,D2",
+   "stage": "S1H",
+   "scale": "0.5",
+   "blend": "multiply",
+   "score": "4",
+   "caveat": "Clean cloth at A2, D2; silver straps sit at A3-B3, D3."
+  }
  },
  {
   "id": "ALIEN2-2",
@@ -7529,8 +7646,8 @@
   "blend": "-",
   "score": "1",
   "caveat": "Flight suit is a uniform; commoner atlases have no uniform base.",
-  "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status": "KEEP-SPEC",
+  "status_note": "w6 fit: species atlas found",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -7575,7 +7692,17 @@
    "B4",
    "C1",
    "D1"
-  ]
+  ],
+  "w6": {
+   "verdict": "KEEP",
+   "atlases": "p_trndoshan;p_trndoshan02",
+   "cells": "A2,D2",
+   "stage": "S1H",
+   "scale": "0.5",
+   "blend": "normal",
+   "score": "4",
+   "caveat": "Dark base reads olive; yellow-green scale panels clash; jacket cells only."
+  }
  },
  {
   "id": "ALIEN2-3",
@@ -7604,8 +7731,8 @@
   "blend": "normal",
   "score": "2",
   "caveat": "Scale pattern on hand island; sandy base low contrast on orange.",
-  "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status": "KEEP-SPEC",
+  "status_note": "w6 fit: species atlas found",
   "canvas_rule": [
    "n_commf02",
    "n_commf03",
@@ -7620,7 +7747,17 @@
   "rule_cells": [
    "C3",
    "D3"
-  ]
+  ],
+  "w6": {
+   "verdict": "KEEP",
+   "atlases": "p_trndoshan;p_trndoshan02",
+   "cells": "B3,B4,C4,D4",
+   "stage": "S2A",
+   "scale": "0.75",
+   "blend": "overlay",
+   "score": "4",
+   "caveat": "Scale panels stand in for forearm; skin vs cloth unverified."
+  }
  },
  {
   "id": "ALIEN2-4",
@@ -7650,7 +7787,7 @@
   "score": "2",
   "caveat": "Creases and grit on hands; shading reads only close up.",
   "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status_note": "w6: DROP:no body texture",
   "canvas_rule": [
    "n_commf02",
    "n_commf03",
@@ -7665,7 +7802,10 @@
   "rule_cells": [
    "C3",
    "D3"
-  ]
+  ],
+  "w6": {
+   "verdict": "DROP:no body texture"
+  }
  },
  {
   "id": "ALIEN2-5",
@@ -7695,7 +7835,7 @@
   "score": "2",
   "caveat": "Fur strokes on hands only; not a true upper arm.",
   "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status_note": "w6: DROP:species not annotated",
   "canvas_rule": [
    "n_commf02",
    "n_commf03",
@@ -7710,7 +7850,10 @@
   "rule_cells": [
    "C3",
    "D3"
-  ]
+  ],
+  "w6": {
+   "verdict": "DROP:species not annotated"
+  }
  },
  {
   "id": "ALIEN2-6",
@@ -7740,14 +7883,17 @@
   "score": "2",
   "caveat": "Tiny ink marks on hand island; n_commf35 is tattoo-only.",
   "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status_note": "w6: DROP:species not annotated",
   "canvas_rule": [
    "n_commm12"
   ],
   "rule_cells": [
    "C3",
    "D3"
-  ]
+  ],
+  "w6": {
+   "verdict": "DROP:species not annotated"
+  }
  },
  {
   "id": "ALIEN3-1",
@@ -7777,7 +7923,7 @@
   "score": "2",
   "caveat": "Ebranite unconfirmed in KOTOR 2; hand or forearm stand-in.",
   "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status_note": "w6: DROP:species not annotated",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -7811,7 +7957,10 @@
   "rule_cells": [
    "C1",
    "D1"
-  ]
+  ],
+  "w6": {
+   "verdict": "DROP:species not annotated"
+  }
  },
  {
   "id": "ALIEN3-2",
@@ -7841,14 +7990,17 @@
   "score": "1",
   "caveat": "Same black upper-arm band as K131; keep the Zabrak card.",
   "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status_note": "w6: DROP:species not annotated",
   "canvas_rule": [
    "n_commm12"
   ],
   "rule_cells": [
    "C3",
    "D3"
-  ]
+  ],
+  "w6": {
+   "verdict": "DROP:species not annotated"
+  }
  },
  {
   "id": "ALIEN3-3",
@@ -7878,14 +8030,17 @@
   "score": "3",
   "caveat": "Swirl tattoo art needs AI painting; hand island stand-in; no face marks.",
   "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status_note": "w6: DROP:species not annotated",
   "canvas_rule": [
    "n_commm12"
   ],
   "rule_cells": [
    "C3",
    "D3"
-  ]
+  ],
+  "w6": {
+   "verdict": "DROP:species not annotated"
+  }
  },
  {
   "id": "ALIEN3-4",
@@ -7915,7 +8070,7 @@
   "score": "2",
   "caveat": "No shoulder island; flat brand placed on forearm or hand stand-in.",
   "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status_note": "w6: DROP:species not annotated",
   "canvas_rule": [
    "n_commf13",
    "n_commf14",
@@ -7927,7 +8082,10 @@
   "rule_cells": [
    "C1",
    "D1"
-  ]
+  ],
+  "w6": {
+   "verdict": "DROP:species not annotated"
+  }
  },
  {
   "id": "ALIEN3-5",
@@ -7956,8 +8114,8 @@
   "blend": "multiply",
   "score": "2",
   "caveat": "Hands only; body dye and linework invisible at game distance.",
-  "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status": "KEEP-SPEC",
+  "status_note": "w6 fit: species atlas found",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -8001,7 +8159,17 @@
    "B4",
    "C1",
    "D1"
-  ]
+  ],
+  "w6": {
+   "verdict": "KEEP",
+   "atlases": "pmbama01;pmbamc01;pmbamb01",
+   "cells": "C1-D2;B1",
+   "stage": "S2A",
+   "scale": "0.5",
+   "blend": "multiply",
+   "score": "4",
+   "caveat": "Human male torso skin; dye and micro-linework read low contrast"
+  }
  },
  {
   "id": "ALIEN3-6",
@@ -8031,7 +8199,7 @@
   "score": "-",
   "caveat": "Fine linework needs AI painting; invisible at game distance.",
   "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status_note": "w6: DROP:species not annotated",
   "canvas_rule": [
    "n_commf13",
    "n_commf14",
@@ -8046,7 +8214,10 @@
    "C2",
    "D1",
    "D2"
-  ]
+  ],
+  "w6": {
+   "verdict": "DROP:species not annotated"
+  }
  },
  {
   "id": "ALIEN3-7",
@@ -8076,13 +8247,16 @@
   "score": "-",
   "caveat": "Collar cloth is not skin; no neck on any canvas.",
   "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status_note": "w6: DROP:species not annotated",
   "canvas_rule": [
    "n_commf13"
   ],
   "rule_cells": [
    "B1"
-  ]
+  ],
+  "w6": {
+   "verdict": "DROP:species not annotated"
+  }
  },
  {
   "id": "ALIEN3-8",
@@ -8112,7 +8286,7 @@
   "score": "2",
   "caveat": "Low contrast; light cloth only; skip gaps, trims, avoid zones.",
   "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status_note": "w6: DROP:species not annotated",
   "canvas_rule": [
    "n_commf01",
    "n_commf02",
@@ -8156,7 +8330,10 @@
    "B4",
    "C1",
    "D1"
-  ]
+  ],
+  "w6": {
+   "verdict": "DROP:species not annotated"
+  }
  },
  {
   "id": "CZERKA-1",
@@ -10363,7 +10540,7 @@
   "score": "-",
   "caveat": "Scrap-metal battle plate; needs armour base.",
   "status": "SPECIES-LOCKED",
-  "status_note": "needs species body, not human canvas",
+  "status_note": "w6: DROP:species not annotated",
   "canvas_rule": [
    "n_commf06",
    "n_commf08",
@@ -10386,7 +10563,10 @@
   "rule_cells": [
    "A1",
    "B1"
-  ]
+  ],
+  "w6": {
+   "verdict": "DROP:species not annotated"
+  }
  },
  {
   "id": "SYM1-1",

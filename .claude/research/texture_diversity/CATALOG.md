@@ -339,3 +339,33 @@ Texture = `racetex` if set, else `texa` + 2-digit `TextureVar`. TextureVar 0 is 
 - **Each body has ONE variant in vanilla** (Czerka, Republic, TSF, Onderon). Every add-on here creates the first visible variety for those NPCs; spawn-time texture swap (as for commoners) is the delivery route.
 - **Unannotated heavy users (follow-up atlas wave):** `n_darkjlowm01` 105 spawns (largest), `pmbama01` 40 and `pmbamc01` 25 (player-body textures that Czerka NPCs use), plus `n_darkjedim03-05` and `n_darkjedif01` (Dark Jedi robes). Species bodies (gand 64, rakata 54+21, weequay 39, gran 26) are species-locked.
 - Card impact: A8-02/A8-03 should target `n_sithcomm01` (27) and `n_sithcomf01` (22) first; SITHJ1-3 commando recolour has all three `n_sithcom` variants in use (the recoloured one must be a new variant, not an edit of 01-03).
+
+## 13. Gap atlases and species bodies (wave 6, 10-12)
+
+Wave 6 = 11 Haiku annotators on 63 more atlases that real NPCs wear (Dark Jedi, smugglers, swoop gangers, low-poly civilians, player-body textures used by Czerka NPCs, 40+ species bodies) + 4 species-card fitters. **12 of the 32 species-locked cards are now usable (KEEP-SPEC); 20 stay locked.** Data: `w6/out/G1..G11.md`, `w6/fit_merged.tsv`, `w6/exact_gap.tsv`, `tools/merge_w6.py`.
+
+- **Biggest new targets (spawns):** `n_darkjlowm01` 105 (Dark Jedi low male, no face, conf 4), `p_trndoshan`/`02` 54, `n_rakata01-03` 76, `pmbama01` 40 + `pmbamc01` 25 + `pmbamb01` 4 (one human male body, olive utility outfit, **bare torso skin = the only usable human tattoo field**, conf 3), Twi'lek dancers, Rodian x5 (shared layout), Duros x5 (shared layout), Walrusman (Aqualish) guards, Wookiee 02-05 (shared fur map).
+- Every family shares ONE layout across its numbered variants (Rodian 01-05, Duros 01-05, Wookiee 02-05, Dark Jedi m03-05, Walrusman 03/04, Rakata 01-03, Trandoshan 01-02). One zone map + one add-on = N variants.
+- Cell maps are eyeballed at 512 px (conf 2-4); the 2048 px Twi'lek HD textures were viewed downsized. Re-check at full size before painting; T2 masks still needed.
+
+### 13.1 KEEP-SPEC cards (12)
+
+| id | card | atlases | stage | score | caveat |
+|---|---|---|---|---|---|
+| A11-03 | Kalikori cord band on upper arm | n_twidanceb01,n_twiundpca01,n_twiundpcc01 | S1D | 4 | Gold symbols vanish on orange skin; add dark outline |
+| A11-06 | Trandoshan jagannath tally marks | p_trndoshan,p_trndoshan02 | S1D | 4 | Scale versus woven panel unclear; verify at 2048 px |
+| ALIEN1-1 | Twi'lek striped forearm skin | n_twidanceb01,n_twiundpca01,n_twiundpcc01 | S1D | 4 | Dancer B arm has teal stripes; undp arms are peach, check contrast. |
+| ALIEN1-2 | Twi'lek vivid skin tone | n_twidanceb01,n_twiundpca01,n_twiundpcc01 | S1H | 4 | Arm cells only; torso skin keeps original tone. |
+| ALIEN1-3 | Rodian green scale skin | n_rodian01,n_rodian02,n_rodian03,n_rodian04,n_rodian05 | S1D | 4 | C2 scaled arm skin vs armour unconfirmed (G6 OPEN). |
+| ALIEN1-4 | Duros blue-green skin | n_duros01,n_duros02,n_duros03,n_duros04,n_duros05 | S1H | 4 | No isolated forearm; recolours head and hands too. |
+| ALIEN2-1 | Trandoshan dark civilian base | p_trndoshan;p_trndoshan02 | S1H | 4 | Clean cloth at A2, D2; silver straps sit at A3-B3, D3. |
+| ALIEN2-2 | Trandoshan yellow flight suit | p_trndoshan;p_trndoshan02 | S1H | 4 | Dark base reads olive; yellow-green scale panels clash; jacket cells only. |
+| ALIEN2-3 | Trandoshan scale pattern on bare forearm | p_trndoshan;p_trndoshan02 | S2A | 4 | Scale panels stand in for forearm; skin vs cloth unverified. |
+| ALIEN3-5 | Aquellan adult body dye | pmbama01;pmbamc01;pmbamb01 | S2A | 4 | Human male torso skin; dye and micro-linework read low contrast |
+| A11-07 | Aqualish tide-band hem | n_walrusman02,n_walrusman01,n_walrusman04,n_walrusman03 | S1D | 3 | Guard costume bodies, not civilian Ando; orange piping on 02 |
+| ALIEN1-5 | Bith pale skin tone | n_bith01 | S1H | 2 | Arm in D2-D3, low confidence; head and face stay orange. |
+
+### 13.2 Still locked (20) and why
+- **No resolvable body texture** (name found in appearance/UTC but no TPC/TGA with that name in packs or override): Gand `n_gand` 64 spawns, Weequay `n_weeq01` 39, Gran `n_gran01` 26, Quarren, Sullustan. Next step: read the texture name embedded in the MDL (model default) instead of the UTC lookup.
+- **Never looked at:** Gamorrean (`c_gammorean*`, creature-class textures; Exchange guards, 240+ spawns by app row), Devaronian, Zabrak, Togorian, A'mari, Bosph. Needs a creature-texture annotation wave (c_ prefix was excluded from the gap list).
+- **A11-08 Ubese mourning band** is tier C; the Ubese body is `n_sithassn01` (hard plate, conf 2), so it stays locked. **A11-02 Rodian Bomu chest mark** is dropped: Rodian chest is a vest; moving it to the scaled upper arm (`C2`, 40 spawns) would work if the zone is relaxed.

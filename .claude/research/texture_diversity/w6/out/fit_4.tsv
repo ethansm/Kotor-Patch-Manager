@@ -1,0 +1,17 @@
+id	verdict	atlases	cells	stage	scale	blend	score	caveat
+ALIEN3-2	DROP:species not annotated	-	-	-	-	-	0	Gamorrean body unannotated; c_gammorean creature texture only
+ALIEN3-3	DROP:species not annotated	-	-	-	-	-	0	Zabrak listed in missing.md as covered by no atlas
+ALIEN3-4	DROP:species not annotated	-	-	-	-	-	0	Brand card species unresolved; Togorian uncovered
+ALIEN3-5	KEEP	pmbama01;pmbamc01;pmbamb01	C1-D2;B1	S2A	0.5	multiply	4	Human male torso skin; dye and micro-linework read low contrast
+ALIEN3-6	DROP:species not annotated	-	-	-	-	-	0	Bosph star-map card: no Bosph body atlas in G files
+ALIEN3-7	DROP:species not annotated	-	-	-	-	-	0	No A'mari body atlas in G files; species unresolved
+ALIEN3-8	DROP:species not annotated	-	-	-	-	-	0	Gamorrean boar/guard body unannotated; no host atlas
+STRAT1-7	DROP:species not annotated	-	-	-	-	-	0	Gamorrean armour base has no annotated species atlas
+
+## NOTES
+- Read all G1-G11 (they hold the wave-6 gap atlases), missing.md, exact_gap.tsv.
+- Score 0 means no fit (DROP rows only); KEEP scores weigh spawns: pmbama01 40, pmbamc01 25, pmbamb01 4.
+- Gamorrean, Zabrak, Togorian, Devaronian, Ubese: no body atlas (missing.md). Bosph and A'mari: no G file mentions them.
+- ALIEN3-5 uses player male bodies (pmba*); spawn counts from exact_gap.tsv; Aquellans are human, so no species conflict.
+- ALIEN3-5 stage S2A: micro-tattoo linework needs painting, not a flat decal.
+- No MERGE: only one kept card, so no duplicates to fold.

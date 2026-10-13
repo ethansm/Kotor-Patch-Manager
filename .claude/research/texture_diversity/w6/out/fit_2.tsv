@@ -1,0 +1,17 @@
+id	verdict	atlases	cells	stage	scale	blend	score	caveat
+A11-09	DROP:no body texture (n_weeq01 39 spawns unresolved)	-	-	-	-	-	0	Tier C; Weequay body texture unresolved, needs MDL read.
+A11-10	DROP:species not annotated (Devaronian)	-	-	-	-	-	0	Tier C; no Devaronian body atlas exists.
+ALIEN1-1	KEEP	n_twidanceb01,n_twiundpca01,n_twiundpcc01	C1-D1,C2,C2	S1D	0.5,0.25,0.25	multiply	4	Dancer B arm has teal stripes; undp arms are peach, check contrast.
+ALIEN1-2	KEEP	n_twidanceb01,n_twiundpca01,n_twiundpcc01	C1-D1,C2,C2	S1H	0.5,0.25,0.25	overlay	4	Arm cells only; torso skin keeps original tone.
+ALIEN1-3	KEEP	n_rodian01,n_rodian02,n_rodian03,n_rodian04,n_rodian05	C2	S1D	0.25	normal	4	C2 scaled arm skin vs armour unconfirmed (G6 OPEN).
+ALIEN1-4	KEEP	n_duros01,n_duros02,n_duros03,n_duros04,n_duros05	B2-C3+B4-C4	S1H	0.5	overlay	4	No isolated forearm; recolours head and hands too.
+ALIEN1-5	KEEP	n_bith01	D2-D3	S1H	0.25	overlay	2	Arm in D2-D3, low confidence; head and face stay orange.
+ALIEN1-6	DROP:no body texture (n_gand 64 spawns unresolved)	-	-	-	-	-	0	Tier A but Gand body texture unresolved, needs MDL read.
+
+## NOTES
+- Score = spawn tier of listed atlases (sum >=40 -> 5, 25-39 -> 4, 10-24 -> 3, 4-9 -> 2, 1-3 -> 1), minus 1 if the field is unconfirmed. 0 = DROP.
+- Multi-atlas rows: one cells/scale value applies to all listed atlases; otherwise values align by position with atlases.
+- Stacking on Twi'lek arms: ALIEN1-2 recolour (S1H) runs before ALIEN1-1 stripes (S1D).
+- Twi'lek dancer and undp atlases are Twi'lek by filename only; role and skin not checked in-game.
+- Cells come from 512 px annotations (G6, G7, G8, G10); verify on 2048 px before painting.
+- Weequay (n_weeq01), Gand (n_gand) and Devaronian have no body texture (missing.md); re-check after MDL read.

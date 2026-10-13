@@ -1,0 +1,16 @@
+id	verdict	atlases	cells	stage	scale	blend	score	caveat
+A11-01	DROP:species not annotated (Zabrak, no body atlas)	-	-	-	-	-	1	Zabrak has no body atlas; in-game name unchecked
+A11-02	DROP:no bare chest skin (Rodian torso is vest)	-	-	-	-	-	1	Only head and scaled arm C2 are skin; zone would need moving to arm
+A11-03	KEEP	n_twidanceb01,n_twiundpca01,n_twiundpcc01	C1+D1;C2;C2	S1D	0.25	normal	4	Gold symbols vanish on orange skin; add dark outline
+A11-04	DROP:species body unresolved (Gand, n_gand)	-	-	-	-	-	1	n_gand has 64 spawns but no resolvable body texture
+A11-05	DROP:species not annotated (Gamorrean)	-	-	-	-	-	1	No Gamorrean body atlas; only creature-class textures exist
+A11-06	KEEP	p_trndoshan,p_trndoshan02	B4+D4;B4+D4	S1D	0.20	normal	4	Scale versus woven panel unclear; verify at 2048 px
+A11-07	KEEP	n_walrusman02,n_walrusman01,n_walrusman04,n_walrusman03	D3+D4;D3+D4;D4;D4	S1D	0.25	normal	3	Guard costume bodies, not civilian Ando; orange piping on 02
+A11-08	DROP:species not annotated; tier C (Ubese, n_sithassn)	-	-	-	-	-	1	Tier C invented; no Ubese atlas exists
+## NOTES
+- Score = spawn tier of matched atlases (>=40:5, 20-39:4, 10-19:3, 5-9:2, <5:1), minus 1 for confidence 2 or fit mismatch; drops score 1.
+- Cells: order matches atlases; "+" joins cells within one atlas, ";" separates atlases.
+- Spawns (exact_gap.tsv): twidanceb01 13, twiundpca01 12, twiundpcc01 12; trndoshan 37, trndoshan02 17; walrusman02 8, 01 6, 04 5, 03 1.
+- Walrusman is used as Aqualish per brief; no G annotation names Aqualish, so A11-07 is a name-based fit.
+- A11-02 becomes KEEP on Rodian scaled arm C2 (rodian01-04, 40 spawns) if the zone moves to upper arm.
+- Drops are species-based: Zabrak, Gand, Gamorrean, Ubese (missing.md); 5 of 8 cards DROP.
