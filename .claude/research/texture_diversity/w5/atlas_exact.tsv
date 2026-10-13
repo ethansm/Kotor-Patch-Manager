@@ -1,0 +1,52 @@
+atlas	spawns	top_modules
+n_czerkaoff01	30	232tel:6,972cor:4,endor2:4,tatm17aa:4
+n_czerkaoffc01	1	endor1:1
+n_darkjedim01	0	
+n_darkjlowf01	3	745kor:2,222tel:1
+n_darkjmidf01	11	903mal:4,852nih:2,905mal:2,906mal:2
+n_darkjmidm01	52	411dxn:9,903mal:4,905mal:4,rhenvar3:4
+n_dockofd01	0	
+n_jedicounf01	2	711kor:2
+n_jedicounm01	2	711kor:2
+n_jedimemf01	0	
+n_jedimemm01	0	
+n_jedirobem	0	
+n_mandalorian01	29	403dxn:13,851nih:4,303nar:2,402dxn:2
+n_mandalorian02	14	971cor:3,403dxn:2,956cor:2,manstation1:2
+n_mandalorian03	18	956cor:3,971cor:3,yavhide1:3,403dxn:2
+n_medoff01	0	
+n_ond_off	0	
+n_ondsoldm1	0	
+n_r_off_f01	0	
+n_repoff01	7	m26mg:3,kasm22aa:2,955cor:1,rcz1:1
+n_repoff_f01	3	202tel:1,711kor:1,955cor:1
+n_repoff_low_f	0	
+n_repoff_low_m	0	
+n_repofff01	0	
+n_repsold01	27	711kor:5,man_m26ae:5,222tel:4,205tel:3
+n_repsold_f01	4	222tel:1,966cor:1,967cor:1,kasm22aa:1
+n_sithappren01	4	740kor:1,745kor:1,mansith2:1,rhenvar3:1
+n_sithassn01	0	
+n_sithcom01	70	yavtomb1:8,mansithb1:6,sithstation1:6,745kor:5
+n_sithcom02	51	906mal:26,905mal:13,yavtomb1:8,mansithb1:1
+n_sithcom03	78	851nih:34,yavbase1:8,222tel:5,rhenvar1:5
+n_sithcomf01	22	851nih:2,mansith2:2,410dxn:1,745kor:1
+n_sithcomf02	0	
+n_sithcomf03	0	
+n_sithcomm01	27	411dxn:2,745kor:2,manm26ab:2,mansithb1:2
+n_sithcomm02	0	
+n_sithcomm03	0	
+n_sithoff_low_f	0	
+n_sithoff_low_m	0	
+n_sithsoldier01	71	411dxn:22,sithstation2:8,410dxn:6,851nih:6
+n_sithsoldier02	18	lev3:3,411dxn:2,gra802:2,lev1:2
+n_sithsoldier03	35	851nih:8,852nih:6,410dxn:3,lev3:3
+n_sithsoldier_b	0	
+n_tsfcmdr01	5	202tel:1,203tel:1,205tel:1,220tel:1
+n_tsfcmdr_f01	1	201tel:1
+n_tsfoff01	20	220tel:6,221tel:6,201tel:3,202tel:3
+n_tsfoff_f01	6	202tel:3,203tel:1,205tel:1,222tel:1
+pfbc01	0	
+pfbd02	0	
+pmbc01	0	
+pmbd02	0	

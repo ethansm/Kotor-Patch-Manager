@@ -1,0 +1,1733 @@
+module	template	app	texvar	texture	spawns
+001ebo	p_hk048	538	1	c_hk50	1
+001ebo	c_drdastro001	57	1	c_drdastro01	1
+003ebo	p_damhk47	3	1	p_hk47_01	1
+004ebo	g_blkvulkgang005	464	0	p_trndoshan	1
+004ebo	g_blkvulkgang009	464	0	p_trndoshan	17
+004ebo	g_blkvulkgang008	599	0	n_weeq01	8
+004ebo	n_smuggler001	173	1	pmbamc01	1
+005ebo	p_damhk47	3	1	p_hk47_01	1
+012ebo	g_blkvulkgang005	464	0	p_trndoshan	1
+101per	g_assassindrd002	460	0	c_mk1_drd	8
+101per	g_assassindrd003	460	0	c_mk1_drd	1
+101per	g_assassindrd005	460	0	c_mk1_drd	6
+101per	n_commf004	704	1		1
+102per	g_assassindrd002	460	0	c_mk1_drd	9
+102per	g_assassindrd003	460	0	c_mk1_drd	3
+102per	tdroid	584	0	c_mk1_drd02	1
+102per	g_assassindrd007	460	0	c_mk1_drd	7
+102per	g_assassindrd006	583	0	c_mk1_drd01	6
+102per	g_assassindrd005	583	0	c_mk1_drd01	2
+102per	g_assassindrd008	460	0	c_mk1_drd	5
+102per	n_commkidf001	452	1	pmbamc01	1
+102per	g_assassindrd009	383	0	n_astro03	4
+103per	g_assassindrd002	460	0	c_mk1_drd	4
+103per	g_assassindrd005	583	0	c_mk1_drd01	2
+103per	g_assassindrd009	383	0	n_astro03	4
+103per	g_floatingmin001	630	0		4
+103per	g_assassindrd006	583	0	c_mk1_drd01	1
+103per	g_droid_mine_003	461	1	c_mk2_drd	1
+103per	g_droid_mine_004	461	1	c_mk2_drd	1
+103per	g_droid_mine_005	461	1	c_mk2_drd	1
+103per	p_hk048	538	1	c_hk50	1
+103per	g_droid_mine_006	461	1	c_mk2_drd	1
+104per	p_kreia001	455	1		1
+104per	n_darthsion001	458	1		1
+105per	g_assassindrd002	460	0	c_mk1_drd	2
+105per	c_drdspyder001	461	1	c_mk2_drd	5
+105per	g_turretbl010	657	0		4
+105per	g_assassindrd007	584	0	c_mk1_drd02	6
+105per	g_assassindrd005	583	0	c_mk1_drd01	3
+105per	g_assassindrd009	383	0	n_astro03	1
+106per	g_assassindrd002	460	0	c_mk1_drd	8
+106per	g_assassindrd003	460	0	c_mk1_drd	1
+106per	c_drdastro003	57	1	c_drdastro01	1
+107per	g_sithtroop009	528	0	n_darkjlowm01	4
+152har	c_drdprot001	63	1		1
+152har	c_drdastro002	57	1	c_drdastro01	3
+152har	g_assassindrd010	62	0		1
+154har	n_darthsion001	458	1		1
+201tel	n_repsold005	487	1	n_tsfcmdr_f01	1
+201tel	iz01_citizen_m1	279	1		1
+201tel	c_ithorian001	72	1		1
+201tel	n_travg	374	1	n_duros03	1
+201tel	n_travm	423	1	n_commm01	1
+201tel	c_drdith	234	1	c_drdprot03	1
+201tel	c_ithorian003	243	1	c_ithorian02	1
+201tel	201_tsf_ith	481	1	n_tsfoff01	1
+201tel	n_tsfoff002	481	1	n_tsfoff01	2
+201tel	n_duros001	24	1	n_duros01	1
+201tel	c_ithorian005	72	1		1
+201tel	n_duros002	374	1	n_duros03	1
+201tel	c_drdprot002	63	1		1
+201tel	n_czerkaguard002	377	1	n_czerkaoff01	1
+201tel	n_fatcomf001	423	1	n_commm01	1
+201tel	n_fatcomf002	188	1	n_commf01	1
+201tel	n_travf001	188	1	n_commf01	2
+201tel	n_travg001	24	1	n_duros01	1
+201tel	per_miner_002	17	1	n_commm01	1
+202tel	c_drdprot001	63	1		1
+202tel	n_repoff003	484	1	n_tsfoff_f01	1
+202tel	202_rep_off	367	1	n_repoff_f01	1
+202tel	n_repoff001	625	1	n_tsfcmdr01	1
+202tel	n_repoff002	481	1	n_tsfoff01	1
+202tel	n_dendis	24	1	n_duros01	1
+202tel	n_samhan	374	1	n_duros03	1
+202tel	n_telf01	610	1	n_commf01	2
+202tel	n_tsfgm	481	1	n_tsfoff01	2
+202tel	n_tsfgf	484	1	n_tsfoff_f01	1
+202tel	n_fatcomf001	484	1	n_tsfoff_f01	1
+202tel	sullustan	601	1	n_sullustan01	1
+202tel	203_merc002	156	1	pmbamb01	1
+202tel	203_merc01	150	1	pmbama01	1
+202tel	n_telm01s	594	1	n_commm01	2
+202tel	wk_telpilot1	39	1	n_rodian01	1
+202tel	wk_telpilot2	596	1	n_commm01	1
+203tel	n_tsfoff002	484	1	n_tsfoff_f01	1
+203tel	n_tsfoff001	481	1	n_tsfoff01	1
+203tel	n_repoff001	625	1	n_tsfcmdr01	1
+203tel	n_duros001	556	1	n_opochano01	1
+203tel	n_b4d4	507	1	n_czerka_droid	1
+203tel	n_czerkaoff001	554	1	n_commf01	1
+203tel	n_exthgd001	258	1	n_rodian04	1
+203tel	n_telm02s	193	1	n_commm01	2
+203tel	n_telf02s	590	1	n_commf01	1
+203tel	n_telf02	189	1	n_commf01	1
+203tel	n_telf01	590	1	n_commf01	1
+203tel	n_telm03	593	1	n_commm01	1
+203tel	n_telf03	612	1	n_commf01	1
+203tel	n_telf01s	590	1	n_commf01	1
+203tel	n_telm01	596	1	n_commm01	1
+203tel	c_ithorian001	243	1	c_ithorian02	1
+203tel	203_batono	616	1	n_commm01	1
+203tel	203_harra	679	1	n_czerkaoff01	1
+203tel	203_moza	243	1	c_ithorian02	1
+204tel	c_ithorian001	72	1		5
+204tel	c_ithorian002	499	1	n_chodo	1
+204tel	c_ithorian003	72	1		1
+204tel	n_telf03	185	1	n_commf01	2
+204tel	n_telf01s	610	1	n_commf01	1
+204tel	n_telf01	586	1	n_commf01	1
+204tel	203_moza	243	1	c_ithorian02	1
+204tel	n_commf001	14	1	n_commf01	1
+204tel	n_telf02	590	1	n_commf01	1
+204tel	ond_dip	472	1		1
+204tel	ith_plant	244	1	c_ithorian03	1
+204tel	corteldc	193	0	n_commm01	1
+205tel	carth	694	1		1
+205tel	grenn	625	1	n_tsfcmdr01	1
+205tel	tsfm	481	1	n_tsfoff01	1
+205tel	tsff	484	1	n_tsfoff_f01	1
+205tel	tsfm001	355	1	n_repsold01	2
+205tel	tsfm002	597	1	n_repsold01	1
+207tel	g_gam_luxa	337	0		2
+207tel	lalah	498	1	n_lala_xua01	1
+207tel	c_drdbar	235	1	c_drdprot04	1
+207tel	n_telm01s	17	1	n_commm01	3
+207tel	n_telm03s	424	1	n_commm01	2
+207tel	n_telf01s	612	1	n_commf01	1
+207tel	n_czerkaoff002	558	1	n_czerkaoff01	1
+207tel	202tel_bith4	12	1	n_bith01	1
+207tel	202tel_bith1	12	1	n_bith01	1
+207tel	202tel_bith3	12	1	n_bith01	1
+207tel	tar02_musictwi21	366	1	n_twidancec01	1
+207tel	n_swpmc	416	1	n_commm01	1
+207tel	n_mebla	189	1	n_commf01	1
+207tel	g_exlt	191	0	n_commm01	1
+207tel	g_exlta	418	0	n_walrusman02	1
+207tel	g_exthgr	256	0	n_rodian02	1
+207tel	203_doton	449	1	n_commm01	1
+207tel	203_ramana	47	1	n_twidancea01	1
+207tel	rep_sold	38	1	n_repsold01	1
+207tel	rep_sold001	471	1		1
+207tel	n_commf001	14	1	n_commf01	1
+207tel	n_fatcomm001	596	1	n_commm01	1
+207tel	n_walrusman001	420	1	n_walrusman04	1
+207tel	n_fatcomf001	570	1	n_commm01	1
+207tel	n_commm001	622	1	n_commf01	1
+207tel	n_commm002	620	1	n_commf01	1
+207tel	n_commf002	14	1	n_commf01	1
+207tel	n_fatcomm002	596	1	n_commm01	1
+208tel	g_exrep	188	0	n_commf01	1
+208tel	n_slusk	537	1	n_quarren01	1
+208tel	g_exlta	418	0	n_walrusman02	1
+208tel	g_exlt	191	0	n_commm01	1
+208tel	g_exthg	190	0	n_commm01	1
+208tel	g_exthgr	256	0	n_rodian02	1
+208tel	g_exthga	258	0	n_rodian04	1
+208tel	c_drdbdygrd	236	1	c_drdwar02	2
+208tel	c_ithorian004	243	1	c_ithorian02	1
+208tel	g_turretc	657	0		2
+209tel	n_b4d4	507	1	n_czerka_droid	1
+209tel	n_czerkaoff001	554	1	n_commf01	1
+209tel	n_203_t1n1	232	1	c_drdastro03	1
+209tel	czerka_employee	18	0	n_czerkaoff01	1
+209tel	203_merc1	17	1	n_commm01	1
+209tel	203_merc2	591	1	n_commm01	1
+209tel	203_merc3	596	1	n_commm01	1
+209tel	czerka_employ001	590	0	n_commf01	1
+209tel	g_csd003	195	0	n_czerkaoff01	1
+209tel	g_csd004	18	0	n_czerkaoff01	1
+209tel	c_drdastro001	57	1	c_drdastro01	1
+220tel	tsf_sold	486	1	n_tsfcmdr01	1
+220tel	tsf_sold001	479	1	n_tsfoff01	3
+220tel	tsf_sold002	481	1	n_tsfoff01	3
+221tel	g_sithass002	530	1	n_darkjlowm01	1
+221tel	n_tsfoff002	481	1	n_tsfoff01	1
+221tel	n_tsfoff003	481	1	n_tsfoff01	1
+221tel	g_sithass004	530	1	n_darkjlowm01	1
+221tel	g_sithass003	530	1	n_darkjlowm01	1
+221tel	g_sithass005	530	1	n_darkjlowm01	1
+221tel	g_sithass006	530	1	n_darkjlowm01	1
+221tel	n_tsfcmdr001	625	1	n_tsfcmdr01	1
+221tel	n_tsfoff001	481	1	n_tsfoff01	4
+222tel	sith_door	510	0	n_sithcom03	1
+222tel	g_dark_app01f001	525	0	n_darkjlowf01	1
+222tel	n_sithcmndo001	510	1	n_sithcom03	4
+222tel	g_sithass002	530	1	n_darkjlowm01	1
+222tel	rep_nav	597	1	n_repsold01	1
+222tel	rep_officer	674	1		1
+222tel	rep_nav003	597	1	n_repsold01	3
+222tel	rep_nav004	364	1	n_repsold_f01	1
+222tel	rep_nav005	675	1		1
+222tel	wk_telpilotmand	35	1	n_mandalorian01	1
+222tel	wk_telpilottsf	484	1	n_tsfoff_f01	1
+231tel	g_mandalor002	17	0	n_commm01	4
+231tel	c_cannok1	512	1	c_cann01	9
+231tel	g_mandalor007	591	0	n_commm01	1
+231tel	c_ithorian001	72	1		2
+231tel	g_mandalor004	592	0	n_commm01	2
+231tel	g_mandalor008	17	0	n_commm01	1
+231tel	c_231drds_c	490	1	c_drdtelsentry	1
+231tel	c_231drds001	490	1	c_drdtelsentry	1
+231tel	merc_rep1	17	0	n_commm01	1
+231tel	merc_rep2	612	0	n_commf01	1
+231tel	merc_rep3	592	0	n_commm01	1
+232tel	g_drdtelmil004	489	0	c_drdtelmil	5
+232tel	g_trttel006	182	0		1
+232tel	g_trttel007	182	0		1
+232tel	g_trttel008	182	0		1
+232tel	g_trttel009	182	0		1
+232tel	n_czerkac001	18	1	n_czerkaoff01	3
+232tel	n_czerkac002	195	1	n_czerkaoff01	2
+232tel	g_drdtelmil001	489	0	c_drdtelmil	6
+232tel	g_drdtelmil002	489	0	c_drdtelmil	4
+232tel	g_drdtelmil003	489	0	c_drdtelmil	6
+232tel	g_trttel002	182	0		4
+232tel	g_drdtelmil005	489	0	c_drdtelmil	2
+232tel	c_drdmkfour001	557	1		1
+232tel	g_trttel010	182	0		4
+232tel	tdroid001	489	0	c_drdtelmil	1
+232tel	tdroid002	489	0	c_drdtelmil	1
+232tel	n_salvage	377	1	n_czerkaoff01	1
+232tel	c_drdassassin001	538	1	c_hk50	1
+233tel	c_231drds003	490	1	c_drdtelsentry	1
+233tel	g_assassindrd019	56	0		1
+233tel	g_assassindrd020	56	0		1
+233tel	g_mandalor010	727	0	n_twidancec01	1
+233tel	g_mandalor012	146	0	pmbama01	1
+233tel	g_mandalor013	579	0	pmbama01	1
+233tel	g_mandalor006	164	0	pmbamb01	1
+233tel	g_mandalor011	173	0	pmbamc01	1
+233tel	g_mandalor014	140	0	pmbama01	5
+233tel	g_mandalor015	171	0	pmbamc01	2
+233tel	g_mandalor016	155	0	pmbamb01	2
+261tel	n_hk50_002	538	1	c_hk50	1
+261tel	n_hk50_003	538	1	c_hk50	1
+261tel	n_hk50_004	538	1	c_hk50	1
+261tel	p_baodur001	451	1		1
+262tel	p_handmaiden006	672	1		1
+262tel	n_jedicounf001	629	1		1
+262tel	p_handmaiden003	672	1		1
+262tel	p_handmaiden004	672	1		1
+262tel	p_handmaiden011	454	1		1
+262tel	p_handmaiden005	672	1		1
+262tel	p_handmaiden007	672	1		1
+298tel	g_drdtelmil001	489	0	c_drdtelmil	2
+298tel	g_drdtelmil002	489	0	c_drdtelmil	3
+298tel	g_drdtelmil003	489	0	c_drdtelmil	3
+298tel	g_drdtelsentr001	490	0	c_drdtelsentry	7
+298tel	g_trttel002	182	0		2
+298tel	g_trttel001	182	0		2
+298tel	c_drdmouse53	574	1		1
+298tel	g_probedroid002	62	0		1
+298tel	droidtarget	63	1		1
+298tel	n_hk50_010	538	1	c_hk50	1
+298tel	n_hk50_009	538	1	c_hk50	1
+298tel	n_hk50_011	538	1	c_hk50	1
+298tel	n_hk50_002	538	1	c_hk50	1
+298tel	n_hk50_003	538	1	c_hk50	1
+298tel	n_hk50_004	538	1	c_hk50	1
+298tel	droidtarget02	63	1		1
+298tel	droidtarget03	63	1		1
+299tel	g_trttel002	182	0		4
+299tel	n_hk50_004	538	1	c_hk50	4
+299tel	n_hk50_002	538	1	c_hk50	8
+299tel	n_hk50_005	538	1	c_hk50	7
+299tel	n_hk50_006	538	1	c_hk50	19
+299tel	n_hk51_002	539	1	c_hk51	10
+299tel	n_hk51_008	539	1	c_hk51	10
+299tel	n_hk50_007	538	1	c_hk50	1
+299tel	n_hk50_003	538	1	c_hk50	1
+299tel	n_hk50_008	538	1	c_hk50	1
+299tel	n_hk50_009	538	1	c_hk50	1
+299tel	n_hk50_010	538	1	c_hk50	1
+299tel	n_hk50_011	538	1	c_hk50	1
+299tel	n_hk50_012	538	1	c_hk50	1
+299tel	n_hk50_013	538	1	c_hk50	1
+299tel	n_hk50_014	538	1	c_hk50	1
+299tel	n_hk50_015	538	1	c_hk50	1
+299tel	n_hk50_016	538	1	c_hk50	1
+299tel	n_hk50_017	538	1	c_hk50	1
+299tel	n_hk51_006	539	1	c_hk51	1
+301nar	c_drdprot001	63	1		1
+301nar	n_duros001	601	1	n_sullustan01	1
+301nar	n_fatcomm001	190	1	n_commm01	1
+301nar	n_smuggler001	173	1	pmbamc01	1
+301nar	n_duros002	373	1	n_duros02	1
+301nar	n_commm001	596	1	n_commm01	2
+301nar	g_blkvulkgang003	464	0	p_trndoshan	1
+301nar	n_commf001	194	1	n_commm01	1
+301nar	c_drdastro002	57	1	c_drdastro01	1
+301nar	n_walrusman001	420	1	n_walrusman04	1
+301nar	g_blkvulkgang012	599	0	n_weeq01	1
+301nar	g_blkvulkgang011	464	0	p_trndoshan	1
+301nar	n_commf003	349	1	n_commm01	1
+301nar	c_drdprot003	233	1	c_drdprot02	1
+301nar	n_walrusman002	49	1	n_walrusman01	1
+301nar	n_twilekm001	681	1	n_commm01	1
+301nar	n_twilekf003	726	1	n_commf01	1
+301nar	n_duros010	373	1	n_duros02	1
+301nar	n_rodian002	450	1	n_commm01	1
+301nar	n_rodian003	256	1	n_rodian02	1
+301nar	g_thug003	256	0	n_rodian02	1
+301nar	n_gran001	565	1	n_gran01	1
+301nar	n_weequay002	464	1	p_trndoshan	1
+301nar	n_twilekm002	619	1	n_commm01	1
+301nar	g_blkvulkgang004	599	0	n_weeq01	1
+301nar	n_twilekm003	661	1		1
+301nar	n_trandobrn001	599	1	n_weeq01	2
+301nar	n_commf004	592	1	n_commm01	1
+301nar	n_commm003	616	1	n_commm01	1
+301nar	n_commm005	17	1	n_commm01	2
+301nar	n_commm006	191	1	n_commm01	1
+301nar	n_commm007	190	1	n_commm01	2
+301nar	g_thug005	465	0	p_trndoshan02	1
+301nar	chano	556	1	n_opochano01	1
+301nar	g_blkvulkgang015	464	0	p_trndoshan	1
+301nar	g_blkvulkgang016	464	0	p_trndoshan	1
+302nar	n_fatcomm010	595	1	n_commm01	1
+302nar	n_fatcomm011	185	1	n_commf01	1
+302nar	n_fatcomm007	590	1	n_commf01	1
+302nar	n_smuggler002	596	1	n_commm01	1
+302nar	n_fatcomm005	193	1	n_commm01	2
+302nar	g_hidbekgang002	147	0	pmbama01	2
+302nar	g_blkvulkgang006	465	0	p_trndoshan02	1
+302nar	g_blkvulkgang004	240	0	c_gammorean02	1
+302nar	g_blkvulkgang007	240	0	c_gammorean02	9
+302nar	g_blkvulkgang005	68	0		8
+302nar	g_thug006	537	0	n_quarren01	1
+302nar	n_fatcomm009	603	1	n_commm01	1
+302nar	n_fatcomm008	680	1	n_commm01	1
+302nar	n_fatcomm002	423	1	n_commm01	1
+302nar	g_hidbekgang003	138	0	pmbama01	16
+302nar	g_hidbekgang004	142	0	pmbama01	1
+302nar	n_fatcomm006	349	1	n_commm01	2
+302nar	n_commf001	609	1	n_commf01	1
+302nar	g_hidbekgang005	147	0	pmbama01	4
+302nar	n_swoopgang001	68	1		1
+302nar	n_swoopgang002	68	1		1
+302nar	n_fatcomm012	615	1	n_commm01	2
+302nar	n_fatcomm016	594	1	n_commm01	1
+302nar	n_fatcomm017	192	1	n_commm01	1
+302nar	n_fatcomm019	617	1	n_commm01	1
+302nar	n_fatcomm020	591	1	n_commm01	2
+302nar	n_fatcomm021	596	1	n_commm01	1
+302nar	g_blkvulkgang009	241	0	c_gammorean03	1
+302nar	n_commf003	15	1	n_commkidf01	1
+302nar	cordrgrecip	24	0	n_duros01	1
+302nar	bloodfromstone1	596	1	n_commm01	1
+303nar	c_drdprot003	233	1	c_drdprot02	1
+303nar	c_drdprot002	233	1	c_drdprot02	1
+303nar	g_veerkal003	661	0		1
+303nar	c_hutt001	229	1	c_hutt03	1
+303nar	c_khounda001	75	1		2
+303nar	g_blkvulkgang009	565	0	n_gran01	1
+303nar	c_ithorian001	72	1		1
+303nar	g_blkvulkgang006	374	0	n_duros03	1
+303nar	g_blkvulkgang007	373	0	n_duros02	1
+303nar	g_blkvulkgang008	373	0	n_duros02	1
+303nar	n_smuggler001	592	1	n_commm01	1
+303nar	g_thug004	419	0	n_walrusman03	1
+303nar	g_thug003	565	0	n_gran01	1
+303nar	n_bith001	12	1	n_bith01	1
+303nar	c_drdprobe001	233	1	c_drdprot02	1
+303nar	vogga_sullustan	12	1	n_bith01	1
+303nar	twi_servant	270	1	n_twidanceb01	1
+303nar	warehouse_droid	233	1	c_drdprot02	1
+303nar	droid_maint	555	1		8
+303nar	comm_droid	560	1		1
+303nar	b4r5	63	1		1
+303nar	tran_jekk	465	1	p_trndoshan02	1
+303nar	rod_jekk	565	1	n_gran01	1
+303nar	mand_lead	352	1	n_mandalorian03	1
+303nar	mand	35	1	n_mandalorian01	2
+303nar	droid_maint001	555	1		1
+303nar	b4d4	507	1	n_czerka_droid	1
+303nar	t1n1	232	1	c_drdastro03	1
+303nar	c_drddock	63	1		2
+304nar	g_thug007	570	0	n_commm01	1
+304nar	g_thug004	570	0	n_commm01	3
+304nar	g_thug006	569	0	n_gand	31
+304nar	n_twilekf001	270	1	n_twidanceb01	2
+304nar	g_thug008	599	0	n_weeq01	6
+304nar	n_twilekf002	365	1	n_twilekmd01	1
+304nar	g_blkvulkgang007	264	0	n_swoopgang04	3
+304nar	n_quarren002	537	1	n_quarren01	1
+304nar	g_thug005	464	0	p_trndoshan	4
+304nar	g_thug010	465	0	p_trndoshan02	5
+304nar	g_blkvulkgang009	262	0	n_swoopgang02	4
+304nar	g_thug011	570	0	n_commm01	3
+304nar	g_thug012	569	0	n_gand	8
+304nar	g_thug013	569	0	n_gand	3
+304nar	gandwar	569	0	n_gand	1
+304nar	g_thug014	599	0	n_weeq01	1
+304nar	p_kreia001	455	1		1
+304nar	n_twilekf003	366	1	n_twidancec01	2
+304nar	n_sullustan002	601	1	n_sullustan01	1
+304nar	g_gandwar	569	0	n_gand	1
+304nar	g_thug009	599	0	n_weeq01	1
+304nar	g_blkvulkgang005	240	0	c_gammorean02	1
+304nar	304_aqua1	418	0	n_walrusman02	5
+304nar	304_aqua2	420	0	n_walrusman04	2
+305nar	g_darkjedi002	459	0		32
+305nar	c_khounda003	75	1		1
+305nar	c_khounda001	75	1		1
+305nar	c_khounda002	75	1		1
+305nar	c_khounda004	75	1		3
+305nar	g_darkjedi003	459	0		1
+305nar	g_darkjedi004	459	0		1
+305nar	n_quarren002	537	1	n_quarren01	1
+306nar	n_trandogrn001	465	1	p_trndoshan02	1
+306nar	n_trandogrn002	464	1	p_trndoshan	1
+306nar	n_twilekf001	682	1	llk_dahnisb01	1
+306nar	g_thug006	565	0	n_gran01	1
+306nar	n_commm004	188	1	n_commf01	1
+306nar	n_commm002	193	1	n_commm01	1
+306nar	g_sennivek001	24	1	n_duros01	1
+306nar	g_blkvulkgang015	565	0	n_gran01	1
+306nar	c_drdprot002	63	1		1
+306nar	n_fatcomm002	193	1	n_commm01	1
+306nar	g_thug007	374	0	n_duros03	1
+306nar	n_duros003	24	1	n_duros01	1
+306nar	n_duros006	373	1	n_duros02	1
+306nar	g_blkvulkgang013	465	0	p_trndoshan02	1
+306nar	n_duros009	464	1	p_trndoshan	1
+306nar	twilekdomo	606	1	n_commm01	1
+306nar	dancer	611	1	n_commf01	1
+306nar	twilekdancer	366	1	n_twidancec01	1
+306nar	twilekdancer2	621	1	n_commf01	1
+306nar	n_commf002	328	1	n_alien03_low	1
+306nar	n_gran001	565	1	n_gran01	1
+306nar	n_trandobrn001	465	1	p_trndoshan02	1
+306nar	n_weequay002	599	1	n_weeq01	1
+306nar	n_quarren002	537	1	n_quarren01	1
+306nar	n_weequay003	599	1	n_weeq01	1
+306nar	n_gran002	565	1	n_gran01	1
+306nar	n_quarren004	329	1	n_alien02_low	1
+306nar	n_quarren003	537	1	n_quarren01	1
+306nar	n_hitman	565	0	n_gran01	1
+306nar	n_twilekf002	47	1	n_twidancea01	1
+307nar	n_trandogrn001	465	1	p_trndoshan02	1
+307nar	n_trandogrn002	464	1	p_trndoshan	1
+307nar	n_twilekf001	270	1	n_twidanceb01	1
+307nar	g_thug006	565	0	n_gran01	1
+307nar	n_commm004	188	1	n_commf01	1
+307nar	n_commm002	193	1	n_commm01	1
+307nar	g_sennivek001	24	1	n_duros01	1
+307nar	g_blkvulkgang015	565	0	n_gran01	1
+307nar	c_drdprot002	63	1		1
+307nar	n_fatcomm002	193	1	n_commm01	1
+307nar	g_thug007	374	0	n_duros03	1
+307nar	n_duros003	24	1	n_duros01	1
+307nar	n_duros006	373	1	n_duros02	1
+307nar	g_blkvulkgang013	465	0	p_trndoshan02	1
+307nar	n_duros009	464	1	p_trndoshan	1
+307nar	twilekdomo	606	1	n_commm01	1
+307nar	dancer	611	1	n_commf01	1
+307nar	twilekdancer	366	1	n_twidancec01	1
+307nar	twilekdancer2	621	1	n_commf01	1
+307nar	n_commf002	328	1	n_alien03_low	1
+307nar	n_gran001	565	1	n_gran01	1
+307nar	n_trandobrn001	465	1	p_trndoshan02	1
+307nar	n_weequay002	599	1	n_weeq01	1
+307nar	n_quarren002	537	1	n_quarren01	1
+307nar	n_weequay003	599	1	n_weeq01	1
+307nar	n_gran002	565	1	n_gran01	1
+307nar	n_quarren004	329	1	n_alien02_low	1
+307nar	n_quarren003	537	1	n_quarren01	1
+350nar	n_azanti002	632	1	n_duros05	1
+350nar	n_azanti001	631	1	n_duros04	10
+350nar	n_gand001	569	1	n_gand	9
+350nar	n_hk50_003	538	1	c_hk50	6
+350nar	n_duros001	601	1	n_sullustan01	1
+350nar	c_drdprot001	63	1		1
+351nar	c_drdsentry002	453	1		1
+351nar	c_drdsentry001	453	1		1
+351nar	n_calonord002	660	1		1
+351nar	c_drdmkone002	555	1		11
+351nar	g_assassindrd009	383	0	n_astro03	3
+351nar	g_drdtelmil002	453	0		5
+351nar	g_drdtelmil003	453	0		4
+351nar	g_drdtelmil001	453	0		1
+351nar	g_turretbl010	183	0		2
+351nar	c_drdastro001	57	1	c_drdastro01	1
+351nar	g_trttel002	182	0		8
+351nar	command_center	555	1		1
+351nar	c_drdastro002	57	1	c_drdastro01	1
+351nar	c_drdmkone004	555	1		3
+351nar	command_right	555	1		1
+351nar	g_trttel003	182	0		6
+351nar	c_drdastro003	231	1	c_drdastro02	1
+352nar	n_duros001	569	1	n_gand	1
+352nar	n_twilekf001	652	1	n_twiassoga01	1
+352nar	n_twilekf002	653	1	n_twiassogb01	1
+352nar	n_duros002	632	1	n_duros05	1
+352nar	p_zaalbar001	511	1	p_hanharr01	1
+352nar	p_hk048	538	1	c_hk50	1
+352nar	n_duros003	569	1	n_gand	2
+352nar	p_g0t001	453	1		1
+352nar	n_hk50_002	538	1	c_hk50	2
+401dxn	c_maalraas1	497	1	c_maal01	5
+401dxn	c_cannok1	512	1	c_cann01	15
+401dxn	tdroid	56	0		1
+401dxn	tdroid2	56	0		1
+401dxn	tdroid3	56	0		1
+401dxn	c_cannok_cs	512	1	c_cann01	3
+401dxn	n_duros001	632	1	n_duros05	1
+401dxn	n_duros002	631	1	n_duros04	2
+401dxn	c_boma1	514	1	c_boma_v_d	1
+402dxn	c_cannok002	512	1	c_cann01	1
+402dxn	c_cannok005	512	1	c_cann01	1
+402dxn	npc_kumus	35	1	n_mandalorian01	1
+402dxn	npc_kelborn	351	1	n_mandalorian02	1
+402dxn	c_zakkeg002	605	1		1
+402dxn	c_cannok004	512	1	c_cann01	1
+402dxn	c_boma002	514	1	c_boma_v_d	3
+402dxn	c_cannok1	512	1	c_cann01	8
+402dxn	c_maalraas1	497	1	c_maal01	11
+402dxn	c_boma1	514	1	c_boma_v_d	4
+402dxn	c_boma003	514	1	c_boma_v_d	1
+402dxn	c_maalraas002	497	1	c_maal01	1
+402dxn	dead_mandy	35	1	n_mandalorian01	1
+402dxn	boma_young_bc	513	1	c_boma_d	1
+402dxn	col_tobin	602	1		1
+402dxn	cs_capt	494	1		1
+402dxn	npc_2scout002	17	1	n_commm01	1
+402dxn	c_cannok003	512	1	c_cann01	1
+402dxn	p_hk048	538	1	c_hk50	1
+402dxn	p_hk049	538	1	c_hk50	1
+402dxn	p_hk050	538	1	c_hk50	1
+403dxn	g_gate_guard	351	0	n_mandalorian02	1
+403dxn	zuka	35	1	n_mandalorian01	1
+403dxn	kex	35	1	n_mandalorian01	1
+403dxn	g_mandalore	462	0	p_mandalorebb01	1
+403dxn	npc_xarga	352	1	n_mandalorian03	1
+403dxn	npc_davrel	35	1	n_mandalorian01	1
+403dxn	npc_mandy_sarge	351	1	n_mandalorian02	1
+403dxn	npc_bralor	352	1	n_mandalorian03	1
+403dxn	npc_tagren	35	1	n_mandalorian01	1
+403dxn	g_gate_guard001	35	0	n_mandalorian01	1
+403dxn	n_mandalorian001	35	1	n_mandalorian01	1
+403dxn	n_mandalorian002	35	1	n_mandalorian01	2
+403dxn	f_man_guide	35	1	n_mandalorian01	1
+403dxn	n_mand_train002	35	1	n_mandalorian01	4
+403dxn	npc_tobin	602	1		1
+404dxn	utildroid_mk2	577	1		1
+404dxn	utildroid_mk1	560	1		16
+404dxn	utildroid_mk3	559	1		1
+410dxn	n_sithsoldier001	43	1	n_sithcomm01	1
+410dxn	c_boma2	513	1	c_boma_d	8
+410dxn	g_sithtroop060	28	0	n_sithsoldier01	2
+410dxn	g_sithtroop003	261	0	n_sithsoldier03	2
+410dxn	g_elite_ramp_1	28	0	n_sithsoldier01	1
+410dxn	npc_xarga	352	1	n_mandalorian03	1
+410dxn	g_elite_ramp_002	261	0	n_sithsoldier03	1
+410dxn	g_wardroid005	239	1	c_drdwar05	4
+410dxn	g_wardroid006	239	1	c_drdwar05	1
+410dxn	g_wardroid007	239	1	c_drdwar05	1
+410dxn	g_sithcomm002	42	0	n_sithcomf01	1
+410dxn	g_darkjedi006	564	0		2
+410dxn	n_sithsoldier002	28	1	n_sithsoldier01	1
+410dxn	g_darkjedi002	536	0	n_darkjmidm01	1
+410dxn	g_turretbl009	182	0		3
+410dxn	g_turretbl010	182	0		6
+410dxn	g_sithtroop004	28	0	n_sithsoldier01	2
+411dxn	g_sithtroop003	28	0	n_sithsoldier01	15
+411dxn	g_wardroid_sith	239	1	c_drdwar05	4
+411dxn	tdroid001	239	0	c_drdwar05	1
+411dxn	g_darkjedi004	564	0		1
+411dxn	ritual_follower	564	0		3
+411dxn	sith_captain	43	0	n_sithcomm01	1
+411dxn	sith_warrior	536	0	n_darkjmidm01	1
+411dxn	sith_warrior001	536	0	n_darkjmidm01	1
+411dxn	sith_cs	28	0	n_sithsoldier01	2
+411dxn	demo_grenade	28	0	n_sithsoldier01	2
+411dxn	g_darkjedi01_e3	536	0	n_darkjmidm01	7
+411dxn	npc_xarga	352	1	n_mandalorian03	1
+411dxn	g_assassindrd010	64	0		1
+411dxn	med_droid	64	0		1
+411dxn	boma_train	514	1	c_boma_v_d	2
+411dxn	troop_beast_1	44	0	n_sithsoldier02	1
+411dxn	troop_beast_2	44	0	n_sithsoldier02	1
+411dxn	g_sithtroop002	28	0	n_sithsoldier01	3
+411dxn	g_sithcomm003	43	0	n_sithcomm01	1
+501ond	npc_worker	26	1	n_fatcomm01	1
+501ond	npc_margar	49	1	n_walrusman01	1
+501ond	npc_port_master	471	0		1
+501ond	npc_beast_rider	591	1	n_commm01	1
+501ond	npc_cp_guard	607	0		1
+501ond	npc_gen_soldier	607	1		2
+501ond	c_tame_boma1	514	1	c_boma_v_d	2
+501ond	c_boma_fr	513	1	c_boma_d	1
+501ond	iz01_citizen_m1	475	1		3
+501ond	iz01_citizen_f1	503	1		2
+501ond	c_cannok_tame	512	1	c_cann01	1
+501ond	npc_talia	524	1	n_talia	1
+501ond	npc_kavar	648	1	n_commm01	1
+502ond	npc_anda	504	0		1
+502ond	npc_gelesi	492	0		1
+502ond	npc_ond_soldier	607	1		5
+502ond	g_sithcomm003	494	0		1
+502ond	n_commkidf001	15	1	n_commkidf01	1
+502ond	n_commkidm001	16	1	n_commkidm01	1
+502ond	mp_crowd	472	1		2
+502ond	npc_crowd_vaklu	476	1		2
+502ond	npc_gegorran	147	1	pmbama01	1
+502ond	npc_gsoldier	607	1		1
+502ond	npc_psoldier	470	1		1
+502ond	npc_cp_replace	466	1		1
+502ond	npc_bostuco	496	0		1
+502ond	npc_ponlar	190	1	n_commm01	1
+502ond	npc_terlyn	502	1		1
+502ond	npc_tolas	388	1	n_commm01	1
+502ond	iz01_citizen_f1	503	1		2
+502ond	iz01_citizen_m1	475	1		2
+502ond	ond_soldier_ster	607	1		1
+502ond	ond_soldier_nter	607	1		1
+502ond	ond_soldier_ri	607	1		1
+502ond	vaklu_troop002	607	1		2
+502ond	vaklu_troop001	607	1		1
+502ond	n_commf001	478	1		1
+502ond	al_twilek	619	1	n_commm01	1
+502ond	al_gran	570	1	n_commm01	1
+502ond	iz01_citizen_001	502	1		1
+502ond	iz01_citizen_002	476	1		1
+502ond	mp_crowd001	504	1		1
+502ond	mp_crowd002	477	1		1
+502ond	npc_crowd_vak001	506	1		1
+502ond	turret_iziz	640	0		7
+502ond	p_hk048	538	1	c_hk50	1
+502ond	p_hk049	538	1	c_hk50	1
+502ond	p_hk050	538	1	c_hk50	1
+502ond	c_tame_boma1	514	1	c_boma_v_d	5
+503ond	npc_bahima	12	1	n_bith01	1
+503ond	npc_gormo	374	1	n_duros03	1
+503ond	npc_kiph	449	1	n_commm01	1
+503ond	npc_nikko	658	1	n_commm01	1
+503ond	npc_thug	190	1	n_commm01	1
+503ond	npc_gen_patron	478	1		1
+503ond	npc_sakarie	612	1	n_commf01	1
+503ond	npc_bthug	596	1	n_commm01	2
+503ond	npc_waitress	590	1	n_commf01	1
+503ond	npc_xaart	595	1	n_commm01	1
+503ond	n_twilekf001	366	1	n_twidancec01	1
+503ond	n_rodian001	256	1	n_rodian02	1
+503ond	n_quarren002	537	1	n_quarren01	1
+503ond	n_swoopgang001	262	1	n_swoopgang02	1
+503ond	n_commf001	270	1	n_twidanceb01	1
+503ond	n_twilekf002	47	1	n_twidancea01	3
+503ond	npc_bthug001	615	1	n_commm01	2
+503ond	g_blkvulkgang002	264	0	n_swoopgang04	1
+503ond	g_blkvulkgang003	263	0	n_swoopgang03	1
+503ond	g_blkvulkgang004	609	0	n_commf01	1
+503ond	g_blkvulkgang005	588	0	n_commf01	1
+503ond	g_blkvulkgang006	445	0	n_commm01	1
+503ond	g_blkvulkgang007	601	0	n_sullustan01	1
+503ond	g_blkvulkgang008	593	0	n_commm01	2
+503ond	g_blkvulkgang009	12	0	n_bith01	1
+503ond	g_blkvulkgang010	12	0	n_bith01	1
+503ond	g_blkvulkgang011	256	0	n_rodian02	1
+503ond	g_blkvulkgang012	420	0	n_walrusman04	1
+504ond	roy_sold_pc	468	1		2
+504ond	roy_sold	471	1		2
+504ond	n_repsold001	470	1		1
+504ond	ds_ro_sold_dead	471	0		3
+506ond	n_calonord001	626	1		1
+506ond	npc_tobin	602	1		1
+506ond	c_drexl002	516	1		1
+506ond	npc_kavar	648	1	n_commm01	1
+506ond	npc_talia	524	1	n_talia	1
+506ond	kadron	495	1		1
+506ond	royal_corporal	468	1		1
+506ond	kiph	449	1	n_commm01	1
+506ond	mil_droid_mk1	238	0	c_drdwar04	1
+506ond	mil_droid_mk2	66	0		1
+506ond	mil_droid_mk2_nr	66	0		3
+506ond	dead_vaklu	607	1		3
+506ond	dead_royal	468	1		3
+506ond	sith_drexl	44	1	n_sithsoldier02	1
+506ond	vaklu_captain001	607	1		4
+511ond	dead_soldier	466	1		3
+511ond	npc_kavar	648	1	n_commm01	1
+511ond	kadron	495	1		1
+511ond	npc_talia	524	1	n_talia	1
+512ond	can_bouncer	418	0	n_walrusman02	1
+512ond	npc_dhagon_thug	190	1	n_commm01	1
+512ond	npc_128	235	1	c_drdprot04	1
+512ond	thug_melee	595	1	n_commm01	3
+512ond	thug_gun	190	1	n_commm01	3
+512ond	thug_grenade	17	1	n_commm01	2
+512ond	th_lead	258	0	n_rodian04	1
+512ond	thug_beast	591	1	n_commm01	4
+512ond	thug	191	1	n_commm01	4
+512ond	ws_commoner	472	1		2
+512ond	ws_salvager	346	1	n_commm01	2
+512ond	npc_kavar	648	1	n_commm01	1
+512ond	npc_talia	524	1	n_talia	1
+601dan	npc_dillan	426	1	n_commf01	1
+601dan	npc_saedhe	623	1	n_commm01	1
+601dan	old_prot_droid	234	1	c_drdprot03	1
+601dan	mechanic	349	1	n_commm01	1
+601dan	g_militia002	17	1	n_commm01	1
+601dan	khoonda_turret	640	0		1
+601dan	khoonda_turre001	640	0		1
+601dan	khoonda_turre002	640	0		1
+601dan	npc_akkere	601	1	n_sullustan01	1
+601dan	npc_pato	244	1	c_ithorian03	1
+601dan	c_kinrath001	88	1		7
+601dan	g_kinrath005	88	0		1
+601dan	c_khoundb001	76	1		1
+601dan	g_kathhound002	246	0	c_khounda03	4
+601dan	g_militia005	17	1	n_commm01	1
+602dan	npc_adum	258	1	n_rodian04	1
+602dan	npc_berun	635	1	n_commm01	1
+602dan	npc_gerevick	628	1	n_smuggler04	1
+602dan	602_receptionist	191	1	n_commm01	1
+602dan	dan_ctz_f1	185	1	n_commf01	1
+602dan	dan_ctz_f2	14	1	n_commf01	1
+602dan	g_staff_f	593	1	n_commm01	1
+602dan	npc_suulru	596	1	n_commm01	1
+602dan	npc_terena	644	1	n_commf01	1
+602dan	npc_zherron	642	1	n_commm01	1
+602dan	g_militia	592	1	n_commm01	1
+602dan	dan_ctz_male	593	1	n_commm01	1
+602dan	assault_droid	60	0		3
+602dan	medic_droid	62	1		1
+602dan	g_militia007	191	1	n_commm01	1
+602dan	g_militia009	596	1	n_commm01	1
+602dan	g_militia003	591	1	n_commm01	1
+602dan	g_militia008	616	1	n_commm01	1
+602dan	terena_guard	592	1	n_commm01	1
+603dan	khoonda_turret_1	182	0		1
+603dan	khoonda_turret_2	182	0		1
+603dan	khoonda_turret_3	182	0		1
+604dan	g_merc004	678	1	n_commm01	1
+604dan	g_kinrath006	88	0		12
+604dan	g_kinrath003	441	0	c_kinrath04	3
+605dan	npc_daraala	637	1	n_commf01	1
+605dan	npc_dopak	647	1	n_commm01	1
+605dan	npc_ralon	190	1	n_commm01	1
+605dan	g_salvager_tae	348	1	n_commm01	1
+605dan	g_salvager_tae2	345	1	n_commm01	2
+605dan	npc_taepalae	645	1	n_commf01	1
+605dan	g_salvager	345	1	n_commm01	1
+605dan	g_merc	190	1	n_commm01	2
+605dan	npc_nallek	617	1	n_commm01	1
+605dan	c_khoundb001	76	1		4
+605dan	g_kathhound002	246	0	c_khounda03	7
+605dan	g_mandalor002	351	0	n_mandalorian02	1
+605dan	g_mandalor003	35	0	n_mandalorian01	1
+605dan	g_mandalor004	35	0	n_mandalorian01	1
+605dan	p_hk048	538	1	c_hk50	1
+605dan	p_hk049	538	1	c_hk50	1
+605dan	p_hk050	538	1	c_hk50	1
+610dan	npc_jorran	646	1		1
+610dan	c_laigrek	553	1	c_laigrek_d	20
+610dan	c_laigrek_deadly	553	1	c_laigrek_d	13
+610dan	c_laigrek_de_kae	553	1	c_laigrek_d	3
+610dan	protdroid1	234	1	c_drdprot03	6
+610dan	g_dead_merc	596	0	n_commm01	1
+610dan	g_dead_merc2	190	0	n_commm01	2
+610dan	n_kaevee	643	1	n_commf01	1
+610dan	c_laigrek_kae01	553	1	c_laigrek_d	1
+610dan	c_laigrek_kae02	553	1	c_laigrek_d	1
+610dan	c_laigrek_kae03	553	1	c_laigrek_d	1
+681dan	shen1	17	1	n_commm01	1
+682dan	rahasia2	186	1	n_commf01	1
+682dan	shen2	17	1	n_commm01	1
+701kor	g_tukata003	89	0		1
+701kor	g_tukata_dead	89	0		2
+701kor	p_hk048	538	1	c_hk50	1
+701kor	p_hk049	538	1	c_hk50	1
+701kor	p_hk050	538	1	c_hk50	1
+702kor	g_tukata003	89	0		6
+702kor	n_darthsion001	458	1		1
+702kor	sithassassin	528	1	n_darkjlowm01	2
+702kor	caged_tukata	89	0		5
+702kor	vash	649	1	n_commf01	1
+710kor	g_tukata003	89	0		14
+710kor	hssiss	662	1		2
+711kor	g_repsold	355	1	n_repsold01	5
+711kor	g_repsold_capt	361	1	n_repoff_f01	1
+711kor	npc_v_malak	32	0	n_jedimalek01	1
+711kor	n_jedicounf001	204	1	n_jedicounf01	1
+711kor	n_jedicounm001	214	1	n_jedicounm01	1
+711kor	n_jedimemf001	203	1	n_jedicounf01	1
+711kor	n_jedimemm001	227	1	n_jedicounm01	1
+711kor	n_jedimemm002	4	1	p_bastilaba01	1
+711kor	n_jedicounm002	432	1	n_commm01	1
+711kor	revan_fake	22	0	n_darthrevan01	1
+711kor	shyrack_brood	282	0	c_shyrack02	10
+711kor	p_kreia_evil001	627	1		1
+711kor	shyrack_wyrm	281	0	c_shyrack01	12
+711kor	hssiss	662	1		1
+740kor	p_jolee	7	1	p_joleeba01	1
+740kor	n_belloq	655	1		1
+740kor	n_forestall	193	1	n_commm01	1
+740kor	g_tukata01	89	0		4
+740kor	g_tukata02	89	0		3
+740kor	n_darthfang	20	1		1
+740kor	g_dark_jed01m001	616	0	n_commm01	1
+740kor	g_dark_app01m001	535	0	n_darkjmidm01	1
+740kor	patrol	41	1	n_sithappren01	1
+740kor	patrolb	528	1	n_darkjlowm01	1
+740kor	patrola	528	1	n_darkjlowm01	1
+740kor	patrolc	528	1	n_darkjlowm01	1
+740kor	shyrack_wyrm	281	0	c_shyrack01	7
+740kor	c_wraid	86	1		3
+740kor	g_wraid02	252	0	c_wraid03	1
+740kor	c_terantanak01	353	1		7
+743kor	n_zombieguard01	650	1		2
+745kor	n_kazius	705	1		1
+745kor	n_sithsent	508	1	n_sithcom01	5
+745kor	n_darthpox_cut	711	0		1
+745kor	old_prot_droid	234	1	c_drdprot03	1
+745kor	med_droid	64	0		1
+745kor	d_astroa	57	1	c_drdastro01	1
+745kor	d_astrob	57	1	c_drdastro01	1
+745kor	tdroid	56	0		1
+745kor	utildroid_mk2	577	1		1
+745kor	utildroid_mk3	559	1		1
+745kor	n_jawa01	73	1		1
+745kor	utildroid_mk1	560	1		1
+745kor	n_sentrya	28	1	n_sithsoldier01	1
+745kor	n_sentryb	261	1	n_sithsoldier03	1
+745kor	d_maindrd	313	1	n_astromech01	1
+745kor	n_sithappren002	535	1	n_darkjmidm01	1
+745kor	ritual_follower	564	0		1
+745kor	g_sithcomm02	43	0	n_sithcomm01	1
+745kor	n_sithsent2	44	1	n_sithsoldier02	1
+745kor	n_sithcmndo	510	1	n_sithcom03	3
+745kor	g_dark_jed01f001	614	0	n_commf01	1
+745kor	n_darthloqi_cut	563	0		1
+745kor	n_yogasith	187	1	n_commf01	1
+745kor	n_sithcleric02	193	1	n_commm01	1
+745kor	n_proselyte02	302	1	n_sithcomm01	1
+745kor	n_proselyte03	446	1	n_commf01	1
+745kor	n_proselyte08	301	1	n_sithcomf01	1
+745kor	n_pupil01	525	1	n_darkjlowf01	1
+745kor	n_pupil02	528	1	n_darkjlowm01	1
+745kor	n_pupil05	527	1	n_darkjlowf01	1
+745kor	n_pupil07	532	1	n_darkjmidf01	1
+745kor	n_pupil10	41	1	n_sithappren01	1
+745kor	n_pupil11	601	1	n_sullustan01	1
+745kor	n_sentryc	717	1		1
+745kor	n_sentryd	717	1		1
+745kor	n_teachjedib	379	1	n_darkjedim03	1
+745kor	n_teachjedia	379	1	n_darkjedim03	1
+745kor	n_darthloqi	685	0	n_twiundpcc01	1
+746kor	p_jolee02	7	1	p_joleeba01	1
+747kor	n_bayguard	28	1	n_sithsoldier01	4
+747kor	n_hbsentryb	510	1	n_sithcom03	1
+747kor	n_hbsentry	261	1	n_sithsoldier03	1
+747kor	n_darkguard	717	0		2
+747kor	p_jolee02	7	1	p_joleeba01	1
+748kor	n_darktask	714	1		1
+748kor	n_slave4_bith	12	1	n_bith01	1
+748kor	n_slave2_man	17	1	n_commm01	1
+748kor	n_slave3_wmn	14	1	n_commf01	1
+748kor	n_slave10_wm	271	1	n_wookiem02	1
+748kor	n_slave5_jawa1	73	0		1
+748kor	n_slave1_fm	26	1	n_fatcomm01	1
+748kor	n_slave9_wf	50	1	n_wookief01	1
+748kor	n_slave8_ith	243	0	c_ithorian02	1
+748kor	n_slave6_jawa2	73	0		1
+748kor	n_slave7_jawa3	73	0		1
+748kor	n_sithtemp	717	0		3
+750kor	n_thulsagaul	701	0		1
+770kor	yavhssiss	662	1		4
+770kor	yavterentatek	353	1		2
+771kor	yavrakg	79	1		5
+771kor	yavdjedim4	20	0		2
+771kor	yavdrdspd1	65	1		2
+771kor	talonfinal	725	0	p_carthbb01	1
+772kor	yavdjedim1	563	0		2
+772kor	yavdjedif1	613	0	n_commf01	1
+772kor	yavterentatek	353	1		2
+772kor	yavdjedif4	566	0		2
+772kor	yavdjedim4	563	0		1
+772kor	yavtuka1	89	1		6
+772kor	yavhssiss	662	1		3
+772kor	yavdjedim3	616	0	n_commm01	1
+773kor	sithprbldm2	701	0		1
+773kor	sithprbldm1	701	0		1
+773kor	yavhssiss	662	1		4
+773kor	yavterentatek	353	1		2
+773kor	yavtuka1	89	1		5
+773kor	lostcityboss1	701	0		1
+789kor	bossrancor	80	0		1
+789kor	yavterentatek	353	1		4
+789kor	yavhssiss	662	1		1
+789kor	yavrakg	79	1		5
+789kor	yavtuka1	89	1		7
+789kor	yavshyrack1	282	1	c_shyrack02	2
+790kor	yavterentatek	353	1		3
+790kor	yavhssiss	662	1		3
+790kor	yavrakg	79	1		3
+790kor	yaventity	701	0		1
+791kor	sithprbldm1	701	0		1
+791kor	sithprbldf2	700	0		1
+791kor	yavdjedif1	701	0		3
+791kor	yavdjedim1	701	0		3
+791kor	tulak	702	0		1
+851nih	g_mandalor002	35	0	n_mandalorian01	1
+851nih	npc_tobin	602	1		1
+851nih	n_sithcmndo001	510	1	n_sithcom03	3
+851nih	n_sithcmndo002	510	1	n_sithcom03	3
+851nih	n_mandalorian001	35	1	n_mandalorian01	3
+851nih	g_sithtroop008	261	0	n_sithsoldier03	2
+851nih	g_sithcomm003	43	0	n_sithcomm01	1
+851nih	n_sithcmndo004	510	1	n_sithcom03	28
+851nih	g_sithtroop003	261	0	n_sithsoldier03	6
+851nih	g_sithtroop005	28	0	n_sithsoldier01	2
+851nih	g_sithcomm002	42	0	n_sithcomf01	2
+851nih	n_sithsoldier002	28	1	n_sithsoldier01	4
+852nih	g_sithcomm002	650	0		12
+852nih	n_darthnihilu001	463	0		1
+852nih	g_sithtroop003	261	0	n_sithsoldier03	6
+852nih	g_sithtroop004	28	0	n_sithsoldier01	6
+852nih	g_dark_jed01f001	531	0	n_darkjmidf01	2
+852nih	g_dark_jed01m001	534	0	n_darkjmidm01	2
+856nih	sion	458	1		1
+856nih	nihilus	463	0		1
+856nih	slave01	650	0		1
+856nih	slave02	650	0		1
+856nih	sion_ass01	528	1	n_darkjlowm01	4
+901mal	c_stormbeast002	633	1		13
+902mal	c_stormbeast002	633	1		10
+902mal	deadassasin	528	1	n_darkjlowm01	3
+903mal	g_sithass002	528	1	n_darkjlowm01	56
+903mal	n_darthsion001	458	1		1
+903mal	n_sithappren002	535	1	n_darkjmidm01	1
+903mal	g_dark_app01f001	531	0	n_darkjmidf01	4
+903mal	g_dark_app01m001	536	0	n_darkjmidm01	3
+903mal	g_dark_jed01f001	614	0	n_commf01	2
+903mal	g_dark_jed01m001	616	0	n_commm01	2
+904mal	n_darthtraya001	600	0		1
+905mal	g_sithass002	528	1	n_darkjlowm01	14
+905mal	n_sithcmndo001	509	1	n_sithcom02	13
+905mal	g_dark_jed01m001	616	0	n_commm01	1
+905mal	g_dark_app01f001	533	0	n_darkjmidf01	2
+905mal	g_dark_app01m001	535	0	n_darkjmidm01	1
+905mal	g_darkjedi007	20	0		3
+905mal	g_dark_jed01f001	614	0	n_commf01	1
+905mal	g_darkjedi006	562	0		3
+905mal	n_sithappren001	534	1	n_darkjmidm01	3
+905mal	g_darkjedi008	19	0	n_darkjedif01	2
+906mal	g_sithass002	528	1	n_darkjlowm01	12
+906mal	n_sithcmndo001	509	1	n_sithcom02	26
+906mal	g_darkjedi007	20	0		4
+906mal	g_dark_app01m001	535	0	n_darkjmidm01	2
+906mal	g_dark_app01f001	533	0	n_darkjmidf01	2
+906mal	g_darkjedi008	19	0	n_darkjedif01	2
+906mal	g_dark_jed01m001	616	0	n_commm01	2
+906mal	g_darkjedi006	562	0		3
+906mal	g_dark_jed01f001	614	0	n_commf01	1
+906mal	n_sithappren001	534	1	n_darkjmidm01	1
+906mal	g_turretbl009	182	0		8
+906mal	g_rancor002	633	0		2
+910dag	n_ezerarden	678	0	n_commm01	1
+910dag	n_darthsiondag	20	1		1
+910dag	n_darthrevandag	20	1		1
+910dag	n_darthnihilusdg	20	0		1
+910dag	n_darthmalakdag	20	0		1
+910dag	n_zombieguard01	650	1		1
+930cor	corarenahost1	465	1	p_trndoshan02	1
+950cor	p_atris001	629	1		1
+950cor	npc_vrook004	648	1	n_commm01	1
+950cor	npc_vrook003	649	1	n_commf01	1
+950cor	npc_vrook	670	1	n_commm01	1
+950cor	npc_vrook002	641	1	n_commm01	1
+950cor	p_damhk47	3	1	p_hk47_01	1
+954cor	cormchnic1	631	0	n_duros04	1
+955cor	corbrtndr1	416	0	n_commm01	1
+955cor	cortwildanc4	720	1	n_darthrevan01	1
+955cor	cortwildanc3	721	1	pmbj02	1
+955cor	cordancer	135	1	n_twiundpcc01	1
+955cor	cordancer5	548	1	n_twiundpcc01	1
+955cor	corzeldanc1	498	1	n_lala_xua01	1
+955cor	cortwildanc1	270	1	n_twidanceb01	1
+955cor	cortwdanc2	698	1	p_carthbb01	1
+955cor	corpazza1	40	0	n_selkath01	1
+955cor	corpazza3	704	0		1
+955cor	corpazza2	73	0		1
+955cor	corbntyhntrnpc2	333	0	n_spaceman_low	1
+955cor	corbntyhntrnpc3	387	0	n_twidancec01	1
+955cor	correpublicsol1	675	0		1
+955cor	correpublicsol2	598	0	n_repoff01	1
+955cor	correpublicsol4	38	0	n_repsold01	1
+955cor	corbntyhntrnpc5	171	0	pmbamc01	1
+955cor	corbntyhntrnpc1	166	0	pmbamc01	1
+955cor	corbntyhntrnpc4	132	0	n_twiundpcc01	1
+955cor	correpublicsol5	367	0	n_repoff_f01	1
+955cor	coryvartfqst1	606	0	n_commm01	1
+956cor	corhele1	123	0	n_twiundpcc01	1
+956cor	trandmerc1	464	1	p_trndoshan	1
+956cor	devbntyhunter	570	1	n_commm01	1
+956cor	corsntrydrd1	64	1		6
+956cor	mndbntyhunter	351	1	n_mandalorian02	2
+956cor	mndmerc	352	1	n_mandalorian03	3
+956cor	corgangmerc	262	1	n_swoopgang02	3
+956cor	corassassindroid	56	0		5
+956cor	corassaultdroid3	59	0		2
+958cor	cordrugdealer	39	0	n_rodian01	1
+959cor	corgangundbss3	135	1	n_twiundpcc01	1
+959cor	corgangl2lt4	664	1	n_twiundpca01	1
+959cor	trandmerc1	464	1	p_trndoshan	2
+959cor	corgang3	256	1	n_rodian02	2
+959cor	corgang6	599	1	n_weeq01	1
+959cor	corgang7	264	1	n_swoopgang04	1
+959cor	corgang5	39	1	n_rodian01	1
+959cor	corgangl2lt2	417	1	n_commm01	1
+959cor	corgangl2lt3	98	1	n_twiundpca01	2
+959cor	corwalr	49	1	n_walrusman01	1
+959cor	corgangl2lt1	270	1	n_twidanceb01	1
+959cor	corassassindroid	56	0		1
+960cor	corgangundbss1	174	1	pmbamc01	1
+960cor	corgang4	569	1	n_gand	3
+960cor	corganglt4	148	1	pmbama01	1
+960cor	corganglt2	621	1	n_commf01	2
+960cor	corganglt1	446	1	n_commf01	2
+960cor	corgang5	374	1	n_duros03	2
+960cor	corgang1	258	1	n_rodian04	2
+960cor	corgang7	265	1	n_swoopgang05	3
+960cor	corgang3	570	1	n_commm01	1
+960cor	corganglt3	450	1	n_commm01	1
+960cor	corgang6	599	1	n_weeq01	2
+960cor	corwalr	49	1	n_walrusman01	1
+960cor	corassassindroid	56	0		2
+960cor	corubese1	459	0		2
+961cor	corgang1	24	1	n_duros01	2
+961cor	corgang7	262	1	n_swoopgang02	2
+961cor	corgang6	599	1	n_weeq01	5
+961cor	corgang3	570	1	n_commm01	5
+961cor	corgang2	565	1	n_gran01	3
+961cor	corgang5	39	1	n_rodian01	1
+961cor	corgang4	569	1	n_gand	2
+963cor	cordrdmin1	461	0	c_mk2_drd	10
+963cor	corgamo2	241	1	c_gammorean03	7
+963cor	corgamo	68	1		5
+963cor	corassassindroid	56	0		3
+963cor	corcombatdroid	64	0		5
+963cor	corgranthug1	565	1	n_gran01	2
+963cor	corroodthug1	39	1	n_rodian01	3
+963cor	cordrdsmsh1	542	0	c_drdminelg	3
+964cor	corarkugruth	242	1	c_gammorean04	1
+964cor	corgamo	68	1		3
+964cor	corgamo2	241	1	c_gammorean03	3
+964cor	corgranthug1	565	1	n_gran01	2
+964cor	cordrdmin1	461	0	c_mk2_drd	2
+964cor	corroodthug1	256	1	n_rodian02	2
+964cor	corassassindroid	56	0		2
+964cor	corcombatdroid	64	0		3
+964cor	cordrdsmsh1	542	0	c_drdminelg	2
+965cor	corgangboss5	143	1	pmbama01	1
+965cor	corgangboss2	621	1	n_commf01	1
+965cor	corgangboss3	139	1	pmbama01	1
+965cor	corgang5	39	1	n_rodian01	2
+965cor	corassassindroid	56	0		2
+965cor	corgangboss4	270	1	n_twidanceb01	1
+965cor	corgang2	565	1	n_gran01	1
+965cor	corgang6	599	1	n_weeq01	1
+965cor	corgang4	569	1	n_gand	1
+965cor	corgang1	631	1	n_duros04	1
+965cor	corwalr	49	1	n_walrusman01	1
+965cor	corgangboss1	417	1	n_commm01	1
+965cor	trandmerc1	465	1	p_trndoshan02	2
+965cor	corgang7	264	1	n_swoopgang04	2
+965cor	corubese1	459	0		4
+966cor	cordroidshop1	643	0	n_commf01	1
+966cor	correpublicsol2	38	0	n_repsold01	1
+966cor	correpublicsol5	364	0	n_repsold_f01	1
+966cor	corzerka1	196	0	n_czerkaoff01	1
+966cor	corzerka2	195	0	n_czerkaoff01	1
+966cor	endorqstgive	195	0	n_czerkaoff01	1
+967cor	corholdo1	243	0	c_ithorian02	1
+967cor	cortatqst1	621	0	n_commf01	1
+967cor	coroperationsgiv	38	0	n_repsold01	1
+967cor	corbntyhntrnpc1	166	0	pmbamc01	1
+967cor	corbntyhntrnpc3	699	0		1
+967cor	corbntyhntrnpc4	698	0	p_carthbb01	1
+967cor	correpublicsol3	597	0	n_repsold01	1
+967cor	correpublicsol5	364	0	n_repsold_f01	1
+967cor	cormerchantgen1	596	0	n_commm01	1
+969cor	corgangundbss3	620	1	n_commf01	1
+969cor	corassassindroid	56	0		2
+969cor	corwalr	49	1	n_walrusman01	1
+969cor	corgang1	24	1	n_duros01	1
+969cor	corgang4	569	1	n_gand	2
+969cor	corgang3	256	1	n_rodian02	1
+969cor	corgangl2lt2	417	1	n_commm01	1
+969cor	corgangl2lt4	168	1	pmbamc01	1
+969cor	corgamo2	241	1	c_gammorean03	4
+969cor	corgamo	68	1		1
+969cor	corgang7	264	1	n_swoopgang04	2
+969cor	corubese1	459	0		6
+970cor	corgang6	599	1	n_weeq01	1
+970cor	mndbntyhunter	35	1	n_mandalorian01	1
+970cor	mndmerc	352	1	n_mandalorian03	1
+970cor	corgang2	565	1	n_gran01	1
+970cor	manftadd2	665	1	n_twiundpca01	1
+970cor	corgang5	39	1	n_rodian01	2
+971cor	mannfett	35	1	n_mandalorian01	1
+971cor	mndmerc	351	1	n_mandalorian02	3
+971cor	mndbntyhunter	352	1	n_mandalorian03	3
+971cor	manftadd4	144	1	pmbama01	1
+971cor	manftadd3	132	1	n_twiundpcc01	1
+971cor	manftadd2	665	1	n_twiundpca01	1
+971cor	manftadd1	180	1	pmbamc01	1
+971cor	corgang6	599	1	n_weeq01	2
+971cor	corgang3	570	1	n_commm01	1
+971cor	corgang1	373	1	n_duros02	1
+971cor	corgang2	565	1	n_gran01	1
+972cor	corzerkgirl1	621	0	n_commf01	1
+972cor	corzerkguy1	196	0	n_czerkaoff01	1
+972cor	corzerkguy2	18	0	n_czerkaoff01	1
+972cor	corzerkguy3	195	0	n_czerkaoff01	1
+972cor	corzerkguy4	377	0	n_czerkaoff01	1
+972cor	corzerkgreet1	507	0	n_czerka_droid	1
+973cor	corvetdude	591	0	n_commm01	1
+973cor	correpcitz1	596	0	n_commm01	1
+973cor	correpcitz2	270	0	n_twidanceb01	1
+973cor	correpcitz3	39	0	n_rodian01	1
+973cor	correpcitz4	601	0	n_sullustan01	1
+974cor	tolcressa	424	1	n_commm01	1
+belsavis1	belsithleader	422	0	n_darkjedim05	1
+belsavis1	cordrdsmsh1	542	0	c_drdminelg	5
+belsavis1	yavsithw1	536	0	n_darkjmidm01	2
+belsavis1	yavsitha1	564	1		1
+belsavis1	cordrdmin1	461	0	c_mk2_drd	2
+belsavis1	yavdjedif4	566	0		1
+belsavis2	cordroidtank	557	1		1
+belsavis2	cordroidboss2	65	1		5
+belsavis2	cordroidboss1	65	1		2
+belsavis3	belevgharj	80	0		1
+belsavis3	belstalk	89	1		4
+belsavis3	yavdrexl1	516	1		6
+cor957	cordroidboss2	577	1		1
+cor957	cordrdmin1	461	0	c_mk2_drd	2
+cor957	corroodthug1	39	1	n_rodian01	2
+cor957	mndbntyhunter	351	1	n_mandalorian02	1
+cor957	corgranthug1	565	1	n_gran01	1
+cor957	corgangmerc	262	1	n_swoopgang02	1
+cor957	corassltdrd1	60	0		3
+cor957	corcombatdroid	64	0		1
+cor957	cordrdsmsh1	542	0	c_drdminelg	2
+cor957	corassaultdroid2	61	0		1
+endor1	endzerkgal3	620	0	n_commf01	1
+endor1	endzerkguy7	570	0	n_commm01	1
+endor1	endzerkoff1	425	0	n_czerkaoffc01	1
+endor1	weakewok1	706	0		1
+endor1	endzerkguy3	168	0	pmbamc01	2
+endor1	endzerkgal1	102	0	n_twiundpca01	2
+endor1	endzerkguy4	144	0	pmbama01	1
+endor2	killerewok6	707	0		2
+endor2	killerewok10	706	0		1
+endor2	killerewok2	706	0		2
+endor2	endzerkguy3	168	0	pmbamc01	2
+endor2	endzerkgal2	448	0	n_commf01	2
+endor2	endzerkguy7	570	0	n_commm01	2
+endor2	killerewok1	706	0		1
+endor2	endzerkguy1	196	0	n_czerkaoff01	2
+endor2	endzerkgal5	123	0	n_twiundpcc01	1
+endor2	endzerkguy5	619	0	n_commm01	2
+endor2	endzerkgal4	446	0	n_commf01	2
+endor2	endzerkguy2	195	0	n_czerkaoff01	1
+endor2	hksewok1	707	0		1
+endor2	endzerkdead	195	0	n_czerkaoff01	1
+endor3	ewok1	706	0		1
+endor3	ewok2	707	0		1
+endor3	ewok5	706	0		2
+endor3	ewok4	707	0		3
+gra801	yavsithco2	508	1	n_sithcom01	3
+gra801	yavsithcapm1	43	1	n_sithcomm01	1
+gra801	yavsithcapf1	42	1	n_sithcomf01	1
+gra801	yavsithco3	510	1	n_sithcom03	3
+gra801	yavsithsol2	44	1	n_sithsoldier02	1
+gra801	yavsithsol1	28	1	n_sithsoldier01	1
+gra802	yavdjedim4	563	0		1
+gra802	yavsithsol3	261	1	n_sithsoldier03	2
+gra802	yavsithco2	508	1	n_sithcom01	2
+gra802	yavsithsol2	44	1	n_sithsoldier02	2
+gra802	yavdjedim3	616	0	n_commm01	1
+gra802	yavsitha1	564	1		1
+gra802	yavsithco3	510	1	n_sithcom03	1
+gra802	yavsithcapm1	43	1	n_sithcomm01	1
+gra802	yavsithcapf1	42	1	n_sithcomf01	1
+gra802	yavsithsol1	28	1	n_sithsoldier01	1
+kas_m23ab	kas23_woorwil_01	274	1	n_wookiem05	1
+kas_m23ac	kas23_worrroz_01	273	1	n_wookiem04	1
+kasm22aa	kas22_dasol_01	17	1	n_commm01	1
+kasm22aa	kas22_xxpazaa_01	257	1	n_rodian03	1
+kasm22aa	kaswookm1	271	1	n_wookiem02	1
+kasm22aa	kaswookm3	272	1	n_wookiem03	1
+kasm22aa	kasrepsol3	355	0	n_repsold01	1
+kasm22aa	kasrepcap2	598	0	n_repoff01	1
+kasm22aa	kasrepsol2	364	0	n_repsold_f01	1
+kasm22aa	kaswookm2	271	1	n_wookiem02	1
+kasm22aa	fakegalare	598	0	n_repoff01	1
+kasm22ab	kas22_wookg2_01	273	1	n_wookiem04	1
+kasm22ab	kas22_wookg1_01	271	1	n_wookiem02	1
+kasm22ab	kas22_kinrath_07	441	1	c_kinrath04	2
+kasm22ab	kas22_kinrath_08	441	1	c_kinrath04	2
+kasm22ab	c_mykal001	78	1		4
+kasm22ab	kas22_kinrath_05	441	1	c_kinrath04	3
+kasm23ad	kas23_wookguard2	271	1	n_wookiem02	2
+kasm23ad	kas23_wookgua002	274	1	n_wookiem05	1
+kasm23ad	kas23_wookgua001	272	1	n_wookiem03	1
+kasm23ad	npczaalbar	9	1	p_zaalbar01	1
+kasm23ad	npcmission	10	1	p_missionba01	1
+kasm24aa	kas24_tach	83	1		8
+kasm25aa	kas25_kinrath	440	0	c_kinrath03	2
+kasm25aa	kas25_tach	83	1		4
+kasm25ab	kas25_kinrath	440	0	c_kinrath03	7
+korr_m37aa	yavlilranc1	309	0		1
+korr_m37aa	yavterentatek	353	1		3
+korr_m38ab	kor38b_tukataqun	89	1		1
+korr_m38ab	kor38b_jorakuln	433	0	n_sithcomm01	1
+korr_m38ab	yavdjedif4	566	0		1
+korr_m38ab	yavdjedim4	563	0		1
+korr_m38ab	yavdjedim1	563	0		1
+korr_m38ab	yavdjedif1	613	0	n_commf01	1
+korr_m39aa	kor39_utharwynn	415	0	n_sithcomm01	1
+korr_m39aa	yavsitha1	564	1		2
+korr_m39aa	yavterentatek	353	1		2
+korr_m39aa	yavlilranc1	309	0		1
+lev1	levsecchief1	42	1	n_sithcomf01	1
+lev1	yavsithsol2	44	1	n_sithsoldier02	2
+lev1	yavsithco2	508	1	n_sithcom01	3
+lev1	yavsithco3	510	1	n_sithcom03	2
+lev1	cordrdmin1	461	0	c_mk2_drd	4
+lev1	levsithintrg1	421	0	n_darkjedim04	1
+lev1	yavdjedim4	563	0		1
+lev1	yavsitha1	564	1		1
+lev1	yavsithsol1	28	1	n_sithsoldier01	2
+lev1	yavsithco1	508	1	n_sithcom01	1
+lev2	yavsithco1	508	1	n_sithcom01	1
+lev2	yavsithsol3	261	1	n_sithsoldier03	1
+lev2	yavsithsol2	44	1	n_sithsoldier02	1
+lev2	yavsithco2	508	1	n_sithcom01	1
+lev2	yavsithw1	536	0	n_darkjmidm01	1
+lev2	yavdjedim4	563	0		1
+lev2	yavsithcapf1	42	1	n_sithcomf01	1
+lev2	yavsithco3	510	1	n_sithcom03	1
+lev2	cordrdsmsh1	542	0	c_drdminelg	3
+lev2	yavdjedim3	616	0	n_commm01	1
+lev2	yavdjedif4	566	0		1
+lev2	cordrdmin1	461	0	c_mk2_drd	4
+lev3	yavsithsol2	44	1	n_sithsoldier02	3
+lev3	yavdjedim3	616	0	n_commm01	1
+lev3	yavdjedim2	616	0	n_commm01	1
+lev3	yavsithcapm1	43	1	n_sithcomm01	1
+lev3	yavsithco2	508	1	n_sithcom01	4
+lev3	yavsithcapf1	42	1	n_sithcomf01	1
+lev3	yavsithsol3	261	1	n_sithsoldier03	3
+lev3	correpublicsol5	355	0	n_repsold01	2
+lev3	cordrdsmsh1	542	0	c_drdminelg	2
+lev3	cordrdmin1	461	0	c_mk2_drd	3
+lev3	yavsithco1	508	1	n_sithcom01	1
+lev3	yavsithsol1	28	1	n_sithsoldier01	1
+lev3	yavsithco3	510	1	n_sithcom03	1
+lev4	sithadmiral	11	1	n_admrlsaulkar01	1
+lev4	yavsithco2	508	1	n_sithcom01	3
+lev4	yavdjedim1	563	0		1
+lev4	yavdjedim4	563	0		1
+lev4	yavsithco1	508	1	n_sithcom01	2
+lev4	yavsithsol3	261	1	n_sithsoldier03	1
+lev4	cordrdsmsh1	542	0	c_drdminelg	1
+lev4	cordrdmin1	461	0	c_mk2_drd	2
+m26mg	n_repoff	37	1	n_repoff01	3
+man_m26aa	man26_viglo	296	1	n_sithcomm01	1
+man_m26aa	man26_irimerc	333	1	n_spaceman_low	1
+man_m26aa	man26_manmerc	27	1	n_smuggler01	1
+man_m26aa	man26_selguard	259	1	n_selkath02	1
+man_m26aa	man26_selbar	40	1	n_selkath01	1
+man_m26aa	man26_selward	259	1	n_selkath02	1
+man_m26aa	man26_seljud5	259	1	n_selkath02	1
+man_m26aa	man26_seljud2	259	1	n_selkath02	1
+man_m26aa	man26_seljud4	259	1	n_selkath02	1
+man_m26aa	man26_seljud3	259	1	n_selkath02	1
+man_m26aa	man26_seljud1	259	1	n_selkath02	1
+man_m26aa	man26_pris	385	1	n_smuggler	1
+man_m26aa	man26_merc1	27	1	n_smuggler01	1
+man_m26aa	man26_sel3	40	1	n_selkath01	2
+man_m26aa	man26_selamb2	40	1	n_selkath01	1
+man_m26aa	man26_travel	472	1		1
+man_m26aa	man26_travel001	17	1	n_commm01	1
+man_m26aa	lelah	697	1		1
+man_m26aa	man26teela	47	1	n_twidancea01	1
+man_m26aa	miraqstpris1	257	1	n_rodian03	1
+man_m26ac	man26_security	59	1		1
+man_m26ac	man26_selport	260	1	n_selkath03	1
+man_m26ac	man26_travel	168	1	pmbamc01	1
+man_m26ac	man26_selcoord	260	1	n_selkath03	1
+man_m26ac	man26_selkol	260	1	n_selkath03	3
+man_m26ac	man26_sel1	323	1	n_selkath_low	1
+man_m26ac	man26_sel2	260	1	n_selkath03	1
+man_m26ac	man26_selamb	323	1	n_selkath_low	1
+man_m26ac	man26_selamb2	260	1	n_selkath03	1
+man_m26ac	man26c_litedr001	313	1	n_astromech01	1
+man_m26ac	man26c_litedrd01	314	1	n_astro02	1
+man_m26ac	man26_jolan	263	1	n_swoopgang03	1
+man_m26ac	man26_selamb002	260	1	n_selkath03	1
+man_m26ac	man26_travel001	102	1	n_twiundpca01	1
+man_m26ad	man26_merch	260	1	n_selkath03	1
+man_m26ad	man26_repkol1	355	1	n_repsold01	1
+man_m26ad	man26ad_droid01	314	0	n_astro02	1
+man_m26ad	man26ad_droid02	313	0	n_astromech01	1
+man_m26ad	man26ad_droid03	314	0	n_astro02	1
+man_m26ad	man26ad_droid04	313	0	n_astromech01	1
+man_m26ad	man26ad_droid05	314	0	n_astro02	1
+man_m26ad	man26ad_droid06	313	0	n_astromech01	1
+man_m26ad	man26ad_droid07	314	0	n_astro02	1
+man_m26ad	man26_sithkol1	376	1	n_sithcomm01	1
+man_m26ae	man26_adroid	313	1	n_astromech01	1
+man_m26ae	man26_ignus	194	1	n_commm01	1
+man_m26ae	man26_repsol1	355	1	n_repsold01	2
+man_m26ae	man26_repkol1	38	1	n_repsold01	1
+man_m26ae	man26_repamb	355	1	n_repsold01	1
+man_m26ae	man26_repdip	676	1		1
+man_m26ae	man26_selamb2	259	1	n_selkath02	2
+man_m26ae	man26_tyvark	39	1	n_rodian01	1
+man_m26ae	man26_litedrd002	314	0	n_astro02	1
+man_m26ae	man26_litedrd03	314	0	n_astro02	1
+man_m26ae	man26_litedrd004	313	0	n_astromech01	1
+man_m26ae	man26_litedrd05	314	0	n_astro02	1
+man_m26ae	man26_litedrd07	313	0	n_astromech01	1
+man_m26ae	man28_shady	258	1	n_rodian04	1
+man_m26ae	manrpmchnc1	38	1	n_repsold01	1
+manm26ab	man26_sel3	260	1	n_selkath03	1
+manm26ab	man26_selamb2	260	1	n_selkath03	2
+manm26ab	man26_sithdip	43	1	n_sithcomm01	1
+manm26ab	man26_sithswp1	42	1	n_sithcomf01	1
+manm26ab	man26_sithswp2	43	1	n_sithcomm01	1
+manm26ab	pman_sithwar	66	1		2
+manm26ab	man26_travel	545	1	pmbama01	1
+manm26ab	man26_yortal	72	1		1
+manm26ab	man_litedrd02	313	0	n_astromech01	1
+manm26ab	man_litedrd03	313	0	n_astromech01	1
+manm26ab	man_litedrd05	313	0	n_astromech01	1
+manm26ab	man26_swpreg	260	1	n_selkath03	1
+manm26ab	man27_zeena	704	1		1
+manm26ab	man26_swoop004	565	1	n_gran01	1
+manm26ab	manswoopfan	548	0	n_twiundpcc01	1
+manm26ab	man26_travel5	93	1	n_twiundpca01	1
+mansith2	lehsithlrd1	41	0	n_sithappren01	1
+mansith2	mansithsol3	44	1	n_sithsoldier02	2
+mansith2	mansithsol1	28	1	n_sithsoldier01	3
+mansith2	yavsithco1	508	1	n_sithcom01	1
+mansith2	yavsithco2	508	1	n_sithcom01	2
+mansith2	yavdjedim4	563	0		1
+mansith2	yavdjedif4	566	0		1
+mansith2	yavsitha1	564	1		2
+mansith2	yavsithcapf1	42	1	n_sithcomf01	2
+mansith2	yavsithcapm1	43	1	n_sithcomm01	1
+mansith2	yavsithw1	536	0	n_darkjmidm01	2
+mansithb1	yavsithcapm1	43	1	n_sithcomm01	2
+mansithb1	yavsithco1	508	1	n_sithcom01	3
+mansithb1	yavdjedim4	564	0		1
+mansithb1	yavdjedim1	564	0		1
+mansithb1	yavdjedim2	616	0	n_commm01	1
+mansithb1	yavdjedif4	566	0		1
+mansithb1	yavsithco5	508	1	n_sithcom01	2
+mansithb1	yavsithco4	508	1	n_sithcom01	1
+mansithb1	yavdjedif1	14	0	n_commf01	1
+mansithb1	yavsithco3	510	1	n_sithcom03	1
+mansithb1	yavsithco2	509	1	n_sithcom02	1
+mansithb1	mansithgreet1	42	1	n_sithcomf01	1
+manstation1	manhummerc1	167	1	pmbamc01	1
+manstation1	manhummerc2	122	1	n_twiundpcc01	1
+manstation1	mndmerc	352	1	n_mandalorian03	1
+manstation1	cordrdmin1	461	0	c_mk2_drd	1
+manstation1	corassaultdroid3	59	0		1
+manstation1	selkathmerc	335	1	n_selkath02	3
+manstation1	mndbntyhunter	351	1	n_mandalorian02	2
+manstation1	trandmerc1	464	1	p_trndoshan	1
+rcz1	man26_repdip	37	1	n_repoff01	1
+rcz1	rcz1supply	38	0	n_repsold01	1
+rcz1	correpublicsol1	675	0		1
+rhenvar1	rhendrdsmsh1	542	0	c_drdminelg	4
+rhenvar1	rhensithsol2	28	1	n_sithsoldier01	1
+rhenvar1	rhensithcom2	510	1	n_sithcom03	5
+rhenvar1	rhensithcom1	508	1	n_sithcom01	1
+rhenvar1	rhensithsol1	261	1	n_sithsoldier03	3
+rhenvar2	rhensithsol2	28	1	n_sithsoldier01	5
+rhenvar2	rhensithcom2	510	1	n_sithcom03	2
+rhenvar2	rhensithsol1	261	1	n_sithsoldier03	1
+rhenvar2	rhendrdsmsh1	542	0	c_drdminelg	2
+rhenvar2	rhensithmar	564	0		2
+rhenvar2	rhensithcom1	508	1	n_sithcom01	1
+rhenvar3	rhensith1	41	0	n_sithappren01	1
+rhenvar3	rhensithsin	534	0	n_darkjmidm01	2
+rhenvar3	rhensithwar	536	0	n_darkjmidm01	2
+rhenvar4	rhensithboss	562	0		1
+rhenvar4	rhensithwar	536	0	n_darkjmidm01	3
+rhenvar4	rhensithsin	534	0	n_darkjmidm01	1
+rhenvar4	rhensithcom1	508	1	n_sithcom01	1
+rhenvar4	rhendrdsmsh1	542	0	c_drdminelg	2
+rhenvar4	rhensithcom2	510	1	n_sithcom03	2
+rhenvar4	rhensithsol1	261	1	n_sithsoldier03	1
+sithstation1	statsithcom5	508	1	n_sithcom01	5
+sithstation1	starassltdrd1	60	0		2
+sithstation1	staassaultdroid3	59	0		2
+sithstation1	stasithcapf1	42	1	n_sithcomf01	1
+sithstation1	statdrdmin2	461	0	c_mk2_drd	3
+sithstation1	statsithsol1	28	1	n_sithsoldier01	3
+sithstation1	statsithcom3	510	1	n_sithcom03	4
+sithstation1	statsmasher1	542	0	c_drdminelg	3
+sithstation1	stacombatdroid	64	0		4
+sithstation1	statsithsol2	44	1	n_sithsoldier02	1
+sithstation1	statdrdmin1	461	0	c_mk2_drd	6
+sithstation1	stasithcapm1	43	1	n_sithcomm01	1
+sithstation1	statsithsol3	261	1	n_sithsoldier03	3
+sithstation1	statsithcom1	508	1	n_sithcom01	1
+sithstation2	stadroidtank	557	1		1
+sithstation2	statdrdmin1	461	0	c_mk2_drd	2
+sithstation2	statsithcom3	510	1	n_sithcom03	2
+sithstation2	statsithcom1	508	1	n_sithcom01	3
+sithstation2	statsithsol1	28	1	n_sithsoldier01	8
+sithstation2	statdrdmin2	461	0	c_mk2_drd	1
+sithstation2	statsithcom2	509	1	n_sithcom02	1
+sithstation3	rhensithmar	564	0		1
+sithstation3	stasithcapf1	42	1	n_sithcomf01	1
+sithstation3	stasithcapm1	43	1	n_sithcomm01	1
+sithstation3	statdrdmin1	461	0	c_mk2_drd	4
+sithstation3	statsmasher1	542	0	c_drdminelg	6
+sithstation3	starassltdrd1	60	0		5
+sithstation3	statsithcom2	509	1	n_sithcom02	1
+sithstation3	statsithsol2	44	1	n_sithsoldier02	1
+sithstation3	statsithcom1	508	1	n_sithcom01	3
+sithstation3	statdrdmin3	461	0	c_mk2_drd	1
+sithstation3	staassaultdroid3	59	0		3
+sithstation3	statdrdmin2	461	0	c_mk2_drd	2
+sithstation4	caiusthorn	705	1		1
+sithstation4	statsithcom2	509	1	n_sithcom02	1
+sithstation4	statsithcom1	508	1	n_sithcom01	1
+sithstation4	statsithsol1	28	1	n_sithsoldier01	1
+sithstation4	statsithsol2	44	1	n_sithsoldier02	1
+sithstation4	statsithcom3	510	1	n_sithcom03	1
+sithstation4	statsithsol3	261	1	n_sithsoldier03	1
+sithstation4	stasithcapf1	42	1	n_sithcomf01	1
+sithstation4	stasithcapm1	43	1	n_sithcomm01	1
+sithstation4	statdrdmin3	461	0	c_mk2_drd	1
+sithstation4	statdrdmin2	461	0	c_mk2_drd	1
+sithstation4	statsmasher1	542	0	c_drdminelg	1
+sithstation4	staassaultdroid3	59	0		1
+sley99aa	sleyhassle1	450	1	n_commm01	1
+sley99aa	sleyhassle2	241	1	c_gammorean03	1
+sley99aa	sleyhassle3	257	1	n_rodian03	1
+sley99aa	sleyjawa1	73	1		1
+sley99ab	sleytwidanc2	698	1	p_carthbb01	1
+sley99ab	sleybrtndr1	445	0	n_commm01	1
+sley99ab	sleytwidanc1	720	1	n_darthrevan01	1
+sley99ab	sleyjawabar	73	1		1
+sley99ab	sley_bith1	12	1	n_bith01	1
+sley99ab	sley_bith3	12	1	n_bith01	1
+sley99ab	sley_bith2	12	1	n_bith01	1
+sley99ab	sleytwidanc4	722	1	henchmand3	1
+sley99ab	sleytwidanc3	721	1	pmbj02	1
+sley99ac	sleyjawamech	73	1		1
+sley99ad	slenpcgamo1	242	1	c_gammorean04	3
+sley99ad	sleytwislv1	366	1	n_twidancec01	1
+sley99ad	sleytoyslvmst	661	1		1
+sley99ad	sleyslvrgam1	241	1	c_gammorean03	1
+sley99ad	slenpcgamo4	68	1		1
+sley99ad	slenpcgamo2	241	1	c_gammorean03	1
+sley99ad	sleyspaceman	333	1	n_spaceman_low	1
+sley99ad	sleybntyhntr1	352	1	n_mandalorian03	1
+sley99ae	slehutt1	229	0	c_hutt03	1
+sley99ae	sleytwidanc7	698	1	p_carthbb01	1
+sley99ae	zorbgamo4	68	1		1
+sley99ae	zorbgamo2	240	1	c_gammorean02	1
+sley99ae	zorbgamo3	241	1	c_gammorean03	1
+sley99ae	bibfortuna1	618	1	n_commm01	1
+sley99ae	gamwander1	68	1		1
+sley99ae	gamwander2	240	1	c_gammorean02	1
+sley99ae	gamwander3	241	1	c_gammorean03	1
+sley99ae	gamwander4	242	1	c_gammorean04	1
+sley99ae	zorbodroid1	234	1	c_drdprot03	1
+sley99ae	zorbmand1	351	1	n_mandalorian02	1
+sley99ae	zorbgamo1	242	1	c_gammorean04	1
+sley99ah	slbossrancor	80	0		1
+sley99ah	sleygamo2	240	1	c_gammorean02	3
+sley99ah	sleygamo4	242	1	c_gammorean04	4
+sley99ah	sleygamo	68	1		2
+sley99ah	sleygamo3	241	1	c_gammorean03	2
+sley99ah	yuthura1	696	1		1
+sley99ah	sleyenforcer1	619	1	n_commm01	1
+sley99ah	sleyhunter1	333	1	n_spaceman_low	1
+sley99ah	sleassassindroid	56	0		1
+sley99ah	sleymand1	35	1	n_mandalorian01	1
+sley99ai	corzerkgun1	140	1	pmbama01	1
+sley99ai	corzerkgun2	174	1	pmbamc01	1
+sley99ai	corzerkgun3	167	1	pmbamc01	2
+sley99ai	sleyzerkwand5	570	1	n_commm01	1
+sley99ai	sleyzerkwand2	665	1	n_twiundpca01	1
+sley99ai	sleyzerkwand3	150	1	pmbama01	1
+sley99ai	sleyzerkwand4	450	1	n_commm01	3
+sley99ai	sleyczerkcap1	174	1	pmbamc01	1
+sley99ai	sleytwislv1	366	1	n_twidancec01	1
+sley99ai	sleyzerkwand7	132	1	n_twiundpcc01	1
+sley99ai	sleyzerkwand8	102	1	n_twiundpca01	1
+sley99aj	sleytwislv2	270	1	n_twidanceb01	1
+sley99aj	sleytwislv6	699	1		1
+sley99aj	sleytwislv4	366	1	n_twidancec01	1
+sley99aj	sleytwislv3	47	1	n_twidancea01	1
+sley99aj	gamwander1	68	1		1
+sley99aj	gamwander2	240	1	c_gammorean02	2
+sley99aj	gamwander4	242	1	c_gammorean04	2
+sley99aj	gamwander3	241	1	c_gammorean03	1
+sley99aj	sleyoverseer1	417	1	n_commm01	1
+sley99aj	sleywookslv2	271	1	n_wookiem02	1
+sley99aj	slejawaslv1	269	1	n_twilekmb01	1
+sley99aj	sleywookslv3	272	1	n_wookiem03	1
+sley99aj	chandfanslv1	328	1	n_alien03_low	1
+sley99aj	sleytwidanc7	699	1		1
+sley99aj	nonhostgamo1	68	1		1
+sley99aj	nonhosttwi1	450	1	n_commm01	1
+sley99aj	nonhostgamo2	241	1	c_gammorean03	1
+sley99aj	yuthura1	696	1		1
+sley99aj	sleytrand1	464	1	p_trndoshan	1
+sley99aj	sleynikto1	264	1	n_swoopgang04	1
+sley99aj	sleyrodian1	257	1	n_rodian03	1
+sley99aj	sleubese1	459	0		2
+sley99aj	sleyweeq1	599	1	n_weeq01	1
+sley99aj	sleassassindroid	56	0		1
+tar_m03af	tar03_mechanic	244	1	c_ithorian03	1
+tar_m03af	tar03_anglu	694	1		1
+tar_m03af	tar03_raceannoun	373	1	n_duros02	1
+tatm17aa	tat17_11iziz_01	73	0		1
+tatm17aa	tat17_12rodia_01	373	0	n_duros02	2
+tatm17aa	tat17_12trade_01	377	0	n_czerkaoff01	2
+tatm17aa	tat17_12rodia_04	373	0	n_duros02	2
+tatm17aa	tat17_12trade_02	196	0	n_czerkaoff01	1
+tatm17aa	tat17_12trade_03	377	0	n_czerkaoff01	1
+tatm17aa	tat17_ronto2	87	0		1
+tatm17aa	tat17_astro_02	313	1	n_astromech01	1
+tatm17aa	tat17_astro_03	313	1	n_astromech01	2
+tatm17aa	tat17_12comm_07	402	0	n_comm_low_mb	1
+tatm17aa	tat17_ronto	87	0		1
+tatm17aa	tat17_xxjawa_01	73	1		6
+tatm17aa	tat17_news_01	617	0	n_commm01	3
+tatm17aa	tat17_news_06	191	0	n_commm01	1
+tatm17aa	tat17_news_07	616	0	n_commm01	1
+tatm17aa	tat17_12comm_01	403	0	n_comm_low_m2b	3
+tatm17ab	tatdockwrk1	377	0	n_czerkaoff01	1
+tatm17ad	tat17_03fazza_01	72	0		1
+tatm17ad	tat17_0xpazaa_01	257	1	n_rodian03	1
+tatm17ad	tatoldman	695	1		1
+tatm17af	tat17_07junix_01	27	0	n_smuggler01	1
+tatm17af	tat17_07jawag_01	73	0		1
+tatm17af	tat17_07furko_01	26	0	n_fatcomm01	1
+tatm17af	tat17_07offic_01	198	0	n_czerkaoff01	1
+tatm17af	tat17_07offic_03	196	0	n_czerkaoff01	1
+tatm17af	tat17_07xjawa_01	73	0		1
+tatm17af	tat17_07ithor_03	243	0	c_ithorian02	1
+tatm17af	tat17_twilek	723	1	henchmand4	1
+tatm17ag	tat17_10greet_01	258	0	n_rodian04	1
+tatm17ag	tatczerkoff1	426	0	n_commf01	1
+tatm18aa	tatsandwarr1	46	1		3
+tatm18ab	tat18ab_bantha	53	1		3
+tatm18ac	tat18_dewback	55	1		4
+tatm20aa	tat20_bantha	53	0		2
+tatm20aa	tatsandchief1	382	1	n_tusken05	1
+tatm20aa	tatsandfem1	90	1		4
+tatm20aa	tatsandwarr1	46	1		16
+tatruins2	tatangboss	168	1	pmbamc01	1
+tatruins2	tatgang5	565	1	n_gran01	1
+tatruins2	tatgang6	39	1	n_rodian01	1
+tatruins2	tatgang3	621	1	n_commf01	1
+tatruins2	tatdrdsmsh1	542	0	c_drdminelg	4
+tatruins2	tatgamo	241	1	c_gammorean03	5
+tatruins2	tatassasindrd1	56	0		2
+tatruins2	tatubese1	459	0		11
+tatruins2	tatdrdmin1	461	0	c_mk2_drd	7
+tatruins2	tatgang1	270	1	n_twidanceb01	3
+tatruins2	tatgang7	599	1	n_weeq01	2
+tatruins2	tatminiboss	352	1	n_mandalorian03	1
+unkm41aa	unk41_gizka	69	0		2
+unkm41aa	unk41_gizka002	69	0		1
+unkm41aa	rakatascout	36	0	n_rakata01	1
+unkm41aa	blraka1	255	0	n_rakata03	1
+unkm41aa	blraka3	255	0	n_rakata03	1
+unkm41aa	blraka5	255	0	n_rakata03	1
+unkm41aa	blraka7	255	0	n_rakata03	1
+unkm41aa	blraka6	255	0	n_rakata03	1
+unkm41aa	blraka2	255	0	n_rakata03	2
+unkm41ab	unk41_gizka	69	0		3
+unkm41ab	unk41_gizkax	69	0		1
+unkm41ab	yavlilranc1	309	0		3
+unkm41ac	unk41_gizka	69	0		2
+unkm41ac	blraka1	255	0	n_rakata03	1
+unkm41ac	blraka2	255	0	n_rakata03	2
+unkm41ac	blraka5	255	0	n_rakata03	1
+unkm41ac	blraka6	255	0	n_rakata03	1
+unkm41ac	blraka7	255	0	n_rakata03	1
+unkm41ac	blraka4	255	0	n_rakata03	1
+unkm41ad	unk41_gizka	69	1		2
+unkm41ad	g_rancor003	309	0		4
+unkm41ad	g_rancor04	309	0		2
+unkm41ad	blraka2	255	0	n_rakata03	1
+unkm41ad	blraka5	255	0	n_rakata03	1
+unkm41ad	blraka7	255	0	n_rakata03	1
+unkm41ad	blraka1	255	0	n_rakata03	1
+unkm41ad	blraka3	255	0	n_rakata03	1
+unkm41ad	blraka4	255	0	n_rakata03	1
+unkm41ad	blraka6	255	0	n_rakata03	1
+unkm42aa	unk42_redelder	254	1	n_rakata02	1
+unkm42aa	n_rakata005	254	1	n_rakata02	1
+unkm42aa	unk42_breed01	255	0	n_rakata03	1
+unkm42aa	unk42_breed02	255	0	n_rakata03	1
+unkm42aa	unk42_breed03	255	0	n_rakata03	1
+unkm42aa	unk42_rakbreed01	254	0	n_rakata02	1
+unkm42aa	unk42_rakbreed02	254	0	n_rakata02	1
+unkm42aa	unk42_rakbreed03	254	0	n_rakata02	1
+unkm42aa	unk42_redelde001	254	1	n_rakata02	1
+unkm42aa	unk42_redelde002	254	1	n_rakata02	1
+unkm42aa	n_rakata003	254	1	n_rakata02	6
+unkm42aa	n_rakata002	254	1	n_rakata02	5
+unkm42aa	n_rakata006	254	1	n_rakata02	1
+unkm42aa	n_rakata001	254	1	n_rakata02	2
+unkm42aa	unk42_elddroid01	65	1		1
+unkm42aa	unk42_elddroid02	65	1		1
+unkm42aa	unk42_elddroid03	65	1		1
+unkm42aa	unk42_elddroid04	65	1		1
+unkm43aa	unk43_theone	255	1	n_rakata03	1
+unkm43aa	unk43_blkwandere	255	1	n_rakata03	10
+unkm43aa	unk41_rancor2	309	0		1
+unkm43aa	unk41_rancor3	309	0		1
+unkm43aa	unk43_blk	255	1	n_rakata03	3
+unkm43aa	unk43_blk2	255	1	n_rakata03	3
+unkm43aa	unk43_blkwand002	255	1	n_rakata03	8
+unkm43aa	unk43_blkwand001	255	1	n_rakata03	5
+unkm43aa	unk43_rancor4	309	0		1
+unkm43aa	unk43_rancor005	309	0		1
+unkm43aa	yavdrdspd1	65	1		3
+unkm44aa	g_turretbl009	182	0		4
+unkm44aa	n_darkjedim001	20	1		4
+unkm44aa	n_darkjedim002	19	1	n_darkjedif01	4
+unkm44aa	g_turretbl010	182	0		2
+unkm44aa	yavsithw1	536	0	n_darkjmidm01	3
+unkm44aa	yavsithco2	508	1	n_sithcom01	2
+unkm44aa	cmbtdrd1	461	0	c_mk2_drd	1
+unkm44aa	yavsithcapf1	42	1	n_sithcomf01	1
+unkm44aa	yavsitha1	564	1		2
+unkm44aa	yavdjedif4	566	0		1
+unkm44aa	yavsithco1	508	1	n_sithcom01	1
+unkm44aa	yavsithcapm1	43	1	n_sithcomm01	1
+unkm44aa	yavdjedim4	563	0		1
+unkm44aa	cmbtdrd4	461	0	c_mk2_drd	1
+unkm44aa	yavdrdspd1	65	1		3
+unkm44ab	yavdjedim4	563	0		1
+unkm44ab	yavhssiss	662	1		1
+unkm44ab	yavsitha1	564	1		1
+unkm44ab	yavlilranc1	309	0		1
+unkm44ab	yavsithw1	536	0	n_darkjmidm01	1
+unkm44ab	yavdjedif4	566	0		1
+unkm44ab	cmbtdrd1	461	0	c_mk2_drd	1
+unkm44ab	yavsithcapm1	43	1	n_sithcomm01	1
+unkm44ab	yavsithcapf1	42	1	n_sithcomf01	1
+unkm44ab	yavdrdspd1	65	1		3
+unkm44ac	lehsithlrd1	173	0	pmbamc01	1
+unkm44ac	lehsithldy1	667	0	n_twiundpca01	1
+unkm44ac	yavdjedif4	566	0		1
+unkm44ac	yavdjedim4	563	0		1
+unkm44ac	yavhssiss	662	1		2
+yavbase1	yavsithlord1	168	0	pmbamc01	1
+yavbase1	yavsithlady1	135	0	n_twiundpcc01	1
+yavbase1	yavsithco2	510	1	n_sithcom03	6
+yavbase1	yavsithco1	508	1	n_sithcom01	5
+yavbase1	yavassltdrd1	60	0		3
+yavbase1	yavsithcapf1	42	1	n_sithcomf01	1
+yavbase1	yavsithcapm1	43	1	n_sithcomm01	1
+yavbase1	yavsithco3	510	1	n_sithcom03	2
+yavbase1	yavdjedif1	613	0	n_commf01	2
+yavbase1	yavdjedim1	563	0		2
+yavbase1	yavdjedim2	616	0	n_commm01	1
+yavbase1	yavsitha1	564	1		1
+yavhide1	corviz1	351	1	n_mandalorian02	1
+yavhide1	mndbntyhunter	35	1	n_mandalorian01	2
+yavhide1	mndmerc	352	1	n_mandalorian03	3
+yavjungle1	kliknik1	441	1	c_kinrath04	2
+yavjungle1	stoneray1	78	1		2
+yavjungle1	yavsithw1	536	0	n_darkjmidm01	2
+yavjungle1	yavsitha1	564	1		2
+yavjungle1	yavsithcapf1	42	1	n_sithcomf01	1
+yavjungle1	yavsithco1	508	1	n_sithcom01	1
+yavjungle1	yavterentatek	353	1		2
+yavjungle1	yavhssiss	662	1		1
+yavjungle1	yavsithcapm1	43	1	n_sithcomm01	1
+yavjungle1	yavsithco3	510	1	n_sithcom03	1
+yavjungle1	yaventity	563	0		1
+yavsadow1	yavterentatek	353	1		3
+yavsadow1	yavrakg	79	1		2
+yavsadow1	yavhssiss	662	1		2
+yavsadow1	bossrancor	80	0		1
+yavshrine1	yaventity	564	0		1
+yavshrine1	yavterentatek	353	1		10
+yavshrine1	yavsithw1	536	0	n_darkjmidm01	2
+yavshrine1	yavdjedif4	566	0		2
+yavshrine1	yavdjedim1	563	0		2
+yavshrine1	yavdjedim4	563	0		4
+yavshrine1	yavsitha1	564	1		2
+yavshrine1	yavhssiss	662	1		9
+yavshrine1	yavdjedim2	616	0	n_commm01	1
+yavshrine1	yavdjedif1	613	0	n_commf01	2
+yavshrine1	yavrakg	79	1		8
+yavshrine1	yavdrdspd1	65	1		5
+yavstation	suvam	624	1	n_rodian05	1
+yavstation	yavgizka	69	0		1
+yavtomb1	yavdjedim4	563	0		2
+yavtomb1	yavsitha1	564	1		3
+yavtomb1	yavsithw1	536	0	n_darkjmidm01	3
+yavtomb1	yavdjedim1	563	0		1
+yavtomb1	yavdjedif4	566	0		1
+yavtomb1	yavsithco2	509	1	n_sithcom02	8
+yavtomb1	yavsithco1	508	1	n_sithcom01	8
+yavtomb1	yavsithcapm1	43	1	n_sithcomm01	1
+yavtomb1	yavdjedim2	616	0	n_commm01	1
+yavtomb1	yavdjedif1	613	0	n_commf01	1
+yavtomb1	yavsithco3	510	1	n_sithcom03	1
+yavtomb1	yavsithcapf1	42	1	n_sithcomf01	1
+yavtomb1	kliknik1	441	1	c_kinrath04	5
+yavtomb1	stoneray1	78	1		8
+yavtomb2	ghostekun	596	0	n_commm01	1
+yavtomb2	yavsithcapf1	42	1	n_sithcomf01	1
+yavtomb2	yavsithcapm1	43	1	n_sithcomm01	1
+yavtomb2	yavsithco2	508	1	n_sithcom01	1
+yavtomb2	yavsithco1	508	1	n_sithcom01	1
+yavtomb2	yavsithw1	536	0	n_darkjmidm01	1
+yavtomb2	yavhssiss	662	1		4
+yavtomb2	yavterentatek	353	1		2
+yavtomb2	yavsithw2	536	0	n_darkjmidm01	2
