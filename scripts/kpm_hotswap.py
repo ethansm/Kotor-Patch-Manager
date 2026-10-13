@@ -128,6 +128,37 @@ def canon(s):
     return re.sub(r"[^a-z0-9]", "", s)
 
 
+def pascal_dir(pid):
+    return pid.replace("_", "-").title().replace("-", "")
+
+
+def canonical_kpm_dir(pid, kpm):
+    """Existing Patches/<X> whose canon() equals canon(pid) (any casing), else Patches/<PascalCase>. ValueError if the
+    chosen dir already holds a manifest for a different patch id."""
+    patches = kpm / "Patches"
+    hits = sorted(d for d in patches.iterdir() if d.is_dir() and canon(d.name) == canon(pid)) if patches.is_dir() else []
+    kd = hits[0] if hits else patches / pascal_dir(pid)
+    mf = kd / "manifest.toml"
+    if mf.is_file():
+        try:
+            with open(mf, "rb") as f:
+                other = tomllib.load(f)["patch"]["id"]
+        except (KeyError, tomllib.TOMLDecodeError, OSError):
+            other = None
+        if other not in (None, pid):
+            raise ValueError(f"{kd} holds patch id '{other}', not '{pid}'")
+    return kd
+
+
+def load_kmap(kpm):
+    """ks.kpm_dirs, or None after printing the duplicate-id FATAL to stderr."""
+    try:
+        return ks.kpm_dirs(kpm)
+    except ks.DuplicateKpmId as e:
+        print(str(e), file=sys.stderr)
+        return None
+
+
 def load_live(game):
     cfg = game / "patch_config.toml"
     return {p["id"]: p for p in tomllib.load(open(cfg, "rb")).get("patches", [])}
@@ -210,7 +241,13 @@ def prepare(pid, row, src, kpm, tag):
     """Mirror (if MIRROR) and rebuild. Returns (ok, message, copied files)."""
     kd = Path(row["kpm"]) if row.get("kpm") else None
     if kd is None:
-        return False, f"{pid}: no Patches/<X> dir with this id in KPM (add the mod to KPM by hand first)", []
+        try:
+            kd = canonical_kpm_dir(pid, kpm)
+        except ValueError as e:
+            return False, f"{pid}: {e}", []
+        if not kd.exists():
+            kd.mkdir(parents=True)
+            print(f"created {kd}")
     copied = mirror(src, kd) if row["verdict"] == "MIRROR" else []
     old = sorted(kd.glob("*.kpatch"))
     if old:
@@ -441,7 +478,9 @@ def main(argv=None):
     if not (game / "patch_config.toml").is_file():
         print(f"no {game / 'patch_config.toml'}", file=sys.stderr)
         return 2
-    live, kmap = load_live(game), ks.kpm_dirs(kpm)
+    live, kmap = load_live(game), load_kmap(kpm)
+    if kmap is None:
+        return 2
     try:
         manifests = resolve(a.mod, kmap)
     except ValueError as e:
@@ -477,6 +516,9 @@ def main(argv=None):
                 print("FAILED " + msg)
                 return 1
             print(f"prepared {pid}: mirrored {', '.join(copied) or 'nothing'}; rebuilt")
+        kmap = load_kmap(kpm)   # --prepare may have created Patches/<X> dirs
+        if kmap is None:
+            return 2
         rows = statuses(manifests, kmap, live, game)
         todo = {pid: r for pid, r in rows.items() if r["verdict"] != "LIVE"}
         swappable = [pid for pid, r in todo.items() if r["verdict"] == "SWAP"]

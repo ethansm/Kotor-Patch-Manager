@@ -245,6 +245,79 @@ class PrepareTest(Base):
         self.assertIn("PREPARE SUCCESS: 1 mod(s)", out)
         self.assertIn("Ready for --apply (hot-swap): demo", out)
 
+    # ---- H4: canonical KPM folder creation
+    def new_mod(self, pid="save-events", src="save_events_src"):
+        """A repo mod with no KPM folder, live in the config (no live DLL, so it ends as SWAP)."""
+        d = self.e.src.parent / src
+        d.mkdir()
+        (d / "manifest.toml").write_text(f'[patch]\nid = "{pid}"\nversion = "1.0.0"\n')
+        (d / "SaveEvents.cpp").write_text("int z;\n")
+        self.e.live[pid] = {"id": pid, "dll": f"patches/{pid}.dll", "hooks": []}
+        self.e.write_config()
+
+    def new_build(self, calls):
+        def fake_build(kd, kpm):
+            calls.append(kd)
+            with zipfile.ZipFile(kd / "SaveEvents.kpatch", "w") as z:
+                z.writestr("manifest.toml", (kd / "manifest.toml").read_bytes())
+                z.writestr("binaries/windows_x86.dll", b"DLL2")
+            t = time.time() + 5
+            os.utime(kd / "SaveEvents.kpatch", (t, t))
+            return 0, ""
+        return fake_build
+
+    def test_pascal_dir(self):
+        self.assertEqual(kh.pascal_dir("save-events"), "SaveEvents")
+        self.assertEqual(kh.pascal_dir("gui_input"), "GuiInput")
+        self.assertEqual(kh.pascal_dir("demo"), "Demo")
+
+    def test_prepare_creates_new_pascal_dir(self):
+        self.new_mod()
+        calls = []
+        with mock.patch.object(kh, "run_create_patch", self.new_build(calls)):
+            rc, out = self.run_cli("--mod", "save-events", "--prepare")
+        kd = self.e.root / "kpm/Patches/SaveEvents"
+        self.assertEqual(rc, 0, out)
+        self.assertEqual(calls, [kd])
+        self.assertTrue((kd / "manifest.toml").is_file())
+        self.assertEqual((kd / "SaveEvents.cpp").read_text(), "int z;\n")
+        self.assertIn("created ", out)
+        self.assertIn("after prepare: save-events=SWAP", out)
+
+    def test_prepare_reuses_alt_case_dir(self):
+        self.new_mod()
+        alt = self.e.root / "kpm/Patches/save-events"
+        alt.mkdir()
+        calls = []
+        with mock.patch.object(kh, "run_create_patch", self.new_build(calls)):
+            rc, out = self.run_cli("--mod", "save-events", "--prepare")
+        self.assertEqual(rc, 0, out)
+        self.assertEqual(calls, [alt])
+        self.assertTrue((alt / "manifest.toml").is_file())
+        self.assertFalse((self.e.root / "kpm/Patches/SaveEvents").exists())
+
+    def test_prepare_refuses_foreign_manifest_dir(self):
+        self.new_mod()
+        foreign = self.e.root / "kpm/Patches/SaveEvents"
+        foreign.mkdir()
+        mf = foreign / "manifest.toml"
+        mf.write_text('[patch]\nid = "other"\nversion = "1.0.0"\n')
+        with mock.patch.object(kh, "run_create_patch", self.new_build([])):
+            rc, out = self.run_cli("--mod", "save-events", "--prepare")
+        self.assertEqual(rc, 1, out)
+        self.assertIn("FAILED save-events:", out)
+        self.assertIn("holds patch id 'other'", out)
+        self.assertEqual(mf.read_text(), '[patch]\nid = "other"\nversion = "1.0.0"\n')
+
+    def test_prepare_hotswap_duplicate_rc2(self):
+        for n in ("SaveEvents", "save-events"):
+            d = self.e.root / "kpm/Patches" / n
+            d.mkdir()
+            (d / "manifest.toml").write_text('[patch]\nid = "save-events"\nversion = "1.0.0"\n')
+        rc, out = self.run_cli("--mod", "demo", "--prepare")
+        self.assertEqual(rc, 2, out)
+        self.assertIn("FATAL: Duplicate", out)
+
     def _reinstall_build(self):
         def fake_build(kd, kpm):
             self.e.kpatch(b"DLL2", hooks=HOOKS.replace("0x401000", "0x402000"))

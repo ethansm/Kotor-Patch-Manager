@@ -74,13 +74,21 @@ def git_dirty(src):
     return [l[3:].split("/")[-1] for l in r.stdout.splitlines() if is_production(l[3:].split("/")[-1])]
 
 
+class DuplicateKpmId(Exception):
+    """Two Patches/<X> folders hold the same patch id (usually a casing twin such as save-events + SaveEvents)."""
+
+
 def kpm_dirs(kpm):
     out = {}
-    for m in (kpm / "Patches").glob("*/manifest.toml"):
+    for m in sorted((kpm / "Patches").glob("*/manifest.toml")):
         try:
-            out[tomllib.load(open(m, "rb"))["patch"]["id"]] = m.parent
+            with open(m, "rb") as f:
+                pid = tomllib.load(f)["patch"]["id"]
         except (KeyError, tomllib.TOMLDecodeError, OSError):
-            pass
+            continue
+        if pid in out and out[pid] != m.parent:
+            raise DuplicateKpmId(f"FATAL: Duplicate KPM patch ID '{pid}' found in directories '{out[pid].name}' and '{m.parent.name}'")
+        out[pid] = m.parent
     return out
 
 
@@ -179,7 +187,11 @@ def main(argv=None):
         print(f"no {cfg}", file=sys.stderr)
         return 2
     live = {p["id"]: p for p in tomllib.load(open(cfg, "rb")).get("patches", [])}
-    kmap = kpm_dirs(a.kpm)
+    try:
+        kmap = kpm_dirs(a.kpm)
+    except DuplicateKpmId as e:
+        print(str(e), file=sys.stderr)
+        return 2
     only = {x for x in a.only.split(",") if x}
     rows = []
     for m in pick_sources(repo_manifests(), kmap):

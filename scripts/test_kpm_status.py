@@ -1,4 +1,6 @@
 """Tests for kpm_status.py (run: python3 test_kpm_status.py, cwd=scripts)."""
+import contextlib
+import io
 import os
 import pathlib
 import sys
@@ -46,6 +48,40 @@ class Env:
 
     def run(self):
         return ks.status(self.src / "manifest.toml", ks.kpm_dirs(self.root / "kpm"), self.live, self.game)
+
+
+class DuplicateGuardTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.e = Env(self.tmp.name)
+        self.addCleanup(self.tmp.cleanup)
+
+    def twin(self, name, pid="save-events"):
+        d = self.e.root / "kpm/Patches" / name
+        d.mkdir()
+        (d / "manifest.toml").write_text(f'[patch]\nid = "{pid}"\nversion = "1.0.0"\n')
+
+    def test_duplicate_id_dirs_fatal(self):
+        self.twin("SaveEvents")
+        self.twin("save-events")
+        with self.assertRaises(ks.DuplicateKpmId) as cm:
+            ks.kpm_dirs(self.e.root / "kpm")
+        self.assertEqual(str(cm.exception), "FATAL: Duplicate KPM patch ID 'save-events' found in directories 'SaveEvents' and 'save-events'")
+
+    def test_same_dir_not_duplicate(self):
+        self.assertEqual(ks.kpm_dirs(self.e.root / "kpm"), {"demo": self.e.kd})
+        self.twin("Other", pid="other")
+        self.assertEqual(set(ks.kpm_dirs(self.e.root / "kpm")), {"demo", "other"})
+
+    def test_main_reports_duplicate_rc2(self):
+        self.twin("SaveEvents")
+        self.twin("save-events")
+        (self.e.game / "patch_config.toml").write_text("")
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err), contextlib.redirect_stdout(io.StringIO()):
+            rc = ks.main(["--game", str(self.e.game), "--kpm", str(self.e.root / "kpm")])
+        self.assertEqual(rc, 2)
+        self.assertIn("FATAL: Duplicate KPM patch ID", err.getvalue())
 
 
 class StatusTest(unittest.TestCase):
