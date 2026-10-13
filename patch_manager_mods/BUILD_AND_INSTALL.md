@@ -86,6 +86,7 @@ Gate & Verify:
 
 1. **Verify After Fix Gate (MANDATORY)**: `scripts/pre_install_gate.sh --mod <x>_src [--mod <y>_src ...]`. MUST report `GATE PASS` across all suites (including check-exports and Wine smokes) against the freshly prepared kpatches before proceeding. Never dismiss a failure as "pre-existing" or "expected" without explicit waiver.
 2. `python3 scripts/kpm_status.py`. Each id targeted for hot-swap must read `SWAP`.
+3. If the gate fails, fix the cause and re-run the failing step right away (stale smoke pins such as a version banner are real failures).
 
 Install:
 

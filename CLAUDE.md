@@ -29,6 +29,12 @@ At session start or before mod work, run `python3 scripts/check_kpm_updates.py -
 - Compat check: after touching `_shared_src` or a library, run `python3 scripts/compat_check.py <files>`
 - Scoped tests: always scope `run_tests.py` (e.g. `run_tests.py <name|filter>` or `-k <filter>`; bare `run_tests.py` runs all 156 repo suites >60s). Positional filter names and suite IDs are supported.
 
+## Verify-After-Fix Invariant
+- Never call a test/gate failure "pre-existing" or "expected" without a known-issues block in the prompt or a written waiver; investigate first (stale smoke, version pin, allowlist).
+- After editing code, manifests, `raw_addresses.toml` or kpatches to fix a failure, re-run that failing suite immediately.
+- After `kpm_hotswap.py --prepare`, a fresh `scripts/pre_install_gate.sh --mod <x>_src` `GATE PASS` is required before `--apply`.
+- No raw hex into `raw_addresses.toml` before `python3 scripts/query_ghidra.py address <hex>`.
+
 ## Context Budget & Read Policy (Anti-Bloat Standards)
 - **Zero-Read / Self-Contained Plans**: In Plan Mode, inline the exact 5-10 line struct/interface or macro snippets directly in the plan. Never tell the executor to "Read first: `LargeHeader.h`".
 - **Execution Fast-Path**: When executing an approved plan after `/clear`, the plan is self-contained. Proceed directly to targeted file edits and tests.

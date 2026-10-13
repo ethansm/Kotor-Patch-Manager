@@ -5,9 +5,9 @@
 - Follow `patch_manager_mods/BUILD_AND_INSTALL.md` (gate, `kpm_hotswap.py --prepare`, `--apply`).
 - **Two-Stage Gate Flow**: Source gate (`pre_install_gate.sh --skip-default --mod <x>_src`) -> Prepare (`kpm_hotswap.py --prepare`) -> Full verification gate (`pre_install_gate.sh --mod <x>_src`) -> Apply (`--apply`).
 - **Verify After Fix & Gate Invariant (CRITICAL)**:
-  - NEVER dismiss a test or gate failure as "pre-existing" or "expected" without an explicit written waiver. Gate failure is a hard stop.
+  - NEVER dismiss a test or gate failure as "pre-existing" or "expected" unless it is listed in a known-issues block of the active prompt or an explicit written waiver. A gate failure is a hard stop.
   - Rebuilding `.kpatch` files via `--prepare` REQUIRES re-running `pre_install_gate.sh` to obtain a fresh `GATE PASS` before `--apply`.
-  - Re-verify immediately after every edit to code, manifests, or allowlists before proceeding to downstream steps.
+  - Re-verify immediately after every edit to code, manifests, allowlists (`raw_addresses.toml`) or `.kpatch` files: re-run the specific failing suite right then; never batch verification after several untested edits.
   - NEVER dump raw addresses into `raw_addresses.toml` without prior lookup via `python3 scripts/query_ghidra.py address <hex>`.
 - Never use KPatchLauncher for a change that can be hot-swapped.
 - Never run two installers at once; commit with explicit paths only.
