@@ -229,15 +229,17 @@ bool isWhitelisted(uintptr_t panel) {
     for (uintptr_t w : PanelWhitelist) if (vt == w) return true;
     return false;
 }
-// Diagnostic only: why the gate is open/closed. Filled by gateEval, logged on change by gateLog (never per frame).
+// Diagnostic only: why the gate is open/closed. Filled by gateEval, logged on change by gateLog (never per frame; past GateLogCap a 30 s heartbeat of the current state).
 struct GateInfo { bool open = false; const char* why = "other"; uintptr_t hud = 0, top = 0; uint32_t f48 = 0, topF48 = 0; bool f48Bad = false; };
 // A genuine panel flags dword is small (0x45/0x47/0x145); the first HUD build of a process can carry stale heap garbage (0xFF8FB4xx) that keeps bit 0x400 set forever.
 bool hudFlagsPlausible(uint32_t f48) { return (f48 >> 12) == 0; }
 void gateLog(const GateInfo& g) {
     static GateInfo last; static bool have = false; static int lines = 0;
-    if (have && last.open == g.open && strcmp(last.why, g.why) == 0 && last.hud == g.hud && last.f48 == g.f48 && last.f48Bad == g.f48Bad && last.top == g.top && last.topF48 == g.topF48) return;
+    const bool same = have && last.open == g.open && strcmp(last.why, g.why) == 0 && last.hud == g.hud && last.f48 == g.f48 && last.f48Bad == g.f48Bad && last.top == g.top && last.topF48 == g.topF48;
+    // past the cap keep a 30 s heartbeat of the current state so late gate state stays visible
+    if (lines > GateLogCap) { last = g; have = true; KP_LOG_EVERY(chHud, 30000, "GATE late open=%d why=%s hud=%08x f48=%08x top=%08x topf48=%08x", (int)g.open, g.why, (unsigned)g.hud, (unsigned)g.f48, (unsigned)g.top, (unsigned)g.topF48); return; }
+    if (same) return;
     last = g; have = true;
-    if (lines > GateLogCap) return;
     if (lines == GateLogCap) { ++lines; KP_LOG(chHud, "GATE cap reached"); return; }
     if (g.f48Bad) { ++lines; KP_LOG(chHud, "GATE hud flags implausible f48=%08x -> treated as not ignored", (unsigned)g.f48); if (lines >= GateLogCap) return; }
     ++lines;
@@ -325,6 +327,8 @@ struct UseInfo { Pick pk; int hp = 0; uintptr_t server = 0; };
 
 #define REFUSE(...) do { KP_LOGV(chCall, KPLOG_WARN, __VA_ARGS__); return; } while (0)
 #define REFUSEF(...) do { KP_LOGV(chCall, KPLOG_WARN, __VA_ARGS__); return false; } while (0)
+// Expected de-dupe/debounce refusals are INFO: normal play, not a problem (selfheal_log_check matches on the text, not the level).
+#define REFUSEI(...) do { KP_LOGV(chCall, KPLOG_INFO, __VA_ARGS__); return false; } while (0)
 
 // QDIAG (trace only; callers check g_queueTrace). Own INFO lines, never appended to REFUSE/KICK/USE/DONE/TIMEOUT.
 // Types: hex, at most 8 shown, then ",+N" for the rest.
@@ -355,7 +359,7 @@ bool useNow(const K2PsContext* ctx, DWORD now, int mi, int minCount, const char*
     if (!menuInfo(ctx)) REFUSEF("REFUSE no menu info in K2PsContext (%s)", src);
     if (ctx->inMenu) REFUSEF("REFUSE in menu (ctx.inMenu=1) (%s)", src);
     if (!gameplayHudActive(g_hud)) { if (g_queueTrace) qdiagHudRefuse(mi); REFUSEF("REFUSE hud gate not active (%s)", src); }
-    if (mi >= 0 && mi <= 2 && g_lastUseMs[mi] && now - g_lastUseMs[mi] < DebounceMs) REFUSEF("REFUSE debounce member=%d (%lu ms since the last use) (%s)", mi, (unsigned long)(now - g_lastUseMs[mi]), src);
+    if (mi >= 0 && mi <= 2 && g_lastUseMs[mi] && now - g_lastUseMs[mi] < DebounceMs) REFUSEI("REFUSE debounce member=%d (%lu ms since the last use) (%s)", mi, (unsigned long)(now - g_lastUseMs[mi]), src);
     std::vector<itemread::Entry> items;
     itemread::readGroup(g_hud, ItemGroup, &items);
     party::Vitals v[3];
@@ -371,7 +375,7 @@ bool useNow(const K2PsContext* ctx, DWORD now, int mi, int minCount, const char*
         actq::Snapshot qs;
         if (!actq::read(m.server, &qs, SiteQueue, SiteRound) && g_queueTrace) KP_LOG(chCall, "QDIAG dedupe queue read failed member=%d", mi);
         shui::UseRefusal ur = shui::useAllowed(actq::useQueued(qs));
-        if (ur != shui::UseRefusal::None) { if (g_queueTrace) qdiagSnap("dedupe", mi, qs, actq::playerPaused(SitePause)); REFUSEF("REFUSE %s member=%d (%s)", shui::useRefusalText(ur), mi, src); }
+        if (ur != shui::UseRefusal::None) { if (g_queueTrace) qdiagSnap("dedupe", mi, qs, actq::playerPaused(SitePause)); REFUSEI("REFUSE %s member=%d (%s)", shui::useRefusalText(ur), mi, src); }
     }
     if (!m.client || !rd<uint32_t>(m.client, Client_ObjectId, &clientId)) REFUSEF("REFUSE ids: client object id unreadable member=%d", mi);
     uint32_t selfServerId = serverIdOf(clientId), itemServerId = pk.srv;

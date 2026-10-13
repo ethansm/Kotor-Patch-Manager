@@ -289,16 +289,18 @@ bool isWhitelisted(uintptr_t panel) {
     return false;
 }
 const char* g_gateDetail = "";
-// Diagnostic only: structured gate reason, logged on change by gateLog (never per frame, capped).
+// Diagnostic only: structured gate reason, logged on change by gateLog (never per frame, capped; past GateLogCap a 30 s heartbeat of the current state).
 struct GateInfo { bool open = false; const char* why = "other"; uintptr_t hud = 0, top = 0; uint32_t f48 = 0, topF48 = 0; bool f48Bad = false; };
 // A genuine panel flags dword is small (0x45/0x47/0x145); the first HUD build of a process can carry stale heap garbage (0xFF8FB4xx) that keeps bit 0x400 set forever.
 bool hudFlagsPlausible(uint32_t f48) { return (f48 >> 12) == 0; }
 constexpr int GateLogCap = 64;
 void gateLog(const GateInfo& g) {
     static GateInfo last; static bool have = false; static int lines = 0;
-    if (have && last.open == g.open && strcmp(last.why, g.why) == 0 && last.hud == g.hud && last.f48 == g.f48 && last.f48Bad == g.f48Bad && last.top == g.top && last.topF48 == g.topF48) return;
+    const bool same = have && last.open == g.open && strcmp(last.why, g.why) == 0 && last.hud == g.hud && last.f48 == g.f48 && last.f48Bad == g.f48Bad && last.top == g.top && last.topF48 == g.topF48;
+    // past the cap keep a 30 s heartbeat of the current state so late gate state stays visible
+    if (lines > GateLogCap) { last = g; have = true; KP_LOG_EVERY(chGate, 30000, "GATE late open=%d why=%s hud=%08x f48=%08x top=%08x topf48=%08x", (int)g.open, g.why, (unsigned)g.hud, (unsigned)g.f48, (unsigned)g.top, (unsigned)g.topF48); return; }
+    if (same) return;
     last = g; have = true;
-    if (lines > GateLogCap) return;
     if (lines == GateLogCap) { ++lines; KP_LOG(chGate, "GATE cap reached"); return; }
     if (g.f48Bad) { ++lines; KP_LOG(chGate, "GATE hud flags implausible f48=%08x -> treated as not ignored", (unsigned)g.f48); if (lines >= GateLogCap) return; }
     ++lines;
