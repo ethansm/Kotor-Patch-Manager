@@ -16,7 +16,10 @@ ONLY through read_status() (swarm_run.py status --out O --json), never from a gl
 only with BOTH --claude-bin ABS and --yes-spend USD (after a swarm_run.py probe); --engine stub refuses both flags.
 Any other combination exits 2 before anything is written.
 The orchestrator never reads a case file's ground truth (true_root_cause); the case's blind_forbidden_terms refuse
-any blind/null unit prompt that contains one (case-insensitive). A human must review every report before a fix starts.
+any blind/null unit prompt that contains one (matched after norm_terms: case, spacing, underscores, hyphens,
+zero-width characters and L<n>| line markers ignored; a term under 3 characters is refused). `new` refuses a symptom
+that contains one. Verify prompts are not checked (they hold model-written claims). A human must review every report
+before a fix starts.
 bundle, blind, null, verify, check and report hold RUN/.lock (flock, non-blocking): a second one on the same run exits 2.
 Each unit records the bundle_sha256 it was built from (a verify unit also its claim_sha256); a stage built from another
 bundle reads as incomplete. `bundle` refuses a run that already has stage data, and a bundle with no excerpts.
@@ -35,6 +38,7 @@ import os
 import re
 import subprocess
 import sys
+import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -199,7 +203,23 @@ def read_case(path) -> dict:
     return keep
 
 
+_LINE_MARK_RE = re.compile(r"L\d+\|")          # a rendered excerpt line marker: `L13| ` (see render_excerpts)
+_SEPARATOR_RE = re.compile(r"[\s_-]+")
+
+
+def norm_terms(s: str) -> str:
+    """The comparison form of a forbidden term or of a prompt: NFKC, format characters (category Cf, e.g. zero-width
+    space) removed, `L<n>|` line markers removed, runs of whitespace, underscores and hyphens removed, casefolded.
+    So `invalid creature` matches `invalid\\u00a0creature`, `inval\\u200bid creature`, `invalid\\nL13| creature`,
+    and `party_count` matches `partycount`."""
+    t = unicodedata.normalize("NFKC", s)
+    t = "".join(ch for ch in t if unicodedata.category(ch) != "Cf")
+    return _SEPARATOR_RE.sub("", _LINE_MARK_RE.sub("", t)).casefold()
+
+
 def forbidden_terms(case: dict) -> list:
+    """The case's blind_forbidden_terms as written. Each term must be at least 3 characters once normalised
+    (norm_terms), so a short word cannot refuse every prompt; the Fail names the term."""
     terms = case.get("blind_forbidden_terms")
     if not isinstance(terms, list) or not terms:
         raise Fail("case blind_forbidden_terms must be a non-empty list of strings")
@@ -207,12 +227,14 @@ def forbidden_terms(case: dict) -> list:
     for t in terms:
         if not isinstance(t, str) or not t.strip():
             raise Fail("case blind_forbidden_terms entries must be non-empty strings")
-        out.append(t.casefold())
+        if len(norm_terms(t)) < 3:
+            raise Fail("case blind_forbidden_terms entry %r is shorter than 3 characters (spacing, case ignored)" % t)
+        out.append(t)
     return out
 
 
 def run_terms(intake: dict):
-    """None for an ad-hoc run (no case: the forbidden-term check is skipped), else the casefolded term list."""
+    """None for an ad-hoc run (no case: the forbidden-term check is skipped), else the case's term list (as written)."""
     if not intake.get("case"):
         return None
     return forbidden_terms(read_case(intake["case"]))
@@ -543,21 +565,26 @@ def collect_hypotheses(blind: dict) -> list:
         seen = set()
         for i, h in enumerate(items):
             d = h if isinstance(h, dict) else {}
-            hid = d.get("id") if isinstance(d.get("id"), str) and d.get("id") else "#%d" % (i + 1)
+            has_id = isinstance(d.get("id"), str) and d.get("id") != ""
+            hid = d["id"] if has_id else "#%d" % (i + 1)
             v = by_index.get(i)
             valid = bool(v and v["valid"]) and isinstance(h, dict)
             reason = "" if valid else (v["reason"] if v else "no quote-check verdict")
+            if isinstance(h, dict) and not has_id:
+                valid, reason = False, "missing hypothesis id"
             if valid and not HID_RE.match(hid):
                 valid, reason = False, "invalid hypothesis id %r" % hid
             if valid and hid.lower() in seen:
                 valid, reason = False, "duplicate hypothesis id within the unit"
             if valid:
                 seen.add(hid.lower())
+            ids = list(v["valid_evidence_ids"]) if valid else []
+            distinct = v.get("distinct_texts", len({e.rsplit(":", 1)[-1] for e in ids})) if valid else 0
             hyps.append({"id": "%s:%s" % (uid, hid), "unit_id": uid, "hypothesis_id": hid, "claim": _s(d.get("claim")),
                          "mechanism": _s(d.get("mechanism")), "falsifier": _s(d.get("falsifier")),
-                         "confidence": _s(d.get("confidence")), "quote_valid": valid,
-                         "evidence_ids": list(v["valid_evidence_ids"]) if valid else [],
-                         "status": "supported" if valid else "rejected", "reason": reason, "verifier": None})
+                         "confidence": _s(d.get("confidence")), "quote_valid": valid, "evidence_ids": ids,
+                         "distinct_texts": distinct, "status": "supported" if valid else "rejected", "reason": reason,
+                         "verifier": None})
     return hyps
 
 
@@ -589,7 +616,21 @@ def apply_verifiers(hyps: list, verify: dict):
 
 
 def rank_key(h):
-    return (-len(h["evidence_ids"]), -CONFIDENCE.get(h["confidence"], 0), h["unit_id"], h["hypothesis_id"])
+    """Most distinct excerpt texts first (a twin excerpt with the same text adds nothing), then confidence, then id."""
+    return (-h["distinct_texts"], -CONFIDENCE.get(h["confidence"], 0), h["unit_id"], h["hypothesis_id"])
+
+
+def unit_refusal(stage, r):
+    """None when a blind or null unit can be used. Else why not: the runner's reason for an incomplete unit, or, for a
+    complete unit, a missing shape (a blind unit needs a hypotheses list, a null unit a non-empty string verdict)."""
+    if not r["complete"]:
+        return r["reason"]
+    out = r["output"]
+    if stage == "blind" and not isinstance(out.get("hypotheses"), list):
+        return "hypotheses is not a list"
+    if stage == "null" and not (isinstance(out.get("verdict"), str) and out["verdict"].strip()):
+        return "null verdict missing"
+    return None
 
 
 def build_report(run, intake, bundle, swarm_run) -> dict:
@@ -601,9 +642,12 @@ def build_report(run, intake, bundle, swarm_run) -> dict:
     supported = sorted((h for h in hyps if h["status"] == "supported"), key=rank_key)
     rejected = [h for h in hyps if h["status"] != "supported"]
 
-    incomplete = [{"unit_id": uid, "reason": r["reason"], "stage": stage}
-                  for stage, res in (("blind", blind), ("null", null)) for uid, r in sorted(res.items())
-                  if not r["complete"]]
+    incomplete = []
+    for stage, res in (("blind", blind), ("null", null)):
+        for uid, r in sorted(res.items()):
+            why = unit_refusal(stage, r)
+            if why is not None:
+                incomplete.append({"unit_id": uid, "reason": why, "stage": stage})
     nres = null[NULL_ID]
     null_verdict = _s(nres["output"].get("verdict")) or None if nres["complete"] else None
     null_valid = bool(nres["complete"] and all(v["valid"] for v in nres["verdicts"]))
@@ -672,8 +716,15 @@ def cmd_new(args) -> int:
             raise Fail("--mod %r: expected letters, digits, . _ - (1..64 chars)" % m)
     if args.save is not None and (not args.save.strip() or len(args.save) > SAVE_MAX or CTRL_RE.search(args.save)):
         raise Fail("--save: expected 1..%d printable characters" % SAVE_MAX)
-    if args.case and not isinstance(case.get("blind_forbidden_terms"), list):
-        print("warning: the case has no blind_forbidden_terms list; blind and null will refuse to run", file=sys.stderr)
+    if args.case:
+        try:
+            terms = forbidden_terms(case)
+        except Fail as e:
+            print("warning: %s; blind and null will refuse to run" % e, file=sys.stderr)
+            terms = []
+        hit = next((t for t in terms if norm_terms(t) in norm_terms(symptom)), None)
+        if hit is not None:                 # refused before any run dir is resolved or claimed
+            raise Fail("refused: the symptom contains the case's forbidden term %r" % hit)
 
     run = resolve_run(args.run if args.run else default_run_dir(kind))
     if os.path.exists(run) and (not os.path.isdir(run) or os.listdir(run)):
@@ -816,10 +867,10 @@ def cmd_blind_or_null(args) -> int:
         role = "null"
     if terms is not None:                       # all units are checked before anything is written or run
         for uid, unit in sorted(units.items()):
-            low = unit["prompt"].casefold()
-            for t in terms:
-                if t in low:
-                    raise Fail("refused: unit %s contains the forbidden term %r" % (uid, t))
+            low = norm_terms(unit["prompt"])
+            for raw in terms:
+                if norm_terms(raw) in low:
+                    raise Fail("refused: unit %s contains the forbidden term %r" % (uid, raw))
     return run_units(args, run, stage, role, units)
 
 

@@ -673,10 +673,70 @@ class TestStages(Base):
 
     def test_forbidden_term_in_the_symptom_is_caught_case_insensitively(self):
         case = self.write_case(symptom_text="it broke when the SECRET sauce kicked in")
-        self.new_run(case=case)
-        self.assertEqual(self.blind()[0], 2)
+        rc, out, err = self.cli("new", "--run", self.run_dir, "--case", case, "--log", "playlog.txt@1")
+        self.assertEqual(rc, 2, err)                    # `new` refuses it before any run dir exists
+        self.assertFalse(os.path.exists(self.run_dir))
+        self.new_run(case=self.write_case())            # a run whose intake was edited after `new` ...
+        intake_path = os.path.join(self.run_dir, "intake.json")
+        intake = read_json(intake_path)
+        intake["symptom"] = "it broke when the SECRET sauce kicked in"
+        write_json(intake_path, intake)
+        self.assertEqual(self.blind()[0], 2)            # ... is still refused by blind and null
         self.assertEqual(self.null()[0], 2)
         self.assertEqual(self.fake.stage_calls, [])
+
+    def leak_stage_rc(self, terms, pairs):
+        """A case with these forbidden terms and a bundle whose excerpt holds pairs -> (blind rc, null rc)."""
+        self.new_run(case=self.write_case(blind_forbidden_terms=list(terms)), bundle=make_bundle(extra_pairs=pairs))
+        return self.blind()[0], self.null()[0]
+
+    def test_forbidden_term_matches_through_nbsp_zero_width_and_line_markers(self):
+        variants = {"nbsp": [(1, "the invalid creature showed")],
+                    "zero-width": [(1, "the inval​id creature showed")],
+                    "line-marker": [(13, "the invalid"), (14, "creature showed")]}
+        for label, pairs in variants.items():
+            shutil.rmtree(self.run_dir, True)
+            self.assertEqual(self.leak_stage_rc(["invalid creature"], pairs), (2, 2), label)
+            self.assertFalse(os.path.exists(os.path.join(self.run_dir, "blind", "units")), label)
+        self.assertEqual(self.fake.stage_calls, [])
+
+    def test_forbidden_term_matches_joined_and_separated_spellings(self):
+        for term, text in (("partycount", "party_count is 3"), ("party_count", "partycount is 3"),
+                           ("one-member party", "one member_party here")):
+            shutil.rmtree(self.run_dir, True)
+            self.assertEqual(self.leak_stage_rc([term], [(1, text)]), (2, 2), (term, text))
+        self.assertEqual(self.fake.stage_calls, [])
+
+    def test_two_character_forbidden_term_is_refused_and_named(self):
+        self.new_run(case=self.write_case(blind_forbidden_terms=["zzleak", "ab"]))
+        rc, out, err = self.blind()
+        self.assertEqual(rc, 2)
+        self.assertIn("'ab'", err)
+        self.assertEqual(self.null()[0], 2)
+        self.assertFalse(os.path.exists(os.path.join(self.run_dir, "blind")))
+        self.assertEqual(self.fake.stage_calls, [])
+
+    def test_new_refuses_a_symptom_with_a_forbidden_term_and_leaves_no_run_dir(self):
+        case = self.write_case()
+        rc, out, err = self.cli("new", "--run", self.run_dir, "--case", case, "--log", "playlog.txt@1",
+                                "--symptom", "the Secret Sauce broke")
+        self.assertEqual(rc, 2, err)
+        self.assertIn("Secret Sauce", err)
+        self.assertFalse(os.path.exists(self.run_dir))
+        case = self.write_case(symptom_text="zz_leak shows in the HUD")
+        rc, out, err = self.cli("new", "--run", self.run_dir, "--case", case, "--log", "playlog.txt@1")
+        self.assertEqual(rc, 2, err)
+        self.assertFalse(os.path.exists(self.run_dir))
+
+    def test_verify_prompt_with_a_forbidden_term_is_not_refused(self):
+        # verify prompts hold model-written claims, so the forbidden-term check does not apply to them
+        sc = self.empty_blind()
+        sc["blind-skeptic"] = blind_out("blind-skeptic", hyp("h1", [(ID_A, Q_A1)], "high", claim="the zzleak claim"))
+        self.run_all(sc, null_out("insufficient"), case=self.write_case())
+        rc, out, err = self.verify()
+        self.assertEqual(rc, 0, err)
+        unit = read_json(os.path.join(self.run_dir, "verify", "units", "verify-blind-skeptic-h1.json"))
+        self.assertIn("zzleak", unit["prompt"])
 
     def test_case_without_a_usable_forbidden_list_is_refused(self):
         for bad in (None, [], "zzleak", {"a": 1}, [1, 2], ["ok", ""], ["ok", "   "]):
@@ -946,6 +1006,67 @@ class TestReport(Base):
         self.run_all(sc)
         self.assertEqual(self.report()[0], 0)
         self.assertEqual(self.report_json()["ranked"], ["blind-skeptic:h2", "blind-skeptic:h3", "blind-skeptic:h1"])
+
+    def test_identical_text_excerpts_rank_below_different_text_excerpts(self):
+        # the twin excerpt has ID_A's text (same sha8 suffix): citing both is ONE distinct text, not two
+        bundle = make_bundle()
+        bundle["evidence"].append(make_excerpt("otherlog", 2, "alert", 13, A_LINES))
+        twin_id = bundle["evidence"][-1]["id"]
+        finalize(bundle)
+        sc = self.empty_blind()
+        sc["blind-skeptic"] = blind_out("blind-skeptic", hyp("h1", [(ID_A, Q_A1), (twin_id, Q_A1)], "high"))
+        sc["blind-advocate"] = blind_out("blind-advocate", hyp("h2", [(ID_A, Q_A1), (ID_B, Q_B)], "low"))
+        self.new_run(bundle=bundle)
+        self.fake.findings.update(sc)
+        self.fake.findings["null-1"] = null_out("insufficient")
+        self.assertEqual((self.blind()[0], self.null()[0]), (0, 0))
+        self.assertEqual(self.report()[0], 0)
+        rep = self.report_json()
+        self.assertEqual(rep["ranked"], ["blind-advocate:h2", "blind-skeptic:h1"])
+        self.assertEqual(self.hyp_by_id(rep, "blind-skeptic:h1")["distinct_texts"], 1)
+        self.assertEqual(self.hyp_by_id(rep, "blind-advocate:h2")["distinct_texts"], 2)
+
+    def test_blind_unit_with_non_list_hypotheses_is_incomplete(self):
+        sc = self.empty_blind()
+        sc["blind-skeptic"] = {"unit_id": "blind-skeptic", "hypotheses": "x"}
+        self.run_all(sc, null_out("not_a_bug", reason(ID_B, Q_B)))
+        self.assertEqual(self.report()[0], 1)
+        rep = self.report_json()
+        self.assertEqual(rep["decision"], "incomplete")
+        self.assertEqual([i for i in rep["incomplete"] if i["unit_id"] == "blind-skeptic"],
+                         [{"unit_id": "blind-skeptic", "reason": "hypotheses is not a list", "stage": "blind"}])
+
+    def test_null_unit_without_a_string_verdict_is_incomplete(self):
+        bad_nulls = ({"unit_id": "null-1", "reasons": [reason(ID_B, Q_B)]},
+                     {"unit_id": "null-1", "verdict": 3, "reasons": [reason(ID_B, Q_B)]})
+        for bad in bad_nulls:
+            shutil.rmtree(self.run_dir, True)
+            self.fake.findings.clear()
+            self.run_all(self.empty_blind(), bad)
+            self.assertEqual(self.report()[0], 1)
+            rep = self.report_json()
+            self.assertEqual([i for i in rep["incomplete"] if i["unit_id"] == "null-1"],
+                             [{"unit_id": "null-1", "reason": "null verdict missing", "stage": "null"}])
+            self.assertEqual(rep["decision"], "incomplete")
+
+    def test_hypothesis_without_an_id_is_rejected_as_missing_hypothesis_id(self):
+        no_id = hyp("x", [(ID_B, Q_B)], "high")
+        del no_id["id"]
+        sc = self.empty_blind()
+        sc["blind-skeptic"] = blind_out("blind-skeptic", no_id)
+        self.run_all(sc)
+        self.assertEqual(self.report()[0], 0)
+        rep = self.report_json()
+        recs = [h for h in rep["hypotheses"] if h["unit_id"] == "blind-skeptic"]
+        self.assertEqual([(h["status"], h["reason"]) for h in recs], [("rejected", "missing hypothesis id")])
+        self.assertEqual((rep["ranked"], rep["decision"]), ([], "no_supported_hypothesis"))
+
+    def test_null_with_empty_reasons_is_never_likely_not_a_bug(self):
+        self.run_all(self.empty_blind(), {"unit_id": "null-1", "verdict": "not_a_bug", "reasons": []})
+        self.assertEqual(self.report()[0], 0)
+        rep = self.report_json()
+        self.assertIs(rep["null_valid"], False)
+        self.assertNotEqual(rep["decision"], "likely_not_a_bug")
 
     def test_null_not_a_bug_alone_is_likely_not_a_bug(self):
         self.run_all(self.empty_blind(), null_out("not_a_bug", reason(ID_B, Q_B)))
