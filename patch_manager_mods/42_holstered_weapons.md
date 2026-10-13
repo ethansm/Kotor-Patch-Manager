@@ -1,6 +1,6 @@
 # 42 — Holstered weapons (hip/back hardpoints) — research
 
-Status: RESEARCH ONLY (2026-10-13). Nothing built. Wave 1 = 10 Haiku web recon agents, all PARTIAL.
+Status: RESEARCH DONE, P0 probe not yet built (2026-10-13). Wave 1 = 10 Haiku web recon agents (all PARTIAL); waves 2-3 = 33 Haiku/REA agents on the Steam exe (raw: `research/holstered_weapons/wave2_3.md`). Decision: Option A (DLL only, attach to existing bones). Nothing installed.
 Raw findings (URLs per claim): `research/holstered_weapons/raw/holster_*.md`.
 
 ## Goal
@@ -41,5 +41,16 @@ A model-only change cannot do it. Needs (1) new dummy nodes in character models,
 6. KotorBlender: dummy-node round trip, animation `transtime`/event fidelity, headless export.
 7. Does vanilla hide/show hilts out of combat? (in-game check)
 
-## Plan
-See `.claude/plans/holster_research_wave2.md` (wave 2 research plan).
+## Waves 2-3 findings (Steam addresses; details in `research/holstered_weapons/wave2_3.md`)
+- Bones on all 133 humanoid bodies: `pelvis_g`, `lthigh_g`/`rthigh_g` (hip), `torso_g`, `torsoUpr_g` (back); no holster dummies anywhere; supermodel edits do not reach bodies. Match names case-insensitively.
+- Weapon attach: `FUN_007637e0` (0x7637e0), node literal "rhand" pushed at 0x763af9, "lhand" at 0x763e2b; vtable +0x7c on `creature+0x68`; handles creature+0x278/+0x27c. Gob attach-by-name: vtable 0x98b5cc slot +0x50 = FUN_00461670; node transform re-copied every update by Gob handler 0x5047b0, so offsets must be applied inside a detour of it.
+- Client combat flag: `FUN_007682b0` (stores this+0x138); server flag creature+0x520. Weapon refresh chain 0x76e130 -> 0x76d590 -> 0x76d890.
+- Timing is ms countdowns (round 3000, attack 1500), not animation driven; first attack plays immediately. In-combat weapon swap = action 0x0E, 1000 ms; executor 0x5DF920. Alt-slot items (slots 18/19) never get models, so the DLL owns their model instances.
+- No holster clip exists; `draw_weapon` event (0.03-0.57 s in 12 clips) has no known consumer. Unarmed walk/run keyframes equal weapon-class walks.
+- Weapon geometry: grip at model origin; lightsaber hilt = REFERENCE subtree `ref_hilt`; hilt-only length single 0.34-0.37 m, short 0.22-0.26, double 0.52-0.56 (origin 0.21 m off grip center).
+
+## Decision (user, 2026-10-13)
+Option A: self-contained DLL, no shipped assets. All lightsabers on the hip; short one-handed blades hip, long two-handed back (threshold about 0.6 m from mesh bounds); two weapon sets on hip L/R + back L/R; draw must not delay the first attack; P1 = PC + party. Phases P0 probe (log-only) -> P1 MVP -> P2 placement -> P3 pseudo-draw slide -> P4 stretch. Blender 4.5.14 LTS installed at `~/apps/blender-4.5.14` as a learning side track (OpenKotOR kotorblender 4.0.9 symlinked, `kb.mdlimport/mdlexport` smoke-tested). Plan: `.claude/plans/holstered_weapons.md`.
+
+## Remaining unknowns (P0 probe gates)
+G2 child Gob pointer location; G3 whether 0x7682B0 fires for NPCs; G4 `draw_weapon` consumer; G5 swap-hook model refresh on client; G6 case-insensitive bone lookup; G7 lightsaber attach origin vs grip center; plus node-output space (world vs local) at 0x5047b0.
