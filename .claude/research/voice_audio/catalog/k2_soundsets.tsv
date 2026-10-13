@@ -1,0 +1,1961 @@
+soundset_row	label	resref	slot_name	strref	sound_resref	file_exists_in_StreamSounds	duration_s	duration_source	in_sounds_bif	sounds_bif_duration_s
+0	None		battlecry1							
+0	None		battlecry2							
+0	None		battlecry3							
+0	None		battlecry4							
+0	None		battlecry5							
+0	None		battlecry6							
+0	None		select1							
+0	None		select2							
+0	None		select3							
+0	None		attack_grunt1							
+0	None		attack_grunt2							
+0	None		attack_grunt3							
+0	None		pain_grunt1							
+0	None		pain_grunt2							
+0	None		low_health							
+0	None		dead							
+0	None		critical_hit							
+0	None		target_immune							
+0	None		lay_mine							
+0	None		disarm_mine							
+0	None		begin_stealth							
+0	None		begin_search							
+0	None		begin_unlock							
+0	None		unlock_failed							
+0	None		unlock_success							
+0	None		separated_from_party							
+0	None		rejoined_party							
+0	None		poisoned							
+1	Droid_Assasin	c_drdassassin	battlecry1	38162	c_drdasasin_bat1	Y	0.68	Sounds.bif wav (ffmpeg -i)	Y	0.68
+1	Droid_Assasin	c_drdassassin	battlecry2	38162	c_drdasasin_bat1	Y	0.68	Sounds.bif wav (ffmpeg -i)	Y	0.68
+1	Droid_Assasin	c_drdassassin	battlecry3	38162	c_drdasasin_bat1	Y	0.68	Sounds.bif wav (ffmpeg -i)	Y	0.68
+1	Droid_Assasin	c_drdassassin	battlecry4	-1						
+1	Droid_Assasin	c_drdassassin	battlecry5	-1						
+1	Droid_Assasin	c_drdassassin	battlecry6	-1						
+1	Droid_Assasin	c_drdassassin	select1	-1						
+1	Droid_Assasin	c_drdassassin	select2	-1						
+1	Droid_Assasin	c_drdassassin	select3	-1						
+1	Droid_Assasin	c_drdassassin	attack_grunt1	38168	c_drdasasin_atk1	Y	0.87	Sounds.bif wav (ffmpeg -i)	Y	0.87
+1	Droid_Assasin	c_drdassassin	attack_grunt2	38168	c_drdasasin_atk1	Y	0.87	Sounds.bif wav (ffmpeg -i)	Y	0.87
+1	Droid_Assasin	c_drdassassin	attack_grunt3	38168	c_drdasasin_atk1	Y	0.87	Sounds.bif wav (ffmpeg -i)	Y	0.87
+1	Droid_Assasin	c_drdassassin	pain_grunt1	38174	c_drdasasin_hit1	Y	0.76	Sounds.bif wav (ffmpeg -i)	Y	0.76
+1	Droid_Assasin	c_drdassassin	pain_grunt2	38174	c_drdasasin_hit1	Y	0.76	Sounds.bif wav (ffmpeg -i)	Y	0.76
+1	Droid_Assasin	c_drdassassin	low_health	-1						
+1	Droid_Assasin	c_drdassassin	dead	38175	c_drdasasin_dead	Y	0.84	Sounds.bif wav (ffmpeg -i)	Y	0.84
+1	Droid_Assasin	c_drdassassin	critical_hit	-1						
+1	Droid_Assasin	c_drdassassin	target_immune	-1						
+1	Droid_Assasin	c_drdassassin	lay_mine	-1						
+1	Droid_Assasin	c_drdassassin	disarm_mine	-1						
+1	Droid_Assasin	c_drdassassin	begin_stealth	-1						
+1	Droid_Assasin	c_drdassassin	begin_search	-1						
+1	Droid_Assasin	c_drdassassin	begin_unlock	-1						
+1	Droid_Assasin	c_drdassassin	unlock_failed	-1						
+1	Droid_Assasin	c_drdassassin	unlock_success	-1						
+1	Droid_Assasin	c_drdassassin	separated_from_party	-1						
+1	Droid_Assasin	c_drdassassin	rejoined_party	-1						
+1	Droid_Assasin	c_drdassassin	poisoned	-1						
+2	Droid_Astro	c_drdastro	battlecry1	38167	c_drdastro_bat1	Y	1.04	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+2	Droid_Astro	c_drdastro	battlecry2	38167	c_drdastro_bat1	Y	1.04	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+2	Droid_Astro	c_drdastro	battlecry3	38167	c_drdastro_bat1	Y	1.04	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+2	Droid_Astro	c_drdastro	battlecry4	-1						
+2	Droid_Astro	c_drdastro	battlecry5	-1						
+2	Droid_Astro	c_drdastro	battlecry6	-1						
+2	Droid_Astro	c_drdastro	select1	-1						
+2	Droid_Astro	c_drdastro	select2	-1						
+2	Droid_Astro	c_drdastro	select3	-1						
+2	Droid_Astro	c_drdastro	attack_grunt1	38168	c_drdasasin_atk1	Y	0.87	Sounds.bif wav (ffmpeg -i)	Y	0.87
+2	Droid_Astro	c_drdastro	attack_grunt2	38168	c_drdasasin_atk1	Y	0.87	Sounds.bif wav (ffmpeg -i)	Y	0.87
+2	Droid_Astro	c_drdastro	attack_grunt3	38168	c_drdasasin_atk1	Y	0.87	Sounds.bif wav (ffmpeg -i)	Y	0.87
+2	Droid_Astro	c_drdastro	pain_grunt1	38169	c_drdastro_hit1	Y	0.43	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+2	Droid_Astro	c_drdastro	pain_grunt2	38169	c_drdastro_hit1	Y	0.43	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+2	Droid_Astro	c_drdastro	low_health	-1						
+2	Droid_Astro	c_drdastro	dead	38170	c_drdastro_dead	Y	1.00	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+2	Droid_Astro	c_drdastro	critical_hit	-1						
+2	Droid_Astro	c_drdastro	target_immune	-1						
+2	Droid_Astro	c_drdastro	lay_mine	-1						
+2	Droid_Astro	c_drdastro	disarm_mine	-1						
+2	Droid_Astro	c_drdastro	begin_stealth	-1						
+2	Droid_Astro	c_drdastro	begin_search	-1						
+2	Droid_Astro	c_drdastro	begin_unlock	-1						
+2	Droid_Astro	c_drdastro	unlock_failed	-1						
+2	Droid_Astro	c_drdastro	unlock_success	-1						
+2	Droid_Astro	c_drdastro	separated_from_party	-1						
+2	Droid_Astro	c_drdastro	rejoined_party	-1						
+2	Droid_Astro	c_drdastro	poisoned	-1						
+3	Droid_Probe	c_drdprobe	battlecry1	38206	c_drdprobe_bat1	Y	1.16	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+3	Droid_Probe	c_drdprobe	battlecry2	38206	c_drdprobe_bat1	Y	1.16	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+3	Droid_Probe	c_drdprobe	battlecry3	38206	c_drdprobe_bat1	Y	1.16	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+3	Droid_Probe	c_drdprobe	battlecry4	-1						
+3	Droid_Probe	c_drdprobe	battlecry5	-1						
+3	Droid_Probe	c_drdprobe	battlecry6	-1						
+3	Droid_Probe	c_drdprobe	select1	-1						
+3	Droid_Probe	c_drdprobe	select2	-1						
+3	Droid_Probe	c_drdprobe	select3	-1						
+3	Droid_Probe	c_drdprobe	attack_grunt1	38207	c_drdprobe_atk1	Y	0.43	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+3	Droid_Probe	c_drdprobe	attack_grunt2	38207	c_drdprobe_atk1	Y	0.43	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+3	Droid_Probe	c_drdprobe	attack_grunt3	38207	c_drdprobe_atk1	Y	0.43	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+3	Droid_Probe	c_drdprobe	pain_grunt1	38208	c_drdprobe_hit1	Y	0.50	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+3	Droid_Probe	c_drdprobe	pain_grunt2	38208	c_drdprobe_hit1	Y	0.50	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+3	Droid_Probe	c_drdprobe	low_health	-1						
+3	Droid_Probe	c_drdprobe	dead	38209	c_drdprobe_dead	Y	0.70	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+3	Droid_Probe	c_drdprobe	critical_hit	-1						
+3	Droid_Probe	c_drdprobe	target_immune	-1						
+3	Droid_Probe	c_drdprobe	lay_mine	-1						
+3	Droid_Probe	c_drdprobe	disarm_mine	-1						
+3	Droid_Probe	c_drdprobe	begin_stealth	-1						
+3	Droid_Probe	c_drdprobe	begin_search	-1						
+3	Droid_Probe	c_drdprobe	begin_unlock	-1						
+3	Droid_Probe	c_drdprobe	unlock_failed	-1						
+3	Droid_Probe	c_drdprobe	unlock_success	-1						
+3	Droid_Probe	c_drdprobe	separated_from_party	-1						
+3	Droid_Probe	c_drdprobe	rejoined_party	-1						
+3	Droid_Probe	c_drdprobe	poisoned	-1						
+4	Droid_Protocol	c_drdprotocol	battlecry1							
+4	Droid_Protocol	c_drdprotocol	battlecry2							
+4	Droid_Protocol	c_drdprotocol	battlecry3							
+4	Droid_Protocol	c_drdprotocol	battlecry4							
+4	Droid_Protocol	c_drdprotocol	battlecry5							
+4	Droid_Protocol	c_drdprotocol	battlecry6							
+4	Droid_Protocol	c_drdprotocol	select1							
+4	Droid_Protocol	c_drdprotocol	select2							
+4	Droid_Protocol	c_drdprotocol	select3							
+4	Droid_Protocol	c_drdprotocol	attack_grunt1							
+4	Droid_Protocol	c_drdprotocol	attack_grunt2							
+4	Droid_Protocol	c_drdprotocol	attack_grunt3							
+4	Droid_Protocol	c_drdprotocol	pain_grunt1							
+4	Droid_Protocol	c_drdprotocol	pain_grunt2							
+4	Droid_Protocol	c_drdprotocol	low_health							
+4	Droid_Protocol	c_drdprotocol	dead							
+4	Droid_Protocol	c_drdprotocol	critical_hit							
+4	Droid_Protocol	c_drdprotocol	target_immune							
+4	Droid_Protocol	c_drdprotocol	lay_mine							
+4	Droid_Protocol	c_drdprotocol	disarm_mine							
+4	Droid_Protocol	c_drdprotocol	begin_stealth							
+4	Droid_Protocol	c_drdprotocol	begin_search							
+4	Droid_Protocol	c_drdprotocol	begin_unlock							
+4	Droid_Protocol	c_drdprotocol	unlock_failed							
+4	Droid_Protocol	c_drdprotocol	unlock_success							
+4	Droid_Protocol	c_drdprotocol	separated_from_party							
+4	Droid_Protocol	c_drdprotocol	rejoined_party							
+4	Droid_Protocol	c_drdprotocol	poisoned							
+5	Droid_Sentry	c_drdsentry	battlecry1	38211	c_drdsntry_bat1	Y	0.59	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+5	Droid_Sentry	c_drdsentry	battlecry2	38211	c_drdsntry_bat1	Y	0.59	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+5	Droid_Sentry	c_drdsentry	battlecry3	38211	c_drdsntry_bat1	Y	0.59	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+5	Droid_Sentry	c_drdsentry	battlecry4	-1						
+5	Droid_Sentry	c_drdsentry	battlecry5	-1						
+5	Droid_Sentry	c_drdsentry	battlecry6	-1						
+5	Droid_Sentry	c_drdsentry	select1	-1						
+5	Droid_Sentry	c_drdsentry	select2	-1						
+5	Droid_Sentry	c_drdsentry	select3	-1						
+5	Droid_Sentry	c_drdsentry	attack_grunt1	38212	c_drdsntry_atk1	Y	0.43	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+5	Droid_Sentry	c_drdsentry	attack_grunt2	38212	c_drdsntry_atk1	Y	0.43	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+5	Droid_Sentry	c_drdsentry	attack_grunt3	38212	c_drdsntry_atk1	Y	0.43	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+5	Droid_Sentry	c_drdsentry	pain_grunt1	38213	c_drdsntry_hit1	Y	0.55	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+5	Droid_Sentry	c_drdsentry	pain_grunt2	38213	c_drdsntry_hit1	Y	0.55	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+5	Droid_Sentry	c_drdsentry	low_health	-1						
+5	Droid_Sentry	c_drdsentry	dead	38214	c_drdsntry_dead	Y	1.01	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+5	Droid_Sentry	c_drdsentry	critical_hit	-1						
+5	Droid_Sentry	c_drdsentry	target_immune	-1						
+5	Droid_Sentry	c_drdsentry	lay_mine	-1						
+5	Droid_Sentry	c_drdsentry	disarm_mine	-1						
+5	Droid_Sentry	c_drdsentry	begin_stealth	-1						
+5	Droid_Sentry	c_drdsentry	begin_search	-1						
+5	Droid_Sentry	c_drdsentry	begin_unlock	-1						
+5	Droid_Sentry	c_drdsentry	unlock_failed	-1						
+5	Droid_Sentry	c_drdsentry	unlock_success	-1						
+5	Droid_Sentry	c_drdsentry	separated_from_party	-1						
+5	Droid_Sentry	c_drdsentry	rejoined_party	-1						
+5	Droid_Sentry	c_drdsentry	poisoned	-1						
+6	Droid_War	c_drdwar	battlecry1	38221	c_drdwar_bat1	Y	1.64	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+6	Droid_War	c_drdwar	battlecry2	38221	c_drdwar_bat1	Y	1.64	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+6	Droid_War	c_drdwar	battlecry3	38221	c_drdwar_bat1	Y	1.64	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+6	Droid_War	c_drdwar	battlecry4	-1						
+6	Droid_War	c_drdwar	battlecry5	-1						
+6	Droid_War	c_drdwar	battlecry6	-1						
+6	Droid_War	c_drdwar	select1	-1						
+6	Droid_War	c_drdwar	select2	-1						
+6	Droid_War	c_drdwar	select3	-1						
+6	Droid_War	c_drdwar	attack_grunt1	38222	c_drdwar_atk1	Y	0.98	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+6	Droid_War	c_drdwar	attack_grunt2	38222	c_drdwar_atk1	Y	0.98	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+6	Droid_War	c_drdwar	attack_grunt3	38222	c_drdwar_atk1	Y	0.98	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+6	Droid_War	c_drdwar	pain_grunt1	38223	c_drdwar_hit1	Y	1.25	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+6	Droid_War	c_drdwar	pain_grunt2	38223	c_drdwar_hit1	Y	1.25	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+6	Droid_War	c_drdwar	low_health	-1						
+6	Droid_War	c_drdwar	dead	38224	c_drdwar_dead	Y	1.75	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+6	Droid_War	c_drdwar	critical_hit	-1						
+6	Droid_War	c_drdwar	target_immune	-1						
+6	Droid_War	c_drdwar	lay_mine	-1						
+6	Droid_War	c_drdwar	disarm_mine	-1						
+6	Droid_War	c_drdwar	begin_stealth	-1						
+6	Droid_War	c_drdwar	begin_search	-1						
+6	Droid_War	c_drdwar	begin_unlock	-1						
+6	Droid_War	c_drdwar	unlock_failed	-1						
+6	Droid_War	c_drdwar	unlock_success	-1						
+6	Droid_War	c_drdwar	separated_from_party	-1						
+6	Droid_War	c_drdwar	rejoined_party	-1						
+6	Droid_War	c_drdwar	poisoned	-1						
+7	Kath_Hound	c_KhoundA	battlecry1	38250	c_khoundA_bat1	Y	1.92	Sounds.bif wav (ffmpeg -i)	Y	1.92
+7	Kath_Hound	c_KhoundA	battlecry2	38250	c_khoundA_bat1	Y	1.92	Sounds.bif wav (ffmpeg -i)	Y	1.92
+7	Kath_Hound	c_KhoundA	battlecry3	38250	c_khoundA_bat1	Y	1.92	Sounds.bif wav (ffmpeg -i)	Y	1.92
+7	Kath_Hound	c_KhoundA	battlecry4	-1						
+7	Kath_Hound	c_KhoundA	battlecry5	-1						
+7	Kath_Hound	c_KhoundA	battlecry6	-1						
+7	Kath_Hound	c_KhoundA	select1	-1						
+7	Kath_Hound	c_KhoundA	select2	-1						
+7	Kath_Hound	c_KhoundA	select3	-1						
+7	Kath_Hound	c_KhoundA	attack_grunt1	38251	c_khoundA_atk1	Y	1.24	Sounds.bif wav (ffmpeg -i)	Y	1.24
+7	Kath_Hound	c_KhoundA	attack_grunt2	38251	c_khoundA_atk1	Y	1.24	Sounds.bif wav (ffmpeg -i)	Y	1.24
+7	Kath_Hound	c_KhoundA	attack_grunt3	38251	c_khoundA_atk1	Y	1.24	Sounds.bif wav (ffmpeg -i)	Y	1.24
+7	Kath_Hound	c_KhoundA	pain_grunt1	38252	c_khoundA_hit1	Y	1.14	Sounds.bif wav (ffmpeg -i)	Y	1.14
+7	Kath_Hound	c_KhoundA	pain_grunt2	38252	c_khoundA_hit1	Y	1.14	Sounds.bif wav (ffmpeg -i)	Y	1.14
+7	Kath_Hound	c_KhoundA	low_health	-1						
+7	Kath_Hound	c_KhoundA	dead	38253	c_khoundA_dead	Y	1.83	Sounds.bif wav (ffmpeg -i)	Y	1.83
+7	Kath_Hound	c_KhoundA	critical_hit	-1						
+7	Kath_Hound	c_KhoundA	target_immune	-1						
+7	Kath_Hound	c_KhoundA	lay_mine	-1						
+7	Kath_Hound	c_KhoundA	disarm_mine	-1						
+7	Kath_Hound	c_KhoundA	begin_stealth	-1						
+7	Kath_Hound	c_KhoundA	begin_search	-1						
+7	Kath_Hound	c_KhoundA	begin_unlock	-1						
+7	Kath_Hound	c_KhoundA	unlock_failed	-1						
+7	Kath_Hound	c_KhoundA	unlock_success	-1						
+7	Kath_Hound	c_KhoundA	separated_from_party	-1						
+7	Kath_Hound	c_KhoundA	rejoined_party	-1						
+7	Kath_Hound	c_KhoundA	poisoned	-1						
+8	Kath_Hound_B	c_KhoundB	battlecry1	38255	c_khoundB_bat1	Y	2.01	Sounds.bif wav (ffmpeg -i)	Y	2.01
+8	Kath_Hound_B	c_KhoundB	battlecry2	38255	c_khoundB_bat1	Y	2.01	Sounds.bif wav (ffmpeg -i)	Y	2.01
+8	Kath_Hound_B	c_KhoundB	battlecry3	38255	c_khoundB_bat1	Y	2.01	Sounds.bif wav (ffmpeg -i)	Y	2.01
+8	Kath_Hound_B	c_KhoundB	battlecry4	-1						
+8	Kath_Hound_B	c_KhoundB	battlecry5	-1						
+8	Kath_Hound_B	c_KhoundB	battlecry6	-1						
+8	Kath_Hound_B	c_KhoundB	select1	-1						
+8	Kath_Hound_B	c_KhoundB	select2	-1						
+8	Kath_Hound_B	c_KhoundB	select3	-1						
+8	Kath_Hound_B	c_KhoundB	attack_grunt1	38256	c_khoundB_atk1	Y	1.11	Sounds.bif wav (ffmpeg -i)	Y	1.11
+8	Kath_Hound_B	c_KhoundB	attack_grunt2	38256	c_khoundB_atk1	Y	1.11	Sounds.bif wav (ffmpeg -i)	Y	1.11
+8	Kath_Hound_B	c_KhoundB	attack_grunt3	38256	c_khoundB_atk1	Y	1.11	Sounds.bif wav (ffmpeg -i)	Y	1.11
+8	Kath_Hound_B	c_KhoundB	pain_grunt1	38257	c_khoundB_hit1	Y	0.79	Sounds.bif wav (ffmpeg -i)	Y	0.79
+8	Kath_Hound_B	c_KhoundB	pain_grunt2	38257	c_khoundB_hit1	Y	0.79	Sounds.bif wav (ffmpeg -i)	Y	0.79
+8	Kath_Hound_B	c_KhoundB	low_health	-1						
+8	Kath_Hound_B	c_KhoundB	dead	38258	c_khoundB_dead	Y	1.17	Sounds.bif wav (ffmpeg -i)	Y	1.17
+8	Kath_Hound_B	c_KhoundB	critical_hit	-1						
+8	Kath_Hound_B	c_KhoundB	target_immune	-1						
+8	Kath_Hound_B	c_KhoundB	lay_mine	-1						
+8	Kath_Hound_B	c_KhoundB	disarm_mine	-1						
+8	Kath_Hound_B	c_KhoundB	begin_stealth	-1						
+8	Kath_Hound_B	c_KhoundB	begin_search	-1						
+8	Kath_Hound_B	c_KhoundB	begin_unlock	-1						
+8	Kath_Hound_B	c_KhoundB	unlock_failed	-1						
+8	Kath_Hound_B	c_KhoundB	unlock_success	-1						
+8	Kath_Hound_B	c_KhoundB	separated_from_party	-1						
+8	Kath_Hound_B	c_KhoundB	rejoined_party	-1						
+8	Kath_Hound_B	c_KhoundB	poisoned	-1						
+9	Kinrath	c_kinrath	battlecry1	38260	c_kinrath_bat1	Y	1.82	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+9	Kinrath	c_kinrath	battlecry2	38260	c_kinrath_bat1	Y	1.82	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+9	Kinrath	c_kinrath	battlecry3	38260	c_kinrath_bat1	Y	1.82	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+9	Kinrath	c_kinrath	battlecry4	-1						
+9	Kinrath	c_kinrath	battlecry5	-1						
+9	Kinrath	c_kinrath	battlecry6	-1						
+9	Kinrath	c_kinrath	select1	-1						
+9	Kinrath	c_kinrath	select2	-1						
+9	Kinrath	c_kinrath	select3	-1						
+9	Kinrath	c_kinrath	attack_grunt1	38261	c_kinrath_atk1	Y	1.72	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+9	Kinrath	c_kinrath	attack_grunt2	38261	c_kinrath_atk1	Y	1.72	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+9	Kinrath	c_kinrath	attack_grunt3	38261	c_kinrath_atk1	Y	1.72	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+9	Kinrath	c_kinrath	pain_grunt1	38262	c_kinrath_hit1	Y	1.09	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+9	Kinrath	c_kinrath	pain_grunt2	38262	c_kinrath_hit1	Y	1.09	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+9	Kinrath	c_kinrath	low_health	-1						
+9	Kinrath	c_kinrath	dead	38263	c_kinrath_dead	Y	2.82	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+9	Kinrath	c_kinrath	critical_hit	-1						
+9	Kinrath	c_kinrath	target_immune	-1						
+9	Kinrath	c_kinrath	lay_mine	-1						
+9	Kinrath	c_kinrath	disarm_mine	-1						
+9	Kinrath	c_kinrath	begin_stealth	-1						
+9	Kinrath	c_kinrath	begin_search	-1						
+9	Kinrath	c_kinrath	begin_unlock	-1						
+9	Kinrath	c_kinrath	unlock_failed	-1						
+9	Kinrath	c_kinrath	unlock_success	-1						
+9	Kinrath	c_kinrath	separated_from_party	-1						
+9	Kinrath	c_kinrath	rejoined_party	-1						
+9	Kinrath	c_kinrath	poisoned	-1						
+10	Tukata	c_tukata	battlecry1	38308	c_tukata_bat1	Y	1.74	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+10	Tukata	c_tukata	battlecry2	38308	c_tukata_bat1	Y	1.74	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+10	Tukata	c_tukata	battlecry3	38308	c_tukata_bat1	Y	1.74	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+10	Tukata	c_tukata	battlecry4	-1						
+10	Tukata	c_tukata	battlecry5	-1						
+10	Tukata	c_tukata	battlecry6	-1						
+10	Tukata	c_tukata	select1	-1						
+10	Tukata	c_tukata	select2	-1						
+10	Tukata	c_tukata	select3	-1						
+10	Tukata	c_tukata	attack_grunt1	38309	c_tukata_atk1	Y	1.55	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+10	Tukata	c_tukata	attack_grunt2	38309	c_tukata_atk1	Y	1.55	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+10	Tukata	c_tukata	attack_grunt3	38309	c_tukata_atk1	Y	1.55	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+10	Tukata	c_tukata	pain_grunt1	38310	c_tukata_hit1	Y	0.99	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+10	Tukata	c_tukata	pain_grunt2	38310	c_tukata_hit1	Y	0.99	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+10	Tukata	c_tukata	low_health	-1						
+10	Tukata	c_tukata	dead	38311	c_tukata_dead	Y	1.43	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+10	Tukata	c_tukata	critical_hit	-1						
+10	Tukata	c_tukata	target_immune	-1						
+10	Tukata	c_tukata	lay_mine	-1						
+10	Tukata	c_tukata	disarm_mine	-1						
+10	Tukata	c_tukata	begin_stealth	-1						
+10	Tukata	c_tukata	begin_search	-1						
+10	Tukata	c_tukata	begin_unlock	-1						
+10	Tukata	c_tukata	unlock_failed	-1						
+10	Tukata	c_tukata	unlock_success	-1						
+10	Tukata	c_tukata	separated_from_party	-1						
+10	Tukata	c_tukata	rejoined_party	-1						
+10	Tukata	c_tukata	poisoned	-1						
+11	Commoner_Male	n_commm	battlecry1	-1						
+11	Commoner_Male	n_commm	battlecry2	-1						
+11	Commoner_Male	n_commm	battlecry3	-1						
+11	Commoner_Male	n_commm	battlecry4	-1						
+11	Commoner_Male	n_commm	battlecry5	-1						
+11	Commoner_Male	n_commm	battlecry6	-1						
+11	Commoner_Male	n_commm	select1	-1						
+11	Commoner_Male	n_commm	select2	-1						
+11	Commoner_Male	n_commm	select3	-1						
+11	Commoner_Male	n_commm	attack_grunt1	36701						
+11	Commoner_Male	n_commm	attack_grunt2	36701						
+11	Commoner_Male	n_commm	attack_grunt3	36701						
+11	Commoner_Male	n_commm	pain_grunt1	36702						
+11	Commoner_Male	n_commm	pain_grunt2	36702						
+11	Commoner_Male	n_commm	low_health	-1						
+11	Commoner_Male	n_commm	dead	36703						
+11	Commoner_Male	n_commm	critical_hit	-1						
+11	Commoner_Male	n_commm	target_immune	-1						
+11	Commoner_Male	n_commm	lay_mine	-1						
+11	Commoner_Male	n_commm	disarm_mine	-1						
+11	Commoner_Male	n_commm	begin_stealth	-1						
+11	Commoner_Male	n_commm	begin_search	-1						
+11	Commoner_Male	n_commm	begin_unlock	-1						
+11	Commoner_Male	n_commm	unlock_failed	-1						
+11	Commoner_Male	n_commm	unlock_success	-1						
+11	Commoner_Male	n_commm	separated_from_party	-1						
+11	Commoner_Male	n_commm	rejoined_party	-1						
+11	Commoner_Male	n_commm	poisoned	-1						
+12	Darth_Malak	n_darth_malek	battlecry1	-1						
+12	Darth_Malak	n_darth_malek	battlecry2	-1						
+12	Darth_Malak	n_darth_malek	battlecry3	-1						
+12	Darth_Malak	n_darth_malek	battlecry4	-1						
+12	Darth_Malak	n_darth_malek	battlecry5	-1						
+12	Darth_Malak	n_darth_malek	battlecry6	-1						
+12	Darth_Malak	n_darth_malek	select1	-1						
+12	Darth_Malak	n_darth_malek	select2	-1						
+12	Darth_Malak	n_darth_malek	select3	-1						
+12	Darth_Malak	n_darth_malek	attack_grunt1	37019	n_drth_mal_atk1	Y	0.36	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+12	Darth_Malak	n_darth_malek	attack_grunt2	37020	n_drth_mal_atk2	Y	0.69	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+12	Darth_Malak	n_darth_malek	attack_grunt3	37021	n_drth_mal_atk3	Y	0.73	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+12	Darth_Malak	n_darth_malek	pain_grunt1	37022	n_drth_mal_hit1	Y	0.71	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+12	Darth_Malak	n_darth_malek	pain_grunt2	37023	n_drth_mal_hit2	Y	0.49	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+12	Darth_Malak	n_darth_malek	low_health	-1						
+12	Darth_Malak	n_darth_malek	dead	37024	n_drth_mal_dead	Y	0.85	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+12	Darth_Malak	n_darth_malek	critical_hit	-1						
+12	Darth_Malak	n_darth_malek	target_immune	-1						
+12	Darth_Malak	n_darth_malek	lay_mine	-1						
+12	Darth_Malak	n_darth_malek	disarm_mine	-1						
+12	Darth_Malak	n_darth_malek	begin_stealth	-1						
+12	Darth_Malak	n_darth_malek	begin_search	-1						
+12	Darth_Malak	n_darth_malek	begin_unlock	-1						
+12	Darth_Malak	n_darth_malek	unlock_failed	-1						
+12	Darth_Malak	n_darth_malek	unlock_success	-1						
+12	Darth_Malak	n_darth_malek	separated_from_party	-1						
+12	Darth_Malak	n_darth_malek	rejoined_party	-1						
+12	Darth_Malak	n_darth_malek	poisoned	-1						
+13	Mandalorian	n_mandalorian	battlecry1	37075	n_mndlorian_bat2	Y	1.11	Sounds.bif wav (ffmpeg -i)	Y	1.11
+13	Mandalorian	n_mandalorian	battlecry2	37075	n_mndlorian_bat2	Y	1.11	Sounds.bif wav (ffmpeg -i)	Y	1.11
+13	Mandalorian	n_mandalorian	battlecry3	37075	n_mndlorian_bat2	Y	1.11	Sounds.bif wav (ffmpeg -i)	Y	1.11
+13	Mandalorian	n_mandalorian	battlecry4	37075	n_mndlorian_bat2	Y	1.11	Sounds.bif wav (ffmpeg -i)	Y	1.11
+13	Mandalorian	n_mandalorian	battlecry5	37075	n_mndlorian_bat2	Y	1.11	Sounds.bif wav (ffmpeg -i)	Y	1.11
+13	Mandalorian	n_mandalorian	battlecry6	37075	n_mndlorian_bat2	Y	1.11	Sounds.bif wav (ffmpeg -i)	Y	1.11
+13	Mandalorian	n_mandalorian	select1	-1						
+13	Mandalorian	n_mandalorian	select2	-1						
+13	Mandalorian	n_mandalorian	select3	-1						
+13	Mandalorian	n_mandalorian	attack_grunt1	37077	n_mndlorian_atk1	Y	0.60	Sounds.bif wav (ffmpeg -i)	Y	0.60
+13	Mandalorian	n_mandalorian	attack_grunt2	37078	n_mndlorian_atk2	Y	0.48	Sounds.bif wav (ffmpeg -i)	Y	0.48
+13	Mandalorian	n_mandalorian	attack_grunt3	37079	n_mndlorian_atk3	Y	0.27	Sounds.bif wav (ffmpeg -i)	Y	0.27
+13	Mandalorian	n_mandalorian	pain_grunt1	37080	n_mndlorian_hit1	Y	0.61	Sounds.bif wav (ffmpeg -i)	Y	0.61
+13	Mandalorian	n_mandalorian	pain_grunt2	37081	n_mndlorian_hit2	Y	0.38	Sounds.bif wav (ffmpeg -i)	Y	0.38
+13	Mandalorian	n_mandalorian	low_health	-1						
+13	Mandalorian	n_mandalorian	dead	37082	n_mndlorian_dead	Y	1.17	Sounds.bif wav (ffmpeg -i)	Y	1.17
+13	Mandalorian	n_mandalorian	critical_hit	-1						
+13	Mandalorian	n_mandalorian	target_immune	-1						
+13	Mandalorian	n_mandalorian	lay_mine	-1						
+13	Mandalorian	n_mandalorian	disarm_mine	-1						
+13	Mandalorian	n_mandalorian	begin_stealth	-1						
+13	Mandalorian	n_mandalorian	begin_search	-1						
+13	Mandalorian	n_mandalorian	begin_unlock	-1						
+13	Mandalorian	n_mandalorian	unlock_failed	-1						
+13	Mandalorian	n_mandalorian	unlock_success	-1						
+13	Mandalorian	n_mandalorian	separated_from_party	-1						
+13	Mandalorian	n_mandalorian	rejoined_party	-1						
+13	Mandalorian	n_mandalorian	poisoned	-1						
+14	Republic_Officer	n_repoff	battlecry1	-1						
+14	Republic_Officer	n_repoff	battlecry2	-1						
+14	Republic_Officer	n_repoff	battlecry3	-1						
+14	Republic_Officer	n_repoff	battlecry4	-1						
+14	Republic_Officer	n_repoff	battlecry5	-1						
+14	Republic_Officer	n_repoff	battlecry6	-1						
+14	Republic_Officer	n_repoff	select1	-1						
+14	Republic_Officer	n_repoff	select2	-1						
+14	Republic_Officer	n_repoff	select3	-1						
+14	Republic_Officer	n_repoff	attack_grunt1	37093	n_repoff_atk1	Y	0.70	Sounds.bif wav (ffmpeg -i)	Y	0.70
+14	Republic_Officer	n_repoff	attack_grunt2	37093	n_repoff_atk1	Y	0.70	Sounds.bif wav (ffmpeg -i)	Y	0.70
+14	Republic_Officer	n_repoff	attack_grunt3	37093	n_repoff_atk1	Y	0.70	Sounds.bif wav (ffmpeg -i)	Y	0.70
+14	Republic_Officer	n_repoff	pain_grunt1	37094	n_repoff_hit1	Y	0.51	Sounds.bif wav (ffmpeg -i)	Y	0.51
+14	Republic_Officer	n_repoff	pain_grunt2	37094	n_repoff_hit1	Y	0.51	Sounds.bif wav (ffmpeg -i)	Y	0.51
+14	Republic_Officer	n_repoff	low_health	-1						
+14	Republic_Officer	n_repoff	dead	37095	n_repoff_dead	Y	0.97	Sounds.bif wav (ffmpeg -i)	Y	0.97
+14	Republic_Officer	n_repoff	critical_hit	-1						
+14	Republic_Officer	n_repoff	target_immune	-1						
+14	Republic_Officer	n_repoff	lay_mine	-1						
+14	Republic_Officer	n_repoff	disarm_mine	-1						
+14	Republic_Officer	n_repoff	begin_stealth	-1						
+14	Republic_Officer	n_repoff	begin_search	-1						
+14	Republic_Officer	n_repoff	begin_unlock	-1						
+14	Republic_Officer	n_repoff	unlock_failed	-1						
+14	Republic_Officer	n_repoff	unlock_success	-1						
+14	Republic_Officer	n_repoff	separated_from_party	-1						
+14	Republic_Officer	n_repoff	rejoined_party	-1						
+14	Republic_Officer	n_repoff	poisoned	-1						
+15	Republic_Soldier	n_repsold	battlecry1	-1						
+15	Republic_Soldier	n_repsold	battlecry2	-1						
+15	Republic_Soldier	n_repsold	battlecry3	-1						
+15	Republic_Soldier	n_repsold	battlecry4	-1						
+15	Republic_Soldier	n_repsold	battlecry5	-1						
+15	Republic_Soldier	n_repsold	battlecry6	-1						
+15	Republic_Soldier	n_repsold	select1	-1						
+15	Republic_Soldier	n_repsold	select2	-1						
+15	Republic_Soldier	n_repsold	select3	-1						
+15	Republic_Soldier	n_repsold	attack_grunt1	37097	n_repsold_atk1	Y	0.62	Sounds.bif wav (ffmpeg -i)	Y	0.62
+15	Republic_Soldier	n_repsold	attack_grunt2	37097	n_repsold_atk1	Y	0.62	Sounds.bif wav (ffmpeg -i)	Y	0.62
+15	Republic_Soldier	n_repsold	attack_grunt3	37097	n_repsold_atk1	Y	0.62	Sounds.bif wav (ffmpeg -i)	Y	0.62
+15	Republic_Soldier	n_repsold	pain_grunt1	37098	n_repsold_hit1	Y	0.62	Sounds.bif wav (ffmpeg -i)	Y	0.62
+15	Republic_Soldier	n_repsold	pain_grunt2	37098	n_repsold_hit1	Y	0.62	Sounds.bif wav (ffmpeg -i)	Y	0.62
+15	Republic_Soldier	n_repsold	low_health	-1						
+15	Republic_Soldier	n_repsold	dead	37099	n_repsold_dead	Y	1.47	Sounds.bif wav (ffmpeg -i)	Y	1.47
+15	Republic_Soldier	n_repsold	critical_hit	-1						
+15	Republic_Soldier	n_repsold	target_immune	-1						
+15	Republic_Soldier	n_repsold	lay_mine	-1						
+15	Republic_Soldier	n_repsold	disarm_mine	-1						
+15	Republic_Soldier	n_repsold	begin_stealth	-1						
+15	Republic_Soldier	n_repsold	begin_search	-1						
+15	Republic_Soldier	n_repsold	begin_unlock	-1						
+15	Republic_Soldier	n_repsold	unlock_failed	-1						
+15	Republic_Soldier	n_repsold	unlock_success	-1						
+15	Republic_Soldier	n_repsold	separated_from_party	-1						
+15	Republic_Soldier	n_repsold	rejoined_party	-1						
+15	Republic_Soldier	n_repsold	poisoned	-1						
+16	Sith_Apprentice_Female	n_sithapprenf	battlecry1	37116	n_sthapprnf_bat1	Y	1.44	Sounds.bif wav (ffmpeg -i)	Y	1.44
+16	Sith_Apprentice_Female	n_sithapprenf	battlecry2	37116	n_sthapprnf_bat1	Y	1.44	Sounds.bif wav (ffmpeg -i)	Y	1.44
+16	Sith_Apprentice_Female	n_sithapprenf	battlecry3	37116	n_sthapprnf_bat1	Y	1.44	Sounds.bif wav (ffmpeg -i)	Y	1.44
+16	Sith_Apprentice_Female	n_sithapprenf	battlecry4	37116	n_sthapprnf_bat1	Y	1.44	Sounds.bif wav (ffmpeg -i)	Y	1.44
+16	Sith_Apprentice_Female	n_sithapprenf	battlecry5	37116	n_sthapprnf_bat1	Y	1.44	Sounds.bif wav (ffmpeg -i)	Y	1.44
+16	Sith_Apprentice_Female	n_sithapprenf	battlecry6	37116	n_sthapprnf_bat1	Y	1.44	Sounds.bif wav (ffmpeg -i)	Y	1.44
+16	Sith_Apprentice_Female	n_sithapprenf	select1	-1						
+16	Sith_Apprentice_Female	n_sithapprenf	select2	-1						
+16	Sith_Apprentice_Female	n_sithapprenf	select3	-1						
+16	Sith_Apprentice_Female	n_sithapprenf	attack_grunt1	37117	n_sthapprnf_atk1	Y	0.55	Sounds.bif wav (ffmpeg -i)	Y	0.55
+16	Sith_Apprentice_Female	n_sithapprenf	attack_grunt2	37117	n_sthapprnf_atk1	Y	0.55	Sounds.bif wav (ffmpeg -i)	Y	0.55
+16	Sith_Apprentice_Female	n_sithapprenf	attack_grunt3	37117	n_sthapprnf_atk1	Y	0.55	Sounds.bif wav (ffmpeg -i)	Y	0.55
+16	Sith_Apprentice_Female	n_sithapprenf	pain_grunt1	37118	n_sthapprnf_hit1	Y	0.59	Sounds.bif wav (ffmpeg -i)	Y	0.59
+16	Sith_Apprentice_Female	n_sithapprenf	pain_grunt2	37118	n_sthapprnf_hit1	Y	0.59	Sounds.bif wav (ffmpeg -i)	Y	0.59
+16	Sith_Apprentice_Female	n_sithapprenf	low_health	-1						
+16	Sith_Apprentice_Female	n_sithapprenf	dead	37119	n_sthapprnf_dead	Y	1.06	Sounds.bif wav (ffmpeg -i)	Y	1.06
+16	Sith_Apprentice_Female	n_sithapprenf	critical_hit	-1						
+16	Sith_Apprentice_Female	n_sithapprenf	target_immune	-1						
+16	Sith_Apprentice_Female	n_sithapprenf	lay_mine	-1						
+16	Sith_Apprentice_Female	n_sithapprenf	disarm_mine	-1						
+16	Sith_Apprentice_Female	n_sithapprenf	begin_stealth	-1						
+16	Sith_Apprentice_Female	n_sithapprenf	begin_search	-1						
+16	Sith_Apprentice_Female	n_sithapprenf	begin_unlock	-1						
+16	Sith_Apprentice_Female	n_sithapprenf	unlock_failed	-1						
+16	Sith_Apprentice_Female	n_sithapprenf	unlock_success	-1						
+16	Sith_Apprentice_Female	n_sithapprenf	separated_from_party	-1						
+16	Sith_Apprentice_Female	n_sithapprenf	rejoined_party	-1						
+16	Sith_Apprentice_Female	n_sithapprenf	poisoned	-1						
+17	Sith_Apprentice_Male	n_sithapprenm	battlecry1	37112	n_sthapprnm_bat1	Y	1.16	Sounds.bif wav (ffmpeg -i)	Y	1.16
+17	Sith_Apprentice_Male	n_sithapprenm	battlecry2	37112	n_sthapprnm_bat1	Y	1.16	Sounds.bif wav (ffmpeg -i)	Y	1.16
+17	Sith_Apprentice_Male	n_sithapprenm	battlecry3	37112	n_sthapprnm_bat1	Y	1.16	Sounds.bif wav (ffmpeg -i)	Y	1.16
+17	Sith_Apprentice_Male	n_sithapprenm	battlecry4	37112	n_sthapprnm_bat1	Y	1.16	Sounds.bif wav (ffmpeg -i)	Y	1.16
+17	Sith_Apprentice_Male	n_sithapprenm	battlecry5	37112	n_sthapprnm_bat1	Y	1.16	Sounds.bif wav (ffmpeg -i)	Y	1.16
+17	Sith_Apprentice_Male	n_sithapprenm	battlecry6	37112	n_sthapprnm_bat1	Y	1.16	Sounds.bif wav (ffmpeg -i)	Y	1.16
+17	Sith_Apprentice_Male	n_sithapprenm	select1	-1						
+17	Sith_Apprentice_Male	n_sithapprenm	select2	-1						
+17	Sith_Apprentice_Male	n_sithapprenm	select3	-1						
+17	Sith_Apprentice_Male	n_sithapprenm	attack_grunt1	37113	n_sthapprnm_atk1	Y	0.57	Sounds.bif wav (ffmpeg -i)	Y	0.57
+17	Sith_Apprentice_Male	n_sithapprenm	attack_grunt2	37113	n_sthapprnm_atk1	Y	0.57	Sounds.bif wav (ffmpeg -i)	Y	0.57
+17	Sith_Apprentice_Male	n_sithapprenm	attack_grunt3	37113	n_sthapprnm_atk1	Y	0.57	Sounds.bif wav (ffmpeg -i)	Y	0.57
+17	Sith_Apprentice_Male	n_sithapprenm	pain_grunt1	37114	n_sthapprnm_hit1	Y	0.50	Sounds.bif wav (ffmpeg -i)	Y	0.50
+17	Sith_Apprentice_Male	n_sithapprenm	pain_grunt2	37114	n_sthapprnm_hit1	Y	0.50	Sounds.bif wav (ffmpeg -i)	Y	0.50
+17	Sith_Apprentice_Male	n_sithapprenm	low_health	-1						
+17	Sith_Apprentice_Male	n_sithapprenm	dead	37115	n_sthapprnm_dead	Y	0.88	Sounds.bif wav (ffmpeg -i)	Y	0.88
+17	Sith_Apprentice_Male	n_sithapprenm	critical_hit	-1						
+17	Sith_Apprentice_Male	n_sithapprenm	target_immune	-1						
+17	Sith_Apprentice_Male	n_sithapprenm	lay_mine	-1						
+17	Sith_Apprentice_Male	n_sithapprenm	disarm_mine	-1						
+17	Sith_Apprentice_Male	n_sithapprenm	begin_stealth	-1						
+17	Sith_Apprentice_Male	n_sithapprenm	begin_search	-1						
+17	Sith_Apprentice_Male	n_sithapprenm	begin_unlock	-1						
+17	Sith_Apprentice_Male	n_sithapprenm	unlock_failed	-1						
+17	Sith_Apprentice_Male	n_sithapprenm	unlock_success	-1						
+17	Sith_Apprentice_Male	n_sithapprenm	separated_from_party	-1						
+17	Sith_Apprentice_Male	n_sithapprenm	rejoined_party	-1						
+17	Sith_Apprentice_Male	n_sithapprenm	poisoned	-1						
+18	Sith_Soldier	n_sithsoldr	battlecry1	-1						
+18	Sith_Soldier	n_sithsoldr	battlecry2	-1						
+18	Sith_Soldier	n_sithsoldr	battlecry3	-1						
+18	Sith_Soldier	n_sithsoldr	battlecry4	-1						
+18	Sith_Soldier	n_sithsoldr	battlecry5	-1						
+18	Sith_Soldier	n_sithsoldr	battlecry6	-1						
+18	Sith_Soldier	n_sithsoldr	select1	-1						
+18	Sith_Soldier	n_sithsoldr	select2	-1						
+18	Sith_Soldier	n_sithsoldr	select3	-1						
+18	Sith_Soldier	n_sithsoldr	attack_grunt1	37130	n_sithsoldr_atk1	Y	1.07	Sounds.bif wav (ffmpeg -i)	Y	1.07
+18	Sith_Soldier	n_sithsoldr	attack_grunt2	37130	n_sithsoldr_atk1	Y	1.07	Sounds.bif wav (ffmpeg -i)	Y	1.07
+18	Sith_Soldier	n_sithsoldr	attack_grunt3	37130	n_sithsoldr_atk1	Y	1.07	Sounds.bif wav (ffmpeg -i)	Y	1.07
+18	Sith_Soldier	n_sithsoldr	pain_grunt1	37131	n_sithsoldr_hit1	Y	1.04	Sounds.bif wav (ffmpeg -i)	Y	1.04
+18	Sith_Soldier	n_sithsoldr	pain_grunt2	37131	n_sithsoldr_hit1	Y	1.04	Sounds.bif wav (ffmpeg -i)	Y	1.04
+18	Sith_Soldier	n_sithsoldr	low_health	-1						
+18	Sith_Soldier	n_sithsoldr	dead	37132	n_sithsoldr_dead	Y	1.40	Sounds.bif wav (ffmpeg -i)	Y	1.40
+18	Sith_Soldier	n_sithsoldr	critical_hit	-1						
+18	Sith_Soldier	n_sithsoldr	target_immune	-1						
+18	Sith_Soldier	n_sithsoldr	lay_mine	-1						
+18	Sith_Soldier	n_sithsoldr	disarm_mine	-1						
+18	Sith_Soldier	n_sithsoldr	begin_stealth	-1						
+18	Sith_Soldier	n_sithsoldr	begin_search	-1						
+18	Sith_Soldier	n_sithsoldr	begin_unlock	-1						
+18	Sith_Soldier	n_sithsoldr	unlock_failed	-1						
+18	Sith_Soldier	n_sithsoldr	unlock_success	-1						
+18	Sith_Soldier	n_sithsoldr	separated_from_party	-1						
+18	Sith_Soldier	n_sithsoldr	rejoined_party	-1						
+18	Sith_Soldier	n_sithsoldr	poisoned	-1						
+19	Bastila	p_bastila	battlecry1	36850	p_bastila_bat1	Y	1.24	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+19	Bastila	p_bastila	battlecry2	36851	p_bastila_bat2	Y	1.19	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+19	Bastila	p_bastila	battlecry3	36852	p_bastila_bat3	Y	1.11	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+19	Bastila	p_bastila	battlecry4	36853	p_bastila_bat4	Y	1.46	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+19	Bastila	p_bastila	battlecry5	36854	p_bastila_bat5	Y	1.88	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+19	Bastila	p_bastila	battlecry6	36855	p_bastila_bat6	Y	0.44	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+19	Bastila	p_bastila	select1	36856	p_bastila_slct1	Y	0.44	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+19	Bastila	p_bastila	select2	36857	p_bastila_slct2	Y	0.67	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+19	Bastila	p_bastila	select3	36858	p_bastila_slct3	Y	0.50	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+19	Bastila	p_bastila	attack_grunt1	36859	p_bastila_atk1	Y	0.28	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+19	Bastila	p_bastila	attack_grunt2	36860	p_bastila_atk2	Y	0.43	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+19	Bastila	p_bastila	attack_grunt3	36861	p_bastila_atk3	Y	0.41	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+19	Bastila	p_bastila	pain_grunt1	36862	p_bastila_hit1	Y	0.38	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+19	Bastila	p_bastila	pain_grunt2	36863	p_bastila_hit2	Y	0.35	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+19	Bastila	p_bastila	low_health	36864	p_bastila_low	Y	2.89	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+19	Bastila	p_bastila	dead	36865	p_bastila_dead	Y	0.82	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+19	Bastila	p_bastila	critical_hit	36866	p_bastila_crit	Y	1.39	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+19	Bastila	p_bastila	target_immune	36867	p_bastila_tia	Y	1.33	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+19	Bastila	p_bastila	lay_mine	36868	p_bastila_lmin	Y	1.65	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+19	Bastila	p_bastila	disarm_mine	36869	p_bastila_dmin	Y	1.10	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+19	Bastila	p_bastila	begin_stealth	36870	p_bastila_stlh	Y	1.15	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+19	Bastila	p_bastila	begin_search	36871	p_bastila_srch	Y	1.22	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+19	Bastila	p_bastila	begin_unlock	36872	p_bastila_block	Y	0.88	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+19	Bastila	p_bastila	unlock_failed	36873	p_bastila_flock	Y	0.99	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+19	Bastila	p_bastila	unlock_success	36874	p_bastila_slock	Y	0.57	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+19	Bastila	p_bastila	separated_from_party	36876	p_bastila_sprty	Y	1.31	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+19	Bastila	p_bastila	rejoined_party	36878	p_bastila_rprty	Y	1.28	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+19	Bastila	p_bastila	poisoned	36882	p_bastila_pois	Y	2.41	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+20	T3M4_K2	p_t3m4	battlecry1	42543	p_t3m3_bat1	Y	0.67	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+20	T3M4_K2	p_t3m4	battlecry2	42544	p_t3m3_bat2	Y	0.71	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+20	T3M4_K2	p_t3m4	battlecry3	134000	p_t3m3_bat3	Y	0.28	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+20	T3M4_K2	p_t3m4	battlecry4	134001	p_t3m3_bat4	Y	0.45	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+20	T3M4_K2	p_t3m4	battlecry5	134002	p_t3m3_bat5	Y	0.50	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+20	T3M4_K2	p_t3m4	battlecry6	134003	p_t3m3_bat6	Y	0.18	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+20	T3M4_K2	p_t3m4	select1	42545	p_t3m3_slct1	Y	0.20	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+20	T3M4_K2	p_t3m4	select2	42546	p_t3m3_slct2	Y	0.39	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+20	T3M4_K2	p_t3m4	select3	42547	p_t3m3_slct3	Y	0.27	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+20	T3M4_K2	p_t3m4	attack_grunt1	42548	p_t3m3_atk1	Y	0.20	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+20	T3M4_K2	p_t3m4	attack_grunt2	42549	p_t3m3_atk2	Y	0.31	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+20	T3M4_K2	p_t3m4	attack_grunt3	42550	p_t3m3_atk3	Y	0.29	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+20	T3M4_K2	p_t3m4	pain_grunt1	42551	p_t3m3_hit1	Y	0.34	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+20	T3M4_K2	p_t3m4	pain_grunt2	42552	p_t3m3_hit2	Y	0.39	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+20	T3M4_K2	p_t3m4	low_health	42553	p_t3m3_low	N			N	
+20	T3M4_K2	p_t3m4	dead	42554	p_t3m3_dead	Y	2.93	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+20	T3M4_K2	p_t3m4	critical_hit	42555	p_t3m3_crit	Y	0.78	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+20	T3M4_K2	p_t3m4	target_immune	42556	p_t3m3_tia	Y	0.49	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+20	T3M4_K2	p_t3m4	lay_mine	42557	p_t3m3_lmin	Y	1.24	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+20	T3M4_K2	p_t3m4	disarm_mine	42558	p_t3m3_dmin	Y	1.88	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+20	T3M4_K2	p_t3m4	begin_stealth	-1						
+20	T3M4_K2	p_t3m4	begin_search	42559	p_t3m3_srch	Y	1.66	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+20	T3M4_K2	p_t3m4	begin_unlock	42560	p_t3m3_block	Y	0.49	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+20	T3M4_K2	p_t3m4	unlock_failed	42561	p_t3m3_flock	Y	1.19	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+20	T3M4_K2	p_t3m4	unlock_success	42562	p_t3m3_slock	Y	1.04	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+20	T3M4_K2	p_t3m4	separated_from_party	42563	p_t3m3_sprty	Y	2.26	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+20	T3M4_K2	p_t3m4	rejoined_party	42564	p_t3m3_rprty	Y	1.33	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+20	T3M4_K2	p_t3m4	poisoned	42565	p_t3m3_pois	Y	1.16	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+21	BomaBeast	c_boma	battlecry1	49162	c_boma_bat	Y	1.26	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	Y	
+21	BomaBeast	c_boma	battlecry2	-1						
+21	BomaBeast	c_boma	battlecry3	-1						
+21	BomaBeast	c_boma	battlecry4	-1						
+21	BomaBeast	c_boma	battlecry5	-1						
+21	BomaBeast	c_boma	battlecry6	-1						
+21	BomaBeast	c_boma	select1	-1						
+21	BomaBeast	c_boma	select2	-1						
+21	BomaBeast	c_boma	select3	-1						
+21	BomaBeast	c_boma	attack_grunt1	49161	c_boma_atk	Y	0.97	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	Y	
+21	BomaBeast	c_boma	attack_grunt2	-1						
+21	BomaBeast	c_boma	attack_grunt3	-1						
+21	BomaBeast	c_boma	pain_grunt1	49163	c_boma_dam	Y	1.05	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	Y	
+21	BomaBeast	c_boma	pain_grunt2	-1						
+21	BomaBeast	c_boma	low_health	-1						
+21	BomaBeast	c_boma	dead	49164	c_boma_die	Y	1.86	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	Y	
+21	BomaBeast	c_boma	critical_hit	-1						
+21	BomaBeast	c_boma	target_immune	-1						
+21	BomaBeast	c_boma	lay_mine	-1						
+21	BomaBeast	c_boma	disarm_mine	-1						
+21	BomaBeast	c_boma	begin_stealth	-1						
+21	BomaBeast	c_boma	begin_search	-1						
+21	BomaBeast	c_boma	begin_unlock	-1						
+21	BomaBeast	c_boma	unlock_failed	-1						
+21	BomaBeast	c_boma	unlock_success	-1						
+21	BomaBeast	c_boma	separated_from_party	-1						
+21	BomaBeast	c_boma	rejoined_party	-1						
+21	BomaBeast	c_boma	poisoned	-1						
+22	Cannok	c_cannok	battlecry1	13287						
+22	Cannok	c_cannok	battlecry2	-1						
+22	Cannok	c_cannok	battlecry3	-1						
+22	Cannok	c_cannok	battlecry4	-1						
+22	Cannok	c_cannok	battlecry5	-1						
+22	Cannok	c_cannok	battlecry6	-1						
+22	Cannok	c_cannok	select1	-1						
+22	Cannok	c_cannok	select2	-1						
+22	Cannok	c_cannok	select3	-1						
+22	Cannok	c_cannok	attack_grunt1	132387	c_cannok_atk	Y	0.67	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+22	Cannok	c_cannok	attack_grunt2	-1						
+22	Cannok	c_cannok	attack_grunt3	-1						
+22	Cannok	c_cannok	pain_grunt1	49167	c_cannok_dam	Y	0.82	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+22	Cannok	c_cannok	pain_grunt2	-1						
+22	Cannok	c_cannok	low_health	-1						
+22	Cannok	c_cannok	dead	49168	c_cannok_die	Y	1.03	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+22	Cannok	c_cannok	critical_hit	-1						
+22	Cannok	c_cannok	target_immune	-1						
+22	Cannok	c_cannok	lay_mine	-1						
+22	Cannok	c_cannok	disarm_mine	-1						
+22	Cannok	c_cannok	begin_stealth	-1						
+22	Cannok	c_cannok	begin_search	-1						
+22	Cannok	c_cannok	begin_unlock	-1						
+22	Cannok	c_cannok	unlock_failed	-1						
+22	Cannok	c_cannok	unlock_success	-1						
+22	Cannok	c_cannok	separated_from_party	-1						
+22	Cannok	c_cannok	rejoined_party	-1						
+22	Cannok	c_cannok	poisoned	-1						
+23	Droid_Mark_1	c_drdmk1	battlecry1	132389	c_drdmk1_bat	Y	0.78	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+23	Droid_Mark_1	c_drdmk1	battlecry2	-1						
+23	Droid_Mark_1	c_drdmk1	battlecry3	-1						
+23	Droid_Mark_1	c_drdmk1	battlecry4	-1						
+23	Droid_Mark_1	c_drdmk1	battlecry5	-1						
+23	Droid_Mark_1	c_drdmk1	battlecry6	-1						
+23	Droid_Mark_1	c_drdmk1	select1	-1						
+23	Droid_Mark_1	c_drdmk1	select2	-1						
+23	Droid_Mark_1	c_drdmk1	select3	-1						
+23	Droid_Mark_1	c_drdmk1	attack_grunt1	132390	c_drdmk1_atk	Y	0.70	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+23	Droid_Mark_1	c_drdmk1	attack_grunt2	-1						
+23	Droid_Mark_1	c_drdmk1	attack_grunt3	-1						
+23	Droid_Mark_1	c_drdmk1	pain_grunt1	132391	c_drdmk1_dam	Y	0.76	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+23	Droid_Mark_1	c_drdmk1	pain_grunt2	-1						
+23	Droid_Mark_1	c_drdmk1	low_health	-1						
+23	Droid_Mark_1	c_drdmk1	dead	49170	c_drdmk1_die	Y	2.80	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+23	Droid_Mark_1	c_drdmk1	critical_hit	-1						
+23	Droid_Mark_1	c_drdmk1	target_immune	-1						
+23	Droid_Mark_1	c_drdmk1	lay_mine	-1						
+23	Droid_Mark_1	c_drdmk1	disarm_mine	-1						
+23	Droid_Mark_1	c_drdmk1	begin_stealth	-1						
+23	Droid_Mark_1	c_drdmk1	begin_search	-1						
+23	Droid_Mark_1	c_drdmk1	begin_unlock	-1						
+23	Droid_Mark_1	c_drdmk1	unlock_failed	-1						
+23	Droid_Mark_1	c_drdmk1	unlock_success	-1						
+23	Droid_Mark_1	c_drdmk1	separated_from_party	-1						
+23	Droid_Mark_1	c_drdmk1	rejoined_party	-1						
+23	Droid_Mark_1	c_drdmk1	poisoned	-1						
+24	Droid_Mark_2	c_drdmk2	battlecry1	132393	c_drdmk2_bat	Y	0.82	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+24	Droid_Mark_2	c_drdmk2	battlecry2	-1						
+24	Droid_Mark_2	c_drdmk2	battlecry3	-1						
+24	Droid_Mark_2	c_drdmk2	battlecry4	-1						
+24	Droid_Mark_2	c_drdmk2	battlecry5	-1						
+24	Droid_Mark_2	c_drdmk2	battlecry6	-1						
+24	Droid_Mark_2	c_drdmk2	select1	-1						
+24	Droid_Mark_2	c_drdmk2	select2	-1						
+24	Droid_Mark_2	c_drdmk2	select3	-1						
+24	Droid_Mark_2	c_drdmk2	attack_grunt1	132392	c_drdmk2_atk	Y	0.53	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+24	Droid_Mark_2	c_drdmk2	attack_grunt2	-1						
+24	Droid_Mark_2	c_drdmk2	attack_grunt3	-1						
+24	Droid_Mark_2	c_drdmk2	pain_grunt1	132395	c_drdmk2_dam	N			N	
+24	Droid_Mark_2	c_drdmk2	pain_grunt2	-1						
+24	Droid_Mark_2	c_drdmk2	low_health	-1						
+24	Droid_Mark_2	c_drdmk2	dead	49172	c_drdmk2_die	Y	1.22	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+24	Droid_Mark_2	c_drdmk2	critical_hit	-1						
+24	Droid_Mark_2	c_drdmk2	target_immune	-1						
+24	Droid_Mark_2	c_drdmk2	lay_mine	-1						
+24	Droid_Mark_2	c_drdmk2	disarm_mine	-1						
+24	Droid_Mark_2	c_drdmk2	begin_stealth	-1						
+24	Droid_Mark_2	c_drdmk2	begin_search	-1						
+24	Droid_Mark_2	c_drdmk2	begin_unlock	-1						
+24	Droid_Mark_2	c_drdmk2	unlock_failed	-1						
+24	Droid_Mark_2	c_drdmk2	unlock_success	-1						
+24	Droid_Mark_2	c_drdmk2	separated_from_party	-1						
+24	Droid_Mark_2	c_drdmk2	rejoined_party	-1						
+24	Droid_Mark_2	c_drdmk2	poisoned	-1						
+25	Generic_Alien	a_aliengen	battlecry1	130612	A_ALIENGEN_BAT	Y	1.01	Sounds.bif wav (ffmpeg -i)	Y	1.01
+25	Generic_Alien	a_aliengen	battlecry2	-1						
+25	Generic_Alien	a_aliengen	battlecry3	-1						
+25	Generic_Alien	a_aliengen	battlecry4	-1						
+25	Generic_Alien	a_aliengen	battlecry5	-1						
+25	Generic_Alien	a_aliengen	battlecry6	-1						
+25	Generic_Alien	a_aliengen	select1	-1						
+25	Generic_Alien	a_aliengen	select2	-1						
+25	Generic_Alien	a_aliengen	select3	-1						
+25	Generic_Alien	a_aliengen	attack_grunt1	130611	A_ALIENGEN_ATK	Y	0.60	Sounds.bif wav (ffmpeg -i)	Y	0.60
+25	Generic_Alien	a_aliengen	attack_grunt2	-1						
+25	Generic_Alien	a_aliengen	attack_grunt3	-1						
+25	Generic_Alien	a_aliengen	pain_grunt1	130613	A_ALIENGEN_DAM	Y	0.64	Sounds.bif wav (ffmpeg -i)	Y	0.64
+25	Generic_Alien	a_aliengen	pain_grunt2	-1						
+25	Generic_Alien	a_aliengen	low_health	-1						
+25	Generic_Alien	a_aliengen	dead	130614	A_ALIENGEN_DIE	Y	1.04	Sounds.bif wav (ffmpeg -i)	Y	1.04
+25	Generic_Alien	a_aliengen	critical_hit	-1						
+25	Generic_Alien	a_aliengen	target_immune	-1						
+25	Generic_Alien	a_aliengen	lay_mine	-1						
+25	Generic_Alien	a_aliengen	disarm_mine	-1						
+25	Generic_Alien	a_aliengen	begin_stealth	-1						
+25	Generic_Alien	a_aliengen	begin_search	-1						
+25	Generic_Alien	a_aliengen	begin_unlock	-1						
+25	Generic_Alien	a_aliengen	unlock_failed	-1						
+25	Generic_Alien	a_aliengen	unlock_success	-1						
+25	Generic_Alien	a_aliengen	separated_from_party	-1						
+25	Generic_Alien	a_aliengen	rejoined_party	-1						
+25	Generic_Alien	a_aliengen	poisoned	-1						
+26	Aqualish	a_aqua	battlecry1	130616	a_aqua_bat	Y	1.94	Sounds.bif wav (ffmpeg -i)	Y	1.94
+26	Aqualish	a_aqua	battlecry2	-1						
+26	Aqualish	a_aqua	battlecry3	-1						
+26	Aqualish	a_aqua	battlecry4	-1						
+26	Aqualish	a_aqua	battlecry5	-1						
+26	Aqualish	a_aqua	battlecry6	-1						
+26	Aqualish	a_aqua	select1	-1						
+26	Aqualish	a_aqua	select2	-1						
+26	Aqualish	a_aqua	select3	-1						
+26	Aqualish	a_aqua	attack_grunt1	130615	a_aqua_atk	Y	1.26	Sounds.bif wav (ffmpeg -i)	Y	1.26
+26	Aqualish	a_aqua	attack_grunt2	-1						
+26	Aqualish	a_aqua	attack_grunt3	-1						
+26	Aqualish	a_aqua	pain_grunt1	130617	a_aqua_dam	Y	1.32	Sounds.bif wav (ffmpeg -i)	Y	1.32
+26	Aqualish	a_aqua	pain_grunt2	-1						
+26	Aqualish	a_aqua	low_health	-1						
+26	Aqualish	a_aqua	dead	130618	a_aqua_die	Y	1.52	Sounds.bif wav (ffmpeg -i)	Y	1.52
+26	Aqualish	a_aqua	critical_hit	-1						
+26	Aqualish	a_aqua	target_immune	-1						
+26	Aqualish	a_aqua	lay_mine	-1						
+26	Aqualish	a_aqua	disarm_mine	-1						
+26	Aqualish	a_aqua	begin_stealth	-1						
+26	Aqualish	a_aqua	begin_search	-1						
+26	Aqualish	a_aqua	begin_unlock	-1						
+26	Aqualish	a_aqua	unlock_failed	-1						
+26	Aqualish	a_aqua	unlock_success	-1						
+26	Aqualish	a_aqua	separated_from_party	-1						
+26	Aqualish	a_aqua	rejoined_party	-1						
+26	Aqualish	a_aqua	poisoned	-1						
+27	Chandra_Fan	a_chandra	battlecry1	130626	a_chandra_bat	Y	0.85	Sounds.bif wav (ffmpeg -i)	Y	0.85
+27	Chandra_Fan	a_chandra	battlecry2	-1						
+27	Chandra_Fan	a_chandra	battlecry3	-1						
+27	Chandra_Fan	a_chandra	battlecry4	-1						
+27	Chandra_Fan	a_chandra	battlecry5	-1						
+27	Chandra_Fan	a_chandra	battlecry6	-1						
+27	Chandra_Fan	a_chandra	select1	-1						
+27	Chandra_Fan	a_chandra	select2	-1						
+27	Chandra_Fan	a_chandra	select3	-1						
+27	Chandra_Fan	a_chandra	attack_grunt1	130627	a_chandra_atk	Y	0.25	Sounds.bif wav (ffmpeg -i)	Y	0.25
+27	Chandra_Fan	a_chandra	attack_grunt2	-1						
+27	Chandra_Fan	a_chandra	attack_grunt3	-1						
+27	Chandra_Fan	a_chandra	pain_grunt1	130628	a_chandra_dam	Y	0.41	Sounds.bif wav (ffmpeg -i)	Y	0.41
+27	Chandra_Fan	a_chandra	pain_grunt2	-1						
+27	Chandra_Fan	a_chandra	low_health	-1						
+27	Chandra_Fan	a_chandra	dead	130629	a_chandra_die	Y	0.81	Sounds.bif wav (ffmpeg -i)	Y	0.81
+27	Chandra_Fan	a_chandra	critical_hit	-1						
+27	Chandra_Fan	a_chandra	target_immune	-1						
+27	Chandra_Fan	a_chandra	lay_mine	-1						
+27	Chandra_Fan	a_chandra	disarm_mine	-1						
+27	Chandra_Fan	a_chandra	begin_stealth	-1						
+27	Chandra_Fan	a_chandra	begin_search	-1						
+27	Chandra_Fan	a_chandra	begin_unlock	-1						
+27	Chandra_Fan	a_chandra	unlock_failed	-1						
+27	Chandra_Fan	a_chandra	unlock_success	-1						
+27	Chandra_Fan	a_chandra	separated_from_party	-1						
+27	Chandra_Fan	a_chandra	rejoined_party	-1						
+27	Chandra_Fan	a_chandra	poisoned	-1						
+28	Weequay	a_weequay	battlecry1	130715	a_weequay_bat	Y	1.16	Sounds.bif wav (ffmpeg -i)	Y	1.16
+28	Weequay	a_weequay	battlecry2	-1						
+28	Weequay	a_weequay	battlecry3	-1						
+28	Weequay	a_weequay	battlecry4	-1						
+28	Weequay	a_weequay	battlecry5	-1						
+28	Weequay	a_weequay	battlecry6	-1						
+28	Weequay	a_weequay	select1	-1						
+28	Weequay	a_weequay	select2	-1						
+28	Weequay	a_weequay	select3	-1						
+28	Weequay	a_weequay	attack_grunt1	130716	a_weequay_atk	Y	0.82	Sounds.bif wav (ffmpeg -i)	Y	0.82
+28	Weequay	a_weequay	attack_grunt2	-1						
+28	Weequay	a_weequay	attack_grunt3	-1						
+28	Weequay	a_weequay	pain_grunt1	130717	a_weequay_dam	Y	0.62	Sounds.bif wav (ffmpeg -i)	Y	0.62
+28	Weequay	a_weequay	pain_grunt2	-1						
+28	Weequay	a_weequay	low_health	-1						
+28	Weequay	a_weequay	dead	130718	a_weequay_die	Y	0.80	Sounds.bif wav (ffmpeg -i)	Y	0.80
+28	Weequay	a_weequay	critical_hit	-1						
+28	Weequay	a_weequay	target_immune	-1						
+28	Weequay	a_weequay	lay_mine	-1						
+28	Weequay	a_weequay	disarm_mine	-1						
+28	Weequay	a_weequay	begin_stealth	-1						
+28	Weequay	a_weequay	begin_search	-1						
+28	Weequay	a_weequay	begin_unlock	-1						
+28	Weequay	a_weequay	unlock_failed	-1						
+28	Weequay	a_weequay	unlock_success	-1						
+28	Weequay	a_weequay	separated_from_party	-1						
+28	Weequay	a_weequay	rejoined_party	-1						
+28	Weequay	a_weequay	poisoned	-1						
+29	Twilek_Male_Tough	a_twitough	battlecry1	130710	a_twitough_bat	Y	0.95	Sounds.bif wav (ffmpeg -i)	Y	0.95
+29	Twilek_Male_Tough	a_twitough	battlecry2	-1						
+29	Twilek_Male_Tough	a_twitough	battlecry3	-1						
+29	Twilek_Male_Tough	a_twitough	battlecry4	-1						
+29	Twilek_Male_Tough	a_twitough	battlecry5	-1						
+29	Twilek_Male_Tough	a_twitough	battlecry6	-1						
+29	Twilek_Male_Tough	a_twitough	select1	-1						
+29	Twilek_Male_Tough	a_twitough	select2	-1						
+29	Twilek_Male_Tough	a_twitough	select3	-1						
+29	Twilek_Male_Tough	a_twitough	attack_grunt1	130711	a_twitough_atk	Y	0.72	Sounds.bif wav (ffmpeg -i)	Y	0.72
+29	Twilek_Male_Tough	a_twitough	attack_grunt2	-1						
+29	Twilek_Male_Tough	a_twitough	attack_grunt3	-1						
+29	Twilek_Male_Tough	a_twitough	pain_grunt1	130712	a_twitough_dam	Y	0.47	Sounds.bif wav (ffmpeg -i)	Y	0.47
+29	Twilek_Male_Tough	a_twitough	pain_grunt2	-1						
+29	Twilek_Male_Tough	a_twitough	low_health	-1						
+29	Twilek_Male_Tough	a_twitough	dead	130713	a_twitough_die	Y	1.39	Sounds.bif wav (ffmpeg -i)	Y	1.39
+29	Twilek_Male_Tough	a_twitough	critical_hit	-1						
+29	Twilek_Male_Tough	a_twitough	target_immune	-1						
+29	Twilek_Male_Tough	a_twitough	lay_mine	-1						
+29	Twilek_Male_Tough	a_twitough	disarm_mine	-1						
+29	Twilek_Male_Tough	a_twitough	begin_stealth	-1						
+29	Twilek_Male_Tough	a_twitough	begin_search	-1						
+29	Twilek_Male_Tough	a_twitough	begin_unlock	-1						
+29	Twilek_Male_Tough	a_twitough	unlock_failed	-1						
+29	Twilek_Male_Tough	a_twitough	unlock_success	-1						
+29	Twilek_Male_Tough	a_twitough	separated_from_party	-1						
+29	Twilek_Male_Tough	a_twitough	rejoined_party	-1						
+29	Twilek_Male_Tough	a_twitough	poisoned	-1						
+30	Twilek_Male_K2	a_twimale	battlecry1	130705	a_twimale_bat1	Y	1.16	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+30	Twilek_Male_K2	a_twimale	battlecry2	132406	a_twimale_bat2	Y	1.37	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+30	Twilek_Male_K2	a_twimale	battlecry3	-1						
+30	Twilek_Male_K2	a_twimale	battlecry4	-1						
+30	Twilek_Male_K2	a_twimale	battlecry5	-1						
+30	Twilek_Male_K2	a_twimale	battlecry6	-1						
+30	Twilek_Male_K2	a_twimale	select1	-1						
+30	Twilek_Male_K2	a_twimale	select2	-1						
+30	Twilek_Male_K2	a_twimale	select3	-1						
+30	Twilek_Male_K2	a_twimale	attack_grunt1	130706	a_twimale_atk1	Y	0.66	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+30	Twilek_Male_K2	a_twimale	attack_grunt2	132407	a_twimale_atk2	Y	0.80	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+30	Twilek_Male_K2	a_twimale	attack_grunt3	132409	a_twimale_atk3	Y	0.53	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+30	Twilek_Male_K2	a_twimale	pain_grunt1	130707	a_twimale_dam1	Y	0.47	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+30	Twilek_Male_K2	a_twimale	pain_grunt2	132410	a_twimale_dam2	Y	0.45	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+30	Twilek_Male_K2	a_twimale	low_health	-1						
+30	Twilek_Male_K2	a_twimale	dead	130708	a_twimale_die	Y	1.06	Sounds.bif wav (ffmpeg -i)	Y	1.06
+30	Twilek_Male_K2	a_twimale	critical_hit	-1						
+30	Twilek_Male_K2	a_twimale	target_immune	-1						
+30	Twilek_Male_K2	a_twimale	lay_mine	-1						
+30	Twilek_Male_K2	a_twimale	disarm_mine	-1						
+30	Twilek_Male_K2	a_twimale	begin_stealth	-1						
+30	Twilek_Male_K2	a_twimale	begin_search	-1						
+30	Twilek_Male_K2	a_twimale	begin_unlock	-1						
+30	Twilek_Male_K2	a_twimale	unlock_failed	-1						
+30	Twilek_Male_K2	a_twimale	unlock_success	-1						
+30	Twilek_Male_K2	a_twimale	separated_from_party	-1						
+30	Twilek_Male_K2	a_twimale	rejoined_party	-1						
+30	Twilek_Male_K2	a_twimale	poisoned	-1						
+31	Twilek_Female_K2	a_twifem	battlecry1	132397	a_twifem_bat1	Y	1.02	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+31	Twilek_Female_K2	a_twifem	battlecry2	132401	a_twifem_bat2	Y	0.87	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+31	Twilek_Female_K2	a_twifem	battlecry3	-1						
+31	Twilek_Female_K2	a_twifem	battlecry4	-1						
+31	Twilek_Female_K2	a_twifem	battlecry5	-1						
+31	Twilek_Female_K2	a_twifem	battlecry6	-1						
+31	Twilek_Female_K2	a_twifem	select1	-1						
+31	Twilek_Female_K2	a_twifem	select2	-1						
+31	Twilek_Female_K2	a_twifem	select3	-1						
+31	Twilek_Female_K2	a_twifem	attack_grunt1	132398	a_twifem_atk1	Y	0.36	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+31	Twilek_Female_K2	a_twifem	attack_grunt2	132402	a_twifem_atk2	Y	0.39	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+31	Twilek_Female_K2	a_twifem	attack_grunt3	132403	a_twifem_atk3	Y	0.59	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+31	Twilek_Female_K2	a_twifem	pain_grunt1	132399	a_twifem_dam1	Y	0.51	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+31	Twilek_Female_K2	a_twifem	pain_grunt2	132404	a_twifem_dam2	Y	0.47	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+31	Twilek_Female_K2	a_twifem	low_health	-1						
+31	Twilek_Female_K2	a_twifem	dead	132400	a_twifem_die1	N			N	
+31	Twilek_Female_K2	a_twifem	critical_hit	-1						
+31	Twilek_Female_K2	a_twifem	target_immune	-1						
+31	Twilek_Female_K2	a_twifem	lay_mine	-1						
+31	Twilek_Female_K2	a_twifem	disarm_mine	-1						
+31	Twilek_Female_K2	a_twifem	begin_stealth	-1						
+31	Twilek_Female_K2	a_twifem	begin_search	-1						
+31	Twilek_Female_K2	a_twifem	begin_unlock	-1						
+31	Twilek_Female_K2	a_twifem	unlock_failed	-1						
+31	Twilek_Female_K2	a_twifem	unlock_success	-1						
+31	Twilek_Female_K2	a_twifem	separated_from_party	-1						
+31	Twilek_Female_K2	a_twifem	rejoined_party	-1						
+31	Twilek_Female_K2	a_twifem	poisoned	-1						
+32	Trandoshan	a_trando	battlecry1	130700	a_trando_bat	Y	1.19	Sounds.bif wav (ffmpeg -i)	Y	1.19
+32	Trandoshan	a_trando	battlecry2	-1						
+32	Trandoshan	a_trando	battlecry3	-1						
+32	Trandoshan	a_trando	battlecry4	-1						
+32	Trandoshan	a_trando	battlecry5	-1						
+32	Trandoshan	a_trando	battlecry6	-1						
+32	Trandoshan	a_trando	select1	-1						
+32	Trandoshan	a_trando	select2	-1						
+32	Trandoshan	a_trando	select3	-1						
+32	Trandoshan	a_trando	attack_grunt1	130701	a_trando_atk	Y	0.42	Sounds.bif wav (ffmpeg -i)	Y	0.42
+32	Trandoshan	a_trando	attack_grunt2	-1						
+32	Trandoshan	a_trando	attack_grunt3	-1						
+32	Trandoshan	a_trando	pain_grunt1	130702	a_trando_dam	Y	0.65	Sounds.bif wav (ffmpeg -i)	Y	0.65
+32	Trandoshan	a_trando	pain_grunt2	-1						
+32	Trandoshan	a_trando	low_health	-1						
+32	Trandoshan	a_trando	dead	130703	a_trando_die	Y	1.37	Sounds.bif wav (ffmpeg -i)	Y	1.37
+32	Trandoshan	a_trando	critical_hit	-1						
+32	Trandoshan	a_trando	target_immune	-1						
+32	Trandoshan	a_trando	lay_mine	-1						
+32	Trandoshan	a_trando	disarm_mine	-1						
+32	Trandoshan	a_trando	begin_stealth	-1						
+32	Trandoshan	a_trando	begin_search	-1						
+32	Trandoshan	a_trando	begin_unlock	-1						
+32	Trandoshan	a_trando	unlock_failed	-1						
+32	Trandoshan	a_trando	unlock_success	-1						
+32	Trandoshan	a_trando	separated_from_party	-1						
+32	Trandoshan	a_trando	rejoined_party	-1						
+32	Trandoshan	a_trando	poisoned	-1						
+33	Sullustan	a_sullust	battlecry1	130694	a_sullust_bat	Y	0.77	Sounds.bif wav (ffmpeg -i)	Y	0.77
+33	Sullustan	a_sullust	battlecry2	-1						
+33	Sullustan	a_sullust	battlecry3	-1						
+33	Sullustan	a_sullust	battlecry4	-1						
+33	Sullustan	a_sullust	battlecry5	-1						
+33	Sullustan	a_sullust	battlecry6	-1						
+33	Sullustan	a_sullust	select1	-1						
+33	Sullustan	a_sullust	select2	-1						
+33	Sullustan	a_sullust	select3	-1						
+33	Sullustan	a_sullust	attack_grunt1	130695	a_sullust_atk	Y	0.68	Sounds.bif wav (ffmpeg -i)	Y	0.68
+33	Sullustan	a_sullust	attack_grunt2	-1						
+33	Sullustan	a_sullust	attack_grunt3	-1						
+33	Sullustan	a_sullust	pain_grunt1	130696	a_sullust_dam	Y	0.64	Sounds.bif wav (ffmpeg -i)	Y	0.64
+33	Sullustan	a_sullust	pain_grunt2	-1						
+33	Sullustan	a_sullust	low_health	-1						
+33	Sullustan	a_sullust	dead	130697	a_sullust_die	Y	1.26	Sounds.bif wav (ffmpeg -i)	Y	1.26
+33	Sullustan	a_sullust	critical_hit	-1						
+33	Sullustan	a_sullust	target_immune	-1						
+33	Sullustan	a_sullust	lay_mine	-1						
+33	Sullustan	a_sullust	disarm_mine	-1						
+33	Sullustan	a_sullust	begin_stealth	-1						
+33	Sullustan	a_sullust	begin_search	-1						
+33	Sullustan	a_sullust	begin_unlock	-1						
+33	Sullustan	a_sullust	unlock_failed	-1						
+33	Sullustan	a_sullust	unlock_success	-1						
+33	Sullustan	a_sullust	separated_from_party	-1						
+33	Sullustan	a_sullust	rejoined_party	-1						
+33	Sullustan	a_sullust	poisoned	-1						
+34	Sith_Assassin	a_sithass	battlecry1	130689	a_sithass_bat	Y	1.72	Sounds.bif wav (ffmpeg -i)	Y	1.72
+34	Sith_Assassin	a_sithass	battlecry2	-1						
+34	Sith_Assassin	a_sithass	battlecry3	-1						
+34	Sith_Assassin	a_sithass	battlecry4	-1						
+34	Sith_Assassin	a_sithass	battlecry5	-1						
+34	Sith_Assassin	a_sithass	battlecry6	-1						
+34	Sith_Assassin	a_sithass	select1	-1						
+34	Sith_Assassin	a_sithass	select2	-1						
+34	Sith_Assassin	a_sithass	select3	-1						
+34	Sith_Assassin	a_sithass	attack_grunt1	130690	a_sithass_atk	Y	0.95	Sounds.bif wav (ffmpeg -i)	Y	0.95
+34	Sith_Assassin	a_sithass	attack_grunt2	-1						
+34	Sith_Assassin	a_sithass	attack_grunt3	-1						
+34	Sith_Assassin	a_sithass	pain_grunt1	130691	a_sithass_dam	Y	1.07	Sounds.bif wav (ffmpeg -i)	Y	1.07
+34	Sith_Assassin	a_sithass	pain_grunt2	-1						
+34	Sith_Assassin	a_sithass	low_health	-1						
+34	Sith_Assassin	a_sithass	dead	130692	a_sithass_die	Y	1.64	Sounds.bif wav (ffmpeg -i)	Y	1.64
+34	Sith_Assassin	a_sithass	critical_hit	-1						
+34	Sith_Assassin	a_sithass	target_immune	-1						
+34	Sith_Assassin	a_sithass	lay_mine	-1						
+34	Sith_Assassin	a_sithass	disarm_mine	-1						
+34	Sith_Assassin	a_sithass	begin_stealth	-1						
+34	Sith_Assassin	a_sithass	begin_search	-1						
+34	Sith_Assassin	a_sithass	begin_unlock	-1						
+34	Sith_Assassin	a_sithass	unlock_failed	-1						
+34	Sith_Assassin	a_sithass	unlock_success	-1						
+34	Sith_Assassin	a_sithass	separated_from_party	-1						
+34	Sith_Assassin	a_sithass	rejoined_party	-1						
+34	Sith_Assassin	a_sithass	poisoned	-1						
+35	Rodian_Male_Tough	a_rodtough	battlecry1	130684	a_rodtough_bat	Y	0.86	Sounds.bif wav (ffmpeg -i)	Y	0.86
+35	Rodian_Male_Tough	a_rodtough	battlecry2	-1						
+35	Rodian_Male_Tough	a_rodtough	battlecry3	-1						
+35	Rodian_Male_Tough	a_rodtough	battlecry4	-1						
+35	Rodian_Male_Tough	a_rodtough	battlecry5	-1						
+35	Rodian_Male_Tough	a_rodtough	battlecry6	-1						
+35	Rodian_Male_Tough	a_rodtough	select1	-1						
+35	Rodian_Male_Tough	a_rodtough	select2	-1						
+35	Rodian_Male_Tough	a_rodtough	select3	-1						
+35	Rodian_Male_Tough	a_rodtough	attack_grunt1	130685	a_rodtough_atk	Y	0.37	Sounds.bif wav (ffmpeg -i)	Y	0.37
+35	Rodian_Male_Tough	a_rodtough	attack_grunt2	-1						
+35	Rodian_Male_Tough	a_rodtough	attack_grunt3	-1						
+35	Rodian_Male_Tough	a_rodtough	pain_grunt1	130686	a_rodtough_dam	Y	0.51	Sounds.bif wav (ffmpeg -i)	Y	0.51
+35	Rodian_Male_Tough	a_rodtough	pain_grunt2	-1						
+35	Rodian_Male_Tough	a_rodtough	low_health	-1						
+35	Rodian_Male_Tough	a_rodtough	dead	130687	a_rodtough_die	Y	1.11	Sounds.bif wav (ffmpeg -i)	Y	1.11
+35	Rodian_Male_Tough	a_rodtough	critical_hit	-1						
+35	Rodian_Male_Tough	a_rodtough	target_immune	-1						
+35	Rodian_Male_Tough	a_rodtough	lay_mine	-1						
+35	Rodian_Male_Tough	a_rodtough	disarm_mine	-1						
+35	Rodian_Male_Tough	a_rodtough	begin_stealth	-1						
+35	Rodian_Male_Tough	a_rodtough	begin_search	-1						
+35	Rodian_Male_Tough	a_rodtough	begin_unlock	-1						
+35	Rodian_Male_Tough	a_rodtough	unlock_failed	-1						
+35	Rodian_Male_Tough	a_rodtough	unlock_success	-1						
+35	Rodian_Male_Tough	a_rodtough	separated_from_party	-1						
+35	Rodian_Male_Tough	a_rodtough	rejoined_party	-1						
+35	Rodian_Male_Tough	a_rodtough	poisoned	-1						
+36	Rodian_Male	a_rodmale	battlecry1	130679	a_rodmale_bat	Y	0.64	Sounds.bif wav (ffmpeg -i)	Y	0.64
+36	Rodian_Male	a_rodmale	battlecry2	-1						
+36	Rodian_Male	a_rodmale	battlecry3	-1						
+36	Rodian_Male	a_rodmale	battlecry4	-1						
+36	Rodian_Male	a_rodmale	battlecry5	-1						
+36	Rodian_Male	a_rodmale	battlecry6	-1						
+36	Rodian_Male	a_rodmale	select1	-1						
+36	Rodian_Male	a_rodmale	select2	-1						
+36	Rodian_Male	a_rodmale	select3	-1						
+36	Rodian_Male	a_rodmale	attack_grunt1	130680	a_rodmale_atk	Y	0.37	Sounds.bif wav (ffmpeg -i)	Y	0.37
+36	Rodian_Male	a_rodmale	attack_grunt2	-1						
+36	Rodian_Male	a_rodmale	attack_grunt3	-1						
+36	Rodian_Male	a_rodmale	pain_grunt1	130681	a_rodmale_dam	Y	0.38	Sounds.bif wav (ffmpeg -i)	Y	0.38
+36	Rodian_Male	a_rodmale	pain_grunt2	-1						
+36	Rodian_Male	a_rodmale	low_health	-1						
+36	Rodian_Male	a_rodmale	dead	130682	a_rodmale_die	Y	0.72	Sounds.bif wav (ffmpeg -i)	Y	0.72
+36	Rodian_Male	a_rodmale	critical_hit	-1						
+36	Rodian_Male	a_rodmale	target_immune	-1						
+36	Rodian_Male	a_rodmale	lay_mine	-1						
+36	Rodian_Male	a_rodmale	disarm_mine	-1						
+36	Rodian_Male	a_rodmale	begin_stealth	-1						
+36	Rodian_Male	a_rodmale	begin_search	-1						
+36	Rodian_Male	a_rodmale	begin_unlock	-1						
+36	Rodian_Male	a_rodmale	unlock_failed	-1						
+36	Rodian_Male	a_rodmale	unlock_success	-1						
+36	Rodian_Male	a_rodmale	separated_from_party	-1						
+36	Rodian_Male	a_rodmale	rejoined_party	-1						
+36	Rodian_Male	a_rodmale	poisoned	-1						
+37	Rodian_Female	a_rodfem	battlecry1	130674	a_rodfem_bat	Y	1.20	Sounds.bif wav (ffmpeg -i)	Y	1.20
+37	Rodian_Female	a_rodfem	battlecry2	-1						
+37	Rodian_Female	a_rodfem	battlecry3	-1						
+37	Rodian_Female	a_rodfem	battlecry4	-1						
+37	Rodian_Female	a_rodfem	battlecry5	-1						
+37	Rodian_Female	a_rodfem	battlecry6	-1						
+37	Rodian_Female	a_rodfem	select1	-1						
+37	Rodian_Female	a_rodfem	select2	-1						
+37	Rodian_Female	a_rodfem	select3	-1						
+37	Rodian_Female	a_rodfem	attack_grunt1	130675	a_rodfem_atk	Y	0.47	Sounds.bif wav (ffmpeg -i)	Y	0.47
+37	Rodian_Female	a_rodfem	attack_grunt2	-1						
+37	Rodian_Female	a_rodfem	attack_grunt3	-1						
+37	Rodian_Female	a_rodfem	pain_grunt1	130676	a_rodfem_dam	Y	0.66	Sounds.bif wav (ffmpeg -i)	Y	0.66
+37	Rodian_Female	a_rodfem	pain_grunt2	-1						
+37	Rodian_Female	a_rodfem	low_health	-1						
+37	Rodian_Female	a_rodfem	dead	130677	a_rodfem_die	Y	1.85	Sounds.bif wav (ffmpeg -i)	Y	1.85
+37	Rodian_Female	a_rodfem	critical_hit	-1						
+37	Rodian_Female	a_rodfem	target_immune	-1						
+37	Rodian_Female	a_rodfem	lay_mine	-1						
+37	Rodian_Female	a_rodfem	disarm_mine	-1						
+37	Rodian_Female	a_rodfem	begin_stealth	-1						
+37	Rodian_Female	a_rodfem	begin_search	-1						
+37	Rodian_Female	a_rodfem	begin_unlock	-1						
+37	Rodian_Female	a_rodfem	unlock_failed	-1						
+37	Rodian_Female	a_rodfem	unlock_success	-1						
+37	Rodian_Female	a_rodfem	separated_from_party	-1						
+37	Rodian_Female	a_rodfem	rejoined_party	-1						
+37	Rodian_Female	a_rodfem	poisoned	-1						
+38	Nikto	a_nikto	battlecry1	130665	a_nikto_bat	Y	0.93	Sounds.bif wav (ffmpeg -i)	Y	0.93
+38	Nikto	a_nikto	battlecry2	-1						
+38	Nikto	a_nikto	battlecry3	-1						
+38	Nikto	a_nikto	battlecry4	-1						
+38	Nikto	a_nikto	battlecry5	-1						
+38	Nikto	a_nikto	battlecry6	-1						
+38	Nikto	a_nikto	select1	-1						
+38	Nikto	a_nikto	select2	-1						
+38	Nikto	a_nikto	select3	-1						
+38	Nikto	a_nikto	attack_grunt1	130666	a_nikto_atk	Y	0.53	Sounds.bif wav (ffmpeg -i)	Y	0.53
+38	Nikto	a_nikto	attack_grunt2	-1						
+38	Nikto	a_nikto	attack_grunt3	-1						
+38	Nikto	a_nikto	pain_grunt1	130667	a_nikto_dam	Y	0.72	Sounds.bif wav (ffmpeg -i)	Y	0.72
+38	Nikto	a_nikto	pain_grunt2	-1						
+38	Nikto	a_nikto	low_health	-1						
+38	Nikto	a_nikto	dead	130668	a_nikto_die	Y	0.93	Sounds.bif wav (ffmpeg -i)	Y	0.93
+38	Nikto	a_nikto	critical_hit	-1						
+38	Nikto	a_nikto	target_immune	-1						
+38	Nikto	a_nikto	lay_mine	-1						
+38	Nikto	a_nikto	disarm_mine	-1						
+38	Nikto	a_nikto	begin_stealth	-1						
+38	Nikto	a_nikto	begin_search	-1						
+38	Nikto	a_nikto	begin_unlock	-1						
+38	Nikto	a_nikto	unlock_failed	-1						
+38	Nikto	a_nikto	unlock_success	-1						
+38	Nikto	a_nikto	separated_from_party	-1						
+38	Nikto	a_nikto	rejoined_party	-1						
+38	Nikto	a_nikto	poisoned	-1						
+39	Ithorian_K2	a_ithor	battlecry1	130660	a_ithor_bat	Y	1.54	Sounds.bif wav (ffmpeg -i)	Y	1.54
+39	Ithorian_K2	a_ithor	battlecry2	-1						
+39	Ithorian_K2	a_ithor	battlecry3	-1						
+39	Ithorian_K2	a_ithor	battlecry4	-1						
+39	Ithorian_K2	a_ithor	battlecry5	-1						
+39	Ithorian_K2	a_ithor	battlecry6	-1						
+39	Ithorian_K2	a_ithor	select1	-1						
+39	Ithorian_K2	a_ithor	select2	-1						
+39	Ithorian_K2	a_ithor	select3	-1						
+39	Ithorian_K2	a_ithor	attack_grunt1	130661	a_ithor_atk	Y	1.17	Sounds.bif wav (ffmpeg -i)	Y	1.17
+39	Ithorian_K2	a_ithor	attack_grunt2	-1						
+39	Ithorian_K2	a_ithor	attack_grunt3	-1						
+39	Ithorian_K2	a_ithor	pain_grunt1	130662	a_ithor_dam	Y	0.96	Sounds.bif wav (ffmpeg -i)	Y	0.96
+39	Ithorian_K2	a_ithor	pain_grunt2	-1						
+39	Ithorian_K2	a_ithor	low_health	-1						
+39	Ithorian_K2	a_ithor	dead	130663	a_ithor_die	Y	1.85	Sounds.bif wav (ffmpeg -i)	Y	1.85
+39	Ithorian_K2	a_ithor	critical_hit	-1						
+39	Ithorian_K2	a_ithor	target_immune	-1						
+39	Ithorian_K2	a_ithor	lay_mine	-1						
+39	Ithorian_K2	a_ithor	disarm_mine	-1						
+39	Ithorian_K2	a_ithor	begin_stealth	-1						
+39	Ithorian_K2	a_ithor	begin_search	-1						
+39	Ithorian_K2	a_ithor	begin_unlock	-1						
+39	Ithorian_K2	a_ithor	unlock_failed	-1						
+39	Ithorian_K2	a_ithor	unlock_success	-1						
+39	Ithorian_K2	a_ithor	separated_from_party	-1						
+39	Ithorian_K2	a_ithor	rejoined_party	-1						
+39	Ithorian_K2	a_ithor	poisoned	-1						
+40	Gran	a_gran	battlecry1	130651	a_gran_bat	Y	1.51	Sounds.bif wav (ffmpeg -i)	Y	1.51
+40	Gran	a_gran	battlecry2	-1						
+40	Gran	a_gran	battlecry3	-1						
+40	Gran	a_gran	battlecry4	-1						
+40	Gran	a_gran	battlecry5	-1						
+40	Gran	a_gran	battlecry6	-1						
+40	Gran	a_gran	select1	-1						
+40	Gran	a_gran	select2	-1						
+40	Gran	a_gran	select3	-1						
+40	Gran	a_gran	attack_grunt1	130652	a_gran_atk	Y	0.47	Sounds.bif wav (ffmpeg -i)	Y	0.47
+40	Gran	a_gran	attack_grunt2	-1						
+40	Gran	a_gran	attack_grunt3	-1						
+40	Gran	a_gran	pain_grunt1	130653	a_gran_dam	Y	0.40	Sounds.bif wav (ffmpeg -i)	Y	0.40
+40	Gran	a_gran	pain_grunt2	-1						
+40	Gran	a_gran	low_health	-1						
+40	Gran	a_gran	dead	130654	a_gran_die	Y	0.72	Sounds.bif wav (ffmpeg -i)	Y	0.72
+40	Gran	a_gran	critical_hit	-1						
+40	Gran	a_gran	target_immune	-1						
+40	Gran	a_gran	lay_mine	-1						
+40	Gran	a_gran	disarm_mine	-1						
+40	Gran	a_gran	begin_stealth	-1						
+40	Gran	a_gran	begin_search	-1						
+40	Gran	a_gran	begin_unlock	-1						
+40	Gran	a_gran	unlock_failed	-1						
+40	Gran	a_gran	unlock_success	-1						
+40	Gran	a_gran	separated_from_party	-1						
+40	Gran	a_gran	rejoined_party	-1						
+40	Gran	a_gran	poisoned	-1						
+41	Gand	a_gand	battlecry1	130646	a_gand_bat	Y	0.77	Sounds.bif wav (ffmpeg -i)	Y	0.77
+41	Gand	a_gand	battlecry2	-1						
+41	Gand	a_gand	battlecry3	-1						
+41	Gand	a_gand	battlecry4	-1						
+41	Gand	a_gand	battlecry5	-1						
+41	Gand	a_gand	battlecry6	-1						
+41	Gand	a_gand	select1	-1						
+41	Gand	a_gand	select2	-1						
+41	Gand	a_gand	select3	-1						
+41	Gand	a_gand	attack_grunt1	130647	a_gand_atk	Y	0.39	Sounds.bif wav (ffmpeg -i)	Y	0.39
+41	Gand	a_gand	attack_grunt2	-1						
+41	Gand	a_gand	attack_grunt3	-1						
+41	Gand	a_gand	pain_grunt1	130648	a_gand_dam	Y	0.32	Sounds.bif wav (ffmpeg -i)	Y	0.32
+41	Gand	a_gand	pain_grunt2	-1						
+41	Gand	a_gand	low_health	-1						
+41	Gand	a_gand	dead	130649	a_gand_die	Y	1.38	Sounds.bif wav (ffmpeg -i)	Y	1.38
+41	Gand	a_gand	critical_hit	-1						
+41	Gand	a_gand	target_immune	-1						
+41	Gand	a_gand	lay_mine	-1						
+41	Gand	a_gand	disarm_mine	-1						
+41	Gand	a_gand	begin_stealth	-1						
+41	Gand	a_gand	begin_search	-1						
+41	Gand	a_gand	begin_unlock	-1						
+41	Gand	a_gand	unlock_failed	-1						
+41	Gand	a_gand	unlock_success	-1						
+41	Gand	a_gand	separated_from_party	-1						
+41	Gand	a_gand	rejoined_party	-1						
+41	Gand	a_gand	poisoned	-1						
+42	Gammorean_K2	a_gamor	battlecry1	130641	a_gamor_bat	Y	1.39	Sounds.bif wav (ffmpeg -i)	Y	1.39
+42	Gammorean_K2	a_gamor	battlecry2	-1						
+42	Gammorean_K2	a_gamor	battlecry3	-1						
+42	Gammorean_K2	a_gamor	battlecry4	-1						
+42	Gammorean_K2	a_gamor	battlecry5	-1						
+42	Gammorean_K2	a_gamor	battlecry6	-1						
+42	Gammorean_K2	a_gamor	select1	-1						
+42	Gammorean_K2	a_gamor	select2	-1						
+42	Gammorean_K2	a_gamor	select3	-1						
+42	Gammorean_K2	a_gamor	attack_grunt1	130642	a_gamor_atk	Y	0.98	Sounds.bif wav (ffmpeg -i)	Y	0.98
+42	Gammorean_K2	a_gamor	attack_grunt2	-1						
+42	Gammorean_K2	a_gamor	attack_grunt3	-1						
+42	Gammorean_K2	a_gamor	pain_grunt1	130643	a_gamor_dam	Y	0.63	Sounds.bif wav (ffmpeg -i)	Y	0.63
+42	Gammorean_K2	a_gamor	pain_grunt2	-1						
+42	Gammorean_K2	a_gamor	low_health	-1						
+42	Gammorean_K2	a_gamor	dead	130644	a_gamor_die	Y	2.01	Sounds.bif wav (ffmpeg -i)	Y	2.01
+42	Gammorean_K2	a_gamor	critical_hit	-1						
+42	Gammorean_K2	a_gamor	target_immune	-1						
+42	Gammorean_K2	a_gamor	lay_mine	-1						
+42	Gammorean_K2	a_gamor	disarm_mine	-1						
+42	Gammorean_K2	a_gamor	begin_stealth	-1						
+42	Gammorean_K2	a_gamor	begin_search	-1						
+42	Gammorean_K2	a_gamor	begin_unlock	-1						
+42	Gammorean_K2	a_gamor	unlock_failed	-1						
+42	Gammorean_K2	a_gamor	unlock_success	-1						
+42	Gammorean_K2	a_gamor	separated_from_party	-1						
+42	Gammorean_K2	a_gamor	rejoined_party	-1						
+42	Gammorean_K2	a_gamor	poisoned	-1						
+43	Duro	a_duro	battlecry1	130636	a_duro_bat	Y	0.65	Sounds.bif wav (ffmpeg -i)	Y	0.65
+43	Duro	a_duro	battlecry2	-1						
+43	Duro	a_duro	battlecry3	-1						
+43	Duro	a_duro	battlecry4	-1						
+43	Duro	a_duro	battlecry5	-1						
+43	Duro	a_duro	battlecry6	-1						
+43	Duro	a_duro	select1	-1						
+43	Duro	a_duro	select2	-1						
+43	Duro	a_duro	select3	-1						
+43	Duro	a_duro	attack_grunt1	130637	a_duro_atk	Y	0.36	Sounds.bif wav (ffmpeg -i)	Y	0.36
+43	Duro	a_duro	attack_grunt2	-1						
+43	Duro	a_duro	attack_grunt3	-1						
+43	Duro	a_duro	pain_grunt1	130638	a_duro_dam	Y	0.56	Sounds.bif wav (ffmpeg -i)	Y	0.56
+43	Duro	a_duro	pain_grunt2	-1						
+43	Duro	a_duro	low_health	-1						
+43	Duro	a_duro	dead	130639	a_duro_die	Y	1.46	Sounds.bif wav (ffmpeg -i)	Y	1.46
+43	Duro	a_duro	critical_hit	-1						
+43	Duro	a_duro	target_immune	-1						
+43	Duro	a_duro	lay_mine	-1						
+43	Duro	a_duro	disarm_mine	-1						
+43	Duro	a_duro	begin_stealth	-1						
+43	Duro	a_duro	begin_search	-1						
+43	Duro	a_duro	begin_unlock	-1						
+43	Duro	a_duro	unlock_failed	-1						
+43	Duro	a_duro	unlock_success	-1						
+43	Duro	a_duro	separated_from_party	-1						
+43	Duro	a_duro	rejoined_party	-1						
+43	Duro	a_duro	poisoned	-1						
+44	Devaronian	a_devar	battlecry1	130631	a_devar_bat	Y	0.70	Sounds.bif wav (ffmpeg -i)	Y	0.70
+44	Devaronian	a_devar	battlecry2	-1						
+44	Devaronian	a_devar	battlecry3	-1						
+44	Devaronian	a_devar	battlecry4	-1						
+44	Devaronian	a_devar	battlecry5	-1						
+44	Devaronian	a_devar	battlecry6	-1						
+44	Devaronian	a_devar	select1	-1						
+44	Devaronian	a_devar	select2	-1						
+44	Devaronian	a_devar	select3	-1						
+44	Devaronian	a_devar	attack_grunt1	130632	a_devar_atk	Y	0.55	Sounds.bif wav (ffmpeg -i)	Y	0.55
+44	Devaronian	a_devar	attack_grunt2	-1						
+44	Devaronian	a_devar	attack_grunt3	-1						
+44	Devaronian	a_devar	pain_grunt1	130633	a_devar_dam	Y	0.31	Sounds.bif wav (ffmpeg -i)	Y	0.31
+44	Devaronian	a_devar	pain_grunt2	-1						
+44	Devaronian	a_devar	low_health	-1						
+44	Devaronian	a_devar	dead	130634	a_devar_die	Y	0.89	Sounds.bif wav (ffmpeg -i)	Y	0.89
+44	Devaronian	a_devar	critical_hit	-1						
+44	Devaronian	a_devar	target_immune	-1						
+44	Devaronian	a_devar	lay_mine	-1						
+44	Devaronian	a_devar	disarm_mine	-1						
+44	Devaronian	a_devar	begin_stealth	-1						
+44	Devaronian	a_devar	begin_search	-1						
+44	Devaronian	a_devar	begin_unlock	-1						
+44	Devaronian	a_devar	unlock_failed	-1						
+44	Devaronian	a_devar	unlock_success	-1						
+44	Devaronian	a_devar	separated_from_party	-1						
+44	Devaronian	a_devar	rejoined_party	-1						
+44	Devaronian	a_devar	poisoned	-1						
+45	VisasMarr	p_visasmarr	battlecry1	123328	p_Visas_Bat1	Y	0.64	Sounds.bif wav (ffmpeg -i)	Y	0.64
+45	VisasMarr	p_visasmarr	battlecry2	123327	p_Visas_Bat2	Y	1.63	Sounds.bif wav (ffmpeg -i)	Y	1.63
+45	VisasMarr	p_visasmarr	battlecry3	123326	p_Visas_Bat3	Y	1.15	Sounds.bif wav (ffmpeg -i)	Y	1.15
+45	VisasMarr	p_visasmarr	battlecry4	123325	p_Visas_Bat4	Y	1.70	Sounds.bif wav (ffmpeg -i)	Y	1.70
+45	VisasMarr	p_visasmarr	battlecry5	123324	p_Visas_Bat5	Y	1.74	Sounds.bif wav (ffmpeg -i)	Y	1.74
+45	VisasMarr	p_visasmarr	battlecry6	123323	p_Visas_Bat6	Y	1.67	Sounds.bif wav (ffmpeg -i)	Y	1.67
+45	VisasMarr	p_visasmarr	select1	123322	p_Visas_Slct1	Y	1.30	Sounds.bif wav (ffmpeg -i)	Y	1.30
+45	VisasMarr	p_visasmarr	select2	123321	p_Visas_Slct2	Y	1.18	Sounds.bif wav (ffmpeg -i)	Y	1.18
+45	VisasMarr	p_visasmarr	select3	123320	p_Visas_Slct3	Y	1.15	Sounds.bif wav (ffmpeg -i)	Y	1.15
+45	VisasMarr	p_visasmarr	attack_grunt1	123319	p_Visas_Atk1	Y	0.39	Sounds.bif wav (ffmpeg -i)	Y	0.39
+45	VisasMarr	p_visasmarr	attack_grunt2	123318	p_Visas_Atk2	Y	0.40	Sounds.bif wav (ffmpeg -i)	Y	0.40
+45	VisasMarr	p_visasmarr	attack_grunt3	123317	p_Visas_Atk3	Y	0.49	Sounds.bif wav (ffmpeg -i)	Y	0.49
+45	VisasMarr	p_visasmarr	pain_grunt1	123316	p_Visas_Hit1	Y	0.33	Sounds.bif wav (ffmpeg -i)	Y	0.33
+45	VisasMarr	p_visasmarr	pain_grunt2	123315	p_Visas_Hit2	Y	0.40	Sounds.bif wav (ffmpeg -i)	Y	0.40
+45	VisasMarr	p_visasmarr	low_health	123314	p_Visas_Low	Y	0.88	Sounds.bif wav (ffmpeg -i)	Y	0.88
+45	VisasMarr	p_visasmarr	dead	123313	p_Visas_Dead	Y	0.65	Sounds.bif wav (ffmpeg -i)	Y	0.65
+45	VisasMarr	p_visasmarr	critical_hit	123312	p_Visas_Crit	Y	1.29	Sounds.bif wav (ffmpeg -i)	Y	1.29
+45	VisasMarr	p_visasmarr	target_immune	123311	p_Visas_Tia	Y	1.57	Sounds.bif wav (ffmpeg -i)	Y	1.57
+45	VisasMarr	p_visasmarr	lay_mine	123310	p_Visas_Lmin	Y	0.93	Sounds.bif wav (ffmpeg -i)	Y	0.93
+45	VisasMarr	p_visasmarr	disarm_mine	123309	p_Visas_Dmin	Y	1.25	Sounds.bif wav (ffmpeg -i)	Y	1.25
+45	VisasMarr	p_visasmarr	begin_stealth	123308	p_Visas_Stlh	Y	1.44	Sounds.bif wav (ffmpeg -i)	Y	1.44
+45	VisasMarr	p_visasmarr	begin_search	123307	p_Visas_Srch	Y	1.54	Sounds.bif wav (ffmpeg -i)	Y	1.54
+45	VisasMarr	p_visasmarr	begin_unlock	123306	p_Visas_Block	Y	0.82	Sounds.bif wav (ffmpeg -i)	Y	0.82
+45	VisasMarr	p_visasmarr	unlock_failed	123305	p_Visas_Flock	Y	0.86	Sounds.bif wav (ffmpeg -i)	Y	0.86
+45	VisasMarr	p_visasmarr	unlock_success	123304	p_Visas_Slock	Y	0.96	Sounds.bif wav (ffmpeg -i)	Y	0.96
+45	VisasMarr	p_visasmarr	separated_from_party	123303	p_Visas_Sprty	Y	1.32	Sounds.bif wav (ffmpeg -i)	Y	1.32
+45	VisasMarr	p_visasmarr	rejoined_party	123302	p_Visas_Rprty	Y	1.30	Sounds.bif wav (ffmpeg -i)	Y	1.30
+45	VisasMarr	p_visasmarr	poisoned	123301	p_Visas_Pois	Y	1.65	Sounds.bif wav (ffmpeg -i)	Y	1.65
+46	Mira	p_mira	battlecry1	123207	p_Mira_Bat1	Y	0.49	Sounds.bif wav (ffmpeg -i)	Y	0.49
+46	Mira	p_mira	battlecry2	123206	p_Mira_Bat2	Y	1.25	Sounds.bif wav (ffmpeg -i)	Y	1.25
+46	Mira	p_mira	battlecry3	123205	p_Mira_Bat3	Y	0.73	Sounds.bif wav (ffmpeg -i)	Y	0.73
+46	Mira	p_mira	battlecry4	123204	p_Mira_Bat4	Y	1.52	Sounds.bif wav (ffmpeg -i)	Y	1.52
+46	Mira	p_mira	battlecry5	123203	p_Mira_Bat5	Y	1.07	Sounds.bif wav (ffmpeg -i)	Y	1.07
+46	Mira	p_mira	battlecry6	123202	p_Mira_Bat6	Y	1.41	Sounds.bif wav (ffmpeg -i)	Y	1.41
+46	Mira	p_mira	select1	123201	p_Mira_Slct1	Y	0.30	Sounds.bif wav (ffmpeg -i)	Y	0.30
+46	Mira	p_mira	select2	123200	p_Mira_Slct2	Y	0.51	Sounds.bif wav (ffmpeg -i)	Y	0.51
+46	Mira	p_mira	select3	123199	p_Mira_Slct3	Y	0.62	Sounds.bif wav (ffmpeg -i)	Y	0.62
+46	Mira	p_mira	attack_grunt1	123198	p_Mira_Atk1	Y	0.41	Sounds.bif wav (ffmpeg -i)	Y	0.41
+46	Mira	p_mira	attack_grunt2	123197	p_Mira_Atk2	Y	0.49	Sounds.bif wav (ffmpeg -i)	Y	0.49
+46	Mira	p_mira	attack_grunt3	123196	p_Mira_Atk3	Y	0.50	Sounds.bif wav (ffmpeg -i)	Y	0.50
+46	Mira	p_mira	pain_grunt1	123195	p_Mira_Hit1	Y	0.31	Sounds.bif wav (ffmpeg -i)	Y	0.31
+46	Mira	p_mira	pain_grunt2	123194	p_Mira_Hit2	Y	0.36	Sounds.bif wav (ffmpeg -i)	Y	0.36
+46	Mira	p_mira	low_health	123193	p_Mira_Low	Y	1.53	Sounds.bif wav (ffmpeg -i)	Y	1.53
+46	Mira	p_mira	dead	123192	p_Mira_Dead	Y	0.41	Sounds.bif wav (ffmpeg -i)	Y	0.41
+46	Mira	p_mira	critical_hit	123191	p_Mira_Crit	Y	1.11	Sounds.bif wav (ffmpeg -i)	Y	1.11
+46	Mira	p_mira	target_immune	123190	p_Mira_Tia	Y	1.47	Sounds.bif wav (ffmpeg -i)	Y	1.47
+46	Mira	p_mira	lay_mine	123189	p_Mira_Lmin	Y	1.28	Sounds.bif wav (ffmpeg -i)	Y	1.28
+46	Mira	p_mira	disarm_mine	123188	p_Mira_Dmin	Y	0.42	Sounds.bif wav (ffmpeg -i)	Y	0.42
+46	Mira	p_mira	begin_stealth	123187	p_Mira_Stlh	Y	1.01	Sounds.bif wav (ffmpeg -i)	Y	1.01
+46	Mira	p_mira	begin_search	123186	p_Mira_Srch	Y	1.19	Sounds.bif wav (ffmpeg -i)	Y	1.19
+46	Mira	p_mira	begin_unlock	123185	p_Mira_Block	Y	0.66	Sounds.bif wav (ffmpeg -i)	Y	0.66
+46	Mira	p_mira	unlock_failed	123184	p_Mira_Flock	Y	1.21	Sounds.bif wav (ffmpeg -i)	Y	1.21
+46	Mira	p_mira	unlock_success	123183	p_Mira_Slock	Y	0.45	Sounds.bif wav (ffmpeg -i)	Y	0.45
+46	Mira	p_mira	separated_from_party	123182	p_Mira_Sprty	Y	0.88	Sounds.bif wav (ffmpeg -i)	Y	0.88
+46	Mira	p_mira	rejoined_party	123181	p_Mira_Rprty	Y	2.25	Sounds.bif wav (ffmpeg -i)	Y	2.25
+46	Mira	p_mira	poisoned	123180	p_Mira_Pois	Y	0.64	Sounds.bif wav (ffmpeg -i)	Y	0.64
+47	Mandalore	p_Mandalore	battlecry1	123075	p_Mand_Bat1	Y	1.33	Sounds.bif wav (ffmpeg -i)	Y	1.33
+47	Mandalore	p_Mandalore	battlecry2	123074	p_Mand_Bat2	Y	1.44	Sounds.bif wav (ffmpeg -i)	Y	1.44
+47	Mandalore	p_Mandalore	battlecry3	123073	p_Mand_Bat3	Y	2.20	Sounds.bif wav (ffmpeg -i)	Y	2.20
+47	Mandalore	p_Mandalore	battlecry4	123072	p_Mand_Bat4	Y	1.33	Sounds.bif wav (ffmpeg -i)	Y	1.33
+47	Mandalore	p_Mandalore	battlecry5	123071	p_Mand_Bat5	Y	1.57	Sounds.bif wav (ffmpeg -i)	Y	1.57
+47	Mandalore	p_Mandalore	battlecry6	123070	p_Mand_Bat6	Y	2.71	Sounds.bif wav (ffmpeg -i)	Y	2.71
+47	Mandalore	p_Mandalore	select1	123069	p_Mand_Slct1	Y	0.41	Sounds.bif wav (ffmpeg -i)	Y	0.41
+47	Mandalore	p_Mandalore	select2	123068	p_Mand_Slct2	Y	0.73	Sounds.bif wav (ffmpeg -i)	Y	0.73
+47	Mandalore	p_Mandalore	select3	123067	p_Mand_Slct3	Y	1.17	Sounds.bif wav (ffmpeg -i)	Y	1.17
+47	Mandalore	p_Mandalore	attack_grunt1	123066	p_Mand_Atk1	Y	0.38	Sounds.bif wav (ffmpeg -i)	Y	0.38
+47	Mandalore	p_Mandalore	attack_grunt2	123065	p_Mand_Atk2	Y	1.19	Sounds.bif wav (ffmpeg -i)	Y	1.19
+47	Mandalore	p_Mandalore	attack_grunt3	123064	p_Mand_Atk3	Y	0.80	Sounds.bif wav (ffmpeg -i)	Y	0.80
+47	Mandalore	p_Mandalore	pain_grunt1	123063	p_Mand_Hit1	Y	0.96	Sounds.bif wav (ffmpeg -i)	Y	0.96
+47	Mandalore	p_Mandalore	pain_grunt2	123062	p_Mand_Hit2	Y	0.52	Sounds.bif wav (ffmpeg -i)	Y	0.52
+47	Mandalore	p_Mandalore	low_health	123061	p_Mand_Low	Y	1.99	Sounds.bif wav (ffmpeg -i)	Y	1.99
+47	Mandalore	p_Mandalore	dead	123060	p_Mand_Dead	Y	0.80	Sounds.bif wav (ffmpeg -i)	Y	0.80
+47	Mandalore	p_Mandalore	critical_hit	123059	p_Mand_Crit	Y	2.40	Sounds.bif wav (ffmpeg -i)	Y	2.40
+47	Mandalore	p_Mandalore	target_immune	123058	p_Mand_Tia	Y	1.52	Sounds.bif wav (ffmpeg -i)	Y	1.52
+47	Mandalore	p_Mandalore	lay_mine	123057	p_Mand_Lmin	Y	1.05	Sounds.bif wav (ffmpeg -i)	Y	1.05
+47	Mandalore	p_Mandalore	disarm_mine	123056	p_Mand_Dmin	Y	0.96	Sounds.bif wav (ffmpeg -i)	Y	0.96
+47	Mandalore	p_Mandalore	begin_stealth	123055	p_Mand_Stlh	Y	1.20	Sounds.bif wav (ffmpeg -i)	Y	1.20
+47	Mandalore	p_Mandalore	begin_search	123054	p_Mand_Srch	Y	1.35	Sounds.bif wav (ffmpeg -i)	Y	1.35
+47	Mandalore	p_Mandalore	begin_unlock	123053	p_Mand_Block	Y	0.45	Sounds.bif wav (ffmpeg -i)	Y	0.45
+47	Mandalore	p_Mandalore	unlock_failed	123052	p_Mand_Flock	Y	0.72	Sounds.bif wav (ffmpeg -i)	Y	0.72
+47	Mandalore	p_Mandalore	unlock_success	123051	p_Mand_Slock	Y	0.70	Sounds.bif wav (ffmpeg -i)	Y	0.70
+47	Mandalore	p_Mandalore	separated_from_party	123050	p_Mand_Sprty	Y	1.22	Sounds.bif wav (ffmpeg -i)	Y	1.22
+47	Mandalore	p_Mandalore	rejoined_party	123049	p_Mand_Rprty	Y	1.09	Sounds.bif wav (ffmpeg -i)	Y	1.09
+47	Mandalore	p_Mandalore	poisoned	123048	p_Mand_Pois	Y	0.92	Sounds.bif wav (ffmpeg -i)	Y	0.92
+48	Kreia	p_kreia	battlecry1	123039	p_Kreia_Bat1	Y	0.84	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+48	Kreia	p_kreia	battlecry2	123038	p_Kreia_Bat2	Y	1.23	Sounds.bif wav (ffmpeg -i)	Y	1.23
+48	Kreia	p_kreia	battlecry3	123037	p_Kreia_Bat3	Y	0.62	Sounds.bif wav (ffmpeg -i)	Y	0.62
+48	Kreia	p_kreia	battlecry4	123036	p_Kreia_Bat4	Y	1.52	Sounds.bif wav (ffmpeg -i)	Y	1.52
+48	Kreia	p_kreia	battlecry5	123035	p_Kreia_Bat5	Y	1.40	Sounds.bif wav (ffmpeg -i)	Y	1.40
+48	Kreia	p_kreia	battlecry6	123034	p_Kreia_Bat6	Y	1.18	Sounds.bif wav (ffmpeg -i)	Y	1.18
+48	Kreia	p_kreia	select1	123033	p_Kreia_Slct1	Y	0.55	Sounds.bif wav (ffmpeg -i)	Y	0.55
+48	Kreia	p_kreia	select2	123032	p_Kreia_Slct2	Y	0.46	Sounds.bif wav (ffmpeg -i)	Y	0.46
+48	Kreia	p_kreia	select3	123031	p_Kreia_Slct3	Y	0.89	Sounds.bif wav (ffmpeg -i)	Y	0.89
+48	Kreia	p_kreia	attack_grunt1	123030	p_Kreia_Atk1	Y	0.49	Sounds.bif wav (ffmpeg -i)	Y	0.49
+48	Kreia	p_kreia	attack_grunt2	123029	p_Kreia_Atk2	Y	0.65	Sounds.bif wav (ffmpeg -i)	Y	0.65
+48	Kreia	p_kreia	attack_grunt3	123028	p_Kreia_Atk3	Y	0.56	Sounds.bif wav (ffmpeg -i)	Y	0.56
+48	Kreia	p_kreia	pain_grunt1	123027	p_Kreia_Hit1	Y	0.58	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+48	Kreia	p_kreia	pain_grunt2	123026	p_Kreia_Hit2	Y	0.69	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+48	Kreia	p_kreia	low_health	123025	p_Kreia_Low	Y	1.90	Sounds.bif wav (ffmpeg -i)	Y	1.90
+48	Kreia	p_kreia	dead	123024	p_Kreia_Dead	Y	1.02	Sounds.bif wav (ffmpeg -i)	Y	1.02
+48	Kreia	p_kreia	critical_hit	123023	p_Kreia_Crit	Y	0.78	Sounds.bif wav (ffmpeg -i)	Y	0.78
+48	Kreia	p_kreia	target_immune	123022	p_Kreia_Tia	Y	1.27	Sounds.bif wav (ffmpeg -i)	Y	1.27
+48	Kreia	p_kreia	lay_mine	123021	p_Kreia_Lmin	Y	1.35	Sounds.bif wav (ffmpeg -i)	Y	1.35
+48	Kreia	p_kreia	disarm_mine	123020	p_Kreia_Dmin	Y	1.32	Sounds.bif wav (ffmpeg -i)	Y	1.32
+48	Kreia	p_kreia	begin_stealth	123019	p_Kreia_Stlh	Y	1.21	Sounds.bif wav (ffmpeg -i)	Y	1.21
+48	Kreia	p_kreia	begin_search	123018	p_Kreia_Srch	Y	1.05	Sounds.bif wav (ffmpeg -i)	Y	1.05
+48	Kreia	p_kreia	begin_unlock	123017	p_Kreia_Block	Y	1.22	Sounds.bif wav (ffmpeg -i)	Y	1.22
+48	Kreia	p_kreia	unlock_failed	123016	p_Kreia_Flock	Y	1.62	Sounds.bif wav (ffmpeg -i)	Y	1.62
+48	Kreia	p_kreia	unlock_success	123015	p_Kreia_Slock	Y	0.83	Sounds.bif wav (ffmpeg -i)	Y	0.83
+48	Kreia	p_kreia	separated_from_party	123014	p_Kreia_Sprty	Y	1.34	Sounds.bif wav (ffmpeg -i)	Y	1.34
+48	Kreia	p_kreia	rejoined_party	123013	p_Kreia_Rprty	Y	1.19	Sounds.bif wav (ffmpeg -i)	Y	1.19
+48	Kreia	p_kreia	poisoned	123012	p_Kreia_Pois	Y	1.71	Sounds.bif wav (ffmpeg -i)	Y	1.71
+49	HK47_K2	p_hk-47	battlecry1	123007	p_HK47_Bat1	Y	2.26	Sounds.bif wav (ffmpeg -i)	Y	2.26
+49	HK47_K2	p_hk-47	battlecry2	123006	p_HK47_Bat2	Y	1.94	Sounds.bif wav (ffmpeg -i)	Y	1.94
+49	HK47_K2	p_hk-47	battlecry3	123005	p_HK47_Bat3	Y	1.25	Sounds.bif wav (ffmpeg -i)	Y	1.25
+49	HK47_K2	p_hk-47	battlecry4	123004	p_HK47_Bat4	Y	1.06	Sounds.bif wav (ffmpeg -i)	Y	1.06
+49	HK47_K2	p_hk-47	battlecry5	123003	p_HK47_Bat5	Y	1.63	Sounds.bif wav (ffmpeg -i)	Y	1.63
+49	HK47_K2	p_hk-47	battlecry6	123002	p_HK47_Bat6	Y	1.64	Sounds.bif wav (ffmpeg -i)	Y	1.64
+49	HK47_K2	p_hk-47	select1	123001	p_HK47_Slct1	Y	1.20	Sounds.bif wav (ffmpeg -i)	Y	1.20
+49	HK47_K2	p_hk-47	select2	123000	p_HK47_Slct2	Y	0.94	Sounds.bif wav (ffmpeg -i)	Y	0.94
+49	HK47_K2	p_hk-47	select3	122999	p_HK47_Slct3	Y	0.92	Sounds.bif wav (ffmpeg -i)	Y	0.92
+49	HK47_K2	p_hk-47	attack_grunt1	122998	p_HK47_Atk1	Y	0.48	Sounds.bif wav (ffmpeg -i)	Y	0.48
+49	HK47_K2	p_hk-47	attack_grunt2	122997	p_HK47_Atk2	Y	0.83	Sounds.bif wav (ffmpeg -i)	Y	0.83
+49	HK47_K2	p_hk-47	attack_grunt3	122996	p_HK47_Atk3	Y	0.88	Sounds.bif wav (ffmpeg -i)	Y	0.88
+49	HK47_K2	p_hk-47	pain_grunt1	122995	p_HK47_Hit1	Y	0.82	Sounds.bif wav (ffmpeg -i)	Y	0.82
+49	HK47_K2	p_hk-47	pain_grunt2	122994	p_HK47_Hit2	Y	0.93	Sounds.bif wav (ffmpeg -i)	Y	0.93
+49	HK47_K2	p_hk-47	low_health	122993	p_HK47_Low	Y	4.91	Sounds.bif wav (ffmpeg -i)	Y	4.91
+49	HK47_K2	p_hk-47	dead	122992	p_HK47_Dead	Y	2.80	Sounds.bif wav (ffmpeg -i)	Y	2.80
+49	HK47_K2	p_hk-47	critical_hit	122991	p_HK47_Crit	Y	2.82	Sounds.bif wav (ffmpeg -i)	Y	2.82
+49	HK47_K2	p_hk-47	target_immune	122990	p_HK47_Tia	Y	2.10	Sounds.bif wav (ffmpeg -i)	Y	2.10
+49	HK47_K2	p_hk-47	lay_mine	122989	p_HK47_Lmin	Y	1.88	Sounds.bif wav (ffmpeg -i)	Y	1.88
+49	HK47_K2	p_hk-47	disarm_mine	122988	p_HK47_Dmin	Y	1.72	Sounds.bif wav (ffmpeg -i)	Y	1.72
+49	HK47_K2	p_hk-47	begin_stealth	122987	p_HK47_Stlh	Y	1.97	Sounds.bif wav (ffmpeg -i)	Y	1.97
+49	HK47_K2	p_hk-47	begin_search	122986	p_HK47_Srch	Y	2.77	Sounds.bif wav (ffmpeg -i)	Y	2.77
+49	HK47_K2	p_hk-47	begin_unlock	122985	p_HK47_Block	Y	2.44	Sounds.bif wav (ffmpeg -i)	Y	2.44
+49	HK47_K2	p_hk-47	unlock_failed	122984	p_HK47_Flock	Y	2.53	Sounds.bif wav (ffmpeg -i)	Y	2.53
+49	HK47_K2	p_hk-47	unlock_success	122983	p_HK47_Slock	Y	2.43	Sounds.bif wav (ffmpeg -i)	Y	2.43
+49	HK47_K2	p_hk-47	separated_from_party	122982	p_HK47_Sprty	Y	2.42	Sounds.bif wav (ffmpeg -i)	Y	2.42
+49	HK47_K2	p_hk-47	rejoined_party	122981	p_HK47_Rprty	Y	1.36	Sounds.bif wav (ffmpeg -i)	Y	1.36
+49	HK47_K2	p_hk-47	poisoned	122980	p_HK47_Pois	Y	2.03	Sounds.bif wav (ffmpeg -i)	Y	2.03
+50	Hanharr	p_Hanharr	battlecry1	130595	p_hanharr_bat1	Y	2.31	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+50	Hanharr	p_Hanharr	battlecry2	133981	p_hanharr_bat2	Y	3.19	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+50	Hanharr	p_Hanharr	battlecry3	133982	p_hanharr_bat3	Y	3.09	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+50	Hanharr	p_Hanharr	battlecry4	-1						
+50	Hanharr	p_Hanharr	battlecry5	-1						
+50	Hanharr	p_Hanharr	battlecry6	-1						
+50	Hanharr	p_Hanharr	select1	133995	p_hanharr_Slct1	Y	1.44	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+50	Hanharr	p_Hanharr	select2	-1						
+50	Hanharr	p_Hanharr	select3	-1						
+50	Hanharr	p_Hanharr	attack_grunt1	130596	p_hanharr_atk1	Y	2.73	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+50	Hanharr	p_Hanharr	attack_grunt2	133979	p_hanharr_atk2	Y	2.03	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+50	Hanharr	p_Hanharr	attack_grunt3	133980	p_hanharr_atk3	Y	2.01	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+50	Hanharr	p_Hanharr	pain_grunt1	130597	p_hanharr_dam1	Y	1.15	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+50	Hanharr	p_Hanharr	pain_grunt2	133984	p_hanharr_dam2	Y	0.61	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+50	Hanharr	p_Hanharr	low_health	133986	p_hanharr_low	Y	3.04	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+50	Hanharr	p_Hanharr	dead	130598	p_hanharr_die	Y	0.84	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+50	Hanharr	p_Hanharr	critical_hit	133985	p_hanharr_crit	Y	1.54	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+50	Hanharr	p_Hanharr	target_immune	133997	p_hanharr_Tia	Y	1.60	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+50	Hanharr	p_Hanharr	lay_mine	133990	p_hanharr_Lmin	Y	2.25	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+50	Hanharr	p_Hanharr	disarm_mine	133989	p_hanharr_Dmin	Y	0.84	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+50	Hanharr	p_Hanharr	begin_stealth	133998	p_hanharr_Stlh	Y	0.80	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+50	Hanharr	p_Hanharr	begin_search	133999	p_hanharr_Srch	Y	1.13	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+50	Hanharr	p_Hanharr	begin_unlock	133993	p_hanharr_Block	Y	1.88	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+50	Hanharr	p_Hanharr	unlock_failed	133991	p_hanharr_Flock	Y	1.17	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+50	Hanharr	p_Hanharr	unlock_success	133992	p_hanharr_Slock	Y	1.58	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+50	Hanharr	p_Hanharr	separated_from_party	133996	p_hanharr_Sprty	Y	0.96	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+50	Hanharr	p_Hanharr	rejoined_party	133987	p_hanharr_Rprty	Y	1.82	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+50	Hanharr	p_Hanharr	poisoned	133994	p_hanharr_Pois	Y	2.70	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+51	G0-T0	p_g0-t0	battlecry1	122950	p_G0T0_Bat1	Y	1.42	Sounds.bif wav (ffmpeg -i)	Y	1.42
+51	G0-T0	p_g0-t0	battlecry2	122949	p_G0T0_Bat2	Y	1.73	Sounds.bif wav (ffmpeg -i)	Y	1.73
+51	G0-T0	p_g0-t0	battlecry3	122948	p_G0T0_Bat3	Y	1.44	Sounds.bif wav (ffmpeg -i)	Y	1.44
+51	G0-T0	p_g0-t0	battlecry4	122947	p_G0T0_Bat4	Y	3.00	Sounds.bif wav (ffmpeg -i)	Y	3.00
+51	G0-T0	p_g0-t0	battlecry5	122946	p_G0T0_Bat5	Y	0.92	Sounds.bif wav (ffmpeg -i)	Y	0.92
+51	G0-T0	p_g0-t0	battlecry6	122945	p_G0T0_Bat6	Y	1.68	Sounds.bif wav (ffmpeg -i)	Y	1.68
+51	G0-T0	p_g0-t0	select1	122944	p_G0T0_Slct1	Y	0.64	Sounds.bif wav (ffmpeg -i)	Y	0.64
+51	G0-T0	p_g0-t0	select2	122943	p_G0T0_Slct2	Y	1.53	Sounds.bif wav (ffmpeg -i)	Y	1.53
+51	G0-T0	p_g0-t0	select3	122942	p_G0T0_Slct3	Y	1.22	Sounds.bif wav (ffmpeg -i)	Y	1.22
+51	G0-T0	p_g0-t0	attack_grunt1	122941	p_G0T0_Atk1	Y	0.69	Sounds.bif wav (ffmpeg -i)	Y	0.69
+51	G0-T0	p_g0-t0	attack_grunt2	122940	p_G0T0_Atk2	Y	0.90	Sounds.bif wav (ffmpeg -i)	Y	0.90
+51	G0-T0	p_g0-t0	attack_grunt3	122939	p_G0T0_Atk3	Y	0.69	Sounds.bif wav (ffmpeg -i)	Y	0.69
+51	G0-T0	p_g0-t0	pain_grunt1	122938	p_G0T0_Hit1	Y	0.94	Sounds.bif wav (ffmpeg -i)	Y	0.94
+51	G0-T0	p_g0-t0	pain_grunt2	122937	p_G0T0_Hit2	Y	0.89	Sounds.bif wav (ffmpeg -i)	Y	0.89
+51	G0-T0	p_g0-t0	low_health	122936	p_G0T0_Low	Y	2.65	Sounds.bif wav (ffmpeg -i)	Y	2.65
+51	G0-T0	p_g0-t0	dead	122935	p_G0T0_Dead	Y	2.36	Sounds.bif wav (ffmpeg -i)	Y	2.36
+51	G0-T0	p_g0-t0	critical_hit	122934	p_G0T0_Crit	Y	1.72	Sounds.bif wav (ffmpeg -i)	Y	1.72
+51	G0-T0	p_g0-t0	target_immune	122933	p_G0T0_Tia	Y	2.05	Sounds.bif wav (ffmpeg -i)	Y	2.05
+51	G0-T0	p_g0-t0	lay_mine	122932	p_G0T0_Lmin	Y	0.98	Sounds.bif wav (ffmpeg -i)	Y	0.98
+51	G0-T0	p_g0-t0	disarm_mine	122931	p_G0T0_Dmin	Y	1.26	Sounds.bif wav (ffmpeg -i)	Y	1.26
+51	G0-T0	p_g0-t0	begin_stealth	122930	p_G0T0_Stlh	Y	1.97	Sounds.bif wav (ffmpeg -i)	Y	1.97
+51	G0-T0	p_g0-t0	begin_search	122929	p_G0T0_Srch	Y	1.48	Sounds.bif wav (ffmpeg -i)	Y	1.48
+51	G0-T0	p_g0-t0	begin_unlock	122928	p_G0T0_Block	Y	1.93	Sounds.bif wav (ffmpeg -i)	Y	1.93
+51	G0-T0	p_g0-t0	unlock_failed	122927	p_G0T0_Flock	Y	2.53	Sounds.bif wav (ffmpeg -i)	Y	2.53
+51	G0-T0	p_g0-t0	unlock_success	122926	p_G0T0_Slock	Y	2.02	Sounds.bif wav (ffmpeg -i)	Y	2.02
+51	G0-T0	p_g0-t0	separated_from_party	122925	p_G0T0_Sprty	Y	2.16	Sounds.bif wav (ffmpeg -i)	Y	2.16
+51	G0-T0	p_g0-t0	rejoined_party	122924	p_G0T0_Rprty	Y	1.81	Sounds.bif wav (ffmpeg -i)	Y	1.81
+51	G0-T0	p_g0-t0	poisoned	122923	p_G0T0_Pois	Y	2.60	Sounds.bif wav (ffmpeg -i)	Y	2.60
+52	Disciple	p_disciple	battlecry1	135132	p_disciple_Bat1	Y	1.47	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+52	Disciple	p_disciple	battlecry2	135133	p_disciple_Bat2	Y	0.96	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+52	Disciple	p_disciple	battlecry3	135134	p_disciple_Bat3	Y	0.81	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+52	Disciple	p_disciple	battlecry4	135135	p_disciple_Bat4	Y	0.92	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+52	Disciple	p_disciple	battlecry5	135136	p_disciple_Bat5	Y	1.35	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+52	Disciple	p_disciple	battlecry6	135137	p_disciple_Bat6	Y	0.98	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+52	Disciple	p_disciple	select1	135141	p_disciple_Slct1	Y	0.71	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+52	Disciple	p_disciple	select2	135142	p_disciple_Slct2	Y	1.04	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+52	Disciple	p_disciple	select3	135143	p_disciple_Slct3	Y	0.60	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+52	Disciple	p_disciple	attack_grunt1	135138	p_disciple_Atk1	Y	0.42	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+52	Disciple	p_disciple	attack_grunt2	135139	p_disciple_Atk2	Y	0.31	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+52	Disciple	p_disciple	attack_grunt3	135140	p_disciple_Atk3	Y	0.51	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+52	Disciple	p_disciple	pain_grunt1	135144	p_disciple_Hit1	Y	0.37	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+52	Disciple	p_disciple	pain_grunt2	135145	p_disciple_Hit2	Y	0.52	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+52	Disciple	p_disciple	low_health	135146	p_disciple_Low	Y	1.45	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+52	Disciple	p_disciple	dead	135147	p_disciple_Dead	N			N	
+52	Disciple	p_disciple	critical_hit	135148	p_disciple_Crit	Y	1.52	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+52	Disciple	p_disciple	target_immune	135149	p_disciple_Tia	Y	1.26	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+52	Disciple	p_disciple	lay_mine	135150	p_disciple_Lmin	Y	0.43	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+52	Disciple	p_disciple	disarm_mine	135151	p_disciple_Dmin	Y	0.61	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+52	Disciple	p_disciple	begin_stealth	135152	p_disciple_Stlh	Y	1.29	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+52	Disciple	p_disciple	begin_search	135153	p_disciple_Srch	Y	1.56	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+52	Disciple	p_disciple	begin_unlock	135154	p_disciple_Block	Y	0.52	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+52	Disciple	p_disciple	unlock_failed	135155	p_disciple_Flock	Y	1.11	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+52	Disciple	p_disciple	unlock_success	135156	p_disciple_Slock	Y	0.49	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+52	Disciple	p_disciple	separated_from_party	135157	p_disciple_Sprty	Y	0.55	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+52	Disciple	p_disciple	rejoined_party	135158	p_disciple_Rprty	Y	1.15	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+52	Disciple	p_disciple	poisoned	135159	p_disciple_Pois	Y	1.13	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+53	Baodur	p_baodur	battlecry1	122761	p_BaoDur_Bat1	Y	0.95	Sounds.bif wav (ffmpeg -i)	Y	0.95
+53	Baodur	p_baodur	battlecry2	122760	p_BaoDur_Bat2	Y	1.01	Sounds.bif wav (ffmpeg -i)	Y	1.01
+53	Baodur	p_baodur	battlecry3	122759	p_BaoDur_Bat3	Y	1.04	Sounds.bif wav (ffmpeg -i)	Y	1.04
+53	Baodur	p_baodur	battlecry4	122758	p_BaoDur_Bat4	Y	1.36	Sounds.bif wav (ffmpeg -i)	Y	1.36
+53	Baodur	p_baodur	battlecry5	122757	p_BaoDur_Bat5	Y	0.87	Sounds.bif wav (ffmpeg -i)	Y	0.87
+53	Baodur	p_baodur	battlecry6	122756	p_BaoDur_Bat6	Y	1.15	Sounds.bif wav (ffmpeg -i)	Y	1.15
+53	Baodur	p_baodur	select1	122755	p_BaoDur_Slct1	Y	0.60	Sounds.bif wav (ffmpeg -i)	Y	0.60
+53	Baodur	p_baodur	select2	122754	p_BaoDur_Slct2	Y	0.53	Sounds.bif wav (ffmpeg -i)	Y	0.53
+53	Baodur	p_baodur	select3	122753	p_BaoDur_Slct3	Y	0.38	Sounds.bif wav (ffmpeg -i)	Y	0.38
+53	Baodur	p_baodur	attack_grunt1	122752	p_BaoDur_Atk1	Y	0.53	Sounds.bif wav (ffmpeg -i)	Y	0.53
+53	Baodur	p_baodur	attack_grunt2	122751	p_BaoDur_Atk2	Y	0.51	Sounds.bif wav (ffmpeg -i)	Y	0.51
+53	Baodur	p_baodur	attack_grunt3	122750	p_BaoDur_Atk3	Y	0.42	Sounds.bif wav (ffmpeg -i)	Y	0.42
+53	Baodur	p_baodur	pain_grunt1	122749	p_BaoDur_Hit1	Y	0.79	Sounds.bif wav (ffmpeg -i)	Y	0.79
+53	Baodur	p_baodur	pain_grunt2	122748	p_BaoDur_Hit2	Y	0.58	Sounds.bif wav (ffmpeg -i)	Y	0.58
+53	Baodur	p_baodur	low_health	122747	p_BaoDur_Low	Y	1.79	Sounds.bif wav (ffmpeg -i)	Y	1.79
+53	Baodur	p_baodur	dead	122746	p_BaoDur_Dead	Y	0.67	Sounds.bif wav (ffmpeg -i)	Y	0.67
+53	Baodur	p_baodur	critical_hit	122745	p_BaoDur_Crit	Y	0.86	Sounds.bif wav (ffmpeg -i)	Y	0.86
+53	Baodur	p_baodur	target_immune	122744	p_BaoDur_Tia	Y	1.18	Sounds.bif wav (ffmpeg -i)	Y	1.18
+53	Baodur	p_baodur	lay_mine	122743	p_BaoDur_Lmin	Y	2.01	Sounds.bif wav (ffmpeg -i)	Y	2.01
+53	Baodur	p_baodur	disarm_mine	122742	p_BaoDur_Dmin	Y	1.83	Sounds.bif wav (ffmpeg -i)	Y	1.83
+53	Baodur	p_baodur	begin_stealth	122741	p_BaoDur_Stlh	Y	1.84	Sounds.bif wav (ffmpeg -i)	Y	1.84
+53	Baodur	p_baodur	begin_search	122740	p_BaoDur_Srch	Y	2.61	Sounds.bif wav (ffmpeg -i)	Y	2.61
+53	Baodur	p_baodur	begin_unlock	122739	p_BaoDur_Block	Y	1.52	Sounds.bif wav (ffmpeg -i)	Y	1.52
+53	Baodur	p_baodur	unlock_failed	122738	p_BaoDur_Flock	Y	1.20	Sounds.bif wav (ffmpeg -i)	Y	1.20
+53	Baodur	p_baodur	unlock_success	122737	p_BaoDur_Slock	Y	1.18	Sounds.bif wav (ffmpeg -i)	Y	1.18
+53	Baodur	p_baodur	separated_from_party	122736	p_BaoDur_Sprty	Y	0.99	Sounds.bif wav (ffmpeg -i)	Y	0.99
+53	Baodur	p_baodur	rejoined_party	122735	p_BaoDur_Rprty	Y	1.20	Sounds.bif wav (ffmpeg -i)	Y	1.20
+53	Baodur	p_baodur	poisoned	122734	p_BaoDur_Pois	Y	1.80	Sounds.bif wav (ffmpeg -i)	Y	1.80
+54	Atton	p_atton	battlecry1	122703						
+54	Atton	p_atton	battlecry2	122702	p_Atton_Bat2	Y	1.84	Sounds.bif wav (ffmpeg -i)	Y	1.84
+54	Atton	p_atton	battlecry3	122701	p_Atton_Bat3	Y	1.14	Sounds.bif wav (ffmpeg -i)	Y	1.14
+54	Atton	p_atton	battlecry4	122700	p_Atton_Bat4	Y	1.95	Sounds.bif wav (ffmpeg -i)	Y	1.95
+54	Atton	p_atton	battlecry5	122699	p_Atton_Bat5	Y	1.24	Sounds.bif wav (ffmpeg -i)	Y	1.24
+54	Atton	p_atton	battlecry6	122698	p_Atton_Bat6	Y	1.36	Sounds.bif wav (ffmpeg -i)	Y	1.36
+54	Atton	p_atton	select1	122697	p_Atton_Slct1	N			N	
+54	Atton	p_atton	select2	122696	p_Atton_Slct2	Y	0.63	Sounds.bif wav (ffmpeg -i)	Y	0.63
+54	Atton	p_atton	select3	122695	p_Atton_Slct3	Y	1.01	Sounds.bif wav (ffmpeg -i)	Y	1.01
+54	Atton	p_atton	attack_grunt1	122694	p_Atton_Atk1	Y	0.54	Sounds.bif wav (ffmpeg -i)	Y	0.54
+54	Atton	p_atton	attack_grunt2	122693	p_Atton_Atk2	Y	0.59	Sounds.bif wav (ffmpeg -i)	Y	0.59
+54	Atton	p_atton	attack_grunt3	122692	p_Atton_Atk3	Y	0.63	Sounds.bif wav (ffmpeg -i)	Y	0.63
+54	Atton	p_atton	pain_grunt1	122691	p_Atton_Hit1	Y	0.67	Sounds.bif wav (ffmpeg -i)	Y	0.67
+54	Atton	p_atton	pain_grunt2	122690	p_Atton_Hit2	Y	0.59	Sounds.bif wav (ffmpeg -i)	Y	0.59
+54	Atton	p_atton	low_health	122689	p_Atton_Low	Y	1.72	Sounds.bif wav (ffmpeg -i)	Y	1.72
+54	Atton	p_atton	dead	122688	p_Atton_Dead	Y	0.36	Sounds.bif wav (ffmpeg -i)	Y	0.36
+54	Atton	p_atton	critical_hit	122687	p_Atton_Crit	Y	1.36	Sounds.bif wav (ffmpeg -i)	Y	1.36
+54	Atton	p_atton	target_immune	122686	p_Atton_Tia	Y	1.72	Sounds.bif wav (ffmpeg -i)	Y	1.72
+54	Atton	p_atton	lay_mine	122685	p_Atton_Lmin	Y	1.89	Sounds.bif wav (ffmpeg -i)	Y	1.89
+54	Atton	p_atton	disarm_mine	122684	p_Atton_Dmin	Y	0.85	Sounds.bif wav (ffmpeg -i)	Y	0.85
+54	Atton	p_atton	begin_stealth	122683	p_Atton_Stlh	Y	0.64	Sounds.bif wav (ffmpeg -i)	Y	0.64
+54	Atton	p_atton	begin_search	122682	p_Atton_Srch	Y	1.04	Sounds.bif wav (ffmpeg -i)	Y	1.04
+54	Atton	p_atton	begin_unlock	122681	p_Atton_Block	Y	1.34	Sounds.bif wav (ffmpeg -i)	Y	1.34
+54	Atton	p_atton	unlock_failed	122680	p_Atton_Flock	Y	1.25	Sounds.bif wav (ffmpeg -i)	Y	1.25
+54	Atton	p_atton	unlock_success	122679	p_Atton_Slock	Y	1.13	Sounds.bif wav (ffmpeg -i)	Y	1.13
+54	Atton	p_atton	separated_from_party	122678	p_Atton_Sprty	Y	2.02	Sounds.bif wav (ffmpeg -i)	Y	2.02
+54	Atton	p_atton	rejoined_party	122677	p_Atton_Rprty	Y	0.60	Sounds.bif wav (ffmpeg -i)	Y	0.60
+54	Atton	p_atton	poisoned	122676	p_Atton_Pois	Y	1.42	Sounds.bif wav (ffmpeg -i)	Y	1.42
+55	Dark_Jedi_Male_K2	n_darkjedim	battlecry1	132423	n_darkjedim_bat	Y	0.94	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+55	Dark_Jedi_Male_K2	n_darkjedim	battlecry2	-1						
+55	Dark_Jedi_Male_K2	n_darkjedim	battlecry3	-1						
+55	Dark_Jedi_Male_K2	n_darkjedim	battlecry4	-1						
+55	Dark_Jedi_Male_K2	n_darkjedim	battlecry5	-1						
+55	Dark_Jedi_Male_K2	n_darkjedim	battlecry6	-1						
+55	Dark_Jedi_Male_K2	n_darkjedim	select1	-1						
+55	Dark_Jedi_Male_K2	n_darkjedim	select2	-1						
+55	Dark_Jedi_Male_K2	n_darkjedim	select3	-1						
+55	Dark_Jedi_Male_K2	n_darkjedim	attack_grunt1	132424	n_darkjedim_atk	Y	0.46	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+55	Dark_Jedi_Male_K2	n_darkjedim	attack_grunt2	-1						
+55	Dark_Jedi_Male_K2	n_darkjedim	attack_grunt3	-1						
+55	Dark_Jedi_Male_K2	n_darkjedim	pain_grunt1	132425	n_darkjedim_dam	Y	0.34	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+55	Dark_Jedi_Male_K2	n_darkjedim	pain_grunt2	-1						
+55	Dark_Jedi_Male_K2	n_darkjedim	low_health	-1						
+55	Dark_Jedi_Male_K2	n_darkjedim	dead	132426	n_darkjedim_die	Y	2.08	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+55	Dark_Jedi_Male_K2	n_darkjedim	critical_hit	-1						
+55	Dark_Jedi_Male_K2	n_darkjedim	target_immune	-1						
+55	Dark_Jedi_Male_K2	n_darkjedim	lay_mine	-1						
+55	Dark_Jedi_Male_K2	n_darkjedim	disarm_mine	-1						
+55	Dark_Jedi_Male_K2	n_darkjedim	begin_stealth	-1						
+55	Dark_Jedi_Male_K2	n_darkjedim	begin_search	-1						
+55	Dark_Jedi_Male_K2	n_darkjedim	begin_unlock	-1						
+55	Dark_Jedi_Male_K2	n_darkjedim	unlock_failed	-1						
+55	Dark_Jedi_Male_K2	n_darkjedim	unlock_success	-1						
+55	Dark_Jedi_Male_K2	n_darkjedim	separated_from_party	-1						
+55	Dark_Jedi_Male_K2	n_darkjedim	rejoined_party	-1						
+55	Dark_Jedi_Male_K2	n_darkjedim	poisoned	-1						
+56	Commoner_Male_Kid	n_commonkm	battlecry1	132418	n_commonkm_bat	N			N	
+56	Commoner_Male_Kid	n_commonkm	battlecry2	-1						
+56	Commoner_Male_Kid	n_commonkm	battlecry3	-1						
+56	Commoner_Male_Kid	n_commonkm	battlecry4	-1						
+56	Commoner_Male_Kid	n_commonkm	battlecry5	-1						
+56	Commoner_Male_Kid	n_commonkm	battlecry6	-1						
+56	Commoner_Male_Kid	n_commonkm	select1	-1						
+56	Commoner_Male_Kid	n_commonkm	select2	-1						
+56	Commoner_Male_Kid	n_commonkm	select3	-1						
+56	Commoner_Male_Kid	n_commonkm	attack_grunt1	132419	n_commonkm_atk	Y	0.45	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+56	Commoner_Male_Kid	n_commonkm	attack_grunt2	-1						
+56	Commoner_Male_Kid	n_commonkm	attack_grunt3	-1						
+56	Commoner_Male_Kid	n_commonkm	pain_grunt1	132420	n_commonkm_dam	Y	0.51	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+56	Commoner_Male_Kid	n_commonkm	pain_grunt2	-1						
+56	Commoner_Male_Kid	n_commonkm	low_health	-1						
+56	Commoner_Male_Kid	n_commonkm	dead	132421	n_commonkm_die	Y	1.04	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+56	Commoner_Male_Kid	n_commonkm	critical_hit	-1						
+56	Commoner_Male_Kid	n_commonkm	target_immune	-1						
+56	Commoner_Male_Kid	n_commonkm	lay_mine	-1						
+56	Commoner_Male_Kid	n_commonkm	disarm_mine	-1						
+56	Commoner_Male_Kid	n_commonkm	begin_stealth	-1						
+56	Commoner_Male_Kid	n_commonkm	begin_search	-1						
+56	Commoner_Male_Kid	n_commonkm	begin_unlock	-1						
+56	Commoner_Male_Kid	n_commonkm	unlock_failed	-1						
+56	Commoner_Male_Kid	n_commonkm	unlock_success	-1						
+56	Commoner_Male_Kid	n_commonkm	separated_from_party	-1						
+56	Commoner_Male_Kid	n_commonkm	rejoined_party	-1						
+56	Commoner_Male_Kid	n_commonkm	poisoned	-1						
+57	Commoner_Female	n_commonf	battlecry1	132413	n_commonf_bat	N			N	
+57	Commoner_Female	n_commonf	battlecry2	-1						
+57	Commoner_Female	n_commonf	battlecry3	-1						
+57	Commoner_Female	n_commonf	battlecry4	-1						
+57	Commoner_Female	n_commonf	battlecry5	-1						
+57	Commoner_Female	n_commonf	battlecry6	-1						
+57	Commoner_Female	n_commonf	select1	-1						
+57	Commoner_Female	n_commonf	select2	-1						
+57	Commoner_Female	n_commonf	select3	-1						
+57	Commoner_Female	n_commonf	attack_grunt1	132414	n_commonf_atk	Y	0.47	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+57	Commoner_Female	n_commonf	attack_grunt2	-1						
+57	Commoner_Female	n_commonf	attack_grunt3	-1						
+57	Commoner_Female	n_commonf	pain_grunt1	132415	n_commonf_dam	Y	0.55	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+57	Commoner_Female	n_commonf	pain_grunt2	-1						
+57	Commoner_Female	n_commonf	low_health	-1						
+57	Commoner_Female	n_commonf	dead	132416	n_commonf_die	Y	1.33	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+57	Commoner_Female	n_commonf	critical_hit	-1						
+57	Commoner_Female	n_commonf	target_immune	-1						
+57	Commoner_Female	n_commonf	lay_mine	-1						
+57	Commoner_Female	n_commonf	disarm_mine	-1						
+57	Commoner_Female	n_commonf	begin_stealth	-1						
+57	Commoner_Female	n_commonf	begin_search	-1						
+57	Commoner_Female	n_commonf	begin_unlock	-1						
+57	Commoner_Female	n_commonf	unlock_failed	-1						
+57	Commoner_Female	n_commonf	unlock_success	-1						
+57	Commoner_Female	n_commonf	separated_from_party	-1						
+57	Commoner_Female	n_commonf	rejoined_party	-1						
+57	Commoner_Female	n_commonf	poisoned	-1						
+58	Bith_K2	a_bith	battlecry1	130619	a_bith_bat	Y	1.06	Sounds.bif wav (ffmpeg -i)	Y	1.06
+58	Bith_K2	a_bith	battlecry2	-1						
+58	Bith_K2	a_bith	battlecry3	-1						
+58	Bith_K2	a_bith	battlecry4	-1						
+58	Bith_K2	a_bith	battlecry5	-1						
+58	Bith_K2	a_bith	battlecry6	-1						
+58	Bith_K2	a_bith	select1	-1						
+58	Bith_K2	a_bith	select2	-1						
+58	Bith_K2	a_bith	select3	-1						
+58	Bith_K2	a_bith	attack_grunt1	130620	a_bith_atk	Y	0.48	Sounds.bif wav (ffmpeg -i)	Y	0.48
+58	Bith_K2	a_bith	attack_grunt2	-1						
+58	Bith_K2	a_bith	attack_grunt3	-1						
+58	Bith_K2	a_bith	pain_grunt1	130621	a_bith_dam	Y	0.66	Sounds.bif wav (ffmpeg -i)	Y	0.66
+58	Bith_K2	a_bith	pain_grunt2	-1						
+58	Bith_K2	a_bith	low_health	-1						
+58	Bith_K2	a_bith	dead	130622	a_bith_die	Y	1.30	Sounds.bif wav (ffmpeg -i)	Y	1.30
+58	Bith_K2	a_bith	critical_hit	-1						
+58	Bith_K2	a_bith	target_immune	-1						
+58	Bith_K2	a_bith	lay_mine	-1						
+58	Bith_K2	a_bith	disarm_mine	-1						
+58	Bith_K2	a_bith	begin_stealth	-1						
+58	Bith_K2	a_bith	begin_search	-1						
+58	Bith_K2	a_bith	begin_unlock	-1						
+58	Bith_K2	a_bith	unlock_failed	-1						
+58	Bith_K2	a_bith	unlock_success	-1						
+58	Bith_K2	a_bith	separated_from_party	-1						
+58	Bith_K2	a_bith	rejoined_party	-1						
+58	Bith_K2	a_bith	poisoned	-1						
+59	Maalrass	c_maalrass	battlecry1	134025	c_maalrass_bat	Y	1.71	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+59	Maalrass	c_maalrass	battlecry2	-1						
+59	Maalrass	c_maalrass	battlecry3	-1						
+59	Maalrass	c_maalrass	battlecry4	-1						
+59	Maalrass	c_maalrass	battlecry5	-1						
+59	Maalrass	c_maalrass	battlecry6	-1						
+59	Maalrass	c_maalrass	select1	-1						
+59	Maalrass	c_maalrass	select2	-1						
+59	Maalrass	c_maalrass	select3	-1						
+59	Maalrass	c_maalrass	attack_grunt1	134026	c_maalrass_atk	Y	1.64	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+59	Maalrass	c_maalrass	attack_grunt2	-1						
+59	Maalrass	c_maalrass	attack_grunt3	-1						
+59	Maalrass	c_maalrass	pain_grunt1	134027	c_maalrass_dam	Y	0.90	Sounds.bif wav (ffmpeg -i)	Y	0.90
+59	Maalrass	c_maalrass	pain_grunt2	-1						
+59	Maalrass	c_maalrass	low_health	-1						
+59	Maalrass	c_maalrass	dead	134028	c_maalrass_die	Y	2.24	Sounds.bif wav (ffmpeg -i)	Y	2.24
+59	Maalrass	c_maalrass	critical_hit	-1						
+59	Maalrass	c_maalrass	target_immune	-1						
+59	Maalrass	c_maalrass	lay_mine	-1						
+59	Maalrass	c_maalrass	disarm_mine	-1						
+59	Maalrass	c_maalrass	begin_stealth	-1						
+59	Maalrass	c_maalrass	begin_search	-1						
+59	Maalrass	c_maalrass	begin_unlock	-1						
+59	Maalrass	c_maalrass	unlock_failed	-1						
+59	Maalrass	c_maalrass	unlock_success	-1						
+59	Maalrass	c_maalrass	separated_from_party	-1						
+59	Maalrass	c_maalrass	rejoined_party	-1						
+59	Maalrass	c_maalrass	poisoned	-1						
+60	StormBeast	c_stormbeast	battlecry1	134030	c_stormbeast_bat	Y	1.74	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+60	StormBeast	c_stormbeast	battlecry2	-1						
+60	StormBeast	c_stormbeast	battlecry3	-1						
+60	StormBeast	c_stormbeast	battlecry4	-1						
+60	StormBeast	c_stormbeast	battlecry5	-1						
+60	StormBeast	c_stormbeast	battlecry6	-1						
+60	StormBeast	c_stormbeast	select1	-1						
+60	StormBeast	c_stormbeast	select2	-1						
+60	StormBeast	c_stormbeast	select3	-1						
+60	StormBeast	c_stormbeast	attack_grunt1	134031	c_stormbeast_atk	Y	1.71	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+60	StormBeast	c_stormbeast	attack_grunt2	-1						
+60	StormBeast	c_stormbeast	attack_grunt3	-1						
+60	StormBeast	c_stormbeast	pain_grunt1	134032	c_stormbeast_dam	Y	1.01	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+60	StormBeast	c_stormbeast	pain_grunt2	-1						
+60	StormBeast	c_stormbeast	low_health	-1						
+60	StormBeast	c_stormbeast	dead	134033	c_stormbeast_die	Y	4.33	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+60	StormBeast	c_stormbeast	critical_hit	-1						
+60	StormBeast	c_stormbeast	target_immune	-1						
+60	StormBeast	c_stormbeast	lay_mine	-1						
+60	StormBeast	c_stormbeast	disarm_mine	-1						
+60	StormBeast	c_stormbeast	begin_stealth	-1						
+60	StormBeast	c_stormbeast	begin_search	-1						
+60	StormBeast	c_stormbeast	begin_unlock	-1						
+60	StormBeast	c_stormbeast	unlock_failed	-1						
+60	StormBeast	c_stormbeast	unlock_success	-1						
+60	StormBeast	c_stormbeast	separated_from_party	-1						
+60	StormBeast	c_stormbeast	rejoined_party	-1						
+60	StormBeast	c_stormbeast	poisoned	-1						
+61	Drexel	c_drexel	battlecry1	134010	c_drexl_bat	Y	1.89	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+61	Drexel	c_drexel	battlecry2	-1						
+61	Drexel	c_drexel	battlecry3	-1						
+61	Drexel	c_drexel	battlecry4	-1						
+61	Drexel	c_drexel	battlecry5	-1						
+61	Drexel	c_drexel	battlecry6	-1						
+61	Drexel	c_drexel	select1	-1						
+61	Drexel	c_drexel	select2	-1						
+61	Drexel	c_drexel	select3	-1						
+61	Drexel	c_drexel	attack_grunt1	134009	c_drexl_atk	Y	1.70	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+61	Drexel	c_drexel	attack_grunt2	-1						
+61	Drexel	c_drexel	attack_grunt3	-1						
+61	Drexel	c_drexel	pain_grunt1	134011	c_drexl_dam	Y	0.64	Sounds.bif wav (ffmpeg -i)	Y	0.64
+61	Drexel	c_drexel	pain_grunt2	-1						
+61	Drexel	c_drexel	low_health	-1						
+61	Drexel	c_drexel	dead	134012	c_drexl_die	Y	2.71	Sounds.bif wav (ffmpeg -i)	Y	2.71
+61	Drexel	c_drexel	critical_hit	-1						
+61	Drexel	c_drexel	target_immune	-1						
+61	Drexel	c_drexel	lay_mine	-1						
+61	Drexel	c_drexel	disarm_mine	-1						
+61	Drexel	c_drexel	begin_stealth	-1						
+61	Drexel	c_drexel	begin_search	-1						
+61	Drexel	c_drexel	begin_unlock	-1						
+61	Drexel	c_drexel	unlock_failed	-1						
+61	Drexel	c_drexel	unlock_success	-1						
+61	Drexel	c_drexel	separated_from_party	-1						
+61	Drexel	c_drexel	rejoined_party	-1						
+61	Drexel	c_drexel	poisoned	-1						
+62	Hssiss	c_hssiss	battlecry1	134014	c_hssiss_bat	Y	2.12	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+62	Hssiss	c_hssiss	battlecry2	-1						
+62	Hssiss	c_hssiss	battlecry3	-1						
+62	Hssiss	c_hssiss	battlecry4	-1						
+62	Hssiss	c_hssiss	battlecry5	-1						
+62	Hssiss	c_hssiss	battlecry6	-1						
+62	Hssiss	c_hssiss	select1	-1						
+62	Hssiss	c_hssiss	select2	-1						
+62	Hssiss	c_hssiss	select3	-1						
+62	Hssiss	c_hssiss	attack_grunt1	134015	c_hssiss_atk	Y	1.45	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+62	Hssiss	c_hssiss	attack_grunt2	-1						
+62	Hssiss	c_hssiss	attack_grunt3	-1						
+62	Hssiss	c_hssiss	pain_grunt1	134016	c_hssiss_dam	Y	1.11	Sounds.bif wav (ffmpeg -i)	Y	1.11
+62	Hssiss	c_hssiss	pain_grunt2	-1						
+62	Hssiss	c_hssiss	low_health	-1						
+62	Hssiss	c_hssiss	dead	134017	c_hssiss_die	Y	1.93	Sounds.bif wav (ffmpeg -i)	Y	1.93
+62	Hssiss	c_hssiss	critical_hit	-1						
+62	Hssiss	c_hssiss	target_immune	-1						
+62	Hssiss	c_hssiss	lay_mine	-1						
+62	Hssiss	c_hssiss	disarm_mine	-1						
+62	Hssiss	c_hssiss	begin_stealth	-1						
+62	Hssiss	c_hssiss	begin_search	-1						
+62	Hssiss	c_hssiss	begin_unlock	-1						
+62	Hssiss	c_hssiss	unlock_failed	-1						
+62	Hssiss	c_hssiss	unlock_success	-1						
+62	Hssiss	c_hssiss	separated_from_party	-1						
+62	Hssiss	c_hssiss	rejoined_party	-1						
+62	Hssiss	c_hssiss	poisoned	-1						
+63	Laigrek	c_laigrek	battlecry1	134019	c_laigrek_bat	Y	1.71	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+63	Laigrek	c_laigrek	battlecry2	-1						
+63	Laigrek	c_laigrek	battlecry3	-1						
+63	Laigrek	c_laigrek	battlecry4	-1						
+63	Laigrek	c_laigrek	battlecry5	-1						
+63	Laigrek	c_laigrek	battlecry6	-1						
+63	Laigrek	c_laigrek	select1	-1						
+63	Laigrek	c_laigrek	select2	-1						
+63	Laigrek	c_laigrek	select3	-1						
+63	Laigrek	c_laigrek	attack_grunt1	134020	c_laigrek_atk	Y	1.64	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+63	Laigrek	c_laigrek	attack_grunt2	-1						
+63	Laigrek	c_laigrek	attack_grunt3	-1						
+63	Laigrek	c_laigrek	pain_grunt1	134021	c_laigrek_dam	Y	1.05	Sounds.bif wav (ffmpeg -i)	Y	1.05
+63	Laigrek	c_laigrek	pain_grunt2	-1						
+63	Laigrek	c_laigrek	low_health	-1						
+63	Laigrek	c_laigrek	dead	134022	c_laigrek_die	Y	2.44	Sounds.bif wav (ffmpeg -i)	Y	2.44
+63	Laigrek	c_laigrek	critical_hit	-1						
+63	Laigrek	c_laigrek	target_immune	-1						
+63	Laigrek	c_laigrek	lay_mine	-1						
+63	Laigrek	c_laigrek	disarm_mine	-1						
+63	Laigrek	c_laigrek	begin_stealth	-1						
+63	Laigrek	c_laigrek	begin_search	-1						
+63	Laigrek	c_laigrek	begin_unlock	-1						
+63	Laigrek	c_laigrek	unlock_failed	-1						
+63	Laigrek	c_laigrek	unlock_success	-1						
+63	Laigrek	c_laigrek	separated_from_party	-1						
+63	Laigrek	c_laigrek	rejoined_party	-1						
+63	Laigrek	c_laigrek	poisoned	-1						
+64	Tank_Droid	c_drdtank	battlecry1	-1						
+64	Tank_Droid	c_drdtank	battlecry2	-1						
+64	Tank_Droid	c_drdtank	battlecry3	-1						
+64	Tank_Droid	c_drdtank	battlecry4	-1						
+64	Tank_Droid	c_drdtank	battlecry5	-1						
+64	Tank_Droid	c_drdtank	battlecry6	-1						
+64	Tank_Droid	c_drdtank	select1	-1						
+64	Tank_Droid	c_drdtank	select2	-1						
+64	Tank_Droid	c_drdtank	select3	-1						
+64	Tank_Droid	c_drdtank	attack_grunt1	-1						
+64	Tank_Droid	c_drdtank	attack_grunt2	-1						
+64	Tank_Droid	c_drdtank	attack_grunt3	-1						
+64	Tank_Droid	c_drdtank	pain_grunt1	134006	c_drdtank_dam	Y	0.64	Sounds.bif wav (ffmpeg -i)	Y	0.64
+64	Tank_Droid	c_drdtank	pain_grunt2	-1						
+64	Tank_Droid	c_drdtank	low_health	-1						
+64	Tank_Droid	c_drdtank	dead	134005	c_drdtank_die	Y	4.31	Sounds.bif wav (ffmpeg -i)	Y	4.31
+64	Tank_Droid	c_drdtank	critical_hit	-1						
+64	Tank_Droid	c_drdtank	target_immune	-1						
+64	Tank_Droid	c_drdtank	lay_mine	-1						
+64	Tank_Droid	c_drdtank	disarm_mine	-1						
+64	Tank_Droid	c_drdtank	begin_stealth	-1						
+64	Tank_Droid	c_drdtank	begin_search	-1						
+64	Tank_Droid	c_drdtank	begin_unlock	-1						
+64	Tank_Droid	c_drdtank	unlock_failed	-1						
+64	Tank_Droid	c_drdtank	unlock_success	-1						
+64	Tank_Droid	c_drdtank	separated_from_party	-1						
+64	Tank_Droid	c_drdtank	rejoined_party	-1						
+64	Tank_Droid	c_drdtank	poisoned	-1						
+65	Handmaiden	p_handmaiden	battlecry1	135103	p_hand_Bat1	Y	1.19	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+65	Handmaiden	p_handmaiden	battlecry2	135104	p_hand_Bat2	Y	0.73	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+65	Handmaiden	p_handmaiden	battlecry3	135105	p_hand_Bat3	Y	1.09	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+65	Handmaiden	p_handmaiden	battlecry4	135106	p_hand_Bat4	Y	0.88	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+65	Handmaiden	p_handmaiden	battlecry5	135107	p_hand_Bat5	Y	1.69	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+65	Handmaiden	p_handmaiden	battlecry6	135108	p_hand_Bat6	Y	2.18	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+65	Handmaiden	p_handmaiden	select1	135109	p_hand_Slct1	Y	0.49	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+65	Handmaiden	p_handmaiden	select2	135110	p_hand_Slct2	Y	0.41	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+65	Handmaiden	p_handmaiden	select3	135111	p_hand_Slct3	Y	0.67	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+65	Handmaiden	p_handmaiden	attack_grunt1	135112	p_hand_Atk1	Y	0.72	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+65	Handmaiden	p_handmaiden	attack_grunt2	135113	p_hand_Atk2	Y	0.48	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+65	Handmaiden	p_handmaiden	attack_grunt3	135114	p_hand_Atk3	Y	0.48	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+65	Handmaiden	p_handmaiden	pain_grunt1	135115	p_hand_Hit1	Y	0.47	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+65	Handmaiden	p_handmaiden	pain_grunt2	135116	p_hand_Hit2	Y	0.65	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+65	Handmaiden	p_handmaiden	low_health	135117	p_hand_Low	Y	1.51	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+65	Handmaiden	p_handmaiden	dead	135118	p_hand_Dead	Y	1.80	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+65	Handmaiden	p_handmaiden	critical_hit	135119	p_hand_Crit	Y	1.00	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+65	Handmaiden	p_handmaiden	target_immune	135120	p_hand_Tia	Y	1.37	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+65	Handmaiden	p_handmaiden	lay_mine	135121	p_hand_Lmin	Y	0.70	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+65	Handmaiden	p_handmaiden	disarm_mine	135122	p_hand_Dmin	N			N	
+65	Handmaiden	p_handmaiden	begin_stealth	135123	p_hand_Stlh	Y	1.26	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+65	Handmaiden	p_handmaiden	begin_search	135124	p_hand_Srch	Y	1.40	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+65	Handmaiden	p_handmaiden	begin_unlock	135125	p_hand_Block	Y	0.73	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+65	Handmaiden	p_handmaiden	unlock_failed	135126	p_hand_Flock	Y	1.56	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+65	Handmaiden	p_handmaiden	unlock_success	135127	p_hand_Slock	Y	0.51	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+65	Handmaiden	p_handmaiden	separated_from_party	135128	p_hand_Sprty	Y	1.14	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+65	Handmaiden	p_handmaiden	rejoined_party	135129	p_hand_Rprty	Y	0.97	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+65	Handmaiden	p_handmaiden	poisoned	135130	p_hand_Pois	Y	1.15	StreamSounds (bytes-514)/44100 (estimate; matches Sounds.bif WAV on 337/342 shared clips)	N	
+66	c_envboss	c_envbos	battlecry1							
+66	c_envboss	c_envbos	battlecry2							
+66	c_envboss	c_envbos	battlecry3							
+66	c_envboss	c_envbos	battlecry4							
+66	c_envboss	c_envbos	battlecry5							
+66	c_envboss	c_envbos	battlecry6							
+66	c_envboss	c_envbos	select1							
+66	c_envboss	c_envbos	select2							
+66	c_envboss	c_envbos	select3							
+66	c_envboss	c_envbos	attack_grunt1							
+66	c_envboss	c_envbos	attack_grunt2							
+66	c_envboss	c_envbos	attack_grunt3							
+66	c_envboss	c_envbos	pain_grunt1							
+66	c_envboss	c_envbos	pain_grunt2							
+66	c_envboss	c_envbos	low_health							
+66	c_envboss	c_envbos	dead							
+66	c_envboss	c_envbos	critical_hit							
+66	c_envboss	c_envbos	target_immune							
+66	c_envboss	c_envbos	lay_mine							
+66	c_envboss	c_envbos	disarm_mine							
+66	c_envboss	c_envbos	begin_stealth							
+66	c_envboss	c_envbos	begin_search							
+66	c_envboss	c_envbos	begin_unlock							
+66	c_envboss	c_envbos	unlock_failed							
+66	c_envboss	c_envbos	unlock_success							
+66	c_envboss	c_envbos	separated_from_party							
+66	c_envboss	c_envbos	rejoined_party							
+66	c_envboss	c_envbos	poisoned							
+67	n_tusken	n_tusken	battlecry1	37137	n_tusken_bat1	N			N	
+67	n_tusken	n_tusken	battlecry2	37138	n_tusken_bat2	N			N	
+67	n_tusken	n_tusken	battlecry3	37137	n_tusken_bat1	N			N	
+67	n_tusken	n_tusken	battlecry4	37138	n_tusken_bat2	N			N	
+67	n_tusken	n_tusken	battlecry5	37137	n_tusken_bat1	N			N	
+67	n_tusken	n_tusken	battlecry6	37138	n_tusken_bat2	N			N	
+67	n_tusken	n_tusken	select1	-1						
+67	n_tusken	n_tusken	select2	-1						
+67	n_tusken	n_tusken	select3	-1						
+67	n_tusken	n_tusken	attack_grunt1	37139	n_tusken_atk1	N			N	
+67	n_tusken	n_tusken	attack_grunt2	37140	n_tusken_atk2	N			N	
+67	n_tusken	n_tusken	attack_grunt3	37141	n_tusken_atk3	N			N	
+67	n_tusken	n_tusken	pain_grunt1	37142	n_tusken_hit1	N			N	
+67	n_tusken	n_tusken	pain_grunt2	37143	n_tusken_hit2	N			N	
+67	n_tusken	n_tusken	low_health	-1						
+67	n_tusken	n_tusken	dead	37144	n_tusken_dead	N			N	
+67	n_tusken	n_tusken	critical_hit	-1						
+67	n_tusken	n_tusken	target_immune	-1						
+67	n_tusken	n_tusken	lay_mine	-1						
+67	n_tusken	n_tusken	disarm_mine	-1						
+67	n_tusken	n_tusken	begin_stealth	-1						
+67	n_tusken	n_tusken	begin_search	-1						
+67	n_tusken	n_tusken	begin_unlock	-1						
+67	n_tusken	n_tusken	unlock_failed	-1						
+67	n_tusken	n_tusken	unlock_success	-1						
+67	n_tusken	n_tusken	separated_from_party	-1						
+67	n_tusken	n_tusken	rejoined_party	-1						
+67	n_tusken	n_tusken	poisoned	-1						
+68	n_rakata	n_rakata	battlecry1	37084	n_rakata_bat1	N			N	
+68	n_rakata	n_rakata	battlecry2	37085	n_rakata_bat2	N			N	
+68	n_rakata	n_rakata	battlecry3	37084	n_rakata_bat1	N			N	
+68	n_rakata	n_rakata	battlecry4	37085	n_rakata_bat2	N			N	
+68	n_rakata	n_rakata	battlecry5	37084	n_rakata_bat1	N			N	
+68	n_rakata	n_rakata	battlecry6	37085	n_rakata_bat2	N			N	
+68	n_rakata	n_rakata	select1	-1						
+68	n_rakata	n_rakata	select2	-1						
+68	n_rakata	n_rakata	select3	-1						
+68	n_rakata	n_rakata	attack_grunt1	37086	n_rakata_atk1	N			N	
+68	n_rakata	n_rakata	attack_grunt2	37087	n_rakata_atk2	N			N	
+68	n_rakata	n_rakata	attack_grunt3	37088	n_rakata_atk3	N			N	
+68	n_rakata	n_rakata	pain_grunt1	37089	n_rakata_hit1	N			N	
+68	n_rakata	n_rakata	pain_grunt2	37090	n_rakata_hit2	N			N	
+68	n_rakata	n_rakata	low_health	-1						
+68	n_rakata	n_rakata	dead	37091	n_rakata_dead	N			N	
+68	n_rakata	n_rakata	critical_hit	-1						
+68	n_rakata	n_rakata	target_immune	-1						
+68	n_rakata	n_rakata	lay_mine	-1						
+68	n_rakata	n_rakata	disarm_mine	-1						
+68	n_rakata	n_rakata	begin_stealth	-1						
+68	n_rakata	n_rakata	begin_search	-1						
+68	n_rakata	n_rakata	begin_unlock	-1						
+68	n_rakata	n_rakata	unlock_failed	-1						
+68	n_rakata	n_rakata	unlock_success	-1						
+68	n_rakata	n_rakata	separated_from_party	-1						
+68	n_rakata	n_rakata	rejoined_party	-1						
+68	n_rakata	n_rakata	poisoned	-1						
+69	c_hutt	c_hutt	battlecry1	38231	c_hutt_bat1	N	1.15	Sounds.bif wav (ffmpeg -i)	Y	1.15
+69	c_hutt	c_hutt	battlecry2	38232	c_hutt_bat2	N	2.51	Sounds.bif wav (ffmpeg -i)	Y	2.51
+69	c_hutt	c_hutt	battlecry3	38232	c_hutt_bat2	N	2.51	Sounds.bif wav (ffmpeg -i)	Y	2.51
+69	c_hutt	c_hutt	battlecry4	-1						
+69	c_hutt	c_hutt	battlecry5	-1						
+69	c_hutt	c_hutt	battlecry6	-1						
+69	c_hutt	c_hutt	select1	-1						
+69	c_hutt	c_hutt	select2	-1						
+69	c_hutt	c_hutt	select3	-1						
+69	c_hutt	c_hutt	attack_grunt1	38233	c_hutt_atk1	N	0.98	Sounds.bif wav (ffmpeg -i)	Y	0.98
+69	c_hutt	c_hutt	attack_grunt2	38234	c_hutt_atk2	N	1.25	Sounds.bif wav (ffmpeg -i)	Y	1.25
+69	c_hutt	c_hutt	attack_grunt3	38235	c_hutt_atk3	N	0.69	Sounds.bif wav (ffmpeg -i)	Y	0.69
+69	c_hutt	c_hutt	pain_grunt1	38236	c_hutt_hit1	N	0.41	Sounds.bif wav (ffmpeg -i)	Y	0.41
+69	c_hutt	c_hutt	pain_grunt2	38237	c_hutt_hit2	N	0.85	Sounds.bif wav (ffmpeg -i)	Y	0.85
+69	c_hutt	c_hutt	low_health	-1						
+69	c_hutt	c_hutt	dead	38238	c_hutt_dead	N	1.38	Sounds.bif wav (ffmpeg -i)	Y	1.38
+69	c_hutt	c_hutt	critical_hit	-1						
+69	c_hutt	c_hutt	target_immune	-1						
+69	c_hutt	c_hutt	lay_mine	-1						
+69	c_hutt	c_hutt	disarm_mine	-1						
+69	c_hutt	c_hutt	begin_stealth	-1						
+69	c_hutt	c_hutt	begin_search	-1						
+69	c_hutt	c_hutt	begin_unlock	-1						
+69	c_hutt	c_hutt	unlock_failed	-1						
+69	c_hutt	c_hutt	unlock_success	-1						
+69	c_hutt	c_hutt	separated_from_party	-1						
+69	c_hutt	c_hutt	rejoined_party	-1						
+69	c_hutt	c_hutt	poisoned	-1						

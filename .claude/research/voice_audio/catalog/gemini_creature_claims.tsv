@@ -1,0 +1,58 @@
+claim_id	creature	gemini_resref	real_resrefs	in_k1_rows	in_k2_rows	n_utc_k1	n_utc_k2	model_in_k2	verdict
+C1.01	kath hound	c_kathhound,c_khoundb	c_khounda;c_khoundb	8	8	20	16	True	PARTIAL
+C1.02	kinrath	-	c_kinrath	4	4	21	27	True	CONFIRMED
+C1.03	shyrack	-	c_verkaal	3	3	16	11	True	CONFIRMED
+C1.04	tukata	-	c_tukata	1	1	13	14	True	CONFIRMED
+C1.05	tach	-	c_tach	1	1	7	10	True	CONFIRMED
+C1.06	terentatek	-	c_terantanak (c_terentatek is an Override-only UTC, not a model)	1	1	6	10	True (c_terantanak)	PARTIAL
+C1.07	gizka	-	c_gizka	1	1	8	7	True	CONFIRMED
+C1.08	gamorrean	-	c_gammorean;c_gammoreanp	5	5	27	51	True	CONFIRMED
+C1.09	wookiee	-	n_wookief;n_wookiem	12	12	58	51	True	CONFIRMED
+C1.10	trandoshan	-	n_trandoshan (K1 rows); sch_trando (K2 rows)	2	2	6	33	True	CONFIRMED
+C1.11	hutt	-	c_hutt	4	4	5	4	True	CONFIRMED
+C1.12	aqualish	-	none (K2 template corwalr uses N_Walrusman row 49)	0	0	0	0	False	REFUTED
+C1.13	nikto	-	none (K2 template corgangmerc uses N_Swoopgang)	0	0	0	0	False	REFUTED
+C1.14	weequay	-	n_weeq	0	1	0	19	True	REFUTED
+C1.15	gran	-	n_gran	0	1	0	17	True	REFUTED
+C1.16	quarren	-	n_quarren	0	1	0	7	True	REFUTED
+C1.17	sullustan	-	n_sullustan	0	1	0	10	True	REFUTED
+C1.18	bith	-	n_bith	1	1	6	16	True	CONFIRMED
+C1.19	devaronian	-	none (K2 row 570 renders with n_commm generic model)	0	1	0	13	False (generic n_commm only)	REFUTED
+C1.20	ithorian	-	c_ithorian	3	4	15	19	True	CONFIRMED
+C1.21	rodian	-	n_rodian	5	5	55	47	True	CONFIRMED
+C1.22	duros	-	n_duros (K2 also n_maskedduros)	3	5	30	63	True	CONFIRMED
+C1.23	twilek	-	n_twilekm;n_twilekf (other rows reuse generic N_CommM/N_CommF/N_SithComM)	18	30	90	115	True	CONFIRMED
+C2.01	rancor	-	c_rancor;c_rancors	3	3	13	18	True	REFUTED
+C2.02	krayt dragon	-	c_kraytdragon	2	2	4	3	True	REFUTED
+C2.03	bantha	-	c_bantha	1	1	7	4	True	REFUTED
+C2.04	dewback	-	c_dewback	1	1	3	3	True	REFUTED
+C2.05	wraid	-	c_wraid	4	4	9	10	True	REFUTED
+C2.06	rakghoul	-	c_rakghoul	1	1	13	4	True	REFUTED
+C2.07	nekghoul	-	none (no appearance row, no MDL in either game)	0	0	0	0	False	REFUTED
+C2.08	firaxa shark	-	c_firixa (name is Firixa, not Firaxa)	1	1	11	2	True	CONFIRMED
+C2.09	mykal	-	c_mykal	1	1	3	4	True	REFUTED
+C2.10	selkath	-	n_selkath	6	6	61	42	True	REFUTED
+C2.11	rakata	-	c_holorakata;n_rakata	5	5	63	71	True	REFUTED
+C2.12	tusken	-	n_tusken;n_tuskenf	6	6	34	20	True	REFUTED
+C2.13	jawa	-	c_jawa;l_jawa	2	2	8	17	True	REFUTED
+C2.14	sith trooper	-	n_sithsoldier	4	4	92	55	True	REFUTED
+C2.15	albino kath hound	-	none (no albino hound; N_SithComF/M are humanoids)	0	0	0	0	False (no hound model)	REFUTED
+C3.01	boma	-	c_bomabeast;c_bomabeastv	0	2	0	18	True	CONFIRMED
+C3.02	cannok	-	c_cannok	0	1	0	10	True	CONFIRMED
+C3.03	zakkeg	-	c_zakkeg	0	1	0	3	True	CONFIRMED
+C3.04	maalraas	-	c_maalrass (spelling: maalrass; UTCs c_maalraas*)	0	1	0	5	True	CONFIRMED
+C3.05	laigrek	-	c_laigrek	0	1	0	8	True	CONFIRMED
+C3.06	hssiss	-	c_hssiss	0	1	0	3	True	CONFIRMED
+C3.07	stormbeast	-	c_malbeast;c_malbeastl (no c_stormbeast model; UTCs c_stormbeast*)	0	2	0	8	True	CONFIRMED
+C3.08	gand	-	n_gand	0	1	0	23	True	CONFIRMED
+C3.09	chadra-fan	-	none (K2 template chandfanslv1 uses N_Smuggler, LiteL_Alien01 row 328, in K1 and K2)	0	0	0	0	True (n_smuggler via LiteL_Alien01)	REFUTED
+C3.10	ubese	-	n_sithassn (K2-only model; K2 templates corubese1 etc. use Sith_Assassin_01 row 459; no ubese model)	0	0	0	0	True (n_sithassn, K2-only)	PARTIAL
+C3.11	sion	-	n_darthsion	0	1	0	8	True	CONFIRMED
+C3.12	nihilus	-	n_darthnihilus	0	1	0	6	True	CONFIRMED
+C3.13	atris	-	p_atrisbb (vanilla row 629; DP_MstrAtris row 711 is Override-only)	0	1	0	11	True	CONFIRMED
+C3.14	remote	-	c_senball	0	1	0	6	True	CONFIRMED
+C3.15	mining droid	-	c_mk1_drd;c_mk2_drd	0	6	0	44	True	CONFIRMED
+C3.16	floating droid	-	c_minefloating	0	1	0	3	True	CONFIRMED
+C3.17	tank droid	-	c_tankdroid	0	1	0	5	True	CONFIRMED
+C3.18	G0-T0	-	p_g0t0	0	1	0	8	True	CONFIRMED
+C4.01	K1-exclusive (all K1 appearance models)	-	p_bastilaba;p_bastillabb;p_candba;p_carthba;p_joleeba;p_juhaniba;p_t3m3 (7 of 120 K1 models absent from K2 install; all party bodies)	313 used K1 rows; 58 label-only k1_only; 10 rows model-absent	-	-	-	partial: 7 of 120 models absent	CONFIRMED

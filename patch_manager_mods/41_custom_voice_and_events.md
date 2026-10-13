@@ -1,0 +1,111 @@
+# 41 Custom voice, barks and voiced scripted events (research synthesis)
+
+## Status
+- **State: V-A research done (2026-10-13); nothing built, nothing installed, no live test run.** Next: `kvoice` host build (V-B, no game) or live tests E1-E4 (V-C, needs user GO and a forged save).
+- Origin (user, 10-13): extend npc-diversity (doc 34), the texture overlays (`.claude/research/texture_diversity/PLAN.md`) and doc 40 section 4 (scripted encounters) with custom or reused voiced dialog; start point was a Gemini Web chat (`~/kotor-custom-audio.pdf`, 18 pages).
+- Evidence: 3 research waves + 1 fact-check wave (`w10-voice`: W1 claim check x12, W2 engine/corpus/delivery x12 (11 reports), W3 brainstorm + red team + REA x12, W4 fact-check x6). Findings: `.claude/research/voice_audio/w1|w2|w3/*.md`, catalogs `.claude/research/voice_audio/catalog/*.tsv`, fact digests `.claude/waves/w10-voice/W1_FACTS.md` and `W2_FACTS.md` (gitignored). All units ended PARTIAL; engine facts are pseudocode-level until E1-E4 run.
+- Related: 34, 38 (section 8 licence ledger), 40 (V5 now points here), `patch_manager_mods/ghidra_knowledge/RE_AGENT_GUIDE.md`.
+
+## 1. Gemini scorecard (what to trust)
+| Gemini said | Verdict | Truth (source) |
+|---|---|---|
+| VO .wav = 470-byte fake header + MP3 | WRONG for VO | StreamVoice: 58-byte header (RIFF size 50, data size 0) + MPEG-1 L3 32 kHz mono 48 kbps; 17,299/17,299 files have the RIFF header; 17,278 have MP3 sync at byte 58 and 21 carry an ID3v2 tag there (u01, b8, b9, c6). The 470-byte layout is the StreamSounds SFX (470-byte MP3-frame prefix + RIFF PCM 22050); the engine opener seeks 0x1D6 only in the branch where global DAT_00A10768 != 0 (r3 Q4; r2 said 'always', corrected by r3); VO's stream type is not established. Fix the one-liner: `tail -c +59`. |
+| .lip header + 16 shapes, 9=M/B/P, 11=F/V | layout RIGHT, table WRONG | 44,844 non-empty LIPs parse across K1 (18,206) and K2 (26,638); correct 9=ng, 11=m/p/b, 12=t/d, 13=sh (u02; rakata/PyKotor table, derived, not engine-attested). Engine ignores the lip unless first key t=0 and last key = clip length (r2; decoded from REA pseudocode, not in-game tested). |
+| .ssf maps 28 events to wav resrefs | WRONG | 28 uint32 StrRefs; the sound most likely comes from the TLK row's SoundResRef (u03; data-consistent for p_bastila 28/28; engine path unverified, r2 Q3). |
+| appearance.2da has a soundset column; row 42 = Selkath | WRONG | No such column (UTC SoundSetFile selects the row); row 42 = a_gamor (u03). |
+| NoZoomIn one-node bark DLG | WRONG | 0 of 1016 loose .dlg files under the mod workspace and 0 hits in game modules/BIFs (u04 C2, c1); Delay 0xFFFFFFFF uses the root DelayEntry and sets a WaitFlags bit (rakata, derived, not attested); the audio-wait meaning is unresolved (u04). |
+| Alien gibberish is 8-15 loops per emotion reused everywhere | PARTLY | Many species use AVO clips in DLGs (Twi'lek 89 of 135 lines, Selkath 60 of 62, Rodian 36, Ithorian 22; u05, v05), but AVO = 2.2% of 17,104 VO lines and ~99% of named VO is unique (u05). AVO bank: 1,436 clips in folders of 3-9 clips (not 8-15), median 6 s (v05). |
+| ElevenLabs PVC needs captcha; IVC fine | PARTLY | PVC = live line-reading, own voice only; IVC of a living person's voice without explicit, informed consent breaches policy s.3 (u08 C5; wording from a WebFetch extract, re-check before quoting); free-tier TTS outputs carry SynthID; free tier no commercial use (u08). |
+| F5/Chatterbox etc. have no watermark, free to use | PARTIAL | Chatterbox always applies Perth (every output); F5 weights CC-BY-NC; XTTS CPML (non-commercial). F5/XTTS/GPT-SoVITS watermark status UNVERIFIED, code not audited (u09, b5). |
+| Jade Empire audio is XWB; shares 4 actors | PARTIAL | PC ships loose Ogg per an xoreos doc (secondary; no Jade Empire install inspected); only Downes and Clarke confirmed; George and Katt not found (u07). |
+| Nexus: disclosure in description is enough | WRONG | Mandatory AI-Generated Content tag (u12). |
+| Creature lists (shared/unused/exclusive) | 31 of 56 right | 22 refuted, 3 partial; 12 of 14 "unused" creatures ARE used in K2 module templates (nekghoul and albino kath hound exist nowhere); no creature model is K1-only (7 party bodies p_* are absent from K2) (v09, recounted by c2). |
+| Module codes (204TEL ... 501OND) | 6 WRONG | e.g. medical ward and Ithorian Compound are both 204TEL (catalog/gemini_module_claims.tsv C01-C04, C12, C20). |
+| K1->K2 MDL "offsets differ"; KotorBlender forked from NWBlender | first TRUE, second PARTIAL | K2 trimesh header is 8 bytes larger (340 vs 332); supermodel name is in the MDL header at offset 136 from model data start (file offset 148), not appearance.2da; no "NWBlender" found, README lineage is NeverBlender (NWN importer) (v11 C6, c2). |
+| Rhubarb/Whisper give a .lip in 30 lines | PARTLY | Layout round-trips in a scratch test only (in-game validity untested); Rhubarb needs a shape remap; Whisper gives no phonemes (u11). |
+
+## 2. Verified engine and data facts (Steam exe, REA pseudocode unless marked)
+Function names other than `FUN_` labels (LipSync, UpdateDialogLipSync, BarkString, StartStream, OpenStream, PlaySound, SpeakString) are brief-assigned, not symbols.
+1. **Playback chain (r3):** caller -> `0x70B170` -> `StartStream 0x70C0C0` -> `OpenStream 0x70CAA0` -> Miles AIL. No TLK lookup in the bodies of `0x70B170`, `0x70C0C0` or `0x70CAA0`; callees not checked, and whether `FUN_0071D970` reads a TLK SoundResRef is unknown. Voice streams (flag param_3 != 0) build `HD0:STREAMVOICE\<ref>`; for resrefs starting `gbl`/`avo`/`000` (case-insensitive) or where `FUN_0091CF18(prefix) > 0` (not decoded; r1 reads it as "numeric") the path is `STREAMVOICE\<first3>\<chars 3..len-4>\<resref>` (the folder layout seen on disk, e.g. `GBL/000REACT/GBL000REACT001.wav`). Non-voice = `STREAMSOUNDS\<resref>`; music = `STREAMMUSIC`. **Open: whether `Override` is searched for streams (E1/E2).**
+2. **Script surface (r1):** `PlaySound 0x68EA70` queues action 0x17; `AIActionPlaySound 0x5D9BF0` sends the resref as message 9/7 to objects within 1000 units (client handler not found). `SpeakString 0x693860` queues action 0x0E; no sound in the function body (the client handler of action 0x0E was not traced). bark chain `0x66DD30` -> `0x740260` -> `0x79BC40` -> vtable +0x120 (class unknown); `0x669910` queues action 0x3E, which likely reaches `0x5D7480` -> `0x740260` (link unconfirmed); `0x77B140` (brief name CSWCCreature::BarkString; no symbol confirms it) has no direct TLK/sound/text call.
+3. **Lip (r2):** `LipSync 0x77B190` loads type 3004 via a cached lookup; with no/invalid LIP, LipSync returns 0 and drives nothing (mouth left as-is by LipSync; caller behaviour unknown). `UpdateDialogLipSync 0x7D0C70` reads no audio position.
+4. **Soundset:** soundset slots 1..28 are mapped to strings by `FUN_0085EE80`; creature fields (roles unconfirmed) are short `+0x314` (-1 = none) and pointer `+0x384` (must be non-null); stats `+0x10EC` = SoundSetFile. **`+0x10EC` (serializer `0x6B3D10`) and `+0x314` (`0x76AED0`) are written to the save GFF as "SoundSetFile" (r3): this is GFF serialization only. No runtime setter of either field was found and the load-side reader (xref `0x6B06F2`) is unresolved, so whether a runtime write survives a load is UNVERIFIED (E5).**
+5. **Formats:** K1 clips use the identical container to K2 VO (no transcode needed for format parity, v04 F7; in-game acceptance of K1 clips in K2 is UNTESTED); StreamVoice loudness, n=20 clips: median -18.5 LUFS, TP median -2.5 dBTP (b9); b8 read about -17 LUFS +/-2 on about 10 clips (conflict, section 8); K2 also ships bare MPEG-1 L3 .mp3 (991 files, b8; 731 of 764 top-level files are 44.1 kHz/128 kbps, u01 C4; nested rate unmeasured) so bare MP3 in a stream folder has precedent.
+6. **Silence in vanilla:** ambient NPCs are silent; reaction barks = `a_gbl_react` + DLG `000react` (v06). `n_commm` (soundset row 11, 74 of 293 commoner templates) has no audible clips; 20 of 224 catalog clip names are silent (v03). `Override/alienvo.2da` differs from vanilla (a mod put it there).
+7. **Delivery (v07):** a `.kpatch` ships manifest, hooks and binaries only. Loose WAV/LIP/SSF and any TLK edits need an out-of-band copy (installer script) or an offline TLK append (precedent `scripts/append_ranged_kite_tlk.py`). Override is a symlink to `override`; the game root has case-pair dirs (`readlink -f` before staging); Steam "verify integrity" restores overwritten vanilla files, so ship NEW names only (b8).
+
+## 3. Recommended architecture
+- **Content-first, engine-second.** Everything below ships as new, `kpv`-prefixed, lowercase, <= 16-char resrefs; never overwrite vanilla files.
+- **Voice sources, ranked by risk:** (1) existing vanilla clips by name (0 bytes shipped): AVO bank, `000react`, generic soundsets; script playback by name is UNTESTED (E7/E4) and no vanilla script plays an AVO clip (v05 F8); (2) K1 clips (13,799 files, 25.3 h, personal use only, ledger class is `vanilla` today in `k1_port/sources.json`, so kvoice must force `personal_only` for any vanilla parent; b4 proposes a `k1_install_audio` source with class `personal_use_only`); (3) original synthetic voices from Apache/MIT models (Qwen3-TTS VoiceDesign then clone prompt (README workflow; clone drift UNTESTED, emotion vs identity-lock conflict, b5), Kokoro with credit; Chatterbox only if the watermark is acceptable) then helmet/droid FX; (4) the user's own recorded voice via speech-to-speech; (5) NEVER upload extracted actor audio to a cloud voice service; SWTOR audio: EA user agreement bars copying (u06), corpus ~100 GB, filenames carry no speaker, generic-bark fit MEDIUM-LOW; Jedi Academy and Fallen Order: personal extraction only per u07 (EULA text not read), Fallen Order 'fits droid/Imperial/human barks' (unverified), Jedi Academy unknown.
+- **Text channel:** persona cards with literal strings/inline names avoid TLK collisions (b7). Overhead text and speech-bubble behaviour of literal `SpeakString` are still unverified (E4).
+- **Pipeline:** `patch_manager_mods/kvoice/` (spec in `w3/b9.md`, prototype `.claude/waves/w10-voice/tmp/b9/`): ingest -> loudness to -18.5 LUFS -> MP3 32k mono 48k -> 58-byte header -> `.lip` (t=0 first key, last key = length) -> ledger row -> verifier R1-R9. Round trip passed (0.0 ms delta, 15/15). Keep >= 120 ms lead-in silence on every clip in case the 0x1D6 seek applies to loose VO (test E2).
+- **Rule engine for barks:** specificity-first matching with respeak/speakonce/odds/weight (Valve-style), compiled offline from TOML to fixed records (`w3/b6.md`). Cheap context first (self state, plot flags, robe check); alignment/party/combat/dead-body/saber need RE.
+- **Starting parameters (hypotheses, `w3/b10.md`):** per-NPC cooldown 90 s; ambient gap >= 25 s per area; >= 10 distinct clips per cue; no-repeat window max(3, pool/2); p = 0.10 per 10 s per eligible NPC; trigger inside 384 units with LOS, never beyond 1000; random-event base rate 1 per 12 min per area, +10%/min after 15 min, reset on fire (all untested).
+
+## 4. Selected ideas (9 of ~31 across b1-b7; criterion: best value per verified capability, one or two per brainstorm lens; details in `w3/b1-b7`, `b11`)
+| # | Idea | Needs | Value | Risk |
+|---|---|---|---|---|
+| 1 | Zone murmur bed from existing AVO clips, shuffle-bag, 0 bytes shipped (b1); enabled by b1 idea 7 (scheduler) | E7-pos (3/8 PlaySound, 1 m vs 900 units) + per-tick timer hook [RE]; timer-play test = T-TIMER | high | low |
+| 2 | Silent-commoner fix: loose `n_commm.ssf` pointing at existing TLK rows (74 templates) (b4) | E4 + T-SSF (Override SSF beats chitin) | med | low |
+| 3 | Texture-keyed text-only personas, 8 sample cards in `w3/b7_persona_cards.toml` (b7) | look: none (proven); name: inline FirstName (UNVERIFIED); barks: E4; 3 of 8 cards blocked (rows 72, 464, 602DAN) | med | low |
+| 4 | Alien events: AVO clip + Basic subtitle (vanilla Gran precedent). Twi'lek (96 short-tier, 261 AVO clips) and Rodian (81, 216) pools are deep; Selkath and Wookiee need K1 imports; Jawa has 6 K2 clips, no import proposed (b3, `catalog/k2_avo_bank.tsv`) | ready now; first test = a DLG node (AVO clip + appended TLK row) | med | low-med |
+| 5 | Stationary refugee-plea / Czerka-inspection events, 36 Twi'lek+Rodian plea clips (b2) | E1/E2 | high | med |
+| 6 | Twi'lek species-correct voices via runtime soundset write to rows 30/31 (b4, r3) | save-side writers confirmed (r3); load-side writer and oid key unverified; pending E5 | med | med |
+| 7 | Synthetic original-voice NPCs + FX for masked/droid actors (b5) | 1-week spike (V-E) | high | med (licence) |
+| 8 | TSF chase / moving events (doc 40 T1) (b2) | native move-to-point not available; immortality untested (UTC Plot field candidate); b2 feasibility 2, risk 3 | highest | high effort |
+| 9 | Reactive barks (alignment/party/robe) (b6) | value/risk unscored (b6 gives RE effort only): 0.5-3 days per slot class (+-2x); GOG addresses, REA re-check needed | med | med |
+Also kept from b1/b3/b4 as enablers: b1 idea 2 (overhead-text murmur, READY, risk 1, validates idea 1 before audio), b3 idea 3 (alienvo.2da route), b4 I6 (designed voice kit).
+Lore seeds: 20 event seeds in `w3/b11.md` (Legends-tagged wiki + K2 plot order; top: Ithorian lease dispute vs Czerka, Basic only). Kel Dor: no AVO pool in `catalog/k2_avo_bank.tsv` (in-game unverified). Traps: all 12 listed in b11 "Traps (do not violate)", e.g. Nihilus's Telos attack is late 3951, Jekk'Jekk Tarr kills humans, Dantooine Enclave not rebuilt yet.
+
+## 5. Legal and policy matrix (judgement unless a source is cited)
+| Use | Private | Public mod |
+|---|---|---|
+| Vanilla clips referenced by name | OK | UNCHECKED (ship no bytes; licence for K2 voice reuse in public mods not checked, u10 OPEN) |
+| K1/K2 clips copied into a pack | OK personal | NO (no permission; Nexus removal rule, u12; Disney legal objected to the TSLRCM DLC on Switch, VGC secondary) |
+| SWTOR / Jedi Academy / Fallen Order audio | personal only (judgement; SWTOR EULA not found, u06) | NO (judgement; per-EULA text not read, u07) |
+| Original designed synthetic voice (Apache/MIT model) | OK | OK with Nexus AI-Generated Content tag, after full LICENSE read (Qwen3, Maya1); no voice resembling a real actor; Kokoro CC BY credit; Chatterbox excluded (MIT, Perth watermark, not for public share) |
+| Own voice + RVC / speech-to-speech | OK | YES after VCTK base-model check (judgement; u12 candidate) |
+| Clone of a KOTOR actor (local) | private only (judgement) | NO (judgement; NO FAKES pending; no Nexus or DeadlyStream text ban found, u12 C1) |
+| ElevenLabs cloud with extracted audio | suspension risk (u08) | NO; cloning living people is banned (use policy s.3, u08 C5); free tier has no commercial use |
+- Local-only weights to avoid in anything public: F5-TTS (CC-BY-NC), XTTS (CPML), IndexTTS-2, Fish/Higgs, kNN-VC. VibeVoice code was pulled by Microsoft.
+- DeadlyStream Rule 18 (original creator) applies to uploads.
+
+## 6. Test ladder (`w3/b8.md` has exact setups for E1-E8; each needs explicit user GO and a forged save; the D0 pause on live fix runs (memory, 10-10) must be lifted by the user first)
+Test IDs from other briefs were renamed to avoid collisions: b1 E7 -> T-TIMER, b3 E7 -> T-DLG, b4 E7 -> T-SSF, b4 E8 -> T-SSFRANGE, b3 E8 -> T-ALIEN, b1 E5 -> T-GLOB. Only the b8 IDs below are E-numbers.
+| ID | Question | Min | Unlocks |
+|---|---|---|---|
+| E1 | `PlaySound` of a loose WAV in Override plays? (item 2.1: stream voice may not search Override) | 15 | route A (ideas 1, 5) |
+| E2 | Container matrix: PCM / 58-byte+MP3 / bare MP3 / 470-prefix+PCM, in Override and StreamVoice | 30 | file format |
+| E3 | `.lip` none / valid / bad | 20 | lip writer strictness |
+| E8 | case and 16/17-char resrefs | 15 | naming rules |
+| E7 | 3 then 8 simultaneous sounds; 1 m vs 900 units | 30 | concurrency, positional |
+| E4 | `BarkString` with an existing TLK row that has SoundResRef; does literal text draw? | 25 | recipe B, ideas 2/3/6 |
+| E6 | StreamSounds vs Sounds.bif precedence (346 overlaps) | 30 | where fixes can live |
+| E5 | spawn + soundset write + save/load: save-side writers confirmed, load-side unknown (r3); check duplicates | 40 | idea 6 |
+| T-SSF | Override `.ssf` beats the chitin one? | 15 | idea 2 (V-D) |
+| T-TIMER | native timer plays an existing AVO resref | 20 | idea 1 |
+Event-system prerequisites P1-P7 are listed in `w3/b2.md`. Free evidence first: any vanilla Override audio the user has already heard in game (`AVO_T3M4QUESS1`, `dm_estf_*`) partially answers E1/E2.
+
+## 7. Phases
+| ID | Phase | State |
+|---|---|---|
+| V-A | Research waves w10-voice (35 unit reports: W1 12, W2 11, W3 12; the v10 report is missing, its data is in the catalog TSV) + wave-4 fact-check (c1-c6, 6 units), this doc | DONE |
+| V-B | `kvoice` host build: container/loudness/lip/ledger/verifier + tests + a KPM test-hook build step (no game); add `audio` kind and ONE source id to `k1_port` (`k2_install_reference` class `vanilla_reference` per b4, or `vanilla_k2` per b9: pick one) | TODO |
+| V-C | Live tests E1-E8 incl. E5, E6, plus T-SSF and T-TIMER, with a tiny probe (needs user GO and the D0 pause lifted) | TODO |
+| V-D | Silent-commoner SSF fix (needs T-SSF) and murmur bed prototype (ideas 1-2) | TODO (after V-C) |
+| V-E | Voice spike: Qwen3 VoiceDesign speed/VRAM, 200-line consistency, FX chain, RVC timing on the 5070, Day-5 sound-alike screen (`w3/b5.md` 5-day plan) | TODO |
+| V-F | Event system (cast from the diversity pool, cooldowns, templates T4, T3, then movement templates T1; b2 ranking) merged into doc 40 V5/V3 | TODO |
+| V-G | RE follow-ups: msg 9/7 client handler, vtable +0x120 class, `+0x384` writers, alienvo row field, party/alignment/death offsets; load-side `+0x10EC` writer (V6.md:176 places the read in LoadCreature `0x6AFED0`; r3 could not read it: confirm) | TODO |
+
+## 8. Open questions and conflicts
+1. Does `Override` feed `STREAMVOICE`/`STREAMSOUNDS` lookups, or only resource (SFX) lookups? (E1/E2/E6)
+2. `.ncs` shipping: doc 40 line 92 vs W1 view on Override scripts under KPM; decide before relying on any NSS route.
+3. `k2_utc_voice_map.tsv` row keys disagree with `k2_soundsets.tsv` (row 35); resolve before binding voices to personas.
+4. Which mod wrote `Override/alienvo.2da`, and does the variant picker randomize (O1)?
+5. Appearance rows 72 and 464 are blank (blocks 2 of 8 persona cards); `602DAN` has no generic spawn slots; Duros has no soundset row.
+6. NO FAKES floor vote after 2026-06-18 unknown; Nexus AI policy wording from a secondary source.
+7. SWTOR `.wem` codec and ExtracTOR output unverified; Jedi Academy `sound/chars` folders unverified; Stormie97/DarthParametric/ShaolinGhost mods not found by search (need URLs).
+8. Loudness target conflict: b9 -18.5 LUFS (n=20) vs b8 -17 LUFS +/-2 (about 10 clips). Measure on one stage before fixing the target.
+9. Ledger: `kvoice` and the `k1_port` gate must flag audio (add `audio` to KINDS and `.wav .mp3 .lip .ssf` to ASSET_SUFFIXES; add `vanilla_k2` to `sources.json`).
+10. Hygiene: StreamVoice has 588 case-alias directory links (e.g. `gbl -> GBL`); never follow links when scanning (a followed scan counts 38,697 wavs).
+11. Source conflicts from the fact-check (c5): NO FAKES committee vote date/type differs between b5 and u12 (both: no floor vote found); SWTOR and Jedi Academy EULA text never read; `v10` report file missing.

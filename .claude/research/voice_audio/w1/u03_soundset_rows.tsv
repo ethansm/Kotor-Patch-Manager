@@ -1,0 +1,71 @@
+row	label	resref	strref	gender	category	ssf_source	in_vanilla_2da	note
+0	None				other	MISSING	Y	
+1	Droid_Assasin	c_drdassassin	38358	0	droid	KEY	Y	
+2	Droid_Astro	c_drdastro	38359	0	droid	KEY	Y	
+3	Droid_Probe	c_drdprobe	38363	0	droid	KEY	Y	
+4	Droid_Protocol	c_drdprotocol	38364	0	droid	MISSING	Y	
+5	Droid_Sentry	c_drdsentry	38365	0	droid	KEY	Y	
+6	Droid_War	c_drdwar	38368	0	droid	KEY	Y	
+7	Kath_Hound	c_KhoundA	38373	0	creature	KEY	Y	
+8	Kath_Hound_B	c_KhoundB	38374	0	creature	KEY	Y	
+9	Kinrath	c_kinrath	38375	0	creature	KEY	Y	
+10	Tukata	c_tukata	38383	0	creature	KEY	Y	
+11	Commoner_Male	n_commm	38393	0	human-M(generic)	KEY	Y	
+12	Darth_Malak	n_darth_malek	38397	0	human-M(generic)	KEY	Y	
+13	Mandalorian	n_mandalorian	38410	0	human-M(generic)	KEY	Y	
+14	Republic_Officer	n_repoff	38412	0	human-M(generic)	KEY	Y	
+15	Republic_Soldier	n_repsold	38413	0	human-M(generic)	KEY	Y	
+16	Sith_Apprentice_Female	n_sithapprenf	38417	1	human-F(generic)	KEY	Y	
+17	Sith_Apprentice_Male	n_sithapprenm	38418	0	human-M(generic)	KEY	Y	
+18	Sith_Soldier	n_sithsoldr	38421	0	human-M(generic)	KEY	Y	
+19	Bastila	p_bastila	38430	1	named-party/story	KEY	Y	
+20	T3M4_K2	p_t3m4	38441	0	named-party/story	KEY	Y	
+21	BomaBeast	c_boma	49165	0	creature	KEY	Y	
+22	Cannok	c_cannok	49166	0	creature	KEY	Y	
+23	Droid_Mark_1	c_drdmk1	49169	0	droid	KEY	Y	
+24	Droid_Mark_2	c_drdmk2	49171	0	droid	KEY	Y	
+25	Generic_Alien	a_aliengen	130610	0	alien(generic)	KEY	Y	
+26	Aqualish	a_aqua	130624	0	alien(generic)	KEY	Y	
+27	Chandra_Fan	a_chandra	130623	1	alien(generic)	KEY	Y	
+28	Weequay	a_weequay	130714	0	alien(generic)	KEY	Y	
+29	Twilek_Male_Tough	a_twitough	130709	0	alien(generic)	KEY	Y	
+30	Twilek_Male_K2	a_twimale	130704	0	alien(generic)	KEY	Y	
+31	Twilek_Female_K2	a_twifem	132396	1	alien(generic)	KEY	Y	
+32	Trandoshan	a_trando	130699	0	alien(generic)	KEY	Y	
+33	Sullustan	a_sullust	130693	0	alien(generic)	KEY	Y	
+34	Sith_Assassin	a_sithass	130688	0	alien(generic)	KEY	Y	
+35	Rodian_Male_Tough	a_rodtough	130683	0	alien(generic)	KEY	Y	
+36	Rodian_Male	a_rodmale	130678	0	alien(generic)	KEY	Y	
+37	Rodian_Female	a_rodfem	130673	1	alien(generic)	KEY	Y	
+38	Nikto	a_nikto	130664	0	alien(generic)	KEY	Y	
+39	Ithorian_K2	a_ithor	130659	0	alien(generic)	KEY	Y	
+40	Gran	a_gran	130650	0	alien(generic)	KEY	Y	
+41	Gand	a_gand	130645	0	alien(generic)	KEY	Y	
+42	Gammorean_K2	a_gamor	130640	0	alien(generic)	KEY	Y	NOT Selkath (task claim C5)
+43	Duro	a_duro	130635	0	alien(generic)	KEY	Y	
+44	Devaronian	a_devar	130630	0	alien(generic)	KEY	Y	
+45	VisasMarr	p_visasmarr	130608	1	named-party/story	KEY	Y	
+46	Mira	p_mira	130607	1	named-party/story	KEY	Y	
+47	Mandalore	p_Mandalore	130606	0	named-party/story	KEY	Y	
+48	Kreia	p_kreia	130605	1	named-party/story	KEY	Y	
+49	HK47_K2	p_hk-47	130604	0	named-party/story	KEY	Y	
+50	Hanharr	p_Hanharr	130603	0	named-party/story	KEY	Y	
+51	G0-T0	p_g0-t0	130602	0	named-party/story	KEY	Y	
+52	Disciple	p_disciple	130599	0	named-party/story	KEY	Y	
+53	Baodur	p_baodur	130601	0	named-party/story	KEY	Y	
+54	Atton	p_atton	130594	0	named-party/story	KEY	Y	
+55	Dark_Jedi_Male_K2	n_darkjedim	134034	0	human-M(generic)	KEY	Y	
+56	Commoner_Male_Kid	n_commonkm	132417	0	human-M(generic)	KEY	Y	
+57	Commoner_Female	n_commonf	132412	1	human-F(generic)	KEY	Y	
+58	Bith_K2	a_bith	130625	0	alien(generic)	KEY	Y	
+59	Maalrass	c_maalrass	134024	0	creature	KEY	Y	
+60	StormBeast	c_stormbeast	134029	0	creature	KEY	Y	
+61	Drexel	c_drexel	134008	0	creature	KEY	Y	
+62	Hssiss	c_hssiss	134013	0	creature	KEY	Y	
+63	Laigrek	c_laigrek	134018	0	creature	KEY	Y	
+64	Tank_Droid	c_drdtank	134007	0	droid	KEY	Y	
+65	Handmaiden	p_handmaiden	134036	1	named-party/story	KEY	Y	
+66	c_envboss	c_envbos	134036		creature	MISSING	N(override-only)	added in Override soundset.2da; strref 134036 duplicates row 65 Handmaiden
+67	n_tusken	n_tusken	-1		human-M(generic)	Override	N(override-only)	added in Override soundset.2da
+68	n_rakata	n_rakata	-1		human-M(generic)	Override	N(override-only)	added in Override soundset.2da
+69	c_hutt	c_hutt	-1		creature	Override	N(override-only)	added in Override soundset.2da

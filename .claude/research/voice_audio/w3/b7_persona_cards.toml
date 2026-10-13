@@ -1,0 +1,196 @@
+# b7 SAMPLE persona cards (schema v1, draft). TEXT ONLY: no audio, no voice ids, no vanilla clip refs.
+# Module codes: corrected per .claude/research/voice_audio/catalog/gemini_module_claims.tsv (not Gemini labels).
+# Counts: placement_census.tsv (registry generic-name placements per module). Nothing verified in game.
+# Names are invented pool examples; check against K2 named-NPC names before use.
+
+[[card]]
+id = "TEL-01"
+planet = "TEL"
+modules = ["203TEL", "204TEL"]
+replaces_generic = "Telosian (census 203=9, 204=6)"
+species = "human"
+body = "N_CommF commoner atlas"
+look = "P1 (K033 K027) on n_commf03"
+texture_var = "B6 allocator, next free"
+name_pool = "telos_res_f"
+name_example = "Mirra Doss"
+voice = "synth:TBD (commoner F soundset has 3 of 4 files; male n_commm has 0)"
+status = "look-ready"
+pairs = ["TEL-02"]
+events = ["EV-TEL-ward"]
+weight = 3
+barks = [
+  "The lift is down again. Use the stairs, please.",
+  "Keep the children off the balconies after dark.",
+  "Another notice on the door. Read it yourself.",
+  "I'm not discussing rent in the corridor.",
+  "The air filters smell like burnt wiring today.",
+]
+
+[[card]]
+id = "TEL-02"
+planet = "TEL"
+modules = ["204TEL"]
+replaces_generic = "Ithorian (census 204=5; Ithorian Compound plant room)"
+species = "Ithorian"
+body = "Ithorian vanilla model, no texture work"
+look = "none (persona + voice only)"
+texture_var = "none"
+name_pool = "ithorian_plant"
+name_example = "pool-generated at build"
+voice = "soundset a_ithor (4 files) + synth fallback"
+status = "blocked:appearance row 72 blank modela, probe first"
+pairs = ["TEL-01"]
+events = ["EV-TEL-exchange"]
+weight = 2
+barks = [
+  "Water the root beds before the next cycle.",
+  "Please do not touch the leaves. They bruise.",
+  "The bed ward needs more light, not less.",
+  "Our garden is quiet today. Keep it that way.",
+  "Someone moved the fungus trays again.",
+]
+
+[[card]]
+id = "NAR-01"
+planet = "NAR"
+modules = ["301NAR", "302NAR"]
+replaces_generic = "Commoner (301 census 8), Refugee (302 census 11)"
+species = "human"
+body = "N_CommF commoner atlas"
+look = "P2 (K037 K063 K020) on n_commf01/f05/f07"
+texture_var = "B6 allocator, next free"
+name_pool = "nar_refugee_f"
+name_example = "Oshi Tallen"
+voice = "synth:TBD (n_commonf 3 of 4 files)"
+status = "look-ready"
+pairs = ["NAR-02"]
+events = ["EV-NAR-shakedown"]
+weight = 3
+barks = [
+  "Anyone got water? Just a few sips, please.",
+  "The Exchange took our ration chits again.",
+  "Stay near the wall. The shuttle lanes are busy.",
+  "Don't stare at the guards when they walk past.",
+  "One more season and we're off this rock, they said.",
+]
+
+[[card]]
+id = "NAR-02"
+planet = "NAR"
+modules = ["304NAR"]
+replaces_generic = "Trandoshan Thug (census 304=9; catalog p_trndoshan 54 spawns)"
+species = "Trandoshan"
+body = "p_trndoshan / p_trndoshan02, look ALIEN2-2 (yellow flight suit, KEEP-SPEC, score 4)"
+look = "ALIEN2-2 on p_trndoshan"
+texture_var = "B6 allocator, next free"
+name_pool = "nar_trandoshan"
+name_example = "Vurrik Hask"
+voice = "soundset a_trando (4 files) + synth"
+status = "blocked:appearance row 464 blank modela, loose Override, probe first"
+pairs = ["NAR-01"]
+events = ["EV-NAR-jekk-brawl"]
+weight = 2
+barks = [
+  "Sit down or leave. Your choice.",
+  "Nobody touches the tab until I say so.",
+  "The Gand paid in advance. You didn't.",
+  "Hiss at me again and you see the back room.",
+  "Keep it quiet. The Exchange is listening.",
+]
+
+[[card]]
+id = "OND-01"
+planet = "OND"
+modules = ["501OND", "502OND"]
+replaces_generic = "Iziz Citizen (501=5, 502=6), Crowd (502=5)"
+species = "human"
+body = "N_CommF commoner atlas"
+look = "P6 palette only (K074 K076 K077) on n_commf03/f09/f11, enlisted brown, no uniform base"
+texture_var = "B6 allocator, next free"
+name_pool = "iziz_merchant_f"
+name_example = "Dalla Verr"
+voice = "synth:TBD (no Onderon soundset in k2_soundsets)"
+status = "look-ready"
+pairs = ["OND-02"]
+events = ["EV-OND-patrol"]
+weight = 3
+barks = [
+  "Fresh spice today, cheap for Iziz regulars.",
+  "Keep your blaster holstered in the market.",
+  "The Royalists searched my stall twice this week.",
+  "Bring your own bags. I don't sell the paper ones.",
+  "Stay clear of the Boma pens. They bite.",
+]
+
+[[card]]
+id = "OND-02"
+planet = "OND"
+modules = ["504OND"]
+replaces_generic = "Royalist Soldier (census 504=7)"
+species = "human"
+body = "Onderon soldier model default (n_ond* has no texture column)"
+look = "none (voice-only)"
+texture_var = "none"
+name_pool = "royalist_guard"
+name_example = "Corl Aseth"
+voice = "synth:TBD, formal military. Do NOT use n_repsold (Republic)"
+status = "voice-only"
+pairs = ["OND-01"]
+events = ["EV-OND-patrol"]
+weight = 2
+barks = [
+  "Sky Ramp is closed to civilians until further orders.",
+  "Show your papers before you climb the ramp.",
+  "Vaklu sympathisers go to the holding pens.",
+  "Hold position and keep your voice down.",
+  "The ramp stays in Royalist hands while I stand here.",
+]
+
+[[card]]
+id = "DAN-01"
+planet = "DAN"
+modules = ["602DAN"]
+replaces_generic = "none in census; spawn slots OPEN (602DAN has named NPCs only)"
+species = "human"
+body = "N_CommF commoner atlas (P1 palette reuse)"
+look = "P1 palette reuse, no new card"
+texture_var = "B6 allocator, next free"
+name_pool = "khoonda_settler_f"
+name_example = "Tessa Brann"
+voice = "synth:TBD (vanilla dan_ctz clips = personal test only)"
+status = "blocked:no generic spawn slots in 602DAN"
+pairs = ["DAN-02"]
+events = ["EV-DAN-kinrath"]
+weight = 2
+barks = [
+  "Kinrath came through the eastern fence again.",
+  "Hand me that water jug before the sun gets up.",
+  "The settlement council meets at dusk.",
+  "Don't wander past the Kath hound nests.",
+  "We rebuilt the north shed twice. Once more won't kill us.",
+]
+
+[[card]]
+id = "DAN-02"
+planet = "DAN"
+modules = ["601DAN", "602DAN"]
+replaces_generic = "Khoonda militia (601 census: none human; 602 named g_militia)"
+species = "human"
+body = "none in catalog (no militia atlas)"
+look = "none (voice-only)"
+texture_var = "none"
+name_pool = "khoonda_militia_m"
+name_example = "Jarek Oss"
+voice = "synth:TBD"
+status = "voice-only"
+pairs = ["DAN-01"]
+events = ["EV-DAN-kinrath"]
+weight = 2
+barks = [
+  "Patrol runs the fence line, then back to the gate.",
+  "Keep your weapon low near the settlers.",
+  "Kath hounds on the ridge. Stay back.",
+  "Anyone seen fresh Kinrath tracks?",
+  "Relief in two hours. Don't be late.",
+]

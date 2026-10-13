@@ -1,0 +1,604 @@
+group	n_files	example	speaker_hint	is_generic_bark
+root:N_GMTWILEK	33	N_GMTWILEK_COML3.wav	Twi'lek male | TLK: I am known as Tariga, a student here at the acad	yes
+root:N_GFTWILEK	30	N_GFTWILEK_ANGL.wav	Twi'lek female | TLK: They're nothing but a bunch of thugs! Things did	yes
+root:N_M1ANTRAS	29	N_M1ANTRAS98027_.wav	ambient population/area chatter (M1A area NTRAS)	yes
+root:N_GRODIAN	28	N_GRODIAN_ANGL.wav	Rodian | TLK: Greetings, friend. I bid you a warm welcome to T	yes
+root:N_GWRAKATA	27	N_GWRAKATA_ANGL.wav	Rakatan(?) | TLK: [Failure] Again, you are only repeating the patt	yes
+root:N_GTMTWLEK	27	N_GTMTWLEK_ANGL.wav	Twi'lek male | TLK: Who will sponsor you then, the Beks? I'm sure th	yes
+root:N_GRAKATA	27	N_GRAKATA_ANGL.wav	Rakatan(?)	yes
+root:N_GTRODIAN	27	N_GTRODIAN_ANGL.wav	Rodian	yes
+root:N_GSEL2	26	n_gsel2_angl.wav	Selkath | TLK: I suppose I can do nothing more but wait here, i	yes
+root:N_GWSEL	26	n_gwsel_angl.wav	Selkath | TLK: I think this may be the work of some Republic co	yes
+root:N_GENHUTT	18	N_GENHUTT_ANGL_.wav	Hutt (token GENHUTT) | TLK: The Mysterious Stranger is a perfect name for yo	yes
+root:N_GWWOOK	17	N_GWWOOK_ANGM.wav	Wookiee | TLK: What was that about? I don't like being used for	yes
+root:N_GTWOOK	17	N_GTWOOK_ANGM.wav	Wookiee | TLK: Let their blood feed out forests! That will be t	yes
+root:N_GWOOK	17	N_GWOOK_ANGM.wav	Wookiee | TLK: Nothing? There was no reason? You just killed hi	yes
+root:N_GFWOOK	17	N_GFWOOK_ANGM.wav	Wookiee(f?) | TLK: Primitive? Our traditions are ancient! There is	yes
+root:N_GENGAMM	14	n_gengamm_angl.wav	Gamorrean(?) | TLK: Maybe you end up dead first. Maybe it will be pa	yes
+root:N_GTUSKEN	13	n_gtusken_angl.wav	Tusken	yes
+root:N_M1AOTRAS	13	N_M1AOTRAS99027_.wav	ambient population/area chatter (M1A area OTRAS) | TLK: Use the Movement keys (<ActionUp>, <ActionDown>,	yes
+root:N_GENITH	13	n_genith_angl.wav	Ithorian(?) | TLK: Besides, even if you did do something drastic he	yes
+root:N_GTRAND	10	n_gtrand_angm.wav	Trandoshan	yes
+root:N_M1ANPOP	9	N_M1ANPOP094000_.wav	ambient population/area chatter (M1A area NPOP)	yes
+root:N_GENJAWA	9	N_GENJAWA_COMM1.wav	Jawa | TLK: Those of Jawa remain with the People of the Sand	yes
+root:N_M1AOPOP	6	N_M1AOPOP097001_.wav	ambient population/area chatter (M1A area OPOP) | TLK: You can also use the ACTION MENU to use special	yes
+root:N_GENDRO	6	n_gendro_coms1.wav	droid(generic) | TLK: Beep-beep beep woop!	yes
+root:N_GDUROS	6	N_GDUROS_COML1.wav	Duros | TLK: Ah, you're riding for the Hidden Beks I see. Alw	yes
+root:BA..CS (cutscene)	5	BA02CS001.wav	named cutscene lines (module prefix)	no
+root:N_GSASHA	5	n_gsasha_coms1.wav	Sasha(?) | TLK: Yooba na abds?	yes
+root:N_GENBITH	4	N_GENBITH_COML1.wav	Bith	yes
+root:N_GHKTUSK	3	n_ghktusk_com1.wav	HK/Tusken(?) | TLK: Translation: [Unitelligible]	yes
+root:MA..CS (cutscene)	2	MA18CS006A.wav	named cutscene lines (module prefix)	no
+root:N_M1ANLEVE	1	N_M1ANLEVE98003_.wav	ambient population/area chatter (M1A area NLEVE)	yes
+root:MI..CS (cutscene)	1	MI41CS001.wav	named cutscene lines (module prefix)	no
+root:other:n_m1bncart01030_	1	n_m1bncart01030_.wav	other root file | TLK: Use the mouse and click on the Stealth button to	unknown
+root:N_GENDUROS	1	N_GENDUROS_GRT.wav	Duros	yes
+root:other:_m40acdart03999_	1	_m40acdart03999_.wav	other root file | TLK: Down you go!	unknown
+globe/miss13	134	globe/miss13/NGLOBEMISS13000_.wav	Mission Vao | TLK: Huh? Oh... sorry. I was thinking about Taris. I	no
+globe/bant00	83	globe/bant00/NGLOBEBANT00000_.wav	code 'bant' (unknown NPC) | TLK: Bastila, I was wondering something. How did thos	no
+globe/bast06	72	globe/bast06/NGLOBEBAST06772_.wav	Bastila Shan | TLK: Actually, your presence at the swoop track is wh	no
+globe/hxor15	65	globe/hxor15/NGLOBEHXOR15000_.wav	code 'hxor' (unknown NPC) | TLK: *grunt* What the hell is your kind doing here? B	no
+globe/davi05	20	globe/davi05/NGLOBEDAVI05000_.wav	code 'davi' (unknown NPC) | TLK: Excuse me, have you seen a mechanic about? Short	no
+globe/lena12	20	globe/lena12/NGLOBELENA12000_.wav	code 'lena' (unknown NPC) | TLK: Mission? Is that you? It's me, Lena. Remember? I	no
+globe/jole09	12	globe/jole09/NGLOBEJOLE09742_.wav	Jolee Bindo | TLK: Nope. Never was. Technically I never rose above	no
+globe/mala12	12	globe/mala12/NGLOBEMALA12002_.wav	code 'mala' (unknown NPC) | TLK: I am Bastila, yes. I take it that you know my mo	no
+globe/calo02	7	globe/calo02/NGLOBECALO02000_.wav	code 'calo' (unknown NPC) | TLK: I have to give you credit... you've led me on qu	no
+globe/band01	5	globe/band01/NGLOBEBAND01000_.wav	code 'band' (unknown NPC) | TLK: At last, my search is over! I was beginning to f	no
+globe/cand03	4	globe/cand03/NGLOBECAND03473_.wav	Canderous Ordo | TLK: Hmph. That trick would never work on a Mandalori	no
+globe/cart04	4	globe/cart04/NGLOBECART04932_.wav	Carth Onasi | TLK: I'm no Jedi, but are you really supposed to be u	no
+globe/juha11	3	globe/juha11/NGLOBEJUHA11851_.wav	Juhani | TLK: A Jedi should not use the Force for personal gai	no
+globe/hhkd07	2	globe/hhkd07/NGLOBEHHKD07556_.wav	code 'hhkd' (unknown NPC) | TLK: Statement: Well done, master. You're my kind of	no
+globe/droi03	1	globe/droi03/NGLOBEDROI03000_.wav	droid (generic) | TLK: I cannot render assistance, citizen. Move along.	no
+m01aa/tras02	115	m01aa/tras02/NM01AATRAS02000_.wav	Taris area citizens	no (unverified code)
+m01aa/cart01	13	m01aa/cart01/NM01AACART01000_.wav	Carth Onasi | TLK: This is Carth Onasi on your personal communicato	no
+m01aa/pop003	9	m01aa/pop003/NM01AAPOP003005_.wav	code 'pop' (unknown NPC) | TLK: Combat uses a pause and play system. At any time	no (unverified code)
+m01aa/c03001	7	m01aa/c03001/nm01aac03001000_.wav	code 'c' (unknown NPC) | TLK: The tide of the battle is turning against us. Th	unknown
+m01aa/pop001	6	m01aa/pop001/NM01AAPOP001004_.wav	code 'pop' (unknown NPC) | TLK: In the lower left of the screen you'll see a lis	no (unverified code)
+m01aa/c05001	4	m01aa/c05001/nm01aac05001000_.wav	code 'c' (unknown NPC) | TLK: Admiral Dodonna - we've hit their main orbital s	unknown
+m01aa/pop002	3	m01aa/pop002/NM01AAPOP002005_.wav	code 'pop' (unknown NPC) | TLK: Highlight the bottom right inventory slot. This	no (unverified code)
+m01aa/c04001	3	m01aa/c04001/nm01aac04001000_.wav	code 'c' (unknown NPC) | TLK: We've lost another capital ship - it's hopeless!	unknown
+m01aa/cut101	2	m01aa/cut101/NM01AACUT101000_.wav	code 'cut' (unknown NPC) | TLK: There's something behind here.	no (unverified code)
+m01aa/room03	2	m01aa/room03/NM01AAROOM03000_.wav	code 'room' (unknown NPC) | TLK: These Sith must be the advance boarding party!	no (unverified code)
+m01aa/cut001	2	m01aa/cut001/NM01AACUT001000_.wav	code 'cut' (unknown NPC) | TLK: Careful, the conduits in this corridor are unsta	no (unverified code)
+m01aa/_cut04	2	m01aa/_cut04/NM01AA_CUT04000_.wav	code '_cut' (unknown NPC) | TLK: That was one of the Jedi accompanying Bastila. D	no (unverified code)
+m01aa/c02001	2	m01aa/c02001/nm01aac02001000_.wav	code 'c' (unknown NPC) | TLK: There - a break in the Sith formations! Green sq	unknown
+m01aa/cart04	1	m01aa/cart04/NM01AACART04931_.wav	Carth Onasi | TLK: We're hit! Damage is critical! The Hawk won't ho	no
+m01aa/leve06	1	m01aa/leve06/NM01AALEVE06003_.wav	code 'leve' (unknown NPC) | TLK: Press [START] to bring up your menus, then pull	no (unverified code)
+m02aa/cart02	66	m02aa/cart02/NM02AACART02000_.wav	Carth Onasi | TLK: Whoa, hold on. Don't try to get up yet. You were	no
+m02aa/dia004	30	m02aa/dia004/NM02AADIA004000_.wav	code 'dia' (unknown NPC) | TLK: Another Sith patrol? I'm telling you, you're was	no (unverified code)
+m02aa/jani05	21	m02aa/jani05/NM02AAJANI05000_.wav	code 'jani' (unknown NPC) | TLK: D...don't hurt me... I'm just the janitor here.	no (unverified code)
+m02aa/carb01	14	m02aa/carb01/NM02AACARB01000_.wav	code 'carb' (unknown NPC) | TLK: Bastila - you're alive! Finally, things are look	no (unverified code)
+m02aa/swoo08	12	m02aa/swoo08/NM02AASWOO08000_.wav	code 'swoo' (unknown NPC) | TLK: Greetings, master. I regret that my database con	unknown
+m02aa/man207	5	m02aa/man207/NM02AAMAN207000_.wav	code 'man' (unknown NPC) | TLK: I'm not looking for any trouble with you Sith. P	no (unverified code)
+m02aa/woma08	5	m02aa/woma08/NM02AAWOMA08000_.wav	code 'woma' (unknown NPC) | TLK: I'm... I'm sorry. I don't want to get in the way	no (unverified code)
+m02aa/chil03	5	m02aa/chil03/NM02AACHIL03000_.wav	child (generic) | TLK: You're one of them Sith, ain't you? My mommy say	probable
+m02aa/woma09	5	m02aa/woma09/NM02AAWOMA09000_.wav	code 'woma' (unknown NPC) | TLK: I'm not doing anything wrong! I'm just standing	no (unverified code)
+m02aa/man006	5	m02aa/man006/NM02AAMAN006000_.wav	code 'man' (unknown NPC) | TLK: Please, don't take me in for questioning... I do	no (unverified code)
+m02aa/prer99	5	m02aa/prer99/nm02aaprer99000_.wav	code 'prer' (unknown NPC) | TLK: Okay you alien scum, everybody get up against th	no (unverified code)
+m02aa/larr99	1	m02aa/larr99/NM02AALARR99029_.wav	code 'larr' (unknown NPC) | TLK: And I can tell you from experience that they are	no (unverified code)
+m02aa/larr06	1	m02aa/larr06/NM02AALARR06024_.wav	code 'larr' (unknown NPC) | TLK: Look, I know we're trying to keep a low profile	no (unverified code)
+m02ab/gort09	32	m02ab/gort09/NM02ABGORT09000_.wav	code 'gort' (unknown NPC) | TLK: Listen to me, people! There is a terrible scourg	no (unverified code)
+m02ab/ithb10	17	m02ab/ithb10/NM02ABITHB10002_.wav	code 'ithb' (unknown NPC) | TLK: Get out of here you goggle-eyed freak! You're to	no (unverified code)
+m02ab/drun05	16	m02ab/drun05/NM02ABDRUN05000_.wav	code 'drun' (unknown NPC) | TLK: Woo, hey, look at this... it's the Shith! [hic]	no (unverified code)
+m02ab/male12	14	m02ab/male12/NM02ABMALE12000_.wav	male citizen (generic) | TLK: I'm not looking for any trouble with the Sith. P	probable
+m02ab/male13	13	m02ab/male13/NM02ABMALE13000_.wav	male citizen (generic) | TLK: What... well, what do you want? I'm not doing an	probable
+m02ab/sith18	11	m02ab/sith18/NM02ABSITH18000_.wav	Sith (generic series?) | TLK: Another patrol heading down to the Lower City, e	unknown
+m02ab/prot15	11	m02ab/prot15/NM02ABPROT15000_.wav	code 'prot' (unknown NPC) | TLK: Greetings and good day. I hope your patrolling g	no (unverified code)
+m02ab/bull02	11	m02ab/bull02/NM02ABBULL02000_.wav	code 'bull' (unknown NPC) | TLK: Thank you - I owe you my life! Those bounty hunt	no (unverified code)
+m02ab/merc15	9	m02ab/merc15/NM02ABMERC15000_.wav	code 'merc' (unknown NPC) | TLK: Please... don't hurt me! I'm just a simple merch	probable
+m02ab/citi04	9	m02ab/citi04/NM02ABCITI04000_.wav	code 'citi' (unknown NPC) | TLK: I'm just an ordinary citizen minding his own bus	probable
+m02ab/boun01	9	m02ab/boun01/NM02ABBOUN01000_.wav	code 'boun' (unknown NPC) | TLK: Davik says you missed your last payment.	no (unverified code)
+m02ab/chil03	5	m02ab/chil03/NM02ABCHIL03000_.wav	child (generic) | TLK: You're one of them Sith, ain't you? My mommy say	probable
+m02ab/gort08	4	m02ab/gort08/NM02ABGORT08000_.wav	code 'gort' (unknown NPC) | TLK: I don't know why you Sith allow this guy to prea	no (unverified code)
+m02ab/gort06	4	m02ab/gort06/NM02ABGORT06000_.wav	code 'gort' (unknown NPC) | TLK: You Sith should shut this guy up. I think he's v	no (unverified code)
+m02ab/sith19	3	m02ab/sith19/NM02ABSITH19000_.wav	Sith (generic series?) | TLK: Is there anything more boring than being out on	unknown
+m02ab/jani11	1	m02ab/jani11/NM02ABJANI11121_.wav	code 'jani' (unknown NPC) | TLK: But you never know. The droid might be available	no (unverified code)
+m02ac/zelk11	92	m02ac/zelk11/NM02ACZELK11000_.wav	code 'zelk' (unknown NPC) | TLK: The Sith governor said I could keep this medical	no (unverified code)
+m02ac/kebl04	37	m02ac/kebl04/NM02ACKEBL04000_.wav	code 'kebl' (unknown NPC) | TLK: Oh... hello there. Uh... what can I do for you?	no (unverified code)
+m02ac/gurn03	26	m02ac/gurn03/NM02ACGURN03000_.wav	code 'gurn' (unknown NPC) | TLK: Don't worry, if I hear anything you Sith will be	no (unverified code)
+m02ac/prot15	11	m02ac/prot15/NM02ACPROT15000_.wav	code 'prot' (unknown NPC) | TLK: Greetings and good day. I hope your patrolling g	no (unverified code)
+m02ac/gana02	9	m02ac/gana02/NM02ACGANA02000_.wav	code 'gana' (unknown NPC) | TLK: Don't bother me... I don't speak to the help.	no (unverified code)
+m02ac/chil01	5	m02ac/chil01/NM02ACCHIL01000_.wav	child (generic) | TLK: You're one of them Sith, ain't you? My mommy say	probable
+m02ac/sith07	4	m02ac/sith07/NM02ACSITH07000_.wav	Sith (generic series?) | TLK: Hey, what do you think you're doing? You can't g	unknown
+m02ac/sith08	3	m02ac/sith08/NM02ACSITH08000_.wav	Sith (generic series?) | TLK: Is there anything more boring than being out on	unknown
+m02ac/boun01	1	m02ac/boun01/NM02ACBOUN01030_.wav	code 'boun' (unknown NPC) | TLK: *whisper* I know we have to be careful about dra	no (unverified code)
+m02ad/sarn07	57	m02ad/sarn07/NM02ADSARN07000_.wav	code 'sarn' (unknown NPC) | TLK: Did you come for the party? You really shouldn't	no (unverified code)
+m02ad/yung12	55	m02ad/yung12/NM02ADYUNG12000_.wav	code 'yung' (unknown NPC) | TLK: Did you come for the party? You really shouldn't	no (unverified code)
+m02ad/sith10	25	m02ad/sith10/NM02ADSITH10000_.wav	Sith (generic series?) | TLK: Just move along. There's nothing to see here.	unknown
+m02ad/scar09	18	m02ad/scar09/NM02ADSCAR09000_.wav	code 'scar' (unknown NPC) | TLK: You're... you're with the Sith, ain't you? Sure.	no (unverified code)
+m02ad/citi05	9	m02ad/citi05/NM02ADCITI05000_.wav	code 'citi' (unknown NPC) | TLK: What... what do you want? I'm not doing anything	probable
+m02ad/chil04	5	m02ad/chil04/NM02ADCHIL04000_.wav	child (generic) | TLK: You're one of them Sith, ain't you? My mommy say	probable
+m02ad/alie03	1	m02ad/alie03/NM02ADALIE03006_.wav	code 'alie' (unknown NPC) | TLK: What are you doing? There's no need to go around	no (unverified code)
+m02ae/yung26	57	m02ae/yung26/NM02AEYUNG26000_.wav	code 'yung' (unknown NPC) | TLK: Hey, you made it! I was beginning to wonder if y	no (unverified code)
+m02ae/sarn29	56	m02ae/sarn29/NM02AESARN29000_.wav	code 'sarn' (unknown NPC) | TLK: Hey, you made it! I was beginning to wonder if y	no (unverified code)
+m02ae/cand30	47	m02ae/cand30/NM02AECAND30000_.wav	Canderous Ordo | TLK: I saw you in the swoop race. Very impressive. Yo	no
+m02ae/duel08	38	m02ae/duel08/NM02AEDUEL08000_.wav	duelist (generic?) | TLK: Talk to Ajuur, he's in charge here.	probable
+m02ae/marl23	31	m02ae/marl23/NM02AEMARL23000_.wav	code 'marl' (unknown NPC) | TLK: You're good, Stranger... maybe even as good as B	no (unverified code)
+m02ae/nikl28	27	m02ae/nikl28/NM02AENIKL28000_.wav	code 'nikl' (unknown NPC) | TLK: What do you want? Have you come here just to bot	no (unverified code)
+m02ae/bend03	26	m02ae/bend03/NM02AEBEND03000_.wav	code 'bend' (unknown NPC) | TLK: What are you doing back here? You finally find t	no (unverified code)
+m02ae/dead06	24	m02ae/dead06/NM02AEDEAD06000_.wav	code 'dead' (unknown NPC) | TLK: I heard you challenged Bendak Starkiller. I'll p	probable
+m02ae/garo15	20	m02ae/garo15/NM02AEGARO15000_.wav	code 'garo' (unknown NPC) | TLK: Pretty soon all of Taris will be talking about h	no (unverified code)
+m02ae/duel11	18	m02ae/duel11/NM02AEDUEL11000_.wav	duelist (generic?) | TLK: I recognize you - you're that new duelist everyo	probable
+m02ae/duel10	18	m02ae/duel10/NM02AEDUEL10000_.wav	duelist (generic?) | TLK: Hey - you're one of the duelists! The one they c	probable
+m02ae/ice017	17	m02ae/ice017/NM02AEICE017000_.wav	code 'ice' (unknown NPC) | TLK: Congratulations, Stranger. I never thought anyon	no (unverified code)
+m02ae/gerl16	15	m02ae/gerl16/NM02AEGERL16000_.wav	girl (generic) | TLK: You're good, Stranger. I'll give you that. But g	probable
+m02ae/jerg19	15	m02ae/jerg19/NM02AEJERG19000_.wav	code 'jerg' (unknown NPC) | TLK: No hard feelings, my good man, but I can't reall	no (unverified code)
+m02ae/duel12	13	m02ae/duel12/NM02AEDUEL12000_.wav	duelist (generic?) | TLK: Bendak Starkiller's dead! I don't believe it! Be	probable
+m02ae/chri05	13	m02ae/chri05/NM02AECHRI05000_.wav	code 'chri' (unknown NPC) | TLK: Wow, are you really a noble? You must be pretty	no (unverified code)
+m02ae/male21	10	m02ae/male21/NM02AEMALE21000_.wav	male citizen (generic) | TLK: Did you hear about the big fight at the swoop ra	probable
+m02ae/male20	10	m02ae/male20/NM02AEMALE20000_.wav	male citizen (generic) | TLK: Hey - I saw you win the big swoop race! Too bad	probable
+m02ae/gana14	10	m02ae/gana14/NM02AEGANA14000_.wav	code 'gana' (unknown NPC) | TLK: Don't bother me... I don't speak to the help	no (unverified code)
+m02ae/musi25	8	m02ae/musi25/NM02AEMUSI25000_.wav	musician (generic?) | TLK: Did you hear what happened after the big swoop r	probable
+m02ae/musi26	8	m02ae/musi26/NM02AEMUSI26000_.wav	musician (generic?) | TLK: They say a brawl broke out at the swoop races th	probable
+m02ae/tapr32	7	m02ae/tapr32/NM02AETAPR32000_.wav	code 'tapr' (unknown NPC) | TLK: They're saying someone broke into the military c	no (unverified code)
+m02ae/musi24	7	m02ae/musi24/NM02AEMUSI24000_.wav	musician (generic?) | TLK: Did you hear what happened after the big swoop r	probable
+m02ae/tapr33	7	m02ae/tapr33/NM02AETAPR33000_.wav	code 'tapr' (unknown NPC) | TLK: Did you hear? There's an underground resistance	no (unverified code)
+m02ae/angr01	5	m02ae/angr01/NM02AEANGR01000_.wav	code 'angr' (unknown NPC) | TLK: Was that Jergan I just saw you talking to? Do yo	no (unverified code)
+m02ae/chil04	4	m02ae/chil04/NM02AECHIL04000_.wav	child (generic) | TLK: You ain't supposed to be here! This ain't your h	probable
+m02ae/duel99	3	m02ae/duel99/NM02AEDUEL99000_.wav	duelist (generic?) | TLK: I can't believe we couldn't get arena tickets fo	probable
+m02ae/femy13	3	m02ae/femy13/NM02AEFEMY13000_.wav	female citizen (generic) | TLK: Do I know you? No? Then why are you speaking to	probable
+m02ae/sith30	3	m02ae/sith30/NM02AESITH30000_.wav	Sith (generic series?) | TLK: I'm not here to chat. I just finished a long shi	unknown
+m02ae/sith31	3	m02ae/sith31/NM02AESITH31000_.wav	Sith (generic series?) | TLK: This Tarisian ale is fantastic! We should have c	unknown
+m02ae/nobl28	2	m02ae/nobl28/NM02AENOBL28000_.wav	code 'nobl' (unknown NPC) | TLK: What? Why are you speaking to me? Can't you tell	probable
+m02ae/wait24	1	m02ae/wait24/NM02AEWAIT24000_.wav	code 'wait' (unknown NPC) | TLK: I'm sorry. I'm too busy to talk. I have to get t	no (unverified code)
+m02af/visi05	9	m02af/visi05/NM02AFVISI05000_.wav	code 'visi' (unknown NPC) | TLK: Is... is something wrong? You seem as if somethi	no (unverified code)
+m03aa/cand05	36	m03aa/cand05/NM03AACAND05000_.wav	Canderous Ordo | TLK: You're with the Sith, are you? Hmmm... don't thi	no
+m03aa/hidb15	18	m03aa/hidb15/NM03AAHIDB15000_.wav	code 'hidb' (unknown NPC) | TLK: Sorry, but your kind aren't welcome in here. The	no (unverified code)
+m03aa/bast01	16	m03aa/bast01/NM03AABAST01000_.wav	Bastila Shan | TLK: Well, maybe those bloody Vulkars will think twic	no
+m03aa/sith19	13	m03aa/sith19/NM03AASITH19000_.wav	Sith (generic series?) | TLK: Hold on - where do you think you're going? This	unknown
+m03aa/brej02	13	m03aa/brej02/NM03AABREJ02006_.wav	code 'brej' (unknown NPC) | TLK: I, Brejik - leader of the Black Vulkars - am hon	no (unverified code)
+m03aa/kand01	12	m03aa/kand01/NM03AAKAND01004_.wav	code 'kand' (unknown NPC) | TLK: And when we win the race, we get Bastila, right?	no (unverified code)
+m03aa/calo03	9	m03aa/calo03/NM03AACALO03000_.wav	code 'calo' (unknown NPC) | TLK: Go away.	no (unverified code)
+m03aa/citi09	9	m03aa/citi09/NM03AACITI09000_.wav	code 'citi' (unknown NPC) | TLK: I'm not looking for any trouble with the Sith. P	probable
+m03aa/hidb14	9	m03aa/hidb14/NM03AAHIDB14000_.wav	code 'hidb' (unknown NPC) | TLK: You Sith don't scare me. Down here the swoop gan	no (unverified code)
+m03aa/citi11	7	m03aa/citi11/NM03AACITI11000_.wav	code 'citi' (unknown NPC) | TLK: I'm not looking for any trouble with you Sith. P	probable
+m03aa/citi10	7	m03aa/citi10/NM03AACITI10000_.wav	code 'citi' (unknown NPC) | TLK: What... what do you want? I'm not doing anything	probable
+m03aa/cand07	6	m03aa/cand07/NM03AACAND07000_.wav	Canderous Ordo | TLK: Those Vulkars are dumber than a Coruscant granit	no
+m03aa/cand06	5	m03aa/cand06/NM03AACAND06000_.wav	Canderous Ordo | TLK: You guys are behind with your payments. What do	no
+m03aa/jani15	5	m03aa/jani15/NM03AAJANI15000_.wav	code 'jani' (unknown NPC) | TLK: I... I don't want no trouble with you Sith. I'm	no (unverified code)
+m03aa/loit16	4	m03aa/loit16/NM03AALOIT16000_.wav	code 'loit' (unknown NPC) | TLK: What... what do you want? You ain't going to arr	no (unverified code)
+m03aa/loit17	4	m03aa/loit17/NM03AALOIT17000_.wav	code 'loit' (unknown NPC) | TLK: What... what do you want? You ain't going to arr	no (unverified code)
+m03aa/loit18	2	m03aa/loit18/NM03AALOIT18000_.wav	code 'loit' (unknown NPC) | TLK: You out on patrol? Consider yourself lucky: we'r	no (unverified code)
+m03aa/calo04	2	m03aa/calo04/NM03AACALO04004_.wav	code 'calo' (unknown NPC) | TLK: There's a bounty on your little green heads. I'm	no (unverified code)
+m03ab/citi05	9	m03ab/citi05/NM03ABCITI05000_.wav	code 'citi' (unknown NPC) | TLK: I'm not looking for any trouble with the Sith. P	probable
+m03ab/selv08	8	m03ab/selv08/NM03ABSELV08000_.wav	code 'selv' (unknown NPC) | TLK: Stop right there, or I'll give you a blaster sho	no (unverified code)
+m03ab/citi06	7	m03ab/citi06/NM03ABCITI06000_.wav	code 'citi' (unknown NPC) | TLK: What... what do you want? I'm not doing anything	probable
+m03ab/citi08	7	m03ab/citi08/NM03ABCITI08000_.wav	code 'citi' (unknown NPC) | TLK: Please, don't take me in for questioning... I do	probable
+m03ab/calo03	2	m03ab/calo03/NM03ABCALO03004_.wav	code 'calo' (unknown NPC) | TLK: There's a bounty on your little green heads. I'm	no (unverified code)
+m03ad/citi03	9	m03ad/citi03/NM03ADCITI03000_.wav	code 'citi' (unknown NPC) | TLK: I'm not looking for any trouble with the Sith. P	probable
+m03ad/citi04	7	m03ad/citi04/NM03ADCITI04000_.wav	code 'citi' (unknown NPC) | TLK: What... what do you want? I'm not doing anything	probable
+m03ad/citi06	7	m03ad/citi06/NM03ADCITI06000_.wav	code 'citi' (unknown NPC) | TLK: Please, don't take me in for questioning... I do	probable
+m03ad/matr05	1	m03ad/matr05/NM03ADMATR05013_.wav	code 'matr' (unknown NPC) | TLK: No, wait! I want to hear what this man means by	no (unverified code)
+m03ad/matr99	1	m03ad/matr99/NM03ADMATR99075_.wav	code 'matr' (unknown NPC) | TLK: Hold on a second. I want to hear what he means b	no (unverified code)
+m03ae/_zax22	58	m03ae/_zax22/NM03AE_ZAX22000_.wav	code '_zax' (unknown NPC)	no (unverified code)
+m03ae/hold13	45	m03ae/hold13/NM03AEHOLD13000_.wav	code 'hold' (unknown NPC) | TLK: Huh? What? Oh... sorry. I didn't see you there.	no (unverified code)
+m03ae/cand06	44	m03ae/cand06/NM03AECAND06000_.wav	Canderous Ordo | TLK: I saw you in the swoop race. Very impressive. Yo	no
+m03ae/miss14	31	m03ae/miss14/NM03AEMISS14000_.wav	Mission Vao | TLK: I told you to leave me alone - so give me some s	no
+m03ae/gelr12	13	m03ae/gelr12/NM03AEGELR12000_.wav	code 'gelr' (unknown NPC) | TLK: Greetings, stranger. My name is Gelrood. Are you	no (unverified code)
+m03ae/card08	10	m03ae/card08/NM03AECARD08002_.wav	code 'card' (unknown NPC)	no (unverified code)
+m03ae/citi09	8	m03ae/citi09/NM03AECITI09000_.wav	code 'citi' (unknown NPC) | TLK: Hey - didn't you just win the big swoop bike rac	probable
+m03ae/boun03	7	m03ae/boun03/NM03AEBOUN03000_.wav	code 'boun' (unknown NPC) | TLK: I'll stick with the bounties Davik puts out... t	no (unverified code)
+m03ae/citi11	6	m03ae/citi11/NM03AECITI11000_.wav	code 'citi' (unknown NPC) | TLK: Hey - I saw you in the big swoop race! I'm glad	probable
+m03ae/cand07	5	m03ae/cand07/NM03AECAND07000_.wav	Canderous Ordo | TLK: You guys are behind with your payments. You thin	no
+m03ae/calo05	1	m03ae/calo05/NM03AECALO05031_.wav	code 'calo' (unknown NPC)	no (unverified code)
+m03ae/zaal18	1	m03ae/zaal18/NM03AEZAAL18002_.wav	code 'zaal' (unknown NPC) | TLK: Hey, relax Big Z. No need to be rude. Sorry abou	no (unverified code)
+m03af/bast03	16	m03af/bast03/NM03AFBAST03000_.wav	Bastila Shan | TLK: Well, maybe those bloody Vulkars will think twic	no
+m03af/brej04	13	m03af/brej04/NM03AFBREJ04006_.wav	code 'brej' (unknown NPC) | TLK: I, Brejik - leader of the Black Vulkars - am hon	no (unverified code)
+m04aa/ruki25	66	m04aa/ruki25/NM04AARUKI25000_.wav	code 'ruki' (unknown NPC) | TLK: False prophet! Deceiver! You have betrayed me! Y	no (unverified code)
+m04aa/igea07	35	m04aa/igea07/NM04AAIGEA07000_.wav	code 'igea' (unknown NPC) | TLK: I saw you talking with Rukil. He told you his le	no (unverified code)
+m04aa/shal27	30	m04aa/shal27/NM04AASHAL27000_.wav	code 'shal' (unknown NPC) | TLK: I saw what you did! You gave those journals to I	no (unverified code)
+m04aa/cand02	26	m04aa/cand02/NM04AACAND02002_.wav	Canderous Ordo | TLK: Don't... don't move! I'm... I'm not afraid to us	no
+m04aa/gend05	26	m04aa/gend05/NM04AAGEND05000_.wav	code 'gend' (unknown NPC) | TLK: Greetings, up-worlder. We rarely see your kind h	no (unverified code)
+m04aa/outw22	22	m04aa/outw22/NM04AAOUTW22000_.wav	code 'outw' (unknown NPC) | TLK: I can't thank you enough for saving me, up-world	probable
+m04aa/infe08	19	m04aa/infe08/NM04AAINFE08000_.wav	code 'infe' (unknown NPC) | TLK: Do you... do you have the cure, up-worlder? Have	no (unverified code)
+m04aa/infe09	19	m04aa/infe09/NM04AAINFE09000_.wav	code 'infe' (unknown NPC) | TLK: Do you... do you have the cure, up-worlder? Have	no (unverified code)
+m04aa/miss10	19	m04aa/miss10/NM04AAMISS10000_.wav	Mission Vao | TLK: Please, you have to help me! Nobody else is goin	no
+m04aa/outw23	18	m04aa/outw23/NM04AAOUTW23000_.wav	code 'outw' (unknown NPC) | TLK: Wait, up-worlder. You can't go through this gate	probable
+m04aa/outm18	17	m04aa/outm18/NM04AAOUTM18000_.wav	code 'outm' (unknown NPC) | TLK: A horrible fate for poor Hendar... I warned him	no (unverified code)
+m04aa/outm14	15	m04aa/outm14/NM04AAOUTM14000_.wav	code 'outm' (unknown NPC) | TLK: You there! Up-worlder! Anyone using this elevato	no (unverified code)
+m04aa/sith27	12	m04aa/sith27/NM04AASITH27000_.wav	Sith (generic series?) | TLK: You there! Civilian! This is a restricted area!	unknown
+m04aa/blac01	10	m04aa/blac01/NM04AABLAC01000_.wav	code 'blac' (unknown NPC) | TLK: Wait - don't kill me! I surrender! I surrender!	no (unverified code)
+m04aa/repu24	6	m04aa/repu24/NM04AAREPU24000_.wav	code 'repu' (unknown NPC) | TLK: H... help me! Please! I can... I can feel it ins	no (unverified code)
+m04aa/outc13	5	m04aa/outc13/NM04AAOUTC13000_.wav	code 'outc' (unknown NPC) | TLK: You talked to old Rukil Wrinkle-Skin? My mommy s	no (unverified code)
+m04aa/outc12	5	m04aa/outc12/NM04AAOUTC12000_.wav	code 'outc' (unknown NPC) | TLK: You from the up-world? My mommy said sometimes w	no (unverified code)
+m04aa/hend06	5	m04aa/hend06/NM04AAHEND06000_.wav	code 'hend' (unknown NPC) | TLK: I can't thank you enough for saving me, up-world	no (unverified code)
+m04aa/outm99	4	m04aa/outm99/NM04AAOUTM99000_.wav	code 'outm' (unknown NPC) | TLK: I once lived above, with the rich and privileged	no (unverified code)
+m04aa/outm17	4	m04aa/outm17/NM04AAOUTM17000_.wav	code 'outm' (unknown NPC) | TLK: A few of the braver villagers dared to leave the	no (unverified code)
+m04aa/outw20	3	m04aa/outw20/NM04AAOUTW20000_.wav	code 'outw' (unknown NPC) | TLK: The rakghouls are increasing in number. We canno	probable
+m04aa/outw19	2	m04aa/outw19/NM04AAOUTW19000_.wav	code 'outw' (unknown NPC) | TLK: I had fine clothes, a beautiful bed - now I wear	probable
+m04aa/vict08	2	m04aa/vict08/NM04AAVICT08000_.wav	code 'vict' (unknown NPC) | TLK: Please, help us! We are infected with the rakgho	no (unverified code)
+m04aa/davi03	1	m04aa/davi03/NM04AADAVI03000_.wav	code 'davi' (unknown NPC) | TLK: Davik put Canderous in charge of this mission. Y	no (unverified code)
+m05aa/zaal03	17	m05aa/zaal03/NM05AAZAAL03001_.wav	code 'zaal' (unknown NPC) | TLK: I'm glad to see you too, Big Z! You didn't think	no (unverified code)
+m05aa/sith05	17	m05aa/sith05/NM05AASITH05000_.wav	Sith (generic series?) | TLK: You there! Civillian! This is a restricted area!	unknown
+m05aa/ff0299	4	m05aa/ff0299/NM05AAFF0299000_.wav	code 'ff' (unknown NPC) | TLK: You won't be able to get that computer to lower	no (unverified code)
+m05aa/miss01	2	m05aa/miss01/NM05AAMISS01000_.wav	Mission Vao | TLK: Hmmm... look at this. This is one of those old s	no
+m05aa/ffxx01	2	m05aa/ffxx01/NM05AAFFXX01002_.wav	code 'ffxx' (unknown NPC) | TLK: You won't be able to get that computer to lower	no (unverified code)
+m05aa/juha11	1	m05aa/juha11/NM05AAJUHA11590A.wav	Juhani | TLK: I... I idolized her and the stories they told of	no
+m05ab/sith01	17	m05ab/sith01/NM05ABSITH01000_.wav	Sith (generic series?) | TLK: You there! Civillian! This is a restricted area!	unknown
+m08aa/davs10	28	m08aa/davs10/NM08AADAVS10000_.wav	code 'davs' (unknown NPC) | TLK: Welcome to the slave quarters, fair mistress. I	no (unverified code)
+m08aa/davs11	26	m08aa/davs11/NM08AADAVS11000_.wav	code 'davs' (unknown NPC) | TLK: Welcome to the slave quarters, good sir. I mean	no (unverified code)
+m08aa/davi08	23	m08aa/davi08/NM08AADAVI08000_.wav	code 'davi' (unknown NPC) | TLK: So, Canderous - I see you have brought someone w	no (unverified code)
+m08aa/hudr11	22	m08aa/hudr11/NM08AAHUDR11000_.wav	code 'hudr' (unknown NPC) | TLK: Thank you! You have no idea what it was like in	no (unverified code)
+m08aa/davg07	11	m08aa/davg07/NM08AADAVG07000_.wav	code 'davg' (unknown NPC) | TLK: How dare you invade my chambers! How rude! I am	no (unverified code)
+m08aa/davg06	9	m08aa/davg06/NM08AADAVG06000_.wav	code 'davg' (unknown NPC) | TLK: Hey - what's the idea barging in here! Get out o	no (unverified code)
+m08aa/davi09	4	m08aa/davi09/NM08AADAVI09000_.wav	code 'davi' (unknown NPC) | TLK: Damn those Sith - they're bombing the whole plan	no (unverified code)
+m08aa/calo03	3	m08aa/calo03/NM08AACALO03000_.wav	code 'calo' (unknown NPC) | TLK: You may have me outnumbered and outgunned, but i	no (unverified code)
+m08aa/cand04	1	m08aa/cand04/NM08AACAND04000_.wav	Canderous Ordo | TLK: Let's get this ship fired up. We'll pick up the	no
+m09aa/dark01	6	m09aa/dark01/NM09AADARK01000_.wav	code 'dark' (unknown NPC) | TLK: Who dares to break my meditation? You will pay	no (unverified code)
+m09aa/sith03	1	m09aa/sith03/NM09AASITH03000_.wav	Sith (generic series?) | TLK: Intruders in the base! Attack! Attack!	unknown
+m10aa/vulk05	17	m10aa/vulk05/NM10AAVULK05000_.wav	code 'vulk' (unknown NPC) | TLK: Wait - don't kill me! I surrender! I surrender!	no (unverified code)
+m10aa/wait07	15	m10aa/wait07/NM10AAWAIT07000_.wav	code 'wait' (unknown NPC) | TLK: Please don't hurt me - I just serve the food her	no (unverified code)
+m10aa/bart02	1	m10aa/bart02/NM10AABART02000_.wav	code 'bart' (unknown NPC)	no (unverified code)
+m10ab/vulk06	18	m10ab/vulk06/NM10ABVULK06000_.wav	code 'vulk' (unknown NPC) | TLK: Hey, there. Say - I don't recognize you... you m	no (unverified code)
+m10ab/vulk08	17	m10ab/vulk08/NM10ABVULK08000_.wav	code 'vulk' (unknown NPC) | TLK: Okay, let's do this deal quick. I don't want som	no (unverified code)
+m10ab/vulk07	12	m10ab/vulk07/NM10ABVULK07000_.wav	code 'vulk' (unknown NPC) | TLK: You picked my pocket pretty good on that last Pa	no (unverified code)
+m10ab/vulk05	4	m10ab/vulk05/NM10ABVULK05000_.wav	code 'vulk' (unknown NPC) | TLK: I'm surprised to see you here. Usually you lab t	no (unverified code)
+m10ab/vulk03	3	m10ab/vulk03/NM10ABVULK03004_.wav	code 'vulk' (unknown NPC) | TLK: You idiot! You can't just let them walk out of h	no (unverified code)
+m10ac/kand01	11	m10ac/kand01/NM10ACKAND01006_.wav	code 'kand' (unknown NPC) | TLK: And when we win the race, we get Bastila, right?	no (unverified code)
+m11aa/gado02	78	m11aa/gado02/NM11AAGADO02000_.wav	code 'gado' (unknown NPC) | TLK: Zaerdra tells me you have the swoop engine accel	no (unverified code)
+m11aa/zaer09	22	m11aa/zaer09/NM11AAZAER09000_.wav	code 'zaer' (unknown NPC) | TLK: Hold it right there - who are you and what is yo	no (unverified code)
+m11aa/hidb06	6	m11aa/hidb06/NM11AAHIDB06000_.wav	code 'hidb' (unknown NPC)	no (unverified code)
+m11aa/hidb05	4	m11aa/hidb05/NM11AAHIDB05004_.wav	code 'hidb' (unknown NPC)	no (unverified code)
+m11aa/hidb04	4	m11aa/hidb04/NM11AAHIDB04000_.wav	code 'hidb' (unknown NPC) | TLK: Keep your eyes open. Our sources tell us Brejik'	no (unverified code)
+m11aa/hidb03	3	m11aa/hidb03/NM11AAHIDB03000_.wav	code 'hidb' (unknown NPC) | TLK: Hey, you can't be in here right now - the contro	no (unverified code)
+m11aa/hidb07	2	m11aa/hidb07/NM11AAHIDB07002_.wav	code 'hidb' (unknown NPC)	no (unverified code)
+m11ab/gado11	7	m11ab/gado11/NM11ABGADO11000_.wav	code 'gado' (unknown NPC) | TLK: Who are you? You can't come in here! Sound the a	no (unverified code)
+m12aa/bast01	28	m12aa/bast01/NM12AABAST01000_.wav	Bastila Shan | TLK: Dantooine... it seems like a lifetime since I la	no
+m12aa/c06001	21	m12aa/c06001/NM12AAC06001007_.wav	code 'c' (unknown NPC) | TLK: We were about to pull back.	unknown
+m12aa/c05001	17	m12aa/c05001/NM12AAC05001014_.wav	code 'c' (unknown NPC) | TLK: This is Master Vandar. A number of Jedi Knights	unknown
+m12aa/swoo03	17	m12aa/swoo03/NM12AASWOO03000_.wav	code 'swoo' (unknown NPC) | TLK: Greetings, master. I regret that my database con	unknown
+m12aa/star03	8	m12aa/star03/NM12AASTAR03000_.wav	code 'star' (unknown NPC) | TLK: The Star Forge... it's huge. I've never seen any	no (unverified code)
+m12aa/c03001	4	m12aa/c03001/nm12aac03001000_.wav	code 'c' (unknown NPC) | TLK: The Star Forge... I've never seen anything like	unknown
+m12aa/c02001	4	m12aa/c02001/nm12aac02001000_.wav	code 'c' (unknown NPC) | TLK: What happened? What's going on?	unknown
+m12aa/cuts01	3	m12aa/cuts01/nm12aacuts01000_.wav	code 'cuts' (unknown NPC) | TLK: Plot a course for Dantooine! There's a Jedi encl	no (cutscene)
+m12aa/c04001	2	m12aa/c04001/nm12aac04001000_.wav	code 'c' (unknown NPC) | TLK: We've got problems! We've flown into some kind o	unknown
+m12aa/bast06	1	m12aa/bast06/NM12AABAST06895_.wav	Bastila Shan | TLK: We can't risk having any of the dark Jedi Master	no
+m13aa/cand03	209	m13aa/cand03/NM13AACAND03000_.wav	Canderous Ordo | TLK: I don't think we can delay much here. We should	no
+m13aa/vand17	150	m13aa/vand17/NM13AAVAND17000_.wav	code 'vand' (unknown NPC) | TLK: Bastila has told us of a most unusual developmen	no (unverified code)
+m13aa/zhar19	101	m13aa/zhar19/NM13AAZHAR19000_.wav	code 'zhar' (unknown NPC) | TLK: You should speak to Master Dorak. He can assist	no (unverified code)
+m13aa/dora08	80	m13aa/dora08/NM13AADORA08000_.wav	code 'dora' (unknown NPC) | TLK: Ah, you have come, young apprentice, at Master Z	no (unverified code)
+m13aa/jagi08	65	m13aa/jagi08/NM13AAJAGI08000_.wav	code 'jagi' (unknown NPC) | TLK: Ah so you managed to come after all. I see you b	no (unverified code)
+m13aa/vroo18	55	m13aa/vroo18/NM13AAVROO18000_.wav	code 'vroo' (unknown NPC) | TLK: I must congratulate you on your actions. You hav	no (unverified code)
+m13aa/yuth22	41	m13aa/yuth22/NM13AAYUTH22000_.wav	Yuthura Ban | TLK: Hello. It is... good to see you again.	no
+m13aa/bela05	36	m13aa/bela05/NM13AABELA05000_.wav	code 'bela' (unknown NPC) | TLK: You there! Padawan! Why are you not wearing the	no (unverified code)
+m13aa/ahla03	27	m13aa/ahla03/NM13AAAHLA03000_.wav	code 'ahla' (unknown NPC) | TLK: I demand justice! The Sandral family is a blight	no (unverified code)
+m13aa/bast01	26	m13aa/bast01/NM13AABAST01000_.wav	Bastila Shan | TLK: Dantooine looks peaceful enough, but packs of ka	no
+m13aa/elis08	19	m13aa/elis08/NM13AAELIS08000_.wav	code 'elis' (unknown NPC) | TLK: Oh, thank you! Thank you!	no (unverified code)
+m13aa/juha11	14	m13aa/juha11/NM13AAJUHA11000_.wav	Juhani | TLK: I must give you my thanks. Because of you, I am	no
+m13aa/zzsh24	12	m13aa/zzsh24/NM13AAZZSH24000_.wav	code 'zzsh' (unknown NPC) | TLK: Hello there, I... it's you! I remember you! You'	no (unverified code)
+m13aa/kela14	11	m13aa/kela14/NM13AAKELA14000_.wav	code 'kela' (unknown NPC) | TLK: You're back. The Council said you might return t	no (unverified code)
+m13aa/jedi10	8	m13aa/jedi10/NM13AAJEDI10000_.wav	code 'jedi' (unknown NPC) | TLK: Good day to you. I am afraid I cannot speak to y	no (unverified code)
+m13aa/cart02	8	m13aa/cart02/NM13AACART02000_.wav	Carth Onasi | TLK: Dantooine looks peaceful enough, but packs of ka	no
+m13aa/shen16	7	m13aa/shen16/NM13AASHEN16000_.wav	code 'shen' (unknown NPC) | TLK: Rahasia and I cannot thank you enough for what y	no (unverified code)
+m13aa/crat07	6	m13aa/crat07/NM13AACRAT07050_.wav	code 'crat' (unknown NPC) | TLK: They are the scum who could not stand defeat and	no (unverified code)
+m13aa/c01001	5	m13aa/c01001/nm13aac01001000_.wav	code 'c' (unknown NPC) | TLK: The path you have chosen to walk is difficult.	unknown
+m13aa/raha14	4	m13aa/raha14/NM13AARAHA14000_.wav	code 'raha' (unknown NPC) | TLK: I am sorry we have nothing of value to give you	no (unverified code)
+m13aa/pdro13	3	m13aa/pdro13/NM13AAPDRO13000_.wav	code 'pdro' (unknown NPC) | TLK: I am sorry, human, I am unable to render assista	no (unverified code)
+m13aa/samn15	2	m13aa/samn15/NM13AASAMN15000_.wav	code 'samn' (unknown NPC) | TLK: What do YOU want?	no (unverified code)
+m13aa/c86906	2	m13aa/c86906/NM13AAC86906000_.wav	code 'c' (unknown NPC) | TLK: I...	unknown
+m13aa/jdro09	2	m13aa/jdro09/NM13AAJDRO09000_.wav	code 'jdro' (unknown NPC) | TLK: The Council has decreed you may come and go as y	no (unverified code)
+m13aa/bast04	1	m13aa/bast04/NM13AABAST04000_.wav	Bastila Shan | TLK: If you have questions, you should direct them to	no
+m14aa/nemo07	48	m14aa/nemo07/NM14AANEMO07000_.wav	code 'nemo' (unknown NPC) | TLK: I hear you managed to return Juhani to the Order	no (unverified code)
+m14aa/jon006	41	m14aa/jon006/NM14AAJON006000_.wav	code 'jon' (unknown NPC) | TLK: Are you a Jedi? How long can you people continue	no (unverified code)
+m14aa/sett11	36	m14aa/sett11/NM14AASETT11000_.wav	code 'sett' (unknown NPC) | TLK: Greetings, friend. I think I can safely assume y	probable
+m14aa/elis04	32	m14aa/elis04/NM14AAELIS04000_.wav	code 'elis' (unknown NPC) | TLK: Greetings, young Jedi, I wonder if you could ass	no (unverified code)
+m14aa/sett09	18	m14aa/sett09/NM14AASETT09000_.wav	code 'sett' (unknown NPC) | TLK: I heard the rogue Jedi girl was killed. Good rid	probable
+m14aa/elis09	9	m14aa/elis09/NM14AAELIS09000_.wav	code 'elis' (unknown NPC) | TLK: Oh, thank you! Thank you!	no (unverified code)
+m14aa/jedi05	9	m14aa/jedi05/NM14AAJEDI05000_.wav	code 'jedi' (unknown NPC) | TLK: Good day to you. I am afraid I cannot speak to y	no (unverified code)
+m14aa/sett10	2	m14aa/sett10/NM14AASETT10000_.wav	code 'sett' (unknown NPC) | TLK: I hope the Jedi Council will listen to Gar. If t	probable
+m14aa/c86901	2	m14aa/c86901/NM14AAC86901000_.wav	code 'c' (unknown NPC) | TLK: I...	unknown
+m14aa/secu08	2	m14aa/secu08/NM14AASECU08000_.wav	code 'secu' (unknown NPC) | TLK: Please be careful on the plains, apprentice. Kat	no (unverified code)
+m14ab/ahla01	37	m14ab/ahla01/NM14ABAHLA01000_.wav	code 'ahla' (unknown NPC) | TLK: My protocol droid tells me you are here on behal	no (unverified code)
+m14ab/mdro03	16	m14ab/mdro03/NM14ABMDRO03000_.wav	code 'mdro' (unknown NPC) | TLK: This is private property! By what authority are	no (unverified code)
+m14ab/cut002	3	m14ab/cut002/NM14ABCUT002000_.wav	code 'cut' (unknown NPC) | TLK: You've been holding out on us again. Since you h	no (unverified code)
+m14ac/juha07	69	m14ac/juha07/NM14ACJUHA07000_.wav	Juhani | TLK: You... you are strong. Stronger than me, even in	no
+m14ac/hand05	45	m14ac/hand05/NM14ACHAND05000_.wav	code 'hand' (unknown NPC) | TLK: Ah, greetings. You must be assisting Master Bolo	no (unverified code)
+m14ac/bolo01	35	m14ac/bolo01/NM14ACBOLO01021_.wav	code 'bolo' (unknown NPC) | TLK: You should try to remain objective in this.	no (unverified code)
+m14ac/rick08	31	m14ac/rick08/NM14ACRICK08000_.wav	code 'rick' (unknown NPC) | TLK: Another Jedi, eh? Helping that Twi'lek investiga	no (unverified code)
+m14ac/idro06	25	m14ac/idro06/NM14ACIDRO06000_.wav	code 'idro' (unknown NPC) | TLK: Greetings, Padawan. You must be the one Master B	no (unverified code)
+m14ac/sher09	3	m14ac/sher09/NM14ACSHER09000_.wav	code 'sher' (unknown NPC) | TLK: Ah, so this is the meddler. You have caused us f	no (unverified code)
+m14ad/cuts02	167	m14ad/cuts02/NM14ADCUTS02000_.wav	code 'cuts' (unknown NPC) | TLK: Shen! You're safe!	no (cutscene)
+m14ad/c86901	37	m14ad/c86901/NM14ADC86901000_.wav	code 'c' (unknown NPC) | TLK: Thank you for saving me, master Jedi. I am C8-42	unknown
+m14ad/sdro04	14	m14ad/sdro04/NM14ADSDRO04000_.wav	code 'sdro' (unknown NPC) | TLK: Nurik has nothing more to say to you. He left st	no (unverified code)
+m15aa/anci01	14	m15aa/anci01/NM15AAANCI01004_.wav	code 'anci' (unknown NPC) | TLK: I think the droid is trying to communicate with	no (unverified code)
+m15aa/bast02	13	m15aa/bast02/NM15AABAST02000_.wav	Bastila Shan | TLK: If the droid is correct, then we must complete t	no
+m16aa/raha02	38	m16aa/raha02/NM16AARAHA02000_.wav	code 'raha' (unknown NPC) | TLK: You are here from the Council, are you not? Look	no (unverified code)
+m16aa/nuri01	26	m16aa/nuri01/NM16AANURI01000_.wav	code 'nuri' (unknown NPC) | TLK: I have been informed by my protocol droid that y	no (unverified code)
+m16aa/shen03	20	m16aa/shen03/NM16AASHEN03000_.wav	code 'shen' (unknown NPC) | TLK: Who are you? What do you want with me? Are you w	no (unverified code)
+m17aa/03sh01	78	m17aa/03sh01/NM17AA03SH01000_.wav	code '03sh' (unknown NPC) | TLK: Please, will you help me? I have nothing. Nothin	no (unverified code)
+m17aa/05me02	35	m17aa/05me02/NM17AA05ME02000_.wav	code '05me' (unknown NPC) | TLK: You again? Oh no, you can just keep walking. I'm	no (unverified code)
+m17aa/11iz05	25	m17aa/11iz05/NM17AA11IZ05000_.wav	code '11iz' (unknown NPC) | TLK: You come back, but you are the one we remember t	no (unverified code)
+m17aa/11gu04	25	m17aa/11gu04/NM17AA11GU04000_.wav	code '11gu' (unknown NPC) | TLK: I've had enough out of you. You either get Czerk	no (unverified code)
+m17aa/news11	20	m17aa/news11/NM17AANEWS11000_.wav	code 'news' (unknown NPC) | TLK: Take care of yourself. The price of kolto tanks	no (unverified code)
+m17aa/12co06	12	m17aa/12co06/NM17AA12CO06000_.wav	code '12co' (unknown NPC) | TLK: Sand People wiped out my moisture farm and what	no (unverified code)
+m17aa/11bg03	8	m17aa/11bg03/NM17AA11BG03000_.wav	code '11bg' (unknown NPC) | TLK: You got authorization, you talk to Billan. Other	no (unverified code)
+m17aa/12dr07	8	m17aa/12dr07/NM17AA12DR07000_.wav	code '12dr' (unknown NPC) | TLK: Greetings. Have you any maintenence needs today?	no (unverified code)
+m17aa/iziz99	7	m17aa/iziz99/NM17AAIZIZ99148_.wav	code 'iziz' (unknown NPC) | TLK: That's the way - squeeze that little guy for eve	no (unverified code)
+m17aa/xbas12	6	m17aa/xbas12/NM17AAXBAS12000_.wav	code 'xbas' (unknown NPC) | TLK: Have you seen a woman that may resemble me somew	no (unverified code)
+m17ab/01cu01	64	m17ab/01cu01/NM17AB01CU01000_.wav	code '01cu' (unknown NPC) | TLK: Welcome to Anchorhead, potential customer. Czerk	no (unverified code)
+m17ab/grif04	18	m17ab/grif04/NM17ABGRIF04000_.wav	code 'grif' (unknown NPC) | TLK: Mission? Is it really you? I heard Taris was des	no (unverified code)
+m17ab/01gu02	8	m17ab/01gu02/NM17AB01GU02000_.wav	code '01gu' (unknown NPC) | TLK: The landing bay is lined with autoguns. To keep	no (unverified code)
+m17ab/01me03	8	m17ab/01me03/NM17AB01ME03000_.wav	code '01me' (unknown NPC) | TLK: Leave me be. If I don't get these converters wor	no (unverified code)
+m17ac/08hk01	41	m17ac/08hk01/NM17AC08HK01000_.wav	code '08hk' (unknown NPC) | TLK: Statement: I see you have purchased me, master.	no (unverified code)
+m17ac/08yu02	12	m17ac/08yu02/NM17AC08YU02016_.wav	code '08yu' (unknown NPC) | TLK: And if the unit proves even more 'uncooperative'	no (unverified code)
+m17ad/03ta06	77	m17ad/03ta06/NM17AD03TA06000_.wav	code '03ta' (unknown NPC) | TLK: I have to thank you again. You really didn't hav	no (unverified code)
+m17ad/03do01	44	m17ad/03do01/NM17AD03DO01000_.wav	code '03do' (unknown NPC) | TLK: I heard what you did out on the dunes. I am impr	no (unverified code)
+m17ad/03gu03	9	m17ad/03gu03/NM17AD03GU03016_.wav	code '03gu' (unknown NPC) | TLK: Hey, don't push your luck, fellas.	no (unverified code)
+m17ae/04ni04	57	m17ae/04ni04/NM17AE04NI04000_.wav	code '04ni' (unknown NPC) | TLK: Leave me alone, will you. I've got things on my	no (unverified code)
+m17ae/04ga03	40	m17ae/04ga03/NM17AE04GA03000_.wav	code '04ga' (unknown NPC)	no (unverified code)
+m17ae/04ce02	34	m17ae/04ce02/NM17AE04CE02008_.wav	code '04ce' (unknown NPC) | TLK: My friend tells the truth. I am a Jedi... are yo	no (unverified code)
+m17ae/04sf06	28	m17ae/04sf06/NM17AE04SF06000_.wav	code '04sf' (unknown NPC) | TLK: I love watching the races. Nothing much else to	no (unverified code)
+m17ae/04sf07	28	m17ae/04sf07/NM17AE04SF07000_.wav	code '04sf' (unknown NPC) | TLK: Gotta like the races. There's nothing else, so y	no (unverified code)
+m17ae/04an01	12	m17ae/04an01/NM17AE04AN01000_.wav	code '04an' (unknown NPC) | TLK: Looks like we've got another racer up on the lin	no (unverified code)
+m17ae/04sw08	12	m17ae/04sw08/NM17AE04SW08000_.wav	code '04sw' (unknown NPC) | TLK: The track here isn't the greatest, but we have t	no (unverified code)
+m17af/hhel01	89	m17af/hhel01/NM17AFHHEL01000_.wav	code 'hhel' (unknown NPC) | TLK: You're back, I see. And Bastila isn't even with	no (unverified code)
+m17af/07fu02	41	m17af/07fu02/NM17AF07FU02000_.wav	code '07fu' (unknown NPC) | TLK: Well, a fresh face for the game. I wonder, would	no (unverified code)
+m17af/07ga03	39	m17af/07ga03/NM17AF07GA03000_.wav	code '07ga' (unknown NPC) | TLK: Go on, take a walk. My mood is sour enough witho	no (unverified code)
+m17af/07ju06	33	m17af/07ju06/NM17AF07JU06000_.wav	code '07ju' (unknown NPC) | TLK: Eh? Who are you, then? The only new people that	no (unverified code)
+m17af/07of07	22	m17af/07of07/NM17AF07OF07000_.wav	code '07of' (unknown NPC) | TLK: Get lost, spacer. I've had enough of you.	no (unverified code)
+m17af/07ja05	9	m17af/07ja05/NM17AF07JA05006_.wav	code '07ja' (unknown NPC) | TLK: Translation: Doubtful. The Jawa language is stru	no (unverified code)
+m17af/07of08	8	m17af/07of08/NM17AF07OF08000_.wav	code '07of' (unknown NPC) | TLK: Our business has nothing to do with you, spacer.	no (unverified code)
+m17ag/10cz01	90	m17ag/10cz01/NM17AG10CZ01000_.wav	code '10cz' (unknown NPC) | TLK: Can I help you? These are the offices of Czerka	no (unverified code)
+m17ag/grif03	40	m17ag/grif03/NM17AGGRIF03000_.wav	code 'grif' (unknown NPC) | TLK: Ah, just the person I was hoping to see!	no (unverified code)
+m17ag/01gr02	2	m17ag/01gr02/NM17AG01GR02001_.wav	code '01gr' (unknown NPC) | TLK: I don't like the sound of this.	no (unverified code)
+m18ab/10ta05	86	m18ab/10ta05/NM18AB10TA05000_.wav	code '10ta' (unknown NPC) | TLK: Hold on there! How about talking to me before yo	no (unverified code)
+m18ab/13cr11	21	m18ab/13cr11/NM18AB13CR11000_.wav	code '13cr' (unknown NPC) | TLK: N-now hold on, we don't want any trouble... plea	no (unverified code)
+m18ab/10wi06	14	m18ab/10wi06/NM18AB10WI06000_.wav	code '10wi' (unknown NPC) | TLK: Hello there. You're heading out to the desert? Y	no (unverified code)
+m18ab/13cr10	13	m18ab/13cr10/NM18AB13CR10000_.wav	code '13cr' (unknown NPC) | TLK: Don't hurt me! Please!	no (unverified code)
+m18ab/12am08	3	m18ab/12am08/NM18AB12AM08000_.wav	code '12am' (unknown NPC) | TLK: Help! Please! Over here! Under the wreckage!	no (unverified code)
+m18ab/bast14	2	m18ab/bast14/NM18ABBAST14000_.wav	Bastila Shan | TLK: So we have found it. Father's holocron. I suppos	no
+m18ab/12gu09	1	m18ab/12gu09/NM18AB12GU09000_.wav	code '12gu' (unknown NPC) | TLK: Please help! I can't get out! (click) 3... 2...	no (unverified code)
+m18ac/star99	18	m18ac/star99/NM18ACSTAR99000_.wav	code 'star' (unknown NPC) | TLK: Anyone else get the feeling that finding this St	no (unverified code)
+m18ac/14sa01	7	m18ac/14sa01/NM18AC14SA01002_.wav	code '14sa' (unknown NPC) | TLK: Extrapolation: This guard doesn't appear honored	no (unverified code)
+m18ac/koma99	7	m18ac/koma99/NM18ACKOMA99130_.wav	code 'koma' (unknown NPC) | TLK: You're going to turn on this guy now? This is lo	no (unverified code)
+m18ad/scre04	2	m18ad/scre04/NM18ADSCRE04000_.wav	code 'scre' (unknown NPC) | TLK: What the...! Look at the size of it... Yeaaaarrr	no (unverified code)
+m18ad/hunt03	1	m18ad/hunt03/NM18ADHUNT03000_.wav	code 'hunt' (unknown NPC) | TLK: I'm tired of waiting, Komad. How big can this dr	no (unverified code)
+m20aa/09ch02	102	m20aa/09ch02/NM20AA09CH02001_.wav	code '09ch' (unknown NPC) | TLK: Translation: I can translate with some guarantee	no (unverified code)
+m20aa/xsto07	89	m20aa/xsto07/NM20AAXSTO07002_.wav	code 'xsto' (unknown NPC) | TLK: Translation: He identifies himself as the Storyt	no (unverified code)
+m20aa/grif05	45	m20aa/grif05/NM20AAGRIF05000_.wav	code 'grif' (unknown NPC) | TLK: Uh... you there! I'm... I'm a high ranking execu	no (unverified code)
+m20aa/09fi03	10	m20aa/09fi03/NM20AA09FI03002_.wav	code '09fi' (unknown NPC) | TLK: Interjection: One moment... I believe I understo	no (unverified code)
+m22aa/elix08	58	m22aa/elix08/NM22AAELIX08000_.wav	code 'elix' (unknown NPC) | TLK: So, new spacers have come to wild Kashyyyk? Plea	no (unverified code)
+m22aa/daso07	30	m22aa/daso07/NM22AADASO07000_.wav	code 'daso' (unknown NPC) | TLK: Thanks for your help, friend. I'm getting off th	no (unverified code)
+m22aa/czer03	22	m22aa/czer03/NM22AACZER03000_.wav	code 'czer' (unknown NPC) | TLK: Hold here, spacer. Czerka Corporation doesn't re	no (unverified code)
+m22aa/czer05	22	m22aa/czer05/NM22AACZER05000_.wav	code 'czer' (unknown NPC) | TLK: I can't talk now. I've got to pack. They'll be o	no (unverified code)
+m22aa/zaal01	21	m22aa/zaal01/NM22AAZAAL01029_.wav	code 'zaal' (unknown NPC) | TLK: Zaalbar should be here. He shouldn't miss this.	no (unverified code)
+m22aa/jano06	11	m22aa/jano06/NM22AAJANO06056_.wav	code 'jano' (unknown NPC) | TLK: [Force Persuade] Hmph. 'Harvesting'. Tell us abo	no (unverified code)
+m22aa/xgcz12	10	m22aa/xgcz12/NM22AAXGCZ12000_.wav	code 'xgcz' (unknown NPC) | TLK: Wookiees settle down a lot once they're caged.	no (unverified code)
+m22aa/czer06	8	m22aa/czer06/NM22AACZER06000_.wav	code 'czer' (unknown NPC) | TLK: Move along, spacer.	no (unverified code)
+m22aa/czer04	8	m22aa/czer04/NM22AACZER04000_.wav	code 'czer' (unknown NPC) | TLK: Please leave me. I've contracts to decipher.	no (unverified code)
+m22aa/xcze12	6	m22aa/xcze12/NM22AAXCZE12000_.wav	code 'xcze' (unknown NPC) | TLK: I do my job and keep my mouth shut. Maybe I can	no (unverified code)
+m22aa/czer02	4	m22aa/czer02/NM22AACZER02000_.wav	code 'czer' (unknown NPC) | TLK: Talk to the captain, not me.	no (unverified code)
+m22ab/dehn06	52	m22ab/dehn06/NM22ABDEHN06000_.wav	code 'dehn' (unknown NPC) | TLK: This isn't good. I can't afford this.	no (unverified code)
+m22ab/czgu05	8	m22ab/czgu05/NM22ABCZGU05000_.wav	code 'czgu' (unknown NPC) | TLK: Wow. This is going to look really bad on my reco	no (unverified code)
+m22ab/zaal01	5	m22ab/zaal01/NM22ABZAAL01023_.wav	code 'zaal' (unknown NPC) | TLK: I never thought I'd see the big trees. Zaalbar's	no (unverified code)
+m22ab/chor02	4	m22ab/chor02/NM22ABCHOR02021_.wav	code 'chor' (unknown NPC) | TLK: Hmph! I merely have an appreciation for solitude	no (unverified code)
+m22ab/gorw08	1	m22ab/gorw08/NM22ABGORW08024_.wav	code 'gorw' (unknown NPC) | TLK: That would be me. Jolee Bindo. Do I really look	no (unverified code)
+m22ab/czgu04	1	m22ab/czgu04/NM22ABCZGU04000_.wav	code 'czgu' (unknown NPC) | TLK: You want to talk, do it with Patrol Captain Dehn	no (unverified code)
+m23aa/wook01	4	m23aa/wook01/NM23AAWOOK01025_.wav	code 'wook' (unknown NPC) | TLK: Madam, I am not a fool. I survive because I am c	no (unverified code)
+m23ab/jaar01	4	m23ab/jaar01/NM23ABJAAR01013_.wav	code 'jaar' (unknown NPC) | TLK: It isn't an easy language to learn, what with al	no (unverified code)
+m23ab/woor02	3	m23ab/woor02/NM23ABWOOR02011_.wav	code 'woor' (unknown NPC) | TLK: We're rather hairless, aren't we?	no (unverified code)
+m23ac/worr01	12	m23ac/worr01/NM23ACWORR01034_.wav	code 'worr' (unknown NPC) | TLK: There was pain no matter how this ended. Perhaps	no (unverified code)
+m23ad/chuu01	27	m23ad/chuu01/NM23ADCHUU01041_.wav	code 'chuu' (unknown NPC) | TLK: Oh, yes. Far better to have both the blade and a	no (unverified code)
+m23ad/frey02	15	m23ad/frey02/NM23ADFREY02031_.wav	code 'frey' (unknown NPC) | TLK: Look, Big Z may owe you a life-debt but you've g	no (unverified code)
+m24aa/jole06	101	m24aa/jole06/NM24AAJOLE06000_.wav	Jolee Bindo | TLK: Well, welcome to my home, such as it is. Pull up	no
+m24aa/poff08	53	m24aa/poff08/NM24AAPOFF08000_.wav	code 'poff' (unknown NPC) | TLK: Who are you, another civil merchant like that co	no (unverified code)
+m24aa/pgen07	30	m24aa/pgen07/NM24AAPGEN07000_.wav	code 'pgen' (unknown NPC) | TLK: I've helped you all I'm going to. Any more and t	no (unverified code)
+m24aa/forc01	14	m24aa/forc01/NM24AAFORC01001_.wav	code 'forc' (unknown NPC) | TLK: Here we are again. Shall I bypass the field so w	no (unverified code)
+m24aa/droi01	9	m24aa/droi01/NM24AADROI01000_.wav	droid (generic) | TLK: Malfunction... my primary motivators are... inca	probable
+m24aa/jole05	9	m24aa/jole05/NM24AAJOLE05000_.wav	Jolee Bindo | TLK: Ah, the damnable racket of battle! Watch yoursel	no
+m24aa/wrai09	2	m24aa/wrai09/NM24AAWRAI09000_.wav	code 'wrai' (unknown NPC) | TLK: What?	no (unverified code)
+m24aa/gorw04	1	m24aa/gorw04/NM24AAGORW04010_.wav	code 'gorw' (unknown NPC) | TLK: Now this is what I live for!	no (unverified code)
+m25aa/comp01	121	m25aa/comp01/NM25AACOMP01001_.wav	code 'comp' (unknown NPC) | TLK: Neural scan complete. Analyzing...	unknown
+m25aa/star99	21	m25aa/star99/NM25AASTAR99000_.wav	code 'star' (unknown NPC) | TLK: This doesn't make any sense. Why put a Star Map	no (unverified code)
+m25aa/frey02	17	m25aa/frey02/NM25AAFREY02002_.wav	code 'frey' (unknown NPC) | TLK: He is almost feral after all this time. Calm you	no (unverified code)
+m25aa/mand04	6	m25aa/mand04/NM25AAMAND04000_.wav	code 'mand' (unknown NPC) | TLK: You have interrupted our hunt, interloper. The i	no (unverified code)
+m25aa/bike01	6	m25aa/bike01/NM25AABIKE01002_.wav	code 'bike' (unknown NPC) | TLK: You have interrupted our hunt, interloper. The i	no (unverified code)
+m25aa/hurt03	3	m25aa/hurt03/NM25AAHURT03068_.wav	code 'hurt' (unknown NPC) | TLK: They were Mandalorian. Poachers, probably. They	no (unverified code)
+m26aa/tria27	97	m26aa/tria27/NM26AATRIA27014_.wav	code 'tria' (unknown NPC) | TLK: No! You traitor!	no (unverified code)
+m26aa/sunr26	74	m26aa/sunr26/NM26AASUNR26000_.wav	code 'sunr' (unknown NPC) | TLK: Jolee! What... what are you doing here?	no (unverified code)
+m26aa/gont05	49	m26aa/gont05/NM26AAGONT05000_.wav	code 'gont' (unknown NPC) | TLK: I wasn't expecting guests - and I don't want any	no (unverified code)
+m26aa/duan01	41	m26aa/duan01/NM26AADUAN01000_.wav	code 'duan' (unknown NPC) | TLK: Look, lady - we Sith aren't here to make friends	no (unverified code)
+m26aa/vigl28	41	m26aa/vigl28/NM26AAVIGL28000_.wav	code 'vigl' (unknown NPC) | TLK: Hey, man, clear out. You're cramping my style wi	no (unverified code)
+m26aa/elor04	35	m26aa/elor04/NM26AAELOR04000_.wav	code 'elor' (unknown NPC) | TLK: I was told that you're a friend of Jolee Bindo..	no (unverified code)
+m26aa/echm03	32	m26aa/echm03/NM26AAECHM03000_.wav	code 'echm' (unknown NPC) | TLK: What are you doing in my room?	no (unverified code)
+m26aa/irim06	32	m26aa/irim06/NM26AAIRIM06000_.wav	code 'irim' (unknown NPC) | TLK: I am not for hire. Perhaps the Mandalorian or th	no (unverified code)
+m26aa/manm07	22	m26aa/manm07/NM26AAMANM07000_.wav	code 'manm' (unknown NPC) | TLK: Canderous! I haven't seen you since the Republic	no (unverified code)
+m26aa/trav26	13	m26aa/trav26/NM26AATRAV26000_.wav	code 'trav' (unknown NPC) | TLK: The Selkath have clamped down on kolto exports a	no (unverified code)
+m26aa/merc08	13	m26aa/merc08/NM26AAMERC08000_.wav	code 'merc' (unknown NPC) | TLK: Now I'm as cold-blooded as the next guy, but I'm	probable
+m26aa/repn12	11	m26aa/repn12/NM26AAREPN12000_.wav	code 'repn' (unknown NPC) | TLK: So do we have a deal?	no (unverified code)
+m26aa/nilk09	10	m26aa/nilk09/NM26AANILK09037_.wav	code 'nilk' (unknown NPC) | TLK: I'm uncomfortable with spying on the Republic...	no (unverified code)
+m26aa/wait29	9	m26aa/wait29/NM26AAWAIT29000_.wav	code 'wait' (unknown NPC) | TLK: I heard the Republic are the cause of the kolto	no (unverified code)
+m26aa/sith24	8	m26aa/sith24/NM26AASITH24000_.wav	Sith (generic series?) | TLK: Your honor, the Republic is clearly in violation	unknown
+m26aa/selj17	7	m26aa/selj17/NM26AASELJ17008_.wav	code 'selj' (unknown NPC) | TLK: Speaking of that injury, has it been taken into	no (unverified code)
+m26aa/repa11	7	m26aa/repa11/NM26AAREPA11000_.wav	code 'repa' (unknown NPC) | TLK: The Republic respects the peace of Ahto City, yo	no (unverified code)
+m26aa/selj21	6	m26aa/selj21/NM26AASELJ21028_.wav	code 'selj' (unknown NPC) | TLK: So nice to meet an impartial judge, for a change	no (unverified code)
+m26aa/sith25	6	m26aa/sith25/NM26AASITH25000_.wav	Sith (generic series?) | TLK: We might have a position within the Sith organiz	unknown
+m26aa/selj18	2	m26aa/selj18/NM26AASELJ18014_.wav	code 'selj' (unknown NPC) | TLK: The Republic believes in justice, as do you. We	no (unverified code)
+m26aa/echm02	2	m26aa/echm02/NM26AAECHM02000_.wav	code 'echm' (unknown NPC) | TLK: You hiring for the Republic or the Sith?	no (unverified code)
+m26aa/pris10	1	m26aa/pris10/NM26AAPRIS10000_.wav	code 'pris' (unknown NPC) | TLK: *growl* *snarl* When I get out of here, you're d	no (unverified code)
+m26ab/casa01	41	m26ab/casa01/NM26ABCASA01000_.wav	code 'casa' (unknown NPC) | TLK: I don't care who you are or what you do on this	no (unverified code)
+m26ab/swoo18	28	m26ab/swoo18/NM26ABSWOO18000_.wav	code 'swoo' (unknown NPC) | TLK: You here to cheer Casandra? She's a fine racer.	unknown
+m26ab/swoo19	28	m26ab/swoo19/NM26ABSWOO19000_.wav	code 'swoo' (unknown NPC) | TLK: I was down here last week and I got Casandra Mat	unknown
+m26ab/swoo25	28	m26ab/swoo25/NM26ABSWOO25000_.wav	code 'swoo' (unknown NPC) | TLK: Well, I guess the course proved too much for you	unknown
+m26ab/07of07	25	m26ab/07of07/NM26AB07OF07000_.wav	code '07of' (unknown NPC) | TLK: Move along, off-worlder. I've had enough of you.	no (unverified code)
+m26ab/sith14	22	m26ab/sith14/NM26ABSITH14000_.wav	Sith (generic series?) | TLK: Go away. You would regret the only other option.	unknown
+m26ab/sith11	17	m26ab/sith11/NM26ABSITH11000_.wav	Sith (generic series?) | TLK: I know you. You're the Arbiter in the murder tri	unknown
+m26ab/trav26	13	m26ab/trav26/NM26ABTRAV26000_.wav	code 'trav' (unknown NPC) | TLK: The Selkath have clamped down on kolto exports a	no (unverified code)
+m26ab/sith16	13	m26ab/sith16/NM26ABSITH16000_.wav	Sith (generic series?) | TLK: Hey - this street is for Sith only. You got to p	unknown
+m26ab/swoo20	12	m26ab/swoo20/NM26ABSWOO20000_.wav	code 'swoo' (unknown NPC) | TLK: Hey! Come to cheer your favorite swoop-jock? Wel	unknown
+m26ab/sith12	6	m26ab/sith12/NM26ABSITH12000_.wav	Sith (generic series?) | TLK: We might have a position within the Sith organiz	unknown
+m26ab/sdoi06	4	m26ab/sdoi06/NM26ABSDOI06000_.wav	code 'sdoi' (unknown NPC) | TLK: This entrance to the Sith Embassy has been close	no (unverified code)
+m26ab/merc03	4	m26ab/merc03/NM26ABMERC03000_.wav	code 'merc' (unknown NPC) | TLK: Sorry, but you're too late to recruit me. I've j	probable
+m26ab/sith10	3	m26ab/sith10/NM26ABSITH10000_.wav	Sith (generic series?) | TLK: You got any armor plating for my swoop bike?	unknown
+m26ab/sith17	2	m26ab/sith17/NM26ABSITH17000_.wav	Sith (generic series?) | TLK: Back off, Republic scum! A man like you couldn't	unknown
+m26ab/sith15	1	m26ab/sith15/NM26ABSITH15000_.wav	Sith (generic series?) | TLK: Move about your business, human.	unknown
+m26ac/repd07	94	m26ac/repd07/NM26ACREPD07000_.wav	code 'repd' (unknown NPC) | TLK: Welcome to Manaan. I am Roland Wann. As the offi	no (unverified code)
+m26ac/repi09	60	m26ac/repi09/NM26ACREPI09000_.wav	code 'repi' (unknown NPC) | TLK: So you're the one Roland has got to help us inte	no (unverified code)
+m26ac/ignu04	44	m26ac/ignu04/NM26ACIGNU04000_.wav	code 'ignu' (unknown NPC) | TLK: Shame about Sunry getting convicted like that. I	no (unverified code)
+m26ac/firi02	25	m26ac/firi02/NM26ACFIRI02000_.wav	code 'firi' (unknown NPC) | TLK: You with the Selkath? You here to see me about t	no (unverified code)
+m26ac/rept15	25	m26ac/rept15/NM26ACREPT15000_.wav	code 'rept' (unknown NPC) | TLK: So you're the one who's going to try to get into	no (unverified code)
+m26ac/gluu03	21	m26ac/gluu03/NM26ACGLUU03000_.wav	code 'gluu' (unknown NPC) | TLK: You here with Selkath? You have questions for Gl	no (unverified code)
+m26ac/repd08	17	m26ac/repd08/NM26ACREPD08000_.wav	code 'repd' (unknown NPC) | TLK: You have returned! I was beginning to fear that	no (unverified code)
+m26ac/sith26	14	m26ac/sith26/NM26ACSITH26000_.wav	Sith (generic series?) | TLK: Your precious Republic's days are numbered! It w	unknown
+m26ac/trav26	13	m26ac/trav26/NM26ACTRAV26000_.wav	code 'trav' (unknown NPC) | TLK: The Selkath have clamped down on kolto exports a	no (unverified code)
+m26ac/mman05	13	m26ac/mman05/NM26ACMMAN05000_.wav	code 'mman' (unknown NPC) | TLK: *hushed* You, Jedi! I hear you are investigating	no (unverified code)
+m26ac/reps13	11	m26ac/reps13/NM26ACREPS13000_.wav	code 'reps' (unknown NPC) | TLK: How much for all this stuff, Tyvark?	no (unverified code)
+m26ac/sith22	5	m26ac/sith22/NM26ACSITH22000_.wav	Sith (generic series?) | TLK: The Selkath have slapped heavy export restrictio	unknown
+m26ac/reps14	5	m26ac/reps14/NM26ACREPS14000_.wav	code 'reps' (unknown NPC) | TLK: If it wasn't for those damn Selkath neutrality l	no (unverified code)
+m26ac/repa06	5	m26ac/repa06/NM26ACREPA06000_.wav	code 'repa' (unknown NPC) | TLK: Kolto production seems to have dropped off a LOT	no (unverified code)
+m26ac/sith24	3	m26ac/sith24/NM26ACSITH24000_.wav	Sith (generic series?) | TLK: Kolto's real scarce all of a sudden. From what I	unknown
+m26ac/repk10	3	m26ac/repk10/NM26ACREPK10000_.wav	code 'repk' (unknown NPC) | TLK: I can't talk now. I have to get this kolto loade	no (unverified code)
+m26ac/repk11	3	m26ac/repk11/NM26ACREPK11000_.wav	code 'repk' (unknown NPC) | TLK: I can't stop to talk to tourists - I'm on kolto	no (unverified code)
+m26ac/sith23	2	m26ac/sith23/NM26ACSITH23000_.wav	Sith (generic series?) | TLK: Everyone knows the Republic crippled the kolto p	unknown
+m26ac/reps12	2	m26ac/reps12/NM26ACREPS12000_.wav	code 'reps' (unknown NPC) | TLK: Kolto sales seem to have dropped off considerabl	no (unverified code)
+m26ac/reps32	1	m26ac/reps32/NM26ACREPS32000_.wav	code 'reps' (unknown NPC) | TLK: Those Sith are always trying to goad us. Why don	no (unverified code)
+m26ac/secu16	1	m26ac/secu16/NM26ACSECU16000_.wav	code 'secu' (unknown NPC) | TLK: Obey the laws here on Manaan, human.	no (unverified code)
+m26ac/sith25	1	m26ac/sith25/NM26ACSITH25000_.wav	Sith (generic series?) | TLK: *groan* Uhh...	unknown
+m26ac/sith30	1	m26ac/sith30/NM26ACSITH30000_.wav	Sith (generic series?) | TLK: Malak will show you Republics how a war is reall	unknown
+m26ac/reps33	1	m26ac/reps33/NM26ACREPS33000_.wav	code 'reps' (unknown NPC) | TLK: I have to stop talking to Sith... they make me w	no (unverified code)
+m26ac/sith29	1	m26ac/sith29/NM26ACSITH29000_.wav	Sith (generic series?) | TLK: You Republics sicken me! We'll do the galaxy a f	unknown
+m26ad/repa01	31	m26ad/repa01/NM26ADREPA01000_.wav	code 'repa' (unknown NPC) | TLK: Yeah, what do you...? Oh, I apologize Master Jed	no (unverified code)
+m26ad/dunc07	23	m26ad/dunc07/NM26ADDUNC07000_.wav	code 'dunc' (unknown NPC) | TLK: Hey, Stranger! Mysterious Stranger! Wow, look at	no (unverified code)
+m26ad/sith04	9	m26ad/sith04/NM26ADSITH04000_.wav	Sith (generic series?) | TLK: You Republic people are so pathetic, sitting aro	unknown
+m26ad/repk03	3	m26ad/repk03/NM26ADREPK03000_.wav	code 'repk' (unknown NPC) | TLK: I can't stop to talk to tourists - I'm on kolto	no (unverified code)
+m26ad/sith06	3	m26ad/sith06/NM26ADSITH06000_.wav	Sith (generic series?) | TLK: Kolto's real scarce all of a sudden. From what I	unknown
+m26ad/repk02	3	m26ad/repk02/NM26ADREPK02000_.wav	code 'repk' (unknown NPC) | TLK: I can't talk now. I have to get this kolto loade	no (unverified code)
+m26ad/sith05	2	m26ad/sith05/NM26ADSITH05000_.wav	Sith (generic series?) | TLK: Everybody knows the Republic crippled the kolto	unknown
+m27aa/shas06	13	m27aa/shas06/NM27AASHAS06020_.wav	code 'shas' (unknown NPC) | TLK: Yes... certainly you must have heard of the dest	no (unverified code)
+m27aa/sith99	11	m27aa/sith99/NM27AASITH99000_.wav	Sith (generic series?) | TLK: You there! I don't recognize you! How did you ge	unknown
+m27aa/sith07	7	m27aa/sith07/NM27AASITH07000_.wav	Sith (generic series?) | TLK: How did you get in here? Wait - I recognize you!	unknown
+m27aa/warn16	4	m27aa/warn16/NM27AAWARN16000_.wav	code 'warn' (unknown NPC) | TLK: WARNING: Activating flow control may flood occup	no (unverified code)
+m27aa/alar08	1	m27aa/alar08/NM27AAALAR08000_.wav	code 'alar' (unknown NPC) | TLK: Intruders have entered the complex! All units re	no (unverified code)
+m28aa/merc03	34	m28aa/merc03/NM28AAMERC03000_.wav	code 'merc' (unknown NPC) | TLK: How... how did you get in? Did they send another	probable
+m28aa/sur104	13	m28aa/sur104/NM28AASUR104000_.wav	code 'sur' (unknown NPC) | TLK: Is somebody out there? Fishy, fishy, fishy? Comi	unknown
+m28ab/sur201	21	m28ab/sur201/NM28ABSUR201000_.wav	code 'sur' (unknown NPC) | TLK: Who's there? You're not Selkath, I can see that	unknown
+m28ab/c01001	3	m28ab/c01001/NM28ABC01001002A.wav	code 'c' (unknown NPC)	unknown
+m28ac/sur303	109	m28ac/sur303/NM28ACSUR303000_.wav	code 'sur' (unknown NPC) | TLK: We were watching you on the cameras, and I want	unknown
+m28ac/warn06	10	m28ac/warn06/NM28ACWARN06000_.wav	code 'warn' (unknown NPC) | TLK: 60 seconds to complete depressurization.	no (unverified code)
+m28ac/sur404	10	m28ac/sur404/NM28ACSUR404000_.wav	code 'sur' (unknown NPC) | TLK: We saw what you did out there on the cameras...	unknown
+m33aa/yuth21	82	m33aa/yuth21/NM33AAYUTH21000_.wav	Yuthura Ban | TLK: You have come back. Good. Are you prepared to go	no
+m33aa/lash11	69	m33aa/lash11/NM33AALASH11000_.wav	code 'lash' (unknown NPC) | TLK: Look here, my dear friends. We have some newcome	no (unverified code)
+m33aa/czer07	45	m33aa/czer07/NM33AACZER07000_.wav	code 'czer' (unknown NPC) | TLK: Greetings. If you haven't heard, there's some tr	no (unverified code)
+m33aa/shaa19	44	m33aa/shaa19/NM33AASHAA19000_.wav	code 'shaa' (unknown NPC) | TLK: No, that is the wrong answer. Again! You patheti	no (unverified code)
+m33aa/pros18	41	m33aa/pros18/NM33AAPROS18000_.wav	code 'pros' (unknown NPC) | TLK: Uhh... greetings. You wouldn't happen to be look	probable
+m33aa/pros17	39	m33aa/pros17/NM33AAPROS17000_.wav	code 'pros' (unknown NPC) | TLK: You... are one of the Sith from the academy, yes	probable
+m33aa/cart04	37	m33aa/cart04/NM33AACART04660_.wav	Carth Onasi | TLK: I know. Don't worry about it. I just... must not	no
+m33aa/sith20	31	m33aa/sith20/NM33AASITH20000_.wav	Sith (generic series?) | TLK: What's this? Looks like we found ourselves a bit	unknown
+m33aa/pilo14	24	m33aa/pilo14/NM33AAPILO14000_.wav	code 'pilo' (unknown NPC) | TLK: Nice to see you again. Hold onto that Hawk... it	no (unverified code)
+m33aa/dakv08	16	m33aa/dakv08/NM33AADAKV08000_.wav	code 'dakv' (unknown NPC) | TLK: If you must know, I intend to take the first shi	no (unverified code)
+m33aa/mech12	16	m33aa/mech12/NM33AAMECH12000_.wav	code 'mech' (unknown NPC) | TLK: Still around the starport, I see. Heading off, s	no (unverified code)
+m33aa/info11	15	m33aa/info11/NM33AAINFO11000_.wav	code 'info' (unknown NPC) | TLK: I suppose you've heard? The heads of the Sith ac	no (unverified code)
+m33aa/citi04	12	m33aa/citi04/NM33AACITI04000_.wav	code 'citi' (unknown NPC) | TLK: Err... you're a Sith, right? *ahem* Excuse me...	probable
+m33aa/citi03	12	m33aa/citi03/NM33AACITI03000_.wav	code 'citi' (unknown NPC) | TLK: Err... you're a Sith, right? Excuse me...	probable
+m33aa/murd13	10	m33aa/murd13/NM33AAMURD13000_.wav	code 'murd' (unknown NPC) | TLK: Ha ha! Once you become a Sith, you can do anythi	no (unverified code)
+m33aa/genp10	8	m33aa/genp10/NM33AAGENP10000_.wav	code 'genp' (unknown NPC) | TLK: You are so lucky. You got accepted into the acad	no (unverified code)
+m33aa/genp09	8	m33aa/genp09/NM33AAGENP09000_.wav	code 'genp' (unknown NPC) | TLK: You are so lucky. You got accepted into the acad	no (unverified code)
+m33aa/cust05	5	m33aa/cust05/NM33AACUST05000_.wav	code 'cust' (unknown NPC) | TLK: Just having a drink, friend, minding my own busi	no (unverified code)
+m33aa/frei08	5	m33aa/frei08/NM33AAFREI08000_.wav	code 'frei' (unknown NPC) | TLK: I'm just here on one of Czerka's transports. I d	no (unverified code)
+m33aa/czer06	5	m33aa/czer06/NM33AACZER06000_.wav	code 'czer' (unknown NPC) | TLK: Go about your business, please, citizen.	no (unverified code)
+m33aa/pilo15	2	m33aa/pilo15/NM33AAPILO15000_.wav	code 'pilo' (unknown NPC) | TLK: Our ship will be ready soon. Then it's off to Co	no (unverified code)
+m33aa/port16	1	m33aa/port16/NM33AAPORT16029_.wav	code 'port' (unknown NPC) | TLK: Hmph! Wherever you find the Sith, Czerka isn't f	no (unverified code)
+m33ab/cart04	66	m33ab/cart04/NM33ABCART04782_.wav	Carth Onasi | TLK: I just can't believe he's dead. I... you should	no
+m33ab/acad01	30	m33ab/acad01/NM33ABACAD01000_.wav	code 'acad' (unknown NPC) | TLK: You are a student at the academy. You may enter	no (unverified code)
+m33ab/meke02	26	m33ab/meke02/NM33ABMEKE02000_.wav	code 'meke' (unknown NPC) | TLK: Is there something specific you wanted?	no (unverified code)
+m33ab/mekf03	10	m33ab/mekf03/NM33ABMEKF03015_.wav	code 'mekf' (unknown NPC) | TLK: Somehow I think he'll get over it.	no (unverified code)
+m33ab/mekf04	7	m33ab/mekf04/NM33ABMEKF04000_.wav	code 'mekf' (unknown NPC) | TLK: You... talked to Mekel? Have I proved my worth?	no (unverified code)
+m33ab/mekf05	5	m33ab/mekf05/NM33ABMEKF05000_.wav	code 'mekf' (unknown NPC) | TLK: I... I must g-get into... the academy... must...	no (unverified code)
+m34aa/thal03	26	m34aa/thal03/NM34AATHAL03000_.wav	code 'thal' (unknown NPC) | TLK: So... is there news? Is the passageway clear?	no (unverified code)
+m35aa/juha11	530	m35aa/juha11/NM35AAJUHA11000_.wav	Juhani | TLK: There is no time to talk now. Our priority is to	no
+m35aa/jole09	336	m35aa/jole09/NM35AAJOLE09000_.wav	Jolee Bindo | TLK: There'll be time for chatter after we find whate	no
+m35aa/cart04	284	m35aa/cart04/NM35AACART04000_.wav	Carth Onasi | TLK: What do you need?	no
+m35aa/bast06	264	m35aa/bast06/NM35AABAST06000_.wav	Bastila Shan | TLK: I know we have not spoken often during our time	no
+m35aa/hhkd07	248	m35aa/hhkd07/NM35AAHHKD07000_.wav	code 'hhkd' (unknown NPC) | TLK: Statement: HK-47 is ready to serve, master.	no (unverified code)
+m35aa/yuth24	162	m35aa/yuth24/NM35AAYUTH24000_.wav	Yuthura Ban | TLK: Your destiny does not lie with the Sith... at le	no
+m35aa/utha22	140	m35aa/utha22/NM35AAUTHA22000_.wav	code 'utha' (unknown NPC) | TLK: Ahhh... what is this you bring me, Shaardan?	no (unverified code)
+m35aa/dust01	81	m35aa/dust01/NM35AADUST01000_.wav	Dustil Onasi | TLK: I don't see the old man with you. Did he come to	no
+m35aa/lash07	63	m35aa/lash07/NM35AALASH07000_.wav	code 'lash' (unknown NPC) | TLK: I understand that Yuthura is dead. Good... perha	no (unverified code)
+m35aa/kela06	32	m35aa/kela06/NM35AAKELA06000_.wav	code 'kela' (unknown NPC) | TLK: Isn't it strange? Nobody seems to know what happ	no (unverified code)
+m35aa/jord10	26	m35aa/jord10/NM35AAJORD10000_.wav	code 'jord' (unknown NPC) | TLK: Carth! Carth Onasi, is that you?	no (unverified code)
+m35aa/meke08	25	m35aa/meke08/NM35AAMEKE08000_.wav	code 'meke' (unknown NPC) | TLK: I hear you beat out the others to get the presti	no (unverified code)
+m35aa/sith15	24	m35aa/sith15/NM35AASITH15000_.wav	Sith (generic series?) | TLK: It's really strange. Nobody seems to know where	unknown
+m35aa/sith14	24	m35aa/sith14/NM35AASITH14000_.wav	Sith (generic series?) | TLK: It's really strange. Nobody seems to know where	unknown
+m35aa/tort19	21	m35aa/tort19/NM35AATORT19000_.wav	code 'tort' (unknown NPC) | TLK: Yes! I heard that! Excellent job!	no (unverified code)
+m35aa/shaa10	19	m35aa/shaa10/NM35AASHAA10000_.wav	code 'shaa' (unknown NPC) | TLK: Can you believe it? They say that Yuthura took o	no (unverified code)
+m35aa/sith12	19	m35aa/sith12/NM35AASITH12000_.wav	Sith (generic series?) | TLK: *sigh* Politics are afoot at the academy once ag	unknown
+m35aa/sith17	16	m35aa/sith17/NM35AASITH17000_.wav	Sith (generic series?) | TLK: Bah. I hate it when things start to change so ra	unknown
+m35aa/repp09	14	m35aa/repp09/NM35AAREPP09000_.wav	code 'repp' (unknown NPC) | TLK: You... you inhuman monster!	no (unverified code)
+m35aa/sith16	14	m35aa/sith16/NM35AASITH16000_.wav	Sith (generic series?) | TLK: There are... tremors in the Force. I fear things	unknown
+m35aa/sith11	13	m35aa/sith11/NM35AASITH11000_.wav	Sith (generic series?) | TLK: If you're here to use the dueling room, go ahead	unknown
+m35aa/bela25	11	m35aa/bela25/NM35AABELA25000_.wav	code 'bela' (unknown NPC) | TLK: You! I remember you!	no (unverified code)
+m35aa/repp10	5	m35aa/repp10/NM35AAREPP10000_.wav	code 'repp' (unknown NPC) | TLK: Get lost, Sith. I'm not falling for any of your	no (unverified code)
+m35aa/sith13	4	m35aa/sith13/NM35AASITH13000_.wav	Sith (generic series?) | TLK: You must be accompanied by a Sith Master if you	unknown
+m35aa/cart03	2	m35aa/cart03/NM35AACART03000_.wav	Carth Onasi | TLK: That datapad... take a look at it. I wonder if D	no
+m35aa/droi01	1	m35aa/droi01/nm35aadroi01000_.wav	droid (generic) | TLK: Beep beep beep-oop!	probable
+m35aa/carth2	1	m35aa/carth2/NM35AACARTH2002_.wav	code 'carth' (unknown NPC) | TLK: I'm sorry, Dustil. I did all I could, and I... f	no (unverified code)
+m35aa/droi02	1	m35aa/droi02/nm35aadroi02000_.wav	droid (generic) | TLK: Please do excuse me, but I am required elsewhere	probable
+m36aa/dakv01	40	m36aa/dakv01/NM36AADAKV01000_.wav	code 'dakv' (unknown NPC) | TLK: Greetings. I don't think I've seen you at the ac	no (unverified code)
+m36aa/sith06	27	m36aa/sith06/NM36AASITH06000_.wav	Sith (generic series?) | TLK: You... you have the sword! The sword of Ajunta P	unknown
+m36aa/sith03	20	m36aa/sith03/NM36AASITH03000_.wav	Sith (generic series?) | TLK: I heard an explosion in there... did you destroy	unknown
+m36aa/ends08	14	m36aa/ends08/NM36AAENDS08000_.wav	code 'ends' (unknown NPC) | TLK: You there! How is it that you are leaving Naga S	no (unverified code)
+m36aa/sith05	14	m36aa/sith05/NM36AASITH05000_.wav	Sith (generic series?) | TLK: Sorry... I'm rather busy with the excavation pla	unknown
+m36aa/sith04	14	m36aa/sith04/NM36AASITH04000_.wav	Sith (generic series?) | TLK: Sorry... I'm rather busy with the excavation pla	unknown
+m36aa/lash02	13	m36aa/lash02/NM36AALASH02000_.wav	code 'lash' (unknown NPC) | TLK: Wonderful! Ha ha! The beast is dead! We work bet	no (unverified code)
+m36aa/sith07	7	m36aa/sith07/NM36AASITH07000_.wav	Sith (generic series?) | TLK: The second tomb on the left within the valley is	unknown
+m37aa/free04	66	m37aa/free04/NM37AAFREE04000_.wav	code 'free' (unknown NPC) | TLK: No... that is not the one. My ancient sword is b	probable
+m37aa/shaa05	21	m37aa/shaa05/NM37AASHAA05000_.wav	code 'shaa' (unknown NPC) | TLK: So the spineless worm actually made it through t	no (unverified code)
+m38aa/assa01	64	m38aa/assa01/NM38AAASSA01000_.wav	code 'assa' (unknown NPC) | TLK: Too much audio input! Audio systems overloading!	no (unverified code)
+m38aa/ward02	3	m38aa/ward02/NM38AAWARD02000_.wav	code 'ward' (unknown NPC) | TLK: Intruders detected. Excessive audio input must b	no (unverified code)
+m38ab/jora02	81	m38ab/jora02/NM38ABJORA02000_.wav	code 'jora' (unknown NPC) | TLK: Ha ha ha! Another idiotic student has stumbled i	no (unverified code)
+m38ab/meke03	20	m38ab/meke03/NM38ABMEKE03000_.wav	code 'meke' (unknown NPC) | TLK: What do you know? I guess he wasn't a 'true Sith	no (unverified code)
+m39aa/utha03	90	m39aa/utha03/NM39AAUTHA03000_.wav	code 'utha' (unknown NPC) | TLK: Excellent work, my young Sith. Your enemy lies d	no (unverified code)
+m39aa/yuth04	51	m39aa/yuth04/NM39AAYUTH04000_.wav	Yuthura Ban | TLK: Unghhh! Stop! I... I yield!	no
+m39aa/star99	12	m39aa/star99/NM39AASTAR99000_.wav	code 'star' (unknown NPC) | TLK: It smells like death here. Not good, honest batt	no (unverified code)
+m40aa/saul10	77	m40aa/saul10/NM40AASAUL10000_.wav	code 'saul' (unknown NPC) | TLK: Carth, it has been far too long since we last sp	no (unverified code)
+m40aa/bast01	58	m40aa/bast01/NM40AABAST01000_.wav	Bastila Shan | TLK: Don't try to move too quickly, you might not be	no
+m40aa/cart05	33	m40aa/cart05/NM40AACART05000_.wav	Carth Onasi | TLK: Admiral Karath taught me everything I know about	no
+m40aa/sith11	20	m40aa/sith11/NM40AASITH11000_.wav	Sith (generic series?) | TLK: Bastila, Carth and the crew have been taken pris	unknown
+m40aa/rodp09	13	m40aa/rodp09/NM40AARODP09000_.wav	code 'rodp' (unknown NPC) | TLK: We kill Sith now, yes? Kill lots of Sith before	no (unverified code)
+m40aa/miss08	12	m40aa/miss08/NM40AAMISS08000_.wav	Mission Vao | TLK: Come on, girlie. Into the cell. Let's go, I have	no
+m40aa/jole07	10	m40aa/jole07/NM40AAJOLE07000_.wav	Jolee Bindo | TLK: Guard, I need to speak with you.	no
+m40aa/cuts01	3	m40aa/cuts01/nm40aacuts01000_.wav	code 'cuts' (unknown NPC) | TLK: We're coming aboard! Nobody try anything or we'l	no (cutscene)
+m40aa/cand04	1	m40aa/cand04/NM40AACAND04000_.wav	Canderous Ordo | TLK: This is Canderous. We're at the Ebon Hawk. Like	no
+m40ab/injo08	26	m40ab/injo08/NM40ABINJO08000_.wav	code 'injo' (unknown NPC) | TLK: Don't shoot! Only the guards were armed, I don't	no (unverified code)
+m40ab/saul09	24	m40ab/saul09/NM40ABSAUL09000_.wav	code 'saul' (unknown NPC) | TLK: Very resourceful. I assume you had some part in	no (unverified code)
+m40ab/c01001	7	m40ab/c01001/nm40abc01001006_.wav	code 'c' (unknown NPC) | TLK: The search for Bastila is taking too long. We ca	unknown
+m40ac/dart03	45	m40ac/dart03/NM40ACDART03002_.wav	code 'dart' (unknown NPC) | TLK: Darth Malak!	no (unverified code)
+m40ac/cart02	9	m40ac/cart02/NM40ACCART02000_.wav	Carth Onasi | TLK: This isn't over, Malak!	no
+m40ac/cand02	1	m40ac/cand02/NM40ACCAND02000_.wav	Canderous Ordo | TLK: It's Canderous. We took care of the guards. We'r	no
+m40ad/cart01	79	m40ad/cart01/NM40ADCART01000_.wav	Carth Onasi | TLK: Where is Bastila? What happened on the ship?	no
+m40ad/swoo02	17	m40ad/swoo02/NM40ADSWOO02000_.wav	code 'swoo' (unknown NPC) | TLK: Greetings, master. I regret that my database con	unknown
+m40ad/c03001	2	m40ad/c03001/nm40adc03001000_.wav	code 'c' (unknown NPC) | TLK: Taris is defenseless against our assault, Lord M	unknown
+m41aa/cart04	93	m41aa/cart04/NM41AACART04000_.wav	Carth Onasi | TLK: You're back! But where's Bastila? Is she alive?	no
+m41aa/cart03	91	m41aa/cart03/NM41AACART03000_.wav	Carth Onasi | TLK: You're back! But where's Bastila? Is she alive?	no
+m41aa/bast01	26	m41aa/bast01/NM41AABAST01000_.wav	Bastila Shan | TLK: Dantooine... it seems like a lifetime since I la	no
+m41aa/swoo03	17	m41aa/swoo03/NM41AASWOO03000_.wav	code 'swoo' (unknown NPC) | TLK: Greetings, master. I regret that my database con	unknown
+m41aa/blac01	10	m41aa/blac01/NM41AABLAC01000_.wav	code 'blac' (unknown NPC)	no (unverified code)
+m41aa/miss04	8	m41aa/miss04/NM41AAMISS04000_.wav	Mission Vao | TLK: No - this isn't happening! It can't be happening	no
+m41aa/star03	8	m41aa/star03/NM41AASTAR03000_.wav	code 'star' (unknown NPC) | TLK: The Star Forge... it's huge. I've never seen any	no (unverified code)
+m41ab/redr01	2	m41ab/redr01/NM41ABREDR01003_.wav	code 'redr' (unknown NPC) | TLK: You... you do not remember the Elders? This... t	no (unverified code)
+m41ad/guid01	11	m41ad/guid01/NM41ADGUID01003_.wav	code 'guid' (unknown NPC) | TLK: Wait... you can't go in there alone!	no (unverified code)
+m44aa/injs03	26	m44aa/injs03/NM44AAINJS03000_.wav	code 'injs' (unknown NPC) | TLK: Please, don't hurt me! I'm injured and unarmed!	no (unverified code)
+m44aa/c02001	9	m44aa/c02001/NM44AAC02001014_.wav	code 'c' (unknown NPC) | TLK: You are strong, child. But I will break you.	unknown
+m44aa/dark02	4	m44aa/dark02/NM44AADARK02000_.wav	code 'dark' (unknown NPC) | TLK: Who dares intrude on our meditations? You know t	no (unverified code)
+m44aa/wrai06	3	m44aa/wrai06/NM44AAWRAI06000_.wav	code 'wrai' (unknown NPC) | TLK: Revan! Darth Malak warned me you might return. L	no (unverified code)
+m44aa/sith04	2	m44aa/sith04/NM44AASITH04000_.wav	Sith (generic series?) | TLK: Revan! Lord Malak told us you still lived. At la	unknown
+m44ac/evil01	61	m44ac/evil01/NM44ACEVIL01001_.wav	code 'evil' (unknown NPC) | TLK: Revan - I knew you'd come for me. Malak thought	no (unverified code)
+m44ac/exit03	4	m44ac/exit03/NM44ACEXIT03000_.wav	code 'exit' (unknown NPC) | TLK: You will have to disable the energy shield aroun	no (unverified code)
+m44ac/c01001	3	m44ac/c01001/nm44acc01001000_.wav	code 'c' (unknown NPC) | TLK: Malak is dead - all hail the return of Darth Rev	unknown
+m45aa/bast01	77	m45aa/bast01/NM45AABAST01000_.wav	Bastila Shan | TLK: The fool is dead. Now there is nothing in the wa	no
+m45aa/dart04	43	m45aa/dart04/NM45AADART04000_.wav	code 'dart' (unknown NPC) | TLK: I tire of this game, Revan. You have been a thor	no (unverified code)
+m45aa/cart02	40	m45aa/cart02/NM45AACART02000_.wav	Carth Onasi | TLK: It's done. Bastila is dead.	no
+m45aa/ligh01	12	m45aa/ligh01/NM45AALIGH01000_.wav	code 'ligh' (unknown NPC) | TLK: Master, why have you summoned me? Without my Bat	no (unverified code)
+m45aa/fema07	10	m45aa/fema07/NM45AAFEMA07000_.wav	code 'fema' (unknown NPC) | TLK: You made it! Several Jedi have already gone ahea	no (unverified code)
+m45aa/malak2	10	m45aa/malak2/NM45AAMALAK2000_.wav	code 'malak' (unknown NPC) | TLK: Why have you disturbed me?	no (unverified code)
+m45aa/dark99	8	m45aa/dark99/NM45AADARK99000_.wav	code 'dark' (unknown NPC) | TLK: You summoned us, Lord Malak?	no (unverified code)
+m45aa/jedi01	7	m45aa/jedi01/NM45AAJEDI01000_.wav	code 'jedi' (unknown NPC) | TLK: We'll deal with these Sith, the rest of you spli	no (unverified code)
+m45aa/malak1	6	m45aa/malak1/NM45AAMALAK1000_.wav	code 'malak' (unknown NPC) | TLK: Lord Malak, a team of Jedi have penetrated our d	no (unverified code)
+m45aa/drkj03	3	m45aa/drkj03/NM45AADRKJ03000_.wav	code 'drkj' (unknown NPC) | TLK: Bastila! You were a fool to betray the Master...	no (unverified code)
+m45aa/darj01	2	m45aa/darj01/NM45AADARJ01000_.wav	code 'darj' (unknown NPC) | TLK: Ah... more victims for us to slaughter.	no (unverified code)
+m45aa/male06	2	m45aa/male06/NM45AAMALE06000_.wav	male citizen (generic) | TLK: The Sith will want to cut off our escape. We'll	probable
+m45aa/bast06	1	m45aa/bast06/NM45AABAST06902_.wav	Bastila Shan | TLK: With each passing moment your old apprentice bec	no
+m45ad/c01001	3	m45ad/c01001/nm45adc01001000_.wav	code 'c' (unknown NPC) | TLK: Lord Malak, the preparations are nearly complete	unknown
+stn12/stun01	15	stn12/stun01/nstn12stun01000_.wav	code 'stun' (unknown NPC) | TLK: Lord Malak, the Star Forge is operating at 200%	no (unverified code)
+stn14/stun01	7	stn14/stun01/nstn14stun01000_.wav	code 'stun' (unknown NPC) | TLK: Calo Nord is dead, Lord Malak. He has failed in	no (unverified code)
+stn57/c01001	4	stn57/c01001/nstn57c01001000_.wav	code 'c' (unknown NPC) | TLK: You have defeated Malak, destroyed the Star Forg	unknown

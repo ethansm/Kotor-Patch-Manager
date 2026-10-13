@@ -54,7 +54,7 @@
 | V2 | Live probe design and build (needs user GO): OID stability across loads, hook-spawn persistence in saves, save-load reset, object count and frame cost | TODO |
 | V3 | Pool and roster spec: group pools, area eligibility table, spawn budget, per-species walk speeds | TODO |
 | V4 | Visit-salt change in doc 34 code (host tests, build only) and doc 34 section 3.2.2 update | DONE (host tests + build; salt unwired, V4b = area-entry source after V2) |
-| V5 | Scripted-encounter feasibility: can the patch run or trigger scripts, effect/flag building blocks, K1 audio licence and format path | TODO |
+| V5 | Scripted-encounter feasibility: can the patch run or trigger scripts, effect/flag building blocks, K1 audio licence and format path (audio/voice side researched 2026-10-13: see doc 41) | TODO |
 | V6 | Animation randomization feasibility: script (flag 109 / local 29) versus native (`Gob::PlayAnimation 004e3270`) | TODO |
 | V7 | Opus gate: choose build order, write the master plan, retire or merge the doc 35 routes | TODO |
 

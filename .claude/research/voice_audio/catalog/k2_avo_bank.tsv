@@ -1,0 +1,199 @@
+folder	species_guess	variant	emotion_tag	emotion	length_tags	n_clips	n_distinct_md5	total_seconds	unique_seconds	clips_with_lip	example_file	alienvo_rows	dlg_avo_lines
+_AquaCmn	Aqualish		Cmn	comment_generic	L,M,S	9	9	59.65	59.65	9	AVO/_AquaCmn/AVO_AquaCmntL1.wav	Aqualish	0
+_BithCmn	Bith		Cmn	comment_generic	L,M,S	9	9	58.54	58.54	9	AVO/_BithCmn/AVO_BithCmntL1.wav	Bith	0
+_BithGre	Bith		Gre	greeting	S	3	3	8.35	8.35	3	AVO/_BithGre/AVO_BithGretS1.wav	Bith	0
+_ChandCmn	Chadra-Fan		Cmn	comment_generic	M,S	6	6	26.57	26.57	6	AVO/_ChandCmn/AVO_ChandCmntM1.wav	Chandra-Fan	0
+_ChandHap	Chadra-Fan		Hap	happy_thankful	M,S	6	6	27.76	27.76	6	AVO/_ChandHap/AVO_ChandHapyM1.wav	Chandra-Fan	0
+_ChandLaf	Chadra-Fan		Laf	laughter	M,S	6	6	27.29	27.29	0	AVO/_ChandLaf/AVO_ChandLaffM1.wav	Chandra-Fan	0
+_ChandPle	Chadra-Fan		Ple	pleading	M,S	6	6	27.90	27.90	6	AVO/_ChandPle/AVO_ChandPledM1.wav	Chandra-Fan	1
+_ChandQue	Chadra-Fan		Que	question	M,S	6	6	27.90	27.90	6	AVO/_ChandQue/AVO_ChandQuesM1.wav	Chandra-Fan	0
+_ChandSca	Chadra-Fan		Sca	scared	M,S	6	6	27.22	27.22	3	AVO/_ChandSca/AVO_ChandScarM1.wav	Chandra-Fan	0
+_DevoAn	Devaronian		An	angry	L,M,S	9	9	60.23	60.23	6	AVO/_DevoAn/AVO_DevoAngL1.wav	Devaronian	0
+_DevoCmn	Devaronian		Cmn	comment_generic	L,M,S	9	9	60.70	60.70	9	AVO/_DevoCmn/AVO_DevoCmntL1.wav	Devaronian	0
+_DevoGre	Devaronian		Gre	greeting	M,S	6	6	26.32	26.32	0	AVO/_DevoGre/AVO_DevoGretM1.wav	Devaronian	0
+_DevoHap	Devaronian		Hap	happy_thankful	L,M,S	9	9	57.56	57.56	0	AVO/_DevoHap/AVO_DevoHapyL1.wav	Devaronian	3
+_DevoMoc	Devaronian		Moc	laughter_mocking	M,S	6	6	30.02	30.02	0	AVO/_DevoMoc/AVO_DevoMockM1.wav	Devaronian	0
+_DevoPle	Devaronian		Ple	pleading	M,S	6	6	19.91	19.91	0	AVO/_DevoPle/AVO_DevoPledM1.wav	Devaronian	0
+_DevoQue	Devaronian		Que	question	L,M,S	9	9	61.09	61.09	6	AVO/_DevoQue/AVO_DevoQuesL1.wav	Devaronian	0
+_DevoSa	Devaronian		Sa	sad	L,M,S	9	9	60.84	60.84	3	AVO/_DevoSa/AVO_DevoSadL1.wav	Devaronian	0
+_DevoSca	Devaronian		Sca	scared	L,M,S	9	9	49.25	49.25	0	AVO/_DevoSca/AVO_DevoScarL1.wav	Devaronian	0
+_DevoSed	Devaronian		Sed	seductive	L,M,S	9	9	60.01	60.01	0	AVO/_DevoSed/AVO_DevoSeduL1.wav	Devaronian	0
+_drdproAn	Droid (protocol)		An	angry	L,M,S	9	9	58.68	58.68	0	AVO/_drdproAn/AVO_drdproAngL1.wav	Droid_Protocol	0
+_drdproCmn	Droid (protocol)		Cmn	comment_generic	L,M,S	9	9	58.50	58.50	9	AVO/_drdproCmn/AVO_drdproCmntL1.wav	Droid_Protocol	0
+_drdproGre	Droid (protocol)		Gre	greeting	M,S	6	6	28.26	28.26	3	AVO/_drdproGre/AVO_drdproGretM1.wav	Droid_Protocol	0
+_drdproPle	Droid (protocol)		Ple	pleading	M,S	6	6	31.00	31.00	3	AVO/_drdproPle/AVO_drdproPledM1.wav	Droid_Protocol	0
+_drdproQue	Droid (protocol)		Que	question	L,M,S	9	9	69.44	69.44	3	AVO/_drdproQue/AVO_drdproQuesL1.wav	Droid_Protocol	0
+_drdproSa	Droid (protocol)		Sa	sad	L,M,S	9	9	69.59	69.59	6	AVO/_drdproSa/AVO_drdproSadL1.wav	Droid_Protocol	0
+_drdproSca	Droid (protocol)		Sca	scared	L,M,S	9	9	69.16	69.16	3	AVO/_drdproSca/AVO_drdproScarL1.wav	Droid_Protocol	0
+_drdproScr	Droid (protocol)		Scr	screaming	M,S	6	6	28.76	28.76	3	AVO/_drdproScr/avo_drdproscrmm1.wav	Droid_Protocol	0
+_drdproWou	Droid (protocol)		Wou	wounded	M,S	6	6	29.30	29.30	0	AVO/_drdproWou/avo_drdprowounm1.wav	Droid_Protocol	0
+_DrdUtAn	Droid (utility)		An	angry	S	3	3	9.40	9.40	0	AVO/_DrdUtAn/AVO_DrdUtAngS1.wav		6
+_DrdUtCmn	Droid (utility)		Cmn	comment_generic	S	3	3	8.82	8.82	3	AVO/_DrdUtCmn/AVO_DrdUtCmntS1.wav	Droid_Utility	0
+_DrdUtHap	Droid (utility)		Hap	happy_thankful	S	3	3	11.16	11.16	3	AVO/_DrdUtHap/AVO_DrdUtHapyS1.wav	Droid_Utility	0
+_DrdUtQue	Droid (utility)		Que	question	S	3	3	9.65	9.65	3	AVO/_DrdUtQue/AVO_DrdUtQuesS1.wav	Droid_Utility	0
+_DrdUtSa	Droid (utility)		Sa	sad	S	3	3	9.40	9.40	3	AVO/_DrdUtSa/AVO_DrdUtSadS1.wav	Droid_Utility	0
+_DrdUtScr	Droid (utility)		Scr	screaming	M,S	6	6	35.86	35.86	0	AVO/_DrdUtScr/AVO_DrdUtScrmM1.wav	Droid_Utility	0
+_DrdUtWou	Droid (utility)		Wou	wounded	M,S	6	6	32.40	32.40	0	AVO/_DrdUtWou/AVO_DrdUtWounM1.wav	Droid_Utility	0
+_DuroCmn	Duros		Cmn	comment_generic	L,M,S	9	9	58.57	58.57	9	AVO/_DuroCmn/AVO_DuroCmntL1.wav	Duro	23
+_DuroGre	Duros		Gre	greeting	S	3	3	8.10	8.10	3	AVO/_DuroGre/AVO_DuroGretS1.wav	Duro	1
+_GammAn	Gamorrean		An	angry	L,M,S	9	9	59.90	59.90	6	AVO/_GammAn/AVO_GammAngL1.wav	Gamorrean	0
+_GammCmn	Gamorrean		Cmn	comment_generic	L,M,S	9	9	64.51	64.51	6	AVO/_GammCmn/AVO_GammCmntL1.wav	Gamorrean	0
+_GammMoc	Gamorrean		Moc	laughter_mocking	M,S	6	6	27.97	27.97	6	AVO/_GammMoc/AVO_GammMockM1.wav	Gamorrean	4
+_GammQue	Gamorrean		Que	question	L,M,S	9	9	60.37	60.37	6	AVO/_GammQue/AVO_GammQuesL1.wav	Gamorrean	0
+_GammSca	Gamorrean		Sca	scared	L,M,S	9	9	59.62	59.62	3	AVO/_GammSca/AVO_GammScarL1.wav	Gamorrean	0
+_GammScr	Gamorrean		Scr	screaming	M,S	6	6	28.30	28.30	0	AVO/_GammScr/AVO_GammScrmM1.wav	Gamorrean	0
+_GammWou	Gamorrean		Wou	wounded	M,S	6	6	27.86	27.86	0	AVO/_GammWou/AVO_GammWounM1.wav	Gamorrean	0
+_GandAn	Gand		An	angry	L,M,S	9	9	59.26	59.26	0	AVO/_GandAn/AVO_GandAngL1.wav	Gand	0
+_GandCmn	Gand		Cmn	comment_generic	L,M,S	9	9	58.90	58.90	9	AVO/_GandCmn/AVO_GandCmntL1.wav	Gand	0
+_GandQue	Gand		Que	question	L,M,S	9	9	58.75	58.75	0	AVO/_GandQue/AVO_GandQuesL1.wav	Gotal	0
+_GandSa	Gand		Sa	sad	L	3	3	30.38	30.38	0	AVO/_GandSa/AVO_GandSadL1.wav	Gotal	0
+_GenAlnAn	Generic alien		An	angry	L,M,S	9	9	81.72	81.72	0	AVO/_GenAlnAn/AVO_GenAlnAngL1.wav	Generic_Alien	0
+_GenAlnCmn	Generic alien		Cmn	comment_generic	L,M,S	9	9	73.84	73.84	3	AVO/_GenAlnCmn/AVO_GenAlnCmntL1.wav	Generic_Alien	0
+_GenAlnQue	Generic alien		Que	question	L,M,S	9	9	81.94	81.94	3	AVO/_GenAlnQue/AVO_GenAlnQuesL1.wav	Generic_Alien	0
+_GenAlnScr	Generic alien		Scr	screaming	M,S	6	6	31.03	31.03	0	AVO/_GenAlnScr/AVO_GenAlnScrmM1.wav	Generic_Alien	0
+_GenAlnWou	Generic alien		Wou	wounded	M,S	6	6	24.98	24.98	0	AVO/_GenAlnWou/AVO_GenAlnWounM1.wav	Generic_Alien	0
+_GranAn	Gran		An	angry	L,M,S	9	9	64.44	64.44	6	AVO/_GranAn/AVO_GranAngL1.wav	Gran	0
+_GranCmn	Gran		Cmn	comment_generic	L,M,S	9	9	65.20	65.20	9	AVO/_GranCmn/AVO_GranCmntL1.wav	Gran	0
+_GranQue	Gran		Que	question	L,M,S	9	9	66.35	66.35	0	AVO/_GranQue/AVO_GranQuesL1.wav		0
+_GranSa	Gran		Sa	sad	L	3	3	30.67	30.67	0	AVO/_GranSa/AVO_GranSadL1.wav		0
+_HanharAn	Hanharr		An	angry	M,S	6	6	30.67	30.67	6	AVO/_HanharAn/AVO_HanharAngM1.wav	Hanharr	0
+_HanharCmn	Hanharr		Cmn	comment_generic	M,S	6	6	31.54	31.54	6	AVO/_HanharCmn/AVO_HanharCmntM1.wav	Hanharr	4
+_HanharGre	Hanharr		Gre	greeting	S	3	3	10.87	10.87	3	AVO/_HanharGre/AVO_HanharGretS1.wav	Hanharr	0
+_HanharHap	Hanharr		Hap	happy_thankful	L,M,S	9	7	80.28	53.64	3	AVO/_HanharHap/avo_hanharhapyl1.wav	Hanharr	8
+_HanharMoc	Hanharr		Moc	laughter_mocking	M,S	6	6	28.08	28.08	3	AVO/_HanharMoc/AVO_HanharMockM1.wav	Hanharr	0
+_HanharQue	Hanharr		Que	question	M,S	6	6	28.62	28.62	6	AVO/_HanharQue/AVO_HanharQuesM1.wav	Hanharr	2
+_HanharSa	Hanharr		Sa	sad	M,S	6	6	29.63	29.63	6	AVO/_HanharSa/AVO_HanharSadM1.wav	Hanharr	0
+_HanharSca	Hanharr		Sca	scared	M,S	6	6	29.38	29.38	3	AVO/_HanharSca/AVO_HanharScarM1.wav	Hanharr	0
+_HanharScr	Hanharr		Scr	screaming	M,S	6	6	20.27	20.27	3	AVO/_HanharScr/AVO_HanharScrmM1.wav	Hanharr	0
+_HanharWou	Hanharr		Wou	wounded	M,S	6	6	31.90	31.90	3	AVO/_HanharWou/AVO_HanharWounM1.wav	Hanharr	0
+_HuttAn	Hutt		An	angry	L,M,S	9	9	62.64	62.64	9	AVO/_HuttAn/AVO_HuttAngL1.wav	Hutt	0
+_HuttCmn	Hutt		Cmn	comment_generic	L,M,S	9	9	59.83	59.83	9	AVO/_HuttCmn/AVO_HuttCmntL1.wav	Hutt	8
+_HuttGre	Hutt		Gre	greeting	S	3	3	10.55	10.55	0	AVO/_HuttGre/AVO_HuttGretS1.wav	Hutt	2
+_HuttHap	Hutt		Hap	happy_thankful	L,S	6	6	41.22	41.22	6	AVO/_HuttHap/AVO_HuttHapyL1.wav	Hutt	0
+_HuttMoc	Hutt		Moc	laughter_mocking	M,S	6	6	31.03	31.03	3	AVO/_HuttMoc/AVO_HuttMockM1.wav	Hutt	0
+_HuttQue	Hutt		Que	question	L,M,S	9	9	56.95	56.95	6	AVO/_HuttQue/AVO_HuttQuesL1.wav	Hutt	0
+_HuttSca	Hutt		Sca	scared	M,S	6	6	27.76	27.76	0	AVO/_HuttSca/AVO_HuttScarM1.wav	Hutt	0
+_IthoAn	Ithorian		An	angry	L,M,S	9	9	57.82	57.82	9	AVO/_IthoAn/AVO_IthoAngL1.wav	Ithorian	0
+_IthoCmn	Ithorian		Cmn	comment_generic	L,M,S	9	9	56.12	56.12	9	AVO/_IthoCmn/AVO_IthoCmntL1.wav	Ithorian	16
+_IthoGre	Ithorian		Gre	greeting	S	3	3	10.87	10.87	3	AVO/_IthoGre/AVO_IthoGretS1.wav	Ithorian	2
+_IthoQue	Ithorian		Que	question	L,M,S	9	9	56.77	56.77	9	AVO/_IthoQue/AVO_IthoQuesL1.wav	Ithorian	4
+_IthoSca	Ithorian		Sca	scared	L,M,S	9	9	57.20	57.20	9	AVO/_IthoSca/AVO_IthoScarL1.wav	Ithorian	0
+_jawhap	Jawa		Hap	happy_thankful	L,M,S	6	6	38.81	38.81	0	AVO/_jawhap/avo_jawhapyl1.wav		38
+_NihilAn	Nihilus		An	angry	L,M,S	9	9	64.66	64.66	6	AVO/_NihilAn/AVO_NihilAngL1.wav	Nihilus	0
+_NihilCmn	Nihilus		Cmn	comment_generic	L,M,S	9	9	69.84	69.84	6	AVO/_NihilCmn/AVO_NihilCmntL1.wav	Nihilus	0
+_NihilQue	Nihilus		Que	question	L,M,S	9	9	80.57	80.57	6	AVO/_NihilQue/AVO_NihilQuesL1.wav	Nihilus	0
+_NihilScr	Nihilus		Scr	screaming	M,S	6	6	39.53	39.53	3	AVO/_NihilScr/AVO_NihilScrmM1.wav	Nihilus	0
+_NihilWou	Nihilus		Wou	wounded	M,S	6	6	32.33	32.33	3	AVO/_NihilWou/AVO_NihilWounM1.wav	Nihilus	0
+_NiktAn	Nikto		An	angry	L,M,S	9	9	71.53	71.53	6	AVO/_NiktAn/AVO_NiktAngL1.wav	Nikto	0
+_NiktCmn	Nikto		Cmn	comment_generic	L,M,S	9	9	70.85	70.85	9	AVO/_NiktCmn/AVO_NiktCmntL1.wav	Nikto	1
+_NiktQue	Nikto		Que	question	L,M,S	9	9	69.23	69.23	3	AVO/_NiktQue/AVO_NiktQuesL1.wav	Nikto	1
+_NiktSa	Nikto		Sa	sad	L	3	3	34.16	34.16	0	AVO/_NiktSa/AVO_NiktSadL1.wav		0
+_QuarAn	Quarren		An	angry	L,M,S	9	9	62.64	62.64	9	AVO/_QuarAn/avo_quarangl1.wav	Quarren	0
+_QuarCmn	Quarren		Cmn	comment_generic	L,M,S	9	9	59.29	59.29	9	AVO/_QuarCmn/avo_quarcmntl1.wav	Quarren	0
+_QuarQue	Quarren		Que	question	L,M,S	9	9	61.27	61.27	9	AVO/_QuarQue/avo_quarquesl1.wav	Quarren	0
+_RodiFAn	Rodian	female	An	angry	L,M,S	9	9	66.31	66.31	0	AVO/_RodiFAn/AVO_RodiFAngL1.wav	Rodian_Female_Generic	0
+_RodiFCmn	Rodian	female	Cmn	comment_generic	L,M,S	9	9	58.28	58.28	3	AVO/_RodiFCmn/AVO_RodiFCmntL1.wav	Rodian_Female_Generic	0
+_RodiFGre	Rodian	female	Gre	greeting	M,S	6	6	26.32	26.32	3	AVO/_RodiFGre/AVO_RodiFGretM1.wav	Rodian_Female_Generic	0
+_RodiFHap	Rodian	female	Hap	happy_thankful	L,M,S	9	9	64.76	64.76	3	AVO/_RodiFHap/AVO_RodiFHapyL1.wav	Rodian_Female_Generic	0
+_RodiFMoc	Rodian	female	Moc	laughter_mocking	M,S	6	6	36.94	36.94	0	AVO/_RodiFMoc/AVO_RodiFMockM1.wav	Rodian_Female_Generic	0
+_RodiFPle	Rodian	female	Ple	pleading	M,S	6	6	30.60	30.60	3	AVO/_RodiFPle/AVO_RodiFPledM1.wav	Rodian_Female_Generic	0
+_RodiFQue	Rodian	female	Que	question	L,M,S	9	9	57.53	57.53	6	AVO/_RodiFQue/AVO_RodiFQuesL1.wav	Rodian_Female_Generic	0
+_RodiFSa	Rodian	female	Sa	sad	L,M,S	9	9	62.03	62.03	3	AVO/_RodiFSa/AVO_RodiFSadL1.wav	Rodian_Female_Generic	0
+_RodiFSca	Rodian	female	Sca	scared	L,M,S	9	9	55.30	55.30	3	AVO/_RodiFSca/AVO_RodiFScarL1.wav	Rodian_Female_Generic	0
+_RodiMAn	Rodian	male	An	angry	L,M,S	9	9	60.41	60.41	3	AVO/_RodiMAn/AVO_RodiMAngL1.wav	Rodian_Male_Generic	0
+_RodiMCmn	Rodian	male	Cmn	comment_generic	L,M,S	9	9	64.62	64.62	9	AVO/_RodiMCmn/AVO_RodiMCmntL1.wav	Rodian_Male_Generic	5
+_RodiMGre	Rodian	male	Gre	greeting	M,S	6	6	32.44	32.44	3	AVO/_RodiMGre/AVO_RodiMGretM1.wav	Rodian_Male_Generic	2
+_RodiMHap	Rodian	male	Hap	happy_thankful	L,M,S	9	9	73.94	73.94	6	AVO/_RodiMHap/AVO_RodiMHapyL1.wav	Rodian_Male_Generic	6
+_RodiMMoc	Rodian	male	Moc	laughter_mocking	M,S	6	6	47.12	47.12	0	AVO/_RodiMMoc/AVO_RodiMMockM1.wav	Rodian_Male_Generic	0
+_RodiMPle	Rodian	male	Ple	pleading	M,S	6	6	32.58	32.58	0	AVO/_RodiMPle/AVO_RodiMPledM1.wav	Rodian_Male_Generic	0
+_RodiMQue	Rodian	male	Que	question	L,M,S	9	9	64.66	64.66	6	AVO/_RodiMQue/AVO_RodiMQuesL1.wav	Rodian_Male_Generic	1
+_RodiMSa	Rodian	male	Sa	sad	L,M,S	9	9	63.72	63.72	6	AVO/_RodiMSa/AVO_RodiMSadL1.wav	Rodian_Male_Generic	2
+_RodiMSca	Rodian	male	Sca	scared	L,M,S	9	9	54.04	54.04	3	AVO/_RodiMSca/AVO_RodiMScarL1.wav	Rodian_Male_Generic	0
+_RodiMTAn	Rodian	male-tough	An	angry	L,M,S	9	9	67.03	67.03	6	AVO/_RodiMTAn/AVO_RodiMTAngL1.wav	Rodian_Male_Tough	0
+_RodiMTCmn	Rodian	male-tough	Cmn	comment_generic	L,M,S	9	9	67.32	67.32	6	AVO/_RodiMTCmn/AVO_RodiMTCmntL1.wav	Rodian_Male_Tough	7
+_RodiMTGre	Rodian	male-tough	Gre	greeting	M,S	6	6	30.82	30.82	3	AVO/_RodiMTGre/AVO_RodiMTGretM1.wav	Rodian_Male_Tough	1
+_RodiMTHap	Rodian	male-tough	Hap	happy_thankful	L,M,S	9	9	61.09	61.09	6	AVO/_RodiMTHap/AVO_RodiMTHapyL1.wav	Rodian_Male_Tough	4
+_RodiMTMoc	Rodian	male-tough	Moc	laughter_mocking	M,S	6	6	35.39	35.39	3	AVO/_RodiMTMoc/AVO_RodiMTMockM1.wav	Rodian_Male_Tough	0
+_RodiMTPle	Rodian	male-tough	Ple	pleading	M,S	6	6	37.40	37.40	0	AVO/_RodiMTPle/AVO_RodiMTPledM1.wav	Rodian_Male_Tough	2
+_RodiMTQue	Rodian	male-tough	Que	question	L,M,S	9	9	65.38	65.38	6	AVO/_RodiMTQue/AVO_RodiMTQuesL1.wav	Rodian_Male_Tough	0
+_RodiMTSa	Rodian	male-tough	Sa	sad	L,M,S	9	9	58.50	58.50	0	AVO/_RodiMTSa/AVO_RodiMTSadL1.wav	Rodian_Male_Tough	6
+_RodiMTSca	Rodian	male-tough	Sca	scared	L,M,S	9	9	68.22	68.22	3	AVO/_RodiMTSca/AVO_RodiMTScarL1.wav	Rodian_Male_Tough	0
+_selkgre	Selkath		Gre	greeting	M,S	2	2	15.91	15.91	0	AVO/_selkgre/avo_selkgretm1.mp3	Selkath_Generic	35
+_selkhap	Selkath		Hap	happy_thankful	L,M,S	3	3	31.37	31.37	0	AVO/_selkhap/avo_selkhapyl1.mp3	Selkath_Generic	21
+_selkple	Selkath		Ple	pleading	M,S	2	2	19.12	19.12	0	AVO/_selkple/avo_selkpledm1.mp3	Selkath_Generic	4
+_SenBCmn	Sensor ball		Cmn	comment_generic	S	3	3	8.89	8.89	3	AVO/_SenBCmn/AVO_SenBCmntS1.wav	Sensor_Ball	0
+_SenBHap	Sensor ball		Hap	happy_thankful	S	3	3	9.07	9.07	3	AVO/_SenBHap/AVO_SenBHapyS1.wav	Sensor_Ball	0
+_SenBLaf	Sensor ball		Laf	laughter	L,M,S	9	9	63.36	63.36	3	AVO/_SenBLaf/AVO_SenBLaffL1.wav	Sensor_Ball	0
+_SenBQue	Sensor ball		Que	question	S	3	3	8.14	8.14	3	AVO/_SenBQue/AVO_SenBQuesS1.wav	Sensor_Ball	0
+_SenBSa	Sensor ball		Sa	sad	S	3	2	8.35	5.33	3	AVO/_SenBSa/AVO_SenBSadS1.wav	Sensor_Ball	0
+_SenBScr	Sensor ball		Scr	screaming	M,S	6	6	26.57	26.57	0	AVO/_SenBScr/AVO_SenBScrmM1.wav	Sensor_Ball	0
+_SenBWou	Sensor ball		Wou	wounded	M,S	6	6	26.93	26.93	3	AVO/_SenBWou/AVO_SenBWounM1.wav	Sensor_Ball	0
+_SithAsAn	Sith assassin		An	angry	L,M,S	9	9	73.22	73.22	0	AVO/_SithAsAn/AVO_SithAsAngL1.wav	Sith_Assassin	0
+_SithAsCmn	Sith assassin		Cmn	comment_generic	L,M,S	9	9	72.65	72.65	3	AVO/_SithAsCmn/AVO_SithAsCmntL1.wav	Sith_Assassin	12
+_SithAsQue	Sith assassin		Que	question	L,M,S	9	9	62.64	62.64	0	AVO/_SithAsQue/AVO_SithAsQuesL1.wav	Sith_Assassin	4
+_SithHoAn	Sith holocron		An	angry	L,M,S	9	9	70.74	70.74	3	AVO/_SithHoAn/AVO_SithHoAngL1.wav	Sith_Holocron	0
+_SithHoCmn	Sith holocron		Cmn	comment_generic	L,M,S	9	9	71.39	71.39	6	AVO/_SithHoCmn/AVO_SithHoCmntL1.wav	Sith_Holocron	0
+_SithHoMoc	Sith holocron		Moc	laughter_mocking	M,S	6	6	33.91	33.91	0	AVO/_SithHoMoc/AVO_SithHoMockM1.wav	Sith_Holocron	0
+_SithHoPle	Sith holocron		Ple	pleading	M,S	6	6	33.34	33.34	0	AVO/_SithHoPle/AVO_SithHoPledM1.wav	Sith_Holocron	0
+_SithHoQue	Sith holocron		Que	question	M,S	6	6	33.01	33.01	0	AVO/_SithHoQue/AVO_SithHoQuesM1.wav	Sith_Holocron	0
+_SithHoSca	Sith holocron		Sca	scared	M,S	6	6	32.83	32.83	0	AVO/_SithHoSca/AVO_SithHoScarM1.wav	Sith_Holocron	0
+_SithHoScr	Sith holocron		Scr	screaming	M,S	6	6	33.55	33.55	6	AVO/_SithHoScr/AVO_SithHoScrmM1.wav	Sith_Holocron	0
+_SithHoSed	Sith holocron		Sed	seductive	L,M,S	9	9	70.60	70.60	6	AVO/_SithHoSed/AVO_SithHoSeduL1.wav	Sith_Holocron	2
+_SithHoWou	Sith holocron		Wou	wounded	M,S	6	6	34.85	34.85	3	AVO/_SithHoWou/AVO_SithHoWounM1.wav	Sith_Holocron	0
+_SullCmn	Sullustan		Cmn	comment_generic	L,M,S	9	9	61.74	61.74	9	AVO/_SullCmn/AVO_SullCmntL1.wav	Sullustan	0
+_SullGre	Sullustan		Gre	greeting	M,S	6	6	27.25	27.25	0	AVO/_SullGre/AVO_SullGretM1.wav	Sullustan	0
+_SullHap	Sullustan		Hap	happy_thankful	L,M,S	9	9	51.05	51.05	9	AVO/_SullHap/AVO_SullHapyL1.wav	Sullustan	0
+_SullQue	Sullustan		Que	question	L,M,S	9	9	53.24	53.24	9	AVO/_SullQue/AVO_SullQuesL1.wav	Sullustan	0
+_SullScr	Sullustan		Scr	screaming	M,S	6	6	26.71	26.71	0	AVO/_SullScr/AVO_SullScrmM1.wav	Sullustan	0
+_SullWou	Sullustan		Wou	wounded	M,S	6	6	21.96	21.96	0	AVO/_SullWou/AVO_SullWounM1.wav	Sullustan	0
+_T3M4AN	T3-M4		An	angry	L,M,S	9	9	56.56	56.56	9	AVO/_T3M4AN/AVO_T3M4ANGL1.wav	T3_Speech	0
+_T3M4CMN	T3-M4		Cmn	comment_generic	L,M,S	9	9	54.94	54.94	9	AVO/_T3M4CMN/AVO_T3M4CMNTL1.wav	T3_Speech	0
+_T3M4GRE	T3-M4		Gre	greeting	M,S	6	6	27.04	27.04	3	AVO/_T3M4GRE/AVO_T3M4GRETM1.wav	T3_Speech	0
+_T3M4HAP	T3-M4		Hap	happy_thankful	L,M,S	9	9	53.60	53.60	6	AVO/_T3M4HAP/AVO_T3M4HAPYL1.wav	T3_Speech	0
+_T3M4LAF	T3-M4		Laf	laughter	L,S	6	6	12.42	12.42	0	AVO/_T3M4LAF/AVO_T3M4LAFFL1.wav	T3_Speech	0
+_T3M4MOC	T3-M4		Moc	laughter_mocking	M,S	6	6	35.57	35.57	6	AVO/_T3M4MOC/AVO_T3M4MOCKM1.wav	T3_Speech	0
+_T3M4QUE	T3-M4		Que	question	L,M,S	9	9	50.65	50.65	6	AVO/_T3M4QUE/AVO_T3M4QUESL1.wav	T3_Speech	0
+_T3M4SA	T3-M4		Sa	sad	L,M,S	9	3	64.37	21.46	3	AVO/_T3M4SA/AVO_T3M4SADL1.wav	T3_Speech	0
+_T3M4SCA	T3-M4		Sca	scared	L,M,S	9	9	57.67	57.67	6	AVO/_T3M4SCA/AVO_T3M4SCARL1.wav	T3_Speech	0
+_T3M4SCR	T3-M4		Scr	screaming	M,S	6	1	11.02	1.84	3	AVO/_T3M4SCR/AVO_T3m4scrmm1.wav	T3_Speech	0
+_T3M4WOU	T3-M4		Wou	wounded	M,S	6	1	7.56	1.26	6	AVO/_T3M4WOU/AVO_T3M4WOUNM1.wav	T3_Speech	0
+_TrodAn	Trandoshan		An	angry	M,S	6	6	37.98	37.98	6	AVO/_TrodAn/AVO_TrodAngM1.wav	Trandoshan	0
+_TrodCmn	Trandoshan		Cmn	comment_generic	L,M,S	9	9	71.14	71.14	9	AVO/_TrodCmn/AVO_TrodCmntL1.wav	Trandoshan	19
+_TrodGre	Trandoshan		Gre	greeting	S	3	3	8.57	8.57	3	AVO/_TrodGre/AVO_TrodGretS1.wav	Trandoshan	4
+_TwilFAn	Twilek	female	An	angry	L,M,S	9	9	68.08	68.08	9	AVO/_TwilFAn/AVO_TwilFAngL1.wav	Twilek_Female_Generic	3
+_TwilFCmn	Twilek	female	Cmn	comment_generic	L,M,S	9	9	72.94	72.94	9	AVO/_TwilFCmn/AVO_TwilFCmntL1.wav	Twilek_Female_Generic	12
+_TwilFGre	Twilek	female	Gre	greeting	M,S	6	6	30.24	30.24	3	AVO/_TwilFGre/AVO_TwilFGretM1.wav	Twilek_Female_Generic	2
+_TwilFHap	Twilek	female	Hap	happy_thankful	L,M,S	9	9	65.88	65.88	6	AVO/_TwilFHap/AVO_TwilFHapyL1.wav	Twilek_Female_Generic	3
+_TwilFLaf	Twilek	female	Laf	laughter	L,M,S	9	9	66.02	66.02	3	AVO/_TwilFLaf/AVO_TwilFLaffL1.wav	Twilek_Female_Generic	1
+_TwilFMoc	Twilek	female	Moc	laughter_mocking	M,S	6	6	31.07	31.07	6	AVO/_TwilFMoc/AVO_TwilFMockM1.wav	Twilek_Female_Generic	3
+_TwilFPle	Twilek	female	Ple	pleading	M,S	6	6	27.40	27.40	6	AVO/_TwilFPle/AVO_TwilFPledM1.wav	Twilek_Female_Generic	0
+_TwilFQue	Twilek	female	Que	question	L,M,S	9	9	59.40	59.40	6	AVO/_TwilFQue/AVO_TwilFQuesL1.wav	Twilek_Female_Generic	0
+_TwilFSa	Twilek	female	Sa	sad	L,M,S	9	9	58.61	58.61	6	AVO/_TwilFSa/AVO_TwilFSadL1.wav	Twilek_Female_Generic	3
+_TwilFSca	Twilek	female	Sca	scared	L,M,S	9	9	57.67	57.67	9	AVO/_TwilFSca/AVO_TwilFScarL1.wav	Twilek_Female_Generic	2
+_TwilFSed	Twilek	female	Sed	seductive	L,M,S	9	9	65.41	65.41	6	AVO/_TwilFSed/AVO_TwilFSeduL1.wav	Twilek_Female_Generic	13
+_TwilMAn	Twilek	male	An	angry	L,M,S	9	9	70.20	70.20	6	AVO/_TwilMAn/AVO_TwilMAngL1.wav	Twilek_Male_Generic	0
+_TwilMCmn	Twilek	male	Cmn	comment_generic	L,M,S	9	9	71.10	71.10	9	AVO/_TwilMCmn/AVO_TwilMCmntL1.wav	Twilek_Male_Generic	17
+_TwilMGre	Twilek	male	Gre	greeting	M,S	6	6	35.60	35.60	6	AVO/_TwilMGre/AVO_TwilMGretM1.wav	Twilek_Male_Generic	3
+_TwilMHap	Twilek	male	Hap	happy_thankful	L,M,S	9	9	64.48	64.48	9	AVO/_TwilMHap/AVO_TwilMHapyL1.wav	Twilek_Male_Generic	3
+_TwilMLaf	Twilek	male	Laf	laughter	L,M,S	9	9	77.15	77.15	6	AVO/_TwilMLaf/AVO_TwilMLaffL1.wav	Twilek_Male_Generic	0
+_TwilMMoc	Twilek	male	Moc	laughter_mocking	M,S	6	6	35.21	35.21	3	AVO/_TwilMMoc/AVO_TwilMMockM1.wav	Twilek_Male_Generic	0
+_TwilMPle	Twilek	male	Ple	pleading	M,S	6	6	33.41	33.41	6	AVO/_TwilMPle/AVO_TwilMPledM1.wav	Twilek_Male_Generic	1
+_TwilMQue	Twilek	male	Que	question	L,M,S	9	9	67.68	67.68	9	AVO/_TwilMQue/AVO_TwilMQuesL1.wav	Twilek_Male_Generic	1
+_TwilMSa	Twilek	male	Sa	sad	L,M,S	9	9	65.16	65.16	6	AVO/_TwilMSa/AVO_TwilMSadL1.wav	Twilek_Male_Generic	0
+_TwilMSca	Twilek	male	Sca	scared	L,M,S	9	9	65.41	65.41	6	AVO/_TwilMSca/AVO_TwilMScarL1.wav	Twilek_Male_Generic	0
+_TwilMSed	Twilek	male	Sed	seductive	L,M,S	9	9	69.52	69.52	6	AVO/_TwilMSed/AVO_TwilMSeduL1.wav	Twilek_Male_Generic	0
+_TwilMTAn	Twilek	male-tough	An	angry	L,M,S	9	9	57.13	57.13	6	AVO/_TwilMTAn/AVO_TwilMTAngL1.wav	Twilek_Male_Tough	1
+_TwilMTCmn	Twilek	male-tough	Cmn	comment_generic	L,M,S	9	9	66.82	66.82	9	AVO/_TwilMTCmn/AVO_TwilMTCmntL1.wav	Twilek_Male_Tough	11
+_TwilMTGre	Twilek	male-tough	Gre	greeting	M,S	6	6	33.30	33.30	3	AVO/_TwilMTGre/AVO_TwilMTGretM1.wav	Twilek_Male_Tough	1
+_TwilMTHap	Twilek	male-tough	Hap	happy_thankful	L,M,S	9	9	61.02	61.02	3	AVO/_TwilMTHap/AVO_TwilMTHapyL1.wav	Twilek_Male_Tough	4
+_TwilMTLaf	Twilek	male-tough	Laf	laughter	L,M,S	9	9	66.24	66.24	0	AVO/_TwilMTLaf/AVO_TwilMTLaffL1.wav	Twilek_Male_Tough	0
+_TwilMTMoc	Twilek	male-tough	Moc	laughter_mocking	M,S	6	6	32.00	32.00	6	AVO/_TwilMTMoc/AVO_TwilMTMockM1.wav	Twilek_Male_Tough	1
+_TwilMTPle	Twilek	male-tough	Ple	pleading	M,S	6	6	31.46	31.46	6	AVO/_TwilMTPle/AVO_TwilMTPledM1.wav	Twilek_Male_Tough	0
+_TwilMTQue	Twilek	male-tough	Que	question	L,M,S	9	9	56.41	56.41	6	AVO/_TwilMTQue/AVO_TwilMTQuesL1.wav	Twilek_Male_Tough	3
+_TwilMTSa	Twilek	male-tough	Sa	sad	L,M,S	9	9	65.81	65.81	3	AVO/_TwilMTSa/AVO_TwilMTSadL1.wav	Twilek_Male_Tough	0
+_TwilMTSca	Twilek	male-tough	Sca	scared	L,M,S	9	9	55.22	55.22	6	AVO/_TwilMTSca/AVO_TwilMTScarL1.wav	Twilek_Male_Tough	0
+_WeeqAn	Weequay		An	angry	L,M,S	9	9	54.94	54.94	9	AVO/_WeeqAn/AVO_WeeqAngL1.wav	Weequays	0
+_WeeqCmn	Weequay		Cmn	comment_generic	L,M,S	9	9	56.27	56.27	9	AVO/_WeeqCmn/AVO_WeeqCmntL1.wav	Weequays	0
+_WeeqQue	Weequay		Que	question	L,M,S	9	9	58.18	58.18	9	AVO/_WeeqQue/AVO_WeeqQuesL1.wav	Weequays	0
+_WeeqSa	Weequay		Sa	sad	L	3	3	26.35	26.35	0	AVO/_WeeqSa/AVO_WeeqSadL1.wav		0
+_wookhap	Wookiee (Shyriiwook)	happy (lowercase folder)	Hap	happy_thankful	L,M,S	4	4	28.94	28.94	0	AVO/_wookhap/avo_wookhapyl1.wav		33
