@@ -6,10 +6,13 @@
   scripts/pre_install_gate.sh --selftest                                # two broken builds must both FAIL
 
 Steps (stop at the first failure; exit 1 on FAIL, 0 on PASS):
-  1 default   run_tests.py (default tier); --skip-default skips it with a warning (selftest only)
+  1 default   run_tests.py (default tier); --skip-default skips it with a warning (selftest only). A failure set of
+              exactly {suite:check-exports} is tolerated with a WARN (it checks the stale live kpatch; see step 3)
   2 build     build_check.py --mod <m> --keep --build-root <scratch>/build (a fresh windows_x86.dll from source)
   3 scratch   for every smokes.toml row whose kpatch (or extra_dlls kpatch) carries the mod's manifest id: copy the
               live kpatch to <scratch>/Patches/<same rel path> and replace binaries/windows_x86.dll with the fresh DLL
+              (a mod with no smoke row gets its live kpatch looked up by manifest id); then check_exports.py runs on
+              those scratch kpatches, so a new detour export is judged on the fresh DLL, not the stale KPM one
   4 wine      KPM_DIR=<scratch> run_tests.py --wine -k wine: ; each matched row must PASS (SKIP only for missing
               DISPLAY). Rows of other mods SKIP (their kpatch is absent from the scratch tree). A mod with no smoke
               row prints NOTE and still passes.
@@ -39,6 +42,8 @@ TMP_BASE = Path(os.environ.get("TMPDIR") or f"/tmp/claude-{os.getuid()}") / "kot
 KPM_DIR = Path(os.environ.get("KPM_DIR") or "~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager").expanduser()
 GAME_DIR = Path(os.environ.get("KOTOR2_ROOT")
                 or "~/.local/share/Steam/steamapps/common/Knights of the Old Republic II").expanduser()
+CHECK_EXPORTS = REPO / "scripts" / "check_exports.py"
+DEFERRED = {"suite:check-exports"}   # judged on the fresh DLL in step 3 instead
 DLL_MEMBER = "binaries/windows_x86.dll"
 RESULT_RE = re.compile(r"^(PASS|FAIL|ERROR|SKIP)\s+wine:([^\s\[]+)(\[\S*\])?\s+(.*)$")
 
@@ -139,6 +144,9 @@ def run(cmd, env=None, quiet=False) -> tuple:
 def step_default(runner=run):
     rc, out = runner([PY, str(RUN_TESTS)])
     bad = [l.split()[1] for l in out.splitlines() if re.match(r"^(FAIL|ERROR)\s+\S", l)]
+    if bad and set(bad) <= DEFERRED:
+        print("WARN  step 1: suite:check-exports failed against the stale KPM kpatch; deferred to step 3 (fresh DLL)")
+        return
     if rc != 0 or bad:
         raise GateFail(1, "default", f"run_tests.py rc={rc}; failing: {', '.join(bad) or '(see output)'}")
 
@@ -162,8 +170,11 @@ def step_build(mods, build_root: Path, repo: Path = REPO, runner=run) -> dict:
     return dlls
 
 
-def step_scratch(dll_by_id: dict, scratch: Path, smokes_toml: Path = SMOKES_TOML, kpm_dir: Path = KPM_DIR) -> dict:
-    """Populate <scratch>/Patches with the matched kpatches (fresh DLLs swapped in). Returns {mod id: [rows]}."""
+def step_scratch(dll_by_id: dict, scratch: Path, smokes_toml: Path = SMOKES_TOML, kpm_dir: Path = KPM_DIR,
+                 packed: dict | None = None) -> dict:
+    """Populate <scratch>/Patches with the matched kpatches (fresh DLLs swapped in). Returns {mod id: [rows]}.
+    `packed`, if given, is filled with {mod id: [scratch kpatch paths carrying its fresh DLL]}."""
+    packed = {} if packed is None else packed
     patches = scratch / "Patches"
     shutil.rmtree(patches, ignore_errors=True)
     cfg = tomllib.loads(smokes_toml.read_text())
@@ -180,10 +191,39 @@ def step_scratch(dll_by_id: dict, scratch: Path, smokes_toml: Path = SMOKES_TOML
             mid = kpatch_id(src)
             if mid in dll_by_id:
                 swap_dll(src, dest, dll_by_id[mid])
+                packed.setdefault(mid, []).append(dest)
             else:   # a co-loaded DLL of another mod: as installed
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(src, dest)
+    for mid in dll_by_id:   # no smoke row: still pack its live kpatch (by manifest id) so exports get checked
+        if mid in packed:
+            continue
+        for src in sorted((kpm_dir / "Patches").glob("**/*.kpatch")):
+            if kpatch_id(src) == mid:
+                dest = patches / src.relative_to(kpm_dir / "Patches")
+                swap_dll(src, dest, dll_by_id[mid])
+                packed[mid] = [dest]
+                break
     return rows
+
+
+def step_exports(ids, packed: dict, scratch: Path, runner=run):
+    """check_exports.py on the scratch kpatches carrying the fresh DLLs (not the stale live ones)."""
+    for mid in ids:
+        if mid not in packed:
+            print(f"NOTE no live kpatch for {mid}: exports not checked against a packed build")
+    kps = [p for mid in ids for p in packed.get(mid, [])]
+    if not kps:
+        return
+    cmd = [PY, str(CHECK_EXPORTS), "--quiet", "--kpm-dir", str(scratch)]
+    for mid in ids:
+        cmd += ["--mod", mid]
+    for p in kps:
+        cmd += ["--kpatch", str(p)]
+    rc, out = runner(cmd)
+    if rc != 0:
+        fails = [l for l in out.splitlines() if l.startswith("FAIL")]
+        raise GateFail(3, "scratch", "; ".join(fails[:3]) or f"check_exports.py rc={rc}")
 
 
 def parse_wine(out: str) -> dict:
@@ -245,8 +285,10 @@ def gate(mods, skip_default=False, scratch=None, runner=run) -> int:
             step_default(runner)
         print("== step 2/4: build from source", flush=True)
         dlls = step_build(mods, scratch / "build", runner=runner)
-        print("== step 3/4: scratch KPM tree", flush=True)
-        rows = step_scratch({ids[m]: dlls[m] for m in mods}, scratch)
+        print("== step 3/4: scratch KPM tree + exports check on the fresh DLLs", flush=True)
+        packed = {}
+        rows = step_scratch({ids[m]: dlls[m] for m in mods}, scratch, packed=packed)
+        step_exports([ids[m] for m in mods], packed, scratch, runner)
         all_rows = []
         for mid, rs in rows.items():
             if rs:

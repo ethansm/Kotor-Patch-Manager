@@ -103,6 +103,34 @@ class Swap(Fixture):
             self.assertEqual(z.read(g.DLL_MEMBER), b"OLD-DLL")
         self.assertFalse((scratch / "Patches/LoadHangProbe").exists())
 
+    def test_step_scratch_records_packed(self):
+        dll = self.root / "new.dll"
+        dll.write_bytes(b"FRESH")
+        scratch = self.root / "scratch"
+        packed = {}
+        g.step_scratch({"perf-lab": dll}, scratch, self.smokes, self.kpm, packed)
+        self.assertEqual(packed["perf-lab"], [scratch / "Patches/PerfLab/PerfLab.kpatch"])
+
+    def test_step_scratch_packs_mod_without_smoke_row(self):   # exports are still checked for it
+        dll = self.root / "new.dll"
+        dll.write_bytes(b"FRESH-OTHER")
+        make_kpatch(self.kpm / "Patches/NoRow/NoRow.kpatch", "no-row")
+        scratch = self.root / "scratch"
+        packed = {}
+        rows = g.step_scratch({"no-row": dll}, scratch, self.smokes, self.kpm, packed)
+        self.assertEqual(rows, {"no-row": []})
+        dest = scratch / "Patches/NoRow/NoRow.kpatch"
+        self.assertEqual(packed["no-row"], [dest])
+        with zipfile.ZipFile(dest) as z:
+            self.assertEqual(z.read(g.DLL_MEMBER), b"FRESH-OTHER")
+
+    def test_step_scratch_new_mod_has_no_packed_entry(self):   # no live kpatch at all
+        dll = self.root / "new.dll"
+        dll.write_bytes(b"FRESH")
+        packed = {}
+        g.step_scratch({"brand-new": dll}, self.root / "scratch", self.smokes, self.kpm, packed)
+        self.assertNotIn("brand-new", packed)
+
     def test_scratch_guard(self):
         with self.assertRaises(SystemExit):
             g.safe_scratch(self.root / "elsewhere")
@@ -135,6 +163,39 @@ class Wine(unittest.TestCase):
             g.judge_wine(["absent"], res)
 
 
+class Exports(unittest.TestCase):
+    def test_argv_and_pass(self):
+        calls = []
+
+        def runner(cmd, env=None, quiet=False):
+            calls.append(cmd)
+            return 0, ""
+        scratch = Path("/s")
+        packed = {"a": [scratch / "Patches/A/A.kpatch"], "b": [scratch / "Patches/B/B.kpatch"]}
+        g.step_exports(["a", "b"], packed, scratch, runner)
+        cmd = calls[0]
+        self.assertIn(str(g.CHECK_EXPORTS), cmd)
+        self.assertEqual(cmd[cmd.index("--kpm-dir") + 1], str(scratch))
+        self.assertEqual([cmd[i + 1] for i, x in enumerate(cmd) if x == "--mod"], ["a", "b"])
+        self.assertEqual([cmd[i + 1] for i, x in enumerate(cmd) if x == "--kpatch"],
+                         [str(scratch / "Patches/A/A.kpatch"), str(scratch / "Patches/B/B.kpatch")])
+
+    def test_nothing_packed_is_note_not_call(self):
+        calls = []
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            g.step_exports(["new"], {}, Path("/s"), lambda cmd, env=None, quiet=False: calls.append(cmd) or (0, ""))
+        self.assertEqual(calls, [])
+        self.assertIn("NOTE no live kpatch for new", buf.getvalue())
+
+    def test_failure_is_gate_fail_3(self):
+        runner = lambda cmd, env=None, quiet=False: (1, "FAIL   mod-a  missing export Foo\n")
+        with self.assertRaises(g.GateFail) as c:
+            g.step_exports(["a"], {"a": [Path("/s/a.kpatch")]}, Path("/s"), runner)
+        self.assertEqual((c.exception.n, c.exception.step), (3, "scratch"))
+        self.assertIn("missing export Foo", c.exception.reason)
+
+
 class Ordering(unittest.TestCase):
     """Fake runner: records calls, fails a chosen step; later steps must not run."""
 
@@ -165,6 +226,18 @@ class Ordering(unittest.TestCase):
         rc, calls, out = self.gate("build")
         self.assertEqual((rc, calls), (1, ["default", "build"]))
         self.assertIn("GATE FAIL 2 build: ", out)
+
+    def test_check_exports_only_failure_deferred(self):
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            g.step_default(lambda cmd, env=None, quiet=False: (1, "FAIL   suite:check-exports  0.1s\n"))
+        self.assertIn("WARN  step 1: suite:check-exports failed against the stale KPM kpatch", buf.getvalue())
+        with self.assertRaises(g.GateFail) as c:
+            g.step_default(lambda cmd, env=None, quiet=False:
+                           (1, "FAIL   suite:check-exports  0.1s\nFAIL   py:x  0.1s\n"))
+        self.assertEqual((c.exception.n, c.exception.step), (1, "default"))
+        with self.assertRaises(g.GateFail):   # rc != 0 with nothing parseable is still a failure
+            g.step_default(lambda cmd, env=None, quiet=False: (1, ""))
 
     def test_skip_default(self):
         runner, calls = self.fake("build")
