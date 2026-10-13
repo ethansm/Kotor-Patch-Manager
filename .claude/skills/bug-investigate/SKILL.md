@@ -25,10 +25,10 @@ Run data lives under `~/.cache/bug_investigate/` (a `--run` dir inside the repo 
 ```bash
 python3 scripts/bug_investigate.py new --kind logic --symptom "what the player saw" --log force_power_hotbar_log.txt@1 --mod action-hotbar
 python3 scripts/bug_investigate.py bundle --run $RUN
-python3 scripts/bug_investigate.py blind --run $RUN --engine stub --cap-total 1.00
-python3 scripts/bug_investigate.py null --run $RUN --engine stub --cap-total 1.00
+python3 scripts/bug_investigate.py blind --run $RUN --engine stub --stub-script FILE --cap-total 1.00
+python3 scripts/bug_investigate.py null --run $RUN --engine stub --stub-script FILE --cap-total 1.00
 python3 scripts/bug_investigate.py check --run $RUN
-python3 scripts/bug_investigate.py verify --run $RUN --engine stub --cap-total 1.00
+python3 scripts/bug_investigate.py verify --run $RUN --engine stub --stub-script FILE --cap-total 1.00
 python3 scripts/bug_investigate.py report --run $RUN
 ```
 
@@ -62,7 +62,25 @@ Every report ends with "a human must review this report before any fix is starte
 - `--engine stub` is the default for rehearsal ($0). `--engine real` needs BOTH `--claude-bin ABS` and `--yes-spend USD` (>= `--cap-total`, `--cap-total` <= 1.00) or it exits 2 before anything is written; the orchestrator runs `swarm_run.py probe` first, which checks the sandbox and the login at $0. Spend only after the user says yes in chat with the ceiling named; pilot 2026-10-11 cost about $0.014 (see `swarm_m2_safety.handoff.md`, "M4"). Role schemas must not carry `$schema` (the claude CLI rejects draft 2020-12 offline).
 - Never `cat`, `tail` or `grep` a raw `*_log.txt`. The bundle builder is the only log reader; it scrubs paths and caps size.
 - No environment variable picks a binary or the runner. `--swarm-run` is explicit.
-- With a case, a unit prompt containing any `blind_forbidden_terms` entry is refused (case-insensitive) and nothing runs.
+- With a case, a `blind` or `null` unit prompt containing any `blind_forbidden_terms` entry is refused (matched after NFKC, zero-width removal, whitespace/`_`/`-` collapse, case-insensitive) and nothing runs. `verify` prompts are NOT checked: they contain model-written claims, and a forbidden word there is legitimate.
+- The stub engine needs `--stub-script FILE`; without it every unit ends `error_no_script`, so the CLI refuses it.
+- Wait for background work with Monitor or the completion notification. Never `sleep` loops and never a self-matching `pgrep -f`. Edit files with Edit/Write, not heredocs.
+
+### Cap sizing (real engine; the preflight refuses a cap that cannot cover the stage)
+
+`cap_total >= spent + (N_pending - 1) x EXPECT + cap_call`, at most 1.00 per stage (the runner's `REAL_MAX_TOTAL_USD`).
+
+| stage | units | EXPECT per unit | example flags |
+|---|---|---|---|
+| blind | 3 | 0.006 | `--cap-total 0.06 --cap-call 0.03` |
+| null | 1 | 0.004 | `--cap-total 0.03 --cap-call 0.03` |
+| verify (Sonnet) | N survivors | 0.04 | `--cap-total <need> --cap-call 0.05 --yes-spend <need> --parallel 2` |
+
+Verify needs `--claude-bin ABS --yes-spend` like every real stage; `--allow-partial` runs what fits and prints `partial: at most K of N units will run`. Pending verify units make `report` exit 1 and print `VERIFY PARTIAL` or `VERIFY NOT RUN`; those hypotheses keep status `supported` with no verdict.
+
+### Worker brief snippet (Haiku implementers)
+
+Red means an assertion failure, not an ImportError. `export TMPDIR=<scratch>` first. No edits after the final green run. Read big files with `sed -n` windows. No demo files. Reply in the 5-line WORKER schema.
 
 ## 7. Case file
 

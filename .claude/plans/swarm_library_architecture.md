@@ -298,14 +298,14 @@ Constraints: bundle `5a8be20` and LIB `651047e` stay untouched unless the row sa
 | R4.3 | rank-1: None top counts as miss; assert top equals report `ranked[0]`; use producer rank key after R3.4; report rank-1 under reversed unit order | `bug_investigate_score.py:154-157`, `:327-330` | $0 | DONE d03aab2 |
 | R4.4 | per-run proportions with run-cluster CI beside pooled Wilson; all-label rate (incl. quote-invalid); per-style breakdown | `bug_investigate_score.py:319-337` | $0 | DONE d03aab2 |
 | R4.5 | one-case assertion in `aggregate`, reject empty regex, `cost_complete` needs expected unit count, stamp rubric sha256 in `score.json` | `bug_investigate_score.py:104-105`, `:164-194`, `:408-411` | $0 | DONE a589b90 + d03aab2 |
-| R5.1 | correct the M4 note: 2 of 28 verified, "rubric label" wording, null saturation, in-sample agreement | `bug_investigate_m4_measurement.md:27,38,39,43` | $0 | TODO |
+| R5.1 | correct the M4 note: 2 of 28 verified, "rubric label" wording, null saturation, in-sample agreement | `bug_investigate_m4_measurement.md:27,38,39,43` | $0 | DONE (see commit docs(bug-investigate) after 6808f6a) |
 | R5.2 | freeze both rubrics; hand-label >= 20 fresh hypotheses by another agent or the user; report kappa; no rubric edit on that set | `hotbar_charkey.json:28-36`, `queue_reinject_bg09.json:42-63` | $0 | TODO, needs user input |
-| R5.3 | design 1 to 2 not-a-bug control bundles for the null unit (design only; building needs a go) | measurement note :43 | $0 | TODO |
-| R5.4 | SKILL.md: cap sizing table, wait via Monitor never sleep/self-matching pgrep, Edit not heredoc, required verify flags, stub needs `--stub-script` | `SKILL.md:62-65` | $0 | TODO |
+| R5.3 | design 1 to 2 not-a-bug control bundles for the null unit (design only; building needs a go) | measurement note :43 | $0 | DONE design only (measurement note) |
+| R5.4 | SKILL.md: cap sizing table, wait via Monitor never sleep/self-matching pgrep, Edit not heredoc, required verify flags, stub needs `--stub-script` | `SKILL.md:62-65` | $0 | DONE |
 | R5.5 | gated verify resume with a cap covering all pending units (about $1.1 for 51 units: two stages or a sample); re-score config B | `swarm_run.py:47` ceiling 1.00 | up to $1.00, gate G-R1 | TODO, needs explicit yes |
-| R6.1 | stub default outputs per role; `rehearse` must end all-ok before a paid gate | session events [122]-[134] | $0 | TODO |
-| R6.2 | `measure --runs N --ceiling USD` driver (frozen check, new/bundle/blind/null/score, ceiling line) replacing hand-written `b1.sh` | review U1 | $0 | TODO |
+| R6.1 | stub default outputs per role; `rehearse` must end all-ok before a paid gate | session events [122]-[134] | $0 | DONE 6808f6a (refuse stub without --stub-script; stub default outputs not built) |
+| R6.2 | `measure --runs N --ceiling USD` driver (frozen check, new/bundle/blind/null/score, ceiling line) replacing hand-written `b1.sh` | review U1 | $0 | DEFERRED: measure driver out of scope for this plan |
 | R6.3 | `score --sample N --seed S` and `agree --labels` (held-out sampling), run id stored from `report.json`, prefix lookup | review U1, U3 | $0 | DONE 1ea4d87 (subcommands sample and agree) |
-| R6.4 | worker-brief snippet in SKILL.md: red = assertion failure, `export TMPDIR=<scratch>` first, no edits after green, `sed -n` windows | review U2 | $0 | TODO |
+| R6.4 | worker-brief snippet in SKILL.md: red = assertion failure, `export TMPDIR=<scratch>` first, no edits after green, `sed -n` windows | review U2 | $0 | DONE |
 
 Order: R3 and R4 (pure code, $0) can run in parallel with R1; R2 after R3.1/R3.3; R5.1/R5.4 any time; R5.2 needs a human or second agent; R5.5 last (after R1, R2, R4). Done = tests for every row red-then-green, mutation per package, `run_tests.py bug_investigate evidence_quote playtest swarm-lib swarm-bundle swarm-fix` PASS, `check_skills.py` PASS, and this table updated with the commit sha per row.

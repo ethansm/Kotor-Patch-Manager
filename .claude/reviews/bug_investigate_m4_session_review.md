@@ -30,3 +30,9 @@ R1 verify budget sizing and visibility; R2 stage integrity; R3 validation gates 
 
 ## Cost of this review
 8 Haiku agents, about $0.62 (estimate, `agent_usage.py`), all peaked 107k to 131k context, above the 100k guideline. Lenses were too wide; split by file next time.
+
+## Corrections to the 2026-10-13 review (added during the remediation plan, plan-mode verification)
+- U5-H1 (stale findings resurrected after a bundle change): MITIGATED. Runner `status` recomputes `unit_sha256` from the current unit file and compares it to the stored record (`swarm_run.py:814-850`), so a rebuilt unit is incomplete. R2.1 and R2.5 DROPPED (resume already sends only incomplete units, `swarm_run.py:524-526`).
+- U5-H3 (null `not_a_bug` with zero citations counts as valid): REFUTED. `_reasons` rejects `not_a_bug` with empty reasons. R3.1 shrinks to a pin test.
+- R1.3 (verify order) DROPPED: new unit ids would orphan the 10 recorded verify runs; the preflight makes order irrelevant and per-style coverage is reported (R4.4).
+- R3.3 NARROWED: the forbidden-term check stays blind and null only (verify prompts hold model-written claims); the symptom is checked at `new`.
