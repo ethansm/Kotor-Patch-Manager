@@ -338,3 +338,10 @@ Plan: "Swarm library: next phases (M2 safety now; M3-M5 as stubs)". Updated 2026
 - Result and numbers: `.claude/reviews/bug_investigate_m4_measurement.md`. Headlines: hotbar precision_hit 0.277 [0.169, 0.418] (n=47), rank-1 HIT 5/5; BG09 0.063 [0.017, 0.201] (n=32), rank-1 HIT 0/5; null `insufficient` 10/10; advocate valid 27/28 with 0 short ids (pilot truncation did not recur; resolver never exercised live); verify layer covered only 28/79 hypotheses, rejected 2 (both MISS), abstained 22, about $0.022/unit.
 - D3 stays "layer 3 off". Verify per-call cap reservation left most units pending: fix the caps before any further verify run.
 - Run data in `~/.cache/bug_investigate/20261012T0400..0411Z-logic` (10 dirs, score.json each).
+
+## M4 session review (2026-10-13, 8 Haiku recon, about $0.62 est.)
+- Review note: `.claude/reviews/bug_investigate_m4_session_review.md`; raw lens outputs `.claude/reviews/bug_investigate_m4_review/u1.md`..`u8.md`.
+- Verdict: mechanics fine (68/68 units, $0.704); validity weaker than the M4 note; verify layer 28/79 covered, 51 pending silently (cap math: `cap_total >= N x cap_call`).
+- Fix packages R1..R6 (verify budget, stage integrity, validation gates, scorer validity, measurement protocol and docs, tooling) are tracked in `.claude/plans/swarm_library_architecture.md` section 18; implementation plan: see that section for the plan file path.
+- Caution: M4 note claims "2 of 79 removed", "correct rejections", "null abstains correctly" overreach (2 of 28 verified; labels are rubric labels). Rubric agreement 8/8 was in-sample; held-out was 7/8.
+- Standing for R-work: bundle `5a8be20` and LIB `651047e` untouched by this review; any LIB change (budget preflight in `swarm_run.py`) is a separate go.

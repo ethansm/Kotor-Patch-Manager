@@ -272,3 +272,40 @@ Corrections found while building the probe:
 - The fork has its own stub (`.claude/review/tools/stub_claude/claude`). It differs from the bundle stub, so the fork's self-tests do not exercise the bundle's stub. Not part of the argv probe.
 
 Verdict, scoped to the map call only: argv parity holds at the default profile. The fork's run_map argv is equivalent. "Fork deleted" is NOT yet supported. It still needs the parsed-result and prompt-render comparison, the settings and system-prompt content check (materialise one bundle run dir and compare), and the rest of the 33-entry drift (verify/ and tools/). D4 is now a real choice: pinning effort changes map results in both engines, because today both use the unknown CLI default.
+
+## 18. M4 review follow-ups: fix packages R1..R6 (2026-10-13, PLANNED, nothing implemented)
+Source: `.claude/reviews/bug_investigate_m4_session_review.md` (8 Haiku recon lenses; raw `.claude/reviews/bug_investigate_m4_review/u1.md`..`u8.md`). Implementation plan: `.claude/plans/swarm_m4_remediation.md` (copied from the approved plan file at its step 0). Handoff: `.claude/handoffs/swarm_m2_safety.handoff.md` section "M4 session review". Track status in this table only (edit the Status cell; never delete a row).
+Constraints: bundle `5a8be20` and LIB `651047e` stay untouched unless the row says "LIB, needs go"; roles, prompts and schemas stay frozen (`$SP/frozen.sha256` style check) until R5.2 is done; paid calls only at gate G-R1 with an explicit in-chat yes and ceiling.
+
+| Id | Package and item | Evidence (file:line) | Paid | Status |
+|---|---|---|---|---|
+| R1.1 | verify preflight: refuse (real engine) when units x cap_call > cap_total, print the cap needed | `bug_investigate.py:693-699`, `swarm_run.py:296-297` | $0 | TODO |
+| R1.2 | pending verify units make decision `incomplete`, nonzero exit, listed in summary as "budget deferred" (not "no record") | `bug_investigate.py:499-515`, `:725`, `swarm_run.py:786-787` | $0 | TODO |
+| R1.3 | verify order: ranked/round-robin by role so no role starves (skeptic got 0 of 25) | `bug_investigate.py:693` | $0 | TODO |
+| R1.4 | same preflight inside the runner (`check_spend_flags`) | `swarm_run.py:282-297` | $0 | TODO, LIB, needs go |
+| R2.1 | run `probe` before `write_units`; write into a fresh/archived `out/` | `bug_investigate.py:626-627`, `:331` | $0 | TODO |
+| R2.2 | stamp `bundle_sha256` + sha256(claim, mechanism, falsifier) into each verify unit; ignore mismatched verdicts | `bug_investigate.py:458`, `:467-471` | $0 | TODO |
+| R2.3 | `bundle` refuses when stage `out/` exists; refuses empty evidence or a missing launch | `bug_investigate.py:590-615`, `:611` | $0 | TODO |
+| R2.4 | per-run lock (`fcntl` on `RUN/.lock`) for mutating commands; `new` uses `mkdir` without `exist_ok` plus random suffix | `bug_investigate.py:562-564`, `:533` | $0 | TODO |
+| R2.5 | resume sends only incomplete units (check what `swarm_run map` already skips) | `bug_investigate.py:648-650`, `swarm_run.py:524-526` | $0 | TODO |
+| R3.1 | null unit needs non-empty verdicts (`all([])` is True today) | `bug_investigate.py:495`, `:503` | $0 | TODO |
+| R3.2 | malformed complete units (hypotheses not a list, missing id) become incomplete with a reason | `bug_investigate.py:428-439`, `:490-492` | $0 | TODO |
+| R3.3 | forbidden-term check: NFKC, strip zero-width, collapse whitespace and `_`/`-`, match on joined excerpt text, whole-word for alnum edges; apply to verify units and to the symptom at `new` | `bug_investigate.py:655-660`, `:682-699` | $0 | TODO |
+| R3.4 | rank on distinct `text_sha256`; dedupe `valid_evidence_ids` | `bug_investigate.py:478`, `evidence_quote_check.py:156-157` | $0 | TODO |
+| R3.5 | validate `L<n>\|` markers against the excerpt line range; `MIN_CHARS` on letters/digits after stripping tag/timestamp; hint `ev:<sha8>` form on truncated ids; catch lone surrogate in CLI | `evidence_quote_check.py:57`, `:140`, `:123`, `:246` | $0 | TODO |
+| R4.1 | scorer: negation window (not/never/no/n't/without within ~6 words), hedge flag | `bug_investigate_score.py:117-119` | $0 | TODO |
+| R4.2 | scorer: strip the symptom sentence and quoted evidence before matching (rubric `companion`/`follower` echo) | `queue_reinject_bg09.json:44-56` | $0 | TODO |
+| R4.3 | rank-1: None top counts as miss; assert top equals report `ranked[0]`; use producer rank key after R3.4; report rank-1 under reversed unit order | `bug_investigate_score.py:154-157`, `:327-330` | $0 | TODO |
+| R4.4 | per-run proportions with run-cluster CI beside pooled Wilson; all-label rate (incl. quote-invalid); per-style breakdown | `bug_investigate_score.py:319-337` | $0 | TODO |
+| R4.5 | one-case assertion in `aggregate`, reject empty regex, `cost_complete` needs expected unit count, stamp rubric sha256 in `score.json` | `bug_investigate_score.py:104-105`, `:164-194`, `:408-411` | $0 | TODO |
+| R5.1 | correct the M4 note: 2 of 28 verified, "rubric label" wording, null saturation, in-sample agreement | `bug_investigate_m4_measurement.md:27,38,39,43` | $0 | TODO |
+| R5.2 | freeze both rubrics; hand-label >= 20 fresh hypotheses by another agent or the user; report kappa; no rubric edit on that set | `hotbar_charkey.json:28-36`, `queue_reinject_bg09.json:42-63` | $0 | TODO, needs user input |
+| R5.3 | design 1 to 2 not-a-bug control bundles for the null unit (design only; building needs a go) | measurement note :43 | $0 | TODO |
+| R5.4 | SKILL.md: cap sizing table, wait via Monitor never sleep/self-matching pgrep, Edit not heredoc, required verify flags, stub needs `--stub-script` | `SKILL.md:62-65` | $0 | TODO |
+| R5.5 | gated verify resume with a cap covering all pending units (about $1.1 for 51 units: two stages or a sample); re-score config B | `swarm_run.py:47` ceiling 1.00 | up to $1.00, gate G-R1 | TODO, needs explicit yes |
+| R6.1 | stub default outputs per role; `rehearse` must end all-ok before a paid gate | session events [122]-[134] | $0 | TODO |
+| R6.2 | `measure --runs N --ceiling USD` driver (frozen check, new/bundle/blind/null/score, ceiling line) replacing hand-written `b1.sh` | review U1 | $0 | TODO |
+| R6.3 | `score --sample N --seed S` and `agree --labels` (held-out sampling), run id stored from `report.json`, prefix lookup | review U1, U3 | $0 | TODO |
+| R6.4 | worker-brief snippet in SKILL.md: red = assertion failure, `export TMPDIR=<scratch>` first, no edits after green, `sed -n` windows | review U2 | $0 | TODO |
+
+Order: R3 and R4 (pure code, $0) can run in parallel with R1; R2 after R3.1/R3.3; R5.1/R5.4 any time; R5.2 needs a human or second agent; R5.5 last (after R1, R2, R4). Done = tests for every row red-then-green, mutation per package, `run_tests.py bug_investigate evidence_quote playtest swarm-lib swarm-bundle swarm-fix` PASS, `check_skills.py` PASS, and this table updated with the commit sha per row.
