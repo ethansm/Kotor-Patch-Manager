@@ -231,6 +231,11 @@ class Report(unittest.TestCase):
         self.assertFalse(T.is_alert("    +00: 00 ff null"))
         self.assertFalse(T.is_alert("[1] net_drop=5 timeouts=1"))
 
+    def test_transient_invalid_object_id_does_not_alert(self):
+        self.assertFalse(T.is_alert("[12 f3] character: creature 0x1a2b3c has invalid object id ffffffff (party members=2 slot=1 tag='')"))
+        self.assertTrue(T.is_alert("[12 f3] character: creature 0x1a2b3c has invalid object id 12345678 (party members=2 slot=1 tag='')"))
+        self.assertTrue(T.is_alert("[1] invalid object id ffffffff in save"))
+
     def test_alert_keywords(self):
         for w in ["warn", "WARNING", "err", "Error", "fail", "failed", "failure", "assert", "exception", "crash", "abort",
                   "timeout", "hang", "null", "bad", "invalid", "overflow", "drop", "dropped"]:
@@ -240,12 +245,11 @@ class Report(unittest.TestCase):
         rc, out = cli(fx("hangprobe_excerpt.txt"), "--launch", 1)
         self.assertNotIn("alerts:", out)
 
-    def test_real_alert_in_hotbar(self):
+    def test_real_transient_invalid_oid_in_hotbar_is_clean(self):
+        # fixture line 35 is the real "creature ... has invalid object id ffffffff" INFO line: allowlisted as transient (was the lone ALERT)
         rc, out = cli(fx("hotbar_excerpt.txt"))
-        L = lines_of(out)
-        a = L.index("alerts:")
-        self.assertTrue(L[a + 1].startswith("1  35  character: creature 0cd83410 has invalid object id"))
-        self.assertTrue(L[-1].startswith("VERDICT: ALERTS(1)"))
+        self.assertNotIn("alerts:", out)
+        self.assertTrue(lines_of(out)[-1].startswith("VERDICT: CLEAN"))
 
     def test_zero_failed_probes_real_fixture_is_clean(self):
         rc, out = cli(fx("shieldprobe_excerpt.txt"))

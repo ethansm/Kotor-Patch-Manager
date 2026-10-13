@@ -70,6 +70,8 @@ RE_BANNER = re.compile(r"^(?:==\s*)?(?=[\w.\-]*[a-z])[A-Za-z][\w.\-]*"
 RE_HEXDUMP = re.compile(r"^\s+\+[0-9a-fA-F]+:")
 RE_ALERT = re.compile(r"\b(warn|warning|err|error|fail(?:ed|ure)?|assert|exception|crash|abort|timeout|hang|null|bad|invalid"
                       r"|overflow|drop(?:ped)?)\b", re.I)
+# Known-transient INFO lines that contain an alert word: action-hotbar logs the 0xFFFFFFFF object id seen while a creature is still loading.
+RE_TRANSIENT = re.compile(r"\bcreature \S+ has invalid object id ffffffff \(party members=", re.I)
 RE_ZERO_AFTER = re.compile(r"\s*[=:]\s*0(?:\.0+)?\b")
 RE_ZERO_BEFORE = re.compile(r"\b0\s+$")
 RE_CAP = re.compile(r"\bcap\b|limit reached", re.I)
@@ -116,6 +118,8 @@ def is_alert(line):
     if RE_HEXDUMP.match(line):
         return False
     msg = strip_prefix(line)
+    if RE_TRANSIENT.search(msg):
+        return False
     found = False
     for m in RE_ALERT.finditer(msg):
         if not RE_ZERO_AFTER.match(msg, m.end()) and not RE_ZERO_BEFORE.search(msg[:m.start()]):

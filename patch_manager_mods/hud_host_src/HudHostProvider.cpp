@@ -103,26 +103,31 @@ void probeDumpPanel(uintptr_t panel) {
     }
 }
 
-// Probe 2: per-frame watch of HUD +0x40..+0x4F; logs only on change (and when g_hud changes), capped at 64 lines per process.
+// Probe 2: per-frame watch of HUD +0x40..+0x4F; logs only on change (and when g_hud changes). Capped per process with separate budgets
+// (64 hud changes, 32 frame dumps) so a flickering frame cannot use up the budget of the hud changes.
 void watchHud48(int32_t hud, unsigned frame) {
     static int32_t lastHud = 0;
     static uint32_t last[4] = {};
     static bool haveLast = false;
-    static int lines = 0;
-    constexpr int Cap = 64;
-    if (lines > Cap) return;
+    static int hudLines = 0, frameLines = 0;
+    constexpr int HudCap = 64, FrameCap = 32;
+    if (hudLines > HudCap && frameLines > FrameCap) return;
     const bool hudChanged = hud != lastHud;
     uint32_t d[4] = {};
     bool ok = true;
     for (int i = 0; i < 4; ++i) ok = saferead::readAt(S_BuildProbe, uintptr_t(hud), BuildProbeOff + 4 * i, &d[i]) && ok;
     const bool changed = ok && (!haveLast || memcmp(d, last, sizeof d) != 0);
     if (!hudChanged && !changed) return;
-    if (lines == Cap) { ++lines; KP_LOG(chCore, "HUD48 cap reached"); return; }
-    if (hudChanged) { ++lines; KP_LOG(chCore, "HUD48 hud=%08x (was %08x)", (unsigned)hud, (unsigned)lastHud); lastHud = hud; }
+    if (hudChanged) {
+        if (hudLines == HudCap) KP_LOG(chCore, "HUD48 cap reached what=hud");
+        if (hudLines < HudCap) KP_LOG(chCore, "HUD48 hud=%08x (was %08x)", (unsigned)hud, (unsigned)lastHud);
+        if (hudLines <= HudCap) ++hudLines;
+        lastHud = hud;
+    }
     if (changed) {
-        if (lines >= Cap) { ++lines; KP_LOG(chCore, "HUD48 cap reached"); return; }
-        ++lines;
-        KP_LOG(chCore, "HUD48 frame=%u +0x40 %08x %08x %08x %08x", frame, (unsigned)d[0], (unsigned)d[1], (unsigned)d[2], (unsigned)d[3]);
+        if (frameLines == FrameCap) KP_LOG(chCore, "HUD48 cap reached what=frame");
+        if (frameLines < FrameCap) KP_LOG(chCore, "HUD48 frame=%u +0x40 %08x %08x %08x %08x", frame, (unsigned)d[0], (unsigned)d[1], (unsigned)d[2], (unsigned)d[3]);
+        if (frameLines <= FrameCap) ++frameLines;
         memcpy(last, d, sizeof d);
         haveLast = true;
     }

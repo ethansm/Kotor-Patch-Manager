@@ -291,22 +291,24 @@ int g_flagLast = -1;
 int g_contState[3] = { -1, -1, -1 };          // -1 never logged, 0 tint read failed, 1 tint read ok (log on change only)
 float g_contLog[3][4] = { { 0 }, { 0 }, { 0 } };   // last logged tint rgb + alpha per group
 
-// VIS diagnostics: one INFO line per visibility state CHANGE of an item (shown, why, rect), capped at 64 lines per process (the 65th call emits one cap line).
+// VIS diagnostics: one INFO line per visibility state CHANGE of an item (shown, why, rect), capped at 64 lines per kind and process
+// (kind 0 = groups, 1 = buttons, 2 = pills/build); the 65th call of a kind emits one "VIS cap reached kind=" line, so one chatty kind cannot silence the others.
 struct VisState { bool set; int shown; char why[24]; int r[4]; };
 VisState g_visGroup[3];
 VisState g_visButtons;
-int g_visCount = 0; bool g_visCapped = false;
-bool visBudget() {
-    if (g_visCount < 64) { ++g_visCount; return true; }
-    if (!g_visCapped) { g_visCapped = true; KP_LOGV(chMain, KPLOG_INFO, "VIS cap reached"); }
+VisState g_visPills;
+int g_visCount[3] = { 0, 0, 0 }; bool g_visCapped[3] = { false, false, false };
+bool visBudget(int kind) {
+    if (g_visCount[kind] < 64) { ++g_visCount[kind]; return true; }
+    if (!g_visCapped[kind]) { g_visCapped[kind] = true; KP_LOGV(chMain, KPLOG_INFO, "VIS cap reached kind=%s", kind == 0 ? "group" : kind == 1 ? "buttons" : "pills"); }
     return false;
 }
-void visReset() { memset(g_visGroup, 0, sizeof(g_visGroup)); memset(&g_visButtons, 0, sizeof(g_visButtons)); }
+void visReset() { memset(g_visGroup, 0, sizeof(g_visGroup)); memset(&g_visButtons, 0, sizeof(g_visButtons)); memset(&g_visPills, 0, sizeof(g_visPills)); }
 void visLog(VisState& st, const char* what, int shown, const char* why, const ch::Rect& r) {
     if (st.set && st.shown == shown && st.r[0] == r.x && st.r[1] == r.y && st.r[2] == r.w && st.r[3] == r.h && strncmp(st.why, why, sizeof(st.why) - 1) == 0) return;
     st.set = true; st.shown = shown; st.r[0] = r.x; st.r[1] = r.y; st.r[2] = r.w; st.r[3] = r.h;
     strncpy(st.why, why, sizeof(st.why) - 1); st.why[sizeof(st.why) - 1] = 0;
-    if (!visBudget()) return;
+    if (!visBudget(&st == &g_visButtons ? 1 : &st == &g_visPills ? 2 : 0)) return;
     KP_LOGV(chMain, KPLOG_INFO, "VIS %s shown=%d why=%s rect=[%d,%d,%d,%d]", what, shown, why, r.x, r.y, r.w, r.h);
 }
 void visGroup(int g, int shown, const char* why, const ch::Rect& r) { char nm[16]; snprintf(nm, sizeof(nm), "group%d", g); visLog(g_visGroup[g], nm, shown, why, r); }
@@ -422,7 +424,7 @@ void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
     g_nBtn = total < MaxBtn ? total : MaxBtn; g_per = per;
     if (n == total) KP_LOGV(chMain, KPLOG_INFO, "BUILD buttons created=%d/%d slots x2 labels (panel=%08x cols=%d rows=%d)", n, total, (unsigned)panel, g_cfg.cols, g_cfg.maxRows);
     else KP_LOGV(chMain, KPLOG_WARN, "BUILD buttons created=%d/%d alloc=%d vtable=%d(%08x) template=%d append=%d other=%d", n, total, failAlloc, failVt, (unsigned)badVt, failTpl, failAppend, failOther);
-    if (visBudget()) KP_LOGV(chMain, KPLOG_INFO, "VIS build controls=%d failAppend=%d", nCont + 2 * n, failAppend + failAppendCont);
+    if (visBudget(2)) KP_LOGV(chMain, KPLOG_INFO, "VIS build controls=%d failAppend=%d", nCont + 2 * n, failAppend + failAppendCont);
 }
 
 void hideAllButtons(const char* why) {
@@ -595,6 +597,7 @@ void updateButtons(const K2HudContext* ctx) {
             pw = cont[firstVis].w; ph = cont[firstVis].h; bw = rects[firstVis * per].w;
         }
         KP_LOGV(chTarget, KPLOG_INFO, "pills: visible=%d%d%d cols=%d usedCols=%d rows=%d pill=[%d,%d] btn=%d", mask & 1, (mask >> 1) & 1, (mask >> 2) & 1, colsU, usedCols, rowsU, pw, ph, bw);
+        visLog(g_visPills, "pills", mask ? 1 : 0, mask ? "ok" : "none", ch::Rect{ 0, 0, pw, ph });
         g_pillMask = mask;
     }
 
