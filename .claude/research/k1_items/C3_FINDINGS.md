@@ -8,7 +8,5 @@ Tool: `k1_port_tex_preview.py compare` (front + side view per model, K1 left, K2
 4. **The 15 K1-only `p_*` companion models render fine** (Bastila, Canderous, Carth, Jolee, Juhani, T3-M4; bodies are headless, heads are separate models). These are the real K1-only assets, but they are NPCs for doc 38, not items.
 5. **Texture source caveat:** K1 tiles use K1's native textures. K2 tiles use K2 Override first (your 2x-upscaled set where present), so K2 looks sharper than vanilla K2 would. Geometry comparison is unaffected.
 
-## C4 shortlist proposal (<=30, for your pick)
-- Tier 1 (best novelty, 15): all `p_*` companion models (doc 38 import path, direct, no resref collision).
-- Tier 2 (weapons that look different, 11): `w_blstrpstl_003`, `w_blstrpstl_004`, `w_hvyblstr_003`, `w_bowcstr_001`, `w_bowcstr_002`, `w_ionrfl_002`, `w_ionrfl_003`, `w_hvrptbltr_001`, `w_hvrptbltr_002`, `w_blstrcrbn_005`, `w_ionblstr_002`. Each would need a renamed resref (converter refuses collisions) and would be 3-7x lower poly than neighbours.
-- Dropped: all sabers, all weapons that only recolour a K2 gun.
+## C4 decision (user, 10-13)
+User viewed the sheets: K2 weapon textures are far better, so **all K1 weapons are dropped** (no Tier 2). Part of that gap is the user's upscaled K2 Override set, which the K2 tiles use; vanilla K2 would look closer. Remaining candidate set: the 15 K1-only `p_*` companion models (Bastila, Canderous, Carth, Jolee, Juhani, T3-M4), direct import, no resref collision, belongs to doc 38. No import is planned yet; it needs a separate plan and a user go.
