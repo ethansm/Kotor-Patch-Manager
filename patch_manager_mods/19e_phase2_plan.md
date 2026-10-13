@@ -277,6 +277,8 @@ Step 0 → T (if multilib) → K → C → H → D → merge into local-mods (Op
 
 ## Execution log
 
+- C180 (done): verified
+
 - Step 0 (10-03): plan copied; doc 19 status/Phase-1 row corrected (merged fa67a3b, not live); gate gets `W=` override. Multilib present (`/usr/lib/gcc/x86_64-linux-gnu/13/32`), so chunk T runs first.
 - Chunk T (10-03): gate already "GATE PASS (full, multilib)" at baseline (15 i386 + 14 x86_64 rows, ELF32 `KotorPatcher.so`). Real 32-bit smoke (scratchpad `t32smoke/`: `gcc -m32` driver dlopens the .so; constructor init reads `patch_config.toml`/`kplog.ini` from the .so dir; DLL_ONLY 32-bit provider+logger fixtures; `CleanupPatcher` then `_exit`) wrote `logger-fixture_log.txt` with header (interfaces kpatch.log + test.counter) + `main WARN hello from KPatchInit` + `main info line`. No core diff. Re-run by Opus: identical.
 - Chunk K (10-03): KpLog.h (462 l) + KpDebugHook.h (63 l) committed on feat/kplog-header (003042b). Compile-clean g++ -m64/-m32, MinGW win32/posix, windows.h before/after; 0 UNIQUE syms, only KPatchInit exported; host fallback + fake-api smoke OK (scratchpad kcheck/). Opus change: MSVC fallback open uses _fsopen(_SH_DENYNO) not fopen_s (sharing). Known: a channel that gets -1 is dead for good; re-Init with a different api keeps cached ids. MSVC/clang uncompiled.
@@ -303,7 +305,7 @@ Step 0 → T (if multilib) → K → C → H → D → merge into local-mods (Op
 | ranged-ai | C5b (doc 24) | **migrated 0.4.0 (local-setup 1ec207f, fork 98d53f6), NOT installed**; fallback = `ranged_ai_log.txt` at INFO; core `ranged-ai_log.txt`; analyze_play_logs reads legacy, fallback and core |
 | k2-texture-memory-release, k2-activation-fix, k2-equip-icon-fix | C5a (doc 24) | **migrated 1.1.0 (local-setup ed52d2b, fork 34c0785), NOT installed**; fallback = old log names; core `<id>_log.txt` read by analyze_runs |
 | char-effects-panel, equip/inv3d, load-hang-probe | their sessions | pending |
-| inventory-sort-filter (C180) | WI-18 | pending |
+| inventory-sort-filter (C180) | WI-18 | **migrated, DONE 9026162**: `logf` forwards to KpLog fallback (`inventory_sort_filter_log.txt`, INFO); build_check + contract test green; NOT installed (lines gain `<ms> <id>/main ` prefix; analyze_play_logs reader fix = WI-72 first) |
 
 ## Step U: user test hand-off (prepared, NOT done; needs the user's go; game closed; never launch it)
 G="$HOME/.local/share/Steam/steamapps/common/Knights of the Old Republic II"; S=~/Games/KOTOR2_Mod_Workspace/stage_mouseprobe_020; B=~/Games/KOTOR2_Mod_Workspace/backups/mouseprobe_020_$(date +%Y%m%d_%H%M)
