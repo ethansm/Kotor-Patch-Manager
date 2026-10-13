@@ -302,7 +302,8 @@ Step 0 → T (if multilib) → K → C → H → D → merge into local-mods (Op
 | companion-ai | engine AI atlas | pending (C5c-style; ai_trace.txt keeps its own format) |
 | ranged-ai | C5b (doc 24) | **migrated 0.4.0 (local-setup 1ec207f, fork 98d53f6), NOT installed**; fallback = `ranged_ai_log.txt` at INFO; core `ranged-ai_log.txt`; analyze_play_logs reads legacy, fallback and core |
 | k2-texture-memory-release, k2-activation-fix, k2-equip-icon-fix | C5a (doc 24) | **migrated 1.1.0 (local-setup ed52d2b, fork 34c0785), NOT installed**; fallback = old log names; core `<id>_log.txt` read by analyze_runs |
-| char-effects-panel, equip/inv3d, inventory-sort-filter, load-hang-probe | their sessions | pending |
+| char-effects-panel, equip/inv3d, load-hang-probe | their sessions | pending |
+| inventory-sort-filter (C180) | WI-18 | pending |
 
 ## Step U: user test hand-off (prepared, NOT done; needs the user's go; game closed; never launch it)
 G="$HOME/.local/share/Steam/steamapps/common/Knights of the Old Republic II"; S=~/Games/KOTOR2_Mod_Workspace/stage_mouseprobe_020; B=~/Games/KOTOR2_Mod_Workspace/backups/mouseprobe_020_$(date +%Y%m%d_%H%M)

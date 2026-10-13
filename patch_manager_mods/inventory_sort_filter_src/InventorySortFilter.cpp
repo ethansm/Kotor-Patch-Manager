@@ -21,6 +21,9 @@
 #include "../_shared/SafeRead.h"
 #include "SortLogic.h"
 #include "GameAddr.h"
+#include "KpLog.h"
+
+KP_LOG_PATCH("inventory-sort-filter");
 
 namespace {
 
@@ -67,16 +70,16 @@ using GetBaseItemFn = int(__thiscall*)(int);
 using CanEquipFn = unsigned char(__thiscall*)(int, int, unsigned*, int, int, int);
 
 // ---- log ----
-// One session per file (truncated in DllMain; cwd = game folder), capped with a marker line.
-int g_logLines = 0;
-constexpr int MaxLogLines = 8000;
+// One session per file (truncated in DllMain; cwd = game folder). logf forwards to the KpLog fallback sink (own line cap).
+KP_CHANNEL(chMain, "main");
+
+// Only stores the path and the level (no I/O): safe from a static initialiser. Same file name as before (tooling reads it).
+const bool g_fallbackSet = (KpLog_SetFallbackFile("inventory_sort_filter_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
+
 void logf(const char* fmt, ...) {
-    if (g_logLines > MaxLogLines) return;
-    FILE* f = fopen("inventory_sort_filter_log.txt", "a");
-    if (!f) return;
-    if (++g_logLines > MaxLogLines) { fputs("-- log cap reached, further lines dropped --\n", f); fclose(f); return; }
-    va_list ap; va_start(ap, fmt); vfprintf(f, fmt, ap); va_end(ap);
-    fputc('\n', f); fclose(f);
+    char buf[480];
+    va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
+    KP_LOG(chMain, "%s", buf);
 }
 
 template <typename T> T rd(int base, int off, T def = T()) {

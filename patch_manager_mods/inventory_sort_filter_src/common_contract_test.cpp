@@ -27,6 +27,7 @@ static SIZE_T fakeVQ(LPCVOID a, MEMORY_BASIC_INFORMATION* m, SIZE_T n) {
 #define VirtualQuery fakeVQ
 #include "SafeRead.h"
 #include "check.h"
+#include "KpLog.h"
 #include <sys/mman.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -34,6 +35,9 @@ static SIZE_T fakeVQ(LPCVOID a, MEMORY_BASIC_INFORMATION* m, SIZE_T n) {
 
 #define HCHECK(why, expr) ::kt::Check("inventory_sort_filter relies on: " why " (line " KT_STR(__LINE__) ")", static_cast<bool>(expr))
 #define HEQ(why, a, b) ::kt::CheckEq("inventory_sort_filter relies on: " why " (line " KT_STR(__LINE__) ")", (a), (b))
+KP_LOG_PATCH("inventory-sort-filter");
+KP_CHANNEL(chMain, "main");
+
 #define U(x) static_cast<unsigned long long>(x)
 
 static uint8_t* g_arena = nullptr; constexpr size_t ArenaSize = 1u << 16;
@@ -131,5 +135,16 @@ int main() {
     g_badLo = g_badHi = 0; saferead::beginScope();
     n = dumpWords(ib + 0x100, 0x120, got);
     HEQ("dump loop reads all 72 words once the hole is gone (scope reset drops the cache)", (long long)n, 72ll);
+
+    // ---- KpLog fallback sink (logf forwards here): SetFallbackFile only stores the path, so the DLL's static initialiser does no I/O.
+    {
+        const char* td = getenv("TMPDIR"); if (!td || !*td) td = "/tmp";
+        char path[300]; snprintf(path, sizeof path, "%s/inventory_sort_filter_log.txt", td);
+        remove(path);
+        KpLog_SetFallbackFile(path); KpLog_SetFallbackLevel(KPLOG_INFO);
+        HCHECK("KpLog_SetFallbackFile only stores the path, no I/O (safe from a static initialiser)", access(path, F_OK) != 0);
+        KpLog_SetFallbackFile(nullptr);
+        remove(path);
+    }
     return kt::Report("common_contract_test (inventory_sort_filter)");
 }
