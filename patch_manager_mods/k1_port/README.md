@@ -64,6 +64,28 @@ K2 already ships `n_commm` and other K1 resrefs, so converted assets use `k1p_` 
 `k1p_` + the lowercase K1 resref, cut to 16 characters (`n_commm` -> `k1p_n_commm`). Textures: lowercase,
 at most 31 characters, `--texture OLD=k1p_...`.
 
+## Texture output gate and UV masks (B0, B1)
+
+Overlay edits of NPC textures (overlay, not repaint) must pass a gate that compares the child TPC with its parent,
+never with a constant: parents vary (1024 DXT5, 512 DXT1, 256 DXT5 atlases).
+
+- `k1_port_tex_gate.py check --parent P --child C [--mask M.png] [--json]` (stdlib; exit 0 pass, 1 gate failure,
+  2 usage). Checks dims, mips, format, header, length and trailer, name rule, no `.txi` sidecar, DXT5 alpha halves
+  (DXT1: 1-bit-alpha block class), and with a mask every block outside the mask footprint is byte-identical.
+- `k1_port_tex_dxt.py` and `k1_port_tex_tpc.py` (numpy, run with the repo `.venv`): own block codec and raw TPC
+  editor. `apply_rgb_edit(parent, rgb, mask)` splices only colour halves of blocks the mask touches, at every mip,
+  and never touches DXT5 alpha. pykotor cannot bake: its DXT encoder is lossy (pure red decodes to (49,0,54)) and
+  its DXT1 decode swaps palette entries 2 and 3, so use it only to reload a result as a validity check.
+- `k1_port_uvmask.py build --model n_commm --atlas n_commm05 --size 512 --flip 0 --out DIR` (patched k1port venv,
+  pure Python; the stock reader misreads K2 MDX offsets): per-label masks `<label>.png` in STORED row order plus
+  `masks.json`. Nodes with out-of-range UVs or a NULL texture are skipped. `torso` is the whole body node;
+  `torso_arm` and `legs` are nested sub-islands of it. Mask size must equal the atlas mip 0 size for the gate.
+- `k1_port_uvmask_overlay.py render --masks DIR --atlas NAME_OR_FILE --out DIR` (repo `.venv`): per-label overlays and
+  `contact.png` for human review. Output goes outside the repo.
+
+Verified 10-12 on the pilots n_commm05, n_sithcom01, n_mandalorian01: masks align with the atlas islands with
+`--flip 0` (masks and gate both use stored row order); the in-game V direction is still the user's T5 test.
+
 ## Caveat
 
 Never commit K1 pack assets (textures, models, archives) to this repo.
