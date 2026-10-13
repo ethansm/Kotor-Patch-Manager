@@ -10,11 +10,8 @@ Assets (all built by this phase):
 ## 0. Preconditions (all must hold; ask the user for each)
 1. Explicit user GO for a live run, and the D0 live-run pause lifted (memory `feedback-pause-live-fix-runs`). Without both, stop here.
 2. Game closed (`pgrep -f swkotor2` prints nothing).
-3. **Trigger route (OPEN, blocks every step).** The scripts need something to run them. `python3 scripts/kpm_status.py` on 2026-10-13 lists no `AdditionalConsoleCommands` patch (doc 06:485 had `runscript` live on 2026-09-29, not targeted-tested), so the console route is not installed. Decide with the user before GO:
-   - (a) reinstall/port the console patch and confirm `runscript kpv_e1` works with a no-op script first;
-   - (b) add a native key trigger to `voice_probe_src` that runs the script (new code, new review);
-   - (c) point the user at an already-live trigger if one exists.
-4. E4 only: `p_bastila_rprty` (row 36878) is not at the top level of `StreamVoice/` or `StreamSounds/`. Confirm where the resref lives (BIF or subdir) before E4, else pick another row and edit `kpv_e4.nss`.
+3. **Trigger route (resolved by investigation 2026-10-13, untested live).** `additional-console-commands` and `k2-visible-console` are INSTALLED live (`patch_config.toml`, `patches/*.dll`; `kpm_status.py` only lists repo-source mods, so it cannot show them). `swkotor2.ini` has `EnableCheats=1`. Route: press `~`, type `runscript kpv_e1`. It runs the script with the PC as OBJECT_SELF. `runscript` was never targeted-tested (doc 06:485), and its source does `delete vm; delete server;` after `GetInstance()`: first prove it with a harmless script and expect a possible crash on the first call. Fallbacks if it fails: a `commands/*.toml` native console command in `voice_probe_src` (no script needed), or a native key trigger. Details in the chat summary of this phase and doc 41 section 8.
+4. E4 only: CONFIRMED 2026-10-13. Row 36878's audio is `StreamSounds/P_BASTILA_RPRTY.wav` (56,898 bytes, uppercase on disk, 470-byte MP3 prefix then RIFF PCM, not in `chitin.key`). The TLK lowercase resref resolves to the uppercase file in vanilla, which is free evidence for E8 case handling. Note: this is the E2d container, so E4 passing also proves that container plays from StreamSounds, not from Override.
 5. Probe DLL reaches the game through the normal route: `kotor2-kpm-install` skill (stage, `scripts/pre_install_gate.sh --mod voice_probe_src` must print `GATE PASS`, then `kpm_hotswap.py`). Set `probe=1` in the game-dir `voice_probe.ini` for the run, back to 0 after.
 
 ## 1. Build the clip stage (host only)
@@ -38,7 +35,7 @@ Expected: 13 clips + 9 `.ncs` = 22 new files, all prefixed `kpv`/`Kpv`. Pass: `l
 
 ## 4. E1 (15 min): loose WAV in Override plays?
 Run `kpv_e1`, then `python3 scripts/kotor2_logs.py check <log> --new` (never raw `cat`).
-Pass: tone audible AND `kpv:` message AND `PLAYSOUND call #1` in `voice_probe_log.txt`. Fail splits: log line but silent = engine called, stream voice does not search Override (route A dead, go to StreamVoice staging). No log line = trigger or hook broken, fix that first.
+Pass: tone audible AND `kpv:` message AND `PLAYSOUND call #1` in `voice_probe_log.txt`. `k2-mp3-playback-fix` is live and claims loose `.mp3` plays and beats a same-named `.wav`, so expect E2c to pass (no name clash here). Fail splits: log line but silent = engine called, stream voice does not search Override (route A dead, go to StreamVoice staging). No log line = trigger or hook broken, fix that first.
 
 ## 5. E2 (30 min): container matrix
 Run `kpv_e2a`, `kpv_e2b`, `kpv_e2c`, `kpv_e2d` one at a time (each audible or silent).
