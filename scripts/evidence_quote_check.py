@@ -14,7 +14,9 @@ Rule: a citation is valid iff its evidence_id names an excerpt in the bundle (th
 `ev:<sha8>` that matches exactly one excerpt id; an ambiguous short id is rejected) AND its quote, after removing
 `L<n>| ` line prefixes (also in multi-line quotes) and normalising whitespace, is a substring of the
 whitespace-normalised text of that ONE excerpt AND the quote is at least 6 characters (MIN_CHARS; the
-same rule as the deep-haiku-review bundle's quote_check.py). A quote spanning two excerpts is fabricated.
+same rule as the deep-haiku-review bundle's quote_check.py) AND keeps at least 4 alphanumeric characters
+once bracket tags, timestamps and punctuation are removed (MIN_ALNUM) AND every `L<n>|` marker names a
+line of that excerpt. A quote spanning two excerpts is fabricated.
 ANY invalid citation rejects the whole hypothesis; a hypothesis with no citations (missing or empty or
 non-list `evidence`) is rejected. A null/verify output with a decisive verdict and no reasons is rejected
 (verdict `insufficient` / `inconclusive` may have none). A rejected verdict lists no valid_evidence_ids.
@@ -23,7 +25,8 @@ Integrity: every excerpt's text_sha256 and the bundle_sha256 are recomputed firs
 hash or a malformed bundle raises BundleTampered (CLI exit 2).
 
 Exit: 0 all verdicts valid (also when there are none), 1 any rejected, 2 tampered/unreadable input.
-Library: check(bundle, output) -> list of {id, valid, reason, valid_evidence_ids, ...}.
+Library: check(bundle, output) -> list of {id, valid, reason, valid_evidence_ids, distinct_texts, ...};
+distinct_texts counts the distinct excerpt texts (sha8) behind the valid ids, 0 when rejected.
 """
 from __future__ import annotations
 
@@ -34,9 +37,16 @@ import re
 import sys
 
 MIN_CHARS = 6
+MIN_ALNUM = 4
 # `L<n>| ` as rendered by the prompt builder; only recognised at a token start so text such as
 # "tailL12| x" or "L12 | x" is left alone.
 _PREFIX = re.compile(r"(?<!\S)L\d+\|[ \t]?")
+# the same token-start rule, capturing the line number of each marker in the raw quote
+_MARKER = re.compile(r"(?<!\S)L(\d+)\|")
+# content that carries no evidence on its own: a bracket tag such as [KP-hotbar] or a log timestamp
+_TAG = re.compile(r"\[[^\]]*\]")
+_TIMESTAMP = re.compile(r"\d{1,2}:\d{2}:\d{2}(?:\.\d+)?")
+_UNKNOWN_HINT = " (cite the full id from the bracket header, or ev:<8 hex>)"
 # short evidence id `ev:<sha8>` (first 8 lowercase hex chars of an excerpt's text_sha256); see _resolve
 _SHORT_ID = re.compile(r"ev:[0-9a-f]{8}")
 # verdicts of a null/verify output that may legitimately come with no reasons
@@ -109,6 +119,27 @@ def index_bundle(bundle) -> dict:
     return texts
 
 
+def index_lines(bundle) -> dict:
+    """{evidence id: set of line numbers n of that excerpt}. Call after index_bundle (structure is checked)."""
+    out: dict = {}
+    for ex in bundle["evidence"]:
+        nums = {l["n"] for l in ex["lines"] if isinstance(l.get("n"), int) and not isinstance(l.get("n"), bool)}
+        out.setdefault(ex["id"], set()).update(nums)
+    return out
+
+
+def _alnum_count(quote_norm: str) -> int:
+    """Alphanumeric characters left once bracket tags, timestamps and punctuation are removed."""
+    s = _TIMESTAMP.sub(" ", _TAG.sub(" ", quote_norm))
+    return sum(ch.isalnum() for ch in s)
+
+
+def _unknown_markers(quote: str, known: set) -> list:
+    """Digits of each line marker in the RAW quote that names no line of the excerpt (leading zeros ignored)."""
+    have = {str(n) for n in known}
+    return [d for d in _MARKER.findall(quote) if (d.lstrip("0") or "0") not in have]
+
+
 def _resolve(eid: str, texts: dict):
     """-> (full evidence id or None, reason). An exact key of texts wins. Otherwise a short `ev:<sha8>`
     (lowercase hex, whole string) resolves iff exactly one excerpt id ends in `:<sha8>`."""
@@ -123,7 +154,7 @@ def _resolve(eid: str, texts: dict):
     return None, f"unknown evidence id {eid}"
 
 
-def _citation(cit, texts: dict):
+def _citation(cit, texts: dict, lines: dict):
     """-> (ok, evidence_id or None, reason). The returned id is the resolved full id when ok."""
     if not isinstance(cit, dict):
         return False, None, "citation is not an object"
@@ -134,11 +165,18 @@ def _citation(cit, texts: dict):
         return False, eid, f"{eid}: citation has no quote"
     full, why = _resolve(eid, texts)
     if full is None:
+        if why.startswith("unknown evidence id "):
+            why += _UNKNOWN_HINT
         return False, eid, why
     eid = full
     want = norm_quote(quote)
     if len(want) < MIN_CHARS:
         return False, eid, f"{eid}: quote shorter than {MIN_CHARS} characters"
+    if _alnum_count(want) < MIN_ALNUM:
+        return False, eid, f"{eid}: quote has no substance (tag or timestamp only)"
+    unknown = _unknown_markers(quote, lines.get(eid, set()))
+    if unknown:
+        return False, eid, f"{eid}: line marker L{unknown[0]} is not in that excerpt"
     if want not in texts[eid]:
         return False, eid, f"{eid}: quote not found verbatim in that excerpt"
     return True, eid, ""
@@ -147,22 +185,25 @@ def _citation(cit, texts: dict):
 def _verdict(index: int, vid: str, results: list, empty_reason: str) -> dict:
     """results = [(ok, evidence_id, reason)] for the item's citations."""
     if not results:
-        return {"id": vid, "index": index, "valid": False, "reason": empty_reason, "valid_evidence_ids": []}
+        return _rejected(vid, empty_reason, index)
     bad = [r for ok, _, r in results if not ok]
     if bad:
-        return {"id": vid, "index": index, "valid": False, "reason": "; ".join(bad), "valid_evidence_ids": []}
+        return _rejected(vid, "; ".join(bad), index)
     ids: list = []
     for _, eid, _ in results:
         if eid not in ids:
             ids.append(eid)
-    return {"id": vid, "index": index, "valid": True, "reason": "", "valid_evidence_ids": ids}
+    # the sha8 suffix identifies the excerpt text; two ids with the same suffix hold the same text
+    return {"id": vid, "index": index, "valid": True, "reason": "", "valid_evidence_ids": ids,
+            "distinct_texts": len({eid.rsplit(":", 1)[-1] for eid in ids})}
 
 
 def _rejected(vid: str, why: str, index: int = 0) -> dict:
-    return {"id": vid, "index": index, "valid": False, "reason": why, "valid_evidence_ids": []}
+    return {"id": vid, "index": index, "valid": False, "reason": why, "valid_evidence_ids": [],
+            "distinct_texts": 0}
 
 
-def _blind(hypotheses, texts: dict) -> list:
+def _blind(hypotheses, texts: dict, lines: dict) -> list:
     if not isinstance(hypotheses, list):
         return [_rejected("hypotheses", "hypotheses is not a list")]
     out = []
@@ -178,11 +219,11 @@ def _blind(hypotheses, texts: dict) -> list:
         elif not isinstance(ev, list):
             out.append(_rejected(hid, "evidence is not a list", i))
         else:
-            out.append(_verdict(i, hid, [_citation(c, texts) for c in ev], "no citations (uncited)"))
+            out.append(_verdict(i, hid, [_citation(c, texts, lines) for c in ev], "no citations (uncited)"))
     return out
 
 
-def _reasons(output: dict, texts: dict) -> list:
+def _reasons(output: dict, texts: dict, lines: dict) -> list:
     reasons = output.get("reasons")
     if not isinstance(reasons, list):
         return [_rejected("reasons", "reasons is not a list")]
@@ -190,7 +231,7 @@ def _reasons(output: dict, texts: dict) -> list:
         if output.get("verdict") in _NO_REASON_OK:
             return []
         return [_rejected("verdict", f"verdict {output.get('verdict')!r} has no cited reasons")]
-    return [_verdict(i, f"r{i + 1}", [_citation(r, texts)], "no citation") for i, r in enumerate(reasons)]
+    return [_verdict(i, f"r{i + 1}", [_citation(r, texts, lines)], "no citation") for i, r in enumerate(reasons)]
 
 
 def check(bundle, output) -> list:
@@ -200,15 +241,16 @@ def check(bundle, output) -> list:
     Raises BundleTampered when the bundle fails its integrity check. Pure: inputs are not modified.
     """
     texts = index_bundle(bundle)
+    lines = index_lines(bundle)
     if not isinstance(output, dict):
         return [_rejected("output", "output is not a JSON object")]
     if "hypotheses" not in output and "reasons" not in output:
         return [_rejected("output", "output has neither hypotheses nor reasons")]
     verdicts: list = []
     if "hypotheses" in output:
-        verdicts += _blind(output["hypotheses"], texts)
+        verdicts += _blind(output["hypotheses"], texts, lines)
     if "reasons" in output:
-        verdicts += _reasons(output, texts)
+        verdicts += _reasons(output, texts, lines)
     return verdicts
 
 
@@ -221,6 +263,12 @@ def _load(path: str, what: str):
 
 
 def main(argv=None) -> int:
+    # an id from a model output may hold a lone surrogate; print it escaped instead of crashing
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="backslashreplace")
+        except (AttributeError, ValueError):      # not a TextIOWrapper (e.g. redirected to StringIO) or closed
+            pass
     ap = argparse.ArgumentParser(prog="evidence_quote_check.py", description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--bundle", required=True, help="playtest bundle JSON")

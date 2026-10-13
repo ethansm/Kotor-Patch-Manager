@@ -387,7 +387,8 @@ class ShortEvidenceIds(unittest.TestCase):
     def test_short_id_zero_matches_is_unknown(self):
         v = eqc.check(BUNDLE, blind(hyp("h1", [cit("ev:00000000", "Loaded 12 entries")])))
         self.assertFalse(v[0]["valid"])
-        self.assertEqual(v[0]["reason"], "unknown evidence id ev:00000000")
+        self.assertEqual(v[0]["reason"], "unknown evidence id ev:00000000 "
+                                         "(cite the full id from the bracket header, or ev:<8 hex>)")
 
     def test_malformed_short_ids_rejected_as_unknown(self):
         bad = ("ev:" + self.SHORT_A[3:10],                  # ev: + 7 hex
@@ -397,7 +398,8 @@ class ShortEvidenceIds(unittest.TestCase):
         for eid in bad:
             v = eqc.check(BUNDLE, blind(hyp("h1", [cit(eid, "Loaded 12 entries")])))
             self.assertFalse(v[0]["valid"], eid)
-            self.assertEqual(v[0]["reason"], f"unknown evidence id {eid}", eid)
+            self.assertEqual(v[0]["reason"], f"unknown evidence id {eid} "
+                                             "(cite the full id from the bracket header, or ev:<8 hex>)", eid)
 
     def test_short_id_quote_not_in_that_excerpt_rejected(self):
         # "Tick 99 done" is only in B; citing it under A's short id is fabricated
@@ -543,6 +545,97 @@ class Tamper(unittest.TestCase):
         b = finalize({"format": "f", "evidence": [ex]})
         out = blind(hyp("h1", [cit(ex["id"], "L1| café — résumé")]))
         self.assertTrue(eqc.check(b, out)[0]["valid"])
+
+
+class QuoteHardening(unittest.TestCase):
+    """Substance rule, line-marker rule, unknown-id hint and distinct_texts on verdicts."""
+
+    def setUp(self):
+        c_ex = make_excerpt("playlog", 1, "alert", 20, [(20, "Player died at dusk"), (21, "Respawn queued")])
+        d_ex = make_excerpt("playlog", 1, "alert", 1, [(1, "x---y--z"), (2, "a-b-c-d")])
+        self.bundle = finalize({"format": "playtest-bundle/1", "intake": {}, "logs": [],
+                                "evidence": [c_ex, d_ex], "caps": {}, "truncated": False,
+                                "dropped": [], "scrub": {}, "gaps": []})
+        self.C, self.D = c_ex["id"], d_ex["id"]
+
+    def one(self, eid, quote, bundle=None):
+        v = eqc.check(bundle or self.bundle, blind(hyp("h1", [cit(eid, quote)])))
+        self.assertEqual(len(v), 1)
+        return v[0]
+
+    def test_identical_text_under_two_ids_is_one_distinct_text(self):
+        twin = copy.deepcopy(BUNDLE)
+        twin["evidence"][1] = make_excerpt("banner", 1, "alert", 13, A_LINES)
+        finalize(twin)
+        id_a, id_twin = twin["evidence"][0]["id"], twin["evidence"][1]["id"]
+        self.assertNotEqual(id_a, id_twin)
+        v = eqc.check(twin, blind(hyp("h1", [cit(id_a, "Loaded 12 entries"), cit(id_twin, "Loaded 12 entries")])))
+        self.assertTrue(v[0]["valid"], v[0]["reason"])
+        self.assertEqual(len(v[0]["valid_evidence_ids"]), 2)
+        self.assertEqual(v[0].get("distinct_texts"), 1)
+
+    def test_distinct_texts_counts_texts_behind_valid_ids(self):
+        v = eqc.check(BUNDLE, blind(hyp("h1", [cit(ID_A, "Mod init ok"), cit(ID_B, "Queue length 0")])))
+        self.assertEqual(v[0].get("distinct_texts"), 2)
+        v = eqc.check(BUNDLE, blind(hyp("h1", [cit(ID_A, "Mod init ok"), cit(ID_A, "Shutdown complete")])))
+        self.assertEqual(v[0].get("distinct_texts"), 1)
+        v = eqc.check(BUNDLE, blind(hyp("h1", [cit(ID_A, "invented text here")])))
+        self.assertEqual(v[0].get("distinct_texts"), 0)
+        v = eqc.check(BUNDLE, null("bug", reason(ID_A, "Mod init ok")))
+        self.assertEqual(v[0].get("distinct_texts"), 1)
+
+    def test_quote_without_substance_rejected(self):
+        for q in ("------", "[KP-hotbar]", "11:05:33", "11:05:33.250", "[KP-hotbar] 11:05:33", "L20| ------"):
+            v = self.one(self.C, q)
+            self.assertFalse(v["valid"], q)
+            self.assertEqual(v["reason"], f"{self.C}: quote has no substance (tag or timestamp only)", q)
+
+    def test_substance_threshold_is_four_alphanumerics(self):
+        self.assertTrue(self.one(self.D, "a-b-c-d")["valid"])                  # 7 characters, 4 alphanumerics
+        v = self.one(self.D, "x---y--z")                                       # 8 characters, 3 alphanumerics
+        self.assertEqual(v["reason"], f"{self.D}: quote has no substance (tag or timestamp only)")
+
+    def test_line_marker_must_name_a_line_of_the_excerpt(self):
+        v = self.one(self.C, "L9999| Player died at dusk")
+        self.assertFalse(v["valid"])
+        self.assertEqual(v["reason"], f"{self.C}: line marker L9999 is not in that excerpt")
+        self.assertTrue(self.one(self.C, "L20| Player died at dusk")["valid"])
+        v = self.one(self.C, "L20| Player died at dusk\nL99| Respawn queued")
+        self.assertEqual(v["reason"], f"{self.C}: line marker L99 is not in that excerpt")
+        self.assertTrue(self.one(self.C, "L20| Player died at dusk\nL21| Respawn queued")["valid"])
+
+    def test_line_marker_naming_a_line_of_another_excerpt_rejected(self):
+        # line 40 belongs to excerpt B of BUNDLE, not to excerpt A (lines 10-14)
+        v = eqc.check(BUNDLE, blind(hyp("h1", [cit(ID_A, "L40| Frame hook  attached")])))[0]
+        self.assertFalse(v["valid"])
+        self.assertEqual(v["reason"], f"{ID_A}: line marker L40 is not in that excerpt")
+
+    def test_quote_without_markers_behaves_unchanged(self):
+        v = self.one(self.C, "Player died at dusk")
+        self.assertTrue(v["valid"])
+        self.assertEqual(v["valid_evidence_ids"], [self.C])
+
+    def test_marker_glued_to_a_word_is_text_not_a_marker(self):
+        # "xL9999|" is not a rendered prefix, so it is not a line marker and must match verbatim
+        v = self.one(self.C, "xL9999| Player died at dusk")
+        self.assertFalse(v["valid"])
+        self.assertIn("not found verbatim", v["reason"])
+
+    def test_truncated_id_reason_names_the_full_id_or_short_form(self):
+        v = self.one("ev:L3500-3503", "Player died at dusk")
+        self.assertFalse(v["valid"])
+        self.assertTrue(v["reason"].startswith("unknown evidence id"), v["reason"])
+        self.assertIn("ev:<8 hex>", v["reason"])
+
+    def test_cli_lone_surrogate_in_id_exits_cleanly(self):
+        f = Files(self, BUNDLE, blind(hyp("h1", [cit("ev:\ud800", "Loaded 12 entries")])))
+        cmd = [sys.executable, "-I", "-B", str(SCRIPT), *f.args()]
+        p = subprocess.run(cmd, capture_output=True, text=True, errors="replace", timeout=30,
+                           cwd=tempfile.gettempdir())
+        self.assertNotIn("Traceback", p.stderr)
+        self.assertEqual(p.returncode, 1, p.stderr)
+        self.assertIn("REJECT h1", p.stdout)
+        self.assertIn("\\ud800", p.stdout)
 
 
 class Cli(unittest.TestCase):
