@@ -69,3 +69,11 @@ Reply to: `<reply channel: user fills in>`
 Reply to: `<reply channel: user fills in>`
 
 - Licence evidence: author "Laast" comes from a snippet, unverified (R2 line 27). License text: none found, "None seen" (R2 line 32). Archives contain only .tga/.txi and .mdl/.mdx/.utc entries, no text (L1 sections 9-10).
+
+### characters_revisited_main - Laast (Characters Revisited, Nexus 1639) [DRAFT, NOT SENT]
+
+> Hi <Laast: name unverified, user confirms before sending>, I'd like to use selected textures from your Characters Revisited main pack (Nexus 1639: player heads and bodies, species skins, commoner and faction NPC textures) for local, private analysis and a local port of a KotOR 2 (TSL) mod. The port stays on my machine and is not uploaded or redistributed. Two questions: (1) is local-only use OK, and (2) if I rename some textures into unused slots so they add variety instead of replacing your originals, may those renamed derived copies ever ship in a public mod? Credit line: "Characters Revisited by Laast." If you ask me to remove them, or I get no reply, I will remove them from the port.
+
+Reply to: `<reply channel: user fills in>`
+
+- Licence evidence: author "Laast" comes from a snippet, unverified. The rar holds only .tga/.txi/.mdl entries (1,310 files), no readme or licence text. Registered as `characters_revisited_main` with `requires_author_approval: true`.

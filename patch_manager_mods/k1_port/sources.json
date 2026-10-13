@@ -147,6 +147,19 @@
       "evidence": "no license text found in the archive or collected pages (L1_pack_licenses.md)",
       "local_dir": null,
       "notes": "Unknown license: treated as requiring author approval, flagged for removal."
+    },
+    "characters_revisited_main": {
+      "name": "Characters Revisited (Nexus 1639)",
+      "author": "Laast (unverified)",
+      "url": null,
+      "license_class": "unknown",
+      "requires_author_approval": true,
+      "credits": [
+        "Laast (unverified)"
+      ],
+      "evidence": "no license text found in the archive (rar holds only .tga/.txi/.mdl entries); Nexus page not collected",
+      "local_dir": "~/Games/KOTOR2_Mod_Workspace/k1_port_extract/characters_revisited",
+      "notes": "Unknown license: treated as requiring author approval, local-only analysis. Same-name textures replace K1/K2 files."
     }
   }
 }
