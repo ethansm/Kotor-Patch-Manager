@@ -1,0 +1,13 @@
+[patch]
+id = "voice-probe"
+name = "Voice Probe"
+version = "0.1.0"
+author = "local"
+description = "Diagnostics only (no gameplay change, spawns nothing, default off). Logs one line per Global::ExecuteCommandPlaySound call (call number, tick, this) to voice_probe_log.txt. The sound resref is not read here; the script side logs it via SendMessageToPC. Switch: voice_probe.ini [probe] probe=0."
+
+requires = []
+conflicts = []
+
+# Steam/LAA only. Hook address is the verified Steam Aspyr entry listed in kotor2-steam-aspyr.hooks.toml.
+[patch.supported_versions]
+kotor2_steam_aspyr = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"

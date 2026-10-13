@@ -1,0 +1,18 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
+
+# Voice Probe 0.1.0. Entry: type detour, 5-byte prologue 55 8B EC 6A FF = PUSH EBP / MOV EBP,ESP / PUSH -1
+# (whole instructions). Thiscall with ECX = this. The handler reads ECX only; stack args are never read.
+
+# P1: Global::ExecuteCommandPlaySound (PlaySound entry). ECX = this. Prologue bytes VERIFIED by Opus.
+[[hooks]]
+address = 0x0068EA70
+type = "detour"
+function = "VoiceProbePlaySound"
+original_bytes = [0x55, 0x8B, 0xEC, 0x6A, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"

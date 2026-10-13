@@ -1,7 +1,7 @@
 # Session Handoff & Plan State: patch_manager_mods/41_custom_voice_and_events.md
 
 ## 0. Next-Phase Direction
-Execute V-C: Live tests E1-E8 incl. E5, E6, plus T-SSF and T-TIMER, with a tiny probe (needs user GO and the D0 pause lifted)
+Execute V-C: design (host-only) a tiny KPM probe firing E1/E2/E3/E4/E7/E8 with kvoice-built clips; build and run need explicit user GO
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/41_custom_voice_and_events.md`
@@ -10,34 +10,16 @@ Execute V-C: Live tests E1-E8 incl. E5, E6, plus T-SSF and T-TIMER, with a tiny 
 - **Waves:** .claude/waves/WI-41-b1/
 - **Waves:** .claude/waves/WI-41-b2/
 - **Waves:** .claude/waves/w11-41-VB/
-- **Branch:** `KOTOR-II` (d111b7a feat(kvoice): offline voice clip toolchain, container/loudness/lip/ledger/verifier/CLI (41:V-B))
-- **Generated:** 2026-10-13 01:27:15 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (3a7b274 docs(41): V-B kvoice host build DONE, state and handoff)
+- **Generated:** 2026-10-13 01:28:20 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-d111b7a feat(kvoice): offline voice clip toolchain, container/loudness/lip/ledger/verifier/CLI (41:V-B)
- patch_manager_mods/k1_port/k1_port_prune.py        |   2 +-
- patch_manager_mods/k1_port/k1_port_sources.py      |   2 +-
- patch_manager_mods/k1_port/sources.json            |  14 +
- patch_manager_mods/kvoice/README.md                |  39 +++
- patch_manager_mods/kvoice/kvoice.py                | 247 +++++++++++++++
- patch_manager_mods/kvoice/kvoice_audio.py          |  98 ++++++
- patch_manager_mods/kvoice/kvoice_container.py      | 130 ++++++++
- patch_manager_mods/kvoice/kvoice_ledger.py         |  71 +++++
- patch_manager_mods/kvoice/kvoice_lip.py            | 108 +++++++
- patch_manager_mods/kvoice/kvoice_norm.py           | 100 +++++++
- patch_manager_mods/kvoice/kvoice_pack.py           | 157 ++++++++++
- patch_manager_mods/kvoice/kvoice_verify.py         | 197 ++++++++++++
- patch_manager_mods/kvoice/test_kvoice_audio.py     | 144 +++++++++
- patch_manager_mods/kvoice/test_kvoice_cli.py       | 325 ++++++++++++++++++++
- patch_manager_mods/kvoice/test_kvoice_container.py | 193 ++++++++++++
- patch_manager_mods/kvoice/test_kvoice_ledger.py    | 218 ++++++++++++++
- patch_manager_mods/kvoice/test_kvoice_lip.py       | 175 +++++++++++
- patch_manager_mods/kvoice/test_kvoice_norm.py      | 171 +++++++++++
- patch_manager_mods/kvoice/test_kvoice_pack.py      | 223 ++++++++++++++
- patch_manager_mods/kvoice/test_kvoice_verify.py    | 333 +++++++++++++++++++++
- 20 files changed, 2945 insertions(+), 2 deletions(-)
+3a7b274 docs(41): V-B kvoice host build DONE, state and handoff
+ .../handoffs/41_custom_voice_and_events.handoff.md | 98 ++++++++--------------
+ patch_manager_mods/41_custom_voice_and_events.md   |  4 +-
+ 2 files changed, 36 insertions(+), 66 deletions(-)
 ```
-- **Dirty Files (143):**
+- **Dirty Files (144):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/24_master_plan_status.handoff.md`
   - ` M .claude/handoffs/27_companion_selfheal.handoff.md`
@@ -48,7 +30,7 @@ d111b7a feat(kvoice): offline voice clip toolchain, container/loudness/lip/ledge
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
   - ` M .claude/plans/swarm_library_architecture.md`
   - ` M patch_manager_mods/24_master_plan_status.md`
-  - ... +133 more (run `git status --short`)
+  - ... +134 more (run `git status --short`)
 
 ## 2. Immediate Objective (V-C)
 **Live tests E1-E8 incl. E5, E6, plus T-SSF and T-TIMER, with a tiny probe (needs user GO and the D0 pause lifted)**
@@ -84,6 +66,12 @@ Task: Live tests E1-E8 incl. E5, E6, plus T-SSF and T-TIMER, with a tiny probe (
 - Some Haiku agents refuse to write report files and reply inline instead (b6, b8, b10, v10): check the file exists after each wave and transcribe if not.
 - `wave_tools.py add`: put `<wave_id>` BEFORE `--entries` (argparse swallows it otherwise).
 - Soundset persistence is NOT proven: r3 shows save-side serialization of `+0x10EC` and `+0x314` only; the load-side reader is unresolved (V6.md:176 says LoadCreature 0x6AFED0).
+
+- V-B lessons (2026-10-13): `mark-done` and `handoff` need `--plan patch_manager_mods/41_custom_voice_and_events.md` (without it `mark-done` picked doc 40). Haiku wave w11-41-VB overshot the 60k budget on all 5 units (84k-135k): split card scopes to one module each. Real vanilla VO is peaky (-19.9 LUFS / -0.5 dBTP), so `kvoice_norm` accepts a clip up to 3 LU under target with `tp_limited` true; do not tighten that back to a hard error.
+- V-B facts: `kvoice.py clip` needs `--source-id` and one of `--lip-tsv`/`--no-lip`; it writes 2 ledger rows (wav + lip). Output length = source + 0.15 s lead-in, rounded up to a 1152-sample frame (<=36 ms). `kvoice` has no PCM-RIFF or 470-byte-prefix writer yet (E2 variants a and d): V-C adds them.
+- V-C trigger route is unproven: scripts via the `runscript` console command depend on the AdditionalConsoleCommands patch being installed (doc 06:485, never targeted-tested). Compile test NSS with nwnnsscomp only (never pykotor `compile_nss`) and check `check_ncs_arg_order.py`.
+
+- V-C host prep lessons (2026-10-13): plan bug, `kpve8_seventeenchrs` is 19 chars; the 17-char E8 name is `kpve8_seventeench`. `check_ncs_arg_order.py` takes a game dir (`<dir>/override`, use `--override-only`) and needs the pykotor venv `~/Games/KOTOR2_Mod_Workspace/venvs/k1port/bin/python`, not file args. Compile with `~/Games/KOTOR2_Mod_Workspace/script_recompile_20260924/tools/compile.sh <out.ncs> <src.nss>`. Haiku bug caught in review: a bare ini name in `GetPrivateProfileIntA` is searched in the Windows dir (fixed with an absolute path). E4 uses strref 36878 (`p_bastila_rprty`); its wav is not at the top level of StreamVoice or StreamSounds, confirm before the live run. Runbook: `patch_manager_mods/kvoice/V-C_RUNBOOK.md`; open blocker is the script trigger route (no console patch installed).
 
 ### Verification commands
 - Host tests (after V-B): `python3 scripts/run_tests.py -k kvoice` (always scoped) and `python3 scripts/compat_check.py patch_manager_mods/k1_port/k1_port_sources.py` after touching the ledger.
