@@ -390,6 +390,52 @@ def test_helmet_sheets_cli_inputs_and_end_to_end():
         assert "ATTACH UNKNOWN" in pv.helmet_label(dict(ROW_B, modeltype="F"), pv.ATTACH_UNKNOWN)
 
 
+def _cmp_side(root: Path, name: str, models: dict) -> Path:
+    """A dump dir {model: (half, tex_rgb, extra_tri)} for the K1/K2 comparison tests."""
+    d = root / name
+    (d / "tex").mkdir(parents=True)
+    for model, (half, rgb, extra) in models.items():
+        _put_tex(d / "tex", f"{model}_tex", rgb)
+        doc = _quad_dump(model, f"{model}_tex", half, 0.0)
+        if extra:
+            doc["nodes"][0]["faces"].append([0, 1, 3])
+        (d / f"{model}.json").write_text(json.dumps(doc), encoding="utf-8")
+    return d
+
+
+def test_compare_rows_verdicts():
+    with tempfile.TemporaryDirectory() as td:
+        k1 = _cmp_side(Path(td), "k1", {"same": (0.2, RED, False), "tris": (0.2, RED, True), "size": (0.2, RED, False),
+                                        "only1": (0.2, RED, False)})
+        k2 = _cmp_side(Path(td), "k2", {"same": (0.2, GREEN, False), "tris": (0.2, RED, False),
+                                        "size": (0.3, RED, False), "only2": (0.2, RED, False)})
+        got = {r["model"]: r["verdict"] for r in pv.compare_rows(k1, k2, ["same", "tris", "size", "only1", "only2", "none"])}
+        # a texture change alone is not a mesh difference
+        assert got == {"same": "SAME", "tris": "TRIS", "size": "SIZE", "only1": "K1_ONLY", "only2": "K2_ONLY",
+                       "none": "NONE"}, got
+
+
+def test_compare_sheets_end_to_end_and_placeholder():
+    with tempfile.TemporaryDirectory() as td:
+        k1 = _cmp_side(Path(td), "k1", {"gun": (0.2, RED, False), "solo": (0.2, RED, False)})
+        k2 = _cmp_side(Path(td), "k2", {"gun": (0.2, GREEN, False)})
+        out = Path(td) / "out"
+        paths = pv.render_compare_sheets(k1, k2, ["gun", "solo"], out)
+        assert [p.name for p in paths] == ["compare_00.png", "compare.tsv"], paths
+        sheet = np.asarray(Image.open(out / "compare_00.png").convert("RGB"))
+        W, H = pv.CMP_TILE_W, pv.CMP_TILE_H
+        assert sheet.shape == (16 + 2 * H, 4 * W, 3)
+        row0 = sheet[16:16 + H]
+        k1_px, k2_px = row0[:, :W].reshape(-1, 3), row0[:, 2 * W:3 * W].reshape(-1, 3)
+        assert (k1_px[:, 0] > 150).sum() > 500 and (k2_px[:, 1] > 100).sum() > 500  # red vs green model
+        solo_k2 = sheet[16 + H:16 + 2 * H, 2 * W:3 * W]
+        assert (solo_k2 == 45).all() or (solo_k2[40:, :] == 45).all()  # placeholder (label strip aside)
+        lines = (out / "compare.tsv").read_text(encoding="utf-8").splitlines()
+        assert lines[0].startswith("model\tverdict") and lines[2].split("\t")[1] == "K1_ONLY", lines
+        assert pv.main(["compare", "--k1", str(k1), "--k2", str(k2), "--models", "gun", "--out", str(out / "cli")]) == 0
+        assert (out / "cli" / "compare_00.png").is_file()
+
+
 def test_dump_model_signature_keeps_old_keys():
     import inspect
 
@@ -428,6 +474,8 @@ TESTS = [
     test_helmet_sheets_cli_inputs_and_end_to_end,
     test_dump_model_signature_keeps_old_keys,
     test_fl_rows_get_one_bare_row,
+    test_compare_rows_verdicts,
+    test_compare_sheets_end_to_end_and_placeholder,
 ]
 
 

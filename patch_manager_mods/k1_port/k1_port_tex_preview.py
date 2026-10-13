@@ -138,9 +138,15 @@ def cmd_mesh(args) -> int:
     out = Path(args.out).expanduser()
     out.mkdir(parents=True, exist_ok=True)
     install = open_install(Path(args.game).expanduser())
+    failed = []
     for model in args.models:
-        doc = dump_model(model, Path(args.game).expanduser(), out / "tex" if args.textures else None, install,
-                         keep_wrapped=args.textures)
+        try:
+            doc = dump_model(model, Path(args.game).expanduser(), out / "tex" if args.textures else None, install,
+                             keep_wrapped=args.textures)
+        except (ValueError, OverflowError, KeyError, IndexError) as exc:  # a model pykotor cannot parse (K1 NaN planes)
+            failed.append(model)
+            print(f"{model}: FAILED {type(exc).__name__}: {exc}", file=sys.stderr)
+            continue
         (out / f"{model}.json").write_text(json.dumps(doc), encoding="utf-8")
         tris = sum(len(n["faces"]) for n in doc["nodes"])
         reasons: dict = {}
@@ -148,6 +154,8 @@ def cmd_mesh(args) -> int:
             reasons[sk["reason"]] = reasons.get(sk["reason"], 0) + 1
         print(f"{model}: {len(doc['nodes'])} textured nodes, {tris} triangles, {len(doc['hooks'])} hooks, "
               f"skipped {reasons or 0}")
+    if failed:
+        print(f"{len(failed)} model(s) failed to parse: {' '.join(failed)}", file=sys.stderr)
     return 0
 
 
@@ -581,6 +589,108 @@ def render_helmet_sheets(meshes: Path, rows: list[dict], masks: list[str], out: 
     return written
 
 
+# ------------------------------------------------------------------ K1 vs K2 model comparison (C3)
+
+CMP_YAWS = (0.0, 90.0)  # per model, each side: front and side view
+CMP_TILE_W, CMP_TILE_H = 220, 150
+
+
+def model_stats(path: Path) -> dict:
+    """Mesh facts of one dump: textured nodes, triangles, bbox extents (x, y, z) in metres, texture names."""
+    np = _np()
+    doc = json.loads(Path(path).read_text(encoding="utf-8"))
+    nodes = [n for n in doc["nodes"] if n["positions"]]
+    pos = np.concatenate([np.asarray(n["positions"], dtype=np.float64) for n in nodes]) if nodes else np.zeros((0, 3))
+    ext = (pos.max(axis=0) - pos.min(axis=0)).tolist() if len(pos) else [0.0, 0.0, 0.0]
+    return {"nodes": len(doc["nodes"]), "tris": sum(len(n["faces"]) for n in doc["nodes"]),
+            "extent": [round(v, 4) for v in ext], "textures": sorted(set(n["texture"].lower() for n in doc["nodes"]))}
+
+
+def compare_rows(k1_dir: Path, k2_dir: Path, models) -> list[dict]:
+    """One row per model: stats from each side's dump (None when that side has no dump) and a verdict string.
+    verdict = K1_ONLY, K2_ONLY, SAME (triangles and extents within 1 mm), TRIS (triangle count differs) or SIZE."""
+    rows = []
+    for m in models:
+        p1, p2 = Path(k1_dir) / f"{m}.json", Path(k2_dir) / f"{m}.json"
+        s1 = model_stats(p1) if p1.is_file() else None
+        s2 = model_stats(p2) if p2.is_file() else None
+        if s1 and s2:
+            if s1["tris"] != s2["tris"]:
+                verdict = "TRIS"
+            elif max(abs(a - b) for a, b in zip(s1["extent"], s2["extent"])) > 0.001:
+                verdict = "SIZE"
+            else:
+                verdict = "SAME"
+        else:
+            verdict = "K1_ONLY" if s1 else "K2_ONLY" if s2 else "NONE"
+        rows.append({"model": m, "k1": s1, "k2": s2, "verdict": verdict})
+    return rows
+
+
+def compare_tile(path: Path | None, tex_dir: Path, other: Path | None, yaw: float, scale: int = 1):
+    """(h, w, 3) uint8 view of one model, framed on the union with `other` so both sides share a scale;
+    a dark placeholder when `path` is absent."""
+    np = _np()
+    W, H = CMP_TILE_W * scale, CMP_TILE_H * scale
+    if path is None or not Path(path).is_file():
+        return np.full((H, W, 3), 45, dtype=np.uint8)
+    parts = load_parts(Path(path), tex_dir)
+    frame = list(parts)
+    if other is not None and Path(other).is_file():
+        frame += [(p[0], p[1], p[2], p[3]) for p in load_parts(Path(other), None)]
+    if not parts:
+        return np.full((H, W, 3), 45, dtype=np.uint8)
+    return render_scene(parts, yaw, W, H, parts_bounds(frame, yaw, 0.08))
+
+
+def render_compare_sheets(k1_dir: Path, k2_dir: Path, models, out: Path, per_sheet: int = 8, scale: int = 1):
+    """compare_NN.png sheets (one row per model: K1 front, K1 side, K2 front, K2 side) and compare.tsv."""
+    from PIL import Image, ImageDraw
+
+    out.mkdir(parents=True, exist_ok=True)
+    rows = compare_rows(k1_dir, k2_dir, models)
+    W, H = CMP_TILE_W * scale, CMP_TILE_H * scale
+    written = []
+    for s in range(0, len(rows), per_sheet):
+        chunk = rows[s:s + per_sheet]
+        sheet = Image.new("RGB", (4 * W, 16 + len(chunk) * H), (30, 30, 30))
+        d = ImageDraw.Draw(sheet)
+        d.text((4, 2), "cols: K1 front | K1 side | K2 front | K2 side   (shared scale per row)", fill=(255, 255, 0))
+        for r, row in enumerate(chunk):
+            m = row["model"]
+            j1, j2 = Path(k1_dir) / f"{m}.json", Path(k2_dir) / f"{m}.json"
+            for side, (j, tex) in enumerate(((j1, Path(k1_dir) / "tex"), (j2, Path(k2_dir) / "tex"))):
+                other = j2 if side == 0 else j1
+                for c, yaw in enumerate(CMP_YAWS):
+                    tile = compare_tile(j, tex, other, yaw, scale)
+                    sheet.paste(Image.fromarray(tile), ((side * 2 + c) * W, 16 + r * H))
+            s1, s2 = row["k1"], row["k2"]
+            _label(d, (2, 18 + r * H), f"{m} [{row['verdict']}]")
+            _label(d, (2, 31 + r * H), f"K1 {s1['nodes']}n {s1['tris']}t" if s1 else "K1 none")
+            _label(d, (2 * W + 2, 31 + r * H), f"K2 {s2['nodes']}n {s2['tris']}t" if s2 else "K2 none")
+        path = out / f"compare_{s // per_sheet:02d}.png"
+        sheet.save(path)
+        written.append(path)
+    lines = ["model\tverdict\tk1_nodes\tk1_tris\tk1_extent\tk2_nodes\tk2_tris\tk2_extent"]
+    for row in rows:
+        s1, s2 = row["k1"], row["k2"]
+        f = lambda s, k: "" if not s else (",".join(map(str, s[k])) if k == "extent" else str(s[k]))  # noqa: E731
+        lines.append("\t".join([row["model"], row["verdict"], f(s1, "nodes"), f(s1, "tris"), f(s1, "extent"),
+                                f(s2, "nodes"), f(s2, "tris"), f(s2, "extent")]))
+    (out / "compare.tsv").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    written.append(out / "compare.tsv")
+    return written
+
+
+def cmd_compare(args) -> int:
+    models = [m.lower() for m in args.models] if args.models else \
+        [ln.strip().lower() for ln in Path(args.list).read_text(encoding="utf-8").splitlines() if ln.strip()]
+    paths = render_compare_sheets(Path(args.k1).expanduser(), Path(args.k2).expanduser(), models,
+                                  Path(args.out).expanduser(), scale=2 if args.size == "big" else 1)
+    print(f"wrote {len(paths)} files ({len(models)} models)")
+    return 0 if paths else 2
+
+
 # ------------------------------------------------------------------ look + texture sources
 
 
@@ -865,12 +975,22 @@ def build_parser() -> argparse.ArgumentParser:
     h.add_argument("--items", nargs="*", default=None, help="helmet model resrefs, or distinct-models (default)")
     h.add_argument("--wall-item", default="i_mask_007", help="helmet model drawn on the family wall ('' = no wall)")
     h.add_argument("--size", choices=("normal", "big"), default="normal")
+    c = sub.add_parser("compare", help="K1 vs K2 model sheets: two `mesh --textures` dump dirs, one row per model")
+    c.add_argument("--k1", required=True, help="dump dir made with --game <K1 install>")
+    c.add_argument("--k2", required=True, help="dump dir made with --game <K2 install>")
+    c.add_argument("--out", required=True)
+    c.add_argument("--list", default=None, help="file with one model resref per line")
+    c.add_argument("--models", nargs="*", default=None)
+    c.add_argument("--size", choices=("normal", "big"), default="normal")
     return ap
 
 
 def main(argv=None) -> int:
     args = build_parser().parse_args(argv)
-    return {"mesh": cmd_mesh, "render": cmd_render, "dossier": cmd_dossier, "helmets": cmd_helmets}[args.cmd](args)
+    if args.cmd == "compare" and not (args.list or args.models):
+        raise SystemExit("compare needs --list or --models")
+    return {"mesh": cmd_mesh, "render": cmd_render, "dossier": cmd_dossier, "helmets": cmd_helmets,
+            "compare": cmd_compare}[args.cmd](args)
 
 
 if __name__ == "__main__":

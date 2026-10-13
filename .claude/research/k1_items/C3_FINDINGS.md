@@ -1,0 +1,14 @@
+# C3: K1 vs K2 model comparison (10-13)
+
+Tool: `k1_port_tex_preview.py compare` (front + side view per model, K1 left, K2 right, shared scale per row). Dumps made with `mesh --textures --game <K1|K2>`. Stats per model: `c3_compare.tsv`. Sheets (PNG, outside the repo): `~/Games/KOTOR2_Mod_Workspace/tex_looks/run1/c3/sheets/compare_00..09.png`. Opus viewed sheets 00, 01, 03, 04, 05, 06, 08 (not 02, 07; their rows are covered by the TSV). Haiku vision pass NOT run: the distinctness rubric needs your approval first.
+
+1. **K2 reworked every weapon mesh.** 60 of 61 weapons differ; K2 has 3x to 7x the triangles (pistol 158 -> 520, carbine 140 -> 1094, bowcaster 226 -> 1534). K1 versions are low-poly blocks with different designs and palettes. Shape and texture differ, so a K1 weapon would read as a different gun, but it would also look cruder than K2 next to it.
+2. **Lightsaber models are not comparable.** K1 `w_lghtsbr_*`, `w_shortsbr_*`, `w_dblsbr_*` are bare blade cylinders (glowing colour, tiny hilt) with 132-227 tris; K2 versions have 0 renderable textured nodes in the dump (hilts are built elsewhere). `w_dblsbr_001`: K1 parse fails (NaN face plane), so no K1 render. Not import candidates.
+3. **K1 designs that stand out versus K2:** gold and brass Arkanian/Zabrak pistols (`w_blstrpstl_003/004`, `w_hvyblstr_003`), bowcaster with glowing orange tips (`w_bowcstr_001/002`), purple ion rifles (`w_ionrfl_002/003`), `w_hvrptbltr_001/002` (cranked repeater, different silhouette). Most other K1 weapons are low-poly versions of the same guns K2 redrew.
+4. **The 15 K1-only `p_*` companion models render fine** (Bastila, Canderous, Carth, Jolee, Juhani, T3-M4; bodies are headless, heads are separate models). These are the real K1-only assets, but they are NPCs for doc 38, not items.
+5. **Texture source caveat:** K1 tiles use K1's native textures. K2 tiles use K2 Override first (your 2x-upscaled set where present), so K2 looks sharper than vanilla K2 would. Geometry comparison is unaffected.
+
+## C4 shortlist proposal (<=30, for your pick)
+- Tier 1 (best novelty, 15): all `p_*` companion models (doc 38 import path, direct, no resref collision).
+- Tier 2 (weapons that look different, 11): `w_blstrpstl_003`, `w_blstrpstl_004`, `w_hvyblstr_003`, `w_bowcstr_001`, `w_bowcstr_002`, `w_ionrfl_002`, `w_ionrfl_003`, `w_hvrptbltr_001`, `w_hvrptbltr_002`, `w_blstrcrbn_005`, `w_ionblstr_002`. Each would need a renamed resref (converter refuses collisions) and would be 3-7x lower poly than neighbours.
+- Dropped: all sabers, all weapons that only recolour a K2 gun.
