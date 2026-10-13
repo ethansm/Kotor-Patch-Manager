@@ -125,12 +125,33 @@ def splice_keeps_alpha_and_unchanged_blocks():
                 check(np.array_equal(O[by, bx, 8:], new[by, bx]), f"changed block {by},{bx} colour not spliced")
             else:
                 check(np.array_equal(O[by, bx], P[by, bx]), f"unchanged block {by},{bx} not byte-identical")
-    parent1 = parent[:32]
+    parent1 = parent[:32].copy()
+    parent1.reshape(2, 2, 8)[..., 1] = 0xFF  # c0 > c1 everywhere: all 4-colour, so no mode flip
+    parent1.reshape(2, 2, 8)[..., 3] = 0x00
+    new = new.copy()
+    new[..., 1], new[..., 3] = 0xFF, 0x00
     out1 = splice_colour(parent1.tobytes(), 8, 8, "dxt1", new, changed)
     O1 = np.frombuffer(out1, dtype=np.uint8).reshape(2, 2, 8)
     P1 = parent1.reshape(2, 2, 8)
     check(np.array_equal(O1[0, 0], new[0, 0]) and np.array_equal(O1[1, 1], new[1, 1]), "DXT1 colour not spliced")
     check(np.array_equal(O1[0, 1], P1[0, 1]) and np.array_equal(O1[1, 0], P1[1, 0]), "DXT1 unchanged block changed")
+
+
+@test
+def splice_dxt1_keeps_parent_block_when_colour_mode_would_flip():
+    four = bytes([0x83, 0x49, 0x12, 0x30, 0, 0, 0, 0])  # c0 > c1 : 4-colour mode
+    three = bytes([0x83, 0x49, 0xA3, 0x51, 0xFE, 0xFF, 0xFF, 0xFF])  # c0 <= c1 : 3-colour mode (transparent index 3)
+    parent = four + three + four + three
+    new = np.zeros((1, 4, 8), dtype=np.uint8)
+    new[0, 0] = np.frombuffer(four, dtype=np.uint8) ^ 1  # 4-colour over 4-colour: spliced
+    new[0, 1] = np.frombuffer(four, dtype=np.uint8) ^ 1  # 4-colour over 3-colour: parent kept
+    new[0, 2] = np.frombuffer(three, dtype=np.uint8)  # 3-colour over 4-colour: parent kept
+    new[0, 3] = np.frombuffer(three, dtype=np.uint8) ^ 1  # 3-colour over 3-colour: spliced
+    out = splice_colour(parent, 16, 4, "dxt1", new, np.ones((1, 4), dtype=bool))
+    O = np.frombuffer(out, dtype=np.uint8).reshape(4, 8)
+    P = np.frombuffer(parent, dtype=np.uint8).reshape(4, 8)
+    check(np.array_equal(O[0], new[0, 0]) and np.array_equal(O[3], new[0, 3]), "same-mode block not spliced")
+    check(np.array_equal(O[1], P[1]) and np.array_equal(O[2], P[2]), "mode-flipping block was not kept")
 
 
 @test

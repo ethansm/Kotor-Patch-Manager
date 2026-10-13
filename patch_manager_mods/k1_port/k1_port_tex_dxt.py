@@ -206,8 +206,9 @@ def splice_colour(parent: bytes, w: int, h: int, fmt: str,
                   new_colour: np.ndarray, changed: np.ndarray) -> bytes:
     """Replace the colour half of changed blocks in one raw mip level; everything else is kept.
 
-    DXT1: all 8 bytes of a changed block are replaced. DXT5: bytes 8..16 are replaced and the
-    alpha half (bytes 0..8) is always kept from the parent. Output length equals parent length.
+    DXT1: all 8 bytes of a changed block are replaced, except a block whose colour mode (c0<=c1, the 1-bit alpha
+    mode) would flip: that block keeps the parent's bytes so alpha behaviour never changes. DXT5: bytes 8..16 are
+    replaced and the alpha half (bytes 0..8) is always kept from the parent. Output length equals parent length.
     """
     nb = BLOCK_BYTES[fmt]
     by, bx = _grid(w, h)
@@ -220,5 +221,11 @@ def splice_colour(parent: bytes, w: int, h: int, fmt: str,
         raise ValueError(f"expected new_colour {(by, bx, 8)} and changed {(by, bx)}")
     blocks = np.frombuffer(parent, dtype=np.uint8, count=n).reshape(by, bx, nb).copy()
     off = 0 if fmt == "dxt1" else 8
+    if fmt == "dxt1":
+        p0 = blocks[..., 0].astype(np.uint16) | (blocks[..., 1].astype(np.uint16) << 8)
+        p1 = blocks[..., 2].astype(np.uint16) | (blocks[..., 3].astype(np.uint16) << 8)
+        n0 = new[..., 0].astype(np.uint16) | (new[..., 1].astype(np.uint16) << 8)
+        n1 = new[..., 2].astype(np.uint16) | (new[..., 3].astype(np.uint16) << 8)
+        ch = ch & ((p0 <= p1) == (n0 <= n1))
     blocks[..., off:off + 8] = np.where(ch[..., None], new, blocks[..., off:off + 8])
     return blocks.tobytes() + bytes(parent[n:])
