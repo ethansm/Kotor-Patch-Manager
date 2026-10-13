@@ -13,6 +13,7 @@ import io
 import json
 import math
 import os
+import random
 import shutil
 import subprocess
 import sys
@@ -955,6 +956,260 @@ class TestScorerStatistics(Base):
         self.unit(short, "blind", "a", {"cost_usd": 0.1, "duration_s": 1})
         self.assertIs(self.aggregate(full)["cost"]["cost_complete"], True)
         self.assertIs(self.aggregate(full, short)["cost"]["cost_complete"], False)
+
+
+# ---------------------------------------------------------------- held-out sample (synthetic reports only)
+class TestSample(Base):
+    def valid_runs(self, n_runs=3, per_run=10):
+        """n_runs synthetic runs: per_run quote-valid hypotheses each, plus one quote-invalid one per run."""
+        runs = []
+        for r in range(n_runs):
+            hyps = [hyp("h%d" % i) for i in range(1, per_run + 1)] + [hyp("bad", quote_valid=False)]
+            runs.append(self.report(self.new_run("run%d" % r), hyps))
+        return runs
+
+    def expected_pool(self, n_runs, per_run):
+        return sorted(("run%d" % r, "blind-skeptic:h%d" % i) for r in range(n_runs) for i in range(1, per_run + 1))
+
+    def sample(self, runs, n, seed, exclude=None):
+        argv = ["sample"]
+        for r in runs:
+            argv += ["--run", r]
+        argv += ["--n", str(n), "--seed", str(seed)]
+        if exclude is not None:
+            argv += ["--exclude", exclude]
+        return self.call(*argv)
+
+    def test_sample_is_identical_for_fixed_inputs_and_seed(self):
+        runs = self.valid_runs()
+        code1, out1, err1 = self.sample(runs, 5, 11)
+        code2, out2, _ = self.sample(runs, 5, 11)
+        self.assertEqual((code1, err1), (0, ""))
+        self.assertEqual(out1, out2)
+        drawn = json.loads(out1)
+        self.assertEqual(len(drawn), 5)
+        self.assertEqual(len({tuple(p) for p in drawn}), 5)
+
+    def test_sample_different_seed_gives_a_different_draw(self):
+        runs = self.valid_runs()
+        code1, out1, err1 = self.sample(runs, 5, 1)
+        code2, out2, err2 = self.sample(runs, 5, 2)
+        self.assertEqual((code1, code2), (0, 0), err1 + err2)
+        self.assertNotEqual(out1, out2)
+
+    def test_sample_draws_rng_sample_over_the_sorted_pool(self):
+        """Pinned: the pool is sorted by (run basename, hypothesis id) first, then random.Random(seed).sample draws."""
+        runs = self.valid_runs(n_runs=3, per_run=10)
+        code, out, err = self.sample(runs, 6, 7)
+        self.assertEqual(code, 0, err)
+        self.assertEqual(json.loads(out), [list(p) for p in random.Random(7).sample(self.expected_pool(3, 10), 6)])
+
+    def test_sample_never_draws_a_quote_invalid_hypothesis(self):
+        runs = self.valid_runs(n_runs=2, per_run=4)
+        code, out, err = self.sample(runs, 100, 3)
+        self.assertEqual(code, 0, err)
+        drawn = json.loads(out)
+        self.assertNotIn(["run0", "blind-skeptic:bad"], drawn)
+        self.assertEqual(sorted(tuple(p) for p in drawn), self.expected_pool(2, 4))
+
+    def test_sample_exclusion_matches_run_basename_and_id(self):
+        runs = self.valid_runs(n_runs=2, per_run=4)
+        excl = os.path.join(self.tmp, "exclude.json")
+        write_json(excl, [["run0", "blind-skeptic:h1"], ["run1", "blind-skeptic:h2"]])
+        code, out, err = self.sample(runs, 100, 3, exclude=excl)
+        self.assertEqual(code, 0, err)
+        gone = {("run0", "blind-skeptic:h1"), ("run1", "blind-skeptic:h2")}
+        self.assertEqual([tuple(p) for p in json.loads(out)],
+                         [p for p in self.expected_pool(2, 4) if p not in gone])
+
+    def test_sample_n_above_the_pool_takes_all_and_says_so(self):
+        runs = self.valid_runs(n_runs=2, per_run=4)
+        code, out, err = self.sample(runs, 50, 3)
+        self.assertEqual(code, 0, err)
+        self.assertEqual([tuple(p) for p in json.loads(out)], self.expected_pool(2, 4))
+        self.assertIn("taking all 8", err)
+
+    def test_sample_writes_nothing(self):
+        runs = self.valid_runs(n_runs=2, per_run=4)
+        before = listing(self.tmp)
+        code, _, err = self.sample(runs, 3, 1)
+        self.assertEqual(code, 0, err)
+        self.assertEqual(listing(self.tmp), before)
+
+    def test_sample_negative_n_exits_2_and_prints_nothing(self):
+        runs = self.valid_runs(n_runs=1, per_run=4)
+        code, out, err = self.sample(runs, -1, 1)
+        self.assertEqual(code, 2)
+        self.assertEqual(out, "")
+        self.assertIn("--n", err)
+
+    def test_sample_malformed_exclude_file_exits_2(self):
+        runs = self.valid_runs(n_runs=1, per_run=4)
+        excl = os.path.join(self.tmp, "exclude.json")
+        write_json(excl, [["run0", "blind-skeptic:h1", "HIT"]])
+        code, out, err = self.sample(runs, 2, 1, exclude=excl)
+        self.assertEqual(code, 2)
+        self.assertEqual(out, "")
+        self.assertIn("exclude", err)
+
+    def test_sample_refuses_two_run_dirs_with_one_basename(self):
+        a = self.report(self.new_run("alpha"), [hyp("h1")])
+        b = self.report(os.path.join(self.tmp, "other", "alpha"), [hyp("h1")])
+        code, out, err = self.sample([a, b], 1, 1)
+        self.assertEqual(code, 2)
+        self.assertIn("alpha", err)
+
+
+# ---------------------------------------------------------------- agreement with score.json (synthetic)
+# (given label, scorer label) per item. Run kappa_a holds items 1-5, kappa_b items 6-10.
+KAPPA_PAIRS = [
+    ("HIT", "HIT"), ("HIT", "HIT"), ("HIT", "HIT"), ("HIT", "PARTIAL"), ("HIT", "MISS"),
+    ("PARTIAL", "PARTIAL"), ("PARTIAL", "PARTIAL"), ("PARTIAL", "MISS"),
+    ("MISS", "MISS"), ("MISS", "MISS"),
+]
+KAPPA_PLAN = [("kappa_a", KAPPA_PAIRS[:5]), ("kappa_b", KAPPA_PAIRS[5:])]
+# claims that the real scorer (RUBRIC above) labels HIT, PARTIAL and MISS
+CLAIM_FOR = {"HIT": "stale slot with queue length", "PARTIAL": "a stale slot only", "MISS": "unrelated noise"}
+
+
+class TestAgree(Base):
+    def scored(self, plan):
+        """plan: [(run name, [(given, scorer), ...]), ...]. One synthetic report per run, each scored by the real
+        scorer (the claim is written to score as the scorer label). Returns (run dirs, {run/id: given label})."""
+        runs, labels, k = [], {}, 0
+        for name, items in plan:
+            hyps = []
+            for given, scorer in items:
+                k += 1
+                hyps.append(hyp("h%d" % k, claim=CLAIM_FOR[scorer]))
+                labels["%s/blind-skeptic:h%d" % (name, k)] = given
+            run = self.report(self.new_run(name), hyps)
+            self.score(run)
+            runs.append(run)
+        return runs, labels
+
+    def labels_file(self, obj):
+        path = os.path.join(self.tmp, "labels.json")
+        write_json(path, obj)
+        return path
+
+    def agree(self, labels_path, runs, *extra):
+        argv = ["agree", "--labels", labels_path]
+        for r in runs:
+            argv += ["--run", r]
+        return self.call(*(argv + list(extra)))
+
+    def test_kappa_hand_computed_on_ten_items(self):
+        # Confusion, rows = given, columns = scorer (HIT, PARTIAL, MISS):
+        #   given HIT     : 3 1 1   (5 items)
+        #   given PARTIAL : 0 2 1   (3 items)
+        #   given MISS    : 0 0 2   (2 items)
+        # Given marginals 5, 3, 2; scorer marginals 3, 3, 4; n = 10.
+        # p_o = (3 + 2 + 2) / 10 = 0.7
+        # p_e = (5*3 + 3*3 + 2*4) / 10^2 = 32 / 100 = 0.32
+        # kappa = (p_o - p_e) / (1 - p_e) = 0.38 / 0.68 = 19/34 = 0.558823... -> 0.559
+        runs, labels = self.scored(KAPPA_PLAN)
+        code, out, err = self.agree(self.labels_file(labels), runs, "--case", self.case, "--json")
+        self.assertEqual(code, 0, err)
+        a = json.loads(out)
+        self.assertEqual((a["n"], a["agree"]), (10, 7))
+        self.assertAlmostEqual(a["raw_agreement"], 0.7, places=9)
+        self.assertEqual(round(a["kappa"], 3), 0.559)
+        self.assertAlmostEqual(a["kappa"], 19 / 34, places=5)
+        self.assertEqual(a["given_counts"], {"HIT": 5, "PARTIAL": 3, "MISS": 2})
+        self.assertEqual(a["scorer_counts"], {"HIT": 3, "PARTIAL": 3, "MISS": 4})
+        self.assertEqual(a["confusion"], {"HIT": {"HIT": 3, "PARTIAL": 1, "MISS": 1},
+                                          "PARTIAL": {"HIT": 0, "PARTIAL": 2, "MISS": 1},
+                                          "MISS": {"HIT": 0, "PARTIAL": 0, "MISS": 2}})
+
+    def test_identical_lists_have_kappa_one(self):
+        plan = [(name, [(s, s) for _, s in items]) for name, items in KAPPA_PLAN]
+        runs, labels = self.scored(plan)
+        code, out, err = self.agree(self.labels_file(labels), runs, "--json")
+        self.assertEqual(code, 0, err)
+        a = json.loads(out)
+        self.assertEqual(a["kappa"], 1.0)
+        self.assertEqual(a["raw_agreement"], 1.0)
+        self.assertTrue(all(a["confusion"][g][s] == 0 for g in bis.LABELS for s in bis.LABELS if g != s))
+
+    def test_identical_single_label_lists_have_kappa_one_not_na(self):
+        # Expected agreement is 1 here (every label is HIT); the identical-lists rule still gives 1.0, not n/a.
+        runs, labels = self.scored([("solo", [("HIT", "HIT")] * 3)])
+        code, out, err = self.agree(self.labels_file(labels), runs, "--json")
+        self.assertEqual(code, 0, err)
+        self.assertEqual(json.loads(out)["kappa"], 1.0)
+
+    def test_list_form_of_labels_gives_the_same_result(self):
+        runs, labels = self.scored(KAPPA_PLAN)
+        as_dict = self.agree(self.labels_file(labels), runs, "--json")
+        as_list = [[k.split("/", 1)[0], k.split("/", 1)[1], v] for k, v in sorted(labels.items())]
+        as_list_run = self.agree(self.labels_file(as_list), runs, "--json")
+        self.assertEqual(as_dict[0], 0, as_dict[2])
+        self.assertEqual(as_list_run[0], 0, as_list_run[2])
+        self.assertEqual(json.loads(as_dict[1]), json.loads(as_list_run[1]))
+
+    def test_label_for_an_unscored_id_exits_2_and_names_it(self):
+        runs, labels = self.scored(KAPPA_PLAN)
+        labels["kappa_a/blind-skeptic:h99"] = "HIT"
+        code, out, err = self.agree(self.labels_file(labels), runs, "--json")
+        self.assertEqual(code, 2)
+        self.assertEqual(out, "")
+        self.assertIn("blind-skeptic:h99", err)
+
+    def test_missing_score_json_exits_2_and_names_a_labelled_id(self):
+        runs, labels = self.scored(KAPPA_PLAN)
+        os.remove(os.path.join(runs[1], "score.json"))
+        code, out, err = self.agree(self.labels_file(labels), runs, "--json")
+        self.assertEqual(code, 2)
+        self.assertTrue(any("kappa_b/blind-skeptic:h%d" % k in err for k in range(6, 11)), err)
+        self.assertFalse(os.path.exists(os.path.join(runs[1], "score.json")))
+
+    def test_runs_scored_with_different_matchers_are_refused(self):
+        runs, labels = self.scored(KAPPA_PLAN)
+        code, _, err = self.call("score", "--run", runs[1], "--case", self.case, "--matcher", "v1", "--json")
+        self.assertEqual(code, 0, err)
+        code, out, err = self.agree(self.labels_file(labels), runs, "--json")
+        self.assertEqual(code, 2)
+        self.assertIn("matcher", err)
+
+    def test_case_with_another_rubric_is_refused(self):
+        runs, labels = self.scored(KAPPA_PLAN)
+        other = os.path.join(self.tmp, "other_case.json")
+        write_json(other, {"id": "other", "score_rubric": {"facts": {"stale": [r"stale"]}, "hit": ["stale"]}})
+        code, out, err = self.agree(self.labels_file(labels), runs, "--case", other, "--json")
+        self.assertEqual(code, 2)
+        self.assertIn("rubric", err)
+
+    def test_label_outside_hit_partial_miss_exits_2_and_names_the_id(self):
+        runs, labels = self.scored(KAPPA_PLAN)
+        labels["kappa_a/blind-skeptic:h1"] = "hit"
+        code, out, err = self.agree(self.labels_file(labels), runs, "--json")
+        self.assertEqual(code, 2)
+        self.assertIn("kappa_a/blind-skeptic:h1", err)
+
+    def test_label_whose_run_is_not_given_exits_2_and_names_the_id(self):
+        runs, labels = self.scored(KAPPA_PLAN)
+        code, out, err = self.agree(self.labels_file(labels), runs[:1], "--json")
+        self.assertEqual(code, 2)
+        self.assertTrue(any("kappa_b/blind-skeptic:h%d" % k in err for k in range(6, 11)), err)
+
+    def test_agree_writes_nothing(self):
+        runs, labels = self.scored(KAPPA_PLAN)
+        path = self.labels_file(labels)
+        before = listing(self.tmp)
+        code, _, err = self.agree(path, runs, "--json")
+        self.assertEqual(code, 0, err)
+        self.assertEqual(listing(self.tmp), before)
+
+    def test_summary_prints_kappa_and_the_confusion_table(self):
+        runs, labels = self.scored(KAPPA_PLAN)
+        code, out, err = self.agree(self.labels_file(labels), runs)
+        self.assertEqual(code, 0, err)
+        self.assertIn("raw agreement 0.700 (7/10)", out)
+        self.assertIn("Cohen's kappa 0.559", out)
+        rows = [line.split() for line in out.splitlines()]
+        for expected in (["HIT", "3", "1", "1"], ["PARTIAL", "0", "2", "1"], ["MISS", "0", "0", "2"]):
+            self.assertIn(expected, rows)
 
 
 def main():

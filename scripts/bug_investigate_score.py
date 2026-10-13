@@ -3,12 +3,22 @@
 
   python3 scripts/bug_investigate_score.py score --run RUN --case CASE [--json]
   python3 scripts/bug_investigate_score.py aggregate --run RUN1 --run RUN2 ... [--allow-mixed] [--json]
+  python3 scripts/bug_investigate_score.py sample --run RUN [--run RUN ...] --n N --seed S [--exclude FILE.json]
+  python3 scripts/bug_investigate_score.py agree --labels FILE.json --run RUN [--run RUN ...] [--case CASE] [--json]
 
 score reads RUN/report.json, CASE["score_rubric"] (the only code that reads it), and the unit cost files
 RUN/{blind,null,verify}/out/runs/*.json; it writes RUN/score.json (sorted keys, indent 2, trailing newline).
 aggregate reads each RUN/score.json, pools the hypotheses, and writes nothing. It refuses score files that
 disagree on case_id, rubric_sha256 or matcher unless --allow-mixed (a score file without the key counts as one
 unnamed value, "<missing>").
+sample prints one JSON list of N [run basename, hypothesis id] pairs: a seeded draw (random.Random(S).sample) from the
+quote-valid hypotheses of the runs' report.json files, after the pool is sorted by (run basename, id) and the pairs in
+--exclude (a JSON list of [run basename, id]) are removed. N above the pool size takes the whole pool (noted on stderr).
+agree compares human labels with the labels already in each RUN/score.json (nothing is rescored). Labels come from
+--labels: {"<run basename>/<id>": "HIT|PARTIAL|MISS", ...} or [[run basename, id, label], ...]. It prints the raw
+agreement, Cohen's kappa (1.0 when every pair agrees, n/a when undefined) and a 3x3 table (rows = given label,
+columns = scorer label). With --case, every score.json must carry that case's score_rubric hash.
+Both sample and agree write nothing.
 Exit codes: 0 ok; 1 score.json could not be written; 2 usage or input error, or refused mixed inputs (nothing written).
 
 Rank-1 and ties: "top" means config B (verifier-surviving), the same hypothesis report.json names in ranked[0].
@@ -38,6 +48,7 @@ import os
 import random
 import re
 import sys
+from fractions import Fraction
 
 REPORT_FORMAT = "bug-investigate-report/1"
 SCORE_FORMAT = "bug-investigate-score/1"
@@ -65,6 +76,7 @@ MIN_NULL_COST_RECORDS = 1
 STYLE_RE = re.compile(r"^blind-([^:]+):")   # hypothesis id "blind-<style>:hN"; style is advocate/evidence/skeptic
 PROVENANCE_KEYS = ("case_id", "rubric_sha256", "matcher")
 MISSING_VALUE = "<missing>"   # a score.json without the key: one unnamed value
+AGREE_FORMAT = "bug-investigate-agree/1"
 
 
 class InputError(Exception):
@@ -148,6 +160,11 @@ def cluster_bootstrap_ci(per_run_counts, stat=pooled_ratio, B=BOOT_B, seed=BOOT_
 
 
 # ---------------------------------------------------------------- rubric and labels
+def rubric_hash(rubric):
+    """sha256 of the rubric's canonical JSON (sorted keys, no spaces): the rubric_sha256 a score.json records."""
+    return hashlib.sha256(json.dumps(rubric, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+
+
 def load_rubric(case_path):
     case = read_json_file(case_path, "case")
     if not isinstance(case, dict) or "score_rubric" not in case:
@@ -398,11 +415,10 @@ def score_run(run, case_path, matcher=DEFAULT_MATCHER):
         return {lab: sum(1 for r in sel if r["label"] == lab) for lab in LABELS}
 
     valid = sum(1 for r in rows if r["quote_valid"])
-    rubric_sha = hashlib.sha256(json.dumps(rubric, sort_keys=True, separators=(",", ":")).encode("utf-8"))
     return {
         "format": SCORE_FORMAT, "case": os.path.basename(case_path),
         "case_id": cid if isinstance(cid, str) and cid else None,
-        "matcher": matcher, "rubric_sha256": rubric_sha.hexdigest(),
+        "matcher": matcher, "rubric_sha256": rubric_hash(rubric),
         "run_id": _text(rep.get("run_id")) or os.path.basename(run),
         "decision": rep.get("decision"), "null_verdict": rep.get("null_verdict"),
         "null_valid": rep.get("null_valid"), "ranked": list(ranked),
@@ -700,6 +716,166 @@ def cmd_aggregate(args):
     return 0
 
 
+# ---------------------------------------------------------------- held-out sample and agreement
+def unique_ids(hyps, path):
+    """{hypothesis id: hypothesis}. A repeated id is refused: a (run, id) key would then name two hypotheses."""
+    out = {}
+    for h in hyps:
+        if h["id"] in out:
+            raise InputError("duplicate hypothesis id %s: %s" % (h["id"], path))
+        out[h["id"]] = h
+    return out
+
+
+def run_names(runs):
+    """{run basename: run dir}. The basename is the run's identity in sample and agree, so two dirs sharing one are
+    refused."""
+    named = {}
+    for run in runs:
+        name = os.path.basename(os.path.normpath(run))
+        if name in named:
+            raise InputError("two --run dirs share the basename %s: %s and %s" % (name, named[name], run))
+        named[name] = run
+    return named
+
+
+def sample_pool(runs):
+    """Sorted (run basename, hypothesis id) for every quote-valid hypothesis in the runs' report.json files."""
+    pool = []
+    for name, run in run_names(runs).items():
+        rep = load_report(run)
+        for hid, h in unique_ids(rep["hypotheses"], os.path.join(run, "report.json")).items():
+            if h["quote_valid"]:
+                pool.append((name, hid))
+    return sorted(pool)
+
+
+def load_exclude(path):
+    obj = read_json_file(path, "exclude file")
+    if not isinstance(obj, list) or not all(
+            isinstance(p, list) and len(p) == 2 and all(isinstance(x, str) for x in p) for p in obj):
+        raise InputError("exclude file must be a JSON list of [run basename, id] pairs: %s" % path)
+    return {tuple(p) for p in obj}
+
+
+def cmd_sample(args):
+    if args.n < 0:
+        raise InputError("--n must be 0 or more, got %d" % args.n)
+    pool = sample_pool(args.runs)
+    if args.exclude:
+        skip = load_exclude(args.exclude)
+        pool = [p for p in pool if p not in skip]
+    if args.n > len(pool):
+        print("note: --n %d is larger than the %d quote-valid hypotheses left in the pool; taking all %d"
+              % (args.n, len(pool), len(pool)), file=sys.stderr)
+        chosen = list(pool)
+    else:
+        chosen = random.Random(args.seed).sample(pool, args.n)
+    sys.stdout.write(json.dumps([list(p) for p in chosen]) + "\n")
+    return 0
+
+
+def load_labels(path):
+    """[(run basename, hypothesis id, given label)] from {"<run>/<id>": label} or [[run, id, label], ...]."""
+    obj = read_json_file(path, "labels")
+    if isinstance(obj, dict):
+        items = []
+        for key, label in obj.items():
+            run, sep, hid = key.partition("/")
+            if not sep or not run or not hid:
+                raise InputError("label key must be <run basename>/<id>, got %r: %s" % (key, path))
+            items.append((run, hid, label))
+    elif isinstance(obj, list) and all(
+            isinstance(e, list) and len(e) == 3 and all(isinstance(x, str) for x in e) for e in obj):
+        items = [tuple(e) for e in obj]
+    else:
+        raise InputError("labels must be a JSON object {run/id: label} or a list of [run, id, label]: %s" % path)
+    seen = set()
+    for run, hid, label in items:
+        if label not in LABELS:
+            raise InputError("label %s/%s is %r, not HIT, PARTIAL or MISS" % (run, hid, label))
+        if (run, hid) in seen:
+            raise InputError("label %s/%s is given twice" % (run, hid))
+        seen.add((run, hid))
+    return items
+
+
+def agreement(pairs):
+    """Raw agreement and Cohen's kappa over (given, scorer) label pairs, computed exactly with Fraction.
+    kappa is 1.0 when every pair agrees (this includes one label only, where expected agreement is 1). It is None
+    (n/a) only when expected agreement is 1 without full agreement, which exact labels cannot produce."""
+    n = len(pairs)
+    given = {lab: 0 for lab in LABELS}
+    scorer = {lab: 0 for lab in LABELS}
+    conf = {g: {s: 0 for s in LABELS} for g in LABELS}
+    for g, s in pairs:
+        given[g] += 1
+        scorer[s] += 1
+        conf[g][s] += 1
+    agree = sum(conf[lab][lab] for lab in LABELS)
+    p_o = Fraction(agree, n)
+    p_e = sum((Fraction(given[lab], n) * Fraction(scorer[lab], n) for lab in LABELS), Fraction(0))
+    if agree == n:
+        kappa = 1.0
+    elif p_e == 1:
+        kappa = None
+    else:
+        kappa = float((p_o - p_e) / (1 - p_e))
+    return {"format": AGREE_FORMAT, "n": n, "agree": agree, "raw_agreement": _round(float(p_o)),
+            "expected_agreement": _round(float(p_e)), "kappa": _round(kappa), "given_counts": given,
+            "scorer_counts": scorer, "confusion": conf}
+
+
+def agree_summary(a):
+    kappa = "n/a" if a["kappa"] is None else "%.3f" % a["kappa"]
+    lines = ["agree: %d labelled ids; raw agreement %.3f (%d/%d); Cohen's kappa %s" % (
+        a["n"], a["raw_agreement"], a["agree"], a["n"], kappa),
+        "confusion (rows = given label, columns = scorer label):",
+        "%-8s%s" % ("", "".join("%9s" % s for s in LABELS))]
+    for g in LABELS:
+        lines.append("%-8s%s" % (g, "".join("%9d" % a["confusion"][g][s] for s in LABELS)))
+    return "\n".join(lines)
+
+
+def cmd_agree(args):
+    named = run_names(args.runs)
+    items = load_labels(args.labels)
+    if not items:
+        raise InputError("no labels in %s" % args.labels)
+    want_sha = rubric_hash(load_rubric(args.case)[2]["score_rubric"]) if args.case else None
+    loaded, by_id = {}, {}   # run basename -> score dict, and -> {hypothesis id: hypothesis row}
+    for name, hid, _ in items:
+        if name not in named:
+            raise InputError("label %s/%s: run %s is not one of the --run dirs" % (name, hid, name))
+        if name in loaded:
+            continue
+        if not os.path.isfile(os.path.join(named[name], "score.json")):
+            raise InputError("label %s/%s: no score.json in %s (score that run first)" % (name, hid, named[name]))
+        loaded[name] = load_score(named[name])
+        by_id[name] = unique_ids(loaded[name]["hypotheses"], os.path.join(named[name], "score.json"))
+        if want_sha is not None and loaded[name].get("rubric_sha256") != want_sha:
+            raise InputError("label %s/%s: score.json rubric_sha256 in %s is not the rubric of --case %s"
+                             % (name, hid, named[name], args.case))
+    problems = ["%s differs: %s" % (key, ", ".join(sorted(seen)))
+                for key, seen in provenance(sorted(loaded.items())).items() if len(seen) > 1]
+    if problems:
+        raise InputError("score files disagree (%s); agree needs labels scored under one case and matcher"
+                         % "; ".join(problems))
+    pairs = []
+    for name, hid, given in items:
+        row = by_id[name].get(hid)
+        if row is None:
+            raise InputError("label %s/%s: no hypothesis %s in %s" % (name, hid, hid,
+                                                                      os.path.join(named[name], "score.json")))
+        pairs.append((given, row["label"]))
+    a = agreement(pairs)
+    if args.json:
+        sys.stdout.write(json.dumps(a, sort_keys=True, indent=2) + "\n")
+    else:
+        print(agree_summary(a))
+    return 0
+
+
 # ---------------------------------------------------------------- CLI
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Score and aggregate bug-investigate runs (deterministic, no model).")
@@ -715,12 +891,23 @@ def main(argv=None):
     pa.add_argument("--allow-mixed", action="store_true",
                     help="pool score files that differ in case_id, rubric_sha256 or matcher (default: refuse, exit 2)")
     pa.add_argument("--json", action="store_true", help="print the aggregate JSON instead of a summary")
+    pz = sub.add_parser("sample", help="draw N quote-valid hypotheses from report.json files (writes nothing)")
+    pz.add_argument("--run", action="append", dest="runs", required=True, help="run dir holding report.json (repeat)")
+    pz.add_argument("--n", type=int, required=True, help="how many to draw (the whole pool when N is larger)")
+    pz.add_argument("--seed", type=int, required=True, help="seed for random.Random")
+    pz.add_argument("--exclude", help="JSON list of [run basename, id] pairs to leave out of the pool")
+    pg = sub.add_parser("agree", help="raw agreement and Cohen's kappa of labels vs score.json (writes nothing)")
+    pg.add_argument("--labels", required=True, help="JSON {run/id: HIT|PARTIAL|MISS} or [[run, id, label], ...]")
+    pg.add_argument("--run", action="append", dest="runs", required=True, help="run dir holding score.json (repeat)")
+    pg.add_argument("--case", help="case JSON; each score.json must carry this case's score_rubric hash")
+    pg.add_argument("--json", action="store_true", help="print the agreement JSON instead of a summary")
     try:
         args = parser.parse_args(argv)
     except SystemExit as e:
         return e.code if isinstance(e.code, int) else 2
+    handlers = {"score": cmd_score, "aggregate": cmd_aggregate, "sample": cmd_sample, "agree": cmd_agree}
     try:
-        return cmd_score(args) if args.cmd == "score" else cmd_aggregate(args)
+        return handlers[args.cmd](args)
     except InputError as e:
         print("error: %s" % e, file=sys.stderr)
         return 2
