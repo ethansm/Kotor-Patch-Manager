@@ -1,0 +1,82 @@
+{
+ "X01": [
+  "20261012T040138Z-logic",
+  "blind-advocate:h3"
+ ],
+ "X02": [
+  "20261012T040138Z-logic",
+  "blind-evidence:h3"
+ ],
+ "X03": [
+  "20261012T040138Z-logic",
+  "blind-advocate:h1"
+ ],
+ "X04": [
+  "20261012T040314Z-logic",
+  "blind-skeptic:h3"
+ ],
+ "X05": [
+  "20261012T040314Z-logic",
+  "blind-evidence:h4"
+ ],
+ "X06": [
+  "20261012T040314Z-logic",
+  "blind-skeptic:h4"
+ ],
+ "X07": [
+  "20261012T040314Z-logic",
+  "blind-advocate:h1"
+ ],
+ "X08": [
+  "20261012T040409Z-logic",
+  "blind-skeptic:h3"
+ ],
+ "X09": [
+  "20261012T040138Z-logic",
+  "blind-advocate:h2"
+ ],
+ "X10": [
+  "20261012T040224Z-logic",
+  "blind-evidence:h2"
+ ],
+ "X11": [
+  "20261012T040409Z-logic",
+  "blind-advocate:h2"
+ ],
+ "X12": [
+  "20261012T040314Z-logic",
+  "blind-advocate:h3"
+ ],
+ "X13": [
+  "20261012T040049Z-logic",
+  "blind-skeptic:h1"
+ ],
+ "X14": [
+  "20261012T040224Z-logic",
+  "blind-advocate:h2"
+ ],
+ "X15": [
+  "20261012T040224Z-logic",
+  "blind-evidence:h1"
+ ],
+ "X16": [
+  "20261012T040314Z-logic",
+  "blind-evidence:h2"
+ ],
+ "X17": [
+  "20261012T040409Z-logic",
+  "blind-evidence:h1"
+ ],
+ "X18": [
+  "20261012T040314Z-logic",
+  "blind-advocate:h2"
+ ],
+ "X19": [
+  "20261012T040409Z-logic",
+  "blind-skeptic:h2"
+ ],
+ "X20": [
+  "20261012T040409Z-logic",
+  "blind-advocate:h3"
+ ]
+}

@@ -49,3 +49,27 @@ Total $0.704 of the $1.90 ceilings: hotbar Haiku $0.041, BG09 Haiku $0.058, Sonn
 - Build 1 to 2 controls: bundles from a log slice of a build or session where the symptom does NOT occur (for the action hotbar: a post-fix log with 2+ party members and no "Character not identified yet"; for BG09: a session without the follower re-queue). Same symptom text as the real case, same scrubber, same excerpt caps.
 - Expected answers: null `not_a_bug` or `insufficient` with cited reasons; blind roles should end with low confidence or empty `hypotheses`. A control where blind roles produce HIT-labelled hypotheses measures the false-positive rate of the rubric and of the pipeline.
 - Cost: about $0.01 per control run (3 blind + 1 null Haiku units, M4 numbers); needs a log slice chosen by a human, then `bundle --from`.
+
+## Addendum 2026-10-13: held-out relabel and matcher v2 (remediation plan Wave D)
+Setup: 38 held-out quote-valid hypotheses (hotbar 20, BG09 18; seed 7, the 29 tuned-on ids excluded; ids committed in `37bfbd1` BEFORE labelling, `heldout_ids.json`). Two Haiku labellers per case saw only the symptom, the true root cause, a plain HIT/PARTIAL/MISS definition, and the claim and mechanism text (ids shuffled and renamed). They never saw the rubric or the scorer. Opus adjudicated the 5 disagreements from the same text. Rubrics frozen; nothing edited after labelling. Files: `.claude/reviews/bug_investigate_m4_review/heldout_labels/`.
+
+| case | labeller kappa (raw) | consensus HIT/PARTIAL/MISS | scorer v1 vs consensus: raw, kappa | scorer v2 vs consensus: raw, kappa |
+|---|---|---|---|---|
+| hotbar (n=20) | 0.612 (0.80) | 0 / 10 / 10 | 0.700, 0.500 | 0.700, 0.500 |
+| BG09 (n=18) | 0.906 (0.944) | 10 / 4 / 4 | 0.111, -0.200 | 0.167, -0.098 |
+
+Confusion rows = consensus, columns = scorer (v2): hotbar PARTIAL row HIT 4 / PARTIAL 6 / MISS 0, MISS row 0 / 2 / 8. BG09 HIT row 0 / 4 / 6, PARTIAL row 1 / 2 / 1, MISS row 0 / 3 / 1.
+
+Reading (as measured, no rubric edit): kappa(consensus, v2) is below 0.6 in both cases, so **the rubrics are not trusted for HIT claims**. The two failure directions differ:
+- Hotbar: the scorer credits 4 hypotheses HIT that the labellers call PARTIAL (the consensus found no HIT at all: none names the party-size gate in `characterKeyFor`). The 0.277 hotbar HIT rate is therefore probably inflated.
+- BG09: the labellers call 10 of 18 HIT, the scorer 0 of those 10 (4 PARTIAL, 6 MISS under v2). Opus read two of the 6 (`...040703Z-logic/blind-advocate:h1`, `.../blind-skeptic:h2`): both describe a re-injection after an `eaten_paused`, `exec=0` vanish and never name the follower entry or a missing "saw executing" signal, so Opus would call them PARTIAL, i.e. the Haiku labellers look lenient here and the rubric may be nearer the truth than the kappa suggests. Same model family on both labeller seats, so this is not independent; a human spot-check of 8 labels is the independent check (offered, not done).
+
+Matcher v2 versus v1 on the 10 M4 runs (copies, original `score.json` untouched; `--matcher v1` reproduces the stored files exactly apart from the new keys `matcher`, `rubric_sha256`, `case_id`, `top_matches_report`, `rank1_alt_label`):
+
+| case | config | v1 HIT / n (precision_hit) | v2 HIT / n (precision_hit) |
+|---|---|---|---|
+| hotbar | A and B | 13 / 47 (0.277) | 11 / 47 (0.234) |
+| BG09 | A | 2 / 32 (0.062) | 1 / 32 (0.031) |
+| BG09 | B | 2 / 30 (0.067) | 1 / 30 (0.033) |
+
+Other: rank-1 mismatch runs 0; tie-break decides the rank-1 label in 1 run per case. The cluster interval over runs is wider than the pooled Wilson interval for BG09 only at the low end (hotbar v2 A: cluster [0.174, 0.292], Wilson [0.136, 0.372]).
