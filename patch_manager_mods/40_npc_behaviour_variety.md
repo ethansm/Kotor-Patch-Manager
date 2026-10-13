@@ -51,6 +51,7 @@
 |---|---|---|
 | V0 | Research wave w9-npcvar (12 Haiku units), web prior art, this doc | DONE |
 | V1 | Close static gaps with Haiku recon (no game): vanilla script animation calls and flag meanings, UTC ItemList armed status for the pool, waypoint/walkmesh counts for candidate areas, quest-script tag scan, `+0x11AC` persistence decode and save-load path (REA) | DONE (section 7) |
+| NB0 | Shared library `npc-world` (owns H1/H2/H3, provides `k2.npcworld@1`, section 12); moves the hooks and native spawn out of `k1_spawn_probe_src`; V2a and NB1-NB4 become its clients | TODO |
 | V2 | Live probe design and build (needs user GO): OID stability across loads, hook-spawn persistence in saves, save-load reset, object count and frame cost | TODO (V2a host build, V2b live; stages P1-P15 + capacity; see section 11) |
 | V3 | Pool and roster spec: group pools, area eligibility table, spawn budget, per-species walk speeds | DONE (section 8) |
 | V4 | Visit-salt change in doc 34 code (host tests, build only) and doc 34 section 3.2.2 update | DONE (host tests + build; salt unwired, V4b = area-entry source after V2) |
@@ -270,3 +271,53 @@ Other mappings: U4 -> P3; U5 -> V2b pre-visit save; U6 -> packaging item in NB3 
 - Mod conflicts: Doodmane444, Drew, Leilukin, Kreia robes (section 2).
 - `261tel` AddToArea branch differs from `204tel`.
 - One detour set per address: probe and `npc-diversity` hooks cannot be live together on `0x568BD0/0x55A460/0x533830` (`area-hook-probe` was removed in T26 for this reason).
+
+## 12. Shared library `npc-world` (decision 2026-10-13, design only, nothing built)
+User decision: spawn new NPCs AND change existing ones, through one common library patch that `npc-diversity` and the new features all use. Same pattern as `save-events` (`kind = "library"`, `provides`, KPatchInit registry, C ABI table, header-only client in `_shared_src`, `requires` or soft-connect in consumers).
+
+### 12.1 Why a library
+- KPM rejects two patches that detour one address. `k1-spawn-probe` (and the retired `area-hook-probe`) own `0x00568BD0` AddToArea, `0x0055A460` LoadModuleInProgress and `0x00533830` MainLoop. NB1 (salt), NB2, NB3, NB4 all need the same three events, so exactly one patch may own them.
+- `npc-diversity` keeps `0x0076D200` SetAppearance and `0x0085E601` texture (no overlap, stays where it is). Spawned walkers pass through SetAppearance on the client side, so commoner rows are remapped automatically; no extra call needed.
+- (`save-events` only mentions 0x00533830 in a comment; its hook sites are different. Re-check with `rg` of all `*.hooks.toml` before NB0 install.)
+
+### 12.2 Provider: `npc-world` (new `npc_world_src/`, id `npc-world`, `provides = ["k2.npcworld@1"]`, header `_shared_src/NpcWorld.h`)
+Owns: H1 MainLoop `0x533830`, H2 LoadModuleInProgress `0x55A460`, H3 AddToArea `0x568BD0`. Code moved from `k1_spawn_probe_src` (area tracking, tag-seen list, 30-tick POP-STABLE gate `SpawnLogic.h`, native spawn sequence with step logging, `g_spawning` re-entry guard). `conflicts = ["k1-spawn-probe", "area-hook-probe"]`.
+
+Events (mask, one K2NW_* bit per event; callbacks cheap, engine thread, 5 ms WARN as in save-events):
+| Event | When | Payload |
+|---|---|---|
+| `K2NW_AREA_LOAD` | H2 fires | load seq |
+| `K2NW_CREATURE_ADDED` | H3 fires (not for the library's own spawns unless `origin` flag says so) | creature ptr, OID, tag, area resref, pos, `origin` (engine/lib) |
+| `K2NW_AREA_STABLE` | 30 quiet ticks after H3 settles, once per load | area resref, area ptr, `visit_seq`, `visit_salt` (hash of load seq + wall clock bits; replaces the unwired `g_visitSalt`) |
+| `K2NW_TICK` | every H1 (opt-in, expensive; most consumers use AREA_STABLE) | tick counter |
+
+Services (table functions, all safe no-ops on a bad arg):
+| Service | Use |
+|---|---|
+| `Spawn(resref, tag, x, y, z, facing)` -> OID or 0 | native new/ctor/CResRef/LoadFromTemplate/orient/AddToArea; skips if tag already seen; counts against a global cap (default 4, ini, hard max from capacity probe) |
+| `TagPresent(tag)` | dedupe against save-loaded creatures |
+| `CurrentArea(buf)` / `VisitSalt()` / `VisitSeq()` | context for pickers |
+| `ForEachCreature(cb, user)` | enumerate area creatures from the AddToArea-seen list (existing NPC changes: animation, remap, despawn) |
+| `PlayAnimation(creature, anim, speed)` | NB2, wraps `0x004E3270` (added in NB2, struct grows) |
+| `Remove(oid)` | P7 outcome (RemoveFromArea), added when verified |
+
+### 12.3 Consumers
+| Consumer | Uses | Notes |
+|---|---|---|
+| `npc-diversity` (existing, 0.1.x) | `AREA_STABLE` salt via soft client (no `requires`, no-op without provider; `visit_variety` stays off by default) | NB1. Stays soft so a missing library cannot break the live appearance remap. |
+| `npc-walkers` (new, `walker_variety`) | `AREA_STABLE`, `Spawn`, `TagPresent` | NB3. Pool/roster from V3 tables (section 8). |
+| `npc-anim` (new or inside walkers, `anim_variety`) | `ForEachCreature`, `PlayAnimation` | NB2. |
+| `npc-encounter` (`encounter_variety`) | `AREA_STABLE`, `Spawn` x N | NB4. |
+| `k1-spawn-probe` -> `npc-world-probe` | everything, ini-selected stages P1-P15 + capacity | V2a. Becomes a client, no hooks of its own. |
+
+### 12.4 Phase changes
+- New **NB0** (before V2a): build `npc-world` by moving the hooks and spawn code out of `k1_spawn_probe_src`; host tests (colocated: `npcworld_registry_test.cpp`, reuse `spawn_logic_test.cpp`), `common_contract_test.cpp` pinning `NpcWorld.h`, `python3 scripts/compat_check.py` over `_shared_src/NpcWorld.h`, version `0.1.0-dev`. Size ~1.5 days.
+- NB0 live check = the pending T26 play check done through the library (mouse droid + `k1p_native_npc` in `204tel` appear once, no duplicate after save/load) before any new feature. It needs REINSTALL (hooks owner changes: `k1-spawn-probe` out, `npc-world` in), so the gates in 11.5 apply, with the user running the launcher.
+- V2a becomes: `npc-world-probe` client with the stage list, not a second hook owner. V2b unchanged.
+- Order is now: NB0 -> V2a -> V2b -> NB1 -> NB2 -> NB3 -> NB4 -> NB5 (conditional). Rollback of NB0: reinstall `k1-spawn-probe` 0.2.0-probe.
+
+### 12.5 Risks
+- Single point of failure: a bug in `npc-world` hooks hits every consumer. Mitigation: log-before-step, SafeRead everywhere, `enabled=0` ini in the library disables events and spawns but keeps hooks passive.
+- Hook moves are REINSTALL, not SWAP: any later address addition costs a launcher reinstall. Put all three addresses plus the future `PlayAnimation` call (a call, not a detour) in at NB0.
+- Registry needs a KotorPatcher with `KPatchInit` (already true for `save-events`).
+- Spawned OIDs differ per load (P4 decides whether persisted state could ever key on them); consumers must key on tag, not OID.
