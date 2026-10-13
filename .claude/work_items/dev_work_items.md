@@ -22,7 +22,7 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [x] | 6 | WI-03 | P0 | hold | S | - | Inventory 3D viewport hook, manifest and bodyvar rows | 3 | 3 | Inventory 3D viewport hook and manifest; feature rows, 2 open. |
 | [ ] | 7 | WI-41 | P0 | ready | M | - | Queue HUD open ToDos: dispatch gate, FIFO, flicker | 9 | 3 | Queue HUD dispatch, FIFO and flicker bugs; active plan, 6 open. |
 | [x] | 8 | WI-18 | P0 | ready | S | - | Inventory sort filter logging on KpLog.h (C180) | 1 | 1 | Inventory sort filter logging on KpLog.h; logging only. |
-| [ ] | 9 | WI-06 | P0 | ready | L | - | Buff duration HUD open ToDos | 10 | 2 | Buff duration HUD: 8 open ToDos, 1 blocked; large and ready. |
+| [!] | 9 | WI-06 | P0 | ready | L | - | Buff duration HUD open ToDos | 10 | 2 | Buff duration HUD: 8 open ToDos, 1 blocked; large and ready. |
 | [ ] | 10 | WI-42 | P0 | ready | S | - | Companion self-heal: IniPath check and BG18 stale HP | 6 | 1 | Companion self-heal IniPath check and stale BG18 row; bug board. |
 | [ ] | 11 | WI-15 | P0 | verify-only | S | - | Level-up F10 over-cap hold verify | 1 | 0 | Level-up F10 over-cap hold verify; single open row. |
 | [ ] | 12 | WI-11 | P0 | ready | L | WI-10 | Force Power Hotbar config and statics | 9 | 3 | Force Power Hotbar config and statics; large, 8 open, ready. |
