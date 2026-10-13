@@ -1,0 +1,819 @@
+row	label	appearance_label	race	modeltype	normalhead	backuphead	headtexve	headtexe	headtexg	headtexvg	helmet_scale_m	helmet_scale_f	headbone	headtrack	head_arc_h	head_arc_v
+0		row0	PMBTest	F										0	30	15
+1	Test	Test	P_HK47	F	0									0	30	15
+2	Party_NPC_T3M3	Party_NPC_T3M3	P_T3M4	F										1	30	15
+3	Party_NPC_HK47	Party_NPC_HK47	P_HK47	F										0	40	10
+4	Party_NPC_Bastila	Party_NPC_Bastila	P_BastilaBB	B	1									1	30	15
+5	Party_NPC_Cand	Party_NPC_Cand	P_CandBB	B	2									1	30	15
+6	Party_NPC_Carth	Party_NPC_Carth	P_CarthBB	B	3									1	30	15
+7	Party_NPC_Jolee	Party_NPC_Jolee	P_JoleeBB	B	4									1	30	15
+8	Party_NPC_Juhani	Party_NPC_Juhani	P_JuhaniBB	B	5									1	30	15
+9	Party_NPC_Zaalbar	Party_NPC_Zaalbar	P_Zaalbar	F										1	30	15
+10	Party_NPC_Mission	Party_NPC_Mission	P_MissionBB	B	6									1	30	15
+11	Unique_Admiral_Saul	Unique_Admiral_Saul	N_AdmrlSaulKar	B	7									0	30	15
+12	Alien_Bith_01	Alien_Bith_01	N_Bith	F										0	30	15
+13	Unique_Calo_Nord	Unique_Calo_Nord	N_Calonord	F										1	30	15
+14	Commoner_Fem_Asian_01_A	Commoner_Fem_Asian_01_A	N_CommF	B	8									0	30	15
+15	Child_Female	Child_Female	N_CommKidF	B	15									0	30	15
+16	Child_Male	Child_Male	N_CommKidM	B	16									0	30	15
+17	Commoner_Mal_Asian_01_A	Commoner_Mal_Asian_01_A	N_CommM	B	9									0	30	15
+18	Czerka_Officer_Asian	Czerka_Officer_Asian	N_CzerkaOff	B	9									0	30	15
+19	Dark_Jedi_Female_01	Dark_Jedi_Female_01	N_DarkJediF	F										0	30	15
+20	Dark_Jedi_Male_01	Dark_Jedi_Male_01	N_DarkJediM	F										0	30	15
+21	Unique_Darth_Malak	Unique_Darth_Malak	N_DarthMalak	F										0	30	15
+22	Unique_Darth_Revan	Unique_Darth_Revan	N_DarthRevan	F										0	30	15
+23	Unique_Admiral_Dodonna	Unique_Admiral_Dodonna	N_Dodonna	B	17									0	30	15
+24	Alien_Duros_01	Alien_Duros_01	N_Duros	F										0	30	15
+25	Commoner_Female_Fat	Commoner_Female_Fat		B	30	29								0	30	15
+26	Commoner_Male_Fat	Commoner_Male_Fat		B	51	52								0	30	15
+27	Smuggler_01	Smuggler_01		B	13									0	30	15
+28	Sith_Soldier_01	Sith_Soldier_01	N_SithSoldier	F										0	30	15
+29		row29		S										0	30	15
+30	Jedi_White_Female_01	Jedi_White_Female_01	N_JediCounF	B	36	40								0	30	15
+31	Jedi_White_Male_01	Jedi_White_Male_01	N_JediCounM	B	51	55								0	30	15
+32	Unique_Malek_Jedi	Unique_Malek_Jedi	N_JediMalek	F										0	30	15
+33	Jedi_Council_Member_Female	Jedi_Council_Member_Female	N_JediMemF	B	37	40								0	30	15
+34	Jedi_Council_Member_Male	Jedi_Council_Member_Male	N_JediMemM	B	130	53								0	30	15
+35	Alien_Mandalorian_01	Alien_Mandalorian_01	N_Mandalorian	F										0	30	15
+36	Alien_Rakata_01	Alien_Rakata_01	N_Rakata	F										0	30	15
+37	Republic_Officer_Mal_White	Republic_Officer_Mal_White	N_RepOff	B	56									0	30	15
+38	Republic_Soldier_Mal_White	Republic_Soldier_Mal_White	N_RepSold	B	13									0	30	15
+39	Alien_Rodian_01	Alien_Rodian_01	N_Rodian	F										0	30	15
+40	Alien_Selkath_01	Alien_Selkath_01	N_Selkath	L										0	30	15
+41	Dark_Jedi_Sith_Apprentice	Dark_Jedi_Sith_Apprentice	N_SithAppren	B	60									0	30	15
+42	Sith_Female_Albino	Sith_Female_Albino	N_SithComF	B	18									0	30	15
+43	Sith_Male_Albino	Sith_Male_Albino	N_SithComM	B	19									0	30	15
+44	Sith_Soldier_02	Sith_Soldier_02	N_SithSoldier	F										0	30	15
+45	Swoop_Gang_01	Swoop_Gang_01	N_Swoopgang	F										0	30	15
+46	Alien_Sand_People_01	Alien_Sand_People_01	N_Tusken	F										0	30	15
+47	Twilek_Female_01_A	Twilek_Female_01_A	N_TwiDance_Boot	B	61									0	30	15
+48	Twilek_Male_01_C	Twilek_Male_01_C	N_TwilekM	B	62									0	30	15
+49	Alien_Walrusman	Alien_Walrusman	N_Walrusman	F										0	30	15
+50	Alien_Wookie_Female_01	Alien_Wookie_Female_01	N_WookieF	F										0	30	15
+51	Alien_Wookie_Male_01	Alien_Wookie_Male_01	N_WookieM	F										0	30	15
+52	Unique_Vandar	Unique_Vandar	N_Yoda	F										1	30	15
+53	Creature_Bantha	Creature_Bantha	C_Bantha	S										0	30	15
+54	Creature_Brith	Creature_Brith	C_Brith	S										0	30	15
+55	Creature_Dewback	Creature_Dewback	C_Dewback	S										0	30	15
+56	Droid_Assassin	Droid_Assassin	C_DrdAssassin	L										0	30	15
+57	Droid_Astro_01	Droid_Astro_01	P_T3M4	F										0	30	15
+58	Droid_Nul	Droid_Nul	C_notready	S										0	30	15
+59	Droid_Mark_Four	Droid_Mark_Four	C_Drdmkfour	L										0	30	15
+60	Droid_Mark_One	Droid_Mark_One	C_Drdmkone	L										0	30	15
+61	Droid_Mark_Two	Droid_Mark_Two	C_Drdmktwo	L										0	30	15
+62	Droid_Probe	Droid_Probe	C_DrdProbe	L										0	30	15
+63	Droid_Protocol_01	Droid_Protocol_01	C_DrdProt	L										0	30	15
+64	Droid_Sentry	Droid_Sentry	C_DrdSentry	L										0	30	15
+65	Droid_Spyder	Droid_Spyder	C_DrdSpyder	L										0	30	15
+66	Droid_War_01	Droid_War_01	C_DrdWar	L										0	30	15
+67	Creature_Firixa	Creature_Firixa	C_Firixa	S										0	30	15
+68	Alien_Gammorean_01	Alien_Gammorean_01	C_Gammorean	S										0	30	15
+69	Creature_Gizka	Creature_Gizka	C_Gizka	S										0	30	15
+70	Alien_Hutt_01	Alien_Hutt_01	C_Hutt	S										1	30	15
+71	Creature_Iriaz	Creature_Iriaz	C_Iriaz	S										0	30	15
+72	Alien_Ithorian_01	Alien_Ithorian_01	C_Ithorian	S										0	30	15
+73	Alien_Jawa	Alien_Jawa	C_Jawa	S										0	30	15
+74	Creature_Kataarn	Creature_Kataarn	C_Kataarn	S										0	30	15
+75	Creature_Kath_Hound_A01	Creature_Kath_Hound_A01	C_KhoundA	S										0	30	15
+76	Creature_Kath_Hound_B01	Creature_Kath_Hound_B01	C_KhoundB	S										0	30	15
+77	Creature_Krayt_Dragon	Creature_Krayt_Dragon	C_KraytDragon	S										0	30	15
+78	Creature_Mykal	Creature_Mykal	C_Mykal	S										0	30	15
+79	Creature_Rakghoul	Creature_Rakghoul	C_Rakghoul	S										0	30	15
+80	Creature_Rancor	Creature_Rancor	C_Rancor	S										0	30	15
+81	Creature_SeaBeast	Creature_SeaBeast	C_SeaBeast	S										0	30	15
+82		row82		S										0	30	15
+83	Creature_Tach	Creature_Tach	C_Tach	S										0	30	15
+84	Alien_TwoHead	Alien_TwoHead	C_TwoHead	S										0	30	15
+85	Creature_Verkaal	Creature_Verkaal	C_Verkaal	S										0	30	15
+86	Creature_Wraid_01	Creature_Wraid_01	C_Wraid	S										0	30	15
+87	Creature_Ronto	Creature_Ronto	C_Ronto	S										0	30	15
+88	Creature_Kinrath	Creature_Kinrath	C_Kinrath	S										0	30	15
+89	Creature_Tukata	Creature_Tukata	C_Tukata	S										0	30	15
+90	Alien_Sand_Person_Female	Alien_Sand_Person_Female	N_TuskenF	F										0	30	15
+91	P_FEM_A_SML_01	P_FEM_A_SML_01		B	26	27								1	30	15
+92	P_FEM_A_MED_01	P_FEM_A_MED_01		B	26	27								1	30	15
+93	P_FEM_A_LRG_01	P_FEM_A_LRG_01		B	26	27								1	30	15
+94	P_FEM_A_SML_02	P_FEM_A_SML_02		B	27	26								1	30	15
+95	P_FEM_A_MED_02	P_FEM_A_MED_02		B	27	26								1	30	15
+96	P_FEM_A_LRG_02	P_FEM_A_LRG_02		B	27	26								1	30	15
+97	P_FEM_A_SML_03	P_FEM_A_SML_03		B	28	29								1	30	15
+98	P_FEM_A_MED_03	P_FEM_A_MED_03		B	28	29								1	30	15
+99	P_FEM_A_LRG_03	P_FEM_A_LRG_03		B	28	29								1	30	15
+100	P_FEM_A_SML_04	P_FEM_A_SML_04		B	29	28								1	30	15
+101	P_FEM_A_MED_04	P_FEM_A_MED_04		B	29	28								1	30	15
+102	P_FEM_A_LRG_04	P_FEM_A_LRG_04		B	29	28								1	30	15
+103	P_FEM_A_SML_05	P_FEM_A_SML_05		B	30	29								1	30	15
+104	P_FEM_A_MED_05	P_FEM_A_MED_05		B	30	29								1	30	15
+105	P_FEM_A_LRG_05	P_FEM_A_LRG_05		B	30	29								1	30	15
+106	P_FEM_B_SML_01	P_FEM_B_SML_01		B	31	32								1	30	15
+107	P_FEM_B_MED_01	P_FEM_B_MED_01		B	31	32								1	30	15
+108	P_FEM_B_LRG_01	P_FEM_B_LRG_01		B	31	32								1	30	15
+109	P_FEM_B_SML_02	P_FEM_B_SML_02		B	32	31								1	30	15
+110	P_FEM_B_MED_02	P_FEM_B_MED_02		B	32	31								1	30	15
+111	P_FEM_B_LRG_02	P_FEM_B_LRG_02		B	32	31								1	30	15
+112	P_FEM_B_SML_03	P_FEM_B_SML_03		B	33	34								1	30	15
+113	P_FEM_B_MED_03	P_FEM_B_MED_03		B	33	34								1	30	15
+114	P_FEM_B_LRG_03	P_FEM_B_LRG_03		B	33	34								1	30	15
+115	P_FEM_B_SML_04	P_FEM_B_SML_04		B	34	33								1	30	15
+116	P_FEM_B_MED_04	P_FEM_B_MED_04		B	34	33								1	30	15
+117	P_FEM_B_LRG_04	P_FEM_B_LRG_04		B	34	33								1	30	15
+118	P_FEM_B_SML_05	P_FEM_B_SML_05		B	35	34								1	30	15
+119	P_FEM_B_MED_05	P_FEM_B_MED_05		B	35	34								1	30	15
+120	P_FEM_B_LRG_05	P_FEM_B_LRG_05		B	35	34								1	30	15
+121	P_FEM_C_SML_01	P_FEM_C_SML_01		B	36	37								1	30	15
+122	P_FEM_C_MED_01	P_FEM_C_MED_01		B	36	37								1	30	15
+123	P_FEM_C_LRG_01	P_FEM_C_LRG_01		B	36	37								1	30	15
+124	P_FEM_C_SML_02	P_FEM_C_SML_02		B	37	36								1	30	15
+125	P_FEM_C_MED_02	P_FEM_C_MED_02		B	37	36								1	30	15
+126	P_FEM_C_LRG_02	P_FEM_C_LRG_02		B	37	36								1	30	15
+127	P_FEM_C_SML_03	P_FEM_C_SML_03		B	173	39								1	30	15
+128	P_FEM_C_MED_03	P_FEM_C_MED_03		B	173	39								1	30	15
+129	P_FEM_C_LRG_03	P_FEM_C_LRG_03		B	173	39								1	30	15
+130	P_FEM_C_SML_04	P_FEM_C_SML_04		B	39	38								1	30	15
+131	P_FEM_C_MED_04	P_FEM_C_MED_04		B	39	38								1	30	15
+132	P_FEM_C_LRG_04	P_FEM_C_LRG_04		B	39	38								1	30	15
+133	P_FEM_C_SML_05	P_FEM_C_SML_05		B	40	39								1	30	15
+134	P_FEM_C_MED_05	P_FEM_C_MED_05		B	40	39								1	30	15
+135	P_FEM_C_LRG_05	P_FEM_C_LRG_05		B	40	39								1	30	15
+136	P_MAL_A_SML_01	P_MAL_A_SML_01		B	41	45								1	30	15
+137	P_MAL_A_MED_01	P_MAL_A_MED_01		B	41	45								1	30	15
+138	P_MAL_A_LRG_01	P_MAL_A_LRG_01		B	41	45								1	30	15
+139	P_MAL_A_SML_02	P_MAL_A_SML_02		B	42	43								1	30	15
+140	P_MAL_A_MED_02	P_MAL_A_MED_02		B	42	43								1	30	15
+141	P_MAL_A_LRG_02	P_MAL_A_LRG_02		B	42	43								1	30	15
+142	P_MAL_A_SML_03	P_MAL_A_SML_03		B	43	42								1	30	15
+143	P_MAL_A_MED_03	P_MAL_A_MED_03		B	43	42								1	30	15
+144	P_MAL_A_LRG_03	P_MAL_A_LRG_03		B	43	42								1	30	15
+145	P_MAL_A_SML_04	P_MAL_A_SML_04		B	135	44								1	30	15
+146	P_MAL_A_MED_04	P_MAL_A_MED_04		B	135	44								1	30	15
+147	P_MAL_A_LRG_04	P_MAL_A_LRG_04		B	135	44								1	30	15
+148	P_MAL_A_SML_05	P_MAL_A_SML_05		B	45	41								1	30	15
+149	P_MAL_A_MED_05	P_MAL_A_MED_05		B	45	41								1	30	15
+150	P_MAL_A_LRG_05	P_MAL_A_LRG_05		B	45	41								1	30	15
+151	P_MAL_B_SML_01	P_MAL_B_SML_01		B	134	46								1	30	15
+152	P_MAL_B_MED_01	P_MAL_B_MED_01		B	134	46								1	30	15
+153	P_MAL_B_LRG_01	P_MAL_B_LRG_01		B	134	46								1	30	15
+154	P_MAL_B_SML_02	P_MAL_B_SML_02		B	47	48								1	30	15
+155	P_MAL_B_MED_02	P_MAL_B_MED_02		B	47	48								1	30	15
+156	P_MAL_B_LRG_02	P_MAL_B_LRG_02		B	47	48								1	30	15
+157	P_MAL_B_SML_03	P_MAL_B_SML_03		B	48	47								1	30	15
+158	P_MAL_B_MED_03	P_MAL_B_MED_03		B	48	47								1	30	15
+159	P_MAL_B_LRG_03	P_MAL_B_LRG_03		B	48	47								1	30	15
+160	P_MAL_B_SML_04	P_MAL_B_SML_04		B	49	50								1	30	15
+161	P_MAL_B_MED_04	P_MAL_B_MED_04		B	49	50								1	30	15
+162	P_MAL_B_LRG_04	P_MAL_B_LRG_04		B	49	50								1	30	15
+163	P_MAL_B_SML_05	P_MAL_B_SML_05		B	50	49								1	30	15
+164	P_MAL_B_MED_05	P_MAL_B_MED_05		B	50	49								1	30	15
+165	P_MAL_B_LRG_05	P_MAL_B_LRG_05		B	50	49								1	30	15
+166	P_MAL_C_SML_01	P_MAL_C_SML_01		B	51	53								1	30	15
+167	P_MAL_C_MED_01	P_MAL_C_MED_01		B	51	53								1	30	15
+168	P_MAL_C_LRG_01	P_MAL_C_LRG_01		B	51	53								1	30	15
+169	P_MAL_C_SML_02	P_MAL_C_SML_02		B	130	52								1	30	15
+170	P_MAL_C_MED_02	P_MAL_C_MED_02		B	130	52								1	30	15
+171	P_MAL_C_LRG_02	P_MAL_C_LRG_02		B	130	52								1	30	15
+172	P_MAL_C_SML_03	P_MAL_C_SML_03		B	53	54								1	30	15
+173	P_MAL_C_MED_03	P_MAL_C_MED_03		B	53	54								1	30	15
+174	P_MAL_C_LRG_03	P_MAL_C_LRG_03		B	53	54								1	30	15
+175	P_MAL_C_SML_04	P_MAL_C_SML_04		B	54	53								1	30	15
+176	P_MAL_C_MED_04	P_MAL_C_MED_04		B	54	53								1	30	15
+177	P_MAL_C_LRG_04	P_MAL_C_LRG_04		B	54	53								1	30	15
+178	P_MAL_C_SML_05	P_MAL_C_SML_05		B	131	55								1	30	15
+179	P_MAL_C_MED_05	P_MAL_C_MED_05		B	131	55								1	30	15
+180	P_MAL_C_LRG_05	P_MAL_C_LRG_05		B	131	55								1	30	15
+181	EnviromentSuit_01	EnviromentSuit_01	watersuit	F										0	30	15
+182	Turret_01	Turret_01	C_Turret01	L										0	30	15
+183	Turret_02	Turret_02	C_Turret02	L										0	30	15
+184	Unique_Darth_Bandon	Unique_Darth_Bandon	N_DarthBand	B	14									0	30	15
+185	Commoner_Fem_White_01_A	Commoner_Fem_White_01_A	N_CommF	B	12									0	30	15
+186	Commoner_Fem_Black_01_A	Commoner_Fem_Black_01_A	N_CommF	B	10									0	30	15
+187	Commoner_Fem_Old_Asian_01_A	Commoner_Fem_Old_Asian_01_A	N_CommF	B	20									0	30	15
+188	Commoner_Fem_Old_White_01_A	Commoner_Fem_Old_White_01_A	N_CommF	B	24									0	30	15
+189	Commoner_Fem_Old_Black_01_A	Commoner_Fem_Old_Black_01_A	N_CommF	B	22									0	30	15
+190	Commoner_Mal_White_01_A	Commoner_Mal_White_01_A	N_CommM	B	13									0	30	15
+191	Commoner_Mal_Black_01_A	Commoner_Mal_Black_01_A	N_CommM	B	11									0	30	15
+192	Commoner_Mal_Old_Asian_01_A	Commoner_Mal_Old_Asian_01_A	N_CommM	B	21									0	30	15
+193	Commoner_Mal_Old_White_01_A	Commoner_Mal_Old_White_01_A	N_CommM	B	25									0	30	15
+194	Commoner_Mal_Old_Black_01_A	Commoner_Mal_Old_Black_01_A	N_CommM	B	23									0	30	15
+195	Czerka_Officer_White	Czerka_Officer_White	N_CzerkaOff	B	13									0	30	15
+196	Czerka_Officer_Black	Czerka_Officer_Black	N_CzerkaOff	B	11									0	30	15
+197	Czerka_Officer_Old_Asian	Czerka_Officer_Old_Asian	N_CzerkaOff	B	21									0	30	15
+198	Czerka_Officer_Old_White	Czerka_Officer_Old_White	N_CzerkaOff	B	25									0	30	15
+199	Czerka_Officer_Old_Black	Czerka_Officer_Old_Black	N_CzerkaOff	B	23									0	30	15
+200	Jedi_White_Female_02	Jedi_White_Female_02	N_JediCounF	B	37	40								0	30	15
+201	Jedi_White_Female_03	Jedi_White_Female_03	N_JediCounF	B	38	40								0	30	15
+202	Jedi_White_Female_04	Jedi_White_Female_04	N_JediCounF	B	39	40								0	30	15
+203	Jedi_White_Female_05	Jedi_White_Female_05	N_JediCounF	B	40	39								0	30	15
+204	Jedi_Asian_Female_01	Jedi_Asian_Female_01	N_JediCounF	B	26	30								0	30	15
+205	Jedi_Asian_Female_02	Jedi_Asian_Female_02	N_JediCounF	B	27	30								0	30	15
+206	Jedi_Asian_Female_03	Jedi_Asian_Female_03	N_JediCounF	B	28	30								0	30	15
+207	Jedi_Asian_Female_04	Jedi_Asian_Female_04	N_JediCounF	B	29	30								0	30	15
+208	Jedi_Asian_Female_05	Jedi_Asian_Female_05	N_JediCounF	B	30	29								0	30	15
+209	Jedi_Black_Female_01	Jedi_Black_Female_01	N_JediCounF	B	31	35								0	30	15
+210	Jedi_Black_Female_02	Jedi_Black_Female_02	N_JediCounF	B	32	35								0	30	15
+211	Jedi_Black_Female_03	Jedi_Black_Female_03	N_JediCounF	B	33	35								0	30	15
+212	Jedi_Black_Female_04	Jedi_Black_Female_04	N_JediCounF	B	34	35								0	30	15
+213	Jedi_Black_Female_05	Jedi_Black_Female_05	N_JediCounF	B	35	34								0	30	15
+214	Jedi_White_Male_02	Jedi_White_Male_02	N_JediCounF	B	130	55								0	30	15
+215	Jedi_White_Male_03	Jedi_White_Male_03	N_JediCounF	B	53	55								0	30	15
+216	Jedi_White_Male_04	Jedi_White_Male_04	N_JediCounF	B	54	55								0	30	15
+217	Jedi_White_Male_05	Jedi_White_Male_05	N_JediCounF	B	55	52								0	30	15
+218	Jedi_Asian_Male_01	Jedi_Asian_Male_01	N_JediCounF	B	41	45								0	30	15
+219	Jedi_Asian_Male_02	Jedi_Asian_Male_02	N_JediCounF	B	42	45								0	30	15
+220	Jedi_Asian_Male_03	Jedi_Asian_Male_03	N_JediCounF	B	43	45								0	30	15
+221	Jedi_Asian_Male_04	Jedi_Asian_Male_04	N_JediCounF	B	135	45								0	30	15
+222	Jedi_Asian_Male_05	Jedi_Asian_Male_05	N_JediCounF	B	45	44								0	30	15
+223	Jedi_Black_Male_01	Jedi_Black_Male_01	N_JediCounF	B	134	50								0	30	15
+224	Jedi_Black_Male_02	Jedi_Black_Male_02	N_JediCounF	B	47	50								0	30	15
+225	Jedi_Black_Male_03	Jedi_Black_Male_03	N_JediCounF	B	48	50								0	30	15
+226	Jedi_Black_Male_04	Jedi_Black_Male_04	N_JediCounF	B	49	50								0	30	15
+227	Jedi_Black_Male_05	Jedi_Black_Male_05	N_JediCounF	B	50	49								0	30	15
+228	Alien_Hutt_02	Alien_Hutt_02	C_Hutt	S										1	30	15
+229	Alien_Hutt_03	Alien_Hutt_03	C_Hutt	S										1	30	15
+230	Alien_Hutt_04	Alien_Hutt_04	C_Hutt	S										1	30	15
+231	Droid_Astro_02	Droid_Astro_02	P_T3M4	F										0	30	15
+232	Droid_Astro_03	Droid_Astro_03	P_T3M4	F										0	30	15
+233	Droid_Protocol_02	Droid_Protocol_02	C_DrdProt	L										0	30	15
+234	Droid_Protocol_03	Droid_Protocol_03	C_DrdProt	L										0	30	15
+235	Droid_Protocol_04	Droid_Protocol_04	C_DrdProt	L										0	30	15
+236	Droid_War_02	Droid_War_02	C_DrdWar	L										0	30	15
+237	Droid_War_03	Droid_War_03	C_DrdWar	L										0	30	15
+238	Droid_War_04	Droid_War_04	C_DrdWar	L										0	30	15
+239	Droid_War_05	Droid_War_05	C_DrdWar	L										0	30	15
+240	Alien_Gammorean_02	Alien_Gammorean_02	C_Gammorean	S										0	30	15
+241	Alien_Gammorean_03	Alien_Gammorean_03	C_Gammorean	S										0	30	15
+242	Alien_Gammorean_04	Alien_Gammorean_04	C_Gammorean	S										0	30	15
+243	Alien_Ithorian_02	Alien_Ithorian_02	C_Ithorian	S										0	30	15
+244	Alien_Ithorian_03	Alien_Ithorian_03	C_Ithorian	S										0	30	15
+245	Creature_Kath_Hound_A02	Creature_Kath_Hound_A02	C_KhoundA	S										0	30	15
+246	Creature_Kath_Hound_A03	Creature_Kath_Hound_A03	C_KhoundA	S										0	30	15
+247	Creature_Kath_Hound_A04	Creature_Kath_Hound_A04	C_KhoundA	S										0	30	15
+248	Creature_Kath_Hound_B02	Creature_Kath_Hound_B02	C_KhoundB	S										0	30	15
+249	Creature_Kath_Hound_B03	Creature_Kath_Hound_B03	C_KhoundB	S										0	30	15
+250	Creature_Kath_Hound_B04	Creature_Kath_Hound_B04	C_KhoundB	S										0	30	15
+251	Creature_Wraid_02	Creature_Wraid_02	C_Wraid	S										0	30	15
+252	Creature_Wraid_03	Creature_Wraid_03	C_Wraid	S										0	30	15
+253	Creature_Wraid_04	Creature_Wraid_04	C_Wraid	S										0	30	15
+254	Alien_Rakata_02	Alien_Rakata_02	N_Rakata	F										0	30	15
+255	Alien_Rakata_03	Alien_Rakata_03	N_Rakata	F										0	30	15
+256	Alien_Rodian_02	Alien_Rodian_02	N_Rodian	F										0	30	15
+257	Alien_Rodian_03	Alien_Rodian_03	N_Rodian	F										0	30	15
+258	Alien_Rodian_04	Alien_Rodian_04	N_Rodian	F										0	30	15
+259	Alien_Selkath_02	Alien_Selkath_02	N_Selkath	L										0	30	15
+260	Alien_Selkath_03	Alien_Selkath_03	N_Selkath	L										0	30	15
+261	Sith_Soldier_03	Sith_Soldier_03	N_SithSoldier	F										0	30	15
+262	Swoop_Gang_02	Swoop_Gang_02	N_Swoopgang	F										0	30	15
+263	Swoop_Gang_03	Swoop_Gang_03	N_Swoopgang	F										0	30	15
+264	Swoop_Gang_04	Swoop_Gang_04	N_Swoopgang	F										0	30	15
+265	Swoop_Gang_05	Swoop_Gang_05	N_Swoopgang	F										0	30	15
+266	Alien_Sand_People_02	Alien_Sand_People_02	N_Tusken	F										0	30	15
+267	Alien_Sand_People_03	Alien_Sand_People_03	N_Tusken	F										0	30	15
+268	Alien_Sand_People_04	Alien_Sand_People_04	N_Tusken	F										0	30	15
+269	Twilek_Male_02_C	Twilek_Male_02_C	N_TwilekM	B	62									0	30	15
+270	Twilek_Female_02_B	Twilek_Female_02_B	N_TwiDance	B	63									0	30	15
+271	Alien_Wookie_Male_02	Alien_Wookie_Male_02	N_WookieM	F										0	30	15
+272	Alien_Wookie_Male_03	Alien_Wookie_Male_03	N_WookieM	F										0	30	15
+273	Alien_Wookie_Male_04	Alien_Wookie_Male_04	N_WookieM	F										0	30	15
+274	Alien_Wookie_Male_05	Alien_Wookie_Male_05	N_WookieM	F										0	30	15
+275	Alien_Wookie_Female_02	Alien_Wookie_Female_02	N_WookieF	F										0	30	15
+276	Alien_Wookie_Female_03	Alien_Wookie_Female_03	N_WookieF	F										0	30	15
+277	Alien_Wookie_Female_04	Alien_Wookie_Female_04	N_WookieF	F										0	30	15
+278	Alien_Wookie_Female_05	Alien_Wookie_Female_05	N_WookieF	F										0	30	15
+279	EnviromentSuit_02	EnviromentSuit_02	Spacesuit01	F										0	30	15
+280	Twilek_Commoner_F_01_D	Twilek_Commoner_F_01_D	N_CommF	B	93									0	30	15
+281	Creature_Shyrack_01	Creature_Shyrack_01	C_Verkaal	S										0	30	15
+282	Creature_Shyrack_02	Creature_Shyrack_02	C_Verkaal	S										0	30	15
+283	Republic_Soldier_Mal_Black	Republic_Soldier_Mal_Black	N_RepSold	B	11									0	30	15
+284	Republic_Soldier_Mal_Old_Asian	Republic_Soldier_Mal_Old_Asian	N_RepSold	B	21									0	30	15
+285	Republic_Soldier_Mal_Old_White	Republic_Soldier_Mal_Old_White	N_RepSold	B	25									0	30	15
+286	Republic_Soldier_Mal_Old_Black	Republic_Soldier_Mal_Old_Black	N_RepSold	B	23									0	30	15
+287	Republic_Officer_Mal_Black	Republic_Officer_Mal_Black	N_RepOff	B	11									0	30	15
+288	Republic_Officer_Mal_Old_Asian	Republic_Officer_Mal_Old_Asian	N_RepOff	B	21									0	30	15
+289	Republic_Officer_Mal_Old_White	Republic_Officer_Mal_Old_White	N_RepOff	B	25									0	30	15
+290	Republic_Officer_Mal_Old_Black	Republic_Officer_Mal_Old_Black	N_RepOff	B	23									0	30	15
+291	Sith_Fem_White	Sith_Fem_White	N_SithComF	B	12									0	30	15
+292	Sith_Fem_Black	Sith_Fem_Black	N_SithComF	B	10									0	30	15
+293	Sith_Fem_Old_Asian	Sith_Fem_Old_Asian	N_SithComF	B	20									0	30	15
+294	Sith_Fem_Old_White	Sith_Fem_Old_White	N_SithComF	B	24									0	30	15
+295	Sith_Fem_Old_Black	Sith_Fem_Old_Black	N_SithComF	B	22									0	30	15
+296	Sith_Mal_White	Sith_Mal_White	N_SithComM	B	13									0	30	15
+297	Sith_Mal_Black	Sith_Mal_Black	N_SithComM	B	11									0	30	15
+298	Sith_Mal_Old_Asian	Sith_Mal_Old_Asian	N_SithComM	B	21									0	30	15
+299	Sith_Mal_Old_White	Sith_Mal_Old_White	N_SithComM	B	25									0	30	15
+300	Sith_Mal_Old_Black	Sith_Mal_Old_Black	N_SithComM	B	23									0	30	15
+301	Sith_Fem_Asian	Sith_Fem_Asian	N_SithComF	B	8									0	30	15
+302	Sith_Mal_Asian	Sith_Mal_Asian	N_SithComM	B	9									0	30	15
+303	Jedi_White_Old_Male	Jedi_White_Old_Male	N_JediCounM	B	25									0	30	15
+304	Jedi_Asian_Old_Male	Jedi_Asian_Old_Male	N_JediCounM	B	21									0	30	15
+305	Jedi_Black_Old_Male	Jedi_Black_Old_Male	N_JediCounM	B	23									0	30	15
+306	Jedi_White_Old_Fem	Jedi_White_Old_Fem	N_JediCounF	B	24									0	30	15
+307	Jedi_Asian_Old_Fem	Jedi_Asian_Old_Fem	N_JediCounF	B	20									0	30	15
+308	Jedi_Black_Old_Fem	Jedi_Black_Old_Fem	N_JediCounF	B	22									0	30	15
+309	Creature_Rancor_Small	Creature_Rancor_Small	C_RancorS	S										0	30	15
+310	Unique_Holo_Vandar	Unique_Holo_Vandar	c_holoVandar	F										0	30	15
+311	Unique_Holo_Dodonna	Unique_Holo_Dodonna	C_Holododonna	F										0	30	15
+312	Unique_Holo_Rakata	Unique_Holo_Rakata	C_Holorakata	F										0	30	15
+313	Lite_Droid_Astro_01	Lite_Droid_Astro_01	L_Astromech	L										0	30	15
+314	Lite_Droid_Astro_02	Lite_Droid_Astro_02	L_Astro02	L										0	30	15
+315	Lite_Commoner_Female_01	Lite_Commoner_Female_01	L_CommF	F	30									0	30	15
+316	Lite_Commoner_Male_01	Lite_Commoner_Male_01	L_CommM	F	51									0	30	15
+317	Lite_Protocol_01	Lite_Protocol_01	L_DrdProt	L										0	30	15
+318	Lite_Protocol_02	Lite_Protocol_02	L_DrdProt02	L										0	30	15
+319	Lite_Jawa	Lite_Jawa	L_Jawa	L										0	30	15
+320	Lite_Rakata_01	Lite_Rakata_01	L_Rakata	F										0	30	15
+321	Lite_Republic_Officer_Mal_White	Lite_Republic_Officer_Mal_White	L_RepOffM	F	13									0	30	15
+322	Lite_Republic_Officer_Fem_White	Lite_Republic_Officer_Fem_White	L_RepOffF	F	13									0	30	15
+323	Lite_Selkath_01	Lite_Selkath_01	L_Selkath	L										0	30	15
+324	Lite_Swoop_Gang	Lite_Swoop_Gang	L_Swoopgang	F										0	30	15
+325	Lite_Twilek_Female	Lite_Twilek_Female	N_TwiDance_Boot	B	61									0	30	15
+326	Lite_Twilek_Male	Lite_Twilek_Male	L_TwilekM	F	62									0	30	15
+327	Lite_Wookie_Male	Lite_Wookie_Male	L_Wookie	F										0	30	15
+328	LiteL_Alien01	LiteL_Alien01	L_Alien03	L										0	30	15
+329	LiteL_Alien02	LiteL_Alien02	L_Alien02	F										0	30	15
+330	LiteL_Alien05	LiteL_Alien05	L_Alien05	F										0	30	15
+331	Lite_Sith_Off_F	Lite_Sith_Off_F	L_SithOff_F	F										0	30	15
+332	Lite_Sith_Off_M	Lite_Sith_Off_M	L_SithOff_M	F										0	30	15
+333	Lite_SpaceMan	Lite_SpaceMan	L_SpaceMan	F										0	30	15
+334	Creature_Rancor_CUTSCN	Creature_Rancor_CUTSCN	C_Rancor	S										0	30	15
+335	Alien_Selkath_Insane_01	Alien_Selkath_Insane_01	N_SelkathCr	L										0	30	15
+336	Alien_Selkath_Insane_02	Alien_Selkath_Insane_02	N_SelkathCr	L										0	30	15
+337	Alien_Gammorean_Civilian	Alien_Gammorean_Civilian	C_GammoreanP	S										0	30	15
+338	Lite_Sith_Soldier	Lite_Sith_Soldier	L_SithSoldier	F										0	30	15
+339	Commoner_Dirty_Fem_Asian	Commoner_Dirty_Fem_Asian	N_CommF	B	8									0	30	15
+340	Commoner_Dirty_Fem_White	Commoner_Dirty_Fem_White	N_CommF	B	12									0	30	15
+341	Commoner_Dirty_Fem_Black	Commoner_Dirty_Fem_Black	N_CommF	B	10									0	30	15
+342	Commoner_Dirty_Fem_Old_Asian	Commoner_Dirty_Fem_Old_Asian	N_CommF	B	20									0	30	15
+343	Commoner_Dirty_Fem_Old_White	Commoner_Dirty_Fem_Old_White	N_CommF	B	24									0	30	15
+344	Commoner_Dirty_Fem_Old_Black	Commoner_Dirty_Fem_Old_Black	N_CommF	B	22									0	30	15
+345	Commoner_Dirty_Mal_Asian	Commoner_Dirty_Mal_Asian	N_CommM	B	9									0	30	15
+346	Commoner_Dirty_Mal_White	Commoner_Dirty_Mal_White	N_CommM	B	13									0	30	15
+347	Commoner_Dirty_Mal_Black	Commoner_Dirty_Mal_Black	N_CommM	B	11									0	30	15
+348	Commoner_Dirty_Mal_Old_Asian	Commoner_Dirty_Mal_Old_Asian	N_CommM	B	21									0	30	15
+349	Commoner_Dirty_Mal_Old_White	Commoner_Dirty_Mal_Old_White	N_CommM	B	25									0	30	15
+350	Commoner_Dirty_Mal_Old_Black	Commoner_Dirty_Mal_Old_Black	N_CommM	B	23									0	30	15
+351	Alien_Mandalorian_02	Alien_Mandalorian_02	N_Mandalorian	F										0	30	15
+352	Alien_Mandalorian_03	Alien_Mandalorian_03	N_Mandalorian	F										0	30	15
+353	Creature_Terantanak	Creature_Terantanak	C_Terantanak	S										0	30	15
+354	Creature_Krayt_Dragon_CUTSCN	Creature_Krayt_Dragon_CUTSCN	C_KraytDragon	S										0	30	15
+355	Republic_Soldier_Mal_w_Helmet	Republic_Soldier_Mal_w_Helmet	N_RepSold	B	58									0	30	15
+356	Republic_Soldier_Fem_Black	Republic_Soldier_Fem_Black	N_RepSold	B	10									0	30	15
+357	Republic_Soldier_Fem_Old_Asian	Republic_Soldier_Fem_Old_Asian	N_RepSold	B	20									0	30	15
+358	Republic_Soldier_Fem_Old_White	Republic_Soldier_Fem_Old_White	N_RepSold	B	24									0	30	15
+359	Republic_Soldier_Fem_Old_Black	Republic_Soldier_Fem_Old_Black	N_RepSold	B	22									0	30	15
+360	Republic_Officer_Fem_Black	Republic_Officer_Fem_Black	N_RepOff	B	10									0	30	15
+361	Republic_Officer_Fem_Old_Asian	Republic_Officer_Fem_Old_Asian	N_RepOff	B	20									0	30	15
+362	Republic_Officer_Fem_Old_White	Republic_Officer_Fem_Old_White	N_RepOff	B	24									0	30	15
+363	Republic_Officer_Fem_Old_Black	Republic_Officer_Fem_Old_Black	N_RepOff	B	22									0	30	15
+364	Republic_Soldier_Fem_w_Helmet	Republic_Soldier_Fem_w_Helmet	N_RepSold	B	59									0	30	15
+365	Twilek_Male_03_F	Twilek_Male_03_F	N_TwilekM	B	67									0	30	15
+366	Twilek_Female_03_C	Twilek_Female_03_C	N_TwiDance_Boot	B	65									0	30	15
+367	Republic_Officer_Fem_White	Republic_Officer_Fem_White	N_RepOff	B	57									0	30	15
+368	Unique_Darth_Malak_JAWLESS	Unique_Darth_Malak_JAWLESS	N_DarthMalak02	F										0	30	15
+369	Unique_Darth_Malak_CINEMATIC	Unique_Darth_Malak_CINEMATIC	N_DarthMalak03	F										0	30	15
+370	Unique_Sith_Ghost	Unique_Sith_Ghost	N_DarkJediM	F										0	30	15
+371	Unique_Darth_Revan_Male_CUTSCN	Unique_Darth_Revan_Male_CUTSCN	N_DarthRevanM	B	66									0	30	15
+372	Unique_Darth_Revan_Female_CUTSCN	Unique_Darth_Revan_Female_CUTSCN	N_DarthRevanF	B	66									0	30	15
+373	Alien_Duros_02	Alien_Duros_02	N_Duros	F										0	30	15
+374	Alien_Duros_03	Alien_Duros_03	N_Duros	F										0	30	15
+375	Party_NPC_Bastila_CUTSCN	Party_NPC_Bastila_CUTSCN	P_BastilaBB02	B	1									1	30	15
+376	Twilek_Sith_Male	Twilek_Sith_Male	N_SithComM	B	62									0	30	15
+377	Twilek_Czerka_Officer	Twilek_Czerka_Officer	N_CzerkaOff	B	62									0	30	15
+378	Unique_Trask	Unique_Trask	N_RepSold	B	68									1	30	15
+379	Dark_Jedi_Master_01	Dark_Jedi_Master_01	N_DarkJediM	F										0	30	15
+380	Twilek_Jedi_Male	Twilek_Jedi_Male		B	62									0	30	15
+381	Party_NPC_Bastila_SLAVE	Party_NPC_Bastila_SLAVE	P_BastilaBB	B	1									1	30	15
+382	Alien_Sand_People_Chief	Alien_Sand_People_Chief	N_Tusken	F										0	30	15
+383	Lite_Droid_Astro_03	Lite_Droid_Astro_03	L_Astro02	L										0	30	15
+384	Lite_Droid_Astro_04	Lite_Droid_Astro_04	L_Astromech	L										0	30	15
+385	Smuggler_02	Smuggler_02	N_Smuggler	B	11									0	30	15
+386	Smuggler_03	Smuggler_03	N_Smuggler	B	9									0	30	15
+387	Unique_Zaerdra	Unique_Zaerdra	N_TwiDance_Boot	B	71									0	30	15
+388	Unique_Davik	Unique_Davik	N_CommM	B	70									1	30	15
+389	Unique_Gadon	Unique_Gadon	N_CommM	B	69									0	30	15
+390	Child_Female_Dirty	Child_Female_Dirty	N_CommKidFD	B	72									0	30	15
+391	Child_Male_Dirty	Child_Male_Dirty	N_CommKidMD	B	73									0	30	15
+392	Lite_Commoner_Female_02	Lite_Commoner_Female_02	L_CommF	F										0	30	15
+393	Lite_Commoner_Female_03	Lite_Commoner_Female_03	L_CommF	F										0	30	15
+394	Lite_Commoner_Female_04	Lite_Commoner_Female_04	L_CommF	F										0	30	15
+395	Lite_Commoner_Female_05	Lite_Commoner_Female_05	L_CommF	F										0	30	15
+396	Lite_Commoner_Female_06	Lite_Commoner_Female_06	L_CommF	F										0	30	15
+397	Lite_Commoner_Male_02	Lite_Commoner_Male_02	L_CommM	F										0	30	15
+398	Lite_Commoner_Male_03	Lite_Commoner_Male_03	L_CommM	F										0	30	15
+399	Lite_Commoner_Male_04	Lite_Commoner_Male_04	L_CommM	F										0	30	15
+400	Lite_Commoner_Male_05	Lite_Commoner_Male_05	L_CommM	F										0	30	15
+401	Lite_Commoner_Male_06	Lite_Commoner_Male_06	L_CommM	F										0	30	15
+402	Lite_Commoner_Male_B01	Lite_Commoner_Male_B01	L_CommMB	F										0	30	15
+403	Lite_Commoner_Male_B02	Lite_Commoner_Male_B02	L_CommMB	F										0	30	15
+404	Lite_Commoner_Male_B03	Lite_Commoner_Male_B03	L_CommMB	F										0	30	15
+405	Lite_Commoner_Male_B04	Lite_Commoner_Male_B04	L_CommMB	F										0	30	15
+406	Lite_Commoner_Male_B05	Lite_Commoner_Male_B05	L_CommMB	F										0	30	15
+407	Lite_Commoner_Female_B01	Lite_Commoner_Female_B01	L_CommF	F										0	30	15
+408	Lite_Commoner_Female_B02	Lite_Commoner_Female_B02	L_CommF	F										0	30	15
+409	Lite_Commoner_Female_B03	Lite_Commoner_Female_B03	L_CommF	F										0	30	15
+410	Lite_Commoner_Female_B04	Lite_Commoner_Female_B04	L_CommF	F										0	30	15
+411	Lite_Commoner_Female_B05	Lite_Commoner_Female_B05	L_CommF	F										0	30	15
+412	Unique_Deadeye	Unique_Deadeye	N_CommM	B	74									0	30	15
+413	Unique_Brejik	Unique_Brejik	N_CommM	B	75									0	30	15
+414	Unique_Gendar	Unique_Gendar	N_CommM	B	76									0	30	15
+415	Unique_Uthar	Unique_Uthar	N_SithComM	B	77									0	30	15
+416	Twilek_Commoner_M_01_A	Twilek_Commoner_M_01_A	N_CommM	B	78									1	30	15
+417	Twilek_Commoner_M_01_B	Twilek_Commoner_M_01_B	N_CommM	B	79									0	30	15
+418	Alien_Walrusman_01_A	Alien_Walrusman_01_A	N_Walrusman	F										0	30	15
+419	Alien_Walrusman_01_B	Alien_Walrusman_01_B	N_Walrusman	F										0	30	15
+420	Alien_Walrusman_01_C	Alien_Walrusman_01_C	N_Walrusman	F										0	30	15
+421	Dark_Jedi_Master_02	Dark_Jedi_Master_02	N_DarkJediM	F										0	30	15
+422	Dark_Jedi_Master_03	Dark_Jedi_Master_03	N_DarkJediM	F										0	30	15
+423	Commoner_Mal_Old_Black_01_C	Commoner_Mal_Old_Black_01_C	N_CommM	B	80									1	30	15
+424	Commoner_Mal_Old_White_01_C	Commoner_Mal_Old_White_01_C	N_CommM	B	116									1	30	15
+425	Czerka_Commander	Czerka_Commander	N_CzerkaOff	B	91									0	30	15
+426	Czerka_Protcol_OfficerF	Czerka_Protcol_OfficerF	N_CommF	B	83									0	30	15
+427	Lite_Wookie_Female	Lite_Wookie_Female	L_WookieF	F										0	30	15
+428	Tatooine_comm_Asian_Male	Tatooine_comm_Asian_Male	N_CommM	B	82									0	30	15
+429	Tatooine_comm_Asian_Female	Tatooine_comm_Asian_Female	N_CommF	B	83									0	30	15
+430	Tatooine_comm_White_Male	Tatooine_comm_White_Male	N_CommM	B	84									0	30	15
+431	Tatooine_comm_White_Female	Tatooine_comm_White_Female	N_CommF	B	85									0	30	15
+432	Unique_Dustil	Unique_Dustil	N_CommM	B	86									0	30	15
+433	Unique_Jorak	Unique_Jorak	N_SithComM	B	87									0	30	15
+434	Unique_Lashowe	Unique_Lashowe	N_SithComF	B	89									0	30	15
+435	Unique_MekelH	Unique_MekelH	N_SithComM	B	88									0	30	15
+436	Droid_Mark_One_Red	Droid_Mark_One_Red	C_Drdmkone	L										0	30	15
+437	Droid_Spyder_Red	Droid_Spyder_Red	C_DrdSpyder	L										0	30	15
+438	Unique_Shaleena	Unique_Shaleena	N_CommF	B	90									0	30	15
+439	Creature_Kinrath_01_Blue	Creature_Kinrath_01_Blue	C_Kinrath	S										0	30	15
+440	Creature_Kinrath_01_Red	Creature_Kinrath_01_Red	C_Kinrath	S										0	30	15
+441	Creature_Kinrath_01_Green	Creature_Kinrath_01_Green	C_Kinrath	S										0	30	15
+442	Unique_Shaardan	Unique_Shaardan	N_SithComM	B	92									0	30	15
+443	Creature_Kataarn02	Creature_Kataarn02	C_Kataarn	S										0	30	15
+444	Unique_Tanis	Unique_Tanis		B	82									0	30	15
+445	Twilek_Commoner_M_01_E	Twilek_Commoner_M_01_E	N_CommM	B	94									0	30	15
+446	Twilek_Commoner_F_01_A	Twilek_Commoner_F_01_A	N_CommF	B	61									0	30	15
+447	Twilek_Commoner_F_01_B	Twilek_Commoner_F_01_B	N_CommF	B	63									0	30	15
+448	Twilek_Commoner_F_01_C	Twilek_Commoner_F_01_C	N_CommF	B	65									0	30	15
+449	Twilek_Commoner_M_01_C	Twilek_Commoner_M_01_C	N_CommM	B	62									0	30	15
+450	Twilek_Commoner_M_01_D	Twilek_Commoner_M_01_D	N_CommM	B	64									0	30	15
+451	Party_NPC_BaoDur	Party_NPC_BaoDur	P_BaoDurBB	B	100									1	30	15
+452	Party_NPC_Atton	Party_NPC_Atton	P_AttonBB	B	96									1	30	15
+453	Party_NPC_G0T0	Party_NPC_G0T0	P_G0T0	F										0	30	15
+454	Party_NPC_Handmaiden	Party_NPC_Handmaiden	P_HandmaidenBB	F										1	30	15
+455	Party_NPC_Kreia	Party_NPC_Kreia	P_KreiaBB	F										1	30	15
+456	Party_NPC_Mira	Party_NPC_Mira	P_MiraBB	B	117									1	30	15
+457	Party_NPC_Visas	Party_NPC_Visas	P_VisasBB	B	98									1	30	15
+458	Unique_Darth_Sion	Unique_Darth_Sion	N_DarthSion	F										0	30	15
+459	Sith_Assassin_01	Sith_Assassin_01	N_SithAssn	B	95									0	30	15
+460	Droid_Mining_Mark_One_A	Droid_Mining_Mark_One_A	C_mk1_drd	L										0	30	15
+461	Droid_Mining_Mark_Two_A	Droid_Mining_Mark_Two_A	C_mk2_drd	L										0	30	15
+462	Party_NPC_Mandalore	Party_NPC_Mandalore	P_MandaloreBB	F										0	30	15
+463	Unique_Darth_Nihilus	Unique_Darth_Nihilus	N_DarthNihilus	F										0	30	15
+464	Alien_Trandoshan_01	Alien_Trandoshan_01	Sch_Trando	F										0	30	15
+465	Alien_Trandoshan_02	Alien_Trandoshan_02	Sch_Trando	F										0	30	15
+466	Onderon_Soldier_Mal_01	Onderon_Soldier_Mal_01	N_OndSoldM1	B	92									0	30	15
+467	Onderon_Soldier_Mal_02	Onderon_Soldier_Mal_02	N_OndSoldM1	B	41	45								0	30	15
+468	Onderon_Soldier_Mal_03	Onderon_Soldier_Mal_03	N_OndSoldM1	B	43	45								0	30	15
+469	Onderon_Soldier_Mal_04	Onderon_Soldier_Mal_04	N_OndSoldM1	B	25									0	30	15
+470	Onderon_Soldier_Mal_05	Onderon_Soldier_Mal_05	N_OndSoldM1	B	23									0	30	15
+471	Onderon_Soldier_Mal_06	Onderon_Soldier_Mal_06	N_OndSoldM1	B	84									0	30	15
+472	Onderon_Commoner_Mal_01	Onderon_Commoner_Mal_01	N_OndComM1	B	42	45								0	30	15
+473	Onderon_Commoner_Mal_02	Onderon_Commoner_Mal_02	N_OndComM1	B	135	45								0	30	15
+474	Onderon_Commoner_Mal_03	Onderon_Commoner_Mal_03	N_OndComM1	B	21									0	30	15
+475	Onderon_Commoner_Mal_04	Onderon_Commoner_Mal_04	N_OndComM1	B	134	50								0	30	15
+476	Onderon_Commoner_Mal_05	Onderon_Commoner_Mal_05	N_OndComM1	B	130	55								0	30	15
+477	Onderon_Commoner_Mal_06	Onderon_Commoner_Mal_06	N_OndComM1	B	54	52								0	30	15
+478	Onderon_Commoner_Mal_07	Onderon_Commoner_Mal_07	N_OndComM1	B	74									0	30	15
+479	TSF_Officer_Mal_01	TSF_Officer_Mal_01	N_RepSold	B	9									0	30	15
+480	TSF_Officer_Mal_02	TSF_Officer_Mal_02	N_RepSold	B	11									0	30	15
+481	TSF_Officer_Mal_03	TSF_Officer_Mal_03	N_RepSold	B	101									0	30	15
+482	TSF_Officer_Mal_04	TSF_Officer_Mal_04	N_RepSold	B	13									0	30	15
+483	TSF_Officer_Fem_01	TSF_Officer_Fem_01	N_RepSold	B	8									0	30	15
+484	TSF_Officer_Fem_02	TSF_Officer_Fem_02	N_RepSold	B	102									0	30	15
+485	TSF_Commander_Mal_01	TSF_Commander_Mal_01	N_RepOff	B	23									0	30	15
+486	TSF_Commander_Mal_02	TSF_Commander_Mal_02	N_RepOff	B	103									0	30	15
+487	TSF_Commander_Fem_01	TSF_Commander_Fem_01	N_RepOff	B	20									0	30	15
+488	TSF_Commander_Fem_02	TSF_Commander_Fem_02	N_RepOff	B	57									0	30	15
+489	Droid_Telos_Military	Droid_Telos_Military	C_Drdmkone	L										0	30	15
+490	Droid_Telos_Sentry	Droid_Telos_Sentry	C_DrdSentry	L										0	30	15
+491	Unique_Darth_Traya	Unique_Darth_Traya	N_DarthTraya	F										0	30	15
+492	Onderon_Officer_Mal_01	Onderon_Officer_Mal_01	N_OndOffM1	B	55	52								0	30	15
+493	Onderon_Officer_Mal_02	Onderon_Officer_Mal_02	N_OndOffM1	B	21									0	30	15
+494	Onderon_Officer_Mal_03	Onderon_Officer_Mal_03	N_OndOffM1	B	48	50								0	30	15
+495	Onderon_Officer_Mal_04	Onderon_Officer_Mal_04	N_OndOffM1	B	53	55								0	30	15
+496	Onderon_Officer_Mal_05	Onderon_Officer_Mal_05	N_OndOffM1	B	25									0	30	15
+497	Creature_Maalrass	Creature_Maalrass	C_Maalrass	S										0	30	15
+498	Unique_Lala	Unique_Lala	N_TwilekF	B	104									1	30	15
+499	Unique_Chodo	Unique_Chodo	C_Ithorian	S										0	30	15
+500	00_Artist_Test_FullBody	00_Artist_Test_FullBody	FullBodyM	F										0	30	15
+501	00_Artist_Test_Body_Head_Change	00_Artist_Test_Body_Head_Change	JustBodyM	B	92									0	30	15
+502	Onderon_Commoner_Fem_01	Onderon_Commoner_Fem_01	N_OndComF1	B	26	30								0	30	15
+503	Onderon_Commoner_Fem_02	Onderon_Commoner_Fem_02	N_OndComF1	B	27	30								0	30	15
+504	Onderon_Commoner_Fem_03	Onderon_Commoner_Fem_03	N_OndComF1	B	28	30								0	30	15
+505	Onderon_Commoner_Fem_04	Onderon_Commoner_Fem_04	N_OndComF1	B	29	30								0	30	15
+506	Onderon_Commoner_Fem_05	Onderon_Commoner_Fem_05	N_OndComF1	B	30	29								0	30	15
+507	Unique_Droid_Protocol_Telos	Unique_Droid_Protocol_Telos	C_DrdProt	L										0	30	15
+508	Sith_Commando_01_A	Sith_Commando_01_A	N_SithCommando	F										0	30	15
+509	Sith_Commando_01_B	Sith_Commando_01_B	N_SithCommando	F										0	30	15
+510	Sith_Commando_01_C	Sith_Commando_01_C	N_SithCommando	F										0	30	15
+511	Party_NPC_Hanharr	Party_NPC_Hanharr	P_Hanharr	F										1	30	15
+512	Creature_Cannok_01	Creature_Cannok_01	C_Cannok	S										0	30	15
+513	Creature_Bomabeast	Creature_Bomabeast	C_Bomabeast	S										0	30	15
+514	Creature_Bomabeast_Small	Creature_Bomabeast_Small	C_BomabeastV	S										0	30	15
+515	Lightsaber_Floating	Lightsaber_Floating	C_Lightsaber	F										0	30	15
+516	Creature_Drexl_01	Creature_Drexl_01	C_Drexl	S										0	30	15
+517	Creature_Drexl_Ambient	Creature_Drexl_Ambient	C_DrexlF	S										0	30	15
+518	Creature_Drexl_Boss	Creature_Drexl_Boss	C_BosDrexl	S										0	30	15
+519	PER_Holo_Miner_Med	PER_Holo_Miner_Med		B	138									0	30	15
+520	PER_Holo_Miner_Admin	PER_Holo_Miner_Admin		B	140									0	30	15
+521	PER_Holo_Miner_Dock	PER_Holo_Miner_Dock		B	137									0	30	15
+522	PER_Holo_Miner_Main	PER_Holo_Miner_Main		B	139									0	30	15
+523	PER_Holo_Miner_Security	PER_Holo_Miner_Security		B	162									0	30	15
+524	Unique_Talia	Unique_Talia	N_Talia	F										0	30	15
+525	Dark_Jedi_Low_Female_01	Dark_Jedi_Low_Female_01	N_DarkJLowF	B	109									0	30	15
+526	Dark_Jedi_Low_Female_02	Dark_Jedi_Low_Female_02	N_DarkJLowF	B	10									0	30	15
+527	Dark_Jedi_Low_Female_03	Dark_Jedi_Low_Female_03	N_DarkJLowF	B	12									0	30	15
+528	Dark_Jedi_Low_Male_01	Dark_Jedi_Low_Male_01	N_DarkJLowM	B	125									0	30	15
+529	Dark_Jedi_Low_Male_02	Dark_Jedi_Low_Male_02	N_DarkJLowM	B	60									0	30	15
+530	Dark_Jedi_Low_Male_03	Dark_Jedi_Low_Male_03	N_DarkJLowM	B	132									0	30	15
+531	Dark_Jedi_Mid_Female_01	Dark_Jedi_Mid_Female_01	N_DarkJMidF	B	109									0	30	15
+532	Dark_Jedi_Mid_Female_02	Dark_Jedi_Mid_Female_02	N_DarkJMidF	B	10									0	30	15
+533	Dark_Jedi_Mid_Female_03	Dark_Jedi_Mid_Female_03	N_DarkJMidF	B	12									0	30	15
+534	Dark_Jedi_Mid_Male_01	Dark_Jedi_Mid_Male_01	N_DarkJMidM	B	125									0	30	15
+535	Dark_Jedi_Mid_Male_02	Dark_Jedi_Mid_Male_02	N_DarkJMidM	B	60									0	30	15
+536	Dark_Jedi_Mid_Male_03	Dark_Jedi_Mid_Male_03	N_DarkJMidM	B	132									0	30	15
+537	Alien_Quarren_01	Alien_Quarren_01	N_Quarren	F										0	30	15
+538	Droid_NPC_hk50	Droid_NPC_hk50	P_HK47	F										0	40	10
+539	Droid_NPC_hk51	Droid_NPC_hk51	P_HK47	F										0	40	10
+540	Party_NPC_Kreia_Stunt	Party_NPC_Kreia_Stunt	P_KreiaStunt	F										1	30	15
+541	Droid_Utility_Mark_1	Droid_Utility_Mark_1	C_DrdMineSm	L										0	30	15
+542	Droid_Utility_Mark_2	Droid_Utility_Mark_2	C_DrdMineLg	L										0	30	15
+543	P_MAL_H_SML_01	P_MAL_H_SML_01		B	123	136								1	30	15
+544	P_MAL_H_MED_01	P_MAL_H_MED_01		B	123	136								1	30	15
+545	P_MAL_H_LRG_01	P_MAL_H_LRG_01		B	123	136								1	30	15
+546	P_FEM_C_SML_06	P_FEM_C_SML_06		B	124	173								1	30	15
+547	P_FEM_C_MED_06	P_FEM_C_MED_06		B	124	173								1	30	15
+548	P_FEM_C_LRG_06	P_FEM_C_LRG_06		B	124	173								1	30	15
+549	PER_Miner_Mal_01	PER_Miner_Mal_01		B	42	45								0	30	15
+550	PER_Miner_Mal_02	PER_Miner_Mal_02		B	135	45								0	30	15
+551	PER_Miner_Mal_03	PER_Miner_Mal_03		B	21									0	30	15
+552	PER_Miner_Mal_04	PER_Miner_Mal_04		B	134	50								0	30	15
+553	Creature_Laigrek_01	Creature_Laigrek_01	C_Laigrek	S										0	30	15
+554	Unique_JanaLorso	Unique_JanaLorso	N_CommF	B	126									0	30	15
+555	Droid_Construction_Medium	Droid_Construction_Medium	C_CondrdM	L										0	30	15
+556	Unique_Opo_Chano	Unique_Opo_Chano	N_OpoChano	F										0	30	15
+557	Droid_Tank	Droid_Tank	C_TankDroid	S										0	30	15
+558	Unique_CorrunFalt	Unique_CorrunFalt	N_CzerkaOff	B	127									0	30	15
+559	Droid_Foreman	Droid_Foreman	C_ForDrd	L										0	30	15
+560	Droid_Construction_Light	Droid_Construction_Light	C_ConDrdL	L										0	30	15
+561	Party_NPC_Discipile	Party_NPC_Discipile	P_DiscipleBB	B	128									1	30	15
+562	Dark_Jedi_Hi_Male_01	Dark_Jedi_Hi_Male_01	N_DarkJHiM	B	125									0	30	15
+563	Dark_Jedi_Hi_Male_02	Dark_Jedi_Hi_Male_02	N_DarkJHiM	B	60									0	30	15
+564	Dark_Jedi_Hi_Male_03	Dark_Jedi_Hi_Male_03	N_DarkJHiM	B	132									0	30	15
+565	Alien_Gran_01	Alien_Gran_01	N_Gran	F										0	30	15
+566	Dark_Jedi_Hi_Female_01	Dark_Jedi_Hi_Female_01	N_DarkJHiF	B	109									0	30	15
+567	Dark_Jedi_Hi_Female_02	Dark_Jedi_Hi_Female_02	N_DarkJHiF	B	10									0	30	15
+568	Dark_Jedi_Hi_Female_03	Dark_Jedi_Hi_Female_03	N_DarkJHiF	B	12									0	30	15
+569	Alien_Gand_01	Alien_Gand_01	N_Gand	F										0	30	15
+570	Alien_Devaronian_01	Alien_Devaronian_01	N_CommM	B	129									0	30	15
+571	Droid_SensorBall	Droid_SensorBall	C_SenBall	F										0	30	15
+572	Droid_Mouse_01	Droid_Mouse_01	C_DrdMouse01	L										0	30	15
+573	Droid_Mouse_02	Droid_Mouse_02	C_DrdMouse02	L										0	30	15
+574	Droid_Mouse_03	Droid_Mouse_03	C_DrdMouse03	L										0	30	15
+575	Droid_Mover_01	Droid_Mover_01	C_DrdMover01	L										0	30	15
+576	Droid_Mover_02	Droid_Mover_02	C_DrdMover02	L										0	30	15
+577	Droid_Construction_Boss	Droid_Construction_Boss	C_CONDRDBoss	L										0	30	15
+578	P_MAL_H_SML_02	P_MAL_H_SML_02		B	136	123								1	30	15
+579	P_MAL_H_MED_02	P_MAL_H_MED_02		B	136	123								1	30	15
+580	P_MAL_H_LRG_02	P_MAL_H_LRG_02		B	136	123								1	30	15
+581	Droid_Mining_Mark_Two_B	Droid_Mining_Mark_Two_B	C_mk2_drd	L										0	30	15
+582	Droid_Mining_Mark_Two_C	Droid_Mining_Mark_Two_C	C_mk2_drd	L										0	30	15
+583	Droid_Mining_Mark_One_B	Droid_Mining_Mark_One_B	C_mk1_drd	L										0	30	15
+584	Droid_Mining_Mark_One_C	Droid_Mining_Mark_One_C	C_mk1_drd	L										0	30	15
+585	Commoner_Fem_Asian_01_B	Commoner_Fem_Asian_01_B	N_CommF	B	105									0	30	15
+586	Commoner_Fem_Black_01_B	Commoner_Fem_Black_01_B	N_CommF	B	107									0	30	15
+587	Commoner_Fem_Old_Asian_01_B	Commoner_Fem_Old_Asian_01_B	N_CommF	B	111									0	30	15
+588	Commoner_Fem_Old_Black_01_B	Commoner_Fem_Old_Black_01_B	N_CommF	B	113									0	30	15
+589	Commoner_Fem_Old_White_01_B	Commoner_Fem_Old_White_01_B	N_CommF	B	115									0	30	15
+590	Commoner_Fem_White_01_B	Commoner_Fem_White_01_B	N_CommF	B	109									0	30	15
+591	Commoner_Mal_Asian_01_B	Commoner_Mal_Asian_01_B	N_CommM	B	106									0	30	15
+592	Commoner_Mal_Black_01_B	Commoner_Mal_Black_01_B	N_CommM	B	108									0	30	15
+593	Commoner_Mal_Old_Asian_01_B	Commoner_Mal_Old_Asian_01_B	N_CommM	B	112									0	30	15
+594	Commoner_Mal_Old_Black_01_B	Commoner_Mal_Old_Black_01_B	N_CommM	B	114									0	30	15
+595	Commoner_Mal_Old_White_01_B	Commoner_Mal_Old_White_01_B	N_CommM	B	116									0	30	15
+596	Commoner_Mal_White_01_B	Commoner_Mal_White_01_B	N_CommM	B	110									0	30	15
+597	Republic_Soldier_Mal_Black_02	Republic_Soldier_Mal_Black_02	N_RepSold	B	141									0	30	15
+598	Republic_Captain_Mal_White_01	Republic_Captain_Mal_White_01	N_RepOff	B	142									0	30	15
+599	Alien_Weeqay	Alien_Weeqay	N_Weeq	F										0	30	15
+600	Party_NPC_Kreia_Evil	Party_NPC_Kreia_Evil	P_KreiaEvilBB	F										1	30	15
+601	Alien_Sullustan	Alien_Sullustan	N_Sullustan	F										0	30	15
+602	Unique_Colonel_Tobin	Unique_Colonel_Tobin	N_OndOffM1	B	143									1	30	15
+603	Unique_Husef	Unique_Husef	N_CommM	B	144									1	30	15
+604	Unique_Azkul	Unique_Azkul		B	145									1	30	15
+605	Creature_Zakkeg	Creature_Zakkeg	C_Zakkeg	S										0	30	15
+606	Twilek_Commoner_M_01_F	Twilek_Commoner_M_01_F	N_CommM	B	67									0	30	15
+607	Onderon_Soldier_Mal_Masked	Onderon_Soldier_Mal_Masked	N_OndSoldM1	B	146									0	30	15
+608	Unique_Dhagon_Gent	Unique_Dhagon_Gent	N_CommM	B	147									0	30	15
+609	Commoner_Fem_Black_01_C	Commoner_Fem_Black_01_C	N_CommF	B	148									0	30	15
+610	Commoner_Fem_Black_01_D	Commoner_Fem_Black_01_D	N_CommF	B	151									0	30	15
+611	Commoner_Fem_Hispanic_01_A	Commoner_Fem_Hispanic_01_A	N_CommF	B	149									0	30	15
+612	Commoner_Fem_Hispanic_01_B	Commoner_Fem_Hispanic_01_B	N_CommF	B	152									0	30	15
+613	Commoner_Fem_Asian_01_C	Commoner_Fem_Asian_01_C	N_CommF	B	153									0	30	15
+614	Commoner_Fem_White_01_C	Commoner_Fem_White_01_C	N_CommF	B	150									0	30	15
+615	Commoner_Mal_Asian_01_C	Commoner_Mal_Asian_01_C	N_CommM	B	154									0	30	15
+616	Commoner_Mal_Hispanic_01_A	Commoner_Mal_Hispanic_01_A	N_CommM	B	155									0	30	15
+617	Commoner_Mal_White_01_C	Commoner_Mal_White_01_C	N_CommM	B	156									0	30	15
+618	Twilek_Commoner_M_01_G	Twilek_Commoner_M_01_G	N_CommM	B	157									0	30	15
+619	Twilek_Commoner_M_01_H	Twilek_Commoner_M_01_H	N_CommM	B	158									0	30	15
+620	Twilek_Commoner_F_01_E	Twilek_Commoner_F_01_E	N_CommF	B	159									0	30	15
+621	Twilek_Commoner_F_01_F	Twilek_Commoner_F_01_F	N_CommF	B	160									0	30	15
+622	Twilek_Commoner_F_01_G	Twilek_Commoner_F_01_G	N_CommF	B	161									0	30	15
+623	Unique_Saedhe	Unique_Saedhe	N_CommM	B	114									0	30	15
+624	Unique_Yavin_Merchant	Unique_Yavin_Merchant	N_Rodian	F										0	30	15
+625	Unique_DolGrenn	Unique_DolGrenn	N_RepOff	B	164									0	30	15
+626	Unique_General_Vaklu	Unique_General_Vaklu	N_OndOffM1	B	165	52								0	30	15
+627	Party_NPC_Kreia_Gimped	Party_NPC_Kreia_Gimped	P_Kreia1hBB	F										1	30	15
+628	Unique_Gerevick	Unique_Gerevick	N_Smuggler	B	166									0	30	15
+629	Party_NPC_Atris	Party_NPC_Atris	P_AtrisBB	F										1	30	15
+630	Droid_MineFloating	Droid_MineFloating	C_MineFloating	F										0	30	15
+631	Alien_Duros_04	Alien_Duros_04	N_Duros	F										0	30	15
+632	Alien_Duros_Brother_01	Alien_Duros_Brother_01	N_Duros	F										0	30	15
+633	Malachor_Beast_01	Malachor_Beast_01	C_Malbeast	S										0	30	15
+634	Malachor_Beast_02	Malachor_Beast_02	C_MalbeastL	S										0	30	15
+635	Unique_Berun_Modrul	Unique_Berun_Modrul	N_CommM	B	169									0	30	15
+636	Unique_Coorta	Unique_Coorta		B	170									0	30	15
+637	Unique_Daraala	Unique_Daraala	N_CommF	B	168									0	30	15
+638	Party_NPC_Handmaiden_Head	Party_NPC_Handmaiden_Head		B	171									1	30	15
+639	Party_NPC_Mandalore_No_Helmet	Party_NPC_Mandalore_No_Helmet	P_CandBB	B	172									1	30	15
+640	Turret_01_Special	Turret_01_Special	C_turret01b	L										0	30	15
+641	Unique_ZezKaiEll	Unique_ZezKaiEll	N_CommM	B	174									0	30	15
+642	Unique_Zherron	Unique_Zherron	N_CommM	B	175									0	30	15
+643	Jedi_Master_4H	Jedi_Master_4H	N_CommF	B	176									0	30	15
+644	Unique_Terena_Adare	Unique_Terena_Adare	N_CommF	B	177									0	30	15
+645	Unique_TaePlae	Unique_TaePlae	N_CommF	B	178									0	30	15
+646	Unique_Jorran	Unique_Jorran	N_DanSalvager	B	179									0	30	15
+647	Unique_Dopak	Unique_Dopak	N_CommM	B	180									0	30	15
+648	Unique_Master_Kavar	Unique_Master_Kavar	N_CommM	B	181									0	30	15
+649	Unique_Vash_Jedi_Master	Unique_Vash_Jedi_Master	N_CommF	B	183									0	30	15
+650	Force_Zombie	Force_Zombie	N_ForceZombie	F										0	30	15
+651	Party_NPC_Kreia_Evil_No_Hands	Party_NPC_Kreia_Evil_No_Hands	P_KreiaEvil0hBB	F										1	30	15
+652	Twilek_Assasin_01	Twilek_Assasin_01	N_TwiAss	B	184									0	30	15
+653	Twilek_Assasin_02	Twilek_Assasin_02	N_TwiAss	B	185									0	30	15
+654	Stunt_Saber_01	Stunt_Saber_01	stuntsaberR	L										0	30	15
+655	Unique_Ralon	Unique_Ralon	N_DanSalvager	B	13									0	30	15
+656	Unique_Batono	Unique_Batono	N_CommM	B	186									0	30	15
+657	Turret_03	Turret_03	C_Turret03	L										0	30	15
+658	Unique_ContestWinner	Unique_ContestWinner	N_CommM	B	187									0	30	15
+659	Thug_01	Thug_01	N_MaleThug	B	180									0	30	15
+660	Unique_Hologram_Goto	Unique_Hologram_Goto	DP_GotoHolo	F										0	30	15
+661	Alien_Toydarian_01	Alien_Toydarian_01	C_Toydarian	B										0	30	15
+662	Creature_Hssiss	Creature_Hssiss	C_Hssiss	S										0	30	15
+663	P_FEM_H_SML_01	P_FEM_H_SML_01		B	189	190								1	30	15
+664	P_FEM_H_MED_01	P_FEM_H_MED_01		B	189	190								1	30	15
+665	P_FEM_H_LRG_01	P_FEM_H_LRG_01		B	189	190								1	30	15
+666	P_FEM_H_SML_02	P_FEM_H_SML_02		B	190	189								1	30	15
+667	P_FEM_H_MED_02	P_FEM_H_MED_02		B	190	189								1	30	15
+668	P_FEM_H_LRG_02	P_FEM_H_LRG_02		B	190	189								1	30	15
+669	Party_NPC_Handmaiden_Clothing_Evil_I	Party_NPC_Handmaiden_Clothing_Evil_I	P_HandmaidenBD	F										1	30	15
+670	Unique_Vrook_Master	Unique_Vrook_Master	N_CommM	B	81									1	30	15
+671	Party_NPC_Kreia_Seppuku	Party_NPC_Kreia_Seppuku	P_KreiDanBB	F										1	30	15
+672	Handmaiden_Sister	Handmaiden_Sister	P_HandsisterBB	F	191									1	30	15
+673	Handmaiden_Sister_Corrupted	Handmaiden_Sister_Corrupted	P_HandsisterBD	F	191									1	30	15
+674	Republic_Captain_Mal_Black	Republic_Captain_Mal_Black	N_RepCptMB	F										0	30	15
+675	Republic_Captain_Fem_White	Republic_Captain_Fem_White	N_RepCptFW	F										0	30	15
+676	Republic_Captain_Mal_White_02	Republic_Captain_Mal_White_02	N_RepCptMW	F										0	30	15
+677	Masked_Duros	Masked_Duros	N_MaskedDuros	F										0	30	15
+678	Unique_Ahrnell	Unique_Ahrnell	N_CommM	B	192									0	30	15
+679	Unique_Harra	Unique_Harra	N_CzerkaOff	B	193									0	30	15
+680	Unique_KehVehn	Unique_KehVehn	N_CommM	B	194									0	30	15
+681	Unique_LupoShar	Unique_LupoShar	N_CommM	B	195									0	30	15
+682	Unique_Dahnis	Unique_Dahnis	N_TwilekF	B	196									0	30	15
+683	P_FEM_C_SML_03R	P_FEM_C_SML_03R		B	38	39								1	30	15
+684	P_FEM_C_MED_03R	P_FEM_C_MED_03R		B	38	39								1	30	15
+685	P_FEM_C_LRG_03R	P_FEM_C_LRG_03R		B	38	39								1	30	15
+686	Kreia_Evil_Fall_Cutscene_Only	Kreia_Evil_Fall_Cutscene_Only	P_Kreiaevil02	F										1	30	15
+687	Darth_Sion_Fall_Cutscene_Only	Darth_Sion_Fall_Cutscene_Only	N_DarthSion	F										0	30	15
+688	Party_NPC_HK47_Repair01	Party_NPC_HK47_Repair01	P_HK47	F										0	40	10
+689	Party_NPC_HK47_Repair02	Party_NPC_HK47_Repair02	P_HK47	F										0	40	10
+690	Party_NPC_HK47_Repair03	Party_NPC_HK47_Repair03	P_HK47	F										0	40	10
+691	Party_NPC_HK47_Repair04	Party_NPC_HK47_Repair04	P_HK47	F										0	40	10
+692	Party_NPC_HK47_Repair05	Party_NPC_HK47_Repair05	P_HK47	F										0	40	10
+693	Handmaiden_Sister	Handmaiden_Sister	P_HandSisterBB	F										1	30	15
+694	DP_Republic_Admiral_Onasi	DP_Republic_Admiral_Onasi	N_AdmOnasiF	F										0	30	15
+695	DP_Republic_Admiral_Cede	DP_Republic_Admiral_Cede	N_AdmCedeF	F										0	30	15
+696	DP_Bastila_DS	DP_Bastila_DS	DP_BastilaDS	F										1	30	15
+697	DP_Bastila_LS	DP_Bastila_LS	DP_BastilaLS	F										1	30	15
+698	DP_Carth_Dead	DP_Carth_Dead	P_CarthBB	B	197									1	30	15
+699	DP_Republic_Officer_Cpt_Male_C01	DP_Republic_Officer_Cpt_Male_C01	DP_RepCpt_M_C01	F										0	30	15
+700	DP_Republic_Officer_Lt_Fem_C01	DP_Republic_Officer_Lt_Fem_C01	DP_RepLt_F_C01	F										0	30	15
+701	DP_Republic_Doctor_Fem_B01	DP_Republic_Doctor_Fem_B01	DP_RepMed_F_B01	F										0	30	15
+702	DP_Peragus_Miner_Admin_Officer	DP_Peragus_Miner_Admin_Officer	DP_MineAdmOff	F										0	30	15
+703	DP_Peragus_Miner_Dock_Officer	DP_Peragus_Miner_Dock_Officer	DP_MineDockOff	F										0	30	15
+704	DP_Peragus_Miner_Maint_Officer	DP_Peragus_Miner_Maint_Officer	DP_MineMaintOff	F										0	30	15
+705	DP_Peragus_Miner_Med_Officer	DP_Peragus_Miner_Med_Officer	DP_MineMedOff	F										0	30	15
+706	DP_Peragus_Miner_Security_Officer	DP_Peragus_Miner_Security_Officer	DP_MineSctyOff	F										0	30	15
+707	DP_Peragus_Miner_MA01	DP_Peragus_Miner_MA01	DP_MineThug_MA1	F										0	30	15
+708	DP_Peragus_Miner_MB01	DP_Peragus_Miner_MB01	DP_MineThug_MB1	F										0	30	15
+709	DP_Peragus_Miner_MC01	DP_Peragus_Miner_MC01	DP_MineThug_MC1	F										0	30	15
+710	DP_Peragus_Miner_Coorta	DP_Peragus_Miner_Coorta	DP_MineCoorta	F										0	30	15
+711	DP_Jedi_Master_Atris	DP_Jedi_Master_Atris	DP_MstrAtris	F										1	30	15
+712	DP_Jedi_Master_Kavar	DP_Jedi_Master_Kavar	DP_MstrKavar	F										0	30	15
+713	DP_Jedi_Master_Vash	DP_Jedi_Master_Vash	DP_MstrVash	F										0	30	15
+714	DP_Jedi_Master_Vrook	DP_Jedi_Master_Vrook	DP_MstrVrook	F										0	30	15
+715	DP_Jedi_Master_Zez-Kai_Ell	DP_Jedi_Master_Zez-Kai_Ell	DP_MstrZezKai	F										0	30	15
+716	DP_Jedi_Master_Vandar	DP_Jedi_Master_Vandar	DP_MstrVandar	F										1	30	15
+717	DP_Canderous_Holo	DP_Canderous_Holo	DP_Canderous	F										0	30	15
+718	DP_Bao-Dur_Holo	DP_Bao-Dur_Holo	DP_BaoHolo	F										1	30	15
+719	DP_Republic_Soldier_Helmet_M_C01	DP_Republic_Soldier_Helmet_M_C01	DP_RepSoldMC1	F										0	30	15
+720	Unique_DP_Holo_Revan	Unique_DP_Holo_Revan	DP_HoloRevan	F										0	30	15
+721	Star_Forge_Revan	Star_Forge_Revan	N_DarthRevan	F										0	30	15
+722	OTGM_MAND_INFILTRATOR	OTGM_MAND_INFILTRATOR	N_Mandalorian	F										0	30	15
+723	OTGM_MAND_HEAVY	OTGM_MAND_HEAVY	N_Mandalorian	F										0	30	15
+733	DP_Carth_Dead	DP_Carth_Dead	P_CarthBB	B	198									1	30	15
+760	DP_Carth_Dead	DP_Carth_Dead	P_CarthBB	B	199									1	30	15
+726	Unique_Borna	Unique_Borna	N_CommF	B	202	199								0	30	15
+727	Unique_Droidmaster	Unique_Droidmaster	N_TwiDance_Boot	B	198	199								0	30	15
+728	PC_TwiNGreen	PC_TwiNGreen		B	198									1	30	15
+729	PC_TwiNGreenR	PC_TwiNGreenR		B	199									1	30	15
+730	PC_TwiNBlue	PC_TwiNBlue		B	200									1	30	15
+731	PC_TwiNPurple	PC_TwiNPurple		B	201									1	30	15
+732	PC_TwiNPink	PC_TwiNPink		B	202									1	30	15
+733	PC_TwiNYell	PC_TwiNYell		B	203									1	30	15
+734	PC_TwiToneRed	PC_TwiToneRed		B	204									1	30	15
+735	PC_TwiToneYel	PC_TwiToneYel		B	205									1	30	15
+736	PC_TwiToneGreen	PC_TwiToneGreen		B	206									1	30	15
+737	PC_TwiToneLime	PC_TwiToneLime		B	207									1	30	15
+738	PC_TwiToneTea	PC_TwiToneTea		B	208									1	30	15
+739	PC_TwiToneBlue	PC_TwiToneBlue		B	209									1	30	15
+740	PC_TwiToneNavy	PC_TwiToneNavy		B	210									1	30	15
+741	PC_TwiTonePurple	PC_TwiTonePurple		B	211									1	30	15
+742	PC_TwiTonePink	PC_TwiTonePink		B	212									1	30	15
+743	PC_TwiAssWhite	PC_TwiAssWhite		B	213									1	30	15
+744	PC_TwiAssBlue	PC_TwiAssBlue		B	214									1	30	15
+745	PC_TwiBlack	PC_TwiBlack		B	215									1	30	15
+746	PC_Twi6	PC_Twi6		B	216									1	30	15
+747	PC_TwiFYuthura	PC_TwiFYuthura		B	217									1	30	15
+748	PC_TwiRed	PC_TwiRed		B	218									1	30	15
+749	PC_Twi7	PC_Twi7		B	219									1	30	15
+750	PC_Twi2	PC_Twi2		B	220									1	30	15
+751	PC_Twi5	PC_Twi5		B	221									1	30	15
+752	PC_Twi3	PC_Twi3		B	222									1	30	15
+753	PC_Twi1	PC_Twi1		B	223									1	30	15
+678	Droid_Construction_Boss_M4-78	Droid_Construction_Boss_M4-78	C_CONDRDBoss	L										0	30	15
+679	Droid_Mining_Mark_One_M4-78	Droid_Mining_Mark_One_M4-78	C_mk1_drd	L										0	30	15
+680	Droid_Mining_Mark_Two_M4-78	Droid_Mining_Mark_Two_M4-78	C_mk2_drd	L										0	30	15
+681	Droid_Greeting_drd	Droid_Greeting_drd	C_CondrdM	L										0	30	15
+682	Industrial_Droid	Industrial_Droid	C_ConTerL	L										0	30	15
+683	Env_01	Env_01	C_Drdmkone	L										0	30	15
+684	Env_02	Env_02	C_Drdmkfour	L										0	30	15
+685	Droid_SentryM478	Droid_SentryM478	C_DrdSentry	L										0	30	15
+686	IS18	IS18	L_DrdProt	L										0	30	15
+687	Env_03	Env_03	C_Drdmkfour	L										0	30	15
+688	Env_04	Env_04	C_Drdmkone	L										0	30	15
+689	RD_Dro	RD_Dro	C_ConTerL	L										0	30	15
+690	Turret_03	Turret_03	C_Turret01	L										0	30	15
+691	Unique_Kaah	Unique_Kaah	N_TwilekM	B	224									0	30	15
+692	Droid_PowerDroid	Droid_PowerDroid	C_PowrDrd	L										0	30	15
+693	Droid_Foreman	Droid_Foreman	C_Empl_ForDrd	L										0	30	15
+694	Unique_Dahnis	Unique_Dahnis	N_TwilekF	B	225									0	30	15
+695	tatoldman	tatoldman	N_CommM	B	232	200								1	30	15
+696	Unique_Yuthura_Ban	Unique_Yuthura_Ban	N_SithComF	B	226									0	30	15
+697	sithbroad	sithbroad	N_SithComF	B	40									0	30	15
+698	N_TwilekFH01	N_TwilekFH01	N_TwilekF	B	227									0	30	15
+699	N_TwilekFG01	N_TwilekFG01	N_TwilekF	B	228									0	30	15
+700	sithpurebldf	sithpurebldf		B	229	197								1	30	15
+701	sithpurebldm	sithpurebldm		B	230	198								1	30	15
+702	tulak	tulak	tulak	B										0	30	15
+703	soa	soa	N_CommM	B	231									1	30	15
+704	n_twidbig	n_twidbig	N_TwilekF	B	225									0	30	15
+705	Unique_Admiral_Saul	Unique_Admiral_Saul	N_AdmrlSaulKar	B	233									0	30	15
+706	n_ewok	n_ewok	n_ewok	F										1	30	15
+706	n_ewok2	n_ewok2	n_ewok	F										0	30	15
+707	n_ezerarden	n_ezerarden	N_DarkJMidM	B	47									0	30	15
+708	Child_jettdarklighter	Child_jettdarklighter	n_jediboy	B	237									0	30	15
+709	Sith_Sentinel_Mal_w_Helmet	Sith_Sentinel_Mal_w_Helmet	N_RepSold	B	239									0	30	15
+710	N_DarthPoxus	N_DarthPoxus	N_DarthBand	B	234									0	30	15
+711	Mandalorian_Kazius	Mandalorian_Kazius	N_Mandalorian	F										0	30	15
+712	Alien_Weeqay_Dark	Alien_Weeqay_Dark	N_Weeq02	F										0	30	15
+713	Dark_Lord_TaskMstr	Dark_Lord_TaskMstr	N_Quarren02	F										0	30	15
+714	Jawa_Jedi	Jawa_Jedi	n_jawajedi	F										0	30	15
+715	n_sithstatue	n_sithstatue	N_DarkJediM	F										0	30	15
+716	Dark_Coun_Male_01	Dark_Coun_Male_01	N_JediCounF	B	132									0	30	15
+717	Padawan_Young	Padawan_Young	n_jediboy_robes	B	237									0	30	15
+718	Invisible_dummy	Invisible_dummy	n_dummy	B											30	15
+719	PC_TwiRed	PC_TwiRed		B	243									1	30	15
+720	PC_TwiNBlue	PC_TwiNBlue		B	244									1	30	15
+721	PC_Twi2	PC_Twi2		B	245									1	30	15
+722	PC_TwiNGreenR	PC_TwiNGreenR		B	246									1	30	15
+723	PC_Twi3	PC_Twi3		B	247									1	30	15
+724	talon	talon		B	248									1	30	15
+802	Commoner_Fat_Male	Commoner_Fat_Male	N_CommM_Fat	B	84									0	30	15
+803	Commoner_Fat_Female	Commoner_Fat_Female	N_CommF_Fat	B	85									0	30	15
+804	Czerka_Officer_Female	Czerka_Officer_Female	N_CzerkaOff	B	83									0	30	15
+805	Twilek_Commoner_M_02_A	Twilek_Commoner_M_02_A	N_CommM	B	192									0	30	15
+806	Twilek_Commoner_M_02_B	Twilek_Commoner_M_02_B	N_CommM	B	193									0	30	15
+807	Twilek_Commoner_M_02_C	Twilek_Commoner_M_02_C	N_CommM	B	194									0	30	15
+808	Twilek_Commoner_M_02_D	Twilek_Commoner_M_02_D	N_CommM	B	195									0	30	15
+809	Twilek_Female_Dancer_Boot	Twilek_Female_Dancer_Boot	N_CommF	B	198									0	30	15
+810	Twilek_Female_Dancer	Twilek_Female_Dancer	N_CommF	B	200									0	30	15
+811	Twilek_Female_Underwear	Twilek_Female_Underwear	N_CommF	B	204									0	30	15
+812	Commoner_Dirty_Male	Commoner_Dirty_Male	N_CommM	B	9									0	30	15
+813	Commoner_Dirty_Female	Commoner_Dirty_Female	N_CommF	B	8									0	30	15
+814	Czerka_Protocol_Officer_Female	Czerka_Protocol_Officer_Female	N_CommF	B	83									0	30	15
+815	Twilek_Female_Tone_A	Twilek_Female_Tone_A	N_TwilekF	B	61									0	30	15
+816	Twilek_Female_Tone_B	Twilek_Female_Tone_B	N_TwilekF	B	61									0	30	15
+817	Twilek_Female_Tone_C	Twilek_Female_Tone_C	N_TwilekF	B	61									0	30	15

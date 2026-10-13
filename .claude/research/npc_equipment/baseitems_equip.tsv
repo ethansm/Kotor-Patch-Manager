@@ -1,0 +1,110 @@
+row_id	label	equipableslots	slot_names	is_headgear	itemclass	defaultmodel	modeltype	partenvmap	bodyvar	itemtype	name_strref
+0	Quarter_Staff	0x00010	RIGHT_HAND	0	w_Qtrstaff	w_Qtrstaff_001	0	0		0	488
+1	Stun_Baton	0x00030	RIGHT_HAND|LEFT_HAND	0	w_Stunbaton	w_Stunbaton_001	0	0		0	489
+2	Long_Sword	0x00030	RIGHT_HAND|LEFT_HAND	0	w_Lngswrd	w_Lngswrd_001	0	0		2	490
+3	Vibro_Sword	0x00030	RIGHT_HAND|LEFT_HAND	0	w_Vbroswrd	w_Vbroswrd_001	0	0		2	491
+4	Short_Sword	0x00030	RIGHT_HAND|LEFT_HAND	0	w_Shortswrd	w_Shortswrd_001	0	0		1	492
+5	Vibro_Blade	0x00030	RIGHT_HAND|LEFT_HAND	0	w_Vbroshort	w_Vbroshort_001	0	0		1	493
+6	Double_Bladed_Sword	0x00010	RIGHT_HAND	0	w_Dblswrd	w_Dblswrd_001	0	0		0	494
+7	Vibro_Double_Blade	0x00010	RIGHT_HAND	0	w_VbrDblswd	w_VbrDblswd_001	0	0		0	495
+8	Lightsaber	0x00030	RIGHT_HAND|LEFT_HAND	0	w_Lghtsbr	w_Lghtsbr_001	0	0		41	496
+9	Double_Bladed_Lightsaber	0x00010	RIGHT_HAND	0	w_Dblsbr	w_Dblsbr_001	0	0		39	497
+10	Short_Lightsaber	0x00030	RIGHT_HAND|LEFT_HAND	0	w_ShortSbr	w_ShortSbr_001	0	0		40	498
+11	Lightsaber_Crystals			0	w_SbrCrstl	it_bag_001	0	0		46	499
+12	Blaster_Pistol	0x00030	RIGHT_HAND|LEFT_HAND	0	w_BlstrPstl	w_BlstrPstl_001	0	0		3	500
+13	Heavy_Blaster	0x00030	RIGHT_HAND|LEFT_HAND	0	w_HvyBlstr	w_HvyBlstr_001	0	0		3	501
+14	Hold_Out_Blaster	0x00030	RIGHT_HAND|LEFT_HAND	0	w_HldOBlst	w_HldOBlst_001	0	0		3	502
+15	Ion_Blaster	0x00030	RIGHT_HAND|LEFT_HAND	0	w_IonBlstr	w_IonBlstr_001	0	0		3	503
+16	Disrupter_Pistol	0x00030	RIGHT_HAND|LEFT_HAND	0	w_DsrptPstl	w_DsrptPstl_001	0	0		3	504
+17	Sonic_Pistol	0x00030	RIGHT_HAND|LEFT_HAND	0	w_SonicPstl	w_SonicPstl_001	0	0		3	505
+18	Ion_Rifle	0x00010	RIGHT_HAND	0	w_IonRfl	w_IonRfl_001	0	0		4	506
+19	Bowcaster	0x00010	RIGHT_HAND	0	w_BowCstr	w_BowCstr_001	0	0		4	507
+20	Blaster_Carbine	0x00010	RIGHT_HAND	0	w_BlstrCrbn	w_BlstrCrbn_001	0	0		4	508
+21	Disrupter_Rifle	0x00010	RIGHT_HAND	0	w_DsrptRfl	w_DsrptRfl_001	0	0		4	509
+22	Sonic_Rifle	0x00010	RIGHT_HAND	0	w_SonicRfl	w_SonicRfl_001	0	0		4	510
+23	Repeating_Blaster	0x00010	RIGHT_HAND	0	w_RptnBlstr	w_RptnBlstr_001	0	0		5	511
+24	Heavy_Repeating_Blaster	0x00010	RIGHT_HAND	0	w_HvRptBltr	w_HvRptBltr_001	0	0		5	512
+25	Fragmentation_Grenades			0	w_FragGren	w_FragGren_001	0	0		6	513
+26	Stun_Grenades			0	w_StunGren	w_StunGren_001	0	0		6	514
+27	Thermal_Detonator			0	w_ThermDet	w_ThermlDet_001	0	0		6	515
+28	Poison_Grenade			0	w_PoisnGren	w_PoisnGren_001	0	0		6	516
+29	Flash_Grenade			0	w_FlashGren	w_FlashGren_001	0	0		6	517
+30	Sonic_Grenade			0	w_SonicGren	w_SonicGren_001	0	0		6	518
+31	Adhesive_Grenade			0	w_AdhsvGren	w_AdhsvGren_001	0	0		6	519
+32	Cryoban_Grenade			0	w_CryobGren	w_CryobGren_001	0	0		6	520
+33	Fire_Grenade			0	w_FireGren	w_FireGren_001	0	0		6	521
+34	Ion_Grenade			0	w_IonGren	w_IonGren_001	0	0		6	522
+35	Jedi_Robe	0x00002	ARMOR	0	a_JediRobe	I_Null	1	1	I	38	523
+36	Jedi_Knight_Robe	0x00002	ARMOR	0	a_MstrRobe	I_Null	1	1	N	38	524
+37	Jedi_Master_Robe	0x00002	ARMOR	0	a_MstrRobe	I_Null	1	1	N	38	525
+38	Armor_Class_4	0x00002	ARMOR	0	a_Class4	I_Null	1	1	C	31	526
+39	Armor_Class_5	0x00002	ARMOR	0	a_Class5	I_Null	1	1	D	32	527
+40	Armor_Class_6	0x00002	ARMOR	0	a_Class6	I_Null	1	1	E	33	528
+41	Armor_Class_7	0x00002	ARMOR	0	a_Class7	I_Null	1	1	F	34	529
+42	Armor_Class_8	0x00002	ARMOR	0	a_Class8	I_Null	1	1	G	35	530
+43	Armor_Class_9	0x00002	ARMOR	0	a_Class9	I_Null	1	1	H	36	531
+44	Mask	0x00001	HEAD	1	I_Mask	I_Mask_001	0	0		18	532
+45	Gauntlets	0x00008	GAUNTLET	0	I_Gauntlet	I_Null	0	0		19	533
+46	Forearm_Bands	0x00180	RIGHT_ARM|LEFT_ARM	0	I_FrArmBnds	I_Null	0	0		20	534
+47	Belt	0x00400	BELT	0	I_Belt	I_Null	0	0		21	535
+48	Implant_1	0x00200	IMPLANT	0	I_Implant1	I_Null	0	0		22	536
+49	Implant_2	0x00200	IMPLANT	0	I_Implant2	I_Null	0	0		22	537
+50	Implant_3	0x00200	IMPLANT	0	I_Implant3	I_Null	0	0		22	538
+51				0							
+52	Data_Pad			0	I_DataPad	I_Null	0	0		24	540
+53	Adrenaline			0	I_Adrnaline	I_Null	0	0		25	541
+54	Combat_Shots			0	I_CmbtShot	I_Null	0	0		25	542
+55	Medical_Equipment			0	I_MedEqpmnt	I_Null	0	0		45	543
+56	Droid_Repair_Equipment			0	I_DrdRepEqp	I_Null	0	0		26	544
+57	Credits			0	I_Credits	I_Null	0	0		23	545
+58	Trap_Kit			0	I_TrapKit	I_Null	0	0		28	546
+59	Security_Spikes			0	I_SecSpike	I_Null	0	0		27	547
+60	Programming_Spikes			0	I_ProgSpike	I_Null	0	0		27	548
+61	Glow_Rod			0	I_GlowRod	I_Null	0	0		29	549
+62	Collar_Light			0	I_CollarLgt	I_Null	0	0		29	550
+63	Torch			0	I_Torch	I_Null	0	0		29	551
+64	Plot_Useable_Items			0	p_PltUseItm	I_Null	0	0		30	552
+65	Aesthetic_Item			0	p_PltUseItm	I_Null	0	0		30	553
+66	Droid_Light_Plating	0x00002	ARMOR	0	I_DrdLtPlat	I_Null	0	0		15	554
+67	Droid_Medium_Plating	0x00002	ARMOR	0	I_DrdMdPlat	I_Null	0	0		15	555
+68	Droid_Heavy_Plating	0x00002	ARMOR	0	I_DrdHvPlat	I_Null	0	0		15	556
+69	Droid_Search_Scope_x	0x00001	HEAD	1	I_DrdSrcScp	I_Null	0	0		16	557
+70	Droid_Motion_Sensors_x	0x00001	HEAD	1	I_DrdMtnSen	I_Null	0	0		16	558
+71	Droid_Sonic_Sensors_x	0x00001	HEAD	1	I_DrdSncSen	I_Null	0	0		16	559
+72	Droid_Targeting_Computers	0x00001	HEAD	1	I_DrdTrgCom	I_Null	0	0		16	560
+73	Droid_Computer_Spike_Mount_x	0x00208	GAUNTLET|IMPLANT	0	I_DrdComSpk	I_Null	0	0		14	561
+74	Droid_Security_Spike_Mount	0x00208	GAUNTLET|IMPLANT	0	I_DrdSecSpk	I_Null	0	0		14	562
+75	Droid_Shield	0x00400	BELT	0	I_DrdShld	I_Null	0	0		13	563
+76	Droid_Utility_Device	0x00180	RIGHT_ARM|LEFT_ARM	0	I_DrdUtlDev	I_Null	0	0		12	564
+77	Blaster_Rifle	0x00010	RIGHT_HAND	0	w_Blstrrfl	w_BlstrRfl_001	0	0		4	567
+78	Ghaffi_Stick	0x00010	RIGHT_HAND	0	w_gaffi	w_Shortswrd_001	0	0		0	1076
+79	Wookie_Warblade	0x00010	RIGHT_HAND	0	w_warblade	w_Dblswrd_001	0	0		0	1077
+80	Gammorean_Battleaxe	0x00030	RIGHT_HAND|LEFT_HAND	0	w_waraxe	w_Shortswrd_001	0	0		1	1078
+81	Creature_Item_Slash	0x1C030	RIGHT_HAND|LEFT_HAND|CLAW1|CLAW2|CLAW3	0	w_crslash	I_Null	0	0			1079
+82	Creature_Item_Pierce	0x1C030	RIGHT_HAND|LEFT_HAND|CLAW1|CLAW2|CLAW3	0	w_crpierce	I_Null	0	0			1080
+83	Creature_Weapon_Sl_Prc	0x1C030	RIGHT_HAND|LEFT_HAND|CLAW1|CLAW2|CLAW3	0	w_crbite	I_Null	0	0			1081
+84	Creature_Hide_Item	0x20000	HIDE	0	w_crhide	I_Null	0	0			1082
+85	Basic_Clothing	0x00002	ARMOR	0	a_cloths	I_Null	1	1	B	37	1348
+86	Pazaak_Card			0	I_PazCard	I_Null	0	0		42	32271
+87	Pazaak_Sideboard			0	p_PltUseItm	I_Null	0	0		43	32343
+88	Stealth_Unit	0x20400	BELT|HIDE	0	I_Belt	I_Null	0	0		44	535
+89	Revan_Armor	0x00002	ARMOR	0	a_revan	I_Null	1	1	J	38	
+90	Disguise_Item	0x00002	ARMOR	0	a_disguise	I_Null	0	1	B	37	41856
+91	Wrist_Launcher	0x00180	RIGHT_ARM|LEFT_ARM	0	I_FrArmBnds	I_Null	0	0		48	48601
+92	Rocket			0	w_rocket	I_Null	0	0		49	48603
+93	Force_Pike	0x00010	RIGHT_HAND	0	w_ForcePike	w_ForcePike_01	0	0		0	48614
+94	Squad_Recovery_kit			0	I_MedEqpmnt	I_Null	0	0		47	48615
+95	Chemicals			0	I_Credits	I_Null	0	0		50	545
+96	Components			0	I_Credits	I_Null	0	0		51	545
+97	Sonic_Grenade_Type2			0	w_SonicGren	w_SonicGren_001	0	0		6	48686
+98	Armor_Armd_Flight_Suit	0x00002	ARMOR	0	a_ClassFlt	I_Null	1	1	K	32	49147
+99	Restrictive_Jedi_Robe	0x00002	ARMOR	0	a_JediRobe	I_Null	1	1	I	38	108461
+100	Slave_Outfit	0x00002	ARMOR	0	a_slave	I_Null	1	1	L	37	115794
+101	Upgrade_Items			0	I_upgrade	I_Null	0	0		30	48426
+102	Armor_Zeison_Sha	0x00002	ARMOR	0	a_ClassZS	I_Null	1	1	M	38	132462
+103	Miner_Uniform	0x00002	ARMOR	0	a_class4	I_Null	1	1	C	37	128548
+104	Mining_Laser	0x00030	RIGHT_HAND|LEFT_HAND	0	w_BlstrPstl	w_BlstrPstl_001	0	0		3	74505
+105	Adv_Mining_Laser	0x00010	RIGHT_HAND	0	w_Blstrrfl	w_BlstrRfl_001	0	0		4	74333
+106	Lightsaber_No_Sound	0x00030	RIGHT_HAND|LEFT_HAND	0	w_Lghtsbr	w_Lghtsbr_001	0	0		41	496
+107	DM_ElectroStaff	0x00010	RIGHT_HAND	0	w_Qtrstaff	w_Qtrstaff_001	0	0		0	488
+108	OTGM_Forearm_Bands	0x00180	RIGHT_ARM|LEFT_ARM	0	I_otgmBnds	I_Null	0	0		20	534
