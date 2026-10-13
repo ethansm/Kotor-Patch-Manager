@@ -1,7 +1,7 @@
 # Session Handoff & Plan State: patch_manager_mods/41_custom_voice_and_events.md
 
 ## 0. Next-Phase Direction
-41 custom voice and events: next phase V-B (kvoice host build) then V-C live probe
+Execute V-C: Live tests E1-E8 incl. E5, E6, plus T-SSF and T-TIMER, with a tiny probe (needs user GO and the D0 pause lifted)
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/41_custom_voice_and_events.md`
@@ -9,65 +9,35 @@
 - **Waves:** .claude/waves/WI-41-a2/
 - **Waves:** .claude/waves/WI-41-b1/
 - **Waves:** .claude/waves/WI-41-b2/
-- **Branch:** `KOTOR-II` (139639c docs(41): custom voice, barks and voiced events research (w10-voice: 35 Haiku reports + 6 fact-checks, Gemini scorecard, test ladder E1-E8, kvoice spec))
-- **Generated:** 2026-10-13 01:07:49 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Waves:** .claude/waves/w11-41-VB/
+- **Branch:** `KOTOR-II` (d111b7a feat(kvoice): offline voice clip toolchain, container/loudness/lip/ledger/verifier/CLI (41:V-B))
+- **Generated:** 2026-10-13 01:27:15 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-139639c docs(41): custom voice, barks and voiced events research (w10-voice: 35 Haiku reports + 6 fact-checks, Gemini scorecard, test ladder E1-E8, kvoice spec)
- .../voice_audio/catalog/gemini_creature_claims.tsv |   58 +
- .../voice_audio/catalog/gemini_module_claims.tsv   |   33 +
- .../voice_audio/catalog/k1_streamwaves_groups.tsv  |  604 ++++++
- .../research/voice_audio/catalog/k2_avo_bank.tsv   |  199 ++
- .../research/voice_audio/catalog/k2_soundsets.tsv  | 1961 ++++++++++++++++++++
- .../voice_audio/catalog/k2_utc_voice_map.tsv       |   46 +
- .claude/research/voice_audio/w1/u01.md             |   30 +
- .claude/research/voice_audio/w1/u02.md             |   28 +
- .claude/research/voice_audio/w1/u03.md             |   41 +
- .../research/voice_audio/w1/u03_soundset_rows.tsv  |   71 +
- .claude/research/voice_audio/w1/u04.md             |   35 +
- .claude/research/voice_audio/w1/u05.md             |   48 +
- .claude/research/voice_audio/w1/u06.md             |   25 +
- .claude/research/voice_audio/w1/u07.md             |   21 +
- .claude/research/voice_audio/w1/u08.md             |   28 +
- .claude/research/voice_audio/w1/u09.md             |   38 +
- .claude/research/voice_audio/w1/u10.md             |   22 +
- .claude/research/voice_audio/w1/u11.md             |   24 +
- .claude/research/voice_audio/w1/u12.md             |   47 +
- .claude/research/voice_audio/w2/r1.md              |   53 +
- .claude/research/voice_audio/w2/r2.md              |   53 +
- .claude/research/voice_audio/w2/v03.md             |   35 +
- .claude/research/voice_audio/w2/v04.md             |   42 +
- .claude/research/voice_audio/w2/v05.md             |   32 +
- .claude/research/voice_audio/w2/v06.md             |   56 +
- .claude/research/voice_audio/w2/v07.md             |   41 +
- .claude/research/voice_audio/w2/v08.md             |   59 +
- .claude/research/voice_audio/w2/v09.md             |   36 +
- .claude/research/voice_audio/w2/v11.md             |   29 +
- .claude/research/voice_audio/w2/v12.md             |   51 +
- .claude/research/voice_audio/w3/b1.md              |   60 +
- .claude/research/voice_audio/w3/b10.md             |   30 +
- .claude/research/voice_audio/w3/b11.md             |  311 ++++
- .claude/research/voice_audio/w3/b2.md              |   60 +
- .claude/research/voice_audio/w3/b3.md              |   60 +
- .claude/research/voice_audio/w3/b4.md              |   57 +
- .claude/research/voice_audio/w3/b5.md              |   86 +
- .claude/research/voice_audio/w3/b6.md              |   37 +
- .claude/research/voice_audio/w3/b7.md              |   58 +
- .../research/voice_audio/w3/b7_persona_cards.toml  |  196 ++
- .claude/research/voice_audio/w3/b8.md              |   37 +
- .claude/research/voice_audio/w3/b9.md              |   28 +
- .claude/research/voice_audio/w3/r3.md              |   51 +
- .claude/research/voice_audio/w4/c1.md              |   47 +
- .claude/research/voice_audio/w4/c2.md              |   49 +
- .claude/research/voice_audio/w4/c3.md              |   38 +
- .claude/research/voice_audio/w4/c4.md              |   46 +
- .claude/research/voice_audio/w4/c5.md              |   50 +
- .claude/research/voice_audio/w4/c6.md              |   30 +
- patch_manager_mods/40_npc_behaviour_variety.md     |    2 +-
- patch_manager_mods/41_custom_voice_and_events.md   |  111 ++
- 51 files changed, 5289 insertions(+), 1 deletion(-)
+d111b7a feat(kvoice): offline voice clip toolchain, container/loudness/lip/ledger/verifier/CLI (41:V-B)
+ patch_manager_mods/k1_port/k1_port_prune.py        |   2 +-
+ patch_manager_mods/k1_port/k1_port_sources.py      |   2 +-
+ patch_manager_mods/k1_port/sources.json            |  14 +
+ patch_manager_mods/kvoice/README.md                |  39 +++
+ patch_manager_mods/kvoice/kvoice.py                | 247 +++++++++++++++
+ patch_manager_mods/kvoice/kvoice_audio.py          |  98 ++++++
+ patch_manager_mods/kvoice/kvoice_container.py      | 130 ++++++++
+ patch_manager_mods/kvoice/kvoice_ledger.py         |  71 +++++
+ patch_manager_mods/kvoice/kvoice_lip.py            | 108 +++++++
+ patch_manager_mods/kvoice/kvoice_norm.py           | 100 +++++++
+ patch_manager_mods/kvoice/kvoice_pack.py           | 157 ++++++++++
+ patch_manager_mods/kvoice/kvoice_verify.py         | 197 ++++++++++++
+ patch_manager_mods/kvoice/test_kvoice_audio.py     | 144 +++++++++
+ patch_manager_mods/kvoice/test_kvoice_cli.py       | 325 ++++++++++++++++++++
+ patch_manager_mods/kvoice/test_kvoice_container.py | 193 ++++++++++++
+ patch_manager_mods/kvoice/test_kvoice_ledger.py    | 218 ++++++++++++++
+ patch_manager_mods/kvoice/test_kvoice_lip.py       | 175 +++++++++++
+ patch_manager_mods/kvoice/test_kvoice_norm.py      | 171 +++++++++++
+ patch_manager_mods/kvoice/test_kvoice_pack.py      | 223 ++++++++++++++
+ patch_manager_mods/kvoice/test_kvoice_verify.py    | 333 +++++++++++++++++++++
+ 20 files changed, 2945 insertions(+), 2 deletions(-)
 ```
-- **Dirty Files (148):**
+- **Dirty Files (143):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/24_master_plan_status.handoff.md`
   - ` M .claude/handoffs/27_companion_selfheal.handoff.md`
@@ -76,27 +46,27 @@
   - ` M .claude/handoffs/38_k1_to_k2_asset_import.handoff.md`
   - ` M .claude/handoffs/PHASE7_COMMON_MASTER.handoff.md`
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
-  - ` M .claude/handoffs/texture_diversity_research.handoff.md`
   - ` M .claude/plans/swarm_library_architecture.md`
-  - ... +138 more (run `git status --short`)
+  - ` M patch_manager_mods/24_master_plan_status.md`
+  - ... +133 more (run `git status --short`)
 
-## 2. Immediate Objective (V-B)
-**`kvoice` host build: container/loudness/lip/ledger/verifier + tests + a KPM test-hook build step (no game); add `audio` kind and ONE source id to `k1_port` (`k2_install_reference` class `vanilla_reference` per b4, or `vanilla_k2` per b9: pick one)**
+## 2. Immediate Objective (V-C)
+**Live tests E1-E8 incl. E5, E6, plus T-SSF and T-TIMER, with a tiny probe (needs user GO and the D0 pause lifted)**
 
 Status: TODO
-Task: `kvoice` host build: container/loudness/lip/ledger/verifier + tests + a KPM test-hook build step (no game); add `audio` kind and ONE source id to `k1_port` (`k2_install_reference` class `vanilla_reference` per b4, or `vanilla_k2` per b9: pick one)
+Task: Live tests E1-E8 incl. E5, E6, plus T-SSF and T-TIMER, with a tiny probe (needs user GO and the D0 pause lifted)
 
 ## 2b. Upcoming Batches in Pipeline
-- **V-C** : Live tests E1-E8 incl. E5, E6, plus T-SSF and T-TIMER, with a tiny probe (needs user GO and the D0 pause lifted)
 - **V-D** : Silent-commoner SSF fix (needs T-SSF) and murmur bed prototype (ideas 1-2)
 - **V-E** : Voice spike: Qwen3 VoiceDesign speed/VRAM, 200-line consistency, FX chain, RVC timing on the 5070, Day-5 sound-alike screen (`w3/b5.md` 5-day plan)
+- **V-F** : Event system (cast from the diversity pool, cooldowns, templates T4, T3, then movement templates T1; b2 ranking) merged into doc 40 V5/V3
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume patch_manager_mods/41_custom_voice_and_events.md`.
 
 ## 4. Subagent Delegation Direction
 - **Claude Code**: parallel `model: haiku` Agent subagents; brief = `Contract` + `Write Scope` + `python3 scripts/agent_contract.py print worker|recon`.
-- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate V-B` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
+- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate V-C` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
 
 ## 5. Dead Ends & Verification (manual)
 ### Provenance fixes

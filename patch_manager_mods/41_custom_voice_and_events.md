@@ -1,7 +1,7 @@
 # 41 Custom voice, barks and voiced scripted events (research synthesis)
 
 ## Status
-- **State: V-A research done (2026-10-13); nothing built, nothing installed, no live test run.** Next: `kvoice` host build (V-B, no game) or live tests E1-E4 (V-C, needs user GO and a forged save).
+- **State: V-A research and V-B `kvoice` host build done (2026-10-13, d111b7a); nothing installed, no live test run.** `patch_manager_mods/kvoice/` (README there). Next: V-C live probe E1-E4/E7/E8 (needs user GO, a forged save and the D0 pause lifted); the KPM test-hook build step moved to V-C.
 - Origin (user, 10-13): extend npc-diversity (doc 34), the texture overlays (`.claude/research/texture_diversity/PLAN.md`) and doc 40 section 4 (scripted encounters) with custom or reused voiced dialog; start point was a Gemini Web chat (`~/kotor-custom-audio.pdf`, 18 pages).
 - Evidence: 3 research waves + 1 fact-check wave (`w10-voice`: W1 claim check x12, W2 engine/corpus/delivery x12 (11 reports), W3 brainstorm + red team + REA x12, W4 fact-check x6). Findings: `.claude/research/voice_audio/w1|w2|w3/*.md`, catalogs `.claude/research/voice_audio/catalog/*.tsv`, fact digests `.claude/waves/w10-voice/W1_FACTS.md` and `W2_FACTS.md` (gitignored). All units ended PARTIAL; engine facts are pseudocode-level until E1-E4 run.
 - Related: 34, 38 (section 8 licence ledger), 40 (V5 now points here), `patch_manager_mods/ghidra_knowledge/RE_AGENT_GUIDE.md`.
@@ -90,7 +90,7 @@ Event-system prerequisites P1-P7 are listed in `w3/b2.md`. Free evidence first: 
 | ID | Phase | State |
 |---|---|---|
 | V-A | Research waves w10-voice (35 unit reports: W1 12, W2 11, W3 12; the v10 report is missing, its data is in the catalog TSV) + wave-4 fact-check (c1-c6, 6 units), this doc | DONE |
-| V-B | `kvoice` host build: container/loudness/lip/ledger/verifier + tests + a KPM test-hook build step (no game); add `audio` kind and ONE source id to `k1_port` (`k2_install_reference` class `vanilla_reference` per b4, or `vanilla_k2` per b9: pick one) | TODO |
+| V-B | `kvoice` host build: container/loudness/lip/ledger/verifier + tests (no game); `audio` kind, ONE source id `vanilla_k2` (b9 chosen) and `.wav .mp3 .lip .ssf` prune suffixes added to `k1_port`. KPM test-hook build step moved to V-C. Code: `patch_manager_mods/kvoice/`, commit d111b7a | DONE |
 | V-C | Live tests E1-E8 incl. E5, E6, plus T-SSF and T-TIMER, with a tiny probe (needs user GO and the D0 pause lifted) | TODO |
 | V-D | Silent-commoner SSF fix (needs T-SSF) and murmur bed prototype (ideas 1-2) | TODO (after V-C) |
 | V-E | Voice spike: Qwen3 VoiceDesign speed/VRAM, 200-line consistency, FX chain, RVC timing on the 5070, Day-5 sound-alike screen (`w3/b5.md` 5-day plan) | TODO |
