@@ -281,16 +281,16 @@ Constraints: bundle `5a8be20` and LIB `651047e` stay untouched unless the row sa
 |---|---|---|---|---|
 | R1.1 | verify preflight: refuse (real engine) when units x cap_call > cap_total, print the cap needed | `bug_investigate.py:693-699`, `swarm_run.py:296-297` | $0 | TODO |
 | R1.2 | pending verify units make decision `incomplete`, nonzero exit, listed in summary as "budget deferred" (not "no record") | `bug_investigate.py:499-515`, `:725`, `swarm_run.py:786-787` | $0 | TODO |
-| R1.3 | verify order: ranked/round-robin by role so no role starves (skeptic got 0 of 25) | `bug_investigate.py:693` | $0 | TODO |
+| R1.3 | verify order: ranked/round-robin by role so no role starves (skeptic got 0 of 25) | `bug_investigate.py:693` | $0 | DROPPED: new unit ids would orphan 10 recorded verify runs; preflight (R1.1) makes order irrelevant, per-style coverage reported (R4.4) |
 | R1.4 | same preflight inside the runner (`check_spend_flags`) | `swarm_run.py:282-297` | $0 | TODO, LIB, needs go |
-| R2.1 | run `probe` before `write_units`; write into a fresh/archived `out/` | `bug_investigate.py:626-627`, `:331` | $0 | TODO |
+| R2.1 | run `probe` before `write_units`; write into a fresh/archived `out/` | `bug_investigate.py:626-627`, `:331` | $0 | DROPPED: runner status recomputes unit_sha256 from the current unit file (swarm_run.py:814-850), stale findings already incomplete |
 | R2.2 | stamp `bundle_sha256` + sha256(claim, mechanism, falsifier) into each verify unit; ignore mismatched verdicts | `bug_investigate.py:458`, `:467-471` | $0 | TODO |
 | R2.3 | `bundle` refuses when stage `out/` exists; refuses empty evidence or a missing launch | `bug_investigate.py:590-615`, `:611` | $0 | TODO |
 | R2.4 | per-run lock (`fcntl` on `RUN/.lock`) for mutating commands; `new` uses `mkdir` without `exist_ok` plus random suffix | `bug_investigate.py:562-564`, `:533` | $0 | TODO |
-| R2.5 | resume sends only incomplete units (check what `swarm_run map` already skips) | `bug_investigate.py:648-650`, `swarm_run.py:524-526` | $0 | TODO |
-| R3.1 | null unit needs non-empty verdicts (`all([])` is True today) | `bug_investigate.py:495`, `:503` | $0 | TODO |
+| R2.5 | resume sends only incomplete units (check what `swarm_run map` already skips) | `bug_investigate.py:648-650`, `swarm_run.py:524-526` | $0 | DROPPED: resume already sends only incomplete units (swarm_run.py:524-526) |
+| R3.1 | null unit needs non-empty verdicts (`all([])` is True today) | `bug_investigate.py:495`, `:503` | $0 | PLAN: pin test only (null not_a_bug with empty reasons is already rejected in _reasons) |
 | R3.2 | malformed complete units (hypotheses not a list, missing id) become incomplete with a reason | `bug_investigate.py:428-439`, `:490-492` | $0 | TODO |
-| R3.3 | forbidden-term check: NFKC, strip zero-width, collapse whitespace and `_`/`-`, match on joined excerpt text, whole-word for alnum edges; apply to verify units and to the symptom at `new` | `bug_investigate.py:655-660`, `:682-699` | $0 | TODO |
+| R3.3 | forbidden-term check: NFKC, strip zero-width, collapse whitespace and `_`/`-`, match on joined excerpt text, whole-word for alnum edges; apply to verify units and to the symptom at `new` | `bug_investigate.py:655-660`, `:682-699` | $0 | PLAN: narrowed to blind and null prompts plus symptom check at new; verify prompts stay unchecked |
 | R3.4 | rank on distinct `text_sha256`; dedupe `valid_evidence_ids` | `bug_investigate.py:478`, `evidence_quote_check.py:156-157` | $0 | TODO |
 | R3.5 | validate `L<n>\|` markers against the excerpt line range; `MIN_CHARS` on letters/digits after stripping tag/timestamp; hint `ev:<sha8>` form on truncated ids; catch lone surrogate in CLI | `evidence_quote_check.py:57`, `:140`, `:123`, `:246` | $0 | TODO |
 | R4.1 | scorer: negation window (not/never/no/n't/without within ~6 words), hedge flag | `bug_investigate_score.py:117-119` | $0 | TODO |
