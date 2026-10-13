@@ -57,7 +57,8 @@ Skipped as low value: Jedi robes (4 spawns), Ubese (1 card), Onderon until a Vak
 | P5 | agent + user | B7 dispatcher scoping and RE, then install and census (`kotor2_logs.py`) | variants seen in game |
 | HA | agent | helmet previews on the 54 head-item appearances (`k1_port_tex_preview.py helmets`) | **DONE 10-13** (6c36ef5); user approves framing before any Haiku vision pass |
 | HB | agent | dispatcher helmet allow-list (`DiversityHeadItems.h`, generator + invariants, no C++) | **DONE 10-13** (f2629e4); dispatcher use needs design + user go |
-| HC | agent + user | K1 item swarm: asset diff DONE 10-13 (`k1_items/ASSET_DIFF_FINDINGS.md`); C2 triage (~4 Haiku units proposed), C3 vision, C4 shortlist | waits for user go on spend |
+| HC | agent + user | K1 item swarm: asset diff, C2 triage (4 Haiku units), C3 K1-vs-K2 compare all **DONE 10-13** (ad80b7e, 2b1de52, 96b6721); K1 weapons dropped (K2 far better); only the 15 `p_*` companions remain | C4 closed; next = install CR textures as the K1 base (plan pending) |
+| HD | agent | fix: bottom-origin TGAs sampled upside down in the preview renderer | **DONE 10-13** (96b6721) |
 
 ## 7. Decisions (answered by the user 10-12)
 1. **P0 (B0 gate + B1 masks): YES.** Next step is a plan for P0 (plan mode), then build. Adds scripts and tests only.
