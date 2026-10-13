@@ -1,0 +1,305 @@
+#!/usr/bin/env python3
+"""Tests for k1_port_tex_tpc.py: TPC layout, mip maths, footprint rule, and RGB edits.
+
+Synthetic parents are built in memory (dxt1 and dxt5, deterministic noise blocks). The footprint check computes the
+expected changed-block set by brute force from mip-0 pixels, independent of the box-filter code. The real-file test
+reads k1p_commm04.tpc from the staged override dir and SKIPs when it is absent. Under system python3 the file
+re-executes itself with the repo venv, which has numpy.
+"""
+import os
+import shutil
+import struct
+import sys
+import tempfile
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+VENV_PY = HERE.parents[1] / ".venv" / "bin" / "python"  # HERE = <repo>/patch_manager_mods/k1_port
+
+try:
+    import numpy as np
+except ImportError:
+    if VENV_PY.exists() and not os.environ.get("K1_TEX_REEXEC"):
+        os.environ["K1_TEX_REEXEC"] = "1"
+        os.execv(str(VENV_PY), [str(VENV_PY), str(Path(__file__).resolve())])
+    print("SKIP: numpy not available (run with .venv/bin/python)")
+    sys.exit(0)
+
+sys.path.insert(0, str(HERE))
+import k1_port_tex_tpc as tpc  # noqa: E402
+from k1_port_tex_dxt import BLOCK_BYTES  # noqa: E402
+
+REAL_TPC = Path("~/Games/KOTOR2_Mod_Workspace/k1_port_stage/override/k1p_commm04.tpc").expanduser()
+PIXEL_TYPE = {"dxt1": 2, "dxt5": 4}
+TESTS = []
+
+
+class Skip(Exception):
+    pass
+
+
+def test(fn):
+    TESTS.append(fn)
+    return fn
+
+
+def check(cond, msg):
+    if not cond:
+        raise AssertionError(msg)
+
+
+def make_header(w: int, h: int, fmt: str, mips: int, data_size: int) -> bytes:
+    head = struct.pack("<IfHHBB", data_size, 1.0, w, h, PIXEL_TYPE[fmt], mips)
+    return head + b"\0" * (128 - len(head))
+
+
+def make_parent(w: int, h: int, fmt: str, mips: int, seed: int = 7, trailer: bytes = b"") -> bytes:
+    sizes = [((max(1, w >> k) + 3) // 4) * ((max(1, h >> k) + 3) // 4) * BLOCK_BYTES[fmt] for k in range(mips)]
+    body = np.random.default_rng(seed).integers(0, 256, size=sum(sizes), dtype=np.uint8).tobytes()
+    return make_header(w, h, fmt, mips, sizes[0]) + body + trailer
+
+
+def mip_slices(data: bytes, info: dict) -> list:
+    return [data[o:o + s] for o, s in zip(info["offsets"], info["sizes"])]
+
+
+def blocks_of(data: bytes, mw: int, mh: int, bb: int) -> list:
+    """Per-block byte strings in stored order (row-major, row 0 first)."""
+    count = ((mw + 3) // 4) * ((mh + 3) // 4)
+    return [data[i * bb:(i + 1) * bb] for i in range(count)]
+
+
+def spans(n: int, k: int) -> list:
+    """Mip-0 index span (lo, hi) under each mip-k pixel along one axis, folding odd trailing indices."""
+    cur = [(i, i + 1) for i in range(n)]
+    for _ in range(k):
+        m = max(1, len(cur) >> 1)
+        nxt = []
+        for x in range(m):
+            lo = cur[2 * x][0]
+            hi = cur[2 * x + 1][1] if x < m - 1 else cur[-1][1]
+            nxt.append((lo, hi))
+        cur = nxt
+    return cur
+
+
+def expected_mask(mask0: np.ndarray, k: int) -> np.ndarray:
+    """Brute force: a mip-k pixel is in mask if any mip-0 pixel under its footprint is."""
+    sy, sx = spans(mask0.shape[0], k), spans(mask0.shape[1], k)
+    out = np.zeros((len(sy), len(sx)), dtype=bool)
+    for j, (y0, y1) in enumerate(sy):
+        for i, (x0, x1) in enumerate(sx):
+            out[j, i] = bool(mask0[y0:y1, x0:x1].any())
+    return out
+
+
+def expected_blocks(mask_k: np.ndarray, mw: int, mh: int) -> list:
+    """A 4x4 block may change only if one of its clipped mip-k pixels is in mask."""
+    bxn, byn = (mw + 3) // 4, (mh + 3) // 4
+    return [bool(mask_k[4 * by:4 * by + 4, 4 * bx:4 * bx + 4].any()) for by in range(byn) for bx in range(bxn)]
+
+
+def check_footprint(parent: bytes, out: bytes, mask0: np.ndarray) -> list:
+    """Assert only footprint blocks changed at every mip (and DXT5 alpha halves never did); return changed counts."""
+    info = tpc.parse(parent)
+    w, h, fmt = info["w"], info["h"], info["fmt"]
+    bb = BLOCK_BYTES[fmt]
+    p_mips, o_mips = mip_slices(parent, info), mip_slices(out, info)
+    counts = []
+    for k in range(info["mips"]):
+        mw, mh = tpc.mip_dims(w, h, k)
+        exp = expected_blocks(expected_mask(mask0, k), mw, mh)
+        pb, ob = blocks_of(p_mips[k], mw, mh, bb), blocks_of(o_mips[k], mw, mh, bb)
+        check(len(pb) == len(exp), f"mip {k}: block count {len(pb)} != expected {len(exp)}")
+        changed = 0
+        for i, (p, o) in enumerate(zip(pb, ob)):
+            if not exp[i]:
+                check(p == o, f"mip {k} block {i} is outside the mask footprint but changed")
+            elif p != o:
+                changed += 1
+            if fmt == "dxt5":
+                check(p[:8] == o[:8], f"mip {k} block {i}: DXT5 alpha half changed")
+        counts.append(changed)
+    return counts
+
+
+@test
+def test_parse_layout(root: Path):
+    trailer = b"[TXI]\r\nfake_txi_text\r\n"
+    for fmt, scale in (("dxt1", 1), ("dxt5", 2)):
+        b = make_parent(64, 64, fmt, 7, trailer=trailer)
+        info = tpc.parse(b)
+        check(info["w"] == 64 and info["h"] == 64 and info["fmt"] == fmt, f"{fmt}: header fields wrong {info}")
+        check(info["mips"] == 7, f"{fmt}: mips {info['mips']} != 7")
+        want = [s * scale for s in (2048, 512, 128, 32, 8, 8, 8)]
+        check(info["sizes"] == want, f"{fmt}: sizes {info['sizes']} != {want}")
+        check(info["offsets"][0] == 128, f"{fmt}: first mip offset {info['offsets'][0]} != 128")
+        for k in range(1, 7):
+            check(info["offsets"][k] == info["offsets"][k - 1] + info["sizes"][k - 1], f"{fmt}: offset gap at {k}")
+        check(sum(info["sizes"]) == len(b) - 128 - len(trailer), f"{fmt}: mip bytes do not sum to body length")
+        check(info["trailer"] == trailer, f"{fmt}: trailer not preserved")
+        check(info["header"] == b[:128], f"{fmt}: header slice wrong")
+
+
+@test
+def test_parse_rejects_bad_input(root: Path):
+    good = make_parent(64, 64, "dxt1", 7)
+    cases = {
+        "short": good[:100],
+        "uncompressed": struct.pack("<IfHHBB", 0, 1.0, 64, 64, 2, 7) + b"\0" * 114 + good[128:],
+        "bad pixel_type": struct.pack("<IfHHBB", 2048, 1.0, 64, 64, 12, 7) + b"\0" * 114 + good[128:],
+        "truncated": good[:-5],
+        "data_size mismatch": make_header(64, 64, "dxt1", 7, 999) + good[128:],
+        "zero mips": make_header(64, 64, "dxt1", 0, 2048) + good[128:],
+    }
+    for name, data in cases.items():
+        try:
+            tpc.parse(data)
+        except ValueError:
+            continue
+        raise AssertionError(f"parse accepted bad input: {name}")
+
+
+@test
+def test_mip_dims(root: Path):
+    want = [(60, 28), (30, 14), (15, 7), (7, 3), (3, 1), (1, 1), (1, 1)]
+    got = [tpc.mip_dims(60, 28, k) for k in range(7)]
+    check(got == want, f"mip_dims(60,28) {got} != {want}")
+    check(tpc.mip_dims(1, 1, 3) == (1, 1), "1x1 mip must stay 1x1")
+
+
+@test
+def test_downsample_rgb_rules(root: Path):
+    two = np.zeros((2, 2, 3), dtype=np.uint8)
+    two[0, 0, 0] = 1
+    two[0, 1, 0] = 1  # R sum 2 of 4 -> 0.5 rounds half up to 1
+    check(tpc.downsample_rgb(two)[0, 0, 0] == 1, "half must round up")
+    two[0, 1, 0] = 0  # sum 1 of 4 -> 0.25 -> 0
+    check(tpc.downsample_rgb(two)[0, 0, 0] == 0, "quarter must round down")
+    one = np.array([[[7, 8, 9]]], dtype=np.uint8)
+    check(np.array_equal(tpc.downsample_rgb(one), one), "1x1 must be identity")
+    three = np.zeros((3, 3, 3), dtype=np.uint8)
+    three[0, 0, 0] = 5  # 5 of 9 -> 0.56 -> 1, all 3x3 folded into one pixel
+    out3 = tpc.downsample_rgb(three)
+    check(out3.shape == (1, 1, 3) and out3[0, 0, 0] == 1, f"3x3 fold wrong: {out3.shape} {out3[0, 0, 0]}")
+    five = np.zeros((1, 5, 3), dtype=np.uint8)
+    five[0, 4, 0] = 9  # last output covers cols 2..4: 9/3 = 3
+    out5 = tpc.downsample_rgb(five)
+    check(out5.shape == (1, 2, 3), f"5-wide shape {out5.shape} != (1, 2, 3)")
+    check(out5[0, 1, 0] == 3 and out5[0, 0, 0] == 0, f"5-wide fold values {out5[0, :, 0]}")
+
+
+@test
+def test_downsample_mask_rules(root: Path):
+    m = np.zeros((2, 2), dtype=bool)
+    m[1, 0] = True
+    check(tpc.downsample_mask(m).tolist() == [[True]], "any-of-2x2 must be True")
+    row = np.array([[False, False, True]])
+    check(tpc.downsample_mask(row).tolist() == [[True]], "edge-folded trailing pixel must count")
+    check(not tpc.downsample_mask(np.zeros((28, 60), dtype=bool)).any(), "empty mask must stay empty")
+    check(tpc.downsample_mask(np.zeros((28, 60), dtype=bool)).shape == (14, 30), "60x28 mask must halve to 14x30")
+
+
+@test
+def test_empty_mask_identity(root: Path):
+    for fmt in ("dxt1", "dxt5"):
+        b = make_parent(64, 64, fmt, 7, trailer=b"TXI")
+        out = tpc.apply_rgb_edit(b, np.zeros((64, 64, 3), dtype=np.uint8), np.zeros((64, 64), dtype=bool))
+        check(out == b, f"{fmt}: empty mask must return the parent byte-for-byte")
+
+
+@test
+def test_masked_edit_footprint(root: Path):
+    for fmt in ("dxt1", "dxt5"):
+        b = make_parent(64, 64, fmt, 7, trailer=b"TXI")
+        mask = np.zeros((64, 64), dtype=bool)
+        mask[5:21, 37:45] = True
+        rgb = np.zeros((64, 64, 3), dtype=np.uint8)
+        rgb[:, :] = (255, 0, 0)
+        out = tpc.apply_rgb_edit(b, rgb, mask)
+        check(len(out) == len(b), f"{fmt}: length changed {len(b)} -> {len(out)}")
+        check(out[:128] == b[:128], f"{fmt}: header changed")
+        check(out[-3:] == b"TXI", f"{fmt}: trailer changed")
+        counts = check_footprint(b, out, mask)
+        check(counts[0] > 0, f"{fmt}: mip 0 has no changed block inside the mask")
+
+
+@test
+def test_non_pow2_60x28(root: Path):
+    for fmt in ("dxt1", "dxt5"):
+        b = make_parent(60, 28, fmt, 7, seed=11)
+        mask = np.zeros((28, 60), dtype=bool)
+        mask[20:28, 55:60] = True  # touches the last row and column, the odd-fold edge
+        rgb = np.zeros((28, 60, 3), dtype=np.uint8)
+        rgb[:, :] = (0, 0, 255)
+        out = tpc.apply_rgb_edit(b, rgb, mask)
+        check(len(out) == len(b), f"{fmt} 60x28: length changed")
+        counts = check_footprint(b, out, mask)
+        check(counts[0] > 0, f"{fmt} 60x28: no mip-0 block changed")
+
+
+@test
+def test_red_tint_decode(root: Path):
+    for fmt in ("dxt1", "dxt5"):
+        b = make_parent(64, 64, fmt, 7, seed=3)
+        mask = np.zeros((64, 64), dtype=bool)
+        mask[8:24, 16:32] = True  # block aligned, so every pixel outside the mask sits in an untouched block
+        info = tpc.parse(b)
+        before = tpc.decode_mip(b, info, 0)
+        rgb = before[:, :, :3].copy()
+        rgb[mask] = (255, 0, 0)
+        out = tpc.apply_rgb_edit(b, rgb, mask)
+        after = tpc.decode_mip(out, tpc.parse(out), 0)
+        inside = after[mask][:, :3].astype(int)
+        red_shift = inside[:, 0] - (inside[:, 1] + inside[:, 2]) / 2
+        check(red_shift.mean() > 120, f"{fmt}: masked pixels not red-shifted, mean shift {red_shift.mean():.1f}")
+        check(np.array_equal(after[~mask], before[~mask]), f"{fmt}: pixels outside the mask changed")
+
+
+@test
+def test_bad_edit_shapes_rejected(root: Path):
+    b = make_parent(64, 64, "dxt1", 7)
+    ok_mask = np.zeros((64, 64), dtype=bool)
+    ok_rgb = np.zeros((64, 64, 3), dtype=np.uint8)
+    for rgb, mask in ((np.zeros((32, 64, 3), dtype=np.uint8), ok_mask), (ok_rgb, np.zeros((64, 32), dtype=bool))):
+        try:
+            tpc.apply_rgb_edit(b, rgb, mask)
+        except ValueError:
+            continue
+        raise AssertionError("apply_rgb_edit accepted a mis-shaped input")
+
+
+@test
+def test_real_file_commm04(root: Path):
+    if not REAL_TPC.exists():
+        raise Skip(f"{REAL_TPC} not found")
+    data = REAL_TPC.read_bytes()
+    info = tpc.parse(data)
+    check((info["w"], info["h"], info["fmt"], info["mips"]) == (512, 512, "dxt1", 10), f"header {info}")
+    check(info["trailer"] == b"", f"unexpected trailer of {len(info['trailer'])} bytes")
+    check(info["sizes"][0] == 131072 and info["sizes"][-3:] == [8, 8, 8], f"sizes {info['sizes']}")
+    out = tpc.apply_rgb_edit(data, np.zeros((512, 512, 3), dtype=np.uint8), np.zeros((512, 512), dtype=bool))
+    check(out == data, "empty-mask edit of k1p_commm04 is not byte-identical")
+
+
+def main() -> int:
+    passed = 0
+    for fn in TESTS:
+        root = Path(tempfile.mkdtemp(prefix="k1port_tpc_test_"))
+        try:
+            fn(root)
+            print(f"PASS {fn.__name__}")
+            passed += 1
+        except Skip as e:
+            print(f"SKIP {fn.__name__}: {e}")
+            passed += 1  # a missing requirement is not a failure
+        except Exception as e:  # noqa: BLE001  report every failure, keep going
+            print(f"FAIL {fn.__name__}: {type(e).__name__}: {e}")
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+    print(f"{passed}/{len(TESTS)} PASS")
+    return 0 if passed == len(TESTS) else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
