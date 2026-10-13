@@ -108,6 +108,8 @@ const char* appLabel(uint16_t app) {
 const bool g_fallbackSet = (KpLog_SetFallbackFile("npc-diversity_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
 
 nl::Counts g_c;
+bool g_visitVariety = false;  // npc-diversity.ini [NpcDiversity] visit_variety: 0 same look every visit (default), 1 new look per visit
+uint32_t g_visitSalt = 0;  // 0 = no per-visit input (V4); V4b sets it once per area entry via MakeVisitSalt
 nl::U32Set<256> g_frSet, g_retSet, g_oidSet, g_cenTexSet, g_cenRemSet;
 nl::Budget g_bTex, g_bRmp, g_bAbi, g_bArm;
 uint32_t g_readBudget[nl::kSiteCount + 1] = {};
@@ -136,6 +138,19 @@ uint32_t pdOidGet(uint32_t pd) { const PdOid& e = g_pdOid[pdSlot(pd)]; return e.
 
 void logBanner();
 
+// Reads npc-diversity.ini from the game dir (a bare name would be searched in the Windows dir). Missing file or key = 0.
+void readConfig() {
+    char path[MAX_PATH + 32];
+    DWORD n = GetModuleFileNameA(nullptr, path, MAX_PATH);
+    if (n == 0 || n >= MAX_PATH) return;
+    char* slash = std::strrchr(path, '\\');
+    if (!slash) return;
+    std::strcpy(slash + 1, "npc-diversity.ini");
+    g_visitVariety = GetPrivateProfileIntA("NpcDiversity", "visit_variety", 0, path) != 0;
+    KP_LOG(chInit, "config visit_variety=%d%s", g_visitVariety ? 1 : 0,
+           g_visitVariety ? " (no area-entry salt source in this build: looks stay fixed)" : "");
+}
+
 void ensureInit() {
     if (g_inited) return;
     g_inited = true;
@@ -143,6 +158,7 @@ void ensureInit() {
     std::memset(g_pdOid, 0, sizeof g_pdOid);
     g_frSet.reset(); g_retSet.reset(); g_oidSet.reset(); g_cenTexSet.reset(); g_cenRemSet.reset();
     saferead::enableRing(true);
+    readConfig();
     logBanner();  // first hook call: never under the loader lock
 }
 
@@ -482,7 +498,7 @@ __declspec(dllexport) void __cdecl RemapNpcAppearance(void* pCreature, layout::A
     } else if (!okOid || oid == 0) {
         // The seed is the creature id; without it nothing is written (the creature stays vanilla).
         why = "unread:oid";
-    } else if (!ShouldVary(oid, d.appearance)) {
+    } else if (!ShouldVary(oid, d.appearance, ActiveVisitSalt(g_visitVariety, g_visitSalt))) {
         // Only kVaryPct of generic commoners change; the roll is a pure function of (oid, original row).
         ++g_c.remNoVary;
         why = "skip:vary";
@@ -490,7 +506,7 @@ __declspec(dllexport) void __cdecl RemapNpcAppearance(void* pCreature, layout::A
         ++g_c.remVary;
         // Row remap: only rows in the generic commoner tables (a row already remapped is not in them).
         if (skip == SkipReason::None) {
-            hash = HashCreatureId(oid, d.appearance);
+            hash = HashCreatureId(oid, d.appearance, ActiveVisitSalt(g_visitVariety, g_visitSalt));
             const uint16_t cand = RemapAppearance(d.appearance, d.gender, hash);
             if (cand != d.appearance) {
                 if (saferead::regionWritable(pd + layout::kDescOffAppearance, pd + layout::kDescOffAppearance + 2)) {
@@ -509,7 +525,7 @@ __declspec(dllexport) void __cdecl RemapNpcAppearance(void* pCreature, layout::A
         }
         // Texture variant for the final row. Idempotent: the pick ignores the current textureVar, so re-application writes nothing (want == d.textureVar).
         // subType >= 3 builds PMB/PFB armor parts, whose variants are not N_Comm slots: never write tv there.
-        const uint8_t want = PickTextureVar(oid, newApp);
+        const uint8_t want = PickTextureVar(oid, newApp, 0, ActiveVisitSalt(g_visitVariety, g_visitSalt));
         if (static_cast<int>(d.subType) > layout::kDescSubTypeMaxCommoner) {
             ++g_c.remTvArmor;
             if (why[0] == 'n') why = "tvarmor";

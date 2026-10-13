@@ -45,6 +45,7 @@ inline uint32_t Fmix32(uint32_t h) {
 //   salt 1 = band roll (BandRoll), 2 = Twi'lek male variant, 3 = female dancer variant,
 //   salt 4 = texture slot (PickTextureVar, ShouldDiversifyTexture), 5 = vary gate (ShouldVary),
 //   salt 6 = female Twi'lek skin tone.
+// Salts 1-6 are Mix salts. visitSalt is a separate input of HashCreatureId and consumes no Mix salt number.
 inline uint32_t Mix(uint32_t hash, uint32_t salt) {
     return Fmix32(hash ^ (salt * 0x9E3779B1u));
 }
@@ -83,8 +84,10 @@ inline uint32_t HashDescriptor(uint16_t appearance, uint8_t gender, uint8_t text
 }
 
 // Per-creature hash for the texture variant: FNV-1a over the 4 bytes of oid, then the 2 bytes of
-// appearance (each least significant byte first), finished with Fmix32.
-inline uint32_t HashCreatureId(uint32_t oid, uint16_t appearance) {
+// appearance (each least significant byte first), finished with Fmix32. When visitSalt != 0, its 4 bytes
+// (least significant first) are folded in after the appearance bytes, before Fmix32. visitSalt 0 takes no
+// extra step, so the 2-argument result is unchanged.
+inline uint32_t HashCreatureId(uint32_t oid, uint16_t appearance, uint32_t visitSalt = 0) {
     uint32_t hash = FNV_OFFSET_BASIS;
     for (int i = 0; i < 4; ++i) {
         hash = (hash ^ static_cast<uint8_t>((oid >> (8 * i)) & 0xFFu)) * FNV_PRIME;
@@ -92,7 +95,25 @@ inline uint32_t HashCreatureId(uint32_t oid, uint16_t appearance) {
     for (int i = 0; i < 2; ++i) {
         hash = (hash ^ static_cast<uint8_t>((appearance >> (8 * i)) & 0xFFu)) * FNV_PRIME;
     }
+    if (visitSalt != 0) {
+        for (int i = 0; i < 4; ++i) {
+            hash = (hash ^ static_cast<uint8_t>((visitSalt >> (8 * i)) & 0xFFu)) * FNV_PRIME;
+        }
+    }
     return Fmix32(hash);
+}
+
+// Per-visit salt for HashCreatureId. Never 0, because 0 means "no visit salt". The caller sets it once per
+// area entry and keeps it for the whole visit, so the idempotent re-application of RemapNpcAppearance stays stable.
+inline uint32_t MakeVisitSalt(uint32_t entropy) {
+    uint32_t s = Fmix32(entropy ^ 0x5BD1E995u);
+    return s != 0 ? s : 1u;
+}
+
+// Option gate for the visit salt (npc-diversity.ini visit_variety). Off (the default) returns 0, so every hash is
+// the plain per-creature one and a creature keeps its look on every visit; on passes the current visit's salt.
+inline uint32_t ActiveVisitSalt(bool visitVariety, uint32_t visitSalt) {
+    return visitVariety ? visitSalt : 0u;
 }
 
 // True for rows that take a commoner texture variant: the generic male and female commoner tables,
@@ -146,22 +167,22 @@ inline const uint8_t* FamilySlots(SlotFamily family, size_t& n) {
 // Vary gate: whether a creature takes a texture variant at all. oid 0 (no creature id) never varies.
 // Appended rows (APP_FIRST_APPENDED..APP_COUNT-1) are mod-produced and always vary; any other row varies for kVaryPct% of
 // creatures, on the salt-5 draw of the per-creature hash.
-inline bool ShouldVary(uint32_t oid, uint16_t originalApp) {
+inline bool ShouldVary(uint32_t oid, uint16_t originalApp, uint32_t visitSalt = 0) {
     if (oid == 0) return false;
     if (originalApp >= APP_FIRST_APPENDED && originalApp < APP_COUNT) return true;
-    return Mix(HashCreatureId(oid, originalApp), 5) % 100u < kVaryPct;
+    return Mix(HashCreatureId(oid, originalApp, visitSalt), 5) % 100u < kVaryPct;
 }
 
 // Texture variant for a creature: a slot from the family allowlist of finalApp, or 0 when no variant
 // applies (oid 0, a row outside every family, or an empty allowlist). The slot is the salt-4 draw
 // modulo the allowlist size. When that draw equals currentTv and the family has more than one slot,
 // the next allowlist entry is used, so the variant changes. FatM and FatF have one slot and are exempt.
-inline uint8_t PickTextureVar(uint32_t oid, uint16_t finalApp, uint8_t currentTv = 0) {
+inline uint8_t PickTextureVar(uint32_t oid, uint16_t finalApp, uint8_t currentTv = 0, uint32_t visitSalt = 0) {
     if (oid == 0) return 0;
     size_t n = 0;
     const uint8_t* allow = FamilySlots(FamilyOf(finalApp), n);
     if (n == 0) return 0;
-    size_t idx = Mix(HashCreatureId(oid, finalApp), 4) % n;
+    size_t idx = Mix(HashCreatureId(oid, finalApp, visitSalt), 4) % n;
     if (allow[idx] == currentTv && n > 1) idx = (idx + 1) % n;
     return allow[idx];
 }

@@ -449,6 +449,89 @@ void testHashCreatureIdGolden() {
     KT_CHECK(NpcDiversity::HashCreatureId(1000u, 805) != NpcDiversity::HashCreatureId(1000u, 806));
 }
 
+// Golden values from the same independent Python reference, with the visit salt bytes (LSB first) after the appearance bytes.
+void testHashCreatureIdVisitSalt() {
+    KT_CHECK_EQ(NpcDiversity::HashCreatureId(1u, 190, 1u), 0x99DD0590u);
+    KT_CHECK_EQ(NpcDiversity::HashCreatureId(1000u, 805, 1u), 0xCC550975u);
+    KT_CHECK_EQ(NpcDiversity::HashCreatureId(0xFFFFFFFFu, 0xFFFFu, 1u), 0x82A05DBAu);
+    KT_CHECK_EQ(NpcDiversity::HashCreatureId(1u, 190, 0xDEADBEEFu), 0x96088ECDu);
+    KT_CHECK_EQ(NpcDiversity::HashCreatureId(1000u, 805, 0xDEADBEEFu), 0xEC022690u);
+    KT_CHECK_EQ(NpcDiversity::HashCreatureId(0xFFFFFFFFu, 0xFFFFu, 0xDEADBEEFu), 0x79616EA7u);
+
+    // Salt 0 is the 2-argument hash. Salts 0, 1 and 2 give three different hashes.
+    KT_CHECK_EQ(NpcDiversity::HashCreatureId(1u, 190, 0u), NpcDiversity::HashCreatureId(1u, 190));
+    KT_CHECK_EQ(NpcDiversity::HashCreatureId(1000u, 805, 0u), NpcDiversity::HashCreatureId(1000u, 805));
+    KT_CHECK_EQ(NpcDiversity::HashCreatureId(0xFFFFFFFFu, 0xFFFFu, 0u), NpcDiversity::HashCreatureId(0xFFFFFFFFu, 0xFFFFu));
+    KT_CHECK(NpcDiversity::HashCreatureId(1000u, 805, 1u) != NpcDiversity::HashCreatureId(1000u, 805, 2u));
+    KT_CHECK(NpcDiversity::HashCreatureId(1000u, 805, 1u) != NpcDiversity::HashCreatureId(1000u, 805));
+    KT_CHECK(NpcDiversity::HashCreatureId(1000u, 805, 2u) != NpcDiversity::HashCreatureId(1000u, 805));
+}
+
+// An explicit salt 0 is the no-salt default for both gate and variant.
+void testVisitSaltKeepsDefaults() {
+    KT_CHECK(NpcDiversity::ShouldVary(1u, 190, 0u) == NpcDiversity::ShouldVary(1u, 190));
+    KT_CHECK(NpcDiversity::ShouldVary(1u, 190, 0u));  // 34, as in testShouldVaryGolden
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(1000u, 805, 0, 0u), NpcDiversity::PickTextureVar(1000u, 805));
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(1000u, 805, 0, 0u), 13);  // as in testPickTextureVarGateAndGolden
+}
+
+// A visit salt re-rolls the draws: the vary share stays near kVaryPct, and most creatures on a multi-slot row
+// get a different texture variant between two salts.
+void testVisitSaltRedistribution() {
+    auto varyCount = [](uint32_t visitSalt) {
+        long n = 0;
+        for (uint32_t oid = 1; oid <= kDraws; ++oid) {
+            if (NpcDiversity::ShouldVary(oid, 190, visitSalt)) ++n;
+        }
+        return n;
+    };
+    KT_CHECK(ShareInRange("vary gate share, row 190, visit salt 1", varyCount(1u), kDraws, 33.0, 37.0));
+    KT_CHECK(ShareInRange("vary gate share, row 190, visit salt 7", varyCount(7u), kDraws, 33.0, 37.0));
+
+    long differ = 0;
+    for (uint32_t oid = 1; oid <= kDraws; ++oid) {
+        if (NpcDiversity::PickTextureVar(oid, 190, 0, 1u) != NpcDiversity::PickTextureVar(oid, 190, 0, 2u)) ++differ;
+    }
+    KT_CHECK(ShareInRange("texvar differs between visit salt 1 and 2, row 190", differ, kDraws, 40.0, 100.0));
+}
+
+// MakeVisitSalt never returns 0 (0 means no visit salt) and spreads its inputs.
+void testMakeVisitSaltNonzero() {
+    uint32_t out[1003];
+    size_t n = 0;
+    const uint32_t specials[3] = {0u, 1u, 0xFFFFFFFFu};
+    for (uint32_t e : specials) out[n++] = NpcDiversity::MakeVisitSalt(e);
+    for (uint32_t e = 2u; e < 1002u; ++e) out[n++] = NpcDiversity::MakeVisitSalt(e);  // 1000 consecutive entropies
+
+    bool nonzero = true;
+    size_t distinct = 0;
+    for (size_t i = 0; i < n; ++i) {
+        if (out[i] == 0) nonzero = false;
+        bool seen = false;
+        for (size_t j = 0; j < i && !seen; ++j) seen = out[j] == out[i];
+        if (!seen) ++distinct;
+    }
+    KT_CHECK(nonzero);
+    KT_CHECK(distinct >= 990);
+    // Fmix32(entropy ^ 0x5BD1E995) is 0 only for entropy 0x5BD1E995, which must map to 1.
+    KT_CHECK_EQ(NpcDiversity::MakeVisitSalt(0x5BD1E995u), 1u);
+}
+
+// visit_variety off (the default) forces salt 0, so the look is the same on every visit; on passes the salt through.
+void testActiveVisitSalt() {
+    const uint32_t salt = NpcDiversity::MakeVisitSalt(1234u);
+    KT_CHECK_EQ(NpcDiversity::ActiveVisitSalt(false, salt), 0u);
+    KT_CHECK_EQ(NpcDiversity::ActiveVisitSalt(false, 0u), 0u);
+    KT_CHECK_EQ(NpcDiversity::ActiveVisitSalt(true, salt), salt);
+    KT_CHECK_EQ(NpcDiversity::ActiveVisitSalt(true, 0u), 0u);
+    // Off: two different visits give the same look; on: they can differ.
+    const uint32_t s1 = NpcDiversity::MakeVisitSalt(1u), s2 = NpcDiversity::MakeVisitSalt(2u);
+    KT_CHECK_EQ(NpcDiversity::HashCreatureId(1000u, 805, NpcDiversity::ActiveVisitSalt(false, s1)),
+                NpcDiversity::HashCreatureId(1000u, 805, NpcDiversity::ActiveVisitSalt(false, s2)));
+    KT_CHECK(NpcDiversity::HashCreatureId(1000u, 805, NpcDiversity::ActiveVisitSalt(true, s1)) !=
+             NpcDiversity::HashCreatureId(1000u, 805, NpcDiversity::ActiveVisitSalt(true, s2)));
+}
+
 void testTexVarEligible() {
     // Generic male and female commoner tables (representative rows from each table).
     KT_CHECK(NpcDiversity::TexVarEligible(17));
@@ -730,6 +813,11 @@ int main() {
     testTwilekMaleDistribution();
     testTwilekFemaleDistribution();
     testHashCreatureIdGolden();
+    testHashCreatureIdVisitSalt();
+    testVisitSaltKeepsDefaults();
+    testVisitSaltRedistribution();
+    testMakeVisitSaltNonzero();
+    testActiveVisitSalt();
     testTexVarEligible();
     testFamilyOfMatchesTexVarEligible();
     testPickTextureVarGateAndGolden();
