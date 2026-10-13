@@ -1,0 +1,16 @@
+resref	type	category	item_name	k2_equivalent	node_change	converter_feasibility	texture_alterability	licence	note
+p_bastilaba	MDL	companion-body	none	no	64->	direct	p_bastilaba01:high	k1-vanilla-local-only	Bastila body; no items_k1 model match; one texture
+p_bastilabb02	MDL	companion-body	none	no	119->	direct	p_bastilabb01:high;p_bastilah04:high	k1-vanilla-local-only	Bastila body variant; two textures; no items_k1 match
+p_candba	MDL	companion-body	none	no	61->	direct	p_candba01:high	k1-vanilla-local-only	Canderous body; no items_k1 match; one texture
+p_candbb	MDL	companion-body	none	no	88->	direct	p_candbb01:high;p_candh01:high	k1-vanilla-local-only	Canderous body variant; also lists head texture p_candh01
+p_candh	MDL	companion-head	none	no	34->	direct	p_candh01:high	k1-vanilla-local-only	Canderous head; no items_k1 match; one texture
+p_carthba	MDL	companion-body	none	no	61->	direct	p_carthba01:high	k1-vanilla-local-only	Carth body; no items_k1 match; one texture
+p_carthbbh	MDL	companion-head	none	no	26->	direct	p_carthh01:high	k1-vanilla-local-only	Carth head; texture p_carthh01; no items_k1 match
+p_joleeba	MDL	companion-body	none	no	61->	direct	p_joleeba01:high	k1-vanilla-local-only	Jolee body; no items_k1 match; one texture
+p_joleebb	MDL	companion-body	none	no	86->	direct	p_joleebb01:high;p_joleeh01:high	k1-vanilla-local-only	Jolee body variant; also lists head texture p_joleeh01
+p_joleeh	MDL	companion-head	none	no	34->	direct	p_joleeh01:high	k1-vanilla-local-only	Jolee head; no items_k1 match; one texture
+p_juhani	MDL	companion-body	none	no	76->	direct	p_juhanibb01:high	k1-vanilla-local-only	Juhani body; texture p_juhanibb01; no items_k1 match
+p_juhaniba	MDL	companion-body	none	no	64->	direct	p_juhaniba01:high	k1-vanilla-local-only	Juhani body variant; no items_k1 match; one texture
+p_juhanibb	MDL	companion-body	none	no	90->	direct	p_juhanibb01:high;p_juhanih01:high	k1-vanilla-local-only	Juhani body variant; also lists head texture p_juhanih01
+p_juhanih	MDL	companion-head	none	no	35->	direct	p_juhanih01:high	k1-vanilla-local-only	Juhani head; no items_k1 match; one texture
+p_t3m3	MDL	companion-body	none	no	31->	direct	p_t3m3_01:high	k1-vanilla-local-only	T3-M4 droid body; no items_k1 match; one texture

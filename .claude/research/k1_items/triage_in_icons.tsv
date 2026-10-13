@@ -1,0 +1,5 @@
+type	resref	family	status	k1_hash	k1_primary	k1_copies	k1_containers	k1_mdl_nodes	k1_mdl_textures	k1_mdl_parse	k2_hash	k2_primary	k2_copies	k2_containers	k2_mdl_nodes	k2_mdl_textures	k2_mdl_parse	mdl_tex_only_k1	mdl_tex_only_k2
+TPC	ii_bithtrombone	icon	only_k1	7bd87661506b9d724a0e3b9f41136574669323a0	TEXPACK:swpc_tex_gui.erf	1	TEXPACK:swpc_tex_gui.erf												
+TPC	ip_pituseitm_033	icon	only_k1	eabf730f1719880fe53036c4024e0707120d40bd	TEXPACK:swpc_tex_gui.erf	1	TEXPACK:swpc_tex_gui.erf												
+TPC	ip_pltuseitm_069	icon	only_k1	87ea2c0eb83c38a75b01ad4ba705321807bedc36	TEXPACK:swpc_tex_gui.erf	1	TEXPACK:swpc_tex_gui.erf												
+TPC	ip_pltuseitm_070	icon	only_k1	ebaf560bc09c0376c4b62be2646a747b425f5dec	TEXPACK:swpc_tex_gui.erf	1	TEXPACK:swpc_tex_gui.erf												

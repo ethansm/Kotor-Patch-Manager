@@ -1,0 +1,32 @@
+resref	type	category	item_name	k2_equivalent	node_change	converter_feasibility	texture_alterability	licence	note
+w_blstrcrbn_001	MDL	weapon-blaster	Blaster Carbine	yes	8->5	needs_rename	low: w_blstrcrbn_001	k1-vanilla-local-only	Single items_k1 match; plain weapon texture.
+w_blstrcrbn_003	MDL	weapon-blaster	Cinnagaran Carbine	yes	8->5	needs_rename	low: w_blstrcrbn_003	k1-vanilla-local-only	Single items_k1 match; plain weapon texture.
+w_blstrcrbn_005	MDL	weapon-blaster	Jamoh Hogra's Carbine	yes	4->9	needs_rename	low: w_blstrcrbn_005	k1-vanilla-local-only	Five items_k1 rows, same name; plain weapon texture.
+w_blstrpstl_001	MDL	weapon-blaster	Blaster Pistol	yes	5->4	needs_rename	low: w_blstrpstl_001	k1-vanilla-local-only	Two items_k1 rows, names differ; first used.
+w_blstrpstl_002	MDL	weapon-blaster	Carth's Blaster	yes	5->4	needs_rename	low: w_blstrpstl_002	k1-vanilla-local-only	Four items_k1 rows, names differ; first used.
+w_blstrpstl_003	MDL	weapon-blaster	Arkanian Pistol	yes	5->4	needs_rename	low: w_blstrpstl_003	k1-vanilla-local-only	Single items_k1 match; plain weapon texture.
+w_blstrpstl_004	MDL	weapon-blaster	Zabrak Blaster Pistol	yes	5->4	needs_rename	low: w_blstrpstl_004	k1-vanilla-local-only	Single items_k1 match; plain weapon texture.
+w_blstrpstl_005	MDL	weapon-blaster	Bendak's Blaster	yes	5->4	needs_rename	low: w_blstrpstl_005	k1-vanilla-local-only	Five items_k1 rows, same name; plain weapon texture.
+w_bowcstr_001	MDL	weapon-blaster	Bowcaster	yes	3->5	needs_rename	low: w_bowcstr_001	k1-vanilla-local-only	Single match; Bowcaster is not a blaster, nearest ranged bucket.
+w_bowcstr_002	MDL	weapon-blaster	Chuundar's Bowcaster	yes	3->5	needs_rename	low: w_bowcstr_002	k1-vanilla-local-only	Two items_k1 rows, names differ; first used.
+w_dblsbr_001	MDL	weapon-saber	Double-Bladed Lightsaber	yes	(empty)->14	needs_rename	unknown	k1-vanilla-local-only	K1 MDL parse-fail; K1 nodes and textures empty.
+w_dblsbr_002	MDL	weapon-saber	Double-Bladed Lightsaber	yes	11->14	needs_rename	low: w_dblsbr_001; w_lsabrered01	k1-vanilla-local-only	Two items_k1 rows, names near-identical; first used.
+w_dblsbr_003	MDL	weapon-saber	Double-Bladed Lightsaber	yes	11->14	needs_rename	low: w_dblsbr_001; w_lsabregren01	k1-vanilla-local-only	Single items_k1 match; shares w_dblsbr_001 texture.
+w_dblsbr_004	MDL	weapon-saber	Bastila's Lightsaber	yes	11->14	needs_rename	low: w_dblsbr_001; w_lsabreyelo01	k1-vanilla-local-only	Four items_k1 rows, names differ; first used.
+w_dblsbr_005	MDL	weapon-saber	Double-Bladed Lightsaber	yes	11->14	needs_rename	low: w_dblsbr_001; w_lsabrepurp01	k1-vanilla-local-only	Single items_k1 match; shares w_dblsbr_001 texture.
+w_dblsbr_006	MDL	weapon-saber	Double Bladed Lightsaber	yes	11->14	needs_rename	low: w_dblsbr_001; w_lsabregold01	k1-vanilla-local-only	Single items_k1 match; shares w_dblsbr_001 texture.
+w_dblsbr_007	MDL	weapon-saber	Double Bladed Lightsaber	yes	11->14	needs_rename	low: w_dblsbr_001; w_lsabreturq01	k1-vanilla-local-only	Single items_k1 match; shares w_dblsbr_001 texture.
+w_dsrptpstl_001	MDL	weapon-blaster	Disruptor Pistol	yes	3->4	needs_rename	low: w_dsrptpstl_001	k1-vanilla-local-only	Single match; disruptor is not a blaster, nearest ranged bucket.
+w_dsrptpstl_002	MDL	weapon-blaster	Mandalorian Ripper	yes	3->4	needs_rename	low: w_dsrptpstl_002	k1-vanilla-local-only	Single match; disruptor is not a blaster, nearest ranged bucket.
+w_dsrptrfl_001	MDL	weapon-blaster	Disruptor Rifle	yes	3->4	needs_rename	low: w_dsrptrfl_001	k1-vanilla-local-only	Single match; disruptor is not a blaster, nearest ranged bucket.
+w_dsrptrfl_002	MDL	weapon-blaster	Baragwin Disruptor-X Weapon	yes	3->4	needs_rename	low: w_dsrptrfl_002	k1-vanilla-local-only	Two items_k1 rows, names differ; first used.
+w_hldoblst_001	MDL	weapon-blaster	Hold Out Blaster	yes	3->4	needs_rename	low: w_hldoblst_001	k1-vanilla-local-only	Single items_k1 match; plain weapon texture.
+w_hldoblst_002	MDL	weapon-blaster	Bothan Quick Draw	yes	3->4	needs_rename	low: w_hldoblst_002	k1-vanilla-local-only	Two rows, same name; K2 also lists w_hldoblst_001.
+w_hldoblst_003	MDL	weapon-blaster	Sith Assassin Pistol	yes	3->4	needs_rename	low: w_hldoblst_003	k1-vanilla-local-only	Two items_k1 rows, same name; plain weapon texture.
+w_hldoblst_004	MDL	weapon-blaster	Bothan Needler	yes	3->4	needs_rename	low: w_hldoblst_004	k1-vanilla-local-only	Single items_k1 match; plain weapon texture.
+w_hvrptbltr_001	MDL	weapon-blaster	Heavy Repeating Blaster	yes	3->6	needs_rename	low: w_hvrptbltr_001	k1-vanilla-local-only	Single items_k1 match; plain weapon texture.
+w_hvrptbltr_002	MDL	weapon-blaster	Baragwin Heavy Repeating Blaster	yes	3->6	needs_rename	low: w_hvrptbltr_002	k1-vanilla-local-only	Four items_k1 rows, names differ; first used.
+w_hvyblstr_001	MDL	weapon-blaster	Heavy Blaster	yes	3->4	needs_rename	low: w_hvyblstr_001	k1-vanilla-local-only	Single items_k1 match; plain weapon texture.
+w_hvyblstr_002	MDL	weapon-blaster	Arkanian Heavy Pistol	yes	3->4	needs_rename	low: w_hvyblstr_002	k1-vanilla-local-only	Single items_k1 match; plain weapon texture.
+w_hvyblstr_003	MDL	weapon-blaster	Zabrak Tystel Mark III	yes	3->4	needs_rename	low: w_hvyblstr_003	k1-vanilla-local-only	Single items_k1 match; plain weapon texture.
+w_hvyblstr_004	MDL	weapon-blaster	Mandalorian Heavy Pistol	yes	3->4	needs_rename	low: w_hvyblstr_004	k1-vanilla-local-only	Single items_k1 match; plain weapon texture.

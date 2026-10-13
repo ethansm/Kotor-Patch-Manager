@@ -1,0 +1,16 @@
+type	resref	family	status	k1_hash	k1_primary	k1_copies	k1_containers	k1_mdl_nodes	k1_mdl_textures	k1_mdl_parse	k2_hash	k2_primary	k2_copies	k2_containers	k2_mdl_nodes	k2_mdl_textures	k2_mdl_parse	mdl_tex_only_k1	mdl_tex_only_k2
+MDL	p_bastilaba	p	only_k1	aade65448ef738f89144aca7f58befbd38fbe55b	CHITIN:models.bif	1	CHITIN:models.bif	64	p_bastilaba01	yes									
+MDL	p_bastilabb02	p	only_k1	29f5e7b20cd1c1ffebf513ff753423227d7d8eca	CHITIN:models.bif	1	CHITIN:models.bif	119	p_bastilabb01;p_bastilah04	yes									
+MDL	p_candba	p	only_k1	e5be6374f67613afdbae10dd4ac68ea9fc38a504	CHITIN:party.bif	1	CHITIN:party.bif	61	p_candba01	yes									
+MDL	p_candbb	p	only_k1	02f0574b89251da7857f04374c749896200a7d08	CHITIN:party.bif	1	CHITIN:party.bif	88	p_candbb01;p_candh01	yes									
+MDL	p_candh	p	only_k1	7c2850f7b197e64e3f59db4a4d81b669704746ce	CHITIN:party.bif	1	CHITIN:party.bif	34	p_candh01	yes									
+MDL	p_carthba	p	only_k1	e8cc19a785ae7c8e53d9d59ccf61ea77e287a62d	CHITIN:party.bif	1	CHITIN:party.bif	61	p_carthba01	yes									
+MDL	p_carthbbh	p	only_k1	d2fecd8a64fac6ae35912aaab0381e39b4ff3d9f	CHITIN:party.bif	1	CHITIN:party.bif	26	p_carthh01	yes									
+MDL	p_joleeba	p	only_k1	810d4717efdd184f55041d739de03d3ebc76ab75	CHITIN:party.bif	1	CHITIN:party.bif	61	p_joleeba01	yes									
+MDL	p_joleebb	p	only_k1	4db1d98ee5ba39462a4e64f6697dacf8c1bc2e3c	CHITIN:party.bif	1	CHITIN:party.bif	86	p_joleebb01;p_joleeh01	yes									
+MDL	p_joleeh	p	only_k1	9f4be3b2cc1072ce1958bc47ad1be32d68c68435	CHITIN:party.bif	1	CHITIN:party.bif	34	p_joleeh01	yes									
+MDL	p_juhani	p	only_k1	b225a9066c3df7d075644dfaf0208f3ccad371f9	CHITIN:party.bif	1	CHITIN:party.bif	76	p_juhanibb01	yes									
+MDL	p_juhaniba	p	only_k1	40c89e13ab50d3da037d971a0e7dce7cadde811f	CHITIN:party.bif	1	CHITIN:party.bif	64	p_juhaniba01	yes									
+MDL	p_juhanibb	p	only_k1	56f61a12bf543c7deef4ef1f99fb406581d877e2	CHITIN:party.bif	1	CHITIN:party.bif	90	p_juhanibb01;p_juhanih01	yes									
+MDL	p_juhanih	p	only_k1	1c9fda55c68a5ec970983b6b60efb699d5b74860	CHITIN:party.bif	1	CHITIN:party.bif	35	p_juhanih01	yes									
+MDL	p_t3m3	p	only_k1	7d11c5e44ba1d52096dd7de5ce7c240551b078a7	CHITIN:models.bif	1	CHITIN:models.bif	31	p_t3m3_01	yes									

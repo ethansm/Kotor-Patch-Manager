@@ -1,0 +1,5 @@
+resref	type	category	item_name	k2_equivalent	node_change	converter_feasibility	texture_alterability	licence	note
+ii_bithtrombone	TPC	icon	none	no	->	direct	unknown	k1-vanilla-local-only	K1 icon TPC only in texpack; no model nodes or textures
+ip_pituseitm_033	TPC	icon	none	no	->	direct	unknown	k1-vanilla-local-only	K1-only icon; no items_k1 match; no model nodes or textures
+ip_pltuseitm_069	TPC	icon	none	no	->	direct	unknown	k1-vanilla-local-only	icon_resref row: Armor Reinforcement; model_resref no match; no textures
+ip_pltuseitm_070	TPC	icon	none	no	->	direct	unknown	k1-vanilla-local-only	icon_resref row: Mesh Underlay; model_resref no match; no textures

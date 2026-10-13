@@ -1,0 +1,31 @@
+resref	type	category	item_name	k2_equivalent	node_change	converter_feasibility	texture_alterability	licence	note
+w_hvyblstr_005	MDL	weapon-blaster	Cassus Fett's Heavy Pistol	yes	3->4	needs_rename	low: w_hvyblstr_005	k1-vanilla-local-only	K2 adds 1 node; same texture name both sides.
+w_ionblstr_001	MDL	weapon-blaster	Ion Blaster	yes	3->6	needs_rename	low: w_ionblstr_001	k1-vanilla-local-only	K2 adds 3 nodes; same texture name both sides.
+w_ionblstr_002	MDL	weapon-blaster	Verpine Prototype Ion Blaster	yes	3->6	needs_rename	low: w_ionblstr_002	k1-vanilla-local-only	K2 adds 3 nodes; same texture name both sides.
+w_ionrfl_001	MDL	weapon-blaster	Ion Rifle	yes	3->4	needs_rename	low: w_ionrfl_001	k1-vanilla-local-only	K2 adds 1 node; same texture name both sides.
+w_ionrfl_002	MDL	weapon-blaster	Baragwin Ion-X Weapon	yes	3->4	needs_rename	low: w_ionrfl_002	k1-vanilla-local-only	K2 adds 1 node; name ambiguous, first file match used.
+w_ionrfl_003	MDL	weapon-blaster	Verpine Droid Disruptor	yes	3->4	needs_rename	low: w_ionrfl_003	k1-vanilla-local-only	K2 adds 1 node; same texture name both sides.
+w_lghtsbr_001	MDL	weapon-saber	Lightsaber	yes	7->9	needs_rename	low: w_lghtsbr_001;w_lsabreblue01	k1-vanilla-local-only	K1-only w_lghtsbr_001; K2 keeps w_lsabreblue01 only.
+w_lghtsbr_002	MDL	weapon-saber	Dark Jedi Lightsaber	yes	7->9	needs_rename	low: w_lghtsbr_001;w_lsabrered01	k1-vanilla-local-only	K1-only w_lghtsbr_001; name ambiguous, first file match used.
+w_lghtsbr_003	MDL	weapon-saber	Lightsaber	yes	7->9	needs_rename	low: w_lghtsbr_001;w_lsabregren01	k1-vanilla-local-only	K1-only w_lghtsbr_001; K2 keeps w_lsabregren01 only.
+w_lghtsbr_004	MDL	weapon-saber	Lightsaber	yes	7->9	needs_rename	low: w_lghtsbr_001;w_lsabreyelo01	k1-vanilla-local-only	K1-only w_lghtsbr_001; K2 keeps w_lsabreyelo01 only.
+w_lghtsbr_005	MDL	weapon-saber	Lightsaber	yes	7->9	needs_rename	low: w_lghtsbr_001;w_lsabrepurp01	k1-vanilla-local-only	K1-only w_lghtsbr_001; K2 keeps w_lsabrepurp01 only.
+w_lghtsbr_006	MDL	weapon-saber	Malak's Lightsaber	yes	7->9	needs_rename	low: w_lsabrered01;w_shortsbr_001	k1-vanilla-local-only	K1-only w_shortsbr_001; K2 keeps w_lsabrered01 only.
+w_lghtsbr_007	MDL	weapon-saber	Lightsaber	yes	7->9	needs_rename	low: w_lghtsbr_001;w_lsabregold01	k1-vanilla-local-only	K1-only w_lghtsbr_001; K2 keeps w_lsabregold01 only.
+w_lghtsbr_008	MDL	weapon-saber	Lightsaber	yes	7->9	needs_rename	low: w_lghtsbr_001;w_lsabreturq01	k1-vanilla-local-only	K1-only w_lghtsbr_001; K2 keeps w_lsabreturq01 only.
+w_qtrstaff_002	MDL	weapon-melee	Massassi Battle Staff	yes	8->22	needs_rename	low: w_qtrstaff_002	k1-vanilla-local-only	K2 has 22 nodes; K2 textures differ: dm_elec01;dm_electrostaf1.
+w_rptnblstr_001	MDL	weapon-blaster	Light Repeating Blaster	yes	3->4	needs_rename	low: w_rptnblstr_001	k1-vanilla-local-only	K2 adds 1 node; same texture name both sides.
+w_rptnblstr_002	MDL	weapon-blaster	Baragwin Assault Gun	yes	3->4	needs_rename	low: w_rptnblstr_002	k1-vanilla-local-only	K2 adds 1 node; name ambiguous, first file match used.
+w_rptnblstr_003	MDL	weapon-blaster	Blaster Cannon	yes	3->4	needs_rename	low: w_rptnblstr_003	k1-vanilla-local-only	K2 adds 1 node; same texture name both sides.
+w_shortsbr_001	MDL	weapon-saber	Short Lightsaber	yes	7->9	needs_rename	low: w_lsabreblue01;w_shortsbr_001	k1-vanilla-local-only	K1-only w_shortsbr_001; K2 keeps w_lsabreblue01 only.
+w_shortsbr_002	MDL	weapon-saber	Short Lightsaber	yes	7->9	needs_rename	low: w_lsabrered01;w_shortsbr_001	k1-vanilla-local-only	K1-only w_shortsbr_001; K2 keeps w_lsabrered01 only.
+w_shortsbr_003	MDL	weapon-saber	Short Lightsaber	yes	7->9	needs_rename	low: w_lsabregren01;w_shortsbr_001	k1-vanilla-local-only	K1-only w_shortsbr_001; K2 keeps w_lsabregren01 only.
+w_shortsbr_004	MDL	weapon-saber	Short Lightsaber	yes	7->9	needs_rename	low: w_lsabreyelo01;w_shortsbr_001	k1-vanilla-local-only	K1-only w_shortsbr_001; K2 keeps w_lsabreyelo01 only.
+w_shortsbr_005	MDL	weapon-saber	Short Lightsaber	yes	7->9	needs_rename	low: w_lsabrepurp01;w_shortsbr_001	k1-vanilla-local-only	K1-only w_shortsbr_001; K2 keeps w_lsabrepurp01 only.
+w_shortsbr_006	MDL	weapon-saber	Short Lightsaber	yes	7->9	needs_rename	low: w_lsabregold01;w_shortsbr_001	k1-vanilla-local-only	K1-only w_shortsbr_001; K2 keeps w_lsabregold01 only.
+w_shortsbr_007	MDL	weapon-saber	Short Lightsaber	yes	7->9	needs_rename	low: w_lsabreturq01;w_shortsbr_001	k1-vanilla-local-only	K1-only w_shortsbr_001; K2 keeps w_lsabreturq01 only.
+w_sonicpstl_001	MDL	weapon-blaster	Sonic Pistol	yes	3->5	needs_rename	low: w_sonicpstl_001	k1-vanilla-local-only	Sonic ranged, mapped to weapon-blaster; K2 adds 2 nodes.
+w_sonicpstl_002	MDL	weapon-blaster	Bothan Shrieker	yes	3->5	needs_rename	low: w_sonicpstl_002	k1-vanilla-local-only	Sonic ranged, mapped to weapon-blaster; K2 adds 2 nodes.
+w_sonicrfl_001	MDL	weapon-blaster	Sonic Rifle	yes	3->4	needs_rename	low: w_sonicrfl_001	k1-vanilla-local-only	Sonic ranged, mapped to weapon-blaster; K2 adds 1 node.
+w_sonicrfl_002	MDL	weapon-blaster	Bothan Discord Gun	yes	3->4	needs_rename	low: w_sonicrfl_002	k1-vanilla-local-only	Sonic ranged, mapped to weapon-blaster; K2 adds 1 node.
+w_sonicrfl_003	MDL	weapon-blaster	Arkanian Sonic Rifle	yes	3->4	needs_rename	low: w_sonicrfl_003	k1-vanilla-local-only	Sonic ranged, mapped to weapon-blaster; K2 adds 1 node.
