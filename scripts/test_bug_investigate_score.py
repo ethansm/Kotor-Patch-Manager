@@ -374,11 +374,15 @@ class TestCost(Base):
         self.assertIsNone(self.score(run)["cost"]["units"][0]["cost_usd"])
 
     def test_known_costs_sum_and_complete(self):
+        # The completeness gate now needs 3 blind and 1 null cost record (see TestScorerStatistics), so the
+        # fixture carries them; the old fixture (1 blind + 1 verify) is no longer complete by design.
         run = self.report(self.new_run("c4"), [hyp("h1", claim="stale slot queue length")])
-        self.unit(run, "blind", "a", {"cost_usd": 0.25, "duration_s": 1})
+        for name in ("a", "b", "c"):
+            self.unit(run, "blind", name, {"cost_usd": 0.25, "duration_s": 1})
+        self.unit(run, "null", "n", {"cost_usd": 0.25, "duration_s": 1})
         self.unit(run, "verify", "v", {"cost_usd": 0.5, "duration_s": 1})
         cost = self.score(run)["cost"]
-        self.assertAlmostEqual(cost["total_cost_usd"], 0.75, places=9)
+        self.assertAlmostEqual(cost["total_cost_usd"], 1.5, places=9)   # 3 x 0.25 blind + 0.25 null + 0.5 verify
         self.assertTrue(cost["cost_complete"])
 
     def test_missing_unit_dirs_are_fine(self):
@@ -545,10 +549,13 @@ GOLDEN_RUBRIC = {"facts": {"invalid_id": [r"invalid\s+id", r"ffffffff"],
                            "recast": [r"already\s+cast"], "info": ["retry"]},
                  "hit": ["invalid_id", "recast"], "note": "synthetic"}
 GOLDEN_SYMPTOM = "When a companion is in my party and I queue a spell"
-NEW_KEYS = ("matcher", "rubric_sha256", "case_id")
+NEW_KEYS = ("matcher", "rubric_sha256", "case_id", "top_matches_report", "rank1_alt_label")
 # score.json written by the pre-change (v1-only) scorer for golden_hyps() + GOLDEN_RUBRIC, compact form.
+# Two deliberate differences from the pre-change file, both from the statistics change: cost_complete is false
+# (zero units: the gate needs 3 blind and 1 null record), and the new top-level keys in NEW_KEYS are stripped.
+# The v1 matcher output itself (hypotheses, labels, facts, counts) is unchanged.
 GOLDEN_V1 = (
-    '{"case":"case.json","cost":{"cost_complete":true,"total_cost_usd":0.0,"units":[]},'
+    '{"case":"case.json","cost":{"cost_complete":false,"total_cost_usd":0.0,"units":[]},'
     '"counts":{"all":{"HIT":0,"MISS":0,"PARTIAL":4},"quote_valid":{"HIT":0,"MISS":0,"PARTIAL":3}},'
     '"decision":"ranked","format":"bug-investigate-score/1","hypotheses":['
     '{"evidence_ids":1,"facts":["invalid_id"],"id":"blind-skeptic:h1","label":"PARTIAL","quote_valid":true,'
@@ -747,6 +754,207 @@ class TestMatcherV2(Base):
         bare = self.scored([hyp("h1", claim="stale slot")], RUBRIC, name="no_case_id")
         self.assertIn("case_id", bare)
         self.assertIsNone(bare["case_id"])
+
+
+# ---------------------------------------------------------------- scorer statistics: rank-1, bootstrap, mixing, cost
+COUNTS_5 = [(3, 9), (2, 9), (4, 10), (1, 8), (3, 11)]   # (HIT, n) per run, synthetic
+PINNED_LO = 0.19    # seed-0 percentile 2.5 of COUNTS_5 (0.190476), cross-checked by an independent resample
+PINNED_HI = 0.347   # seed-0 percentile 97.5 of COUNTS_5 (0.346939)
+
+
+class TestScorerStatistics(Base):
+    def write_case(self, name, rubric=RUBRIC, **extra):
+        body = {"score_rubric": rubric}
+        body.update(extra)
+        path = os.path.join(self.tmp, "cases", name)
+        write_json(path, body)
+        return path
+
+    def score_with(self, run, case, matcher=None):
+        argv = ["score", "--run", run, "--case", case, "--json"]
+        if matcher is not None:
+            argv += ["--matcher", matcher]
+        code, _, err = self.call(*argv)
+        self.assertEqual(code, 0, err)
+
+    def run_with_hits(self, name, k, n):
+        """A synthetic run with k HIT hypotheses out of n quote-valid ones."""
+        hyps = [hyp("h%d" % i, claim="stale slot queue length" if i < k else "nothing here", evidence=("e%d" % i,))
+                for i in range(n)]
+        return self.report(self.new_run(name), hyps)
+
+    # rank-1: a run with no top counts as a miss over all runs
+    def test_run_without_a_top_lowers_p_all_runs(self):
+        r1 = self.report(self.new_run("top1"), [hyp("h1", claim="stale slot queue length")])
+        r2 = self.report(self.new_run("top0"), [hyp("m1", claim="stale slot queue length", quote_valid=False)])
+        a = self.aggregate(r1, r2)["rank1"]["A"]
+        self.assertEqual(a.get("runs"), 2)
+        self.assertEqual(a.get("runs_with_top"), 1)
+        self.assertEqual(a.get("HIT"), 1)
+        self.assertEqual(a.get("p_all_runs"), 0.5)
+        self.assertEqual(a.get("p_among_top"), 1.0)
+        self.assertEqual(a.get("p"), 1.0)   # kept: old key, equal to p_among_top
+
+    # cluster bootstrap over runs
+    def test_cluster_bootstrap_ci_is_seeded_and_pinned(self):
+        fn = getattr(bis, "cluster_bootstrap_ci", None)
+        self.assertIsNotNone(fn, "bis.cluster_bootstrap_ci is missing")
+        first, second = fn(COUNTS_5), fn(COUNTS_5)
+        self.assertEqual(first, second)
+        self.assertEqual((first["B"], first["seed"], first["n_runs"]), (2000, 0, 5))
+        self.assertEqual(round(first["lo"], 3), PINNED_LO)
+        self.assertEqual(round(first["hi"], 3), PINNED_HI)
+        self.assertTrue(first["lo"] < 13 / 47 < first["hi"])   # pooled 13/47 sits inside the cluster CI
+
+    def test_cluster_ci_and_per_run_proportions_sit_beside_wilson(self):
+        runs = [self.run_with_hits("c1", 2, 4), self.run_with_hits("c2", 1, 3), self.run_with_hits("c3", 0, 2)]
+        agg = self.aggregate(*runs)
+        for cfg in ("config_A", "config_B"):
+            with self.subTest(config=cfg):
+                block = agg[cfg]
+                self.assertIsNotNone(block.get("precision_hit_cluster_ci"))
+                self.assertIsNotNone(block["precision_hit"]["wilson95"])
+                per_run = block.get("per_run_precision_hit")
+                self.assertEqual([(r["k"], r["n"]) for r in per_run], [(2, 4), (1, 3), (0, 2)])
+
+    # tie-break and report agreement
+    def test_tie_break_by_unit_id_decides_rank1_label(self):
+        run = self.report(self.new_run("tie"), [
+            hyp("h1", claim="nothing here", unit="blind-advocate"),
+            hyp("h1", claim="stale slot queue length", unit="blind-skeptic"),
+        ], ranked=["blind-advocate:h1", "blind-skeptic:h1"])
+        s = self.score(run)
+        self.assertEqual(s["top_ranked"]["B"]["id"], "blind-advocate:h1")
+        self.assertEqual(s.get("rank1_alt_label"), "HIT")
+        self.assertIs(s.get("top_matches_report"), True)
+        self.assertEqual(self.aggregate(run)["rank1"].get("ties_decide_runs"), 1)
+
+    def test_report_ranked_top_that_differs_from_scorer_is_counted(self):
+        run = self.report(self.new_run("mis"), [
+            hyp("h1", claim="stale slot queue length", evidence=("e1", "e2", "e3")),
+            hyp("h2", claim="stale slot", evidence=("e1",)),
+        ], ranked=["blind-skeptic:h2", "blind-skeptic:h1"])
+        self.assertIs(self.score(run).get("top_matches_report"), False)
+        self.assertEqual(self.aggregate(run)["rank1"].get("rank_mismatch_runs"), 1)
+
+    def test_empty_ranked_counts_as_matching_the_report(self):
+        run = self.report(self.new_run("emp"), [hyp("h1", claim="stale slot")], ranked=[])
+        self.assertIs(self.score(run).get("top_matches_report"), True)
+
+    def test_distinct_texts_is_preferred_over_raw_evidence_count(self):
+        run = self.report(self.new_run("dt"), [
+            hyp("h1", claim="stale slot queue length", evidence=("e1", "e2", "e3"), distinct_texts=1),
+            hyp("h2", claim="stale slot queue length", evidence=("e1", "e2")),
+        ])
+        s = self.score(run)
+        rows = by_id(s)
+        self.assertEqual(rows["blind-skeptic:h1"]["evidence_ids"], 1)
+        self.assertEqual(rows["blind-skeptic:h2"]["evidence_ids"], 2)
+        self.assertEqual(s["top_ranked"]["B"]["id"], "blind-skeptic:h2")
+
+    # precision over all hypotheses and the per-style table
+    def test_precision_hit_all_counts_quote_invalid_as_non_hit(self):
+        run = self.report(self.new_run("pha"), [
+            hyp("h1", claim="stale slot queue length"),
+            hyp("m1", claim="stale slot queue length", quote_valid=False),
+            hyp("m2", claim="nothing", quote_valid=False),
+        ])
+        a = self.aggregate(run)["config_A"]
+        self.assertEqual((a["precision_hit"]["k"], a["precision_hit"]["n"]), (1, 1))
+        pha = a.get("precision_hit_all")
+        self.assertIsNotNone(pha)
+        self.assertEqual((pha["k"], pha["n"]), (1, 3))
+        self.assertAlmostEqual(pha["p"], 1 / 3, places=6)
+
+    def test_per_style_table_counts_labels_quote_and_verify_coverage(self):
+        run = self.report(self.new_run("ps"), [
+            hyp("h1", claim="stale slot queue length", unit="blind-advocate", verifier=verdict("supported", True)),
+            hyp("h2", claim="stale slot", unit="blind-advocate"),
+            hyp("h3", claim="nothing", unit="blind-advocate", quote_valid=False),
+            hyp("e1", claim="queue length", unit="blind-evidence"),
+            hyp("s1", claim="stale slot queue length", unit="blind-skeptic", status="rejected",
+                verifier=verdict("rejected", True)),
+            hyp("s2", claim="nothing", unit="blind-skeptic"),
+        ])
+        ps = self.aggregate(run).get("per_style")
+        self.assertIsNotNone(ps)
+        self.assertEqual(ps.get("advocate"), {"n": 3, "quote_valid": 2, "HIT": 1, "PARTIAL": 1, "MISS": 1,
+                                              "verify": {"complete": 1, "queued": 2}})
+        self.assertEqual(ps.get("evidence"), {"n": 1, "quote_valid": 1, "HIT": 0, "PARTIAL": 1, "MISS": 0,
+                                              "verify": {"complete": 0, "queued": 1}})
+        self.assertEqual(ps.get("skeptic"), {"n": 2, "quote_valid": 2, "HIT": 1, "PARTIAL": 0, "MISS": 1,
+                                             "verify": {"complete": 1, "queued": 2}})
+
+    # mixing guard
+    def test_aggregate_refuses_mixed_case_id_unless_allow_mixed(self):
+        case_a = self.write_case("case_a.json", case_id="hotbar_case_1")
+        case_b = self.write_case("case_b.json", case_id="queue_case_2")
+        r1 = self.report(self.new_run("ci1"), [hyp("h1", claim="stale slot queue length")])
+        r2 = self.report(self.new_run("ci2"), [hyp("h2", claim="stale slot queue length")])
+        self.score_with(r1, case_a)
+        self.score_with(r2, case_b)
+        code, out, err = self.call("aggregate", "--run", r1, "--run", r2, "--json")
+        self.assertEqual(code, 2, err)
+        self.assertIn('"hotbar_case_1"', err)
+        self.assertIn('"queue_case_2"', err)
+        self.assertEqual(out, "")
+        code, out, err = self.call("aggregate", "--run", r1, "--run", r2, "--json", "--allow-mixed")
+        self.assertEqual(code, 0, err)
+        self.assertEqual(json.loads(out)["provenance"]["case_id"], ['"hotbar_case_1"', '"queue_case_2"'])
+
+    def test_aggregate_refuses_mixed_rubric_and_matcher(self):
+        other = self.write_case("rubric_other.json", rubric={"facts": {"stale": [r"stale\s+slot"]}, "hit": ["stale"]})
+        r1 = self.report(self.new_run("rm1"), [hyp("h1", claim="stale slot queue length")])
+        r2 = self.report(self.new_run("rm2"), [hyp("h2", claim="stale slot queue length")])
+        r3 = self.report(self.new_run("rm3"), [hyp("h3", claim="stale slot queue length")])
+        self.score_with(r1, self.case)
+        self.score_with(r2, other)
+        self.score_with(r3, self.case, matcher="v1")
+        code, _, err = self.call("aggregate", "--run", r1, "--run", r2, "--json")
+        self.assertEqual(code, 2, err)
+        self.assertIn("rubric_sha256", err)
+        code, _, err = self.call("aggregate", "--run", r1, "--run", r3, "--json")
+        self.assertEqual(code, 2, err)
+        self.assertIn("matcher", err)
+        self.assertIn('"v1"', err)
+
+    def test_missing_key_is_one_unnamed_value(self):
+        old1 = self.report(self.new_run("old1"), [hyp("h1", claim="stale slot queue length")])
+        old2 = self.report(self.new_run("old2"), [hyp("h2", claim="stale slot queue length")])
+        new = self.report(self.new_run("new1"), [hyp("h3", claim="stale slot queue length")])
+        for r in (old1, old2):
+            self.score(r)
+            obj = read_json(os.path.join(r, "score.json"))
+            for key in ("case_id", "matcher", "rubric_sha256", "top_matches_report", "rank1_alt_label"):
+                obj.pop(key, None)   # a pre-change score.json
+            write_json(os.path.join(r, "score.json"), obj)
+        code, _, err = self.call("aggregate", "--run", old1, "--run", old2, "--json")
+        self.assertEqual(code, 0, err)   # two old files agree: one unnamed value per key
+        self.score(new)
+        code, _, err = self.call("aggregate", "--run", old1, "--run", new, "--json")
+        self.assertEqual(code, 2, err)
+        self.assertIn("<missing>", err)
+
+    # cost completeness gate
+    def test_cost_complete_needs_three_blind_and_one_null_record(self):
+        run = self.report(self.new_run("cg"), [hyp("h1", claim="stale slot queue length")])
+        for name in ("a", "b"):
+            self.unit(run, "blind", name, {"cost_usd": 0.1, "duration_s": 1})
+        self.assertIs(self.score(run)["cost"]["cost_complete"], False)   # 2 blind: short
+        self.unit(run, "blind", "c", {"cost_usd": 0.1, "duration_s": 1})
+        self.assertIs(self.score(run)["cost"]["cost_complete"], False)   # 3 blind, no null: short
+        self.unit(run, "null", "n1", {"cost_usd": 0.05, "duration_s": 1})
+        self.assertIs(self.score(run)["cost"]["cost_complete"], True)
+
+    def test_aggregate_cost_is_incomplete_when_any_run_is(self):
+        full = self.report(self.new_run("cf"), [hyp("h1", claim="stale slot queue length")])
+        for name in ("a", "b", "c"):
+            self.unit(full, "blind", name, {"cost_usd": 0.1, "duration_s": 1})
+        self.unit(full, "null", "n1", {"cost_usd": 0.05, "duration_s": 1})
+        short = self.report(self.new_run("cs"), [hyp("h2", claim="stale slot queue length")])
+        self.unit(short, "blind", "a", {"cost_usd": 0.1, "duration_s": 1})
+        self.assertIs(self.aggregate(full)["cost"]["cost_complete"], True)
+        self.assertIs(self.aggregate(full, short)["cost"]["cost_complete"], False)
 
 
 def main():

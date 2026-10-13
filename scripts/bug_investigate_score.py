@@ -2,12 +2,21 @@
 """Deterministic scorer and aggregator for bug-investigate runs (stdlib only; no model call, no network).
 
   python3 scripts/bug_investigate_score.py score --run RUN --case CASE [--json]
-  python3 scripts/bug_investigate_score.py aggregate --run RUN1 --run RUN2 ... [--json]
+  python3 scripts/bug_investigate_score.py aggregate --run RUN1 --run RUN2 ... [--allow-mixed] [--json]
 
 score reads RUN/report.json, CASE["score_rubric"] (the only code that reads it), and the unit cost files
 RUN/{blind,null,verify}/out/runs/*.json; it writes RUN/score.json (sorted keys, indent 2, trailing newline).
-aggregate reads each RUN/score.json, pools the hypotheses, and writes nothing.
-Exit codes: 0 ok; 1 score.json could not be written; 2 usage or input error (nothing written).
+aggregate reads each RUN/score.json, pools the hypotheses, and writes nothing. It refuses score files that
+disagree on case_id, rubric_sha256 or matcher unless --allow-mixed (a score file without the key counts as one
+unnamed value, "<missing>").
+Exit codes: 0 ok; 1 score.json could not be written; 2 usage or input error, or refused mixed inputs (nothing written).
+
+Rank-1 and ties: "top" means config B (verifier-surviving), the same hypothesis report.json names in ranked[0].
+top_matches_report is false when the scorer's B top differs from ranked[0]. rank1_alt_label is the B top's label
+when ties on distinct evidence and confidence are broken by unit_id descending instead of ascending; ties_decide_runs
+counts runs where that label differs from the normal one.
+Intervals: the pooled Wilson interval sits beside a cluster bootstrap over runs (B=2000, seed 0, percentile 2.5/97.5).
+cost_complete needs at least 3 blind and 1 null cost record in the run, and every record's cost known.
 
 Labels: HIT = every fact named in score_rubric.hit matched; PARTIAL = at least one hit fact matched; MISS = none.
 Informational facts (not in hit) are recorded in `facts` but never change the label.
@@ -26,6 +35,7 @@ import hashlib
 import json
 import math
 import os
+import random
 import re
 import sys
 
@@ -48,6 +58,13 @@ NEGATORS = frozenset(("not", "no", "never", "without", "cannot", "nor", "neither
 HEDGES = frozenset(("might", "may", "could", "possibly", "perhaps", "maybe", "seems", "appears"))
 WORD_RE = re.compile(r"\w+")
 WINDOW_WORD_RE = re.compile(r"[\w']+")   # keeps apostrophes, so "doesn't" stays one word
+BOOT_B = 2000                 # cluster bootstrap resamples
+BOOT_SEED = 0
+MIN_BLIND_COST_RECORDS = 3    # cost_complete needs at least this many blind cost records in a run
+MIN_NULL_COST_RECORDS = 1
+STYLE_RE = re.compile(r"^blind-([^:]+):")   # hypothesis id "blind-<style>:hN"; style is advocate/evidence/skeptic
+PROVENANCE_KEYS = ("case_id", "rubric_sha256", "matcher")
+MISSING_VALUE = "<missing>"   # a score.json without the key: one unnamed value
 
 
 class InputError(Exception):
@@ -102,6 +119,32 @@ def proportion(k, n):
         return {"k": k, "n": 0, "p": None, "wilson95": None}
     lo, hi = wilson(k, n)
     return {"k": k, "n": n, "p": _round(k / n), "wilson95": [_round(lo), _round(hi)]}
+
+
+def pooled_ratio(pairs):
+    """pairs: (k, n) per run. Pooled k / n over the runs, or None when no n is positive."""
+    n = sum(n for _, n in pairs)
+    return sum(k for k, _ in pairs) / n if n else None
+
+
+def cluster_bootstrap_ci(per_run_counts, stat=pooled_ratio, B=BOOT_B, seed=BOOT_SEED):
+    """Percentile bootstrap with the run as the cluster: resample the runs with replacement B times, apply stat to
+    each resample, and take the 2.5th and 97.5th percentiles. None when there are no runs or no defined resample."""
+    runs = list(per_run_counts)
+    if not runs:
+        return None
+    rng = random.Random(seed)
+    vals = []
+    for _ in range(B):
+        v = stat([runs[rng.randrange(len(runs))] for _ in runs])
+        if v is not None:
+            vals.append(v)
+    if not vals:
+        return None
+    vals.sort()
+    lo = vals[int(0.025 * len(vals))]
+    hi = vals[min(len(vals) - 1, int(0.975 * len(vals)))]
+    return {"lo": _round(lo), "hi": _round(hi), "B": B, "seed": seed, "n_runs": len(runs), "n_defined": len(vals)}
 
 
 # ---------------------------------------------------------------- rubric and labels
@@ -225,6 +268,10 @@ def load_report(run):
 
 
 def distinct_evidence(h):
+    """Distinct excerpt texts behind the hypothesis when the report carries distinct_texts, else distinct ids."""
+    dt = h.get("distinct_texts")
+    if isinstance(dt, int) and not isinstance(dt, bool) and dt >= 0:
+        return dt
     return len({str(x) for x in h["evidence_ids"]})
 
 
@@ -232,6 +279,27 @@ def rank_key(h):
     conf = h.get("confidence")
     return (-distinct_evidence(h), -(CONFIDENCE.get(conf, 0) if isinstance(conf, str) else 0),
             _text(h.get("unit_id")), _text(h.get("hypothesis_id")))
+
+
+class _Reversed:
+    """Sort-key wrapper that orders a string descending. Used only by the alternative tie-break."""
+    __slots__ = ("s",)
+
+    def __init__(self, s):
+        self.s = s
+
+    def __eq__(self, other):
+        return self.s == other.s
+
+    def __lt__(self, other):
+        return self.s > other.s
+
+
+def alt_rank_key(h):
+    """rank_key with unit_id descending instead of ascending (hypothesis_id stays ascending)."""
+    conf = h.get("confidence")
+    return (-distinct_evidence(h), -(CONFIDENCE.get(conf, 0) if isinstance(conf, str) else 0),
+            _Reversed(_text(h.get("unit_id"))), _text(h.get("hypothesis_id")))
 
 
 # ---------------------------------------------------------------- unit costs
@@ -265,10 +333,25 @@ def known_costs(units):
     return [c for c in (_cost(u.get("cost_usd")) for u in units) if c is not None]
 
 
+def cost_gaps(units):
+    """Why a run's cost is incomplete, as short reasons. Empty list means complete."""
+    known = known_costs(units)
+    blind = sum(1 for u in units if u.get("stage") == "blind")
+    null = sum(1 for u in units if u.get("stage") == "null")
+    gaps = []
+    if len(known) != len(units):
+        gaps.append("%d unit(s) unknown" % (len(units) - len(known)))
+    if blind < MIN_BLIND_COST_RECORDS:
+        gaps.append("only %d blind cost record(s), need %d" % (blind, MIN_BLIND_COST_RECORDS))
+    if null < MIN_NULL_COST_RECORDS:
+        gaps.append("only %d null cost record(s), need %d" % (null, MIN_NULL_COST_RECORDS))
+    return gaps
+
+
 def cost_summary(units):
     known = known_costs(units)
     return {"units": units, "total_cost_usd": _round(float(sum(known))),
-            "cost_complete": len(known) == len(units)}
+            "cost_complete": not cost_gaps(units)}
 
 
 # ---------------------------------------------------------------- score one run
@@ -302,6 +385,11 @@ def score_run(run, case_path, matcher=DEFAULT_MATCHER):
     ordered = [row for _, row in sorted(zip(rep["hypotheses"], rows), key=lambda pair: rank_key(pair[0]))]
     top_a = next((r for r in ordered if r["status_A"] == "supported"), None)
     top_b = next((r for r in ordered if r["status_B"] == "supported"), None)
+    # report.ranked is the B list (verifier-surviving, rank_key order), so the B top is the one to compare.
+    ranked = rep["ranked"]
+    top_matches_report = (not ranked) or (top_b is not None and top_b["id"] == ranked[0])
+    b_pairs = [(h, r) for h, r in zip(rep["hypotheses"], rows) if r["status_B"] == "supported"]
+    rank1_alt = min(b_pairs, key=lambda pair: alt_rank_key(pair[0]))[1]["label"] if b_pairs else None
 
     def top(row):
         return None if row is None else {"id": row["id"], "label": row["label"]}
@@ -317,7 +405,8 @@ def score_run(run, case_path, matcher=DEFAULT_MATCHER):
         "matcher": matcher, "rubric_sha256": rubric_sha.hexdigest(),
         "run_id": _text(rep.get("run_id")) or os.path.basename(run),
         "decision": rep.get("decision"), "null_verdict": rep.get("null_verdict"),
-        "null_valid": rep.get("null_valid"), "ranked": list(rep["ranked"]),
+        "null_valid": rep.get("null_valid"), "ranked": list(ranked),
+        "top_matches_report": top_matches_report, "rank1_alt_label": rank1_alt,
         "quote_valid": {"valid": valid, "total": len(rows), "rate": _round(valid / len(rows)) if rows else None},
         "counts": {"all": tally(rows), "quote_valid": tally([r for r in rows if r["quote_valid"]])},
         "top_ranked": {"A": top(top_a), "B": top(top_b)},
@@ -347,7 +436,6 @@ def write_score(run, data):
 
 def score_summary(s, path):
     cost = s["cost"]
-    unknown = sum(1 for u in cost["units"] if u["cost_usd"] is None)
     counts = s["counts"]["all"]
     qv = s["counts"]["quote_valid"]
 
@@ -362,7 +450,8 @@ def score_summary(s, path):
         "labels (quote-valid): HIT %d, PARTIAL %d, MISS %d" % (qv["HIT"], qv["PARTIAL"], qv["MISS"]),
         "top-ranked A: %s | B: %s" % (t("A"), t("B")),
         "cost: $%s total%s" % (cost["total_cost_usd"],
-                               "" if cost["cost_complete"] else " (INCOMPLETE: %d unit(s) unknown)" % unknown),
+                               "" if cost["cost_complete"] else " (INCOMPLETE: %s)" % "; ".join(
+                                   cost_gaps(cost["units"]))),
         "wrote %s" % path,
     ]
     return "\n".join(lines)
@@ -408,18 +497,83 @@ def label_counts(rows):
     return {lab: sum(1 for r in rows if r["label"] == lab) for lab in LABELS}
 
 
-def config_summary(rows):
+def config_summary(groups, run_ids):
+    """groups: one list of supported rows per run, in run_ids order. Pooled Wilson intervals sit beside a cluster
+    bootstrap over runs and the per-run proportions."""
+    rows = [h for g in groups for h in g]
     c = label_counts(rows)
     n = len(rows)
+    per_run, counts = [], []
+    for rid, g in zip(run_ids, groups):
+        k = sum(1 for h in g if h["label"] == "HIT")
+        counts.append((k, len(g)))
+        per_run.append({"run_id": rid, "k": k, "n": len(g), "p": _round(k / len(g)) if g else None})
     return {"n_supported": n, "HIT": c["HIT"], "PARTIAL": c["PARTIAL"], "MISS": c["MISS"],
             "precision_hit": proportion(c["HIT"], n),
-            "hit_or_partial": proportion(c["HIT"] + c["PARTIAL"], n)}
+            "hit_or_partial": proportion(c["HIT"] + c["PARTIAL"], n),
+            "precision_hit_cluster_ci": cluster_bootstrap_ci(counts),
+            "per_run_precision_hit": per_run}
 
 
 def rank1_summary(labels):
+    """labels: one per run, the top's label, or None when the run has no top. A run with no top is a miss
+    over all runs; p_among_top is the old statistic over runs that have a top. "p" is kept as p_among_top."""
+    n = len(labels)
     tops = [x for x in labels if x is not None]
     hit = sum(1 for x in tops if x == "HIT")
-    return {"runs_with_top": len(tops), "HIT": hit, "p": _round(hit / len(tops)) if tops else None}
+    return {"runs": n, "runs_with_top": len(tops), "HIT": hit,
+            "p_all_runs": _round(hit / n) if n else None,
+            "p_among_top": _round(hit / len(tops)) if tops else None,
+            "p": _round(hit / len(tops)) if tops else None}
+
+
+def style_of(row):
+    m = STYLE_RE.match(row["id"])
+    return m.group(1) if m else "other"
+
+
+def per_style(rows):
+    """Per blind style: n, quote-valid, label counts over all its rows, and verify coverage (complete = quote-valid
+    rows with a verifier verdict, queued = quote-valid rows)."""
+    out = {}
+    for st in sorted({style_of(h) for h in rows}):
+        sel = [h for h in rows if style_of(h) == st]
+        out[st] = {"n": len(sel), "quote_valid": sum(1 for h in sel if h["quote_valid"]),
+                   "HIT": sum(1 for h in sel if h["label"] == "HIT"),
+                   "PARTIAL": sum(1 for h in sel if h["label"] == "PARTIAL"),
+                   "MISS": sum(1 for h in sel if h["label"] == "MISS"),
+                   "verify": {"complete": sum(1 for h in sel if h["quote_valid"] and h["verifier_verdict"]),
+                              "queued": sum(1 for h in sel if h["quote_valid"])}}
+    return out
+
+
+_MISSING = object()   # stands for "score.json has no such key"
+
+
+def _show(v):
+    return MISSING_VALUE if v is _MISSING else json.dumps(v, sort_keys=True)
+
+
+def provenance(scored):
+    """{key: {shown value: [run paths]}} for PROVENANCE_KEYS. A score file without the key is one unnamed value."""
+    out = {}
+    for key in PROVENANCE_KEYS:
+        seen = {}
+        for run, s in scored:
+            seen.setdefault(_show(s[key] if key in s else _MISSING), []).append(run)
+        out[key] = seen
+    return out
+
+
+def refuse_mixed(scored):
+    """Raise InputError naming the differing values when the score files do not share case_id, rubric_sha256
+    and matcher."""
+    problems = []
+    for key, seen in provenance(scored).items():
+        if len(seen) > 1:
+            problems.append("%s differs: %s" % (key, ", ".join(sorted(seen))))
+    if problems:
+        raise InputError("score files disagree (%s); pass --allow-mixed to pool them anyway" % "; ".join(problems))
 
 
 def aggregate(scored):
@@ -447,12 +601,20 @@ def aggregate(scored):
             null_valid[flag] = null_valid.get(flag, 0) + 1
     units = [u for _, s in scored for u in s["cost"]["units"]]
     known = known_costs(units)
+    run_ids = [s.get("run_id") for _, s in scored]
+    cfg_a = config_summary([[h for h in s["hypotheses"] if h["status_A"] == "supported"] for _, s in scored], run_ids)
+    # HIT over all hypotheses, quote-invalid ones counted as non-HIT (their label is text-only, not evidence-backed)
+    cfg_a["precision_hit_all"] = proportion(sum(1 for h in rows if h["label"] == "HIT" and h["quote_valid"]),
+                                            len(rows))
+    cfg_b = config_summary([[h for h in s["hypotheses"] if h["status_B"] == "supported"] for _, s in scored], run_ids)
     return {
         "format": AGG_FORMAT, "caveat": CAVEAT,
         "runs": [{"run_id": s.get("run_id"), "case": s.get("case"), "decision": s.get("decision")}
                  for _, s in scored],
         "n_runs": len(scored), "n_hypotheses": len(rows),
-        "config_A": config_summary(a_rows), "config_B": config_summary(b_rows),
+        "provenance": {key: sorted(seen) for key, seen in provenance(scored).items()},
+        "config_A": cfg_a, "config_B": cfg_b,
+        "per_style": per_style(rows),
         "verifier_effect": {
             "rejected_by_verifier": dict(label_counts(rejected), total=len(rejected)),
             "false_rejections": sum(1 for h in rejected if h["label"] == "HIT"),
@@ -466,12 +628,27 @@ def aggregate(scored):
             "per_run": [{"run_id": s.get("run_id"),
                          "A": (s["top_ranked"].get("A") or {}).get("label"),
                          "B": (s["top_ranked"].get("B") or {}).get("label")} for _, s in scored],
+            # rank_mismatch_runs: the scorer's B top is not report ranked[0]; ties_decide_runs: the unit_id
+            # tie-break changes the B top's label
+            "rank_mismatch_runs": sum(1 for _, s in scored if s.get("top_matches_report") is False),
+            "ties_decide_runs": sum(1 for _, s in scored if tie_decides(s)),
         },
         "null_verdicts": null_verdicts, "null_valid": null_valid,
-        "cost": {"total_cost_usd": _round(float(sum(known))), "cost_complete": len(known) == len(units),
+        "cost": {"total_cost_usd": _round(float(sum(known))),
+                 "cost_complete": len(known) == len(units) and all(s["cost"].get("cost_complete") is True
+                                                                   for _, s in scored),
                  "units": len(units), "units_known": len(known),
                  "per_unit_mean_usd": _round(sum(known) / len(known)) if known else None},
     }
+
+
+def tie_decides(s):
+    """True when the B rank-1 label changes under the unit_id-descending tie-break. False for a score.json that
+    predates rank1_alt_label."""
+    if "rank1_alt_label" not in s:
+        return False
+    normal = (s["top_ranked"].get("B") or {}).get("label")
+    return s["rank1_alt_label"] != normal
 
 
 def _p(block):
@@ -480,26 +657,40 @@ def _p(block):
     return "%.3f [%.3f, %.3f]" % (block["p"], block["wilson95"][0], block["wilson95"][1])
 
 
+def _ci(block):
+    ci = block.get("precision_hit_cluster_ci")
+    return "n/a" if ci is None else "[%.3f, %.3f]" % (ci["lo"], ci["hi"])
+
+
 def aggregate_summary(agg):
     a, b = agg["config_A"], agg["config_B"]
+    mixed = [key for key, vals in agg["provenance"].items() if len(vals) > 1]
     lines = [
         "aggregate: %d run(s), %d hypothesis(es)" % (agg["n_runs"], agg["n_hypotheses"]),
-        "A (quote-valid): n=%d HIT %d PARTIAL %d MISS %d precision_hit %s hit_or_partial %s" % (
-            a["n_supported"], a["HIT"], a["PARTIAL"], a["MISS"], _p(a["precision_hit"]), _p(a["hit_or_partial"])),
-        "B (verifier): n=%d HIT %d PARTIAL %d MISS %d precision_hit %s hit_or_partial %s" % (
-            b["n_supported"], b["HIT"], b["PARTIAL"], b["MISS"], _p(b["precision_hit"]), _p(b["hit_or_partial"])),
+        "A (quote-valid): n=%d HIT %d PARTIAL %d MISS %d precision_hit %s cluster95 %s hit_or_partial %s" % (
+            a["n_supported"], a["HIT"], a["PARTIAL"], a["MISS"], _p(a["precision_hit"]), _ci(a),
+            _p(a["hit_or_partial"])),
+        "B (verifier): n=%d HIT %d PARTIAL %d MISS %d precision_hit %s cluster95 %s hit_or_partial %s" % (
+            b["n_supported"], b["HIT"], b["PARTIAL"], b["MISS"], _p(b["precision_hit"]), _ci(b),
+            _p(b["hit_or_partial"])),
+        "rank-1: report mismatch runs %d, tie-break decides %d run(s)" % (
+            agg["rank1"]["rank_mismatch_runs"], agg["rank1"]["ties_decide_runs"]),
         "verifier false rejections (HIT): %d" % agg["verifier_effect"]["false_rejections"],
         "cost: $%s total, per unit mean %s" % (agg["cost"]["total_cost_usd"],
                                              "n/a" if agg["cost"]["per_unit_mean_usd"] is None
                                              else "$%s" % agg["cost"]["per_unit_mean_usd"]),
         "caveat: " + CAVEAT,
     ]
+    if mixed:
+        lines.append("MIXED: pooled score files differ in %s (allowed by --allow-mixed)" % ", ".join(mixed))
     return "\n".join(lines)
 
 
 def cmd_aggregate(args):
     runs = sorted({os.path.realpath(r) for r in args.runs})
     scored = [(r, load_score(r)) for r in runs]
+    if not args.allow_mixed:
+        refuse_mixed(scored)
     agg = aggregate(scored)
     data = dump_bytes(agg)
     if args.json:
@@ -521,6 +712,8 @@ def main(argv=None):
     ps.add_argument("--json", action="store_true", help="print the score JSON instead of a summary")
     pa = sub.add_parser("aggregate", help="pool several runs' score.json files (writes nothing)")
     pa.add_argument("--run", action="append", dest="runs", required=True, help="run dir (repeat per run)")
+    pa.add_argument("--allow-mixed", action="store_true",
+                    help="pool score files that differ in case_id, rubric_sha256 or matcher (default: refuse, exit 2)")
     pa.add_argument("--json", action="store_true", help="print the aggregate JSON instead of a summary")
     try:
         args = parser.parse_args(argv)
