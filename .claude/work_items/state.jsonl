@@ -12,3 +12,4 @@
 {"ev": "rescue", "reason": "round 1 (recorded retroactively): recon run by hand, outputs in .claude/research/wi03_rescue/", "session": "c42fcd07-4e85-429e-a1d7-f3b451268ad8", "ts": "2026-10-12T22:30:19Z", "wi": "WI-03"}
 {"ev": "done", "reason": "manual: C018 settled by address DB + live acceptance", "session": "e4dba859-eeaa-42a8-9675-1a96b8fef143", "ts": "2026-10-12T22:32:42Z", "wi": "WI-03"}
 {"ev": "park", "reason": "worker reply FAIL: worker STATUS: FAIL", "session": "f78c857f-3761-418f-bf51-04987af7f71c", "ts": "2026-10-13T03:18:49Z", "wi": "WI-18"}
+{"ev": "rescue", "reason": "round 1: 7 recon briefs in WI-18-rescue", "session": "f78c857f-3761-418f-bf51-04987af7f71c", "ts": "2026-10-13T03:18:51Z", "wi": "WI-18"}
