@@ -2,7 +2,7 @@
 // Question: how often does Global::ExecuteCommandPlaySound run, and in what order relative to the script-side PC messages?
 //
 // Hook (detour, 5-byte prologue 55 8B EC 6A FF = PUSH EBP / MOV EBP,ESP / PUSH -1, whole instructions):
-//   P1 0x0068EA70 Global::ExecuteCommandPlaySound (thiscall, ECX = this). The handler reads ECX only.
+//   P1 Global::ExecuteCommandPlaySound, address in kotor2-steam-aspyr.hooks.toml (thiscall, ECX = this). The handler reads ECX only.
 //
 // The sound resref is NOT read here. Stack arguments are never touched and a resref cannot be read safely from this hook.
 // The script side logs the resref via SendMessageToPC; match the two logs by call order and tick.

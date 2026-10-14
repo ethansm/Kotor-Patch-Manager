@@ -137,7 +137,9 @@ def test_vanilla_lip_positive_control():
     paths = []
     with os.scandir(override) as it:
         for entry in it:
-            if entry.name.lower().endswith(".lip") and entry.is_file(follow_symlinks=False):
+            # kpv* are the doc 41 E-matrix probe clips; kpve3c.lip is invalid on purpose (R7) and may be staged live
+            if entry.name.lower().endswith(".lip") and not entry.name.lower().startswith("kpv") \
+                    and entry.is_file(follow_symlinks=False):
                 paths.append(entry.path)
     if not paths:
         raise Skip("no loose .lip files in %s" % override)
