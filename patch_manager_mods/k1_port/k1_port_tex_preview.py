@@ -620,6 +620,17 @@ WEAPON_BONES = ("pelvis_g", "lthigh_g", "rthigh_g", "torso_g", "torsoUpr_g")
 BODY_BAND = (0.35, 0.95)  # camera band as a fraction of body height: knees to shoulders
 
 
+def euler_matrix(rx: float, ry: float, rz: float):
+    """3x3 rotation (nested lists) for degrees about x, then y, then z (R = Rz @ Ry @ Rx)."""
+    a, b, c = (math.radians(v) for v in (rx, ry, rz))
+    ca, sa, cb, sb, cc, sc = math.cos(a), math.sin(a), math.cos(b), math.sin(b), math.cos(c), math.sin(c)
+    rx_m = [[1, 0, 0], [0, ca, -sa], [0, sa, ca]]
+    ry_m = [[cb, 0, sb], [0, 1, 0], [-sb, 0, cb]]
+    rz_m = [[cc, -sc, 0], [sc, cc, 0], [0, 0, 1]]
+    mm = lambda p, q: [[sum(p[i][k] * q[k][j] for k in range(3)) for j in range(3)] for i in range(3)]  # noqa: E731
+    return mm(rz_m, mm(ry_m, rx_m))
+
+
 class WeaponKit(HelmetKit):
     """HelmetKit plus the full node table (`nodes_all`, skin bones included) and REFERENCE nodes (`refs`)."""
 
@@ -645,13 +656,23 @@ class WeaponKit(HelmetKit):
                 parts += self._place(self.parts(ref), tf)
         return parts
 
-    def scene(self, body: str, weapon: str, bone: str, rotate: bool = True):
-        """(parts, status): body + weapon with the weapon origin on `bone`; status OK or NO_NODE (body only)."""
+    def scene(self, body: str, weapon: str, bone: str, rotate: bool = True, rot=(0.0, 0.0, 0.0), offset=(0.0, 0.0, 0.0),
+              hand: str = ""):
+        """(parts, status): body + weapon with the weapon origin on `bone`; status OK or NO_NODE (body only).
+        rot = euler degrees (about x, then y, then z) and offset = metres, both applied in the bone frame before the bone.
+        hand = a hand node name (rhand/lhand): the weapon takes that node's rotation (its held orientation), at the bone."""
         tf = self.node(body, [bone])
         if tf is None:
             return self.parts(body), NO_NODE
         if not rotate:
             tf = ([[1, 0, 0], [0, 1, 0], [0, 0, 1]], tf[1])
+        if hand:
+            h = self.node(body, [hand])
+            if h is None:
+                return self.parts(body), NO_NODE
+            tf = (h[0], tf[1])
+        if any(rot) or any(offset):
+            tf = compose_transforms(tf, (euler_matrix(*rot), list(offset)))
         return self.parts(body) + self._place(self.weapon_parts(weapon), tf), OK
 
 
@@ -667,16 +688,18 @@ def body_band(parts, lo_hi=BODY_BAND):
     return [(sel, parts[0][1], parts[0][2], parts[0][3])]
 
 
-def weapon_tile(kit: WeaponKit, body: str, weapon: str, bone: str, shot: str, rotate: bool = True, scale: int = 1):
+def weapon_tile(kit: WeaponKit, body: str, weapon: str, bone: str, shot: str, rotate: bool = True, scale: int = 1,
+                rot=(0.0, 0.0, 0.0), offset=(0.0, 0.0, 0.0), hand: str = ""):
     """(uint8 image, status) of `weapon` on `bone` of `body`, framed on the bare body's torso band."""
-    parts, status = kit.scene(body, weapon, bone, rotate)
+    parts, status = kit.scene(body, weapon, bone, rotate, rot, offset, hand)
     yaw = WEAPON_SHOTS[shot]
     bounds = parts_bounds(body_band(kit.parts(body)), yaw, 0.10)
     return render_scene(parts, yaw, WEAPON_TILE_W * scale, WEAPON_TILE_H * scale, bounds), status
 
 
 def render_weapon_sheets(meshes: Path, bodies, weapons, bones, out: Path, shots=tuple(WEAPON_SHOTS),
-                         rotate: bool = True, scale: int = 1) -> list[Path]:
+                         rotate: bool = True, scale: int = 1, rot=(0.0, 0.0, 0.0), offset=(0.0, 0.0, 0.0),
+                         tag: str = "", hand: str = "") -> list[Path]:
     """<body>_<shot>.png per body and shot: rows = weapon, columns = bone. REST pose only."""
     from PIL import Image, ImageDraw
 
@@ -693,15 +716,16 @@ def render_weapon_sheets(meshes: Path, bodies, weapons, bones, out: Path, shots=
             sheet = Image.new("RGB", (len(bones) * W, 16 + len(weapons) * H), (30, 30, 30))
             d = ImageDraw.Draw(sheet)
             mode = "bone rotation applied" if rotate else "translation only"
-            d.text((4, 2), f"{body} {shot}: weapon origin on bone, REST pose, {mode}", fill=(255, 255, 0))
+            pose = (f", rot {tuple(rot)} deg, offset {tuple(offset)} m" if any(rot) or any(offset) else "") + (f", rotation of {hand}" if hand else "")
+            d.text((4, 2), f"{body} {shot}: weapon origin on bone, REST pose, {mode}{pose}", fill=(255, 255, 0))
             for r, weapon in enumerate(weapons):
                 for c, bone in enumerate(bones):
-                    tile, status = weapon_tile(kit, body, weapon, bone, shot, rotate, scale)
+                    tile, status = weapon_tile(kit, body, weapon, bone, shot, rotate, scale, rot, offset, hand)
                     sheet.paste(Image.fromarray(tile), (c * W, 16 + r * H))
                     _label(d, (c * W + 2, 18 + r * H), bone if status == OK else f"{bone} NO_NODE",
                            fill=(255, 255, 0) if status == OK else (255, 140, 60))
                 _label(d, (2, 18 + r * H + 13), weapon)
-            path = out / f"{body.lower()}_{shot}.png"
+            path = out / f"{body.lower()}_{shot}{tag}.png"
             sheet.save(path)
             written.append(path)
             print(f"{body} {shot}: {path}")
@@ -712,7 +736,8 @@ def cmd_weapons(args) -> int:
     paths = render_weapon_sheets(Path(args.meshes).expanduser(), [b.lower() for b in args.bodies],
                                  [w.lower() for w in args.weapons], args.bones,
                                  Path(args.out).expanduser(), shots=tuple(args.shots), rotate=not args.no_rotate,
-                                 scale=2 if args.size == "big" else 1)
+                                 scale=2 if args.size == "big" else 1, rot=tuple(args.rot), offset=tuple(args.offset),
+                                 tag=args.tag, hand=args.hand_rot)
     print(f"wrote {len(paths)} sheets ({len(args.bodies)} bodies x {len(args.shots)} shots; rest pose)")
     return 0 if paths else 2
 
@@ -1111,6 +1136,13 @@ def build_parser() -> argparse.ArgumentParser:
     w.add_argument("--bones", nargs="+", default=list(WEAPON_BONES))
     w.add_argument("--shots", nargs="+", default=list(WEAPON_SHOTS), choices=sorted(WEAPON_SHOTS))
     w.add_argument("--no-rotate", action="store_true", help="place the weapon with the bone translation only")
+    w.add_argument("--rot", nargs=3, type=float, default=[0.0, 0.0, 0.0], metavar=("RX", "RY", "RZ"),
+                   help="weapon euler degrees about x, y, z in the bone frame (e.g. -90 0 0 turns a +y barrel down)")
+    w.add_argument("--offset", nargs=3, type=float, default=[0.0, 0.0, 0.0], metavar=("X", "Y", "Z"),
+                   help="weapon offset in metres in the bone frame (x = character's right, y = forward, z = up)")
+    w.add_argument("--hand-rot", default="", metavar="NODE",
+                   help="give the weapon the rotation of this node (rhand/lhand): its held orientation, placed at each bone")
+    w.add_argument("--tag", default="", help="suffix for the output file names, e.g. _barrel_down")
     w.add_argument("--size", choices=("normal", "big"), default="normal")
     c = sub.add_parser("compare", help="K1 vs K2 model sheets: two `mesh --textures` dump dirs, one row per model")
     c.add_argument("--k1", required=True, help="dump dir made with --game <K1 install>")

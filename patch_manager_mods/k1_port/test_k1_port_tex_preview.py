@@ -529,6 +529,20 @@ def test_weapons_sheets_end_to_end():
         assert status == pv.NO_NODE and reds(off) == 0
 
 
+def test_weapons_rot_offset_and_hand_rot():
+    r = pv.euler_matrix(-90.0, 0.0, 0.0)  # +y (barrel) -> -z (down); +z (saber emitter) -> +y (forward)
+    assert np.allclose(np.asarray(r) @ [0, 1, 0], [0, 0, -1], atol=1e-9) and np.allclose(np.asarray(r) @ [0, 0, 1], [0, 1, 0], atol=1e-9)
+    with tempfile.TemporaryDirectory() as td:
+        mdir = _weapon_fixture(Path(td))
+        kit = pv.WeaponKit(mdir)
+        base = kit.scene("body", "saber", "pelvis_g")[0][1][0]
+        moved = kit.scene("body", "saber", "pelvis_g", offset=(0.3, 0.0, 0.0))[0][1][0]
+        assert np.allclose(moved - base, [0.3, 0, 0], atol=1e-9)
+        turned = kit.scene("body", "saber", "pelvis_g", rot=(180.0, 0.0, 0.0))[0][1][0]  # hilt flips about the bone origin
+        assert abs((turned[:, 2].mean() - 1.0) + (base[:, 2].mean() - 1.0)) < 1e-9
+        assert kit.scene("body", "saber", "pelvis_g", hand="nope")[1] == pv.NO_NODE
+
+
 def test_fl_rows_get_one_bare_row():
     with tempfile.TemporaryDirectory() as td:
         root = Path(td)
@@ -562,6 +576,7 @@ TESTS = [
     test_mesh_skips_missing_models,
     test_weapons_lands_at_bone_and_missing_bone_is_no_node,
     test_weapons_sheets_end_to_end,
+    test_weapons_rot_offset_and_hand_rot,
     test_fl_rows_get_one_bare_row,
     test_load_texture_tga_origin_uses_stored_row_order,
     test_compare_rows_verdicts,
