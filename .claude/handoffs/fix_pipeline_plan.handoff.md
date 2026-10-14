@@ -496,3 +496,8 @@ button to enable auto medpacks on the leader."
 - Hot-swapped, game closed, all LIVE: companion-selfheal 0.8.3-dev (4972327d), combat-hotbar 0.9.1-rc (dd9aa0f2), hud-host 0.5.1-dev (4af80ef5). Backup `batch_swap_20261014_005331` (`kpm_hotswap.py --rollback batch_swap_20261014_005331`).
 - NOT installed: action-hotbar 0.1.4-dev = REINSTALL (live hook differs from repo `kotor2-steam-aspyr.hooks.toml`: the 10-12 EKC hook move 0x0072CB63 -> 0x0072CB84 was never installed). Needs `python3 scripts/kpm_reinstall.py --mod action-hotbar [--dry-run]` with the user's GO, game closed. That also puts the `GATE late` heartbeat live.
 - After play: `kotor2_logs.py check companion-selfheal_log.txt --new` (expect 0 `REFUSE already queued` at WARN), combat-hotbar `VIS pills`, hud-host `HUD48 cap reached what=`.
+
+## action-hotbar reinstalled (2026-10-14 01:01)
+- `kpm_reinstall.py --mod action-hotbar` (first live run of that script): 43 patches applied, 0 peer DLLs to restore, action-hotbar 0.1.4-dev LIVE (fd9fab6c), selfheal/combat-hotbar/hud-host still LIVE. Backup `action-hotbar_reinstall_20261014_010140` (`kpm_reinstall.py --rollback <that dir>`). Hook is now 0x0072CB84 (EKC move) + `GATE late` heartbeat.
+- First dry run was REFUSED: KPM `Patches/4GBPatch/` and `Patches/K2AspyrShaderFixes/` had no built `.kpatch` (manual installs copied them from stage dirs). Fix: copied the canonical build (identical md5 in 25 stage dirs, e.g. `areahook_stage/`) into those two dirs (gitignored `*.kpatch`, local only). If the refusal returns on a fresh KPM checkout, repeat that copy.
+- Play checks pending: Action Hotbar number keys still work with EKC hook (1-0 keys capture), `kotor2_logs.py check action-hotbar_log.txt --new` / companion-selfheal / combat-hotbar / hud-host.
