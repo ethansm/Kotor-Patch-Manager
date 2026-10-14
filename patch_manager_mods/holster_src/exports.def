@@ -1,0 +1,9 @@
+LIBRARY Holster
+EXPORTS
+    KPatchInit
+    HolsterCombat
+    HolsterAttach
+    HolsterSwap
+    HolsterAnimResolve
+    HolsterAnimSend
+    HolsterGobUpdate

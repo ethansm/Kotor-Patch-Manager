@@ -187,6 +187,18 @@ struct K2AddrTable {
     uintptr_t PerformUseItem = 0;                    // thiscall(creature; clientItemId,0,targetClientId,float* pos) RET 0x10
     uintptr_t CloudSavesFlag = 0;                    // Steam Cloud byte
     uintptr_t CloudSavesDir = 0;                     // CExoString cloudsaves/<id>/
+    // ---- holster (doc 42) ----
+    uintptr_t ClientCombatStateSet = 0;              // thiscall(client creature, newState) -> old combat state (this+0x138)
+    uintptr_t WeaponAttach = 0;                      // cdecl(u32 obj, char* tag, int* creature): in-world hand attach
+    uintptr_t SwapWeaponsExec = 0;                   // thiscall(executor): weapon-set swap (0x10<->0x40000, 0x20<->0x80000)
+    uintptr_t AnimResolve = 0;                       // thiscall(client creature; u16 animId)
+    uintptr_t AnimSend = 0;                          // thiscall(client creature; animId, pos[3], speed)
+    uintptr_t GobUpdateDependent = 0;                // thiscall(Gob): re-copies the attach-node transform each update
+    uintptr_t GobAttachByName = 0;                   // thiscall(parent Gob; node name, kind)
+    int Creature_ClientCombat = 0;                   // client creature: combat state int (stored by ClientCombatStateSet)
+    int Creature_BodyObj = 0;                        // client creature: scene body object (vtable +0x7c attaches weapons)
+    int Creature_HandleR = 0, Creature_HandleL = 0;  // client creature: attached right / left weapon model handles
+    int Creature_AltItemR = 0, Creature_AltItemL = 0; // creature: alternate weapon-set item ids (slots 18/19)
 };
 
 // Steam Aspyr exe (vanilla 6A522E..., which is also what the live 4gb-patched file reports). Built by name so a new field
@@ -361,6 +373,19 @@ constexpr K2AddrTable makeSteam() {
     t.PerformUseItem = gameaddr::PerformUseItem;
     t.CloudSavesFlag = gameaddr::CloudSavesFlag;
     t.CloudSavesDir = gameaddr::CloudSavesDir;
+    t.ClientCombatStateSet = gameaddr::ClientCombatStateSet;
+    t.WeaponAttach = gameaddr::WeaponAttach;
+    t.SwapWeaponsExec = gameaddr::SwapWeaponsExec;
+    t.AnimResolve = gameaddr::AnimResolve;
+    t.AnimSend = gameaddr::AnimSend;
+    t.GobUpdateDependent = gameaddr::GobUpdateDependent;
+    t.GobAttachByName = gameaddr::GobAttachByName;
+    t.Creature_ClientCombat = 0x138;
+    t.Creature_BodyObj = 0x68;
+    t.Creature_HandleR = 0x278;
+    t.Creature_HandleL = 0x27C;
+    t.Creature_AltItemR = 0x264;
+    t.Creature_AltItemL = 0x268;
     return t;
 }
 
@@ -526,6 +551,19 @@ constexpr K2AddrTable makeGog() {
     t.PerformUseItem = 0;   // UNKNOWN (zero = helper inert)
     t.CloudSavesFlag = 0;   // UNKNOWN (zero = helper inert)
     t.CloudSavesDir = 0;   // UNKNOWN (zero = helper inert)
+    t.ClientCombatStateSet = 0;   // UNKNOWN (zero = helper inert)
+    t.WeaponAttach = 0;   // UNKNOWN (zero = helper inert)
+    t.SwapWeaponsExec = 0;   // UNKNOWN (zero = helper inert)
+    t.AnimResolve = 0;   // UNKNOWN (zero = helper inert)
+    t.AnimSend = 0;   // UNKNOWN (zero = helper inert)
+    t.GobUpdateDependent = 0;   // UNKNOWN (zero = helper inert)
+    t.GobAttachByName = 0;   // UNKNOWN (zero = helper inert)
+    t.Creature_ClientCombat = 0;   // UNKNOWN (zero = helper inert)
+    t.Creature_BodyObj = 0;   // UNKNOWN (zero = helper inert)
+    t.Creature_HandleR = 0;   // UNKNOWN (zero = helper inert)
+    t.Creature_HandleL = 0;   // UNKNOWN (zero = helper inert)
+    t.Creature_AltItemR = 0;   // UNKNOWN (zero = helper inert)
+    t.Creature_AltItemL = 0;   // UNKNOWN (zero = helper inert)
     return t;
 }
 } } // namespace k2addr::detail

@@ -155,6 +155,19 @@ static void checkSteamFields(const K2AddrTable& t) {
     STEAM(PerformUseItem, 0x00775600);
     STEAM(CloudSavesFlag, 0x00A7EA88);
     STEAM(CloudSavesDir, 0x00A7EABC);
+    STEAM(ClientCombatStateSet, 0x007682B0);
+    STEAM(WeaponAttach, 0x007637E0);
+    STEAM(SwapWeaponsExec, 0x005DF920);
+    STEAM(AnimResolve, 0x00863650);
+    STEAM(AnimSend, 0x005644B0);
+    STEAM(GobUpdateDependent, 0x005047B0);
+    STEAM(GobAttachByName, 0x00461670);
+    STEAM(Creature_ClientCombat, 0x138);
+    STEAM(Creature_BodyObj, 0x68);
+    STEAM(Creature_HandleR, 0x278);
+    STEAM(Creature_HandleL, 0x27C);
+    STEAM(Creature_AltItemR, 0x264);
+    STEAM(Creature_AltItemL, 0x268);
 #undef STEAM
     KT_CHECK_EQ(t.sha, kSteamSha);
 }
@@ -312,6 +325,19 @@ static void checkGogFields(const K2AddrTable& g) {
     KT_CHECK_EQ((unsigned long long)g.PerformUseItem, 0ull);
     KT_CHECK_EQ((unsigned long long)g.CloudSavesFlag, 0ull);
     KT_CHECK_EQ((unsigned long long)g.CloudSavesDir, 0ull);
+    KT_CHECK_EQ((unsigned long long)g.ClientCombatStateSet, 0ull);
+    KT_CHECK_EQ((unsigned long long)g.WeaponAttach, 0ull);
+    KT_CHECK_EQ((unsigned long long)g.SwapWeaponsExec, 0ull);
+    KT_CHECK_EQ((unsigned long long)g.AnimResolve, 0ull);
+    KT_CHECK_EQ((unsigned long long)g.AnimSend, 0ull);
+    KT_CHECK_EQ((unsigned long long)g.GobUpdateDependent, 0ull);
+    KT_CHECK_EQ((unsigned long long)g.GobAttachByName, 0ull);
+    KT_CHECK_EQ(g.Creature_ClientCombat, 0);
+    KT_CHECK_EQ(g.Creature_BodyObj, 0);
+    KT_CHECK_EQ(g.Creature_HandleR, 0);
+    KT_CHECK_EQ(g.Creature_HandleL, 0);
+    KT_CHECK_EQ(g.Creature_AltItemR, 0);
+    KT_CHECK_EQ(g.Creature_AltItemL, 0);
     // GOG really differs from Steam for the functions the three mods call
     KT_CHECK(g.GetMaxForcePoints != kSteam.GetMaxForcePoints && g.PushClipRect != kSteam.PushClipRect);
     // every function field the three mods call is non-zero on GOG

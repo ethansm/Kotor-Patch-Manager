@@ -69,6 +69,14 @@ constexpr uintptr_t PerformUseItem = 0x00775600;         // thiscall(controlled 
 constexpr uintptr_t PerformCastSpell = 0x00775700;       // thiscall(controlled client creature; spellId, arg2, targetClientId, multispell, metamagic, domain, float* pos) RET 0x1C, void
 constexpr uintptr_t CloudSavesFlag = 0x00A7EA88;         // Steam Cloud byte (set -> SAVES: alias = cloudsaves dir, else saves/)
 constexpr uintptr_t CloudSavesDir = 0x00A7EABC;          // CExoString "cloudsaves/<steam id>/"
+// ---- holster (doc 42): static RE, Steam only ----
+constexpr uintptr_t ClientCombatStateSet = 0x007682B0;   // thiscall(client creature, newState) -> old; stores this+0x138
+constexpr uintptr_t WeaponAttach = 0x007637E0;           // cdecl(u32 obj, char* tag, int* creature): in-world rhand/lhand attach, RET 0
+constexpr uintptr_t SwapWeaponsExec = 0x005DF920;        // thiscall(action executor): swaps 0x10<->0x40000, 0x20<->0x80000
+constexpr uintptr_t AnimResolve = 0x00863650;            // thiscall(client creature; u16 animId): ready-idle / wield-transition row resolver
+constexpr uintptr_t AnimSend = 0x005644B0;               // thiscall(client creature; animId, pos[3], speed): anim message sender
+constexpr uintptr_t GobUpdateDependent = 0x005047B0;     // thiscall(Gob): UpdateDependentPosition copy of the attach-node transform
+constexpr uintptr_t GobAttachByName = 0x00461670;        // thiscall(parent Gob; node name, kind): named-node attach, miss = silent no-attach
 constexpr uintptr_t HudVtable = 0x0099DCC4;             // CSWGuiInGame (HUD panel) RTTI vtable
 // Panels that do not block gameplay hotkeys (RTTI vtables; doc 07 gate whitelist; shared by the hotbar/selfheal HUD gates)
 constexpr uintptr_t MessagesPanelVtable = 0x0099E5EC;    // CSWGuiMessages

@@ -1,0 +1,15 @@
+[patch]
+id = "holster"
+name = "Holstered Weapons"
+version = "0.1.0-dev"
+author = "local"
+description = "P0 log-only probe for holstered weapons (doc 42): logs the client combat-flag setter, the in-world rhand/lhand weapon attach, the weapon-set swap executor, wield-transition animation ids and the Gob attach-transform update, so the hip/back holster design can be settled from evidence. Changes no game behaviour. Needs holster.ini (probe=1 plus ch_* switches; log holster_log.txt; needs a [holster] section with level=info in the game-dir kplog.ini or every line is dropped)."
+
+requires = []
+conflicts = []
+
+[patch.supported_versions]
+kotor2_steam_aspyr = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"
+
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]

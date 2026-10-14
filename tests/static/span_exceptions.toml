@@ -60,3 +60,11 @@ reason = """Span 1 is movzx ecx,[0x99447F] (7) + cmp eax,ecx (2) + jne 0x669A3E 
 push edx (1) + mov ecx,[ebp-8] (3) ending on `call 0x5E1340` at 0x669A39 (the rel32 call is outside the detour's relocated bytes). \
 vmlk's cave deliberately ends with `jmp 0x669A32` (RobustnessFixes.cpp VmlkSuccess, comment :50) so the success path enters the \
 perf-lab detour at its first instruction; the fall-through of the replaced jne reaches the same address."""
+
+# holster HolsterSwap 0x005DF926-0x005DF92C vs cmdq-probe detour CmdqProbeReequip 0x005DF920-0x005DF926 (0-byte gap).
+[[adjacency]]
+address = 0x005DF926
+patches = ["cmdq-probe", "holster"]
+reason = """Span 1 is the whole prologue `push ebp / mov ebp,esp / sub esp,0x6C` (55 8B EC 83 EC 6C, 6 bytes) ending on 0x5DF926; span 2 is \
+`mov [ebp-0x6C],ecx / mov eax,[ebp-0x6C]` (89 4D 94 8B 45 94, 6 bytes, no relative operand) ending on 0x5DF92C (`mov edx,[eax]`). Both \
+detours run a read-only handler first and then the stolen bytes, and return to their own span end, so neither reaches into the other."""

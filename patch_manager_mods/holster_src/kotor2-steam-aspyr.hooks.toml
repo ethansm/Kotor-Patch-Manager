@@ -1,0 +1,105 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
+
+# Holster P0 probe. Every entry: type detour at a function entry, whole-instruction prologue (55 8B EC ...), skip_original_bytes = false
+# (handler runs first, then the stolen bytes). No stolen bytes contain relative branches. Handlers only read.
+
+# H1: client combat flag setter 0x007682B0 (thiscall: ECX = client creature, [esp+4] = new state; stores this+0x138, returns old).
+# PUSH EBP / MOV EBP,ESP / SUB ESP,0x20 (6 bytes).
+[[hooks]]
+address = 0x007682B0
+type = "detour"
+function = "HolsterCombat"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x20]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "int"
+
+# H2: in-world weapon attach 0x007637E0 (cdecl: obj u32, char* tag "rhand"/"lhand", int* creature). PUSH EBP / MOV EBP,ESP / PUSH -1 (5 bytes).
+[[hooks]]
+address = 0x007637E0
+type = "detour"
+function = "HolsterAttach"
+original_bytes = [0x55, 0x8B, 0xEC, 0x6A, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "uint"
+
+[[hooks.parameters]]
+source = "[esp+8]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+0xC]"
+type = "pointer"
+
+# H3: weapon-set swap executor 0x005DF920 (thiscall: ECX = executor). The entry (0x5DF920-0x5DF925) belongs to cmdq-probe's CmdqProbeReequip, so this
+# hook sits right after the prologue at 0x005DF926: MOV [EBP-0x6C],ECX / MOV EAX,[EBP-0x6C] (6 bytes, no relative branches; ECX is still `this`).
+[[hooks]]
+address = 0x005DF926
+type = "detour"
+function = "HolsterSwap"
+original_bytes = [0x89, 0x4D, 0x94, 0x8B, 0x45, 0x94]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+# H4: anim-id resolver 0x00863650 (thiscall: ECX = object, [esp+4] = u16 anim id). PUSH EBP / MOV EBP,ESP / SUB ESP,0x60 (6 bytes).
+[[hooks]]
+address = 0x00863650
+type = "detour"
+function = "HolsterAnimResolve"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x60]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "uint"
+
+# H5: anim sender 0x005644B0 (thiscall: ECX = client creature, [esp+4] = anim id). PUSH EBP / MOV EBP,ESP / SUB ESP,0xC (6 bytes).
+[[hooks]]
+address = 0x005644B0
+type = "detour"
+function = "HolsterAnimSend"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x0C]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "uint"
+
+# H6: Gob UpdateDependentPosition handler 0x005047B0 (thiscall: ECX = Gob). PUSH EBP / MOV EBP,ESP / SUB ESP,0xC (6 bytes). Per Gob per frame.
+[[hooks]]
+address = 0x005047B0
+type = "detour"
+function = "HolsterGobUpdate"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x0C]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
