@@ -13,6 +13,7 @@
 #include "SafeRead.h"
 #include "KpLog.h"
 #include "K2Addr.h"
+#include "HolsterBonePatch.h"
 #include "check.h"
 #include "FakeKPatchApi.h"
 
@@ -83,6 +84,22 @@ int main() {
         v = 77;
         HCHECK("readAt on a null base fails and leaves the output untouched", !saferead::readAt(3u, 0, 0x138, &v) && v == 77);
         HCHECK("readAt below 0x10000 fails", !saferead::readAt(3u, 0x100, 0x138, &v));
+    }
+
+    // 3b. bone_test literal patch: matching bytes are rewritten, any other bytes are refused untouched (never patch an unknown exe)
+    {
+        static_assert(hs::kRhandImm == 0x00763AF9u && hs::kLhandImm == 0x00763E2Bu, "holster relies on: push sites in FUN_007637E0");
+        uint8_t* site = arena + 0x3000;
+        uint8_t seen[5] = {0, 0, 0, 0, 0};
+        memcpy(site, hs::kRhandOrig, 5);
+        HEQ("patchNodeLiteral writes over the vanilla immediate", hs::patchNodeLiteral(reinterpret_cast<uintptr_t>(site), hs::kRhandOrig, 0x11223344u, seen), 1);
+        HCHECK("the immediate is now the new pointer (little endian)", site[0] == 0x68 && site[1] == 0x44 && site[2] == 0x33 && site[3] == 0x22 && site[4] == 0x11);
+        HCHECK("seen holds the vanilla bytes", memcmp(seen, hs::kRhandOrig, 5) == 0);
+        HEQ("a second patch finds non-vanilla bytes and refuses", hs::patchNodeLiteral(reinterpret_cast<uintptr_t>(site), hs::kRhandOrig, 0x55667788u, seen), -1);
+        HCHECK("refused patch leaves the bytes alone and reports them", site[1] == 0x44 && seen[1] == 0x44 && seen[4] == 0x11);
+        memcpy(site, hs::kLhandOrig, 5);
+        HEQ("a lhand site is not accepted with the rhand expectation", hs::patchNodeLiteral(reinterpret_cast<uintptr_t>(site), hs::kRhandOrig, 0x1u, seen), -1);
+        HEQ("lhand expectation patches the lhand literal", hs::patchNodeLiteral(reinterpret_cast<uintptr_t>(site), hs::kLhandOrig, 0xAABBCCDDu, seen), 1);
     }
 
     // 4. KpLog: init with no API is fail-soft (the probe must keep running if the log core is old)

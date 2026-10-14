@@ -1,7 +1,7 @@
 // Holster.cpp -- holster 0.1.0-dev (Steam build): P0 LOG-ONLY probe for the holstered-weapons mod (patch_manager_mods/42_holstered_weapons.md).
 // Plan: .claude/plans/holstered_weapons.md. Handlers are plain extern "C" void __cdecl functions; the detour wrappers in
 // kotor2-steam-aspyr.hooks.toml call them at function entry with the game arguments BEFORE the stolen bytes run.
-// Hard rules for P0: no writes to game memory or registers, no engine calls, reads only through saferead, and every handler returns at
+// Hard rules for P0 (the only exception is the flag-file bone_test code patch, default off): no writes to game memory or registers, no engine calls, reads only through saferead, and every handler returns at
 // once while its channel is off (holster.ini: probe=1 AND ch_<name>=1). All channels share one line budget (max_lines).
 //
 // Gates this probe answers (doc 42):
@@ -16,10 +16,12 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <ctype.h>
 #include "SafeRead.h"
 #include "KpLog.h"
 #include "K2Addr.h"
 #include "HolsterLogic.h"
+#include "HolsterBonePatch.h"
 
 KP_LOG_PATCH("holster");
 
@@ -36,6 +38,8 @@ const bool g_fallbackSet = (KpLog_SetFallbackFile("holster_log.txt"), KpLog_SetF
 // Config. Written once in KPatchInit (before the handlers do anything); defaults are silent.
 static bool g_probe = false;
 static bool g_onComb = false, g_onAttach = false, g_onSwap = false, g_onAnim = false, g_onGob = false;   // probe=1 AND ch_<name>=1
+static bool g_boneTest = false, g_boneLeft = false;   // bone_test=1 (needs probe=1), bone_test_left=1
+static char g_boneName[32] = "pelvis_g";              // attach node name; its ADDRESS becomes the push immediate, so it must stay static
 static LONG g_maxLines = 3000;
 static int g_gobEvery = 600;            // GOB lines: first 24 updates, then every Nth (the handler runs per Gob per frame)
 static volatile LONG g_lines = 0;
@@ -66,7 +70,7 @@ static bool flagValue(const char* v) {
 }
 
 static void readConfig() {
-    bool probe = false, comb = false, attach = false, swap = false, anim = false, gob = false;
+    bool probe = false, boneTest = false, boneLeft = false, comb = false, attach = false, swap = false, anim = false, gob = false;
     FILE* f = fopen("holster.ini", "r");
     if (f) {
         char line[256];
@@ -79,6 +83,15 @@ static void readConfig() {
             char* key = trimIni(p);
             char* val = trimIni(eq + 1);
             if (!_stricmp(key, "probe")) probe = flagValue(val);
+            else if (!_stricmp(key, "bone_test")) boneTest = flagValue(val);
+            else if (!_stricmp(key, "bone_test_left")) boneLeft = flagValue(val);
+            else if (!_stricmp(key, "bone_name")) {
+                // node names are plain identifiers; anything else (or empty) keeps the default
+                size_t n = strlen(val);
+                bool ok = n > 0 && n < sizeof(g_boneName);
+                for (size_t i = 0; ok && i < n; ++i) ok = isalnum(static_cast<unsigned char>(val[i])) || val[i] == '_';
+                if (ok) memcpy(g_boneName, val, n + 1);
+            }
             else if (!_stricmp(key, "ch_comb")) comb = flagValue(val);
             else if (!_stricmp(key, "ch_attach")) attach = flagValue(val);
             else if (!_stricmp(key, "ch_swap")) swap = flagValue(val);
@@ -95,6 +108,8 @@ static void readConfig() {
         fclose(f);
     }
     g_probe = probe;
+    g_boneTest = probe && boneTest;
+    g_boneLeft = g_boneTest && boneLeft;
     g_onComb = probe && comb;
     g_onAttach = probe && attach;
     g_onSwap = probe && swap;
@@ -213,6 +228,22 @@ extern "C" void __cdecl HolsterGobUpdate(void* gob) {
            rdF(kSiteGob, g, 0xB0), rdF(kSiteGob, g, 0xB4), rdF(kSiteGob, g, 0xB8), rdF(kSiteGob, g, 0xBC));
 }
 
+// bone_test: repoint the rhand (and with bone_test_left the lhand) attach-node literal at g_boneName. Default OFF.
+static void applyBoneTest() {
+    if (!g_boneTest) return;
+    if (!k2addr::get()) { KP_LOG(chMain, "BONETEST refused: unknown exe (no address table)"); return; }
+    const uint32_t ptr = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(g_boneName));
+    struct Site { const char* tag; uintptr_t at; const uint8_t* orig; bool on; };
+    const Site sites[2] = {{"rhand", hs::kRhandImm, hs::kRhandOrig, true}, {"lhand", hs::kLhandImm, hs::kLhandOrig, g_boneLeft}};
+    for (const Site& s : sites) {
+        if (!s.on) continue;
+        uint8_t seen[5] = {0, 0, 0, 0, 0};
+        const int rc = hs::patchNodeLiteral(s.at, s.orig, ptr, seen);
+        if (rc == 1) KP_LOG(chMain, "BONETEST patched %s -> %s", s.tag, g_boneName);
+        else KP_LOG(chMain, "BONETEST refused %s: rc=%d seen=%02X %02X %02X %02X %02X", s.tag, rc, seen[0], seen[1], seen[2], seen[3], seen[4]);
+    }
+}
+
 // Written out literally (create-patch's export scan reads the source text) and listed in exports.def.
 extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     readConfig();
@@ -225,6 +256,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     addName(names, sizeof(names), g_onGob, "gob");
     KP_LOG(chMain, "holster 0.1.0-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
            names[0] ? names : "none", static_cast<long>(g_maxLines), g_gobEvery, k2addr::get() ? "ok" : "none");
+    applyBoneTest();
 }
 
 // No I/O here (loader lock). The config is read in KPatchInit.

@@ -1,6 +1,6 @@
 # 42 — Holstered weapons (hip/back hardpoints) — research
 
-Status: RESEARCH DONE; P0 probe scaffold BUILT, not installed (2026-10-13): `patch_manager_mods/holster_src/` (6 log-only detours, `HolsterLogic.h` pure logic + tests, contract test; K2Addr/GameAddr gained the holster addresses). Next: flag-file visual experiment, then user GO to install. Wave 1 = 10 Haiku web recon agents (all PARTIAL); waves 2-3 = 33 Haiku/REA agents on the Steam exe (raw: `research/holstered_weapons/wave2_3.md`). Decision: Option A (DLL only, attach to existing bones). Nothing installed.
+Status: RESEARCH DONE; P0 probe scaffold BUILT, not installed (2026-10-13): `patch_manager_mods/holster_src/` (6 log-only detours, `HolsterLogic.h` pure logic + tests, contract test; K2Addr/GameAddr gained the holster addresses). Flag-file bone experiment BUILT (2026-10-13, `holster.ini bone_test=1`, patches only the `push` of the rhand/lhand literal in FUN_007637E0, verified-original, default off); next: user GO to install, then the play test below. Wave 1 = 10 Haiku web recon agents (all PARTIAL); waves 2-3 = 33 Haiku/REA agents on the Steam exe (raw: `research/holstered_weapons/wave2_3.md`). Decision: Option A (DLL only, attach to existing bones). Nothing installed.
 Raw findings (URLs per claim): `research/holstered_weapons/raw/holster_*.md`.
 
 ## Goal
@@ -54,3 +54,11 @@ Option A: self-contained DLL, no shipped assets. All lightsabers on the hip; sho
 
 ## Remaining unknowns (P0 probe gates)
 G2 child Gob pointer location; G3 whether 0x7682B0 fires for NPCs; G4 `draw_weapon` consumer; G5 swap-hook model refresh on client; G6 case-insensitive bone lookup; G7 lightsaber attach origin vs grip center; plus node-output space (world vs local) at 0x5047b0.
+
+## P0 play-test checklist (user, after install)
+Bone experiment mechanics: with `probe=1` and `bone_test=1`, `KPatchInit` rewrites `push "rhand"` at 0x763AF9 to push `bone_name` (default `pelvis_g`; `bone_test_left=1` does the same for `lhand` at 0x763E2B). Every creature's right-hand weapon then attaches to that node. A log line `BONETEST patched rhand -> <name>` or `BONETEST refused ...` appears at load. Answers G6 (name/case lookup works), G7 (saber origin vs grip on the hip), and local vs world space of the node transform.
+1. `holster.ini`: `probe=1`, `ch_comb=1`, `ch_attach=1`, `ch_swap=1`, `ch_anim=1`; keep `ch_gob=0`, `bone_test=0` for run 1. Add `[holster]` + `level=info` to the game-dir `kplog.ini`.
+2. Run 1 (probe only): load a save, walk, enter and leave combat with party, swap weapon sets in combat and out, save/load, change area. Quit.
+3. Run 2 (bone test): `bone_test=1`, `bone_name=pelvis_g`, equip a lightsaber, look at the hip in and out of combat; then `rthigh_g`, then `torsoUpr_g`. Note: weapon visible where, which end, drifts or stays.
+4. Report back; read logs with `python3 scripts/kotor2_logs.py check holster_log.txt --new`.
+Rollback: `python3 scripts/kpm_hotswap.py --rollback latest`; flag off = `bone_test=0` (no game bytes touched).
