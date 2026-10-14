@@ -80,7 +80,7 @@ class Base(unittest.TestCase):
         return self.rows if self.loads == 1 else self.after
 
     def resolve(self, names):
-        dirs = ["t_src", "p1_src", "p2_src"]
+        dirs = ["t_src", "p1_src", "p2_src", "n_src"]
         out, bad = [], []
         for n in names:
             m = n if n in dirs else n + "_src" if n + "_src" in dirs else None
@@ -134,7 +134,7 @@ class ReinstallTests(Base):
         self.assertEqual(self.launches, [])
 
     def test_refuses_non_reinstall_target(self):
-        for verdict in ("SWAP", "DIRTY", "NOT-LIVE"):
+        for verdict in ("SWAP", "DIRTY"):
             with self.subTest(verdict=verdict):
                 self.rows, self.loads = [row("t", verdict)], 0
                 rc, out = self.run_main("--mod", "t")
@@ -142,6 +142,33 @@ class ReinstallTests(Base):
                 self.assertIn(f"REFUSED t: {verdict}", out)
                 self.assertEqual(self.launches, [])
                 self.assertEqual(self.backups(), [])
+
+    def add_new_id_kpatch(self):
+        d = self.kpm / "Patches" / "N"
+        d.mkdir(parents=True)
+        (d / "manifest.toml").write_text('[patch]\nid = "n"\n')
+        with zipfile.ZipFile(d / "n.kpatch", "w") as z:
+            z.writestr("manifest.toml", '[patch]\nid = "n"\n')
+            z.writestr("binaries/windows_x86.dll", b"n-kp")
+            z.writestr("kotor2-steam-aspyr.hooks.toml", "")
+
+    def test_new_id_without_kpatch_refused(self):
+        self.rows, self.loads = [row("n", "NOT-LIVE")], 0
+        rc, out = self.run_main("--mod", "n")
+        self.assertEqual(rc, 1)
+        self.assertIn("new id(s) n have no built kpatch", out)
+        self.assertEqual(self.launches, [])
+        self.assertFalse((self.game / "backups").exists())
+
+    def test_new_id_added_to_launcher_ids(self):
+        self.add_new_id_kpatch()
+        self.rows, self.after, self.loads = [row("t", "REINSTALL"), row("n", "NOT-LIVE")], [row("t", "LIVE"), row("n", "LIVE")], 0
+        rc, out = self.run_main("--mod", "t", "n")
+        self.assertEqual(rc, 0, out)
+        (cmd, _env), = self.launches
+        self.assertEqual(cmd[cmd.index("--patches") + 2:], [*IDS, "n"])  # live ids first, the new id last
+        stage = pathlib.Path(cmd[cmd.index("--patches") + 1])
+        self.assertIn("n.kpatch", {p.name for p in stage.iterdir()})
 
     def test_refuses_game_running(self):
         self.running = True

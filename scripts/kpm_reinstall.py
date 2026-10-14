@@ -35,7 +35,7 @@ NEXT_STEP = {
     "DIRTY": "commit first (kpm_ship.py --mod {id} --prepare)",
     "MIRROR": "mirror/rebuild first (kpm_ship.py --mod {id} --prepare)",
     "REBUILD": "rebuild first (kpm_ship.py --mod {id} --prepare)",
-    "NOT-LIVE": "not installed in the live game; unsupported here, install it manually first",
+    "NOT-LIVE": "a new id: build its kpatch in KPM first, then it is a valid target",
     "LIVE": "already live; nothing to do",
 }
 
@@ -156,7 +156,7 @@ def reinstall(a):
     if missing:
         print(f"no status row for {', '.join(sorted(missing))}; nothing touched")
         return 1
-    refused = [r for r in trows if r["verdict"] != "REINSTALL"]
+    refused = [r for r in trows if r["verdict"] not in ("REINSTALL", "NOT-LIVE")]  # NOT-LIVE = a new id; needs a built kpatch in KPM (checked below)
     for r in refused:
         print(f"REFUSED {r['id']}: {r['verdict']}: {NEXT_STEP.get(r['verdict'], 'not a REINSTALL target').format(id=r['id'])}")
     if refused:
@@ -182,6 +182,13 @@ def reinstall(a):
     if lost:
         print(f"REFUSED: no kpatch in KPM for live id(s) {', '.join(lost)}; the launcher would uninstall them")
         return 1
+    newids = [t for t in targets if t not in live]
+    nokp = [t for t in newids if not (t in kmap and sorted(kmap[t].glob("*.kpatch")))]
+    if nokp:
+        print(f"REFUSED: new id(s) {', '.join(nokp)} have no built kpatch in KPM; run kpm_hotswap.prepare for them first")
+        return 1
+    for pid in newids:
+        kpatch[pid] = sorted(kmap[pid].glob("*.kpatch"))[0]
     peers = []
     for pid, p in live.items():
         if pid in targets or not p.get("dll"):
@@ -195,7 +202,7 @@ def reinstall(a):
             if md5 != hs.full_md5(hs.kpatch_dll(kpatch[pid])):
                 peers.append({"id": pid, "dll": p["dll"], "md5": md5})
 
-    ids = list(live)
+    ids = list(live) + newids   # new ids last, in --mod order (the launcher orders loading by requires)
     label = targets[0] if len(targets) == 1 else "batch"
     backup_name = f"{label}_reinstall_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
     if a.dry_run:
