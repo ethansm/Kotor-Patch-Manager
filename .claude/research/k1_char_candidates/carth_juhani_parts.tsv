@@ -1,0 +1,9 @@
+character	part	resref	in_k2_chitin	in_k2_override	staged	texture
+Carth Onasi	modela	p_carthba	no	no	yes	p_carthba01
+Carth Onasi	modelb	p_carthbb	yes	yes	no	p_carthbb01;p_carthh01
+Carth Onasi	head	p_carthh	yes	yes	no	p_carthh01
+Juhani	modela	p_juhaniba	no	no	yes	p_juhaniba01
+Juhani	modelb	p_juhanibb	no	no	yes	p_juhanibb01;p_juhanih01
+Juhani	head	p_juhanih	no	no	yes	p_juhanih01
+Carth Onasi	unreferenced_staged	p_carthbbh	no	no	yes	p_carthh01
+Juhani	unreferenced_staged	p_juhani	no	no	yes	p_juhanibb01

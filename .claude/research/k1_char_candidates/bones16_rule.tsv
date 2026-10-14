@@ -1,0 +1,37 @@
+section	key	cases	matches	rate	note
+meta	corpus	858	-	-	K2 vanilla c_/n_/p_ 289 models (cap 300) = 855 skins; K1 n_commm = 3 skins
+meta	real_count_def	-	-	-	n = count(bonemap >= 0); bonemap is per node (len = node count), value = bone serial
+meta	serials_contiguous	858	858	100%	serials are 0..n-1 in every skin
+meta	slot_i_is_node_of_serial_i	858	858	100%	for i < n, bones16[i] is the node whose bonemap == i
+meta	n_gt_16	11	-	-	header holds 16 slots only; excluded from padding stats
+meta	n_eq_0	2	-	-	n_jedirobef torso/arms: all bonemap -1; see OPEN
+padding	K2 padding slots (0 < n < 16, 650 skins)	4003	-	-	slots n..15
+rule	a_fill_0	4003	1014	25.3%	best single rule
+rule	b_repeat_last_real bones16[n-1]	4003	23	0.6%	-
+rule	c1_bonemap_serial_copy bones16[k-n]	4003	449	11.2%	-
+rule	c2_cyclic_real bones16[(k-n)%n]	4003	23	0.6%	-
+rule	c3_kth_nonbone_node	4003	217	5.4%	node index of kth bonemap==-1 entry
+rule	c4_kth_nonbone_from_tail	4003	9	0.2%	-
+rule	c5_bonemap_at_slot bonemap[k]	4003	20	0.5%	-
+rule	c6_prev_slot bones16[k-1]	4003	656	16.4%	-
+rule	c7_nonbone_after_max_real	4003	13	0.3%	-
+rule	c8_last_real_plus_step	4003	24	0.6%	-
+rule	c9_len_bonemap_minus_tail	4003	13	0.3%	-
+rule	c10_prev_slot_or_zero	4003	822	20.5%	-
+rule	union_a_to_c6	4003	1149	28.7%	any rule hits; not a usable rule
+padval	zero	4003	1014	25.3%	-
+padval	0xFFFF	4003	47	1.2%	-
+padval	>= len(bonemap) (not a node index)	4003	1724	43.1%	garbage-like
+padval	in range, nonzero, non-bone node	4003	1068	26.7%	-
+padval	in range, nonzero, real bone node	4003	150	3.7%	-
+anchor	K2 n_commm torso (n=15) slot 15	1	0	0%	actual 10; slot 14 = 7 is a real bone
+anchor	K2 n_commm armL (n=14) slots 14-15	2	2	100%	actual 0,0
+anchor	K2 n_commm armR (n=14) slots 14-15	2	0	0%	actual 3,10
+anchor	K1 n_commm padding (ArmL 14-15, torso 15, ArmR 14-15)	5	1	20%	actual 0,16256 / 48769 / 18384,16148 (garbage)
+ce	K2 c_bantha bthair slot 11	1	0	-	n=11 actual 16237 (bonemap len 46)
+ce	K2 c_bmspecdiff LLeg slot 14	1	0	-	n=13 actual 2 (node 2 is non-bone)
+ce	K2 c_bomabeast lowerbody slot 15	1	0	-	n=15 actual 3
+ce	K2 c_bosdrexl head slot 11	1	0	-	n=6 actual 15771 (bonemap len 66)
+ce	K2 n_commm torso slot 15	1	0	-	n=15 actual 10
+func	weighted vertex refs into padding, 0 < n < 16 skins	650	0	0%	padding never weighted in these skins
+func	weighted vertex refs into padding, n = 0 skins	2	1414 refs	-	n_jedirobef torso/arms; see OPEN
