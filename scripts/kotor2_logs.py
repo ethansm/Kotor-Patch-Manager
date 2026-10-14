@@ -42,13 +42,15 @@ SELFHEAL = "scripts/selfheal_log_check.py"
 QUEUEHUD = "scripts/queue_hud_log_check.py"
 NPCDIV = "scripts/npc_div_log_check.py"
 CMDQ = "scripts/cmdq_probe_log_check.py"
+HOLSTER = "scripts/holster_log_check.py"
 
-# name -> (parser label, route kind). kinds: engfix, luo, runs, playlogs, selfheal, queuehud, npcdiv, cmdqprobe. Anything else -> log_triage.
+# name -> (parser label, route kind). kinds: engfix, luo, runs, playlogs, selfheal, queuehud, npcdiv, cmdqprobe, holster. Anything else -> log_triage.
 ROUTES = {
     "companion-selfheal_log.txt": ("selfheal_log_check", "selfheal"),
     "queue-hud_log.txt": ("queue_hud_log_check", "queuehud"),
     "npc-diversity_log.txt": ("npc_div_log_check", "npcdiv"),
     "cmdq-probe_log.txt": ("cmdq_probe_log_check", "cmdqprobe"),
+    "holster_log.txt": ("holster_log_check", "holster"),
     "k2-dialogue-letterbox-fix_log.txt": ("analyze_engfix_logs", "engfix"),
     "levelup_override_log.txt": ("luo_log_check", "luo"),
     "perflab_log.txt": ("analyze_runs", "runs"),
@@ -132,6 +134,8 @@ def route(name: str, game_dir: str) -> list[str]:
         return [py, _py(SELFHEAL), path]
     if kind == "queuehud":
         return [py, _py(QUEUEHUD), path]
+    if kind == "holster":
+        return [py, _py(HOLSTER), path]
     if kind == "npcdiv":
         return [py, _py(NPCDIV), path]
     if kind == "cmdqprobe":
@@ -227,6 +231,7 @@ ALIASES = {
     "companion-selfheal": "companion-selfheal_log.txt",
     "queue-hud": "queue-hud_log.txt",
     "queuehud": "queue-hud_log.txt",
+    "holster": "holster_log.txt",
     "npc-diversity": "npc-diversity_log.txt",
     "npcdiv": "npc-diversity_log.txt",
     "cmdq-probe": "cmdq-probe_log.txt",
