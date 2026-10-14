@@ -1,0 +1,1 @@
+cxxflags = ["-I../_shared_src", "-Werror"]

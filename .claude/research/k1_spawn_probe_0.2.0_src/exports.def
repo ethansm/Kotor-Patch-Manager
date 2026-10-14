@@ -1,0 +1,6 @@
+LIBRARY K1SpawnProbe
+EXPORTS
+    K1SpawnOnAddToArea
+    K1Spawn_Init
+    K1SpawnOnLoad
+    K1SpawnOnTick

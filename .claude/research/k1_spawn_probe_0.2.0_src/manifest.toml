@@ -1,0 +1,16 @@
+[patch]
+id = "k1-spawn-probe"
+name = "K1 Spawn Probe"
+version = "0.2.0-probe"
+author = "local"
+description = "Native creature spawn (doc 38 stage 2): once per load of the target area, after the population is stable, spawns a roster of creatures through the engine CreateObject path (alloc, ctor, LoadFromTemplate, AddToArea), skipping rows whose tag was already loaded from the save. Also logs every creature AddToArea (id, area, position, tag) and dumps creature memory for tag k1p_probe_npc. Opt-out: k1_spawn_probe.ini [spawn] enabled=0."
+
+requires = []
+conflicts = []
+
+# Steam/LAA only. Hook address is the Steam Aspyr entry listed in kotor2-steam-aspyr.hooks.toml.
+[patch.supported_versions]
+kotor2_steam_aspyr = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"
+
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]

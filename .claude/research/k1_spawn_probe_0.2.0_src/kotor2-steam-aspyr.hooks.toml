@@ -1,0 +1,50 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
+
+# K1 Spawn Probe 0.1.0-probe, stage 1 (observe only). Prologue 55 8B EC 6A FF = PUSH EBP / MOV EBP,ESP / PUSH -1
+# (whole instructions, same shape as the area and load-hang probes).
+# 0x00568BD0 = CSWSObject-derived creature AddToArea: thiscall, ret 0x18, 6 stack args (area*, x, y, z, int, int).
+# ECX = creature. [esp+4] = first stack arg: a VALUE (bracketed source), i.e. the area pointer.
+# The detour runs before the original bytes, so creature +0x94..+0x9c hold their entry values (0x568BD0 writes them itself).
+[[hooks]]
+address = 0x00568BD0
+type = "detour"
+function = "K1SpawnOnAddToArea"
+original_bytes = [0x55, 0x8B, 0xEC, 0x6A, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "pointer"
+
+# 0.2.0 Stage 2. H2: CSWSModule::LoadModuleInProgress (ECX = module), same shape as the area probe (which must be removed: two detours
+# on one address conflict). Prologue 55 8B EC 6A FF.
+[[hooks]]
+address = 0x0055A460
+type = "detour"
+function = "K1SpawnOnLoad"
+original_bytes = [0x55, 0x8B, 0xEC, 0x6A, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+# H1: CServerExoAppInternal::MainLoop (every tick, ECX = this). Prologue 55 8B EC 6A FF.
+[[hooks]]
+address = 0x00533830
+type = "detour"
+function = "K1SpawnOnTick"
+original_bytes = [0x55, 0x8B, 0xEC, 0x6A, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
