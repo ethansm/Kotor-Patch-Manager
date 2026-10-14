@@ -16,8 +16,8 @@ Install prechecks (every one must pass; any failure refuses the copy):
   2. k1_port_prune gate --strict over the named files against <stage>/ledger.json: no flagged file.
      A missing ledger blocks, because the gate would otherwise pass with nothing to compare.
   3. no swkotor2 process (scans <proc-root>/<pid>/cmdline; --proc-root is a test hook, default /proc).
-  4. no target already in override/, except appearance.2da. That file must hash to --base-sha256 and is
-     backed up first. A target that an active install manifest already lists is also refused.
+  4. no target already in override/, except appearance.2da and heads.2da. Each must hash to its base
+     (--base-sha256 for appearance.2da, --base heads.2da=HEX for heads.2da) and is backed up first. A target that an active install manifest already lists is also refused.
 
 Backups: <game>/backups/k1p_probe_<YYYYMMDD_HHMM>/manifest.json, originals under original/.
 Save slots (<game>/cloudsaves/*/000000 - QUICKSAVE and 000001 - AUTOSAVE) are copied to saves/ and
@@ -55,7 +55,7 @@ DEFAULT_FILES = (
     "models/k1p_commm.mdx",
     "override/k1p_commm04.tpc",
 )
-REPLACED_NAMES = frozenset({"appearance.2da"})  # the only override file this probe may replace
+REPLACED_NAMES = frozenset({"appearance.2da", "heads.2da"})  # the only override files this probe may replace
 PROCESS_PREFIX = "swkotor2"
 BACKUP_PREFIX = "k1p_probe_"
 POINTER_NAME = "k1p_probe_latest.json"
@@ -248,6 +248,7 @@ class Plan:
         self.manifest = None
         self.backup_dir = None
         self.base = None
+        self.bases = {}  # replaceable file name -> expected live sha256
 
     def check(self, name, ok, detail=""):
         self.checks.append((bool(ok), name, detail))
@@ -307,6 +308,17 @@ def compute_plan(args, stamp: str) -> Plan:
     names = list(args.files) if args.files else list(DEFAULT_FILES)
     base = args.base_sha256.strip().lower() if args.base_sha256 else None
     plan.base = base
+    bases = {"appearance.2da": base} if base else {}
+    for item in getattr(args, "base", None) or []:
+        name, sep, hexs = item.partition("=")
+        name, hexs = name.strip().lower(), hexs.strip().lower()
+        if not sep or name not in REPLACED_NAMES or not SHA_RE.fullmatch(hexs):
+            plan.check("--base format", False, f"{item!r}: want NAME=64-hex with NAME in {sorted(REPLACED_NAMES)}")
+        elif name in bases and bases[name] != hexs:
+            plan.check("--base conflict", False, f"{name} given twice with different hashes")
+        else:
+            bases[name] = hexs
+    plan.bases = bases
 
     plan.check("stage dir", stage.is_dir(), str(stage))
     if base is not None:
@@ -389,12 +401,15 @@ def compute_plan(args, stamp: str) -> Plan:
             plan.check(f"target {rel}", True, "absent: will create")
         elif f["name"].lower() in REPLACED_NAMES and dest.is_file() and not dest.is_symlink():
             live = sha_of(dest)
+            fbase = bases.get(f["name"].lower())
+            f["base"] = fbase
             f["action"] = "replace"
             f["backup"] = plan.backup_dir / "original" / f["name"]
-            if base is None:
-                plan.check(f"target {rel}", False, f"exists (live sha256 {live}): pass --base-sha256 {live}")
-            elif live != base:
-                plan.check(f"target {rel}", False, f"live sha256 {live} != --base-sha256 {base}")
+            flag = "--base-sha256" if f["name"].lower() == "appearance.2da" else f"--base {f['name'].lower()}="
+            if fbase is None:
+                plan.check(f"target {rel}", False, f"exists (live sha256 {live}): pass {flag}{'' if flag.endswith('=') else ' '}{live}")
+            elif live != fbase:
+                plan.check(f"target {rel}", False, f"live sha256 {live} != {flag.rstrip('=')} {fbase}")
             else:
                 plan.check(f"target {rel}", True, f"replace; live sha256 matches base; backup {f['backup']}")
         else:
@@ -469,8 +484,8 @@ def install_files(plan: Plan, game: Path, stage: Path, base) -> dict:
                 bak.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(f["dest"], bak)
                 bsha = sha_of(bak)
-                if bsha != base:
-                    raise ProbeError(f"backup of {f['dest']} hashes {bsha}, expected {base}")
+                if bsha != f.get("base"):
+                    raise ProbeError(f"backup of {f['dest']} hashes {bsha}, expected {f.get('base')}")
                 rec.update(action="replaced", backup=f"original/{f['name']}", backup_sha256=bsha)
                 undo.append(("restore", f["dest"], bak))
             else:
@@ -480,7 +495,7 @@ def install_files(plan: Plan, game: Path, stage: Path, base) -> dict:
             if sha_of(f["dest"]) != f["sha256"]:
                 raise ProbeError(f"copy verify failed: {f['dest']}")
         manifest = {"schema": SCHEMA, "created": now_iso(), "game_dir": str(game), "stage": str(stage),
-                    "base_sha256": base, "backup_dir": str(bdir), "installed": records, "saves": save_records}
+                    "base_sha256": base, "bases": dict(plan.bases), "backup_dir": str(bdir), "installed": records, "saves": save_records}
         write_json_atomic(plan.manifest, manifest)
         write_json_atomic(pointer_path(game), {"manifest": str(plan.manifest), "written": manifest["created"]})
         bad = [r["rel"] for r in records if entry_state(game, r) != "ok"]
@@ -671,6 +686,8 @@ def build_parser() -> argparse.ArgumentParser:
                            help="staged files relative to --stage (default: the design-doc probe set)")
             p.add_argument("--base-sha256", metavar="HEX",
                            help="sha256 of the live override/appearance.2da that install replaces")
+            p.add_argument("--base", action="append", metavar="NAME=HEX",
+                           help="sha256 of another live override file that install replaces, e.g. heads.2da=<hex> (repeatable)")
             p.add_argument("--no-save-backup", action="store_true",
                            help="skip the backup of cloudsaves QUICKSAVE/AUTOSAVE (tests, non-Steam installs)")
 

@@ -267,6 +267,37 @@ def test_replaced_base_mismatch_blocked(root):
 
 
 @test
+def test_heads_2da_replaced_with_its_own_base_and_rolled_back(root):
+    w = make_world(root)
+    live, staged = b"2DA V2.b\n\nhead\n0 h_old\n", b"2DA V2.b\n\nhead\n0 h_old\n1 k1p_juhanih\n"
+    (w["game"] / "override" / "heads.2da").write_bytes(live)
+    (w["stage"] / "probe_T12h" / "override" / "heads.2da").write_bytes(staged)
+    files = ["--files", "probe_T12h/override/appearance.2da", "probe_T12h/override/heads.2da"]
+    hsha = sha_of(live)
+    before = snapshot(root)
+    r = run(root, "install", *common(w), *files, "--base-sha256", BASE_SHA, "--yes")  # heads base missing
+    check(r.returncode == 1 and f"--base heads.2da= {hsha}" in r.stdout.replace("--base heads.2da=", "--base heads.2da= "),
+          f"missing heads base must refuse and name the flag: {r.stdout}")
+    check(snapshot(root) == before, "refused install must write nothing")
+    r = run(root, "install", *common(w), *files, "--base-sha256", BASE_SHA, "--base", "heads.2da=" + "0" * 64, "--yes")
+    check(r.returncode == 1 and "!= --base heads.2da" in r.stdout, f"wrong heads base must refuse: {r.stdout}")
+    check(snapshot(root) == before, "refused install must write nothing")
+    r = run(root, "install", *common(w), *files, "--base", "bogus.2da=" + hsha, "--yes")
+    check(r.returncode == 1 and "--base format" in r.stdout, f"unknown --base name must refuse: {r.stdout}")
+    r = run(root, "install", *common(w), *files, "--base-sha256", BASE_SHA, "--base", "heads.2da=" + hsha, "--yes")
+    check(r.returncode == 0, f"install rc {r.returncode}: {r.stdout} {r.stderr}")
+    check((w["game"] / "override" / "heads.2da").read_bytes() == staged, "heads.2da replaced")
+    m = load_manifest(w)
+    ent = {e["name"]: e for e in m["installed"]}
+    check(m["bases"] == {"appearance.2da": BASE_SHA, "heads.2da": hsha}, m["bases"])
+    check(ent["heads.2da"]["action"] == "replaced" and ent["heads.2da"]["backup_sha256"] == hsha, ent["heads.2da"])
+    r = run(root, "rollback", *game_args(w), "--yes")
+    check(r.returncode == 0, f"rollback rc {r.returncode}: {r.stdout}")
+    check((w["game"] / "override" / "heads.2da").read_bytes() == live, "heads.2da restored")
+    check((w["game"] / "override" / "appearance.2da").read_bytes() == BASE_2DA, "appearance.2da restored")
+
+
+@test
 def test_sha_drift_refuses_then_force(root):
     w = install_ok(root)
     drifted = w["game"] / "override" / "k1p_commm04.tpc"
