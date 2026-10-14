@@ -4,7 +4,7 @@
 ; stages: t26 (old k1-spawn-probe roster, NB0 live check) | pool (row1..row16) | capacity | persist | frame | all | none
 stages=t26,persist
 
-; ---- Run B: capacity 1 / 6 / 18 (also set npc_world.ini [world] spawn_cap=18 and stages=capacity,persist,frame) ----
+; ---- Run B: capacity 1 / 6 / 18 (set npc_world.ini [world] spawn_cap=N+2, k1_spawn_probe.ini [spawn] enabled=0; capacity_n is REQUIRED, stages=capacity spawns nothing without it) ----
 ;stages=capacity,persist,frame
 ;capacity_n=6
 ;capacity_resref=c_drdmouse01
