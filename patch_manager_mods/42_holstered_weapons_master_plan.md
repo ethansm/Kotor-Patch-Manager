@@ -22,7 +22,7 @@ Characters visibly stow weapons out of combat. ALL lightsabers on the hip, other
 | HW0 | Research waves 1-3 (33 Haiku/REA agents), decision Option A (DLL only, attach to existing bones) | - | - | DONE | e6a8bb0 | - |
 | HW1 | P0 probe scaffold: 6 log-only detours, `HolsterLogic.h` + tests, contract test, K2Addr/GameAddr holster addresses | HW0 | - | DONE | e9fef28 | - |
 | HW2 | Flag-file `bone_test` (rhand/lhand attach-node literal repoint, default off), `code_patches.toml`, contract tests, play-test checklist | HW1 | - | DONE | 4e85582 | host tests + hook bytes PASS, scratch build 7 exports |
-| HW3 | Offline weapon-on-bone preview: `weapons` command in `k1_port_tex_preview.py` (sub-plan A) | HW1 | - | PARTIAL | | mesh dump P_BastilaBA failed (model not in K2 install); verify body names; weapons cmd not written |
+| HW3 | Offline weapon-on-bone preview: `weapons` command in `k1_port_tex_preview.py` (sub-plan A) | HW1 | - | DONE | 8abfc22 | weapons cmd + 2 tests; mesh skips missing; N_CommM/F bodies; skin bones via nodes_all; saber hilt via REFERENCE; identity bone R, offsets needed (doc 42 Offline preview) |
 | HW4 | P0 install: Common sync into the real KPM tree, `pre_install_gate.sh --mod holster_src` GATE PASS, `kpm_hotswap` dry run + `--prepare`, REINSTALL (sub-plan B) | HW2 | user GO | TODO | | ask user for GO with the game closed |
 | HW5 | P0 play runs 1 (probe) and 2 (bone test) by the user; read logs | HW4 | user play | TODO | | `kotor2_logs.py check holster_log.txt --new` |
 | HW6 | Answer gates G2-G7 in doc 42 from logs + preview; choose placement offsets and bone per category | HW3, HW5 | - | TODO | | write doc 42 section "P0 results" |
