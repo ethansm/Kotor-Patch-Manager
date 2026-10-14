@@ -7,7 +7,7 @@ description = "Diagnostics client of the npc-world library (k2.npcworld@1), no h
 
 requires = ["npc-world"]
 requires_interfaces = ["k2.npcworld@1"]
-conflicts = ["k1-spawn-probe", "area-hook-probe"]
+conflicts = ["area-hook-probe"]
 
 # Steam/LAA only. DLL-only patch: it owns no detour, so the three world hooks must come from npc-world (which loads first via requires).
 # Design: patch_manager_mods/40_npc_behaviour_variety.md sections 12 and 13.
