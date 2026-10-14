@@ -81,3 +81,9 @@ Probe (10-13, after the draft was written, nothing committed): `k1_port_tex_prev
 - User decision (10-13): install the CR textures over the K1 assets so all K1 experimentation uses them instead of vanilla low-res. OPEN in the plan: where (K1 game Override = a write into the K1 dir, which the earlier constraint forbade; or a local overlay dir that our tools, `mesh --textures` and the converter, search first). Then the next phases (doc 38 `p_*` import, texture diversity P1, dispatcher consumption).
 - Not done / gated: Haiku vision pass over helmet sheets (rubric approval); dispatcher C++ use of `DiversityHeadItems.h`; F/L head-item attach; `asset_diff_all.tsv` uncommitted.
 - Resume: `python3 scripts/plan_manager.py resume .claude/research/texture_diversity/PLAN.md`.
+
+## 9. UPDATE 10-13 (latest): CR base overlay + ledger safety + 15 p_* imported (rows HE/HF DONE)
+- Overlay `~/Games/KOTOR2_Mod_Workspace/k1_hd_install` (418 same-layout CR stems; `scripts/k1_hd_overlay.py build|check`); layout verifier `scripts/cr_k1_layout_check.py`; findings `.claude/research/k1_items/CR_BASE_FINDINGS.md`.
+- Ledger safety: `--allow-overlay-install` (refused otherwise), `--prefer-source`, `updates/` tie-break; `gate` BLOCKS CR shas (also renamed copies).
+- 15 `k1p_*` p_* models + 16 flagged CR textures in the stage (`scripts/k1_import_companions.py`, dry run default, `--apply`). Not installed in K2.
+- Open: P2 user look at `R/sheets/index.png` (3 files game-closed install needs user go); `cr_stem_to_model.tsv` heads wall not rendered; `asset_diff_all.tsv` (6 MB) left untracked on purpose; CR permission drafts unsent.

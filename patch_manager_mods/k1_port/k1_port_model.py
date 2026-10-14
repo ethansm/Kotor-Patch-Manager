@@ -50,7 +50,7 @@ from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # python -I drops the script dir from sys.path
 from k1_port_sources import Ledger, SourceError, get_source  # noqa: E402  stdlib only
-from k1_port_textures import repo_roots, stage_refusal  # noqa: E402  stdlib only; one stage/ledger guard
+from k1_port_textures import OVERLAY_FLAG, overlay_refusal, repo_roots, stage_refusal  # noqa: E402  stdlib only; one stage/ledger guard
 
 DEFAULT_SOURCE_ID = "vanilla_k1"
 PROVENANCE = ("source_id", "license_class", "requires_author_approval", "removal_group", "credits")
@@ -599,6 +599,10 @@ def convert(args: argparse.Namespace) -> dict:
     tex_map = parse_tex_map(args.tex_map)
 
     install = Path(args.install_k1).expanduser()
+    if args.pack_dir is None:  # the install is only read without --pack-dir
+        reason = overlay_refusal(install, args.allow_overlay_install)
+        if reason:
+            raise Rejected(reason)
     k2_install = Path(args.k2_install).expanduser()
     pack_dir = Path(args.pack_dir).expanduser() if args.pack_dir else None
     if pack_dir is not None and not pack_dir.is_dir():
@@ -739,6 +743,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--install-k1", default=DEFAULT_K1_INSTALL,
                    help=f"K1 install root, read-only (default {DEFAULT_K1_INSTALL})")
+    p.add_argument(OVERLAY_FLAG, action="store_true",
+                   help="allow --install-k1 to be a K1 HD overlay (flagged Characters Revisited files in its "
+                        "override/); refused by default")
     p.add_argument("--resref", required=True, help="model resref, e.g. n_commm")
     p.add_argument("--pack-dir", help="read <resref>.mdl/.mdx from this dir instead of the K1 install "
                                       "(then --source-id is required)")

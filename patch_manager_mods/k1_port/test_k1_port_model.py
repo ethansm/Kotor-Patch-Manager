@@ -782,6 +782,18 @@ def test_real_k2_install_refuses_n_commm():
         assert "already has a resource named 'n_commm'" in r.stderr, r.stderr[-300:]
 
 
+def test_overlay_install_refused_without_allow_flag():
+    with workdir() as root:
+        ov = root / "overlay"
+        ov.mkdir()
+        (ov / "K1_HD_OVERLAY.json").write_text('{"source_id": "characters_revisited_main"}', encoding="utf-8")
+        r = run_cli(root, None, "k1p_test", ["n_testtex=k1p_new"], install=ov)
+        assert_refused(r, root)
+        assert "K1 HD overlay" in r.stderr and "--allow-overlay-install" in r.stderr, r.stderr[-300:]
+        r = run_cli(root, None, "k1p_test", ["n_testtex=k1p_new"], install=ov, extra=["--allow-overlay-install"])
+        assert "K1 HD overlay" not in r.stderr, "flag did not lift the overlay refusal: " + r.stderr[-300:]
+
+
 PURE_TESTS = [
     ("identical_skin_and_tangent_summaries_all_true", test_identical_skin_and_tangent_summaries_all_true),
     ("differing_bonemap_flags_skin_bone_poses", test_differing_bonemap_flags_skin_bone_poses),
@@ -827,6 +839,7 @@ TESTS = [
     ("missing_k2_install_warns_and_continues", test_missing_k2_install_warns_and_continues),
     ("out_dir_inside_k2_install_refused", test_out_dir_inside_k2_install_refused),
     ("real_k2_install_refuses_n_commm", test_real_k2_install_refuses_n_commm),
+    ("overlay_install_refused_without_allow_flag", test_overlay_install_refused_without_allow_flag),
     ("unknown_source_id_rejected_nothing_written", test_unknown_source_id_rejected_nothing_written),
     ("pack_without_source_id_rejected", test_pack_without_source_id_rejected),
     ("vanilla_source_not_flagged_and_outputs_registered", test_vanilla_source_not_flagged_and_outputs_registered),

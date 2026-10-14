@@ -425,6 +425,54 @@ def from_install_stages_real_k1_texture(root):
           and led[0]["author_approved"] is False, f"ledger entry: {led}")
 
 
+def make_overlay(root: Path) -> Path:
+    """A K1 HD overlay: symlinks to the real install plus a real override/ holding one fake CR texture."""
+    ov = root / "overlay"
+    ov.mkdir()
+    for name in ("chitin.key", "dialog.tlk", "data", "modules", "rims", "TexturePacks", "lips", "patch.erf",
+                 "swkotor.exe", "swkotor.ini"):
+        if (INSTALL / name).exists():
+            (ov / name).symlink_to(INSTALL / name)
+    make_tga(ov / "override" / "N_CommM04.tga", 16, 16, seed=5)
+    (ov / "K1_HD_OVERLAY.json").write_text(json.dumps(
+        {"source_id": "characters_revisited_main", "flagged": True, "files": {}}), encoding="utf-8")
+    return ov
+
+
+@test
+def overlay_install_refused_without_flag(root):
+    if not INSTALL.is_dir():
+        raise Skip(f"K1 install not found: {INSTALL}")
+    ov = make_overlay(root)
+    stage = root / "stage"
+    r = run_cli(root, "--from-install", ov, "--map-json", write_map(root, {"N_CommM04": "k1p_ovtest"}),
+                "--stage-dir", stage)
+    expect_refused(r, "K1 HD overlay", "--allow-overlay-install")
+    check(not stage.exists() and not (root / "ledger.json").exists(), "refused run wrote something")
+
+
+@test
+def overlay_override_files_are_attributed_to_the_flagged_source(root):
+    if not INSTALL.is_dir():
+        raise Skip(f"K1 install not found: {INSTALL}")
+    ov = make_overlay(root)
+    stage = root / "stage"
+    r = run_cli(root, "--from-install", ov, "--allow-overlay-install",
+                "--map-json", write_map(root, {"N_CommM04": "k1p_ovtest", "N_CommM01": "k1p_ovvanilla"}),
+                "--stage-dir", stage)
+    expect_ok(r)
+    by_new = {e["new"]: e for e in json.loads(r.stdout)["files"]}
+    cr, van = by_new["k1p_ovtest"], by_new["k1p_ovvanilla"]
+    check((cr["width"], cr["height"]) == (16, 16), f"override texture not used: {cr['width']}x{cr['height']}")
+    check(cr["source_id"] == "characters_revisited_main" and cr["removal_group"] == "pending_author_approval",
+          f"CR file not flagged: {cr}")
+    check(van["source_id"] == "vanilla_k1" and van["removal_group"] is None, f"vanilla file mislabelled: {van}")
+    led = {Path(e["file"]).stem: e for e in ledger_entries(root)}
+    check(led["k1p_ovtest"]["source_id"] == "characters_revisited_main"
+          and led["k1p_ovtest"]["removal_group"] == "pending_author_approval", f"ledger: {led['k1p_ovtest']}")
+    check(led["k1p_ovvanilla"]["source_id"] == "vanilla_k1", f"ledger: {led['k1p_ovvanilla']}")
+
+
 def main() -> int:
     if not Path(PY).exists():
         print(f"SKIP: patched pykotor python not found at {PY} (set K1PORT_PY, see setup_venv.sh)")

@@ -113,7 +113,8 @@ def walk_names(root: Path, wanted: set) -> dict:
     return found
 
 
-def vanilla_lookup(install: Path, resref: str, olds: list, want_model: bool, read_tpc, notes: list) -> dict:
+def vanilla_lookup(install: Path, resref: str, olds: list, want_model: bool, read_tpc, notes: list,
+                   overlay: dict | None = None) -> dict:
     """What the K1 install holds, read only. Same search order as the converters."""
     out = {"present": False, "model": None, "textures": {}}
     if not install.is_dir():
@@ -138,8 +139,14 @@ def vanilla_lookup(install: Path, resref: str, olds: list, want_model: bool, rea
                 data = bytes(res.data)
                 ext = ".tga" if res.restype == api.ResourceType.TGA else ".tpc"
                 q, basis, w, h = texture_quality(read_tpc, data)
-                out["textures"][old] = make_cand(VANILLA, "texture", old, kt.install_label(res.filepath, root),
-                                                 None, ext, q, basis, w, h)
+                label = kt.install_label(res.filepath, root)
+                if overlay is not None and kt.is_override_label(label):
+                    # An overlay's override/ holds flagged files: never vanilla_k1. Staged like a pack file.
+                    sid = kt.overlay_source_id(overlay)
+                    out["textures"][old] = make_cand(sid, "texture", old, str(res.filepath),
+                                                     str(Path(res.filepath).parent), ext, q, basis, w, h)
+                else:
+                    out["textures"][old] = make_cand(VANILLA, "texture", old, label, None, ext, q, basis, w, h)
             if want_model:
                 order = [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.MODULES]
                 mdl = inst.resource(resref, api.ResourceType.MDL, order)
@@ -202,8 +209,10 @@ def pack_candidates(reg: dict, resref: str, olds: list, want_model: bool, read_t
                 continue
             # Same rule as the texture stager: a .tpc anywhere beats a .tga, then the shallowest path.
             # A variant folder (Optional*/, Upscale*) is penalised ahead of both, unless allow_variants.
+            # An updates/ folder (Characters Revisited patch files) beats the same name in the base shard.
             best = min(paths, key=lambda p: (not allow_variants and _variant_folder(p, root),
                                              p.suffix.lower() != ".tpc",
+                                             not any(part.lower() == "updates" for part in p.relative_to(root).parts[:-1]),
                                              len(p.relative_to(root).parts),
                                              p.as_posix()))
             q, basis, w, h = texture_quality(read_tpc, best.read_bytes())
@@ -214,12 +223,18 @@ def pack_candidates(reg: dict, resref: str, olds: list, want_model: bool, read_t
     return out
 
 
-def decide(reg: dict, name: str, new: str, cands: list, searched: list) -> dict:
+def decide(reg: dict, name: str, new: str, cands: list, searched: list, prefer: tuple = ()) -> dict:
     if not cands:
         where = ", ".join(searched) if searched else "no source"
         raise Refused(f"no candidates for {name} -> {new}: searched {where}; none holds it. "
                       "Check the name, --install-k1, or the local_dir of a source in sources.json.")
-    res = ks.pick(cands)
+    preferred = [c for c in cands if c["source_id"] in prefer]
+    if preferred:  # --prefer-source: a preferred source outranks the rest, even unflagged vanilla
+        res = ks.pick(preferred)
+        res["rejected"] += [{"candidate": c, "reason": f"--prefer-source {res['chosen']['source_id']!r} outranks it"}
+                            for c in cands if c["source_id"] not in prefer]
+    else:
+        res = ks.pick(cands)
     return {
         "name": name,
         "new": new,
@@ -257,7 +272,8 @@ def run_tool(cmd: list, what: str) -> dict:
         raise Refused(f"{what} printed no JSON manifest: {e}") from e
 
 
-def stage_texture(stage: Path, ledger: Path, install: Path, cand: dict, old: str, new: str, tmp: Path) -> dict:
+def stage_texture(stage: Path, ledger: Path, install: Path, cand: dict, old: str, new: str, tmp: Path,
+                  allow_overlay: bool = False) -> dict:
     fd, map_name = tempfile.mkstemp(suffix=".json", dir=str(tmp))
     with os.fdopen(fd, "w", encoding="utf-8") as fh:
         json.dump({old: new}, fh)
@@ -266,17 +282,22 @@ def stage_texture(stage: Path, ledger: Path, install: Path, cand: dict, old: str
            "--pack-name", cand["source_id"]]
     if cand["source_id"] == VANILLA:
         cmd += ["--from-install", str(install)]
+        if allow_overlay:
+            cmd.append(kt.OVERLAY_FLAG)
     else:
         cmd += ["--pack-dir", cand["pack_dir"]]
     return run_tool(cmd, f"texture {old} -> {new} from {cand['source_id']}")
 
 
-def run_model(stage: Path, ledger: Path, install: Path, cand: dict, resref: str, new: str, pairs: list) -> dict:
+def run_model(stage: Path, ledger: Path, install: Path, cand: dict, resref: str, new: str, pairs: list,
+              allow_overlay: bool = False) -> dict:
     cmd = [sys.executable, "-I", "-B", "-u", str(MODEL_TOOL), "--resref", resref, "--new-resref", new,
            "--tex-map", *[f"{o}={n}" for o, n in pairs], "--out-dir", str(stage / MODEL_DIR),
            "--ledger", str(ledger)]
     if cand["source_id"] == VANILLA:
         cmd += ["--install-k1", str(install), "--source-id", VANILLA]
+        if allow_overlay:
+            cmd.append(kt.OVERLAY_FLAG)
     else:
         cmd += ["--pack-dir", cand["pack_dir"], "--source-id", cand["source_id"]]
     return run_tool(cmd, f"model {resref} -> {new} from {cand['source_id']}")
@@ -341,6 +362,10 @@ def ingest(args, mapping: dict, new_resref: str, out: dict) -> None:
     if reason:
         raise Refused(f"refused --ledger {ledger_path}: {reason}")
     install = args.install_k1.expanduser()
+    reason = kt.overlay_refusal(install, args.allow_overlay_install)
+    if reason:
+        raise Refused(reason)
+    overlay = kt.overlay_marker(install)
     errs: list = []
     read_tpc = kt.import_read_tpc(errs)
     if read_tpc is None:
@@ -350,7 +375,7 @@ def ingest(args, mapping: dict, new_resref: str, out: dict) -> None:
     notes: list = []
     olds = list(mapping)
     want_model = not args.no_model
-    vanilla = vanilla_lookup(install, args.resref, olds, want_model, read_tpc, notes)
+    vanilla = vanilla_lookup(install, args.resref, olds, want_model, read_tpc, notes, overlay)
     packs = pack_candidates(reg, args.resref, olds, want_model, read_tpc, notes,
                             allow_variants=args.allow_variant_folders)
     searched = ([VANILLA] if vanilla["present"] else []) + packs["searched"]
@@ -359,7 +384,7 @@ def ingest(args, mapping: dict, new_resref: str, out: dict) -> None:
     tex = []
     for old in olds:
         cands = ([vanilla["textures"][old]] if old in vanilla["textures"] else []) + packs["textures"][old]
-        d = decide(reg, old, mapping[old], cands, searched)
+        d = decide(reg, old, mapping[old], cands, searched, tuple(args.prefer_source))
         if not args.allow_variant_folders and chosen_from_variant(reg, d["chosen"]):
             notes.append(f"{old} from {d['chosen']['source_id']}: {VARIANT_NOTE}")
         d["hd"] = None
@@ -396,15 +421,16 @@ def ingest(args, mapping: dict, new_resref: str, out: dict) -> None:
             tmp = Path(td)
             for d in tex:
                 if d["status"] == "planned":
-                    d["manifest"] = stage_texture(stage, ledger_path, install, d["chosen"], d["name"], d["new"], tmp)
+                    d["manifest"] = stage_texture(stage, ledger_path, install, d["chosen"], d["name"], d["new"], tmp,
+                                                    args.allow_overlay_install)
                     d["status"] = "staged"
                 if d["hd"] and d["hd"]["status"] == "planned":
                     d["hd"]["manifest"] = stage_texture(stage / HD_DIR, ledger_path, install, d["hd"]["chosen"],
-                                                        d["name"], d["new"], tmp)
+                                                        d["name"], d["new"], tmp, args.allow_overlay_install)
                     d["hd"]["status"] = "staged"
             if model and model["status"] == "planned":
                 model["manifest"] = run_model(stage, ledger_path, install, model["chosen"], args.resref,
-                                              new_resref, pairs)
+                                              new_resref, pairs, args.allow_overlay_install)
                 model["status"] = "staged"
     if model and model["status"] == "staged":
         gate_model(args, ledger_path, model, new_resref, notes)
@@ -480,6 +506,12 @@ def build_parser() -> argparse.ArgumentParser:
                     help=f"stage root (default: {kt.DEFAULT_STAGE})")
     ap.add_argument("--install-k1", type=Path, default=Path(DEFAULT_INSTALL),
                     help=f"K1 install, read only (default: {DEFAULT_INSTALL})")
+    ap.add_argument(kt.OVERLAY_FLAG, action="store_true",
+                    help="allow --install-k1 to be a K1 HD overlay; its override/ files are then attributed to the "
+                         "overlay marker's flagged source, never vanilla_k1 (refused by default)")
+    ap.add_argument("--prefer-source", action="append", default=[], metavar="ID",
+                    help="textures only, repeatable: a candidate from this source outranks all others, even "
+                         "unflagged vanilla_k1 (the ledger row keeps its flag); default: none")
     ap.add_argument("--ledger", type=Path, default=None,
                     help="removal ledger (default: env K1PORT_LEDGER, else <stage>/ledger.json)")
     ap.add_argument("--also-hd", action="store_true",

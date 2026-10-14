@@ -369,7 +369,7 @@ def _not_tpc(raw: bytes):
 
 def fake_run_model(calls: list):
     """Stands in for k1_port_model.py: writes a synthetic MDL/MDX pair and registers it as the converter does."""
-    def run(stage, ledger, install, cand, resref, new, pairs):
+    def run(stage, ledger, install, cand, resref, new, pairs, allow_overlay=False):
         out_dir = stage / ing.MODEL_DIR
         out_dir.mkdir(parents=True, exist_ok=True)
         (out_dir / f"{new}.mdl").write_bytes(MDL_BYTES)
@@ -382,7 +382,7 @@ def fake_run_model(calls: list):
     return run
 
 
-def fake_stage_texture(stage, ledger, install, cand, old, new, tmp) -> dict:
+def fake_stage_texture(stage, ledger, install, cand, old, new, tmp, allow_overlay=False) -> dict:
     """Stands in for k1_port_textures.py: writes one synthetic TPC under stage/override and registers it."""
     path = stage / "override" / f"{new}.tpc"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -502,6 +502,53 @@ def clean_validation_registers_model(root):
     check("WARNING" not in r.stderr, f"clean run warned: {r.stderr!r}")
     models = sorted(Path(e["file"]).name for e in ledger_entries(root) if e["kind"] == "model")
     check(models == ["k1p_n_test.mdl", "k1p_n_test.mdx"], f"model entries: {models}")
+
+
+@test
+def overlay_install_refused_without_flag(root):
+    world(root)
+    ov = root / "overlay"
+    ov.mkdir()
+    (ov / "K1_HD_OVERLAY.json").write_text(json.dumps({"source_id": "test_permission"}), encoding="utf-8")
+    before = tree(root)
+    r = run_ingest(root, "--resref", "n_test", "--texture", "N_TestTex=k1p_testtex", "--install-k1", ov,
+                   "--dry-run", "--json")
+    errors = " ".join(json.loads(r.stdout)["errors"])
+    check(r.returncode == 1 and "K1 HD overlay" in errors and "--allow-overlay-install" in errors,
+          f"overlay not refused: rc={r.returncode} out={r.stdout[-400:]}")
+    check(tree(root) == before, "refused run wrote files")
+
+
+@test
+def prefer_source_flips_choice_to_flagged_source(root):
+    world(root)
+    base = ["--resref", "n_test", "--texture", "N_TestTex=k1p_testtex", "--dry-run", "--json"]
+    plain = texture_decision(json.loads(run_ingest(root, *base).stdout))
+    check(plain["chosen"]["source_id"] == "test_credit", "without the flag the approval-free source must win")
+    r = run_ingest(root, *base, "--prefer-source", "test_permission")
+    expect_rc(r, 0, "prefer")
+    s = json.loads(r.stdout)
+    t = texture_decision(s)
+    check(t["chosen"]["source_id"] == "test_permission", f"prefer ignored: {t['chosen']['source_id']}")
+    check(t["chosen"]["requires_author_approval"], "preferred flagged pick lost its flag")
+    check(any(x["source_id"] == "test_credit" and "prefer-source" in x["reason"] for x in t["rejected"]),
+          f"no prefer reason: {t['rejected']}")
+    check(s["model"]["chosen"]["source_id"] == "test_credit", "--prefer-source must not change the model choice")
+    check(any(o["flagged"] for o in s["outputs"]), "preferred flagged texture should be listed as flagged")
+
+
+@test
+def updates_folder_beats_same_name_in_base_shard(root):
+    write_registry(root)
+    base = make_tga(root / "src" / "a.tga", 8, 8, seed=1)
+    upd = make_tga(root / "src" / "b.tga", 8, 8, seed=2)
+    make_tpcs(root, [(base, root / "credit" / "party" / "N_TestTex.tpc"),
+                     (upd, root / "credit" / "updates" / "N_TestTex.tpc")])
+    r = run_ingest(root, "--resref", "n_test", "--texture", "N_TestTex=k1p_testtex", "--no-model", "--dry-run",
+                   "--json")
+    expect_rc(r, 0, "dry-run")
+    path = texture_decision(json.loads(r.stdout))["chosen"]["path"]
+    check("/updates/" in path, f"updates/ should win the same-name tie, chose {path}")
 
 
 def main() -> int:

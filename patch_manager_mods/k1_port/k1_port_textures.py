@@ -47,6 +47,8 @@ MAX_NEW_LEN = 31
 NEW_RE = re.compile(r"[a-z0-9_]+")
 EXTS = (".tpc", ".tga")  # lookup order: .tpc first, .tga only as fallback
 MANIFEST_NAME = "stage_manifest.json"
+OVERLAY_MARKER = "K1_HD_OVERLAY.json"  # written by scripts/k1_hd_overlay.py at the root of a K1 HD overlay install
+OVERLAY_FLAG = "--allow-overlay-install"
 PROVENANCE = ("source_id", "license_class", "requires_author_approval", "removal_group", "credits")
 
 
@@ -224,6 +226,35 @@ def open_install(path: Path, api, errors: list[str]):
     return inst
 
 
+def overlay_marker(install: Path) -> dict | None:
+    """The K1_HD_OVERLAY.json of an overlay install ({} if unreadable), None for a plain install."""
+    marker = install.expanduser() / OVERLAY_MARKER
+    if not marker.is_file():
+        return None
+    try:
+        data = json.loads(marker.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def overlay_refusal(install: Path, allowed: bool, flag_for: str = "--install-k1") -> str | None:
+    """Reason to refuse `install` (an overlay holds flagged CR files that would look like vanilla), else None."""
+    if allowed or overlay_marker(install) is None:
+        return None
+    return (f"{flag_for} {install} is a K1 HD overlay ({OVERLAY_MARKER}): its override/ holds flagged "
+            f"Characters Revisited files that would be recorded as vanilla_k1. Pass {OVERLAY_FLAG} to read it, "
+            "in which case those override/ files are attributed to the marker's source.")
+
+
+def is_override_label(label: str) -> bool:
+    return label.replace("\\", "/").lower().startswith("override/")
+
+
+def overlay_source_id(marker: dict) -> str:
+    return str(marker.get("source_id") or "characters_revisited_main")
+
+
 def install_label(path: Path, root: Path) -> str:
     """Where the resource lives, relative to the install root when it is inside it."""
     try:
@@ -339,6 +370,9 @@ def build_parser() -> argparse.ArgumentParser:
     src.add_argument("--pack-dir", type=Path, help="already-extracted pack directory (searched recursively)")
     src.add_argument("--from-install", type=Path, help="KotOR 1 install root, read only")
     ap.add_argument("--source-id", required=True, help="registry id from sources.json; unknown ids are refused")
+    ap.add_argument(OVERLAY_FLAG, action="store_true",
+                    help="allow --from-install to be a K1 HD overlay; its override/ files are then ledgered under "
+                         "the overlay marker's source (flagged) instead of --source-id")
     ap.add_argument("--map-json", required=True, type=Path, help='JSON object {"OLD": "new_name", ...}')
     ap.add_argument("--stage-dir", type=Path, default=DEFAULT_STAGE, help=f"default: {DEFAULT_STAGE}")
     ap.add_argument("--pack-name", help="source_pack label for the manifest (default: pack or install dir name)")
@@ -366,6 +400,17 @@ def main(argv: list[str] | None = None) -> int:
 
     is_pack = args.pack_dir is not None
     src_dir = (args.pack_dir if is_pack else args.from_install).expanduser().resolve()
+    marker = None
+    if not is_pack:
+        marker = overlay_marker(src_dir)
+        reason = overlay_refusal(src_dir, args.allow_overlay_install, "--from-install")
+        if reason:
+            return fail([reason])
+        if marker is not None:
+            try:
+                get_source(overlay_source_id(marker))
+            except SourceError as e:
+                errors.append(str(e))
     if not src_dir.is_dir():
         errors.append(f"{'--pack-dir' if is_pack else '--from-install'} is not a directory: {src_dir}")
 
@@ -412,7 +457,10 @@ def main(argv: list[str] | None = None) -> int:
                         fmt_name, width, height = got
                         target = override / f"{new.lower()}{ext}"
                         staged.append((target, data))
+                        entry_sid = (overlay_source_id(marker)
+                                     if marker is not None and is_override_label(rel) else args.source_id)
                         new_entries.append({
+                            "_source_id": entry_sid,
                             "source_pack": pack_name,
                             "source_rel_path": rel,
                             "sha256": hashlib.sha256(data).hexdigest(),
@@ -430,7 +478,7 @@ def main(argv: list[str] | None = None) -> int:
         return fail(errors, warnings)
 
     for (target, _data), entry in zip(staged, new_entries):
-        led_entry = led.add(str(target), "texture", args.source_id, sha256=entry["sha256"],
+        led_entry = led.add(str(target), "texture", entry.pop("_source_id"), sha256=entry["sha256"],
                             old_name=entry["old"], new_name=entry["new"],
                             width=entry["width"], height=entry["height"])
         entry.update({k: led_entry[k] for k in PROVENANCE})

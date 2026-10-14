@@ -88,6 +88,11 @@ Verified 10-12 on the pilots n_commm05, n_sithcom01, n_mandalorian01: masks alig
 
 ## Caveat
 
+K1 HD overlay (`scripts/k1_hd_overlay.py`): a local-only install dir holding flagged Characters Revisited files in
+its `override/`. It is never an `--install-k1` / `--from-install` without `--allow-overlay-install` (the tools
+refuse it, and with the flag attribute its `override/` files to `characters_revisited_main`, never `vanilla_k1`).
+`k1_port_ingest.py --prefer-source <id>` lets a flagged source outrank vanilla for textures; `gate` still blocks CR shas.
+
 Never commit K1 pack assets (textures, models, archives) to this repo.
 Only the patch and scripts belong here.
 

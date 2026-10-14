@@ -59,6 +59,8 @@ Skipped as low value: Jedi robes (4 spawns), Ubese (1 card), Onderon until a Vak
 | HB | agent | dispatcher helmet allow-list (`DiversityHeadItems.h`, generator + invariants, no C++) | **DONE 10-13** (f2629e4); dispatcher use needs design + user go |
 | HC | agent + user | K1 item swarm: asset diff, C2 triage (4 Haiku units), C3 K1-vs-K2 compare all **DONE 10-13** (ad80b7e, 2b1de52, 96b6721); K1 weapons dropped (K2 far better); only the 15 `p_*` companions remain | C4 closed; next = install CR textures as the K1 base (plan pending) |
 | HD | agent | fix: bottom-origin TGAs sampled upside down in the preview renderer | **DONE 10-13** (96b6721) |
+| HE | agent | CR textures as the K1 base: `scripts/k1_hd_overlay.py` overlay (`~/Games/KOTOR2_Mod_Workspace/k1_hd_install`, 418 CR stems, same-layout only), K1-layout check, ledger safety (`--allow-overlay-install`, `--prefer-source`), p_* re-render on CR | **DONE 10-13** (see `.claude/research/k1_items/CR_BASE_FINDINGS.md`); overlay is local-only, never an `--install-k1` without the flag |
+| HF | agent | import the 15 `p_*` companion models into the stage (`scripts/k1_import_companions.py`, CR textures flagged `pending_author_approval`) | **DONE 10-13**; stage only, no K2 install (needs doc 38 T27 roster + user go) |
 
 ## 7. Decisions (answered by the user 10-12)
 1. **P0 (B0 gate + B1 masks): YES.** Next step is a plan for P0 (plan mode), then build. Adds scripts and tests only.

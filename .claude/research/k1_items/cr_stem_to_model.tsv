@@ -1,0 +1,332 @@
+stem	shard	model	confidence	note
+pfbal01	body_player	pfbal	exact	k1_mdl_textures lists stem verbatim
+pfbala01	body_player		none	no K1 MDL texture list contains stem or its base
+pfbalb01	body_player		none	no K1 MDL texture list contains stem or its base
+pfbald01	body_player		none	no K1 MDL texture list contains stem or its base
+pfbam01	body_player	pfbam	exact	k1_mdl_textures lists stem verbatim
+pfbas01	body_player	pfbas	exact	k1_mdl_textures lists stem verbatim
+pfbasa01	body_player		none	no K1 MDL texture list contains stem or its base
+pfbasb01	body_player		none	no K1 MDL texture list contains stem or its base
+pfbasd01	body_player		none	no K1 MDL texture list contains stem or its base
+c_terantanak	creature		none	no K1 MDL texture list contains stem or its base
+pfha01d3	head_player	pfha01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha02	head_player	pfha02	exact	k1_mdl_textures lists stem verbatim
+pfha02d1	head_player	pfha02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha02d2	head_player	pfha02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha02d3	head_player	pfha02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha03d	head_player	pfha03	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha03d3	head_player	pfha03	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha04d3	head_player	pfha04	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d	head_player	m41ad_c01_char06	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d	head_player	m12aa_c04_char01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d	head_player	m01aa_c05_char03	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d	head_player	m01aa_c03_char03	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d	head_player	m01aa_c04_char04	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d	head_player	m41ad_c01_char07	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d	head_player	m40ab_c03_char04	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d	head_player	m01aa_c04_char02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d	head_player	m41ad_c01_char12	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d	head_player	pfha05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d	head_player	m01aa_c02_char02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d	head_player	m40ab_c03_char08	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d	head_player	m01aa_c05_char05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d	head_player	m12aa_c03_char02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d	head_player	m41ad_c01_char05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d	head_player	m41ad_c01_char10	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d	head_player	m40ab_c03_char06	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d	head_player	m01aa_c01_char02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d3	head_player	m40ab_c03_char06	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d3	head_player	m01aa_c04_char02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d3	head_player	m01aa_c01_char02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d3	head_player	m41ad_c01_char10	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d3	head_player	m40ab_c03_char08	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d3	head_player	m41ad_c01_char07	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d3	head_player	m01aa_c04_char04	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d3	head_player	m01aa_c05_char03	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d3	head_player	m01aa_c03_char03	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d3	head_player	m41ad_c01_char12	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d3	head_player	m41ad_c01_char06	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d3	head_player	m40ab_c03_char04	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d3	head_player	m41ad_c01_char05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d3	head_player	m01aa_c02_char02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d3	head_player	pfha05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d3	head_player	m01aa_c05_char05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d3	head_player	m12aa_c04_char01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfha05d3	head_player	m12aa_c03_char02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc01	head_player	pfhc01	exact	k1_mdl_textures lists stem verbatim
+pfhc01d1	head_player	pfhc01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc01d2	head_player	pfhc01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02	head_player	m40ab_c03_char04	exact	k1_mdl_textures lists stem verbatim
+pfhc02	head_player	pfha05	exact	k1_mdl_textures lists stem verbatim
+pfhc02	head_player	m01aa_c03_char03	exact	k1_mdl_textures lists stem verbatim
+pfhc02	head_player	m41ad_c01_char10	exact	k1_mdl_textures lists stem verbatim
+pfhc02	head_player	m41ad_c01_char07	exact	k1_mdl_textures lists stem verbatim
+pfhc02	head_player	m01aa_c05_char03	exact	k1_mdl_textures lists stem verbatim
+pfhc02	head_player	pfhc02	exact	k1_mdl_textures lists stem verbatim
+pfhc02	head_player	m41ad_c01_char06	exact	k1_mdl_textures lists stem verbatim
+pfhc02	head_player	m01aa_c05_char05	exact	k1_mdl_textures lists stem verbatim
+pfhc02	head_player	m40ab_c03_char08	exact	k1_mdl_textures lists stem verbatim
+pfhc02	head_player	m01aa_c04_char04	exact	k1_mdl_textures lists stem verbatim
+pfhc02	head_player	m40ab_c03_char06	exact	k1_mdl_textures lists stem verbatim
+pfhc02	head_player	m01aa_c02_char02	exact	k1_mdl_textures lists stem verbatim
+pfhc02	head_player	m41ad_c01_char12	exact	k1_mdl_textures lists stem verbatim
+pfhc02	head_player	m01aa_c04_char02	exact	k1_mdl_textures lists stem verbatim
+pfhc02	head_player	m41ad_c01_char05	exact	k1_mdl_textures lists stem verbatim
+pfhc02	head_player	m01aa_c01_char02	exact	k1_mdl_textures lists stem verbatim
+pfhc02	head_player	m12aa_c03_char02	exact	k1_mdl_textures lists stem verbatim
+pfhc02d1	head_player	m01aa_c04_char04	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d1	head_player	m01aa_c05_char05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d1	head_player	m01aa_c01_char02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d1	head_player	pfha05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d1	head_player	m01aa_c03_char03	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d1	head_player	m41ad_c01_char05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d1	head_player	m01aa_c05_char03	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d1	head_player	m41ad_c01_char12	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d1	head_player	pfhc02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d1	head_player	m01aa_c02_char02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d1	head_player	m41ad_c01_char06	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d1	head_player	m40ab_c03_char04	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d1	head_player	m40ab_c03_char08	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d1	head_player	m12aa_c03_char02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d1	head_player	m01aa_c04_char02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d1	head_player	m41ad_c01_char07	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d1	head_player	m41ad_c01_char10	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d1	head_player	m40ab_c03_char06	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d2	head_player	m40ab_c03_char04	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d2	head_player	m01aa_c01_char02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d2	head_player	m41ad_c01_char10	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d2	head_player	m01aa_c04_char02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d2	head_player	m12aa_c03_char02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d2	head_player	m01aa_c02_char02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d2	head_player	m01aa_c05_char05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d2	head_player	m40ab_c03_char08	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d2	head_player	pfha05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d2	head_player	m41ad_c01_char07	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d2	head_player	m01aa_c05_char03	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d2	head_player	m40ab_c03_char06	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d2	head_player	m41ad_c01_char12	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d2	head_player	m41ad_c01_char06	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d2	head_player	pfhc02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d2	head_player	m01aa_c03_char03	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d2	head_player	m01aa_c04_char04	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d2	head_player	m41ad_c01_char05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d3	head_player	m40ab_c03_char06	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d3	head_player	m12aa_c03_char02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d3	head_player	m40ab_c03_char08	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d3	head_player	m41ad_c01_char05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d3	head_player	m40ab_c03_char04	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d3	head_player	m41ad_c01_char06	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d3	head_player	m01aa_c04_char02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d3	head_player	m01aa_c01_char02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d3	head_player	m41ad_c01_char12	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d3	head_player	m01aa_c02_char02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d3	head_player	pfha05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d3	head_player	m01aa_c05_char03	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d3	head_player	m41ad_c01_char07	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d3	head_player	pfhc02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d3	head_player	m01aa_c03_char03	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d3	head_player	m01aa_c04_char04	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d3	head_player	m01aa_c05_char05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pfhc02d3	head_player	m41ad_c01_char10	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m12aa_c06_char05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m40ad_c01_char07	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m01aa_c02_char03	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m01aa_c05_char04	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m40ab_c03_char03	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m40ab_c01_char02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m02af_c10_char01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m40ad_c01_char09	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m41ad_c01_char03	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	pmba01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m40ad_c01_char03	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m41ad_c01_char09	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m40ab_c03_char09	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m40ad_c01_char04	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m12aa_c01_char01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m01aa_c03_char04	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m01aa_c02_char05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m41ad_c01_char13	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m12aa_c07_char01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m01aa_c05_char06	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m40ab_c03_char05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	n_jedimalek	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m41ad_c01_char08	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m01aa_c05_char01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m44ac_c01_char02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m40ad_c01_char05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m01aa_c01_char01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m01aa_c03_char05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m40ad_c01_char06	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m01aa_c02_char04	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m40ab_c03_char02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	pmha01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m40ad_c01_char08	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m01aa_c04_char03	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m40ab_c03_char07	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d	head_player	m40ad_c01_char02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m44ac_c01_char02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	pmha01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m40ab_c03_char05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m01aa_c02_char04	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m12aa_c07_char01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m01aa_c05_char04	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m40ad_c01_char03	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m12aa_c06_char05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m01aa_c01_char01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m41ad_c01_char09	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m40ad_c01_char04	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m40ab_c03_char09	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m40ab_c03_char03	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m02af_c10_char01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m40ad_c01_char07	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m01aa_c02_char05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m40ad_c01_char09	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	pmba01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m41ad_c01_char03	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m12aa_c01_char01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m40ad_c01_char02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m40ab_c03_char07	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	n_jedimalek	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m01aa_c05_char06	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m40ab_c03_char02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m01aa_c02_char03	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m01aa_c03_char05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m01aa_c05_char01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m40ad_c01_char06	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m40ad_c01_char08	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m41ad_c01_char13	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m01aa_c04_char03	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m01aa_c03_char04	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m41ad_c01_char08	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m40ad_c01_char05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha01d3	head_player	m40ab_c01_char02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha03	head_player	pmha03	exact	k1_mdl_textures lists stem verbatim
+pmha03d	head_player	pmha03	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha03d1	head_player	pmha03	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha03d2	head_player	pmha03	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha03d3	head_player	pmha03	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha04	head_player	pmha04	exact	k1_mdl_textures lists stem verbatim
+pmha04d	head_player	pmha04	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha04d1	head_player	pmha04	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha04d2	head_player	pmha04	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha04d3	head_player	pmha04	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha05	head_player	pmha05	exact	k1_mdl_textures lists stem verbatim
+pmha05d	head_player	pmha05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha05d1	head_player	pmha05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha05d2	head_player	pmha05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmha05d3	head_player	pmha05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhb01d	head_player	pmba01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhb01d	head_player	pmhb01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhb01d1	head_player	pmhb01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhb01d1	head_player	pmba01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhb01d2	head_player	pmba01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhb01d2	head_player	pmhb01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhb01d3	head_player	pmhb01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhb01d3	head_player	pmba01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhb02	head_player	pmhb03	exact	k1_mdl_textures lists stem verbatim
+pmhb02	head_player	pmhb02	exact	k1_mdl_textures lists stem verbatim
+pmhb02	head_player	n_gadonh	exact	k1_mdl_textures lists stem verbatim
+pmhb02d1	head_player	pmhb03	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhb02d1	head_player	n_gadonh	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhb02d1	head_player	pmhb02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhb02d2	head_player	pmhb02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhb02d2	head_player	n_gadonh	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhb02d2	head_player	pmhb03	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhb02d3	head_player	n_gadonh	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhb02d3	head_player	pmhb02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhb02d3	head_player	pmhb03	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhb04	head_player	pmhb04	exact	k1_mdl_textures lists stem verbatim
+pmhb04d1	head_player	pmhb04	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhb04d2	head_player	pmhb04	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhb05	head_player	pmhb05	exact	k1_mdl_textures lists stem verbatim
+pmhb05d1	head_player	pmhb05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhb05d2	head_player	pmhb05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhb05d3	head_player	pmhb05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc01	head_player	pmhc01	exact	k1_mdl_textures lists stem verbatim
+pmhc01d	head_player	pmhc01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc01d1	head_player	pmhc01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc01d2	head_player	pmhc01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc01d3	head_player	pmhc01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc02d	head_player	pmbtest	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc02d	head_player	pmhc02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc02d	head_player	n_sithoffmh	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc02d	head_player	n_sithcomm	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc02d	head_player	sith_off	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc02d1	head_player	pmhc02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc02d1	head_player	n_sithoffmh	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc02d1	head_player	pmbtest	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc02d1	head_player	sith_off	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc02d1	head_player	n_sithcomm	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc02d2	head_player	pmbtest	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc02d2	head_player	pmhc02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc02d2	head_player	n_sithcomm	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc02d2	head_player	n_sithoffmh	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc02d2	head_player	sith_off	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc02d3	head_player	n_sithcomm	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc02d3	head_player	n_sithoffmh	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc02d3	head_player	sith_off	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc02d3	head_player	pmhc02	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc02d3	head_player	pmbtest	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc03d3	head_player	pmhc03	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc04	head_player	n_darthrevanm	exact	k1_mdl_textures lists stem verbatim
+pmhc04	head_player	m44ac_c02_char01	exact	k1_mdl_textures lists stem verbatim
+pmhc04	head_player	plc_koltank2	exact	k1_mdl_textures lists stem verbatim
+pmhc04	head_player	n_darthrevanf	exact	k1_mdl_textures lists stem verbatim
+pmhc04	head_player	pmhc04	exact	k1_mdl_textures lists stem verbatim
+pmhc04d	head_player	pmhc04	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc04d	head_player	n_darthrevanm	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc04d	head_player	m44ac_c02_char01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc04d	head_player	plc_koltank2	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc04d	head_player	n_darthrevanf	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc04d1	head_player	plc_koltank2	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc04d1	head_player	n_darthrevanf	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc04d1	head_player	n_darthrevanm	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc04d1	head_player	pmhc04	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc04d1	head_player	m44ac_c02_char01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc04d2	head_player	pmhc04	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc04d2	head_player	n_darthrevanm	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc04d2	head_player	n_darthrevanf	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc04d2	head_player	m44ac_c02_char01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc04d2	head_player	plc_koltank2	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc04d3	head_player	n_darthrevanf	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc04d3	head_player	n_darthrevanm	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc04d3	head_player	m44ac_c02_char01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc04d3	head_player	pmhc04	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc04d3	head_player	plc_koltank2	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc05d	head_player	pmhc05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc05d1	head_player	pmhc05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc05d2	head_player	pmhc05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc05d3	head_player	pmhc05	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+p_bastilaba	party		none	no K1 MDL texture list contains stem or its base
+p_bastilaba01	party	p_bastilaba	exact	k1_mdl_textures lists stem verbatim
+p_bastilaba02	party		none	no K1 MDL texture list contains stem or its base
+p_bastilabas01	party		none	no K1 MDL texture list contains stem or its base
+p_candba01	party	p_candba	exact	k1_mdl_textures lists stem verbatim
+p_candbb01	party	m41ad_c01_char16	exact	k1_mdl_textures lists stem verbatim
+p_candbb01	party	p_candbb	exact	k1_mdl_textures lists stem verbatim
+p_candh01	party	m41ad_c01_char16	exact	k1_mdl_textures lists stem verbatim
+p_candh01	party	p_candbb	exact	k1_mdl_textures lists stem verbatim
+p_candh01	party	p_candh	exact	k1_mdl_textures lists stem verbatim
+p_carthba01	party	p_carthba	exact	k1_mdl_textures lists stem verbatim
+p_joleeba01	party	p_joleeba	exact	k1_mdl_textures lists stem verbatim
+p_joleebb01	party	m41ad_c01_char15	exact	k1_mdl_textures lists stem verbatim
+p_joleebb01	party	p_joleebb	exact	k1_mdl_textures lists stem verbatim
+p_joleeh01	party	m41ad_c01_char15	exact	k1_mdl_textures lists stem verbatim
+p_joleeh01	party	p_joleeh	exact	k1_mdl_textures lists stem verbatim
+p_joleeh01	party	p_joleebb	exact	k1_mdl_textures lists stem verbatim
+p_juhaniba01	party	p_juhaniba	exact	k1_mdl_textures lists stem verbatim
+p_juhanibb01	party	m41ad_c01_char20	exact	k1_mdl_textures lists stem verbatim
+p_juhanibb01	party	p_juhani	exact	k1_mdl_textures lists stem verbatim
+p_juhanibb01	party	p_juhanibb	exact	k1_mdl_textures lists stem verbatim
+p_juhanih01	party	m41ad_c01_char20	exact	k1_mdl_textures lists stem verbatim
+p_juhanih01	party	p_juhanih	exact	k1_mdl_textures lists stem verbatim
+p_juhanih01	party	p_juhanibb	exact	k1_mdl_textures lists stem verbatim
+p_candh01	updates	m41ad_c01_char16	exact	k1_mdl_textures lists stem verbatim
+p_candh01	updates	p_candbb	exact	k1_mdl_textures lists stem verbatim
+p_candh01	updates	p_candh	exact	k1_mdl_textures lists stem verbatim
+pmbam01	updates	pmbam	exact	k1_mdl_textures lists stem verbatim
+pmhc01	updates	pmhc01	exact	k1_mdl_textures lists stem verbatim
+pmhc01d	updates	pmhc01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc01d1	updates	pmhc01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc01d2	updates	pmhc01	prefix	k1_mdl_textures lists stem minus d-suffix or digit
+pmhc01d3	updates	pmhc01	prefix	k1_mdl_textures lists stem minus d-suffix or digit

@@ -1,0 +1,28 @@
+look	input_kinds	tga_used	flip_risk	note
+SC-copper	TPC_parent	no	none	parent n_sithcom01; no pool copy; no decal
+SC-crimson	TPC_parent	no	none	parent n_sithcom01; no pool copy; no decal
+SC-navy	TPC_parent	no	none	parent n_sithcom01; no pool copy; no decal
+MD-crimson	TPC_parent+decal	no	none	parent n_mandalorian01; no pool copy; decal jaig_eyes
+MD-green	TPC_parent	no	none	parent n_mandalorian01; no pool copy; no decal
+MD-amber	TPC_parent+decal	no	none	parent n_mandalorian01; no pool copy; decal chevrons3
+P1-f03	TPC_parent+decal	no	none	parent n_commf03; sha differs from pool copy; decal sprout
+P1-m11	TPC_parent+decal	no	none	parent n_commm11; sha differs from pool copy; decal sprout
+P2-f01	TPC_parent+decal	no	none	parent n_commf01; sha differs from pool copy; decal bar_stack
+P2-f05	TPC_parent+decal	no	none	parent n_commf05; sha differs from pool copy; decal bar_stack
+P2-f07	TPC_parent+decal	no	none	parent n_commf07; sha differs from pool copy; decal bar_stack
+P3-m05	TPC_parent+decal	no	none	parent n_commm05; sha differs from pool copy; decal patch_round
+P3-m06	TPC_parent+decal	no	none	parent n_commm06; sha differs from pool copy; decal patch_round
+P3-m11	TPC_parent+decal	no	none	parent n_commm11; sha differs from pool copy; decal patch_round
+P4-f02	TPC_parent+decal	no	none	parent n_commf02; sha differs from pool copy; decal chevrons3
+P4-f03	TPC_parent+decal	no	none	parent n_commf03; sha differs from pool copy; decal chevrons3
+P4-f05	TPC_parent+decal	no	none	parent n_commf05; sha differs from pool copy; decal chevrons3
+P5-f02	TPC_parent	no	none	parent n_commf02; sha differs from pool copy; no decal
+P5-f07	TPC_parent	no	none	parent n_commf07; sha differs from pool copy; no decal
+P5-m07	TPC_parent	no	none	parent n_commm07; sha differs from pool copy; no decal
+P6-f03	TPC_parent	no	none	parent n_commf03; sha differs from pool copy; no decal
+P6-f09	TPC_parent	no	none	parent n_commf09; sha differs from pool copy; no decal
+P6-f11	TPC_parent	no	none	parent n_commf11; sha differs from pool copy; no decal
+P7-m08	TPC_parent+decal	no	none	parent n_commm08; sha differs from pool copy; decal cog8
+P8-f01	TPC_parent	no	none	parent n_commf01; sha differs from pool copy; no decal
+P8-f02	TPC_parent	no	none	parent n_commf02; sha differs from pool copy; no decal
+P8-f03	TPC_parent	no	none	parent n_commf03; sha differs from pool copy; no decal
