@@ -1,7 +1,7 @@
 // HolsterBonePatch.h -- P0 flag-file bone experiment (doc 42): repoint the "rhand"/"lhand" attach-node literal of FUN_007637E0.
 // Only the 5-byte `push imm32` is rewritten (same opcode, new immediate; no new hook). The original bytes are verified first; an unknown exe is refused.
-//   0x00763AF9: 68 D8 ED 99 00   push 0x0099EDD8 ("rhand")     patch site 0x763AF9
-//   0x00763E2B: 68 D0 ED 99 00   push 0x0099EDD0 ("lhand")     patch site 0x763E2B
+//   site 0x763AF9: 68 D8 ED 99 00   push 0x99EDD8 ("rhand")
+//   site 0x763E2B: 68 D0 ED 99 00   push 0x99EDD0 ("lhand")
 #pragma once
 #include <stdint.h>
 #include <string.h>
