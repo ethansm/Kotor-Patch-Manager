@@ -455,6 +455,80 @@ def test_dump_model_signature_keeps_old_keys():
     assert "tex_dir" in inspect.signature(pv.dump_model).parameters
 
 
+def test_mesh_skips_missing_models():
+    """A resref the install lacks prints NOT FOUND and the rest still dump (it used to SystemExit on the first)."""
+    real_dump, real_open = pv.dump_model, pv.open_install
+
+    def fake_dump(model, game, tex_dir=None, install=None, keep_wrapped=False):
+        if model == "nope":
+            raise pv.ModelNotFound(f"{model}: MDL/MDX not found in {game}")
+        return {"model": model, "nodes": [], "skipped": [], "hooks": {"pelvis_g": {}}, "textures": {}}
+
+    pv.dump_model, pv.open_install = fake_dump, lambda game: (None, None)
+    try:
+        with tempfile.TemporaryDirectory() as td:
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(io.StringIO()):
+                rc = pv.main(["mesh", "--out", td, "--models", "nope", "good"])
+                rc_none = pv.main(["mesh", "--out", td, "--models", "nope"])
+            assert rc == 0 and rc_none == 1, (rc, rc_none)
+            assert "nope: NOT FOUND" in buf.getvalue() and (Path(td) / "good.json").is_file()
+            assert not (Path(td) / "nope.json").exists()
+    finally:
+        pv.dump_model, pv.open_install = real_dump, real_open
+
+
+def _weapon_fixture(root: Path) -> Path:
+    """Body: a 2 m tall quad with skin bones (nodes_all only, not hooks); saber: no own mesh, hilt via ref_hilt."""
+    mdir = root / "w"
+    (mdir / "tex").mkdir(parents=True)
+    _put_tex(mdir / "tex", "body_tex", BLUE)
+    _put_tex(mdir / "tex", "hilt_tex", RED)
+    eye = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+    body = _quad_dump("body", "body_tex", 1.0, 0.0)
+    body["nodes"][0]["positions"] = [[0.5, 0, 0], [-0.5, 0, 0], [-0.5, 0, 2.0], [0.5, 0, 2.0]]
+    body["nodes_all"] = {"pelvis_g": {"R": eye, "t": [0.0, 0.0, 1.0], "mesh": True, "faces": 4, "texture": "NULL"}}
+    (mdir / "body.json").write_text(json.dumps(body), encoding="utf-8")
+    hilt = _quad_dump("hilt", "hilt_tex", 0.1, 0.05)  # 5 cm towards the camera, not coplanar with the body
+    (mdir / "hilt.json").write_text(json.dumps(hilt), encoding="utf-8")
+    saber = {"model": "saber", "nodes": [], "skipped": [], "hooks": {}, "textures": {}, "refs": {"ref_hilt": "hilt"},
+             "nodes_all": {"ref_hilt": {"R": eye, "t": [0.0, 0.0, 0.2], "mesh": False, "faces": 0, "texture": ""}}}
+    (mdir / "saber.json").write_text(json.dumps(saber), encoding="utf-8")
+    return mdir
+
+
+def test_weapons_lands_at_bone_and_missing_bone_is_no_node():
+    with tempfile.TemporaryDirectory() as td:
+        kit = pv.WeaponKit(_weapon_fixture(Path(td)))
+        assert kit.node("body", ["PELVIS_g"]) is not None and kit.node("body", ["nope"]) is None
+        parts, status = kit.scene("body", "saber", "pelvis_g")
+        assert status == pv.OK and len(parts) == 2
+        # hilt quad (z -0.1..0.1 in its own model) sits at ref_hilt z=0.2, then on the bone z=1.0
+        assert abs(parts[1][0][:, 2].mean() - 1.2) < 1e-9, parts[1][0]
+        parts, status = kit.scene("body", "saber", "nope")
+        assert status == pv.NO_NODE and len(parts) == 1  # body only, no crash
+        _, status = kit.scene("body", "saber", "pelvis_g", rotate=False)
+        assert status == pv.OK
+
+
+def test_weapons_sheets_end_to_end():
+    with tempfile.TemporaryDirectory() as td:
+        mdir = _weapon_fixture(Path(td))
+        out = Path(td) / "out"
+        with contextlib.redirect_stdout(io.StringIO()):
+            rc = pv.main(["weapons", "--meshes", str(mdir), "--out", str(out), "--bodies", "Body", "--weapons", "Saber",
+                          "--bones", "pelvis_g", "nope", "--shots", "front", "side"])
+        assert rc == 0 and sorted(p.name for p in out.glob("*.png")) == ["body_front.png", "body_side.png"]
+        with Image.open(out / "body_front.png") as im:
+            assert im.size == (2 * pv.WEAPON_TILE_W, 16 + pv.WEAPON_TILE_H), im.size
+        kit = pv.WeaponKit(mdir)
+        on, _ = pv.weapon_tile(kit, "body", "saber", "pelvis_g", "front")
+        reds = lambda a: int(((a[..., 0].astype(int) - a[..., 2].astype(int)) > 100).sum())  # noqa: E731
+        assert reds(on) > 30, reds(on)  # the red hilt shows over the blue body
+        off, status = pv.weapon_tile(kit, "body", "saber", "nope", "front")
+        assert status == pv.NO_NODE and reds(off) == 0
+
+
 def test_fl_rows_get_one_bare_row():
     with tempfile.TemporaryDirectory() as td:
         root = Path(td)
@@ -485,6 +559,9 @@ TESTS = [
     test_helmet_tile_shows_helmet_over_head,
     test_helmet_sheets_cli_inputs_and_end_to_end,
     test_dump_model_signature_keeps_old_keys,
+    test_mesh_skips_missing_models,
+    test_weapons_lands_at_bone_and_missing_bone_is_no_node,
+    test_weapons_sheets_end_to_end,
     test_fl_rows_get_one_bare_row,
     test_load_texture_tga_origin_uses_stored_row_order,
     test_compare_rows_verdicts,

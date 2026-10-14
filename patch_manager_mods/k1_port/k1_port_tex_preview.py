@@ -75,6 +75,10 @@ def _texture_get(pk, inst, name: str, rtype):
     return res
 
 
+class ModelNotFound(Exception):
+    """The install has no MDL/MDX pair for this resref."""
+
+
 def dump_model(model: str, game: Path, tex_dir: Path | None = None, install=None,
                keep_wrapped: bool = False) -> dict:
     """Textured meshes (world space, UV set 1) plus `hooks`: every mesh-less node as {R, t} in model space
@@ -86,10 +90,10 @@ def dump_model(model: str, game: Path, tex_dir: Path | None = None, install=None
     mdl_res = uvm.install_get(pk, inst, model, pk.ResourceType.MDL)
     mdx_res = uvm.install_get(pk, inst, model, pk.ResourceType.MDX)
     if mdl_res is None or mdx_res is None:
-        raise SystemExit(f"{model}: MDL/MDX not found in {game}")
+        raise ModelNotFound(f"{model}: MDL/MDX not found in {game}")
     mdx = bytes(mdx_res.data)
     mdl = pk.read_mdl(bytes(mdl_res.data), source_ext=mdx, size_ext=len(mdx))
-    nodes, skipped, hooks = [], [], {}
+    nodes, skipped, hooks, nodes_all, refs = [], [], {}, {}, {}
     ident = ([[1, 0, 0], [0, 1, 0], [0, 0, 1]], [0.0, 0.0, 0.0])
 
     def walk(node, parent):
@@ -97,6 +101,13 @@ def dump_model(model: str, game: Path, tex_dir: Path | None = None, install=None
         world = _compose(parent, (p.x, p.y, p.z), (o.x, o.y, o.z, o.w))
         mesh = getattr(node, "mesh", None)
         name = str(node.name)
+        nodes_all.setdefault(name, {"R": [list(map(float, row)) for row in world[0]], "t": [float(x) for x in world[1]],
+                                    "mesh": mesh is not None,
+                                    "faces": len(getattr(mesh, "faces", None) or []) if mesh is not None else 0,
+                                    "texture": str(getattr(mesh, "texture_1", "") or "").strip() if mesh is not None else ""})
+        ref = getattr(getattr(node, "reference", None), "model", "")
+        if ref:
+            refs.setdefault(name, str(ref))  # REFERENCE node: another model hangs here (saber hilts)
         if mesh is None:
             hooks.setdefault(name, {"R": [list(map(float, row)) for row in world[0]], "t": [float(x) for x in world[1]]})
         else:
@@ -121,7 +132,8 @@ def dump_model(model: str, game: Path, tex_dir: Path | None = None, install=None
             walk(child, world)
 
     walk(mdl.root, ident)
-    doc = {"model": model, "nodes": nodes, "skipped": skipped, "hooks": hooks, "textures": {}}
+    doc = {"model": model, "nodes": nodes, "skipped": skipped, "hooks": hooks, "nodes_all": nodes_all, "refs": refs,
+           "textures": {}}
     for tex in sorted({n["texture"].lower() for n in nodes}):
         for ext, rtype in (("tga", pk.ResourceType.TGA), ("tpc", pk.ResourceType.TPC)):
             res = _texture_get(pk, inst, tex, rtype)
@@ -138,11 +150,15 @@ def cmd_mesh(args) -> int:
     out = Path(args.out).expanduser()
     out.mkdir(parents=True, exist_ok=True)
     install = open_install(Path(args.game).expanduser())
-    failed = []
+    failed, missing = [], []
     for model in args.models:
         try:
             doc = dump_model(model, Path(args.game).expanduser(), out / "tex" if args.textures else None, install,
                              keep_wrapped=args.textures)
+        except ModelNotFound:
+            missing.append(model)
+            print(f"{model}: NOT FOUND")
+            continue
         except (ValueError, OverflowError, KeyError, IndexError) as exc:  # a model pykotor cannot parse (K1 NaN planes)
             failed.append(model)
             print(f"{model}: FAILED {type(exc).__name__}: {exc}", file=sys.stderr)
@@ -154,9 +170,11 @@ def cmd_mesh(args) -> int:
             reasons[sk["reason"]] = reasons.get(sk["reason"], 0) + 1
         print(f"{model}: {len(doc['nodes'])} textured nodes, {tris} triangles, {len(doc['hooks'])} hooks, "
               f"skipped {reasons or 0}")
+    if missing:
+        print(f"{len(missing)} model(s) not found: {' '.join(missing)}", file=sys.stderr)
     if failed:
         print(f"{len(failed)} model(s) failed to parse: {' '.join(failed)}", file=sys.stderr)
-    return 0
+    return 0 if len(missing) + len(failed) < len(args.models) else 1
 
 
 # ------------------------------------------------------------------ renderer (numpy + PIL)
@@ -594,6 +612,111 @@ def render_helmet_sheets(meshes: Path, rows: list[dict], masks: list[str], out: 
     return written
 
 
+# ------------------------------------------------------------------ holstered weapons on bodies (HW3)
+
+WEAPON_SHOTS = {"front": 0.0, "side": 90.0, "back": 180.0}  # name: yaw degrees
+WEAPON_TILE_W, WEAPON_TILE_H = 230, 300
+WEAPON_BONES = ("pelvis_g", "lthigh_g", "rthigh_g", "torso_g", "torsoUpr_g")
+BODY_BAND = (0.35, 0.95)  # camera band as a fraction of body height: knees to shoulders
+
+
+class WeaponKit(HelmetKit):
+    """HelmetKit plus the full node table (`nodes_all`, skin bones included) and REFERENCE nodes (`refs`)."""
+
+    def _doc(self, model: str) -> dict:
+        return json.loads((self.meshes / f"{model.lower()}.json").read_text(encoding="utf-8"))
+
+    def node(self, model: str, names):
+        """(R, t) of the first of `names` among the dump's nodes_all, then its hooks (case-insensitive), else None."""
+        doc = self._doc(model)
+        for table in (doc.get("nodes_all", {}), doc.get("hooks", {})):
+            low = {k.lower(): v for k, v in table.items()}
+            for n in names:
+                if n.lower() in low:
+                    return low[n.lower()]["R"], low[n.lower()]["t"]
+        return None
+
+    def weapon_parts(self, weapon: str):
+        """The weapon's own meshes plus every REFERENCE model that has a dump (a saber hilt hangs on ref_hilt)."""
+        parts = list(self.parts(weapon))
+        for node, ref in self._doc(weapon).get("refs", {}).items():
+            tf = self.node(weapon, [node])
+            if self.has(ref) and tf is not None:
+                parts += self._place(self.parts(ref), tf)
+        return parts
+
+    def scene(self, body: str, weapon: str, bone: str, rotate: bool = True):
+        """(parts, status): body + weapon with the weapon origin on `bone`; status OK or NO_NODE (body only)."""
+        tf = self.node(body, [bone])
+        if tf is None:
+            return self.parts(body), NO_NODE
+        if not rotate:
+            tf = ([[1, 0, 0], [0, 1, 0], [0, 0, 1]], tf[1])
+        return self.parts(body) + self._place(self.weapon_parts(weapon), tf), OK
+
+
+def body_band(parts, lo_hi=BODY_BAND):
+    """One part holding the body vertices between the lo and hi fractions of its height: the shared camera target."""
+    np = _np()
+    zmin = min(float(p[0][:, 2].min()) for p in parts)
+    zmax = max(float(p[0][:, 2].max()) for p in parts)
+    lo, hi = zmin + lo_hi[0] * (zmax - zmin), zmin + lo_hi[1] * (zmax - zmin)
+    sel = np.concatenate([p[0][(p[0][:, 2] >= lo) & (p[0][:, 2] <= hi)] for p in parts])
+    if not len(sel):
+        return list(parts)  # nothing in the band: frame the whole body
+    return [(sel, parts[0][1], parts[0][2], parts[0][3])]
+
+
+def weapon_tile(kit: WeaponKit, body: str, weapon: str, bone: str, shot: str, rotate: bool = True, scale: int = 1):
+    """(uint8 image, status) of `weapon` on `bone` of `body`, framed on the bare body's torso band."""
+    parts, status = kit.scene(body, weapon, bone, rotate)
+    yaw = WEAPON_SHOTS[shot]
+    bounds = parts_bounds(body_band(kit.parts(body)), yaw, 0.10)
+    return render_scene(parts, yaw, WEAPON_TILE_W * scale, WEAPON_TILE_H * scale, bounds), status
+
+
+def render_weapon_sheets(meshes: Path, bodies, weapons, bones, out: Path, shots=tuple(WEAPON_SHOTS),
+                         rotate: bool = True, scale: int = 1) -> list[Path]:
+    """<body>_<shot>.png per body and shot: rows = weapon, columns = bone. REST pose only."""
+    from PIL import Image, ImageDraw
+
+    out.mkdir(parents=True, exist_ok=True)
+    kit = WeaponKit(meshes)
+    W, H = WEAPON_TILE_W * scale, WEAPON_TILE_H * scale
+    written: list[Path] = []
+    weapons = [w for w in weapons if kit.has(w) or print(f"skip weapon {w}: no mesh dump", file=sys.stderr)]
+    for body in bodies:
+        if not kit.has(body):
+            print(f"skip body {body}: no mesh dump", file=sys.stderr)
+            continue
+        for shot in shots:
+            sheet = Image.new("RGB", (len(bones) * W, 16 + len(weapons) * H), (30, 30, 30))
+            d = ImageDraw.Draw(sheet)
+            mode = "bone rotation applied" if rotate else "translation only"
+            d.text((4, 2), f"{body} {shot}: weapon origin on bone, REST pose, {mode}", fill=(255, 255, 0))
+            for r, weapon in enumerate(weapons):
+                for c, bone in enumerate(bones):
+                    tile, status = weapon_tile(kit, body, weapon, bone, shot, rotate, scale)
+                    sheet.paste(Image.fromarray(tile), (c * W, 16 + r * H))
+                    _label(d, (c * W + 2, 18 + r * H), bone if status == OK else f"{bone} NO_NODE",
+                           fill=(255, 255, 0) if status == OK else (255, 140, 60))
+                _label(d, (2, 18 + r * H + 13), weapon)
+            path = out / f"{body.lower()}_{shot}.png"
+            sheet.save(path)
+            written.append(path)
+            print(f"{body} {shot}: {path}")
+    return written
+
+
+def cmd_weapons(args) -> int:
+    paths = render_weapon_sheets(Path(args.meshes).expanduser(), [b.lower() for b in args.bodies],
+                                 [w.lower() for w in args.weapons], args.bones,
+                                 Path(args.out).expanduser(), shots=tuple(args.shots), rotate=not args.no_rotate,
+                                 scale=2 if args.size == "big" else 1)
+    print(f"wrote {len(paths)} sheets ({len(args.bodies)} bodies x {len(args.shots)} shots; rest pose)")
+    return 0 if paths else 2
+
+
 # ------------------------------------------------------------------ K1 vs K2 model comparison (C3)
 
 CMP_YAWS = (0.0, 90.0)  # per model, each side: front and side view
@@ -980,6 +1103,15 @@ def build_parser() -> argparse.ArgumentParser:
     h.add_argument("--items", nargs="*", default=None, help="helmet model resrefs, or distinct-models (default)")
     h.add_argument("--wall-item", default="i_mask_007", help="helmet model drawn on the family wall ('' = no wall)")
     h.add_argument("--size", choices=("normal", "big"), default="normal")
+    w = sub.add_parser("weapons", help="weapon-on-bone previews, REST pose: bodies x weapons x bones (run with .venv)")
+    w.add_argument("--meshes", required=True, help="dir of `mesh --textures` dumps (bodies, weapons, saber hilts)")
+    w.add_argument("--out", required=True)
+    w.add_argument("--bodies", nargs="+", required=True)
+    w.add_argument("--weapons", nargs="+", required=True)
+    w.add_argument("--bones", nargs="+", default=list(WEAPON_BONES))
+    w.add_argument("--shots", nargs="+", default=list(WEAPON_SHOTS), choices=sorted(WEAPON_SHOTS))
+    w.add_argument("--no-rotate", action="store_true", help="place the weapon with the bone translation only")
+    w.add_argument("--size", choices=("normal", "big"), default="normal")
     c = sub.add_parser("compare", help="K1 vs K2 model sheets: two `mesh --textures` dump dirs, one row per model")
     c.add_argument("--k1", required=True, help="dump dir made with --game <K1 install>")
     c.add_argument("--k2", required=True, help="dump dir made with --game <K2 install>")
@@ -995,7 +1127,7 @@ def main(argv=None) -> int:
     if args.cmd == "compare" and not (args.list or args.models):
         raise SystemExit("compare needs --list or --models")
     return {"mesh": cmd_mesh, "render": cmd_render, "dossier": cmd_dossier, "helmets": cmd_helmets,
-            "compare": cmd_compare}[args.cmd](args)
+            "weapons": cmd_weapons, "compare": cmd_compare}[args.cmd](args)
 
 
 if __name__ == "__main__":

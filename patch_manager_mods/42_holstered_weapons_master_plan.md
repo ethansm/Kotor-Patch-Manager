@@ -34,9 +34,9 @@ Characters visibly stow weapons out of combat. ALL lightsabers on the hip, other
 
 ## Sub-plan A — HW3 offline preview (no game, no install)
 Tool: `patch_manager_mods/k1_port/k1_port_tex_preview.py` (numpy + PIL software rasteriser; `mesh` runs in the k1port venv, renders in `.venv`). The `helmets` command already places one model at a named hook node of another; `weapons` reuses `HelmetKit.parts`, `hook_transform` and `compose_transforms`.
-1. Pick body models that exist in the K2 install: names come from `.claude/research/npc_equipment/head_wearability.tsv` (column `body_model`; `P_BastilaBA` was NOT found). Try `P_BastillaBB`, `N_CommM`, `N_CommF`, and the PC body models; record the working list here.
+1. Pick body models that exist in the K2 install: names come from `.claude/research/npc_equipment/head_wearability.tsv` (column `body_model`; `P_BastilaBA` was NOT found). Working list (HW3): `N_CommM`, `N_CommF`; the P_*BA and PMBA/PFBA names are not in the K2 install.
 2. `mesh --textures` dump of bodies and weapons: `w_lghtsbr_001`, `w_dblsbr_001`, `w_blstrpstl_001`, `w_blstrrfl_001`, `w_hvyblstr_001` (names to confirm from `items_k2.tsv` column `model_resref`) into the scratchpad.
-3. Confirm the body dump `hooks` contains `pelvis_g`, `lthigh_g`, `rthigh_g`, `torso_g`, `torsoUpr_g` (they are mesh-less dummy nodes only if the dump lists them; skin bones may be missing, then read them via pykotor node walk).
+3. Confirm the body dump `hooks` contains `pelvis_g`, `lthigh_g`, `rthigh_g`, `torso_g`, `torsoUpr_g` (they are NOT in `hooks`: skin bones are mesh nodes with texture NULL; the dump's `nodes_all` has them, done HW3).
 4. Add a `weapons` subcommand: for each body x weapon x bone, draw the weapon with transform `compose_transforms(bone_hook, identity)`, views front / side / back, contact sheet out. Add a host test next to `test_k1_port_tex_preview.py`.
 5. Optional later: pose one animation frame with Blender (`~/apps/blender-4.5.14/blender -b --python`, add-on `bl_ext.user_default.io_scene_kotor`) to compare against rest pose.
 Verification: `.venv/bin/python -I -m pytest patch_manager_mods/k1_port/test_k1_port_tex_preview.py -q` (or `python3 scripts/run_tests.py k1_port_tex_preview`), then eyeball the sheet.
