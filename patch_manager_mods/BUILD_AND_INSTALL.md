@@ -98,9 +98,9 @@ Install:
 
 To eliminate the 7-step manual dance and nondeterministic agent round-trips:
 ```bash
-python3 scripts/kpm_ship.py [--mod <id> ...] [--apply]
+python3 scripts/kpm_ship.py --mod <id> [<id> ...] [--apply] [--skip-gate] [--dry-run]
 ```
-Orchestrates deterministically:
+A mutating run needs `--mod` (or `--all`, which also ships other sessions' dirty mods); bare it prints the pending table and exits 2. `--dry-run` prints the planned steps and runs nothing. NOT-LIVE and REINSTALL targets are refused (REINSTALL = H10). Halts at the first failing step. Orchestrates deterministically:
 1. Production dirty auto-committer (`kpm_commit.py` — Phase H7) with scoped unit tests.
 2. Pre-install gate (`pre_install_gate.sh`) across all target mods.
 3. Mirror and KPM auto-commit (`kpm_hotswap.py --prepare --commit-kpm` — Phase H6).
