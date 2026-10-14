@@ -45,6 +45,23 @@ class PlanTests(unittest.TestCase):
         self.assertIn("P_CandH01=k1p_candh01", dry)
         self.assertNotIn("--dry-run", ic.ingest_cmd(p, None, apply=True))
 
+    def test_supermodel_map_in_cmd(self):
+        p = ic.plan_model("p_juhanih", dump("P_JuhaniH01"), ["P_JuhaniBB=k1p_juhanibb"])
+        cmd = ic.ingest_cmd(p, None, apply=False)
+        self.assertEqual(cmd[cmd.index("--supermodel-map") + 1], "P_JuhaniBB=k1p_juhanibb")
+        self.assertNotIn("--supermodel-map", ic.ingest_cmd(ic.plan_model("p_x", dump("T")), None, apply=False))
+
+    def test_read_supermodel_map(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            f = Path(d) / "m.tsv"
+            f.write_text("# c\np_juhanih\tP_JuhaniBB\tk1p_juhanibb\n\nP_JuhaniBA\tP_JuhaniBB\tk1p_juhanibb\n")
+            self.assertEqual(ic.read_supermodel_map(f), {"p_juhanih": ["P_JuhaniBB=k1p_juhanibb"],
+                                                         "p_juhaniba": ["P_JuhaniBB=k1p_juhanibb"]})
+            f.write_text("only\ttwo\n")
+            with self.assertRaises(ValueError):
+                ic.read_supermodel_map(f)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -41,8 +41,22 @@ def texture_names(dump: dict) -> list[str]:
     return list(seen.values())
 
 
-def plan_model(resref: str, dump: dict) -> dict:
-    """{'resref', 'new_resref', 'textures': [(OLD, NEW)]}; ValueError on a name that would not fit."""
+def read_supermodel_map(path: Path) -> dict[str, list[str]]:
+    """TSV `resref<TAB>OLD<TAB>NEW` (blank lines and # comments skipped) -> {resref: ['OLD=NEW', ...]}."""
+    out: dict[str, list[str]] = {}
+    for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        cols = line.rstrip("\n").split("\t")
+        if len(cols) != 3 or not all(c.strip() for c in cols):
+            raise ValueError(f"{path}:{n}: expected resref<TAB>OLD<TAB>NEW")
+        out.setdefault(cols[0].strip().lower(), []).append(f"{cols[1].strip()}={cols[2].strip()}")
+    return out
+
+
+def plan_model(resref: str, dump: dict, supermodel_map: list[str] | None = None) -> dict:
+    """{'resref', 'new_resref', 'textures': [(OLD, NEW)], 'supermodel_map': ['OLD=NEW']}; ValueError on a name that
+    would not fit."""
     new_resref = short(resref)
     if len(new_resref) > MAX_RESREF:
         raise ValueError(f"{resref}: new resref {new_resref!r} is longer than {MAX_RESREF}")
@@ -54,7 +68,7 @@ def plan_model(resref: str, dump: dict) -> dict:
         pairs.append((old, new))
     if not pairs:
         raise ValueError(f"{resref}: dump lists no textures")
-    return {"resref": resref, "new_resref": new_resref, "textures": pairs}
+    return {"resref": resref, "new_resref": new_resref, "textures": pairs, "supermodel_map": supermodel_map or []}
 
 
 def ingest_cmd(plan: dict, stage: Path | None, apply: bool) -> list[str]:
@@ -62,6 +76,8 @@ def ingest_cmd(plan: dict, stage: Path | None, apply: bool) -> list[str]:
            "--new-resref", plan["new_resref"], "--prefer-source", PREFER, "--json"]
     for old, new in plan["textures"]:
         cmd += ["--texture", f"{old}={new}"]
+    if plan.get("supermodel_map"):
+        cmd += ["--supermodel-map", *plan["supermodel_map"]]
     if stage is not None:
         cmd += ["--stage-dir", str(stage)]
     if not apply:
@@ -74,13 +90,21 @@ def main(argv=None) -> int:
     ap.add_argument("--dumps", type=Path, required=True)
     ap.add_argument("--models-file", type=Path, required=True)
     ap.add_argument("--stage-dir", type=Path, default=None)
+    ap.add_argument("--supermodel-map-file", type=Path, default=None,
+                    help="TSV resref<TAB>OLD<TAB>NEW: rewrite that model's K1-only supermodel OLD to the staged NEW")
     ap.add_argument("--apply", action="store_true", help="stage for real (default: dry run)")
     args = ap.parse_args(argv)
     models = [m.strip() for m in args.models_file.read_text(encoding="utf-8").split() if m.strip()]
     plans = []
+    try:
+        sm_map = read_supermodel_map(args.supermodel_map_file) if args.supermodel_map_file else {}
+    except (OSError, ValueError) as e:
+        print(f"refused: {e}", file=sys.stderr)
+        return 2
     for m in models:
         try:
-            plans.append(plan_model(m, json.loads((args.dumps / f"{m}.json").read_text(encoding="utf-8"))))
+            plans.append(plan_model(m, json.loads((args.dumps / f"{m}.json").read_text(encoding="utf-8")),
+                                    sm_map.get(m.lower())))
         except (OSError, ValueError) as e:
             print(f"refused: {e}", file=sys.stderr)
             return 2

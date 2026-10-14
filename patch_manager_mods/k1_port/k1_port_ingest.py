@@ -290,10 +290,12 @@ def stage_texture(stage: Path, ledger: Path, install: Path, cand: dict, old: str
 
 
 def run_model(stage: Path, ledger: Path, install: Path, cand: dict, resref: str, new: str, pairs: list,
-              allow_overlay: bool = False) -> dict:
+              allow_overlay: bool = False, supermodel_map: list | None = None) -> dict:
     cmd = [sys.executable, "-I", "-B", "-u", str(MODEL_TOOL), "--resref", resref, "--new-resref", new,
            "--tex-map", *[f"{o}={n}" for o, n in pairs], "--out-dir", str(stage / MODEL_DIR),
            "--ledger", str(ledger)]
+    if supermodel_map:
+        cmd += ["--supermodel-map", *supermodel_map]
     if cand["source_id"] == VANILLA:
         cmd += ["--install-k1", str(install), "--source-id", VANILLA]
         if allow_overlay:
@@ -430,7 +432,8 @@ def ingest(args, mapping: dict, new_resref: str, out: dict) -> None:
                     d["hd"]["status"] = "staged"
             if model and model["status"] == "planned":
                 model["manifest"] = run_model(stage, ledger_path, install, model["chosen"], args.resref,
-                                              new_resref, pairs, args.allow_overlay_install)
+                                              new_resref, pairs, args.allow_overlay_install,
+                                              args.supermodel_map)
                 model["status"] = "staged"
     if model and model["status"] == "staged":
         gate_model(args, ledger_path, model, new_resref, notes)
@@ -516,6 +519,9 @@ def build_parser() -> argparse.ArgumentParser:
                     help="removal ledger (default: env K1PORT_LEDGER, else <stage>/ledger.json)")
     ap.add_argument("--also-hd", action="store_true",
                     help="also stage a higher-quality flagged variant (needs approval) under <stage>/_hd/override/")
+    ap.add_argument("--supermodel-map", nargs="+", metavar="OLD=NEW", default=None,
+                    help="model header supermodel rewrite, passed to k1_port_model.py (OLD = K1-only name, NEW = "
+                         "staged K2 resref)")
     ap.add_argument("--no-model", action="store_true", help="textures only: skip the model conversion")
     ap.add_argument("--allow-variant-folders", action="store_true",
                     help="let Optional*/ and Upscale* folders of a source compete on equal terms "

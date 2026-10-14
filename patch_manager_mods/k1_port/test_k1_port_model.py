@@ -913,6 +913,29 @@ def test_golden_n_commm_matches_k2_vanilla_skin_and_planes():
     assert skins == 3, skins
 
 
+def test_supermodel_map_rewrites_header_name():
+    with workdir() as root:
+        pack, _ = make_pack(root, ONE_MESH, supermodel="P_OldBB")
+        r = run_cli(root, pack, "k1p_test", ["n_testtex=k1p_new"], extra=["--supermodel-map", "p_oldbb=k1p_newbb"])
+        man = manifest_of(r)
+        assert man["supermodel_mapped_to"] == "k1p_newbb", man
+        assert read_back(root / "out", "k1p_test")["supermodel"] == "k1p_newbb"
+
+
+def test_supermodel_map_unmatched_warns_and_bad_entries_refused():
+    with workdir() as root:
+        pack, _ = make_pack(root, ONE_MESH, supermodel="P_OldBB")
+        r = run_cli(root, pack, "k1p_test", ["n_testtex=k1p_new"], extra=["--supermodel-map", "p_other=k1p_x"])
+        man = manifest_of(r)
+        assert man["supermodel_mapped_to"] is None
+        assert any("not in the map" in w for w in man["warnings"]), man["warnings"]
+    for bad in ("nonsense", "P_OldBB=Has Space", "a=" + "b" * 17):
+        with workdir() as root:
+            pack, _ = make_pack(root, ONE_MESH, supermodel="P_OldBB")
+            r = run_cli(root, pack, "k1p_test", ["n_testtex=k1p_new"], extra=["--supermodel-map", bad])
+            assert_refused(r, root)
+
+
 PURE_TESTS = [
     ("identical_skin_and_tangent_summaries_all_true", test_identical_skin_and_tangent_summaries_all_true),
     ("differing_bonemap_flags_skin_bone_poses", test_differing_bonemap_flags_skin_bone_poses),
@@ -967,6 +990,8 @@ TESTS = [
     ("vanilla_source_not_flagged_and_outputs_registered", test_vanilla_source_not_flagged_and_outputs_registered),
     ("permission_source_flagged_for_removal", test_permission_source_flagged_for_removal),
     ("ledger_inside_repo_refused", test_ledger_inside_repo_refused),
+    ("supermodel_map_rewrites_header_name", test_supermodel_map_rewrites_header_name),
+    ("supermodel_map_unmatched_warns_and_bad_entries_refused", test_supermodel_map_unmatched_warns_and_bad_entries_refused),
     ("golden_n_commm_matches_k2_vanilla_skin_and_planes", test_golden_n_commm_matches_k2_vanilla_skin_and_planes),
 ]
 

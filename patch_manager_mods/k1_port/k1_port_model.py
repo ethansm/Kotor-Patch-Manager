@@ -186,6 +186,20 @@ def check_new_resref(name: str) -> None:
     if not NEW_RESREF_RE.fullmatch(name):
         raise Rejected(f"--new-resref {name!r} must be lowercase ASCII letters, digits and '_' only")
 
+def parse_supermodel_map(items: list[str] | None) -> dict[str, str]:
+    """--supermodel-map OLD=NEW pairs: lower(OLD) -> NEW. NEW follows the --new-resref rules (it names a staged model)."""
+    mapping: dict[str, str] = {}
+    for item in items or []:
+        old, sep, new = item.partition("=")
+        if not sep or not old or not new:
+            raise Rejected(f"--supermodel-map entry {item!r} must be OLD=NEW")
+        check_new_resref(new)
+        if old.lower() in mapping:
+            raise Rejected(f"--supermodel-map OLD {old!r} is given twice (names are case-insensitive)")
+        mapping[old.lower()] = new
+    return mapping
+
+
 def parse_tex_map(items: list[str]) -> dict[str, tuple[str, str]]:
     """Map lower(OLD) -> (OLD as typed, NEW lowercased). Validates the NEW names."""
     mapping: dict[str, tuple[str, str]] = {}
@@ -649,6 +663,7 @@ def convert(args: argparse.Namespace) -> dict:
     new_resref = args.new_resref if args.new_resref is not None else default_new_resref(resref)
     check_new_resref(new_resref)
     tex_map = parse_tex_map(args.tex_map)
+    sm_map = parse_supermodel_map(getattr(args, "supermodel_map", None))
 
     install = Path(args.install_k1).expanduser()
     if args.pack_dir is None:  # the install is only read without --pack-dir
@@ -710,6 +725,11 @@ def convert(args: argparse.Namespace) -> dict:
 
     renamed = apply_rename(mdl, tex_map)
     root_renamed = rename_model(mdl, new_resref)
+    sm_mapped_to = sm_map.get((mdl.supermodel or "").lower())
+    if sm_map and sm_mapped_to is None:
+        warnings.append(f"--supermodel-map: the model's supermodel {mdl.supermodel!r} is not in the map; unchanged")
+    if sm_mapped_to is not None:
+        mdl.supermodel = sm_mapped_to
     padded_slots = pad_skin_bones(mdl)
     planes_fixed = fix_face_planes(mdl)
     created_dir = not out_dir.exists()
@@ -756,6 +776,7 @@ def convert(args: argparse.Namespace) -> dict:
         "source": origin,
         "source_path": source_path,
         "supermodel": None if sm_status == "none" else mdl.supermodel,
+        "supermodel_mapped_to": sm_mapped_to,
         "supermodel_status": sm_status,
         "supermodel_origin": sm_origin,
         "texture_map": {old: new for old, new in tex_map.values()},
@@ -812,6 +833,9 @@ def build_parser() -> argparse.ArgumentParser:
                    help="removal ledger JSON (default: env K1PORT_LEDGER, else the library default)")
     p.add_argument("--tex-map", required=True, nargs="+", metavar="OLD=NEW",
                    help="texture renames, matched case-insensitively; NEW is written lowercase, max 31 chars")
+    p.add_argument("--supermodel-map", nargs="+", metavar="OLD=NEW", default=None,
+                   help="rewrite the header supermodel name OLD (a K1-only model, e.g. P_JuhaniBB) to NEW, the "
+                        "resref of the staged K2 copy (e.g. k1p_juhanibb); other supermodels stay as they are")
     p.add_argument("--new-resref", default=None, metavar="NAME",
                    help="output resref: file stem and internal model name; lowercase letters, digits, '_', "
                         f"max {RESREF_MAX} chars (default: {NEW_RESREF_PREFIX} + source resref, cut to {RESREF_MAX})")

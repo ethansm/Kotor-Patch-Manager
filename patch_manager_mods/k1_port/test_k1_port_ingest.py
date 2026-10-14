@@ -367,9 +367,13 @@ def _not_tpc(raw: bytes):
     raise ValueError("stub reader: not a TPC")
 
 
+calls_map: list = []  # supermodel_map argument of each fake run_model call
+
+
 def fake_run_model(calls: list):
     """Stands in for k1_port_model.py: writes a synthetic MDL/MDX pair and registers it as the converter does."""
-    def run(stage, ledger, install, cand, resref, new, pairs, allow_overlay=False):
+    def run(stage, ledger, install, cand, resref, new, pairs, allow_overlay=False, supermodel_map=None):
+        calls_map.append(supermodel_map)
         out_dir = stage / ing.MODEL_DIR
         out_dir.mkdir(parents=True, exist_ok=True)
         (out_dir / f"{new}.mdl").write_bytes(MDL_BYTES)
@@ -502,6 +506,18 @@ def clean_validation_registers_model(root):
     check("WARNING" not in r.stderr, f"clean run warned: {r.stderr!r}")
     models = sorted(Path(e["file"]).name for e in ledger_entries(root) if e["kind"] == "model")
     check(models == ["k1p_n_test.mdl", "k1p_n_test.mdx"], f"model entries: {models}")
+
+
+@test
+def supermodel_map_reaches_the_model_tool(root):
+    model_world(root)
+    calls_map.clear()
+    with stubbed(root), patched(kv, "validate", lambda mdl, mdx=None, **kw: []):
+        r = ingest_main(root, "--json", "--supermodel-map", "P_OldBB=k1p_newbb")
+    expect_rc(r, 0, "ingest with --supermodel-map")
+    check(calls_map == [["P_OldBB=k1p_newbb"]], f"run_model supermodel_map: {calls_map}")
+    s = subprocess.run([PY, "-I", "-B", str(DRIVER), "--help"], capture_output=True, text=True, timeout=60)
+    check("--supermodel-map" in s.stdout, "help lacks --supermodel-map")
 
 
 @test
