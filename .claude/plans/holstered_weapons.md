@@ -2,6 +2,8 @@
 
 Status 2026-10-13: research waves 1-3 persisted (`research/holstered_weapons/`), Blender installed, P0 scaffold next. Doc: `patch_manager_mods/42_holstered_weapons.md`.
 
+MASTER TRACKING (phase table, sub-plans, traps): `patch_manager_mods/42_holstered_weapons_master_plan.md`.
+
 ## Locked requirements (user)
 1. Self-contained Patch Manager DLL (no shipped model/2DA/anim files); works with ANY weapon-override mod; reuse Common (`_shared_src`): K2Addr.h (+ k2addr_test), SafeRead.h, CodePatch.h, SceneView.h, ActQueue.h, ItemRead.h, Party.h, NpcWorld.h, KpLog.h.
 2. ALL LIGHTSABERS (itemclass stems `w_Lghtsbr`, `w_ShortSbr`, `w_Dblsbr`; baseitems rows 8, 9, 10, live 106) on the HIP; vibroblades/other swords are NOT lightsabers. Hilt-only extent for placement.

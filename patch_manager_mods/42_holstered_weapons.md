@@ -1,6 +1,7 @@
 # 42 — Holstered weapons (hip/back hardpoints) — research
 
 Status: RESEARCH DONE; P0 probe scaffold BUILT, not installed (2026-10-13): `patch_manager_mods/holster_src/` (6 log-only detours, `HolsterLogic.h` pure logic + tests, contract test; K2Addr/GameAddr gained the holster addresses). Flag-file bone experiment BUILT (2026-10-13, `holster.ini bone_test=1`, patches only the `push` of the rhand/lhand literal in FUN_007637E0, verified-original, default off); next: user GO to install, then the play test below. Wave 1 = 10 Haiku web recon agents (all PARTIAL); waves 2-3 = 33 Haiku/REA agents on the Steam exe (raw: `research/holstered_weapons/wave2_3.md`). Decision: Option A (DLL only, attach to existing bones). Nothing installed.
+Master plan and phase table: `patch_manager_mods/42_holstered_weapons_master_plan.md`.
 Raw findings (URLs per claim): `research/holstered_weapons/raw/holster_*.md`.
 
 ## Goal
