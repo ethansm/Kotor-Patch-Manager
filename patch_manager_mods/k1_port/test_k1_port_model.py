@@ -794,6 +794,125 @@ def test_overlay_install_refused_without_allow_flag():
         assert "K1 HD overlay" not in r.stderr, "flag did not lift the overlay refusal: " + r.stderr[-300:]
 
 
+# ---------------------------------------------------------------- skin bones[16] padding and face planes
+
+def _ns(**kw):
+    import types
+    return types.SimpleNamespace(**kw)
+
+
+def _tree(*nodes):
+    root = _ns(children=list(nodes), skin=None, mesh=None)
+    return _ns(root=root)
+
+
+def test_pad_skin_bones_zeroes_only_unused_slots():
+    pk = _import_model()
+    junk = [5, 6, 7, 8, 9, 48769, 16256, 18384, 1, 2, 3, 4, 7, 8, 9, 10]
+    skin = _ns(bonemap=[0, 1, 2, 3, 4, -1, -1, -1], bone_indices=tuple(junk))
+    mdl = _tree(_ns(children=[], skin=skin, mesh=None))
+    changed = pk.pad_skin_bones(mdl)
+    assert skin.bone_indices[:5] == tuple(junk[:5]), skin.bone_indices
+    assert skin.bone_indices[5:] == (0,) * 11, skin.bone_indices
+    assert changed == 11, changed
+    assert pk.pad_skin_bones(mdl) == 0, "second run must be a no-op"
+
+
+def test_pad_skin_bones_leaves_full_and_empty_skins_alone():
+    pk = _import_model()
+    full = _ns(bonemap=list(range(16)), bone_indices=tuple(range(100, 116)))
+    empty = _ns(bonemap=[-1, -1], bone_indices=tuple(range(16)))
+    mdl = _tree(_ns(children=[], skin=full, mesh=None), _ns(children=[], skin=empty, mesh=None))
+    assert pk.pad_skin_bones(mdl) == 0
+    assert full.bone_indices == tuple(range(100, 116)) and empty.bone_indices == tuple(range(16))
+
+
+def test_fix_face_planes_recomputes_float_distance():
+    pk = _import_model()
+    v = lambda x, y, z: _ns(x=x, y=y, z=z)  # noqa: E731
+    face = _ns(v1=1, normal=v(0.0, 0.0, 1.0), coefficient=0)
+    flat = _ns(v1=0, normal=v(0.0, 0.0, 1.0), coefficient=0)
+    mesh = _ns(faces=[face, flat], vertex_positions=[v(0, 0, 0), v(1, 2, 0.4)])
+    mdl = _tree(_ns(children=[], skin=None, mesh=mesh))
+    assert pk.fix_face_planes(mdl) == 1  # `flat` already has distance 0 = -dot(n, origin)
+    assert abs(face.coefficient + 0.4) < 1e-9, face.coefficient  # the int() truncation to 0 is gone
+    assert flat.coefficient == 0 or abs(flat.coefficient) < 1e-12
+
+
+def _import_model():
+    spec = importlib.util.spec_from_file_location("k1_port_model_mod", CLI)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["k1_port_model_mod"] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _raw_skin_and_planes(mdl, tm):
+    """DFS over the node tree of a K2-layout MDL. Returns (name table, {lowercase node name: (bones16 or None,
+    [plane distances])}). bones16 values index the name table."""
+    nc = struct.unpack_from("<I", mdl, 12 + 0xC0)[0]
+    ap = struct.unpack_from("<I", mdl, 12 + 0xB8)[0]
+    tab = [mdl[12 + struct.unpack_from("<I", mdl, 12 + ap + 4 * i)[0]:].split(b"\0")[0].decode("latin1").lower()
+           for i in range(nc)]
+    out = {}
+
+    def walk(off):
+        typ, idx = struct.unpack_from("<HH", mdl, off)[0], struct.unpack_from("<H", mdl, off + 4)[0]
+        bones, planes = None, []
+        if typ & 0x20:
+            T = off + 80
+            fp, fc = struct.unpack_from("<II", mdl, T + 8)
+            planes = [struct.unpack_from("<f", mdl, 12 + fp + 32 * i + 12)[0] for i in range(fc)]
+            if typ & 0x40:
+                bones = struct.unpack_from("<16H", mdl, T + tm + 64)
+        out[tab[idx]] = (bones, planes)
+        cp, cc = struct.unpack_from("<II", mdl, off + 44)
+        for k in range(cc):
+            walk(12 + struct.unpack_from("<I", mdl, 12 + cp + 4 * k)[0])
+
+    walk(12 + struct.unpack_from("<I", mdl, 12 + 40)[0])
+    return tab, out
+
+
+def test_golden_n_commm_matches_k2_vanilla_skin_and_planes():
+    """Convert the real K1 n_commm and compare against K2 vanilla n_commm, node by node by name (K2 has one extra
+    node, freelookhook, so indices shift): real bones[16] slots name the same nodes, padding slots are in range,
+    and every plane distance is within 1e-3 of vanilla."""
+    k1 = Path(os.path.expanduser(os.environ.get("K1_INSTALL", "~/.local/share/Steam/steamapps/common/swkotor")))
+    if not (k1 / "chitin.key").is_file() or not (REAL_K2 / "chitin.key").is_file():
+        raise Skip("K1 or K2 install not found")
+    vspec = importlib.util.spec_from_file_location("tv_golden", HERE / "test_k1_port_validate.py")
+    tv = importlib.util.module_from_spec(vspec)
+    sys.modules["tv_golden"] = tv
+    vspec.loader.exec_module(tv)
+    van = next(((m, x) for n, m, x in tv._vanilla_k2_pairs() if n == "n_commm"), None)
+    assert van is not None, "n_commm missing from K2 chitin"
+    with workdir() as root:
+        r = subprocess.run([K1PORT_PY, str(CLI), "--install-k1", str(k1), "--resref", "n_commm", "--out-dir",
+                            str(root / "out"), "--k2-install", str(REAL_K2), "--new-resref", "k1p_commm",
+                            "--source-id", "vanilla_k1", "--tex-map", "N_CommM04=k1p_commm04"],
+                           capture_output=True, text=True, timeout=300, env=test_env(root / "ledger.json"), cwd=root)
+        man = manifest_of(r)
+        assert man["face_planes_recomputed"] > 0 and man["skin_mesh_count"] == 3, man
+        ours = (root / "out" / "k1p_commm.mdl").read_bytes()
+    tab_o, nodes_o = _raw_skin_and_planes(ours, 340)
+    tab_v, nodes_v = _raw_skin_and_planes(van[0], 340)
+    extra_v = set(nodes_v) - set(nodes_o) - {"n_commm"}
+    assert extra_v == {"freelookhook"}, extra_v
+    skins = 0
+    for name, (bo, po) in nodes_o.items():
+        if name == "k1p_commm":
+            continue
+        bv, pv = nodes_v[name]
+        assert len(po) == len(pv), name
+        assert all(abs(a - b) < 1e-3 for a, b in zip(po, pv)), f"{name}: plane distance differs from K2 vanilla"
+        if bo is not None:
+            skins += 1
+            assert all(x < len(tab_o) for x in bo), f"{name}: bones[16] slot out of range: {bo}"
+            assert [tab_o[x] for x in bo[:14]] == [tab_v[x] for x in bv[:14]], f"{name}: real bone slots differ"
+    assert skins == 3, skins
+
+
 PURE_TESTS = [
     ("identical_skin_and_tangent_summaries_all_true", test_identical_skin_and_tangent_summaries_all_true),
     ("differing_bonemap_flags_skin_bone_poses", test_differing_bonemap_flags_skin_bone_poses),
@@ -810,6 +929,9 @@ PURE_TESTS = [
     ("new_resref_rules", test_new_resref_rules),
     ("root_rename_only_when_root_is_the_model", test_root_rename_only_when_root_is_the_model),
     ("skin_unknown0_warning_is_gone", test_skin_unknown0_warning_is_gone),
+    ("pad_skin_bones_zeroes_only_unused_slots", test_pad_skin_bones_zeroes_only_unused_slots),
+    ("pad_skin_bones_leaves_full_and_empty_skins_alone", test_pad_skin_bones_leaves_full_and_empty_skins_alone),
+    ("fix_face_planes_recomputes_float_distance", test_fix_face_planes_recomputes_float_distance),
 ]
 
 
@@ -845,6 +967,7 @@ TESTS = [
     ("vanilla_source_not_flagged_and_outputs_registered", test_vanilla_source_not_flagged_and_outputs_registered),
     ("permission_source_flagged_for_removal", test_permission_source_flagged_for_removal),
     ("ledger_inside_repo_refused", test_ledger_inside_repo_refused),
+    ("golden_n_commm_matches_k2_vanilla_skin_and_planes", test_golden_n_commm_matches_k2_vanilla_skin_and_planes),
 ]
 
 

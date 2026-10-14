@@ -227,6 +227,58 @@ def walk_nodes(node):
         yield from walk_nodes(child)
 
 
+def real_bone_count(skin) -> int:
+    """Bones a skin node really has: bonemap entries >= 0 (the rest are -1 = node without a bone)."""
+    return sum(1 for b in skin.bonemap if int(b) >= 0)
+
+
+def pad_skin_bones(mdl) -> int:
+    """Zero the unused slots of every skin header's bones[16] list; returns the number of slots rewritten.
+
+    Slots 0..n-1 hold the nodes of bone serials 0..n-1 (n = real_bone_count). Slots n..15 are never read by
+    a weight, but K1 leaves uninitialised memory there. K2 vanilla does too (617 of 1414 skins hold values
+    beyond the node count), so the content is irrelevant to the engine; zero is a valid node index and makes
+    the output deterministic. A skin with 16 or more bones (or none) is left alone.
+    """
+    changed = 0
+    for node in walk_nodes(mdl.root):
+        skin = node.skin
+        if skin is None:
+            continue
+        n = real_bone_count(skin)
+        if n == 0 or n >= 16:
+            continue
+        slots = [int(b) for b in skin.bone_indices][:16]
+        slots += [0] * (16 - len(slots))
+        padded = slots[:n] + [0] * (16 - n)
+        changed += sum(1 for a, b in zip(slots, padded) if a != b)
+        skin.bone_indices = tuple(padded)
+    return changed
+
+
+def fix_face_planes(mdl) -> int:
+    """Set every face's plane distance to -dot(normal, vertex 1) as a float; returns the faces rewritten.
+
+    pykotor reads the binary float into an int field (int() truncates it), so a distance below 1 in magnitude
+    arrives as 0 and the writer stores the truncated value. K2 vanilla stores real floats.
+    """
+    changed = 0
+    for node in walk_nodes(mdl.root):
+        mesh = node.mesh
+        if mesh is None or not mesh.faces or not mesh.vertex_positions:
+            continue
+        pos = mesh.vertex_positions
+        for face in mesh.faces:
+            if not 0 <= int(face.v1) < len(pos):
+                continue
+            p, nrm = pos[int(face.v1)], face.normal
+            d = -(float(nrm.x) * float(p.x) + float(nrm.y) * float(p.y) + float(nrm.z) * float(p.z))
+            if d != face.coefficient:
+                face.coefficient = d
+                changed += 1
+    return changed
+
+
 def _bounds(points, axes=("x", "y", "z")):
     if not points:
         return None, None
@@ -658,6 +710,8 @@ def convert(args: argparse.Namespace) -> dict:
 
     renamed = apply_rename(mdl, tex_map)
     root_renamed = rename_model(mdl, new_resref)
+    padded_slots = pad_skin_bones(mdl)
+    planes_fixed = fix_face_planes(mdl)
     created_dir = not out_dir.exists()
     written: list[Path] = []
     ledger_touched = False
@@ -709,6 +763,8 @@ def convert(args: argparse.Namespace) -> dict:
         "node_count": len(src["nodes"]),
         "mesh_count": len(src["meshes"]),
         "skin_mesh_count": skin_count,
+        "bones16_slots_zeroed": padded_slots,
+        "face_planes_recomputed": planes_fixed,
         "k2_collision_checked": k2_checked,
         "k2_collision": k2_collision,
         "synth_zero_uv": synth,
