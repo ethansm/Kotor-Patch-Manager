@@ -18,7 +18,7 @@ Full reference (paths, verdict table, build, rollback, troubleshooting, Gemini p
 4. **GO, then apply:** ask the user for GO with the game closed, then `python3 scripts/kpm_hotswap.py --mod <id>... --apply` (one backup dir, atomic swap).
 5. **Verify:** `kpm_status.py` shows `LIVE`; `python3 scripts/kotor2_logs.py check <log> --new` after play. Rollback: `kpm_hotswap.py --rollback latest` (`--list-backups` to browse).
 
-Rules: never run two installers at once (re-run `kpm_status.py` before and after; changing md5s mean a peer is installing, so stop and ask). Never KPatchLauncher for a hot-swappable change (it reverts peer DLLs); full reinstall only for hooks, exports/imports, new ids or a regenerated `patch_config.toml` (see the doc, section 4). Never run `check_shared_headers.py --sync` inside an install step.
+Rules: never run two installers at once (re-run `kpm_status.py` before and after; changing md5s mean a peer is installing, so stop and ask). Never KPatchLauncher for a hot-swappable change (it reverts peer DLLs); full reinstall only for hooks, exports/imports, new ids or a regenerated `patch_config.toml` (see the doc, section 4); automated: `python3 scripts/kpm_reinstall.py --mod <id> [--dry-run]` (needs the user's GO, game closed, rollback built in). Never run `check_shared_headers.py --sync` inside an install step.
 
 ## KPM repo, staging, PR branches
 

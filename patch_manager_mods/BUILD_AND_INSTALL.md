@@ -70,7 +70,7 @@ KPATCH_NO_LAUNCH=1 "$K/bin/NoLaunch/KPatchLauncher" "$G/swkotor2.exe" --patches 
 ```
 
 Risks: it uninstalls and reinstalls every patch, so it reverts peer DLLs that were hot-swapped but not committed to a kpatch, and it rewrites the hand-edited `patch_config.toml`. Pass every live id, not only the changed one. Take a backup of the DLLs, `patch_config.toml` and `kpm_install_state.json` first (a manual `$G/backups/<tag>_full_<ts>/`), and run `kpm_status.py` afterwards.
-Automated alternative (doc 36 Phase H10): `python3 scripts/kpm_reinstall.py --mod <id>` automates this workflow while preserving peer DLLs.
+Automated alternative (doc 36 Phase H10): `python3 scripts/kpm_reinstall.py --mod <id> [<id> ...] [--dry-run]` (targets must read exactly `REINSTALL`; game closed; needs the user's GO). It snapshots `patches/` + both config files to `$G/backups/<tag>_reinstall_<ts>/`, stages one `<id>.kpatch` per live id in a FLAT `stage/` dir, runs `KPatchLauncher` with every live id, restores peer DLLs that were hot-swapped away from their kpatch, warns (never edits) if the launcher dropped config keys, verifies the targets read `LIVE`, and rolls back on any failure. Manual restore: `kpm_reinstall.py --rollback <dir|latest>` (restores config unconditionally). Narrower than doc 36's "merge custom sections": no custom sections exist in the live config, so it only warns.
 
 ## 5. Step-by-step flow (hot-swap)
 
