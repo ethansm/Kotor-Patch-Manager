@@ -1,17 +1,18 @@
 # Session Handoff & Plan State: patch_manager_mods/ghidra_knowledge/DECOMP_PLAN.md
 
 ## 0. Next-Phase Direction
-Execute D4: `named_decomp.py` named decompile; G4 CSWCCreature
+DECOMP_PLAN D4 — Batch B: named_decomp.py (T4.1 Haiku, V4 Sonnet, G4 live on CSWSCreatureStats), docs, mark-done D4
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/ghidra_knowledge/DECOMP_PLAN.md`
-- **Branch:** `KOTOR-II` (85ad108 DECOMP D3: cost line)
-- **Generated:** 2026-10-15 19:50:28 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (c280e03 DECOMP D3: mark done, handoff to D4)
+- **Generated:** 2026-10-15 19:50:51 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-85ad108 DECOMP D3: cost line
- patch_manager_mods/ghidra_knowledge/DECOMP_PLAN.md | 1 +
- 1 file changed, 1 insertion(+)
+c280e03 DECOMP D3: mark done, handoff to D4
+ .claude/handoffs/DECOMP_PLAN.handoff.md            | 37 ++++++++++++----------
+ patch_manager_mods/ghidra_knowledge/DECOMP_PLAN.md |  2 +-
+ 2 files changed, 21 insertions(+), 18 deletions(-)
 ```
 - **Dirty Files (150):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
