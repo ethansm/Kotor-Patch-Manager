@@ -17,7 +17,7 @@ the user directs PR 5). User decisions: mod-demand order, then Phase E and the P
 | P3 | B16 mod GUI/engine classes | DONE: SHIPPED (branch caf65ec, +146) | README B16 |
 | P4 | B11a CClientExoApp(+Internal) | DONE: SHIPPED (branch bcb4acb, +356) | README B11a |
 | P5 | B12a CSWSCreature lower half | DONE: SHIPPED (branch db4f5cf, +171; 3,420 rows) | README B12a |
-| R1 | REA mapping plan: design how REA MCP (rea-recon Haiku, findings ledger `ghidra_knowledge/rea_findings/`, cc6a424) maps the Steam exe into the DB: where REA replaces/augments candidates, reviewer cards, Opus gates, rotation audits; pilot on one batch; cost/accuracy gate vs the Sonnet-card baseline | TODO (plan-mode next) | handoff MASTER_PLAN |
+| R1 | REA mapping plan: design how REA MCP (rea-recon Haiku, findings ledger `ghidra_knowledge/rea_findings/`, cc6a424) maps the Steam exe into the DB: where REA replaces/augments candidates, reviewer cards, Opus gates, rotation audits; pilot on one batch; cost/accuracy gate vs the Sonnet-card baseline | DONE | handoff MASTER_PLAN |
 | R2 | REA + Sonnet re-pilot: 2 Sonnet reviewers on the 50 R1 pilot cards (`B13a/rea_pilot/cards_rea/`), scored with `score_pilot.py` vs Sonnet-orig 10/14; GO = LS > 10/14 or >= 1 of the 4 Opus-only rows, 0 decoys, < $0.08/card; else REA only for u06 fill | TODO | B13a/rea_pilot/PILOT.md |
 | R3 | REA in B17 cards (`rea_questions.py` -> rea-recon <= 2-3 parallel -> `cards --rea`), only if R2 GO | TODO (gated on R2) | DESIGN 4.9 |
 | R4 | Optional Opus calibration: may REA callers count as A-CALLEE (twin separation required first) | TODO (optional) | DESIGN 4.9 |
