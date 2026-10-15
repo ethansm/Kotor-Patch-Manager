@@ -639,8 +639,9 @@ class RescueTests(Base):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("adopted 1 leftover edit", r.stdout)
         self.assertEqual(self.st.read_claim("WI-01")["own_partial"], ["src/a.txt"])
-        self.worker_reply(self.claim_wave("WI-01"), "None")
-        self.assertEqual(self.drv("verify", "WI-01").returncode, 0)
+        self.worker_reply(self.claim_wave("WI-01"), "src/a.txt")  # a no-op worker still lists the adopted file
+        v = self.drv("verify", "WI-01")
+        self.assertEqual(v.returncode, 0, v.stdout + v.stderr)
         self.checker_reply(self.st.read_claim("WI-01")["checker_wave"])
         self.assertEqual(self.drv("docs", "WI-01").returncode, 0)
         c = self.drv("close", "WI-01")

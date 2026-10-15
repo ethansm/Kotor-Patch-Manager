@@ -390,9 +390,12 @@ def wave_check(st, wave_id, wi):
     except ValueError:
         return {"status": "ERROR", "verdict": "-", "finding": last_lines(r.stderr or r.stdout, 3), "problems": []}
     u = data["units"][0] if data.get("units") else {"status": "MISSING", "verdict": "-", "finding": "no units", "problems": []}
-    if not any(p["code"] in FOREIGN_CODES for p in u.get("problems", [])):
+    claim = st.read_claim(wi.id) or {}
+    own = set(claim.get("own_partial", []))  # edits adopted from this item's earlier attempt show no change since the claim
+    probs = [(p["level"], p["code"], p["detail"]) for p in u.get("problems", [])
+             if not (p["code"] == "NOT_DIRTY" and any(p["detail"] == f"MODIFIED {o} shows no change" for o in own))]
+    if len(probs) == len(u.get("problems", [])) and not any(c in FOREIGN_CODES for _, c, _ in probs):
         return u
-    probs = [(p["level"], p["code"], p["detail"]) for p in u["problems"]]
     kept, foreign = filter_foreign(probs, wi, wave_reply_text(st.root, wave_id), data.get("kind", "worker"))
     if foreign:
         st.trace(wi.id, "foreign", "NOTE", "not this item's, ignored: " + ", ".join(foreign), paths=foreign)
