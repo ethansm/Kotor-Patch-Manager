@@ -1,6 +1,22 @@
 // Host test of the GuiKit.h additions: imageFor out-params / 256 pool, createLabelFromTemplate failure reason.
 // Fake engine in a MAP_32BIT arena (see research/companion_levelup/tools/parity/guikit_test.cpp for the full parity test).
 #define GUIKIT_HOST 1
+#include <windows.h>
+// Protection faking (as saferead_test.cpp): the host stub's VirtualQuery reports every address as one committed PAGE_READWRITE region.
+// Route SafeRead.h's VirtualQuery through a wrapper that overrides State/Protect for one chosen range and forwards everything else.
+struct FakeRange { uintptr_t lo, hi; DWORD protect, state; };
+static FakeRange g_fake;   // hi == 0: no override
+static auto g_realVQ = &VirtualQuery;
+static SIZE_T fakeVQ(LPCVOID a, MEMORY_BASIC_INFORMATION* m, SIZE_T n) {
+    SIZE_T r = g_realVQ(a, m, n);
+    uintptr_t p = reinterpret_cast<uintptr_t>(a);
+    if (r && g_fake.hi && p >= g_fake.lo && p < g_fake.hi) {
+        m->BaseAddress = reinterpret_cast<void*>(g_fake.lo); m->RegionSize = g_fake.hi - g_fake.lo;
+        m->Protect = g_fake.protect; m->State = g_fake.state;
+    }
+    return r;
+}
+#define VirtualQuery fakeVQ
 #include "GuiKit.h"
 #include "check.h"
 #include <sys/mman.h>
@@ -456,5 +472,34 @@ int main() {
         g_gk = saved;
     }
     g_gkCallLabelDtor = dtorSaved; at<uint32_t>(LabelVtable, 0) = slot0Saved;
+    // ---- wr write probe (WI-100a): a target that is readable but not writable returns false and keeps its bytes; no fault ----
+    {
+        uintptr_t k = arenaAlloc(0x200);
+        const uintptr_t lo = k & ~uintptr_t(0xFFF), hi = lo + 0x2000;   // fake region covers the whole control (it may straddle a page)
+        auto fake = [&](DWORD prot, DWORD state = MEM_COMMIT) { g_fake = { lo, hi, prot, state }; saferead::beginScope(); };
+        void* const img = reinterpret_cast<void*>(0x5000);
+        at<uint32_t>(k, 0x100) = 0x1234u; at<int>(k, Ctl_Flags) = FlagVisible | FlagClickThrough;
+        at<uint32_t>(k, Label_Border) = 0x9875BC; at<uint32_t>(k, Label_Border + Border_Fill) = 0x77u;
+        // direct wr: every non-writable protection / state refuses and leaves the word alone
+        const DWORD bad[] = { PAGE_READONLY, PAGE_EXECUTE_READ, PAGE_NOACCESS, PAGE_READWRITE | PAGE_GUARD };
+        for (DWORD prot : bad) { fake(prot); KT_CHECK(!detail::wr<uint32_t>(k, 0x100, 0xDEADu)); KT_CHECK_EQ(at<uint32_t>(k, 0x100), 0x1234u); }
+        fake(PAGE_READWRITE, 0x2000 /* MEM_RESERVE */); KT_CHECK(!detail::wr<uint32_t>(k, 0x100, 0xDEADu)); KT_CHECK_EQ(at<uint32_t>(k, 0x100), 0x1234u);
+        // writable protections (fake and stub default) keep storing, with and without a cached region
+        const DWORD good[] = { PAGE_READWRITE, PAGE_WRITECOPY, PAGE_EXECUTE_READWRITE };
+        for (DWORD prot : good) { fake(prot); KT_CHECK(detail::wr<uint32_t>(k, 0x100, 0x2222u) && at<uint32_t>(k, 0x100) == 0x2222u); at<uint32_t>(k, 0x100) = 0x1234u; }
+        // setters, read-only region: the read probe passes (caches the region), the write refuses; nothing changes
+        fake(PAGE_READONLY);
+        KT_CHECK(!setClickable(k, true)); KT_CHECK_EQ(at<int>(k, Ctl_Flags), (int)(FlagVisible | FlagClickThrough));
+        KT_CHECK(!setFill(k, img)); KT_CHECK_EQ((unsigned long long)at<uint32_t>(k, Label_Border + Border_Fill), 0x77ull);
+        // same setters, writable region: unchanged behaviour
+        fake(PAGE_READWRITE);
+        KT_CHECK(setClickable(k, true)); KT_CHECK_EQ(at<int>(k, Ctl_Flags), (int)FlagVisible);
+        KT_CHECK(setFill(k, img)); KT_CHECK_EQ((unsigned long long)at<uint32_t>(k, Label_Border + Border_Fill), 0x5000ull);
+        // null / low base and a base+off that wraps below base are refused without a store
+        g_fake = {}; saferead::beginScope();
+        KT_CHECK(!detail::wr<uint32_t>(0, 0x100, 1u)); KT_CHECK(!detail::wr<uint32_t>(0x10, 0, 1u));
+        if (sizeof(uintptr_t) == 8) KT_CHECK(!detail::wr<uint32_t>(~uintptr_t(0) - 0xFFFFF, 0x120000, 1u));   // wraps to 0x20000
+        KT_CHECK(detail::wr<uint32_t>(k, 0x100, 0x3333u) && at<uint32_t>(k, 0x100) == 0x3333u);   // back to the default stub: stores
+    }
     return kt::Report("guikit_test");
 }

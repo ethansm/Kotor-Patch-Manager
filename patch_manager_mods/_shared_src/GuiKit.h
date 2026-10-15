@@ -120,10 +120,12 @@ constexpr unsigned SiteBase = 0x6B00;
 template <typename T> inline bool rd(uintptr_t base, int off, T* out) { return saferead::readAt<T>(SiteBase, base, off, out); }
 inline bool rd32(uintptr_t base, int off, uint32_t* out) { return rd<uint32_t>(base, off, out); }
 inline bool rdInt(uintptr_t base, int off, int* out) { return rd<int>(base, off, out); }
-// Guarded write of a value to engine memory: the target must be readable (same guard level as the originals' direct stores).
+// Guarded write of a value to engine memory: the target must be committed, writable memory (saferead::probeWrite); read-only or unmapped
+// targets return false instead of faulting. Same base/offset-wrap guard as saferead::readAt.
 template <typename T> inline bool wr(uintptr_t base, int off, T v) {
-    T cur; if (!rd<T>(base, off, &cur)) return false;
-    *reinterpret_cast<T*>(base + off) = v; return true;
+    uintptr_t a = base + uintptr_t(off);
+    if (base == 0 || (off >= 0 ? a < base : a > base) || !saferead::probeWrite(SiteBase, reinterpret_cast<void*>(a), sizeof(T))) return false;
+    *reinterpret_cast<T*>(a) = v; return true;
 }
 // Table fields for this exe (0 = unknown): struct offsets and vtable addresses.
 inline int off(int K2AddrTable::* m) { return k2addr::off(m); }
