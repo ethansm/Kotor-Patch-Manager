@@ -171,9 +171,10 @@ def doc_read_ranges(root, wi, pad=DOC_PAD_LINES, span=DOC_MAX_SPAN):
     return out
 
 
-def worker_wave(st, wi, claim, retry_note=""):
+def worker_wave(st, wi, claim, retry_note="", model="haiku"):
     n = claim.get("attempt", 0) + 1
     claim["attempt"] = n
+    claim["checker_reruns"] = 0  # a fresh worker attempt gets a fresh checker rerun allowance
     kind = "recon" if wi.state == "verify-only" else "worker"
     wi_md = f"{wm.WORK_DIR.as_posix()}/{wi.id}.md"
     files = [f for f in wi.files if (st.root / f).is_file()]
@@ -195,11 +196,16 @@ def worker_wave(st, wi, claim, retry_note=""):
     extra = lessons_for(st, wi.id)
     if extra:
         task += " Lessons: " + " | ".join(extra)
-    if retry_note:
+    if retry_note and model != "haiku":
+        task += (" ESCALATION: two Haiku attempts did not pass. Earlier attempts' edits are already in the working tree (see the item.diff "
+                 "files under .claude/waves/" + claim["wave_prefix"] + "-a*/). Failure: " + retry_note +
+                 " Resolve exactly what was flagged. If a Step is already satisfied or contradicts the source, do not skip it silently: "
+                 "put the file:line evidence in NOTES so the checker can confirm it. Stay inside the Write Scope.")
+    elif retry_note:
         task += " RETRY, previous attempt failed: " + retry_note
     wave_id, desc, prompt = make_wave(st, wi, claim, f"a{n}", kind, task, entries, scope)
     claim["wave"], claim["stage"] = wave_id, "worker"
-    return claim, spawn_lines(desc, prompt)
+    return claim, spawn_lines(desc, prompt, model)
 
 
 # ---------------------------------------------------------------- next
@@ -226,6 +232,8 @@ def cmd_next(a, st):
             skipped = []
         else:
             dirty = set(ac.git_dirty(root))
+            mine = own_partial(st, a.wi) if a.wi else []  # leftover edits from this item's own parked attempt are not "another session"
+            dirty -= set(mine)
             wi, skipped = wm.pick_next(items, done, live, dirty, a.wi, parked)
             if wi is None:
                 reasons = [f"  {w}: {r}" for w, r in skipped[:8]]
@@ -267,6 +275,9 @@ def cmd_next(a, st):
             n = ac.write_snapshot(root, base)
             claim["base"] = base.relative_to(root).as_posix()
             claim["base_dirty"] = n
+            claim["own_partial"] = [p for p in mine if allowed_path(p, wi)]
+            if claim["own_partial"]:
+                header.append(f"  adopted {len(claim['own_partial'])} leftover edit(s) from this item's earlier attempt (committed by close): {claim['own_partial'][0]}")
         try:
             claim, spawn = worker_wave(st, wi, claim)
         except DriverError:
@@ -399,23 +410,30 @@ def wave_check(st, wave_id, wi):
 
 
 def fail_path(st, wi, claim, reason, excerpt, session):
-    """One Haiku retry with the failure excerpt, then park."""
+    """One Haiku retry, then one Sonnet escalation, then park."""
     st.trace(wi.id, "fail", "FAIL", f"{reason}: {excerpt}"[:300])
     claim = st.read_claim(wi.id)
+    note = f"{reason}: {excerpt}"[:600].replace("\n", " ")
     if claim["retries"] < 1:
         claim["retries"] += 1
-        claim, spawn = worker_wave(st, wi, claim, retry_note=f"{reason}: {excerpt}"[:600].replace("\n", " "))
-        st.write_claim(wi.id, claim)
-        print(f"FAIL {wi.id}: {reason}")
-        print(excerpt)
-        print("RETRY (1 of 1):")
-        print("\n".join(spawn))
-        print(f"THEN: python3 scripts/wi_driver.py verify {wi.id}")
-        return 1
-    print(f"FAIL {wi.id}: {reason}\n{excerpt}")
-    worker_fail = reason.startswith("worker reply FAIL")
-    return park(st, wi, claim, f"{reason}: {excerpt}"[:200], session,
-                rescue=worker_fail and rescue_rounds(st, wi) < MAX_RESCUE_ROUNDS, capped=worker_fail and rescue_rounds(st, wi) >= MAX_RESCUE_ROUNDS)
+        claim, spawn = worker_wave(st, wi, claim, retry_note=note)
+        label = "RETRY (1 of 1, Haiku):"
+    elif not claim.get("escalated"):
+        claim["escalated"] = True
+        claim, spawn = worker_wave(st, wi, claim, retry_note=note, model="sonnet")
+        label = "ESCALATE (Sonnet 5.5, last attempt before park):"
+    else:
+        print(f"FAIL {wi.id}: {reason}\n{excerpt}")
+        worker_fail = reason.startswith("worker reply FAIL")
+        return park(st, wi, claim, f"{reason}: {excerpt}"[:200], session,
+                    rescue=worker_fail and rescue_rounds(st, wi) < MAX_RESCUE_ROUNDS, capped=worker_fail and rescue_rounds(st, wi) >= MAX_RESCUE_ROUNDS)
+    st.write_claim(wi.id, claim)
+    print(f"FAIL {wi.id}: {reason}")
+    print(excerpt)
+    print(label)
+    print("\n".join(spawn))
+    print(f"THEN: python3 scripts/wi_driver.py verify {wi.id}")
+    return 1
 
 
 def cmd_verify(a, st):
@@ -463,11 +481,12 @@ def cmd_verify(a, st):
             f"says and touches nothing else, REFUTED if it does not, PARTIAL or UNSURE otherwise. Write findings to your OUTPUT file.")
     entries = [f"{wm.WORK_DIR.as_posix()}/{wi.id}.md", diff_path.relative_to(root).as_posix()]
     wave_id, desc, prompt = make_wave(st, wi, claim, f"b{claim.get('attempt', 1)}", "recon", task, entries, [])
+    chk_model = "sonnet" if claim.get("escalated") else "haiku"  # the escalated attempt is judged by Sonnet too
     claim.update(stage="gated", checker_wave=wave_id)
     claim["trace"].append({"ts": ws.now_iso(), "phase": "verify", "status": "PASS", "detail": f"{len(results)} gate cmd(s) {why}"})
     st.write_claim(wi.id, claim)
     print(f"GATE PASS {wi.id} ({len(results)} cmd, {why}); worker reply {chk['status']} verdict {chk['verdict']}")
-    print("\n".join(spawn_lines(desc, prompt)))
+    print("\n".join(spawn_lines(desc, prompt, chk_model)))
     print(f"THEN: python3 scripts/wi_driver.py docs {wi.id}")
     return 0
 
@@ -523,7 +542,7 @@ def cmd_docs(a, st):
             print(f"CHECKER {chk['status']}: {chk['finding']}\nRERUN the checker once (same spawn as printed by verify), then run docs again.")
             return 1
         if not a.dry_run:
-            return park(st, wi, claim, f"checker {chk['status']} twice: {chk['finding']}"[:200], claim["session"])
+            return fail_path(st, wi, claim, f"checker {chk['status']} twice", chk["finding"], claim["session"])
     verdict = chk.get("verdict", "-")
     if verdict != "CONFIRMED" and not a.dry_run:
         # PARTIAL, REFUTED or missing ("-") all stop here; only CONFIRMED lets docs mark the plan rows
@@ -635,7 +654,7 @@ def run_record(st, wi, claim, outcome, **extra):
     dur = int((ws.parse_iso(closed) - ws.parse_iso(claim["claimed_at"])).total_seconds())
     tr = claim.get("trace", [])
     return {"wi": wi.id, "outcome": outcome, "session": claim["session"], "claimed_at": claim["claimed_at"], "closed_at": closed,
-            "duration_s": dur, "retries": claim.get("retries", 0), "state": wi.state, "size": wi.size, "prio": wi.prio,
+            "duration_s": dur, "retries": claim.get("retries", 0), "escalated": bool(claim.get("escalated")), "state": wi.state, "size": wi.size, "prio": wi.prio,
             "gates": [{"cmd": t["detail"].split(" :: ")[0][:120], "status": t["status"], "secs": t.get("secs", 0),
                        "detail": t["detail"].split(" :: ", 1)[1][:160] if " :: " in t["detail"] else ""} for t in tr if t["phase"] == "gate"],
             "failures": [{"detail": t["detail"][:200]} for t in tr if t["phase"] in ("fail", "check") and t["status"] != "OK"],
@@ -712,9 +731,10 @@ def cmd_close(a, st):
             return 1
     base = ac.read_snapshot(root / claim["base"])
     changed, now = ac.changed_since(root, base)
-    item_set = sorted(p for p in changed if allowed_path(p, wi))
+    own = set(claim.get("own_partial", []))
+    item_set = sorted({p for p in changed if allowed_path(p, wi)} | (own & set(ac.git_dirty(root))))
     stray = sorted(p for p in changed if not allowed_path(p, wi))
-    pre_dirty = [p for p in item_set if p in base]
+    pre_dirty = [p for p in item_set if p in base and p not in own]
     if pre_dirty:
         st.trace(wi.id, "close", "BLOCKED", f"pre-dirty in-scope: {pre_dirty[:3]}")
         print(f"HARD STOP {wi.id}: in-scope path(s) were already dirty before the claim, committing would sweep another session's edits:")
@@ -730,7 +750,7 @@ def cmd_close(a, st):
     if len(unres) > 3:
         msg_lines.append(f"  (+{len(unres) - 3} more)")
     msg_lines += [f"Gate: {sum(1 for t in claim['trace'] if t['phase'] == 'gate' and t['status'] == 'PASS')} command(s) PASS; "
-                  f"checker verdict {claim.get('checker_verdict')}; retries {claim['retries']}", "", TRAILER, ""]
+                  f"checker verdict {claim.get('checker_verdict')}; retries {claim['retries']}{', escalated to Sonnet' if claim.get('escalated') else ''}", "", TRAILER, ""]
     message = "\n".join(msg_lines)
     if a.dry_run:
         print(f"DRY RUN close {wi.id}: would commit {len(item_set)} path(s)")
@@ -763,6 +783,7 @@ def cmd_close(a, st):
                                                                  "foreign_dirty": dirty_now, "left_dirty": left, "stray": stray[:10],
                                                                  "unresolved": claim.get("docs_unresolved", [])[:5]}), encoding="utf-8")
     st.release(wi.id)
+    (st.claims / f"{wi.id}.partial.json").unlink(missing_ok=True)
     ledger(root, "WI_DONE", wi=wi.id, sha=sha)
     print(f"COMMITTED {wi.id} {sha}: {len(item_set)} item path(s) + state; item-scoped dirty after commit: {'0' if not left else left.splitlines()[0]}")
     if stray:
@@ -797,6 +818,33 @@ def cmd_report(a, st):
     return 0
 
 
+def file_sha1(root, rel):
+    import hashlib
+    try:
+        return hashlib.sha1((root / rel).read_bytes()).hexdigest()
+    except OSError:
+        return None
+
+
+def save_partial(st, wi, paths):
+    """Remember the item's own leftover edits at park time (path -> sha1) so the next claim recognises them as its own, not another session's."""
+    f = st.claims / f"{wi.id}.partial.json"
+    if paths:
+        f.write_text(json.dumps({p: file_sha1(st.root, p) for p in paths}), encoding="utf-8")
+    else:
+        f.unlink(missing_ok=True)
+
+
+def own_partial(st, wi_id):
+    """Paths from this item's own park manifest whose content is unchanged since the park (nobody else has touched them since)."""
+    f = st.claims / f"{wi_id}.partial.json"
+    try:
+        saved = json.loads(f.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    return sorted(p for p, h in saved.items() if h and file_sha1(st.root, p) == h)
+
+
 # ---------------------------------------------------------------- park / release / status
 def park(st, wi, claim, reason, session, commit=True, rescue=False, capped=False):
     """Record a park event, release the claim, commit state files. Partial edits stay in the tree and are reported."""
@@ -806,6 +854,8 @@ def park(st, wi, claim, reason, session, commit=True, rescue=False, capped=False
         base = ac.read_snapshot(root / claim["base"])
         changed, _ = ac.changed_since(root, base)
         partial = sorted(p for p in changed if allowed_path(p, wi))
+    keep = set(partial) | set((claim or {}).get("own_partial", []))
+    save_partial(st, wi, sorted(p for p in keep if allowed_path(p, wi) and p in ac.git_dirty(root)))
     with st.flock("commit.flock"):
         state_p, runs_p, index_p = ws.STATE_FILE.as_posix(), ws.RUNS_FILE.as_posix(), ws.INDEX_FILE.as_posix()
         sizes = {p: ((root / p).stat().st_size if (root / p).exists() else None) for p in (state_p, runs_p)}

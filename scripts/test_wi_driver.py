@@ -338,7 +338,7 @@ class FlowTests(Base):
         self.assertEqual(sh(self.root, "git", "rev-parse", "HEAD").stdout, head)
         self.assertIsNotNone(self.st.read_claim("WI-01"))
 
-    def test_gate_failure_retries_once_then_parks(self):
+    def test_gate_failure_retries_once_escalates_then_parks(self):
         bad = FILES[".claude/work_items/WI-01.md"].replace(GATE_OK, 'verify: python3 -I -c "import sys; sys.exit(1)"')
         self.write(".claude/work_items/WI-01.md", bad)
         sh(self.root, "git", "commit", "-qam", "bad gate")
@@ -348,6 +348,14 @@ class FlowTests(Base):
         r = self.drv("verify", "WI-01")
         self.assertEqual(r.returncode, 1, r.stdout)
         self.assertIn("RETRY", r.stdout)
+        self.assertIn("model=haiku", r.stdout)
+        self.worker_reply(self.claim_wave("WI-01"), "src/a.txt")
+        r = self.drv("verify", "WI-01")
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("ESCALATE", r.stdout)
+        self.assertIn("SPAWN 1 agent: model=sonnet", r.stdout)
+        self.assertNotIn("PARKED", r.stdout)
+        self.assertTrue(self.st.read_claim("WI-01")["escalated"])
         self.worker_reply(self.claim_wave("WI-01"), "src/a.txt")
         r = self.drv("verify", "WI-01")
         self.assertEqual(r.returncode, 2, r.stdout)
@@ -464,6 +472,12 @@ class FlowTests(Base):
 
         worker_reports_fail()
         r = self.drv("verify", "WI-01")
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn("ESCALATE", r.stdout)
+        self.assertIn("model=sonnet", r.stdout)
+
+        worker_reports_fail()
+        r = self.drv("verify", "WI-01")
         self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
         self.assertIn("PARKED WI-01", r.stdout)
         self.assertNotIn("GATE PASS", r.stdout)
@@ -494,6 +508,32 @@ class FlowTests(Base):
         self.assertNotIn("not CONFIRMED", r.stdout)
         self.assertIn("| DONE |", (self.root / "docs/plan.md").read_text())
 
+
+    def test_partial_checker_twice_escalates_to_sonnet_before_parking(self):
+        self.drv("next", "WI-01")
+        self.write("src/a.txt", "alpha edited\n")
+        self.worker_reply(self.claim_wave("WI-01"), "src/a.txt")
+        self.assertEqual(self.drv("verify", "WI-01").returncode, 0)
+        self.checker_reply(self.st.read_claim("WI-01")["checker_wave"], "PARTIAL")
+        self.assertIn("RETRY", self.drv("docs", "WI-01").stdout)  # Haiku retry
+        self.write("src/a.txt", "alpha edited 2\n")
+        self.worker_reply(self.claim_wave("WI-01"), "src/a.txt")
+        self.assertEqual(self.drv("verify", "WI-01").returncode, 0)
+        self.checker_reply(self.st.read_claim("WI-01")["checker_wave"], "PARTIAL")
+        r = self.drv("docs", "WI-01")
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn("ESCALATE", r.stdout)
+        self.assertIn("SPAWN 1 agent: model=sonnet", r.stdout)
+        self.assertNotIn("PARKED", r.stdout)
+        self.write("src/a.txt", "alpha edited 3\n")
+        self.worker_reply(self.claim_wave("WI-01"), "src/a.txt")
+        v = self.drv("verify", "WI-01")
+        self.assertEqual(v.returncode, 0, v.stdout + v.stderr)
+        self.assertIn("SPAWN 1 agent: model=sonnet", v.stdout)  # the escalated attempt is checked by Sonnet
+        self.checker_reply(self.st.read_claim("WI-01")["checker_wave"], "PARTIAL")
+        r = self.drv("docs", "WI-01")
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertIn("PARKED WI-01", r.stdout)
 
     def test_foreign_edit_mid_run_is_noted_not_failed(self):
         wid = "WI-01"
@@ -580,7 +620,7 @@ class RescueTests(Base):
 
     def test_worker_fail_park_points_to_rescue(self):
         self.drv("next", "WI-01")
-        for _ in range(2):
+        for _ in range(3):  # Haiku attempt, Haiku retry, Sonnet escalation
             self.write("src/a.txt", "edit\n")
             self.worker_reply(self.claim_wave("WI-01"), "src/a.txt")
             reply = self.root / ".claude" / "waves" / self.claim_wave("WI-01") / "u01.reply.txt"
@@ -589,6 +629,32 @@ class RescueTests(Base):
         self.assertIn("PARKED WI-01", r.stdout)
         self.assertIn("THEN: python3 scripts/wi_driver.py rescue WI-01", r.stdout)
         self.assertNotIn("Safe to /clear", r.stdout)
+
+    def test_unparked_item_adopts_its_own_leftover_edits(self):
+        self.drv("next", "WI-01")
+        self.write("src/a.txt", "partial edit\n")
+        self.assertEqual(self.drv("park", "WI-01", "--reason", "checker partial").returncode, 2)
+        self.assertEqual(self.drv("unpark", "WI-01", "--reason", "steps fixed").returncode, 0)
+        r = self.drv("next", "WI-01")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("adopted 1 leftover edit", r.stdout)
+        self.assertEqual(self.st.read_claim("WI-01")["own_partial"], ["src/a.txt"])
+        self.worker_reply(self.claim_wave("WI-01"), "None")
+        self.assertEqual(self.drv("verify", "WI-01").returncode, 0)
+        self.checker_reply(self.st.read_claim("WI-01")["checker_wave"])
+        self.assertEqual(self.drv("docs", "WI-01").returncode, 0)
+        c = self.drv("close", "WI-01")
+        self.assertEqual(c.returncode, 0, c.stdout + c.stderr)
+        self.assertIn("COMMITTED WI-01", c.stdout)
+        self.assertEqual(sh(self.root, "git", "show", "--stat", "--format=", "HEAD").stdout.count("src/a.txt"), 1)
+
+    def test_other_sessions_edit_still_blocks_claim_after_unpark(self):
+        self.drv("next", "WI-01")
+        self.write("src/a.txt", "partial edit\n")
+        self.drv("park", "WI-01", "--reason", "x")
+        self.drv("unpark", "WI-01", "--reason", "y")
+        self.write("src/a.txt", "someone else changed it\n")
+        self.assertEqual(self.drv("next", "WI-01").returncode, 3)
 
     def test_plain_park_does_not_point_to_rescue(self):
         self.drv("next", "WI-01")
@@ -789,7 +855,7 @@ class RescueTests(Base):
         for n in (1, 2):
             self.st.append_event("WI-01", "rescue", "s", f"round {n}")
         self.drv("next", "WI-01")
-        for _ in range(2):
+        for _ in range(3):  # Haiku, Haiku retry, Sonnet escalation
             self.write("src/a.txt", "edit\n")
             self.worker_reply(self.claim_wave("WI-01"), "src/a.txt")
             reply = self.root / ".claude" / "waves" / self.claim_wave("WI-01") / "u01.reply.txt"
