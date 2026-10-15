@@ -130,3 +130,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 114 | WI-82 | P3 | hold | S | - | BG35 Transient g_combatUnreadable overwrites g_prevCombat, firing false combat rising edge | 0 | 1 | wrong-behaviour/low: Unreadable frame stores prev=false so next readab |
 | [ ] | 115 | WI-83 | P3 | hold | S | - | BG36 Pending, auto and cooldown state indexed by party slot not creature; leader swap misa | 0 | 1 | wrong-behaviour/low: Pending/auto/cooldown state is slot-indexed with  |
 | [ ] | 116 | WI-84 | P3 | hold | S | - | BG37 LMB on companion button at FullHp/Pending skips popover close and noneed log | 0 | 1 | log-only/low: Companion LMB at FullHp/Pending falls through silently a |
+| [ ] | 117 | WI-85 | P3 | ready | S | - | BG38 heal() logs giving up on the 20th refill even if that fill succeeded | 0 | 2 | log-only/low: heals counts attempts and ignores fill() result; line 15 |
