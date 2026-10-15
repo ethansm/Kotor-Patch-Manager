@@ -24,7 +24,7 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [x] | 8 | WI-18 | P0 | ready | S | - | Inventory sort filter logging on KpLog.h (C180) | 1 | 1 | Inventory sort filter logging on KpLog.h; logging only. |
 | [x] | 9 | WI-06 | P0 | ready | L | - | Buff duration HUD open ToDos | 10 | 2 | Buff duration HUD: 8 open ToDos, 1 blocked; large and ready. |
 | [x] | 10 | WI-42 | P0 | ready | S | - | Companion self-heal: IniPath check and BG18 stale HP | 6 | 1 | Companion self-heal IniPath check and stale BG18 row; bug board. |
-| [ ] | 11 | WI-15 | P0 | verify-only | S | - | Level-up F10 over-cap hold verify | 1 | 0 | Level-up F10 over-cap hold verify; single open row. |
+| [x] | 11 | WI-15 | P0 | verify-only | S | - | Level-up F10 over-cap hold verify | 1 | 0 | Level-up F10 over-cap hold verify; single open row. |
 | [ ] | 12 | WI-11 | P0 | ready | L | WI-10 | Force Power Hotbar config and statics | 9 | 3 | Force Power Hotbar config and statics; large, 8 open, ready. |
 | [ ] | 13 | WI-05 | P1 | ready | S | WI-03 | Inventory 3D viewport no-preview fallback and build-hook ver | 4 | 2 | No-preview fallback and build rows; 1 open, 2 blocked. |
 | [ ] | 14 | WI-35 | P1 | ready | S | - | Equip menu-3d stale-claim cleanup (C206, C208) | 2 | 3 | Equip menu-3d stale-claim cleanup; ready, 2 doc rows. |
