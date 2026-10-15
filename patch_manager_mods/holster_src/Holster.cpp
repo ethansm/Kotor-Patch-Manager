@@ -44,6 +44,7 @@ static LONG g_maxLines = 3000;
 static int g_gobEvery = 600;            // GOB lines: first 24 updates, then every Nth (the handler runs per Gob per frame)
 static volatile LONG g_lines = 0;
 static volatile LONG g_gobCalls = 0;
+static volatile LONG g_idleAnim = 0;   // id 0x2710 resolves every frame; cap its lines so combat/attach/gob lines keep the budget
 
 // saferead site tags (failure ring only).
 static const unsigned kSiteComb = 0xE70010u, kSiteAttach = 0xE70020u, kSiteSwap = 0xE70030u, kSiteAnim = 0xE70040u, kSiteGob = 0xE70050u;
@@ -197,6 +198,7 @@ static bool animInteresting(uint32_t id) { return (id & 0xFFFFu) >= 0x2710u && (
 
 extern "C" void __cdecl HolsterAnimResolve(void* self, uint32_t animId) {
     if (!g_onAnim || !animInteresting(animId)) return;
+    if ((animId & 0xFFFFu) == 0x2710u && InterlockedIncrement(&g_idleAnim) > 20) return;
     saferead::beginScope();
     if (!KP_ENABLED(chAnim, KPLOG_INFO) || !takeLine()) return;
     const uintptr_t s = reinterpret_cast<uintptr_t>(self);
