@@ -169,6 +169,7 @@ struct Pres {
 };
 struct Slot {
     int panel; unsigned char* block; bool usable; bool rigFallback;
+    bool hidden3d;   // WI-05 C022: the 3D control was hidden for an item with neither a model nor a bodyvar
     int lastItem, lastBase, lastVar; unsigned seq;
     DWORD bindTick; DWORD lastBeat; Pres p;
 };
@@ -500,8 +501,9 @@ extern "C" void __cdecl ShowItem(int item, int panel) {
     s->p.valid = false; s->p.dragging = false;
     if (cat == 0) {
         if (n >= 2) { sceneview::removeModel(view, 1, true); saferead::beginScope(); }
+        if (!s->hidden3d) s->hidden3d = guikit::setVisible(reinterpret_cast<uintptr_t>(view), false);   // WI-05 C022: neither model nor bodyvar -> hide the 3D control
         s->lastItem = item; s->lastBase = id; s->lastVar = var;
-        logf("H2: item %08x base=%d var=%04x cat=0 (no preview), models %d -> %d", item, id, var, n, modelCount(view));
+        logf("H2: item %08x base=%d var=%04x cat=0 (no preview), models %d -> %d, 3D control hidden=%d", item, id, var, n, modelCount(view), s->hidden3d);
         return;
     }
     if (n < 1) { logwH2("H2: light model gone (count=%d), slot unusable", n); s->usable = false; return; }
@@ -543,6 +545,7 @@ extern "C" void __cdecl ShowItem(int item, int panel) {
         return;
     }
     s->lastItem = item; s->lastBase = id; s->lastVar = var;
+    if (s->hidden3d && guikit::setVisible(reinterpret_cast<uintptr_t>(view), true)) s->hidden3d = false;   // WI-05 C022: a model is back, show the 3D control again
     logf("H2: rendered item %08x base=%d var=%04x cat=%d effVar=%d subst=%d, models %d -> %d", item, id, var, cat, effVar, substituted, n, n2);
     if (detailLogs < 10) { ++detailLogs; dumpMem("scene", reinterpret_cast<int>(view + SceneOffset), 16); }
     setupPresentation(s, id, effVar, cat, fe);
