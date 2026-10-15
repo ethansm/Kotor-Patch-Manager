@@ -124,3 +124,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 108 | WI-76 | P3 | ready | S | - | BG29 imageFor pools failed (null) lookups so hudkit::image retry never reloads | 0 | 4 | wrong-behaviour/med: imageFor pools null (line 299) so lazy retries in |
 | [ ] | 109 | WI-77 | P3 | hold | S | - | BG30 CrTrack caches raw creature pointer; stale spinning state and dangling cr after death | 0 | 1 | log-only/low: e1Evaluate only runs from AiTraceAttackEntry, so spinnin |
 | [ ] | 110 | WI-78 | P3 | hold | S | - | BG31 g_lastCtrlArea overwritten with 0 during transition so PARTY why=area misses | 0 | 1 | log-only/low: Line 589 overwrites the baseline with 0 on a transient F |
+| [ ] | 111 | WI-79 | P3 | hold | S | - | BG32 Unreadable creature logs false old=0 edge=1 combat transition | 0 | 1 | log-only/low: rdU32 returns 0 on saferead failure, so an unreadable cr |
