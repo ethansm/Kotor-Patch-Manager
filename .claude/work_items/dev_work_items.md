@@ -140,7 +140,7 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 124 | WI-92 | P3 | ready | S | - | Gemini test/tooling gaps: k1 (test_k1_port_tex_audit.py, test_k1_port_tex_dxt.py, test_k1_ | 0 | 4 | 4 validated test-gap/tooling fids: K1-5c-06: test_k1_port_tex_audit.py |
 | [ ] | 125 | WI-93 | P3 | ready | S | - | Gemini test/tooling gaps: npc (nw_registry_test.cpp) | 0 | 1 | 1 validated test-gap/tooling fids: HN-6n-07: nw_registry_test.cpp: cal |
 | [ ] | 126 | WI-94 | P3 | ready | S | - | Gemini test/tooling gaps: perf-lab (analyze_runs.py, ExportCallGraph.java, NewNullCheck.ja | 0 | 4 | 5 validated test-gap/tooling fids: PL-4d-03: test_analyze_runs.py: leg |
-| [ ] | 127 | WI-95 | P3 | hold | S | - | Gemini test/tooling gaps: perf-lab (smoke_perflab3.cpp, hookbytes.py, persist_findings.py) | 0 | 3 | 3 validated test-gap/tooling fids: PL-4b-01: smoke_perflab3.cpp M5 che |
+| [ ] | 127 | WI-95 | P3 | ready | S | - | Gemini test/tooling gaps: perf-lab (smoke_perflab3.cpp, hookbytes.py, persist_findings.py) | 0 | 3 | 3 validated test-gap/tooling fids: PL-4b-01: smoke_perflab3.cpp M5 che |
 | [ ] | 128 | WI-96 | P3 | hold | S | - | Gemini test/tooling gaps: queue-hud (QueueHud.cpp, queue_hud_logic_test.cpp) | 0 | 2 | 4 validated test-gap/tooling fids: QH-2a-09: -; QH-2b-01: queue_hud_lo |
 | [x] | 129 | WI-97 | P3 | ready | S | - | Gemini test/tooling gaps: shared (actqueue_test.cpp, effects_test.cpp, embtex_test.cpp, fi | 0 | 4 | 4 validated test-gap/tooling fids: SH-3c-04: actqueue_test.cpp: feed 2 |
 | [x] | 130 | WI-98 | P3 | ready | S | - | Gemini test/tooling gaps: shared (guikit_test.cpp, guitip_test.cpp, hudkit_test.cpp, item_ | 0 | 4 | 4 validated test-gap/tooling fids: SH-3b-01: guikit_test.cpp: setAlpha |
