@@ -35,3 +35,8 @@ Responses are byte-for-byte copies of `.claude/bundles/*_response.md`.
 4. `recon/<topic>.md`, `verdicts.tsv`: Haiku recon swarm verdicts (CONFIRMED / REFUTED / PARTIAL / UNSURE).
 
 Fix decisions are out of scope for G1.
+
+## Checkpoint C (triage)
+- 135 findings (= 135 `**Anchor**` blocks across the responses) → 100 topics: P1 8, P2 47, P3 45; 0 dropped.
+- 7 Sonnet batches (`triage/`); 5 cross-batch merges (X-T01..X-T05, `topics.md`).
+- Anchors (`anchors.tsv`): 115 exact, 3 partial, 7 token-only, **10 NOT-FOUND** (likely invented or paraphrased; recon asks whether the code exists at all).
