@@ -17,9 +17,11 @@ verify: python3 scripts/kpm_ship.py --help
 Create H7, H10, H9 in that order. H9 runs last because it orchestrates the other tools.
 
 ## Steps
-1. H7 (C007): create `scripts/kpm_commit.py`: dirty-tree auto-committer with scoped tests and conventional commits.
-2. H10 (C009): create `scripts/kpm_reinstall.py --mod <id>`: wraps KPatchLauncher with peer DLL preservation. Needs H2 from WI-02.
-3. H9 (C008): create `scripts/kpm_ship.py [--apply]`: runs status, then commit (`kpm_commit.py` from step 1), gate (`pre_install_gate.py`), prepare and apply (`kpm_hotswap.py`). Build only after H8 (WI-02c) is done.
+All three scripts already exist and are committed (checked 10-15): no create step remains, so the code diff is expected to be empty. Do not recreate or edit them.
+1. H7 (C007): `scripts/kpm_commit.py` already satisfied, no edit (main at :68, commit 49978eb). Confirm `python3 scripts/kpm_commit.py --help` exits 0.
+2. H10 (C009): `scripts/kpm_reinstall.py` already satisfied, no edit (main at :271, commits 5673d94, 6af1de1). Confirm `--help` exits 0.
+3. H9 (C008): `scripts/kpm_ship.py` already satisfied, no edit (main at :85, `--apply` at :89, `--dry-run` at :91, commit 92bcb56). Confirm `--help` and `--dry-run` exit 0.
+4. Only remaining work: close plan rows H7, H10, H9 in the docs step (rows are still open in patch_manager_mods/24_master_plan_status.md:95/:98/:97).
 
 ## Verify
 1. `python3 scripts/build_check.py`
