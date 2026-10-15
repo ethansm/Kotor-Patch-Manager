@@ -1265,7 +1265,8 @@ void tickItemQueues(DWORD now, bool inMenu) {
     outWatchTick(now);
     const bool combatNow = g_combat != 0 && !g_combatUnreadable;
     bool edgeFlags[3] = {false, false, false};
-    for (int k = 0; k < 3; ++k) { edgeFlags[k] = combatNow && !g_prevCombat[k]; g_prevCombat[k] = combatNow; }
+    // unreadable HUD flags: no edge and g_prevCombat is kept (QH-2a-07), so a gap cannot fake a rising edge
+    for (int k = 0; k < 3; ++k) edgeFlags[k] = qh::combatEdgeStep(g_prevCombat[k], !g_combatUnreadable, g_combat != 0);
     if (inMenu || g_combat != 0) {
         if (combatNow) { combatEdgeTrace(now, edgeFlags); handoffTick(now, edgeFlags); roundWatchTick(now); }   // unreadable HUD flags: no hand-off and no drop, the buffers wait
         return;

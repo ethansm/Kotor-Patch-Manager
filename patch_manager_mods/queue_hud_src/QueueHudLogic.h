@@ -1321,5 +1321,14 @@ inline EngineView makeEngineView(const int* entryTypes, int ne, bool actionPrese
     return ev;
 }
 
+// One slot's combat rising edge for one frame (QH-2a-07). An unreadable frame is a gap, not evidence: it returns false
+// and leaves prev as the last readable state, so combat,unreadable,combat is one edge and combat,unreadable,off,combat is two.
+inline bool combatEdgeStep(bool& prev, bool readable, bool combat) {
+    if (!readable) return false;
+    const bool edge = combat && !prev;
+    prev = combat;
+    return edge;
+}
+
 }  // namespace qh
 

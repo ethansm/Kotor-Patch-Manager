@@ -2308,6 +2308,30 @@ void testMutationGaps() {
     e = makeEngineView(nullptr, 0, false, false, 10, 0, 0, 0, false, 0, 1000);            KT_CHECK(!e.executing);   // no cur at all
 }
 
+// WI-82 / QH-2a-07: combat rising edge across unreadable HUD frames. Frames: 'C' readable combat, 'o' readable no combat,
+// 'U' unreadable. Counts the edges one slot sees; an unreadable frame must leave the last readable state untouched.
+static int combatEdges(const char* frames) {
+    bool prev = false;
+    int edges = 0;
+    for (const char* f = frames; *f; ++f) edges += qh::combatEdgeStep(prev, *f != 'U', *f == 'C') ? 1 : 0;
+    return edges;
+}
+void testCombatEdgeSequences() {
+    KT_CHECK_EQ(combatEdges("C"), 1);
+    KT_CHECK_EQ(combatEdges("CC"), 1);        // repeat combat: one edge
+    KT_CHECK_EQ(combatEdges("CoC"), 2);       // readable off then on: a real second edge
+    KT_CHECK_EQ(combatEdges("CUC"), 1);       // the bug: U stored false, so the second C re-fired (2)
+    KT_CHECK_EQ(combatEdges("CUUC"), 1);      // two unreadable frames in the gap
+    KT_CHECK_EQ(combatEdges("CUoC"), 2);      // readable off inside the gap makes the second C a real edge
+    KT_CHECK_EQ(combatEdges("UC"), 1);        // leading gap: prev starts false; a store-true mutant gives 0
+    KT_CHECK_EQ(combatEdges("oUC"), 1);       // store-true mutant gives 0
+    KT_CHECK_EQ(combatEdges("UUU"), 0);       // nothing readable: no edge
+    KT_CHECK_EQ(combatEdges("CUoUCoC"), 3);   // swaps with gaps
+    // an unreadable frame leaves prev alone in both directions and never reports an edge
+    bool prev = true;   KT_CHECK(!qh::combatEdgeStep(prev, false, true));   KT_CHECK(prev);
+    prev = false;       KT_CHECK(!qh::combatEdgeStep(prev, false, true));   KT_CHECK(!prev);
+}
+
 int main() {
     testConstants();
     testKeys();
@@ -2368,5 +2392,6 @@ int main() {
     testCancelStyle();
     testHeldHeadAction();
     testGateEngineCount();
+    testCombatEdgeSequences();
     return kt::Report("queue_hud_logic_test");
 }
