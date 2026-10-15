@@ -1208,6 +1208,9 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
             } else if (Card& c = g_card[onBtn]; shui::clickAllowed(c.st)) {
                 if (c.st == shui::BtnState::NoItem) KP_LOG(chCall, "CLICK member=%d noitem", onBtn);
                 else useNow(ctx, now, onBtn, shui::clickMinCount(c.st), "click");
+            } else {   // BG37: FullHp/Pending were silent; log like the leader branch (pending is new). Hidden/Down stay silent.
+                if (c.st == shui::BtnState::FullHp) KP_LOG(chCall, "CLICK member=%d noneed", onBtn);
+                else if (c.st == shui::BtnState::Pending) KP_LOG(chCall, "CLICK member=%d pending", onBtn);
             }
         } else if (popOpen) g_popMi = -1;
     } else if (haveCur && redge) {
