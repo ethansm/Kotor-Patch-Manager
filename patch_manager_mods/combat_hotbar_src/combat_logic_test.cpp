@@ -1420,5 +1420,20 @@ int main() {
     KT_CHECK_EQ((int)tooltipStep(moveSet, moveClr, moveKey, 5u, "A"), (int)TipAction::Set);
     KT_CHECK(moveSet && moveKey == 5);
   }
+  // ================= WI-81 (BG34) pillAlpha pins: 0.95 default for a failed read or out-of-range alpha =================
+  KT_CHECK(ch::pillAlpha(true, 0.5f) == 0.5f);
+  KT_CHECK(ch::pillAlpha(true, 0.05f) == 0.05f);   // lower bound inclusive
+  KT_CHECK(ch::pillAlpha(true, 1.0f) == 1.0f);     // upper bound inclusive
+  KT_CHECK(ch::pillAlpha(true, 0.0f) == 0.95f);    // zero alpha would hide the pill
+  KT_CHECK(ch::pillAlpha(true, 0.049f) == 0.95f);
+  KT_CHECK(ch::pillAlpha(true, 1.5f) == 0.95f);
+  KT_CHECK(ch::pillAlpha(false, 0.5f) == 0.95f);   // unreadable: the value is ignored
+  KT_CHECK(ch::pillAlpha(false, 0.0f) == 0.95f);
+  { float nanV; const uint32_t nanBits = 0x7FC00000u; memcpy(&nanV, &nanBits, sizeof nanV); KT_CHECK(ch::pillAlpha(true, nanV) == 0.95f); }   // NaN fails the range test
+  // sequence across calls (helper is stateless): good, unreadable, good again, out-of-range, good
+  const bool seqOk[5] = { true, false, true, true, true };
+  const float seqIn[5] = { 0.5f, 0.7f, 0.7f, 1.5f, 0.5f };
+  const float seqOut[5] = { 0.5f, 0.95f, 0.7f, 0.95f, 0.5f };
+  for (int i = 0; i < 5; ++i) { KT_CHECK(ch::pillAlpha(seqOk[i], seqIn[i]) == seqOut[i]); }
   return kt::Report("combat_logic_test");
 }

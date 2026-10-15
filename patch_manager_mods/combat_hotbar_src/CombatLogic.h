@@ -18,6 +18,10 @@ struct GroupView { int count; EntryView e[16]; };
 
 inline int clampCount(int c) { return c < 0 ? 0 : (c > 16 ? 16 : c); }
 
+// Alpha for a group pill or button: the vanilla alpha when the read succeeded and is in 0.05..1.0, else the 0.95 default (WI-81).
+// Positive range test, so NaN also takes the default.
+inline float pillAlpha(bool readOk, float value) { return (readOk && value >= 0.05f && value <= 1.0f) ? value : 0.95f; }
+
 // Index of the entry to invoke for a target of type 0..3: the LAST usable entry with a non-zero owner, or -1.
 // Any other targetType (0xFF = no target included) -> -1.
 inline int pickInvokeEntry(const GroupView& g, int targetType) {

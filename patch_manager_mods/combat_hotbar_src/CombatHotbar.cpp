@@ -289,7 +289,7 @@ bool g_replaced = false;           // vanilla bit1 cleared by us (Replace=1), so
 int g_replState = -1;              // -1 never applied, 0 failed, 1 applied (log on change only)
 uintptr_t g_logObj = 0; int g_logType = -2;
 int g_flagLast = -1;
-int g_contState[3] = { -1, -1, -1 };          // -1 never logged, 0 tint read failed, 1 tint read ok (log on change only)
+int g_contState[3] = { -1, -1, -1 };          // -1 never logged, 1 logged (log on change only)
 float g_contLog[3][4] = { { 0 }, { 0 }, { 0 } };   // last logged tint rgb + alpha per group
 
 // VIS diagnostics: one INFO line per visibility state CHANGE of an item (shown, why, rect), capped at 64 lines per kind and process
@@ -640,26 +640,22 @@ void updateButtons(const K2HudContext* ctx) {
         }
     }
 
-    // Per group: copy the vanilla BTN_TARGETn tint + alpha (a failed read keeps the defaults), then show the pill behind the buttons.
+    // Per group: force the combat red border tint, read the vanilla BTN_TARGETn alpha, then show the pill behind the buttons.
+    // pillAlpha keeps the 0.95 default on a failed or out-of-range read. The vanilla border-tint read was dead (HB-1c-06) and is removed.
     // The pill is clickable (swallows gap clicks) but has no action: the click handler below only acts on button hits.
-    bool tOk[3], aOk[3]; float tint[3][3], alp[3];
+    float tint[3][3], alp[3];
     for (int g = 0; g < 3; ++g) {
-        tint[g][0] = 0.85f; tint[g][1] = 0.15f; tint[g][2] = 0.15f;
-        alp[g] = 0.95f;
         const uintptr_t btnCtl = menu + GroupBase + (uintptr_t)g * GroupStride;
-        // Sanity gates (the hidden-BTN tint is UNVERIFIED): pure black or a near-zero alpha would make the pills vanish, so keep the defaults instead.
-        tOk[g] = guikit::getBorderTint(btnCtl, tint[g]) && (tint[g][0] > 0.01f || tint[g][1] > 0.01f || tint[g][2] > 0.01f);
-        aOk[g] = guikit::getAlpha(btnCtl, &alp[g]) && alp[g] >= 0.05f && alp[g] <= 1.0f;
         // Force combat red theme for container & button border tint (matching native combat UI)
         tint[g][0] = 0.85f; tint[g][1] = 0.15f; tint[g][2] = 0.15f;
-        tOk[g] = true;
-        if (!aOk[g]) { alp[g] = 0.95f; aOk[g] = true; }
-        if (!tOk[g]) { if (g_contState[g] != 0) { g_contState[g] = 0; CH_VLOG(chTarget, KPLOG_INFO, "container g%d tint read failed or rejected (black)", g); } }
-        else if (g_contState[g] != 1 || g_contLog[g][0] != tint[g][0] || g_contLog[g][1] != tint[g][1] || g_contLog[g][2] != tint[g][2] || (aOk[g] && g_contLog[g][3] != alp[g])) {
+        float rawAlpha = 0.95f;
+        const bool aRead = guikit::getAlpha(btnCtl, &rawAlpha);
+        alp[g] = ch::pillAlpha(aRead, rawAlpha);
+        if (g_contState[g] != 1 || g_contLog[g][0] != tint[g][0] || g_contLog[g][1] != tint[g][1] || g_contLog[g][2] != tint[g][2] || g_contLog[g][3] != alp[g]) {
             g_contState[g] = 1;
             for (int k = 0; k < 3; ++k) g_contLog[g][k] = tint[g][k];
-            if (aOk[g]) g_contLog[g][3] = alp[g];
-            CH_VLOG(chTarget, KPLOG_INFO, "container g%d tint=(%.2f,%.2f,%.2f) alpha=%.2f", g, tint[g][0], tint[g][1], tint[g][2], aOk[g] ? alp[g] : -1.f);
+            g_contLog[g][3] = alp[g];
+            CH_VLOG(chTarget, KPLOG_INFO, "container g%d tint=(%.2f,%.2f,%.2f) alpha=%.2f", g, tint[g][0], tint[g][1], tint[g][2], alp[g]);
         }
         Wid& c = g_cont[g];
         if (!c.c) { visGroup(g, 0, "no-container", ch::Rect{ 0, 0, 0, 0 }); continue; }
@@ -669,8 +665,8 @@ void updateButtons(const K2HudContext* ctx) {
         // Use g_imgHi (cream border in lbl_miscroll_hi) so red tint produces vibrant red (lbl_miscroll_f has teal baked in)
         void* contImg = g_imgHi ? g_imgHi : g_imgFrame;
         if (contImg) widFill(c, contImg);
-        if (tOk[g]) widTint(c, tint[g]);
-        if (aOk[g]) widAlpha(c, alp[g]);
+        widTint(c, tint[g]);
+        widAlpha(c, alp[g]);
         widShow(c, true);
         visGroup(g, 1, "ok", cont[g]);
     }
@@ -701,7 +697,7 @@ void updateButtons(const K2HudContext* ctx) {
             float bTint[3] = { tint[g][0], tint[g][1], tint[g][2] };
             if (s == g_hover) { bTint[0] = 1.0f; bTint[1] = 0.35f; bTint[2] = 0.35f; }
             widTint(b.bg, bTint);
-            widAlpha(b.bg, (s == g_hover) ? 1.0f : (aOk[g] ? alp[g] : 0.85f));
+            widAlpha(b.bg, (s == g_hover) ? 1.0f : alp[g]);
             widAlpha(b.icon, e.usable ? 1.0f : 0.35f);
             widShow(b.bg, true); widShow(b.icon, false);
             ++visBtn;
