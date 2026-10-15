@@ -128,3 +128,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 112 | WI-80 | P3 | hold | S | - | BG33 Stale tooltip kept when new slot name read is empty | 0 | 3 | wrong-behaviour/low: tipKey and tipSet update even when setNative is s |
 | [ ] | 113 | WI-81 | P3 | hold | S | - | BG34 Vanilla tint read immediately overwritten; failure branches are dead code | 0 | 1 | log-only/low: tOk and aOk are forced true right after the reads, so th |
 | [ ] | 114 | WI-82 | P3 | hold | S | - | BG35 Transient g_combatUnreadable overwrites g_prevCombat, firing false combat rising edge | 0 | 1 | wrong-behaviour/low: Unreadable frame stores prev=false so next readab |
+| [ ] | 115 | WI-83 | P3 | hold | S | - | BG36 Pending, auto and cooldown state indexed by party slot not creature; leader swap misa | 0 | 1 | wrong-behaviour/low: Pending/auto/cooldown state is slot-indexed with  |
