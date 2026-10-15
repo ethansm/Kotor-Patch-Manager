@@ -1,4 +1,4 @@
-// K1 Spawn Probe 0.3.0-probe (Steam Aspyr build 6A522E71...): a DLL-only client of the npc-world library (k2.npcworld@1, NpcWorld.h).
+// K1 Spawn Probe 0.3.1-probe (Steam Aspyr build 6A522E71...): a DLL-only client of the npc-world library (k2.npcworld@1, NpcWorld.h).
 // Doc 38 stage 2 (native spawn of K1 content into K2) on top of the shared library. It owns NO hook: the three world detours
 // (LoadModuleInProgress, creature AddToArea, MainLoop), the POP-STABLE latch, the seen-tag list and the native CreateObject sequence
 // all live in npc-world, which must load first (manifest requires = ["npc-world"]; a DLL-only patch has no hook to retry connect() from).
@@ -27,7 +27,7 @@ namespace {
 
 using saferead::readAt;
 
-constexpr const char* kVersion = "0.3.0-probe";
+constexpr const char* kVersion = "0.3.1-probe";
 constexpr const char* kLogName = "k1-spawn-probe_log.txt";
 constexpr int kEventLines = 25;         // one dump event: header + 16 creature rows + 4 DUMP24 rows + 4 DUMPST rows
 constexpr int kCreatureDwords = 0x100;  // creature object dump (dwords)
@@ -289,6 +289,12 @@ void onCreatureAdded(const K2NwEvent* ev) {
     tagStr[0] = 0;
     unsigned charPtr = 0;
     if (tagPtrOk && readAt(kSiteTagPtr, tagPtr, 0x18, &charPtr)) readStr(kSiteTagStr, charPtr, tagStr, sizeof tagStr);
+    // tag18: the char* at c+0x18 read as a string. Run 1 (10-15) found the engine tag of a save-restored creature here (TAGSCAN hit at
+    // +0x18) while [c+0x24] was 0 at the hook; logged for every add so the harvest proves the offset across creature types.
+    char tag18[33];
+    tag18[0] = 0;
+    unsigned tag18Ptr = 0;
+    if (readAt(kSiteTagPtr, c, 0x18, &tag18Ptr)) readStr(kSiteTagStr, tag18Ptr, tag18, sizeof tag18);
 
     if (g_budget.addToAreaAllowed()) {
         char sId[16], sType[16], sArea2[16], sAreaId[16], sX[16], sY[16], sZ[16], sF1[16], sF2[16], sTagPtr[16];
@@ -307,10 +313,10 @@ void onCreatureAdded(const K2NwEvent* ev) {
         fmtRef16(ar2, sizeof ar2, kSiteResref, (area2Ok && area2) ? static_cast<uintptr_t>(area2) + 0x110 : 0);
         logfKind(k1spawn::LogKind::AddToArea,
                  "ADDTOAREA n=%ld c=%08lx id=%s type=%s area=%08lx area2=%s areaId=%s pos=%s,%s,%s f11ac=%s f11fc=%s "
-                 "tagptr=%s tagstr=\"%s\" ar1=%s ar2=%s origin=%s oid=%08x libtag=\"%s\" libarea=\"%s\" libpos=%.3f,%.3f,%.3f",
+                 "tagptr=%s tagstr=\"%s\" ar1=%s ar2=%s origin=%s oid=%08x libtag=\"%s\" libarea=\"%s\" libpos=%.3f,%.3f,%.3f tag18=\"%s\"",
                  g_seq, static_cast<unsigned long>(c), sId, sType, static_cast<unsigned long>(a), sArea2, sAreaId,
                  sX, sY, sZ, sF1, sF2, sTagPtr, tagStr, ar1, ar2, fromLib ? "LIB" : "ENGINE", ev->oid, libTag, libArea,
-                 ev->x, ev->y, ev->z);
+                 ev->x, ev->y, ev->z, tag18);
     } else {
         chargeLine(k1spawn::LogKind::AddToArea);  // ADDTOAREA sub-cap reached: refused and counted, nothing formatted
     }
@@ -325,9 +331,9 @@ void onCreatureAdded(const K2NwEvent* ev) {
 
     // Dump triggers. The NPC trigger is a harvest tag in either tag path. While the NPC dump is still wanted, the fallback scan runs
     // only when both tag strings came back empty (ScanBudget). DUMP-ANY fires once per distinct id, for the first three ids.
-    const char* dumpTag = tagStr[0] ? tagStr : libTag;
-    bool npcHit = k1spawn::IsHarvestTag(tagStr) || k1spawn::IsHarvestTag(libTag);
-    if (!npcHit && g_gate.wantNpc(true) && g_scan.allow(libTag[0] == 0, tagStr[0] == 0, g_budget.capped())) {
+    const char* dumpTag = tagStr[0] ? tagStr : (tag18[0] ? tag18 : libTag);
+    bool npcHit = k1spawn::IsHarvestTag(tagStr) || k1spawn::IsHarvestTag(tag18) || k1spawn::IsHarvestTag(libTag);
+    if (!npcHit && g_gate.wantNpc(true) && g_scan.allow(libTag[0] == 0, tagStr[0] == 0 && tag18[0] == 0, g_budget.capped())) {
         unsigned off = 0;
         if (scanForTag(c, kCreatureDwords, &off)) { logf("TAGSCAN hit creature c=%08lx at +0x%x", static_cast<unsigned long>(c), off); npcHit = true; }
         else if (tagPtrOk && tagPtr && scanForTag(tagPtr, kPtrDwords, &off)) { logf("TAGSCAN hit [c+0x24]=%08x at +0x%x", tagPtr, off); npcHit = true; }
