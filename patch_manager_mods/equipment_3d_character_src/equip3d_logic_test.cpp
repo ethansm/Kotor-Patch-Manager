@@ -510,6 +510,23 @@ static void testStyleFor() {
     KT_CHECK_EQ(kStyleAnim[styleFor(4, 4, true, true)], "g6r1");
 }
 
+// EQ10 holstered mode: holstered=true gives no stance for any weapon state; holstered=false is styleFor unchanged.
+static void testStanceStyle() {
+    for (int rw = -2; rw <= 8; ++rw) for (int lw = -2; lw <= 8; ++lw) for (int m = 0; m < 4; ++m) {
+        bool rHas = (m & 1) != 0, lHas = (m & 2) != 0;
+        char what[64];
+        snprintf(what, sizeof what, "holstered r=%d l=%d rHas=%d lHas=%d", rw, lw, (int)rHas, (int)lHas);
+        kt::CheckEq(what, stanceStyle(true, rw, lw, rHas, lHas), 0);
+        snprintf(what, sizeof what, "hands r=%d l=%d rHas=%d lHas=%d", rw, lw, (int)rHas, (int)lHas);
+        kt::CheckEq(what, stanceStyle(false, rw, lw, rHas, lHas), styleFor(rw, lw, rHas, lHas));
+    }
+    // holstered with weapons on: empty stance anim, so the .cpp keeps the alignment idle (stanceOn needs a non-empty name)
+    KT_CHECK_EQ(kStyleAnim[stanceStyle(true, 4, 2, true, true)], "");
+    KT_CHECK_EQ(kStyleAnim[stanceStyle(true, 2, 0, true, false)], "");
+    // hands mode still gives the stance for the same weapon
+    KT_CHECK_EQ(kStyleAnim[stanceStyle(false, 2, 0, true, false)], "g2r1");
+}
+
 // ---- idle / droids -----------------------------------------------------------------------------------------------
 static void testIdle() {
     const int droids[] = {2, 3, 57, 231, 232, 453, 538, 539};
@@ -831,6 +848,7 @@ int main() {
     testIniFile();
     testWeaponTable();
     testStyleFor();
+    testStanceStyle();
     testIdle();
     testScreenValid();
     testClientToEngine();

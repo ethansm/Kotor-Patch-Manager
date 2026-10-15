@@ -161,6 +161,12 @@ inline int styleFor(int rWield, int lWield, bool rHas, bool lHas) {
     if (rHas) { static const int map[7] = {0, 1, 2, 3, 5, 7, 9}; return (rWield >= 1 && rWield <= 6) ? map[rWield] : 0; }
     return 0;   // left only, or nothing (unarmed style 8 deliberately not applied: keep the normal idle)
 }
+// EQ10 holstered mode (doc 42 Option A): the weapons sit on the hip/back bones and the hands stay empty, so no wield stance
+// applies. Returns 0 when holstered, so the caller's stanceOn stays false and the idle is the alignment idle (idleFor).
+// holstered=false is styleFor unchanged (hands mode).
+inline int stanceStyle(bool holstered, int rWield, int lWield, bool rHas, bool lHas) {
+    return holstered ? 0 : styleFor(rWield, lWield, rHas, lHas);
+}
 // baseitems row + variation -> weapon model ResRef "<itemclass>_<var:03d>" and the row's weaponwield. false (and nothing
 // written) when the row is out of range or not a wieldable weapon (weaponwield 0).
 inline bool weaponModelName(int base, int var, char* out, size_t n, int* wield) {
