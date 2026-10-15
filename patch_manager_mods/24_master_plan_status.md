@@ -86,16 +86,19 @@ workers, gates, commits explicit paths, then updates its row here (status, commi
 | CS10 | Shared HUD placement: companion queue (doc 30 queue-hud) and selfheal share one right-to-left strip next to each companion card; selfheal claims the right-most slot. Contract via hud-host (doc 31 s5, `HudHost.h`; needs a slot/ReserveIds API) — coordinate with the queue-hud / hud-host owner | CS8, hud-host | selfheal + queue-hud owners | INSTALLED | 37f50bd | hud-host 0.5.0-dev StripSlot (HhStrip.h); selfheal order 0, queue-hud order 1; live 10-05 21:34 hud-host 60865e03; play test pending |
 | CS11 | Queue UX kit: dark-green hotbar-style panel (border (0,44,26)/(10,96,80), fill (0,0,0,175), radius like hotbar tiles) + Cancel button modelled on vanilla "Cancel Combat"; slim per-companion variant; selfheal button styled to fit the kit | CS10 | queue-hud owner (+ selfheal art) | INSTALLED | f6cc2bd | HudKit.h + HudKitTextures.inc (gen_hud_kit_textures.py, byte-identical art); slim strip icon = selfheal button side; queue-hud 0.4.0-dev ab52dfd7 |
 | CS12 | Companion queue as its own mod on the shared HUD dll, selfheal adopts the shared kit (no private copies) | CS10, CS11 | queue-hud + selfheal | INSTALLED | f6cc2bd | queue-hud already own dll; selfheal 0.7.0-dev draws kit_frame, no private kit copies; live 469ee363; play test pending |
-| H1 | Recursive manifest discovery & fuzzy suggestions: `kpm_status.py` & `kpm_hotswap.py` `*_src/**/manifest.toml` (doc 36) | - | tooling | READY | | Resolves nested perflab & probe manifests |
-| H2 | Decouple `--prepare` exit code from `--apply`: exit 0 on mirror/rebuild success even if verdict is REINSTALL (doc 36) | H1 | tooling | READY | | Fixes false build failure on hook changes |
-| H3 | Decouple `check-exports` from stale KPM tree: run in `pre_install_gate.py` Step 3 against fresh scratch kpatch (doc 36) | - | tooling | READY | | Eliminates chicken-and-egg gate deadlock |
-| H4 | Auto-create canonical PascalCase KPM folders in `--prepare` & case-insensitive duplicate collision guard (doc 36) | H1, H2 | tooling | READY | | Eliminates save-events vs SaveEvents dual-directory collisions |
-| H5 | Agent Verify-After-Fix invariant, two-stage gate lifecycle in `BUILD_AND_INSTALL.md` & harness middleware (doc 36) | H1-H4 | docs | READY | | Prohibits raw address bypass & enforces re-verification |
-| H6 | Auto-commit KPM mirror in `--prepare` (`--commit-kpm` flag in `scripts/kpm_hotswap.py`) (doc 36) | H2 | tooling | READY | | Eliminates agent parsing & manual `git -C <KPM> commit` loop |
-| H7 | Production dirty auto-committer: `scripts/kpm_commit.py` with scoped tests & conventional commits (doc 36) | - | tooling | READY | | Automates repo commit dance before gate |
-| H8 | Smoke harness canonical include normalization: `run_tests.py` auto-injects canonical Common includes (doc 36) | - | tooling | READY | | Eliminates scratch `$KPM_DIR` include breakage in `smokes.toml` |
-| H9 | End-to-end fast-path pipeline: `scripts/kpm_ship.py [--apply]` orchestrates status -> commit -> gate -> prepare -> apply (doc 36) | H6-H8 | tooling | READY | | Replaces 7-step manual cycle with single deterministic script |
-| H10 | Safe automated hook reinstaller: `scripts/kpm_reinstall.py --mod <id>` wraps KPatchLauncher with peer DLL preservation (doc 36) | H2 | tooling | READY | | Safe automated resolution for `REINSTALL` hook-change mods |
+| H1 | Recursive manifest discovery & fuzzy suggestions: `kpm_status.py` & `kpm_hotswap.py` `*_src/**/manifest.toml` (doc 36) | - | tooling | DONE | 2ebd205 | repo_manifests ** glob; resolve() reldir alias + Did-you-mean; 7 new tests |
+| H2 | Decouple `--prepare` exit code from `--apply`: exit 0 on mirror/rebuild success even if verdict is REINSTALL (doc 36) | H1 | tooling | DONE | 6c691d7 | --prepare exits 0 with PREPARE SUCCESS summary (SWAP vs REINSTALL); --apply + REINSTALL still rc 1; 2 new tests |
+| H3 | Decouple `check-exports` from stale KPM tree: run in `pre_install_gate.py` Step 3 against fresh scratch kpatch (doc 36) | - | tooling | DONE | 8d236d9 | step_default tolerates only suite:check-exports (WARN); step_scratch packs kpatches (incl. mods without smoke row); step_exports runs check_exports --kpm-dir scratch --kpatch on fresh DLL in step 3 (GateFail 3 scratch); 8 new tests |
+| H4 | Auto-create canonical PascalCase KPM folders in `--prepare` & case-insensitive duplicate collision guard (doc 36) | H1, H2 | tooling | DONE | ab519d9 | kpm_hotswap --prepare creates/reuses canonical Patches/<X> (PascalCase, any-case reuse, foreign-manifest refusal, kmap refresh); kpm_dirs raises DuplicateKpmId (rc 2); 8 new tests |
+| H5 | Agent Verify-After-Fix invariant, two-stage gate lifecycle in `BUILD_AND_INSTALL.md` & harness middleware (doc 36) | H1-H4 | docs | DONE | ca80ebb | CLAUDE.md invariant added, AGENTS.md wording completed; BUILD_AND_INSTALL section 5 already compliant; OpenCode harness half N/A (lives in ~/.local/bin, oc-* not used in Claude Code) |
+| H6 | Auto-commit KPM mirror in `--prepare` (`--commit-kpm` flag in `scripts/kpm_hotswap.py`) (doc 36) | H2 | tooling | DONE | d9b18a0 | kpm_hotswap.py --commit-kpm (+6 tests); KPM-side commit only, repo-side commit stays H7 |
+| H7 | Production dirty auto-committer: `scripts/kpm_commit.py` with scoped tests & conventional commits (doc 36) | - | tooling | DONE | 49978eb | kpm_commit.py repo-side auto-committer (+9 tests); dry-run is the only mode safe in the shared tree |
+| H8 | Smoke harness canonical include normalization: `run_tests.py` auto-injects canonical Common includes (doc 36) | - | tooling | DONE | 65f9206 | run_tests.py canonical_include_flags(); smokes.toml -I entries removed (+5 tests) |
+| H9 | End-to-end fast-path pipeline: `scripts/kpm_ship.py [--apply]` orchestrates status -> commit -> gate -> prepare -> apply (doc 36) | H6-H8 | tooling | DONE | 92bcb56 | scripts/kpm_ship.py pipeline (+12 tests); live --apply not run |
+| H10 | Safe automated hook reinstaller: `scripts/kpm_reinstall.py --mod <id>` wraps KPatchLauncher with peer DLL preservation (doc 36) | H2 | tooling | DONE | 5673d94 | scripts/kpm_reinstall.py (+14 tests); live launcher run not done |
+
+Track BG (bug board, doc 37): rows BG01-BG41. BG01-BG25 are the 25 verified-and-still-real defects from the p2c deep-haiku-review audit (3 high, 13 medium, 9 low, all TODO when triaged 2026-10-11); BG26+ were appended by later reviews. Most rows are now FIXED/DONE; current status lives only in `patch_manager_mods/37_bug_board.md`. Take open rows from there; owner-gated rows follow the owner's doc. New audit findings are appended there.
+Track BG fix half (2026-10-11, $0): swarm-ready input and profile built in `.claude/deep-review/p2c/fix/` (see READY.md). Intake: auto-fixable BG13/14/19, human-only BG01-03/09/21-23, rest needs-design or contested. Pending, all the user's: `findings-skim`, a fix ceiling, `fix-go`. Resume `resume deep-haiku-review p2c-fix-ready`.
 
 Track P (engine research, separate): perf-lab 0.6.0 from W9 (doc 10 "Status log 20:49"), robustness 1.3.0 Delay/AssignCommand leak fix (shim 0x7037C0). **10-05: robustness 1.3.0 dclk COUNTER built (39aca1c, KPM eb162ff, dll 24893fb9; dclk=1 default counts the 3 drops, dclk=2 frees via 0x7037C0, opt-in after drops are seen); install awaits user GO.**
 
@@ -126,6 +129,19 @@ When delegating pending batches via `python3 scripts/plan_manager.py delegate <i
 - KPM `dotnet test tests/KPatchCore.Tests`; `scripts/kpm_registry_gate.sh` GATE PASS.
 - Every Common consumer has `common_contract_test.cpp`.
 - Live installs post-check: DLL md5s, exe `7751f7d8`, AR_ERROR `a2d88789`.
+
+## Revisit: agy (Antigravity) quota reset
+
+Parked 2026-10-10. Not a KOTOR mod batch: a swarm study that needs live Gemini quota. Nothing here is blocking the mod batches above.
+
+- **Trigger:** the "Gemini Models" weekly bucket (Flash and Pro share it) resets. It read 0.75% with refresh in 73h 18m on 10-10, so expect about 2026-10-13. The exact reset time was not recorded: check the Antigravity meter.
+- **Study:** `.claude/agy_eval/agy_eval_index.md` (start here). Full record: `.claude/agy_eval/agy_eval_session_log.md`.
+- **Circle back when the quota resets:**
+  1. Read `.claude/handoffs/agy_flash_swarm.handoff.md`.
+  2. Get the meter percentage from the user. Do not start if it is still low.
+  3. Run the P2 probes (up to 12 calls) with `.claude/agy_eval/agy_probe.py run`. Stop at the first quota or auth error.
+  4. Finalise `.claude/agy_eval/agy_eval_prereg.md`, then ask the user for a go before the pilot (P5).
+- **Still open:** P2 probes, pilot runner, final PREREG, pilot go, P6 analysis and decision memo. Nothing committed.
 
 ## Status log
 - 2026-10-03 M0 DONE: doc 24 created; 19b ranked-list status column refreshed (KpLog pilot done, items 2/3/7/8 adoption counts).
@@ -162,3 +178,5 @@ When delegating pending batches via `python3 scripts/plan_manager.py delegate <i
 - 2026-10-05 22:00 HP5+HP6+HP7 DONE, Action Hotbar 1.3.0-dev INSTALLED (user: "go") by DLL hot-swap: eeb6144f -> 3974512e (kpatch rebuilt, old kept as .hp4_pre.bak), hooks/exports byte-identical, imports msvcrt-only diff (+ftell +isxdigit -strtol), patch_config bf129653 unchanged; backup backups/action-hotbar_swap_20261005_220039. Repo 9409ffd/ebc2b01 (HP7a KeyBif.h, HP5a), 97c3866 (HP7b chitin.key fallback, no RE), c14c8e1 (HP5b), 7c60599 (HP6), 1fb1b23 (version); KPM df20d6c (+ Common/test/TestHarness.h kt::TempDir). Gates: run_tests 142/142, cov HotbarLogic 97.7 / HotbarConfig 99.2 / KeyBif 97.5, pre_install_gate PASS (no Wine smoke for action-hotbar), raw_addresses/hook_spans green. Behaviour notes: @self/@lowhp on spell:/feat: refused (WARN); unbound slot hides qty; wheel HUD-fresh 300->250 ms; `avail` tag -> `avail:`; live has override/spells.2da so log shows source=override. Next: play check (bars, picker, @lowhp/@self, `tip: ... source=` line).
 
 - [x] MG3 inv3d (completed)
+
+- 2026-10-10 AGY study PARKED (Gemini quota 0.75%, refresh in 73h 18m): P0, P1, P3, P4 done at $0 under `.claude/agy_eval/`; P2 probes and P5 pilot held until the quota resets (see "Revisit: agy quota reset" above). No mod files changed; nothing committed.
