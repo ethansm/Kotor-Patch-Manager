@@ -20,6 +20,9 @@ static void fCtor(void* t) { uintptr_t c = reinterpret_cast<uintptr_t>(t); at<ui
 static void* fExoCtor(void* e, const char* s) { memset(e, 0, 16); strncpy(static_cast<char*>(e), s, 15); return e; }
 static void fExoDtor(void*) {}
 static void fInit(void*, void* ctl, void*, int, int) { if (initWritesId) at<int>(reinterpret_cast<uintptr_t>(ctl), Ctl_Id) = -1; }
+// label-dtor recorder (the g_gkCallLabelDtor seam): the header hands (vtable slot 0 value, label, flags) here instead of calling it
+static int dtorCalls = 0; static uint32_t dtorFn = 0; static uintptr_t dtorSelf = 0; static unsigned dtorFlags = 0;
+static void recordDtor(uint32_t fn, uintptr_t self, unsigned flags) { ++dtorCalls; dtorFn = fn; dtorSelf = self; dtorFlags = flags; }
 
 int main() {
     void* m = mmap(nullptr, ArenaSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_32BIT, -1, 0);
@@ -87,6 +90,31 @@ int main() {
 
     why = -1;   // panel whose count field (0x38) sits in the unreadable low page
     KT_CHECK(createLabelFromTemplate(0x10, "LBL_X", &why) == 0); KT_CHECK_EQ(why, (int)CF_Count);
+
+    // WI-87 (BG40): a create that fails AFTER the vtable check releases its label once through the label's OWN vtable slot 0 (flags = 1);
+    // an unknown vtable is never called; a label that succeeds is never released.
+    const uint32_t slot0Saved = at<uint32_t>(LabelVtable, 0); auto* const dtorSaved = g_gkCallLabelDtor;
+    at<uint32_t>(LabelVtable, 0) = 0x7510B0u; g_gkCallLabelDtor = recordDtor;
+    dtorCalls = 0; why = -1; initWritesId = false;                       // InitControl leaves the id sentinel: template not in the layout
+    KT_CHECK(createLabelFromTemplate(panel, "LBL_X", &why) == 0); KT_CHECK_EQ(why, (int)CF_Template);
+    KT_CHECK_EQ(dtorCalls, 1); KT_CHECK_EQ((unsigned long long)dtorFn, 0x7510B0ull); KT_CHECK_EQ(dtorFlags, 1u);
+    KT_CHECK(dtorSelf >= reinterpret_cast<uintptr_t>(g_arena) && dtorSelf < reinterpret_cast<uintptr_t>(g_arena) + g_used);   // the allocated label
+    KT_CHECK(at<uint32_t>(dtorSelf, 0) == LabelVtable);
+    initWritesId = true;
+    dtorCalls = 0; why = -1;                                             // panel count unreadable: CF_Count, still after InitControl
+    KT_CHECK(createLabelFromTemplate(0x10, "LBL_X", &why) == 0); KT_CHECK_EQ(why, (int)CF_Count); KT_CHECK_EQ(dtorCalls, 1);
+    KT_CHECK_EQ(dtorFlags, 1u);
+    dtorCalls = 0; why = -1;                                             // success: the label is kept
+    KT_CHECK(createLabelFromTemplate(panel, "LBL_X", &why) != 0); KT_CHECK_EQ(why, (int)CF_None); KT_CHECK_EQ(dtorCalls, 0);
+    dtorCalls = 0; why = -1; ctorVtable = 0x00987800u; at<uint32_t>(0x00987800u, 0) = 0x7510B0u;   // readable foreign vtable with a live slot 0
+    KT_CHECK(createLabelFromTemplate(panel, "LBL_X", &why) == 0); KT_CHECK_EQ(why, (int)CF_Vtable); KT_CHECK_EQ(dtorCalls, 0);   // never called
+    at<uint32_t>(0x00987800u, 0) = 0; ctorVtable = LabelVtable;
+    at<uint32_t>(LabelVtable, 0) = 0; initWritesId = false; dtorCalls = 0; why = -1;   // our vtable but slot 0 empty: no call
+    KT_CHECK(createLabelFromTemplate(panel, "LBL_X", &why) == 0); KT_CHECK_EQ(why, (int)CF_Template); KT_CHECK_EQ(dtorCalls, 0);
+    initWritesId = true;
+    g_gkCallLabelDtor = nullptr; at<uint32_t>(LabelVtable, 0) = 0x7510B0u; why = -1; initWritesId = false;   // no seam: refuses, no crash
+    KT_CHECK(createLabelFromTemplate(panel, "LBL_X", &why) == 0); KT_CHECK_EQ(why, (int)CF_Template);
+    initWritesId = true; g_gkCallLabelDtor = recordDtor;
 
     why = -1; KT_CHECK(createLabelFromTemplate(panel, "LBL_X", &why) != 0 && why == CF_None);
 
@@ -402,8 +430,10 @@ int main() {
         KT_CHECK(bindByTag(bp, "LBL_FOO", 7, 0x200) != 0); KT_CHECK_EQ(lastSize, 0x200u);
         KT_CHECK(bindByTag(bp, "LBL_FOO", 7) != 0); KT_CHECK_EQ(lastSize, (unsigned)LabelSize);          // 0 = table size
         g_gk.alloc = fAlloc;
+        dtorCalls = 0;
         fakeId = 9; bc = bindByTag(bp, "LBL_BAR", 7, 0, &bi);
         KT_CHECK(bc == 0); KT_CHECK(bi.ctl != 0 && bi.id == 9 && bi.why == CF_Template);
+        KT_CHECK_EQ(dtorCalls, 0);                                        // addToList = 1: the control is in the panel list, never released
         KT_CHECK(bi.flagsAfter == 0x120 && at<int>(bi.ctl, Ctl_Flags) == 0x120);                          // hidden (bit1 clear) + click-through
         fakeId = 7;
         // failure paths
@@ -417,10 +447,14 @@ int main() {
         int ic = initCalls;
         ctorVtable = 0xABCD0000u; KT_CHECK(bindByTag(bp, "LBL_FOO", 7, 0, &bi) == 0 && bi.why == CF_Vtable && bi.badVtable == 0xABCD0000u); ctorVtable = LabelVtable;
         KT_CHECK_EQ(initCalls, ic);                                       // never reached InitControl on a bad vtable
+        ctorVtable = 0x00987800u; at<uint32_t>(0x00987800u, 0) = 0x7510B0u;   // readable foreign vtable with a live slot 0
+        KT_CHECK(bindByTag(bp, "LBL_FOO", 7, 0, &bi) == 0 && bi.why == CF_Vtable); KT_CHECK_EQ(dtorCalls, 0);   // the CF_Vtable leak stays: never called
+        at<uint32_t>(0x00987800u, 0) = 0; ctorVtable = LabelVtable;
         KT_CHECK(bindByTag(0, "LBL_FOO", 7, 0, &bi) == 0 && bi.why == CF_Alloc);
         KT_CHECK(bindByTag(bp, nullptr, 7, 0, &bi) == 0 && bi.why == CF_Alloc);
         g_gk.initControl = nullptr; KT_CHECK(bindByTag(bp, "LBL_FOO", 7, 0, &bi) == 0 && bi.why == CF_Alloc);
         g_gk = saved;
     }
+    g_gkCallLabelDtor = dtorSaved; at<uint32_t>(LabelVtable, 0) = slot0Saved;
     return kt::Report("guikit_test");
 }

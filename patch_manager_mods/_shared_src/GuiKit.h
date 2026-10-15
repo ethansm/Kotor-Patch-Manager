@@ -144,11 +144,32 @@ inline void* textSub(uintptr_t ctl) { return reinterpret_cast<void*>(ctl + off(&
 }
 
 // ---- creation ----
+// Calls a label's vtable slot 0 (CSWGuiLabel scalar deleting dtor): thiscall, one stack arg `flags` (RET 4); flags bit0 = free the storage.
+// `fn` is the slot value read from the object. A host test replaces this seam (like Engine::callSetRect) and records (fn, ctl, flags).
+// A namespace-level variable, not an Engine field: the Engine layout is unchanged. Under GUIKIT_HOST it defaults to nullptr (no engine:
+// the release is a no-op and reads nothing, so host tests of other mods that never mapped a label vtable are unaffected).
+#ifdef GUIKIT_HOST
+inline void (*g_gkCallLabelDtor)(uint32_t fn, uintptr_t ctl, unsigned flags) = nullptr;
+#else
+inline void (*g_gkCallLabelDtor)(uint32_t fn, uintptr_t ctl, unsigned flags) = [](uint32_t fn, uintptr_t ctl, unsigned flags) {
+    reinterpret_cast<void(__thiscall*)(void*, unsigned)>(static_cast<uintptr_t>(fn))(reinterpret_cast<void*>(ctl), flags);
+};
+#endif
+// Releases a label that createLabelFromTemplate allocated and then failed on (InitControl ran with addToList = 0, so no panel list, focus or
+// hover pointer holds it). Re-reads the object's vtable and calls its OWN slot 0 with flags = 1 only when the vtable == labelVt and slot 0 is
+// non-zero; an unknown vtable is never called (a leak beats a wild call). Never for a control in a panel list (bindByTag, addToList = 1).
+inline void releaseUnlinkedLabel(uintptr_t c, uint32_t labelVt) {
+    using namespace detail;
+    uint32_t vt = 0, fn = 0;
+    if (!c || !labelVt || !g_gkCallLabelDtor || !rd32(c, 0, &vt) || vt != labelVt || !rd32(vt, 0, &fn) || !fn) return;
+    g_gkCallLabelDtor(fn, c, 1u);
+}
 // Creates a blank label from the layout template `templateTag` (e.g. "LBL_QUEUE1"; recipe = Mod 3 createLabel 982-1043).
 // NOT appended to the panel (call appendToPanel). Created hidden + click-through (flags bit1 clear, 0x20 set).
 // ONLY valid while the panel's layout GFF is open: inside the panel ctor, before StopLoadFromLayout (0x0040F5A0).
 // Returns the label, or 0 (allocation failed, ctor vtable wrong, or the template tag is not in the layout).
 // Optional out-params: *why = CreateFail reason (CF_None on success); *badVtable = the vtable read when why == CF_Vtable.
+// A failure after the vtable check passed releases the label (releaseUnlinkedLabel); the CF_Vtable failure leaks it (unknown vtable).
 inline uintptr_t createLabelFromTemplate(uintptr_t panel, const char* templateTag, int* why = nullptr, uint32_t* badVtable = nullptr) {
     using namespace detail;
     if (why) *why = CF_None;
@@ -165,18 +186,18 @@ inline uintptr_t createLabelFromTemplate(uintptr_t panel, const char* templateTa
     uintptr_t c = reinterpret_cast<uintptr_t>(mem);
     uint32_t vt = 0;
     if (!rd32(c, 0, &vt) || vt != labelVt) { if (why) *why = CF_Vtable; if (badVtable) *badVtable = vt; return 0; }
-    if (!wr<int>(c, oId, IdSentinel)) { if (why) *why = CF_Vtable; return 0; }
+    if (!wr<int>(c, oId, IdSentinel)) { releaseUnlinkedLabel(c, labelVt); if (why) *why = CF_Vtable; return 0; }
     char exo[16] = {0};
     g_gk.exoCtor(exo, templateTag);
     g_gk.initControl(reinterpret_cast<void*>(panel), mem, exo, 0, 1);   // addToList = 0, scale = 1 (Mod 3 1031)
     g_gk.exoDtor(exo);
     int id = 0;
-    if (!rdInt(c, oId, &id) || id == IdSentinel) { if (why) *why = CF_Template; return 0; }   // template not in the layout
+    if (!rdInt(c, oId, &id) || id == IdSentinel) { releaseUnlinkedLabel(c, labelVt); if (why) *why = CF_Template; return 0; }   // template not in the layout
     int index = 0;
-    if (!rdInt(panel, oCount, &index)) { if (why) *why = CF_Count; return 0; }
+    if (!rdInt(panel, oCount, &index)) { releaseUnlinkedLabel(c, labelVt); if (why) *why = CF_Count; return 0; }
     wr<int>(c, oId, index);                                             // provisional; appendToPanel re-stamps it
     int fl = 0;
-    if (!rdInt(c, oFlags, &fl)) { if (why) *why = CF_Flags; return 0; }
+    if (!rdInt(c, oFlags, &fl)) { releaseUnlinkedLabel(c, labelVt); if (why) *why = CF_Flags; return 0; }
     wr<int>(c, oFlags, (fl & ~FlagVisible) | FlagClickThrough);     // hidden + click-through until the caller shows it (Mod 3 1034)
     return c;
 }
@@ -554,7 +575,8 @@ struct BindInfo {   // what the copies logged ("H1 %s: ctl id expect extent flag
 };
 // alloc(labelSize) + zero + label ctor + vtable check + InitControl(panel, ctl, tag, addToList = 1, scale = 1) (so the panel list takes it,
 // unlike createLabelFromTemplate) + id/flags/extent readback + bindFlags write. Returns the control iff its id == expectId, else 0 (the
-// hidden control stays in the panel list, as in the copies; info->ctl still holds it). labelSize <= 0 = the K2Addr table's LabelSize
+// hidden control stays in the panel list, as in the copies; info->ctl still holds it; it is NEVER released: the panel list owns it, and the
+// CF_Vtable leak stays because an unknown vtable is never called). labelSize <= 0 = the K2Addr table's LabelSize
 // (the copies hard-coded 0x148). `tagName` is the layout tag string (the copies' tagName), not an int.
 inline uintptr_t bindByTag(uintptr_t panel, const char* tagName, int expectId, int labelSize = 0, BindInfo* info = nullptr) {
     using namespace detail;
