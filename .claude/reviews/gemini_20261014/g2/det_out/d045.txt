@@ -1,0 +1,7 @@
+fids: QH-2b-01
+question: QH-2b-01: decideAction/decideItemAction signature is (buf, inCombat, engineQueueLen, haveCur=false); the 2nd arg is inCombat. Does any test call pass a 4th (haveCur) argument? Run: rg -n 'decide(Item)?Action\([^()]*,[^()]*,[^()]*,[^()]*\)' patch_manager_mods/queue_hud_src/queue_hud_logic_test.cpp
+cmd: rg -n 'decide(Item)?Action\([^()]*,[^()]*,[^()]*,[^()]*\)' patch_manager_mods/queue_hud_src/queue_hud_logic_test.cpp
+rule: 0 hits => CONFIRMED gap (haveCur always defaults to false in tests of decideAction/decideItemAction; only shouldDispatchNext covers haveCur at test line 1421); >=1 hit => inspect for a true 4th arg, REFUTED if true
+hits: 0
+--- output ---
+

@@ -1,0 +1,8 @@
+fids: SH-3c-03
+question: rg -n 'Tex_W|allocation failed|newFn *= *(nullptr|\[)|fNew.*return *nullptr' patch_manager_mods/_shared_src/embtex_test.cpp
+cmd: rg -n 'Tex_W|allocation failed|newFn *= *(nullptr|\[)|fNew.*return *nullptr' patch_manager_mods/_shared_src/embtex_test.cpp
+rule: 0 hits => width-change rebuild (EmbedTex.h:150 w != s.w) and allocation-failed (EmbedTex.h:130) paths untested => claim CONFIRMED; hit on Tex_W with a log-count check for 'rebuilt without our pixels' w= differing from s.w => REFUTED for that path; hit on newFn null with 'allocation failed' count => REFUTED for that path
+hits: 2
+--- output ---
+49:    KT_CHECK_EQ(ObjSize, 0xF4); KT_CHECK_EQ(Tex_Pixels, 0x44); KT_CHECK_EQ(Tex_Uploaded, 0x58); KT_CHECK_EQ(Tex_MipBytes, 0x5C); KT_CHECK_EQ(Tex_W, 0x68);
+66:    KT_CHECK(b != nullptr); KT_CHECK_EQ(at<int>(b, Tex_W), 2); KT_CHECK_EQ(at<int>(b, Tex_H), 2); KT_CHECK_EQ(at<int>(b, Tex_Bpp), 4);

@@ -1,0 +1,7 @@
+fids: SH-3c-05
+question: rg -n 'changed\([^;]*&' patch_manager_mods/_shared_src/filewatch_test.cpp
+cmd: rg -n 'changed\([^;]*&' patch_manager_mods/_shared_src/filewatch_test.cpp
+rule: 0 hits => CONFIRMED no changed() call passes a Stamp* out (5th arg, FileWatch.h:77) in the whole test file; mtimeMs assertion at :59 sits in the else-branch of the ns-support check at :51 (deliberate coarse-FS skip); >=1 hit => REFUTED
+hits: 0
+--- output ---
+

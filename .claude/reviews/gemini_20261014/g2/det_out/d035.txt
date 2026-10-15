@@ -1,0 +1,7 @@
+fids: K1-5d-05
+question: rg -n -i 'symlink|ambig|active|collision' patch_manager_mods/k1_port/test_k1_port_probe.py
+cmd: rg -n -i 'symlink|ambig|active|collision' patch_manager_mods/k1_port/test_k1_port_probe.py
+rule: 0 hits => active-manifest collision, ambiguous cloudsaves slot and save-tree symlink checks untested (CONFIRMED); hits => PARTIAL, inspect hit lines
+hits: 0
+--- output ---
+

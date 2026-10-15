@@ -1,0 +1,7 @@
+fids: K1-5b-06,K1-5d-04
+question: rg -n 'SKIN_ARRAY_ORDER' patch_manager_mods/k1_port/test_k1_port_validate.py
+cmd: rg -n 'SKIN_ARRAY_ORDER' patch_manager_mods/k1_port/test_k1_port_validate.py
+rule: 0 hits => SKIN_ARRAY_ORDER never asserted (CONFIRMED test gap); u32 read and w>b-only check already confirmed by G1 at validate.py:264-265
+hits: 0
+--- output ---
+

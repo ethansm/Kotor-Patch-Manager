@@ -1,0 +1,11 @@
+fids: CO-2d-08,HN-6h-06,QH-2a-10,SH-3a-03
+question: rg -n 'readAt[^;]*[^0-9a-zA-Z_]0x[0-9a-fA-F]{5,}' patch_manager_mods --glob '*.{h,cpp,inc}' --glob '!*_test.cpp'
+cmd: rg -n 'readAt[^;]*[^0-9a-zA-Z_]0x[0-9a-fA-F]{5,}' patch_manager_mods --glob '*.{h,cpp,inc}' --glob '!*_test.cpp'
+rule: Hits whose OFFSET arg (3rd) is >=0x10000 (e.g. PerfLab.cpp:1665 0x2000C/0x20000) => off>0x10000 exists so the low-address guard can be bypassed by a wrapping base: gap CONFIRMED for those sites; if every hit has base-address constant and off 0 => callers never exceed 0x10000 => REFUTED/impact nil
+hits: 5
+--- output ---
+patch_manager_mods/k1_spawn_probe_src/K1SpawnProbe.cpp:203:        if (!readAt(kSiteDump, base, i * 4, &v) || v < 0x10000u) continue;
+patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp:1665:    if (saferead::readAt(55, reinterpret_cast<uintptr_t>(obj), 0x2000C, &peer) && saferead::readAt(56, peer, 0x20000, &rd) && newW > rd + 0x10000u)
+patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp:1787:    if (saferead::readAt(58, 0x00A1BC70, 0, &recs)) g_m->texScanRecs = recs;
+patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp:1798:        if (saferead::readAt(59, 0x00A1BC4C, 0, &bound)) g_m->texScanBound = bound;
+patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp:1799:        if (saferead::readAt(60, 0x00A1BB84, 0, &maxId)) g_m->texScanMaxId = maxId;

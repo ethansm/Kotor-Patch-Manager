@@ -1,0 +1,13 @@
+fids: HB-1b-01
+question: rg -n '0x0072CB63|0x0072CB84|^address' patch_manager_mods/action_hotbar_src/kotor2-steam-aspyr.hooks.toml patch_manager_mods/07_force_power_hotbar.md patch_manager_mods/action_hotbar_src/README.md
+cmd: rg -n '0x0072CB63|0x0072CB84|^address' patch_manager_mods/action_hotbar_src/kotor2-steam-aspyr.hooks.toml patch_manager_mods/07_force_power_hotbar.md patch_manager_mods/action_hotbar_src/README.md
+rule: hooks.toml active 'address = 0x0072CB84' (:8) while doc :94 lists 0x0072CB63 and README lists only 1 direct detour (others via hud-host/save-events) => doc hook list stale, CONFIRMED; doc key text 'obj<hexid>' (:95) vs HotbarLogic.h:93-117 tag/slotN/Exile range already confirmed by G1
+hits: 7
+--- output ---
+patch_manager_mods/action_hotbar_src/README.md:210:| `0x0072CB63` | `CaptureHotbarKey` | Reads the DirectInput key event, so the bound keys can be taken. |
+patch_manager_mods/07_force_power_hotbar.md:94:- 8 hooks (all Steam Aspyr; table in the README "Hooks"): 0x0072CB63 `CaptureHotbarKey`, 0x0074B3F0 `HotbarHudTick`, 0x00748502 `HotbarBuildButtons`, 0x00534527 `HotbarOnSaved`, 0x0053C5AA `HotbarOnAutosaved`, 0x0052FD1E `HotbarOnLoadRequest`, 0x008529E0 `HotbarOnAutosaveSlotLoad`, 0x008FACA0 `HotbarOnNewGame`.
+patch_manager_mods/07_force_power_hotbar.md:838:`Applied DETOUR` x3 for the hotbar (0x0072CB63, 0x0074B3F0, 0x00748502), DLL md5, `AR_ERROR.LOG` md5 unchanged.
+patch_manager_mods/07_force_power_hotbar.md:874:- Both detours apply (`Applied DETOUR hook at 0x0072CB63 / 0x0074B3F0`), no `AR_ERROR.LOG` change (md5 `a2d887896b53eae113758dc8c3729db9`).
+patch_manager_mods/07_force_power_hotbar.md:907:| DirectInput capture hook (`89 85 bc fe ff ff`; EAX=record{dwOfs,dwData}, `[ebp-0x10]`=device) | `0x0072CB63` |
+patch_manager_mods/action_hotbar_src/kotor2-steam-aspyr.hooks.toml:4:# CExoInputInternal::GetEvents+0x3A4 (Steam 0x0072CB84; moved from +0x383 / 0x0072CB63 for EKC coexistence,
+patch_manager_mods/action_hotbar_src/kotor2-steam-aspyr.hooks.toml:8:address = 0x0072CB84

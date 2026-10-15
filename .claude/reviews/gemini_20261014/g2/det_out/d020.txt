@@ -1,0 +1,8 @@
+fids: HB-1b-03
+question: rg -n 'v\.down = |cur *= *-' patch_manager_mods/_shared_src/Party.h patch_manager_mods/action_hotbar_src/hotbar_logic_test.cpp
+cmd: rg -n 'v\.down = |cur *= *-' patch_manager_mods/_shared_src/Party.h patch_manager_mods/action_hotbar_src/hotbar_logic_test.cpp
+rule: Party.h:118 shows down = ok && cur <= 0 (so production candidates with cur<=0 carry down=true and are skipped) and the only negative-cur test (:523) uses max=0 => test-gap CONFIRMED (low severity), production defect REFUTED; a test with cur<0, max>0, down=false => REFUTED
+hits: 2
+--- output ---
+patch_manager_mods/action_hotbar_src/hotbar_logic_test.cpp:523:    m[0].cur = -5; m[0].max = 0;
+patch_manager_mods/_shared_src/Party.h:118:        v.down = v.ok && v.cur <= 0;

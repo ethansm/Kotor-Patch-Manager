@@ -1,0 +1,15 @@
+fids: CO-2d-05
+question: rg -n 'seen = false|hideAll\(\)' patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp
+cmd: rg -n 'seen = false|hideAll\(\)' patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp
+rule: hideAll (~725) resets seen and is called on gate close (~997); seen also reset each frame at ~1001-1002 before being set at ~1020/1027 after refreshCache (~998): both present => CONFIRMED one-frame lag; absent => REFUTED
+hits: 9
+--- output ---
+669:    bool seen = false;                 // matched to a slot this frame
+721:void hideAll() {
+725:    for (Card& c : g_card) { c.seen = false; c.st = shui::BtnState::Hidden; }
+726:    g_card0.seen = false;
+997:    if (!gateOpen(ctx)) { hideAll(); return; }
+1001:    for (Card& c : g_card) c.seen = false;
+1002:    g_card0.seen = false;
+1302:    for (Card& c : g_card) c.seen = false;
+1303:    g_card0.seen = false;

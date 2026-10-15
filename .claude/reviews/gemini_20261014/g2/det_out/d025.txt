@@ -1,0 +1,7 @@
+fids: K1-5a-05
+question: rg -n 'len\(.*(child|name|resref|prefix)|> *16|<= *16|16' patch_manager_mods/k1_port/k1_port_tex_bake.py
+cmd: rg -n 'len\(.*(child|name|resref|prefix)|> *16|<= *16|16' patch_manager_mods/k1_port/k1_port_tex_bake.py
+rule: 0 hits applying a 16-char limit to the child name => no check (CONFIRMED gap for nn>=100 on n_mandalorian); a hit that rejects names > 16 chars => REFUTED
+hits: 0
+--- output ---
+

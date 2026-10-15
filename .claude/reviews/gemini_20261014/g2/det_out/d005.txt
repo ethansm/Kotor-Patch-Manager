@@ -1,0 +1,7 @@
+fids: CO-2d-08,HN-6h-06,QH-2a-10,SH-3a-03
+question: rg -n 'readAt\(' patch_manager_mods/_shared_src/saferead_test.cpp | rg -n '0x[Ff]{4,}'
+cmd: rg -n 'readAt\(' patch_manager_mods/_shared_src/saferead_test.cpp | rg -n '0x[Ff]{4,}'
+rule: 0 hits => no test pins positive-off wrap from a high base (gap CONFIRMED, test-only); >=1 hit => REFUTED (wrap tested)
+hits: 0
+--- output ---
+

@@ -1,0 +1,10 @@
+fids: HB-1d-02
+question: rg -n 'vector<std::string>[ ]*[A-Za-z]+\(|\.assign\(|\.resize\(|implausible' patch_manager_mods/action_hotbar_src/twoda_test.cpp
+cmd: rg -n 'vector<std::string>[ ]*[A-Za-z]+\(|\.assign\(|\.resize\(|implausible' patch_manager_mods/action_hotbar_src/twoda_test.cpp
+rule: only 'implausible row count' hits (:102,:106,:107) and no test building thousands of columns => CONFIRMED gap; a many-column Build2da case => REFUTED
+hits: 4
+--- output ---
+102:        KT_CHECK(!m.Parse(Build2da(C, R, 100001))); KT_CHECK_EQ(m.error.c_str(), "implausible row count");
+105:        KT_CHECK(!m.Parse(Build2da(C, R, 65536))); KT_CHECK_EQ(m.error.c_str(), "bad row label");      // byte 2 of the count counts (not implausible, just truncated)
+106:        KT_CHECK(!m.Parse(Build2da(C, R, 0x01000000l))); KT_CHECK_EQ(m.error.c_str(), "implausible row count");   // byte 3 of the count counts
+107:        KT_CHECK(!m.Parse(Build2da(C, R, 0x80000000l))); KT_CHECK_EQ(m.error.c_str(), "implausible row count");

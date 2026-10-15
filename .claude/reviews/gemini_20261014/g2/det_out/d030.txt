@@ -1,0 +1,31 @@
+fids: K1-5b-03
+question: rg -n -A24 'def add_row' /home/ethansm/Games/KOTOR2_Mod_Workspace/venvs/k1port/lib/python3.12/site-packages/pykotor/resource/formats/twoda/twoda_data.py
+cmd: rg -n -A24 'def add_row' /home/ethansm/Games/KOTOR2_Mod_Workspace/venvs/k1port/lib/python3.12/site-packages/pykotor/resource/formats/twoda/twoda_data.py
+rule: if headers absent from cells (the label column is skipped in probe_build.py:106) are filled with empty string and label defaults to given row_label, then set_label replaces the numeric 812 row label with K1P_CommM_Probe and the label column is empty (mechanics CONFIRMED; engine impact is the re row)
+hits: 25
+--- output ---
+531:    def add_row(
+532-        self,
+533-        row_label: str | None = None,
+534-        cells: dict[str, Any] | None = None,
+535-    ) -> int:
+536-        """Adds a new row to the end of the table.
+537-
+538-        Headers specified in the cells parameter that do not exist in the table
+539-        itself will be ignored, headers that are not specified in the cells parameter but do exist in the table will
+540-        default to being blank. All cells are converted to strings before being added into the 2DA.
+541-
+542-        Args:
+543-        ----
+544-            row_label: The row label. If None then the row label will be its index.
+545-            cells: A dictionary representing the cells of the new row. A key is the header and value is the cell.
+546-
+547-        Returns:
+548-        -------
+549-            The id of the new row.
+550-        """
+551-        self._rows.append({})
+552-        label = str(len(self._rows)) if row_label is None else row_label
+553-        self._labels.append(label)
+554-
+555-        # Update lookup dictionary for O(1) find_row performance

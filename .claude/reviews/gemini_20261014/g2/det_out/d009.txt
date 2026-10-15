@@ -1,0 +1,10 @@
+fids: HN-6h-05
+question: rg -n 'Fsm|onSwap|onCombat' patch_manager_mods/holster_src --glob '!*_test.cpp' --glob '!HolsterLogic.h'
+cmd: rg -n 'Fsm|onSwap|onCombat' patch_manager_mods/holster_src --glob '!*_test.cpp' --glob '!HolsterLogic.h'
+rule: 0 hits => hs::Fsm is not wired into shipped code (unit-test-only logic; onSwap-out-of-combat defect unreachable in the DLL, test-gap still real); >=1 hit => read the caller for out-of-combat swap reachability and Fsm reset on load/area change
+hits: 4
+--- output ---
+patch_manager_mods/holster_src/Holster.cpp:40:static bool g_onComb = false, g_onAttach = false, g_onSwap = false, g_onAnim = false, g_onGob = false;   // probe=1 AND ch_<name>=1
+patch_manager_mods/holster_src/Holster.cpp:115:    g_onSwap = probe && swap;
+patch_manager_mods/holster_src/Holster.cpp:184:    if (!g_onSwap) return;
+patch_manager_mods/holster_src/Holster.cpp:254:    addName(names, sizeof(names), g_onSwap, "swap");

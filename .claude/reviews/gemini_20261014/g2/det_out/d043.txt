@@ -1,0 +1,7 @@
+fids: QH-2a-09
+question: QH-2a-09 part 1: is drawChevron called anywhere? Run: rg -n 'drawChevron' patch_manager_mods/queue_hud_src
+cmd: rg -n 'drawChevron' patch_manager_mods/queue_hud_src
+rule: exactly 1 hit (the definition at QueueHud.cpp:351) => CONFIRMED dead code; >=2 hits => REFUTED (has a caller)
+hits: 1
+--- output ---
+patch_manager_mods/queue_hud_src/QueueHud.cpp:351:void drawChevron(int x, int y, int w, int h, const float* rgb, float alpha) {

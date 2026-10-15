@@ -1,0 +1,11 @@
+fids: HN-6h-04
+question: rg -n -A4 'static uint32_t rdU32' patch_manager_mods/holster_src/Holster.cpp
+cmd: rg -n -A4 'static uint32_t rdU32' patch_manager_mods/holster_src/Holster.cpp
+rule: 'uint32_t v = 0' before readAt and 'return v' => unreadable returns 0 (no sentinel) so old=0 on failure is CONFIRMED (edge=1 whenever new!=0); sentinel/other init => REFUTED
+hits: 5
+--- output ---
+127:static uint32_t rdU32(unsigned site, uintptr_t base, int off) {
+128-    uint32_t v = 0;
+129-    (void)saferead::readAt(site, base, off, &v);
+130-    return v;
+131-}

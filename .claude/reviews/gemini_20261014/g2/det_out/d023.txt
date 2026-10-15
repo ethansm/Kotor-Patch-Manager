@@ -1,0 +1,10 @@
+fids: HB-1c-04
+question: rg -n 'clearNative|setNative' patch_manager_mods/combat_hotbar_src/CombatHotbar.cpp patch_manager_mods/_shared_src/GuiTip.h
+cmd: rg -n 'clearNative|setNative' patch_manager_mods/combat_hotbar_src/CombatHotbar.cpp patch_manager_mods/_shared_src/GuiTip.h
+rule: only setNative at CombatHotbar.cpp:710 guarded by 'if (name[0])' and no clearNative call in CombatHotbar.cpp => empty name keeps the previous tooltip while tipKey/tipSet update (stale tooltip CONFIRMED); a clearNative(b.bg.c) call on the empty branch => REFUTED
+hits: 4
+--- output ---
+patch_manager_mods/_shared_src/GuiTip.h:5://      ctl+0x28 is 0. setNative() writes those two fields once per control; the engine draws the box next to the cursor after its own delay.
+patch_manager_mods/_shared_src/GuiTip.h:45:inline bool setNative(uintptr_t ctl, const char* text) {
+patch_manager_mods/_shared_src/GuiTip.h:53:inline bool clearNative(uintptr_t ctl) { return setNative(ctl, ""); }
+patch_manager_mods/combat_hotbar_src/CombatHotbar.cpp:710:                if (name[0]) guitip::setNative(b.bg.c, name);

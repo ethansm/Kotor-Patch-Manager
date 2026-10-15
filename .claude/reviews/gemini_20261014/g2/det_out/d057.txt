@@ -1,0 +1,8 @@
+fids: SH-3c-04
+question: rg -n 'playerPaused' patch_manager_mods --glob '*test*'
+cmd: rg -n 'playerPaused' patch_manager_mods --glob '*test*'
+rule: Only the comment actqueue_test.cpp:101 and the function-pointer cast common_contract_test.cpp:289 (no call) => CONFIRMED playerPaused never called by any test; a call in queue_hud_logic_test.cpp => REFUTED
+hits: 2
+--- output ---
+patch_manager_mods/_shared_src/actqueue_test.cpp:101:    // playerPaused() walks the fixed engine address AppGlobal (not mappable in the host arena), so it is not host-testable; QueueHud's tests keep the behaviour pinned.
+patch_manager_mods/companion_selfheal_src/common_contract_test.cpp:289:        HCHECK("actq::read(0, ...) returns false (no creature) and playerPaused(site) is declared bool(unsigned)", !actq::read(0, &qa, 0x6E10, 0x6E20) && static_cast<bool(*)(unsigned)>(&actq::playerPaused) != nullptr);

@@ -1,0 +1,10 @@
+fids: SH-3b-02
+question: rg -n 'STEAM\(Menu_Char[23],' patch_manager_mods/_shared_src/k2addr_test.cpp
+cmd: rg -n 'STEAM\(Menu_Char[23],' patch_manager_mods/_shared_src/k2addr_test.cpp
+rule: 4 hits (two for Menu_Char2, two for Menu_Char3, lines 122-126 both inside checkSteamFields 25-172) => CONFIRMED double-checked; 2 hits => REFUTED
+hits: 4
+--- output ---
+122:    STEAM(Menu_Char2, 0x3134);
+123:    STEAM(Menu_Char3, 0x36DC);
+125:    STEAM(Menu_Char2, 0xc4d * 4);   STEAM(Menu_Level2, 0xc9f * 4);  STEAM(Menu_Back2, 0xcf1 * 4);   STEAM(Menu_Change2, 0xd43 * 4);
+126:    STEAM(Menu_Char3, 0xdb7 * 4);   STEAM(Menu_Level3, 0xe09 * 4);  STEAM(Menu_Back3, 0xe5b * 4);   STEAM(Menu_Change3, 0xead * 4);

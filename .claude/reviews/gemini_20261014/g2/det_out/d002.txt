@@ -1,0 +1,8 @@
+fids: CO-2d-05
+question: rg -n 'gameplay' patch_manager_mods/_shared_src/HealItems.h
+cmd: rg -n 'gameplay' patch_manager_mods/_shared_src/HealItems.h
+rule: hit in shouldAutoUse early-return condition (|| !gameplay) => shouldAutoUse hard-gates on seen (5th arg is the gameplay param): CONFIRMED lag of one frame when seen was false; no such hit => REFUTED
+hits: 2
+--- output ---
+65:inline bool shouldAutoUse(const AutoCfg& cfg, int cur, int max, bool alive, bool commandable, bool gameplay,
+67:    if (!cfg.on || !alive || !commandable || !gameplay || max <= 0) return false;

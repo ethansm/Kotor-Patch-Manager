@@ -1,0 +1,13 @@
+fids: HB-1a-01
+question: rg -n 'SIZE_MAX|UINT32_MAX|implausible|nrows|cells' patch_manager_mods/action_hotbar_src/TwoDA.h
+cmd: rg -n 'SIZE_MAX|UINT32_MAX|implausible|nrows|cells' patch_manager_mods/action_hotbar_src/TwoDA.h
+rule: only the 'implausible row count' cap on nrows (no cap on cols.size() or overflow check on nrows*cols.size()) => 32-bit size_t wrap unguarded, PARTIAL stands (cost/overflow only; the cell scan itself is bounded by the implicit NUL at d.size()); a cols cap or overflow check => REFUTED
+hits: 7
+--- output ---
+72:        uint32_t nrows = rd32(d, p); p += 4;
+73:        if (nrows > 100000) { error = "implausible row count"; return false; }
+74:        for (uint32_t r = 0; r < nrows; ++r) {
+79:        size_t cells = (size_t)nrows * cols.size();
+80:        if (p + cells * 2 + 2 > d.size()) { error = "truncated offsets"; return false; }
+81:        size_t offs = p; p += cells * 2;
+83:        for (uint32_t r = 0; r < nrows; ++r) {

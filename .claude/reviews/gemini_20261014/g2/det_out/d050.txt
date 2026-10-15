@@ -1,0 +1,7 @@
+fids: SH-3b-03
+question: rg -c 'collectBuffs' patch_manager_mods/_shared_src/k2addr_test.cpp patch_manager_mods/_shared_src/effects_test.cpp
+cmd: rg -c 'collectBuffs' patch_manager_mods/_shared_src/k2addr_test.cpp patch_manager_mods/_shared_src/effects_test.cpp
+rule: k2addr_test.cpp 0 hits => collectBuffs untested there; effects_test.cpp >=1 hit => claim 'collectBuffs untested' REFUTED as stated (covered in effects_test.cpp:303-370)
+hits: 23
+--- output ---
+patch_manager_mods/_shared_src/effects_test.cpp:23

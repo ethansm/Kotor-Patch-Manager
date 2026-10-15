@@ -1,0 +1,9 @@
+fids: SH-3a-09
+question: rg -n 'wheelUninstall' patch_manager_mods --glob '*.cpp' --glob '!*_test.cpp'
+cmd: rg -n 'wheelUninstall' patch_manager_mods --glob '*.cpp' --glob '!*_test.cpp'
+rule: All hits inside DLL_PROCESS_DETACH => static subOk never needs resetting in-process (stale subOk claim REFUTED as a live defect, only latent API hazard); any hit outside DLL_PROCESS_DETACH => (b) CONFIRMED reachable
+hits: 3
+--- output ---
+patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp:1002:    if (reason == DLL_PROCESS_DETACH) guikit::wheelUninstall();   // restore if still on top, else stay chained but inert
+patch_manager_mods/active_effects_panel_src/CharEffectsPanel.cpp:992:    if (reason == DLL_PROCESS_DETACH) guikit::wheelUninstall();   // never leave a dangling window proc: restores if on top, else stays chained but inert
+patch_manager_mods/inventory_3d_viewport_src/Inventory3DViewport.cpp:592:    if (reason == DLL_PROCESS_DETACH) guikit::wheelUninstall();   // restore if still on top, else stay chained but inert

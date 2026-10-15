@@ -1,0 +1,19 @@
+fids: SH-3c-09
+question: rg -n 'marqueeText\(|fitText\(|wrapAppendW\(|wrapAppend\(' patch_manager_mods/_shared_src/textfit_test.cpp
+cmd: rg -n 'marqueeText\(|fitText\(|wrapAppendW\(|wrapAppend\(' patch_manager_mods/_shared_src/textfit_test.cpp
+rule: marqueeText offsets are 0,0,3,100,7 (no negative off; 'Droid Deflector Mark I'[7]=='e', not a space), no source string ends in a space, no source over 120 chars => CONFIRMED all four gaps; a negative off, trailing-space src, space at the off index, or >120-char word => REFUTED for that item
+hits: 13
+--- output ---
+33:    KT_CHECK(!fitText(ctx, "Droid Deflector Mark I", 442.005524f, out, sizeof out, F16));
+35:    KT_CHECK(fitText(ctx, "Droid Deflector Mark I", 441.005524f, out, sizeof out, F16));
+37:    KT_CHECK(fitText(ctx, "Droid Deflector Mark I", 265.203308f, out, sizeof out, F16));
+39:    KT_CHECK(fitText(ctx, "Droid Deflector Mark I", 223.856125f, out, sizeof out, F10));
+44:    marqueeText(ctx, "Droid Deflector Mark I", 443.005524f, 0, out, sizeof out, &mo, F16);
+46:    marqueeText(ctx, "Droid Deflector Mark I", 265.203308f, 0, out, sizeof out, &mo, F16);
+48:    marqueeText(ctx, "Droid Deflector Mark I", 265.203308f, 3, out, sizeof out, &mo, F16);
+50:    marqueeText(ctx, "Droid Deflector Mark I", 265.203308f, 100, out, sizeof out, &mo, F16);
+52:    marqueeText(ctx, "Droid Deflector Mark I", 223.856125f, 7, out, sizeof out, &mo, F10);
+58:        int n = wrapAppend(ctx, "WWW WWW iiiiiiii iiiiiiii", 164.802048f, buf, &len, 1024);
+66:        KT_CHECK_EQ(wrapAppendW(chars, "aaa bbb ccc ddd", 7, buf, &len, 1024), 2);
+70:        KT_CHECK_EQ(wrapAppendW(chars, "ee", 7, buf, &len, 1024), 1);
+74:        KT_CHECK_EQ(wrapAppendW(chars, "aaaa bbbb", 4, tiny, &tl, 8), 1);

@@ -1,0 +1,7 @@
+fids: PL-4b-02
+question: rg -n 'static\s+\w+\s+\w+\[0x[0-9A-Fa-f]{4,}\]' patch_manager_mods/perf_lab_src/harness/smoke_perflab3.cpp
+cmd: rg -n 'static\s+\w+\s+\w+\[0x[0-9A-Fa-f]{4,}\]' patch_manager_mods/perf_lab_src/harness/smoke_perflab3.cpp
+rule: 1 hit (only pad at :20) => no other large static .bss buffer; runtime check at smoke_perflab3.cpp:92 exits 2 if pad starts above 0x420000 so overshoot fails loud, not silent => REFUTED as silent risk; >=2 hits => CONFIRMED risk
+hits: 1
+--- output ---
+20:static char pad[0x700000];   // covers the engine's code/data addresses used below

@@ -1,0 +1,7 @@
+fids: PL-4d-08
+question: awk -F'\t' 'NR>1 && $2+0<5' ~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71/inputs/steam_functions.tsv | wc -l
+cmd: awk -F'\t' 'NR>1 && $2+0<5' ~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71/inputs/steam_functions.tsv | wc -l
+rule: N=0 => REFUTED (no function shorter than 5 bytes so hookbytes.py:19 cannot run off a function end); N>=1 (observed run earlier: 8 functions <5 bytes, 5 of them thunks) => CONFIRMED hazard only when an ADDR argument points in one of them; real hook sites are >=5-byte prologues so low impact
+hits: 1
+--- output ---
+8

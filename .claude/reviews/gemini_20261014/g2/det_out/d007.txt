@@ -1,0 +1,7 @@
+fids: SH-3a-07
+question: rg -n -i 'labelDtor|LabelDtor|CSWGuiLabel.*(dtor|destroy)|operator delete|DeleteCtl|ctlFree' patch_manager_mods/_shared_src/K2Addr.h patch_manager_mods/_shared_src/GameAddr.h patch_manager_mods/_shared_src/GuiKit.h
+cmd: rg -n -i 'labelDtor|LabelDtor|CSWGuiLabel.*(dtor|destroy)|operator delete|DeleteCtl|ctlFree' patch_manager_mods/_shared_src/K2Addr.h patch_manager_mods/_shared_src/GameAddr.h patch_manager_mods/_shared_src/GuiKit.h
+rule: 0 hits => the mod has no known label destructor/free so failure returns after alloc+labelCtor cannot release; >=1 hit => check if the failure paths call it (REFUTED if so)
+hits: 0
+--- output ---
+

@@ -1,0 +1,18 @@
+fids: SH-3a-10
+question: rg -n 'Effect_(Type|SpellId|IntCount|Ints)\b|k2addr::off' patch_manager_mods/_shared_src/EffectIcons.h patch_manager_mods/_shared_src/Effects.h
+cmd: rg -n 'Effect_(Type|SpellId|IntCount|Ints)\b|k2addr::off' patch_manager_mods/_shared_src/EffectIcons.h patch_manager_mods/_shared_src/Effects.h
+rule: EffectIcons.h hits (31,32,47) use bare names that resolve to constexpr in Effects.h:23-28 while Effects.h:116-117 use k2addr::off => CONFIRMED bypass of K2AddrTable; if EffectIcons.h also uses k2addr::off => REFUTED
+hits: 12
+--- output ---
+patch_manager_mods/_shared_src/Effects.h:23:constexpr int Effect_Type = 0x08, Effect_Subtype = 0x0a;     // ushort
+patch_manager_mods/_shared_src/Effects.h:27:constexpr int Effect_SpellId = 0x1c;
+patch_manager_mods/_shared_src/Effects.h:28:constexpr int Effect_IntCount = 0x30, Effect_Ints = 0x34;
+patch_manager_mods/_shared_src/Effects.h:59:    int oa = k2addr::off(&K2AddrTable::Creature_EffectArray), oc = k2addr::off(&K2AddrTable::Creature_EffectCount);
+patch_manager_mods/_shared_src/Effects.h:74:    int o1 = k2addr::off(&K2AddrTable::AppGlobal_ToWorld), o2 = k2addr::off(&K2AddrTable::World_ToSub), o3 = k2addr::off(&K2AddrTable::Sub_ToTimer);
+patch_manager_mods/_shared_src/Effects.h:97:    int od = k2addr::off(&K2AddrTable::Effect_Duration), ox = k2addr::off(&K2AddrTable::Effect_ExpiryDay), ot = k2addr::off(&K2AddrTable::Effect_ExpiryTime);
+patch_manager_mods/_shared_src/Effects.h:116:    const int oType = k2addr::off(&K2AddrTable::Effect_Type), oSub = k2addr::off(&K2AddrTable::Effect_Subtype);
+patch_manager_mods/_shared_src/Effects.h:117:    const int oIntCount = k2addr::off(&K2AddrTable::Effect_IntCount), oInts = k2addr::off(&K2AddrTable::Effect_Ints);
+patch_manager_mods/_shared_src/Effects.h:118:    const int oSpell = k2addr::off(&K2AddrTable::Effect_SpellId);
+patch_manager_mods/_shared_src/EffectIcons.h:31:    if (!rd(eff, Effect_Type, &type) || type != EffType_Icon) return nullptr;
+patch_manager_mods/_shared_src/EffectIcons.h:32:    if (!rd(eff, Effect_IntCount, &n) || n <= 0 || !rd(eff, Effect_Ints, &ip) || !ip || !rd(ip, 0, &row)) return nullptr;
+patch_manager_mods/_shared_src/EffectIcons.h:47:        if (!rd(arr, i * 4, &eff) || !rd(eff, Effect_SpellId, &spell)) continue;

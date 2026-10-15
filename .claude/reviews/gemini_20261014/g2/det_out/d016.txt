@@ -1,0 +1,7 @@
+fids: HB-1d-01
+question: rg -n -i 'no NUL|without NUL|unterminated|not terminated|mid-blob|EOF-terminated' patch_manager_mods/action_hotbar_src/twoda_test.cpp
+cmd: rg -n -i 'no NUL|without NUL|unterminated|not terminated|mid-blob|EOF-terminated' patch_manager_mods/action_hotbar_src/twoda_test.cpp
+rule: 0 hits => no test for a NUL-less cell (only the EOF-terminated pad case at :177-186) => CONFIRMED gap (low severity: scan is bounded); hit on a mid-blob NUL-less case => REFUTED
+hits: 0
+--- output ---
+

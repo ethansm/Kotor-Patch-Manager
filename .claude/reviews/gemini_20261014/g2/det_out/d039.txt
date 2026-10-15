@@ -1,0 +1,12 @@
+fids: PL-4d-09
+question: rg -n 'rt_redem|RT stat' patch_manager_mods/perf_lab_src --glob '*.py' --glob '*.cpp'
+cmd: rg -n 'rt_redem|RT stat' patch_manager_mods/perf_lab_src --glob '*.py' --glob '*.cpp'
+rule: Hits only in analyze_runs.py (:237 init, :329/:331 store, :987 read of TPC_RESTYPE) + tests and NO 'RT stat' emitter in PerfLab.cpp => 'stat' key is never read and has no producer (CONFIRMED as dead tolerance path, low impact); any other reader of rt_redem['stat'] or a producer emitting it => REFUTED/escalate
+hits: 6
+--- output ---
+patch_manager_mods/perf_lab_src/analyze_runs.py:226:    __slots__ = ("n", "ev", "tick", "frames", "live", "allocs", "hdr", "kv", "rt", "rt_redem", "evts", "tpctop", "restop", "hwvfb")
+patch_manager_mods/perf_lab_src/analyze_runs.py:237:        self.rt_redem = {}   # restype -> redemB (0.5.0 RT column / `redemB=` token; absent in older logs)
+patch_manager_mods/perf_lab_src/analyze_runs.py:305:            # `RT <restype> <11 counters> <resident> [<redemB> | redemB=<n>]` (0.5.0 appends redemB); `RT stat redemB=..` tolerated
+patch_manager_mods/perf_lab_src/analyze_runs.py:329:                    blk.rt_redem[ints] = red
+patch_manager_mods/perf_lab_src/analyze_runs.py:331:                    blk.rt_redem["stat"] = red
+patch_manager_mods/perf_lab_src/analyze_runs.py:987:    reds = [b.rt_redem[TPC_RESTYPE] for b in x.blocks if TPC_RESTYPE in b.rt_redem]

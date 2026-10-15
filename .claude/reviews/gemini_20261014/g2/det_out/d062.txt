@@ -1,0 +1,9 @@
+fids: SH-3c-07
+question: rg -n 'Entry_Icon|icon' patch_manager_mods/_shared_src/item_read_test.cpp
+cmd: rg -n 'Entry_Icon|icon' patch_manager_mods/_shared_src/item_read_test.cpp
+rule: Only the 'i_medpac?' (9 chars, NUL-terminated by the zero-filled ib[17]) icon case at :60-61 and no 16 non-NUL byte resref => CONFIRMED 16-byte icon untested; a put of 16 non-NUL bytes at Entry_Icon => REFUTED
+hits: 3
+--- output ---
+54:    memcpy(g_a + ents + Entry_Icon, "i_medpac\x01", 9);
+60:        KT_CHECK_EQ(v[0].icon.c_str(), "i_medpac?"); KT_CHECK_EQ(v[0].group, 1); KT_CHECK_EQ(v[0].index, 0);
+61:        KT_CHECK_EQ(v[1].name.c_str(), "Stim"); KT_CHECK_EQ(v[1].index, 1); KT_CHECK_EQ(v[1].icon.c_str(), "");

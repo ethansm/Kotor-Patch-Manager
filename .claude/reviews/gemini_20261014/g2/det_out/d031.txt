@@ -1,0 +1,17 @@
+fids: K1-5b-04
+question: rg -n -B1 -A1 'GFFFieldType.ResRef' /home/ethansm/Games/KOTOR2_Mod_Workspace/venvs/k1port/lib/python3.12/site-packages/pykotor/resource/formats/gff/io_gff.py
+cmd: rg -n -B1 -A1 'GFFFieldType.ResRef' /home/ethansm/Games/KOTOR2_Mod_Workspace/venvs/k1port/lib/python3.12/site-packages/pykotor/resource/formats/gff/io_gff.py
+rule: writer branch at ~445-446 uses write_string(str(value)) => a plain str in UTC.resref serializes fine (REFUTED as functional bug; style-only inconsistency vs spawn_build ResRef(resref)); a .get() call on value => CONFIRMED
+hits: 11
+--- output ---
+25-    GFFFieldType.String,
+26:    GFFFieldType.ResRef,
+27-    GFFFieldType.LocalizedString,
+--
+222-                gff_struct.set_string(label, self._reader.read_string(length))
+223:            elif field_type_id == 11:  # GFFFieldType.ResRef
+224-                length = self._reader.read_uint8()
+--
+444-                self._field_data_writer.write_string(value, prefix_length=4)
+445:            elif field_type == GFFFieldType.ResRef:
+446-                self._field_data_writer.write_string(str(value), prefix_length=1)

@@ -1,0 +1,12 @@
+fids: SH-3b-04
+question: rg -n 'iconFx\(' patch_manager_mods/_shared_src/effects_test.cpp
+cmd: rg -n 'iconFx\(' patch_manager_mods/_shared_src/effects_test.cpp
+rule: Rows used are only 28,5,2,0,-3,5000,kEffectIconRowCount; EffectIconRowTable.inc rows 28/5/2 are ip_slow/ip_droiddestroy/ip_speedburst (not ii_/iw_) and row 56/105 nullptr rows are never passed => CONFIRMED no item (ii_/iw_) or nullptr-resref good row via iconFx; any row index of an ii_/iw_ or nullptr(56,105) entry => REFUTED
+hits: 6
+--- output ---
+353:        uintptr_t slowIcon = iconFx(28, -1, 1);
+360:        KT_CHECK_EQ((long long)collectBuffs(makeCreature({ slow45, slowIcon, iconFx(28, -1, 1) }), BuffDay, tNow, true, o, 8, true), 1ll);
+362:        KT_CHECK_EQ((long long)collectBuffs(makeCreature({ iconFx(2, -1, 1) }), BuffDay, tNow, true, o, 8, true), 0ll);
+363:        KT_CHECK_EQ((long long)collectBuffs(makeCreature({ iconFx(kEffectIconRowCount, -1, 1), iconFx(5000, -1, 1), iconFx(0, -1, 1), iconFx(-3, -1, 1) }), BuffDay, tNow, true, o, 8, true), 0ll);
+364:        KT_CHECK_EQ((long long)collectBuffs(makeCreature({ iconFx(28, -1, 0) }), BuffDay, tNow, true, o, 8, true), 0ll);
+369:        n = collectBuffs(makeCreature({ d1, iconFx(28, -1, 1), iconFx(5, -1, 1) }), BuffDay, tNow, true, o, 8, true);

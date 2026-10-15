@@ -1,0 +1,7 @@
+fids: K1-5d-06
+question: rg -n 'allow_overlay=True|allow-overlay-install|vanilla_lookup' patch_manager_mods/k1_port/test_k1_port_ingest.py
+cmd: rg -n 'allow_overlay=True|allow-overlay-install|vanilla_lookup' patch_manager_mods/k1_port/test_k1_port_ingest.py
+rule: only the refusal assert at line ~533 (no allow_overlay=True call, no vanilla_lookup hit) => attribution of overlay vs vanilla_k1 never tested (CONFIRMED); an allow_overlay=True run asserting the source id => REFUTED
+hits: 1
+--- output ---
+533:    check(r.returncode == 1 and "K1 HD overlay" in errors and "--allow-overlay-install" in errors,

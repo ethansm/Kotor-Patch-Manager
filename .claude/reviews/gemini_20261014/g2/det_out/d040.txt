@@ -1,0 +1,7 @@
+fids: PL-4d-10
+question: rg -n 'attach[^"]*tick=' patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp
+cmd: rg -n 'attach[^"]*tick=' patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp
+rule: 0 hits => current producer attach message carries no tick= so attach kv has no tick key and Launch.flags() (:555 excludes only exe/scan from attach kv) cannot render it (REFUTED for current producer; tick= from KpLog-prefix only); >=1 hit => CONFIRMED (tick would render as a config flag)
+hits: 0
+--- output ---
+

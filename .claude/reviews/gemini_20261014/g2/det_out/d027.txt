@@ -1,0 +1,7 @@
+fids: K1-5c-03
+question: rg -n '"(header|length)"' patch_manager_mods/k1_port/test_k1_port_tex_gate.py
+cmd: rg -n '"(header|length)"' patch_manager_mods/k1_port/test_k1_port_tex_gate.py
+rule: only the ALL_IDS line (25) => no test makes header or length fail (CONFIRMED gap); any hit in expect_only/detail/failing or a dedicated header/length test => REFUTED
+hits: 1
+--- output ---
+25:ALL_IDS = ["dims", "mips", "format", "header", "length", "name", "txi_sidecar", "alpha"]

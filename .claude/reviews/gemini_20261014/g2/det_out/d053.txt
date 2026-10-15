@@ -1,0 +1,7 @@
+fids: SH-3b-01
+question: rg -n '(^|[^.\w])(appendToPanel|setRect|setFill|setAlpha|setText|setFont|setAlign|getTextColor|setTextColor|playHoverSound)\(' patch_manager_mods/_shared_src/guikit_test.cpp
+cmd: rg -n '(^|[^.\w])(appendToPanel|setRect|setFill|setAlpha|setText|setFont|setAlign|getTextColor|setTextColor|playHoverSound)\(' patch_manager_mods/_shared_src/guikit_test.cpp
+rule: 0 hits => CONFIRMED none of the nine free functions is called anywhere in guikit_test.cpp (wh.setRect is the WheelHub member, excluded by [^.]); >=1 hit => REFUTED for those names, then check whether on success path
+hits: 0
+--- output ---
+

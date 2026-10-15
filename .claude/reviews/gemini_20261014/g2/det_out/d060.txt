@@ -1,0 +1,11 @@
+fids: SH-3c-06
+question: rg -n 'measure\(' patch_manager_mods/_shared_src/guitip_test.cpp
+cmd: rg -n 'measure\(' patch_manager_mods/_shared_src/guitip_test.cpp
+rule: Every measure( call passes &l,&mx (no null lines/maxLen out-param; null is only the text arg at :104) => CONFIRMED null out-param case absent; a call with nullptr for lines or maxLen => REFUTED
+hits: 5
+--- output ---
+101:        measure("abc\nde\nfghij", &l, &mx); KT_CHECK(l == 3 && mx == 5);
+102:        measure("one line", &l, &mx); KT_CHECK(l == 1 && mx == 8);
+103:        measure("", &l, &mx); KT_CHECK(l == 0 && mx == 0);
+104:        measure(nullptr, &l, &mx); KT_CHECK(l == 0 && mx == 0);
+105:        measure("a\n\nb", &l, &mx); KT_CHECK(l == 3 && mx == 1);

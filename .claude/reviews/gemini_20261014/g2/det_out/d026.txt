@@ -1,0 +1,16 @@
+fids: K1-5c-01
+question: rg -n 'mae\(|check\(m <' patch_manager_mods/k1_port/test_k1_port_tex_dxt.py
+cmd: rg -n 'mae\(|check\(m <' patch_manager_mods/k1_port/test_k1_port_tex_dxt.py
+rule: line 96 and line 257 are INFO prints with no threshold (real_k1p_commm04_vs_pykotor has no check) => CONFIRMED for those two; line 240 print sits in real_k1p_commm04_mip0_round_trip whose line 239 check(m < 8) thresholds it, and line 92 asserts gradient MAE<8, so the blanket claim is overstated => PARTIAL
+hits: 10
+--- output ---
+46:def mae(a, b) -> float:
+91:    m = mae(out[..., :3], grad)
+92:    check(m < 8, f"gradient MAE {m:.2f} >= 8")
+96:    print(f"INFO random-noise 256x256 MAE {mae(out_n[..., :3], noise):.2f} (no threshold)", flush=True)
+106:    m = mae(out[..., :3], grad)
+107:    check(m < 8, f"1024x1024 gradient MAE {m:.2f} >= 8")
+210:    check(mae(out[..., :3], rgb) < 8, "6x10 gradient MAE >= 8")
+238:    m = mae(again[..., :3], rgba[..., :3])
+239:    check(m < 8, f"decode->encode->decode MAE {m:.2f} >= 8")
+257:    print(f"INFO k1p_commm04 mip0 mean abs diff vs pykotor RGBA {mae(rgba, ref):.2f} (no threshold)", flush=True)

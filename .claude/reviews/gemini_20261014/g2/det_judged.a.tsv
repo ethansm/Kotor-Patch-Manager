@@ -1,0 +1,40 @@
+did	fid	verdict	evidence	reason
+d001	CO-2c-04	CONFIRMED	patch_manager_mods/companion_ai_src/CompanionAiLogic.h:637	fm3Lost is a pure bool over removed and level; no deref, stale read only shifts a log line
+d002	CO-2d-05	REFUTED	patch_manager_mods/_shared_src/HealItems.h:67	shouldAutoUse has no seen parameter or gate; early return gates on gameplay only, per extra rg
+d003	CO-2d-05	CONFIRMED	patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp:1001	seen reset per frame at 1001-1002 and in hideAll (725, called at 997): both present, one-frame lag
+d004	CO-2d-08	CONFIRMED	patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp:1665	readAt offsets 0x2000C and 0x20000 are at least 0x10000: wrap-bypass site exists in the codebase
+d004	HN-6h-06	CONFIRMED	patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp:1665	readAt offsets 0x2000C and 0x20000 are at least 0x10000: wrap-bypass site exists in the codebase
+d004	QH-2a-10	CONFIRMED	patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp:1665	readAt offsets 0x2000C and 0x20000 are at least 0x10000: wrap-bypass site exists in the codebase
+d004	SH-3a-03	CONFIRMED	patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp:1665	readAt offsets 0x2000C and 0x20000 are at least 0x10000: wrap-bypass site exists in the codebase
+d005	CO-2d-08	CONFIRMED	no-hits	No saferead_test readAt call pins a positive-offset wrap from a high base: test-only gap
+d005	HN-6h-06	CONFIRMED	no-hits	No saferead_test readAt call pins a positive-offset wrap from a high base: test-only gap
+d005	QH-2a-10	CONFIRMED	no-hits	No saferead_test readAt call pins a positive-offset wrap from a high base: test-only gap
+d005	SH-3a-03	CONFIRMED	no-hits	No saferead_test readAt call pins a positive-offset wrap from a high base: test-only gap
+d006	SH-3c-03	PARTIAL	patch_manager_mods/_shared_src/embtex_test.cpp:66	allocation-failed path has no newFn-null test (gap); Tex_W hits at :49 and :66 are layout asserts, not rebuild tests
+d007	SH-3a-07	CONFIRMED	no-hits	No label dtor or free helper in K2Addr.h, GameAddr.h or GuiKit.h: failure paths cannot release
+d008	SH-3a-09	REFUTED	patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp:1002	All three wheelUninstall calls sit under DLL_PROCESS_DETACH: no in-process reachability, latent hazard only
+d009	HN-6h-05	PARTIAL	patch_manager_mods/holster_src/Holster.cpp:184	No Fsm hit in shipped code; onSwap flag at Holster.cpp:115 and :184 is separate, reachability unresolved
+d010	HN-6h-04	CONFIRMED	patch_manager_mods/holster_src/Holster.cpp:128	rdU32 initialises v to 0 and returns it unchanged on readAt failure: no sentinel
+d011	HN-6n-05	REFUTED	patch_manager_mods/k1_spawn_probe_src/K1SpawnProbe.cpp:306	fmtRef16 has only callers with char[64] buffers at :306-307; 52-byte write fits: no live overflow
+d012	HN-6n-06	REFUTED	patch_manager_mods/k1_spawn_probe_src/K1SpawnProbe.cpp:123	Dump rows use direct fprintf and fputs at :123-127, bypassing writeLine; all-writes-charged claim refuted
+d013	HN-6n-06	PARTIAL	patch_manager_mods/k1_spawn_probe_src/k1_client_core_test.cpp:202	dumpEvent is not named in tests; CAP marker text is asserted at :202, so CAP wiring is tested
+d014	HN-6n-07	CONFIRMED	patch_manager_mods/npc_world_src/nw_registry_test.cpp:22	cbRegisters only adds and cbKillsB only removes; no callback does both, so add-and-remove in one callback is untested
+d015	HB-1a-01	PARTIAL	patch_manager_mods/action_hotbar_src/TwoDA.h:79	nrows capped at 100000 (:73) but nrows times cols.size() at :79 has no cap or overflow check
+d016	HB-1d-01	CONFIRMED	no-hits	No NUL-less or unterminated cell test in twoda_test.cpp: gap, low severity
+d017	HB-1d-02	CONFIRMED	patch_manager_mods/action_hotbar_src/twoda_test.cpp:102	Only implausible-row-count cases at :102-107; no many-column Build2da case found
+d018	HB-1b-01	CONFIRMED	patch_manager_mods/action_hotbar_src/kotor2-steam-aspyr.hooks.toml:8	Active hook is 0x0072CB84 (hooks.toml:8); 07_force_power_hotbar.md:94 still lists 0x0072CB63
+d019	HB-1b-02	CONFIRMED	no-hits	No clampOffset negative-offset test in hotbar_logic_test.cpp: test gap, harmless since setters clamp to zero
+d020	HB-1b-03	PARTIAL	patch_manager_mods/_shared_src/Party.h:118	Party.h:118 marks cur<=0 as down (production fine); only negative-cur test at hotbar_logic_test.cpp:523 uses max=0: test gap only
+d021	HB-1d-04	PARTIAL	patch_manager_mods/action_hotbar_src/tlk_test.cpp:68	Leak refuted: only early return is :68, before cleanup is armed; system rm -rf style finding confirmed
+d022	HB-1d-04	REFUTED	no-hits	No kt::TempDir or struct TempDir in repo: the TempDir-based fix the claim relies on is absent
+d023	HB-1c-04	CONFIRMED	patch_manager_mods/combat_hotbar_src/CombatHotbar.cpp:710	Only setNative at :710, guarded by name[0]; no clearNative call: empty name keeps stale tooltip
+d024	K1-5a-02	CONFIRMED	patch_manager_mods/k1_port/k1_port_tex_gate.py:311	Only PNG bit-depth checks at gate.py:311-312; no pyramid-depth cap in tpc.py or gate.py
+d025	K1-5a-05	CONFIRMED	no-hits	No 16-character check or 16 literal in k1_port_tex_bake.py: child-name length unguarded
+d026	K1-5c-01	PARTIAL	patch_manager_mods/k1_port/test_k1_port_tex_dxt.py:96	Lines 96 and 257 are INFO prints with no threshold; checks at :92, :107 and :239 do threshold MAE: blanket claim overstated
+d027	K1-5c-03	CONFIRMED	patch_manager_mods/k1_port/test_k1_port_tex_gate.py:25	header and length appear only in ALL_IDS (:25); no test makes either fail
+d028	K1-5c-05	CONFIRMED	no-hits	No test references cmd_pose, cmd_table, _rot_angle_deg or _wrap180: helpers untested
+d029	K1-5b-01	CONFIRMED	patch_manager_mods/k1_port/k1_port_sources.py:269	local_only set at sources.py:269 with no reader in prune or ingest; personal_only has zero hits
+d030	K1-5b-03	PARTIAL	/home/ethansm/Games/KOTOR2_Mod_Workspace/venvs/k1port/lib/python3.12/site-packages/pykotor/resource/formats/twoda/twoda_data.py:552	add_row blanks absent headers and uses given row_label (:552); set_label step is not in the output
+d031	K1-5b-04	REFUTED	/home/ethansm/Games/KOTOR2_Mod_Workspace/venvs/k1port/lib/python3.12/site-packages/pykotor/resource/formats/gff/io_gff.py:446	Writer uses write_string(str(value)) with no .get() call: plain str serializes fine; style-only difference
+d032	K1-5b-06	CONFIRMED	no-hits	SKIN_ARRAY_ORDER is never referenced in test_k1_port_validate.py: untested
+d032	K1-5d-04	CONFIRMED	no-hits	SKIN_ARRAY_ORDER is never referenced in test_k1_port_validate.py: untested

@@ -1,0 +1,8 @@
+fids: QH-2a-09
+question: QH-2a-09 part 2: documented ini default vs Config::kit=true (QueueHudLogic.h:184). Run: rg -n '^;? *kit *=|kit = [01] \(default\)' patch_manager_mods/queue_hud_src/queue_hud.ini
+cmd: rg -n '^;? *kit *=|kit = [01] \(default\)' patch_manager_mods/queue_hud_src/queue_hud.ini
+rule: a line saying 'kit = 0 (default)' (ini:8) with Config::kit default true at QueueHudLogic.h:184 => mismatch CONFIRMED; line says 'kit = 1 (default)' or no default text => REFUTED
+hits: 2
+--- output ---
+8:; kit = 1 draws each slot as the embedded qh_frame image (icon inset 15%); kit = 0 (default) skins the queue
+10:;kit = 0

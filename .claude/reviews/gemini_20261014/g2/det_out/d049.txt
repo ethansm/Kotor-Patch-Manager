@@ -1,0 +1,16 @@
+fids: SH-3a-10
+question: rg -n 'MaxEffects|effectListNonEmpty' patch_manager_mods/_shared_src/Effects.h patch_manager_mods/_shared_src/EffectIcons.h
+cmd: rg -n 'MaxEffects|effectListNonEmpty' patch_manager_mods/_shared_src/Effects.h patch_manager_mods/_shared_src/EffectIcons.h
+rule: Effects.h:64 clamps *count <= MaxEffects and EffectIcons.h:42 returns 0 when effectListNonEmpty fails, so seen[nSeen++] (one write per loop iter, i<count<=512, seen[MaxEffects]) cannot overflow => REFUTED overflow; no clamp in effectListNonEmpty => CONFIRMED
+hits: 10
+--- output ---
+patch_manager_mods/_shared_src/EffectIcons.h:42:    if (!effectListNonEmpty(creature, &arr, &count)) return 0;
+patch_manager_mods/_shared_src/EffectIcons.h:43:    int seen[MaxEffects]; int nSeen = 0; int n = 0;
+patch_manager_mods/_shared_src/EffectIcons.h:44:    const char* iconSeen[MaxEffects]; int nIcon = 0;   // icons added from type-0x43 rows (debuff only)
+patch_manager_mods/_shared_src/EffectIcons.h:60:        if (viaIcon) { if (nIcon < MaxEffects) iconSeen[nIcon++] = resref; } else seen[nSeen++] = spell;
+patch_manager_mods/_shared_src/Effects.h:30:constexpr int MaxEffects = 512;
+patch_manager_mods/_shared_src/Effects.h:62:// Non-empty and sane (1..MaxEffects): what every per-effect scan wants.
+patch_manager_mods/_shared_src/Effects.h:63:inline bool effectListNonEmpty(uintptr_t creature, int* arr, int* count) {
+patch_manager_mods/_shared_src/Effects.h:64:    return readEffectList(creature, arr, count) && *arr != 0 && *count > 0 && *count <= MaxEffects;
+patch_manager_mods/_shared_src/Effects.h:69:    return c && readEffectList(c, &arr, &cnt) && cnt >= 0 && cnt <= MaxEffects;
+patch_manager_mods/_shared_src/Effects.h:120:    if (!effectListNonEmpty(creature, &arr, &count)) return 0;

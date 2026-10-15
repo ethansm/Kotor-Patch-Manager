@@ -1,0 +1,29 @@
+# G2 resolver input: batch cross (8 open fids, 4 topics)
+
+## X-T02 (P1) — G1 unit u008, facts file recon/X-T02.md
+Question: Does saferead::readAt compute base+off in 32-bit uintptr_t with no wraparound check, so a high (corrupt) base plus positive off wraps to a low address that passes probeRead's checks and reads an unrelated location?
+G1 windows (do NOT reuse): patch_manager_mods/_shared_src/SafeRead.h:60-135;patch_manager_mods/holster_src/Holster.cpp:150-182
+G1 OPEN: Magnitudes of k2addr::off entries and rdU32/readAt callers (outside ranges); whether any off reaches 0x10000.
+- CO-2d-08 [PARTIAL] readAt base+off 32-bit wraparound bypasses probeRead low-address check | file patch_manager_mods/_shared_src/SafeRead.h | fn saferead::readAt | cat memory-safety | G1 evidence patch_manager_mods/_shared_src/SafeRead.h:101,116 | G1 note: Low-address bypass needs off>0x10000; small struct offsets are always caught. | anchor now patch_manager_mods/_shared_src/SafeRead.h:116 drift none
+- HN-6h-06 [PARTIAL] base+off 32-bit wraparound bypasses probeRead overflow check | file patch_manager_mods/_shared_src/SafeRead.h | fn saferead::readAt | cat memory-safety | G1 evidence patch_manager_mods/_shared_src/SafeRead.h:101,116 | G1 note: Overflow check tests a+len, not base+off; wrap goes unseen by it, impact bounded. | anchor now patch_manager_mods/_shared_src/SafeRead.h:116 drift none
+- QH-2a-10 [PARTIAL] readAt base+off can wrap on 32-bit, bypassing probeRead low-address guard | file patch_manager_mods/_shared_src/SafeRead.h | fn saferead::readAt | cat memory-safety | G1 evidence patch_manager_mods/_shared_src/SafeRead.h:101,116 | G1 note: Same as SH-3a-03: the low guard blocks wraps when off<0x10000. | anchor now patch_manager_mods/_shared_src/SafeRead.h:116 drift none
+- SH-3a-03 [PARTIAL] readAt base+off can wrap on 32-bit and bypass low-address probe checks | file patch_manager_mods/_shared_src/SafeRead.h | fn saferead::readAt | cat memory-safety | G1 evidence patch_manager_mods/_shared_src/SafeRead.h:101,116 | G1 note: Wrap occurs, but probeRead rejects wrapped addresses below 0x10000 for off<=0x10000. | anchor now patch_manager_mods/_shared_src/SafeRead.h:116 drift none
+
+## X-T03 (P2) — G1 unit u053, facts file recon/X-T03.md
+Question: In embtex::heal, is ++s.heals done before detail::fill and the MaxHeals give-up message logged when heals==MaxHeals even if that same fill succeeded, and does embtex_test.cpp only count the line without checking it follows a successful fill?
+G1 windows (do NOT reuse): patch_manager_mods/_shared_src/EmbedTex.h:120-163;patch_manager_mods/_shared_src/embtex_test.cpp:60-130
+G1 OPEN: Does embtex_test.cpp outside lines 60-130 cover the width-change rebuild (EmbedTex.h:150) and allocation-failed (EmbedTex.h:130) paths?
+- SH-3c-03 [PARTIAL] embtex_test never checks when give-up logs; misses width-change rebuild and null-new paths | file patch_manager_mods/_shared_src/embtex_test.cpp | fn main / embtex::heal | cat test-gap | G1 evidence patch_manager_mods/_shared_src/embtex_test.cpp:91-93,83-85,121 | G1 note: Give-up count+heals asserted at :92-93; width-change and null-new paths untested in range | anchor now patch_manager_mods/_shared_src/embtex_test.cpp:91 drift none
+
+## X-T04 (P2) — G1 unit u054, facts file recon/X-T04.md
+Question: Do the failure returns in createLabelFromTemplate (CF_Vtable/CF_Template/CF_Count/CF_Flags) and bindByTag (CF_Vtable before initControl) return 0 after g_gk.alloc (+ labelCtor) without destroying or freeing the allocated control?
+G1 windows (do NOT reuse): patch_manager_mods/_shared_src/GuiKit.h:150-215;patch_manager_mods/_shared_src/GuiKit.h:536-600
+G1 OPEN: Does labelCtor or the engine panel list own sub-allocations or need release? Outside read ranges.
+- SH-3a-07 [PARTIAL] Allocated label leaked on createLabelFromTemplate and bindByTag failure paths | file patch_manager_mods/_shared_src/GuiKit.h | fn guikit::createLabelFromTemplate / bindByTag | cat memory-safety | G1 evidence patch_manager_mods/_shared_src/GuiKit.h:174 (leaks); :556, :562, :563 (not leaked) | G1 note: Right for createLabelFromTemplate:174 only; bindByTag:563 control is listed and returned. | anchor now patch_manager_mods/_shared_src/GuiKit.h:174 drift none
+
+## X-T05 (P2) — G1 unit u055, facts file recon/X-T05.md
+Question: Answer each separately: (a) WindowHook::install returns true when old is set without checking h==hwnd or IsWindow(hwnd); (b) guikit wheelInstall's static subOk is never reset by wheelUninstall, so it reinstalls on a stale hwnd; (c) k2input::Client::connect calls onConnect(false,...) on every attempt with no reportedMissing guard?
+G1 windows (do NOT reuse): patch_manager_mods/_shared_src/WindowHook.h:20-56;patch_manager_mods/_shared_src/GuiKit.h:650-705;patch_manager_mods/_shared_src/GuiInput.h:76-135
+G1 OPEN: Does the engine ever recreate the game HWND? Decides whether SH-3a-08 triggers; outside my ranges.
+- SH-3a-08 [PARTIAL] Stale hwnd reused after game window recreation; new window never subclassed | file patch_manager_mods/_shared_src/WindowHook.h | fn kp::WindowHook::install / guikit::wheelInstall | cat logic | G1 evidence patch_manager_mods/_shared_src/GuiKit.h:686-687 | G1 note: Old set means no gameWindow() re-lookup; recreation trigger is engine knowledge, UNSURE. | anchor now - drift noanchor
+- SH-3a-09 [PARTIAL] subOk never reset on wheelUninstall; k2input::Client lacks reportedMissing log guard | file patch_manager_mods/_shared_src/GuiInput.h | fn k2input::Client::connect / guikit::wheelInstall | cat logic | G1 evidence patch_manager_mods/_shared_src/GuiKit.h:676-697; patch_manager_mods/_shared_src/GuiInput.h:88-117 | G1 note: (b) subOk never reset: true; stale-hwnd reinstall: false. (c) connect() unguarded: true, poll-throttled. | anchor now patch_manager_mods/_shared_src/GuiInput.h:30,patch_manager_mods/_shared_src/GuiInput.h:31,patch_manager_mods/_shared_src/GuiInput.h:34 drift none

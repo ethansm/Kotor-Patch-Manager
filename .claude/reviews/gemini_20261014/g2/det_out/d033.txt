@@ -1,0 +1,10 @@
+fids: K1-5d-03
+question: rg -n '"run"|run_shard|unrar|cmd_run' patch_manager_mods/k1_port/test_k1_port_cr_extract.py
+cmd: rg -n '"run"|run_shard|unrar|cmd_run' patch_manager_mods/k1_port/test_k1_port_cr_extract.py
+rule: every run invocation carries --dry-run (lines ~213,233) and 0 run_shard hits => non-dry run_shard, resume and manifest paths untested (CONFIRMED); a non-dry run call or run_shard hit => REFUTED
+hits: 4
+--- output ---
+2:"""Tests for k1_port_cr_extract.py. Tempdirs only; no rar, no game files, no unrar.
+213:            ["run", "--shard", "all", "--dry-run", "--file-list", str(fx), "--dest", str(dest)],
+219:            if argv[0] == "run":
+233:        r = cli("run", "--shard", "all", "--dry-run", "--file-list", str(fx), "--dest", str(dest))

@@ -1,0 +1,10 @@
+fids: HN-6n-05
+question: rg -n 'fmtRef16\(|char ar[0-9]\[' patch_manager_mods/k1_spawn_probe_src
+cmd: rg -n 'fmtRef16\(|char ar[0-9]\[' patch_manager_mods/k1_spawn_probe_src
+rule: Hex branch writes 4+16*3=52 bytes (seen in K1SpawnProbe.cpp:171-178). Only callers at 306-307 with ar1/ar2 [64] and no other callers => REFUTED as live overflow (latent API hazard only, n ignored); any caller with buffer <52 => CONFIRMED
+hits: 4
+--- output ---
+patch_manager_mods/k1_spawn_probe_src/K1SpawnProbe.cpp:153:void fmtRef16(char* out, size_t n, unsigned site, uintptr_t p) {
+patch_manager_mods/k1_spawn_probe_src/K1SpawnProbe.cpp:295:        char ar1[64], ar2[64];
+patch_manager_mods/k1_spawn_probe_src/K1SpawnProbe.cpp:306:        fmtRef16(ar1, sizeof ar1, kSiteResref, a ? a + 0x110 : 0);
+patch_manager_mods/k1_spawn_probe_src/K1SpawnProbe.cpp:307:        fmtRef16(ar2, sizeof ar2, kSiteResref, (area2Ok && area2) ? static_cast<uintptr_t>(area2) + 0x110 : 0);

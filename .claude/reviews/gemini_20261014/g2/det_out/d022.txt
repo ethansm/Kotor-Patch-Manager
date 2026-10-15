@@ -1,0 +1,7 @@
+fids: HB-1d-04
+question: rg -n 'struct TempDir|class TempDir' patch_manager_mods -g '*.h'
+cmd: rg -n 'struct TempDir|class TempDir' patch_manager_mods -g '*.h'
+rule: 0 hits => kt::TempDir does not exist here (not a fix available); >=1 hit => exists, style finding CONFIRMED
+hits: 0
+--- output ---
+

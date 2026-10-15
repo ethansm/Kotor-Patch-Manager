@@ -1,0 +1,14 @@
+fids: HN-6n-06
+question: rg -n 'fprintf|fputs|fwrite|writeLine\(' patch_manager_mods/k1_spawn_probe_src/K1SpawnProbe.cpp
+cmd: rg -n 'fprintf|fputs|fwrite|writeLine\(' patch_manager_mods/k1_spawn_probe_src/K1SpawnProbe.cpp
+rule: Every file write reached only via writeLine inside chargeLine/vlogKind (lines ~60-90) plus the uncharged CAP marker => logf lines (incl. skipped-unreadable one-liners) are charged; a direct fprintf bypass => REFUTED accounting claim
+hits: 8
+--- output ---
+57:void writeLine(const char* text) {
+60:    fputs(text, f);
+74:    if (g_budget.takeCapMarker(g_seq, marker, sizeof marker)) writeLine(marker);
+82:    if (chargeLine(kind)) writeLine(buf);
+101:    void line(const char* text) override { writeLine(text); }
+123:        fprintf(f, "%s off=%03x:", prefix, static_cast<unsigned>(row * 16 * 4));
+126:            if (readAt(kSiteDump, base, i * 4, &v)) fprintf(f, " %08x", v);
+127:            else fputs(" ????????", f);

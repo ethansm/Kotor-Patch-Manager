@@ -1,0 +1,9 @@
+fids: QH-2b-05
+question: QH-2b-05: which chevronRect calls exist in the test? Run: rg -n 'chevronRect\(' patch_manager_mods/queue_hud_src/queue_hud_logic_test.cpp
+cmd: rg -n 'chevronRect\(' patch_manager_mods/queue_hud_src/queue_hud_logic_test.cpp
+rule: only 3 hits (854 q0 40x40, 859 80x80, 862 all-zero) => chevronRect min clamp (w<8, h<10 at QueueHudLogic.h:299-308) untested => CONFIRMED for chevron; combatBgRect has no min clamp (only zero guard, tested at 872) and stripCancelRect tiny 8x8 (1188) and zero-width (1197) are tested => REFUTED for those two; >=4 hits => inspect for q0 smaller than 18x15
+hits: 3
+--- output ---
+854:    Rect c = chevronRect(q0);
+859:    Rect c2 = chevronRect(Rect{ 864, 1042, 80, 80 });
+862:    KT_CHECK(rectEq(chevronRect(Rect{ 0, 0, 0, 0 }), 0, 0, 0, 0));

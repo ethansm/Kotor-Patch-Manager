@@ -1,0 +1,31 @@
+fids: SH-3a-11
+question: rg -n 'Creature_Vt(Max|Cur)Hp|SlotMaxHp|SlotCurHp' patch_manager_mods --glob '*.h' --glob '*.cpp'
+cmd: rg -n 'Creature_Vt(Max|Cur)Hp|SlotMaxHp|SlotCurHp' patch_manager_mods --glob '*.h' --glob '*.cpp'
+rule: Party.h hits only SlotMaxHp/SlotCurHp (99-100,113-114) and K2Addr.h defines Creature_VtMaxHp/CurHp (137-138,318-319,505-506) with no consumer outside k2addr_test.cpp => CONFIRMED hardcode bypass; any non-test consumer of Creature_Vt* in Party.h => REFUTED
+hits: 25
+--- output ---
+patch_manager_mods/shield_bar_src/ShieldLogic.h:25:    return t && t->Creature_Stats && t->Stats_ForceA && t->Stats_ForceB && t->Creature_VtMaxHp && t->Creature_VtCurHp && t->GetMaxForcePoints;
+patch_manager_mods/companion_selfheal_src/common_contract_test.cpp:133:    put<uint32_t>(0x400 + party::SlotMaxHp, 0x1111); put<uint32_t>(0x400 + party::SlotCurHp, 0x2222);
+patch_manager_mods/shield_bar_src/ShieldBar.cpp:382:    if (!readAt(vt, T->Creature_VtMaxHp, &fnMax) || !readAt(vt, T->Creature_VtCurHp, &fnCur) || !fnMax || !fnCur || !readAt(stats, T->Stats_ForceA, &sForceA) || !readAt(stats, T->Stats_ForceB, &sForceB)) return false;
+patch_manager_mods/shield_bar_src/common_contract_test.cpp:106:SBOTH(Creature_Stats, 0x1198); SBOTH(Stats_ForceA, 0x130); SBOTH(Stats_ForceB, 0x132); SBOTH(Creature_VtMaxHp, 0x98); SBOTH(Creature_VtCurHp, 0x9c);
+patch_manager_mods/shield_bar_src/shield_logic_test.cpp:58:    ZERO_BREAKS(sb::vitalsFieldsOk, Creature_VtMaxHp); ZERO_BREAKS(sb::vitalsFieldsOk, Creature_VtCurHp); ZERO_BREAKS(sb::vitalsFieldsOk, GetMaxForcePoints);
+patch_manager_mods/_shared_src/k2addr_test.cpp:131:    STEAM(Creature_VtMaxHp, 0x98);
+patch_manager_mods/_shared_src/k2addr_test.cpp:132:    STEAM(Creature_VtCurHp, 0x9c);
+patch_manager_mods/_shared_src/k2addr_test.cpp:291:    GOG(Creature_VtMaxHp, 0x98);
+patch_manager_mods/_shared_src/k2addr_test.cpp:292:    GOG(Creature_VtCurHp, 0x9C);
+patch_manager_mods/action_hotbar_src/common_contract_test.cpp:86:static_assert(party::SlotMaxHp == 0x98 && party::SlotCurHp == 0x9C, "hotbar relies on: HP vtable slots max +0x98, cur +0x9C");
+patch_manager_mods/action_hotbar_src/common_contract_test.cpp:441:    at<uint32_t>(vt, party::SlotMaxHp) = (uint32_t)g_slotMax; at<uint32_t>(vt, party::SlotCurHp) = (uint32_t)g_slotCur; at<uint32_t>(c, 0) = (uint32_t)vt;
+patch_manager_mods/action_hotbar_src/common_contract_test.cpp:515:    at<uint32_t>(g_servers[0], 0) = (uint32_t)vt0; at<uint32_t>(vt0, party::SlotMaxHp) = 0;
+patch_manager_mods/action_hotbar_src/common_contract_test.cpp:517:    at<uint32_t>(vt0, party::SlotMaxHp) = (uint32_t)g_slotMax; at<uint32_t>(vt0, party::SlotCurHp) = 0;
+patch_manager_mods/action_hotbar_src/common_contract_test.cpp:519:    at<uint32_t>(vt0, party::SlotCurHp) = (uint32_t)g_slotCur;
+patch_manager_mods/_shared_src/party_test.cpp:49:static_assert(party::SlotMaxHp == 0x98 && party::SlotCurHp == 0x9C, "vtable HP slots");
+patch_manager_mods/_shared_src/Party.h:99:constexpr int SlotMaxHp = 0x98;   // arg 1
+patch_manager_mods/_shared_src/Party.h:100:constexpr int SlotCurHp = 0x9C;   // arg 0
+patch_manager_mods/_shared_src/Party.h:113:        saferead::readAt<uint32_t>(SiteBase, vt, SlotMaxHp, &fMax) && fMax &&
+patch_manager_mods/_shared_src/Party.h:114:        saferead::readAt<uint32_t>(SiteBase, vt, SlotCurHp, &fCur) && fCur) {
+patch_manager_mods/_shared_src/K2Addr.h:137:    int Creature_VtMaxHp = 0;            // creature vtable byte offset: max HP getter, thiscall(creature, 1) RET 4
+patch_manager_mods/_shared_src/K2Addr.h:138:    int Creature_VtCurHp = 0;            // creature vtable byte offset: current HP getter, thiscall(creature, 0) RET 4
+patch_manager_mods/_shared_src/K2Addr.h:318:    t.Creature_VtMaxHp = 0x98;
+patch_manager_mods/_shared_src/K2Addr.h:319:    t.Creature_VtCurHp = 0x9c;
+patch_manager_mods/_shared_src/K2Addr.h:505:    t.Creature_VtMaxHp = 0x98;
+patch_manager_mods/_shared_src/K2Addr.h:506:    t.Creature_VtCurHp = 0x9C;

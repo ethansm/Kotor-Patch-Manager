@@ -1,0 +1,7 @@
+fids: SH-3c-04
+question: rg -n 'rn\[[0-9]\]\.spellId|kMaxEntries|kMaxRound|nrn = ([5-9]|[1-9][0-9])|ne = (1[7-9]|[2-9][0-9])' patch_manager_mods/_shared_src/actqueue_test.cpp
+cmd: rg -n 'rn\[[0-9]\]\.spellId|kMaxEntries|kMaxRound|nrn = ([5-9]|[1-9][0-9])|ne = (1[7-9]|[2-9][0-9])' patch_manager_mods/_shared_src/actqueue_test.cpp
+rule: 0 hits => CONFIRMED actqueue_test.cpp never asserts rn spellId nor feeds more than 16 entries / 4 round nodes (kMaxEntries/kMaxRound pinned only in queue_hud_logic_test.cpp:24); >=1 hit => REFUTED for that item
+hits: 0
+--- output ---
+

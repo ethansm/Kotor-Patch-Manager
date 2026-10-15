@@ -1,0 +1,32 @@
+did	fid	verdict	evidence	reason
+d033	K1-5d-03	CONFIRMED	patch_manager_mods/k1_port/test_k1_port_cr_extract.py:233	Both run calls (213, 233) pass --dry-run; zero run_shard hits.
+d034	K1-5d-01	CONFIRMED	no-hits	Zero K1PORT_VENV hits; ingest honors only K1PORT_PY; SKIP paths documented exit 0.
+d035	K1-5d-05	CONFIRMED	no-hits	Zero symlink/ambig/active/collision hits in test_k1_port_probe.py.
+d036	K1-5d-06	CONFIRMED	patch_manager_mods/k1_port/test_k1_port_ingest.py:533	Only the overlay-refusal assert; no allow_overlay=True run, no vanilla_lookup.
+d037	PL-4b-02	PARTIAL	patch_manager_mods/perf_lab_src/harness/smoke_perflab3.cpp:20	Single pad at :20 confirmed; exit-2 guard at :92 not in output.
+d038	PL-4d-08	CONFIRMED	stdout (count=8)	Eight functions under 5 bytes exist; hazard needs an ADDR inside one (not shown).
+d039	PL-4d-09	CONFIRMED	patch_manager_mods/perf_lab_src/analyze_runs.py:331	"stat" key stored only at :331; no RT stat emitter in PerfLab.cpp; reads use TPC_RESTYPE.
+d040	PL-4d-10	REFUTED	no-hits	No attach tick= in PerfLab.cpp; current producer emits no tick key.
+d041	QH-2a-05	REFUTED	patch_manager_mods/queue_hud_src/queue_hud.ini:57	show_in_combat=1 and default true (QueueHudLogic.h:192); combat term dropped by default.
+d042	QH-2a-08	PARTIAL	patch_manager_mods/queue_hud_src/QueueHud.cpp:402	Fill cleared on hide (402) and HUD rebuild (498); not permanent; no-retry-per-episode stands.
+d043	QH-2a-09	CONFIRMED	patch_manager_mods/queue_hud_src/QueueHud.cpp:351	drawChevron has only its definition; no caller in queue_hud_src.
+d044	QH-2a-09	PARTIAL	patch_manager_mods/queue_hud_src/queue_hud.ini:8	ini:8 documents kit=0 default; Config default (QueueHudLogic.h:184) not in output.
+d045	QH-2b-01	CONFIRMED	no-hits	No 4-arg call found; regex skips args containing parens, so nested-call args could be missed.
+d046	QH-2b-04	PARTIAL	no-hits	waiting_dim_rgb has no test parse; slotStyle half refuted per rule note.
+d047	QH-2b-05	PARTIAL	patch_manager_mods/queue_hud_src/queue_hud_logic_test.cpp:862	Chevron clamp untested (3 calls only); combatBgRect/stripCancelRect tested per rule.
+d048	SH-3a-10	CONFIRMED	patch_manager_mods/_shared_src/EffectIcons.h:31	Bare Effect_* names in EffectIcons.h; no k2addr::off there, unlike Effects.h:116.
+d049	SH-3a-10	REFUTED	patch_manager_mods/_shared_src/Effects.h:64	effectListNonEmpty clamps count<=MaxEffects; EffectIcons.h:42 returns early on failure.
+d050	SH-3b-03	REFUTED	patch_manager_mods/_shared_src/effects_test.cpp (count=23)	k2addr_test.cpp has 0 collectBuffs hits; effects_test.cpp has 23 (covered).
+d051	SH-3a-11	PARTIAL	patch_manager_mods/shield_bar_src/ShieldBar.cpp:382	Party.h hardcodes 0x98/0x9C, but Creature_VtMaxHp has non-test consumers (ShieldBar.cpp:382).
+d052	SH-3c-08	CONFIRMED	patch_manager_mods/_shared_src/party_test.cpp:198	callVitalSlot never referenced; all party::vitals calls (214-313) sit inside fake swap 198-335.
+d053	SH-3b-01	CONFIRMED	no-hits	None of the nine guikit free functions is called in guikit_test.cpp.
+d054	SH-3b-02	CONFIRMED	no-hits	Border_FillStyle and SceneView never referenced in k2addr_test.cpp.
+d055	SH-3b-02	CONFIRMED	patch_manager_mods/_shared_src/k2addr_test.cpp:122	Menu_Char2 and Menu_Char3 each STEAM-checked twice (lines 122-126).
+d056	SH-3b-04	PARTIAL	patch_manager_mods/_shared_src/effects_test.cpp:363	Rows 56/105 never passed; ii_/iw_ identity of rows 28/5/2 not in output.
+d057	SH-3c-04	CONFIRMED	patch_manager_mods/companion_selfheal_src/common_contract_test.cpp:289	playerPaused only in a comment and a fn-pointer cast; never called.
+d058	SH-3c-04	CONFIRMED	no-hits	actqueue_test.cpp has no rn spellId asserts and no >16 or >4 feeds.
+d059	SH-3c-05	CONFIRMED	no-hits	No changed() call passes a Stamp* out-param in filewatch_test.cpp.
+d060	SH-3c-06	CONFIRMED	patch_manager_mods/_shared_src/guitip_test.cpp:104	All measure() calls pass &l,&mx; nullptr only as text arg.
+d061	SH-3c-07	CONFIRMED	patch_manager_mods/_shared_src/item_read_test.cpp:51	Entry bases always valid; no count -1/256/257 cases; 100000 only over-bound case.
+d062	SH-3c-07	CONFIRMED	patch_manager_mods/_shared_src/item_read_test.cpp:54	Only 9-byte 'i_medpac' icon tested; no 16 non-NUL resref case.
+d063	SH-3c-09	CONFIRMED	patch_manager_mods/_shared_src/textfit_test.cpp:50	Offsets 0,0,3,100,7; no negative, trailing-space, space-index or >120-char case.

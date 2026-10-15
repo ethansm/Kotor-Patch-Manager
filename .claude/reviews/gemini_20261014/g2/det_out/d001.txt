@@ -1,0 +1,9 @@
+fids: CO-2c-04
+question: rg -n 'fm3Lost' patch_manager_mods/companion_ai_src/CompanionAiLogic.h patch_manager_mods/companion_ai_src/companion_ai_logic_test.cpp
+cmd: rg -n 'fm3Lost' patch_manager_mods/companion_ai_src/CompanionAiLogic.h patch_manager_mods/companion_ai_src/companion_ai_logic_test.cpp
+rule: fm3Lost body returns removed || nowLevel != level: a stale read yields only a spurious or missed log line, not a deref; confirms stale-not-crash
+hits: 3
+--- output ---
+patch_manager_mods/companion_ai_src/companion_ai_logic_test.cpp:348:    // fm3Lost
+patch_manager_mods/companion_ai_src/companion_ai_logic_test.cpp:349:    CHECK(!fm3Lost(4, 4, false)); CHECK(fm3Lost(4, 2, false)); CHECK(fm3Lost(2, 2, true));
+patch_manager_mods/companion_ai_src/CompanionAiLogic.h:637:inline bool fm3Lost(int level, int nowLevel, bool removed) { return removed || nowLevel != level; }

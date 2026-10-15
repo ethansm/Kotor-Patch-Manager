@@ -1,0 +1,7 @@
+fids: SH-3b-02
+question: rg -n 'Border_FillStyle|SceneView' patch_manager_mods/_shared_src/k2addr_test.cpp
+cmd: rg -n 'Border_FillStyle|SceneView' patch_manager_mods/_shared_src/k2addr_test.cpp
+rule: 0 hits => CONFIRMED both Border_FillStyle (K2Addr.h:106, 288, 476) and SceneView fields are unchecked in k2addr_test.cpp; >=1 hit inside checkSteamFields/checkGogFields => REFUTED for that item
+hits: 0
+--- output ---
+

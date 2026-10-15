@@ -1,0 +1,8 @@
+fids: K1-5b-01
+question: rg -n 'local_only|personal_only' patch_manager_mods/k1_port/k1_port_prune.py patch_manager_mods/k1_port/k1_port_sources.py patch_manager_mods/k1_port/k1_port_ingest.py
+cmd: rg -n 'local_only|personal_only' patch_manager_mods/k1_port/k1_port_prune.py patch_manager_mods/k1_port/k1_port_sources.py patch_manager_mods/k1_port/k1_port_ingest.py
+rule: personal_only 0 hits anywhere and local_only only set in sources.py (~260,269) with no reader in prune.py is_flagged/cmd_gate => gate ignores it (CONFIRMED); a reader in prune.py => REFUTED
+hits: 2
+--- output ---
+patch_manager_mods/k1_port/k1_port_sources.py:260:        ai_pixel_fraction); any ai or edited copy is local_only until a person signs it off."""
+patch_manager_mods/k1_port/k1_port_sources.py:269:                         ai_derived=info is not None, local_only=True, parent_sha256=want,

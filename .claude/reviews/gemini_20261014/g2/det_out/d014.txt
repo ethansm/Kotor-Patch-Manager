@@ -1,0 +1,21 @@
+fids: HN-6n-07
+question: rg -n 'g_d->(add|remove)|\.remove\(|\.add\(' patch_manager_mods/npc_world_src/nw_registry_test.cpp
+cmd: rg -n 'g_d->(add|remove)|\.remove\(|\.add\(' patch_manager_mods/npc_world_src/nw_registry_test.cpp
+rule: Only cbRegisters (add only) and cbKillsB (remove only) exist and no callback body does both => gap CONFIRMED; a callback that both removes and adds => REFUTED
+hits: 15
+--- output ---
+22:static void KPATCH_CALL cbRegisters(const K2NwEvent*, void*) { g_order.push_back(10); g_tokNew = g_d->add(K2NW_ALL, cbC, nullptr, "late"); }
+23:static void KPATCH_CALL cbKillsB(const K2NwEvent*, void*) { g_order.push_back(11); g_d->remove(g_tokB); }
+36:        KT_CHECK_EQ(d.add(K2NW_ALL, nullptr, nullptr, "x"), -1);              // null fn
+37:        KT_CHECK_EQ(d.add(0, cbA, nullptr, "x"), -1);                          // no kind bit
+38:        KT_CHECK_EQ(d.add(0x100, cbA, nullptr, "x"), -1);                      // only unknown bits
+39:        const int32_t t1 = d.add(K2NW_AREA_LOAD | 0x100, cbA, nullptr, "a");   // unknown bits dropped
+41:        KT_CHECK_EQ(d.add(K2NW_ALL, cbB, nullptr, nullptr), 2); KT_CHECK(d.e[1].owner != nullptr);   // null owner -> ""
+42:        KT_CHECK(!d.remove(99)); KT_CHECK(d.remove(1)); KT_CHECK(!d.remove(1)); KT_CHECK_EQ(d.n, 1);
+44:        for (int i = 0; i < nw::MaxConsumers; ++i) KT_CHECK(f.add(K2NW_TICK, cbA, nullptr, "f") > 0);
+45:        KT_CHECK_EQ(f.add(K2NW_TICK, cbA, nullptr, "f"), -2);                  // table full
+51:        d.add(K2NW_AREA_STABLE, cbA, nullptr, "a"); d.add(K2NW_ALL, cbB, nullptr, "b"); d.add(K2NW_TICK, cbC, nullptr, "c");
+64:        d.add(K2NW_TICK, cbRegisters, nullptr, "r"); g_tokB = d.add(K2NW_TICK, cbB, nullptr, "b");
+69:        d.remove(g_tokNew);
+71:        k.add(K2NW_TICK, cbKillsB, nullptr, "k"); g_tokB = k.add(K2NW_TICK, cbB, nullptr, "b");
+77:        nw::Dispatcher d; d.add(K2NW_ALL, cbA, nullptr, "slow");

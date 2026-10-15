@@ -1,0 +1,7 @@
+fids: K1-5c-05
+question: rg -n 'cmd_pose|cmd_table|_rot_angle_deg|_wrap180' patch_manager_mods/k1_port/test_*.py
+cmd: rg -n 'cmd_pose|cmd_table|_rot_angle_deg|_wrap180' patch_manager_mods/k1_port/test_*.py
+rule: 0 hits in test files => untested (CONFIRMED; production uses are only k1_anim_pose.py:317,321 inside cmd_table, and matrix_to_euler tests do not reach them); hits => REFUTED for the named helper
+hits: 0
+--- output ---
+

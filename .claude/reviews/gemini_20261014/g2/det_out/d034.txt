@@ -1,0 +1,22 @@
+fids: K1-5d-01
+question: rg -n 'K1PORT_VENV|K1PORT_PY|SKIP' patch_manager_mods/k1_port/test_k1_port_ingest.py patch_manager_mods/k1_port/test_k1_port_char_build.py patch_manager_mods/k1_port/test_k1_port_probe_build.py patch_manager_mods/k1_port/test_k1_port_spawn_build.py
+cmd: rg -n 'K1PORT_VENV|K1PORT_PY|SKIP' patch_manager_mods/k1_port/test_k1_port_ingest.py patch_manager_mods/k1_port/test_k1_port_char_build.py patch_manager_mods/k1_port/test_k1_port_probe_build.py patch_manager_mods/k1_port/test_k1_port_spawn_build.py
+rule: 0 K1PORT_VENV hits => env var not honored (CONFIRMED); ingest honors K1PORT_PY instead (override exists there only); SKIP prints followed by return 0 => whole-file skip exits 0
+hits: 16
+--- output ---
+patch_manager_mods/k1_port/test_k1_port_probe_build.py:5:is missing it prints SKIP and exits 0 (run_tests.py has no py-item SKIP hook).
+patch_manager_mods/k1_port/test_k1_port_probe_build.py:336:        print(f"SKIP test_k1_port_probe_build: {VENV_PY} missing (pykotor venv not set up)")
+patch_manager_mods/k1_port/test_k1_port_spawn_build.py:5:is missing it prints SKIP and exits 0 (run_tests.py has no py-item SKIP hook).
+patch_manager_mods/k1_port/test_k1_port_spawn_build.py:6:The real-compiler test SKIPs (not PASS) when the kit compile.sh is missing. Fake compilers cover the rest.
+patch_manager_mods/k1_port/test_k1_port_spawn_build.py:430:    """Exec THIS test file under the k1port venv python -I when pykotor is missing. Returns a SKIP reason or None."""
+patch_manager_mods/k1_port/test_k1_port_spawn_build.py:447:        print(f"SKIP all: {reason}")
+patch_manager_mods/k1_port/test_k1_port_spawn_build.py:455:            print(f"SKIP {fn.__name__}: {exc}", flush=True)
+patch_manager_mods/k1_port/test_k1_port_spawn_build.py:463:    print(f"{passed}/{total} PASS, {skipped} SKIP, {failed} FAIL")
+patch_manager_mods/k1_port/test_k1_port_char_build.py:5:missing it prints SKIP and exits 0.
+patch_manager_mods/k1_port/test_k1_port_char_build.py:199:        print(f"SKIP test_k1_port_char_build: {VENV_PY} missing (pykotor venv not set up)")
+patch_manager_mods/k1_port/test_k1_port_ingest.py:4:Drives the CLI through the patched pykotor venv (K1PORT_PY, default
+patch_manager_mods/k1_port/test_k1_port_ingest.py:5:~/Games/KOTOR2_Mod_Workspace/venvs/k1port/bin/python). If that interpreter is missing the whole file SKIPs (exit 0).
+patch_manager_mods/k1_port/test_k1_port_ingest.py:25:PY = os.environ.get("K1PORT_PY") or str(Path("~/Games/KOTOR2_Mod_Workspace/venvs/k1port/bin/python").expanduser())
+patch_manager_mods/k1_port/test_k1_port_ingest.py:47:    """A requirement is missing. Reported as SKIP and counted as a pass."""
+patch_manager_mods/k1_port/test_k1_port_ingest.py:572:        print(f"SKIP: patched pykotor python not found at {PY} (set K1PORT_PY, see setup_venv.sh)")
+patch_manager_mods/k1_port/test_k1_port_ingest.py:582:            print(f"SKIP {fn.__name__}: {e}")

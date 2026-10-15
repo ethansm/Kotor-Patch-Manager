@@ -1,0 +1,9 @@
+fids: HB-1d-04
+question: rg -n 'mkdtemp|TempDir|rm -rf|return [0-9]|exit\(' patch_manager_mods/action_hotbar_src/tlk_test.cpp
+cmd: rg -n 'mkdtemp|TempDir|rm -rf|return [0-9]|exit\(' patch_manager_mods/action_hotbar_src/tlk_test.cpp
+rule: mkdtemp (:68) and system rm -rf (:227) present, no TempDir => confirmed; the only early return is 'return 1' at :68 BEFORE cleanup is armed and no other return/exit between :76-:225 => no leak on KT_CHECK failure paths, so the leak claim REFUTED, tooling-style claim CONFIRMED (PARTIAL)
+hits: 3
+--- output ---
+2:// malformed / edge-case files generated into a mkdtemp dir under $TMPDIR (nothing extra is committed).
+68:    if (!mkdtemp(tb.data())) { puts("FAIL mkdtemp"); return 1; }
+227:        std::string cmd = "rm -rf '" + g_dir + "'";

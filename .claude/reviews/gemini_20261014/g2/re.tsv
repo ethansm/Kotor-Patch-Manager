@@ -1,0 +1,9 @@
+fid	verdict	evidence	note
+CO-2c-06	REFUTED	0x6F6241/0x6F6272/0x6F62A0/0x6F62CE pops; CompanionAI.cpp:769-772	re.md CO-T05: pops write str -0x20/-0x1C, x -0x10, y -0x14, life -0x18; mod reads same slots (Opus checked on disk)
+SH-3a-07	UNSURE	-	re.md X-T04: label ctor not located at brief address
+SH-3a-08	UNSURE	-	re.md X-T05: CreateWindowEx/DestroyWindow callers listed; main-window recreation not confirmed
+HN-6n-01	UNSURE	0x994F5C vtbl[0]=0x563490; 0x572AC0 JZ new-fail	re.md HN-T06: ctor stores vtbl 0x994F5C, dtor frees; no global registration seen; new() failure skips ctor
+K1-5b-03	UNSURE	-	re.md K1-T15: 2DA row-label handling not located
+PL-4a-01	UNSURE	0x712F3F; 0x7120C9	re.md PL-T01: Malloc derefs CRes+0x18 unguarded (game itself faults on NULL); FreeResourceData NULL-tests first; stale non-null undecidable statically
+PL-4a-02	UNSURE	0x712F3F; 0x7120C9	re.md PL-T01: as PL-4a-01; hook reading CRes+0x10 before 0x7120C9 test faults on NULL where game would not
+PL-4d-01	UNSURE	-	re.md PL-T06: thunk chains not enumerated

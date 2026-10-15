@@ -1,0 +1,7 @@
+fids: QH-2b-04
+question: QH-2b-04 part 1: is the waiting_dim_rgb ini key parsed in any test? Run: rg -n 'waiting_dim_rgb' patch_manager_mods/queue_hud_src/queue_hud_logic_test.cpp
+cmd: rg -n 'waiting_dim_rgb' patch_manager_mods/queue_hud_src/queue_hud_logic_test.cpp
+rule: 0 hits => ini-key parse gap CONFIRMED (parser at QueueHudLogic.h:463); >=1 hit => REFUTED. Note for caller: test lines 314 and 322 already assert default waitingBg and slotStyle bg recolour, so the 'slotStyle bg unasserted' half is REFUTED regardless
+hits: 0
+--- output ---
+

@@ -1,0 +1,7 @@
+fids: HN-6n-06
+question: rg -c 'dumpEvent|kEventLines|CAP reached|fits' patch_manager_mods/k1_spawn_probe_src/k1_client_core_test.cpp
+cmd: rg -c 'dumpEvent|kEventLines|CAP reached|fits' patch_manager_mods/k1_spawn_probe_src/k1_client_core_test.cpp
+rule: 0 => dumpEvent composition/CAP wiring untested (test-gap CONFIRMED beyond primitive Budget tests); >=1 => read the matching test lines
+hits: 4
+--- output ---
+4

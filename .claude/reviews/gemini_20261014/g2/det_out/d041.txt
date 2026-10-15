@@ -1,0 +1,11 @@
+fids: QH-2a-05
+question: QH-2a-05: only drawAll's shouldShow (QueueHud.cpp:755) still uses raw g_combat; lines 538/739/1626 are soft-aware. Is the show_in_combat gate on by default? Run: rg -n 'show_in_combat|showInCombat *=' patch_manager_mods/queue_hud_src/queue_hud.ini patch_manager_mods/queue_hud_src/QueueHudLogic.h
+cmd: rg -n 'show_in_combat|showInCombat *=' patch_manager_mods/queue_hud_src/queue_hud.ini patch_manager_mods/queue_hud_src/QueueHudLogic.h
+rule: ini show_in_combat=1 AND Config default showInCombat = true (QueueHudLogic.h:192) => raw gate at 755 passes in soft combat => REFUTED for default config (CONFIRMED only for users who set show_in_combat=0); ini =0 or default false => CONFIRMED
+hits: 5
+--- output ---
+patch_manager_mods/queue_hud_src/queue_hud.ini:57:show_in_combat=1
+patch_manager_mods/queue_hud_src/QueueHudLogic.h:124:// showInCombat (show_in_combat=1) drops the combat term only; enabled, menu, age and slot gates still apply.
+patch_manager_mods/queue_hud_src/QueueHudLogic.h:125:inline bool shouldShow(bool enabled, bool combat, bool inMenu, uint32_t ageMs, int nSlots, bool showInCombat = false) {
+patch_manager_mods/queue_hud_src/QueueHudLogic.h:192:    bool showInCombat = true;     // show_in_combat: keep the queue strip drawn during combat (default on)
+patch_manager_mods/queue_hud_src/QueueHudLogic.h:479:    if (detail::keyEq(kb, ke, "show_in_combat")) return detail::parseBool(vb, ve, &c.showInCombat);

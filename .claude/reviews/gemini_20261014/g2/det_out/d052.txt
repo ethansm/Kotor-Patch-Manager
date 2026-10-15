@@ -1,0 +1,27 @@
+fids: SH-3c-08
+question: rg -n 'callVitalSlot|party::vitals\(|g_callVital' patch_manager_mods/_shared_src/party_test.cpp
+cmd: rg -n 'callVitalSlot|party::vitals\(|g_callVital' patch_manager_mods/_shared_src/party_test.cpp
+rule: callVitalSlot 0 hits AND every party::vitals( hit lies between the g_callVital=fakeVital swap (line 198) and its restore (line 335) => CONFIRMED real callVitalSlot (short return) never run; a vitals( call outside 198-335 or a callVitalSlot hit => REFUTED/PARTIAL
+hits: 21
+--- output ---
+197:        auto sM = party::g_member; auto sS = party::g_serverCreature; auto sV = party::g_callVital;
+198:        party::g_member = fakeMember; party::g_serverCreature = fakeServer; party::g_callVital = fakeVital;
+214:        KT_CHECK(party::vitals(g_servers[0], &v));
+226:        KT_CHECK(party::vitals(g_servers[1], &v)); KT_CHECK(v.down); KT_CHECK_EQ((long long)v.cur, 0ll);
+227:        KT_CHECK(party::vitals(g_servers[2], &v)); KT_CHECK(!v.down);
+230:        KT_CHECK(party::vitals(g_servers[0], nullptr));
+231:        KT_CHECK(!party::vitals(0, &v)); KT_CHECK(!v.ok); KT_CHECK_EQ((long long)g_vcalls, 2ll);
+233:        g_fc[0].maxhp = 0; KT_CHECK(!party::vitals(g_servers[0], &v)); KT_CHECK(!v.ok); KT_CHECK(!v.down);
+234:        g_fc[0].maxhp = -5; KT_CHECK(!party::vitals(g_servers[0], &v)); KT_CHECK(!v.ok);
+240:        KT_CHECK(!party::vitals(g_servers[0], &v)); KT_CHECK(!v.ok);
+242:        KT_CHECK(!party::vitals(g_servers[0], &v));
+244:        at<uint32_t>(vt0, 0x98) = 0; KT_CHECK(!party::vitals(g_servers[0], &v)); KT_CHECK(!v.ok);
+246:        KT_CHECK(!party::vitals(g_servers[0], &v)); KT_CHECK(!v.ok);
+307:          g_fc[0].hp = -1;       KT_CHECK(party::vitals(g_servers[0], &w)); KT_CHECK(w.down); KT_CHECK_EQ((long long)w.cur, -1ll);
+308:          g_fc[0].hp = -32768;   KT_CHECK(party::vitals(g_servers[0], &w)); KT_CHECK(w.down);
+309:          g_fc[0].hp = 0;        KT_CHECK(party::vitals(g_servers[0], &w)); KT_CHECK(w.down);
+310:          g_fc[0].hp = 1;        KT_CHECK(party::vitals(g_servers[0], &w)); KT_CHECK(!w.down);
+311:          g_fc[0].hp = 100;      KT_CHECK(party::vitals(g_servers[0], &w)); KT_CHECK(!w.down);   // cur == max
+312:          g_fc[0].hp = 500;      KT_CHECK(party::vitals(g_servers[0], &w)); KT_CHECK(!w.down);   // cur > max is not clamped
+313:          g_fc[0].hp = -1; g_fc[0].maxhp = 0; KT_CHECK(!party::vitals(g_servers[0], &w)); KT_CHECK(!w.down);   // down needs ok
+335:        party::g_member = sM; party::g_serverCreature = sS; party::g_callVital = sV;

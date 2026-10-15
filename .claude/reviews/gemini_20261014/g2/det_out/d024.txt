@@ -1,0 +1,9 @@
+fids: K1-5a-02
+question: rg -n 'bit_length|log2|depth|max\(w, *h\)' patch_manager_mods/k1_port/k1_port_tex_tpc.py patch_manager_mods/k1_port/k1_port_tex_gate.py
+cmd: rg -n 'bit_length|log2|depth|max\(w, *h\)' patch_manager_mods/k1_port/k1_port_tex_tpc.py patch_manager_mods/k1_port/k1_port_tex_gate.py
+rule: only PNG-depth hits (gate.py:311-314) and no pyramid-depth cap => no cap exists (supports CONFIRMED); a cap hit in tpc.py/gate.py parse or _parse_parent => REFUTED
+hits: 3
+--- output ---
+patch_manager_mods/k1_port/k1_port_tex_gate.py:311:    w, h, depth, color, comp, filt, interlace = struct.unpack(">IIBBBBB", ihdr)
+patch_manager_mods/k1_port/k1_port_tex_gate.py:312:    if depth != 8 or color not in (0, 2) or comp or filt or interlace or w < 1 or h < 1:
+patch_manager_mods/k1_port/k1_port_tex_gate.py:314:                         f"(depth {depth}, colour type {color}, interlace {interlace})")

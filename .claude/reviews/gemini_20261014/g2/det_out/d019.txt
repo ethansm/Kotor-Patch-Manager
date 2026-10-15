@@ -1,0 +1,7 @@
+fids: HB-1b-02
+question: rg -n 'clampOffset\(-' patch_manager_mods/action_hotbar_src/hotbar_logic_test.cpp
+cmd: rg -n 'clampOffset\(-' patch_manager_mods/action_hotbar_src/hotbar_logic_test.cpp
+rule: 0 hits => no negative-offset test for clampOffset (existing :382 covers only upper clamp) => test-gap CONFIRMED but harmless since all setters clamp to >=0; >=1 hit => REFUTED
+hits: 0
+--- output ---
+

@@ -1,0 +1,14 @@
+fids: SH-3c-07
+question: rg -n 'GroupLists|readGroup\(' patch_manager_mods/_shared_src/item_read_test.cpp
+cmd: rg -n 'GroupLists|readGroup\(' patch_manager_mods/_shared_src/item_read_test.cpp
+rule: Only groups 1 (count 2), 2 (count 100000), 3 (base 0/count 0), 7 and -1 are used, and no entry array base is a non-null unreadable pointer, and ItemRead.h MaxEntries=256 (line 17) with no count -1/256/257 case => CONFIRMED missing unreadable-array and count-bound cases; any count -1/256/257 or small-pointer base => REFUTED for that item
+hits: 8
+--- output ---
+12:static_assert(EntryStride == 0x3C && Hud_GroupLists == 0x78, "entry/group layout");
+50:    put<int32_t>(hud + Hud_GroupLists + 1 * 12, (int32_t)A(ents)); put<int32_t>(hud + Hud_GroupLists + 1 * 12 + 4, 2);
+51:    put<int32_t>(hud + Hud_GroupLists + 2 * 12, (int32_t)A(ents)); put<int32_t>(hud + Hud_GroupLists + 2 * 12 + 4, 100000);
+52:    put<int32_t>(hud + Hud_GroupLists + 3 * 12, 0);                 put<int32_t>(hud + Hud_GroupLists + 3 * 12 + 4, 0);
+57:    KT_CHECK_EQ(readGroup(A(hud), 1, &v), 2);
+63:    KT_CHECK_EQ(readGroup(A(hud), 2, &v), 0); KT_CHECK(v.empty());
+64:    KT_CHECK_EQ(readGroup(A(hud), 3, &v), 0);
+65:    KT_CHECK_EQ(readGroup(A(hud), 7, &v), 0); KT_CHECK_EQ(readGroup(A(hud), -1, &v), 0);

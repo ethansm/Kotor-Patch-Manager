@@ -1,0 +1,9 @@
+fids: QH-2a-08
+question: QH-2a-08: cwLookCompanion latches fill=2 (QueueHud.cpp:432-437). Where is CW.fill reset? Run: rg -n 'fill = -1|w = CW\(\)' patch_manager_mods/queue_hud_src/QueueHud.cpp
+cmd: rg -n 'fill = -1|w = CW\(\)' patch_manager_mods/queue_hud_src/QueueHud.cpp
+rule: hit in cwShow(!on) (~402) or the g_cw reset loop (~498) => latch is cleared whenever the control hides or HUD rebuilds => 'permanent' claim REFUTED, 'no retry within one visible episode' stands (intentional per comment 427); 0 reset hits beyond 376 declaration => CONFIRMED permanent
+hits: 3
+--- output ---
+376:    int fill = -1;           // 0 = kit_cancel, 1 = kit_cancel_hi, 2 = text fallback
+402:    if (!on) { w.hover = false; w.fill = -1; }
+498:    for (CW& w : g_cw) w = CW();
