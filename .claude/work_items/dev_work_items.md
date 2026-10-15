@@ -134,3 +134,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 118 | WI-86 | P3 | ready | S | - | BG39 Wheel callback passes engine screen size as client rect size to clientToEngineF | 0 | 3 | wrong-behaviour/low: cw/ch are the provider's engine size (client rect |
 | [ ] | 119 | WI-87 | P3 | ready | S | - | BG40 Allocated label leaked on createLabelFromTemplate and bindByTag failure paths | 0 | 2 | wrong-behaviour/low: Leak real in createLabelFromTemplate and bindByTa |
 | [ ] | 120 | WI-88 | P3 | ready | S | - | BG41 pendingDone2 now==0 sentinel branch untested | 0 | 2 | wrong-behaviour/low: Untested sentinel branch is also buggy: storing 1 |
+| [ ] | 121 | WI-89 | P3 | hold | S | - | Gemini test/tooling gaps: hotbar (07_force_power_hotbar.md, keybif_test.cpp, twoda_test.cp | 0 | 3 | 5 validated test-gap/tooling fids: HB-1b-01: -; HB-1d-03: keybif_test. |
