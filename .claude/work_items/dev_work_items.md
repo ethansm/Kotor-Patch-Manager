@@ -30,7 +30,7 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [x] | 14 | WI-35 | P1 | ready | S | - | Equip menu-3d stale-claim cleanup (C206, C208) | 2 | 3 | Equip menu-3d stale-claim cleanup; ready, 2 doc rows. |
 | [x] | 15 | WI-07 | P1 | ready | M | WI-06 | Buff HUD shared helpers and accessor | 5 | 4 | Buff HUD shared helpers and accessor; ready, after WI-06. |
 | [x] | 16 | WI-04 | P1 | verify-only | M | - | Equipment 3D character shared-code migration | 9 | 4 | Equipment 3D shared-code migration; refactor, owner GO needed. |
-| [ ] | 17 | WI-20b | P1 | verify-only | S | - | Robustness TD and GUIID fixes, verify only (C115, C116) | 2 | 1 | Robustness TD and GUIID fixes, verify only; target file present. |
+| [x] | 17 | WI-20b | P1 | verify-only | S | - | Robustness TD and GUIID fixes, verify only (C115, C116) | 2 | 1 | Robustness TD and GUIID fixes, verify only; target file present. |
 | [ ] | 18 | WI-38 | P1 | ready | L | - | Companion self-heal open rows: verify and build | 10 | 3 | Companion self-heal open rows: verify and build; 7 open, ready. |
 | [ ] | 19 | WI-02 | P1 | ready | M | - | KPM tooling H1-H6 build batch | 5 | 4 | KPM tooling batch; tooling, not game behavior. |
 | [ ] | 20 | WI-12 | P1 | ready | M | WI-10 | Force Power Hotbar arrow art and setFont check | 4 | 4 | Hotbar arrow art and setFont check; arrow spec unknown. |
