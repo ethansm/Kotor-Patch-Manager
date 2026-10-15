@@ -32,12 +32,12 @@ Session context lives in `.claude/handoffs/gemini_review.handoff.md` (committed 
 ## Phases (batch table; mark with `plan_manager.py mark-done <Id>`)
 | Id | Batch | Deps | Owner gate | Status | Commit | Next |
 |---|---|---|---|---|---|---|
-| G2.0 | Persist this plan to `.claude/plans/gemini_review_g2.md` + handoff pointer | - | - | OPEN | | commit |
-| G2.1 | Deterministic re-anchor of all 135 verdicts to HEAD ($0) | G2.0 | - | OPEN | | `reanchor.tsv` |
-| G2.2 | Widen PARTIAL/UNSURE: Sonnet resolvers then Haiku wave `gem2` + 1 rea-recon | G2.1 | - | OPEN | | `verdicts_v2.tsv` |
-| G2.3 | Adversarial validation of all CONFIRMED (Sonnet skeptics) + Opus gate | G2.2 | - | OPEN | | `validated.tsv` |
-| G2.4 | Persist: BG rows (doc 37) + work items + refuted ledger + scorecard + memory | G2.3 | user skim of BG list | OPEN | | commits |
-| G2.5 | Close: lint, mark-done, handoff, Saved State | G2.4 | - | OPEN | | - |
+| G2.0 | Persist this plan to `.claude/plans/gemini_review_g2.md` + handoff pointer | - | - | DONE | f427b92 | commit |
+| G2.1 | Deterministic re-anchor of all 135 verdicts to HEAD ($0) | G2.0 | - | DONE | dedb65e | `reanchor.tsv` |
+| G2.2 | Widen PARTIAL/UNSURE: Sonnet resolvers then Haiku wave `gem2` + 1 rea-recon | G2.1 | - | DONE | 93d371a | `verdicts_v2.tsv` |
+| G2.3 | Adversarial validation of all CONFIRMED (Sonnet skeptics) + Opus gate | G2.2 | - | DONE | 30ba0b6 | `validated.tsv` |
+| G2.4 | Persist: BG rows (doc 37) + work items + refuted ledger + scorecard + memory | G2.3 | user skim of BG list | DONE | 6e8af73 | BG26-BG41, WI-73..WI-101, README f7f8974 |
+| G2.5 | Close: lint, mark-done, handoff, Saved State | G2.4 | - | DONE | b3a1c6e | - |
 
 ### G2.0 Persist the plan (inline, about 3 min)
 1. Copy this plan to `.claude/plans/gemini_review_g2.md`. In `.claude/handoffs/gemini_review.handoff.md` section 0, set the plan path.
