@@ -120,3 +120,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 104 | WI-72 | P3 | hold | S | - | analyze_play_logs.py: strip KpLog prefix for inventory_sort_filter_log.txt | 0 | 0 | KpLog fallback prefixes each line '<ms32> <patch>/<ch> ', breaking ^-a |
 | [ ] | 105 | WI-73 | P3 | hold | S | - | BG26 DXT1 splice skips RGB edits on parents with c0<=c1 since encode_rgb is always 4-colou | 0 | 2 | wrong-behaviour/med: Guard is deliberate alpha protection but silently |
 | [ ] | 106 | WI-74 | P3 | hold | S | - | BG27 engineNe counts resting 0x3D/bare 0x3F, forcing buffering and permanent engine_busy | 0 | 3 | wrong-behaviour/med: engineNe counts every entry; ActQueue.h documents |
+| [ ] | 107 | WI-75 | P3 | hold | S | - | BG28 keyFor(0) returns slot0 ignoring tag, so settings follow party position not creature  | 0 | 1 | wrong-behaviour/med: keyFor(0) returns slot0 even though c0.tag is rea |
