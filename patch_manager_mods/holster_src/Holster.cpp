@@ -336,7 +336,7 @@ static bool nodeIsTarget(uintptr_t node) {
     return _stricmp(name, g_boneName) == 0;
 }
 
-// 0x005047F4 (H7): runs for EVERY attached behavior right after the engine wrote node N's WORLD pose into gob+0xA4 (vec3) / gob+0xB0 (quat w-first).
+// gameaddr::GobUpdateDependent + 0x44 (H7 site, see hooks.toml H7): runs for EVERY attached behavior right after the engine wrote node N's WORLD pose into gob+0xA4 (vec3) / gob+0xB0 (quat w-first).
 // For the target node (g_boneName) it composes the live-tuned placement onto that pose and writes it back. Needs probe=1 AND bone_test=1 AND place=1;
 // ch_place only gates the PLACE log lines.
 extern "C" void __cdecl HolsterPlace(void* gob, void* node, void* beh) {
