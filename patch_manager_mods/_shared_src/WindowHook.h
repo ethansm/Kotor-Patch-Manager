@@ -30,6 +30,8 @@ struct WindowHook {
 
     static bool install(HWND h, WNDPROC proc) {
         if (pins == 0) { whapi::pin(proc); ++pins; }
+        // stored window destroyed/recreated: its proc chain died with it. Forget old/pass-through (no setProc on the dead window), subclass h below.
+        if (old && !(hwnd && whapi::isWindow(hwnd))) { old = nullptr; hwnd = HWND(); passthrough = 0; }
         if (old) {
             if (passthrough) whapi::xchg(&passthrough, 0);
             return true;

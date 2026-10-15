@@ -147,4 +147,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [x] | 131 | WI-99 | P3 | ready | S | - | Gemini test/tooling gaps: shared (k2addr_test.cpp, party_test.cpp, sceneview_test.cpp, tex | 0 | 4 | 4 validated test-gap/tooling fids: SH-3b-02: k2addr_test.cpp: STEAM(Bo |
 | [ ] | 132 | WI-100 | P3 | ready | S | - | Gemini latent hardening: GuiKit wr write-probe, CodePatch writeChecked order, TwoDA cells  | 0 | 4 | Real in code, unreachable today (g2/gate.md): X-T01 wr<T> uses probeRe |
 | [ ] | 133 | WI-101 | P3 | verify-only | S | - | Gemini runtime-unsure checks: CO-2d-02, HN-6n-03, QH-2a-03, SH-3a-08 | 0 | 0 | CO-2d-02: Hover/click gated by inPop (1134, 1143) but the native toolt |
-| [ ] | 134 | WI-102 | P3 | ready | S | - | SH-3a-08 window subclass lost when the hooked HWND is recreated | 0 | 4 | re2 2026-10-15: top-level Render Window (0x408af0, HWND DAT_00a1b484)  |
+| [x] | 134 | WI-102 | P3 | ready | S | - | SH-3a-08 window subclass lost when the hooked HWND is recreated | 0 | 4 | re2 2026-10-15: top-level Render Window (0x408af0, HWND DAT_00a1b484)  |

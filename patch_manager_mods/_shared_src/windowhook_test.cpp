@@ -233,5 +233,82 @@ int main() {
         KT_CHECK_EQ(H::passthrough, 0);
         KT_CHECK(FakeGetWindowLongPtr(kHwnd) == &BaseGameProc);
     }
+    // (f) hooked window destroyed and recreated under a new HWND: install() drops the dead chain and subclasses the new window
+    {
+        resetWorld();
+        using H = Sub<0>::H;
+        const HWND kNew = 0x2222;
+        Sub<0>::install();
+        KT_CHECK(H::hwnd == kHwnd);
+        KT_CHECK_EQ(kp::whapi::setCalls, 1);
+        window().h = kNew;               // old window destroyed, a new one exists: FakeIsWindow(kHwnd) is now false
+        window().proc = &BaseGameProc;   // the new window starts on the class proc
+        KT_CHECK(!kp::whapi::isWindow(kHwnd));
+        KT_CHECK(H::install(kNew, &Sub<0>::proc));
+        KT_CHECK_EQ(kp::whapi::setCalls, 2);  // exactly one setProc, on the new window; none on the dead one
+        KT_CHECK(H::hwnd == kNew);
+        KT_CHECK(H::old == &BaseGameProc);
+        KT_CHECK_EQ(H::passthrough, 0);
+        KT_CHECK(H::active());
+        KT_CHECK_EQ(H::pins, 1);
+        KT_CHECK_EQ(kp::whapi::pinCalls, 1);
+        KT_CHECK(FakeGetWindowLongPtr(kNew) == &Sub<0>::proc);
+        int b = base().hits;
+        KT_CHECK_EQ(FakeSendMessage(1, 0, 10), 11);  // new chain: Sub<0>::proc -> new old proc (base)
+        KT_CHECK_EQ(Sub<0>::handled, 1);
+        KT_CHECK_EQ(base().hits, b + 1);
+        KT_CHECK(H::install(kNew, &Sub<0>::proc));   // repeat on the live window: no second setProc
+        KT_CHECK_EQ(kp::whapi::setCalls, 2);
+        Sub<0>::uninstall();                          // restores the NEW window's proc
+        KT_CHECK(H::old == nullptr);
+        KT_CHECK(H::hwnd == HWND());
+        KT_CHECK(FakeGetWindowLongPtr(kNew) == &BaseGameProc);
+    }
+
+    // (g) stale pass-through state on a dead window is dropped too: the re-install is a real subclass, not just "clear the flag"
+    {
+        resetWorld();
+        using H = Sub<0>::H;
+        Sub<0>::install();
+        Sub<1>::install();
+        Sub<0>::uninstall();              // not on top: pass-through, old kept
+        KT_CHECK_EQ(H::passthrough, 1);
+        window().h = 0x2222;              // window recreated
+        window().proc = &BaseGameProc;
+        int sets = kp::whapi::setCalls;
+        KT_CHECK(H::install(0x2222, &Sub<0>::proc));
+        KT_CHECK_EQ(kp::whapi::setCalls, sets + 1);
+        KT_CHECK_EQ(H::passthrough, 0);
+        KT_CHECK(H::hwnd == 0x2222);
+        KT_CHECK(H::old == &BaseGameProc);
+        KT_CHECK(FakeGetWindowLongPtr(0x2222) == &Sub<0>::proc);
+    }
+
+    // (h) live stored window: install() with another HWND keeps the chain (no resubclass of a window that still exists)
+    {
+        resetWorld();
+        using H = Sub<0>::H;
+        Sub<0>::install();
+        KT_CHECK(H::install(0x2222, &Sub<0>::proc));
+        KT_CHECK(H::hwnd == kHwnd);
+        KT_CHECK(H::old == &BaseGameProc);
+        KT_CHECK_EQ(kp::whapi::setCalls, 1);
+    }
+    // (i) the providers' re-arm gate (GuiInputProvider rearmWheelHook / ActionHotbar ensureWheelHook): `active() && isWindow(hwnd)` means healthy.
+    // Healthy polls never touch the window; after the window is recreated the first re-arm re-subclasses it exactly once, later polls are healthy again.
+    {
+        resetWorld();
+        using H = Sub<0>::H;
+        auto rearm = [](HWND cur) { if (H::active() && kp::whapi::isWindow(H::hwnd)) return false; H::install(cur, &Sub<0>::proc); return true; };
+        Sub<0>::install();
+        for (int i = 0; i < 100; ++i) KT_CHECK(!rearm(kHwnd));   // healthy: no install call at all
+        KT_CHECK_EQ(kp::whapi::setCalls, 1);
+        window().h = 0x2222; window().proc = &BaseGameProc;       // game recreated its window
+        KT_CHECK(rearm(0x2222));
+        KT_CHECK_EQ(kp::whapi::setCalls, 2);
+        for (int i = 0; i < 100; ++i) KT_CHECK(!rearm(0x2222));
+        KT_CHECK_EQ(kp::whapi::setCalls, 2);
+        KT_CHECK(FakeGetWindowLongPtr(0x2222) == &Sub<0>::proc);
+    }
     return kt::Report("windowhook_test");
 }

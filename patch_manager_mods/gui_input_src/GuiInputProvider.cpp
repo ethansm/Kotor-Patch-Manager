@@ -49,6 +49,7 @@ BOOL CALLBACK enumProc(HWND h, LPARAM lp) {
 
 HWND findGameWindow() {
     if (g_gameHwnd && IsWindow(g_gameHwnd)) return g_gameHwnd;
+    if (g_gameHwnd) { g_gameHwnd = nullptr; g_lastWindowTry = 0; }   // cached window destroyed: drop it (the throttle return below must not hand it out) and re-enumerate now
     DWORD now = GetTickCount();
     if (g_lastWindowTry && (now - g_lastWindowTry) < 1000) return g_gameHwnd;
     g_lastWindowTry = now;
@@ -114,26 +115,49 @@ LRESULT CALLBACK wheelProc(HWND h, UINT m, WPARAM w, LPARAM l) {
 }
 
 bool ensureSubclass() {
-    if (Hook::active()) return true;
+    if (Hook::active() && IsWindow(Hook::hwnd)) return true;   // hooked window destroyed/recreated: fall through, re-find and re-subclass
     HWND h = findGameWindow();
     if (!h) return false;
     bool ok = Hook::install(h, wheelProc);
     if (ok) {
         KP_LOGV(chCore, KPLOG_INFO, "subclassed game window %p, old proc %p", (void*)h, (void*)Hook::old);
+        char cls[128] = {0}; GetClassNameA(h, cls, (int)sizeof(cls));
+        KP_LOGV(chCore, KPLOG_INFO, "hooked window class \"%s\" (%p)", cls, (void*)h);
     } else {
         KP_LOGV(chCore, KPLOG_WARN, "failed to subclass game window %p (err=%lu)", (void*)h, (unsigned long)GetLastError());
     }
     return ok;
 }
 
+// Re-arms the wheel subclass when the hooked window was destroyed/recreated. ensureSubclass otherwise runs only inside wheel_subscribe,
+// and consumers subscribe once, so this is called from the provider calls consumers make regularly (game_hwnd, cursor_engine, foreground).
+// Healthy cost: two loads and one IsWindow. Unhealthy: at most one attempt per second (findGameWindow throttles its own EnumWindows too).
+// Subscribers stay in g_disp across the re-hook (the dispatcher does not depend on the HWND).
+void rearmWheelHook() {
+    static bool outageLogged = false;
+    if (g_disp.count == 0) return;                          // nobody subscribed: no hook to keep alive
+    if (Hook::active() && IsWindow(Hook::hwnd)) { outageLogged = false; return; }
+    static DWORD lastTry = 0;
+    DWORD now = GetTickCount();
+    if (lastTry && (now - lastTry) < 1000) return;
+    lastTry = now;
+    if (!outageLogged) {
+        outageLogged = true;
+        KP_LOGV(chCore, KPLOG_INFO, "hooked window %p is gone, re-subclassing for %d subscriber(s)", (void*)Hook::hwnd, g_disp.count);
+    }
+    ensureSubclass();
+}
+
 // ---- Exported Provider API ----
 intptr_t KPATCH_CALL apiGameHwnd() {
+    rearmWheelHook();
     HWND h = findGameWindow();
     return reinterpret_cast<intptr_t>(h);
 }
 
 int32_t KPATCH_CALL apiCursorEngine(float* x, float* y) {
     if (!x || !y) return 0;
+    rearmWheelHook();
     HWND h = findGameWindow();
     if (!h) return 0;
 
@@ -171,6 +195,7 @@ void KPATCH_CALL apiWheelUnsubscribe(K2WheelCallback cb) {
 }
 
 int32_t KPATCH_CALL apiForeground() {
+    rearmWheelHook();
     HWND fg = GetForegroundWindow();
     HWND h = findGameWindow();
     return (fg && h && fg == h) ? 1 : 0;

@@ -1210,10 +1210,16 @@ void ensureWheelHook() {
                 subscribed = true;
                 KP_LOG(chInput, "wheel: subscribed to k2.guiinput (token %d)", tok);
             }
+        } else {
+            (void)g_guiInput.game_hwnd();   // subscribe is one-shot: this per-frame call lets the provider re-subclass a recreated game window
         }
         return;
     }
-    if (WheelHook::active()) return;
+    if (WheelHook::active() && IsWindow(WheelHook::hwnd)) return;   // else the hooked window was destroyed/recreated: fall through and re-subclass g_gameWnd
+    if (WheelHook::old && g_gameWnd && !IsWindow(g_gameWnd)) {   // hooked window gone; cursorInGame refinds only while gated, so refind here (throttled)
+        static long lastRefind = -1000;
+        if (g_frame - lastRefind >= RetryFrames) { lastRefind = g_frame; g_gameWnd = findGameWnd(); }
+    }
     if (!g_gameWnd || !IsWindow(g_gameWnd)) {
         static bool waitLogged = false;
         if (!waitLogged) { waitLogged = true; KP_LOGV(chInput, KPLOG_DEBUG, "wheel: waiting for the game window (g_gameWnd=%p IsWindow=%d), picker wheel scrolling unavailable", (void*)g_gameWnd, (int)(g_gameWnd && IsWindow(g_gameWnd))); }
@@ -1222,7 +1228,11 @@ void ensureWheelHook() {
     static int attempts = 0; ++attempts;
     WheelHook::install(g_gameWnd, &wheelProc);
     unsigned long err = WheelHook::old ? 0UL : (unsigned long)GetLastError();
-    if (WheelHook::old) KP_LOG(chInput, "wheel: subclassed window %p, old proc %p (err=%lu)", (void*)g_gameWnd, (void*)WheelHook::old, err);
+    if (WheelHook::old) {
+        KP_LOG(chInput, "wheel: subclassed window %p, old proc %p (err=%lu)", (void*)g_gameWnd, (void*)WheelHook::old, err);
+        char cls[128] = {0}; GetClassNameA(g_gameWnd, cls, (int)sizeof(cls));
+        KP_LOG(chInput, "wheel: hooked window class \"%s\" (%p)", cls, (void*)g_gameWnd);
+    }
     else if (attempts <= 3) KP_LOGV(chInput, KPLOG_WARN, "wheel: subclassed window %p, old proc %p (err=%lu)", (void*)g_gameWnd, (void*)WheelHook::old, err);   // old proc null = failed; retried next frame as before (map R6)
     else KP_LOG_EVERY(chInput, 60000, "wheel: subclass still failing (attempts=%d err=%lu)", attempts, err);
 }
