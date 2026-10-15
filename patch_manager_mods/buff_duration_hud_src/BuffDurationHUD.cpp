@@ -22,12 +22,12 @@
 #include <math.h>
 
 #include "BuffHudLogic.h"          // bh:: pure logic: appendf (bounded log formatting, audit 20a F7), arrow counter bump, column geometry
-#include "../_shared/SafeRead.h"    // VirtualQuery-based probing: IsBadReadPtr = a real Wine page fault + SEH dispatch per bad pointer
-#include "../_shared/K2Addr.h"     // per-exe address table: every engine offset below is read from k2addr::get() (0 = unknown -> feature off)
-#include "../_shared/EffectIcons.h" // effect-list walk + decode (Effects.h) and the buff/debuff icon tables (doc 21 W2)
-#include "../_shared/Gui2D.h"       // 2D batch / clip / flush / image draw + CapGuard
-#include "../_shared/GuiKit.h"      // imageFor: one pooled engine image per resref
-#include "../_shared/PortraitSlots.h" // k2.portraitslots v1 consumer (slot -> creature, phase callbacks)
+#include "SafeRead.h"    // VirtualQuery-based probing: IsBadReadPtr = a real Wine page fault + SEH dispatch per bad pointer
+#include "K2Addr.h"     // per-exe address table: every engine offset below is read from k2addr::get() (0 = unknown -> feature off)
+#include "EffectIcons.h" // effect-list walk + decode (Effects.h) and the buff/debuff icon tables (doc 21 W2)
+#include "Gui2D.h"       // 2D batch / clip / flush / image draw + CapGuard
+#include "GuiKit.h"      // imageFor: one pooled engine image per resref
+#include "PortraitSlots.h" // k2.portraitslots v1 consumer (slot -> creature, phase callbacks)
 #include "KpLog.h"
 
 KP_LOG_PATCH("buff-duration-hud");
