@@ -354,25 +354,6 @@ void drawSlot(int x, int y, int w, int h, const qh::Style& st, void* img) {
     if (img) gui2d::drawImage(img, ir.x, ir.y, ir.w, ir.h, 0, white, st.iconA);
 }
 
-void drawChevron(int x, int y, int w, int h, const float* rgb, float alpha) {
-    if (w <= 0 || h <= 0) return;
-    void* img = guikit::imageFor("uibit_arrow_r");
-    if (!img) img = guikit::imageFor("gui_arrow_r");
-    if (img) {
-        gui2d::drawImage(img, x, y, w, h, 0, rgb, alpha);
-        return;
-    }
-    // Scanline rasterized right-pointing triangle fallback
-    for (int col = 0; col < w; ++col) {
-        int insetY = ((h / 2) * col) / (w > 1 ? (w - 1) : 1);
-        int startY = y + insetY;
-        int colH = h - 2 * insetY;
-        if (colH > 0) {
-            gui2d::fillRect(x + col, startY, 1, colH, rgb, alpha);
-        }
-    }
-}
-
 // ---- Cancel controls (0.3.0): 3 HUD labels (0 = leader, 1-2 = companions) built from LBL_QUEUE1 in hud-host's BUILD phase ----
 struct CW {
     uintptr_t c = 0;

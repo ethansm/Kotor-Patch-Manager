@@ -373,6 +373,14 @@ void testIniLine() {
     KT_CHECK(parseIniLine(c, "bg_rgb = 1, 0 ,0.5 ")); KT_CHECK(c.bg[0] == 1.0f && c.bg[1] == 0.0f && near(c.bg[2], 0.5f));
     KT_CHECK(parseIniLine(c, "bg_rgb=2,-1,0.5")); KT_CHECK(c.bg[0] == 1.0f && c.bg[1] == 0.0f && near(c.bg[2], 0.5f));   // clamped per component
     KT_CHECK(parseIniLine(c, "border_rgb=0.9,0.8,0.7")); KT_CHECK(near(c.border[0], 0.9f) && near(c.border[1], 0.8f) && near(c.border[2], 0.7f));
+    // waiting_dim_rgb sets waitingBg only (the slot bg keeps its value)
+    {
+        Config w; const float bg0 = w.bg[0], bg1 = w.bg[1], bg2 = w.bg[2];
+        KT_CHECK(parseIniLine(w, "waiting_dim_rgb = 0.25,0.5,0.75"));
+        KT_CHECK(w.waitingBg[0] == 0.25f && w.waitingBg[1] == 0.5f && w.waitingBg[2] == 0.75f);
+        KT_CHECK(w.bg[0] == bg0 && w.bg[1] == bg1 && w.bg[2] == bg2);
+        KT_CHECK(parseIniLine(w, "waiting_dim_rgb=2,-1,0.5")); KT_CHECK(w.waitingBg[0] == 1.0f && w.waitingBg[1] == 0.0f && w.waitingBg[2] == 0.5f);   // clamped per component
+    }
     // border_px
     for (int px = 1; px <= 6; ++px) { char l[32]; snprintf(l, sizeof l, "border_px=%d", px); KT_CHECK(parseIniLine(c, l)); KT_CHECK_EQ(c.borderPx, px); }
     // independence: setting one key never touches another
@@ -389,6 +397,7 @@ void testIniBad() {
         "border_alpha=x", "waiting_alpha=", "waiting_alpha=high",
         "bg_rgb=", "bg_rgb=1,2", "bg_rgb=1,2,3,4", "bg_rgb=1;2;3", "bg_rgb=a,b,c", "bg_rgb=1,,3", "bg_rgb=0.1,0.2,", "bg_rgb=,0.2,0.3", "bg_rgb=1 2 3",
         "border_rgb=1,2", "border_rgb=x",
+        "waiting_dim_rgb=", "waiting_dim_rgb=0.25,0.5", "waiting_dim_rgb=0.25,oops,0.75", "waiting_dim_rgb=1,2,3,4",
         "border_px=0", "border_px=7", "border_px=-1", "border_px=", "border_px=2.5", "border_px=abc", "border_px=99999999999", "border_px=2px", "border_px=06", "border_px=10", "border_px=1,2", "border_px=/;", "border_px=:", "border_px=/",
         "waiting_dim=2", "log=x", "trace_queue=x", "pause_reinject=x", "handoff_on_combat=", "show_in_combat=2",
         "handoff_clear_first=2", "handoff_clear_first=",
@@ -1068,17 +1077,21 @@ void testFollowerWipeProtection() {
     KT_CHECK(!shouldReInject(buf, /*itemInQueue=*/true, /*hasFollowLeader=*/false, false, 1100));
 
     // C. Natural item completion:
-    // Item finishes and leaves queue: itemInQueue=false, hasFollowLeader=false
-    // Within 500ms grace period: not yet marked inactive
-    const uint32_t nowEarly = 1400; // 340ms elapsed
+    // The engine showed it executing (1100), then it leaves the queue (first absent frame 1200): itemInQueue=false, hasFollowLeader=false
+    buf.noteView(true, 1100); buf.notePresent(true, true, 1100);
+    buf.noteView(false, 1200);
+    // Gone 200ms (past the debounce) but only 340ms after dispatch: the min-active rule keeps the verdict at present, so the buffer stays active
+    const uint32_t nowEarly = 1400;
     KT_CHECK(!shouldReInject(buf, false, false, false, nowEarly));
-    KT_CHECK(buf.active); // still active until 500ms elapsed
+    const EngineView evGone{};   // action absent from the engine queue
+    KT_CHECK_EQ((int)activeVerdict(buf, evGone, nowEarly), (int)AV_PRESENT);
+    KT_CHECK(buf.active);
 
-    // At 550ms after activeStartTick (1610): completion window met
+    // At 550ms after activeStartTick (1610): the engine verdict decides completion (executed), not a local flag
     const uint32_t nowDone = 1610;
-    if (nowDone - buf.activeStartTick > 500) {
-        buf.active = false;
-    }
+    const ActiveVerdict doneV = activeVerdict(buf, evGone, nowDone);
+    KT_CHECK_EQ((int)doneV, (int)AV_EXECUTED);
+    buf.active = (doneV == AV_PRESENT);
     KT_CHECK(!buf.active);
 
     // D. Now next buffered action (a2) is ready for dispatch
@@ -1315,6 +1328,9 @@ void testDecideBranches() {
     KT_CHECK_EQ((int)decideAction(two, true, 3), (int)DECIDE_DISPATCH_NOW);     // combat beats engine queue
     KT_CHECK_EQ((int)decideItemAction(three, false, 0), (int)DECIDE_DROP_FULL); // wrapper matches
     KT_CHECK_EQ((int)decideItemAction(idle, false, 0), (int)DECIDE_DISPATCH_NOW);
+    // haveCur: round node still running (QH4 in-flight wipe); buffer even with an empty engine queue
+    KT_CHECK_EQ((int)decideAction(idle, false, 0, true), (int)DECIDE_BUFFER);
+    KT_CHECK_EQ((int)decideItemAction(idle, false, 0, true), (int)DECIDE_BUFFER);   // wrapper parity
 }
 
 void testFifoMixedKinds() {
