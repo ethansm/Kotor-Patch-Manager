@@ -188,6 +188,31 @@ static void testPlacementDefaults() {
         }
 }
 
+// COMB old state (Holster.cpp HolsterCombat): an unreadable old state must never print old=0 edge=1.
+static void testCombFields() {
+    CombFields a = combFields(true, 0u, 1);            // readable 0 -> 1: a real combat-on edge
+    KT_CHECK(a.oldKnown && a.old == 0 && a.edge == 1);
+    CombFields b = combFields(true, 1u, 1);            // readable 1 -> 1: no edge
+    KT_CHECK(b.oldKnown && b.old == 1 && b.edge == 0);
+    CombFields c = combFields(true, 5u, 0);            // readable 5 -> 0: edge
+    KT_CHECK(c.oldKnown && c.edge == 1);
+    CombFields d = combFields(false, 0u, 1);           // unreadable (rdU32 gives 0 today) -> 1: must print old=? edge=?
+    KT_CHECK(!d.oldKnown);
+    CombFields e = combFields(false, 0u, 0);           // unreadable -> 0: also unknown
+    KT_CHECK(!e.oldKnown);
+    KT_CHECK(d.edge == 0 && e.edge == 0);              // an unknown old state never claims an edge
+    CombFields g = combFields(false, 0xFFFFFFFFu, 1);  // unreadable with the no-offset sentinel value: still unknown
+    KT_CHECK(!g.oldKnown);
+    CombFields h = combFields(false, 0xFFFFFFFFu, 0);  // same, new==0
+    KT_CHECK(!h.oldKnown);
+    CombFields i = combFields(true, 0u, 0);            // readable 0 -> 0: known, no edge
+    KT_CHECK(i.oldKnown && i.old == 0 && i.edge == 0);
+    CombFields j = combFields(true, 0xFFFFFFFFu, 1);   // a real readable -1 is known (prints old=-1), not mistaken for unreadable
+    KT_CHECK(j.oldKnown && j.old == -1 && j.edge == 0);
+    CombFields k = combFields(true, 5u, 7);               // nonzero -> nonzero: no edge
+    KT_CHECK(k.oldKnown && k.old == 5 && k.edge == 0);
+}
+
 int main() {
     testClassifyTable();
     testClassifyCaseAndBoundary();
@@ -201,5 +226,6 @@ int main() {
     testFsmStowDelayAndCancel();
     testFsmSwapAndRollover();
     testPlacementDefaults();
+    testCombFields();
     return kt::Report("holster_logic");
 }

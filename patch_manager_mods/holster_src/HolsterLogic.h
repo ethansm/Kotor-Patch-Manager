@@ -27,6 +27,21 @@ inline const char* categoryName(Category c) {
     }
 }
 
+// ---- COMB log fields (Holster.cpp HolsterCombat, client combat flag). Pure: the caller passes the read result. ----
+// oldKnown = the old-state read succeeded AND the offset is known. An unknown old prints old=? edge=?, never old=0 edge=1.
+struct CombFields {
+    bool oldKnown;
+    int old;   // valid when oldKnown
+    int edge;  // valid when oldKnown: 1 when the creature flips between 0 and non-0
+};
+inline CombFields combFields(bool readOk, uint32_t raw, int newState) {
+    CombFields f;
+    f.oldKnown = readOk;
+    f.old = readOk ? static_cast<int>(raw) : 0;
+    f.edge = (readOk && ((raw == 0) != (newState == 0))) ? 1 : 0;
+    return f;
+}
+
 // ---- ASCII helpers (no <cctype>/<string.h> so the header stays host/DLL neutral) ----
 inline char lower(char c) { return (c >= 'A' && c <= 'Z') ? static_cast<char>(c + 32) : c; }
 

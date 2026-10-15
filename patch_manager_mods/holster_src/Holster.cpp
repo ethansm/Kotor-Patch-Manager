@@ -130,6 +130,13 @@ static uint32_t rdU32(unsigned site, uintptr_t base, int off) {
     (void)saferead::readAt(site, base, off, &v);
     return v;
 }
+// Like rdU32, but reports whether the read succeeded (*out is 0 when it did not). Only the COMB old-state read uses it.
+static bool rdU32Ok(unsigned site, uintptr_t base, int off, uint32_t* out) {
+    uint32_t v = 0;
+    const bool ok = saferead::readAt(site, base, off, &v);
+    *out = v;
+    return ok;
+}
 static float rdF(unsigned site, uintptr_t base, int off) {
     float v = 0.f;
     (void)saferead::readAt(site, base, off, &v);
@@ -159,9 +166,13 @@ extern "C" void __cdecl HolsterCombat(void* creature, int newState) {
     if (!KP_ENABLED(chComb, KPLOG_INFO) || !takeLine()) return;
     const uintptr_t c = reinterpret_cast<uintptr_t>(creature);
     const int off = k2addr::off(&K2AddrTable::Creature_ClientCombat);
-    const uint32_t oldState = off ? rdU32(kSiteComb, c, off) : 0xFFFFFFFFu;
-    KP_LOG(chComb, "COMB creature=%x old=%d new=%d edge=%d tick=%lu", U(creature), static_cast<int>(oldState), newState,
-           (static_cast<int>(oldState) == 0) != (newState == 0) ? 1 : 0, static_cast<unsigned long>(GetTickCount()));
+    uint32_t raw = 0;
+    const bool readOk = off != 0 && rdU32Ok(kSiteComb, c, off, &raw);
+    const hs::CombFields f = hs::combFields(readOk, raw, newState);
+    char oldS[12] = "?", edgeS[4] = "?";
+    if (f.oldKnown) { snprintf(oldS, sizeof oldS, "%d", f.old); snprintf(edgeS, sizeof edgeS, "%d", f.edge); }
+    KP_LOG(chComb, "COMB creature=%x old=%s new=%d edge=%s tick=%lu", U(creature), oldS, newState, edgeS,
+           static_cast<unsigned long>(GetTickCount()));
 }
 
 // 0x007637E0 in-world weapon attach. [esp+4] = obj (u32), [esp+8] = tag (char*), [esp+0xC] = creature (int*).

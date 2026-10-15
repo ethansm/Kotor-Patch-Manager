@@ -38,3 +38,4 @@
 {"ev": "park", "reason": "checker PARTIAL: clean", "session": "2717ac6a-0196-4a04-b89c-d1a7b4574208", "ts": "2026-10-15T17:08:25Z", "wi": "WI-05"}
 {"ev": "unpark", "reason": "Steps no longer order a cat==2 deletion; checker PARTIALs came from that stale sentence", "session": "2717ac6a-0196-4a04-b89c-d1a7b4574208", "ts": "2026-10-15T18:47:11Z", "wi": "WI-05"}
 {"ev": "done", "session": "2717ac6a-0196-4a04-b89c-d1a7b4574208", "ts": "2026-10-15T18:54:36Z", "wi": "WI-05"}
+{"ev": "done", "reason": "manual: FX2 Haiku x3 + Sonnet consolidated + reviewed (APPROVE_MINOR, edge==0 nit applied); .claude/waves/fix2/WI-79/", "session": "25cf62dd-96fa-470a-9b87-b2087bec089a", "ts": "2026-10-15T19:04:28Z", "wi": "WI-79"}
