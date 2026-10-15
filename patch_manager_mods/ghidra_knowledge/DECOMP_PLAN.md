@@ -7,9 +7,9 @@ Handoff: `.claude/handoffs/DECOMP_PLAN.handoff.md`. Recon: `.claude/research/rea
 
 | # | Phase | Status | Record |
 |---|---|---|---|
-| D0 | Plan doc + hygiene + ledger lint (`rea_ledger.py`, query_ghidra superseded flag, rea_questions sha gate/manifest/RUNNING, DESIGN 4.9) | TODO | spec §D0 |
-| D1 | `rea_session.py` persistent REA MCP client + fake server + live probe (`.claude/research/rea_decomp/D1_probe.md`) | TODO | spec §D1 |
-| D2 | `static_facts.py` ($0 facts, twins) + `batch.py cards --facts` + REVIEWER_BRIEF/DESIGN 4.10 | TODO | spec §D2 |
+| D0 | Plan doc + hygiene + ledger lint (`rea_ledger.py`, query_ghidra superseded flag, rea_questions sha gate/manifest/RUNNING, DESIGN 4.9) | DONE | spec §D0 |
+| D1 | `rea_session.py` persistent REA MCP client + fake server + live probe (`.claude/research/rea_decomp/D1_probe.md`) | DONE | spec §D1 |
+| D2 | `static_facts.py` ($0 facts, twins) + `batch.py cards --facts` + REVIEWER_BRIEF/DESIGN 4.10 | DONE | spec §D2 |
 | D3 | `rea_facts.py` live-only facts (indirect targets, body ranges, data xrefs) + `rea_questions --residual`; G3 on 46 R1 addrs | TODO | spec §D3 |
 | D4 | `named_decomp.py` named decompile; G4 CSWCCreature | TODO (gated on D1) | spec §D4 |
 | D5 | `fn_doc.py` + `persist_purposes.py`; CSWCCreature page + KDB purposes | TODO | spec §D5 |
@@ -22,6 +22,7 @@ Handoff: `.claude/handoffs/DECOMP_PLAN.handoff.md`. Recon: `.claude/research/rea
 | phase | start (ISO) | agents | est. cost | note |
 |---|---|---|---|---|
 | D0 | 2026-10-15T18:44 | 3 Haiku, 2 Sonnet | $0.60 | T0.1 Haiku peaked 116k ctx; lint baseline 53 (L2 26, L6 3, L8 24); suites 89/314/13 OK |
+| D1+D2 | 2026-10-15T19:00 | 4 Haiku, 5 Sonnet | ~$1.6 | 2 live REA probes (~11 min, $0 tokens); suites 196 (ghidra tools) / 320 (steam tools) OK |
 
 ## Decisions (Opus)
 
@@ -31,7 +32,23 @@ Handoff: `.claude/handoffs/DECOMP_PLAN.handoff.md`. Recon: `.claude/research/rea
   decompile), `ghidra_knowledge/README.md` "Querying", `SUBAGENT_ROLES.md` (REA routing), and from D7 the rea-recon
   agent. D8 sweeps all of them plus skills that mention `query_ghidra.py`/`cg.py`/rea-recon
   (`.claude/skills/openkotor-ghidra-server`, `kotor2-log-analysis`, `kotor2-crash-triage`, `kotor2-address-db`).
+- **D1 gates (probe 10-15, `.claude/research/rea_decomp/D1_probe.md`):** cold first analysis call ~315 s per session,
+  then median 0.01 s per call -> D3/D4 GO. `ReaSession.open()` runs a warm call under `open_timeout_s`.
+  Results are envelopes: read `normalized_result`.
+- **D3 redesign:** `resolve_native_call_targets` returns `unresolved` for vtable calls -> step 1 uses the static slot
+  (`static_facts.indirect_slots`) + `class_methods` slot candidates ($0, `callsite` rows `probable`; `confirmed` only
+  with exactly one candidate whose class matches the caller's class). Step 2 body ranges via `analyze_function`
+  (`normalized_result.procedure.body.ranges`). Step 3 `xrefs {address: <fn>}` for DATA refs to the function
+  (vtable/table slots), written as `xref`/`table` rows.
+- **D4 naming:** `set_addresses_names`/`set_address_name` are rejected by the Ghidra provider; use per-address
+  `annotate_native_function {procedure, name}` (0.13 s each; visible in pseudo-C and batch_decompile). Post-pass 3b
+  only for addresses whose annotate call fails.
 - **T0.3 manifest:** `q_manifest.tsv` holds `topic n_addr sha_of_list` only; no kind counts (blindness).
+- **D1 read-only (from rea-agents 6.3.0 source):** `open_binary` is a strict schema `{path, format?, provider_id?, snapshot_path?}`;
+  there is no `read_only` input. REA always imports with `-readOnly -deleteProject` (ephemeral project), so in-session
+  names/annotations never touch disk. `ReaSession(read_only=True)` is therefore a CLIENT guard: it refuses `set_*`,
+  `annotate_*` and other write tools. `set_addresses_names` input is `{names: {"0x..": name}}`, output per-address bool.
+  MCP response budget floor is 10 MiB (`REA_MCP_MAX_RESPONSE_BYTES`).
 - **T0.3 DESIGN:** live exe label stays md5 `62411a3a` (verified with md5sum 10-15; Haiku had relabelled it sha256).
 
 ## Spec (approved plan, verbatim)
