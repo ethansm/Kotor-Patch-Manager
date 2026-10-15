@@ -11,8 +11,11 @@ REMAINING (each: copy worktree review.md into .claude/waves/fix3/<u>/, `git appl
 - WI-91a: review = REQUEST_CHANGES (.claude/waves/fix3/WI-91a/review.md): probe_build fails with empty HOME + valid K1PORT_VENV; the overlay test's
   local_dir workaround hides the real k1_port_ingest.py:164 ValueError (new item 1); run_tests.py still reports a test-internal SKIP as PASS (runner decision).
   Next: ONE revision by a fresh Sonnet consolidator (brief consolidate.md + this review + verdict.md; consolidator worktree from the old session is gone),
-  then fresh re-review; a second REQUEST_CHANGES parks WI-91a. Owner decision first: fix the ValueError in k1_port_ingest.py (scope widen) or keep the
-  overlay test xfail-marked until item 1 lands. Then `wi_driver.py close WI-91 --manual --paths <3 test files>` (91b/91c landed).
+  then fresh re-review; a second REQUEST_CHANGES parks WI-91a. Owner decided 2026-10-15: FIX the crash first as WI-103 (ready, in the FX3 plan, group I:
+  WI-90 -> WI-103 -> WI-91a); WI-91a's revision then drops its local_dir workaround. Then `wi_driver.py close WI-91 --manual --paths <3 test files>`.
+- WI-103 (new, item 1 below): small bug, Steps in .claude/work_items/WI-103.md (return False when the pick is outside local_dir; red-before test). Same recipe:
+  2-3 Haiku variants (append a WI-103 row to tools/fix3_items.tsv and add its units by hand with wave_tools.py add fix3 --id u55.., since fix3_briefs.py
+  re-creates the wave) -> Sonnet consolidator -> independent reviewer -> `wi_driver.py close WI-103 --manual`.
 - FU-texinit: revision 1 done (adds one-shot `TEXLATE slot= resref= img=` line + checker clear logic + __main__ runner in test_selfheal_log_check.py);
   needs a FRESH re-review (review.brief.md + prior review.md + verdict.md "Revision 1"). Apply touches CompanionSelfHeal.cpp, SelfHealUi.h, selfheal_ui_test.cpp,
   scripts/selfheal_log_check.py, scripts/test_selfheal_log_check.py; then --sync, build companion_selfheal_src + queue_hud_src; `git commit -- <paths>` (no WI).

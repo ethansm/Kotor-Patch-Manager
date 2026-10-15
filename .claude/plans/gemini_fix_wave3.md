@@ -35,6 +35,7 @@ Deferred (not in FX3):
 | WI-102 | SH-3a-08 (new WI) | _shared_src/WindowHook.h:31-41 install/active never notice a dead hwnd; gui_input_src/GuiInputProvider.cpp:116-117 ensureSubclass returns on active(); action_hotbar_src/ActionHotbar.cpp:1215 same | WindowHook.h, windowhook_test.cpp, GuiInputProvider.cpp, ActionHotbar.cpp | cpp:windowhook_test, cpp:patch_manager_mods/gui_input_src/common_contract_test.cpp | W |
 | FU-holster | FX2 review | scripts/holster_log_check.py:46 COMB FULL_RE needs `old=<I> edge=<I>`; :102-103 a miss goes to skipped | scripts/holster_log_check.py, scripts/test_holster_log_check.py | py:scripts/test_holster_log_check.py | - |
 | FU-texset | FX2 review | scripts/selfheal_log_check.py:56 TEXSET_RE has no `tog=` (C++ emits it at CompanionSelfHeal.cpp:517); every fixture predates it | scripts/selfheal_log_check.py, scripts/test_selfheal_log_check.py, new scripts/testdata/selfheal/<tog fixture>.txt | py:scripts/test_selfheal_log_check.py | - |
+| WI-103 | FX3 WI-91a review (added 2026-10-15, user: fix it in FX3) | k1_port/k1_port_ingest.py:162-164 `_variant_folder` Path.relative_to raises ValueError when chosen_from_variant (:166-172) passes an overlay pick outside its source local_dir | k1_port_ingest.py, test_k1_port_ingest.py | py:k1_port/test_k1_port_ingest.py | I (after WI-90, before WI-91a revision) |
 | FU-texinit | FX2 review | companion_selfheal_src/CompanionSelfHeal.cpp:507 `if (g_texInit) return;` stops null cross/disc re-query (:510-513) | CompanionSelfHeal.cpp, SelfHealUi.h (B helper), selfheal_ui_test.cpp | cpp:selfheal_ui_test, cpp:queue_hud_logic_test (SelfHealUi.h consumer) | S |
 
 **Kind: gap.** These get 2 Haiku variants: T1 test, and T2 test + named mutation to kill. The proof is the mutation kill, because these are green on HEAD by design.
@@ -59,7 +60,7 @@ Leave the run logs at :838/:874 as they are. Verify with `rg -n 0x0072CB63`, the
 
 **Conflict groups, applied in this order:**
 - K: WI-73 -> WI-92
-- I: WI-90 -> WI-91a
+- I: WI-90 -> WI-103 -> WI-91a (WI-91a's revision drops its local_dir workaround once WI-103 lands)
 - H: WI-89a -> WI-100c
 - G: WI-87 -> WI-100a
 - S: FU-texinit, and its consumer check for queue_hud
