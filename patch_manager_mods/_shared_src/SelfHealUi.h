@@ -298,6 +298,28 @@ inline const CompCfg& lookup(const CfgTable& t, const std::string& tag) {
     return t.def;
 }
 
+// WI-75 (BG28): the leader (member 0) keys its settings by creature tag, like companions.
+// "slot0" is only the fallback when no tag could be read.
+inline std::string leaderKey(const std::string& tag) {
+    return tag.empty() ? std::string("slot0") : tag;
+}
+
+// WI-75: first-load migration of the pre-fix leader row. When the tagged leader has no row yet and a
+// legacy "slot0" row exists, copy slot0 to the tag key. Returns true when a row was added (the caller
+// then persists the table); false for an empty/"slot0" tag, an existing tag row, or no slot0 row.
+inline bool migrateLeaderRow(CfgTable& t, const std::string& tag) {
+    if (tag.empty() || tag == "slot0") return false;
+    bool hasTag = false, hasLegacy = false;
+    for (const auto& r : t.rows) {
+        if (r.first == tag) hasTag = true;
+        if (r.first == "slot0") hasLegacy = true;
+    }
+    if (hasTag || !hasLegacy) return false;
+    const CompCfg legacy = lookup(t, "slot0");   // copy first: upsert may reallocate t.rows
+    upsert(t, tag, legacy);
+    return true;
+}
+
 inline CfgTable parseFile(const std::string& text) {
     CfgTable t;
     std::string sec;

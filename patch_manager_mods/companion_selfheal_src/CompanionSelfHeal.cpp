@@ -704,7 +704,7 @@ shui::PopLayout popLayoutFor(const Card& pc, int screenW, int screenH) {
 }
 
 std::string keyFor(int mi) {
-    if (mi == 0) return "slot0";
+    if (mi == 0) return shui::leaderKey(g_card0.tag);   // WI-75: leader keyed by its tag; slot0 only when untagged
     if (!g_card[mi].tag.empty()) return g_card[mi].tag;
     if (!g_warnTag[mi]) {
         uintptr_t sv = g_card[mi].m.server; char hex[64] = {}; int hn = 0;   // CS8 investigation: raw bytes of the CExoString field {char*, len, ...} at server+0x18
@@ -884,7 +884,12 @@ void refreshCache(const K2PsContext* ctx, DWORD now) {
         c0.m = v[0];
         char tag[64]; readCreatureTag(c0.m.server, tag, sizeof tag);
         c0.tag = tag;
+        const bool migrated = shui::migrateLeaderRow(g_cfg, c0.tag);   // WI-75: first load of a tagged leader copies the legacy slot0 row
         c0.cfg = shui::lookup(g_cfg, keyFor(0));
+        if (migrated) {
+            KP_LOG(chCfg, "KEY migrate member=0 slot0 -> tag=%s", c0.tag.c_str());
+            saveIni(c0.tag, c0.cfg);   // persist now: a later INI reload would otherwise drop the in-memory row
+        }
         c0.pk = analyzeMember(c0.m, items, false, 1);
         c0.apk = c0.cfg.autoOn ? analyzeMember(c0.m, items, false, c0.cfg.keep + 1) : Pick();
         // Auto-heal for leader (member 0)

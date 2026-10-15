@@ -369,5 +369,35 @@ int main() {
         KT_CHECK(std::string(useRefusalText(useAllowed(true))) == "already queued");
         KT_CHECK(std::string(useRefusalText(UseRefusal::None)).empty());
     }
+    {
+        // WI-75 (BG28): leader settings follow the leader's tag; slot0 is only the untagged fallback.
+        KT_CHECK(shui::leaderKey("Carth") == "Carth");
+        KT_CHECK(shui::leaderKey("player") == "player");
+        KT_CHECK(shui::leaderKey("") == "slot0");                          // empty tag -> fallback
+
+        shui::CfgTable t;
+        shui::CompCfg s0; s0.hpPct = 30;                                   // pre-fix leader row (slot0)
+        shui::upsert(t, "slot0", s0);
+        KT_CHECK(shui::migrateLeaderRow(t, "player"));                     // frame 1: copy slot0 once
+        KT_CHECK(shui::lookup(t, shui::leaderKey("player")).hpPct == 30);
+        KT_CHECK(!shui::migrateLeaderRow(t, "player"));                    // repeat frame: no second copy
+        shui::CompCfg pA; pA.hpPct = 70;
+        shui::upsert(t, "player", pA);                                     // player edits own row
+        KT_CHECK(!shui::migrateLeaderRow(t, "player"));                    // an existing tag row is never overwritten
+        KT_CHECK(shui::lookup(t, "player").hpPct == 70);
+        KT_CHECK(shui::migrateLeaderRow(t, "Carth"));                      // leader swap to Carth
+        KT_CHECK(shui::lookup(t, shui::leaderKey("Carth")).hpPct == 30);   // not player's 70
+        shui::CompCfg cC; cC.hpPct = 50;
+        shui::upsert(t, "Carth", cC);                                      // Carth edits own row
+        KT_CHECK(shui::lookup(t, shui::leaderKey("player")).hpPct == 70);  // swap back: player's row
+        KT_CHECK(shui::lookup(t, shui::leaderKey("Carth")).hpPct == 50);
+        KT_CHECK(!shui::migrateLeaderRow(t, ""));                          // empty tag: no migration
+        KT_CHECK(!shui::migrateLeaderRow(t, "slot0"));
+        KT_CHECK(shui::lookup(t, shui::leaderKey("")).hpPct == 30);        // slot0 fallback row kept
+        KT_CHECK(t.rows.size() == 3);                                      // slot0, player, Carth: no duplicates
+        shui::CfgTable e;                                                  // no slot0 row: nothing to copy
+        KT_CHECK(!shui::migrateLeaderRow(e, "Carth"));
+        KT_CHECK(e.rows.empty());
+    }
     return kt::Report("selfheal_ui_test");
 }
