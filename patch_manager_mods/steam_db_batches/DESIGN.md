@@ -316,6 +316,14 @@ NWScript command handlers (`ExecuteCommand*`) are proven by engine data, not by 
   change the AUTO rule. It needs an Opus calibration review first (section 4.2), before B10b (dispatch switch
   tables). B15 has no TBL family: the gate ranked `near` over `cmdtable` in 7 rows, and Opus corrected all 7.
 
+### 4.9 REA live evidence (report-only)
+- **Flow.** `cards B<n>` -> `tools/rea_questions.py B<n> [--per-run 8] [--keys F]` -> `B<n>/rea/q_<k>.md` (<= 8 Steam addresses each) -> one `rea-recon` Haiku per file (<= 12 parallel) -> ledger `patch_manager_mods/ghidra_knowledge/rea_findings/<date>_B<n>-q<k>.tsv` -> `cards B<n> --rea [--out DIR]` prints `### Live evidence (REA, report-only)` per card, from ledger rows at the card's effective Steam address (topic prefix `B<n>-q` only) -> reviewers -> finalize -> Opus gate (rules unchanged).
+- **Blindness.** Question files mix real and decoy card addresses, sorted and shuffled with seed `B<n>`. No GOG address, name, kind or card id. Agents write behavioural summaries, never names copied from `steam_functions.tsv` or other ledgers. Every card (real and decoy) gets the section by the same code path.
+- **Exe.** REA opens only `~/Games/KOTOR2_Mod_Workspace/backups/vanilla_clean/swkotor2.exe` (Steam md5 `6a522e71`), never the game folder (live exe = vanilla + 4 GB patch, md5 `62411a3a`).
+- **Output.** The ledger is the only output. Agents never write either DB. `rea-row-verify` stays off DB rows.
+- **Trust.** REA rows are report-only evidence. They change no gate, AUTO rule, ranking or trust route (section 1 trust tiers; 4.2 gate classes). A row counts as a content anchor only when it quotes an asm line. Promotion (e.g. REA callers as A-CALLEE) only via an Opus calibration (MASTER_PLAN R4).
+- **Cost/time.** Cold first procedure call ~356 s. Target <= 8 addresses and < 100k tokens per run. Pilot result in `B13a/rea_pilot/PILOT.md` (R1).
+
 ## 5. Process rules
 - **The PR changes only the Steam DB** (user, 2026-10-03). `kotor2_gog_aspyr.db` in the KPM repo is read-only input:
   never edited, never committed. GOG label suspects / wrong GOG param sizes are recorded (gate report, PR description),

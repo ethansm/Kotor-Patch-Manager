@@ -1,0 +1,35 @@
+addr	kind	name	confidence	evidence	topic	date
+0x00774200	function	reads this+0x224 word; calls 0x0071b3f0 with out-ptr; returns out-param float, or const 0x009919f0 if callee returns 0	confirmed	procedure_assembly 0x774244: CALL 0x0071b3f0; 0x77425c: RET (size 93, no operand; body 0x774200-0x77425c)	B13a-q3	2026-10-15
+0x007759b0	function	returns 0x2711 if this+0x138 nonzero; else calls 0x0051c6f0, 0x0072fb00, 0x0073fb90, 0x007e5da0 and returns 0x2710 or 0x276c	confirmed	procedure_assembly 0x7759cb: MOV EAX, 0x2711; 0x775a72: RET (body 0x7759b0-0x775a72 in 3 ranges, 188 B, span 195, no operand)	B13a-q3	2026-10-15
+0x007679f0	function	if this+0x178 nonzero: indirect vtable calls (slot +0x4c, then slot +0x0); then zeroes this+0x178, +0x17c, +0x180; no resolved direct callees	confirmed	procedure_assembly 0x767a1e: CALL EAX; 0x767a7c: RET (size 141, no operand; body 0x7679f0-0x767a7c)	B13a-q3	2026-10-15
+0x00774260	function	switch on result of 0x0071b8b0 (default 3) pushes literal Fx_Shadow_S/M/L into 0x007338d0; direct callees 0x005160c0, 0x0071b8b0, 0x00733540, 0x00733780, 0x007338d0; SEH frame; indirect calls	confirmed	procedure_assembly 0x774328: PUSH 0x99f1a4; 0x774429: RET (size 458, 15 blocks, no operand; body 0x774260-0x774429; callers none)	B13a-q3	2026-10-15
+0x00764f80	function	if this+0x68 nonzero: indirect vtable call (slot +0xac) on the this+0x68 object; no resolved direct callees; no resolved callers	confirmed	procedure_assembly 0x764fa6: CALL EAX; 0x764fab: RET (size 44, no operand; body 0x764f80-0x764fab)	B13a-q3	2026-10-15
+0x007678f0	function	calls 0x0073f4b0 then 0x0053dfb0; on match calls 0x004452b0, 0x0044b8a0, 0x005143c0 (twice) and copies 12 bytes to this+0x1d8; on mismatch indirect vtable call slot +0x88	confirmed	procedure_assembly 0x767907: CALL 0x0073f4b0; 0x7679e7: RET (size 248, no operand; body 0x7678f0-0x7679e7)	B13a-q3	2026-10-15
+0x0077c6a0	function	calls 0x0077d800 and 0x0058a2c0; loops over count at +0x10 calling 0x00606100 and 0x0077c1b0 per item; returns with RET 0x8	confirmed	procedure_assembly 0x77c6b5: CALL 0x0058a2c0; 0x77c708: RET 0x8 (size 107; body 0x77c6a0-0x77c70a)	B13a-q3	2026-10-15
+0x007736d0	function	loops 0..19 calling 0x0076e610 and passing result to 0x0076ef70; if this+0x68 nonzero: calls 0x00733570 with empty string 0x986925 and vtable slot +0x7c twice; 0x00733780 cleanup	confirmed	procedure_assembly 0x773717: CALL 0x0076e610; 0x7737d8: RET (size 265, no operand; body 0x7736d0-0x7737d8)	B13a-q3	2026-10-15
+0x00773bf0	callsite	calls 0x00774200	probable	procedure_callers 0x774200 -> 0x773bf0; 0x774200: PUSH EBP (callee entry; caller-side asm not read)	B13a-q3	2026-10-15
+0x0056d6a0	callsite	calls 0x007759b0	probable	procedure_callers 0x7759b0 -> 0x56d6a0; 0x7759b0: PUSH EBP (callee entry; caller-side asm not read)	B13a-q3	2026-10-15
+0x00776fe0	callsite	calls 0x007759b0	probable	procedure_callers 0x7759b0 -> 0x776fe0; 0x7759b0: PUSH EBP (callee entry; caller-side asm not read)	B13a-q3	2026-10-15
+0x007779b0	callsite	calls 0x007759b0	probable	procedure_callers 0x7759b0 -> 0x7779b0; 0x7759b0: PUSH EBP (callee entry; caller-side asm not read)	B13a-q3	2026-10-15
+0x007ed9a0	callsite	calls 0x007759b0	probable	procedure_callers 0x7759b0 -> 0x7ed9a0; 0x7759b0: PUSH EBP (callee entry; caller-side asm not read)	B13a-q3	2026-10-15
+0x0085a9e0	callsite	calls 0x007679f0	probable	procedure_callers 0x7679f0 -> 0x85a9e0; 0x7679f0: PUSH EBP (callee entry; caller-side asm not read)	B13a-q3	2026-10-15
+0x0085b940	callsite	calls 0x007679f0	probable	procedure_callers 0x7679f0 -> 0x85b940; 0x7679f0: PUSH EBP (callee entry; caller-side asm not read)	B13a-q3	2026-10-15
+0x007675b0	callsite	calls 0x007678f0	probable	procedure_callers 0x7678f0 -> 0x7675b0; 0x7678f0: PUSH EBP (callee entry; caller-side asm not read)	B13a-q3	2026-10-15
+0x0077e370	callsite	calls 0x0077c6a0	probable	procedure_callers 0x77c6a0 -> 0x77e370; 0x77c6a0: PUSH EBP (callee entry; caller-side asm not read)	B13a-q3	2026-10-15
+0x0082b0c0	callsite	calls 0x007736d0	probable	procedure_callers 0x7736d0 -> 0x82b0c0; 0x7736d0: PUSH EBP (callee entry; caller-side asm not read)	B13a-q3	2026-10-15
+0x0099f1a4	string	Fx_Shadow_S	confirmed	read_bytes 0x99f1a4 = "Fx_Shadow_S" (NUL-terminated); 0x774328: PUSH 0x99f1a4	B13a-q3	2026-10-15
+0x0099f198	string	Fx_Shadow_M	confirmed	read_bytes 0x99f198 = "Fx_Shadow_M" (NUL-terminated); 0x774337: PUSH 0x99f198 (default path 0x774355 same)	B13a-q3	2026-10-15
+0x0099f18c	string	Fx_Shadow_L	confirmed	read_bytes 0x99f18c = "Fx_Shadow_L" (NUL-terminated); 0x774346: PUSH 0x99f18c	B13a-q3	2026-10-15
+0x00986925	string	empty string (first byte 0x00)	confirmed	read_bytes 0x986925 first byte 00; 0x773734: PUSH 0x986925	B13a-q3	2026-10-15
+0x0099ef10	vtable	code-pointer table slot holding 0x00774260 (table base unknown; shape only)	probable	read_bytes 0x99ef10 = 60 42 77 00 (LE 0x00774260); 0x774260: PUSH EBP (target entry)	B13a-q3	2026-10-15
+0x0099ef18	vtable	code-pointer table slot holding 0x00764f80 (same table, +8 bytes; shape only)	probable	read_bytes 0x99ef18 = 80 4f 76 00 (LE 0x00764f80); 0x764f80: PUSH EBP (target entry)	B13a-q3	2026-10-15
+0x009a2330	global	data word holding 0x00764f80 (unclassified)	probable	xrefs 0x764f80 -> 0x009a2330; 0x764f80: PUSH EBP (target entry)	B13a-q3	2026-10-15
+0x009a2700	global	data word holding 0x00764f80 (unclassified)	probable	xrefs 0x764f80 -> 0x009a2700; 0x764f80: PUSH EBP (target entry)	B13a-q3	2026-10-15
+0x009a28e8	global	data word holding 0x00764f80 (unclassified)	probable	xrefs 0x764f80 -> 0x009a28e8; 0x764f80: PUSH EBP (target entry)	B13a-q3	2026-10-15
+0x009a38b8	global	data word holding 0x00764f80 (unclassified)	probable	xrefs 0x764f80 -> 0x009a38b8; 0x764f80: PUSH EBP (target entry)	B13a-q3	2026-10-15
+0x009a4df0	global	data word holding 0x00764f80 (unclassified)	probable	xrefs 0x764f80 -> 0x009a4df0; 0x764f80: PUSH EBP (target entry)	B13a-q3	2026-10-15
+0x009a5600	global	data word holding 0x00764f80 (unclassified)	probable	xrefs 0x764f80 -> 0x009a5600; 0x764f80: PUSH EBP (target entry)	B13a-q3	2026-10-15
+0x009a5760	global	data word holding 0x00764f80 (unclassified)	probable	xrefs 0x764f80 -> 0x009a5760; 0x764f80: PUSH EBP (target entry)	B13a-q3	2026-10-15
+0x009a6768	global	data word holding 0x00764f80 (unclassified)	probable	xrefs 0x764f80 -> 0x009a6768; 0x764f80: PUSH EBP (target entry)	B13a-q3	2026-10-15
+0x009a9180	global	data word holding 0x00764f80 (unclassified)	probable	xrefs 0x764f80 -> 0x009a9180; 0x764f80: PUSH EBP (target entry)	B13a-q3	2026-10-15
+0x009a9320	global	data word holding 0x00764f80 (unclassified)	probable	xrefs 0x764f80 -> 0x009a9320; 0x764f80: PUSH EBP (target entry)	B13a-q3	2026-10-15

@@ -1,0 +1,9 @@
+addr	kind	name	confidence	evidence	topic	date
+0x007680a0	xref	callers 9: 0x66b8a0,0x7664b0,0x7682b0,0x76d890,0x770310; callees: 0x7ed830,0x76e610,0x73f530	confirmed	procedure_callers/procedure_callees 0x007680a0; 516 B RET 0x8	B13a-q1	2026-10-15
+0x0076efe0	xref	callers 1: 0x7711f0; callees: 0x76e610	confirmed	procedure_callers/procedure_callees 0x0076efe0; 120 B RET 0x4	B13a-q1	2026-10-15
+0x00776db0	xref	callers 3: 0x7b3050,0x865250,0x8652c0; callees: none	confirmed	procedure_callers/procedure_callees 0x00776db0; 84 B RET 0x4	B13a-q1	2026-10-15
+0x00774440	xref	callers 0: none; callees: 0x7f1ec0	confirmed	procedure_callers/procedure_callees 0x00774440; 19 B plain RET	B13a-q1	2026-10-15
+0x007682b0	xref	callers 3: 0x57a560,0x807730,0x8079b0; callees: 0x7680a0,0x76e610,0x773ba0,0x77d800,0x73f4d0,0x7fe6c0	confirmed	procedure_callers/procedure_callees 0x007682b0; 397 B RET 0x4	B13a-q1	2026-10-15
+0x00776e40	xref	callers 5: 0x7664b0,0x775aa0,0x776fe0,0x7ac470,0x865830; callees: 0x51c8b0,0x51cbe0,0x7ef780	confirmed	procedure_callers/procedure_callees 0x00776e40; 126 B plain RET	B13a-q1	2026-10-15
+0x007754d0	xref	callers 2: 0x7754a0,0x7a2fb0; callees: none	confirmed	procedure_callers/procedure_callees 0x007754d0; 66 B plain RET	B13a-q1	2026-10-15
+0x00775760	xref	callers 1: 0x813200; callees: 0x919723,0x64dd10	confirmed	procedure_callers/procedure_callees 0x00775760; 128 B plain RET	B13a-q1	2026-10-15

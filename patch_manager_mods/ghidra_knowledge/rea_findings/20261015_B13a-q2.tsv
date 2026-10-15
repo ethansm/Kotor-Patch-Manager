@@ -1,0 +1,28 @@
+addr	kind	name	confidence	evidence	topic	date
+0x00768060	function	calls 0x7ed980; if AX==0x2711 calls vtbl+0x9c with (0,0,0x2711); returns 1; RET no operand	confirmed	procedure_info length=59; procedure_assembly 0x768072: CMP EAX, 0x2711; procedure_callers=[0x76e130]; xrefs CALL 0x76e4ae only	B13a-q2	2026-10-15
+0x00776e10	function	stores two stack floats to this+0x3c8 and this+0x3cc; RET 0x8; no callees	confirmed	procedure_info length=37; procedure_assembly 0x776e29: FSTP float ptr [ECX + 0x3c8]; procedure_callers=[0x865830]; xrefs CALL 0x867a33 only	B13a-q2	2026-10-15
+0x0076eda0	function	switch on arg; returns dword at this+0x280..+0x2b8 for matched values, else 0; RET 0x4; no callees	confirmed	procedure_info length=365; procedure_assembly 0x76ee5a: MOV EAX, dword ptr [ECX + 0x280]; procedure_callers=[0x7637e0,0x76e130]; 5 CALL sites	B13a-q2	2026-10-15
+0x0077c780	function	branches on global byte 0x00a7ead4; calls 10 internal functions (see callsite rows); writes this+0x15230/0x15234/0x15238; RET 0x8	confirmed	procedure_info length=1271; procedure_assembly 0x77c78f: MOVZX EAX, byte ptr [0x00a7ead4]; procedure_callers=[0x752050]; DATA refs 0x77bff3,0x77c021 (in FUN_0077bcf0)	B13a-q2	2026-10-15
+0x0077fce0	function	calls 0x77d800; returns float at this+0x11dc if result nonzero, else float const 0x994f50; RET no operand	confirmed	procedure_info length=59; procedure_assembly 0x77fd03: FLD float ptr [EAX + 0x11dc]; procedure_callers=[0x873360]	B13a-q2	2026-10-15
+0x00769620	function	stores float at this+0x4c; returns early for 8 listed values; else calls 0x7ed7d0, 0x7ef5d0 and vtbl+0xa0 or vtbl+0x9c; RET 0x8	confirmed	procedure_info length=179; procedure_assembly 0x76962d: FSTP float ptr [EAX + 0x4c]; procedure_callers=none; xrefs DATA 0x99ef48	B13a-q2	2026-10-15
+0x00775930	function	loads this+0x224 into ECX and calls 0x85d260; RET no operand	confirmed	procedure_info length=25; procedure_assembly 0x77593a: MOV ECX, dword ptr [EAX + 0x224]; procedure_callers=none; xrefs DATA 0x99eee4	B13a-q2	2026-10-15
+0x00775970	function	loads this+0x224 into ECX and calls 0x85d320; RET no operand	confirmed	procedure_info length=25; procedure_assembly 0x77597a: MOV ECX, dword ptr [EAX + 0x224]; procedure_callers=none; xrefs DATA 0x99eeec	B13a-q2	2026-10-15
+0x0076806a	callsite	0x768060 calls 0x7ed980 (internal, not import)	confirmed	procedure_assembly 0x76806a: CALL 0x007ed980	B13a-q2	2026-10-15
+0x00768090	callsite	0x768060 indirect call through vtbl+0x9c	confirmed	procedure_assembly 0x768090: CALL EAX	B13a-q2	2026-10-15
+0x0076967d	callsite	0x769620 calls 0x7ed7d0 (internal, not import)	confirmed	procedure_assembly 0x76967d: CALL 0x007ed7d0	B13a-q2	2026-10-15
+0x00769692	callsite	0x769620 calls 0x7ef5d0 (internal, not import)	confirmed	procedure_assembly 0x769692: CALL 0x007ef5d0	B13a-q2	2026-10-15
+0x007696b0	callsite	0x769620 indirect call through vtbl+0xa0	confirmed	procedure_assembly 0x7696b0: CALL EAX	B13a-q2	2026-10-15
+0x007696cb	callsite	0x769620 indirect call through vtbl+0x9c	confirmed	procedure_assembly 0x7696cb: CALL EDX	B13a-q2	2026-10-15
+0x00775940	callsite	0x775930 calls 0x85d260 (internal, not import)	confirmed	procedure_assembly 0x775940: CALL 0x0085d260	B13a-q2	2026-10-15
+0x00775980	callsite	0x775970 calls 0x85d320 (internal, not import)	confirmed	procedure_assembly 0x775980: CALL 0x0085d320	B13a-q2	2026-10-15
+0x0077fcec	callsite	0x77fce0 calls 0x77d800 (internal, not import)	confirmed	procedure_assembly 0x77fcec: CALL 0x0077d800	B13a-q2	2026-10-15
+0x0077c7bd	callsite	0x77c780 calls 0x51c8b0 (internal, not import)	confirmed	procedure_assembly 0x77c7bd: CALL 0x0051c8b0	B13a-q2	2026-10-15
+0x0077c7d8	callsite	0x77c780 calls 0x51c0e0 (internal, not import)	confirmed	procedure_assembly 0x77c7d8: CALL 0x0051c0e0	B13a-q2	2026-10-15
+0x0077c7ee	callsite	0x77c780 calls 0x6d6e30 (internal, not import)	confirmed	procedure_assembly 0x77c7ee: CALL 0x006d6e30	B13a-q2	2026-10-15
+0x0077c7f9	callsite	0x77c780 calls 0x77d800 (internal, not import)	confirmed	procedure_assembly 0x77c7f9: CALL 0x0077d800	B13a-q2	2026-10-15
+0x0077c818	callsite	0x77c780 calls 0x5d2f80 (internal, not import)	confirmed	procedure_assembly 0x77c818: CALL 0x005d2f80	B13a-q2	2026-10-15
+0x0077c834	callsite	0x77c780 calls 0x77cc80 (internal, not import)	confirmed	procedure_assembly 0x77c834: CALL 0x0077cc80	B13a-q2	2026-10-15
+0x0077c84d	callsite	0x77c780 calls 0x73f750 (internal, not import)	confirmed	procedure_assembly 0x77c84d: CALL 0x0073f750	B13a-q2	2026-10-15
+0x0077c8a1	callsite	0x77c780 calls 0x73fb90 (internal, not import)	confirmed	procedure_assembly 0x77c8a1: CALL 0x0073fb90	B13a-q2	2026-10-15
+0x0077c919	callsite	0x77c780 calls 0x7e5da0 (internal, not import)	confirmed	procedure_assembly 0x77c919: CALL 0x007e5da0	B13a-q2	2026-10-15
+0x0077c9a2	callsite	0x77c780 calls 0x775600 (internal, not import)	confirmed	procedure_assembly 0x77c9a2: CALL 0x00775600	B13a-q2	2026-10-15

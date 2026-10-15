@@ -1,0 +1,26 @@
+gog_addr	steam_addr	verdict	corrected_addr	content_anchor	confidence	reason
+0x0041f6b0	0x007737e0	unsure			2	Vtbl+0x70 float fetch via 0x71B3F0; decoy 0x773860 identical except global table, cannot separate.
+0x00421650	0x00775760	match		0x007757CB: MOV dword ptr [ECX + 0x3B8],EDX; 0x00775788: PUSH 0xc; 0x0077578A: CALL 0x00919723	4	Allocates 0xc object, stores at +0x3B8; GOG disp 0x3b8 and imm 0xc match; decoy 0x7757E0 is Delete.
+0x00414080	0x00768440	mismatch	0x007682B0	0x007682CB: MOV dword ptr [EDX + 0x138],EAX (corrected 0x007682B0; disp set = GOG 6/6)	4	Candidate is MoveCreatureToPosition body (+0x1f0, 0 shared disp); 0x7682b0 matches SetCombatState disp 6/6.
+0x0041ae50	0x0076efe0	label_suspect		0x0076F00D: CALL 0x0076E610 (slot accessor); 0x0076F04D: MOV EAX,0x7F000000	4	Switch maps arg to equipped-item slot lookup; GOG imm set 9/9 matches; name BarkBubble contradicted.
+0x004248c0	0x00778900	unsure			2	Leaf 4-arg equality helper; no callees or member offsets, nothing to anchor GOG side.
+0x00428690	0x0077c6a0	unsure			2	Trusted callees 0x58A2C0/0x606100 shared with decoy 0x77c710; _2 callee unresolved; candidate already held by GetHostileItems.
+0x00413620	0x007678f0	label_suspect		0x00767907: CALL 0x0073F4B0 (GetGameObjectArray, trusted); 0x00767930: CALL 0x0053DFB0 (GetGameObject, trusted)	4	Trusted callees and disp 4/4 match; body moves a vector into +0x1D8, no equipment logic.
+0x0041f5a0	0x007736d0	label_suspect		0x0077373C: CALL 0x00733570 (CExoString ctor, trusted); 0x0077376E: CALL EAX via [EDX+0x7C]	3	Loops 20 equipment-instant lookups and sets empty-string anim state; nothing about orientation or locks.
+0x00420310	0x00774440	match		0x007F1EC0: CMP [EAX+0x68],0 then CALL vtbl+0xA8; CMP [ECX+0xD4],0 then CALL vtbl+0xB8	3	Thunk to shadow-holder (+0x68) teardown; GOG sole callee RemoveShadowBlob; apply side is 0x774260.
+0x004102b0	0x007645d0	mismatch		0x007645DA: ADD ECX,0x18; 0x007645DD: CALL 0x00733780 (22-byte CExoString dtor thunk)	5	22-byte destructor thunk; GOG constructor is 2405 bytes with 11 callees and 0 shared displacements.
+0x00426430	0x0077a490	mismatch	0x0077a470	0x0077A477: PUSH 0x408; 0x0077A47F: CALL 0x0077A280 (corrected 0x0077a470)	4	Candidate pushes 0x409; GOG imm 0x408 absent. 0x77a470 pushes 0x408, size 26, RET 8.
+0x00428d50	0x0077cdd0	match		0x0077CDE2: CALL 0x0077FD20 (SetCombatMode); 0x0077CDF2: CALL 0x0077CC80 (PartyMenuUseItem)	4	Both GOG callees present; their Steam bodies fit the names; RET 8 and imm 8 match.
+0x00419dc0	0x0076e610	mismatch		0x0076E777: MOV EAX,dword ptr [EAX + 0x248] (slot accessor; 0 callees; 41 callers)	5	Slot-indexed accessor at +0x228-0x268 with no callees; GOG reads +0x4/+0x20/+0xb4 and calls two functions.
+0x0042bae0	0x0077fac0	mismatch		0x0077FAEA: CALL 0x0070AF80 (VC++ library _Decref, not a sound stop)	3	Sole callee is generic _Decref; GOG calls CExoSoundSource::Stop; 3 offsets shared with decoy 0x77fa00.
+0x00426490	0x0077a4b0	mismatch	0x0077a4d0	0x0077A4D7: PUSH 0x40A (corrected 0x0077a4d0); candidate pushes 0x40B (0x0077A4B7)	4	Candidate pushes 0x40B; GOG imm 0x40A absent. 0x77a4d0 pushes 0x40A, size 26, RET 8.
+0x0042bd00	0x0077fce0	label_suspect		0x0077FD03: FLD float ptr [EAX + 0x11DC]	4	Only offset +0x11dc matches GOG; body returns that float or a default, writes nothing; name says Set.
+0x00414210	0x00768440	match		0x0076846D: CMP EDX,dword ptr [ECX + 0x1F0]	4	Step countdown at +0x1f0, Vector ops, vtbl+0x8c callback; disp 3/3 and imm 7/7 match GOG.
+0x00421840	0x00775970	unsure			2	Thunk shape and +0x224 match GOG; callee 0x85d320 unnamed, CAMERAHOOK float body; siblings share shape.
+0x00413e70	0x00769620	mismatch	0x007680A0	0x007680D1: PUSH 0x272e (corrected 0x007680a0); 0x00768236: CALL 0x0073F530 (GetItemByGameObjectID, trusted)	5	Candidate: 179 B, 1/6 disp, different callees; corrected 0x7680a0: 516 B, disp 6/6, all 12 imms, callers match.
+0x00421820	0x007759b0	mismatch		0x007759CB: MOV EAX,0x2711 (candidate 188 B, 4 callees)	5	188-byte creature function with 4 callees; GOG is 25-byte thunk to appearance getter with +0x224.
+0x004137c0	0x007679f0	match		0x007679FC: CMP dword ptr [EAX + 0x178],0x0; 0x00767A1E: CALL EAX (vtbl+0x4C)	4	Clears list at +0x178 via vtbl+0x4c, deletes via vtbl+0, zeroes 0x178/0x17c/0x180; disp 4/4 match.
+0x004102b0	0x00764f80	mismatch		0x00764FA0: MOV EAX,dword ptr [EDX + 0xAC] (CALL EAX on this+0x68)	5	44-byte one-branch vtable call; GOG constructor is 2405 bytes, 11 callees, disp set disjoint.
+0x00413850	0x007682b0	mismatch		0x007682CB: MOV dword ptr [EDX + 0x138],EAX (SetCombatState-shaped setter; no 0x73F530 call)	4	Candidate is SetCombatState-shaped setter; GOG BlurWeapon's disp 0x198/0x2e4 and GetItemByGameObjectID call absent.
+0x00420070	0x00774200	unsure			2	Decoy 0x7741a0 identical except global table; trusted GOG caller's Steam counterpart 0x5c6340 calls 0x7741a0.
+0x00422dd0	0x00776e10	label_suspect		0x00776E1D: FSTP float ptr [EAX + 0x3CC]; 0x00776E29: FSTP float ptr [ECX + 0x3C8]	3	Disp 0x3c8/0x3cc, size 37, RET 8, 0 callees match GOG; body only stores two float args, not a predicate.

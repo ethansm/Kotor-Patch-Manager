@@ -1,0 +1,9 @@
+addr	kind	name	confidence	evidence	topic	date
+0x00768060	xref	callers 1: 0x76e130; callees: 0x7ed980; data users: none	confirmed	procedure_callers/procedure_callees 0x00768060; size 59 B RET no operand	B13a-q2	2026-10-15
+0x00776e10	xref	callers 1: 0x865830; callees: none; data users: none	confirmed	procedure_callers/procedure_callees 0x00776e10; size 37 B RET 0x8	B13a-q2	2026-10-15
+0x0076eda0	xref	callers 2: 0x7637e0, 0x76e130; callees: none; data users: none	confirmed	procedure_callers/procedure_callees 0x0076eda0; size 365 B RET 0x4	B13a-q2	2026-10-15
+0x0077c780	xref	callers 1: 0x752050; callees: 0x51c0e0, 0x51c8b0, 0x5d2f80, 0x6d6e30, 0x73f750, 0x73fb90, 0x775600, 0x77cc80, 0x77d800, 0x7e5da0; data users: 0x77bff3, 0x77c021	confirmed	procedure_callers/procedure_callees 0x0077c780; size 1271 B RET 0x8	B13a-q2	2026-10-15
+0x0077fce0	xref	callers 1: 0x873360; callees: 0x77d800; data users: none	confirmed	procedure_callers/procedure_callees 0x0077fce0; size 59 B RET no operand	B13a-q2	2026-10-15
+0x00769620	xref	callers 0: none; callees: 0x7ed7d0, 0x7ef5d0; data users: 0x99ef48	confirmed	procedure_callers/procedure_callees 0x00769620; size 179 B RET 0x8	B13a-q2	2026-10-15
+0x00775930	xref	callers 0: none; callees: 0x85d260; data users: 0x99eee4	confirmed	procedure_callers/procedure_callees 0x00775930; size 25 B RET no operand	B13a-q2	2026-10-15
+0x00775970	xref	callers 0: none; callees: 0x85d320; data users: 0x99eeec	confirmed	procedure_callers/procedure_callees 0x00775970; size 25 B RET no operand	B13a-q2	2026-10-15

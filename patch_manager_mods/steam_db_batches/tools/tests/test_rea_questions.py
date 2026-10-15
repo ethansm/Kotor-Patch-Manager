@@ -1,0 +1,224 @@
+"""Unit tests for steam_db_batches/tools/rea_questions.py. Every fixture lives in a temp dir.
+
+Run:  cd <repo>/patch_manager_mods/steam_db_batches/tools && python3 -m unittest tests.test_rea_questions
+"""
+import contextlib
+import io
+import re
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+TOOLS = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(TOOLS))
+import rea_questions as rq  # noqa: E402
+
+BATCH = "B13a"
+KEY_HEADER = "card_id\tchunk\tgog\tsteam_addr\tkind\texpected\n"
+LEDGER_HEADER = "addr\tkind\tname\tconfidence\tevidence\ttopic\tdate\n"
+BULLET_RE = re.compile(r"^- 0x[0-9a-f]{8}$", re.M)
+
+
+def key_row(card_id, gog, steam, kind="real", chunk="1"):
+    return f"{card_id}\t{chunk}\t{gog}\t{steam}\t{kind}\t\n"
+
+
+def ledger_row(addr, confidence, topic, kind="function"):
+    return f"{addr}\t{kind}\tsome behaviour\t{confidence}\tprocedure_assembly {addr}: RET\t{topic}\t2026-10-15\n"
+
+
+class QuestionFixture(unittest.TestCase):
+    def setUp(self):
+        self._td = tempfile.TemporaryDirectory()
+        self.root = Path(self._td.name)
+        self.batches = self.root / "batches"
+        self.batch_dir = self.batches / BATCH
+        (self.batch_dir / "cards").mkdir(parents=True)
+        self.ledger = self.root / "ledger"
+        self.ledger.mkdir()
+        self.out = self.root / "out"
+
+    def tearDown(self):
+        self._td.cleanup()
+
+    def write_key(self, name, rows):
+        path = self.batch_dir / "cards" / name
+        path.write_text(KEY_HEADER + "".join(rows), encoding="utf-8")
+        return path
+
+    def write_ledger(self, name, rows):
+        (self.ledger / name).write_text(LEDGER_HEADER + "".join(rows), encoding="utf-8")
+
+    def run_cli(self, *args):
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            rc = rq.main(list(args))
+        return rc, out.getvalue(), err.getvalue()
+
+    def cli(self, *extra, out=None):
+        target = self.out if out is None else out
+        return self.run_cli(BATCH, "--batches-dir", str(self.batches), "--ledger-dir", str(self.ledger),
+                            "--out", str(target), *extra)
+
+    def question_files(self, out=None):
+        target = self.out if out is None else out
+        return sorted(target.glob("q_*.md"))
+
+    def bullets(self, path):
+        return BULLET_RE.findall(path.read_text(encoding="utf-8"))
+
+
+class DedupeTests(QuestionFixture):
+    def test_same_steam_addr_on_two_cards_is_one_entry(self):
+        self.write_key("key.tsv", [
+            key_row("B13a-1-01", "0x00410000", "0x00500000"),
+            key_row("B13a-1-02", "0x00410010", "0x00500000", kind="decoy_prev"),
+        ])
+        rc, out, _ = self.cli()
+        self.assertEqual(rc, 0)
+        self.assertIn("1 addresses (0 skipped, ledger) -> 1 files", out)
+        files = self.question_files()
+        self.assertEqual(len(files), 1)
+        self.assertEqual(self.bullets(files[0]), ["- 0x00500000"])
+
+
+class BlindnessTests(QuestionFixture):
+    def test_output_carries_no_gog_address_card_id_or_kind_label(self):
+        gog_addrs = ["0x00410000", "0x00410010", "0x00410020"]
+        self.write_key("key.tsv", [
+            key_row("B13a-1-01", gog_addrs[0], "0x00500000", kind="real"),
+            key_row("B13a-1-02", gog_addrs[1], "0x00500010", kind="decoy_prev"),
+            key_row("B13a-1-03", gog_addrs[2], "0x00500020", kind="decoy_next"),
+        ])
+        rc, _, _ = self.cli()
+        self.assertEqual(rc, 0)
+        files = self.question_files()
+        self.assertEqual(len(files), 1)
+        text = files[0].read_text(encoding="utf-8")
+        lowered = text.lower()
+        self.assertNotIn("decoy", lowered)
+        self.assertNotIn("real", lowered)
+        for gog in gog_addrs:
+            self.assertNotIn(gog, text)
+            self.assertNotIn(gog[2:], text)
+        for card_id in ("B13a-1-01", "B13a-1-02", "B13a-1-03"):
+            self.assertNotIn(card_id, text)
+
+    def test_file_shape(self):
+        self.write_key("key.tsv", [key_row("B13a-1-01", "0x00410000", "0x00500000")])
+        self.cli()
+        text = self.question_files()[0].read_text(encoding="utf-8")
+        self.assertIn("# REA questions B13a-q1\n", text)
+        self.assertIn(f"Binary: {rq.BINARY}\n", text)
+        self.assertIn("Ledger topic: B13a-q1\n", text)
+        self.assertIn("## Addresses", text)
+        self.assertIn("- 0x00500000", text)
+        for n in range(1, 7):
+            self.assertIn(f"{n}. ", text)
+
+
+class ChunkingTests(QuestionFixture):
+    def test_seventeen_addresses_make_eight_eight_one(self):
+        rows = [key_row(f"B13a-1-{i:02d}", f"0x{0x410000 + i * 16:08x}", f"0x{0x500000 + i * 16:08x}")
+                for i in range(17)]
+        self.write_key("key.tsv", rows)
+        rc, out, _ = self.cli("--per-run", "8")
+        self.assertEqual(rc, 0)
+        self.assertIn("17 addresses (0 skipped, ledger) -> 3 files", out)
+        files = self.question_files()
+        self.assertEqual([p.name for p in files], ["q_1.md", "q_2.md", "q_3.md"])
+        self.assertEqual([len(self.bullets(p)) for p in files], [8, 8, 1])
+        all_bullets = [b for p in files for b in self.bullets(p)]
+        self.assertEqual(len(set(all_bullets)), 17)
+
+    def test_stale_question_files_are_removed(self):
+        self.write_key("key.tsv", [key_row("B13a-1-01", "0x00410000", "0x00500000")])
+        self.out.mkdir(parents=True)
+        (self.out / "q_9.md").write_text("stale\n", encoding="utf-8")
+        self.cli()
+        self.assertFalse((self.out / "q_9.md").exists())
+        self.assertEqual([p.name for p in self.question_files()], ["q_1.md"])
+
+
+class DeterminismTests(QuestionFixture):
+    def test_two_runs_write_identical_bytes(self):
+        rows = [key_row(f"B13a-1-{i:02d}", f"0x{0x410000 + i * 16:08x}", f"0x{0x500000 + i * 16:08x}")
+                for i in range(20)]
+        self.write_key("key.tsv", rows)
+        out1, out2 = self.root / "run1", self.root / "run2"
+        self.assertEqual(self.cli(out=out1)[0], 0)
+        self.assertEqual(self.cli(out=out2)[0], 0)
+        names1 = [p.name for p in self.question_files(out1)]
+        self.assertEqual(names1, [p.name for p in self.question_files(out2)])
+        self.assertTrue(names1)
+        for name in names1:
+            self.assertEqual((out1 / name).read_bytes(), (out2 / name).read_bytes())
+
+
+class LedgerSkipTests(QuestionFixture):
+    def test_only_confirmed_same_batch_q_topic_rows_skip(self):
+        self.write_key("key.tsv", [
+            key_row("B13a-1-01", "0x00410000", "0x00500000"),  # confirmed, B13a-q1 -> skipped
+            key_row("B13a-1-02", "0x00410010", "0x00500010"),  # probable, B13a-q1 -> kept
+            key_row("B13a-1-03", "0x00410020", "0x00500020"),  # confirmed, other batch topic -> kept
+            key_row("B13a-1-04", "0x00410030", "0x00500030"),  # confirmed, B13a-x not -q -> kept
+        ])
+        self.write_ledger("20261015_test.tsv", [
+            ledger_row("0x00500000", "confirmed", "B13a-q1"),
+            ledger_row("0x00500010", "probable", "B13a-q1"),
+            ledger_row("0x00500020", "confirmed", "B14-q1"),
+            ledger_row("0x00500030", "confirmed", "B13a-x"),
+        ])
+        rc, out, _ = self.cli()
+        self.assertEqual(rc, 0)
+        self.assertIn("4 addresses (1 skipped, ledger) -> 1 files", out)
+        text = self.question_files()[0].read_text(encoding="utf-8")
+        self.assertNotIn("- 0x00500000", text)
+        for addr in ("0x00500010", "0x00500020", "0x00500030"):
+            self.assertIn(f"- {addr}", text)
+
+
+class TopicNumberingTests(QuestionFixture):
+    def test_rerun_continues_after_highest_ledger_topic(self):
+        self.write_key("key.tsv", [key_row("B13a-1-%02d" % i, "0x%08x" % (0x410000 + 16 * i),
+                                           "0x%08x" % (0x500000 + 16 * i)) for i in range(10)])
+        self.write_ledger("20261015_test.tsv", [ledger_row("0x00500000", "confirmed", "B13a-q1"),
+                                                ledger_row("0x00600000", "probable", "B13a-q3")])
+        rc, _, _ = self.cli()
+        self.assertEqual(rc, 0)
+        self.assertEqual([p.name for p in self.question_files()], ["q_4.md", "q_5.md"])
+        self.assertIn("Ledger topic: B13a-q4", self.question_files()[0].read_text(encoding="utf-8"))
+
+
+class KeysTests(QuestionFixture):
+    def test_keys_flag_restricts_input_to_given_files(self):
+        pilot = self.write_key("key_pilot.tsv", [key_row("B13a-1-01", "0x00410000", "0x00500000")])
+        self.write_key("key.tsv", [
+            key_row("B13a-1-02", "0x00410010", "0x00500010"),
+            key_row("B13a-1-03", "0x00410020", "0x00500020"),
+        ])
+        rc, out, _ = self.cli()
+        self.assertEqual(rc, 0)
+        self.assertIn("3 addresses", out)
+        rc, out, _ = self.cli("--keys", str(pilot))
+        self.assertEqual(rc, 0)
+        self.assertIn("1 addresses (0 skipped, ledger) -> 1 files", out)
+        self.assertEqual(self.bullets(self.question_files()[0]), ["- 0x00500000"])
+
+
+class ErrorTests(QuestionFixture):
+    def test_batch_without_key_files_is_usage_error(self):
+        rc, _, err = self.cli()
+        self.assertEqual(rc, 2)
+        self.assertIn("no key files", err)
+
+    def test_bad_steam_addr_is_data_error(self):
+        self.write_key("key.tsv", [key_row("B13a-1-01", "0x00410000", "not-hex")])
+        rc, _, err = self.cli()
+        self.assertEqual(rc, 2)
+        self.assertIn("bad steam_addr", err)
+
+
+if __name__ == "__main__":
+    unittest.main()

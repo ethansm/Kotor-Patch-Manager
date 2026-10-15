@@ -1,0 +1,9 @@
+addr	kind	name	confidence	evidence	topic	date
+0x00774200	xref	callers 1: 0x773bf0; callees: 0x71b3f0; strings/data: none	confirmed	procedure_callers/procedure_callees 0x00774200; size 93 B RET none	B13a-q3	2026-10-15
+0x007759b0	xref	callers 4: 0x56d6a0, 0x776fe0, 0x7779b0, 0x7ed9a0; callees: 0x51c6f0, 0x72fb00, 0x73fb90, 0x7e5da0; strings/data: none	confirmed	procedure_callers/procedure_callees 0x007759b0; size 188 B RET none	B13a-q3	2026-10-15
+0x007679f0	xref	callers 2: 0x85a9e0, 0x85b940; callees: none (indirect only); strings/data: none	confirmed	procedure_callers/procedure_callees 0x007679f0; size 141 B RET none	B13a-q3	2026-10-15
+0x00774260	xref	callers 0: none; callees: 0x5160c0, 0x71b8b0, 0x733540, 0x733780, 0x7338d0; strings/data: 0x99f1a4 Fx_Shadow_S, 0x99f198 Fx_Shadow_M, 0x99f18c Fx_Shadow_L, data 0x99ef10	confirmed	procedure_callers/procedure_callees 0x00774260; size 458 B RET none	B13a-q3	2026-10-15
+0x00764f80	xref	callers 0: none; callees: none (indirect only); strings/data: data 0x99ef18, 0x9a2330, 0x9a2700, 0x9a28e8, 0x9a38b8, 0x9a4df0, 0x9a5600, 0x9a5760, 0x9a6768, 0x9a9180, 0x9a9320	confirmed	procedure_callers/procedure_callees 0x00764f80; size 44 B RET none	B13a-q3	2026-10-15
+0x007678f0	xref	callers 1: 0x7675b0; callees: 0x4452b0, 0x44b8a0, 0x5143c0, 0x53dfb0, 0x73f4b0; strings/data: none	confirmed	procedure_callers/procedure_callees 0x007678f0; size 248 B RET none	B13a-q3	2026-10-15
+0x0077c6a0	xref	callers 1: 0x77e370; callees: 0x58a2c0, 0x606100, 0x77c1b0, 0x77d800; strings/data: none	confirmed	procedure_callers/procedure_callees 0x0077c6a0; size 107 B RET 0x8	B13a-q3	2026-10-15
+0x007736d0	xref	callers 1: 0x82b0c0; callees: 0x733570, 0x733780, 0x76e610, 0x76ef70; strings/data: string empty 0x986925	confirmed	procedure_callers/procedure_callees 0x007736d0; size 265 B RET none	B13a-q3	2026-10-15

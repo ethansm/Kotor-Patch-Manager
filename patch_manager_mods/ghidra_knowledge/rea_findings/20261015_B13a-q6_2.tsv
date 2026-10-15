@@ -1,0 +1,15 @@
+addr	kind	name	confidence	evidence	topic	date
+0x0077fac0	function	guarded call 0x0070af80 on this+0x448, then clears this+0x450 and this+0x454	confirmed	asm: 0x77faca: CMP dword ptr [EAX + 0x448], 0x0 | 0x77faea: CALL 0x0070af80 | 0x77faf2: MOV dword ptr [EAX + 0x450], 0x0	B13a-q6	2026-10-15
+0x0077fac0	xref	callers 1: 0x0077fb10; callees: 0x0070af80; size 77 B RET 0	confirmed	asm: 0x77fb0c: RET | 0x77faea: CALL 0x0070af80 | procedure_info length 77, body 0x77fac0-0x77fb0c	B13a-q6	2026-10-15
+0x007645d0	function	calls 0x00733780 with ECX = this+0x18, then returns	confirmed	asm: 0x7645da: ADD ECX, 0x18 | 0x7645dd: CALL 0x00733780 | 0x7645e5: RET	B13a-q6	2026-10-15
+0x007645d0	xref	callers 1: 0x007651b0; callees: 0x00733780; size 22 B RET 0	confirmed	asm: 0x7645e5: RET | 0x7645dd: CALL 0x00733780 | procedure_info length 22, body 0x7645d0-0x7645e5	B13a-q6	2026-10-15
+0x0077d310	function	if this+0x310 is nonzero, stores word arg clamped to -1..100 at [this+0x310]+0x82	confirmed	asm: 0x77d31c: CMP dword ptr [EAX + 0x310], 0x0 | 0x77d335: CMP EAX, -0x1 | 0x77d34a: CMP dword ptr [EBP + -0xc], 0x64 | 0x77d37f: MOV word ptr [EDX + 0x82], AX	B13a-q6	2026-10-15
+0x0077d310	xref	callers 1: 0x008079b0; callees: none; size 124 B RET 4	confirmed	asm: 0x77d389: RET 0x4 | 0x77d31c: CMP dword ptr [EAX + 0x310], 0x0 | procedure_info length 124, body 0x77d310-0x77d38b	B13a-q6	2026-10-15
+0x0076eb20	function	keyed setter: arg1 selects one of 17 slots this+0x280..0x2c0 (store blocks), stores arg2 there	confirmed	asm: 0x76eb3f: JZ 0x0076ec77 | 0x76ec7d: MOV dword ptr [EDX + 0x2a0], EAX | 0x76ecf6: RET 0x8	B13a-q6	2026-10-15
+0x0076eb20	xref	callers 2: 0x00804f10, 0x0080efb0; callees: none; size 473 B RET 8	confirmed	asm: 0x76ecf6: RET 0x8 | 0x76eb62: JMP dword ptr [EAX*0x4 + 0x76ecfc] | procedure_info length 473, body 0x76eb20-0x76ecf8	B13a-q6	2026-10-15
+0x0076ecfc	data	switch jump-table base read by indirect JMP at 0x76eb62	confirmed	asm: 0x76eb62: JMP dword ptr [EAX*0x4 + 0x76ecfc] | 0x76eb5b: MOVZX EAX, byte ptr [EDX + 0x76ed20]	B13a-q6	2026-10-15
+0x0076ed20	data	byte index table for the switch at 0x76eb5b, indexed by arg1-1	confirmed	asm: 0x76eb48: SUB ECX, 0x1 | 0x76eb5b: MOVZX EAX, byte ptr [EDX + 0x76ed20]	B13a-q6	2026-10-15
+0x0077a490	function	calls 0x0077a280 with pushed immediate 0x409 and ECX = this; RET 8	confirmed	asm: 0x77a497: PUSH 0x409 | 0x77a49c: MOV ECX, dword ptr [EBP + -0x4] | 0x77a49f: CALL 0x0077a280 | 0x77a4a7: RET 0x8	B13a-q6	2026-10-15
+0x0077a490	xref	callers 0: none; callees: 0x0077a280; size 26 B RET 8	confirmed	asm: 0x77a4a7: RET 0x8 | 0x77a49f: CALL 0x0077a280 | procedure_info length 26, body 0x77a490-0x77a4a9	B13a-q6	2026-10-15
+0x007738e0	function	zeroes dwords +0x4 and +0x8 of the pointer read from [EBP+0x10]; bare RET	confirmed	asm: 0x7738e4: MOV EAX, dword ptr [EBP + 0x10] | 0x7738ed: MOV dword ptr [ECX + 0x4], 0x0 | 0x7738f7: MOV dword ptr [EDX + 0x8], 0x0	B13a-q6	2026-10-15
+0x007738e0	xref	callers 0: none; callees: none; size 34 B RET 0	confirmed	asm: 0x773901: RET | 0x7738f7: MOV dword ptr [EDX + 0x8], 0x0 | procedure_info length 34, body 0x7738e0-0x773901	B13a-q6	2026-10-15

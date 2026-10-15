@@ -1003,8 +1003,34 @@ def load_card_facts(bdir: Path) -> dict[int, list[str]]:
     return out
 
 
+REA_LEDGER_DIR = Path(__file__).resolve().parents[3] / "patch_manager_mods" / "ghidra_knowledge" / "rea_findings"
+REA_LINES_PER_CARD = 8
+
+
+def load_rea_rows(ledger_dir: Path, topic_prefix: str) -> dict[int, list[dict]]:
+    """REA ledger rows (`load_ledger` in scripts/query_ghidra.py) whose topic starts with `topic_prefix`, keyed by the
+    int address.  Malformed addresses are skipped; each address's rows are sorted so card output is deterministic."""
+    import importlib.util
+    qg_path = Path(__file__).resolve().parents[3] / "scripts" / "query_ghidra.py"
+    spec = importlib.util.spec_from_file_location("query_ghidra_rea", qg_path)
+    qg = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(qg)
+    out: dict[int, list[dict]] = {}
+    for r in qg.load_ledger(ledger_dir):
+        if not r.get("topic", "").startswith(topic_prefix):
+            continue
+        try:
+            addr = int(r["addr"], 16)
+        except (KeyError, TypeError, ValueError):
+            continue
+        out.setdefault(addr, []).append(r)
+    for rows in out.values():
+        rows.sort(key=lambda r: (r["kind"] != "function", r["kind"], r["confidence"], r["name"], r["evidence"]))
+    return out
+
+
 def make_card(card_id: str, corpus: bd.Corpus, g: GogFn, ce: CandEval, ev_by_gog: dict, mapper_tag: str,
-              card_facts: Optional[dict] = None) -> str:
+              card_facts: Optional[dict] = None, rea_rows: Optional[dict] = None) -> str:
     rp = corpus.rp
     root = str(corpus.paths.dump)
     L = ["## Card %s" % card_id, "",
@@ -1060,6 +1086,13 @@ def make_card(card_id: str, corpus: bd.Corpus, g: GogFn, ce: CandEval, ev_by_gog
         da = parse_addr(dec.group(1))
         L += ["", "### decoy: %s (neighbour that must NOT be confused with the candidate)" % hx8(da), "```"]
         L += fmt_prologue(corpus, da) + fmt_anchors(corpus, da) + ["```"]
+    if rea_rows is not None:          # report-only; same path for real and decoy cards (keyed by the effective address)
+        rows = rea_rows.get(ce.eff, [])
+        L += ["", "### Live evidence (REA, report-only)"]
+        L += ["- %s | %s | %s | %s" % (r["kind"], r["name"], r["confidence"], r["evidence"])
+              for r in rows[:REA_LINES_PER_CARD]]
+        if not rows:
+            L.append("- (no REA rows for 0x%08x)" % ce.eff)
     return "\n".join(L) + "\n"
 
 
@@ -1140,11 +1173,13 @@ def cmd_cards(args) -> int:
     crows = {parse_addr(r["gog"]): r for r in iter_tsv(bdir / "candidates.tsv")}
     rng = random.Random("cards-" + args.batch)
     facts = load_card_facts(bdir)
+    rea_rows = (load_rea_rows(Path(args.rea_ledger_dir), args.rea_topic_prefix or args.batch + "-q")
+                if args.rea else None)
     review = [e for e in evs if e["gate_class"] == "REVIEW"]
     per_chunk_decoys = max(MIN_DECOYS, args.chunk // 6) if args.decoys is None else args.decoys
     per_chunk_real = max(1, args.chunk - per_chunk_decoys)
     chunks = [review[i:i + per_chunk_real] for i in range(0, len(review), per_chunk_real)]
-    cards_dir = bdir / "cards"
+    cards_dir = Path(args.out) if args.out else bdir / "cards"
     cards_dir.mkdir(parents=True, exist_ok=True)
     for old in list(cards_dir.glob("chunk_*.md")):
         old.unlink()
@@ -1168,7 +1203,8 @@ def cmd_cards(args) -> int:
                 ce = next((c for c in row.cands if c.addr == want), row.best)
             else:
                 ce = evaluate_row(corpus, scorer, g, [(forced, ["card"])]).best
-            text.append(make_card(cid, corpus, g, ce, ev_by_gog, ce.mapper_tag if kind == "real" else "", facts))
+            text.append(make_card(cid, corpus, g, ce, ev_by_gog, ce.mapper_tag if kind == "real" else "", facts,
+                                  rea_rows=rea_rows))
             key_rows.append({"card_id": cid, "chunk": k, "gog": hx8(g.addr), "steam_addr": hx8(ce.addr),
                              "kind": kind, "expected": expected})
         (cards_dir / ("chunk_%d.md" % k)).write_text("\n".join(text), encoding="utf-8")
@@ -2046,6 +2082,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("batch", type=batch_name)
     p.add_argument("--chunk", type=int, default=60)
     p.add_argument("--decoys", type=int, default=None, help="calibration cards per chunk (default chunk//10)")
+    p.add_argument("--rea", action="store_true", help="add a report-only 'Live evidence (REA)' section per card")
+    p.add_argument("--rea-ledger-dir", default=str(REA_LEDGER_DIR), help="REA findings ledger dir (with --rea)")
+    p.add_argument("--rea-topic-prefix", default=None,
+                   help="only ledger rows whose topic starts with this (default <batch>-q)")
+    p.add_argument("--out", default=None, help="directory for chunk_*.md and key.tsv (default B<n>/cards)")
     p = sub.add_parser("finalize", help="merge reviews and overrides")
     p.add_argument("batch", type=batch_name)
     p.add_argument("--with-likely", action="store_true")

@@ -32,6 +32,8 @@ Write one TSV row per card to OUT (header below). Work only from the card, the d
 - The GOG side section comes from the GOG binary itself (callees named by the GOG DB, strings, operand displacements
   and immediates). Common values are marked `*`.
 
+Cards built with `--rea` carry a `### Live evidence (REA, report-only)` section. Its rows are observations a Haiku agent made on the vanilla Steam exe through Ghidra, shown on real and decoy cards alike. A row is valid as a content anchor only when it quotes an asm line (`0x...: instr`); summaries without a quoted line are hints only. Never accept a candidate on REA rows alone. A REA summary that contradicts the GOG name (strings, callees) is a reason to flag `label_suspect`.
+
 ## Burden of proof
 Assume the candidate is a neighbouring function or thunk with an identical `RET` signature. You are FORBIDDEN to
 answer `match` on `ret N`, size, SIG score or name alone. To answer `match` you MUST cite at least one content anchor
