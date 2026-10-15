@@ -37,7 +37,7 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 21 | WI-09 | P1 | ready | S | - | Ultrawide GUI and FullPartySelect follow-ups | 3 | 1 | Ultrawide GUI and FullPartySelect follow-ups; 1 open, ready. |
 | [ ] | 22 | WI-13 | P1 | verify-only | M | - | Level-up override verify and Configure nudge check | 10 | 0 | Level-up override verify and Configure nudge check; 9 open. |
 | [ ] | 23 | WI-50 | P1 | ready | S | - | deep-haiku-review H1/H2 backoff, verify scripts and ladder c | 4 | 0 | deep-haiku-review H1/H2 backoff and verify scripts; tooling. |
-| [ ] | 24 | WI-44 | P1 | verify-only | S | - | NPC diversity selector bias and float guard | 1 | 0 | NPC diversity selector bias and float guard; 1 verify open. |
+| [x] | 24 | WI-44 | P1 | verify-only | S | - | NPC diversity selector bias and float guard | 1 | 0 | NPC diversity selector bias and float guard; 1 verify open. |
 | [ ] | 25 | WI-18c | P1 | ready | M | WI-18 | KpLog remainder: probe, companion AI, parser, design rows (C | 6 | 3 | KpLog remainder for probe, companion AI and parser rows; mostly parked |
 | [ ] | 26 | WI-14 | P1 | verify-only | L | - | Level-up override F-row verify and deferred items | 10 | 0 | Level-up F-row verify and deferred items; large, 8 open. |
 | [ ] | 27 | WI-30 | P1 | ready | L | - | Letterbox fix KpLog verify and analyzer cleanup | 9 | 4 | Letterbox fix KpLog verify and analyzer cleanup; 9 open, ready. |
