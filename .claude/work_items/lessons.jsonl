@@ -5,3 +5,4 @@
 {"key": "worker-fail-closed", "scope": "global", "text": "Fix the Steps or verify line after a worker/checker failure before retrying; do not re-run unchanged.", "ts": "2026-10-12T21:43:26Z"}
 {"key": "repeat-park:WI-03", "scope": "WI-03", "text": "WI-03 has been parked 2 times; do not claim it until its scope or verify line is fixed.", "ts": "2026-10-12T21:45:48Z"}
 {"key": "slow-items", "scope": "audit", "text": "WI-10 took over 3x the median (136s)", "ts": "2026-10-15T05:04:30Z"}
+{"key": "repeat-park:WI-05", "scope": "WI-05", "text": "WI-05 has been parked 2 times; do not claim it until its scope or verify line is fixed.", "ts": "2026-10-15T19:13:40Z"}
