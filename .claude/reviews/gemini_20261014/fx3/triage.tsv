@@ -1,0 +1,24 @@
+target	class	size	tests	write	dirty	install
+WI-73	FIX-NOW	M	py:patch_manager_mods/k1_port/test_k1_port_tex_tpc.py,py:patch_manager_mods/k1_port/test_k1_port_tex_dxt.py	patch_manager_mods/k1_port/k1_port_tex_dxt.py,patch_manager_mods/k1_port/test_k1_port_tex_dxt.py,patch_manager_mods/k1_port/test_k1_port_tex_tpc.py,patch_manager_mods/k1_port/k1_port_tex_tpc.py	n	k1_port
+WI-92	FIX-NOW	M	py:patch_manager_mods/k1_port/test_k1_port_tex_dxt.py,py:patch_manager_mods/k1_port/test_k1_port_tex_tpc.py,py:patch_manager_mods/k1_port/test_k1_port_tex_gate.py,py:patch_manager_mods/k1_port/test_k1_port_tex_audit.py	patch_manager_mods/k1_port/test_k1_port_tex_dxt.py,patch_manager_mods/k1_port/test_k1_port_tex_tpc.py,patch_manager_mods/k1_port/test_k1_port_tex_gate.py,patch_manager_mods/k1_port/test_k1_port_tex_audit.py	n	-
+WI-90	FIX-NOW	M	py:patch_manager_mods/k1_port/test_k1_port_ingest.py,py:patch_manager_mods/k1_port/test_k1_port_probe.py,py:patch_manager_mods/k1_port/test_k1_port_validate.py,py:patch_manager_mods/k1_port/test_k1_anim_pose.py	patch_manager_mods/k1_port/k1_port_ingest.py,patch_manager_mods/k1_port/test_k1_port_ingest.py,patch_manager_mods/k1_port/test_k1_port_probe.py,patch_manager_mods/k1_port/test_k1_port_validate.py,patch_manager_mods/k1_port/test_k1_anim_pose.py	n	-
+WI-91a	FIX-NOW	M	py:patch_manager_mods/k1_port/test_k1_port_char_build.py,py:patch_manager_mods/k1_port/test_k1_port_probe_build.py,py:patch_manager_mods/k1_port/test_k1_port_ingest.py	patch_manager_mods/k1_port/test_k1_port_char_build.py,patch_manager_mods/k1_port/test_k1_port_probe_build.py,patch_manager_mods/k1_port/test_k1_port_ingest.py	n	-
+WI-91b	FIX-NOW	M	py:patch_manager_mods/k1_port/test_k1_port_cr_extract.py	patch_manager_mods/k1_port/test_k1_port_cr_extract.py	n	-
+WI-91c	FIX-NOW	S	py:patch_manager_mods/k1_port/test_k1_port_model.py	patch_manager_mods/k1_port/test_k1_port_model.py	n	-
+WI-89a	FIX-NOW	S	cpp:twoda_test	patch_manager_mods/action_hotbar_src/twoda_test.cpp	n	-
+WI-89b	FIX-NOW	M	cpp:keybif_test	patch_manager_mods/action_hotbar_src/keybif_test.cpp,patch_manager_mods/action_hotbar_src/testdata/make_keybif_fixture.py	n	-
+WI-89c	FIX-NOW	S	none	patch_manager_mods/07_force_power_hotbar.md	n	-
+WI-93	FIX-NOW	S	cpp:nw_registry_test	patch_manager_mods/npc_world_src/nw_registry_test.cpp	n	-
+WI-94a	FIX-NOW	M	py:patch_manager_mods/perf_lab_src/test_analyze_runs.py	patch_manager_mods/perf_lab_src/analyze_runs.py,patch_manager_mods/perf_lab_src/test_analyze_runs.py	n	-
+WI-94b	NEEDS-RUNTIME	S	none (ghidra-headless)	patch_manager_mods/perf_lab_src/ghidra_scripts/ExportCallGraph.java,patch_manager_mods/perf_lab_src/ghidra_scripts/NewNullCheck.java	n	-
+WI-94c	NEEDS-RUNTIME	S	wine:activationfix[run]	patch_manager_mods/perf_lab_src/harness/smoke_activationfix.cpp	n	-
+WI-95a	FIX-NOW	M	new test file needed: patch_manager_mods/perf_lab_src/test_hookbytes.py,new test file needed: patch_manager_mods/perf_lab_src/test_persist_findings.py	patch_manager_mods/perf_lab_src/hookbytes.py,patch_manager_mods/perf_lab_src/persist_findings.py,patch_manager_mods/perf_lab_src/test_hookbytes.py,patch_manager_mods/perf_lab_src/test_persist_findings.py	n	-
+WI-95b	FIX-NOW	S	wine:perflab3[run]	patch_manager_mods/perf_lab_src/harness/smoke_perflab3.cpp	n	-
+WI-96	FIX-NOW	M	cpp:queue_hud_logic_test	patch_manager_mods/queue_hud_src/queue_hud_logic_test.cpp,patch_manager_mods/queue_hud_src/QueueHud.cpp,patch_manager_mods/queue_hud_src/queue_hud.ini	n	queue_hud
+FU-holster-comb	FIX-NOW	S	py:scripts/test_holster_log_check.py	scripts/holster_log_check.py,scripts/test_holster_log_check.py	n	-
+WI-100a	OWNER-DECISION	M	cpp:guikit_test	patch_manager_mods/_shared_src/GuiKit.h	n	mod
+WI-100b	OWNER-DECISION	S	cpp:codepatch_test	patch_manager_mods/_shared_src/CodePatch.h	n	mod
+WI-100c	FIX-NOW	S	cpp:twoda_test	patch_manager_mods/action_hotbar_src/TwoDA.h	n	mod
+WI-100d	OWNER-DECISION	S	cpp:saferead_test	patch_manager_mods/_shared_src/SafeRead.h	n	mod
+FU-texset	FIX-NOW	S	py:scripts/test_selfheal_log_check.py	scripts/selfheal_log_check.py,scripts/test_selfheal_log_check.py,scripts/testdata/selfheal/<new tog fixture>.txt	n	-
+FU-texinit	FIX-NOW	M	cpp:selfheal_ui_test	patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp,patch_manager_mods/_shared_src/SelfHealUi.h,patch_manager_mods/_shared_src/selfheal_ui_test.cpp	n	companion-selfheal

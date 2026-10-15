@@ -548,6 +548,7 @@ Doc 15 stays the register for *engine* bug candidates; this board is for defects
 - **Check steps**: guikit_test.cpp: bindByTag with wrong vtable fake; assert alloc released; today leaked. Run `python3 scripts/compat_check.py <files>` after any `_shared_src` change.
 - **Investigate**: fix sketch: Same as HB-1c-02; bindByTag only leaks on the CF_Vtable return at :551. Source rows: `.claude/reviews/gemini_20261014/validated.tsv` (SH-3a-07, HB-1c-02).
 - **Resolution**: still OPEN (WI-87 parked). FX2 rea-recon 2026-10-15 (`.claude/waves/fix2/re.md`, PARTIAL): candidate destroy = CSWGuiLabel scalar deleting dtor at vftable slot 0 (rea reports 0x7510b0, vftable 0x9878bc; NOT in our symbol DB, unverified), thiscall + `uint flags`, bit0 frees via CRT `_free` (0x9196fd, DB: operator delete); the dtor chain (Text/Border/Control bodies) unlinks no list/focus/hover pointer. Open: whether K2AddrTable::New is CRT-malloc backed, LabelCtor and panel child release not located.
+  **Answered 2026-10-15 (re2, `.claude/waves/fix2/re2/SUMMARY.md`)**: vftable 0x9878bc slot 0 = 0x7510b0 confirmed by read_bytes; operator new 0x919723 (`_malloc`) and `_free` 0x9196fd share heap DAT_00a806c8; InitControl addToList=0 registers nothing (only ctl+0x38 = panel). Fix: on CF_Template call the label's vtable slot 0 with flags=1 (read from the object, no new address); on CF_Vtable do not call an unknown vtable. WI-87 unparked for FX3.
 
 ### BG41 — gem-SH-3b-05 (low, G2-validated, test-gap/wrong-behaviour)
 - **Where**: `patch_manager_mods/_shared_src/SelfHealUi.h:382`

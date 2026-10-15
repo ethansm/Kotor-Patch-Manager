@@ -5,6 +5,10 @@
 WI-75 066320e, WI-83 b18c0f3, WI-84 685fede, WI-80 810590a, WI-81 6d24306, BG29c ce3cec1; doc 37 BG27-BG37 DONE + rea notes 2ae4cb2.
 Not installed: rebuild + install (user GO) queue_hud, companion_selfheal, companion_ai, holster, combat_hotbar; play checks WI-74 (companion
 dispatch behind resting 0x3D) and WI-80 (empty tip hides). rea-recon PARTIAL/UNSURE: WI-87 stays parked (dtor 0x7510b0 not in DB; allocator unknown).
+**re2 + FX3 triage (2026-10-15, after FX2):** 9 Haiku rea-recon runs answered WI-87 (unpark: label vtable slot0(1) is safe, same heap) and SH-3a-08
+(likely real: top-level "Render Window" recreated via 0x409750 on the activate path); `.claude/reviews/gemini_20261014/fx3/re2/SUMMARY.md`.
+7 Haiku triage units re-checked the FX3 queue at HEAD 2dc7684: `.claude/reviews/gemini_20261014/fx3/triage.tsv` (23 rows: 18 FIX-NOW, 3 OWNER-DECISION
+WI-100a/b/d, 2 NEEDS-RUNTIME WI-94b/c; splits 89a-c, 91a-c, 94a-c, 95a-b, 100a-d). The REA exe uses GameAddr.h addresses, not K2Addr.h `t.*`.
 **Next = FX3:** WI-73, 89, 90, 91, 92, 93, 94 (split), 95, 96, 100 + follow-ups: selfheal_log_check TEXSET_RE lacks `tog=`; holster_log_check COMB
 regex should accept `old=? edge=?`; selfheal g_texInit never re-queries null disc/cross handles. Plan `.claude/plans/gemini_fix_wave2.md` (wave dir `.claude/waves/fix2/`,
 triage `.claude/waves/fx2_pick/`). Resume: `python3 scripts/plan_manager.py resume --plan .claude/plans/gemini_fix_wave2.md`.
