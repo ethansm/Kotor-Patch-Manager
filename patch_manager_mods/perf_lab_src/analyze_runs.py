@@ -70,7 +70,7 @@ LOG_ALIASES = {"robustnessfixes_log.txt": "k2-robustness-fixes_log.txt",
                "texmem_log.txt": "k2-texture-memory-release_log.txt",
                "activationfix_log.txt": "k2-activation-fix_log.txt",
                "equipiconfix_log.txt": "k2-equip-icon-fix_log.txt"}
-ALL_FILES = ("perflab_metrics.txt", "perflab_alloc_snaps.txt", "perflab_log.txt") + LOG_FILES
+ALL_FILES = ("perflab_metrics.txt", "perflab_alloc_snaps.txt", "perflab_log.txt", "perf-lab_log.txt") + LOG_FILES
 CONFIG_FILES = ("perflab_debug.txt", "texmem.txt")
 MATCH_SLACK_MS = 2000
 TAIL_SLACK_MS = 5000
@@ -407,14 +407,14 @@ def parse_perflab_log(info):
 
 
 def parse_perflab_pair(old_info, new_info):
-    """Legacy/fallback file vs core file: the one with the newer last attach tick wins; ties -> legacy name."""
+    """Legacy/fallback file + core file: attaches and lives from both, deduped by tick (legacy copy wins a tie), so an
+    attach kept in only one of the two files survives."""
     oa, ol = parse_perflab_log(old_info)
     if new_info is None:
         return oa, ol
     na, nl = parse_perflab_log(new_info)
-    if na and (not oa or na[-1]["tick"] != oa[-1]["tick"] and tdiff(na[-1]["tick"], oa[-1]["tick"]) < 0x80000000):
-        return na, nl
-    return oa, ol
+    seen = set(a["tick"] for a in oa)
+    return oa + [a for a in na if a["tick"] not in seen], sorted(set(ol) | set(nl))
 
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -766,18 +766,11 @@ def build_launches(mlaunches, attaches, snaps, text_logs):
     def start_of(x):
         return x.attach["tick"] if x.attach else x.blocks[0].tick - 120000
     L.sort(key=start_of)
-    prev = None
     for k, x in enumerate(L, 1):
         x.idx = k
         end = x.blocks[-1].tick if x.blocks else (x.attach["tick"] + 60000)
-        if x.attach:
-            x.start = x.attach["tick"]
-        elif prev is not None:
-            x.start = prev.hi + 1
-        else:
-            x.start = x.blocks[0].tick - 120000
+        x.start = start_of(x)   # no attach line (cleared log/offset): first block tick - 120000, never prev.hi + 1
         x.lo, x.hi = x.start, end
-        prev = x
     orphans = {}
 
     def find(tick):
@@ -1379,7 +1372,7 @@ def run(game_dir, offsets, arms=None, latest=None, summary=False):
     infos = {n: ReadInfo(n, os.path.join(game_dir, n), offsets.get(n, 0)) for n in ALL_FILES}
     mlaunches = parse_metrics(infos["perflab_metrics.txt"])
     snaps = parse_snaps(infos["perflab_alloc_snaps.txt"])
-    pinfo = ReadInfo("perf-lab_log.txt", os.path.join(game_dir, "perf-lab_log.txt"), offsets.get("perf-lab_log.txt", 0))
+    pinfo = infos["perf-lab_log.txt"]
     attaches, _ = parse_perflab_pair(infos["perflab_log.txt"], pinfo if pinfo.present else None)
     text, headless = {}, {}
     for n in LOG_FILES:

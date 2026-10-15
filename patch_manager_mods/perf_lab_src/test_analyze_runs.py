@@ -45,6 +45,29 @@ class LaunchSplit(unittest.TestCase):
         self.assertEqual(L[0].wall_s, 36000 + 1000)       # 10:16:40 from tick 1_000_000
         self.assertIn("Launches found: 4", md)
 
+    def test_no_attach_start_not_prev_hi(self):
+        # PL-4d-04: pid 101's attach line is gone -> start = first block tick - 120000 (not prev.hi + 1: that inflated the duration)
+        d = tempfile.mkdtemp()
+        try:
+            g = os.path.join(d, "g")
+            shutil.copytree(GAME, g)
+            p = os.path.join(g, "perflab_log.txt")
+            with open(p) as f:
+                lines = f.readlines()
+            keep = [s for s in lines if not s.startswith("[2000000 t0] perf-lab ")]
+            self.assertEqual(len(keep), len(lines) - 1)
+            with open(p, "w") as f:
+                f.writelines(keep)
+            md, L, A = run(game=g)
+            x = [y for y in L if y.pid == 101][0]
+            self.assertFalse(x.attach)
+            self.assertGreater(x.idx, 1)
+            prev = L[x.idx - 2]
+            self.assertNotEqual(x.start, prev.hi + 1)
+            self.assertEqual(x.start, x.blocks[0].tick - 120000)
+        finally:
+            shutil.rmtree(d)
+
     def test_attach_only_stub(self):
         d = tempfile.mkdtemp()
         try:
@@ -294,7 +317,41 @@ class KpLogShapesPerfRb(unittest.TestCase):
     def test_newest_perflab_file_wins(self):
         files = dict(self._legacy())
         files["perf-lab_log.txt"] = self._core()["perf-lab_log.txt"].replace("tick=1000000", "tick=9000000")
-        self.assertEqual(self._pl(files)[0][0]["tick"], 9000000)
+        att, _ = self._pl(files)
+        self.assertEqual(max(a["tick"] for a in att), 9000000)
+
+    def test_legacy_and_core_attaches_merged(self):
+        # PL-4d-03: both files present -> attaches (and lives) from both survive; a tick in both files counts once
+        a = "[%d t0] perf-lab 0.3.0 attach exe=1 game=1 alloc=1\n"
+        files = {"perflab_log.txt": a % 1000000 + a % 2000000 + "[1030000 t900] live=1 dropped=0\n",
+                 "perf-lab_log.txt": "# kplog session 2026-10-04 10:00:00\n"
+                 "T=0.000 f=- perf-lab/main perf-lab 0.5.1 attach exe=x ev=1 tick=2000000\n"
+                 "T=1000.000 f=9 perf-lab/main perf-lab 0.5.1 attach exe=x ev=1 tick=3000000\n"
+                 "T=30.000 f=900 perf-lab/main live=1 dropped=0 frames=900\n"}
+        att, lives = self._pl(files)
+        self.assertEqual(sorted(x["tick"] for x in att), [1000000, 2000000, 3000000])
+        self.assertEqual(lives, sorted(set(lives)))
+        self.assertIn(1030000, lives)
+        self.assertEqual(len(lives), 2, lives)
+
+    def test_sources_table_lists_core_perflab_log(self):
+        # PL-4d-03: core perf-lab_log.txt is parsed, so the Sources table must list it (present, then ABSENT)
+        d = tempfile.mkdtemp()
+        try:
+            g = os.path.join(d, "g")
+            shutil.copytree(GAME, g)
+            md, _, _ = run(game=g)
+            row = [ln for ln in md.split("## Sources", 1)[1].splitlines() if "| perf-lab_log.txt |" in ln]
+            self.assertEqual(len(row), 1, md)
+            self.assertIn("ABSENT", row[0])
+            with open(os.path.join(g, "perf-lab_log.txt"), "w") as f:
+                f.write("[9000000 t0] perf-lab 0.3.0 attach exe=1 game=1 alloc=1\n")
+            md, _, _ = run(game=g)
+            row = [ln for ln in md.split("## Sources", 1)[1].splitlines() if "| perf-lab_log.txt |" in ln]
+            self.assertEqual(len(row), 1, md)
+            self.assertNotIn("ABSENT", row[0])
+        finally:
+            shutil.rmtree(d)
 
 
 class Perf050(unittest.TestCase):
