@@ -1,0 +1,14 @@
+{
+ "operation": "procedure_assembly",
+ "parameters": {
+  "procedure": "0x00775950"
+ },
+ "subject": {
+  "name": "swkotor2.exe",
+  "digest": {
+   "sha256": "6a522e71631dcee93467bd2010f3b23d9145326e1e2e89305f13ab104dbbffef"
+  }
+ },
+ "normalized_result": "0x775950: PUSH EBP\n0x775951: MOV EBP, ESP\n0x775953: PUSH ECX\n0x775954: MOV dword ptr [EBP + -0x4], ECX\n0x775957: MOV EAX, dword ptr [EBP + -0x4]\n0x77595a: MOV ECX, dword ptr [EAX + 0x224]\n0x775960: CALL 0x0085d2d0\n0x775965: MOV ESP, EBP\n0x775967: POP EBP\n0x775968: RET",
+ "confidence": "observed"
+}

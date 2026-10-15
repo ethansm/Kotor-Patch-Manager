@@ -1,0 +1,14 @@
+{
+ "operation": "procedure_assembly",
+ "parameters": {
+  "procedure": "0x00776db0"
+ },
+ "subject": {
+  "name": "swkotor2.exe",
+  "digest": {
+   "sha256": "6a522e71631dcee93467bd2010f3b23d9145326e1e2e89305f13ab104dbbffef"
+  }
+ },
+ "normalized_result": "0x776db0: PUSH EBP\n0x776db1: MOV EBP, ESP\n0x776db3: SUB ESP, 0x8\n0x776db6: MOV dword ptr [EBP + -0x4], ECX\n0x776db9: MOV EAX, dword ptr [EBP + 0x8]\n0x776dbc: MOV dword ptr [EBP + -0x8], EAX\n0x776dbf: CMP dword ptr [EBP + -0x8], 0x0\n0x776dc3: JZ 0x00776dd3\n0x776dc5: CMP dword ptr [EBP + -0x8], 0x1\n0x776dc9: JZ 0x00776de2\n0x776dcb: CMP dword ptr [EBP + -0x8], 0x2\n0x776dcf: JZ 0x00776df1\n0x776dd1: JMP 0x00776dfe\n0x776dd3: MOV ECX, dword ptr [EBP + -0x4]\n0x776dd6: MOV dword ptr [ECX + 0x3c0], 0x0\n0x776de0: JMP 0x00776dfe\n0x776de2: MOV EDX, dword ptr [EBP + -0x4]\n0x776de5: MOV dword ptr [EDX + 0x3c0], 0x1\n0x776def: JMP 0x00776dfe\n0x776df1: MOV EAX, dword ptr [EBP + -0x4]\n0x776df4: MOV dword ptr [EAX + 0x3c0], 0x2\n0x776dfe: MOV ESP, EBP\n0x776e00: POP EBP\n0x776e01: RET 0x4",
+ "confidence": "observed"
+}

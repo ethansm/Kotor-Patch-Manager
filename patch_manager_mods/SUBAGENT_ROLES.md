@@ -84,7 +84,8 @@ VERDICT: <CONFIRMED | REFUTED | PARTIAL | UNSURE>
 - Static facts (size, RET, callers, callees, strings, globals) come from the $0 dump scripts listed in
   `ghidra_knowledge/RE_AGENT_GUIDE.md` §2.1. Put their output in the brief; never ask a Haiku or REA for them.
 - Live REA (`rea-recon`) only for indirect call targets, non-contiguous bodies, data xrefs and named pseudo-C.
-  At most 2 live REA sessions machine-wide. Ledger rows go through `ghidra_knowledge/tools/rea_ledger.py` (`lint`).
+  At most 2 live REA sessions machine-wide (`ghidra_knowledge/tools/rea_session.py guard`); scripted live facts use
+  `rea_session.py` ($0 tokens) before any rea-recon agent. Ledger rows go through `ghidra_knowledge/tools/rea_ledger.py` (`lint`).
 
 ## Claude Code Haiku swarm (waves)
 

@@ -1,0 +1,19 @@
+{
+ "operation": "procedure_callees",
+ "parameters": {
+  "procedure": "0x007680a0"
+ },
+ "subject": {
+  "name": "swkotor2.exe",
+  "digest": {
+   "sha256": "6a522e71631dcee93467bd2010f3b23d9145326e1e2e89305f13ab104dbbffef"
+  }
+ },
+ "normalized_result": [
+  "0x73f530",
+  "0x76e610",
+  "0x7ed830"
+ ],
+ "confidence": "observed",
+ "synthetic_envelope": true
+}

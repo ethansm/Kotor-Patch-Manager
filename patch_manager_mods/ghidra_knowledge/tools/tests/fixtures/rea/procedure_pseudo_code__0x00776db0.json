@@ -1,0 +1,15 @@
+{
+ "operation": "procedure_pseudo_code",
+ "parameters": {
+  "procedure": "0x00776db0"
+ },
+ "subject": {
+  "name": "swkotor2.exe",
+  "digest": {
+   "sha256": "6a522e71631dcee93467bd2010f3b23d9145326e1e2e89305f13ab104dbbffef"
+  }
+ },
+ "normalized_result": "\nvoid FUN_00776db0(int param_1)\n\n{\n  int in_ECX;\n  \n  if (param_1 == 0) {\n    *(undefined4 *)(in_ECX + 0x3c0) = 0;\n  }\n  else if (param_1 == 1) {\n    *(undefined4 *)(in_ECX + 0x3c0) = 1;\n  }\n  else if (param_1 == 2) {\n    *(undefined4 *)(in_ECX + 0x3c0) = 2;\n  }\n  return;\n}\n\n",
+ "confidence": "observed",
+ "synthetic_envelope": true
+}

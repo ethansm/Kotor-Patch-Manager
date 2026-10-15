@@ -1,0 +1,13 @@
+{
+ "synthetic": true,
+ "status": "open",
+ "target": {
+  "name": "swkotor2.exe",
+  "digest": {
+   "sha256": "6a522e71631dcee93467bd2010f3b23d9145326e1e2e89305f13ab104dbbffef"
+  }
+ },
+ "provider": {
+  "id": "ghidra"
+ }
+}

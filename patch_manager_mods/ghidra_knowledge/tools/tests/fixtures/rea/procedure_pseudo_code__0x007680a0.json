@@ -1,0 +1,15 @@
+{
+ "operation": "procedure_pseudo_code",
+ "parameters": {
+  "procedure": "0x007680a0"
+ },
+ "subject": {
+  "name": "swkotor2.exe",
+  "digest": {
+   "sha256": "6a522e71631dcee93467bd2010f3b23d9145326e1e2e89305f13ab104dbbffef"
+  }
+ },
+ "normalized_result": "\nundefined4 FUN_007680a0(int param_1)\n\n{\n  int iVar1;\n  undefined4 uVar2;\n  int *piVar3;\n  int in_ECX;\n  \n  iVar1 = FUN_007ed830();\n  if (iVar1 == 0) {\n    uVar2 = 0;\n  }\n  else if (param_1 == 1) {\n    piVar3 = (int *)FUN_007ed830();\n    iVar1 = (**(code **)(*piVar3 + 0x4c))(0x272e);\n    if (iVar1 != 1) {\n      piVar3 = (int *)FUN_007ed830();\n      iVar1 = (**(code **)(*piVar3 + 0x4c))(0x27ab);\n      if (iVar1 != 1) {\n        piVar3 = (int *)FUN_007ed830();\n        iVar1 = (**(code **)(*piVar3 + 0x4c))(0x2736);\n        if (iVar1 != 1) {\n          piVar3 = (int *)FUN_007ed830();\n          iVar1 = (**(code **)(*piVar3 + 0x4c))(0x27aa);\n          if (iVar1 != 1) {\n            piVar3 = (int *)FUN_007ed830();\n            iVar1 = (**(code **)(*piVar3 + 0x4c))(0x2737);\n            if (iVar1 != 1) {\n              piVar3 = (int *)FUN_007ed830();\n              iVar1 = (**(code **)(*piVar3 + 0x4c))(0x2738);\n              if (iVar1 != 1) {\n                piVar3 = (int *)FUN_007ed830();\n                iVar1 = (**(code **)(*piVar3 + 0x4c))(0x2739);\n                if (iVar1 != 1) {\n                  piVar3 = (int *)FUN_007ed830();\n                  iVar1 = (**(code **)(*piVar3 + 0x4c))(0x273a);\n                  if ((iVar1 != 1) && (*(int *)(in_ECX + 0x3b0) == 0)) {\n                    if (*(short *)(in_ECX + 0x2e8) == 0) {\n                      return 1;\n                    }\n                    uVar2 = FUN_0076e610(0x20);\n                    FUN_0073f530(uVar2);\n                    if (*(int *)(in_ECX + 0x138) == 1) {\n                      return 1;\n                    }\n                    FUN_007ed830();\n                    uVar2 = FUN_0076e610(0x10);\n                    FUN_0073f530(uVar2);\n                    return 1;\n                  }\n                }\n              }\n            }\n          }\n        }\n      }\n    }\n    uVar2 = 1;\n  }\n  else {\n    uVar2 = 1;\n  }\n  return uVar2;\n}\n\n",
+ "confidence": "observed",
+ "synthetic_envelope": true
+}

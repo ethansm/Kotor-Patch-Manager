@@ -1,0 +1,27 @@
+{
+ "operation": "xrefs",
+ "parameters": {
+  "address": "0x00a1b4a4"
+ },
+ "subject": {
+  "name": "swkotor2.exe",
+  "digest": {
+   "sha256": "6a522e71631dcee93467bd2010f3b23d9145326e1e2e89305f13ab104dbbffef"
+  }
+ },
+ "normalized_result": [
+  "0x407654",
+  "0x407a7c",
+  "0x407c6a",
+  "0x407cfc",
+  "0x407d20",
+  "0x407d67",
+  "0x407d84",
+  "0x407da2",
+  "0x407dc0",
+  "0x407ddd",
+  "0x407dfb",
+  "0x407e15"
+ ],
+ "confidence": "observed"
+}

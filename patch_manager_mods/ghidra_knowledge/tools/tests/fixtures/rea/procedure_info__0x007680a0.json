@@ -1,0 +1,114 @@
+{
+ "operation": "procedure_info",
+ "parameters": {
+  "procedure": "0x007680a0"
+ },
+ "subject": {
+  "name": "swkotor2.exe",
+  "digest": {
+   "sha256": "6a522e71631dcee93467bd2010f3b23d9145326e1e2e89305f13ab104dbbffef"
+  }
+ },
+ "normalized_result": {
+  "name": "FUN_007680a0",
+  "entrypoint": "0x7680a0",
+  "basicblock_count": 20,
+  "length": 516,
+  "signature": "undefined FUN_007680a0()",
+  "locals": [
+   {
+    "description": "undefined4 local_14 @ Stack[-0x14]:4",
+    "provenance": "ghidra-function-database"
+   },
+   {
+    "description": "undefined4 local_18 @ Stack[-0x18]:4",
+    "provenance": "ghidra-function-database"
+   },
+   {
+    "description": "undefined4 local_1c @ Stack[-0x1c]:4",
+    "provenance": "ghidra-function-database"
+   },
+   {
+    "description": "undefined4 local_20 @ Stack[-0x20]:4",
+    "provenance": "ghidra-function-database"
+   },
+   {
+    "description": "undefined4 local_24 @ Stack[-0x24]:4",
+    "provenance": "ghidra-function-database"
+   },
+   {
+    "description": "undefined4 local_28 @ Stack[-0x28]:4",
+    "provenance": "ghidra-function-database"
+   },
+   {
+    "description": "undefined4 local_2c @ Stack[-0x2c]:4",
+    "provenance": "ghidra-function-database"
+   },
+   {
+    "description": "undefined4 local_30 @ Stack[-0x30]:4",
+    "provenance": "ghidra-function-database"
+   },
+   {
+    "description": "undefined4 local_34 @ Stack[-0x34]:4",
+    "provenance": "ghidra-function-database"
+   },
+   {
+    "description": "undefined4 local_38 @ Stack[-0x38]:4",
+    "provenance": "ghidra-function-database"
+   },
+   {
+    "description": "undefined4 local_3c @ Stack[-0x3c]:4",
+    "provenance": "ghidra-function-database"
+   },
+   {
+    "description": "undefined4 local_40 @ Stack[-0x40]:4",
+    "provenance": "ghidra-function-database"
+   },
+   {
+    "description": "undefined4 local_44 @ Stack[-0x44]:4",
+    "provenance": "ghidra-function-database"
+   },
+   {
+    "description": "undefined1 local_5 @ Stack[-0x5]:1",
+    "provenance": "ghidra-function-database"
+   },
+   {
+    "description": "undefined4 local_c @ Stack[-0xc]:4",
+    "provenance": "ghidra-function-database"
+   },
+   {
+    "description": "undefined2 local_e @ Stack[-0xe]:2",
+    "provenance": "ghidra-function-database"
+   }
+  ],
+  "classification": {
+   "external": false,
+   "thunk": false,
+   "thunk_target": null,
+   "provenance": "ghidra-function-manager"
+  },
+  "body": {
+   "available": true,
+   "provenance": "ghidra-function-body-address-set",
+   "ranges": [
+    {
+     "start": "0x7680a0",
+     "end": "0x768296"
+    },
+    {
+     "start": "0x768299",
+     "end": "0x76829f"
+    },
+    {
+     "start": "0x7682a2",
+     "end": "0x7682a7"
+    }
+   ],
+   "total_bytes": 516,
+   "span_bytes": 520,
+   "non_contiguous": true,
+   "contains_entry": true
+  }
+ },
+ "confidence": "observed"
+}

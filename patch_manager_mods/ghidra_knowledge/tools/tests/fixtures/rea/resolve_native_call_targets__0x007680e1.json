@@ -1,0 +1,24 @@
+{
+ "operation": "resolve_native_call_targets",
+ "parameters": {
+  "address": "0x007680e1"
+ },
+ "subject": {
+  "name": "swkotor2.exe",
+  "digest": {
+   "sha256": "6a522e71631dcee93467bd2010f3b23d9145326e1e2e89305f13ab104dbbffef"
+  }
+ },
+ "normalized_result": {
+  "call_site": "0x7680e1",
+  "procedure": "0x7680a0",
+  "status": "unresolved",
+  "mechanism": "computed",
+  "targets": [],
+  "limitations": [
+   "Targets are static Ghidra ReferenceManager call-reference observations. Computed calls without call references remain unresolved; a resolved reference is not proof of runtime execution.",
+   "Objective-C, Swift, vtable and closure mechanisms are not identified by this reference-only boundary."
+  ]
+ },
+ "confidence": "observed"
+}

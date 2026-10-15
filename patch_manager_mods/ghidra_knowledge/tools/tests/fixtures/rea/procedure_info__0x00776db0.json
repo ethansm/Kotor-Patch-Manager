@@ -1,0 +1,50 @@
+{
+ "operation": "procedure_info",
+ "parameters": {
+  "procedure": "0x00776db0"
+ },
+ "subject": {
+  "name": "swkotor2.exe",
+  "digest": {
+   "sha256": "6a522e71631dcee93467bd2010f3b23d9145326e1e2e89305f13ab104dbbffef"
+  }
+ },
+ "normalized_result": {
+  "name": "FUN_00776db0",
+  "entrypoint": "0x776db0",
+  "basicblock_count": 8,
+  "length": 84,
+  "signature": "undefined FUN_00776db0()",
+  "locals": [
+   {
+    "description": "undefined4 local_8 @ Stack[-0x8]:4",
+    "provenance": "ghidra-function-database"
+   },
+   {
+    "description": "undefined4 local_c @ Stack[-0xc]:4",
+    "provenance": "ghidra-function-database"
+   }
+  ],
+  "classification": {
+   "external": false,
+   "thunk": false,
+   "thunk_target": null,
+   "provenance": "ghidra-function-manager"
+  },
+  "body": {
+   "available": true,
+   "provenance": "ghidra-function-body-address-set",
+   "ranges": [
+    {
+     "start": "0x776db0",
+     "end": "0x776e03"
+    }
+   ],
+   "total_bytes": 84,
+   "span_bytes": 84,
+   "non_contiguous": false,
+   "contains_entry": true
+  }
+ },
+ "confidence": "observed"
+}

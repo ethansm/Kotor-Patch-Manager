@@ -90,6 +90,12 @@ $0 and take milliseconds; never ask REA or a model for them.
 | the same facts on every review card (blind, real = decoy) | `steam_db_batches/tools/batch.py cards B<n> --facts` |
 | ledger hygiene before using or adding rows | `python3 ghidra_knowledge/tools/rea_ledger.py lint` (rules L1 L2 L4 L5 L6 L8; baseline 53 issues on 10-15) |
 
+Live REA, scripted ($0 tokens): `python3 ghidra_knowledge/tools/rea_session.py guard` (counts live REA sessions;
+max 2) then `rea_session.py call <tool> --args '<json>'` or the `ReaSession` class: one persistent MCP session,
+~5 min cold start once, then ~0.01 s per call; results are envelopes (read `normalized_result`); cached under the
+dump dir `rea_cache/`. REA cannot resolve vtable calls (use the static slot instead) and rejects
+`set_addresses_names` (use `annotate_native_function`). Details: `.claude/research/rea_decomp/D1_probe.md`.
+
 Live REA (`rea-recon`) is only for what the dumps cannot answer: targets of INDIRECT call sites, non-contiguous
 function bodies, live data xrefs, and named pseudo-C. At most 2 live REA sessions machine-wide.
 

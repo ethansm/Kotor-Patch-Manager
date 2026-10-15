@@ -1,0 +1,23 @@
+{
+ "operation": "annotate_native_function",
+ "parameters": {
+  "procedure": "0x0085d320",
+  "name": "ProbeName",
+  "comment": "probe"
+ },
+ "subject": {
+  "name": "swkotor2.exe",
+  "digest": {
+   "sha256": "6a522e71631dcee93467bd2010f3b23d9145326e1e2e89305f13ab104dbbffef"
+  }
+ },
+ "normalized_result": {
+  "annotations": {
+   "address": "0x85d320",
+   "name": "ProbeName",
+   "comment": "probe",
+   "inline_comment": null
+  }
+ },
+ "confidence": "observed"
+}
