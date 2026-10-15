@@ -40,7 +40,7 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [x] | 24 | WI-44 | P1 | verify-only | S | - | NPC diversity selector bias and float guard | 1 | 0 | NPC diversity selector bias and float guard; 1 verify open. |
 | [x] | 25 | WI-18c | P1 | ready | M | WI-18 | KpLog remainder: probe, companion AI, parser, design rows (C | 6 | 3 | KpLog remainder for probe, companion AI and parser rows; mostly parked |
 | [x] | 26 | WI-14 | P1 | verify-only | L | - | Level-up override F-row verify and deferred items | 10 | 0 | Level-up F-row verify and deferred items; large, 8 open. |
-| [ ] | 27 | WI-30 | P1 | ready | L | - | Letterbox fix KpLog verify and analyzer cleanup | 9 | 4 | Letterbox fix KpLog verify and analyzer cleanup; 9 open, ready. |
+| [x] | 27 | WI-30 | P1 | ready | L | - | Letterbox fix KpLog verify and analyzer cleanup | 9 | 4 | Letterbox fix KpLog verify and analyzer cleanup; 9 open, ready. |
 | [ ] | 28 | WI-46 | P1 | ready | M | - | Agent tooling hardening: kpm_hotswap, kpm_status, gate, raw  | 7 | 4 | Agent tooling hardening, incl. kpm_hotswap; tooling, 2 blocked. |
 | [x] | 29 | WI-02c | P1 | ready | S | - | Smoke harness include normalization (H8) | 0 | 1 | Smoke harness include normalization; test tooling, no blockers. |
 | [ ] | 30 | WI-23 | P1 | ready | M | - | Ranged AI a1_retarget strict range gate | 1 | 2 | Ranged AI a1_retarget strict range gate; 1 open, line numbers unknown. |

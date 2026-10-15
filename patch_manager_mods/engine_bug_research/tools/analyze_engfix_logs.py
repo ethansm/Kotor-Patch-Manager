@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Read-only offline analyzer for the k2-dialogue-letterbox-fix log (mod 1.0.0 / 1.0.1 / 1.0.1-probe / 1.0.2 / 1.0.2-probe).
 
-Usage: analyze_engfix_logs.py <logfile> [--json]
+Usage: analyze_engfix_logs.py [<logfile>] [--json]
   <logfile> is dialogue_letterbox_fix_log.txt (legacy 1.0.0/1.0.1 own log, or the 1.0.2 old-core fallback sink) or
-  k2-dialogue-letterbox-fix_log.txt (1.0.2 on a KotorPatcher with kpatch.log); there is no default path, pass the file.
+  k2-dialogue-letterbox-fix_log.txt (1.0.2 on a KotorPatcher with kpatch.log). With no <logfile>, the default
+  DEFAULT_LOG_PATH (k2-dialogue-letterbox-fix_log.txt, relative to the current directory) is read.
 
 Line prefixes accepted (a prefix stage strips them; the message regexes below only ever see the bare text):
   * legacy:    `[<GetTickCount>] text`                                          (1.0.0 / 1.0.1 own log)
@@ -43,6 +44,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 import kplog_parse  # noqa: E402  (prefix grammar for the core / fallback line shapes; not duplicated here)
 
 PATCH_ID = "k2-dialogue-letterbox-fix"
+DEFAULT_LOG_PATH = "k2-dialogue-letterbox-fix_log.txt"  # main() reads this when no <logfile> is given (1.0.2 perpatch name)
 VANILLA_BYTES = "00 00 00 80 aa aa 02 40"
 
 LINE_RE = re.compile(r"^\[(\d+)\]\s?(.*)$")
@@ -742,8 +744,10 @@ def analyze_file(path):
 def main(argv):
     args = [a for a in argv[1:] if a != "--json"]
     as_json = "--json" in argv[1:]
+    if not args:
+        args = [DEFAULT_LOG_PATH]
     if len(args) != 1:
-        sys.stderr.write("usage: analyze_engfix_logs.py <logfile> [--json]\n")
+        sys.stderr.write("usage: analyze_engfix_logs.py [<logfile>] [--json]\n")
         return 2
     path = args[0]
     try:
