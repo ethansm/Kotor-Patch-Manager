@@ -20,7 +20,8 @@ sys.path.insert(0, str(HERE))
 import gen_hotbar_textures as gt  # noqa: E402
 
 EXPECTED = {"fph_slot": (128, 128), "fph_slot_hi": (128, 128), "fph_edit": (72, 128), "fph_edit_hi": (72, 128),
-            "fph_tgt_lowhp": (32, 32), "fph_tgt_self": (32, 32), "fph_mode": (72, 128), "fph_mode_hi": (72, 128)}
+            "fph_tgt_lowhp": (32, 32), "fph_tgt_self": (32, 32), "fph_mode": (72, 128), "fph_mode_hi": (72, 128),
+            "fph_arrow_prev": (56, 70), "fph_arrow_next": (56, 70)}
 
 
 def gen():

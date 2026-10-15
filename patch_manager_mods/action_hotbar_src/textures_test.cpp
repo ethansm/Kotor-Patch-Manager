@@ -8,6 +8,7 @@ struct Expect { const char* name; int w, h; };
 static const Expect kExpected[] = {
     { "fph_slot", 128, 128 }, { "fph_slot_hi", 128, 128 }, { "fph_edit", 72, 128 }, { "fph_edit_hi", 72, 128 },
     { "fph_tgt_lowhp", 32, 32 }, { "fph_tgt_self", 32, 32 }, { "fph_mode", 72, 128 }, { "fph_mode_hi", 72, 128 },
+    { "fph_arrow_prev", 56, 70 }, { "fph_arrow_next", 56, 70 },
 };
 
 int main() {

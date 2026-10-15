@@ -112,7 +112,8 @@ constexpr DWORD TipDelayMs = 450;
 using hb::TipWrap; using hb::TipMaxDescLines;   // tooltip metrics live in HotbarLogic.h (hb::tipLayout)
 const char* const Spells2daPath = "override/spells.2da";
 const char* const TlkPath = "dialog.tlk";
-// Art embedded in the DLL (HotbarTextures.inc) and registered as engine textures under these names (ensureTextures).
+// Art embedded in the DLL (HotbarTextures.inc) and registered as engine textures under these names (ensureTextures registers every
+// EmbeddedTextures entry, so new art needs no list edit here). fph_arrow_prev / fph_arrow_next: the prev / next arrow buttons (LBL_HOTBARPREV / NEXT).
 const char* const FrameResref = "fph_slot", *const FrameHiResref = "fph_slot_hi";   // slot / tab / cell frame, normal + hover
 const char* const EditResref = "fph_edit", *const EditHiResref = "fph_edit_hi";     // thin wrench toggle, normal + active
 constexpr double EditBoxUnits = 38.0, PickBoxUnits = 112.0, BoxPadUnits = 8.0, TitleUnits = 22.0;   // must match LBL_HOTBARPBG / PTITLE in Layout[]
@@ -1624,8 +1625,8 @@ constexpr CtlSpec Layout[] = {
     { "LBL_HOTBARTAB0",      TP_Plain,  12, 394,  84,  24, "fph_slot", "Powers", "dialogfont10x10", 18 },
     { "LBL_HOTBARTAB1",      TP_Plain, 100, 394,  84,  24, "fph_slot", "Items",  "dialogfont10x10", 18 },
     { "LBL_HOTBARTAB2",      TP_Plain, 188, 394,  84,  24, "fph_slot", "Modes",  "dialogfont10x10", 18 },
-    { "LBL_HOTBARPREV",      TP_Plain,  12, 426,  28,  35, "fph_slot", "<",      nullptr,           18 },
-    { "LBL_HOTBARNEXT",      TP_Plain, 388, 426,  28,  35, "fph_slot", ">",      nullptr,           18 },
+    { "LBL_HOTBARPREV",      TP_Plain,  12, 426,  28,  35, "fph_arrow_prev", nullptr, nullptr, -1 },
+    { "LBL_HOTBARNEXT",      TP_Plain, 388, 426,  28,  35, "fph_arrow_next", nullptr, nullptr, -1 },
     { "LBL_HOTBARCLEAR",     TP_Plain, 346, 394,  70,  24, "fph_slot", "Clear",  "dialogfont10x10", 18 },
     { "LBL_HOTBARCELLBG0",   TP_Plain,  56, 426,  35,  35, "fph_slot", nullptr,  nullptr,           -1 },
     { "LBL_HOTBARCELLBG1",   TP_Plain,  96, 426,  35,  35, "fph_slot", nullptr,  nullptr,           -1 },

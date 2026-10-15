@@ -5,7 +5,8 @@ Writes patch_manager_mods/action_hotbar_src/HotbarTextures.inc: one uncompressed
 (fph_slot / fph_slot_hi: 128x128 rounded-square slot frame, teal / beige like the native lbl_mibox00 / 00a;
 fph_edit / fph_edit_hi: 72x128 thin frame with a wrench, normal / active; fph_mode / fph_mode_hi: same frame with a
 crosshair, the target-mode button; fph_tgt_lowhp: 32x32 red-cross corner badge for 'lowest-HP party member' slots;
-fph_tgt_self: 32x32 teal person-silhouette corner badge for 'apply to self' slots). The DLL registers them with the engine at
+fph_tgt_self: 32x32 teal person-silhouette corner badge for 'apply to self' slots; fph_arrow_prev / fph_arrow_next: 56x70
+slot frame with a mint chevron, the prev / next arrow buttons). The DLL registers them with the engine at
 start-up, so nothing is installed into override/. Re-run after changing the art, then rebuild the patch.
 
   --out-dir DIR   also write the .tga files to DIR (for inspection)
@@ -45,7 +46,8 @@ EDIT_COLS = ((EDIT_TEX[0], (10, 96, 80)), (EDIT_TEX[1], (208, 204, 170)))
 MODE_TEX = ("fph_mode", "fph_mode_hi")
 BADGE_TEX = "fph_tgt_lowhp"
 SELF_BADGE_TEX = "fph_tgt_self"
-ALL_NAMES = TEX + EDIT_TEX + (BADGE_TEX, SELF_BADGE_TEX) + MODE_TEX
+ARROW_TEX = ("fph_arrow_prev", "fph_arrow_next")
+ALL_NAMES = TEX + EDIT_TEX + (BADGE_TEX, SELF_BADGE_TEX) + MODE_TEX + ARROW_TEX
 
 
 def _editor_frame(col, S=4, W=72, H=128):
@@ -212,9 +214,46 @@ def make_self_badge_texture(out: Path) -> list[Path]:
     return [p]
 
 
+def make_arrow_textures(out: Path) -> list[Path]:
+    """56x70 prev / next arrow buttons: the slot frame (dark rim, translucent black well) with a mint->teal chevron and a dark
+    outline. The Layout[] label is 28x35 units, so the art is drawn at 2:1 and the engine scales it down."""
+    from PIL import Image, ImageDraw
+    S, W, H = 4, 56, 70
+    made = []
+    for name in ARROW_TEX:
+        flip = name == ARROW_TEX[1]   # next = prev mirrored
+        def fx(x, flip=flip): return W - x if flip else x
+        im = Image.new("RGBA", (W * S, H * S), (0, 0, 0, 0))
+        d = ImageDraw.Draw(im)
+        d.rounded_rectangle([0, 0, W * S - 1, H * S - 1], radius=10 * S, fill=(0, 44, 26, 255))
+        d.rounded_rectangle([2.5 * S, 2.5 * S, (W - 2.5) * S, (H - 2.5) * S], radius=8 * S, fill=(0, 0, 0, 175))
+        pts = [(fx(38), 24), (fx(19), 35), (fx(38), 46)]   # '<' for prev
+        def chevron(width, pts=pts):
+            m = Image.new("L", im.size, 0)
+            md = ImageDraw.Draw(m)
+            md.line([(x * S, y * S) for x, y in pts], fill=255, width=int(round(width * S)), joint="curve")
+            r = width / 2 * S
+            for x, y in (pts[0], pts[-1]):
+                md.ellipse([x * S - r, y * S - r, x * S + r, y * S + r], fill=255)
+            return m
+        im.paste(Image.new("RGBA", im.size, (6, 60, 50, 255)), (0, 0), chevron(10.5))   # dark outline
+        grad = Image.new("RGBA", im.size)
+        gd = ImageDraw.Draw(grad)
+        top, bot = (175, 252, 228), (28, 150, 122)   # the wrench / target-mode palette, light at the top
+        for y in range(H * S):
+            t = y / (H * S - 1)
+            gd.line([(0, y), (W * S - 1, y)], fill=tuple(int(top[i] + (bot[i] - top[i]) * t) for i in range(3)) + (255,))
+        im.paste(grad, (0, 0), chevron(7.0))
+        im = im.resize((W, H), Image.LANCZOS)
+        p = out / f"{name}.tga"
+        im.save(p, format="TGA")
+        made.append(p)
+    return made
+
+
 def make_all(out: Path) -> list[Path]:
     """Every texture, in EmbeddedTextures[] order (new art appended after the original four)."""
-    return make_textures(out) + make_edit_textures(out) + make_badge_texture(out) + make_self_badge_texture(out) + make_mode_textures(out)
+    return make_textures(out) + make_edit_textures(out) + make_badge_texture(out) + make_self_badge_texture(out) + make_mode_textures(out) + make_arrow_textures(out)
 
 
 def render_inc(blobs) -> str:

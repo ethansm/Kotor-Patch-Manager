@@ -17,6 +17,7 @@ Action Hotbar (id `action-hotbar`), formerly Force Power Hotbar.
 - WI-10: Force Power Hotbar polish and config round-trip.
 - WI-10b: Force Power Hotbar EKC hook move and arrow art (split from WI-10).
 - WI-11: Force Power Hotbar config and statics.
+- WI-12: Force Power Hotbar arrow art and setFont check.
 
 ## 1.2.2-dev (2026-10-05)
 
