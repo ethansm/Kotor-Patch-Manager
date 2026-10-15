@@ -587,6 +587,56 @@ def updates_folder_beats_same_name_in_base_shard(root):
     check("/updates/" in path, f"updates/ should win the same-name tie, chose {path}")
 
 
+@test
+def overlay_pick_outside_local_dir_is_not_variant(root):
+    """WI-103: an overlay-attributed pick sits in the install's override/, outside its source's local_dir."""
+    r = Path(root)
+    reg = {"sources": {"ov1": {"local_dir": str(r / "overlay_src")}}}
+    chosen = {"source_id": "ov1", "path": str(r / "install" / "override" / "tex.tga")}
+    check(ing.chosen_from_variant(reg, chosen) is False, "overlay pick outside local_dir must not count as variant")
+
+
+@test
+def variant_folder_outside_root_is_false_inside_root_unchanged(root):
+    r = Path(root)
+    src = r / "overlay_src"
+    check(ing._variant_folder(r / "install" / "override" / "x.tga", src) is False, "outside root must be False")
+    check(ing._variant_folder(r / "overlay_src_evil" / "Optional - X" / "x.tga", src) is False,
+          "a sibling dir sharing the name prefix is not under root")
+    check(ing._variant_folder(src / "x.tga", src) is False, "a file directly under root has no variant folder")
+    check(ing._variant_folder(src / "Optional - X" / "x.tga", src) is True, "variant folder under root must stay True")
+    check(ing._variant_folder(src / "Upscale" / "deep" / "x.tga", src) is True, "nested variant folder stays True")
+    check(ing._variant_folder(src / "a" / "Optional.tga", src) is False, "the file name never counts")
+
+
+@test
+def overlay_pick_outside_local_dir_ingests_without_variant_note(root):
+    """Caller level (k1_port_ingest.py ingest -> chosen_from_variant): an overlay texture from the install's
+    override/ must not abort the run (HEAD: uncaught ValueError) and gets no 'chosen from variant folder' note."""
+    write_registry(root)
+    path = Path(root) / "sources.json"
+    reg = json.loads(path.read_text(encoding="utf-8"))
+    reg["sources"]["test_overlay"] = {"name": "overlay", "author": "Ov Author", "license_class": "credit_required",
+                                      "requires_author_approval": False, "credits": ["Ov Author"],
+                                      "local_dir": str(Path(root) / "overlay_src")}
+    path.write_text(json.dumps(reg, indent=2), encoding="utf-8")
+    (Path(root) / "overlay_src").mkdir()
+    tex = str(Path(root) / "install" / "override" / "N_TestTex.tga")
+    cand = ing.make_cand("test_overlay", "texture", "N_TestTex", tex, str(Path(tex).parent), ".tga", 64, "pixels", 8, 8)
+
+    def fake_vanilla(install, resref, olds, want_model, read_tpc, notes, overlay):
+        return {"present": True, "textures": {"N_TestTex": cand}, "model": None}
+
+    with stubbed(root), patched(ing, "vanilla_lookup", fake_vanilla):
+        res = ingest_main(root, "--no-model", "--dry-run", "--json")
+    check(res.returncode == 0, f"overlay pick aborted the run: rc={res.returncode} err={res.stderr[-300:]}")
+    s = json.loads(res.stdout)
+    t = texture_decision(s)
+    check(t["chosen"]["source_id"] == "test_overlay" and t["chosen"]["path"] == tex,
+          f"the overlay pick should win: {t['chosen']}")
+    check(variant_notes(s) == [], f"an overlay pick is not a variant pick, so no note: {s['notes']}")
+
+
 def main() -> int:
     if not Path(PY).exists():
         print(f"SKIP: patched pykotor python not found at {PY} (set K1PORT_PY, see setup_venv.sh)")

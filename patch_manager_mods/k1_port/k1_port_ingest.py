@@ -161,6 +161,8 @@ def vanilla_lookup(install: Path, resref: str, olds: list, want_model: bool, rea
 
 def _variant_folder(p: Path, root: Path) -> bool:
     """True when a directory between root and the file is a variant folder. The file name never counts."""
+    if not p.is_relative_to(root):
+        return False  # outside the source's own dir (an overlay pick): no variant folder of that source
     return any(VARIANT_DIR_RE.match(part) for part in p.relative_to(root).parts[:-1])
 
 
