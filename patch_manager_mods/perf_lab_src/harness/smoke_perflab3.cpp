@@ -207,8 +207,10 @@ int main(int argc, char** argv) {
     std::string fr = line(blk, "FRAME ");
     long long h[10] = {0}; size_t hp = fr.find("hist_ms ");
     if (hp != std::string::npos) sscanf(fr.c_str() + hp + 8, "%lld %lld %lld %lld %lld %lld %lld %lld %lld %lld", &h[0], &h[1], &h[2], &h[3], &h[4], &h[5], &h[6], &h[7], &h[8], &h[9]);
-    check(field(fr, "frames") == 5 && h[5] == 4 && field(fr, "bucket_calls") == 60 && field(fr, "actionbar_calls") == 5 && field(fr, "max_bucket_per_frame") == 14 && field(fr, "max_actionbar_per_frame") == 1,
-          "M5 frames, frame-time histogram (4 intervals in 16-31 ms), per-frame maxima");
+    check(field(fr, "frames") == 5 && h[5] + h[6] == 4 && field(fr, "bucket_calls") == 60 && field(fr, "actionbar_calls") == 5 && field(fr, "max_bucket_per_frame") == 14 && field(fr, "max_actionbar_per_frame") == 1,
+          "M5 frames, frame-time histogram (4 intervals in 16-63 ms), per-frame maxima");
+    long long hsum = 0; for (int k = 0; k < 10; ++k) hsum += h[k];   // every interval lands in bins 0-9, so the total does not depend on timing
+    check(hsum == 4, "M5 frame-time histogram: exactly 4 SwapBuffers intervals across all bins");
     std::string mv = line(blk, "MOVIE ");
     check(field(mv, "calls") == 2 && field(mv, "spins") == 601 && field(mv, "pump_cutoff_seen") == 1 && field(mv, "last_this254") == 1 && mv.find("spin_hist 0 0 0 0 0 0 0 0 0 0 1 ") != std::string::npos,
           "M6 movie calls/spins/cut-off/this+0x254/spin histogram");
