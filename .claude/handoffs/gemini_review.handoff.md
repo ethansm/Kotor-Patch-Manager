@@ -1,6 +1,9 @@
 # Session Handoff: Gemini 2026-10-14 review (G1 + G2 DONE)
 
 ## 0. Next-Phase Direction
+**FX1 (2026-10-15, active):** fixing WI-76, WI-85..88, WI-97..99 with a Haiku variant wave + Sonnet consolidators; plan
+`.claude/plans/gemini_fix_wave1.md` (wave dir `.claude/waves/fix1/`, brief generator `tools/fix1_briefs.py`). Resume: `python3 scripts/plan_manager.py resume --plan .claude/plans/gemini_fix_wave1.md`.
+
 G1 and **G2 are DONE** (plan `.claude/plans/gemini_review_g2.md`, all 6 phases marked; commits f427b92, dedb65e, 93d371a, 30ba0b6, b213db6,
 6e8af73 doc 37, WI-73..WI-101 commits by wi_driver, af03494, f7f8974). Single source of truth: `.claude/reviews/gemini_20261014/validated.tsv`
 (real 61, latent 49, refuted 21, unsure 4; 0 high). Persisted: doc 37 BG26-BG41, work items WI-73..WI-101 (origin gemini-20261014),
