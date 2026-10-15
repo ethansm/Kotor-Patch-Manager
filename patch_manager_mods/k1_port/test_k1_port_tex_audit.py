@@ -63,7 +63,33 @@ def test_only_filters_to_one_atlas() -> None:
         assert [p.name for p in sorted(out.glob("*.png"))] == ["n_commf02.png"]
 
 
-TESTS = [test_audit_writes_png_and_stats_per_atlas, test_only_filters_to_one_atlas]
+def test_gap_texture_pixel_classes() -> None:
+    import numpy as np
+
+    # 1x6 strip, every texel bright content (luma > BG_LUMA) unless noted:
+    #   0 unpainted non-skin inside an island -> red      1 unpainted skin inside an island -> yellow
+    #   2 unpainted non-skin outside islands  -> cyan     3 unpainted skin outside islands  -> cyan (beats yellow)
+    #   4 painted                             -> source x 0.3   5 unpainted background (luma <= BG_LUMA) -> source x 0.3
+    rgb = np.array([[[255, 255, 255]] * 4 + [[100, 200, 250], [10, 10, 10]]], dtype=np.uint8)
+    painted = np.array([[False, False, False, False, True, False]])
+    skin = np.array([[False, True, False, True, False, False]])
+    any_island = np.array([[True, True, False, False, True, True]])
+    gap = au.gap_texture(rgb, painted, skin, any_island)
+    assert gap.shape == (1, 6, 3) and gap.dtype == np.uint8, (gap.shape, gap.dtype)
+    got = [tuple(int(v) for v in gap[0, i]) for i in range(6)]
+    assert got[0] == (255, 40, 40), f"red {got[0]}"
+    assert got[1] == (255, 220, 0), f"yellow {got[1]}"
+    assert got[2] == (0, 230, 230), f"cyan non-skin {got[2]}"
+    assert got[3] == (0, 230, 230), f"cyan skin {got[3]}"
+    assert got[4] == (30, 60, 75), f"painted dim {got[4]}"
+    assert got[5] == (3, 3, 3), f"background dim {got[5]}"
+
+
+TESTS = [
+    test_audit_writes_png_and_stats_per_atlas,
+    test_only_filters_to_one_atlas,
+    test_gap_texture_pixel_classes,
+]
 
 
 def main() -> int:

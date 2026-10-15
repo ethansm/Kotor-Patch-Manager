@@ -254,6 +254,35 @@ def test_red_tint_decode(root: Path):
         red_shift = inside[:, 0] - (inside[:, 1] + inside[:, 2]) / 2
         check(red_shift.mean() > 120, f"{fmt}: masked pixels not red-shifted, mean shift {red_shift.mean():.1f}")
         check(np.array_equal(after[~mask], before[~mask]), f"{fmt}: pixels outside the mask changed")
+        # the mean alone hides skipped blocks (a random DXT1 parent is ~half 3-colour): every masked block must turn red
+        for by in range(8, 24, 4):
+            for bx in range(16, 32, 4):
+                blk = after[by:by + 4, bx:bx + 4, :3].astype(int)
+                best = (blk[..., 0] - (blk[..., 1] + blk[..., 2]) / 2).max()
+                check(best > 120, f"{fmt}: masked block at pixel ({bx},{by}) was not edited, best red shift {best:.1f}")
+
+
+@test
+def test_red_tint_every_masked_pixel_on_four_colour_parent(root: Path):
+    for fmt in ("dxt1", "dxt5"):
+        raw = bytearray(make_parent(64, 64, fmt, 7, seed=3))
+        info = tpc.parse(bytes(raw))
+        bb, col = BLOCK_BYTES[fmt], 0 if fmt == "dxt1" else 8
+        for off, size in zip(info["offsets"], info["sizes"]):  # every level 4-colour only: c0 = 0xFFFF > c1 = 0
+            for o in range(off + col, off + size, bb):
+                raw[o:o + 4] = b"\xff\xff\x00\x00"
+        b = bytes(raw)
+        mask = np.zeros((64, 64), dtype=bool)
+        mask[8:24, 16:32] = True  # block aligned
+        before = tpc.decode_mip(b, info, 0)
+        rgb = before[:, :, :3].copy()
+        rgb[mask] = (255, 0, 0)
+        out = tpc.apply_rgb_edit(b, rgb, mask)
+        after = tpc.decode_mip(out, tpc.parse(out), 0)
+        px = after[mask][:, :3].astype(int)
+        shift = px[:, 0] - (px[:, 1] + px[:, 2]) / 2
+        check(shift.min() > 120, f"{fmt}: a masked pixel is not red, min shift {shift.min():.1f}")
+        check(np.array_equal(after[~mask], before[~mask]), f"{fmt}: pixels outside the mask changed")
 
 
 @test
@@ -279,6 +308,10 @@ def test_edit_on_3colour_parent_lands_on_opaque_pixels(root: Path):
     idx_in, idx_out = index_map(b), index_map(out)
     check(np.array_equal(idx_out == 3, idx_in == 3), "transparent (index 3) pixels changed")
     after = tpc.decode_mip(out, tpc.parse(out), 0)
+    ob = np.frombuffer(out[off:off + size], dtype=np.uint8).reshape(-1, 8)
+    c0, c1 = ob[:, 0] | (ob[:, 1].astype(int) << 8), ob[:, 2] | (ob[:, 3].astype(int) << 8)
+    check(bool((c0 <= c1).all()), f"{int((c0 > c1).sum())} mip-0 block(s) lost 3-colour mode (c0 > c1)")
+    check(np.array_equal(after[..., 3], before[..., 3]), "decoded mip-0 alpha changed")
     px = after[mask & (idx_in != 3)].astype(int)
     shift = px[:, 0] - (px[:, 1] + px[:, 2]) / 2
     check(shift.min() > 120, f"opaque masked pixels not red-shifted, min shift {shift.min():.1f}")
@@ -318,7 +351,10 @@ def test_red_tint_on_three_colour_parent(root: Path):
     out = tpc.apply_rgb_edit(parent, rgb, mask)
     O = np.frombuffer(out, dtype=np.uint8, count=m0.size, offset=off).reshape(16, 16, 8)
     check(np.all(O[2:6, 4:8][odd[2:6, 4:8]][:, 4:] == 0xFF), "transparent masked blocks lost index 3")
+    c0, c1 = O[..., 0].astype(int) | (O[..., 1].astype(int) << 8), O[..., 2].astype(int) | (O[..., 3].astype(int) << 8)
+    check(bool((c0 <= c1).all()), f"{int((c0 > c1).sum())} mip-0 block(s) lost 3-colour mode (c0 > c1)")
     after = tpc.decode_mip(out, tpc.parse(out), 0)
+    check(np.array_equal(after[..., 3], before[..., 3]), "decoded mip-0 alpha changed")
     opaque = mask & ~np.kron(odd, np.ones((4, 4), dtype=bool))
     inside = after[opaque][:, :3].astype(int)
     red_shift = inside[:, 0] - (inside[:, 1] + inside[:, 2]) / 2

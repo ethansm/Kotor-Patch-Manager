@@ -27,6 +27,7 @@ from k1_port_tex_dxt import BLOCK_BYTES, block_mask, decode, encode_rgb, splice_
 
 TPC = Path("~/Games/KOTOR2_Mod_Workspace/k1_port_stage/override/k1p_commm04.tpc").expanduser()
 TESTS = []
+NOISE_MAE_CEILING = 50  # loose: the encoder measures 41.7 on seed-7 noise; zeroed indices or endpoints give 60+
 
 
 class Skip(Exception):
@@ -93,7 +94,9 @@ def gradient_and_noise_round_trip():
     noise = np.random.default_rng(7).integers(0, 256, (256, 256, 3), dtype=np.uint8)
     out_n = decode(encode_rgb(noise).tobytes(), 256, 256, "dxt1")
     check(out_n.shape == (256, 256, 4), f"noise decode shape {out_n.shape}")
-    print(f"INFO random-noise 256x256 MAE {mae(out_n[..., :3], noise):.2f} (no threshold)", flush=True)
+    noise_mae = mae(out_n[..., :3], noise)  # measured 41.68 (seed 7); a 4-colour block of uniform noise cannot go far lower
+    check(noise_mae < NOISE_MAE_CEILING, f"random-noise 256x256 MAE {noise_mae:.2f} >= {NOISE_MAE_CEILING}")
+    print(f"INFO random-noise 256x256 MAE {noise_mae:.2f} (ceiling {NOISE_MAE_CEILING})", flush=True)
 
 
 @test
@@ -160,6 +163,25 @@ def splice_dxt1_three_colour_parent_is_reencoded():
         check(c0 <= c1, f"block {b}: not 3-colour")
         check(all(((word >> (2 * i)) & 3) == 3 for i in range(1, 16)) and (word & 3) != 3, f"block {b}: transparency lost")
     check(splice_colour(parent, 16, 4, "dxt1", new, np.zeros((1, 4), dtype=bool)) == parent, "empty mask changed bytes")
+
+
+@test
+def splice_dxt1_four_colour_new_over_opaque_three_colour_parent_uses_midpoint():
+    # new block: c0 0xFFFF > c1 0 (4-colour), pixel i uses index i % 4 -> white, black, (170,170,170), (85,85,85)
+    new_blk = pack_dxt1(0xFFFF, 0x0000, [i % 4 for i in range(16)])
+    parent = pack_dxt1(0x0000, 0xFFFF, [0] * 16)  # c0 <= c1 (3-colour), every pixel opaque
+    new = np.frombuffer(new_blk, dtype=np.uint8).reshape(1, 1, 8)
+    out = splice_colour(parent, 4, 4, "dxt1", new, np.ones((1, 1), dtype=bool))
+    check(len(out) == 8 and out != parent, "block not re-encoded")
+    c0, c1 = struct.unpack_from("<HH", out, 0)
+    check(c0 <= c1, f"mode lost: c0 {c0:#06x} > c1 {c1:#06x}")
+    dec = decode(out, 4, 4, "dxt1")
+    check(bool((dec[..., 3] == 255).all()), "opaque parent pixels became transparent")
+    # 170 and 85 are nearer the midpoint (127) than either endpoint, so indices 2 and 3 land on index 2 exactly
+    want = {0: (255, 255, 255), 1: (0, 0, 0), 2: (127, 127, 127), 3: (127, 127, 127)}
+    for i in range(16):
+        got = tuple(int(v) for v in dec[i // 4, i % 4, :3])
+        check(got == want[i % 4], f"pixel {i} (new index {i % 4}): {got} != {want[i % 4]}")
 
 
 @test

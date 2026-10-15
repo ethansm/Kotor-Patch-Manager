@@ -191,6 +191,45 @@ def dxt1_vs_dxt5_header_fails_only_format():
 
 
 @test
+def changed_header_alpha_float_fails_only_header():
+    p = make_tpc(256, 256, 4, 9)
+    res = run(p, patch(p, 4, bytes([p[4] ^ 0x01])))  # byte 4 = alpha float, outside NAMED_HDR
+    expect_only(res, "header")
+    check("differ at offsets [4]" in detail(res, "header"), detail(res, "header"))
+
+
+@test
+def changed_reserved_header_byte_fails_only_header():
+    p = make_tpc(64, 64, 2, 7)
+    off = next(i for i in range(G.HDR_LEN) if i not in G.NAMED_HDR and i >= 14)  # first reserved byte
+    res = run(p, patch(p, off, bytes([p[off] ^ 0xFF])))
+    expect_only(res, "header")
+    check(f"differ at offsets [{off}]" in detail(res, "header"), detail(res, "header"))
+
+
+@test
+def named_header_bytes_are_not_judged_by_header_check():
+    p = make_tpc(64, 64, 2, 7)
+    check(G._check_header(p, patch(p, 8, struct.pack("<H", 32)))["ok"], "NAMED_HDR byte flagged by the header check")
+
+
+@test
+def changed_trailer_fails_only_length():
+    p = make_tpc(64, 64, 4, 7, trailer=b"envmaptexture x\r\n")
+    res = run(p, p[:-1] + bytes([p[-1] ^ 0x01]))
+    expect_only(res, "length")
+    check("trailer differs" in detail(res, "length"), detail(res, "length"))
+
+
+@test
+def appended_bytes_fail_only_length():
+    p = make_tpc(64, 64, 4, 7)
+    res = run(p, p + b"\0")
+    expect_only(res, "length")
+    check("length child" in detail(res, "length"), detail(res, "length"))
+
+
+@test
 def one_dxt5_alpha_byte_fails_only_alpha():
     p = make_tpc(256, 256, 4, 9)
     off = block_off(256, 256, 16, 0, 2, 1) + 3
