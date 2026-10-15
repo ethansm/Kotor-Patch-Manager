@@ -21,6 +21,7 @@ Handoff: `.claude/handoffs/DECOMP_PLAN.handoff.md`. Recon: `.claude/research/rea
 
 | phase | start (ISO) | agents | est. cost | note |
 |---|---|---|---|---|
+| D0 | 2026-10-15T18:44 | 3 Haiku, 2 Sonnet | $0.60 | T0.1 Haiku peaked 116k ctx; lint baseline 53 (L2 26, L6 3, L8 24); suites 89/314/13 OK |
 
 ## Decisions (Opus)
 
