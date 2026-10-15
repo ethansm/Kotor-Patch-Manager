@@ -1,8 +1,12 @@
 # Session Handoff: Gemini 2026-10-14 review (G1 + G2 DONE)
 
 ## 0. Next-Phase Direction
-**FX2 (2026-10-15, IN PROGRESS):** the 11 mod-side bug items (WI-74/75/77-84 + BG29c) via Haiku variants -> Sonnet consolidators ->
-Sonnet reviewers, plus one rea-recon for WI-87/SH-3a-08. Plan `.claude/plans/gemini_fix_wave2.md` (wave dir `.claude/waves/fix2/`,
+**FX2 (2026-10-15, DONE, $9.08):** 11 mod-side bugs landed: WI-79 9dbfed7, WI-77 b4c80a5, WI-78 49a57a7, WI-74 a2ecc13, WI-82 ab456aa,
+WI-75 066320e, WI-83 b18c0f3, WI-84 685fede, WI-80 810590a, WI-81 6d24306, BG29c ce3cec1; doc 37 BG27-BG37 DONE + rea notes 2ae4cb2.
+Not installed: rebuild + install (user GO) queue_hud, companion_selfheal, companion_ai, holster, combat_hotbar; play checks WI-74 (companion
+dispatch behind resting 0x3D) and WI-80 (empty tip hides). rea-recon PARTIAL/UNSURE: WI-87 stays parked (dtor 0x7510b0 not in DB; allocator unknown).
+**Next = FX3:** WI-73, 89, 90, 91, 92, 93, 94 (split), 95, 96, 100 + follow-ups: selfheal_log_check TEXSET_RE lacks `tog=`; holster_log_check COMB
+regex should accept `old=? edge=?`; selfheal g_texInit never re-queries null disc/cross handles. Plan `.claude/plans/gemini_fix_wave2.md` (wave dir `.claude/waves/fix2/`,
 triage `.claude/waves/fx2_pick/`). Resume: `python3 scripts/plan_manager.py resume --plan .claude/plans/gemini_fix_wave2.md`.
 
 **FX1 (2026-10-15, DONE):** 7 landed (WI-99 f6ecaf6, WI-88 09bfbf1, WI-86 424a79a, WI-85 4a9f047, WI-76 c0910fe PARTIAL/BG29 owner callers

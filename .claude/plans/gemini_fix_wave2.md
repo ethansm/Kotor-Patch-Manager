@@ -30,12 +30,12 @@ helper there, so the red-before/green-after test can run on the host. The triage
 ## Phases (persist as `.claude/plans/gemini_fix_wave2.md`; mark with `plan_manager.py mark-done <Id> --plan .claude/plans/gemini_fix_wave2.md --no-handoff`)
 | Id | Batch | Deps | Owner gate | Status | Commit | Next |
 |---|---|---|---|---|---|---|
-| FX2.0 | Persist plan, pre-flight, WI header unhold | - | - | OPEN | | commit |
-| FX2.1 | Packs + briefs (`fix2_briefs.py`, $0) | FX2.0 | - | OPEN | | `fix2/` packs |
-| FX2.2 | Haiku wave `fix2` (33 units) + 1 rea-recon, parallel | FX2.1 | - | OPEN | | proposals, re.md |
-| FX2.3 | 11 Sonnet consolidators (worktrees) + 11 independent Sonnet reviewers | FX2.2 | - | OPEN | | `final.diff` + `review.md` x11 |
-| FX2.4 | Apply in conflict order, gate, `close --manual`, doc 37 | FX2.3 | - | OPEN | | 11 commits |
-| FX2.5 | Close: RE notes, handoff, memory, Saved State | FX2.4 | - | OPEN | | - |
+| FX2.0 | Persist plan, pre-flight, WI header unhold | - | - | DONE | 6fef194 | no claims; write files clean; baseline 9/9 PASS at BASE 6fef194; 10 WIs unheld, lint PASS |
+| FX2.1 | Packs + briefs (`fix2_briefs.py`, $0) | FX2.0 | - | DONE | 959a149 | 33 units u01-u33 (est 47-50k each); WAVE_OVERHEAD_TOKENS=45000 (plan's 61k exceeds the 60k total cap) |
+| FX2.2 | Haiku wave `fix2` (33 units) + 1 rea-recon, parallel | FX2.1 | - | DONE | | 33/33 PASS (12 CONFIRMED, 21 PARTIAL), 0 rerun, 0 repo edits; rea-recon PARTIAL (a) / UNSURE (b) |
+| FX2.3 | 11 Sonnet consolidators (worktrees) + 11 independent Sonnet reviewers | FX2.2 | - | DONE | | 11 consolidators PASS + 11 reviewers (10 APPROVE_MINOR, WI-80 APPROVE after 1 revision); 0 REQUEST_CHANGES; reviewers cannot write the main tree (copied from worktrees) |
+| FX2.4 | Apply in conflict order, gate, `close --manual`, doc 37 | FX2.3 | - | DONE | 2ae4cb2 | 11 landed: 9dbfed7 79, b4c80a5 77, 49a57a7 78, a2ecc13 74, ab456aa 82, 066320e 75, b18c0f3 83, 685fede 84, 810590a 80, 6d24306 81, ce3cec1 BG29c; doc37 2ae4cb2; 5 test-file merge conflicts resolved (keep both) |
+| FX2.5 | Close: RE notes, handoff, memory, Saved State | FX2.4 | - | DONE | | RE notes 2ae4cb2; lint PASS; audit eac9a66; memory updated; cost $9.08 |
 
 ### FX2.0 Pre-flight (inline, about 10 min)
 1. Copy this plan to `.claude/plans/gemini_fix_wave2.md`. Add the FX2 pointer to `.claude/handoffs/gemini_review.handoff.md` section 0.
