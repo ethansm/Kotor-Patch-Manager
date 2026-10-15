@@ -250,6 +250,33 @@ class GateTests(Base):
         self.assertIn("not allowed", wd.run_gate_cmd(self.root, "curl http://x", Path(self._tmp.name) / "t")["detail"])
         self.assertIn("hot-swap", wd.run_gate_cmd(self.root, "python3 scripts/kpm_hotswap.py --apply", Path(self._tmp.name) / "t")["detail"])
 
+    def test_gate_rejection_policy(self):
+        allowed = ["python3 scripts/run_tests.py test_kpm_hotswap", "python3 scripts/run_tests.py hotswap",
+                   "python3 scripts/run_tests.py test_kpm_hotswap -v", "python3 scripts/build_check.py"]
+        for cmd in allowed:
+            self.assertIsNone(wm.gate_cmd_rejection(cmd), cmd)
+        rejected = ["python3 scripts/kpm_hotswap.py --apply", "python3 scripts/kpm_hotswap.py --prepare",
+                    "python3 scripts/kpm_ship.py --appl", "python3 scripts/kpm_ship.py --app", "python3 scripts/kpm_ship.py --ap=x",
+                    "python3 scripts/kpm_reinstall.py --ap", "bash -c 'python3 scripts/kpm_hotswap.py'",
+                    "bash -c \"python3 scripts/kpm_hotswap.py --apply\"", "python3 -m kpm_hotswap", "python3 -c 'import kpm_hotswap'",
+                    "python3 scripts/run_tests.py -k kpm_hotswap", "python3 scripts/run_tests.py test_x -k kpm_hotswap",
+                    "python3 scripts/run_tests.py 'kpm_hotswap;x'"]
+        for cmd in rejected:
+            self.assertEqual(wm.gate_cmd_rejection(cmd), "gate may not install or hot-swap", cmd)
+        self.assertIn("not allowed", wm.gate_cmd_rejection("curl http://x"))
+        self.assertIn("unparseable", wm.gate_cmd_rejection("python3 'oops"))
+        self.assertIs(wd.gate_rejection, wm.gate_rejection)
+
+    def test_real_corpus_gates_pass_policy(self):
+        items = wm.load_all(wm.REPO)
+        bad = []
+        for wi in items.values():
+            if not wi.runnable:
+                continue
+            for c, d in wm.gate_preflight(wi, wm.REPO):
+                bad.append(f"{wi.id}: {d} :: {c}")
+        self.assertEqual(bad, [])
+
     def test_nonzero_exit_fails(self):
         self.assertEqual(wd.run_gate_cmd(self.root, "python3 -I -c 'import sys; sys.exit(3)'", Path(self._tmp.name) / "t")["status"], "FAIL")
 
@@ -366,6 +393,66 @@ class FlowTests(Base):
         self.assertIn("WI-01", parked)
         self.assertIn("| [!] | 1 | WI-01 |", (self.root / ".claude/work_items/dev_work_items.md").read_text())
         self.assertIn("parked", self.drv("next", "WI-01").stdout)
+
+    def test_next_refuses_policy_rejected_gate_without_claiming(self):
+        bad = FILES[".claude/work_items/WI-01.md"].replace(GATE_OK, "verify: python3 scripts/kpm_hotswap.py --prepare")
+        self.write(".claude/work_items/WI-01.md", bad)
+        sh(self.root, "git", "commit", "-qam", "rejected gate")
+        self.assertIn("(gate rejected: gate may not install or hot-swap)", "\n".join(m for _, _, m in wm.lint(wm.load_all(self.root), self.root)))
+        r = self.drv("next", "WI-01")
+        self.assertEqual(r.returncode, 3, r.stdout + r.stderr)
+        self.assertIn("GATE CONFIG ERROR WI-01: gate may not install or hot-swap", r.stdout)
+        self.assertEqual(self.st.all_claims(), {})
+        self.assertFalse((self.root / ".claude" / "waves" / "WI-01-a1").exists())
+
+    def test_unnamed_next_passes_over_policy_rejected_gate(self):
+        bad = FILES[".claude/work_items/WI-01.md"].replace(GATE_OK, "verify: python3 scripts/kpm_hotswap.py --prepare")
+        self.write(".claude/work_items/WI-01.md", bad)
+        sh(self.root, "git", "commit", "-qam", "rejected gate")
+        r = self.drv("next")
+        self.assertNotIn("CLAIM WI-01", r.stdout, r.stdout)
+        self.assertNotIn("WI-01", self.st.all_claims())
+        self.assertNotIn("REFUSED", r.stdout)
+        if r.returncode:
+            self.assertIn("WI-01: gate config error", r.stdout)
+
+    def test_verify_gate_config_error_parks_without_retry(self):
+        self.drv("next", "WI-01")
+        bad = FILES[".claude/work_items/WI-01.md"].replace(GATE_OK, "verify: python3 scripts/kpm_ship.py --appl")
+        self.write(".claude/work_items/WI-01.md", bad)  # header changed after the claim
+        sh(self.root, "git", "commit", "-qm", "rejected gate", "--", ".claude/work_items/WI-01.md")
+        self.write("src/a.txt", "edit\n")
+        self.worker_reply(self.claim_wave("WI-01"), "src/a.txt")
+        r = self.drv("verify", "WI-01")
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertIn("GATE CONFIG ERROR WI-01: gate may not install or hot-swap :: python3 scripts/kpm_ship.py --appl", r.stdout)
+        self.assertIn("THEN: fix the item's `verify:` header", r.stdout)
+        self.assertNotIn("RETRY", r.stdout)
+        self.assertNotIn("SPAWN", r.stdout)
+        self.assertIn("PARKED WI-01", r.stdout)
+        self.assertEqual(self.st.all_claims(), {})
+        _, parked = self.st.state_maps()
+        self.assertTrue(parked["WI-01"].startswith("gate config error"), parked)
+        self.assertEqual(self.drv("unpark", "WI-01", "--reason", "verify header fixed").returncode, 0)
+
+    def test_retry_adopts_attempt_one_edits_as_own_partial(self):
+        bad = FILES[".claude/work_items/WI-07.md"].replace(GATE_OK, 'verify: python3 -I -c "import sys; sys.exit(1)"')
+        self.write(".claude/work_items/WI-07.md", bad)
+        sh(self.root, "git", "commit", "-qam", "bad gate")
+        wi = wm.load_all(self.root)["WI-07"]
+        self.write("src/z.txt", "pre-dirty, another session\n")
+        self.drv("next", "WI-07")
+        self.write("src/g.txt", "attempt one\n")
+        self.write("src/new_g.txt", "created in attempt one\n")
+        self.worker_reply(self.claim_wave("WI-07"), "src/g.txt", created="src/new_g.txt")
+        r = self.drv("verify", "WI-07")
+        self.assertIn("RETRY", r.stdout)
+        claim = self.st.read_claim("WI-07")
+        self.assertEqual(claim["own_partial"], ["src/g.txt", "src/new_g.txt"])
+        self.worker_reply(self.claim_wave("WI-07"), "src/g.txt", created="src/new_g.txt")  # attempt two keeps attempt one's edits
+        chk = wd.wave_check(self.st, self.claim_wave("WI-07"), wi)
+        self.assertEqual(chk["status"], "PASS", chk)
+        self.assertNotIn("NOT_DIRTY", json.dumps(chk.get("problems", [])))
 
     def test_missing_worker_reply_triggers_retry(self):
         self.drv("next", "WI-01")

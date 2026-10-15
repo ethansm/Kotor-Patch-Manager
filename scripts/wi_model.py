@@ -12,7 +12,9 @@ WI header (WI-NN.md), `key: value` lines between the `# WI-NN title` line and th
 awaiting-user wins (the index has no such state).
 """
 import fnmatch
+import os
 import re
+import shlex
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -295,7 +297,7 @@ def _is_dirty(path, dirty_paths):
     return any(d == p or d.startswith(p + "/") or fnmatch.fnmatch(d, p) for d in dirty_paths)
 
 
-def pick_next(items, done, live_claims, dirty_paths, want=None, parked=None):
+def pick_next(items, done, live_claims, dirty_paths, want=None, parked=None, exclude=None):
     """(wi, skipped) where skipped is [(wi_id, reason)] for every row passed over before the pick, in rank order.
     With `want`, only that WI is tried and its failed predicate is the single skipped entry."""
     skipped = []
@@ -303,6 +305,9 @@ def pick_next(items, done, live_claims, dirty_paths, want=None, parked=None):
     if want and want not in items:
         return None, [(want, "unknown WI id")]
     for wi in pool:
+        if exclude and wi.id in exclude:
+            skipped.append((wi.id, exclude[wi.id]))
+            continue
         v = eligibility(wi, items, done, live_claims, dirty_paths, parked)
         if v.ok:
             return wi, skipped
@@ -368,6 +373,52 @@ def derive_gate(wi, root=REPO):
     return [], "no gate derivable: add a `verify:` header line (or `verify: none <reason>`)"
 
 
+# ---------------------------------------------------------------- gate policy
+GATE_PROGRAMS = {"python3", "rg", "bash", "test", "sed", "wc", "stat"}
+APPLY_ABBREV_RE = re.compile(r"^--ap(p(l(y)?)?)?(=|$)")  # argparse accepts unique prefixes of --apply
+FILTER_WORD_RE = re.compile(r"[\w:.\-]+")
+
+
+def gate_argv(cmd):
+    """shlex-split and expand a gate command, as run_gate_cmd runs it. Raises ValueError when unparseable."""
+    return [os.path.expandvars(os.path.expanduser(t)) for t in shlex.split(cmd)]
+
+
+def gate_rejection(argv):
+    """Policy check for one gate argv. Returns the rejection detail, or None when the gate may run.
+
+    Rejects programs outside GATE_PROGRAMS, any --apply (or argparse abbreviation) and any token naming kpm_hotswap.
+    Exception: for `python3 <...run_tests.py> words...` the plain positional filter words before the first dash token
+    are test-name filters, not scripts, so `run_tests.py test_kpm_hotswap` may run."""
+    if not argv or argv[0] not in GATE_PROGRAMS:
+        return f"gate program not allowed: {argv[:1]}"
+    exempt = set()
+    if len(argv) >= 2 and argv[0] == "python3" and argv[1].endswith("run_tests.py"):
+        for i in range(2, len(argv)):
+            if argv[i].startswith("-") or not FILTER_WORD_RE.fullmatch(argv[i]):
+                break  # options and their values (e.g. -k kpm_hotswap) stay checked
+            exempt.add(i)
+    for i, t in enumerate(argv):
+        if APPLY_ABBREV_RE.match(t) or ("kpm_hotswap" in t and i not in exempt):
+            return "gate may not install or hot-swap"
+    return None
+
+
+def gate_cmd_rejection(cmd):
+    """gate_rejection for a command string; an unparseable command is rejected too."""
+    try:
+        argv = gate_argv(cmd)
+    except ValueError as e:
+        return f"unparseable gate: {e}"
+    return gate_rejection(argv)
+
+
+def gate_preflight(wi, root=REPO):
+    """[(cmd, detail)] for every declared or derived gate command of `wi` that the gate policy would reject."""
+    cmds, _ = derive_gate(wi, root)
+    return [(c, d) for c in cmds if (d := gate_cmd_rejection(c))]
+
+
 # ---------------------------------------------------------------- lint
 def lint(items, root=REPO):
     """List of (level, wi_id, message). level is ERROR or WARN."""
@@ -400,4 +451,7 @@ def lint(items, root=REPO):
             cmds, why = derive_gate(wi, root)
             if not cmds:
                 problems.append(("ERROR", wi.id, why))
+        if wi.runnable:
+            for c, detail in gate_preflight(wi, root):
+                problems.append(("ERROR", wi.id, f"(gate rejected: {detail}) {c}"))
     return problems

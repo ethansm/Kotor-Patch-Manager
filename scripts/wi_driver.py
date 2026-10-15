@@ -45,7 +45,8 @@ import wi_model as wm  # noqa: E402
 import wi_state as ws  # noqa: E402
 
 TRAILER = "Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
-GATE_PROGRAMS = {"python3", "rg", "bash", "test", "sed", "wc", "stat"}
+GATE_PROGRAMS = wm.GATE_PROGRAMS
+gate_rejection = wm.gate_rejection
 GATE_TIMEOUT = 1500
 DOC_PAD_LINES = 15  # context lines kept around each cited plan-doc row in a brief entry
 DOC_MAX_SPAN = 150
@@ -234,7 +235,12 @@ def cmd_next(a, st):
             dirty = set(ac.git_dirty(root))
             mine = own_partial(st, a.wi) if a.wi else []  # leftover edits from this item's own parked attempt are not "another session"
             dirty -= set(mine)
-            wi, skipped = wm.pick_next(items, done, live, dirty, a.wi, parked)
+            exclude = {}
+            while True:  # an unnamed `next` passes over an item whose gate the policy rejects; a named one refuses below
+                wi, skipped = wm.pick_next(items, done, live, dirty, a.wi, parked, exclude)
+                if wi is None or a.wi or not wm.gate_preflight(wi, root):
+                    break
+                exclude[wi.id] = "gate config error (see lint)"
             if wi is None:
                 reasons = [f"  {w}: {r}" for w, r in skipped[:8]]
                 print("NOTHING CLAIMABLE" + (f" for {a.wi}" if a.wi else ""))
@@ -243,6 +249,12 @@ def cmd_next(a, st):
                     print(f"  STALE claim {w} (session {c['session']}, last heartbeat {c['heartbeat_at']}): next {w} --adopt | release {w} --force")
                 return 3
             claim = None
+        rejected = wm.gate_preflight(wi, root)
+        if rejected:  # refuse before any claim is written: a policy-rejected gate can never pass, so a worker run is wasted
+            print(f"REFUSED {wi.id}: gate config error, nothing claimed")
+            print("\n".join(f"  GATE CONFIG ERROR {wi.id}: {d} :: {c}" for c, d in rejected))
+            print("THEN: fix the item's `verify:` header or the gate guard (SKILL Section 1b), then: python3 scripts/wi_driver.py lint")
+            return 3
         header = [f"CLAIM {wi.id} [{wi.prio} {wi.state} size {wi.size}] {wi.title}",
                   f"  write scope: {'; '.join(wi.files) or '(none: verify/out-of-repo)'}"]
         if wi.deferred:
@@ -300,13 +312,12 @@ def run_gate_cmd(root, cmd, tmpdir):
     """Run one gate command. Returns {cmd, status: PASS|FAIL, secs, detail}. SKIP and zero-match count as FAIL."""
     import time
     try:
-        argv = [expand(t) for t in shlex.split(cmd)]
+        argv = wm.gate_argv(cmd)
     except ValueError as e:
         return {"cmd": cmd, "status": "FAIL", "secs": 0, "detail": f"unparseable gate: {e}"}
-    if not argv or argv[0] not in GATE_PROGRAMS:
-        return {"cmd": cmd, "status": "FAIL", "secs": 0, "detail": f"gate program not allowed: {argv[:1]}"}
-    if any("kpm_hotswap" in t or t == "--apply" for t in argv):
-        return {"cmd": cmd, "status": "FAIL", "secs": 0, "detail": "gate may not install or hot-swap"}
+    rejected = gate_rejection(argv)
+    if rejected:
+        return {"cmd": cmd, "status": "FAIL", "secs": 0, "detail": rejected}
     tmpdir.mkdir(parents=True, exist_ok=True)
     env = dict(os.environ, TMPDIR=str(tmpdir))
     t0 = time.time()
@@ -393,7 +404,7 @@ def wave_check(st, wave_id, wi):
     claim = st.read_claim(wi.id) or {}
     own = set(claim.get("own_partial", []))  # edits adopted from this item's earlier attempt show no change since the claim
     probs = [(p["level"], p["code"], p["detail"]) for p in u.get("problems", [])
-             if not (p["code"] == "NOT_DIRTY" and any(p["detail"] == f"MODIFIED {o} shows no change" for o in own))]
+             if not (p["code"] == "NOT_DIRTY" and any(p["detail"] in (f"MODIFIED {o} shows no change", f"CREATED {o} shows no change") for o in own))]
     if len(probs) == len(u.get("problems", [])) and not any(c in FOREIGN_CODES for _, c, _ in probs):
         return u
     kept, foreign = filter_foreign(probs, wi, wave_reply_text(st.root, wave_id), data.get("kind", "worker"))
@@ -412,6 +423,29 @@ def wave_check(st, wave_id, wi):
             "problems": [{"level": lvl, "code": code, "detail": detail} for lvl, code, detail in kept]}
 
 
+def gate_config_error(st, wi, claim, rejected, session):
+    """A policy-rejected gate is a driver/config defect, not a worker failure: no retry, no escalation, park at once."""
+    c, d = rejected[0]
+    st.trace(wi.id, "gate", "CONFIG", f"{c} :: {d}"[:300])
+    for c2, d2 in rejected:
+        print(f"GATE CONFIG ERROR {wi.id}: {d2} :: {c2}")
+    print(f"THEN: fix the item's `verify:` header or the gate guard (SKILL Section 1b), then: python3 scripts/wi_driver.py unpark {wi.id} and rerun")
+    return park(st, wi, st.read_claim(wi.id), f"gate config error: {d} :: {c}"[:200], session)
+
+
+def adopt_attempt_edits(st, wi, claim):
+    """Before a retry/escalation on the same claim: in-scope paths changed since the claim base (earlier attempts' edits)
+    become own_partial, so the next attempt's NOT_DIRTY check treats them as the item's own work. Paths that were already
+    dirty at claim time are left out, so close still hard-stops on them."""
+    if not claim.get("base"):
+        return claim
+    base = ac.read_snapshot(st.root / claim["base"])
+    changed, _ = ac.changed_since(st.root, base)
+    mine = {p for p in changed if p not in base and allowed_path(p, wi)}
+    claim["own_partial"] = sorted(set(claim.get("own_partial", [])) | mine)
+    return claim
+
+
 def fail_path(st, wi, claim, reason, excerpt, session):
     """One Haiku retry, then one Sonnet escalation, then park."""
     st.trace(wi.id, "fail", "FAIL", f"{reason}: {excerpt}"[:300])
@@ -419,11 +453,11 @@ def fail_path(st, wi, claim, reason, excerpt, session):
     note = f"{reason}: {excerpt}"[:600].replace("\n", " ")
     if claim["retries"] < 1:
         claim["retries"] += 1
-        claim, spawn = worker_wave(st, wi, claim, retry_note=note)
+        claim, spawn = worker_wave(st, wi, adopt_attempt_edits(st, wi, claim), retry_note=note)
         label = "RETRY (1 of 1, Haiku):"
     elif not claim.get("escalated"):
         claim["escalated"] = True
-        claim, spawn = worker_wave(st, wi, claim, retry_note=note, model="sonnet")
+        claim, spawn = worker_wave(st, wi, adopt_attempt_edits(st, wi, claim), retry_note=note, model="sonnet")
         label = "ESCALATE (Sonnet 5.5, last attempt before park):"
     else:
         print(f"FAIL {wi.id}: {reason}\n{excerpt}")
@@ -447,6 +481,10 @@ def cmd_verify(a, st):
     session = claim["session"]
     if claim["stage"] not in ("worker", "gated"):
         raise DriverError(f"{wi.id} is at stage {claim['stage']}; verify runs after the worker (stage worker)")
+    cmds, why = wm.derive_gate(wi, root)
+    rejected = [(c, d) for c in cmds if (d := wm.gate_cmd_rejection(c))]
+    if rejected and not a.dry_run:  # checked before the reply: a retry could never pass a policy-rejected gate
+        return gate_config_error(st, wi, claim, rejected, session)
     chk = wave_check(st, claim["wave"], wi)
     if chk["status"] == "PASS" and chk.get("verdict") == "FAIL":
         # the reply is well-formed, but the worker itself reported STATUS: FAIL
@@ -458,13 +496,13 @@ def cmd_verify(a, st):
         return fail_path(st, wi, claim, f"worker reply {chk['status']}", chk["finding"], session)
     if wi.state == "verify-only" and chk.get("verdict") == "REFUTED":
         pass  # a refuted claim is a result, not a failure; the gate below still runs
-    cmds, why = wm.derive_gate(wi, root)
     results = []
     tmpdir = root / ".claude" / "waves" / claim["wave"] / "tmp"
     if a.dry_run:
         print(f"DRY RUN gate ({why}):")
         for c in cmds:
-            print(f"  {c}")
+            d = dict(rejected).get(c)
+            print(f"  {c}" + (f"  [GATE CONFIG ERROR: {d}]" if d else ""))
         return 0
     if not cmds and not why.startswith("none:"):
         return fail_path(st, wi, claim, "no gate", why, session)
