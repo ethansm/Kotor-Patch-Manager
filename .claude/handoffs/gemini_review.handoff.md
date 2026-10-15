@@ -1,7 +1,7 @@
 # Session Handoff: Gemini 2026-10-14 review (G1 + G2 DONE)
 
 ## 0. Next-Phase Direction
-**FX3 (2026-10-15, IN PROGRESS):** plan `.claude/plans/gemini_fix_wave3.md` (22 fix units + WI-89c inline; wave dir `.claude/waves/fix3/`,
+**FX3 (2026-10-15, DONE: all 22 units + WI-89c + WI-103 landed; last 4 this session: FU-texinit f5df3c3, WI-100a/close WI-100 cf24857, WI-103 0d713ce, WI-91a rev2/close WI-91 0550a25; final baseline 27/27 PASS; BG26+BG40 DONE; open: WI-94b/c, WI-101 runtime checks, residuals 'production k1 CLIs ignore K1PORT_VENV' + 'runner SKIP visibility'):** plan `.claude/plans/gemini_fix_wave3.md` (22 fix units + WI-89c inline; wave dir `.claude/waves/fix3/`,
 brief generator `tools/fix3_briefs.py`). Resume: `python3 scripts/plan_manager.py resume --plan .claude/plans/gemini_fix_wave3.md`.
 FX3.0-FX3.2 DONE (BASE 5a0f526; 54 Haiku, 27 CONFIRMED/27 PARTIAL). 19/22 units LANDED + WI-89c 17fbda3:
 FU-holster 9b9f4b6, FU-texset 1a14b19, WI-91b bf449fe, WI-94a f7cc1e4, WI-93 f55b8c1, WI-95a 1b0b409, WI-95b+close WI-95 e3c6871, WI-73 6dc574d (BG26 e889a71),
