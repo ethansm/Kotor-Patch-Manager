@@ -88,3 +88,4 @@
 {"ev": "done", "session": "22607950-df0c-41a5-a696-b7877ca7c486", "ts": "2026-10-15T22:55:02Z", "wi": "WI-14"}
 {"ev": "done", "session": "aa967f16-2423-45c8-ab8e-19fd4f8d01d6", "ts": "2026-10-15T23:11:15Z", "wi": "WI-30"}
 {"ev": "park", "reason": "gate failed: python3 scripts/run_tests.py test_kpm_hotswap\ngate may not install or hot-swap", "session": "01e6ef29-b277-4be6-9206-3ca3c2065598", "ts": "2026-10-15T23:20:34Z", "wi": "WI-46"}
+{"ev": "unpark", "reason": "gate guard fixed: run_tests filter words exempt (wi_model.gate_rejection)", "session": "01e6ef29-b277-4be6-9206-3ca3c2065598", "ts": "2026-10-15T23:36:12Z", "wi": "WI-46"}
