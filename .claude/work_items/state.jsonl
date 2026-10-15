@@ -78,3 +78,4 @@
 {"ev": "done", "session": "336ad066-bc85-480f-8c4d-f1855b8057aa", "ts": "2026-10-15T21:05:45Z", "wi": "WI-09"}
 {"ev": "done", "reason": "manual: FX3 WI-100a: wr probes for WRITE; Sonnet consolidate + independent review APPROVE_MINOR (.claude/waves/fix3/WI-100a/revi", "session": "4a5ea252-7f9b-492a-8fa9-45342c547799", "ts": "2026-10-15T21:17:07Z", "wi": "WI-100"}
 {"ev": "done", "reason": "manual: FX3 WI-103: is_relative_to guard in _variant_folder; 3 Haiku variants + Sonnet consolidate + independent review APPROVE_", "session": "4a5ea252-7f9b-492a-8fa9-45342c547799", "ts": "2026-10-15T21:17:28Z", "wi": "WI-103"}
+{"ev": "done", "reason": "manual: FX3 WI-91a rev2: K1PORT_VENV honoured in tests, real-topology overlay test (needs WI-103); re-review APPROVE_MINOR (.cla", "session": "4a5ea252-7f9b-492a-8fa9-45342c547799", "ts": "2026-10-15T21:22:37Z", "wi": "WI-91"}

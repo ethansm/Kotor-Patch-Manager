@@ -15,7 +15,14 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 CLI = HERE / "k1_port_char_build.py"
-VENV_PY = Path(os.path.expanduser("~/Games/KOTOR2_Mod_Workspace/venvs/k1port/bin/python"))
+
+def venv_python(env=os.environ) -> Path:
+    """The k1port venv interpreter: $K1PORT_VENV (a venv dir, as setup_venv.sh reads it), else the HOME default."""
+    base = env.get("K1PORT_VENV") or "~/Games/KOTOR2_Mod_Workspace/venvs/k1port"
+    return Path(os.path.expanduser(base)) / "bin" / "python"
+
+
+VENV_PY = venv_python()
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(HERE))
 import k1_port_char_build as cb  # noqa: E402  (no pykotor import at module level)
@@ -192,6 +199,25 @@ def main() -> int:
             shutil.rmtree(root, ignore_errors=True)
     print(f"{passed}/{len(TESTS)} PASS")
     return 0 if passed == len(TESTS) else 1
+
+
+@test
+def venv_python_honours_k1port_venv(root):
+    venv = root / "venv"
+    check(venv_python({"K1PORT_VENV": str(venv)}) == venv / "bin" / "python", "K1PORT_VENV ignored")
+    check(venv_python({"K1PORT_VENV": ""}) == venv_python({}), "empty K1PORT_VENV must fall back to the default")
+    check(venv_python({}) == Path(os.path.expanduser("~/Games/KOTOR2_Mod_Workspace/venvs/k1port/bin/python")),
+          "default venv path changed")
+
+
+@test
+def missing_venv_prints_visible_skip(root):
+    """A missing venv still exits 0 (run_tests has no SKIP hook) but the SKIP line must name the K1PORT_VENV path."""
+    env = dict(os.environ, HOME=str(root / "h"), K1PORT_VENV=str(root / "no_venv"))
+    r = subprocess.run([sys.executable, str(Path(__file__).resolve())], env=env, capture_output=True, text=True,
+                       timeout=120)
+    check(r.returncode == 0 and "SKIP test_k1_port_char_build:" in r.stdout and str(root / "no_venv") in r.stdout,
+          f"rc {r.returncode} stdout {r.stdout[-300:]!r} stderr {r.stderr[-300:]!r}")
 
 
 if __name__ == "__main__":

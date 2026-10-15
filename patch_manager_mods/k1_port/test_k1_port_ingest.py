@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Tests for k1_port_ingest.py. Tempdirs only; nothing is written next to the repo or in the real stage.
 
-Drives the CLI through the patched pykotor venv (K1PORT_PY, default
-~/Games/KOTOR2_Mod_Workspace/venvs/k1port/bin/python). If that interpreter is missing the whole file SKIPs (exit 0).
+Drives the CLI through the patched pykotor venv (K1PORT_PY, else $K1PORT_VENV/bin/python, default venv
+~/Games/KOTOR2_Mod_Workspace/venvs/k1port). If that interpreter is missing the CLI tests print SKIP (counted as a
+pass, exit 0) and the in-process stub tests still run.
 Each run gets a temp registry (K1PORT_SOURCES), a temp ledger (K1PORT_LEDGER), a temp stage (--stage-dir) and a
 missing K1 install (--install-k1), so only the two synthetic sources (approval-free and flagged) are in play.
 The subprocess tests run no model conversion (--no-model, or dry-run decisions). The model validation gate is
@@ -22,7 +23,8 @@ from types import SimpleNamespace
 
 HERE = Path(__file__).resolve().parent
 DRIVER = HERE / "k1_port_ingest.py"
-PY = os.environ.get("K1PORT_PY") or str(Path("~/Games/KOTOR2_Mod_Workspace/venvs/k1port/bin/python").expanduser())
+_VENV_DIR = os.environ.get("K1PORT_VENV") or "~/Games/KOTOR2_Mod_Workspace/venvs/k1port"
+PY = os.environ.get("K1PORT_PY") or str(Path(os.path.expanduser(_VENV_DIR)) / "bin" / "python")
 sys.path.insert(0, str(HERE))  # the in-process tests import the driver and its stdlib libraries
 import k1_port_ingest as ing  # noqa: E402  stdlib only at import
 import k1_port_sources as ks  # noqa: E402
@@ -47,6 +49,12 @@ class Skip(Exception):
     """A requirement is missing. Reported as SKIP and counted as a pass."""
 
 
+def need_py():
+    """Raises Skip for a test that spawns the patched pykotor interpreter when it is missing."""
+    if not Path(PY).exists():
+        raise Skip(f"needs the patched pykotor python at {PY} (set K1PORT_PY or K1PORT_VENV)")
+
+
 def make_tga(path: Path, w: int, h: int, seed: int) -> Path:
     """Uncompressed 32-bit TGA. read_tpc needs >= 128 bytes to detect TGA."""
     header = struct.pack("<BBBHHBHHHHBB", 0, 0, 2, 0, 0, 0, 0, 0, w, h, 32, 8)
@@ -65,6 +73,7 @@ def make_tpcs(root: Path, pairs: list) -> None:
     for _src, out in pairs:
         Path(out).parent.mkdir(parents=True, exist_ok=True)
     flat = [str(p) for pair in pairs for p in pair]
+    need_py()
     r = subprocess.run([PY, "-B", "-c", code, *flat], cwd=str(root), env=driver_env(root),
                        capture_output=True, text=True, timeout=300)
     check(r.returncode == 0, f"make_tpcs failed: {r.stderr[-500:]}")
@@ -87,6 +96,7 @@ def run_ingest(root: Path, *args) -> subprocess.CompletedProcess:
         extra += ["--stage-dir", str(root / "stage")]
     if "--install-k1" not in args:
         extra += ["--install-k1", str(root / "no_install")]
+    need_py()
     cmd = [PY, "-I", "-B", "-u", str(DRIVER), *extra, *[str(a) for a in args]]
     return subprocess.run(cmd, cwd=str(root), env=driver_env(root), capture_output=True, text=True, timeout=600)
 
@@ -536,7 +546,7 @@ def supermodel_map_reaches_the_model_tool(root):
         r = ingest_main(root, "--json", "--supermodel-map", "P_OldBB=k1p_newbb")
     expect_rc(r, 0, "ingest with --supermodel-map")
     check(calls_map == [["P_OldBB=k1p_newbb"]], f"run_model supermodel_map: {calls_map}")
-    s = subprocess.run([PY, "-I", "-B", str(DRIVER), "--help"], capture_output=True, text=True, timeout=60)
+    s = subprocess.run([sys.executable, "-I", "-B", str(DRIVER), "--help"], capture_output=True, text=True, timeout=60)
     check("--supermodel-map" in s.stdout, "help lacks --supermodel-map")
 
 
@@ -637,12 +647,88 @@ def overlay_pick_outside_local_dir_ingests_without_variant_note(root):
     check(variant_notes(s) == [], f"an overlay pick is not a variant pick, so no note: {s['notes']}")
 
 
-def main() -> int:
+def fake_k1_install(root: Path, name: str = "k1install") -> Path:
+    """A K1 install just complete enough for pykotor to detect K1: marker files and a 0-entry chitin.key."""
+    k1 = root / name
+    for d in ("override", "data", "modules", "lips", "rims", "TexturePacks"):
+        (k1 / d).mkdir(parents=True, exist_ok=True)
+    for f in ("swkotor.exe", "swkotor.ini", "dialog.tlk"):
+        (k1 / f).write_bytes(b"x")
+    (k1 / "chitin.key").write_bytes(b"KEY V1  " + struct.pack("<IIIIII", 0, 0, 64, 64, 2008, 1) + bytes(32))
+    return k1
+
+
+@test
+def overlay_override_texture_is_attributed_to_overlay_source(root):
+    # Real topology: the overlay source's local_dir (an extract dir) is NOT the install, so the overlay pick sits
+    # outside it. WI-103 made _variant_folder return False there instead of raising ValueError (rc 1).
+    write_registry(root)
+    k1 = fake_k1_install(root)
+    make_tga(k1 / "override" / "N_TestTex.tga", 8, 8, seed=3)
+    reg = json.loads((root / "sources.json").read_text(encoding="utf-8"))
+    ov_dir = Path(reg["sources"]["test_permission"]["local_dir"]).resolve()
+    check(not ov_dir.is_relative_to(k1.resolve()) and not k1.resolve().is_relative_to(ov_dir),
+          f"fixture: the overlay source's local_dir {ov_dir} must be separate from the install {k1}")
+    args = ("--resref", "n_test", "--texture", "N_TestTex=k1p_testtex", "--no-model", "--dry-run", "--json")
+    plain = run_ingest(root, *args, "--install-k1", k1)
+    expect_rc(plain, 0, "plain install dry-run")
+    src = texture_decision(json.loads(plain.stdout))["chosen"]["source_id"]
+    check(src == "vanilla_k1", f"control: a plain install's override/ texture should be vanilla_k1, got {src}")
+    (k1 / "K1_HD_OVERLAY.json").write_text(json.dumps({"source_id": "test_permission"}), encoding="utf-8")
+    r = run_ingest(root, *args, "--install-k1", k1, "--allow-overlay-install")
+    expect_rc(r, 0, "overlay dry-run")
+    chosen = texture_decision(json.loads(r.stdout))["chosen"]
+    check(chosen["source_id"] != "vanilla_k1", f"overlay override/ texture attributed to vanilla_k1: {chosen}")
+    check(chosen["source_id"] == kt.overlay_source_id({"source_id": "test_permission"}) == "test_permission",
+          f"not the overlay marker's source: {chosen}")
+    check(chosen["requires_author_approval"], f"overlay texture lost the flagged source's approval flag: {chosen}")
+
+
+@test
+def missing_py_skips_cli_tests_and_runs_stub_tests(root):
+    global PY
+    saved, PY = PY, str(root / "no_such_python")
+
+    def stub_ok(_root):
+        return None
+
+    def cli_case(_root):
+        write_registry(_root)
+        run_ingest(_root, "--resref", "n_test", "--no-model", "--dry-run", "--json")
+
+    buf = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(buf):
+            rc = main(tests=[stub_ok, cli_case])
+    finally:
+        PY = saved
+    out = buf.getvalue()
+    check(rc == 0 and "PASS stub_ok" in out and "SKIP cli_case" in out and "1 SKIP" in out
+          and out.rstrip().endswith("2/2 PASS"), f"missing PY must SKIP CLI tests and run stubs: rc={rc} {out!r}")
+
+
+@test
+def py_is_derived_from_k1port_venv_and_k1port_py(root):
+    code = f"import sys; sys.path.insert(0, {str(HERE)!r}); import test_k1_port_ingest as t; print(t.PY)"
+
+    def derived(**extra):
+        env = {k: v for k, v in os.environ.items() if k not in ("K1PORT_PY", "K1PORT_VENV")}
+        env.update(extra)
+        r = subprocess.run([sys.executable, "-I", "-c", code], capture_output=True, text=True, env=env, check=False)
+        check(r.returncode == 0, f"child failed: {r.stderr[-300:]}")
+        return r.stdout.strip()
+
+    check(derived(K1PORT_VENV=str(root / "v")) == str(root / "v" / "bin" / "python"), "K1PORT_VENV ignored")
+    check(derived(K1PORT_VENV=str(root / "v"), K1PORT_PY=str(root / "p")) == str(root / "p"), "K1PORT_PY must win")
+    check(derived(K1PORT_VENV="") == derived(), "empty K1PORT_VENV must fall back to the default")
+
+
+def main(tests=None) -> int:
+    tests = TESTS if tests is None else tests
     if not Path(PY).exists():
-        print(f"SKIP: patched pykotor python not found at {PY} (set K1PORT_PY, see setup_venv.sh)")
-        return 0
-    passed = 0
-    for fn in TESTS:
+        print(f"SKIP CLI tests: no patched pykotor python at {PY} (set K1PORT_PY or K1PORT_VENV); stub tests still run")
+    passed = skipped = 0
+    for fn in tests:
         root = Path(tempfile.mkdtemp(prefix="k1port_ingest_test_"))
         try:
             fn(root)
@@ -651,12 +737,14 @@ def main() -> int:
         except Skip as e:
             print(f"SKIP {fn.__name__}: {e}")
             passed += 1
+            skipped += 1
         except Exception as e:  # noqa: BLE001  report every failure, keep going
             print(f"FAIL {fn.__name__}: {type(e).__name__}: {e}")
         finally:
             shutil.rmtree(root, ignore_errors=True)
-    print(f"{passed}/{len(TESTS)} PASS")
-    return 0 if passed == len(TESTS) else 1
+    print(f"{skipped} SKIP")
+    print(f"{passed}/{len(tests)} PASS")
+    return 0 if passed == len(tests) else 1
 
 
 if __name__ == "__main__":
