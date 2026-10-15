@@ -249,8 +249,8 @@ extern "C" void __cdecl HolsterSwap(void* exec) {
            static_cast<unsigned>(rdU32(kSiteSwap, e, 28)), static_cast<unsigned long>(GetTickCount()));
 }
 
-// 0x00863650 anim-id resolver (ECX = object, [esp+4] = u16 anim id) and 0x005644B0 anim sender (ECX = client creature, [esp+4] = anim id).
-// Only ids in the hold/ready/wield-transition family 0x2710..0x27FF are logged; the sender fires for every animation in the game.
+// 0x00863650 anim-id resolver (ECX = object, [esp+4] = u16 anim id). (H5 0x005644B0 was removed: A3 showed it is an action enqueue, not an anim sender.)
+// Only ids in the hold/ready/wield-transition family 0x2710..0x27FF are logged; the resolver runs for every animation in the game.
 static bool animInteresting(uint32_t id) { return (id & 0xFFFFu) >= 0x2710u && (id & 0xFFFFu) <= 0x27FFu; }
 
 extern "C" void __cdecl HolsterAnimResolve(void* self, uint32_t animId) {
@@ -264,13 +264,6 @@ extern "C" void __cdecl HolsterAnimResolve(void* self, uint32_t animId) {
     for (int i = 0; i < 5; ++i) (void)saferead::readAt(kSiteAnim, s, offs[i], &b[i]);
     KP_LOG(chAnim, "ANIMRES self=%x id=%x style=%u gate=%u cc=%u d4=%u e8=%u tick=%lu", U(self), static_cast<unsigned>(animId & 0xFFFFu), b[0], b[1], b[2],
            b[3], b[4], static_cast<unsigned long>(GetTickCount()));
-}
-
-extern "C" void __cdecl HolsterAnimSend(void* creature, uint32_t animId) {
-    if (!g_onAnim || !animInteresting(animId)) return;
-    saferead::beginScope();
-    if (!KP_ENABLED(chAnim, KPLOG_INFO) || !takeLine()) return;
-    KP_LOG(chAnim, "ANIMSEND creature=%x id=%x tick=%lu", U(creature), static_cast<unsigned>(animId & 0xFFFFu), static_cast<unsigned long>(GetTickCount()));
 }
 
 // Live reload of the tune keys (place, place_rot, place_off) when holster.ini changes. Throttled to 500 ms by ReloadPoll; a failed open keeps

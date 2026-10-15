@@ -1,8 +1,10 @@
 [metadata]
 target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
 
-# Holster P0 probe. Every entry: type detour at a function entry, whole-instruction prologue (55 8B EC ...), skip_original_bytes = false
-# (handler runs first, then the stolen bytes). No stolen bytes contain relative branches. Handlers only read.
+# Holster P0 probe. Every entry: plain detour (no consumed exit), whole stolen instructions, skip_original_bytes = false (handler runs first,
+# then the stolen bytes). H1/H2/H4/H6 sit at a function entry; H3 and H7 are mid-function. No stolen bytes contain relative branches.
+# Handlers only read, except H7 (HolsterPlace), which rewrites the weapon Gob pose only with probe=1 bone_test=1 place=1.
+# H5 (0x5644B0) was removed: A3 showed it is an action enqueue, not an anim sender.
 
 # H1: client combat flag setter 0x007682B0 (thiscall: ECX = client creature, [esp+4] = new state; stores this+0x138, returns old).
 # PUSH EBP / MOV EBP,ESP / SUB ESP,0x20 (6 bytes).
@@ -74,24 +76,7 @@ type = "pointer"
 source = "[esp+4]"
 type = "uint"
 
-# H5: anim sender 0x005644B0 (thiscall: ECX = client creature, [esp+4] = anim id). PUSH EBP / MOV EBP,ESP / SUB ESP,0xC (6 bytes).
-[[hooks]]
-address = 0x005644B0
-type = "detour"
-function = "HolsterAnimSend"
-original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x0C]
-skip_original_bytes = false
-exclude_from_restore = []
-
-[[hooks.parameters]]
-source = "ecx"
-type = "pointer"
-
-[[hooks.parameters]]
-source = "[esp+4]"
-type = "uint"
-
-# H6: Gob UpdateDependentPosition handler 0x005047B0 (thiscall: ECX = Gob). PUSH EBP / MOV EBP,ESP / SUB ESP,0xC (6 bytes). Per Gob per frame.
+# H6: CAurBehaviorAttach UpdateDependentPosition handler 0x005047B0 (thiscall: ECX = behavior object, NOT the Gob; C1). PUSH EBP / MOV EBP,ESP / SUB ESP,0xC (6 bytes). Per Gob per frame.
 [[hooks]]
 address = 0x005047B0
 type = "detour"
@@ -102,4 +87,27 @@ exclude_from_restore = []
 
 [[hooks.parameters]]
 source = "ecx"
+type = "pointer"
+
+# H7: post-copy point inside 0x005047B0 at 0x005047F4, right after N->vtbl[+0xC](gob+0xA4, gob+0xB0) wrote node N's WORLD pose into the child Gob
+# (C1 .claude/research/holster_c1_postcopy.md, C3 holster_c3_nodeclass.md). Stolen: PUSH 0 / PUSH 0x9918B8 (7 bytes, no relative branch), resume
+# 0x5047FB. Locals: [ebp-8] = child Gob, [ebp-4] = node N, [ebp-0xC] = behavior. EAX/ECX/EDX are dead here (clobbered by the callee).
+[[hooks]]
+address = 0x005047F4
+type = "detour"
+function = "HolsterPlace"
+original_bytes = [0x6A, 0x00, 0x68, 0xB8, 0x18, 0x99, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-8]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[ebp-4]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[ebp-0xC]"
 type = "pointer"

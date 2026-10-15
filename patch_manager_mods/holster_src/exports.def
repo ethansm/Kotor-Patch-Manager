@@ -5,5 +5,5 @@ EXPORTS
     HolsterAttach
     HolsterSwap
     HolsterAnimResolve
-    HolsterAnimSend
+    HolsterPlace
     HolsterGobUpdate
