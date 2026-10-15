@@ -118,7 +118,7 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 102 | WI-70 | P3 | hold | S | - | Action Hotbar A11: extract picker tab filter/Same dedupe and panel box math | 0 | 3 | WI-10 leftover step 8 (optional M item) skipped; move ActionHotbar.cpp |
 | [ ] | 103 | WI-71 | P3 | hold | S | - | Inventory 3D viewport v2: PC-own-body armor/robe preview via 008cd060 (Branch B) | 0 | 0 | v1 uses the Workbench fixed row 137 and cat==4 (bodyvar folded in by g |
 | [ ] | 104 | WI-72 | P3 | hold | S | - | analyze_play_logs.py: strip KpLog prefix for inventory_sort_filter_log.txt | 0 | 0 | KpLog fallback prefixes each line '<ms32> <patch>/<ch> ', breaking ^-a |
-| [ ] | 105 | WI-73 | P3 | hold | S | - | BG26 DXT1 splice skips RGB edits on parents with c0<=c1 since encode_rgb is always 4-colou | 0 | 2 | wrong-behaviour/med: Guard is deliberate alpha protection but silently |
+| [ ] | 105 | WI-73 | P3 | ready | S | - | BG26 DXT1 splice skips RGB edits on parents with c0<=c1 since encode_rgb is always 4-colou | 0 | 2 | wrong-behaviour/med: Guard is deliberate alpha protection but silently |
 | [x] | 106 | WI-74 | P3 | ready | S | - | BG27 engineNe counts resting 0x3D/bare 0x3F, forcing buffering and permanent engine_busy | 0 | 3 | wrong-behaviour/med: engineNe counts every entry; ActQueue.h documents |
 | [x] | 107 | WI-75 | P3 | ready | S | - | BG28 keyFor(0) returns slot0 ignoring tag, so settings follow party position not creature  | 0 | 1 | wrong-behaviour/med: keyFor(0) returns slot0 even though c0.tag is rea |
 | [x] | 108 | WI-76 | P3 | ready | S | - | BG29 imageFor pools failed (null) lookups so hudkit::image retry never reloads | 0 | 4 | wrong-behaviour/med: imageFor pools null (line 299) so lazy retries in |
