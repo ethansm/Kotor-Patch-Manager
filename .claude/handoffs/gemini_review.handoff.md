@@ -1,6 +1,10 @@
 # Session Handoff: Gemini 2026-10-14 review (G1 + G2 DONE)
 
 ## 0. Next-Phase Direction
+**FX2 (2026-10-15, IN PROGRESS):** the 11 mod-side bug items (WI-74/75/77-84 + BG29c) via Haiku variants -> Sonnet consolidators ->
+Sonnet reviewers, plus one rea-recon for WI-87/SH-3a-08. Plan `.claude/plans/gemini_fix_wave2.md` (wave dir `.claude/waves/fix2/`,
+triage `.claude/waves/fx2_pick/`). Resume: `python3 scripts/plan_manager.py resume --plan .claude/plans/gemini_fix_wave2.md`.
+
 **FX1 (2026-10-15, DONE):** 7 landed (WI-99 f6ecaf6, WI-88 09bfbf1, WI-86 424a79a, WI-85 4a9f047, WI-76 c0910fe PARTIAL/BG29 owner callers
 pending, WI-98 e4f19b4, WI-97 0af3d09); WI-87 parked 215410c (needs RE of engine control release); doc 37 d94955f. Haiku variant wave + Sonnet consolidators + Sonnet reviewers, $11.70; plan
 `.claude/plans/gemini_fix_wave1.md` (wave dir `.claude/waves/fix1/`, brief generator `tools/fix1_briefs.py`). Resume: `python3 scripts/plan_manager.py resume --plan .claude/plans/gemini_fix_wave1.md`.
