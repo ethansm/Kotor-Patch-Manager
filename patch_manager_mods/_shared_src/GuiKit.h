@@ -285,7 +285,10 @@ inline bool setTextColor(uintptr_t ctl, float r, float g, float b) {   // Mod 14
 // Image wrapper for a resref (lowercased, pooled one per resref, never released: Mod 14 imageFor 289). Returns 0 on failure.
 // Optional out-params: *loaded = true only when this call invoked loadImage (new pool entry, even if it returned null);
 // *poolCount = pool entries after the call (every path). Pool full == !loaded && result==null && *poolCount >= ImagePoolSize.
-inline void* imageFor(const char* resref, bool* loaded = nullptr, int* poolCount = nullptr) {
+// A failed (null) load is pooled, so imageFor never asks the engine again for that resref: right for per-frame callers of a texture that
+// is either shipped or absent. A caller that polls for a texture that may appear LATER (hudkit::image, SH-3a-05) uses imageForRetry.
+namespace detail {
+inline void* imageLookup(const char* resref, bool* loaded, int* poolCount, bool poolNull) {
     struct E { char name[17]; void* im; };
     static E pool[ImagePoolSize]; static int n = 0;
     if (loaded) *loaded = false;
@@ -296,10 +299,20 @@ inline void* imageFor(const char* resref, bool* loaded = nullptr, int* poolCount
     for (int i = 0; i < n; ++i) if (!strcmp(pool[i].name, buf)) return pool[i].im;
     if (n >= ImagePoolSize) return nullptr;
     void* im = g_gk.loadImage(buf);
-    memset(&pool[n], 0, sizeof pool[n]); strncpy(pool[n].name, buf, 16); pool[n].im = im; ++n;
+    if (im || poolNull) { memset(&pool[n], 0, sizeof pool[n]); strncpy(pool[n].name, buf, 16); pool[n].im = im; ++n; }
     if (loaded) *loaded = true;
     if (poolCount) *poolCount = n;
     return im;
+}
+}  // namespace detail
+inline void* imageFor(const char* resref, bool* loaded = nullptr, int* poolCount = nullptr) {
+    return detail::imageLookup(resref, loaded, poolCount, true);
+}
+// Same pool and out-params as imageFor, but a null load adds NO pool entry (*loaded is still true: the engine was asked), so the next call
+// asks again once the texture exists. Non-null handles are pooled one per resref exactly as imageFor does. Costs one engine call per call
+// while the texture is missing; use it only from lazy getters that already stop calling once they hold a handle.
+inline void* imageForRetry(const char* resref, bool* loaded = nullptr, int* poolCount = nullptr) {
+    return detail::imageLookup(resref, loaded, poolCount, false);
 }
 // border+0x74 = image (nullptr clears it); tint (optional rgb) -> border+0x28. Refused unless the border vtable is 0x9875BC.
 // Gate tint with getBorderTint first, as Mod 14 does.

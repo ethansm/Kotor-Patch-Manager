@@ -1,5 +1,5 @@
 // Host test of HudKit.h: the five kit textures (names, order, 32-bit TGA headers, dimensions, colour/alpha pixels), the colour constants,
-// and the image getters (null without a loader, cached once found). Expected values are independent literals.
+// and the image getters (null without a loader, retried while missing, cached once found). Expected values are independent literals.
 #ifndef EMBTEX_HOST
 #define EMBTEX_HOST 1
 #endif
@@ -23,6 +23,9 @@ static void px(int id, int x, int y, int out[4]) {
 static int g_loads = 0;
 static char g_lastName[32], g_tok[8];
 static void* fakeLoad(const char* name) { ++g_loads; strncpy(g_lastName, name, 31); return strcmp(name, "kit_cancel_hi") == 0 ? nullptr : &g_tok[g_loads % 8]; }
+static int g_flakyCalls = 0;   // SH-3a-05 loader: refuses its first call, hands out a handle afterwards
+static void* flakyLoad(const char*) { ++g_flakyCalls; return g_flakyCalls == 1 ? nullptr : &g_tok[0]; }
+static void* nullLoad(const char*) { ++g_loads; return nullptr; }
 
 int main() {
     // ---- names + order ----
@@ -66,6 +69,30 @@ int main() {
     KT_CHECK(frame(true) != nullptr && cancel(false) != nullptr && disc() != nullptr);
     KT_CHECK(cancel(true) == nullptr);   // this loader refuses kit_cancel_hi: nullptr, caller falls back
     KT_CHECK(g_loads >= 4);
+    // ---- null then valid (SH-3a-05): kit_cancel_hi was refused above, yet a failed load is not cached, so the next image() asks again ----
+    guikit::g_gk.loadImage = flakyLoad; g_flakyCalls = 0;
+    KT_CHECK(cancel(true) == nullptr && g_flakyCalls == 1);   // call 1: the loader runs (nothing was pooled for the earlier refusal) and refuses
+    void* h = cancel(true);                                   // call 2: the loader runs again and returns a handle
+    KT_CHECK(h != nullptr && g_flakyCalls == 2);
+    KT_CHECK(cancel(true) == h && g_flakyCalls == 2);         // found: cached, no third load
+    // ---- imageForRetry out-params: a null load reports loaded but adds no pool entry; a handle is pooled once; imageFor still pools null ----
+    {
+        int pc0 = -1, pc1 = -1; bool ld = false;
+        guikit::imageFor(nullptr, nullptr, &pc0);             // no lookup: reports the pool count only
+        guikit::g_gk.loadImage = nullLoad; g_loads = 0;
+        KT_CHECK(guikit::imageForRetry("kit_probe_a", &ld, &pc1) == nullptr);
+        KT_CHECK(ld); KT_CHECK_EQ(pc1, pc0); KT_CHECK_EQ(g_loads, 1);
+        KT_CHECK(guikit::imageForRetry("KIT_PROBE_A", &ld, &pc1) == nullptr);   // case-insensitive, asks again
+        KT_CHECK(ld); KT_CHECK_EQ(pc1, pc0); KT_CHECK_EQ(g_loads, 2);
+        guikit::g_gk.loadImage = fakeLoad; g_loads = 0;
+        void* p = guikit::imageForRetry("kit_probe_a", &ld, &pc1);              // texture appears: pooled now
+        KT_CHECK(p != nullptr && ld); KT_CHECK_EQ(pc1, pc0 + 1); KT_CHECK_EQ(g_loads, 1);
+        KT_CHECK(guikit::imageForRetry("kit_probe_a", &ld, &pc1) == p && !ld); KT_CHECK_EQ(g_loads, 1);
+        KT_CHECK(guikit::imageFor("kit_probe_a") == p); KT_CHECK_EQ(g_loads, 1);   // the shared pool answers imageFor too
+        guikit::g_gk.loadImage = nullLoad; g_loads = 0;
+        KT_CHECK(guikit::imageFor("kit_probe_b", &ld, &pc1) == nullptr); KT_CHECK_EQ(pc1, pc0 + 2);   // imageFor keeps pooling a null ...
+        KT_CHECK(guikit::imageFor("kit_probe_b", &ld, &pc1) == nullptr && !ld); KT_CHECK_EQ(g_loads, 1);   // ... and does not ask again
+    }
     guikit::g_gk.loadImage = nullptr;
     return kt::Report("hudkit_test");
 }

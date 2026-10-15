@@ -9,7 +9,7 @@
 // arrays). This header wraps the EmbedTex.h loading pattern the mods already used: the mod sets embtex::g_log, calls hudkit::ensure() once
 // per process (create + fill + queue; idempotent) and embtex::heal() every frame (the kit textures are part of embtex's remembered set), then
 // asks for the pooled GUI image with frame(hover) / cancel(hover) / disc(). An image getter returns nullptr when the texture is unavailable (the
-// caller falls back to its flat look / text X); call it only after ensure() (guikit::imageFor pools a failed lookup too).
+// caller falls back to its flat look / text X); call it only after ensure() (a failed lookup is not pooled: each call retries until the texture exists).
 //
 // Both mods embed their own copy of the arrays (each DLL has its own embtex slot set); the resrefs are shared names. embtex::MaxTex (16)
 // must hold the mod's own textures plus Count (5).
@@ -42,7 +42,7 @@ inline bool ensure() { return embtex::ensure(detail::kHudKitTextures, Count); }
 inline void* image(int id) {
     static void* cache[Count] = {};
     if (id < 0 || id >= Count) return nullptr;
-    if (!cache[id]) cache[id] = guikit::imageFor(detail::kHudKitTextures[id].resref);
+    if (!cache[id]) cache[id] = guikit::imageForRetry(detail::kHudKitTextures[id].resref);   // null is not pooled: retried until the texture exists (SH-3a-05)
     return cache[id];
 }
 inline void* frame(bool hover) { return image(hover ? FrameHi : Frame); }
