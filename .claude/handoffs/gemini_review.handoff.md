@@ -1,9 +1,14 @@
-# Session Handoff: Gemini 2026-10-14 review (phase G1 done, then G2 plan)
+# Session Handoff: Gemini 2026-10-14 review (G1 + G2 DONE)
 
 ## 0. Next-Phase Direction
-G1 (persist, triage, anchor check, Haiku recon) is DONE and committed. Next is **G2: verify, validate and persist the
-recon results for development**. Plan path: **`.claude/plans/gemini_review_g2.md`** (approved and saved 2026-10-14; G2 started 2026-10-14T23:28-04:00). Resume with `python3 scripts/plan_manager.py resume .claude/plans/gemini_review_g2.md`
-(never bare). No fixes have been decided. No game files were touched.
+G1 and **G2 are DONE** (plan `.claude/plans/gemini_review_g2.md`, all 6 phases marked; commits f427b92, dedb65e, 93d371a, 30ba0b6, b213db6,
+6e8af73 doc 37, WI-73..WI-101 commits by wi_driver, af03494, f7f8974). Single source of truth: `.claude/reviews/gemini_20261014/validated.tsv`
+(real 61, latent 49, refuted 21, unsure 4; 0 high). Persisted: doc 37 BG26-BG41, work items WI-73..WI-101 (origin gemini-20261014),
+`refuted.md`, `scorecard.md`, README "G2 result". No fixes were made in G2 and no game files were touched.
+**Next:** fixing runs through `/next-dev-work-item`, one item per session. Ready now: WI-76 (BG29), WI-85..WI-88 (BG38-BG41), WI-97..WI-99
+(shared test gaps). Hold items wait for their owner sessions (queue-hud, selfheal, hotbar, k1, holster, npc, perf-lab, companion-ai).
+WI-100 (latent hardening) needs an owner decision. WI-101 is runtime-only verification.
+Open G2 notes: rea-recon answered 1 of 7 engine questions (g2/re.md); the 4 `unsure` fids sit in WI-101. G2 cost $9.16 (budget was $4-5).
 
 ## 1. Provenance and commits (branch `KOTOR-II`)
 - `d871ff0` A: review_bundle packer + manifest + tests, doc 43, MASTER_KEY row 43 (index-blob partial stage; the other session's BG row left unstaged).
