@@ -69,7 +69,7 @@ When starting a new session or beginning mod work:
 - Brief = `Contract: worker|recon` + `Write Scope: <globs>` + output of `python3 scripts/agent_contract.py print worker|recon`.
 - **Backend policy (Claude Code)**: Do not use OpenCode subagents (`oc-subagent`, `oc-flow`, `oc-free`, `oc-local`) unless the user explicitly asks for them in Claude Code. Default to the Haiku swarm (parallel `model: haiku` Agent subagents).
 - Wave recipe and budget gate: see `patch_manager_mods/SUBAGENT_ROLES.md` "Claude Code Haiku swarm (waves)".
-- Order: worker CREATED,MODIFIED,TESTS,NOTES,STATUS · recon OUTPUT,EVIDENCE,FINDING,OPEN,VERDICT. Verify: `agent_contract.py snapshot` before launch, `agent_contract.py check --scope <globs> -` after.
+- Order: worker CREATED,MODIFIED,TESTS,NOTES,STATUS · recon OUTPUT,EVIDENCE,FINDING,OPEN,VERDICT · review OUTPUT,EVIDENCE,BLOCKING,FINDING,DECISION. Verify: `agent_contract.py snapshot` before launch, `agent_contract.py check --scope <globs> -` after.
 
 ## AI Agent Output Style (`i-have-adhd`)
 - The `i-have-adhd` plugin is installed globally across Claude Code and Antigravity (`agy`).

@@ -2,12 +2,13 @@
 """agent_contract.py - subagent contract templates and validator. Python 3, stdlib only.
 
 Usage:
-  agent_contract.py print {worker|recon}
+  agent_contract.py print {worker|recon|review}
   agent_contract.py snapshot [--out FILE] [--repo-root DIR]
-  agent_contract.py check [--type auto|worker|recon] [--scope GLOB ...] [--baseline FILE] [--repo-root DIR] [--json] {FILE|-}
+  agent_contract.py check [--type auto|worker|recon|review] [--scope GLOB ...] [--baseline FILE] [--repo-root DIR] [--json] {FILE|-}
 
 print     emit the contract block to append to a subagent brief (worker = edits code/docs/tests;
-          recon = read-only research/audit/log triage, may write only its OUTPUT file).
+          recon = read-only research/audit/log triage, may write only its OUTPUT file;
+          review = read-only code/doc review, may write only its review.md, with BLOCKING count and DECISION).
 snapshot  record `git status` + content hashes before launch (default .claude/contract_baseline.tsv).
 check     validate a 5-line reply: shape, key order, values, claimed paths vs git, write scope.
           Uses --baseline, else the default snapshot file if present. Scope globs are fnmatch
@@ -61,6 +62,19 @@ SPECS = {
         "verdict_key": "VERDICT",
         "verdicts": ("CONFIRMED", "REFUTED", "PARTIAL", "UNSURE"),
     },
+    "review": {
+        "header": "## Output Schema: REVIEW (read-only reviewer; write only your review.md). Reply with exactly these 5 lines "
+                  "in this order (evidence first, verdict last). NO prose, NO pasted code.",
+        "fields": [
+            ("OUTPUT", "<repo-relative path of your review.md>"),
+            ("EVIDENCE", "<1-3 anchors: path:line | 0xADDR | log marker; ';'-separated>"),
+            ("BLOCKING", "<integer count of blocking issues>"),
+            ("FINDING", "<most important issue, <= 25 words>"),
+            ("DECISION", "<APPROVE | APPROVE_MINOR | REQUEST_CHANGES>"),
+        ],
+        "verdict_key": "DECISION",
+        "verdicts": ("APPROVE", "APPROVE_MINOR", "REQUEST_CHANGES"),
+    },
 }
 RE_FIELD = re.compile(r"^([A-Z]+):\s*(.*)$")
 
@@ -81,10 +95,16 @@ RULES = {
         "- Scratch: only the dir the brief names; long jobs via run_in_background + notification, never poll loops.",
     ],
 }
+RULES["review"] = list(RULES["recon"])  # review uses recon's process rules
 
 
 def keys(kind):
     return [k for k, _ in SPECS[kind]["fields"]]
+
+
+def owners(key):
+    """Schema kinds that define this field key. OUTPUT, EVIDENCE and FINDING are shared by recon and review."""
+    return [t for t in SPECS if key in keys(t)]
 
 
 def template(kind):
@@ -103,13 +123,13 @@ def parse(text, kind="auto"):
     probs = []
     fields = {}
     order = []
-    all_keys = {k: t for t in SPECS for k in keys(t)}
+    known = {k for t in SPECS for k in keys(t)}
     for ln, raw in enumerate(text.splitlines(), 1):
         line = raw.strip()
         if not line or line.startswith("```") or line.startswith("~~~"):
             continue
         m = RE_FIELD.match(line)
-        if not m or m.group(1) not in all_keys:
+        if not m or m.group(1) not in known:
             probs.append(("FAIL", "PROSE", "line %d: %s" % (ln, line[:80])))
             continue
         k, v = m.group(1), m.group(2).strip()
@@ -119,16 +139,19 @@ def parse(text, kind="auto"):
         fields[k] = (v, ln)
         order.append(k)
     if kind == "auto":
-        votes = {t: sum(1 for k in order if all_keys[k] == t) for t in SPECS}
-        kind = max(votes, key=lambda t: (votes[t], t == "worker"))
+        if "DECISION" in fields:  # only the review schema has a DECISION line
+            kind = "review"
+        else:
+            votes = {t: sum(1 for k in order if t in owners(k)) for t in SPECS if t != "review"}
+            kind = max(votes, key=lambda t: (votes[t], t == "worker"))
     spec = SPECS[kind]
     for k in order:
-        if all_keys[k] != kind:
+        if kind not in owners(k):
             probs.append(("FAIL", "WRONG_KEY", "%s is not a %s key" % (k, kind)))
     missing = [k for k in keys(kind) if k not in fields]
     for k in missing:
         probs.append(("FAIL", "MISSING_KEY", k))
-    present = [k for k in order if all_keys[k] == kind]
+    present = [k for k in order if kind in owners(k)]
     if not missing and present != keys(kind):
         probs.append(("WARN", "ORDER", "got %s, want %s" % (",".join(present), ",".join(keys(kind)))))
     vk = spec["verdict_key"]
@@ -138,8 +161,8 @@ def parse(text, kind="auto"):
         t = fields["TESTS"][0]
         if not is_none(t) and "->" not in t:
             probs.append(("WARN", "TESTS_FORM", "TESTS should be '<command> -> <result>': %r" % t[:80]))
-    if kind == "recon" and "EVIDENCE" in fields and is_none(fields["EVIDENCE"][0]):
-        probs.append(("FAIL", "EVIDENCE_EMPTY", "recon reply cites no anchor"))
+    if kind in ("recon", "review") and "EVIDENCE" in fields and is_none(fields["EVIDENCE"][0]):
+        probs.append(("FAIL", "EVIDENCE_EMPTY", "%s reply cites no anchor" % kind))
     return kind, fields, probs
 
 
@@ -258,6 +281,14 @@ def check(text, root, kind="auto", scopes=None, baseline=None):
             if not (root / p).exists():
                 probs.append(("FAIL", "NO_PATH", "OUTPUT %s does not exist" % p))
         claimed = set(out)
+
+    if kind == "review" and "BLOCKING" in fields:
+        blocking = fields["BLOCKING"][0].strip().strip("`")
+        decision = fields.get("DECISION", ("",))[0].strip().strip("`").upper()
+        if not re.fullmatch(r"[0-9]+", blocking):
+            probs.append(("FAIL", "BLOCKING_FORM", "BLOCKING must be a non-negative integer: %r" % blocking[:40]))
+        elif int(blocking) > 0 and decision in ("APPROVE", "APPROVE_MINOR"):
+            probs.append(("WARN", "LABEL_CONTRADICTS_BLOCKING", "BLOCKING=%s but DECISION=%s" % (blocking, decision)))
 
     if changed is not None:
         for p in sorted(changed - claimed):

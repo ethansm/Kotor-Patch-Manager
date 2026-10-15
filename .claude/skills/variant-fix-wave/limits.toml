@@ -1,0 +1,12 @@
+# Batch caps for `fix_wave.py plan` (FX2 = 11 units / 56 agents / $9.08 was the sweet spot; FX3 = 23 / 107 / $26.22 was too big).
+# Per-agent rates measured over FX1-FX3 (10-15); revisions add about 30%.
+max_units = 12
+max_agents = 60
+max_cost_usd = 15.0
+max_inflight = 20
+
+[rates]
+haiku = 0.045
+consolidator = 0.62
+reviewer = 0.34
+revision_factor = 1.3

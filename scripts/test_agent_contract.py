@@ -25,6 +25,12 @@ FINDING: old.py has one line
 OPEN: None
 VERDICT: CONFIRMED
 """
+REVIEW_OK = """OUTPUT: notes/review.md
+EVIDENCE: a/old.py:1; b/other.py:1
+BLOCKING: 0
+FINDING: old.py is a one-line stub with no defect
+DECISION: APPROVE
+"""
 
 
 def git(root, *args):
@@ -96,6 +102,26 @@ class TestParse(unittest.TestCase):
     def test_recon_evidence_empty(self):
         _, _, probs = ac.parse(RECON_OK.replace("a/old.py:1; 0x00712f30", "None"))
         self.assertIn("EVIDENCE_EMPTY", [c for _, c, _ in probs])
+
+    def test_review_ok(self):
+        kind, _, probs = ac.parse(REVIEW_OK)
+        self.assertEqual((kind, probs), ("review", []))
+
+    def test_auto_detect_review_and_shared_keys(self):
+        # OUTPUT/EVIDENCE/FINDING belong to both recon and review; only a DECISION line selects review.
+        self.assertEqual(ac.parse(REVIEW_OK.replace("BLOCKING: 0\n", ""))[0], "review")
+        self.assertEqual(ac.parse(RECON_OK)[0], "recon")
+        self.assertEqual(ac.parse("OUTPUT: notes/find.md\nEVIDENCE: a/old.py:1\nFINDING: one line\n")[0], "recon")
+
+    def test_review_evidence_empty(self):
+        _, _, probs = ac.parse(REVIEW_OK.replace("a/old.py:1; b/other.py:1", "None"))
+        self.assertIn("EVIDENCE_EMPTY", [c for _, c, _ in probs])
+
+    def test_print_review_key_order(self):
+        out = io.StringIO()
+        self.assertEqual(ac.main(["print", "review"], out=out), 0)
+        self.assertEqual(re.findall(r"^([A-Z]+): ", out.getvalue(), re.M),
+                         ["OUTPUT", "EVIDENCE", "BLOCKING", "FINDING", "DECISION"])
 
     def test_template_round_trips_keys(self):
         for kind in ac.SPECS:
@@ -173,8 +199,60 @@ class TestGit(unittest.TestCase):
         self.assertTrue({"type", "fails", "warns", "problems", "baseline"} <= set(data))
 
 
+class TestReview(unittest.TestCase):
+    def setUp(self):
+        self.r = Repo()
+        self.r.write("notes/review.md", "# review\n")
+
+    def tearDown(self):
+        self.r.tmp.cleanup()
+
+    def test_valid_review_passes(self):
+        rc, out = self.r.run("check", "-", stdin=REVIEW_OK)
+        self.assertEqual(rc, 0, out)
+        self.assertEqual(codes(out), [])
+        self.assertIn("VERDICT: PASS type=review", out)
+
+    def test_check_type_review_flag(self):
+        rc, out = self.r.run("check", "--type", "review", "--", "-", stdin=REVIEW_OK)
+        self.assertEqual(rc, 0, out)
+        self.assertIn("type=review", out)
+
+    def test_output_must_exist(self):
+        rc, out = self.r.run("check", "-", stdin=REVIEW_OK.replace("notes/review.md", "notes/missing.md"))
+        self.assertEqual(rc, 1)
+        self.assertIn("NO_PATH", codes(out))
+
+    def test_blocking_must_be_integer(self):
+        rc, out = self.r.run("check", "-", stdin=REVIEW_OK.replace("BLOCKING: 0", "BLOCKING: two"))
+        self.assertEqual(rc, 1)
+        self.assertIn("BLOCKING_FORM", codes(out))
+
+    def test_blocking_with_approve_warns_but_passes(self):
+        rc, out = self.r.run("check", "-", stdin=REVIEW_OK.replace("BLOCKING: 0", "BLOCKING: 2"))
+        self.assertEqual(rc, 0, out)
+        self.assertEqual(codes(out), ["LABEL_CONTRADICTS_BLOCKING"])
+        self.assertIn("VERDICT: PASS", out)
+
+    def test_blocking_with_request_changes_is_clean(self):
+        text = REVIEW_OK.replace("BLOCKING: 0", "BLOCKING: 2").replace("DECISION: APPROVE", "DECISION: REQUEST_CHANGES")
+        rc, out = self.r.run("check", "-", stdin=text)
+        self.assertEqual(rc, 0, out)
+        self.assertEqual(codes(out), [])
+
+    def test_scope_and_unclaimed_like_recon(self):
+        self.r.run("snapshot")
+        self.r.write("b/other.py", "y = 3\n")
+        rc, out = self.r.run("check", "--scope", "notes/*", "--", "-", stdin=REVIEW_OK)
+        self.assertEqual(rc, 1)
+        self.assertIn("OUT_OF_SCOPE", codes(out))
+        self.assertIn("UNCLAIMED", codes(out))
+
+
 class TestDocsDrift(unittest.TestCase):
     """AGENTS.md and CLAUDE.md carry a short pointer; its key order must match the templates."""
+
+    UNDOCUMENTED = ()
 
     def section(self, name):
         text = (REPO_ROOT / name).read_text(encoding="utf-8")
@@ -186,6 +264,8 @@ class TestDocsDrift(unittest.TestCase):
         for name in ("AGENTS.md", "CLAUDE.md"):
             sec = self.section(name)
             for kind in ac.SPECS:
+                if kind in self.UNDOCUMENTED:
+                    continue
                 m = re.search(kind + r" ([A-Z,]+)", sec)
                 self.assertIsNotNone(m, "%s: no '%s KEY,KEY' order list" % (name, kind))
                 self.assertEqual(m.group(1).split(","), ac.keys(kind), name)
