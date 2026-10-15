@@ -35,7 +35,7 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 19 | WI-02 | P1 | ready | M | - | KPM tooling H1-H6 build batch | 5 | 4 | KPM tooling batch; tooling, not game behavior. |
 | [ ] | 20 | WI-12 | P1 | ready | M | WI-10 | Force Power Hotbar arrow art and setFont check | 4 | 4 | Hotbar arrow art and setFont check; arrow spec unknown. |
 | [ ] | 21 | WI-09 | P1 | ready | S | - | Ultrawide GUI and FullPartySelect follow-ups | 3 | 1 | Ultrawide GUI and FullPartySelect follow-ups; 1 open, ready. |
-| [ ] | 22 | WI-13 | P1 | verify-only | M | - | Level-up override verify and Configure nudge check | 10 | 0 | Level-up override verify and Configure nudge check; 9 open. |
+| [!] | 22 | WI-13 | P1 | verify-only | M | - | Level-up override verify and Configure nudge check | 10 | 0 | Level-up override verify and Configure nudge check; 9 open. |
 | [ ] | 23 | WI-50 | P1 | ready | S | - | deep-haiku-review H1/H2 backoff, verify scripts and ladder c | 4 | 0 | deep-haiku-review H1/H2 backoff and verify scripts; tooling. |
 | [x] | 24 | WI-44 | P1 | verify-only | S | - | NPC diversity selector bias and float guard | 1 | 0 | NPC diversity selector bias and float guard; 1 verify open. |
 | [ ] | 25 | WI-18c | P1 | ready | M | WI-18 | KpLog remainder: probe, companion AI, parser, design rows (C | 6 | 3 | KpLog remainder for probe, companion AI and parser rows; mostly parked |
