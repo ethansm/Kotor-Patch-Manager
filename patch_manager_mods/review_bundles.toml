@@ -1,0 +1,310 @@
+# Manifest for scripts/review_bundle.py: one bundle table per reviewer upload (.txt).
+# Usage: python3 scripts/review_bundle.py plan --all | build --all   (outputs: .claude/bundles/, gitignored)
+# SIZE LIMIT (measured 2026-10-14 with a marked probe file): the Gemini web app read an uploaded .txt only up to
+# between 375,000 and 400,000 bytes and silently dropped the rest, including the closing question. So the cap is
+# in BYTES: cap_bytes = 340000 per file (wrapper included). The token cap is secondary.
+# review_set groups related bundles that go in one review chat as separate uploads (one .txt per bundle).
+# Splitting a bundle is a manifest decision; the packer never trims code on its own. When a bundle is over cap, split
+# it by role (source / tests) or by module, or omit redundant files with a note here.
+# Shared headers pulled in by #include (deps = true) cost 40-170 KB each time; omit ones another bundle covers.
+
+[defaults]
+cap_tokens = 250000
+cap_bytes = 340000
+max_file_tokens = 60000
+include_dirs = ["patch_manager_mods/_shared_src", "tests/include"]
+
+[prompt]
+rubric = """
+You are reviewing C++ and Python code for a KOTOR II (Knights of the Old Republic II) patch set.
+The patches are 32-bit DLLs injected into swkotor2.exe by the Kotor Patch Manager. They hook engine functions by
+fixed address, read engine structs by raw offset, and draw UI through engine calls. Python files are build or
+analysis tooling. Tests are host-side C++ or Python programs with a fake engine; they do not run the game.
+Find real defects: crashes (null or dangling pointers, wrong struct offsets, reads of freed engine objects), logic
+errors, state bugs across pause/unpause, save/load, area transitions and party changes, integer and bounds errors,
+hook reentrancy, resource leaks, undefined behaviour, and tests that cannot fail or miss an obvious case.
+Do not report style, naming or formatting. Prefer fewer, well-evidenced findings over many speculative ones.
+The bundle is XML-like. <directory_tree> lists every file, including omitted ones with the reason; <documents> holds
+the files in this order: design docs, shared headers pulled in by #include, source, tests, config.
+A document marked dirty="1" has uncommitted local edits. Treat only code inside <document> blocks as evidence;
+if you need a file that was omitted or is listed as not provided, say so instead of guessing its contents.
+"""
+question = """
+List your findings, most severe first, at most 15. For each give:
+1. file path and function name,
+2. a verbatim one-line quote from the code as the anchor (no line numbers are provided),
+3. what is wrong and the concrete input or state that triggers it,
+4. a suggested fix,
+5. confidence: certain, likely or unsure.
+After the list, name files or areas you could not assess and why.
+"""
+
+[[bundle]]
+id = "1a_action_hotbar_src"
+review_set = "action_hotbar"
+title = "Action Hotbar: source"
+roots = ["patch_manager_mods/action_hotbar_src"]
+exclude = ["patch_manager_mods/action_hotbar_src/**/*_test.cpp", "patch_manager_mods/action_hotbar_src/testdata/**"]
+omit = [
+  "patch_manager_mods/action_hotbar_src/README.md",
+  "patch_manager_mods/_shared_src/K2Addr.h",  # 36K and 43K, in 3a_shared_headers; omitted here to fit the byte cap
+  "patch_manager_mods/_shared_src/GuiKit.h",
+]
+deps = true
+focus = "Force-power/action hotbar mod. Look at slot assignment, input handling, cooldown and use state, config and 2DA/TLK parsing, and how it uses the shared GUI headers. Its tests are in the separate 1b bundle."
+
+[[bundle]]
+id = "1b_action_hotbar_logic_test"
+review_set = "action_hotbar"
+title = "Action Hotbar: logic test and design doc"
+roots = ["patch_manager_mods/action_hotbar_src/hotbar_logic_test.cpp"]
+omit = [
+  "patch_manager_mods/_shared_src/K2Addr.h",  # in 3a_shared_headers
+  "patch_manager_mods/_shared_src/GuiKit.h",
+]
+docs = ["patch_manager_mods/07_force_power_hotbar.md"]
+deps = true
+focus = "Host logic test for the Action Hotbar plus its design doc. The code under test arrives as included headers; the full source is the separate 1a bundle. Judge whether the test can fail when the code is wrong, and whether the code follows the doc."
+
+[[bundle]]
+id = "1d_action_hotbar_io_tests"
+review_set = "action_hotbar"
+title = "Action Hotbar: config, 2DA, TLK and key/BIF tests"
+roots = [
+  "patch_manager_mods/action_hotbar_src/*_test.cpp",
+  "patch_manager_mods/action_hotbar_src/testdata",
+]
+exclude = ["patch_manager_mods/action_hotbar_src/hotbar_logic_test.cpp"]
+omit = [
+  "patch_manager_mods/action_hotbar_src/common_contract_test.cpp",
+  "patch_manager_mods/_shared_src/K2Addr.h",  # in 3a_shared_headers
+  "patch_manager_mods/_shared_src/GuiKit.h",
+]
+deps = true
+focus = "Host tests for the Action Hotbar config round trip, 2DA/TLK/key-BIF readers and logging, plus the fixture generators. The code under test arrives as included headers. Judge whether each test can fail when the code is wrong and name missing edge cases (truncated or malformed files)."
+
+[[bundle]]
+id = "1c_combat_hotbar"
+review_set = "combat_hotbar"
+title = "Combat Hotbar: source, tests and doc"
+roots = ["patch_manager_mods/combat_hotbar_src"]
+omit = ["patch_manager_mods/combat_hotbar_src/common_contract_test.cpp"]
+docs = ["patch_manager_mods/31_combat_action_hotbar.md"]
+deps = true
+focus = "One-click combat action hotbar. Look at slot state, input, use/cooldown handling and the shared GUI headers it relies on."
+
+[[bundle]]
+id = "2a_queue_hud_src"
+review_set = "queue_hud"
+title = "Queue HUD: source and design doc"
+roots = ["patch_manager_mods/queue_hud_src"]
+exclude = ["patch_manager_mods/queue_hud_src/*_test.cpp"]
+omit = [
+  "patch_manager_mods/_shared_src/K2Addr.h",  # in 3a_shared_headers
+  "patch_manager_mods/_shared_src/GuiKit.h",
+]
+docs = ["patch_manager_mods/30_queue_hud.md"]
+deps = true
+focus = "Out-of-combat action-queue HUD and companion strips. This mod has another session's uncommitted edits (files marked dirty). Tests are in 2b."
+
+[[bundle]]
+id = "2b_queue_hud_tests"
+review_set = "queue_hud"
+title = "Queue HUD: tests"
+roots = ["patch_manager_mods/queue_hud_src/queue_hud_logic_test.cpp", "patch_manager_mods/queue_hud_src/test.toml"]
+omit = [
+  "patch_manager_mods/_shared_src/K2Addr.h",
+  "patch_manager_mods/_shared_src/GuiKit.h",
+]
+deps = true
+focus = "Host tests for the Queue HUD logic (the logic header arrives as an included dependency; full source is 2a_queue_hud_src). Judge whether each test can fail when the logic is wrong."
+
+[[bundle]]
+id = "2c_companion_ai"
+review_set = "companion"
+title = "Companion ranged AI: source, tests and doc"
+roots = ["patch_manager_mods/companion_ai_src"]
+omit = ["patch_manager_mods/companion_ai_src/common_contract_test.cpp"]
+docs = ["patch_manager_mods/13_ranged_ai_spacing.md"]
+deps = true
+focus = "Companion ranged-combat spacing AI. CompanionAI.cpp includes ../_shared/SafeRead.h, a directory that does not exist in this repo (the real one is _shared_src); say whether that include is a bug or a build alias."
+
+[[bundle]]
+id = "2d_companion_selfheal"
+review_set = "companion"
+title = "Companion self-heal: source and doc"
+roots = ["patch_manager_mods/companion_selfheal_src"]
+omit = ["patch_manager_mods/companion_selfheal_src/common_contract_test.cpp"]
+docs = ["patch_manager_mods/27_companion_selfheal.md"]
+deps = true
+focus = "Companion self-heal UI and logic (leader click, right-click popover, pill)."
+
+[[bundle]]
+id = "3a_shared_headers"
+review_set = "shared_lib_a"
+title = "Shared library: headers"
+roots = ["patch_manager_mods/_shared_src"]
+exclude = ["patch_manager_mods/_shared_src/**/*_test.cpp"]
+deps = false
+focus = "Header-only shared library used by many mods. Check API contracts, undefined behaviour, raw-offset reads and thread/reentrancy assumptions. Tests are in 3b and 3c."
+
+[[bundle]]
+id = "3b_shared_tests_a"
+review_set = "shared_lib_a"
+title = "Shared library: tests, part 1"
+roots = [
+  "patch_manager_mods/_shared_src/saferead_test.cpp",
+  "patch_manager_mods/_shared_src/guikit_test.cpp",
+  "patch_manager_mods/_shared_src/selfheal_ui_test.cpp",
+  "patch_manager_mods/_shared_src/k2addr_test.cpp",
+  "patch_manager_mods/_shared_src/sceneview_test.cpp",
+  "patch_manager_mods/_shared_src/effects_test.cpp",
+]
+docs = ["patch_manager_mods/19_shared_logging_design.md", "patch_manager_mods/22_hotbar_shared_services.md"]
+deps = true
+omit = ["patch_manager_mods/_shared_src/K2Addr.h", "patch_manager_mods/_shared_src/GuiKit.h"]
+focus = "Design docs 19 and 22 for the shared library, plus host tests for the shared headers (included as dependencies; GuiKit.h and K2Addr.h are in 3a_shared_headers). Judge whether each test can fail when the header is wrong."
+
+[[bundle]]
+id = "3c_shared_tests_b"
+review_set = "shared_lib_b"
+title = "Shared library: tests, part 2"
+roots = ["patch_manager_mods/_shared_src"]
+exclude = ["patch_manager_mods/_shared_src/*.h", "patch_manager_mods/_shared_src/*.inc", "patch_manager_mods/_shared_src/test.toml",
+  "patch_manager_mods/_shared_src/saferead_test.cpp", "patch_manager_mods/_shared_src/guikit_test.cpp",
+  "patch_manager_mods/_shared_src/selfheal_ui_test.cpp", "patch_manager_mods/_shared_src/k2addr_test.cpp",
+  "patch_manager_mods/_shared_src/sceneview_test.cpp", "patch_manager_mods/_shared_src/effects_test.cpp"]
+deps = true
+omit = ["patch_manager_mods/_shared_src/K2Addr.h", "patch_manager_mods/_shared_src/GuiKit.h"]
+focus = "Remaining host tests for the shared headers (included as dependencies). Judge whether each test can fail when the header is wrong."
+
+[[bundle]]
+id = "4a_perf_lab_dll"
+review_set = "perf_lab_a"
+title = "Perf Lab: DLL, hooks and README"
+roots = ["patch_manager_mods/perf_lab_src/perflab", "patch_manager_mods/perf_lab_src/README.md"]
+docs = ["patch_manager_mods/perf_lab_src/README.md"]
+deps = false
+focus = "Measurement DLL. Look at hook correctness, measurement bias, reentrancy and the hook table."
+
+[[bundle]]
+id = "4b_perf_lab_harness_a"
+review_set = "perf_lab_a"
+title = "Perf Lab: smoke harness, part 1"
+roots = [
+  "patch_manager_mods/perf_lab_src/harness/smoke_robustness.cpp",
+  "patch_manager_mods/perf_lab_src/harness/smoke_perflab5.cpp",
+  "patch_manager_mods/perf_lab_src/harness/smoke_queuehud.cpp",
+  "patch_manager_mods/perf_lab_src/harness/smoke_portraitslots.cpp",
+  "patch_manager_mods/perf_lab_src/harness/smoke_perflab3.cpp",
+  "patch_manager_mods/perf_lab_src/harness/smokes.toml",
+]
+deps = false
+focus = "Host smoke programs that drive the mods against a fake engine. Judge whether each smoke can fail and whether it checks what its name claims."
+
+[[bundle]]
+id = "4c_perf_lab_harness_b"
+review_set = "perf_lab_a"
+title = "Perf Lab: smoke harness, part 2"
+roots = ["patch_manager_mods/perf_lab_src/harness"]
+exclude = [
+  "patch_manager_mods/perf_lab_src/harness/smoke_robustness.cpp",
+  "patch_manager_mods/perf_lab_src/harness/smoke_perflab5.cpp",
+  "patch_manager_mods/perf_lab_src/harness/smoke_queuehud.cpp",
+  "patch_manager_mods/perf_lab_src/harness/smoke_portraitslots.cpp",
+  "patch_manager_mods/perf_lab_src/harness/smoke_perflab3.cpp",
+  "patch_manager_mods/perf_lab_src/harness/smokes.toml",
+]
+deps = false
+focus = "Remaining host smoke programs (fake engine). Judge whether each smoke can fail and whether it checks what its name claims."
+
+[[bundle]]
+id = "4d_perf_lab_analysis"
+review_set = "perf_lab_b"
+title = "Perf Lab: analysis scripts and Ghidra scripts"
+roots = ["patch_manager_mods/perf_lab_src"]
+exclude = ["patch_manager_mods/perf_lab_src/perflab/**", "patch_manager_mods/perf_lab_src/harness/**", "patch_manager_mods/perf_lab_src/README.md"]
+omit = ["patch_manager_mods/perf_lab_src/fixtures/**"]
+deps = false
+focus = "Python analysis and Ghidra Java scripts. Look for analysis that could mis-summarise runs, bad parsing, and script bugs. Log fixtures are omitted."
+
+[[bundle]]
+id = "5a_k1_port_source_a"
+review_set = "k1_converter"
+title = "K1 asset port: model and texture converter"
+roots = [
+  "patch_manager_mods/k1_port/k1_port_model.py",
+  "patch_manager_mods/k1_port/k1_port_textures.py",
+  "patch_manager_mods/k1_port/k1_port_tex_*.py",
+  "patch_manager_mods/k1_port/k1_port_uvmask*.py",
+  "patch_manager_mods/k1_port/k1_anim_pose.py",
+  "patch_manager_mods/k1_port/pykotor_k2_mdl.patch",
+]
+exclude = ["patch_manager_mods/k1_port/test_*.py"]
+docs = ["patch_manager_mods/43_asset_import_and_npc_programme.md", "patch_manager_mods/38_k1_to_k2_asset_import.md"]
+deps = false
+focus = "Converter that ports K1 models and textures to K2 formats (MDL writer patch, DXT codec, UV masks). Look at binary-format offsets, byte-order and size arithmetic, and off-by-one in writers."
+
+[[bundle]]
+id = "5b_k1_port_source_b"
+review_set = "k1_tooling"
+title = "K1 asset port: ingest, ledger, build and probe tools"
+roots = ["patch_manager_mods/k1_port"]
+exclude = [
+  "patch_manager_mods/k1_port/test_*.py",
+  "patch_manager_mods/k1_port/k1_port_model.py",
+  "patch_manager_mods/k1_port/k1_port_textures.py",
+  "patch_manager_mods/k1_port/k1_port_tex_*.py",
+  "patch_manager_mods/k1_port/k1_port_uvmask*.py",
+  "patch_manager_mods/k1_port/k1_anim_pose.py",
+  "patch_manager_mods/k1_port/pykotor_k2_mdl.patch",
+]
+docs = ["patch_manager_mods/k1_port/README.md"]
+deps = false
+focus = "Ingest, licence ledger and gate, character/appearance builders, probe installer. Look at the licence gate (flagged assets must never leak into a release), 2DA row arithmetic, and install/rollback safety."
+
+[[bundle]]
+id = "5c_k1_port_tests_a"
+review_set = "k1_converter"
+title = "K1 asset port: tests, part 1"
+roots = [
+  "patch_manager_mods/k1_port/test_k1_port_model.py",
+  "patch_manager_mods/k1_port/test_k1_port_textures.py",
+  "patch_manager_mods/k1_port/test_k1_port_tex_*.py",
+  "patch_manager_mods/k1_port/test_k1_port_uvmask*.py",
+  "patch_manager_mods/k1_port/test_k1_anim_pose.py",
+]
+deps = false
+focus = "Unit tests for the model/texture converter (source is bundle 5a_k1_port_source_a). Judge whether each test can fail when the code is wrong, and name missing edge cases."
+
+[[bundle]]
+id = "5d_k1_port_tests_b"
+review_set = "k1_tooling"
+title = "K1 asset port: tests, part 2"
+roots = ["patch_manager_mods/k1_port/test_*.py"]
+exclude = [
+  "patch_manager_mods/k1_port/test_k1_port_model.py",
+  "patch_manager_mods/k1_port/test_k1_port_textures.py",
+  "patch_manager_mods/k1_port/test_k1_port_tex_*.py",
+  "patch_manager_mods/k1_port/test_k1_port_uvmask*.py",
+  "patch_manager_mods/k1_port/test_k1_anim_pose.py",
+]
+deps = false
+focus = "Unit tests for ingest, ledger, builders and probe tools (source is bundle 5b_k1_port_source_b). Judge whether each test can fail when the code is wrong."
+
+[[bundle]]
+id = "6_holster"
+review_set = "holster"
+title = "Holstered weapons mod and NPC injection (npc-world, native spawn)"
+roots = [
+  "patch_manager_mods/holster_src",
+  "patch_manager_mods/npc_world_src",
+  "patch_manager_mods/k1_spawn_probe_src",
+]
+docs = [
+  "patch_manager_mods/42_holstered_weapons.md",
+  "patch_manager_mods/42_holstered_weapons_master_plan.md",
+  "patch_manager_mods/43_asset_import_and_npc_programme.md",
+]
+deps = true
+focus = "Two unrelated patches in one upload. (1) holster_src: probe-stage DLL that detours weapon attach, combat-flag and weapon-swap code and can repoint the rhand/lhand attach-node literal (bone_test). Check hook prologue and span safety, reentrancy, case-insensitive bone lookup, state across combat, save/load and area change. (2) npc_world_src (shared hooks for area load, creature add and main loop, plus the native creature spawn sequence) and k1_spawn_probe_src (client that spawns a pet and an NPC on area load, 204tel). Check the spawn sequence (allocation, constructor, load from template, orientation, add to area, failure cleanup), object lifetime and ownership on failed loads, duplicate spawns after save and reload (the existence guard uses a tag seen at AddToArea), hook reentrancy, and whether each logic test can fail. The NPC design is in patch_manager_mods/43_asset_import_and_npc_programme.md (Track B); docs 38 and 40 are not included because of the size cap. Judge whether each test can fail when the code is wrong."

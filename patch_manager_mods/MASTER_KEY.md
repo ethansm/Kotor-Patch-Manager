@@ -57,6 +57,7 @@ Our numbered markdown documents in `patch_manager_mods/` map directly to specifi
 | **34** | `npc_diversity_dispatcher` | Master NPC Diversity Dispatcher (.kpatch Architecture & Asset Pool) |
 | **35** | `clef_systemone_matcher_and_ledger` | Master Audit Ledger & Clef-Flash System-1 Subagent Router |
 | **36** | `agent_tooling_hardening` | **Active Tooling Plan**: Agent harness, gate hardening & atomic KPM pipeline |
+| **43** | `asset_import_and_npc_programme` | Overview: K1 asset import, NPC spawn/insertion/customisation, voice, holstered weapons (docs 34, 38, 40-42) |
 
 
 ---
