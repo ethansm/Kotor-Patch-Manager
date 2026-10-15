@@ -1,22 +1,19 @@
 # Session Handoff & Plan State: patch_manager_mods/ghidra_knowledge/DECOMP_PLAN.md
 
 ## 0. Next-Phase Direction
-DECOMP_PLAN D3 — persist session (D0-D2 done, D3 drafts committed unvalidated); plan the next phases D3 validation+G3, D4, D5, D6, D7, D8 in small batches so the orchestrator context stays small
+Execute D4: `named_decomp.py` named decompile; G4 CSWCCreature
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/ghidra_knowledge/DECOMP_PLAN.md`
-- **Branch:** `KOTOR-II` (707cf82 DECOMP D3 WIP: rea_facts.py + rea_questions --residual (Haiku drafts; Sonnet validation pending))
-- **Generated:** 2026-10-15 19:37:36 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (85ad108 DECOMP D3: cost line)
+- **Generated:** 2026-10-15 19:50:28 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-707cf82 DECOMP D3 WIP: rea_facts.py + rea_questions --residual (Haiku drafts; Sonnet validation pending)
- .../ghidra_knowledge/tools/rea_facts.py            | 412 +++++++++++++++++++++
- .../ghidra_knowledge/tools/tests/test_rea_facts.py | 352 ++++++++++++++++++
- .../steam_db_batches/tools/rea_questions.py        |  51 ++-
- .../tools/tests/test_rea_questions.py              |  82 ++++
- 4 files changed, 881 insertions(+), 16 deletions(-)
+85ad108 DECOMP D3: cost line
+ patch_manager_mods/ghidra_knowledge/DECOMP_PLAN.md | 1 +
+ 1 file changed, 1 insertion(+)
 ```
-- **Dirty Files (155):**
+- **Dirty Files (150):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/33_ui_queue_hotbar_fixes.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
@@ -27,25 +24,25 @@ DECOMP_PLAN D3 — persist session (D0-D2 done, D3 drafts committed unvalidated)
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
   - ` M patch_manager_mods/34_npc_diversity_dispatcher.md`
   - ` M patch_manager_mods/MASTER_KEY.md`
-  - ... +145 more (run `git status --short`)
+  - ... +140 more (run `git status --short`)
 
-## 2. Immediate Objective (D3)
-**`rea_facts.py` live-only facts (indirect targets, body ranges, data xrefs) + `rea_questions --residual`; G3 on 46 R1 addrs**
+## 2. Immediate Objective (D4)
+**`named_decomp.py` named decompile; G4 CSWCCreature**
 
-Status: PARTIAL
-Task: `rea_facts.py` live-only facts (indirect targets, body ranges, data xrefs) + `rea_questions --residual`; G3 on 46 R1 addrs
+Status: TODO (GATED ON D1)
+Task: `named_decomp.py` named decompile; G4 CSWCCreature
 
 ## 2b. Upcoming Batches in Pipeline
-- **D4** : `named_decomp.py` named decompile; G4 CSWCCreature
 - **D5** : `fn_doc.py` + `persist_purposes.py`; CSWCCreature page + KDB purposes
 - **D6** : R2 rebuilt (`--arm facts
+- **D7** : rea-recon agent v2 + `test_agent_copy.py`; live check on 0x85d260/2d0/320/3d0
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume patch_manager_mods/ghidra_knowledge/DECOMP_PLAN.md`.
 
 ## 4. Subagent Delegation Direction
 - **Claude Code**: parallel `model: haiku` Agent subagents; brief = `Contract` + `Write Scope` + `python3 scripts/agent_contract.py print worker|recon`.
-- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate D3` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
+- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate D4` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
 
 ## 5. Dead Ends & Verification (manual)
 _(none recorded; append Dead Ends & Anti-Patterns and Verification Commands here)_
@@ -67,3 +64,9 @@ _(none recorded; append Dead Ends & Anti-Patterns and Verification Commands here
 - **Verify:** `cd patch_manager_mods/ghidra_knowledge/tools && timeout 600 python3 -m unittest discover -s tests` (214 OK);
   `cd patch_manager_mods/steam_db_batches/tools && python3 -m unittest discover -s tests` (326 OK);
   `python3 -m unittest scripts.test_query_ghidra` (13 OK); `python3 patch_manager_mods/ghidra_knowledge/tools/rea_ledger.py lint` (baseline 53).
+- **D3 closed (65d4524, cost 85ad108):** V3 fixed callsite evidence (exact `0x<site>: <insn>` from `atlas_common.read_asm`,
+  falls back to `how`), `--no-live` writes marker `no live run (static only)` (never counts as done for a live run);
+  `--residual` already met spec (tests added). G3: `rea_findings/20261015_B13a-s1.tsv` 98 rows, exit 0, lint 53, sha OK.
+  Slot candidates are often unrelated CSWGui* classes (receiver class unknown) -> keep `probable`; never treat as names.
+- **D4 next (Batch B):** pilot class is **CSWSCreatureStats** (124 shipped rows), NOT CSWCCreature (0 rows); record in
+  DECOMP_PLAN Decisions at the start of Batch B (phase-table text still says CSWCCreature).

@@ -10,7 +10,7 @@ Handoff: `.claude/handoffs/DECOMP_PLAN.handoff.md`. Recon: `.claude/research/rea
 | D0 | Plan doc + hygiene + ledger lint (`rea_ledger.py`, query_ghidra superseded flag, rea_questions sha gate/manifest/RUNNING, DESIGN 4.9) | DONE | spec §D0 |
 | D1 | `rea_session.py` persistent REA MCP client + fake server + live probe (`.claude/research/rea_decomp/D1_probe.md`) | DONE | spec §D1 |
 | D2 | `static_facts.py` ($0 facts, twins) + `batch.py cards --facts` + REVIEWER_BRIEF/DESIGN 4.10 | DONE | spec §D2 |
-| D3 | `rea_facts.py` live-only facts (indirect targets, body ranges, data xrefs) + `rea_questions --residual`; G3 on 46 R1 addrs | PARTIAL | spec §D3 |
+| D3 | `rea_facts.py` live-only facts (indirect targets, body ranges, data xrefs) + `rea_questions --residual`; G3 on 46 R1 addrs | DONE | spec §D3 |
 | D4 | `named_decomp.py` named decompile; G4 CSWCCreature | TODO (gated on D1) | spec §D4 |
 | D5 | `fn_doc.py` + `persist_purposes.py`; CSWCCreature page + KDB purposes | TODO | spec §D5 |
 | D6 | R2 rebuilt (`--arm facts|facts_rea`), scored; MASTER_PLAN R2/R3 | TODO | spec §D6 |
