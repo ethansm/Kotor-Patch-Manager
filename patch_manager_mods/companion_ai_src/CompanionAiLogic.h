@@ -215,6 +215,7 @@ struct Config {
     // ---- engine fixes (design_ai_engine_fixes.md)
     bool a1 = true; unsigned a1Stances = maskOf3(11, 12, 16); bool a1PartyOnly = true;
     bool a1Retarget = true; unsigned a1RetargetStances = maskOf3(11, 12, 16); int a1RethinkMs = 3000;
+    bool a1RetargetStrict = false;   // C145 (a1_retarget_strict): a retarget candidate must pass the strict 2D range test or the A1 path ends
     bool p1 = false; int p1IntervalMs = 250;
     bool fm1 = true; int fm1RethinkMs = 0;
     int fm4 = 1;                // 0 vanilla, 1 snapshot/restore (mode 2 of the design is not built: treated as 0)
@@ -265,6 +266,7 @@ inline void parseConfig(const IniTable& t, Config& c) {
     c.a1PartyOnly = t.getBool("a1_party_only", c.a1PartyOnly);
     c.a1Retarget = t.getBool("a1_retarget", c.a1Retarget);
     if (const char* s = t.get("a1_retarget_stances")) c.a1RetargetStances = parseMask(s);
+    c.a1RetargetStrict = t.getBool("a1_retarget_strict", c.a1RetargetStrict);
     c.a1RethinkMs = clampi(t.getInt("a1_rethink_ms", c.a1RethinkMs), 0, 3000);
     c.p1 = t.getBool("p1", c.p1);
     c.p1IntervalMs = clampi(t.getInt("p1_interval_ms", c.p1IntervalMs), 0, 60000);
@@ -302,7 +304,7 @@ inline bool sameConfig(const Config& a, const Config& b) {
            a.a1BurstThreshold == b.a1BurstThreshold && a.a1RateThreshold == b.a1RateThreshold && a.engineVerbose == b.engineVerbose &&
            a.summarySec == b.summarySec && a.p1DetailLines == b.p1DetailLines && a.a1 == b.a1 && a.a1Stances == b.a1Stances &&
            a.a1PartyOnly == b.a1PartyOnly && a.a1Retarget == b.a1Retarget && a.a1RetargetStances == b.a1RetargetStances &&
-           a.a1RethinkMs == b.a1RethinkMs && a.p1 == b.p1 && a.p1IntervalMs == b.p1IntervalMs && a.fm1 == b.fm1 &&
+           a.a1RethinkMs == b.a1RethinkMs && a.a1RetargetStrict == b.a1RetargetStrict && a.p1 == b.p1 && a.p1IntervalMs == b.p1IntervalMs && a.fm1 == b.fm1 &&
            a.fm1RethinkMs == b.fm1RethinkMs && a.fm4 == b.fm4 && a.fm4Requested == b.fm4Requested && a.a4 == b.a4 && a.c1 == b.c1 &&
            a.c1PartyOnly == b.c1PartyOnly && a.a3 == b.a3 && a.log == b.log && a.probeFm2c == b.probeFm2c && a.probeFm2f == b.probeFm2f &&
            a.probeFm2r == b.probeFm2r && a.probeFm3 == b.probeFm3 && a.probeRs == b.probeRs && a.probeP2 == b.probeP2 &&
@@ -500,6 +502,9 @@ inline bool a1TryRetarget(const Config& c, int rawStance, float maxRange) {
     return c.a1Retarget && inMask(c.a1RetargetStances, rawStance) && maxRange > 0.5f;
 }
 inline int a1NewTarget(int found) { return found ? found : Invalid; }   // 0x57C990 may return 0 or INVALID for "none"
+// C145 a1_retarget_strict gate: with the gate on, a candidate is kept only when strictOk (a1Strict on the readable positions;
+// unreadable = not ok, fail closed). A rejected candidate becomes Invalid, i.e. the same END path as "no candidate".
+inline int a1GateTarget(const Config& c, int newId, bool strictOk) { return (c.a1RetargetStrict && newId != Invalid && !strictOk) ? Invalid : newId; }
 // Shorten the fallback timer after an END (not after a retarget) when a1_rethink_ms < 3000.
 inline bool a1RethinkWanted(const Config& c, int newId) { return newId == Invalid && c.a1RethinkMs < 3000; }
 inline bool a1RethinkWrite(const Config& c, int cur570) { return cur570 > c.a1RethinkMs; }

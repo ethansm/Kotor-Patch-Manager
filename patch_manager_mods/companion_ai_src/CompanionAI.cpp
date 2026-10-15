@@ -181,9 +181,9 @@ void logConfig(DWORD now, const char* why) {
           why, c.trace, c.scripts, c.enginePoints, c.shipScope == cai::ScopeOff ? "off" : c.shipScope == cai::ScopeAll ? "all" : "ai", scripts,
           c.printsAllScripts, c.partyOnly, tags, c.logAll, c.enginePrint, c.logAur, c.dedupeMs, c.maxLinesPerSec, c.maxFileMb, c.flushMs,
           c.a1BurstThreshold, c.a1RateThreshold, c.engineVerbose, c.summarySec, c.p1DetailLines);
-    eline(now, "# config fixes a1=%d a1_stances=%x a1_party_only=%d a1_retarget=%d a1_retarget_stances=%x a1_rethink_ms=%d p1=%d p1_interval_ms=%d "
-               "fm1=%d fm1_rethink_ms=%d fm4=%d%s a4=%d c1=%d c1_party_only=%d a3=%d log=%d",
-          c.a1, c.a1Stances, c.a1PartyOnly, c.a1Retarget, c.a1RetargetStances, c.a1RethinkMs, c.p1, c.p1IntervalMs, c.fm1, c.fm1RethinkMs,
+    eline(now, "# config fixes a1=%d a1_stances=%x a1_party_only=%d a1_retarget=%d a1_retarget_stances=%x a1_retarget_strict=%d a1_rethink_ms=%d p1=%d "
+               "p1_interval_ms=%d fm1=%d fm1_rethink_ms=%d fm4=%d%s a4=%d c1=%d c1_party_only=%d a3=%d log=%d",
+          c.a1, c.a1Stances, c.a1PartyOnly, c.a1Retarget, c.a1RetargetStances, c.a1RetargetStrict, c.a1RethinkMs, c.p1, c.p1IntervalMs, c.fm1, c.fm1RethinkMs,
           c.fm4, c.fm4Requested > 1 ? " (requested mode not built: vanilla)" : "", c.a4, c.c1, c.c1PartyOnly, c.a3, c.log);
     eline(now, "# config probes fm2c=%d fm2f=%d fm2r=%d fm3=%d rs=%d p2=%d pf=%d rar=%d shx=%d ss1=%d gca=%d party=%d a1x=%d lines=%d", c.probeFm2c,
           c.probeFm2f, c.probeFm2r, c.probeFm3, c.probeRs, c.probeP2, c.probePf, c.probeRar, c.probeShx, c.probeSs1, c.probeGca, c.probeParty,
@@ -902,6 +902,15 @@ extern "C" int __cdecl CompanionAiA1Gate(int ebp) {
     if (apply) {
         if (cai::a1TryRetarget(g_cfg, raw, mx))
             newId = cai::a1NewTarget(reinterpret_cast<RetargetFn>(FnNearestEnemy)(attacker, mx, tgt, Invalid));
+        if (g_cfg.a1RetargetStrict && newId != Invalid) {   // C145 gate (a1_retarget_strict): unreadable positions = out of range
+            float ax = 0, ay = 0, tx = 0, ty = 0;
+            int cand = gameObject(newId);
+            bool known = cand && saferead::readAt<float>(9, static_cast<uintptr_t>(attacker), CrPos, &ax) &&
+                         saferead::readAt<float>(9, static_cast<uintptr_t>(attacker), CrPos + 4, &ay) &&
+                         saferead::readAt<float>(9, static_cast<uintptr_t>(cand), CrPos, &tx) &&
+                         saferead::readAt<float>(9, static_cast<uintptr_t>(cand), CrPos + 4, &ty);
+            newId = cai::a1GateTarget(g_cfg, newId, known && cai::a1Strict(ax, ay, tx, ty, mx));
+        }
         frw<int>(ebp, F_NewTarget, newId);
         if (cai::a1RethinkWanted(g_cfg, newId)) {
             int f570 = rd<int>(attacker, CrFallback);
