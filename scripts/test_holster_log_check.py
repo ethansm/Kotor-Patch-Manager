@@ -151,6 +151,40 @@ class ParseTests(unittest.TestCase):
         b = parse([stamped(comb(0x1F0, 0, 1, 1))])[0][0]
         self.assertEqual({k: v for k, v in a.items() if k != "line"}, {k: v for k, v in b.items() if k != "line"})
 
+    def test_unreadable_comb_is_counted_not_skipped(self):
+        lines = ["COMB creature=zz old=0 new=1 edge=1 tick=5",
+                 "COMB creature=1f0 old=? new=2 edge=? tick=7",
+                 "COMB creature=1f0 old=? new=3 edge=? tick=8",
+                 comb(0x1F0, 0, 1, 1)]
+        recs, skipped, main = parse(lines)
+        self.assertEqual(main["unreadable"], 2)
+        self.assertEqual([(k, t) for _, k, t in skipped], [("COMB", lines[0])])
+        self.assertEqual(len(recs), 1)
+        rc, out = run_log(lines)
+        self.assertEqual(rc, 0)
+        self.assertIn("COMB edges=1 creatures=1 unreadable=2", out)
+        self.assertTrue(any(l.startswith("HOLSTER lines=4 parsed=1 skipped=1") for l in out), out)
+
+    def test_unreadable_comb_accepts_stamp_and_header_only_log(self):
+        rc, out = run_log([stamped("COMB creature=2a old=? new=0 edge=? tick=9")])
+        self.assertEqual(rc, 0)
+        self.assertIn("COMB edges=0 creatures=0 unreadable=1", out)
+        self.assertTrue(any(l.startswith("HOLSTER lines=1 parsed=0 skipped=0") for l in out), out)
+
+    def test_no_unreadable_leaves_comb_header_unchanged(self):
+        rc, out = run_log([comb(0x1F0, 0, 1, 1)])
+        self.assertEqual(rc, 0)
+        self.assertIn("COMB edges=1 creatures=1", out)
+        self.assertFalse(any("unreadable" in l for l in out), out)
+
+    def test_half_unknown_comb_stays_skipped(self):
+        # old=? with a known edge (or new=?) is not what the emitter prints: it must not be hidden as unreadable.
+        bad = ["COMB creature=1f0 old=? new=2 edge=7 tick=1100", "COMB creature=1f0 old=? new=? edge=? tick=1101"]
+        recs, skipped, main = parse(bad)
+        self.assertEqual(recs, [])
+        self.assertEqual(main["unreadable"], 0)
+        self.assertEqual([k for _, k, _ in skipped], ["COMB", "COMB"])
+
     def test_hex_is_normalised(self):
         recs, _, _ = parse(["ANIMRES self=1 id=001F style=0 gate=1 cc=2 d4=3 e8=4 tick=9"])
         self.assertEqual(recs[0]["id"], "1f")

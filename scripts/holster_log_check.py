@@ -3,7 +3,7 @@
 
 Usage: holster_log_check.py [LOG | --log LOG] [--new [--no-advance] [--state PATH]]
   Default log: ~/.local/share/Steam/steamapps/common/Knights of the Old Republic II/holster_log.txt
-  Report (at most 40 lines): header, status (loaded / cap reached / BONETEST), COMB edges per creature, ATTACH tags and
+  Report (at most 40 lines): header, status (loaded / cap reached / BONETEST), COMB edges per creature (plus unreadable=N for `old=? edge=?` lines), ATTACH tags and
   (body, handleR, handleL) tuples per creature, SWAP total, ANIMRES and ANIMSEND id histograms, GOB samples per gob
   (the 8 with the most samples: parent18, pos min/max/mean per axis, quat min/max per component, mean-quat angle),
   PLACE (only when PLACE lines exist: count, gobvt histogram, quat1 unit-norm check, last pos0/quat0 -> pos1/quat1 for the
@@ -46,6 +46,8 @@ def _rx(template):
 
 
 KIND_RE = re.compile(r"\b(COMB|ATTACH|SWAP|ANIMRES|ANIMSEND|GOB|PLACE) ")
+# Holster.cpp prints old=? edge=? when the COMB old-state read failed: counted as unreadable, never skipped.
+COMB_UNREAD = _rx(r"\bCOMB creature=<H> old=\? new=<I> edge=\? tick=\d+")
 FULL_RE = {
     "COMB": _rx(r"\bCOMB creature=(?P<creature><H>) old=(?P<old><I>) new=(?P<new><I>) edge=(?P<edge><I>) tick=\d+"),
     "ATTACH": _rx(r"\bATTACH obj=<H> tag='(?P<tag>[^']*)' creature=(?P<creature><H>) body=(?P<body><H>) "
@@ -95,7 +97,7 @@ def _record(kind, n, m):
 def parse_lines(window):
     """window: [(line_no, raw)] -> (records in log order, skipped [(line_no, kind, text)], main facts)."""
     recs, skipped = [], []
-    main = {"loaded": [], "cap": [], "bonetest": Counter()}
+    main = {"loaded": [], "cap": [], "bonetest": Counter(), "unreadable": 0}
     for n, raw in window:
         text = raw.strip()
         m = MAIN_RES["loaded"].search(text)
@@ -111,6 +113,9 @@ def parse_lines(window):
         if k is None:
             continue
         kind = k.group(1)
+        if kind == "COMB" and COMB_UNREAD.search(text):
+            main["unreadable"] += 1
+            continue
         f = FULL_RE[kind].search(text)
         if f is None:
             skipped.append((n, kind, text))
@@ -270,7 +275,11 @@ def _place(recs):
 def render(recs, skipped, main_facts, nlines, meta):
     has_place = any(r["kind"] == "PLACE" for r in recs) or any(k == "PLACE" for _, k, _ in skipped)
     out = ["HOLSTER lines=%d parsed=%d skipped=%d%s" % (nlines, len(recs), len(skipped), meta), _status(main_facts)]
-    out += _comb(recs)
+    comb = _comb(recs)
+    un = main_facts.get("unreadable", 0)
+    if un:
+        comb[0] += " unreadable=%d" % un
+    out += comb
     out += _attach(recs)
     out.append("SWAP total=%d" % sum(1 for r in recs if r["kind"] == "SWAP"))
     out.append(_hist("ANIMRES", recs))
