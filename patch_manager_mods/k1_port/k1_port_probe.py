@@ -368,6 +368,9 @@ def compute_plan(args, stamp: str) -> Plan:
     else:
         plan.check("stage ledger", False, f"missing {ledger_path}: prune gate cannot run")
     if led is not None and plan.files:
+        # Characters Revisited textures stay flagged until the author answers (request drafted, user sends it).
+        # Owner's fallback (10-14): if refused, remove them, swap in their own upscales, or do not publish. The
+        # gate is deliberately kept strict; there is no bypass flag.
         ok, detail = run_gate(led, stage.resolve(), [f["src"] for f in plan.files])
         plan.check("prune gate --strict (no flagged file)", ok, detail)
 
