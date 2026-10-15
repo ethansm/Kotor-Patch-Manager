@@ -8,7 +8,11 @@ FU-holster 9b9f4b6, FU-texset 1a14b19, WI-91b bf449fe, WI-94a f7cc1e4, WI-93 f55
 WI-89a 9e31e49, WI-89b+close WI-89 f899b72, WI-90 d3dfdf6, WI-100b 602a09d (+perflab contract fake, PerfLab -4 label), WI-96 2d2dab0, WI-91c 8e13e60,
 WI-100d f04d6a0 (+reviewer neg-wrap test), WI-100c 17efa9b, WI-102 fb4f76a (rev1), WI-87 2388aa8 (BG40 112afcf), WI-92 bf3216d.
 REMAINING (each: copy worktree review.md into .claude/waves/fix3/<u>/, `git apply` final.diff, tests, sync+build_check for _shared_src, commit):
-- WI-91a: reviewer was running at handoff (final.diff ready). APPROVE -> apply, then `wi_driver.py close WI-91 --manual --paths <3 test files>` (91b/91c landed).
+- WI-91a: review = REQUEST_CHANGES (.claude/waves/fix3/WI-91a/review.md): probe_build fails with empty HOME + valid K1PORT_VENV; the overlay test's
+  local_dir workaround hides the real k1_port_ingest.py:164 ValueError (new item 1); run_tests.py still reports a test-internal SKIP as PASS (runner decision).
+  Next: ONE revision by a fresh Sonnet consolidator (brief consolidate.md + this review + verdict.md; consolidator worktree from the old session is gone),
+  then fresh re-review; a second REQUEST_CHANGES parks WI-91a. Owner decision first: fix the ValueError in k1_port_ingest.py (scope widen) or keep the
+  overlay test xfail-marked until item 1 lands. Then `wi_driver.py close WI-91 --manual --paths <3 test files>` (91b/91c landed).
 - FU-texinit: revision 1 done (adds one-shot `TEXLATE slot= resref= img=` line + checker clear logic + __main__ runner in test_selfheal_log_check.py);
   needs a FRESH re-review (review.brief.md + prior review.md + verdict.md "Revision 1"). Apply touches CompanionSelfHeal.cpp, SelfHealUi.h, selfheal_ui_test.cpp,
   scripts/selfheal_log_check.py, scripts/test_selfheal_log_check.py; then --sync, build companion_selfheal_src + queue_hud_src; `git commit -- <paths>` (no WI).
