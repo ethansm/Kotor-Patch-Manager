@@ -53,7 +53,7 @@ tags = [
 # view; the two bevels; the toolbar column (5 buttons, x 684, y 174..300). The pop-up items and tooltip (ids 57..78) are
 # placed at runtime, so they have no fixed rect.
 rects = [[536, 134, 216, 336], [532, 130, 224, 38], [532, 436, 224, 38], [684, 174, 62, 126]]
-source = "EquipCharPreview.cpp:49-50,59-60"
+source = "EquipCharPreview.cpp:44-45,49-50"
 source_regex = [
   "constexpr int NumButtons = 5;",
   "constexpr int MaxMenu = 20;",
