@@ -33,7 +33,7 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [x] | 17 | WI-20b | P1 | verify-only | S | - | Robustness TD and GUIID fixes, verify only (C115, C116) | 2 | 1 | Robustness TD and GUIID fixes, verify only; target file present. |
 | [ ] | 18 | WI-38 | P1 | ready | L | - | Companion self-heal open rows: verify and build | 10 | 3 | Companion self-heal open rows: verify and build; 7 open, ready. |
 | [ ] | 19 | WI-02 | P1 | ready | M | - | KPM tooling H1-H6 build batch | 5 | 4 | KPM tooling batch; tooling, not game behavior. |
-| [!] | 20 | WI-12 | P1 | ready | M | WI-10 | Force Power Hotbar arrow art and setFont check | 4 | 4 | Hotbar arrow art and setFont check; arrow spec unknown. |
+| [ ] | 20 | WI-12 | P1 | ready | M | WI-10 | Force Power Hotbar arrow art and setFont check | 4 | 4 | Hotbar arrow art and setFont check; arrow spec unknown. |
 | [ ] | 21 | WI-09 | P1 | ready | S | - | Ultrawide GUI and FullPartySelect follow-ups | 3 | 1 | Ultrawide GUI and FullPartySelect follow-ups; 1 open, ready. |
 | [x] | 22 | WI-13 | P1 | verify-only | M | - | Level-up override verify and Configure nudge check | 10 | 0 | Level-up override verify and Configure nudge check; 9 open. |
 | [ ] | 23 | WI-50 | P1 | ready | S | - | deep-haiku-review H1/H2 backoff, verify scripts and ladder c | 4 | 0 | deep-haiku-review H1/H2 backoff and verify scripts; tooling. |

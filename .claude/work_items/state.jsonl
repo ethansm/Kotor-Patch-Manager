@@ -58,3 +58,4 @@
 {"ev": "unpark", "reason": "Steps now pin file:line anchors and grant read access (b20bc8e)", "session": "2d96ca70-8acd-4117-ace5-9f5bd1f51019", "ts": "2026-10-15T20:01:19Z", "wi": "WI-13"}
 {"ev": "done", "session": "2d96ca70-8acd-4117-ace5-9f5bd1f51019", "ts": "2026-10-15T20:04:06Z", "wi": "WI-13"}
 {"ev": "park", "reason": "worker reply FAIL: NOT_DIRTY MODIFIED None (this attempt; all five Write Scope files already carry the arrow work from attempts 1-2: ActionHotbar.cpp shows no change; NOT_DIRTY MODIFIED HotbarTextures", "session": "8e238b75-803e-47eb-ae96-a9777ac65a13", "ts": "2026-10-15T20:12:31Z", "wi": "WI-12"}
+{"ev": "unpark", "reason": "false park: MODIFIED parsed as None; arrow work present and tests pass; Steps note added", "session": "8e238b75-803e-47eb-ae96-a9777ac65a13", "ts": "2026-10-15T20:12:51Z", "wi": "WI-12"}
