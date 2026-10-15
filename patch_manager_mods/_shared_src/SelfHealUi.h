@@ -20,12 +20,12 @@ inline int clampi(int v, int lo, int hi) { return v < lo ? lo : (v > hi ? hi : v
 // Small (companion) cards only: live vits are 47x96 small vs 103x208 leader at 3840x1600 (doc 08 probe 1); w >= 70 = leader.
 inline bool isLeaderVit(Rect vit) { return vit.w >= 70; }
 inline bool isLeaderVitForButton(Rect vit) { return vit.w >= 70; }
-// Disc ("circle") diameter: same math as queue-hud autoIconPx (clamp(0.6 * vit.h, 48, 72); live companion vit.h 96 -> 58) so the
-// self-heal circle matches the queue squares next to the companion portraits. btnSizeForDisc inverts ringRect (side ~1.5 * button).
-inline int discDiameter(int vitH) { return clampi((vitH * 6 + 5) / 10, 48, 72); }
+// Disc ("circle") diameter. WI-38 C219: fixed at kDefaultDisc (58) for every bar height (was clamp(0.6 * vit.h, 48, 72)).
+// btnSizeForDisc inverts ringRect (side ~1.5 * button).
+constexpr int kDefaultDisc = 58;   // declared before discDiameter (its body returns it)
+inline int discDiameter(int vitH) { (void)vitH; return kDefaultDisc; }
 inline int btnSizeForDisc(int d) { return (d * 2 + 1) / 3; }
 inline int ringSideFor(int btnH) { return ((btnH * 3 + 2) / 4) * 2; }   // ringRect side (defined below)
-constexpr int kDefaultDisc = 58;
 inline int gapFor(int h) { int g = (int)std::lround(2 * h / 36.0); return g < 2 ? 2 : g; }
 // The disc/ring square sits left of the vitality bar (its right edge `gap` from vit.x), the cross button is centred in it, both vertically
 // centred on the bar. {0,0,0,0} = do not draw.

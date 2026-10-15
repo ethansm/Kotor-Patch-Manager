@@ -9,8 +9,9 @@ static bool parse(const char* l, std::string& k, CompCfg& c) { return parseLine(
 int main() {
     // ---- buttonRect ----
     // ---- discDiameter / buttonRect: disc square = queue strip icon (autoIconPx), cross button = 2/3 of it, disc right edge `gap` left of vit.x ----
-    KT_CHECK_EQ(discDiameter(96), 58); KT_CHECK_EQ(discDiameter(36), 48); KT_CHECK_EQ(discDiameter(64), 48); KT_CHECK_EQ(discDiameter(80), 48);
-    KT_CHECK_EQ(discDiameter(200), 72); KT_CHECK_EQ(discDiameter(0), 48); KT_CHECK_EQ(discDiameter(1000), 72);
+    // WI-38 C219: disc is fixed at kDefaultDisc (58) for every bar height (no 48-72 clamp)
+    KT_CHECK_EQ(discDiameter(96), 58); KT_CHECK_EQ(discDiameter(36), 58); KT_CHECK_EQ(discDiameter(64), 58); KT_CHECK_EQ(discDiameter(80), 58);
+    KT_CHECK_EQ(discDiameter(200), 58); KT_CHECK_EQ(discDiameter(0), 58); KT_CHECK_EQ(discDiameter(1000), 58);
     { Rect r = buttonRect({3671, 1285, 47, 96}); KT_CHECK(r == (Rect{3617, 1313, 39, 39}));   // live small card, 3840x1600 (doc 08 probe 1)
       Rect rg = ringRect(r); KT_CHECK_EQ(rg.w, 58); KT_CHECK_EQ(rg.h, 58); KT_CHECK_EQ(rg.x + rg.w + 5, 3671);   // disc = 58 px, gap round(5.33)=5
       KT_CHECK_EQ(rg.y + rg.h / 2, 1285 + 96 / 2); }                                                          // centred on the bar
@@ -20,12 +21,12 @@ int main() {
         KT_CHECK(rg.w - discDiameter(h) >= -1 && rg.w - discDiameter(h) <= 1);      // ring square == disc diameter (+/-1)
         KT_CHECK(r.w == r.h); KT_CHECK(rg.x + rg.w <= 1000 - 2);                    // clear of the bar, gap >= 2
     }
-    { Rect r = buttonRect({100, 0, 47, 400}); KT_CHECK_EQ(r.w, 48); KT_CHECK_EQ(ringRect(r).w, 72); }   // h=400 allowed, capped at 72
+    { Rect r = buttonRect({100, 0, 47, 400}); KT_CHECK_EQ(r.w, 39); KT_CHECK_EQ(ringRect(r).w, 58); }   // h=400 allowed, disc fixed at 58
     { Rect z{0, 0, 0, 0}; KT_CHECK(buttonRect({100, 50, 70, 36}) == z); KT_CHECK(buttonRect({100, 50, 103, 208}) == z); KT_CHECK(buttonRect({100, 50, 0, 36}) == z); KT_CHECK(!(buttonRect({100, 50, 69, 96}) == z)); }   // leader (w >= 70) / empty; 69 = small card
     { KT_CHECK(isLeaderVit({3511, 1386, 103, 208})); KT_CHECK(!isLeaderVit({3671, 1285, 47, 96})); }
     { Rect z{0, 0, 0, 0}; KT_CHECK(buttonRect({100, 50, 47, 0}) == z); KT_CHECK(buttonRect({100, 50, 47, -5}) == z); KT_CHECK(buttonRect({100, 50, 47, 401}) == z); }
-    { Rect z{0, 0, 0, 0}; KT_CHECK(buttonRect({49, 50, 47, 36}) == z); KT_CHECK(!(buttonRect({50, 50, 47, 36}) == z)); }   // disc 48 + gap 2: left edge 0 ok, -1 refused
-    { Rect r = buttonRect({50, 50, 47, 36}); KT_CHECK_EQ(ringRect(r).x, 0); }
+    { Rect z{0, 0, 0, 0}; KT_CHECK(buttonRect({59, 50, 47, 36}) == z); KT_CHECK(!(buttonRect({60, 50, 47, 36}) == z)); }   // disc 58 + gap 2: left edge 0 ok, -1 refused
+    { Rect r = buttonRect({60, 50, 47, 36}); KT_CHECK_EQ(ringRect(r).x, 0); }
 
     // ---- resolveState priority ----
     // args: hasCreature,isLeader,cur,max,havePick,pending,autoOn
@@ -314,7 +315,7 @@ int main() {
 
     // ---- stripReserve: gap (ceil) + disc diameter + kReserveGap; covers the real disc at every bar height (wastes at most 1 gap px) ----
     KT_CHECK_EQ(stripReserve({3671, 1285, 47, 96}), 66);     // gap 6 + disc 58 + kReserveGap 2
-    KT_CHECK_EQ(stripReserve({0, 0, 47, 8}), 2 + 48 + kReserveGap);   // gap floor 2, disc floor 48
+    KT_CHECK_EQ(stripReserve({0, 0, 47, 8}), 2 + 58 + kReserveGap);   // gap floor 2, disc fixed 58
     for (int h = 8; h <= 400; ++h) {
         const Rect bt = buttonRect({1000, 100, 47, h});
         if (bt.w <= 0) continue;

@@ -62,3 +62,4 @@
 {"ev": "park", "reason": "false park: leftover C219 edit predates attempt baseline; Steps note+waiver added, re-claim to adopt", "session": "8e238b75-803e-47eb-ae96-a9777ac65a13", "ts": "2026-10-15T20:16:30Z", "wi": "WI-38"}
 {"ev": "unpark", "reason": "false park; Steps note + waiver added", "session": "8e238b75-803e-47eb-ae96-a9777ac65a13", "ts": "2026-10-15T20:16:34Z", "wi": "WI-38"}
 {"ev": "done", "session": "8e238b75-803e-47eb-ae96-a9777ac65a13", "ts": "2026-10-15T20:21:15Z", "wi": "WI-12"}
+{"ev": "done", "session": "8e238b75-803e-47eb-ae96-a9777ac65a13", "ts": "2026-10-15T20:26:08Z", "wi": "WI-38"}
