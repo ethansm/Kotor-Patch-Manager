@@ -28,7 +28,7 @@ Run each command with Bash from the repo root. Each prints the next command unde
 5. `python3 scripts/wi_driver.py docs WI-NN`: marks plan rows with plan_manager and may print a docs-worker spawn. A REFUTED checker verdict triggers the same single retry.
 6. Spawn the docs worker only if one was printed.
 7. `python3 scripts/wi_driver.py close WI-NN`: commits only this item's paths plus the state files. `HARD STOP` means an in-scope path was dirty before the claim: tell the user, do not force.
-8. `python3 scripts/wi_driver.py report WI-NN` (on the rescue route, only once its plan is decided): paste its Saved State block, then write the other three sections of the End-of-Step protocol (Actions Completed, What Now Works, Agents Used) in the ADHD format with one next action under two minutes.
+8. `python3 scripts/wi_driver.py report WI-NN` (on the rescue route, only once its plan is decided): paste its Saved State block, then write the other three sections of the End-of-Step protocol (Actions Completed, What Now Works, Agents Used) in the ADHD format. Before writing it, run every mechanical follow-up yourself (Section 2: backlog add for open rows, audit when due); the one next action under two minutes must be something only the user can do (`/clear` then `/next-dev-work-item`), never a script.
 
 Park only when the ladder is exhausted (Haiku, Haiku retry, Sonnet) or the item cannot be finished: `python3 scripts/wi_driver.py park WI-NN --reason "<one line>"`. Parking records the reason, frees the claim, and never reverts files. A park caused by a worker `STATUS: FAIL` continues in Section 1a instead of ending the turn.
 
@@ -60,11 +60,13 @@ Same driver, same per-item commands as Section 1. The only change is that the sp
 Do not use a batch for items the driver flags as large (size L) or items whose write scopes overlap: if two claimed items share a path, run the second after the first closes.
 
 ## 2. Backlog and audit
-- A worker reply whose OPEN field names real follow-up work: push it with `python3 scripts/wi_driver.py backlog add --title "..." --why "..." --origin WI-NN`. New items start on hold; the user promotes them.
+- A worker reply whose OPEN field names real follow-up work, or a report with open rows (an F2/F5-style row left unfixed): run `python3 scripts/wi_driver.py backlog add --title "..." --why "..." --origin WI-NN` yourself, before writing the final answer, and state the new WI id and commit as done. Never list it as the user's next action. New items start on hold; the user promotes them.
+- Script-shaped next actions are never handed to the user: backlog add, `audit --apply`, `unpark`, rerun, and any other `wi_driver.py` command the report would suggest are run by you in the same turn (Section 1b). The closing "next action" is only something the user must do: `/clear` then `/next-dev-work-item`, a play test, an install go, or a design decision.
 - `report` prints `AUDIT DUE` every 5th finished run. Then run `python3 scripts/wi_driver.py audit --apply` before ending the turn (after the rescue route ends, if one ran), without asking the user, and list the findings plus the audit commit SHA.
 
 ## 3. Hard rules
 - Never install, hot-swap, play-test, push, post to GitHub, or run `git add -A`, `git commit -a`, `git reset`, `git checkout`, `git stash`. The driver does the only git writes, scoped to explicit paths.
+- Never run `verify` (or `docs`) before spawning the agent the previous command printed: a skipped retry spawn is counted as a missing reply and burns a ladder step.
 - Other sessions' dirty files are none of your business: report the count, never touch them.
 - Do not use `oc-subagent` or `oc-flow`. Do not spawn more agents than the driver prints (at most 7 recon spawns from `rescue`; the Sonnet escalation is one of those prints).
 - After the report, stop (on the rescue route: stop at plan approval). The next item (or batch) starts in a fresh session after `/clear`. Without a `batch` input, never run more than one item per session.
