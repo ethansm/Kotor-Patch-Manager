@@ -32,9 +32,9 @@ MANIFEST = "reinstall_manifest.json"
 KEEP_KEYS = {"hooks", "dll", "id", "replacement_bytes"}
 NEXT_STEP = {
     "SWAP": "a DLL hot-swap is enough: kpm_hotswap.py --mod {id} --apply",
-    "DIRTY": "commit first (kpm_ship.py --mod {id} --prepare)",
-    "MIRROR": "mirror/rebuild first (kpm_ship.py --mod {id} --prepare)",
-    "REBUILD": "rebuild first (kpm_ship.py --mod {id} --prepare)",
+    "DIRTY": "commit first (kpm_ship.py --mod {id})",
+    "MIRROR": "mirror/rebuild first (kpm_ship.py --mod {id})",
+    "REBUILD": "rebuild first (kpm_ship.py --mod {id})",
     "NOT-LIVE": "a new id: build its kpatch in KPM first, then it is a valid target",
     "LIVE": "already live; nothing to do",
 }

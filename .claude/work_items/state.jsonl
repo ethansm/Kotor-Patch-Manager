@@ -83,3 +83,4 @@
 {"ev": "unpark", "reason": "verify header added: derived gate test_kpm_hotswap tripped the hotswap guard; Steps anchors refreshed", "session": "94e28d55-0e13-43f6-9156-313ebdd420d1", "ts": "2026-10-15T21:46:41Z", "wi": "WI-02"}
 {"ev": "done", "session": "94e28d55-0e13-43f6-9156-313ebdd420d1", "ts": "2026-10-15T21:52:17Z", "wi": "WI-02"}
 {"ev": "done", "session": "2dce937e-7345-4597-961f-e28413a3d049", "ts": "2026-10-15T22:00:49Z", "wi": "WI-02b"}
+{"ev": "done", "session": "a8c48a1f-02d1-41d2-a666-7bdaecb35dcb", "ts": "2026-10-15T22:46:54Z", "wi": "WI-104"}

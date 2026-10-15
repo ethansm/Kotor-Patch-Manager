@@ -4,7 +4,9 @@ import contextlib
 import io
 import json
 import pathlib
+import re
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -292,6 +294,22 @@ class RollbackTests(Base):
         rc, out = self.run_main("--rollback", "latest")
         self.assertEqual(rc, 1)
         self.assertIn("REFUSED", out)
+
+
+class HintTests(unittest.TestCase):
+    def test_next_step_kpm_ship_hints_use_only_accepted_flags(self):
+        here = pathlib.Path(__file__).resolve().parent
+        help_text = subprocess.run([sys.executable, str(here / "kpm_ship.py"), "--help"],
+                                   capture_output=True, text=True, check=True).stdout
+        accepted = set(re.findall(r"--[a-z][a-z-]*", help_text))
+        for hint in kr.NEXT_STEP.values():
+            self.assertNotIn("--prepare", hint)
+        ship_hints = [h for h in kr.NEXT_STEP.values() if "kpm_ship.py" in h]
+        self.assertEqual(len(ship_hints), 3)  # DIRTY, MIRROR, REBUILD
+        for hint in ship_hints:
+            self.assertIn("kpm_ship.py --mod t", hint.format(id="t"))
+            used = set(re.findall(r"--[a-z][a-z-]*", hint.split("kpm_ship.py", 1)[1]))
+            self.assertTrue(used <= accepted, f"{hint!r} uses flags kpm_ship does not accept: {sorted(used - accepted)}")
 
 
 if __name__ == "__main__":
