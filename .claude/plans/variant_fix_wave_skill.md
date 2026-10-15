@@ -62,6 +62,11 @@ Routes `plan` / `run`; hard rules: Haiku → Sonnet consolidator (worktree) → 
 | VW.2 | Opus integrate: CLI, SKILL.md, review of worker diffs | VW.1 | DONE |
 | VW.3 | Verify: tests, check_skills, FX3 dry run | VW.2 | DONE |
 | VW.4 | Commit, memory, docs, `~/tmp` question, handoff | VW.3 | DONE |
+| VS.0 | `next` route: pre-flight, limits max_units 10 | VW.4 | TODO |
+| VS.1 | Haiku workers: fix_wave_select.py (select + collect + claims), draft template, collect heartbeat | VS.0 | TODO |
+| VS.2 | Opus integrate: fix_wave.py select/draft-collect, SKILL.md `next` route | VS.1 | TODO |
+| VS.3 | Verify: suites, check_skills, select --dry-run on the live backlog | VS.2 | TODO |
+| VS.4 | Commit, memory, handoff | VS.3 | TODO |
 
 ## Verification
 - All 7 scoped suites PASS; `check_skills.py` clean.
