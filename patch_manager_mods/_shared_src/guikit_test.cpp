@@ -121,6 +121,25 @@ int main() {
         KT_CHECK(!setFillStyle(k, 4)); KT_CHECK(!setFillStyle(k, -1)); KT_CHECK(!setFillStyle(0, 2));
         at<uint32_t>(k, Label_Border) = 0; KT_CHECK(!setFillStyle(k, 2)); at<uint32_t>(k, Label_Border) = 0x9875BC;
 
+        // setAlpha: writes the float at border+0x24 only through the border-vtable gate; the tint neighbour is untouched
+        at<float>(k, Label_Border + Border_Alpha) = 0.125f;
+        KT_CHECK(setAlpha(k, 0.5f)); KT_CHECK(at<float>(k, Label_Border + Border_Alpha) == 0.5f);
+        KT_CHECK(getAlpha(k, &al) && al == 0.5f); KT_CHECK(at<float>(k, Label_Border + Border_Tint) == 0.8f);
+        KT_CHECK(!setAlpha(0, 0.25f));
+        at<uint32_t>(k, Label_Border) = 0; KT_CHECK(!setAlpha(k, 0.25f)); KT_CHECK(at<float>(k, Label_Border + Border_Alpha) == 0.5f);
+        at<uint32_t>(k, Label_Border) = 0x9875BC;
+        // setFill: image pointer -> border+Border_Fill (nullptr clears), optional tint -> border+Border_Tint; gated like the other border setters
+        void* const img = reinterpret_cast<void*>(0x5000);
+        const float t2[3] = { 0.1f, 0.2f, 0.3f };
+        KT_CHECK(setFill(k, img)); KT_CHECK_EQ((unsigned long long)at<uint32_t>(k, Label_Border + Border_Fill), 0x5000ull);
+        KT_CHECK(at<float>(k, Label_Border + Border_Tint) == 0.8f);                                   // no tint argument: tint untouched
+        KT_CHECK(setFill(k, nullptr, t2)); KT_CHECK_EQ((unsigned long long)at<uint32_t>(k, Label_Border + Border_Fill), 0ull);
+        KT_CHECK(at<float>(k, Label_Border + Border_Tint) == 0.1f && at<float>(k, Label_Border + Border_Tint + 4) == 0.2f && at<float>(k, Label_Border + Border_Tint + 8) == 0.3f);
+        KT_CHECK(!setFill(0, img));
+        at<uint32_t>(k, Label_Border) = 0; KT_CHECK(!setFill(k, img, hi)); at<uint32_t>(k, Label_Border) = 0x9875BC;
+        KT_CHECK_EQ((unsigned long long)at<uint32_t>(k, Label_Border + Border_Fill), 0ull); KT_CHECK(at<float>(k, Label_Border + Border_Tint) == 0.1f);
+        KT_CHECK(setBorderTint(k, hi));                                                               // restore the tint other blocks expect
+
         // scaleFromRef: ref ctl px rect (100,50,800,600) vs layout units (10,20,400,300) -> s = 2, origin (100,50)
         at<int>(k, Ctl_X) = 100; at<int>(k, Ctl_Y) = 50; at<int>(k, Ctl_W) = 800; at<int>(k, Ctl_H) = 600;
         Scale s = scaleFromRef(k, 10, 20, 400, 300);

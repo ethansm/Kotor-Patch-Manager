@@ -63,6 +63,15 @@ int main() {
     mg.appear = -1.f; KT_CHECK_EQ(delayMs(mg), 400u);
     mg.appear = 0.01f; KT_CHECK_EQ(delayMs(mg), 10u);
     mg.appear = 0.5f; mg.ok = false; KT_CHECK_EQ(delayMs(mg), 400u);
+    // manager pointer non-null but unreadable (0x20 is in the low page): false, and the out struct is reset to its defaults.
+    // (A page that is readable up to Flags and unreadable at Disabled cannot be built here: the host VirtualQuery stub is all-or-nothing.)
+    {
+        at<uint32_t>(cell, 0) = 0x20;
+        Mgr p; p.ok = true; p.over = 0x7777; p.owner = 0x8888; p.timer = 1.f; p.appear = 2.f; p.flags = 3; p.disabled = 4;
+        KT_CHECK(!readMgr(&p));
+        KT_CHECK(!p.ok && p.over == 0 && p.owner == 0 && p.timer == 0.f && p.appear == 0.f && p.flags == 0 && p.disabled == 0);
+        at<uint32_t>(cell, 0) = (uint32_t)mgr;
+    }
     guikit::g_gk.guiSoundMgrAddr = 0; KT_CHECK(!readMgr(&mg));
 
     // ---- state machine ----
@@ -103,6 +112,12 @@ int main() {
         measure("", &l, &mx); KT_CHECK(l == 0 && mx == 0);
         measure(nullptr, &l, &mx); KT_CHECK(l == 0 && mx == 0);
         measure("a\n\nb", &l, &mx); KT_CHECK(l == 3 && mx == 1);
+        // null out-params are optional (GuiTip.h:99-100): must not crash, must not write, and one null must not suppress the other
+        l = -1; mx = -1;
+        measure("a\nb", nullptr, nullptr); KT_CHECK(l == -1 && mx == -1);
+        measure("a\nb", nullptr, &mx); KT_CHECK(l == -1 && mx == 1);
+        mx = -1; measure("a\nb", &l, nullptr); KT_CHECK(l == 2 && mx == -1);
+        measure("abc\nd", nullptr, &mx); KT_CHECK(mx == 3);
         const Metrics mt = {6, 12, 6, 5};
         const Region reg = {54, 134, 300, 470};
         // box below the control: w = 20*6+12 = 132, h = 2*12+10 = 34

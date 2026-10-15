@@ -64,6 +64,20 @@ int main() {
     KT_CHECK_EQ(readGroup(A(hud), 3, &v), 0);
     KT_CHECK_EQ(readGroup(A(hud), 7, &v), 0); KT_CHECK_EQ(readGroup(A(hud), -1, &v), 0);
 
+    // SH-3c-07: bad counts over a valid, zero-filled, readable base (0x9000..0xCC3C holds MaxEntries+1 strides), so only the count guard can
+    // return 0; a missing or off-by-one guard fails cleanly (257 empty entries) instead of walking into the string pool at 0x6000.
+    const size_t zeros = 0x9000;
+    put<int32_t>(hud + Hud_GroupLists + 4 * 12, (int32_t)A(zeros)); put<int32_t>(hud + Hud_GroupLists + 4 * 12 + 4, -1);
+    KT_CHECK_EQ(readGroup(A(hud), 4, &v), 0); KT_CHECK(v.empty());
+    put<int32_t>(hud + Hud_GroupLists + 4 * 12 + 4, (int32_t)MaxEntries + 1);
+    KT_CHECK_EQ(readGroup(A(hud), 4, &v), 0); KT_CHECK(v.empty());
+    // Full 16-char icon resref with no NUL in the field: ib[16] stays 0, so icon is exactly the 16 chars.
+    const size_t ent16 = 0x7000;
+    putExo(ent16, 0x6200, "Ammo"); memcpy(g_a + ent16 + Entry_Icon, "ABCDEFGHIJKLMNOP", 16);
+    put<int32_t>(hud + Hud_GroupLists + 5 * 12, (int32_t)A(ent16)); put<int32_t>(hud + Hud_GroupLists + 5 * 12 + 4, 1);
+    KT_CHECK_EQ(readGroup(A(hud), 5, &v), 1);
+    if (v.size() == 1) { KT_CHECK_EQ(v[0].name.c_str(), "Ammo"); KT_CHECK_EQ(v[0].icon.c_str(), "ABCDEFGHIJKLMNOP"); KT_CHECK_EQ((int)v[0].icon.size(), 16); }
+
     // ---- serverItemFor: app cell at 0x80 -> app at 0x90, objTable = *(app+8) = A(0x100) ----
     put<uint32_t>(0x80, (uint32_t)A(0x90)); put<uint32_t>(0x90 + 8, (uint32_t)A(0x100));
     g_appGlobal = A(0x80); g_clientToServer = fakeC2S; g_getItem = fakeGet;
