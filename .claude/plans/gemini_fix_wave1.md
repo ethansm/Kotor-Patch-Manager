@@ -22,12 +22,12 @@ applies final diffs and commits.
 ## Phases (batch table; mark with `plan_manager.py mark-done <Id> --plan .claude/plans/gemini_fix_wave1.md --no-handoff`)
 | Id | Batch | Deps | Owner gate | Status | Commit | Next |
 |---|---|---|---|---|---|---|
-| FX1.0 | Persist plan + handoff, pre-flight (claims, dirt, test ids) | - | - | OPEN | | commit |
-| FX1.1 | Context packs + Haiku briefs (script, $0) | FX1.0 | - | OPEN | | `fix1/` packs |
-| FX1.2 | Haiku wave `fix1`: 37 proposal units, parallel | FX1.1 | - | OPEN | | proposals |
-| FX1.3 | Sonnet consolidators: 8 parallel, one per WI, each in its own worktree | FX1.2 | - | OPEN | | `final.diff` x8 |
-| FX1.4 | Apply in conflict order, gate, `close --manual` per WI, doc 37 resolution | FX1.3 | - | OPEN | | 8 commits |
-| FX1.5 | Close: mark-done, handoff, memory, Saved State | FX1.4 | - | OPEN | | - |
+| FX1.0 | Persist plan + handoff, pre-flight (claims, dirt, test ids) | - | - | DONE | f4fb5f7 | commit |
+| FX1.1 | Context packs + Haiku briefs (script, $0) | FX1.0 | - | DONE | 4aa04c2 | `fix1/` packs |
+| FX1.2 | Haiku wave `fix1`: 37 proposal units, parallel | FX1.1 | - | DONE | | 37/37 PASS (21 CONFIRMED, 16 PARTIAL), 0 rerun |
+| FX1.3 | Sonnet consolidators: 8 parallel, one per WI, each in its own worktree | FX1.2 | - | DONE | | 8 Sonnet consolidators + 8 independent Sonnet reviewers (user request); 2 revision/rebase round-trips |
+| FX1.4 | Apply in conflict order, gate, `close --manual` per WI, doc 37 resolution | FX1.3 | - | DONE | 0af3d09 | 7 landed (f6ecaf6 99, 09bfbf1 88, 424a79a 86, 4a9f047 85, c0910fe 76 PARTIAL, e4f19b4 98, 0af3d09 97); WI-87 parked 215410c; doc37 d94955f |
+| FX1.5 | Close: mark-done, handoff, memory, Saved State | FX1.4 | - | DONE | | lint PASS, audit e796b0b, memory updated, cost $11.70 |
 
 Pre-flight result (FX1.0): no live claims; `_shared_src` clean; all 15 test ids exist; baseline 14/14 PASS at BASE `1963cca`.
 
