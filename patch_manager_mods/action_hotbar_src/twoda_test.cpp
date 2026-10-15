@@ -218,6 +218,48 @@ int main(int argc, char** argv) {
         KT_CHECK(m.Get(0, "A") == std::string(pad, 'p') + "Q");
         remove(path.c_str());
     }
+    // ================= Offset-table size guard (WI-100c): nrows*cols and cells*2 must not wrap size_t (i686) =================
+    {
+        const uint64_t i686 = 0xFFFFFFFFull, lp64 = ~0ull;   // SIZE_MAX of a 32-bit and of a 64-bit size_t
+        // Oracle: the pre-fix check `p + cells*2 + 2 > size` evaluated in a size_t of the given mask width (accepts = no error).
+        auto oldAccepts = [](uint64_t nrows, uint64_t cols, uint64_t p, uint64_t dsize, uint64_t mask) {
+            uint64_t cells = (nrows * cols) & mask;
+            return ((p + ((cells * 2) & mask) + 2) & mask) <= dsize;
+        };
+        const uint64_t p42950 = 9 + 42950 + 1 + 4 + 100000, p21475 = 9 + 21475 + 1 + 4 + 100000;
+        // The two wrap shapes really fool the old check at i686 width but not at 64-bit width (so the cases below are meaningful reds).
+        KT_CHECK(oldAccepts(100000, 42950, p42950, p42950 + 65538, i686));    // cells wraps to 32704
+        KT_CHECK(oldAccepts(100000, 21475, p21475, p21475 + 65538, i686));    // cells fits, cells*2 wraps to 32704
+        KT_CHECK(!oldAccepts(100000, 42950, p42950, p42950 + 65538, lp64));
+        // The guard rejects both at i686 width, and at 64-bit width (where the file bound alone rejects them).
+        for (uint64_t w : {i686, lp64}) {
+            KT_CHECK(!hb::TwoDA::OffsetTableFits(100000, 42950, p42950, p42950 + 65538, w));
+            KT_CHECK(!hb::TwoDA::OffsetTableFits(100000, 21475, p21475, p21475 + 65538, w));
+        }
+        // The cell-count guard (nrows > SIZE_MAX / cols) is independent of the file bound: it rejects even if the claimed file
+        // were larger than a size_t (never true in practice) and it flips exactly at SIZE_MAX / cols rows.
+        KT_CHECK(!hb::TwoDA::OffsetTableFits(100000, 42950, 20, lp64, i686));
+        KT_CHECK(!hb::TwoDA::OffsetTableFits(i686 / 42950 + 1, 42950, 20, lp64, i686));
+        KT_CHECK(hb::TwoDA::OffsetTableFits(i686 / 42950, 42950, 20, lp64, i686));
+        // Exact boundaries: table + 2-byte data size ends exactly at EOF -> fits; one byte short -> rejected.
+        KT_CHECK(hb::TwoDA::OffsetTableFits(3, 5, 20, 20 + 30 + 2, i686));
+        KT_CHECK(!hb::TwoDA::OffsetTableFits(3, 5, 20, 20 + 30 + 1, i686));
+        KT_CHECK(hb::TwoDA::OffsetTableFits(3, 5, 20, 20 + 31 + 2, i686));   // odd slack byte: still floor(33/2)=15 >= 15 cells
+        KT_CHECK(hb::TwoDA::OffsetTableFits(0, 5, 20, 22, i686));            // no rows: only the 2-byte data size is needed
+        KT_CHECK(!hb::TwoDA::OffsetTableFits(0, 5, 20, 21, i686));
+        KT_CHECK(hb::TwoDA::OffsetTableFits(7, 0, 20, 22, i686));            // no columns: no division by zero, zero cells
+        KT_CHECK(!hb::TwoDA::OffsetTableFits(7, 0, 20, 21, i686));
+        KT_CHECK(!hb::TwoDA::OffsetTableFits(1, 1, 30, 20, i686));           // p already past EOF: no unsigned underflow
+        // Parse level (green on a 64-bit host; on i686 the old code wrapped, ran ~4.3e9 / 2.1e9 cell reads and crashed or hung).
+        auto lie = [](size_t ncols) {
+            std::string s = "2DA V2.b\n" + std::string(ncols, '\t') + std::string(1, '\0');
+            le32(s, 100000); s += std::string(100000, '\t'); s += std::string(65536, '\0');   // 100000 empty labels, then 64 KiB
+            return s;
+        };
+        hb::TwoDA m;
+        KT_CHECK(!m.Parse(lie(42950))); KT_CHECK_EQ(m.error.c_str(), "truncated offsets"); KT_CHECK_EQ(m.rows.size(), 0);
+        KT_CHECK(!m.Parse(lie(21475))); KT_CHECK_EQ(m.error.c_str(), "truncated offsets"); KT_CHECK_EQ(m.rows.size(), 0);
+    }
     // TLK step. argv[2] = real dialog.tlk: must open, and the spell name/desc strrefs must resolve to non-empty text.
     if (argc > 2) {
         hb::Tlk k;

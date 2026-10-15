@@ -51,6 +51,15 @@ struct TwoDA {
         return rows[row][c];
     }
 
+    // Pure, width-independent check that the uint16 offset table (nrows*ncols cells, 2 bytes each) plus the 2-byte data size fit
+    // in the file after offset p. sizeMax is the build's SIZE_MAX (a parameter so the host can test i686 width). Nothing is
+    // multiplied: on i686 both nrows*ncols (100000 x 42950 -> 32704) and cells*2 (100000 x 21475 -> 32704) wrap size_t.
+    static bool OffsetTableFits(uint64_t nrows, uint64_t ncols, uint64_t p, uint64_t dsize, uint64_t sizeMax) {
+        if (ncols != 0 && nrows > sizeMax / ncols) return false;   // cell count itself would wrap size_t
+        if (p + 2 > dsize) return false;
+        return ncols == 0 || nrows <= ((dsize - p - 2) / 2) / ncols;   // cells <= floor((dsize-p-2)/2), so cells*2 cannot wrap either
+    }
+
 private:
     static bool ieq(const std::string& a, const char* b) {
         size_t i = 0;
@@ -76,8 +85,8 @@ private:
             if (e == std::string::npos) { error = "bad row label"; return false; }
             labels.push_back(d.substr(p, e - p)); p = e + 1;
         }
-        size_t cells = (size_t)nrows * cols.size();
-        if (p + cells * 2 + 2 > d.size()) { error = "truncated offsets"; return false; }
+        if (!OffsetTableFits(nrows, cols.size(), p, d.size(), (uint64_t)~(size_t)0)) { error = "truncated offsets"; return false; }
+        size_t cells = (size_t)nrows * cols.size();   // exact: bounded by the file size above
         size_t offs = p; p += cells * 2;
         p += 2;   // data size
         for (uint32_t r = 0; r < nrows; ++r) {
