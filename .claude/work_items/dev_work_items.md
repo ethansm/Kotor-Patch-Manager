@@ -138,3 +138,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 122 | WI-90 | P3 | hold | S | - | Gemini test/tooling gaps: k1 (k1_port_ingest.py, k1_port_probe.py, k1_port_validate.py, te | 0 | 4 | 4 validated test-gap/tooling fids: K1-5b-02: test_k1_port_ingest.py: p |
 | [ ] | 123 | WI-91 | P3 | hold | S | - | Gemini test/tooling gaps: k1 (test_k1_port_char_build.py, test_k1_port_cr_extract.py, test | 0 | 4 | 4 validated test-gap/tooling fids: K1-5d-01: test_k1_port_char_build.p |
 | [ ] | 124 | WI-92 | P3 | hold | S | - | Gemini test/tooling gaps: k1 (test_k1_port_tex_audit.py, test_k1_port_tex_dxt.py, test_k1_ | 0 | 4 | 4 validated test-gap/tooling fids: K1-5c-06: test_k1_port_tex_audit.py |
+| [ ] | 125 | WI-93 | P3 | hold | S | - | Gemini test/tooling gaps: npc (nw_registry_test.cpp) | 0 | 1 | 1 validated test-gap/tooling fids: HN-6n-07: nw_registry_test.cpp: cal |
