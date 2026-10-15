@@ -468,6 +468,11 @@ inline const char* fm1WhyName(int w) {
     return (w >= 0 && w <= 4) ? n[w] : "?";
 }
 
+// WI-78 (BG31): PARTY why=area baseline. A zero (unreadable) FnGetArea is never a change and never replaces a known
+// non-zero baseline, so a transient 0 mid-transition keeps the old area and the next real area change still fires why=area.
+inline bool partyAreaChanged(int baseline, int area) { return area && baseline && area != baseline; }
+inline int partyAreaNext(int baseline, int area) { return area ? area : baseline; }
+
 // C1: belt and braces against an endless restart loop. Every restart follows a successful group delete, so a real
 // call needs at most groups-count restarts; past `cap` restarts for the same (object, frame) within 50 ms the
 // handler falls back to the vanilla index.

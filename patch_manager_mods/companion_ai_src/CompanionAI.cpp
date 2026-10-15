@@ -600,9 +600,9 @@ void partyTick(DWORD now) {
     const char* why = nullptr;
     if (have && !g_partyLoaded) why = "load";
     else if (have && g_lastCtrl && ctrl != g_lastCtrl) why = "leader";
-    else if (have && area && g_lastCtrlArea && area != g_lastCtrlArea) why = "area";
+    else if (have && cai::partyAreaChanged(g_lastCtrlArea, area)) why = "area";
     else if (pf) why = "pf";
-    if (have) { g_partyLoaded = true; g_lastCtrl = ctrl; g_lastCtrlArea = area; }
+    if (have) { g_partyLoaded = true; g_lastCtrl = ctrl; g_lastCtrlArea = cai::partyAreaNext(g_lastCtrlArea, area); }
     if (why) partyEmit(now, why, have ? ctrl : Invalid);
 }
 

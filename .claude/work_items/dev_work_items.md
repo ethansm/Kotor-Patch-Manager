@@ -123,7 +123,7 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 107 | WI-75 | P3 | ready | S | - | BG28 keyFor(0) returns slot0 ignoring tag, so settings follow party position not creature  | 0 | 1 | wrong-behaviour/med: keyFor(0) returns slot0 even though c0.tag is rea |
 | [x] | 108 | WI-76 | P3 | ready | S | - | BG29 imageFor pools failed (null) lookups so hudkit::image retry never reloads | 0 | 4 | wrong-behaviour/med: imageFor pools null (line 299) so lazy retries in |
 | [x] | 109 | WI-77 | P3 | ready | S | - | BG30 CrTrack caches raw creature pointer; stale spinning state and dangling cr after death | 0 | 1 | log-only/low: e1Evaluate only runs from AiTraceAttackEntry, so spinnin |
-| [ ] | 110 | WI-78 | P3 | ready | S | - | BG31 g_lastCtrlArea overwritten with 0 during transition so PARTY why=area misses | 0 | 1 | log-only/low: Line 589 overwrites the baseline with 0 on a transient F |
+| [x] | 110 | WI-78 | P3 | ready | S | - | BG31 g_lastCtrlArea overwritten with 0 during transition so PARTY why=area misses | 0 | 1 | log-only/low: Line 589 overwrites the baseline with 0 on a transient F |
 | [x] | 111 | WI-79 | P3 | ready | S | - | BG32 Unreadable creature logs false old=0 edge=1 combat transition | 0 | 1 | log-only/low: rdU32 returns 0 on saferead failure, so an unreadable cr |
 | [ ] | 112 | WI-80 | P3 | ready | S | - | BG33 Stale tooltip kept when new slot name read is empty | 0 | 3 | wrong-behaviour/low: tipKey and tipSet update even when setNative is s |
 | [ ] | 113 | WI-81 | P3 | ready | S | - | BG34 Vanilla tint read immediately overwritten; failure branches are dead code | 0 | 1 | log-only/low: tOk and aOk are forced true right after the reads, so th |

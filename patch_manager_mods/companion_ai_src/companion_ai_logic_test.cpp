@@ -396,6 +396,36 @@ static void testSpinExpiry() {
     CHECK(!spinExpired(false, 0, 10000, kSpinExpireMs));                           // not spinning (already ENDed / never spun): no END
 }
 
+// WI-78 (BG31): PARTY area baseline. Replays FnGetArea frames through the same two helpers partyTick uses (have == true).
+template <typename Arr> static int partyAreaFires(const Arr& frames, int* baselineOut = nullptr) {
+    int base = 0, fires = 0;
+    for (size_t i = 0; i < sizeof frames / sizeof frames[0]; ++i) {
+        if (partyAreaChanged(base, frames[i])) ++fires;
+        base = partyAreaNext(base, frames[i]);
+    }
+    if (baselineOut) *baselineOut = base;
+    return fires;
+}
+static void testPartyArea() {
+    CHECK(!partyAreaChanged(0, 5)); CHECK(!partyAreaChanged(5, 0)); CHECK(!partyAreaChanged(0, 0)); CHECK(!partyAreaChanged(5, 5));
+    CHECK(partyAreaChanged(5, 7));
+    CHECK(partyAreaNext(5, 0) == 5); CHECK(partyAreaNext(0, 0) == 0); CHECK(partyAreaNext(0, 7) == 7); CHECK(partyAreaNext(5, 7) == 7);
+    static const int repeat[] = {5, 5, 5}, change[] = {5, 7}, zeroSame[] = {5, 0, 5}, zeroThenB[] = {5, 0, 7};
+    static const int firstZero[] = {0, 5}, firstZeroThen[] = {0, 5, 7}, zeroRun[] = {5, 0, 0, 0, 7}, swap[] = {5, 7, 5};
+    static const int zeroSwap[] = {5, 0, 7, 0, 7}, leadingZeros[] = {0, 0, 0};
+    int base = -1;
+    CHECK(partyAreaFires(repeat) == 0);                             // A->A: no change
+    CHECK(partyAreaFires(change) == 1);                             // A->B: why=area
+    CHECK(partyAreaFires(zeroSame, &base) == 0 && base == 5);       // A->0->A: no why, baseline kept
+    CHECK(partyAreaFires(zeroThenB, &base) == 1 && base == 7);      // A->0->B: why=area (kills the unconditional store)
+    CHECK(partyAreaFires(firstZero, &base) == 0 && base == 5);      // first-ever 0 then A: no baseline yet, no why
+    CHECK(partyAreaFires(firstZeroThen) == 1);                      // ...then a real change after that fires
+    CHECK(partyAreaFires(zeroRun) == 1);                            // A->0->0->0->B: repeated unreadable frames keep A
+    CHECK(partyAreaFires(swap) == 2);                               // A->B->A: each real change fires
+    CHECK(partyAreaFires(zeroSwap) == 1);                           // A->0->B->0->B: only the first B fires
+    CHECK(partyAreaFires(leadingZeros, &base) == 0 && base == 0);   // unreadable from the start: no baseline
+}
+
 // exports.def == the hooks.toml function names (run from the source directory)
 static void testExports() {
     static char t[65536], d[4096];
@@ -420,7 +450,7 @@ static void testExports() {
 
 int main() {
     testGlob(); testNumbers(); testIni(); testShippedIni(); testGate(); testThrottles(); testDecisions(); testHandlerDecisions();
-    testProbeHelpers(); testSpinExpiry(); testExports();
+    testProbeHelpers(); testSpinExpiry(); testExports(); testPartyArea();
     printf("%d checks, %d failed\n%s\n", g_checks, g_fail, g_fail ? "TESTS FAILED" : "ALL PASS");
     return g_fail ? 1 : 0;
 }
