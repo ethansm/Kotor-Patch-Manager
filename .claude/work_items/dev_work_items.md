@@ -152,3 +152,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [x] | 136 | WI-104 | P3 | ready | S | - | Close plan rows H7/H10/H9 (doc 24 :95/:98/:97) and fix kpm_reinstall.py:35-37 hint (kpm_sh | 0 | 0 | WI-02b closed with scripts already built; docs step skipped 3 rows bec |
 | [ ] | 137 | WI-105 | P3 | hold | S | - | WI-14 F2 non-pause hold branch (LevelUpOverride.cpp:701-714) and F5 HOLD_MIDLOOP | 0 | 0 | F2 non-pause branch unchecked; F5 still unfixed |
 | [ ] | 138 | WI-106 | P3 | hold | S | - | WI-23 follow-up: confirm a1_retarget_strict gate keeps pre-block value when a1TryRetarget  | 0 | 0 | Checker OPEN question (u01): if a1TryRetarget returns false, does newI |
+| [ ] | 139 | WI-107 | P3 | hold | S | - | WI-23 follow-up: mark doc 13 C145 done for a1_retarget_strict | 0 | 0 | Doc patch_manager_mods/13_ranged_ai_spacing.md row C145 was left unmar |
