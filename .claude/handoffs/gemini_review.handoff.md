@@ -2,8 +2,7 @@
 
 ## 0. Next-Phase Direction
 G1 (persist, triage, anchor check, Haiku recon) is DONE and committed. Next is **G2: verify, validate and persist the
-recon results for development**. The plan is written in plan mode (2026-10-14/15) and saved to
-`.claude/plans/gemini_review_g2.md` on approval. Resume with `python3 scripts/plan_manager.py resume .claude/plans/gemini_review_g2.md`
+recon results for development**. Plan path: **`.claude/plans/gemini_review_g2.md`** (approved and saved 2026-10-14; G2 started 2026-10-14T23:28-04:00). Resume with `python3 scripts/plan_manager.py resume .claude/plans/gemini_review_g2.md`
 (never bare). No fixes have been decided. No game files were touched.
 
 ## 1. Provenance and commits (branch `KOTOR-II`)
