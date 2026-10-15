@@ -21,6 +21,12 @@ static nw::Dispatcher* g_d = nullptr;
 static int32_t g_tokB = 0, g_tokNew = 0;
 static void KPATCH_CALL cbRegisters(const K2NwEvent*, void*) { g_order.push_back(10); g_tokNew = g_d->add(K2NW_ALL, cbC, nullptr, "late"); }
 static void KPATCH_CALL cbKillsB(const K2NwEvent*, void*) { g_order.push_back(11); g_d->remove(g_tokB); }
+static bool g_oneShotDone = false;
+static void KPATCH_CALL cbRemovesBAddsC(const K2NwEvent*, void*) {
+    g_order.push_back(20);
+    if (g_oneShotDone) return;                                                 // one-shot: later events only record the call
+    g_oneShotDone = true; g_d->remove(g_tokB); g_tokNew = g_d->add(K2NW_TICK, cbC, nullptr, "c");
+}
 
 static uint32_t g_clock = 0, g_step = 0;
 static uint32_t fakeNow(void*) { uint32_t t = g_clock; g_clock += g_step; return t; }
@@ -71,6 +77,19 @@ int main() {
         k.add(K2NW_TICK, cbKillsB, nullptr, "k"); g_tokB = k.add(K2NW_TICK, cbB, nullptr, "b");
         KT_CHECK_EQ(k.dispatch(ev(K2NW_TICK)), 1);                             // B unregistered by the earlier callback: not called
         KT_CHECK(g_order == (std::vector<int>{11}));
+    }
+    // 3b. one-shot callback X removes B and adds C in one dispatch: B is skipped and C waits (T1); the next event fires C once (T2)
+    {
+        nw::Dispatcher m; g_d = &m; g_order.clear(); g_oneShotDone = false;
+        m.add(K2NW_TICK, cbRemovesBAddsC, nullptr, "x"); g_tokB = m.add(K2NW_TICK, cbB, nullptr, "b");   // tokens: X=1, B=2
+        KT_CHECK_EQ(m.dispatch(ev(K2NW_TICK)), 1);                             // T1: B removed by X earlier in this dispatch: not called
+        KT_CHECK(g_order == (std::vector<int>{20}));                           // T1: X only
+        KT_CHECK(g_tokNew > 0 && g_tokNew != g_tokB);                          // T1: C got a fresh token (3), not B's (2)
+        KT_CHECK_EQ(m.n, 2); KT_CHECK(!m.live(g_tokB));                        // T1: table is now [X, C]; B is gone
+        g_order.clear();
+        KT_CHECK_EQ(m.dispatch(ev(K2NW_TICK)), 2);                             // T2: next event: X (no-op) and C
+        KT_CHECK(g_order == (std::vector<int>{20, 3}));                        // T2: C fires exactly once
+        KT_CHECK(!m.live(g_tokB));                                             // T2: B's token was not handed to C
     }
     // 4. slow-consumer guard
     {
