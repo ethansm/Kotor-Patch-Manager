@@ -1,18 +1,19 @@
 ---
 name: next-dev-work-item
-argument-hint: "[WI-NN | audit | status | backlog ...]"
+argument-hint: "[WI-NN | batch N | batch WI-NN,WI-NN,... | audit | status | backlog ...]"
 description: >-
-  /next-dev-work-item [WI-NN | audit | status]: claim the next eligible dev work item from .claude/work_items/dev_work_items.md, run it through Haiku worker, checker and docs waves, commit only that item's paths, report, then stop so the session can be cleared. Safe to run in several sessions at once (claims, locks, dependency order). Use for "next work item", "next dev work item", "run the next WI", "audit the work item loop".
+  /next-dev-work-item [WI-NN | batch N | batch WI-NN,WI-NN | audit | status]: claim the next eligible dev work item from .claude/work_items/dev_work_items.md, run it through Haiku worker, checker and docs waves, commit only that item's paths, report, then stop so the session can be cleared. With no input it does exactly one item. `batch` runs several small items in one session, with parallel workers and checkers. Safe to run in several sessions at once (claims, locks, dependency order). Use for "next work item", "next dev work item", "run the next WI", "batch work items", "audit the work item loop".
 ---
 
 # Next Dev Work Item
 
-One fresh session = one finished, committed work item. You are the orchestrator (Sonnet); every worker, checker and docs agent is Haiku (`model: haiku`) except the escalation: after one Haiku retry fails, `wi_driver.py` prints an `ESCALATE` spawn with `model=sonnet` (Sonnet 5.5) for one last worker attempt, and the checker for that attempt is Sonnet too. Only after the Sonnet attempt also fails does the driver park the item. Spawn exactly the model the driver prints. This overrides the Opus-lead note in plan-handoff. Never read the per-item detail files under `.claude/work_items/` or the source files yourself: the driver prints what you need and the workers read the rest. The one exception is the rescue route (Section 1a): read only the recon OUTPUT files that `rescue --collect` lists, and write the decision note `decision_r<N>.md`.
+By default, one fresh session = one finished, committed work item. Only an explicit `batch` input (Section 1c) widens that to several items. You are the orchestrator (Sonnet); every worker, checker and docs agent is Haiku (`model: haiku`) except the escalation: after one Haiku retry fails, `wi_driver.py` prints an `ESCALATE` spawn with `model=sonnet` (Sonnet 5.5) for one last worker attempt, and the checker for that attempt is Sonnet too. Only after the Sonnet attempt also fails does the driver park the item. Spawn exactly the model the driver prints. This overrides the Opus-lead note in plan-handoff. Never read the per-item detail files under `.claude/work_items/` or the source files yourself: the driver prints what you need and the workers read the rest. The one exception is the rescue route (Section 1a): read only the recon OUTPUT files that `rescue --collect` lists, and write the decision note `decision_r<N>.md`.
 
 User input: $ARGUMENTS
 
 ## 0. Route
-- Empty or `WI-NN`: do Section 1.
+- Empty or `WI-NN`: do Section 1 (one item; this is the default).
+- `batch N` (N = 2..4) or `batch WI-NN,WI-NN,...` (comma or space separated, 2..4 ids; ids keep their suffix, e.g. `WI-20b`, and ranges are not supported): do Section 1c.
 - `audit`: run `python3 scripts/wi_driver.py audit --apply` (no confirmation needed) and show the findings plus the commit it prints (max 5 findings).
 - `status`: run `python3 scripts/wi_driver.py status` and stop.
 - `backlog ...`: pass the arguments to `python3 scripts/wi_driver.py backlog` (add, list, promote).
@@ -46,6 +47,18 @@ Runs for up to 2 rounds per item, starting when `PARKED` printed `THEN: python3 
 ## 1b. Never hand the user a fix you can do yourself
 When a park or report would end with a mechanical unblock (a Step that names an edit the source already has, a missing file:line anchor, `unpark`, rerun), do it in the same turn instead of listing it as the user's next action: use `rg`/`sed -n` on just the cited lines to confirm, fix the Steps in the item's detail file under `.claude/work_items/` with Edit (pin file:line; say "already satisfied, no edit" where true), commit that Steps edit alone with explicit paths (`git commit -- <path>`), run `python3 scripts/wi_driver.py unpark WI-NN --reason "<what changed>"`, then restart the loop with `next WI-NN`. Do this at most once per park (not once per item): a checker PARTIAL whose finding cites a Step instruction that the tree already satisfies (a deletion of a line that is gone, an absence the diff cannot show) is a stale-Steps defect, so fix the Steps this way before the ladder moves on, never park over it. Ask the user only when the choice is a design decision, not a mechanical correction.
 
+## 1c. Batch route (only when the input starts with `batch`)
+Same driver, same per-item commands as Section 1. The only change is that the spawn steps for all items happen in ONE message, so Haiku workers and checkers run in parallel. Cap: 4 items. More than 4 ids or N > 4: stop and ask the user to trim the batch.
+1. Claim: `batch N` runs `python3 scripts/wi_driver.py next` N times (each call claims the next distinct item); `batch WI-a,WI-b` runs `next WI-a`, `next WI-b`. Run these claims one Bash call at a time. An item that prints `NOTHING CLAIMABLE`, or an explicit id that cannot be claimed, is dropped with its reason (max 2 lines) and the batch continues with the rest. A `STALE claim` is the user's call, as in Section 1. If no item was claimed, stop.
+2. Spawn every printed worker in ONE message, exactly as printed.
+3. Run `verify WI-NN` for each item, one Bash call at a time (the gates share the build). Collect the printed checker spawns and spawn all of them in ONE message. Items whose `verify` printed `RETRY` or `ESCALATE` form a retry group: spawn that group together in ONE message, then run `verify` again for each. Each item keeps its own ladder (Haiku, Haiku retry, Sonnet, park); one item's failure never blocks the others.
+4. Run `docs WI-NN` for each item; spawn any docs workers together in ONE message.
+5. Run `close WI-NN` for each item, strictly one after another (the commits are serial). `HARD STOP` on one item does not stop the others.
+6. Run `report WI-NN` for each closed item. Final answer: one combined End-of-Step protocol, a Saved State line per item (commit SHA each), and one next action under two minutes.
+7. Parked items: a park that prints `THEN: ... rescue` is handled only after all other items are closed and reported, one rescue at a time (Section 1a), since the rescue route ends at a plan-mode approval gate. A park with `rescue` unavailable is listed in the final answer with its reason.
+8. `AUDIT DUE` is checked once at the end of the batch (Section 2), not per item.
+Do not use a batch for items the driver flags as large (size L) or items whose write scopes overlap: if two claimed items share a path, run the second after the first closes.
+
 ## 2. Backlog and audit
 - A worker reply whose OPEN field names real follow-up work: push it with `python3 scripts/wi_driver.py backlog add --title "..." --why "..." --origin WI-NN`. New items start on hold; the user promotes them.
 - `report` prints `AUDIT DUE` every 5th finished run. Then run `python3 scripts/wi_driver.py audit --apply` before ending the turn (after the rescue route ends, if one ran), without asking the user, and list the findings plus the audit commit SHA.
@@ -54,4 +67,5 @@ When a park or report would end with a mechanical unblock (a Step that names an 
 - Never install, hot-swap, play-test, push, post to GitHub, or run `git add -A`, `git commit -a`, `git reset`, `git checkout`, `git stash`. The driver does the only git writes, scoped to explicit paths.
 - Other sessions' dirty files are none of your business: report the count, never touch them.
 - Do not use `oc-subagent` or `oc-flow`. Do not spawn more agents than the driver prints (at most 7 recon spawns from `rescue`; the Sonnet escalation is one of those prints).
-- After the report, stop (on the rescue route: stop at plan approval). The next item starts in a fresh session after `/clear`.
+- After the report, stop (on the rescue route: stop at plan approval). The next item (or batch) starts in a fresh session after `/clear`. Without a `batch` input, never run more than one item per session.
+- In a batch, never exceed 4 items and never spawn agents the driver did not print.
