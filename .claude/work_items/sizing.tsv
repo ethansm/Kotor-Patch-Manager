@@ -1,0 +1,91 @@
+id	R	C	V	K	U	size	old	state	conf	why
+WI-41	1	1	1	1	0	L	M	ready	M	C233 call already exists at QueueHud.cpp:1492; C242 FIFO premise contradicted by QueueHudLogic.h:736 comment; FIFO needs new test; C231 atlas row unverified.
+WI-23	1	0	1	0	0	M	M	ready	M	cause known (retarget up to 2 radii past range); site must be found by rg in CompanionAI.cpp a1_retarget path; gate new, suite unknown
+WI-46	0	2	2	1	0	L	M	ready	M	Sites named in 4 scripts (hotswap canon/prepare/commit-kpm, gate step_default/scratch, raw_addresses prune); suite names and step_default drop target unverified.
+WI-50	0	0	2	0	1	M	S	ready	M	Site named: canary_test.sh run_variant:128-141 needs 429/529 retry via dr_backoff_seconds; retry path needs stub 429 test; mark-done STATE/qualifier unknown.
+WI-47	0	0	1	1	1	M	S	ready	M	Fix sites is_production (kpm_status.py:43) and mirror (kpm_hotswap.py:210), WI lines stale; mirror docstring excludes ini, needs decision; no suite named.
+WI-08	2	1	2	1	0	XL	M	ready	M	Fix sites are ShieldBar.cpp describePools (:224) and tooltip hook 0x00744EEC (:639); C095 hover-refresh mechanism unknown and needs engine RE; test suite unknown.
+WI-36	2	1	2	1	1	XL	L	ready	M	Fix site LevelUpOverride.cpp panels; ctor 0x909E00 is an unverified user proposal needing Ghidra; Build(Hide) unimplemented; doc 25 open questions gate it.
+WI-60	1	0	2	1	0	L	S	verify-only	M	Fix sites present per rg (prep.py:504, fix_settings.py:244, runlib.sh:104); unknown: A0.2 baseline status, bwrap auth spec, canary real-run cost.
+WI-29	1	0	0	1	1	M	M	verify-only	M	C174 fix site confirmed at PortraitSlotsProvider.cpp:29,54; C179 needs user decision; C174/C179 absent from 19e_phase2_plan.md rows 295/302
+WI-31	0	0	0	1	0	S	M	ready	H	PortraitSlots.h:116 connect() comment-only; decision text doc 21:110 confirmed; run_tests suite filter and mark-done phase unknown
+WI-43	2	0	2	1	0	XL	S	ready	M	Fix site OverrideNpcTexture (cpp:369, WI says 312); non-B A-type coverage needs an unnamed engine hook site; existing suites don't reach Hook 1
+WI-50b	0	0	0	1	1	S	S	verify-only	H	Verify-only: build_dossiers.py:151/186-191 and prep.py:1185/1199-1201 confirmed; C290 UNIT_COST and C291 spend need user decisions; plan_manager mark-done.
+WI-21	1	0	2	1	0	L	M	ready	M	Site named (SortLogic.h:21-25, InventorySortFilter.cpp:332,365); GetString 0x7356B0 signature only med-confidence in R8.md:42; +0x2C0 offset unverified; no inventory suite
+WI-64	1	0	1	1	0	L	S	ready	H	Fix site dr_profile.py:326-337 is_excluded; static read says .env already True via BUILTIN_EXCLUDE_NAMES (dr_profile.py:22,312). Only verify needs a profile path.
+WI-68	0	0	0	0	0	S	S	verify-only	H	Per-call trees confirmed: run_case:95, P_TREE:78, fork TREE:85 (verify grep misses it); no edit; prep.py:1213 out-of-repo, stays open.
+WI-19	1	1	2	1	1	XL	M	ready	M	Fix site PerfLab.cpp hwmipBuild/hkGluBuild2DMipmaps (~704-748); TGA-only gate mechanism unresolved; perf-lab suite filter unknown; C113/C118/C120/C178 need GO.
+WI-44	0	0	0	0	0	S	S	verify-only	H	BandRoll %100 (DiversityLogic.h:54), ShouldVary (:170), QuantizeCoord (:230) all present; diversity_logic_test covers them; WI line numbers are stale.
+WI-35	0	0	0	0	0	S	S	ready	H	Doc-only: close doc 23 rows C206 (EquipCharPreview.cpp:110 SiteEquip) and C208 (gui_ids.toml:56 already correct). Unknown: suite name, plan row ids.
+WI-34	1	0	2	1	0	L	L	verify-only	M	Fix site is doc 22 row 4.3 plus 5 consumer sources (CombatHotbar, QueueHud, CompanionSelfHeal, EnemyStrip, ActionHotbar); runtime wiring unverified.
+WI-51	0	0	0	1	1	S	M	verify-only	M	Verify-only; sites confirmed (ladder.py:437,504-512,60; dr.py:69,651). Unknown: ladder_test result, P2b-a/b scope conflict across plan docs, CONTESTED grep misses ladder.py.
+WI-46b	1	2	2	1	0	XL	M	ready	M	New kpm_commit/ship/reinstall scripts plus test suites; fix site is new files; KPatchLauncher reinstall command and suite names unknown; touches live install state.
+WI-59	1	0	1	1	1	L	M	verify-only	M	Sites named (build_integration_batches.py, fix_workspace.py, dr.py:74-76); unknown batch-size check command, selftest counts, mark-done phase id, real-engine spend.
+WI-24	1	0	1	0	0	M	L	ready	M	Fix site CharEffectsPanel.cpp loadIni/g_debug flag-file (lines 135,197,857); C150 already in Effects.h/EffectIcons.h. Unknown: run_tests suite name.
+WI-40b	1	1	2	1	0	XL	S	ready	M	Fix site scripts/kotor2_logs.py new section; route at :52 sends cmdq-probe to checker. Probe source emits no LAT/gate lines, so parser has no live input.
+WI-66b	0	0	1	0	0	S	S	ready	M	Fix site scripts/bug_investigate_score.py STAGES/proportion/wilson (WI line numbers stale); suite and rerun run dir unknown; null/verify success criteria undefined.
+WI-49	2	0	1	1	0	XL	S	ready	M	io_mdl.py:2456 _get_node_order; 2460 vs 2470 undecided (each adds 12 once in-window), hunk absent from patch, spec doc and load-check command missing
+WI-25	0	0	0	0	1	S	M	verify-only	M	C154 site scan_2da_limits.py:95 confirmed; verify grep misses line 95 (no 256 pattern). C155 blocked on unknown Phase 1 survivor list.
+WI-56	1	0	1	1	1	L	M	verify-only	M	Verify-only; sites confirmed at runlib.sh:330, run_map.sh:142, run_reduce.sh:41. Unknown: unset-path byte-identical method; E3 premise stale (run_compare.sh:23 sets DR_EFFORT_STAGE).
+WI-51b	1	2	2	1	1	XL	M	ready	M	Refusal is dr.py:1187-1188 ("refute ladder not wired yet" guard); ladder.py has no refute support; 5+ out-of-repo files; Sonnet residue needs spend GO
+WI-37	0	0	0	1	0	S	M	ready	M	Fix site scenarios.py:31-39 and :120, plus 7 saves.toml expect headers; ~17 lines in 2 files; suite levelup-scenarios (tests/suites.toml:152) covers it; K for the id '-' closure tooling.
+WI-63	0	0	1	0	1	S	S	ready	M	Site fix_merge.py:206 and cause named; one-line edit, but None fallback when safe_rel rejects absolute path is undecided; no test suite named
+WI-54	0	1	1	1	0	M	M	ready	M	Fix sites named and confirmed in runlib.sh, run_verify.sh, run_refute_audit.sh; most H2 items already present. Unchecked: run_adjudicate.sh, selftest coverage.
+WI-60b	0	0	0	1	1	S	S	ready	H	Fix site profile_p2.toml:59-60 [effort] is named and keys exist (dr_profile.py:32); open D4 vs "user decides" conflict and WI-58 hold.
+WI-45	0	0	0	1	0	S	S	verify-only	M	Verify-only: 3 named suites exist (stem-discovered); docs step writes plan state via plan_manager.py; Wave4 and blocked C379 excluded.
+WI-66	1	0	1	0	1	M	M	ready	M	C410 cmd_verify (bug_investigate.py:917, WI line numbers stale); C393 BLIND_STYLES plus new style md; C395 log destination unknown, needs owner choice.
+WI-27	1	0	3	0	1	XL	M	awaiting_user	M	Sites confirmed (MouseProbe.cpp 114-134, 172; snapshot_live.py 182-184); unknown C159 anchor, C161 run hook, C167 trigger key; only live mouse run confirms.
+WI-48	0	0	0	0	0	S	S	verify-only	H	Verify-only: MaxH2WarnLines/WarnMarker at Inventory3DViewport.cpp:70-75 and the abi_check.py:398-406 refusal are confirmed; suite name and mark-done phase unknown.
+WI-68b	0	1	1	0	1	M	S	ready	H	Sites named (scaffold_mod.py:37,129,270-275); plan 8.4 never defines data/ui file sets, so an owner decision is needed before coding.
+WI-59b	1	1	1	1	0	L	S	ready	M	Site is stub/claude refute-audit path (:601, :987) plus selftest.py after :349; refute mode behaviour and three check names are unspecified
+WI-05	0	0	2	0	0	M	S	hold	M	Fix site Inventory3DViewport.cpp:502-508 (cat==0 branch) and hidden3d :172 confirmed; V needs a new ShowItem stub since no test covers it; gated on WI-03.
+WI-68c	0	0	0	0	1	S	S	hold	M	Fix site scripts/search_docs.py:223 (index cmd, DB_PATH :25); stale cache known. Held: gitignored output, unknown query and STATE need owner re-scope.
+WI-17	1	2	2	1	1	XL	M	hold	M	C101/C104 sites named (new AidRegistry.h, LoadHangProbe.cpp); C121 target unknown; 2 new shared headers; all rows await owner GO; probe removed from install.
+WI-61	0	0	0	1	0	S	M	verify-only	M	All 7 claims confirmed in source (refute_audit:37, runlib.sh:313, prep.py:140, pick_units:161); no suite; K=1 for plan_manager mark-done; phase id unknown.
+WI-05b	1	2	3	1	1	XL	S	hold	M	Sites: GuiInput.h, GuiKit.h, IniKit.h plus consumer mods; maybeReloadIni source unlocated, line refs stale, owner GO gate, live wheel/cursor check.
+WI-65	1	1	1	1	1	L	M	ready	M	Sites named in ~/.claude/swarm lib; C391 needs owner call: cli_version only exists post-run, but ctx.keys is built pre-run (swarm_run.py:662); suite runner unknown.
+WI-53	0	0	0	1	0	S	S	verify-only	M	10 named files exist; stage markers in 3 only; mark-done --plan resolves selector; K for plan-tracker writes
+WI-62	1	1	0	1	1	L	M	ready	M	Sites verified (merge.py:15, dr.py:1383 gates, pick_units.py:13/161, SKILL.md 82 lines); unknown: gate vs gates naming, mark-done phase id.
+WI-59c	0	0	0	1	0	S	S	verify-only	M	Verify-only, no code fix; close phase3c:55 C338 only. Lines match; dr.py init (out-of-repo) and mark-done phase id unverified.
+WI-67	1	1	1	1	1	L	M	awaiting_user	M	C405 site likely swarm_run.py cmd_status exit-0 (~855) or map (~748); budget ceiling source and C408 no-cache target unidentified.
+WI-17b	1	1	2	1	1	XL	M	hold	M	Sites named but lines drifted (writeChecked :92, patchIat :141); C-ids absent from docs; all rows need owner GO, C106/C123 maybe verify-only.
+WI-03b	1	2	3	1	1	XL	M	hold	M	Sites named (Inventory3DViewport.cpp logf/dlogf and g_debug, ItemModelTable.inc:385-435); unknown: C020 hash-fix design, in-game ultrawide placement, test suite name.
+WI-35b	1	1	2	1	1	XL	M	hold	M	Fix sites confirmed (EquipCharPreview.cpp:48/726, 24 saferead lines, GuiKit.h helper); C204 0x74 unconfirmed, build approval gate, C209 callers unknown.
+WI-40c	1	0	1	0	1	M	S	hold	M	Fix site is shouldShow() QueueHudLogic.h:125 plus QueueHud.cpp HUD draw; doc's H8 0x74C168 hook is stale (moved to K2HUD_FRAME); C229 needs GO
+WI-57	1	0	1	1	1	L	L	verify-only	M	Verify-only, no edits; sites named, but Track F blocked on owner decision (phase3b:145); C344 revise loop and fixture intake command unknown.
+WI-55	1	2	2	1	1	XL	L	ready	M	Fix sites named; gaps in run_compare.sh, run_escalate.sh, stub/claude --agents, selftest unknown; mock selftest skips ladder; P2b-b state unknown; dr.py shared with WI-53b
+WI-33b	0	1	3	1	1	XL	M	hold	M	Fix sites named (ActionHotbar.cpp:1176-1236 wheel, 1365, 2165); blocked on user click-to-target answer and A1 guiinput; live play needed.
+WI-52	1	0	0	0	0	M	S	ready	M	Verify-only; SKILL.md (82 lines) and dr.py:972 scaffold wiring exist, selftest covers. Unknown: H1-H5 and WI-51 gate state, P3.1/P3.3 ids.
+WI-09	0	0	0	1	0	S	S	ready	M	C275 verify-only: reg_ok gate at scripts/generate_ultrawide_gui_overrides.py:1843/1864 already tested; C044/C045 deferred; K for plan_manager BG14 edit.
+WI-16	2	0	3	1	1	XL	S	hold	M	All rows gated; hang cause unproven; C105 sites LoadHangProbe.cpp:482-485 (four tailFile calls); live proof needs user play; C097/C100 need user GO.
+WI-05c	0	2	2	1	1	L	S	hold	M	BindInventoryView (Inventory3DViewport.cpp:426) and BindEquipView (EquipCharPreview.cpp:845) merge into new Scene3D.h; C028 is size L
+WI-35c	2	1	2	1	1	XL	S	hold	M	Fix sites are EquipCharPreview.cpp:345 (TipCharW) and K2Addr.h makeGog (now :403, WI says :378). GOG scene-field offsets source is unread doc 21b. Mod 14 gate.
+WI-01b	0	0	0	1	1	S	S	hold	H	Fix site is doc 37 BG rows and doc 24:100; BG01-25 are FIXED/DONE except BG17 WONTFIX; 41 rows now; closure needs user decision.
+WI-16c	1	0	2	1	1	L	S	hold	M	Hold/GO-gated: no slot-age code; guard needs design in BuffDurationHUD.cpp (ref :411); suite unknown; hot PRE_ENGINE_READ hook path.
+WI-16b	0	0	2	1	1	M	S	hold	M	Named site confirmed at :306/:313/:319 (Rd struct); GO-held, and an unlisted probe_src mirror also calls IsBadReadPtr; suite unknown.
+WI-33c	0	1	1	1	1	M	S	hold	M	Fix site named (HotbarLogic.h:22 chooseTarget; K2Addr.h table); gated on second consumer and split-session K2Addr edits; suite unknown; new Items.h untested.
+WI-26b	2	1	3	1	1	XL	S	hold	M	replyY (K2DialogueLetterboxFix.cpp:211-213) is only logged, never written; applying it needs an unknown SetReply (0x8BB9A6) engine write; visual check is user-only
+WI-26	2	0	3	1	1	XL	S	hold	M	Draw hook unnamed: no address for CAurGUIStringInternal::Draw in repo, only WrapStrings hook 0x47B232 exists; blocked on user GO; play test user-only.
+WI-18b	1	1	2	1	1	XL	M	hold	M	PerfLab.cpp:926-940,1198 private fopen writers (alloc, snaps, metrics); kplog.ini path unknown; owner GO pending; shared out-of-repo KpLog.h
+WI-53b	1	2	2	1	1	XL	M	hold	M	fix_merge.py:650 self-test already asserts gap exit 1; apply-script path and F-g fixture gaps unverified; dr.py shared with WI-55
+WI-28	0	0	0	1	1	S	S	hold	H	Verify-only; rg shows no IsBadReadPtr and SafeRead present in ActionHotbar.cpp; held on user confirmation; mark-done touches plan tooling.
+WI-20	1	0	3	1	1	XL	S	hold	M	Site TextureMemoryRelease.cpp:34 (0x4261CF) is known; S3 saves and M3 zero-hit gates need live play with unknown commands; C114/C119 IDs absent from doc
+WI-58	1	0	1	1	1	L	S	hold	H	Gated HOLD: profile_p2.toml [effort]/[ladder] empty pending L0/L2 and user go; init resumes existing run (dr.py:990); mark-done id unknown.
+WI-40	1	1	2	1	1	XL	M	hold	M	Fix site CmdqProbe.cpp + hooks.toml; batch-2 addresses only in doc :51/:65-72, not in files; suite name unknown; held for GO.
+WI-39	2	2	3	1	1	XL	L	hold	M	Unknown 17-param AddMoveToPointAction layout and Steam ClientToServerObjectId address; new mod, live-play verify, held for GO.
+WI-32	0	0	2	1	1	M	M	hold	M	Fix site named: check_shared_headers.py main() :37-58; blocked until owner names contract suites (doc 22:338); red-case verify needs a scratch fixture.
+WI-53c	1	2	2	1	1	XL	L	hold	M	Port S9-S14 has no code site yet (rg empty); C326 guard fix_canary.sh:186-187, settings bind fix_settings.py:280 may pre-exist; needs GO.
+WI-20c	1	1	3	1	1	XL	S	hold	M	Fix site 0x4957AA (ClearBuckets, U4.md:38,103); patch source file unknown; cave code needs owner go-ahead; A/B and soak need live game
+WI-04	1	1	3	1	1	XL	M	verify-only	M	Sites confirmed in EquipCharPreview.cpp and SceneView.h (hub); kplog.ini unlocated; C125-C131 need owner GO; live game check for input and bind.
+WI-13	0	0	2	1	0	M	M	verify-only	M	Anchors confirmed (onLevelUp:1569, levelNow:688, uiNudge:843); no edits. Named r10 suites cover R10, not these rows; closure is source audit plus user play test.
+WI-22	0	2	3	1	1	XL	L	hold	H	Parked on owner decision (revive or close); sites named (SetMouseCursor 0x7B3870, HiliteAreaObjects 0x7AA747, tick 0x7AC470); visual tint/cursor needs live run.
+WI-69	1	1	1	1	1	L	S	hold	M	Fix site unnamed (files: none); unresolved causes in scripts/wi_driver.py:602-620, but which 5 closed items and which reason are unknown; needs triage.
+WI-70	1	1	1	0	1	L	S	hold	M	Fix site is ActionHotbar.cpp edPicker tab filter/dedupe (~1417-1433) and placePanel box math (~1244-1257); verify command unknown, held for triage.
+WI-71	2	1	3	1	1	XL	S	hold	M	Fix site Inventory3DViewport.cpp:524-533 and gen_inventory_3dview_table.py:40; unknown FnRender/008cd060 targeting for PC body, needs live test, on hold
+WI-101	2	2	3	1	1	XL	S	verify-only	M	Runtime-only per WI; SH-3a-08 site GuiInputProvider.cpp:118 + ActionHotbar.cpp:1218 (partly present); 3 items lack site; WindowHook.h shared.
+WI-94	0	1	1	0	1	M	S	ready	M	Part a fix sites named in analyze_runs.py (parse_perflab_pair ~415, build_launches start ~772, render ~1320; lines drift); b/c deferred, c owner-gated.
+WI-105	1	1	2	0	1	L	S	hold	M	Non-pause hold at LevelUpOverride.cpp:709-713 confirmed; F2 correctness unchecked; F5 HOLD_MIDLOOP is a documented no-veto limitation needing design choice; needs fake-engine scenario
+WI-72	0	0	1	0	0	S	S	hold	H	(U column missing in reply; read as 0) analyze_play_logs.py analyze_inv (~l.177-186, 1066, 1088) needs kplog_parse.strip_prefix; WI's line list incomplete.
+WI-12	1	2	2	0	0	XL	M	ready	M	Fix sites: gen_hotbar_textures.py make_all/ALL_NAMES and ActionHotbar.cpp LBL_HOTBARPREV/NEXT. C190 line is stale (GuiKit.h:282). Arrow shape is left to the executor.
+WI-38	0	0	1	1	0	M	L	ready	M	Fix site SelfHealUi.h:25-26 discDiameter clamp to 58; pins in selfheal_ui_test.cpp; shared-header sync and compat waivers; C213/C215/C220 confirm-only.
+WI-02b	0	2	1	1	0	L	M	ready	M	Fix sites confirmed at kpm_commit.py:68, kpm_reinstall.py:271, kpm_ship.py:85; scored as from-scratch 3-file build; verify only --help/dry-run; WI says NEW, rows DONE
