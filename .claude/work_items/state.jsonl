@@ -81,3 +81,4 @@
 {"ev": "done", "reason": "manual: FX3 WI-91a rev2: K1PORT_VENV honoured in tests, real-topology overlay test (needs WI-103); re-review APPROVE_MINOR (.cla", "session": "4a5ea252-7f9b-492a-8fa9-45342c547799", "ts": "2026-10-15T21:22:37Z", "wi": "WI-91"}
 {"ev": "park", "reason": "gate failed: python3 scripts/run_tests.py test_kpm_hotswap\ngate may not install or hot-swap", "session": "94e28d55-0e13-43f6-9156-313ebdd420d1", "ts": "2026-10-15T21:46:08Z", "wi": "WI-02"}
 {"ev": "unpark", "reason": "verify header added: derived gate test_kpm_hotswap tripped the hotswap guard; Steps anchors refreshed", "session": "94e28d55-0e13-43f6-9156-313ebdd420d1", "ts": "2026-10-15T21:46:41Z", "wi": "WI-02"}
+{"ev": "done", "session": "94e28d55-0e13-43f6-9156-313ebdd420d1", "ts": "2026-10-15T21:52:17Z", "wi": "WI-02"}
