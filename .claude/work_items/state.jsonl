@@ -19,3 +19,4 @@
 {"ev": "done", "session": "8234197b-06e5-42f4-bd17-d5ba35bb2bd7", "ts": "2026-10-13T03:45:16Z", "wi": "WI-06"}
 {"ev": "park", "reason": "checker PARTIAL: clean", "session": "5a63ecf0-adfc-498b-986b-ce042f134c25", "ts": "2026-10-13T03:52:04Z", "wi": "WI-42"}
 {"ev": "done", "reason": "manual: BG18 forced cache refresh on refused click; C240 verified", "session": "5a63ecf0-adfc-498b-986b-ce042f134c25", "ts": "2026-10-13T03:57:28Z", "wi": "WI-42"}
+{"ev": "done", "reason": "manual: FX1 Haiku T1/T2 + Sonnet consolidated + independent Sonnet review APPROVE_WITH_NITS; verdict .claude/waves/fix1/WI-99/ve", "session": "ef9e50dd-6a01-4db5-ada4-0ac34db43372", "ts": "2026-10-15T04:52:26Z", "wi": "WI-99"}

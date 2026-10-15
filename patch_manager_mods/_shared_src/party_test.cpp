@@ -192,6 +192,44 @@ int main() {
     party::g_getControlled = fakeGetControlled;
 
 
+    // ---- SH-3c-08 (WI-99): the REAL callVitalSlot through vitals() (every other vitals case swaps in the int-returning fakeVital) ----
+    // The engine HP slots return a short, so only AX is the value; the upper half of EAX is junk (lesson 355 family). x86-64 host stubs
+    // `mov eax, imm32 ; ret` sit in a MAP_32BIT RWX page (vtable slots are 32-bit fields; a PIE test binary is above 4 GB). The
+    // one-stack-arg RET 4 half of the contract cannot be observed on the x86-64 host (no callee-pops), only the short result can.
+    {
+        void* page = mmap(nullptr, 4096, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS | MAP_32BIT, -1, 0);
+        KT_CHECK(page != MAP_FAILED);
+        if (page != MAP_FAILED) {
+            unsigned char* code = static_cast<unsigned char*>(page);
+            auto putStub = [&](int slot, uint32_t eax) {
+                unsigned char* s = code + 16 * slot;
+                s[0] = 0xB8; memcpy(s + 1, &eax, 4); s[5] = 0xC3;
+                return reinterpret_cast<uintptr_t>(s);
+            };
+            struct Case { uint32_t maxEax, curEax; int max, cur; bool down; };
+            const Case cases[] = {
+                { 0x12340064u, 0x1234FFFFu, 100, -1,     true  },   // AX = -1, junk above: must sign-extend (an int return reads +305463295)
+                { 0x12340064u, 0xABCD0032u, 100, 50,     false },   // AX = 50, EAX negative as an int: must not read as down
+                { 0x56780064u, 0x56780000u, 100, 0,      true  },   // AX = 0, junk above: down
+                { 0x00010064u, 0x00018000u, 100, -32768, true  },   // AX = 0x8000: short minimum
+            };
+            auto sVc = party::g_callVital; auto sMx = g_slotMax; auto sCx = g_slotCur;
+            party::g_callVital = party::callVitalSlot;
+            for (const Case& cs : cases) {
+                g_slotMax = putStub(0, cs.maxEax); g_slotCur = putStub(1, cs.curEax);
+                KT_CHECK(g_slotMax <= 0xFFFFFFFFull && g_slotCur <= 0xFFFFFFFFull);
+                build(1); mkCreature(0, 0, 0);
+                party::Vitals v;
+                KT_CHECK(party::vitals(g_servers[0], &v));
+                KT_CHECK_EQ((long long)v.max, (long long)cs.max);
+                KT_CHECK_EQ((long long)v.cur, (long long)cs.cur);
+                KT_CHECK(v.ok); KT_CHECK_EQ((long long)v.down, (long long)cs.down);
+            }
+            party::g_callVital = sVc; g_slotMax = sMx; g_slotCur = sCx;
+            munmap(page, 4096);
+        }
+    }
+
     // ---- member / serverCreature / vitals / members ----
     {
         auto sM = party::g_member; auto sS = party::g_serverCreature; auto sV = party::g_callVital;

@@ -60,6 +60,21 @@ static void checkSteamFields(const K2AddrTable& t) {
     STEAM(ClientCreatureVtable, 0x0099EE14);
     STEAM(SceneCamVt_Attach, 0x74);
     STEAM(SceneCamVt_Fov, 0x44);
+    // SceneView.h inventory-3D block (Steam only; the GOG column leaves it zero, see the zero checks in checkGogFields)
+    STEAM(SceneViewSize, 0x400);
+    STEAM(View_Scene, 0x60);
+    STEAM(View_SceneObj, 0x74);
+    STEAM(View_Camera, 0x78);
+    STEAM(View_ModelCount, 0x80);
+    STEAM(SceneVt_Init, 0x70);
+    STEAM(GobVt_SetPosition, 0x5C);
+    STEAM(GobVt_SetOrientation, 0x60);
+    STEAM(GobVt_GetPosition, 0x64);
+    STEAM(GobVt_GetOrientation, 0x68);
+    STEAM(GobVt_GetParent, 0x108);
+    STEAM(GobVtReadable, 0x10c);
+    STEAM(GobReadable, 0x200);
+    STEAM(Gob_Scale, 0x1e0);
     STEAM(WorldTimerGetCurrentTime, 0x0051AD20);
     STEAM(Creature_EffectArray, 0x148);
     STEAM(Creature_EffectCount, 0x14c);
@@ -99,6 +114,7 @@ static void checkSteamFields(const K2AddrTable& t) {
     STEAM(Border_Alpha, 0x24);
     STEAM(Border_Tint, 0x28);
     STEAM(Border_Fill, 0x74);
+    STEAM(Border_FillStyle, 0x34);
     STEAM(Panel_CtlArray, 0x24);
     STEAM(Panel_CtlCount, 0x28);
     STEAM(AppGlobal_ToWorld, 8);
@@ -121,6 +137,8 @@ static void checkSteamFields(const K2AddrTable& t) {
     STEAM(Menu_PortraitSlot, 0x2350);
     STEAM(Menu_Char2, 0x3134);
     STEAM(Menu_Char3, 0x36DC);
+    // (the two index*4 lines below re-check Menu_Char2/3 with the same values on purpose: the hex form is the table literal, the
+    // index form is the provenance ShieldBar carried; equal, so not a conflict)
     // ShieldBar's MenuCharGroup was dword indices: LBL_CHARn, LEVELUPn, BACKn, BTN_CHANGEn, offset = index * 4
     STEAM(Menu_Char2, 0xc4d * 4);   STEAM(Menu_Level2, 0xc9f * 4);  STEAM(Menu_Back2, 0xcf1 * 4);   STEAM(Menu_Change2, 0xd43 * 4);
     STEAM(Menu_Char3, 0xdb7 * 4);   STEAM(Menu_Level3, 0xe09 * 4);  STEAM(Menu_Back3, 0xe5b * 4);   STEAM(Menu_Change3, 0xead * 4);
@@ -294,6 +312,10 @@ static void checkGogFields(const K2AddrTable& g) {
     GOG(Creature_IconCacheCount, 0x1000);
     GOG(IconEnt_F14, 0x14);
     GOG(IconEnt_F1c, 0x1C);
+    GOG(Border_Alpha, 0x24);
+    GOG(Border_Tint, 0x28);
+    GOG(Border_Fill, 0x74);
+    GOG(Border_FillStyle, 0x34);
     GOG(Border_Width, 0xC);
     GOG(Border_Height, 0x10);
     GOG(Border_Rot, 0x20);

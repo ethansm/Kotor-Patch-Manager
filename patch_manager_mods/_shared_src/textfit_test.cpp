@@ -39,7 +39,7 @@ int main() {
     KT_CHECK(fitText(ctx, "Droid Deflector Mark I", 223.856125f, out, sizeof out, F10));
     KT_CHECK_EQ((const char*)out, "Droid Def...");
 
-    // 4. marqueeText: whole text fits (maxOff 0), offsets 0 / 3 / past the end, F10 offset landing on a space.
+    // 4. marqueeText: whole text fits (maxOff 0), offsets 0 / 3 / past the end, F10 offset 7 (lands on 'e'), F16 offset 5 (a space, skipped).
     int mo = -1;
     marqueeText(ctx, "Droid Deflector Mark I", 443.005524f, 0, out, sizeof out, &mo, F16);
     KT_CHECK_EQ((const char*)out, "Droid Deflector Mark I"); KT_CHECK_EQ(mo, 0);
@@ -51,6 +51,20 @@ int main() {
     KT_CHECK_EQ((const char*)out, "lector Mark I"); KT_CHECK_EQ(mo, 9);
     marqueeText(ctx, "Droid Deflector Mark I", 223.856125f, 7, out, sizeof out, &mo, F10);
     KT_CHECK_EQ((const char*)out, "eflector..."); KT_CHECK_EQ(mo, 12);
+    // F16 off=5 is the space after "Droid": skipped to "Deflector". maxPx = width of " Deflector Mark I", so m == 5 (no clamp)
+    float fit5 = textPx(ctx, "Droid Deflector Mark I" + 5, 17, F16);
+    marqueeText(ctx, "Droid Deflector Mark I", fit5, 5, out, sizeof out, &mo, F16);
+    KT_CHECK_EQ((const char*)out, "Deflector Mark I"); KT_CHECK_EQ(mo, 5);
+    {   // same space skip when the rest still has to be cut: off 5 (a space) must equal the off 6 cut, not start with the space
+        char want[128];
+        marqueeText(ctx, "Droid Deflector Mark I", 265.203308f, 5, out, sizeof out, &mo, F16);
+        fitText(ctx, "Deflector Mark I", 265.203308f, want, sizeof want, F16);
+        KT_CHECK(out[0] == 'D');
+        KT_CHECK_EQ((const char*)out, (const char*)want); KT_CHECK_EQ(mo, 9);
+    }
+    // a negative offset clamps to 0 (same result as off 0)
+    marqueeText(ctx, "Droid Deflector Mark I", 265.203308f, -5, out, sizeof out, &mo, F16);
+    KT_CHECK_EQ((const char*)out, "Droid Deflec..."); KT_CHECK_EQ(mo, 9);
 
     // 5. wrapAppend (px10) and wrapAppendW (plain character count measure).
     {
@@ -74,6 +88,14 @@ int main() {
         KT_CHECK_EQ(wrapAppendW(chars, "aaaa bbbb", 4, tiny, &tl, 8), 1);
         KT_CHECK_EQ((const char*)tiny, "aaaa");
         KT_CHECK_EQ(tl, 4);
+    }
+    {   // a single word longer than 120 characters is cut to exactly 120 (the rest of that word is dropped, nothing overflows)
+        char buf[1025]; int len = 0;
+        auto chars = [](const char*, int n) { return (float)n; };
+        std::string longWord(130, 'a');
+        KT_CHECK_EQ(wrapAppendW(chars, longWord.c_str(), 1000, buf, &len, 1024), 1);
+        KT_CHECK_EQ(len, 120); KT_CHECK_EQ((int)strlen(buf), 120);
+        KT_CHECK(std::string(buf) == std::string(120, 'a'));
     }
 
     return kt::Report("textfit_test");

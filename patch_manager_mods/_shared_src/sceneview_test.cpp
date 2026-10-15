@@ -418,6 +418,76 @@ static void testScale() {
     k2addr::clearForTest();
 }
 
+// SH-3b-06 (WI-99): installFakes() replaces every call lambda, so the default thiscall trampolines of Engine never ran on host.
+// A fresh Engine keeps them. Its `fn` slot is a 32-bit engine address, but a PIE test binary lives above 4 GB, so each host stub is
+// reached through a 12-byte thunk (mov rax, imm64 ; jmp rax) in a MAP_32BIT page. On the x86-64 host __thiscall is ignored, so what
+// is pinned is the argument order/count, the pass-through of the sentinel pointers, the return value and the size of the hidden
+// out buffers (the stubs fill them exactly like the engine: 3 floats for a position, 4 for an orientation; ASan flags a short one).
+static uint8_t* g_thunkPage = nullptr; static size_t g_thunkUsed = 0;
+static uint32_t lowThunk(const void* target) {
+    if (!g_thunkPage) {
+        void* p = mmap(nullptr, 4096, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS | MAP_32BIT, -1, 0);
+        if (p == MAP_FAILED) return 0;
+        g_thunkPage = static_cast<uint8_t*>(p);
+    }
+    uint8_t* t = g_thunkPage + g_thunkUsed; g_thunkUsed += 16;
+    uint64_t dst = reinterpret_cast<uint64_t>(target);
+    t[0] = 0x48; t[1] = 0xB8; memcpy(t + 2, &dst, 8); t[10] = 0xFF; t[11] = 0xE0;   // mov rax, dst ; jmp rax
+    return static_cast<uint32_t>(reinterpret_cast<uintptr_t>(t));
+}
+static int dN; static void* dThis; static void* dArg1; static float dF[4]; static const char* dStr; static int dInt;
+static void dReset() { dN = 0; dThis = dArg1 = nullptr; memset(dF, 0, sizeof dF); dStr = nullptr; dInt = 0; }
+static void dSceneInit(void* sc, const char* room, float* pos, float* quat) { ++dN; dThis = sc; dStr = room; dArg1 = pos; memcpy(dF, quat, sizeof(float) * 4); }
+static void* dSetPos(void* g, float* out, float x, float y, float z) { ++dN; dThis = g; dArg1 = out; out[0] = x; out[1] = y; out[2] = z; dF[0] = x; dF[1] = y; dF[2] = z; return out; }
+static void* dSetOri(void* g, float* out, float w, float x, float y, float z) { ++dN; dThis = g; dArg1 = out; out[0] = w; out[1] = x; out[2] = y; out[3] = z; dF[0] = w; dF[1] = x; dF[2] = y; dF[3] = z; return out; }
+static void* dGetVec(void* g, float* out) { ++dN; dThis = g; dArg1 = out; out[0] = 4.f; out[1] = 5.f; out[2] = 6.f; out[3] = 7.f; return out; }
+static void* dGetParent(void* g, int arg) { ++dN; dThis = g; dInt = arg; return reinterpret_cast<void*>(0x7777); }
+static void dCamAttach(void* cam, void* model, const char* node, int flag) { ++dN; dThis = cam; dArg1 = model; dStr = node; dInt = flag; }
+static void dCamFov(void* cam, float fov) { ++dN; dThis = cam; dF[0] = fov; }
+static void testDefaultTrampolines() {
+    k2addr::clearForTest();
+    Engine e;   // default trampolines, not the installFakes overrides
+    void* const g = reinterpret_cast<void*>(0x5A5A0010); void* const x1 = reinterpret_cast<void*>(0x5A5A0020);
+    const uint32_t tSi = lowThunk(reinterpret_cast<void*>(&dSceneInit)), tPos = lowThunk(reinterpret_cast<void*>(&dSetPos)),
+                   tOri = lowThunk(reinterpret_cast<void*>(&dSetOri)), tGv = lowThunk(reinterpret_cast<void*>(&dGetVec)),
+                   tGp = lowThunk(reinterpret_cast<void*>(&dGetParent)), tCa = lowThunk(reinterpret_cast<void*>(&dCamAttach)),
+                   tCf = lowThunk(reinterpret_cast<void*>(&dCamFov));
+    KT_CHECK(tSi && tPos && tOri && tGv && tGp && tCa && tCf);
+    if (!(tSi && tPos && tOri && tGv && tGp && tCa && tCf)) return;
+
+    dReset(); float pos[3] = { 1.f, 2.f, 3.f }, quat[4] = { 0.f, 0.5f, 0.25f, 1.f };
+    e.callSceneInit(tSi, reinterpret_cast<uintptr_t>(x1), "room_x", pos, quat);
+    KT_CHECK_EQ((long long)dN, 1ll); KT_CHECK(dThis == x1 && dStr && strcmp(dStr, "room_x") == 0 && dArg1 == pos);
+    KT_CHECK(dF[0] == 0.f && dF[1] == 0.5f && dF[2] == 0.25f && dF[3] == 1.f);
+
+    dReset();
+    e.callSetPos(tPos, g, 1.5f, -2.25f, 3.0f);   // distinct values expose a swapped axis
+    KT_CHECK_EQ((long long)dN, 1ll); KT_CHECK(dThis == g && dArg1 != nullptr);
+    KT_CHECK(dF[0] == 1.5f && dF[1] == -2.25f && dF[2] == 3.0f);
+
+    dReset();
+    e.callSetOri(tOri, g, 0.5f, 0.25f, -0.75f, 1.0f);
+    KT_CHECK_EQ((long long)dN, 1ll); KT_CHECK(dThis == g && dArg1 != nullptr);
+    KT_CHECK(dF[0] == 0.5f && dF[1] == 0.25f && dF[2] == -0.75f && dF[3] == 1.0f);
+
+    dReset(); float out[4] = { 0, 0, 0, 0 };
+    e.callGetVec(tGv, g, out);   // the caller's buffer is passed straight through (up to 4 floats)
+    KT_CHECK_EQ((long long)dN, 1ll); KT_CHECK(dThis == g && dArg1 == out);
+    KT_CHECK(out[0] == 4.f && out[1] == 5.f && out[2] == 6.f && out[3] == 7.f);
+
+    dReset();
+    KT_CHECK(e.callGetParent(tGp, g, 9) == reinterpret_cast<void*>(0x7777));
+    KT_CHECK_EQ((long long)dN, 1ll); KT_CHECK(dThis == g); KT_CHECK_EQ((long long)dInt, 9ll);
+
+    dReset();
+    e.callCamAttach(tCa, reinterpret_cast<uintptr_t>(x1), g, "camerahook", 3);
+    KT_CHECK_EQ((long long)dN, 1ll); KT_CHECK(dThis == x1 && dArg1 == g && dStr && strcmp(dStr, "camerahook") == 0); KT_CHECK_EQ((long long)dInt, 3ll);
+
+    dReset();
+    e.callCamFov(tCf, reinterpret_cast<uintptr_t>(x1), 62.5f);
+    KT_CHECK_EQ((long long)dN, 1ll); KT_CHECK(dThis == x1 && dF[0] == 62.5f);
+}
+
 int main() {
     void* m = mmap(nullptr, ArenaSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_32BIT, -1, 0);
     if (m == MAP_FAILED) { perror("mmap MAP_32BIT"); return 5; }
@@ -433,5 +503,6 @@ int main() {
     testGobCheck();
     testGobPose();
     testScale();
+    testDefaultTrampolines();
     return kt::Report("sceneview_test");
 }
