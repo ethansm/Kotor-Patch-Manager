@@ -91,7 +91,11 @@ static BOOL protect(LPVOID p, SIZE_T n, DWORD np, PDWORD old) {
     return 1;
 }
 static void flush(const void* p, SIZE_T n) { if (flushN < 8) flushed[flushN] = { p, n, seq }; ++flushN; ++seq; }
-static SIZE_T query(LPCVOID, MEMORY_BASIC_INFORMATION*, SIZE_T) { return 0; }
+// writeChecked asks committed() before reading the site (CodePatch.h -4): report every address as one committed region.
+static SIZE_T query(LPCVOID, MEMORY_BASIC_INFORMATION* m, SIZE_T) {
+    m->BaseAddress = nullptr; m->RegionSize = ~static_cast<SIZE_T>(0); m->State = MEM_COMMIT; m->Protect = PAGE_READWRITE;
+    return sizeof *m;
+}
 static void reset() { protN = flushN = seq = 0; protFail = false; oldProt = PAGE_EXECUTE_READ; }
 }
 

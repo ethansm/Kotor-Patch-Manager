@@ -73,6 +73,7 @@ static void buildImage(bool zeroOftK, bool noImportDir = false) {
 int main() {
     codepatch::Ops saved = codepatch::ops();
     codepatch::ops() = { fakeQuery, fakeProtect, fakeFlush };
+    g_vqMode = 1; g_vqBase = 0; g_vqSize = ~static_cast<SIZE_T>(0);   // default: every address committed (write/writeChecked cases); the committed block overrides
 
     // ---- write ------------------------------------------------------------------------------------------------------
     {
@@ -138,6 +139,48 @@ int main() {
         KT_CHECK(std::memcmp(seen, orig, 7) == 0);
         KT_CHECK(std::memcmp(c3, orig, 7) == 0);
         KT_CHECK_EQ(g_protN, 1); KT_CHECK_EQ(g_flushN, 0);
+    }
+
+    // ---- writeChecked: target not committed or n <= 0 -> -4 before any read; no protect/flush/write; seen zeroed ----------
+    {
+        const uint8_t expect[7] = { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 };
+        const uint8_t repl[7] = { 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC };
+        uint8_t site[7]; uint8_t seen[7];                                           // real host buffer; the bytes match `expect`
+        const uintptr_t at = reinterpret_cast<uintptr_t>(site);
+        // MEM_RESERVE (not MEM_COMMIT) over the buffer
+        std::memcpy(site, expect, 7); reset(); std::memset(seen, 0xEE, sizeof seen);
+        g_vqBase = at; g_vqSize = sizeof site; g_vqMode = 2;
+        KT_CHECK_EQ(codepatch::writeChecked(at, expect, repl, 7, seen), -4);
+        KT_CHECK_EQ(g_protN, 0); KT_CHECK_EQ(g_flushN, 0);
+        KT_CHECK(std::memcmp(site, expect, 7) == 0);
+        for (int i = 0; i < 7; ++i) KT_CHECK_EQ(seen[i], 0);                        // zeroed, not the 0x90 found at the site
+        // query fails (unmapped)
+        std::memcpy(site, expect, 7); reset(); std::memset(seen, 0xEE, sizeof seen);
+        g_vqMode = 0;
+        KT_CHECK_EQ(codepatch::writeChecked(at, expect, repl, 7, seen), -4);
+        KT_CHECK_EQ(g_protN, 0); KT_CHECK_EQ(g_flushN, 0);
+        KT_CHECK(std::memcmp(site, expect, 7) == 0);
+        for (int i = 0; i < 7; ++i) KT_CHECK_EQ(seen[i], 0);
+        // committed, but the region ends one byte short of at+n
+        std::memcpy(site, expect, 7); reset(); std::memset(seen, 0xEE, sizeof seen);
+        g_vqBase = at; g_vqSize = sizeof site - 1; g_vqMode = 1;
+        KT_CHECK_EQ(codepatch::writeChecked(at, expect, repl, 7, seen), -4);
+        KT_CHECK_EQ(g_protN, 0); KT_CHECK_EQ(g_flushN, 0);
+        KT_CHECK(std::memcmp(site, expect, 7) == 0);
+        for (int i = 0; i < 7; ++i) KT_CHECK_EQ(seen[i], 0);
+        // n == 0 on a committed region: committed(at, 0) is true, so only the n <= 0 gate returns -4; seen has no bytes to zero
+        std::memcpy(site, expect, 7); reset(); std::memset(seen, 0xEE, sizeof seen);
+        g_vqBase = at; g_vqSize = sizeof site; g_vqMode = 1;
+        KT_CHECK_EQ(codepatch::writeChecked(at, expect, repl, 0, seen), -4);
+        KT_CHECK_EQ(g_protN, 0); KT_CHECK_EQ(g_flushN, 0);
+        KT_CHECK(std::memcmp(site, expect, 7) == 0);
+        for (int i = 0; i < 7; ++i) KT_CHECK_EQ(seen[i], 0xEE);                     // untouched
+        // exact fit in a committed region: unchanged happy path, seen holds the pre-write bytes
+        std::memcpy(site, expect, 7); reset(); std::memset(seen, 0xEE, sizeof seen);
+        KT_CHECK_EQ(codepatch::writeChecked(at, expect, repl, 7, seen), 1);
+        KT_CHECK(std::memcmp(site, repl, 7) == 0);
+        KT_CHECK(std::memcmp(seen, expect, 7) == 0);
+        KT_CHECK_EQ(g_protN, 2); KT_CHECK_EQ(g_flushN, 1);
     }
 
     // ---- committed --------------------------------------------------------------------------------------------------

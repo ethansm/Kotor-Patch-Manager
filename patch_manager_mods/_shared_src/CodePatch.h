@@ -6,7 +6,9 @@
 // activation_fix_src (writeCode, putRel32). Semantics are those copies' exactly:
 //   write         1 ok | -2 VirtualProtect failed (bytes untouched). Order: protect(RWX), memcpy, restore protection, flush.
 //   writeChecked  1 ok | -1 bytes differ from `expect` (`seen` is filled BEFORE the compare; no protect, nothing written)
-//                 | -2 VirtualProtect failed (`seen` already filled).
+//                 | -2 VirtualProtect failed (`seen` already filled)
+//                 | -4 n <= 0 or [at, at+n) not inside one committed region: decided BEFORE any read of `at`, so `seen` is zeroed
+//                 (not read from the target), no protect, nothing written. -3 is deliberately unused: callers keep it (cave-alloc failure).
 // The return codes are the helper's only contract: callers keep their own state codes (g_state / -3 "not committed" /
 // bad-address bookkeeping) and map these onto them. (activation_fix's writeCode also returns -3 on a non-committed page; that
 // stays caller-side: call committed() first.)
@@ -84,10 +86,15 @@ inline int write(uintptr_t at, const uint8_t* repl, int n) {
     return 1;
 }
 
-// As write(), but only if the n bytes at `at` equal `expect`: 1 | -1 (mismatch) | -2 (protect failed). `seen` (n bytes) receives
-// the bytes found at `at` before the compare, so every return code leaves the caller the evidence.
+// As write(), but only if the n bytes at `at` equal `expect`: 1 | -1 (mismatch) | -2 (protect failed) | -4 (n <= 0 or target not
+// committed). `seen` (n bytes) receives the bytes found at `at` before the compare, so -1 and -2 leave the caller the evidence;
+// on -4 nothing is read from `at` and `seen` is zeroed.
 inline int writeChecked(uintptr_t at, const uint8_t* expect, const uint8_t* repl, int n, uint8_t* seen) {
     auto p = reinterpret_cast<uint8_t*>(at);
+    if (n <= 0 || !committed(at, static_cast<size_t>(n))) {   // gate before any read: an unmapped/reserved target is never touched
+        if (n > 0) memset(seen, 0, static_cast<size_t>(n));
+        return -4;
+    }
     memcpy(seen, p, n);
     if (memcmp(p, expect, n) != 0) return -1;
     DWORD old;

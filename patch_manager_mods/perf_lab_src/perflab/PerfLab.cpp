@@ -1264,7 +1264,7 @@ volatile LONG g_snapNow = 0, g_unloadNow = 0;
 bool g_gameProcess = false;
 
 void logExperiments() {
-    auto st = [](LONG v) { return v == 1 ? "ON" : v == 0 ? "OFF" : v == -1 ? "REFUSED(bytes)" : v == -2 ? "REFUSED(protect)" : "REFUSED(cave alloc)"; };
+    auto st = [](LONG v) { return v == 1 ? "ON" : v == 0 ? "OFF" : v == -1 ? "REFUSED(bytes)" : v == -2 ? "REFUSED(protect)" : v == -4 ? "REFUSED(not committed)" : "REFUSED(cave alloc)"; };
     logf("experiments at first tick: tx=%s (0x4261CF saw %02x %02x %02x %02x %02x %02x %02x, cave %p) g1skip=%s (0x4265F3 saw %02x %02x) abreserve=%s (0x58C406 saw %02x %02x %02x %02x, cave %p)",
          st(g_txState), g_txSeen[0], g_txSeen[1], g_txSeen[2], g_txSeen[3], g_txSeen[4], g_txSeen[5], g_txSeen[6], (void*)g_txCave,
          st(g_g1State), g_g1Seen[0], g_g1Seen[1],
