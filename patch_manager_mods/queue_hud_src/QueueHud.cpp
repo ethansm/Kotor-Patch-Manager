@@ -535,7 +535,7 @@ Held g_heldLeader;
 // Paints the leader's background, icons and Cancel from a Draw list. The live draw and the panel hold both come through here.
 void paintLeader(uintptr_t hud, const Draw* d, int nd, DWORD age, const K2PsContext* ctx) {
     // Cancel: right of the live QUEUE0 extent, sized by the live QUEUE1 height (read every frame; the HUD scale can change).
-    if (qh::cancelVisible(g_cfg.enabled, g_cfg.cancel, g_combat != 0, ctx->inMenu != 0, age, nd)) {
+    if (qh::cancelVisible(g_cfg.enabled, g_cfg.cancel, g_combat != 0 && !g_softCombat, ctx->inMenu != 0, age, nd)) {
         qh::Rect q0{}, q1{};
         if (guikit::getExtent(hud + HudSlotBase, &q0.x, &q0.y, &q0.w, &q0.h) && guikit::getExtent(hud + HudSlotBase + HudSlotStride, &q1.x, &q1.y, &q1.w, &q1.h)) {
             g_want[0].r = qh::cancelRect(q0, q1);
@@ -736,7 +736,7 @@ void drawStrips(uintptr_t hud, DWORD now, bool inMenu) {
         else stripNote(k, false, 0, "", qh::Rect{ 0, 0, 0, 0 }, 0);
     }
     if (!any) return;
-    if (g_cfg.cancel && g_combat == 0)   // Cancel stays hidden in combat (its click is refused there)
+    if (g_cfg.cancel && (g_combat == 0 || g_softCombat))   // Cancel stays hidden in real combat; soft combat (ally-only targets) shows it like out of combat
         for (int k = 1; k <= 2; ++k)
             if (d[k].have) { g_want[k].r = qh::stripCancelRect(d[k].r, d[k].n, g_cfg.stripSide, screenW); g_want[k].show = g_want[k].r.w > 0; }
     gui2d::CapGuard capGuard;
@@ -1620,8 +1620,9 @@ void KPATCH_CALL onFrameBegin(const K2PsContext* ctx, void*) {
     }
     for (int k = 0; k < 3; ++k)
         if (g_cpend[k].on) { g_cpend[k].on = false; QLOG(chCancel, "CANCEL done member=%d n=%d", k, queueCountOf(k)); }
-    if (!g_cfg.cancel || inMenu || g_combat != 0) {
-        cwHideAll(inMenu ? "hud-inactive" : g_combat != 0 ? "combat" : "cancel-off");
+    const bool hardCombat = g_combat != 0 && !g_softCombat;
+    if (!g_cfg.cancel || inMenu || hardCombat) {
+        cwHideAll(inMenu ? "hud-inactive" : hardCombat ? "combat" : "cancel-off");
     } else {
         for (int k = 0; k < 3; ++k) {
             CW& w = g_cw[k];
