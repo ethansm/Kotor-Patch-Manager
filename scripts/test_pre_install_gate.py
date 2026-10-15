@@ -103,6 +103,15 @@ class Swap(Fixture):
             self.assertEqual(z.read(g.DLL_MEMBER), b"OLD-DLL")
         self.assertFalse((scratch / "Patches/LoadHangProbe").exists())
 
+    def test_scratch_tree_carries_common_headers(self):   # smoke builds use -I$KPM_DIR/Patches/Common
+        (self.kpm / "Patches/Common").mkdir(parents=True)
+        (self.kpm / "Patches/Common/kpatch_api.h").write_text("/* api */\n")
+        dll = self.root / "new.dll"
+        dll.write_bytes(b"FRESH")
+        scratch = self.root / "scratch"
+        g.step_scratch({"perf-lab": dll}, scratch, self.smokes, self.kpm)
+        self.assertEqual((scratch / "Patches/Common/kpatch_api.h").read_text(), "/* api */\n")
+
     def test_step_scratch_records_packed(self):
         dll = self.root / "new.dll"
         dll.write_bytes(b"FRESH")

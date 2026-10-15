@@ -12,7 +12,8 @@ Steps (stop at the first failure; exit 1 on FAIL, 0 on PASS):
   3 scratch   for every smokes.toml row whose kpatch (or extra_dlls kpatch) carries the mod's manifest id: copy the
               live kpatch to <scratch>/Patches/<same rel path> and replace binaries/windows_x86.dll with the fresh DLL
               (a mod with no smoke row gets its live kpatch looked up by manifest id); then check_exports.py runs on
-              those scratch kpatches, so a new detour export is judged on the fresh DLL, not the stale KPM one
+              those scratch kpatches, so a new detour export is judged on the fresh DLL, not the stale KPM one;
+              Patches/Common (kpatch_api.h etc.) is copied in too, since the smokes compile with -I$KPM_DIR/Patches/Common
   4 wine      KPM_DIR=<scratch> run_tests.py --wine -k wine: ; each matched row must PASS (SKIP only for missing
               DISPLAY). Rows of other mods SKIP (their kpatch is absent from the scratch tree). A mod with no smoke
               row prints NOTE and still passes.
@@ -177,6 +178,9 @@ def step_scratch(dll_by_id: dict, scratch: Path, smokes_toml: Path = SMOKES_TOML
     packed = {} if packed is None else packed
     patches = scratch / "Patches"
     shutil.rmtree(patches, ignore_errors=True)
+    common = kpm_dir / "Patches" / "Common"
+    if common.is_dir():   # smokes compile with -I$KPM_DIR/Patches/Common (kpatch_api.h etc.), so the scratch needs it too
+        shutil.copytree(common, patches / "Common")
     cfg = tomllib.loads(smokes_toml.read_text())
     rows = {mid: smoke_rows(mid, smokes_toml, kpm_dir) for mid in dll_by_id}
     wanted = {r for rs in rows.values() for r in rs}
