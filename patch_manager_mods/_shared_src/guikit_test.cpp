@@ -258,6 +258,18 @@ int main() {
         cCx = 5; cCy = 7; cCw = 1; cCh = 1; KT_CHECK(cursorEngineF(&ex, &ey, 100, 200)); KT_CHECK(ex == 500.f && ey == 1400.f);   // 1x1 client is valid
         cCx = 1; cCy = 1; cCw = 3; cCh = 3;
         at<int>(gw, 0) = 0; KT_CHECK(cursorEngineF(&ex, &ey)); KT_CHECK(ex == 1.f && ey == 1.f);                              // invalid engine: client px
+        // wheelIniScaleF: client 1000x500, engine 1920x1080, INI 2560x1440; provider engine px 960,540 = client 500,250
+        {
+            float wx = 0, wy = 0;
+            wheelIniScaleF(960.f, 540.f, 1920, 1080, 2560.f, 1440.f, &wx, &wy);
+            KT_CHECK(fabsf(wx - 1280.f) < 1e-3f && fabsf(wy - 720.f) < 1e-3f);   // client 500,250 * INI / client 1000x500
+            wheelIniScaleF(960.f, 540.f, 1920, 1080, 1920.f, 1080.f, &wx, &wy);
+            KT_CHECK(wx == 960.f && wy == 540.f);                                 // INI == engine: unchanged
+            wheelIniScaleF(960.f, 540.f, 0, 0, 2560.f, 1440.f, &wx, &wy);
+            KT_CHECK(wx == 960.f && wy == 540.f);                                 // engine size unknown: unchanged, no divide by 0
+            wheelIniScaleF(960.f, 540.f, 1920, 1080, 2560.f, 1080.f, &wx, &wy);
+            KT_CHECK(fabsf(wx - 1280.f) < 1e-3f && wy == 540.f);                 // half override (W only): y keeps engine scale
+        }
         at<int>(gw, 0) = 1600;
         cCw = 0; KT_CHECK(!cursorEngineF(&ex, &ey)); cCw = 3; cCh = 0; KT_CHECK(!cursorEngineF(&ex, &ey)); cCh = 3;
         cOk = false; KT_CHECK(!cursorEngineF(&ex, &ey)); cOk = true;

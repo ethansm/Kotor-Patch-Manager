@@ -473,6 +473,13 @@ inline int wheelAddClamped(int cur, int delta) {
 }
 // Half-open box test (left/top inclusive, right/bottom exclusive); a rect with w <= 0 or h <= 0 contains nothing.
 inline bool rectContainsF(float x, float y, int rx, int ry, int rw, int rh) { return x >= rx && x < rx + rw && y >= ry && y < ry + rh; }
+// Wheel cursor -> INI screen px. ex/ey = provider engine px in the evW x evH space (K2WheelEvent engine_x/screen_w); scaling by sw/evW
+// equals client_x * sw / clientW (provider invariant, GuiInputProvider.cpp wheelProc), so no client size is needed. evW/evH < 1 = unknown: unchanged.
+inline void wheelIniScaleF(float ex, float ey, int evW, int evH, float sw, float sh, float* x, float* y) {
+    *x = ex; *y = ey;
+    if (evW < 1 || evH < 1) return;
+    *x = ex * sw / static_cast<float>(evW); *y = ey * sh / static_cast<float>(evH);
+}
 
 struct WheelHook {
     volatile int32_t accum = 0;           // summed deltas since the last take()
@@ -584,8 +591,8 @@ inline int32_t KPATCH_CALL guikitWheelCb(const K2WheelEvent* ev, void*) {
         syncScreen(s.iniW, s.iniH, &sw, &sh);
         float ex = ev->engine_x, ey = ev->engine_y;
         if (s.iniW > 0 || s.iniH > 0) {
-            clientToEngineF(ev->client_x, ev->client_y, ev->screen_w, ev->screen_h,
-                            static_cast<float>(sw), static_cast<float>(sh), &ex, &ey);
+            wheelIniScaleF(ev->engine_x, ev->engine_y, ev->screen_w, ev->screen_h,
+                           static_cast<float>(sw), static_cast<float>(sh), &ex, &ey);
         }
         if (s.inside(ex, ey)) {
             int32_t cur = __atomic_load_n(&s.accum, __ATOMIC_RELAXED);
