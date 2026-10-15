@@ -735,6 +735,11 @@ struct Editor {
     bool modeWasOver = false; DWORD modeSince = 0;                // cursor over the target-mode button + since when
     unsigned lastKey = 0;             // updateEditor change-only enable key
     int clsSlot = -1; uint32_t clsKey = 0; bool clsHeal = false, clsSelf = false;   // classifyItem cache of the edited slot's item (per slot + item key)
+    // C062/C067: edge state that used to be function statics (process-wide, so it survived a HUD rebuild); now reset with Bar
+    std::string inLastChar = "\x01";  // edInput: character key seen last frame ("\x01" = none yet)
+    bool inLastFgOk = true;           // edInput: last foreground-window test
+    guikit::ClickEdge inClick;        // edInput: LMB edge for the editor
+    guikit::ClickEdge slotClick;      // updateHover: LMB edge for a click on a bar slot
 };
 struct Bar {
     uintptr_t panel = 0; int built = 0; Button b[ButtonCount]; Widget tipBg, tip; int tipSlot = -1; std::string tipText;
@@ -851,8 +856,8 @@ void setVisible(Button& bt, Widget& b, int slot, bool vis, const char* why) {
     if (!b.ctl) return;
     int fl = 0; FlagsRead fr = readFlags(b, &fl, chSlots, "btn flags");
     if (fr != FR_Ok) { if (fr == FR_FaultWarn) KP_LOGV(chSlots, KPLOG_WARN, "btn[%d].%s: flags unreadable, cannot set visible ctl=%p", slot, wname(b, bt), (void*)b.ctl); return; }
-    if (b.visible == (vis ? 1 : 0) && b.why == why) return;
     int nf = visFlags(fl, vis, &b == &bt.bg ? (vis ? 0 : 1) : -1);   // shown frames are hit-testable so clicks on the bar do not reach the world
+    if (b.visible == (vis ? 1 : 0) && b.why == why && nf == fl) return;   // C060: the live flags must match too, not only the cached visible
     writeFlags(b, fl, nf, false);
     KP_LOGV(chSlots, KPLOG_DEBUG, "btn[%d].%s key %c: %s -> %s (%s) flags %08x->%08x", slot, wname(b, bt), slotDigit(slot), b.visible < 0 ? "?" : (b.visible ? "shown" : "hidden"), vis ? "shown" : "hidden", why, (unsigned)fl, (unsigned)nf);
     b.visible = vis ? 1 : 0; b.why = why;
@@ -1034,7 +1039,7 @@ void updateHover(bool gate) {
         if (b.bg.ctl && b.bg.visible) setFill(b, b.bg, s, (hov || selected) ? FrameHiResref : FrameResref);
     }
     {   // left click on an available slot = same request as its digit key
-        static guikit::ClickEdge clickState;
+        guikit::ClickEdge& clickState = g_bar.ed.slotClick;   // C067: was a function static
         if (!gate) clickState.prev = false;   // as before: a press held while the HUD was inactive does not fire when it becomes active
         bool click = gate && guikit::clickEdge(clickState);   // clickEdge also requires the game window to be foreground
         if (click && over >= 0 && g_bar.ed.mode != M_Normal) KP_LOG(chInput, "click: slot %d in %s mode -> handled by the editor, not invoked", over, ModeName[g_bar.ed.mode]);
@@ -1346,19 +1351,18 @@ static bool edEnabled(uintptr_t hud, Editor& ed) {
 // Cross-block values of one updateEditor frame.
 struct EdFrame { POINT pt; bool haveCur, click, down; bool mHeal, mSelf; hb::ModeBtn mst; int oth, maxOff; };
 static void edInput(Editor& ed, bool gate, EdFrame& f) {
-    static std::string lastChar = "\x01"; static guikit::ClickEdge clickState; static bool lastFgOk = true;
     ensureWheelHook();
-    if (lastChar != g_charKey) { if (lastChar != "\x01" && ed.mode != M_Normal) setMode(M_Normal, -1, "character changed"); lastChar = g_charKey; }
+    if (ed.inLastChar != g_charKey) { if (ed.inLastChar != "\x01" && ed.mode != M_Normal) setMode(M_Normal, -1, "character changed"); ed.inLastChar = g_charKey; }
     if (!gate && ed.mode != M_Normal) setMode(M_Normal, -1, "gate closed");
     if (g_escHit) { g_escHit = false; if (ed.mode == M_Pick) setMode(M_Edit, -1, "Esc"); else if (ed.mode == M_Edit) setMode(M_Normal, -1, "Esc"); else KP_LOG(chEdit, "edit: Esc flag set in Normal mode (ignored)"); }
 
     f.pt = POINT{0, 0}; f.haveCur = gate && cursorInGame(&f.pt);
     HWND fg = GetForegroundWindow(); DWORD fgPid = 0; if (fg) GetWindowThreadProcessId(fg, &fgPid);
     bool fgOk = fg && fgPid == GetCurrentProcessId();
-    if (fgOk != lastFgOk) { KP_LOG(chEdit, "edit: foreground window %p pid=%lu ours=%d", (void*)fg, (unsigned long)fgPid, (int)fgOk); lastFgOk = fgOk; }
-    if (!gate) clickState.prev = false;
-    f.click = gate && guikit::clickEdge(clickState);   // clickEdge = LMB down AND game window foreground (same test as fgOk above)
-    f.down = clickState.prev;   // level state (gate && fg && LMB), as the old local `down`
+    if (fgOk != ed.inLastFgOk) { KP_LOG(chEdit, "edit: foreground window %p pid=%lu ours=%d", (void*)fg, (unsigned long)fgPid, (int)fgOk); ed.inLastFgOk = fgOk; }
+    if (!gate) ed.inClick.prev = false;
+    f.click = gate && guikit::clickEdge(ed.inClick);   // clickEdge = LMB down AND game window foreground (same test as fgOk above)
+    f.down = ed.inClick.prev;   // level state (gate && fg && LMB), as the old local `down`
 }
 
 static void edVisibility(Editor& ed, bool gate, EdFrame& f) {

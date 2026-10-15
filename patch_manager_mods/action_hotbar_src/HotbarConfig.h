@@ -222,13 +222,14 @@ inline std::string RawLineText(const RawLine& e) {
     return o + "\n";
 }
 // An unknown [section] (neither [General] nor [Profile.*]) and its key lines, kept verbatim across Save.
-struct RawSection { std::string name; std::vector<RawLine> lines; };
+struct RawSection { std::string name; std::vector<RawLine> lines; std::vector<std::string> comments; };   // comments: free lines in the section (C061)
 
 struct Profile {
     std::string name;
     ActionRef slots[Rows][Slots];
     std::string notes[Rows][Slots];   // trailing "; comment" per slot, preserved across Save
     std::vector<RawLine> extra;       // unknown keys in this profile, preserved across Save (C049)
+    std::vector<std::string> comments;   // free ';' / '#' lines inside [Profile.<name>], kept verbatim across Save (C061)
 };
 
 // Picking an action already on the bar MOVES it: every other slot holding `a` becomes explicit "none" (note "moved"),
@@ -254,6 +255,7 @@ struct General {
     int healFallbackSelf = 1;     // when nobody is below the threshold: 1 = use on self, 0 = do nothing
     int syncActionBar = 1;        // 1 = resync the vanilla action bar (stance/form icons) after an AI stance or form change, 0 = off
     std::map<std::string, std::string> extra;  // unknown [General] keys, preserved
+    std::vector<std::string> comments;         // free ';' / '#' lines inside [General], kept verbatim across Save (C061)
 };
 
 // Slot override wins; -1 (unset) defers to [General].
@@ -264,7 +266,25 @@ struct Config {
     General general;
     std::map<std::string, Profile> profiles;   // key = lowercase profile name
     std::vector<RawSection> unknownSections;   // unknown [sections] in file order, kept verbatim (C049)
+    std::vector<std::string> headComments;     // free comment lines above [General], minus the generated header (C061)
     std::vector<std::string> warnings;
+
+    // The comment block Save writes at the top of every file. Parse drops these exact lines so they are not duplicated on Save.
+    static std::string generatedHeader() {
+        std::string o = "; Action Hotbar. Slots: Bottom1..Bottom9, Bottom0 = the on-screen slots for keys 1..9, 0.\n"
+                        "; Values: spell:<spells.2da row>  feat:<row>  item:<item name>  other:<hex>  none (explicitly empty)  (missing/empty = unbound, AutoFill may fill it)\n"
+                        "; [General] Invoke=1 use the action (0 = log only)  Verbose=1 detailed log  AutoFill=1 fill unbound slots with known powers\n"
+                        "; Item value suffix @lowhp[:<pct>[:self|none]] = use on the party member with the lowest HP% (below pct, default HealThreshold; else self or none, default HealFallback)\n"
+                        "; Item value suffix @self = always use the item on the controlled character, whatever is targeted\n"
+                        "; [General] HealThreshold=1..100 (default 50)  HealFallback=self|none (default self)\n"
+                        "; [General] SyncActionBar=0|1 (default 1) resync the vanilla action bar (stance/form icons) after an AI stance or form change\n"
+                        "; [General] TargetProbe=0|1|2 (default 2) item target modes: 0 off, 1 log the decision only, 2 live\n"
+                        "; [General] SchemaVersion=<n> is written by the mod and ignored on load\n"
+                        "; KeyboardDevice=<n> overrides the engine's DirectInput keyboard index (omit = automatic)\n"
+                        "; Profiles belong to the loaded save: saving copies this file into the save folder, loading a save restores its copy (none = empty bar).\n";
+        return o;
+    }
+    static bool isGeneratedHeaderLine(const std::string& c) { return ("\n" + generatedHeader()).find("\n" + c + "\n") != std::string::npos; }
 
     Profile& profile(const std::string& name) {
         Profile& p = profiles[lower(name)];
@@ -319,11 +339,19 @@ struct Config {
             pos = (e == std::string::npos) ? text.size() + 1 : e + 1;
             if (e != std::string::npos && text[e] == '\r' && pos < text.size() && text[pos] == '\n') ++pos;
             ++lineNo;
+            std::string whole = trim(line);
+            if (!whole.empty() && (whole[0] == ';' || whole[0] == '#')) {   // C061: a free comment line, kept verbatim in the section it sits in
+                if (inGeneral) general.comments.push_back(whole);
+                else if (cur) cur->comments.push_back(whole);
+                else if (curRaw) curRaw->comments.push_back(whole);
+                else if (!isGeneratedHeaderLine(whole)) headComments.push_back(whole);   // above [General]: the generated header is regenerated, not kept
+                continue;
+            }
             std::string note;
             size_t sc = line.find(';');
             if (sc != std::string::npos) { note = trim(line.substr(sc + 1)); line = line.substr(0, sc); }
             line = trim(line);
-            if (line.empty() || line[0] == '#') continue;
+            if (line.empty()) continue;   // comment-only lines were taken above (C061)
             char msg[200];   // every %s below is clipped (%.Ns) so the line number and key always survive
             if (line[0] == '[') {
                 size_t rb = line.find(']');
@@ -331,7 +359,7 @@ struct Config {
                 section = trim(line.substr(1, rb - 1)); inGeneral = false; cur = nullptr; curRaw = nullptr;
                 if (lower(section) == "general") inGeneral = true;
                 else if (lower(section).compare(0, 8, "profile.") == 0 && section.size() > 8) cur = &profile(trim(section.substr(8)));   // HB15: "[Profile. Bob ]" is profile "Bob"
-                else { unknownSections.push_back(RawSection{section, {}}); curRaw = &unknownSections.back(); }   // C049: kept verbatim, no warning (a warning would refuse every Save)
+                else { unknownSections.push_back(RawSection{section, {}, {}}); curRaw = &unknownSections.back(); }   // C049: kept verbatim, no warning (a warning would refuse every Save)
                 continue;
             }
             size_t eq = line.find('=');
@@ -383,19 +411,11 @@ struct Config {
 
     // Canonical text: General, Default first, then the other profiles in name order.
     std::string Serialize() const {
-        std::string o = "; Action Hotbar. Slots: Bottom1..Bottom9, Bottom0 = the on-screen slots for keys 1..9, 0.\n"
-                        "; Values: spell:<spells.2da row>  feat:<row>  item:<item name>  other:<hex>  none (explicitly empty)  (missing/empty = unbound, AutoFill may fill it)\n"
-                        "; [General] Invoke=1 use the action (0 = log only)  Verbose=1 detailed log  AutoFill=1 fill unbound slots with known powers\n"
-                        "; Item value suffix @lowhp[:<pct>[:self|none]] = use on the party member with the lowest HP% (below pct, default HealThreshold; else self or none, default HealFallback)\n"
-                        "; Item value suffix @self = always use the item on the controlled character, whatever is targeted\n"
-                        "; [General] HealThreshold=1..100 (default 50)  HealFallback=self|none (default self)\n"
-                        "; [General] SyncActionBar=0|1 (default 1) resync the vanilla action bar (stance/form icons) after an AI stance or form change\n"
-                        "; [General] TargetProbe=0|1|2 (default 2) item target modes: 0 off, 1 log the decision only, 2 live\n"
-                        "; [General] SchemaVersion=<n> is written by the mod and ignored on load\n"
-                        "; KeyboardDevice=<n> overrides the engine's DirectInput keyboard index (omit = automatic)\n"
-                        "; Profiles belong to the loaded save: saving copies this file into the save folder, loading a save restores its copy (none = empty bar).\n";
+        std::string o = generatedHeader();
+        for (auto& c : headComments) o += c + "\n";
         char b[64];
         o += "[General]\n";
+        for (auto& c : general.comments) o += c + "\n";
         snprintf(b, sizeof b, "SchemaVersion=%d\n", SchemaVersion); o += b;
         snprintf(b, sizeof b, "Invoke=%d\n", general.invoke); o += b;
         snprintf(b, sizeof b, "Verbose=%d\n", general.verbose); o += b;
@@ -407,6 +427,7 @@ struct Config {
         for (auto& kv : general.extra) o += kv.first + "=" + kv.second + "\n";
         auto emit = [&](const Profile& p) {
             o += "\n[Profile." + p.name + "]\n";
+            for (auto& c : p.comments) o += c + "\n";   // C061
             for (int r = 0; r < Rows; ++r) for (int s = 0; s < Slots; ++s) {
                 if (p.slots[r][s].empty() && !p.slots[r][s].blank) continue;
                 o += SlotKeyName(r, s) + "=" + Format(p.slots[r][s]);
@@ -419,6 +440,7 @@ struct Config {
         for (auto& kv : profiles) if (kv.first != "default") emit(kv.second);
         for (auto& sec : unknownSections) {   // C049: unknown sections last, in file order
             o += "\n[" + sec.name + "]\n";
+            for (auto& c : sec.comments) o += c + "\n";   // C061
             for (auto& e : sec.lines) o += RawLineText(e);
         }
         return o;

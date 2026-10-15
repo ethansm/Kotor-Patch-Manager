@@ -16,6 +16,7 @@ Action Hotbar (id `action-hotbar`), formerly Force Power Hotbar.
 - Internal: pure logic moved to `HotbarLogic.h` (HP5), named constants and cleanup (HP6), more tests.
 - WI-10: Force Power Hotbar polish and config round-trip.
 - WI-10b: Force Power Hotbar EKC hook move and arrow art (split from WI-10).
+- WI-11: Force Power Hotbar config and statics.
 
 ## 1.2.2-dev (2026-10-05)
 

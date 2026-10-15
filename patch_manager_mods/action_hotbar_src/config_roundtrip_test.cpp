@@ -47,6 +47,24 @@ int main(){
     KT_CHECK(u.Save(up));
     Config w; KT_CHECK(w.Load(up)); KT_CHECK(w.warnings.empty()); KT_CHECK(w.Serialize()==us);
     remove(up.c_str()); }
+  { // C061/C066: free comment lines (whole-line ';' or '#') survive Parse -> Serialize -> Save -> Load in the section they sit in; the generated header is not duplicated
+    auto countOf=[](const std::string& h,const std::string& n){ size_t c=0,p=0; while((p=h.find(n,p))!=std::string::npos){ ++c; p+=n.size(); } return c; };
+    Config f; f.Parse("; my own header note\n# second note\n[General]\n; general note\nInvoke=1\n[Profile.Bob]\n; bob note\nBottom1=spell:8 ; kept note\n[Custom Section]\n; section note\nA=1\n");
+    KT_CHECK(f.warnings.empty());
+    std::string fs=f.Serialize();
+    KT_CHECK(fs.find("; my own header note\n# second note\n[General]\n; general note\n")!=std::string::npos);
+    KT_CHECK(fs.find("\n[Profile.Bob]\n; bob note\nBottom1=spell:8   ; kept note\n")!=std::string::npos);
+    KT_CHECK(fs.find("\n[Custom Section]\n; section note\nA=1\n")!=std::string::npos);
+    KT_CHECK_EQ(countOf(fs,"Action Hotbar. Slots"),1);   // the generated header is regenerated, never copied
+    Config g; g.Parse(fs); KT_CHECK(g.warnings.empty()); KT_CHECK(g.headComments.size()==2); KT_CHECK(g.Serialize()==fs);
+    std::string cp=td.file("comment_rt.ini");
+    KT_CHECK(f.Save(cp));
+    Config h; KT_CHECK(h.Load(cp)); KT_CHECK(h.Serialize()==fs);
+    remove(cp.c_str());
+    Config e; e.profile("Default"); std::string es=e.Serialize();   // a fresh file: Parse drops the generated header, so nothing is kept above [General]
+    Config e2; e2.Parse(es); KT_CHECK(e2.headComments.empty()); KT_CHECK(e2.Serialize()==es);
+    KT_CHECK(Config::isGeneratedHeaderLine("; Action Hotbar. Slots: Bottom1..Bottom9, Bottom0 = the on-screen slots for keys 1..9, 0."));
+    KT_CHECK(!Config::isGeneratedHeaderLine("; my own header note")); }
   KT_CHECK_EQ(StackCount(0x40000272,"Medpac (7)"),7);
   KT_CHECK_EQ(StackCount(0x40000273,"Repair Kit (19)"),19);
   KT_CHECK_EQ(StackCount(0x40000272,"Medpac"),0);
