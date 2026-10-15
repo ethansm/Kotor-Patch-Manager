@@ -227,18 +227,23 @@ extern "C" void __cdecl HolsterAnimSend(void* creature, uint32_t animId) {
     KP_LOG(chAnim, "ANIMSEND creature=%x id=%x tick=%lu", U(creature), static_cast<unsigned>(animId & 0xFFFFu), static_cast<unsigned long>(GetTickCount()));
 }
 
-// 0x005047B0 Gob update handler (UpdateDependentPosition). ECX = Gob. Runs per Gob per frame: count every call, log the first 24 and
-// then every gob_every-th. Logs the child local transform the handler re-copies (+0xA4 vec3, +0xB0 quat) and the first dwords (G1/G2).
-extern "C" void __cdecl HolsterGobUpdate(void* gob) {
+// 0x005047B0 behavior update handler (UpdateDependentPosition). C1 recon (.claude/research/holster_c1_postcopy.md): ECX is the CAurBehaviorAttach
+// object, NOT the Gob. Child Gob = [this+0x10], attach node N = [this+0x18], name-lookup parent = [this+0x14]. The handler calls
+// N->vtbl[+0xC](gob+0xA4, gob+0xB0), which re-copies the node transform into the child. Runs per delivered event: count every call, log the
+// first 24 and then every gob_every-th. Logs the child local transform (+0xA4 vec3, +0xB0 quat w-first) of the real Gob.
+extern "C" void __cdecl HolsterGobUpdate(void* beh) {
     if (!g_onGob) return;
     const LONG n = InterlockedIncrement(&g_gobCalls);
     if (n > 24 && (n % g_gobEvery) != 0) return;
     saferead::beginScope();
     if (!KP_ENABLED(chGob, KPLOG_INFO) || !takeLine()) return;
-    const uintptr_t g = reinterpret_cast<uintptr_t>(gob);
-    KP_LOG(chGob, "GOB n=%ld gob=%x parent18=%x pos=(%.3f,%.3f,%.3f) quat=(%.3f,%.3f,%.3f,%.3f)", static_cast<long>(n), U(gob),
-           static_cast<unsigned>(rdU32(kSiteGob, g, 0x18)), rdF(kSiteGob, g, 0xA4), rdF(kSiteGob, g, 0xA8), rdF(kSiteGob, g, 0xAC),
-           rdF(kSiteGob, g, 0xB0), rdF(kSiteGob, g, 0xB4), rdF(kSiteGob, g, 0xB8), rdF(kSiteGob, g, 0xBC));
+    const uintptr_t b = reinterpret_cast<uintptr_t>(beh);
+    const uintptr_t g = static_cast<uintptr_t>(rdU32(kSiteGob, b, 0x10));
+    KP_LOG(chGob, "GOB n=%ld gob=%x parent18=%x pos=(%.3f,%.3f,%.3f) quat=(%.3f,%.3f,%.3f,%.3f) beh=%x par14=%x node=%x", static_cast<long>(n),
+           static_cast<unsigned>(g), static_cast<unsigned>(g ? rdU32(kSiteGob, g, 0x18) : 0u), g ? rdF(kSiteGob, g, 0xA4) : 0.f,
+           g ? rdF(kSiteGob, g, 0xA8) : 0.f, g ? rdF(kSiteGob, g, 0xAC) : 0.f, g ? rdF(kSiteGob, g, 0xB0) : 0.f, g ? rdF(kSiteGob, g, 0xB4) : 0.f,
+           g ? rdF(kSiteGob, g, 0xB8) : 0.f, g ? rdF(kSiteGob, g, 0xBC) : 0.f, U(beh), static_cast<unsigned>(rdU32(kSiteGob, b, 0x14)),
+           static_cast<unsigned>(rdU32(kSiteGob, b, 0x18)));
 }
 
 // bone_test: repoint the rhand (and with bone_test_left the lhand) attach-node literal at g_boneName. Default OFF.
