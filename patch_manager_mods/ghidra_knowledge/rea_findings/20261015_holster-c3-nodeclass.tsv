@@ -1,0 +1,31 @@
+addr	kind	name	confidence	evidence	topic	date
+0x005047b0	function	FUN_005047b0 CAurBehaviorAttach update handler (vtbl 0x9918d8 +0x20): copies N pose to P, re-sends event to P	confirmed	procedure_pseudo_code 0x5047B0: (**(code **)(**(int **)(in_ECX + 0x18) + 0xc))(piVar1 + 0x29,piVar1 + 0x2c);	holster-C3 sha7751f7d8	2026-10-15
+0x004587f0	function	FUN_004587f0 Gob::FindPart(name): thiscall ECX=Gob, RET 0x4, root = [Gob+0x98]	confirmed	procedure_assembly 0x4587F0: 0x458830: RET 0x4	holster-C3 sha7751f7d8	2026-10-15
+0x00456b00	function	FUN_00456b00 recursive node search cdecl(node,name): stricmp of node name, recurses over children	confirmed	procedure_pseudo_code 0x456B00: iVar1 = __stricmp(_Str1,_Str2);	holster-C3 sha7751f7d8	2026-10-15
+0x0044b350	function	FUN_0044b350 node-name getter: returns char* table[H.index], H = [node+0x04]	confirmed	procedure_pseudo_code 0x44B350: iVar1 = *(int *)(in_ECX + 4);	holster-C3 sha7751f7d8	2026-10-15
+0x0044b350	field	NameHandle H+0x04 = index, H+0x08 = owner object; table = *(owner+0xB8) if type 2, else *(*(owner+0x84)+0xB8) if type 5	confirmed	procedure_pseudo_code 0x44B350: local_1c = *(undefined4 *)(*(int *)(*(int *)(iVar2 + 0x84) + 0xb8) + iVar1 * 4);	holster-C3 sha7751f7d8	2026-10-15
+0x00451e20	function	FUN_00451e20 object type getter: byte [obj+0x4C] & 0x7F	confirmed	procedure_pseudo_code 0x451E20: return *(byte *)(in_ECX + 0x4c) & 0x7f;	holster-C3 sha7751f7d8	2026-10-15
+0x00452830	function	FUN_00452830 type cast: returns obj if type == 2, else 0	confirmed	procedure_pseudo_code 0x452830: return ~-(uint)(cVar1 != '\x02') & in_ECX;	holster-C3 sha7751f7d8	2026-10-15
+0x00452860	function	FUN_00452860 type cast: returns obj if type == 5, else 0	confirmed	procedure_pseudo_code 0x452860: return ~-(uint)(cVar1 != '\x05') & in_ECX;	holster-C3 sha7751f7d8	2026-10-15
+0x00457510	function	FUN_00457510 Part world pose(vec3,quat): parent chain via +0x3C then owner Gob pose +0xA4/+0xB0/+0x1E0 when +0x40 nonzero	confirmed	procedure_pseudo_code 0x457510: local_c = *(int *)(in_ECX + 0x40);	holster-C3 sha7751f7d8	2026-10-15
+0x00456d00	function	FUN_00456d00 Part ctor: final vtable Part::vftable; sets +0x14=1.0, +0x24=1.0, zeroes +0x3C and +0x40	confirmed	procedure_pseudo_code 0x456D00: *in_ECX = Part::vftable;	holster-C3 sha7751f7d8	2026-10-15
+0x00456d00	field	Part+0x04 name handle H (ctor param_1)	confirmed	procedure_pseudo_code 0x456D00: in_ECX[1] = param_1;	holster-C3 sha7751f7d8	2026-10-15
+0x00456d00	field	Part+0x40 owner Gob pointer (zeroed by ctor; read as Gob by FUN_00457510)	confirmed	procedure_pseudo_code 0x456D00: in_ECX[0x10] = 0;	holster-C3 sha7751f7d8	2026-10-15
+0x00456d00	field	Part+0x3C parent node pointer (zeroed by ctor; chain walk in FUN_00457510)	confirmed	procedure_pseudo_code 0x456D00: in_ECX[0xf] = 0;	holster-C3 sha7751f7d8	2026-10-15
+0x0098b36c	vtable	Part::vftable; slot+0xC = FUN_00457510	confirmed	read_bytes 0x98B378: bytes 10754500 (0x00457510); find_xrefs_to_name Part::vftable -> 0x98b36c	holster-C3 sha7751f7d8	2026-10-15
+0x0098b414	vtable	PartTriMesh::vftable; slot+0xC = FUN_00457510	confirmed	read_bytes 0x98B420: bytes_hex 10754500	holster-C3 sha7751f7d8	2026-10-15
+0x0098b08c	vtable	PartSkin::vftable; slot+0xC = FUN_00457510	confirmed	read_bytes 0x98B098: bytes_hex 10754500	holster-C3 sha7751f7d8	2026-10-15
+0x0098b22c	vtable	PartAnimMesh::vftable; slot+0xC = FUN_00457510	confirmed	read_bytes 0x98B238: bytes_hex 10754500	holster-C3 sha7751f7d8	2026-10-15
+0x0098afec	vtable	PartDanglyMesh::vftable; slot+0xC = FUN_00457510	confirmed	read_bytes 0x98AFF8: bytes_hex 10754500	holster-C3 sha7751f7d8	2026-10-15
+0x0098b544	vtable	PartLight::vftable; slot+0xC = FUN_00457510	confirmed	read_bytes 0x98B550: bytes_hex 10754500	holster-C3 sha7751f7d8	2026-10-15
+0x0098b3ec	vtable	CAurPart::vftable; slot+0xC = __purecall (abstract base)	confirmed	read_bytes 0x98B3F8: bytes_hex d1d39100 (0x0091d3d1 __purecall)	holster-C3 sha7751f7d8	2026-10-15
+0x0098b3ec	vtable	CAurPart concrete instance as node N class	refuted	read_bytes 0x98B3F8: d1d39100 -> 0x0091d3d1; procedure_pseudo_code 0x91D3D1: void __purecall(void)	holster-C3 sha7751f7d8	2026-10-15
+0x0091d3d1	function	__purecall (CAurPart vtbl+0xC)	confirmed	procedure_pseudo_code 0x91D3D1: void __purecall(void)	holster-C3 sha7751f7d8	2026-10-15
+0x004dd260	function	FUN_004dd260 Gob event dispatcher (vtbl+0x1B4): walks listeners Gob+0x1BC/+0x1C0, calls rec+0x20(Gob,name,rec+0x24)	confirmed	procedure_pseudo_code 0x4DD260: (**(code **)(_Str1 + 0x20))(in_ECX,param_1,local_24);	holster-C3 sha7751f7d8	2026-10-15
+0x0098b5cc	vtable	Gob::vftable; +0x10C = FindPart 0x4587f0, +0x1B4 = dispatcher 0x4dd260	confirmed	find_xrefs_to_name Gob::vftable -> 0x98b5cc; read_bytes 0x98B780: 60d24d00	holster-C3 sha7751f7d8	2026-10-15
+0x005045e0	function	FUN_005045e0 listener callback: stricmp(name,"UpdateDependentPosition") then behavior vtbl+0x20()	confirmed	procedure_pseudo_code 0x5045E0: iVar1 = __stricmp(param_2,"UpdateDependentPosition");	holster-C3 sha7751f7d8	2026-10-15
+0x00504810	function	FUN_00504810 CAurBehaviorAttach ctor: registers 0x5045E0 on parent [this+0x14] via parent vtbl+0x28	confirmed	procedure_pseudo_code 0x504810: (FUN_005045e0,"UpdateDependentPosition",in_ECX,0x461c3c00,0);	holster-C3 sha7751f7d8	2026-10-15
+0x009918b8	string	"UpdateDependentPosition" (one literal copy; 4 xrefs)	confirmed	search_strings: {"address":"0x9918b8","value":"UpdateDependentPosition"}	holster-C3 sha7751f7d8	2026-10-15
+0x005047f6	callsite	child re-send of UpdateDependentPosition inside FUN_005047b0 (P->vtbl+0x1B4)	confirmed	xrefs 0x9918B8 -> ["0x5045ea","0x5047f6","0x504937","0x504a1c"]	holster-C3 sha7751f7d8	2026-10-15
+0x00504937	callsite	ctor 0x504810 sends UpdateDependentPosition to child P at attach	confirmed	xrefs 0x9918B8 -> ["0x5045ea","0x5047f6","0x504937","0x504a1c"]	holster-C3 sha7751f7d8	2026-10-15
+0x004616c4	callsite	attach FUN_00461670 calls FindPart via CALL EDX; next insn MOV [EBP-0x14],EAX (no caller cleanup)	confirmed	inspect_native_instruction 0x4616C4: "raw_disassembly":"CALL EDX"	holster-C3 sha7751f7d8	2026-10-15
