@@ -74,3 +74,11 @@ CONFIRMED: X-T01 (GuiKit.h:122-126), CO-T04 (CompanionAI.cpp:589), PL-T12 (persi
 - The RECON contract line "write only your OUTPUT file" conflicted with the brief's reply.txt. Batch 1 units u004/u005 skipped the reply, and Opus wrote it from the notification. From batch 2 on, the launch prompt said both files are in scope.
 - Cost: 7 Sonnet triage + 100 Haiku recon = $3.71 (`agent_usage.py --since 2026-10-14T22:53`). Haiku about $0.013 per unit.
 - Pipeline scripts: `tools/` (merge_triage, dedupe, add_units, aggregate, triage_rules, an example brief).
+
+## G2 result (verify, validate, persist; 2026-10-14/15, plan `.claude/plans/gemini_review_g2.md`)
+- **G2.1** `reanchor.tsv`: 135/135 classified at HEAD f427b92 (124 none, 10 noanchor, 1 moved, 0 gone; 2 queue-hud rows with changed evidence lines).
+- **G2.2** `verdicts_v2.tsv`: 96 PARTIAL/UNSURE widened by 8 Sonnet resolvers (`g2/*.widen.tsv`) into 63 `det` commands (`g2/det.tsv`, outputs `g2/det_out/`, judged by 2 Haiku in `g2/det_judged.*.tsv`), 43 Haiku `gem2` units (`g2/gem2/`), 7 engine questions to rea-recon (`g2/re.md`, 1 answered: CO-2c-06 REFUTED, checked on disk).
+- **G2.3** `validated.tsv` (single source): 9 Sonnet skeptics over the 120 non-refuted fids (`g2/*.validate.tsv`), Opus gate `g2/gate.md`.
+  **real 61 (0 high, 13 med), latent 49, refuted 21, unsure 4.** No crash/corruption defect survived. The P1 memory-safety claims (wr write-probe, writeChecked, TwoDA wrap, readAt wrap) are real in code but unreachable today.
+- **G2.4** persisted: doc 37 **BG26–BG41** (4 medium, 12 low; commit 6e8af73), work items **WI-73–WI-101** (origin `gemini-20261014`: 16 BG, 11 test/tooling clusters, 1 latent hardening, 1 verify-only), false-positive ledger `refuted.md`, scorecard `scorecard.md`.
+- **Scorecard headline:** 45% of findings real, 81% real-or-latent, 16% refuted; anchors 93% exact/partial hits. Gemini claimed 39 high: 12 real, 0 high after validation. Memory-safety: 2 real, 17 latent, 2 refuted. Precision by stated confidence: certain 50% real, likely 13% real.
