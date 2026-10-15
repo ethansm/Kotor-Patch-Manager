@@ -18,7 +18,7 @@ Statuses come from this doc's own status blocks, the git log of `equipment_3d_ch
 | EQ9 | Track P gui-input adoption; creature destroy on character change, anim fallback, screen sync | BUILT | 7aeb296 22b56b4 | 7aeb296 and 22b56b4 equip files (EquipCharPreview.cpp, manifest) in live build: KPM copy (10-08 23:16) matches HEAD; kpatch built 10-09 10:07; kpm_status LIVE. Play test not recorded |
 | EQ10 | Phase 2: holstered / combat-stance toggle | TODO | | Research gate first (SESSION 4 remaining plan) |
 | EQ11 | Per-weapon extras: saber blade/effects, forms g2r2..g2r7 | TODO | | Untested (STATUS BLOCK Open/next) |
-| EQ12 | Phase 3 / Track M: mirror the CHARACTER page | DONE | 4ce7330 | Superseded: thirds layout is final (user 2026-10-13). Deployed by Mod 14 Phase 2 (mirror_character_page.py), approved 2026-10-01. 3D is in the middle third, not the right; no re-layout. |
+| EQ12 | Phase 3 / Track M: mirror the CHARACTER page | DONE | pending | WI-04 verified |
 | EQ13 | Doc 19/19b shared state and code: registry A-ids, Common B-ids, kplog.ini | PARTIAL | d2fd8cc | Doc 19 Phases 0-1 done 10-02 (Phase 1 not live); MG4 landed part; rest unverified |
 | EQ14 | Finalise doc, DB, memory; FINAL independent Opus review (user-required, run last) | TODO | | After EQ10-EQ13 |
 
