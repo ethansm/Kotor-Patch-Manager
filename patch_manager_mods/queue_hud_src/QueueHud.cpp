@@ -215,7 +215,8 @@ struct Snapshot {
     uintptr_t creature = 0, round = 0;
     int aa8 = 0, ab8 = 0;
     qh::QEntry e[qh::kMaxEntries]; uintptr_t eData[qh::kMaxEntries]; int ne = 0;
-    int engineNe = 0;
+    int engineNe = 0;   // raw entry count: logs and the loops over e[]
+    int gateNe = 0;     // QH-2a-02: what the dispatch gates see (qh::gateEngineCount)
     int nBuffered = 0;
     qh::RNode rn[qh::kMaxRound]; int nrn = 0;
     qh::RNode cur; bool haveCur = false;
@@ -238,6 +239,11 @@ bool gatherFor(uintptr_t cr, Snapshot& s) {
     s.ne = a.ne;
     for (int i = 0; i < a.ne; ++i) { s.e[i].type = a.e[i].type; s.e[i].param0 = a.e[i].param0; s.eData[i] = a.eData[i]; }
     s.nrn = a.nrn;
+    {
+        int gateTypes[qh::kMaxEntries];
+        for (int i = 0; i < a.ne; ++i) gateTypes[i] = s.e[i].type;
+        s.gateNe = qh::gateEngineCount(gateTypes, a.ne, a.nrn);
+    }
     for (int i = 0; i < a.nrn; ++i) s.rn[i] = toQh(a.rn[i]);
     s.haveCur = a.haveCur;
     s.aa8 = a.aa8; s.ab8 = a.ab8;
@@ -771,14 +777,16 @@ void KPATCH_CALL onHudDraw(const K2PsContext* ctx, void*) {
 
 // ---- Cancel click (FRAME_BEGIN: the UI tick, outside the draw batch) ----
 // Queue entries of party member k (0 leader, 1-2 companions), -1 when the creature is unreadable.
-// *haveCur (optional) gets the round-node flag from the same snapshot.
-int queueCountOf(int k, bool* haveCur = nullptr) {
+// *haveCur (optional) gets the round-node flag from the same snapshot. *gateNe (optional) gets the dispatch-gate count (-1 unreadable);
+// the return value stays the raw count (logs).
+int queueCountOf(int k, bool* haveCur = nullptr, int* gateNe = nullptr) {
     party::Fail why = party::F_None;
     const uintptr_t tbl = party::table(&why);
     const uintptr_t m = tbl ? party::member(tbl, k) : 0;
     Snapshot s;
     const bool ok = gatherFor(m ? party::serverCreature(m) : 0, s);
     if (haveCur) *haveCur = ok && s.haveCur;
+    if (gateNe) *gateNe = ok ? s.gateNe : -1;
     return ok ? s.engineNe : -1;
 }
 
@@ -1476,8 +1484,8 @@ void tickItemQueues(DWORD now, bool inMenu) {
             }
         }
 
-        // 3. Sequential dispatch of next buffered action (idle gate: engineNe == 0 && !haveCur && nrn == 0)
-        qh::DispatchWhy dsWhy = qh::dispatchWhy(buf, s.engineNe, creal, s.nrn);
+        // 3. Sequential dispatch of next buffered action (idle gate: gateNe == 0 && !haveCur && nrn == 0; gateNe skips a resting 0x3D)
+        qh::DispatchWhy dsWhy = qh::dispatchWhy(buf, s.gateNe, creal, s.nrn);
         bool flagCapped = false;
         if (dsWhy == qh::DS_OK && g_cfg.dispatchWaitFlags) {
             const bool flagsBusy = !s.paused && (s.aa8 != 0 || s.ab8 != 0);
@@ -1499,7 +1507,7 @@ void tickItemQueues(DWORD now, bool inMenu) {
         } else {
             g_prevDsWhy[k] = -1;
         }
-        if (dsWhy == qh::DS_OK && qh::shouldDispatchNext(buf, s.engineNe, creal, s.nrn)) {
+        if (dsWhy == qh::DS_OK && qh::shouldDispatchNext(buf, s.gateNe, creal, s.nrn)) {
             qh::QueuedAction nextA;
             if (buf.pop(&nextA)) {
                 if (!saferead::probeRead(SiteQueue, reinterpret_cast<const void*>(nextA.creature), 4)) {
@@ -1868,10 +1876,11 @@ int __cdecl QueueHudPerformUseItem(int clientCreature, int ebp) {
     const bool fb = false;
 
     bool haveCur = false;
-    const int engineQ = queueCountOf(memberK, &haveCur);
+    int gateQ = -1;
+    const int engineQ = queueCountOf(memberK, &haveCur, &gateQ);
     const int engqLog = engineQ < 0 ? -1 : engineQ;
     const int bufBefore = g_itemQueue[memberK].count;
-    const qh::ActionDecision dec = qh::decideAction(g_itemQueue[memberK], g_combat != 0, engineQ > 0 ? engineQ : 0, haveCur);
+    const qh::ActionDecision dec = qh::decideAction(g_itemQueue[memberK], g_combat != 0, gateQ > 0 ? gateQ : 0, haveCur);
 
     if (dec == qh::DECIDE_DISPATCH_NOW) {
         g_itemQueue[memberK].userCancelled = false;
@@ -1966,10 +1975,11 @@ int __cdecl QueueHudPerformCastSpell(int clientCreature, int ebp) {
     const bool fb = false;
 
     bool haveCur = false;
-    const int engineQ = queueCountOf(memberK, &haveCur);
+    int gateQ = -1;
+    const int engineQ = queueCountOf(memberK, &haveCur, &gateQ);
     const int engqLog = engineQ < 0 ? -1 : engineQ;
     const int bufBefore = g_itemQueue[memberK].count;
-    const qh::ActionDecision dec = qh::decideAction(g_itemQueue[memberK], g_combat != 0, engineQ > 0 ? engineQ : 0, haveCur);
+    const qh::ActionDecision dec = qh::decideAction(g_itemQueue[memberK], g_combat != 0, gateQ > 0 ? gateQ : 0, haveCur);
 
     if (dec == qh::DECIDE_DISPATCH_NOW) {
         g_itemQueue[memberK].userCancelled = false;

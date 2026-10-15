@@ -719,6 +719,20 @@ enum ActionDecision : int {
 // A caster the party table does not list (scripted NPC, cutscene, unreadable table) is not ours to buffer: pass it to the engine.
 inline bool isPartyCaster(int memberK) { return memberK >= 0 && memberK < 3; }
 
+// QH-2a-02 / WI-74: entry count for the dispatch gates (decideAction / dispatchWhy / shouldDispatchNext). With no round nodes a
+// follower's permanent resting FollowLeader (0x3D, ActQueue.h T_FOLLOW_LEADER) and a bare 0x3F are skipped, so a companion at rest
+// reads 0 instead of a permanent engine_busy. With round nodes every entry counts, as before: decideAction has no nrn input, so
+// skipping 0x3D there could dispatch into a running round. null types (unreadable) = the raw count.
+inline int gateEngineCount(const int* entryTypes, int ne, int nrn) {
+    if (entryTypes == nullptr || nrn != 0) return ne;
+    int n = 0;
+    for (int i = 0; i < ne; ++i) {
+        const int t = entryTypes[i];
+        if (t != 0x3D && t != 0x3F) ++n;
+    }
+    return n;
+}
+
 // haveCur: the round node is still running (3000 ms); an immediate dispatch then wipes it, so buffer instead (FIFO gate).
 inline ActionDecision decideAction(const ActionBuffer& buf, bool inCombat, int engineQueueLen, bool haveCur = false) {
     if (inCombat) return DECIDE_DISPATCH_NOW;

@@ -2079,6 +2079,40 @@ void testMakeEngineView() {
     KT_CHECK(!ap.executing && ap.idle);
 }
 
+// ---- QH-2a-02 / WI-74: a companion's resting FollowLeader (0x3D) must not hold the dispatch gates shut ----
+void testGateEngineCount() {
+    const int rest[] = { 0x3D };
+    const int restBare[] = { 0x3D, 0x3F };
+    const int restExec[] = { 0x3D, 0x2E };
+    const int restOther[] = { 0x3D, 0x0C };
+    // the count itself
+    KT_CHECK_EQ(gateEngineCount(rest, 1, 0), 0);
+    KT_CHECK_EQ(gateEngineCount(restBare, 2, 0), 0);      // bare 0x3F (no round node) rests too
+    KT_CHECK_EQ(gateEngineCount(restBare, 2, 1), 2);      // 0x3F beside a round node still blocks
+    KT_CHECK_EQ(gateEngineCount(rest, 1, 1), 1);          // round nodes pending: raw count, as before
+    KT_CHECK_EQ(gateEngineCount(restExec, 2, 0), 1);      // an exec node behind the follower still blocks
+    KT_CHECK_EQ(gateEngineCount(restOther, 2, 0), 1);     // a foreign entry blocks
+    KT_CHECK_EQ(gateEngineCount(rest, 0, 0), 0);          // zero entries
+    KT_CHECK_EQ(gateEngineCount(nullptr, 3, 0), 3);       // unreadable types: the raw count
+    // decideAction: a resting companion dispatches now; the raw count (BASE) buffered it forever
+    ActionBuffer idle;
+    KT_CHECK_EQ((int)decideAction(idle, false, gateEngineCount(rest, 1, 0)), (int)DECIDE_DISPATCH_NOW);
+    KT_CHECK_EQ((int)decideAction(idle, false, 1), (int)DECIDE_BUFFER);
+    KT_CHECK_EQ((int)decideAction(idle, false, gateEngineCount(restExec, 2, 0)), (int)DECIDE_BUFFER);
+    KT_CHECK_EQ((int)decideAction(idle, false, gateEngineCount(rest, 1, 1)), (int)DECIDE_BUFFER);
+    // dispatchWhy / shouldDispatchNext with one buffered action
+    ActionBuffer b;
+    fillBuf(b, 1);
+    KT_CHECK_EQ((int)dispatchWhy(b, gateEngineCount(rest, 1, 0), false, 0), (int)DS_OK);
+    KT_CHECK(shouldDispatchNext(b, gateEngineCount(rest, 1, 0), false, 0));
+    KT_CHECK_EQ((int)dispatchWhy(b, gateEngineCount(restBare, 2, 0), false, 0), (int)DS_OK);
+    KT_CHECK_EQ((int)dispatchWhy(b, gateEngineCount(restBare, 2, 1), false, 1), (int)DS_ENGINE_BUSY);
+    KT_CHECK_EQ((int)dispatchWhy(b, gateEngineCount(rest, 1, 1), false, 1), (int)DS_ENGINE_BUSY);
+    KT_CHECK_EQ((int)dispatchWhy(b, gateEngineCount(restExec, 2, 0), false, 0), (int)DS_ENGINE_BUSY);
+    KT_CHECK_EQ((int)dispatchWhy(b, gateEngineCount(rest, 1, 0), true, 0), (int)DS_CUR_BUSY);   // other gates unaffected
+    KT_CHECK(!shouldDispatchNext(b, gateEngineCount(restExec, 2, 0), false, 0));
+}
+
 // ---- QL3: an engine-held active command that combat start wipes is re-sent; one the engine really runs is not ----
 void testHeldHeadAction() {
     // play test 2026-10-11 cmd 8: held at the edge, gone 70 ms later -> wait while held, re-send once released
@@ -2333,5 +2367,6 @@ int main() {
     testHandoffClearAndRoundFormat();
     testCancelStyle();
     testHeldHeadAction();
+    testGateEngineCount();
     return kt::Report("queue_hud_logic_test");
 }
