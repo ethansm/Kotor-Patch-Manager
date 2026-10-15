@@ -4,7 +4,7 @@
 Usage:
   python3 tools/rea_questions.py <B> [--per-run 8] [--out DIR] [--keys FILE ...]
                                  [--ledger-dir DIR] [--batches-dir DIR]
-                                 [--exe PATH] [--skip-exe-check]
+                                 [--exe PATH] [--skip-exe-check] [--residual]
 
 Reads <B>/cards/key*.tsv (or the --keys files), collects the distinct Steam addresses, drops
 addresses already confirmed in the REA ledger under topic <B>-q*, shuffles the rest with a seed
@@ -104,7 +104,35 @@ def confirmed_ledger_addrs(rows, batch):
     return done
 
 
-def render_question(batch, k, addrs, ledger_path, today):
+RULE_7_FULL = ("7. One row per address with kind = function (behaviour summary), plus one row with kind = xref whose name is "
+               "`callers N: <first 5>; callees: <list or none>; size <n> B RET <n>`. Extra rows are allowed for strings and "
+               "callsites. Budget: at most 4 REA calls per address; skip pseudo-code unless the asm is unclear.")
+RULE_7_RESIDUAL = ("7. One row per address with kind = function (the purpose, evidence = the quoted asm line). "
+                   "Budget: at most 3 REA calls per address, plus 3 spare for the whole file. "
+                   "Do not re-ask static facts (size, RET, callers, callees, strings).")
+FULL_QUESTIONS = [
+    "",
+    "## Questions (answer all six for every address)",
+    "",
+    "1. Function start? yes/no. If no, the start address of the containing procedure.",
+    "2. Size in bytes, and the RET operand (RET n, or RET if none).",
+    "3. Callers: total count, then the first 5 caller addresses.",
+    "4. Callees: their addresses. Add a name only when Ghidra shows an import or library name.",
+    "5. Strings pushed or referenced: address and text for each.",
+    "6. Vtable or data xref users: addresses, or none.",
+    "",
+]
+RESIDUAL_QUESTIONS = [
+    "",
+    "## Questions (answer both for every address)",
+    "",
+    "1. Semantic purpose in at most 15 words, with one quoted asm line `0x<addr>: <instr>` as the anchor.",
+    "2. Anything the scripted facts could not resolve (indirect call targets, non-contiguous body, data xrefs), or \"none\".",
+    "",
+]
+
+
+def render_question(batch, k, addrs, ledger_path, today, residual=False):
     topic = f"{batch}-q{k}"
     lines = [
         f"# REA questions {topic}",
@@ -122,7 +150,7 @@ def render_question(batch, k, addrs, ledger_path, today):
         "4. Report observations only. Write \"unknown\" when Ghidra does not show the answer.",
         "5. Answer each address as its own block, headed by its address.",
         "6. Write the ledger file above. Columns in order (tab-separated): addr, kind, name, confidence, evidence, topic, date.",
-        "7. One row per address with kind = function (behaviour summary), plus one row with kind = xref whose name is `callers N: <first 5>; callees: <list or none>; size <n> B RET <n>`. Extra rows are allowed for strings and callsites. Budget: at most 4 REA calls per address; skip pseudo-code unless the asm is unclear.",
+        RULE_7_RESIDUAL if residual else RULE_7_FULL,
         "8. name = a short behavioural summary of what you observed (strings, callees, fields). "
         "Do NOT copy names from steam_functions.tsv, other ledger files or any other source. "
         "Do not guess class or method names unless a string literal in the body names them.",
@@ -134,18 +162,7 @@ def render_question(batch, k, addrs, ledger_path, today):
         "",
     ]
     lines += [f"- 0x{a:08x}" for a in addrs]
-    lines += [
-        "",
-        "## Questions (answer all six for every address)",
-        "",
-        "1. Function start? yes/no. If no, the start address of the containing procedure.",
-        "2. Size in bytes, and the RET operand (RET n, or RET if none).",
-        "3. Callers: total count, then the first 5 caller addresses.",
-        "4. Callees: their addresses. Add a name only when Ghidra shows an import or library name.",
-        "5. Strings pushed or referenced: address and text for each.",
-        "6. Vtable or data xref users: addresses, or none.",
-        "",
-    ]
+    lines += RESIDUAL_QUESTIONS if residual else FULL_QUESTIONS
     return "\n".join(lines)
 
 
@@ -200,7 +217,7 @@ def _run(args):
     manifest = ["topic\tn_addr\tsha_of_list"]
     for k, chunk in enumerate(chunks, start=first):
         ledger_path = ledger_dir / f"{stamp}_{batch}-q{k}.tsv"
-        text = render_question(batch, k, chunk, ledger_path, today)
+        text = render_question(batch, k, chunk, ledger_path, today, residual=args.residual)
         with (out / f"q_{k}.md").open("w", encoding="utf-8", newline="\n") as fh:
             fh.write(text)
         listing = "".join(f"0x{a:08x}\n" for a in chunk)
@@ -223,6 +240,8 @@ def main(argv=None) -> int:
     ap.add_argument("--batches-dir", default=str(BATCHES_DIR), help="parent of the batch dirs")
     ap.add_argument("--exe", default=BINARY, help="swkotor2.exe to verify before writing (default: vanilla_clean)")
     ap.add_argument("--skip-exe-check", action="store_true", help="tests only: skip the exe sha256 check")
+    ap.add_argument("--residual", action="store_true",
+                    help="ask only the semantic residual questions; static facts come from static_facts.py")
     args = ap.parse_args(argv)
     try:
         return _run(args)

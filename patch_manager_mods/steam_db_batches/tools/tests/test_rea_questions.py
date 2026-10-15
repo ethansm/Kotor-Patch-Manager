@@ -358,5 +358,87 @@ class CompositionLineTests(QuestionFixture):
         self.assertNotIn("decoy", lowered)
 
 
+RESIDUAL_Q1 = "1. Semantic purpose in at most 15 words, with one quoted asm line `0x<addr>: <instr>` as the anchor."
+RESIDUAL_Q2 = ("2. Anything the scripted facts could not resolve (indirect call targets, non-contiguous body, "
+               "data xrefs), or \"none\".")
+RESIDUAL_RULE_7 = ("7. One row per address with kind = function (the purpose, evidence = the quoted asm line). "
+                   "Budget: at most 3 REA calls per address, plus 3 spare for the whole file. "
+                   "Do not re-ask static facts (size, RET, callers, callees, strings).")
+FIXED_QUESTION_TEXTS = ("Function start?", "Size in bytes", "Callers: total count", "Callees: their addresses",
+                        "Strings pushed or referenced", "Vtable or data xref users")
+
+
+class ResidualModeTests(QuestionFixture):
+    def setUp(self):
+        super().setUp()
+        self.write_key("key.tsv", [
+            key_row("B13a-1-01", "0x00410000", "0x00500000", kind="real"),
+            key_row("B13a-1-02", "0x00410010", "0x00500010", kind="decoy_prev"),
+            key_row("B13a-1-03", "0x00410020", "0x00500020", kind="decoy_next"),
+        ])
+
+    def read_single(self):
+        files = self.question_files()
+        self.assertEqual(len(files), 1)
+        return files[0].read_text(encoding="utf-8")
+
+    def test_residual_file_asks_only_the_two_residual_questions(self):
+        rc, _, _ = self.cli("--residual")
+        self.assertEqual(rc, 0)
+        text = self.read_single()
+        self.assertIn("## Questions (answer both for every address)\n\n" + RESIDUAL_Q1 + "\n" + RESIDUAL_Q2 + "\n", text)
+        for fixed in FIXED_QUESTION_TEXTS:
+            self.assertNotIn(fixed, text)
+        self.assertNotIn("answer all six", text)
+
+    def test_residual_rule_7_replaces_xref_row_rule(self):
+        self.cli("--residual")
+        text = self.read_single()
+        self.assertIn(RESIDUAL_RULE_7 + "\n", text)
+        self.assertNotIn("kind = xref", text)
+        self.assertNotIn("at most 4 REA calls", text)
+
+    def test_normal_mode_still_asks_all_six(self):
+        self.cli()
+        text = self.read_single()
+        self.assertIn("## Questions (answer all six for every address)", text)
+        for fixed in FIXED_QUESTION_TEXTS:
+            self.assertIn(fixed, text)
+        self.assertIn("kind = xref", text)
+        self.assertNotIn(RESIDUAL_RULE_7, text)
+        self.assertNotIn(RESIDUAL_Q1, text)
+
+    def test_residual_mode_writes_manifest_matching_file(self):
+        self.assertEqual(self.cli("--residual")[0], 0)
+        lines = (self.out / "q_manifest.tsv").read_text(encoding="utf-8").splitlines()
+        self.assertEqual(lines[0], "topic\tn_addr\tsha_of_list")
+        self.assertEqual(len(lines), 1 + len(self.question_files()))
+        topic, n_addr, sha = lines[1].split("\t")
+        bullets = [b[len("- "):] for b in self.bullets(self.out / "q_1.md")]
+        self.assertEqual(topic, "B13a-q1")
+        self.assertEqual(int(n_addr), len(bullets))
+        self.assertEqual(sha, hashlib.sha1(("\n".join(bullets) + "\n").encode("utf-8")).hexdigest())
+
+    def test_residual_output_is_blind(self):
+        self.cli("--residual")
+        text = self.read_single()
+        lowered = text.lower()
+        self.assertNotIn("real", lowered)
+        self.assertNotIn("decoy", lowered)
+        for gog in ("0x00410000", "0x00410010", "0x00410020"):
+            self.assertNotIn(gog, text)
+        for card_id in ("B13a-1-01", "B13a-1-02", "B13a-1-03"):
+            self.assertNotIn(card_id, text)
+
+    def test_residual_topics_continue_after_highest_ledger_topic(self):
+        self.write_key("key.tsv", [key_row("B13a-1-%02d" % i, "0x%08x" % (0x410000 + 16 * i),
+                                           "0x%08x" % (0x500000 + 16 * i)) for i in range(10)])
+        self.write_ledger("20261015_test.tsv", [ledger_row("0x00600000", "probable", "B13a-q3")])
+        rc, _, _ = self.cli("--residual")
+        self.assertEqual(rc, 0)
+        self.assertEqual([p.name for p in self.question_files()], ["q_4.md", "q_5.md"])
+        self.assertIn("Ledger topic: B13a-q4", self.question_files()[0].read_text(encoding="utf-8"))
+
+
 if __name__ == "__main__":
     unittest.main()
