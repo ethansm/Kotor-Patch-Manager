@@ -40,7 +40,7 @@ logging.disable(logging.CRITICAL)
 from pykotor.common.misc import Game
 from pykotor.resource.formats.mdl import MDL, MDLNode, MDLMesh, MDLFace, read_mdl
 from pykotor.resource.formats.mdl.io_mdl import MDLBinaryWriter
-from pykotor.resource.formats.mdl.mdl_data import Vector2, Vector3
+from pykotor.resource.formats.mdl.mdl_data import MDLBoneVertex, MDLSkin, Vector2, Vector3
 from pykotor.resource.formats.mdl.mdl_types import MDLNodeType
 
 def make_mdl(spec):
@@ -72,6 +72,17 @@ def make_mdl(spec):
             mesh.tangent_space = True
             mesh.tangent_block = [bytes([j + 1]) * 36 for j in range(4)]
         node.mesh = mesh
+        if m.get("skin"):  # opt-in skin header: bone slots, bonemap, per-vertex bone indices and weights
+            sk = m["skin"]
+            node.node_type = MDLNodeType.SKIN
+            node.skin = MDLSkin()
+            node.skin.bone_indices = tuple(sk["bones16"])
+            node.skin.bonemap = list(sk["bonemap"])
+            for idx, wts in zip(sk["vertex_indices"], sk["vertex_weights"]):
+                vb = MDLBoneVertex()
+                vb.vertex_indices = tuple(float(v) for v in idx)
+                vb.vertex_weights = tuple(float(v) for v in wts)
+                node.skin.vertex_bones.append(vb)
         mdl.root.children.append(node)
     return mdl
 
@@ -92,6 +103,35 @@ def uvwarn(cli_dir, spec):
     sys.path.insert(0, cli_dir)
     import k1_port_model as K
     return {"warning": K.bare_uv_warning(K.summarize(make_mdl(spec)), bool(spec.get("synth", False)))}
+
+def skinrt(cli_dir, pack, spec):
+    # Production order: pad_skin_bones on the in-memory model, then the K1 writer, then read the files back.
+    sys.dont_write_bytecode = True  # -I ignores PYTHONDONTWRITEBYTECODE; keep the repo free of __pycache__
+    sys.path.insert(0, cli_dir)
+    import k1_port_model as K
+    mdl = make_mdl(spec)
+    pad_changed = K.pad_skin_bones(mdl)
+    mdl_path, mdx_path = Path(pack) / "skin_rt.mdl", Path(pack) / "skin_rt.mdx"
+    w = MDLBinaryWriter(mdl, mdl_path, mdx_path)
+    w.force_game = Game.K1
+    w.synth_zero_uv = False
+    w.keep_zero_tangents = True
+    w.write()
+    mdx = mdx_path.read_bytes()
+    back = read_mdl(mdl_path.read_bytes(), source_ext=mdx, size_ext=len(mdx))
+    skins = []
+    def find(n):
+        if n.skin is not None:
+            skins.append(n.skin)
+        for c in n.children:
+            find(c)
+    find(back.root)
+    assert len(skins) == 1, f"expected 1 skin node after the round trip, got {len(skins)}"
+    sk = skins[0]
+    return {"pad_changed": pad_changed, "bones16": [int(b) for b in sk.bone_indices],
+            "bonemap": [int(b) for b in sk.bonemap],
+            "vertex_indices": [[float(v) for v in vb.vertex_indices] for vb in sk.vertex_bones],
+            "vertex_weights": [[float(v) for v in vb.vertex_weights] for vb in sk.vertex_bones]}
 
 def read(mdl_path, mdx_path):
     mdx = Path(mdx_path).read_bytes()
@@ -118,6 +158,8 @@ elif mode == "read":
     out = read(sys.argv[2], sys.argv[3])
 elif mode == "uvwarn":
     out = uvwarn(sys.argv[2], json.loads(sys.argv[3]))
+elif mode == "skinrt":
+    out = skinrt(sys.argv[2], sys.argv[3], json.loads(sys.argv[4]))
 else:
     raise SystemExit("bad mode " + mode)
 sys.stdout.write(json.dumps(out) + "\n")
@@ -349,6 +391,25 @@ def test_mesh_without_uv1_is_warned():
     assert "--synth-zero-uv writes zero UVs" in synth["warning"], synth
     clean = helper("uvwarn", str(HERE), json.dumps({"meshes": ONE_MESH}))
     assert clean["warning"] is None, clean
+
+
+# K1-5c-04: a skin node round-trips through pad_skin_bones, the K1 writer and read_mdl (no install needed).
+SKIN_BONEMAP = [0, -1, 1, -1, 2]  # node index -> bone serial (-1 = no bone): 3 real bones at nodes 0, 2, 4
+SKIN_BONES16_IN = [0, 2, 4] + [13] * 13  # slots 3..15 hold junk that pad_skin_bones must zero
+SKIN_VERTEX_INDICES = [[0, 1, -1, -1], [1, 2, -1, -1], [2, -1, -1, -1], [0, 1, 2, -1]]
+SKIN_VERTEX_WEIGHTS = [[0.75, 0.25, 0.0, 0.0], [0.5, 0.5, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0], [0.5, 0.25, 0.25, 0.0]]
+
+
+def test_skin_round_trip_keeps_bones16_bonemap_and_weights():
+    skin = {"bones16": SKIN_BONES16_IN, "bonemap": SKIN_BONEMAP,
+            "vertex_indices": SKIN_VERTEX_INDICES, "vertex_weights": SKIN_VERTEX_WEIGHTS}
+    with workdir() as root:
+        out = helper("skinrt", str(HERE), str(root), json.dumps({"meshes": [{"name": "k1p_body", "skin": skin}]}))
+    assert out["pad_changed"] == 13, out  # slots 3..15 were nonzero junk
+    assert out["bones16"] == [0, 2, 4] + [0] * 13, out  # bones[16]: real slots kept, unused slots zeroed
+    assert out["bonemap"] == SKIN_BONEMAP, out  # -1 gaps survive signed
+    assert out["vertex_indices"] == [[float(v) for v in r] for r in SKIN_VERTEX_INDICES], out
+    assert out["vertex_weights"] == SKIN_VERTEX_WEIGHTS, out
 
 
 NO_UV_TEXTURED = [{"name": "k1p_bare", "texture_1": "N_TestTex", "no_uv": True}]
@@ -993,6 +1054,7 @@ TESTS = [
     ("supermodel_map_rewrites_header_name", test_supermodel_map_rewrites_header_name),
     ("supermodel_map_unmatched_warns_and_bad_entries_refused", test_supermodel_map_unmatched_warns_and_bad_entries_refused),
     ("golden_n_commm_matches_k2_vanilla_skin_and_planes", test_golden_n_commm_matches_k2_vanilla_skin_and_planes),
+    ("skin_round_trip_keeps_bones16_bonemap_and_weights", test_skin_round_trip_keeps_bones16_bonemap_and_weights),
 ]
 
 
