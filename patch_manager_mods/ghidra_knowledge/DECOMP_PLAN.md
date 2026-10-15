@@ -23,6 +23,7 @@ Handoff: `.claude/handoffs/DECOMP_PLAN.handoff.md`. Recon: `.claude/research/rea
 |---|---|---|---|---|
 | D0 | 2026-10-15T18:44 | 3 Haiku, 2 Sonnet | $0.60 | T0.1 Haiku peaked 116k ctx; lint baseline 53 (L2 26, L6 3, L8 24); suites 89/314/13 OK |
 | D1+D2 | 2026-10-15T19:00 | 4 Haiku, 5 Sonnet | ~$1.6 | 2 live REA probes (~11 min, $0 tokens); suites 196 (ghidra tools) / 320 (steam tools) OK |
+| D3 | 2026-10-15T19:40 | 1 Sonnet (V3) | $0.39 | G3 live 46 addrs -> 98 rows (52 callsite, 4 function, 42 xref), lint 53 (+0), exe sha unchanged; suites 221/328 OK |
 
 ## Decisions (Opus)
 
