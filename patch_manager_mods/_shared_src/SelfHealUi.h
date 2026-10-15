@@ -407,6 +407,16 @@ inline bool pendingDone2(const Pending& p, uint32_t now, int hp, int stack, bool
     return (uint32_t)(t - *unqueuedSince) >= kPendingTimeoutMs;
 }
 
+// ---- slot owner (BG36 / CO-2d-04): pending/auto/cooldown state is kept per party slot, so it must follow the creature ----
+// What to do with a slot's owner record when the creature now in the slot is `current` (0 = unreadable): Keep the state,
+// Adopt `current` as the owner (nothing was recorded yet, nothing to reset), or Reset every per-slot field (another creature moved in).
+enum class OwnerStep { Keep, Adopt, Reset };
+inline OwnerStep ownerStep(uintptr_t recorded, uintptr_t current) {
+    if (!current) return OwnerStep::Keep;
+    if (!recorded) return OwnerStep::Adopt;
+    return recorded == current ? OwnerStep::Keep : OwnerStep::Reset;
+}
+
 enum class UseRefusal { None, AlreadyQueued };
 inline const char* useRefusalText(UseRefusal r) { return r == UseRefusal::AlreadyQueued ? "already queued" : ""; }
 // A second heal use is refused while one is still queued (it would stack behind the stalled first).

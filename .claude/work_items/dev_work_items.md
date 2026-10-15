@@ -128,7 +128,7 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 112 | WI-80 | P3 | ready | S | - | BG33 Stale tooltip kept when new slot name read is empty | 0 | 3 | wrong-behaviour/low: tipKey and tipSet update even when setNative is s |
 | [ ] | 113 | WI-81 | P3 | ready | S | - | BG34 Vanilla tint read immediately overwritten; failure branches are dead code | 0 | 1 | log-only/low: tOk and aOk are forced true right after the reads, so th |
 | [x] | 114 | WI-82 | P3 | ready | S | - | BG35 Transient g_combatUnreadable overwrites g_prevCombat, firing false combat rising edge | 0 | 1 | wrong-behaviour/low: Unreadable frame stores prev=false so next readab |
-| [ ] | 115 | WI-83 | P3 | ready | S | - | BG36 Pending, auto and cooldown state indexed by party slot not creature; leader swap misa | 0 | 1 | wrong-behaviour/low: Pending/auto/cooldown state is slot-indexed with  |
+| [x] | 115 | WI-83 | P3 | ready | S | - | BG36 Pending, auto and cooldown state indexed by party slot not creature; leader swap misa | 0 | 1 | wrong-behaviour/low: Pending/auto/cooldown state is slot-indexed with  |
 | [ ] | 116 | WI-84 | P3 | ready | S | - | BG37 LMB on companion button at FullHp/Pending skips popover close and noneed log | 0 | 1 | log-only/low: Companion LMB at FullHp/Pending falls through silently a |
 | [x] | 117 | WI-85 | P3 | ready | S | - | BG38 heal() logs giving up on the 20th refill even if that fill succeeded | 0 | 2 | log-only/low: heals counts attempts and ignores fill() result; line 15 |
 | [x] | 118 | WI-86 | P3 | ready | S | - | BG39 Wheel callback passes engine screen size as client rect size to clientToEngineF | 0 | 3 | wrong-behaviour/low: cw/ch are the provider's engine size (client rect |

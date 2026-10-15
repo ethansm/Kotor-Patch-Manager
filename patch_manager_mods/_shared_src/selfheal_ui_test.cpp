@@ -399,5 +399,25 @@ int main() {
         KT_CHECK(!shui::migrateLeaderRow(e, "Carth"));
         KT_CHECK(e.rows.empty());
     }
+    {   // BG36 / CO-2d-04: slot owner. Unreadable keeps, first sight adopts, same keeps, a different creature resets.
+        KT_CHECK(ownerStep(0x1000, 0) == OwnerStep::Keep);
+        KT_CHECK(ownerStep(0, 0) == OwnerStep::Keep);
+        KT_CHECK(ownerStep(0, 0x1000) == OwnerStep::Adopt);
+        KT_CHECK(ownerStep(0x1000, 0x1000) == OwnerStep::Keep);
+        KT_CHECK(ownerStep(0x1000, 0x2000) == OwnerStep::Reset);
+        // frame sequence: A armed, unreadable frame, A again, swap to B, B again, swap back to A -> exactly two resets, owner follows
+        uintptr_t owner = 0;
+        int resets = 0, adopts = 0;
+        const uintptr_t frames[] = {0x1000, 0, 0x1000, 0x2000, 0x2000, 0x1000};
+        for (uintptr_t cur : frames) {
+            const OwnerStep s = ownerStep(owner, cur);
+            if (s == OwnerStep::Reset) ++resets;
+            if (s == OwnerStep::Adopt) ++adopts;
+            if (s != OwnerStep::Keep) owner = cur;
+        }
+        KT_CHECK(adopts == 1);
+        KT_CHECK(resets == 2);
+        KT_CHECK(owner == 0x1000);
+    }
     return kt::Report("selfheal_ui_test");
 }

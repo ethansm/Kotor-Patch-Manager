@@ -322,8 +322,30 @@ DWORD g_starvedSince0 = 0;
 bool g_kickGaveUp0 = false;
 uint32_t g_pendKey0 = 0;
 heal::AutoState g_auto0;
+uintptr_t g_owner[3] = {};          // BG36: creature (server object) the per-slot state above belongs to; index 0 = leader, 0 = none recorded yet
 
 struct UseInfo { Pick pk; int hp = 0; uintptr_t server = 0; };
+
+// BG36 / CO-2d-04: every per-slot field of member mi (0 = leader) back to idle, incl. the g_auto cooldown and the debounce.
+void resetSlotState(int mi) {
+    g_lastUseMs[mi] = 0;
+    if (mi == 0) { g_pend0 = shui::Pending(); g_unqueuedSince0 = 0; g_kickReason0 = 0; g_starvedSince0 = 0; g_kickGaveUp0 = false; g_pendKey0 = 0; g_auto0 = heal::AutoState(); return; }
+    g_pend[mi] = shui::Pending(); g_unqueuedSince[mi] = 0; g_kickReason[mi] = 0; g_starvedSince[mi] = 0; g_kickGaveUp[mi] = false; g_pendKey[mi] = 0; g_auto[mi] = heal::AutoState();
+    g_starveLogged[mi] = false; g_rotNoopLogged[mi] = false; g_readFail[mi] = false; g_kickGate[mi] = nullptr;
+}
+// Run with the creature currently read in slot mi. Another creature in the slot (leader swap / party reorder) drops the old one's
+// pending and cooldown, so DONE/TIMEOUT/kick are never credited to the newcomer. Returns true when the slot was reset.
+bool swapOwner(int mi, uintptr_t server) {
+    const shui::OwnerStep step = shui::ownerStep(g_owner[mi], server);
+    if (step == shui::OwnerStep::Keep) return false;
+    if (step == shui::OwnerStep::Reset) {
+        const bool pend = mi == 0 ? g_pend0.on : g_pend[mi].on;
+        KP_LOG(chCall, "OWNER swap member=%d creature %08x -> %08x (pending=%d, slot state reset)", mi, (unsigned)g_owner[mi], (unsigned)server, (int)pend);
+        resetSlotState(mi);
+    }
+    g_owner[mi] = server;
+    return step == shui::OwnerStep::Reset;
+}
 
 #define REFUSE(...) do { KP_LOGV(chCall, KPLOG_WARN, __VA_ARGS__); return; } while (0)
 #define REFUSEF(...) do { KP_LOGV(chCall, KPLOG_WARN, __VA_ARGS__); return false; } while (0)
@@ -390,8 +412,8 @@ bool useNow(const K2PsContext* ctx, DWORD now, int mi, int minCount, const char*
     }
     if (mi >= 0 && mi <= 2) g_lastUseMs[mi] = now;   // only real uses debounce
     KP_LOG(chCall, "USE member=%d item=%08x \"%s\" heal=%d hp=%d/%d src=%s", mi, (unsigned)itemServerId, pk.name.c_str(), pk.heal, m.cur, m.max, src);
-    if (mi >= 1 && mi <= 2) { g_pend[mi] = shui::Pending(); g_pend[mi].on = true; g_pend[mi].since = now; g_pend[mi].preHp = m.cur; g_pend[mi].preStack = pk.count; g_unqueuedSince[mi] = 0; g_kickReason[mi] = 0; g_starvedSince[mi] = 0; g_kickGaveUp[mi] = false; g_pendKey[mi] = pk.key; g_auto[mi].lastUseMs = now; g_auto[mi].pending = true; g_starveLogged[mi] = false; g_rotNoopLogged[mi] = false; }
-    else if (mi == 0) { g_pend0 = shui::Pending(); g_pend0.on = true; g_pend0.since = now; g_pend0.preHp = m.cur; g_pend0.preStack = pk.count; g_unqueuedSince0 = 0; g_kickReason0 = 0; g_starvedSince0 = 0; g_kickGaveUp0 = false; g_pendKey0 = pk.key; g_auto0.lastUseMs = now; g_auto0.pending = true; }
+    if (mi >= 1 && mi <= 2) { g_pend[mi] = shui::Pending(); g_pend[mi].on = true; g_pend[mi].since = now; g_pend[mi].preHp = m.cur; g_pend[mi].preStack = pk.count; g_unqueuedSince[mi] = 0; g_kickReason[mi] = 0; g_starvedSince[mi] = 0; g_kickGaveUp[mi] = false; g_pendKey[mi] = pk.key; g_owner[mi] = m.server; g_auto[mi].lastUseMs = now; g_auto[mi].pending = true; g_starveLogged[mi] = false; g_rotNoopLogged[mi] = false; }
+    else if (mi == 0) { g_pend0 = shui::Pending(); g_pend0.on = true; g_pend0.since = now; g_pend0.preHp = m.cur; g_pend0.preStack = pk.count; g_unqueuedSince0 = 0; g_kickReason0 = 0; g_starvedSince0 = 0; g_kickGaveUp0 = false; g_pendKey0 = pk.key; g_owner[0] = m.server; g_auto0.lastUseMs = now; g_auto0.pending = true; }
     if (out) { out->pk = pk; out->hp = m.cur; out->server = m.server; }
     if (g_queueTrace) {
         actq::Snapshot qb;
@@ -738,6 +760,7 @@ void pendingTick(DWORD now) {
     std::vector<itemread::Entry> items;
     bool haveItems = itemread::readGroup(g_hud, ItemGroup, &items) >= 0;
     for (int i = 1; i <= 2; ++i) {
+        if (i < cnt && swapOwner(i, v[i].server)) continue;   // BG36: a different creature moved into the slot, this pending is not its
         if (!g_pend[i].on) continue;
         int hp = i < cnt ? v[i].cur : g_pend[i].preHp;
         int stack = -1;
@@ -753,6 +776,7 @@ void pendingTick(DWORD now) {
         g_pend[i].on = false; g_auto[i].pending = false; g_unqueuedSince[i] = 0; g_kickReason[i] = 0; g_starvedSince[i] = 0; g_kickGaveUp[i] = false; g_starveLogged[i] = false; g_rotNoopLogged[i] = false;
     }
     // Member 0 (leader)
+    if (0 < cnt && swapOwner(0, v[0].server)) return;
     if (!g_pend0.on) return;
     int hp0 = 0 < cnt ? v[0].cur : g_pend0.preHp;
     int stack0 = -1;
@@ -788,7 +812,8 @@ void kickTick(DWORD now) {
     party::Vitals v[3];
     int cnt = party::members(v, 3);
     for (int i = 1; i <= 2 && i < cnt; ++i) {   // never member 0 (the controlled leader)
-        if (!g_pend[i].on || g_kickGaveUp[i] || !v[i].server) continue;
+        if (!v[i].server || swapOwner(i, v[i].server)) continue;   // BG36: never kick a creature that does not own the pending
+        if (!g_pend[i].on || g_kickGaveUp[i]) continue;
         uintptr_t cr = v[i].server;
         actq::Snapshot q;
         bool qok = actq::read(cr, &q, SiteQueue, SiteRound);
@@ -858,6 +883,7 @@ void refreshCache(const K2PsContext* ctx, DWORD now) {
         c.have = i < cnt && v[i].ok;
         if (!c.have) { c.pk = Pick(); c.apk = Pick(); continue; }
         c.m = v[i];
+        swapOwner(i, c.m.server);   // BG36: before shouldAutoUse reads g_auto[i], so a newcomer does not inherit the old cooldown
         char tag[64]; readCreatureTag(c.m.server, tag, sizeof tag);
         c.tag = tag;
         c.cfg = shui::lookup(g_cfg, keyFor(i));
@@ -882,6 +908,7 @@ void refreshCache(const K2PsContext* ctx, DWORD now) {
     if (!c0.have != leaderGone) { leaderGone = !c0.have; KP_LOG(chUi, "LEADER %s (members=%d ok=%d)", leaderGone ? "gone" : "back", cnt, cnt > 0 ? (int)v[0].ok : 0); }
     if (!c0.have) { c0.pk = Pick(); c0.apk = Pick(); c0.m = party::Vitals(); c0.cfg = shui::CompCfg(); } else {
         c0.m = v[0];
+        swapOwner(0, c0.m.server);   // BG36: leader swap
         char tag[64]; readCreatureTag(c0.m.server, tag, sizeof tag);
         c0.tag = tag;
         const bool migrated = shui::migrateLeaderRow(g_cfg, c0.tag);   // WI-75: first load of a tagged leader copies the legacy slot0 row
