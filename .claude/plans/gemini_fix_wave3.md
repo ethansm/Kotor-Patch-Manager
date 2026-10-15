@@ -68,10 +68,10 @@ Leave the run logs at :838/:874 as they are. Verify with `rg -n 0x0072CB63`, the
 ## Phases (mark with `plan_manager.py mark-done <Id> --plan .claude/plans/gemini_fix_wave3.md --no-handoff`)
 | Id | Batch | Deps | Owner gate | Status | Commit | Next |
 |---|---|---|---|---|---|---|
-| FX3.0 | Persist plan, pre-flight, WI split/unhold, WI-102 create | - | - | OPEN | | commit |
-| FX3.1 | Packs + briefs (`fix3_briefs.py`, $0) | FX3.0 | - | OPEN | | `fix3/` packs |
-| FX3.2 | Haiku wave `fix3` (54 units) | FX3.1 | - | OPEN | | proposals |
-| FX3.3 | 22 Sonnet consolidators (2 waves of 11, worktrees) + 22 independent Sonnet reviewers | FX3.2 | - | OPEN | | `final.diff` + `review.md` x22 |
+| FX3.0 | Persist plan, pre-flight, WI split/unhold, WI-102 create | - | - | DONE | 9f14c62 | BASE 5a0f526: 25 suites + perflab3 PASS; k1 venv present (0 SKIP); WI-102 37dd72f; holster_log_check moved in bc653a5 after triage |
+| FX3.1 | Packs + briefs (`fix3_briefs.py`, $0) | FX3.0 | - | DONE | 6946197 | 54 briefs .claude/waves/fix3/u01..u54 (units.tsv); $0 |
+| FX3.2 | Haiku wave `fix3` (54 units) | FX3.1 | - | DONE | | 54/54 replies, check RERUN none; 27 CONFIRMED 27 PARTIAL; contract out-of-scope = other sessions (WI-12/WI-38/B13a), 0 unit repo edits; Haiku 68k-184k tokens/unit (over 60k target) |
+| FX3.3 | 22 Sonnet consolidators (2 waves of 11, worktrees) + 22 independent Sonnet reviewers | FX3.2 | - | PARTIAL | | 20/22 consolidated+reviewed; WI-91a review running, FU-texinit rev1 needs re-review, WI-100a not started; see handoff section 0 |
 | FX3.4 | Apply in conflict order, gate, `close --manual`, doc 37 / WI rows | FX3.3 | - | OPEN | | ~22 commits |
 | FX3.5 | Close: handoff, memory, Saved State | FX3.4 | - | OPEN | | - |
 

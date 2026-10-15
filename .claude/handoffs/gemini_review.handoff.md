@@ -3,6 +3,28 @@
 ## 0. Next-Phase Direction
 **FX3 (2026-10-15, IN PROGRESS):** plan `.claude/plans/gemini_fix_wave3.md` (22 fix units + WI-89c inline; wave dir `.claude/waves/fix3/`,
 brief generator `tools/fix3_briefs.py`). Resume: `python3 scripts/plan_manager.py resume --plan .claude/plans/gemini_fix_wave3.md`.
+FX3.0-FX3.2 DONE (BASE 5a0f526; 54 Haiku, 27 CONFIRMED/27 PARTIAL). 19/22 units LANDED + WI-89c 17fbda3:
+FU-holster 9b9f4b6, FU-texset 1a14b19, WI-91b bf449fe, WI-94a f7cc1e4, WI-93 f55b8c1, WI-95a 1b0b409, WI-95b+close WI-95 e3c6871, WI-73 6dc574d (BG26 e889a71),
+WI-89a 9e31e49, WI-89b+close WI-89 f899b72, WI-90 d3dfdf6, WI-100b 602a09d (+perflab contract fake, PerfLab -4 label), WI-96 2d2dab0, WI-91c 8e13e60,
+WI-100d f04d6a0 (+reviewer neg-wrap test), WI-100c 17efa9b, WI-102 fb4f76a (rev1), WI-87 2388aa8 (BG40 112afcf), WI-92 bf3216d.
+REMAINING (each: copy worktree review.md into .claude/waves/fix3/<u>/, `git apply` final.diff, tests, sync+build_check for _shared_src, commit):
+- WI-91a: reviewer was running at handoff (final.diff ready). APPROVE -> apply, then `wi_driver.py close WI-91 --manual --paths <3 test files>` (91b/91c landed).
+- FU-texinit: revision 1 done (adds one-shot `TEXLATE slot= resref= img=` line + checker clear logic + __main__ runner in test_selfheal_log_check.py);
+  needs a FRESH re-review (review.brief.md + prior review.md + verdict.md "Revision 1"). Apply touches CompanionSelfHeal.cpp, SelfHealUi.h, selfheal_ui_test.cpp,
+  scripts/selfheal_log_check.py, scripts/test_selfheal_log_check.py; then --sync, build companion_selfheal_src + queue_hud_src; `git commit -- <paths>` (no WI).
+- WI-100a: consolidator NOT launched yet (WI-87 landed, so it can start): brief .claude/waves/fix3/WI-100a/consolidate.md; tell it to re-anchor on HEAD and to
+  build_check with a scratch --kpm-dir copy (stock build_check compiles the KPM Patches/Common header = false PASS). Then review, apply, close WI-100 (a is last).
+- WI-94 stays open: 94a landed, 94b/94c deferred (NEEDS-RUNTIME/owner).
+NEW ITEMS from FX3 (file as WIs / tell owners): (1) k1_port_ingest.py:164 `_variant_folder` uncaught ValueError for an overlay texture outside its source
+local_dir (real characters_revisited_main setup; WI-91a test works around it); (2) check-raw-addresses FAILs on holster_src/Holster.cpp:339 0x005047F4 (holster
+session ad0444a, no raw_addresses row); (3) compat_check reports FAIL 30 on WindowHook.h at HEAD (unresolvable test ids gate_test/apply_test/scenario_test/ui_test):
+tooling gap; (4) build_check uses KPM Patches/Common copies, so shared-header diffs PASS falsely until --sync (add a drift pre-check); (5) WI-92 dxt noise MAE
+ceiling 50 is loose (~46 would kill a duplicated-palette fault, MAE 43.4).
+KPM Common synced (CodePatch, SafeRead, WindowHook, GuiKit, and the other session's committed WI-38 SelfHealUi.h). No installs/pushes.
+INSTALL QUEUE (user GO): queue_hud (WI-96), companion_selfheal (FU-texinit), GuiKit consumers (WI-87, WI-100a), CodePatch consumers (WI-100b), SafeRead consumers
+(WI-100d), action_hotbar (WI-100c, WI-102), gui_input (WI-102); k1 texture bakes re-run (WI-73). PLAY CHECKS: WI-102 alt-tab then wheel on hotbar (gui-input log
+"is gone" then "hooked window class"); WI-87 level-up screen (fallback templates trigger slot-0 release on half-initialised labels: watch for crash);
+FU-texinit TEXLATE after a late load. Then FX3.5 (mark phases, lint, audit --apply, memory: gemini review + variant-wave yield; agent_usage --since 2026-10-15T16:06).
 **FX2 (2026-10-15, DONE, $9.08):** 11 mod-side bugs landed: WI-79 9dbfed7, WI-77 b4c80a5, WI-78 49a57a7, WI-74 a2ecc13, WI-82 ab456aa,
 WI-75 066320e, WI-83 b18c0f3, WI-84 685fede, WI-80 810590a, WI-81 6d24306, BG29c ce3cec1; doc 37 BG27-BG37 DONE + rea notes 2ae4cb2.
 Not installed: rebuild + install (user GO) queue_hud, companion_selfheal, companion_ai, holster, combat_hotbar; play checks WI-74 (companion
