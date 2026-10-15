@@ -719,15 +719,16 @@ enum ActionDecision : int {
 // A caster the party table does not list (scripted NPC, cutscene, unreadable table) is not ours to buffer: pass it to the engine.
 inline bool isPartyCaster(int memberK) { return memberK >= 0 && memberK < 3; }
 
-inline ActionDecision decideAction(const ActionBuffer& buf, bool inCombat, int engineQueueLen) {
+// haveCur: the round node is still running (3000 ms); an immediate dispatch then wipes it, so buffer instead (FIFO gate).
+inline ActionDecision decideAction(const ActionBuffer& buf, bool inCombat, int engineQueueLen, bool haveCur = false) {
     if (inCombat) return DECIDE_DISPATCH_NOW;
-    if (engineQueueLen == 0 && !buf.active && buf.empty()) return DECIDE_DISPATCH_NOW;
+    if (engineQueueLen == 0 && !haveCur && !buf.active && buf.empty()) return DECIDE_DISPATCH_NOW;
     if (buf.full()) return DECIDE_DROP_FULL;
     return DECIDE_BUFFER;
 }
 
-inline ActionDecision decideItemAction(const ActionBuffer& buf, bool inCombat, int engineQueueLen) {
-    return decideAction(buf, inCombat, engineQueueLen);
+inline ActionDecision decideItemAction(const ActionBuffer& buf, bool inCombat, int engineQueueLen, bool haveCur = false) {
+    return decideAction(buf, inCombat, engineQueueLen, haveCur);
 }
 
 inline bool shouldReInject(const ActionBuffer& buf, bool actionInQueue, bool hasFollowLeader, bool paused = false, uint32_t now = 0, bool userCancelled = false) {

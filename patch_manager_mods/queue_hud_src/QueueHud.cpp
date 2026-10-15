@@ -771,12 +771,15 @@ void KPATCH_CALL onHudDraw(const K2PsContext* ctx, void*) {
 
 // ---- Cancel click (FRAME_BEGIN: the UI tick, outside the draw batch) ----
 // Queue entries of party member k (0 leader, 1-2 companions), -1 when the creature is unreadable.
-int queueCountOf(int k) {
+// *haveCur (optional) gets the round-node flag from the same snapshot.
+int queueCountOf(int k, bool* haveCur = nullptr) {
     party::Fail why = party::F_None;
     const uintptr_t tbl = party::table(&why);
     const uintptr_t m = tbl ? party::member(tbl, k) : 0;
     Snapshot s;
-    return gatherFor(m ? party::serverCreature(m) : 0, s) ? s.engineNe : -1;
+    const bool ok = gatherFor(m ? party::serverCreature(m) : 0, s);
+    if (haveCur) *haveCur = ok && s.haveCur;
+    return ok ? s.engineNe : -1;
 }
 
 // Server-side ids for ServerClearAllActions(serverObjectId) on one member's creature: id = CrObjectId, server = *(*AppGlobal + AppToServer).
@@ -1496,7 +1499,7 @@ void tickItemQueues(DWORD now, bool inMenu) {
         } else {
             g_prevDsWhy[k] = -1;
         }
-        if (dsWhy == qh::DS_OK) {
+        if (dsWhy == qh::DS_OK && qh::shouldDispatchNext(buf, s.engineNe, creal, s.nrn)) {
             qh::QueuedAction nextA;
             if (buf.pop(&nextA)) {
                 if (!saferead::probeRead(SiteQueue, reinterpret_cast<const void*>(nextA.creature), 4)) {
@@ -1864,10 +1867,11 @@ int __cdecl QueueHudPerformUseItem(int clientCreature, int ebp) {
     }
     const bool fb = false;
 
-    const int engineQ = queueCountOf(memberK);
+    bool haveCur = false;
+    const int engineQ = queueCountOf(memberK, &haveCur);
     const int engqLog = engineQ < 0 ? -1 : engineQ;
     const int bufBefore = g_itemQueue[memberK].count;
-    const qh::ActionDecision dec = qh::decideAction(g_itemQueue[memberK], g_combat != 0, engineQ > 0 ? engineQ : 0);
+    const qh::ActionDecision dec = qh::decideAction(g_itemQueue[memberK], g_combat != 0, engineQ > 0 ? engineQ : 0, haveCur);
 
     if (dec == qh::DECIDE_DISPATCH_NOW) {
         g_itemQueue[memberK].userCancelled = false;
@@ -1961,10 +1965,11 @@ int __cdecl QueueHudPerformCastSpell(int clientCreature, int ebp) {
     }
     const bool fb = false;
 
-    const int engineQ = queueCountOf(memberK);
+    bool haveCur = false;
+    const int engineQ = queueCountOf(memberK, &haveCur);
     const int engqLog = engineQ < 0 ? -1 : engineQ;
     const int bufBefore = g_itemQueue[memberK].count;
-    const qh::ActionDecision dec = qh::decideAction(g_itemQueue[memberK], g_combat != 0, engineQ > 0 ? engineQ : 0);
+    const qh::ActionDecision dec = qh::decideAction(g_itemQueue[memberK], g_combat != 0, engineQ > 0 ? engineQ : 0, haveCur);
 
     if (dec == qh::DECIDE_DISPATCH_NOW) {
         g_itemQueue[memberK].userCancelled = false;
