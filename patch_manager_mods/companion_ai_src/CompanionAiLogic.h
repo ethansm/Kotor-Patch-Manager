@@ -403,6 +403,10 @@ struct BurstTrack {
     void resetSecond() { maxBurst = 0; perSec = 0; }
 };
 
+// E1 spin expiry: a spinning track not seen (no E1/E1b event) for ttlMs is over. Unsigned subtraction is GetTickCount-wrap safe.
+constexpr unsigned kSpinExpireMs = 3000;
+inline bool spinExpired(bool spinning, unsigned seen, unsigned now, unsigned ttlMs) { return spinning && now - seen >= ttlMs; }
+
 // E3: perception-1 rate aggregation (calls, distinct creatures, per-creature max, share with elapsed >= 4000).
 struct RateAgg {
     static constexpr int Slots = 64;

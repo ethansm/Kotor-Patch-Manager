@@ -386,6 +386,16 @@ static void testProbeHelpers() {
     ProbeCap grow; for (int i = 0; i < 5; ++i) grow.take(5); CHECK(!grow.take(5)); CHECK(grow.take(6));   // reload with a larger budget resumes
 }
 
+// WI-77 (BG30): a spinning E1 track that stops being seen expires (one END); a recently seen one keeps spinning.
+static void testSpinExpiry() {
+    CHECK(spinExpired(true, 1000, 1000 + kSpinExpireMs, kSpinExpireMs));          // unseen exactly TTL: expire
+    CHECK(spinExpired(true, 0, 10000, kSpinExpireMs));                             // unseen 10 s after death / area change
+    CHECK(spinExpired(true, 0xFFFFF000u, 0x00000800u, kSpinExpireMs));             // GetTickCount wrap, unseen 6144 ms
+    CHECK(!spinExpired(true, 1000, 1000 + kSpinExpireMs - 1, kSpinExpireMs));      // 1 ms short: still spinning
+    CHECK(!spinExpired(true, 9000, 9100, kSpinExpireMs));                          // seen again (track() refreshes seen): no END
+    CHECK(!spinExpired(false, 0, 10000, kSpinExpireMs));                           // not spinning (already ENDed / never spun): no END
+}
+
 // exports.def == the hooks.toml function names (run from the source directory)
 static void testExports() {
     static char t[65536], d[4096];
@@ -410,7 +420,7 @@ static void testExports() {
 
 int main() {
     testGlob(); testNumbers(); testIni(); testShippedIni(); testGate(); testThrottles(); testDecisions(); testHandlerDecisions();
-    testProbeHelpers(); testExports();
+    testProbeHelpers(); testSpinExpiry(); testExports();
     printf("%d checks, %d failed\n%s\n", g_checks, g_fail, g_fail ? "TESTS FAILED" : "ALL PASS");
     return g_fail ? 1 : 0;
 }

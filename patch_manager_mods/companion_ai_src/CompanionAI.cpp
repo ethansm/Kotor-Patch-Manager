@@ -325,6 +325,7 @@ struct CrTrack {
     int id = 0; int cr = 0; DWORD seen = 0;
     cai::BurstTrack burst; DWORD secStart = 0; int f570 = 0; int party = 0;
     bool spinning = false; DWORD spinStart = 0;
+    bool spinShow = false; char spinTag[33] = {};   // WI-77: cached at SPIN so an END without e1Evaluate never reads cr
     // E1b snapshot
     unsigned exits = 0; int xStance = -1, xBackoff = 0, xCtrl = Invalid, xRanged = 0, xLos = 0, xTgt = Invalid; float xDist2 = 0, xMax = 0;
     // A1
@@ -333,6 +334,20 @@ struct CrTrack {
     cai::LineThrottle strictLog; unsigned strictN = 0, strictRej = 0;   // A1X STRICT: counts per summary window, throttled line (review SF2)
 };
 CrTrack g_tr[32];
+// WI-77 (BG30): END for a spin that stops without e1Evaluate (eviction, or unseen past kSpinExpireMs after death / area change).
+// Cached fields only: t.cr may be stale, so no e1Evaluate, readTag, crPasses or roundActive here. Printed only if the SPIN line was.
+void spinEnd(CrTrack& t, DWORD now) {
+    t.spinning = false;
+    if (t.spinShow)
+        eline(now, "t=%lu E1 END cr=%08x %s spin lasted %.1f s", now, t.id, t.spinTag, (t.seen - t.spinStart) / 1000.0);
+    t.spinShow = false;
+}
+DWORD g_lastSpinSweep = 0;
+void spinSweep(DWORD now) {
+    if (now - g_lastSpinSweep < 500) return;
+    g_lastSpinSweep = now;
+    for (auto& t : g_tr) if (cai::spinExpired(t.spinning, t.seen, now, cai::kSpinExpireMs)) spinEnd(t, now);
+}
 // review N6: with tags=/log_all=1 big fights must not evict the party's tracks (A1 throttle, would-spin counts):
 // evict the least recently seen non-party track first
 CrTrack* track(int id, DWORD now) {
@@ -343,6 +358,7 @@ CrTrack* track(int id, DWORD now) {
         if (victim && !victim->id) continue;
         if (!victim || (victim->party && !t.party) || (!!victim->party == !!t.party && now - t.seen > now - victim->seen)) victim = &t;
     }
+    if (victim->spinning) spinEnd(*victim, now);   // WI-77: an evicted spin still ends
     *victim = CrTrack(); victim->id = id; victim->seen = now; victim->secStart = now;
     return victim;
 }
@@ -670,6 +686,7 @@ inline void tick(DWORD now) {
     if (g_cfg.trace && g_cfg.enginePoints && g_cfg.engineVerbose && now - g_lastP1Report >= 1000) { g_lastP1Report = now; reportP1(now); }
     if (g_cfg.probeParty && (g_partyPf || now - g_lastPartyChk >= 1000)) partyTick(now);
     if (g_cfg.probeA1x && now - g_lastOrphan >= 250) orphanTick(now);
+    spinSweep(now);   // WI-77: END for E1 spins that stopped being seen
     if (g_dirty && g_log && now - g_lastFlush >= static_cast<DWORD>(g_cfg.flushMs)) { Lock lk; fflush(g_log); g_dirty = false; g_lastFlush = now; }
 }
 
@@ -696,8 +713,9 @@ void e1Evaluate(CrTrack& t, DWORD now) {
     if (spin && round != 1) {
         if (!t.spinning) {
             t.spinning = true; t.spinStart = now; ++g_st.e1spins;
+            t.spinShow = show;
             if (show) {
-                char tag[33]; readTag(cr, tag, sizeof tag);
+                char* tag = t.spinTag; readTag(cr, tag, sizeof t.spinTag);   // cached for spinEnd
                 eline(now, "t=%lu E1 SPIN cr=%08x %s party=%d stance=%d entries/s=%u maxBurst=%u round=%d combat=%d f570=%d tgt=%08x "
                            "exit{n=%u stance=%d backoff=%d ctrl=%08x ranged=%d dist2=%.2f max=%.2f los=%d}",
                       now, t.id, tag, t.party, rawStance(cr), t.burst.perSec, t.burst.maxBurst, round, rd<int>(cr, CrCombat), t.f570,
