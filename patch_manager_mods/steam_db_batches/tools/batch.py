@@ -1029,8 +1029,26 @@ def load_rea_rows(ledger_dir: Path, topic_prefix: str) -> dict[int, list[dict]]:
     return out
 
 
+STATIC_FACTS_PATH = (Path(__file__).resolve().parents[3] / "patch_manager_mods" / "ghidra_knowledge" / "tools"
+                     / "static_facts.py")
+_STATIC_FACTS = None
+
+
+def load_static_facts():
+    """`static_facts` (ghidra_knowledge/tools), imported by path on first use: `cards` without --facts never loads it."""
+    global _STATIC_FACTS
+    if _STATIC_FACTS is None:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("static_facts_cards", STATIC_FACTS_PATH)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _STATIC_FACTS = mod
+    return _STATIC_FACTS
+
+
 def make_card(card_id: str, corpus: bd.Corpus, g: GogFn, ce: CandEval, ev_by_gog: dict, mapper_tag: str,
-              card_facts: Optional[dict] = None, rea_rows: Optional[dict] = None) -> str:
+              card_facts: Optional[dict] = None, rea_rows: Optional[dict] = None,
+              static_dump: Optional[object] = None) -> str:
     rp = corpus.rp
     root = str(corpus.paths.dump)
     L = ["## Card %s" % card_id, "",
@@ -1086,6 +1104,12 @@ def make_card(card_id: str, corpus: bd.Corpus, g: GogFn, ce: CandEval, ev_by_gog
         da = parse_addr(dec.group(1))
         L += ["", "### decoy: %s (neighbour that must NOT be confused with the candidate)" % hx8(da), "```"]
         L += fmt_prologue(corpus, da) + fmt_anchors(corpus, da) + ["```"]
+    if static_dump is not None:       # report-only; keyed by the effective address only: same path for real and decoy
+        sf = load_static_facts()
+        flines = list(sf.card_lines(sf.facts(static_dump, ce.eff), max_lines=10))
+        if sum(l.startswith("- twins:") for l in flines) != 1:   # card_lines always emits exactly one; never invent "none"
+            raise RuntimeError("static_facts.card_lines returned no single twins line for %s" % hx8(ce.eff))
+        L += ["", "### Static facts (script output, report-only)"] + flines
     if rea_rows is not None:          # report-only; same path for real and decoy cards (keyed by the effective address)
         rows = rea_rows.get(ce.eff, [])
         L += ["", "### Live evidence (REA, report-only)"]
@@ -1175,6 +1199,11 @@ def cmd_cards(args) -> int:
     facts = load_card_facts(bdir)
     rea_rows = (load_rea_rows(Path(args.rea_ledger_dir), args.rea_topic_prefix or args.batch + "-q")
                 if args.rea else None)
+    static_dump = None
+    if args.facts:                    # report-only; built once per run
+        sf = load_static_facts()
+        static_dump = sf.Dump(root=str(corpus.paths.dump),
+                              names=sf.load_names(steam_db=paths.branchdb, kdb=paths.kdb, exclude_sources=(args.batch,)))
     review = [e for e in evs if e["gate_class"] == "REVIEW"]
     per_chunk_decoys = max(MIN_DECOYS, args.chunk // 6) if args.decoys is None else args.decoys
     per_chunk_real = max(1, args.chunk - per_chunk_decoys)
@@ -1204,7 +1233,7 @@ def cmd_cards(args) -> int:
             else:
                 ce = evaluate_row(corpus, scorer, g, [(forced, ["card"])]).best
             text.append(make_card(cid, corpus, g, ce, ev_by_gog, ce.mapper_tag if kind == "real" else "", facts,
-                                  rea_rows=rea_rows))
+                                  rea_rows=rea_rows, static_dump=static_dump))
             key_rows.append({"card_id": cid, "chunk": k, "gog": hx8(g.addr), "steam_addr": hx8(ce.addr),
                              "kind": kind, "expected": expected})
         (cards_dir / ("chunk_%d.md" % k)).write_text("\n".join(text), encoding="utf-8")
@@ -2086,6 +2115,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--rea-ledger-dir", default=str(REA_LEDGER_DIR), help="REA findings ledger dir (with --rea)")
     p.add_argument("--rea-topic-prefix", default=None,
                    help="only ledger rows whose topic starts with this (default <batch>-q)")
+    p.add_argument("--facts", action="store_true",
+                   help="add a report-only 'Static facts' section per card from the static dump")
     p.add_argument("--out", default=None, help="directory for chunk_*.md and key.tsv (default B<n>/cards)")
     p = sub.add_parser("finalize", help="merge reviews and overrides")
     p.add_argument("batch", type=batch_name)

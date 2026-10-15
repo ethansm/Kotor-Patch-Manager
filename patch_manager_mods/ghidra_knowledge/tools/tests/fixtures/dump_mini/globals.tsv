@@ -1,0 +1,2 @@
+global	target_addr	site	reftype	fn	fn_name	insn
+a1b480	00a1b480	00408aa0	WRITE	004087a0	FUN_004087a0	MOV dword ptr [0x00a1b480],EDX

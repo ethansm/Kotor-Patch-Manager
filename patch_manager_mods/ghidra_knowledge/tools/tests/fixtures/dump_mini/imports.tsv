@@ -1,0 +1,2 @@
+import	library	calling_fn	fn_name	site	reftype	insn
+timeGetTime	WINMM.DLL	00776db0	FUN_00776db0	00776dc0	COMPUTED_CALL	CALL dword ptr [0x00986484]

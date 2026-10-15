@@ -325,6 +325,12 @@ NWScript command handlers (`ExecuteCommand*`) are proven by engine data, not by 
 - **Trust.** REA rows are report-only evidence. They change no gate, AUTO rule, ranking or trust route (section 1 trust tiers; 4.2 gate classes). A row counts as a content anchor only when it quotes an asm line. Promotion (e.g. REA callers as A-CALLEE) only via an Opus calibration (MASTER_PLAN R4).
 - **Cost/time.** Cold first procedure call ~356 s. Target <= 8 addresses and < 100k tokens per run. Pilot result in `B13a/rea_pilot/PILOT.md` (R1).
 
+### 4.10 Static facts (report-only)
+- **Source.** `patch_manager_mods/ghidra_knowledge/tools/static_facts.py` reads the static dump (`callgraph.tsv`, `strings.tsv`, `globals.tsv`, `imports.tsv`, `inputs/steam_functions.tsv`, `decomp/<bb>/<addr>.asm`); $0, < 1 s per address. `cards B<n> --facts` prints `### Static facts (script output, report-only)` per card at the effective Steam address, before the REA section.
+- **Blindness.** Names come from the Steam DB plus high-confidence `name_map`, minus the current batch's own `name_map` sources (`B<n>*`); the card's own address is never named; real and decoy cards share one code path.
+- **Twins.** `twins:` lists same-size, same-RET, same-shape functions within 0x400 bytes with the distinguishing asm line; reviewers must cite it for a match (REVIEWER_BRIEF twins rule).
+- **Trust.** Report-only: no gate, AUTO rule, ranking or trust route changes. A static fact is a content anchor only when it quotes an asm line.
+
 ## 5. Process rules
 - **The PR changes only the Steam DB** (user, 2026-10-03). `kotor2_gog_aspyr.db` in the KPM repo is read-only input:
   never edited, never committed. GOG label suspects / wrong GOG param sizes are recorded (gate report, PR description),

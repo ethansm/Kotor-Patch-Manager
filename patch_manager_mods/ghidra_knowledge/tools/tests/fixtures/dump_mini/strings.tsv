@@ -1,0 +1,3 @@
+addr	string	ref_count	functions
+009868a0	permov06	1	00776db0:FUN_00776db0
+009868b0	other	1	00778100:Leaky::Name

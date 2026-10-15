@@ -86,6 +86,8 @@ $0 and take milliseconds; never ask REA or a model for them.
 | known name / ledger finding at an address | `python3 scripts/query_ghidra.py address <hex>` (ledger rows tagged `[rea]`, overridden ones `[superseded]`) |
 | callers, callees, call path, vtable-slot sites | `engine_ai_atlas/tools/cg.py callers|callees|path|indirect --slot` |
 | field reads/writes | `engine_ai_atlas/tools/field_census.py` |
+| all static facts for one address (size, RET, callers/callees named, INDIRECT vtable slots, strings, globals, imports, look-alike twins + the distinguishing asm line) | `python3 ghidra_knowledge/tools/static_facts.py addr <hex> [--json]` / `twins <hex>` (~0.4 s) |
+| the same facts on every review card (blind, real = decoy) | `steam_db_batches/tools/batch.py cards B<n> --facts` |
 | ledger hygiene before using or adding rows | `python3 ghidra_knowledge/tools/rea_ledger.py lint` (rules L1 L2 L4 L5 L6 L8; baseline 53 issues on 10-15) |
 
 Live REA (`rea-recon`) is only for what the dumps cannot answer: targets of INDIRECT call sites, non-contiguous

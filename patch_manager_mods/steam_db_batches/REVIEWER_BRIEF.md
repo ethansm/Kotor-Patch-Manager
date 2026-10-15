@@ -33,6 +33,11 @@ Write one TSV row per card to OUT (header below). Work only from the card, the d
   and immediates). Common values are marked `*`.
 
 Cards built with `--rea` carry a `### Live evidence (REA, report-only)` section. Its rows are observations a Haiku agent made on the vanilla Steam exe through Ghidra, shown on real and decoy cards alike. A row is valid as a content anchor only when it quotes an asm line (`0x...: instr`); summaries without a quoted line are hints only. Never accept a candidate on REA rows alone. A REA summary that contradicts the GOG name (strings, callees) is a reason to flag `label_suspect`.
+- **Static facts section** (`### Static facts (script output, report-only)`, from `cards --facts`):
+  - It is computed by `patch_manager_mods/ghidra_knowledge/tools/static_facts.py` from the static Ghidra dump at $0 (size, RET, callers, callees, indirect vtable slots, strings, globals, imports, twins). Do not re-derive these facts and do not ask for them.
+  - A static fact counts as a content anchor only when it quotes an asm line (`0x<addr>: <insn>`); counts and names alone are not anchors.
+  - Names in the section never include the card's own Steam address (blind); real and decoy cards get the same section.
+  - **twins rule:** a `- twins:` line other than `none` means the candidate has look-alike neighbours (same size, RET and shape). For a `match` verdict you must cite the distinguishing anchor for the candidate (the quoted line that differs from its twins); if you cannot, answer `unsure`.
 
 ## Burden of proof
 Assume the candidate is a neighbouring function or thunk with an identical `RET` signature. You are FORBIDDEN to
