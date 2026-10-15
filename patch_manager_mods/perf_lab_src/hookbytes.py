@@ -15,8 +15,10 @@ for arg in sys.argv[1:]:
     a=int(a,16); ins=insns(a); i=[k for k,x in enumerate(ins) if x[0]==a]
     if not i: print('%08x NOT an instruction boundary'%a); continue
     got='';txt=[];k=i[0]
-    while len(got)<2*max(5,len(exp.replace(' ',''))//2):
+    need=2*max(5,len(exp.replace(' ',''))//2)
+    while len(got)<need and k<len(ins):
         got+=ins[k][1]; txt.append(ins[k][2]); k+=1
     ok = '' if not exp else ('OK' if got.upper().startswith(exp.replace(' ','').upper()) else 'MISMATCH exp '+exp)
-    rel=any(t.split()[0] in ('CALL','JMP') and '0x' in t and '[' not in t or t.startswith('J') for t in txt)
-    print('%08x %-26s %s | %s %s'%(a,got,ok,' ; '.join(txt),' REL-BRANCH-IN-STOLEN' if rel else ''))
+    rel=any((t.split()[0] in ('CALL','JMP') and '0x' in t and '[' not in t) or (t.startswith('J') and '[' not in t) for t in txt)
+    short=' FN-END-SHORT' if len(got)<need else ''
+    print('%08x %-26s %s | %s %s%s'%(a,got,ok,' ; '.join(txt),' REL-BRANCH-IN-STOLEN' if rel else '',short))

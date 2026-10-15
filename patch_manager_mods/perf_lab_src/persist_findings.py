@@ -5,7 +5,8 @@
 # (upgrades an existing row only to high when verified) and functions rows (only when the address has none). Source = <batch>-Phase4.
 import sqlite3,re,sys
 H='6a522e71631dcee93467bd2010f3b23d9145326e1e2e89305f13ab104dbbffef'
-u=sys.argv[1]; ver=sys.argv[2].split(',')
+if len(sys.argv)<3: sys.exit('usage: persist_findings.py <batch> <ver,ver,...>')
+u=sys.argv[1]; ver=[x for x in sys.argv[2].split(',') if x]
 c=sqlite3.connect('ghidra_knowledge/kotor2_ghidra_knowledge.db')
 st={'new':0,'upd':0,'skip':0,'fn':0}
 for l in open(f'engine_research_findings/{u}.md'):
