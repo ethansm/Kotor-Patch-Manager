@@ -19,6 +19,7 @@ static void* g_alloc[512]; static int g_nAlloc = 0;   // every fake-engine alloc
 static void* track(void* p) { if (g_nAlloc < 512) g_alloc[g_nAlloc++] = p; return p; }
 static void* fNew(unsigned n) { ++nNew; return track(calloc(1, n)); }
 static void* fNewArr(unsigned n) { ++nNewArr; return track(malloc(n)); }
+static void* fNoMem(unsigned) { ++nNewArr; return nullptr; }   // engine operator new[] failure: fill() logs and returns false
 static void* fCtor(void* t, const char* a, const char*) { ++nCtor; lastCtorName = a; (void)t; return t; }
 static void fAdd(void* list, void*) { ++nAdd; lastAddList = list; }
 static void fReset(void* b) {   // the engine's Reset: pixels and GL name freed, not constructed
@@ -90,8 +91,44 @@ int main() {
     KT_CHECK(ensure(set, 1)); b = B(slots()[0]); KT_CHECK_EQ(nAdd, 1);
     for (int i = 0; i < 25; ++i) { simGlReset(b); heal(); }
     KT_CHECK_EQ(nAdd, 1 + MaxHeals); KT_CHECK_EQ(slots()[0].heals, MaxHeals); KT_CHECK_EQ(countLines("tex emb_a: refilled after a texture reset"), MaxHeals);
-    KT_CHECK_EQ(countLines("tex emb_a: giving up after 20 failed refills"), 1);
+    KT_CHECK_EQ(countLines("tex emb_a: giving up after 20 refill attempts"), 1);
     b[Tex_Constructed] = 1; simUpload(b); heal(); KT_CHECK_EQ(slots()[0].heals, 0);   // a late successful upload re-arms the counter
+
+    // ---- 20th refill succeeds: the cap still engages, so the line stays, worded as attempts and reporting ok=1 ----
+    clearForTest(); resetCounters();
+    KT_CHECK(ensure(set, 1)); b = B(slots()[0]);
+    for (int i = 0; i < MaxHeals - 1; ++i) { simGlReset(b); heal(); }
+    KT_CHECK_EQ(slots()[0].heals, MaxHeals - 1); KT_CHECK_EQ(countLines("giving up"), 0);
+    simGlReset(b); heal();   // 20th attempt: fill succeeds
+    KT_CHECK_EQ(slots()[0].heals, MaxHeals); KT_CHECK_EQ(countLines("tex emb_a: giving up after 20 refill attempts"), 1); KT_CHECK_EQ(countLines("last fill ok=1"), 1);
+    KT_CHECK_EQ(countLines("art missing"), 0);   // the 20th fill worked: the line must not claim the art is missing
+    simUpload(b); heal(); KT_CHECK_EQ(slots()[0].heals, 0);   // the upload is observed: counter re-arms
+
+    // ---- 20th refill fails (engine new[] returns NULL): the give-up line reports last fill ok=0 ----
+    clearForTest(); resetCounters();
+    KT_CHECK(ensure(set, 1)); b = B(slots()[0]);
+    { auto svArr = g_et.newArrFn; g_et.newArrFn = fNoMem;   // engine allocation fails from here on
+      for (int i = 0; i < MaxHeals; ++i) { simGlReset(b); heal(); }
+      g_et.newArrFn = svArr; }
+    KT_CHECK_EQ(slots()[0].heals, MaxHeals); KT_CHECK_EQ(countLines("tex emb_a: giving up after 20 refill attempts"), 1); KT_CHECK_EQ(countLines("last fill ok=0"), 1);
+    KT_CHECK_EQ(countLines("art missing, labels still work"), 1);   // a real failure keeps the art-missing wording
+    KT_CHECK_EQ(countLines("refilled after a texture reset"), 0);
+
+    // ---- the 20th refill goes through the missing-rebuild branch: the line reports that branch's fill result ----
+    for (int pass = 0; pass < 2; ++pass) {
+        const bool fail = pass == 1;
+        clearForTest(); resetCounters();
+        KT_CHECK(ensure(set, 1)); b = B(slots()[0]);
+        for (int i = 0; i < MaxHeals - 1; ++i) { simGlReset(b); heal(); }   // refills 1..19 via the texture-reset branch
+        at<void*>(b, Tex_Pixels) = nullptr; at<int>(b, Tex_Uploaded) = 0; b[Tex_Constructed] = 1; b[Tex_Missing] = 1;
+        auto svArr = g_et.newArrFn; if (fail) g_et.newArrFn = fNoMem;
+        heal();   // refill 20: Reset + fill through the rebuild branch
+        g_et.newArrFn = svArr;
+        KT_CHECK_EQ(slots()[0].heals, MaxHeals); KT_CHECK_EQ(countLines("tex emb_a: rebuilt without our pixels"), 1);
+        KT_CHECK_EQ(countLines("tex emb_a: refilled after a missing rebuild"), fail ? 0 : 1);
+        KT_CHECK_EQ(countLines("tex emb_a: giving up after 20 refill attempts"), 1); KT_CHECK_EQ(countLines(fail ? "last fill ok=0" : "last fill ok=1"), 1);
+        KT_CHECK_EQ(countLines("art missing"), fail ? 1 : 0);
+    }
 
     // ---- bad TGAs rejected: nothing queued, a log line says why ----
     clearForTest();

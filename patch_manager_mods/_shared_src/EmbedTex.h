@@ -37,7 +37,7 @@ constexpr int Tex_Uploaded = 0x58;   // GL name; nonzero once the texture tick u
 constexpr int Tex_MipBytes = 0x5C;
 constexpr int Tex_W = 0x68, Tex_H = 0x6C, Tex_Bpp = 0x74, Tex_Format = 0x78;
 constexpr int Tex_Cube = 0xDF, Tex_Constructed = 0xE4, Tex_Missing = 0xE5, Tex_FromRes = 0xE7, Tex_Tpc = 0xE9;
-constexpr int MaxHeals = 20;         // consecutive failed refills before heal() gives up on a texture
+constexpr int MaxHeals = 20;         // consecutive refill attempts with no observed upload before heal() gives up on a texture
 constexpr int MaxTex = 16;           // slots in the remembered set
 
 struct Tex { const char* resref; const unsigned char* data; unsigned size; };   // data = whole embedded TGA file (must outlive the process)
@@ -146,14 +146,16 @@ inline void heal() {
         bool built = b[Tex_Constructed] != 0; void* px = detail::at<void*>(b, Tex_Pixels); int w = detail::at<int>(b, Tex_W);
         if (built && !px && !b[Tex_Missing] && detail::at<int>(b, Tex_Uploaded)) { s.heals = 0; continue; }   // uploaded: healthy
         if (s.heals >= MaxHeals) continue;   // given up (art missing, labels still work)
-        if (!built && !px) { ++s.heals; detail::fill(s, "refilled after a texture reset"); }
+        bool filled = false;   // outcome of this tick's refill; the give-up line reports it
+        if (!built && !px) { ++s.heals; filled = detail::fill(s, "refilled after a texture reset"); }
         else if (built && !px && (b[Tex_Missing] || w != s.w)) {
             ++s.heals; EMBTEX_LOG("tex %s: rebuilt without our pixels (missing=%d w=%d), resetting", s.t->resref, (int)b[Tex_Missing], w);
             g_et.resetFn(b);
-            detail::fill(s, "refilled after a missing rebuild");
+            filled = detail::fill(s, "refilled after a missing rebuild");
         }
-        if (s.heals == MaxHeals) EMBTEX_LOG("tex %s: giving up after %d failed refills (built=%d missing=%d pixels=%p); art missing, labels still work",
-                                            s.t->resref, MaxHeals, (int)b[Tex_Constructed], (int)b[Tex_Missing], detail::at<void*>(b, Tex_Pixels));   // crossed once: the >= check above skips afterwards
+        if (s.heals == MaxHeals) EMBTEX_LOG("tex %s: giving up after %d refill attempts with no upload (last fill ok=%d, built=%d missing=%d pixels=%p); %s",
+                                            s.t->resref, MaxHeals, (int)filled, (int)b[Tex_Constructed], (int)b[Tex_Missing], detail::at<void*>(b, Tex_Pixels),
+                                            filled ? "last refill worked, its upload was not seen; labels still work" : "art missing, labels still work");   // crossed once: the >= check above skips afterwards
     }
 }
 
