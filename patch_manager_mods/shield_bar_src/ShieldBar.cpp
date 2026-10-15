@@ -53,20 +53,21 @@ const char* g_connectNote = nullptr;   // set in KPatchInit (no file I/O allowed
 bool g_connectOk = false;
 void onConnect(bool ok, const char* why) { g_connectOk = ok; g_connectNote = why; }
 
-// ---- Shield Bar PROBE (1.1.0-probe): OFF unless "shieldprobe.txt" exists in the game dir.
-// Writes shieldprobe_log.txt: effect APPLY/CHANGE/REMOVE per creature (S1/S2/S4) and the
-// portrait slot rects + test rects drawn at the new every-frame draw site (R-D/S6/S7). ----
+// ---- Shield Bar PROBE (1.1.0-probe), KpLog.h (doc 19f): probe lines go to shield-bar_log.txt, channel "probe" at DEBUG
+// (kplog.ini [shield-bar] level=debug); VIS lines below are channel "main" INFO. g_probe ("shieldprobe.txt" in the game dir) still
+// gates the extra probe WORK (effect dumps, GL queries, F9 mark, saferead ring), not the lines. On an old core (no KpLog_Init) the
+// fallback file is shieldprobe_log.txt as before and shieldprobe.txt raises the fallback level to DEBUG. The old 20000-line cap is
+// gone (the core rate-limits and rotates). Effect APPLY/CHANGE/REMOVE per creature (S1/S2/S4) and the portrait slot rects + test
+// rects drawn at the every-frame draw site (R-D/S6/S7). ----
+KP_CHANNEL(chProbe, "probe");
 bool g_probe = false;
-int g_probeLines = 0, g_frame = 0;   // g_frame = the portrait-slots frame counter, copied in every phase callback
-constexpr int MaxProbeLines = 20000;
+int g_frame = 0;   // g_frame = the portrait-slots frame counter, copied in every phase callback
 void probeLog(const char* fmt, ...) {
-    if (!g_probe || g_probeLines >= MaxProbeLines) return;
-    FILE* f = fopen("shieldprobe_log.txt", "a");
-    if (!f) return;
-    ++g_probeLines;
-    fprintf(f, "[t=%lu f=%d] ", GetTickCount(), g_frame);
-    va_list ap; va_start(ap, fmt); vfprintf(f, fmt, ap); va_end(ap);
-    fputc('\n', f); fclose(f);
+    if (!KP_ENABLED(chProbe, KPLOG_DEBUG)) return;
+    char buf[1024];
+    va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof(buf), fmt, ap); va_end(ap);
+    buf[sizeof(buf) - 1] = 0;
+    KP_LOGV(chProbe, KPLOG_DEBUG, "%s", buf);
 }
 
 // ---- VIS log (visibility diagnostics, logging only): "VIS <what> shown=%d why=%s rect=[x,y,w,h]" to kpatch.log (INFO, channel
@@ -660,6 +661,8 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {
         g_probe = GetFileAttributesA("shieldprobe.txt") != INVALID_FILE_ATTRIBUTES;
         saferead::enableRing(g_probe);
+        KpLog_SetFallbackFile("shieldprobe_log.txt");   // old core only: today's file name; shieldprobe.txt picks the fallback level
+        KpLog_SetFallbackLevel(g_probe ? KPLOG_DEBUG : KPLOG_WARN);
         gui2d::g_hooks.onGlInit = onGlInit;
         gui2d::g_hooks.onCapFix = onCapFix;
     }

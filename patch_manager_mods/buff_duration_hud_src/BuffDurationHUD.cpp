@@ -28,6 +28,9 @@
 #include "../_shared/Gui2D.h"       // 2D batch / clip / flush / image draw + CapGuard
 #include "../_shared/GuiKit.h"      // imageFor: one pooled engine image per resref
 #include "../_shared/PortraitSlots.h" // k2.portraitslots v1 consumer (slot -> creature, phase callbacks)
+#include "KpLog.h"
+
+KP_LOG_PATCH("buff-duration-hud");
 
 namespace {
 
@@ -48,18 +51,18 @@ constexpr float BgAlpha = 0.80f;              // backing disc, full-strength par
 const float BgColor[3] = { 0.035f, 0.415f, 0.34f };  // the HUD border teal (sampled 9,106,87)
 const char* const CircleResref = "buffhud_circle";  // white disc TGA shipped in override/
 
-// ---- diagnostics: OFF by default. Create an empty "buffhud_debug.txt" in the game dir to turn
-// on buffhud_log.txt (capped, first-N + change-detected lines from the hooks below). ----
+// ---- diagnostics (KpLog.h, doc 19f): lines go to buff-duration-hud_log.txt (channels "main" INFO, "probe" DEBUG); kplog.ini
+// [buff-duration-hud] is the switch on a new core. On an old core (no KpLog_Init) the fallback file is buffhud_log.txt as before and
+// "buffhud_debug.txt" (INFO) / "shieldprobe.txt" (DEBUG) raise the fallback level. g_debugLog only gates the extra untracked-debuff
+// dump work now; the old in-mod line caps are gone (the core rate-limits and rotates). ----
+KP_CHANNEL(chMain, "main");
 bool g_debugLog = false;
-int g_logLines = 0;
-constexpr int MaxLogLines = 6000;
 void logf(const char* fmt, ...) {
-    if (!g_debugLog || g_logLines >= MaxLogLines) return;
-    FILE* f = fopen("buffhud_log.txt", "a");
-    if (!f) return;
-    ++g_logLines;
-    va_list ap; va_start(ap, fmt); vfprintf(f, fmt, ap); va_end(ap);
-    fputc('\n', f); fclose(f);
+    if (!KP_ENABLED(chMain, KPLOG_INFO)) return;
+    char buf[256];
+    va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof(buf), fmt, ap); va_end(ap);
+    buf[sizeof(buf) - 1] = 0;
+    KP_LOG(chMain, "%s", buf);
 }
 
 // ---- portrait-slots consumer -------------------------------------------------------------
@@ -78,13 +81,13 @@ template <typename T> bool readAt(int base, int off, T* out) {
 struct Saved { bool active; int border; int origImage; int width; int height; int widthOff, heightOff; } g_saved;
 
 // ---- VIS diagnostics (visibility trace): `VIS <what> shown=%d why=%s rect=[x,y,w,h]`, written through logf (the mod's main channel,
-// so it needs buffhud_debug.txt like every other line here), ONLY when (shown, why-category, count, rect) changes for that item.
+// so it follows the main channel like every other line here), ONLY when (shown, why-category, count, rect) changes for that item.
 // At most VisMaxLines lines per process, then one `VIS cap reached` and silence. Pure logging: no effect on hooks or drawing.
 enum VisCat { VisNone = 0, VisNoSlot, VisGateClosed, VisKill, VisNoTable, VisBadCard, VisNoBuffs, VisNoFit, VisDrawn };
 constexpr int VisMaxLines = 64;
 int g_visLines = 0;
 void visLine(const char* fmt, ...) {
-    if (!g_debugLog || g_visLines > VisMaxLines) return;
+    if (g_visLines > VisMaxLines) return;
     if (g_visLines == VisMaxLines) { ++g_visLines; logf("VIS cap reached"); return; }
     ++g_visLines;
     char buf[256];
@@ -149,19 +152,18 @@ void visColumn(int slotPtr, bool debuff, int tracked, int drawN, const int* rect
 }
 
 
-// ---- shared probe log: OFF unless "shieldprobe.txt" exists in the game dir. ARROWS / ICONCACHE / GLINIT / CAPFIX lines go to
-// shieldprobe_log.txt, the same file the shield-bar patch writes (one game thread: lines interleave in call order). ----
+// ---- shared probe log (DEBUG, channel "probe"): ARROWS / ICONCACHE / GLINIT / CAPFIX lines; the shield-bar patch has its own probe
+// channel (one game thread: use sink=merged in kplog.ini to see both interleaved). g_probe (shieldprobe.txt) still gates the extra
+// diagnostic work (saferead ring), not the lines. ----
+KP_CHANNEL(chProbe, "probe");
 bool g_probe = false;
-int g_probeLines = 0, g_frame = 0;   // g_frame = the portrait-slots frame counter, copied in every phase callback
-constexpr int MaxProbeLines = 20000;
+int g_frame = 0;   // g_frame = the portrait-slots frame counter, copied in every phase callback
 void probeLog(const char* fmt, ...) {
-    if (!g_probe || g_probeLines >= MaxProbeLines) return;
-    FILE* f = fopen("shieldprobe_log.txt", "a");
-    if (!f) return;
-    ++g_probeLines;
-    fprintf(f, "[t=%lu f=%d] ", GetTickCount(), g_frame);
-    va_list ap; va_start(ap, fmt); vfprintf(f, fmt, ap); va_end(ap);
-    fputc('\n', f); fclose(f);
+    if (!KP_ENABLED(chProbe, KPLOG_DEBUG)) return;
+    char buf[256];
+    va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof(buf), fmt, ap); va_end(ap);
+    buf[sizeof(buf) - 1] = 0;
+    KP_LOGV(chProbe, KPLOG_DEBUG, "%s", buf);
 }
 
 // A feature runs only when the exe's address table has every field it needs (K2Addr.h; null table / 0 = unknown). The first feature
@@ -406,7 +408,7 @@ void ForceArrowCounters(int slotPtr) {
         Buff tmp[16];
         nBuff = collectBuffs(creature, day, ms, haveTime, tmp, 16, false);
         nDebuff = collectBuffs(creature, day, ms, haveTime, tmp, 16, true);
-        if (g_debugLog && rawDebuff > 0 && nDebuff == 0) logUntrackedDebuff(creature, rawDebuff);
+        if ((g_debugLog || KP_ENABLED(chMain, KPLOG_INFO)) && rawDebuff > 0 && nDebuff == 0) logUntrackedDebuff(creature, rawDebuff);
     }
     {   // gate open again after a rejection: nothing tracked means no column call will follow, so close the stale state here
         const int vi = visIndex(slotPtr);
@@ -501,6 +503,8 @@ static void KPATCH_CALL onMenuOverlay(const K2PsContext* c, void*) {
 }
 
 void __cdecl KPatchInit(const KPatchApi* api) {
+    KpLog_Init(api);
+    logf("buffhud loaded");
     g_ps.init(api, "buff-duration-hud");
     g_ps.onConnect = onConnect;
     g_ps.add(K2PS_PRE_ENGINE_READ, K2PS_PRIO_BUFF, onPreEngineRead);
@@ -518,7 +522,8 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
         saferead::enableRing(g_probe);
         gui2d::g_hooks.onGlInit = onGlInit;
         gui2d::g_hooks.onCapFix = onCapFix;
-        logf("buffhud loaded");
+        KpLog_SetFallbackFile("buffhud_log.txt");   // old core only: today's file name; the flag files pick the fallback level
+        KpLog_SetFallbackLevel(g_probe ? KPLOG_DEBUG : g_debugLog ? KPLOG_INFO : KPLOG_WARN);
     }
     return TRUE;
 }
