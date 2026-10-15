@@ -481,7 +481,9 @@ def cmd_verify(a, st):
     untracked = [p for p, s in ac.git_dirty(root).items() if s == "??" and any(p == f or p.startswith(f.rstrip("/") + "/") for f in wi.files)]
     diff_path.write_text(d + ("\n# new files:\n" + "\n".join(untracked) if untracked else "") or "(no repo diff: verify-only)\n", encoding="utf-8")
     task = (f"Check {wi.id}: {wi.title}. Read the diff and the WI Goal and Steps. Reply VERDICT CONFIRMED if the diff does what the Goal "
-            f"says and touches nothing else, REFUTED if it does not, PARTIAL or UNSURE otherwise. Write findings to your OUTPUT file.")
+            f"says and touches nothing else, REFUTED if it does not, PARTIAL or UNSURE otherwise. A diff cannot show an absence: when a Step says to "
+            f"remove, avoid or leave out something and the diff adds no such line, treat that Step as satisfied (the target state is already true), "
+            f"never as missing work, and do not return PARTIAL for it. Judge only what the diff adds against the Goal. Write findings to your OUTPUT file.")
     entries = [f"{wm.WORK_DIR.as_posix()}/{wi.id}.md", diff_path.relative_to(root).as_posix()]
     wave_id, desc, prompt = make_wave(st, wi, claim, f"b{claim.get('attempt', 1)}", "recon", task, entries, [])
     chk_model = "sonnet" if claim.get("escalated") else "haiku"  # the escalated attempt is judged by Sonnet too
