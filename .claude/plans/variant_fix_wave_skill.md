@@ -57,11 +57,11 @@ Routes `plan` / `run`; hard rules: Haiku → Sonnet consolidator (worktree) → 
 ## 2. Phases
 | Id | Batch | Deps | Status |
 |---|---|---|---|
-| VW.0 | Persist plan, pre-flight | - | TODO |
-| VW.1 | Haiku worker wave, 5 parallel (H1 plan, H2 brief, H3 collect, H4 apply, H5 agent_contract) | VW.0 | TODO |
-| VW.2 | Opus integrate: CLI, SKILL.md, review of worker diffs | VW.1 | TODO |
-| VW.3 | Verify: tests, check_skills, FX3 dry run | VW.2 | TODO |
-| VW.4 | Commit, memory, docs, `~/tmp` question, handoff | VW.3 | TODO |
+| VW.0 | Persist plan, pre-flight | - | DONE |
+| VW.1 | Haiku worker wave, 5 parallel (H1 plan, H2 brief, H3 collect, H4 apply, H5 agent_contract) | VW.0 | DONE |
+| VW.2 | Opus integrate: CLI, SKILL.md, review of worker diffs | VW.1 | DONE |
+| VW.3 | Verify: tests, check_skills, FX3 dry run | VW.2 | DONE |
+| VW.4 | Commit, memory, docs, `~/tmp` question, handoff | VW.3 | DONE |
 
 ## Verification
 - All 7 scoped suites PASS; `check_skills.py` clean.
