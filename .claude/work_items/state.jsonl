@@ -73,3 +73,4 @@
 {"ev": "done", "reason": "manual: FX3 Haiku variants + Sonnet consolidated + reviewed (APPROVE_MINOR; i686 objdump thiscall verified); KPM Common synced; ", "session": "2659c028-e2d1-4d6d-9b52-81c8179110c0", "ts": "2026-10-15T20:38:26Z", "wi": "WI-87"}
 {"ev": "done", "reason": "manual: FX3 Haiku variants + Sonnet consolidated + reviewed (APPROVE_MINOR; noise ceiling 50 loose, see review); dxt:257 kept IN", "session": "2659c028-e2d1-4d6d-9b52-81c8179110c0", "ts": "2026-10-15T20:38:36Z", "wi": "WI-92"}
 {"ev": "done", "session": "50ec10a4-c1e0-4a8a-bb07-cd5630b2a5c0", "ts": "2026-10-15T20:40:45Z", "wi": "WI-02c"}
+{"ev": "park", "reason": "gate failed: python3 scripts/run_tests.py test_generate_ultrawide_gui_overrides\nexit 1: FAIL   py:scripts/test_generate_ultrawide_gui_overrides.py  0.1s  exit 1\n    --- last 40 lines ---\n    Error: py", "session": "336ad066-bc85-480f-8c4d-f1855b8057aa", "ts": "2026-10-15T21:03:15Z", "wi": "WI-09"}
