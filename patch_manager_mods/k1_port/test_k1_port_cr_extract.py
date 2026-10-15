@@ -4,6 +4,9 @@
 CLI calls run under python -I with K1PORT_CR_* removed from the environment (unless a test sets them).
 Run: python3 -u test_k1_port_cr_extract.py   (cwd may be anything; exit 0 = all PASS)
 """
+import contextlib
+import hashlib
+import io
 import os
 import re
 import subprocess
@@ -247,6 +250,113 @@ def test_cli_env_overrides_dest_and_rar():
     check(r.returncode == 0, f"plan exit {r.returncode}: {r.stderr.strip()[:300]}")
     check(str(dest / "head_player") in r.stdout, "K1PORT_CR_DEST not used")
     check(str(rar) in r.stdout and "MISSING" in r.stdout, "K1PORT_CR_RAR_MAIN not used")
+
+
+FAKE_UNRAR = '''#!{exe}
+import os, sys
+NAMES, SIZES, RC, LOG, PARTIAL = {names!r}, {sizes!r}, {rc}, {log!r}, {partial}
+lst = next((p for p in (a.lstrip("-@") for a in sys.argv[1:]) if os.path.basename(p) == NAMES), None)
+if lst is None:
+    sys.exit(9)
+wanted = open(lst, encoding="utf-8").read().split()
+open(LOG, "a", encoding="utf-8").write(" ".join(wanted) + "\\n")
+if RC:
+    sys.stderr.write("fake unrar failure\\n")
+for n in (wanted[:PARTIAL] if RC else wanted):
+    dst = os.path.join(os.path.dirname(lst), *n.split("/"))
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    open(dst, "wb").write(b"x" * SIZES[n])
+sys.exit(RC)
+'''
+
+EXTRACT_ITEMS = [("main", "Override/Pfha03D1.TGA", 1000), ("main", "Override/c_hutt01.mdl", 2000),
+                 ("creatures", "Override/c_rancor.mdx", 4000)]
+
+
+@contextlib.contextmanager
+def _fake_unrar(td, rc=0, partial=0):
+    """Fake unrar first on PATH; rar stubs at K1PORT_CR_RAR_<PACK>. rc!=0 still writes the first `partial` names of each pack.
+    Yields (dest, call_log, manifest_calls)."""
+    bindir, log, exe = Path(td) / "bin", Path(td) / "calls.log", Path(td) / "bin" / "unrar"
+    bindir.mkdir()
+    sizes = {p: s for _pk, p, s in EXTRACT_ITEMS}
+    exe.write_text(FAKE_UNRAR.format(exe=sys.executable, names=os.path.basename(str(kx.NAMES_FILE)),
+                                     sizes=sizes, rc=rc, log=str(log), partial=partial), encoding="utf-8")
+    exe.chmod(0o755)
+    env = {"PATH": f"{bindir}{os.pathsep}{os.environ['PATH']}"}
+    for pk in ("main", "creatures"):
+        rar = Path(td) / f"{pk}.rar"
+        rar.write_bytes(b"")
+        env[f"K1PORT_CR_RAR_{pk.upper()}"] = str(rar)
+    saved = {k: os.environ.get(k) for k in env}
+    real_manifest, manifest = kx.write_manifest, []
+    os.environ.update(env)
+    kx.write_manifest = lambda dest, shard, rows: manifest.append((dest, shard, rows))
+    try:
+        yield Path(td) / "dest", log, manifest
+    finally:
+        kx.write_manifest = real_manifest
+        for k, v in saved.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+
+
+@test
+def test_run_shard_extracts_flattens_and_builds_manifest_rows():
+    with tempfile.TemporaryDirectory() as td, _fake_unrar(td) as (dest, log, manifest):
+        ret = kx.run_shard("head_player", EXTRACT_ITEMS, dest)
+        shard_dir = dest / "head_player"
+        check(ret == (3, 3), f"run_shard returned {ret}, want (3, 3)")
+        for name, size in (("pfha03d1.tga", 1000), ("c_hutt01.mdl", 2000), ("c_rancor.mdx", 4000)):
+            check((shard_dir / name).stat().st_size == size, f"{name} not flattened to lowercase, size {size}")
+        asked = sorted(n for line in log.read_text().splitlines() for n in line.split())
+        check(asked == sorted(p for _pk, p, _s in EXTRACT_ITEMS), f"unrar asked for {asked}")
+        check(len(manifest) == 1 and manifest[0][:2] == (dest, "head_player"), f"manifest calls {manifest}")
+        rows = {r[0]: r for r in manifest[0][2]}
+        check(sorted(rows) == ["c_hutt01", "c_rancor", "pfha03d1"], f"manifest rows {manifest[0][2]}")
+        check(rows["c_hutt01"][1].endswith("mdl") and rows["c_hutt01"][2] == 2000, f"row {rows['c_hutt01']}")
+        check(rows["c_hutt01"][3] == hashlib.sha256(b"x" * 2000).hexdigest(), "manifest sha256 mismatch")
+
+
+@test
+def test_run_shard_resume_requests_only_missing_entries():
+    with tempfile.TemporaryDirectory() as td, _fake_unrar(td) as (dest, log, manifest):
+        kx.run_shard("head_player", EXTRACT_ITEMS, dest)
+        (dest / "head_player" / "pfha03d1.tga").unlink()
+        log.unlink()
+        ret = kx.run_shard("head_player", EXTRACT_ITEMS, dest)
+        asked = log.read_text().split()
+        check(ret == (3, 3), f"resume run returned {ret}")
+        check(asked == ["Override/Pfha03D1.TGA"], f"resume asked unrar for {asked}")
+        check(len(manifest) == 2 and len(manifest[1][2]) == 3, "resume manifest lacks the skipped entries")
+
+
+@test
+def test_run_shard_unrar_failure_leaves_entries_missing_and_warns():
+    with tempfile.TemporaryDirectory() as td, _fake_unrar(td, rc=2) as (dest, _log, manifest):
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            ret = kx.run_shard("head_player", EXTRACT_ITEMS, dest)
+        warn = err.getvalue()
+        check(ret == (3, 0), f"failed unrar returned {ret}, want (3, 0)")
+        check("WARN: unrar exit 2 (pack main" in warn and "(pack creatures" in warn, f"no WARN per pack: {warn!r}")
+        check(manifest[0][2] == [], f"failed run wrote rows {manifest[0][2]}")
+
+
+@test
+def test_run_shard_partial_unrar_failure_counts_only_extracted_entries():
+    with tempfile.TemporaryDirectory() as td, _fake_unrar(td, rc=3, partial=1) as (dest, _log, manifest):
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            ret = kx.run_shard("head_player", EXTRACT_ITEMS, dest)
+        shard_dir = dest / "head_player"
+        check(ret == (3, 2), f"partial unrar returned {ret}, want (3, 2)")
+        check(err.getvalue().count("WARN: unrar exit 3") == 2, f"want one WARN per pack: {err.getvalue()!r}")
+        check(sorted(p.name for p in shard_dir.iterdir() if p.name != kx.NAMES_FILE) == ["c_rancor.mdx", "pfha03d1.tga"],
+              "partial extract left unexpected files")
+        check(sorted(r[0] for r in manifest[0][2]) == ["c_rancor", "pfha03d1"], f"manifest rows {manifest[0][2]}")
 
 
 if __name__ == "__main__":
