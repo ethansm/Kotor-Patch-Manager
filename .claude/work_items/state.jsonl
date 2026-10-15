@@ -28,3 +28,4 @@
 {"ev": "done", "reason": "manual: FX1 Haiku T1/T2 + Sonnet consolidated + independent Sonnet review APPROVE_WITH_NITS (15/17 mutations red, 2 equivalent).", "session": "ef9e50dd-6a01-4db5-ada4-0ac34db43372", "ts": "2026-10-15T05:03:29Z", "wi": "WI-98"}
 {"ev": "done", "reason": "manual: FX1 Haiku T1/T2 + Sonnet consolidated (rebased onto WI-85) + independent Sonnet review APPROVE_WITH_NITS (20 mutations r", "session": "ef9e50dd-6a01-4db5-ada4-0ac34db43372", "ts": "2026-10-15T05:03:35Z", "wi": "WI-97"}
 {"ev": "park", "reason": "checker UNSURE: clean", "session": "9998eedb-92f0-4097-97bd-b0cbbea769de", "ts": "2026-10-15T15:45:23Z", "wi": "WI-15"}
+{"ev": "unpark", "reason": "Steps rewritten with exact file:line anchors; checker UNSURE was scope-only", "session": "9998eedb-92f0-4097-97bd-b0cbbea769de", "ts": "2026-10-15T16:00:33Z", "wi": "WI-15"}
