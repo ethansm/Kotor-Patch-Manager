@@ -19,6 +19,41 @@ import sys
 from pathlib import Path
 
 DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent / "patch_manager_mods" / "ghidra_knowledge" / "kotor2_ghidra_knowledge.db"
+DEFAULT_LEDGER_DIR = DEFAULT_DB_PATH.parent / "rea_findings"
+LEDGER_COLS = ["addr", "kind", "name", "confidence", "evidence", "topic", "date"]
+
+
+def load_ledger(ledger_dir: Path) -> list[dict]:
+    """rea-recon findings (rea_findings/*.tsv, see its README). Malformed lines are skipped, never fatal."""
+    rows = []
+    if not ledger_dir or not ledger_dir.is_dir():
+        return rows
+    for f in sorted(ledger_dir.glob("*.tsv")):
+        lines = f.read_text(encoding="utf-8", errors="replace").splitlines()
+        if not lines or lines[0].split("\t")[:len(LEDGER_COLS)] != LEDGER_COLS:
+            continue
+        for line in lines[1:]:
+            cells = line.split("\t")
+            if len(cells) < len(LEDGER_COLS) or not cells[0].strip():
+                continue
+            d = dict(zip(LEDGER_COLS, (c.strip() for c in cells)))
+            d["source_table"], d["file"] = "rea_finding", f.name
+            rows.append(d)
+    return rows
+
+
+def ledger_by_address(rows: list[dict], int_val: int) -> list[dict]:
+    out = []
+    for r in rows:
+        norm = normalize_hex_address(r["addr"])
+        if norm[0] is not None and norm[3] == int_val:
+            out.append(r)
+    return out
+
+
+def ledger_by_name(rows: list[dict], query: str) -> list[dict]:
+    q = query.lower()
+    return [r for r in rows if q in r["name"].lower()]
 
 def normalize_hex_address(addr_str: str) -> str:
     """Normalizes address strings like '0x0053f000', '53F000', '0x53f000' to '0x%08x' and integer."""
@@ -188,6 +223,8 @@ def main():
     parent_parser.add_argument("--db", type=Path, default=DEFAULT_DB_PATH, help="Path to kotor2_ghidra_knowledge.db")
     parent_parser.add_argument("--json", action="store_true", help="Output results in JSON format")
     parent_parser.add_argument("--limit", type=int, default=25, help="Maximum number of results to display")
+    parent_parser.add_argument("--ledger-dir", type=Path, default=DEFAULT_LEDGER_DIR,
+                               help="rea-recon findings ledger (rea_findings/*.tsv)")
 
     parser = argparse.ArgumentParser(description="Query KOTOR II Ghidra knowledge database", parents=[parent_parser])
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -212,14 +249,18 @@ def main():
     con = connect_db(args.db)
 
     results = []
+    ledger = load_ledger(args.ledger_dir)
     if args.command == "symbol":
         results = query_symbol(con, args.query, limit=args.limit)
+        results += ledger_by_name(ledger, args.query)[:max(0, args.limit - len(results))]
     elif args.command == "address":
         results = query_address(con, args.address)
+        results += ledger_by_address(ledger, normalize_hex_address(args.address)[3])
     elif args.command == "struct":
         results = query_struct(con, args.class_name, limit=args.limit)
     elif args.command == "stats":
         stats = get_stats(con)
+        stats["rea_findings"] = len(ledger)
         if args.json:
             print(json.dumps(stats, indent=2))
         else:
@@ -252,6 +293,9 @@ def main():
                 print(f"  {item.get('offset_hex')} (+{item.get('offset'):4d}) | size: {str(item.get('size')):2s} | {item.get('type', ''):18s} | {item.get('class')}::{item.get('name')}")
             elif source == "steam_validated":
                 print(f"[steam_val] Steam: {item.get('steam_addr')} -> GOG: {item.get('gog_addr')} | {item.get('name')} | verdict: {item.get('verdict')} (batch {item.get('batch')})")
+            elif source == "rea_finding":
+                print(f"[rea] {item.get('addr')} | {item.get('kind')} | {item.get('name')} | {item.get('confidence')} | {item.get('topic')} {item.get('date')} ({item.get('file')})")
+                print(f"       evidence: {item.get('evidence')}")
             elif source == "name_map":
                 print(f"[name_map] {item.get('steam_addr')} | {item.get('name')} | source: {item.get('source')} | conf: {item.get('confidence')}")
             else:

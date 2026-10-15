@@ -65,5 +65,46 @@ class TestQueryGhidra(unittest.TestCase):
         self.assertIn("offset_hex", data[0])
         self.assertIn("offset", data[0])
 
+class TestReaLedger(unittest.TestCase):
+    """GHI-06: rea-recon findings ledger (patch_manager_mods/ghidra_knowledge/rea_findings/*.tsv) is searchable."""
+
+    HEADER = "addr\tkind\tname\tconfidence\tevidence\ttopic\tdate\n"
+
+    def setUp(self):
+        import tempfile
+        self.tmp = tempfile.TemporaryDirectory()
+        d = Path(self.tmp.name)
+        (d / "20261015_wi87.tsv").write_text(
+            self.HEADER + "0x007510b0\tfunction\tCSWGuiLabel scalar deleting dtor\tprobable\t"
+            "procedure_assembly 0x7510b0: vftable slot 0\tWI-87\t2026-10-15\n", encoding="utf-8")
+        (d / "bad.tsv").write_text("not\ta\theader\n0x007510b0\tx\n", encoding="utf-8")   # wrong header: skipped
+        self.dir = str(d)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def run_cli(self, *args):
+        cmd = [sys.executable, str(SCRIPT)] + list(args) + ["--ledger-dir", self.dir]
+        return subprocess.run(cmd, cwd=str(REPO_ROOT), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+    def test_address_finds_ledger_row_in_any_hex_form(self):
+        for v in ("0x007510b0", "7510B0"):
+            res = self.run_cli("address", v, "--json")
+            self.assertEqual(res.returncode, 0, res.stderr)
+            rows = [r for r in json.loads(res.stdout) if r.get("source_table") == "rea_finding"]
+            self.assertEqual([r["name"] for r in rows], ["CSWGuiLabel scalar deleting dtor"])
+            self.assertEqual(rows[0]["file"], "20261015_wi87.tsv")
+
+    def test_symbol_finds_ledger_row_and_text_output_labels_it(self):
+        res = self.run_cli("symbol", "CSWGuiLabel scalar")
+        self.assertEqual(res.returncode, 0, res.stderr)
+        self.assertIn("[rea] 0x007510b0", res.stdout)
+        self.assertIn("evidence: procedure_assembly", res.stdout)
+
+    def test_stats_counts_only_well_formed_rows(self):
+        res = self.run_cli("stats", "--json")
+        self.assertEqual(json.loads(res.stdout)["rea_findings"], 1)
+
+
 if __name__ == "__main__":
     unittest.main()
