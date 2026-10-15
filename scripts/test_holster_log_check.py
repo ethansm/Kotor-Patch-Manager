@@ -54,9 +54,20 @@ def gob_line(n, gob, parent, pos, quat):
     return "GOB n=%d gob=%x parent18=%x pos=(%.3f,%.3f,%.3f) quat=(%.3f,%.3f,%.3f,%.3f)" % (n, gob, parent, *pos, *quat)
 
 
-def fixture():
+def place(seq, gob, gobvt, pos0, quat0, pos1, quat1, node=0x77, beh=0x88):
+    return ("PLACE n=%d gob=%x node=%x beh=%x gobvt=%x pos0=(%.3f,%.3f,%.3f) quat0=(%.3f,%.3f,%.3f,%.3f) "
+            "pos1=(%.3f,%.3f,%.3f) quat1=(%.3f,%.3f,%.3f,%.3f)") % (seq, gob, node, beh, gobvt, *pos0, *quat0, *pos1, *quat1)
+
+
+PLACE_OK_A = place(1, 0x9200, 0x1f, (0.0, 0.0, 0.0), (1.0, 0.0, 0.0, 0.0), (0.1, 0.0, 0.0), (0.985, 0.0, 0.0, 0.174))
+PLACE_BAD = place(2, 0x9300, 0x1f, (1.0, 1.0, 1.0), (1.0, 0.0, 0.0, 0.0), (1.0, 1.0, 1.5), (1.0, 0.0, 0.0, 0.100))   # norm 1.005
+PLACE_OK_B = place(3, 0x9200, 0x7, (0.1, 0.0, 0.0), (0.985, 0.0, 0.0, 0.174), (0.2, 0.0, 0.0), (0.985, 0.0, 0.0, 0.174))
+
+
+def fixture_bodies():
     """Every line kind, stamped and bare mixed. Gob 0x9000 turns 20 deg about z; its third sample is the same rotation
-    with the sign flipped. Gob 0x9100 is constant except z."""
+    with the sign flipped. Gob 0x9100 is constant except z. PLACE: gob 0x9200 twice (last one is the shown one), gob 0x9300
+    once with a non-unit quat1 that must be flagged."""
     bodies = [
         LOADED, BONE,
         comb(0x2A1, 0, 1, 1), comb(0x1F0, 0, 1, 1), comb(0x2A1, 1, 0, 2), comb(0x1F0, 1, 0, 2), comb(0x2A1, 0, 1, 3),
@@ -70,9 +81,14 @@ def fixture():
         gob_line(50, 0x9000, 0x1234, (0.1, 1.0, 2.2), (0.985, 0.0, 0.0, 0.174)),
         gob_line(50, 0x9100, 0x1234, (5.0, 5.0, 5.5), (1.0, 0.0, 0.0, 0.0)),
         gob_line(75, 0x9000, 0x1234, (0.2, 1.0, 2.4), (-0.985, 0.0, 0.0, -0.174)),
+        PLACE_OK_A, PLACE_BAD, PLACE_OK_B,
         CAP,
     ]
-    return [stamped(b, i) if i % 3 == 0 else b for i, b in enumerate(bodies)]
+    return bodies
+
+
+def fixture():
+    return [stamped(b, i) if i % 3 == 0 else b for i, b in enumerate(fixture_bodies())]
 
 
 def worst_case():
@@ -89,6 +105,15 @@ def worst_case():
         bodies += [gob_line(k + 1, 0xA00 + g, 0x1, (0.0, 0.0, 0.0), (1.0, 0.0, 0.0, 0.0)) for k in range(g + 1)]
     bodies += ["COMB creature=zz old=0 new=1 edge=1 tick=1"]                    # skipped
     bodies += [CAP]
+    return bodies
+
+
+def place_worst():
+    """31 parsed PLACE lines over 6 gobs and 12 gobvt values (line 31 has quat1 norm 1.118), plus one unparsable PLACE."""
+    bodies = [place(i + 1, 0x9400 + i % 6, 0x10 + i % 12, (0.0, 0.0, 0.0), (1.0, 0.0, 0.0, 0.0),
+                    (float(i), 0.0, 0.0), (1.0, 0.0, 0.0, 0.0)) for i in range(30)]
+    bodies.append(place(31, 0x9400, 0x10, (0.0, 0.0, 0.0), (1.0, 0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 0.0, 0.0, 0.5)))
+    bodies.append("PLACE n=32 gob=9400 node=77 beh=88 gobvt=10 pos0=(0.000,0.000,0.000)")   # missing quat0/pos1/quat1
     return bodies
 
 
@@ -116,7 +141,7 @@ class ParseTests(unittest.TestCase):
         recs, skipped, main = parse(fixture())
         self.assertEqual(skipped, [])
         self.assertEqual(Counter(r["kind"] for r in recs),
-                         Counter({"COMB": 5, "ATTACH": 4, "SWAP": 3, "ANIMRES": 4, "ANIMSEND": 2, "GOB": 5}))
+                         Counter({"COMB": 5, "ATTACH": 4, "SWAP": 3, "ANIMRES": 4, "ANIMSEND": 2, "GOB": 5, "PLACE": 3}))
         self.assertEqual(main["loaded"], ["0.1.0-dev"])
         self.assertEqual(main["cap"], ["60000"])
         self.assertEqual(main["bonetest"], Counter({"patched": 1}))
@@ -157,7 +182,7 @@ class ReportTests(unittest.TestCase):
 
     def test_header_and_status(self):
         self.assertEqual(self.rc, 0)
-        self.assertEqual(self.out[0], "HOLSTER lines=26 parsed=23 skipped=0")
+        self.assertEqual(self.out[0], "HOLSTER lines=29 parsed=26 skipped=0")
         self.assertEqual(self.out[1], STATUS)
 
     def test_status_when_absent(self):
@@ -221,6 +246,67 @@ class ReportTests(unittest.TestCase):
             missing = os.path.join(d, "holster_log.txt")
             rc, out = run([missing])
         self.assertEqual((rc, out), (2, ["no log: %s" % missing]))
+
+
+class PlaceTests(unittest.TestCase):
+    def setUp(self):
+        self.rc, self.out = run_log(fixture_bodies())
+        self.bad_line = fixture_bodies().index(PLACE_BAD) + 1
+
+    def test_place_records_parse_with_fields(self):
+        recs, skipped, _ = parse(fixture_bodies())
+        places = [r for r in recs if r["kind"] == "PLACE"]
+        self.assertEqual(skipped, [])
+        self.assertEqual([(r["seq"], r["gob"], r["gobvt"]) for r in places],
+                         [(1, "9200", "1f"), (2, "9300", "1f"), (3, "9200", "7")])
+        self.assertEqual((places[0]["node"], places[0]["beh"]), ("77", "88"))
+        self.assertEqual(places[1]["quat1"], [1.0, 0.0, 0.0, 0.1])
+
+    def test_place_counts_gobvt_and_shows_last_sample_per_gob(self):
+        self.assertIn("PLACE lines=3 gobs=2 gobvt distinct=2: 0x1f x2, 0x7 x1", self.out)
+        self.assertIn("  gob=0x9200 samples=2 last pos0=(0.100,0.000,0.000) quat0=(0.985,0.000,0.000,0.174)", self.out)
+        self.assertIn("    -> pos1=(0.200,0.000,0.000) quat1=(0.985,0.000,0.000,0.174)", self.out)
+        self.assertIn("  gob=0x9300 samples=1 last pos0=(1.000,1.000,1.000) quat0=(1.000,0.000,0.000,0.000)", self.out)
+        self.assertIn("    -> pos1=(1.000,1.000,1.500) quat1=(1.000,0.000,0.000,0.100)", self.out)
+        self.assertLess(self.out.index("  gob=0x9200 samples=2 last pos0=(0.100,0.000,0.000) quat0=(0.985,0.000,0.000,0.174)"),
+                        self.out.index("  gob=0x9300 samples=1 last pos0=(1.000,1.000,1.000) quat0=(1.000,0.000,0.000,0.000)"))
+
+    def test_non_unit_quat1_is_flagged_with_count_and_line(self):
+        problems = [s for s in self.out if s.startswith("PROBLEM ")]
+        self.assertEqual(problems, ["PROBLEM PLACE quat1 |norm-1|>0.002: count=1 worst=0.0050 e.g. L%d gob=0x9300"
+                                    % self.bad_line])
+        self.assertFalse(any(s.startswith("PLACE quat1 unit-norm ok") for s in self.out))
+
+    def test_unit_quat1_lines_are_not_flagged(self):
+        rc, out = run_log([PLACE_OK_A, PLACE_OK_B])
+        self.assertIn("PLACE quat1 unit-norm ok: 2 lines within 0.002", out)
+        self.assertFalse(any(s.startswith("PROBLEM ") for s in out))
+
+    def test_unparsable_place_line_is_skipped_not_fatal(self):
+        bad = "PLACE n=1 gob=9200 node=77 beh=88 gobvt=1f pos0=(0.000,0.000,0.000) quat0=(1.000,0.000,0.000,0.000)"
+        recs, skipped, _ = parse([bad])
+        self.assertEqual(recs, [])
+        self.assertEqual([(s[0], s[1]) for s in skipped], [(1, "PLACE")])
+
+    def test_unrelated_place_words_are_ignored(self):
+        self.assertEqual(parse(["PLACED ok", "PLACEHOLDER n=1"])[:2], ([], []))
+
+    def test_place_view_caps_gobs_and_report_stays_within_40_lines(self):
+        rc, out = run_log(worst_case()[:-1] + place_worst() + [CAP])
+        self.assertEqual(rc, 0)
+        self.assertLessEqual(len(out), 40)
+        self.assertIn("GOB lines=55 gobs=10 (top 4 by samples shown)", out)
+        self.assertIn("PLACE lines=31 gobs=6 (top 4 by samples shown) gobvt distinct=12: 0x10 x4, 0x11 x3, 0x12 x3, "
+                      "0x13 x3, 0x14 x3, 0x15 x3, 0x16 x2, 0x17 x2, 0x18 x2, 0x19 x2 (+2 more)", out)
+        self.assertTrue(any(s.startswith("PROBLEM PLACE quat1 |norm-1|>0.002: count=1 worst=0.1180") and "gob=0x9400" in s
+                            for s in out))
+        self.assertEqual(len([s for s in out if s.startswith("  gob=0x94")]), 4)
+        self.assertTrue(out[-1].startswith("skipped e.g. L") and "COMB creature=zz" in out[-1])
+
+    def test_logs_without_place_lines_have_no_place_section(self):
+        rc, out = run_log(worst_case())
+        self.assertFalse(any(s.startswith(("PLACE", "PROBLEM")) for s in out))
+        self.assertIn("GOB lines=55 gobs=10 (top 8 by samples shown)", out)
 
 
 class NewWindowTests(unittest.TestCase):

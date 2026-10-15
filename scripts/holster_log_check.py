@@ -5,7 +5,9 @@ Usage: holster_log_check.py [LOG | --log LOG] [--new [--no-advance] [--state PAT
   Default log: ~/.local/share/Steam/steamapps/common/Knights of the Old Republic II/holster_log.txt
   Report (at most 40 lines): header, status (loaded / cap reached / BONETEST), COMB edges per creature, ATTACH tags and
   (body, handleR, handleL) tuples per creature, SWAP total, ANIMRES and ANIMSEND id histograms, GOB samples per gob
-  (the 8 with the most samples: parent18, pos min/max/mean per axis, quat min/max per component, mean-quat angle).
+  (the 8 with the most samples: parent18, pos min/max/mean per axis, quat min/max per component, mean-quat angle),
+  PLACE (only when PLACE lines exist: count, gobvt histogram, quat1 unit-norm check, last pos0/quat0 -> pos1/quat1 for the
+  4 gobs with the most samples; the GOB view then drops to 4 gobs so the report stays within 40 lines).
   --new: only lines after the bookmark shared with log_triage (same state file, keyed by absolute path), then advance it.
   Exit 0 = analyzed, 2 = log missing ("no log: <path>").
 
@@ -30,7 +32,9 @@ sys.path.insert(0, str(HERE))
 import log_triage as LT  # noqa: E402  (--new bookmark: same state file and helpers; log_triage is not modified)
 
 DEFAULT_LOG = Path.home() / ".local/share/Steam/steamapps/common/Knights of the Old Republic II/holster_log.txt"
-CAPS = {"comb": 4, "attach": 3, "tuples": 3, "tags": 5, "ids": 10, "gobs": 8}
+CAPS = {"comb": 4, "attach": 3, "tuples": 3, "tags": 5, "ids": 10, "gobs": 8,
+        "gobs_with_place": 4, "place_gobs": 4}   # GOB view and PLACE view both shrink so the report stays <= 40 lines
+UNIT_TOL = 2e-3   # PLACE quat1 |norm-1| limit: the DLL enforces 1e-3 (poseSane); %.3f printing adds up to ~1e-3 rounding
 HEX = r"[0-9a-fA-F]+"
 INT = r"-?\d+"
 NUM = r"[-+]?(?:\d+\.?\d*|\.\d+)"
@@ -41,7 +45,7 @@ def _rx(template):
     return re.compile(template.replace("<H>", HEX).replace("<I>", INT).replace("<N>", NUM))
 
 
-KIND_RE = re.compile(r"\b(COMB|ATTACH|SWAP|ANIMRES|ANIMSEND|GOB) ")
+KIND_RE = re.compile(r"\b(COMB|ATTACH|SWAP|ANIMRES|ANIMSEND|GOB|PLACE) ")
 FULL_RE = {
     "COMB": _rx(r"\bCOMB creature=(?P<creature><H>) old=(?P<old><I>) new=(?P<new><I>) edge=(?P<edge><I>) tick=\d+"),
     "ATTACH": _rx(r"\bATTACH obj=<H> tag='(?P<tag>[^']*)' creature=(?P<creature><H>) body=(?P<body><H>) "
@@ -51,6 +55,9 @@ FULL_RE = {
     "ANIMSEND": _rx(r"\bANIMSEND creature=<H> id=(?P<id><H>) tick=\d+"),
     "GOB": _rx(r"\bGOB n=(?P<n><I>) gob=(?P<gob><H>) parent18=(?P<parent><H>) "
                r"pos=\((?P<px><N>),(?P<py><N>),(?P<pz><N>)\) quat=\((?P<qw><N>),(?P<qx><N>),(?P<qy><N>),(?P<qz><N>)\)"),
+    "PLACE": _rx(r"\bPLACE n=(?P<n><I>) gob=(?P<gob><H>) node=(?P<node><H>) beh=(?P<beh><H>) gobvt=(?P<gobvt><H>) "
+                 r"pos0=\((?P<p0x><N>),(?P<p0y><N>),(?P<p0z><N>)\) quat0=\((?P<q0w><N>),(?P<q0x><N>),(?P<q0y><N>),(?P<q0z><N>)\) "
+                 r"pos1=\((?P<p1x><N>),(?P<p1y><N>),(?P<p1z><N>)\) quat1=\((?P<q1w><N>),(?P<q1x><N>),(?P<q1y><N>),(?P<q1z><N>)\)"),
 }
 MAIN_RES = {
     "loaded": re.compile(r"\bholster (\S+) loaded\b"),
@@ -76,6 +83,12 @@ def _record(kind, n, m):
     elif kind == "GOB":
         rec.update(gob=_hex(g["gob"]), parent=_hex(g["parent"]),
                    pos=[float(g[k]) for k in ("px", "py", "pz")], quat=[float(g[k]) for k in ("qw", "qx", "qy", "qz")])
+    elif kind == "PLACE":
+        rec.update(seq=int(g["n"]), gob=_hex(g["gob"]), node=_hex(g["node"]), beh=_hex(g["beh"]), gobvt=_hex(g["gobvt"]),
+                   pos0=[float(g[k]) for k in ("p0x", "p0y", "p0z")],
+                   quat0=[float(g[k]) for k in ("q0w", "q0x", "q0y", "q0z")],
+                   pos1=[float(g[k]) for k in ("p1x", "p1y", "p1z")],
+                   quat1=[float(g[k]) for k in ("q1w", "q1x", "q1y", "q1z")])
     return rec
 
 
@@ -182,13 +195,13 @@ def _span(vals):
     return "%.3f..%.3f" % (min(vals), max(vals))
 
 
-def _gobs(recs):
+def _gobs(recs, cap):
     rows = [r for r in recs if r["kind"] == "GOB"]
     per = {}
     for r in rows:
         per.setdefault(r["gob"], []).append(r)
     ordered = sorted(per.items(), key=lambda kv: -len(kv[1]))   # stable: ties keep first-seen order
-    shown = ordered[:CAPS["gobs"]]
+    shown = ordered[:cap]
     head = "GOB lines=%d gobs=%d" % (len(rows), len(per))
     if len(per) > len(shown):
         head += " (top %d by samples shown)" % len(shown)
@@ -213,14 +226,58 @@ def _gobs(recs):
     return out
 
 
+def _norm(q):
+    return math.sqrt(sum(c * c for c in q))
+
+
+def _vec(vals):
+    return ",".join("%.3f" % v for v in vals)
+
+
+def _place(recs):
+    """PLACE section: parsed count, gobvt histogram, quat1 unit-norm problem line, last pos0/quat0 -> pos1/quat1 per gob."""
+    rows = [r for r in recs if r["kind"] == "PLACE"]
+    per = {}
+    for r in rows:
+        per.setdefault(r["gob"], []).append(r)
+    shown = sorted(per.items(), key=lambda kv: -len(kv[1]))[:CAPS["place_gobs"]]   # stable: ties keep first-seen order
+    gobvt = Counter(r["gobvt"] for r in rows)
+    top = gobvt.most_common(CAPS["ids"])
+    head = "PLACE lines=%d gobs=%d" % (len(rows), len(per))
+    if len(per) > len(shown):
+        head += " (top %d by samples shown)" % len(shown)
+    head += " gobvt distinct=%d: %s" % (len(gobvt), ", ".join("0x%s x%d" % kv for kv in top) or "none")
+    if len(gobvt) > len(top):
+        head += " (+%d more)" % (len(gobvt) - len(top))
+    out = [head]
+    bad = [r for r in rows if abs(_norm(r["quat1"]) - 1.0) > UNIT_TOL]
+    if bad:
+        worst = max(abs(_norm(r["quat1"]) - 1.0) for r in bad)
+        out.append("PROBLEM PLACE quat1 |norm-1|>%g: count=%d worst=%.4f e.g. L%d gob=0x%s"
+                   % (UNIT_TOL, len(bad), worst, bad[0]["line"], bad[0]["gob"]))
+    elif rows:
+        out.append("PLACE quat1 unit-norm ok: %d lines within %g" % (len(rows), UNIT_TOL))
+    else:
+        out.append("PLACE quat1 unit-norm: n/a (no parsed PLACE lines)")
+    for gid, samples in shown:
+        last = samples[-1]
+        out.append("  gob=0x%s samples=%d last pos0=(%s) quat0=(%s)"
+                   % (gid, len(samples), _vec(last["pos0"]), _vec(last["quat0"])))
+        out.append("    -> pos1=(%s) quat1=(%s)" % (_vec(last["pos1"]), _vec(last["quat1"])))
+    return out
+
+
 def render(recs, skipped, main_facts, nlines, meta):
+    has_place = any(r["kind"] == "PLACE" for r in recs) or any(k == "PLACE" for _, k, _ in skipped)
     out = ["HOLSTER lines=%d parsed=%d skipped=%d%s" % (nlines, len(recs), len(skipped), meta), _status(main_facts)]
     out += _comb(recs)
     out += _attach(recs)
     out.append("SWAP total=%d" % sum(1 for r in recs if r["kind"] == "SWAP"))
     out.append(_hist("ANIMRES", recs))
     out.append(_hist("ANIMSEND", recs))
-    out += _gobs(recs)
+    out += _gobs(recs, CAPS["gobs_with_place"] if has_place else CAPS["gobs"])
+    if has_place:
+        out += _place(recs)
     if skipped:
         n, kind, text = skipped[0]
         out.append("skipped e.g. L%d %s: %s" % (n, kind, text[:120]))
