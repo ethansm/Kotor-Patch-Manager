@@ -509,11 +509,11 @@ void ensureTextures() {   // once per process; the textures outlive every HUD (n
     const bool ensured = embtex::ensure(kSelfHealTextures, Count);   // create + fill + queue (idempotent); heal() below refills after a GL reset
     g_texInit = ensured;   // not ready / partial: retried on the next HUD build (was set unconditionally, a not-ready first call left the discs null forever)
     for (int i = 0; i < Count; ++i) {
-        void* im = guikit::imageFor(kSelfHealTextures[i].resref);   // a pooled GUI handle that is never released keeps the texture alive
+        void* im = guikit::imageForRetry(kSelfHealTextures[i].resref);   // non-null handles are pooled and never released (keep the texture alive); a null is not pooled, so the next HUD build asks again (SH-3a-05)
         if (i == 0) g_crossImg = im; else if (i <= 2) g_discImg[i - 1] = im; else if (i <= 6) g_togImg[i - 3] = im; else g_ringImg[i - 7] = im;
     }
-    g_arrowNeg = guikit::imageFor("uibit_arrowneg_p");   // vanilla stepper glyphs (r1.md); pooled, never released
-    g_arrowPos = guikit::imageFor("uibit_arrowpos_p");
+    g_arrowNeg = guikit::imageForRetry("uibit_arrowneg_p");   // vanilla stepper glyphs (r1.md); non-null pooled, a null is retried by resolveArrows (SH-3a-05)
+    g_arrowPos = guikit::imageForRetry("uibit_arrowpos_p");
     KP_LOG(chUi, "TEXSET ensure=%d supported=%d ready=%d cross=%08x disc=%08x dischi=%08x tog=%08x,%08x,%08x,%08x ring0=%08x slots=%d/%d", (int)ensured, (int)embtex::supported(), (int)embtex::detail::engineReady(),
            (unsigned)reinterpret_cast<uintptr_t>(g_crossImg), (unsigned)reinterpret_cast<uintptr_t>(g_discImg[0]), (unsigned)reinterpret_cast<uintptr_t>(g_discImg[1]), (unsigned)reinterpret_cast<uintptr_t>(g_togImg[0]), (unsigned)reinterpret_cast<uintptr_t>(g_togImg[1]), (unsigned)reinterpret_cast<uintptr_t>(g_togImg[2]), (unsigned)reinterpret_cast<uintptr_t>(g_togImg[3]), (unsigned)reinterpret_cast<uintptr_t>(g_ringImg[0]), embtex::slotCount(), (int)embtex::MaxTex);
     KP_LOG(chUi, "ARROW neg=%08x pos=%08x", (unsigned)reinterpret_cast<uintptr_t>(g_arrowNeg), (unsigned)reinterpret_cast<uintptr_t>(g_arrowPos));
@@ -523,8 +523,8 @@ void resolveArrows(DWORD now) {
     static DWORD last = 0; static int tries = 0;
     if ((g_arrowNeg && g_arrowPos) || tries >= 10 || (last && now - last < 500)) return;
     last = now; ++tries;
-    if (!g_arrowNeg) g_arrowNeg = guikit::imageFor("uibit_arrowneg_p");
-    if (!g_arrowPos) g_arrowPos = guikit::imageFor("uibit_arrowpos_p");
+    if (!g_arrowNeg) g_arrowNeg = guikit::imageForRetry("uibit_arrowneg_p");
+    if (!g_arrowPos) g_arrowPos = guikit::imageForRetry("uibit_arrowpos_p");
     KP_LOG(chUi, "ARROW retry=%d neg=%08x pos=%08x", tries, (unsigned)reinterpret_cast<uintptr_t>(g_arrowNeg), (unsigned)reinterpret_cast<uintptr_t>(g_arrowPos));
 }
 void healTextures() { embtex::heal(); }   // every frame (GL reset + missing rebuild, 20-refill give-up per texture; DB lesson 290)

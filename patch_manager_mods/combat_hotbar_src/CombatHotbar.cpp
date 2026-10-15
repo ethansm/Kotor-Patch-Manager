@@ -282,7 +282,7 @@ int g_pillMask = -1;               // CH4e last logged visible-pill bitmask (bit
 ch::FreezeState g_freeze = { false, 0, 0 };
 bool g_frozenLog = false;
 int g_hover = -1;                  // flat slot under the cursor, -1 none
-void* g_imgFrame = nullptr;        // guikit::imageFor results, cached once non-null (pooled, never released)
+void* g_imgFrame = nullptr;        // guikit::imageForRetry results, cached once non-null (pooled, never released)
 void* g_imgHi = nullptr;
 bool g_imgWarned = false;
 bool g_replaced = false;           // vanilla bit1 cleared by us (Replace=1), so Replace=0 must restore it
@@ -615,9 +615,17 @@ void updateButtons(const K2HudContext* ctx) {
                 firstW, sw, sh);
     }
 
-    // Art (cached once resolved).
-    if (!g_imgFrame) g_imgFrame = guikit::imageFor(FrameResref);
-    if (!g_imgHi) g_imgHi = guikit::imageFor(HiResref);
+    // Art (cached once resolved). imageForRetry does not pool a null (SH-3a-05); at most 10 tries, 500 ms apart (as resolveArrows),
+    // so a permanently absent resref costs 10 engine loads, not one per frame. A refused gate spends no try.
+    if (!g_imgFrame || !g_imgHi) {
+        static DWORD artLast = 0; static int artTries = 0;
+        const DWORD artNow = GetTickCount();
+        if (artTries < 10 && (artTries == 0 || artNow - artLast >= 500)) {
+            artLast = artNow; ++artTries;
+            if (!g_imgFrame) g_imgFrame = guikit::imageForRetry(FrameResref);
+            if (!g_imgHi) g_imgHi = guikit::imageForRetry(HiResref);
+        }
+    }
     if ((!g_imgFrame || !g_imgHi) && !g_imgWarned) { g_imgWarned = true; KP_LOGV(chMain, KPLOG_WARN, "buttons: art not resolved yet (frame=%p hi=%p)", g_imgFrame, g_imgHi); }
     else if (g_imgFrame && g_imgHi && g_imgWarned) { g_imgWarned = false; KP_LOGV(chMain, KPLOG_INFO, "buttons: art resolved (frame=%p hi=%p)", g_imgFrame, g_imgHi); }
 
