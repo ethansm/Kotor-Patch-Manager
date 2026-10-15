@@ -91,7 +91,7 @@ Re-triaged 2026-10-05 against 1.2.1 (the 2026-09-30/10-02 list had 8 items). Pha
 - 86 runtime controls, all built from one `Layout[]` table in `ActionHotbar.cpp` (`static_assert(sizeof Layout / sizeof Layout[0] == ControlCount)`, `ControlCount = TipOff + 1`; `EditorControlCount` = 25, the editor is enabled only when all exist). Breakdown: 10 frames, 10 icons, 10 digit labels, 10 qty labels (`LBL_HOTBARQTY1..0`), 10 target badges (`LBL_HOTBARTGT<d>`, rect = `hb::badgeRect(slot)`, `static_assert`-pinned), wrench, picker bg/title/3 tabs/prev/next/Clear/mode button, 8 cell frames + 8 cell icons + 8 cell qty labels, 2 tooltip labels. The tooltip pair MUST stay the last two controls (panel Draw is ascending by index).
 - Controls are appended at the panel count at the hook (ids are relative: `base` = control count after every native bind); no `.gui` edit and no override TGAs. Textures `fph_slot`, `fph_slot_hi`, `fph_edit`, `fph_edit_hi` (plus mode/badge art `fph_mode`, `fph_mode_hi`, `fph_tgt_lowhp`, `fph_tgt_self`) are registered from DLL memory.
 - Geometry (800x600 GUI units): wrench [4,478,20,35]; slots x=29+40*i, y=478, 35x35, icon inset 2; digit labels [x+4,y+1,18,18]; badge [x+22,479,13,13]; picker box [4,py-8,420,112] with py=y-110. Baseline rects: `action_hotbar_src/baseline_h3_build26.txt` (that baseline predates the badge/mode controls).
-- 8 hooks (all Steam Aspyr; table in the README "Hooks"): 0x0072CB63 `CaptureHotbarKey`, 0x0074B3F0 `HotbarHudTick`, 0x00748502 `HotbarBuildButtons`, 0x00534527 `HotbarOnSaved`, 0x0053C5AA `HotbarOnAutosaved`, 0x0052FD1E `HotbarOnLoadRequest`, 0x008529E0 `HotbarOnAutosaveSlotLoad`, 0x008FACA0 `HotbarOnNewGame`.
+- 8 hooks (all Steam Aspyr; table in the README "Hooks"): 0x0072CB84 `CaptureHotbarKey`, 0x0074B3F0 `HotbarHudTick`, 0x00748502 `HotbarBuildButtons`, 0x00534527 `HotbarOnSaved`, 0x0053C5AA `HotbarOnAutosaved`, 0x0052FD1E `HotbarOnLoadRequest`, 0x008529E0 `HotbarOnAutosaveSlotLoad`, 0x008FACA0 `HotbarOnNewGame`.
 - Character key: `obj<hexid>` of the controlled creature; Exile = `objfffffffd`. Invalid id 0xFFFFFFFF/0 = unknown (saves refused) except a one-member party with 0xFFFFFFFF -> `objfffffffd`. Full feature and decision log: History.
 
 ## Deferred ideas
@@ -904,7 +904,7 @@ delta +0x119300 (only +0x383 verified). Steam addresses (all in the knowledge DB
 | Role | Steam |
 |---|---|
 | HUD Draw / tick hook (`55 8b ec 6a ff`, ECX=hud) | `0x0074B3F0` |
-| DirectInput capture hook (`89 85 bc fe ff ff`; EAX=record{dwOfs,dwData}, `[ebp-0x10]`=device) | `0x0072CB63` |
+| DirectInput capture hook (`8b 55 10 c1 e2 06`, GetEvents+0x3A4, moved from +0x383 for EKC coexistence; EAX=record{dwOfs,dwData}, `[ebp-0x10]`=device) | `0x0072CB84` |
 | activate button | `0x007516B0` thiscall(hud, button) RET 4 |
 | personal invoke | `0x00751750` thiscall(hud, group 0..6, 0) RET 8 |
 | target invoke | `0x00751710` thiscall(hud,i,0) RET 8 -> `007445d0(hud+0xCC, i, 1)` |
