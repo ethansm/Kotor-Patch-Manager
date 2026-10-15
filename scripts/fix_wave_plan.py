@@ -4,7 +4,7 @@
 Usage:
   fix_wave_plan.py [plan] <items.tsv> --wave W [--findings F --cols a,b,c]
                    [--max-units N] [--max-agents N] [--max-cost X] [--limits P]
-                   [--waves-root D] [--repo-root D]
+                   [--waves-root D] [--repo-root D] [--claims-dir D]
 
 Input: items TSV, one row per fix unit (columns in COLUMNS). Rows sharing a non-free `group` form one block and are
 never split. Free rows (group `-` or empty) are a block of one. Blocks and the rows inside them are ordered so every
@@ -18,6 +18,8 @@ usd = (len(variants) * haiku + consolidator + reviewer) * revision_factor.
 Writes <waves-root>/<W>/ items.tsv (copy of the input), plan.json and batches.tsv (wave_id = <W>-<letter>), and prints
 a table on stdout. A block over a cap, an `after` cycle or an unknown `after` id exits 2 and writes nothing.
 A leading `plan` token is accepted so `fix_wave.py plan ...` can forward argv unchanged.
+Select source: when the items file sits beside a candidates.tsv (written by `select`), plan.json gets
+"source": "select" and the claims of candidates outside batch A are released (--claims-dir overrides the claim store).
 Exit: 0 ok; 2 bad input or over-cap block.
 """
 import argparse
@@ -35,6 +37,7 @@ SCRIPTS_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPTS_DIR.parent
 WAVES_REL = Path(".claude") / "waves"
 LIMITS_REL = Path(".claude") / "skills" / "variant-fix-wave" / "limits.toml"
+SELECT_CANDIDATES = "candidates.tsv"  # written beside the items file by `select`
 WAVE_ID_RE = r"[A-Za-z0-9][A-Za-z0-9._-]*"
 COLUMNS = ("id", "kind", "size", "group", "after", "fids", "write", "tests", "mods",
            "entries", "anchors", "constraint", "context", "doc")
@@ -297,8 +300,9 @@ def batch_letter(i):
     return s
 
 
-def write_plan(waves_root, wave, items_path, rows, batches, limits, findings, cols):
-    """Write <waves_root>/<wave>/{items.tsv, plan.json, batches.tsv}. Returns the plan dir."""
+def write_plan(waves_root, wave, items_path, rows, batches, limits, findings, cols, source=None):
+    """Write <waves_root>/<wave>/{items.tsv, plan.json, batches.tsv}. Returns the plan dir.
+    `source` is recorded in plan.json only when given (e.g. "select")."""
     if sorted(r["id"] for b in batches for r in b) != sorted(r["id"] for r in rows):
         raise PlanError("internal: batches do not cover every row exactly once")
     plan_dir = Path(waves_root) / wave
@@ -310,6 +314,8 @@ def write_plan(waves_root, wave, items_path, rows, batches, limits, findings, co
         "cols": list(cols) if cols else None,
         "limits": limits,
     }
+    if source:
+        plan["source"] = source
     (plan_dir / "plan.json").write_text(json.dumps(plan, indent=2) + "\n", encoding="utf-8")
     lines = ["batch\twave_id\tunits\tagents\ttest_usd\tids"]
     for i, b in enumerate(batches):
@@ -333,6 +339,40 @@ def format_table(batches, limits):
     return "\n".join(out)
 
 
+def select_candidates(items_path):
+    """Ids of the candidates.tsv beside the items file (written by `select`), in file order.
+    None when there is no such file, i.e. the items did not come from select."""
+    path = Path(items_path).resolve().parent / SELECT_CANDIDATES
+    if not path.is_file():
+        return None
+    with path.open(newline="", encoding="utf-8") as fh:
+        reader = csv.DictReader(fh, delimiter="\t", quoting=csv.QUOTE_NONE)
+        if "id" not in (reader.fieldnames or []):
+            raise PlanError(f"{path}: header lacks the 'id' column")
+        return [(r["id"] or "").strip() for r in reader if (r["id"] or "").strip()]
+
+
+def default_release(repo_root, claims_dir=None, wave=None):
+    """Release function for the select source: release(ids) drops the claim of each id in the WI claim store, only
+    when `select --wave <wave>` made it (wave_prefix VW-<wave>), so a peer session's claim is never freed.
+    Best effort: a store or per-id error prints a note on stderr and the plan still succeeds."""
+    def release(ids):
+        try:
+            import wi_state as ws  # lazy: only the select source touches the claim store
+            store = ws.Store(repo_root, claims_dir=claims_dir)
+        except Exception as exc:  # noqa: BLE001 - best effort, reported below
+            print(f"note: claim store unavailable, nothing released: {exc}", file=sys.stderr)
+            return
+        for wi in ids:
+            try:
+                claim = store.read_claim(wi)
+                if claim and claim.get("wave_prefix") == f"VW-{wave}":
+                    store.release(wi)
+            except Exception as exc:  # noqa: BLE001 - one stuck claim must not stop the others
+                print(f"note: could not release {wi}: {exc}", file=sys.stderr)
+    return release
+
+
 def build_parser():
     p = argparse.ArgumentParser(prog="fix_wave_plan.py", description="Pack fix-unit rows into batches (plan step).")
     p.add_argument("items", help="items TSV, one row per fix unit")
@@ -345,10 +385,12 @@ def build_parser():
     p.add_argument("--limits", help="limits.toml path (default: repo .claude/skills/variant-fix-wave/limits.toml)")
     p.add_argument("--waves-root", help="waves root (default: repo .claude/waves)")
     p.add_argument("--repo-root", help="repo root (default: parent of scripts/)")
+    p.add_argument("--claims-dir", help="WI claims dir for releasing select candidates (default: the wi_state store)")
     return p
 
 
-def run_plan(args):
+def run_plan(args, release=None):
+    """Plan the wave. `release(ids)` drops claims for select candidates outside batch A; None = the WI claim store."""
     if not re.fullmatch(WAVE_ID_RE, args.wave):
         raise PlanError(f"invalid wave id {args.wave!r}: use [A-Za-z0-9._-], starting with a letter or digit")
     repo_root = Path(args.repo_root).resolve() if args.repo_root else REPO_ROOT
@@ -371,10 +413,19 @@ def run_plan(args):
     limits = load_limits(limits_path, {"max_units": args.max_units, "max_agents": args.max_agents,
                                        "max_cost_usd": args.max_cost})
     rows = read_items(items)
+    candidates = select_candidates(items)
     batches = pack_batches(blocks(rows), limits)
     waves_root = Path(args.waves_root).resolve() if args.waves_root else repo_root / WAVES_REL
-    write_plan(waves_root, args.wave, items, rows, batches, limits, findings, cols)
+    write_plan(waves_root, args.wave, items, rows, batches, limits, findings, cols,
+               source="select" if candidates is not None else None)
     print(format_table(batches, limits))
+    if candidates is not None:
+        batch_a = {r["id"] for r in batches[0]}
+        planned = {r["id"] for r in rows}  # unfit candidates were already released by draft-collect
+        freed = [wi for wi in dict.fromkeys(candidates) if wi in planned and wi not in batch_a]
+        if freed:
+            (release or default_release(repo_root, args.claims_dir, args.wave))(freed)
+            print(f"released, not in batch A: {';'.join(freed)}")
     return 0
 
 

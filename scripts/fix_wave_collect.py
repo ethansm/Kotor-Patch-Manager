@@ -32,7 +32,8 @@ per --session given, or once for the current session when none is given. Covers 
 --session is repeated. --since is the batch manifest.json `created` time.
 
 Exit: 0 ok; 2 bad args, missing batch, unknown item, bad limits file, or unreadable agent_usage output.
-Writes only under the batch dir (copy-out, markers, revise archives).
+Writes only under the batch dir (copy-out, markers, revise archives), plus heartbeat_at of claimed WI-NN items
+in the claims store on every status run (a store error prints a warning and never fails status).
 """
 import argparse
 import csv
@@ -50,11 +51,12 @@ DEFAULT_REPO = SCRIPTS.parent
 DEFAULT_MAX_INFLIGHT = 20
 DECISIONS = ("APPROVE", "APPROVE_MINOR", "REQUEST_CHANGES")
 MARKS = ("cons", "rev")
-ROLE_NAMES = {"haiku": "VW haiku", "cons": "VW cons", "rev": "VW rev"}
-ROLE_RE = re.compile(r"^VW (haiku|cons|rev)\b")
+ROLE_NAMES = {"haiku": "VW haiku", "cons": "VW cons", "rev": "VW rev", "draft": "VW draft"}
+ROLE_RE = re.compile(r"^VW (haiku|cons|rev|draft)\b")
 LABEL_SUFFIX_RE = re.compile(r"-(A|B|C|T1|T2)$")
 ROUND_RE = re.compile(r"^review\.r(\d+)\.md$")
 HEAD_LINES = 10
+WI_ITEM_RE = re.compile(r"^WI-\d+[a-z]?$")
 
 STAGE_APPLIED = "applied"
 STAGE_HAIKU = "haiku-pending"
@@ -282,12 +284,32 @@ def inflight_count(batch_dir, items):
     return n
 
 
-def status(waves_root, repo_root, wave_batch, max_inflight, mark=None, revise=None):
+def refresh_heartbeats(items, store=None):
+    """Refresh heartbeat_at of claimed WI-NN items so a long batch does not look stale. Never raises."""
+    wis = [item for item in items if WI_ITEM_RE.match(item)]
+    if not wis:
+        return
+    try:
+        import wi_state as ws
+        st = store if store is not None else ws.Store()
+        now = ws.now_iso()
+        with st.flock(".select.lock"):  # select/draft-collect release under this lock; never resurrect a claim
+            for wi in wis:
+                claim = st.read_claim(wi)
+                if claim:
+                    claim["heartbeat_at"] = now
+                    st.write_claim(wi, claim)
+    except Exception as exc:  # claims are advisory here; status must still print
+        print(f"warning: claim heartbeat skipped: {exc}", file=sys.stderr)
+
+
+def status(waves_root, repo_root, wave_batch, max_inflight, mark=None, revise=None, store=None):
     """Status lines for one batch: inflight line, then one `<id> <stage> <next action>` line per item."""
     batch_dir = Path(waves_root) / wave_batch
     if not batch_dir.is_dir():
         raise FixWaveError(f"no batch dir: {batch_dir}")
     items = load_items(batch_dir)
+    refresh_heartbeats(items, store)
     for item in items:
         copy_out(batch_dir, item, repo_root)
     for item in _as_ids(revise):

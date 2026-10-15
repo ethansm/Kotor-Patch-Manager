@@ -1,11 +1,12 @@
 ---
 name: variant-fix-wave
-argument-hint: "[plan <items.tsv> | run <W-A> | status <W-A> | apply <W-A> | close <W-A>]"
+argument-hint: "[next | plan <items.tsv> | run <W-A> | status <W-A> | apply <W-A> | close <W-A>]"
 description: >-
   Fix a batch of known defects or test gaps in parallel with the FX1-FX3 ladder: Haiku variant proposals, a Sonnet
   consolidator per item (own worktree), an independent Sonnet reviewer, then Opus applies through gates in conflict
   order and commits. `scripts/fix_wave.py` plans batches (refuses oversized ones), writes briefs, tracks stages,
-  gates each apply and sums cost. Use for "variant fix wave", "fix these items in parallel", "same escalation as the
+  gates each apply and sums cost; `next` picks the batch itself from the top ~10 ready dev work items. Use for
+  "variant fix wave", "next fix wave", "pick the next batch", "fix these items in parallel", "same escalation as the
   Gemini fixes", "Haiku variants then Sonnet consolidate".
 ---
 
@@ -13,8 +14,8 @@ description: >-
 
 You are the Opus orchestrator. You brief, relay and apply; agents do the fixing. User input: $ARGUMENTS
 
-CLI: `python3 scripts/fix_wave.py plan|brief|status|apply|cost ...` (`--help` on each). Templates and caps live
-next to this file: `variants.md`, `consolidate.md`, `review.md`, `limits.toml`.
+CLI: `python3 scripts/fix_wave.py select|draft-collect|plan|brief|status|apply|cost ...` (`--help` on each).
+Templates and caps live next to this file: `draft.md`, `variants.md`, `consolidate.md`, `review.md`, `limits.toml`.
 
 ## Input: items TSV
 One row per fix unit; tab-separated, `;` lists. Columns: `id kind size group after fids write tests mods entries
@@ -24,6 +25,19 @@ repo-relative; `patch_manager_mods/` is implied unless a path starts with `scrip
 `scripts/testdata/fix_wave/fx3_items.tsv`. Variants: bug S = A; bug M/L = A,B,C; gap S/M = T2; gap L = T1,T2.
 
 ## Route
+### `next` (no items TSV: pick the next batch from the dev work-item backlog)
+1. `python3 scripts/fix_wave.py select --wave <W>`: top ≤10 `ready` WIs by rank (wi_model eligibility, in-repo files
+   only), claimed as `VW-<W>`, conflict groups from locksets; writes `<W>/candidates.tsv` and the recon wave
+   `<W>-draft`. Preview first with `--dry-run` (claims and writes nothing).
+2. Draft wave: `agent_contract.py snapshot`, then one `model: haiku` Agent per `<W>-draft/uNN.brief.md`
+   (description `VW draft <WI>`, map in `units.map.tsv`), in one message. Each writes `<WI>.row.tsv` or `UNFIT:`.
+3. `python3 scripts/fix_wave.py draft-collect --wave <W>`: writes `<W>/items.input.tsv` and `unfit.tsv`, releases
+   UNFIT / no-row / lint-failed claims.
+4. `python3 scripts/fix_wave.py plan .claude/waves/<W>/items.input.tsv --wave <W>`; claims outside batch A are
+   released ("released, not in batch A").
+5. Show batch A, the UNFIT list and each row's constraint, then STOP: the user approves the batch and its
+   constraints before `run`. `status` keeps the claims' heartbeats fresh during the run.
+
 ### `plan <items.tsv>`
 1. `python3 scripts/fix_wave.py plan <items.tsv> --wave <W> [--findings F --cols C]`.
 2. Show the batch table (batch, units, agents, est $, ids). Exit 2 = a group over a cap or a bad `after`: report it,
@@ -71,6 +85,6 @@ Run the CLI subcommand and report its lines; nothing else.
 - One revision per item. The 2nd REQUEST_CHANGES parks it.
 - Opus inline nits after APPROVE_MINOR: at most 5 lines, test-only or log-text-only, listed in the commit body.
   Anything else goes back to the consolidator.
-- Agent descriptions start `VW haiku <id>`, `VW cons <id>`, `VW rev <id>` so `cost` can bucket them.
+- Agent descriptions start `VW draft <id>`, `VW haiku <id>`, `VW cons <id>`, `VW rev <id>` so `cost` can bucket them.
 - Commit with explicit paths only (`git commit -- <paths>`); peer sessions share the worktree.
 - No installs, pushes or GitHub posts from this skill.

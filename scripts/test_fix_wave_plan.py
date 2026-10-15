@@ -111,7 +111,7 @@ class HelperTests(TempCase):
         if not REAL_LIMITS.is_file():
             self.skipTest("no variant-fix-wave limits.toml in this checkout")
         limits = fwp.load_limits(REAL_LIMITS)
-        self.assertEqual(limits["max_units"], 12)
+        self.assertEqual(limits["max_units"], 10)
         self.assertEqual(limits["rates"]["haiku"], 0.045)
 
     def test_read_items_rejects_bad_kind_and_names_row(self):
@@ -285,6 +285,57 @@ class PlanFileTests(TempCase):
         rc, _, err = self.run_main(["plan", *self.plan_argv(items)])
         self.assertEqual(rc, 0, err)
         self.assertTrue((self.waves / "FX9" / "batches.tsv").is_file())
+
+
+class SelectSourceTests(TempCase):
+    """Items written beside a candidates.tsv (the `select` layout): batch A keeps its claims, the rest are released."""
+
+    def setUp(self):
+        super().setUp()
+        self.wave_dir = self.waves / "FX9"
+        self.wave_dir.mkdir(parents=True)
+
+    def plan_select(self, release, *extra, with_candidates=True):
+        items = write_items(self.wave_dir, [row("WI-1"), row("WI-2"), row("WI-3")], name="items.input.tsv")
+        if with_candidates:
+            write_items(self.wave_dir, [row("WI-1"), row("WI-2"), row("WI-3")], name="candidates.tsv")
+        args = fwp.build_parser().parse_args(self.plan_argv(items, "FX9", "--max-units", "2", *extra))
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            rc = fwp.run_plan(args, release=release)
+        return rc, out.getvalue()
+
+    def plan_meta(self):
+        return json.loads((self.wave_dir / "plan.json").read_text(encoding="utf-8"))
+
+    def test_select_releases_only_candidates_outside_batch_a(self):
+        calls = []
+        rc, out = self.plan_select(lambda ids: calls.append(list(ids)))
+        self.assertEqual(rc, 0)
+        batches = (self.wave_dir / "batches.tsv").read_text(encoding="utf-8").splitlines()
+        self.assertEqual(batches[1].split("\t")[5], "WI-1;WI-2")  # batch A
+        self.assertEqual(calls, [["WI-3"]])
+        self.assertIn("released, not in batch A: WI-3", out)
+        self.assertEqual(self.plan_meta()["source"], "select")
+
+    def test_without_candidates_nothing_is_released_and_no_source(self):
+        calls = []
+        rc, out = self.plan_select(lambda ids: calls.append(list(ids)), with_candidates=False)
+        self.assertEqual(rc, 0)
+        self.assertEqual(calls, [])
+        self.assertNotIn("released", out)
+        self.assertNotIn("source", self.plan_meta())
+
+    def test_default_release_drops_claims_in_claims_dir_only_outside_batch_a(self):
+        import wi_state as ws  # imported here: only the default release path needs it
+        claims = self.tmp / "claims"
+        store = ws.Store(self.repo, claims_dir=claims)
+        for wi in ("WI-1", "WI-3"):
+            self.assertIsNotNone(store.create_claim(wi, "test", [], "abc1234", "VW-FX9"))
+        rc, _ = self.plan_select(None, "--claims-dir", str(claims))
+        self.assertEqual(rc, 0)
+        self.assertTrue(store.claim_path("WI-1").is_file())  # batch A keeps its claim
+        self.assertFalse(store.claim_path("WI-3").exists())  # released
 
 
 if __name__ == "__main__":

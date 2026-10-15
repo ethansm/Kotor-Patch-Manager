@@ -45,7 +45,7 @@ class TestCli(unittest.TestCase):
             self.assertGreaterEqual(len(rows), 2)
             self.assertEqual(sum(int(r["units"]) for r in rows), 23)
             for r in rows:
-                self.assertLessEqual(int(r["units"]), 12)
+                self.assertLessEqual(int(r["units"]), 10)
                 self.assertLessEqual(int(r["agents"]), 60)
                 self.assertLessEqual(float(r["test_usd"]), 15.0)
             self.assertEqual(rows[0]["wave_id"], "vwt-A")

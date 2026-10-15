@@ -17,6 +17,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
 
 import fix_wave_collect as fwc  # noqa: E402
+import wi_state as ws  # noqa: E402
 
 BATCH = "fx-A"
 CREATED = "2026-10-15T20:00:00Z"
@@ -279,6 +280,41 @@ class CostTests(FixtureTestCase):
         (self.batch / "manifest.json").unlink()
         with self.assertRaises(fwc.FixWaveError):
             fwc.cost(self.waves, BATCH, [], run_usage=self.fake_runner())
+
+
+class HeartbeatTests(FixtureTestCase):
+    """status() refreshes heartbeat_at of claimed WI-NN items only; claims live in a temp claims dir."""
+    OLD = "2020-01-01T00:00:00Z"
+
+    def setUp(self):
+        super().setUp()
+        self.store = ws.Store(self.root, claims_dir=self.root / "c")
+        write(self.batch / "items.tsv", "id\tkind\tsize\tconstraint\n"
+              "WI-12\tbug\tS\tfixture\nF3\tbug\tS\tfixture\nWI-13\tbug\tS\tfixture\n")
+        for wi in ("WI-12", "F3"):
+            claim = self.store.create_claim(wi, "s1", [], "abc1234", "VW-fx-A")
+            claim["heartbeat_at"] = self.OLD
+            self.store.write_claim(wi, claim)
+
+    def test_claimed_wi_refreshed_non_wi_and_unclaimed_untouched(self):
+        lines = self.status(store=self.store)
+        self.assertEqual(len(lines), 4)
+        refreshed = self.store.read_claim("WI-12")["heartbeat_at"]
+        self.assertGreater(ws.parse_iso(refreshed), ws.parse_iso(self.OLD))
+        self.assertEqual(self.store.read_claim("F3")["heartbeat_at"], self.OLD)
+        self.assertFalse(self.store.claim_path("WI-13").exists())
+
+    def test_store_error_warns_and_status_still_prints(self):
+        class BrokenStore:
+            def read_claim(self, wi_id):
+                raise OSError("claims unreadable")
+
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            lines = self.status(store=BrokenStore())
+        self.assertEqual(len(lines), 4)
+        self.assertIn("claim heartbeat skipped", err.getvalue())
+        self.assertEqual(self.store.read_claim("WI-12")["heartbeat_at"], self.OLD)
 
 
 class CliTests(FixtureTestCase):

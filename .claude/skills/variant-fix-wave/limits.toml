@@ -1,6 +1,6 @@
 # Batch caps for `fix_wave.py plan` (FX2 = 11 units / 56 agents / $9.08 was the sweet spot; FX3 = 23 / 107 / $26.22 was too big).
 # Per-agent rates measured over FX1-FX3 (10-15); revisions add about 30%.
-max_units = 12
+max_units = 10  # VS (10-15): top ~10 keeps batches small and the orchestrator context lean
 max_agents = 60
 max_cost_usd = 15.0
 max_inflight = 20
