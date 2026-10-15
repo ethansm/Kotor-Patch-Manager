@@ -13,13 +13,14 @@ the user directs PR 5). User decisions: mod-demand order, then Phase E and the P
 | # | Phase | Status | Record |
 |---|---|---|---|
 | P1 | Task 0 tooling + Task 1 mod_audit | DONE (086491a, b341618) | README Roadmap |
-| P2 | B12b CSWSCreature upper half | SHIPPED (branch a72c344, +178) | README B12b |
-| P3 | B16 mod GUI/engine classes | SHIPPED (branch caf65ec, +146) | README B16 |
-| P4 | B11a CClientExoApp(+Internal) | SHIPPED (branch bcb4acb, +356) | README B11a |
-| P5 | B12a CSWSCreature lower half | SHIPPED (branch db4f5cf, +171; 3,420 rows) | README B12a |
-| P6 | B13a CSWCCreature: ship (merge a/r/z -> finalize --opus-sample-errors 1 -> expect verified 177, label_suspect 19, unresolved 3; kdb_overrides.tsv 28 rows) | Opus + consolidation DONE | B13a/ |
-| P7 | B10a CSWSObject+CSWCObject: ship (merge a/r/z -> finalize --opus-sample-errors 0 -> expect verified 210, likely 29, label_suspect 5, rejected 1; KDB has kdb_overrides.tsv 6 rows) | Opus + consolidation DONE (commit after 2dc30c6) | B10a/ |
-| P8 | B11b CGuiInGame+CSWGuiMainInterface: consolidation (summary, lessons, ledger side file, AUTO rotation audit; GOG labels heavily rotated), then ship | Opus a/b/c/r DONE (sample_errors a 2, b 0, c 0 -> finalize --opus-sample-errors 2) | B11b/ |
+| P2 | B12b CSWSCreature upper half | DONE: SHIPPED (branch a72c344, +178) | README B12b |
+| P3 | B16 mod GUI/engine classes | DONE: SHIPPED (branch caf65ec, +146) | README B16 |
+| P4 | B11a CClientExoApp(+Internal) | DONE: SHIPPED (branch bcb4acb, +356) | README B11a |
+| P5 | B12a CSWSCreature lower half | DONE: SHIPPED (branch db4f5cf, +171; 3,420 rows) | README B12a |
+| R1 | REA mapping plan: design how REA MCP (rea-recon Haiku, findings ledger `ghidra_knowledge/rea_findings/`, cc6a424) maps the Steam exe into the DB: where REA replaces/augments candidates, reviewer cards, Opus gates, rotation audits; pilot on one batch; cost/accuracy gate vs the Sonnet-card baseline | TODO (plan-mode next) | handoff MASTER_PLAN |
+| P6 | B13a CSWCCreature: ship (merge a/r/z -> finalize --opus-sample-errors 1 -> expect verified 177, label_suspect 19, unresolved 3; kdb_overrides.tsv 28 rows) | TODO (gate work finished; ship only) | B13a/ |
+| P7 | B10a CSWSObject+CSWCObject: ship (merge a/r/z -> finalize --opus-sample-errors 0 -> expect verified 210, likely 29, label_suspect 5, rejected 1; KDB has kdb_overrides.tsv 6 rows) | TODO (gate work finished, 4ed13ec; ship only) | B10a/ |
+| P8 | B11b CGuiInGame+CSWGuiMainInterface: consolidation (summary, lessons, ledger side file, AUTO rotation audit; GOG labels heavily rotated), then ship | TODO (Opus a/b/c/r finished; sample_errors a 2, b 0, c 0 -> finalize --opus-sample-errors 2) | B11b/ |
 | P9 | Ledger + audit catch-up: append B13a/B10a/B11b `gog_ledger_section.md` to GOG_LABEL_SUSPECTS.md; `mod_audit.py` re-run + diff; report label findings to the user | TODO | mod_audit/ |
 | P10 | Phase E-1: scripted same-name Mac-score sweep over all AUTO rows of B12b/B16/B11a/B13a/B10a/B11b; Opus reads low scorers; fix via overrides / KDB renames (B12a lesson) | TODO | - |
 | P11 | Phase E-2: `check-validated --out`; Opus final review of branch commits since c9a58bd (evidence pointer per row, validate, no dup, ICF folds documented) | TODO | - |
@@ -48,4 +49,6 @@ the user directs PR 5). User decisions: mod-demand order, then Phase E and the P
 - Never edit `*_src`, the GOG DB, the game folder; only the lead writes DBs.
 
 ## Next phase
-P6 ship B13a (all Opus outputs in). Then P7 ship B10a, P8 B11b consolidation + ship, P9.
+R1: plan how to use REA MCP tooling (rea-recon) for optimal Steam DB mapping (user, 2026-10-15). Then P6-P8 ship
+(gate work done) and P9. User-approved roadmap add (10-15): B17 'mod GUI round 2' (CSWGuiInGameEquip 31, CSWGuiTargetActionMenu 15,
+CSWGuiManager 48 left, CSWGuiPanel 14 left, CExoInputInternal 43) after P8; re-run mod_audit first (37 mods now vs 22).
