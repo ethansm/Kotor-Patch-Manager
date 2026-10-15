@@ -1,0 +1,32 @@
+path	role	status	reason	est_tokens	bytes	dirty
+patch_manager_mods/_shared_src/FileWatch.h	deps	included		1884	6594	0
+patch_manager_mods/_shared_src/HealItems.h	deps	included		1139	3984	0
+patch_manager_mods/action_hotbar_src/HotbarConfig.h	deps	included		7049	24670	0
+patch_manager_mods/action_hotbar_src/HotbarLogic.h	deps	included		10702	37457	0
+patch_manager_mods/action_hotbar_src/HotbarTextures.inc	deps	omitted	over max_file_tokens	0	1496270	0
+patch_manager_mods/action_hotbar_src/KeyBif.h	deps	included		2538	8882	0
+patch_manager_mods/action_hotbar_src/Tlk.h	deps	included		941	3291	0
+patch_manager_mods/action_hotbar_src/TwoDA.h	deps	included		1187	4154	0
+tests/include/TestHarness.h	deps	included		1788	6255	0
+tests/include/check.h	deps	included		32	110	0
+patch_manager_mods/action_hotbar_src/testdata/fixture.tlk	source	omitted	binary	0	362	0
+patch_manager_mods/action_hotbar_src/testdata/keybif_fixture/bad/bad_bif_index.key	source	omitted	binary	0	71	0
+patch_manager_mods/action_hotbar_src/testdata/keybif_fixture/bad/bad_magic.key	source	omitted	binary	0	115	0
+patch_manager_mods/action_hotbar_src/testdata/keybif_fixture/bad/bad_res.key	source	omitted	binary	0	193	0
+patch_manager_mods/action_hotbar_src/testdata/keybif_fixture/bad/data/bad.bif	source	omitted	binary	0	54	0
+patch_manager_mods/action_hotbar_src/testdata/keybif_fixture/bad/data/badmagic.bif	source	omitted	binary	0	37	0
+patch_manager_mods/action_hotbar_src/testdata/keybif_fixture/bad/trunc.key	source	omitted	binary	0	41	0
+patch_manager_mods/action_hotbar_src/testdata/keybif_fixture/case.key	source	omitted	binary	0	115	0
+patch_manager_mods/action_hotbar_src/testdata/keybif_fixture/chitin.key	source	omitted	binary	0	115	0
+patch_manager_mods/action_hotbar_src/testdata/keybif_fixture/data/2da.bif	source	omitted	binary	0	1732	0
+patch_manager_mods/action_hotbar_src/testdata/make_keybif_fixture.py	source	included		1168	4085	0
+patch_manager_mods/action_hotbar_src/testdata/make_spells_fixture.py	source	included		884	3092	0
+patch_manager_mods/action_hotbar_src/testdata/make_tlk_fixture.py	source	included		986	3449	0
+patch_manager_mods/action_hotbar_src/testdata/spells_fixture.2da	source	omitted	binary	0	1633	0
+patch_manager_mods/action_hotbar_src/common_contract_test.cpp	tests	omitted	manifest-omit	0	0	0
+patch_manager_mods/action_hotbar_src/config_roundtrip_test.cpp	tests	included		12922	45227	0
+patch_manager_mods/action_hotbar_src/hotbar_log_test.cpp	tests	included		3560	12460	0
+patch_manager_mods/action_hotbar_src/keybif_test.cpp	tests	included		1254	4387	0
+patch_manager_mods/action_hotbar_src/textures_test.cpp	tests	included		586	2051	0
+patch_manager_mods/action_hotbar_src/tlk_test.cpp	tests	included		3826	13391	0
+patch_manager_mods/action_hotbar_src/twoda_test.cpp	tests	included		3952	13832	0

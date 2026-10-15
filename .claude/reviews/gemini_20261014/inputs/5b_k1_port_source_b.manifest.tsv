@@ -1,0 +1,19 @@
+path	role	status	reason	est_tokens	bytes	dirty
+patch_manager_mods/k1_port/README.md	docs	included		1855	7420	0
+patch_manager_mods/k1_port/PERMISSION_REQUESTS.md	docs	included		1893	7571	0
+patch_manager_mods/k1_port/k1_port_char_build.py	source	included		3603	12608	0
+patch_manager_mods/k1_port/k1_port_cr_extract.py	source	included		4202	14706	0
+patch_manager_mods/k1_port/k1_port_cr_sheets.py	source	included		3796	13283	0
+patch_manager_mods/k1_port/k1_port_ingest.py	source	included		9127	31942	0
+patch_manager_mods/k1_port/k1_port_probe.py	source	included		8988	31456	0
+patch_manager_mods/k1_port/k1_port_probe_build.py	source	included		2997	10487	0
+patch_manager_mods/k1_port/k1_port_prune.py	source	included		5088	17808	0
+patch_manager_mods/k1_port/k1_port_sources.py	source	included		4500	15749	0
+patch_manager_mods/k1_port/k1_port_spawn_build.py	source	included		2912	10191	1
+patch_manager_mods/k1_port/k1_port_validate.py	source	included		3964	13871	0
+patch_manager_mods/k1_port/setup_venv.sh	source	included		354	1238	0
+patch_manager_mods/k1_port/looks/commoner_a.json	config	included		9295	32531	0
+patch_manager_mods/k1_port/looks/commoner_b.json	config	included		8861	31012	0
+patch_manager_mods/k1_port/looks/mandalorian.json	config	included		1332	4661	0
+patch_manager_mods/k1_port/looks/sith_commando.json	config	included		1015	3552	0
+patch_manager_mods/k1_port/sources.json	config	included		2213	7745	0

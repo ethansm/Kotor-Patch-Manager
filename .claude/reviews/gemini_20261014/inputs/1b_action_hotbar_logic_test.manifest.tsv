@@ -1,0 +1,10 @@
+path	role	status	reason	est_tokens	bytes	dirty
+patch_manager_mods/07_force_power_hotbar.md	docs	included		30626	122504	0
+patch_manager_mods/_shared_src/FileWatch.h	deps	included		1884	6594	0
+patch_manager_mods/_shared_src/HealItems.h	deps	included		1139	3984	0
+patch_manager_mods/action_hotbar_src/HotbarConfig.h	deps	included		7049	24670	0
+patch_manager_mods/action_hotbar_src/HotbarLogic.h	deps	included		10702	37457	0
+patch_manager_mods/action_hotbar_src/TwoDA.h	deps	included		1187	4154	0
+tests/include/TestHarness.h	deps	included		1788	6255	0
+tests/include/check.h	deps	included		32	110	0
+patch_manager_mods/action_hotbar_src/hotbar_logic_test.cpp	tests	included		21543	75399	0

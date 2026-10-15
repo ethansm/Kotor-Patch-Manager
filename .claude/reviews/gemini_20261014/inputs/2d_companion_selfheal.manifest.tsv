@@ -1,0 +1,29 @@
+path	role	status	reason	est_tokens	bytes	dirty
+patch_manager_mods/27_companion_selfheal.md	docs	included		8471	33881	0
+patch_manager_mods/companion_selfheal_src/README.md	docs	included		907	3625	0
+patch_manager_mods/_shared_src/ActQueue.h	deps	included		2092	7322	0
+patch_manager_mods/_shared_src/EmbedTex.h	deps	included		3210	11232	0
+patch_manager_mods/_shared_src/FileWatch.h	deps	included		1884	6594	0
+patch_manager_mods/_shared_src/FontWidths.inc	deps	included		664	2321	0
+patch_manager_mods/_shared_src/GameAddr.h	deps	included		3390	11862	0
+patch_manager_mods/_shared_src/GuiKit.h	deps	included		12359	43256	0
+patch_manager_mods/_shared_src/GuiTip.h	deps	included		2342	8195	0
+patch_manager_mods/_shared_src/HealItems.h	deps	included		1139	3984	0
+patch_manager_mods/_shared_src/HudHost.h	deps	included		2345	8206	0
+patch_manager_mods/_shared_src/HudKit.h	deps	included		908	3175	0
+patch_manager_mods/_shared_src/HudKitTextures.inc	deps	omitted	over max_file_tokens	0	391334	0
+patch_manager_mods/_shared_src/ItemRead.h	deps	included		1698	5941	0
+patch_manager_mods/_shared_src/K2Addr.h	deps	included		10354	36239	0
+patch_manager_mods/_shared_src/Party.h	deps	included		1930	6754	0
+patch_manager_mods/_shared_src/PortraitSlots.h	deps	included		2264	7922	0
+patch_manager_mods/_shared_src/SafeRead.h	deps	included		2930	10253	0
+patch_manager_mods/_shared_src/SelfHealUi.h	deps	included		5615	19652	0
+patch_manager_mods/_shared_src/TextFit.h	deps	included		1166	4081	0
+patch_manager_mods/_shared_src/WindowHook.h	deps	included		824	2881	0
+patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp	source	included		24492	85719	0
+patch_manager_mods/companion_selfheal_src/SelfHealTextures.inc	source	omitted	over max_file_tokens	0	677355	0
+patch_manager_mods/companion_selfheal_src/common_contract_test.cpp	tests	omitted	manifest-omit	0	0	0
+patch_manager_mods/companion_selfheal_src/exports.def	config	included		20	69	0
+patch_manager_mods/companion_selfheal_src/kotor2-steam-aspyr.hooks.toml	config	included		257	897	0
+patch_manager_mods/companion_selfheal_src/manifest.toml	config	included		342	1195	0
+patch_manager_mods/companion_selfheal_src/test.toml	config	included		142	494	0

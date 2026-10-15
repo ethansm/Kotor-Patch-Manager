@@ -1,0 +1,7 @@
+path	role	status	reason	est_tokens	bytes	dirty
+patch_manager_mods/perf_lab_src/harness/smoke_perflab3.cpp	source	included		7999	27996	0
+patch_manager_mods/perf_lab_src/harness/smoke_perflab5.cpp	source	included		9934	34769	0
+patch_manager_mods/perf_lab_src/harness/smoke_portraitslots.cpp	source	included		8031	28108	0
+patch_manager_mods/perf_lab_src/harness/smoke_queuehud.cpp	source	included		9835	34420	0
+patch_manager_mods/perf_lab_src/harness/smoke_robustness.cpp	source	included		13764	48173	0
+patch_manager_mods/perf_lab_src/harness/smokes.toml	config	included		3075	10760	0

@@ -1,0 +1,25 @@
+path	role	status	reason	est_tokens	bytes	dirty
+patch_manager_mods/30_queue_hud.md	docs	included		4671	18683	0
+patch_manager_mods/_shared_src/ActQueue.h	deps	included		2092	7322	0
+patch_manager_mods/_shared_src/EmbedTex.h	deps	included		3210	11232	0
+patch_manager_mods/_shared_src/GameAddr.h	deps	included		3390	11862	0
+patch_manager_mods/_shared_src/Gui2D.h	deps	included		3709	12980	0
+patch_manager_mods/_shared_src/GuiKit.h	deps	omitted	manifest-omit	0	0	0
+patch_manager_mods/_shared_src/GuiTip.h	deps	included		2342	8195	0
+patch_manager_mods/_shared_src/HudHost.h	deps	included		2345	8206	0
+patch_manager_mods/_shared_src/HudKit.h	deps	included		908	3175	0
+patch_manager_mods/_shared_src/HudKitTextures.inc	deps	omitted	over max_file_tokens	0	391334	0
+patch_manager_mods/_shared_src/K2Addr.h	deps	omitted	manifest-omit	0	0	0
+patch_manager_mods/_shared_src/Party.h	deps	included		1930	6754	0
+patch_manager_mods/_shared_src/PortraitSlots.h	deps	included		2264	7922	0
+patch_manager_mods/_shared_src/SafeRead.h	deps	included		2930	10253	0
+patch_manager_mods/_shared_src/SelfHealUi.h	deps	included		5615	19652	0
+patch_manager_mods/queue_hud_src/QueueHud.cpp	source	included		29525	103336	1
+patch_manager_mods/queue_hud_src/QueueHudLogic.h	source	included		18681	65381	1
+patch_manager_mods/queue_hud_src/override/lbl_miqueue_teal.tga	source	omitted	binary	0	524332	0
+patch_manager_mods/queue_hud_src/exports.def	config	included		34	116	0
+patch_manager_mods/queue_hud_src/kotor2-steam-aspyr.hooks.toml	config	included		388	1355	0
+patch_manager_mods/queue_hud_src/manifest.toml	config	included		424	1483	0
+patch_manager_mods/queue_hud_src/override/lbl_miqueue_teal.txi	config	included		3	9	0
+patch_manager_mods/queue_hud_src/queue_hud.ini	config	included		1106	3868	0
+patch_manager_mods/queue_hud_src/test.toml	config	included		158	552	0

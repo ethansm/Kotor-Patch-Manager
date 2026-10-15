@@ -1,0 +1,14 @@
+path	role	status	reason	est_tokens	bytes	dirty
+patch_manager_mods/k1_port/test_k1_anim_pose.py	tests	included		2179	7624	0
+patch_manager_mods/k1_port/test_k1_port_model.py	tests	included		14995	52480	0
+patch_manager_mods/k1_port/test_k1_port_tex_audit.py	tests	included		864	3023	0
+patch_manager_mods/k1_port/test_k1_port_tex_bake.py	tests	included		3965	13877	0
+patch_manager_mods/k1_port/test_k1_port_tex_decals.py	tests	included		1361	4761	0
+patch_manager_mods/k1_port/test_k1_port_tex_dxt.py	tests	included		3605	12616	0
+patch_manager_mods/k1_port/test_k1_port_tex_gate.py	tests	included		3902	13657	0
+patch_manager_mods/k1_port/test_k1_port_tex_overlay.py	tests	included		4595	16080	0
+patch_manager_mods/k1_port/test_k1_port_tex_preview.py	tests	included		8594	30077	0
+patch_manager_mods/k1_port/test_k1_port_tex_tpc.py	tests	included		3643	12749	0
+patch_manager_mods/k1_port/test_k1_port_textures.py	tests	included		6553	22935	0
+patch_manager_mods/k1_port/test_k1_port_uvmask.py	tests	included		4023	14079	0
+patch_manager_mods/k1_port/test_k1_port_uvmask_overlay.py	tests	included		2094	7327	0

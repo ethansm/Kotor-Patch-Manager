@@ -1,0 +1,18 @@
+path	role	status	reason	est_tokens	bytes	dirty
+patch_manager_mods/43_asset_import_and_npc_programme.md	docs	included		2820	11279	1
+patch_manager_mods/38_k1_to_k2_asset_import.md	docs	included		14080	56318	1
+patch_manager_mods/k1_port/k1_anim_pose.py	source	included		3906	13668	0
+patch_manager_mods/k1_port/k1_port_model.py	source	included		12458	43602	0
+patch_manager_mods/k1_port/k1_port_tex_audit.py	source	included		2273	7953	0
+patch_manager_mods/k1_port/k1_port_tex_bake.py	source	included		4778	16720	0
+patch_manager_mods/k1_port/k1_port_tex_decals.py	source	included		2049	7169	0
+patch_manager_mods/k1_port/k1_port_tex_dxt.py	source	included		3064	10723	0
+patch_manager_mods/k1_port/k1_port_tex_gate.py	source	included		4093	14323	0
+patch_manager_mods/k1_port/k1_port_tex_overlay.py	source	included		4768	16687	0
+patch_manager_mods/k1_port/k1_port_tex_preview.py	source	included		16732	58561	0
+patch_manager_mods/k1_port/k1_port_tex_sheets.py	source	included		1551	5427	0
+patch_manager_mods/k1_port/k1_port_tex_tpc.py	source	included		1655	5792	0
+patch_manager_mods/k1_port/k1_port_textures.py	source	included		6456	22593	0
+patch_manager_mods/k1_port/k1_port_uvmask.py	source	included		4766	16681	0
+patch_manager_mods/k1_port/k1_port_uvmask_overlay.py	source	included		1940	6789	0
+patch_manager_mods/k1_port/pykotor_k2_mdl.patch	source	included		3989	13959	0

@@ -1,0 +1,20 @@
+path	role	status	reason	est_tokens	bytes	dirty
+patch_manager_mods/31_combat_action_hotbar.md	docs	included		6735	26939	0
+patch_manager_mods/_shared_src/FileWatch.h	deps	included		1884	6594	0
+patch_manager_mods/_shared_src/GameAddr.h	deps	included		3390	11862	0
+patch_manager_mods/_shared_src/GuiKit.h	deps	included		12359	43256	0
+patch_manager_mods/_shared_src/GuiTip.h	deps	included		2342	8195	0
+patch_manager_mods/_shared_src/HudHost.h	deps	included		2345	8206	0
+patch_manager_mods/_shared_src/K2Addr.h	deps	included		10354	36239	0
+patch_manager_mods/_shared_src/SafeRead.h	deps	included		2930	10253	0
+patch_manager_mods/_shared_src/WindowHook.h	deps	included		824	2881	0
+tests/include/TestHarness.h	deps	included		1788	6255	0
+tests/include/check.h	deps	included		32	110	0
+patch_manager_mods/combat_hotbar_src/CombatHotbar.cpp	source	included		15269	53441	0
+patch_manager_mods/combat_hotbar_src/CombatLogic.h	source	included		7500	26248	0
+patch_manager_mods/combat_hotbar_src/combat_logic_test.cpp	tests	included		22930	80255	0
+patch_manager_mods/combat_hotbar_src/common_contract_test.cpp	tests	omitted	manifest-omit	0	0	0
+patch_manager_mods/combat_hotbar_src/exports.def	config	included		7	23	0
+patch_manager_mods/combat_hotbar_src/kotor2-steam-aspyr.hooks.toml	config	included		96	335	0
+patch_manager_mods/combat_hotbar_src/manifest.toml	config	included		146	509	0
+patch_manager_mods/combat_hotbar_src/test.toml	config	included		70	242	0

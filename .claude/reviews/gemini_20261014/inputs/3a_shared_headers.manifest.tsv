@@ -1,0 +1,36 @@
+path	role	status	reason	est_tokens	bytes	dirty
+patch_manager_mods/_shared_src/ActQueue.h	source	included		2092	7322	0
+patch_manager_mods/_shared_src/CodePatch.h	source	included		2451	8578	0
+patch_manager_mods/_shared_src/DebuffIconTable.inc	source	included		2424	8484	0
+patch_manager_mods/_shared_src/EffectIconRowTable.inc	source	included		1269	4441	0
+patch_manager_mods/_shared_src/EffectIconTable.inc	source	included		1572	5500	0
+patch_manager_mods/_shared_src/EffectIcons.h	source	included		1092	3819	0
+patch_manager_mods/_shared_src/Effects.h	source	included		2396	8383	0
+patch_manager_mods/_shared_src/EmbedTex.h	source	included		3210	11232	0
+patch_manager_mods/_shared_src/FileWatch.h	source	included		1884	6594	0
+patch_manager_mods/_shared_src/FontWidths.inc	source	included		664	2321	0
+patch_manager_mods/_shared_src/GameAddr.h	source	included		3390	11862	0
+patch_manager_mods/_shared_src/Gui2D.h	source	included		3709	12980	0
+patch_manager_mods/_shared_src/GuiInput.h	source	included		1579	5525	0
+patch_manager_mods/_shared_src/GuiKit.h	source	included		12359	43256	0
+patch_manager_mods/_shared_src/GuiTip.h	source	included		2342	8195	0
+patch_manager_mods/_shared_src/HealItems.h	source	included		1139	3984	0
+patch_manager_mods/_shared_src/HudHost.h	source	included		2345	8206	0
+patch_manager_mods/_shared_src/HudKit.h	source	included		908	3175	0
+patch_manager_mods/_shared_src/HudKitTextures.inc	source	omitted	over max_file_tokens	0	391334	0
+patch_manager_mods/_shared_src/IniKit.h	source	included		1868	6537	0
+patch_manager_mods/_shared_src/ItemRead.h	source	included		1698	5941	0
+patch_manager_mods/_shared_src/K2Addr.h	source	included		10354	36239	0
+patch_manager_mods/_shared_src/NpcWorld.h	source	included		3132	10959	0
+patch_manager_mods/_shared_src/PanelSlots.h	source	included		1357	4747	0
+patch_manager_mods/_shared_src/Party.h	source	included		1930	6754	0
+patch_manager_mods/_shared_src/PortraitSlots.h	source	included		2264	7922	0
+patch_manager_mods/_shared_src/RangedAI.h	source	included		1209	4229	0
+patch_manager_mods/_shared_src/SafeRead.h	source	included		2930	10253	0
+patch_manager_mods/_shared_src/SaveEvents.h	source	included		2310	8085	0
+patch_manager_mods/_shared_src/SceneView.h	source	included		4660	16308	0
+patch_manager_mods/_shared_src/SelfHealUi.h	source	included		5615	19652	0
+patch_manager_mods/_shared_src/StrFmt.h	source	included		272	949	0
+patch_manager_mods/_shared_src/TextFit.h	source	included		1166	4081	0
+patch_manager_mods/_shared_src/WindowHook.h	source	included		824	2881	0
+patch_manager_mods/_shared_src/test.toml	config	included		664	2322	0

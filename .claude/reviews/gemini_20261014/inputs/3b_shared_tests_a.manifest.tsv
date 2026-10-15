@@ -1,0 +1,22 @@
+path	role	status	reason	est_tokens	bytes	dirty
+patch_manager_mods/19_shared_logging_design.md	docs	included		5347	21386	0
+patch_manager_mods/22_hotbar_shared_services.md	docs	included		5007	20026	0
+patch_manager_mods/_shared_src/DebuffIconTable.inc	deps	included		2424	8484	0
+patch_manager_mods/_shared_src/EffectIconRowTable.inc	deps	included		1269	4441	0
+patch_manager_mods/_shared_src/EffectIconTable.inc	deps	included		1572	5500	0
+patch_manager_mods/_shared_src/EffectIcons.h	deps	included		1092	3819	0
+patch_manager_mods/_shared_src/Effects.h	deps	included		2396	8383	0
+patch_manager_mods/_shared_src/Gui2D.h	deps	included		3709	12980	0
+patch_manager_mods/_shared_src/GuiKit.h	deps	omitted	manifest-omit	0	0	0
+patch_manager_mods/_shared_src/K2Addr.h	deps	omitted	manifest-omit	0	0	0
+patch_manager_mods/_shared_src/SafeRead.h	deps	included		2930	10253	0
+patch_manager_mods/_shared_src/SceneView.h	deps	included		4660	16308	0
+patch_manager_mods/_shared_src/SelfHealUi.h	deps	included		5615	19652	0
+tests/include/TestHarness.h	deps	included		1788	6255	0
+tests/include/check.h	deps	included		32	110	0
+patch_manager_mods/_shared_src/effects_test.cpp	tests	included		7343	25700	0
+patch_manager_mods/_shared_src/guikit_test.cpp	tests	included		9001	31502	0
+patch_manager_mods/_shared_src/k2addr_test.cpp	tests	included		8552	29930	0
+patch_manager_mods/_shared_src/saferead_test.cpp	tests	included		9535	33371	0
+patch_manager_mods/_shared_src/sceneview_test.cpp	tests	included		8250	28874	0
+patch_manager_mods/_shared_src/selfheal_ui_test.cpp	tests	included		8924	31233	0

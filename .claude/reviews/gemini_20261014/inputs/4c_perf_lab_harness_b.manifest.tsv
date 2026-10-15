@@ -1,0 +1,15 @@
+path	role	status	reason	est_tokens	bytes	dirty
+patch_manager_mods/perf_lab_src/harness/retired/README.md	docs	included		19	75	0
+patch_manager_mods/perf_lab_src/harness/retired/smoke_probe13.cpp	source	included		1228	4296	0
+patch_manager_mods/perf_lab_src/harness/smoke_activationfix.cpp	source	included		2094	7329	0
+patch_manager_mods/perf_lab_src/harness/smoke_equipiconfix.cpp	source	included		3570	12495	0
+patch_manager_mods/perf_lab_src/harness/smoke_hwmip.cpp	source	included		6548	22918	0
+patch_manager_mods/perf_lab_src/harness/smoke_perflab.cpp	source	included		1201	4203	0
+patch_manager_mods/perf_lab_src/harness/smoke_perflab2.cpp	source	included		5121	17923	0
+patch_manager_mods/perf_lab_src/harness/smoke_probe11.cpp	source	included		924	3234	0
+patch_manager_mods/perf_lab_src/harness/smoke_probe12.cpp	source	included		1026	3589	0
+patch_manager_mods/perf_lab_src/harness/smoke_probe14.cpp	source	included		2733	9563	0
+patch_manager_mods/perf_lab_src/harness/smoke_saveevents.cpp	source	included		6760	23658	0
+patch_manager_mods/perf_lab_src/harness/smoke_selfheal.cpp	source	included		6084	21293	0
+patch_manager_mods/perf_lab_src/harness/smoke_texmem.cpp	source	included		1869	6539	0
+patch_manager_mods/perf_lab_src/harness/wait_line.h	source	included		570	1994	0

@@ -1,0 +1,28 @@
+path	role	status	reason	est_tokens	bytes	dirty
+patch_manager_mods/action_hotbar_src/CHANGELOG.md	docs	omitted	noise	0	0	0
+patch_manager_mods/action_hotbar_src/PULL_REQUEST.md	docs	omitted	noise	0	0	0
+patch_manager_mods/action_hotbar_src/README.md	docs	omitted	manifest-omit	0	0	0
+patch_manager_mods/action_hotbar_src/baseline_h3_build26.txt	docs	omitted	noise	0	0	0
+patch_manager_mods/_shared_src/FileWatch.h	deps	included		1884	6594	0
+patch_manager_mods/_shared_src/GameAddr.h	deps	included		3390	11862	0
+patch_manager_mods/_shared_src/GuiInput.h	deps	included		1579	5525	0
+patch_manager_mods/_shared_src/GuiKit.h	deps	omitted	manifest-omit	0	0	0
+patch_manager_mods/_shared_src/HealItems.h	deps	included		1139	3984	0
+patch_manager_mods/_shared_src/HudHost.h	deps	included		2345	8206	0
+patch_manager_mods/_shared_src/ItemRead.h	deps	included		1698	5941	0
+patch_manager_mods/_shared_src/K2Addr.h	deps	omitted	manifest-omit	0	0	0
+patch_manager_mods/_shared_src/Party.h	deps	included		1930	6754	0
+patch_manager_mods/_shared_src/SafeRead.h	deps	included		2930	10253	0
+patch_manager_mods/_shared_src/SaveEvents.h	deps	included		2310	8085	0
+patch_manager_mods/_shared_src/WindowHook.h	deps	included		824	2881	0
+patch_manager_mods/action_hotbar_src/ActionHotbar.cpp	source	included		45113	157893	0
+patch_manager_mods/action_hotbar_src/HotbarConfig.h	source	included		7049	24670	0
+patch_manager_mods/action_hotbar_src/HotbarLogic.h	source	included		10702	37457	0
+patch_manager_mods/action_hotbar_src/HotbarTextures.inc	source	omitted	over max_file_tokens	0	1496270	0
+patch_manager_mods/action_hotbar_src/KeyBif.h	source	included		2538	8882	0
+patch_manager_mods/action_hotbar_src/Tlk.h	source	included		941	3291	0
+patch_manager_mods/action_hotbar_src/TwoDA.h	source	included		1187	4154	0
+patch_manager_mods/action_hotbar_src/exports.def	config	included		31	106	0
+patch_manager_mods/action_hotbar_src/kotor2-steam-aspyr.hooks.toml	config	included		319	1114	0
+patch_manager_mods/action_hotbar_src/manifest.toml	config	included		400	1399	0
+patch_manager_mods/action_hotbar_src/test.toml	config	included		337	1179	0

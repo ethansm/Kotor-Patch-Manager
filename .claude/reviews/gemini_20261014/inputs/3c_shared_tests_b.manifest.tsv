@@ -1,0 +1,44 @@
+path	role	status	reason	est_tokens	bytes	dirty
+patch_manager_mods/_shared_src/ActQueue.h	deps	included		2092	7322	0
+patch_manager_mods/_shared_src/CodePatch.h	deps	included		2451	8578	0
+patch_manager_mods/_shared_src/EmbedTex.h	deps	included		3210	11232	0
+patch_manager_mods/_shared_src/FileWatch.h	deps	included		1884	6594	0
+patch_manager_mods/_shared_src/FontWidths.inc	deps	included		664	2321	0
+patch_manager_mods/_shared_src/GameAddr.h	deps	included		3390	11862	0
+patch_manager_mods/_shared_src/Gui2D.h	deps	included		3709	12980	0
+patch_manager_mods/_shared_src/GuiKit.h	deps	omitted	manifest-omit	0	0	0
+patch_manager_mods/_shared_src/GuiTip.h	deps	included		2342	8195	0
+patch_manager_mods/_shared_src/HealItems.h	deps	included		1139	3984	0
+patch_manager_mods/_shared_src/HudKit.h	deps	included		908	3175	0
+patch_manager_mods/_shared_src/HudKitTextures.inc	deps	omitted	over max_file_tokens	0	391334	0
+patch_manager_mods/_shared_src/IniKit.h	deps	included		1868	6537	0
+patch_manager_mods/_shared_src/ItemRead.h	deps	included		1698	5941	0
+patch_manager_mods/_shared_src/K2Addr.h	deps	omitted	manifest-omit	0	0	0
+patch_manager_mods/_shared_src/PanelSlots.h	deps	included		1357	4747	0
+patch_manager_mods/_shared_src/Party.h	deps	included		1930	6754	0
+patch_manager_mods/_shared_src/SafeRead.h	deps	included		2930	10253	0
+patch_manager_mods/_shared_src/StrFmt.h	deps	included		272	949	0
+patch_manager_mods/_shared_src/TextFit.h	deps	included		1166	4081	0
+patch_manager_mods/_shared_src/WindowHook.h	deps	included		824	2881	0
+patch_manager_mods/buff_duration_hud_src/BuffHudLogic.h	deps	included		3141	10992	0
+patch_manager_mods/shield_bar_src/ShieldLogic.h	deps	included		1716	6003	0
+tests/include/TestHarness.h	deps	included		1788	6255	0
+tests/include/check.h	deps	included		32	110	0
+tests/include/fake_wndproc.h	deps	included		660	2307	0
+patch_manager_mods/_shared_src/actqueue_test.cpp	tests	included		1797	6289	0
+patch_manager_mods/_shared_src/codepatch_test.cpp	tests	included		5686	19900	0
+patch_manager_mods/_shared_src/embtex_test.cpp	tests	included		3016	10556	0
+patch_manager_mods/_shared_src/filewatch_test.cpp	tests	included		2906	10169	0
+patch_manager_mods/_shared_src/gui2d_test.cpp	tests	included		5058	17701	0
+patch_manager_mods/_shared_src/guitip_test.cpp	tests	included		2853	9983	0
+patch_manager_mods/_shared_src/heal_items_test.cpp	tests	included		2559	8956	0
+patch_manager_mods/_shared_src/hudkit_test.cpp	tests	included		1282	4484	0
+patch_manager_mods/_shared_src/inikit_test.cpp	tests	included		4495	15731	0
+patch_manager_mods/_shared_src/item_read_test.cpp	tests	included		1666	5828	0
+patch_manager_mods/_shared_src/member_function_thunk_test.cpp	tests	included		1825	6386	0
+patch_manager_mods/_shared_src/panelslots_test.cpp	tests	included		3457	12098	0
+patch_manager_mods/_shared_src/party_test.cpp	tests	included		6985	24446	0
+patch_manager_mods/_shared_src/strfmt_test.cpp	tests	included		2026	7088	0
+patch_manager_mods/_shared_src/textfit_test.cpp	tests	included		1188	4158	0
+patch_manager_mods/_shared_src/vtable_override_test.cpp	tests	included		1080	3780	0
+patch_manager_mods/_shared_src/windowhook_test.cpp	tests	included		2810	9832	0

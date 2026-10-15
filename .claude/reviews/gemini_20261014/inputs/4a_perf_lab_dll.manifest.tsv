@@ -1,0 +1,9 @@
+path	role	status	reason	est_tokens	bytes	dirty
+patch_manager_mods/perf_lab_src/README.md	docs	included		6282	25125	0
+patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp	source	included		34834	121916	0
+patch_manager_mods/perf_lab_src/perflab/common_contract_test.cpp	tests	included		7722	27027	0
+patch_manager_mods/perf_lab_src/perflab/code_patches.toml	config	included		528	1846	0
+patch_manager_mods/perf_lab_src/perflab/exports.def	config	included		482	1686	0
+patch_manager_mods/perf_lab_src/perflab/kotor2-steam-aspyr.hooks.toml	config	included		6998	24492	0
+patch_manager_mods/perf_lab_src/perflab/manifest.toml	config	included		487	1703	0
+patch_manager_mods/perf_lab_src/perflab/test.toml	config	included		135	470	0

@@ -1,0 +1,8 @@
+path	role	status	reason	est_tokens	bytes	dirty
+patch_manager_mods/_shared_src/SelfHealUi.h	deps	included		5615	19652	0
+patch_manager_mods/hud_host_src/HhStrip.h	deps	included		517	1808	0
+patch_manager_mods/queue_hud_src/QueueHudLogic.h	deps	included		18681	65381	1
+tests/include/TestHarness.h	deps	included		1788	6255	0
+tests/include/check.h	deps	included		32	110	0
+patch_manager_mods/queue_hud_src/queue_hud_logic_test.cpp	tests	included		38037	133129	0
+patch_manager_mods/queue_hud_src/test.toml	config	included		158	552	0

@@ -1,0 +1,12 @@
+path	role	status	reason	est_tokens	bytes	dirty
+patch_manager_mods/13_ranged_ai_spacing.md	docs	included		9922	39686	0
+patch_manager_mods/_shared_src/GameAddr.h	deps	included		3390	11862	0
+patch_manager_mods/companion_ai_src/CompanionAI.cpp	source	included		23266	81430	0
+patch_manager_mods/companion_ai_src/CompanionAiLogic.h	source	included		9954	34838	0
+patch_manager_mods/companion_ai_src/common_contract_test.cpp	tests	omitted	manifest-omit	0	0	0
+patch_manager_mods/companion_ai_src/companion_ai_logic_test.cpp	tests	included		8722	30524	0
+patch_manager_mods/companion_ai_src/companion_ai.ini	config	included		1732	6061	0
+patch_manager_mods/companion_ai_src/exports.def	config	included		226	788	0
+patch_manager_mods/companion_ai_src/kotor2-steam-aspyr.hooks.toml	config	included		3802	13307	0
+patch_manager_mods/companion_ai_src/manifest.toml	config	included		184	641	0
+patch_manager_mods/companion_ai_src/test.toml	config	included		112	390	0

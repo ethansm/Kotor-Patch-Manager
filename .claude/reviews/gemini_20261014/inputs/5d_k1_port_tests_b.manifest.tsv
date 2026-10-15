@@ -1,0 +1,11 @@
+path	role	status	reason	est_tokens	bytes	dirty
+patch_manager_mods/k1_port/test_k1_port_char_build.py	tests	included		2568	8986	0
+patch_manager_mods/k1_port/test_k1_port_cr_extract.py	tests	included		2789	9759	0
+patch_manager_mods/k1_port/test_k1_port_cr_sheets.py	tests	included		3264	11422	0
+patch_manager_mods/k1_port/test_k1_port_ingest.py	tests	included		8106	28371	0
+patch_manager_mods/k1_port/test_k1_port_probe.py	tests	included		7025	24587	0
+patch_manager_mods/k1_port/test_k1_port_probe_build.py	tests	included		3970	13895	0
+patch_manager_mods/k1_port/test_k1_port_prune.py	tests	included		7070	24743	0
+patch_manager_mods/k1_port/test_k1_port_sources.py	tests	included		5900	20647	0
+patch_manager_mods/k1_port/test_k1_port_spawn_build.py	tests	included		5731	20056	1
+patch_manager_mods/k1_port/test_k1_port_validate.py	tests	included		4105	14366	0

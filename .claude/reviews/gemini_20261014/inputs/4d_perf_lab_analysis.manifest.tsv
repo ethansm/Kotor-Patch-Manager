@@ -1,0 +1,38 @@
+path	role	status	reason	est_tokens	bytes	dirty
+patch_manager_mods/perf_lab_src/fixtures/game/activationfix_log.txt	docs	omitted	manifest-omit	0	0	0
+patch_manager_mods/perf_lab_src/fixtures/game/equipiconfix_log.txt	docs	omitted	manifest-omit	0	0	0
+patch_manager_mods/perf_lab_src/fixtures/game/perflab_alloc_snaps.txt	docs	omitted	manifest-omit	0	0	0
+patch_manager_mods/perf_lab_src/fixtures/game/perflab_debug.txt	docs	omitted	manifest-omit	0	0	0
+patch_manager_mods/perf_lab_src/fixtures/game/perflab_log.txt	docs	omitted	manifest-omit	0	0	0
+patch_manager_mods/perf_lab_src/fixtures/game/perflab_metrics.txt	docs	omitted	manifest-omit	0	0	0
+patch_manager_mods/perf_lab_src/fixtures/game/robustnessfixes_log.txt	docs	omitted	manifest-omit	0	0	0
+patch_manager_mods/perf_lab_src/fixtures/game/texmem.txt	docs	omitted	manifest-omit	0	0	0
+patch_manager_mods/perf_lab_src/fixtures/game/texmem_log.txt	docs	omitted	manifest-omit	0	0	0
+patch_manager_mods/perf_lab_src/fixtures/game050/activationfix_log.txt	docs	omitted	manifest-omit	0	0	0
+patch_manager_mods/perf_lab_src/fixtures/game050/equipiconfix_log.txt	docs	omitted	manifest-omit	0	0	0
+patch_manager_mods/perf_lab_src/fixtures/game050/perflab_alloc_snaps.txt	docs	omitted	manifest-omit	0	0	0
+patch_manager_mods/perf_lab_src/fixtures/game050/perflab_debug.txt	docs	omitted	manifest-omit	0	0	0
+patch_manager_mods/perf_lab_src/fixtures/game050/perflab_log.txt	docs	omitted	manifest-omit	0	0	0
+patch_manager_mods/perf_lab_src/fixtures/game050/perflab_metrics.txt	docs	omitted	manifest-omit	0	0	0
+patch_manager_mods/perf_lab_src/fixtures/game050/robustnessfixes_log.txt	docs	omitted	manifest-omit	0	0	0
+patch_manager_mods/perf_lab_src/fixtures/game050/texmem.txt	docs	omitted	manifest-omit	0	0	0
+patch_manager_mods/perf_lab_src/fixtures/game050/texmem_log.txt	docs	omitted	manifest-omit	0	0	0
+patch_manager_mods/perf_lab_src/analyze_runs.py	source	included		18545	64906	0
+patch_manager_mods/perf_lab_src/asm.sh	source	included		114	398	0
+patch_manager_mods/perf_lab_src/fixtures/gen_fixtures.py	source	omitted	manifest-omit	0	0	0
+patch_manager_mods/perf_lab_src/gh.sh	source	included		177	618	0
+patch_manager_mods/perf_lab_src/ghidra_scripts/DumpAllDecomp.java	source	included		1460	5109	0
+patch_manager_mods/perf_lab_src/ghidra_scripts/ExportAllFunctions.java	source	included		596	2085	0
+patch_manager_mods/perf_lab_src/ghidra_scripts/ExportCallGraph.java	source	included		1292	4520	0
+patch_manager_mods/perf_lab_src/ghidra_scripts/ExportGlobalXrefs.java	source	included		566	1980	0
+patch_manager_mods/perf_lab_src/ghidra_scripts/ExportImportXrefs.java	source	included		821	2873	0
+patch_manager_mods/perf_lab_src/ghidra_scripts/ExportStrings.java	source	included		538	1881	0
+patch_manager_mods/perf_lab_src/ghidra_scripts/FindFieldWrites.java	source	included		324	1132	0
+patch_manager_mods/perf_lab_src/ghidra_scripts/NewNullCheck.java	source	included		1790	6263	0
+patch_manager_mods/perf_lab_src/ghidra_scripts/RefsTo.java	source	included		200	700	0
+patch_manager_mods/perf_lab_src/ghidra_scripts/ScalarSearch.java	source	included		264	922	0
+patch_manager_mods/perf_lab_src/ghidra_scripts/SymSearch.java	source	included		168	585	0
+patch_manager_mods/perf_lab_src/hookbytes.py	source	included		391	1368	0
+patch_manager_mods/perf_lab_src/persist_findings.py	source	included		576	2016	0
+patch_manager_mods/perf_lab_src/resolve_sites.py	source	included		2483	8690	0
+patch_manager_mods/perf_lab_src/test_analyze_runs.py	tests	included		9333	32664	0
