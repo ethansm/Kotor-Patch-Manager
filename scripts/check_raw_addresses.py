@@ -5,6 +5,7 @@
   python3 scripts/check_raw_addresses.py --quiet
   python3 scripts/check_raw_addresses.py --root DIR [--gameaddr GameAddr.h] [--allowlist raw_addresses.toml]
   python3 scripts/check_raw_addresses.py --write-baseline     # regenerate the allowlist (see the warning below)
+  python3 scripts/check_raw_addresses.py --prune              # delete the stale allowlist entries (WARN lines); never adds one
 
 Scans patch_manager_mods/*_src/**/*.{cpp,h,inc} (nested dirs included; _shared_src is one of them) for 8-hex-digit
 image-range addresses 0x00400000-0x00BFFFFF (regex \\b0x00[4-9A-Ba-b][0-9A-Fa-f]{5}\\b; comments count too). Excluded:
@@ -229,6 +230,84 @@ def write_baseline(root, gameaddr, allowlist, out=sys.stdout):
     return added, removed
 
 
+SECTION_RE = re.compile(r'^\[files\."([^"]+)"\]\s*$')
+ADDRS_LINE_RE = re.compile(r'^(addresses\s*=\s*\[)(.*)(\]\s*)$')
+QUOTED_RE = re.compile(r'"([^"]*)"')
+
+
+def render_pruned(text, drop):
+    """`text` with the dropped addresses removed from their addresses lines; a block whose drop value is None is removed
+    whole. Every other line is kept as written, so the file's own order and comments survive."""
+    out, rel, skipping = [], None, False
+    for line in text.splitlines(keepends=True):
+        m = SECTION_RE.match(line)
+        if m:
+            rel = m.group(1)
+            skipping = rel in drop and drop[rel] is None
+            if not skipping:
+                out.append(line)
+            continue
+        if skipping:
+            continue
+        am = ADDRS_LINE_RE.match(line) if rel in drop else None
+        if am:
+            kept = [q for q in QUOTED_RE.findall(am.group(2)) if norm(q) not in drop[rel]]
+            line = am.group(1) + ", ".join(f'"{q}"' for q in kept) + am.group(3)
+        out.append(line)
+    return "".join(out)
+
+
+def prune(root, gameaddr=None, allowlist=None, out=sys.stdout) -> int:
+    """Delete the allowlist entries run() WARNs about as stale: an address the file no longer contains, an address now in
+    GameAddr.h, or a file that is no longer scanned. Never adds an address. The edited text is validated with tomllib
+    before the file is written; then the check runs again and its exit code is returned."""
+    root = Path(root)
+    gameaddr = Path(gameaddr) if gameaddr else root / GAMEADDR_REL
+    allow_path = Path(allowlist) if allowlist else root / ALLOWLIST_REL
+    if not gameaddr.is_file() or not allow_path.is_file():
+        print(f"prune: needs {gameaddr} and {allow_path}; nothing changed", file=out)
+        return 2
+    ga = load_gameaddr(gameaddr)
+    allow = load_allowlist(allow_path)
+    present = {rel: {a for _, a in scan_occurrences(p)} for rel, p in scan_files(root)}
+    drop = {}   # repo-relative path -> set of addresses to drop, or None for the whole [files] block
+    removed = 0
+    for rel in sorted(allow):
+        if rel not in present:
+            drop[rel] = None
+            print(f"pruned {rel}: file no longer scanned", file=out)
+            continue
+        for a in sorted(allow[rel]):
+            if a not in present[rel]:
+                why = "file no longer contains it"
+            elif int(a, 16) in ga:
+                why = f"now covered by gameaddr::{ga[int(a, 16)][0]}"
+            else:
+                continue
+            drop.setdefault(rel, set()).add(a)
+            removed += 1
+            print(f"pruned {rel} {a}: {why}", file=out)
+    whole = {rel for rel, s in drop.items() if s is None or s >= allow[rel]}   # a block with nothing left goes too
+    if not drop:
+        print("nothing stale to prune", file=out)
+    else:
+        expect = {rel: allow[rel] - drop.get(rel, set()) for rel in allow if rel not in whole}
+        new_text = render_pruned(allow_path.read_text(), {rel: (None if rel in whole else drop[rel]) for rel in drop})
+        try:
+            files = tomllib.loads(new_text).get("files", {})
+            got = {k: {norm(a) for a in v.get("addresses", [])} for k, v in files.items()}
+        except tomllib.TOMLDecodeError:
+            got = None
+        if got != expect:
+            print(f"prune: {allow_path} has a layout this tool cannot edit line by line; nothing written", file=out)
+            return 2
+        allow_path.write_text(new_text)
+        print(f"wrote {allow_path}: {removed} address(es) and {len(whole)} file block(s) removed", file=out)
+    rep = sc.Reporter(quiet=True, out=out)
+    run(root, gameaddr, allow_path, rep)
+    return rep.finish("check_raw_addresses")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--root", default=str(sc.REPO), help="repo root holding patch_manager_mods/ (default: this repo)")
@@ -236,8 +315,14 @@ def main(argv=None):
     ap.add_argument("--allowlist", help=f"allowlist toml (default <root>/{ALLOWLIST_REL})")
     ap.add_argument("--write-baseline", action="store_true",
                     help="regenerate the allowlist; run only by a human or Opus after reviewing the new addresses, never by automation")
+    ap.add_argument("--prune", action="store_true",
+                    help="delete the stale allowlist entries (address no longer in the file, now in GameAddr.h, or file no longer scanned); never adds one")
     ap.add_argument("--quiet", action="store_true", help="hide PASS and INFO lines")
     a = ap.parse_args(argv)
+    if a.prune and a.write_baseline:
+        ap.error("--prune and --write-baseline are exclusive")
+    if a.prune:
+        return prune(a.root, a.gameaddr, a.allowlist)
     if a.write_baseline:
         write_baseline(a.root, a.gameaddr, a.allowlist)
         return 0

@@ -308,12 +308,12 @@ This plan specifies the implementation for hardening scripts, test runners, and 
 
 | Phase | Description | Scope | Status | Next Action |
 |---|---|---|---|---|
-| H1 | Recursive manifest discovery & fuzzy stderr hints | `scripts/kpm_status.py`, `scripts/kpm_hotswap.py` | READY | Apply recursive glob & fuzzy match |
-| H2 | Decouple `--prepare` exit code from `--apply` constraints | `scripts/kpm_hotswap.py` | READY | Return 0 on mirror/rebuild success |
-| H3 | Decouple `check-exports` from stale KPM trees in gate | `scripts/pre_install_gate.py` | READY | Test scratch kpatch in Step 3 |
-| H4 | Canonical KPM folder auto-creation & casing collision guard | `scripts/kpm_hotswap.py`, `scripts/kpm_status.py` | READY | Implement PascalCase auto-dir & collision check |
+| H1 | Recursive manifest discovery & fuzzy stderr hints | `scripts/kpm_status.py`, `scripts/kpm_hotswap.py` | DONE | Apply recursive glob & fuzzy match |
+| H2 | Decouple `--prepare` exit code from `--apply` constraints | `scripts/kpm_hotswap.py` | DONE | Return 0 on mirror/rebuild success |
+| H3 | Decouple `check-exports` from stale KPM trees in gate | `scripts/pre_install_gate.py` | DONE | Test scratch kpatch in Step 3 |
+| H4 | Canonical KPM folder auto-creation & casing collision guard | `scripts/kpm_hotswap.py`, `scripts/kpm_status.py` | DONE | Implement PascalCase auto-dir & collision check |
 | H5 | Verify-After-Fix invariant & two-stage gate documentation | `AGENTS.md`, `BUILD_AND_INSTALL.md` | READY | Insert invariant directives & update lifecycle |
-| H6 | Auto-commit KPM mirror in `--prepare` (`--commit-kpm`) | `scripts/kpm_hotswap.py` | READY | Implement `--commit-kpm` flag and git commit execution |
+| H6 | Auto-commit KPM mirror in `--prepare` (`--commit-kpm`) | `scripts/kpm_hotswap.py` | DONE | Implement `--commit-kpm` flag and git commit execution |
 | H7 | Production dirty auto-committer (`scripts/kpm_commit.py`) | `scripts/kpm_commit.py` | READY | Build dirty scanner, test runner, and commit wrapper |
 | H8 | Smoke harness canonical include normalization | `scripts/run_tests.py`, `smokes.toml` | READY | Inject canonical Common includes in MinGW smoke builds |
 | H9 | End-to-end atomic deployment pipeline (`scripts/kpm_ship.py`) | `scripts/kpm_ship.py` | READY | Implement unified single-command shipping runner |

@@ -521,7 +521,9 @@ def main(argv=None):
     for pid, r in rows.items():
         print(f"{r['verdict']:<10} {pid:<24} {r['version']:<12} {(r['live'] or '-')}/{(r['kpatch'] or '-')}  {action_for(r)}"
               + (f"  [{r['detail']}]" if r["detail"] and r["verdict"] not in ("LIVE",) else ""))
-    refused = [pid for pid, r in rows.items() if r["verdict"] in HARD_REFUSE]
+    # --prepare alone may pass a REINSTALL mod: it only mirrors and rebuilds, and --apply still refuses REINSTALL below
+    prep_ok = ("REINSTALL",) if (a.prepare and not a.apply) else ()
+    refused = [pid for pid, r in rows.items() if r["verdict"] in HARD_REFUSE and r["verdict"] not in prep_ok]
     if refused:
         print(f"REFUSED whole batch: {' '.join(refused)}")
         return 1

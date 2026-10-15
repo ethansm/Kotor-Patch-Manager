@@ -17,10 +17,12 @@ Verdicts, first match wins:
 Ends with summary lines `SWAP: ...`, `REBUILD: ...` etc. that name the ids for the next step.
 """
 import argparse
+import difflib
 import filecmp
 import hashlib
 import json
 import pathlib
+import re
 import subprocess
 import sys
 import tomllib
@@ -175,6 +177,15 @@ def status(mod_manifest, kpm_map, live, game):
     return {**row, "verdict": "SWAP", "detail": kp.name}
 
 
+def suggest(query, ids):
+    """Closest known patch id to a mistyped query (case, '-' and '_' ignored), or None."""
+    def key(s):
+        return re.sub(r"[^a-z0-9]", "", s.lower())
+    by_key = {key(i): i for i in ids}
+    hit = difflib.get_close_matches(key(query), list(by_key), n=1, cutoff=0.6)
+    return by_key[hit[0]] if hit else None
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--game", type=pathlib.Path, default=GAME_DEFAULT)
@@ -193,14 +204,19 @@ def main(argv=None):
         print(str(e), file=sys.stderr)
         return 2
     only = {x for x in a.only.split(",") if x}
-    rows = []
+    rows, known = [], set()
     for m in pick_sources(repo_manifests(), kmap):
         try:
             r = status(m, kmap, live, a.game)
         except (KeyError, tomllib.TOMLDecodeError, zipfile.BadZipFile) as e:
             r = {"id": m.parent.name, "version": "?", "verdict": "REBUILD", "live": "", "kpatch": "", "detail": f"unreadable: {e}"}
+        known.add(r["id"])
         if not only or r["id"] in only:
             rows.append(r)
+    for x in sorted(only - known):
+        hint = suggest(x, known)
+        print(f"usage error: unknown id '{x}'" + (f"\nDid you mean: '{hint}'?" if hint else ""), file=sys.stderr)
+        return 2
     rows.sort(key=lambda r: (ORDER.index(r["verdict"]), r["id"]))
     if a.json:
         print(json.dumps(rows, indent=1))
