@@ -1125,7 +1125,12 @@ void handoffTick(DWORD now, const bool* edge) {
             }
         } else {
             // Combat start wipes the engine queue; the first send clears this member's creature so the hand-off is not queued behind the engine's attack entries.
-            if (qh::clearBeforeHandoff(g_cfg.handoffClearFirst, h.sent)) {
+            if (g_logOn && g_cfg.traceQueue && qh::keepNewAtHandoff(g_cfg.handoffClearFirst, g_cfg.handoffKeepNew, h.sent)) {
+                char line[200];
+                qh::fmtHandoffKeep(line, sizeof line, k, a.cmdId, s.engineNe, s.nrn);
+                QTRACE("%s", line);
+            }
+            if (qh::clearBeforeHandoff(g_cfg.handoffClearFirst, h.sent, g_cfg.handoffKeepNew)) {
                 uint32_t id = 0, server = 0;
                 const char* bad = resolveServerClear(srv, id, server);
                 if (g_logOn && g_cfg.traceQueue) {
@@ -1775,8 +1780,8 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     g_logOn = g_cfg.log;
     KP_LOG(chMain, "0.4.1-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax);
     QLOG(chMain, "pause_eaten_wait=%d dispatch_wait_flags=%d spell_replay_pos=%d", g_cfg.pauseEatenWait ? 1 : 0, g_cfg.dispatchWaitFlags ? 1 : 0, g_cfg.spellReplayPos ? 1 : 0);
-    QLOG(chMain, "pause_reinject=%d handoff_on_combat=%d handoff_clear_first=%d handoff_resend_held=%d show_in_combat=%d",
-         g_cfg.pauseReinject ? 1 : 0, g_cfg.handoffOnCombat ? 1 : 0, g_cfg.handoffClearFirst ? 1 : 0, g_cfg.handoffResendHeld ? 1 : 0, g_cfg.showInCombat ? 1 : 0);
+    QLOG(chMain, "pause_reinject=%d handoff_on_combat=%d handoff_clear_first=%d handoff_keep_new=%d handoff_resend_held=%d show_in_combat=%d",
+         g_cfg.pauseReinject ? 1 : 0, g_cfg.handoffOnCombat ? 1 : 0, g_cfg.handoffClearFirst ? 1 : 0, g_cfg.handoffKeepNew ? 1 : 0, g_cfg.handoffResendHeld ? 1 : 0, g_cfg.showInCombat ? 1 : 0);
     g_ps.init(api, "queue-hud");
     g_ps.onConnect = onConnect;
     g_ps.add(K2PS_HUD_DRAW, 400, onHudDraw);

@@ -137,7 +137,10 @@ inline bool panelHold(uint32_t lastGoodTick, uint32_t now, bool inMenu, bool com
 inline bool activeNeedsSlot(bool bufActive, bool engineHolds) { return bufActive && !engineHolds; }
 
 // handoff_clear_first: clear the engine queue before the first handoff send (nothing sent yet this handoff).
-inline bool clearBeforeHandoff(bool cfgOn, int sentSoFar) { return cfgOn && sentSoFar == 0; }
+// handoff_keep_new (QL10 probe): keepNew skips the clear so the player's new click survives; the engine then orders the queue itself.
+inline bool clearBeforeHandoff(bool cfgOn, int sentSoFar, bool keepNew = false) { return cfgOn && !keepNew && sentSoFar == 0; }
+// True on the first send of a hand-off that keeps the engine queue (logged as HANDOFF_KEEP).
+inline bool keepNewAtHandoff(bool cfgOn, bool keepNew, int sentSoFar) { return cfgOn && keepNew && sentSoFar == 0; }
 
 // handoff_resend_held: the active command the engine still held at the combat edge (a thrown grenade / medpack that triggered combat).
 // The hand-off waits while the engine still holds it, then settles by whether it ever ran (QL6c; the old 300 ms clock dropped real casts):
@@ -191,6 +194,7 @@ struct Config {
     bool handoffOnCombat = true;  // handoff_on_combat: hand the buffered queue over when combat starts (default on)
     bool showInCombat = true;     // show_in_combat: keep the queue strip drawn during combat (default on)
     bool handoffClearFirst = true;  // handoff_clear_first: clear the engine queue before the first handoff send (default on)
+    bool handoffKeepNew = true;     // handoff_keep_new: do NOT clear the engine queue at the hand-off (keeps the new click; 0 = clear-first behaviour)
     bool handoffResendHeld = true;  // handoff_resend_held: re-send an engine-held active command the engine wipes at combat start (default on)
     bool spellReplayPos = true;     // spell_replay_pos: replay a buffered spell with a NULL position when the engine's original was NULL (0 = always pass the zero-filled copy)
     bool hideBannerSoft = true;     // hide_banner_soft: hide the top combat banner while combat is "soft" (only own-party targets, no hostile)
@@ -478,6 +482,7 @@ inline bool parseIniLine(Config& c, const char* line) {
     if (detail::keyEq(kb, ke, "handoff_on_combat")) return detail::parseBool(vb, ve, &c.handoffOnCombat);
     if (detail::keyEq(kb, ke, "show_in_combat")) return detail::parseBool(vb, ve, &c.showInCombat);
     if (detail::keyEq(kb, ke, "handoff_clear_first")) return detail::parseBool(vb, ve, &c.handoffClearFirst);
+    if (detail::keyEq(kb, ke, "handoff_keep_new")) return detail::parseBool(vb, ve, &c.handoffKeepNew);
     if (detail::keyEq(kb, ke, "handoff_resend_held")) return detail::parseBool(vb, ve, &c.handoffResendHeld);
     if (detail::keyEq(kb, ke, "spell_replay_pos")) return detail::parseBool(vb, ve, &c.spellReplayPos);
     if (detail::keyEq(kb, ke, "hide_banner_soft")) return detail::parseBool(vb, ve, &c.hideBannerSoft);
@@ -1045,6 +1050,16 @@ inline int fmtHandoffOne(char* out, int cap, uint32_t cmdId, int m, int seq, int
 inline int fmtHandoffClear(char* out, int cap, int m, uint32_t cmdId, int ne, int round) {
     detail::LogWr w(out, cap);
     w.s("HANDOFF_CLEAR m="); w.mm(m);
+    w.s(" cmd="); w.u(cmdId);
+    w.s(" ne="); w.i(ne);
+    w.s(" round="); w.i(round);
+    return w.done();
+}
+
+// HANDOFF_KEEP m=<k> cmd=<n> ne=<n> round=<n>   (handoff_keep_new: the engine queue was left as is before the first send)
+inline int fmtHandoffKeep(char* out, int cap, int m, uint32_t cmdId, int ne, int round) {
+    detail::LogWr w(out, cap);
+    w.s("HANDOFF_KEEP m="); w.mm(m);
     w.s(" cmd="); w.u(cmdId);
     w.s(" ne="); w.i(ne);
     w.s(" round="); w.i(round);

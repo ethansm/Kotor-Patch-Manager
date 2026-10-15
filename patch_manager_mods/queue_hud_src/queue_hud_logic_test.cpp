@@ -766,6 +766,21 @@ void testPanelHoldAndSlotRules() {
     KT_CHECK(!clearBeforeHandoff(true, 2));
     KT_CHECK(!clearBeforeHandoff(false, 0));
     KT_CHECK(!clearBeforeHandoff(false, 1));
+    // handoff_keep_new (QL10): keepNew suppresses the clear and is logged on the first send only
+    KT_CHECK(!clearBeforeHandoff(true, 0, true));
+    KT_CHECK(clearBeforeHandoff(true, 0, false));
+    KT_CHECK(keepNewAtHandoff(true, true, 0));
+    KT_CHECK(!keepNewAtHandoff(true, true, 1));
+    KT_CHECK(!keepNewAtHandoff(true, false, 0));
+    KT_CHECK(!keepNewAtHandoff(false, true, 0));
+    Config k;
+    KT_CHECK(k.handoffKeepNew);                                                     // default on
+    KT_CHECK(parseIniLine(k, "handoff_keep_new=0") && !k.handoffKeepNew);
+    KT_CHECK(parseIniLine(k, "handoff_keep_new=1") && k.handoffKeepNew);
+    KT_CHECK(!parseIniLine(k, "handoff_keep_new=maybe") && k.handoffKeepNew);       // invalid: rejected, kept
+    char kl[120];
+    fmtHandoffKeep(kl, sizeof kl, 0, 7, 5, 2);
+    KT_CHECK(strcmp(kl, "HANDOFF_KEEP m=0 cmd=7 ne=5 round=2") == 0);
 }
 
 // ---- T1 HANDOFF_CLEAR / ROUND formatter goldens, clamp and tiny-buffer behaviour ----
