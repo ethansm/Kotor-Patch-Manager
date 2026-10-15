@@ -113,8 +113,10 @@ __attribute__((noinline, unused)) static bool probeWrite(unsigned site, void* p,
 }
 
 template <typename T> bool readAt(unsigned site, uintptr_t base, int off, T* out) {
-    if (base == 0 || !probeRead(site, reinterpret_cast<const void*>(base + off), sizeof(T))) return false;
-    *out = *reinterpret_cast<const T*>(base + off);
+    // base + off wraps mod 2^N: off >= 0 must not lower the address, off < 0 must not raise it.
+    uintptr_t a = base + uintptr_t(off);
+    if (base == 0 || (off >= 0 ? a < base : a > base) || !probeRead(site, reinterpret_cast<const void*>(a), sizeof(T))) return false;
+    *out = *reinterpret_cast<const T*>(a);
     return true;
 }
 

@@ -227,6 +227,22 @@ int main() {
         KT_CHECK(saferead::readAt(1, a + 16, -8, &o)); KT_CHECK_EQ(o, 0x1234u);                 // a legal negative offset still works
     }
 
+    // ---- readAt base+off wrap: a wrapped address fails before any read and leaves out untouched
+    {
+        saferead::beginScope();
+        uintptr_t s = arenaAlloc(8);
+        *reinterpret_cast<uint32_t*>(s) = 0xC0DEu;                                    // readable sentinel in the arena
+        uintptr_t base = uintptr_t(0) - 0x10000;                                      // base + off wraps to s on any pointer width
+        int off = static_cast<int>(s + 0x10000);
+        uint32_t o = 0x5A5A5A5Au;
+        KT_CHECK(!saferead::readAt(1, base, off, &o)); KT_CHECK_EQ(o, 0x5A5A5A5Au);   // wrapped: must fail, out untouched
+        KT_CHECK(saferead::readAt(1, s, 0, &o)); KT_CHECK_EQ(o, 0xC0DEu);            // unwrapped read of s still works
+        KT_CHECK(saferead::readAt(1, s - 16, 16, &o)); KT_CHECK_EQ(o, 0xC0DEu);       // legal positive offset (no wrap) still works
+        // negative off wrapping below 0 (1 - 0x30000 -> high address): rejected before any probe (the VirtualQuery count is the observable)
+        g_fake[0] = { uintptr_t(0) - 0x10000, uintptr_t(0) - 0x8000, PAGE_NOACCESS, MEM_COMMIT }; g_fakeN = 1; int calls = g_vqCalls;
+        KT_CHECK(!saferead::readAt(1, 0x20000, -0x30000, &o)); KT_CHECK_EQ(o, 0xC0DEu); KT_CHECK_EQ(g_vqCalls, calls); g_fakeN = 0;
+    }
+
     // ---- readExo exact fit: len == cap-1 fits (NUL at buf[cap-1]); len == cap does not
     {
         char b6[8]; std::memset(b6, 'X', sizeof b6);
