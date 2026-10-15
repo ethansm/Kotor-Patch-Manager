@@ -57,10 +57,11 @@ void testTagEqualsThirtyTwoChars() {
 
 void testRowsForAreaMatch() {
     int idx[k1spawn::kMaxRowsPerArea];
-    KT_CHECK_EQ(k1spawn::RowsForArea("204tel", idx, k1spawn::kMaxRowsPerArea), 2);
+    KT_CHECK_EQ(k1spawn::RowsForArea("204tel", idx, k1spawn::kMaxRowsPerArea), 3);
     KT_CHECK_EQ(idx[0], 0);
     KT_CHECK_EQ(idx[1], 1);
-    KT_CHECK_EQ(k1spawn::RowsForArea("204TEL", idx, k1spawn::kMaxRowsPerArea), 2);  // case does not matter
+    KT_CHECK_EQ(idx[2], 2);
+    KT_CHECK_EQ(k1spawn::RowsForArea("204TEL", idx, k1spawn::kMaxRowsPerArea), 3);  // case does not matter
     KT_CHECK_EQ(k1spawn::RowsForArea("other", idx, k1spawn::kMaxRowsPerArea), 0);
     KT_CHECK_EQ(k1spawn::RowsForArea("", idx, k1spawn::kMaxRowsPerArea), 0);
     KT_CHECK_EQ(k1spawn::RowsForArea("204tel2", idx, k1spawn::kMaxRowsPerArea), 0);  // a longer name is not a match
@@ -110,9 +111,10 @@ void testRosterIntegrity() {
         // tags are unique: the duplicate guard is per tag
         for (int j = i + 1; j < k1spawn::kRosterCount; ++j) KT_CHECK(!k1spawn::TagEquals(r.tag, k1spawn::kRoster[j].tag));
     }
-    // the two rows the 0.2.0 play test was written for
+    // the rows the play tests were written for (0.2.0: pet + native NPC; 0.3.2: K1 Juhani)
     KT_CHECK(k1spawn::ResrefEquals(k1spawn::kRoster[0].resref, "c_drdmouse01"));
     KT_CHECK(k1spawn::ResrefEquals(k1spawn::kRoster[1].resref, "k1p_native_npc"));
+    KT_CHECK(k1spawn::ResrefEquals(k1spawn::kRoster[2].resref, "k1p_juhani"));
 }
 
 }  // namespace

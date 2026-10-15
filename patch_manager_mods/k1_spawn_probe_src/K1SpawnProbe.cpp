@@ -1,4 +1,4 @@
-// K1 Spawn Probe 0.3.1-probe (Steam Aspyr build 6A522E71...): a DLL-only client of the npc-world library (k2.npcworld@1, NpcWorld.h).
+// K1 Spawn Probe 0.3.2-probe (Steam Aspyr build 6A522E71...): a DLL-only client of the npc-world library (k2.npcworld@1, NpcWorld.h).
 // Doc 38 stage 2 (native spawn of K1 content into K2) on top of the shared library. It owns NO hook: the three world detours
 // (LoadModuleInProgress, creature AddToArea, MainLoop), the POP-STABLE latch, the seen-tag list and the native CreateObject sequence
 // all live in npc-world, which must load first (manifest requires = ["npc-world"]; a DLL-only patch has no hook to retry connect() from).
@@ -27,7 +27,7 @@ namespace {
 
 using saferead::readAt;
 
-constexpr const char* kVersion = "0.3.1-probe";
+constexpr const char* kVersion = "0.3.2-probe";
 constexpr const char* kLogName = "k1-spawn-probe_log.txt";
 constexpr int kEventLines = 25;         // one dump event: header + 16 creature rows + 4 DUMP24 rows + 4 DUMPST rows
 constexpr int kCreatureDwords = 0x100;  // creature object dump (dwords)
