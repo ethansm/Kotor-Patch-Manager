@@ -266,6 +266,7 @@ struct Btn {
     bool iconSet = false;
     uint32_t tipKey = 0;
     bool tipSet = false;
+    bool tipClr = false;   // native tip cleared for an empty name (tipSet stays false); avoids a clearNative every tick
 };
 Btn g_btn[MaxBtn];
 Wid g_cont[3];                     // CH4d one pill container per group (created before the slot labels so they draw behind the buttons)
@@ -436,7 +437,7 @@ void hideAllButtons(const char* why) {
         Btn& b = g_btn[i];
         if (!b.bg.c) continue;
         widHide(b.bg); widHide(b.icon);
-        b.tipSet = false;
+        b.tipSet = false; b.tipClr = false;
     }
     g_haveLast = false; g_pillMask = -1; g_freeze = { false, 0, 0 }; g_frozenLog = false; g_hover = -1; g_logObj = 0; g_logType = -2;
     memset(g_lastRect, 0, sizeof(g_lastRect)); memset(g_lastCont, 0, sizeof(g_lastCont)); memset(g_lastN, 0, sizeof(g_lastN)); memset(g_lastSig, 0, sizeof(g_lastSig));
@@ -682,7 +683,7 @@ void updateButtons(const K2HudContext* ctx) {
             Btn& b = g_btn[s];
             if (!b.bg.c) { if (k < outN[g]) ++noCtl; continue; }
             if (k >= outN[g]) {
-                if (b.bg.vis != 0 || b.icon.vis != 0) { widHide(b.bg); widHide(b.icon); b.tipSet = false; }
+                if (b.bg.vis != 0 || b.icon.vis != 0) { widHide(b.bg); widHide(b.icon); b.tipSet = false; b.tipClr = false; }
                 continue;
             }
             const ch::EntryView& e = gv[g].e[ord[g][k]];
@@ -705,10 +706,11 @@ void updateButtons(const K2HudContext* ctx) {
             widShow(b.bg, true); widShow(b.icon, false);
             ++visBtn;
 
-            if (!b.tipSet || b.tipKey != e.key) {
-                const char* name = g_names[g][ord[g][k]];
-                if (name[0]) guitip::setNative(b.bg.c, name);
-                b.tipKey = e.key; b.tipSet = true;
+            const char* tipName = g_names[g][ord[g][k]];
+            switch (ch::tooltipStep(b.tipSet, b.tipClr, b.tipKey, e.key, tipName)) {
+                case ch::TipAction::Set:   guitip::setNative(b.bg.c, tipName); break;
+                case ch::TipAction::Clear: guitip::clearNative(b.bg.c); break;
+                case ch::TipAction::Keep:  break;
             }
         }
     }

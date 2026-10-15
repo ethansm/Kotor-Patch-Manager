@@ -1377,5 +1377,48 @@ int main() {
   ch6GuardsAndNulls();
   ch6LayoutSweeps();
   ch6Profile();
+  // ================= WI-80 (BG33, HB-1c-03): empty slot name clears the native tip once; shown tip always equals the slot name =================
+  {
+    struct Step { uint32_t key; const char* name; TipAction want; };
+    const Step seq[] = {
+      { 7, "Force Push", TipAction::Set },   // fresh button: first tip is set
+      { 7, "Force Push", TipAction::Keep },  // repeat frame, same key: no re-set
+      { 8, "Slash", TipAction::Set },        // key swap: new tip
+      { 9, "", TipAction::Clear },           // unreadable name after key 8: clear, "Slash" must not persist
+      { 9, "", TipAction::Keep },            // repeat empty frame: already cleared, no second native write
+      { 7, "Force Push", TipAction::Set },   // stale X, then empty, then X: X is set again
+      { 7, "", TipAction::Clear },           // same key, name now unreadable: cleared
+      { 7, "Force Push", TipAction::Set },   // same key, name recovers: must re-Set (tipSet was not left true)
+      { 7, "", TipAction::Clear },           // cleared again
+      { 3, nullptr, TipAction::Keep },       // null name counts as empty; already cleared
+      { 3, "Slash", TipAction::Set },        // recovers on the next readable name
+      { 3, nullptr, TipAction::Clear },      // null name on a button that had a tip: cleared
+    };
+    bool wiTipSet = false, wiTipClr = false; uint32_t wiTipKey = 0; std::string wiShown;
+    for (const Step& s : seq) {
+      const TipAction a = tooltipStep(wiTipSet, wiTipClr, wiTipKey, s.key, s.name);
+      KT_CHECK_EQ((int)a, (int)s.want);
+      // model of the native tip: Set shows the name, Clear empties it, Keep leaves it as is
+      if (a == TipAction::Set) wiShown = s.name;
+      else if (a == TipAction::Clear) wiShown.clear();
+      KT_CHECK(wiShown == (s.name ? s.name : ""));
+      const bool empty = !s.name || !s.name[0];
+      KT_CHECK(wiTipSet == !empty);          // an empty name is never stored as a set tip
+      KT_CHECK(wiTipClr == empty);
+    }
+    // fresh button, empty name: cleared once, nothing recorded as set
+    bool freshSet = false, freshClr = false; uint32_t freshKey = 0;
+    KT_CHECK_EQ((int)tooltipStep(freshSet, freshClr, freshKey, 1u, ""), (int)TipAction::Clear);
+    KT_CHECK(!freshSet && freshClr);
+    // hide path resets tipSet and tipClr: the same empty name clears again, and the same readable key sets again
+    freshSet = false; freshClr = false;
+    KT_CHECK_EQ((int)tooltipStep(freshSet, freshClr, freshKey, 1u, ""), (int)TipAction::Clear);
+    freshSet = false; freshClr = false;
+    KT_CHECK_EQ((int)tooltipStep(freshSet, freshClr, freshKey, 1u, "A"), (int)TipAction::Set);
+    // key change with a readable name records the new key
+    bool moveSet = true, moveClr = false; uint32_t moveKey = 4;
+    KT_CHECK_EQ((int)tooltipStep(moveSet, moveClr, moveKey, 5u, "A"), (int)TipAction::Set);
+    KT_CHECK(moveSet && moveKey == 5);
+  }
   return kt::Report("combat_logic_test");
 }

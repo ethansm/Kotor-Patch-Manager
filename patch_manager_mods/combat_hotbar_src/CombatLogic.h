@@ -517,4 +517,23 @@ inline bool parseProfileLine(Profile& p, const char* key, const char* val) {
     return false;
 }
 
+// ---- tooltip decision (WI-80 / BG33, HB-1c-03; pure, host-tested) ----
+// One button's native tooltip decision per UI tick. Empty or null name: clear the native tip once and mark it unset (tipSet=false, never stored
+// as a set tip) and cleared (tipClr=true), so repeat empty frames do not re-clear. Same key with a tip already set: keep (no native write).
+// Otherwise: record the key and set. Callers reset tipSet and tipClr when the button is hidden.
+enum class TipAction { Keep, Set, Clear };
+template <typename A, typename B>
+inline TipAction tooltipStep(bool& tipSet, bool& tipClr, A& tipKey, const B& key, const char* name) {
+    if (!name || !name[0]) {
+        tipSet = false;
+        if (tipClr) return TipAction::Keep;
+        tipClr = true;
+        return TipAction::Clear;
+    }
+    tipClr = false;
+    if (tipSet && tipKey == key) return TipAction::Keep;
+    tipKey = key; tipSet = true;
+    return TipAction::Set;
+}
+
 }  // namespace ch
