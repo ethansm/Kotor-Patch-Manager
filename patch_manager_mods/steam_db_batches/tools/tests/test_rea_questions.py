@@ -391,6 +391,28 @@ class ResidualModeTests(QuestionFixture):
             self.assertNotIn(fixed, text)
         self.assertNotIn("answer all six", text)
 
+    def test_residual_asks_exactly_two_numbered_questions_and_no_fixed_one(self):
+        self.assertEqual(self.cli("--residual")[0], 0)
+        text = self.read_single()
+        section = text.split("## Questions", 1)[1].split("\n## ", 1)[0]
+        numbered = re.findall(r"^\d+\. ", section, re.M)
+        self.assertEqual(numbered, ["1. ", "2. "])
+        self.assertEqual(len(numbered), 2)
+        self.assertIn("at most 15 words", section)
+        self.assertIn("quoted asm line", section)
+        self.assertIn("could not resolve", section)
+        for fixed in FIXED_QUESTION_TEXTS:
+            self.assertNotIn(fixed, text)
+
+    def test_residual_budget_is_three_per_address_plus_three_spare(self):
+        self.assertEqual(self.cli("--residual")[0], 0)
+        text = self.read_single()
+        rule7 = next(line for line in text.splitlines() if line.startswith("7. "))
+        self.assertIn("at most 3 REA calls per address", rule7)
+        self.assertIn("plus 3 spare for the whole file", rule7)
+        self.assertNotIn("at most 4", rule7)
+        self.assertEqual(rq.RULE_7_RESIDUAL, RESIDUAL_RULE_7)
+
     def test_residual_rule_7_replaces_xref_row_rule(self):
         self.cli("--residual")
         text = self.read_single()

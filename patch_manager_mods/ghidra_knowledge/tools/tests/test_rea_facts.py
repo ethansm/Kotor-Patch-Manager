@@ -5,6 +5,7 @@ import contextlib
 import datetime as dt
 import io
 import json
+import re
 import shlex
 import shutil
 import sqlite3
@@ -101,6 +102,7 @@ class FactsCase(unittest.TestCase):
         ])
         self.steam = self.root / "steam.db"
         make_steam(self.steam, [("CSWFoo", "Foo", ADDR_A)])
+        self.dump_root = DUMP_MINI
         self.addr_file = self.root / "addrs.txt"
         self.addr_file.write_text("0x007680a0\n0x00776db0\n0x00775930\n", encoding="utf-8")
         guard_patch = mock.patch.object(rf, "guard", lambda *a, **k: None)
@@ -129,7 +131,7 @@ class FactsCase(unittest.TestCase):
         overrides = {"exe": self.exe, "env": fake_env, "warm": None,
                      "cache_dir": self.cache, "lock_dir": self.lock}
         base = ["run", "--topic", TOPIC, "--ledger-dir", str(ledger or self.ledger),
-                "--dump-root", str(DUMP_MINI), "--kdb", str(self.kdb), "--steam-db", str(self.steam),
+                "--dump-root", str(self.dump_root), "--kdb", str(self.kdb), "--steam-db", str(self.steam),
                 "--no-preflight", "--cmd", shlex.join([sys.executable, FAKE])]
         out, err = io.StringIO(), io.StringIO()
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
@@ -139,7 +141,7 @@ class FactsCase(unittest.TestCase):
     def static_only(self, *argv, ledger=None):
         """Same as cli() but without a fake session."""
         base = ["run", "--topic", TOPIC, "--ledger-dir", str(ledger or self.ledger),
-                "--dump-root", str(DUMP_MINI), "--kdb", str(self.kdb), "--steam-db", str(self.steam),
+                "--dump-root", str(self.dump_root), "--kdb", str(self.kdb), "--steam-db", str(self.steam),
                 "--no-live"]
         out, err = io.StringIO(), io.StringIO()
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
@@ -179,7 +181,7 @@ class StaticCallsiteTests(FactsCase):
         site = by_addr["0x007680a6"]
         self.assertEqual(site["name"], "slot 0x14 candidates: CSWBar::Bar@0x0040e980, CSWFoo::Foo@0x00894110")
         self.assertEqual(site["confidence"], "confirmed")
-        self.assertEqual(site["evidence"], "static_facts 0x007680a6: direct [eax + 0x14]")
+        self.assertEqual(site["evidence"], "static_facts 0x007680a6: CALL dword ptr [EAX + 0x14]")
 
     def test_unmatched_slot_is_probable_with_no_candidates(self):
         code, _, err = self.cli("--addrs", self._one(ADDR_A))
@@ -198,6 +200,49 @@ class StaticCallsiteTests(FactsCase):
         site = {r["addr"]: r for r in self.rows() if r["kind"] == "callsite"}["0x007680a6"]
         self.assertEqual(site["confidence"], "probable")
 
+    def test_callsite_evidence_quotes_exact_asm_line_from_read_asm(self):
+        code, _, err = self.cli("--addrs", self._one(ADDR_A))
+        self.assertEqual(code, 0, err)
+        asm_text = (DUMP_MINI / "decomp" / "76" / "007680a0.asm").read_text(encoding="utf-8")
+        for r in self.rows():
+            if r["kind"] != "callsite":
+                continue
+            quote = r["evidence"].split("static_facts ", 1)[1]
+            site8, insn = quote.split(": ", 1)
+            self.assertEqual(site8, r["addr"])
+            self.assertRegex(asm_text, r"(?m)^%s +[0-9a-f]+ +%s$" % (site8[2:], re.escape(insn)))
+        by_addr = {r["addr"]: r for r in self.rows() if r["kind"] == "callsite"}
+        self.assertEqual(by_addr["0x007680e1"]["evidence"], "static_facts 0x007680e1: CALL EAX")
+        self.assertEqual(rl.lint(self.ledger), [])
+
+    def test_callsite_evidence_falls_back_to_how_without_asm_file(self):
+        dump = self.root / "dump_noasm"
+        shutil.copytree(DUMP_MINI, dump)
+        (dump / "decomp" / "76" / "007680a0.asm").unlink()
+        self.dump_root = dump
+        code, _, err = self.cli("--addrs", self._one(ADDR_A))
+        self.assertEqual(code, 0, err)
+        sites = [r for r in self.rows() if r["kind"] == "callsite"]
+        self.assertEqual(len(sites), 2)
+        for r in sites:
+            self.assertEqual(r["evidence"], "static_facts %s: no asm" % r["addr"])
+        self.assertEqual([f for f in rl.lint(self.ledger) if "L8" not in str(f)], [])
+
+    def test_callsite_evidence_falls_back_to_how_when_site_line_absent(self):
+        real = rf.sf._AC.read_asm
+
+        def without_site(root, addr):
+            lines = real(root, addr)
+            return None if lines is None else [t for t in lines if t[0] != 0x007680a6]
+
+        with mock.patch.object(rf.sf._AC, "read_asm", without_site):
+            code, _, err = self.cli("--addrs", self._one(ADDR_A))
+        self.assertEqual(code, 0, err)
+        by_addr = {r["addr"]: r for r in self.rows() if r["kind"] == "callsite"}
+        self.assertEqual(by_addr["0x007680a6"]["evidence"], "static_facts 0x007680a6: direct [eax + 0x14]")
+        self.assertEqual(by_addr["0x007680e1"]["evidence"], "static_facts 0x007680e1: CALL EAX")
+        self.assertEqual([f for f in rl.lint(self.ledger) if "L8" not in str(f)], [])
+
     def test_max_sites_caps_callsite_rows_per_address(self):
         code, _, err = self.cli("--addrs", self._one(ADDR_A), "--max-sites", "1")
         self.assertEqual(code, 0, err)
@@ -212,6 +257,50 @@ class StaticCallsiteTests(FactsCase):
         rows = self.rows()
         self.assertEqual({r["kind"] for r in rows}, {"callsite"})
         self.assertEqual(len(rows), 2)
+
+    def test_no_live_writes_static_marker_for_address_without_callsites(self):
+        code, _, err = self.static_only("--addrs", self._one(ADDR_C))
+        self.assertEqual(code, 0, err)
+        rows = self.by_addr(ADDR_C)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual((rows[0]["kind"], rows[0]["name"]), ("xref", "no live run (static only)"))
+        self.assertEqual(rows[0]["evidence"], "rea_facts 0x00775930: static only")
+        self.assertEqual(rl.lint(self.ledger), [])
+
+    def test_no_live_resume_adds_no_rows(self):
+        code, out, err = self.static_only("--addrs", self.addr_file)
+        self.assertEqual(code, 0, err)
+        self.assertRegex(out, r"addresses 3, rows 4, skipped 0 \(resume\)")
+        before = self.row_keys()
+        code, out, err = self.static_only("--addrs", self.addr_file)
+        self.assertEqual(code, 0, err)
+        self.assertRegex(out, r"addresses 3, rows 0, skipped 3 \(resume\)")
+        self.assertEqual(before, self.row_keys())
+
+    def test_live_run_after_no_live_still_does_live_work(self):
+        self.assertEqual(self.static_only("--addrs", self.addr_file)[0], 0)
+        code, out, err = self.cli("--addrs", self.addr_file)
+        self.assertEqual(code, 0, err)
+        self.assertRegex(out, r"addresses 3, rows \d+, skipped 0 \(resume\)")
+        self.assertTrue(self.call_log.exists())
+        names = {(r["addr"], r["name"]) for r in self.rows()}
+        self.assertIn(("0x%08x" % ADDR_C, "no live-only facts"), names)
+        self.assertTrue([r for r in self.by_addr(ADDR_A) if r["kind"] == "function"])
+        self.assertTrue([r for r in self.by_addr(ADDR_B) if r["kind"] == "xref" and r["name"].startswith("data refs")])
+        keys = self.row_keys()
+        self.assertEqual(len(keys), len(set(keys)))
+        # A later --no-live run still skips everything.
+        code, out, _ = self.static_only("--addrs", self.addr_file)
+        self.assertEqual(code, 0)
+        self.assertRegex(out, r"rows 0, skipped 3")
+
+    def test_static_marker_does_not_count_as_live_done(self):
+        self.assertEqual(self.static_only("--addrs", self._one(ADDR_C))[0], 0)
+        code, out, err = self.cli("--addrs", self._one(ADDR_C))
+        self.assertEqual(code, 0, err)
+        self.assertRegex(out, r"rows 1, skipped 0")
+        names = sorted(r["name"] for r in self.by_addr(ADDR_C))
+        self.assertEqual(names, ["no live run (static only)", "no live-only facts"])
 
 
 class LiveFactTests(FactsCase):
@@ -264,6 +353,10 @@ class CrashAndResumeTests(FactsCase):
         self.assertEqual(code, 1, err)
         self.assertIn("REA session lost", err)
         self.assertEqual({r["addr"] for r in self.rows()}, {"0x%08x" % ADDR_A, "0x007680a6", "0x007680e1"})
+        # The victim (C) and the not-yet-reached address (B) have no rows, not even static ones.
+        self.assertEqual(self.by_addr(ADDR_C), [])
+        self.assertEqual(self.by_addr(ADDR_B), [])
+        self.assertTrue(self.by_addr(ADDR_A))
 
         code, out, err = self.cli("--addrs", self.addr_file)
         self.assertEqual(code, 0, err)
@@ -275,6 +368,8 @@ class CrashAndResumeTests(FactsCase):
         code, _, err = self.cli("--addrs", self.addr_file, ledger=clean)
         self.assertEqual(code, 0, err)
         self.assertEqual(sorted(keys), sorted(self.row_keys(clean)))
+        self.assertTrue(self.by_addr(ADDR_C))
+        self.assertTrue(self.by_addr(ADDR_B))
 
     def test_rerun_on_finished_file_skips_everything(self):
         code, _, err = self.cli("--addrs", self.addr_file)
@@ -317,7 +412,7 @@ class KeysAndTopicTests(FactsCase):
 
     def test_bad_topic_exits_two(self):
         base = ["run", "--addrs", str(self.addr_file), "--topic", "B13a", "--ledger-dir", str(self.ledger),
-                "--dump-root", str(DUMP_MINI), "--kdb", str(self.kdb), "--steam-db", str(self.steam),
+                "--dump-root", str(self.dump_root), "--kdb", str(self.kdb), "--steam-db", str(self.steam),
                 "--no-live"]
         err = io.StringIO()
         with contextlib.redirect_stderr(err):
@@ -341,7 +436,7 @@ class CliTests(FactsCase):
         script = TOOLS_DIR / "rea_facts.py"
         proc = subprocess.run(
             [sys.executable, str(script), "run", "--addrs", str(self.addr_file), "--topic", TOPIC,
-             "--ledger-dir", str(self.ledger), "--dump-root", str(DUMP_MINI), "--kdb", str(self.kdb),
+             "--ledger-dir", str(self.ledger), "--dump-root", str(self.dump_root), "--kdb", str(self.kdb),
              "--steam-db", str(self.steam), "--no-live"],
             capture_output=True, text=True, timeout=120)
         self.assertEqual(proc.returncode, 0, proc.stderr)

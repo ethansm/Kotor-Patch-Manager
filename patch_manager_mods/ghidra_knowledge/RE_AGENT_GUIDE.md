@@ -96,6 +96,11 @@ max 2) then `rea_session.py call <tool> --args '<json>'` or the `ReaSession` cla
 dump dir `rea_cache/`. REA cannot resolve vtable calls (use the static slot instead) and rejects
 `set_addresses_names` (use `annotate_native_function`). Details: `.claude/research/rea_decomp/D1_probe.md`.
 
+Live-only facts in batch ($0 tokens): `python3 ghidra_knowledge/tools/rea_facts.py run --addrs FILE --topic <B>-s<k>`
+writes ledger rows per address (static INDIRECT `callsite` rows quoting `0x<site>: <insn>` with `class_methods` slot
+candidates, `function` rows for non-contiguous bodies, `xref`/`table` rows for data refs to the function); resumable,
+exit 1 when the REA session dies (re-run to resume); `--no-live` writes static rows only.
+
 Live REA (`rea-recon`) is only for what the dumps cannot answer: targets of INDIRECT call sites, non-contiguous
 function bodies, live data xrefs, and named pseudo-C. At most 2 live REA sessions machine-wide.
 

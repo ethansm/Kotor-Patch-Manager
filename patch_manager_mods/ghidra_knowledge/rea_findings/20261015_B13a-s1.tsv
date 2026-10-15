@@ -1,0 +1,99 @@
+addr	kind	name	confidence	evidence	topic	date
+0x007645d0	xref	no live-only facts	probable	rea_facts 0x007645d0: checked	B13a-s1	2026-10-15
+0x00764fa6	callsite	slot 0xac candidates: none	probable	static_facts 0x00764fa6: CALL EAX	B13a-s1	2026-10-15
+0x00764f80	xref	data refs 11: 0x99ef18,0x9a2330,0x9a2700,0x9a28e8,0x9a38b8,0x9a4df0,0x9a5600,0x9a5760 (first 8)	confirmed	xrefs 0x00764f80: 11 sources, 0 code call sites	B13a-s1	2026-10-15
+0x00765110	xref	data refs 1: 0x99ee84 (first 8)	confirmed	xrefs 0x00765110: 1 sources, 0 code call sites	B13a-s1	2026-10-15
+0x00767800	xref	no live-only facts	probable	rea_facts 0x00767800: checked	B13a-s1	2026-10-15
+0x007679e2	callsite	slot 0x88 candidates: CSWGuiControl::FUN_004193f0@0x004193f0, CSWGuiLabel::FUN_00419a10@0x00419a10	probable	static_facts 0x007679e2: CALL EDX	B13a-s1	2026-10-15
+0x007678f0	xref	no live-only facts	probable	rea_facts 0x007678f0: checked	B13a-s1	2026-10-15
+0x00767a1e	callsite	slot 0x4c candidates: CSWGuiFeatsCharGen::FUN_0040f4c0@0x0040f4c0, CSWGuiInGameInventory::?@0x008a7520, CSWGuiInGameMap::FUN_00894ca0@0x00894ca0, CSWGuiMainInterface::FUN_00753720@0x00753720, CSWGuiUpgrade::FUN_008cca70@0x008cca70	probable	static_facts 0x00767a1e: CALL EAX	B13a-s1	2026-10-15
+0x00767a44	callsite	slot 0x0 candidates: CGameEffectApplierRemover::?@0x0051d450, CSWCCreature::scalar deleting dtor(flag)@0x00765180, CSWGuiBorder::FUN_00414bf0@0x00414bf0, CSWGuiControl::FUN_004186c0@0x004186c0, CSWGuiFeatsCharGen::FUN_0090a970@0x0090a970, CSWGuiImage::FUN_004163a0@0x004163a0	probable	static_facts 0x00767a44: CALL EAX	B13a-s1	2026-10-15
+0x007679f0	xref	no live-only facts	probable	rea_facts 0x007679f0: checked	B13a-s1	2026-10-15
+0x00768090	callsite	slot 0x9c candidates: CSWGuiLabel::FUN_004197d0@0x004197d0, CSWGuiProgressBar::FUN_0041b930@0x0041b930	probable	static_facts 0x00768090: CALL EAX	B13a-s1	2026-10-15
+0x00768060	xref	no live-only facts	probable	rea_facts 0x00768060: checked	B13a-s1	2026-10-15
+0x007680e1	callsite	slot 0x4c candidates: CSWGuiFeatsCharGen::FUN_0040f4c0@0x0040f4c0, CSWGuiInGameInventory::?@0x008a7520, CSWGuiInGameMap::FUN_00894ca0@0x00894ca0, CSWGuiMainInterface::FUN_00753720@0x00753720, CSWGuiUpgrade::FUN_008cca70@0x008cca70	probable	static_facts 0x007680e1: CALL EAX	B13a-s1	2026-10-15
+0x00768107	callsite	slot 0x4c candidates: CSWGuiFeatsCharGen::FUN_0040f4c0@0x0040f4c0, CSWGuiInGameInventory::?@0x008a7520, CSWGuiInGameMap::FUN_00894ca0@0x00894ca0, CSWGuiMainInterface::FUN_00753720@0x00753720, CSWGuiUpgrade::FUN_008cca70@0x008cca70	probable	static_facts 0x00768107: CALL EAX	B13a-s1	2026-10-15
+0x0076812d	callsite	slot 0x4c candidates: CSWGuiFeatsCharGen::FUN_0040f4c0@0x0040f4c0, CSWGuiInGameInventory::?@0x008a7520, CSWGuiInGameMap::FUN_00894ca0@0x00894ca0, CSWGuiMainInterface::FUN_00753720@0x00753720, CSWGuiUpgrade::FUN_008cca70@0x008cca70	probable	static_facts 0x0076812d: CALL EAX	B13a-s1	2026-10-15
+0x00768153	callsite	slot 0x4c candidates: CSWGuiFeatsCharGen::FUN_0040f4c0@0x0040f4c0, CSWGuiInGameInventory::?@0x008a7520, CSWGuiInGameMap::FUN_00894ca0@0x00894ca0, CSWGuiMainInterface::FUN_00753720@0x00753720, CSWGuiUpgrade::FUN_008cca70@0x008cca70	probable	static_facts 0x00768153: CALL EAX	B13a-s1	2026-10-15
+0x00768179	callsite	slot 0x4c candidates: CSWGuiFeatsCharGen::FUN_0040f4c0@0x0040f4c0, CSWGuiInGameInventory::?@0x008a7520, CSWGuiInGameMap::FUN_00894ca0@0x00894ca0, CSWGuiMainInterface::FUN_00753720@0x00753720, CSWGuiUpgrade::FUN_008cca70@0x008cca70	probable	static_facts 0x00768179: CALL EAX	B13a-s1	2026-10-15
+0x0076819b	callsite	slot 0x4c candidates: CSWGuiFeatsCharGen::FUN_0040f4c0@0x0040f4c0, CSWGuiInGameInventory::?@0x008a7520, CSWGuiInGameMap::FUN_00894ca0@0x00894ca0, CSWGuiMainInterface::FUN_00753720@0x00753720, CSWGuiUpgrade::FUN_008cca70@0x008cca70	probable	static_facts 0x0076819b: CALL EAX	B13a-s1	2026-10-15
+0x007681bd	callsite	slot 0x4c candidates: CSWGuiFeatsCharGen::FUN_0040f4c0@0x0040f4c0, CSWGuiInGameInventory::?@0x008a7520, CSWGuiInGameMap::FUN_00894ca0@0x00894ca0, CSWGuiMainInterface::FUN_00753720@0x00753720, CSWGuiUpgrade::FUN_008cca70@0x008cca70	probable	static_facts 0x007681bd: CALL EAX	B13a-s1	2026-10-15
+0x007681df	callsite	slot 0x4c candidates: CSWGuiFeatsCharGen::FUN_0040f4c0@0x0040f4c0, CSWGuiInGameInventory::?@0x008a7520, CSWGuiInGameMap::FUN_00894ca0@0x00894ca0, CSWGuiMainInterface::FUN_00753720@0x00753720, CSWGuiUpgrade::FUN_008cca70@0x008cca70	probable	static_facts 0x007681df: CALL EAX	B13a-s1	2026-10-15
+0x007680a0	function	body ranges 0x7680a0-0x768296;0x768299-0x76829f;0x7682a2-0x7682a7 total 516 span 520	confirmed	analyze_function 0x007680a0: 0x007682a5: RET 0x8	B13a-s1	2026-10-15
+0x00768312	callsite	slot 0x94 candidates: none	probable	static_facts 0x00768312: CALL EDX	B13a-s1	2026-10-15
+0x00768338	callsite	slot 0x9c candidates: CSWGuiLabel::FUN_004197d0@0x004197d0, CSWGuiProgressBar::FUN_0041b930@0x0041b930	probable	static_facts 0x00768338: CALL EAX	B13a-s1	2026-10-15
+0x007683a4	callsite	slot 0x34 candidates: CSWGuiControl::FUN_00414ba0@0x00414ba0, CSWGuiFeatsCharGen::FUN_0090bbb0@0x0090bbb0, CSWGuiInGameInventory::?@0x008a7350, CSWGuiInGameMap::FUN_00894cd0@0x00894cd0, CSWGuiMainInterface::FUN_0074b3f0@0x0074b3f0, CSWGuiPowersLevelUp::FUN_009091e0@0x009091e0	probable	static_facts 0x007683a4: CALL EAX	B13a-s1	2026-10-15
+0x007683bf	callsite	slot 0x34 candidates: CSWGuiControl::FUN_00414ba0@0x00414ba0, CSWGuiFeatsCharGen::FUN_0090bbb0@0x0090bbb0, CSWGuiInGameInventory::?@0x008a7350, CSWGuiInGameMap::FUN_00894cd0@0x00894cd0, CSWGuiMainInterface::FUN_0074b3f0@0x0074b3f0, CSWGuiPowersLevelUp::FUN_009091e0@0x009091e0	probable	static_facts 0x007683bf: CALL EDX	B13a-s1	2026-10-15
+0x00768409	callsite	slot 0x34 candidates: CSWGuiControl::FUN_00414ba0@0x00414ba0, CSWGuiFeatsCharGen::FUN_0090bbb0@0x0090bbb0, CSWGuiInGameInventory::?@0x008a7350, CSWGuiInGameMap::FUN_00894cd0@0x00894cd0, CSWGuiMainInterface::FUN_0074b3f0@0x0074b3f0, CSWGuiPowersLevelUp::FUN_009091e0@0x009091e0	probable	static_facts 0x00768409: CALL EAX	B13a-s1	2026-10-15
+0x00768424	callsite	slot 0x34 candidates: CSWGuiControl::FUN_00414ba0@0x00414ba0, CSWGuiFeatsCharGen::FUN_0090bbb0@0x0090bbb0, CSWGuiInGameInventory::?@0x008a7350, CSWGuiInGameMap::FUN_00894cd0@0x00894cd0, CSWGuiMainInterface::FUN_0074b3f0@0x0074b3f0, CSWGuiPowersLevelUp::FUN_009091e0@0x009091e0	probable	static_facts 0x00768424: CALL EDX	B13a-s1	2026-10-15
+0x007682b0	function	body ranges 0x7682b0-0x768348;0x76834b-0x76843e total 397 span 399	confirmed	analyze_function 0x007682b0: 0x0076843c: RET 0x4	B13a-s1	2026-10-15
+0x00768494	callsite	slot 0x8c candidates: CSWGuiLabel::FUN_00419a60@0x00419a60	probable	static_facts 0x00768494: CALL EDX	B13a-s1	2026-10-15
+0x0076850c	callsite	slot 0x8c candidates: CSWGuiLabel::FUN_00419a60@0x00419a60	probable	static_facts 0x0076850c: CALL EDX	B13a-s1	2026-10-15
+0x0076854d	callsite	slot 0x8c candidates: CSWGuiLabel::FUN_00419a60@0x00419a60	probable	static_facts 0x0076854d: CALL EDX	B13a-s1	2026-10-15
+0x007685e5	callsite	slot 0x8c candidates: CSWGuiLabel::FUN_00419a60@0x00419a60	probable	static_facts 0x007685e5: CALL EDX	B13a-s1	2026-10-15
+0x00768440	xref	no live-only facts	probable	rea_facts 0x00768440: checked	B13a-s1	2026-10-15
+0x007696b0	callsite	slot 0xa0 candidates: none	probable	static_facts 0x007696b0: CALL EAX	B13a-s1	2026-10-15
+0x007696cb	callsite	slot 0x9c candidates: CSWGuiLabel::FUN_004197d0@0x004197d0, CSWGuiProgressBar::FUN_0041b930@0x0041b930	probable	static_facts 0x007696cb: CALL EDX	B13a-s1	2026-10-15
+0x00769620	xref	data refs 1: 0x99ef48 (first 8)	confirmed	xrefs 0x00769620: 1 sources, 0 code call sites	B13a-s1	2026-10-15
+0x0076da97	callsite	slot 0xb4 candidates: none	probable	static_facts 0x0076da97: CALL EAX	B13a-s1	2026-10-15
+0x0076dad7	callsite	slot 0xb4 candidates: none	probable	static_facts 0x0076dad7: CALL EDX	B13a-s1	2026-10-15
+0x0076db4d	callsite	slot 0xb8 candidates: none	probable	static_facts 0x0076db4d: CALL EAX	B13a-s1	2026-10-15
+0x0076db6a	callsite	slot 0xb8 candidates: none	probable	static_facts 0x0076db6a: CALL EAX	B13a-s1	2026-10-15
+0x0076dba8	callsite	slot 0xb4 candidates: none	probable	static_facts 0x0076dba8: CALL EDX	B13a-s1	2026-10-15
+0x0076dce7	callsite	slot 0xb4 candidates: none	probable	static_facts 0x0076dce7: CALL EAX	B13a-s1	2026-10-15
+0x0076dd21	callsite	slot 0xb4 candidates: none	probable	static_facts 0x0076dd21: CALL EDX	B13a-s1	2026-10-15
+0x0076dd7e	callsite	slot 0xb8 candidates: none	probable	static_facts 0x0076dd7e: CALL EDX	B13a-s1	2026-10-15
+0x0076d9e0	xref	no live-only facts	probable	rea_facts 0x0076d9e0: checked	B13a-s1	2026-10-15
+0x0076defa	callsite	slot 0xb4 candidates: none	probable	static_facts 0x0076defa: CALL EDX	B13a-s1	2026-10-15
+0x0076df36	callsite	slot 0xb8 candidates: none	probable	static_facts 0x0076df36: CALL EAX	B13a-s1	2026-10-15
+0x0076dde0	xref	no live-only facts	probable	rea_facts 0x0076dde0: checked	B13a-s1	2026-10-15
+0x0076e610	function	body ranges 0x76e610-0x76e6ef;0x76e6f5-0x76e702;0x76e708-0x76e715;0x76e71b-0x76e728;0x76e72e-0x76e73b;0x76e741-0x76e74e;0x76e754-0x76e761;0x76e767-0x76e771;0x76e774-0x76e77e;0x76e781-0x76e78b;0x76e78e-0x76e798;0x76e79b-0x76e7a5;0x76e7a8-0x76e7b2;0x76e7b5-0x76e7bf;0x76e7c2-0x76e7cc;0x76e7cf-0x76e7d9;0x76e7dc-0x76e7e6;0x76e7e9-0x76e7f3 total 429 span 484	confirmed	analyze_function 0x0076e610: 0x0076e7f1: RET 0x4	B13a-s1	2026-10-15
+0x0076eb20	xref	no live-only facts	probable	rea_facts 0x0076eb20: checked	B13a-s1	2026-10-15
+0x0076eda0	xref	no live-only facts	probable	rea_facts 0x0076eda0: checked	B13a-s1	2026-10-15
+0x0076efe0	xref	no live-only facts	probable	rea_facts 0x0076efe0: checked	B13a-s1	2026-10-15
+0x0077376e	callsite	slot 0x7c candidates: CSWGuiControl::FUN_00418fe0@0x00418fe0	probable	static_facts 0x0077376e: CALL EAX	B13a-s1	2026-10-15
+0x007737b9	callsite	slot 0x7c candidates: CSWGuiControl::FUN_00418fe0@0x00418fe0	probable	static_facts 0x007737b9: CALL EAX	B13a-s1	2026-10-15
+0x007736d0	xref	no live-only facts	probable	rea_facts 0x007736d0: checked	B13a-s1	2026-10-15
+0x007737f6	callsite	slot 0x70 candidates: none	probable	static_facts 0x007737f6: CALL EAX	B13a-s1	2026-10-15
+0x007737e0	xref	data refs 1: 0x77f4fc (first 8)	confirmed	xrefs 0x007737e0: 1 sources, 0 code call sites	B13a-s1	2026-10-15
+0x007738e0	xref	data refs 1: 0x77f55c (first 8)	confirmed	xrefs 0x007738e0: 1 sources, 0 code call sites	B13a-s1	2026-10-15
+0x00774200	xref	no live-only facts	probable	rea_facts 0x00774200: checked	B13a-s1	2026-10-15
+0x0077437c	callsite	slot 0xa4 candidates: none	probable	static_facts 0x0077437c: CALL EAX	B13a-s1	2026-10-15
+0x007743e5	callsite	slot 0xb4 candidates: none	probable	static_facts 0x007743e5: CALL EAX	B13a-s1	2026-10-15
+0x00774401	callsite	slot 0x108 candidates: Gob::Gob::GetAttachedParent@0x00461530	probable	static_facts 0x00774401: CALL EDX	B13a-s1	2026-10-15
+0x00774260	xref	data refs 1: 0x99ef10 (first 8)	confirmed	xrefs 0x00774260: 1 sources, 0 code call sites	B13a-s1	2026-10-15
+0x00774440	xref	data refs 1: 0x99ef14 (first 8)	confirmed	xrefs 0x00774440: 1 sources, 0 code call sites	B13a-s1	2026-10-15
+0x007754d0	xref	no live-only facts	probable	rea_facts 0x007754d0: checked	B13a-s1	2026-10-15
+0x00775760	xref	no live-only facts	probable	rea_facts 0x00775760: checked	B13a-s1	2026-10-15
+0x00775930	xref	data refs 1: 0x99eee4 (first 8)	confirmed	xrefs 0x00775930: 1 sources, 0 code call sites	B13a-s1	2026-10-15
+0x00775950	xref	data refs 1: 0x99eee8 (first 8)	confirmed	xrefs 0x00775950: 1 sources, 0 code call sites	B13a-s1	2026-10-15
+0x00775970	xref	data refs 1: 0x99eeec (first 8)	confirmed	xrefs 0x00775970: 1 sources, 0 code call sites	B13a-s1	2026-10-15
+0x00775990	xref	no live-only facts	probable	rea_facts 0x00775990: checked	B13a-s1	2026-10-15
+0x007759b0	function	body ranges 0x7759b0-0x7759d4;0x7759da-0x775a60;0x775a63-0x775a72 total 188 span 195	confirmed	analyze_function 0x007759b0: 0x00775a72: RET	B13a-s1	2026-10-15
+0x00776db0	xref	no live-only facts	probable	rea_facts 0x00776db0: checked	B13a-s1	2026-10-15
+0x00776e10	xref	no live-only facts	probable	rea_facts 0x00776e10: checked	B13a-s1	2026-10-15
+0x00776e40	xref	no live-only facts	probable	rea_facts 0x00776e40: checked	B13a-s1	2026-10-15
+0x0077856e	callsite	slot 0x140 candidates: none	probable	static_facts 0x0077856e: CALL EDX	B13a-s1	2026-10-15
+0x007785ab	callsite	slot 0x98 candidates: CSWGuiLabel::FUN_00419840@0x00419840, CSWGuiProgressBar::FUN_0041b9a0@0x0041b9a0	probable	static_facts 0x007785ab: CALL EDX	B13a-s1	2026-10-15
+0x007785ce	callsite	slot 0x98 candidates: CSWGuiLabel::FUN_00419840@0x00419840, CSWGuiProgressBar::FUN_0041b9a0@0x0041b9a0	probable	static_facts 0x007785ce: CALL EAX	B13a-s1	2026-10-15
+0x007785fd	callsite	slot 0x98 candidates: CSWGuiLabel::FUN_00419840@0x00419840, CSWGuiProgressBar::FUN_0041b9a0@0x0041b9a0	probable	static_facts 0x007785fd: CALL EDX	B13a-s1	2026-10-15
+0x00778620	callsite	slot 0x98 candidates: CSWGuiLabel::FUN_00419840@0x00419840, CSWGuiProgressBar::FUN_0041b9a0@0x0041b9a0	probable	static_facts 0x00778620: CALL EAX	B13a-s1	2026-10-15
+0x007786d4	callsite	slot 0x70 candidates: none	probable	static_facts 0x007786d4: CALL EAX	B13a-s1	2026-10-15
+0x007786ee	callsite	slot 0x14 candidates: none	probable	static_facts 0x007786ee: CALL EAX	B13a-s1	2026-10-15
+0x007786ff	callsite	slot 0x14 candidates: none	probable	static_facts 0x007786ff: CALL EAX	B13a-s1	2026-10-15
+0x00778510	xref	no live-only facts	probable	rea_facts 0x00778510: checked	B13a-s1	2026-10-15
+0x00778900	xref	no live-only facts	probable	rea_facts 0x00778900: checked	B13a-s1	2026-10-15
+0x0077a490	xref	data refs 2: 0x779aa9,0x779ad7 (first 8)	confirmed	xrefs 0x0077a490: 2 sources, 0 code call sites	B13a-s1	2026-10-15
+0x0077a4b0	xref	data refs 2: 0x779bcf,0x779c03 (first 8)	confirmed	xrefs 0x0077a4b0: 2 sources, 0 code call sites	B13a-s1	2026-10-15
+0x0077c6a0	xref	no live-only facts	probable	rea_facts 0x0077c6a0: checked	B13a-s1	2026-10-15
+0x0077c780	xref	data refs 2: 0x77bff3,0x77c021 (first 8)	confirmed	xrefs 0x0077c780: 3 sources, 1 code call sites	B13a-s1	2026-10-15
+0x0077cdd0	xref	no live-only facts	probable	rea_facts 0x0077cdd0: checked	B13a-s1	2026-10-15
+0x0077d310	xref	no live-only facts	probable	rea_facts 0x0077d310: checked	B13a-s1	2026-10-15
+0x0077dc4a	callsite	slot 0x34 candidates: CSWGuiControl::FUN_00414ba0@0x00414ba0, CSWGuiFeatsCharGen::FUN_0090bbb0@0x0090bbb0, CSWGuiInGameInventory::?@0x008a7350, CSWGuiInGameMap::FUN_00894cd0@0x00894cd0, CSWGuiMainInterface::FUN_0074b3f0@0x0074b3f0, CSWGuiPowersLevelUp::FUN_009091e0@0x009091e0	probable	static_facts 0x0077dc4a: CALL EDX	B13a-s1	2026-10-15
+0x0077dc5b	callsite	slot 0x34 candidates: CSWGuiControl::FUN_00414ba0@0x00414ba0, CSWGuiFeatsCharGen::FUN_0090bbb0@0x0090bbb0, CSWGuiInGameInventory::?@0x008a7350, CSWGuiInGameMap::FUN_00894cd0@0x00894cd0, CSWGuiMainInterface::FUN_0074b3f0@0x0074b3f0, CSWGuiPowersLevelUp::FUN_009091e0@0x009091e0	probable	static_facts 0x0077dc5b: CALL EAX	B13a-s1	2026-10-15
+0x0077dba0	xref	no live-only facts	probable	rea_facts 0x0077dba0: checked	B13a-s1	2026-10-15
+0x0077f733	callsite	slot 0x0 candidates: CGameEffectApplierRemover::?@0x0051d450, CSWCCreature::scalar deleting dtor(flag)@0x00765180, CSWGuiBorder::FUN_00414bf0@0x00414bf0, CSWGuiControl::FUN_004186c0@0x004186c0, CSWGuiFeatsCharGen::FUN_0090a970@0x0090a970, CSWGuiImage::FUN_004163a0@0x004163a0	probable	static_facts 0x0077f733: CALL EAX	B13a-s1	2026-10-15
+0x0077f6c0	xref	no live-only facts	probable	rea_facts 0x0077f6c0: checked	B13a-s1	2026-10-15
+0x0077fac0	xref	no live-only facts	probable	rea_facts 0x0077fac0: checked	B13a-s1	2026-10-15
+0x0077fb10	xref	no live-only facts	probable	rea_facts 0x0077fb10: checked	B13a-s1	2026-10-15
+0x0077fce0	xref	no live-only facts	probable	rea_facts 0x0077fce0: checked	B13a-s1	2026-10-15

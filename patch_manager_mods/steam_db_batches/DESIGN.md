@@ -324,6 +324,7 @@ NWScript command handlers (`ExecuteCommand*`) are proven by engine data, not by 
 - **Output.** The ledger is the only output. Agents never write either DB. `rea-row-verify` stays off DB rows.
 - **Trust.** REA rows are report-only evidence. They change no gate, AUTO rule, ranking or trust route (section 1 trust tiers; 4.2 gate classes). A row counts as a content anchor only when it quotes an asm line. Promotion (e.g. REA callers as A-CALLEE) only via an Opus calibration (MASTER_PLAN R4).
 - **Cost/time.** Cold first procedure call ~356 s. Target <= 8 addresses and < 100k tokens per run. Pilot result in `B13a/rea_pilot/PILOT.md` (R1).
+- **Scripted facts first.** `ghidra_knowledge/tools/rea_facts.py run --addrs F --topic B<n>-s<k>` answers the fixed live-only questions with no agent (topic `B<n>-s`, not read by `cards --rea`). Then `rea_questions.py B<n> --residual` writes question files with only 2 questions (purpose in at most 15 words with a quoted asm line; anything the scripted facts could not resolve; budget 3 calls per address + 3), for addresses the Opus gate selects.
 
 ### 4.10 Static facts (report-only)
 - **Source.** `patch_manager_mods/ghidra_knowledge/tools/static_facts.py` reads the static dump (`callgraph.tsv`, `strings.tsv`, `globals.tsv`, `imports.tsv`, `inputs/steam_functions.tsv`, `decomp/<bb>/<addr>.asm`); $0, < 1 s per address. `cards B<n> --facts` prints `### Static facts (script output, report-only)` per card at the effective Steam address, before the REA section.

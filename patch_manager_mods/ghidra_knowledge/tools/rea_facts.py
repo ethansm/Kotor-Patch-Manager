@@ -12,8 +12,20 @@ Per address, in order:
   4. When steps 2-3 add nothing: kind xref marker "no live-only facts", keyed to
      the address so resume can skip it.
 
+Callsite evidence quotes the exact asm line "0x<site8>: <insn>" read from the dump's
+decomp .asm (atlas_common.read_asm). When the file or the site line is missing, the
+evidence falls back to the static_facts "how" text, which is still lint-clean.
+
 Rows for one address go out in one append, so a crash keeps finished addresses.
-A dead REA session stops the run with exit 1; re-running the same command resumes.
+A dead REA session stops the run with exit 1 and writes no row for the address being
+processed; re-running the same command resumes.
+
+Done markers (resume). A live run treats an address as done when it has any non-callsite
+row other than the static marker. With --no-live, addresses without callsites get the
+distinct marker xref "no live run (static only)"; a --no-live run treats an address as
+done when it has any row at all. The static marker never counts for a live run, so a live
+run after a --no-live run on the same topic still does its REA work. The live marker
+"no live-only facts" counts for both modes.
 A per-address REA error becomes an "error: ..." xref row and the run continues.
 
 Usage:
@@ -47,6 +59,8 @@ TOPIC_RE = re.compile(r"^[A-Za-z0-9]+-s\d+$")
 ASM_LINE_RE = re.compile(r"^\s*0x([0-9a-fA-F]+):\s*(.*?)\s*$")
 MAX_CANDIDATES = 6
 DATA_REF_SAMPLE = 8
+LIVE_MARKER = "no live-only facts"
+STATIC_MARKER = "no live run (static only)"
 SESSION_LOST_MARKERS = ("connection lost", "stdout closed", "write to REA", "REA exited", "Broken pipe")
 DEFAULT_KDB = TOOLS_DIR.parent / "kotor2_ghidra_knowledge.db"
 DEFAULT_STEAM_DB = (Path.home() / "Games/KOTOR2_Mod_Workspace/tools/kpm-pr-steam-db"
@@ -174,7 +188,10 @@ class Facts:
         self.max_sites = max_sites
         self.session = session
         self.keys = {_key(r) for r in existing}
-        self.done = {_to_int(r["addr"]) for r in existing if r["kind"] != "callsite"}
+        self.done_live = {_to_int(r["addr"]) for r in existing
+                          if r["kind"] != "callsite" and r["name"] != STATIC_MARKER}
+        self.done_static = {_to_int(r["addr"]) for r in existing}
+        self.asm = {}
         self.written = 0
 
     def row(self, addr, kind, name, confidence, evidence):
@@ -182,13 +199,22 @@ class Facts:
                 "confidence": confidence, "evidence": _clean(evidence),
                 "topic": self.topic, "date": self.date}
 
+    def site_insn(self, fn, site):
+        """Exact instruction text at site from fn's decomp asm, or None."""
+        if fn not in self.asm:
+            self.asm[fn] = sf._AC.read_asm(self.dump.root, fn)
+        for addr, _bytes, insn in self.asm[fn] or ():
+            if addr == site:
+                return _clean(insn)
+        return None
+
     # Step 1: static indirect call sites.
     def static_rows(self, a):
         rows = []
         classes = steam_classes(self.steam, a)
         sites = sorted(self.dump.indirect_slots(a), key=lambda t: t[0])[: self.max_sites]
         for site, slot, how in sites:
-            evidence = "static_facts 0x%08x: %s" % (site, how)
+            evidence = "static_facts 0x%08x: %s" % (site, self.site_insn(a, site) or how)
             if slot is None:
                 name, confidence = "slot unknown (%s)" % how, "probable"
             else:
@@ -246,6 +272,9 @@ class Facts:
     def batch(self, a):
         rows = self.static_rows(a)
         if self.session is None:
+            if not rows:
+                rows.append(self.row(a, "xref", STATIC_MARKER, "probable",
+                                     "rea_facts 0x%08x: static only" % a))
             return rows
         live, step = [], "body"
         try:
@@ -259,7 +288,7 @@ class Facts:
                              "rea_facts 0x%08x: %s failed" % (a, step))
             return rows + live + [error]
         if not live:
-            live.append(self.row(a, "xref", "no live-only facts", "probable",
+            live.append(self.row(a, "xref", LIVE_MARKER, "probable",
                                  "rea_facts 0x%08x: checked" % a))
         return rows + live
 
@@ -282,7 +311,8 @@ class Facts:
         """Return (skipped, lost). lost is (addr, message) when the session died."""
         skipped, lost = 0, None
         for a in addrs:
-            if self.session is not None and a in self.done:
+            done = self.done_live if self.session is not None else self.done_static
+            if a in done:
                 skipped += 1
                 continue
             try:
