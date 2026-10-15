@@ -134,7 +134,7 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [x] | 118 | WI-86 | P3 | ready | S | - | BG39 Wheel callback passes engine screen size as client rect size to clientToEngineF | 0 | 3 | wrong-behaviour/low: cw/ch are the provider's engine size (client rect |
 | [!] | 119 | WI-87 | P3 | ready | S | - | BG40 Allocated label leaked on createLabelFromTemplate and bindByTag failure paths | 0 | 2 | wrong-behaviour/low: Leak real in createLabelFromTemplate and bindByTa |
 | [x] | 120 | WI-88 | P3 | ready | S | - | BG41 pendingDone2 now==0 sentinel branch untested | 0 | 2 | wrong-behaviour/low: Untested sentinel branch is also buggy: storing 1 |
-| [ ] | 121 | WI-89 | P3 | hold | S | - | Gemini test/tooling gaps: hotbar (07_force_power_hotbar.md, keybif_test.cpp, twoda_test.cp | 0 | 3 | 5 validated test-gap/tooling fids: HB-1b-01: -; HB-1d-03: keybif_test. |
+| [ ] | 121 | WI-89 | P3 | ready | S | - | Gemini test/tooling gaps: hotbar (07_force_power_hotbar.md, keybif_test.cpp, twoda_test.cp | 0 | 3 | 5 validated test-gap/tooling fids: HB-1b-01: -; HB-1d-03: keybif_test. |
 | [ ] | 122 | WI-90 | P3 | hold | S | - | Gemini test/tooling gaps: k1 (k1_port_ingest.py, k1_port_probe.py, k1_port_validate.py, te | 0 | 4 | 4 validated test-gap/tooling fids: K1-5b-02: test_k1_port_ingest.py: p |
 | [ ] | 123 | WI-91 | P3 | hold | S | - | Gemini test/tooling gaps: k1 (test_k1_port_char_build.py, test_k1_port_cr_extract.py, test | 0 | 4 | 4 validated test-gap/tooling fids: K1-5d-01: test_k1_port_char_build.p |
 | [ ] | 124 | WI-92 | P3 | hold | S | - | Gemini test/tooling gaps: k1 (test_k1_port_tex_audit.py, test_k1_port_tex_dxt.py, test_k1_ | 0 | 4 | 4 validated test-gap/tooling fids: K1-5c-06: test_k1_port_tex_audit.py |
