@@ -144,3 +144,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 128 | WI-96 | P3 | hold | S | - | Gemini test/tooling gaps: queue-hud (QueueHud.cpp, queue_hud_logic_test.cpp) | 0 | 2 | 4 validated test-gap/tooling fids: QH-2a-09: -; QH-2b-01: queue_hud_lo |
 | [ ] | 129 | WI-97 | P3 | ready | S | - | Gemini test/tooling gaps: shared (actqueue_test.cpp, effects_test.cpp, embtex_test.cpp, fi | 0 | 4 | 4 validated test-gap/tooling fids: SH-3c-04: actqueue_test.cpp: feed 2 |
 | [ ] | 130 | WI-98 | P3 | ready | S | - | Gemini test/tooling gaps: shared (guikit_test.cpp, guitip_test.cpp, hudkit_test.cpp, item_ | 0 | 4 | 4 validated test-gap/tooling fids: SH-3b-01: guikit_test.cpp: setAlpha |
+| [ ] | 131 | WI-99 | P3 | ready | S | - | Gemini test/tooling gaps: shared (k2addr_test.cpp, party_test.cpp, sceneview_test.cpp, tex | 0 | 4 | 4 validated test-gap/tooling fids: SH-3b-02: k2addr_test.cpp: STEAM(Bo |
