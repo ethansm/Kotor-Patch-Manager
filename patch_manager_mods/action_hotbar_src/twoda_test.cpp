@@ -1,6 +1,6 @@
 // twoda_test: hb::TwoDA against testdata/spells_fixture.2da (default; cwd = this dir), or a real
 // spells.2da given as argv[1] (real-data mode: fixture-specific row/col counts are not asserted).
-// Optional argv[2] = dialog.tlk enables the TLK step (skipped otherwise).
+// Optional argv[2] = dialog.tlk runs the TLK step on it; without argv[2] the step runs on a synthetic dialog.tlk in TMPDIR.
 // Category is stored as a hex string ("0x1808") in the real file; TwoDA returns cells verbatim.
 #include "TwoDA.h"
 #include "Tlk.h"
@@ -26,6 +26,19 @@ static std::string Build2da(const std::vector<std::string>& cols, const std::vec
     for (const auto& row : cells) for (const std::string& c : row) { le16(offs, offOverride >= 0 ? (uint32_t)offOverride : (uint32_t)blob.size()); blob += c; blob += '\0'; }
     s += offs; le16(s, (uint32_t)blob.size()); s += blob;
     return s;
+}
+// Synthetic dialog.tlk (V3.0, Tlk.h layout): strref i holds "S<i>". Header 20 bytes, 40-byte entries (text offset at +28, size at +32), then the text.
+static std::string BuildTlk(uint32_t count) {
+    std::string s = "TLK V3.0"; le32(s, 0); le32(s, count);
+    std::string ents, data;
+    for (uint32_t i = 0; i < count; ++i) {
+        const std::string txt = "S" + std::to_string(i);
+        le32(ents, 0); ents += std::string(16, '\0'); le32(ents, 0); le32(ents, 0);   // flags, sound, volVar, pitchVar
+        le32(ents, (uint32_t)data.size()); le32(ents, (uint32_t)txt.size()); le32(ents, 0);   // offset, size, soundLen
+        data += txt;
+    }
+    le32(s, 20 + (uint32_t)ents.size());   // stringsOffset: text starts right after the entries
+    return s + ents + data;
 }
 struct Expect { int row; const char* name; const char* fp; const char* range; const char* category; const char* icon; };
 int main(int argc, char** argv) {
@@ -132,6 +145,26 @@ int main(int argc, char** argv) {
         KT_CHECK_EQ(m.cols.size(), 0);
     }
 
+    // ================= HB-1d-01: mid-blob cell with no NUL reads to the next NUL (TwoDA.h:88) =================
+    {
+        // Blob "abcd\0": cell A (offset 0) is "ab" with no terminator; cell B (offset 2) is "cd\0". Current merge: A = "abcd".
+        std::string b = "2DA V2.b\nA\tB\t"; b += '\0';
+        le32(b, 1); b += "0\t";                                  // one row, label "0"
+        le16(b, 0); le16(b, 2); le16(b, 5);                      // cell offsets 0 and 2, data size 5
+        b += "abcd"; b += '\0';
+        hb::TwoDA m; KT_CHECK(m.Parse(b));
+        KT_CHECK_EQ(m.rows.size(), 1);
+        KT_CHECK_EQ(m.Get(0, "A").c_str(), "abcd");   // a reader capped at the next offset would give "ab"
+        KT_CHECK_EQ(m.Get(0, "B").c_str(), "cd");
+    }
+    // ================= HB-1d-02: 43000 columns x 100000 rows: the cells-size bound (TwoDA.h:80) must fire =================
+    {
+        const std::vector<std::string> wide(43000, "c");
+        const std::vector<std::vector<std::string>> rows(100000);   // all 100000 labels present, no cell data ("bad row label" cannot fire first)
+        hb::TwoDA m;
+        KT_CHECK(!m.Parse(Build2da(wide, rows)));
+        KT_CHECK_EQ(m.error.c_str(), "truncated offsets");          // 43000 * 100000 cells cannot fit in the file
+    }
     // ================= Parse is self-contained: a second Parse replaces, not appends =================
     {
         const std::string a = Build2da({"Label", "Name"}, {{"a", "1"}, {"b", "2"}});
@@ -185,9 +218,27 @@ int main(int argc, char** argv) {
         KT_CHECK(m.Get(0, "A") == std::string(pad, 'p') + "Q");
         remove(path.c_str());
     }
-    hb::Tlk k;
-    if (argc > 2 && k.Open(argv[2])) {
-        for (int r : {8, 10}) { int n = atoi(t.Get(r, "name").c_str()), d = atoi(t.Get(r, "spelldesc").c_str()); printf("tlk name[%d]='%s'\n desc[%d]='%s'\n", n, k.Get(n).c_str(), d, k.Get(d).c_str()); }
-    } else printf("tlk skipped: %s\n", k.error.c_str());
+    // TLK step. argv[2] = real dialog.tlk: must open, and the spell name/desc strrefs must resolve to non-empty text.
+    if (argc > 2) {
+        hb::Tlk k;
+        if (!kt::Check("tlk Open", k.Open(argv[2]), k.error.c_str())) return kt::Report("twoda_test");
+        for (int r : {8, 10}) { int n = atoi(t.Get(r, "name").c_str()), d = atoi(t.Get(r, "spelldesc").c_str()); printf("tlk name[%d]='%s'\n desc[%d]='%s'\n", n, k.Get(n).c_str(), d, k.Get(d).c_str()); KT_CHECK(!k.Get(n).empty()); KT_CHECK(!k.Get(d).empty()); }
+    } else {
+        // Default gate (no argv): synthetic TLK sized to cover every strref the two spell rows use, so this step always runs.
+        uint32_t count = 1;
+        for (int r : {8, 10}) for (const char* col : {"name", "spelldesc"}) { const uint32_t ref = (uint32_t)atoi(t.Get(r, col).c_str()); if (ref + 1 > count) count = ref + 1; }
+        const char* td = getenv("TMPDIR"); std::string path = std::string(td && *td ? td : "/tmp") + "/twoda_tlk_" + std::to_string((long)getpid()) + ".tlk";
+        const std::string tlk = BuildTlk(count);
+        FILE* f = fopen(path.c_str(), "wb"); KT_CHECK(f != nullptr);
+        if (f) { fwrite(tlk.data(), 1, tlk.size(), f); fclose(f); }
+        hb::Tlk k;
+        if (kt::Check("synthetic tlk Open", k.Open(path.c_str()), k.error.c_str())) {
+            for (int r : {8, 10}) for (const char* col : {"name", "spelldesc"}) {
+                const uint32_t ref = (uint32_t)atoi(t.Get(r, col).c_str());
+                KT_CHECK(k.Get(ref) == "S" + std::to_string(ref));   // exact text: an off-by-one in entry or text offset fails here
+            }
+        }
+        remove(path.c_str());
+    }
     return kt::Report("twoda_test");
 }
