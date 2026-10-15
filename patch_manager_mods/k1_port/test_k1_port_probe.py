@@ -462,6 +462,63 @@ def test_failed_save_backup_aborts_before_any_override(root):
           "no manifest or pointer may be written")
 
 
+def extra_user_slot(w: dict, slot: str) -> Path:
+    d = w["game"] / "cloudsaves" / "76561198000000002" / slot
+    d.mkdir(parents=True)
+    (d / "savegame.sav").write_bytes(b"second steam user")
+    return d
+
+
+@test
+def test_save_slot_in_two_user_dirs_blocks(root):
+    w = make_world(root)
+    make_saves(w)
+    extra_user_slot(w, "000000 - QUICKSAVE")
+    saves_before = snapshot(w["game"] / "cloudsaves")
+    r = run(root, "plan", *common(w), "--base-sha256", BASE_SHA)
+    check(has_line(r.stdout, "BLOCK", "save slot 000000 - QUICKSAVE", "2 matches under cloudsaves/*/"),
+          f"two cloudsaves/*/ hits must BLOCK the slot: {r.stdout}")
+    check(has_line(r.stdout, "PASS", "save slot 000001 - AUTOSAVE"), f"the unambiguous slot still passes: {r.stdout}")
+    check("verdict: BLOCKED" in r.stdout, f"plan verdict: {r.stdout}")
+    before = snapshot(root)
+    r = run(root, "install", *common(w), "--base-sha256", BASE_SHA, "--yes")
+    check(r.returncode != 0, f"install must refuse an ambiguous save slot: rc {r.returncode} {r.stdout}")
+    check(snapshot(root) == before, "refused install must change nothing")
+    check(snapshot(w["game"] / "cloudsaves") == saves_before, "save slots must be untouched")
+
+
+@test
+def test_symlinked_save_slot_blocks(root):
+    w = make_world(root)
+    slots = make_saves(w)
+    real = slots["000000 - QUICKSAVE"]
+    elsewhere = root / "elsewhere"
+    shutil.move(str(real), str(elsewhere))
+    real.symlink_to(elsewhere, target_is_directory=True)
+    r = run(root, "plan", *common(w), "--base-sha256", BASE_SHA)
+    check(has_line(r.stdout, "BLOCK", "save slot 000000 - QUICKSAVE", "is not a plain directory"),
+          f"a symlinked slot dir must BLOCK: {r.stdout}")
+    check(has_line(r.stdout, "PASS", "save slot 000001 - AUTOSAVE"), f"the plain slot still passes: {r.stdout}")
+    r = run(root, "install", *common(w), "--base-sha256", BASE_SHA, "--yes")
+    check(r.returncode != 0, f"install must refuse a symlinked save slot: rc {r.returncode} {r.stdout}")
+    check(real.is_symlink() and (elsewhere / "savegame.sav").is_file(), "the symlinked slot must be untouched")
+
+
+@test
+def test_target_listed_by_active_install_blocks(root):
+    w = install_ok(root)
+    r = run(root, "plan", *common(w), "--base-sha256", BASE_SHA)
+    check(has_line(r.stdout, "BLOCK", "target override/k1p_commm04.tpc", "listed by an active install"),
+          f"a target an active manifest lists must BLOCK: {r.stdout}")
+    check("verdict: BLOCKED" in r.stdout, f"plan verdict: {r.stdout}")
+    r = run(root, "rollback", *game_args(w), "--yes")
+    check(r.returncode == 0, f"rollback rc {r.returncode}: {r.stdout} {r.stderr}")
+    fresh = root / "fresh_backup" / "manifest.json"  # the stamped backup dir of the first install still exists
+    r = run(root, "plan", *common(w), "--base-sha256", BASE_SHA, "--manifest", str(fresh))
+    check("listed by an active install" not in r.stdout and "verdict: READY" in r.stdout,
+          f"a rolled-back manifest must not block: {r.stdout}")
+
+
 def main() -> int:
     passed = 0
     for fn in TESTS:

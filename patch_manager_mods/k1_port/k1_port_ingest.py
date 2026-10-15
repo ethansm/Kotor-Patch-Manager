@@ -445,8 +445,8 @@ def ingest(args, mapping: dict, new_resref: str, out: dict) -> None:
     def existing_row(path: Path, kind: str):
         e = by_file.get(str(path))
         if e is None:
-            rows.append(row(path, kind, "already_ingested", None, None, [], approved=True))
-            notes.append(f"{path} exists but is not in the ledger; not flagged")
+            rows.append(row(path, kind, "already_ingested", None, ks.REMOVAL_PENDING, []))
+            notes.append(f"{path} exists but is not in the ledger; flagged for review")
             return
         rows.append(row(path, kind, "already_ingested", e.get("source_id"), e.get("removal_group"),
                         e.get("credits"), approved=bool(e.get("author_approved"))))

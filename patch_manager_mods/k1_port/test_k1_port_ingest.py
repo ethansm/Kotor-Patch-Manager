@@ -247,6 +247,26 @@ def rerun_reports_already_ingested(root):
 
 
 @test
+def ledger_absent_output_is_flagged(root):
+    """An existing staged output the ledger never recorded has unknown provenance: flag it, never call it clean."""
+    world(root)
+    out_file = root / "stage" / "override" / "k1p_testtex.tpc"
+    out_file.parent.mkdir(parents=True)
+    out_file.write_bytes(b"pre-placed, not in the ledger")
+    r = run_ingest(root, "--resref", "n_test", "--texture", "N_TestTex=k1p_testtex", "--no-model", "--json")
+    expect_rc(r, 0, "ingest over a ledger-absent output")
+    s = json.loads(r.stdout)
+    check(texture_decision(s)["status"] == "already_ingested", f"status: {texture_decision(s)['status']}")
+    check(s["flagged_files"] == [str(out_file)], f"ledger-absent output must be flagged: {s['flagged_files']}")
+    row_ = [o for o in s["outputs"] if o["path"] == str(out_file)]
+    check(len(row_) == 1 and row_[0]["flagged"] and row_[0]["removal_group"] == ks.REMOVAL_PENDING,
+          f"row: {row_}")
+    check(any(str(out_file) in n and "not in the ledger; flagged for review" in n for n in s["notes"]),
+          f"note must say flagged: {s['notes']}")
+    check(out_file.read_bytes() == b"pre-placed, not in the ledger", "existing output must not be rewritten")
+
+
+@test
 def no_candidates_is_a_clear_error(root):
     world(root)
     before = tree(root)

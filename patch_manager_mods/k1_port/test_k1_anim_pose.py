@@ -170,6 +170,23 @@ def test_euler_gimbal_lock_reproduces_matrix():
                 assert close(back[i][j], m[i][j], 1e-6), (b, i, j)
 
 
+def test_wrap180_wraps_into_half_open_range():
+    for x, want in ((190.0, -170.0), (-190.0, 170.0), (370.0, 10.0), (45.0, 45.0), (0.0, 0.0)):
+        got = ap._wrap180(x)
+        assert close(got, want), (x, got, want)
+
+
+def test_rot_angle_deg_known_rotations():
+    ident = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+    rz90 = [[0.0, -1.0, 0.0], [1.0, 0.0, 0.0], [0.0, 0.0, 1.0]]
+    rx180 = [[1.0, 0.0, 0.0], [0.0, -1.0, 0.0], [0.0, 0.0, -1.0]]
+    for m, want in ((ident, 0.0), (rz90, 90.0), (rx180, 180.0)):
+        got = ap._rot_angle_deg(m)
+        assert close(got, want, 1e-6), (got, want)
+    m = tp.euler_matrix(0.0, 0.0, 30.0)  # the angle is the same whatever the axis: a 30 degree turn about z
+    assert close(ap._rot_angle_deg(m), 30.0, 1e-6), ap._rot_angle_deg(m)
+
+
 POS, ORI = ap.POSITION, ap.ORIENTATION
 
 TESTS = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]

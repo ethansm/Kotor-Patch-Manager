@@ -259,6 +259,17 @@ def test_skin_row_order_reversed():
 
 
 @test
+def test_skin_array_order_overlap():
+    mdl, mdx, L = build(skin=True)
+    b = mutable(mdl)
+    qbones_ptr = struct.unpack_from("<I", b, L["S"] + 28)[0]
+    struct.pack_into("<I", b, L["S"] + 40, qbones_ptr)  # tbones now starts where qbones starts, inside qbones
+    got = kv.validate(bytes(b), mdx)
+    expect(got, "SKIN_ARRAY_ORDER")
+    check(codes(got) == ["SKIN_ARRAY_ORDER"], f"tbones overlap should be the only finding: {codes(got)}")
+
+
+@test
 def test_stride_mismatch():
     mdl, mdx, L = build()
     b = mutable(mdl)

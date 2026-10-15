@@ -65,3 +65,4 @@
 {"ev": "done", "session": "8e238b75-803e-47eb-ae96-a9777ac65a13", "ts": "2026-10-15T20:26:08Z", "wi": "WI-38"}
 {"ev": "done", "reason": "manual: FX3 Haiku variants + Sonnet consolidated + reviewed; .claude/waves/fix3/WI-93/", "session": "2659c028-e2d1-4d6d-9b52-81c8179110c0", "ts": "2026-10-15T20:26:20Z", "wi": "WI-93"}
 {"ev": "done", "reason": "manual: FX3 Haiku variants + Sonnet consolidated + reviewed (APPROVE_MINOR; test gaps 1-2 routed to WI-92); .claude/waves/fix3/W", "session": "2659c028-e2d1-4d6d-9b52-81c8179110c0", "ts": "2026-10-15T20:28:59Z", "wi": "WI-73"}
+{"ev": "done", "reason": "manual: FX3 Haiku variants + Sonnet consolidated + reviewed; K1-5b-02 flags by default; .claude/waves/fix3/WI-90/", "session": "2659c028-e2d1-4d6d-9b52-81c8179110c0", "ts": "2026-10-15T20:29:25Z", "wi": "WI-90"}
