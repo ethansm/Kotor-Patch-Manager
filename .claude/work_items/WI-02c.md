@@ -8,13 +8,13 @@ out-of-repo: none
 blockers: none. WI-02b (H9) waits on this row.
 docs: patch_manager_mods/24_master_plan_status.md:96 (H8); patch_manager_mods/36_agent_tooling_hardening.md (doc 36)
 deferred: none
-verify: python3 scripts/run_tests.py test_run_tests_select test_run_tests_coverage
+verify: python3 scripts/run_tests.py test_run_tests_select test_run_tests_coverage test_run_tests_includes
 
 ## Goal
 Build H8 (plan row only; the checker had no C-id). H8 was undefined in the earlier bundle. It is defined at 24:96 (READY, no dependencies), so it is now a step here, and H9 depends on it.
 
 ## Steps
-1. H8 (no C-id; doc 24:96): in `scripts/run_tests.py`, auto-inject canonical Common includes for the smoke harness, so scratch `$KPM_DIR` include breakage in `smokes.toml` stops.
+1. H8 is ALREADY SATISFIED in commit 65f9206: `scripts/run_tests.py:114` `canonical_include_flags()` and its use at `scripts/run_tests.py:702` (smoke_build) already inject the canonical Common includes; tests live in `scripts/test_run_tests_includes.py`. No edit to `scripts/run_tests.py` is needed. Confirm by `sed -n '114,120p;700,704p' scripts/run_tests.py`, run the Verify command, and reply STATUS: PASS with MODIFIED: None.
 
 ## Verify
 1. `python3 scripts/run_tests.py <smoke filter>` (suite name unknown; always scope it, a bare run covers all 156 suites)
