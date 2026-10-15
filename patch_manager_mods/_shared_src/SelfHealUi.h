@@ -455,4 +455,10 @@ inline Rect ringRect(Rect btn) {
     return Rect{btn.x + (btn.w - side) / 2, btn.y + (btn.h - side) / 2, side, side};
 }
 
+// Per-slot texture policy (FU-texinit): a non-null handle is returned as-is and never looked up again (the GuiKit image pool keeps it alive);
+// a null handle is asked again on every call, ready or not (imageForRetry does not pool a null). A miss stays null (no sentinel).
+// Header-only, std only: `lookup` is any callable returning void* (the caller passes the imageForRetry call for its slot).
+template <class Lookup>
+inline void* resolveTexSlot(void* cur, Lookup&& lookup) { return cur ? cur : lookup(); }
+
 }  // namespace shui

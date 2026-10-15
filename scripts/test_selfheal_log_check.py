@@ -562,3 +562,62 @@ def load_tests(loader, tests, pattern):
         if name.startswith("test_") and callable(fn):
             suite.addTest(unittest.FunctionTestCase(fn))
     return suite
+
+
+# ---- FU-texinit: TEXLATE (a slot TEXSET logged as null that a later build resolved) ----
+LATE_DISC = "T=11.000 f=- companion-selfheal/ui TEXLATE slot=1 resref=csh_disc img=0a0b0c00"
+
+
+def test_texlate_shape_matches_cpp_format():
+    # CompanionSelfHeal.cpp: KP_LOG(chUi, "TEXLATE slot=%d resref=%s img=%08x", i, resref, handle)
+    m = S.TEXLATE_RE.match("TEXLATE slot=%d resref=%s img=%08x" % (1, "csh_disc", 0x0A0B0C00))
+    assert m is not None and m.groups() == ("1", "csh_disc", "0a0b0c00")
+    assert S.TEXLATE_RE.match("TEXLATE slot=1 resref=csh_disc") is None
+
+
+def test_texlate_clears_null_texset_disc():
+    base = lines("v083_tog.txt")
+    assert S.check(base)["p5"] == "FAIL"
+    r = S.check(base + [LATE_DISC])
+    assert r["p5"] == "PASS" and not r["p5_fail"], r["p5_fail"]
+    assert r["p5_info"].endswith(" late=disc"), r["p5_info"]
+    assert len(r["v"]["texlate"]) == 1 and r["v"]["texlate"][0]["img"] == "0a0b0c00"
+
+
+def test_texlate_clears_disc_lines_before_it_only():
+    L = lines("fail_disc_null.txt")
+    assert S.check(L)["p5"] == "FAIL"
+    last_disc = max(i for i, l in enumerate(L) if " DISC m=" in l)
+    r = S.check(L[:last_disc + 1] + [LATE_DISC] + L[last_disc + 1:])
+    assert r["p5"] == "PASS" and not r["p5_fail"], r["p5_fail"]
+    assert r["p5_info"].endswith(" late=DISC,disc"), r["p5_info"]
+    # a DISC img=0 line AFTER the TEXLATE is a real failure again
+    bad = "T=11.500 f=- companion-selfheal/ui DISC m=2 hover=0 img=00000000 setfill=0"
+    r = S.check(L[:last_disc + 1] + [LATE_DISC, bad] + L[last_disc + 1:])
+    assert r["p5"] == "FAIL" and any("DISC m=2 img=00000000" in m for _, m in r["p5_fail"])
+
+
+def test_texlate_does_not_mask_other_failures():
+    base = lines("v083_tog.txt")
+    # TEXLATE before the TEXSET line (nothing recovered afterwards), a zero handle, or the wrong resref must not clear disc=0
+    assert S.check([LATE_DISC.replace("T=11.000", "T=1.000")] + base)["p5"] == "FAIL"
+    assert S.check(base + [LATE_DISC.replace("img=0a0b0c00", "img=00000000")])["p5"] == "FAIL"
+    assert S.check(base + [LATE_DISC.replace("csh_disc ", "csh_disc_hi ")])["p5"] == "FAIL"
+    # dischi=0 is cleared only by csh_disc_hi
+    hi0 = [l.replace("dischi=0a0b0c02", "dischi=00000000").replace("disc=00000000", "disc=0a0b0c00") for l in base]
+    assert S.check(hi0 + [LATE_DISC])["p5"] == "FAIL"
+    r = S.check(hi0 + [LATE_DISC.replace("csh_disc ", "csh_disc_hi ")])
+    assert r["p5"] == "PASS" and r["p5_info"].endswith(" late=dischi"), r["p5_info"]
+
+
+if __name__ == "__main__":   # scripts/run_tests.py runs `python <file>` (no pytest here): without this block the assertions above never executed
+    _failed = 0
+    _tests = sorted(k for k, f in dict(globals()).items() if k.startswith("test_") and callable(f))
+    for _name in _tests:
+        try:
+            globals()[_name]()
+        except Exception as _e:  # noqa: BLE001
+            _failed += 1
+            print("FAIL %s: %r" % (_name, _e))
+    print("test_selfheal_log_check: %d tests, %d failed" % (len(_tests), _failed))
+    sys.exit(1 if _failed else 0)

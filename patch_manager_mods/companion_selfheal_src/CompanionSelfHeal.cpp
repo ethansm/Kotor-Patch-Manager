@@ -495,6 +495,7 @@ namespace tex {
 #include "SelfHealTextures.inc"
 constexpr int Count = 7 + shui::kRingFrames;   // csh_cross, csh_disc, csh_disc_hi, csh_tog_off, csh_tog_off_hi, csh_tog_on, csh_tog_on_hi, csh_ring0..7
 bool g_texInit = false;
+bool g_texSetLogged = false;   // a TEXSET line has been written (a null slot in it is later reported once by TEXLATE)
 void* g_crossImg = nullptr; void* g_discImg[2] = {}; void* g_togImg[4] = {}; void* g_ringImg[shui::kRingFrames] = {};   // g_togImg: off, off_hi, on, on_hi
 void* g_arrowNeg = nullptr; void* g_arrowPos = nullptr;   // vanilla stepper glyphs uibit_arrowneg_p / uibit_arrowpos_p (engine textures, not embedded)
 static_assert(sizeof kSelfHealTextures / sizeof kSelfHealTextures[0] == Count, "csh_cross + csh_disc + csh_disc_hi + 4 csh_tog_* + csh_ring0..7");
@@ -504,18 +505,25 @@ void logLine(const char* fmt, ...) {   // embtex::g_log sink
     KP_LOG(chUi, "%s", buf);
 }
 void ensureTextures() {   // once per process; the textures outlive every HUD (never freed)
-    if (g_texInit) return;
-    embtex::g_log = logLine;
-    const bool ensured = embtex::ensure(kSelfHealTextures, Count);   // create + fill + queue (idempotent); heal() below refills after a GL reset
-    g_texInit = ensured;   // not ready / partial: retried on the next HUD build (was set unconditionally, a not-ready first call left the discs null forever)
-    for (int i = 0; i < Count; ++i) {
-        void* im = guikit::imageForRetry(kSelfHealTextures[i].resref);   // non-null handles are pooled and never released (keep the texture alive); a null is not pooled, so the next HUD build asks again (SH-3a-05)
-        if (i == 0) g_crossImg = im; else if (i <= 2) g_discImg[i - 1] = im; else if (i <= 6) g_togImg[i - 3] = im; else g_ringImg[i - 7] = im;
+    const bool pending = !g_texInit;   // ensure + TEXSET/ARROW logs + arrow lookups run only until ensured; the per-slot loop below runs on every build (FU-texinit)
+    if (pending) {
+        embtex::g_log = logLine;
+        g_texInit = embtex::ensure(kSelfHealTextures, Count);   // create + fill + queue (idempotent); heal() below refills after a GL reset. Not ready / partial: retried on the next HUD build (was set unconditionally, a not-ready first call left the discs null forever)
     }
+    for (int i = 0; i < Count; ++i) {
+        // FU-texinit: a null slot is asked again every build, even after ensured=1 (the old early return left it null forever); a non-null handle is pooled and kept, never looked up again (SH-3a-05)
+        void** slot = i == 0 ? &g_crossImg : i <= 2 ? &g_discImg[i - 1] : i <= 6 ? &g_togImg[i - 3] : &g_ringImg[i - 7];
+        const bool had = *slot != nullptr;
+        *slot = shui::resolveTexSlot(*slot, [i] { return guikit::imageForRetry(kSelfHealTextures[i].resref); });
+        // one-shot per slot (a handle is never cleared): a slot that TEXSET already logged as null and that resolved on a later build; scripts/selfheal_log_check.py P5 reads this to clear that TEXSET disc=0
+        if (g_texSetLogged && !had && *slot) KP_LOG(chUi, "TEXLATE slot=%d resref=%s img=%08x", i, kSelfHealTextures[i].resref, (unsigned)reinterpret_cast<uintptr_t>(*slot));
+    }
+    if (!pending) return;   // ensured on an earlier build: no arrow re-lookup and no TEXSET/ARROW log (resolveArrows retries the arrows)
     g_arrowNeg = guikit::imageForRetry("uibit_arrowneg_p");   // vanilla stepper glyphs (r1.md); non-null pooled, a null is retried by resolveArrows (SH-3a-05)
     g_arrowPos = guikit::imageForRetry("uibit_arrowpos_p");
-    KP_LOG(chUi, "TEXSET ensure=%d supported=%d ready=%d cross=%08x disc=%08x dischi=%08x tog=%08x,%08x,%08x,%08x ring0=%08x slots=%d/%d", (int)ensured, (int)embtex::supported(), (int)embtex::detail::engineReady(),
+    KP_LOG(chUi, "TEXSET ensure=%d supported=%d ready=%d cross=%08x disc=%08x dischi=%08x tog=%08x,%08x,%08x,%08x ring0=%08x slots=%d/%d", (int)g_texInit, (int)embtex::supported(), (int)embtex::detail::engineReady(),
            (unsigned)reinterpret_cast<uintptr_t>(g_crossImg), (unsigned)reinterpret_cast<uintptr_t>(g_discImg[0]), (unsigned)reinterpret_cast<uintptr_t>(g_discImg[1]), (unsigned)reinterpret_cast<uintptr_t>(g_togImg[0]), (unsigned)reinterpret_cast<uintptr_t>(g_togImg[1]), (unsigned)reinterpret_cast<uintptr_t>(g_togImg[2]), (unsigned)reinterpret_cast<uintptr_t>(g_togImg[3]), (unsigned)reinterpret_cast<uintptr_t>(g_ringImg[0]), embtex::slotCount(), (int)embtex::MaxTex);
+    g_texSetLogged = true;
     KP_LOG(chUi, "ARROW neg=%08x pos=%08x", (unsigned)reinterpret_cast<uintptr_t>(g_arrowNeg), (unsigned)reinterpret_cast<uintptr_t>(g_arrowPos));
 }
 // Vanilla arrow handles: ensureTextures resolves them once; if the engine had no handle yet (null), retry at most 10 times, 500 ms apart, on popover show.

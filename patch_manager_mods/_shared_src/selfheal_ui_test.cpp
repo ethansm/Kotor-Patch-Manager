@@ -420,5 +420,34 @@ int main() {
         KT_CHECK(resets == 2);
         KT_CHECK(owner == 0x1000);
     }
+    {   // FU-texinit / SH-3a-05: per-slot texture policy. A null slot is asked again on every build; a non-null handle is kept, never looked up again.
+        int asks = 0;
+        void* ready = nullptr;   // fake engine: null until the texture exists
+        auto lookup = [&]() -> void* { ++asks; return ready; };
+        void* cross = shui::resolveTexSlot(nullptr, lookup);   // build 1 (ensure ok, texture not ready yet)
+        KT_CHECK(cross == nullptr);
+        KT_CHECK(asks == 1);
+        cross = shui::resolveTexSlot(cross, lookup);           // build 2: still absent, asked again
+        KT_CHECK(cross == nullptr);
+        KT_CHECK(asks == 2);
+        ready = reinterpret_cast<void*>(uintptr_t{0x2000});
+        cross = shui::resolveTexSlot(cross, lookup);           // build 3 (g_texInit already 1): the null is re-queried and found
+        KT_CHECK(cross == reinterpret_cast<void*>(uintptr_t{0x2000}));
+        KT_CHECK(asks == 3);
+        ready = reinterpret_cast<void*>(uintptr_t{0x3000});
+        cross = shui::resolveTexSlot(cross, lookup);           // build 4: non-null kept, the engine is not asked again (pool leak)
+        cross = shui::resolveTexSlot(cross, lookup);
+        KT_CHECK(cross == reinterpret_cast<void*>(uintptr_t{0x2000}));
+        KT_CHECK(asks == 3);
+    }
+    {   // FU-texinit: a miss stays nullptr (no sentinel stored), so the next build still sees a null slot and asks again.
+        int asks = 0;
+        void* s = shui::resolveTexSlot(nullptr, [&]() -> void* { ++asks; return nullptr; });
+        KT_CHECK(s == nullptr);
+        KT_CHECK(asks == 1);
+        s = shui::resolveTexSlot(s, [&]() -> void* { ++asks; return nullptr; });
+        KT_CHECK(s == nullptr);
+        KT_CHECK(asks == 2);
+    }
     return kt::Report("selfheal_ui_test");
 }

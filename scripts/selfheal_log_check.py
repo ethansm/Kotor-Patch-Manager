@@ -17,7 +17,7 @@ queued cannot happen by design, so an unqueued timeout means the use never enter
 `tex <res>: <why>, WxH RGBA queued for upload (...)`; `giving up`, `slot table full`, `allocation failed` are WARN. SETFAIL is WARN (counted).
 P4 popover rows (7 text items auto,hpm,hpp,keepm,keepp,hpval,keepval: tobj=1, rend!=0, extOk=1, rectSet=1, vis=1, ext w>0 h>0; bg exempt),
 INFO `rows h=<min> screen=<WxH>`. P5 discs (TEXSET disc and dischi != 0 else FAIL, ensure=1 else WARN; every DISC img!=0 and setfill=1),
-INFO `discs slots=N/M DISC=n hover=h`. P4/P5 are NOT-SEEN (not FAIL) when their lines are absent. STATE lookA and BUILD proj/cleared are optional.
+INFO `discs slots=N/M DISC=n hover=h`. 0.8.3-dev: `TEXLATE slot=i resref=r img=h` (once per slot TEXSET logged as null that a later build resolved) clears an earlier null TEXSET disc/dischi and the DISC img=0 lines before it (INFO `late=...`). P4/P5 are NOT-SEEN (not FAIL) when their lines are absent. STATE lookA and BUILD proj/cleared are optional.
 Checks: P1 (>=1 `P1 hud built ... layoutOpen=1`, ctlCount 1..4096), P3 (every `P3 slot[i]=` has k=0|1|2),
 DUMP blocks (hp cur<=max, heal-row cand {64,65,66,84,127,128} has heal>0 and only those have heal>0, a pick line, routeA idOk=1 when a pick exists).
 0.8.0-dev (popsize+togglepill+leaderclick): POPSIZE m= unit= panelW= widest= line= screen=WxH, POPHOVER m= row= (1 auto, 2 hp-, 3 hp+, 4 keep-, 5 keep+), POPCLICK m= row=, CLICK member=0 ok|noneed|noitem (leader click).
@@ -54,6 +54,7 @@ POP_RE = re.compile(r"^POP open m=(\S+) screen=(\S+?)x(\S+) unit=(\S+) btn=\[([^
 POPNULL_RE = re.compile(r"^POPROW m=(\S+) item=(\S+) null\s*$")
 POPROW_RE = re.compile(r'^POPROW m=(\S+) item=(\S+) ext=\[([^\]]*)\] extOk=(\S+) vis=(\S+) txt="(.*?)" tobj=(\S+) rend=(\S+) rgb=\S+ rgbOk=(\S+) rectSet=(\S+)\s*$')
 TEXSET_RE = re.compile(r"^TEXSET ensure=(\S+) supported=(\S+) ready=(\S+) cross=(\S+) disc=(\S+) dischi=(\S+)(?: tog=\S+)? ring0=(\S+) slots=(\S+?)/(\S+)\s*$")   # tog=a,b,c,d (CompanionSelfHeal.cpp:517) is optional and non-capturing: legacy lines have none, groups stay 1-9
+TEXLATE_RE = re.compile(r"^TEXLATE slot=(\S+) resref=(\S+) img=(\S+)\s*$")   # CompanionSelfHeal.cpp ensureTextures: once per slot that TEXSET logged as null and a later build resolved
 DISC_RE = re.compile(r"^DISC m=(\S+) hover=(\S+) img=(\S+) setfill=(\S+)\s*$")
 SETFAIL_RE = re.compile(r"^SETFAIL op=(\S+)(?: .*)?$")
 STATE_RE = re.compile(r"^STATE member=(\S+) (\S+?)->(\S+) hp=(\S+)(?: lookA=(\S+))?\s*$")
@@ -224,6 +225,8 @@ def v070_line(v, n, t):
         g = m.groups()
         v["texset"].append({"line": n, "ensure": g[0], "supported": g[1], "ready": g[2], "cross": g[3], "disc": g[4],
                             "dischi": g[5], "ring0": g[6], "slots": g[7], "max": g[8]})
+    elif (m := TEXLATE_RE.match(t)):
+        v["texlate"].append({"line": n, "slot": m.group(1), "resref": m.group(2), "img": m.group(3)})
     elif (m := DISC_RE.match(t)):
         v["disc"].append({"line": n, "m": m.group(1), "hover": m.group(2), "img": m.group(3), "setfill": m.group(4)})
     elif (m := SETFAIL_RE.match(t)):
@@ -316,13 +319,24 @@ def disc_check(v):
     if not texset and not discs:
         return "NOT-SEEN", [], [], None
     fails, warns = [], []
+    # TEXLATE (a slot TEXSET logged as null resolved on a later build) clears the earlier null TEXSET disc/dischi and the DISC img=0 lines before it.
+    late = {}
+    for L in v["texlate"]:
+        if hexval(L["img"]):
+            late.setdefault(L["resref"], L["line"])
+    recovered = set()
     for t in texset:
-        for key in ("disc", "dischi"):
-            if not hexval(t[key]):
+        for key, res in (("disc", "csh_disc"), ("dischi", "csh_disc_hi")):
+            if hexval(t[key]) == 0 and res in late and late[res] > t["line"]:
+                recovered.add(key)
+            elif not hexval(t[key]):
                 fails.append((t["line"], "TEXSET %s=%s (disc texture missing)" % (key, t[key])))
         if to_int(t["ensure"]) != 1:
             warns.append((t["line"], "P5 TEXSET ensure=%s (disc textures not ensured)" % t["ensure"]))
     for d in discs:
+        if hexval(d["img"]) == 0 and "csh_disc" in late and late["csh_disc"] > d["line"]:   # img=0 only comes from the normal disc (hover falls back to it)
+            recovered.add("DISC")
+            continue
         if not hexval(d["img"]):
             fails.append((d["line"], "DISC m=%s img=%s (no disc image)" % (d["m"], d["img"])))
         if to_int(d["setfill"]) != 1:
@@ -330,6 +344,8 @@ def disc_check(v):
     hover = sum(1 for d in discs if to_int(d["hover"]) == 1)
     slots = ("%s/%s" % (texset[-1]["slots"], texset[-1]["max"])) if texset else "none"
     info = "discs slots=%s DISC=%d hover=%d" % (slots, len(discs), hover)
+    if recovered:
+        info += " late=" + ",".join(sorted(recovered))
     return ("FAIL" if fails else "PASS"), fails, warns, info
 
 
@@ -404,7 +420,7 @@ def check(lines, lo=1, hi=None):
          "v": {"build": [], "use": [], "done": [], "auto": [], "refuse": {}, "cfg_save": [], "cfg_reload": [], "click_noitem": 0,
                "fail": [], "warn": [], "tex": {}, "seen": False, "diag_pop": [],
                "kick": [], "kick_skip": {}, "kick_starved": 0, "timeout_unq": 0, "refuse_queued": 0,
-               "version": None, "pop_open": [], "pop_rows": [], "texset": [], "disc": [], "setfail": [], "state": [],
+               "version": None, "pop_open": [], "pop_rows": [], "texset": [], "texlate": [], "disc": [], "setfail": [], "state": [],
                "popsize": [], "pop_hover": [], "pop_click": [], "click0": [],
                "arrow_hdr": [], "arrow_retry": [], "arrow_fill": [], "popocclude": []}}
     v = r["v"]
