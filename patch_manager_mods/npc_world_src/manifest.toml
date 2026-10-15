@@ -1,7 +1,7 @@
 [patch]
 id = "npc-world"
 name = "NPC World (shared area / creature / tick hooks + native spawn)"
-version = "0.1.0-dev"
+version = "0.1.1-dev"
 kind = "library"
 provides = ["k2.npcworld@1"]
 author = "local"

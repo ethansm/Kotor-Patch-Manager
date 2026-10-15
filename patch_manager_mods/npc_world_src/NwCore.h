@@ -123,6 +123,35 @@ struct Dispatcher {
     }
 };
 
+// ---- creature tag read (host-testable: the provider supplies the memory reader) --------------------------------------------------
+// Where the tag lives in a creature object at AddToArea time:
+//   primary  : the dword at c+0x18 is a char* to the NUL-terminated tag. Seen live 10-15 (doc 40 13.6): an engine-restored creature
+//              (oid 0x348) matched its tag through this pointer in k1-spawn-probe's TAGSCAN. Verified for two creatures only.
+//   fallback : [c+0x24] -> +0x18 -> char* (the first guess, doc 38). It was empty on every engine add in the 10-15 run.
+// A candidate is accepted only when the string is readable, non-empty and holds printable ASCII only (a wrong pointer almost never does).
+struct MemReader {
+    virtual bool u32(uintptr_t addr, unsigned* v) = 0;
+    // Copies the string at p into out (< cap bytes, NUL-terminated). nonPrintable = number of bytes outside 0x20..0x7e before the end.
+    virtual bool cstr(uintptr_t p, char* out, int cap, int* nonPrintable) = 0;
+    virtual ~MemReader() {}
+};
+
+enum TagVia { TagNone = 0, TagVia18 = 1, TagVia24 = 2 };
+
+// out must hold TagChars+1 bytes. Returns which path produced the tag; out = "" when none did.
+inline TagVia readCreatureTag(MemReader& m, uintptr_t c, char* out) {
+    out[0] = 0;
+    unsigned p = 0;
+    int bad = 0;
+    if (m.u32(c + 0x18, &p) && p && m.cstr(p, out, TagChars + 1, &bad) && bad == 0 && out[0]) return TagVia18;
+    out[0] = 0;
+    unsigned holder = 0;
+    bad = 0;
+    if (m.u32(c + 0x24, &holder) && holder && m.u32(holder + 0x18, &p) && p && m.cstr(p, out, TagChars + 1, &bad) && bad == 0 && out[0]) return TagVia24;
+    out[0] = 0;
+    return TagNone;
+}
+
 // What the provider read from the engine at one AddToArea. Strings must be NUL-terminated (the provider guarantees it).
 struct CreatureInfo {
     void* creature = nullptr;

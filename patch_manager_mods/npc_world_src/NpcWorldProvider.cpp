@@ -39,7 +39,7 @@ KP_CHANNEL(chSpawn, "spawn");
 // Only stores the path and the level (no I/O): safe from a static initialiser.
 const bool g_fallbackSet = (KpLog_SetFallbackFile("npc-world_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
 
-constexpr const char* kVersion = "0.1.0-dev";
+constexpr const char* kVersion = "0.1.1-dev";
 constexpr const char* kIniName = ".\\npc_world.ini";
 
 // saferead site ids: 0x7300-0x73FF belong to this mod
@@ -90,8 +90,9 @@ void onSlow(void*, const nw::Entry& e, uint32_t us, int32_t kind) {
 // ---- engine reads ---------------------------------------------------------------------------------------------------------------
 // Copies the NUL-terminated string at p into out (at most cap-1 bytes, each byte probed). Non-printable bytes become '.'.
 // False with out = "" when p is 0 or its first byte is unreadable. A string cut short by an unreadable byte is kept.
-bool readCStr(unsigned site, uintptr_t p, char* out, int cap) {
+bool readCStr(unsigned site, uintptr_t p, char* out, int cap, int* nonPrintable = nullptr) {
     out[0] = 0;
+    if (nonPrintable) *nonPrintable = 0;
     if (p == 0 || cap < 2) return false;
     if (!saferead::probeRead(site, reinterpret_cast<const void*>(p), 1)) return false;
     int n = 0;
@@ -99,11 +100,18 @@ bool readCStr(unsigned site, uintptr_t p, char* out, int cap) {
         if (!saferead::probeRead(site, reinterpret_cast<const void*>(p + n), 1)) break;
         const unsigned char ch = *reinterpret_cast<const unsigned char*>(p + n);
         if (ch == 0) break;
+        if (ch < 0x20 || ch >= 0x7f) { if (nonPrintable) ++*nonPrintable; }
         out[n++] = (ch >= 0x20 && ch < 0x7f) ? static_cast<char>(ch) : '.';
     }
     out[n] = 0;
     return true;
 }
+
+// The provider's memory reader for nw::readCreatureTag: every byte is probed through saferead.
+struct DllMem : nw::MemReader {
+    bool u32(uintptr_t addr, unsigned* v) override { return saferead::readAt(S_TagPtr, addr, 0, v); }
+    bool cstr(uintptr_t p, char* out, int cap, int* nonPrintable) override { return readCStr(S_TagStr, p, out, cap, nonPrintable); }
+};
 
 // 16-byte resref at p (not necessarily NUL-terminated) -> out (17 bytes). Printable ASCII prefix only; "" when unreadable.
 void readResref16(uintptr_t p, char* out) {
@@ -242,18 +250,16 @@ __declspec(dllexport) void __cdecl NW_OnAddToArea(void* creature, void* areaArg)
     saferead::readAt(S_Float, c, 0x9c, &ci.z);
 
     char tagStr[nw::TagChars + 1];
-    tagStr[0] = 0;
-    unsigned tagPtr = 0, charPtr = 0;
-    if (saferead::readAt(S_TagPtr, c, 0x24, &tagPtr) && tagPtr && saferead::readAt(S_TagPtr, tagPtr, 0x18, &charPtr))
-        readCStr(S_TagStr, charPtr, tagStr, sizeof tagStr);
+    DllMem mem;
+    const nw::TagVia via = nw::readCreatureTag(mem, c, tagStr);
     ci.tag = tagStr;
 
     char areaRes[17];
     readResref16(a ? a + 0x110 : 0, areaRes);
     ci.areaRes = areaRes;
 
-    KP_LOGV(chAdd, KPLOG_DEBUG, "ADD c=%08lx id=%08x tag=\"%s\" area=%s pos=%.1f,%.1f,%.1f origin=%s", (unsigned long)c, id, tagStr, areaRes,
-            ci.x, ci.y, ci.z, g_world.spawning() ? "lib" : "engine");
+    KP_LOGV(chAdd, KPLOG_DEBUG, "ADD c=%08lx id=%08x tag=\"%s\" via=%s area=%s pos=%.1f,%.1f,%.1f origin=%s", (unsigned long)c, id, tagStr,
+            via == nw::TagVia18 ? "18" : via == nw::TagVia24 ? "24" : "none", areaRes, ci.x, ci.y, ci.z, g_world.spawning() ? "lib" : "engine");
     const bool wasStable = g_world.stable();
     g_world.onCreatureAdded(ci);
     if (wasStable && !g_world.stable())
