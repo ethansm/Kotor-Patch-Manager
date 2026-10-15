@@ -4,10 +4,16 @@
 Usage:
   python3 tools/rea_questions.py <B> [--per-run 8] [--out DIR] [--keys FILE ...]
                                  [--ledger-dir DIR] [--batches-dir DIR]
+                                 [--exe PATH] [--skip-exe-check]
 
 Reads <B>/cards/key*.tsv (or the --keys files), collects the distinct Steam addresses, drops
 addresses already confirmed in the REA ledger under topic <B>-q*, shuffles the rest with a seed
-derived from <B>, and writes <out>/q_<k>.md (default <out> = <B>/rea/).
+derived from <B>, and writes <out>/q_<k>.md plus <out>/q_manifest.tsv (default <out> = <B>/rea/).
+
+Refuses (exit 2) before any file is deleted or written when:
+- <B>/rea/RUNNING exists (the lead's marker while rea-recon agents run; checked even with --out elsewhere);
+- --exe (default: vanilla_clean swkotor2.exe) is missing, sits under a steamapps path, or its sha256 is not
+  EXE_SHA256. --skip-exe-check bypasses this check (tests only).
 
 Blind by construction: question files hold no GOG address, no card id, no kind label and no name.
 Stdlib only. Exit codes: 0 ok, 2 usage or data error.
@@ -16,6 +22,7 @@ Stdlib only. Exit codes: 0 ok, 2 usage or data error.
 import argparse
 import csv
 import datetime as dt
+import hashlib
 import importlib.util
 import random
 import re
@@ -28,11 +35,30 @@ REPO = Path(__file__).resolve().parents[3]
 QUERY_GHIDRA = REPO / "scripts" / "query_ghidra.py"
 DEFAULT_LEDGER_DIR = REPO / "patch_manager_mods" / "ghidra_knowledge" / "rea_findings"
 BINARY = "/home/ethansm/Games/KOTOR2_Mod_Workspace/backups/vanilla_clean/swkotor2.exe"
+EXE_SHA256 = "6a522e71631dcee93467bd2010f3b23d9145326e1e2e89305f13ab104dbbffef"
 BATCH_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]*")
 
 
 class DataError(Exception):
     """Bad usage or bad input data; reported on stderr with exit code 2."""
+
+
+def preflight_exe(path, sha=EXE_SHA256):
+    """Raise DataError unless <path> is a file outside any steamapps dir whose sha256 equals <sha>."""
+    exe = Path(path)
+    if "steamapps" in str(exe):
+        raise DataError(f"{exe}: refusing a steamapps path; REA opens only the vanilla_clean exe")
+    if not exe.is_file():
+        raise DataError(f"exe not found: {exe}")
+    digest = hashlib.sha256()
+    try:
+        with exe.open("rb") as fh:
+            for chunk in iter(lambda: fh.read(1 << 20), b""):
+                digest.update(chunk)
+    except OSError as exc:
+        raise DataError(f"cannot read {exe}: {exc}") from None
+    if digest.hexdigest() != sha:
+        raise DataError(f"{exe}: sha256 {digest.hexdigest()} != expected {sha}")
 
 
 def _load_query_ghidra():
@@ -86,6 +112,7 @@ def render_question(batch, k, addrs, ledger_path, today):
         f"Binary: {BINARY}",
         f"Ledger topic: {topic}",
         f"Ledger file: {ledger_path}",
+        f"addresses: {len(addrs)}",
         "",
         "## Rules",
         "",
@@ -135,6 +162,8 @@ def _run(args):
     batch = args.batch
     if not BATCH_RE.fullmatch(batch):
         raise DataError(f"bad batch name {batch!r}")
+    if not args.skip_exe_check:
+        preflight_exe(args.exe, sha=EXE_SHA256)
 
     batch_dir = Path(args.batches_dir) / batch
     if args.keys:
@@ -157,18 +186,27 @@ def _run(args):
     random.Random(batch).shuffle(queue)
     chunks = [queue[i:i + args.per_run] for i in range(0, len(queue), args.per_run)]
 
+    running = batch_dir / "rea" / "RUNNING"
+    if running.exists():
+        raise DataError(f"{running} exists: rea-recon agents are running; refusing to rewrite question files")
+
     out = Path(args.out) if args.out else batch_dir / "rea"
     out.mkdir(parents=True, exist_ok=True)
-    for stale in out.glob("q_*.md"):
-        stale.unlink()
+    for stale in [*out.glob("q_*.md"), out / "q_manifest.tsv"]:
+        stale.unlink(missing_ok=True)
 
     today = dt.date.today()
     stamp = today.strftime("%Y%m%d")
+    manifest = ["topic\tn_addr\tsha_of_list"]
     for k, chunk in enumerate(chunks, start=first):
         ledger_path = ledger_dir / f"{stamp}_{batch}-q{k}.tsv"
         text = render_question(batch, k, chunk, ledger_path, today)
         with (out / f"q_{k}.md").open("w", encoding="utf-8", newline="\n") as fh:
             fh.write(text)
+        listing = "".join(f"0x{a:08x}\n" for a in chunk)
+        manifest.append(f"{batch}-q{k}\t{len(chunk)}\t{hashlib.sha1(listing.encode('utf-8')).hexdigest()}")
+    with (out / "q_manifest.tsv").open("w", encoding="utf-8", newline="\n") as fh:
+        fh.write("\n".join(manifest) + "\n")
 
     print(f"{batch}: {len(steam)} addresses ({skipped} skipped, ledger) -> {len(chunks)} files in {out.resolve()}")
     return 0
@@ -183,6 +221,8 @@ def main(argv=None) -> int:
                     help="key TSV to use instead of cards/key*.tsv (repeatable)")
     ap.add_argument("--ledger-dir", default=str(DEFAULT_LEDGER_DIR), help="REA ledger dir (confirmed rows are skipped)")
     ap.add_argument("--batches-dir", default=str(BATCHES_DIR), help="parent of the batch dirs")
+    ap.add_argument("--exe", default=BINARY, help="swkotor2.exe to verify before writing (default: vanilla_clean)")
+    ap.add_argument("--skip-exe-check", action="store_true", help="tests only: skip the exe sha256 check")
     args = ap.parse_args(argv)
     try:
         return _run(args)

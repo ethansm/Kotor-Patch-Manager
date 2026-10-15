@@ -50,6 +50,11 @@ traps, prompt schema, calibration). Pre-processing helper: `tools/re_card_prep.p
 
 ## Querying
 
+**Free script tools first** (no sqlite needed): `python3 scripts/query_ghidra.py symbol|address|struct|stats`
+(also reads the REA ledger `rea_findings/`, tagging rows `[rea]` / `[superseded]`), and
+`python3 patch_manager_mods/ghidra_knowledge/tools/rea_ledger.py lint` for ledger hygiene. The full tool order
+(static dumps at $0, live REA last) is in `RE_AGENT_GUIDE.md` §2.1.
+
 **No `sqlite3` CLI is installed on this machine** (confirmed 2026-09-29,
 cost real time to discover) — the `sqlite3` shell command below will fail
 with "command not found". Use `python3 -c "import sqlite3; ..."` or a

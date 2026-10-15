@@ -11,6 +11,7 @@ Exit codes:
 """
 
 import argparse
+import importlib.util
 import json
 import os
 import re
@@ -23,23 +24,82 @@ DEFAULT_LEDGER_DIR = DEFAULT_DB_PATH.parent / "rea_findings"
 LEDGER_COLS = ["addr", "kind", "name", "confidence", "evidence", "topic", "date"]
 
 
-def load_ledger(ledger_dir: Path) -> list[dict]:
-    """rea-recon findings (rea_findings/*.tsv, see its README). Malformed lines are skipped, never fatal."""
-    rows = []
+REA_LEDGER_TOOL = DEFAULT_DB_PATH.parent / "tools" / "rea_ledger.py"
+_REA_LEDGER = None           # tools/rea_ledger.py module, or None when it cannot be loaded
+_REA_LEDGER_LOADED = False   # the import is attempted once per process
+
+
+def _rea_ledger():
+    """Return the rea_ledger module loaded by path, or None (with a stderr warning). Cached per process."""
+    global _REA_LEDGER, _REA_LEDGER_LOADED
+    if not _REA_LEDGER_LOADED:
+        _REA_LEDGER_LOADED = True
+        try:
+            spec = importlib.util.spec_from_file_location("_kotor2_rea_ledger", REA_LEDGER_TOOL)
+            mod = importlib.util.module_from_spec(spec)
+            sys.modules[spec.name] = mod
+            spec.loader.exec_module(mod)
+            _REA_LEDGER = mod
+        except Exception as e:
+            sys.modules.pop("_kotor2_rea_ledger", None)
+            sys.stderr.write(f"Warning: rea_ledger unavailable ({e}); ledger rows shown without superseded flags\n")
+            _REA_LEDGER = None
+    return _REA_LEDGER
+
+
+def _ledger_files(ledger_dir: Path):
+    """Yield (path, data_lines) for each *.tsv whose first line is the expected header. Missing dir yields nothing."""
     if not ledger_dir or not ledger_dir.is_dir():
-        return rows
+        return
     for f in sorted(ledger_dir.glob("*.tsv")):
         lines = f.read_text(encoding="utf-8", errors="replace").splitlines()
-        if not lines or lines[0].split("\t")[:len(LEDGER_COLS)] != LEDGER_COLS:
-            continue
-        for line in lines[1:]:
+        if lines and lines[0].split("\t")[:len(LEDGER_COLS)] == LEDGER_COLS:
+            yield f, lines[1:]
+
+
+def load_ledger(ledger_dir: Path, strict: bool = False) -> list[dict]:
+    """rea-recon findings (rea_findings/*.tsv, see its README). Malformed rows are skipped, never fatal.
+
+    Uses tools/rea_ledger.py (dedupe adds "superseded"); strict=True makes rea_ledger raise on bad rows.
+    Falls back to a plain parser with superseded=False if rea_ledger cannot be loaded.
+    """
+    if not ledger_dir or not ledger_dir.is_dir():
+        return []
+    mod = _rea_ledger()
+    if mod is None:
+        return _load_ledger_plain(ledger_dir)
+    rows = mod.dedupe(mod.read_rows(ledger_dir, strict=strict))
+    for r in rows:
+        r["source_table"], r["file"] = "rea_finding", Path(r["file"]).name
+    return rows
+
+
+def _load_ledger_plain(ledger_dir: Path) -> list[dict]:
+    """Fallback parser used when rea_ledger is unavailable. Same row rule as rea_ledger: exactly 7 cells."""
+    rows = []
+    for f, data in _ledger_files(ledger_dir):
+        for line in data:
             cells = line.split("\t")
-            if len(cells) < len(LEDGER_COLS) or not cells[0].strip():
+            if len(cells) != len(LEDGER_COLS) or not cells[0].strip():
                 continue
             d = dict(zip(LEDGER_COLS, (c.strip() for c in cells)))
-            d["source_table"], d["file"] = "rea_finding", f.name
+            d["source_table"], d["file"], d["superseded"] = "rea_finding", f.name, False
             rows.append(d)
     return rows
+
+
+def ledger_malformed_count(ledger_dir: Path) -> int:
+    """Non-blank data rows in valid-header files whose cell count is not exactly 7 (these rows are skipped)."""
+    return sum(1 for _f, data in _ledger_files(ledger_dir)
+               for line in data if line.strip() and len(line.split("\t")) != len(LEDGER_COLS))
+
+
+def ledger_issue_count(ledger_dir: Path) -> int:
+    """len(rea_ledger.lint(dir)); 0 when rea_ledger is unavailable or the dir is missing."""
+    mod = _rea_ledger()
+    if mod is None or not ledger_dir or not ledger_dir.is_dir():
+        return 0
+    return len(mod.lint(ledger_dir))
 
 
 def ledger_by_address(rows: list[dict], int_val: int) -> list[dict]:
@@ -261,12 +321,14 @@ def main():
     elif args.command == "stats":
         stats = get_stats(con)
         stats["rea_findings"] = len(ledger)
+        stats["rea_findings_issues"] = ledger_issue_count(args.ledger_dir)
+        stats["rea_findings_malformed"] = ledger_malformed_count(args.ledger_dir)
         if args.json:
             print(json.dumps(stats, indent=2))
         else:
             print("Ghidra Knowledge Database Stats:")
             for k, v in stats.items():
-                print(f"  {k:20s}: {v:6d} entries")
+                print(f"  {k:22s}: {v:6d} entries")
         sys.exit(0)
 
     if not results:
@@ -294,7 +356,8 @@ def main():
             elif source == "steam_validated":
                 print(f"[steam_val] Steam: {item.get('steam_addr')} -> GOG: {item.get('gog_addr')} | {item.get('name')} | verdict: {item.get('verdict')} (batch {item.get('batch')})")
             elif source == "rea_finding":
-                print(f"[rea] {item.get('addr')} | {item.get('kind')} | {item.get('name')} | {item.get('confidence')} | {item.get('topic')} {item.get('date')} ({item.get('file')})")
+                tag = " [superseded]" if item.get("superseded") else ""
+                print(f"[rea] {item.get('addr')} | {item.get('kind')} | {item.get('name')} | {item.get('confidence')} | {item.get('topic')} {item.get('date')} ({item.get('file')}){tag}")
                 print(f"       evidence: {item.get('evidence')}")
             elif source == "name_map":
                 print(f"[name_map] {item.get('steam_addr')} | {item.get('name')} | source: {item.get('source')} | conf: {item.get('confidence')}")

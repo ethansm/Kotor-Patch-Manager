@@ -23,6 +23,7 @@ At session start or before mod work, run `python3 scripts/check_kpm_updates.py -
 ## Fast Local Tools
 - Plan resume: `python3 scripts/plan_manager.py resume | next | handoff` (spec: `patch_manager_mods/MASTER_KEY.md`)
 - Symbols/structs: `python3 scripts/query_ghidra.py symbol <name> | address <hex> | struct <class>` (never inline sqlite)
+- Steam exe RE, free first: the static dumps answer size/RET/callers/callees/strings at $0 (`ghidra_knowledge/RE_AGENT_GUIDE.md` §2.1 lists the scripts); REA ledger hygiene `python3 patch_manager_mods/ghidra_knowledge/tools/rea_ledger.py lint`; live REA only for indirect targets, body ranges, data xrefs, named decompile (plan `patch_manager_mods/ghidra_knowledge/DECOMP_PLAN.md`)
 - Agent tokens + est. cost for `### Agents Used`: `python3 scripts/agent_usage.py [--since <step start ISO8601>] [--all] [--json]` (reads the session's subagent transcripts; no model tokens)
 - Reviewer upload bundles (one packed .txt per review): `python3 scripts/review_bundle.py list | plan <id>... | build <id>... [--out DIR] [--allow-over] [--line-numbers] [--all]` (manifest `patch_manager_mods/review_bundles.toml`; outputs in gitignored `.claude/bundles/`; over-cap bundles are not written)
 - Search: `rg`; repo map: `python3 scripts/generate_repo_map.py [dir]`; docs: `python3 scripts/search_docs.py "<query>"`; subagent pack: `npx repomix [dir]`

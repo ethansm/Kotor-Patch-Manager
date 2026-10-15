@@ -3,12 +3,14 @@
 Run:  cd <repo>/patch_manager_mods/steam_db_batches/tools && python3 -m unittest tests.test_rea_questions
 """
 import contextlib
+import hashlib
 import io
 import re
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 TOOLS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(TOOLS))
@@ -56,10 +58,14 @@ class QuestionFixture(unittest.TestCase):
             rc = rq.main(list(args))
         return rc, out.getvalue(), err.getvalue()
 
-    def cli(self, *extra, out=None):
+    def cli(self, *extra, out=None, checked=False):
+        """Run the CLI with the exe check skipped, unless checked=True (then pass --exe in extra)."""
         target = self.out if out is None else out
-        return self.run_cli(BATCH, "--batches-dir", str(self.batches), "--ledger-dir", str(self.ledger),
-                            "--out", str(target), *extra)
+        args = [BATCH, "--batches-dir", str(self.batches), "--ledger-dir", str(self.ledger),
+                "--out", str(target), *extra]
+        if not checked:
+            args.append("--skip-exe-check")
+        return self.run_cli(*args)
 
     def question_files(self, out=None):
         target = self.out if out is None else out
@@ -218,6 +224,138 @@ class ErrorTests(QuestionFixture):
         rc, _, err = self.cli()
         self.assertEqual(rc, 2)
         self.assertIn("bad steam_addr", err)
+
+
+class ExeGuardTests(QuestionFixture):
+    def setUp(self):
+        super().setUp()
+        self.write_key("key.tsv", [key_row("B13a-1-01", "0x00410000", "0x00500000")])
+
+    def write_exe(self, rel, data=b"not the vanilla exe\n"):
+        path = self.root / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+        return path
+
+    def test_wrong_digest_is_refused_and_nothing_is_written(self):
+        exe = self.write_exe("swkotor2.exe")
+        rc, _, err = self.cli("--exe", str(exe), checked=True)
+        self.assertEqual(rc, 2)
+        self.assertIn("sha256", err)
+        self.assertEqual(self.question_files(), [])
+        self.assertFalse((self.out / "q_manifest.tsv").exists())
+        self.assertFalse(self.out.exists())
+
+    def test_multi_chunk_file_is_hashed_in_full(self):
+        exe = self.write_exe("big/swkotor2.exe", b"x" * ((1 << 20) * 2 + 17))
+        digest = hashlib.sha256(exe.read_bytes()).hexdigest()
+        rq.preflight_exe(exe, sha=digest)
+        with self.assertRaises(rq.DataError):
+            rq.preflight_exe(exe, sha="0" * 64)
+
+    def test_steamapps_path_is_refused_even_with_right_digest(self):
+        exe = self.write_exe("steamapps/swkotor2.exe")
+        digest = hashlib.sha256(exe.read_bytes()).hexdigest()
+        with mock.patch.object(rq, "EXE_SHA256", digest):
+            rc, _, err = self.cli("--exe", str(exe), checked=True)
+        self.assertEqual(rc, 2)
+        self.assertIn("steamapps", err)
+        self.assertEqual(self.question_files(), [])
+
+    def test_missing_exe_is_refused(self):
+        rc, _, err = self.cli("--exe", str(self.root / "missing.exe"), checked=True)
+        self.assertEqual(rc, 2)
+        self.assertIn("exe not found", err)
+        self.assertEqual(self.question_files(), [])
+
+    def test_matching_digest_passes(self):
+        exe = self.write_exe("vanilla/swkotor2.exe", b"vanilla stand-in\n")
+        digest = hashlib.sha256(exe.read_bytes()).hexdigest()
+        with mock.patch.object(rq, "EXE_SHA256", digest):
+            rc, _, _ = self.cli("--exe", str(exe), checked=True)
+        self.assertEqual(rc, 0)
+        self.assertEqual(len(self.question_files()), 1)
+
+    def test_running_marker_refuses_and_keeps_existing_files(self):
+        self.out.mkdir(parents=True)
+        keep = self.out / "q_1.md"
+        keep.write_text("keep me\n", encoding="utf-8")
+        marker = self.batch_dir / "rea" / "RUNNING"
+        marker.parent.mkdir(parents=True)
+        marker.write_text("", encoding="utf-8")
+        rc, _, err = self.cli()
+        self.assertEqual(rc, 2)
+        self.assertIn("rea-recon agents are running", err)
+        self.assertEqual(keep.read_text(encoding="utf-8"), "keep me\n")
+        self.assertEqual([p.name for p in self.question_files()], ["q_1.md"])
+        self.assertFalse((self.out / "q_manifest.tsv").exists())
+
+
+class RunningMarkerElsewhereTests(QuestionFixture):
+    def test_marker_blocks_even_when_out_points_elsewhere(self):
+        self.write_key("key.tsv", [key_row("B13a-1-01", "0x00410000", "0x00500000")])
+        marker = self.batch_dir / "rea" / "RUNNING"
+        marker.parent.mkdir(parents=True)
+        marker.write_text("", encoding="utf-8")
+        other = self.root / "elsewhere"
+        rc, _, err = self.cli(out=other)
+        self.assertEqual(rc, 2)
+        self.assertIn("rea-recon agents are running", err)
+        self.assertFalse(other.exists())
+
+
+class ManifestTests(QuestionFixture):
+    def setUp(self):
+        super().setUp()
+        self.write_key("key.tsv", [
+            key_row(f"B13a-1-{i:02d}", f"0x{0x410000 + i * 16:08x}", f"0x{0x500000 + i * 16:08x}",
+                    kind="real" if i % 2 == 0 else "decoy_prev")
+            for i in range(20)
+        ])
+
+    def test_two_runs_write_byte_identical_manifest(self):
+        out1, out2 = self.root / "run1", self.root / "run2"
+        self.assertEqual(self.cli(out=out1)[0], 0)
+        self.assertEqual(self.cli(out=out2)[0], 0)
+        self.assertEqual((out1 / "q_manifest.tsv").read_bytes(), (out2 / "q_manifest.tsv").read_bytes())
+
+    def test_manifest_rows_match_question_files(self):
+        self.assertEqual(self.cli()[0], 0)
+        lines = (self.out / "q_manifest.tsv").read_text(encoding="utf-8").splitlines()
+        self.assertEqual(lines[0], "topic\tn_addr\tsha_of_list")
+        rows = [line.split("\t") for line in lines[1:]]
+        self.assertEqual(len(rows), len(self.question_files()))
+        self.assertEqual(sum(int(row[1]) for row in rows), 20)
+        for k, row in enumerate(rows, start=1):
+            bullets = [b[len("- "):] for b in self.bullets(self.out / f"q_{k}.md")]
+            self.assertEqual(row[0], f"B13a-q{k}")
+            self.assertEqual(int(row[1]), len(bullets))
+            self.assertEqual(row[2], hashlib.sha1(("\n".join(bullets) + "\n").encode("utf-8")).hexdigest())
+
+    def test_stale_manifest_is_replaced(self):
+        self.out.mkdir(parents=True)
+        (self.out / "q_manifest.tsv").write_text("stale\n", encoding="utf-8")
+        self.assertEqual(self.cli()[0], 0)
+        text = (self.out / "q_manifest.tsv").read_text(encoding="utf-8")
+        self.assertNotIn("stale", text)
+        self.assertEqual(len(text.splitlines()), 1 + len(self.question_files()))
+
+
+class CompositionLineTests(QuestionFixture):
+    def test_addresses_line_follows_ledger_line_and_no_kind_words(self):
+        self.write_key("key.tsv", [
+            key_row("B13a-1-01", "0x00410000", "0x00500000", kind="real"),
+            key_row("B13a-1-02", "0x00410010", "0x00500010", kind="decoy_prev"),
+            key_row("B13a-1-03", "0x00410020", "0x00500020", kind="decoy_next"),
+        ])
+        self.assertEqual(self.cli()[0], 0)
+        text = self.question_files()[0].read_text(encoding="utf-8")
+        lines = text.splitlines()
+        i = next(n for n, line in enumerate(lines) if line.startswith("Ledger file: "))
+        self.assertEqual(lines[i + 1], "addresses: 3")
+        lowered = text.lower()
+        self.assertNotIn("real", lowered)
+        self.assertNotIn("decoy", lowered)
 
 
 if __name__ == "__main__":

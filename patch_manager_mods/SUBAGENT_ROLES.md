@@ -79,6 +79,13 @@ VERDICT: <CONFIRMED | REFUTED | PARTIAL | UNSURE>
 
 ---
 
+## Steam exe RE: scripts before models, REA last
+
+- Static facts (size, RET, callers, callees, strings, globals) come from the $0 dump scripts listed in
+  `ghidra_knowledge/RE_AGENT_GUIDE.md` §2.1. Put their output in the brief; never ask a Haiku or REA for them.
+- Live REA (`rea-recon`) only for indirect call targets, non-contiguous bodies, data xrefs and named pseudo-C.
+  At most 2 live REA sessions machine-wide. Ledger rows go through `ghidra_knowledge/tools/rea_ledger.py` (`lint`).
+
 ## Claude Code Haiku swarm (waves)
 
 Backend in Claude Code: native `Agent` calls with `model: haiku`. No `oc-*` backends, no swarm-runner real engine. Artifacts live under `.claude/waves/<id>/` (gitignored).
@@ -100,6 +107,7 @@ Backend in Claude Code: native `Agent` calls with `model: haiku`. No `oc-*` back
 - Caps: <= 12 parallel read-only recon; <= 6 parallel write workers. Above 12 units, print the estimated total first.
 
 **Escalation**: retry once on Haiku with the failure excerpt; then split the task; only then one Sonnet.
+Sanctioned exception (user, 10-15): the `variant-fix-wave` skill runs a Sonnet consolidator and an independent Sonnet reviewer per item by design.
 
 **Decisions**
 - Haiku is the default for map, recon, draft, verify.

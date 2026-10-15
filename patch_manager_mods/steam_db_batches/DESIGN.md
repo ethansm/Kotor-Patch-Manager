@@ -317,9 +317,10 @@ NWScript command handlers (`ExecuteCommand*`) are proven by engine data, not by 
   tables). B15 has no TBL family: the gate ranked `near` over `cmdtable` in 7 rows, and Opus corrected all 7.
 
 ### 4.9 REA live evidence (report-only)
-- **Flow.** `cards B<n>` -> `tools/rea_questions.py B<n> [--per-run 8] [--keys F]` -> `B<n>/rea/q_<k>.md` (<= 8 Steam addresses each) -> one `rea-recon` Haiku per file (<= 12 parallel) -> ledger `patch_manager_mods/ghidra_knowledge/rea_findings/<date>_B<n>-q<k>.tsv` -> `cards B<n> --rea [--out DIR]` prints `### Live evidence (REA, report-only)` per card, from ledger rows at the card's effective Steam address (topic prefix `B<n>-q` only) -> reviewers -> finalize -> Opus gate (rules unchanged).
+- **Flow.** `cards B<n>` -> `tools/rea_questions.py B<n> [--per-run 8] [--keys F]` -> `B<n>/rea/q_<k>.md` (<= 8 Steam addresses each) -> one `rea-recon` Haiku per file (<= 2 live REA sessions machine-wide; check with `rea_session.py guard` first) -> ledger `patch_manager_mods/ghidra_knowledge/rea_findings/<date>_B<n>-q<k>.tsv` -> `cards B<n> --rea [--out DIR]` prints `### Live evidence (REA, report-only)` per card, from ledger rows at the card's effective Steam address (topic prefix `B<n>-q` only) -> reviewers -> finalize -> Opus gate (rules unchanged).
 - **Blindness.** Question files mix real and decoy card addresses, sorted and shuffled with seed `B<n>`. No GOG address, name, kind or card id. Agents write behavioural summaries, never names copied from `steam_functions.tsv` or other ledgers. Every card (real and decoy) gets the section by the same code path.
-- **Exe.** REA opens only `~/Games/KOTOR2_Mod_Workspace/backups/vanilla_clean/swkotor2.exe` (Steam md5 `6a522e71`), never the game folder (live exe = vanilla + 4 GB patch, md5 `62411a3a`).
+- **Exe.** REA opens only `~/Games/KOTOR2_Mod_Workspace/backups/vanilla_clean/swkotor2.exe` (Steam sha256 prefix `6a522e71`; full digest pinned as `EXE_SHA256` in `tools/rea_questions.py`), never the game folder (live exe = vanilla + 4 GB patch, md5 prefix `62411a3a`).
+- **Guard.** `patch_manager_mods/ghidra_knowledge/tools/rea_session.py guard` counts live `analyzeHeadless|GhidraClassLoader|rea-agents` processes; the lead writes `B<n>/rea/RUNNING` before launching agents and removes it after; `rea_questions.py` refuses to run while it exists.
 - **Output.** The ledger is the only output. Agents never write either DB. `rea-row-verify` stays off DB rows.
 - **Trust.** REA rows are report-only evidence. They change no gate, AUTO rule, ranking or trust route (section 1 trust tiers; 4.2 gate classes). A row counts as a content anchor only when it quotes an asm line. Promotion (e.g. REA callers as A-CALLEE) only via an Opus calibration (MASTER_PLAN R4).
 - **Cost/time.** Cold first procedure call ~356 s. Target <= 8 addresses and < 100k tokens per run. Pilot result in `B13a/rea_pilot/PILOT.md` (R1).
@@ -329,6 +330,6 @@ NWScript command handlers (`ExecuteCommand*`) are proven by engine data, not by 
   never edited, never committed. GOG label suspects / wrong GOG param sizes are recorded (gate report, PR description),
   and a GOG DB change is proposed to the user only for a confirmed bug.
 - Agents never commit, never write either DB, never touch the game folder or credential files; private `mktemp -d`.
-- One `analyzeHeadless` at a time, always `-readOnly` (`pgrep -af '^java.*analyzeHeadless'` first).
+- One `analyzeHeadless` at a time, always `-readOnly`; at most 2 live REA sessions machine-wide. Check with `python3 patch_manager_mods/ghidra_knowledge/tools/rea_session.py guard` first (matches `analyzeHeadless|GhidraClassLoader|rea-agents`).
 - Branch-DB writes: the lead only, after a backup to `~/Games/KOTOR2_Mod_Workspace/backups/steam_db/`, via
   SqliteTools, then `SqliteTools validate` (0 errors).

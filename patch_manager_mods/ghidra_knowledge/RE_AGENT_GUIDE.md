@@ -75,6 +75,22 @@ Tools that do tier-0 work here:
   - `anchors` lists strings, callees and offsets;
   - `prologue` checks alignment and prologue.
 
+### 2.1 Free static facts first, live REA last (DECOMP plan, `ghidra_knowledge/DECOMP_PLAN.md`)
+The static dumps in `~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71/` cover every real function
+(12,355 `.asm`/`.c` pairs + `callgraph.tsv`, `strings.tsv`, `globals.tsv`, `imports.tsv`, `inputs/steam_functions.tsv`).
+They matched live REA on 955 of 958 checks. So size, RET, function start, callers, direct callees and strings cost
+$0 and take milliseconds; never ask REA or a model for them.
+
+| question | tool (all $0, < 1 s) |
+|---|---|
+| known name / ledger finding at an address | `python3 scripts/query_ghidra.py address <hex>` (ledger rows tagged `[rea]`, overridden ones `[superseded]`) |
+| callers, callees, call path, vtable-slot sites | `engine_ai_atlas/tools/cg.py callers|callees|path|indirect --slot` |
+| field reads/writes | `engine_ai_atlas/tools/field_census.py` |
+| ledger hygiene before using or adding rows | `python3 ghidra_knowledge/tools/rea_ledger.py lint` (rules L1 L2 L4 L5 L6 L8; baseline 53 issues on 10-15) |
+
+Live REA (`rea-recon`) is only for what the dumps cannot answer: targets of INDIRECT call sites, non-contiguous
+function bodies, live data xrefs, and named pseudo-C. At most 2 live REA sessions machine-wide.
+
 ## 3. Traps (put the relevant ones in every small-model prompt as facts)
 
 ### 3.1 x86 stack slots: narrow args still pop 4 bytes
