@@ -1,0 +1,1 @@
+T=9.650 f=- companion-selfheal/ui TEXSET ensure=1 supported=1 ready=1 cross=0a0b0c01 disc=00000000 dischi=0a0b0c02 tog=0a0b0c03,0a0b0c04,0a0b0c05,0a0b0c06 ring0=0a0b0c07 slots=11/16

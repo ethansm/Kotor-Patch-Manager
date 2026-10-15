@@ -53,7 +53,7 @@ VERSION_RE = re.compile(r"^(\d+\.\d+\.\d+(?:-\w+)?)(?: ui=(\S+))?: probe call=")
 POP_RE = re.compile(r"^POP open m=(\S+) screen=(\S+?)x(\S+) unit=(\S+) btn=\[([^\]]*)\] align=(\S+)\s*$")
 POPNULL_RE = re.compile(r"^POPROW m=(\S+) item=(\S+) null\s*$")
 POPROW_RE = re.compile(r'^POPROW m=(\S+) item=(\S+) ext=\[([^\]]*)\] extOk=(\S+) vis=(\S+) txt="(.*?)" tobj=(\S+) rend=(\S+) rgb=\S+ rgbOk=(\S+) rectSet=(\S+)\s*$')
-TEXSET_RE = re.compile(r"^TEXSET ensure=(\S+) supported=(\S+) ready=(\S+) cross=(\S+) disc=(\S+) dischi=(\S+) ring0=(\S+) slots=(\S+?)/(\S+)\s*$")
+TEXSET_RE = re.compile(r"^TEXSET ensure=(\S+) supported=(\S+) ready=(\S+) cross=(\S+) disc=(\S+) dischi=(\S+)(?: tog=\S+)? ring0=(\S+) slots=(\S+?)/(\S+)\s*$")   # tog=a,b,c,d (CompanionSelfHeal.cpp:517) is optional and non-capturing: legacy lines have none, groups stay 1-9
 DISC_RE = re.compile(r"^DISC m=(\S+) hover=(\S+) img=(\S+) setfill=(\S+)\s*$")
 SETFAIL_RE = re.compile(r"^SETFAIL op=(\S+)(?: .*)?$")
 STATE_RE = re.compile(r"^STATE member=(\S+) (\S+?)->(\S+) hp=(\S+)(?: lookA=(\S+))?\s*$")

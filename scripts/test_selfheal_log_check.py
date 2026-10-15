@@ -273,6 +273,28 @@ def test_v070_disc_null_fail():
     assert S.fmt(r).splitlines()[-1].endswith("P4=PASS P5=FAIL VERDICT=FAIL")
 
 
+def test_v083_tog_texset_fails_disc_null():
+    # CompanionSelfHeal.cpp:517 writes tog=a,b,c,d between dischi and ring0; TEXSET_RE used to miss it, so P5 never saw disc=00000000
+    r = S.check(lines("v083_tog.txt"))
+    assert r["p5"] == "FAIL", r["p5"]
+    assert "TEXSET disc=00000000" in " ".join(m for _, m in r["p5_fail"])
+    assert len(r["v"]["texset"]) == 1 and r["v"]["texset"][0]["dischi"] == "0a0b0c02" and r["v"]["texset"][0]["ring0"] == "0a0b0c07"
+
+
+def test_v083_tog_texset_good_disc_passes():
+    # negative control: the same tog line with a real disc handle must not FAIL P5
+    r = S.check([l.replace("disc=00000000", "disc=0a0b0c00") for l in lines("v083_tog.txt")])
+    assert r["p5"] == "PASS" and len(r["v"]["texset"]) == 1
+
+
+def test_v083_texset_legacy_no_tog_still_parses():
+    # the tog= group is optional: a pre-tog TEXSET line keeps the same nine groups
+    legacy = "TEXSET ensure=1 supported=1 ready=1 cross=0a0b0c01 disc=0a0b0c02 dischi=0a0b0c03 ring0=0a0b0c04 slots=11/16"
+    m = S.TEXSET_RE.match(legacy)
+    assert m is not None and len(m.groups()) == 9 and m.group(5) == "0a0b0c02" and m.group(7) == "0a0b0c04" and m.group(8) == "11"
+    assert len(S.check(lines("v070.txt"))["v"]["texset"]) == 1
+
+
 def test_v070_ensure_zero_is_warn_only():
     r = S.check([l.replace("ensure=1", "ensure=0") if "TEXSET" in l else l for l in lines("v070.txt")])
     assert r["p5"] == "PASS" and r["verdict"] == "PASS"
