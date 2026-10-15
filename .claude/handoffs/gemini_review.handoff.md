@@ -1,6 +1,8 @@
 # Session Handoff: Gemini 2026-10-14 review (G1 + G2 DONE)
 
 ## 0. Next-Phase Direction
+**FX3 (2026-10-15, IN PROGRESS):** plan `.claude/plans/gemini_fix_wave3.md` (22 fix units + WI-89c inline; wave dir `.claude/waves/fix3/`,
+brief generator `tools/fix3_briefs.py`). Resume: `python3 scripts/plan_manager.py resume --plan .claude/plans/gemini_fix_wave3.md`.
 **FX2 (2026-10-15, DONE, $9.08):** 11 mod-side bugs landed: WI-79 9dbfed7, WI-77 b4c80a5, WI-78 49a57a7, WI-74 a2ecc13, WI-82 ab456aa,
 WI-75 066320e, WI-83 b18c0f3, WI-84 685fede, WI-80 810590a, WI-81 6d24306, BG29c ce3cec1; doc 37 BG27-BG37 DONE + rea notes 2ae4cb2.
 Not installed: rebuild + install (user GO) queue_hud, companion_selfheal, companion_ai, holster, combat_hotbar; play checks WI-74 (companion
