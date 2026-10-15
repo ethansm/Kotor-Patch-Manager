@@ -20,6 +20,7 @@ static void* track(void* p) { if (g_nAlloc < 512) g_alloc[g_nAlloc++] = p; retur
 static void* fNew(unsigned n) { ++nNew; return track(calloc(1, n)); }
 static void* fNewArr(unsigned n) { ++nNewArr; return track(malloc(n)); }
 static void* fNoMem(unsigned) { ++nNewArr; return nullptr; }   // engine operator new[] failure: fill() logs and returns false
+static void* fNewFail(unsigned) { ++nNew; return nullptr; }     // the engine cannot allocate the texture object
 static void* fCtor(void* t, const char* a, const char*) { ++nCtor; lastCtorName = a; (void)t; return t; }
 static void fAdd(void* list, void*) { ++nAdd; lastAddList = list; }
 static void fReset(void* b) {   // the engine's Reset: pixels and GL name freed, not constructed
@@ -86,6 +87,16 @@ int main() {
     KT_CHECK_EQ(countLines("tex emb_a: rebuilt without our pixels"), 1); KT_CHECK_EQ(countLines("tex emb_a: refilled after a missing rebuild"), 1);
     simUpload(b); heal(); KT_CHECK_EQ(slots()[0].heals, 0);
 
+    // ---- width changed, Missing=0: heal takes the w != s.w arm -> Reset + refill (the Missing=1 case above never reaches it) ----
+    clearForTest(); resetCounters();
+    KT_CHECK(ensure(set, 1)); b = B(slots()[0]); KT_CHECK_EQ(nAdd, 1);
+    simUpload(b); heal(); KT_CHECK_EQ(nReset, 0);
+    at<void*>(b, Tex_Pixels) = nullptr; at<int>(b, Tex_Uploaded) = 0; b[Tex_Constructed] = 1; b[Tex_Missing] = 0; at<int>(b, Tex_W) = 3; heal();
+    KT_CHECK_EQ(nReset, 1); KT_CHECK_EQ(nAdd, 2); KT_CHECK_EQ(slots()[0].heals, 1); KT_CHECK_EQ(at<int>(b, Tex_W), 2); KT_CHECK_EQ(slots()[0].w, 2);
+    KT_CHECK_EQ(b[Tex_Missing], 0); KT_CHECK_EQ(b[Tex_Constructed], 1); KT_CHECK(at<void*>(b, Tex_Pixels) != nullptr);
+    KT_CHECK_EQ(countLines("tex emb_a: rebuilt without our pixels (missing=0 w=3)"), 1); KT_CHECK_EQ(countLines("tex emb_a: refilled after a missing rebuild"), 1);
+    simUpload(b); heal(); KT_CHECK_EQ(slots()[0].heals, 0);   // healthy again re-arms the counter
+
     // ---- give-up after 20 refills: the 21st is not attempted, the give-up line appears once ----
     clearForTest(); resetCounters();
     KT_CHECK(ensure(set, 1)); b = B(slots()[0]); KT_CHECK_EQ(nAdd, 1);
@@ -129,6 +140,23 @@ int main() {
         KT_CHECK_EQ(countLines("tex emb_a: giving up after 20 refill attempts"), 1); KT_CHECK_EQ(countLines(fail ? "last fill ok=0" : "last fill ok=1"), 1);
         KT_CHECK_EQ(countLines("art missing"), fail ? 1 : 0);
     }
+
+    // ---- give-up follows FAILED fills: the engine cannot allocate the pixel buffer, 20 retries then stop (even if the engine recovers) ----
+    clearForTest(); resetCounters();
+    { auto sv = g_et.newArrFn; g_et.newArrFn = fNoMem;
+      KT_CHECK(!ensure(set, 1)); b = B(slots()[0]); KT_CHECK(b != nullptr); KT_CHECK_EQ(nNewArr, 1); KT_CHECK_EQ(nAdd, 0);   // registered, not filled
+      for (int i = 0; i < 25; ++i) heal();
+      KT_CHECK_EQ(nNewArr, 1 + MaxHeals); KT_CHECK_EQ(slots()[0].heals, MaxHeals); KT_CHECK_EQ(nAdd, 0);
+      KT_CHECK_EQ(countLines("tex emb_a: engine malloc("), 1 + MaxHeals); KT_CHECK_EQ(countLines("tex emb_a: giving up after 20 refill attempts"), 1);
+      g_et.newArrFn = sv; heal(); KT_CHECK_EQ(nAdd, 0); KT_CHECK_EQ(slots()[0].heals, MaxHeals); }   // given up stays given up until an upload re-arms it
+
+    // ---- engine object allocation fails: the slot is registered without an object, ensure reports false, heal skips it ----
+    clearForTest(); resetCounters();
+    { auto sv = g_et.newFn; g_et.newFn = fNewFail;
+      KT_CHECK(!ensure(set, 1)); KT_CHECK_EQ(slotCount(), 1); KT_CHECK(B(slots()[0]) == nullptr);
+      KT_CHECK_EQ(nCtor, 0); KT_CHECK_EQ(nNewArr, 0); KT_CHECK_EQ(nAdd, 0); KT_CHECK_EQ(countLines("tex emb_a: allocation failed"), 1);
+      heal(); KT_CHECK_EQ(nAdd, 0); KT_CHECK_EQ(nReset, 0);
+      g_et.newFn = sv; KT_CHECK(!ensure(set, 1)); KT_CHECK_EQ(nCtor, 0); }   // the registered null slot is not retried by ensure (idempotent by name)
 
     // ---- bad TGAs rejected: nothing queued, a log line says why ----
     clearForTest();

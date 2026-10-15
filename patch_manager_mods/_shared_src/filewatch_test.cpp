@@ -116,6 +116,40 @@ static void test_accept() {
     KT_CHECK(changed(p, f.c_str(), 7000));
 }
 
+// changed(..., &out) hands back the stamp it read. out is written on every poll that reaches stat (missing, changed, quiet,
+// forced); a throttled poll never stats, so out is left as the caller had it. The sentinel (999 / -1) makes a dropped store visible.
+static void test_out() {
+    std::string f = P("out.ini");
+    ReloadPoll p; p.throttleMs = 1000;
+    Stamp out;
+    out.size = 999; out.mtime = -1;                       // sentinel: a dropped store leaves it as is
+    KT_CHECK(changed(p, f.c_str(), 0, false, &out));      // first call is a change, also for a missing file
+    KT_CHECK(out == stamp(f.c_str()));
+    KT_CHECK(!out.exists);
+    put(f, "one"); setMtime(f, 1700000000, 0);
+    out.size = 999; out.mtime = -1;
+    KT_CHECK(changed(p, f.c_str(), 2000, false, &out));   // missing -> present
+    KT_CHECK(out == stamp(f.c_str()));
+    KT_CHECK(out.exists);
+    KT_CHECK_EQ(out.size, 3ull);
+    out.size = 999; out.mtime = -1;
+    KT_CHECK(!changed(p, f.c_str(), 3000, false, &out));  // unchanged: no change, but out still gets the current stamp
+    KT_CHECK(out == stamp(f.c_str()));
+    put(f, "twotwo"); setMtime(f, 1700000000, 0);
+    out.size = 999; out.mtime = -1;
+    KT_CHECK(!changed(p, f.c_str(), 3500, false, &out));  // throttled (window began at 3000): no stat, out untouched
+    KT_CHECK_EQ(out.size, 999ull);
+    KT_CHECK_EQ(out.mtime, -1LL);
+    KT_CHECK(changed(p, f.c_str(), 3600, true, &out));    // forced past the throttle: out gets the new stamp
+    KT_CHECK(out == stamp(f.c_str()));
+    KT_CHECK_EQ(out.size, 6ull);
+    remove(f.c_str());
+    out.size = 999; out.mtime = -1;
+    KT_CHECK(changed(p, f.c_str(), 9000, false, &out));   // present -> missing: out is the zero stamp again
+    KT_CHECK(out == stamp(f.c_str()));
+    KT_CHECK(!out.exists);
+}
+
 static void test_atomic() {
     std::string f = P("w.ini");
     KT_CHECK(atomicWrite(f.c_str(), "first", true));
@@ -197,6 +231,7 @@ int main() {
     test_stamp();
     test_poll();
     test_accept();
+    test_out();
     test_atomic();
     test_failures();
     chmod(g_dir.c_str(), 0755);

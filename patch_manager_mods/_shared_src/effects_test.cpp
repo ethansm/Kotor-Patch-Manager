@@ -368,6 +368,14 @@ int main() {
         // another harmful row mixes with spell debuffs, order kept (row 5 = ip_droiddestroy)
         n = collectBuffs(makeCreature({ d1, iconFx(28, -1, 1), iconFx(5, -1, 1) }), BuffDay, tNow, true, o, 8, true);
         KT_CHECK_EQ((long long)n, 3ll); KT_CHECK_EQ(o[0].resref, "ip_advlsthrow"); KT_CHECK_EQ(o[1].resref, "ip_slow"); KT_CHECK_EQ(o[2].resref, "ip_droiddestroy");
+        // harmful ii_/iw_ effecticon rows are item-disc debuffs: 41 = iw_stungren_001 (iw_ prefix), 55 = ii_drdutldev_001 (ii_ prefix); kills a drop of either prefix in EffectIcons.h:35
+        n = collectBuffs(makeCreature({ iconFx(41, -1, 1), iconFx(55, -1, 1) }), BuffDay, tNow, true, o, 8, true);
+        KT_CHECK_EQ((long long)n, 2ll);
+        KT_CHECK_EQ(o[0].resref, "iw_stungren_001"); KT_CHECK(o[0].item);
+        KT_CHECK_EQ(o[1].resref, "ii_drdutldev_001"); KT_CHECK(o[1].item);
+        // a harmful row with a null resref (56, good 0, not row 0) yields nothing, and does not hide its neighbours
+        n = collectBuffs(makeCreature({ iconFx(56, -1, 1), iconFx(28, -1, 1) }), BuffDay, tNow, true, o, 8, true);
+        KT_CHECK_EQ((long long)n, 1ll); KT_CHECK_EQ(o[0].resref, "ip_slow"); KT_CHECK(!o[0].item);
     }
 
     return kt::Report("effects_test");

@@ -98,6 +98,60 @@ int main() {
     put<uint32_t>(cr + CrQueue, 0); put<uint32_t>(cr + CrRound, 0);
     KT_CHECK(read(A(cr), &s, 0x7100, 0x7120));
     KT_CHECK_EQ(s.ne, 0); KT_CHECK_EQ(s.nrn, 0); KT_CHECK(!s.haveCur); KT_CHECK(!useQueued(s));
-    // playerPaused() walks the fixed engine address AppGlobal (not mappable in the host arena), so it is not host-testable; QueueHud's tests keep the behaviour pinned.
+    // truncation: 20 queue nodes keep the first 16 (kMaxEntries), 6 round nodes keep the first 4 (kMaxRound), in list order
+    {
+        const size_t tcr = 0x4000, tint = 0x4200, tnode = 0x4300, tdata = 0x4500;
+        const size_t trnd = 0x5100, trl = 0x6000, trin = 0x6040, trnode = 0x6100, trdata = 0x6400;
+        put<uint32_t>(tcr + CrQueue, (uint32_t)A(tint)); put<uint32_t>(tint, (uint32_t)A(tnode));
+        for (int i = 0; i < 20; ++i) {
+            const size_t nd = tnode + 0x10 * i, dd = tdata + 0x40 * i;
+            put<uint32_t>(nd + NodeNext, i + 1 < 20 ? (uint32_t)A(nd + 0x10) : 0u); put<uint32_t>(nd + NodeData, (uint32_t)A(dd));
+            put<uint32_t>(dd + ActType, 100 + i); put<uint32_t>(dd + ActParam0, i);
+        }
+        put<uint32_t>(tcr + CrRound, (uint32_t)A(trnd));
+        put<uint32_t>(trnd + RdList, (uint32_t)A(trl)); put<uint32_t>(trl, (uint32_t)A(trin)); put<uint32_t>(trin, (uint32_t)A(trnode));
+        for (int i = 0; i < 6; ++i) {
+            const size_t nd = trnode + 0x10 * i, dd = trdata + 0x80 * i;
+            put<uint32_t>(nd + NodeNext, i + 1 < 6 ? (uint32_t)A(nd + 0x10) : 0u); put<uint32_t>(nd + NodeData, (uint32_t)A(dd));
+            put<uint8_t>(dd + RnSub, (uint8_t)(i + 1)); put<uint32_t>(dd + RnSpell, 0x100 + i);
+            put<uint32_t>(dd + RnItem, 0x200 + i); put<uint16_t>(dd + RnFeat, (uint16_t)i);
+        }
+        KT_CHECK(read(A(tcr), &s, 0x7300, 0x7320));
+        KT_CHECK_EQ(s.ne, 16); KT_CHECK_EQ(s.e[0].type, 100); KT_CHECK_EQ(s.e[15].type, 115); KT_CHECK_EQ((int)s.e[15].param0, 15);
+        KT_CHECK_EQ(s.nrn, 4); KT_CHECK_EQ((int)s.rn[0].spellId, 0x100); KT_CHECK_EQ((int)s.rn[3].itemId, 0x203); KT_CHECK_EQ((int)s.rn[3].subType, 4);
+        KT_CHECK(!s.haveCur);
+    }
+    // playerPaused() walks the fixed engine address AppGlobal: map that page (best effort; skipped when the host process already owns it)
+    // and a second 32-bit region for the chain, then pin each hop and the bit-2 test.
+    {
+        const uintptr_t ag = gameaddr::AppGlobal;
+        void* gp = mmap(reinterpret_cast<void*>(ag & ~(uintptr_t)0xFFF), 0x1000, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE, -1, 0);
+        void* ch = mmap(nullptr, 0x20000, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS
+#ifdef MAP_32BIT
+                        | MAP_32BIT
+#endif
+                        , -1, 0);
+        if (gp != MAP_FAILED && ch != MAP_FAILED && reinterpret_cast<uintptr_t>(gp) == (ag & ~(uintptr_t)0xFFF) && reinterpret_cast<uintptr_t>(ch) < 0x80000000u) {
+            uint8_t* c = static_cast<uint8_t*>(ch);
+            const uint32_t cApp = (uint32_t)reinterpret_cast<uintptr_t>(c), cSrv = cApp + 0x100, cInt = cApp + 0x200;   // internal + 0x10078 stays inside the 0x20000 region
+            auto w32 = [&](uintptr_t addr, uint32_t v) { memcpy(reinterpret_cast<void*>(addr), &v, sizeof v); };
+            KT_CHECK(!playerPaused(0x7400));                                   // AppGlobal -> NULL app: not paused
+            w32(ag, cApp);
+            KT_CHECK(!playerPaused(0x7400));                                   // app+8 (server) still NULL
+            w32(cApp + 8, cSrv);
+            KT_CHECK(!playerPaused(0x7400));                                   // server+4 (internal) still NULL
+            w32(cSrv + 4, cInt);
+            KT_CHECK(!playerPaused(0x7400));                                   // pause byte 0
+            c[0x200 + PauseInternal] = 2;  KT_CHECK(playerPaused(0x7400));     // bit 2 set: paused
+            c[0x200 + PauseInternal] = 0xFD; KT_CHECK(!playerPaused(0x7400));  // every other bit set, bit 2 clear: not paused
+            c[0x200 + PauseInternal] = 0xFF; KT_CHECK(playerPaused(0x7400));
+            w32(cSrv + 4, 0);              KT_CHECK(!playerPaused(0x7400));    // chain broken again: not paused
+            munmap(gp, 0x1000); munmap(ch, 0x20000);
+        } else {
+            printf("actqueue_test: AppGlobal page not mappable on this host, playerPaused chain case skipped\n");
+            if (gp != MAP_FAILED && reinterpret_cast<uintptr_t>(gp) == (ag & ~(uintptr_t)0xFFF)) munmap(gp, 0x1000);
+            if (ch != MAP_FAILED) munmap(ch, 0x20000);
+        }
+    }
     return kt::Report("actqueue_test");
 }
