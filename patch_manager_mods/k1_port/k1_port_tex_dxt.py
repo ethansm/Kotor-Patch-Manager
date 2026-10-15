@@ -202,12 +202,38 @@ def block_mask(mask: np.ndarray) -> np.ndarray:
     return pad.reshape(by, 4, bx, 4).any(axis=(1, 3))
 
 
+def _three_colour_half(new: np.ndarray, parent: np.ndarray) -> np.ndarray:
+    """(k,8) new DXT1 colour halves + (k,8) parent blocks -> (k,8) 3-colour halves for the same pixels.
+
+    Endpoints are the new block's two 565 words, low then high. Each parent-opaque pixel takes the nearest of
+    c0, c1, (c0+c1)/2 on its decoded new colour; parent index-3 (transparent) pixels stay 3.
+    """
+    shift = 2 * np.arange(16, dtype=np.int64)
+    n0 = new[:, 0].astype(np.int64) | (new[:, 1].astype(np.int64) << 8)
+    n1 = new[:, 2].astype(np.int64) | (new[:, 3].astype(np.int64) << 8)
+    nword = sum(new[:, 4 + i].astype(np.int64) << (8 * i) for i in range(4))
+    pword = sum(parent[:, 4 + i].astype(np.int64) << (8 * i) for i in range(4))
+    nidx = (nword[:, None] >> shift) & 3
+    opaque = ((pword[:, None] >> shift) & 3) != 3
+    a, b = _unpack565(n0).astype(np.float64), _unpack565(n1).astype(np.float64)
+    four = np.stack([a, b, (2 * a + b) // 3, (a + 2 * b) // 3], axis=1)  # integer floor, as the decoder
+    three = np.stack([a, b, (a + b) // 2, np.zeros_like(a)], axis=1)  # index 3 of a 3-colour block decodes black
+    pal = np.where((n0 > n1)[:, None, None], four, three)
+    rgb = np.take_along_axis(pal, np.repeat(nidx[:, :, None], 3, axis=2), axis=1)
+    lo, hi = np.minimum(n0, n1), np.maximum(n0, n1)
+    e0, e1 = _unpack565(lo).astype(np.float64), _unpack565(hi).astype(np.float64)
+    ends = np.stack([e0, e1, (e0 + e1) // 2], axis=1)
+    near = ((rgb[:, :, None, :] - ends[:, None, :, :]) ** 2).sum(-1).argmin(-1)
+    return _pack((lo, hi, np.where(opaque, near, 3), None))
+
+
 def splice_colour(parent: bytes, w: int, h: int, fmt: str,
                   new_colour: np.ndarray, changed: np.ndarray) -> bytes:
     """Replace the colour half of changed blocks in one raw mip level; everything else is kept.
 
-    DXT1: all 8 bytes of a changed block are replaced, except a block whose colour mode (c0<=c1, the 1-bit alpha
-    mode) would flip: that block keeps the parent's bytes so alpha behaviour never changes. DXT5: bytes 8..16 are
+    DXT1: all 8 bytes of a changed block are replaced. A changed block with a 3-colour parent (c0<=c1, 1-bit alpha
+    mode) is re-encoded in 3-colour mode with its transparent (index 3) pixels kept, so alpha never changes; a
+    4-colour parent with a 3-colour new block keeps the parent's bytes. DXT5: bytes 8..16 are
     replaced and the alpha half (bytes 0..8) is always kept from the parent. Output length equals parent length.
     """
     nb = BLOCK_BYTES[fmt]
@@ -226,6 +252,10 @@ def splice_colour(parent: bytes, w: int, h: int, fmt: str,
         p1 = blocks[..., 2].astype(np.uint16) | (blocks[..., 3].astype(np.uint16) << 8)
         n0 = new[..., 0].astype(np.uint16) | (new[..., 1].astype(np.uint16) << 8)
         n1 = new[..., 2].astype(np.uint16) | (new[..., 3].astype(np.uint16) << 8)
-        ch = ch & ((p0 <= p1) == (n0 <= n1))
+        ch = ch & ~((p0 > p1) & (n0 <= n1))  # 4-colour parent, 3-colour new: keep parent (encode_rgb never emits this)
+        conv = ch & (p0 <= p1)  # 3-colour parent: re-encode, parent index-3 pixels stay transparent
+        if conv.any():
+            new = new.copy()  # np.asarray may alias the caller's array
+            new[conv] = _three_colour_half(new[conv], blocks[conv])
     blocks[..., off:off + 8] = np.where(ch[..., None], new, blocks[..., off:off + 8])
     return blocks.tobytes() + bytes(parent[n:])

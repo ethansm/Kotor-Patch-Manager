@@ -257,6 +257,35 @@ def test_red_tint_decode(root: Path):
 
 
 @test
+def test_edit_on_3colour_parent_lands_on_opaque_pixels(root: Path):
+    raw = bytearray(make_parent(64, 64, "dxt1", 7, seed=3))
+    info = tpc.parse(bytes(raw))
+    off, size = info["offsets"][0], info["sizes"][0]
+    blk = np.frombuffer(bytes(raw[off:off + size]), dtype=np.uint8).reshape(-1, 8).copy()
+    blk[:, 0:4] = (0x00, 0x00, 0xFF, 0xFF)  # c0 <= c1 everywhere: every mip-0 block is 3-colour
+    b = bytes(raw[:off]) + blk.tobytes() + bytes(raw[off + size:])
+
+    def index_map(data):  # (64, 64) DXT1 index per mip-0 pixel
+        d = np.frombuffer(data[off:off + size], dtype=np.uint8).reshape(16, 16, 8).astype(np.int64)
+        word = d[..., 4] | (d[..., 5] << 8) | (d[..., 6] << 16) | (d[..., 7] << 24)
+        return ((word[..., None] >> (2 * np.arange(16))) & 3).reshape(16, 16, 4, 4).swapaxes(1, 2).reshape(64, 64)
+
+    mask = np.zeros((64, 64), dtype=bool)
+    mask[8:24, 16:32] = True  # block aligned
+    before = tpc.decode_mip(b, info, 0)
+    rgb = before[:, :, :3].copy()
+    rgb[mask] = (255, 0, 0)
+    out = tpc.apply_rgb_edit(b, rgb, mask)
+    idx_in, idx_out = index_map(b), index_map(out)
+    check(np.array_equal(idx_out == 3, idx_in == 3), "transparent (index 3) pixels changed")
+    after = tpc.decode_mip(out, tpc.parse(out), 0)
+    px = after[mask & (idx_in != 3)].astype(int)
+    shift = px[:, 0] - (px[:, 1] + px[:, 2]) / 2
+    check(shift.min() > 120, f"opaque masked pixels not red-shifted, min shift {shift.min():.1f}")
+    check(np.array_equal(after[~mask], before[~mask]), "pixels outside the mask changed")
+
+
+@test
 def test_bad_edit_shapes_rejected(root: Path):
     b = make_parent(64, 64, "dxt1", 7)
     ok_mask = np.zeros((64, 64), dtype=bool)
@@ -267,6 +296,34 @@ def test_bad_edit_shapes_rejected(root: Path):
         except ValueError:
             continue
         raise AssertionError("apply_rgb_edit accepted a mis-shaped input")
+
+
+@test
+def test_red_tint_on_three_colour_parent(root: Path):
+    # every mip-0 block 3-colour (c0 == c1 == 0, opaque index 0); checkerboard of fully transparent blocks
+    b = bytearray(make_parent(64, 64, "dxt1", 7, seed=3))
+    off = tpc.parse(bytes(b))["offsets"][0]
+    m0 = np.frombuffer(bytes(b), dtype=np.uint8, count=16 * 16 * 8, offset=off).reshape(16, 16, 8).copy()
+    m0[..., :4] = 0
+    m0[..., 4:] = 0
+    odd = (np.add.outer(np.arange(16), np.arange(16)) % 2) == 1
+    m0[odd, 4:] = 0xFF
+    b[off:off + m0.size] = m0.tobytes()
+    parent = bytes(b)
+    before = tpc.decode_mip(parent, tpc.parse(parent), 0)
+    mask = np.zeros((64, 64), dtype=bool)
+    mask[8:24, 16:32] = True  # block aligned: block rows 2..5, block cols 4..7
+    rgb = before[:, :, :3].copy()
+    rgb[mask] = (255, 0, 0)
+    out = tpc.apply_rgb_edit(parent, rgb, mask)
+    O = np.frombuffer(out, dtype=np.uint8, count=m0.size, offset=off).reshape(16, 16, 8)
+    check(np.all(O[2:6, 4:8][odd[2:6, 4:8]][:, 4:] == 0xFF), "transparent masked blocks lost index 3")
+    after = tpc.decode_mip(out, tpc.parse(out), 0)
+    opaque = mask & ~np.kron(odd, np.ones((4, 4), dtype=bool))
+    inside = after[opaque][:, :3].astype(int)
+    red_shift = inside[:, 0] - (inside[:, 1] + inside[:, 2]) / 2
+    check(red_shift.min() > 120, f"opaque masked pixel not red, min shift {red_shift.min():.1f}")
+    check(np.array_equal(after[~mask], before[~mask]), "pixels outside the mask changed")
 
 
 @test
