@@ -352,6 +352,18 @@ int main() {
         KT_CHECK(pendingDone2(p, 21000, 10, 3, false, &u));
         KT_CHECK(pendingDone2(p, 7000, 10, 3, false, nullptr));    // no tracker: falls back to the old since-based timeout
         KT_CHECK(!pendingDone2(p, 6999, 10, 3, false, nullptr));
+        // tick 0 is the sentinel: arming at now==0 must not time out at once (SH-3b-05 / BG41)
+        u = 0; KT_CHECK(!pendingDone2(p, 0, 10, 3, false, &u));
+        KT_CHECK_EQ(u, 1u);
+        KT_CHECK(!pendingDone2(p, 0, 10, 3, false, &u));          // same tick again: 0 ms elapsed
+        KT_CHECK(!pendingDone2(p, 6000, 10, 3, false, &u));       // tick 0 read as 1: 5999 ms
+        KT_CHECK(pendingDone2(p, 6001, 10, 3, false, &u));        // 6000 ms
+        // wrap: stretch armed just below 0xFFFFFFFF, clock wraps past 0 (unsigned delta)
+        u = 0; KT_CHECK(!pendingDone2(p, 0xFFFFFFF0u, 10, 3, false, &u));
+        KT_CHECK_EQ(u, 0xFFFFFFF0u);
+        KT_CHECK(!pendingDone2(p, 0x00000F00u, 10, 3, false, &u));   // 3856 ms across the wrap
+        KT_CHECK(!pendingDone2(p, 0x0000175Fu, 10, 3, false, &u));   // 5999 ms
+        KT_CHECK(pendingDone2(p, 0x00001760u, 10, 3, false, &u));    // 6000 ms
         KT_CHECK(useAllowed(false) == UseRefusal::None);
         KT_CHECK(useAllowed(true) == UseRefusal::AlreadyQueued);
         KT_CHECK(std::string(useRefusalText(useAllowed(true))) == "already queued");

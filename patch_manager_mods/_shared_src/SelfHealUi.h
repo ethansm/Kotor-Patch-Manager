@@ -379,8 +379,10 @@ inline bool pendingDone2(const Pending& p, uint32_t now, int hp, int stack, bool
     if (hp > p.preHp || (stack >= 0 && stack < p.preStack) || (stack < 0 && p.preStack > 0)) return true;
     if (queued) { if (unqueuedSince) *unqueuedSince = 0; return false; }
     if (!unqueuedSince) return pendingTimedOut(p, now);
-    if (*unqueuedSince == 0) *unqueuedSince = now ? now : 1u;   // 0 is the "not running" sentinel
-    return (uint32_t)(now - *unqueuedSince) >= kPendingTimeoutMs;
+    // 0 is the "not running" sentinel, so a tick of 0 is read as 1 in both the stored start and the clock below
+    const uint32_t t = now ? now : 1u;
+    if (*unqueuedSince == 0) { *unqueuedSince = t; return false; }   // arming call: a fresh stretch has not timed out yet
+    return (uint32_t)(t - *unqueuedSince) >= kPendingTimeoutMs;
 }
 
 enum class UseRefusal { None, AlreadyQueued };
