@@ -7,6 +7,8 @@ Good set: chitin.key + data/2da.bif holding `spells` (2017) = spells_fixture.2da
 (2002), and a decoy `decoy` (2017). The BIF var table is deliberately out of order (IDs 2,0,1). case.key names the BIF
 "Data\\2DA.BIF" to exercise the lowercase fallback. Broken set (bad/): bad_magic.key, trunc.key, bad_bif_index.key,
 bad_res.key (+ data/bad.bif, data/badmagic.bif) for oversize / out-of-range / missing / bad-magic BIF cases.
+zero_name.key, big_name.key, name_eof.key, short_key.key (byte patches of one good key) and bif_bad.key (+ data/short.bif,
+data/noid.bif) cover the name-size, name-offset, key-length, short-BIF and missing-resource-id guards.
 Layout: see KeyBif.h. Reads everything back and verifies; exit 1 on mismatch.
 """
 import struct
@@ -65,6 +67,22 @@ def build():
     files[bad + "bad_res.key"] = make_key(
         ["data\\bad.bif", "data\\badmagic.bif", "data\\nope.bif"],
         [("big", 2017, 0), ("past", 2017, 1), ("badmagic", 2017, (1 << 20) | 0), ("ghost", 2017, (2 << 20) | 0)])
+    # Byte patches of the good single-BIF key `full`: file table entry 0 starts at 24 (NameOffset +4, NameSize +8).
+    zero_name = bytearray(full)
+    struct.pack_into("<H", zero_name, 24 + 8, 0)           # NameSize 0 -> "bad bif name size"
+    files[bad + "zero_name.key"] = bytes(zero_name)
+    big_name = bytearray(full)
+    struct.pack_into("<H", big_name, 24 + 8, 261)          # NameSize 261 (> 260 cap) -> "bad bif name size"
+    files[bad + "big_name.key"] = bytes(big_name)
+    name_eof = bytearray(full)
+    struct.pack_into("<I", name_eof, 24 + 4, len(full))    # NameOffset == EOF, NameSize > 0 -> "bif name out of range"
+    files[bad + "name_eof.key"] = bytes(name_eof)
+    files[bad + "short_key.key"] = full[:23]               # 23 of the 24 header bytes -> "key too short"
+    # bif 0 is 19 of its 20 header bytes; bif 1 holds only id 5, so resource index 0 is absent -> "resource id not in bif".
+    files[bad + "bif_bad.key"] = make_key(["data\\short.bif", "data\\noid.bif"],
+                                          [("short", 2017, 0), ("absent", 2017, (1 << 20) | 0)])
+    files[bad + "data/short.bif"] = make_bif([(0, 2017, b"x")])[:19]
+    files[bad + "data/noid.bif"] = make_bif([(5, 2017, b"y")])
     return files
 
 

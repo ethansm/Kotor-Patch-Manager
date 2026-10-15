@@ -61,6 +61,13 @@ int main() {
     ExpectFail("resource past EOF", bad + "/bad_res.key", bad, "past", "resource out of range");
     ExpectFail("bad bif magic", bad + "/bad_res.key", bad, "badmagic", "bad bif magic");
     ExpectFail("missing bif", bad + "/bad_res.key", bad, "ghost", "cannot open bif");
+    // One case per defensive branch (KeyBif.h): key header, BIF name size (0 and over 260), name offset, BIF header, resource id.
+    ExpectFail("key too short", bad + "/short_key.key", FX, "spells", "key too short");
+    ExpectFail("bad bif name size (zero)", bad + "/zero_name.key", FX, "spells", "bad bif name size");
+    ExpectFail("bad bif name size (over 260)", bad + "/big_name.key", FX, "spells", "bad bif name size");
+    ExpectFail("bif name out of range", bad + "/name_eof.key", FX, "spells", "bif name out of range");
+    ExpectFail("bif too short", bad + "/bif_bad.key", bad, "short", "bif too short");
+    ExpectFail("resource id not in bif", bad + "/bif_bad.key", bad, "absent", "resource id not in bif");
 
     // Real-data mode.
     const char* dir = getenv("KOTOR2_GAME_DIR");
