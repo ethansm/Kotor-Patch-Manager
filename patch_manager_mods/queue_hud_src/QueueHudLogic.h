@@ -149,9 +149,14 @@ inline bool keepNewAtHandoff(bool cfgOn, bool keepNew, int sentSoFar) { return c
 //   gone and not sawExec     -> RESEND (wiped before it ran, e.g. a combat-start wipe or a paused eat)
 constexpr int kHeldStuckMs = 3000;
 enum HeldHeadAction : uint8_t { HELD_WAIT, HELD_RESEND, HELD_DROP };
-inline HeldHeadAction heldHeadAction(bool held, bool sawExec, bool paused, int unpausedHeldMs) {
+// cancelClick: the player clicked after the edge, a moment ago (Cancel / queue icon): a head that vanished then was cancelled, not wiped (QL10: Cancel needed two clicks because the head was re-sent).
+constexpr uint32_t kCancelClickMs = 600;
+inline bool cancelClickRecent(uint32_t clickTick, uint32_t edgeAt, uint32_t now) {
+    return clickTick != 0 && static_cast<int32_t>(clickTick - edgeAt) > 0 && now - clickTick <= kCancelClickMs;
+}
+inline HeldHeadAction heldHeadAction(bool held, bool sawExec, bool paused, int unpausedHeldMs, bool cancelClick = false) {
     if (held) return (!paused && unpausedHeldMs > kHeldStuckMs) ? HELD_DROP : HELD_WAIT;
-    return sawExec ? HELD_DROP : HELD_RESEND;
+    return (sawExec || cancelClick) ? HELD_DROP : HELD_RESEND;
 }
 
 // Dark teal palette matching custom GUI theme (Session 2)

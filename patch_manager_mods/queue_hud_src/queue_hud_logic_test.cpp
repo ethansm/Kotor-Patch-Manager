@@ -2144,6 +2144,16 @@ void testHeldHeadAction() {
     KT_CHECK(heldHeadAction(false, true, true, 0) == HELD_DROP);
     KT_CHECK(heldHeadAction(false, false, false, 0) == HELD_RESEND);
     KT_CHECK(heldHeadAction(false, false, true, 0) == HELD_RESEND);
+    // QL10: a vanished head right after a player click is a cancel, never re-sent; a still-held head ignores the click
+    KT_CHECK(heldHeadAction(false, false, false, 0, true) == HELD_DROP);
+    KT_CHECK(heldHeadAction(false, false, true, 0, true) == HELD_DROP);
+    KT_CHECK(heldHeadAction(true, false, false, 0, true) == HELD_WAIT);
+    KT_CHECK(cancelClickRecent(1100, 1000, 1102));            // click after the edge, 2 ms ago
+    KT_CHECK(cancelClickRecent(1100, 1000, 1100 + kCancelClickMs));
+    KT_CHECK(!cancelClickRecent(1100, 1000, 1100 + kCancelClickMs + 1));   // too old
+    KT_CHECK(!cancelClickRecent(990, 1000, 1002));            // the click that started combat is before the edge
+    KT_CHECK(!cancelClickRecent(1000, 1000, 1002));           // same tick as the edge: not after it
+    KT_CHECK(!cancelClickRecent(0, 1000, 1002));              // no click yet
     // replay of the two logs: 13:07 cmd 8 gone at +70 ms with no exec evidence; 18:xx cmd 6 / cmd 8 lingered with aa8=1 ab8=1
     KT_CHECK(heldHeadAction(false, false, false, 0) == HELD_RESEND);
     KT_CHECK(heldHeadAction(true, true, false, 400) == HELD_WAIT);

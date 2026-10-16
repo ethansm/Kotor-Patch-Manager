@@ -950,6 +950,7 @@ struct Handoff { bool pending = false; bool headValid = false; bool headHeld = f
 Handoff g_handoff[3];
 // Round-list watch: 15 s after each hand-off dispatch, roundWatchTick logs the member's round / cur / entry state on change only.
 DWORD g_roundWatchUntil[3] = {};
+DWORD g_lastClickTick = 0;   // last left-button press edge (any frame, trace on or off); a head that vanishes right after one was cancelled, not wiped
 struct RoundLast { int subs[qh::kMaxRound]; int n = -1; int cur = -2; int ne = -1; } g_lastRound[3];
 bool g_prevCombat[3] = {false, false, false};
 
@@ -1091,12 +1092,14 @@ void handoffTick(DWORD now, const bool* edge) {
         if (s.nrn + 1 > qh::kMaxRound) continue;   // the engine's round list is full: retry next frame
         if (h.headValid && h.headHeld) {
             const int ms = static_cast<int>(now - h.edgeAt);
-            const qh::HeldHeadAction act = qh::heldHeadAction(engineHoldsAction(s), h.sawExec, s.paused, h.heldUnpausedMs);
+            const bool cancelClick = qh::cancelClickRecent(g_lastClickTick, h.edgeAt, now);
+            const qh::HeldHeadAction act = qh::heldHeadAction(engineHoldsAction(s), h.sawExec, s.paused, h.heldUnpausedMs, cancelClick);
             if (act == qh::HELD_WAIT) continue;
             if (g_logOn && g_cfg.traceQueue) {
                 char line[200];
                 qh::fmtHandoffHeld(line, sizeof line, k, h.head.cmdId, act, ms);
-                QTRACE("%s", line);
+                if (cancelClick && act == qh::HELD_DROP && !h.sawExec) QTRACE("%s why=cancel_click", line);
+                else QTRACE("%s", line);
             }
             h.headHeld = false;
             if (act == qh::HELD_DROP) h.headValid = false;   // the engine really ran it (or it already finished): the buffered commands still go
@@ -1609,6 +1612,7 @@ void KPATCH_CALL onFrameBegin(const K2PsContext* ctx, void*) {
     const bool menuKnown = ctx->struct_size >= offsetof(K2PsContext, inMenu) + sizeof(int32_t);
     const bool inMenu = menuKnown && (ctx->inMenu != 0);
     const bool ledge = guikit::clickEdge(g_lmb);   // polled every frame so a held press never fires on reopen
+    if (ledge) g_lastClickTick = GetTickCount();
     if (ledge && g_logOn && g_cfg.traceQueue && g_cfg.traceClicks) {
         int tx = 0, ty = 0;
         const bool xy = guikit::cursorEngine(&tx, &ty);
