@@ -854,3 +854,13 @@ than intermittently, that would be the trigger to escalate.
 - Workaround (hot, file only): `shield_nodraw.txt` in the game dir makes Buff HUD skip DrawMenuOverlay (and the HUD shield draw) - line 926/967.
   Fix belongs to the Shield Bar / Buff HUD session: correct the vtable+0x98/+0x9c signatures (check UpdatePortraits 0x74ee90 call sites for
   pushed-arg count / RET n) or read HP via the fields 0x74ee90 uses.
+
+## 2026-10-16: Juhani test dialog, second playthrough, line 3 (corrupt .lip)
+
+- Symptom: `kvjdlg01` (3 NPC lines) played once cleanly; on the second run, line 3 crashed to desktop. Lips moved only on line 1 (valid lip); line 2 had no lip, line 3 had a deliberately corrupt `kvjv0003.lip`.
+- Log evidence (`~/steam-208580.log`, via `crash_triage.py` + targeted rg): `Unhandled exception: page fault on read access to 0x00000000`, EIP `0x0091CF5B` (CRT string-helper area next to `0x91CFF0`, no Ghidra-DB name), ESI=0, callers `0x944E1A` -> `0x77B333` (no DB rows). The stack holds the ASCII `kvjv0003` (the resref being handled). KPM patcher OK (468 detours). `k1-spawn-probe` log CLEAN.
+- Watcher (`scripts/override_watch.py`): line 3 opens `StreamVoice/kvjv0003.wav` then `override/kvjv0003.lip`, as for lines 1 and 2.
+- Ruled out: wav format (lines 1-3 use the same bytes, only line 3 crashed), KPM patcher failure.
+- Likely cause (not proven): the engine's LIP parser does not validate a corrupt file; a null string/pointer then reaches a CRT string call. First pass survived, second pass crashed (cached or re-parsed object).
+- Open: decode `0x77B333` / `0x944E1A` (rea-recon; brief must include the exe path) and replay line 3 alone with a good lip to prove the corrupt lip is the trigger.
+- Fix: none to the engine. Rule for the bundle/lip writer: never ship a lip that does not validate; the corrupt-lip variant is removed from the rig.
