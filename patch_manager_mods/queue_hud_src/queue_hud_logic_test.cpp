@@ -817,6 +817,14 @@ void testPanelHoldAndSlotRules() {
         KT_CHECK(!reattachReady(false, false, 0, 1000, 4, 1));                   // list full
         KT_CHECK(reattachReady(false, false, 0, 1000, 3, 1));
         KT_CHECK(!reattachReady(false, false, 0, 1000, 0, 0));                   // nothing detached
+        KT_CHECK(keepPathAllowed(true, true, false));              // paused: always
+        KT_CHECK(keepPathAllowed(true, false, true));              // unpaused: only with handoff_keep_unpaused
+        KT_CHECK(!keepPathAllowed(true, false, false));
+        KT_CHECK(!keepPathAllowed(false, true, true));             // handoff_keep_new off wins
+        Config ku;
+        KT_CHECK(ku.handoffKeepUnpaused);
+        KT_CHECK(parseIniLine(ku, "handoff_keep_unpaused=0") && !ku.handoffKeepUnpaused);
+        KT_CHECK(parseIniLine(ku, "handoff_keep_unpaused=1") && ku.handoffKeepUnpaused);
         Config dc;
         KT_CHECK(dc.handoffDetachHeld);
         KT_CHECK(parseIniLine(dc, "handoff_detach_held=0") && !dc.handoffDetachHeld);

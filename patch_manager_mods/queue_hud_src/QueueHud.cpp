@@ -1127,7 +1127,7 @@ void handoffTick(DWORD now, const bool* edge) {
             if (held && !s.paused) { const DWORD d = now - h.lastTick; h.heldUnpausedMs += d < 1000u ? static_cast<int>(d) : 1000; }
             h.lastTick = now;
         }
-        if (g_cfg.handoffDetachHeld && g_cfg.handoffKeepNew && h.headValid && h.headHeld && !h.detachTried && s.paused && s.nrn > 0) {
+        if (g_cfg.handoffDetachHeld && g_cfg.handoffKeepNew && h.headValid && h.headHeld && !h.detachTried && qh::keepPathAllowed(true, s.paused, g_cfg.handoffKeepUnpaused) && s.nrn > 0) {
             h.detachTried = true;   // once per hand-off: the nodes pending at the edge are the player's new click
             detachRound(k, srv, s, now, "held_head");
         }
@@ -1167,8 +1167,8 @@ void handoffTick(DWORD now, const bool* edge) {
             }
         } else {
             // Combat start wipes the engine queue; the first send clears this member's creature so the hand-off is not queued behind the engine's attack entries.
-            // QL10: only while paused (nothing pops the round list then); unpaused keeps the clear-first behaviour.
-            const bool keepNow = g_cfg.handoffKeepNew && s.paused;
+            // QL10: while paused nothing pops the round list; unpaused it is allowed too (handoff_keep_unpaused) and a node the engine already popped is simply not there to order.
+            const bool keepNow = qh::keepPathAllowed(g_cfg.handoffKeepNew, s.paused, g_cfg.handoffKeepUnpaused);
             if (qh::keepNewAtHandoff(g_cfg.handoffClearFirst, keepNow, h.sent)) {
                 if (s.nrn > 0) {
                     RoundOrder& ro = g_roundOrder[k];
