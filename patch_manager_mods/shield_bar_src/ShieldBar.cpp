@@ -180,7 +180,7 @@ const float SeamTint[3] = { 0.0f, 0.16f, 0.14f };           // dark-teal groove 
 const char* const ShieldBarTexture = "uibit_bar_sh_p";     // curved outer-left, outline-free right edge (scripts/gen_shield_bar_art.py)
 const char* const CornerTexture = "uibit_bar_sc_p";          // wedge that fills the card-frame corner notch (drawn on the health rect)
 #define HEX(r, g, b) { r / 255.0f, g / 255.0f, b / 255.0f }
-struct Pool { int eff; int remaining; int max; const float* rgb; };
+struct Pool { int eff; int remaining; int max; const float* rgb; int flags; float secsLeft; };   // secsLeft < 0 = unknown / permanent
 struct MaxRec { int creature, eff, max, stamp, lastLogged, spell, last; };
 MaxRec g_max[64];
 int g_maxStamp = 0;
@@ -197,6 +197,8 @@ int collectPools(int creature, Pool* out, int maxOut) {
     int arr = 0, count = 0;
     if (!k2fx::effectListNonEmpty(creature, &arr, &count)) return 0;
     ++g_maxStamp;
+    int day = 0, ms = 0;
+    const bool haveTime = k2fx::currentTime(&day, &ms);
     k2fx::PoolRaw raw[16];
     int nRaw = k2fx::scanShieldPools(creature, raw, maxOut < 16 ? maxOut : 16);
     int n = 0;
@@ -210,7 +212,15 @@ int collectPools(int creature, Pool* out, int maxOut) {
             if (m->spell != spell || remaining > m->last) m->max = remaining;   // value or another spell = a NEW shield
             m->spell = spell; m->last = remaining; m->stamp = g_maxStamp; mx = m->max;
         }
-        out[n++] = { eff, remaining, mx, shieldColor(vfx, flags) };
+        float secs = -1.0f;                                    // time left (tooltip): duration x remaining ratio; < 0 when no duration / no world time
+        {
+            const K2AddrTable* T = k2addr::get(); float dur = 0.0f; unsigned short sub = 0;
+            // temporary only ((sub & 7) == 1, as EnemyStrip / CharEffectsPanel): a permanent or stale-expiry pool must not show "0s"
+            if (haveTime && T && T->Effect_Duration && T->Effect_ExpiryDay && T->Effect_ExpiryTime && T->Effect_Subtype &&
+                readAt(eff, T->Effect_Subtype, &sub) && (sub & 7) == 1 && readAt(eff, T->Effect_Duration, &dur) && dur > 0.0f)
+                secs = dur * k2fx::effectRatio(static_cast<uintptr_t>(eff), day, ms, true);
+        }
+        out[n++] = { eff, remaining, mx, shieldColor(vfx, flags), flags, secs };
         if (m && m->lastLogged != remaining) {
             m->lastLogged = remaining;
             probeLog("POOL c=%08x e=%08x spell=%d vfx=%d flags=%d remaining=%d max=%d", creature, eff, spell, vfx, flags, remaining, mx);
@@ -220,7 +230,7 @@ int collectPools(int creature, Pool* out, int maxOut) {
 }
 
 
-// "Shield: 32/40" (several pools: "Shield: 32/40 + 10/25") for the portrait hover tooltip; returns the pool count, out = "" when none
+// "Shield: 32/40 Energy 45s" (several pools: "Shield: 32/40 Energy 45s + 10/25 Enviro") for the portrait hover tooltip; returns the pool count, out = "" when none
 int describePools(int creature, char* out, int cap) {
     if (cap <= 0) return 0;
     out[0] = 0;
@@ -228,8 +238,10 @@ int describePools(int creature, char* out, int cap) {
     int n = collectPools(creature, pools, 8);
     if (n <= 0) return 0;
     int len = snprintf(out, cap, "Shield: ");
-    for (int i = 0; i < n && len > 0 && len < cap; ++i)
-        len = sb::appendf(out, cap, len, "%s%d/%d", i ? " + " : "", pools[i].remaining, pools[i].max);
+    for (int i = 0; i < n && len > 0 && len < cap; ++i) {
+        if (i) len = sb::appendf(out, cap, len, " + ");
+        len = sb::appendPoolText(out, cap, len, pools[i].remaining, pools[i].max, pools[i].flags, pools[i].secsLeft);
+    }
     return n;
 }
 

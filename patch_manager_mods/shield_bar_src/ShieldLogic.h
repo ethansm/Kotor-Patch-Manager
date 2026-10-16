@@ -82,4 +82,23 @@ inline int companionDy(int leaderBottom, int compY, int compH) {
 // Bounded printf-append: the shared strfmt::appendf (StrFmt.h), re-exported so sb::appendf call sites and tests are unchanged.
 using strfmt::appendf;
 
+// ---------------------------------------------------------------- hover tooltip (C094)
+// Shield kind from the pool's damage-coverage mask (ints[0], DAMAGE_TYPE_* bits), the generator's rule (scripts/gen_shield_table.py):
+// ion/sonic coverage = "Enviro" (so Sith/Arkanian/Verpine energy shields, which also cover ion+sonic, read "Enviro"; the bar colour
+// can differ because shieldColor tries the vfx row first), physical-only coverage (bits 1|2|4, no blaster 4096) = "Melee", else "Energy".
+inline const char* shieldKind(int damageFlags) {
+    if (damageFlags & (2048 | 1024)) return "Enviro";
+    if ((damageFlags & 7) && !(damageFlags & 4096)) return "Melee";
+    return "Energy";
+}
+// Append one pool as "32/40 Energy 1m05s" (time omitted when secsLeft < 0 = unknown / permanent). Returns the new length.
+inline int appendPoolText(char* out, int cap, int len, int remaining, int max, int damageFlags, float secsLeft) {
+    len = appendf(out, cap, len, "%d/%d %s", remaining, max, shieldKind(damageFlags));
+    if (secsLeft >= 0.0f) {
+        int s = int(secsLeft + 0.5f);
+        len = s >= 60 ? appendf(out, cap, len, " %dm%02ds", s / 60, s % 60) : appendf(out, cap, len, " %ds", s);
+    }
+    return len;
+}
+
 }  // namespace sb

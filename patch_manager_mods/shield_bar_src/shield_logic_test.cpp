@@ -95,6 +95,36 @@ void testMenuBars() {
     KT_CHECK(gapComp - gapLead > -1.0f && gapComp - gapLead < 1.0f);
 }
 
+// Hover tooltip (C094): shieldKind from the damage-coverage mask (DAMAGE_TYPE bits: phys 1|2|4, sonic 1024, ion 2048, blaster 4096)
+// and appendPoolText ("32/40 Energy 1m05s"; time omitted when secsLeft < 0; rounds to the nearest second; truncates safely).
+void testPoolText() {
+    KT_CHECK_EQ(sb::shieldKind(7), "Melee");        // physical only
+    KT_CHECK_EQ(sb::shieldKind(4103), "Energy");    // physical + blaster (Mandalorian power)
+    KT_CHECK_EQ(sb::shieldKind(4224), "Energy");    // plain energy
+    KT_CHECK_EQ(sb::shieldKind(5248), "Enviro");    // Sith energy shield covers ion+sonic: generator rule labels it Enviro
+    KT_CHECK_EQ(sb::shieldKind(7520), "Enviro");    // droid environment shield
+    KT_CHECK_EQ(sb::shieldKind(0), "Energy");       // no mask: default
+    struct Row { float secs; const char* want; };
+    const Row rows[] = {
+        {-1.0f, "32/40 Energy"},        // unknown / permanent: no time
+        {0.0f, "32/40 Energy 0s"},
+        {44.6f, "32/40 Energy 45s"},    // rounds to nearest
+        {59.5f, "32/40 Energy 1m00s"},  // rounds up across the minute boundary
+        {65.0f, "32/40 Energy 1m05s"},
+    };
+    for (const Row& r : rows) {
+        char b[64]; b[0] = 0;
+        int len = sb::appendPoolText(b, (int)sizeof b, 0, 32, 40, 4224, r.secs);
+        KT_CHECK_EQ(b, r.want);
+        KT_CHECK_EQ(len, (int)strlen(r.want));
+    }
+    Guarded g(12); char* b = g.buf(); b[0] = 0;       // "10/25 Energy 45s" does not fit in 12: clamped, NUL-terminated, canary intact
+    int len = sb::appendPoolText(b, 12, 0, 10, 25, 4224, 45.0f);
+    KT_CHECK_EQ(len, 11);
+    KT_CHECK_EQ((int)strlen(b), 11);
+    KT_CHECK(g.canaryIntact());
+}
+
 // Companion cards aligned to the leader card bottom (user 10-04 option b). Leader vit rect (2395,1269,100,202), leader card bottom
 // 1463 (GUI check), companion cards 96x96 at y 1365 (bottom 1461).
 void testCompanionDy() {
@@ -223,6 +253,7 @@ int main() {
     testTableGates();
     testMenuBars();
     testCompanionDy();
+    testPoolText();
 
     return kt::Report("shield_logic");
 }
