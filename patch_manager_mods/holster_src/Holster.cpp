@@ -50,7 +50,7 @@ static uint32_t g_placeGobvt = 0;       // place_gobvt: required Gob vtable (0 =
 static volatile LONG g_lines = 0;
 static volatile LONG g_gobCalls = 0;
 static volatile LONG g_placeCalls = 0;   // PLACE lines: first 24 placements, then every gob_every-th
-static volatile LONG g_idleAnim = 0;   // id 0x2710 resolves every frame; cap its lines so combat/attach/gob lines keep the budget
+static volatile LONG g_animPerId[0x100] = {};   // ANIMRES lines per id 0x27xx: ids resolve every frame (run 2: 0x2711 x3976, 0x2718 x1900), cap each at 20
 
 // saferead site tags (failure ring only).
 static const unsigned kSiteComb = 0xE70010u, kSiteAttach = 0xE70020u, kSiteSwap = 0xE70030u, kSiteAnim = 0xE70040u, kSiteGob = 0xE70050u, kSitePlace = 0xE70060u;
@@ -255,7 +255,7 @@ static bool animInteresting(uint32_t id) { return (id & 0xFFFFu) >= 0x2710u && (
 
 extern "C" void __cdecl HolsterAnimResolve(void* self, uint32_t animId) {
     if (!g_onAnim || !animInteresting(animId)) return;
-    if ((animId & 0xFFFFu) == 0x2710u && InterlockedIncrement(&g_idleAnim) > 20) return;
+    if (InterlockedIncrement(&g_animPerId[(animId & 0xFFFFu) - 0x2700u]) > 20) return;
     saferead::beginScope();
     if (!KP_ENABLED(chAnim, KPLOG_INFO) || !takeLine()) return;
     const uintptr_t s = reinterpret_cast<uintptr_t>(self);

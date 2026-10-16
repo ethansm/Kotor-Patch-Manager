@@ -22,7 +22,7 @@ LOADED = ("holster 0.1.0-dev loaded (P0 probe, log-only): probe=0 channels=comb,
           "max_lines=60000 gob_every=50 table=ok")
 BONE = "BONETEST patched rhand -> p_rhand"
 CAP = "cap reached max_lines=60000: further lines dropped"
-STATUS = "status: loaded=yes 0.1.0-dev | cap reached=yes max_lines=60000 | BONETEST=patched x1"
+STATUS = "status: loaded=yes 0.1.0-dev | cap reached=yes max_lines=60000 | BONETEST=patched x1 | TID gobupdate=absent place=absent | RELOAD 0"
 
 
 def stamped(body, n=0):
@@ -221,7 +221,7 @@ class ReportTests(unittest.TestCase):
 
     def test_status_when_absent(self):
         rc, out = run_log(["hud built panel=1"])
-        self.assertEqual(out[1], "status: loaded=no | cap reached=no | BONETEST=absent")
+        self.assertEqual(out[1], "status: loaded=no | cap reached=no | BONETEST=absent | TID gobupdate=absent place=absent | RELOAD 0")
 
     def test_comb_edges_per_creature(self):
         self.assertIn("COMB edges=5 creatures=2", self.out)
@@ -404,6 +404,22 @@ class RouteTests(unittest.TestCase):
         self.assertIn("HOLSTER lines=2 parsed=2", p.stdout)
         self.assertIn("SWAP total=1", p.stdout)
 
+
+
+class MainFactTests(unittest.TestCase):
+    def _status(self, lines):
+        _, _, main = H.parse_lines(list(enumerate(lines, 1)))
+        return H._status(main)
+
+    def test_tid_same_thread_and_reload_reported(self):
+        st = self._status(["[holster] TID gobupdate=324", "[holster] TID place=324",
+                           "[holster] RELOAD place=1 rot=(180.0,0.0,0.0) off=(0.200,0.000,0.000)"])
+        self.assertIn("TID gobupdate=324 place=324 (same thread)", st)
+        self.assertIn("RELOAD 1 last: place=1 rot=(180.0,0.0,0.0)", st)
+
+    def test_tid_different_threads_flagged(self):
+        st = self._status(["TID gobupdate=1", "TID place=2"])
+        self.assertIn("(DIFFERENT threads)", st)
 
 if __name__ == "__main__":
     unittest.main()

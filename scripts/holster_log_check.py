@@ -65,6 +65,8 @@ MAIN_RES = {
     "loaded": re.compile(r"\bholster (\S+) loaded\b"),
     "cap": re.compile(r"\bcap reached max_lines=(\d+)"),
     "bonetest": re.compile(r"\bBONETEST (patched|refused)\b"),
+    "tid": re.compile(r"\bTID (gobupdate|place)=(\d+)"),
+    "reload": re.compile(r"\bRELOAD (place=\d .*)$"),
 }
 
 
@@ -97,7 +99,7 @@ def _record(kind, n, m):
 def parse_lines(window):
     """window: [(line_no, raw)] -> (records in log order, skipped [(line_no, kind, text)], main facts)."""
     recs, skipped = [], []
-    main = {"loaded": [], "cap": [], "bonetest": Counter(), "unreadable": 0}
+    main = {"loaded": [], "cap": [], "bonetest": Counter(), "unreadable": 0, "tid": {}, "reload": []}
     for n, raw in window:
         text = raw.strip()
         m = MAIN_RES["loaded"].search(text)
@@ -109,6 +111,12 @@ def parse_lines(window):
         m = MAIN_RES["bonetest"].search(text)
         if m:
             main["bonetest"][m.group(1)] += 1
+        m = MAIN_RES["tid"].search(text)
+        if m:
+            main["tid"].setdefault(m.group(1), m.group(2))
+        m = MAIN_RES["reload"].search(text)
+        if m:
+            main["reload"].append(m.group(1))
         k = KIND_RE.search(text)
         if k is None:
             continue
@@ -131,7 +139,13 @@ def _status(f):
         loaded = "no"
     cap = ("yes max_lines=%s" % f["cap"][-1]) if f["cap"] else "no"
     bone = ", ".join("%s x%d" % kv for kv in f["bonetest"].most_common()) or "absent"
-    return "status: loaded=%s | cap reached=%s | BONETEST=%s" % (loaded, cap, bone)
+    tid = f.get("tid", {})
+    tids = "gobupdate=%s place=%s" % (tid.get("gobupdate", "absent"), tid.get("place", "absent"))
+    if "gobupdate" in tid and "place" in tid:
+        tids += " (same thread)" if tid["gobupdate"] == tid["place"] else " (DIFFERENT threads)"
+    rl = f.get("reload", [])
+    reload = ("%d last: %s" % (len(rl), rl[-1][:70])) if rl else "0"
+    return "status: loaded=%s | cap reached=%s | BONETEST=%s | TID %s | RELOAD %s" % (loaded, cap, bone, tids, reload)
 
 
 def _comb(recs):
