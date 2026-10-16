@@ -1,0 +1,2 @@
+# Default for every holster-editor test: shared headers on the include path, warnings are errors.
+cxxflags = ["-I../_shared_src", "-Werror"]
