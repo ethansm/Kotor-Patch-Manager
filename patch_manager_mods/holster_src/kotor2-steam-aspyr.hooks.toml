@@ -109,3 +109,46 @@ type = "pointer"
 [[hooks.parameters]]
 source = "[ebp-0x44]"
 type = "pointer"
+
+# H8/H9 (0.1.1-dev, r6 recon .claude/research/holster_edit/r6*.md): hand sites inside FUN_007637E0, right 0x00763B49 and left 0x00763E7B.
+# Stolen: MOV EAX,[EDX+0x7C] / CALL EAX (8B 42 7C FF D0, 5 bytes, indirect call so no rel32 to fix), resume +5. The handlers run BEFORE the stolen bytes
+# and only record. At the site: ECX = body anim object, weapon Gob = [EBP-0x2C], item = [EBP-0x40] (R) / [EBP-0x30] (L), W = [item+0x14].
+[[hooks]]
+address = 0x00763B49
+type = "detour"
+function = "OnHandAttachR"
+original_bytes = [0x8B, 0x42, 0x7C, 0xFF, 0xD0]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-0x2c]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[ebp-0x40]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks]]
+address = 0x00763E7B
+type = "detour"
+function = "OnHandAttachL"
+original_bytes = [0x8B, 0x42, 0x7C, 0xFF, 0xD0]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-0x2c]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[ebp-0x30]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"

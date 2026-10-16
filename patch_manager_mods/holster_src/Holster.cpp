@@ -1,4 +1,4 @@
-// Holster.cpp -- holster 0.1.0-dev (Steam build): P0 LOG-ONLY probe for the holstered-weapons mod (patch_manager_mods/42_holstered_weapons.md).
+// Holster.cpp -- holster 0.1.1-dev (Steam build): P0 LOG-ONLY probe for the holstered-weapons mod (patch_manager_mods/42_holstered_weapons.md).
 // Plan: .claude/plans/holstered_weapons.md. Handlers are plain extern "C" void __cdecl functions; the detour wrappers in
 // kotor2-steam-aspyr.hooks.toml call them at function entry with the game arguments BEFORE the stolen bytes run.
 // Hard rules for P0 (exceptions, both default off: the bone_test code patch, and HolsterPlace's 28-byte pose write with probe=1 bone_test=1 place=1): no other writes to game memory or registers, no engine calls, reads only through saferead, and every handler returns at
@@ -23,6 +23,7 @@
 #include "HolsterLogic.h"
 #include "HolsterBonePatch.h"
 #include "HolsterQuat.h"
+#include "HolsterHand.h"
 #include "HolsterTune.h"
 #include "HolsterPreview.h"
 #include "HolsterApi.h"
@@ -433,6 +434,49 @@ static void gobModelName(uintptr_t gob, char* out, int cap) {
     if (model) readTag(kSitePlace, reinterpret_cast<const char*>(model + 0x08), out, cap);
 }
 
+// ---- hand record (0.1.1-dev, r6 recon): FUN_007637E0 attaches the weapon Gob to the creature's rhand (0x763B49) or lhand (0x763E7B) node. ----
+// Both hand detours run BEFORE the stolen `MOV EAX,[EDX+0x7C] / CALL EAX` (vtbl+0x7C is a no-op on the verified classes), so they only record:
+// gob -> hand into a 16-entry ring (HolsterHand.h) and log HANDATTACH. HolsterPlace then reports HANDMAP once per placed gob found in the ring.
+// Behaviour is unchanged (kWorldKnowsHand stays false). Both run on the main thread; the ring is not locked. Own caps: 64 lines each.
+static hs::HandRing g_handRing;
+static hs::SeenSet g_handSeen;
+static volatile LONG g_handAttachLines = 0;
+static const LONG kHandLines = 64;
+
+// ecx = body anim object, gob = [EBP-0x2C], item = [EBP-0x40] (R) / [EBP-0x30] (L); item+0x14 = W.
+static void handAttach(int hand, void* gob, void* item, void* body) {
+    if (!g_onAttach) return;
+    saferead::beginScope();
+    const uintptr_t g = reinterpret_cast<uintptr_t>(gob);
+    (void)hs::handRecord(g_handRing, g, hand);
+    if (!KP_ENABLED(chAttach, KPLOG_INFO)) return;
+    if (InterlockedIncrement(&g_handAttachLines) > kHandLines || !takeLine()) return;
+    char name[17];
+    gobModelName(g, name, sizeof name);
+    const uintptr_t it = reinterpret_cast<uintptr_t>(item), b = reinterpret_cast<uintptr_t>(body);
+    const uint32_t w = it ? rdU32(kSiteAttach, it, 0x14) : 0u;
+    const uint32_t bvt = b ? rdU32(kSiteAttach, b, 0) : 0u;
+    KP_LOG(chAttach, "HANDATTACH hand=%c gob=%x item=%x W=%x name=%s bodyvt=%x", hs::handChar(hand), U(gob), U(item), static_cast<unsigned>(w),
+           name[0] ? name : "-", static_cast<unsigned>(bvt));
+}
+
+// 0x00763B49 right-hand attach site. Args (hooks.toml order): weapon Gob [ebp-0x2c], item [ebp-0x40], body anim object ecx.
+extern "C" void __cdecl OnHandAttachR(void* gob, void* item, void* body) { handAttach(hs::HandR, gob, item, body); }
+// 0x00763E7B left-hand attach site. Args: weapon Gob [ebp-0x2c], item [ebp-0x30], body anim object ecx.
+extern "C" void __cdecl OnHandAttachL(void* gob, void* item, void* body) { handAttach(hs::HandL, gob, item, body); }
+
+// Called first thing in HolsterPlace: logs HANDMAP once per placed gob that the ring knows (dedupe and cap 64 in hs::SeenSet).
+static void handMapLog(uintptr_t g) {
+    if (!g_onAttach || !g) return;
+    const int hand = hs::handLookup(g_handRing, g);
+    if (hand == hs::HandNone || !hs::seenFirst(g_handSeen, g)) return;
+    saferead::beginScope();
+    if (!KP_ENABLED(chAttach, KPLOG_INFO) || !takeLine()) return;
+    char name[17];
+    gobModelName(g, name, sizeof name);
+    KP_LOG(chAttach, "HANDMAP g=%x hand=%c name=%s", static_cast<unsigned>(g), hs::handChar(hand), name[0] ? name : "-");
+}
+
 // HE0 probe (doc 42 HW-EDIT, plan .claude/plans: holster editor). Answers: does the per-frame attach refresh (this hook) run for the
 // equip-screen preview weapons, and which body / thread does it see? The preview attaches weapons to the engine's own "rhand"/"lhand"
 // literal, so its weapon nodes keep those names (in-world weapons under bone_test point at bone_name instead). PREVIEWNODE: one line per
@@ -670,6 +714,7 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
 // pose into gob+0xA4 (vec3) / gob+0xB0 (quat w-first). N = [beh+0x18]. For the target node (g_boneName) it composes the live-tuned placement onto
 // that pose and writes it back. Needs probe=1 AND bone_test=1 AND place=1; ch_place only gates the PLACE/PLACENODE/PLACEREFUSE log lines.
 extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
+    handMapLog(reinterpret_cast<uintptr_t>(gob));
     if (previewPlace(reinterpret_cast<uintptr_t>(gob), reinterpret_cast<uintptr_t>(beh))) return;
     if (!g_probe) return;
     static volatile LONG s_tid = 0;
