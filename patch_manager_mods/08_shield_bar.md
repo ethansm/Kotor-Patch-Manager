@@ -521,3 +521,5 @@ Static research (existing ghidra_dumps, no new Ghidra run). Question: why `sprea
 
 ## Split into portrait-slots + buff-duration-hud 2.0.0 + shield-bar 1.2.0 (2026-10-03)
 The shared portrait hooks moved to the new `portrait-slots` provider patch; this mod is now its own DLL on the `k2.portraitslots` registry interface. Source of truth for state, phases, install rules and the W5 test matrix: `21_portrait_slots_and_split.md` ("RESUME HERE").
+
+- [x] P4 (completed)

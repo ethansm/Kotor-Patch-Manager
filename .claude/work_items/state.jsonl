@@ -96,3 +96,4 @@
 {"ev": "unpark", "reason": "Steps and files now include the two pinned tests", "session": "4c70bd63-4f92-437c-b70b-ad83498d8425", "ts": "2026-10-16T00:02:45Z", "wi": "WI-47"}
 {"ev": "done", "session": "4c70bd63-4f92-437c-b70b-ad83498d8425", "ts": "2026-10-16T00:05:34Z", "wi": "WI-47"}
 {"ev": "park", "reason": "checker PARTIAL: clean", "session": "cb7f57ae-1747-48f4-a261-bab766471797", "ts": "2026-10-16T00:06:49Z", "wi": "WI-08"}
+{"ev": "done", "reason": "manual: C094 landed aae5a0b (independent review fixes applied); C043/C176 already satisfied at e3b6d97; C095/C093 OPEN per Steps", "session": "cb7f57ae-1747-48f4-a261-bab766471797", "ts": "2026-10-16T00:13:04Z", "wi": "WI-08"}
