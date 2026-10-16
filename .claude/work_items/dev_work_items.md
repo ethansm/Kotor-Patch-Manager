@@ -178,3 +178,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 162 | WI-130 | P3 | hold | S | - | Gemini r2 latent hardening: npc-world (loadless area change, readStr, vtable saferead, cli | 0 | 3 | R2-NW-01: Stale seen-tags on loadless area change is real in code, but |
 | [ ] | 163 | WI-131 | P3 | hold | S | - | Gemini r2 latent hardening: queue-hud (cancel/combat-end handoff head, party rotation, cw  | 0 | 1 | R2-QH-01: Cancel click sets g_lastClickTick, so a held head is already |
 | [ ] | 164 | WI-132 | P3 | hold | S | - | Gemini r2 latent hardening: companion-ai (strict gate probe logging, A1Gate party flag) | 0 | 1 | R2-CA-02: Claim holds: strict gate sets newId=Invalid before probe blo |
+| [ ] | 165 | WI-133 | P3 | ready | S | - | Gemini r2 doc fixes: buff-hud doc 02/EffectIcons.h/version labels, doc 34 + README, queue- | 0 | 7 | R2-BH-12: Boundary line is gated on disc, which is item-only; force-po |
