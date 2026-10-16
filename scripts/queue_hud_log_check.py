@@ -28,6 +28,7 @@ these keywords are ignored; a keyword line with a missing or malformed field is 
   HANDOFF_ONE cmd=<n> m=<k> seq=<i>/<n>
   HANDOFF_HELD m=<k> cmd=<n> act=<resend|drop|wait> ms=<n>   (an engine-held active command settled: resend => a HANDOFF_ONE
     for it follows; drop => deliberately not re-sent; no lifecycle)
+  ROUND_DETACH m=<k> n=<n> act=<detach|reattach|discard> ok=<0|1> why=<text>  (handoff_detach_held: new power/attack held out of the round list; no lifecycle)
   ROUND_ROT m=<k> n=<n> moved=<n> ok=<0|1>        (handoff_keep_new: pending round nodes re-ordered, new click last; no lifecycle)
   HANDOFF_KEEP m=<k> cmd=<n> ne=<n> round=<n>    (handoff_keep_new: queue left as is before the first send; no lifecycle)
   HANDOFF_CLEAR m=<k> cmd=<n> ne=<n> round=<n>   (counted as clear x<n> in the HANDOFFS title; no lifecycle)
@@ -104,7 +105,7 @@ FIELD_RE = {
     "active": r"-|\d+", "buffered": r"\d+", "cmds": r"-|\d+(?:,\d+)*", "seq": r"\d+/\d+",
     "sub": r"-?\d+", "since": r"-?\d+", "from": r"-?\d+", "to": r"-?\d+",
     "subs": r"-|\d+(?:,\d+)*", "hexlist": r"-|" + HEXV + r"(?:," + HEXV + r")*", "roundcur": r"-|\d+",
-    "act": r"resend|drop|wait", "ms": r"\d+",
+    "act": r"resend|drop|wait", "detach_act": r"detach|reattach|discard", "ms": r"\d+",
     "firstExecMs": r"-|\d+", "endMs": r"-?\d+", "t": r"\d+", "x": r"-|-?\d+", "y": r"-|-?\d+",
     "cr520": r"(?:[0-9a-fA-F]{8}|\?)(?:,(?:[0-9a-fA-F]{8}|\?))*", "t550": r"\?|[0-9a-fA-F]{8}",
     "t564": r"\?|[0-9a-fA-F]{8}", "t568": r"\?|[0-9a-fA-F]{8}",
@@ -116,7 +117,7 @@ FIELD_RE = {
 OVERRIDE = {("EDGE", "buf"): "buflist", ("VANISH", "kind"): "vanish_kind",
             ("ROUND", "types"): "hexlist", ("ROUND", "cur"): "roundcur",
             ("SPELL_ARGS", "tgt"): "spell_tgt",
-            ("BANNER", "act"): "banner_act"}
+            ("BANNER", "act"): "banner_act", ("ROUND_DETACH", "act"): "detach_act"}
 REQUIRED = {
     "CMD": ("m", "cr", "kind", "id", "tgt", "dec", "fb", "engq", "buf", "paused", "combat"),
     "WAIT": ("cmd", "m", "why", "buf", "engNe", "age"),
@@ -133,6 +134,7 @@ REQUIRED = {
     "HANDOFF_CLEAR": ("m", "cmd", "ne", "round"),
     "HANDOFF_KEEP": ("m", "cmd", "ne", "round"),
     "ROUND_ROT": ("m", "n", "moved", "ok"),
+    "ROUND_DETACH": ("m", "n", "act", "ok", "why"),
     "ROUND": ("m", "n", "subs", "cur", "ne", "types"),
     "HANDOFF_OUT": ("m", "cmd", "exec", "firstExecMs", "endMs"),
     "CLICK": ("t", "x", "y"),

@@ -200,6 +200,7 @@ struct Config {
     bool showInCombat = true;     // show_in_combat: keep the queue strip drawn during combat (default on)
     bool handoffClearFirst = true;  // handoff_clear_first: clear the engine queue before the first handoff send (default on)
     bool handoffKeepNew = true;     // handoff_keep_new: do NOT clear the engine queue at the hand-off (keeps the new click; 0 = clear-first behaviour)
+    bool handoffDetachHeld = true;  // handoff_detach_held: while an engine-held command waits, take the player's new round nodes out of the list and put them back after the hand-off (new power/attack runs LAST)
     bool handoffResendHeld = true;  // handoff_resend_held: re-send an engine-held active command the engine wipes at combat start (default on)
     bool spellReplayPos = true;     // spell_replay_pos: replay a buffered spell with a NULL position when the engine's original was NULL (0 = always pass the zero-filled copy)
     bool hideBannerSoft = true;     // hide_banner_soft: hide the top combat banner while combat is "soft" (only own-party targets, no hostile)
@@ -488,6 +489,7 @@ inline bool parseIniLine(Config& c, const char* line) {
     if (detail::keyEq(kb, ke, "show_in_combat")) return detail::parseBool(vb, ve, &c.showInCombat);
     if (detail::keyEq(kb, ke, "handoff_clear_first")) return detail::parseBool(vb, ve, &c.handoffClearFirst);
     if (detail::keyEq(kb, ke, "handoff_keep_new")) return detail::parseBool(vb, ve, &c.handoffKeepNew);
+    if (detail::keyEq(kb, ke, "handoff_detach_held")) return detail::parseBool(vb, ve, &c.handoffDetachHeld);
     if (detail::keyEq(kb, ke, "handoff_resend_held")) return detail::parseBool(vb, ve, &c.handoffResendHeld);
     if (detail::keyEq(kb, ke, "spell_replay_pos")) return detail::parseBool(vb, ve, &c.spellReplayPos);
     if (detail::keyEq(kb, ke, "hide_banner_soft")) return detail::parseBool(vb, ve, &c.hideBannerSoft);
@@ -1106,6 +1108,26 @@ inline int fmtRoundRot(char* out, int cap, int m, int n, int moved, bool ok) {
     w.s(" n="); w.i(n);
     w.s(" moved="); w.i(moved);
     w.s(" ok="); w.i(ok ? 1 : 0);
+    return w.done();
+}
+
+// QL10 detach: the player's new round nodes (power / attack) are taken out of the round list while an engine-held command and the buffered
+// commands run, and appended again when the hand-off is over. Ready = nothing of ours pending anywhere:
+//   no hand-off or buffer, no item/spell in the engine queue, no item/spell round node, the last send is >= kReattachQuietMs old
+//   (the server needs a frame to create the node after a send) and the list has room (cap kMaxRound).
+constexpr int kReattachQuietMs = 300;
+inline bool reattachReady(bool handoffBusy, bool midFlight, int oursPendingNodes, int sinceSendMs, int nrn, int nDetached) {
+    return nDetached > 0 && !handoffBusy && !midFlight && oursPendingNodes == 0 && sinceSendMs >= kReattachQuietMs && nrn + nDetached <= kMaxRound;
+}
+
+// ROUND_DETACH m=<k> n=<n> act=<detach|reattach|discard> ok=<0|1> why=<text>
+inline int fmtRoundDetach(char* out, int cap, int m, int n, const char* act, bool ok, const char* why) {
+    detail::LogWr w(out, cap);
+    w.s("ROUND_DETACH m="); w.mm(m);
+    w.s(" n="); w.i(n);
+    w.s(" act="); w.s(act);
+    w.s(" ok="); w.i(ok ? 1 : 0);
+    w.s(" why="); w.s(why);
     return w.done();
 }
 

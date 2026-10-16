@@ -945,13 +945,17 @@ DWORD g_identLastTick[3] = {0, 0, 0};
 // ---- Combat hand-off: at combat start the queued commands (active + buffered) go to the engine in click order, one per frame ----
 // headHeld: the head was still held by the engine at the edge; it waits there until the engine releases it (qh::heldHeadAction).
 // sawExec latches exec evidence (execEvidence) from the edge on; heldUnpausedMs / lastTick time a head that stays held.
-struct Handoff { bool pending = false; bool headValid = false; bool headHeld = false; bool sawExec = false; DWORD edgeAt = 0; DWORD lastTick = 0;
+struct Handoff { bool detachTried = false; bool pending = false; bool headValid = false; bool headHeld = false; bool sawExec = false; DWORD edgeAt = 0; DWORD lastTick = 0;
                  int heldUnpausedMs = 0; qh::QueuedAction head; int total = 0; int sent = 0; };
 Handoff g_handoff[3];
 // QL10 (handoff_keep_new): round nodes already pending at the first send (the player's new click); roundOrderTick keeps them behind our re-sent commands.
 struct RoundOrder { uint32_t foreign[qh::kMaxRound] = {}; int n = 0; DWORD armedAt = 0; };
 RoundOrder g_roundOrder[3];
 constexpr DWORD kRoundOrderMaxMs = 600000;   // safety net; normally disarmed as soon as no foreign node is pending
+// QL10 detach (handoff_detach_held): round nodes held OUT of the engine's list (data pointers only; the nodes stay alive, nobody frees them).
+struct Detached { uint32_t ptr[qh::kMaxRound] = {}; int n = 0; DWORD at = 0; };
+Detached g_detached[3];
+constexpr DWORD kDetachMaxMs = 600000;
 // Round-list watch: 15 s after each hand-off dispatch, roundWatchTick logs the member's round / cur / entry state on change only.
 DWORD g_roundWatchUntil[3] = {};
 DWORD g_lastClickTick = 0;   // last left-button press edge (any frame, trace on or off); a head that vanishes right after one was cancelled, not wiped
@@ -1032,6 +1036,8 @@ void endHandoff(int k, qh::DropWhy why) {
     h = Handoff{};
 }
 
+void detachRound(int k, uintptr_t srv, const Snapshot& s, DWORD now, const char* why);   // QL10 detach, defined after the hand-off code
+void discardDetached(int k, const char* why);
 // Every frame in combat (readable HUD). The edge frame moves a member's buffer into g_handoff; then each pending member sends one command per frame.
 void handoffTick(DWORD now, const bool* edge) {
     party::Fail why = party::F_None;
@@ -1093,6 +1099,10 @@ void handoffTick(DWORD now, const bool* edge) {
             if (held && !s.paused) { const DWORD d = now - h.lastTick; h.heldUnpausedMs += d < 1000u ? static_cast<int>(d) : 1000; }
             h.lastTick = now;
         }
+        if (g_cfg.handoffDetachHeld && g_cfg.handoffKeepNew && h.headValid && h.headHeld && !h.detachTried && s.paused && s.nrn > 0) {
+            h.detachTried = true;   // once per hand-off: the nodes pending at the edge are the player's new click
+            detachRound(k, srv, s, now, "held_head");
+        }
         if (s.nrn + 1 > qh::kMaxRound) continue;   // the engine's round list is full: retry next frame
         if (h.headValid && h.headHeld) {
             const int ms = static_cast<int>(now - h.edgeAt);
@@ -1107,6 +1117,7 @@ void handoffTick(DWORD now, const bool* edge) {
             }
             if (cancelClick && act == qh::HELD_DROP && !h.sawExec) {   // the player cancelled: the whole queue goes, buffered commands too (QL10: the stim re-entered combat after a Cancel)
                 endHandoff(k, qh::DR_CANCEL); traceDropAll(k, qh::DR_CANCEL); buf.clear();
+                discardDetached(k, "cancel_click");
                 continue;
             }
             h.headHeld = false;
@@ -1221,6 +1232,86 @@ void roundOrderTick(DWORD now, const bool* edge) {
     }
 }
 
+// Guards shared by the round-list writes: creature not inside RunActions, list object + internal list readable. w = the list object ECX for the thunks.
+bool roundListHandle(uintptr_t srv, uintptr_t round, uint32_t* w) {
+    uint32_t running = 0, internal = 0;
+    return round && saferead::readAt(SiteCancel + 0x33, srv, actq::CrRunning, &running) && running == 0 &&
+           saferead::readAt(SiteCancel + 0x34, round, actq::RdList, w) && *w &&
+           saferead::readAt(SiteCancel + 0x35, *w, 0, &internal) && internal;
+}
+
+void traceDetach(int k, int n, const char* act, bool ok, const char* why) {
+    if (!g_logOn || !g_cfg.traceQueue) return;
+    char line[160];
+    qh::fmtRoundDetach(line, sizeof line, k, n, act, ok, why);
+    QTRACE("%s", line);
+}
+
+// Take every pending round node of member k out of the list (identity-checked against the snapshot; put back untouched on any mismatch).
+void detachRound(int k, uintptr_t srv, const Snapshot& s, DWORD now, const char* why) {
+    Detached& d = g_detached[k];
+    uint32_t w = 0;
+    if (d.n != 0 || s.nrn <= 0 || !roundListHandle(srv, s.round, &w)) { traceDetach(k, s.nrn, "detach", false, "guard"); return; }
+    auto pop = reinterpret_cast<uint32_t(__thiscall*)(uintptr_t)>(gameaddr::ActListRemoveHead);
+    auto push = reinterpret_cast<void(__thiscall*)(uintptr_t, uint32_t)>(gameaddr::ActListAddTail);
+    uint32_t got[qh::kMaxRound];
+    int popped = 0;
+    for (; popped < s.nrn; ++popped) { got[popped] = pop(w); if (got[popped] == 0) break; }
+    bool ok = popped == s.nrn;
+    for (int i = 0; i < s.nrn && ok; ++i) ok = got[i] == s.rn[i].ptr;
+    if (ok) { for (int i = 0; i < s.nrn; ++i) d.ptr[i] = got[i]; d.n = s.nrn; d.at = now; }
+    else for (int i = 0; i < popped; ++i) if (got[i]) push(w, got[i]);   // put it back exactly as it was
+    traceDetach(k, s.nrn, "detach", ok, why);
+}
+
+// Forget the detached nodes without re-adding them (the player cancelled, combat ended or restarted). The ~0x88 byte nodes are leaked on purpose: the free path is unverified.
+void discardDetached(int k, const char* why) {
+    Detached& d = g_detached[k];
+    if (d.n == 0) return;
+    traceDetach(k, d.n, "discard", true, why);
+    d = Detached();
+}
+
+// Per combat frame: put the detached nodes back once nothing of ours is pending; drop them when the player cancelled the whole queue.
+void detachTick(DWORD now) {
+    party::Fail why = party::F_None;
+    const uintptr_t tbl = party::table(&why);
+    if (!tbl) return;
+    for (int k = 0; k < 3; ++k) {
+        Detached& d = g_detached[k];
+        if (d.n == 0) continue;
+        if (static_cast<int>(now - d.at) > static_cast<int>(kDetachMaxMs)) { discardDetached(k, "timeout"); continue; }
+        const uintptr_t cli = party::member(tbl, k);
+        const uintptr_t srv = cli ? party::serverCreature(cli) : 0;
+        Snapshot s;
+        if (!srv || !gatherFor(srv, s)) continue;
+        bool midFlight = false;
+        for (int i = 0; i < s.engineNe && i < qh::kMaxEntries; ++i)
+            if (s.e[i].type == qh::T_USE_ITEM || s.e[i].type == qh::T_CAST_SPELL) midFlight = true;
+        int oursNodes = 0;
+        for (int i = 0; i < s.nrn; ++i) if (s.rn[i].subType == 9 || s.rn[i].subType == 10) ++oursNodes;
+        const bool busy = g_handoff[k].pending || bufBusy(g_itemQueue[k]);
+        // A click right before the engine went completely quiet = the player's Cancel: the detached power goes too, and so do the buffered commands.
+        const bool quiet = !midFlight && s.nrn == 0 && s.engineNe == 0;
+        if (quiet && qh::cancelClickRecent(g_lastClickTick, d.at, now)) {
+            discardDetached(k, "cancel_click");
+            endHandoff(k, qh::DR_CANCEL); traceDropAll(k, qh::DR_CANCEL); g_itemQueue[k].clear();
+            continue;
+        }
+        const int sinceSend = g_lastOurs[k].tick ? static_cast<int>(now - g_lastOurs[k].tick) : 100000;
+        if (!qh::reattachReady(busy, midFlight, oursNodes, sinceSend, s.nrn, d.n)) continue;
+        uint32_t w = 0;
+        bool ok = roundListHandle(srv, s.round, &w);
+        if (ok) {
+            auto push = reinterpret_cast<void(__thiscall*)(uintptr_t, uint32_t)>(gameaddr::ActListAddTail);
+            for (int i = 0; i < d.n; ++i) push(w, d.ptr[i]);
+        }
+        traceDetach(k, d.n, "reattach", ok, ok ? "done" : "guard");
+        if (ok) d = Detached();
+        else if (static_cast<int>(now - d.at) > 5000) discardDetached(k, "reattach_guard");   // never wedge on an unwritable list
+    }
+}
+
 // Round-list watch (combat only, 15 s per dispatch): one line per change of the member's round subtypes, cur and entry types. Edge only.
 void roundWatchTick(DWORD now) {
     party::Fail why = party::F_None;
@@ -1321,8 +1412,8 @@ void tickItemQueues(DWORD now, bool inMenu) {
     // unreadable HUD flags: no edge and g_prevCombat is kept (QH-2a-07), so a gap cannot fake a rising edge
     for (int k = 0; k < 3; ++k) edgeFlags[k] = qh::combatEdgeStep(g_prevCombat[k], !g_combatUnreadable, g_combat != 0);
     if (inMenu || g_combat != 0) {
-        if (combatNow) { for (int k = 0; k < 3; ++k) if (edgeFlags[k]) g_roundOrder[k] = RoundOrder();   // a new combat starts clean
-                         combatEdgeTrace(now, edgeFlags); handoffTick(now, edgeFlags); roundOrderTick(now, edgeFlags); roundWatchTick(now); }   // unreadable HUD flags: no hand-off and no drop, the buffers wait
+        if (combatNow) { for (int k = 0; k < 3; ++k) if (edgeFlags[k]) { g_roundOrder[k] = RoundOrder(); discardDetached(k, "new_combat"); }   // a new combat starts clean
+                         combatEdgeTrace(now, edgeFlags); handoffTick(now, edgeFlags); roundOrderTick(now, edgeFlags); detachTick(now); roundWatchTick(now); }   // unreadable HUD flags: no hand-off and no drop, the buffers wait
         return;
     }
     party::Fail why = party::F_None;

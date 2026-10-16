@@ -808,6 +808,22 @@ void testPanelHoldAndSlotRules() {
         const uint32_t f2[2] = {0xA1, 0xA2};                        // two foreign nodes keep their relative order
         const uint32_t p6[4] = {0xA1, 0xA2, 0xB1, 0xB2};
         KT_CHECK(roundPartition(p6, 4, f2, 2, o) == 4 && o[0] == 2 && o[1] == 3 && o[2] == 0 && o[3] == 1);
+        // reattachReady: only when nothing of ours is pending anywhere and the last send is old enough
+        KT_CHECK(reattachReady(false, false, 0, kReattachQuietMs, 0, 1));
+        KT_CHECK(!reattachReady(true, false, 0, 1000, 0, 1));                    // hand-off / buffer busy
+        KT_CHECK(!reattachReady(false, true, 0, 1000, 0, 1));                    // item/spell in the engine queue
+        KT_CHECK(!reattachReady(false, false, 1, 1000, 0, 1));                   // our round node still pending
+        KT_CHECK(!reattachReady(false, false, 0, kReattachQuietMs - 1, 0, 1));   // just sent: the server has no node yet
+        KT_CHECK(!reattachReady(false, false, 0, 1000, 4, 1));                   // list full
+        KT_CHECK(reattachReady(false, false, 0, 1000, 3, 1));
+        KT_CHECK(!reattachReady(false, false, 0, 1000, 0, 0));                   // nothing detached
+        Config dc;
+        KT_CHECK(dc.handoffDetachHeld);
+        KT_CHECK(parseIniLine(dc, "handoff_detach_held=0") && !dc.handoffDetachHeld);
+        KT_CHECK(parseIniLine(dc, "handoff_detach_held=1") && dc.handoffDetachHeld);
+        char dl[120];
+        fmtRoundDetach(dl, sizeof dl, 0, 1, "detach", true, "held_head");
+        KT_CHECK(strcmp(dl, "ROUND_DETACH m=0 n=1 act=detach ok=1 why=held_head") == 0);
         char rr[80];
         fmtRoundRot(rr, sizeof rr, 0, 3, 2, true);
         KT_CHECK(strcmp(rr, "ROUND_ROT m=0 n=3 moved=2 ok=1") == 0);
