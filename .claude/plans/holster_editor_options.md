@@ -123,7 +123,12 @@ HE0, HE1, HE2 and HE6 carry over. Options study: `.claude/research/holster_edit/
   - `kpm_status.py` = SWAP;
   - GO → `--apply`.
 - **D2** (Haiku recon): DONE 10-16 (d2b/d2c/d2d, §2b).
-- **D2e** (Haiku recon, static): the second-layout route V1. Layout open/free behind 0x40EE40, the `panel+0x30` handle type, whether a swapped handle is safe for `InitControl` 0x40F620, and rect scaling. Verdict decides V1 vs V2 before D3a.
+- **D2e** DONE 10-16 (`d2e_second_layout.md`): **V1 CONFIRMED statically.**
+  - InitControl 0x40F620 → 0x418DF0 reads only `panel+0x30`/`+0x34` for the TAG search, EXTENT and ID. TAG match → ctl vt[0x48] (0x418F20, the generic EXTENT/ID loader).
+  - Rects are absolute file units, scaled by screen/800x600. No other panel field is used.
+  - So swapping only `panel+0x30` (and `+0x34`) works.
+  - Open, checked first in D3a with a log-only probe: does a second live open of `hse_view.gui` get data (descriptor-owner check 0x712B60), and what is `DAT_00A1B9F0` at runtime?
+  - Original brief: the second-layout route V1. Layout open/free behind 0x40EE40, the `panel+0x30` handle type, whether a swapped handle is safe for `InitControl` 0x40F620, and rect scaling. Verdict decides V1 vs V2 before D3a.
 - **D1** shared extraction (Sonnet worker, Opus review; equip3d hot-swap, no behaviour change):
   - `_shared_src/EditKit.h`: `Box`, Repeat, slider, dragMode, midClick, fmtValue, from `Equip3dEdit.h` + tests. Also drop the duplicate `Box` in `hud_host_src/HhStrip.h` if that is trivial; otherwise leave it.
   - `_shared_src/Preview3d.h`: Viewer struct + body/weapon/view/drag functions from `EquipCharPreview.cpp` (ranges from d2d).
