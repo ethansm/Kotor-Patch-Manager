@@ -477,6 +477,292 @@ static void testSizeBudget() {
     KT_CHECK(sizeof(TuneCfg) <= 4096);
 }
 
+// ---- boneName and scopeKeys (HE2-T1) ----
+
+// Output arrays for one scopeKeys call: 3 set and 3 unset is the most one scope can need.
+struct ScopeArrays {
+    KV set[3];
+    const char* unset[3];
+    char buf[kScopeTextMax];
+    ScopeOut o;
+    ScopeArrays() : set{}, unset{}, buf{}, o{set, 3, 0, unset, 3, 0, buf, sizeof buf, 0} {}
+};
+
+static const char* setVal(const ScopeOut& o, const char* key) {
+    for (int i = 0; i < o.nSet; ++i)
+        if (tuneEqCi(o.set[i].key, key)) return o.set[i].val;
+    return nullptr;
+}
+
+static bool isUnset(const ScopeOut& o, const char* key) {
+    for (int i = 0; i < o.nUnset; ++i)
+        if (tuneEqCi(o.unset[i], key)) return true;
+    return false;
+}
+
+// Replays the set entries through applyTuneKey into a fresh cfg; false when a key is rejected.
+static bool applySet(TuneCfg& c, const ScopeOut& o) {
+    for (int i = 0; i < o.nSet; ++i)
+        if (!applyTuneKey(c, o.set[i].key, o.set[i].val)) return false;
+    return true;
+}
+
+// Same hasRot / hasOff / bone; the values count only where the flag is set.
+static bool sameLevel(const CatTune& a, const CatTune& b) {
+    if (a.hasRot != b.hasRot || a.hasOff != b.hasOff || a.boneIdx != b.boneIdx) return false;
+    if (a.hasRot && !closeV3(b.rot, a.rot[0], a.rot[1], a.rot[2])) return false;
+    if (a.hasOff && !closeV3(b.off, a.off[0], a.off[1], a.off[2])) return false;
+    return true;
+}
+
+static const float kZero3[3] = {0.f, 0.f, 0.f};   // stands in for a vector the level does not have
+
+static CatTune level(bool hasRot, const float rot[3], bool hasOff, const float off[3], uint8_t bone) {
+    CatTune t;
+    t.hasRot = hasRot;
+    t.hasOff = hasOff;
+    t.boneIdx = bone;
+    for (int i = 0; i < 3; ++i) { t.rot[i] = hasRot ? rot[i] : 0.f; t.off[i] = hasOff ? off[i] : 0.f; }
+    return t;
+}
+
+static void testBoneNameForwards() {
+    const char* want[kBoneCount] = {"torsoUpr_g", "torso_g", "pelvis_g", "rthigh_g", "lthigh_g"};
+    KT_CHECK(boneName(0) == nullptr);
+    KT_CHECK(boneName(6) == nullptr);
+    KT_CHECK(boneName(255) == nullptr);
+    for (uint8_t i = 1; i <= kBoneCount; ++i) {
+        KT_CHECK(boneName(i) == boneNameOf(i));   // forwards: the same static string, no copy
+        KT_CHECK(strcmp(boneName(i), want[i - 1]) == 0);
+    }
+}
+
+static void testScopeModelKeysAndRoundTrip() {
+    // Right hand, all three fields, bone rthigh_g (4).
+    const float rot[3] = {7.f, 8.f, 9.f}, off[3] = {0.9f, 0.8f, 0.7f};
+    TuneCfg c;
+    ModelTune m;
+    tuneCopyName(m.model, "w_Blaster");
+    m.left = false;
+    m.t = level(true, rot, true, off, 4);
+    ScopeArrays a;
+    KT_CHECK(scopeKeys(m, a.o));
+    KT_CHECK(a.o.nSet == 3 && a.o.nUnset == 0);
+    KT_CHECK(strcmp(setVal(a.o, "place_rot_w_Blaster"), "7.0,8.0,9.0") == 0);
+    KT_CHECK(strcmp(setVal(a.o, "place_off_w_Blaster"), "0.900,0.800,0.700") == 0);
+    KT_CHECK(setVal(a.o, "place_bone_w_Blaster") == boneNameOf(4));   // static string
+    TuneCfg fresh;
+    KT_CHECK(applySet(fresh, a.o));
+    const ModelTune* back = findModel(fresh, "w_Blaster", false);
+    KT_CHECK(back && sameLevel(back->t, m.t));
+
+    // Left hand, off only, no bone: rot and bone become unset entries.
+    ModelTune L;
+    tuneCopyName(L.model, "w_Blaster");
+    L.left = true;
+    L.t = level(false, kZero3, true, off, 0);
+    ScopeArrays b;
+    KT_CHECK(scopeKeys(L, b.o));
+    KT_CHECK(b.o.nSet == 1 && b.o.nUnset == 2);
+    KT_CHECK(strcmp(setVal(b.o, "place_off_l_w_Blaster"), "0.900,0.800,0.700") == 0);
+    KT_CHECK(isUnset(b.o, "place_rot_l_w_Blaster") && isUnset(b.o, "place_bone_l_w_Blaster"));
+    TuneCfg fresh2;
+    KT_CHECK(applySet(fresh2, b.o));
+    const ModelTune* backL = findModel(fresh2, "w_Blaster", true);
+    KT_CHECK(backL && sameLevel(backL->t, L.t));
+    KT_CHECK(findModel(fresh2, "w_Blaster", false) == nullptr);   // the left entry never leaks into the right hand
+}
+
+static void testScopeTypeKeysAndRoundTrip() {
+    // Fixture-style right pistol: rot, off and bone pelvis_g (3).
+    TuneCfg c = fixture();
+    ScopeArrays a;
+    KT_CHECK(scopeKeys(CatPistol, false, c.cat[CatPistol], a.o));
+    KT_CHECK(a.o.nSet == 3 && a.o.nUnset == 0);
+    KT_CHECK(strcmp(setVal(a.o, "place_rot_pistol"), "1.0,2.0,3.0") == 0);
+    KT_CHECK(strcmp(setVal(a.o, "place_off_pistol"), "0.400,0.500,0.600") == 0);
+    KT_CHECK(setVal(a.o, "place_bone_pistol") == boneNameOf(3));
+    TuneCfg fresh;
+    KT_CHECK(applySet(fresh, a.o));
+    KT_CHECK(sameLevel(fresh.cat[CatPistol], c.cat[CatPistol]));
+
+    // Left pistol: rot only (catL has no off and no bone), so off and bone are unset.
+    ScopeArrays b;
+    KT_CHECK(scopeKeys(CatPistol, true, c.catL[CatPistol], b.o));
+    KT_CHECK(b.o.nSet == 1 && b.o.nUnset == 2);
+    KT_CHECK(strcmp(setVal(b.o, "place_rot_l_pistol"), "11.0,12.0,13.0") == 0);
+    KT_CHECK(isUnset(b.o, "place_off_l_pistol") && isUnset(b.o, "place_bone_l_pistol"));
+    TuneCfg fresh2;
+    KT_CHECK(applySet(fresh2, b.o));
+    KT_CHECK(sameLevel(fresh2.catL[CatPistol], c.catL[CatPistol]));
+    KT_CHECK(!fresh2.cat[CatPistol].hasRot);   // the left key never touches the right table
+
+    // Bone 0 (unset) and bone 1 / 5 keep their names through the round trip.
+    const float off[3] = {0.1f, 0.2f, 0.3f};
+    const uint8_t bones[3] = {0, 1, 5};
+    for (uint8_t bone : bones) {
+        CatTune t = level(false, kZero3, true, off, bone);
+        ScopeArrays d;
+        KT_CHECK(scopeKeys(CatHeavy, false, t, d.o));
+        KT_CHECK(bone == 0 ? isUnset(d.o, "place_bone_heavy") : setVal(d.o, "place_bone_heavy") == boneNameOf(bone));
+        TuneCfg f;
+        KT_CHECK(applySet(f, d.o));
+        KT_CHECK(sameLevel(f.cat[CatHeavy], t));
+    }
+}
+
+static void testScopeBodyKeysAndRoundTrip() {
+    TuneCfg c = fixture();
+    const BodyTune* juhani = findBody(c, "Juhani");
+    KT_CHECK(juhani != nullptr);
+    if (!juhani) return;
+    ScopeArrays a;
+    KT_CHECK(scopeKeys(*juhani, a.o));
+    KT_CHECK(a.o.nSet == 1 && a.o.nUnset == 0);
+    KT_CHECK(strcmp(setVal(a.o, "place_off_body_Juhani"), "0.050,0.060,0.070") == 0);
+    TuneCfg fresh;
+    KT_CHECK(applySet(fresh, a.o));
+    const BodyTune* back = findBody(fresh, "Juhani");
+    KT_CHECK(back && closeV3(back->off, 0.05f, 0.06f, 0.07f));
+}
+
+static void testScopeValueFormat() {
+    // Values that round to zero print 0, never -0; the rest round half-away-from-zero at the printed digit.
+    BodyTune b;
+    tuneCopyName(b.body, "Rnd");
+    b.off[0] = -0.0001f; b.off[1] = 0.0004f; b.off[2] = -0.0006f;
+    ScopeArrays a;
+    KT_CHECK(scopeKeys(b, a.o));
+    KT_CHECK(strcmp(setVal(a.o, "place_off_body_Rnd"), "0.000,0.000,-0.001") == 0);
+    CatTune t = level(true, kZero3, false, kZero3, 0);
+    t.rot[0] = 0.04f; t.rot[1] = -0.04f; t.rot[2] = 0.06f;
+    ScopeArrays d;
+    KT_CHECK(scopeKeys(CatRifle, false, t, d.o));
+    KT_CHECK(strcmp(setVal(d.o, "place_rot_rifle"), "0.0,0.0,0.1") == 0);
+}
+
+static void testScopeRangeBoundary() {
+    ScopeArrays a;
+    CatTune t = level(true, kZero3, true, kZero3, 0);
+    t.rot[0] = 720.f; t.rot[1] = -720.f; t.rot[2] = 0.f;
+    t.off[0] = 3.f; t.off[1] = -3.f; t.off[2] = 0.f;
+    KT_CHECK(scopeKeys(CatPistol, false, t, a.o));          // inclusive bounds
+    KT_CHECK(strcmp(setVal(a.o, "place_rot_pistol"), "720.0,-720.0,0.0") == 0);
+    KT_CHECK(strcmp(setVal(a.o, "place_off_pistol"), "3.000,-3.000,0.000") == 0);
+    TuneCfg fresh;
+    KT_CHECK(applySet(fresh, a.o));
+    KT_CHECK(sameLevel(fresh.cat[CatPistol], t));
+
+    t.rot[0] = 720.5f;
+    KT_CHECK(!scopeKeys(CatPistol, false, t, a.o));
+    KT_CHECK(a.o.nSet == 0 && a.o.nUnset == 0);
+    t.rot[0] = 720.f;
+    t.off[2] = -3.001f;
+    KT_CHECK(!scopeKeys(CatPistol, false, t, a.o));
+    KT_CHECK(a.o.nSet == 0 && a.o.nUnset == 0);
+
+    BodyTune b;
+    tuneCopyName(b.body, "Edge");
+    b.off[0] = 3.001f; b.off[1] = 0.f; b.off[2] = 0.f;
+    KT_CHECK(!scopeKeys(b, a.o));
+    KT_CHECK(a.o.nSet == 0);
+    b.off[0] = std::nanf("");
+    KT_CHECK(!scopeKeys(b, a.o));
+    KT_CHECK(a.o.nSet == 0);
+}
+
+static void testScopeNameBoundary() {
+    ScopeArrays a;
+    // Model names: 16 chars is the longest, "w_" + 14.
+    ModelTune m;
+    tuneCopyName(m.model, "w_0123456789abcd");
+    m.t = level(false, kZero3, false, kZero3, 2);
+    KT_CHECK(strlen(m.model) == 16);
+    KT_CHECK(scopeKeys(m, a.o));
+    KT_CHECK(strcmp(setVal(a.o, "place_bone_w_0123456789abcd"), "torso_g") == 0);   // bone 2
+    // Not "w_" prefixed, empty, or bad characters: rejected. (A 17-char name cannot be stored: model is char[17].)
+    ModelTune bad;
+    bad.t = m.t;
+    tuneCopyName(bad.model, "Blaster");
+    KT_CHECK(!scopeKeys(bad, a.o));
+    tuneCopyName(bad.model, "w_bad-name");
+    KT_CHECK(!scopeKeys(bad, a.o));
+    tuneCopyName(bad.model, "");
+    KT_CHECK(!scopeKeys(bad, a.o));
+    KT_CHECK(a.o.nSet == 0 && a.o.nUnset == 0);
+
+    // Body names: 16 chars ok, a name with a space rejected.
+    BodyTune b;
+    tuneCopyName(b.body, "Juhani_012345678");
+    KT_CHECK(strlen(b.body) == 16);
+    KT_CHECK(scopeKeys(b, a.o));
+    KT_CHECK(setVal(a.o, "place_off_body_Juhani_012345678") != nullptr);
+    tuneCopyName(b.body, "Juhani x");
+    KT_CHECK(!scopeKeys(b, a.o));
+
+    // Categories: CatUnknown and CatCount are not scopes.
+    CatTune t = level(true, kZero3, false, kZero3, 0);
+    KT_CHECK(!scopeKeys(CatUnknown, false, t, a.o));
+    KT_CHECK(!scopeKeys(CatCount, true, t, a.o));
+}
+
+static void testScopeCountAndBufferCaps() {
+    // Model with all three fields set needs 3 set slots.
+    const float rot[3] = {1.f, 2.f, 3.f}, off[3] = {0.1f, 0.2f, 0.3f};
+    ModelTune m;
+    tuneCopyName(m.model, "w_Cap");
+    m.t = level(true, rot, true, off, 1);
+    ScopeArrays a;
+    a.o.setCap = 2;
+    KT_CHECK(!scopeKeys(m, a.o));
+    KT_CHECK(a.o.nSet == 0 && a.o.nUnset == 0);
+    a.o.setCap = 3;
+    KT_CHECK(scopeKeys(m, a.o) && a.o.nSet == 3);
+
+    // Model with nothing set needs 3 unset slots.
+    ModelTune empty;
+    tuneCopyName(empty.model, "w_Cap");
+    ScopeArrays u;
+    u.o.unsetCap = 2;
+    KT_CHECK(!scopeKeys(empty, u.o));
+    KT_CHECK(u.o.nUnset == 0);
+    u.o.unsetCap = 3;
+    KT_CHECK(scopeKeys(empty, u.o) && u.o.nUnset == 3 && u.o.nSet == 0);
+
+    // Body needs one set slot; a null array is a clean false.
+    BodyTune b;
+    tuneCopyName(b.body, "Juhani");
+    ScopeArrays z;
+    z.o.setCap = 0;
+    KT_CHECK(!scopeKeys(b, z.o));
+    z.o.set = nullptr;
+    z.o.setCap = 1;
+    KT_CHECK(!scopeKeys(b, z.o));
+
+    // Buffer: the worst case (16-char left weapon, every field at its cap) fits kScopeTextMax; a smaller buffer fails cleanly
+    // and bytes past bufCap are never written.
+    ModelTune worst;
+    tuneCopyName(worst.model, "w_0123456789abcd");
+    worst.left = true;
+    const float lim[3] = {-720.f, -720.f, -720.f}, offLim[3] = {-3.f, -3.f, -3.f};
+    worst.t = level(true, lim, true, offLim, 5);
+    ScopeArrays w;
+    KT_CHECK(scopeKeys(worst, w.o));
+    KT_CHECK(w.o.bufUsed <= kScopeTextMax);
+    KT_CHECK(strcmp(setVal(w.o, "place_off_l_w_0123456789abcd"), "-3.000,-3.000,-3.000") == 0);
+    KT_CHECK(setVal(w.o, "place_bone_l_w_0123456789abcd") == boneNameOf(5));
+
+    char big[200];
+    memset(big, 'Z', sizeof big);
+    KV set[3];
+    const char* unset[3];
+    ScopeOut tight = {set, 3, 0, unset, 3, 0, big, 40, 0};
+    KT_CHECK(!scopeKeys(worst, tight));
+    KT_CHECK(tight.nSet == 0 && tight.bufUsed <= 40);
+    for (size_t i = 40; i < sizeof big; ++i)
+        if (big[i] != 'Z') { KT_CHECK(false); break; }
+}
+
 int main() {
     testCategoryBone();
     testCategoryOverride();
@@ -506,5 +792,13 @@ int main() {
     testMirrorIsQuaternionReflection();
     testClearDropsNewTables();
     testSizeBudget();
+    testBoneNameForwards();
+    testScopeModelKeysAndRoundTrip();
+    testScopeTypeKeysAndRoundTrip();
+    testScopeBodyKeysAndRoundTrip();
+    testScopeValueFormat();
+    testScopeRangeBoundary();
+    testScopeNameBoundary();
+    testScopeCountAndBufferCaps();
     return kt::Report("holster_tune");
 }

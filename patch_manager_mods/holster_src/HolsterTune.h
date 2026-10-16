@@ -18,10 +18,20 @@
 //                 isTuneKey is syntactic: it stays true for a well-formed key even when its table is full.
 //   resolveFull   per weapon, per hand: model > type > global precedence, body delta, mirrored left values (see Resolved).
 //                 A bone of 0 means "no table bone at any level": the caller uses defaultBone(cfg), which is not mirrored.
+//   boneName      1-based table index -> bone name (boneNameOf, static storage); nullptr for 0 or out of range.
+//   scopeKeys     the inverse of applyTuneKey, for one edit scope (ModelTune, Category + hand + CatTune, or BodyTune): writes
+//                 KV entries for setKeys and key names for removeKeys (a field the level lacks). Pure: the caller owns the arrays
+//                 and the text buffer (kScopeTextMax bytes is enough for one scope). Raw values, printed %.1f (rot) / %.3f (off).
+//                 At most 3 set and 3 unset entries per call. Returns false, with both counts 0, on a bad name, a value outside the
+//                 caps, or an array or buffer that is too small.
 #pragma once
+#include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <ctype.h>
+#include <cmath>
 #include "IniKit.h"
+#include "HolsterIniWrite.h"
 #include "HolsterLogic.h"
 
 namespace hs {
@@ -40,6 +50,9 @@ inline const char* boneNameOf(uint8_t idx) {
     static const char* const kBones[kBoneCount] = {"torsoUpr_g", "torso_g", "pelvis_g", "rthigh_g", "lthigh_g"};
     return (idx >= 1 && idx <= kBoneCount) ? kBones[idx - 1] : nullptr;
 }
+
+// Bone name of a 1-based table index: the boneNameOf string (static storage), nullptr for 0 or out of range.
+inline const char* boneName(uint8_t idx) { return boneNameOf(idx); }
 
 // Case-insensitive table lookup: 1..kBoneCount, or 0 for a null, empty or non-table name (a custom bone_name is 0).
 inline uint8_t boneIndexOf(const char* name) {
@@ -367,6 +380,150 @@ inline bool applyTuneKey(TuneCfg& c, const char* key, const char* val) {
     TuneKeyRef r;
     if (!tuneParseKey(key, r)) return false;
     return tuneApplyParsed(c, r, val);
+}
+
+// ---- scopeKeys: one edit scope -> holster.ini keys (the inverse of applyTuneKey) ----
+
+// Text bytes one scope needs at most: 3 keys (29-30 bytes each) and the rot and off values (21 bytes each), bone names are static.
+enum : int { kScopeTextMax = 160 };
+
+// Caller-owned output of scopeKeys. Every call resets nSet, nUnset and bufUsed first.
+//   set / nSet      setKeys entries; key points into buf, val into buf or at boneName's static string
+//   unset / nUnset  key names for removeKeys; they point into buf
+//   buf / bufUsed   key and value text, NUL-terminated strings packed from offset 0
+struct ScopeOut {
+    KV* set;
+    int setCap;
+    int nSet;
+    const char** unset;
+    int unsetCap;
+    int nUnset;
+    char* buf;
+    size_t bufCap;
+    size_t bufUsed;
+};
+
+inline bool scopeFail(ScopeOut& o) {
+    o.nSet = 0;
+    o.nUnset = 0;
+    return false;
+}
+
+// Appends "place_<kind>_<tail>" to o.buf. Returns its start, or nullptr when it does not fit (nothing is written past bufCap).
+inline const char* scopeKey(ScopeOut& o, const char* kind, const char* tail) {
+    const size_t room = o.bufCap - o.bufUsed;
+    const int n = snprintf(o.buf + o.bufUsed, room, "place_%s_%s", kind, tail);
+    if (n < 0 || static_cast<size_t>(n) >= room) return nullptr;
+    const char* s = o.buf + o.bufUsed;
+    o.bufUsed += static_cast<size_t>(n) + 1;
+    return s;
+}
+
+// Appends "a,b,c" to o.buf: rot as %.1f, off as %.3f. Each value must be finite with |v| <= the cap applyTuneKey accepts.
+// A value that rounds to zero prints as 0, never -0. Returns its start, or nullptr on a bad value or a full buffer.
+inline const char* scopeVec(ScopeOut& o, const float* v, bool rot) {
+    const float limit = rot ? 720.f : 3.f;
+    for (int i = 0; i < 3; ++i)
+        if (!std::isfinite(v[i]) || std::fabs(v[i]) > limit) return nullptr;
+    const float half = rot ? 0.05f : 0.0005f;   // half a unit of the last printed digit
+    float x[3];
+    for (int i = 0; i < 3; ++i) x[i] = std::fabs(v[i]) < half ? 0.f : v[i];
+    const size_t room = o.bufCap - o.bufUsed;
+    const int n = rot ? snprintf(o.buf + o.bufUsed, room, "%.1f,%.1f,%.1f", x[0], x[1], x[2])
+                      : snprintf(o.buf + o.bufUsed, room, "%.3f,%.3f,%.3f", x[0], x[1], x[2]);
+    if (n < 0 || static_cast<size_t>(n) >= room) return nullptr;
+    const char* s = o.buf + o.bufUsed;
+    o.bufUsed += static_cast<size_t>(n) + 1;
+    return s;
+}
+
+inline bool scopeSet(ScopeOut& o, const char* key, const char* val) {
+    if (!o.set || o.nSet >= o.setCap) return false;
+    o.set[o.nSet++] = KV{key, val};
+    return true;
+}
+
+inline bool scopeUnset(ScopeOut& o, const char* key) {
+    if (!o.unset || o.nUnset >= o.unsetCap) return false;
+    o.unset[o.nUnset++] = key;
+    return true;
+}
+
+// True when "place_<kind>_<tail>" parses with tuneParseKey, so the serialized key is one applyTuneKey accepts.
+inline bool scopeParses(const char* kind, const char* tail, TuneKeyRef& r) {
+    char probe[64];
+    const int n = snprintf(probe, sizeof probe, "place_%s_%s", kind, tail);
+    return n > 0 && static_cast<size_t>(n) < sizeof probe && tuneParseKey(probe, r);
+}
+
+// One weapon or type level. tail is "[l_]<name>", the key text after place_<kind>_. Each field the level has goes to set;
+// each field it lacks (no rot, no off, or bone 0) goes to unset, so setKeys and removeKeys together mirror the level.
+inline bool scopeLevel(ScopeOut& o, const char* tail, const CatTune& t) {
+    const char* key = scopeKey(o, "rot", tail);
+    if (!key) return false;
+    if (t.hasRot) {
+        const char* val = scopeVec(o, t.rot, true);
+        if (!val || !scopeSet(o, key, val)) return false;
+    } else if (!scopeUnset(o, key)) {
+        return false;
+    }
+    key = scopeKey(o, "off", tail);
+    if (!key) return false;
+    if (t.hasOff) {
+        const char* val = scopeVec(o, t.off, false);
+        if (!val || !scopeSet(o, key, val)) return false;
+    } else if (!scopeUnset(o, key)) {
+        return false;
+    }
+    key = scopeKey(o, "bone", tail);
+    if (!key) return false;
+    if (const char* bone = boneName(t.boneIdx)) return scopeSet(o, key, bone);
+    return scopeUnset(o, key);
+}
+
+// Weapon override (ModelTune): key tail [l_]w_<x>. The name must be 1..16 chars of [A-Za-z0-9_] and start with "w_".
+inline bool scopeKeys(const ModelTune& m, ScopeOut& o) {
+    o.nSet = 0;
+    o.nUnset = 0;
+    o.bufUsed = 0;
+    if (tuneNameLen(m.model, 16) == 0) return false;
+    char tail[24];
+    snprintf(tail, sizeof tail, "%s%s", m.left ? "l_" : "", m.model);
+    TuneKeyRef r;
+    if (!scopeParses("rot", tail, r) || !r.model || r.left != m.left) return false;
+    if (!scopeLevel(o, tail, m.t)) return scopeFail(o);
+    return true;
+}
+
+// Category override (CatTune of cat[cat], or catL[cat] when left): key tail [l_]<categoryName>. cat must be a real category.
+inline bool scopeKeys(Category cat, bool left, const CatTune& t, ScopeOut& o) {
+    o.nSet = 0;
+    o.nUnset = 0;
+    o.bufUsed = 0;
+    if (cat <= CatUnknown || cat >= CatCount) return false;
+    char tail[24];
+    snprintf(tail, sizeof tail, "%s%s", left ? "l_" : "", categoryName(cat));
+    TuneKeyRef r;
+    if (!scopeParses("rot", tail, r) || r.model || r.body || r.cat != cat || r.left != left) return false;
+    if (!scopeLevel(o, tail, t)) return scopeFail(o);
+    return true;
+}
+
+// Body delta (BodyTune): always one set entry place_off_body_<name> (a body entry always has an off, so nothing is unset).
+inline bool scopeKeys(const BodyTune& b, ScopeOut& o) {
+    o.nSet = 0;
+    o.nUnset = 0;
+    o.bufUsed = 0;
+    if (tuneNameLen(b.body, 16) == 0) return false;
+    char tail[24];
+    snprintf(tail, sizeof tail, "body_%s", b.body);
+    TuneKeyRef r;
+    if (!scopeParses("off", tail, r) || !r.body) return false;
+    const char* key = scopeKey(o, "off", tail);
+    if (!key) return scopeFail(o);
+    const char* val = scopeVec(o, b.off, false);
+    if (!val || !scopeSet(o, key, val)) return scopeFail(o);
+    return true;
 }
 
 } // namespace hs
