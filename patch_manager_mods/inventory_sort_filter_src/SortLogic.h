@@ -19,14 +19,25 @@ struct Entry {
                           // the 7-value aggregate inits warning-free (-Wmissing-field-initializers) and a default-built Entry empty.
 };
 
+// ASCII-only fold on unsigned char: locale-independent, cp1252 bytes >= 0x80 compare as raw bytes.
+inline int foldCmp(const char* a, const char* b) {
+    for (;; ++a, ++b) {
+        unsigned char x = (unsigned char)*a, y = (unsigned char)*b;
+        if (x >= 'A' && x <= 'Z') x += 32;
+        if (y >= 'A' && y <= 'Z') y += 32;
+        if (x != y) return x < y ? -1 : 1;
+        if (!x) return 0;
+    }
+}
+
 // New first, then usable, then by base item id (groups identical kinds), then localised name, then vanilla order.
-// Names compare with strcmp, so "" sorts before any name: equal names (all-empty groups included) fall to orig, and a failed
-// lookup in a mixed group clusters first. Skipping the name key when either side is empty would make the order cyclic (UB in sort).
+// Names compare ASCII case-insensitively (foldCmp), so "" sorts before any name: equal names (all-empty groups included) fall to orig,
+// and a failed lookup in a mixed group clusters first. Skipping the name key when either side is empty would make the order cyclic (UB in sort).
 inline bool before(const Entry& a, const Entry& b) {
     if (a.isNew != b.isNew) return a.isNew;
     if (a.usable != b.usable) return a.usable;
     if (a.baseItem != b.baseItem) return a.baseItem < b.baseItem;
-    int c = strcmp(a.name, b.name);
+    int c = foldCmp(a.name, b.name);
     if (c != 0) return c < 0;
     return a.orig < b.orig;
 }

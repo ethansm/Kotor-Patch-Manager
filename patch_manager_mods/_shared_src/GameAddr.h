@@ -95,7 +95,7 @@ constexpr uintptr_t RButtonDownHoldSite = 0x007B3817;    // PerformRButtonDownAc
 
 // ---- addresses shared by several mods under different local names (F20; canonical names, mods still hold their own copies) ----
 constexpr uintptr_t GetLocString = 0x007356B0;           // CExoLocString::GetString (REA 20261015): bool thiscall(ECX = handle, int language, CExoString* out, uint8 gender = 0) RET 0xC; free out with ExoDtor; inventory-sort item name (item+0x2C0)
-constexpr uintptr_t GetClientLanguage = 0x0073F350;      // __fastcall(ECX = *(*(GuiGlobal 0xA1B4A4)+4)) -> int language for GetLocString (REA Q2, caller 0x8BF52B-0x8BF54F)
+constexpr uintptr_t GetClientLanguage = 0x0073F350;      // __fastcall(ECX = *(*(AppGlobal 0xA1B4A4)+4)) -> int language for GetLocString (REA Q2, caller 0x8BF52B-0x8BF54F)
 constexpr uintptr_t GetBaseItem = 0x006D6E30;            // CSWItem::GetBaseItem (verified B0) thiscall(itemPtr), no stack args -> baseitems row ptr (slot mask +4, gender req byte +0xB4); action-hotbar GetBaseItem, inventory-sort FnGetBaseItem
 constexpr uintptr_t ServerObjectGetArea = 0x005453C0;    // CSWSObject::GetArea (name_map, medium conf) thiscall(server object) -> area ptr (0 = none); companion-ai / ranged-ai FnGetArea
 constexpr uintptr_t AppActiveFlag = 0x00A1B4E0;          // int: engine app-active flag; AppActivated 0x40BCF0 sets it 1, AppDeactivated 0x40BC40 clears it; MainLoop's load-screen dismiss tests it; activation-fix / load-hang-probe FlagA1B4E0

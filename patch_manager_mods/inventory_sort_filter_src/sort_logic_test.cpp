@@ -56,6 +56,31 @@ int main() {
     for (size_t i = 0; i < mx.size(); ++i) CHECK(mx[i].item == wantM[i]);
     for (size_t i = 0; i < mx.size(); ++i) { CHECK(!before(mx[i], mx[i])); for (size_t j = 0; j < mx.size(); ++j) CHECK(!(before(mx[i], mx[j]) && before(mx[j], mx[i]))); }
 
+    // case-insensitive name compare: "b" (orig 0) vs "A" (orig 1) -> "A" first
+    std::vector<Entry> ci = {{50, 50, 0, false, true, 5, false}, {51, 51, 1, false, true, 5, false}};
+    setName(ci[0], "b"); setName(ci[1], "A");
+    sortEntries(ci.data(), (int)ci.size());
+    CHECK(ci[0].item == 51 && ci[1].item == 50);
+    // "apple" (orig 0) vs "Apple" (orig 1): equal under fold, vanilla order decides
+    std::vector<Entry> eq = {{60, 60, 0, false, true, 5, false}, {61, 61, 1, false, true, 5, false}};
+    setName(eq[0], "apple"); setName(eq[1], "Apple");
+    sortEntries(eq.data(), (int)eq.size());
+    CHECK(eq[0].item == 60 && eq[1].item == 61);
+    CHECK(before(eq[0], eq[1]) && !before(eq[1], eq[0]));
+    // mixed-case set incl. an empty name stays a strict weak order
+    std::vector<Entry> mc = {{70, 70, 0, false, true, 5, false}, {71, 71, 1, false, true, 5, false}, {72, 72, 2, false, true, 5, false},
+                             {73, 73, 3, false, true, 5, false}, {74, 74, 4, false, true, 5, false}};
+    setName(mc[0], "Banana"); setName(mc[1], "apple"); /* mc[2] empty */ setName(mc[3], "APPLE"); setName(mc[4], "cherry");
+    sortEntries(mc.data(), (int)mc.size());
+    int wantC[] = {72, 71, 73, 70, 74};
+    for (size_t i = 0; i < mc.size(); ++i) CHECK(mc[i].item == wantC[i]);
+    for (size_t i = 0; i < mc.size(); ++i) { CHECK(!before(mc[i], mc[i])); for (size_t j = 0; j < mc.size(); ++j) CHECK(!(before(mc[i], mc[j]) && before(mc[j], mc[i]))); }
+    // bytes >= 0x80 compare as unsigned raw bytes (cp1252 never negative): "\xE9" sorts after "z"
+    std::vector<Entry> hi = {{80, 80, 0, false, true, 5, false}, {81, 81, 1, false, true, 5, false}};
+    setName(hi[0], "\xE9"); setName(hi[1], "z");
+    sortEntries(hi.data(), (int)hi.size());
+    CHECK(hi[0].item == 81 && hi[1].item == 80);
+
     // cycle state machine, all states enabled: New = engine mode 1, Usable/Upgrade = mode 0 + our extra filter
     unsigned all = (1u << S_New) | (1u << S_Usable) | (1u << S_Upgrade);
     State s = S_All; Extra ex = X_None; int mode = 0;
