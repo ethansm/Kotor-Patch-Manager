@@ -8,7 +8,7 @@ Ships as its **own patch id `inventory-sort-filter`** (`Patches/InventorySortFil
 
 ## Goal
 
-1. **Sort:** new items first, then usable-by-this-character, then grouped by base item; unusable rows tinted.
+1. **Sort:** new items first, then usable-by-this-character, then grouped by base item, then localised name (ASCII case-insensitive), then vanilla order; unusable rows tinted.
 2. **Extra filters** by **re-clicking the active "All" tab** (user decision): All → New → Usable-by-me → Open upgrade slot → All.
    No new buttons.
 
@@ -44,7 +44,7 @@ Ships as its **own patch id `inventory-sort-filter`** (`Patches/InventorySortFil
 - [x] **R11** tab handler `0x8A8CF0` (see map); re-click ⇔ `ctrl[0x17] == GuiInGame[0xFC1]`.
 - [x] **R12** splice chosen: buffer at the backpack `CreateItemEntry` site, flush before finalise (below).
 - [x] **R13** `SetCanUse(row,2)` draws the red-orange tint (colours decoded from `0x9A17A0`=0.74, `0x98BA9C`=0.11). `SetItem` (called by `CreateItemEntry` on every row) rewrites all four colour triplets each time (teal, or the vanilla New colour `0xA7FE48` when the New bit is set; `8B1536-8B168B`), so **no reset is needed and `SetCanUse(row,0)` must NOT be called** (it would erase the vanilla New highlight). Call `SetCanUse(row,2)` only for unusable rows. `row+0x3B0` is never read by inventory code.
-- [x] **R14** name getter is `CSWCItem::GetName 0x7FDFA0` (`thiscall(clientItem; CExoString* out, identified)` `RET 8`, string at `+0x18C`). **v1 does not sort by name** (base item id groups identical kinds); name sort is a later stage.
+- [x] **R14** name getter is `CSWCItem::GetName 0x7FDFA0` (`thiscall(clientItem; CExoString* out, identified)` `RET 8`, string at `+0x18C`). **v1 does not sort by name** (base item id groups identical kinds); name sort is a later stage. **DONE in WI-21 (C132, `c24be8e`):** name key added as the tie-break after base item (see the WI-21 build entry under 0.2.0).
 
 ## Definitive build plan
 
@@ -80,7 +80,7 @@ Every buffered row is created later by the same `CreateItemEntry`, so vanilla ro
 2. Reselect: if `*(int*)(panel+0x24C8) == *(int*)(item+0x14)` ⇒ remember that id, set `*(int*)(panel+0x24C8)=0x7F000000` (exactly what the skipped vanilla code did).
 3. Push `{item, origIndex, isNew = item+0x2C8>>7&1, usable = IsItemUsable(...)!=0, baseItem = *(int*)(item+0xC)}`.
 
-H6c, once, before the finalise call: stable-sort by `isNew desc, usable desc, baseItem asc, origIndex asc`; for each entry: if its id equals the remembered id ⇒ `*(int*)(ebp-0x20) = *(int*)(ebp-0x3C)` (current counter); `CreateItemEntry(panel, cobj, counter, list, item, 0, 0)`; row = `((void**)*(panel+0x24B0))[counterBefore]`; if `!usable` then `SetCanUse(row, 2)` (nothing for usable rows). Clear the buffer. The equipped block stays vanilla (equipped first).
+H6c, once, before the finalise call: stable-sort by `isNew desc, usable desc, baseItem asc, name asc (ASCII case-insensitive; "" sorts first), origIndex asc`; for each entry: if its id equals the remembered id ⇒ `*(int*)(ebp-0x20) = *(int*)(ebp-0x3C)` (current counter); `CreateItemEntry(panel, cobj, counter, list, item, 0, 0)`; row = `((void**)*(panel+0x24B0))[counterBefore]`; if `!usable` then `SetCanUse(row, 2)` (nothing for usable rows). Clear the buffer. The equipped block stays vanilla (equipped first).
 
 **Re-click cycle (H6a).** State = `(GuiInGame[0xFC1], g_upgradeActive)`. Let `clicked = *(int*)(ctrl+0x5C)`.
 - If `clicked == 0` **and** state ∈ {All, New (mode 1), Usable (mode 5), Upgrade (mode 0 + flag)}: advance All→New→Usable→Upgrade→All using `SetNextFilter(panel, 1 | 5 | 0)` (Upgrade = engine mode 0 + `g_upgradeActive=true`); set `LBL_FILTER` to `Filter: New` / `Filter: Usable` / `Filter: Upgradeable` (or `Filter` for All); return 1 (consumed). Modes 1 and 5 leave all 7 tabs unlit (engine behaviour); acceptable.
@@ -101,7 +101,8 @@ No 2DA/TLK/script changes. Captions are C strings set by the DLL. INI (`inventor
 3. **Tint is lost when the row is entered/selected:** `8A83D0` clears the New bit and `8B1CC0` re-runs `SetItem`, which resets the colours. Test hover/click on a tinted row; if it matters, re-apply `SetCanUse(row,2)` after that path (not in v1). Clearing New this way also moves the item out of the "new first" group at the next repopulate. Rows are reused only across repopulates while the panel is open (closing destroys them), so test tab switches, not open/close.
 4. **"Usable" is not one predicate:** tint and sort use `IsItemUsable` (what the popup uses); the cycle's Usable state is engine mode 5, which also requires `CanUseItem` and a different ECX (`0x58AE90(creature)`), so an item can be untinted yet hidden by `Filter: Usable`. Decide in Stage 3 whether to call it "Usable" or add `CanUseItem` to the tint. The Upgrade filter drops backpack rows only; equipped rows still show.
 5. H6b's window is large (79 bytes). If the framework rejects that `original_bytes` length, split it at instruction boundaries into two `skip_original_bytes=true` windows (add them to `check_windows.py` and re-validate; the internal `JNZ` at `0x8A7E3A` targets `0x8A7E52`, so split there) with the same handler state.
-6. Alphabetical name sort is not in v1.
+6. **Name tie-break (shipped in WI-21, C132, `c24be8e`; not yet seen in game):** within one base item, rows sort by localised name, ASCII case-insensitive (`foldCmp`, `SortLogic.h`). An empty name (failed `GetString` lookup) sorts before any non-empty name. Equal names fall to vanilla order.
+7. **`GetString 0x7356B0` side effects (REA 20261015, verdict UNSURE):** the call inserts into the CExoLocString cache, sets the container `+8` dirty flag (consumer unknown), and writes gender into the talk manager at `+0x3C`. Check these before relying on the name key in a live session.
 
 
 ## Build status (2026-09-30)
@@ -151,9 +152,13 @@ The 10-01 22:13 session did not open the inventory: the Mod 6 checklist is still
 
 ### v2 research (2026-10-02, static)
 `mods678_research/ai_research_2026-10-02/R4_medpac_mod6v2.md`:
-- **R14 name sort:** the sort works on server items (`0x606100`). Use the server item's loc string `+0x2C0` via `CExoLocString::GetString 0x7356B0` as the tie-break key; this is the same text `SetItem 0x8B1250` shows. `CSWCItem::GetName 0x7FDFA0` (`thiscall(clientItem; CExoString* out, int identified)`, `RET 8`; client item via `0x73F530`) is the fallback. Estimated cost is 0.1-0.3 ms per populate; measure it with a timing log.
+- **R14 name sort:** the sort works on server items (`0x606100`). The tie-break key is the server item's loc string `+0x2C0` via `CExoLocString::GetString 0x7356B0` (bool return, `CExoString* out`). REA 20261015 verdict: **UNSURE** for safe binding; side effects are listed in risk 7. `CSWCItem::GetName 0x7FDFA0` (`thiscall(clientItem; CExoString* out, int identified)`, `RET 8`; client item via `0x73F530`) was planned as a fallback and is **NOT implemented**. Estimated cost was 0.1-0.3 ms per populate; the per-flush sort timing line in the WI-21 live check is the measurement (pending).
 - **Level-requirement tint:** unreachable with the current `0x5BD6A0(...,0,0,0)` call (`0x5BD6AA` gate). It needs `p4=1, p5=0, p6=0`, applies to the PC only, and also needs a module flag `[..+0xD0]` of unknown value. Log that flag before building anything.
 
+
+### WI-21 build (C132 only, 2026-10-15)
+
+- Name tie-break built (`c24be8e`): host tests, `compat_check` 63/0 and `build_check` pass. Not yet tried in game; queued in [`PLAY_TEST_QUEUE.md`](PLAY_TEST_QUEUE.md) as WI-21. No game install.
 
 ## Planned shared state and shared code (doc 19 / 19b, added 2026-10-02)
 **Nothing here is built yet.** When a piece lands, use it instead of extending this patch's local copy. The ids (A1, B2, ...) refer to [`19b_cross_patch_sharing_survey.md`](19b_cross_patch_sharing_survey.md), which has the evidence. Line numbers there are from 10-02.

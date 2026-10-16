@@ -11,7 +11,7 @@ WI-29	1	0	0	1	1	0	M	M	verify-only	M	C174 fix site confirmed at PortraitSlotsProv
 WI-31	0	0	0	1	0	0	S	M	ready	H	PortraitSlots.h:116 connect() comment-only; decision text doc 21:110 confirmed; run_tests suite filter and mark-done phase unknown
 WI-43	2	0	2	1	0	0	XL	S	ready	M	Fix site OverrideNpcTexture (cpp:369, WI says 312); non-B A-type coverage needs an unnamed engine hook site; existing suites don't reach Hook 1
 WI-50b	0	0	0	1	1	0	S	S	verify-only	H	Verify-only: build_dossiers.py:151/186-191 and prep.py:1185/1199-1201 confirmed; C290 UNIT_COST and C291 spend need user decisions; plan_manager mark-done.
-WI-21	1	0	2	1	0	0	L	M	ready	M	Site named (SortLogic.h:21-25, InventorySortFilter.cpp:332,365); GetString 0x7356B0 signature only med-confidence in R8.md:42; +0x2C0 offset unverified; no inventory suite
+WI-21	1	0	2	1	0	0	L	M	ready	M	Site named (SortLogic.h:21-25, InventorySortFilter.cpp:332,365); GetString 0x7356B0 signature only med-confidence in R8.md:42; no inventory suite
 WI-64	1	0	1	1	0	0	L	S	ready	H	Fix site dr_profile.py:326-337 is_excluded; static read says .env already True via BUILTIN_EXCLUDE_NAMES (dr_profile.py:22,312). Only verify needs a profile path.
 WI-68	0	0	0	0	0	0	S	S	verify-only	H	Per-call trees confirmed: run_case:95, P_TREE:78, fork TREE:85 (verify grep misses it); no edit; prep.py:1213 out-of-repo, stays open.
 WI-19	1	1	2	1	1	0	XL	M	ready	M	Fix site PerfLab.cpp hwmipBuild/hkGluBuild2DMipmaps (~704-748); TGA-only gate mechanism unresolved; perf-lab suite filter unknown; C113/C118/C120/C178 need GO.

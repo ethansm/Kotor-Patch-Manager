@@ -120,4 +120,4 @@ This mod is an exemplary implementation of an engine-level quality-of-life featu
 | **Panel Reopen after Upgrade Filter** | Set filter to "Filter: Upgradeable", close inventory with ESC, reopen inventory. | Filter resets cleanly to "All" (caption "Filter"); all items are displayed. |
 | **Unusable Item Tinting** | View inventory containing weapons/armor the current character cannot equip. | Unusable rows display red-orange tint; usable rows retain default teal styling. |
 | **Companion Switching** | Switch active character in inventory. | Unusable tints dynamically update to reflect the newly active companion's proficiencies. |
-| **Sort Stability** | Populate inventory with 20+ items of identical base types. | Stable tie-break retains original acquisition order; new items appear at the top. |
+| **Sort Stability** | Populate inventory with 20+ items of identical base types. | Identical base types are ordered by localised name (ASCII case-insensitive); items with equal names keep original acquisition order; new items appear at the top. |
