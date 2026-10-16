@@ -317,7 +317,7 @@ void logBanner() {
             KP_LOGV(::kplog::detail::gMain, KPLOG_WARN, "%s", b);
         }
     }
-    nl::FormatBannerRows(b, sizeof b, APP_FIRST_APPENDED, APP_TWILEK_FEMALE_UNDERWEAR, APP_COUNT - APP_FIRST_APPENDED,
+    nl::FormatBannerRows(b, sizeof b, APP_FIRST_APPENDED, APP_COUNT - 1, APP_COUNT - APP_FIRST_APPENDED,
                          HEAD_LLK_AHRNELL, HEAD_LLK_DAHNISH, HEAD_LLK_DAHNISH - HEAD_LLK_AHRNELL + 1, APP_COUNT,
                          HEAD_COUNT);
     logLine(chInit, b);
@@ -351,7 +351,7 @@ void dumpStats() {
             if (b[0]) logLine(chStat, b);
         }
     }
-    KP_LOG(chStat, "STAT texa emptyCell=%u nonB=%u", g_texEmptyCell, g_texNonB);
+    KP_LOG(chStat, "STAT texa emptyCell=%u otherB=%u", g_texEmptyCell, g_texNonB);
     nl::FormatStatRead(b, sizeof b, g_c); logLine(chStat, b);
     nl::FormatStatCensus(b, sizeof b, g_cenTexSet.count + g_cenRemSet.count, g_cenTexSet.ovf + g_cenRemSet.ovf);
     logLine(chStat, b);
@@ -503,7 +503,7 @@ __declspec(dllexport) void __cdecl OverrideNpcTexture(void* frame) {
                              0u, "0", 0, d.subType, armOid);
             logLine(chTex, b);
         } else if (!isArmorBodyRes(cur)) {
-            // Non-B model types (neither N_Comm nor pmb*/pfb*): count and log them (own budget) so coverage is visible.
+            // Other model types (neither N_Comm nor pmb*/pfb*), counted as otherB: log them (own budget) so coverage is visible.
             ++g_texNonB;
             if (KP_ENABLED(chTex) && g_bNonB.take(100, 500)) {
                 char b[nl::kLineMax];
@@ -592,6 +592,11 @@ __declspec(dllexport) void __cdecl RemapNpcAppearance(void* pCreature, layout::A
     } else if (skip == SkipReason::Gender) {
         ++g_c.remSkipGender;
         why = "skip:gender";
+    } else if (skip == SkipReason::NotCommonerRow && (d.appearance < APP_FIRST_APPENDED || d.appearance >= APP_COUNT)) {
+        // Not a generic commoner row and not an appended row: no vary roll, no remap, no texture-variant write.
+        // Appended rows (APP_FIRST_APPENDED..APP_COUNT-1) fall through so the idempotent tv path below still runs.
+        ++g_c.remSkipRow;
+        why = "skip:notcomm";
     } else if (IsKeepDefault(tag, x, y, xyOk)) {
         // Named / merchant / uniformed / plot NPCs (position list, plus the tag list once the tag is readable).
         ++g_c.remKeep;

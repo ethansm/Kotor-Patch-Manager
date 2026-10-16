@@ -1,4 +1,5 @@
 // diversity_log_test.cpp -- Unit tests for NpcDivLog.h (pure log formatters, counters, sets, budget).
+#include "DiversityRows.h"
 #include "NpcDivLog.h"
 #include "check.h"
 #include <cstdint>
@@ -13,7 +14,7 @@ namespace {
 // GOLDEN: mirrored in scripts/test_npc_div_log_check.py
 constexpr const char* kGoldBanner0 = "BANNER v=1.0.0 kpl=1 sha=6A522E71 base=00400000 ts=5f3a1b2c";
 constexpr const char* kGoldBannerHook = "BANNER hook=tex addr=0085e601 pre=ok";
-constexpr const char* kGoldBannerRows = "BANNER rows app=802-811 n=10 head=192-196 n=5 appcount=816 headcount=249";
+constexpr const char* kGoldBannerRows = "BANNER rows app=802-817 n=16 head=192-196 n=5 appcount=818 headcount=249";
 constexpr const char* kGoldTex =
     "TEX pd=0a1b2c3d fr=00001234 ret=00abcdef app=805 g=1 tv=1 dm=0 hd=0 ph=2 cur=n_commm01 "
     "h=06c232b2 st=1 slot=09 new=1 sw=1";
@@ -104,7 +105,7 @@ void testLogFormatGolden() {
     r = nl::FormatBannerHook(b, sizeof b, "tex", 0x0085E601u, "ok");
     ExpectLine(r, b, kGoldBannerHook);
 
-    r = nl::FormatBannerRows(b, sizeof b, 802u, 811u, 10u, 192u, 196u, 5u, 816u, 249u);
+    r = nl::FormatBannerRows(b, sizeof b, 802u, 817u, 16u, 192u, 196u, 5u, 818u, 249u);
     ExpectLine(r, b, kGoldBannerRows);
 
     r = nl::FormatTex(b, sizeof b, 0x0A1B2C3Du, 0x00001234u, 0x00ABCDEFu, 805u, 1u, 1u, 0, 0, 2u, "n_commm01",
@@ -446,6 +447,17 @@ void testStatAppChunking() {
     KT_CHECK_EQ(covered, 15);
 }
 
+// R2-ND-05: the dispatcher prints the banner from these constants (high bound APP_COUNT - 1, n = APP_COUNT -
+// APP_FIRST_APPENDED). Build the line from the real constants so the range, n and appcount cannot drift apart.
+void testBannerRowsFromConstants() {
+    using namespace NpcDiversity;
+    char b[nl::kLineMax];
+    const int r = nl::FormatBannerRows(b, sizeof b, APP_FIRST_APPENDED, APP_COUNT - 1, APP_COUNT - APP_FIRST_APPENDED,
+                                       HEAD_LLK_AHRNELL, HEAD_LLK_DAHNISH, HEAD_LLK_DAHNISH - HEAD_LLK_AHRNELL + 1,
+                                       APP_COUNT, HEAD_COUNT);
+    ExpectLine(r, b, kGoldBannerRows);
+}
+
 }  // namespace
 
 int main() {
@@ -457,5 +469,6 @@ int main() {
     testBudget();
     testStatSlotChunking();
     testStatAppChunking();
+    testBannerRowsFromConstants();
     return kt::Report("diversity_log_test");
 }

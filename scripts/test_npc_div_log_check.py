@@ -18,7 +18,7 @@ import npc_div_log_check as N  # noqa: E402
 # GOLDEN: mirrored from diversity_log_test.cpp
 GOLD_BANNER0 = "BANNER v=1.0.0 kpl=1 sha=6A522E71 base=00400000 ts=5f3a1b2c"
 GOLD_BANNER_HOOK = "BANNER hook=tex addr=0085e601 pre=ok"
-GOLD_BANNER_ROWS = "BANNER rows app=802-811 n=10 head=192-196 n=5 appcount=816 headcount=249"
+GOLD_BANNER_ROWS = "BANNER rows app=802-817 n=16 head=192-196 n=5 appcount=818 headcount=249"
 GOLD_TEX = ("TEX pd=0a1b2c3d fr=00001234 ret=00abcdef app=805 g=1 tv=1 dm=0 hd=0 ph=2 cur=n_commm01 "
             "h=06c232b2 st=1 slot=09 new=1 sw=1")
 GOLD_RMP = ("RMP this=12345678 pd=0a1b2c3d oid=000003e9 tp=00000010 tl=6 tag=Bastila xy=12.5,-3.5 "
