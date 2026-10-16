@@ -1,9 +1,9 @@
 [patch]
 id = "inventory-sort-filter"
 name = "Inventory Sort & Filter"
-version = "0.2.0"
+version = "0.2.1"
 author = "local"
-description = "Sorts the inventory backpack (new, usable, base item), tints items the shown character cannot equip, and adds New / Usable / Upgradeable filters by re-clicking the active All tab."
+description = "Sorts the inventory backpack (new, usable, base item), tints items the shown character cannot equip, and adds New / Usable / Upgradeable filters by re-clicking the active All tab. 0.2.1: no longer truncates inventory_sort_filter_log.txt at attach (sessions split on the loaded line)."
 
 requires = []
 conflicts = []

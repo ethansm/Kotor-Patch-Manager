@@ -72,7 +72,7 @@ using GetClientLanguageFn = int(__fastcall*)(int);                            //
 using CanEquipFn = unsigned char(__thiscall*)(int, int, unsigned*, int, int, int);
 
 // ---- log ----
-// One session per file (truncated in DllMain; cwd = game folder). logf forwards to the KpLog fallback sink (own line cap).
+// The fallback file is appended; sessions split on the "inventory-sort-filter <ver> loaded" line (no truncate since 0.2.1). logf forwards to the KpLog fallback sink (own line cap).
 KP_CHANNEL(chMain, "main");
 
 // Only stores the path and the level (no I/O): safe from a static initialiser. Same file name as before (tooling reads it).
@@ -433,9 +433,8 @@ extern "C" void __cdecl SortFilterRowSelect(int ebp) {
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {
-        if (FILE* f = fopen("inventory_sort_filter_log.txt", "w")) fclose(f);   // one session per file (cwd = game folder)
         char cwd[MAX_PATH] = "?"; GetCurrentDirectoryA(MAX_PATH, cwd);
-        logf("inventory-sort-filter 0.2.0 loaded; cwd=%s pid=%lu", cwd, (unsigned long)GetCurrentProcessId());
+        logf("inventory-sort-filter 0.2.1 loaded; cwd=%s pid=%lu", cwd, (unsigned long)GetCurrentProcessId());
         // Bare names go to the Windows directory (Wine: C:\\windows), so anchor the INI to the game folder.
         if (GetCurrentDirectoryA(MAX_PATH, cwd) > 0) snprintf(IniName, sizeof IniName, "%s\\inventory_sort_filter.ini", cwd);
         logf("ini path: %s", IniName);
