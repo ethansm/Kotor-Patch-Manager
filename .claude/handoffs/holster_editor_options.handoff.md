@@ -75,3 +75,10 @@ _(none recorded; append Dead Ends & Anti-Patterns and Verification Commands here
   - Needed fix (D3b): header + status labels are placed at modalLayout rects INSIDE the description pane, under the 3D view, so editor mode shows a blank title bar. Move the header to the vanilla LBL_TITLE rect (listed ctl) and the status below the view.
   - kplog.ini needs a section per new patch: added [holster-editor] + [preview-3d] (level=debug); without it no log is written.
   - Recon: r1 hand per weapon -> NEEDS-LIVE-PROBE (hook 0x763B4C rhand / 0x763E7E lhand in FUN_007637E0); r2 Options dtor cleanup -> labels SAFE-RECIPE, view free needs probe (hover mgr+0x08, count P+0x28, list P+0x24); r3 input -> GAPS small (no held/move events, no point-in-box, thumb inset 5px, no camera basis, wheel unwired). Reports in .claude/research/holster_edit/r1..r3.
+- USER FEEDBACK 10-16 (after D3a play), DESIGN CHANGE for D3b:
+  1. The 'Holstered weapons' button is a plain cloned label: needs the real button look (colours, outline, hover state).
+  2. On hover, the right-hand pane (LB_DESC) must show a text description of the entry.
+  3. Placement: NOT last in the menu. Nest it under a new 'Mod Configuration' Options entry placed directly UNDER Gameplay (Feedback/Auto-Pause/Graphics/Sound/Exit shift down one slot). Holstered weapons becomes an entry on that sub-page.
+  4. 'Mod Configuration' becomes its own shared provider patch (working name mod-config, k2.modconfig@1): other mods register entries (name, description, enter/leave callbacks); holster-editor becomes a client.
+  Recon launched: r4 button style + hover (.claude/research/holster_edit/r4_button_style_hover.md), r5 reflow + provider sketch (r5_modconfig_provider.md). r2 already found hover pointer = [P+0x1C]+0x08 (poll per Draw tick to drive the description).
+  New order: D3a2 (mod-config provider + styled entry button + hover description + header fix) BEFORE D3b viewport. Cards after r4/r5 land.
