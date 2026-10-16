@@ -24,19 +24,10 @@ CLASS_IDS = {n: i for i, n in enumerate("Soldier Scout Scoundrel JediGuardian Je
 FIXTURE_GUID = 0xFB7BDBF7   # "keep": the GUID the live test save carries (doc 08 run logs)
 TIMEOUT = 120
 
-# TODO(move into saves.toml as [scenario.<id>.expect].decisions): decision keys the harness emits are
+# Expected decisions live in saves.toml as [scenario.<id>.expect].decisions; decision keys the harness emits are
 #   <tag>.canLevelUp = HOLD|PASS|NONE   (HOLD = real CanLevelUp 1 gated to 0; NONE = the real engine cannot level)
 #   <tag>.autoLevel  = APPLIED|WOULD_REWRITE|ALREADY|SKIP|DRY|NONE|BLOCKED   <tag>.guard = HOLD|PASS (GUI button guard, tag = party leader)
 #   guid = g<hex> after `load`, load.found = LUO_G names present, save.globals = LUO_G names in the saved table, banked = n of the last BANKED line
-EXPECT_DECISIONS = {
-    "S1_atton_hold_default": {"atton.canLevelUp": "HOLD", "atton.autoLevel": "BLOCKED", "banked": "1", "guid": "gfb7bdbf7"},
-    "S2_atton_pause3_many": {"atton.canLevelUp": "HOLD", "atton.autoLevel": "BLOCKED", "banked": "12"},   # levels 4..15 = 12 held levels
-    "S3_atton_converted_early": {"atton.canLevelUp": "PASS", "atton.autoLevel": "APPLIED"},
-    "S5_guid_partial": {"guid": "g00000000", "load.found": "16"},
-    "S6_guid_orphan": {"guid": "g5eed0006", "load.found": "32"},
-    "S7_guid_cleared": {"guid": "g00000000", "load.found": "0", "save.globals": "0"},
-    "S10_pc_led_levelable": {"pc.canLevelUp": "PASS", "pc.guard": "PASS", "pc.autoLevel": "NONE"},
-}
 
 
 def build(exe, m32=False):
@@ -117,7 +108,7 @@ def scenario_dat(sid, sc):
     L += ["ACT " + a for a in sc.get("actions", acts)]
     L += ["EVENT " + e for e in exp.get("events", [])]
     L += ["ABSENT " + e for e in exp.get("absent", [])]
-    dec = dict(EXPECT_DECISIONS.get(sid, {}))
+    dec = {}
     dec.update(exp.get("decisions", {}))
     L += ["DECISION %s %s" % (k, v) for k, v in dec.items()]
     L.append("END")

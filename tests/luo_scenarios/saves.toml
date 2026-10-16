@@ -61,6 +61,7 @@ in_party = true
 playthrough_guid = "save"
 companions = { atton = "atton__melee_dual_light_early|instant=0|hold=1" }
 [scenario.S1_atton_hold_default.expect]
+decisions = { "atton.canLevelUp" = "HOLD", "atton.autoLevel" = "BLOCKED", banked = "1", guid = "gfb7bdbf7" }
 events = ['^HOLD tag=atton ', '^BANKED tag=atton ']
 absent = ['^APPLIED tag=atton__', 'APPLY ABORTED']
 
@@ -79,6 +80,8 @@ in_party = true
 playthrough_guid = "save"
 companions = { atton = "atton__melee_dual_light_early|instant=0|hold=1|pause=3" }
 [scenario.S2_atton_pause3_many.expect]
+# levels 4..15 = 12 held levels
+decisions = { "atton.canLevelUp" = "HOLD", "atton.autoLevel" = "BLOCKED", banked = "12" }
 events = ['^HOLD tag=atton ', '^BANKED tag=atton ']
 absent = ['^APPLIED tag=atton__']
 
@@ -97,6 +100,7 @@ in_party = true
 playthrough_guid = "save"
 companions = { atton = "atton__melee_dual_light_early|instant=0|hold=1" }
 [scenario.S3_atton_converted_early.expect]
+decisions = { "atton.canLevelUp" = "PASS", "atton.autoLevel" = "APPLIED" }
 events = ['^APPLIED tag=atton__']
 absent = ['^HOLD tag=atton ']
 
@@ -127,6 +131,7 @@ guid = "partial:16"
 [scenario.S5_guid_partial.config]
 playthrough_guid = "none"
 [scenario.S5_guid_partial.expect]
+decisions = { guid = "g00000000", "load.found" = "16" }
 events = ['^GUID load g[0-9a-f]{8} found=16/32']
 
 [scenario.S6_guid_orphan]
@@ -139,6 +144,7 @@ guid = "g5eed0006"
 [scenario.S6_guid_orphan.config]
 playthrough_guid = "none"
 [scenario.S6_guid_orphan.expect]
+decisions = { guid = "g5eed0006", "load.found" = "32" }
 events = ['^GUID load g5eed0006 found=32/32']
 absent = ['APPLIED']
 
@@ -152,6 +158,7 @@ guid = "none"
 [scenario.S7_guid_cleared.config]
 playthrough_guid = "none"
 [scenario.S7_guid_cleared.expect]
+decisions = { guid = "g00000000", "load.found" = "0", "save.globals" = "0" }
 events = ['^GUID load g00000000 found=0/32']
 
 [scenario.S8_kreia_levelable]
@@ -191,6 +198,7 @@ xp = 105000
 playthrough_guid = "save"
 companions = { atton = "atton__melee_dual_light_early|instant=0|hold=1" }
 [scenario.S10_pc_led_levelable.expect]
+decisions = { "pc.canLevelUp" = "PASS", "pc.guard" = "PASS", "pc.autoLevel" = "NONE" }
 absent = ['DECIDE tag=\? ', 'INSTANT(-LEADER)? tag=\? ']
 
 [scenario.S11_multi_levelable]

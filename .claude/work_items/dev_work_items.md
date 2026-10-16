@@ -67,7 +67,7 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 51 | WI-25 | P2 | verify-only | M | - | 2DA limit verify and wrap width probe | 2 | 0 | 2DA limit verify and wrap width probe; engine bug candidates. |
 | [ ] | 52 | WI-66b | P2 | ready | S | - | Bug-investigate per-stage reliability and playtest bundle ch | 2 | 1 | Bug-investigate per-stage reliability and playtest; tooling. |
 | [ ] | 53 | WI-51b | P2 | ready | M | WI-51 | deep-haiku-review ladder wiring: refute-audit and fix (C296) | 1 | 0 | deep-haiku-review ladder wiring; tooling, after WI-51. |
-| [ ] | 54 | WI-37 | P2 | ready | M | - | Forced-state expected decisions into saves.toml | 2 | 2 | Forced-state expected decisions into saves.toml; test tooling. |
+| [x] | 54 | WI-37 | P2 | ready | M | - | Forced-state expected decisions into saves.toml | 2 | 2 | Forced-state expected decisions into saves.toml; test tooling. |
 | [ ] | 55 | WI-56 | P2 | verify-only | M | WI-55 | Verify deep-haiku-review effort plumbing E1-E3 (gaps reporte | 3 | 0 | deep-haiku-review effort plumbing verify; tooling, gaps reported. |
 | [ ] | 56 | WI-54 | P2 | ready | M | WI-50 | Deep-haiku-review H2 verify-script backoff, lookup order and | 6 | 0 | deep-haiku-review H2 verify-script backoff and lookup; tooling. |
 | [ ] | 57 | WI-27 | P2 | ready | M | - | Mouse camera probe logging and hooks | 10 | 2 | Mouse camera probe logging and hooks; 7 open, 1 awaiting user. |
