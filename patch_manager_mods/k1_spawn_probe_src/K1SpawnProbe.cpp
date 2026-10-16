@@ -1,10 +1,10 @@
-// K1 Spawn Probe 0.3.2-probe (Steam Aspyr build 6A522E71...): a DLL-only client of the npc-world library (k2.npcworld@1, NpcWorld.h).
+// K1 Spawn Probe 0.3.3-probe (Steam Aspyr build 6A522E71...): a DLL-only client of the npc-world library (k2.npcworld@1, NpcWorld.h).
 // Doc 38 stage 2 (native spawn of K1 content into K2) on top of the shared library. It owns NO hook: the three world detours
 // (LoadModuleInProgress, creature AddToArea, MainLoop), the POP-STABLE latch, the seen-tag list and the native CreateObject sequence
 // all live in npc-world, which must load first (manifest requires = ["npc-world"]; a DLL-only patch has no hook to retry connect() from).
 // What this client keeps from 0.2.0: the roster, the forensic dumps (ADDTOAREA line with +0x11AC/+0x11FC, NPC dump, DUMP-ANY, TAGSCAN)
 // and the log format, so the harvest keys do not change. New fields are appended at the end of the ADDTOAREA line.
-// Log: k1-spawn-probe_log.txt in the game's working directory (appended; the banner line marks each process start).
+// Log: k1-spawn-probe_log.txt via KpLog.h (channel main; core prefix `T=<s.ms> f=- k1-spawn-probe/main`; old core: same file name, fallback at INFO, appended; the loaded line marks each process start).
 // Every memory read goes through SafeRead (no faults, no unvalidated derefs). Creature and area pointers from an event are valid only
 // inside the callback, so all reads happen there. Lines are budgeted by k1spawn::LogBudget (ClientCore.h): 3000 per process, 2500 of them
 // ADDTOAREA. The first logf/ADDTOAREA line refused at the total cap writes one "CAP reached" line (SPAWN and dump refusals do not); further lines are counted in memory only.
@@ -22,13 +22,15 @@
 #include "SafeRead.h"
 #include "NpcWorld.h"
 #include "ClientCore.h"
+#include "KpLog.h"
+
+KP_LOG_PATCH("k1-spawn-probe");
 
 namespace {
 
 using saferead::readAt;
 
-constexpr const char* kVersion = "0.3.2-probe";
-constexpr const char* kLogName = "k1-spawn-probe_log.txt";
+constexpr const char* kVersion = "0.3.3-probe";
 constexpr int kEventLines = 25;         // one dump event: header + 16 creature rows + 4 DUMP24 rows + 4 DUMPST rows
 constexpr int kCreatureDwords = 0x100;  // creature object dump (dwords)
 constexpr int kPtrDwords = 0x40;        // DUMP24 / DUMPST dumps (dwords)
@@ -45,25 +47,40 @@ bool g_enabled = true;       // [spawn] enabled in k1_spawn_probe.ini
 long g_seq = 0;              // ADDTOAREA events since attach (counts events after the cap too)
 long g_loadSeq = 0;
 char g_armedArea[17] = "";   // area resref "SPAWN armed" was last logged for (reset by AREA_LOAD)
-FILE* g_event = nullptr;     // log file kept open for the duration of one event callback (callbacks over 5 ms are WARNed)
 k1spawn::LogBudget g_budget;   // every line and dump row is charged here (3000 total, 2500 ADDTOAREA)
-k1spawn::EventScope g_scope;   // nesting of onEvent callbacks: the outermost one owns g_event
+k1spawn::EventScope g_scope;   // nesting of onEvent callbacks (the core still calls openLog/closeLog; both are no-ops since KpLog)
 k1spawn::DumpGate g_gate;      // NPC dump once; DUMP-ANY for the first distinct creature ids
 k1spawn::ScanBudget g_scan;    // fallback TAGSCAN, at most 64 per process
 
 // ---- logging ----------------------------------------------------------------------------------------------------
-// Writes one line the budget has already charged. Uses the event's open handle; outside an event it opens and closes the log.
-// A line is flushed at the end of every event (flushEvent) and when the log closes, so a crash keeps the last flushed line.
-void writeLine(const char* text) {
-    FILE* f = g_event ? g_event : fopen(kLogName, "a");
-    if (!f) return;
-    fputs(text, f);
-    fputc('\n', f);
-    if (!g_event) fclose(f);
-}
+// 0.3.3-probe: lines go through KpLog.h (channel main): new core -> k1-spawn-probe_log.txt (same name as the old raw file), old core ->
+// fallback k1-spawn-probe_log.txt at INFO. The core cuts a message at 232 bytes ("[...]"), so a long line (ADDTOAREA is ~400 B) is split
+// at spaces into pieces of <= 220 bytes (continuations start with `+ `). The budget charges the logical line, pieces are not charged.
+// Crash durability now relies on the KpLog flush thread (the raw log was flushed at the end of every event); accepted for a probe.
+KP_CHANNEL(chMain, "main");
+const bool g_fallbackSet = (KpLog_SetFallbackFile("k1-spawn-probe_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
 
-void flushEvent() {
-    if (g_event) fflush(g_event);
+constexpr int LogPiece = 220;
+
+// Writes one line the budget has already charged.
+void emit(const char* s) {
+    int n = static_cast<int>(strlen(s));
+    if (n <= LogPiece) { KP_LOG(chMain, "%s", s); return; }
+    char piece[LogPiece + 1];
+    int pos = 0; bool first = true;
+    while (pos < n) {
+        int len = n - pos < LogPiece - 2 ? n - pos : LogPiece - 2;   // room for the `+ ` marker
+        if (pos + len < n) {   // not the last piece: prefer to cut at a space
+            int cut = len;
+            while (cut > LogPiece / 2 && s[pos + cut] != ' ') --cut;
+            if (s[pos + cut] == ' ') len = cut;
+        }
+        if (first) { memcpy(piece, s + pos, len); piece[len] = 0; }
+        else { piece[0] = '+'; piece[1] = ' '; memcpy(piece + 2, s + pos, len); piece[len + 2] = 0; }
+        KP_LOG(chMain, "%s", piece);
+        first = false; pos += len;
+        if (pos < n && s[pos] == ' ') ++pos;
+    }
 }
 
 // Charges one line against the budget. A refused line is counted as dropped; the first refusal at the total cap writes the
@@ -71,7 +88,7 @@ void flushEvent() {
 bool chargeLine(k1spawn::LogKind kind) {
     if (g_budget.reserve(1, kind)) return true;
     char marker[48];
-    if (g_budget.takeCapMarker(g_seq, marker, sizeof marker)) writeLine(marker);
+    if (g_budget.takeCapMarker(g_seq, marker, sizeof marker)) emit(marker);
     return false;
 }
 
@@ -79,7 +96,7 @@ bool chargeLine(k1spawn::LogKind kind) {
 void vlogKind(k1spawn::LogKind kind, const char* fmt, va_list ap) {
     char buf[1024];
     vsnprintf(buf, sizeof buf, fmt, ap);
-    if (chargeLine(kind)) writeLine(buf);
+    if (chargeLine(kind)) emit(buf);
 }
 
 void logf(const char* fmt, ...) {
@@ -96,19 +113,16 @@ void logfKind(k1spawn::LogKind kind, const char* fmt, ...) {
     va_end(ap);
 }
 
-// The DLL side of the core's Env: writes lines the budget already charged, opens the log for one event, calls npc-world.
+// The DLL side of the core's Env: writes lines the budget already charged, calls npc-world. openLog/closeLog/flush are no-ops (KpLog owns the file).
 struct DllEnv : k1spawn::Env {
-    void line(const char* text) override { writeLine(text); }
-    void openLog() override { g_event = fopen(kLogName, "a"); }
-    void closeLog() override {
-        if (g_event) fclose(g_event);
-        g_event = nullptr;
-    }
+    void line(const char* text) override { emit(text); }
+    void openLog() override {}
+    void closeLog() override {}
     uint32_t spawn(const char* resref, const char* tag, float x, float y, float z, float facing) override {
         return g_nw.spawn(resref, tag, x, y, z, facing);
     }
     bool tagPresent(const char* tag) override { return g_nw.tagPresent(tag); }
-    void flush() override { flushEvent(); }
+    void flush() override {}
 };
 DllEnv g_env;
 
@@ -117,18 +131,16 @@ DllEnv g_env;
 void dumpBlock(const char* prefix, uintptr_t base, int dwords) {
     const int rows = (dwords + 15) / 16;
     if (!g_budget.reserve(rows, k1spawn::LogKind::Other)) return;
-    FILE* f = g_event ? g_event : fopen(kLogName, "a");
-    if (!f) return;
     for (int row = 0; row < rows; ++row) {
-        fprintf(f, "%s off=%03x:", prefix, static_cast<unsigned>(row * 16 * 4));
-        for (int i = row * 16; i < row * 16 + 16 && i < dwords; ++i) {
+        char line[200];
+        int n = snprintf(line, sizeof line, "%s off=%03x:", prefix, static_cast<unsigned>(row * 16 * 4));
+        for (int i = row * 16; i < row * 16 + 16 && i < dwords && n > 0 && n < static_cast<int>(sizeof line) - 10; ++i) {
             unsigned v = 0;
-            if (readAt(kSiteDump, base, i * 4, &v)) fprintf(f, " %08x", v);
-            else fputs(" ????????", f);
+            if (readAt(kSiteDump, base, i * 4, &v)) n += snprintf(line + n, sizeof line - n, " %08x", v);
+            else n += snprintf(line + n, sizeof line - n, " ????????");
         }
-        fputc('\n', f);
+        emit(line);
     }
-    if (!g_event) fclose(f);
 }
 
 // ---- formatting -------------------------------------------------------------------------------------------------
@@ -375,6 +387,7 @@ void onConnect(bool ok, const char* why) {
 extern "C" {
 
 __declspec(dllexport) void __cdecl KPatchInit(const KPatchApi* api) {
+    KpLog_Init(api);   // first: nothing logged before this reaches the core file (KpLog_Init itself does no file I/O; the ini read below predates 0.3.3)
     g_enabled = GetPrivateProfileIntA("spawn", "enabled", 1, kIniName) != 0;
     logf("k1-spawn-probe %s loaded (client of npc-world, spawn %s)", kVersion, g_enabled ? "enabled" : "disabled by ini");
     g_nw.init(api, "k1-spawn-probe");

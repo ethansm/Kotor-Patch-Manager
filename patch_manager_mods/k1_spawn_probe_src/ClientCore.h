@@ -176,7 +176,7 @@ inline void RunStable(Env& env, const char* area, int visitSeq, unsigned salt, b
         }
         snprintf(buf, sizeof buf, "SPAWN begin resref=%.16s tag=%.32s area=%s at %.1f,%.1f,%.1f", row.resref, row.tag, a, row.x, row.y, row.z);
         EmitLine(env, budget, buf);
-        env.flush();  // a crash inside the library's spawn sequence leaves the begin line as the last one
+        env.flush();  // durable only when the DLL flushes (k1-spawn-probe 0.3.3: no-op, KpLog flush thread; up to ~500 ms of lines can be lost in a crash)
         const uint32_t oid = env.spawn(row.resref, row.tag, row.x, row.y, row.z, row.facing);
         if (oid) snprintf(buf, sizeof buf, "SPAWN ok resref=%.16s id=%08x", row.resref, static_cast<unsigned>(oid));
         else snprintf(buf, sizeof buf, "SPAWN fail resref=%.16s refused by npc-world (reason in npc-world_log.txt)", row.resref);
