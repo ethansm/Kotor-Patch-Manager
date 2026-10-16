@@ -460,9 +460,9 @@ static void handAttach(int hand, void* gob, void* item, void* body) {
            name[0] ? name : "-", static_cast<unsigned>(bvt));
 }
 
-// 0x00763B49 right-hand attach site. Args (hooks.toml order): weapon Gob [ebp-0x2c], item [ebp-0x40], body anim object ecx.
+// 0x763B49 right-hand attach site. Args (hooks.toml order): weapon Gob [ebp-0x2c], item [ebp-0x40], body anim object ecx.
 extern "C" void __cdecl OnHandAttachR(void* gob, void* item, void* body) { handAttach(hs::HandR, gob, item, body); }
-// 0x00763E7B left-hand attach site. Args: weapon Gob [ebp-0x2c], item [ebp-0x30], body anim object ecx.
+// 0x763E7B left-hand attach site. Args: weapon Gob [ebp-0x2c], item [ebp-0x30], body anim object ecx.
 extern "C" void __cdecl OnHandAttachL(void* gob, void* item, void* body) { handAttach(hs::HandL, gob, item, body); }
 
 // Called first thing in HolsterPlace: logs HANDMAP once per placed gob that the ring knows (dedupe and cap 64 in hs::SeenSet).

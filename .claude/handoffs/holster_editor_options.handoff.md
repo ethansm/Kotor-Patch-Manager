@@ -90,3 +90,18 @@ _(none recorded; append Dead Ends & Anti-Patterns and Verification Commands here
   - r7: labels SAFE-RECIPE (at OptDestroy: focus P+0x20, hover M+0x08 via 0x413C50 writer, pressed M+0x10, M+0x14, then P+0x28=count, vt[0](1) only if vtable 0x9878BC); 3D view NEEDS-PROBE (Scene* view+0x74 dtor unidentified, double-free risk).
   - r8 GAPS: Bind(party::member(party::table(),N)) -> Rebuild -> SetWeapons(token,1) -> RegisterPreview(WeaponGob(token,h),NULL,h==LEFT) -> BeginEdit a frame later; SetView(token,yaw,zoom,panZ). Gaps: bind+register (G1), framing (G2), party picker + names (G3, no accessor; 0x5632F0 unverified), left-hand decision (G4).
   - NEXT: user go to plan next round (D3a2 mod-config/menuui provider + probes, then D3b).
+
+## Session context 10-16 (round 3 plan)
+- D3a play result (10-16): button visible, enter/leave restore OK, EMBED/INPUTCLASS/DTOR lines clean, no crash. Two faults on the user's screenshots: (1) the "Holstered weapons" label does not look like a vanilla button (no outline, colours, hover); (2) the editor title bar is blank: header and status labels sit inside the LB_DESC pane (hse::modalLayout on the desc box, HolsterEditor.cpp:169-175) and the 3D view drawn on the same rect covers them. Fix = header on the LBL_TITLE rect, status in a strip under the view.
+- User feedback verbatim: "options button isn't properly styled, colors, outline, hover state. On hover the menu on the right side should have a text description of what it is. This should be nested in the options menu under Gameplay or Graphics or a new Mod Configuration option that this would sit underneath. Mod Configuration menu could be its own provider dll patch for shared leverage. We wouldn't want it last in the menu list, instead move it up under the Gameplay option." and "we should put a lot of this into a shared DLL provider for other mods to create menu screens with shared components that maintain vanilla styling".
+- Design decisions:
+  - Menu nesting: Options -> Mod Configuration (under Gameplay) -> list -> mod page. The list page exists even with one mod.
+  - Pages live inside the Options panel (hide/restore vanilla controls), not in a new engine panel.
+  - On mod pages BTN_EXIT and LBL_TITLE are hidden; our Back = BTN_EXIT clone on its rect, title = LBL_TITLE clone. Esc still closes the whole GUI.
+  - Hover is detected by polling the cursor each tick (the M+0x08 writer runs on clicks only). Event 0 / 0x8A2210 not used.
+  - Button classes are cloned in `_shared_src/GuiButton.h`, not GuiKit.h.
+  - mod-config v1 = buttons, labels, custom controls, pages only (sliders/toggles in D3c).
+  - Probes ship first (Install 1).
+- Agent routing: Haiku 5.5 for recon, boilerplate, pure headers and docs; Sonnet 5.5 for engine-glue cards (c13, c14, c18, c19, c21) and failed Haiku retries; orchestrator only reviews on escalation.
+- Repo state at plan start: head a154fa2; live holster 9196b748, holster-editor 6368a82a, preview-3d 7384ae1a; kplog.ini has [holster-editor] and [preview-3d] (backup kplog.ini.bak_hse_20261016); mod-config needs a [mod-config] kplog.ini section at its install.
+- Resume: `python3 scripts/plan_manager.py resume .claude/plans/holster_editor_options.md`.

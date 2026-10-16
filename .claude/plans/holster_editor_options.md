@@ -167,3 +167,16 @@ Order: HE0 GO → HE2 ∥ D2 (+ D2f embedded layout, D2 wave 2: mouse routing, t
   - the editor works with equip3d uninstalled;
   - with holster uninstalled, holster-editor is not installable (hard requires);
   - values survive a restart and match the world.
+
+## 5. Round 3 (10-16): probes -> mod-config provider -> D3b
+D3a play PASS 10-16, with two faults (unstyled entry button, blank title bar) and the user's menu direction (Mod Configuration under Gameplay, shared provider). Order: W0 recon, W1 probes (Install 1), W2 provider, W3 D3b. Context: handoff section "Session context 10-16 (round 3 plan)".
+
+**W0 static recon (Haiku, no install).** R9 button lifetime: scalar deleting dtor, vt[0x14], the 0x8A2320 description replay sequence, and the mouse-move enter/leave dispatcher, into `.claude/research/holster_edit/r9_button_lifetime.md`. R10 creature first-name read path, into `.claude/research/holster_edit/r10_creature_name.md`.
+
+**W1 probe build (Install 1).** New shared headers `_shared_src/GuiButton.h` (CSWGuiButton clone from the vanilla template: ctor 0x41A510 thiscall, vt 0x987A1C, 0x1D0 bytes) and `_shared_src/MenuLayout.h` (column reflow, slotBelow, statusStrip). holster-editor 0.1.1-probe: styled button clone under Gameplay with column reflow, hover description written into LB_DESC, release-edge clicks, title label on the LBL_TITLE rect and a status strip under the view (the blank-header fix), r7 label free recipe, optional free_view. holster 0.1.1-dev: hand-attach probe hooks at 0x763B49 (R) and 0x763E7B (L) logging HANDATTACH/HANDMAP. Play row PRB1.
+
+**W2 `mod-config` provider (new patch id).** Provides `k2.modconfig@1` and `k2.menuui@1`, and owns the three Options hooks (McBind, McTick, McDestroy; r5 sites 0x8A16FE, 0x40EC90, 0x8A1930). Options -> "Mod Configuration" (clone of BTN_GAMEPLAY at y 242, FEEDBACK..QUIT shift +36) -> list of registered mods with hover descriptions -> mod page with Back on the BTN_EXIT rect. holster-editor 0.2.0-dev becomes a hookless consumer (Register + build/enter/leave/tick/destroy callbacks). A new patch id needs a full `kpm_reinstall.py` and a `[mod-config]` kplog.ini section. Play row MC1.
+
+**W3 D3b holstered preview (holster-editor 0.2.1-dev, hot-swap).** Chosen party member in the view with weapons holstered (Bind -> Rebuild -> SetWeapons -> RegisterPreview, then BeginEdit a frame later), drag to spin, picker "<" name ">". Party names have no accessor yet (r8 G3). Play row D3B.
+
+**Later.** D3c value pane (+AddSlider/AddToggle), D3d drag editing, view-free default on, HE6, P-MIG.

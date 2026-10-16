@@ -20,6 +20,7 @@ constexpr uintptr_t GuiRefH = 0x009F4394;               // int (600): GUI layout
 constexpr uintptr_t ProjectionFlag = 0x00A1B9F0;        // GUI projection mode flag
 constexpr uintptr_t New = 0x00919723;                   // cdecl(size) engine operator new                 Mod3 FnNew 52
 constexpr uintptr_t LabelCtor = 0x00419740;             // CSWGuiLabel ctor, thiscall ECX only, no stack args, object size 0x148   Mod3 FnLabelCtor 49
+constexpr uintptr_t ButtonCtor = 0x0041A510;            // CSWGuiButton ctor, __fastcall(this) = ECX only, no stack args (dump decomp/41/0041a510.c:3)
 constexpr uintptr_t InitControl = 0x0040F620;           // thiscall(panel, ctl, CExoString* tag, addToList, scale) RET 16   Mod3 50
 constexpr uintptr_t StopLoadFromLayout = 0x0040F5A0;    // StopLoadFromLayout (createLabelFromTemplate must run BEFORE this)
 constexpr uintptr_t ExoCtor = 0x00733570;               // CExoString ctor, thiscall(this, const char*)    Mod3 51
@@ -35,6 +36,7 @@ constexpr uintptr_t PartyGetAt = 0x007E5DA0;            // party member accessor
 constexpr uintptr_t MemberServerCreature = 0x0077D800;  // thiscall(client party member) -> server creature (CSWSCreature*); 0x77caa4 in 0x77C780
 constexpr uintptr_t ClientPartyTable = 0x0073FB90;      // FUN_0073fb90(A) = *(*(A+4)+0x270), the party table getter
 constexpr uintptr_t LabelVtable = 0x009878BC;           // CSWGuiLabel RTTI vtable
+constexpr uintptr_t ButtonVtable = 0x00987A1C;          // CSWGuiButton vtable, size 0x1D0 (dump decomp/41/0041a510.c writes it)
 constexpr uintptr_t BorderVtable = 0x009875BC;          // CSWGuiBorder RTTI vtable
 constexpr uintptr_t TextVtable = 0x009876B4;            // CSWGuiText RTTI vtable
 constexpr uintptr_t KeyboardDeviceGlobal = 0x0099C884;  // rdata constant 0 (device-array index)
