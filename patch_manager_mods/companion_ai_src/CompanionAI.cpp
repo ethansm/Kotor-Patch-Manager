@@ -143,6 +143,11 @@ KP_CHANNEL(chProbe, "probe");
 const bool g_fallbackSet = (KpLog_SetFallbackFile("ai_trace.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
 bool g_started = false;   // startSession() ran (guarded by g_cs)
 void startSession();
+// The core rotates the file at max_bytes (8 MB default) keeping one .1 generation, so after ~5 MB written (core prefix ~35 B/line not counted: margin)
+// the session header and the config lines are written again; the current file then always starts with a header + config.
+constexpr unsigned long long RotateEvery = 5000000ull;
+unsigned long long g_sinceHeader = 0;
+void reAnchor(DWORD now);
 
 struct Lock { Lock() { EnterCriticalSection(&g_cs); } ~Lock() { LeaveCriticalSection(&g_cs); } };
 
@@ -153,6 +158,7 @@ constexpr int KpChunk = 200;
 void writeLine(::kplog::Channel& ch, int level, const char* s, int n) {
     if (n <= 0) return;
     g_gate.wrote(static_cast<unsigned long long>(n) + 1);
+    g_sinceHeader += static_cast<unsigned long long>(n) + 1;
     if (n <= KpChunk + 24) { KP_LOGV(ch, level, "%s", s); return; }
     unsigned long t = 0;   // continuation stamp = the line's own t= when it has one
     if (s[0] == 't' && s[1] == '=') t = strtoul(s + 2, nullptr, 10); else t = GetTickCount();
@@ -196,6 +202,7 @@ void vemit(::kplog::Channel& ch, DWORD now, uint32_t key, bool force, int level,
         buf[n] = 0;
         writeLine(ch, level, buf, n);
     }
+    if (g_sinceHeader >= RotateEvery) { g_sinceHeader = 0; reAnchor(now); }
 }
 // trace line: dedupe key (0 = none), subject to the per-second cap
 void tline(DWORD now, uint32_t key, const char* fmt, ...) { va_list ap; va_start(ap, fmt); vemit(chTrace, now, key, false, KPLOG_INFO, fmt, ap); va_end(ap); }
@@ -770,18 +777,27 @@ void e1Evaluate(CrTrack& t, DWORD now) {
 
 // The session header, the config lines and the first summary stamp. Emitted by KPatchInit (new core, after KpLog_Init) or, on an old core with
 // no KPatchInit, by the first handler through tick(); idempotent. DllMain only prepares paths (no logging before the logger is known).
-void startSession() {
-    Lock lk;
-    if (g_started) return;
-    g_started = true;
+void sessionHeader(DWORD now) {
     char cwd[MAX_PATH] = "";
     GetCurrentDirectoryA(MAX_PATH, cwd);
-    DWORD now = GetTickCount();
     time_t tt = time(nullptr); struct tm* lt = localtime(&tt);
     char when[32] = "?";
     if (lt) strftime(when, sizeof when, "%Y-%m-%d %H:%M:%S", lt);
     eline(now, "# companion-ai %s session %s t=%lu pid=%lu tid=%lu cwd=%s ini=%s", Version, when, now, (unsigned long)GetCurrentProcessId(),
           (unsigned long)g_loadTid, cwd, g_iniPath);
+}
+// Called under g_cs from vemit once ~5 MB went out: same header (re-anchors the clock) + the current config, so a rotated file stays self-describing.
+void reAnchor(DWORD now) {
+    sessionHeader(now);
+    logConfig(now, "rotate");
+}
+
+void startSession() {
+    Lock lk;
+    if (g_started) return;
+    g_started = true;
+    DWORD now = GetTickCount();
+    sessionHeader(now);
     loadIni(now, true);
     g_lastSummary = now;
     g_ready = true;
@@ -1135,6 +1151,13 @@ extern "C" int __cdecl CompanionAiA4(int ebp) {
     if (!g_cfg.a4) {   // exact vanilla semantics, including the fault on a NULL row
         if (!row) {
             ewarn(now, "t=%lu A4 NULL spell row: cr=%08x spell=%d -> vanilla crash (a4=0)", now, rd<int>(fr<int>(ebp, -0x1AC), ObId), fr<int>(ebp, -0x58));
+            // The core flushes asynchronously and the dereference below faults at once: write the line synchronously to a side file as well
+            // (hook thread, not the loader lock) and give the woken flusher a moment. The game is about to crash, so the delay costs nothing.
+            if (FILE* cf = fopen("companion-ai_crash.txt", "a")) {
+                fprintf(cf, "t=%lu A4 NULL spell row: cr=%08x spell=%d -> vanilla crash (a4=0)\n", now, rd<int>(fr<int>(ebp, -0x1AC), ObId), fr<int>(ebp, -0x58));
+                fclose(cf);
+            }
+            Sleep(100);
         }
         int v = *reinterpret_cast<volatile const int*>(row + 0x154);
         frw<int>(ebp, -0x15C, v);

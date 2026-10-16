@@ -27,7 +27,7 @@ def archive_logs(game_dir: str, archive_dir: str, tag: str) -> str:
     dest_path = os.path.join(archive_dir, dest_name)
     os.makedirs(dest_path, exist_ok=True)
 
-    log_patterns = ["*log*.txt", "kpatch.log", "*metrics*.txt", "*alloc*.txt"]
+    log_patterns = ["*log*.txt", "*log*.txt.1", "kpatch.log", "*metrics*.txt", "*alloc*.txt"]
     copied = 0
     total_bytes = 0
 

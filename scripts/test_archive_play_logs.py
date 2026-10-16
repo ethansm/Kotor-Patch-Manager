@@ -18,6 +18,7 @@ MATCHING = {
     "frame_metrics.txt": b"m" * 50,
     "heap_alloc.txt": b"z" * 10,
     "hotbar_log_2.txt": b"h",
+    "companion-ai_log.txt.1": b"r",   # KpLog core rotation generation
 }
 NON_MATCHING = ["notes.txt", "swkotor2.exe", "kpatch.log.1", "readme.md", "log.dat", "Shield_LOG_x.txt"]  # last: glob is case-sensitive
 
