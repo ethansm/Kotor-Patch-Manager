@@ -386,9 +386,17 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
         s_cache[s_next] = {n, g, h, isTarget};
         s_next = (s_next + 1) % 128u;
         static volatile LONG s_nodeLines = 0;   // one line per newly resolved (node, gob) pair, first 40
-        if (g_onPlace && InterlockedIncrement(&s_nodeLines) <= 40 && KP_ENABLED(chPlace, KPLOG_INFO) && takeLine())
-            KP_LOG(chPlace, "PLACENODE node=%x gob=%x t=%u step=%d name=%s target=%d bvt=%x", static_cast<unsigned>(n), static_cast<unsigned>(g), ni.t, ni.step,
-                   ni.name[0] ? ni.name : "-", isTarget ? 1 : 0, static_cast<unsigned>(rdU32(kSitePlace, reinterpret_cast<uintptr_t>(beh), 0)));
+        if (g_onPlace && InterlockedIncrement(&s_nodeLines) <= 40 && KP_ENABLED(chPlace, KPLOG_INFO) && takeLine()) {
+            // C5 recon (weapon identity probe): Gob+0x64 = inline Gob name; [Gob+0x84] = model, model+0x08 = inline model name (resref GUESS).
+            char gname[32], mname[32];
+            readTag(kSitePlace, reinterpret_cast<const char*>(g + 0x64), gname, sizeof gname);
+            const uintptr_t model = rdU32(kSitePlace, g, 0x84);
+            mname[0] = 0;
+            if (model) readTag(kSitePlace, reinterpret_cast<const char*>(model + 0x08), mname, sizeof mname);
+            KP_LOG(chPlace, "PLACENODE node=%x gob=%x t=%u step=%d name=%s target=%d bvt=%x gname=%s mname=%s", static_cast<unsigned>(n), static_cast<unsigned>(g),
+                   ni.t, ni.step, ni.name[0] ? ni.name : "-", isTarget ? 1 : 0, static_cast<unsigned>(rdU32(kSitePlace, reinterpret_cast<uintptr_t>(beh), 0)),
+                   gname[0] ? gname : "-", mname[0] ? mname : "-");
+        }
     }
     if (!isTarget) { refuse(PrNotTarget, g, n, 0); return; }
     const uint32_t vt = rdU32(kSitePlace, g, 0);
