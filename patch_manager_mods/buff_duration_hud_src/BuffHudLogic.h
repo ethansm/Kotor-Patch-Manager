@@ -65,6 +65,7 @@ inline ArrowCounters bumpArrowCounters(int rawBuff, int rawDebuff, int nBuff, in
 struct ArrowRaw { int slot; unsigned char buff, debuff, nBuff, nDebuff; bool seen; };
 
 // Existing entry for slot, else the first free one (slot == 0) claimed and zeroed, else nullptr (table full: no change log).
+// Capacity is fixed by the caller (g_arrowRaw[8] in the DLL); entries are never evicted, so a slot that stops resolving keeps its entry.
 // slotPtr == 0 is the free marker, never a valid key: it yields nullptr (nothing claimed).
 inline ArrowRaw* arrowRawFor(ArrowRaw* tbl, int count, int slotPtr) {
     if (slotPtr == 0) return nullptr;
@@ -82,6 +83,10 @@ inline bool arrowRawUpdate(ArrowRaw* raw, int rawBuff, int rawDebuff, int nBuff,
     raw->nBuff = (unsigned char)nBuff; raw->nDebuff = (unsigned char)nDebuff;
     return changed;
 }
+
+// ForceArrowCounters column reset: a column with nothing tracked this frame whose stored drawn or tracked count is still set needs
+// one visColumn(slot, debuff, 0, 0, nullptr) call (visSet merges both columns, so the other column keeps its state).
+inline bool arrowColumnStale(int nTracked, int lastDrawn, int lastTracked) { return nTracked == 0 && (lastDrawn > 0 || lastTracked > 0); }
 
 // Hook 2 (per native arrow): the first `tracked` arrows of the row are hidden, the rest (untracked engine buffs) are kept.
 inline bool arrowSuppressed(int index, int tracked) { return index < tracked; }

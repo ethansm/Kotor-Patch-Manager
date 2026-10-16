@@ -99,6 +99,7 @@ struct VisSlot {
     int slotPtr, cat, count, rect[4];
     int drawn[2], tracked[2], rc[2][4];       // per column (0 = buff, 1 = debuff): icons drawn / tracked effects / bounding rect
 };
+// Capacity 4 (K2PS_MAX_SLOTS). visIndex never evicts: a slot that stops resolving keeps its entry, and a fifth slot gets none (no VIS line).
 VisSlot g_vis[4];                              // K2PS_MAX_SLOTS entries, claimed in first-seen order: slot0, slot1, ...
 int visIndex(int slotPtr) {
     if (slotPtr == 0) return -1;
@@ -413,6 +414,9 @@ void ForceArrowCounters(int slotPtr) {
     {   // gate open again after a rejection: nothing tracked means no column call will follow, so close the stale state here
         const int vi = visIndex(slotPtr);
         if (vi >= 0 && g_vis[vi].cat != VisNone && g_vis[vi].cat < VisNoBuffs && nBuff + nDebuff == 0) visSet(vi, VisNoBuffs, 0, nullptr, 0);
+        // per column: a column with nothing tracked still holding its last drawn/tracked count gets no column call, so clear just that column
+        if (vi >= 0 && bh::arrowColumnStale(nBuff, g_vis[vi].drawn[0], g_vis[vi].tracked[0])) visColumn(slotPtr, false, 0, 0, nullptr);
+        if (vi >= 0 && bh::arrowColumnStale(nDebuff, g_vis[vi].drawn[1], g_vis[vi].tracked[1])) visColumn(slotPtr, true, 0, 0, nullptr);
     }
     const bh::ArrowCounters ctr = bh::bumpArrowCounters(rawBuff, rawDebuff, nBuff, nDebuff, hidden);   // never lowers an engine value
     unsigned char newBuff = (unsigned char)ctr.buff, newDebuff = (unsigned char)ctr.debuff;

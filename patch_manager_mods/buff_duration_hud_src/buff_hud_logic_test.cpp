@@ -423,6 +423,14 @@ static void testColumnLogGate() {
     }
 }
 
+// Column reset decision used by ForceArrowCounters (BuffDurationHUD.cpp): clear a column only when nothing is tracked for it now and it still stores a count.
+static void testArrowColumnStale() {
+    KT_CHECK(bh::arrowColumnStale(0, 2, 0));     // stale drawn icons, nothing tracked now: clear
+    KT_CHECK(bh::arrowColumnStale(0, 0, 3));     // stale tracked count only: clear
+    KT_CHECK(!bh::arrowColumnStale(0, 0, 0));    // nothing stored: no call
+    KT_CHECK(!bh::arrowColumnStale(1, 2, 3));    // still tracked this frame: the column call itself updates it
+}
+
 // ================================================================ menu companion portraits
 static void testMenuGates() {
     KT_CHECK(!bh::menuPortraitVisible(0));
@@ -604,6 +612,7 @@ int main() {
     testColumnLogGate();
     testMenuGates();
     testTableGates();
+    testArrowColumnStale();
 
     return kt::Report("buff_hud_logic");
 }
