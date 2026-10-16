@@ -143,7 +143,42 @@ static void testUnknownAndNullKeys() {
     KT_CHECK(same(c, before));
 }
 
+static void testCategoryOverride() {
+    TuneCfg c = base();
+    KT_CHECK(applyTuneKey(c, "place_rot_pistol", "-90,0,0"));
+    KT_CHECK(applyTuneKey(c, "PLACE_OFF_Rifle", "0.1,-0.05,0"));
+    KT_CHECK(c.cat[CatPistol].hasRot && !c.cat[CatPistol].hasOff && c.cat[CatPistol].rot[0] == -90.f);
+    KT_CHECK(c.cat[CatRifle].hasOff && !c.cat[CatRifle].hasRot);
+    float r[3], o[3];
+    resolveTune(c, CatPistol, r, o);   // rot override, global offset
+    KT_CHECK(r[0] == -90.f && r[1] == 0.f && o[0] == 0.5f);
+    resolveTune(c, CatRifle, r, o);    // global rot, offset override
+    KT_CHECK(r[0] == 1.f && r[2] == 3.f && o[0] == 0.1f && o[1] == -0.05f);
+    resolveTune(c, CatLightsaber, r, o);
+    KT_CHECK(r[0] == 1.f && o[2] == 0.5f);
+    resolveTune(c, CatUnknown, r, o);
+    KT_CHECK(r[1] == 2.f);
+    clearCatTune(c);
+    resolveTune(c, CatPistol, r, o);
+    KT_CHECK(r[0] == 1.f && !c.cat[CatPistol].hasRot);
+}
+
+static void testCategoryKeyRejects() {
+    TuneCfg c = base();
+    KT_CHECK(!applyTuneKey(c, "place_rot_unknown", "1,2,3"));
+    KT_CHECK(!applyTuneKey(c, "place_rot_", "1,2,3"));
+    KT_CHECK(!applyTuneKey(c, "place_rot_pistolx", "1,2,3"));
+    KT_CHECK(!applyTuneKey(c, "place_rotpistol", "1,2,3"));
+    KT_CHECK(!applyTuneKey(c, "place_rot_pistol", "1,2"));
+    KT_CHECK(!applyTuneKey(c, "place_off_heavy", "4,0,0"));
+    KT_CHECK(!c.cat[CatPistol].hasRot && !c.cat[CatHeavy].hasOff);
+    KT_CHECK(isTuneKey("place_rot_heavy") && isTuneKey("place") && isTuneKey("Place_Off"));
+    KT_CHECK(!isTuneKey("place_gobvt") && !isTuneKey("place_rot_x") && !isTuneKey(nullptr));
+}
+
 int main() {
+    testCategoryOverride();
+    testCategoryKeyRejects();
     testDefaultIsZero();
     testPlaceBoolWords();
     testPlaceBadWordLeavesCfg();

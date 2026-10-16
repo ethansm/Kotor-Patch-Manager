@@ -59,7 +59,7 @@ FULL_RE = {
                r"pos=\((?P<px><N>),(?P<py><N>),(?P<pz><N>)\) quat=\((?P<qw><N>),(?P<qx><N>),(?P<qy><N>),(?P<qz><N>)\)"),
     "PLACE": _rx(r"\bPLACE n=(?P<n><I>) gob=(?P<gob><H>) node=(?P<node><H>) beh=(?P<beh><H>) gobvt=(?P<gobvt><H>) "
                  r"pos0=\((?P<p0x><N>),(?P<p0y><N>),(?P<p0z><N>)\) quat0=\((?P<q0w><N>),(?P<q0x><N>),(?P<q0y><N>),(?P<q0z><N>)\) "
-                 r"pos1=\((?P<p1x><N>),(?P<p1y><N>),(?P<p1z><N>)\) quat1=\((?P<q1w><N>),(?P<q1x><N>),(?P<q1y><N>),(?P<q1z><N>)\)"),
+                 r"pos1=\((?P<p1x><N>),(?P<p1y><N>),(?P<p1z><N>)\) quat1=\((?P<q1w><N>),(?P<q1x><N>),(?P<q1y><N>),(?P<q1z><N>)\)(?: cat=(?P<cat>\w+))?"),
 }
 MAIN_RES = {
     "loaded": re.compile(r"\bholster (\S+) loaded\b"),
@@ -69,7 +69,7 @@ MAIN_RES = {
     "reload": re.compile(r"\bRELOAD (place=\d .*)$"),
     "tune": re.compile(r"\bTUNE boot (place=\d .*)$"),
     "refuse": re.compile(r"\bPLACEREFUSE reason=(\w+) n=(\d+)"),
-    "node": re.compile(r"\bPLACENODE node=\w+ gob=\w+ t=(\d+) step=(-?\d+) name=(\S+) target=(\d)(?: bvt=(\w+))?(?: gname=(\S+) mname=(\S+))?"),
+    "node": re.compile(r"\bPLACENODE node=\w+ gob=\w+ t=(\d+) step=(-?\d+) name=(\S+) target=(\d)(?: bvt=(\w+))?(?: gname=(\S+) mname=(\S+))?(?: cat=(\w+))?"),
 }
 
 
@@ -95,7 +95,7 @@ def _record(kind, n, m):
                    pos0=[float(g[k]) for k in ("p0x", "p0y", "p0z")],
                    quat0=[float(g[k]) for k in ("q0w", "q0x", "q0y", "q0z")],
                    pos1=[float(g[k]) for k in ("p1x", "p1y", "p1z")],
-                   quat1=[float(g[k]) for k in ("q1w", "q1x", "q1y", "q1z")])
+                   quat1=[float(g[k]) for k in ("q1w", "q1x", "q1y", "q1z")], cat=g["cat"] or "")
     return rec
 
 
@@ -129,7 +129,8 @@ def parse_lines(window):
         m = MAIN_RES["node"].search(text)
         if m:
             main["node"]["t=%s step=%s name=%s target=%s" % m.groups()[:4] + (" bvt=%s" % m.group(5) if m.group(5) else "")
-                   + (" gname=%s mname=%s" % m.group(6, 7) if m.group(6) else "")] += 1
+                   + (" gname=%s mname=%s" % m.group(6, 7) if m.group(6) else "")
+                   + (" cat=%s" % m.group(8) if m.group(8) else "")] += 1
         k = KIND_RE.search(text)
         if k is None:
             continue
@@ -293,8 +294,8 @@ def _place(recs):
         out.append("PLACE quat1 unit-norm: n/a (no parsed PLACE lines)")
     for gid, samples in shown:
         last = samples[-1]
-        out.append("  gob=0x%s samples=%d last pos0=(%s) quat0=(%s)"
-                   % (gid, len(samples), _vec(last["pos0"]), _vec(last["quat0"])))
+        out.append("  gob=0x%s%s samples=%d last pos0=(%s) quat0=(%s)"
+                   % (gid, " cat=%s" % last["cat"] if last.get("cat") else "", len(samples), _vec(last["pos0"]), _vec(last["quat0"])))
         out.append("    -> pos1=(%s) quat1=(%s)" % (_vec(last["pos1"]), _vec(last["quat1"])))
     return out
 

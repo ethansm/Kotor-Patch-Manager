@@ -141,7 +141,7 @@ static void readConfig() {
                 const unsigned long v = strtoul(val, &end, 16);   // accepts a 0x prefix; blank or junk = no check
                 g_placeGobvt = (end == val) ? 0u : static_cast<uint32_t>(v);
             }
-            else if (!_stricmp(key, "place") || !_stricmp(key, "place_rot") || !_stricmp(key, "place_off")) (void)hs::applyTuneKey(tune, key, val);
+            else if (hs::isTuneKey(key)) (void)hs::applyTuneKey(tune, key, val);
             else if (!_stricmp(key, "max_lines") || !_stricmp(key, "gob_every")) {
                 char* end = nullptr;
                 unsigned long v = strtoul(val, &end, 10);
@@ -277,6 +277,7 @@ static void maybeReload() {
     FILE* f = fopen("holster.ini", "r");
     if (f) {
         hs::TuneCfg t = g_tuneW;
+        hs::clearCatTune(t);   // per-category overrides are re-read, so a deleted key falls back to place_rot / place_off
         char line[256];
         while (fgets(line, sizeof(line), f)) {
             char* p = trimIni(line);
@@ -286,11 +287,17 @@ static void maybeReload() {
             *eq = 0;
             char* key = trimIni(p);
             char* val = trimIni(eq + 1);
-            if (!_stricmp(key, "place") || !_stricmp(key, "place_rot") || !_stricmp(key, "place_off")) (void)hs::applyTuneKey(t, key, val);
+            if (hs::isTuneKey(key)) (void)hs::applyTuneKey(t, key, val);
         }
         fclose(f);
         publishTune(t);
         KP_LOG(chMain, "RELOAD place=%d rot=(%.1f,%.1f,%.1f) off=(%.3f,%.3f,%.3f)", t.place ? 1 : 0, t.rot[0], t.rot[1], t.rot[2], t.off[0], t.off[1], t.off[2]);
+        for (int i = hs::CatUnknown + 1; i < hs::CatCount; ++i) {
+            const hs::CatTune& ct = t.cat[i];
+            if (ct.hasRot || ct.hasOff)
+                KP_LOG(chMain, "RELOAD cat=%s rot=(%.1f,%.1f,%.1f)%s off=(%.3f,%.3f,%.3f)%s", hs::categoryName(static_cast<hs::Category>(i)), ct.rot[0], ct.rot[1],
+                       ct.rot[2], ct.hasRot ? "" : "[global]", ct.off[0], ct.off[1], ct.off[2], ct.hasOff ? "" : "[global]");
+        }
     }
     InterlockedExchange(&g_reloadBusy, 0);
 }
@@ -370,7 +377,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     saferead::beginScope();
     void* const node = beh ? reinterpret_cast<void*>(static_cast<uintptr_t>(rdU32(kSitePlace, reinterpret_cast<uintptr_t>(beh), 0x18))) : nullptr;
     // Verdict cache keyed on node + gob + the node's name handle [N+4], so a freed and reused address pair is re-resolved.
-    struct Ent { uintptr_t node, gob, handle; bool isTarget; };
+    struct Ent { uintptr_t node, gob, handle; bool isTarget; hs::Category cat; };
     static Ent s_cache[128];
     static unsigned s_next = 0;
     const uintptr_t g = reinterpret_cast<uintptr_t>(gob), n = reinterpret_cast<uintptr_t>(node);
@@ -378,24 +385,29 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     const uintptr_t h = rdU32(kSitePlace, n, 0x04);
     if (!h) { refuse(PrNoHandle, g, n, 0); return; }
     bool isTarget = false, hit = false;
+    hs::Category cat = hs::CatUnknown;
     for (const Ent& e : s_cache)
-        if (e.node == n && e.gob == g && e.handle == h) { isTarget = e.isTarget; hit = true; break; }
+        if (e.node == n && e.gob == g && e.handle == h) { isTarget = e.isTarget; cat = e.cat; hit = true; break; }
     if (!hit) {
         NodeInfo ni;
         isTarget = nodeIsTarget(n, ni);
-        s_cache[s_next] = {n, g, h, isTarget};
+        // Weapon identity (C5, live-verified 10-16: "w_Lngswrd_001", "w_SonicPstl_002"): [Gob+0x84] = model, model+0x08 = inline model name,
+        // classified by the itemclass stem table. Gob+0x64 = inline Gob name (log only). Unknown stem -> CatUnknown -> global place_rot / place_off.
+        char mname[32];
+        mname[0] = 0;
+        const uintptr_t model = rdU32(kSitePlace, g, 0x84);
+        if (model) readTag(kSitePlace, reinterpret_cast<const char*>(model + 0x08), mname, sizeof mname);
+        cat = hs::classify(mname, 0);
+        s_cache[s_next] = {n, g, h, isTarget, cat};
         s_next = (s_next + 1) % 128u;
         static volatile LONG s_nodeLines = 0;   // one line per newly resolved (node, gob) pair, first 40
         if (g_onPlace && InterlockedIncrement(&s_nodeLines) <= 40 && KP_ENABLED(chPlace, KPLOG_INFO) && takeLine()) {
-            // C5 recon (weapon identity probe): Gob+0x64 = inline Gob name; [Gob+0x84] = model, model+0x08 = inline model name (resref GUESS).
-            char gname[32], mname[32];
+            char gname[32];
             readTag(kSitePlace, reinterpret_cast<const char*>(g + 0x64), gname, sizeof gname);
-            const uintptr_t model = rdU32(kSitePlace, g, 0x84);
-            mname[0] = 0;
-            if (model) readTag(kSitePlace, reinterpret_cast<const char*>(model + 0x08), mname, sizeof mname);
-            KP_LOG(chPlace, "PLACENODE node=%x gob=%x t=%u step=%d name=%s target=%d bvt=%x gname=%s mname=%s", static_cast<unsigned>(n), static_cast<unsigned>(g),
-                   ni.t, ni.step, ni.name[0] ? ni.name : "-", isTarget ? 1 : 0, static_cast<unsigned>(rdU32(kSitePlace, reinterpret_cast<uintptr_t>(beh), 0)),
-                   gname[0] ? gname : "-", mname[0] ? mname : "-");
+            KP_LOG(chPlace, "PLACENODE node=%x gob=%x t=%u step=%d name=%s target=%d bvt=%x gname=%s mname=%s cat=%s", static_cast<unsigned>(n),
+                   static_cast<unsigned>(g), ni.t, ni.step, ni.name[0] ? ni.name : "-", isTarget ? 1 : 0,
+                   static_cast<unsigned>(rdU32(kSitePlace, reinterpret_cast<uintptr_t>(beh), 0)), gname[0] ? gname : "-", mname[0] ? mname : "-",
+                   hs::categoryName(cat));
         }
     }
     if (!isTarget) { refuse(PrNotTarget, g, n, 0); return; }
@@ -405,7 +417,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     if (!saferead::readAt(kSitePlace, g, 0xA4, &in)) { refuse(PrReadIn, g, n, vt); return; }
     if (!hs::poseSane(in)) { refuse(PrInsaneIn, g, n, vt); return; }
     hs::Placement pl;
-    for (int i = 0; i < 3; ++i) { pl.pos[i] = s_tune.off[i]; pl.rotDeg[i] = s_tune.rot[i]; }
+    hs::resolveTune(s_tune, cat, pl.rotDeg, pl.pos);
     const hs::Pose out = hs::applyPlacement(in, pl);
     if (!hs::poseSane(out)) { refuse(PrInsaneOut, g, n, vt); return; }
     if (!saferead::probeWrite(kSitePlace, reinterpret_cast<void*>(g + 0xA4), sizeof(hs::Pose))) { refuse(PrNoWrite, g, n, vt); return; }
@@ -414,9 +426,9 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     const LONG c = InterlockedIncrement(&g_placeCalls);
     if (c > 24 && (c % g_gobEvery) != 0) return;
     if (!KP_ENABLED(chPlace, KPLOG_INFO) || !takeLine()) return;
-    KP_LOG(chPlace, "PLACE n=%ld gob=%x node=%x beh=%x gobvt=%x pos0=(%.3f,%.3f,%.3f) quat0=(%.3f,%.3f,%.3f,%.3f) pos1=(%.3f,%.3f,%.3f) quat1=(%.3f,%.3f,%.3f,%.3f)",
+    KP_LOG(chPlace, "PLACE n=%ld gob=%x node=%x beh=%x gobvt=%x pos0=(%.3f,%.3f,%.3f) quat0=(%.3f,%.3f,%.3f,%.3f) pos1=(%.3f,%.3f,%.3f) quat1=(%.3f,%.3f,%.3f,%.3f) cat=%s",
            static_cast<long>(c), U(gob), U(node), U(beh), static_cast<unsigned>(vt), in.pos[0], in.pos[1], in.pos[2], in.q.w, in.q.x, in.q.y, in.q.z,
-           out.pos[0], out.pos[1], out.pos[2], out.q.w, out.q.x, out.q.y, out.q.z);
+           out.pos[0], out.pos[1], out.pos[2], out.q.w, out.q.x, out.q.y, out.q.z, hs::categoryName(cat));
 }
 
 // bone_test: repoint the rhand (and with bone_test_left the lhand) attach-node literal at g_boneName. Default OFF.
