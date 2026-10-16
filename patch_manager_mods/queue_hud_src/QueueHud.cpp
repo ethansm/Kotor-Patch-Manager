@@ -790,7 +790,7 @@ void KPATCH_CALL onHudDraw(const K2PsContext* ctx, void*) {
 
 // ---- Cancel click (FRAME_BEGIN: the UI tick, outside the draw batch) ----
 // Queue entries of party member k (0 leader, 1-2 companions), -1 when the creature is unreadable.
-// *haveCur (optional) gets the round-node flag from the same snapshot. *gateNe (optional) gets the dispatch-gate count (-1 unreadable);
+// *haveCur (optional) gets curReal() of the same snapshot (staleCurSince of buffer k, 0 when k is out of range). *gateNe (optional) gets the dispatch-gate count (-1 unreadable);
 // the return value stays the raw count (logs).
 int queueCountOf(int k, bool* haveCur = nullptr, int* gateNe = nullptr) {
     party::Fail why = party::F_None;
@@ -798,7 +798,11 @@ int queueCountOf(int k, bool* haveCur = nullptr, int* gateNe = nullptr) {
     const uintptr_t m = tbl ? party::member(tbl, k) : 0;
     Snapshot s;
     const bool ok = gatherFor(m ? party::serverCreature(m) : 0, s);
-    if (haveCur) *haveCur = ok && s.haveCur;
+    if (haveCur) {
+        // Same judgement as tickItemQueues: a flagless item/spell round node stale for kStaleCurMs is not "running" (curReal), so it must not force a buffer.
+        const uint32_t stale = (k >= 0 && k < 3) ? g_itemQueue[k].staleCurSince : 0;
+        *haveCur = ok && qh::curReal(s.haveCur, s.haveCur ? static_cast<int>(s.cur.subType) : -1, s.aa8, s.ab8, s.paused, stale, GetTickCount());
+    }
     if (gateNe) *gateNe = ok ? s.gateNe : -1;
     return ok ? s.engineNe : -1;
 }
