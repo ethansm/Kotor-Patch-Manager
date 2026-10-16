@@ -13,7 +13,7 @@ Handoff: `.claude/handoffs/DECOMP_PLAN.handoff.md`. Recon: `.claude/research/rea
 | D3 | `rea_facts.py` live-only facts (indirect targets, body ranges, data xrefs) + `rea_questions --residual`; G3 on 46 R1 addrs | DONE | spec §D3 |
 | D4 | `named_decomp.py` named decompile; G4 CSWSCreatureStats (pilot changed, see Decisions) | DONE | spec §D4 |
 | D5 | `fn_doc.py` + `persist_purposes.py`; CSWCCreature page + KDB purposes | DONE | spec §D5 |
-| D6 | R2 rebuilt (`--arm facts|facts_rea`), scored; MASTER_PLAN R2/R3 | TODO | spec §D6 |
+| D6 | R2 rebuilt (`--arm facts| DONE | TODO | spec §D6 |
 | D7 | rea-recon agent v2 + `test_agent_copy.py`; live check on 0x85d260/2d0/320/3d0 | TODO | spec §D7 |
 | D8 | Docs sweep: every new script listed (free/fast first, REA last) in all agent-facing docs; `check_skills.py` + a grep that each tool name appears in each doc | TODO | Decisions: docs rule |
 
