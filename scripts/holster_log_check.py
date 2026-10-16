@@ -70,6 +70,7 @@ MAIN_RES = {
     "tune": re.compile(r"\bTUNE boot (place=\d .*)$"),
     "refuse": re.compile(r"\bPLACEREFUSE reason=(\w+) n=(\d+)"),
     "mount": re.compile(r"\bMOUNT (\S+) parent=\w+ bone=(\S+) node=(\w+)"),
+    "owner": re.compile(r"\bPLACENODE .*\btarget=1 .*\bowner=(\w+) body=(\S+)"),
     "node": re.compile(r"\bPLACENODE node=\w+ gob=\w+ t=(\d+) step=(-?\d+) name=(\S+) target=(\d)(?: bvt=(\w+))?(?: gname=(\S+) mname=(\S+))?(?: cat=(\w+))?"),
 }
 
@@ -105,7 +106,8 @@ def _record(kind, n, m):
 def parse_lines(window):
     """window: [(line_no, raw)] -> (records in log order, skipped [(line_no, kind, text)], main facts)."""
     recs, skipped = [], []
-    main = {"loaded": [], "cap": [], "bonetest": Counter(), "unreadable": 0, "tid": {}, "reload": [], "tune": [], "refuse": {}, "node": Counter(), "mount": Counter()}
+    main = {"loaded": [], "cap": [], "bonetest": Counter(), "unreadable": 0, "tid": {}, "reload": [], "tune": [], "refuse": {}, "node": Counter(), "mount": Counter(),
+            "owner": Counter(), "combc": set()}
     for n, raw in window:
         text = raw.strip()
         m = MAIN_RES["loaded"].search(text)
@@ -137,6 +139,9 @@ def parse_lines(window):
         m = MAIN_RES["mount"].search(text)
         if m:
             main["mount"][(m.group(1), m.group(2))] += 1
+        m = MAIN_RES["owner"].search(text)
+        if m:
+            main["owner"][(_hex(m.group(1)), m.group(2))] += 1
         k = KIND_RE.search(text)
         if k is None:
             continue
@@ -149,6 +154,8 @@ def parse_lines(window):
             skipped.append((n, kind, text))
         else:
             recs.append(_record(kind, n, f))
+            if kind == "COMB":
+                main["combc"].add(recs[-1]["creature"])
     return recs, skipped, main
 
 
@@ -316,6 +323,10 @@ def _place_diag(f):
     if f.get("node"):
         top = sorted(f["node"].items(), key=lambda kv: (" target=1" not in kv[0], -kv[1]))[:5]   # weapons (target=1) first
         out.append("PLACENODE distinct=%d: %s" % (len(f["node"]), "; ".join("%s x%d" % kv for kv in top)))
+    if f.get("owner"):   # C7f: [parent+0x1D8] of weapon nodes vs the COMB creatures; body = per-body offset key
+        comb = f.get("combc", set())
+        out.append("OWNER (weapon parent+0x1D8 / body): " + ", ".join(
+            "0x%s %s comb=%s x%d" % (k[0], k[1], ("yes" if k[0] in comb else "no") if comb else "n/a", v) for k, v in f["owner"].most_common(5)))
     if f.get("mount"):
         out.append("MOUNT " + ", ".join("%s bone=%s x%d" % (k[0], k[1], v) for k, v in f["mount"].most_common(5)))
     return out

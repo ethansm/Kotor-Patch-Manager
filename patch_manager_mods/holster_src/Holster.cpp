@@ -466,12 +466,19 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
         s_next = (s_next + 1) % 128u;
         static volatile LONG s_nodeLines = 0;   // one line per newly resolved (node, gob) pair, first 40
         if (g_onPlace && InterlockedIncrement(&s_nodeLines) <= 40 && KP_ENABLED(chPlace, KPLOG_INFO) && takeLine()) {
-            char gname[32];
+            char gname[32], body[32];
             readTag(kSitePlace, reinterpret_cast<const char*>(g + 0x64), gname, sizeof gname);
-            KP_LOG(chPlace, "PLACENODE node=%x gob=%x t=%u step=%d name=%s target=%d bvt=%x gname=%s mname=%s cat=%s", static_cast<unsigned>(n),
-                   static_cast<unsigned>(g), ni.t, ni.step, ni.name[0] ? ni.name : "-", isTarget ? 1 : 0,
+            // C7f probe: parent Gob [beh+0x14] -> +0x1D8 = owner CSWCCreature* (set in LoadModel 0x769F60; compare with COMB creature=),
+            // [parent+0x84]+0x08 = body model name (per-body offsets, doc 42 HW-EDIT). Unverified that the parent is the body Gob.
+            const uintptr_t parent = rdU32(kSitePlace, reinterpret_cast<uintptr_t>(beh), 0x14);
+            const uintptr_t owner = parent ? rdU32(kSitePlace, parent, 0x1D8) : 0;
+            const uintptr_t bmodel = parent ? rdU32(kSitePlace, parent, 0x84) : 0;
+            body[0] = 0;
+            if (bmodel) readTag(kSitePlace, reinterpret_cast<const char*>(bmodel + 0x08), body, sizeof body);
+            KP_LOG(chPlace, "PLACENODE node=%x gob=%x t=%u step=%d name=%s target=%d bvt=%x gname=%s mname=%s cat=%s parent=%x owner=%x body=%s",
+                   static_cast<unsigned>(n), static_cast<unsigned>(g), ni.t, ni.step, ni.name[0] ? ni.name : "-", isTarget ? 1 : 0,
                    static_cast<unsigned>(rdU32(kSitePlace, reinterpret_cast<uintptr_t>(beh), 0)), gname[0] ? gname : "-", mname[0] ? mname : "-",
-                   hs::categoryName(cat));
+                   hs::categoryName(cat), static_cast<unsigned>(parent), static_cast<unsigned>(owner), body[0] ? body : "-");
         }
     }
     if (!isTarget) { refuse(PrNotTarget, g, n, 0); return; }

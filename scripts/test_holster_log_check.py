@@ -435,6 +435,16 @@ class PlaceDiagTests(unittest.TestCase):
         self.assertTrue(out[2].startswith("PLACENODE distinct=2: "))
         self.assertIn("t=2 step=0 name=rhand target=0 x1", out[2])
 
+    def test_owner_body_vs_comb(self):
+        lines = ["COMB creature=0A10 old=0 new=1 edge=1 tick=5",
+                 "PLACENODE node=2 gob=1 t=2 step=0 name=pelvis_g target=1 bvt=99 gname=g mname=w_Lngswrd_001 cat=melee parent=7 owner=0a10 body=P_AttonBB",
+                 "PLACENODE node=3 gob=4 t=2 step=0 name=pelvis_g target=1 bvt=99 gname=g mname=w_Lngswrd_001 cat=melee parent=8 owner=bb body=N_CommM",
+                 "PLACENODE node=5 gob=6 t=2 step=0 name=rhand target=0 bvt=99 gname=g mname=- cat=unknown parent=8 owner=cc body=N_CommM"]
+        _, _, main = H.parse_lines(list(enumerate(lines, 1)))
+        own = [l for l in H._place_diag(main) if l.startswith("OWNER")]
+        self.assertEqual(own, ["OWNER (weapon parent+0x1D8 / body): 0xa10 P_AttonBB comb=yes x1, 0xbb N_CommM comb=no x1"])
+        self.assertIn("cat=melee x2", H._place_diag(main)[0])   # old key format unchanged by the new tail (both weapon lines share it)
+
     def test_old_log_has_no_diag_lines(self):
         _, _, main = H.parse_lines([(1, "COMB creature=1 old=0 new=1 edge=1")])
         self.assertEqual(H._place_diag(main), [])
