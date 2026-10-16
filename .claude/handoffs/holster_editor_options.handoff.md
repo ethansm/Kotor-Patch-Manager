@@ -5,15 +5,19 @@ No phases parsed from .claude/plans/holster_editor_options.md; check its header 
 
 ## 1. Active State & Provenance
 - **Master Plan:** `.claude/plans/holster_editor_options.md`
-- **Branch:** `KOTOR-II` (0dfe55c play queue: PRB1 row (holster editor round 3 probe))
-- **Generated:** 2026-10-16 19:02:13 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (487d7f7 mod-config W2 c15+c16: ModConfigApi.h (k2.modconfig@1, k2.menuui@1) + contract test, MenuUiLogic.h page/hover/click/registry logic + host tests)
+- **Generated:** 2026-10-16 19:37:17 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-0dfe55c play queue: PRB1 row (holster editor round 3 probe)
- patch_manager_mods/PLAY_TEST_QUEUE.md | 1 +
- 1 file changed, 1 insertion(+)
+487d7f7 mod-config W2 c15+c16: ModConfigApi.h (k2.modconfig@1, k2.menuui@1) + contract test, MenuUiLogic.h page/hover/click/registry logic + host tests
+ patch_manager_mods/_shared_src/ModConfigApi.h      | 259 ++++++++++++
+ patch_manager_mods/mod_config_src/MenuUiLogic.h    | 353 ++++++++++++++++
+ .../mod_config_src/common_contract_test.cpp        | 159 ++++++++
+ .../mod_config_src/menu_ui_logic_test.cpp          | 452 +++++++++++++++++++++
+ patch_manager_mods/mod_config_src/test.toml        |   4 +
+ 5 files changed, 1227 insertions(+)
 ```
-- **Dirty Files (165):**
+- **Dirty Files (170):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/33_ui_queue_hotbar_fixes.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
@@ -21,10 +25,10 @@ No phases parsed from .claude/plans/holster_editor_options.md; check its header 
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
   - ` M .claude/handoffs/PHASE7_COMMON_MASTER.handoff.md`
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
+  - ` M .claude/handoffs/holster_editor_options.handoff.md`
   - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
   - ` M .claude/plans/swarm_library_architecture.md`
-  - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
-  - ... +155 more (run `git status --short`)
+  - ... +160 more (run `git status --short`)
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume .claude/plans/holster_editor_options.md`.
@@ -97,3 +101,11 @@ _(none recorded; append Dead Ends & Anti-Patterns and Verification Commands here
 - Agent routing: Haiku 5.5 for recon, boilerplate, pure headers and docs; Sonnet 5.5 for engine-glue cards (c13, c14, c18, c19, c21) and failed Haiku retries; orchestrator only reviews on escalation.
 - Repo state at plan start: head a154fa2; live holster 9196b748, holster-editor 6368a82a, preview-3d 7384ae1a; kplog.ini has [holster-editor] and [preview-3d] (backup kplog.ini.bak_hse_20261016); mod-config needs a [mod-config] kplog.ini section at its install.
 - Resume: `python3 scripts/plan_manager.py resume .claude/plans/holster_editor_options.md`.
+
+## Session context 10-16 evening (PRB1 played, W2 c15-c17)
+- **PRB1 PASS** (8c4abc9; reports `.claude/research/holster_edit/prb1_{editor_log,hand_log,sweep}.md`): user saw styling, hover highlight, description and hover sound all correct. Logs: BTNCLONE ok canary=1 x2, HOVER hl=1 on 7/7 ours=1 hovers (engine highlights a listed mod button itself: no manual vt[0x0C] needed), DESC ok via=8A2320 7/7, REFLOW on moved=5, RELAYOUT 0, EDITOR enter focusCleared=1, leave restored=16 of 16, no WARN/ERR, no crash, preview-3d token create/destroy balanced. Hand probe: 11 HANDATTACH / 11 HANDMAP (R7/L4), each gob one hand, names match; L gobs logged `nottarget` (lhand target=0) so off-hand placement needs kWorldKnowsHand / c22. free_view=1 run NOT done.
+- Open from PRB1: HOVER line showed hl=1 with m08=0 twice (pointer over no control?); mouse-probe has no screen tag.
+- **User design decision (10-16, after PRB1), verbatim:** "Instead of adding our holster config to the root of the menu under gameplay, could we add a 'Mod Configuration' button, with basic description. Clicking it opens another menu of the same layout, buttons on left description on right when hovered. The only item would be our holster config to start. This new mod config screen would hold the config buttons for my patches and is where they would get merged together by the provider DLL". This is the plan's MAIN -> LIST -> ENTRY model; the LIST page must use the vanilla column rects (left) + LB_DESC hover description (right), and the root button needs its own description text.
+- **W2 progress:** c15 ModConfigApi.h + contract test (49 checks) and c16 MenuUiLogic.h + tests (241 checks) committed 487d7f7; KPM Common ModConfigApi.h synced + committed in KPM 9ac4fd9. c17 scaffold (manifest/exports.def/mod_config.ini/hooks.toml, hooks McBind/McTick/McDestroy = OptBindView/OptTick/OptDestroy addresses) is on disk UNCOMMITTED by design: it lands in ONE commit with c18+c19 (hook move). check_provider_manifests currently FAIL=2 = missing provide() calls (c18 adds them); the duplicate-hook FAIL appears once holster-editor requires mod-config, so c19 must drop its hooks in the same commit.
+- **User rule (10-16 evening):** after investigation, persist context, then plan mode for a detailed next-phase plan; Haiku 5.5 swarms for research in planning and in the plan; Sonnet 5.5 for the code cards so the Opus orchestrator keeps a minimal context.
+- Next: plan mode -> plan for c18 (mod-config engine glue) + c19 (holster-editor 0.2.0-dev port) + Install 2 + MC1, then W3.
