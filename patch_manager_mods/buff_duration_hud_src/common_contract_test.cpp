@@ -575,7 +575,14 @@ static void effects_contract() {
         if (kEffectIcons[i]) { ++nBuff; distinct.insert(kEffectIcons[i]); maxLen = std::max(maxLen, strlen(kEffectIcons[i])); }
         if (kDebuffIcons[i].resref) { ++nDebuff; distinct.insert(kDebuffIcons[i].resref); maxLen = std::max(maxLen, strlen(kDebuffIcons[i].resref)); }
     }
+    // effecticon.2da rows (script EffectIcon, type 0x43) feed the same imageFor pool via iconForEffectIconEffect (R2-BH-10).
+    int nRows = 0;
+    for (int i = 0; i < kEffectIconRowCount; ++i) {
+        if (!kEffectIconRows[i].resref) continue;
+        ++nRows; distinct.insert(kEffectIconRows[i].resref); maxLen = std::max(maxLen, strlen(kEffectIconRows[i].resref));
+    }
     for (const std::string& s : distinct) for (char ch : s) lower &= !(ch >= 'A' && ch <= 'Z');
+    HCHECK("effecticon row table carries resrefs (row 0 is the none row)", nRows >= 40 && kEffectIconRows[0].resref == nullptr);
     HCHECK("tables track a non-trivial number of buff and debuff rows", nBuff >= 40 && nDebuff >= 40);
     HCHECK("no icon resref exceeds 16 chars (imageFor would truncate and collide)", maxLen <= 16);
     HCHECK("every icon resref is lowercase (engine resrefs, matches imageFor's pooling key)", lower);

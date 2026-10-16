@@ -274,7 +274,7 @@ static void testColumnLayout() {
     for (int n = 0; n <= 16; ++n) for (int no = 0; no <= 16; no += 4) for (int w : { -3, 0, 1, 30, 100, 400, 2000 })
     for (int h : { -10, 0, 1, 30, 100, 400, 2000 }) for (float sc : { 0.1f, 0.5f, 1.0f, 2.0f, 3.7f, 9.9f }) for (int lg = 0; lg < 2; ++lg) {
         ColumnLayout l = columnLayout(n, no, lg, w, h, sc);
-        bool ok = l.gap >= 1 && l.size >= 0 && l.size >= 1 && l.cols >= 1 && l.cols <= bh::MaxColumns && l.perCol >= 1
+        bool ok = l.gap >= 1 && l.size >= 1 && l.cols >= 1 && l.cols <= bh::MaxColumns && l.perCol >= 1
                && l.fit == l.perCol * l.cols && l.drawN >= 0 && l.drawN <= n && l.drawN <= l.fit && (l.drawN == n || l.drawN == l.fit);
         kt::Check("layout invariants", ok, ok ? "" : "invariant violated");
     }
@@ -448,7 +448,7 @@ static void testMenuGates() {
     // Every size menuRectOk accepts yields a sane layout (the menu draws with isLarge=0 and the control rect as the card).
     for (int w = 1; w <= 2000; w += 37) for (int h = 1; h <= 2000; h += 41) {
         bh::ColumnLayout l = bh::columnLayout(4, 2, 0, w, h, 2.0f);
-        KT_CHECK(l.size >= 0 && l.size >= 1 && l.perCol >= 1);   // w of a few px can give size 0 (see testColumnLayout)
+        KT_CHECK(l.size >= 1 && l.perCol >= 1);   // columnLayout clamps size to >= 1 (BuffHudLogic.h), so a tiny rect never yields size 0
     }
 }
 
