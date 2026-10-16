@@ -178,3 +178,7 @@ The dedicated route costs roughly 2x more. What it buys:
 2. If O2a: keep the small O0 bits in equip3d anyway (the holster toggle, i.e. a holstered **view** with no editor)? It costs one HE3-lite step and shows the tuned values next to the gear.
 
 Suggested order if O2a: HE0 apply + play → HE2 → D2 recon (Haiku, $0 static) → D1 → D3a/b/c.
+
+## 7. Decision (user, 2026-10-16)
+O2a chosen: a dedicated in-game Options screen, independent of equipment-3d-character, because users without an ultrawide
+monitor may not run the ultrawide menus that equip3d's layout relies on. Plan: `.claude/plans/holster_editor_options.md`.
