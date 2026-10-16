@@ -356,7 +356,10 @@ static void refuse(PlaceRefuse r, uintptr_t g, uintptr_t n, uint32_t vt) {
            static_cast<unsigned>(n), static_cast<unsigned>(vt));
 }
 
-extern "C" void __cdecl HolsterPlace(void* gob, void* node, void* beh) {
+// H7 (hooks.toml H7, C4 recon): runs on EVERY per-frame refresh of an attach behavior (vtbl+0x08), right after the engine re-copied node N's WORLD
+// pose into gob+0xA4 (vec3) / gob+0xB0 (quat w-first). N = [beh+0x18]. For the target node (g_boneName) it composes the live-tuned placement onto
+// that pose and writes it back. Needs probe=1 AND bone_test=1 AND place=1; ch_place only gates the PLACE/PLACENODE/PLACEREFUSE log lines.
+extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     if (!g_probe) return;
     static volatile LONG s_tid = 0;
     if (InterlockedCompareExchange(&s_tid, 1, 0) == 0) KP_LOG(chMain, "TID place=%lu", static_cast<unsigned long>(GetCurrentThreadId()));
@@ -365,6 +368,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* node, void* beh) {
     loadTune(s_tune);
     if (!s_tune.place) return;
     saferead::beginScope();
+    void* const node = beh ? reinterpret_cast<void*>(static_cast<uintptr_t>(rdU32(kSitePlace, reinterpret_cast<uintptr_t>(beh), 0x18))) : nullptr;
     // Verdict cache keyed on node + gob + the node's name handle [N+4], so a freed and reused address pair is re-resolved.
     struct Ent { uintptr_t node, gob, handle; bool isTarget; };
     static Ent s_cache[128];
@@ -383,8 +387,8 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* node, void* beh) {
         s_next = (s_next + 1) % 128u;
         static volatile LONG s_nodeLines = 0;   // one line per newly resolved (node, gob) pair, first 40
         if (g_onPlace && InterlockedIncrement(&s_nodeLines) <= 40 && KP_ENABLED(chPlace, KPLOG_INFO) && takeLine())
-            KP_LOG(chPlace, "PLACENODE node=%x gob=%x t=%u step=%d name=%s target=%d", static_cast<unsigned>(n), static_cast<unsigned>(g), ni.t, ni.step,
-                   ni.name[0] ? ni.name : "-", isTarget ? 1 : 0);
+            KP_LOG(chPlace, "PLACENODE node=%x gob=%x t=%u step=%d name=%s target=%d bvt=%x", static_cast<unsigned>(n), static_cast<unsigned>(g), ni.t, ni.step,
+                   ni.name[0] ? ni.name : "-", isTarget ? 1 : 0, static_cast<unsigned>(rdU32(kSitePlace, reinterpret_cast<uintptr_t>(beh), 0)));
     }
     if (!isTarget) { refuse(PrNotTarget, g, n, 0); return; }
     const uint32_t vt = rdU32(kSitePlace, g, 0);

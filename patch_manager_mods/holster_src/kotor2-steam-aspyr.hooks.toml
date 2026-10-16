@@ -89,25 +89,23 @@ exclude_from_restore = []
 source = "ecx"
 type = "pointer"
 
-# H7: post-copy point inside 0x005047B0 at 0x005047F4, right after N->vtbl[+0xC](gob+0xA4, gob+0xB0) wrote node N's WORLD pose into the child Gob
-# (C1 .claude/research/holster_c1_postcopy.md, C3 holster_c3_nodeclass.md). Stolen: PUSH 0 / PUSH 0x9918B8 (7 bytes, no relative branch), resume
-# 0x5047FB. Locals: [ebp-8] = child Gob, [ebp-4] = node N, [ebp-0xC] = behavior. EAX/ECX/EDX are dead here (clobbered by the callee).
+# H7: per-frame post-copy point inside the attach behaviors' refresh (vtbl+0x08 = 0x00504D40) at 0x00504EF5, right after
+# N->vtbl[+0xC](P+0xA4, P+0xB0) at 0x504EF3 rewrote the child Gob's WORLD pose from node N (C4 .claude/research/holster_c4_weapon_attach.md).
+# The old site 0x005047F4 (event-only handler 0x5047B0) never saw a weapon, only OmenRef01 (run 10-16).
+# Stolen: MOV [EBP-0x3C],1 (C7 45 C4 01 00 00 00, 7 bytes, no relative branch), resume 0x504EFC. [ebp-0x1C] = child Gob P, [ebp-0x44] = behavior
+# (node N = [behavior+0x18], read in the handler). EAX/ECX/EDX are dead here. Translate/Rotate subtypes write pos/quat AFTER this base refresh.
 [[hooks]]
-address = 0x005047F4
+address = 0x00504EF5
 type = "detour"
 function = "HolsterPlace"
-original_bytes = [0x6A, 0x00, 0x68, 0xB8, 0x18, 0x99, 0x00]
+original_bytes = [0xC7, 0x45, 0xC4, 0x01, 0x00, 0x00, 0x00]
 skip_original_bytes = false
 exclude_from_restore = []
 
 [[hooks.parameters]]
-source = "[ebp-8]"
+source = "[ebp-0x1C]"
 type = "pointer"
 
 [[hooks.parameters]]
-source = "[ebp-4]"
-type = "pointer"
-
-[[hooks.parameters]]
-source = "[ebp-0xC]"
+source = "[ebp-0x44]"
 type = "pointer"
