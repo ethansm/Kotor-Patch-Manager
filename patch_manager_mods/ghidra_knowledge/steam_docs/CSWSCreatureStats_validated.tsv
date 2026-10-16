@@ -1,0 +1,125 @@
+addr	purpose	anchor	decision	reason
+0x006a4260	Constructs creature stats: initializes embedded member objects, zeroes fields, allocates PendingLevelUp, sets default class and level.	0x006a42be: MOV dword ptr [EAX + 0x24],0x0	keep	Callees show PendingLevelUp constructor and SetClass calls.
+0x006a49d0	Tears down creature stats: frees owned buffer, clears feats, deletes per-level stat records, destroys strings and loc-strings.	0x006a4a33: CALL 0x006b8370	fix	Per-level list is the one GetLevelStats indexes; not a class list.
+0x006a4c30	Fills output string with full name, built from two name fields via a helper (likely first and last).	0x006a4c84: CALL 0x00633620	keep	Two loc-string fields passed to a name-building helper.
+0x006a4cd0	Returns spells gained for a class at a spell level, plus an ability-modifier bonus for force-user classes.	0x006a4d42: CALL 0x006f2a30	fix	Body gives per-level gain with ability bonus, not uses per day.
+0x006a4e00	Returns total level by summing class levels; a later branch likely consults a global-variable override.	0x006a4e78: CALL 0x006ad2f0	keep	Loop sums GetClassLevel; global-variable lookup callees follow.
+0x006a5020	Returns true if any class slot holds one of nine force-user class IDs (3,4,5,11 through 16).	0x006a5087: MOVZX ECX,byte ptr [0x0099b19b]	fix	Pseudo-C compares inline class IDs; no global data lookup.
+0x006a5110	Computes armor class versus an attacker; builds text breakdown of each AC bonus source.	0x006a5182: CALL 0x005908c0	keep	Strings list each AC bonus source in breakdown text.
+0x006a6f80	Returns total base attack bonus: sums each class's to-hit table value at its level, likely the ToHitMult column.	0x006a703d: CALL 0x006f08f0	keep	Loop over classes with ToHitMult string and table lookup.
+0x006a7170	Returns constant 1, i.e. one attack per round; no per-class or feat logic.	0x006a7179: MOV dword ptr [EBP + -0x4],0x1	keep	Body is just return 1.
+0x006a7190	Rebuilds cached combat info: reallocates a cache object, then collects effect-derived values into arrays.	0x006a71d5: CMP dword ptr [EAX + 0x11c],0x0	keep	Many effect-integer reads and cache object allocation visible.
+0x006a7db0	Computes melee to-hit bonus: base attack, effect bonuses, finesse or Dex mod, and weapon feat bonuses.	0x006a7e68: CMP dword ptr [EBP + 0xc],0x1	keep	Pseudo-C and callees support the purpose.
+0x006a8370	Computes melee damage bonus from strength, weapon specialization and feats, for main-hand or off-hand.	0x006a83e4: CMP EDX,0x3	keep	Pseudo-C and callees support the purpose.
+0x006a8c20	Returns ranged damage bonus for the main-hand ranged weapon: ability term, damage property (capped), and feat bonuses.	0x006a8cd6: CMP ECX,0x7	keep	Pseudo-C and callees support the purpose.
+0x006a8ea0	Returns true when monk abilities apply and the main-hand slot is empty; the flag argument does not change this.	0x006a8eb5: CALL 0x005766f0	keep	Pseudo-C matches: monk abilities and empty main-hand slot.
+0x006a9100	Computes unarmed damage roll from the monk die-size ladder and weapon specialization, scaled by difficulty and a DamageMult setting.	0x006a9171: CALL 0x006a2000	fix	Callee label GetUseMonkAttackTables is wrong; it is the die ladder.
+0x006a93a0	Computes attack modifier versus a target (base attack, ability, feats, effects) with a breakdown string.	0x006a9447: CALL 0x005908c0	keep	Strings enumerate attack modifier sources.
+0x006abf70	Computes total damage bonus: specialization, power attack, favored enemy, offhand, special-attack terms, with breakdown text.	0x006ac065: CALL 0x00591e10	keep	Strings enumerate damage bonus sources with critical suffix.
+0x006acec0	Returns the to-hit modifier for the special attack id, via a switch with weapon-dependent cases.	0x006acf2e: JMP dword ptr [EAX*0x4 + 0x6ad0f4]	keep	Switch on attack id returns signed to-hit adjustments.
+0x006ad1a0	Returns favored-enemy bonus for the current attack id via a switch; values range 0 to 12.	0x006ad20a: JMP dword ptr [EAX*0x4 + 0x6ad26c]	keep	Switch on attack id returns values 0 to 12.
+0x006ad2f0	Returns class level for a class index; when flag set, subtracts negative levels, floored at zero.	0x006ad341: MOV AL,byte ptr [EDX + ECX*0x1 + 0xad]	keep	Pseudo-C subtracts negative levels when flag set, floors at zero.
+0x006ad370	Returns the negative-level count for a class index (0 if index out of range).	0x006ad399: MOV DL,byte ptr [ECX + EAX*0x1 + 0xad]	keep	Pseudo-C and callees support the purpose.
+0x006ad3b0	Returns the per-level stats entry at an index; 0 for non-player creatures or out-of-range index.	0x006ad3d9: CMP ECX,dword ptr [EBP + -0x8]	fix	Gate is the IsPC field at +0x6c, not a missing list.
+0x006ad400	Adjusts alignment by a delta, clamped to 0-100, updates party NPC influence and global variables, and refreshes combat info.	0x006ad467: MOV dword ptr [EBP + -0x74],0x64	keep	Clamp near 100, global variable and party influence callees.
+0x006ad910	Writes stats snapshot (abilities, bonuses, saves, BAB, AC, skills, feats) into an output object.	0x006ad95e: MOV byte ptr [EAX + 0x2c],CL	keep	Writes ability, bonus, save, BAB, AC, skill and feat getters to output.
+0x006adec0	Computes attack damage roll from weapon dice, effect damage, sneak attack, and critical multiplier, with breakdown.	0x006adfa7: CALL 0x006d0620	keep	Strings: NumDice, Effect Damage Bonus, Sneak Attack, Damage Roll.
+0x006afa60	Likely computes crit range from weapon base-item byte +0x1e, doubled by property 0x1c; unarmed defaults to 1.	0x006afa98: PUSH 0x10	keep	Reads base-item byte +0x1e, doubles on property 0x1c, unarmed gives 1.
+0x006afcd0	Returns crit multiplier: weapon base-item byte +0x1f (default 2 unarmed), plus 1 for some attack types and lightsabers.	0x006afcd9: MOV dword ptr [EBP + -0x8],0x2	fix	Code replaces default 2 with item byte, does not add to it.
+0x006afed0	Loads creature stats from GFF: names, tag, ability scores, class list, perception and assorted stat fields.	0x006aff86: CALL 0x007190e0	keep	GFF read callees and field-name strings throughout.
+0x006b3b70	Reads each class's known-spell list from GFF ClassList, calling AddKnownSpell per WORD spell id.	0x006b3bac: CALL 0x00718760	keep	ClassList GetList loop, ReadFieldWORD then AddKnownSpell.
+0x006b3d10	Serializes creature stats into a GFF struct: names, tag, ability bases, saves, gold, components, chemicals.	0x006b3d56: CALL 0x00719f30	keep	Long run of GFF write callees for names, saves and gold.
+0x006b4ea0	Writes the ClassList GFF: per class ID, level, known spells, and force/talent fields (likely).	0x006b4ef4: CALL 0x00719740	keep	AddList/AddListElement writes class, spells and level stats.
+0x006b5990	Returns total STR: base, total STR bonus, and table entry at +0x18 (likely racial); floor of 3.	0x006b59c2: MOVZX ESI,byte ptr [EDX + 0xed]	keep	Pseudo-C and callees support the purpose.
+0x006b5a40	Returns total CON: base, total CON bonus, and table entry at +0x1d (likely racial); floor of 3.	0x006b5a72: MOVZX ESI,byte ptr [EDX + 0xf1]	keep	Pseudo-C and callees support the purpose.
+0x006b5af0	Returns total INT: base, total INT bonus, and table entry at +0x1a (likely racial); floor of 3.	0x006b5b22: MOVZX ESI,byte ptr [EDX + 0xf3]	keep	Pseudo-C and callees support the purpose.
+0x006b5ba0	Returns total WIS: base, total WIS bonus, and table entry at +0x1c (likely racial); floor of 3.	0x006b5bd2: MOVZX ESI,byte ptr [EDX + 0xf5]	keep	Pseudo-C and callees support the purpose.
+0x006b5c50	Returns total CHA: base, total CHA bonus, and table entry at +0x1b (likely racial); floor of 3.	0x006b5c82: MOVZX ESI,byte ptr [EDX + 0xf7]	keep	Pseudo-C and callees support the purpose.
+0x006b5db0	Returns DEX modifier for AC: base DEX modifier at +0xf0, likely capped by worn armor's max-DEX value.	0x006b5e9c: MOVSX EAX,byte ptr [EDX + 0xf0]	keep	Pseudo-C and callees support the purpose.
+0x006b5ee0	Computes an attack bonus from weapon specialization, a monk-ladder value and feat checks; adds STR modifier when first arg set.	0x006b5f76: CALL 0x006b83f0	fix	Ranged claim unverified; monk-table label is the wrong callee name.
+0x006b6600	Returns 0-3 AC bonus from three feat IDs (likely defense style), gated on hand-slot items.	0x006b66b7: CALL 0x006b83f0	keep	Pseudo-C and callees support the purpose.
+0x006b67d0	Stores STR base at +0xed, then recomputes STR modifier at +0xee via GetSTRStat and CalcStatModifier.	0x006b67dd: MOV byte ptr [EAX + 0xed],CL	keep	Pseudo-C and callees support the purpose.
+0x006b6810	Stores DEX base at +0xef, then recomputes DEX modifier at +0xf0 via stat getter and CalcStatModifier.	0x006b681d: MOV byte ptr [EAX + 0xef],CL	keep	Pseudo-C and callees support the purpose.
+0x006b6850	Stores CON base at +0xf1, recomputes CON modifier at +0xf2, and shifts current HP when flag is set.	0x006b6861: MOV byte ptr [EAX + 0xf1],CL	keep	Pseudo-C and callees support the purpose.
+0x006b6920	Stores INT base at +0xf3, recomputes INT modifier at +0xf4, then calls AdjustSpellUsesPerDay.	0x006b692d: MOV byte ptr [EAX + 0xf3],CL	keep	Pseudo-C and callees support the purpose.
+0x006b6960	Stores WIS base at +0xf5, recomputes WIS modifier at +0xf6, then calls AdjustSpellUsesPerDay.	0x006b696d: MOV byte ptr [EAX + 0xf5],CL	keep	Pseudo-C and callees support the purpose.
+0x006b69a0	Stores CHA base at +0xf7, recomputes CHA modifier at +0xf8, then calls AdjustSpellUsesPerDay.	0x006b69ad: MOV byte ptr [EAX + 0xf7],CL	keep	Pseudo-C and callees support the purpose.
+0x006b69e0	Sets class ID in slot N (40-byte stride at +0xab) if N is below the class count.	0x006b6a08: MOV byte ptr [ECX + EAX*0x1 + 0xab],DL	keep	Pseudo-C and callees support the purpose.
+0x006b6a20	Sets class level in slot N (+0xac, 40-byte stride); likely notifies when total level is 30 or more.	0x006b6a4a: MOV byte ptr [ECX + EAX*0x1 + 0xac],DL	keep	Writes level byte; level above 29 calls a notification helper.
+0x006b6ab0	Sets negative-level byte in slot N (+0xad, 40-byte stride) if N is below the class count.	0x006b6ad8: MOV byte ptr [ECX + EAX*0x1 + 0xad],DL	keep	Pseudo-C and callees support the purpose.
+0x006b6af0	Converts ability score to modifier: (score minus 10) halved for 10+, (score minus 11) halved below 10.	0x006b6afb: CMP EAX,0xa	keep	Pseudo-C and callees support the purpose.
+0x006b6b30	Returns address of the tag field at +0x18 inside the owning object (pointer at +0x24).	0x006b6b3d: ADD EAX,0x18	keep	Pseudo-C and callees support the purpose.
+0x006b6b50	Likely sets the owning creature's tag to a lowercased copy of the argument string.	0x006b6b88: CALL 0x00734690	keep	Pseudo-C and callees support the purpose.
+0x006b6bd0	Sets creature XP to a new value; logs a warning when XP would drop, then checks level changes.	0x006b6c65: CMP EDX,dword ptr [ECX + 0x68]	keep	Warning string about reducing XP plus LevelUp/LevelDown callees.
+0x006b7060	Multiclass XP award: uses the likely favored class, else the highest-level of the first three classes; then calls SetExperience.	0x006b70c0: CMP EAX,0xff	keep	Reads race-table favored class, else compares first three classes.
+0x006b72e0	Returns XP needed for the next level, read from the XP table at the current level index.	0x006b7300: MOV EDX,dword ptr [ECX + EAX*0x4 + 0x38]	keep	Pseudo-C and callees support the purpose.
+0x006b7310	Returns the level reached by current XP, stepping up thresholds, capped at server max level (when flag set).	0x006b7369: CMP ESI,dword ptr [EAX + 0x94]	keep	Pseudo-C steps level while XP meets threshold, server cap applies.
+0x006b73a0	Computes base Fortitude save by summing per-class save values by class level, plus likely feat bonuses.	0x006b7429: IMUL EDX,EDX,0x238	keep	Pseudo-C and callees support the purpose.
+0x006b75c0	Computes base Will save by summing per-class save values by class level, plus likely feat bonuses.	0x006b7649: IMUL EDX,EDX,0x238	keep	Pseudo-C and callees support the purpose.
+0x006b77e0	Computes base Reflex save by summing per-class save values by class level, plus likely feat bonuses.	0x006b7869: IMUL EDX,EDX,0x238	keep	Pseudo-C and callees support the purpose.
+0x006b7a00	Likely checks skill usability: skill 2 passes via certain spells or a feat, else skill rank.	0x006b7a5d: PUSH 0x9c	keep	Skill 2 checks three spells and a feat; else GetSkillRank.
+0x006b7bb0	Likely returns effective skill rank: stored rank plus effect bonuses and an ability modifier, or 0 if unranked.	0x006b7c8f: CALL 0x00582010	keep	Stored rank plus effect bonus plus ability modifier, 0 if unranked.
+0x006b81c0	Sets a skill's stored rank; rank 30 or more for five skills calls a per-skill notification helper.	0x006b81fa: CMP EAX,0x1e	fix	Feedback-message claim unsupported; only a numbered helper is called.
+0x006b8280	Adds a feat id to the feat list and, for limited-use feats (likely), a usage entry.	0x006b82af: CALL 0x006c0a70	keep	Pseudo-C and callees support the purpose.
+0x006b8370	Likely clears the feat list, then frees each limited-use feat entry.	0x006b83d6: CALL 0x009196fd	keep	Pseudo-C and callees support the purpose.
+0x006b83f0	Returns whether the creature has the feat, checking its main feat list and a second list (likely granted feats).	0x006b8419: ADD ECX,0x18	keep	Pseudo-C and callees support the purpose.
+0x006b8440	Returns remaining uses of a limited-use feat: max uses from the feat table minus uses spent.	0x006b8500: MOV AL,byte ptr [EDX + 0x33]	keep	Pseudo-C and callees support the purpose.
+0x006b8580	Increments the used count of every matching limited-use feat entry.	0x006b85db: ADD ECX,0x1	keep	Pseudo-C and callees support the purpose.
+0x006b85f0	Removes a feat: first calls a helper, then deletes its matching limited-use entry.	0x006b8683: CALL 0x009196fd	keep	Pseudo-C and callees support the purpose.
+0x006b86a0	Adds a spell to a class's known list, if the spell exists and (when flagged) the class is force-user.	0x006b874e: CALL 0x006a4030	keep	Pseudo-C and callees support the purpose.
+0x006b8760	Removes a spell from a class's known list if the spell exists in the spell table.	0x006b87a5: CALL 0x00845a40	keep	Pseudo-C and callees support the purpose.
+0x006b87b0	Returns a class's known-spell entry (likely by level and slot), or -1 if class index out of range.	0x006b87c9: OR EAX,0xffffffff	keep	Pseudo-C and callees support the purpose.
+0x006b8800	Returns a class's known-spell count, or 0 if the class index is out of range.	0x006b8833: CALL 0x006a4190	keep	Pseudo-C and callees support the purpose.
+0x006b8840	Tests whether the creature has a given talent (spell, feat, skill or power) it can currently use.	0x006b8878: MOVZX ECX,word ptr [ECX + 0x1114]	keep	Branches over spell, feat, skill and item power checks.
+0x006b8bb0	Randomly picks a talent (power, feat, special ability, or item power) and writes its ids to output pointers.	0x006b8c2b: CALL 0x0091eb8b	keep	Pseudo-C and callees support the purpose.
+0x006b8da0	Returns whether a finesse feat lets DEX replace strength for the given weapon (likely).	0x006b8dea: PUSH 0xc1	keep	Pseudo-C and callees support the purpose.
+0x006b8ee0	Returns whether the creature has the specialization feat tied to the item's base type.	0x006b8f09: MOV CX,word ptr [EAX + 0xb0]	keep	Pseudo-C and callees support the purpose.
+0x006b8f40	Returns uses left for a spell at a class index, using room force rating and a list scan (likely).	0x006b8fc1: CALL 0x0054b4f0	keep	Pseudo-C and callees support the purpose.
+0x006b91b0	Validates a spell, reads room force rating and a cost effect, computes cost, then adjusts current points (likely force points).	0x006b91e7: JZ 0x006b95ed	fix	Body adjusts points via cost calc; no ready-count logic visible.
+0x006b9640	Checks CanLevelUp, then either schedules a deferred level-up event on the server AI master or applies it now (likely).	0x006b9672: CALL 0x006b9790	keep	Pseudo-C shows CanLevelUp, AI master event add, else LevelUp.
+0x006b9790	Returns 1 if level is under the server cap, XP reaches the next threshold, and no blocking check fails.	0x006b97ba: CMP ESI,dword ptr [EAX + 0x94]	keep	Pseudo-C and callees support the purpose.
+0x006b9870	Applies a pending level-up: walks the class table, sets class and ability bases, skill ranks, feats and spells.	0x006b9920: MOV DL,byte ptr [ECX + EAX*0x1 + 0xab]	keep	Pseudo-C and callees support the purpose.
+0x006b9d80	Drops one level: removes an emptied class, reverts ability bases, skills, feats and spells, and unequips now-unusable gear.	0x006b9e4f: CALL 0x006b6a20	keep	Calls SetClassLevel, ability setters, RemoveFeat, UnequipItem.
+0x006ba320	Sets creature movement rate from the MOVERATE column of its 2DA row, only when the argument is 7 (likely).	0x006ba34e: CMP dword ptr [EBP + 0x8],0x7	keep	Pseudo-C and callees support the purpose.
+0x006ba620	Returns fortitude save: base save, CON modifier, a stored bonus byte, plus effect bonuses when argument is zero.	0x006ba68f: CALL 0x006b73a0	fix	One of the added bytes is the CON modifier at +0xf2.
+0x006ba6b0	Returns will save: base save, WIS modifier, a stored bonus byte, plus effect bonuses when argument is zero.	0x006ba71f: CALL 0x006b75c0	fix	One of the added bytes is the WIS modifier at +0xf6.
+0x006ba740	Returns total reflex save: base, DEX modifier, a stored bonus byte, and effect bonuses if argument is zero.	0x006ba7a1: CALL 0x006b5db0	keep	Pseudo-C and callees support the purpose.
+0x006ba7d0	Builds a 12-byte record from id, flag and byte and likely adds it to the +0x134 list (name misleading).	0x006ba80d: MOV ECX,dword ptr [EDX + 0x134]	fix	Body appends a record to the +0x134 list; name GetFeat is misleading.
+0x006ba8f0	Returns 1 if the known-spell list has the given id with flag 1 (a spell-like ability), else 0.	0x006ba958: CMP dword ptr [EAX + ECX*0x1 + 0x4],0x1	keep	Pseudo-C and callees support the purpose.
+0x006ba9f0	Returns total strength bonus from effects, via the effect-bonus helper with ability index 0 (STR).	0x006baa27: CALL 0x00582010	keep	Pseudo-C and callees support the purpose.
+0x006baa40	Returns total dexterity bonus from effects, via the effect-bonus helper with ability index 1 (DEX).	0x006baa77: CALL 0x00582010	keep	Pseudo-C and callees support the purpose.
+0x006baa90	Returns total constitution bonus from effects, via the effect-bonus helper with ability index 2 (CON).	0x006baac7: CALL 0x00582010	keep	Pseudo-C and callees support the purpose.
+0x006baae0	Returns total intelligence bonus from effects, via the effect-bonus helper with ability index 3 (INT).	0x006bab17: CALL 0x00582010	keep	Pseudo-C and callees support the purpose.
+0x006bab30	Returns total wisdom bonus from effects, via the effect-bonus helper with ability index 4 (WIS).	0x006bab67: CALL 0x00582010	keep	Pseudo-C and callees support the purpose.
+0x006bab80	Returns total charisma bonus from effects, via the effect-bonus helper with ability index 5 (CHA).	0x006babb7: CALL 0x00582010	keep	Pseudo-C and callees support the purpose.
+0x006babd0	Returns a table value for a force-user class at its level (plus one if flagged); 0 otherwise.	0x006bacc4: CALL 0x006ad2f0	fix	Body returns a value and sets nothing; name contradicts body.
+0x006bad10	Returns force resistance as one stored byte minus a second, floored at zero.	0x006bad31: SUB ECX,EAX	keep	Pseudo-C and callees support the purpose.
+0x006bae00	For each force-user class, tries a random known power; returns 1 on first success, else the last result.	0x006bae9f: CMP dword ptr [EBP + -0x4],0x1	keep	Pseudo-C and callees support the purpose.
+0x006baec0	Collects known spells that are valid special-ability candidates, then selects one, likely at random.	0x006bafa0: MOV EAX,dword ptr [EDX + 0x4]	keep	Candidate lists, IsSpellTalentCandidate, random pick callee.
+0x006bb3a0	Allocates temp candidate lists, then scans item properties in an inventory slot for item-granted powers (likely).	0x006bb3d7: CALL 0x00919723	keep	Pseudo-C and callees support the purpose.
+0x006bc0e0	Collects feats the creature can take (valid, passes inclusion check, not already held) and picks one at random (likely).	0x006bc1c1: CALL 0x006bdd60	keep	Pseudo-C and callees support the purpose.
+0x006bc3d0	Stores the new force resistance value, then calls UpdateCombatInformation to refresh combat state.	0x006bc3dd: MOV byte ptr [EAX + 0x12b],CL	keep	Pseudo-C and callees support the purpose.
+0x006bc400	Stores the force resistance penalty byte at +0x12c, then calls UpdateCombatInformation to refresh combat values.	0x006bc40d: MOV byte ptr [EAX + 0x12c],CL	keep	Pseudo-C and callees support the purpose.
+0x006bc430	Returns the feat ID at an index (list at +0x0, count +0x4), or 65535 if out of range.	0x006bc45b: MOV AX,word ptr [EDX + EAX*0x2]	keep	Pseudo-C and callees support the purpose.
+0x006bc530	Returns the bonus feat ID at an index (list at +0x18, count +0x1c), or 65535 if out of range.	0x006bc559: MOV EDX,dword ptr [ECX + 0x18]	keep	Pseudo-C and callees support the purpose.
+0x006bc570	Likely returns an immunity bitmask for an effect type; buckets the source's alignment (+0x18a) into three groups.	0x006bc5be: CMP EAX,0x28	fix	+0x18a is the alignment value, per ModifyAlignment clamp.
+0x006bc9a0	Returns the link-immunity bitmask for an effect: checks the inclusion match, then ORs per-slot immunity results.	0x006bca98: CALL 0x006bc570	keep	Pseudo-C and callees support the purpose.
+0x006bce00	Likely recomputes spell uses per day for each force-user class, clamping remaining uses at zero.	0x006bce6b: CALL 0x006f2a30	keep	Loops force-user classes, compares GetSpellGainWithBonus to stored.
+0x006bcfa0	Likely picks a random known power for a creature by collecting known spell candidates into lists, then choosing one.	0x006bd089: CALL 0x006b8800	keep	Pseudo-C and callees support the purpose.
+0x006bd810	Returns the caster level stored for a spell-like ability ID in its list (+0x134), or 255 if absent.	0x006bd878: MOV AL,byte ptr [EAX + ECX*0x1 + 0x8]	keep	Pseudo-C and callees support the purpose.
+0x006bd890	Adds a float delta to the HP accumulator at +0x1bc, then returns and removes its whole-number part.	0x006bd8a2: FADD float ptr [EBP + 0x8]	keep	Pseudo-C and callees support the purpose.
+0x006bd9c0	Returns whether any class knows the spell or power; with the flag set, also checks room force rating (likely).	0x006bda17: CALL 0x006a41c0	keep	Pseudo-C and callees support the purpose.
+0x006bdcd0	Adds a class slot (max two), sets its class and level, then notifies the owner if present.	0x006bdd12: CALL 0x006b69e0	keep	Pseudo-C and callees support the purpose.
+0x006bdd60	Returns 1 if every hex nibble of the second value is a wildcard or matches the first value.	0x006bdd73: AND EAX,0xf000	keep	Pseudo-C and callees support the purpose.
+0x006be0a0	Clears two out-flags, then sets each if a feat-specific helper check passes, gated on a class entry (likely).	0x006be0ec: IMUL EAX,EAX,0x238	fix	Table at 0x238 stride is the class table, not a bonus table.
+0x006be150	Likely decides if a creature can choose a feat: rejects two reserved IDs, then checks tags and prerequisites.	0x006be18b: CMP EAX,0xcf	keep	Pseudo-C and callees support the purpose.
+0x006be5f0	Likely validates a spell choice: entry type 1 or 5, valid class, and spell not already known.	0x006be665: CMP EDX,0x5	keep	Pseudo-C and callees support the purpose.
+0x006be770	Returns 1 if a feat is held, checking two feat sets then the supplied list (likely).	0x006be793: CALL 0x0064dc30	keep	Pseudo-C and callees support the purpose.
+0x006be820	Likely checks that all spell prerequisites in two lists are known, returning 0 if any is missing.	0x006be858: CALL 0x006bd9c0	keep	Pseudo-C and callees support the purpose.
+0x006bea00	Checks feat prereqs: two required feats must be held, plus one of five optional feats if any are listed.	0x006bea2c: CALL 0x006be770	keep	Pseudo-C and callees support the purpose.
+0x006beb10	Checks a feat's level, skill, and base-attack requirements against the creature, plus prerequisite feats (likely).	0x006beb98: CALL 0x006f2580	keep	Pseudo-C and callees support the purpose.
+0x006bedf0	Likely auto-picks level-up stats, skills and feats into a PendingLevelUp record for the creature.	0x006beeee: CALL 0x006a4e00	keep	PendingLevelUp constructor, AddFeat, skill delta calls visible.
+0x006c0330	Returns 1 if an equipped item in any of 20 slots grants the power via a type-10 item property.	0x006c03bc: CALL 0x00603f60	keep	Pseudo-C and callees support the purpose.
+0x006c06b0	Finds an equipped item granting the power (type-10 property) and returns its object ID and property index via out-params.	0x006c0723: CALL 0x006d0620	keep	Pseudo-C and callees support the purpose.
+0x00844e40	Returns the byte at +0xf8 plus slot*0x20 for slot 0 or 1, else 255; likely a class ID.	0x00844e60: MOV AL,byte ptr [EDX + ECX*0x1 + 0xf8]	fix	Stride 0x20 at +0xf8 differs from server class array; name suspect.
+0x0089aef0	Returns the class ID at a list position, or 255 if the position is past the class count.	0x0089af19: MOV DL,byte ptr [ECX + EAX*0x1 + 0xab]	keep	Pseudo-C and callees support the purpose.

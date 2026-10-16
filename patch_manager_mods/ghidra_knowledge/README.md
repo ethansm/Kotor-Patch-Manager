@@ -53,7 +53,11 @@ traps, prompt schema, calibration). Pre-processing helper: `tools/re_card_prep.p
 **Free script tools first** (no sqlite needed): `python3 scripts/query_ghidra.py symbol|address|struct|stats`
 (also reads the REA ledger `rea_findings/`, tagging rows `[rea]` / `[superseded]`), and
 `python3 patch_manager_mods/ghidra_knowledge/tools/rea_ledger.py lint` for ledger hygiene. Named pseudo-C for a whole class: `python3 patch_manager_mods/ghidra_knowledge/tools/named_decomp.py run --class <Class>`
-($0 tokens, one live REA session; output in the dump dir `named_decomp/`, outside git). The full tool order
+($0 tokens, one live REA session; output in the dump dir `named_decomp/`, outside git). Class doc page:
+`python3 patch_manager_mods/ghidra_knowledge/tools/fn_doc.py page <Class>` (-> `steam_docs/<Class>.md`; also
+`draft-input`, `check-drafts`). Validated purposes into the KDB:
+`python3 patch_manager_mods/ghidra_knowledge/tools/persist_purposes.py <validated.tsv> [--apply]` (dry-run default,
+never overwrites human purposes). The full tool order
 (static dumps at $0, live REA last) is in `RE_AGENT_GUIDE.md` §2.1.
 
 **No `sqlite3` CLI is installed on this machine** (confirmed 2026-09-29,

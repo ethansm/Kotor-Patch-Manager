@@ -107,6 +107,12 @@ annotates every known name (target + named callees, `annotate_native_function`) 
 plus `manifest.tsv`; resumable (skips `ok` rows), aborts (exit 3) if the exe sha changes. Read these files before
 asking REA or a model for a decompile.
 
+Class doc page ($0): `python3 ghidra_knowledge/tools/fn_doc.py page <Class>` writes `steam_docs/<Class>.md`
+(facts, struct fields, KDB purpose, named pseudo-C per function); `draft-input <Class> --n 25` builds drafter inputs
+and `check-drafts <tsv>` checks `addr purpose anchor` rows (exact asm anchor, <= 20 words).
+Validated purposes into the KDB: `python3 ghidra_knowledge/tools/persist_purposes.py <validated.tsv> [--apply]`
+(dry-run default; fills only NULL or its own rows, never human/atlas purposes; idempotent; integrity check).
+
 Live REA (`rea-recon`) is only for what the dumps cannot answer: targets of INDIRECT call sites, non-contiguous
 function bodies, live data xrefs, and named pseudo-C. At most 2 live REA sessions machine-wide.
 
