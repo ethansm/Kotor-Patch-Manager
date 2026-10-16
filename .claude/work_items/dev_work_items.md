@@ -62,7 +62,7 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 46 | WI-46b | P2 | ready | M | WI-46 | Agent tooling hardening: ship pipeline modules | 3 | 3 | Agent tooling ship pipeline modules; tooling, 1 blocked. |
 | [ ] | 47 | WI-59 | P2 | verify-only | M | - | Deep-haiku-review fix ports: verify and close | 4 | 0 | deep-haiku-review fix ports verify and close; 4 blocked. |
 | [ ] | 48 | WI-40b | P2 | ready | S | - | Cmdq LAT and hold-reason parser | 1 | 1 | Cmdq LAT and hold-reason parser; probe-log tooling, ready. |
-| [ ] | 49 | WI-24 | P2 | ready | L | - | Active effects panel: logging and shared-helper migration | 8 | 1 | Active effects panel; 7 of 8 rows blocked on unbuilt helpers. |
+| [x] | 49 | WI-24 | P2 | ready | L | - | Active effects panel: logging and shared-helper migration | 8 | 1 | Active effects panel; 7 of 8 rows blocked on unbuilt helpers. |
 | [ ] | 50 | WI-49 | P2 | ready | S | - | K1 asset import: pykotor node-order fix (T12c) | 5 | 1 | K1 asset import pykotor node-order fix; 4 open, 1 parked. |
 | [ ] | 51 | WI-25 | P2 | verify-only | M | - | 2DA limit verify and wrap width probe | 2 | 0 | 2DA limit verify and wrap width probe; engine bug candidates. |
 | [ ] | 52 | WI-66b | P2 | ready | S | - | Bug-investigate per-stage reliability and playtest bundle ch | 2 | 1 | Bug-investigate per-stage reliability and playtest; tooling. |

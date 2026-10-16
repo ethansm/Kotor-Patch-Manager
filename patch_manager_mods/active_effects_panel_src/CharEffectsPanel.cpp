@@ -85,7 +85,7 @@ const float TealText[3] = {0.10196f, 0.69804f, 0.54902f}, TealFrame[3] = {0.0509
 const float DiscTeal[3] = {0.035f, 0.415f, 0.34f}, White[3] = {1, 1, 1};   // disc = the Buff HUD backing colour
 const char* const DiscResref = "buffhud_circle";
 
-// ---- diagnostics: KpLog (core file character-effects-panel_log.txt; old core: fallback chareffects_log.txt at INFO), capped; chareffects_debug.txt enables detail ----
+// ---- diagnostics: KpLog (core file character-effects-panel_log.txt; old core: fallback chareffects_log.txt at INFO), capped; kplog.ini [character-effects-panel] level=debug enables detail ----
 KP_CHANNEL(chMain, "main");
 KP_CHANNEL(chDbg, "debug");
 // Only stores the path and the level (no I/O): safe from a static initialiser.
@@ -132,7 +132,7 @@ using inikit::trim;
 void syncWheelCfg() { guikit::g_wheel.enabled = g_cfg.wheelScroll != 0; guikit::g_wheel.iniW = (int)g_cfg.screenW; guikit::g_wheel.iniH = (int)g_cfg.screenH; }   // after every loadIni and each tick
 void loadIni() {
     Cfg c;
-    g_debug = GetFileAttributesA("chareffects_debug.txt") != INVALID_FILE_ATTRIBUTES;
+    g_debug = ::kplog::Enabled(chDbg, KPLOG_DEBUG);
     WIN32_FILE_ATTRIBUTE_DATA fa;
     g_iniStamp = GetFileAttributesExA("chareffects.ini", GetFileExInfoStandard, &fa)
         ? (((ULONGLONG)fa.ftLastWriteTime.dwHighDateTime << 32) | fa.ftLastWriteTime.dwLowDateTime) : 0;
@@ -194,7 +194,7 @@ void maybeReloadIni() {
     WIN32_FILE_ATTRIBUTE_DATA fa; ULONGLONG st = 0;
     if (GetFileAttributesExA("chareffects.ini", GetFileExInfoStandard, &fa))
         st = ((ULONGLONG)fa.ftLastWriteTime.dwHighDateTime << 32) | fa.ftLastWriteTime.dwLowDateTime;
-    bool dbg = GetFileAttributesA("chareffects_debug.txt") != INVALID_FILE_ATTRIBUTES;
+    bool dbg = ::kplog::Enabled(chDbg, KPLOG_DEBUG);
     if (st != g_iniStamp || dbg != g_debug) { logf("INI changed on disk, reloading"); loadIni(); }
 }
 

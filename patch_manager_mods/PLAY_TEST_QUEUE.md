@@ -13,3 +13,4 @@ rows, then check each pass signal with `python3 scripts/kotor2_logs.py check <lo
 
 | id | source | mod@version | install | steps | pass signal | status | added |
 |---|---|---|---|---|---|---|---|
+| WI-24 | vw1-A | active_effects_panel 0.2.0-probe | rebuild + install active_effects_panel_src | add `[character-effects-panel]` `level=debug` to kplog.ini in the game dir, start the game, open the character screen with active effects | `kotor2_logs.py check character-effects-panel_log.txt` shows the INI loaded line with debug=1 | pending | 2026-10-15 |
