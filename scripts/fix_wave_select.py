@@ -13,7 +13,9 @@ comes from .claude/skills/variant-fix-wave/draft.md. --dry-run prints the candid
 
 draft-collect merges each drafter row <waves-root>/W-draft/<WI>.row.tsv into its candidate and lints it. Fit rows go to
 <waves-root>/W/items.input.tsv (COLUMNS only); the rest go to <waves-root>/W/unfit.tsv as `id<TAB>reason`. Unfit,
-lint-failed and row-less candidates release their claims. Next step: fix_wave.py plan <items.input.tsv> --wave W.
+lint-failed and row-less candidates release their claims. A fit row's optional `playtest` cell (live-game steps and
+pass signal, `-` for none) goes to <waves-root>/W/playtests.tsv; the close step copies applied items' rows into
+patch_manager_mods/PLAY_TEST_QUEUE.md. Next step: fix_wave.py plan <items.input.tsv> --wave W.
 
 The wave_tools runner, the git dirty list and git HEAD are injectable, so tests need no git and no real wave_tools run.
 Exit: 0 ok; 2 bad args, missing input, --top over the cap, or a wave_tools failure.
@@ -43,6 +45,7 @@ KINDS = ("bug", "gap")
 ROW_COLUMNS = ("id", "kind", "entries", "anchors", "tests", "constraint")
 CANDIDATE_COLUMNS = fwp.COLUMNS + ("why",)
 UNFIT_COLUMNS = ("id", "reason")
+PLAYTEST_COLUMNS = ("id", "playtest")
 UNFIT_PREFIX = "UNFIT:"
 ENTRY_RE = re.compile(r"([^:\s]+)(?::(\d+)-(\d+))?")
 
@@ -341,7 +344,7 @@ def draft_collect(wave, *, root, waves_root, claims_dir=None):
         raise SelectError(f"{cand_path} has no candidate rows")
     draft_dir = wr / f"{wave}-draft"
     st = ws.Store(root, claims_dir=claims_dir)
-    fit, unfit, released = [], [], []
+    fit, unfit, released, playtests = [], [], [], []
     with st.flock(".select.lock"):
         for cand in cands:
             wid = cand["id"]
@@ -352,6 +355,9 @@ def draft_collect(wave, *, root, waves_root, claims_dir=None):
                 problems = lint_row(merged, cells.get("id", ""))
                 if not problems:
                     fit.append(merged)
+                    live = cells.get("playtest", "").strip()
+                    if live and live != "-":
+                        playtests.append({"id": wid, "playtest": live})
                     continue
                 reason = "lint: " + "; ".join(problems)
             unfit.append((wid, reason))
@@ -360,7 +366,8 @@ def draft_collect(wave, *, root, waves_root, claims_dir=None):
     items_path = wave_dir / "items.input.tsv"
     write_tsv(items_path, fwp.COLUMNS, fit)
     write_tsv(wave_dir / "unfit.tsv", UNFIT_COLUMNS, [{"id": w, "reason": r} for w, r in unfit])
-    print(f"fit={len(fit)} unfit={len(unfit)}")
+    write_tsv(wave_dir / "playtests.tsv", PLAYTEST_COLUMNS, playtests)
+    print(f"fit={len(fit)} unfit={len(unfit)} playtests={len(playtests)}")
     if released:
         print(f"released: {';'.join(released)}")
     print(f"plan input: {items_path}")

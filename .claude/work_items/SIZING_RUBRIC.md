@@ -26,9 +26,11 @@ scorer's gut. Scores live in `.claude/work_items/sizing.tsv`; only the size lett
   - 1: the WI needs an owner decision or design choice before work can start.
 
 ## Size rule
-points = 2R + C + V + K (V counted as 0-2)
+points = 2R + C + min(V, 2) + K
 - S: 0-1 · M: 2-3 · L: 4-5 · XL: >=6
-- XL also when V = 3 (only a live game or play test can confirm it: not agent-finishable in one pass).
+- V = 3 (only a live game run or play test can confirm it) neither blocks the item nor makes it XL: agents do the
+  code and host tests, and the live check goes to the batched play sessions. `live = 1` in sizing.tsv, and closing
+  the item MUST add a row (steps + pass signal) to `patch_manager_mods/PLAY_TEST_QUEUE.md` (user rule, 10-15).
 - U = 1 is a flag, not a size: the item waits for an owner answer. (10-15 run: scorers set U = 1 on 55 of 80 open
   items, so "U -> XL" made 60 of 80 XL and was dropped.)
 

@@ -31,6 +31,7 @@ repo-relative; `patch_manager_mods/` is implied unless a path starts with `scrip
    `<W>-draft`. Preview first with `--dry-run` (claims and writes nothing).
 2. Draft wave: `agent_contract.py snapshot`, then one `model: haiku` Agent per `<W>-draft/uNN.brief.md`
    (description `VW draft <WI>`, map in `units.map.tsv`), in one message. Each writes `<WI>.row.tsv` or `UNFIT:`.
+   A live-game-only check is not UNFIT: the row's `playtest` cell carries it to `<W>/playtests.tsv`.
 3. `python3 scripts/fix_wave.py draft-collect --wave <W>`: writes `<W>/items.input.tsv` and `unfit.tsv`, releases
    UNFIT / no-row / lint-failed claims.
 4. `python3 scripts/fix_wave.py plan .claude/waves/<W>/items.input.tsv --wave <W>`; claims outside batch A are
@@ -71,6 +72,8 @@ Run the CLI subcommand and report its lines; nothing else.
 ### `close <W-A>`
 1. `python3 scripts/fix_wave.py cost <W-A>` (current session only; add `--session <id>` per extra session).
 2. Append one yield line to memory `feedback-variant-wave-yield.md`: wave, items applied/parked, agents, $ per item.
+   For each applied item in `<W>/playtests.tsv`, add a `pending` row to `patch_manager_mods/PLAY_TEST_QUEUE.md`
+   in that item's commit (live-only checks are deferred to batched play sessions, never dropped).
 3. `/plan-handoff <plan>` last, then the 4-section output (`### Actions Completed`, `### What Now Works`,
    `### Agents Used`, `### Saved State`).
 

@@ -52,9 +52,11 @@ def make_repo(root):
     (work / "dev_work_items.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def row_text(wid, kind="bug", entries="", anchors="", tests="", constraint=""):
+def row_text(wid, kind="bug", entries="", anchors="", tests="", constraint="", playtest=None):
     cols = ("id", "kind", "entries", "anchors", "tests", "constraint")
     vals = (wid, kind, entries, anchors, tests, constraint)
+    if playtest is not None:
+        cols, vals = cols + ("playtest",), vals + (playtest,)
     return "\t".join(cols) + "\n" + "\t".join(vals) + "\n"
 
 
@@ -237,6 +239,20 @@ class TestDraftCollect(SelectFixture):
         self.assertEqual(first["group"], "g1")
         self.assertEqual(first["write"], "scripts/alpha.py")
         self.assertEqual(first["context"], ".claude/work_items/WI-01.md#Goal")
+        self.assertEqual(self.claim_ids(), ["WI-01", "WI-02"])
+
+    def test_live_only_row_stays_fit_and_queues_playtest(self):
+        self.select(top=2)
+        self.write_row("WI-01", row_text("WI-01", kind="bug", entries="scripts/alpha.py:1-3", constraint="Fix alpha.",
+                                         playtest="steps: open inventory | signal: INV ok line"))
+        self.write_row("WI-02", row_text("WI-02", kind="gap", entries="scripts/beta.py:1-5",
+                                         constraint="Add beta coverage.", playtest="-"))
+        fit, out = self.draft_collect()
+        self.assertEqual(fit, ["WI-01", "WI-02"])
+        self.assertIn("playtests=1", out)
+        self.assertEqual(fws.read_tsv(self.waves / W / "playtests.tsv"),
+                         [{"id": "WI-01", "playtest": "steps: open inventory | signal: INV ok line"}])
+        self.assertEqual(list(fws.read_tsv(self.waves / W / "items.input.tsv")[0].keys()), list(fwp.COLUMNS))
         self.assertEqual(self.claim_ids(), ["WI-01", "WI-02"])
 
     def test_unfit_file_releases_claim(self):

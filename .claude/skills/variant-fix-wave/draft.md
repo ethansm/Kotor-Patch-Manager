@@ -10,17 +10,19 @@ Pre-filled from select (write= is the WI's declared files; tests= are short name
 Write {ROW} as exactly one of A or B.
 
 A. Row: a header line, then one row. Columns are TAB-separated, not spaces:
-id	kind	entries	anchors	tests	constraint
-{WI}	bug|gap	<entries>	<anchors>	<tests>	<constraint>
+id	kind	entries	anchors	tests	constraint	playtest
+{WI}	bug|gap	<entries>	<anchors>	<tests>	<constraint>	<playtest>
 - kind: bug = behaviour is wrong today; gap = behaviour is right but untested.
 - entries: at most 5 `path` or `path:lo-hi` (ints, lo<=hi), `;`-separated, fix site first.
 - anchors: `;`-separated rg patterns that hit today in the entry files. Run each rg before you write it.
 - tests: keep the pre-filled names unless one is wrong. A new name must be an id printed by run_tests.py --list.
 - constraint: at most 6 sentences: the exact behaviour required; the test that is red before the fix; what must not change; what is deferred. No tabs or newlines inside it.
+- playtest: `-` when host tests prove the fix. When only the live game can confirm it, do NOT mark UNFIT: write
+  `steps: <what the player does> | signal: <log line or kotor2_logs.py check result that proves it>` (at most 3
+  sentences, no tabs). It goes to patch_manager_mods/PLAY_TEST_QUEUE.md for the next batched play session.
 
 B. UNFIT: one line, `UNFIT: <reason>`, and nothing else in {ROW}. Use it when any of these hold:
 - the fix needs an owner decision or a design choice;
-- the fix needs a live game run or a play test;
 - the fix needs edits to more than 4 files;
 - the fix site cannot be found in the repo;
 - the WI is docs-only.

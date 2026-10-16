@@ -68,6 +68,7 @@ Do not use a batch for items the driver flags as large (size L) or items whose w
 
 ## 3. Hard rules
 - Never install, hot-swap, play-test, push, post to GitHub, or run `git add -A`, `git commit -a`, `git reset`, `git checkout`, `git stash`. The driver does the only git writes, scoped to explicit paths.
+- A Verify step that only the live game can check neither blocks nor parks the item: finish the code and host tests, close, then add a `pending` row (steps + pass signal) to `patch_manager_mods/PLAY_TEST_QUEUE.md` and commit it with `git commit -- patch_manager_mods/PLAY_TEST_QUEUE.md`. The user plays the queue in batches.
 - Never run `verify` (or `docs`) before spawning the agent the previous command printed: a skipped retry spawn is counted as a missing reply and burns a ladder step.
 - Other sessions' dirty files are none of your business: report the count, never touch them.
 - Do not use `oc-subagent` or `oc-flow`. Do not spawn more agents than the driver prints (at most 7 recon spawns from `rescue`; the Sonnet escalation is one of those prints).
