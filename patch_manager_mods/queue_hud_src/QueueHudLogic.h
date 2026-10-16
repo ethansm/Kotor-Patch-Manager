@@ -1356,6 +1356,9 @@ inline bool curReal(bool haveCur, int curSub, int aa8, int ab8, bool paused, uin
     return false;
 }
 
+// Is the current round node a queued item/spell action? Only a real (creal) subType 9 = cast spell or 10 = use item node.
+inline bool curActionPresent(bool creal, int curSub) { return creal && (curSub == 9 || curSub == 10); }
+
 // Builds the EngineView from raw engine reads. aa8/ab8 are ignored while paused (sticky in a frozen round).
 inline EngineView makeEngineView(const int* entryTypes, int ne, bool actionPresent, bool haveCur, int curSub, int nrn,
                                  int aa8, int ab8, bool paused, uint32_t staleSince, uint32_t now) {

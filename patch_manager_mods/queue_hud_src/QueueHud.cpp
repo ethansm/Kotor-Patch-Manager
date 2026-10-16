@@ -1523,6 +1523,11 @@ void tickItemQueues(DWORD now, bool inMenu) {
         }
         if (!gOk) continue;
 
+        // Stale-cur bookkeeping: a flagless item/spell round node that sits unpaused with aa8/ab8 == 0 goes stale.
+        if (s.haveCur && !s.paused && s.aa8 == 0 && s.ab8 == 0) { if (buf.staleCurSince == 0) buf.staleCurSince = now; }
+        else buf.staleCurSince = 0;
+        const bool creal = qh::curReal(s.haveCur, s.haveCur ? (int)s.cur.subType : -1, s.aa8, s.ab8, s.paused, buf.staleCurSince, now);
+
         // 1. Engine-busy test, deliberately NOT matched to buf.activeAction: dispatching while ANY spell/item holds the creature would ClearAllActions it (doc 30 QH4).
         //    Known limit (BG23): an unrelated engine-initiated cast can look like our eaten action (AV_PRESENT) until it ends.
         bool actionInQueue = false;
@@ -1531,15 +1536,10 @@ void tickItemQueues(DWORD now, bool inMenu) {
             if (s.e[i].type == qh::T_USE_ITEM || s.e[i].type == qh::T_CAST_SPELL) actionInQueue = true;
             if (s.e[i].type == 0x3D) hasFollowLeader = true; // AIActionFollowLeader
         }
-        if (s.haveCur && (s.cur.subType == 9 || s.cur.subType == 10)) actionInQueue = true; // 9 = cast spell, 10 = use item
+        if (qh::curActionPresent(creal, s.haveCur ? (int)s.cur.subType : -1)) actionInQueue = true; // real 9 = cast spell, 10 = use item
         for (int i = 0; i < s.nrn; ++i) {
             if (s.rn[i].subType == 9 || s.rn[i].subType == 10) actionInQueue = true;
         }
-
-        // Stale-cur bookkeeping: a flagless item/spell round node that sits unpaused with aa8/ab8 == 0 goes stale.
-        if (s.haveCur && !s.paused && s.aa8 == 0 && s.ab8 == 0) { if (buf.staleCurSince == 0) buf.staleCurSince = now; }
-        else buf.staleCurSince = 0;
-        const bool creal = qh::curReal(s.haveCur, s.haveCur ? (int)s.cur.subType : -1, s.aa8, s.ab8, s.paused, buf.staleCurSince, now);
         int types[qh::kMaxEntries];
         for (int i = 0; i < s.engineNe && i < qh::kMaxEntries; ++i) types[i] = s.e[i].type;
         const qh::EngineView ev = qh::makeEngineView(types, s.engineNe < qh::kMaxEntries ? s.engineNe : qh::kMaxEntries, actionInQueue,

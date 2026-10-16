@@ -2094,6 +2094,28 @@ void testCurReal() {
     KT_CHECK(!curReal(true, 8, 0, 0, false, 0, 0));
 }
 
+void testCurActionPresent() {
+    // no current node -> never an action
+    KT_CHECK(!curActionPresent(curReal(false, 10, 0, 0, false, 0, 0), -1));
+    // stale flagless 10 and 9 (unpaused, stale at exactly 1500 ms) -> not present
+    KT_CHECK(!curActionPresent(curReal(true, 10, 0, 0, false, 1000, 2500), 10));
+    KT_CHECK(!curActionPresent(curReal(true, 9, 0, 0, false, 1000, 2500), 9));
+    // same node at 1499 ms is still a real action -> present
+    KT_CHECK(curActionPresent(curReal(true, 10, 0, 0, false, 1000, 2499), 10));
+    // now wrap: staleSince 0xFFFFFE00 + 1500 ms = 0x3DC (stale); 0x3DB is 1499 ms (real)
+    KT_CHECK(!curActionPresent(curReal(true, 10, 0, 0, false, 0xFFFFFE00u, 0x3DCu), 10));
+    KT_CHECK(curActionPresent(curReal(true, 10, 0, 0, false, 0xFFFFFE00u, 0x3DBu), 10));
+    // paused flagless 9/10 (stale timer frozen) -> present
+    KT_CHECK(curActionPresent(curReal(true, 10, 0, 0, true, 0, 0), 10));
+    KT_CHECK(curActionPresent(curReal(true, 9, 0, 0, true, 1, 999999), 9));
+    // flagged 9/10 unpaused, even on a stale timer -> present
+    KT_CHECK(curActionPresent(curReal(true, 10, 1, 0, false, 1000, 999999), 10));
+    // never stale (staleSince 0) -> present
+    KT_CHECK(curActionPresent(curReal(true, 10, 0, 0, false, 0, 999999), 10));
+    // real node of another subType (ghost 1 with ab8 set) -> not an item/spell action
+    KT_CHECK(!curActionPresent(curReal(true, 1, 0, 1, false, 0, 0), 1));
+}
+
 void testMakeEngineView() {
     const int a3f[] = { 0x3F };
     const int a3d[] = { 0x3D };
@@ -2465,5 +2487,6 @@ int main() {
     testHeldHeadAction();
     testGateEngineCount();
     testCombatEdgeSequences();
+    testCurActionPresent();
     return kt::Report("queue_hud_logic_test");
 }
