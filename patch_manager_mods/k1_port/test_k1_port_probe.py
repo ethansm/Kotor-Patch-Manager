@@ -267,6 +267,27 @@ def test_replaced_base_mismatch_blocked(root):
 
 
 @test
+def test_soundset_2da_replaced_with_its_own_base_and_rolled_back(root):
+    w = make_world(root)
+    live, staged = b"2DA V2.b\n\nlabel\n0 s_old\n", b"2DA V2.b\n\nlabel\n0 s_old\n1 kvj_juhani\n"
+    (w["game"] / "override" / "soundset.2da").write_bytes(live)
+    (w["stage"] / "probe_T12h" / "override" / "soundset.2da").write_bytes(staged)
+    files = ["--files", "probe_T12h/override/appearance.2da", "probe_T12h/override/soundset.2da"]
+    ssha = sha_of(live)
+    before = snapshot(root)
+    r = run(root, "install", *common(w), *files, "--base-sha256", BASE_SHA, "--yes")  # soundset base missing
+    check(r.returncode == 1 and "--base soundset.2da=" in r.stdout and ssha in r.stdout,
+          f"missing soundset base must refuse and name the flag: {r.stdout}")
+    check(snapshot(root) == before, "refused install must write nothing")
+    r = run(root, "install", *common(w), *files, "--base-sha256", BASE_SHA, "--base", "soundset.2da=" + ssha, "--yes")
+    check(r.returncode == 0, f"install rc {r.returncode}: {r.stdout} {r.stderr}")
+    check((w["game"] / "override" / "soundset.2da").read_bytes() == staged, "soundset.2da replaced")
+    r = run(root, "rollback", *game_args(w), "--yes")
+    check(r.returncode == 0, f"rollback rc {r.returncode}: {r.stdout}")
+    check((w["game"] / "override" / "soundset.2da").read_bytes() == live, "soundset.2da restored")
+
+
+@test
 def test_heads_2da_replaced_with_its_own_base_and_rolled_back(root):
     w = make_world(root)
     live, staged = b"2DA V2.b\n\nhead\n0 h_old\n", b"2DA V2.b\n\nhead\n0 h_old\n1 k1p_juhanih\n"

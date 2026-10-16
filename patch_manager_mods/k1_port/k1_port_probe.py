@@ -16,8 +16,8 @@ Install prechecks (every one must pass; any failure refuses the copy):
   2. k1_port_prune gate --strict over the named files against <stage>/ledger.json: no flagged file.
      A missing ledger blocks, because the gate would otherwise pass with nothing to compare.
   3. no swkotor2 process (scans <proc-root>/<pid>/cmdline; --proc-root is a test hook, default /proc).
-  4. no target already in override/, except appearance.2da and heads.2da. Each must hash to its base
-     (--base-sha256 for appearance.2da, --base heads.2da=HEX for heads.2da) and is backed up first. A target that an active install manifest already lists is also refused.
+  4. no target already in override/, except appearance.2da, heads.2da and soundset.2da. Each must hash to its base
+     (--base-sha256 for appearance.2da, --base heads.2da=HEX / --base soundset.2da=HEX for the others) and is backed up first. A target that an active install manifest already lists is also refused.
 
 Backups: <game>/backups/k1p_probe_<YYYYMMDD_HHMM>/manifest.json, originals under original/.
 Save slots (<game>/cloudsaves/*/000000 - QUICKSAVE and 000001 - AUTOSAVE) are copied to saves/ and
@@ -55,7 +55,7 @@ DEFAULT_FILES = (
     "models/k1p_commm.mdx",
     "override/k1p_commm04.tpc",
 )
-REPLACED_NAMES = frozenset({"appearance.2da", "heads.2da"})  # the only override files this probe may replace
+REPLACED_NAMES = frozenset({"appearance.2da", "heads.2da", "soundset.2da"})  # the only override files this probe may replace
 PROCESS_PREFIX = "swkotor2"
 BACKUP_PREFIX = "k1p_probe_"
 POINTER_NAME = "k1p_probe_latest.json"

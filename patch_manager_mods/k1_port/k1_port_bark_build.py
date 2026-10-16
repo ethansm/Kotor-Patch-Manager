@@ -14,9 +14,9 @@ Writes under <out>/:
   override_bark/p_juhani_slct1.wav   control: RIFF PCM16 mono 22050 tone, 440 Hz (E1 format; proves SSF -> TLK -> Override)
   override_bark/p_juhani_slct2.wav   K1 original (SFX layout: MP3 + RIFF at byte 470) = E2d
   override_bark/p_juhani_slct3.wav   K1 original (same layout); also the candidate for a StreamSounds/ copy
-  utc/k1p_juhani_dialog.utc     installed UTC with Conversation = kvjdlg01 (Soundset unchanged)
-  utc/k1p_juhani_bark.utc       Soundset = the new row (Conversation unchanged)
-  utc/k1p_juhani_both.utc       both
+  utc/dialog/k1p_juhani.utc     installed UTC with Conversation = kvjdlg01 (Soundset unchanged)
+  utc/bark/k1p_juhani.utc       Soundset = the new row (Conversation unchanged)
+  utc/both/k1p_juhani.utc       both
 The base UTC is the staged char_juhani/override/k1p_juhani.utc (so the appearance row stays 818). Install ONE UTC
 as override/k1p_juhani.utc per test. Watch with scripts/override_watch.py --match 'p_juhani|kvj'.
 """
@@ -121,9 +121,10 @@ def build(k1, k2, out: Path, *, adopt=True) -> dict:
         k1_made.append(bark / f"p_juhani_slct{n}.wav")
     k1_made.append(bark / f"{SSF_NAME}.ssf")
     base = BASE_UTC.read_bytes()
-    for name, kw in (("k1p_juhani_dialog.utc", dict(conversation=DLG)), ("k1p_juhani_bark.utc", dict(soundset=row)),
-                     ("k1p_juhani_both.utc", dict(conversation=DLG, soundset=row))):
-        files[utcd / name] = patch_utc(base, **kw)
+    for name, kw in (("dialog", dict(conversation=DLG)), ("bark", dict(soundset=row)),
+                     ("both", dict(conversation=DLG, soundset=row))):
+        (utcd / name).mkdir(exist_ok=True)  # the probe installs by file name, so each variant is k1p_juhani.utc
+        files[utcd / name / "k1p_juhani.utc"] = patch_utc(base, **kw)
     for p, b in files.items():
         p.write_bytes(b)
     if adopt:
