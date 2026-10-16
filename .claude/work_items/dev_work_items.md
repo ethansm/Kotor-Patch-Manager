@@ -155,3 +155,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 139 | WI-107 | P3 | hold | S | - | WI-23 follow-up: mark doc 13 C145 done for a1_retarget_strict | 0 | 0 | Doc patch_manager_mods/13_ranged_ai_spacing.md row C145 was left unmar |
 | [ ] | 140 | WI-108 | P3 | hold | S | - | WI-46 follow-up: tests for --prune/render_pruned/suggest/REINSTALL prepare; H3 suite exclu | 0 | 0 | Opus review of the WI-46 diff found no tests for check_raw_addresses - |
 | [ ] | 141 | WI-109 | P3 | hold | S | - | Resolve claude_state default: ro vs rw (Phase3d sandbox) | 0 | 0 | WI-60 worker OPEN: dr_profile.py:55 says default claude_state is ro; f |
+| [ ] | 142 | WI-110 | P3 | hold | S | - | Shield bar hover tooltip refresh (C095) | 0 | 0 | WI-08 found no safe hover hook or refresh flag offset in ShieldBar.cpp |
