@@ -95,3 +95,4 @@
 {"ev": "park", "reason": "worker FAIL: tests pinning old filter were outside write scope; Steps+files amended", "session": "4c70bd63-4f92-437c-b70b-ad83498d8425", "ts": "2026-10-16T00:02:42Z", "wi": "WI-47"}
 {"ev": "unpark", "reason": "Steps and files now include the two pinned tests", "session": "4c70bd63-4f92-437c-b70b-ad83498d8425", "ts": "2026-10-16T00:02:45Z", "wi": "WI-47"}
 {"ev": "done", "session": "4c70bd63-4f92-437c-b70b-ad83498d8425", "ts": "2026-10-16T00:05:34Z", "wi": "WI-47"}
+{"ev": "park", "reason": "checker PARTIAL: clean", "session": "cb7f57ae-1747-48f4-a261-bab766471797", "ts": "2026-10-16T00:06:49Z", "wi": "WI-08"}
