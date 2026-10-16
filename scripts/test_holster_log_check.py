@@ -449,5 +449,18 @@ class PlaceDiagTests(unittest.TestCase):
         _, _, main = H.parse_lines([(1, "COMB creature=1 old=0 new=1 edge=1")])
         self.assertEqual(H._place_diag(main), [])
 
+    def test_previewnode_and_camnode(self):   # HE0 (doc 42 HW-EDIT)
+        lines = ["PLACENODE node=2 gob=1 t=2 step=0 name=pelvis_g target=1 bvt=99 gname=g mname=w_Lngswrd_001 cat=melee parent=7 owner=0a10 body=P_AttonBB",
+                 "PREVIEWNODE gob=11 node=12 name=rhand parent=13 owner=0 body=P_AttonBB mname=w_Lngswrd_001 cat=melee gobvt=98b5cc tid=42 tick=9",
+                 "PREVIEWNODE gob=14 node=15 name=lhand parent=13 owner=0 body=P_AttonBB mname=w_VibroBld_002 cat=melee gobvt=98b5cc tid=42 tick=9",
+                 "CAMNODE parent=13 pmodel=P_AttonBB pvt=98b5cc pparent=16 ppmodel=charrec_light ppvt=98b5cc camhook_p=0 camhook_pp=00ABC0"]
+        _, _, main = H.parse_lines(list(enumerate(lines, 1)))
+        out = H._place_diag(main)
+        self.assertIn("PREVIEWNODE n=2 parents=1 tids=42", out)
+        self.assertIn("  parent=0x13 body=P_AttonBB owner=0x0 weapons=rhand:w_Lngswrd_001/melee lhand:w_VibroBld_002/melee", out)
+        self.assertIn("PREVIEW mname vs in-world target=1 mname: shared=w_lngswrd_001 preview-only=w_vibrobld_002", out)
+        self.assertIn("PREVIEW body vs in-world body: shared=P_AttonBB preview-only=-", out)
+        self.assertIn("CAMNODE parent=0x13 P_AttonBB camhook=0 | pparent=0x16 charrec_light camhook=abc0", out)
+
 if __name__ == "__main__":
     unittest.main()

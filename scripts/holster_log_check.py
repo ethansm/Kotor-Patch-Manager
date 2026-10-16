@@ -71,6 +71,8 @@ MAIN_RES = {
     "refuse": re.compile(r"\bPLACEREFUSE reason=(\w+) n=(\d+)"),
     "mount": re.compile(r"\bMOUNT (\S+) parent=\w+ bone=(\S+) node=(\w+)"),
     "owner": re.compile(r"\bPLACENODE .*\btarget=1 .*\bowner=(\w+) body=(\S+)"),
+    "preview": re.compile(r"\bPREVIEWNODE gob=\w+ node=\w+ name=(\w+) parent=(\w+) owner=(\w+) body=(\S+) mname=(\S+) cat=(\w+) gobvt=(\w+) tid=(\d+)"),
+    "camnode": re.compile(r"\bCAMNODE parent=(\w+) pmodel=(\S+) pvt=\w+ pparent=(\w+) ppmodel=(\S+) ppvt=\w+ camhook_p=(\w+) camhook_pp=(\w+)"),
     "node": re.compile(r"\bPLACENODE node=\w+ gob=\w+ t=(\d+) step=(-?\d+) name=(\S+) target=(\d)(?: bvt=(\w+))?(?: gname=(\S+) mname=(\S+))?(?: cat=(\w+))?"),
 }
 
@@ -107,7 +109,8 @@ def parse_lines(window):
     """window: [(line_no, raw)] -> (records in log order, skipped [(line_no, kind, text)], main facts)."""
     recs, skipped = [], []
     main = {"loaded": [], "cap": [], "bonetest": Counter(), "unreadable": 0, "tid": {}, "reload": [], "tune": [], "refuse": {}, "node": Counter(), "mount": Counter(),
-            "owner": Counter(), "combc": set()}
+            "owner": Counter(), "combc": set(),
+            "preview": [], "camnode": [], "wmname": set()}
     for n, raw in window:
         text = raw.strip()
         m = MAIN_RES["loaded"].search(text)
@@ -136,6 +139,14 @@ def parse_lines(window):
             main["node"]["t=%s step=%s name=%s target=%s" % m.groups()[:4] + (" bvt=%s" % m.group(5) if m.group(5) else "")
                    + (" gname=%s mname=%s" % m.group(6, 7) if m.group(6) else "")
                    + (" cat=%s" % m.group(8) if m.group(8) else "")] += 1
+        if m and m.group(4) == "1" and m.group(7):
+            main["wmname"].add(m.group(7).lower())
+        m = MAIN_RES["preview"].search(text)
+        if m:
+            main["preview"].append(m.groups())
+        m = MAIN_RES["camnode"].search(text)
+        if m:
+            main["camnode"].append(m.groups())
         m = MAIN_RES["mount"].search(text)
         if m:
             main["mount"][(m.group(1), m.group(2))] += 1
@@ -313,6 +324,34 @@ def _place(recs):
     return out
 
 
+def _preview_diag(f):
+    """HE0 (doc 42 HW-EDIT): PREVIEWNODE = weapon Gobs still on the engine's rhand/lhand node (equip-screen preview, or in-world without
+    bone_test); CAMNODE = one line per distinct parent with FindPart("camerahook") results (0 = not found, 1 = FindPart slot mismatch)."""
+    out = []
+    pv = f.get("preview") or []
+    if pv:
+        by_parent = {}
+        for name, parent, owner, body, mname, cat, vt, tid in pv:
+            e = by_parent.setdefault(_hex(parent), {"body": body, "owner": _hex(owner), "m": [], "tid": set()})
+            e["m"].append("%s:%s/%s" % (name, mname, cat))
+            e["tid"].add(tid)
+        out.append("PREVIEWNODE n=%d parents=%d tids=%s" % (len(pv), len(by_parent), ",".join(sorted({p[7] for p in pv}))))
+        for parent, e in list(by_parent.items())[:6]:
+            out.append("  parent=0x%s body=%s owner=0x%s weapons=%s" % (parent, e["body"], e["owner"], " ".join(e["m"][:4])))
+        wm = f.get("wmname") or set()
+        if wm:
+            pm = {p[4].lower() for p in pv}
+            out.append("PREVIEW mname vs in-world target=1 mname: shared=%s preview-only=%s" % (
+                ",".join(sorted(pm & wm)) or "-", ",".join(sorted(pm - wm)) or "-"))
+        bodies = {k[1] for k in (f.get("owner") or {})}
+        if bodies:
+            pb = {p[3] for p in pv}
+            out.append("PREVIEW body vs in-world body: shared=%s preview-only=%s" % (",".join(sorted(pb & bodies)) or "-", ",".join(sorted(pb - bodies)) or "-"))
+    for parent, pm, pp, ppm, cp, cpp in (f.get("camnode") or [])[:8]:
+        out.append("CAMNODE parent=0x%s %s camhook=%s | pparent=0x%s %s camhook=%s" % (_hex(parent), pm, _hex(cp), _hex(pp), ppm, _hex(cpp)))
+    return out
+
+
 def _place_diag(f):
     """TUNE boot, PLACEREFUSE (highest n seen per reason; the DLL logs the first 5 then every 500th) and PLACENODE verdicts. Empty for old logs."""
     out = []
@@ -327,6 +366,7 @@ def _place_diag(f):
         comb = f.get("combc", set())
         out.append("OWNER (weapon parent+0x1D8 / body): " + ", ".join(
             "0x%s %s comb=%s x%d" % (k[0], k[1], ("yes" if k[0] in comb else "no") if comb else "n/a", v) for k, v in f["owner"].most_common(5)))
+    out += _preview_diag(f)
     if f.get("mount"):
         out.append("MOUNT " + ", ".join("%s bone=%s x%d" % (k[0], k[1], v) for k, v in f["mount"].most_common(5)))
     return out

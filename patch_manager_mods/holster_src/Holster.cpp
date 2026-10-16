@@ -343,7 +343,7 @@ extern "C" void __cdecl HolsterGobUpdate(void* beh) {
 // Node name of an attach node, no engine call: H = [N+4]; index = [H+4]; owner = [H+8]; t = [owner+0x4C] & 0x7F; t==2 -> table = [owner+0xB8];
 // t==5 -> table = [[owner+0x84]+0xB8]; name = (char*)[table + index*4]. step = the first failing step (0 = name read), for the PLACENODE log.
 struct NodeInfo { uint32_t t; int step; char name[32]; };
-static bool nodeIsTarget(uintptr_t node, NodeInfo& ni) {
+static bool nodeName(uintptr_t node, NodeInfo& ni) {
     ni.t = 0xFFu; ni.step = 1; ni.name[0] = 0;
     const uintptr_t h = rdU32(kSitePlace, node, 0x04);
     if (!h) return false;
@@ -362,7 +362,88 @@ static bool nodeIsTarget(uintptr_t node, NodeInfo& ni) {
     if (!namePtr) return false;
     ni.step = 0;
     readTag(kSitePlace, reinterpret_cast<const char*>(namePtr), ni.name, sizeof ni.name);
-    return _stricmp(ni.name, g_boneName) == 0;
+    return true;
+}
+static bool nodeIsTarget(uintptr_t node, NodeInfo& ni) { return nodeName(node, ni) && _stricmp(ni.name, g_boneName) == 0; }
+
+// Inline model name of a Gob: [gob+0x84] = model, model+0x08 = name ("" when unreadable).
+static void gobModelName(uintptr_t gob, char* out, int cap) {
+    out[0] = 0;
+    const uintptr_t model = gob ? rdU32(kSitePlace, gob, 0x84) : 0;
+    if (model) readTag(kSitePlace, reinterpret_cast<const char*>(model + 0x08), out, cap);
+}
+
+// HE0 probe (doc 42 HW-EDIT, plan .claude/plans: holster editor). Answers: does the per-frame attach refresh (this hook) run for the
+// equip-screen preview weapons, and which body / thread does it see? The preview attaches weapons to the engine's own "rhand"/"lhand"
+// literal, so its weapon nodes keep those names (in-world weapons under bone_test point at bone_name instead). PREVIEWNODE: one line per
+// new (parent, node name, model) triple whose model starts with w_ and whose node is rhand/lhand; own cap of 40, independent of PLACENODE,
+// placed before the bone_test/place gates. CAMNODE: once per distinct parent (first 8), its model name, its own parent ([parent+0x18])
+// and whether FindPart("camerahook") resolves on either (FindPart slot checked against the weapon Gob's own +0x10C slot, as mountPose does).
+static uintptr_t camFind(uintptr_t gob, uintptr_t on) {
+    if (!on) return 0;
+    const uintptr_t ovt = rdU32(kSitePlace, on, 0), gvt = rdU32(kSitePlace, gob, 0);
+    const uintptr_t find = ovt ? rdU32(kSitePlace, ovt, 0x10C) : 0, findRef = gvt ? rdU32(kSitePlace, gvt, 0x10C) : 0;
+    if (!find || find != findRef) return 1;   // 1 = slot mismatch, not called
+    return reinterpret_cast<uintptr_t>(reinterpret_cast<void*(__thiscall*)(void*, const char*)>(find)(reinterpret_cast<void*>(on), "camerahook"));
+}
+static void camNodeOnce(uintptr_t gob, uintptr_t parent) {
+    static uintptr_t s_par[8];
+    static volatile LONG s_n = 0;
+    if (!parent || s_n >= 8) return;
+    for (LONG i = 0; i < s_n; ++i)
+        if (s_par[i] == parent) return;
+    const LONG slot = InterlockedIncrement(&s_n) - 1;
+    if (slot >= 8) return;
+    s_par[slot] = parent;
+    if (!KP_ENABLED(chPlace, KPLOG_INFO) || !takeLine()) return;
+    const uintptr_t pp = rdU32(kSitePlace, parent, 0x18);
+    char pname[32], ppname[32];
+    gobModelName(parent, pname, sizeof pname);
+    gobModelName(pp, ppname, sizeof ppname);
+    const uintptr_t camP = camFind(gob, parent), camPP = camFind(gob, pp);
+    KP_LOG(chPlace, "CAMNODE parent=%x pmodel=%s pvt=%x pparent=%x ppmodel=%s ppvt=%x camhook_p=%x camhook_pp=%x", static_cast<unsigned>(parent),
+           pname[0] ? pname : "-", static_cast<unsigned>(rdU32(kSitePlace, parent, 0)), static_cast<unsigned>(pp), ppname[0] ? ppname : "-",
+           static_cast<unsigned>(pp ? rdU32(kSitePlace, pp, 0) : 0u), static_cast<unsigned>(camP), static_cast<unsigned>(camPP));
+}
+static void previewProbe(uintptr_t g, uintptr_t beh) {
+    static volatile LONG s_lines = 0;
+    if (!g_onPlace || s_lines >= 40 || !g || !beh) return;
+    saferead::beginScope();
+    const uintptr_t n = rdU32(kSitePlace, beh, 0x18);
+    if (!n) return;
+    struct Seen { uintptr_t g, n; };   // (gob, node) pairs already looked at, so each attach is classified once
+    static Seen s_seen[256];
+    static unsigned s_next = 0;
+    for (const Seen& s : s_seen)
+        if (s.g == g && s.n == n) return;
+    s_seen[s_next] = {g, n};
+    s_next = (s_next + 1) % 256u;
+    char mname[32];
+    gobModelName(g, mname, sizeof mname);
+    if ((mname[0] != 'w' && mname[0] != 'W') || mname[1] != '_') return;
+    NodeInfo ni;
+    if (!nodeName(n, ni) || (_stricmp(ni.name, "rhand") != 0 && _stricmp(ni.name, "lhand") != 0)) return;
+    const uintptr_t parent = rdU32(kSitePlace, beh, 0x14);
+    struct Trip { uintptr_t parent; char node[8]; char mname[32]; };
+    static Trip s_trip[40];
+    static volatile LONG s_nTrip = 0;
+    for (LONG i = 0; i < s_nTrip && i < 40; ++i)
+        if (s_trip[i].parent == parent && !_stricmp(s_trip[i].node, ni.name) && !_stricmp(s_trip[i].mname, mname)) return;
+    const LONG slot = InterlockedIncrement(&s_lines) - 1;
+    if (slot >= 40) return;
+    s_trip[slot].parent = parent;
+    snprintf(s_trip[slot].node, sizeof s_trip[slot].node, "%s", ni.name);
+    snprintf(s_trip[slot].mname, sizeof s_trip[slot].mname, "%s", mname);
+    InterlockedIncrement(&s_nTrip);
+    if (KP_ENABLED(chPlace, KPLOG_INFO) && takeLine()) {
+        char body[32];
+        gobModelName(parent, body, sizeof body);
+        KP_LOG(chPlace, "PREVIEWNODE gob=%x node=%x name=%s parent=%x owner=%x body=%s mname=%s cat=%s gobvt=%x tid=%lu tick=%lu", static_cast<unsigned>(g),
+               static_cast<unsigned>(n), ni.name, static_cast<unsigned>(parent), static_cast<unsigned>(parent ? rdU32(kSitePlace, parent, 0x1D8) : 0u),
+               body[0] ? body : "-", mname, hs::categoryName(hs::classify(mname, 0)), static_cast<unsigned>(rdU32(kSitePlace, g, 0)),
+               static_cast<unsigned long>(GetCurrentThreadId()), static_cast<unsigned long>(GetTickCount()));
+    }
+    camNodeOnce(g, parent);
 }
 
 // Refusal reasons of HolsterPlace (live test 10-15: PLACE n=0 with no hint which gate refused). Each reason logs its first 5 hits, then every 500th.
@@ -434,6 +515,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     if (!g_probe) return;
     static volatile LONG s_tid = 0;
     if (InterlockedCompareExchange(&s_tid, 1, 0) == 0) KP_LOG(chMain, "TID place=%lu", static_cast<unsigned long>(GetCurrentThreadId()));
+    previewProbe(reinterpret_cast<uintptr_t>(gob), reinterpret_cast<uintptr_t>(beh));
     if (!g_boneTest) return;
     static hs::TuneCfg s_tune;
     loadTune(s_tune);
