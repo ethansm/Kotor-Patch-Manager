@@ -80,6 +80,40 @@ HE0, HE1, HE2 and HE6 carry over. Options study: `.claude/research/holster_edit/
    - Opaque fill `e3d_fill`, renamed to the editor's own resrefs (`hse_fill`, `hse_trk`, `hse_thm`) via `embtex::ensure`.
 7. **Lifetime.** Options ctor → bind. Per-frame tick (D2-B site) → input + `GetEdit` refresh. Panel destroy (D2-B site) → `Revert` + `EndEdit` + unregister + destroy creature. A tick gap > 2 s means the menu closed: leave editor mode and keep the overlay (v1 §1.3 rule).
 
+## 2b. D2 recon results (10-16; notes d2b/d2c/d2d in `.claude/research/holster_edit/`, static only; re-check bytes before use)
+
+**Hooks (d2b)**, toml shape as in `equipment_3d_character_src/kotor2-steam-aspyr.hooks.toml`:
+
+| id | site | bytes | this / filter | use |
+|---|---|---|---|---|
+| H-O1 ctor | **0x008A16FE** | `8B 8D 54 FF FF FF` (`MOV ECX,[EBP-0xAC]`, 6 B, no rel32) | panel = `[EBP-0xAC]` | clone button + labels + view |
+| H-O2 per-frame | `CSWGuiPanel::Draw` 0x0040EC90 | — | shared by **every** panel: filter `[ECX] == 0x9A701C` (options vtable) before doing anything | tick |
+| H-O3 input | vtable slot 15 = 0x8A2070 | — | — | optional, for future key handling |
+| H-O4 dtor | **0x8A1930** | 6 B prologue | ECX = panel | free our creature/weapons before the panel's controls go |
+
+- **Not usable:** the StopLoadFromLayout call at 0x8A1704 (it is a rel32 CALL).
+- **Draw 0x40EC90 is a hot path,** so its handler must exit on a single compare. It may collide with other mods' hooks: check `check_hook_spans` / hud-host, which already detours 0x40F5A0, not 0x40EC90.
+- **Construction:** the Options panel is built once per CGuiInGame instance, not once per menu open. The bind must therefore survive repeated opens; tick gaps mark open and close.
+- **Pause:** opening the in-game GUI calls TogglePauseState(2) through 0x87A730, and hiding it toggles back. Tab switches do not re-toggle. So Options is paused (play row confirms).
+- **Back / EXIT / Esc** close the whole in-game GUI. Intercepting them would need a whole-function skip, and the framework only offers `skip_original_bytes` for the stolen instructions (selfheal 0x7B3817 precedent).
+  - **Decision:** keep vanilla behaviour. Our own `Back` button leaves editor mode; Esc/EXIT close the menu.
+  - On close, the tick gap ends editor mode and keeps the overlay (v1 §1.3), so a reopen resumes the unsaved edit.
+  - No H-O4-style intercept of 0x8878D0.
+
+**3D view and .gui (d2c).** The ultrawide generator overrides `optionsingame_p.gui` and `optionsmain_p.gui` (content-mapped, k=0.7407, manifest/sha-tracked; it refuses foreign files, `scripts/generate_ultrawide_gui_overrides.py:1399-1405`). A `3D_MODEL` needs a GFF control; there is no runtime-only route. Shipping our own `optionsingame_p.gui` would clobber ultrawide.
+- **Preferred route V1, own layout resource:**
+  - Ship a NEW resref `hse_view.gui` (only a `3D_MODEL` control `HSE_VIEW` plus label templates), so it collides with nobody.
+  - In H-O1, open it as a second layout, temporarily swap `panel+0x30` (the layout handle `InitControl` 0x40F620 reads), run `createView`/`createLabelFromTemplate` from it, then restore `panel+0x30` and free our handle.
+  - **Needs RE (D2e):** the layout open/free functions behind `StartLoadFromLayout` 0x40EE40 (RET 12, `(this,resref,scaleA,scaleB)`) and the handle type; whether `InitControl` scales rects from the panel's own extent.
+- **Fallback route V2:** a post-install step `scripts/add_options_holster_controls.py` that appends `HSE_VIEW` to whichever `optionsingame_p.gui` is installed (vanilla or ultrawide). It must run after the ultrawide generator and be accepted by its manifest, i.e. a cross-tool contract.
+- **Layout is measured at runtime** from vanilla control rects by tag (GuiKit), so both layouts work.
+
+**Party and preview (d2d).**
+- Any member: `party::member(table,i)` (`_shared_src/Party.h:80`) gives a CSWCCreature; all buildPreview inputs are per-creature.
+- Panel-only state that becomes Viewer/caller parameters: weaponsOn, cfg, drag, menu.
+- Weapon model name = **item ResRef at `item+0x128`**, not the formula. HE0 check 3 / a D3b log line compares it with `[Gob+0x84]+0x08` live.
+- Name for the picker: see d2d §1.
+
 ## 3. Phases
 - **HE0** (pending GO): apply holster 19a54e80, then play HW-C6.
 - **HE2** (Opus, holster hot-swap): as v1 + §1 note. Gates:
@@ -88,7 +122,8 @@ HE0, HE1, HE2 and HE6 carry over. Options study: `.claude/research/holster_edit/
   - `kpm_hotswap.py --mod holster --prepare --commit-kpm`, re-gate;
   - `kpm_status.py` = SWAP;
   - GO → `--apply`.
-- **D2** (Haiku recon, running 10-16): d2b Options hooks / Esc / pause; d2c `.gui` + ultrawide + generator; d2d party picker + `Preview3d.h` API + model name.
+- **D2** (Haiku recon): DONE 10-16 (d2b/d2c/d2d, §2b).
+- **D2e** (Haiku recon, static): the second-layout route V1. Layout open/free behind 0x40EE40, the `panel+0x30` handle type, whether a swapped handle is safe for `InitControl` 0x40F620, and rect scaling. Verdict decides V1 vs V2 before D3a.
 - **D1** shared extraction (Sonnet worker, Opus review; equip3d hot-swap, no behaviour change):
   - `_shared_src/EditKit.h`: `Box`, Repeat, slider, dragMode, midClick, fmtValue, from `Equip3dEdit.h` + tests. Also drop the duplicate `Box` in `hud_host_src/HhStrip.h` if that is trivial; otherwise leave it.
   - `_shared_src/Preview3d.h`: Viewer struct + body/weapon/view/drag functions from `EquipCharPreview.cpp` (ranges from d2d).
