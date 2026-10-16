@@ -110,3 +110,4 @@
 {"ev": "done", "reason": "manual: WI-117 fix wave r2fx1-A", "session": "351ca63e-9c91-49c3-8162-6d2de7e7d15d", "ts": "2026-10-16T18:57:40Z", "wi": "WI-117"}
 {"ev": "done", "reason": "manual: WI-122 fix wave r2fx1-A; Opus nit (test-only, 3 lines): tagOf case 4e empty fallback string (kills dropping out[0] at Nw", "session": "351ca63e-9c91-49c3-8162-6d2de7e7d15d", "ts": "2026-10-16T18:58:13Z", "wi": "WI-122"}
 {"ev": "done", "reason": "manual: WI-124 fix wave r2fx1-A", "session": "351ca63e-9c91-49c3-8162-6d2de7e7d15d", "ts": "2026-10-16T18:58:21Z", "wi": "WI-124"}
+{"ev": "done", "reason": "manual: WI-118 fix wave r2fx1-A (rebased once onto WI-115)", "session": "351ca63e-9c91-49c3-8162-6d2de7e7d15d", "ts": "2026-10-16T19:01:48Z", "wi": "WI-118"}

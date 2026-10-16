@@ -389,6 +389,31 @@ void testIniLine() {
     KT_CHECK(d.enabled == e0.enabled && d.bgAlpha == e0.bgAlpha && d.borderAlpha == e0.borderAlpha && d.waitingAlpha == e0.waitingAlpha && d.bg[0] == e0.bg[0] && d.border[0] == e0.border[0] && d.waitingDim == e0.waitingDim && d.log == e0.log);
 }
 
+// Field-wise Config compare over every member (memcmp would read indeterminate padding bytes).
+// A new Config member needs an edit here and in testConfigEqualSeesEveryField below.
+bool configEqual(const Config& a, const Config& b) {
+    auto s3 = [](const float* x, const float* y) { return x[0] == y[0] && x[1] == y[1] && x[2] == y[2]; };
+    return a.enabled == b.enabled && a.bgAlpha == b.bgAlpha && a.borderAlpha == b.borderAlpha && a.borderPx == b.borderPx && a.waitingDim == b.waitingDim && a.waitingAlpha == b.waitingAlpha && a.log == b.log && a.traceQueue == b.traceQueue && a.companions == b.companions && a.stripIconPx == b.stripIconPx && a.stripSide == b.stripSide && a.stripMax == b.stripMax
+        && a.kit == b.kit && a.frameAlpha == b.frameAlpha && a.cancel == b.cancel && a.pauseReinject == b.pauseReinject && a.dispatchWaitFlags == b.dispatchWaitFlags && a.traceClicks == b.traceClicks && a.pauseEatenWait == b.pauseEatenWait && a.handoffOnCombat == b.handoffOnCombat && a.showInCombat == b.showInCombat && a.handoffClearFirst == b.handoffClearFirst
+        && a.handoffKeepNew == b.handoffKeepNew && a.handoffKeepUnpaused == b.handoffKeepUnpaused && a.handoffDetachHeld == b.handoffDetachHeld && a.handoffResendHeld == b.handoffResendHeld && a.spellReplayPos == b.spellReplayPos && a.hideBannerSoft == b.hideBannerSoft && a.hideRedbarSoft == b.hideRedbarSoft && s3(a.bg, b.bg) && s3(a.border, b.border) && s3(a.waitingBg, b.waitingBg);
+}
+
+// Positive control: configEqual must see a change in every member, else the checks that replaced memcmp prove nothing.
+void testConfigEqualSeesEveryField() {
+    Config ref;
+    KT_CHECK(configEqual(ref, Config()));
+#define CFG_FLIP(F) do { Config m; m.F = !m.F; KT_CHECK(!configEqual(m, ref)); } while (0)
+    CFG_FLIP(enabled); CFG_FLIP(bgAlpha); CFG_FLIP(borderAlpha); CFG_FLIP(borderPx); CFG_FLIP(waitingDim); CFG_FLIP(waitingAlpha); CFG_FLIP(log); CFG_FLIP(traceQueue); CFG_FLIP(companions); CFG_FLIP(stripIconPx);
+    CFG_FLIP(stripSide); CFG_FLIP(stripMax); CFG_FLIP(kit); CFG_FLIP(frameAlpha); CFG_FLIP(cancel); CFG_FLIP(pauseReinject); CFG_FLIP(dispatchWaitFlags); CFG_FLIP(traceClicks); CFG_FLIP(pauseEatenWait); CFG_FLIP(handoffOnCombat);
+    CFG_FLIP(showInCombat); CFG_FLIP(handoffClearFirst); CFG_FLIP(handoffKeepNew); CFG_FLIP(handoffKeepUnpaused); CFG_FLIP(handoffDetachHeld); CFG_FLIP(handoffResendHeld); CFG_FLIP(spellReplayPos); CFG_FLIP(hideBannerSoft); CFG_FLIP(hideRedbarSoft);
+#undef CFG_FLIP
+    for (int i = 0; i < 3; ++i) {
+        Config m; m.bg[i] += 1.0f;        KT_CHECK(!configEqual(m, ref));
+        Config n; n.border[i] += 1.0f;    KT_CHECK(!configEqual(n, ref));
+        Config o; o.waitingBg[i] += 1.0f; KT_CHECK(!configEqual(o, ref));
+    }
+}
+
 void testIniBad() {
     // each bad line returns false and leaves the whole Config unchanged
     const char* bad[] = {
@@ -406,8 +431,8 @@ void testIniBad() {
     for (const char* l : bad) {
         Config c; Config ref;
         KT_CHECK(!parseIniLine(c, l));
-        KT_CHECK(memcmp(&c, &ref, sizeof c) == 0);
-        if (memcmp(&c, &ref, sizeof c) != 0) printf("   changed by: %s\n", l);
+        KT_CHECK(configEqual(c, ref));
+        if (!configEqual(c, ref)) printf("   changed by: %s\n", l);
     }
     // changed config + bad value keeps the changed value (not the default)
     Config c; parseIniLine(c, "bg_alpha=0.2"); parseIniLine(c, "bg_alpha=zzz"); KT_CHECK(near(c.bgAlpha, 0.2f));
@@ -429,7 +454,7 @@ void testIniText() {
     parseIni(e, "\n\n\r\n   bg_alpha=0.9\n\n   log=0");
     KT_CHECK(near(e.bgAlpha, 0.9f) && !e.log);
     // empty / null text leave the config alone
-    Config f; parseIni(f, ""); parseIni(f, nullptr); Config ref; KT_CHECK(memcmp(&f, &ref, sizeof f) == 0);
+    Config f; parseIni(f, ""); parseIni(f, nullptr); Config ref; KT_CHECK(configEqual(f, ref));
     // a line of 255 bytes is parsed, 256+ ignored
     char buf[400];
     memset(buf, ' ', sizeof buf);
@@ -1503,7 +1528,7 @@ void testDispatchNextEachCondition() {
 // ---- T1: why-codes, queue signature, lost-command ids, LOG GRAMMAR formatters ----
 void testWhyParityMatrix() {
     const float pos[3] = { 0.f, 0.f, 0.f };
-    int reHits[7] = { 0 };
+    int reHits[8] = { 0 };
     for (int active = 0; active < 2; ++active)
     for (int pend = 0; pend < 2; ++pend)
     for (int bcan = 0; bcan < 2; ++bcan)
@@ -1512,9 +1537,11 @@ void testWhyParityMatrix() {
     for (int lead = 0; lead < 2; ++lead)
     for (int pcan = 0; pcan < 2; ++pcan)
     for (int paused = 0; paused < 2; ++paused)
-    for (int nowSet = 0; nowSet < 2; ++nowSet) {
+    for (int nowSet = 0; nowSet < 2; ++nowSet)
+    for (int ex = 0; ex < 2; ++ex) {
         ActionBuffer b;
         b.active = active != 0;
+        b.sawExecuting = ex != 0;   // drives RI_EXECUTED
         b.reInjectPending = pend != 0;
         b.userCancelled = bcan != 0;
         b.activeAction = makeSpellAction(0x1000, 0x55, 0, 1, 0, 0, 0, pos, 1);
@@ -1525,23 +1552,25 @@ void testWhyParityMatrix() {
         KT_CHECK_EQ(why == RI_OK, want);
         reHits[why]++;
     }
-    for (int r = 0; r < 7; ++r) KT_CHECK(reHits[r] > 0);   // every ReInjectWhy is reachable in the matrix
+    for (int r = 0; r < 8; ++r) KT_CHECK(reHits[r] > 0);   // every ReInjectWhy is reachable in the matrix
 
-    int dsHits[6] = { 0 };
+    int dsHits[7] = { 0 };
     for (int active = 0; active < 2; ++active)
     for (int isEmpty = 0; isEmpty < 2; ++isEmpty)
     for (int eng = 0; eng < 3; ++eng)
     for (int cur = 0; cur < 2; ++cur)
-    for (int nrn = -1; nrn <= 1; ++nrn) {
+    for (int nrn = -1; nrn <= 1; ++nrn)
+    for (int fh = 0; fh < 2; ++fh) {
         ActionBuffer b;
         if (!isEmpty) KT_CHECK(b.push(makeSpellAction(0x1000, 0x55, 0, 1, 0, 0, 0, pos, 1)));
         b.active = active != 0;
-        const bool want = shouldDispatchNext(b, eng, cur != 0, nrn);
-        const DispatchWhy why = dispatchWhy(b, eng, cur != 0, nrn);
+        // shouldDispatchNext has no flagHold input (the flag gate is FlagGate); DS_FLAG_BUSY is the one extra reason after it passes
+        const bool want = shouldDispatchNext(b, eng, cur != 0, nrn) && fh == 0;
+        const DispatchWhy why = dispatchWhy(b, eng, cur != 0, nrn, fh != 0);   // fh drives DS_FLAG_BUSY
         KT_CHECK_EQ(why == DS_OK, want);
         dsHits[why]++;
     }
-    for (int r = 0; r < 6; ++r) KT_CHECK(dsHits[r] > 0);   // every DispatchWhy is reachable in the matrix
+    for (int r = 0; r < 7; ++r) KT_CHECK(dsHits[r] > 0);   // every DispatchWhy is reachable in the matrix
 }
 
 void testWhyNames() {
@@ -2488,5 +2517,6 @@ int main() {
     testGateEngineCount();
     testCombatEdgeSequences();
     testCurActionPresent();
+    testConfigEqualSeesEveryField();
     return kt::Report("queue_hud_logic_test");
 }
