@@ -65,6 +65,7 @@ ROUTES = {
     "perf-lab_log.txt": ("analyze_runs", "runs"),
     "k2-robustness-fixes_log.txt": ("analyze_runs", "runs"),
     "ai_trace.txt": ("analyze_play_logs", "playlogs"),
+    "companion-ai_log.txt": ("analyze_play_logs", "playlogs"),
     "ranged_ai_log.txt": ("analyze_play_logs", "playlogs"),
     "ranged-ai_log.txt": ("analyze_play_logs", "playlogs"),
     "inventory_sort_filter_log.txt": ("analyze_play_logs", "playlogs"),

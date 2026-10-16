@@ -46,7 +46,7 @@ install (game closed, back up `kpm_install_state.json` + `patch_config.toml` + `
 
 ## INI keys (all `=1` in the shipped probe INI; a flag 0 stops the logging, the hook stays installed)
 `probe_fm2c probe_fm2f probe_fm2r probe_fm3 probe_rs probe_p2 probe_pf probe_rar probe_shx probe_ss1 probe_gca probe_party probe_a1x`, `probe_lines=400` (0..100000, per-probe PR budget; PRS summaries are exempt).
-The `# config probes ...` line in ai_trace.txt records them. Shipped INI keys: 50 (`known[]` == file, defaults == file).
+The `# config probes ...` line in `companion-ai_log.txt` (`ai_trace.txt` on an old core) records them. Shipped INI keys: 50 (`known[]` == file, defaults == file).
 
 ## Notes / small decisions inside the design (nothing left unimplemented)
 - Hot handlers: P2 = flag, `cr` null, `+0x11AC` test, `+0x10E8`, `p2Runs` (all direct loads, no tick) then the work; RAR = flag, `obj+8 == 5`, `+0x11AC`, then `GetTickCount/tick`; RS = flag + `rsSite` switch (<= 7 compares).
@@ -62,3 +62,11 @@ The `# config probes ...` line in ai_trace.txt records them. Shipped INI keys: 5
 - Old analyzer tests changed only where the facts changed: companion-ai hook count 18 -> 31, healthy CLI "Checklist: 16 PASS" -> 17 (PR-RAH2 legitimately passes on the healthy fixture's ranged log).
 - ObjInfo gained an `ispc` field (read with the party flag, once a second per object) so RS can track the `pc=` id.
 - Not exercised at run time (static only): the perf-lab check of the P2/RAR cost is still required before the play session.
+
+## Logging (0.2.1-probe, KpLog)
+- Files: core `companion-ai_log.txt` in the game dir. On an old core (no `KPatchInit`) the fallback is `ai_trace.txt` at INFO, appended per session (split on the `# companion-ai <ver> session` line).
+- Lines: `T=<s.ms> f=- companion-ai/<main|trace|probe> <old text>`; text and field layout unchanged. Channels: `main` = fix events, summaries, config, gate markers; `trace` = deduped trace; `probe` = PR/PRS lines. The A4 NULL spell-row line is WARN (visible without kplog.ini).
+- Enable: `[companion-ai]` section in `kplog.ini` with `enabled=1`, `level=info`, `channels=*`.
+- Flush: KpLog flushes every 500 ms by default, so a crash can lose up to 0.5 s. `flush_ms` in companion_ai.ini is parsed but unused; for crash work set `flush_ms=0` in `kplog.ini` `[global]`.
+- Reader: `analyze_play_logs` reads the core file, the fallback and the legacy raw file. The core cuts a message at 232 bytes, so lines longer than ~224 bytes (S, PRS, `# config`) are written as pieces: the first as-is, the rest `t=<ms> + <rest>` (`++` = cut mid-word); `read_trace_lines` re-joins them. A tool that greps the raw file sees the pieces.
+- Install: new export `KPatchInit` (29 -> 30), so use the full `python3 scripts/kpm_reinstall.py --mod companion-ai` (hot-swap `--apply` refuses export changes). Built and unit-tested 2026-10-15, NOT installed.

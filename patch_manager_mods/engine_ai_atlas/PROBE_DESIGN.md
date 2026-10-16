@@ -298,7 +298,7 @@ type = "int"
 4. **Allied shout fight (E9, SHX, RS S7):** a fight where friendly NPCs fight hostiles (e.g. Telos/Onderon soldiers, Mandalorians). Keep the party idle within 15 m of the allies for about 20 s, then fight.
 5. **Normal combat (RAR, GCA, SS1, A1X, FM5):** 2-3 ordinary fights, at least one with a stun, horror or choke on a companion; one
    where a companion follows through a door or a narrow corridor (OnBlocked); one with a Ranged companion whose target is out of range (A1).
-6. Close the game and copy out `$G/ai_trace.txt`, `$G/companion_ai.ini` (the config is logged, but the file settles any doubt),
+6. Close the game and copy out `$G/companion-ai_log.txt` (`ai_trace.txt` on an old core), `$G/companion_ai.ini` (the config is logged, but the file settles any doubt),
    `$G/ranged_ai_log.txt`, `$G/inventory_sort_filter_log.txt`, `~/steam-208580.log` (and perf-lab's logs, both A/B runs, if present) to
    `~/Games/KOTOR2_Mod_Workspace/playlogs_probe_<MMDD_HHMM>/`. Then run
    `python3 mods678_research/analyze_play_logs.py <dir>` and read the `PR-*` rows plus the per-probe PRS summaries.

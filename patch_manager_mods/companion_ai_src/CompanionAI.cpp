@@ -25,6 +25,7 @@
 //   C1  0x5868B9/0x5868F1/0x586929 CompanionAiC1(ebp)   ClearHostileActionsVersus restart index (skip-only)
 //   A3  0x6D78B7 CompanionAiA3(ebp)             dead/undetected-target exit: clear the orientation lock (opt, a3=0)
 //   (FM3 hot sentinel probe 0x51DBE7: designed and validated, NOT shipped -- wrapper cost in the hottest loop; the cold FM3 sites below ship)
+//  Log (0.2.1-probe): shared KpLog.h (channels main/trace/probe) replaces the private fopen logger; see the "config, log" section.
 //  Phase-4 probes (0.2.0-probe; log only, plain detours, INI probe_<name>, "PR"/"PRS" lines; engine_ai_atlas/PROBE_DESIGN.md):
 //   FM2C 0x55B69A CompanionAiProbeFm2c(ebp)            PlotPathInArea result 2 (partial) vs 3 (failed)
 //   FM2F 0x5C2438 CompanionAiProbeFm2Fail(ebp)         MoveToPoint FAIL leg
@@ -47,17 +48,21 @@
 #include <windows.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdarg.h>
 #include <time.h>
 
 #include "../_shared/SafeRead.h"
 #include "CompanionAiLogic.h"
 #include "GameAddr.h"
+#include "KpLog.h"
+
+KP_LOG_PATCH("companion-ai");
 
 namespace {
 
 using cai::Invalid;
-constexpr const char* Version = "0.2.0-probe";
+constexpr const char* Version = "0.2.1-probe";
 
 // ---- game globals and functions (conventions from the raw .asm)
 constexpr int G_VM = 0x00A1B4A8;            // CVirtualMachine*
@@ -119,56 +124,85 @@ cai::Config g_cfg;
 cai::IniTable g_ini;
 char g_iniText[32768];
 char g_iniPath[MAX_PATH + 32] = "companion_ai.ini";
-char g_logPath[MAX_PATH + 32] = "ai_trace.txt";
 DWORD g_lastIniCheck = 0, g_iniSize = ~0u;
 FILETIME g_iniTime = {0, 0};
 bool g_iniSeen = false, g_ready = false;
 
 CRITICAL_SECTION g_cs;
-FILE* g_log = nullptr;
 cai::LogGate g_gate;
-DWORD g_lastFlush = 0;
-bool g_dirty = false;
+
+// 0.2.1-probe: the sink is the shared KpLog.h (core file companion-ai_log.txt: `T=<s.ms> f=- companion-ai/<ch> t=<ms> <TAG> ...`; old core: fallback
+// ai_trace.txt at INFO, `<ms> companion-ai/<ch> ...`). Lines keep their `t=<ms> <TAG> ...` text and field order. Channels: eline -> main,
+// tline -> trace, pline/pev -> probe; gate marker lines -> main. The fallback file appends, so the parser splits sessions on the
+// `# companion-ai <ver> session` header (the old DllMain "w" truncate is gone). LogGate (dedupe / per-second cap / file-cap accounting) is unchanged;
+// KpLog's own flush (flush_ms in kplog.ini) replaces the private flush, so the ini key flush_ms is parsed but unused.
+KP_CHANNEL(chMain, "main");
+KP_CHANNEL(chTrace, "trace");
+KP_CHANNEL(chProbe, "probe");
+// Only stores the path and the level (no I/O): safe from a static initialiser. Old core: same file name as 0.2.0, at INFO.
+const bool g_fallbackSet = (KpLog_SetFallbackFile("ai_trace.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
+bool g_started = false;   // startSession() ran (guarded by g_cs)
+void startSession();
 
 struct Lock { Lock() { EnterCriticalSection(&g_cs); } ~Lock() { LeaveCriticalSection(&g_cs); } };
 
-void writeRaw(const char* s, int n) {
+// One formatted line (no trailing newline) through KpLog; the gate counts the bytes the old file would have held (line + '\n').
+// The core cuts a message at 232 bytes ("[...]"), and the S / PRS / config lines are longer. A long line is therefore split at spaces into pieces of
+// <= 200 bytes; every piece after the first starts `t=<ms> + ` (`t=<ms> ++ ` when cut mid-word) and analyze_play_logs.read_trace_lines re-joins them.
+constexpr int KpChunk = 200;
+void writeLine(::kplog::Channel& ch, int level, const char* s, int n) {
     if (n <= 0) return;
-    fwrite(s, 1, n, g_log);
-    g_gate.wrote(static_cast<unsigned long long>(n));
-    g_dirty = true;
+    g_gate.wrote(static_cast<unsigned long long>(n) + 1);
+    if (n <= KpChunk + 24) { KP_LOGV(ch, level, "%s", s); return; }
+    unsigned long t = 0;   // continuation stamp = the line's own t= when it has one
+    if (s[0] == 't' && s[1] == '=') t = strtoul(s + 2, nullptr, 10); else t = GetTickCount();
+    char piece[KpChunk + 1];
+    int pos = 0; bool first = true, midWord = false, prevMid = false;
+    while (pos < n) {
+        int len = n - pos < KpChunk ? n - pos : KpChunk;
+        midWord = false;
+        if (pos + len < n) {   // not the last piece: prefer to cut at a space
+            int cut = len;
+            while (cut > KpChunk / 2 && s[pos + cut] != ' ') --cut;
+            if (s[pos + cut] == ' ') len = cut; else midWord = true;
+        }
+        memcpy(piece, s + pos, len); piece[len] = 0;
+        if (first) KP_LOGV(ch, level, "%s", piece);
+        else KP_LOGV(ch, level, "t=%lu %s %s", t, prevMid ? "++" : "+", piece);
+        first = false; prevMid = midWord;
+        pos += len;
+        if (!midWord && pos < n && s[pos] == ' ') ++pos;   // the space is re-added by the joiner
+    }
 }
 
-void vemit(DWORD now, uint32_t key, bool force, const char* fmt, va_list ap) {
-    if (!g_log) return;
+void vemit(::kplog::Channel& ch, DWORD now, uint32_t key, bool force, int level, const char* fmt, va_list ap) {
+    if (!KP_ENABLED(ch, level)) return;
     Lock lk;
     cai::GateOut o = g_gate.admit(now, key, force);
     char buf[1100];
-    bool flushNow = force;
     if (o.capMarker) {
-        writeRaw(buf, snprintf(buf, sizeof buf, "-- ai_trace: file cap %d MB reached at t=%lu; further lines dropped (raise max_file_mb to resume) --\n",
-                               g_cfg.maxFileMb, now));
-        flushNow = true;
+        writeLine(chMain, KPLOG_INFO, buf, snprintf(buf, sizeof buf, "-- ai_trace: file cap %d MB reached at t=%lu; further lines dropped (raise max_file_mb to resume) --",
+                                                    g_cfg.maxFileMb, now));
     }
-    if (o.repeats) writeRaw(buf, snprintf(buf, sizeof buf, "t=%lu R previous line repeated %ux\n", now, o.repeats));
+    if (o.repeats) writeLine(chMain, KPLOG_INFO, buf, snprintf(buf, sizeof buf, "t=%lu R previous line repeated %ux", now, o.repeats));
     if (o.droppedMarker) {
-        writeRaw(buf, snprintf(buf, sizeof buf, "-- ai_trace: %u lines dropped by the per-second cap (%d/s) at t=%lu --\n",
-                               o.droppedMarker, g_cfg.maxLinesPerSec, now));
-        flushNow = true;
+        writeLine(chMain, KPLOG_INFO, buf, snprintf(buf, sizeof buf, "-- ai_trace: %u lines dropped by the per-second cap (%d/s) at t=%lu --",
+                                                    o.droppedMarker, g_cfg.maxLinesPerSec, now));
     }
     if (o.write) {
         int n = vsnprintf(buf, sizeof buf - 1, fmt, ap);
         if (n < 0) n = 0;
         if (n > int(sizeof buf) - 2) n = int(sizeof buf) - 2;
-        buf[n++] = '\n';
-        writeRaw(buf, n);
+        buf[n] = 0;
+        writeLine(ch, level, buf, n);
     }
-    if (g_dirty && (flushNow || now - g_lastFlush >= static_cast<DWORD>(g_cfg.flushMs))) { fflush(g_log); g_dirty = false; g_lastFlush = now; }
 }
 // trace line: dedupe key (0 = none), subject to the per-second cap
-void tline(DWORD now, uint32_t key, const char* fmt, ...) { va_list ap; va_start(ap, fmt); vemit(now, key, false, fmt, ap); va_end(ap); }
-// event line: fix events, summaries, config; bypasses the per-second cap (not the file cap), flushed at once
-void eline(DWORD now, const char* fmt, ...) { va_list ap; va_start(ap, fmt); vemit(now, 0, true, fmt, ap); va_end(ap); }
+void tline(DWORD now, uint32_t key, const char* fmt, ...) { va_list ap; va_start(ap, fmt); vemit(chTrace, now, key, false, KPLOG_INFO, fmt, ap); va_end(ap); }
+// event line: fix events, summaries, config; bypasses the per-second cap (not the file cap)
+void eline(DWORD now, const char* fmt, ...) { va_list ap; va_start(ap, fmt); vemit(chMain, now, 0, true, KPLOG_INFO, fmt, ap); va_end(ap); }
+// same, at WARN: visible without a kplog.ini (the A4 NULL spell row that a4=0 lets crash the game)
+void ewarn(DWORD now, const char* fmt, ...) { va_list ap; va_start(ap, fmt); vemit(chMain, now, 0, true, KPLOG_WARN, fmt, ap); va_end(ap); }
 
 void logConfig(DWORD now, const char* why) {
     const cai::Config& c = g_cfg;
@@ -429,11 +463,11 @@ bool pbudget(int pid, DWORD now) {
 }
 void pline(int pid, DWORD now, const char* fmt, ...) {
     if (!pbudget(pid, now)) return;
-    va_list ap; va_start(ap, fmt); vemit(now, 0, false, fmt, ap); va_end(ap);
+    va_list ap; va_start(ap, fmt); vemit(chProbe, now, 0, false, KPLOG_INFO, fmt, ap); va_end(ap);
 }
 void pev(int pid, DWORD now, const char* fmt, ...) {
     if (!pbudget(pid, now)) return;
-    va_list ap; va_start(ap, fmt); vemit(now, 0, true, fmt, ap); va_end(ap);
+    va_list ap; va_start(ap, fmt); vemit(chProbe, now, 0, true, KPLOG_INFO, fmt, ap); va_end(ap);
 }
 
 // ---- FM2: per (creature, target) pair counters (FM2C 30 s, FM2F / FM2R 12 s)
@@ -675,7 +709,7 @@ void probeSummary(DWORD now) {
 
 // Called first by every handler: INI reload (1 Hz), periodic summaries, buffered-log flush.
 inline void tick(DWORD now) {
-    if (!g_ready) return;
+    if (!g_ready) { startSession(); if (!g_ready) return; }   // old core: no KPatchInit, the first handler starts the session
     if (now - g_lastIniCheck >= 1000) loadIni(now, false);
     if (now - g_lastSummary >= static_cast<DWORD>(g_cfg.summarySec) * 1000u) {
         g_lastSummary = now;
@@ -687,7 +721,6 @@ inline void tick(DWORD now) {
     if (g_cfg.probeParty && (g_partyPf || now - g_lastPartyChk >= 1000)) partyTick(now);
     if (g_cfg.probeA1x && now - g_lastOrphan >= 250) orphanTick(now);
     spinSweep(now);   // WI-77: END for E1 spins that stopped being seen
-    if (g_dirty && g_log && now - g_lastFlush >= static_cast<DWORD>(g_cfg.flushMs)) { Lock lk; fflush(g_log); g_dirty = false; g_lastFlush = now; }
 }
 
 unsigned long long nowUs() {
@@ -733,6 +766,25 @@ void e1Evaluate(CrTrack& t, DWORD now) {
         tline(now, 0, "t=%lu E1 RATE cr=%08x party=%d entries/s=%u maxBurst=%u round=%d f570=%d", now, t.id, t.party, t.burst.perSec,
               t.burst.maxBurst, round, t.f570);
     t.burst.resetSecond(); t.exits = 0; t.secStart = now;
+}
+
+// The session header, the config lines and the first summary stamp. Emitted by KPatchInit (new core, after KpLog_Init) or, on an old core with
+// no KPatchInit, by the first handler through tick(); idempotent. DllMain only prepares paths (no logging before the logger is known).
+void startSession() {
+    Lock lk;
+    if (g_started) return;
+    g_started = true;
+    char cwd[MAX_PATH] = "";
+    GetCurrentDirectoryA(MAX_PATH, cwd);
+    DWORD now = GetTickCount();
+    time_t tt = time(nullptr); struct tm* lt = localtime(&tt);
+    char when[32] = "?";
+    if (lt) strftime(when, sizeof when, "%Y-%m-%d %H:%M:%S", lt);
+    eline(now, "# companion-ai %s session %s t=%lu pid=%lu tid=%lu cwd=%s ini=%s", Version, when, now, (unsigned long)GetCurrentProcessId(),
+          (unsigned long)g_loadTid, cwd, g_iniPath);
+    loadIni(now, true);
+    g_lastSummary = now;
+    g_ready = true;
 }
 
 } // namespace
@@ -1082,8 +1134,7 @@ extern "C" int __cdecl CompanionAiA4(int ebp) {
     int row = fr<int>(ebp, -0x68);
     if (!g_cfg.a4) {   // exact vanilla semantics, including the fault on a NULL row
         if (!row) {
-            eline(now, "t=%lu A4 NULL spell row: cr=%08x spell=%d -> vanilla crash (a4=0)", now, rd<int>(fr<int>(ebp, -0x1AC), ObId), fr<int>(ebp, -0x58));
-            if (g_log) fflush(g_log);
+            ewarn(now, "t=%lu A4 NULL spell row: cr=%08x spell=%d -> vanilla crash (a4=0)", now, rd<int>(fr<int>(ebp, -0x1AC), ObId), fr<int>(ebp, -0x58));
         }
         int v = *reinterpret_cast<volatile const int*>(row + 0x154);
         frw<int>(ebp, -0x15C, v);
@@ -1450,28 +1501,15 @@ extern "C" void __cdecl CompanionAiProbeGetCurrentAction(int ebp) {
     pline(PiGca, now, "t=%lu PR GCA cr=%08x res=%d lastRun=%x moving=%d", now, id, res, rarLastType(id), obj ? rd<int>(obj, CrMoving, -1) : -1);
 }
 
+extern "C" void __cdecl KPatchInit(const KPatchApi* api) { KpLog_Init(api); startSession(); }
+
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {
         InitializeCriticalSection(&g_cs);
         char cwd[MAX_PATH] = "";
-        if (GetCurrentDirectoryA(MAX_PATH, cwd) > 0) {
-            snprintf(g_iniPath, sizeof g_iniPath, "%s\\companion_ai.ini", cwd);
-            snprintf(g_logPath, sizeof g_logPath, "%s\\ai_trace.txt", cwd);
-        }
-        g_log = fopen(g_logPath, "w");   // one session per file
-        if (g_log) setvbuf(g_log, nullptr, _IOFBF, 64 * 1024);
-        DWORD now = GetTickCount();
+        if (GetCurrentDirectoryA(MAX_PATH, cwd) > 0) snprintf(g_iniPath, sizeof g_iniPath, "%s\\companion_ai.ini", cwd);
         g_loadTid = GetCurrentThreadId();
-        time_t tt = time(nullptr); struct tm* lt = localtime(&tt);
-        char when[32] = "?";
-        if (lt) strftime(when, sizeof when, "%Y-%m-%d %H:%M:%S", lt);
-        eline(now, "# companion-ai %s session %s t=%lu pid=%lu tid=%lu cwd=%s ini=%s", Version, when, now, (unsigned long)GetCurrentProcessId(),
-              (unsigned long)g_loadTid, cwd, g_iniPath);
-        loadIni(now, true);
-        g_lastSummary = now;
-        g_ready = true;
-    } else if (reason == DLL_PROCESS_DETACH) {
-        if (g_log) fflush(g_log);
+        // No logging here: KpLog_Init has not run yet. KPatchInit (new core) or the first handler (old core) calls startSession().
     }
     return TRUE;
 }

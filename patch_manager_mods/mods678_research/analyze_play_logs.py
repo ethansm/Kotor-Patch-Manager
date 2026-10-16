@@ -5,7 +5,8 @@ Usage:
     python3 analyze_play_logs.py PLAYLOGS_DIR [--hooks-toml [ID=]PATH ...] [--window HH:MM-HH:MM]
                                  [--anchor "YYYY-MM-DD HH:MM:SS=TICK_MS"] [--out PATH] [--strict]
 
-Reads (each optional) from PLAYLOGS_DIR: ai_trace.txt, ranged_ai_log.txt or ranged-ai_log.txt (KpLog core, ranged-ai 0.4.0), inventory_sort_filter_log.txt,
+Reads (each optional) from PLAYLOGS_DIR: companion-ai_log.txt (KpLog core, companion-ai 0.2.1) or ai_trace.txt (legacy / fallback shape),
+ranged_ai_log.txt or ranged-ai_log.txt (KpLog core, ranged-ai 0.4.0), inventory_sort_filter_log.txt,
 steam-208580.log (the Proton/Wine log). Writes REPORT.md into PLAYLOGS_DIR (or --out).
 Python 3.12, stdlib only. Never reads the live game folder: it only reads the directory it is given.
 
@@ -119,6 +120,10 @@ BENIGN_EXC = {"40010006": "DBG_PRINTEXCEPTION_C (OutputDebugString)", "406d1388"
               "6ba": "RPC_S_SERVER_UNAVAILABLE (wine startup)", "6be": "RPC (wine startup)"}
 
 FILES = {"trace": "ai_trace.txt", "ranged": "ranged_ai_log.txt", "inv": "inventory_sort_filter_log.txt"}
+# companion-ai 0.2.1-probe logs through KpLog: core file companion-ai_log.txt ("T=... f=- companion-ai/<ch> <text>" + "# kplog session" header),
+# or ai_trace.txt in the fallback shape ("<ms> companion-ai/<ch> <text>"); 0.2.0-probe and older wrote raw lines to ai_trace.txt.
+# find_files picks the first of these that exists (core name first).
+TRACE_NAMES = ("companion-ai_log.txt", "ai_trace.txt")
 # ranged-ai 0.4.0 logs through KpLog: core file ranged-ai_log.txt (T=... prefix + "# kplog session" header), or ranged_ai_log.txt in the
 # fallback shape ("<ms> ranged-ai/main ..."); 0.3.0 and older wrote raw lines to ranged_ai_log.txt. find_files picks one (see there).
 RANGED_NAMES = ("ranged_ai_log.txt", "ranged-ai_log.txt")
@@ -224,6 +229,51 @@ def read_lines(path: Path):
     with open(path, "r", encoding="utf-8", errors="replace", newline=None) as f:
         for i, line in enumerate(f, 1):
             yield i, line.rstrip("\r\n")
+
+
+def _read_trace_pieces(path: Path):
+    """read_ranged_lines for the companion-ai trace (companion-ai_log.txt core, ai_trace.txt fallback or legacy raw). Yields (ln, kind, msg):
+    'line' (msg = the old companion-ai text, KpLog prefix removed), 'header' (the '# kplog session' line), 'drop' (KpLog DROPPED;
+    msg = 'DROPPED n (ring r, rate s)', RE_DROPPED matches it), 'mark' (KpLog MARK).
+    Two differences from read_ranged_lines, both needed for the legacy raw '#' comments to keep working:
+    (1) kplog_parse reads every '# ' line as a KpLog header and strips the '# ', which would hide '# config ...' and the
+        '# companion-ai ... session' line (HEADER_RE). So a '#' line keeps its raw text as kind 'line', except '# kplog session'.
+    (2) a KpLog MARK is a user label (KP_MARK / F9), not a lost line, so it is kind 'mark' and the readers ignore it."""
+    for ln, line in read_lines(path):
+        if line.startswith("#") and not kplog_parse.RE_SESSION.match(line):
+            yield ln, "line", line
+            continue
+        d = kplog_parse.parse_line(line) if line else None
+        if d is None:
+            yield ln, "line", line
+        elif d["kind"] == "header":
+            yield ln, "header", d["msg"]
+        elif d["kind"] == "mark":
+            yield ln, "mark", d["msg"]
+        elif d["kind"] == "dropped":
+            yield ln, "drop", f"DROPPED {d['dropped']} (ring {d['ring']}, rate {d['rate']})"
+        else:
+            yield ln, "line", d["msg"]
+
+
+TRACE_CONT_RE = re.compile(r"^t=\d+ (\+\+?) (.*)$")
+
+
+def read_trace_lines(path: Path):
+    """_read_trace_pieces with the continuation pieces re-joined: the core cuts a message at 232 bytes, so companion-ai 0.2.1 splits a longer
+    line (S summaries, PRS, '# config') into pieces; every piece after the first reads `t=<ms> + <rest>` (joined with a space) or
+    `t=<ms> ++ <rest>` (cut mid-word, joined directly). The joined line is reported at the first piece's line number."""
+    pend = None   # [ln, kind, msg]
+    for ln, kind, msg in _read_trace_pieces(path):
+        m = TRACE_CONT_RE.match(msg) if kind == "line" else None
+        if m and pend is not None and pend[1] == "line":
+            pend[2] += ("" if m.group(1) == "++" else " ") + m.group(2)
+            continue
+        if pend is not None:
+            yield tuple(pend)
+        pend = [ln, kind, msg]
+    if pend is not None:
+        yield tuple(pend)
 
 
 def read_ranged_lines(path: Path):
@@ -575,8 +625,13 @@ def analyze_trace(path: Path | None, win: Window | None, clock: Clock, an: Anoms
         cr_tag.setdefault(oid, tag)
         return oid
 
-    for ln, line in read_lines(path):
+    for ln, kind, line in read_trace_lines(path):
+        if kind in ("header", "mark"):          # KpLog session line (the companion '# companion-ai ... session' line after it is the HEADER_RE one) / KpLog label: not companion lines
+            continue
         n_lines += 1
+        if kind == "drop":                      # KpLog DROPPED n: same meaning as a DROP_RE hit, count from the line
+            drops.append((int(kplog_parse.RE_DROPPED.match(line).group(1)), ln, line))
+            continue
         if not line:
             continue
         c0 = line[0]
@@ -585,7 +640,7 @@ def analyze_trace(path: Path | None, win: Window | None, clock: Clock, an: Anoms
             if m:
                 header = dict(ver=m.group(1), when=m.group(2), tick=int(m.group(3)), pid=m.group(4), tid=int(m.group(5)), ln=ln, text=line)
                 try:
-                    clock.set(dt.datetime.strptime(m.group(2), "%Y-%m-%d %H:%M:%S"), int(m.group(3)), "ai_trace.txt session header", override=(clock.source != "--anchor"))
+                    clock.set(dt.datetime.strptime(m.group(2), "%Y-%m-%d %H:%M:%S"), int(m.group(3)), f"{name} session header", override=(clock.source != "--anchor"))
                 except ValueError:
                     pass
                 continue
@@ -1176,7 +1231,12 @@ def analyze_probes(trace_path: Path | None, ranged_path: Path | None, win: Windo
     t_min = t_max = None
     last_prs: dict[tuple[str, str], tuple[int, str]] = {}
     if trace_path:
-        for ln, line in read_lines(trace_path):
+        for ln, kind, line in read_trace_lines(trace_path):
+            if kind in ("header", "mark"):
+                continue
+            if kind == "drop":                  # KpLog DROPPED has no companion t= of its own: the last t= line before it stands in
+                drop_t.append(prev_t)
+                continue
             if not line:
                 continue
             if line[0] == "#":
@@ -1886,7 +1946,7 @@ def render(dirp: Path, found: dict, S, T, RG, I, hooks, hook_notes, checklist, a
         a, b = S["ts_first"] * 1000, S["ts_last"] * 1000
         spans.append(f"steam log: tick {a / 1000:.1f}..{b / 1000:.1f} s ({(b - a) / 60000:.1f} min)" + (f", {clock.wall(int(a)):%H:%M:%S}..{clock.wall(int(b)):%H:%M:%S}" if clock.anchor_dt else ""))
     if T.get("present") and T.get("t_min") is not None:
-        spans.append(f"ai_trace: t={T['t_min']}..{T['t_max']} ({(T['t_max'] - T['t_min']) / 60000:.1f} min)" + (f", {clock.wall(T['t_min']):%H:%M:%S}..{clock.wall(T['t_max']):%H:%M:%S}" if clock.anchor_dt else ""))
+        spans.append(f"{T.get('name', FILES['trace'])}: t={T['t_min']}..{T['t_max']} ({(T['t_max'] - T['t_min']) / 60000:.1f} min)" + (f", {clock.wall(T['t_min']):%H:%M:%S}..{clock.wall(T['t_max']):%H:%M:%S}" if clock.anchor_dt else ""))
     if RG.get("present") and RG.get("t_min") is not None:
         spans.append(f"ranged_ai_log: t={RG['t_min']}..{RG['t_max']}" + (f", {clock.wall(RG['t_min']):%H:%M:%S}..{clock.wall(RG['t_max']):%H:%M:%S}" if clock.anchor_dt else ""))
     A("- Session time span: " + ("; ".join(spans) if spans else "unknown (no timestamps found)"))
@@ -1895,7 +1955,7 @@ def render(dirp: Path, found: dict, S, T, RG, I, hooks, hook_notes, checklist, a
     if win:
         A(f"- Window: {win.spec} " + ("(applied to ai_trace and ranged_ai_log events)" if win.active() else "**ignored: no clock anchor available**"))
     if T.get("present") and T.get("header"):
-        A(f"- ai_trace header: `{T['header']['text'][:200]}`")
+        A(f"- {T.get('name', FILES['trace'])} header: `{T['header']['text'][:200]}`")
     cnt = Counter(s for s, _, _ in an.items)
     A(f"- Anomalies: {cnt['FAIL']} FAIL, {cnt['WARN']} WARN, {cnt['INFO']} INFO")
     cl = Counter(c[1] for c in checklist)
@@ -2212,7 +2272,7 @@ def render(dirp: Path, found: dict, S, T, RG, I, hooks, hook_notes, checklist, a
             A("")
         A("Last PRS line per probe (and creature):")
         items = [(key, ln_line) for key, ln_line in sorted(P["prs_last"].items())]
-        L.extend(quotes_block([q(ln, line, FILES["trace"]) for _k, (ln, line) in items], 40))
+        L.extend(quotes_block([q(ln, line, T.get("name", FILES["trace"])) for _k, (ln, line) in items], 40))
     A("")
     return "\n".join(L) + "\n"
 
@@ -2225,6 +2285,8 @@ def find_files(d: Path) -> dict:
     for k, fn in FILES.items():
         p = d / fn
         found[k] = p if p.is_file() else None
+    # companion-ai: KpLog core name first, then the legacy/fallback ai_trace.txt (no mtime rule: the core file wins when both exist)
+    found["trace"] = next((d / n for n in TRACE_NAMES if (d / n).is_file()), None)
     # ranged-ai: legacy/fallback name vs KpLog core name; the newer file (mtime) wins, a tie goes to the legacy name
     cands = [d / n for n in RANGED_NAMES if (d / n).is_file()]
     if cands:

@@ -671,6 +671,80 @@ def render_c(fmt: str, args: list) -> str:
     return out
 
 
+class TraceShapes(Base):
+    """companion-ai 0.2.1 (KpLog) trace shapes give the same verdicts and counts as the legacy raw ai_trace.txt.
+    core = companion-ai_log.txt: a '# kplog session' header, then 'T=1000.000 f=- companion-ai/<ch> <old line>' per line.
+    fallback = ai_trace.txt in the old-core shape: '1000 companion-ai/<ch> <old line>' per line, no header."""
+    CORE_HDR = "# kplog session 2026-10-02 02:00:00 | kpatch.log v1 | patcher ABI 1"
+
+    @staticmethod
+    def channel(text: str) -> str:
+        return "probe" if (" PR " in text or " PRS " in text or text.startswith("-- probe ")) else "main"
+
+    def shaped_dir(self, rows, shape) -> Path:
+        d = Path(tempfile.mkdtemp(dir=self.tmp)) / "case"
+        d.mkdir()
+        if shape == "core":
+            (d / "companion-ai_log.txt").write_text("\n".join([self.CORE_HDR] + [f"T=1000.000 f=- companion-ai/{self.channel(s)} {s}" for s in rows]) + "\n")
+        elif shape == "fallback":
+            (d / "ai_trace.txt").write_text("\n".join(f"1000 companion-ai/{self.channel(s)} {s}" for s in rows) + "\n")
+        else:
+            (d / "ai_trace.txt").write_text("\n".join(rows) + "\n")
+        return d
+
+    def run_raw_core(self, raw_rows) -> dict:
+        d = Path(tempfile.mkdtemp(dir=self.tmp)) / "case"
+        d.mkdir()
+        (d / "companion-ai_log.txt").write_text("\n".join([self.CORE_HDR] + raw_rows) + "\n")
+        return apl.run_full([str(d), "--no-write"] + MINI)
+
+    @staticmethod
+    def verdicts(r) -> tuple:
+        return ([(i, st) for i, st, _s, _e in r["checklist"]], sorted(s for s, _src, _m in r["an"].items), r["T"]["n_lines"], r["T"]["n_pa"],
+                r["P"]["n_pr"], r["P"]["n_prs"], r["P"]["budget"], len(r["T"]["drops"]))
+
+    def test_core_and_fallback_match_legacy(self):
+        for case in ("probe_pass", "probe_fail"):
+            rows = (FIX / case / "ai_trace.txt").read_text().splitlines()
+            want = self.verdicts(apl.run_full([str(self.shaped_dir(rows, "legacy"))] + MINI))
+            for shape, name in (("core", "companion-ai_log.txt"), ("fallback", "ai_trace.txt")):
+                r = apl.run_full([str(self.shaped_dir(rows, shape))] + MINI)
+                self.assertEqual(r["T"]["name"], name, (case, shape))
+                self.assertEqual(self.verdicts(r), want, (case, shape))
+
+    def test_core_name_wins_over_legacy_name(self):
+        d = self.copy_case("probe_pass")
+        shutil.copy(d / "ai_trace.txt", d / "companion-ai_log.txt")
+        self.assertEqual(apl.find_files(d)["trace"].name, "companion-ai_log.txt")
+        (d / "companion-ai_log.txt").unlink()
+        self.assertEqual(apl.find_files(d)["trace"].name, "ai_trace.txt")
+
+    def test_split_long_lines_are_rejoined(self):
+        # the core cuts a message at 232 bytes: companion-ai 0.2.1 splits at spaces into `t=<ms> + <rest>` pieces (`++` = cut mid-word)
+        whole = "t=5000 S lines=5 " + " ".join(f"grp{i}{{a={i} b=2}}" for i in range(30)) + " tail" + "x" * 30
+        cut = whole.index("grp10")
+        mid = len(whole) - 20
+        pieces = [whole[:cut - 1], "t=5000 + " + whole[cut:mid], "t=5000 ++ " + whole[mid:]]
+        for shape in ("core", "fallback"):
+            rows = [f"T=1000.000 f=- companion-ai/main {p}" if shape == "core" else f"1000 companion-ai/main {p}" for p in pieces]
+            d = Path(tempfile.mkdtemp(dir=self.tmp)) / "case"
+            d.mkdir()
+            (d / ("companion-ai_log.txt" if shape == "core" else "ai_trace.txt")).write_text("\n".join(([self.CORE_HDR] if shape == "core" else []) + rows) + "\n")
+            got = [m for _ln, k, m in apl.read_trace_lines(next(d.iterdir())) if k == "line"]
+            self.assertEqual(got, [whole], shape)
+
+    def test_kplog_dropped_is_a_drop_and_mark_is_not(self):
+        hdr = [f"T=1000.000 f=- companion-ai/main {s}" for s in ProbeChecks.HDR.splitlines()]
+        end = [f"T=1000.000 f=- companion-ai/main {s}" for s in ProbeChecks.END.splitlines()]
+        ss = "T=1000.000 f=- companion-ai/probe t=2040000 PR SS1 cr=7f0001a2 p_atton state 0->5 combat=1"
+        r = self.run_raw_core(hdr + [ss, "T=1000.000 f=- companion-ai/kplog DROPPED 40 (ring 0, rate 200)"] + end)
+        self.assertEqual(self.status(r, "PR-SS"), "OBSERVE")
+        self.assertEqual([d[0] for d in r["T"]["drops"]], [40])
+        r = self.run_raw_core(hdr + [ss, "T=1000.000 f=- MARK before the cutscene"] + end)
+        self.assertEqual(self.status(r, "PR-SS"), "FAIL")
+        self.assertEqual(r["T"]["drops"], [])
+
+
 class FormatsMatchSource(unittest.TestCase):
     """Render the printf format strings found in the C++ sources and check that the tool's regexes parse them."""
     MODS = apl.MODS_DIR

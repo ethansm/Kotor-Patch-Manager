@@ -112,7 +112,7 @@ class Routing(Tmp):
             self.assertEqual(a[2:], ["--game-dir", self.g, "--summary", "--latest", "1"], n)
 
     def test_playlogs_class(self):
-        for n in ("ai_trace.txt", "ranged_ai_log.txt", "ranged-ai_log.txt", "inventory_sort_filter_log.txt"):
+        for n in ("ai_trace.txt", "companion-ai_log.txt", "ranged_ai_log.txt", "ranged-ai_log.txt", "inventory_sort_filter_log.txt"):
             a = self.argv(n)
             self.assertTrue(a[1].endswith("kotor2_logs.py"), n)
             self.assertEqual(a[2:], ["_playlogs", self.g], n)

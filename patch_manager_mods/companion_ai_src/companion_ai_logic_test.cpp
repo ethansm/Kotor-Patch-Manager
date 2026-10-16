@@ -443,7 +443,7 @@ static void testExports() {
     }
     CHECK(funcs == 31 && missing == 0);                          // 31 hooks: 18 + the 13 Phase-4 probes (C1 x3 share one function)
     int exports = 0; for (const char* p = strstr(d, "EXPORTS\n"); p && (p = strstr(p + 1, "\n    ")); ) ++exports;
-    CHECK(exports == 29);                                        // 29 distinct functions
+    CHECK(exports == 30);                                        // 30 exports: 29 distinct hook functions + KPatchInit (KpLog)
     CHECK(!strstr(t, "0x0051DBE7"));                             // the hot FM3 probe window stays unshipped (the cold FM3S/E/R ship)
     CHECK(strstr(t, "0x0051DBE1") && strstr(t, "0x0051DD33") && strstr(t, "0x0051E0C9"));
 }

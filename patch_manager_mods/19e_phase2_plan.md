@@ -301,8 +301,8 @@ Step 0 → T (if multilib) → K → C → H → D → merge into local-mods (Op
 | level-up-override | level-up | pending |
 | perf-lab, robustness-fixes | engine research / engine-bug | pending |
 | k2-dialogue-letterbox-fix (+ probe variant) | engine-bug owns behaviour; shared-logging does the KpLog migration (19h) | **migrated 1.0.2 LIVE 10-03 22:42 (7b3936bc, backup pre_lb102_1003_2242), NOT VALIDATED: 17-row manual checklist in doc 17 "Manual validation checklist (1.0.2)"**; 1.0.2-probe staged (local-setup 2823ff6/aea74cb, fork b4e1db6) |
-| companion-ai | engine AI atlas | pending (C5c-style; ai_trace.txt keeps its own format) |
 | ranged-ai | C5b (doc 24) | **migrated 0.4.0 (local-setup 1ec207f, fork 98d53f6), NOT installed**; fallback = `ranged_ai_log.txt` at INFO; core `ranged-ai_log.txt`; analyze_play_logs reads legacy, fallback and core |
+| companion-ai | doc 24 / fix pipeline | **migrated 0.2.1-probe (2026-10-15), NOT installed**; fallback = `ai_trace.txt` at INFO; core `companion-ai_log.txt`; channels main/trace/probe; analyze_play_logs reads legacy, fallback and core (long lines are split into `t=N +` pieces under the core 232-byte cut and re-joined by the parser); new `KPatchInit` export => install via `kpm_reinstall.py` |
 | k2-texture-memory-release, k2-activation-fix, k2-equip-icon-fix | C5a (doc 24) | **migrated 1.1.0 (local-setup ed52d2b, fork 34c0785), NOT installed**; fallback = old log names; core `<id>_log.txt` read by analyze_runs |
 | char-effects-panel, equip/inv3d, load-hang-probe | their sessions | pending |
 | inventory-sort-filter (C180) | WI-18 | **migrated, DONE 9026162**: `logf` forwards to KpLog fallback (`inventory_sort_filter_log.txt`, INFO); build_check + contract test green; NOT installed (lines gain `<ms> <id>/main ` prefix; analyze_play_logs reader fix = WI-72 first) |
