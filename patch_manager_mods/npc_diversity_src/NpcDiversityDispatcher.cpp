@@ -28,6 +28,7 @@
 #include "KpLog.h"
 #include "NpcWorld.h"
 #include "../_shared/SafeRead.h"
+#include "DiversityAnim.h"
 #include "DiversityKeep.h"
 #include "DiversityLogic.h"
 #include "DiversityRows.h"
@@ -35,6 +36,8 @@
 #include "HookDecision.h"
 #include "NpcDivLayout.h"
 #include "NpcDivLog.h"
+#define NPCDIV_ANIM_ENGINE_IMPL
+#include "DiversityAnimEngine.h"
 
 KP_LOG_PATCH("npc-diversity");
 
@@ -49,7 +52,7 @@ namespace {
 using namespace NpcDiversity;
 namespace nl = NpcDiversity::log;
 
-constexpr const char* kVersion = "0.1.8-probe";
+constexpr const char* kVersion = "0.2.0-probe";
 constexpr size_t kResRefLen = 16;
 
 // SafeRead site ids (counted in Counts::fail, printed by STAT read).
@@ -65,6 +68,7 @@ KP_CHANNEL(chStat, "stat");
 KP_CHANNEL(chCensus, "census");
 KP_CHANNEL(chProbe, "probe");
 KP_CHANNEL(chRead, "read");
+KP_CHANNEL(chAnim, "anim");
 
 // Debug mode: one REMAP line per row change, at KPLOG_DEBUG. With the logging core, kplog.ini `[npc-diversity]
 // level=debug` is the switch. Without it (probe builds), the flag file npc-diversity_debug.txt in the game dir raises
@@ -121,6 +125,59 @@ void onNwConnect(bool ok, const char* why) {
 // The salt for this remap call: 0 unless visit_variety is on AND npc-world provides one. Retries the lookup from the hook
 // (config order is not a contract); poll() is one require per 256 calls until it succeeds.
 uint32_t currentVisitSalt() { return VisitSaltFrom(g_visitVariety, g_nw); }
+
+// ---- NB2 ambient flourishes (doc 40 section 15). Both switches default 0. anim_probe=1 only logs the engine chain once per
+// eligible creature (no play); anim_variety=1 plays a flourish on idle eligible creatures. Roster fed by the remap hook (client oid +
+// final row), cleared on every AREA_LOAD, driven by npc-world's TICK (without the library nothing runs).
+bool g_animVariety = false, g_animProbe = false;
+unsigned g_animFlags = 1;          // PlayAnimation flags: 1 = engine "once" (fades out); 0 loops; 2 = no cross-fade
+int g_animProbeMax = 24;           // chain lines per process
+uint32_t g_animLastRun = 0, g_animPlays = 0, g_animReady = 0, g_animBusy = 0, g_animNoChain = 0;
+int g_animProbeLines = 0;
+Anim::Roster g_roster;
+bool g_rosterInit = false;
+inline bool animOn() { return g_animVariety || g_animProbe; }
+
+void logChain(uint32_t oid, uint16_t app, const AnimEngine::Chain& c) {
+    KP_LOG(chAnim, "CHAIN oid=%08X app=%u stage=%s srv=%08X soid=%08X type=%u party=%d pc=%d act=%04X q=%08X cmb=%u dlg=%08X cli=%08X vt=%08X cache=%08X hold=%08X body=%08X idle=%d",
+           oid, app, AnimEngine::StageName(c.stage), (unsigned)c.server, c.serverOid, c.facts.type, c.facts.party, c.facts.isPc,
+           c.facts.action, c.facts.queueHead, c.facts.combat, c.facts.dialog, (unsigned)c.client, c.clientVt, c.cache,
+           (unsigned)c.holder, (unsigned)c.body, Anim::IsIdle(c.facts) ? 1 : 0);
+}
+
+void animTick(uint32_t now) {
+    if (now - g_animLastRun < 250u) return;
+    g_animLastRun = now;
+    for (int i = 0; i < g_roster.count; ++i) {
+        Anim::Slot& s = g_roster.slots[i];
+        const bool wantProbe = g_animProbe && !s.probed && g_animProbeLines < g_animProbeMax;
+        if (!wantProbe && !(g_animVariety && Anim::Ready(s, now))) continue;
+        AnimEngine::Chain c;
+        AnimEngine::Resolve(s.oid, &c);
+        if (wantProbe) { s.probed = true; ++g_animProbeLines; logChain(s.oid, s.app, c); }
+        if (!g_animVariety || !Anim::Ready(s, now)) continue;
+        ++g_animReady;
+        if (c.stage < AnimEngine::StBody) { ++g_animNoChain; s.nextMs = now + 10000u; continue; }
+        const bool idle = Anim::IsIdle(c.facts);
+        if (!idle) ++g_animBusy;
+        if (const Anim::Flourish* f = Anim::Due(s, now, idle)) {
+            const bool ok = AnimEngine::Play(c, f->name, 1.0f, g_animFlags);
+            ++g_animPlays;
+            if (g_animPlays <= 200) KP_LOG(chAnim, "PLAY oid=%08X %s flags=%u ok=%d n=%u", s.oid, f->name, g_animFlags, ok ? 1 : 0, s.plays);
+            else if ((g_animPlays & 63u) == 0) KP_LOG(chAnim, "PLAY total=%u ready=%u busy=%u nochain=%u", g_animPlays, g_animReady, g_animBusy, g_animNoChain);
+        }
+    }
+}
+
+void KPATCH_CALL onNwEvent(const K2NwEvent* ev, void*) {
+    if (!ev || !animOn()) return;
+    if (ev->kind == K2NW_AREA_LOAD) {
+        g_roster.clear();
+        KP_LOG(chAnim, "area load: roster cleared (plays=%u ready=%u busy=%u nochain=%u)", g_animPlays, g_animReady, g_animBusy, g_animNoChain);
+    } else if (ev->kind == K2NW_TICK) {
+        animTick(GetTickCount());
+    }
+}
 nl::U32Set<256> g_frSet, g_retSet, g_oidSet, g_cenTexSet, g_cenRemSet;
 nl::Budget g_bTex, g_bRmp, g_bAbi, g_bArm, g_bNonB;
 uint32_t g_texEmptyCell = 0;  // C252: hook 1 calls with an empty texa cell (skipped)
@@ -162,6 +219,13 @@ void readConfig() {
     g_visitVariety = GetPrivateProfileIntA("NpcDiversity", "visit_variety", 0, path) != 0;
     KP_LOG(chInit, "config visit_variety=%d%s", g_visitVariety ? 1 : 0,
            g_visitVariety ? " (per-visit salt from npc-world when it is loaded, else looks stay fixed)" : "");
+    g_animVariety = GetPrivateProfileIntA("NpcDiversity", "anim_variety", 0, path) != 0;
+    g_animProbe = GetPrivateProfileIntA("NpcDiversity", "anim_probe", 0, path) != 0;
+    g_animFlags = static_cast<unsigned>(GetPrivateProfileIntA("NpcDiversity", "anim_flags", 1, path));
+    g_animProbeMax = static_cast<int>(GetPrivateProfileIntA("NpcDiversity", "anim_probe_max", 24, path));
+    if (!g_rosterInit) { g_roster.clear(); g_rosterInit = true; }
+    KP_LOG(chInit, "config anim_variety=%d anim_probe=%d anim_flags=%u anim_probe_max=%d%s", g_animVariety ? 1 : 0, g_animProbe ? 1 : 0,
+           g_animFlags, g_animProbeMax, animOn() ? " (needs npc-world: TICK drives it)" : "");
 }
 
 void ensureInit() {
@@ -381,6 +445,7 @@ extern "C" {
 __declspec(dllexport) void __cdecl KPatchInit(const KPatchApi* api) {
     g_nw.init(api, "npc-diversity");
     g_nw.onConnect = onNwConnect;
+    g_nw.add(K2NW_AREA_LOAD | K2NW_TICK, onNwEvent);   // NB2: inert unless anim_variety / anim_probe is on in npc-diversity.ini
     g_nw.connect();
 }
 
@@ -576,6 +641,12 @@ __declspec(dllexport) void __cdecl RemapNpcAppearance(void* pCreature, layout::A
             }
         }
         if ((why[0] == 'n' || why[0] == 't') && (newApp != d.appearance || newTv != d.textureVar)) why = "ok";
+    }
+
+    if (animOn() && okOid && oid) {
+        bool mil = false;
+        if (Anim::EligibleRow(newApp, &mil) && static_cast<int>(d.subType) <= layout::kDescSubTypeMaxCommoner)
+            g_roster.add(oid, newApp, visitSalt, mil, GetTickCount());
     }
 
     if (KP_ENABLED(chRemap) && g_bRmp.take(300, 500)) {

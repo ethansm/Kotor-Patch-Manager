@@ -59,7 +59,7 @@
 | V6 | Animation randomization feasibility: script (flag 109 / local 29) versus native (`Gob::PlayAnimation 004e3270`) | DONE (section 9; native route recommended, P8-P10 added to V2) |
 | V7 | Opus gate: choose build order, write the master plan, retire or merge the doc 35 routes | DONE (section 11; build order NB1-NB5, doc 35 merged) |
 | NB1 | Visit salt wiring (V4b): `visit_variety` source = area-entry latch | PARTIAL (host build, section 14; install = full reinstall of npc-diversity, KPatchInit export added; needs user GO) |
-| NB2 | Animation injector (`anim_variety`) | TODO |
+| NB2 | Animation injector (`anim_variety`) | PARTIAL (host + build, section 15; chain unverified live: first run is the `anim_probe` log, then `anim_variety`) |
 | NB3 | Extra walkers (`walker_variety`) | TODO |
 | NB4 | Scripted encounter, route (a) (`encounter_variety`) | TODO |
 | NB5 | Encounter fallback, override `.ncs` (only if P12/P14 fail) | TODO (conditional) |
@@ -391,4 +391,31 @@ Run 1 (user, 10-15 00:19): first `204tel` load spawned `c_drdmouse01` (oid 0x348
 - **Tests.** New `diversity_salt_source_test` (real `k2nw::Client` against a fake provider table: no provider, switch off asks nothing, switch on follows the library salt visit to visit, late provider connects, salt 0 equals the plain hashes, a new salt flips about the vary share of 400 oids and many texture slots; mutation of the switch check caught). `common_contract_test` pins the interface name/version, the table order and the inert client. `-k diversity` (14), `npc_div` and `build_check` pass; hook-bytes/spans/sources/exports suites pass.
 - **Doc 34 line 170** (`visitSalt is 0 until V4b`) is outdated; doc 34 had peer edits so it was not touched.
 - **Play check (user, after the install):** set `visit_variety=1`, enter a crowd area, leave and re-enter (or reload): commoner looks should change between visits and stay stable inside one; with `visit_variety=0` nothing changes. `kotor2_logs.py check npc-diversity_log.txt` check 16 (cross-launch map) will flag the intended difference only when the switch is on.
+
+## 15. NB2 results (2026-10-16; host-only, nothing installed)
+`npc-diversity` 0.2.0-probe adds ambient flourishes for idle commoners behind two new keys in `npc-diversity.ini [NpcDiversity]` (both default 0): `anim_probe=1` logs the engine chain once per eligible creature and plays nothing; `anim_variety=1` plays. Also `anim_flags` (default 1) and `anim_probe_max` (default 24 chain lines per process). Needs `npc-world` (its TICK drives the scheduler); without it nothing runs. Exports are unchanged (4), so this is a hot-swap.
+
+**Decision: no library table growth.** Section 12 planned `PlayAnimation` and `ForEachCreature` in `k2.npcworld`. The glue needs neither: the roster is fed by `RemapNpcAppearance` (client creature, client oid, final row) and the library only supplies `AREA_LOAD` (roster clear) and `TICK`. Per 13.4 a table entry waits until a second client needs it. Pointer validity is solved by never keeping a pointer: every tick resolves from the oid, and a freed object resolves to 0.
+
+### 15.1 Recon (`.claude/research/npc_variety/nb2_recon.md`, ledger `rea_findings/20261016_nb2-recon.tsv`, Steam exe 6a522e71)
+| Step | Engine call or read | Status |
+|---|---|---|
+| server object | `0x0051C0A0` thiscall(`[[0xA1B4A4]+8]`, oid), RET 4 | proven (companion-ai) |
+| client creature | `0x0054A840` fastcall(ECX = server object): key = oid or 0x80000000, lookup `0x0073F4D0`, cached at server `+0x264` | **UNVERIFIED live**: the recon found no writer for the high-bit buckets, so it may return 0 for ordinary creatures |
+| type check | `[client]` == `0x0099EE14` (CSWCCreature) | confirmed constant |
+| body Gob | `[client+0x68]` holder, `holder->vt[2](0xFF)` | proven for preview creatures (equip3d), unproven for world ones |
+| play | `body->vt[6](name, 1.0, flags, 0.0)` = `Gob::PlayAnimation` | proven (equip3d) |
+| idle (server) | `+0x84` word == 0xFFFF and list head `[+0x100]` == 0, not party (`+0x11AC`), not PC (`+0x10E8`), not combat (`+0x520`), dialog partner (`+0x54`) 0 or 0x7F000000 | fields confirmed, "none" value of `+0x54` and the `+0x84` start value unverified |
+Open from the recon: client oid vs server oid (the remap hook reads the CLIENT creature's `+0x04`; the server lookup uses it as is), a client-side busy test (none found; `Gob+0xDC/+0xE0` anim list candidate), the action count field. The recon also says the `0x00568BD0` hook's `this` looks area-shaped; live logs (tag at `c+0x18`, restored copies matched) say the library's creature read works, so this is noted, not acted on.
+
+### 15.2 What was built
+- `DiversityAnim.h` (pure, tested by `diversity_anim_test`): pool = the 7 ambient names (`pausesh scanning shrug rolleyes touchheart nodyes greeting`), `salute` only for rows 479/485 (TSF); first play 3-15 s after the creature is seen, then every 20-45 s with a fresh draw, never overlapping its own flourish; Mix salts 11-13; clock-wrap-safe `Ready/Due`; roster of 96, cleared on every area load; eligible rows = the 11 base rows of the 13 checked models (`12 18 24 39 47 185 190 479 485 569 601`); the appended custom rows 802-817 (fat, Twi'lek, dirty) are NOT eligible because their model chains are unchecked and a missing animation name cannot be detected at runtime.
+- `DiversityAnimEngine.h` (DLL only): the chain above with a `Stage` result (`none server type client vtable holder body`), every read through SafeRead. `animTick` runs at most every 250 ms.
+- Log channel `anim`: `CHAIN oid= app= stage= srv= soid= type= party= pc= act= q= cmb= dlg= cli= vt= cache= hold= body= idle=` (probe), `PLAY oid= <name> flags= ok= n=` (first 200), `area load: roster cleared (...)`.
+- Gate: `build_check.py --mod npc_diversity_src` PASS (4 exports, 2 detours), `pre_install_gate.sh --mod npc_diversity_src --skip-default` GATE PASS, raw-address allowlist block for `DiversityAnimEngine.h` (three addresses, each checked with `query_ghidra.py address`).
+
+### 15.3 Live plan (user plays; hot-swap needs GO and the game closed)
+1. Run A, probe only: `anim_probe=1`, `anim_variety=0`. Walk a crowd area (Citadel, Telos). Read `CHAIN` lines: `stage=body` for most eligible creatures means the chain works and server oid equals client oid; `stage=server` or `none` means the ids differ (then the roster needs the server oid from `K2NW_CREATURE_ADDED` instead); `stage=client` means `0x0054A840` returns 0 for ordinary creatures.
+2. Run B, play: `anim_variety=1`, `anim_flags=1` (engine "once"). Watch: does the creature play the flourish and go back to its idle by itself (P8), does it snap or freeze (flags 1 vs 0 vs 2), any flourish during a walk (P9), frame feel (P10).
+3. If the idle does not resume with flags 1, the next build re-issues the idle name after the flourish length (Mod 10 recipe).
 

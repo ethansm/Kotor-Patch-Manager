@@ -42,7 +42,7 @@ inline uint32_t FirstDelayMs(uint32_t hash) { return kFirstMinMs + Mix(hash, kSa
 inline uint32_t GapMs(uint32_t hash, uint32_t n) { return kGapMinMs + Mix(hash + n * 0x85EBCA6Bu, kSaltGap) % kGapSpanMs; }
 
 // One slot per creature that has been seen. Keyed on oid (valid for one visit); the DLL clears the roster on every AREA_LOAD.
-struct Slot { uint32_t oid; uint32_t hash; uint32_t nextMs; uint32_t busyUntilMs; uint32_t plays; bool military; bool used; };
+struct Slot { uint32_t oid; uint32_t hash; uint32_t nextMs; uint32_t busyUntilMs; uint32_t plays; uint16_t app; bool military; bool used; bool probed; };
 
 constexpr int kMaxSlots = 96;
 
@@ -59,7 +59,7 @@ struct Roster {
         if (Slot* s = find(oid)) return s;
         if (count >= kMaxSlots) { ++dropped; return nullptr; }
         Slot& s = slots[count++];
-        s.oid = oid; s.hash = HashCreatureId(oid, appearance, visitSalt); s.military = military; s.plays = 0; s.used = true;
+        s.oid = oid; s.hash = HashCreatureId(oid, appearance, visitSalt); s.military = military; s.plays = 0; s.app = appearance; s.used = true; s.probed = false;
         s.nextMs = nowMs + FirstDelayMs(s.hash); s.busyUntilMs = nowMs;   // not 0: a 32-bit clock past 2^31 would read 0 as "in the future"
         return &s;
     }
@@ -73,15 +73,39 @@ struct Roster {
 // re-armed with its own gap and marked busy for the flourish length (the glue re-issues the idle then).
 constexpr uint32_t kBusyRetryMs = 2000;
 
+// True when the slot may be looked at now (not inside our own flourish, past its next time). The glue resolves the engine chain only then.
+inline bool Ready(const Slot& s, uint32_t nowMs) {
+    return static_cast<int32_t>(nowMs - s.busyUntilMs) >= 0 && static_cast<int32_t>(nowMs - s.nextMs) >= 0;
+}
+
 inline const Flourish* Due(Slot& s, uint32_t nowMs, bool idle) {
-    if (static_cast<int32_t>(nowMs - s.busyUntilMs) < 0) return nullptr;           // our own flourish is still running
-    if (static_cast<int32_t>(nowMs - s.nextMs) < 0) return nullptr;
+    if (!Ready(s, nowMs)) return nullptr;
     if (!idle) { s.nextMs = nowMs + kBusyRetryMs; return nullptr; }
     const Flourish& f = Pick(Mix(s.hash, s.plays + 1u), s.military);
     s.busyUntilMs = nowMs + f.lenMs;
     s.nextMs = nowMs + f.lenMs + GapMs(s.hash, s.plays);
     ++s.plays;
     return &f;
+}
+
+// ---- eligibility and idle test (pure; the engine glue only reads the facts) --------------------------------------------------------------
+// Rows whose models have all 7 ambient flourishes (anim_pool.tsv). The appended custom rows 802-817 (fat, Twi'lek variants, dirty) are NOT
+// listed: their model chains are not checked, and a missing animation name is not provable at runtime (the vt[0x1c] probe cannot see
+// supermodel anims). 479 = N_RepSold and 485 = N_RepOff are the TSF bodies that may salute.
+constexpr uint16_t kEligibleRows[] = {12, 18, 24, 39, 47, 185, 190, 479, 485, 569, 601};
+inline bool EligibleRow(uint16_t appearance, bool* military = nullptr) {
+    if (military) *military = (appearance == 479 || appearance == 485);
+    for (uint16_t r : kEligibleRows) if (r == appearance) return true;
+    return false;
+}
+
+// Server creature facts (recon nb2_recon.md): +0x08 object type (5 creature), +0x11AC party flag, +0x10E8 is-PC, +0x84 current action word
+// (0xFFFF none), +0x100 action list head (0 = empty), +0x520 combat state, +0x54 dialog partner oid (0x7F000000 or 0 = none, unverified).
+struct ServerFacts { uint8_t type; int32_t party; int32_t isPc; uint16_t action; uint32_t queueHead; uint32_t combat; uint32_t dialog; };
+constexpr uint32_t kObjInvalid = 0x7F000000u;
+inline bool IsIdle(const ServerFacts& f) {
+    return f.type == 5 && f.party == 0 && f.isPc == 0 && f.action == 0xFFFFu && f.queueHead == 0 && f.combat == 0 &&
+           (f.dialog == 0 || f.dialog == kObjInvalid);
 }
 
 }  // namespace Anim

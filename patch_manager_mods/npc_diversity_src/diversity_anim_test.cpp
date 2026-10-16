@@ -98,5 +98,26 @@ int main() {
         }
         KT_CHECK(diff > 80);
     }
+    // 8. eligibility: base rows only, appended custom rows and party-ish rows are out; military = the two TSF bodies
+    {
+        bool mil = true;
+        KT_CHECK(EligibleRow(185, &mil) && !mil);
+        KT_CHECK(EligibleRow(479, &mil) && mil);
+        KT_CHECK(EligibleRow(485, &mil) && mil);
+        KT_CHECK(!EligibleRow(802) && !EligibleRow(813) && !EligibleRow(817) && !EligibleRow(0) && !EligibleRow(6));
+    }
+    // 9. idle test: every single blocker flips it
+    {
+        ServerFacts f = {5, 0, 0, 0xFFFF, 0, 0, kObjInvalid};
+        KT_CHECK(IsIdle(f));
+        { ServerFacts g = f; g.dialog = 0; KT_CHECK(IsIdle(g)); }
+        { ServerFacts g = f; g.type = 9; KT_CHECK(!IsIdle(g)); }
+        { ServerFacts g = f; g.party = 1; KT_CHECK(!IsIdle(g)); }
+        { ServerFacts g = f; g.isPc = 1; KT_CHECK(!IsIdle(g)); }
+        { ServerFacts g = f; g.action = 3; KT_CHECK(!IsIdle(g)); }
+        { ServerFacts g = f; g.queueHead = 0x1000; KT_CHECK(!IsIdle(g)); }
+        { ServerFacts g = f; g.combat = 1; KT_CHECK(!IsIdle(g)); }
+        { ServerFacts g = f; g.dialog = 0x7F000123u; KT_CHECK(!IsIdle(g)); }
+    }
     return kt::Report("diversity_anim_test");
 }
