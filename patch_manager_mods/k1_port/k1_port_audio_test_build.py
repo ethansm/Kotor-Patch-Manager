@@ -24,6 +24,8 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE.parent / "kvoice"))
+import kvoice_lip  # noqa: E402
 DEFAULT_K1 = "~/.local/share/Steam/steamapps/common/swkotor"
 DEFAULT_STAGE = Path("~/Games/KOTOR2_Mod_Workspace/k1_port_stage").expanduser()
 SRC_WAV = "streamwaves/m35aa/juha11/NM35AAJUHA11395_.wav"
@@ -31,8 +33,9 @@ SRC_LIP = ("lips/localization.mod", "nm35aajuha11395_")
 LINES = (
     ("kvjv0001", "Juhani test line one: wav and a valid lip."),
     ("kvjv0002", "Juhani test line two: wav, no lip file."),
-    ("kvjv0003", "Juhani test line three: wav and a corrupt lip."),
+    ("kvjv0003", "Juhani test line three: wav and a second valid lip."),
 )
+CORRUPT_LINE3 = "Juhani test line three: wav and a corrupt lip."
 DLG_NAME = "kvjdlg01"
 
 
@@ -82,7 +85,7 @@ def build_dlg(lines=LINES):
     return d
 
 
-def build(k1, out: Path, *, adopt=True) -> dict:
+def build(k1, out: Path, *, adopt=True, corrupt_lip_variant=False) -> dict:
     from pykotor.resource.formats.erf import read_erf
     from pykotor.resource.generics.dlg import bytes_dlg
     k1 = Path(k1).expanduser()
@@ -92,11 +95,16 @@ def build(k1, out: Path, *, adopt=True) -> dict:
     if len(hits) != 1:
         raise BuildError(f"expected one {SRC_LIP[1]}.lip in {SRC_LIP[0]}, found {len(hits)}")
     lip = bytes(hits[0].data)
-    files = {"kvjdlg01.dlg": bytes_dlg(build_dlg())}
+    problems = kvoice_lip.check_lip(lip)
+    if problems:
+        raise BuildError(f"source lip {SRC_LIP[1]} fails the LIP structure check: {'; '.join(problems)}")
+    lines = LINES[:2] + ((LINES[2][0], CORRUPT_LINE3),) if corrupt_lip_variant else LINES
+    files = {"kvjdlg01.dlg": bytes_dlg(build_dlg(lines))}
     for vo, _ in LINES:
         files[f"{vo}.wav"] = wav
     files["kvjv0001.lip"] = lip
-    files["kvjv0003.lip"] = corrupt_lip(lip)
+    # A corrupt lip crashed the engine (10-16, CRASH_INVESTIGATION.md): only stage one when explicitly asked.
+    files["kvjv0003.lip"] = corrupt_lip(lip) if corrupt_lip_variant else lip
     written = []
     for sub, names in (("override", list(files)), ("streamvoice", [n for n in files if n.endswith(".wav")])):
         (out / sub).mkdir(parents=True, exist_ok=True)
@@ -119,10 +127,12 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--k1", default=DEFAULT_K1)
     ap.add_argument("--out", required=True, help="stage dir (must be under the k1_port stage root for the ledger)")
+    ap.add_argument("--corrupt-lip", action="store_true",
+                    help="stage a corrupt kvjv0003.lip (crashes the engine on a second pass; the installer refuses it)")
     ap.add_argument("--no-adopt", action="store_true", help="skip ledger registration (tests)")
     a = ap.parse_args(argv)
     try:
-        res = build(a.k1, Path(a.out).expanduser(), adopt=not a.no_adopt)
+        res = build(a.k1, Path(a.out).expanduser(), adopt=not a.no_adopt, corrupt_lip_variant=a.corrupt_lip)
     except (BuildError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

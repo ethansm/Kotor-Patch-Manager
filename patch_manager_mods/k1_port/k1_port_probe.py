@@ -42,8 +42,10 @@ from pathlib import Path
 sys.dont_write_bytecode = True
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE.parent / "kvoice"))
 
 import k1_port_prune as kp  # noqa: E402
+import kvoice_lip  # noqa: E402
 import k1_port_sources as ks  # noqa: E402
 import k1_port_validate as kv  # noqa: E402
 
@@ -356,6 +358,12 @@ def compute_plan(args, stamp: str) -> Plan:
             continue
         findings = kv.validate(pr[".mdl"].read_bytes(), pr[".mdx"].read_bytes(), require_lower_k1p=True)
         plan.check(f"validate {stem} (.mdl+.mdx)", not findings, summarize_findings(findings))
+
+    # The engine crashed on a corrupt .lip (10-16, CRASH_INVESTIGATION.md): refuse any staged lip that fails its structure rules.
+    for _, real in staged:
+        if real.suffix.lower() == ".lip":
+            problems = kvoice_lip.check_lip(real.read_bytes())
+            plan.check(f"lip {real.name}", not problems, "; ".join(problems) if problems else "structure ok")
 
     ledger_path = stage / "ledger.json"
     led = None

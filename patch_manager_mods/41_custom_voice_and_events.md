@@ -92,6 +92,8 @@ Test IDs from other briefs were renamed to avoid collisions: b1 E7 -> T-TIMER, b
 
 **T1b Juhani dialog voice (2026-10-16, `StreamVoice/kvjv000N.wav` flat, copied out of band).** User heard all 3 lines (K1 clip `NM35AAJUHA11395_`, 58-byte VO container + MP3). Watcher: the engine OPENed `StreamVoice/kvjv0001..3.wav` per line (about 4 opens each), then `override/kvjv0001.lip` and `kvjv0003.lip`; no lip open for line 2 (none exists). So: dialog VO resolves from the flat `StreamVoice/` dir (the `kvj` prefix is not special), not from `Override`; the 58-byte container plays through the dialog path (E2 VO route PASS); LIP still comes from `Override` (E3). A bundle must therefore write voice wavs to `StreamVoice/` and lips to `Override/`. Per-line lip-sync visuals were not reported.
 
+**T1b lip result and crash (2026-10-16).** Lips moved only on line 1 (valid lip); line 2 (no lip) and line 3 (corrupt lip) stayed still. The second playthrough crashed on line 3: null read at `0x0091CF5B` (CRT string helper), `kvjv0003` on the stack; cause is the corrupt lip (likely, not proven; `r1_lip_crash.md` recon pending). Rule: a lip must pass `kvoice_lip.check_lip` before it is staged. Enforced now: `k1_port_probe.py plan/install` BLOCKs a staged `.lip` that fails it, and `k1_port_audio_test_build.py` refuses an invalid source lip and stages the corrupt variant only with `--corrupt-lip`. Details: `CRASH_INVESTIGATION.md`.
+
 Event-system prerequisites P1-P7 are listed in `w3/b2.md`. Free evidence first: any vanilla Override audio the user has already heard in game (`AVO_T3M4QUESS1`, `dm_estf_*`) partially answers E1/E2.
 
 ## 7. Phases

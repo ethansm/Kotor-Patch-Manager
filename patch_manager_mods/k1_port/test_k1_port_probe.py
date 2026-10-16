@@ -288,6 +288,31 @@ def test_soundset_2da_replaced_with_its_own_base_and_rolled_back(root):
 
 
 @test
+def test_corrupt_lip_blocks_and_valid_lip_installs(root):
+    sys.path.insert(0, str(HERE.parent / "kvoice"))
+    import kvoice_lip
+    w = make_world(root)
+    good = kvoice_lip.write_lip([(0.0, 0), (0.5, 3)], 1.0)
+    d = w["stage"] / "probe_T12h" / "override"
+    (d / "kvjv0001.lip").write_bytes(good)
+    (d / "kvjv0003.lip").write_bytes(b"BAD " + good[4:])
+    led = Ledger(w["stage"] / "ledger.json")
+    for n in ("kvjv0001.lip", "kvjv0003.lip"):
+        led.add(str((d / n).resolve()), "other", VANILLA, sha256=kp.sha256_of(d / n))
+    led.save()
+    base = ["--files", "probe_T12h/override/appearance.2da"]
+    r = run(root, "install", *common(w), *base, "probe_T12h/override/kvjv0001.lip", "--base-sha256", BASE_SHA, "--yes")
+    check(r.returncode == 0, f"valid lip install rc {r.returncode}: {r.stdout}")
+    check((w["game"] / "override" / "kvjv0001.lip").read_bytes() == good, "valid lip installed")
+    run(root, "rollback", *game_args(w), "--yes")
+    before = snapshot(root)
+    r = run(root, "install", *common(w), *base, "probe_T12h/override/kvjv0003.lip", "--base-sha256", BASE_SHA, "--yes")
+    check(r.returncode == 1 and "BLOCK lip kvjv0003.lip" in r.stdout and "bad signature" in r.stdout,
+          f"corrupt lip must block and say why: {r.stdout}")
+    check(snapshot(root) == before, "blocked install must write nothing")
+
+
+@test
 def test_heads_2da_replaced_with_its_own_base_and_rolled_back(root):
     w = make_world(root)
     live, staged = b"2DA V2.b\n\nhead\n0 h_old\n", b"2DA V2.b\n\nhead\n0 h_old\n1 k1p_juhanih\n"
