@@ -382,6 +382,8 @@ void spinEnd(CrTrack& t, DWORD now) {
     if (t.spinShow)
         eline(now, "t=%lu E1 END cr=%08x %s spin lasted %.1f s", now, t.id, t.spinTag, (t.seen - t.spinStart) / 1000.0);
     t.spinShow = false;
+    // R2-CA-01: an ended spin must not carry its burst window, exit count or window start into the track's next sighting
+    t.burst.resetSecond(); t.exits = 0; t.secStart = now;
 }
 DWORD g_lastSpinSweep = 0;
 void spinSweep(DWORD now) {
