@@ -131,3 +131,6 @@ a) restore dangly sway (MDLOps route already keeps it: confirm in game; pykotor 
 
 ### Resume
 `python3 scripts/plan_manager.py resume patch_manager_mods/38_k1_to_k2_asset_import.md` (never bare). Next dev action: read the five `w13-juhani/u0*.md` findings, then plan mode.
+
+### 10-16 research wave RESULTS (merged into doc 38 section 19, commit follows 7f8580f; raw reports are local-only in gitignored `.claude/waves/w13-juhani/u01..u05_*.md`)
+u01 dangly CONFIRMED (MDLOps keeps sway data); u02 pykotor dangly writer fix feasible (~30 lines: reader seeks constraints at ptr+12, skips positions; writer omits positions, zero positions ptr); u03 left arm PARTIAL (lead: my rename lowercased node names such as `lbicepL_g`; test one build keeping K1 casing); u04 animations CONFIRMED (idle/walk/run covered; `cpause1/2`, `cwalk`, `crun` missing in the K2 chain, also in vanilla); u05 audio PARTIAL (UTC Conversation is `204ithr` and soundset 57; fix to `k_hjuh_dialog`/new row; minimal plan in `u05_audio_needs.md` s4; tests E3, E4, E2d first).
