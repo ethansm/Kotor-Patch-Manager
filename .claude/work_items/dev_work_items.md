@@ -163,3 +163,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 147 | WI-115 | P3 | ready | S | - | Queue HUD: actionInQueue uses raw haveCur before creal (stale cur blocks dispatch) | 0 | 3 | R2-QH-02: Raw s.haveCur sets actionPresent before creal; activeVerdict |
 | [ ] | 148 | WI-116 | P3 | ready | S | - | Queue HUD: queueCountOf passes raw haveCur to decideAction | 0 | 1 | R2-QH-03: Hooks pass raw haveCur to decideAction while the tick dispat |
 | [ ] | 149 | WI-117 | P3 | ready | S | - | Queue HUD: softBannerTick early-return clear + raw g_combat draw gates | 0 | 1 | R2-QH-06: Both paths real, but severity lowered from Haiku medium: pat |
+| [ ] | 150 | WI-118 | P3 | ready | S | - | Queue HUD tests: memcmp(Config) padding failures + testWhyParityMatrix arrays one short | 0 | 1 | SIDE-QH-TEST: 66 failures reproduce only without sanitizers (plain -O1 |
