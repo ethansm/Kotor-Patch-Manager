@@ -124,6 +124,13 @@ class CliSelectionTests(unittest.TestCase):
         self.assertEqual(len(lines), 1)
         self.assertIn("cpp:gui2d_test", lines[0])
 
+    def test_positional_exact_and_substring_are_a_union(self):
+        # used to intersect to nothing: the substring narrowed items, then the exact ids dropped the rest
+        res = self._run_cli("cpp:party_test", "gui2d", "--list")
+        self.assertEqual(res.returncode, 0)
+        ids = {ln.split()[0] for ln in res.stdout.splitlines() if ln.strip()}
+        self.assertEqual(ids, {"cpp:party_test", "cpp:gui2d_test"})
+
     def test_positional_substring_filter(self):
         res = self._run_cli("gui2d", "--list")
         self.assertEqual(res.returncode, 0)

@@ -869,15 +869,15 @@ def main() -> int:
         smokes, wine_err = wine_plan(SMOKES_TOML, dll_from_override=a.dll_from)
     if a.k:
         items = [i for i in items if a.k in i.id]
+    pos_subs = []
     if a.filters:
         pos_exact = {f for f in a.filters if any(f == i.id for i in items) or f.startswith("wine:")}
         pos_subs = [f for f in a.filters if f not in pos_exact]
         if pos_exact:
             target_ids.update(pos_exact)
-        if pos_subs:
-            items = [i for i in items if any(sub in i.id for sub in pos_subs)]
-    if target_ids:
-        items = [i for i in items if i.id in target_ids]
+    if target_ids or pos_subs:
+        # exact ids and substring filters are a union (mixing them used to intersect to nothing)
+        items = [i for i in items if i.id in target_ids or any(sub in i.id for sub in pos_subs)]
 
     # Wine items: (smoke, mode) -> id
     wine_items = []  # (id, smoke, mode, skip)
@@ -885,7 +885,8 @@ def main() -> int:
         skip = smoke_skip(s)
         for mode in (s.get("modes") or [""]):
             wid = f"wine:{s['name']}" + (f"[{mode}]" if mode else "")
-            match_target = not target_ids or wid in target_ids or any(wid == t or wid.startswith(f"{t}[") for t in target_ids)
+            match_target = (not target_ids or wid in target_ids or any(wid == t or wid.startswith(f"{t}[") for t in target_ids)
+                            or any(sub in wid for sub in pos_subs))
             match_k = not a.k or a.k in wid
             match_filters = not a.filters or not pos_subs or any(sub in wid for sub in pos_subs) or match_target
             if match_k and match_filters and match_target:
