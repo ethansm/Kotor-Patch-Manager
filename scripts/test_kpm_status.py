@@ -115,6 +115,18 @@ class StatusTest(unittest.TestCase):
         self.assertEqual(r["verdict"], "REINSTALL", r)
         self.assertIn("1 differ", r["detail"])
 
+    def test_reinstall_when_exports_differ(self):
+        # hooks match, but the new DLL exports KPatchInit (KpLog migration): a swap is refused by kpm_hotswap, so the verdict must be REINSTALL
+        import kpm_hotswap as hs
+        self.e.kpatch(b"DLL2")
+        old = time.time() - 100
+        os.utime(self.e.game / "patches/demo.dll", (old, old))
+        with mock.patch.object(hs, "pe_exports", side_effect=lambda d: ["A", "KPatchInit"] if d == b"DLL2" else ["A"]), \
+                mock.patch.object(hs, "pe_imports", return_value=["KERNEL32.dll"]):
+            r = self.e.run()
+        self.assertEqual(r["verdict"], "REINSTALL", r)
+        self.assertIn("+KPatchInit", r["detail"])
+
     def test_not_live(self):
         self.e.live = {}
         self.assertEqual(self.e.run()["verdict"], "NOT-LIVE")

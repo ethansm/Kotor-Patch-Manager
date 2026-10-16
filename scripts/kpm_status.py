@@ -11,7 +11,7 @@ Verdicts, first match wins:
   MIRROR       repo production files differ from Patches/<X>/ in KPM: copy them over, then rebuild
   REBUILD      kpatch older than its KPM code, or its manifest/hooks differ from the KPM files: run create-patch.py
   LIVE         live DLL md5 == kpatch DLL md5
-  REINSTALL    kpatch hooks != the live patch_config hooks for the id: hot-swap NOT allowed (KPatchLauncher)
+  REINSTALL    kpatch hooks != the live patch_config hooks for the id, or the DLL's exports/imports differ from the live DLL: hot-swap NOT allowed (KPatchLauncher)
   LIVE-OTHER   live DLL differs but is newer than the kpatch (a gate/stage build of the same source); swap only on purpose
   SWAP         kpatch is fresh, hooks match live, DLL differs: ready for a DLL hot-swap
 Ends with summary lines `SWAP: ...`, `REBUILD: ...` etc. that name the ids for the next step.
@@ -126,6 +126,23 @@ def pick_sources(manifests, kpm_map):
     return sorted(out)
 
 
+def dll_link_change(new, live):
+    """'' or why a DLL swap is not allowed although the hooks match: the exports or imports differ from the live DLL (kpm_hotswap refuses
+    these too, the launcher must re-link them). An unparseable DLL gives '' (the swap's own PE check reports it)."""
+    import struct
+    import kpm_hotswap as hs  # lazy: kpm_hotswap imports this module
+    try:
+        ne, le = set(hs.pe_exports(new)), set(hs.pe_exports(live))
+        ni, li = set(hs.pe_imports(new)), set(hs.pe_imports(live))
+    except (ValueError, struct.error):
+        return ""
+    if ne != le:
+        return f"exports differ from the live DLL (+{','.join(sorted(ne - le)) or '-'} -{','.join(sorted(le - ne)) or '-'}): full reinstall"
+    if ni - li:
+        return f"new DLL dependency {', '.join(sorted(ni - li))}: full reinstall"
+    return ""
+
+
 def status(mod_manifest, kpm_map, live, game):
     man = tomllib.load(open(mod_manifest, "rb"))["patch"]
     pid, ver, src = man["id"], man.get("version", "?"), mod_manifest.parent
@@ -173,6 +190,9 @@ def status(mod_manifest, kpm_map, live, game):
     kn, ln = norm_hooks(khooks), norm_hooks(live[pid].get("hooks", []))
     if kn != ln:
         return {**row, "verdict": "REINSTALL", "detail": f"hooks kpatch {len(kn)} vs live {len(ln)}, {len(set(kn) - set(ln))} differ (address/bytes/function/params)"}
+    chg = dll_link_change(kdll, dll.read_bytes())
+    if chg:
+        return {**row, "verdict": "REINSTALL", "detail": chg}
     if dll.stat().st_mtime > kp_m:
         return {**row, "verdict": "LIVE-OTHER", "detail": "live DLL newer than kpatch (other build)"}
     return {**row, "verdict": "SWAP", "detail": kp.name}
