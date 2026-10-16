@@ -551,6 +551,37 @@ void paintLeader(uintptr_t hud, const Draw* d, int nd, DWORD age, const K2PsCont
     }
 }
 
+// QL10/QL11 detach (handoff_detach_held): round nodes held OUT of the engine's list (data pointers only; the nodes stay alive, nobody frees them).
+struct Detached { uint32_t ptr[qh::kMaxRound] = {}; qh::RNode rn[qh::kMaxRound]; int n = 0; DWORD at = 0; };   // rn: copies for the icon draw (QL11)
+Detached g_detached[3];
+constexpr DWORD kDetachMaxMs = 600000;
+
+// QL11: the vanilla combat queue panel cannot show a round node that handoff_detach_held holds out of the list. Draw it as one more (dimmed, waiting)
+// slot on the next unused vanilla slot control, with the icon resolved from the node exactly like a round-list slot (the queue's 0x3F entry + the node).
+void drawDetachedSlots(uintptr_t hud, const Snapshot& s, int nVanilla, DWORD now) {
+    const Detached& d = g_detached[0];
+    static uint32_t lastSig = 0;
+    if (d.n == 0 || !s.round) { lastSig = 0; return; }
+    int ci = -1;
+    for (int i = 0; i < s.engineNe && i < qh::kMaxEntries; ++i) if (s.e[i].type == qh::T_COMBAT) { ci = i; break; }
+    if (ci < 0) return;
+    gui2d::CapGuard capGuard;
+    int idx = nVanilla, drawn = 0;
+    uint32_t sig = 0x51u;
+    for (int i = 0; i < d.n && idx < qh::kMaxSlots; ++i) {
+        if (!qh::nodeIconValid(qh::T_COMBAT, d.rn[i].subType)) continue;
+        char rr[17] = {};
+        if (!resolveIcon(hud, s.round, s.e[ci], s.eData[ci], d.rn[i].ptr, qh::nodeKey(d.rn[i]), now, rr)) continue;
+        const uintptr_t ctl = hud + HudSlotBase + static_cast<uintptr_t>(idx) * HudSlotStride;
+        int x = 0, y = 0, w = 0, h = 0;
+        if (!guikit::getExtent(ctl, &x, &y, &w, &h) || w < 1 || h < 1 || w > 2000 || h > 2000) continue;
+        drawSlot(x, y, w, h, qh::slotStyle(g_cfg, idx, true), guikit::imageFor(rr));
+        sig = sig * 131u + d.rn[i].ptr + static_cast<uint32_t>(idx);
+        ++idx; ++drawn;
+    }
+    if (drawn > 0 && sig != lastSig) { lastSig = sig; QLOG(chDraw, "detached icons drawn=%d first_slot=%d", drawn, nVanilla); }
+}
+
 // The leader's panel over the hidden vanilla slots (unchanged from 0.1.0). The caller already checked enabled / combat / menu / stale / hud.
 void drawLeader(uintptr_t hud, DWORD now, DWORD age, const K2PsContext* ctx) {
     Snapshot s;
@@ -562,6 +593,7 @@ void drawLeader(uintptr_t hud, DWORD now, DWORD age, const K2PsContext* ctx) {
     const bool hardCombat = g_combat != 0 && !g_softCombat;   // soft combat (ally-only targets) draws the strip like out of combat
     if (!qh::shouldShow(g_cfg.enabled, hardCombat, ctx->inMenu != 0, age, n)) {
         if (n == 0 && held.nd > 0 && qh::panelHold(held.tick, now, ctx->inMenu != 0, hardCombat)) { paintLeader(hud, held.d, held.nd, age, ctx); return; }
+        if (hardCombat && ctx->inMenu == 0 && age < 250u) drawDetachedSlots(hud, s, n, now);
         noteHidden(g_combat != 0 ? "combat" : "empty queue");
         return;
     }
@@ -952,10 +984,6 @@ Handoff g_handoff[3];
 struct RoundOrder { uint32_t foreign[qh::kMaxRound] = {}; int n = 0; DWORD armedAt = 0; };
 RoundOrder g_roundOrder[3];
 constexpr DWORD kRoundOrderMaxMs = 600000;   // safety net; normally disarmed as soon as no foreign node is pending
-// QL10 detach (handoff_detach_held): round nodes held OUT of the engine's list (data pointers only; the nodes stay alive, nobody frees them).
-struct Detached { uint32_t ptr[qh::kMaxRound] = {}; int n = 0; DWORD at = 0; };
-Detached g_detached[3];
-constexpr DWORD kDetachMaxMs = 600000;
 // Round-list watch: 15 s after each hand-off dispatch, roundWatchTick logs the member's round / cur / entry state on change only.
 DWORD g_roundWatchUntil[3] = {};
 DWORD g_lastClickTick = 0;   // last left-button press edge (any frame, trace on or off); a head that vanishes right after one was cancelled, not wiped
@@ -1259,7 +1287,7 @@ void detachRound(int k, uintptr_t srv, const Snapshot& s, DWORD now, const char*
     for (; popped < s.nrn; ++popped) { got[popped] = pop(w); if (got[popped] == 0) break; }
     bool ok = popped == s.nrn;
     for (int i = 0; i < s.nrn && ok; ++i) ok = got[i] == s.rn[i].ptr;
-    if (ok) { for (int i = 0; i < s.nrn; ++i) d.ptr[i] = got[i]; d.n = s.nrn; d.at = now; }
+    if (ok) { for (int i = 0; i < s.nrn; ++i) { d.ptr[i] = got[i]; d.rn[i] = s.rn[i]; } d.n = s.nrn; d.at = now; }
     else for (int i = 0; i < popped; ++i) if (got[i]) push(w, got[i]);   // put it back exactly as it was
     traceDetach(k, s.nrn, "detach", ok, why);
 }
