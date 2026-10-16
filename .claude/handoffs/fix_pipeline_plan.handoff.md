@@ -1,20 +1,19 @@
 # Session Handoff & Plan State: .claude/plans/fix_pipeline_plan.md
 
 ## 0. Next-Phase Direction
-Migrate to kplog.h:  load_hang_probe_src (0.1.4): 5 raw fopen sites in LoadHangProbe.cpp.
+migrate k1_spawn_probe_src to KpLog.h (3 raw fopen sites, LIVE 0.3.2-probe) and the inventory-sort-filter leftover truncate (InventorySortFilter.cpp:436) in parallel
 
 ## 1. Active State & Provenance
 - **Master Plan:** `.claude/plans/fix_pipeline_plan.md`
-- **Branch:** `KOTOR-II` (abe262d PLAY_TEST_QUEUE: companion-ai KpLog follow-up rows CAI-PT1..3; handoff with open review findings 3-6)
-- **Generated:** 2026-10-16 12:30:43 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (229ed69 PLAY_TEST_QUEUE: LHP-PT1 load-hang-probe 0.1.5 live log check)
+- **Generated:** 2026-10-16 14:10:39 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-abe262d PLAY_TEST_QUEUE: companion-ai KpLog follow-up rows CAI-PT1..3; handoff with open review findings 3-6
- .claude/handoffs/fix_pipeline_plan.handoff.md | 5 +++++
- patch_manager_mods/PLAY_TEST_QUEUE.md         | 3 +++
- 2 files changed, 8 insertions(+)
+229ed69 PLAY_TEST_QUEUE: LHP-PT1 load-hang-probe 0.1.5 live log check
+ patch_manager_mods/PLAY_TEST_QUEUE.md | 1 +
+ 1 file changed, 1 insertion(+)
 ```
-- **Dirty Files (166):**
+- **Dirty Files (167):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/33_ui_queue_hotbar_fixes.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
@@ -25,7 +24,7 @@ abe262d PLAY_TEST_QUEUE: companion-ai KpLog follow-up rows CAI-PT1..3; handoff w
   - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
   - ` M .claude/plans/swarm_library_architecture.md`
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
-  - ... +156 more (run `git status --short`)
+  - ... +157 more (run `git status --short`)
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume .claude/plans/fix_pipeline_plan.md`.
@@ -74,3 +73,8 @@ abe262d PLAY_TEST_QUEUE: companion-ai KpLog follow-up rows CAI-PT1..3; handoff w
 - Gate update 10-16: after d03e67c (holster TSV dates) the first re-run failed on `wine:probe14` (smoke checked the `0.1.4 loaded` line; bumped to 0.1.5 in `smoke_probe14.cpp`) and then on `test_override_watch.py` (inotify merges identical unread events, so two back-to-back reads raced the watcher; 0.1s gap added). **`pre_install_gate.sh --mod load_hang_probe_src` now GATE PASS** (313 default tests, 39 wine, probe11/12/14). The probe14 pass also exercised the old-core fallback path: `hangprobe_log.txt` got the early `loaded` line.
 - **load-hang-probe 0.1.5 INSTALLED 2026-10-16 13:28** (user GO "install"): hot-swap/ship refuse NOT-LIVE ids, so the KPM mirror + `create-patch.py` ran via `kpm_hotswap.mirror/run_create_patch` (KPM stale kpatch 1.4.1 from 10-01 kept as `.lhp015_pre.bak`; KPM commit e54ad8b), then `kpm_reinstall.py --mod load-hang-probe` (46 patches applied, holster peer DLL 302eaba4 restored). `kpm_status`: LIVE fadc1aa8/fadc1aa8. Backups: `backups/load-hang-probe_reinstall_20261016_132844` (rollback: `kpm_reinstall.py --rollback <dir>`), `kplog.ini.bak_loadhang_20261016`; `[load-hang-probe] enabled=1 level=info channels=*` appended to kplog.ini. `hangprobe_debug.txt` (empty, from 10-01) already existed: probe is ACTIVE (log only, fix off, file-I/O capture on). Holster now reports LIVE-OTHER (was SWAP) with the same md5 pair: its DLL was restored, not reverted.
 - Pending: live log check after the next play session (`kotor2_logs.py check load-hang-probe_log.txt --new`; expect `T=.. f=- load-hang-probe/main f.. load-hang-probe 0.1.5 loaded` first, then IAT hooks line, no `[...]` cuts). Caveat: the Steam exe's old `hangprobe_log.txt` (2.8 MB, 10-02) stays as is.
+
+## Next batch: k1_spawn_probe_src KpLog + inventory-sort-filter truncate (2026-10-16, planned)
+- User decisions: migrate k1-spawn-probe (LIVE 0.3.2-probe, 3 raw fopen: `writeLine` :58, `DllEnv::openLog` :102, `dumpBlock` :120) and, in parallel, **delete only** the `fopen("inventory_sort_filter_log.txt","w")` truncate at `InventorySortFilter.cpp:436` (sessions then split on the `inventory-sort-filter 0.2.0 loaded` line; NO KPatchInit/export change, stays hot-swappable; mod stays fallback-only because it never calls KpLog_Init).
+- k1-spawn-probe facts: `KPatchInit` is already exported (no export change => hot-swappable); log name `k1-spawn-probe_log.txt` equals the core file name (same file either way); `ClientCore.h` `LogBudget` (3000/2500 lines per process) + `Env` (`line/openLog/closeLog/flush`) stay; dump rows are 16 dwords (~170 B < 232). `logfKind` buf is 1024 B so ADDTOAREA lines can exceed the 232-byte core cut: split like load-hang-probe `emit()` (220 B pieces, `+ ` continuation). Logging before `KpLog_Init` (KPatchInit's first `logf`) must come after `KpLog_Init(api)`; DllMain only calls DisableThreadLibraryCalls. Doc 38 line 237 gives the play check (`204tel` save, mouse droid + "K1 Probe Citizen").
+- Gate lessons from load-hang-probe: bumping a version string breaks the Wine smoke that greps it (grep `smoke_*.cpp`/`smokes.toml` for the old version before the gate); `test_override_watch.py` race fixed (4b05287). `kpm_hotswap`/`kpm_ship` refuse NOT-LIVE ids; LIVE mods use `kpm_hotswap --prepare` then `--apply` (needs GO, game closed).
