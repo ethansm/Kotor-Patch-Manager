@@ -1,36 +1,43 @@
 # Session Handoff & Plan State: patch_manager_mods/40_npc_behaviour_variety.md
 
 ## 0. Next-Phase Direction
-V2b play checks (user): Run 1 then Run 2; harvest logs; then NB1
+NB1 installed? needs npc-diversity full reinstall (exports changed, widen kpm_reinstall) + user GO; else NB2 animation
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/40_npc_behaviour_variety.md`
 - **Waves:** .claude/waves/w10-40-V1/
-- **Branch:** `KOTOR-II` (eacad71 docs(40): T35 install result (npc-world + probe + k1 0.3.0 live))
-- **Generated:** 2026-10-14 17:19:54 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (f3a54f2 feat(npc-diversity:NB1): per-visit salt from npc-world VisitSalt (soft client, KPatchInit export), 0.1.7-probe, host tests)
+- **Generated:** 2026-10-15 23:48:12 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-eacad71 docs(40): T35 install result (npc-world + probe + k1 0.3.0 live)
- patch_manager_mods/40_npc_behaviour_variety.md | 5 +++++
- 1 file changed, 5 insertions(+)
+f3a54f2 feat(npc-diversity:NB1): per-visit salt from npc-world VisitSalt (soft client, KPatchInit export), 0.1.7-probe, host tests
+ patch_manager_mods/40_npc_behaviour_variety.md     | 11 ++-
+ .../npc_diversity_src/DiversitySaltSource.h        | 20 +++++
+ .../npc_diversity_src/NpcDiversityDispatcher.cpp   | 39 +++++++---
+ .../npc_diversity_src/common_contract_test.cpp     | 16 ++++
+ .../diversity_salt_source_test.cpp                 | 88 ++++++++++++++++++++++
+ patch_manager_mods/npc_diversity_src/exports.def   |  1 +
+ patch_manager_mods/npc_diversity_src/manifest.toml |  2 +-
+ patch_manager_mods/npc_diversity_src/test.toml     |  3 +
+ 8 files changed, 168 insertions(+), 12 deletions(-)
 ```
-- **Dirty Files (154):**
+- **Dirty Files (164):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
-  - ` M .claude/handoffs/24_master_plan_status.handoff.md`
-  - ` M .claude/handoffs/27_companion_selfheal.handoff.md`
   - ` M .claude/handoffs/33_ui_queue_hotbar_fixes.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
-  - ` A .claude/handoffs/40_v2b/k1-spawn-probe_0.2.0_log.txt`
-  - ` A .claude/handoffs/40_v2b/kplog.ini.pre`
+  - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
   - ` M .claude/handoffs/PHASE7_COMMON_MASTER.handoff.md`
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
+  - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
   - ` M .claude/plans/swarm_library_architecture.md`
-  - ... +144 more (run `git status --short`)
+  - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
+  - ` M CLAUDE.md`
+  - ... +154 more (run `git status --short`)
 
 ## 2. Immediate Objective (NB1)
 **Visit salt wiring (V4b): `visit_variety` source = area-entry latch**
 
-Status: TODO
+Status: PARTIAL (HOST BUILD, SECTION 14; INSTALL = FULL REINSTALL OF NPC-DIVERSITY, KPATCHINIT EXPORT ADDED; NEEDS USER GO)
 Task: Visit salt wiring (V4b): `visit_variety` source = area-entry latch
 
 ## 2b. Upcoming Batches in Pipeline
