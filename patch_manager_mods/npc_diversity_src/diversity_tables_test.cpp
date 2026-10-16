@@ -65,6 +65,22 @@ void testGenericAppearanceChecks() {
     expectOnlyIn(1, femaleRows);
     expectOnlyIn(2, twiMaleRows);
     expectOnlyIn(3, twiFemaleRows);
+
+    // Widened to every row: no row matches two generic tables, and each table matches some row.
+    long perTable[4] = {};
+    for (uint16_t app = 0; app < NpcDiversity::APP_COUNT; ++app) {
+        int hits = 0;
+        for (int t = 0; t < 4; ++t) {
+            if (inTable(t, app)) {
+                ++hits;
+                perTable[t]++;
+            }
+        }
+        KT_CHECK(hits <= 1);
+    }
+    for (int t = 0; t < 4; ++t) {
+        KT_CHECK(perTable[t] > 0);
+    }
 }
 
 } // namespace

@@ -12,10 +12,9 @@ using NpcDiversity::SlotFamily;
 
 constexpr uint32_t kDraws = 100000;
 
-// Per-creature hash through the real pipeline (position, objectId, row).
+// Per-creature hash for objectId i + 1 (ids start at 1) on row.
 uint32_t DrawHash(uint32_t i, uint16_t row) {
-    return NpcDiversity::HashCreaturePosition(static_cast<float>(i) * 0.37f,
-                                              static_cast<float>(i) * 0.11f, i, row);
+    return NpcDiversity::HashCreatureId(i + 1u, row);
 }
 
 // True when count / total is within [lo, hi] percent. Prints the observed share on failure.
@@ -197,6 +196,12 @@ void testHashCreaturePosition() {
     KT_CHECK(h1 != NpcDiversity::HashCreaturePosition(12.5f, -34.7f, 42, 190));
     KT_CHECK(h1 != NpcDiversity::HashCreaturePosition(12.5f, -34.8f, 99, 190));
     KT_CHECK(h1 != NpcDiversity::HashCreaturePosition(12.5f, -34.8f, 42, 350));
+}
+
+void testDrawHashObjectIdPlusOne() {
+    KT_CHECK_EQ(DrawHash(0u, 190), NpcDiversity::HashCreatureId(1u, 190));
+    KT_CHECK_EQ(DrawHash(999u, 185), NpcDiversity::HashCreatureId(1000u, 185));
+    KT_CHECK_EQ(DrawHash(kDraws - 1u, 190), NpcDiversity::HashCreatureId(kDraws, 190));
 }
 
 void testQuantizeCoordGuards() {
@@ -831,5 +836,6 @@ int main() {
     testSlots6And9Appear();
     testNeverEqualCurrent();
     testDeterminism();
+    testDrawHashObjectIdPlusOne();
     return kt::Report("diversity_logic_test");
 }
