@@ -70,7 +70,7 @@ int main(int argc, char** argv) {
     CloseHandle(CreateFileA("hangprobe_dump.txt", GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0)); for (int i = 0; i < 260; ++i) { loop(internal); Sleep(16); }
     Sleep(600);
     std::string log = fileText("hangprobe_log.txt");
-    check(log.find("load-hang-probe 0.1.4 loaded") != std::string::npos, "0.1.4 version line");
+    check(log.find("load-hang-probe 0.1.5 loaded") != std::string::npos, "0.1.5 version line");
     bool fgOk = GetForegroundWindow() == w;
     check(log.find("ACTIVATEAPP-ARRIVE(0x40B4AD) hwnd=") != std::string::npos && log.find("wp=00000000 lp=00000000") != std::string::npos, "ACTIVATEAPP arrival logged with wParam/lParam");
     if (fgOk) check(log.find("lp=00000000 fgOurs=1") != std::string::npos && log.find("SYNTHETIC DEACTIVATE while foreground is ours") != std::string::npos, "synthetic-deactivate discriminator (wParam 0, lParam 0, our foreground) flagged");

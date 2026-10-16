@@ -22,6 +22,7 @@ class WatchTest(unittest.TestCase):
             def touch():
                 time.sleep(0.3)
                 (d / "kvjv0001.wav").read_bytes()
+                time.sleep(0.1)   # inotify merges identical unread events; let the watcher drain the first open
                 (d / "kvjv0001.wav").read_bytes()
                 (d / "other.wav").read_bytes()
                 (d / "KVJNEW.lip").write_bytes(b"y")
