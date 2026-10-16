@@ -215,6 +215,21 @@ class TestSelect(SelectFixture):
         self.assertIn("WI-03 P1 S - scripts/gamma.py", out)
 
 
+class TestSelectIds(SelectFixture):
+    def test_ids_pick_named_items_and_skip_xl(self):
+        sizing = self.root / ".claude" / "work_items" / "sizing.tsv"
+        sizing.write_text("id\tsize\nWI-02\tXL\nWI-01\tS\n", encoding="utf-8")
+        kept, out = self.select(ids=["WI-02", "WI-01"], dry_run=True)
+        self.assertEqual(kept, ["WI-01"])
+        self.assertIn("skipped WI-02", out)
+        self.assertIn("WI-01 ", out)
+        self.assertRegex(out, r"WI-01 \S+ S ")  # size comes from sizing.tsv
+
+    def test_unknown_id_is_an_error(self):
+        with self.assertRaises(fws.SelectError):
+            self.select(ids=["WI-99"], dry_run=True)
+
+
 class TestDraftCollect(SelectFixture):
     def test_merges_row_into_items_input(self):
         self.select(top=2)

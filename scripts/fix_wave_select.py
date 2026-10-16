@@ -46,6 +46,8 @@ ROW_COLUMNS = ("id", "kind", "entries", "anchors", "tests", "constraint")
 CANDIDATE_COLUMNS = fwp.COLUMNS + ("why",)
 UNFIT_COLUMNS = ("id", "reason")
 PLAYTEST_COLUMNS = ("id", "playtest")
+SIZING_REL = Path(".claude") / "work_items" / "sizing.tsv"
+SIZES = ("S", "M", "L", "XL")  # XL is never selected: split it first (SIZING_RUBRIC.md)
 UNFIT_PREFIX = "UNFIT:"
 ENTRY_RE = re.compile(r"([^:\s]+)(?::(\d+)-(\d+))?")
 
@@ -163,10 +165,18 @@ def gate_cells(wi, root):
     return ";".join(dict.fromkeys(tests)), ";".join(dict.fromkeys(mods))
 
 
-def prefill_row(wi, group, after, root):
+def load_sizes(root):
+    """{wi_id: S|M|L|XL} from .claude/work_items/sizing.tsv (effort rubric scores); {} when the file is absent."""
+    path = Path(root) / SIZING_REL
+    if not path.is_file():
+        return {}
+    return {r["id"]: r["size"] for r in read_tsv(path) if r.get("size") in SIZES}
+
+
+def prefill_row(wi, group, after, root, size=None):
     tests, mods = gate_cells(wi, root)
     return {
-        "id": wi.id, "kind": "", "size": wi.size or "M", "group": group, "after": after, "fids": "",
+        "id": wi.id, "kind": "", "size": size or wi.size or "M", "group": group, "after": after, "fids": "",
         "write": ";".join(wi.files), "tests": tests, "mods": mods, "entries": "", "anchors": "",
         "constraint": "", "context": f"{wm.WORK_DIR.as_posix()}/{wi.id}.md#Goal", "doc": "",
     }
@@ -202,8 +212,9 @@ def create_draft(root, wr, draft, rows, template, runner):
 
 
 def select(wave, *, root, waves_root, top=DEFAULT_TOP, dry_run=False, claims_dir=None, session=None,
-           wave_runner=None, dirty_fn=None, head_fn=None, template=None):
-    """Pick, claim and pre-fill the candidates, then create the W-draft recon wave. Returns the kept WI ids."""
+           wave_runner=None, dirty_fn=None, head_fn=None, template=None, ids=None):
+    """Pick, claim and pre-fill the candidates, then create the W-draft recon wave. Returns the kept WI ids.
+    `ids` names the candidates (in that order) instead of taking the top ready ones; XL (sizing.tsv) is skipped."""
     check_wave_id(wave)
     if not 1 <= top <= MAX_TOP:
         raise SelectError(f"--top must be between 1 and {MAX_TOP}, got {top}")
@@ -226,14 +237,25 @@ def select(wave, *, root, waves_root, top=DEFAULT_TOP, dry_run=False, claims_dir
         done, parked = st.state_maps()
         live = {w: c.get("locks", []) for w, c in st.all_claims().items()}
         dirty = set(dirty_fn(root))
+        sizes = load_sizes(root)
+        unknown = [w for w in (ids or []) if w not in items]
+        if unknown:
+            raise SelectError(f"unknown WI id(s): {', '.join(unknown)}")
+        pool = [items[w] for w in ids] if ids else list(items.values())
         eligible = []
-        for wi in items.values():
+        for wi in pool:
             if len(eligible) >= top:
                 break
-            if wi.state != "ready" or not wi.files or wi.out_of_repo:
+            if wi.state != "ready" or not wi.files or wi.out_of_repo or sizes.get(wi.id) == "XL":
+                if ids:
+                    print(f"skipped {wi.id}: state {wi.state}, size {sizes.get(wi.id, wi.size)}, "
+                          f"out-of-repo {bool(wi.out_of_repo)}")
                 continue
-            if wm.eligibility(wi, items, done, live, dirty, parked).ok:
+            verdict = wm.eligibility(wi, items, done, live, dirty, parked)
+            if verdict.ok:
                 eligible.append(wi)
+            elif ids:
+                print(f"skipped {wi.id}: {verdict.reason[:100]}")
         if not eligible:
             print("no eligible candidates")
             return []
@@ -257,7 +279,7 @@ def select(wave, *, root, waves_root, top=DEFAULT_TOP, dry_run=False, claims_dir
             rows = []
             for wi in kept:
                 after = ";".join(a for a in wi.after if a in ids)
-                rows.append(prefill_row(wi, groups[wi.id], after, root))
+                rows.append(prefill_row(wi, groups[wi.id], after, root, sizes.get(wi.id)))
             for row in rows:
                 print(f"{row['id']} {items[row['id']].prio} {row['size']} {row['group']} {row['write']}")
             if dry_run:
@@ -389,6 +411,7 @@ def build_parser():
     sel.add_argument("--wave", required=True, metavar="W")
     sel.add_argument("--top", type=int, default=DEFAULT_TOP, help=f"candidates to take, 1..{MAX_TOP} (default {DEFAULT_TOP})")
     sel.add_argument("--dry-run", action="store_true", help="print the candidates; claim and write nothing")
+    sel.add_argument("--ids", help="comma-separated WI ids to take instead of the top ready ones")
     _common(sel)
     dc = sub.add_parser("draft-collect", help="merge drafter rows into items.input.tsv and unfit.tsv")
     dc.add_argument("--wave", required=True, metavar="W")
@@ -403,8 +426,9 @@ def main(argv=None):
     waves_root = Path(args.waves_root).resolve() if args.waves_root else repo_root / fwp.WAVES_REL
     try:
         if args.cmd == "select":
+            ids = [w.strip() for w in args.ids.split(",") if w.strip()] if args.ids else None
             select(args.wave, root=repo_root, waves_root=waves_root, top=args.top, dry_run=args.dry_run,
-                   claims_dir=args.claims_dir)
+                   claims_dir=args.claims_dir, ids=ids)
         else:
             draft_collect(args.wave, root=repo_root, waves_root=waves_root, claims_dir=args.claims_dir)
     except (SelectError, OSError, ValueError, subprocess.SubprocessError) as exc:
