@@ -900,6 +900,18 @@ def test_fix_face_planes_recomputes_float_distance():
     assert flat.coefficient == 0 or abs(flat.coefficient) < 1e-12
 
 
+def test_demote_dangly_clears_only_dangly_nodes():
+    pk = _import_model()
+    cloth = _ns(children=[], skin=None, mesh=None, dangly=_ns(constraints=[1, 2]))
+    skin = _ns(bonemap=[0], bone_indices=tuple(range(16)))
+    body = _ns(children=[cloth], skin=skin, mesh=None, dangly=None)
+    plain = _ns(children=[], skin=None, mesh=None)  # no dangly attribute at all
+    mdl = _tree(body, plain)
+    assert pk.demote_dangly(mdl) == 1
+    assert cloth.dangly is None and body.skin is skin
+    assert pk.demote_dangly(mdl) == 0, "second run must be a no-op"
+
+
 def _import_model():
     spec = importlib.util.spec_from_file_location("k1_port_model_mod", CLI)
     mod = importlib.util.module_from_spec(spec)

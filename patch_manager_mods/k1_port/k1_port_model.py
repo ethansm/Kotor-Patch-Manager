@@ -293,6 +293,23 @@ def fix_face_planes(mdl) -> int:
     return changed
 
 
+def demote_dangly(mdl) -> int:
+    """Turn every danglymesh node (type 0x121) into a plain trimesh; returns the nodes demoted.
+
+    pykotor's writer cannot round-trip dangly data: it writes each constraint as float(type)/1e6 (a placeholder,
+    not the K1 value) and never writes the vertex-position array, so the dangly header's positions pointer is 0.
+    The engine then simulates cloth/hair from garbage; the Juhani play test (10-15, `cloth` + `hair`) rendered
+    huge planes and head artifacts, while Carth and n_commm (no dangly) rendered fine. A plain trimesh keeps
+    the geometry static, which is correct but loses the sway.
+    """
+    demoted = 0
+    for node in walk_nodes(mdl.root):
+        if getattr(node, "dangly", None) is not None:
+            node.dangly = None
+            demoted += 1
+    return demoted
+
+
 def _bounds(points, axes=("x", "y", "z")):
     if not points:
         return None, None
@@ -732,6 +749,10 @@ def convert(args: argparse.Namespace) -> dict:
         mdl.supermodel = sm_mapped_to
     padded_slots = pad_skin_bones(mdl)
     planes_fixed = fix_face_planes(mdl)
+    dangly_demoted = demote_dangly(mdl)
+    if dangly_demoted:
+        warnings.append(f"{dangly_demoted} danglymesh node(s) written as plain trimesh (pykotor cannot write dangly data); "
+                        "cloth/hair will not sway")
     created_dir = not out_dir.exists()
     written: list[Path] = []
     ledger_touched = False
@@ -786,6 +807,7 @@ def convert(args: argparse.Namespace) -> dict:
         "skin_mesh_count": skin_count,
         "bones16_slots_zeroed": padded_slots,
         "face_planes_recomputed": planes_fixed,
+        "dangly_demoted": dangly_demoted,
         "k2_collision_checked": k2_checked,
         "k2_collision": k2_collision,
         "synth_zero_uv": synth,
