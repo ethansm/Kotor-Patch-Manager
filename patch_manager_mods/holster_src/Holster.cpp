@@ -253,7 +253,10 @@ extern "C" void __cdecl HolsterSwap(void* exec) {
 // Only ids in the hold/ready/wield-transition family 0x2710..0x27FF are logged; the resolver runs for every animation in the game.
 static bool animInteresting(uint32_t id) { return (id & 0xFFFFu) >= 0x2710u && (id & 0xFFFFu) <= 0x27FFu; }
 
+static void maybeReload();
+
 extern "C" void __cdecl HolsterAnimResolve(void* self, uint32_t animId) {
+    if (g_probe) maybeReload();   // the resolver runs every frame; the 0x5047B0 handler only on attach events (live test 10-15: GOB lines=12)
     if (!g_onAnim || !animInteresting(animId)) return;
     if (InterlockedIncrement(&g_animPerId[(animId & 0xFFFFu) - 0x2700u]) > 20) return;
     saferead::beginScope();
@@ -317,28 +320,42 @@ extern "C" void __cdecl HolsterGobUpdate(void* beh) {
 }
 
 // Node name of an attach node, no engine call: H = [N+4]; index = [H+4]; owner = [H+8]; t = [owner+0x4C] & 0x7F; t==2 -> table = [owner+0xB8];
-// t==5 -> table = [[owner+0x84]+0xB8]; name = (char*)[table + index*4]. False when any step is unreadable or t is another type.
-static bool nodeIsTarget(uintptr_t node) {
+// t==5 -> table = [[owner+0x84]+0xB8]; name = (char*)[table + index*4]. step = the first failing step (0 = name read), for the PLACENODE log.
+struct NodeInfo { uint32_t t; int step; char name[32]; };
+static bool nodeIsTarget(uintptr_t node, NodeInfo& ni) {
+    ni.t = 0xFFu; ni.step = 1; ni.name[0] = 0;
     const uintptr_t h = rdU32(kSitePlace, node, 0x04);
     if (!h) return false;
+    ni.step = 2;
     const uint32_t index = rdU32(kSitePlace, h, 0x04);
     const uintptr_t owner = rdU32(kSitePlace, h, 0x08);
     if (!owner || index > 0xFFFFu) return false;
-    const uint32_t t = rdU32(kSitePlace, owner, 0x4C) & 0x7Fu;
+    ni.step = 3;
+    ni.t = rdU32(kSitePlace, owner, 0x4C) & 0x7Fu;
     uintptr_t table = 0;
-    if (t == 2) table = rdU32(kSitePlace, owner, 0xB8);
-    else if (t == 5) { const uintptr_t inner = rdU32(kSitePlace, owner, 0x84); table = inner ? rdU32(kSitePlace, inner, 0xB8) : 0; }
+    if (ni.t == 2) table = rdU32(kSitePlace, owner, 0xB8);
+    else if (ni.t == 5) { const uintptr_t inner = rdU32(kSitePlace, owner, 0x84); table = inner ? rdU32(kSitePlace, inner, 0xB8) : 0; }
     if (!table) return false;
+    ni.step = 4;
     const uintptr_t namePtr = rdU32(kSitePlace, table, static_cast<int>(index * 4u));
     if (!namePtr) return false;
-    char name[32];
-    readTag(kSitePlace, reinterpret_cast<const char*>(namePtr), name, sizeof name);
-    return _stricmp(name, g_boneName) == 0;
+    ni.step = 0;
+    readTag(kSitePlace, reinterpret_cast<const char*>(namePtr), ni.name, sizeof ni.name);
+    return _stricmp(ni.name, g_boneName) == 0;
 }
 
-// gameaddr::GobUpdateDependent + 0x44 (H7 site, see hooks.toml H7): runs for EVERY attached behavior right after the engine wrote node N's WORLD pose into gob+0xA4 (vec3) / gob+0xB0 (quat w-first).
-// For the target node (g_boneName) it composes the live-tuned placement onto that pose and writes it back. Needs probe=1 AND bone_test=1 AND place=1;
-// ch_place only gates the PLACE log lines.
+// Refusal reasons of HolsterPlace (live test 10-15: PLACE n=0 with no hint which gate refused). Each reason logs its first 5 hits, then every 500th.
+enum PlaceRefuse : int { PrNull = 0, PrNoHandle, PrNotTarget, PrGobvt, PrReadIn, PrInsaneIn, PrInsaneOut, PrNoWrite, PrCount };
+static const char* const kRefuseName[PrCount] = {"null", "nohandle", "nottarget", "gobvt", "readin", "insanein", "insaneout", "nowrite"};
+static volatile LONG g_refuse[PrCount] = {};
+static void refuse(PlaceRefuse r, uintptr_t g, uintptr_t n, uint32_t vt) {
+    const LONG c = InterlockedIncrement(&g_refuse[r]);
+    if (!g_onPlace || (c > 5 && (c % 500) != 0)) return;
+    if (!KP_ENABLED(chPlace, KPLOG_INFO) || !takeLine()) return;
+    KP_LOG(chPlace, "PLACEREFUSE reason=%s n=%ld gob=%x node=%x gobvt=%x", kRefuseName[r], static_cast<long>(c), static_cast<unsigned>(g),
+           static_cast<unsigned>(n), static_cast<unsigned>(vt));
+}
+
 extern "C" void __cdecl HolsterPlace(void* gob, void* node, void* beh) {
     if (!g_probe) return;
     static volatile LONG s_tid = 0;
@@ -346,33 +363,40 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* node, void* beh) {
     if (!g_boneTest) return;
     static hs::TuneCfg s_tune;
     loadTune(s_tune);
-    if (!s_tune.place || !gob || !node) return;
+    if (!s_tune.place) return;
     saferead::beginScope();
     // Verdict cache keyed on node + gob + the node's name handle [N+4], so a freed and reused address pair is re-resolved.
     struct Ent { uintptr_t node, gob, handle; bool isTarget; };
     static Ent s_cache[128];
     static unsigned s_next = 0;
     const uintptr_t g = reinterpret_cast<uintptr_t>(gob), n = reinterpret_cast<uintptr_t>(node);
+    if (!g || !n) { refuse(PrNull, g, n, 0); return; }
     const uintptr_t h = rdU32(kSitePlace, n, 0x04);
-    if (!h) return;
+    if (!h) { refuse(PrNoHandle, g, n, 0); return; }
     bool isTarget = false, hit = false;
     for (const Ent& e : s_cache)
         if (e.node == n && e.gob == g && e.handle == h) { isTarget = e.isTarget; hit = true; break; }
     if (!hit) {
-        isTarget = nodeIsTarget(n);
+        NodeInfo ni;
+        isTarget = nodeIsTarget(n, ni);
         s_cache[s_next] = {n, g, h, isTarget};
         s_next = (s_next + 1) % 128u;
+        static volatile LONG s_nodeLines = 0;   // one line per newly resolved (node, gob) pair, first 40
+        if (g_onPlace && InterlockedIncrement(&s_nodeLines) <= 40 && KP_ENABLED(chPlace, KPLOG_INFO) && takeLine())
+            KP_LOG(chPlace, "PLACENODE node=%x gob=%x t=%u step=%d name=%s target=%d", static_cast<unsigned>(n), static_cast<unsigned>(g), ni.t, ni.step,
+                   ni.name[0] ? ni.name : "-", isTarget ? 1 : 0);
     }
-    if (!isTarget) return;
+    if (!isTarget) { refuse(PrNotTarget, g, n, 0); return; }
     const uint32_t vt = rdU32(kSitePlace, g, 0);
-    if (g_placeGobvt != 0 && vt != g_placeGobvt) return;
+    if (g_placeGobvt != 0 && vt != g_placeGobvt) { refuse(PrGobvt, g, n, vt); return; }
     hs::Pose in;
-    if (!saferead::readAt(kSitePlace, g, 0xA4, &in) || !hs::poseSane(in)) return;
+    if (!saferead::readAt(kSitePlace, g, 0xA4, &in)) { refuse(PrReadIn, g, n, vt); return; }
+    if (!hs::poseSane(in)) { refuse(PrInsaneIn, g, n, vt); return; }
     hs::Placement pl;
     for (int i = 0; i < 3; ++i) { pl.pos[i] = s_tune.off[i]; pl.rotDeg[i] = s_tune.rot[i]; }
     const hs::Pose out = hs::applyPlacement(in, pl);
-    if (!hs::poseSane(out)) return;
-    if (!saferead::probeWrite(kSitePlace, reinterpret_cast<void*>(g + 0xA4), sizeof(hs::Pose))) return;
+    if (!hs::poseSane(out)) { refuse(PrInsaneOut, g, n, vt); return; }
+    if (!saferead::probeWrite(kSitePlace, reinterpret_cast<void*>(g + 0xA4), sizeof(hs::Pose))) { refuse(PrNoWrite, g, n, vt); return; }
     memcpy(reinterpret_cast<void*>(g + 0xA4), &out, sizeof(hs::Pose));
     if (!g_onPlace) return;
     const LONG c = InterlockedIncrement(&g_placeCalls);
@@ -414,6 +438,12 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     addName(names, sizeof(names), g_onPlace, "place");
     KP_LOG(chMain, "holster 0.1.0-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
            names[0] ? names : "none", static_cast<long>(g_maxLines), g_gobEvery, k2addr::get() ? "ok" : "none");
+    {
+        hs::TuneCfg t;
+        loadTune(t);
+        KP_LOG(chMain, "TUNE boot place=%d rot=(%.1f,%.1f,%.1f) off=(%.3f,%.3f,%.3f) gobvt=%x bone=%s", t.place ? 1 : 0, t.rot[0], t.rot[1], t.rot[2],
+               t.off[0], t.off[1], t.off[2], static_cast<unsigned>(g_placeGobvt), g_boneName);
+    }
     applyBoneTest();
 }
 

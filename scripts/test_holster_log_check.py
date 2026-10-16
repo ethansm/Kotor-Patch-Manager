@@ -421,5 +421,23 @@ class MainFactTests(unittest.TestCase):
         st = self._status(["TID gobupdate=1", "TID place=2"])
         self.assertIn("(DIFFERENT threads)", st)
 
+
+class PlaceDiagTests(unittest.TestCase):
+    def test_refuse_node_tune_summarised(self):
+        lines = ["TUNE boot place=1 rot=(0.0,0.0,0.0) off=(0.000,0.000,0.000) gobvt=0 bone=pelvis_g",
+                 "PLACEREFUSE reason=nottarget n=1 gob=1 node=2 gobvt=0", "PLACEREFUSE reason=nottarget n=5 gob=1 node=2 gobvt=0",
+                 "PLACEREFUSE reason=nohandle n=2 gob=1 node=2 gobvt=0",
+                 "PLACENODE node=2 gob=1 t=2 step=0 name=rhand target=0", "PLACENODE node=3 gob=1 t=9 step=3 name=- target=0"]
+        _, _, main = H.parse_lines(list(enumerate(lines, 1)))
+        out = H._place_diag(main)
+        self.assertEqual(out[0], "TUNE boot place=1 rot=(0.0,0.0,0.0) off=(0.000,0.000,0.000) gobvt=0 bone=pelvis_g")
+        self.assertEqual(out[1], "PLACEREFUSE (n>=): nottarget=5, nohandle=2")
+        self.assertTrue(out[2].startswith("PLACENODE distinct=2: "))
+        self.assertIn("t=2 step=0 name=rhand target=0 x1", out[2])
+
+    def test_old_log_has_no_diag_lines(self):
+        _, _, main = H.parse_lines([(1, "COMB creature=1 old=0 new=1 edge=1")])
+        self.assertEqual(H._place_diag(main), [])
+
 if __name__ == "__main__":
     unittest.main()

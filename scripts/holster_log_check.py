@@ -67,6 +67,9 @@ MAIN_RES = {
     "bonetest": re.compile(r"\bBONETEST (patched|refused)\b"),
     "tid": re.compile(r"\bTID (gobupdate|place)=(\d+)"),
     "reload": re.compile(r"\bRELOAD (place=\d .*)$"),
+    "tune": re.compile(r"\bTUNE boot (place=\d .*)$"),
+    "refuse": re.compile(r"\bPLACEREFUSE reason=(\w+) n=(\d+)"),
+    "node": re.compile(r"\bPLACENODE node=\w+ gob=\w+ t=(\d+) step=(-?\d+) name=(\S+) target=(\d)"),
 }
 
 
@@ -99,7 +102,7 @@ def _record(kind, n, m):
 def parse_lines(window):
     """window: [(line_no, raw)] -> (records in log order, skipped [(line_no, kind, text)], main facts)."""
     recs, skipped = [], []
-    main = {"loaded": [], "cap": [], "bonetest": Counter(), "unreadable": 0, "tid": {}, "reload": []}
+    main = {"loaded": [], "cap": [], "bonetest": Counter(), "unreadable": 0, "tid": {}, "reload": [], "tune": [], "refuse": {}, "node": Counter()}
     for n, raw in window:
         text = raw.strip()
         m = MAIN_RES["loaded"].search(text)
@@ -117,6 +120,15 @@ def parse_lines(window):
         m = MAIN_RES["reload"].search(text)
         if m:
             main["reload"].append(m.group(1))
+        m = MAIN_RES["tune"].search(text)
+        if m:
+            main["tune"].append(m.group(1))
+        m = MAIN_RES["refuse"].search(text)
+        if m:
+            main["refuse"][m.group(1)] = max(main["refuse"].get(m.group(1), 0), int(m.group(2)))
+        m = MAIN_RES["node"].search(text)
+        if m:
+            main["node"]["t=%s step=%s name=%s target=%s" % m.groups()] += 1
         k = KIND_RE.search(text)
         if k is None:
             continue
@@ -286,9 +298,23 @@ def _place(recs):
     return out
 
 
+def _place_diag(f):
+    """TUNE boot, PLACEREFUSE (highest n seen per reason; the DLL logs the first 5 then every 500th) and PLACENODE verdicts. Empty for old logs."""
+    out = []
+    if f.get("tune"):
+        out.append("TUNE boot %s" % f["tune"][-1][:90])
+    if f.get("refuse"):
+        out.append("PLACEREFUSE (n>=): " + ", ".join("%s=%d" % kv for kv in sorted(f["refuse"].items(), key=lambda kv: -kv[1])))
+    if f.get("node"):
+        top = f["node"].most_common(5)
+        out.append("PLACENODE distinct=%d: %s" % (len(f["node"]), "; ".join("%s x%d" % kv for kv in top)))
+    return out
+
+
 def render(recs, skipped, main_facts, nlines, meta):
     has_place = any(r["kind"] == "PLACE" for r in recs) or any(k == "PLACE" for _, k, _ in skipped)
     out = ["HOLSTER lines=%d parsed=%d skipped=%d%s" % (nlines, len(recs), len(skipped), meta), _status(main_facts)]
+    out += _place_diag(main_facts)
     comb = _comb(recs)
     un = main_facts.get("unreadable", 0)
     if un:
