@@ -299,3 +299,9 @@ Rig: the npc-world hook spawns UTC `k1p_juhani` (appearance 818, heads 249, Text
 - **Sway:** unconfirmed, she stands in the idle pose. Offline: hair dangly 234 constraints (138 = 0, max 220, mean 83), displacement 0.125, tightness 1.75, period 7.0 (K1 values; K2 vanilla displacement 0.015-0.045, so hers may swing wider); cloth 27 constraints (12 = 0). Valid data in the vanilla value range. Queued as `JUH-PT1` in `PLAY_TEST_QUEUE.md` (needs her to move or the camera to turn; never blocks).
 - **Next:** Batch 2 live audio tests (runbook `kvoice/V-D_JUHANI_RUNBOOK.md`, user GO per test) and Batch 3 pykotor dangly writer fix (offline).
 
+
+## 23. Juhani dialog audio (T1/T1b, 2026-10-16)
+
+- T1 (Override only): 3-line test dialog `kvjdlg01` ran, text and animation OK, no audio; engine never opened the wavs from `Override`, but read both `.lip` files (corrupt tolerated).
+- T1b (wavs in flat `StreamVoice/`): voice heard on all 3 lines; lips still read from `Override`.
+- Bundle rule: voice wav in `StreamVoice/`, lip in `Override/`, dialog and UTC in `Override/`. K1 audio stays local (doc 41 section 5). Bundle design swarm: `.claude/waves/w14-juhani-bundle/SYNTHESIS.md` (local). Details: doc 41 section 6.
