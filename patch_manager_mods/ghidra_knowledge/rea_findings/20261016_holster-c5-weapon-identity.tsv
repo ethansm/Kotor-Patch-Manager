@@ -1,18 +1,18 @@
 addr	kind	name	confidence	evidence	topic	date
-0x00458b70	function	FUN_00458b70 Gob ctor (name param, Gob::vftable)	confirmed	procedure_pseudo_code 0x458bd6 (FUN_00458b70): *in_ECX = Gob::vftable;	holster-C5-7751f7d8	20261016
-0x00458b70	field	Gob+0x64 inline char name (object tag, not pointer)	confirmed	pseudo 0x458bd6: FUN_0091cff0(in_ECX+0x19,local_58); pseudo 0x458ae0 stricmp(entry+100)	holster-C5-7751f7d8	20261016
-0x00458ae0	function	FUN_00458ae0 Gob name registry binary search	confirmed	procedure_pseudo_code 0x458ae0: __stricmp((char *)(*(int *)(DAT_00a1ff9c + iVar2 * 4) + 100),param_1)	holster-C5-7751f7d8	20261016
-0x00462320	function	FUN_00462320 model-based Gob creator (resref lookup FUN_0048e160)	confirmed	procedure_pseudo_code 0x462484 (FUN_00462320): local_24 = FUN_0048e160(param_1);	holster-C5-7751f7d8	20261016
-0x00462320	field	Gob+0x84 = model object pointer	confirmed	procedure_pseudo_code 0x462484: local_7c[0x21] = local_24;	holster-C5-7751f7d8	20261016
-0x00462320	field	model+0x08 used as default Gob name (resref identity GUESS)	probable	procedure_pseudo_code 0x462484: param_2 = (char *)(local_24 + 8);	holster-C5-7751f7d8	20261016
-0x00462320	field	root node owner back-pointer node+0x40 = Gob	confirmed	procedure_pseudo_code 0x462484: *(int **)(local_20[0x26] + 0x40) = local_20;	holster-C5-7751f7d8	20261016
-0x00464500	string	c_FocusGobDummyModel%d model name (Scene, Gob+0x19C)	confirmed	procedure_pseudo_code 0x4646d3 (FUN_00464500): _sprintf(local_38,"c_FocusGobDummyModel%d",DAT_00a20030);	holster-C5-7751f7d8	20261016
-0x0047ecd0	function	FUN_0047ecd0 Camera ctor passes its name to Gob ctor	confirmed	procedure_pseudo_code 0x47ed12 (FUN_0047ecd0): FUN_00458b70(param_1);	holster-C5-7751f7d8	20261016
-0x0045a190	function	FUN_0045a190 Gob dtor (Gob::vftable, Dying event)	confirmed	procedure_pseudo_code 0x45a1bb (FUN_0045a190): *in_ECX = Gob::vftable; FUN_004dd260("Dying",0);	holster-C5-7751f7d8	20261016
-0x0073f530	function	FUN_0073f530 handle resolver wrapper (calls FUN_0078bd80)	confirmed	procedure_pseudo_code 0x73f530 (FUN_0073f530): FUN_0078bd80(param_1);	holster-C5-7751f7d8	20261016
-0x007637e0	function	FUN_007637e0 weapon attach (param_3 creature, param_2 event string)	confirmed	procedure_pseudo_code 0x7637e0: void FUN_007637e0(undefined4 param_1,char *param_2,int *param_3)	holster-C5-7751f7d8	20261016
-0x007637e0	field	creature+0x224 +0x18 u16 baseitem key into FUN_0071b670 WEAPONSCALE (object identity GUESS)	probable	pseudo 0x7637e0: FUN_0071b670(*(undefined2 *)(local_2c[0x89] + 0x18),local_58,&local_40)	holster-C5-7751f7d8	20261016
-0x007637e0	field	slot+0x164 = creature object id in replace path (identity GUESS)	probable	pseudo 0x7637e0: *(int *)(local_44 + 0x164) = local_2c[1];	holster-C5-7751f7d8	20261016
-0x00763b1b	callsite	rhand: EAX=[EBP-0x40] slot, ECX=[EAX+0x14] attach handle; stolen 6 bytes for hook H-A	confirmed	read_bytes 0x763b00 len 48: ...8b45c08b4814898d60ffffff... bytes at 0x763B1B	holster-C5-7751f7d8	20261016
-0x00763b10	callsite	CALL FUN_007ed830 singleton; EAX stored at [EBP-0xC4]	confirmed	read_bytes 0x763b00: e81b9d080089853cffffff at 0x763B10..0x763B1A	holster-C5-7751f7d8	20261016
-0x00763b28	callsite	FLD [EBP-0x3C] scale float feeds rhand attach	confirmed	read_bytes 0x763b00: d945c4d91c246a01 at 0x763B28..0x763B2F	holster-C5-7751f7d8	20261016
+0x00458b70	function	FUN_00458b70 Gob ctor (name param, Gob::vftable)	confirmed	procedure_pseudo_code 0x458bd6 (FUN_00458b70): *in_ECX = Gob::vftable;	holster-C5-7751f7d8	2026-10-16
+0x00458b70	field	Gob+0x64 inline char name (object tag, not pointer)	confirmed	pseudo 0x458bd6: FUN_0091cff0(in_ECX+0x19,local_58); pseudo 0x458ae0 stricmp(entry+100)	holster-C5-7751f7d8	2026-10-16
+0x00458ae0	function	FUN_00458ae0 Gob name registry binary search	confirmed	procedure_pseudo_code 0x458ae0: __stricmp((char *)(*(int *)(DAT_00a1ff9c + iVar2 * 4) + 100),param_1)	holster-C5-7751f7d8	2026-10-16
+0x00462320	function	FUN_00462320 model-based Gob creator (resref lookup FUN_0048e160)	confirmed	procedure_pseudo_code 0x462484 (FUN_00462320): local_24 = FUN_0048e160(param_1);	holster-C5-7751f7d8	2026-10-16
+0x00462320	field	Gob+0x84 = model object pointer	confirmed	procedure_pseudo_code 0x462484: local_7c[0x21] = local_24;	holster-C5-7751f7d8	2026-10-16
+0x00462320	field	model+0x08 used as default Gob name (resref identity GUESS)	probable	procedure_pseudo_code 0x462484: param_2 = (char *)(local_24 + 8);	holster-C5-7751f7d8	2026-10-16
+0x00462320	field	root node owner back-pointer node+0x40 = Gob	confirmed	procedure_pseudo_code 0x462484: *(int **)(local_20[0x26] + 0x40) = local_20;	holster-C5-7751f7d8	2026-10-16
+0x00464500	string	c_FocusGobDummyModel%d model name (Scene, Gob+0x19C)	confirmed	procedure_pseudo_code 0x4646d3 (FUN_00464500): _sprintf(local_38,"c_FocusGobDummyModel%d",DAT_00a20030);	holster-C5-7751f7d8	2026-10-16
+0x0047ecd0	function	FUN_0047ecd0 Camera ctor passes its name to Gob ctor	confirmed	procedure_pseudo_code 0x47ed12 (FUN_0047ecd0): FUN_00458b70(param_1);	holster-C5-7751f7d8	2026-10-16
+0x0045a190	function	FUN_0045a190 Gob dtor (Gob::vftable, Dying event)	confirmed	procedure_pseudo_code 0x45a1bb (FUN_0045a190): *in_ECX = Gob::vftable; FUN_004dd260("Dying",0);	holster-C5-7751f7d8	2026-10-16
+0x0073f530	function	FUN_0073f530 handle resolver wrapper (calls FUN_0078bd80)	confirmed	procedure_pseudo_code 0x73f530 (FUN_0073f530): FUN_0078bd80(param_1);	holster-C5-7751f7d8	2026-10-16
+0x007637e0	function	FUN_007637e0 weapon attach (param_3 creature, param_2 event string)	confirmed	procedure_pseudo_code 0x7637e0: void FUN_007637e0(undefined4 param_1,char *param_2,int *param_3)	holster-C5-7751f7d8	2026-10-16
+0x007637e0	field	creature+0x224 +0x18 u16 baseitem key into FUN_0071b670 WEAPONSCALE (object identity GUESS)	probable	pseudo 0x7637e0: FUN_0071b670(*(undefined2 *)(local_2c[0x89] + 0x18),local_58,&local_40)	holster-C5-7751f7d8	2026-10-16
+0x007637e0	field	slot+0x164 = creature object id in replace path (identity GUESS)	probable	pseudo 0x7637e0: *(int *)(local_44 + 0x164) = local_2c[1];	holster-C5-7751f7d8	2026-10-16
+0x00763b1b	callsite	rhand: EAX=[EBP-0x40] slot, ECX=[EAX+0x14] attach handle; stolen 6 bytes for hook H-A	confirmed	read_bytes 0x763b00 len 48: ...8b45c08b4814898d60ffffff... bytes at 0x763B1B	holster-C5-7751f7d8	2026-10-16
+0x00763b10	callsite	CALL FUN_007ed830 singleton; EAX stored at [EBP-0xC4]	confirmed	read_bytes 0x763b00: e81b9d080089853cffffff at 0x763B10..0x763B1A	holster-C5-7751f7d8	2026-10-16
+0x00763b28	callsite	FLD [EBP-0x3C] scale float feeds rhand attach	confirmed	read_bytes 0x763b00: d945c4d91c246a01 at 0x763B28..0x763B2F	holster-C5-7751f7d8	2026-10-16
