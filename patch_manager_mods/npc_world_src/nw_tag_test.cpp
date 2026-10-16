@@ -48,6 +48,17 @@ int main() {
     // 4. a primary pointer to garbage (non-printable bytes) is rejected, fallback is used
     { FakeMem m; m.dw[C + 0x18] = 0x10; m.str[0x10] = std::string("\x01\x02\xff", 3); m.dw[C + 0x24] = 0x1000; m.dw[0x1018] = 0x2000; m.str[0x2000] = "B";
       KT_CHECK(tagOf(m, C, &via) == "B"); KT_CHECK_EQ(int(via), int(nw::TagVia24)); }
+    // 4b. a fallback pointer to garbage is rejected as well: no usable path -> "" and TagNone
+    { FakeMem m; m.dw[C + 0x24] = 0x1000; m.dw[0x1018] = 0x2000; m.str[0x2000] = std::string("\x01\x02\xff", 3);
+      KT_CHECK(tagOf(m, C, &via) == ""); KT_CHECK_EQ(int(via), int(nw::TagNone)); }
+    // 4c. an empty primary string does not end the search: the fallback still supplies the tag
+    { FakeMem m; m.dw[C + 0x18] = 0x10; m.str[0x10] = ""; m.dw[C + 0x24] = 0x1000; m.dw[0x1018] = 0x2000; m.str[0x2000] = "k1p_native_npc";
+      KT_CHECK(tagOf(m, C, &via) == "k1p_native_npc"); KT_CHECK_EQ(int(via), int(nw::TagVia24)); }
+    // 4d. the 32-char cut also holds on the fallback path
+    { FakeMem m; m.dw[C + 0x24] = 0x1000; m.dw[0x1018] = 0x2000; m.str[0x2000] = std::string(40, 'y');
+      KT_CHECK(tagOf(m, C, &via) == std::string(32, 'y')); KT_CHECK_EQ(int(via), int(nw::TagVia24)); }
+    // 4e. an empty fallback string is not a tag either: "" and TagNone (pins the out[0] check on the 0x24 path)
+    { FakeMem m; m.dw[C + 0x24] = 0x1000; m.dw[0x1018] = 0x2000; m.str[0x2000] = ""; KT_CHECK(tagOf(m, C, &via) == ""); KT_CHECK_EQ(int(via), int(nw::TagNone)); }
     // 5. empty string, null pointer, unreadable pointer, nothing at all -> "" and TagNone
     { FakeMem m; m.dw[C + 0x18] = 0x10; m.str[0x10] = ""; KT_CHECK(tagOf(m, C, &via) == ""); KT_CHECK_EQ(int(via), int(nw::TagNone)); }
     { FakeMem m; m.dw[C + 0x18] = 0; KT_CHECK(tagOf(m, C, &via) == ""); KT_CHECK_EQ(int(via), int(nw::TagNone)); }
