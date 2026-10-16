@@ -42,6 +42,8 @@ def _pykotor() -> SimpleNamespace:
     api = pb._pykotor()
     from pykotor.common.language import LocalizedString
     api.LocalizedString = LocalizedString
+    from pykotor.common.misc import ResRef
+    api.ResRef = ResRef
     return api
 
 
@@ -72,16 +74,22 @@ def _read_table(api, game: Path, rel: str) -> tuple[bytes, object]:
 def build(game_dir, out_dir, *, tag: str, label: str, new_row: int, new_head_row: int, body_a: str, body_b: str,
           head: str, soundset: int, gender: int, name: str, utc: str | None = None, texture_var: int = 1,
           template_row: int = TEMPLATE_ROW, module: str = pb.PROBE_MODULE, template_utc: str = pb.PROBE_UTC,
-          expect_appearance: int = pb.PROBE_EXPECT, chain_from=None) -> dict:
+          expect_appearance: int = pb.PROBE_EXPECT, chain_from=None, conversation: str | None = None,
+          soundset_table=None) -> dict:
     """Write the character data files into out_dir. Returns the char_build.json dict. Writes nothing on refusal.
 
     chain_from: a previous package's override dir. Its appearance.2da/heads.2da replace the live tables as the base
     (so --new-row/--new-head-row count on from that package); install that package first. Soundset, module and
-    the template UTC still come from the live game."""
+    the template UTC still come from the live game.
+    conversation: DLG resref for the UTC (default: the template's, e.g. the K2 Ithorian dialog).
+    soundset_table: a soundset.2da file used for the --soundset range check instead of the live one (a staged
+    table with appended rows, installed alongside)."""
     utc = utc or f"k1p_{tag}"
     _check(dict(body_a=body_a, body_b=body_b, head=head, utc=utc, new_row=new_row, new_head_row=new_head_row,
                 template_row=template_row, soundset=soundset, texture_var=texture_var, gender=gender, label=label,
                 name=name))
+    if conversation is not None and not RESREF_RE.fullmatch(conversation):
+        raise BuildError(f"conversation must be 1-16 chars of [a-z0-9_], got {conversation!r}")
     game, out = pb._resolve_dirs(game_dir, out_dir)
     api = _pykotor()
     base = game
@@ -93,7 +101,13 @@ def build(game_dir, out_dir, *, tag: str, label: str, new_row: int, new_head_row
     rel_app, rel_heads = (Path(APPEARANCE_REL).name, Path(HEADS_REL).name) if chain_from else (APPEARANCE_REL, HEADS_REL)
     app_raw, app = _read_table(api, base, rel_app)
     heads_raw, heads = _read_table(api, base, rel_heads)
-    _sraw, sounds = _read_table(api, game, SOUNDSET_REL)
+    if soundset_table is None:
+        _sraw, sounds = _read_table(api, game, SOUNDSET_REL)
+    else:
+        st = Path(soundset_table).expanduser()
+        if not st.is_file():
+            raise BuildError(f"missing soundset table: {st}")
+        sounds = api.read_2da(st.read_bytes())
     if app.get_height() != new_row:
         raise BuildError(f"live appearance.2da has {app.get_height()} rows but --new-row is {new_row}; the table "
                          "changed (another mod added rows?): re-plan with the live count")
@@ -129,11 +143,13 @@ def build(game_dir, out_dir, *, tag: str, label: str, new_row: int, new_head_row
     u.appearance_id, u.texture_variation, u.soundset_id, u.gender_id = new_row, texture_var, soundset, gender
     u.tag = u.resref = utc
     u.first_name = api.LocalizedString.from_english(name)
+    if conversation is not None:
+        u.conversation = api.ResRef(conversation)
 
     files = {"appearance.2da": api.bytes_2da(app), "heads.2da": api.bytes_2da(heads), f"{utc}.utc": api.bytes_utc(u)}
     info = {"tag": tag, "label": label, "appearance_row": new_row, "heads_row": new_head_row, "utc": utc,
             "template_row": template_row, "body_a": body_a, "body_b": body_b, "head": head, "soundset": soundset,
-            "gender": gender, "texture_var": texture_var, "name": name,
+            "gender": gender, "texture_var": texture_var, "name": name, "conversation": str(u.conversation),
             "sha256": {n: pb.sha256_hex(b) for n, b in files.items()},
             "chained_from": None if chain_from is None else str(base),
             "base_sha256": {"appearance.2da": pb.sha256_hex(app_raw), "heads.2da": pb.sha256_hex(heads_raw)}}
@@ -185,6 +201,9 @@ def main(argv=None) -> int:
     ap.add_argument("--chain-from", default=None, metavar="DIR",
                     help="a previous package's override dir: its appearance/heads tables are the base (install it first)")
     ap.add_argument("--out", default=None, metavar="DIR", help="output dir (default <stage>/char_<tag>/override)")
+    ap.add_argument("--conversation", default=None, metavar="RESREF", help="UTC dialog resref (default: the template's)")
+    ap.add_argument("--soundset-table", default=None, metavar="FILE",
+                    help="soundset.2da used for the --soundset range check (default: the live table)")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
     out = args.out or str(DEFAULT_STAGE / f"char_{args.tag}" / "override")
@@ -195,7 +214,7 @@ def main(argv=None) -> int:
                     soundset=args.soundset, gender=args.gender, name=args.name, utc=args.utc,
                     texture_var=args.texture_var, template_row=args.template_row, module=args.module,
                     template_utc=args.template_utc, expect_appearance=args.expect_appearance,
-                    chain_from=args.chain_from)
+                    chain_from=args.chain_from, conversation=args.conversation, soundset_table=args.soundset_table)
     except (BuildError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

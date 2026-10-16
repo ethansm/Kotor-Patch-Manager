@@ -112,6 +112,38 @@ def appends_rows_and_builds_utc(root):
 
 
 @test
+def conversation_and_soundset_table_options(root):
+    from pykotor.resource.generics.utc import read_utc
+    game = make_game(root)
+    base = cb.build(game, root / "base", **KW)
+    check(base["conversation"] != "kvjdlg01", base)
+    # extra row 12 exists only in the staged table
+    extra = root / "sound_table.2da"
+    extra.write_bytes(table(["label"], SOUND_ROWS + 1, lambda i, h: f"S{i}"))
+    kw = dict(KW, soundset=SOUND_ROWS, conversation="kvjdlg01", soundset_table=extra)
+    info = cb.build(game, root / "out2", **kw)
+    u = read_utc((root / "out2" / "k1p_juhani.utc").read_bytes())
+    check(str(u.conversation) == "kvjdlg01" and u.soundset_id == SOUND_ROWS and info["conversation"] == "kvjdlg01", vars(u))
+    u0 = read_utc((root / "base" / "k1p_juhani.utc").read_bytes())
+    check(str(u0.conversation) == base["conversation"], "default must keep the template conversation")
+
+
+@test
+def live_soundset_table_still_bounds_the_row(root):
+    refused(root, "soundset 12", soundset=SOUND_ROWS)  # live table has only 12 rows (0..11)
+
+
+@test
+def bad_conversation_refused(root):
+    refused(root, "conversation must be", conversation="Bad Name")
+
+
+@test
+def missing_soundset_table_refused(root):
+    refused(root, "missing soundset table", soundset_table=root / "nope.2da")
+
+
+@test
 def chain_from_counts_on_from_the_previous_package(root):
     from pykotor.resource.formats.twoda import read_2da
     game = make_game(root)
