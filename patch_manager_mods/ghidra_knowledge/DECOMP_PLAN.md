@@ -11,7 +11,7 @@ Handoff: `.claude/handoffs/DECOMP_PLAN.handoff.md`. Recon: `.claude/research/rea
 | D1 | `rea_session.py` persistent REA MCP client + fake server + live probe (`.claude/research/rea_decomp/D1_probe.md`) | DONE | spec §D1 |
 | D2 | `static_facts.py` ($0 facts, twins) + `batch.py cards --facts` + REVIEWER_BRIEF/DESIGN 4.10 | DONE | spec §D2 |
 | D3 | `rea_facts.py` live-only facts (indirect targets, body ranges, data xrefs) + `rea_questions --residual`; G3 on 46 R1 addrs | DONE | spec §D3 |
-| D4 | `named_decomp.py` named decompile; G4 CSWSCreatureStats (pilot changed, see Decisions) | TODO | spec §D4 |
+| D4 | `named_decomp.py` named decompile; G4 CSWSCreatureStats (pilot changed, see Decisions) | DONE | spec §D4 |
 | D5 | `fn_doc.py` + `persist_purposes.py`; CSWCCreature page + KDB purposes | TODO | spec §D5 |
 | D6 | R2 rebuilt (`--arm facts|facts_rea`), scored; MASTER_PLAN R2/R3 | TODO | spec §D6 |
 | D7 | rea-recon agent v2 + `test_agent_copy.py`; live check on 0x85d260/2d0/320/3d0 | TODO | spec §D7 |
