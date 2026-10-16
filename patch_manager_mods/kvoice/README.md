@@ -37,3 +37,6 @@ R1 RIFF@0 · R2 no RIFF@0x1D6 · R3 header == `build_header()` · R4 frame chain
 
 ## Next
 V-C live probe (E1/E2/E3/E4/E7/E8): needs user GO, a forged save, and the D0 live-run pause lifted. See doc 41 section 6.
+
+## Live lookup observer and Juhani tests
+`python3 scripts/override_watch.py --match <regex> [--log F]` logs every engine OPEN in override/StreamVoice/StreamSounds/lips (inotify, no hook). Juhani dialog/lip/bark live tests: `V-D_JUHANI_RUNBOOK.md` (doc 38 §21).
