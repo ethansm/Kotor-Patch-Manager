@@ -15,7 +15,7 @@ Gates run in the repo root, in this order, and stop at the first failure:
     check_shared_headers.py --sync.
   4 build_check.py --mod <m> --quiet --build-root /tmp/claude-1000/fixwave-<W>-<id>, once per mod. Any failure: exit 5,
     the diff stays applied, and the revert command is printed.
-  5 PASS: state.tsv row '<id>\\tgated\\t', then one close command: WI-NN -> wi_driver.py close --manual; other ids ->
+  5 PASS: state.tsv row '<id>\\tgated\\t', then one close command: WI-NN -> wi_driver.py release && close --manual; other ids ->
     git commit -m "<id>: <constraint>" -- <paths>. Exit 0.
 
 --dry-run runs gate 1 and git apply --check only, prints the planned gates and changes nothing.
@@ -240,7 +240,9 @@ def close_command(row, wave_batch):
     paths = " ".join(shlex.quote(p) for p in write_paths(row))
     if WI_RE.fullmatch(item_id):
         reason = dq(f"{item_id} fix wave {wave_batch}")
-        return f"python3 scripts/wi_driver.py close {item_id} --manual --paths {paths} --reason {reason}"
+        # select claimed the WI as VW-<wave>; close --manual refuses while that claim is live
+        return (f"python3 scripts/wi_driver.py release {item_id} && "
+                f"python3 scripts/wi_driver.py close {item_id} --manual --paths {paths} --reason {reason}")
     text = " ".join((row.get("constraint") or "").split())[:60]
     message = f"{item_id}: {text}" if text else item_id
     return f"git commit -m {dq(message)} -- {paths}"

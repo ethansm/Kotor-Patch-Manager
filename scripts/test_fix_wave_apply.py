@@ -113,7 +113,8 @@ class ApplyTests(ApplyCase):
         self.assertEqual((self.repo / DEMO).read_text(encoding="utf-8"), BASE.replace("bravo", "BRAVO"))
         self.assertEqual(self.state()["WI-12"]["stage"], "gated")
         self.assertEqual(stub.gate_names(), ["run_tests.py", "build_check.py"])
-        self.assertIn("python3 scripts/wi_driver.py close WI-12 --manual --paths " + DEMO +
+        self.assertIn("python3 scripts/wi_driver.py release WI-12 && "
+                      "python3 scripts/wi_driver.py close WI-12 --manual --paths " + DEMO +
                       ' --reason "WI-12 fix wave fx4-A"', out)
         self.assertEqual(out.count("close: "), 1)
 
@@ -257,6 +258,7 @@ class CliAndHelperTests(ApplyCase):
     def test_close_command_forms(self):
         wi = {"id": "WI-12", "write": "demo_src/demo.txt", "constraint": "x"}
         self.assertEqual(fwa.close_command(wi, "fx4-A"),
+                         'python3 scripts/wi_driver.py release WI-12 && '
                          'python3 scripts/wi_driver.py close WI-12 --manual --paths ' + DEMO +
                          ' --reason "WI-12 fix wave fx4-A"')
         other = {"id": "K1-5a-01", "write": "demo_src/demo.txt;_shared_src/Shared.h",
