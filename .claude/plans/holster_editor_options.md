@@ -52,7 +52,7 @@ HE0, HE1, HE2 and HE6 carry over. Options study: `.claude/research/holster_edit/
 
 ## 2. Architecture (new)
 1. **Entry.** Hook the CSWGuiInGameOptions ctor window before `StopLoadFromLayout` (call at 0x008A1704; site and register from D2-B).
-   - Clone one button `BTN_HOLSTER` "Holster placement" from a vanilla `BTN_*` template.
+   - Create `BTN_HOLSTER` "Holster placement" as a button-STYLED LABEL (GuiKit clones labels only, w1 u10): own fill texture + text, hover tint, clicks polled; call `guikit::setVisible(true)` on it (cloned labels start hidden, GuiKit.h:170).
    - Place it in the first free slot below the last vanilla button (measured).
    - Also clone, hidden: the editor labels and the 3D view.
 2. **Editor mode (inside the Options panel).** Clicking `BTN_HOLSTER`:
@@ -93,7 +93,7 @@ HE0, HE1, HE2 and HE6 carry over. Options study: `.claude/research/holster_edit/
 | H-O1 ctor | **0x008A16FE** | `8B 8D 54 FF FF FF` (`MOV ECX,[EBP-0xAC]`, 6 B, no rel32) | panel = `[EBP-0xAC]` | clone button + labels + view |
 | H-O2 per-frame | `CSWGuiPanel::Draw` 0x0040EC90 | — | shared by **every** panel: filter `[ECX] == 0x9A701C` (options vtable) before doing anything | tick |
 | H-O3 input | vtable slot 15 = 0x8A2070 | — | — | optional, for future key handling |
-| H-O4 dtor | **0x8A1930** | 6 B prologue | ECX = panel | free our creature/weapons before the panel's controls go |
+| H-O5 dtor (d2b numbering) | **0x8A1930** | 6 B prologue | ECX = panel | free our creature/weapons before the panel's controls go |
 
 - **Not usable:** the StopLoadFromLayout call at 0x8A1704 (it is a rel32 CALL).
 - **Draw 0x40EC90 is a hot path,** so its handler must exit on a single compare. It may collide with other mods' hooks: check `check_hook_spans` / hud-host, which already detours 0x40F5A0, not 0x40EC90.
@@ -110,6 +110,7 @@ HE0, HE1, HE2 and HE6 carry over. Options study: `.claude/research/holster_edit/
   - Ship a NEW resref `hse_view.gui` (only a `3D_MODEL` control `HSE_VIEW` plus label templates), so it collides with nobody.
   - In H-O1, open it as a second layout, temporarily swap `panel+0x30` (the layout handle `InitControl` 0x40F620 reads), run `createView`/`createLabelFromTemplate` from it, then restore `panel+0x30` and free our handle.
   - **Needs RE (D2e):** the layout open/free functions behind `StartLoadFromLayout` 0x40EE40 (RET 12, `(this,resref,scaleA,scaleB)`) and the handle type; whether `InitControl` scales rects from the panel's own extent.
+- The EXTENT written into the embedded `HSE_VIEW` control is a placeholder; at bind time the editor moves every control to rects measured from the Options panel (setCtlRect), so no pane coordinates are hard-coded.
 - **Route V2 (fallback 2):** a post-install step `scripts/add_options_holster_controls.py` that appends `HSE_VIEW` to whichever `optionsingame_p.gui` is installed (vanilla or ultrawide). It must run after the ultrawide generator and be accepted by its manifest, i.e. a cross-tool contract.
 - **Layout is measured at runtime** from vanilla control rects by tag (GuiKit), so both layouts work.
 
