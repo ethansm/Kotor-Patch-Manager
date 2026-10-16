@@ -70,3 +70,4 @@ _(none recorded; append Dead Ends & Anti-Patterns and Verification Commands here
   - Trap: create-patch.py needs a `*hooks.toml` even for a hookless provider: preview-3d got a metadata-only `kotor2-steam-aspyr.hooks.toml` (`hooks = []`, like gui-input), 7f3eb36.
   - D3a kpatches built: KPM 157eaca (Preview3D) + e09a9e3 (HolsterEditor); GATE PASS head 7f3eb36; `kpm_reinstall.py --mod preview-3d holster-editor --dry-run` clean (48 ids, no peer restore); queue 1c8dd34.
   - Next: user GO (game closed) -> `python3 scripts/kpm_reinstall.py --mod preview-3d holster-editor`; then play rows HW-C6, HE2, D3a.
+- D3a LIVE 10-16 16:57: holster-editor 6368a82a + preview-3d 7384ae1a (48 patches applied, 0 peer restores; rollback `kpm_reinstall.py --rollback batch_reinstall_20261016_165749`). Next: play rows HW-C6, HE2, D3a; then `kotor2_logs.py check <log> --new` and D3b cards.
