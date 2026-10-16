@@ -33,6 +33,7 @@ MODS = REPO / "patch_manager_mods"
 KPM_DEFAULT = pathlib.Path.home() / "Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager"
 GAME_DEFAULT = pathlib.Path.home() / ".steam/steam/steamapps/common/Knights of the Old Republic II"
 CODE_EXT = {".cpp", ".h", ".inc", ".def"}
+ASSET_EXT = {".ini", ".toml", ".tpc", ".mdl", ".mdx", ".2da", ".tga"}  # production assets, incl. code_patches.toml and override/ trees
 ORDER = ["NOT-LIVE", "DIRTY", "MIRROR", "REBUILD", "REINSTALL", "SWAP", "LIVE-OTHER", "LIVE"]
 
 
@@ -45,7 +46,7 @@ def is_production(name):
     p = pathlib.PurePath(name)
     if name == "test.toml" or name.endswith("_test.cpp") or name.startswith("smoke_"):
         return False
-    return p.suffix in CODE_EXT or name == "manifest.toml" or name.endswith(".hooks.toml")
+    return p.suffix in CODE_EXT or p.suffix in ASSET_EXT or name == "manifest.toml" or name.endswith(".hooks.toml")
 
 
 def norm_hooks(hooks):

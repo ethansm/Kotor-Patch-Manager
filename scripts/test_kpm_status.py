@@ -213,9 +213,10 @@ class HelperTest(unittest.TestCase):
         self.assertIsNone(ks.steam_hooks_name(["manifest.toml"]))
 
     def test_is_production(self):
-        for n in ("A.cpp", "A.h", "T.inc", "exports.def", "manifest.toml", "x.hooks.toml"):
+        for n in ("A.cpp", "A.h", "T.inc", "exports.def", "manifest.toml", "x.hooks.toml",
+                  "code_patches.toml", "demo.ini", "a.tpc", "a.mdl", "a.mdx", "a.2da", "a.tga"):
             self.assertTrue(ks.is_production(n), n)
-        for n in ("a_test.cpp", "test.toml", "smoke_a.cpp", "README.md", "code_patches.toml"):
+        for n in ("a_test.cpp", "test.toml", "smoke_a.cpp", "README.md"):
             self.assertFalse(ks.is_production(n), n)
 
 

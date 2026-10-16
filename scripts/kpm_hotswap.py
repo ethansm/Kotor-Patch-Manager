@@ -207,15 +207,26 @@ def live_dll_path(game, live, pid):
 
 # ---------------------------------------------------------------- prepare: mirror + build
 
+MIRROR_SKIP_DIRS = {"__pycache__", "test", "tests", "testdata"}
+
+
 def mirror(src, kd):
-    """Copy only the production files that differ. No --sync, no docs/ini, never Patches/Common."""
+    """Copy the production files that differ, recursing into nested asset trees (override/ etc.).
+    Skips hidden dirs, test-harness dirs and nested mods (a subdir with its own manifest.toml). No --sync, never Patches/Common."""
     copied = []
-    for f in sorted(src.iterdir()):
-        if f.is_file() and ks.is_production(f.name):
-            dst = kd / f.name
+    for root, dirs, files in os.walk(src):
+        dirs[:] = sorted(d for d in dirs if not d.startswith(".") and d not in MIRROR_SKIP_DIRS
+                         and not (Path(root) / d / "manifest.toml").exists())
+        for name in sorted(files):
+            if not ks.is_production(name):
+                continue
+            f = Path(root) / name
+            rel = f.relative_to(src)
+            dst = kd / rel
             if not dst.exists() or dst.read_bytes() != f.read_bytes():
+                dst.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(f, dst)
-                copied.append(f.name)
+                copied.append(rel.as_posix())
     return copied
 
 

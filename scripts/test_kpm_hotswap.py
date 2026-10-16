@@ -261,7 +261,8 @@ class PrepareTest(NewModMixin, Base):
         self.assertEqual(rc, 0, out)
         self.assertEqual(calls, [self.e.kd])
         self.assertEqual((self.e.kd / "Demo.cpp").read_text(), "int y;\n")
-        for n in ("demo_test.cpp", "smoke_demo.cpp", "test.toml", "README.md", "demo.ini"):
+        self.assertEqual((self.e.kd / "demo.ini").read_text(), "i\n")
+        for n in ("demo_test.cpp", "smoke_demo.cpp", "test.toml", "README.md"):
             self.assertFalse((self.e.kd / n).exists(), n)
         self.assertEqual((common.read_bytes(), common.stat().st_mtime), before)
         self.assertTrue(list(self.e.kd.glob("Demo.kpatch.*_pre.bak")))
