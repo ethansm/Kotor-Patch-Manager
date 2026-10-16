@@ -1,7 +1,8 @@
 # Session Handoff & Plan State: patch_manager_mods/38_k1_to_k2_asset_import.md
 
 ## 0. Next-Phase Direction
-T34 harvest 0.2.0 (needs user 'played') then T35 surgical install (user GO, game closed): backup, build 3 kpatches, edit config copy, nwmove_check_config.py, copy DLLs, rollback proven
+10-16 UPDATE (supersedes the T34/T35 line below, those are done): Juhani PLAYED OK in 204tel via npc-world spawn with MDLOps K2 models; see section 6 "10-16 Juhani session" at the end. Next phase = plan after the w13-juhani Haiku recon (dangly, arm pose, animations, audio) lands: restore hair/cloth sway, fix left arm, find the pykotor body-shard cause, Juhani audio test ladder; rollback of the test rig still pending.
+(older) T34 harvest 0.2.0 (needs user 'played') then T35 surgical install (user GO, game closed): backup, build 3 kpatches, edit config copy, nwmove_check_config.py, copy DLLs, rollback proven
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/38_k1_to_k2_asset_import.md`
@@ -93,3 +94,40 @@ Task: Harvest the live 0.2.0 play test (tag path, TextureVar/BodyVariation offse
 - Gate: GATE FAIL 272/275, only `check-raw-addresses` (voice_probe_src/VoiceProbe.cpp:5 0x0068EA70) and `kvoice/test_kvoice_lip.py` fail; both are the voice session's, independently confirmed. Do not call them pre-existing in a commit message without that evidence.
 - Do NOT: install anything or touch `$G` without an explicit user GO and the game closed; `check_shared_headers.py --sync`; edit `npc_world_src/` or `npc_world_probe_src/`; skip the R3 step-6 offline dry run if the full-reinstall route is chosen; run the full gate repeatedly (140 s, shared tree).
 - Verify: `python3 scripts/run_tests.py -k spawn_logic`; `python3 scripts/build_check.py --mod k1_spawn_probe_src --quiet`; peers `-k nw_`, `-k npcworld`, `-k nwprobe`.
+
+## 6. 10-16 Juhani session (self-contained; read this instead of the transcript)
+### Outcome
+Juhani renders correctly in K2 `204tel` (Cathar head with markings, CR textures, body good; left arm held out = MDLOps quirk). Doc 38 section 18 holds the full record (commit 054005a); doc 38 section 17 has the peer's Run 1b (no duplicates after save/reload, npc-world 0.1.1-dev).
+
+### Live state (game dir `$K2` = `~/.local/share/Steam/steamapps/common/Knights of the Old Republic II`)
+- Probe install ACTIVE: manifest `$K2/backups/k1p_probe_20261016_0025/manifest.json`, 9 files in `override/`: `appearance.2da` (3665911e, row 818 appended), `heads.2da` (c5191ec0, row 249), `k1p_juhani.utc` (e15ecacc), MDLOps models `k1p_juhaniba` (5a0db3b4/7e69c046), `k1p_juhanibb` (eafe6d44/02dcc2b9), `k1p_juhanih` (cc804f80/4aa24bae). Base shas for rollback: appearance `44427a35...488b91`, heads `e0f8381c...fb9d`. Saves backed up in the manifest dir (do NOT save in 204tel while installed).
+- 3 CR textures hand-copied (private test, NOT in the probe manifest): `override/k1p_juhaniba01.tga`, `k1p_juhanibb01.tga`, `k1p_juhanih01.tga`; list+shas in `~/Games/KOTOR2_Mod_Workspace/k1_port_stage/char_juhani_test/CR_MANUAL_COPY.txt`. Probe `rollback` does NOT delete them: `rm --` each by explicit path with `"${K2:?}"` first.
+- Rollback = game closed; `rm` the 3 CR files; `python3 patch_manager_mods/k1_port/k1_port_probe.py rollback --game-dir "$K2" --yes`; verify base shas; `override/` keeps `k1p_native_npc.utc` (peer's, leave).
+- DLL: k1-spawn-probe 0.3.2-probe LIVE (roster rows: `c_drdmouse01` pet at -39.0,-63.1; `k1p_native_npc` -21.1,-31.1; `k1p_juhani` -37.5,-63.1; all `204tel`, spawn_cap 4). Source commit 30984d7, KPM commit 1fd8d3a, hot-swap backup `k1-spawn-probe_swap_20261015_145104` (rollback: `kpm_hotswap.py --rollback k1-spawn-probe_swap_20261015_145104`). npc-world 0.1.1-dev and npc-world-probe untouched.
+- Commits this session: 30984d7 (roster row + tests rows=3), fa66d8d (`demote_dangly` in `k1_port_model.py` + test), 054005a (doc 38 s18, PLAN.md HH note, texture_diversity handoff line). Not committed: nothing of mine (the w13-juhani agent outputs are written by Haiku agents; commit them explicitly by path after review).
+
+### Key findings (details doc 38 s18)
+1. pykotor cannot write danglymesh (0x121): placeholder constraints, no positions array. `demote_dangly` makes hair/cloth static plain trimesh in the pykotor path; MDLOps keeps valid dangly headers (positions ptr = constraints ptr + 4 x count, like K2 vanilla).
+2. Displayed body is `modela` (modeltype B, no armor) = `k1p_juhaniba`; `bb` is only its supermodel + head chain.
+3. pykotor-writer `k1p_juhaniba` shreds in game although EVERY static check equals K1 (bonemap, bones16, qbones/tbones, vertex weights, faces, positions, normals, UVs, node order; skeleton rest poses equal K2 `S_Female03`/`p_bastilabb`). Ruled out: bone count (K2 has 203 skins >= 16 bones), 2-level supermodel chains (K2 chains 5 deep), `supernode` values (arbitrary in vanilla), texture alpha, name theory. Cause OPEN. The K1 probe citizen (fixed pykotor `k1p_commm`) renders fine, so the writer is right for that model: do not assume it is broken everywhere.
+4. MDLOps recipe works (doc 38 s18): work dir `~/Games/KOTOR2_Mod_Workspace/mdlops_t7/juhani_run/` (`pass1.sh`, `pass1_more.sh`, `pass2.sh`, `pass2_more.sh`, `work/`, `pass2/`); Proton prefix reused from `mdl_run1/prefix`; ASCII rename via word-boundary regex (a plain double replace produced `k1k1p_`). Stage copies: `~/Games/KOTOR2_Mod_Workspace/k1_port_stage/probe_mdlops_juhani/models/` (adopted into the ledger as `vanilla_k1`).
+5. Wiring facts: modeltype B no armor -> body `modela`, texture `texa` + TextureVar (runtime spawns get TextureVar 1, so `k1p_juhaniba01`); head from heads.2da row 249 (`k1p_juhanih`), head texture `k1p_juhanih01`. Appearance 818/heads 249 are the live row counts +1 at build time (`--new-row` refuses a grown table).
+6. Playtest history: (a) Ithorian-UTC override rig (rolled back); (b) hook spawn with pykotor models: shards + head artifacts; (c) +dangly demote: body still shards; (d) MDLOps body A: body good, head bad; (e) MDLOps ba+bb+h: all good, arm out.
+7. User report: an Ithorian once spawned on the mouse droid and separated on click (likely a vanilla 204tel creature; check the GIT, doc 38 s17 O1).
+
+### Research in flight (Haiku 5.5 recon wave `.claude/waves/w13-juhani/`, launched 10-16, read-only, 5 agents)
+- u01 `u01_dangly_verify.md`: is MDLOps hair/cloth sway data intact vs K1 and K2 vanilla.
+- u02 `u02_dangly_writer_design.md`: smallest pykotor-writer fix to keep dangly (design only).
+- u03 `u03_arm_pose.md`: cause of the held-out left arm (bonemap/bones16 vs animation).
+- u04 `u04_animations.md`: animation names K1 vs K2 chain vs our models; missing ones.
+- u05 `u05_audio_needs.md`: audio inventory + minimal test plan for Juhani (ssf, DLG `k_hjuh_dialog`, VO, lip).
+Contract: `python3 scripts/agent_contract.py check --scope '.claude/waves/w13-juhani/*' -` after the agents return (snapshot taken at launch). Results are NOT yet merged into docs: on return, summarize each in doc 38 new section 19 (research), then update this handoff and the memory file `kotor2-k1-asset-import.md`.
+
+### Audio facts already known (doc 41 s1-2, doc 38 claims 11/12)
+K1 VO wavs are MP3 data in a WAV container in `streamwaves`; K2 StreamVoice uses a 58-byte header + MPEG-1 L3 32 kHz mono 48 kbps and a per-dialog subfolder; dropping K1 wavs in `StreamVoice` does not play (claim 11 refuted). Open: does K2 read voice from `Override` (E1/E2), TLK SoundResRef vs DLG VO_ResRef precedence, `.lip` strictness (E3). K1 Juhani: `k_hjuh_dialog` 1,272 entries+replies, 850 VO refs, 533 wavs, soundset 29 wavs; current UTC soundset is generic female 57. Dialog scripts/plot flags/TLK strrefs are K1-specific (inline text needed). Private use of K1 audio OK, public NO (doc 41 s5).
+
+### Open items after the research lands
+a) restore dangly sway (MDLOps route already keeps it: confirm in game; pykotor route needs the writer fix), b) left-arm pose, c) why pykotor shreds `p_juhaniba`, d) Ithorian-on-droid overlap, e) audio ladder E1-E3 then a 3-line Juhani DLG, f) Carth (same rig, chained tables 819/250), g) T27 roster/persistence policy (npc-diversity/doc 40), h) CR author permission (user sends), i) rollback of this rig when testing ends, j) decide whether the converter should default to the MDLOps route for skinned K1 bodies.
+
+### Resume
+`python3 scripts/plan_manager.py resume patch_manager_mods/38_k1_to_k2_asset_import.md` (never bare). Next dev action: read the five `w13-juhani/u0*.md` findings, then plan mode.
