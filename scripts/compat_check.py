@@ -457,6 +457,15 @@ def check_stale_wine_smokes(plan: Plan, repo_root: Path, kpm_dir: Path) -> tuple
     return stale_map, stale_ids
 
 
+def known_run_test_ids(repo_root: Path) -> set[str]:
+    """Item ids `run_tests.py --list` prints (first token per line); empty set if the listing fails."""
+    proc = subprocess.run([sys.executable, str(repo_root / "scripts" / "run_tests.py"), "--list"], cwd=repo_root,
+                          capture_output=True, text=True, check=False)
+    if proc.returncode != 0:
+        return set()
+    return {ln.split()[0] for ln in proc.stdout.splitlines() if ln.strip()}
+
+
 def print_plan(plan: Plan, why_mode: bool = False, repo_root: Path | None = None, kpm_dir: Path | None = None) -> None:
     """Print the plan actions and reasons matching doc 22 layout."""
     for t in plan.touched:
@@ -972,6 +981,13 @@ def main() -> int:
     try:
         # Separate test and build items
         test_suite_ids = [it.id for it in plan.items if it.kind in ("test", "suite", "wine", "static")]
+        # A cpp test the graph found but run_tests does not register (e.g. research/**/parity/*_test.cpp, run by the
+        # suite:levelup-* suites) would make run_tests exit "no test item matched" with no JSON: drop it, say so.
+        known = known_run_test_ids(repo_root)
+        unknown = {it.id for it in plan.items if it.kind == "test"} - known if known else set()
+        for u in sorted(unknown):
+            print(f"NOTE    {u} is not a run_tests item (covered by its suite, if any); not run")
+        test_suite_ids = [i for i in test_suite_ids if i not in unknown]
         build_mods = plan.builds()
 
         # Check stale wine smokes if wine is enabled
