@@ -659,6 +659,25 @@ inline bool a1Strict(float ax, float ay, float tx, float ty, float maxR) {
 inline bool a1OrphanDue(unsigned now, unsigned endAt, int rethinkMs) {
     return endAt != 0 && now - endAt > static_cast<unsigned>(rethinkMs) + 1000u;
 }
+// WI-125 / R2-CA-03: frozen time (player pause, or a stall in which no hook ran) must not age a pending A1 end. Every companion-ai hook sits in
+// server-side AI/world update, so none is assumed to run during a pause: the gap since the previous clock sample is the evidence. AIUpdate runs per
+// creature per frame while unpaused, so a gap above kA1StallMs means time was frozen. lastClock 0 = no previous sample Only forward gaps count (a backward clock step is never a stall).
+constexpr unsigned kA1StallMs = 1000;
+inline bool a1Frozen(unsigned lastClock, unsigned now, bool paused) {
+    if (lastClock == 0 || now - lastClock > 0x80000000u) return false;   // no sample, or the clock stepped backwards: no usable gap
+    return paused || now - lastClock > kA1StallMs;
+}
+// Shifts a pending end forward by the gap [lastClock, now] when frozen, capped at now (an end set inside the gap restarts at now, age 0).
+// 0 (= none) stays 0; a shifted end is never 0; unsigned math, so wrap-safe. An end that lies after now (clock stepped back) is left alone.
+inline unsigned a1Rebase(unsigned endAt, unsigned lastClock, unsigned now, bool paused) {
+    if (endAt == 0 || !a1Frozen(lastClock, now, paused)) return endAt;
+    unsigned gap = now - lastClock, age = now - endAt;
+    if (age > 0x80000000u) return endAt;
+    unsigned out = age > gap ? endAt + gap : now;
+    return out ? out : 1u;
+}
+// RS hook gate: CompanionAiProbeRunScript returns at once only when the RS probe and the A1X follow-up are both off.
+inline bool rsProbeIdle(bool probeRs, bool probeA1x) { return !probeRs && !probeA1x; }
 
 // Per-(creature, target) event counter inside a sliding window (gap since the last event). Returns true when it (re)started.
 struct PairCount {

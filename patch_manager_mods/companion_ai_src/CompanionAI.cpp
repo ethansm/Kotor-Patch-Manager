@@ -52,10 +52,11 @@
 #include <stdarg.h>
 #include <time.h>
 
-#include "../_shared/SafeRead.h"
+#include "SafeRead.h"
 #include "CompanionAiLogic.h"
 #include "GameAddr.h"
 #include "KpLog.h"
+#include "ActQueue.h"   // actq::playerPaused (WI-125: A1X orphan clock)
 
 KP_LOG_PATCH("companion-ai");
 
@@ -601,6 +602,8 @@ int rarLastType(int id) { for (auto& e : g_rar) if (e.seen && e.id == id) return
 // ---- PARTY: party flag / controlled-creature snapshot
 unsigned g_partyLines = 0;
 DWORD g_lastPartyChk = 0, g_lastOrphan = 0;
+bool g_a1Paused = false; DWORD g_a1PauseAt = 0;   // WI-125: cached player-pause sample and its tick
+DWORD g_a1Clock = 0;   // WI-125: previous a1xClock sample (own clock: g_lastOrphan only moves every 250 ms); 0 = none
 int g_lastCtrl = 0, g_lastCtrlArea = 0;
 bool g_partyLoaded = false;
 
@@ -650,8 +653,26 @@ void partyTick(DWORD now) {
 }
 
 // ---- A1X: follow-up after an A1 end/retarget (a slot-6 run: RS S6A/S6B/S6C or E2) and orphans
+// WI-125 / R2-CA-03: frozen time must not age a pending A1 end. No hook is assumed to run while the player is paused, so the gap since the
+// previous sample (> cai::kA1StallMs) is the main signal; the pause bit covers a hook that does run paused. Idempotent per tick value, so the
+// callers (tick, a1xFollowup) can both call it. A shifted end keeps its age at the previous sample; ORPHAN/FOLLOWUP then count unfrozen ms only.
+static const unsigned SitePause = 20;   // playerPaused reads SitePause..+3; the other companion-ai SafeRead sites are 1-11
+void a1xClock(DWORD now) {
+    DWORD last = g_a1Clock;
+    g_a1Clock = now ? now : 1;
+    if (!g_cfg.probeA1x || !last) return;
+    bool any = false;
+    for (auto& t : g_tr) if (t.id && t.pendingA1) { any = true; break; }
+    if (!any) return;
+    if (!g_a1PauseAt || now - g_a1PauseAt >= 250) { g_a1Paused = actq::playerPaused(SitePause); g_a1PauseAt = now ? now : 1; }   // sampled at most 4x/s (4 guarded reads); only while an end is pending
+    bool paused = g_a1Paused;
+    if (!cai::a1Frozen(last, now, paused)) return;
+    for (auto& t : g_tr)
+        if (t.id && t.pendingA1) t.pendingA1 = cai::a1Rebase(t.pendingA1, last, now, paused);
+}
 void a1xFollowup(int id, const char* site, DWORD now) {
     if (!g_cfg.probeA1x || !id) return;
+    a1xClock(now);   // before the age is read: a paused span must not show up in after=
     for (auto& t : g_tr)
         if (t.id == id) {
             if (t.pendingA1) {
@@ -728,6 +749,7 @@ inline void tick(DWORD now) {
     }
     if (g_cfg.trace && g_cfg.enginePoints && g_cfg.engineVerbose && now - g_lastP1Report >= 1000) { g_lastP1Report = now; reportP1(now); }
     if (g_cfg.probeParty && (g_partyPf || now - g_lastPartyChk >= 1000)) partyTick(now);
+    a1xClock(now);   // WI-125: rebase pending A1 ends over a pause / stall before orphanTick ages them
     if (g_cfg.probeA1x && now - g_lastOrphan >= 250) orphanTick(now);
     spinSweep(now);   // WI-77: END for E1 spins that stopped being seen
 }
@@ -897,8 +919,9 @@ extern "C" void __cdecl AiTraceAttackApproachExit(int ebp) {
 // E2. CSWSCreature::AIUpdate 0x569320 at 0x569A08: +0x520==1, +0x570<=0, alive => the slot-6 script runs now.
 extern "C" void __cdecl AiTraceFallbackFires(int ebp) {
     saferead::beginScope();
-    DWORD now = GetTickCount(); tick(now);
-    if (g_cfg.probeA1x) a1xFollowup(rd<int>(fr<int>(ebp, -0x194), ObId), "E2", now);   // A1X: slot-6 run seen (RS S6B follows)
+    DWORD now = GetTickCount();
+    if (g_cfg.probeA1x) a1xFollowup(rd<int>(fr<int>(ebp, -0x194), ObId), "E2", now);   // A1X: slot-6 run seen (RS S6B follows); before tick() so orphanTick cannot ORPHAN it first
+    tick(now);
     if (!g_cfg.trace || !g_cfg.enginePoints) return;
     int cr = fr<int>(ebp, -0x194);
     int party = rd<int>(cr, CrParty);
@@ -1340,12 +1363,14 @@ extern "C" void __cdecl CompanionAiProbeFm3Remove(int ebp) {
 // RS. RunScript 0x6FD8D0 entry (thiscall; ret = return address, script = CExoString* slot (may be 0), self = OBJECT_SELF id). Only the
 // 7 probed call sites pass the first test; everything else returns after at most 7 compares.
 extern "C" void __cdecl CompanionAiProbeRunScript(int ret, int script, int self) {
-    if (!g_cfg.probeRs) return;
+    if (cai::rsProbeIdle(g_cfg.probeRs, g_cfg.probeA1x)) return;   // probe_rs=0 must not disable the A1X follow-up
     int site = cai::rsSite(static_cast<unsigned>(ret));
     if (!site) return;
     saferead::beginScope();
-    DWORD now = GetTickCount(); tick(now);
-    if (site <= 3) a1xFollowup(self, cai::rsName(site), now);   // slot-6 sites: the A1 end was followed up (before the filter: review N3)
+    DWORD now = GetTickCount();
+    if (site <= 3) a1xFollowup(self, cai::rsName(site), now);   // slot-6 sites: the A1 end was followed up (before the filter: review N3, and before tick() so orphanTick cannot ORPHAN it first)
+    tick(now);
+    if (!g_cfg.probeRs) return;   // probe_rs-only filter: everything below is the RS probe
     ObjInfo o = objInfo(self, now);
     if (!objPasses(o)) return;
     RsTrack* t = rsTrack(self, now);

@@ -170,7 +170,7 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [x] | 154 | WI-122 | P3 | ready | S | - | NPC world tests: nw_tag fallback/out-clearing cases + ADD line format via= in contract tes | 0 | 2 | R2-NW-06: Case 4 only covers non-printable primary with a successful f |
 | [x] | 155 | WI-123 | P3 | ready | S | - | Buff HUD tests: EffectIconRowTable.inc contract checks + tautological size asserts | 0 | 2 | R2-BH-10: Type-0x43 logic, dedupe and bad-row rejection are already te |
 | [x] | 156 | WI-124 | P3 | ready | S | - | NPC diversity tests: HashCreatureId distribution, table coverage, DiversityHeadItems.h C++ | 0 | 3 | R2-ND-12: Header is unincluded by design (PLAN HB: generator + invaria |
-| [ ] | 157 | WI-125 | P3 | ready | S | - | Companion AI: A1X orphanTick pause-aware (false ORPHAN on pause) | 0 | 1 | R2-CA-03: Pause side settled: player pause freezes world timer, dt=0,  |
+| [x] | 157 | WI-125 | P3 | ready | S | - | Companion AI: A1X orphanTick pause-aware (false ORPHAN on pause) | 0 | 1 | R2-CA-03: Pause side settled: player pause freezes world timer, dt=0,  |
 | [x] | 158 | WI-126 | P3 | ready | S | - | Buff HUD: VisSlot stale column state + diagnostic slot table hygiene | 0 | 3 | R2-BH-03: Open Q settled: FUN_00744f00 writes +0xddd = debuffCount (0  |
 | [ ] | 159 | WI-127 | P3 | hold | S | - | NPC diversity: armored descriptors (subType>=3) get row remap while tv withheld | 0 | 1 | R2-ND-02: Row remap runs before the subType>2 tv guard (tvarmor seen 2 |
 | [ ] | 160 | WI-128 | P3 | hold | S | - | Gemini r2 latent hardening: buff-hud (hardcoded Effect offsets, unprobed writes, off-file  | 0 | 2 | R2-BH-01: Hardcoded Effect_Type/IntCount/Ints skip the k2addr zero-mea |

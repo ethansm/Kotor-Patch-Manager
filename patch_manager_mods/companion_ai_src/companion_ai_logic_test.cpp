@@ -380,6 +380,43 @@ static void testProbeHelpers() {
     CHECK(a1OrphanDue(0x00000010u + 5000u, 0xFFFFFFF0u, 3000));   // wrap: 5024 ms later
     CHECK(!a1OrphanDue(0x00000010u + 100u, 0xFFFFFFF0u, 3000));
     CHECK(a1OrphanDue(1002, 1, 0)); CHECK(!a1OrphanDue(1001, 1, 0)); CHECK(!a1OrphanDue(1002, 1, 1000));
+    // a1Rebase (WI-125 / R2-CA-03): frozen time (pause or a stall with no hook running) does not age a pending A1 end
+    CHECK(kA1StallMs == 1000);
+    CHECK(a1Rebase(0, 5100, 10000, false) == 0 && a1Rebase(0, 5100, 10000, true) == 0);                // none stays none
+    CHECK(a1Rebase(5000, 0, 10000, false) == 5000 && a1Rebase(5000, 0, 10000, true) == 5000);          // no previous sample: unchanged
+    // stall / pause gap above rethink+1 s (3000+1000): no ORPHAN, frozen age kept
+    CHECK(a1OrphanDue(10000, 5000, 3000));                                                             // BASE: unshifted end is ORPHAN
+    { unsigned e = a1Rebase(5000, 5100, 10000, false);                                                 // 4900 ms gap, hooks silent
+      CHECK(e == 9900 && !a1OrphanDue(10000, e, 3000));                                                // age at the last sample (100 ms) kept
+      CHECK(!a1OrphanDue(10000 + 3900, e, 3000) && a1OrphanDue(10000 + 3901, e, 3000)); }              // aging resumes after the gap
+    CHECK(a1Rebase(5100, 5100, 60000, false) == 60000);                                                // end set at the last sample: age 0 after a 55 s gap
+    CHECK(a1Rebase(5200, 5100, 10000, false) == 10000);                                                // end set inside the gap: capped at now
+    CHECK(a1Rebase(5000, 9500, 10000, true) == 5500);                                                  // pause bit read on a short gap: that gap is frozen
+    // normal small gaps age normally (existing ORPHAN still fires)
+    CHECK(a1Rebase(5000, 5250, 5500, false) == 5000 && a1Rebase(5000, 5000, 6000, false) == 5000);     // gap 250 and exactly kA1StallMs: unchanged
+    CHECK(a1Rebase(5000, 5000, 6001, false) == 6001);                                                  // gap 1001: stalled
+    { unsigned e = 5000; for (unsigned t = 5250; t <= 9250; t += 250) e = a1Rebase(e, t - 250, t, false);
+      CHECK(e == 5000 && a1OrphanDue(9001, e, 3000) && !a1OrphanDue(9000, e, 3000)); }                // 250 ms ticks: ORPHAN at 4001 ms as before
+    { unsigned e = 5000, prev = 5250;   // hooks running while paused (pause bit set), 250 ms samples
+      for (unsigned t = 5500; t <= 20000; t += 250) { e = a1Rebase(e, prev, t, true); prev = t; CHECK(!a1OrphanDue(t, e, 3000)); }
+      CHECK(e == 19750 && !a1OrphanDue(23750, e, 3000) && a1OrphanDue(23751, e, 3000)); }              // frozen at age 250 for 15 s; aging resumes after the unpause
+    // wrap across 0xFFFFFFFF
+    CHECK(a1Rebase(0xFFFFFF00u, 0xFFFFFF80u, 0x00001000u, false) == 0x00000F80u);                      // gap 0x1080 wraps: age 0x80 kept
+    CHECK(!a1OrphanDue(0x00001000u, a1Rebase(0xFFFFFF00u, 0xFFFFFF80u, 0x00001000u, false), 3000));
+    CHECK(a1OrphanDue(0x00001000u, 0xFFFFFF00u, 0));                                                   // BASE: unshifted wrap end is ORPHAN
+    CHECK(a1Rebase(0xFFFFFF80u, 0xFFFFFF00u, 0x00001000u, false) == 0x00001000u);                      // end set inside a wrapped gap: capped at now
+    // a shift never yields 0 (= none)
+    CHECK(a1Rebase(0xFFFFF000u, 0x00000010u, 0x00001010u, false) == 1u);                               // endAt + gap wraps to exactly 0 -> 1
+    CHECK(a1Rebase(0xFFFFF000u, 0x00000010u, 0x00001010u, false) != 0u);
+    CHECK(a1Rebase(0xFFFFFFF0u, 0xFFFFE000u, 0u, false) == 1u);                                        // stalled, capped at now == 0 -> 1
+    CHECK(a1Rebase(0x7FFFFFFFu, 0x10u, 0x5000u, false) == 0x7FFFFFFFu);                                // end in the future (clock stepped back): untouched
+    // clock stepped backwards (now < lastClock): not a stall, even with the pause bit; pending end unchanged
+    CHECK(!a1Frozen(10000, 5000, false) && !a1Frozen(10000, 5000, true));
+    CHECK(!a1Frozen(0xFFFFFF00u, 0x00000100u, false) && a1Frozen(1, 0x7FFFFFFFu, false) && !a1Frozen(1, 0x80000002u, false));   // small forward wrap: normal; big forward gap: stall; ~2^31+ is backward
+    CHECK(a1Rebase(5000, 10000, 6000, false) == 5000 && a1Rebase(5000, 10000, 6000, true) == 5000);
+    CHECK(a1Rebase(4000, 0x40000000u, 0x10u, false) == 4000);
+    // rsProbeIdle: probe_rs=0 keeps the A1X follow-up alive
+    CHECK(rsProbeIdle(false, false)); CHECK(!rsProbeIdle(false, true)); CHECK(!rsProbeIdle(true, false)); CHECK(!rsProbeIdle(true, true));
     // rarIndex
     CHECK(rarIndex(1, 2) == 7); CHECK(rarIndex(0x47, 4) == 359); CHECK(rarIndex(0x48, 1) == 1); CHECK(rarIndex(5, 9) == 25);
     CHECK(rarIndex(0, 0) == 0 && rarIndex(-3, 4) == 4 && rarIndex(0x47, 0) == 355 && rarIndex(0x47, 5) == 355 && rarIndex(1, -1) == 5);
