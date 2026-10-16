@@ -35,16 +35,21 @@ class Stub:
         if cmd[0] == "git":
             return fwa.run(cmd, cwd)
         self.calls.append(list(cmd))
-        name = Path(cmd[1]).name
+        name = script_name(cmd)
         if name in self.fail:
             return self.fail[name], f"scripted failure: {name}"
         return 0, "PASS"
 
     def gate_names(self):
-        return [Path(c[1]).name for c in self.calls]
+        return [script_name(c) for c in self.calls]
 
     def calls_for(self, name):
-        return [c for c in self.calls if Path(c[1]).name == name]
+        return [c for c in self.calls if script_name(c) == name]
+
+
+def script_name(cmd):
+    """First *.py in argv (gates may start with `env KPM_DIR=...`); `-c` for inline helpers."""
+    return next((Path(str(c)).name for c in cmd if str(c).endswith(".py")), str(cmd[1]))
 
 
 class ApplyCase(unittest.TestCase):
@@ -188,18 +193,43 @@ class ApplyTests(ApplyCase):
         self.assertEqual(stub.gate_names(), ["run_tests.py"])
         self.assertNotIn("WI-12", self.state())
 
-    def test_shared_src_runs_compat_check_and_shared_headers_sync(self):
+    def test_shared_src_syncs_scratch_kpm_not_live(self):
         self.add_item("WI-40", "_shared_src/Shared.h", self.diff_for(SHARED, "int shared = 2;\n"),
                       tests="cpp:guikit_test", mods="demo_src")
         stub = Stub()
         rc, out = self.apply("WI-40", stub)
         self.assertEqual(rc, 0, out)
-        compat = stub.calls_for("compat_check.py")
-        self.assertEqual(len(compat), 1)
-        self.assertEqual(compat[0][2:], [SHARED])
+        # scratch copy, then sync, then compat, then build: sync before compat so a new shared symbol passes first time
+        self.assertEqual(stub.gate_names(), ["run_tests.py", "-c", "check_shared_headers.py", "compat_check.py",
+                                             "build_check.py"])
+        kpm = str(fwa.BUILD_ROOT / "fixwave-fx4-WI-40" / "kpm")
+        self.assertEqual(stub.calls_for("-c")[0][-1], kpm)
         headers = stub.calls_for("check_shared_headers.py")
-        self.assertEqual(len(headers), 1)
-        self.assertEqual(headers[0][2:], ["--sync"])
+        self.assertEqual(headers[0][:2], ["env", "KPM_DIR=" + kpm])
+        self.assertEqual(headers[0][-1], "--sync")
+        compat = stub.calls_for("compat_check.py")
+        self.assertEqual(compat[0][2:], ["--kpm-dir", kpm, SHARED])
+        self.assertIn("after the commit, sync live Common (user OK): " + fwa.LIVE_SYNC, out)
+
+    def test_shared_gates_use_scratch_kpm(self):
+        row = {"id": "WI-40", "write": "_shared_src/Shared.h;demo_src/demo.txt", "tests": "", "mods": "demo_src;other_src"}
+        gates = fwa.gate_plan(row, fwa.write_paths(row), Path("/b"), kpm_live="/live")
+        kpm = "/b/kpm"
+        for label, cmd in gates:
+            name = script_name(cmd)
+            if name in ("compat_check.py", "build_check.py"):
+                self.assertEqual(cmd[cmd.index("--kpm-dir") + 1], kpm, label)
+            if "--sync" in cmd:
+                self.assertIn("KPM_DIR=" + kpm, cmd, label)
+        self.assertEqual(len([c for _, c in gates if script_name(c) == "build_check.py"]), 2)
+        self.assertEqual(gates[0][1][-2:], ["/live", kpm])
+
+    def test_non_shared_item_keeps_default_kpm(self):
+        row = {"id": "WI-41", "write": "demo_src/demo.txt", "tests": "", "mods": "demo_src"}
+        gates = fwa.gate_plan(row, fwa.write_paths(row), Path("/b"))
+        self.assertEqual([script_name(c) for _, c in gates], ["build_check.py"])
+        self.assertNotIn("--kpm-dir", gates[0][1])
+        self.assertFalse(fwa.shared_items(row))
 
     def test_diff_outside_write_column_is_refused(self):
         combined = self.diff_for(DEMO, BASE.replace("bravo", "BRAVO")) + self.diff_for(SHARED, "int shared = 2;\n")

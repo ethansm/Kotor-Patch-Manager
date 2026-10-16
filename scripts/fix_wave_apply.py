@@ -11,12 +11,13 @@ Gates run in the repo root, in this order, and stop at the first failure:
     only paths in the write column, and state.tsv has no row for the id yet.
   2 git apply --check final.diff; if that fails, git apply -3. Conflict markers (or a -3 error) restore every touched file
     byte-for-byte and reset its index entry, print REBASE <id>, exit 4.
-  3 run_tests.py <tests>; a write path under _shared_src also runs compat_check.py <non-test shared files> and
-    check_shared_headers.py --sync.
-  4 build_check.py --mod <m> --quiet --build-root /tmp/claude-1000/fixwave-<W>-<id>, once per mod. Any failure: exit 5,
-    the diff stays applied, and the revert command is printed.
+  3 run_tests.py <tests>; a write path under _shared_src first copies $KPM_DIR/Patches + lib to a scratch
+    <build-root>/kpm, runs KPM_DIR=<scratch> check_shared_headers.py --sync there (never on the live clone), then
+    compat_check.py --kpm-dir <scratch> <non-test shared files>.
+  4 build_check.py --mod <m> --quiet --build-root /tmp/claude-1000/fixwave-<W>-<id> [--kpm-dir <scratch>], once per mod.
+    Any failure: exit 5, the diff stays applied, and the revert command is printed.
   5 PASS: state.tsv row '<id>\\tgated\\t', then one close command: WI-NN -> wi_driver.py release && close --manual; other ids ->
-    git commit -m "<id>: <constraint>" -- <paths>. Exit 0.
+    git commit -m "<id>: <constraint>" -- <paths>. A shared item also prints the manual live sync line (user OK). Exit 0.
 
 --dry-run runs gate 1 and git apply --check only, prints the planned gates and changes nothing.
 --commit <sha> writes state.tsv row '<id>\\tapplied\\t<sha>' with no gates.
@@ -26,6 +27,7 @@ a ROOT_DIRS dir (patch_manager_mods/, scripts/, tests/, research/, .claude/). Ex
 """
 import argparse
 import csv
+import os
 import re
 import shlex
 import subprocess
@@ -34,6 +36,14 @@ from pathlib import Path
 
 REPO_DEFAULT = Path(__file__).resolve().parent.parent
 BUILD_ROOT = Path("/tmp/claude-1000")
+KPM_DEFAULT = "~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager"  # $KPM_DIR overrides, as in check_shared_headers.py
+# gate helper: fresh copy of <live>/Patches and <live>/lib into <scratch> (Patches whole, so mod dir names match the live clone)
+SCRATCH_KPM = ("import shutil, sys; from pathlib import Path\n"
+               "live, dst = Path(sys.argv[1]), Path(sys.argv[2])\n"
+               "shutil.rmtree(dst, ignore_errors=True)\n"
+               "for sub in ('Patches', 'lib'):\n"
+               "    shutil.copytree(live / sub, dst / sub, symlinks=True)\n")
+LIVE_SYNC = "python3 scripts/check_shared_headers.py --sync"
 MOD_PREFIX = "patch_manager_mods/"
 ROOT_DIRS = (MOD_PREFIX, "scripts/", "tests/", "research/", ".claude/")  # repo-root dirs: no prefix
 APPLY_OK = ("APPROVE", "APPROVE_MINOR")
@@ -213,22 +223,35 @@ def restore(root, snap, staged_before, runner):
 
 
 # ---------------------------------------------------------------- gates and close command
-def gate_plan(row, write, build_root):
+def gate_plan(row, write, build_root, kpm_live=None):
     gates = []
     tests = test_ids(row)
     if tests:
         gates.append(("run_tests " + " ".join(tests), [sys.executable, "scripts/run_tests.py", *tests]))
+    kpm_args = []
     shared = [w for w in write if "/_shared_src/" in w]
     if shared:
+        # the live Patches/Common is never synced from a gate (BUILD_AND_INSTALL.md): sync a scratch copy and point
+        # compat_check/build_check at it, so a new shared symbol passes the first time
+        kpm_dir = Path(build_root) / "kpm"
+        live = Path(kpm_live or os.environ.get("KPM_DIR") or KPM_DEFAULT).expanduser()
+        gates.append((f"scratch kpm {kpm_dir}", [sys.executable, "-c", SCRATCH_KPM, str(live), str(kpm_dir)]))
+        gates.append((f"KPM_DIR={kpm_dir} check_shared_headers --sync",
+                      ["env", f"KPM_DIR={kpm_dir}", sys.executable, "scripts/check_shared_headers.py", "--sync"]))
+        kpm_args = ["--kpm-dir", str(kpm_dir)]
         nontest = [w for w in shared if not is_test(w)]
         if nontest:
             gates.append(("compat_check " + " ".join(nontest),
-                          [sys.executable, "scripts/compat_check.py", *nontest]))
-        gates.append(("check_shared_headers --sync", [sys.executable, "scripts/check_shared_headers.py", "--sync"]))
+                          [sys.executable, "scripts/compat_check.py", *kpm_args, *nontest]))
     for mod in mod_names(row):
         gates.append((f"build_check --mod {mod}",
-                      [sys.executable, "scripts/build_check.py", "--mod", mod, "--quiet", "--build-root", str(build_root)]))
+                      [sys.executable, "scripts/build_check.py", "--mod", mod, "--quiet", "--build-root", str(build_root),
+                       *kpm_args]))
     return gates
+
+
+def shared_items(row):
+    return any("/_shared_src/" in w for w in write_paths(row))
 
 
 def dq(text):
@@ -320,6 +343,8 @@ def apply_item(waves_root, repo_root, wave_batch, item_id, dry_run=False, runner
     record_commit(batch_dir, item_id, "", "gated")
     print(f"GATED {item_id}: all gates passed, state.tsv -> gated. Commit with the close command only:")
     print(f"close: {close_command(row, wave_batch)}")
+    if shared_items(row):
+        print(f"after the commit, sync live Common (user OK): {LIVE_SYNC}")
     return 0
 
 

@@ -61,9 +61,14 @@ repo-relative; `patch_manager_mods/` is implied unless a path starts with `scrip
    - `apply-ready`: go to step 4.
 4. Apply in group order (`after` first): `python3 scripts/fix_wave.py apply <W-A> <id>`.
    - Exit 4 `REBASE`: send the consolidator one rebase request; a second conflict parks the item.
+   - `_shared_src` items: gates copy `$KPM_DIR/Patches` + `lib` to a scratch `<build-root>/kpm`, run
+     `KPM_DIR=<scratch> check_shared_headers.py --sync` there, then pass `--kpm-dir <scratch>` to compat_check and
+     build_check. The live `Patches/Common` is never synced by a gate.
    - Exit 5: a gate failed; read the named gate output, `git apply -R` as printed, send it back to the consolidator.
+     A new `gameaddr::`/Common symbol no longer fails here: the scratch sync runs before compat_check.
    - Exit 0: run the one printed close command (`wi_driver.py close ...` or `git commit ... -- <paths>`), then
-     `fix_wave.py apply <W-A> <id> --commit <sha>`.
+     `fix_wave.py apply <W-A> <id> --commit <sha>`. A shared item also prints
+     `sync live Common (user OK): python3 scripts/check_shared_headers.py --sync`; run it only after the user says yes.
 5. When every item is `applied` or `park`: go to `close`.
 
 ### `status <W-A>` / `apply <W-A>`
