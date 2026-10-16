@@ -156,3 +156,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 140 | WI-108 | P3 | hold | S | - | WI-46 follow-up: tests for --prune/render_pruned/suggest/REINSTALL prepare; H3 suite exclu | 0 | 0 | Opus review of the WI-46 diff found no tests for check_raw_addresses - |
 | [ ] | 141 | WI-109 | P3 | hold | S | - | Resolve claude_state default: ro vs rw (Phase3d sandbox) | 0 | 0 | WI-60 worker OPEN: dr_profile.py:55 says default claude_state is ro; f |
 | [ ] | 142 | WI-110 | P3 | hold | S | - | Shield bar hover tooltip refresh (C095) | 0 | 0 | WI-08 found no safe hover hook or refresh flag offset in ShieldBar.cpp |
+| [ ] | 143 | WI-111 | P3 | hold | S | - | Shield bar probe log trim (C093) | 0 | 0 | WI-08: ShieldProbeSlot has 0 hits; rollback set unknown, probe lines l |
