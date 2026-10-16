@@ -173,3 +173,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 157 | WI-125 | P3 | ready | S | - | Companion AI: A1X orphanTick pause-aware (false ORPHAN on pause) | 0 | 1 | R2-CA-03: Pause side settled: player pause freezes world timer, dt=0,  |
 | [ ] | 158 | WI-126 | P3 | ready | S | - | Buff HUD: VisSlot stale column state + diagnostic slot table hygiene | 0 | 3 | R2-BH-03: Open Q settled: FUN_00744f00 writes +0xddd = debuffCount (0  |
 | [ ] | 159 | WI-127 | P3 | hold | S | - | NPC diversity: armored descriptors (subType>=3) get row remap while tv withheld | 0 | 1 | R2-ND-02: Row remap runs before the subType>2 tv guard (tvarmor seen 2 |
+| [ ] | 160 | WI-128 | P3 | hold | S | - | Gemini r2 latent hardening: buff-hud (hardcoded Effect offsets, unprobed writes, off-file  | 0 | 2 | R2-BH-01: Hardcoded Effect_Type/IntCount/Ints skip the k2addr zero-mea |
