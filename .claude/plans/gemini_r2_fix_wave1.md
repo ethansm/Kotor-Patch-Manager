@@ -12,10 +12,10 @@ Several Gemini fix diffs are wrong (BH-06, QH-01, QH-08, CA-03, BH-15). The `fix
 |---|---|---|---|---|---|---|
 | R2.0 | Validate round-2 findings (Haiku swarm + Sonnet consolidate) | - | - | DONE | c360b15 | validated.tsv |
 | R2.1 | Ingest: create WIs from validated.tsv (reachable + SIDE-QH-TEST + test gaps ready; latent/doc grouped) | R2.0 | - | DONE | 36dd958 | WI-115..133 + WI-113 note; lint clean |
-| R2.2 | Items TSV + `fix_wave.py plan` -> batch A | R2.1 | user approves batch A | OPEN | | |
-| R2.3 | Run batch A (Haiku variants -> Sonnet cons -> Sonnet rev) | R2.2 | - | OPEN | | |
-| R2.4 | Apply in conflict order, close WIs, play-test rows | R2.3 | - | OPEN | | |
-| R2.5 | Close: cost, memory yield line, handoff | R2.4 | - | OPEN | | |
+| R2.2 | Items TSV + `fix_wave.py plan` -> batch A | R2.1 | user approves batch A | DONE | a0de0ef | batch A planned + approved (run r2fx1-A) |
+| R2.3 | Run batch A (Haiku variants -> Sonnet cons -> Sonnet rev) | R2.2 | - | DONE | | 12 Haiku, 10 cons, 10 rev; 0 REQUEST_CHANGES, 1 rebase |
+| R2.4 | Apply in conflict order, close WIs, play-test rows | R2.3 | - | DONE | cdd2475 | 10/10 applied 823aea5..cdd2475; play-test rows a4e43d0 |
+| R2.5 | Close: cost, memory yield line, handoff | R2.4 | - | DONE | | cost $6.83/32 agents (~$0.68/item); memory yield line |
 
 ## fid -> WI map (R2.1, 2026-10-16)
 | WI | fids | state | wave |
