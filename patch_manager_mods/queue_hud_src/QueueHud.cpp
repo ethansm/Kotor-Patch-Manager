@@ -1105,6 +1105,10 @@ void handoffTick(DWORD now, const bool* edge) {
                 if (cancelClick && act == qh::HELD_DROP && !h.sawExec) QTRACE("%s why=cancel_click", line);
                 else QTRACE("%s", line);
             }
+            if (cancelClick && act == qh::HELD_DROP && !h.sawExec) {   // the player cancelled: the whole queue goes, buffered commands too (QL10: the stim re-entered combat after a Cancel)
+                endHandoff(k, qh::DR_CANCEL); traceDropAll(k, qh::DR_CANCEL); buf.clear();
+                continue;
+            }
             h.headHeld = false;
             if (act == qh::HELD_DROP) h.headValid = false;   // the engine really ran it (or it already finished): the buffered commands still go
         }
