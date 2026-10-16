@@ -352,8 +352,8 @@ static bool nodeIsTarget(uintptr_t node, NodeInfo& ni) {
 }
 
 // Refusal reasons of HolsterPlace (live test 10-15: PLACE n=0 with no hint which gate refused). Each reason logs its first 5 hits, then every 500th.
-enum PlaceRefuse : int { PrNull = 0, PrNoHandle, PrNotTarget, PrGobvt, PrReadIn, PrInsaneIn, PrInsaneOut, PrNoWrite, PrCount };
-static const char* const kRefuseName[PrCount] = {"null", "nohandle", "nottarget", "gobvt", "readin", "insanein", "insaneout", "nowrite"};
+enum PlaceRefuse : int { PrNull = 0, PrNoHandle, PrNotTarget, PrGobvt, PrReadIn, PrInsaneIn, PrInsaneOut, PrNoWrite, PrNoMount, PrCount };
+static const char* const kRefuseName[PrCount] = {"null", "nohandle", "nottarget", "gobvt", "readin", "insanein", "insaneout", "nowrite", "nomount"};
 static volatile LONG g_refuse[PrCount] = {};
 static void refuse(PlaceRefuse r, uintptr_t g, uintptr_t n, uint32_t vt) {
     const LONG c = InterlockedIncrement(&g_refuse[r]);
@@ -361,6 +361,56 @@ static void refuse(PlaceRefuse r, uintptr_t g, uintptr_t n, uint32_t vt) {
     if (!KP_ENABLED(chPlace, KPLOG_INFO) || !takeLine()) return;
     KP_LOG(chPlace, "PLACEREFUSE reason=%s n=%ld gob=%x node=%x gobvt=%x", kRefuseName[r], static_cast<long>(c), static_cast<unsigned>(g),
            static_cast<unsigned>(n), static_cast<unsigned>(vt));
+}
+
+// Mount-bone pose for place_bone_<type> (C3/C4 recon): parent Gob = [beh+0x14]; FindPart = parent vtbl+0x10C, thiscall(name) -> node, RET 4;
+// node world pose = node vtbl+0xC, thiscall(vec3*, quat*): the same call the engine made for N just before the hook. Before calling, each slot
+// must equal the weapon Gob's own +0x10C slot and N's own +0xC slot (same engine function, no address constants). The node is cached per
+// (parent, category, bone) and re-checked every frame (owner [node+0x40] equals N's owner, pose slot unchanged).
+struct MountEnt { uintptr_t parent, owner, node; int cat; char bone[32]; };
+static MountEnt g_mount[64];
+static unsigned g_mountNext = 0;
+static void mountLog(const char* what, uintptr_t parent, const char* bone, uintptr_t node, uintptr_t a, uintptr_t b) {
+    static volatile LONG s_lines = 0;
+    if (!g_onPlace || InterlockedIncrement(&s_lines) > 40 || !KP_ENABLED(chPlace, KPLOG_INFO) || !takeLine()) return;
+    KP_LOG(chPlace, "MOUNT %s parent=%x bone=%s node=%x a=%x b=%x", what, static_cast<unsigned>(parent), bone, static_cast<unsigned>(node),
+           static_cast<unsigned>(a), static_cast<unsigned>(b));
+}
+static bool mountPose(uintptr_t gob, uintptr_t n, uintptr_t beh, hs::Category cat, const char* bone, hs::Pose& out) {
+    const uintptr_t parent = rdU32(kSitePlace, beh, 0x14);
+    const uintptr_t owner = rdU32(kSitePlace, n, 0x40);
+    const uintptr_t nvt = rdU32(kSitePlace, n, 0);
+    const uintptr_t poseFn = nvt ? rdU32(kSitePlace, nvt, 0x0C) : 0;
+    if (!parent || !owner || !poseFn) return false;
+    uintptr_t mn = 0;
+    MountEnt* hit = nullptr;
+    for (MountEnt& e : g_mount)
+        if (e.parent == parent && e.cat == cat && e.owner == owner && _stricmp(e.bone, bone) == 0) { hit = &e; mn = e.node; break; }
+    if (mn) {   // stale entry (node freed or reused): drop it and look up again
+        const uintptr_t mvt = rdU32(kSitePlace, mn, 0);
+        if (rdU32(kSitePlace, mn, 0x40) != owner || !mvt || rdU32(kSitePlace, mvt, 0x0C) != poseFn) { hit->parent = 0; mn = 0; hit = nullptr; }
+    }
+    if (!mn) {
+        const uintptr_t pvt = rdU32(kSitePlace, parent, 0), gvt = rdU32(kSitePlace, gob, 0);
+        const uintptr_t find = pvt ? rdU32(kSitePlace, pvt, 0x10C) : 0, findRef = gvt ? rdU32(kSitePlace, gvt, 0x10C) : 0;
+        if (!find || find != findRef) { mountLog("refused-findslot", parent, bone, 0, find, findRef); return false; }
+        mn = reinterpret_cast<uintptr_t>(reinterpret_cast<void*(__thiscall*)(void*, const char*)>(find)(reinterpret_cast<void*>(parent), bone));
+        const uintptr_t mvt = mn ? rdU32(kSitePlace, mn, 0) : 0;
+        const uintptr_t mfn = mvt ? rdU32(kSitePlace, mvt, 0x0C) : 0;
+        const uintptr_t mowner = mn ? rdU32(kSitePlace, mn, 0x40) : 0;
+        if (!mn || mfn != poseFn || mowner != owner) { mountLog("refused-node", parent, bone, mn, mfn, mowner); return false; }
+        MountEnt& e = g_mount[g_mountNext];
+        g_mountNext = (g_mountNext + 1) % 64u;
+        e.parent = parent; e.owner = owner; e.node = mn; e.cat = cat;
+        snprintf(e.bone, sizeof e.bone, "%s", bone);
+        mountLog("found", parent, bone, mn, owner, poseFn);
+    }
+    hs::Pose p;
+    float* const f = reinterpret_cast<float*>(&p);
+    reinterpret_cast<void(__thiscall*)(void*, float*, float*)>(poseFn)(reinterpret_cast<void*>(mn), f, f + 3);
+    if (!hs::poseSane(p)) return false;
+    out = p;
+    return true;
 }
 
 // H7 (hooks.toml H7, C4 recon): runs on EVERY per-frame refresh of an attach behavior (vtbl+0x08), right after the engine re-copied node N's WORLD
@@ -418,7 +468,13 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     if (!hs::poseSane(in)) { refuse(PrInsaneIn, g, n, vt); return; }
     hs::Placement pl;
     hs::resolveTune(s_tune, cat, pl.rotDeg, pl.pos);
-    const hs::Pose out = hs::applyPlacement(in, pl);
+    hs::Pose base = in;   // place_bone_<type>: compose on that bone's world pose instead of the attach node's
+    const char* const mountBone = hs::resolveBone(s_tune, cat);
+    if (mountBone && _stricmp(mountBone, g_boneName) != 0 && !mountPose(g, n, reinterpret_cast<uintptr_t>(beh), cat, mountBone, base)) {
+        refuse(PrNoMount, g, n, vt);
+        return;
+    }
+    const hs::Pose out = hs::applyPlacement(base, pl);
     if (!hs::poseSane(out)) { refuse(PrInsaneOut, g, n, vt); return; }
     if (!saferead::probeWrite(kSitePlace, reinterpret_cast<void*>(g + 0xA4), sizeof(hs::Pose))) { refuse(PrNoWrite, g, n, vt); return; }
     memcpy(reinterpret_cast<void*>(g + 0xA4), &out, sizeof(hs::Pose));

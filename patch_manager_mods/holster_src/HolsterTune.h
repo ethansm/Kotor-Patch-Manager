@@ -7,6 +7,8 @@
 //                   place_off  exactly 3 comma floats, each |v| <= 3.0 (metres)
 //                   place_rot_<cat> / place_off_<cat>  per-category override (cat = categoryName: lightsaber, melee, qstaff,
 //                              pistol, rifle, heavy); a category without an override uses place_rot / place_off
+//                   place_bone_<cat>   mount bone name for that category (1..31 chars of [A-Za-z0-9_], e.g. torsoUpr_g); none = the
+//                              attach node itself (bone_name under bone_test)
 //                 Any parse failure, wrong count, range violation or unknown key returns false and leaves the cfg unchanged.
 //                 A rejected vector is never half-applied.
 #pragma once
@@ -17,7 +19,8 @@
 namespace hs {
 
 struct CatTune {
-    bool hasRot = false, hasOff = false;
+    bool hasRot = false, hasOff = false, hasBone = false;
+    char bone[32] = {0};
     float rot[3] = {0.f, 0.f, 0.f};
     float off[3] = {0.f, 0.f, 0.f};
 };
@@ -53,11 +56,14 @@ inline bool tuneSetVec3(const char* val, float* dst, float limit) {
     return true;
 }
 
-// "place_rot_pistol" -> (isRot, CatPistol). False for anything that is not a per-category key with a known category name.
-inline bool tuneCatKey(const char* key, bool& isRot, Category& cat) {
+// "place_rot_pistol" -> (TkRot, CatPistol). False for anything that is not a per-category key with a known category name.
+enum TuneKind : int { TkRot = 0, TkOff, TkBone };
+inline bool tuneCatKey(const char* key, TuneKind& kind, Category& cat) {
     const char* rest = nullptr;
-    if (stemIs(key, "place_rot") && key[9] == '_') { isRot = true; rest = key + 10; }
-    else if (stemIs(key, "place_off") && key[9] == '_') { isRot = false; rest = key + 10; }
+    if (!key) return false;
+    if (stemIs(key, "place_rot") && key[9] == '_') { kind = TkRot; rest = key + 10; }
+    else if (stemIs(key, "place_off") && key[9] == '_') { kind = TkOff; rest = key + 10; }
+    else if (stemIs(key, "place_bone") && key[10] == '_') { kind = TkBone; rest = key + 11; }
     else return false;
     for (int i = CatUnknown + 1; i < CatCount; ++i)
         if (tuneEqCi(rest, categoryName(static_cast<Category>(i)))) { cat = static_cast<Category>(i); return true; }
@@ -66,8 +72,8 @@ inline bool tuneCatKey(const char* key, bool& isRot, Category& cat) {
 
 // Keys this header owns (the ini reader routes them to applyTuneKey; place_gobvt is NOT one of them).
 inline bool isTuneKey(const char* key) {
-    bool r; Category c;
-    return key && (tuneEqCi(key, "place") || tuneEqCi(key, "place_rot") || tuneEqCi(key, "place_off") || tuneCatKey(key, r, c));
+    TuneKind k; Category c;
+    return key && (tuneEqCi(key, "place") || tuneEqCi(key, "place_rot") || tuneEqCi(key, "place_off") || tuneCatKey(key, k, c));
 }
 
 // Drop every per-category override (a reload re-reads them, so a deleted key falls back to the global value).
@@ -84,6 +90,23 @@ inline void resolveTune(const TuneCfg& c, Category cat, float rot[3], float off[
     }
 }
 
+// Mount bone of a category, or nullptr when it has none (the weapon stays on its attach node).
+inline const char* resolveBone(const TuneCfg& c, Category cat) {
+    return (cat > CatUnknown && cat < CatCount && c.cat[cat].hasBone) ? c.cat[cat].bone : nullptr;
+}
+
+// Bone name -> dst (1..31 chars of [A-Za-z0-9_]). dst is written only when the whole name passes.
+inline bool tuneSetBone(const char* val, char* dst) {
+    int n = 0;
+    for (; val[n]; ++n) {
+        const char ch = val[n];
+        if (n >= 31 || !((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '_')) return false;
+    }
+    if (n == 0) return false;
+    for (int i = 0; i <= n; ++i) dst[i] = val[i];
+    return true;
+}
+
 inline bool applyTuneKey(TuneCfg& c, const char* key, const char* val) {
     if (!key || !val) return false;
     if (tuneEqCi(key, "place")) {
@@ -94,12 +117,13 @@ inline bool applyTuneKey(TuneCfg& c, const char* key, const char* val) {
     }
     if (tuneEqCi(key, "place_rot")) return tuneSetVec3(val, c.rot, 720.f);
     if (tuneEqCi(key, "place_off")) return tuneSetVec3(val, c.off, 3.f);
-    bool isRot = false;
+    TuneKind kind = TkRot;
     Category cat = CatUnknown;
-    if (!tuneCatKey(key, isRot, cat)) return false;
+    if (!tuneCatKey(key, kind, cat)) return false;
     CatTune& t = c.cat[cat];
-    if (isRot) { if (!tuneSetVec3(val, t.rot, 720.f)) return false; t.hasRot = true; }
-    else { if (!tuneSetVec3(val, t.off, 3.f)) return false; t.hasOff = true; }
+    if (kind == TkRot) { if (!tuneSetVec3(val, t.rot, 720.f)) return false; t.hasRot = true; }
+    else if (kind == TkOff) { if (!tuneSetVec3(val, t.off, 3.f)) return false; t.hasOff = true; }
+    else { if (!tuneSetBone(val, t.bone)) return false; t.hasBone = true; }
     return true;
 }
 

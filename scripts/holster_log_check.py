@@ -69,6 +69,7 @@ MAIN_RES = {
     "reload": re.compile(r"\bRELOAD (place=\d .*)$"),
     "tune": re.compile(r"\bTUNE boot (place=\d .*)$"),
     "refuse": re.compile(r"\bPLACEREFUSE reason=(\w+) n=(\d+)"),
+    "mount": re.compile(r"\bMOUNT (\S+) parent=\w+ bone=(\S+) node=(\w+)"),
     "node": re.compile(r"\bPLACENODE node=\w+ gob=\w+ t=(\d+) step=(-?\d+) name=(\S+) target=(\d)(?: bvt=(\w+))?(?: gname=(\S+) mname=(\S+))?(?: cat=(\w+))?"),
 }
 
@@ -102,7 +103,7 @@ def _record(kind, n, m):
 def parse_lines(window):
     """window: [(line_no, raw)] -> (records in log order, skipped [(line_no, kind, text)], main facts)."""
     recs, skipped = [], []
-    main = {"loaded": [], "cap": [], "bonetest": Counter(), "unreadable": 0, "tid": {}, "reload": [], "tune": [], "refuse": {}, "node": Counter()}
+    main = {"loaded": [], "cap": [], "bonetest": Counter(), "unreadable": 0, "tid": {}, "reload": [], "tune": [], "refuse": {}, "node": Counter(), "mount": Counter()}
     for n, raw in window:
         text = raw.strip()
         m = MAIN_RES["loaded"].search(text)
@@ -131,6 +132,9 @@ def parse_lines(window):
             main["node"]["t=%s step=%s name=%s target=%s" % m.groups()[:4] + (" bvt=%s" % m.group(5) if m.group(5) else "")
                    + (" gname=%s mname=%s" % m.group(6, 7) if m.group(6) else "")
                    + (" cat=%s" % m.group(8) if m.group(8) else "")] += 1
+        m = MAIN_RES["mount"].search(text)
+        if m:
+            main["mount"][(m.group(1), m.group(2))] += 1
         k = KIND_RE.search(text)
         if k is None:
             continue
@@ -308,8 +312,10 @@ def _place_diag(f):
     if f.get("refuse"):
         out.append("PLACEREFUSE (n>=): " + ", ".join("%s=%d" % kv for kv in sorted(f["refuse"].items(), key=lambda kv: -kv[1])))
     if f.get("node"):
-        top = f["node"].most_common(5)
+        top = sorted(f["node"].items(), key=lambda kv: (" target=1" not in kv[0], -kv[1]))[:5]   # weapons (target=1) first
         out.append("PLACENODE distinct=%d: %s" % (len(f["node"]), "; ".join("%s x%d" % kv for kv in top)))
+    if f.get("mount"):
+        out.append("MOUNT " + ", ".join("%s bone=%s x%d" % (k[0], k[1], v) for k, v in f["mount"].most_common(5)))
     return out
 
 

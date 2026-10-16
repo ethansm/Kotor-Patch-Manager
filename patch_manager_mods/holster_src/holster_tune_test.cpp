@@ -176,7 +176,25 @@ static void testCategoryKeyRejects() {
     KT_CHECK(!isTuneKey("place_gobvt") && !isTuneKey("place_rot_x") && !isTuneKey(nullptr));
 }
 
+static void testCategoryBone() {
+    TuneCfg c = base();
+    KT_CHECK(resolveBone(c, CatRifle) == nullptr);
+    KT_CHECK(applyTuneKey(c, "place_bone_rifle", "torsoUpr_g"));
+    KT_CHECK(resolveBone(c, CatRifle) && strcmp(resolveBone(c, CatRifle), "torsoUpr_g") == 0);
+    KT_CHECK(resolveBone(c, CatPistol) == nullptr && resolveBone(c, CatUnknown) == nullptr);
+    KT_CHECK(!applyTuneKey(c, "place_bone_melee", ""));
+    KT_CHECK(!applyTuneKey(c, "place_bone_melee", "torso g"));
+    KT_CHECK(!applyTuneKey(c, "place_bone_melee", "a234567890123456789012345678901b"));   // 32 chars
+    KT_CHECK(applyTuneKey(c, "place_bone_melee", "a23456789012345678901234567890b"));     // 31 chars
+    KT_CHECK(!applyTuneKey(c, "place_bone_rifle", "bad-name"));
+    KT_CHECK(strcmp(resolveBone(c, CatRifle), "torsoUpr_g") == 0);   // rejected value leaves the old bone
+    KT_CHECK(isTuneKey("PLACE_BONE_Heavy") && !isTuneKey("place_bone_") && !isTuneKey("place_bonex_rifle"));
+    clearCatTune(c);
+    KT_CHECK(resolveBone(c, CatRifle) == nullptr);
+}
+
 int main() {
+    testCategoryBone();
     testCategoryOverride();
     testCategoryKeyRejects();
     testDefaultIsZero();
