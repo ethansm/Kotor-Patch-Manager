@@ -506,3 +506,8 @@ button to enable auto medpacks on the leader."
 - Sources `e3b6d97`; KPM `9a1d612`, `b0b9025`. GATE PASS (smokes=portraitslots). Hot-swapped 00:30, both LIVE (85e4334b, 4a33a6b1). Rollback: `python3 scripts/kpm_hotswap.py --rollback batch_swap_20261015_003043`.
 - Logs now `buff-duration-hud_log.txt` / `shield-bar_log.txt` (core format). `kplog.ini` got `[buff-duration-hud]` and `[shield-bar]` sections (level=info); backup `kplog.ini.bak_buffshield_20261015`. Probe chatter is DEBUG on channel `probe`; in-mod line caps removed.
 - Play check: `python3 scripts/kotor2_logs.py check buff-duration-hud_log.txt --new`; expect `buffhud loaded` and VIS lines, 0 WARN. Remaining non-KpLog mods: companion-ai, inventory-sort-filter (leftover truncate), dialogue-letterbox-fix-probe, probes (area-hook, load-hang, voice).
+
+### Live log check 2026-10-15 23:11 session (buff-hud 0.2.3 / shield-bar 0.1.3)
+- `buff-duration-hud_log.txt` 327 L CLEAN, 0 WARN, `buffhud loaded` present, 20 `VIS slot* why=drawn`, 19 `DEBUFF` column lines (ip_slow x13, ip_stun), no untracked-debuff dump, no VIS cap. `shield-bar_log.txt` 19 L CLEAN (VIS bar/mbar/overlay). Old `buffhud_log.txt` is stale (pre-migration format).
+- Not seen yet: probe-channel DEBUG lines (kplog.ini level=info). Hotbar 1-0 key press check after the EKC hook move is still the user's.
+- Memory updated: `kotor2-fix-pipeline.md`, `kotor2-kplog-adoption.md`. NEXT: companion-ai KpLog migration (plan mode; plan file in `.claude/plans/`). Remaining raw-fopen mods: inventory-sort-filter (truncate), dialogue-letterbox-fix-probe, area-hook/load-hang/voice probes.
