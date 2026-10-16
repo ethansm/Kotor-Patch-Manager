@@ -17,8 +17,7 @@
     13,
     14,
     15,
-    16,
-    17
+    16
    ],
    "FatF": [
     35
@@ -41,8 +40,7 @@
     12,
     13,
     14,
-    15,
-    16
+    15
    ]
   },
   "pool_files": 70,
@@ -84,8 +82,6 @@
    "n_commm35"
   ],
   "review": [
-   "n_commf17",
-   "n_commm16",
    "n_commm34"
   ],
   "uv_min": 0.25
@@ -445,7 +441,7 @@
   },
   "n_commf17": {
    "adjudicated": {
-    "F": "yes"
+    "F": "no"
    },
    "alt_body": null,
    "category": "blank_garbled",
@@ -454,9 +450,9 @@
     "dirty_poor"
    ],
    "gender": "F",
-   "keep": true,
+   "keep": false,
    "layout_ok": {
-    "F": "yes",
+    "F": "no",
     "FatF": "no",
     "FatM": "no",
     "M": "no"
@@ -1221,7 +1217,7 @@
   },
   "n_commm16": {
    "adjudicated": {
-    "M": "yes"
+    "M": "no"
    },
    "alt_body": null,
    "category": "commoner_clothing",
@@ -1230,12 +1226,12 @@
     "dirty_poor"
    ],
    "gender": "M",
-   "keep": true,
+   "keep": false,
    "layout_ok": {
     "F": "no",
     "FatF": "no",
     "FatM": "no",
-    "M": "yes"
+    "M": "no"
    },
    "min_conf": 3,
    "outfit": "ragged blood-stained tan and rust clothes",

@@ -566,10 +566,16 @@ class Rules012Tests(unittest.TestCase):
         self.assertEqual(rc, 1, out)
         self.assertIn("FAIL 12 tv allowlist: 1 RMP line(s) with a tv after-value outside their family's slot list", out)
 
-    def test_tv_17_is_allowed_for_female_final_app(self):
-        rc, out = run_bodies(healthy() + [rmp_line(oid=0x4000, before=805, after=811, tv=(1, 17))])
+    def test_tv_16_is_allowed_for_female_final_app(self):
+        rc, out = run_bodies(healthy() + [rmp_line(oid=0x4000, before=805, after=811, tv=(1, 16))])
         self.assertEqual(rc, 0, out)
         self.assertIn("PASS 12 tv allowlist: 7 RMP tv after-value(s) inside their family's slot list", out)
+
+    def test_vetoed_rag_slots_are_rejected(self):
+        # 10-16 user veto: F17 (tattered patchwork rags) and M16 (ragged blood-stained) are no longer in the allowlist.
+        rc, out = run_bodies(healthy() + [rmp_line(oid=0x4000, before=805, after=811, tv=(1, 17))])
+        self.assertEqual(rc, 1, out)
+        self.assertIn("FAIL 12 tv allowlist: 1 RMP line(s) with a tv after-value outside their family's slot list", out)
 
     def test_changed_share_in_band_passes(self):
         rows = _rows(3, base=0x100, before=17, after=17, tv=(1, 2)) + _rows(7, base=0x200, before=17, after=17, tv=(1, 1))

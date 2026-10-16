@@ -55,9 +55,14 @@ class DecideTests(unittest.TestCase):
         self.assertEqual(d["alt_body"]["mesh"], "N_OndComM1")
         self.assertIn(472, d["alt_body"]["rows"])
 
-    def test_user_trial_slots_allowed(self):
-        self.assertEqual(M.decide(16, "M", "n_commmd01", 0.27, [vote(outfit="ragged clothes", conf=3)])["layout_ok"]["M"], "yes")
-        self.assertEqual(M.decide(17, "F", "n_commfd01", 0.20, [vote("unsure", "blank_garbled", 2)])["layout_ok"]["F"], "yes")
+    def test_user_vetoed_rag_slots_removed(self):
+        # 10-16: the two spot-check trial slots (ragged / patchwork rags) were vetoed after the in-game check.
+        d = M.decide(16, "M", "n_commmd01", 0.27, [vote(outfit="ragged clothes", conf=3)])
+        self.assertEqual(d["layout_ok"]["M"], "no")
+        self.assertFalse(d["keep"])
+        d = M.decide(17, "F", "n_commfd01", 0.20, [vote("unsure", "blank_garbled", 2)])
+        self.assertEqual(d["layout_ok"]["F"], "no")
+        self.assertFalse(d["keep"])
 
     def test_adjudication_applies(self):
         d = M.decide(34, "M", "n_fatcomm01", 0.41, [vote("unsure", conf=2)])

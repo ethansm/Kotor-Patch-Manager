@@ -161,9 +161,9 @@ void testShouldDiversifyTexture() {
 
     // Golden: the prefix follows the texture, the slot is drawn from the row's family allowlist.
     KT_CHECK(NpcDiversity::ShouldDiversifyTexture("N_CommM01", 190, hash, outTex, sizeof(outTex)));
-    KT_CHECK(std::strcmp(outTex, "N_CommM13") == 0);
+    KT_CHECK(std::strcmp(outTex, "N_CommM09") == 0);
     KT_CHECK(NpcDiversity::ShouldDiversifyTexture("n_commf01", 185, hash, outTex, sizeof(outTex)));
-    KT_CHECK(std::strcmp(outTex, "N_CommF15") == 0);
+    KT_CHECK(std::strcmp(outTex, "N_CommF13") == 0);
 
     // Fat rows have one slot each: 34 for male, 35 for female.
     KT_CHECK(NpcDiversity::ShouldDiversifyTexture("N_CommM01", 802, hash, outTex, sizeof(outTex)));
@@ -472,7 +472,7 @@ void testVisitSaltKeepsDefaults() {
     KT_CHECK(NpcDiversity::ShouldVary(1u, 190, 0u) == NpcDiversity::ShouldVary(1u, 190));
     KT_CHECK(NpcDiversity::ShouldVary(1u, 190, 0u));  // 34, as in testShouldVaryGolden
     KT_CHECK_EQ(NpcDiversity::PickTextureVar(1000u, 805, 0, 0u), NpcDiversity::PickTextureVar(1000u, 805));
-    KT_CHECK_EQ(NpcDiversity::PickTextureVar(1000u, 805, 0, 0u), 13);  // as in testPickTextureVarGateAndGolden
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(1000u, 805, 0, 0u), 15);  // as in testPickTextureVarGateAndGolden
 }
 
 // A visit salt re-rolls the draws: the vary share stays near kVaryPct, and most creatures on a multi-slot row
@@ -589,17 +589,17 @@ void testPickTextureVarGateAndGolden() {
     KT_CHECK_EQ(NpcDiversity::PickTextureVar(5u, 0xFFFFu), 0);
 
     // Golden picks: Mix(HashCreatureId(oid, row), 4) % n indexes the family allowlist.
-    KT_CHECK_EQ(NpcDiversity::PickTextureVar(1u, 190), 13);          // M, index 12 of 16
-    KT_CHECK_EQ(NpcDiversity::PickTextureVar(1000u, 805), 13);       // M (Twi'lek variant row)
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(1u, 190), 14);          // M, index 13 of 15
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(1000u, 805), 15);       // M (Twi'lek variant row)
     KT_CHECK_EQ(NpcDiversity::PickTextureVar(0x12345678u, 617), 1);  // M
-    KT_CHECK_EQ(NpcDiversity::PickTextureVar(42u, 185), 1);          // F
-    KT_CHECK_EQ(NpcDiversity::PickTextureVar(0xDEADBEEFu, 811), 8);  // F (underwear row)
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(42u, 185), 10);         // F
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(0xDEADBEEFu, 811), 4);  // F (underwear row)
     KT_CHECK_EQ(NpcDiversity::PickTextureVar(0x12345678u, 802), 34); // FatM
     KT_CHECK_EQ(NpcDiversity::PickTextureVar(0xDEADBEEFu, 803), 35); // FatF
 
     // Current-variant skip: a draw equal to currentTv moves to the next allowlist entry.
-    KT_CHECK_EQ(NpcDiversity::PickTextureVar(1u, 190, 13), 14);
-    KT_CHECK_EQ(NpcDiversity::PickTextureVar(42u, 185, 1), 2);
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(1u, 190, 14), 15);
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(42u, 185, 10), 11);
 
     // Dispatcher idempotence: the 2-arg pick is a pure function of (oid, final row), so re-applying a row
     // returns the value already written (no write). Passing that value back as currentTv would move to the
@@ -692,7 +692,10 @@ void testFamilyOfMatchesTexVarEligible() {
     // The allowlist accessor returns the generated arrays and their sizes; None has none.
     size_t n = 0;
     KT_CHECK(NpcDiversity::FamilySlots(SlotFamily::M, n) == NpcDiversity::kMaleSlots);
-    KT_CHECK_EQ(static_cast<long>(n), 16L);
+    KT_CHECK_EQ(static_cast<long>(n), 15L);   // 10-16: M16 (ragged, user veto) removed
+    // 10-16 user veto: the dirty K1 rag textures (M16 ragged blood-stained, F17 tattered patchwork) must never be picked.
+    for (size_t i = 0; i < NpcDiversity::kMaleSlotsCount; ++i) KT_CHECK(NpcDiversity::kMaleSlots[i] != 16);
+    for (size_t i = 0; i < NpcDiversity::kFemaleSlotsCount; ++i) KT_CHECK(NpcDiversity::kFemaleSlots[i] != 17);
     KT_CHECK(NpcDiversity::FamilySlots(SlotFamily::FatF, n) == NpcDiversity::kFatFemaleSlots);
     KT_CHECK_EQ(static_cast<long>(n), 1L);
     KT_CHECK(NpcDiversity::FamilySlots(SlotFamily::None, n) == nullptr);

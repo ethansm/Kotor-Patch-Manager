@@ -31,8 +31,10 @@ UV_MIN = 0.25
 VANILLA_SLOTS = range(1, 12)
 # Orchestrator adjudications (recorded, reviewed in the human spot-check): slot -> {family: verdict}.
 ADJUDICATED = {"n_commm34": {"FatM": "yes"},
-               "n_commm16": {"M": "yes"},   # user liked it in the spot-check; plain MD mesh, uv 0.27: trial slot, check at Gate 2
-               "n_commf17": {"F": "yes"}}   # same: plain FD mesh, uv 0.20, vote unsure: trial slot, check at Gate 2   # fat-native provenance (n_fatcomm01) + uv 0.41; the vote was unsure only because the fat atlas differs
+               # n_commm34: fat-native provenance (n_fatcomm01) + uv 0.41; the vote was unsure only because the fat atlas differs
+               # 10-16 user veto after the in-game check (dirty K1 rag textures look bad on commoners): both trial slots removed.
+               "n_commm16": {"M": "no"},    # was "yes" (spot-check trial); n_commmd01 ragged blood-stained clothes
+               "n_commf17": {"F": "no"}}    # was "yes" (spot-check trial); n_commfd01 tattered patchwork rags
 # Textures authored for OTHER body meshes (user liked them: robes, armor, uniforms). Not valid on the plain N_CommM/F mesh;
 # usable through appearance rows that use that mesh (row remap, later tier). provenance prefix -> (mesh, rows).
 ALT_BODY = {

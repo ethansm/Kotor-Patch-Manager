@@ -1,4 +1,4 @@
-// NpcDiversityDispatcher.cpp -- Master NPC Diversity Dispatcher runtime detour hooks (0.1.7-probe).
+// NpcDiversityDispatcher.cpp -- Master NPC Diversity Dispatcher runtime detour hooks (0.1.8-probe).
 //
 // Strategy B (confirmed by the 0.1.1 play-test: the engine builds N_Comm?NN from descriptor textureVar):
 // Hook 2 RemapNpcAppearance: CSWCCreature::SetAppearance entry (Steam 0x76D200), args ecx=this,
@@ -49,7 +49,7 @@ namespace {
 using namespace NpcDiversity;
 namespace nl = NpcDiversity::log;
 
-constexpr const char* kVersion = "0.1.7-probe";
+constexpr const char* kVersion = "0.1.8-probe";
 constexpr size_t kResRefLen = 16;
 
 // SafeRead site ids (counted in Counts::fail, printed by STAT read).
