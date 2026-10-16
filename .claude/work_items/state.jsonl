@@ -93,3 +93,4 @@
 {"ev": "done", "session": "01e6ef29-b277-4be6-9206-3ca3c2065598", "ts": "2026-10-15T23:44:57Z", "wi": "WI-46"}
 {"ev": "done", "session": "a3aa27b2-bf63-4523-a594-8852a04835f4", "ts": "2026-10-15T23:47:30Z", "wi": "WI-60"}
 {"ev": "park", "reason": "worker FAIL: tests pinning old filter were outside write scope; Steps+files amended", "session": "4c70bd63-4f92-437c-b70b-ad83498d8425", "ts": "2026-10-16T00:02:42Z", "wi": "WI-47"}
+{"ev": "unpark", "reason": "Steps and files now include the two pinned tests", "session": "4c70bd63-4f92-437c-b70b-ad83498d8425", "ts": "2026-10-16T00:02:45Z", "wi": "WI-47"}
