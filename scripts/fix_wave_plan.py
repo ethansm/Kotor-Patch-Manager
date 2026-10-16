@@ -74,10 +74,13 @@ def lst(s):
     return [x.strip() for x in s.split(";") if x.strip() not in ("", "-")]
 
 
+ROOT_DIRS = ("scripts/", "patch_manager_mods/", "tests/", "research/", ".claude/")  # repo-root dirs: no prefix
+
+
 def ent(p):
-    """Repo-relative entry path. Bare paths get the patch_manager_mods/ prefix; scripts/ and patch_manager_mods/ paths stay."""
+    """Repo-relative entry path. Bare paths get the patch_manager_mods/ prefix; paths under ROOT_DIRS stay."""
     p = p.strip()
-    if p.startswith(("scripts/", "patch_manager_mods/")):
+    if p.startswith(ROOT_DIRS):
         return p
     return "patch_manager_mods/" + p
 

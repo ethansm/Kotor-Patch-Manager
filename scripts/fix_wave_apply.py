@@ -22,7 +22,7 @@ Gates run in the repo root, in this order, and stop at the first failure:
 --commit <sha> writes state.tsv row '<id>\\tapplied\\t<sha>' with no gates.
 
 Paths in items.tsv are repo-relative after ent(): prefixed with patch_manager_mods/ unless they start with
-patch_manager_mods/ or scripts/. Exit: 0 ok; 2 refused or bad input; 4 conflict (REBASE); 5 gate failed.
+a ROOT_DIRS dir (patch_manager_mods/, scripts/, tests/, research/, .claude/). Exit: 0 ok; 2 refused or bad input; 4 conflict (REBASE); 5 gate failed.
 """
 import argparse
 import csv
@@ -35,6 +35,7 @@ from pathlib import Path
 REPO_DEFAULT = Path(__file__).resolve().parent.parent
 BUILD_ROOT = Path("/tmp/claude-1000")
 MOD_PREFIX = "patch_manager_mods/"
+ROOT_DIRS = (MOD_PREFIX, "scripts/", "tests/", "research/", ".claude/")  # repo-root dirs: no prefix
 APPLY_OK = ("APPROVE", "APPROVE_MINOR")
 STATE_HEADER = "id\tstage\tcommit"
 WI_RE = re.compile(r"WI-\d+")
@@ -60,7 +61,7 @@ def run(cmd, cwd):
 
 # ---------------------------------------------------------------- items and paths
 def ent(path):
-    return path if path.startswith(MOD_PREFIX) or path.startswith("scripts/") else MOD_PREFIX + path
+    return path if path.startswith(ROOT_DIRS) else MOD_PREFIX + path
 
 
 def lst(text):

@@ -110,6 +110,17 @@ class BriefCase(unittest.TestCase):
         return [re.match(r"Unit \S+ = (\S+)\.", t).group(1) for _, t in sorted(self.add_tasks().items())]
 
 
+class EntTests(unittest.TestCase):
+    def test_repo_root_dirs_keep_their_path(self):
+        import fix_wave_apply as fa
+        import fix_wave_plan as fp
+        for ent in (fb.ent, fa.ent, fp.ent):
+            for p in ("tests/a.toml", "research/x/y.py", ".claude/review/f.py", "scripts/s.py",
+                      "patch_manager_mods/m/a.h"):
+                self.assertEqual(ent(p), p)
+            self.assertEqual(ent("m_src/a.h"), "patch_manager_mods/m_src/a.h")
+
+
 class SectionTests(unittest.TestCase):
     def test_section_stops_at_next_level_two_heading(self):
         with tempfile.TemporaryDirectory() as td:

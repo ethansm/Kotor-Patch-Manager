@@ -32,6 +32,7 @@ TEMPLATE_DIR = Path(".claude") / "skills" / "variant-fix-wave"
 TEMPLATES = ("variants.md", "consolidate.md", "review.md")
 SCRATCH_BASE = "/tmp/claude-1000"
 MOD = "patch_manager_mods/"
+ROOT_DIRS = (MOD, "scripts/", "tests/", "research/", ".claude/")  # repo-root dirs: no prefix
 NAME_RE = r"[A-Za-z0-9][A-Za-z0-9._-]*"
 VARIANT_LABELS = ("A", "B", "C", "T1", "T2")
 PROOF = {
@@ -46,8 +47,8 @@ class Refused(Exception):
 
 
 def ent(p):
-    """Repo-relative entry path: patch_manager_mods/ is prepended unless the path already starts with it or scripts/."""
-    return p if p.startswith(MOD) or p.startswith("scripts/") else MOD + p
+    """Repo-relative entry path: patch_manager_mods/ is prepended unless the path starts with a ROOT_DIRS dir."""
+    return p if p.startswith(ROOT_DIRS) else MOD + p
 
 
 def lst(s):
