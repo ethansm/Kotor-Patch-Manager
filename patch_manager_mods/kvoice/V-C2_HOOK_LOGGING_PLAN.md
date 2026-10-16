@@ -117,3 +117,10 @@ extern "C" void __cdecl VoiceProbeKeyLookup(void* self, const char* resref, int 
 1. Is the watcher result enough? (If it shows `kpv_e1.ncs` opened and no `kpve1a.wav` open, H2 + H1 are the minimum.)
 2. GO for the combined full reinstall.
 3. GO to hook mid-function RunScript (H3) at all: it sits next to a live companion-ai detour.
+
+## 9. E1 outcome so far (2026-10-15) and plan change
+- Runs on the live game: `runscript kpv_e1`, `kpv_e4` (no audio, no text), then after a FRESH game start (23:11, all `kpv*` files indexed) `runscript kpv_c1` (control: +1234 credits, overhead text): no credits, no text, no console error.
+- inotify watcher on `Override` saw NO game open of `kpv_c1.ncs` (nor `kpv_e1.ncs`/`kpve1a.wav`). Reading: the console `runscript` never reached script loading. E1 is therefore INCONCLUSIVE about audio: the trigger never fired.
+- Likely cause (unverified): `additional-console-commands` `runscript` returns silently when `CServerExoApp::GetInstance()` is null (`if (!server) return;`), or the Steam address set is wrong for that call. Untested.
+- Consequence: before any audio logging pays off, the trigger route must change. Order of work becomes: (1) a trigger that provably runs a script (below), (2) the hooks in section 3.
+- Trigger options, best first: (a) native hotkey in `voice_probe_src` that calls `RunScript` 0x6FD8D0 with the PC id (same reinstall as the logging hooks); (b) `commands/*.toml` native console command; (c) override a vanilla script that fires on its own in the forged save area (OnEnter/heartbeat), no native code, needs a verified script name and cleanup.
