@@ -241,7 +241,7 @@ def close_command(row, wave_batch):
     if WI_RE.fullmatch(item_id):
         reason = dq(f"{item_id} fix wave {wave_batch}")
         # select claimed the WI as VW-<wave>; close --manual refuses while that claim is live
-        return (f"python3 scripts/wi_driver.py release {item_id} && "
+        return (f"python3 scripts/wi_driver.py release {item_id} --force && "
                 f"python3 scripts/wi_driver.py close {item_id} --manual --paths {paths} --reason {reason}")
     text = " ".join((row.get("constraint") or "").split())[:60]
     message = f"{item_id}: {text}" if text else item_id
