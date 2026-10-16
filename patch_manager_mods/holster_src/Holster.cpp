@@ -580,6 +580,17 @@ static hs::Pose g_editMount;              // world pose of the edited Gob's moun
 static bool g_editMountOk = false;
 static volatile uintptr_t g_refFind = 0, g_refPose = 0;   // FindPart (Gob vtbl+0x10C) / node pose (vtbl+0xC) slots seen on a placed weapon
 
+// Review F1: in world both hands share the bone_name node, so HolsterPlace cannot tell the hand and always resolves right-hand values.
+// Until it can (record the hand per weapon Gob at attach time), the editor resolves and saves the left preview weapon with the
+// right-hand levels too, so what the editor shows is what the world shows and no place_*_l_* key is written that nothing reads.
+static const bool kWorldKnowsHand = false;
+static bool effLeft(bool left) {
+    static volatile LONG s_logged = 0;
+    if (left && !kWorldKnowsHand && InterlockedCompareExchange(&s_logged, 1, 0) == 0 && KP_ENABLED(chEdit, KPLOG_INFO))
+        KP_LOG(chEdit, "LEFTHAND treated as right: the in-world path cannot tell the hand yet (review F1)");
+    return kWorldKnowsHand && left;
+}
+
 struct EdLock {
     EdLock() { AcquireSRWLockExclusive(&g_edLock); }
     ~EdLock() { ReleaseSRWLockExclusive(&g_edLock); }
@@ -611,7 +622,7 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
             e.parent = reinterpret_cast<void*>(parent);
             e.node = reinterpret_cast<void*>(n);
         }
-        left = e.left;
+        left = effLeft(e.left);
         editing = g_edit.active && g_editGob == reinterpret_cast<void*>(g);
         if (editing) {
             hs::EditView v;
@@ -832,7 +843,7 @@ static int32_t KPATCH_CALL apiBeginEdit(void* gob, int32_t scope) {
         const int i = hs::previewFind(g_preview, gob);
         if (i < 0) return 0;
         parent = g_preview.e[i].parent;
-        left = g_preview.e[i].left;
+        left = effLeft(g_preview.e[i].left);
     }
     saferead::beginScope();
     char model[17], body[17];
@@ -947,52 +958,64 @@ static int32_t KPATCH_CALL apiSetScope(int32_t scope, int32_t left) {
     if (scope < 0 || scope > 2) return 0;
     EdLock lk;
     if (!g_edit.active) return 0;
-    edReseed(left != 0, scope);   // implicit Revert: the editor confirmed Discard first
+    edReseed(effLeft(left != 0), scope);   // implicit Revert: the editor confirmed Discard first
     return 1;
 }
 
-// Rewrites holster.ini for the open scope (reset: deletes its keys), then publishes the re-parsed text. Caller holds g_edLock.
+// Rewrites holster.ini for the open scope (reset: deletes its keys), then publishes the re-parsed text. Takes g_edLock only to build the
+// keys and to reseed afterwards; the file read and write run outside it, so a placement on another thread never waits on disk I/O (F6).
 static bool edWrite(bool reset) {
-    if (!g_edit.active) return false;
-    hs::TuneCfg c;
-    if (!loadTune(c)) return false;
     hs::KV set[8];
     const char* unset[8];
-    char buf[hs::kScopeTextMax];
+    char buf[hs::kScopeTextMax];   // keys and values (set[].val may also point at boneName's static strings)
     hs::ScopeOut so{set, 8, 0, unset, 8, 0, buf, sizeof buf, 0};
-    bool ok = false;
-    const bool left = g_edit.left;
-    switch (g_edit.scope) {
-    case hs::ScopeWeapon: {
-        if (reset) {
-            hs::ModelTune m;
-            hs::tuneCopyName(m.model, g_edit.model);
-            m.left = left;
-            ok = hs::scopeKeys(m, so);
-        } else if (hs::overlayWrite(g_edit, c)) {
-            const hs::ModelTune* m = hs::findModel(c, g_edit.model, left);
-            ok = m && hs::scopeKeys(*m, so);
+    int scope = 0;
+    bool left = false;
+    hs::Category cat = hs::CatUnknown;
+    char model[17] = {0}, body[17] = {0};
+    {
+        EdLock lk;
+        if (!g_edit.active) return false;
+        hs::TuneCfg c;
+        if (!loadTune(c)) return false;
+        bool ok = false;
+        left = g_edit.left;
+        scope = g_edit.scope;
+        cat = g_edit.cat;
+        memcpy(model, g_edit.model, sizeof model);
+        memcpy(body, g_edit.body, sizeof body);
+        switch (g_edit.scope) {
+        case hs::ScopeWeapon: {
+            if (reset) {
+                hs::ModelTune m;
+                hs::tuneCopyName(m.model, model);
+                m.left = left;
+                ok = hs::scopeKeys(m, so);
+            } else if (hs::overlayWrite(g_edit, c)) {
+                const hs::ModelTune* m = hs::findModel(c, model, left);
+                ok = m && hs::scopeKeys(*m, so);
+            }
+            break;
         }
-        break;
-    }
-    case hs::ScopeType:
-        if (reset) ok = hs::scopeKeys(g_edit.cat, left, hs::CatTune(), so);
-        else ok = hs::overlayWrite(g_edit, c) && hs::scopeKeys(g_edit.cat, left, left ? c.catL[g_edit.cat] : c.cat[g_edit.cat], so);
-        break;
-    case hs::ScopeBody:
-        if (reset) {
-            const int n = snprintf(buf, sizeof buf, "place_off_body_%s", g_edit.body);
-            ok = g_edit.body[0] && n > 0 && static_cast<size_t>(n) < sizeof buf;
-            if (ok) { unset[0] = buf; so.nUnset = 1; so.nSet = 0; }
-        } else if (hs::overlayWrite(g_edit, c)) {
-            const hs::BodyTune* b = hs::findBody(c, g_edit.body);
-            ok = b && hs::scopeKeys(*b, so);
+        case hs::ScopeType:
+            if (reset) ok = hs::scopeKeys(cat, left, hs::CatTune(), so);
+            else ok = hs::overlayWrite(g_edit, c) && hs::scopeKeys(cat, left, left ? c.catL[cat] : c.cat[cat], so);
+            break;
+        case hs::ScopeBody:
+            if (reset) {
+                const int n = snprintf(buf, sizeof buf, "place_off_body_%s", body);
+                ok = body[0] && n > 0 && static_cast<size_t>(n) < sizeof buf;
+                if (ok) { unset[0] = buf; so.nUnset = 1; so.nSet = 0; }
+            } else if (hs::overlayWrite(g_edit, c)) {
+                const hs::BodyTune* b = hs::findBody(c, body);
+                ok = b && hs::scopeKeys(*b, so);
+            }
+            break;
         }
-        break;
-    }
-    if (!ok) {
-        if (takeEditLine()) KP_LOG(chEdit, "SAVE refused: no keys for scope=%d model=%s body=%s reset=%d", static_cast<int>(g_edit.scope), g_edit.model, g_edit.body, reset ? 1 : 0);
-        return false;
+        if (!ok) {
+            if (takeEditLine()) KP_LOG(chEdit, "SAVE refused: no keys for scope=%d model=%s body=%s reset=%d", scope, model, body, reset ? 1 : 0);
+            return false;
+        }
     }
     std::string text;
     (void)readFileText("holster.ini", text);   // a missing file saves into a new one
@@ -1016,15 +1039,18 @@ static bool edWrite(bool reset) {
     }
     InterlockedExchange(&g_reloadBusy, 0);
     if (takeEditLine())
-        KP_LOG(chEdit, "SAVE %s scope=%d model=%s cat=%s body=%s left=%d set=%d unset=%d first=%s=%s ok=%d", reset ? "reset" : "write", static_cast<int>(g_edit.scope),
-               g_edit.model[0] ? g_edit.model : "-", hs::categoryName(g_edit.cat), g_edit.body[0] ? g_edit.body : "-", left ? 1 : 0, so.nSet, so.nUnset,
+        KP_LOG(chEdit, "SAVE %s scope=%d model=%s cat=%s body=%s left=%d set=%d unset=%d first=%s=%s ok=%d", reset ? "reset" : "write", scope,
+               model[0] ? model : "-", hs::categoryName(cat), body[0] ? body : "-", left ? 1 : 0, so.nSet, so.nUnset,
                so.nSet ? set[0].key : (so.nUnset ? unset[0] : "-"), so.nSet ? set[0].val : "-", wrote ? 1 : 0);
-    if (wrote) edReseed(left, g_edit.scope);
+    if (wrote) {
+        EdLock lk;
+        // Reseed only when the same edit is still open (EndEdit / BeginEdit on another weapon may have run meanwhile).
+        if (g_edit.active && g_edit.left == left && g_edit.cat == cat && !strcmp(g_edit.model, model) && !strcmp(g_edit.body, body)) edReseed(left, scope);
+    }
     return wrote;
 }
 
 static int32_t KPATCH_CALL apiSave(void) {
-    EdLock lk;
     return edWrite(false) ? 1 : 0;
 }
 
@@ -1034,7 +1060,6 @@ static void KPATCH_CALL apiRevert(void) {
 }
 
 static void KPATCH_CALL apiResetScope(void) {
-    EdLock lk;
     (void)edWrite(true);
 }
 

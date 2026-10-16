@@ -123,9 +123,10 @@ void dumpMem(const char* tag, int addr, int words) {
     }
 }
 
-// ---- BeforeFree callback (one slot, last SetBeforeFree wins) ----
-K2Preview3dBeforeFree g_beforeFree = nullptr;
-void* g_beforeFreeUser = nullptr;
+// ---- BeforeFree callbacks: up to kMaxBeforeFree (cb, user) pairs, so a second consumer never replaces the first (review F2) ----
+constexpr int kMaxBeforeFree = 4;
+struct BeforeFreeSlot { K2Preview3dBeforeFree cb; void* user; };
+BeforeFreeSlot g_beforeFree[kMaxBeforeFree] = {};
 
 // ---- the viewer ----
 struct Viewer {
@@ -173,9 +174,11 @@ Viewer* find(uint32_t token) {
 }
 
 void notifyBeforeFree(const Viewer* v, const char* why) {
-    if (!g_beforeFree) return;
-    logf("before-free: token=%u (%s)", v->token, why);
-    g_beforeFree(v->token, g_beforeFreeUser);
+    for (const BeforeFreeSlot& s : g_beforeFree) {
+        if (!s.cb) continue;
+        logf("before-free: token=%u (%s) cb=%p", v->token, why, reinterpret_cast<void*>(s.cb));
+        s.cb(v->token, s.user);
+    }
 }
 
 // ---- engine helpers (ports) ----
@@ -448,6 +451,26 @@ void freeViewer(Viewer* v, const char* why) {
     *v = Viewer();
 }
 
+// Review F4: a view block whose CreateView fails after InitControl. Freed through its own vtable slot 0 (scalar deleting dtor, flag 1)
+// ONLY when it is provably not in the panel list (ID -1: InitControl lists a control only for ID >= 0) and its vtable is the scene
+// view's. A listed block (the consumer's layout gave the control an ID) or an unknown vtable is left as a logged leak: a leak beats a
+// dangling list entry or a wild call.
+void freeUnlistedBlock(unsigned char* block, const char* why) {
+    if (!block) return;
+    int id = 0, vt0 = 0;
+    readAt<int>(reinterpret_cast<int>(block), k2addr::off(&K2AddrTable::Ctl_Id), &id);
+    readAt<int>(reinterpret_cast<int>(block), 0, &vt0);
+    const uint32_t want = static_cast<uint32_t>(k2addr::addr(&K2AddrTable::SceneViewVtable));
+    void** vt = vtOf(block);
+    if (id != -1 || !want || static_cast<uint32_t>(vt0) != want || !vt || !saferead::probeRead(SiteP3d, vt, 4) || !vt[0]) {
+        logw("CreateView (%s): view block %p left allocated (id=%d vtable=%08x expect %08x)", why, block, id, vt0, static_cast<unsigned>(want));
+        return;
+    }
+    reinterpret_cast<void(__thiscall*)(void*, int)>(vt[0])(block, 1);
+    saferead::beginScope();
+    logf("CreateView (%s): unlisted view block %p freed", why, block);
+}
+
 uint32_t KPATCH_CALL apiCreateView(void* panel, const char* tag) {
     ensureInit();
     saferead::beginScope();
@@ -472,14 +495,14 @@ uint32_t KPATCH_CALL apiCreateView(void* panel, const char* tag) {
 
     uintptr_t scene = 0;
     int sf = sceneview::initScene(block, kSceneRoom, &scene);
-    if (sf != sceneview::SF_None) { logw("CreateView: initScene failed (code %d, scene %08x)", sf, static_cast<unsigned>(scene)); return 0; }
+    if (sf != sceneview::SF_None) { logw("CreateView: initScene failed (code %d, scene %08x)", sf, static_cast<unsigned>(scene)); freeUnlistedBlock(block, "initScene"); return 0; }
     saferead::beginScope();
     logf("CreateView: scene %08x initialised (%s)", static_cast<unsigned>(scene), kSceneRoom);
     void* rig = sceneview::addModel(block, kRigModel, -1);
     saferead::beginScope();
     int n = sceneview::modelCount(block);
     logf("CreateView: rig '%s' model=%p, scene model count=%d", kRigModel, rig, n);
-    if (!rig || n < 1) { logw("CreateView: rig missing, view unusable"); return 0; }
+    if (!rig || n < 1) { logw("CreateView: rig missing, view unusable"); freeUnlistedBlock(block, "rig"); return 0; }
     uint32_t cam = 0, camv = 0; bool camOk = sceneview::camera(block, &cam, &camv);
     logf("CreateView: camera=%08x vtable=%08x ok=%d", static_cast<unsigned>(cam), static_cast<unsigned>(camv), camOk);
     if (camOk) {
@@ -501,7 +524,7 @@ uint32_t KPATCH_CALL apiCreateView(void* panel, const char* tag) {
         if (old >= 0) { logw("CreateView: table full, evicting oldest token=%u panel=%08x", g_view[old].token, g_view[old].panel); freeViewer(&g_view[old], "evict"); }
     }
     uint32_t token = p3d::viewersAdd(&g_tokens);
-    if (!token) { logw("CreateView: no token available"); return 0; }
+    if (!token) { logw("CreateView: no token available"); freeUnlistedBlock(block, "token"); return 0; }
     Viewer* v = find(token);
     *v = Viewer();
     v->token = token; v->panel = p; v->seq = ++g_seq; v->block = block; v->rig = rig;
@@ -611,8 +634,18 @@ void KPATCH_CALL apiDestroy(uint32_t token) {
 
 void KPATCH_CALL apiSetBeforeFree(K2Preview3dBeforeFree cb, void* user) {
     ensureInit();
-    g_beforeFree = cb; g_beforeFreeUser = user;
-    if (firstN(&g_nSetCb, 4)) logf("API SetBeforeFree cb=%p user=%p", reinterpret_cast<void*>(cb), user);
+    bool ok = false;
+    if (!cb) {   // remove every registration of this user
+        for (BeforeFreeSlot& s : g_beforeFree)
+            if (s.cb && s.user == user) { s = BeforeFreeSlot{}; ok = true; }
+    } else {
+        for (BeforeFreeSlot& s : g_beforeFree)
+            if (s.cb == cb && s.user == user) { ok = true; break; }
+        for (BeforeFreeSlot& s : g_beforeFree)
+            if (!ok && !s.cb) { s = BeforeFreeSlot{cb, user}; ok = true; }
+    }
+    if (!ok) logw("SetBeforeFree: cb=%p user=%p not %s (table of %d full or user unknown)", reinterpret_cast<void*>(cb), user, cb ? "added" : "removed", kMaxBeforeFree);
+    if (firstN(&g_nSetCb, 8)) logf("API SetBeforeFree cb=%p user=%p ok=%d", reinterpret_cast<void*>(cb), user, ok ? 1 : 0);
 }
 
 void* KPATCH_CALL apiViewControl(uint32_t token) {

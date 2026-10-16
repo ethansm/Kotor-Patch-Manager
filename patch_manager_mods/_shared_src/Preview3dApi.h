@@ -58,8 +58,8 @@ extern "C" {
 #pragma pack(push, 8)
 
 /* Fired before any of the token's weapon Gobs is freed (Destroy, view teardown, Rebuild, SetWeapons), while WeaponGob still returns
- * them, so the consumer can unregister them (k2.holster UnregisterPreview). May fire more than once per operation. One slot: the
- * last SetBeforeFree wins. */
+ * them, so the consumer can unregister them (k2.holster UnregisterPreview). May fire more than once per operation. Up to 4
+ * (cb, user) registrations; every one fires. */
 typedef void (KPATCH_CALL *K2Preview3dBeforeFree)(uint32_t token, void* user);
 
 typedef struct K2Preview3dApi {
@@ -86,7 +86,7 @@ typedef struct K2Preview3dApi {
     /* Frees the creature and its attached Gobs (BeforeFree first, then weapons and helmet, then the creature). Keeps yaw, zoom,
      * panZ and the cached appearance and alignment; the token and its Bind stay valid. */
     void     (KPATCH_CALL *Destroy)(uint32_t token);
-    /* Registers the BeforeFree callback with its user pointer. cb 0 clears it. */
+    /* Adds a BeforeFree (cb, user) registration (a repeat is a no-op; up to 4). cb 0 removes every registration of `user`. */
     void     (KPATCH_CALL *SetBeforeFree)(K2Preview3dBeforeFree cb, void* user);
     /* The CSWGui3DSceneView control CreateView bound (the GUI control the consumer lists with appendToPanel when the layout control
      * had ID -1, and resizes with its rect slot), or 0 for an unknown token. */

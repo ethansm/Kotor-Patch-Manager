@@ -3,7 +3,7 @@ id = "holster-editor"
 name = "Holster Editor"
 version = "0.1.0-dev"
 author = "local"
-description = "Scaffold for the in-game holster placement editor (D3a). Hooks the GUI panel constructor (OptBindView), the panel Draw (OptTick, the hot path shared by every panel) and the panel destructor (OptDestroy). Scaffold only: the handlers pass every call through, so no game behaviour changes yet. Needs holster (k2.holster@1) and preview-3d (k2.preview3d@1)."
+description = "Holster placement editor on the in-game Options screen, D3a skeleton + embedded-layout probe (doc 42 HW-EDIT). Adds a Holstered weapons button under the Options button column; clicking it enters an editor mode that hides the vanilla controls (BTN_EXIT stays) and shows a Back button, a header and the 3D preview view bound from a layout embedded in the DLL (no override file). Placement editing is not in this build. Hooks the Options ctor (OptBindView), CSWGuiPanel::Draw filtered on the Options vtable (OptTick) and the Options dtor (OptDestroy). Needs holster (k2.holster@1) and preview-3d (k2.preview3d@1); log holster-editor_log.txt."
 kind = "patch"
 
 requires = ["holster", "preview-3d"]

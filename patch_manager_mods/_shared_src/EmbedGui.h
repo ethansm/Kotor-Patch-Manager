@@ -14,7 +14,8 @@
 //
 // Engine calls go through seven named wrappers (callNew .. callDtor), the only place a call is made. Game build: inline, real Steam
 // addresses. EMBEDGUI_HOST: the wrappers are only declared here; embedgui_test.cpp defines them as fakes with the same signatures.
-// UNVERIFIED (asm not read): the ctor argument push order (kept in callCtor only) and the Malloc return type (treated as bool).
+// Checked against the static dumps (review 10-16): ctor 0x716FD0 is __thiscall(obj; ushort type, char* ext, resref) RET 12, as callCtor
+// pushes it; Malloc 0x712F30 returns bool (+0x10 != 0) and gives the budget back on failure.
 #pragma once
 #include <stdint.h>
 #include <string.h>

@@ -9,8 +9,10 @@
 //   OptTick      CSWGuiPanel::Draw 0x40EC90, every panel every frame: returns at once unless [ECX] is the Options vtable. First tick
 //                appends our controls (id = list index), then handles clicks: BTN_HOLSTER enters editor mode (vanilla controls hidden,
 //                their raw flags saved first), Back leaves it (raw flags written back). A gap in the tick ends editor mode.
-//   OptDestroy   0x8A1930, the Options scalar deleting dtor, on entry: destroys the preview creature and forgets the panel. Our
-//                controls are panel children; nothing is freed by hand.
+//   OptDestroy   0x8A1930, the Options scalar deleting dtor, on entry: destroys the preview creature and forgets the panel. The engine
+//                does NOT free our controls (0x8A1960 frees only its member controls; CSWGuiPanel dtor 0x40E860 frees the list array,
+//                P+0x30 and P+0x60), so the view block and the 4 labels leak once per Options panel (review F3). Deliberate for D3a:
+//                freeing them needs the panel's hover/focus pointers checked first (open item for D3b, plan handoff §5).
 // Esc / BTN_EXIT are never intercepted (they close the whole in-game GUI; BTN_EXIT stays visible in editor mode).
 // Probe lines (log only): EMBED (open, view bind, control id, restore), INPUTCLASS (click position + hits), HIDDENDRAW (panel flag
 // changes and tick gaps: does Draw keep firing while the panel is hidden).
@@ -216,7 +218,11 @@ void leaveEditor(const char* why) {
     if (e.haveSaved && oFlags) {
         for (int i = 0; i < n; ++i) {
             const uintptr_t c = listCtl(e.panel, i);
-            if (c && e.savedFlags[i] != -1 && guikit::detail::wr<int>(c, oFlags, e.savedFlags[i])) ++restored;   // exact vanilla flags (incl. 0x20)
+            // Review F5: put back only the two bits setVisible changed (visible bit1, click-through 0x20); any other state bit the
+            // vanilla code changed while the editor was open (hover, selected, disabled) is kept as it is now.
+            int cur = 0;
+            const int mask = guikit::FlagVisible | guikit::FlagClickThrough;
+            if (c && e.savedFlags[i] != -1 && rd<int>(c, oFlags, &cur) && guikit::detail::wr<int>(c, oFlags, (cur & ~mask) | (e.savedFlags[i] & mask))) ++restored;
         }
     }
     e.haveSaved = false;
@@ -267,7 +273,11 @@ extern "C" void __cdecl OptBindView(int panelArg) {
     uint32_t back = 0;
     (void)rd<uint32_t>(P, embedgui::PanelLayoutSlot, &back);
     KP_LOG(chEmbed, "EMBED restore layout=%x (expect %x) %s", static_cast<unsigned>(back), static_cast<unsigned>(slot), back == slot ? "ok" : "MISMATCH");
-    if (back != slot) { g_ed = Editor(); return; }   // never touch the layout again if the restore did not hold
+    if (back != slot) {   // never touch the layout again if the restore did not hold
+        if (g_ed.token && g_p3.ok()) g_p3.p->Destroy(g_ed.token);   // review F4 (the unlisted view block itself stays: the token still points at it)
+        g_ed = Editor();
+        return;
+    }
 
     // Labels from the vanilla layout (open until StopLoadFromLayout right after this hook).
     g_ed.btn = cloneLabel(P, "btn_holster");
@@ -322,7 +332,7 @@ extern "C" void __cdecl OptDestroy(int panelArg) {
     saferead::beginScope();
     if (g_ed.token && g_p3.ok()) g_p3.p->Destroy(g_ed.token);
     KP_LOG(chMain, "DTOR panel=%x token=%u editor=%d", static_cast<unsigned>(P), g_ed.token, g_ed.editor ? 1 : 0);
-    g_ed = Editor();   // controls are panel children: the engine frees them (no manual free, G5)
+    g_ed = Editor();   // our controls are not freed (see the OptDestroy note at the top: a known per-panel leak, review F3)
 }
 
 // Written out literally (create-patch's export scan reads the source text) and listed in exports.def.
