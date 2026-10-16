@@ -45,7 +45,10 @@ repo-relative; `patch_manager_mods/` is implied unless a path starts with `scrip
    do not raise caps on your own.
 3. Stop. The user picks the batch. One batch per session; the next batch is the next plan phase after /clear.
 
-### `run <W-A>`
+### `run <W-A>` (end to end: brief → wave → consolidate → review → apply → close, in one turn)
+Invoking `run` is the user's approval of the batch. Do not stop or hand the user a command between steps: apply,
+close and `/plan-handoff` all run in this turn. Stop early only for a decision that is the user's (a unit to drop
+for exit 3, the live Common sync, a destructive action).
 1. `python3 scripts/fix_wave.py brief <W> --batch A`. Exit 3 lists rejected units: fix the row (entries too big) or
    drop it with the user's OK; never launch a partial batch silently.
 2. Haiku wave: `agent_contract.py snapshot`, then one `model: haiku` Agent per `uNN.brief.md` (description
@@ -69,7 +72,8 @@ repo-relative; `patch_manager_mods/` is implied unless a path starts with `scrip
    - Exit 0: run the one printed close command (`wi_driver.py close ...` or `git commit ... -- <paths>`), then
      `fix_wave.py apply <W-A> <id> --commit <sha>`. A shared item also prints
      `sync live Common (user OK): python3 scripts/check_shared_headers.py --sync`; run it only after the user says yes.
-5. When every item is `applied` or `park`: go to `close`.
+5. When every item is `applied` or `park`: run the `close` steps below immediately (no user prompt). `close <W-A>`
+   on its own exists only to resume a session that ended before close.
 
 ### `status <W-A>` / `apply <W-A>`
 Run the CLI subcommand and report its lines; nothing else.
@@ -86,6 +90,7 @@ Run the CLI subcommand and report its lines; nothing else.
 - Ladder: Haiku variants → Sonnet consolidator (`isolation: worktree`) → independent Sonnet reviewer (fresh
   worktree). Opus only briefs, relays and applies. This Sonnet use is a sanctioned exception to the SUBAGENT_ROLES
   "Sonnet = escalation" rule, at the user's request (10-15).
+- `run` never ends before `close` finishes, unless a user decision blocks it; say which one in the report.
 - One batch per session. Batches come from `plan`; never hand-merge two batches.
 - At most `max_inflight` (20) agents in flight; take free slots from the first `status` line.
 - After launching, do not read replies per notification. Run `status` when about 5 notifications have arrived or
