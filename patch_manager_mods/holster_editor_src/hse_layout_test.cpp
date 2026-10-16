@@ -109,6 +109,41 @@ static void testModalLayout() {
     KT_CHECK(Big.rows[0].track.w == 320 - 8 - 136);              // track is the flexible part
 }
 
+static void testViewRect() {
+    using menulayout::Rect;
+    Rect v = viewRect(Rect{294, 134, 232, 336});            // vanilla pane: 216 x 336, 12 left of it
+    KT_CHECK(v.x == 66 && v.y == 134 && v.w == 216 && v.h == 336);
+    Rect d = viewRect(Rect{588, 268, 464, 672});            // 2x scale
+    KT_CHECK(d.x == 588 - 24 - 432 && d.y == 268 && d.w == 432 && d.h == 672);
+    Rect u = viewRect(Rect{800, 100, 300, 504});            // 1.5x: w 324, gap 18
+    KT_CHECK(u.w == 324 && u.h == 504 && u.x == 800 - 18 - 324);
+    Rect z = viewRect(Rect{294, 134, 232, 0});
+    KT_CHECK(z.x == 0 && z.y == 0 && z.w == 0 && z.h == 0);
+    Rect z2 = viewRect(Rect{294, 134, 0, 336});
+    KT_CHECK(z2.w == 0 && z2.h == 0);
+    KT_CHECK(viewRect(Rect{294, 134, 232, 336}).x + viewRect(Rect{294, 134, 232, 336}).w + 12 == 294);   // gap to the pane
+}
+
+static void testStatusFloor() {
+    using menulayout::Rect;
+    // vanilla: QUIT bottom 418, view bottom 470, bars at 505 and below
+    int bars[5] = {560, 505, 530, 100, 0};
+    KT_CHECK_EQ(statusFloor(bars, 5, 418, 470), 505);       // nearest bar below QUIT with room under the view
+    Rect strip = menulayout::statusStrip(Rect{66, 134, 216, 336}, statusFloor(bars, 5, 418, 470));
+    KT_CHECK(strip.y == 474 && strip.h == 28 && strip.x == 66 && strip.w == 216);
+    int tight[2] = {440, 520};                              // 440 is below QUIT but above the view bottom 470: no room under the view
+    KT_CHECK_EQ(statusFloor(tight, 2, 418, 470), 520);      // skipped, 520 wins
+    int none[2] = {10, 20};
+    KT_CHECK_EQ(statusFloor(none, 2, 418, 470), 504);       // no bar: view bottom + 34
+    KT_CHECK_EQ(statusFloor(nullptr, 0, 418, 470), 504);
+    int above[2] = {400, 410};                              // bars at/above QUIT bottom; view bottom 400: neither has 16 px of room
+    KT_CHECK_EQ(statusFloor(above, 2, 418, 400), 434);      // falls back to view bottom + 34
+    int second[2] = {300, 430};                             // first pass fails (430 > 418 but...): 430 - 400 = 30 >= 16 qualifies
+    KT_CHECK_EQ(statusFloor(second, 2, 418, 400), 430);
+    int viaSecond[2] = {300, 417};                          // not below QUIT bottom 418, but 417 - 400 >= 16: second pass takes it
+    KT_CHECK_EQ(statusFloor(viaSecond, 2, 418, 400), 417);
+}
+
 static void testLegend() {
     KT_CHECK(strcmp(legendText(), "L-drag rotate | R-drag move | Shift+wheel depth | wheel zoom | M-drag spin | X/Y/Z lock (bone axis; may change all 3 Rot) | Shift fine | Ctrl snap 5deg/0.01m") == 0);
 }
@@ -116,6 +151,8 @@ static void testLegend() {
 int main() {
     testRectHelpers();
     testModalLayout();
+    testViewRect();
+    testStatusFloor();
     testLegend();
     return kt::Report("hse_layout");
 }

@@ -5,6 +5,7 @@
 #pragma once
 #include <math.h>
 #include "EditKit.h"
+#include "MenuLayout.h"
 
 namespace hse {
 
@@ -83,6 +84,38 @@ inline ModalLayout modalLayout(editkit::Box pane, const float* thumbFrac) {
     int b4 = (W - (kModalButtons - 1) * gap) / kModalButtons;
     for (int i = 0; i < kModalButtons; ++i) L.buttons[i] = editkit::Box{left + i * (b4 + gap), y, b4, 22};
     return L;
+}
+
+// ---------------------------------------------------------------- editor view + status (card c13)
+// The 3D view sits LEFT of the description pane (LB_DESC), so the title and status labels no longer share its rect. Layout units
+// are the vanilla 800x600 GUI space: LB_DESC is 232 x 336 and the view is 216 x 336, 12 units left of it. Everything scales by
+// s = desc.h / 336 (integer math, rounded to nearest): w = 216 s, gap = 12 s, x = desc.x - gap - w, y = desc.y, h = desc.h.
+// A desc rect with no area gives the zero rect.
+constexpr int kViewRefW = 216, kViewRefH = 336, kViewRefGap = 12;
+inline menulayout::Rect viewRect(const menulayout::Rect& desc) {
+    menulayout::Rect r = {0, 0, 0, 0};
+    if (desc.w <= 0 || desc.h <= 0) return r;
+    const int w = (kViewRefW * desc.h + kViewRefH / 2) / kViewRefH;
+    const int gap = (kViewRefGap * desc.h + kViewRefH / 2) / kViewRefH;
+    r.x = desc.x - gap - w;
+    r.y = desc.y;
+    r.w = w;
+    r.h = desc.h;
+    return r;
+}
+
+// Floor for menulayout::statusStrip: the top y of the nearest slider bar below the button column (strictly below quitBottom) that
+// leaves at least 16 px under the view; else the nearest bar at least 16 px under the view; else viewBottom + 34 (a full 28 px strip).
+inline int statusFloor(const int* barY, int n, int quitBottom, int viewBottom) {
+    const int kRoom = 16;
+    int best = 0;
+    bool have = false;
+    for (int i = 0; barY && i < n; ++i)
+        if (barY[i] > quitBottom && barY[i] - viewBottom >= kRoom && (!have || barY[i] < best)) { best = barY[i]; have = true; }
+    if (have) return best;
+    for (int i = 0; barY && i < n; ++i)
+        if (barY[i] - viewBottom >= kRoom && (!have || barY[i] < best)) { best = barY[i]; have = true; }
+    return have ? best : viewBottom + 34;
 }
 
 // Legend shown while the modal is open: the drag controls.

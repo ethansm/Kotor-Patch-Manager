@@ -124,4 +124,9 @@ constexpr uintptr_t ClientCreatureSetAppearance = 0x0076D200;   // CSWCCreature:
 constexpr uintptr_t PreviewSetAlign = 0x0085D430;        // thiscall(preview[0x89], int align) RET 4 (equip3d, live)
 constexpr uintptr_t ClientCreatureSetup3DScene = 0x0077EC20;    // CSWCCreature::Setup3DScene (name_map medium) thiscall(preview, view, real, 0, 1) RET 0x10
 
+// ---- in-game Options panel description path (holster-editor 0.1.1-probe, card c13; static dump reads, not yet live-verified) ----
+constexpr uintptr_t OptionsSetDescription = 0x008A2320;  // Options panel description fn: thiscall ECX=panel, ONE stack arg = TLK strref (int, -1 = none), RET 4 (dump decomp/8a/008a2320.asm:36-39,134)
+constexpr uintptr_t ExoStringAssign = 0x007337C0;        // CExoString::operator= thiscall(dst, CExoString* src) RET 4; CExoString = {char* ptr, uint cap}, dump decomp/73/007337c0.c
+constexpr uintptr_t GuiTextObjRefresh = 0x00417800;      // fastcall(ECX = text holder): when holder+0x14/+0x10/+0xC are all set, calls [holder+0x14]->vt[0x4C](-1); tail of 416EA0 (dump decomp/41/00416ea0.asm 416f68, 41/00417800.c)
+
 } // namespace gameaddr

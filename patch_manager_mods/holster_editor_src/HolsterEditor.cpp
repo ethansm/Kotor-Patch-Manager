@@ -1,21 +1,27 @@
-// HolsterEditor.cpp -- holster-editor 0.1.0-dev (Steam build): D3a skeleton + embedded-layout probe on the in-game Options screen
+// HolsterEditor.cpp -- holster-editor 0.1.1-probe (Steam build): D3a skeleton + embedded-layout probe on the in-game Options screen
 // (doc 42 HW-EDIT, plan .claude/plans/holster_editor_options.md). Handlers are plain extern "C" void __cdecl functions; the detour
 // wrappers in kotor2-steam-aspyr.hooks.toml call them BEFORE the stolen bytes run.
 //
-// D3a scope (no placement editing yet; that is D3b-D3d):
+// 0.1.1-probe (card c13, DLL only; hooks unchanged) on top of D3a:
+//   * the entry and Back controls are real CSWGuiButton clones (BTN_GAMEPLAY, BTN_EXIT; GuiButton.h) with a label fallback; the title is a
+//     LBL_TITLE clone; the 3D view sits left of LB_DESC (hse::viewRect) so the title and the status strip are no longer covered.
+//   * the entry is inserted into the button column after GAMEPLAY (menulayout::columnReflow), the five later rows move down one pitch.
+//   * hovering the entry writes a description through the vanilla path (0x8A2320, see describe()); HOVER lines log whether the engine
+//     highlights our button by itself.
+//   * clicks act on the LMB RELEASE; editor mode also hides BTN_EXIT and LBL_TITLE and clears the keyboard focus.
+//   * OptDestroy frees our controls with the r7 recipe (free_labels, default on; the 3D view only with free_view, default off).
+// Every new behaviour is gated in holster_editor.ini.
+//
+// Pieces kept from D3a:
 //   OptBindView  0x8A16FE, inside the Options ctor with the layout still open (panel = [ebp-0xAC]). Swaps P+0x30 to the embedded
 //                HSE_VIEW layout (EmbedGui.h), lets preview-3d bind the 3D view to it, restores P+0x30 FIRST, then clones the label
-//                templates of the vanilla layout: BTN_HOLSTER (a button-styled label), Back, and two pane labels (header, status).
+//                and button templates of the vanilla layout.
 //   OptTick      CSWGuiPanel::Draw 0x40EC90, every panel every frame: returns at once unless [ECX] is the Options vtable. First tick
-//                appends our controls (id = list index), then handles clicks: BTN_HOLSTER enters editor mode (vanilla controls hidden,
-//                their raw flags saved first), Back leaves it (raw flags written back). A gap in the tick ends editor mode.
-//   OptDestroy   0x8A1930, the Options scalar deleting dtor, on entry: destroys the preview creature and forgets the panel. The engine
-//                does NOT free our controls (0x8A1960 frees only its member controls; CSWGuiPanel dtor 0x40E860 frees the list array,
-//                P+0x30 and P+0x60), so the view block and the 4 labels leak once per Options panel (review F3). Deliberate for D3a:
-//                freeing them needs the panel's hover/focus pointers checked first (open item for D3b, plan handoff §5).
-// Esc / BTN_EXIT are never intercepted (they close the whole in-game GUI; BTN_EXIT stays visible in editor mode).
-// Probe lines (log only): EMBED (open, view bind, control id, restore), INPUTCLASS (click position + hits), HIDDENDRAW (panel flag
-// changes and tick gaps: does Draw keep firing while the panel is hidden).
+//                appends our controls (id = list index); then hover, release-edge clicks and layout re-apply. A gap in the tick ends editor mode.
+//   OptDestroy   0x8A1930, the Options scalar deleting dtor, on entry: clears every engine reference to our controls, truncates the list
+//                (the vanilla dtor frees only the array buffer, never a listed control), frees them, destroys the preview creature.
+// Esc is never intercepted (it closes the whole in-game GUI). BTN_EXIT is hidden in editor mode and Back takes its place.
+// Probe lines (log only): EMBED, BTNCLONE, REFLOW, RELAYOUT, HOVER, DESC, FREE, FREEVIEW, INPUTCLASS, HIDDENDRAW.
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,6 +34,8 @@
 #include "K2Addr.h"
 #include "GameAddr.h"
 #include "GuiKit.h"
+#include "GuiButton.h"
+#include "MenuLayout.h"
 #include "EmbedGui.h"
 #include "HolsterApi.h"
 #include "Preview3dApi.h"
@@ -44,32 +52,74 @@ const bool g_fallbackSet = (KpLog_SetFallbackFile("holster-editor_log.txt"), KpL
 
 namespace {
 
-constexpr uint32_t kOptionsVtable = static_cast<uint32_t>(gameaddr::OptionsInGameVtable);
-// Vanilla optionsingame_p list indices (ID == index, d2c section 1): the button column template and the description pane.
-constexpr int kIdxGameplay = 1, kIdxExit = 13, kIdxDesc = 15;
-constexpr int kMaxVanilla = 64;
-constexpr DWORD kTickGapMs = 500;   // longer than this between two Options draws = the panel was not on screen: leave editor mode
-constexpr const char* kLabelTemplate = "LBL_TITLE";
+using menulayout::Rect;
 
+constexpr uint32_t kOptionsVtable = static_cast<uint32_t>(gameaddr::OptionsInGameVtable);
+constexpr uint32_t kLabelVtable = static_cast<uint32_t>(gameaddr::LabelVtable);
+constexpr uint32_t kButtonVtable = static_cast<uint32_t>(gameaddr::ButtonVtable);
+constexpr uint32_t kSceneViewVtable = static_cast<uint32_t>(gameaddr::SceneViewVtable);
+// Vanilla optionsingame_p list indices (ID == index, d2c section 1).
+constexpr int kIdxQuit = 2, kIdxTitle = 3, kIdxExit = 13, kIdxDesc = 15;
+constexpr int kBarFirst = 8, kBarLast = 12;
+constexpr int kColumnN = 8, kInsertAfter = 2;                                   // column positions top -> bottom, insert after GAMEPLAY
+constexpr int kColumnIdx[kColumnN] = {0, 14, 1, 4, 5, 6, 7, 2};                 // SAVEGAME LOADGAME GAMEPLAY FEEDBACK AUTOPAUSE GRAPHICS SOUND QUIT
+constexpr int kMovedN = kColumnN - kInsertAfter - 1;                            // rows that move down: positions 3..7
+constexpr int kMaxVanilla = 64;
+constexpr int kMaxTargets = 16;
+constexpr int kMaxReapply = 8;                                                  // per target, then give up (a SetRect the engine keeps rewriting)
+constexpr DWORD kTickGapMs = 500;   // longer than this between two Options draws = the panel was not on screen: leave editor mode
+constexpr DWORD kLeaveDelayMs = 100;   // Back: restore the vanilla controls this long after the LMB is up (the release must not reach BTN_EXIT)
+constexpr const char* kLabelTemplate = "LBL_TITLE";
+constexpr const char* kDescText = "Adjust where holstered weapons sit on each party member. Changes preview here and save to holster.ini.";
+// Options panel offsets (static dump reads, doc r4/r7/r9): manager, focus, description string object, text holder pointer, label.
+constexpr int kPanelMgr = 0x1C, kPanelFocus = 0x20, kDescStr = 0x1120, kDescHolderPtr = 0x1170, kDescLabel = 0x1030;
+constexpr int kMgrHover = 0x08, kMgrCaptureFlag = 0x0C, kMgrCapture = 0x10, kMgrLastHit = 0x14;
+constexpr int kVtSetActive = 0x08, kVtHover = 0x0C;
+constexpr int kHolderObj = 0x14, kObjSetText = 0x18;
+
+struct Config {
+    bool buttonClone = true;   // clone CSWGuiButton templates for the entry and Back (else the D3a label clones)
+    bool reflow = true;        // insert the entry into the column and move the later rows (else place it below QUIT)
+    bool desc = true;          // write the hover description through the vanilla path
+    bool freeLabels = true;    // free our labels and buttons in OptDestroy (r7 recipe)
+    bool freeView = false;     // also free the 3D view block after preview-3d destroys the creature (probe)
+};
+Config g_cfg;
 bool g_enabled = true;
 bool g_debug = false;
 const KPatchApi* g_api = nullptr;
 k2p3::Client g_p3;
 k2holster::Client g_hol;
 
+struct Target {
+    uintptr_t ctl = 0;
+    Rect r = {0, 0, 0, 0};
+    int applied = 0;
+    bool gaveUp = false;
+};
+
 struct Editor {
     uintptr_t panel = 0;
     int vanillaCount = 0;
     uintptr_t view = 0;        // the CSWGui3DSceneView control preview-3d bound to HSE_VIEW
     uint32_t token = 0;        // preview-3d viewer token
-    uintptr_t btn = 0, back = 0, header = 0, status = 0;
+    uintptr_t btn = 0, back = 0, title = 0, status = 0;
+    bool btnIsButton = false, backIsButton = false;
     bool appended = false;
     bool editor = false;
     int savedFlags[kMaxVanilla] = {};
     bool haveSaved = false;
     DWORD lastTick = 0;
     int lastFlags48 = -1;
-    guikit::ClickEdge click;
+    Target tg[kMaxTargets];
+    int nTg = 0;
+    int relayouts = 0;
+    bool prevDown = false;
+    int pressed = 0;           // 0 none, 1 = entry, 2 = Back (the control the LMB went down on)
+    DWORD leaveAt = 0;         // Back released: leave editor mode at this tick count (0 = none)
+    bool lastOurs = false;
+    uint32_t lastM08 = 0xFFFFFFFFu;
+    int lastHl = -1;
 };
 Editor g_ed;
 
@@ -86,6 +136,13 @@ template <typename T>
 bool rd(uintptr_t base, int off, T* out) { return saferead::readAt<T>(0xE70100u, base, off, out); }
 
 int ctlFlagsOff() { return k2addr::off(&K2AddrTable::Ctl_Flags); }
+
+// Engine call shapes (thiscall = ECX is the object). Every call site is gated on a vtable / pointer read first.
+using Call1Fn = void(__thiscall*)(void*, int);
+using Call2Fn = void(__thiscall*)(void*, int, int);
+using TextPushFn = void(__thiscall*)(void*, const char*);
+using AssignFn = void*(__thiscall*)(void*, void*);
+using FixFn = void(__fastcall*)(void*);
 
 // Vanilla control i of the panel list (Panel_CtlArray {ptr, count, cap}), 0 when out of range or unreadable.
 uintptr_t listCtl(uintptr_t panel, int i) {
@@ -111,6 +168,41 @@ uintptr_t cloneLabel(uintptr_t panel, const char* what) {
     return c;
 }
 
+// A real CSWGuiButton clone of `tag`; on any failure (or ini button_clone=0) the D3a label clone instead. *isButton = which one you got.
+uintptr_t cloneEntry(uintptr_t panel, const char* tag, const char* what, bool* isButton) {
+    *isButton = false;
+    if (g_cfg.buttonClone) {
+        int why = 0;
+        uint32_t badVt = 0;
+        bool canary = false;
+        const uintptr_t b = guibutton::createButtonFromTemplate(panel, tag, &why, &badVt, &canary);
+        KP_LOG(chMain, "BTNCLONE %s from %s ctl=%x vt=%x why=%d canary=%d", what, tag, static_cast<unsigned>(b), static_cast<unsigned>(badVt), why,
+               canary ? 1 : 0);
+        if (b && canary) {
+            KP_LOG(chMain, "BTNCLONE %s ok canary=1", what);
+            *isButton = true;
+            return b;
+        }
+        if (b) {   // constructed fine but the canary slack was overwritten: do not use it
+            KP_LOG(chMain, "BTNCLONE %s canary overrun: releasing the button", what);
+            guibutton::releaseUnlinkedButton(b);
+        }
+        KP_LOG(chMain, "BTNCLONE %s fallback label", what);
+    } else {
+        KP_LOG(chMain, "BTNCLONE %s skipped (button_clone=0): label", what);
+    }
+    return cloneLabel(panel, what);
+}
+
+bool setCtlText(uintptr_t ctl, bool isButton, const char* text) {
+    if (!ctl) return false;
+    const bool ok = isButton ? guibutton::setButtonText(ctl, text) : guikit::setText(ctl, text);
+    if (!ok) KP_LOG(chMain, "TEXT set failed ctl=%x button=%d", static_cast<unsigned>(ctl), isButton ? 1 : 0);
+    return ok;
+}
+
+bool iniBool(const char* v) { return !_stricmp(v, "1") || !_stricmp(v, "on") || !_stricmp(v, "true") || !_stricmp(v, "yes"); }
+
 void readConfig() {
     FILE* f = fopen("holster_editor.ini", "r");
     if (!f) return;
@@ -128,9 +220,14 @@ void readConfig() {
         char* k = p;
         n = strlen(k);
         while (n && (k[n - 1] == ' ' || k[n - 1] == '\t')) k[--n] = 0;
-        const bool on = !_stricmp(v, "1") || !_stricmp(v, "on") || !_stricmp(v, "true") || !_stricmp(v, "yes");
+        const bool on = iniBool(v);
         if (!_stricmp(k, "enabled")) g_enabled = on;
         else if (!_stricmp(k, "debug")) g_debug = on;
+        else if (!_stricmp(k, "button_clone")) g_cfg.buttonClone = on;
+        else if (!_stricmp(k, "reflow")) g_cfg.reflow = on;
+        else if (!_stricmp(k, "desc")) g_cfg.desc = on;
+        else if (!_stricmp(k, "free_labels")) g_cfg.freeLabels = on;
+        else if (!_stricmp(k, "free_view")) g_cfg.freeView = on;
     }
     fclose(f);
 }
@@ -142,47 +239,177 @@ void logRect(const char* what, uintptr_t ctl) {
            ctl && guikit::isVisible(ctl) ? 1 : 0);
 }
 
-// First Options draw: list our controls (id = list index), place them from the live vanilla rects (ultrawide-aware), show BTN_HOLSTER.
+bool ctlRect(uintptr_t ctl, Rect* out) {
+    int x = 0, y = 0, w = 0, h = 0;
+    if (!ctl || !guikit::getExtent(ctl, &x, &y, &w, &h) || w <= 0 || h <= 0) return false;
+    *out = Rect{x, y, w, h};
+    return true;
+}
+
+void addTarget(Editor& e, uintptr_t ctl, const Rect& r) {
+    if (!ctl || e.nTg >= kMaxTargets) return;
+    e.tg[e.nTg] = Target();
+    e.tg[e.nTg].ctl = ctl;
+    e.tg[e.nTg].r = r;
+    ++e.nTg;
+}
+
+// Writes every target rect (initial) or only the ones whose control rect drifted (RELAYOUT, a few times per target).
+void applyTargets(Editor& e, bool initial) {
+    for (int i = 0; i < e.nTg; ++i) {
+        Target& t = e.tg[i];
+        if (!t.ctl || t.gaveUp) continue;
+        int x = 0, y = 0, w = 0, h = 0;
+        if (!guikit::getExtent(t.ctl, &x, &y, &w, &h)) continue;
+        if (x == t.r.x && y == t.r.y && w == t.r.w && h == t.r.h) continue;
+        if (!initial) {
+            if (t.applied >= kMaxReapply) {
+                t.gaveUp = true;
+                KP_LOG(chMain, "RELAYOUT gave up on ctl=%x id=%d after %d re-applies (now %d,%d,%d,%d want %d,%d,%d,%d)", static_cast<unsigned>(t.ctl),
+                       ctlId(t.ctl), t.applied, x, y, w, h, t.r.x, t.r.y, t.r.w, t.r.h);
+                continue;
+            }
+            ++t.applied;
+            ++e.relayouts;
+            if (e.relayouts <= 32)
+                KP_LOG(chMain, "RELAYOUT n=%d ctl=%x id=%d was (%d,%d,%d,%d) -> (%d,%d,%d,%d)", e.relayouts, static_cast<unsigned>(t.ctl), ctlId(t.ctl), x, y,
+                       w, h, t.r.x, t.r.y, t.r.w, t.r.h);
+        }
+        guikit::setRect(t.ctl, t.r.x, t.r.y, t.r.w, t.r.h);
+    }
+}
+
+// SetActiveControl(0, 0) (0x40EC00 via vtable slot 2): drops the keyboard focus so Enter cannot open a hidden sub-panel.
+bool clearFocus(uintptr_t P) {
+    uint32_t vt = 0, fn = 0;
+    if (!rd<uint32_t>(P, 0, &vt) || vt != kOptionsVtable || !rd<uint32_t>(vt, kVtSetActive, &fn) || !fn) return false;
+    reinterpret_cast<Call2Fn>(static_cast<uintptr_t>(fn))(reinterpret_cast<void*>(P), 0, 0);
+    return true;
+}
+
+// Description path. The vanilla function 0x8A2320 takes a TLK STRREF (0x416EA0 stores it at P+0x1120+8 and resolves it through the TLK table),
+// not a string, so a custom text cannot be passed to it. Instead: store our text into the CExoString at P+0x1120 (0x7337C0), do what the
+// strref branch of 0x416EA0 does afterwards (push the C string to the text object [[P+0x1170]+0x14] vt[0x18], then 0x417800), then call
+// 0x8A2320(P, -1): strref -1 skips the TLK branch, every later step (temp copy, list clear, rect, relayout, scroll flag) runs unchanged.
+bool describe(uintptr_t P, const char* text, const char** why) {
+    *why = "";
+    uint32_t vt = 0, lvt = 0;
+    if (!guibutton::steamBuild() || !guikit::g_gk.exoCtor || !guikit::g_gk.exoDtor) { *why = "no-engine"; return false; }
+    if (!rd<uint32_t>(P, 0, &vt) || vt != kOptionsVtable) { *why = "panel-vt"; return false; }
+    if (!rd<uint32_t>(P, kDescLabel, &lvt) || lvt != kLabelVtable) { *why = "label-vt"; return false; }
+    char exo[16] = {0};
+    guikit::g_gk.exoCtor(exo, text);
+    reinterpret_cast<AssignFn>(gameaddr::ExoStringAssign)(reinterpret_cast<void*>(P + kDescStr), exo);
+    guikit::g_gk.exoDtor(exo);
+    uint32_t cstr = 0;
+    if (!rd<uint32_t>(P, kDescStr, &cstr) || !cstr) { *why = "assign"; return false; }
+    uint32_t holder = 0, obj = 0, ovt = 0, fn = 0;
+    int pushed = 0;
+    if (rd<uint32_t>(P, kDescHolderPtr, &holder) && holder && rd<uint32_t>(holder, kHolderObj, &obj) && obj && rd<uint32_t>(obj, 0, &ovt) && ovt &&
+        rd<uint32_t>(ovt, kObjSetText, &fn) && fn) {
+        reinterpret_cast<TextPushFn>(static_cast<uintptr_t>(fn))(reinterpret_cast<void*>(obj), reinterpret_cast<const char*>(static_cast<uintptr_t>(cstr)));
+        reinterpret_cast<FixFn>(gameaddr::GuiTextObjRefresh)(reinterpret_cast<void*>(holder));
+        pushed = 1;
+    }
+    reinterpret_cast<Call1Fn>(gameaddr::OptionsSetDescription)(reinterpret_cast<void*>(P), -1);
+    static volatile LONG s_d = 0;
+    if (InterlockedIncrement(&s_d) <= 16) KP_LOG(chMain, "DESC ok via=8A2320 strref=-1 holder=%x pushed=%d", static_cast<unsigned>(holder), pushed);
+    return true;
+}
+
+// First Options draw: list our controls (id = list index), measure the vanilla rects (ultrawide-aware), place everything, show the entry.
 void firstTick() {
     Editor& e = g_ed;
     e.appended = true;
-    uintptr_t* mine[] = {&e.view, &e.btn, &e.back, &e.header, &e.status};
-    const char* names[] = {"view", "btn", "back", "header", "status"};
+    uintptr_t* mine[] = {&e.view, &e.btn, &e.back, &e.title, &e.status};
+    const char* names[] = {"view", "btn", "back", "title", "status"};
     for (int i = 0; i < 5; ++i) {
         if (!*mine[i]) continue;
         const bool ok = guikit::appendToPanel(e.panel, *mine[i]);
         KP_LOG(chEmbed, "EMBED append %s ctl=%x ok=%d id=%d", names[i], static_cast<unsigned>(*mine[i]), ok ? 1 : 0, ctlId(*mine[i]));
         if (!ok) *mine[i] = 0;
     }
-    // BTN_HOLSTER: below the button column, same pitch (d2c 2a: layout (78,422,318,32), BTN_GAMEPLAY at y 206).
-    int gx = 0, gy = 0, gw = 0, gh = 0, dx = 0, dy = 0, dw = 0, dh = 0;
-    const uintptr_t gp = listCtl(e.panel, kIdxGameplay), desc = listCtl(e.panel, kIdxDesc);
-    const bool gpOk = gp && guikit::getExtent(gp, &gx, &gy, &gw, &gh) && gw > 0 && gh > 0;
-    const bool dOk = desc && guikit::getExtent(desc, &dx, &dy, &dw, &dh) && dw > 0 && dh > 0;
-    KP_LOG(chMain, "TEMPLATE gameplay=%x ok=%d (%d,%d,%d,%d) desc=%x ok=%d (%d,%d,%d,%d) vanilla=%d", static_cast<unsigned>(gp), gpOk ? 1 : 0, gx, gy,
-           gw, gh, static_cast<unsigned>(desc), dOk ? 1 : 0, dx, dy, dw, dh, e.vanillaCount);
-    if (gpOk) {
-        const int by = gy + (422 - 206) * gh / 32;
-        if (e.btn) guikit::setRect(e.btn, gx, by, gw, gh);
-        if (e.back) guikit::setRect(e.back, gx, by, gw, gh);
+    // Button column, top -> bottom.
+    Rect col[kColumnN];
+    bool colOk = true;
+    for (int i = 0; i < kColumnN; ++i) {
+        if (!ctlRect(listCtl(e.panel, kColumnIdx[i]), &col[i])) colOk = false;
+        else if (g_debug) KP_LOG(chMain, "COLUMN pos=%d idx=%d (%d,%d,%d,%d)", i, kColumnIdx[i], col[i].x, col[i].y, col[i].w, col[i].h);
     }
+    Rect desc = {0, 0, 0, 0}, exitR = {0, 0, 0, 0}, titleR = {0, 0, 0, 0};
+    const bool dOk = ctlRect(listCtl(e.panel, kIdxDesc), &desc);
+    const bool xOk = ctlRect(listCtl(e.panel, kIdxExit), &exitR);
+    const bool tOk = ctlRect(listCtl(e.panel, kIdxTitle), &titleR);
+    int barY[kBarLast - kBarFirst + 1];
+    int nBars = 0;
+    for (int i = kBarFirst; i <= kBarLast; ++i) {
+        Rect b = {0, 0, 0, 0};
+        const bool ok = ctlRect(listCtl(e.panel, i), &b);
+        if (ok) barY[nBars++] = b.y;
+        KP_LOG(chMain, "BAR idx=%d ok=%d (%d,%d,%d,%d)", i, ok ? 1 : 0, b.x, b.y, b.w, b.h);
+    }
+    KP_LOG(chMain, "TEMPLATE column=%d desc=%d (%d,%d,%d,%d) exit=%d (%d,%d,%d,%d) title=%d (%d,%d,%d,%d) vanilla=%d", colOk ? 1 : 0, dOk ? 1 : 0, desc.x,
+           desc.y, desc.w, desc.h, xOk ? 1 : 0, exitR.x, exitR.y, exitR.w, exitR.h, tOk ? 1 : 0, titleR.x, titleR.y, titleR.w, titleR.h, e.vanillaCount);
+
+    // Entry button: after GAMEPLAY with the later rows moved down one pitch, else below QUIT.
+    Rect nw = {0, 0, 0, 0}, moved[kMovedN];
+    bool placed = false;
+    if (colOk && g_cfg.reflow && menulayout::columnReflow(col, kColumnN, kInsertAfter, &nw, moved)) {
+        addTarget(e, e.btn, nw);
+        for (int j = 0; j < kMovedN; ++j) addTarget(e, listCtl(e.panel, kColumnIdx[kInsertAfter + 1 + j]), moved[j]);
+        KP_LOG(chMain, "REFLOW on new=(%d,%d,%d,%d) moved=%d", nw.x, nw.y, nw.w, nw.h, kMovedN);
+        placed = true;
+    } else if (colOk) {
+        int pitch = col[kColumnN - 1].y - col[kColumnN - 2].y;
+        if (pitch <= 0) pitch = col[kColumnN - 1].h * 36 / 32;
+        nw = col[kColumnN - 1];
+        nw.y = menulayout::slotBelow(col[kColumnN - 1], pitch, 1);
+        addTarget(e, e.btn, nw);
+        KP_LOG(chMain, "REFLOW off (cfg=%d) new=(%d,%d,%d,%d) pitch=%d", g_cfg.reflow ? 1 : 0, nw.x, nw.y, nw.w, nw.h, pitch);
+        placed = true;
+    } else {
+        Rect gp, q;   // column unreadable: GAMEPLAY-relative D3a placement (d2c 2a: layout (78,422,318,32), BTN_GAMEPLAY at y 206)
+        if (ctlRect(listCtl(e.panel, 1), &gp)) {
+            nw = gp;
+            nw.y = gp.y + (422 - 206) * gp.h / 32;
+            addTarget(e, e.btn, nw);
+            placed = true;
+        } else if (ctlRect(listCtl(e.panel, kIdxQuit), &q)) {
+            nw = q;
+            nw.y = menulayout::slotBelow(q, q.h * 36 / 32, 1);
+            addTarget(e, e.btn, nw);
+            placed = true;
+        }
+        KP_LOG(chMain, "REFLOW off (column unreadable) placed=%d new=(%d,%d,%d,%d)", placed ? 1 : 0, nw.x, nw.y, nw.w, nw.h);
+    }
+    // Editor mode pieces: Back on the BTN_EXIT rect, the title on LBL_TITLE, the 3D view left of LB_DESC, the status strip under it.
+    if (xOk) addTarget(e, e.back, exitR);
+    if (tOk) addTarget(e, e.title, titleR);
     if (dOk) {
-        const hse::ModalLayout L = hse::modalLayout(editkit::Box{dx, dy, dw, dh}, nullptr);
-        if (e.header) guikit::setRect(e.header, L.header.x, L.header.y, L.header.w, L.header.h);
-        if (e.status) guikit::setRect(e.status, L.warning.x, L.warning.y, L.warning.w, L.warning.h);
-        // Placeholder pane for the D3a probe: the 3D view takes the description pane; D3b measures the final split.
-        if (e.view) guikit::setRect(e.view, dx, dy, dw, dh);
+        const Rect v = hse::viewRect(desc);
+        addTarget(e, e.view, v);
+        const int quitBottom = colOk ? col[kColumnN - 1].y + col[kColumnN - 1].h : 0;
+        const int floorY = hse::statusFloor(barY, nBars, quitBottom, v.y + v.h);
+        const Rect st = menulayout::statusStrip(v, floorY);
+        KP_LOG(chMain, "VIEWRECT (%d,%d,%d,%d) floor=%d status=(%d,%d,%d,%d)", v.x, v.y, v.w, v.h, floorY, st.x, st.y, st.w, st.h);
+        if (st.h > 0) addTarget(e, e.status, st);
     }
-    if (e.btn) {
-        guikit::setText(e.btn, "Holstered weapons");
-        guikit::setVisible(e.btn, true);   // cloned labels start hidden + click-through
-    }
-    if (e.back) guikit::setText(e.back, "Back");
-    if (e.header) guikit::setText(e.header, "Holster editor");
-    if (e.status) guikit::setText(e.status, g_p3.ok() && g_hol.ok() ? "D3a probe: preview + holster connected" : "D3a probe: a provider is missing");
+    applyTargets(e, true);
+    (void)placed;
+
+    setCtlText(e.btn, e.btnIsButton, "Holstered weapons");
+    setCtlText(e.back, e.backIsButton, "Back");
+    if (e.title) guikit::setText(e.title, "Holstered Weapons");
+    if (e.status) guikit::setText(e.status, g_p3.ok() && g_hol.ok() ? "0.1.1 probe: preview + holster connected" : "0.1.1 probe: a provider is missing");
+    if (e.btn) guikit::setVisible(e.btn, true);   // clones start hidden + click-through
+    if (e.back) guikit::setVisible(e.back, false);
+    if (e.title) guikit::setVisible(e.title, false);
+    if (e.status) guikit::setVisible(e.status, false);
     if (e.view) guikit::setVisible(e.view, false);
     logRect("btn", e.btn);
     logRect("back", e.back);
+    logRect("title", e.title);
+    logRect("status", e.status);
     logRect("view", e.view);
 }
 
@@ -196,21 +423,24 @@ void enterEditor() {
         int fl = 0;
         e.savedFlags[i] = (c && rd<int>(c, oFlags, &fl)) ? fl : -1;
         if (g_debug) KP_LOG(chMain, "ENTER save idx=%d ctl=%x flags=%x", i, static_cast<unsigned>(c), static_cast<unsigned>(e.savedFlags[i]));
-        if (c && i != kIdxExit && e.savedFlags[i] != -1) guikit::setVisible(c, false);
+        if (c && e.savedFlags[i] != -1) guikit::setVisible(c, false);   // everything vanilla, BTN_EXIT and LBL_TITLE included
     }
     e.haveSaved = true;
+    const bool cleared = clearFocus(e.panel);
     if (e.btn) guikit::setVisible(e.btn, false);
     if (e.back) guikit::setVisible(e.back, true);
-    if (e.header) guikit::setVisible(e.header, true);
+    if (e.title) guikit::setVisible(e.title, true);
     if (e.status) guikit::setVisible(e.status, true);
     if (e.view) guikit::setVisible(e.view, true);
     e.editor = true;
-    KP_LOG(chMain, "EDITOR enter panel=%x vanilla=%d saved0=%x saved1=%x view=%x token=%u", static_cast<unsigned>(e.panel), n,
-           static_cast<unsigned>(n > 0 ? e.savedFlags[0] : 0), static_cast<unsigned>(n > 1 ? e.savedFlags[1] : 0), static_cast<unsigned>(e.view), e.token);
+    KP_LOG(chMain, "EDITOR enter panel=%x vanilla=%d saved0=%x saved1=%x view=%x token=%u focusCleared=%d", static_cast<unsigned>(e.panel), n,
+           static_cast<unsigned>(n > 0 ? e.savedFlags[0] : 0), static_cast<unsigned>(n > 1 ? e.savedFlags[1] : 0), static_cast<unsigned>(e.view), e.token,
+           cleared ? 1 : 0);
 }
 
 void leaveEditor(const char* why) {
     Editor& e = g_ed;
+    e.leaveAt = 0;
     if (!e.editor) return;
     const int oFlags = ctlFlagsOff();
     const int n = e.vanillaCount < kMaxVanilla ? e.vanillaCount : kMaxVanilla;
@@ -227,12 +457,99 @@ void leaveEditor(const char* why) {
     }
     e.haveSaved = false;
     if (e.view) guikit::setVisible(e.view, false);
-    if (e.header) guikit::setVisible(e.header, false);
+    if (e.title) guikit::setVisible(e.title, false);
     if (e.status) guikit::setVisible(e.status, false);
     if (e.back) guikit::setVisible(e.back, false);
     if (e.btn) guikit::setVisible(e.btn, true);
     e.editor = false;
     KP_LOG(chMain, "EDITOR leave (%s) restored=%d of %d", why, restored, n);
+}
+
+// Hover bookkeeping for the entry: the description on the enter edge, and HOVER lines that answer "does the engine highlight our button?".
+void hoverTick(uintptr_t P, bool cur, int x, int y) {
+    Editor& e = g_ed;
+    const bool ours = cur && !e.editor && e.btn && guikit::hit(e.btn, x, y);
+    uint32_t M = 0, m08 = 0;
+    if (rd<uint32_t>(P, kPanelMgr, &M) && M) (void)rd<uint32_t>(M, kMgrHover, &m08);
+    const int hl = (e.btn && e.btnIsButton) ? (guibutton::buttonHighlighted(e.btn) ? 1 : 0) : -1;
+    if (ours != e.lastOurs || m08 != e.lastM08 || hl != e.lastHl) {
+        const bool involved = ours || e.lastOurs || (m08 && m08 == static_cast<uint32_t>(e.btn)) || (e.lastM08 && e.lastM08 == static_cast<uint32_t>(e.btn));
+        static volatile LONG s_ours = 0, s_other = 0;
+        if (InterlockedIncrement(involved ? &s_ours : &s_other) <= (involved ? 64 : 16))
+            KP_LOG(chInput, "HOVER ours=%d m08=%x hl=%d btn=%x isButton=%d", ours ? 1 : 0, static_cast<unsigned>(m08), hl, static_cast<unsigned>(e.btn),
+                   e.btnIsButton ? 1 : 0);
+    }
+    if (ours && !e.lastOurs) {
+        if (g_cfg.desc) {
+            const char* why = "";
+            if (!describe(P, kDescText, &why)) KP_LOG(chMain, "DESC no-refresh why=%s", why);
+        } else {
+            KP_LOG(chMain, "DESC skipped (desc=0)");
+        }
+    }
+    e.lastOurs = ours;
+    e.lastM08 = m08;
+    e.lastHl = hl;
+}
+
+// ---- OptDestroy: the r7 recipe (.claude/research/holster_edit/r7_options_free_safety.md, R9 Q1) ----
+bool isOwn(const Editor& e, uint32_t v) {
+    return v && (v == static_cast<uint32_t>(e.view) || v == static_cast<uint32_t>(e.btn) || v == static_cast<uint32_t>(e.back) ||
+                 v == static_cast<uint32_t>(e.title) || v == static_cast<uint32_t>(e.status));
+}
+
+// Clears every engine reference to L (focus, hover, capture, last hit). Hover leave runs L->vt[0x0C](0) first.
+void dropRefs(uintptr_t P, uint32_t M, uintptr_t L) {
+    uint32_t v = 0;
+    if (rd<uint32_t>(P, kPanelFocus, &v) && v == static_cast<uint32_t>(L)) { clearFocus(P); KP_LOG(chMain, "FREE refs: focus cleared for %x", static_cast<unsigned>(L)); }
+    if (!M) return;
+    if (rd<uint32_t>(M, kMgrHover, &v) && v == static_cast<uint32_t>(L)) {
+        uint32_t vt = 0, fn = 0;
+        if (rd<uint32_t>(L, 0, &vt) && vt && rd<uint32_t>(vt, kVtHover, &fn) && fn) reinterpret_cast<Call1Fn>(static_cast<uintptr_t>(fn))(reinterpret_cast<void*>(L), 0);
+        guikit::detail::wr<uint32_t>(M, kMgrHover, 0);
+        KP_LOG(chMain, "FREE refs: hover left + cleared for %x", static_cast<unsigned>(L));
+    }
+    if (rd<uint32_t>(M, kMgrCapture, &v) && v == static_cast<uint32_t>(L)) {
+        guikit::detail::wr<uint32_t>(M, kMgrCapture, 0);
+        guikit::detail::wr<uint32_t>(M, kMgrCaptureFlag, 0);
+        KP_LOG(chMain, "FREE refs: capture cleared for %x", static_cast<unsigned>(L));
+    }
+    if (rd<uint32_t>(M, kMgrLastHit, &v) && v == static_cast<uint32_t>(L)) guikit::detail::wr<uint32_t>(M, kMgrLastHit, 0);
+}
+
+// vt[0](1) for a control whose vtable is the label or button vtable (R9 Q1: scalar deleting dtor 0x885AB0 for buttons).
+void freeCtl(uintptr_t L, const char* what) {
+    uint32_t vt = 0, fn = 0;
+    const bool got = rd<uint32_t>(L, 0, &vt) && (vt == kLabelVtable || vt == kButtonVtable) && rd<uint32_t>(vt, 0, &fn) && fn;
+    KP_LOG(chMain, "FREE %s ctl=%x vt=%x call=%d", what, static_cast<unsigned>(L), static_cast<unsigned>(vt), got ? 1 : 0);
+    if (got && guikit::g_gkCallLabelDtor) guikit::g_gkCallLabelDtor(fn, L, 1u);
+}
+
+// Returns true when the list is clean of our controls (so a free is safe).
+bool releaseOwn(uintptr_t P) {
+    Editor& e = g_ed;
+    uint32_t M = 0, A = 0;
+    int C = 0;
+    (void)rd<uint32_t>(P, kPanelMgr, &M);
+    const int oArr = k2addr::off(&K2AddrTable::Panel_CtlArray), oCount = k2addr::off(&K2AddrTable::Panel_CtlCount);
+    const uintptr_t own[5] = {e.view, e.btn, e.back, e.title, e.status};
+    for (int i = 0; i < 5; ++i)
+        if (own[i]) dropRefs(P, M, own[i]);
+    if (!e.appended) return true;   // never listed: nothing references them but this struct
+    if (!oArr || !oCount || !rd<uint32_t>(P, oArr, &A) || !A || !rd<int>(P, oCount, &C)) { KP_LOG(chMain, "FREE skip: list unreadable"); return false; }
+    const int V = e.vanillaCount;
+    if (C < V || C > V + 5) { KP_LOG(chMain, "FREE skip: list count %d outside [%d, %d]", C, V, V + 5); return false; }
+    for (int i = V; i < C; ++i) {
+        uint32_t entry = 0;
+        if (!rd<uint32_t>(A, i * 4, &entry) || !isOwn(e, entry)) {
+            KP_LOG(chMain, "FREE skip: list entry %d = %x is not ours (no truncate, no frees)", i, static_cast<unsigned>(entry));
+            return false;
+        }
+    }
+    if (!guikit::detail::wr<int>(P, oCount, V)) { KP_LOG(chMain, "FREE skip: count write failed"); return false; }
+    for (int i = V; i < C; ++i) guikit::detail::wr<uint32_t>(A, i * 4, 0);
+    KP_LOG(chMain, "FREE truncated list %d -> %d", C, V);
+    return true;
 }
 
 }  // namespace
@@ -279,10 +596,10 @@ extern "C" void __cdecl OptBindView(int panelArg) {
         return;
     }
 
-    // Labels from the vanilla layout (open until StopLoadFromLayout right after this hook).
-    g_ed.btn = cloneLabel(P, "btn_holster");
-    g_ed.back = cloneLabel(P, "back");
-    g_ed.header = cloneLabel(P, "header");
+    // Buttons and labels from the vanilla layout (open until StopLoadFromLayout right after this hook).
+    g_ed.btn = cloneEntry(P, "BTN_GAMEPLAY", "btn_holster", &g_ed.btnIsButton);
+    g_ed.back = cloneEntry(P, "BTN_EXIT", "back", &g_ed.backIsButton);
+    g_ed.title = cloneLabel(P, "title");
     g_ed.status = cloneLabel(P, "status");
 }
 
@@ -312,16 +629,33 @@ extern "C" void __cdecl OptTick(int panelArg) {
     if (!e.appended) firstTick();
     g_p3.poll();
     g_hol.poll();
-    const bool click = guikit::clickEdge(e.click);
-    if (!click) return;
+    applyTargets(e, false);
+
     int x = 0, y = 0;
     const bool cur = guikit::cursorEngine(&x, &y);
-    const bool hb = cur && e.btn && guikit::hit(e.btn, x, y), hk = cur && e.back && guikit::hit(e.back, x, y);
-    static volatile LONG s_in = 0;
-    if (InterlockedIncrement(&s_in) <= 40)
-        KP_LOG(chInput, "INPUTCLASS click cur=%d x=%d y=%d hitBtn=%d hitBack=%d editor=%d", cur ? 1 : 0, x, y, hb ? 1 : 0, hk ? 1 : 0, e.editor ? 1 : 0);
-    if (!e.editor && hb) enterEditor();
-    else if (e.editor && hk) leaveEditor("back");
+    hoverTick(P, cur, x, y);
+
+    // Clicks act on the RELEASE: LMB up over the control the press went down on. Not-foreground counts as up (GuiKit clickEdge rule).
+    const bool down = guikit::g_gk.gameForeground && guikit::g_gk.lbuttonDown && guikit::g_gk.gameForeground() && guikit::g_gk.lbuttonDown();
+    const bool overBtn = cur && !e.editor && e.btn && guikit::hit(e.btn, x, y);
+    const bool overBack = cur && e.editor && e.back && guikit::hit(e.back, x, y);
+    if (down && !e.prevDown) {
+        e.pressed = overBtn ? 1 : (overBack ? 2 : 0);
+        static volatile LONG s_in = 0;
+        if (InterlockedIncrement(&s_in) <= 40)
+            KP_LOG(chInput, "INPUTCLASS press cur=%d x=%d y=%d hitBtn=%d hitBack=%d editor=%d", cur ? 1 : 0, x, y, overBtn ? 1 : 0, overBack ? 1 : 0, e.editor ? 1 : 0);
+    } else if (!down && e.prevDown) {
+        const int pressed = e.pressed;
+        e.pressed = 0;
+        static volatile LONG s_up = 0;
+        if (pressed && InterlockedIncrement(&s_up) <= 40)
+            KP_LOG(chInput, "INPUTCLASS release pressed=%d overBtn=%d overBack=%d editor=%d", pressed, overBtn ? 1 : 0, overBack ? 1 : 0, e.editor ? 1 : 0);
+        if (pressed == 1 && overBtn) enterEditor();
+        else if (pressed == 2 && overBack && e.leaveAt == 0) e.leaveAt = now + kLeaveDelayMs;
+    }
+    e.prevDown = down;
+    // Back: restore the vanilla controls only once the LMB is up and the delay has passed (the release must not land on BTN_EXIT).
+    if (e.editor && e.leaveAt && !down && static_cast<LONG>(now - e.leaveAt) >= 0) leaveEditor("back");
 }
 
 // H-O4 0x8A1930: Options scalar deleting dtor (ECX = this), on entry, before the children are freed.
@@ -330,9 +664,39 @@ extern "C" void __cdecl OptDestroy(int panelArg) {
     const uintptr_t P = static_cast<uintptr_t>(static_cast<unsigned>(panelArg));
     if (P != g_ed.panel) return;
     saferead::beginScope();
-    if (g_ed.token && g_p3.ok()) g_p3.p->Destroy(g_ed.token);
-    KP_LOG(chMain, "DTOR panel=%x token=%u editor=%d", static_cast<unsigned>(P), g_ed.token, g_ed.editor ? 1 : 0);
-    g_ed = Editor();   // our controls are not freed (see the OptDestroy note at the top: a known per-panel leak, review F3)
+    Editor& e = g_ed;
+    KP_LOG(chMain, "DTOR panel=%x token=%u editor=%d appended=%d free_labels=%d free_view=%d", static_cast<unsigned>(P), e.token, e.editor ? 1 : 0,
+           e.appended ? 1 : 0, g_cfg.freeLabels ? 1 : 0, g_cfg.freeView ? 1 : 0);
+    bool clean = false;
+    if (g_cfg.freeLabels || g_cfg.freeView) {
+        clean = releaseOwn(P);   // references dropped + list truncated (all or nothing)
+        if (clean && g_cfg.freeLabels) {
+            if (e.btn) freeCtl(e.btn, "btn");
+            if (e.back) freeCtl(e.back, "back");
+            if (e.title) freeCtl(e.title, "title");
+            if (e.status) freeCtl(e.status, "status");
+        }
+    }
+    const uintptr_t view = e.view;
+    if (e.token && g_p3.ok()) g_p3.p->Destroy(e.token);
+    if (g_cfg.freeView && clean && view) {
+        uint32_t vt = 0, scene = 0, svt = 0, resman = 0, r34 = 0, fn = 0;
+        (void)rd<uint32_t>(view, 0, &vt);
+        (void)rd<uint32_t>(view, 0x74, &scene);
+        if (scene) (void)rd<uint32_t>(scene, 0, &svt);
+        if (rd<uint32_t>(gameaddr::ResManGlobal, 0, &resman) && resman) (void)rd<uint32_t>(resman, 0x34, &r34);
+        KP_LOG(chMain, "FREEVIEW view=%x vt=%x (expect %x) scene=%x scene_vt=%x resman34=%x", static_cast<unsigned>(view), static_cast<unsigned>(vt),
+               static_cast<unsigned>(kSceneViewVtable), static_cast<unsigned>(scene), static_cast<unsigned>(svt), static_cast<unsigned>(r34));
+        if (vt == kSceneViewVtable && rd<uint32_t>(vt, 0, &fn) && fn && guikit::g_gkCallLabelDtor) {
+            guikit::g_gkCallLabelDtor(fn, view, 1u);
+            KP_LOG(chMain, "FREEVIEW freed");
+        } else {
+            KP_LOG(chMain, "FREEVIEW skipped (vtable mismatch)");
+        }
+    } else if (g_cfg.freeView) {
+        KP_LOG(chMain, "FREEVIEW skipped (list not clean=%d view=%x)", clean ? 0 : 1, static_cast<unsigned>(view));
+    }
+    g_ed = Editor();
 }
 
 // Written out literally (create-patch's export scan reads the source text) and listed in exports.def.
@@ -343,8 +707,9 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_p3.init(api);
     g_hol.init(api);
     embedgui::g_log = embedLog;
-    KP_LOG(chMain, "holster-editor 0.1.0-dev loaded (D3a skeleton + embedded-layout probe): enabled=%d debug=%d table=%s layout=%u bytes", g_enabled ? 1 : 0,
-           g_debug ? 1 : 0, k2addr::get() ? "ok" : "none", static_cast<unsigned>(sizeof kHseViewGui));
+    KP_LOG(chMain, "holster-editor 0.1.1-probe loaded (button clones, column reflow, release clicks, free recipe): enabled=%d debug=%d button_clone=%d reflow=%d desc=%d free_labels=%d free_view=%d table=%s layout=%u bytes",
+           g_enabled ? 1 : 0, g_debug ? 1 : 0, g_cfg.buttonClone ? 1 : 0, g_cfg.reflow ? 1 : 0, g_cfg.desc ? 1 : 0, g_cfg.freeLabels ? 1 : 0,
+           g_cfg.freeView ? 1 : 0, k2addr::get() ? "ok" : "none", static_cast<unsigned>(sizeof kHseViewGui));
 }
 
 // No I/O here (loader lock). The config is read in KPatchInit.
