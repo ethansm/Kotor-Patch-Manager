@@ -175,3 +175,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 159 | WI-127 | P3 | hold | S | - | NPC diversity: armored descriptors (subType>=3) get row remap while tv withheld | 0 | 1 | R2-ND-02: Row remap runs before the subType>2 tv guard (tvarmor seen 2 |
 | [ ] | 160 | WI-128 | P3 | hold | S | - | Gemini r2 latent hardening: buff-hud (hardcoded Effect offsets, unprobed writes, off-file  | 0 | 2 | R2-BH-01: Hardcoded Effect_Type/IntCount/Ints skip the k2addr zero-mea |
 | [ ] | 161 | WI-129 | P3 | hold | S | - | Gemini r2 latent hardening: npc-diversity (dump latches, STAT fail sites, RMP clamp, pDesc | 0 | 1 | R2-ND-07: Latches are set before the probe: onePtrDumps records a null |
+| [ ] | 162 | WI-130 | P3 | hold | S | - | Gemini r2 latent hardening: npc-world (loadless area change, readStr, vtable saferead, cli | 0 | 3 | R2-NW-01: Stale seen-tags on loadless area change is real in code, but |
