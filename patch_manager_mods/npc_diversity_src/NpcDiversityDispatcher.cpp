@@ -111,7 +111,9 @@ nl::Counts g_c;
 bool g_visitVariety = false;  // npc-diversity.ini [NpcDiversity] visit_variety: 0 same look every visit (default), 1 new look per visit
 uint32_t g_visitSalt = 0;  // 0 = no per-visit input (V4); V4b sets it once per area entry via MakeVisitSalt
 nl::U32Set<256> g_frSet, g_retSet, g_oidSet, g_cenTexSet, g_cenRemSet;
-nl::Budget g_bTex, g_bRmp, g_bAbi, g_bArm;
+nl::Budget g_bTex, g_bRmp, g_bAbi, g_bArm, g_bNonB;
+uint32_t g_texEmptyCell = 0;  // C252: hook 1 calls with an empty texa cell (skipped)
+uint32_t g_texNonB = 0;       // C252: non-commoner, non-armor (non-B model type) texture requests seen
 uint32_t g_readBudget[nl::kSiteCount + 1] = {};
 bool g_inited = false;
 bool g_dsc0Done = false;
@@ -274,6 +276,7 @@ void dumpStats() {
             if (b[0]) logLine(chStat, b);
         }
     }
+    KP_LOG(chStat, "STAT texa emptyCell=%u nonB=%u", g_texEmptyCell, g_texNonB);
     nl::FormatStatRead(b, sizeof b, g_c); logLine(chStat, b);
     nl::FormatStatCensus(b, sizeof b, g_cenTexSet.count + g_cenRemSet.count, g_cenTexSet.ovf + g_cenRemSet.ovf);
     logLine(chStat, b);
@@ -395,6 +398,10 @@ __declspec(dllexport) void __cdecl OverrideNpcTexture(void* frame) {
     if (!saferead::readResRef16(S_TEXRES, texPtr, cur, 0)) { ++g_c.texUnread; logRead(S_TEXRES, texPtr, 16); return; }
     oneShotDsc0(pdPtr);
 
+    // C252 (doc 34 s7 item 5): skip ONLY an empty texa cell (blank ResRef). Every caller (0x85CC00, 0x85D430,
+    // 0x85C490) hands in its own pDesc, so nothing else is assumed about the descriptor beyond the abiCheck above.
+    if (cur[0] == '\0') { ++g_texEmptyCell; return; }
+
     if (KP_ENABLED(chCensus) && g_cenTexSet.insert(nl::detail::Fmix(d.appearance * 977u + d.gender * 31u + d.textureVar + (uint32_t)d.descMode14 * 7u + (uint32_t)cur[0] * 131u + (uint32_t)cur[7] * 17u))) {
         char b[nl::kLineMax];
         nl::FormatCenTex(b, sizeof b, d.appearance, d.gender, d.textureVar, d.descMode14, cur, std::strlen(cur));
@@ -412,6 +419,16 @@ __declspec(dllexport) void __cdecl OverrideNpcTexture(void* frame) {
                              d.textureVar, d.descMode14, d.headOverride, d.phenotype, cur, std::strlen(cur), 0u, 0,
                              0u, "0", 0, d.subType, armOid);
             logLine(chTex, b);
+        } else if (!isArmorBodyRes(cur)) {
+            // Non-B model types (neither N_Comm nor pmb*/pfb*): count and log them (own budget) so coverage is visible.
+            ++g_texNonB;
+            if (KP_ENABLED(chTex) && g_bNonB.take(100, 500)) {
+                char b[nl::kLineMax];
+                nl::FormatTexExt(b, sizeof b, pdPtr, static_cast<uint32_t>(fr), ret, d.appearance, d.gender,
+                                 d.textureVar, d.descMode14, d.headOverride, d.phenotype, cur, std::strlen(cur), 0u,
+                                 0, 0u, "0", 0, d.subType, armOid);
+                logLine(chTex, b);
+            }
         }
         return;
     }
