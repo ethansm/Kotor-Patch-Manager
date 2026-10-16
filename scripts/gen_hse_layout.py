@@ -33,9 +33,12 @@ _ELEMENT_SIZE = 4                    # list element = uint32 struct index
 _EXT_KEYS = ("LEFT", "TOP", "WIDTH", "HEIGHT")
 _CONTROLTYPE_3D = 4                  # add_equip_3dview_control.py asserts CONTROLTYPE == 4 on its 3D_MODEL
 
-# PLACEHOLDER: the DLL calls setCtlRect at runtime with the measured pane, so this ID and rect are not final.
+# PLACEHOLDER: the DLL calls setCtlRect at runtime with the measured pane, so this rect is not final.
 # 216x336 is the equip 3D view size (add_equip_3dview_control.py LAYOUTS "R"), used only as a sane default.
-HSE_VIEW_ID = 0
+# ID -1 on purpose: sceneview::createView runs InitControl with addToList=1, and an ID below the panel's control count would
+# OVERWRITE that vanilla list slot (d2e section 2/4 risk 4). With -1 InitControl lists nothing; the DLL appends the view itself
+# (gui::appendToPanel sets ID = count).
+HSE_VIEW_ID = -1
 HSE_VIEW_EXTENT = (0, 0, 216, 336)   # LEFT, TOP, WIDTH, HEIGHT
 LBL_TITLE_ID = 3                     # optionsingame_p LBL_TITLE (u10.md:8)
 LBL_TITLE_CONTROLTYPE = 4            # "T4" in u10.md:8
