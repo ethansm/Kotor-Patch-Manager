@@ -166,3 +166,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 150 | WI-118 | P3 | ready | S | - | Queue HUD tests: memcmp(Config) padding failures + testWhyParityMatrix arrays one short | 0 | 1 | SIDE-QH-TEST: 66 failures reproduce only without sanitizers (plain -O1 |
 | [ ] | 151 | WI-119 | P3 | ready | S | - | NPC diversity: NotCommonerRow gate, nonB counter label, banner appHi 811->817 | 0 | 2 | R2-ND-03: NotCommonerRow is not gated: non-commoner rows run keep, var |
 | [ ] | 152 | WI-120 | P3 | ready | S | - | Companion AI: spinEnd leaves stale BurstTrack counters (false E1 SPIN) | 0 | 1 | R2-CA-01: spinSweep expiry clears spinning but leaves burst.maxBurst/p |
+| [ ] | 153 | WI-121 | P3 | ready | S | - | Companion AI: test a1GateTarget/a1_retarget_strict and add ini key | 0 | 2 | R2-CA-05: No ini key, known[] entry or a1GateTarget assertion exists;  |
