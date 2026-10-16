@@ -1,0 +1,15 @@
+[patch]
+id = "preview-3d"
+name = "Preview 3D (shared 3D character preview provider)"
+version = "0.1.0-dev"
+kind = "provider"
+provides = ["k2.preview3d@1"]
+author = "local"
+description = "Shared 3D character preview viewers for GUI panels (per-token viewer: bind a creature, rebuild its model, set weapons, camera view and animation). Provides k2.preview3d v1. Needs a KotorPatcher with the patch registry (KPatchInit)."
+
+requires = []
+conflicts = []
+
+[patch.supported_versions]
+kotor2_steam_aspyr = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"
+kotor2_gog_aspyr = "777BEE235A9E8BDD9863F6741BC3AC54BB6A113B62B1D2E4D12BBE6DB963A914"

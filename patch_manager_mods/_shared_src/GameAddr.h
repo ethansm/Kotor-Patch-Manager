@@ -111,4 +111,13 @@ constexpr uintptr_t ResGffOnServiced = 0x00717300;       // CResGFF::OnResourceS
 constexpr uintptr_t ResManFreeData = 0x007120C0;         // CExoResMan::FreeResourceData (verified B0) thiscall(resman; CRes*)
 constexpr uintptr_t ResRelease = 0x007112B0;             // CRes::Release (R1-static, high) fastcall(obj)
 
+// ---- 3D character preview (equip3d EquipCharPreview.cpp, live since 10-05; preview-3d provider copies the recipe) ----
+constexpr uintptr_t ClientGetItemById = 0x0073F530;      // CClientExoApp::GetItemByGameObjectID (verified B11a) thiscall(mgr = [[AppGlobal]+4], id) -> client item*
+constexpr uintptr_t CreateModelGob = 0x00462320;         // model-based Gob creator (REA holster C5) cdecl(name, inst, 0, 0) -> Gob*
+constexpr uintptr_t PreviewModelInstName = 0x009A4AB0;   // instance-name string passed to CreateModelGob (equip3d, live)
+constexpr uintptr_t ClientCreatureCtor = 0x007645F0;     // CSWCCreature ctor (REA holster C6) fastcall ECX = block (0x470 bytes)
+constexpr uintptr_t ClientCreatureSetAppearance = 0x0076D200;   // CSWCCreature::SetAppearance (name_map medium) thiscall(preview, copy60, flags, 1, 0) RET 0x10
+constexpr uintptr_t PreviewSetAlign = 0x0085D430;        // thiscall(preview[0x89], int align) RET 4 (equip3d, live)
+constexpr uintptr_t ClientCreatureSetup3DScene = 0x0077EC20;    // CSWCCreature::Setup3DScene (name_map medium) thiscall(preview, view, real, 0, 1) RET 0x10
+
 } // namespace gameaddr

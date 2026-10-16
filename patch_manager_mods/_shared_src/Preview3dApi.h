@@ -57,8 +57,9 @@ extern "C" {
 
 #pragma pack(push, 8)
 
-/* Fired by Destroy and by view teardown, for the token about to be destroyed, before any of its Gobs are detached. One slot:
- * the last SetBeforeFree wins. */
+/* Fired before any of the token's weapon Gobs is freed (Destroy, view teardown, Rebuild, SetWeapons), while WeaponGob still returns
+ * them, so the consumer can unregister them (k2.holster UnregisterPreview). May fire more than once per operation. One slot: the
+ * last SetBeforeFree wins. */
 typedef void (KPATCH_CALL *K2Preview3dBeforeFree)(uint32_t token, void* user);
 
 typedef struct K2Preview3dApi {
