@@ -1,0 +1,6 @@
+LIBRARY HolsterEditor
+EXPORTS
+    KPatchInit
+    OptBindView
+    OptTick
+    OptDestroy

@@ -615,6 +615,12 @@ void KPATCH_CALL apiSetBeforeFree(K2Preview3dBeforeFree cb, void* user) {
     if (firstN(&g_nSetCb, 4)) logf("API SetBeforeFree cb=%p user=%p", reinterpret_cast<void*>(cb), user);
 }
 
+void* KPATCH_CALL apiViewControl(uint32_t token) {
+    ensureInit();
+    Viewer* v = find(token);
+    return v ? v->block : nullptr;
+}
+
 const K2Preview3dApi g_apiTable = {
     sizeof(K2Preview3dApi),
     apiCreateView,
@@ -626,7 +632,8 @@ const K2Preview3dApi g_apiTable = {
     apiPlayAnim,
     apiRigGob,
     apiDestroy,
-    apiSetBeforeFree
+    apiSetBeforeFree,
+    apiViewControl
 };
 
 } // anonymous namespace

@@ -111,6 +111,8 @@ constexpr uintptr_t ResGffOnServiced = 0x00717300;       // CResGFF::OnResourceS
 constexpr uintptr_t ResManFreeData = 0x007120C0;         // CExoResMan::FreeResourceData (verified B0) thiscall(resman; CRes*)
 constexpr uintptr_t ResRelease = 0x007112B0;             // CRes::Release (R1-static, high) fastcall(obj)
 
+constexpr uintptr_t OptionsInGameVtable = 0x009A701C;    // in-game Options panel vtable: ctor 0x8A1170 writes it at 0x8A11BA (static asm); holster-editor filters CSWGuiPanel::Draw on it
+
 // ---- 3D character preview (equip3d EquipCharPreview.cpp, live since 10-05; preview-3d provider copies the recipe) ----
 constexpr uintptr_t ClientGetItemById = 0x0073F530;      // CClientExoApp::GetItemByGameObjectID (verified B11a) thiscall(mgr = [[AppGlobal]+4], id) -> client item*
 constexpr uintptr_t CreateModelGob = 0x00462320;         // model-based Gob creator (REA holster C5) cdecl(name, inst, 0, 0) -> Gob*

@@ -88,6 +88,9 @@ typedef struct K2Preview3dApi {
     void     (KPATCH_CALL *Destroy)(uint32_t token);
     /* Registers the BeforeFree callback with its user pointer. cb 0 clears it. */
     void     (KPATCH_CALL *SetBeforeFree)(K2Preview3dBeforeFree cb, void* user);
+    /* The CSWGui3DSceneView control CreateView bound (the GUI control the consumer lists with appendToPanel when the layout control
+     * had ID -1, and resizes with its rect slot), or 0 for an unknown token. */
+    void*    (KPATCH_CALL *ViewControl)(uint32_t token);
 } K2Preview3dApi;
 
 #pragma pack(pop)
@@ -105,7 +108,8 @@ typedef struct K2Preview3dApi {
 #ifdef K2PREVIEW3D_STATIC_ASSERT
 K2PREVIEW3D_STATIC_ASSERT(offsetof(K2Preview3dApi, CreateView) == sizeof(void*), "K2Preview3dApi.CreateView offset");
 K2PREVIEW3D_STATIC_ASSERT(offsetof(K2Preview3dApi, SetBeforeFree) == 10 * sizeof(void*), "K2Preview3dApi.SetBeforeFree offset");
-K2PREVIEW3D_STATIC_ASSERT(sizeof(K2Preview3dApi) == 11 * sizeof(void*), "K2Preview3dApi size");
+K2PREVIEW3D_STATIC_ASSERT(offsetof(K2Preview3dApi, ViewControl) == 11 * sizeof(void*), "K2Preview3dApi.ViewControl offset");
+K2PREVIEW3D_STATIC_ASSERT(sizeof(K2Preview3dApi) == 12 * sizeof(void*), "K2Preview3dApi size");
 #undef K2PREVIEW3D_STATIC_ASSERT
 #endif
 
@@ -133,7 +137,7 @@ struct Client {
     // Every field the consumer calls is present and non-null, and the table is at least the v1 size.
     static bool usable(const K2Preview3dApi* t) {
         return t && t->struct_size >= sizeof(K2Preview3dApi) && t->CreateView && t->Bind && t->Rebuild && t->SetWeapons && t->WeaponGob &&
-               t->SetView && t->PlayAnim && t->RigGob && t->Destroy && t->SetBeforeFree;
+               t->SetView && t->PlayAnim && t->RigGob && t->Destroy && t->SetBeforeFree && t->ViewControl;
     }
 
     bool connect() {
