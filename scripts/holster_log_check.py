@@ -69,7 +69,7 @@ MAIN_RES = {
     "reload": re.compile(r"\bRELOAD (place=\d .*)$"),
     "tune": re.compile(r"\bTUNE boot (place=\d .*)$"),
     "refuse": re.compile(r"\bPLACEREFUSE reason=(\w+) n=(\d+)"),
-    "node": re.compile(r"\bPLACENODE node=\w+ gob=\w+ t=(\d+) step=(-?\d+) name=(\S+) target=(\d)"),
+    "node": re.compile(r"\bPLACENODE node=\w+ gob=\w+ t=(\d+) step=(-?\d+) name=(\S+) target=(\d)(?: bvt=(\w+))?"),
 }
 
 
@@ -128,7 +128,7 @@ def parse_lines(window):
             main["refuse"][m.group(1)] = max(main["refuse"].get(m.group(1), 0), int(m.group(2)))
         m = MAIN_RES["node"].search(text)
         if m:
-            main["node"]["t=%s step=%s name=%s target=%s" % m.groups()] += 1
+            main["node"]["t=%s step=%s name=%s target=%s" % m.groups()[:4] + (" bvt=%s" % m.group(5) if m.group(5) else "")] += 1
         k = KIND_RE.search(text)
         if k is None:
             continue
