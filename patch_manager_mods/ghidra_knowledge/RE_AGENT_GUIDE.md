@@ -101,6 +101,12 @@ writes ledger rows per address (static INDIRECT `callsite` rows quoting `0x<site
 candidates, `function` rows for non-contiguous bodies, `xref`/`table` rows for data refs to the function); resumable,
 exit 1 when the REA session dies (re-run to resume); `--no-live` writes static rows only.
 
+Named pseudo-C in batch ($0 tokens): `python3 ghidra_knowledge/tools/named_decomp.py run --class <Class> | --addrs FILE`
+annotates every known name (target + named callees, `annotate_native_function`) in one REA session, then
+`batch_decompile`s and writes `<dump root>/named_decomp/<bb>/0x<addr>.c` (header `// NAMED ... names=<n> exe=<sha12>`)
+plus `manifest.tsv`; resumable (skips `ok` rows), aborts (exit 3) if the exe sha changes. Read these files before
+asking REA or a model for a decompile.
+
 Live REA (`rea-recon`) is only for what the dumps cannot answer: targets of INDIRECT call sites, non-contiguous
 function bodies, live data xrefs, and named pseudo-C. At most 2 live REA sessions machine-wide.
 

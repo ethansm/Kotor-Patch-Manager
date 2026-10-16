@@ -11,7 +11,7 @@ Handoff: `.claude/handoffs/DECOMP_PLAN.handoff.md`. Recon: `.claude/research/rea
 | D1 | `rea_session.py` persistent REA MCP client + fake server + live probe (`.claude/research/rea_decomp/D1_probe.md`) | DONE | spec §D1 |
 | D2 | `static_facts.py` ($0 facts, twins) + `batch.py cards --facts` + REVIEWER_BRIEF/DESIGN 4.10 | DONE | spec §D2 |
 | D3 | `rea_facts.py` live-only facts (indirect targets, body ranges, data xrefs) + `rea_questions --residual`; G3 on 46 R1 addrs | DONE | spec §D3 |
-| D4 | `named_decomp.py` named decompile; G4 CSWCCreature | TODO (gated on D1) | spec §D4 |
+| D4 | `named_decomp.py` named decompile; G4 CSWSCreatureStats (pilot changed, see Decisions) | TODO | spec §D4 |
 | D5 | `fn_doc.py` + `persist_purposes.py`; CSWCCreature page + KDB purposes | TODO | spec §D5 |
 | D6 | R2 rebuilt (`--arm facts|facts_rea`), scored; MASTER_PLAN R2/R3 | TODO | spec §D6 |
 | D7 | rea-recon agent v2 + `test_agent_copy.py`; live check on 0x85d260/2d0/320/3d0 | TODO | spec §D7 |
@@ -24,6 +24,7 @@ Handoff: `.claude/handoffs/DECOMP_PLAN.handoff.md`. Recon: `.claude/research/rea
 | D0 | 2026-10-15T18:44 | 3 Haiku, 2 Sonnet | $0.60 | T0.1 Haiku peaked 116k ctx; lint baseline 53 (L2 26, L6 3, L8 24); suites 89/314/13 OK |
 | D1+D2 | 2026-10-15T19:00 | 4 Haiku, 5 Sonnet | ~$1.6 | 2 live REA probes (~11 min, $0 tokens); suites 196 (ghidra tools) / 320 (steam tools) OK |
 | D3 | 2026-10-15T19:40 | 1 Sonnet (V3) | $0.39 | G3 live 46 addrs -> 98 rows (52 callsite, 4 function, 42 xref), lint 53 (+0), exe sha unchanged; suites 221/328 OK |
+| D4 | 2026-10-15T19:57 | 1 Haiku (T4.1), 1 Sonnet (V4) | $0.49 | G4 live CSWSCreatureStats 124/124 ok in 6m43s wall incl. ~5 min cold start (~5.4 min and $0 tokens per 100 fns), 228 names annotated, 15 annotate failures -> 23 files `names=postpass`; exe sha unchanged; suites 240/328/13 OK, lint 53 |
 
 ## Decisions (Opus)
 
@@ -44,6 +45,11 @@ Handoff: `.claude/handoffs/DECOMP_PLAN.handoff.md`. Recon: `.claude/research/rea
 - **D4 naming:** `set_addresses_names`/`set_address_name` are rejected by the Ghidra provider; use per-address
   `annotate_native_function {procedure, name}` (0.13 s each; visible in pseudo-C and batch_decompile). Post-pass 3b
   only for addresses whose annotate call fails.
+- **D4 pilot (10-15):** D4 pilot = CSWSCreatureStats (124 shipped rows); CSWCCreature runs again after B13a ships (P6).
+- **D4 G4 result (10-15):** annotate fails two ways: (1) `resource_constraint` when the MCP response exceeds
+  10 MB (REA says the operation completed, so the name is likely applied anyway); (2) `invalid_value` for names with
+  spaces (`operator new`, prose names in name_map). Both fall back to the post-pass. Ghidra prints `Class::fn` as
+  `Class__fn`. Output stays outside git: `<dump root>/named_decomp/` (124 `.c` + `manifest.tsv`).
 - **T0.3 manifest:** `q_manifest.tsv` holds `topic n_addr sha_of_list` only; no kind counts (blindness).
 - **D1 read-only (from rea-agents 6.3.0 source):** `open_binary` is a strict schema `{path, format?, provider_id?, snapshot_path?}`;
   there is no `read_only` input. REA always imports with `-readOnly -deleteProject` (ephemeral project), so in-session
