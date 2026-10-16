@@ -419,3 +419,6 @@ Open from the recon: client oid vs server oid (the remap hook reads the CLIENT c
 2. Run B, play: `anim_variety=1`, `anim_flags=1` (engine "once"). Watch: does the creature play the flourish and go back to its idle by itself (P8), does it snap or freeze (flags 1 vs 0 vs 2), any flourish during a walk (P9), frame feel (P10).
 3. If the idle does not resume with flags 1, the next build re-issues the idle name after the flourish length (Mod 10 recipe).
 
+
+### 15.4 Open decision (user, follow up later)
+**Custom appended rows 802-817 (fat 802/803, Twi'lek variants 805-811 and 815-817, dirty 812/813, Czerka officer 804/814) are excluded from flourishes** (`kEligibleRows` in `DiversityAnim.h`). Reason: their model chains are not checked against the 7 ambient names, and a missing animation name cannot be detected at runtime (the `vt[0x1c]` probe cannot see supermodel-inherited anims). Effect: those NPCs never play a flourish, only the 11 base rows do. To include any of them: run `scripts/npcvar_anim_pool.py` on their models (extend its target list), confirm all 7 names (or a subset) resolve through the supermodel chain, then add the row to `kEligibleRows` and a case to `diversity_anim_test.cpp`. User to say which rows, if any, after Run B shows the flourishes work.
