@@ -168,3 +168,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 152 | WI-120 | P3 | ready | S | - | Companion AI: spinEnd leaves stale BurstTrack counters (false E1 SPIN) | 0 | 1 | R2-CA-01: spinSweep expiry clears spinning but leaves burst.maxBurst/p |
 | [ ] | 153 | WI-121 | P3 | ready | S | - | Companion AI: test a1GateTarget/a1_retarget_strict and add ini key | 0 | 2 | R2-CA-05: No ini key, known[] entry or a1GateTarget assertion exists;  |
 | [ ] | 154 | WI-122 | P3 | ready | S | - | NPC world tests: nw_tag fallback/out-clearing cases + ADD line format via= in contract tes | 0 | 2 | R2-NW-06: Case 4 only covers non-printable primary with a successful f |
+| [ ] | 155 | WI-123 | P3 | ready | S | - | Buff HUD tests: EffectIconRowTable.inc contract checks + tautological size asserts | 0 | 2 | R2-BH-10: Type-0x43 logic, dedupe and bad-row rejection are already te |
