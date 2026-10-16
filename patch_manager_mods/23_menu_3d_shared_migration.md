@@ -93,7 +93,7 @@ Not shared, stays raw: inv3d `FnRender 0x8CD2C0` (`I:47`), equip creature/appear
 
 Stacked wheel subclassers (`tests/static/subclassers.toml`): inv3d (`:17-22`), equip (`:24-29`), effects (`:31-36`), hotbar (`:38-43`). Each installs one proc, keeps `g_oldProc`, and restores only if still on top. `k2.guiinput` (19b:16) collapses the four into one subclass with `game_hwnd`, `cursor_engine`, `wheel_subscribe`, `foreground`. Mod 14 also joins `k2.charscreen` (19b:17), replacing the `FirstId=69` id coordination with the level-up UI (`C:65`; `gui_ids.toml:95`).
 
-Library shape (`PatchRegistry.md:273-310`): a library owns the hook and dispatches; consumers `require` lazily and stay inert on NULL. Reference: `portrait_slots_src/` (`PortraitSlotsProvider.cpp`, `PsDispatch.h`), manifest `kind="library"`, `provides=["k2.portraitslots@1"]`. The consumer side keeps its own subclass as fallback until the library is live (19b:48).
+Library shape (`PatchRegistry.md:273-310`): a library owns the hook and dispatches; consumers `require` lazily and stay inert on NULL. Reference: `portrait_slots_src/` (`PortraitSlotsProvider.cpp`, `PsDispatch.h`), manifest `kind = "provider"`, `provides=["k2.portraitslots@1"]`. The consumer side keeps its own subclass as fallback until the library is live (19b:48).
 
 ## (c) Per-mod order and gates
 

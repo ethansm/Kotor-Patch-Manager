@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Static check that library/consumer manifests agree with the provide()/require() calls in their sources.
+"""Static check that provider/consumer manifests agree with the provide()/require() calls in their sources.
 
-  python3 scripts/check_library_manifests.py
-  python3 scripts/check_library_manifests.py --quiet
-  python3 scripts/check_library_manifests.py --root DIR [--shared DIR] [--core-header kpatch_api.h]
+  python3 scripts/check_provider_manifests.py
+  python3 scripts/check_provider_manifests.py --quiet
+  python3 scripts/check_provider_manifests.py --root DIR [--shared DIR] [--core-header kpatch_api.h]
 
 Scans <root>/*_src/manifest.toml (root default <repo>/patch_manager_mods; --shared default <root>/_shared_src; --core-header
 default $KPM_DIR/Patches/Common/kpatch_api.h). Per mod the source set is its own *.cpp/*.h/*.inc (not *_test.cpp, not
@@ -12,14 +12,14 @@ testdata/ retired/ ...) plus the _shared_src headers reached transitively throug
   api->provide(NAME_OR_"literal", VERSION_OR_int, ...)    api->require(NAME_OR_"literal", VERSION_OR_int)
 Comments are stripped first. Declarations of the functions themselves (typed parameters) are skipped. The core interface
 kpatch.log is provided by the patcher and never needs a manifest entry.
-  FAIL  provides / requires_interfaces entry that is not `name@<int>`; kind = "library" with an empty provides
+  FAIL  provides / requires_interfaces entry that is not `name@<int>`; kind = "provider" with an empty provides
   FAIL  a `provides` entry with no matching provide() in the sources; a resolved provide() not listed in `provides`
   FAIL  a `requires_interfaces` entry with no matching require() in the sources
   FAIL  a consumer whose `requires` lacks the id of the manifest providing the interface; no manifest provides it
-  FAIL  one hook address in the same hooks.toml file name of a library and of one of its consumers
+  FAIL  one hook address in the same hooks.toml file name of a provider and of one of its consumers
   WARN  a resolved require() of a non-core interface not listed in requires_interfaces; an argument that cannot be
         resolved (a core macro when the core header is missing, a variable, ...)
-  PASS  one line per library and per consumer without a FAIL
+  PASS  one line per provider and per consumer without a FAIL
 Exit 1 on any FAIL. Read-only.
 """
 import argparse
@@ -32,6 +32,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _static_common as sc  # noqa: E402
 
+PROVIDER_KIND = "provider"
 CORE_IFACES = {("kpatch.log", 1)}
 CORE_HEADER_REL = Path("Patches") / "Common" / "kpatch_api.h"
 SRC_EXT = {".cpp", ".h", ".inc"}
@@ -299,8 +300,10 @@ def run(root, shared=None, core_header=None, reporter=None):
                     fail(m, "manifest", f"malformed {field} entry {s!r} (expected name@<int>, e.g. k2.portraitslots@1)")
                 else:
                     dest[e] = s
-        if m.kind == "library" and not m.provides_raw:
-            fail(m, "manifest", 'kind = "library" with an empty provides')
+        if m.kind not in ("patch", PROVIDER_KIND):
+            fail(m, "manifest", f'kind = "{m.kind}" is not "patch" or "provider"')
+        if m.kind == PROVIDER_KIND and not m.provides_raw:
+            fail(m, "manifest", 'kind = "provider" with an empty provides')
 
     provider_of = {}                         # (name, ver) -> Mod
     for m in mods:
@@ -339,7 +342,7 @@ def run(root, shared=None, core_header=None, reporter=None):
                 rep.warn("requires", f"{m.id}: {where} require({key[0]!r}, {key[1]}) is not listed in requires_interfaces")
 
     # ---- consumer wiring
-    consumers = {}                           # library id -> [consumer Mod]
+    consumers = {}                           # provider id -> [consumer Mod]
     for m in mods:
         for key, raw in m.req_ifaces.items():
             if key in CORE_IFACES:
@@ -353,14 +356,14 @@ def run(root, shared=None, core_header=None, reporter=None):
                 lst = consumers.setdefault(prov.id, [])
                 if m not in lst:
                     lst.append(m)
-        for rid in m.requires:               # a plain `requires` on a library also makes this mod its consumer
-            lib = next((x for x in mods if x.id == rid and x.kind == "library"), None)
+        for rid in m.requires:               # a plain `requires` on a provider also makes this mod its consumer
+            lib = next((x for x in mods if x.id == rid and x.kind == PROVIDER_KIND), None)
             if lib is not None and lib is not m:
                 lst = consumers.setdefault(lib.id, [])
                 if m not in lst:
                     lst.append(m)
 
-    # ---- duplicate hook addresses between a library and its consumers
+    # ---- duplicate hook addresses between a provider and its consumers
     for lib in mods:
         for c in consumers.get(lib.id, []):
             for hp in sorted(lib.dir.glob("*.hooks.toml")):
@@ -369,16 +372,16 @@ def run(root, shared=None, core_header=None, reporter=None):
                     continue
                 dup = hook_addresses(hp) & hook_addresses(cp)
                 for a in sorted(dup):
-                    fail(c, "hooks", f"hook 0x{a:08X} is in both {lib.id} and {c.id} ({hp.name}); the library owns it")
+                    fail(c, "hooks", f"hook 0x{a:08X} is in both {lib.id} and {c.id} ({hp.name}); the provider owns it")
                     lib.fails += 1
 
     # ---- PASS lines
     for m in mods:
-        if m.kind == "library" and m.fails == 0 and m.provides:
+        if m.kind == PROVIDER_KIND and m.fails == 0 and m.provides:
             cs = ", ".join(c.id for c in consumers.get(m.id, [])) or "none"
-            rep.passed("library", f"{m.id} provides {', '.join(m.provides.values())} (consumers: {cs})")
+            rep.passed("provider", f"{m.id} provides {', '.join(m.provides.values())} (consumers: {cs})")
     for m in mods:
-        if m.kind != "library" and m.req_ifaces and m.fails == 0:
+        if m.kind != PROVIDER_KIND and m.req_ifaces and m.fails == 0:
             rep.passed("consumer", f"{m.id} requires {', '.join(m.req_ifaces.values())} and lists {', '.join(m.requires)}")
     return rep
 
@@ -392,7 +395,7 @@ def main(argv=None):
     a = ap.parse_args(argv)
     rep = sc.Reporter(quiet=a.quiet)
     run(a.root, a.shared, a.core_header, rep)
-    return rep.finish("check_library_manifests")
+    return rep.finish("check_provider_manifests")
 
 
 if __name__ == "__main__":

@@ -142,8 +142,8 @@ cmd = ["python", "scripts/check_subclassers.py", "--quiet"]
 timeout_s = 60
 
 [[suite]]
-name = "library_manifests"
-cmd = ["python", "scripts/check_library_manifests.py", "--quiet"]
+name = "provider_manifests"
+cmd = ["python", "scripts/check_provider_manifests.py", "--quiet"]
 timeout_s = 60
 
 # ---- level-up Phase 6b (requested by the level-up session in doc 20 Status, 10-03) ----

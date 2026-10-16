@@ -8,7 +8,7 @@
 
 ## Summary
 
-When touching shared code (`Patches/Common/*`), library patches (`kind = "library"`), hooks, or core `.NET` runtime code, contributors currently have to guess which downstream patches are affected, or wait for CI to build every patch directory sequentially.
+When touching shared code (`Patches/Common/*`), library patches (`kind = "provider"`), hooks, or core `.NET` runtime code, contributors currently have to guess which downstream patches are affected, or wait for CI to build every patch directory sequentially.
 
 This PR introduces `tools/affected-patches.py`: a zero-dependency, stdlib-only Python 3.9+ tool that statically analyzes the dependency graph and determines the exact blast radius of a change.
 
@@ -21,7 +21,7 @@ This PR introduces `tools/affected-patches.py`: a zero-dependency, stdlib-only P
    - Connects `Common.cpp` changes to `Common.h` and modules linking GameAPI.
 
 2. **Library & Interface Fan-out:**
-   - Detects patches marked `kind = "library"` and cascades changes to consumers via manifest `requires` and `requires_interfaces` (e.g. `k2.portraitslots@1`).
+   - Detects patches marked `kind = "provider"` and cascades changes to consumers via manifest `requires` and `requires_interfaces` (e.g. `k2.portraitslots@1`).
 
 3. **Core & Hook Scope Routing:**
    - Changes to `*hooks.toml` or `manifest.toml` route to `python3 tools/validate-patches.py` and `ShippedHooksTests`.

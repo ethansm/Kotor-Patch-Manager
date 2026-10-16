@@ -1,4 +1,4 @@
-# Doc 22. Force Power Hotbar and shared services (registry / library plan), 2026-10-03
+# Doc 22. Force Power Hotbar and shared services (registry / service-provider plan; `kind = "provider"`), 2026-10-03
 
 Status: **design only, nothing implemented.** Input for the 1.0.0 follow-up and the split session's library work (doc 21). Facts come from a read-only
 scan on 2026-10-03; raw tables (all 246 hooks with their enclosing engine function) are in the session scratchpad `task9_facts.md`. Every claim
@@ -60,9 +60,9 @@ Requirement: the hotbar stays fully functional with no provider. The manifest ge
 information, **not** `requires = ["portrait-slots"]`, because a hard require would force-install the library (PatchRegistry.md:296-303). Whether an
 optional dependency should be expressible (`optional_requires`?) is an open question for the split session (section 7).
 
-## 4. Interfaces the hotbar could provide (library candidates)
+## 4. Interfaces the hotbar could provide (service-provider candidates)
 
-Library rules (`PatchRegistry.md:305-312`, KPM 94b6b3a):
+Provider rules (the KPM kind was named "library" until 2026-10-15) (`PatchRegistry.md:305-312`, KPM 94b6b3a):
 - a library provides interfaces and owns hooks;
 - alone it draws nothing and changes no behaviour;
 - consumers stay inert without it and never re-hook the same sites;

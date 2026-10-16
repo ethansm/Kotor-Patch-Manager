@@ -36,7 +36,7 @@ WAVES_DIR = Path(os.environ.get("PLAN_MANAGER_WAVES_DIR") or (REPO_ROOT / ".clau
 PREFIX_LEGEND = {
     "T": "Testing & Contracts",
     "S": "Sync / Header Mirroring",
-    "L": "Library DLLs & Packaging",
+    "L": "Provider DLLs & Packaging",
     "C": "Common Extraction",
     "M": "Meta / Planning Setup",
     "B": "Steam Address DB Batches",

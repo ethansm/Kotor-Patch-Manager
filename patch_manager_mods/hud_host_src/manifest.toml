@@ -2,7 +2,7 @@
 id = "hud-host"
 name = "HUD Host (shared in-game menu / HUD hooks)"
 version = "0.5.1-dev"
-kind = "library"
+kind = "provider"
 provides = ["k2.hud@1"]
 author = "local"
 description = "Owns the CSWGuiTargetActionMenu::PopulateMenus hook (0x00743540) and its POST hook (PopulateMenus tail 0x00743847, after the menu origin is final, before any draw), fires the BUILD phase from the HUD layout-closing hook (0x0040F5A0, HUD panel only, layout still open so labels can be created), and provides the k2.hud v1 registry interface, so several HUD mods (combat hotbar, ...) can share it. Draws and writes nothing by itself. Needs a KotorPatcher with the patch registry (KPatchInit)."

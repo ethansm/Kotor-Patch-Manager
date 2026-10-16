@@ -273,7 +273,7 @@ Other mappings: U4 -> P3; U5 -> V2b pre-visit save; U6 -> packaging item in NB3 
 - One detour set per address: probe and `npc-diversity` hooks cannot be live together on `0x568BD0/0x55A460/0x533830` (`area-hook-probe` was removed in T26 for this reason).
 
 ## 12. Shared library `npc-world` (decision 2026-10-13, design only, nothing built)
-User decision: spawn new NPCs AND change existing ones, through one common library patch that `npc-diversity` and the new features all use. Same pattern as `save-events` (`kind = "library"`, `provides`, KPatchInit registry, C ABI table, header-only client in `_shared_src`, `requires` or soft-connect in consumers).
+User decision: spawn new NPCs AND change existing ones, through one common library patch that `npc-diversity` and the new features all use. Same pattern as `save-events` (`kind = "provider"`, `provides`, KPatchInit registry, C ABI table, header-only client in `_shared_src`, `requires` or soft-connect in consumers).
 
 ### 12.1 Why a library
 - KPM rejects two patches that detour one address. `k1-spawn-probe` (and the retired `area-hook-probe`) own `0x00568BD0` AddToArea, `0x0055A460` LoadModuleInProgress and `0x00533830` MainLoop. NB1 (salt), NB2, NB3, NB4 all need the same three events, so exactly one patch may own them.

@@ -29,7 +29,7 @@ workers, gates, commits explicit paths, then updates its row here (status, commi
 | M0 | Create doc 24; refresh 19b status column | - | - | DONE | (this commit) | T1 |
 | T0 | `run_tests.py --coverage` roots = every `patch_manager_mods/*_src` with test.toml; exe name `<dir>__<stem>` (same-stem `common_contract_test` collided: Text file busy) | - | - | DONE | (T0 commit) | B8-style: GuiKit 78.1 / K2Addr 9.6 to >=80% |
 | T1 | `tests/include/FakeKPatchApi.h` from ps_dispatch_test.cpp:58-80; port ps_dispatch_test | M0 | split (doc 21) read-only | DONE | (T1 commit) | ps_dispatch 64/64 host + m32 + mingw build; Wine not on PATH |
-| T2 | `scripts/check_library_manifests.py` (provides/require vs source, consumer requires, no dup hook addrs) + selftest, static tier | M0 | - | DONE | (T2 commit) | real tree PASS=3; selftest 15; mutation `k2.portraitslot@1` -> FAIL; default tier 75/75 |
+| T2 | `scripts/check_provider_manifests.py` (provides/require vs source, consumer requires, no dup hook addrs) + selftest, static tier | M0 | - | DONE | (T2 commit) | real tree PASS=3; selftest 15; mutation `k2.portraitslot@1` -> FAIL; default tier 75/75 |
 | T3 | `portrait_slots_src/ps_registry_test.cpp` (inert w/o provider, late provider via poll, require after close, short struct_size, k2ps m32 layout asserts) | T1 | split | DONE | (T3 commit) | 99 checks host + m32; mutation `& 127` -> 6 FAIL; default tier 76/76 |
 | T4 | contract tests buff / shield / portrait | T1 | split | DONE | (T4 commit) | buff 201 / shield 215 / portrait 126 checks; host + m32 |
 | T5a | contract tests companion_ai + ranged_ai | T1 | - | DONE | (T5 commit) | 52 + 32 checks; CompanionAiLogic.h cov 100 |
@@ -125,7 +125,7 @@ When delegating pending batches via `python3 scripts/plan_manager.py delegate <i
 
 ## Final verification (end of each track)
 - `python3 scripts/run_tests.py` and `--wine` all PASS x3.
-- `check_shared_headers / check_raw_addresses / check_hook_bytes / check_hook_spans / check_library_manifests` FAIL=0.
+- `check_shared_headers / check_raw_addresses / check_hook_bytes / check_hook_spans / check_provider_manifests` FAIL=0.
 - KPM `dotnet test tests/KPatchCore.Tests`; `scripts/kpm_registry_gate.sh` GATE PASS.
 - Every Common consumer has `common_contract_test.cpp`.
 - Live installs post-check: DLL md5s, exe `7751f7d8`, AR_ERROR `a2d88789`.

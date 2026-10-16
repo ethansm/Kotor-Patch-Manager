@@ -10,7 +10,7 @@ Tests:
   - Deleted header handling (unresolved include matches deleted file)
   - Rename handling
   - .inc include chain
-  - Manifest library fan-out (library -> requires/requires_interfaces consumers)
+  - Manifest provider fan-out (provider -> requires/requires_interfaces consumers)
   - Nested mod key (perf_lab_src/perflab via nearest manifest.toml)
   - Golden check on live repository (SafeRead.h, Gui2D.h, PortraitSlotsProvider.cpp)
 """
@@ -149,12 +149,12 @@ class TestCompatGraphFixtures(unittest.TestCase):
         plan = cg.affected(["patch_manager_mods/_shared_src/Table.inc"])
         self.assertIn("sample_mod_src", plan.builds())
 
-    def test_manifest_library_fanout(self):
-        """Library touch fans out to consumer mod builds and colocated tests."""
+    def test_manifest_provider_fanout(self):
+        """Provider touch fans out to consumer mod builds and colocated tests."""
         lib_dir = self.repo / "patch_manager_mods/my_lib_src"
         lib_dir.mkdir(parents=True)
         (lib_dir / "manifest.toml").write_text(
-            '[patch]\nid = "my-lib"\nkind = "library"\nprovides = ["my.iface@1"]\n'
+            '[patch]\nid = "my-lib"\nkind = "provider"\nprovides = ["my.iface@1"]\n'
         )
         (lib_dir / "Lib.cpp").write_text("int lib_fn(){ return 1; }\n")
 

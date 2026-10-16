@@ -5,7 +5,7 @@ scripts/compat_graph.py - Dependency and reachability graph for KOTOR-II patch m
 Constructs:
   - E1: C++ include graph (#include "x" and <x> with stub / shared / KPM resolution)
   - E2: Python import graph (ast parse over scripts, tests, mods, research)
-  - E3: Manifest library edges (manifest.toml: requires, requires_interfaces, provides, kind=library)
+  - E3: Manifest provider edges (manifest.toml: requires, requires_interfaces, provides, kind=provider)
   - E4: Non-include test coverage:
         (a) Colocation: tests in a mod dir cover that mod's sources
         (b) Suite scripts: .cpp literals in suite runner scripts (parity.py, etc.)
@@ -136,11 +136,11 @@ class CompatGraph:
         # imported_file -> list of importer_files
         self.reverse_imports: dict[str, list[str]] = {}
 
-        # E3: manifests & libraries
+        # E3: manifests & providers
         # mod_dir_rel -> manifest dict
         self.manifests: dict[str, dict[str, Any]] = {}
-        # library_mod_dir -> list of consumer_mod_dirs
-        self.library_consumers: dict[str, list[str]] = {}
+        # provider_mod_dir -> list of consumer_mod_dirs
+        self.provider_consumers: dict[str, list[str]] = {}
         # interface name@major -> list of consumer_mod_dirs
         self.interface_consumers: dict[str, list[str]] = {}
 
@@ -240,9 +240,9 @@ class CompatGraph:
                 except Exception:
                     continue
 
-        # Build library consumer relationships (E3)
+        # Build provider consumer relationships (E3)
         for lib_mod, lib_info in self.manifests.items():
-            if lib_info["kind"] == "library":
+            if lib_info["kind"] == "provider":
                 lib_id = lib_info["id"]
                 provides = set(lib_info["provides"])
                 consumers: list[str] = []
@@ -253,7 +253,7 @@ class CompatGraph:
                     req_ifaces = set(c_info.get("requires_interfaces", []))
                     if lib_id in reqs or (provides and req_ifaces.intersection(provides)):
                         consumers.append(c_mod)
-                self.library_consumers[lib_mod] = consumers
+                self.provider_consumers[lib_mod] = consumers
 
             for iface in lib_info.get("provides", []):
                 self.interface_consumers.setdefault(iface, [])
@@ -680,7 +680,7 @@ class CompatGraph:
                         )
                     )
 
-            # 4. Mod Directory Code (build_check + colocation + library fan-out)
+            # 4. Mod Directory Code (build_check + colocation + provider fan-out)
             mod_dir = self._find_mod_dir(self.repo_root / node)
             if mod_dir and not node.startswith("patch_manager_mods/_shared_src"):
                 is_test = node.endswith("_test.cpp")
@@ -703,10 +703,10 @@ class CompatGraph:
                         if col_test not in chain:
                             queue.append((col_test, chain + [f"colocated in {mod_dir}", col_test], host_only, from_shared))
 
-                # Manifest library fan-out (E3): library touched -> consumers
+                # Manifest provider fan-out (E3): provider touched -> consumers
                 # Does not fan out for test files or when reached from _shared_src includes
-                if not is_test and not from_shared and mod_dir in self.library_consumers:
-                    for consumer_mod in self.library_consumers[mod_dir]:
+                if not is_test and not from_shared and mod_dir in self.provider_consumers:
+                    for consumer_mod in self.provider_consumers[mod_dir]:
                         c_manifest = self.manifests[consumer_mod]
                         # Add consumer builds & colocated tests
                         if not host_only:
@@ -714,7 +714,7 @@ class CompatGraph:
                                 PlanItem(
                                     kind="build",
                                     id=f"build_check:{consumer_mod}",
-                                    why=tuple(chain + [f"library consumer: {consumer_mod}"]),
+                                    why=tuple(chain + [f"provider consumer: {consumer_mod}"]),
                                     details={"mod": consumer_mod},
                                 )
                             )
@@ -723,7 +723,7 @@ class CompatGraph:
                                 queue.append(
                                     (
                                         col_test,
-                                        chain + [f"library consumer: {consumer_mod}", col_test],
+                                        chain + [f"provider consumer: {consumer_mod}", col_test],
                                         host_only,
                                         from_shared,
                                     )

@@ -195,7 +195,7 @@ def summarize_reason(why: tuple[str, ...]) -> str:
     for part in why:
         if "colocated in" in part:
             return f"({part})"
-        if "library consumer:" in part:
+        if "provider consumer:" in part:
             return f"({part})"
         if "covers:" in part:
             return f"({part})"

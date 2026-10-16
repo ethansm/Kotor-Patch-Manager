@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for scripts/check_library_manifests.py. Pure stdlib; every case builds a tiny patch_manager_mods tree in a temp dir."""
+"""Tests for scripts/check_provider_manifests.py. Pure stdlib; every case builds a tiny patch_manager_mods tree in a temp dir."""
 import subprocess
 import sys
 import tempfile
@@ -9,7 +9,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import _static_common as sc  # noqa: E402
-import check_library_manifests as clm  # noqa: E402
+import check_provider_manifests as clm  # noqa: E402
 
 CORE = '#define KPATCH_LOG_IFACE   "kpatch.log"\n#define KPATCH_LOG_VERSION 1\n' \
        'typedef struct KPatchApi {\n  int (*provide)(const char* name, unsigned version, const void* iface);\n' \
@@ -47,7 +47,7 @@ def sevs(rep, sev):
     return [f for f in rep.findings if f.sev == sev]
 
 
-class LibraryManifestTests(unittest.TestCase):
+class ProviderManifestTests(unittest.TestCase):
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self._tmp.cleanup)
@@ -55,7 +55,7 @@ class LibraryManifestTests(unittest.TestCase):
         self.core = Path(self._tmp.name) / "kpatch_api.h"
         self.core.write_text(CORE)
         self.write("_shared_src/PortraitSlots.h", SHARED)
-        self.write("lib_src/manifest.toml", manifest("lib", "library", provides=["k2.portraitslots@1"]))
+        self.write("lib_src/manifest.toml", manifest("lib", "provider", provides=["k2.portraitslots@1"]))
         self.write("lib_src/Lib.cpp", LIB_CPP)
         self.write("lib_src/kotor2-steam-aspyr.hooks.toml", hooks(0x100, 0x200))
         self.write("con_src/manifest.toml", manifest("con", requires=["lib"], ifaces=["k2.portraitslots@1"]))
@@ -77,7 +77,7 @@ class LibraryManifestTests(unittest.TestCase):
         rep = self.check()
         self.assertEqual(sevs(rep, "FAIL"), [])
         self.assertEqual(sevs(rep, "WARN"), [])
-        self.assertEqual([f.check for f in sevs(rep, "PASS")], ["library", "consumer"])
+        self.assertEqual([f.check for f in sevs(rep, "PASS")], ["provider", "consumer"])
         self.assertEqual(rep.exit_code(), 0)
 
     def test_wrong_interface_name_in_consumer_manifest_fails(self):
@@ -87,7 +87,7 @@ class LibraryManifestTests(unittest.TestCase):
         self.assertTrue(any("no manifest provides it" in m for m in f), f)
         self.assertEqual(self.check().exit_code(), 1)
 
-    def test_library_provides_without_provide_call_fails(self):
+    def test_provider_provides_without_provide_call_fails(self):
         self.write("lib_src/Lib.cpp", "void init() {}\n")
         f = self.fails(self.check())
         self.assertTrue(any("no provide(" in m for m in f), f)
@@ -124,11 +124,15 @@ class LibraryManifestTests(unittest.TestCase):
         self.write("con_src/manifest.toml", manifest("con", requires=["lib"], ifaces=["k2.portraitslots@x"]))
         f = self.fails(self.check())
         self.assertTrue(any("malformed requires_interfaces" in m for m in f), f)
-        self.write("lib_src/manifest.toml", manifest("lib", "library", provides=["k2.portraitslots@x"]))
+        self.write("lib_src/manifest.toml", manifest("lib", "provider", provides=["k2.portraitslots@x"]))
         self.assertTrue(any("malformed provides" in m for m in self.fails(self.check())))
 
-    def test_empty_library_provides_fails(self):
-        self.write("lib_src/manifest.toml", manifest("lib", "library", provides=[]))
+    def test_library_kind_is_rejected_as_provider(self):
+        self.write("lib_src/manifest.toml", manifest("lib", "library", provides=["k2.portraitslots@1"]))
+        self.assertTrue(self.fails(self.check()))
+
+    def test_empty_provider_provides_fails(self):
+        self.write("lib_src/manifest.toml", manifest("lib", "provider", provides=[]))
         self.write("lib_src/Lib.cpp", "void init() {}\n")
         self.assertTrue(any("empty provides" in m for m in self.fails(self.check())))
 
@@ -162,11 +166,11 @@ class LibraryManifestTests(unittest.TestCase):
 
     def test_main_exit_codes(self):
         def run(*args):
-            return subprocess.run([sys.executable, str(HERE / "check_library_manifests.py"), "--root", str(self.root),
+            return subprocess.run([sys.executable, str(HERE / "check_provider_manifests.py"), "--root", str(self.root),
                                    "--core-header", str(self.core), *args], capture_output=True, text=True)
         ok = run("--quiet")
         self.assertEqual(ok.returncode, 0, ok.stdout)
-        self.assertNotIn("PASS library", ok.stdout)
+        self.assertNotIn("PASS provider", ok.stdout)
         self.write("con_src/manifest.toml", manifest("con", requires=[], ifaces=["k2.portraitslots@1"]))
         bad = run()
         self.assertEqual(bad.returncode, 1)

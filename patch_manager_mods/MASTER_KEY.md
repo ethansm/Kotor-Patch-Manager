@@ -12,7 +12,7 @@ When looking at batches in master plans (e.g. `T5d`, `S1a`, `C1`, `R10`), the le
 |---|---|---|---|
 | **T** | **Testing & Contracts** | Colocated unit tests, SafeRead contract tests, or `--wine` smokes | `T5d`: contract test level_up_override |
 | **S** | **Sync / Mirroring** | Syncing shared headers (`_shared_src/`) to KPM `ethansm/local-mods` | `S1a`: mirror sync buff + shield + portrait |
-| **L** | **Library / Packaging** | KPM library DLL manifests, launcher integration, split DLL installs | `L2`: KPM manifest builder |
+| **L** | **Provider / Packaging** | KPM service-provider (`kind = "provider"`) DLL manifests, launcher integration, split DLL installs | `L2`: KPM manifest builder |
 | **C** | **Common Extraction** | Extracting shared logic into `Patches/Common` (`CodePatch.h`, etc.) | `C1`: CodePatch adoption across fixes |
 | **M** | **Meta / Setup** | Administrative master plan creation, status updates, scaffolding | `M0`: Create doc 24 master plan |
 | **B** | **Database Batches** | Steam address DB reverse-engineering batches in `kpm-pr-steam-db` | `B12b`: Acc/Steam ABI normalization |

@@ -2,7 +2,7 @@
 id = "gui-input"
 name = "GUI Input (shared game window / input / wheel provider)"
 version = "0.1.0-dev"
-kind = "library"
+kind = "provider"
 provides = ["k2.guiinput@1"]
 author = "local"
 description = "Consolidates window subclassing on the game window into a single owner, providing k2.guiinput v1: game HWND, cursor in engine coordinates, foreground tracking, and mouse wheel subscription dispatch. Needs a KotorPatcher with the patch registry (KPatchInit)."
