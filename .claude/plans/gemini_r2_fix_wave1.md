@@ -16,6 +16,8 @@ Several Gemini fix diffs are wrong (BH-06, QH-01, QH-08, CA-03, BH-15). The `fix
 | R2.3 | Run batch A (Haiku variants -> Sonnet cons -> Sonnet rev) | R2.2 | - | DONE | | 12 Haiku, 10 cons, 10 rev; 0 REQUEST_CHANGES, 1 rebase |
 | R2.4 | Apply in conflict order, close WIs, play-test rows | R2.3 | - | DONE | cdd2475 | 10/10 applied 823aea5..cdd2475; play-test rows a4e43d0 |
 | R2.5 | Close: cost, memory yield line, handoff | R2.4 | - | DONE | | cost $6.83/32 agents (~$0.68/item); memory yield line |
+| R2.6 | Wave 2 plan: items TSV (WI-125, WI-126) + `fix_wave.py plan --wave r2fx2` | R2.5 | user approves batch r2fx2-A | TODO | | `.claude/waves/r2fx2/items.input.tsv` |
+| R2.7 | Wave 2 run: `/variant-fix-wave run r2fx2-A` (variants -> cons -> rev -> apply, close, play-test rows) | R2.6 | - | TODO | | |
 
 ## fid -> WI map (R2.1, 2026-10-16)
 | WI | fids | state | wave |
