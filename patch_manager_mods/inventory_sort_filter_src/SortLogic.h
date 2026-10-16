@@ -15,13 +15,19 @@ struct Entry {
     bool usable;    // usableForCycle(): equippable by the shown character, or activatable
     int baseItem;   // item+0xC
     bool tint;      // tintRow(): equippable type the shown character cannot equip
+    char name[64] = {};   // localised item name (CExoLocString at item+0x2C0), NUL-terminated; "" = unknown. Default member init keeps
+                          // the 7-value aggregate inits warning-free (-Wmissing-field-initializers) and a default-built Entry empty.
 };
 
-// New first, then usable, then by base item id (groups identical kinds), then vanilla order.
+// New first, then usable, then by base item id (groups identical kinds), then localised name, then vanilla order.
+// Names compare with strcmp, so "" sorts before any name: equal names (all-empty groups included) fall to orig, and a failed
+// lookup in a mixed group clusters first. Skipping the name key when either side is empty would make the order cyclic (UB in sort).
 inline bool before(const Entry& a, const Entry& b) {
     if (a.isNew != b.isNew) return a.isNew;
     if (a.usable != b.usable) return a.usable;
     if (a.baseItem != b.baseItem) return a.baseItem < b.baseItem;
+    int c = strcmp(a.name, b.name);
+    if (c != 0) return c < 0;
     return a.orig < b.orig;
 }
 

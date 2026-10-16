@@ -46,7 +46,7 @@ constexpr int LabelTextOff = 0xD8, TextRendererOff = 0x14, TextStringSubOff = 0x
 
 constexpr int PanelFilterLabelOff = 0x16B8;   // LBL_FILTER (static caption "Filter")
 constexpr int PanelRowArrayOff = 0x24B0, PanelRowCountOff = 0x24B4, PanelSelectedIdOff = 0x24C8;
-constexpr int ItemIdOff = 0x14, ItemFlagsOff = 0x2C8, ItemBaseOff = 0x0C, ItemUpgradeSlotsOff = 0x2F4;
+constexpr int ItemIdOff = 0x14, ItemFlagsOff = 0x2C8, ItemBaseOff = 0x0C, ItemUpgradeSlotsOff = 0x2F4, ItemNameOff = 0x2C0;
 constexpr int BaseSlotMaskOff = 0x04, BaseGenderReqOff = 0xB4, CrStatsOff = 0x1198, StatsGenderOff = 0xE0;
 constexpr int TabClickedOff = 0x5C;
 constexpr int NoSelection = 0x7F000000;
@@ -67,6 +67,8 @@ using SetCanUseFn = void(__thiscall*)(int, int);
 using SetNextFilterFn = void(__thiscall*)(int, int);
 using GetUpgradeTypeFn = unsigned(__thiscall*)(int, int);
 using GetBaseItemFn = int(__thiscall*)(int);
+using GetLocStringFn = bool(__thiscall*)(void*, int, void*, unsigned char);   // CExoLocString::GetString(this, language, CExoString* out, gender) RET 0xC
+using GetClientLanguageFn = int(__fastcall*)(int);                            // ECX = *(*(GuiGlobal)+4)
 using CanEquipFn = unsigned char(__thiscall*)(int, int, unsigned*, int, int, int);
 
 // ---- log ----
@@ -141,6 +143,29 @@ int guiInGame() {
 int filterMode() {
     int g = guiInGame();
     return g ? rd<unsigned char>(g, FilterModeOff, 0xFF) : -1;   // 0xFF/-1 = unknown, never equals a cycle mode
+}
+
+// Localised item name for the sort tie-break: CExoLocString at item+0x2C0 read through GetString (REA 20261015). Leaves out[0] = 0
+// (the "unknown" name, so before() falls back to orig) for a null/unreadable handle, a false return or a null text pointer.
+// Copies at most cap-1 chars. The engine out string is always freed with the CExoString dtor.
+void readItemName(int item, char* out, int cap) {
+    out[0] = 0;
+    const int handle = item + ItemNameOff;
+    if (!item || rd<int>(handle, 0) == 0) return;   // GetString dereferences [handle+0] first, with no null check
+    const int app = rd<int>(rd<int>(GuiGlobal, 0), 4);
+    if (!app || rd<int>(app, 4) == 0) return;       // GetClientLanguage reads *(*(app+4)+0x148)
+    const int language = reinterpret_cast<GetClientLanguageFn>(gameaddr::GetClientLanguage)(app);
+    int exo[2] = {0, 0};                            // CExoString {char* p; uint32 len}
+    const bool ok = reinterpret_cast<GetLocStringFn>(gameaddr::GetLocString)(reinterpret_cast<void*>(handle), language, exo, 0);
+    if (ok && exo[0]) {
+        char tmp[256];
+        if (saferead::readExo(4, reinterpret_cast<uintptr_t>(exo), tmp, sizeof tmp, 255, false)) {
+            int k = 0;
+            while (tmp[k] && k < cap - 1) { out[k] = tmp[k]; ++k; }
+            out[k] = 0;
+        }
+    }
+    if (exo[0]) reinterpret_cast<CExoDtor>(gameaddr::ExoDtor)(exo);
 }
 
 void setLabelText(int panel, const char* text) {
@@ -334,6 +359,7 @@ extern "C" void __cdecl SortFilterBufferRow(int ebp) {
     e.isNew = ((rd<unsigned>(item, ItemFlagsOff) >> 7) & 1) != 0;
     e.usable = usable; e.baseItem = rd<int>(item, ItemBaseOff);
     e.tint = needUsable && isf::tintRow(equippable, equipOk);
+    if (g_cfg.sort) readItemName(item, e.name, sizeof e.name);   // name key only matters when sorting; e.name stays "" otherwise
 
     // Reselect bookkeeping that the skipped vanilla code did; the row index is only known at flush time.
     bool matched = (rd<int>(panel, PanelSelectedIdOff) == id);
@@ -362,7 +388,14 @@ extern "C" void __cdecl SortFilterFlush(int ebp) {
         return;
     }
     normaliseState(panel);
-    if (g_cfg.sort) isf::sortEntries(g_buf, g_n);
+    if (g_cfg.sort) {
+        LARGE_INTEGER freq, t0, t1;
+        QueryPerformanceFrequency(&freq); QueryPerformanceCounter(&t0);
+        isf::sortEntries(g_buf, g_n);
+        QueryPerformanceCounter(&t1);
+        if (g_cfg.log && freq.QuadPart > 0)
+            logf("sort timing: sortEntries rows=%d took %u us", g_n, (unsigned)((t1.QuadPart - t0.QuadPart) * 1000000 / freq.QuadPart));
+    }
     if (g_cfg.log) {
         int nTint = 0, nUsable = 0;
         for (int i = 0; i < g_n; ++i) { nTint += g_buf[i].tint; nUsable += g_buf[i].usable; }

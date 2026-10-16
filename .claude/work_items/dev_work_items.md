@@ -51,7 +51,7 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 35 | WI-36 | P1 | ready | L | - | PC level-up in-panel Filter button | 1 | 2 | PC level-up in-panel Filter button; new feature, ready. |
 | [x] | 36 | WI-02b | P2 | ready | M | WI-02,WI-02c | KPM tooling H7, H10, H9 new scripts | 3 | 3 | New KPM tooling scripts; tooling only, after WI-02. |
 | [ ] | 37 | WI-29 | P2 | verify-only | M | - | Portrait-slots verify and companion-AI KpLog scope | 2 | 0 | Portrait-slots verify and companion-AI KpLog scope; verify only. |
-| [ ] | 38 | WI-21 | P2 | ready | M | WI-18 | Inventory sort name tie-break (C132); rest deferred | 6 | 2 | Inventory sort name tie-break; 1 open, 5 parked. |
+| [x] | 38 | WI-21 | P2 | ready | M | WI-18 | Inventory sort name tie-break (C132); rest deferred | 6 | 2 | Inventory sort name tie-break; 1 open, 5 parked. |
 | [ ] | 39 | WI-31 | P2 | ready | M | - | Portrait-slots split v1 decision comment | 4 | 2 | Portrait-slots split v1 decision comment; 2 open, 2 parked. |
 | [ ] | 40 | WI-50b | P2 | verify-only | S | WI-50 | deep-haiku-review H3/H4 verify, H6 and H9 decisions | 4 | 0 | deep-haiku-review H3/H4 verify and H6/H9 decision; tooling. |
 | [ ] | 41 | WI-51 | P2 | verify-only | M | - | deep-haiku-review ladder verify (L2-L4, P2b-a/b, style runne | 9 | 0 | deep-haiku-review ladder verify; tooling, spend GO excluded. |

@@ -25,6 +25,37 @@ int main() {
     int lastBase = -1, lastOrig = -1;
     for (auto& e : w) { if (e.baseItem != lastBase) { lastBase = e.baseItem; lastOrig = -1; } CHECK(e.orig > lastOrig); lastOrig = e.orig; }
 
+    // name tie-break (WI-21): same new/usable/base item, names "b" (orig 0) and "a" (orig 1) -> "a" first
+    auto setName = [](Entry& e, const char* s) { snprintf(e.name, sizeof e.name, "%s", s); };
+    std::vector<Entry> nm = {{10, 10, 0, false, true, 5, false}, {11, 11, 1, false, true, 5, false}};
+    setName(nm[0], "b"); setName(nm[1], "a");
+    sortEntries(nm.data(), (int)nm.size());
+    CHECK(nm[0].item == 11 && nm[1].item == 10);
+
+    // empty names (failed lookup) are equal: vanilla order decides; a default-built Entry has an empty name
+    Entry blank;
+    CHECK(blank.name[0] == 0 && blank.name[63] == 0);
+    std::vector<Entry> em = {{20, 20, 1, false, true, 5, false}, {21, 21, 0, false, true, 5, false}};
+    sortEntries(em.data(), (int)em.size());
+    CHECK(em[0].item == 21 && em[1].item == 20);
+
+    // name is the 4th key: isNew, usable and baseItem still decide first ("z" new, "a" base 9 vs "b" base 5, unusable "a")
+    std::vector<Entry> pr = {{30, 30, 0, false, true, 9, false}, {31, 31, 1, false, true, 5, false},
+                             {32, 32, 2, false, false, 5, false}, {33, 33, 3, true, false, 9, false}};
+    setName(pr[0], "a"); setName(pr[1], "z"); setName(pr[2], "a"); setName(pr[3], "z");
+    sortEntries(pr.data(), (int)pr.size());
+    int wantP[] = {33, 31, 30, 32};
+    for (size_t i = 0; i < pr.size(); ++i) CHECK(pr[i].item == wantP[i]);
+
+    // mixed empty/named rows stay a strict weak order (no skip-when-empty cycle): "" first, then names, ties by orig
+    std::vector<Entry> mx = {{40, 40, 0, false, true, 5, false}, {41, 41, 1, false, true, 5, false},
+                             {42, 42, 2, false, true, 5, false}, {43, 43, 3, false, true, 5, false}};
+    setName(mx[0], "b"); setName(mx[1], "a"); /* mx[2] stays empty */ setName(mx[3], "a");
+    sortEntries(mx.data(), (int)mx.size());
+    int wantM[] = {42, 41, 43, 40};
+    for (size_t i = 0; i < mx.size(); ++i) CHECK(mx[i].item == wantM[i]);
+    for (size_t i = 0; i < mx.size(); ++i) { CHECK(!before(mx[i], mx[i])); for (size_t j = 0; j < mx.size(); ++j) CHECK(!(before(mx[i], mx[j]) && before(mx[j], mx[i]))); }
+
     // cycle state machine, all states enabled: New = engine mode 1, Usable/Upgrade = mode 0 + our extra filter
     unsigned all = (1u << S_New) | (1u << S_Usable) | (1u << S_Upgrade);
     State s = S_All; Extra ex = X_None; int mode = 0;
