@@ -1,21 +1,40 @@
 # Session Handoff & Plan State: .claude/plans/gemini_r2_fix_wave1.md
 
 ## 0. Next-Phase Direction
-we should ingest these into WorkItems to be tracked, and can pick up a wave of them with the variant-fix-wave skill. Plan the first fix wave run.
+Execute R2.2: Items TSV + `fix_wave.py plan` -> batch A
 
 ## 1. Active State & Provenance
 - **Master Plan:** `.claude/plans/gemini_r2_fix_wave1.md`
-- **Branch:** `KOTOR-II` (7322abb plan HW-EDIT v2: holster editor pivots to a dedicated in-game Options screen patch (independent of equip3d/ultrawide))
-- **Generated:** 2026-10-16 14:08:55 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (36dd958 work items: ingest Gemini round-2 findings as WI-115..133 (+WI-113 ND-01 note); plan R2FX1 batch A)
+- **Generated:** 2026-10-16 14:16:44 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-7322abb plan HW-EDIT v2: holster editor pivots to a dedicated in-game Options screen patch (independent of equip3d/ultrawide)
- .../42_holstered_weapons_master_plan.handoff.md    |   1 +
- .claude/plans/holster_editor_options.md            | 121 +++++++++++++++++++++
- .claude/research/holster_edit/UX_OPTIONS.md        |   4 +
- 3 files changed, 126 insertions(+)
+36dd958 work items: ingest Gemini round-2 findings as WI-115..133 (+WI-113 ND-01 note); plan R2FX1 batch A
+ .claude/handoffs/gemini_r2_fix_wave1.handoff.md | 55 +++++++++++++++++++++++++
+ .claude/plans/gemini_r2_fix_wave1.md            | 43 +++++++++++++++++++
+ .claude/work_items/WI-113.md                    |  3 ++
+ .claude/work_items/WI-115.md                    | 15 ++++---
+ .claude/work_items/WI-116.md                    | 12 ++++--
+ .claude/work_items/WI-117.md                    | 14 +++++--
+ .claude/work_items/WI-118.md                    | 13 ++++--
+ .claude/work_items/WI-119.md                    | 18 +++++---
+ .claude/work_items/WI-120.md                    | 10 +++--
+ .claude/work_items/WI-121.md                    | 20 ++++++---
+ .claude/work_items/WI-122.md                    | 14 +++++--
+ .claude/work_items/WI-123.md                    | 13 ++++--
+ .claude/work_items/WI-124.md                    | 16 +++++--
+ .claude/work_items/WI-125.md                    | 16 ++++---
+ .claude/work_items/WI-126.md                    | 15 +++++--
+ .claude/work_items/WI-127.md                    | 11 +++--
+ .claude/work_items/WI-128.md                    | 27 +++++++++---
+ .claude/work_items/WI-129.md                    | 20 +++++++--
+ .claude/work_items/WI-130.md                    | 20 +++++++--
+ .claude/work_items/WI-131.md                    | 19 +++++++--
+ .claude/work_items/WI-132.md                    | 13 ++++--
+ .claude/work_items/WI-133.md                    | 29 +++++++++----
+ 22 files changed, 331 insertions(+), 85 deletions(-)
 ```
-- **Dirty Files (166):**
+- **Dirty Files (167):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/33_ui_queue_hotbar_fixes.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
@@ -23,28 +42,28 @@ we should ingest these into WorkItems to be tracked, and can pick up a wave of t
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
   - ` M .claude/handoffs/PHASE7_COMMON_MASTER.handoff.md`
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
+  - ` M .claude/handoffs/fix_pipeline_plan.handoff.md`
   - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
-  - ` M .claude/plans/swarm_library_architecture.md`
-  - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
-  - ... +156 more (run `git status --short`)
+  - ` M .claude/plans/gemini_r2_fix_wave1.md`
+  - ... +157 more (run `git status --short`)
 
-## 2. Immediate Objective (R2.1)
-**Ingest: create WIs from validated.tsv (reachable + SIDE-QH-TEST + test gaps ready; latent/doc grouped)**
+## 2. Immediate Objective (R2.2)
+**Items TSV + `fix_wave.py plan` -> batch A**
 
 Status: OPEN
-Task: Ingest: create WIs from validated.tsv (reachable + SIDE-QH-TEST + test gaps ready; latent/doc grouped)
+Task: Items TSV + `fix_wave.py plan` -> batch A
 
 ## 2b. Upcoming Batches in Pipeline
-- **R2.2** [Research & Probes] : Items TSV + `fix_wave.py plan` -> batch A
 - **R2.3** [Research & Probes] : Run batch A (Haiku variants -> Sonnet cons -> Sonnet rev)
 - **R2.4** [Research & Probes] : Apply in conflict order, close WIs, play-test rows
+- **R2.5** [Research & Probes] : Close: cost, memory yield line, handoff
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume .claude/plans/gemini_r2_fix_wave1.md`.
 
 ## 4. Subagent Delegation Direction
 - **Claude Code**: parallel `model: haiku` Agent subagents; brief = `Contract` + `Write Scope` + `python3 scripts/agent_contract.py print worker|recon`.
-- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate R2.1` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
+- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate R2.2` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
 
 ## 5. Dead Ends & Verification (manual)
 - **Do not trust Gemini fix diffs.** BH-06 doesn't compile (float[3] assignment); QH-01 needs a forward declaration of `endHandoff`; QH-04 needs a `!headHeld && !sawExec` gate; QH-08's fix never clears "X" (setFill never clears text); CA-03's reorder does not fix the pause-driven ORPHAN; BH-15 bumps to 2.x, against the 0.X.Y rule. Use the `fix` column of validated.tsv.
