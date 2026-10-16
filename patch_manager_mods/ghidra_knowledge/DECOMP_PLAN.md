@@ -26,6 +26,7 @@ Handoff: `.claude/handoffs/DECOMP_PLAN.handoff.md`. Recon: `.claude/research/rea
 | D3 | 2026-10-15T19:40 | 1 Sonnet (V3) | $0.39 | G3 live 46 addrs -> 98 rows (52 callsite, 4 function, 42 xref), lint 53 (+0), exe sha unchanged; suites 221/328 OK |
 | D4 | 2026-10-15T19:57 | 1 Haiku (T4.1), 1 Sonnet (V4) | $0.49 | G4 live CSWSCreatureStats 124/124 ok in 6m43s wall incl. ~5 min cold start (~5.4 min and $0 tokens per 100 fns), 228 names annotated, 15 annotate failures -> 23 files `names=postpass`; exe sha unchanged; suites 240/328/13 OK, lint 53 |
 | D5 | 2026-10-16T00:14 | 2 Haiku (T5.1/T5.2), 1 Sonnet (V5), 5 Haiku drafters, 1 Sonnet validator | $2.49 | CSWSCreatureStats 124 purposes (108 keep, 16 fix, 0 drop), check-drafts 124/124, KDB +123 insert +1 update, 2nd apply 0, 0 of 749 prior purposes changed, integrity ok; page 285 KB byte-identical on regen; Haiku peaked 136-162k ctx (drafter chunks 84-111 KB too big: use --n 12); stale name_map row 0x006a8fe0 (GetUseMonkAttackTables, superseded by B0 0x006a8ea0) found, not fixed |
+| D6 | 2026-10-16T00:38 | 1 Haiku (T6.1), 4 Sonnet + 4 Haiku reviewers | $5.32 | R2 NO-GO: sonnet+facts 9/14, +rea 8/14, haiku+facts 4/14 + 1 decoy (1-31 twin), 0/4 Opus-only rows; R3 NO-GO; Haiku peaked 140-161k on 48-58 KB parts (dump reads); suites 328/289 OK; plan est. $2.8 overran (Sonnet ~$1.1 each) |
 
 ## Decisions (Opus)
 

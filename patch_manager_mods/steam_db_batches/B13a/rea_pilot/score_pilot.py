@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """R1 pilot score: reviewer TSVs (review/<arm>_<k>.tsv, plus the original Sonnet reviews) against the B13a Opus
-overrides, on the cards in key_pilot.tsv.  Acceptance uses bdlib.reviewer_accepts (finalize's rule); an accepted decoy
+overrides, on the cards in key_pilot.tsv. R2 arms: sfacts_/sfactsrea_/hfacts_*.tsv; $/card from review/cost.tsv
+(arm, usd per arm total).  Acceptance uses bdlib.reviewer_accepts (finalize's rule); an accepted decoy
 that equals an Opus-shipped override pair is a key error, not a decoy accept (finalize's rule).
 
     python3 B13a/rea_pilot/score_pilot.py        (from steam_db_batches/)"""
@@ -42,11 +43,16 @@ def main():
                        "UNRES" if o["final_verdict"] == "unresolved" else "OK")
     arms = {"sonnet (orig)": sorted((B / "review").glob("sonnet_c*.tsv")),
             "haiku+REA": sorted((HERE / "review").glob("rea_*.tsv")),
-            "haiku no-REA": sorted((HERE / "review").glob("norea_*.tsv"))}
+            "haiku no-REA": sorted((HERE / "review").glob("norea_*.tsv")),
+            "sonnet+facts": sorted((HERE / "review").glob("sfacts_*.tsv")),
+            "sonnet+facts+rea": sorted((HERE / "review").glob("sfactsrea_*.tsv")),
+            "haiku+facts": sorted((HERE / "review").glob("hfacts_*.tsv"))}
+    cost_p = HERE / "review" / "cost.tsv"
+    usd = {r["arm"]: float(r["usd"]) for r in rd(cost_p) if r["usd"].strip()} if cost_p.exists() else {}
     n = Counter(cls.values())
     print("cards: %s" % dict(sorted(n.items())))
-    print("| arm | rows | LS flagged | ADDR rejected | OK accepted | decoys accepted | unsure |")
-    print("|---|---|---|---|---|---|---|")
+    print("| arm | rows | LS flagged | ADDR rejected | OK accepted | decoys accepted | unsure | $/card |")
+    print("|---|---|---|---|---|---|---|---|")
     for arm, files in arms.items():
         rev = {}
         for f in files:
@@ -67,9 +73,10 @@ def main():
             c["ADDR_rej"] += cl == "ADDR" and not acc
             c["OK_acc"] += cl == "OK" and acc
             c["DEC_acc"] += cl == "DECOY" and acc
-        print("| %s | %d | %d/%d | %d/%d | %d/%d | %d/%d | %d |" % (
+        per = "%.3f" % (usd[arm] / len(cls)) if arm in usd else "-"
+        print("| %s | %d | %d/%d | %d/%d | %d/%d | %d/%d | %d | %s |" % (
             arm, len(rev), c["LS_flag"], n["LS"], c["ADDR_rej"], n["ADDR"], c["OK_acc"], n["OK"],
-            c["DEC_acc"], n["DECOY"], c["unsure"]))
+            c["DEC_acc"], n["DECOY"], c["unsure"], per))
 
 
 if __name__ == "__main__":

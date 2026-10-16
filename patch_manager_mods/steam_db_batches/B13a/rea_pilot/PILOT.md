@@ -69,3 +69,53 @@ The cost bar passes, just barely: REA about doubles the Haiku review cost.
 - R3 (only if R2 is GO): REA in B17 cards.
 - R4 (optional): Opus calibration to let REA callers count as A-CALLEE.
 - Twin rule before any REA-anchored accept: the card must show REA rows for the same-shape neighbours too.
+
+# R2 pilot: static facts (+ REA) on the same 50 cards (2026-10-16, DECOMP D6)
+
+**Verdict: NO-GO.** No arm beats Sonnet-orig 10/14 and no arm catches any of the 4 Opus-only rows. Static facts are
+$0 and stay on cards as report-only evidence. REA stays report-only (u06 fill only). R3 does not run.
+
+## Arms
+- `build_pilot_cards.py --arm facts|facts_rea`: same ids, order and committed body as R1, plus the
+  `### Static facts (script output, report-only)` section (and the REA section) from `cards B13a --facts [--rea]`
+  (`cards_full_facts*/`). R1 `cards_rea/` + `cards_norea/` regenerate byte-identical (`test_build_pilot_cards`, 6 OK).
+- Facts sections are small (~190 B/card); pilot parts 105-126 KB.
+- Reviewers: 2 Sonnet per Sonnet arm (25 cards each); haiku+facts split into 4 Haiku parts of 12-13 cards
+  (48-58 KB), to try to stay near the 60k ctx cap.
+
+## Score (`score_pilot.py`; $/card from `review/cost.tsv`; sonnet+facts+rea includes R1's $1.13 REA runs)
+| arm | rows | LS flagged | ADDR rejected | OK accepted | decoys accepted | unsure | $/card |
+|---|---|---|---|---|---|---|---|
+| sonnet (orig) | 50 | 10/14 | 11/11 | 4/4 | 0/20 | 0 | - |
+| haiku+REA (R1) | 50 | 7/14 | 10/11 | 4/4 | 1/20 | 6 | 0.047 |
+| haiku no-REA (R1) | 50 | 5/14 | 11/11 | 4/4 | 0/20 | 8 | 0.023 |
+| sonnet+facts | 50 | 9/14 | 11/11 | 4/4 | 0/20 | 1 | 0.045 |
+| sonnet+facts+rea | 50 | 8/14 | 11/11 | 4/4 | 0/20 | 2 | 0.067 |
+| haiku+facts | 50 | 4/14 | 10/11 | 4/4 | **1/20** | 5 | 0.017 |
+
+- GO rule (LS > 10/14 or >= 1 of 1-01/1-15/1-34/2-18; 0 decoys; < $0.08/card): every arm fails the LS leg.
+- All Sonnet arms answer `match` on 1-01, 1-15, 1-34, 2-18 (the Opus-only rows need Mac names / caller context that
+  neither facts nor REA carry). Sonnet+facts loses 1-56 (match); +rea also loses 2-13 (unsure). Facts add no LS lift.
+- haiku+facts: 4/14 (below R1 no-REA 5/14). It accepted decoy B13a-1-31 = 0x775930, another twin of the
+  0x775930/50/70/90 `[this+0x224]` forwarder family. It cited the callee `0x00775940 CALL 0x0085D260` as the
+  "distinguishing anchor", but that callee is not mapped to the GOG side, so the twins rule was obeyed in form only.
+  It did answer `unsure` on R1's trap 1-53. Haiku is not a cheap default.
+- Haiku ctx: all 4 Haiku reviewers peaked at 140-161k despite 48-58 KB inputs (dump reads dominate); the 60k cap
+  needs a per-call read budget enforced by tooling, not by the brief.
+- Hygiene (self-reported, no answer files opened): one Sonnet printed 150 B of R1 `norea_2.tsv` (card 1-41), one saw
+  `[rea]` ledger lines via `query_ghidra.py` that matched its card, one `rg` listed `opus/` paths, one Sonnet used
+  `upstream_server/.../fp.tsv` (GOG fingerprints, outside the brief's tool list).
+
+## Cost (agent_usage.py, est.)
+| item | $ |
+|---|---|
+| T6.1 builder (Haiku) | 0.03 |
+| Sonnet facts (2) | 2.23 |
+| Sonnet facts+rea (2) | 2.22 (+1.13 R1 REA runs = 3.35 arm) |
+| Haiku facts (4) | 0.84 |
+| **R2 total new spend** | **5.32** |
+
+## Decision (MASTER_PLAN)
+- R2 DONE (NO-GO). R3 NO-GO: no REA in B17 cards. Facts sections stay as $0 report-only card evidence.
+- The remaining LS gap is name/context evidence (Mac/Linux names, caller context), not body facts: a future pilot
+  would put upstream names on the card, not more REA.

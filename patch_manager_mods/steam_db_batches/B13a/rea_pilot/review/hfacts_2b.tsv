@@ -1,0 +1,13 @@
+gog_addr	steam_addr	verdict	corrected_addr	content_anchor	confidence	reason
+0x00421860	0x00775990	unsure			2	Thunk to unnamed 0x0085D3D0; GOG callee 0x0048d3b0 unmapped; +0x224 shared with all twins.
+0x00421880	0x00775970	unsure			2	Thunk to unnamed 0x0085D320; GOG callee 0x0048d460 unmapped; +0x224 shared with all twins.
+0x00413e70	0x007680a0	match		0x0073F530 CClientExoApp::GetItemByGameObjectID (trusted map of GOG 0x0040c9f0)	4	Trusted callee plus all 6 GOG disp and 12 imms present; RET 8 equals gog_retn; GOG param_size flagged bad.
+0x00422e80	0x00776db0	mismatch		0x00776DB0 decompile: *(param_1+0x3c0)=0/1/2 (GOG writes +0x13c)	4	GOG writes +0x13C, candidate +0x3C0; size 25 vs 84; no shared displacement.
+0x0042a5d0	0x0077dba0	mismatch		0x0077DBA0 direct callees CheckFeat 0x007787E0 and SceneHitCheck 0x00778940; GOG callees are four getters	3	GOG 129B, four getter callees, zero displacements; candidate 1005B, seven callees incl. CheckFeat.
+0x0042bae0	0x0077fb10	mismatch		0x0077FB10 decompile: if (*(param_1+0x448)!=0) then switch on anim calling FUN_0077fa00(0/1)	4	Footstep switch with 3 callees; GOG has one callee, and +0x450/+0x454 accesses absent here. 0x0077FAC0 unverified.
+0x00419dc0	0x0076dde0	mismatch		0x0076DDE3 83 EC 30 SUB ESP,0x30 (GOG imms 0x44 and 0x378 absent)	4	GOG imms 0x44/0x378 absent; frame 0x30 vs GOG 0x44; size 470 vs 363; 0x0076df50 unverified.
+0x0041f7b0	0x007738e0	mismatch		0x007738E4 MOV EAX,[EBP+0x10] then stores via ECX/EDX: target is a stack arg	4	Stores go to pointer from stack arg [EBP+0x10]; GOG 0-arg member setter writes this+4/+8.
+0x0042bae0	0x0077f6c0	mismatch		0x0077F6C0 calls operator new 0x00919723 (decompile FUN_00919723(8))	4	GOG 77B with one callee; candidate 819B SEH frame, 13 callees incl. operator new 0x00919723; body is a loader.
+0x0041a710	0x0076d9e0	mismatch		0x0076D9E0 decompile: if (param_2==1 && param_1[+0x19c]==0) then vtable slot 0xb4 with 0x1f42	4	GOG slot array +0x228-0x268 has 0 shared displacements; candidate is a 1013B effect toggle (+0x19c flag, vtable 0xb4/0xb8).
+0x00422e00	0x00776e40	match		0x0051CBE0 CServerExoApp::IsActionsPending (trusted map of GOG 0x0064c600)	4	Three trusted callees present; size 126 and 4/4 displacements match; name fits; G7 mac_contra unexplained.
+0x0041a710	0x0076eb20	mismatch		0x0076EB20 decompile: *(param_1+0x280)=param_3 (case 1); GOG slots at +0x228	2	All 11 flag immediates match, but 17 slot offsets shift +0x58 vs GOG; no allocation-size proof.
