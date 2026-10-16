@@ -44,3 +44,7 @@ Builds on c4/c5 (not re-derived). Brief's known facts re-checked: 0x863650 thisc
 2. Writer of creature+0xC5 (row+8 reader plus creature store). Start near the equip path that stores creature+0x224.
 3. Decompile FUN_00561f30 for the server counterpart.
 4. What the caller does with raw 0x2711 and how the row maps to a g<N> name.
+
+## Static follow-up (Opus, field_census $0, 10-16)
+- VERIFIED `field_census.py --offset 0xC5 --all --writers`: only 2 writers. CSWCCreature::UpdateWeaponClass 0x76D590 (`0076d7d2 MOV byte ptr [EDX+0xc5],AL`, EDX = ret of 0x7ED830 = `[creature+0x68]`, the anim base) and CSWCAnimBase::Constructor 0x85F7E0 (`0085f8c3 MOV byte ptr [ECX+0xc5],0x0`). So +0xC5 lives on the CSWCAnimBase at client creature+0x68, default 0. The ANIMRES `self` is that anim base.
+- Readers (any base, 12 fns): 0x66B8A0 FlourishWeapon, 0x6DB4A0 (server), 0x7680A0, 0x76F070 UpdateAttackData, 0x772020 PlayHitSound, 0x79C9C0 GetClientMeleeAnimation, 0x79CA90 GetClientRangedAnimation, 0x79F430 PlayerFlourishWeapons, 0x8602C0 SetOverlayAnimation_2, 0x863650. Wave C7 (6 Haiku, `.claude/research/holster_c7/`) classifies each.
