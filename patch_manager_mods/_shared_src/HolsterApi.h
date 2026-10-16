@@ -1,10 +1,10 @@
 /* HolsterApi.h -- the "k2.holster" v1 interface (provider: the holster patch) + a C++ consumer helper.
  *
- * Why: the equip-screen 3D preview (equipment-3d-character) shows weapons holstered and hosts the holster placement editor
- * (doc 42 HW-EDIT). Holster owns the tune data, the mount pose and holster.ini; equip3d owns the UI. Equip3d requires this
- * interface OPTIONALLY: when it is absent, the holster toggle and the gear never appear and the preview works as before.
+ * Why: the holster-editor patch (in-game Options screen) hosts the editor (doc 42 HW-EDIT): its 3D preview (k2.preview3d) shows
+ * weapons holstered and the placement is edited live. Holster owns the tune data, the mount pose and holster.ini; holster-editor
+ * owns the UI and requires this interface.
  *
- * Calls run on the game's main thread (the equip panel tick); holster applies registered preview Gobs from its per-frame
+ * Calls run on the game's main thread (the editor panel tick); holster applies registered preview Gobs from its per-frame
  * attach-refresh hook (0x504EF5). Every Gob passed to RegisterPreview must be unregistered before it is freed.
  *
  * Plain C ABI (kpatch_api.h rules): fixed-width ints, floats and function pointers only, KPATCH_CALL (cdecl), structs only grow,

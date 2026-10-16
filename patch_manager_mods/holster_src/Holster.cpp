@@ -24,7 +24,11 @@
 #include "HolsterBonePatch.h"
 #include "HolsterQuat.h"
 #include "HolsterTune.h"
+#include "HolsterPreview.h"
+#include "HolsterApi.h"
 #include "FileWatch.h"
+#include <stddef.h>
+#include <string>
 
 KP_LOG_PATCH("holster");
 
@@ -35,6 +39,7 @@ KP_CHANNEL(chSwap, "swap");
 KP_CHANNEL(chAnim, "anim");
 KP_CHANNEL(chGob, "gob");
 KP_CHANNEL(chPlace, "place");
+KP_CHANNEL(chEdit, "edit");   // k2.holster editor API (holster-editor patch): own line cap kEditLines, not max_lines
 
 // Fallback sink for an old core or a failed KpLog_Init. Stores the path and level only.
 const bool g_fallbackSet = (KpLog_SetFallbackFile("holster_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
@@ -43,6 +48,7 @@ const bool g_fallbackSet = (KpLog_SetFallbackFile("holster_log.txt"), KpLog_SetF
 static bool g_probe = false;
 static bool g_onComb = false, g_onAttach = false, g_onSwap = false, g_onAnim = false, g_onGob = false, g_onPlace = false;   // probe=1 AND ch_<name>=1 (g_onPlace gates PLACE logging only)
 static bool g_boneTest = false, g_boneLeft = false;   // bone_test=1 (needs probe=1), bone_test_left=1
+static bool g_editor = true;            // editor=0: RegisterPreview refuses and the preview fast path never runs (no probe needed)
 static char g_boneName[32] = "pelvis_g";              // attach node name; its ADDRESS becomes the push immediate, so it must stay static
 static LONG g_maxLines = 3000;
 static int g_gobEvery = 600;            // GOB lines: first 24 updates, then every Nth (the handler runs per Gob per frame)
@@ -61,6 +67,17 @@ static bool takeLine() {
     LONG n = InterlockedIncrement(&g_lines);
     if (n <= g_maxLines) return true;
     if (n == g_maxLines + 1) KP_LOG(chMain, "cap reached max_lines=%ld: further lines dropped", static_cast<long>(g_maxLines));
+    return false;
+}
+
+// EDIT lines have their own budget, so a long probe session cannot starve the editor log (and the reverse).
+static const LONG kEditLines = 200;
+static volatile LONG g_editLines = 0;
+static bool takeEditLine() {
+    if (!KP_ENABLED(chEdit, KPLOG_INFO)) return false;
+    const LONG n = InterlockedIncrement(&g_editLines);
+    if (n <= kEditLines) return true;
+    if (n == kEditLines + 1) KP_LOG(chEdit, "cap reached edit lines=%ld: further EDIT lines dropped", static_cast<long>(kEditLines));
     return false;
 }
 
@@ -94,7 +111,8 @@ static void publishTune(const hs::TuneCfg& t) {
     InterlockedIncrement(&g_tuneSeq);   // even
 }
 
-static void loadTune(hs::TuneCfg& dst) {
+// True with dst = the published config (and *seqOut = its sequence); false after 3 torn reads, dst unchanged.
+static bool loadTune(hs::TuneCfg& dst, LONG* seqOut = nullptr) {
     for (int i = 0; i < 3; ++i) {
         const LONG s1 = g_tuneSeq;
         MemoryBarrier();
@@ -102,8 +120,60 @@ static void loadTune(hs::TuneCfg& dst) {
         hs::TuneCfg tmp;
         memcpy(&tmp, static_cast<const void*>(&g_tunePub), sizeof tmp);
         MemoryBarrier();
-        if (g_tuneSeq == s1) { dst = tmp; return; }
+        if (g_tuneSeq == s1) {
+            dst = tmp;
+            if (seqOut) *seqOut = s1;
+            return true;
+        }
     }
+    return false;
+}
+
+// Per-frame reader: copies the 4 KiB config only when the sequence moved. lastSeq advances only after a successful copy, so a torn
+// read is retried next frame. lastSeq starts at 0; readConfig's publishTune leaves the sequence at 2 before any hook runs.
+static bool loadTuneIfChanged(hs::TuneCfg& dst, LONG& lastSeq) {
+    if (g_tuneSeq == lastSeq) return false;
+    LONG got = 0;
+    if (!loadTune(dst, &got)) return false;
+    lastSeq = got;
+    return true;
+}
+
+// The tune keys of an ini text applied onto t (the caller seeds t): every override is cleared first, so a deleted key falls back
+// to place_rot / place_off. maybeReload and the editor Save both use it, so a saved file parses exactly like a reloaded one.
+static void parseTuneText(const char* text, hs::TuneCfg& t) {
+    hs::clearCatTune(t);
+    const char* s = text;
+    while (s && *s) {
+        const char* e = s;
+        while (*e && *e != '\n') ++e;
+        char line[256];
+        size_t n = static_cast<size_t>(e - s);
+        if (n >= sizeof line) n = sizeof line - 1;   // longer lines are cut, like fgets with a 256-byte buffer would split them
+        memcpy(line, s, n);
+        line[n] = 0;
+        s = *e ? e + 1 : e;
+        char* p = trimIni(line);
+        if (*p == 0 || *p == ';' || *p == '#' || *p == '[') continue;
+        char* eq = strchr(p, '=');
+        if (!eq) continue;
+        *eq = 0;
+        char* key = trimIni(p);
+        char* val = trimIni(eq + 1);
+        if (hs::isTuneKey(key)) (void)hs::applyTuneKey(t, key, val);
+    }
+}
+
+// Whole file into out. False when it cannot be opened (out cleared).
+static bool readFileText(const char* path, std::string& out) {
+    out.clear();
+    FILE* f = fopen(path, "rb");
+    if (!f) return false;
+    char buf[4096];
+    size_t n;
+    while ((n = fread(buf, 1, sizeof buf, f)) > 0) out.append(buf, n);
+    fclose(f);
+    return true;
 }
 
 static void readConfig() {
@@ -136,6 +206,7 @@ static void readConfig() {
             else if (!_stricmp(key, "ch_anim")) anim = flagValue(val);
             else if (!_stricmp(key, "ch_gob")) gob = flagValue(val);
             else if (!_stricmp(key, "ch_place")) place = flagValue(val);
+            else if (!_stricmp(key, "editor")) g_editor = flagValue(val);
             else if (!_stricmp(key, "place_gobvt")) {
                 char* end = nullptr;
                 const unsigned long v = strtoul(val, &end, 16);   // accepts a 0x prefix; blank or junk = no check
@@ -161,6 +232,7 @@ static void readConfig() {
     g_onAnim = probe && anim;
     g_onGob = probe && gob;
     g_onPlace = probe && place;
+    tune.bootBoneIdx = hs::boneIndexOf(g_boneName);   // 0 = custom bone_name (not one of the five editor bones)
     publishTune(tune);
 }
 
@@ -288,22 +360,10 @@ extern "C" void __cdecl HolsterAnimResolve(void* self, uint32_t animId) {
 static void maybeReload() {
     if (!filewatch::changed(g_poll, "holster.ini", GetTickCount())) return;
     if (InterlockedCompareExchange(&g_reloadBusy, 1, 0) != 0) return;
-    FILE* f = fopen("holster.ini", "r");
-    if (f) {
+    std::string text;
+    if (readFileText("holster.ini", text)) {
         hs::TuneCfg t = g_tuneW;
-        hs::clearCatTune(t);   // per-category overrides are re-read, so a deleted key falls back to place_rot / place_off
-        char line[256];
-        while (fgets(line, sizeof(line), f)) {
-            char* p = trimIni(line);
-            if (*p == 0 || *p == ';' || *p == '#' || *p == '[') continue;
-            char* eq = strchr(p, '=');
-            if (!eq) continue;
-            *eq = 0;
-            char* key = trimIni(p);
-            char* val = trimIni(eq + 1);
-            if (hs::isTuneKey(key)) (void)hs::applyTuneKey(t, key, val);
-        }
-        fclose(f);
+        parseTuneText(text.c_str(), t);
         publishTune(t);
         KP_LOG(chMain, "RELOAD place=%d rot=(%.1f,%.1f,%.1f) off=(%.3f,%.3f,%.3f)", t.place ? 1 : 0, t.rot[0], t.rot[1], t.rot[2], t.off[0], t.off[1], t.off[2]);
         for (int i = hs::CatUnknown + 1; i < hs::CatCount; ++i) {
@@ -508,33 +568,125 @@ static bool mountPose(uintptr_t gob, uintptr_t n, uintptr_t beh, hs::Category ca
     return true;
 }
 
+// ---- editor preview (k2.holster v1, HE2): registered preview Gobs are placed from the full resolve, or from the open edit overlay ----
+// Shared between the editor API (the holster-editor panel tick) and HolsterPlace; g_edLock guards the registry, the overlay and the
+// edited Gob's mount pose. Engine calls (FindPart, node pose) run outside the lock.
+static SRWLOCK g_edLock = SRWLOCK_INIT;
+static hs::PreviewRegistry g_preview;
+static volatile LONG g_previewN = 0;     // g_preview.n mirror for the lock-free "no preview" test on every placement
+static hs::EditOverlay g_edit;
+static void* g_editGob = nullptr;
+static hs::Pose g_editMount;              // world pose of the edited Gob's mount bone, refreshed by every placement of that Gob
+static bool g_editMountOk = false;
+static volatile uintptr_t g_refFind = 0, g_refPose = 0;   // FindPart (Gob vtbl+0x10C) / node pose (vtbl+0xC) slots seen on a placed weapon
+
+struct EdLock {
+    EdLock() { AcquireSRWLockExclusive(&g_edLock); }
+    ~EdLock() { ReleaseSRWLockExclusive(&g_edLock); }
+};
+
+// Model name of the Gob (16 chars max, the tune table limit) and body model name of its parent ([parent+0x84]+0x08), "" when unknown.
+static void gobNames(uintptr_t gob, uintptr_t parent, char model[17], char body[17]) {
+    char m[32], b[32];
+    gobModelName(gob, m, sizeof m);
+    gobModelName(parent, b, sizeof b);
+    hs::tuneCopyName(model, m);
+    hs::tuneCopyName(body, b);
+}
+
+// Places a registered preview Gob. Returns false when the Gob is not a preview (in-world path continues), true when handled.
+static bool previewPlace(uintptr_t g, uintptr_t beh) {
+    if (!g_editor || g_previewN == 0 || !g || !beh) return false;
+    saferead::beginScope();
+    const uintptr_t parent = rdU32(kSitePlace, beh, 0x14), n = rdU32(kSitePlace, beh, 0x18);
+    bool left = false, editing = false, moved = false;
+    hs::Resolved r;
+    {
+        EdLock lk;
+        const int i = hs::previewFind(g_preview, reinterpret_cast<void*>(g));
+        if (i < 0) return false;
+        hs::PreviewEntry& e = g_preview.e[i];
+        if (e.parent != reinterpret_cast<void*>(parent) || e.node != reinterpret_cast<void*>(n)) {
+            moved = e.parent != nullptr;
+            e.parent = reinterpret_cast<void*>(parent);
+            e.node = reinterpret_cast<void*>(n);
+        }
+        left = e.left;
+        editing = g_edit.active && g_editGob == reinterpret_cast<void*>(g);
+        if (editing) {
+            hs::EditView v;
+            hs::overlayGetEdit(g_edit, v);
+            r = v.r;
+        }
+    }
+    if (moved && takeEditLine()) KP_LOG(chEdit, "PREVIEW reattach gob=%x parent=%x node=%x", static_cast<unsigned>(g), static_cast<unsigned>(parent), static_cast<unsigned>(n));
+    static hs::TuneCfg s_tune;
+    static LONG s_seq = 0;
+    (void)loadTuneIfChanged(s_tune, s_seq);
+    char model[17], body[17];
+    gobNames(g, parent, model, body);
+    const hs::Category cat = hs::classify(model, 0);
+    if (!editing) hs::resolveFull(s_tune, model, cat, body, left, false, r);
+    const uint8_t boneIdx = r.boneIdx ? r.boneIdx : hs::defaultBone(s_tune);
+    const char* const bone = hs::boneNameOf(boneIdx) ? hs::boneNameOf(boneIdx) : g_boneName;
+    const uintptr_t gvt = rdU32(kSitePlace, g, 0), nvt = n ? rdU32(kSitePlace, n, 0) : 0;
+    if (gvt) g_refFind = rdU32(kSitePlace, gvt, 0x10C);
+    if (nvt) g_refPose = rdU32(kSitePlace, nvt, 0x0C);
+    static volatile LONG s_lines = 0;
+    const bool logIt = InterlockedIncrement(&s_lines) <= 16 && takeEditLine();
+    hs::Pose base;
+    if (!n || !mountPose(g, n, beh, cat, bone, base)) {
+        if (logIt) KP_LOG(chEdit, "PREVIEW nomount gob=%x model=%s body=%s bone=%s left=%d", static_cast<unsigned>(g), model, body, bone, left ? 1 : 0);
+        return true;
+    }
+    hs::Placement pl;
+    for (int k = 0; k < 3; ++k) { pl.rotDeg[k] = r.rot[k]; pl.pos[k] = r.off[k]; }
+    const hs::Pose out = hs::applyPlacement(base, pl);
+    if (editing) {
+        EdLock lk;
+        if (g_editGob == reinterpret_cast<void*>(g)) { g_editMount = base; g_editMountOk = true; }
+    }
+    if (!hs::poseSane(out) || !saferead::probeWrite(kSitePlace, reinterpret_cast<void*>(g + 0xA4), sizeof(hs::Pose))) return true;
+    memcpy(reinterpret_cast<void*>(g + 0xA4), &out, sizeof(hs::Pose));
+    if (logIt)
+        KP_LOG(chEdit, "PREVIEW place gob=%x model=%s cat=%s body=%s left=%d bone=%s edit=%d rot=(%.1f,%.1f,%.1f) off=(%.3f,%.3f,%.3f) src=%u/%u/%u",
+               static_cast<unsigned>(g), model, hs::categoryName(cat), body[0] ? body : "-", left ? 1 : 0, bone, editing ? 1 : 0, r.rot[0], r.rot[1], r.rot[2],
+               r.off[0], r.off[1], r.off[2], r.src[0], r.src[1], r.src[2]);
+    return true;
+}
+
 // H7 (hooks.toml H7, C4 recon): runs on EVERY per-frame refresh of an attach behavior (vtbl+0x08), right after the engine re-copied node N's WORLD
 // pose into gob+0xA4 (vec3) / gob+0xB0 (quat w-first). N = [beh+0x18]. For the target node (g_boneName) it composes the live-tuned placement onto
 // that pose and writes it back. Needs probe=1 AND bone_test=1 AND place=1; ch_place only gates the PLACE/PLACENODE/PLACEREFUSE log lines.
 extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
+    if (previewPlace(reinterpret_cast<uintptr_t>(gob), reinterpret_cast<uintptr_t>(beh))) return;
     if (!g_probe) return;
     static volatile LONG s_tid = 0;
     if (InterlockedCompareExchange(&s_tid, 1, 0) == 0) KP_LOG(chMain, "TID place=%lu", static_cast<unsigned long>(GetCurrentThreadId()));
     previewProbe(reinterpret_cast<uintptr_t>(gob), reinterpret_cast<uintptr_t>(beh));
     if (!g_boneTest) return;
     static hs::TuneCfg s_tune;
-    loadTune(s_tune);
+    static LONG s_seq = 0;
+    (void)loadTuneIfChanged(s_tune, s_seq);
     if (!s_tune.place) return;
     saferead::beginScope();
     void* const node = beh ? reinterpret_cast<void*>(static_cast<uintptr_t>(rdU32(kSitePlace, reinterpret_cast<uintptr_t>(beh), 0x18))) : nullptr;
-    // Verdict cache keyed on node + gob + the node's name handle [N+4], so a freed and reused address pair is re-resolved.
-    struct Ent { uintptr_t node, gob, handle; bool isTarget; hs::Category cat; };
+    // Verdict cache keyed on node + gob + the node's name handle [N+4], so a freed and reused address pair is re-resolved. The full
+    // resolve (weapon > type > global, plus the body delta) is cached with the tune sequence it was computed for and redone when it moves.
+    // In world both hands share the bone_name node, so the hand is not known here: left stays false (right-hand values).
+    struct Ent { uintptr_t node, gob, handle; bool isTarget, left; hs::Category cat; char mname[17], body[17]; LONG seq; hs::Resolved r; };
     static Ent s_cache[128];
     static unsigned s_next = 0;
     const uintptr_t g = reinterpret_cast<uintptr_t>(gob), n = reinterpret_cast<uintptr_t>(node);
     if (!g || !n) { refuse(PrNull, g, n, 0); return; }
     const uintptr_t h = rdU32(kSitePlace, n, 0x04);
     if (!h) { refuse(PrNoHandle, g, n, 0); return; }
-    bool isTarget = false, hit = false;
+    bool isTarget = false;
     hs::Category cat = hs::CatUnknown;
-    for (const Ent& e : s_cache)
-        if (e.node == n && e.gob == g && e.handle == h) { isTarget = e.isTarget; cat = e.cat; hit = true; break; }
-    if (!hit) {
+    Ent* ent = nullptr;
+    for (Ent& e : s_cache)
+        if (e.node == n && e.gob == g && e.handle == h) { isTarget = e.isTarget; cat = e.cat; ent = &e; break; }
+    if (!ent) {
         NodeInfo ni;
         isTarget = nodeIsTarget(n, ni);
         // Weapon identity (C5, live-verified 10-16: "w_Lngswrd_001", "w_SonicPstl_002"): [Gob+0x84] = model, model+0x08 = inline model name,
@@ -544,8 +696,18 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
         const uintptr_t model = rdU32(kSitePlace, g, 0x84);
         if (model) readTag(kSitePlace, reinterpret_cast<const char*>(model + 0x08), mname, sizeof mname);
         cat = hs::classify(mname, 0);
-        s_cache[s_next] = {n, g, h, isTarget, cat};
+        ent = &s_cache[s_next];
         s_next = (s_next + 1) % 128u;
+        *ent = Ent{};
+        ent->node = n; ent->gob = g; ent->handle = h; ent->isTarget = isTarget; ent->left = false; ent->cat = cat;
+        ent->seq = -1;   // never a real sequence (those are >= 0), so the first use resolves
+        {
+            const uintptr_t par = rdU32(kSitePlace, reinterpret_cast<uintptr_t>(beh), 0x14);
+            char m17[17], b17[17];
+            gobNames(g, par, m17, b17);
+            memcpy(ent->mname, m17, sizeof m17);
+            memcpy(ent->body, b17, sizeof b17);
+        }
         static volatile LONG s_nodeLines = 0;   // one line per newly resolved (node, gob) pair, first 40
         if (g_onPlace && InterlockedIncrement(&s_nodeLines) <= 40 && KP_ENABLED(chPlace, KPLOG_INFO) && takeLine()) {
             char gname[32], body[32];
@@ -569,10 +731,16 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     hs::Pose in;
     if (!saferead::readAt(kSitePlace, g, 0xA4, &in)) { refuse(PrReadIn, g, n, vt); return; }
     if (!hs::poseSane(in)) { refuse(PrInsaneIn, g, n, vt); return; }
+    if (ent->seq != s_seq) {
+        hs::resolveFull(s_tune, ent->mname, cat, ent->body, ent->left, false, ent->r);
+        ent->seq = s_seq;
+    }
     hs::Placement pl;
-    hs::resolveTune(s_tune, cat, pl.rotDeg, pl.pos);
-    hs::Pose base = in;   // place_bone_<type>: compose on that bone's world pose instead of the attach node's
-    const char* const mountBone = hs::resolveBone(s_tune, cat);
+    for (int k = 0; k < 3; ++k) { pl.rotDeg[k] = ent->r.rot[k]; pl.pos[k] = ent->r.off[k]; }
+    hs::Pose base = in;   // place_bone_<...>: compose on that bone's world pose instead of the attach node's
+    // No bone at any level -> defaultBone (bone_name's own index, so the weapon stays on the attach node); 0 = custom bone_name, same.
+    const uint8_t boneIdx = ent->r.boneIdx ? ent->r.boneIdx : hs::defaultBone(s_tune);
+    const char* const mountBone = hs::boneNameOf(boneIdx);
     if (mountBone && _stricmp(mountBone, g_boneName) != 0 && !mountPose(g, n, reinterpret_cast<uintptr_t>(beh), cat, mountBone, base)) {
         refuse(PrNoMount, g, n, vt);
         return;
@@ -589,6 +757,301 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
            static_cast<long>(c), U(gob), U(node), U(beh), static_cast<unsigned>(vt), in.pos[0], in.pos[1], in.pos[2], in.q.w, in.q.x, in.q.y, in.q.z,
            out.pos[0], out.pos[1], out.pos[2], out.q.w, out.q.x, out.q.y, out.q.z, hs::categoryName(cat));
 }
+
+// ---- k2.holster v1 (HolsterApi.h): the holster-editor patch drives these from its panel tick (main thread) ----
+// The overlay keeps the edited weapon's identity (model, type, body, hand); BeginEdit reads it from the registered Gob.
+
+static void edBegin(const hs::TuneCfg& c, const char* model, hs::Category cat, const char* body, bool left, int scope) {
+    hs::overlayBegin(g_edit, c, model, cat, body, left);
+    (void)hs::overlaySetScope(g_edit, scope);
+    // hidden: the type level is edited while a weapon level of this hand (or, on the left, the right weapon level it mirrors) wins.
+    g_edit.hidden = scope == hs::ScopeType && (hs::findModel(c, model, left) || (left && hs::findModel(c, model, false)));
+}
+
+// Re-seeds the open overlay from the current published config (after Save / ResetScope / SetScope). Caller holds g_edLock.
+static void edReseed(bool left, int scope) {
+    hs::TuneCfg c;
+    if (!loadTune(c)) return;
+    char model[17], body[17];
+    memcpy(model, g_edit.model, sizeof model);
+    memcpy(body, g_edit.body, sizeof body);
+    edBegin(c, model, g_edit.cat, body, left, scope);
+}
+
+static int32_t KPATCH_CALL apiRegisterPreview(void* gob, void* beh, int32_t left) {
+    if (!g_editor || !gob) return 0;
+    void* parent = nullptr;
+    void* node = nullptr;
+    if (beh) {
+        saferead::beginScope();
+        parent = reinterpret_cast<void*>(static_cast<uintptr_t>(rdU32(kSitePlace, reinterpret_cast<uintptr_t>(beh), 0x14)));
+        node = reinterpret_cast<void*>(static_cast<uintptr_t>(rdU32(kSitePlace, reinterpret_cast<uintptr_t>(beh), 0x18)));
+    }
+    bool ok;
+    LONG count;
+    {
+        EdLock lk;
+        ok = hs::previewRegister(g_preview, gob, parent, node, left != 0);
+        count = g_preview.n;
+        InterlockedExchange(&g_previewN, count);
+    }
+    if (takeEditLine()) KP_LOG(chEdit, "API register gob=%x beh=%x left=%d ok=%d n=%ld", U(gob), U(beh), left ? 1 : 0, ok ? 1 : 0, static_cast<long>(count));
+    return ok ? 1 : 0;
+}
+
+static void KPATCH_CALL apiUnregisterPreview(void* gob) {
+    LONG count;
+    bool ended = false;
+    {
+        EdLock lk;
+        if (!gob) {
+            g_preview = hs::PreviewRegistry();
+        } else {
+            (void)hs::previewUnregister(g_preview, gob);
+        }
+        if (g_edit.active && (!gob || g_editGob == gob)) {
+            g_edit = hs::EditOverlay();
+            g_editGob = nullptr;
+            g_editMountOk = false;
+            ended = true;
+        }
+        count = g_preview.n;
+        InterlockedExchange(&g_previewN, count);
+    }
+    if (takeEditLine()) KP_LOG(chEdit, "API unregister gob=%x n=%ld endedit=%d", U(gob), static_cast<long>(count), ended ? 1 : 0);
+}
+
+static int32_t KPATCH_CALL apiBeginEdit(void* gob, int32_t scope) {
+    if (!gob || scope < 0 || scope > 2) return 0;
+    hs::TuneCfg c;
+    if (!loadTune(c)) return 0;
+    void* parent = nullptr;
+    bool left = false;
+    {
+        EdLock lk;
+        const int i = hs::previewFind(g_preview, gob);
+        if (i < 0) return 0;
+        parent = g_preview.e[i].parent;
+        left = g_preview.e[i].left;
+    }
+    saferead::beginScope();
+    char model[17], body[17];
+    gobNames(reinterpret_cast<uintptr_t>(gob), reinterpret_cast<uintptr_t>(parent), model, body);
+    const hs::Category cat = hs::classify(model, 0);
+    {
+        EdLock lk;
+        edBegin(c, model, cat, body, left, scope);
+        g_editGob = gob;
+        g_editMountOk = false;
+    }
+    if (takeEditLine())
+        KP_LOG(chEdit, "API begin gob=%x model=%s cat=%s body=%s left=%d scope=%d", U(gob), model[0] ? model : "-", hs::categoryName(cat), body[0] ? body : "-",
+               left ? 1 : 0, static_cast<int>(scope));
+    return 1;
+}
+
+static void KPATCH_CALL apiNudgeWorld(const float dq[4], const float dp[3]) {
+    EdLock lk;
+    if (!g_edit.active || !g_editMountOk) return;
+    if (dq) (void)hs::overlayNudgeWorldRot(g_edit, g_editMount.q, hs::Q{dq[0], dq[1], dq[2], dq[3]});
+    if (dp && (dp[0] != 0.f || dp[1] != 0.f || dp[2] != 0.f)) (void)hs::overlayNudgeWorldMove(g_edit, g_editMount.q, dp);
+}
+
+static void KPATCH_CALL apiNudgeLocal(int32_t axis, float deg, float metres) {
+    if (axis < 0 || axis > 2) return;
+    EdLock lk;
+    if (!g_edit.active) return;
+    if (deg != 0.f) (void)hs::overlayNudgeLocal(g_edit, axis, deg);
+    if (metres != 0.f) {
+        float x[3] = {g_edit.cur.off[0], g_edit.cur.off[1], g_edit.cur.off[2]};
+        x[axis] += metres;
+        hs::overlaySetAbsOff(g_edit, x);
+        g_edit.dirty = true;
+    }
+}
+
+static void KPATCH_CALL apiSetValues(const float rot[3], const float off[3]) {
+    if (!rot || !off) return;
+    EdLock lk;
+    (void)hs::overlaySetValues(g_edit, rot, off);
+}
+
+static int32_t KPATCH_CALL apiCycleBone(int32_t dir) {
+    EdLock lk;
+    (void)hs::overlayCycleBone(g_edit, dir < 0 ? -1 : 1);
+    return g_edit.cur.boneIdx;
+}
+
+static int32_t KPATCH_CALL apiGetEdit(K2HolsterEditInfo* out) {
+    if (!out || out->struct_size < sizeof(K2HolsterEditInfo)) return 0;
+    EdLock lk;
+    if (!g_edit.active) return 0;
+    hs::EditView v;
+    hs::overlayGetEdit(g_edit, v);
+    hs::tuneCopyName(out->model, g_edit.model);
+    snprintf(out->type, sizeof out->type, "%s", hs::categoryName(g_edit.cat));
+    hs::tuneCopyName(out->body, g_edit.body);
+    const hs::TuneCfg& c = g_tuneW;   // bootBoneIdx only (set once at boot)
+    const uint8_t bi = v.r.boneIdx ? v.r.boneIdx : hs::defaultBone(c);
+    snprintf(out->bone, sizeof out->bone, "%s", hs::boneNameOf(bi) ? hs::boneNameOf(bi) : "custom");
+    out->scope = v.scope;
+    out->left = v.left ? 1 : 0;
+    out->dirty = v.dirty ? 1 : 0;
+    out->hidden = g_edit.hidden ? 1 : 0;
+    for (int i = 0; i < 3; ++i) { out->rot[i] = v.r.rot[i]; out->off[i] = v.r.off[i]; out->src[i] = v.r.src[i]; }
+    return 1;
+}
+
+static int32_t KPATCH_CALL apiGetMountWorld(float pos[3], float q[4]) {
+    if (!pos || !q) return 0;
+    EdLock lk;
+    if (!g_edit.active || !g_editMountOk) return 0;
+    for (int i = 0; i < 3; ++i) pos[i] = g_editMount.pos[i];
+    q[0] = g_editMount.q.w; q[1] = g_editMount.q.x; q[2] = g_editMount.q.y; q[3] = g_editMount.q.z;
+    return 1;
+}
+
+// World pose of a named node of any Gob (e.g. the preview rig's "camerahook"). Same safety rule as mountPose: the Gob's FindPart slot
+// and the node's pose slot must equal the ones seen on a placed weapon, so only the engine's own functions are called.
+static int32_t KPATCH_CALL apiGetNodeWorld(void* gob, const char* node, float pos[3], float q[4]) {
+    if (!gob || !node || !*node || !pos || !q) return 0;
+    saferead::beginScope();
+    const uintptr_t gvt = rdU32(kSitePlace, reinterpret_cast<uintptr_t>(gob), 0);
+    const uintptr_t find = gvt ? rdU32(kSitePlace, gvt, 0x10C) : 0;
+    const uintptr_t refFind = g_refFind, refPose = g_refPose;
+    int why = 0;
+    hs::Pose p;
+    if (!find || !refFind || find != refFind) why = 1;
+    else {
+        const uintptr_t mn = reinterpret_cast<uintptr_t>(reinterpret_cast<void*(__thiscall*)(void*, const char*)>(find)(gob, node));
+        const uintptr_t mvt = mn ? rdU32(kSitePlace, mn, 0) : 0;
+        const uintptr_t pf = mvt ? rdU32(kSitePlace, mvt, 0x0C) : 0;
+        if (!mn) why = 2;
+        else if (!pf || pf != refPose) why = 3;
+        else {
+            float* const f = reinterpret_cast<float*>(&p);
+            reinterpret_cast<void(__thiscall*)(void*, float*, float*)>(pf)(reinterpret_cast<void*>(mn), f, f + 3);
+            if (!hs::poseSane(p)) why = 4;
+        }
+    }
+    static volatile LONG s_lines = 0;
+    if (why && InterlockedIncrement(&s_lines) <= 20 && takeEditLine())
+        KP_LOG(chEdit, "API nodeworld refused gob=%x node=%s why=%d find=%x ref=%x", U(gob), node, why, static_cast<unsigned>(find), static_cast<unsigned>(refFind));
+    if (why) return 0;
+    for (int i = 0; i < 3; ++i) pos[i] = p.pos[i];
+    q[0] = p.q.w; q[1] = p.q.x; q[2] = p.q.y; q[3] = p.q.z;
+    return 1;
+}
+
+static int32_t KPATCH_CALL apiSetScope(int32_t scope, int32_t left) {
+    if (scope < 0 || scope > 2) return 0;
+    EdLock lk;
+    if (!g_edit.active) return 0;
+    edReseed(left != 0, scope);   // implicit Revert: the editor confirmed Discard first
+    return 1;
+}
+
+// Rewrites holster.ini for the open scope (reset: deletes its keys), then publishes the re-parsed text. Caller holds g_edLock.
+static bool edWrite(bool reset) {
+    if (!g_edit.active) return false;
+    hs::TuneCfg c;
+    if (!loadTune(c)) return false;
+    hs::KV set[8];
+    const char* unset[8];
+    char buf[hs::kScopeTextMax];
+    hs::ScopeOut so{set, 8, 0, unset, 8, 0, buf, sizeof buf, 0};
+    bool ok = false;
+    const bool left = g_edit.left;
+    switch (g_edit.scope) {
+    case hs::ScopeWeapon: {
+        if (reset) {
+            hs::ModelTune m;
+            hs::tuneCopyName(m.model, g_edit.model);
+            m.left = left;
+            ok = hs::scopeKeys(m, so);
+        } else if (hs::overlayWrite(g_edit, c)) {
+            const hs::ModelTune* m = hs::findModel(c, g_edit.model, left);
+            ok = m && hs::scopeKeys(*m, so);
+        }
+        break;
+    }
+    case hs::ScopeType:
+        if (reset) ok = hs::scopeKeys(g_edit.cat, left, hs::CatTune(), so);
+        else ok = hs::overlayWrite(g_edit, c) && hs::scopeKeys(g_edit.cat, left, left ? c.catL[g_edit.cat] : c.cat[g_edit.cat], so);
+        break;
+    case hs::ScopeBody:
+        if (reset) {
+            const int n = snprintf(buf, sizeof buf, "place_off_body_%s", g_edit.body);
+            ok = g_edit.body[0] && n > 0 && static_cast<size_t>(n) < sizeof buf;
+            if (ok) { unset[0] = buf; so.nUnset = 1; so.nSet = 0; }
+        } else if (hs::overlayWrite(g_edit, c)) {
+            const hs::BodyTune* b = hs::findBody(c, g_edit.body);
+            ok = b && hs::scopeKeys(*b, so);
+        }
+        break;
+    }
+    if (!ok) {
+        if (takeEditLine()) KP_LOG(chEdit, "SAVE refused: no keys for scope=%d model=%s body=%s reset=%d", static_cast<int>(g_edit.scope), g_edit.model, g_edit.body, reset ? 1 : 0);
+        return false;
+    }
+    std::string text;
+    (void)readFileText("holster.ini", text);   // a missing file saves into a new one
+    const size_t cap = text.size() + 4096;
+    std::string a(cap, '\0'), b(cap, '\0');
+    if (!hs::setKeys(text.data(), text.size(), set, so.nSet, &a[0], cap) || !hs::removeKeys(a.c_str(), strlen(a.c_str()), unset, so.nUnset, &b[0], cap)) {
+        if (takeEditLine()) KP_LOG(chEdit, "SAVE refused: ini rewrite did not fit (%u bytes)", static_cast<unsigned>(cap));
+        return false;
+    }
+    b.resize(strlen(b.c_str()));
+    if (InterlockedCompareExchange(&g_reloadBusy, 1, 0) != 0) {
+        if (takeEditLine()) KP_LOG(chEdit, "SAVE refused: reload in progress (retry)");
+        return false;
+    }
+    const bool wrote = filewatch::atomicWrite("holster.ini", b, true);
+    if (wrote) {
+        filewatch::accept(g_poll, "holster.ini");
+        hs::TuneCfg t = g_tuneW;
+        parseTuneText(b.c_str(), t);
+        publishTune(t);
+    }
+    InterlockedExchange(&g_reloadBusy, 0);
+    if (takeEditLine())
+        KP_LOG(chEdit, "SAVE %s scope=%d model=%s cat=%s body=%s left=%d set=%d unset=%d first=%s=%s ok=%d", reset ? "reset" : "write", static_cast<int>(g_edit.scope),
+               g_edit.model[0] ? g_edit.model : "-", hs::categoryName(g_edit.cat), g_edit.body[0] ? g_edit.body : "-", left ? 1 : 0, so.nSet, so.nUnset,
+               so.nSet ? set[0].key : (so.nUnset ? unset[0] : "-"), so.nSet ? set[0].val : "-", wrote ? 1 : 0);
+    if (wrote) edReseed(left, g_edit.scope);
+    return wrote;
+}
+
+static int32_t KPATCH_CALL apiSave(void) {
+    EdLock lk;
+    return edWrite(false) ? 1 : 0;
+}
+
+static void KPATCH_CALL apiRevert(void) {
+    EdLock lk;
+    hs::overlayRevert(g_edit);
+}
+
+static void KPATCH_CALL apiResetScope(void) {
+    EdLock lk;
+    (void)edWrite(true);
+}
+
+static void KPATCH_CALL apiEndEdit(void) {
+    {
+        EdLock lk;
+        g_edit = hs::EditOverlay();
+        g_editGob = nullptr;
+        g_editMountOk = false;
+    }
+    if (takeEditLine()) KP_LOG(chEdit, "API endedit");
+}
+
+static const K2HolsterApi g_holsterApi = {
+    sizeof(K2HolsterApi), apiRegisterPreview, apiUnregisterPreview, apiBeginEdit, apiNudgeWorld, apiNudgeLocal, apiSetValues, apiCycleBone,
+    apiGetEdit, apiGetMountWorld, apiGetNodeWorld, apiSetScope, apiSave, apiRevert, apiResetScope, apiEndEdit,
+};
 
 // bone_test: repoint the rhand (and with bone_test_left the lhand) attach-node literal at g_boneName. Default OFF.
 static void applyBoneTest() {
@@ -609,6 +1072,9 @@ static void applyBoneTest() {
 // Written out literally (create-patch's export scan reads the source text) and listed in exports.def.
 extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     readConfig();
+    if (api && api->struct_size >= offsetof(KPatchApi, require) + sizeof(api->require) && api->provide) {
+        api->provide(K2HOLSTER_IFACE, K2HOLSTER_VERSION, &g_holsterApi);
+    }
     KpLog_Init(api);
     g_poll.throttleMs = 500;
     filewatch::accept(g_poll, "holster.ini");
@@ -623,9 +1089,11 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
            names[0] ? names : "none", static_cast<long>(g_maxLines), g_gobEvery, k2addr::get() ? "ok" : "none");
     {
         hs::TuneCfg t;
-        loadTune(t);
-        KP_LOG(chMain, "TUNE boot place=%d rot=(%.1f,%.1f,%.1f) off=(%.3f,%.3f,%.3f) gobvt=%x bone=%s", t.place ? 1 : 0, t.rot[0], t.rot[1], t.rot[2],
-               t.off[0], t.off[1], t.off[2], static_cast<unsigned>(g_placeGobvt), g_boneName);
+        LONG seq = 0;
+        (void)loadTuneIfChanged(t, seq);
+        KP_LOG(chMain, "TUNE boot place=%d rot=(%.1f,%.1f,%.1f) off=(%.3f,%.3f,%.3f) gobvt=%x bone=%s bootbone=%u models=%d bodies=%d editor=%d", t.place ? 1 : 0,
+               t.rot[0], t.rot[1], t.rot[2], t.off[0], t.off[1], t.off[2], static_cast<unsigned>(g_placeGobvt), g_boneName, t.bootBoneIdx, t.nMdl, t.nBody,
+               g_editor ? 1 : 0);
     }
     applyBoneTest();
 }
