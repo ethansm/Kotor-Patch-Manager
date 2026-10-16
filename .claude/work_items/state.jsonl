@@ -103,3 +103,4 @@
 {"ev": "done", "reason": "manual: WI-21 fix wave vw1-A", "session": "6903dff4-f30b-467b-84f6-f8ade27e8048", "ts": "2026-10-16T01:48:20Z", "wi": "WI-21"}
 {"ev": "done", "reason": "manual: WI-120 fix wave r2fx1-A", "session": "351ca63e-9c91-49c3-8162-6d2de7e7d15d", "ts": "2026-10-16T18:54:12Z", "wi": "WI-120"}
 {"ev": "done", "reason": "manual: WI-123 fix wave r2fx1-A", "session": "351ca63e-9c91-49c3-8162-6d2de7e7d15d", "ts": "2026-10-16T18:54:55Z", "wi": "WI-123"}
+{"ev": "done", "reason": "manual: WI-121 fix wave r2fx1-A", "session": "351ca63e-9c91-49c3-8162-6d2de7e7d15d", "ts": "2026-10-16T18:55:50Z", "wi": "WI-121"}

@@ -117,16 +117,17 @@ static void testShippedIni() {
     CHECK(c.shipScope == ScopeAi && c.tags.empty() && c.traceScripts.n == 5);
     CHECK(c.dedupeMs == 1000 && c.maxLinesPerSec == 200 && c.maxFileMb == 64 && c.flushMs == 250);
     CHECK(c.a1BurstThreshold == 4 && c.a1RateThreshold == 400 && !c.engineVerbose && c.summarySec == 10 && c.p1DetailLines == 20);
+    CHECK(!c.a1RetargetStrict);                  // shipped off: a1_retarget_strict=0
     // every key in the shipped file is one the parser knows (no typo silently ignored)
     const char* known[] = {"trace", "scripts", "engine_points", "trace_scripts", "shipbuild_scope", "prints_all_scripts", "party_only", "tags",
                            "log_all", "engine_print", "log_aur", "dedupe_ms", "max_lines_per_sec", "max_file_mb", "flush_ms",
                            "a1_burst_threshold", "a1_rate_threshold", "engine_verbose", "summary_sec", "p1_detail_lines", "a1", "a1_stances",
-                           "a1_party_only", "a1_retarget", "a1_retarget_stances", "a1_rethink_ms", "p1", "p1_interval_ms", "fm1",
+                           "a1_party_only", "a1_retarget", "a1_retarget_stances", "a1_retarget_strict", "a1_rethink_ms", "p1", "p1_interval_ms", "fm1",
                            "fm1_rethink_ms", "fm4", "a4", "c1", "c1_party_only", "a3", "log",
                            "probe_fm2c", "probe_fm2f", "probe_fm2r", "probe_fm3", "probe_rs", "probe_p2", "probe_pf", "probe_rar", "probe_shx",
                            "probe_ss1", "probe_gca", "probe_party", "probe_a1x", "probe_lines"};
     int knownN = int(sizeof known / sizeof known[0]);
-    CHECK(g_t.n == knownN); CHECK(knownN == 50);
+    CHECK(g_t.n == knownN); CHECK(knownN == 51);
     for (int i = 0; i < g_t.n; ++i) {
         bool ok = false;
         for (int k = 0; k < knownN; ++k) if (!strcmp(g_t.key[i], known[k])) ok = true;
@@ -264,6 +265,14 @@ static void testHandlerDecisions() {
     Config rt = on; rt.a1RethinkMs = 1500;
     CHECK(a1RethinkWanted(rt, Invalid)); CHECK(!a1RethinkWanted(rt, 0x80000431));   // only after an END
     CHECK(a1RethinkWrite(rt, 3000)); CHECK(!a1RethinkWrite(rt, 1500)); CHECK(!a1RethinkWrite(rt, 200));
+    // ---- A1 strict-retarget gate (a1_retarget_strict; a1GateTarget). `on` is shipped (gate off); gOn is the gate-on copy
+    Config gOn = on; gOn.a1RetargetStrict = true;
+    CHECK(a1GateTarget(on, 0x80000431, false) == (int)0x80000431);    // gate off: passthrough even when !strictOk
+    CHECK(a1GateTarget(on, 0x80000431, true) == (int)0x80000431);
+    CHECK(a1GateTarget(gOn, 0x80000431, false) == Invalid);           // gate on, !strictOk: END path (WI-106: any newId)
+    CHECK(a1GateTarget(gOn, 0x80000431, true) == (int)0x80000431);    // gate on, strictOk: keep
+    CHECK(a1GateTarget(gOn, Invalid, false) == Invalid);              // Invalid passes through unchanged
+    CHECK(a1GateTarget(on, Invalid, true) == Invalid);
     // ---- A4 result mapping (a4=1) and vanilla mapping (a4=0)
     A4Out o = a4Decide(false, 0);    CHECK(o.ret == 1 && o.local == 0 && o.guarded);    // NULL/unreadable row
     o = a4Decide(true, 0);           CHECK(o.ret == 1 && o.local == 0 && !o.guarded);   // row+0x154 == 0: vanilla JZ target
