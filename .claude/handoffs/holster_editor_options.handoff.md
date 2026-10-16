@@ -1,27 +1,19 @@
 # Session Handoff & Plan State: .claude/plans/holster_editor_options.md
 
 ## 0. Next-Phase Direction
-Fix all valid findings from the Opus review (.claude/reviews/holster_editor_d1b_d3a_review.md), re-gate, then HE2 hot-swap + D3a reinstall on user GO; after the D3a play row, write D3b cards
+No phases parsed from .claude/plans/holster_editor_options.md; check its header levels (## Phase N / table with Id + Status columns).
 
 ## 1. Active State & Provenance
 - **Master Plan:** `.claude/plans/holster_editor_options.md`
-- **Branch:** `KOTOR-II` (c94b332 holster-editor D3a-T9/T10: scaffold (ctor 0x8A16FE [ebp-0xAC], Draw 0x40EC90 vtable-filtered, dtor 0x8A1930) + skeleton (embedded HSE_VIEW via EmbedGui, BTN_HOLSTER/Back/pane labels, editor mode with raw vanilla flags restore, EMBED/INPUTCLASS/HIDDENDRAW probes); preview-3d ViewControl slot; OptionsInGameVtable in GameAddr.h; play rows HE2 + D3a)
-- **Generated:** 2026-10-16 16:16:38 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (0dfe55c play queue: PRB1 row (holster editor round 3 probe))
+- **Generated:** 2026-10-16 19:02:13 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-c94b332 holster-editor D3a-T9/T10: scaffold (ctor 0x8A16FE [ebp-0xAC], Draw 0x40EC90 vtable-filtered, dtor 0x8A1930) + skeleton (embedded HSE_VIEW via EmbedGui, BTN_HOLSTER/Back/pane labels, editor mode with raw vanilla flags restore, EMBED/INPUTCLASS/HIDDENDRAW probes); preview-3d ViewControl slot; OptionsInGameVtable in GameAddr.h; play rows HE2 + D3a
- patch_manager_mods/PLAY_TEST_QUEUE.md              |   4 +-
- patch_manager_mods/_shared_src/GameAddr.h          |   2 +
- patch_manager_mods/_shared_src/Preview3dApi.h      |   8 +-
- .../holster_editor_src/HolsterEditor.cpp           | 341 +++++++++++++++++++++
- patch_manager_mods/holster_editor_src/exports.def  |   6 +
- .../holster_editor_src/holster_editor.ini          |   5 +
- .../kotor2-steam-aspyr.hooks.toml                  |  47 +++
- .../holster_editor_src/manifest.toml               |  17 +
- .../preview_3d_src/Preview3dProvider.cpp           |   9 +-
- 9 files changed, 435 insertions(+), 4 deletions(-)
+0dfe55c play queue: PRB1 row (holster editor round 3 probe)
+ patch_manager_mods/PLAY_TEST_QUEUE.md | 1 +
+ 1 file changed, 1 insertion(+)
 ```
-- **Dirty Files (166):**
+- **Dirty Files (165):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/33_ui_queue_hotbar_fixes.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
@@ -32,7 +24,7 @@ c94b332 holster-editor D3a-T9/T10: scaffold (ctor 0x8A16FE [ebp-0xAC], Draw 0x40
   - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
   - ` M .claude/plans/swarm_library_architecture.md`
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
-  - ... +156 more (run `git status --short`)
+  - ... +155 more (run `git status --short`)
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume .claude/plans/holster_editor_options.md`.
