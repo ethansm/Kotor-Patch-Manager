@@ -3,10 +3,13 @@
 #include "DiversityLogic.h"
 #include "DiversityRoles.h"
 #include "DiversityRows.h"
+#include "DiversitySaltSource.h"
+#include "NpcWorld.h"
 #include "NpcDivLayout.h"
 #include "check.h"
 #include <cstdint>
 #include <cstddef>
+#include <cstring>
 
 #define CCHECK(why, expr) ::kt::Check("npc_diversity relies on: " why " (line " KT_STR(__LINE__) ")", static_cast<bool>(expr))
 #define CEQ(why, a, b) ::kt::CheckEq("npc_diversity relies on: " why " (line " KT_STR(__LINE__) ")", (a), (b))
@@ -73,6 +76,18 @@ void testKeepPosTolerance() {
     CEQ("keep-default position tolerance is 3 (0.3 m)", NpcDiversity::roles::kKeepPosTol10, 3);
 }
 
+// NB1: the soft k2.npcworld client. The salt API this mod relies on, and the "no provider -> salt 0" guarantee.
+void testNpcWorldClient() {
+    CCHECK("interface name is k2.npcworld", std::strcmp(K2NW_IFACE, "k2.npcworld") == 0);
+    CEQ("interface version is 1", K2NW_VERSION, 1);
+    CCHECK("VisitSalt is a field of the v1 table, before SpawnCap", offsetof(K2NpcWorldApi, VisitSalt) < offsetof(K2NpcWorldApi, SpawnCap));
+    k2nw::Client inert;   // never init()ed: no KPatchApi, no provider
+    CCHECK("an inert client does not connect", !inert.connect());
+    CEQ("an inert client reports salt 0", inert.visitSalt(), 0u);
+    CEQ("visit_variety on without a provider gives salt 0", NpcDiversity::VisitSaltFrom(true, inert), 0u);
+    CEQ("visit_variety off gives salt 0", NpcDiversity::VisitSaltFrom(false, inert), 0u);
+}
+
 } // namespace
 
 int main() {
@@ -82,5 +97,6 @@ int main() {
     testHookFrameOffsets();
     testExclusionContract();
     testKeepPosTolerance();
+    testNpcWorldClient();
     return kt::Report("npc_diversity_common_contract_test");
 }

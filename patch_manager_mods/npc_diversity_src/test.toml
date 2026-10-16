@@ -2,3 +2,6 @@ cxxflags = ["-I../_shared_src", "-Werror"]
 
 [common_contract_test]
 cxxflags = ["-I../_shared_src", "-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common", "-I../../research/companion_levelup/tools/parity/stub", "-Werror"]
+
+[diversity_salt_source_test]
+cxxflags = ["-I../_shared_src", "-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common", "-Werror"]

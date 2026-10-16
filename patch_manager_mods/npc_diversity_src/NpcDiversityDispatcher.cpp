@@ -1,4 +1,4 @@
-// NpcDiversityDispatcher.cpp -- Master NPC Diversity Dispatcher runtime detour hooks (0.1.6-probe).
+// NpcDiversityDispatcher.cpp -- Master NPC Diversity Dispatcher runtime detour hooks (0.1.7-probe).
 //
 // Strategy B (confirmed by the 0.1.1 play-test: the engine builds N_Comm?NN from descriptor textureVar):
 // Hook 2 RemapNpcAppearance: CSWCCreature::SetAppearance entry (Steam 0x76D200), args ecx=this,
@@ -26,19 +26,22 @@
 #include <cstring>
 
 #include "KpLog.h"
+#include "NpcWorld.h"
 #include "../_shared/SafeRead.h"
 #include "DiversityKeep.h"
 #include "DiversityLogic.h"
 #include "DiversityRows.h"
+#include "DiversitySaltSource.h"
 #include "HookDecision.h"
 #include "NpcDivLayout.h"
 #include "NpcDivLog.h"
 
 KP_LOG_PATCH("npc-diversity");
 
-// KPatchInit (KpLog_Init) is deliberately NOT exported in the probe builds: a hot-swap refuses a DLL whose exports
-// differ from the live one, and the live npc-diversity.dll exports NpcDiversity_Init. Logs therefore use the
-// header's fallback sink (npc-diversity_log.txt) at INFO. The KPatchInit migration (19f) is a later full reinstall.
+// KpLog_Init is deliberately NOT called in the probe builds: logs use the header's fallback sink (npc-diversity_log.txt) at INFO.
+// KPatchInit exists only to receive the KPatchApi for the soft k2.npcworld client (NB1, doc 40): the per-visit salt for
+// visit_variety comes from npc-world's VisitSalt(). It is a SOFT client: no `requires`, and without the library the salt stays
+// 0 (looks stay fixed). Exporting KPatchInit changes the export list, so the NB1 build needs a full reinstall, not a hot-swap.
 extern "C" __declspec(dllexport) void NpcDiversity_Init() {}
 
 namespace {
@@ -46,7 +49,7 @@ namespace {
 using namespace NpcDiversity;
 namespace nl = NpcDiversity::log;
 
-constexpr const char* kVersion = "0.1.6-probe";
+constexpr const char* kVersion = "0.1.7-probe";
 constexpr size_t kResRefLen = 16;
 
 // SafeRead site ids (counted in Counts::fail, printed by STAT read).
@@ -109,7 +112,15 @@ const bool g_fallbackSet = (KpLog_SetFallbackFile("npc-diversity_log.txt"), KpLo
 
 nl::Counts g_c;
 bool g_visitVariety = false;  // npc-diversity.ini [NpcDiversity] visit_variety: 0 same look every visit (default), 1 new look per visit
-uint32_t g_visitSalt = 0;  // 0 = no per-visit input (V4); V4b sets it once per area entry via MakeVisitSalt
+k2nw::Client g_nw;  // soft client of npc-world: no event registrations, only VisitSalt() (valid from AREA_LOAD on, so during the load's SetAppearance)
+
+void onNwConnect(bool ok, const char* why) {
+    KP_LOG(chInit, "npc-world %s (%s)", ok ? "connected: visit salt available" : "not connected: visit salt stays 0", why ? why : "?");
+}
+
+// The salt for this remap call: 0 unless visit_variety is on AND npc-world provides one. Retries the lookup from the hook
+// (config order is not a contract); poll() is one require per 256 calls until it succeeds.
+uint32_t currentVisitSalt() { return VisitSaltFrom(g_visitVariety, g_nw); }
 nl::U32Set<256> g_frSet, g_retSet, g_oidSet, g_cenTexSet, g_cenRemSet;
 nl::Budget g_bTex, g_bRmp, g_bAbi, g_bArm, g_bNonB;
 uint32_t g_texEmptyCell = 0;  // C252: hook 1 calls with an empty texa cell (skipped)
@@ -150,7 +161,7 @@ void readConfig() {
     std::strcpy(slash + 1, "npc-diversity.ini");
     g_visitVariety = GetPrivateProfileIntA("NpcDiversity", "visit_variety", 0, path) != 0;
     KP_LOG(chInit, "config visit_variety=%d%s", g_visitVariety ? 1 : 0,
-           g_visitVariety ? " (no area-entry salt source in this build: looks stay fixed)" : "");
+           g_visitVariety ? " (per-visit salt from npc-world when it is loaded, else looks stay fixed)" : "");
 }
 
 void ensureInit() {
@@ -366,6 +377,13 @@ void abiCheck(const layout::AppearanceDesc& d, uint32_t pd, const char* where) {
 
 extern "C" {
 
+// NB1: only stores the KPatchApi for the soft npc-world client and tries the lookup once. Does NOT call KpLog_Init (logging is unchanged).
+__declspec(dllexport) void __cdecl KPatchInit(const KPatchApi* api) {
+    g_nw.init(api, "npc-diversity");
+    g_nw.onConnect = onNwConnect;
+    g_nw.connect();
+}
+
 // LOG-ONLY in 0.1.2-probe. Intercepts CSWCCreatureAppearance::GetBTypeModelAndTextureResRef after the vanilla
 // texture lookup and records what the engine requested (texture name, st/tv). It never writes.
 // `frame` is the resolver's EBP: [frame+4] = return address, [frame+8] = pDesc, [frame+0x10] = out ResRef*.
@@ -452,6 +470,7 @@ __declspec(dllexport) void __cdecl RemapNpcAppearance(void* pCreature, layout::A
     pollDebugFlag();
     maybeDump();
     if (!pCreature || !pDesc) { ++g_c.remNullGuard; return; }
+    const uint32_t visitSalt = currentVisitSalt();   // one value for every draw of this call
 
     const uintptr_t self = reinterpret_cast<uintptr_t>(pCreature);
     const uint32_t pd = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(pDesc));
@@ -515,7 +534,7 @@ __declspec(dllexport) void __cdecl RemapNpcAppearance(void* pCreature, layout::A
     } else if (!okOid || oid == 0) {
         // The seed is the creature id; without it nothing is written (the creature stays vanilla).
         why = "unread:oid";
-    } else if (!ShouldVary(oid, d.appearance, ActiveVisitSalt(g_visitVariety, g_visitSalt))) {
+    } else if (!ShouldVary(oid, d.appearance, visitSalt)) {
         // Only kVaryPct of generic commoners change; the roll is a pure function of (oid, original row).
         ++g_c.remNoVary;
         why = "skip:vary";
@@ -523,7 +542,7 @@ __declspec(dllexport) void __cdecl RemapNpcAppearance(void* pCreature, layout::A
         ++g_c.remVary;
         // Row remap: only rows in the generic commoner tables (a row already remapped is not in them).
         if (skip == SkipReason::None) {
-            hash = HashCreatureId(oid, d.appearance, ActiveVisitSalt(g_visitVariety, g_visitSalt));
+            hash = HashCreatureId(oid, d.appearance, visitSalt);
             const uint16_t cand = RemapAppearance(d.appearance, d.gender, hash);
             if (cand != d.appearance) {
                 if (saferead::regionWritable(pd + layout::kDescOffAppearance, pd + layout::kDescOffAppearance + 2)) {
@@ -542,7 +561,7 @@ __declspec(dllexport) void __cdecl RemapNpcAppearance(void* pCreature, layout::A
         }
         // Texture variant for the final row. Idempotent: the pick ignores the current textureVar, so re-application writes nothing (want == d.textureVar).
         // subType >= 3 builds PMB/PFB armor parts, whose variants are not N_Comm slots: never write tv there.
-        const uint8_t want = PickTextureVar(oid, newApp, 0, ActiveVisitSalt(g_visitVariety, g_visitSalt));
+        const uint8_t want = PickTextureVar(oid, newApp, 0, visitSalt);
         if (static_cast<int>(d.subType) > layout::kDescSubTypeMaxCommoner) {
             ++g_c.remTvArmor;
             if (why[0] == 'n') why = "tvarmor";
