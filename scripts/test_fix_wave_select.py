@@ -63,12 +63,17 @@ def row_text(wid, kind="bug", entries="", anchors="", tests="", constraint="", p
 class FakeRunner:
     """Records every wave_tools call. add_rc: return codes consumed by successive `add` calls (default 0)."""
 
-    def __init__(self, add_rc=None):
+    def __init__(self, add_rc=None, waves=None):
         self.calls = []
         self.add_rc = list(add_rc or [])
+        self.waves = waves  # set: `new` refuses an existing wave dir, as wave_tools does
 
     def __call__(self, argv):
         self.calls.append(list(argv))
+        if argv[0] == "new" and self.waves is not None:
+            if (self.waves / argv[1]).exists():
+                return 1, "", f"error: wave already exists: {argv[1]}"
+            (self.waves / argv[1]).mkdir(parents=True)
         if argv[0] == "add" and self.add_rc:
             return self.add_rc.pop(0), "", "over budget"
         return 0, "", ""
@@ -92,7 +97,7 @@ class SelectFixture(unittest.TestCase):
         make_repo(self.root)
         self.store = ws.Store(self.root, claims_dir=self.claims)
         self.items = wm.load_all(self.root)
-        self.runner = FakeRunner()
+        self.runner = FakeRunner(waves=self.waves)
 
     def select(self, **kw):
         args = dict(root=self.root, waves_root=self.waves, claims_dir=self.claims, session="S-test",

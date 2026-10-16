@@ -191,10 +191,11 @@ def render_task(template, wi_id, row_path, prefill):
 def create_draft(root, wr, draft, rows, template, runner):
     """Create the recon wave `draft` with one unit per candidate row (u01, u02, ...). Returns [(uid, wi_id)]."""
     units = [(f"u{i:02d}", row["id"]) for i, row in enumerate(rows, start=1)]
-    write_tsv(Path(wr) / draft / "units.map.tsv", ("unit", "wi"), [{"unit": u, "wi": w} for u, w in units])
     rc, out, err = runner(["new", draft, "--kind", "recon", "--repo-root", str(root)])
     if rc != 0:
         raise SelectError(f"wave_tools new {draft} failed (exit {rc}): {_last(err or out)}")
+    # after `new`: wave_tools refuses a wave dir that already exists
+    write_tsv(Path(wr) / draft / "units.map.tsv", ("unit", "wi"), [{"unit": u, "wi": w} for u, w in units])
     for (uid, wid), row in zip(units, rows):
         wi_file = f"{wm.WORK_DIR.as_posix()}/{wid}.md"
         row_path = rel(root, Path(wr) / draft / f"{wid}.row.tsv")
