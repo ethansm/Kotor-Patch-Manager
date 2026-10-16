@@ -239,7 +239,7 @@ class ReportTests(unittest.TestCase):
         self.assertIn("SWAP total=3", self.out)
 
     def test_anim_histograms(self):
-        self.assertIn("ANIMRES n=4 distinct=2 top10: 0x1f x3, 0x7 x1", self.out)
+        self.assertIn("ANIMRES n=4 distinct=2 top10: 0x1f x3, 0x7 x1 | style per creature (self style/gate): 10 0/1 x2, 11 0/1 x2", self.out)
         self.assertIn("ANIMSEND n=2 distinct=1 top10: 0x1f x2", self.out)
 
     def test_gob_stats_for_changing_and_still_gobs(self):
@@ -271,7 +271,7 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(len(out), 40)
         self.assertIn("COMB edges=6 creatures=6 (top 4 shown)", out)
         self.assertIn("ATTACH n=20 creatures=5 tags: 't'=20 (first 3 creatures shown)", out)
-        self.assertTrue(any(s.startswith("ANIMRES n=12 distinct=12 top10:") and s.endswith("(+2 more ids)") for s in out))
+        self.assertTrue(any(s.startswith("ANIMRES n=12 distinct=12 top10:") and "(+2 more ids) | style per creature" in s for s in out))
         self.assertIn("GOB lines=55 gobs=10 (top 8 by samples shown)", out)
         self.assertTrue(out[-1].startswith("skipped e.g. L") and "COMB creature=zz" in out[-1])
 

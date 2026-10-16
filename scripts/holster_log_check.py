@@ -53,7 +53,7 @@ FULL_RE = {
     "ATTACH": _rx(r"\bATTACH obj=<H> tag='(?P<tag>[^']*)' creature=(?P<creature><H>) body=(?P<body><H>) "
                   r"handleR=(?P<hr><H>) handleL=(?P<hl><H>) tick=\d+"),
     "SWAP": _rx(r"\bSWAP exec=<H>" + "".join(" d%d=<H>" % i for i in range(8)) + r" tick=\d+"),
-    "ANIMRES": _rx(r"\bANIMRES self=<H> id=(?P<id><H>) style=\d+ gate=\d+ cc=\d+ d4=\d+ e8=\d+ tick=\d+"),
+    "ANIMRES": _rx(r"\bANIMRES self=(?P<self><H>) id=(?P<id><H>) style=(?P<style>\d+) gate=(?P<gate>\d+) cc=\d+ d4=\d+ e8=\d+ tick=\d+"),
     "ANIMSEND": _rx(r"\bANIMSEND creature=<H> id=(?P<id><H>) tick=\d+"),
     "GOB": _rx(r"\bGOB n=(?P<n><I>) gob=(?P<gob><H>) parent18=(?P<parent><H>) "
                r"pos=\((?P<px><N>),(?P<py><N>),(?P<pz><N>)\) quat=\((?P<qw><N>),(?P<qx><N>),(?P<qy><N>),(?P<qz><N>)\)"),
@@ -88,6 +88,8 @@ def _record(kind, n, m):
         rec.update(tag=g["tag"], creature=_hex(g["creature"]), body=_hex(g["body"]), hr=_hex(g["hr"]), hl=_hex(g["hl"]))
     elif kind in ("ANIMRES", "ANIMSEND"):
         rec.update(id=_hex(g["id"]))
+        if kind == "ANIMRES":
+            rec.update(self=_hex(g["self"]), style=int(g["style"]), gate=int(g["gate"]))
     elif kind == "GOB":
         rec.update(gob=_hex(g["gob"]), parent=_hex(g["parent"]),
                    pos=[float(g[k]) for k in ("px", "py", "pz")], quat=[float(g[k]) for k in ("qw", "qx", "qy", "qz")])
@@ -331,6 +333,10 @@ def render(recs, skipped, main_facts, nlines, meta):
     out += _attach(recs)
     out.append("SWAP total=%d" % sum(1 for r in recs if r["kind"] == "SWAP"))
     out.append(_hist("ANIMRES", recs))
+    styles = Counter((r["self"], r["style"], r["gate"]) for r in recs if r["kind"] == "ANIMRES")
+    if styles:   # C6: +0xC5 = wield style byte, +0xC6 = table gate; one entry per creature and value
+        out[-1] += " | style per creature (self style/gate): " + ", ".join("%s %d/%d x%d" % (k[0], k[1], k[2], v)
+                                                                            for k, v in styles.most_common(8))
     out.append(_hist("ANIMSEND", recs))
     out += _gobs(recs, CAPS["gobs_with_place"] if has_place else CAPS["gobs"])
     if has_place:

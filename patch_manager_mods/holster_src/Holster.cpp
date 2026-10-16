@@ -258,7 +258,21 @@ static void maybeReload();
 extern "C" void __cdecl HolsterAnimResolve(void* self, uint32_t animId) {
     if (g_probe) maybeReload();   // the resolver runs every frame; the 0x5047B0 handler only on attach events (live test 10-15: GOB lines=12)
     if (!g_onAnim || !animInteresting(animId)) return;
-    if (InterlockedIncrement(&g_animPerId[(animId & 0xFFFFu) - 0x2700u]) > 20) return;
+    if (InterlockedIncrement(&g_animPerId[(animId & 0xFFFFu) - 0x2700u]) > 20) {
+        // C6: past the per-id cap, still log the first sighting of each (creature, id, style) so every party member's wield style shows.
+        struct Seen { uintptr_t self; uint32_t id; uint8_t style; };
+        static Seen s_seen[64];
+        static volatile LONG s_nSeen = 0;
+        uint8_t st = 0;
+        saferead::beginScope();
+        (void)saferead::readAt(kSiteAnim, reinterpret_cast<uintptr_t>(self), 0xC5, &st);
+        const LONG n = s_nSeen < 64 ? s_nSeen : 64;
+        for (LONG i = 0; i < n; ++i)
+            if (s_seen[i].self == reinterpret_cast<uintptr_t>(self) && s_seen[i].id == (animId & 0xFFFFu) && s_seen[i].style == st) return;
+        const LONG slot = InterlockedIncrement(&s_nSeen) - 1;
+        if (slot >= 64) return;
+        s_seen[slot] = {reinterpret_cast<uintptr_t>(self), animId & 0xFFFFu, st};
+    }
     saferead::beginScope();
     if (!KP_ENABLED(chAnim, KPLOG_INFO) || !takeLine()) return;
     const uintptr_t s = reinterpret_cast<uintptr_t>(self);
