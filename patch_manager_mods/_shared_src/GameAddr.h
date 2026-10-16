@@ -103,4 +103,12 @@ constexpr uintptr_t MovieRestoreSkipFlag = 0x00A1B76C;   // int: set to 1 by the
 constexpr uintptr_t ClientCreatureVtable = 0x0099EE14;   // CSWCCreature vtable: the client creature ctor 0x7645F0 stores it at [this] (mov [ecx],0x99EE14); CharEffectsPanel ClientCreatureVftable == EquipCharPreview CreatureVftable
 constexpr uintptr_t WorldTimerGetCurrentTime = 0x0051AD20; // CWorldTimer::GetWorldTime (verified B0) thiscall(timer, int* day, uint* ms) RET 8; mirrors K2Addr Effects.h field
 
+// ---- in-memory GFF resources (EmbedGui.h; holster_edit D2F, static only) ----
+constexpr uintptr_t ResManGlobal = 0x00A1B490;           // DWORD: CExoResMan* (every resman caller loads [0xA1B490]; perf-lab G_ResMan)
+constexpr uintptr_t ResGffCtor = 0x00716FD0;             // CResGFF::Constructor_2 (verified B0) thiscall(obj; type, ext, resref) RET 12, object 0xA0
+constexpr uintptr_t ResManMalloc = 0x00712F30;           // CExoResMan::Malloc (verified B0) thiscall(resman; CRes*): allocates the data buffer at obj+0x10
+constexpr uintptr_t ResGffOnServiced = 0x00717300;       // CResGFF::OnResourceServiced (verified B0) fastcall(obj): parses obj+0x10 in place, 1 ok / 0 fail
+constexpr uintptr_t ResManFreeData = 0x007120C0;         // CExoResMan::FreeResourceData (verified B0) thiscall(resman; CRes*)
+constexpr uintptr_t ResRelease = 0x007112B0;             // CRes::Release (R1-static, high) fastcall(obj)
+
 } // namespace gameaddr
