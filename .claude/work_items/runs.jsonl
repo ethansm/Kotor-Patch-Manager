@@ -89,3 +89,4 @@
 {"claimed_at": "2026-10-16T18:56:53Z", "closed_at": "2026-10-16T18:56:53Z", "duration_s": 0, "outcome": "manual-close", "paths": 3, "reason": "WI-119 fix wave r2fx1-A", "session": "351ca63e-9c91-49c3-8162-6d2de7e7d15d", "wi": "WI-119"}
 {"claimed_at": "2026-10-16T18:57:08Z", "closed_at": "2026-10-16T18:57:08Z", "duration_s": 0, "outcome": "manual-close", "paths": 3, "reason": "WI-115 fix wave r2fx1-A", "session": "351ca63e-9c91-49c3-8162-6d2de7e7d15d", "wi": "WI-115"}
 {"claimed_at": "2026-10-16T18:57:21Z", "closed_at": "2026-10-16T18:57:21Z", "duration_s": 0, "outcome": "manual-close", "paths": 1, "reason": "WI-116 fix wave r2fx1-A", "session": "351ca63e-9c91-49c3-8162-6d2de7e7d15d", "wi": "WI-116"}
+{"claimed_at": "2026-10-16T18:57:40Z", "closed_at": "2026-10-16T18:57:40Z", "duration_s": 0, "outcome": "manual-close", "paths": 1, "reason": "WI-117 fix wave r2fx1-A", "session": "351ca63e-9c91-49c3-8162-6d2de7e7d15d", "wi": "WI-117"}

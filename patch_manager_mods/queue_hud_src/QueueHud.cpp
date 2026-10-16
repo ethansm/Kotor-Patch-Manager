@@ -594,7 +594,7 @@ void drawLeader(uintptr_t hud, DWORD now, DWORD age, const K2PsContext* ctx) {
     if (!qh::shouldShow(g_cfg.enabled, hardCombat, ctx->inMenu != 0, age, n)) {
         if (n == 0 && held.nd > 0 && qh::panelHold(held.tick, now, ctx->inMenu != 0, hardCombat)) { paintLeader(hud, held.d, held.nd, age, ctx); return; }
         if (hardCombat && ctx->inMenu == 0 && age < 250u) drawDetachedSlots(hud, s, n, now);
-        noteHidden(g_combat != 0 ? "combat" : "empty queue");
+        noteHidden(hardCombat ? "combat" : "empty queue");
         return;
     }
 
@@ -709,7 +709,7 @@ void drawStrips(uintptr_t hud, DWORD now, bool inMenu) {
         const int n = qh::buildSlots(s.e, s.ne, s.rn, s.nrn, s.haveCur ? &s.cur : nullptr, slots);
         HeldStrip& hs = g_heldStrip[k];
         if (hs.creature != srv[k]) { hs.d = StripDraw(); hs.tick = 0; hs.creature = srv[k]; }   // a Tab switch never shows the old strip
-        if (n == 0 && hs.d.have && qh::panelHold(hs.tick, now, inMenu, g_combat != 0 && !g_cfg.showInCombat)) {
+        if (n == 0 && hs.d.have && qh::panelHold(hs.tick, now, inMenu, g_combat != 0 && !g_softCombat && !g_cfg.showInCombat)) {
             d[k] = hs.d;   // hold repaint: Cancel below and the draw loop use the held rects; hs.tick is not refreshed
             memcpy(types[k], hs.types, sizeof types[k]);
             sigs[k] = hs.sig;
@@ -771,8 +771,8 @@ void drawAll(const K2PsContext* ctx) {
     const uintptr_t hud = g_hud;
     uint32_t probe = 0;
     if (!hud || !rd(SiteHud, hud, HudSlotBase, &probe)) { if (hud) noteHidden("hud unreadable"); if (g_cfg.companions) stripsHidden(); return; }
-    if (!qh::shouldShow(g_cfg.enabled, g_combat != 0, ctx->inMenu != 0, age, 1, g_cfg.showInCombat)) {
-        noteHidden(g_combat ? "combat" : ctx->inMenu ? "menu" : "stale capture");
+    if (!qh::shouldShow(g_cfg.enabled, g_combat != 0 && !g_softCombat, ctx->inMenu != 0, age, 1, g_cfg.showInCombat)) {
+        noteHidden((g_combat != 0 && !g_softCombat) ? "combat" : ctx->inMenu ? "menu" : "stale capture");
         if (g_cfg.companions) stripsHidden();
         return;
     }
@@ -1879,13 +1879,12 @@ void bannerTrace(const char* act, bool soft, int nWr) {
 
 // One frame of the soft-combat decision; sets g_softCombat. Writes happen only while g_combat != 0 and the HUD flags are readable.
 void softBannerTick(uintptr_t hud) {
+    if (g_combatUnreadable) return;               // no verdict, no writes; the state is kept (g_softCombat too)
     g_softCombat = false;
-    if (!g_cfg.hideBannerSoft && !g_cfg.hideRedbarSoft) return;
     if (g_bannerHidden && hud != g_bannerHud) {   // HUD rebuilt (load): the old controls are gone
         bannerTrace("forget", false, 0);
         g_bannerHidden = false; g_bannerMask = 0; g_bannerLastAct = -1; g_bannerResetLogged = false;
     }
-    if (g_combatUnreadable) return;               // no verdict, no writes; the state is kept
     if (g_combat == 0) {
         if (g_bannerHidden) {                     // combat ended: the engine hid the controls itself, do not restore
             bannerTrace("forget", false, 0);
@@ -1914,6 +1913,7 @@ void softBannerTick(uintptr_t hud) {
         }
     }
     g_softCombat = soft;
+    if (!g_cfg.hideBannerSoft && !g_cfg.hideRedbarSoft) return;   // flags off: verdict still feeds hardCombat and Cancel; no banner writes
     const qh::BannerAct act = qh::bannerAct(g_bannerHidden, true, soft);
     if (act == qh::BA_NONE) { g_bannerLastAct = act; return; }
     uint32_t before[kBannerCtlN] = {}, after[kBannerCtlN] = {};
