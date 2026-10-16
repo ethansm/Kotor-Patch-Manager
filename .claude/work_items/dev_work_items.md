@@ -160,3 +160,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 144 | WI-112 | P3 | hold | S | - | NPC diversity: RemapAppearance reaches rows 812-817 (APP_COUNT 818) - fix C250 premise/bou | 0 | 0 | WI-43 worker: DiversityLogic.h:265-310 returns rows 812-817, Diversity |
 | [ ] | 145 | WI-113 | P3 | hold | S | - | NPC diversity: wire exclusion kind in dispatcher (C254) | 0 | 0 | WI-43 worker: NpcDiversityDispatcher.cpp:484 hard-wires ExcludeKind::N |
 | [ ] | 146 | WI-114 | P3 | hold | S | - | NPC diversity: add hooks.toml site for non-B texture coverage (C252, 0x85E623 candidate) | 0 | 0 | WI-43 built C252 log-only; empty-cell path jumps past 0x85E601 and cla |
+| [ ] | 147 | WI-115 | P3 | ready | S | - | Queue HUD: actionInQueue uses raw haveCur before creal (stale cur blocks dispatch) | 0 | 3 | R2-QH-02: Raw s.haveCur sets actionPresent before creal; activeVerdict |
