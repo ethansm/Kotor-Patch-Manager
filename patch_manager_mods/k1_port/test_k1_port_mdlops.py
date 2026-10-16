@@ -86,6 +86,22 @@ class RenameTest(unittest.TestCase):
         self.assertIn("lfootT_g 0.5", out)  # weight lines keep the K1 spelling, as in the 10-16 build
 
 
+class OrderTest(unittest.TestCase):
+    def test_ascii_supermodel(self):
+        self.assertEqual(M.ascii_supermodel(FIXTURE), "S_Female03")
+        self.assertIsNone(M.ascii_supermodel("setsupermodel x NULL\n"))
+        self.assertIsNone(M.ascii_supermodel("newmodel x\n"))
+
+    def test_build_order_parent_first(self):
+        supers = {"k1p_juhaniba": "k1p_juhanibb", "k1p_juhanih": "k1p_juhanibb", "k1p_juhanibb": "S_Female03"}
+        order = M.build_order(supers)
+        self.assertEqual(order[0], "k1p_juhanibb")
+        self.assertEqual(sorted(order), sorted(supers))
+
+    def test_build_order_independent(self):
+        self.assertEqual(M.build_order({"a": "S_Male02", "b": "S_Male02"}), ["a", "b"])
+
+
 class HelperTest(unittest.TestCase):
     def test_node_names_keep_case(self):
         self.assertEqual(M.node_names(FIXTURE), ["P_JuhaniBB", "rootdummy", "lfootT_g", "CLOTH"])

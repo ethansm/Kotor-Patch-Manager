@@ -16,6 +16,11 @@ new name (word-boundary, case-insensitive, one pass, so nothing is replaced twic
 node names, which broke exact-name matches against S_Female03 (58/64 -> 32/64); --lowercase-nodes restores that
 for an A/B build.
 
+Node numbers (10-16 finding, fixed Juhani's out-held left arm): pass2 numbers nodes after the SUPERMODEL binaries found in
+the pass2 dir. K1 numbering (pelvis_g 68) is wrong for K2 (pelvis_g 86). So pass2 builds against the K2 supermodel chain
+(copied from the K2 install, read only) and builds mapped models in dependency order, feeding each K2-compiled model to its
+child as the supermodel (k1p_juhaniba <- k1p_juhanibb <- S_Female03). --k1-supermodels restores the old K1 numbering.
+
 Examples:
   k1_port_mdlops.py extract --models p_juhaniba p_juhanibb p_juhanih
   k1_port_mdlops.py pass1   --models p_juhaniba p_juhanibb p_juhanih
@@ -43,6 +48,7 @@ TOOL_SRC = WORKSPACE / "mdlops_t7" / "juhani_run" / "tools" / "mdlops.exe"
 PROTON = Path("~/.local/share/Steam/steamapps/common/Proton - Experimental/proton").expanduser()
 STAGE = WORKSPACE / "k1_port_stage"
 DEFAULT_K1 = "~/.local/share/Steam/steamapps/common/swkotor"
+DEFAULT_K2 = "~/.local/share/Steam/steamapps/common/Knights of the Old Republic II"
 VALIDATE = HERE / "k1_port_validate.py"
 PRUNE = HERE / "k1_port_prune.py"
 SUPER_OFF = 12 + 136  # supermodel name inside a binary MDL (12-byte resource header + geometry header)
@@ -111,6 +117,31 @@ def rename_ascii(text, model_map, tex_map=None, lowercase_nodes=False):
 def node_names(text):
     """Node names of an MDLOps ASCII model, in file order."""
     return re.findall(r"^\s*node\s+\S+\s+(\S+)\s*$", text.replace("\r", ""), re.MULTILINE)
+
+
+def ascii_supermodel(text):
+    """Supermodel name of an MDLOps ASCII model (second word after setsupermodel), or None."""
+    m = re.search(r"^\s*setsupermodel\s+\S+\s+(\S+)", text, re.MULTILINE)
+    return None if not m or m.group(1).upper() == "NULL" else m.group(1)
+
+
+def build_order(supers):
+    """supers {new_name: supermodel_name}. New names whose supermodel is another mapped model come after it."""
+    lower = {k.lower(): k for k in supers}
+    order, seen = [], set()
+
+    def visit(name):
+        if name in seen:
+            return
+        seen.add(name)
+        parent = lower.get((supers[name] or "").lower())
+        if parent:
+            visit(parent)
+        order.append(name)
+
+    for name in supers:
+        visit(name)
+    return order
 
 
 def supermodel_of(mdl_bytes):
@@ -221,16 +252,63 @@ def cmd_rename(a):
     return 0
 
 
+def k2_model_bytes(k2, name):
+    """(mdl, mdx) of a K2 model from override/ (case-insensitive), else via pykotor from the whole install."""
+    ov = Path(k2).expanduser() / "override"
+    found = {}
+    for ext in (".mdl", ".mdx"):
+        hit = next((f for f in ov.iterdir() if f.name.lower() == name.lower() + ext), None) if ov.is_dir() else None
+        if hit is not None:
+            found[ext] = hit.read_bytes()
+    if len(found) == 2:
+        return found[".mdl"], found[".mdx"]
+    try:
+        import k1_port_model as K  # noqa: F401  (pykotor needs the k1port venv)
+        pk = K.load_pykotor()
+        inst = pk.Installation(str(Path(k2).expanduser()))
+        order = [pk.SearchLocation.OVERRIDE, pk.SearchLocation.CHITIN, pk.SearchLocation.MODULES]
+        mdl, mdx = (inst.resource(name, getattr(pk.ResourceType, e), order) for e in ("MDL", "MDX"))
+        if mdl is not None and mdx is not None:
+            return mdl.data, mdx.data
+    except Exception as exc:  # noqa: BLE001  (import or install problems: report below)
+        raise MdlopsError(f"K2 supermodel {name}: not in override/ and pykotor lookup failed ({exc}); "
+                          "run with the k1port venv python") from exc
+    raise MdlopsError(f"K2 supermodel {name} not found in {k2}")
+
+
+def stage_k2_supermodels(pass2, k2, first, mapped_lower):
+    """Copy the K2 chain starting at `first` (an unmapped supermodel name) into pass2. Returns the names copied."""
+    copied, name = [], first
+    while name and name.lower() != "null" and name.lower() not in mapped_lower:
+        mdl, mdx = k2_model_bytes(k2, name)
+        (pass2 / f"{name.lower()}.mdl").write_bytes(mdl)
+        (pass2 / f"{name.lower()}.mdx").write_bytes(mdx)
+        copied.append(name)
+        name = supermodel_of(mdl)
+    return copied
+
+
 def cmd_pass2(a):
     run, _, pass2 = ensure_run(a.run)
-    for new in parse_map(a.map).values():
+    news = list(parse_map(a.map).values())
+    for new in news:
         if not (pass2 / f"{new}-ascii.mdl").is_file():
             raise MdlopsError(f"{new}-ascii.mdl missing: run rename first")
+    supers = {n: ascii_supermodel((pass2 / f"{n}-ascii.mdl").read_text(encoding="latin1")) for n in news}
+    if not a.k1_supermodels:
+        mapped = {n.lower() for n in news}
+        for first in sorted({s for s in supers.values() if s and s.lower() not in mapped}):
+            print(f"k2 supermodel chain: {', '.join(stage_k2_supermodels(pass2, a.k2, first, mapped))}")
+        news = build_order(supers)
+    for new in news:
         rc = run_mdlops(run, pass2, ["-k2", win_path(pass2 / f"{new}-ascii.mdl")], run / f"pass2_{new}.log")
         ok = (pass2 / f"{new}-ascii-k2-bin.mdl").is_file() and (pass2 / f"{new}-ascii-k2-bin.mdx").is_file()
         print(f"pass2 {new}: rc={rc} {'ok' if ok else 'NO OUTPUT'}")
         if not ok:
             return 1
+        if not a.k1_supermodels:  # children of this model must see its K2 numbering
+            shutil.copy2(pass2 / f"{new}-ascii-k2-bin.mdl", pass2 / f"{new}.mdl")
+            shutil.copy2(pass2 / f"{new}-ascii-k2-bin.mdx", pass2 / f"{new}.mdx")
     return 0
 
 
@@ -288,6 +366,9 @@ def build_parser():
         p.add_argument("--tex", nargs="*", default=[], metavar="OLD=NEW", help="texture renames (default k1p_<x>)")
         p.add_argument("--lowercase-nodes", action="store_true", help="old behaviour: lowercase node names")
         p.add_argument("--stage-sub", default="probe_mdlops_juhani2", help="stage subdirectory for finish")
+        p.add_argument("--k2", default=DEFAULT_K2, help="K2 install (read only): source of the supermodel chain")
+        p.add_argument("--k1-supermodels", action="store_true",
+                       help="old behaviour: number nodes against the K1 supermodels (wrong for K2, arm held out)")
         p.set_defaults(fn=fn)
     return ap
 
