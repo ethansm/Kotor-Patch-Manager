@@ -157,3 +157,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 141 | WI-109 | P3 | hold | S | - | Resolve claude_state default: ro vs rw (Phase3d sandbox) | 0 | 0 | WI-60 worker OPEN: dr_profile.py:55 says default claude_state is ro; f |
 | [ ] | 142 | WI-110 | P3 | hold | S | - | Shield bar hover tooltip refresh (C095) | 0 | 0 | WI-08 found no safe hover hook or refresh flag offset in ShieldBar.cpp |
 | [ ] | 143 | WI-111 | P3 | hold | S | - | Shield bar probe log trim (C093) | 0 | 0 | WI-08: ShieldProbeSlot has 0 hits; rollback set unknown, probe lines l |
+| [ ] | 144 | WI-112 | P3 | hold | S | - | NPC diversity: RemapAppearance reaches rows 812-817 (APP_COUNT 818) - fix C250 premise/bou | 0 | 0 | WI-43 worker: DiversityLogic.h:265-310 returns rows 812-817, Diversity |
