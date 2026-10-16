@@ -1,19 +1,19 @@
 # Session Handoff & Plan State: .claude/plans/gemini_r2_fix_wave1.md
 
 ## 0. Next-Phase Direction
-r2fx1-A done (10/10 applied, $6.83). Next: wave 2 = WI-125 (R2-CA-03, M) + WI-126 (R2-BH-03/04): items TSV + fix_wave.py plan --wave r2fx2, show batch, stop for approval. WI-133 docs -> /next-dev-work-item. Live checks queued in PLAY_TEST_QUEUE.md (WI-115/116/117/119/120).
+r2fx2-A done (2/2 applied: WI-126 bba8463, WI-125 01091d7; $2.32/8 agents; play-test rows queued). Gemini round-2 ready fix items exhausted. Next: WI-133 docs via /next-dev-work-item WI-133; WI-125 live check (pause 10+ s, no false A1X ORPHAN) waits in PLAY_TEST_QUEUE.md.
 
 ## 1. Active State & Provenance
 - **Master Plan:** `.claude/plans/gemini_r2_fix_wave1.md`
-- **Branch:** `KOTOR-II` (a4e43d0 play-test queue: r2fx1-A rows WI-115/116/117/119/120 (live-only checks))
-- **Generated:** 2026-10-16 15:02:33 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (4ac16be plan: gemini r2 R2.6/R2.7 done (r2fx2-A 2/2 applied, $2.32))
+- **Generated:** 2026-10-16 15:24:33 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-a4e43d0 play-test queue: r2fx1-A rows WI-115/116/117/119/120 (live-only checks)
- patch_manager_mods/PLAY_TEST_QUEUE.md | 5 +++++
- 1 file changed, 5 insertions(+)
+4ac16be plan: gemini r2 R2.6/R2.7 done (r2fx2-A 2/2 applied, $2.32)
+ .claude/plans/gemini_r2_fix_wave1.md | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 ```
-- **Dirty Files (167):**
+- **Dirty Files (166):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/33_ui_queue_hotbar_fixes.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
@@ -22,9 +22,9 @@ a4e43d0 play-test queue: r2fx1-A rows WI-115/116/117/119/120 (live-only checks)
   - ` M .claude/handoffs/PHASE7_COMMON_MASTER.handoff.md`
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
   - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
-  - ` M .claude/plans/gemini_r2_fix_wave1.md`
   - ` M .claude/plans/swarm_library_architecture.md`
-  - ... +157 more (run `git status --short`)
+  - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
+  - ... +156 more (run `git status --short`)
 
 ## 2. Immediate Objective (WI-115)
 **R2-QH-02**
