@@ -1,4 +1,5 @@
 // Load Hang Probe 1.4.1 (Steam Aspyr build 6A522E71...). Diagnostics only unless "fix=auto" is set.
+// manifest 0.1.5: logging moved to KpLog.h (channel main, file load-hang-probe_log.txt; old core: hangprobe_log.txt); see logging section.
 // 1.4.1 (doc 10 Phase 5A): RESTORE-AFTER-MOVIE / PLAYMOVIES-EXIT are logged only when their tuple changes (they run every frame from
 // MainLoop ret 0x781DFA while the intro-movie state lingers: 1362 lines in incident 16); `calls=` = cumulative calls of that point.
 // 1.4.0 (doc 10 Phase 4, T4/U6 probe-log points; ring slots only, logged as WINEV by the watchdog):
@@ -22,7 +23,7 @@
 //     something already looks wrong (load screen up > 5 s while frames run, no frame for 5 s, or a manual
 //     trigger) samples the main thread every 250 ms (Suspend / GetThreadContext / stack walk
 //     that touches only [ESP, StackBase) / Resume) and reads the load-screen state fields every tick;
-//   * hangprobe_log.txt: load-state CHANGES (one line each) + a heartbeat line every 60 s;
+//   * load-hang-probe_log.txt (KpLog channel main; hangprobe_log.txt on an old core): load-state CHANGES (one line each) + a heartbeat line every 60 s;
 //   * hangprobe_report.txt (rewritten every 5 s while a condition holds): stack histogram with
 //     module+offset, load state, failed-probe ring, loaded modules, tails of the other mods' logs.
 //     Conditions: LOADSCREEN_STUCK (CSWGuiLoadScreen modal while frames keep running), MAIN_STALL
@@ -37,6 +38,9 @@
 #include "../_shared/SafeRead.h"
 #include "CodePatch.h"
 #include "GameAddr.h"
+#include "KpLog.h"
+
+KP_LOG_PATCH("load-hang-probe");
 
 namespace {
 
@@ -84,16 +88,60 @@ HMODULE g_self = nullptr;
 // ms since the main thread's last MainLoop call; signed so a tick written after `now` was read gives <= 0.
 LONG msSinceFrame(DWORD now) { DWORD last = g_lastFrameTick; return last ? static_cast<LONG>(now - last) : 0; }
 
-// ---- logging (watchdog thread only) --------------------------------------------------------------------
+// ---- logging (watchdog thread + DllMain) -------------------------------------------------------------------
+// 0.1.5: lines go through KpLog.h (channel main): new core -> load-hang-probe_log.txt (`T=<s.ms> f=- load-hang-probe/main f<frame> ...`),
+// old core -> fallback hangprobe_log.txt at INFO. hangprobe_report.txt stays a dedicated artifact. The core cuts a message at 232 bytes
+// ("[...]"), so a long line is split at spaces into pieces of <= 220 bytes (continuations start with `+ `). DllMain logs before KpLog_Init has
+// run: those lines are queued (g_early) and emitted by flushEarly() from KPatchInit (new core) or by the watchdog (old core, after <= 1.5 s).
+KP_CHANNEL(chMain, "main");
+const bool g_fallbackSet = (KpLog_SetFallbackFile("hangprobe_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
+
+constexpr int LogPiece = 220, EarlyMax = 8, EarlyLen = 400;
 int g_logLines = 0;
+volatile LONG g_logReady = 0, g_initDone = 0, g_flushing = 0, g_earlyN = 0;
+char g_early[EarlyMax][EarlyLen];
+
+void emit(const char* s) {
+    int n = static_cast<int>(strlen(s));
+    if (n <= LogPiece) { KP_LOG(chMain, "%s", s); return; }
+    char piece[LogPiece + 1];
+    int pos = 0; bool first = true;
+    while (pos < n) {
+        int len = n - pos < LogPiece - 2 ? n - pos : LogPiece - 2;   // room for the `+ ` marker
+        if (pos + len < n) {   // not the last piece: prefer to cut at a space
+            int cut = len;
+            while (cut > LogPiece / 2 && s[pos + cut] != ' ') --cut;
+            if (s[pos + cut] == ' ') len = cut;
+        }
+        if (first) { memcpy(piece, s + pos, len); piece[len] = 0; }
+        else { piece[0] = '+'; piece[1] = ' '; memcpy(piece + 2, s + pos, len); piece[len + 2] = 0; }
+        KP_LOG(chMain, "%s", piece);
+        first = false; pos += len;
+        if (pos < n && s[pos] == ' ') ++pos;
+    }
+}
+
+// Emits the queued pre-init lines once, then opens normal logging. Safe to call from both KPatchInit and the watchdog.
+void flushEarly() {
+    if (InterlockedCompareExchange(&g_flushing, 1, 0) != 0) { while (!g_logReady) Sleep(1); return; }   // the loser waits: its next logf must not be queued after the snapshot
+    LONG n = g_earlyN; if (n > EarlyMax) n = EarlyMax;
+    for (LONG i = 0; i < n; ++i) emit(g_early[i]);
+    g_logReady = 1;
+}
+
 void logf(const char* fmt, ...) {
     if (g_logLines >= MaxLogLines) return;
-    FILE* f = fopen("hangprobe_log.txt", "a");
-    if (!f) return;
+    char buf[1100];
+    int k = snprintf(buf, sizeof buf, "f%ld ", g_frames);
+    if (k < 0) k = 0;
+    va_list ap; va_start(ap, fmt); vsnprintf(buf + k, sizeof buf - k, fmt, ap); va_end(ap);
     ++g_logLines;
-    fprintf(f, "[%lu f%ld] ", GetTickCount(), g_frames);
-    va_list ap; va_start(ap, fmt); vfprintf(f, fmt, ap); va_end(ap);
-    fputc('\n', f); fclose(f);
+    if (!g_logReady) {
+        LONG i = InterlockedIncrement(&g_earlyN) - 1;
+        if (i < EarlyMax) { strncpy(g_early[i], buf, EarlyLen - 1); g_early[i][EarlyLen - 1] = 0; }
+        return;
+    }
+    emit(buf);
 }
 
 // ---- main-thread samples --------------------------------------------------------------------------------
@@ -482,11 +530,14 @@ void writeReport(const char* reason, DWORD now, const LoadState& st) {
     tailFile(f, "force_power_hotbar_log.txt", 40);
     tailFile(f, "buffhud_log.txt", 40);
     tailFile(f, "inv3d_log.txt", 40);
+    tailFile(f, "load-hang-probe_log.txt", 60);
     tailFile(f, "hangprobe_log.txt", 60);
     fclose(f);
 }
 
 DWORD WINAPI watchdog(LPVOID) {
+    for (int w = 0; w < 30 && !g_initDone; ++w) Sleep(50);   // old core: no KPatchInit, give up after 1.5 s
+    flushEarly();
     HANDLE th = nullptr;
     LoadState last; memset(&last, 0, sizeof(last));
     DWORD lsSince = 0, lastReport = 0, lastBeat = GetTickCount();
@@ -703,6 +754,8 @@ int __cdecl HangProbeDumpDiag(char* buf, int cap) { return buf && cap > 0 ? safe
 
 } // extern "C"
 
+extern "C" void __cdecl KPatchInit(const KPatchApi* api) { if (KpLog_Init(api)) { g_initDone = 1; flushEarly(); } }
+
 BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {
         g_self = inst;
@@ -715,7 +768,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID) {
         auto nt = reinterpret_cast<const IMAGE_NT_HEADERS*>(g_exeLo + dos->e_lfanew);
         g_exeHi = g_exeLo + nt->OptionalHeader.SizeOfImage;
         if (FILE* cf = fopen("hangprobe_debug.txt", "r")) { char l[64]; while (fgets(l, sizeof l, cf)) { if (!strncmp(l, "fix=auto", 8)) g_fixAuto = true; if (!strncmp(l, "fixdelay=", 9)) { long v = atol(l + 9); if (v >= 1000 && v <= 60000) g_fixDelayMs = (DWORD)v; } } fclose(cf); }
-        logf("load-hang-probe 0.1.4 loaded: attach tid=%lu exe=%08x-%08x fix=%s fixdelay=%lums", GetCurrentThreadId(), (unsigned)g_exeLo, (unsigned)g_exeHi, g_fixAuto ? "auto" : "off (log only)", g_fixDelayMs);
+        logf("load-hang-probe 0.1.5 loaded: attach tid=%lu exe=%08x-%08x fix=%s fixdelay=%lums", GetCurrentThreadId(), (unsigned)g_exeLo, (unsigned)g_exeHi, g_fixAuto ? "auto" : "off (log only)", g_fixDelayMs);
         {   // 1.2.0 file-I/O capture; "io=0" in hangprobe_debug.txt disables it
             bool ioWanted = true;
             if (FILE* cf = fopen("hangprobe_debug.txt", "r")) { char l[64]; while (fgets(l, sizeof l, cf)) if (!strncmp(l, "io=0", 4)) ioWanted = false; fclose(cf); }

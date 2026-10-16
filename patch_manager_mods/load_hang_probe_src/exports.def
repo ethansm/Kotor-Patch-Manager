@@ -14,3 +14,4 @@ EXPORTS
     HangProbeMovieExit
     HangProbePumpCutoff
     HangProbeLsDecision
+    KPatchInit
