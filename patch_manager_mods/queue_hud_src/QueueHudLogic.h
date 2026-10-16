@@ -1086,6 +1086,29 @@ inline int fmtHandoffKeep(char* out, int cap, int m, uint32_t cmdId, int ne, int
     return w.done();
 }
 
+// QL10 round reorder: stable partition of the engine's pending round nodes. ptrs[0..n) = list order head->tail; nodes found in foreign[] (what was
+// pending before our first send: the player's new click) go LAST, all others (our re-sent commands) first, each group in its old order.
+// order[i] = source index of the node that must sit at position i. Returns how many positions change (0 = already in order, nothing to do).
+inline int roundPartition(const uint32_t* ptrs, int n, const uint32_t* foreign, int nForeign, int* order) {
+    auto isForeign = [&](uint32_t p) { for (int i = 0; i < nForeign; ++i) if (foreign[i] == p) return true; return false; };
+    int w = 0;
+    for (int i = 0; i < n; ++i) if (!isForeign(ptrs[i])) order[w++] = i;
+    for (int i = 0; i < n; ++i) if (isForeign(ptrs[i])) order[w++] = i;
+    int moved = 0;
+    for (int i = 0; i < n; ++i) if (order[i] != i) ++moved;
+    return moved;
+}
+
+// ROUND_ROT m=<k> n=<n> moved=<n> ok=<0|1>   (handoff_keep_new: pending round nodes re-ordered so the re-sent commands run before the new click)
+inline int fmtRoundRot(char* out, int cap, int m, int n, int moved, bool ok) {
+    detail::LogWr w(out, cap);
+    w.s("ROUND_ROT m="); w.mm(m);
+    w.s(" n="); w.i(n);
+    w.s(" moved="); w.i(moved);
+    w.s(" ok="); w.i(ok ? 1 : 0);
+    return w.done();
+}
+
 // HANDOFF_HELD m=<k> cmd=<n> act=<resend|drop> ms=<n>   (handoff_resend_held: how an engine-held active command was settled; ms = since the edge)
 inline int fmtHandoffHeld(char* out, int cap, int m, uint32_t cmdId, HeldHeadAction act, int ms) {
     detail::LogWr w(out, cap);

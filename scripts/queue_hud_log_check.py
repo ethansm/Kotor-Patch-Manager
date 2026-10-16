@@ -28,6 +28,7 @@ these keywords are ignored; a keyword line with a missing or malformed field is 
   HANDOFF_ONE cmd=<n> m=<k> seq=<i>/<n>
   HANDOFF_HELD m=<k> cmd=<n> act=<resend|drop|wait> ms=<n>   (an engine-held active command settled: resend => a HANDOFF_ONE
     for it follows; drop => deliberately not re-sent; no lifecycle)
+  ROUND_ROT m=<k> n=<n> moved=<n> ok=<0|1>        (handoff_keep_new: pending round nodes re-ordered, new click last; no lifecycle)
   HANDOFF_KEEP m=<k> cmd=<n> ne=<n> round=<n>    (handoff_keep_new: queue left as is before the first send; no lifecycle)
   HANDOFF_CLEAR m=<k> cmd=<n> ne=<n> round=<n>   (counted as clear x<n> in the HANDOFFS title; no lifecycle)
   ROUND m=<k> n=<count> subs=<s,s,...|-> cur=<n|-> ne=<n> types=<hex,hex,...|->   (subs/types: '-' = empty; cur '-' = none)
@@ -131,6 +132,7 @@ REQUIRED = {
     "HANDOFF_HELD": ("m", "cmd", "act", "ms"),
     "HANDOFF_CLEAR": ("m", "cmd", "ne", "round"),
     "HANDOFF_KEEP": ("m", "cmd", "ne", "round"),
+    "ROUND_ROT": ("m", "n", "moved", "ok"),
     "ROUND": ("m", "n", "subs", "cur", "ne", "types"),
     "HANDOFF_OUT": ("m", "cmd", "exec", "firstExecMs", "endMs"),
     "CLICK": ("t", "x", "y"),

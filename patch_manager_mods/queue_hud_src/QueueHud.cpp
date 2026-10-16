@@ -948,6 +948,10 @@ DWORD g_identLastTick[3] = {0, 0, 0};
 struct Handoff { bool pending = false; bool headValid = false; bool headHeld = false; bool sawExec = false; DWORD edgeAt = 0; DWORD lastTick = 0;
                  int heldUnpausedMs = 0; qh::QueuedAction head; int total = 0; int sent = 0; };
 Handoff g_handoff[3];
+// QL10 (handoff_keep_new): round nodes already pending at the first send (the player's new click); roundOrderTick keeps them behind our re-sent commands.
+struct RoundOrder { uint32_t foreign[qh::kMaxRound] = {}; int n = 0; DWORD armedAt = 0; };
+RoundOrder g_roundOrder[3];
+constexpr DWORD kRoundOrderMaxMs = 600000;   // safety net; normally disarmed as soon as no foreign node is pending
 // Round-list watch: 15 s after each hand-off dispatch, roundWatchTick logs the member's round / cur / entry state on change only.
 DWORD g_roundWatchUntil[3] = {};
 DWORD g_lastClickTick = 0;   // last left-button press edge (any frame, trace on or off); a head that vanishes right after one was cancelled, not wiped
@@ -1120,12 +1124,22 @@ void handoffTick(DWORD now, const bool* edge) {
             }
         } else {
             // Combat start wipes the engine queue; the first send clears this member's creature so the hand-off is not queued behind the engine's attack entries.
-            if (g_logOn && g_cfg.traceQueue && qh::keepNewAtHandoff(g_cfg.handoffClearFirst, g_cfg.handoffKeepNew, h.sent)) {
-                char line[200];
-                qh::fmtHandoffKeep(line, sizeof line, k, a.cmdId, s.engineNe, s.nrn);
-                QTRACE("%s", line);
+            // QL10: only while paused (nothing pops the round list then); unpaused keeps the clear-first behaviour.
+            const bool keepNow = g_cfg.handoffKeepNew && s.paused;
+            if (qh::keepNewAtHandoff(g_cfg.handoffClearFirst, keepNow, h.sent)) {
+                if (s.nrn > 0) {
+                    RoundOrder& ro = g_roundOrder[k];
+                    ro = RoundOrder();
+                    for (int i = 0; i < s.nrn && i < qh::kMaxRound; ++i) ro.foreign[ro.n++] = s.rn[i].ptr;
+                    ro.armedAt = now;
+                }
+                if (g_logOn && g_cfg.traceQueue) {
+                    char line[200];
+                    qh::fmtHandoffKeep(line, sizeof line, k, a.cmdId, s.engineNe, s.nrn);
+                    QTRACE("%s", line);
+                }
             }
-            if (qh::clearBeforeHandoff(g_cfg.handoffClearFirst, h.sent, g_cfg.handoffKeepNew)) {
+            if (qh::clearBeforeHandoff(g_cfg.handoffClearFirst, h.sent, keepNow)) {
                 uint32_t id = 0, server = 0;
                 const char* bad = resolveServerClear(srv, id, server);
                 if (g_logOn && g_cfg.traceQueue) {
@@ -1149,6 +1163,57 @@ void handoffTick(DWORD now, const bool* edge) {
             }
         }
         if (!h.headValid && buf.count == 0) h = Handoff{};
+    }
+}
+
+// QL10 (handoff_keep_new): the hand-off no longer clears the engine, so the player's new click (attack / power) stays in the round list AHEAD of our
+// re-sent commands. Each frame the pending round nodes are re-ordered with the engine's own list thunks (pop head, append tail: link nodes churn,
+// no round node is allocated or freed) so every node that was already pending at the first send runs last. Static RE: ghidra_knowledge/rea_findings/20261015_round-list-rotate.tsv.
+void roundOrderTick(DWORD now, const bool* edge) {
+    party::Fail why = party::F_None;
+    const uintptr_t tbl = party::table(&why);
+    if (!tbl) return;
+    for (int k = 0; k < 3; ++k) {
+        RoundOrder& ro = g_roundOrder[k];
+        if (ro.n == 0) continue;
+        if (static_cast<int>(now - ro.armedAt) > static_cast<int>(kRoundOrderMaxMs)) { ro = RoundOrder(); continue; }
+        const uintptr_t cli = party::member(tbl, k);
+        const uintptr_t srv = cli ? party::serverCreature(cli) : 0;
+        Snapshot s;
+        if (!srv || !gatherFor(srv, s)) continue;
+        uint32_t ptrs[qh::kMaxRound];
+        int nForeignPresent = 0;
+        for (int i = 0; i < s.nrn; ++i) {
+            ptrs[i] = s.rn[i].ptr;
+            for (int j = 0; j < ro.n; ++j) if (ro.foreign[j] == ptrs[i]) ++nForeignPresent;
+        }
+        if (nForeignPresent == 0) { ro = RoundOrder(); continue; }   // the new click ran or was cancelled: nothing left to order
+        int order[qh::kMaxRound];
+        const int moved = qh::roundPartition(ptrs, s.nrn, ro.foreign, ro.n, order);
+        if (moved == 0 || s.nrn < 2) continue;
+        uint32_t running = 0, w = 0, internal = 0;
+        bool ok = s.round &&
+                  saferead::readAt(SiteCancel + 0x30, srv, actq::CrRunning, &running) && running == 0 &&   // not inside RunActions
+                  saferead::readAt(SiteCancel + 0x31, s.round, actq::RdList, &w) && w &&
+                  saferead::readAt(SiteCancel + 0x32, w, 0, &internal) && internal;
+        bool applied = false;
+        if (ok) {
+            auto pop = reinterpret_cast<uint32_t(__thiscall*)(uintptr_t)>(gameaddr::ActListRemoveHead);
+            auto push = reinterpret_cast<void(__thiscall*)(uintptr_t, uint32_t)>(gameaddr::ActListAddTail);
+            uint32_t d[qh::kMaxRound];
+            int popped = 0;
+            for (; popped < s.nrn; ++popped) { d[popped] = pop(w); if (d[popped] == 0) break; }
+            applied = popped == s.nrn;
+            for (int i = 0; i < s.nrn && applied; ++i) applied = d[i] == ptrs[i];   // the list is what the snapshot said
+            if (applied) for (int i = 0; i < s.nrn; ++i) push(w, d[order[i]]);
+            else for (int i = 0; i < popped; ++i) if (d[i]) push(w, d[i]);          // put it back exactly as it was
+        }
+        if (g_logOn && g_cfg.traceQueue) {
+            char line[100];
+            qh::fmtRoundRot(line, sizeof line, k, s.nrn, moved, applied);
+            QTRACE("%s", line);
+        }
+        if (!applied) ro = RoundOrder();   // never retry a failed rotate every frame
     }
 }
 
@@ -1252,7 +1317,8 @@ void tickItemQueues(DWORD now, bool inMenu) {
     // unreadable HUD flags: no edge and g_prevCombat is kept (QH-2a-07), so a gap cannot fake a rising edge
     for (int k = 0; k < 3; ++k) edgeFlags[k] = qh::combatEdgeStep(g_prevCombat[k], !g_combatUnreadable, g_combat != 0);
     if (inMenu || g_combat != 0) {
-        if (combatNow) { combatEdgeTrace(now, edgeFlags); handoffTick(now, edgeFlags); roundWatchTick(now); }   // unreadable HUD flags: no hand-off and no drop, the buffers wait
+        if (combatNow) { for (int k = 0; k < 3; ++k) if (edgeFlags[k]) g_roundOrder[k] = RoundOrder();   // a new combat starts clean
+                         combatEdgeTrace(now, edgeFlags); handoffTick(now, edgeFlags); roundOrderTick(now, edgeFlags); roundWatchTick(now); }   // unreadable HUD flags: no hand-off and no drop, the buffers wait
         return;
     }
     party::Fail why = party::F_None;

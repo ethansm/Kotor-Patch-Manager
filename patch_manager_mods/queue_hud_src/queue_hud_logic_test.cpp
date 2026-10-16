@@ -790,6 +790,28 @@ void testPanelHoldAndSlotRules() {
     char kl[120];
     fmtHandoffKeep(kl, sizeof kl, 0, 7, 5, 2);
     KT_CHECK(strcmp(kl, "HANDOFF_KEEP m=0 cmd=7 ne=5 round=2") == 0);
+    // roundPartition: the player's new click (foreign) ends up last, everything else keeps its order
+    {
+        int o[4];
+        const uint32_t foreign[1] = {0xA1};
+        const uint32_t p1[2] = {0xA1, 0xB1};                        // [attack, ours]
+        KT_CHECK(roundPartition(p1, 2, foreign, 1, o) == 2 && o[0] == 1 && o[1] == 0);
+        const uint32_t p2[3] = {0xA1, 0xB1, 0xB2};                  // [attack, ours, ours]
+        KT_CHECK(roundPartition(p2, 3, foreign, 1, o) == 3 && o[0] == 1 && o[1] == 2 && o[2] == 0);
+        const uint32_t p3[3] = {0xB1, 0xA1, 0xB2};                  // [ours, attack, ours]
+        KT_CHECK(roundPartition(p3, 3, foreign, 1, o) == 2 && o[0] == 0 && o[1] == 2 && o[2] == 1);
+        const uint32_t p4[3] = {0xB1, 0xB2, 0xA1};                  // already ordered
+        KT_CHECK(roundPartition(p4, 3, foreign, 1, o) == 0 && o[0] == 0 && o[1] == 1 && o[2] == 2);
+        const uint32_t p5[2] = {0xB1, 0xB2};                        // no foreign present
+        KT_CHECK(roundPartition(p5, 2, foreign, 1, o) == 0);
+        KT_CHECK(roundPartition(p5, 0, foreign, 1, o) == 0);
+        const uint32_t f2[2] = {0xA1, 0xA2};                        // two foreign nodes keep their relative order
+        const uint32_t p6[4] = {0xA1, 0xA2, 0xB1, 0xB2};
+        KT_CHECK(roundPartition(p6, 4, f2, 2, o) == 4 && o[0] == 2 && o[1] == 3 && o[2] == 0 && o[3] == 1);
+        char rr[80];
+        fmtRoundRot(rr, sizeof rr, 0, 3, 2, true);
+        KT_CHECK(strcmp(rr, "ROUND_ROT m=0 n=3 moved=2 ok=1") == 0);
+    }
 }
 
 // ---- T1 HANDOFF_CLEAR / ROUND formatter goldens, clamp and tiny-buffer behaviour ----

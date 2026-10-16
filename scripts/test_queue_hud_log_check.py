@@ -707,6 +707,11 @@ class NewSectionTests(unittest.TestCase):
 
 
 class RoundParseTests(unittest.TestCase):
+    def test_golden_round_rot_parses(self):
+        recs, skipped = parse(["ROUND_ROT m=0 n=3 moved=2 ok=1"])
+        self.assertEqual(skipped, [])
+        self.assertEqual((recs[0]["kw"], recs[0]["f"]["moved"], recs[0]["f"]["ok"]), ("ROUND_ROT", "2", "1"))
+
     def test_golden_handoff_keep_parses(self):
         recs, skipped = parse(["HANDOFF_KEEP m=0 cmd=7 ne=5 round=2"])
         self.assertEqual(skipped, [])
