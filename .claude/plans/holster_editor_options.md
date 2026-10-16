@@ -3,18 +3,22 @@
 Status: PIVOTED 2026-10-16. User decision: "instead of being in the equip screen, create the dedicated options screen so it's
 independent from that patch. Users might not have an ultrawide monitor to run the ultrawide menus it relies on. Putting it in
 the options is a more robust solution."
+Confirmed 10-16: the equip-screen editor is ABANDONED; the page lives in the IN-GAME Options screen (not the title-screen
+Options: no save loaded there, so no party bodies).
+User 10-16 (later): build a SHARED 3D preview PROVIDER DLL (`preview-3d`, interface `k2.preview3d@1`) and use it in
+holster-editor; a follow-up step migrates equipment-3d-character onto the same provider (P-MIG, after the editor ships).
 
 Supersedes the HE3/HE4/HE5 phases of plan HW-EDIT v1 (equip-screen editor; text in transcript acdd1f4e and in the handoff).
 HE0, HE1, HE2 and HE6 carry over. Options study: `.claude/research/holster_edit/UX_OPTIONS.md` (O2a).
 
 ## 0. Fixed constraints
 - Separate patch `holster-editor` (`patch_manager_mods/holster_editor_src/`):
-  - `kind = "patch"`, `requires = ["holster"]`, `requires_interfaces = ["k2.holster@1"]`.
+  - `kind = "patch"`, `requires = ["holster", "preview-3d"]`, `requires_interfaces = ["k2.holster@1", "k2.preview3d@1"]`.
   - No dependency on equipment-3d-character, inventory-3d-viewport or the ultrawide GUI work.
 - **Must work on the vanilla `optionsingame_p.gui` and on an ultrawide override of it.** All positions are measured at
   runtime from the panel's own control rects (by tag). No hard-coded pane coordinates.
 - Holster stays `kind = "patch"`: KPM skips an unrequired provider (`DependencyValidator.cs:293`). It provides `k2.holster@1`
-  from KPatchInit (ranged-ai precedent). equip3d is not touched by this plan, except the shared-code extraction in D1.
+  from KPatchInit (ranged-ai precedent). equip3d is not touched until P-MIG (its migration onto `k2.preview3d`).
 - Holster owns data, pose maths and holster.ini; the editor owns only UI.
 - Installs:
   - A new patch or hook = `kpm_reinstall.py` with the game closed and the user's GO.
@@ -26,7 +30,7 @@ HE0, HE1, HE2 and HE6 carry over. Options study: `.claude/research/holster_edit/
 - **HE0** preview probe: `PREVIEWNODE`/`CAMNODE`, kpatch 19a54e80 prepared + re-gated, `--apply` awaits GO; play row HW-C6.
   - Still useful: it proves the attach refresh 0x504D40 runs in a menu scene, and that menu-scene model and body names match the world.
 - **HE1** landed `03aa85d`: `HolsterEdit.h`, `HolsterTune.h` (model/body/left tables), `HolsterIniWrite.h`,
-  `_shared_src/HolsterApi.h`, `_shared_src/GearIconTex.inc`, `equipment_3d_character_src/Equip3dEdit.h` (moves in D1).
+  `_shared_src/HolsterApi.h`, `_shared_src/GearIconTex.inc`, `Equip3dEdit.h` (split 10-16: generic parts -> `_shared_src/EditKit.h`, modal layout -> `holster_editor_src/HseLayout.h`, equip-only parts deleted).
 - **HE2** holster wiring, as in v1 §3 HE2, with one comment change: `HolsterApi.h:3-4` must say "the holster-editor patch" instead of equip3d.
   - provide k2.holster;
   - preview fast path first in HolsterPlace (registry ≤8, parent/node drop check, `g_nPreview` guard, editor=1 boot key);
@@ -61,7 +65,7 @@ HE0, HE1, HE2 and HE6 carry over. Options study: `.claude/research/holster_edit/
    - Fallback if a .gui edit is unacceptable: D2-C's runtime option.
    - Scene: `sceneview::createView` → `initScene("gui3D_room")` → rig `charrec_light` → `cameraAttach("camerahook")`.
 4. **Body.**
-   - `Preview3d.h` (D1) builds a preview creature from a real party member's appearance (`+0x224` blob, BuildApp 0x76D200) and attaches the equipped weapons (item ids `+0x238/+0x23C`, model create 0x462320, Gob vt[0x50] "rhand"/"lhand").
+   - the `preview-3d` provider (D1) builds a preview creature from a real party member's appearance (`+0x224` blob, BuildApp 0x76D200) and attaches the equipped weapons (item ids `+0x238/+0x23C`, model create 0x462320, Gob vt[0x50] "rhand"/"lhand").
    - Picker `◀ name ▶` over the party (D2-D gives the enumeration and names).
    - The weapon model name must equal the in-world `[Gob+0x84]+0x08` name (D2-D; HE0 check 3).
 5. **Holster link.**
@@ -129,13 +133,15 @@ HE0, HE1, HE2 and HE6 carry over. Options study: `.claude/research/holster_edit/
   - So swapping only `panel+0x30` (and `+0x34`) works.
   - Open, checked first in D3a with a log-only probe: does a second live open of `hse_view.gui` get data (descriptor-owner check 0x712B60), and what is `DAT_00A1B9F0` at runtime?
   - Original brief: the second-layout route V1. Layout open/free behind 0x40EE40, the `panel+0x30` handle type, whether a swapped handle is safe for `InitControl` 0x40F620, and rect scaling. Verdict decides V1 vs V2 before D3a.
-- **D1** shared extraction (Sonnet worker, Opus review; equip3d hot-swap, no behaviour change):
-  - `_shared_src/EditKit.h`: `Box`, Repeat, slider, dragMode, midClick, fmtValue, from `Equip3dEdit.h` + tests. Also drop the duplicate `Box` in `hud_host_src/HhStrip.h` if that is trivial; otherwise leave it.
-  - `_shared_src/Preview3d.h`: Viewer struct + body/weapon/view/drag functions from `EquipCharPreview.cpp` (ranges from d2d).
-  - equip3d switches to it.
-  - Delete `Equip3dEdit.h`'s weaponRow/tipFor (unused, never wired). Move `modalLayout`/`legendText` to `holster_editor_src/HseLayout.h`.
-  - Gates: `compat_check.py` + Common sync, `run_tests.py equip3d`, equip3d `pre_install_gate`.
-  - Play row: equip preview unchanged (EQ4/8/9).
+- **D1** editor-owned code, equip3d untouched (no equip3d build, gate or play recheck):
+  - DONE/in progress 10-16: `_shared_src/EditKit.h` (Box, Repeat, slider, dragMode, midClick, fmtValue) + `holster_editor_src/HseLayout.h` (modalLayout, legendText); `Equip3dEdit.h` deleted.
+  - **D1b provider `preview-3d`** (`patch_manager_mods/preview_3d_src/`, `kind = "provider"`, `provides = ["k2.preview3d@1"]`, no hooks of its own; header `_shared_src/Preview3dApi.h` with `struct_size` first + `k2p3::Client`, RangedAI.h/HudHost.h pattern):
+    - Implementation ported from the equip3d recipe (`EquipCharPreview.cpp` ranges in d2d §3: allocCreature/readApp/buildPreview, attach/detach/refresh weapons, destroyCreature, applyView, drag/zoom); pure parts in a host-tested `Preview3dLogic.h`. Weapon model = item ResRef `+0x128`.
+    - Per-viewer handles (token), so several panels can own viewers; all engine calls on the caller's thread.
+    - Interface sketch (from ux_d §2, refine in D1b): `CreateView(panel, tag)` (ctor window only), `Bind(token, creature)`, `Rebuild`, `SetWeapons(on)`, `WeaponGob(token, hand)` (for holster RegisterPreview), `SetView(yaw, zoom, panZ)`, `PlayAnim(name)`, `RigGob` (camerahook for camera axes), `Destroy(token)`; callbacks or a `BeforeFree(token)` hook so consumers unregister holster Gobs before weapons are freed.
+    - Gates: `check_provider_manifests.py`, host tests, `pre_install_gate.sh --mod preview_3d_src`; installs with D3a (one reinstall).
+  - Gates: `compat_check.py` + Common sync for EditKit.h and Preview3dApi.h; host tests.
+- **P-MIG** (after D3d ships and plays OK): equipment-3d-character switches to `k2.preview3d` (requires preview-3d), deleting its own body/weapon code; equip3d play recheck EQ4/8/9.
 - **D3a** skeleton patch (reinstall, GO):
   - `holster_editor_src/` with manifest, hooks (ctor, tick, destroy), `exports.def`, KpLog patch `holster-editor`, `holster_editor.ini` (`enabled=1`, `debug=0`);
   - `scripts/add_options_holster_controls.py` + test;
@@ -146,14 +152,14 @@ HE0, HE1, HE2 and HE6 carry over. Options study: `.claude/research/holster_edit/
 - **D3d** drag editing + legend (hot-swap): trackball rotate, screen move, depth, locks, fine/snap. Play row.
 - **HE6** after the playthrough (and HW7 for players).
 
-Order: HE0 GO → HE2 ∥ D2 → D1 → D3a → D3b → D3c → D3d. Haiku-first for workers (one retry, then one Sonnet). Opus gates and commits with explicit paths.
+Order: HE0 GO → HE2 ∥ D2 (+ D2f embedded layout, D2 wave 2: mouse routing, two live scenes, weapon fields, clone templates) → D1 → D3a → D3b → D3c → D3d. Haiku-first for workers (one retry, then one Sonnet). Opus gates and commits with explicit paths.
 
 ## 4. Verification (end to end)
 - Host tests:
-  - `run_tests.py holster holster_edit holster_tune holster_iniwrite equip3d edit_kit preview3d holster_editor` PASS;
+  - `run_tests.py holster holster_edit holster_tune holster_iniwrite editkit hse_layout preview3d holster_editor` PASS;
   - `test_add_options_holster_controls.py` PASS;
   - `check_provider_manifests.py` FAIL=0.
-- Gates: GATE PASS for holster, equip3d and holster-editor. `kpm_status.py` shows all three LIVE.
+- Gates: GATE PASS for holster, preview-3d and holster-editor. `kpm_status.py` shows all LIVE; equip3d md5 unchanged until P-MIG.
 - Live:
   - the button shows on the vanilla Options layout and on the ultrawide one;
   - the editor works with equip3d uninstalled;
