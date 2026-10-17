@@ -60,7 +60,7 @@ typedef struct KPatchApi {
 /* Stream filter return codes */
 #define K2VFS_STREAM_PASS    0 /* Not handled; pass to next filter or disk */
 #define K2VFS_STREAM_MEMORY  1 /* Filter populated *out_data and *out_size (> 0); stream from memory */
-#define K2VFS_STREAM_REWRITE 2 /* Filter wrote a new path/spec into out_resolved_path */
+#define K2VFS_STREAM_REWRITE 2 /* DISABLED: treated as K2VFS_STREAM_PASS (one WARN per owner) */
 
 /* Interface 2: k2.characterlib v1 */
 #define K2_CHARLIB_IFACE   "k2.characterlib"
@@ -92,18 +92,40 @@ typedef struct K2Vfs2DaCell {
  * (resref, res_type). resref is lowercase null-terminated (up to 16 chars).
  * If the callback fills *out_entry (data != NULL, size > 0) and returns 1, asset-vfs registers
  * that asset into the VFS registry and immediately services it via ServiceFromImage (0x00713E83).
- * Return 0 to pass to the next handler / vanilla miss. */
+ * Return 0 to pass to the next handler / vanilla miss.
+ *
+ * Contract:
+ *   - The data is COPIED by asset-vfs before the callback's claim is registered: *out_entry->data
+ *     need only stay valid until the callback returns. The copy is owned by the handler's token and
+ *     freed (unless already served to the engine) by UnregisterResManMissHandler.
+ *   - Called on the engine's main thread, WITHOUT any asset-vfs lock held, so the callback may call
+ *     back into the k2.assetvfs API. A re-entrant GetKeyEntry miss raised from inside a callback is
+ *     answered as a plain miss without calling any handler.
+ *   - Handlers are asked in registration slot order; the first one to claim (return 1 with data) wins.
+ *   - A (resref, res_type) every handler declined is remembered in a bounded negative cache and not
+ *     asked again until ANY RegisterAsset / RegisterAssets / RegisterResManMissHandler call. A handler
+ *     whose answer can change must therefore re-register (or register an asset) when it does. */
 typedef int32_t (KPATCH_CALL *K2VfsResManMissFn)(
     const char* resref,
     uint16_t res_type,
     K2VfsAssetEntry* out_entry,
     void* user);
 
-/* Called on StreamingSource::OpenStream (0x0070CB76) when resolving a candidate stream path
- * (e.g. "HD0:STREAMVOICE\\kvjv0001.wav") with stream_kind (+0x148).
+/* Called on StreamingSource::OpenStream (0x0070CB76) when resolving the stream's primary candidate path
+ * (the string at this+0x28, e.g. "HD0:STREAMVOICE\\kvjv0001.wav") with stream_kind (+0x148).
+ * Filters are called ONLY for stream_kind 4 and 8 and ONLY for that primary candidate (the fallback
+ * candidates at this+0x30.. are resolved against the static registry only), on the engine's main
+ * thread, with no asset-vfs lock held.
  * Return K2VFS_STREAM_MEMORY (1) and set *out_data / *out_size (> 0) to stream an in-memory
- * audio buffer (58-byte VO, 470-byte SFX, or raw WAV/MP3) via asset-vfs's Miles cursor table;
- * Return K2VFS_STREAM_REWRITE (2) and write a replacement path into out_resolved_path (capacity path_cap);
+ * audio buffer (58-byte VO, 470-byte SFX, or plain RIFF/MP3) via asset-vfs's Miles cursor table.
+ *   - The buffer is COPIED before the callback's claim is registered; it need only stay valid until
+ *     the callback returns. The copy is owned by the filter's token and freed (unless already served)
+ *     by UnregisterStreamFilter.
+ *   - The record is keyed by the full normalised candidate path (lowercase, '/' -> '\\'). A MEMORY claim
+ *     on a file stem already owned by a DIFFERENT candidate path is rejected (one WARN) and treated as PASS.
+ *   - Filters are asked in registration slot order; the first to claim wins.
+ * K2VFS_STREAM_REWRITE (2) is DISABLED: it is treated as K2VFS_STREAM_PASS (one WARN per owner), because
+ * a rewritten path could not be told apart from a disk spec by the Miles file callbacks.
  * Return K2VFS_STREAM_PASS (0) to pass through. */
 typedef int32_t (KPATCH_CALL *K2VfsStreamFilterFn)(
     const char* candidate_path,
@@ -134,7 +156,7 @@ typedef struct K2CharacterDefinition {
     const char* default_utc;    /* e.g. "k1p_juhani" */
     const char* default_dlg;    /* e.g. "kvjdlg01" */
     uint32_t appearance_id;     /* Virtual 2DA appearance row (e.g. 818) */
-    uint32_t head_id;           /* Virtual 2DA heads row (e.g. 250) */
+    uint32_t head_id;           /* Virtual 2DA heads row (e.g. 249; 250 is Carth's) */
     uint32_t soundset_id;       /* Virtual soundset row (e.g. 70) */
 } K2CharacterDefinition;
 

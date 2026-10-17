@@ -90,6 +90,74 @@ static uint8_t* testAlloc(uint32_t sz) {
     return static_cast<uint8_t*>(p);
 }
 
+
+static int g_allocCalls = 0;
+static int g_freeCalls = 0;
+static uint8_t* countingAlloc(uint32_t sz) {
+    g_allocCalls++;
+    return static_cast<uint8_t*>(std::malloc(sz));
+}
+static void countingFree(void* p) {
+    g_freeCalls++;
+    std::free(p);
+}
+
+// ---- fake Miles (callback chaining tests) ----
+struct MilesCallLog {
+    int open, close, seek, read;
+    uint32_t lastHandle;
+    char lastName[300];
+};
+static MilesCallLog g_defLog, g_otherLog;
+static assetvfs::MilesCallbackSet g_milesCur;
+static int g_milesSetCalls = 0;
+static int g_milesChanged = 0;
+static int g_milesNoDefaults = 0;
+static bool g_milesHasDefaults = true;
+
+static uint32_t defOpen(const char* n, uint32_t* h) { g_defLog.open++; std::snprintf(g_defLog.lastName, sizeof(g_defLog.lastName), "%s", n); *h = 0x8ABCDEF0u; return 1; }
+static void defClose(uint32_t h) { g_defLog.close++; g_defLog.lastHandle = h; }
+static int32_t defSeek(uint32_t h, int32_t, uint32_t) { g_defLog.seek++; g_defLog.lastHandle = h; return 55; }
+static uint32_t defRead(uint32_t h, void*, uint32_t) { g_defLog.read++; g_defLog.lastHandle = h; return 77; }
+static uint32_t othOpen(const char* n, uint32_t* h) { g_otherLog.open++; std::snprintf(g_otherLog.lastName, sizeof(g_otherLog.lastName), "%s", n); *h = 0x7ABCDEF0u; return 1; }
+static void othClose(uint32_t h) { g_otherLog.close++; g_otherLog.lastHandle = h; }
+static int32_t othSeek(uint32_t h, int32_t, uint32_t) { g_otherLog.seek++; g_otherLog.lastHandle = h; return 11; }
+static uint32_t othRead(uint32_t h, void*, uint32_t) { g_otherLog.read++; g_otherLog.lastHandle = h; return 22; }
+static uint32_t ourOpen(const char*, uint32_t*) { return 0; }
+static void ourClose(uint32_t) {}
+static int32_t ourSeek(uint32_t, int32_t, uint32_t) { return 0; }
+static uint32_t ourRead(uint32_t, void*, uint32_t) { return 0; }
+
+static assetvfs::MilesCallbackSet makeSet(assetvfs::AilOpenCb o, assetvfs::AilCloseCb c, assetvfs::AilSeekCb s, assetvfs::AilReadCb r) {
+    assetvfs::MilesCallbackSet m;
+    m.open = o; m.close = c; m.seek = s; m.read = r;
+    return m;
+}
+static assetvfs::MilesCallbackSet defaultsSet() { return makeSet(defOpen, defClose, defSeek, defRead); }
+static assetvfs::MilesCallbackSet otherSet() { return makeSet(othOpen, othClose, othSeek, othRead); }
+static assetvfs::MilesCallbackSet oursSet() { return makeSet(ourOpen, ourClose, ourSeek, ourRead); }
+
+static void fakeMilesGet(assetvfs::MilesCallbackSet* out) { *out = g_milesCur; }
+static void fakeMilesSet(const assetvfs::MilesCallbackSet& s) {
+    g_milesSetCalls++;
+    if (!s.open && !s.close && !s.seek && !s.read) {
+        g_milesCur = g_milesHasDefaults ? defaultsSet() : assetvfs::MilesCallbackSet();
+    } else {
+        g_milesCur = s;
+    }
+}
+static void fakeMilesNotice(int code) {
+    if (code == assetvfs::kMilesNoticeChanged) g_milesChanged++;
+    if (code == assetvfs::kMilesNoticeNoDefaults) g_milesNoDefaults++;
+}
+static void resetMilesFakes() {
+    std::memset(&g_defLog, 0, sizeof(g_defLog));
+    std::memset(&g_otherLog, 0, sizeof(g_otherLog));
+    g_milesCur = defaultsSet();
+    g_milesSetCalls = g_milesChanged = g_milesNoDefaults = 0;
+    g_milesHasDefaults = true;
+}
+
 static int g_servicedCalls = 0;
 static void* g_lastServiced = nullptr;
 static int testServiced(void* r) {
@@ -295,11 +363,15 @@ int main() {
     KT_CHECK(state.cursors.close(h));
     KT_CHECK_EQ(state.cursors.read(h, readBuf, 10), 0u);
 
-    // Fallback direct name parsing
+    // Non-VFS names are never claimed by stem: bare names and disk specs go to Miles' own callbacks
     uint32_t hDirect = 0;
-    KT_CHECK(state.parseVfsStreamSpec("kvjv0001", &hDirect));
-    KT_CHECK(state.cursors.isVfsHandle(hDirect));
-    state.cursors.close(hDirect);
+    KT_CHECK(!state.parseVfsStreamSpec("kvjv0001", &hDirect));
+    KT_CHECK_EQ(hDirect, 0u);
+    KT_CHECK(!state.parseVfsStreamSpec("*C:\\x\\streamvoice\\kvjv0001.wav*100*0", &hDirect));
+    KT_CHECK(!state.parseVfsStreamSpec("StreamVoice/kvjv0001.wav", &hDirect));
+    // a dead slot or a missing/odd index is not served either
+    KT_CHECK(!state.parseVfsStreamSpec("#*VFS_200.wav", &hDirect));
+    KT_CHECK(!state.parseVfsStreamSpec("#*VFS_x.wav", &hDirect));
 
     // -------------------------------------------------------------
     // 5. Miss Handlers (RegisterResManMissHandler / Unregister)
@@ -346,6 +418,18 @@ int main() {
     KT_CHECK_EQ(missCtx.calls, 1);
     KT_CHECK(std::strcmp(missCtx.lastResref, "dyn_item") == 0);
     KT_CHECK_EQ(missCtx.lastType, vfsreg::ResTypeUtc);
+
+    // The decline above is negative-cached: asking again does not call the handler
+    KT_CHECK_EQ(state.handleGetKeyEntryMiss("dyn_item", vfsreg::ResTypeUtc, &table, &entry), 0);
+    KT_CHECK_EQ(missCtx.calls, 1);
+    // ... until any Register* call clears the cache
+    const uint8_t unrelated[] = { 'x' };
+    KT_CHECK(state.registerAsset("unrelated", vfsreg::ResTypeDlg, unrelated, sizeof(unrelated), 0, false, "t") >= 0);
+    missCtx.returnCode = 0;
+    KT_CHECK_EQ(state.handleGetKeyEntryMiss("dyn_item", vfsreg::ResTypeUtc, &table, &entry), 0);
+    KT_CHECK_EQ(missCtx.calls, 2);
+    KT_CHECK(state.registerAsset("unrelated2", vfsreg::ResTypeDlg, unrelated, sizeof(unrelated), 0, false, "t") >= 0);
+    missCtx.calls = 1;
 
     // Handled (return 1) -> dynamically registered & returned
     const uint8_t dynData[] = { 'D', 'Y', 'N', 'A', 'M', 'I', 'C', '_', 'V', 'F', 'S' };
@@ -476,14 +560,29 @@ int main() {
     KT_CHECK_EQ(streamReadBuf[9], dynAudio[67]);
     state.cursors.close(dynH);
 
-    // Case C: K2VFS_STREAM_REWRITE (2)
+    // Case C: K2VFS_STREAM_REWRITE (2) is disabled: treated as PASS + exactly one notice per owner
+    static int rewriteNotices;
+    static char rewriteOwner[32];
+    rewriteNotices = 0;
+    rewriteOwner[0] = '\0';
+    state.noticeFn = [](int code, const char*, const char* owner) {
+        if (code == assetvfs::kNoticeRewriteIgnored) {
+            rewriteNotices++;
+            std::snprintf(rewriteOwner, sizeof(rewriteOwner), "%s", owner);
+        }
+    };
     streamCtx.returnCode = K2VFS_STREAM_REWRITE;
     streamCtx.rewriteTarget = "Custom/voice_pack_01.wav";
 
     std::memset(streamSpec, 0, sizeof(streamSpec));
-    KT_CHECK(state.resolveStreamSpec("StreamVoice/original.wav", 8, streamSpec, sizeof(streamSpec)));
+    KT_CHECK(!state.resolveStreamSpec("StreamVoice/original.wav", 8, streamSpec, sizeof(streamSpec)));
     KT_CHECK_EQ(streamCtx.calls, 3);
-    KT_CHECK(std::strcmp(streamSpec, "Custom/voice_pack_01.wav") == 0);
+    KT_CHECK(streamSpec[0] == '\0');
+    KT_CHECK(!state.resolveStreamSpec("StreamVoice/original2.wav", 8, streamSpec, sizeof(streamSpec)));
+    KT_CHECK_EQ(streamCtx.calls, 4);
+    KT_CHECK_EQ(rewriteNotices, 1);
+    KT_CHECK(std::strcmp(rewriteOwner, "filter_mod") == 0);
+    state.noticeFn = nullptr;
 
     // Case D: Unregister stops callback
     state.unregisterStreamFilter(tokFilter);
@@ -491,7 +590,7 @@ int main() {
     streamCtx.rewriteTarget = "Custom/should_not_reach.wav";
     std::memset(streamSpec, 0, sizeof(streamSpec));
     KT_CHECK(!state.resolveStreamSpec("StreamVoice/unregistered.wav", 8, streamSpec, sizeof(streamSpec)));
-    KT_CHECK_EQ(streamCtx.calls, 3); // Unchanged
+    KT_CHECK_EQ(streamCtx.calls, 4); // Unchanged
 
     // Test stream filter slot capacity limit (16 max)
     int32_t sTokens[assetvfs::EngineState::kMaxStreamFilters];
@@ -601,7 +700,9 @@ int main() {
         for (size_t i = 0; i < sizeof(audio); ++i) audio[i] = static_cast<uint8_t>(i);
         KT_CHECK(state.reg.registerAsset("snd_one", vfsreg::ResTypeWav, audio, sizeof(audio), vfsreg::FlagMilesStream) >= 0);
         uint32_t hh = 0;
-        KT_CHECK(state.parseVfsStreamSpec("snd_one", &hh));
+        char sndSpec[64] = {0};
+        KT_CHECK(state.resolveStreamSpec("StreamSounds/snd_one.wav", 4, sndSpec, sizeof(sndSpec)));
+        KT_CHECK(state.parseVfsStreamSpec(sndSpec, &hh));
         KT_CHECK_EQ(hh, 0xFFFF0001u);
         KT_CHECK(state.isVfsHandle(hh));
         KT_CHECK(!state.isVfsHandle(0x8ABCDEF0u));
@@ -666,11 +767,434 @@ int main() {
         state.noticeFn = nullptr;
     }
 
+    // -------------------------------------------------------------
+    // 10. H1 zero-handler fast path predicate (type counters, handler counter)
+    // -------------------------------------------------------------
+    state.reset();
+    {
+        KT_CHECK(state.missCannotHit(vfsreg::ResTypeUtc));
+        KT_CHECK(state.missCannotHit(vfsreg::ResTypeDlg));
+        const uint8_t d[] = { 'F', 'P' };
+        KT_CHECK(state.registerAsset("fp_asset", vfsreg::ResTypeUtc, d, sizeof(d), 0, false, "t") >= 0);
+        KT_CHECK(!state.missCannotHit(vfsreg::ResTypeUtc));
+        KT_CHECK(state.missCannotHit(vfsreg::ResTypeDlg));
+        // a stream record is not a ResMan record
+        KT_CHECK(state.registerAsset("fp_stream", vfsreg::ResTypeWav, d, sizeof(d), vfsreg::FlagMilesStream, false, "t") >= 0);
+        KT_CHECK(state.missCannotHit(vfsreg::ResTypeWav));
+        auto passFn = [](const char*, uint16_t, K2VfsAssetEntry*, void*) -> int32_t { return 0; };
+        int32_t t1 = state.registerMissHandler(passFn, nullptr, "a");
+        KT_CHECK(!state.missCannotHit(vfsreg::ResTypeDlg));
+        state.unregisterMissHandler(t1);
+        state.unregisterMissHandler(t1); // double unregister must not underflow the counter
+        KT_CHECK(state.missCannotHit(vfsreg::ResTypeDlg));
+        state.enabled = false;
+        KT_CHECK(state.missCannotHit(vfsreg::ResTypeUtc));
+        state.enabled = true;
+    }
+
+    // -------------------------------------------------------------
+    // 11. Miss handler data is COPIED, owner-tagged, evicted on unregister unless served
+    // -------------------------------------------------------------
+    state.reset();
+    {
+        g_allocCalls = g_freeCalls = 0;
+        state.copyAllocFn = countingAlloc;
+        state.copyFreeFn = countingFree;
+        static int servedKeptNotices;
+        static char keptWhat[16];
+        servedKeptNotices = 0;
+        state.noticeFn = [](int code, const char* what, const char*) {
+            if (code == assetvfs::kNoticeServedKept) {
+                servedKeptNotices++;
+                std::snprintf(keptWhat, sizeof(keptWhat), "%s", what);
+            }
+        };
+
+        struct Ctx { uint8_t buf[8]; int claim; } ctx = {{ 1, 2, 3, 4, 5, 6, 7, 8 }, 1};
+        auto claimFn = [](const char* resref, uint16_t t, K2VfsAssetEntry* out, void* user) -> int32_t {
+            auto* c = static_cast<Ctx*>(user);
+            if (!c->claim) return 0;
+            out->resref = resref; out->res_type = t; out->flags = K2VFS_FLAG_RESMAN;
+            out->data = c->buf; out->size = sizeof(c->buf);
+            return 1;
+        };
+        int32_t tok = state.registerMissHandler(claimFn, &ctx, "owner_a");
+        KT_CHECK(tok > 0);
+
+        void* tb = nullptr; void* en = nullptr;
+        KT_CHECK_EQ(state.handleGetKeyEntryMiss("copy_me", vfsreg::ResTypeUtc, &tb, &en), 1);
+        KT_CHECK_EQ(g_allocCalls, 1);
+        auto* key = static_cast<vfsreg::KeyTableEntry*>(en);
+        size_t idx = vfsreg::indexFromPackedId(key->packedId);
+        KT_CHECK(state.reg.records[idx].data != ctx.buf); // provider-owned copy, not the handler's pointer
+        KT_CHECK(state.dynOf(idx).token == tok);
+        std::memset(ctx.buf, 0xEE, sizeof(ctx.buf));      // handler reuses its buffer
+        KT_CHECK_EQ(state.reg.records[idx].data[0], 1u);
+        KT_CHECK_EQ(state.reg.records[idx].data[7], 8u);
+
+        // unregister: unserved record is evicted, copy freed, type counter back to zero
+        state.unregisterMissHandler(tok);
+        KT_CHECK_EQ(g_freeCalls, 1);
+        KT_CHECK(!state.reg.records[idx].active);
+        KT_CHECK(state.reg.findResMan("copy_me", vfsreg::ResTypeUtc) == nullptr);
+        KT_CHECK(state.missCannotHit(vfsreg::ResTypeUtc));
+        KT_CHECK_EQ(servedKeptNotices, 0);
+
+        // served record survives unregister (data intact) with one notice
+        std::memcpy(ctx.buf, "\x01\x02\x03\x04\x05\x06\x07\x08", 8);
+        tok = state.registerMissHandler(claimFn, &ctx, "owner_b");
+        KT_CHECK_EQ(state.handleGetKeyEntryMiss("keep_me", vfsreg::ResTypeUtc, &tb, &en), 1);
+        key = static_cast<vfsreg::KeyTableEntry*>(en);
+        idx = vfsreg::indexFromPackedId(key->packedId);
+        uint8_t res[0x40] = {0};
+        *reinterpret_cast<uint32_t*>(res + assetvfs::kResOffPackedId) = key->packedId;
+        KT_CHECK_EQ(state.handleServiceFromImage(res, testAlloc, nullptr), 1);
+        int freesBefore = g_freeCalls;
+        state.unregisterMissHandler(tok);
+        KT_CHECK_EQ(g_freeCalls, freesBefore);
+        KT_CHECK(state.reg.records[idx].active);
+        KT_CHECK_EQ(state.reg.records[idx].data[3], 4u);
+        KT_CHECK_EQ(servedKeptNotices, 1);
+        KT_CHECK(std::strcmp(keptWhat, "1") == 0);
+        // a later lookup of the served key still hits
+        KT_CHECK_EQ(state.handleGetKeyEntryMiss("keep_me", vfsreg::ResTypeUtc, &tb, &en), 1);
+
+        // one owner's eviction leaves another owner's unserved record alone
+        int32_t tokA = state.registerMissHandler(claimFn, &ctx, "owner_c");
+        int32_t tokB = state.registerMissHandler(claimFn, &ctx, "owner_d");
+        // handlers are asked in slot order: owner_c claims first
+        KT_CHECK_EQ(state.handleGetKeyEntryMiss("first_claim", vfsreg::ResTypeUtc, &tb, &en), 1);
+        size_t ownedIdx = vfsreg::indexFromPackedId(static_cast<vfsreg::KeyTableEntry*>(en)->packedId);
+        KT_CHECK(state.dynOf(ownedIdx).token == tokA);
+        state.unregisterMissHandler(tokB);
+        KT_CHECK(state.reg.records[ownedIdx].active);
+        state.unregisterMissHandler(tokA);
+        KT_CHECK(!state.reg.records[ownedIdx].active);
+
+        // a handler unregistered while its callback runs does not leave an orphan record behind
+        static assetvfs::EngineState* selfState;
+        static int32_t selfTok;
+        selfState = &state;
+        auto selfRemoveFn = [](const char* resref, uint16_t t, K2VfsAssetEntry* out, void* user) -> int32_t {
+            auto* c = static_cast<Ctx*>(user);
+            selfState->unregisterMissHandler(selfTok);
+            out->resref = resref; out->res_type = t; out->flags = K2VFS_FLAG_RESMAN;
+            out->data = c->buf; out->size = sizeof(c->buf);
+            return 1;
+        };
+        selfTok = state.registerMissHandler(selfRemoveFn, &ctx, "owner_e");
+        int allocsBefore = g_allocCalls;
+        freesBefore = g_freeCalls;
+        KT_CHECK_EQ(state.handleGetKeyEntryMiss("orphan_x", vfsreg::ResTypeUtc, &tb, &en), 0);
+        KT_CHECK(tb == nullptr);
+        KT_CHECK_EQ(g_allocCalls - allocsBefore, g_freeCalls - freesBefore); // copy made and freed
+
+        state.noticeFn = nullptr;
+        state.reset();
+        state.copyAllocFn = assetvfs::defaultCopyAlloc;
+        state.copyFreeFn = assetvfs::defaultCopyFree;
+    }
+
+    // -------------------------------------------------------------
+    // 12. Negative cache + recursion guard
+    // -------------------------------------------------------------
+    state.reset();
+    {
+        static int outerCalls, innerResult, innerTable;
+        static assetvfs::EngineState* st;
+        outerCalls = 0; innerResult = -1; innerTable = -1;
+        st = &state;
+        auto reentrantFn = [](const char*, uint16_t, K2VfsAssetEntry*, void*) -> int32_t {
+            outerCalls++;
+            void* it = reinterpret_cast<void*>(0x1234);
+            void* ie = nullptr;
+            innerResult = st->handleGetKeyEntryMiss("inner_x", vfsreg::ResTypeUtc, &it, &ie);
+            innerTable = (it == nullptr) ? 1 : 0;
+            return 0;
+        };
+        KT_CHECK(state.registerMissHandler(reentrantFn, nullptr, "re") > 0);
+        void* tb = nullptr; void* en = nullptr;
+        KT_CHECK_EQ(state.handleGetKeyEntryMiss("outer_x", vfsreg::ResTypeUtc, &tb, &en), 0);
+        KT_CHECK_EQ(outerCalls, 1);      // the inner miss did not call the handler again
+        KT_CHECK_EQ(innerResult, 0);
+        KT_CHECK_EQ(innerTable, 1);      // ... and still zeroed *ppTable
+        KT_CHECK(!state.inMiss);
+        // inner_x was never asked of any handler, so it is not negative-cached: a fresh ask calls the handler
+        KT_CHECK_EQ(state.handleGetKeyEntryMiss("inner_x", vfsreg::ResTypeUtc, &tb, &en), 0);
+        KT_CHECK_EQ(outerCalls, 2);
+
+        // negative cache is keyed by (name, type)
+        state.reset();
+        static int declineCalls;
+        declineCalls = 0;
+        auto declineFn = [](const char*, uint16_t, K2VfsAssetEntry*, void*) -> int32_t { declineCalls++; return 0; };
+        KT_CHECK(state.registerMissHandler(declineFn, nullptr, "d") > 0);
+        KT_CHECK_EQ(state.handleGetKeyEntryMiss("nc_a", vfsreg::ResTypeUtc, &tb, &en), 0);
+        KT_CHECK_EQ(state.handleGetKeyEntryMiss("nc_a", vfsreg::ResTypeUtc, &tb, &en), 0);
+        KT_CHECK_EQ(declineCalls, 1);
+        KT_CHECK_EQ(state.handleGetKeyEntryMiss("nc_a", vfsreg::ResTypeDlg, &tb, &en), 0); // other type
+        KT_CHECK_EQ(declineCalls, 2);
+        KT_CHECK_EQ(state.handleGetKeyEntryMiss("NC_A", vfsreg::ResTypeUtc, &tb, &en), 0); // case-normalised
+        KT_CHECK_EQ(declineCalls, 2);
+        // RegisterMissHandler clears it
+        KT_CHECK(state.registerMissHandler(declineFn, nullptr, "d2") > 0);
+        KT_CHECK_EQ(state.handleGetKeyEntryMiss("nc_a", vfsreg::ResTypeUtc, &tb, &en), 0);
+        KT_CHECK_EQ(declineCalls, 4); // both handlers asked
+        // RegisterAssets path (registerAsset) clears it
+        const uint8_t one[] = { 1 };
+        KT_CHECK(state.registerAsset("whatever", vfsreg::ResTypeDlg, one, 1, 0, false, "t") >= 0);
+        KT_CHECK_EQ(state.handleGetKeyEntryMiss("nc_a", vfsreg::ResTypeUtc, &tb, &en), 0);
+        KT_CHECK_EQ(declineCalls, 6);
+        // a registration failure (pool full) is not a "nobody has it" answer: not cached
+        static int claimCalls;
+        claimCalls = 0;
+        auto claimFn2 = [](const char* r, uint16_t t, K2VfsAssetEntry* o, void*) -> int32_t {
+            claimCalls++;
+            static const uint8_t dd[] = { 9 };
+            o->resref = r; o->res_type = t; o->flags = 0; o->data = dd; o->size = 1;
+            return 1;
+        };
+        state.reset();
+        KT_CHECK(state.registerMissHandler(claimFn2, nullptr, "c") > 0);
+        // fill the dynamic pool
+        char nm[32];
+        for (size_t i = 0; i < vfsreg::Registry::kDynamicReserve; ++i) {
+            std::snprintf(nm, sizeof(nm), "fill_%02u", static_cast<unsigned>(i));
+            KT_CHECK_EQ(state.handleGetKeyEntryMiss(nm, vfsreg::ResTypeUtc, &tb, &en), 1);
+        }
+        KT_CHECK_EQ(state.handleGetKeyEntryMiss("overflow_a", vfsreg::ResTypeUtc, &tb, &en), 0);
+        int callsAfterFirst = claimCalls;
+        KT_CHECK_EQ(state.handleGetKeyEntryMiss("overflow_a", vfsreg::ResTypeUtc, &tb, &en), 0);
+        KT_CHECK_EQ(claimCalls, callsAfterFirst + 1); // asked again (not negative-cached)
+    }
+
+    // -------------------------------------------------------------
+    // 13. Stream filter: kinds, primary-candidate gate, copy, ownership, stem conflict, replay
+    // -------------------------------------------------------------
+    state.reset();
+    {
+        g_allocCalls = g_freeCalls = 0;
+        state.copyAllocFn = countingAlloc;
+        state.copyFreeFn = countingFree;
+        static int conflictNotices, keptNotices, fltCalls;
+        conflictNotices = keptNotices = fltCalls = 0;
+        state.noticeFn = [](int code, const char*, const char*) {
+            if (code == assetvfs::kNoticeStemConflict) conflictNotices++;
+            if (code == assetvfs::kNoticeServedKept) keptNotices++;
+        };
+
+        static uint8_t wav[64];
+        std::memcpy(wav, "RIFF", 4);
+        for (size_t i = 4; i < sizeof(wav); ++i) wav[i] = static_cast<uint8_t>(i);
+        auto memFn = [](const char*, uint16_t, const void** od, uint32_t* os, char*, uint32_t, void*) -> int32_t {
+            fltCalls++;
+            *od = wav; *os = sizeof(wav);
+            return K2VFS_STREAM_MEMORY;
+        };
+        int32_t tok = state.registerStreamFilter(memFn, nullptr, "voice_owner");
+        KT_CHECK(tok > 0);
+        char spec[64] = {0};
+
+        // kinds other than 4 / 8 never reach a filter; fallback candidates (allowFilters=false) neither
+        KT_CHECK(!state.resolveStreamSpec("StreamVoice/abc.wav", 1, spec, sizeof(spec)));
+        KT_CHECK(!state.resolveStreamSpec("StreamVoice/abc.wav", 0, spec, sizeof(spec)));
+        KT_CHECK(!state.resolveStreamSpec("StreamVoice/abc.wav", 8, spec, sizeof(spec), false));
+        KT_CHECK_EQ(fltCalls, 0);
+
+        // kind 4 and 8 do; plain RIFF is passed through unsliced; data is a provider-owned copy
+        KT_CHECK(state.resolveStreamSpec("StreamVoice/abc.wav", 4, spec, sizeof(spec)));
+        KT_CHECK_EQ(fltCalls, 1);
+        KT_CHECK_EQ(g_allocCalls, 1);
+        KT_CHECK(std::strstr(spec, ".wav") != nullptr);
+        size_t sidx = static_cast<size_t>(std::strtoul(spec + 6, nullptr, 10));
+        KT_CHECK(state.reg.records[sidx].data != wav);
+        KT_CHECK_EQ(state.reg.records[sidx].size, static_cast<uint32_t>(sizeof(wav)));
+        KT_CHECK(std::strcmp(state.dynOf(sidx).path, "streamvoice\\abc.wav") == 0);
+        KT_CHECK_EQ(state.reg.records[sidx].data[0], static_cast<uint8_t>('R'));
+        uint32_t ch = 0;
+        KT_CHECK(state.parseVfsStreamSpec(spec, &ch));
+        uint8_t rb[4] = {0};
+        KT_CHECK_EQ(state.cursorRead(ch, rb, 4), 4u);
+        KT_CHECK_EQ(rb[0], static_cast<uint8_t>('R')); // no slicing for plain RIFF
+        state.cursorClose(ch);
+
+        // same exact path again (any case / separator): served from the record, filter not asked again
+        char spec2[64] = {0};
+        KT_CHECK(state.resolveStreamSpec("STREAMVOICE\\ABC.WAV", 4, spec2, sizeof(spec2)));
+        KT_CHECK_EQ(fltCalls, 1);
+        KT_CHECK(std::strcmp(spec, spec2) == 0);
+
+        // a different path with the SAME stem is not served that record: the filter claim is rejected
+        char spec3[64] = {0};
+        KT_CHECK(!state.resolveStreamSpec("OtherDir/abc.wav", 8, spec3, sizeof(spec3)));
+        KT_CHECK_EQ(fltCalls, 2);
+        KT_CHECK_EQ(conflictNotices, 1);
+        KT_CHECK_EQ(state.reg.findStream("abc")->data[0], static_cast<uint8_t>('R'));
+
+        // no synthetic vfs_flt_* retry records exist
+        KT_CHECK(state.reg.findStream("vfs_flt_0") == nullptr);
+
+        // replay: an already-issued live spec is accepted as-is (no filter call), a dead slot is not
+        char replay[64] = {0};
+        KT_CHECK(state.resolveStreamSpec(spec, 8, replay, sizeof(replay)));
+        KT_CHECK(std::strcmp(replay, spec) == 0);
+        KT_CHECK_EQ(fltCalls, 2);
+        KT_CHECK(!state.resolveStreamSpec("#*VFS_77.mp3", 8, replay, sizeof(replay)));
+        KT_CHECK_EQ(fltCalls, 2);
+
+        // unserved MEMORY record from another stem is evicted on unregister; the served one survives
+        char specU[64] = {0};
+        KT_CHECK(state.resolveStreamSpec("StreamVoice/unserved.wav", 8, specU, sizeof(specU)));
+        size_t uidx = static_cast<size_t>(std::strtoul(specU + 6, nullptr, 10));
+        int freesBefore = g_freeCalls;
+        state.unregisterStreamFilter(tok);
+        KT_CHECK_EQ(g_freeCalls - freesBefore, 1);
+        KT_CHECK(!state.reg.records[uidx].active);
+        KT_CHECK(state.reg.records[sidx].active);
+        KT_CHECK_EQ(state.reg.records[sidx].data[0], static_cast<uint8_t>('R'));
+        KT_CHECK_EQ(keptNotices, 1);
+
+        state.noticeFn = nullptr;
+        state.reset();
+        state.copyAllocFn = assetvfs::defaultCopyAlloc;
+        state.copyFreeFn = assetvfs::defaultCopyFree;
+    }
+
+    // -------------------------------------------------------------
+    // 14. Miles chaining: forward everything that is not ours, reset-then-reread, re-install on change
+    // -------------------------------------------------------------
+    state.reset();
+    {
+        resetMilesFakes();
+        assetvfs::MilesChain chain;
+        chain.bind(&state, oursSet(), fakeMilesGet, fakeMilesSet, fakeMilesNotice);
+
+        // Miles starts with NULL callbacks: reset to defaults (set 0,0,0,0), re-read, then install ours
+        g_milesCur = assetvfs::MilesCallbackSet();
+        KT_CHECK(chain.ensure());
+        KT_CHECK_EQ(g_milesSetCalls, 2);
+        KT_CHECK(chain.prev.sameAs(defaultsSet()));
+        KT_CHECK(g_milesCur.sameAs(oursSet()));
+        KT_CHECK(chain.installed);
+        KT_CHECK_EQ(g_milesChanged, 0);
+
+        // a second match with nothing changed does not re-install
+        KT_CHECK(chain.ensure());
+        KT_CHECK_EQ(g_milesSetCalls, 2);
+
+        // disk spec: forwarded unchanged to Miles' default open, never claimed by stem
+        const uint8_t pcm[] = { 10, 11, 12, 13, 14, 15, 16, 17 };
+        KT_CHECK(state.registerAsset("abc", vfsreg::ResTypeWav, pcm, sizeof(pcm), vfsreg::FlagMilesStream, false, "t") >= 0);
+        uint32_t hd = 0;
+        const char* diskSpec = "*C:\\x\\streamvoice\\abc.wav*100*0";
+        KT_CHECK_EQ(chain.open(diskSpec, &hd), 1u);
+        KT_CHECK_EQ(g_defLog.open, 1);
+        KT_CHECK(std::strcmp(g_defLog.lastName, diskSpec) == 0);
+        KT_CHECK_EQ(hd, 0x8ABCDEF0u);
+        KT_CHECK(!state.reg.records[0].served);
+
+        // heap-like handle: read / seek / close all forwarded
+        uint8_t buf[4] = {0};
+        KT_CHECK_EQ(chain.read(0x8ABCDEF0u, buf, 4), 77u);
+        KT_CHECK_EQ(chain.seek(0x8ABCDEF0u, 5, 1), 55);
+        chain.close(0x8ABCDEF0u);
+        KT_CHECK_EQ(g_defLog.read, 1);
+        KT_CHECK_EQ(g_defLog.seek, 1);
+        KT_CHECK_EQ(g_defLog.close, 1);
+        KT_CHECK_EQ(g_defLog.lastHandle, 0x8ABCDEF0u);
+
+        // #*VFS_ spec: served from the cursor table, nothing forwarded
+        char vspec[64] = {0};
+        KT_CHECK(state.resolveStreamSpec("StreamSounds/abc.wav", 4, vspec, sizeof(vspec)));
+        uint32_t hv = 0;
+        KT_CHECK_EQ(chain.open(vspec, &hv), 1u);
+        KT_CHECK_EQ(g_defLog.open, 1);
+        KT_CHECK(state.isVfsHandle(hv));
+        KT_CHECK_EQ(chain.read(hv, buf, 4), 4u);
+        KT_CHECK_EQ(buf[0], 10u);
+        KT_CHECK_EQ(chain.seek(hv, 2, 0), 2);
+        KT_CHECK_EQ(g_defLog.read, 1);
+        KT_CHECK_EQ(g_defLog.seek, 1);
+        chain.close(hv);
+        KT_CHECK(!state.isVfsHandle(hv));
+        KT_CHECK_EQ(g_defLog.close, 1);
+        // stale / double close and use of one of our dead handles is swallowed, never forwarded
+        chain.close(hv);
+        KT_CHECK_EQ(chain.read(hv, buf, 4), 0u);
+        KT_CHECK_EQ(chain.seek(hv, 0, 0), -1);
+        KT_CHECK_EQ(g_defLog.close, 1);
+        KT_CHECK_EQ(g_defLog.read, 1);
+        KT_CHECK_EQ(g_defLog.seek, 1);
+        // an unservable #*VFS_ name fails the open instead of reaching the disk path
+        uint32_t hx = 0;
+        KT_CHECK_EQ(chain.open("#*VFS_99.wav", &hx), 0u);
+        KT_CHECK_EQ(g_defLog.open, 1);
+        KT_CHECK_EQ(chain.open(nullptr, &hx), 0u);
+
+        // another module replaces the callbacks: one notice, adopt as prev, re-install ours
+        g_milesCur = otherSet();
+        KT_CHECK(chain.ensure());
+        KT_CHECK_EQ(g_milesChanged, 1);
+        KT_CHECK(chain.prev.sameAs(otherSet()));
+        KT_CHECK(g_milesCur.sameAs(oursSet()));
+        KT_CHECK_EQ(g_milesSetCalls, 3);
+        KT_CHECK_EQ(chain.open(diskSpec, &hd), 1u);
+        KT_CHECK_EQ(g_otherLog.open, 1);
+        KT_CHECK_EQ(g_defLog.open, 1);
+        KT_CHECK(chain.ensure());
+        KT_CHECK_EQ(g_milesSetCalls, 3); // read-back equals ours: no re-install
+
+        // partial overwrite (only `open` replaced): the entries that are still ours keep the old target
+        assetvfs::MilesCallbackSet part = oursSet();
+        part.open = defaultsSet().open;
+        g_milesCur = part;
+        KT_CHECK(chain.ensure());
+        KT_CHECK_EQ(g_milesChanged, 2);
+        KT_CHECK(chain.prev.open == defaultsSet().open);
+        KT_CHECK(chain.prev.close == otherSet().close);
+        KT_CHECK(chain.prev.seek == otherSet().seek);
+        KT_CHECK(chain.prev.read == otherSet().read);
+        KT_CHECK(g_milesCur.sameAs(oursSet()));
+
+        // callbacks cleared behind our back: reset to defaults, re-read, adopt, re-install
+        int setsBefore = g_milesSetCalls;
+        g_milesCur = assetvfs::MilesCallbackSet();
+        KT_CHECK(chain.ensure());
+        KT_CHECK_EQ(g_milesSetCalls, setsBefore + 2);
+        KT_CHECK(chain.prev.sameAs(defaultsSet()));
+        KT_CHECK_EQ(g_milesChanged, 3);
+    }
+
+    state.reset();
+    {
+        // Miles cannot produce defaults: error notice once, nothing installed, no match
+        resetMilesFakes();
+        g_milesHasDefaults = false;
+        assetvfs::MilesChain chain;
+        chain.bind(&state, oursSet(), fakeMilesGet, fakeMilesSet, fakeMilesNotice);
+        g_milesCur = assetvfs::MilesCallbackSet();
+        KT_CHECK(!chain.ensure());
+        KT_CHECK(!chain.ensure());
+        KT_CHECK_EQ(g_milesNoDefaults, 1);
+        KT_CHECK(!chain.installed);
+        KT_CHECK(!g_milesCur.sameAs(oursSet()));
+        // forwarding with no target is inert, not a crash
+        uint32_t h = 0;
+        KT_CHECK_EQ(chain.open("*x*1*0", &h), 0u);
+        KT_CHECK_EQ(chain.read(0x8ABCDEF0u, &h, 4), 0u);
+        KT_CHECK_EQ(chain.seek(0x8ABCDEF0u, 0, 0), -1);
+        chain.close(0x8ABCDEF0u);
+
+        // unbound / missing get-set: no match
+        assetvfs::MilesChain unbound;
+        KT_CHECK(!unbound.ensure());
+    }
+
     // Cleanup allocated memory
     for (void* p : g_allocatedPointers) {
         std::free(p);
     }
     g_allocatedPointers.clear();
 
-    return 0;
+    return kt::Report("asset_vfs_core_test");
 }

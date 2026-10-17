@@ -131,9 +131,36 @@ struct TwoDaPatchTable {
 
 
 // Notice codes passed to EngineState::noticeFn (the provider turns them into KP_WARN lines).
-constexpr int kNoticeServedReject = 1; // what = resref, owner = registrant
-constexpr int kNoticePoolFull     = 2; // what = "static" | "dynamic", owner = registrant
+constexpr int kNoticeServedReject   = 1; // what = resref, owner = registrant
+constexpr int kNoticePoolFull       = 2; // what = "static" | "dynamic", owner = registrant
+constexpr int kNoticeRewriteIgnored = 3; // what = "", owner = stream filter owner (REWRITE is disabled)
+constexpr int kNoticeStemConflict   = 4; // what = candidate path, owner = stream filter owner
+constexpr int kNoticeServedKept     = 5; // what = decimal count of served records kept, owner = unregistered owner
 typedef void (*NoticeFn)(int code, const char* what, const char* owner);
+
+// Provider-owned copies of handler/filter data (HeapAlloc on Win32, malloc on host; tests inject fakes).
+typedef uint8_t* (*CopyAllocFn)(uint32_t size);
+typedef void (*CopyFreeFn)(void* p);
+
+inline uint8_t* defaultCopyAlloc(uint32_t size) {
+#if defined(_WIN32)
+    return static_cast<uint8_t*>(HeapAlloc(GetProcessHeap(), 0, size));
+#else
+    return static_cast<uint8_t*>(std::malloc(size));
+#endif
+}
+
+inline void defaultCopyFree(void* p) {
+    if (!p) return;
+#if defined(_WIN32)
+    HeapFree(GetProcessHeap(), 0, p);
+#else
+    std::free(p);
+#endif
+}
+
+// registerOwnedCopy: a stream MEMORY claim on a stem already owned by a different candidate path.
+constexpr int kRegPathConflict = -4;
 
 struct EngineState {
     bool enabled = true;
@@ -147,6 +174,7 @@ struct EngineState {
 
     static constexpr size_t kMaxMissHandlers = 16;
     static constexpr size_t kMaxStreamFilters = 16;
+    static constexpr size_t kMaxPathKey = 260;
 
     struct MissHandlerEntry {
         K2VfsResManMissFn fn = nullptr;
@@ -162,11 +190,28 @@ struct EngineState {
         char owner[32] = {0};
         int32_t token = 0;
         bool active = false;
+        bool warnedRewrite = false;
+    };
+
+    // Per dynamic-pool slot: the provider-owned data copy, the handler/filter token that owns it and
+    // (stream records) the full normalised candidate path the record was claimed for.
+    struct DynInfo {
+        uint8_t* copy;
+        int32_t token;
+        char path[kMaxPathKey];
     };
 
     MissHandlerEntry missHandlers[kMaxMissHandlers] = {};
     StreamFilterEntry streamFilters[kMaxStreamFilters] = {};
     int32_t nextToken = 1;
+
+    DynInfo dyn[vfsreg::Registry::kDynamicReserve] = {};
+    vfsreg::NegCache neg;
+    volatile int32_t activeMissHandlers = 0; // read lock-free by the H1 fast path
+    bool inMiss = false;                      // recursion guard for the miss-handler loop
+
+    CopyAllocFn copyAllocFn = defaultCopyAlloc;
+    CopyFreeFn copyFreeFn = defaultCopyFree;
 
     NoticeFn noticeFn = nullptr;
     bool warnedFull[2] = {false, false}; // [0] static pool, [1] dynamic pool
@@ -177,6 +222,10 @@ struct EngineState {
 
     void reset() {
         enabled = true;
+        for (size_t i = 0; i < vfsreg::Registry::kDynamicReserve; ++i) {
+            freeCopy(dyn[i].copy);
+        }
+        std::memset(dyn, 0, sizeof(dyn));
         reg.clear();
         cursors.clear();
         twodaPatches.clear();
@@ -191,6 +240,9 @@ struct EngineState {
         for (size_t i = 0; i < kMaxStreamFilters; ++i) {
             streamFilters[i] = {};
         }
+        neg.clear();
+        activeMissHandlers = 0;
+        inMiss = false;
         nextToken = 1;
         warnedFull[0] = warnedFull[1] = false;
     }
@@ -199,16 +251,76 @@ struct EngineState {
         reset();
     }
 
+    // ---- owned copies -----------------------------------------------------------------------
+
+    void freeCopy(void* p) {
+        if (p && copyFreeFn) {
+            copyFreeFn(p);
+        }
+    }
+
+    static bool isDynIdx(size_t idx) {
+        return idx >= vfsreg::Registry::kStaticSlots && idx < vfsreg::Registry::kMaxAssets;
+    }
+
+    DynInfo& dynOf(size_t idx) {
+        return dyn[idx - vfsreg::Registry::kStaticSlots];
+    }
+
+    // Call with the lock held.
+    bool tokenLiveLocked(int32_t token) const {
+        if (token <= 0) return false;
+        for (size_t i = 0; i < kMaxMissHandlers; ++i) {
+            if (missHandlers[i].active && missHandlers[i].token == token) return true;
+        }
+        for (size_t i = 0; i < kMaxStreamFilters; ++i) {
+            if (streamFilters[i].active && streamFilters[i].token == token) return true;
+        }
+        return false;
+    }
+
+    // Evicts every UNSERVED record owned by `token` (frees its copy); served records keep record and
+    // copy (the engine still references them). Returns the number of served records kept.
+    // Call with the lock held; the copies are freed here (copyFreeFn is not an external callback).
+    uint32_t evictOwnerLocked(int32_t token) {
+        uint32_t kept = 0;
+        if (token <= 0) return 0;
+        for (size_t i = 0; i < vfsreg::Registry::kDynamicReserve; ++i) {
+            DynInfo& d = dyn[i];
+            if (!d.copy || d.token != token) continue;
+            const size_t idx = vfsreg::Registry::kStaticSlots + i;
+            vfsreg::AssetRecord& rec = reg.records[idx];
+            if (rec.active && rec.served) {
+                ++kept;
+                continue;
+            }
+            reg.evict(idx);
+            freeCopy(d.copy);
+            std::memset(&d, 0, sizeof(d));
+        }
+        return kept;
+    }
+
+    void emitServedKept(uint32_t kept, const char* owner) {
+        if (kept > 0 && noticeFn) {
+            char buf[16];
+            std::snprintf(buf, sizeof(buf), "%u", static_cast<unsigned>(kept));
+            noticeFn(kNoticeServedKept, buf, owner ? owner : "");
+        }
+    }
+
     // ---- registry (locked) ------------------------------------------------------------------
 
     // Returns slot index (>= 0) or vfsreg::kRegInvalid / kRegServed / kRegPoolFull.
     // `dynamic` registrations (miss handler / stream filter) use the reserved top slots.
+    // Public registrations clear the miss negative cache (a handler may now answer differently).
     int registerAsset(const char* resref, uint16_t resType, const void* data, uint32_t size,
                       uint16_t flags, bool dynamic, const char* owner) {
         int rc = vfsreg::kRegInvalid;
         bool firstFull = false;
         {
             vfsreg::LockGuard g(lock);
+            neg.clear();
             rc = reg.registerAsset(resref, resType, data, size, flags, dynamic);
             if (rc == vfsreg::kRegPoolFull && !warnedFull[dynamic ? 1 : 0]) {
                 warnedFull[dynamic ? 1 : 0] = true;
@@ -222,6 +334,78 @@ struct EngineState {
                 noticeFn(kNoticePoolFull, dynamic ? "dynamic" : "static", owner ? owner : "");
             }
         }
+        return rc;
+    }
+
+    // Registers a provider-owned COPY of `data` in the dynamic pool, tagged with `token`.
+    // `pathKey` (stream records) is the full normalised candidate path stored with the record; a record
+    // for the same stem owned by a different path is rejected with kRegPathConflict, a record for the
+    // same path is reused. Returns the slot index or a negative code. Never calls external code.
+    int registerOwnedCopy(const char* resref, uint16_t resType, const void* data, uint32_t size,
+                          uint16_t flags, const char* owner, int32_t token, const char* pathKey) {
+        if (!data || size == 0 || !copyAllocFn) return vfsreg::kRegInvalid;
+        uint8_t* copy = copyAllocFn(size);
+        if (!copy) return vfsreg::kRegInvalid;
+        std::memcpy(copy, data, size);
+
+        int rc = vfsreg::kRegInvalid;
+        bool firstFull = false;
+        {
+            vfsreg::LockGuard g(lock);
+            rc = adoptCopyLocked(resref, resType, copy, size, flags, token, pathKey);
+            if (rc == vfsreg::kRegPoolFull && !warnedFull[1]) {
+                warnedFull[1] = true;
+                firstFull = true;
+            }
+        }
+        if (noticeFn) {
+            if (rc == vfsreg::kRegServed) {
+                noticeFn(kNoticeServedReject, resref ? resref : "", owner ? owner : "");
+            } else if (firstFull) {
+                noticeFn(kNoticePoolFull, "dynamic", owner ? owner : "");
+            }
+        }
+        return rc;
+    }
+
+    // Takes ownership of `copy` (always either stored in dyn[] or freed). Lock held.
+    int adoptCopyLocked(const char* resref, uint16_t resType, uint8_t* copy, uint32_t size,
+                        uint16_t flags, int32_t token, const char* pathKey) {
+        if (!tokenLiveLocked(token)) {
+            freeCopy(copy); // handler/filter unregistered while its callback ran
+            return vfsreg::kRegInvalid;
+        }
+        vfsreg::AssetRecord* ex = (flags == vfsreg::FlagMilesStream)
+            ? reg.findStream(resref) : reg.findResMan(resref, resType);
+        if (ex) {
+            const size_t eidx = static_cast<size_t>(ex - reg.records);
+            if (!isDynIdx(eidx)) {
+                freeCopy(copy); // a static registration owns this key
+                return vfsreg::kRegInvalid;
+            }
+            if (pathKey) {
+                if (std::strcmp(dynOf(eidx).path, pathKey) != 0) {
+                    freeCopy(copy);
+                    return kRegPathConflict;
+                }
+                if (ex->served) {
+                    freeCopy(copy); // same path, already streaming: reuse the served record as-is
+                    return static_cast<int>(eidx);
+                }
+            }
+        }
+        int rc = reg.registerAsset(resref, resType, copy, size, flags, true);
+        if (rc < 0 || !isDynIdx(static_cast<size_t>(rc))) {
+            freeCopy(copy);
+            return rc < 0 ? rc : vfsreg::kRegInvalid;
+        }
+        DynInfo& d = dynOf(static_cast<size_t>(rc));
+        if (d.copy && d.copy != copy) {
+            freeCopy(d.copy); // in-place update of an unserved record: drop the superseded copy
+        }
+        d.copy = copy;
+        d.token = token;
+        std::snprintf(d.path, sizeof(d.path), "%s", pathKey ? pathKey : "");
         return rc;
     }
 
@@ -274,6 +458,7 @@ struct EngineState {
     int32_t registerMissHandler(K2VfsResManMissFn fn, void* user, const char* owner) {
         if (!fn) return 0;
         vfsreg::LockGuard g(lock);
+        neg.clear();
         for (size_t i = 0; i < kMaxMissHandlers; ++i) {
             if (!missHandlers[i].active) {
                 int32_t tok = nextToken++;
@@ -286,6 +471,7 @@ struct EngineState {
                 } else {
                     missHandlers[i].owner[0] = '\0';
                 }
+                activeMissHandlers = activeMissHandlers + 1;
                 return tok;
             }
         }
@@ -294,13 +480,24 @@ struct EngineState {
 
     void unregisterMissHandler(int32_t token) {
         if (token <= 0) return;
-        vfsreg::LockGuard g(lock);
-        for (size_t i = 0; i < kMaxMissHandlers; ++i) {
-            if (missHandlers[i].active && missHandlers[i].token == token) {
-                missHandlers[i] = {};
-                return;
+        char owner[32] = {0};
+        uint32_t kept = 0;
+        {
+            vfsreg::LockGuard g(lock);
+            bool found = false;
+            for (size_t i = 0; i < kMaxMissHandlers; ++i) {
+                if (missHandlers[i].active && missHandlers[i].token == token) {
+                    std::memcpy(owner, missHandlers[i].owner, sizeof(owner));
+                    missHandlers[i] = {};
+                    if (activeMissHandlers > 0) activeMissHandlers = activeMissHandlers - 1;
+                    found = true;
+                    break;
+                }
             }
+            if (!found) return;
+            kept = evictOwnerLocked(token);
         }
+        emitServedKept(kept, owner);
     }
 
     int32_t registerStreamFilter(K2VfsStreamFilterFn fn, void* user, const char* owner) {
@@ -313,6 +510,7 @@ struct EngineState {
                 streamFilters[i].user = user;
                 streamFilters[i].token = tok;
                 streamFilters[i].active = true;
+                streamFilters[i].warnedRewrite = false;
                 if (owner) {
                     std::snprintf(streamFilters[i].owner, sizeof(streamFilters[i].owner), "%s", owner);
                 } else {
@@ -326,16 +524,33 @@ struct EngineState {
 
     void unregisterStreamFilter(int32_t token) {
         if (token <= 0) return;
-        vfsreg::LockGuard g(lock);
-        for (size_t i = 0; i < kMaxStreamFilters; ++i) {
-            if (streamFilters[i].active && streamFilters[i].token == token) {
-                streamFilters[i] = {};
-                return;
+        char owner[32] = {0};
+        uint32_t kept = 0;
+        {
+            vfsreg::LockGuard g(lock);
+            bool found = false;
+            for (size_t i = 0; i < kMaxStreamFilters; ++i) {
+                if (streamFilters[i].active && streamFilters[i].token == token) {
+                    std::memcpy(owner, streamFilters[i].owner, sizeof(owner));
+                    streamFilters[i] = {};
+                    found = true;
+                    break;
+                }
             }
+            if (!found) return;
+            kept = evictOwnerLocked(token);
         }
+        emitServedKept(kept, owner);
     }
 
     // ---- H1: CExoResMan::GetKeyEntry miss ---------------------------------------------------
+
+    // Lock-free pre-check for the H1 hook: true = this lookup certainly cannot be served by the VFS
+    // (disabled, or no miss handler active AND no ResMan record of this type), so the hook can zero
+    // *ppTable and return 0 without any SafeRead or lock. Plain aligned 32-bit reads only.
+    bool missCannotHit(uint16_t resType) const {
+        return !enabled || (activeMissHandlers == 0 && !reg.mayHaveResMan(resType));
+    }
 
     // Hook H1 uses skip_original_bytes = true, so the stolen `MOV DWORD [ecx],0` (zeroing *ppTable)
     // never runs. This function therefore owns that write: on EVERY path returning 0 it zeroes
@@ -354,10 +569,20 @@ struct EngineState {
             return 0;
         }
 
+        char rawCopy[17] = {0};
+        for (size_t i = 0; i < 16; ++i) {
+            char c = rawResRef16[i];
+            rawCopy[i] = c;
+            if (c == '\0') break;
+        }
+        char norm[17] = {0};
+        const bool normOk = vfsreg::normalizeResRef(rawCopy, norm);
+
         struct HandlerSnap {
             K2VfsResManMissFn fn;
             void* user;
             char owner[32];
+            int32_t token;
         } snap[kMaxMissHandlers];
         size_t nSnap = 0;
         {
@@ -368,47 +593,54 @@ struct EngineState {
                 *ppEntry = &rec->keyEntry;
                 return 1;
             }
+            if (inMiss || !normOk) {
+                return 0; // re-entrant miss from inside a handler (or unusable name): plain miss
+            }
+            if (neg.contains(norm, resType)) {
+                return 0;
+            }
             for (size_t i = 0; i < kMaxMissHandlers; ++i) {
                 if (missHandlers[i].active && missHandlers[i].fn) {
                     snap[nSnap].fn = missHandlers[i].fn;
                     snap[nSnap].user = missHandlers[i].user;
+                    snap[nSnap].token = missHandlers[i].token;
                     std::memcpy(snap[nSnap].owner, missHandlers[i].owner, sizeof(snap[nSnap].owner));
                     nSnap++;
                 }
             }
-        }
-        if (nSnap == 0) {
-            return 0;
-        }
-
-        char rawCopy[17] = {0};
-        for (size_t i = 0; i < 16; ++i) {
-            char c = rawResRef16[i];
-            rawCopy[i] = c;
-            if (c == '\0') break;
+            if (nSnap == 0) {
+                return 0;
+            }
+            inMiss = true;
         }
 
-        char norm[17] = {0};
-        if (!vfsreg::normalizeResRef(rawCopy, norm)) {
-            return 0;
-        }
-
-        // Handlers run WITHOUT the lock held (they may call back into the VFS API).
+        // Handlers run WITHOUT the lock held (they may call back into the VFS API), in slot order.
+        bool claimed = false;
+        bool regFailed = false;
         for (size_t i = 0; i < nSnap; ++i) {
             K2VfsAssetEntry outEntry = {};
             int32_t handled = snap[i].fn(norm, resType, &outEntry, snap[i].user);
             if (handled == 1 && outEntry.data != nullptr && outEntry.size > 0) {
-                int idx = registerAsset(norm, resType, outEntry.data, outEntry.size,
-                                        vfsreg::FlagResMan, true, snap[i].owner);
+                int idx = registerOwnedCopy(norm, resType, outEntry.data, outEntry.size,
+                                            vfsreg::FlagResMan, snap[i].owner, snap[i].token, nullptr);
                 if (idx >= 0) {
                     *ppTable = &reg.fakeTable;
                     *ppEntry = &reg.records[idx].keyEntry;
-                    return 1;
+                    claimed = true;
+                    break;
                 }
+                regFailed = true; // pool full / served / handler gone: not a real "nobody has it"
             }
         }
 
-        return 0;
+        {
+            vfsreg::LockGuard g(lock);
+            inMiss = false;
+            if (!claimed && !regFailed) {
+                neg.add(norm, resType);
+            }
+        }
+        return claimed ? 1 : 0;
     }
 
     // ---- H2: CExoResMan::ServiceFromImage ---------------------------------------------------
@@ -461,40 +693,81 @@ struct EngineState {
 
     // ---- H4: streaming source open ----------------------------------------------------------
 
-    bool resolveStreamSpec(const char* candidatePath, uint16_t streamKind, char* outSpec, size_t specCap) {
+    static bool isVfsSpec(const char* s) {
+        return s && std::strncmp(s, "#*VFS_", 6) == 0;
+    }
+
+    // Formats "#*VFS_<idx><ext>" for an active stream record. Lock held.
+    bool makeStreamSpecLocked(size_t idx, uint16_t streamKind, char* outSpec, size_t specCap) {
+        if (idx >= vfsreg::Registry::kMaxAssets || !reg.records[idx].active) {
+            return false;
+        }
+        const vfsreg::AssetRecord& rec = reg.records[idx];
+        vfsreg::AudioSlice slice = vfsreg::inspectAudioContainer(rec.data, rec.size, streamKind);
+        const char* ext = slice.ext ? slice.ext : ".wav";
+        int n = std::snprintf(outSpec, specCap, "#*VFS_%u%s", static_cast<unsigned>(idx), ext);
+        return (n > 0 && static_cast<size_t>(n) < specCap);
+    }
+
+    // `allowFilters` is true only for the primary candidate (this+0x28); the fallback candidates are
+    // resolved against the static registry only. Filters run only for streamKind 4 and 8.
+    bool resolveStreamSpec(const char* candidatePath, uint16_t streamKind, char* outSpec, size_t specCap,
+                           bool allowFilters = true) {
         if (!candidatePath || !outSpec || specCap == 0) {
             return false;
         }
+
+        char npath[kMaxPathKey];
+        vfsreg::normalizePath(candidatePath, npath, sizeof(npath));
 
         struct FilterSnap {
             K2VfsStreamFilterFn fn;
             void* user;
             char owner[32];
+            int32_t token;
+            size_t slot;
         } snap[kMaxStreamFilters];
         size_t nSnap = 0;
         {
             vfsreg::LockGuard g(lock);
-            vfsreg::AssetRecord* rec = reg.findStream(candidatePath);
-            if (rec && rec->data && rec->size > 0) {
-                uint32_t idx = static_cast<uint32_t>(rec - reg.records);
-                if (idx < vfsreg::Registry::kMaxAssets) {
-                    vfsreg::AudioSlice slice = vfsreg::inspectAudioContainer(rec->data, rec->size, streamKind);
-                    const char* ext = slice.ext ? slice.ext : ".wav";
-                    int n = std::snprintf(outSpec, specCap, "#*VFS_%u%s", idx, ext);
+            if (isVfsSpec(candidatePath)) {
+                // Already a spec we issued (replay, loop, save/load): accept as-is while its slot is live.
+                const char* numPtr = candidatePath + 6;
+                char* endPtr = nullptr;
+                unsigned long idx = std::strtoul(numPtr, &endPtr, 10);
+                if (endPtr != numPtr && idx < vfsreg::Registry::kMaxAssets &&
+                    reg.records[idx].active && reg.records[idx].flags == vfsreg::FlagMilesStream) {
+                    int n = std::snprintf(outSpec, specCap, "%s", candidatePath);
                     return (n > 0 && static_cast<size_t>(n) < specCap);
                 }
+                return false;
+            }
+            vfsreg::AssetRecord* rec = reg.findStream(candidatePath);
+            if (rec && rec->data && rec->size > 0) {
+                size_t idx = static_cast<size_t>(rec - reg.records);
+                // A filter-owned (dynamic) record only serves the exact candidate path it was claimed for.
+                if (idx < vfsreg::Registry::kMaxAssets &&
+                    (!isDynIdx(idx) || std::strcmp(dynOf(idx).path, npath) == 0)) {
+                    return makeStreamSpecLocked(idx, streamKind, outSpec, specCap);
+                }
+            }
+            if (!allowFilters || (streamKind != 4 && streamKind != 8)) {
+                return false;
             }
             for (size_t i = 0; i < kMaxStreamFilters; ++i) {
                 if (streamFilters[i].active && streamFilters[i].fn) {
                     snap[nSnap].fn = streamFilters[i].fn;
                     snap[nSnap].user = streamFilters[i].user;
+                    snap[nSnap].token = streamFilters[i].token;
+                    snap[nSnap].slot = i;
                     std::memcpy(snap[nSnap].owner, streamFilters[i].owner, sizeof(snap[nSnap].owner));
                     nSnap++;
                 }
             }
         }
 
-        // Not found in the static registry AND at least one stream filter is active (called unlocked):
+        // Not found in the static registry AND at least one stream filter is active (called unlocked,
+        // in registration slot order; the first MEMORY claim wins).
         for (size_t i = 0; i < nSnap; ++i) {
             const void* outData = nullptr;
             uint32_t outSize = 0;
@@ -504,67 +777,194 @@ struct EngineState {
                 rewritten, sizeof(rewritten), snap[i].user);
 
             if (rc == K2VFS_STREAM_MEMORY && outData != nullptr && outSize > 0) {
-                int idx = registerAsset(candidatePath, vfsreg::ResTypeWav, outData, outSize,
-                                        vfsreg::FlagMilesStream, true, snap[i].owner);
-                if (idx < 0) {
-                    char synStem[17] = {0};
-                    std::snprintf(synStem, sizeof(synStem), "vfs_flt_%u", static_cast<unsigned>(i));
-                    idx = registerAsset(synStem, vfsreg::ResTypeWav, outData, outSize,
-                                        vfsreg::FlagMilesStream, true, snap[i].owner);
+                int idx = registerOwnedCopy(candidatePath, vfsreg::ResTypeWav, outData, outSize,
+                                            vfsreg::FlagMilesStream, snap[i].owner, snap[i].token, npath);
+                if (idx == kRegPathConflict) {
+                    if (noticeFn) noticeFn(kNoticeStemConflict, candidatePath, snap[i].owner);
+                    continue; // treated as PASS
                 }
                 if (idx >= 0 && static_cast<size_t>(idx) < vfsreg::Registry::kMaxAssets) {
-                    vfsreg::AudioSlice slice = vfsreg::inspectAudioContainer(
-                        static_cast<const uint8_t*>(outData), outSize, streamKind);
-                    const char* ext = slice.ext ? slice.ext : ".wav";
-                    int n = std::snprintf(outSpec, specCap, "#*VFS_%u%s", static_cast<unsigned>(idx), ext);
-                    return (n > 0 && static_cast<size_t>(n) < specCap);
+                    vfsreg::LockGuard g(lock);
+                    return makeStreamSpecLocked(static_cast<size_t>(idx), streamKind, outSpec, specCap);
                 }
-            } else if (rc == K2VFS_STREAM_REWRITE && rewritten[0] != '\0') {
-                int n = std::snprintf(outSpec, specCap, "%s", rewritten);
-                return (n > 0 && static_cast<size_t>(n) < specCap);
+            } else if (rc == K2VFS_STREAM_REWRITE) {
+                // REWRITE is disabled: treated as PASS, one WARN per filter owner.
+                bool warn = false;
+                {
+                    vfsreg::LockGuard g(lock);
+                    StreamFilterEntry& e = streamFilters[snap[i].slot];
+                    if (e.active && e.token == snap[i].token && !e.warnedRewrite) {
+                        e.warnedRewrite = true;
+                        warn = true;
+                    }
+                }
+                if (warn && noticeFn) noticeFn(kNoticeRewriteIgnored, "", snap[i].owner);
             }
         }
 
         return false;
     }
 
+    // Opens a cursor for a "#*VFS_<idx>.<ext>" spec. Names without the tag are NOT claimed here (they are
+    // disk specs for Miles' own callbacks); there is deliberately no stem lookup fallback.
     bool parseVfsStreamSpec(const char* filename, uint32_t* outHandle) {
         if (!filename || !outHandle) {
             return false;
         }
         *outHandle = 0;
 
-        vfsreg::LockGuard g(lock);
         const char* vfsTag = std::strstr(filename, "#*VFS_");
-        if (vfsTag) {
-            const char* numPtr = vfsTag + 6;
-            char* endPtr = nullptr;
-            unsigned long idx = std::strtoul(numPtr, &endPtr, 10);
-            if (endPtr != numPtr && idx < vfsreg::Registry::kMaxAssets && reg.records[idx].active) {
-                const vfsreg::AssetRecord& rec = reg.records[idx];
-                vfsreg::AudioSlice slice = vfsreg::inspectAudioContainer(rec.data, rec.size, rec.keyEntry.resType);
-                uint32_t h = cursors.open(slice.payload, slice.length);
-                if (h != 0) {
-                    reg.markServed(idx);
-                    *outHandle = h;
-                    return true;
-                }
-            }
+        if (!vfsTag) {
             return false;
         }
 
-        vfsreg::AssetRecord* rec = reg.findStream(filename);
-        if (rec && rec->data && rec->size > 0) {
-            vfsreg::AudioSlice slice = vfsreg::inspectAudioContainer(rec->data, rec->size, rec->keyEntry.resType);
+        vfsreg::LockGuard g(lock);
+        const char* numPtr = vfsTag + 6;
+        char* endPtr = nullptr;
+        unsigned long idx = std::strtoul(numPtr, &endPtr, 10);
+        if (endPtr != numPtr && idx < vfsreg::Registry::kMaxAssets && reg.records[idx].active) {
+            const vfsreg::AssetRecord& rec = reg.records[idx];
+            vfsreg::AudioSlice slice = vfsreg::inspectAudioContainer(rec.data, rec.size, rec.keyEntry.resType);
             uint32_t h = cursors.open(slice.payload, slice.length);
             if (h != 0) {
-                reg.markServed(static_cast<size_t>(rec - reg.records));
+                reg.markServed(idx);
                 *outHandle = h;
                 return true;
             }
         }
-
         return false;
+    }
+};
+
+// ---- Miles file-callback chaining ----------------------------------------------------------------
+//
+// Miles has exactly one global set of file callbacks (_AIL_set_file_callbacks); the engine opens every
+// disk stream through them (specs like "*<path>*<len>*<off>"). We install a set that serves "#*VFS_n"
+// names from the cursor table and forwards EVERYTHING else, unchanged, to whatever was installed before
+// us (normally Miles' own defaults). The decision logic lives here, behind function pointers, so it is
+// host-testable; the provider only supplies the Mss32 get/set shims and __stdcall thunks.
+
+#if defined(_WIN32)
+#define ASSETVFS_AILCALL __stdcall
+#else
+#define ASSETVFS_AILCALL
+#endif
+
+typedef uint32_t (ASSETVFS_AILCALL *AilOpenCb)(const char* filename, uint32_t* file_handle);
+typedef void     (ASSETVFS_AILCALL *AilCloseCb)(uint32_t file_handle);
+typedef int32_t  (ASSETVFS_AILCALL *AilSeekCb)(uint32_t file_handle, int32_t offset, uint32_t type);
+typedef uint32_t (ASSETVFS_AILCALL *AilReadCb)(uint32_t file_handle, void* buffer, uint32_t bytes);
+
+struct MilesCallbackSet {
+    AilOpenCb open = nullptr;
+    AilCloseCb close = nullptr;
+    AilSeekCb seek = nullptr;
+    AilReadCb read = nullptr;
+
+    bool allSet() const { return open && close && seek && read; }
+    bool sameAs(const MilesCallbackSet& o) const {
+        return open == o.open && close == o.close && seek == o.seek && read == o.read;
+    }
+};
+
+constexpr int kMilesNoticeChanged    = 1; // someone replaced the callbacks since we installed ours
+constexpr int kMilesNoticeNoDefaults = 2; // callbacks still NULL after resetting to Miles' defaults (once)
+typedef void (*MilesNoticeFn)(int code);
+
+struct MilesChain {
+    typedef void (*GetFn)(MilesCallbackSet* out);
+    typedef void (*SetFn)(const MilesCallbackSet& set);
+
+    EngineState* st = nullptr;
+    GetFn getFn = nullptr;   // reads the current Miles callbacks (_AIL_file_callbacks)
+    SetFn setFn = nullptr;   // writes them (_AIL_set_file_callbacks); all-NULL restores Miles' defaults
+    MilesNoticeFn noticeFn = nullptr;
+    MilesCallbackSet ours;
+    MilesCallbackSet prev;   // the target every non-VFS call is forwarded to
+    bool installed = false;
+    bool noDefaultsNoticed = false;
+
+    void bind(EngineState* state, const MilesCallbackSet& oursSet, GetFn get, SetFn set, MilesNoticeFn notice) {
+        st = state;
+        ours = oursSet;
+        getFn = get;
+        setFn = set;
+        noticeFn = notice;
+        prev = MilesCallbackSet();
+        installed = false;
+        noDefaultsNoticed = false;
+    }
+
+    void notify(int code) {
+        if (noticeFn) noticeFn(code);
+    }
+
+    // Called on every VFS stream match. True = our callbacks are installed and `prev` is a complete
+    // chain target; false = leave the stream to the engine's normal path.
+    bool ensure() {
+        if (!st || !getFn || !setFn || !ours.allSet()) {
+            return false;
+        }
+        MilesCallbackSet cur;
+        getFn(&cur);
+        if (installed && cur.sameAs(ours)) {
+            return true;
+        }
+        if (!cur.allSet()) {
+            setFn(MilesCallbackSet()); // 4 NULLs: Miles restores its default callbacks
+            cur = MilesCallbackSet();
+            getFn(&cur);
+        }
+        // Entries that are still ours (partial overwrite) keep the target saved earlier, never ourselves.
+        MilesCallbackSet np = cur;
+        if (cur.open == ours.open) np.open = prev.open;
+        if (cur.close == ours.close) np.close = prev.close;
+        if (cur.seek == ours.seek) np.seek = prev.seek;
+        if (cur.read == ours.read) np.read = prev.read;
+        if (!np.allSet()) {
+            if (!noDefaultsNoticed) {
+                noDefaultsNoticed = true;
+                notify(kMilesNoticeNoDefaults);
+            }
+            return false;
+        }
+        const bool changed = installed;
+        prev = np;
+        if (changed) {
+            notify(kMilesNoticeChanged);
+        }
+        setFn(ours);
+        installed = true;
+        return true;
+    }
+
+    // ---- the callbacks themselves (the provider's __stdcall thunks call these) ----
+
+    uint32_t open(const char* filename, uint32_t* handle) {
+        if (!filename || !handle) return 0;
+        if (std::strstr(filename, "#*VFS_")) {
+            // Ours (never a disk path): serve from the cursor table, do not forward.
+            return (st && st->parseVfsStreamSpec(filename, handle)) ? 1u : 0u;
+        }
+        return prev.open ? prev.open(filename, handle) : 0u;
+    }
+
+    void close(uint32_t handle) {
+        if (st && st->cursorClose(handle)) return;
+        if (vfsreg::MilesCursorTable::hasVfsTag(handle)) return; // stale/double close of ours: never forward
+        if (prev.close) prev.close(handle);
+    }
+
+    int32_t seek(uint32_t handle, int32_t offset, uint32_t type) {
+        if (st && st->isVfsHandle(handle)) return st->cursorSeek(handle, offset, type);
+        if (vfsreg::MilesCursorTable::hasVfsTag(handle)) return -1;
+        return prev.seek ? prev.seek(handle, offset, type) : -1;
+    }
+
+    uint32_t read(uint32_t handle, void* buffer, uint32_t bytes) {
+        if (st && st->isVfsHandle(handle)) return st->cursorRead(handle, buffer, bytes);
+        if (vfsreg::MilesCursorTable::hasVfsTag(handle)) return 0;
+        return prev.read ? prev.read(handle, buffer, bytes) : 0u;
     }
 };
 

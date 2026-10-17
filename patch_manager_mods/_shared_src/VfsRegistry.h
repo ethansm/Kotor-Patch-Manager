@@ -146,6 +146,28 @@ inline bool normalizeResRef(const char* raw, char out16[16]) {
     return true;
 }
 
+// Full-path normalisation used to key stream-filter records: lowercase, '/' -> '\\'.
+// Truncates to cap-1 chars and always NUL-terminates. Returns the output length.
+inline size_t normalizePath(const char* in, char* out, size_t cap) {
+    if (!out || cap == 0) {
+        return 0;
+    }
+    size_t n = 0;
+    if (in) {
+        for (; in[n] != '\0' && n + 1 < cap; ++n) {
+            char c = in[n];
+            if (c >= 'A' && c <= 'Z') {
+                c = static_cast<char>(c + ('a' - 'A'));
+            } else if (c == '/') {
+                c = '\\';
+            }
+            out[n] = c;
+        }
+    }
+    out[n] = '\0';
+    return n;
+}
+
 struct AssetRecord {
     KeyTableEntry keyEntry;
     const uint8_t* data;
@@ -167,8 +189,23 @@ struct Registry {
     static constexpr size_t kDynamicReserve = 64;
     static constexpr size_t kStaticSlots = kMaxAssets - kDynamicReserve;
 
+    // Per-type live ResMan record counters (64 buckets hashed by resType; a collision only costs a lost
+    // fast path). Maintained by registerAsset/evict (callers hold the VFS lock); read lock-free by the
+    // zero-handler GetKeyEntry fast path (aligned 32-bit reads, x86-atomic).
+    static constexpr size_t kTypeBuckets = 64;
+
     AssetRecord records[kMaxAssets];
     FakeKeyTable fakeTable;
+    volatile int32_t resManTypeCount[kTypeBuckets];
+
+    static size_t typeBucket(uint16_t resType) {
+        return static_cast<size_t>((resType ^ (resType >> 6)) & (kTypeBuckets - 1));
+    }
+
+    // False = certainly no ResMan record of this type; true = maybe (hash collision possible).
+    bool mayHaveResMan(uint16_t resType) const {
+        return resManTypeCount[typeBucket(resType)] != 0;
+    }
 
     Registry() {
         init();
@@ -182,6 +219,24 @@ struct Registry {
         memset(records, 0, sizeof(records));
         memset(&fakeTable, 0, sizeof(fakeTable));
         fakeTable.tableType = 4;
+        for (size_t i = 0; i < kTypeBuckets; ++i) {
+            resManTypeCount[i] = 0;
+        }
+    }
+
+    // Removes a record entirely (slot becomes free). Used to evict an unregistered owner's unserved
+    // records. Callers hold the VFS lock.
+    void evict(size_t idx) {
+        if (idx >= kMaxAssets || !records[idx].active) {
+            return;
+        }
+        if (records[idx].flags == FlagResMan) {
+            volatile int32_t& c = resManTypeCount[typeBucket(records[idx].keyEntry.resType)];
+            if (c > 0) {
+                c = c - 1;
+            }
+        }
+        memset(&records[idx], 0, sizeof(records[idx]));
     }
 
     // Returns slot index, kRegInvalid, kRegServed or kRegPoolFull.
@@ -244,6 +299,9 @@ struct Registry {
                 records[i].keyEntry.packedId = makePackedId(static_cast<uint32_t>(i));
                 records[i].keyEntry.refCount = 1;
                 records[i].keyEntry.resType = resType;
+                if (flags == FlagResMan) {
+                    resManTypeCount[typeBucket(resType)] = resManTypeCount[typeBucket(resType)] + 1;
+                }
                 return static_cast<int>(i);
             }
         }
@@ -341,6 +399,74 @@ inline AudioSlice inspectAudioContainer(const uint8_t* buf, uint32_t size, uint1
     }
     return { buf, size, 0, (streamKind == 8) ? ".mp3" : ".wav" };
 }
+
+// Bounded negative cache for ResMan miss handlers: remembers (normalised name, type) pairs that every
+// handler declined so the engine's repeated lookups do not re-run the handlers. Open addressing, no
+// deletion (cleared wholesale); once full, add() silently stops adding. Callers hold the VFS lock.
+struct NegCache {
+    static constexpr size_t kCapacity = 512;
+
+    struct Slot {
+        char name[16];
+        uint16_t type;
+        bool used;
+    };
+
+    Slot slots[kCapacity];
+    uint32_t count;
+
+    NegCache() : count(0) {
+        memset(slots, 0, sizeof(slots));
+    }
+
+    void clear() {
+        count = 0;
+        memset(slots, 0, sizeof(slots));
+    }
+
+    static size_t hashOf(const char* name16, uint16_t type) {
+        uint32_t h = 2166136261u;
+        for (size_t i = 0; i < 16; ++i) {
+            h = (h ^ static_cast<uint8_t>(name16[i])) * 16777619u;
+        }
+        h = (h ^ type) * 16777619u;
+        return static_cast<size_t>(h % kCapacity);
+    }
+
+    bool contains(const char* name16, uint16_t type) const {
+        size_t i = hashOf(name16, type);
+        for (size_t probes = 0; probes < kCapacity; ++probes, i = (i + 1) % kCapacity) {
+            if (!slots[i].used) {
+                return false;
+            }
+            if (slots[i].type == type && memcmp(slots[i].name, name16, 16) == 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Returns true when the pair is in the cache afterwards (newly added or already present).
+    bool add(const char* name16, uint16_t type) {
+        if (contains(name16, type)) {
+            return true;
+        }
+        if (count >= kCapacity) {
+            return false; // full: stop adding
+        }
+        size_t i = hashOf(name16, type);
+        for (size_t probes = 0; probes < kCapacity; ++probes, i = (i + 1) % kCapacity) {
+            if (!slots[i].used) {
+                memcpy(slots[i].name, name16, 16);
+                slots[i].type = type;
+                slots[i].used = true;
+                ++count;
+                return true;
+            }
+        }
+        return false;
+    }
+};
 
 struct MilesCursorTable {
     static constexpr size_t kMaxCursors = 16;

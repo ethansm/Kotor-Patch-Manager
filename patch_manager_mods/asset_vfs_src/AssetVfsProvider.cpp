@@ -35,76 +35,97 @@ enum Site : unsigned {
     S_2Da = 0x7430
 };
 
-typedef uint32_t (__stdcall *AilFileOpenCb)(const char* filename, uint32_t* file_handle);
-typedef void (__stdcall *AilFileCloseCb)(uint32_t file_handle);
-typedef int32_t (__stdcall *AilFileSeekCb)(uint32_t file_handle, int32_t offset, uint32_t type);
-typedef uint32_t (__stdcall *AilFileReadCb)(uint32_t file_handle, void* buffer, uint32_t bytes);
-typedef void (__stdcall *AilSetFileCallbacksFn)(AilFileOpenCb, AilFileCloseCb, AilFileSeekCb, AilFileReadCb);
+// Mss32.dll exports. _AIL_file_callbacks reads the four current file callbacks into four out-pointers;
+// _AIL_set_file_callbacks is their only writer (four NULLs restore Miles' defaults).
+typedef void (__stdcall *AilGetFileCallbacksFn)(assetvfs::AilOpenCb*, assetvfs::AilCloseCb*,
+                                                assetvfs::AilSeekCb*, assetvfs::AilReadCb*);
+typedef void (__stdcall *AilSetFileCallbacksFn)(assetvfs::AilOpenCb, assetvfs::AilCloseCb,
+                                                assetvfs::AilSeekCb, assetvfs::AilReadCb);
+
+AilGetFileCallbacksFn g_ailGet = nullptr;
+AilSetFileCallbacksFn g_ailSet = nullptr;
+assetvfs::MilesChain g_miles;
 
 uint32_t __stdcall MilesFileOpen(const char* filename, uint32_t* file_handle) {
-    if (!filename || !file_handle) return 0;
-    if (g_state.parseVfsStreamSpec(filename, file_handle)) {
-        return 1;
-    }
-    HANDLE h = CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-    if (h != INVALID_HANDLE_VALUE) {
-        *file_handle = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(h));
-        return 1;
-    }
-    return 0;
+    return g_miles.open(filename, file_handle);
 }
 
 void __stdcall MilesFileClose(uint32_t handle) {
-    if (g_state.cursorClose(handle)) {
-        return;
-    }
-    if (vfsreg::MilesCursorTable::hasVfsTag(handle)) {
-        return; // stale / double close of one of our cursor handles: never hand it to CloseHandle
-    }
-    if (handle != 0 && handle != static_cast<uint32_t>(reinterpret_cast<uintptr_t>(INVALID_HANDLE_VALUE))) {
-        CloseHandle(reinterpret_cast<HANDLE>(static_cast<uintptr_t>(handle)));
-    }
+    g_miles.close(handle);
 }
 
 int32_t __stdcall MilesFileSeek(uint32_t handle, int32_t offset, uint32_t type) {
-    if (g_state.isVfsHandle(handle)) {
-        return g_state.cursorSeek(handle, offset, type);
-    } else if (handle != 0 && handle != static_cast<uint32_t>(reinterpret_cast<uintptr_t>(INVALID_HANDLE_VALUE))) {
-        DWORD moveMethod = FILE_BEGIN;
-        if (type == 1) moveMethod = FILE_CURRENT;
-        else if (type == 2) moveMethod = FILE_END;
-        return static_cast<int32_t>(SetFilePointer(reinterpret_cast<HANDLE>(static_cast<uintptr_t>(handle)), offset, nullptr, moveMethod));
-    }
-    return -1;
+    return g_miles.seek(handle, offset, type);
 }
 
 uint32_t __stdcall MilesFileRead(uint32_t handle, void* buffer, uint32_t bytes) {
-    if (g_state.isVfsHandle(handle)) {
-        return g_state.cursorRead(handle, buffer, bytes);
-    } else if (handle != 0 && handle != static_cast<uint32_t>(reinterpret_cast<uintptr_t>(INVALID_HANDLE_VALUE))) {
-        DWORD bytesRead = 0;
-        if (ReadFile(reinterpret_cast<HANDLE>(static_cast<uintptr_t>(handle)), buffer, bytes, &bytesRead, nullptr)) {
-            return bytesRead;
-        }
-    }
-    return 0;
+    return g_miles.read(handle, buffer, bytes);
 }
 
-void ensureMilesCallbacks() {
-    static bool installed = false;
-    if (installed) return;
+void milesGetCallbacks(assetvfs::MilesCallbackSet* out) {
+    if (g_ailGet && out) {
+        g_ailGet(&out->open, &out->close, &out->seek, &out->read);
+    }
+}
+
+void milesSetCallbacks(const assetvfs::MilesCallbackSet& set) {
+    if (g_ailSet) {
+        g_ailSet(set.open, set.close, set.seek, set.read);
+    }
+}
+
+void onMilesNotice(int code) {
+    if (code == assetvfs::kMilesNoticeChanged) {
+        KP_WARN("Miles file callbacks were replaced by another module; chaining to the new set and re-installing ours");
+    } else if (code == assetvfs::kMilesNoticeNoDefaults) {
+        KP_ERR("Miles file callbacks are NULL even after resetting to defaults; VFS streams disabled (engine path)");
+    }
+}
+
+void initMilesChain() {
+    assetvfs::MilesCallbackSet ours;
+    ours.open = MilesFileOpen;
+    ours.close = MilesFileClose;
+    ours.seek = MilesFileSeek;
+    ours.read = MilesFileRead;
+    g_miles.bind(&g_state, ours, milesGetCallbacks, milesSetCallbacks, onMilesNotice);
+}
+
+// Resolves the Mss32 exports once. False = Miles unavailable (the stream is left to the engine).
+bool resolveMilesExports() {
+    if (g_ailGet && g_ailSet) return true;
     HMODULE hMss = GetModuleHandleA("Mss32.dll");
     if (!hMss) {
         hMss = LoadLibraryA("Mss32.dll");
     }
-    if (hMss) {
-        auto setCb = reinterpret_cast<AilSetFileCallbacksFn>(GetProcAddress(hMss, "_AIL_set_file_callbacks@16"));
-        if (setCb) {
-            setCb(MilesFileOpen, MilesFileClose, MilesFileSeek, MilesFileRead);
-            installed = true;
-            KP_LOG(chAudio, "installed Miles file callbacks");
-        }
+    if (!hMss) return false;
+    g_ailGet = reinterpret_cast<AilGetFileCallbacksFn>(GetProcAddress(hMss, "_AIL_file_callbacks@16"));
+    g_ailSet = reinterpret_cast<AilSetFileCallbacksFn>(GetProcAddress(hMss, "_AIL_set_file_callbacks@16"));
+    if (!g_ailGet || !g_ailSet) {
+        g_ailGet = nullptr;
+        g_ailSet = nullptr;
+        return false;
     }
+    return true;
+}
+
+// Called on every VFS stream match: chains/installs our callbacks. False = do not rewrite the stream.
+bool ensureMilesChain() {
+    static bool logged = false;
+    if (!resolveMilesExports()) {
+        static bool warnedExports = false;
+        if (!warnedExports) {
+            warnedExports = true;
+            KP_ERR("Mss32.dll file-callback exports not found; VFS streams disabled (engine path)");
+        }
+        return false;
+    }
+    if (!g_miles.ensure()) return false;
+    if (!logged) {
+        logged = true;
+        KP_LOG(chAudio, "installed Miles file callbacks (chained to the previous set)");
+    }
+    return true;
 }
 
 uint8_t* engineAlloc(uint32_t size) {
@@ -145,6 +166,12 @@ void onVfsNotice(int code, const char* what, const char* owner) {
         KP_WARN("REGISTER rejected: '%s' already served to the engine (owner=%s)", what, owner);
     } else if (code == assetvfs::kNoticePoolFull) {
         KP_WARN("REGISTER failed: %s asset pool full (owner=%s); further failures in this pool are silent", what, owner);
+    } else if (code == assetvfs::kNoticeRewriteIgnored) {
+        KP_WARN("stream filter K2VFS_STREAM_REWRITE is disabled; treated as PASS (owner=%s)", owner);
+    } else if (code == assetvfs::kNoticeStemConflict) {
+        KP_WARN("stream filter MEMORY claim rejected: stem already owned by a different path '%s' (owner=%s)", what, owner);
+    } else if (code == assetvfs::kNoticeServedKept) {
+        KP_WARN("unregistered owner=%s: %s served VFS record(s) keep their data copy (engine still references them)", owner, what);
     }
 }
 
@@ -273,6 +300,7 @@ __declspec(dllexport) void __cdecl KPatchInit(const KPatchApi* api) {
     api->provide(K2_CHARLIB_IFACE, K2_CHARLIB_VERSION, &g_charApi);
     KpLog_Init(api);
     g_state.noticeFn = onVfsNotice;
+    initMilesChain();
 
     int enabledIni = GetPrivateProfileIntA("vfs", "enabled", 1, ".\\asset_vfs.ini");
     if (enabledIni == 0) {
@@ -290,6 +318,21 @@ __declspec(dllexport) void __cdecl KPatchInit(const KPatchApi* api) {
 
 __declspec(dllexport) int __cdecl VFS_OnGetKeyEntryMiss(uintptr_t ebp) {
     if (!ebp) return 0;
+
+    // Zero-handler fast path (every ordinary resource lookup that misses the key table lands here): when
+    // no miss handler is active and the static registry holds no ResMan record of this type, nothing can
+    // be served, so zero *ppTable and return 0 with PLAIN reads - [ebp+0xC] resType and [ebp+0x10] ppTable
+    // are the engine's own live frame (the native code writes *ppTable unconditionally anyway), so no
+    // SafeRead and no lock are needed.
+    {
+        const uint32_t fastType = *reinterpret_cast<const uint32_t*>(ebp + 0x0C);
+        void** fastTable = *reinterpret_cast<void***>(ebp + 0x10);
+        if (fastTable && g_state.missCannotHit(static_cast<uint16_t>(fastType & 0xFFFF))) {
+            *fastTable = nullptr;
+            return 0;
+        }
+    }
+
     saferead::beginScope();
 
     // If ppTable itself cannot be read or written nothing can be zeroed: return 0 and let the native
@@ -436,11 +479,13 @@ __declspec(dllexport) int __cdecl VFS_OnOpenStream(uintptr_t ebp) {
     }
 
     char candidate[260] = {0};
-    char specBuf[64] = {0};
+    char specBuf[260] = {0};
     bool matched = false;
 
+    // Only the primary candidate (this+0x28) may reach the stream filters; the fallback candidates are
+    // matched against the static registry only. Plain-disk specs are never claimed here.
     if (readExoString(thisPtr + 0x28, candidate, sizeof(candidate))) {
-        if (g_state.resolveStreamSpec(candidate, streamKind, specBuf, sizeof(specBuf))) {
+        if (g_state.resolveStreamSpec(candidate, streamKind, specBuf, sizeof(specBuf) - 1, true)) {
             matched = true;
         }
     }
@@ -449,20 +494,23 @@ __declspec(dllexport) int __cdecl VFS_OnOpenStream(uintptr_t ebp) {
         for (int i = 0; i < 32; ++i) {
             uintptr_t candidateExo = thisPtr + 0x30 + i * 8;
             if (readExoString(candidateExo, candidate, sizeof(candidate))) {
-                if (g_state.resolveStreamSpec(candidate, streamKind, specBuf, sizeof(specBuf))) {
+                if (g_state.resolveStreamSpec(candidate, streamKind, specBuf, sizeof(specBuf) - 1, false)) {
                     matched = true;
                     break;
                 }
             }
         }
     }
+    specBuf[sizeof(specBuf) - 1] = '\0';
 
     if (!matched) {
         return 0;
     }
 
-    if (std::strncmp(specBuf, "#*VFS_", 6) == 0) {
-        ensureMilesCallbacks();
+    // Chain our Miles file callbacks in front of the current set; if that is impossible the stream
+    // stays on the engine's normal path.
+    if (!ensureMilesChain()) {
+        return 0;
     }
 
     uint8_t tempExo[8] = {0};

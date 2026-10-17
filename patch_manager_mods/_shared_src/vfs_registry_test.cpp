@@ -2,6 +2,7 @@
 #include "check.h"
 
 #include <stdio.h>
+#include <string.h>
 
 int main() {
     // -------------------------------------------------------------
@@ -396,6 +397,102 @@ int main() {
             vfsreg::LockGuard g2(lk);
         }
         lk.init();
+    }
+
+    // -------------------------------------------------------------
+    // 12. Per-type ResMan counters (lock-free H1 fast path) + evict
+    // -------------------------------------------------------------
+    {
+        vfsreg::Registry reg;
+        const uint8_t d[] = { 1, 2, 3 };
+        KT_CHECK(!reg.mayHaveResMan(vfsreg::ResTypeUtc));
+        int a = reg.registerAsset("ctr_a", vfsreg::ResTypeUtc, d, sizeof(d));
+        int b = reg.registerAsset("ctr_b", vfsreg::ResTypeUtc, d, sizeof(d));
+        KT_CHECK(a >= 0 && b >= 0);
+        KT_CHECK(reg.mayHaveResMan(vfsreg::ResTypeUtc));
+        KT_CHECK_EQ(reg.resManTypeCount[vfsreg::Registry::typeBucket(vfsreg::ResTypeUtc)], 2);
+        // in-place update of an existing key does not double count
+        KT_CHECK_EQ(reg.registerAsset("ctr_a", vfsreg::ResTypeUtc, d, sizeof(d)), a);
+        KT_CHECK_EQ(reg.resManTypeCount[vfsreg::Registry::typeBucket(vfsreg::ResTypeUtc)], 2);
+        // stream records do not count; failed registrations do not count
+        KT_CHECK(reg.registerAsset("ctr_s", vfsreg::ResTypeWav, d, sizeof(d), vfsreg::FlagMilesStream) >= 0);
+        KT_CHECK(!reg.mayHaveResMan(vfsreg::ResTypeWav));
+        KT_CHECK_EQ(reg.registerAsset("ctr_t", vfsreg::ResTypeTga, d, sizeof(d)), vfsreg::kRegInvalid);
+        KT_CHECK(!reg.mayHaveResMan(vfsreg::ResTypeTga));
+        // types hash into 64 buckets; every distinct bucket is stable and < 64
+        for (unsigned t = 0; t < 4000; ++t) {
+            KT_CHECK(vfsreg::Registry::typeBucket(static_cast<uint16_t>(t)) < vfsreg::Registry::kTypeBuckets);
+        }
+        // evict frees the slot and decrements; evicting twice / out of range is harmless
+        reg.evict(static_cast<size_t>(a));
+        KT_CHECK(!reg.records[a].active);
+        KT_CHECK(reg.findResMan("ctr_a", vfsreg::ResTypeUtc) == nullptr);
+        KT_CHECK_EQ(reg.resManTypeCount[vfsreg::Registry::typeBucket(vfsreg::ResTypeUtc)], 1);
+        reg.evict(static_cast<size_t>(a));
+        reg.evict(vfsreg::Registry::kMaxAssets + 5);
+        KT_CHECK_EQ(reg.resManTypeCount[vfsreg::Registry::typeBucket(vfsreg::ResTypeUtc)], 1);
+        reg.evict(static_cast<size_t>(b));
+        KT_CHECK(!reg.mayHaveResMan(vfsreg::ResTypeUtc));
+        // the freed slot is reusable
+        KT_CHECK_EQ(reg.registerAsset("ctr_c", vfsreg::ResTypeUtc, d, sizeof(d)), a);
+        reg.clear();
+        KT_CHECK(!reg.mayHaveResMan(vfsreg::ResTypeUtc));
+    }
+
+    // -------------------------------------------------------------
+    // 13. NegCache: bounded, keyed by (name, type), clearable
+    // -------------------------------------------------------------
+    {
+        vfsreg::NegCache nc;
+        char n1[16] = {0};
+        char n2[16] = {0};
+        KT_CHECK(vfsreg::normalizeResRef("neg_one", n1));
+        KT_CHECK(vfsreg::normalizeResRef("neg_two", n2));
+        KT_CHECK(!nc.contains(n1, 2027));
+        KT_CHECK(nc.add(n1, 2027));
+        KT_CHECK(nc.add(n1, 2027)); // idempotent
+        KT_CHECK_EQ(nc.count, 1u);
+        KT_CHECK(nc.contains(n1, 2027));
+        KT_CHECK(!nc.contains(n1, 2029)); // other type
+        KT_CHECK(!nc.contains(n2, 2027)); // other name
+        nc.clear();
+        KT_CHECK(!nc.contains(n1, 2027));
+        KT_CHECK_EQ(nc.count, 0u);
+
+        // fill to capacity: everything added is found, the next add is refused, lookups still terminate
+        char nm[16];
+        for (size_t i = 0; i < vfsreg::NegCache::kCapacity; ++i) {
+            memset(nm, 0, sizeof(nm));
+            snprintf(nm, sizeof(nm), "n%05u", static_cast<unsigned>(i));
+            KT_CHECK(nc.add(nm, 2027));
+        }
+        KT_CHECK_EQ(nc.count, static_cast<uint32_t>(vfsreg::NegCache::kCapacity));
+        memset(nm, 0, sizeof(nm));
+        snprintf(nm, sizeof(nm), "n%05u", 100u);
+        KT_CHECK(nc.contains(nm, 2027));
+        memset(nm, 0, sizeof(nm));
+        snprintf(nm, sizeof(nm), "absent");
+        KT_CHECK(!nc.contains(nm, 2027));
+        KT_CHECK(!nc.add(nm, 2027));
+        KT_CHECK_EQ(nc.count, static_cast<uint32_t>(vfsreg::NegCache::kCapacity));
+    }
+
+    // -------------------------------------------------------------
+    // 14. normalizePath
+    // -------------------------------------------------------------
+    {
+        char out[32];
+        KT_CHECK_EQ(vfsreg::normalizePath("StreamVoice/ABC.wav", out, sizeof(out)), 19u);
+        KT_CHECK_EQ(out, "streamvoice\\abc.wav");
+        KT_CHECK_EQ(vfsreg::normalizePath("HD0:STREAMVOICE\\X.WAV", out, sizeof(out)), 21u);
+        KT_CHECK_EQ(out, "hd0:streamvoice\\x.wav");
+        // truncates, always NUL-terminated
+        char small[6];
+        KT_CHECK_EQ(vfsreg::normalizePath("ABCDEFGHIJ", small, sizeof(small)), 5u);
+        KT_CHECK_EQ(small, "abcde");
+        KT_CHECK_EQ(vfsreg::normalizePath(nullptr, out, sizeof(out)), 0u);
+        KT_CHECK_EQ(out, "");
+        KT_CHECK_EQ(vfsreg::normalizePath("x", nullptr, 4), 0u);
     }
 
     return kt::Report("vfs_registry_test");
