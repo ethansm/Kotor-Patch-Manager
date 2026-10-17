@@ -8,7 +8,7 @@ author = "local"
 description = "Provider for in-memory CExoResMan asset resolution (GetKeyEntry miss + ServiceFromImage hooks), load-time 2DA V2.b row splicing (CRes2DA::OnResourceServiced), and memory-backed Miles audio streams (InitializeSource hook + AIL file callbacks). Exposes k2.assetvfs@1 and k2.characterlib@1. Config asset_vfs.ini [vfs] mode=serve|observe|off (default observe when missing: hooks only log what they would do and change nothing; set mode=serve to serve), log_prefix=, log_all=; legacy enabled=0 = off."
 
 requires = []
-requires_interfaces = ["k2.npcworld@1"]
+requires_interfaces = []  # k2.npcworld@1 is optional: Spawn() polls it lazily and returns 0 without it
 conflicts = []
 
 [patch.supported_versions]
