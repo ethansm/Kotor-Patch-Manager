@@ -1,19 +1,18 @@
 # Session Handoff & Plan State: .claude/plans/holster_editor_options.md
 
 ## 0. Next-Phase Direction
-W4b (0.2.3-dev) hot-swapped LIVE 10-16 22:34 (holster-editor bfff7360, preview-3d daa73241; rollback `kpm_hotswap.py --rollback holster-editor_swap_20261016_223434`).
-- mod-config Esc re-open bug fixed in commit 6ad23e8; full pre-install gate PASSED (332 suites), prepared in KPM, verdict SWAP (awaits user GO to apply).
-- D3c/D3d Weapon Edit Mode architecture and implementation plan created: `d3c_d3d_weapon_edit_plan.md`.
-- Next: Apply `mod-config` hot-swap on user GO, then execute Phase D3c (Weapon Edit Mode & Nudging).
+D3c (0.2.4-dev) prepared and full verification gate PASSED (332 suites, GATE PASS head 7c94d354fc4d). Verdict SWAP.
+- Weapon Edit Mode implemented: Bone cycling, Scope cycling (Weapon/Type/Body), Save (holster.ini [editor]), Revert, Reset Scope, Done.
+- Gestures: LMB screen translation, RMB trackball rotation, Shift+Wheel depth adjustment, MMB character yaw spin, Shift fine tuning (0.2x), Ctrl snapping (1cm / 5deg).
+- Next: Ask user for GO to apply hot-swap `python3 scripts/kpm_hotswap.py --mod holster-editor --apply` (game closed), then playtest row D3C.
 
 ## 1. Active State & Provenance
 - **Master Plan:** `.claude/plans/holster_editor_options.md`
-- **Branch:** `KOTOR-II` (6ad23e8 mod-config: reset pages to MAIN when options panel is hidden by Esc)
-- **Last Landed Commit:**
+- **Branch:** `KOTOR-II` (75a9f23 docs: add D3C play-test queue row for holster-editor 0.2.4-dev)
+- **Last Landed Commits:**
 ```
-6ad23e8 mod-config: reset pages to MAIN when options panel is hidden by Esc
- patch_manager_mods/mod_config_src/ModConfig.cpp | 4 ++++
- 1 file changed, 4 insertions(+)
+75a9f23 docs: add D3C play-test queue row for holster-editor 0.2.4-dev
+7c94d35 holster-editor 0.2.4-dev: weapon edit mode, bone cycling, scopes, and mouse nudging (D3c)
 ```
 - **Dirty Files (166):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
