@@ -1,5 +1,7 @@
 # V-C2 trigger design: run a script with no loose game files (doc 41)
 
+> **BUILT 2026-10-17 as voice-probe 0.2.0 (NOT installed).** Code: `voice_probe_src/TriggerCore.h` (pure logic), wiring in `VoiceProbe.cpp`, tests `trigger_core_test.cpp` (45 checks) + `common_contract_test.cpp`. Manifest now `requires = ["npc-world"]`. Ini: `voice_probe.ini [trigger] key=<VK decimal> ctrl=1 shift=0 cooldown_ms=1000 script=<resref>` (key 0 or empty script = off). Log: `TRIGGER cfg ...` once, then `TRIGGER #n t=.. script=.. oid=.. called=.. ret=..` or `skip=<reason>` per press. R-T1/R-T2 answered by wave `w15-41-hotkey` u01: arg 3 = `bOidValid` (1 at 110/142 engine sites), the name is deep-copied (ReadScriptFile -> 0x7337C0), return 1 = ran. R-T4: `a_attspch1`/`a_attspch2` are NOT sound-only (they start Atton's `102Atton` dialog), so no default script is shipped; pick one per live run. Install = the combined VFS reinstall (needs GO).
+
 Status 2026-10-17: design only. No code written, nothing installed or run live. Input: wave `w14-41-VC2` (u01-u03) plus static facts (`ghidra_knowledge/tools/static_facts.py addr`).
 
 Rule (user, 2026-10-17): no loose game files, no overrides, no edits of game files. Only kpatches with hooks and redirects. Allowed exception: the existing ini config files (`voice_probe.ini`, `kplog.ini`). A `commands/*.toml` for `additional-console-commands` is a loose file, so it is out.
@@ -77,5 +79,5 @@ Consequence for the design: a vanilla script proves the trigger + `PlaySound` pa
 - R-T3: npc-world tick thread = RunScript's usual thread (first live run logs it).
 
 ## 6. Decision for the user
-1. Build the hotkey trigger now in `voice_probe_src` (code + host tests, NOT installed; ships in the combined VFS reinstall), or wait for the VFS and build it then.
-2. GO for the two ini lines (`kplog.ini [voice-probe]`, `voice_probe.ini probe=1`) at the next live slot.
+1. DONE 2026-10-17: the user chose "build now". Built as 0.2.0. Review fixes (Sonnet, APPROVE, 0 blocking): the key is read first and the other Win32 queries only while it is held; TRIGGER lines have their own 200-line cap; a skipped press (no PC) does not start the cooldown; presses are ignored until npc-world `AREA_STABLE` after each `AREA_LOAD`; `g_nw.poll()` in the PlaySound hook retries a late npc-world connect.
+2. Open: GO for the full reinstall (bundle with the VFS install) + the ini lines, then play row VC2-T1.

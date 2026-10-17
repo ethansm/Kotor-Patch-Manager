@@ -145,3 +145,4 @@ extern "C" void __cdecl VoiceProbeKeyLookup(void* self, const char* resref, int 
      (`[global] enabled=1` is already set; the core re-reads the ini about once a second.)
   2. `<game>/voice_probe.ini` is absent (probe off by default). For a run: `[probe]` `probe=1`; back to `probe=0` after.
 - A trigger change (section 9, design in `V-C2_TRIGGER_DESIGN.md`) adds code to `voice_probe_src` and then needs a hot-swap or reinstall: bundle it with the VFS install (one `kpm_reinstall.py` run, per `kotor2-kpm-install`), fresh `GATE PASS` first.
+- UPDATE 2026-10-17: the trigger is BUILT as voice-probe 0.2.0 (NOT installed; gate `GATE PASS` head 0b6c46c, DLL md5 594f76a1). Its manifest gained `requires = ["npc-world"]`, so it needs a FULL reinstall, not a hot-swap. Live check = `PLAY_TEST_QUEUE.md` row VC2-T1.
