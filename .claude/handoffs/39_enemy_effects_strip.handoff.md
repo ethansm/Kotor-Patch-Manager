@@ -1,31 +1,30 @@
 # Session Handoff & Plan State: patch_manager_mods/39_enemy_effects_strip.md
 
 ## 0. Next-Phase Direction
-start p0: static RE of where the target name/vitality bar is drawn, then the logging probe
+All phases complete
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/39_enemy_effects_strip.md`
-- **Branch:** `KOTOR-II` (6c0e0f9 docs: record user decisions on texture overlay plan)
-- **Generated:** 2026-10-12 23:10:42 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (8dd1573 docs(voice): VC2-T1 voice-probe 0.2.0 INSTALLED 10-17 02:48 (play check pending))
+- **Generated:** 2026-10-17 03:07:14 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-6c0e0f9 docs: record user decisions on texture overlay plan
- .claude/handoffs/texture_diversity_research.handoff.md |  2 +-
- .claude/research/texture_diversity/PLAN.md             | 12 ++++++------
- 2 files changed, 7 insertions(+), 7 deletions(-)
+8dd1573 docs(voice): VC2-T1 voice-probe 0.2.0 INSTALLED 10-17 02:48 (play check pending)
+ patch_manager_mods/PLAY_TEST_QUEUE.md | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 ```
-- **Dirty Files (119):**
-  - ` M .claude/handoffs/24_master_plan_status.handoff.md`
-  - ` M .claude/handoffs/27_companion_selfheal.handoff.md`
-  - ` M .claude/handoffs/33_ui_queue_hotbar_fixes.handoff.md`
+- **Dirty Files (168):**
+  - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
-  - ` M .claude/handoffs/38_k1_to_k2_asset_import.handoff.md`
+  - ` M .claude/handoffs/40_npc_behaviour_variety.handoff.md`
+  - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
+  - ` M .claude/handoffs/PHASE7_COMMON_MASTER.handoff.md`
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
+  - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
   - ` M .claude/plans/swarm_library_architecture.md`
-  - ` M patch_manager_mods/24_master_plan_status.md`
-  - ` M patch_manager_mods/34_npc_diversity_dispatcher.md`
-  - ` M patch_manager_mods/38_k1_to_k2_asset_import.md`
-  - ... +109 more (run `git status --short`)
+  - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
+  - ` M CLAUDE.md`
+  - ... +158 more (run `git status --short`)
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume patch_manager_mods/39_enemy_effects_strip.md`.

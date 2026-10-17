@@ -70,3 +70,5 @@
 - Below `TierObvious`: zero visual change (byte-identical draw path, nothing drawn).
 - Slowing an enemy at the right rank shows one icon above its bar that disappears when Slow expires; at `TierFull` the icon drains.
 - No log spam (<50 lines on startup), no crash on null/dead/destroyed target.
+
+- [x] P2 (completed)
