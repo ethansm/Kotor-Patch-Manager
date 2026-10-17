@@ -1,7 +1,7 @@
 # Session Handoff & Plan State: .claude/plans/holster_editor_options.md
 
 ## 0. Next-Phase Direction
-Install 2 LIVE 10-16 20:14: mod-config 70ce9753 + holster-editor 0c7b2a8d (rollback kpm_reinstall.py --rollback batch_reinstall_20261016_201439); patch_config order OK (mod-config 151 < holster-editor 2455); kplog.ini [mod-config] added (backup kplog.ini.bak_mc_20261016); MC1 row pending in PLAY_TEST_QUEUE.md. NEXT: user plays MC1 -> 2-3 Haiku log readers (mod-config log, holster-editor log, crash sweep); in parallel W3 c20 HseView.h + hse_view_test (Haiku). Follow-up: holster_editor_src common_contract_test.cpp (compat GAP).
+W3 (D3b) code landed in 96f96d6, KPM mirrored & rebuilt in c2a22c7, full pre-install gate PASS, kpm_status SWAP. Play row D3B pending in PLAY_TEST_QUEUE.md. NEXT: user GO with game closed -> `python3 scripts/kpm_hotswap.py --mod holster-editor --apply`. Then user plays D3B, logs checked with `kotor2_logs.py check holster-editor_log.txt --new`. Follow-up: D3c placement editing (sliders, nudges, Save).
 
 ## 1. Active State & Provenance
 - **Master Plan:** `.claude/plans/holster_editor_options.md`
@@ -105,3 +105,9 @@ _(none recorded; append Dead Ends & Anti-Patterns and Verification Commands here
 - **W2 progress:** c15 ModConfigApi.h + contract test (49 checks) and c16 MenuUiLogic.h + tests (241 checks) committed 487d7f7; KPM Common ModConfigApi.h synced + committed in KPM 9ac4fd9. c17 scaffold (manifest/exports.def/mod_config.ini/hooks.toml, hooks McBind/McTick/McDestroy = OptBindView/OptTick/OptDestroy addresses) is on disk UNCOMMITTED by design: it lands in ONE commit with c18+c19 (hook move). check_provider_manifests currently FAIL=2 = missing provide() calls (c18 adds them); the duplicate-hook FAIL appears once holster-editor requires mod-config, so c19 must drop its hooks in the same commit.
 - **User rule (10-16 evening):** after investigation, persist context, then plan mode for a detailed next-phase plan; Haiku 5.5 swarms for research in planning and in the plan; Sonnet 5.5 for the code cards so the Opus orchestrator keeps a minimal context.
 - Next: plan mode -> plan for c18 (mod-config engine glue) + c19 (holster-editor 0.2.0-dev port) + Install 2 + MC1, then W3.
+- **W3 (D3b) DONE 10-16**:
+  - Wave 1 landed: c20 `HseView.h` + `hse_view_test.cpp` (view maths, rect helpers, labels); c21a `HseParty.h` (saferead memberCount/memberAt/memberName); c23 housekeeping (version bump 0.2.1-dev, `common_contract_test.cpp`); R13a (`r13a_menu_attach_refresh.md` confirms 504ef5 runs per frame for preview-3d weapons); R13c (`r13c_c22_left_hand.md` confirms c22 ready for build).
+  - Wave 2+3 landed: c21b + c21c in `HolsterEditor.cpp` (re-reads ini at every build, creates 8 buttons + name label, layouts strip, drives Bind/Rebuild/SetWeapons/RegisterPreview/SetView/BeforeFree lifecycle, button clicks, mouse spin drag).
+  - Tests: `run_tests.py hse_view hse_layout holster_editor` 3 passed; `check_raw_addresses.py` FAIL=0; `check_provider_manifests.py` FAIL=0; `check_shared_headers.py` 43 headers 0 drifted; `compat_check.py` 6 passed.
+  - Gate: full `pre_install_gate.sh --mod holster_editor_src` GATE PASS (331 suites pass); `kpm_hotswap.py --mod holster-editor --prepare` rebuilt KPM side (committed c2a22c7); verdict SWAP.
+  - Play row D3B added to `patch_manager_mods/PLAY_TEST_QUEUE.md`. Next: await user GO (game closed) to run `--apply`.
