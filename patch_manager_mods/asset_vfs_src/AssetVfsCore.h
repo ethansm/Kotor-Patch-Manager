@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -95,6 +96,27 @@ struct TwoDaPatchTable {
         return static_cast<int32_t>(added);
     }
 
+    // Number of distinct row indices with an active cell for this table (0 = nothing registered).
+    uint32_t countRows(const char* tableResRef16) const {
+        if (!tableResRef16) return 0;
+        char targetNorm[16] = {0};
+        if (!vfsreg::normalizeResRef(tableResRef16, targetNorm)) return 0;
+        uint32_t seen[kMax2DaCells];
+        uint32_t nSeen = 0;
+        for (uint32_t i = 0; i < count; ++i) {
+            if (!cells[i].active) continue;
+            char tableNorm[16] = {0};
+            if (!vfsreg::normalizeResRef(cells[i].table_name, tableNorm)) continue;
+            if (std::memcmp(targetNorm, tableNorm, 16) != 0) continue;
+            bool dup = false;
+            for (uint32_t k = 0; k < nSeen; ++k) {
+                if (seen[k] == cells[i].row_index) { dup = true; break; }
+            }
+            if (!dup) seen[nSeen++] = cells[i].row_index;
+        }
+        return nSeen;
+    }
+
     uint32_t buildSpliced(const char* tableResRef16, const uint8_t* baseBuf, uint32_t baseSize, uint8_t* outBuf, uint32_t outCap) const {
         if (!tableResRef16 || !baseBuf || baseSize == 0) return 0;
         char targetNorm[16] = {0};
@@ -130,12 +152,184 @@ struct TwoDaPatchTable {
 };
 
 
+// Engine data dword read once by the H4 hook for the log (0 = the stream gate branch is dead).
+// Name: the InitializeSource stream-gate flag in .data (doc 44); no gameaddr:: name exists yet.
+constexpr uintptr_t kStreamGateFlag = 0x00A10768;
+
+// ---- configuration (asset_vfs.ini [vfs]) ----------------------------------------------------------
+//
+// mode=serve|observe|off (default observe when missing or unusable; legacy enabled=0 = off),
+// log_prefix=<comma list> (case-insensitive prefix match on the normalised name; empty = counters only),
+// log_all=0|1 (1 = log every name). Parsed from plain strings so it is host-testable.
+constexpr int kModeOff     = 0;
+constexpr int kModeObserve = 1;
+constexpr int kModeServe   = 2;
+
+inline const char* modeName(int mode) {
+    return mode == kModeServe ? "serve" : (mode == kModeOff ? "off" : "observe");
+}
+
+inline const char* defaultLogPrefixes() { return "k1p_,kvj,p_juhani"; }
+
+struct VfsConfig {
+    static constexpr size_t kMaxPrefixes = 8;
+    static constexpr size_t kPrefixLen = 24;
+
+    int mode = kModeObserve;
+    bool logAll = false;
+    bool modeInvalid = false;           // mode= was present but not serve|observe|off
+    char prefixes[kMaxPrefixes][kPrefixLen] = {};
+    uint32_t nPrefixes = 0;
+
+    static char lower(char c) { return (c >= 'A' && c <= 'Z') ? static_cast<char>(c + ('a' - 'A')) : c; }
+
+    // Replaces the prefix list from a comma-separated string (trimmed, lowercased, empties skipped).
+    void setPrefixes(const char* list) {
+        nPrefixes = 0;
+        std::memset(prefixes, 0, sizeof(prefixes));
+        if (!list) return;
+        const char* p = list;
+        while (*p && nPrefixes < kMaxPrefixes) {
+            while (*p == ',' || *p == ' ' || *p == '\t') ++p;
+            char* dst = prefixes[nPrefixes];
+            size_t n = 0;
+            while (*p && *p != ',') {
+                if (n + 1 < kPrefixLen && *p != ' ' && *p != '\t') {
+                    dst[n++] = lower(*p);
+                }
+                ++p;
+            }
+            dst[n] = '\0';
+            if (n > 0) ++nPrefixes;
+        }
+    }
+
+    bool prefixMatch(const char* name) const {
+        if (!name) return false;
+        for (uint32_t i = 0; i < nPrefixes; ++i) {
+            const char* pre = prefixes[i];
+            size_t k = 0;
+            while (pre[k] && name[k] && lower(name[k]) == pre[k]) ++k;
+            if (pre[k] == '\0') return true;
+        }
+        return false;
+    }
+
+    bool wants(const char* name) const { return logAll || prefixMatch(name); }
+
+    // modeStr: raw mode= value ("" or null = missing); legacyEnabled: enabled= value (1 when missing).
+    static VfsConfig fromIni(const char* modeStr, int legacyEnabled, const char* prefixList, int logAllVal) {
+        VfsConfig c;
+        c.mode = kModeObserve;
+        char m[16] = {0};
+        size_t n = 0;
+        if (modeStr) {
+            const char* p = modeStr;
+            while (*p == ' ' || *p == '\t') ++p;
+            for (; *p && *p != ' ' && *p != '\t' && n + 1 < sizeof(m); ++p) m[n++] = lower(*p);
+        }
+        if (n > 0) {
+            if (std::strcmp(m, "serve") == 0) c.mode = kModeServe;
+            else if (std::strcmp(m, "observe") == 0) c.mode = kModeObserve;
+            else if (std::strcmp(m, "off") == 0) c.mode = kModeOff;
+            else c.modeInvalid = true;
+        }
+        if (legacyEnabled == 0) c.mode = kModeOff; // legacy opt-out always wins
+        c.setPrefixes(prefixList);
+        c.logAll = (logAllVal != 0);
+        return c;
+    }
+};
+
+// Per-name / total line budget for the `res` channel (call-count based, no allocation).
+// Prefix test first, then: first kPerNameFirst lines per name, then every kPerNameEvery-th, total cap kTotalCap.
+struct LogBudget {
+    static constexpr uint32_t kSlots = 128;      // power of two
+    static constexpr uint32_t kPerNameFirst = 20;
+    static constexpr uint32_t kPerNameEvery = 100;
+    static constexpr uint32_t kTotalCap = 400;
+
+    uint32_t hashes[kSlots] = {};
+    uint32_t counts[kSlots] = {};
+    uint32_t total = 0;
+
+    void clear() {
+        std::memset(hashes, 0, sizeof(hashes));
+        std::memset(counts, 0, sizeof(counts));
+        total = 0;
+    }
+
+    static uint32_t hashName(const char* name) {
+        uint32_t h = 2166136261u;
+        for (const char* p = name; *p; ++p) {
+            h = (h ^ static_cast<uint8_t>(VfsConfig::lower(*p))) * 16777619u;
+        }
+        return h | 1u; // never 0 (0 = empty slot)
+    }
+
+    // Call with the lock held. True = emit this line.
+    bool take(const char* name) {
+        if (!name || total >= kTotalCap) return false;
+        const uint32_t h = hashName(name);
+        uint32_t i = h & (kSlots - 1);
+        for (uint32_t probe = 0; probe < kSlots; ++probe, i = (i + 1) & (kSlots - 1)) {
+            if (hashes[i] == 0) hashes[i] = h;
+            if (hashes[i] != h) continue;
+            const uint32_t n = ++counts[i];
+            const bool ok = n <= kPerNameFirst || ((n - kPerNameFirst) % kPerNameEvery) == 0;
+            if (ok) ++total;
+            return ok;
+        }
+        return false; // table full: silent
+    }
+};
+
+struct Counters {
+    std::atomic<uint32_t> h1Calls{0};
+    std::atomic<uint32_t> misses{0};   // slow-path lookups (past the zero-handler fast path)
+    std::atomic<uint32_t> served{0};
+    std::atomic<uint32_t> observe{0};
+    std::atomic<uint32_t> streams{0};
+    std::atomic<uint32_t> splices{0};
+
+    void clear() {
+        h1Calls = 0; misses = 0; served = 0; observe = 0; streams = 0; splices = 0;
+    }
+};
+
+// `res` channel outcomes for MissEventFn.
+constexpr int kMissServe   = 1;
+constexpr int kMissObserve = 2;
+constexpr int kMissPass    = 3;
+// Called WITHOUT the lock, only when the budget lets the line through.
+typedef void (*MissEventFn)(const char* name, uint16_t resType, int outcome);
+typedef void (*ServeEventFn)(const char* name, uint16_t resType, uint32_t size, int ret);
+
+// Basename without extension, lowercased, truncated to cap-1 (the `res`/`audio` log name of a stream path).
+inline void streamStem(const char* path, char* out, size_t cap) {
+    if (!out || cap == 0) return;
+    out[0] = '\0';
+    if (!path) return;
+    const char* start = path;
+    for (const char* p = path; *p; ++p) {
+        if (*p == '\\' || *p == '/' || *p == ':') start = p + 1;
+    }
+    const char* end = start + std::strlen(start);
+    for (const char* p = start; *p; ++p) {
+        if (*p == '.') end = p;
+    }
+    size_t n = 0;
+    for (const char* p = start; p < end && n + 1 < cap; ++p) out[n++] = VfsConfig::lower(*p);
+    out[n] = '\0';
+}
+
 // Notice codes passed to EngineState::noticeFn (the provider turns them into KP_WARN lines).
 constexpr int kNoticeServedReject   = 1; // what = resref, owner = registrant
 constexpr int kNoticePoolFull       = 2; // what = "static" | "dynamic", owner = registrant
 constexpr int kNoticeRewriteIgnored = 3; // what = "", owner = stream filter owner (REWRITE is disabled)
 constexpr int kNoticeStemConflict   = 4; // what = candidate path, owner = stream filter owner
 constexpr int kNoticeServedKept     = 5; // what = decimal count of served records kept, owner = unregistered owner
+constexpr int kNoticeOpenFail       = 6; // what = spec, owner = reason ("cursor-full" | "bad-spec")
 typedef void (*NoticeFn)(int code, const char* what, const char* owner);
 
 // Provider-owned copies of handler/filter data (HeapAlloc on Win32, malloc on host; tests inject fakes).
@@ -163,7 +357,8 @@ inline void defaultCopyFree(void* p) {
 constexpr int kRegPathConflict = -4;
 
 struct EngineState {
-    bool enabled = true;
+    bool enabled = true;          // false = mode off: every hook returns 0 at the top
+    bool observe = false;         // true = mode observe: hooks log what they would do and change no engine state
     vfsreg::Lock lock;            // guards reg, cursors, twodaPatches, handler/filter lists, work buffers
     vfsreg::Registry reg;
     vfsreg::MilesCursorTable cursors;
@@ -214,6 +409,11 @@ struct EngineState {
     CopyFreeFn copyFreeFn = defaultCopyFree;
 
     NoticeFn noticeFn = nullptr;
+    MissEventFn missEventFn = nullptr;
+    ServeEventFn serveEventFn = nullptr;
+    VfsConfig logCfg;             // prefixes / log_all (no prefixes + !logAll = counters only)
+    LogBudget budget;
+    Counters counters;
     bool warnedFull[2] = {false, false}; // [0] static pool, [1] dynamic pool
 
     EngineState() {
@@ -222,6 +422,10 @@ struct EngineState {
 
     void reset() {
         enabled = true;
+        observe = false;
+        logCfg = VfsConfig(); // no prefixes, log_all off: counters only
+        budget.clear();
+        counters.clear();
         for (size_t i = 0; i < vfsreg::Registry::kDynamicReserve; ++i) {
             freeCopy(dyn[i].copy);
         }
@@ -249,6 +453,21 @@ struct EngineState {
 
     void init() {
         reset();
+    }
+
+    // Applies a parsed [vfs] config (mode + log selection). Provider startup only.
+    void applyConfig(const VfsConfig& c) {
+        enabled = (c.mode != kModeOff);
+        observe = (c.mode == kModeObserve);
+        logCfg = c;
+    }
+
+    // Log gate: prefix test first (no allocation), then the per-name / total budget. Takes the lock briefly;
+    // never call with the lock held.
+    bool takeLog(const char* name) {
+        if (!name || !logCfg.wants(name)) return false;
+        vfsreg::LockGuard g(lock);
+        return budget.take(name);
     }
 
     // ---- owned copies -----------------------------------------------------------------------
@@ -425,6 +644,11 @@ struct EngineState {
         return twodaPatches.addCells(newCells, numCells);
     }
 
+    uint32_t countTwoDaRows(const char* tableResRef16) {
+        vfsreg::LockGuard g(lock);
+        return twodaPatches.countRows(tableResRef16);
+    }
+
     uint32_t buildTwoDaSpliced(const char* tableResRef16, const uint8_t* baseBuf, uint32_t baseSize,
                                uint8_t* outBuf, uint32_t outCap) {
         vfsreg::LockGuard g(lock);
@@ -546,10 +770,11 @@ struct EngineState {
     // ---- H1: CExoResMan::GetKeyEntry miss ---------------------------------------------------
 
     // Lock-free pre-check for the H1 hook: true = this lookup certainly cannot be served by the VFS
-    // (disabled, or no miss handler active AND no ResMan record of this type), so the hook can zero
+    // (disabled, or no miss handler active AND no ResMan record of this type; log_all=1 keeps the slow
+    // path open so every name can be logged), so the hook can zero
     // *ppTable and return 0 without any SafeRead or lock. Plain aligned 32-bit reads only.
     bool missCannotHit(uint16_t resType) const {
-        return !enabled || (activeMissHandlers == 0 && !reg.mayHaveResMan(resType));
+        return !enabled || (activeMissHandlers == 0 && !reg.mayHaveResMan(resType) && !logCfg.logAll);
     }
 
     // Hook H1 uses skip_original_bytes = true, so the stolen `MOV DWORD [ecx],0` (zeroing *ppTable)
@@ -562,6 +787,16 @@ struct EngineState {
             *ppTable = nullptr;
         }
         return rc;
+    }
+
+    // Reports one H1 outcome: counters always, the `res` line only when the log gate lets it through.
+    void emitMiss(const char* name, uint16_t resType, int outcome) {
+        counters.misses.fetch_add(1, std::memory_order_relaxed);
+        if (outcome == kMissServe) counters.served.fetch_add(1, std::memory_order_relaxed);
+        else if (outcome == kMissObserve) counters.observe.fetch_add(1, std::memory_order_relaxed);
+        if (missEventFn && takeLog(name)) {
+            missEventFn(name, resType, outcome);
+        }
     }
 
     int resolveKeyEntryMiss(const char* rawResRef16, uint16_t resType, void** ppTable, void** ppEntry) {
@@ -577,6 +812,7 @@ struct EngineState {
         }
         char norm[17] = {0};
         const bool normOk = vfsreg::normalizeResRef(rawCopy, norm);
+        const char* logName = normOk ? norm : rawCopy;
 
         struct HandlerSnap {
             K2VfsResManMissFn fn;
@@ -585,18 +821,29 @@ struct EngineState {
             int32_t token;
         } snap[kMaxMissHandlers];
         size_t nSnap = 0;
+        bool staticHit = false;
         {
             vfsreg::LockGuard g(lock);
             vfsreg::AssetRecord* rec = reg.findResMan(rawResRef16, resType);
             if (rec) {
-                *ppTable = &reg.fakeTable;
-                *ppEntry = &rec->keyEntry;
-                return 1;
+                if (!observe) {
+                    *ppTable = &reg.fakeTable;
+                    *ppEntry = &rec->keyEntry;
+                }
+                staticHit = true;
             }
+        }
+        if (staticHit) {
+            emitMiss(logName, resType, observe ? kMissObserve : kMissServe);
+            return observe ? 0 : 1;
+        }
+        {
+            vfsreg::LockGuard g(lock);
             if (inMiss || !normOk) {
                 return 0; // re-entrant miss from inside a handler (or unusable name): plain miss
             }
             if (neg.contains(norm, resType)) {
+                counters.misses.fetch_add(1, std::memory_order_relaxed);
                 return 0;
             }
             for (size_t i = 0; i < kMaxMissHandlers; ++i) {
@@ -609,18 +856,29 @@ struct EngineState {
                 }
             }
             if (nSnap == 0) {
-                return 0;
+                // fallthrough to the pass event below (after the lock is released)
+            } else {
+                inMiss = true;
             }
-            inMiss = true;
+        }
+        if (nSnap == 0) {
+            emitMiss(logName, resType, kMissPass);
+            return 0;
         }
 
         // Handlers run WITHOUT the lock held (they may call back into the VFS API), in slot order.
+        // Observe mode: the handler is still called, its result is only logged (no registration, no copy).
         bool claimed = false;
         bool regFailed = false;
+        bool wouldServe = false;
         for (size_t i = 0; i < nSnap; ++i) {
             K2VfsAssetEntry outEntry = {};
             int32_t handled = snap[i].fn(norm, resType, &outEntry, snap[i].user);
             if (handled == 1 && outEntry.data != nullptr && outEntry.size > 0) {
+                if (observe) {
+                    wouldServe = true;
+                    break;
+                }
                 int idx = registerOwnedCopy(norm, resType, outEntry.data, outEntry.size,
                                             vfsreg::FlagResMan, snap[i].owner, snap[i].token, nullptr);
                 if (idx >= 0) {
@@ -636,10 +894,11 @@ struct EngineState {
         {
             vfsreg::LockGuard g(lock);
             inMiss = false;
-            if (!claimed && !regFailed) {
+            if (!claimed && !wouldServe && !regFailed) {
                 neg.add(norm, resType);
             }
         }
+        emitMiss(logName, resType, claimed ? kMissServe : (wouldServe ? kMissObserve : kMissPass));
         return claimed ? 1 : 0;
     }
 
@@ -648,10 +907,14 @@ struct EngineState {
     // Mirrors the native contract: returns 0 (do nothing, native runs) when the CRes already has
     // flag 4 set or is not a servable VFS record; otherwise fills the CRes and returns the result of
     // OnResourceServiced (callOnServiced) or 1 when no callee is given. Non-zero = consumed.
+    // Observe mode: returns 0 before touching anything (the CRes is never written).
     int handleServiceFromImage(uint8_t* pRes, uint8_t* (*allocFn)(uint32_t), int (*callOnServiced)(void*)) {
-        if (!enabled || !pRes) {
+        if (!enabled || observe || !pRes) {
             return 0;
         }
+        char logName[17] = {0};
+        uint16_t logType = 0;
+        uint32_t logSize = 0;
         {
             vfsreg::LockGuard g(lock);
             uint32_t packedId = *reinterpret_cast<const uint32_t*>(pRes + kResOffPackedId);
@@ -678,6 +941,9 @@ struct EngineState {
                 }
                 workCap[idx] = neededSize;
             }
+            std::memcpy(logName, rec->keyEntry.resref, 16);
+            logType = rec->keyEntry.resType;
+            logSize = rec->size;
             std::memset(workAlloc[idx], 0, kWorkPrefixBytes);
             std::memcpy(workAlloc[idx] + kWorkPrefixBytes, rec->data, rec->size);
 
@@ -688,7 +954,11 @@ struct EngineState {
         }
 
         // External callee: lock released. A 0 result is passed through (nothing is rolled back).
-        return callOnServiced ? callOnServiced(pRes) : 1;
+        const int ret = callOnServiced ? callOnServiced(pRes) : 1;
+        if (serveEventFn && takeLog(logName)) {
+            serveEventFn(logName, logType, logSize, ret);
+        }
+        return ret;
     }
 
     // ---- H4: streaming source open ----------------------------------------------------------
@@ -777,6 +1047,11 @@ struct EngineState {
                 rewritten, sizeof(rewritten), snap[i].user);
 
             if (rc == K2VFS_STREAM_MEMORY && outData != nullptr && outSize > 0) {
+                if (observe) {
+                    // Observe: the claim is only reported (no copy, no registration).
+                    int n = std::snprintf(outSpec, specCap, "observe");
+                    return (n > 0 && static_cast<size_t>(n) < specCap);
+                }
                 int idx = registerOwnedCopy(candidatePath, vfsreg::ResTypeWav, outData, outSize,
                                             vfsreg::FlagMilesStream, snap[i].owner, snap[i].token, npath);
                 if (idx == kRegPathConflict) {
@@ -818,20 +1093,25 @@ struct EngineState {
             return false;
         }
 
-        vfsreg::LockGuard g(lock);
-        const char* numPtr = vfsTag + 6;
-        char* endPtr = nullptr;
-        unsigned long idx = std::strtoul(numPtr, &endPtr, 10);
-        if (endPtr != numPtr && idx < vfsreg::Registry::kMaxAssets && reg.records[idx].active) {
-            const vfsreg::AssetRecord& rec = reg.records[idx];
-            vfsreg::AudioSlice slice = vfsreg::inspectAudioContainer(rec.data, rec.size, rec.keyEntry.resType);
-            uint32_t h = cursors.open(slice.payload, slice.length);
-            if (h != 0) {
-                reg.markServed(idx);
-                *outHandle = h;
-                return true;
+        const char* failReason = "bad-spec";
+        {
+            vfsreg::LockGuard g(lock);
+            const char* numPtr = vfsTag + 6;
+            char* endPtr = nullptr;
+            unsigned long idx = std::strtoul(numPtr, &endPtr, 10);
+            if (endPtr != numPtr && idx < vfsreg::Registry::kMaxAssets && reg.records[idx].active) {
+                const vfsreg::AssetRecord& rec = reg.records[idx];
+                vfsreg::AudioSlice slice = vfsreg::inspectAudioContainer(rec.data, rec.size, rec.keyEntry.resType);
+                uint32_t h = cursors.open(slice.payload, slice.length);
+                if (h != 0) {
+                    reg.markServed(idx);
+                    *outHandle = h;
+                    return true;
+                }
+                failReason = "cursor-full";
             }
         }
+        if (noticeFn) noticeFn(kNoticeOpenFail, filename, failReason); // lock released
         return false;
     }
 };
@@ -904,6 +1184,9 @@ struct MilesChain {
     bool ensure() {
         if (!st || !getFn || !setFn || !ours.allSet()) {
             return false;
+        }
+        if (st->observe || !st->enabled) {
+            return false; // observe/off: never touch the Miles callbacks
         }
         MilesCallbackSet cur;
         getFn(&cur);

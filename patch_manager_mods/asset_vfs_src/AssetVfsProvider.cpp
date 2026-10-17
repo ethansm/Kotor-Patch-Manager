@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include <atomic>
 
 #include "kpatch_api.h"
 #include "KpLog.h"
@@ -170,6 +171,12 @@ void onVfsNotice(int code, const char* what, const char* owner) {
         KP_WARN("stream filter K2VFS_STREAM_REWRITE is disabled; treated as PASS (owner=%s)", owner);
     } else if (code == assetvfs::kNoticeStemConflict) {
         KP_WARN("stream filter MEMORY claim rejected: stem already owned by a different path '%s' (owner=%s)", what, owner);
+    } else if (code == assetvfs::kNoticeOpenFail) {
+        static std::atomic<uint32_t> fails{0};
+        const uint32_t n = fails.fetch_add(1, std::memory_order_relaxed);
+        if (n < 20) { // first 20 only; the reason is "cursor-full" or "bad-spec"
+            KP_WARN("OPEN failed: '%s' (%s)", what, owner);
+        }
     } else if (code == assetvfs::kNoticeServedKept) {
         KP_WARN("unregistered owner=%s: %s served VFS record(s) keep their data copy (engine still references them)", owner, what);
     }
@@ -177,6 +184,18 @@ void onVfsNotice(int code, const char* what, const char* owner) {
 
 const char* ownerOrUnknown(const char* owner) {
     return (owner && owner[0]) ? owner : "?";
+}
+
+// `res` channel lines. The core only calls these when the log gate (prefix test + budget) allows the line,
+// so no formatting happens for filtered names.
+void onMissEvent(const char* name, uint16_t resType, int outcome) {
+    const char* what = outcome == assetvfs::kMissServe ? "serve"
+                     : (outcome == assetvfs::kMissObserve ? "observe" : "pass");
+    KP_LOG(chRes, "MISS %s %u %s", name, static_cast<unsigned>(resType), what);
+}
+
+void onServeEvent(const char* name, uint16_t resType, uint32_t size, int ret) {
+    KP_LOG(chRes, "SERVE %s %u %u ret=%d", name, static_cast<unsigned>(resType), static_cast<unsigned>(size), ret);
 }
 
 // Returns 1 when registered, 0 otherwise (invalid entry, already served, or pool full).
@@ -247,7 +266,10 @@ const K2AssetVfsApi g_vfsApi = {
 };
 
 int32_t KPATCH_CALL apiRegisterCharacter(const K2CharacterDefinition* def, const char* owner) {
-    return g_state.chars.registerDef(def, owner);
+    const int32_t rc = g_state.chars.registerDef(def, owner);
+    KP_LOG(chChar, "REGISTER %s owner=%s rc=%d",
+           (def && def->character_id) ? def->character_id : "(null)", ownerOrUnknown(owner), static_cast<int>(rc));
+    return rc;
 }
 
 int32_t KPATCH_CALL apiHasCharacter(const char* character_id) {
@@ -266,8 +288,14 @@ uint32_t KPATCH_CALL apiSpawn(const char* character_id, const char* area_resref,
     (void)area_resref;
     g_nw.poll();
     const k2char::Catalog::Entry* entry = g_state.chars.getEntry(character_id);
-    if (!entry) return 0;
-    return g_nw.spawn(entry->default_utc, entry->default_tag, x, y, z, facingRadians);
+    if (!entry) {
+        KP_WARN("SPAWN %s: not registered", character_id ? character_id : "(null)");
+        return 0;
+    }
+    const uint32_t oid = g_nw.spawn(entry->default_utc, entry->default_tag, x, y, z, facingRadians);
+    KP_LOG(chChar, "SPAWN %s utc=%s tag=%s -> oid=0x%X", character_id, entry->default_utc, entry->default_tag,
+           static_cast<unsigned>(oid));
+    return oid;
 }
 
 const K2CharacterLibApi g_charApi = {
@@ -302,22 +330,50 @@ __declspec(dllexport) void __cdecl KPatchInit(const KPatchApi* api) {
     g_state.noticeFn = onVfsNotice;
     initMilesChain();
 
-    int enabledIni = GetPrivateProfileIntA("vfs", "enabled", 1, ".\\asset_vfs.ini");
-    if (enabledIni == 0) {
-        g_state.enabled = false;
-    }
+    // [vfs] mode=serve|observe|off (default observe), legacy enabled=0 = off, log_prefix=a,b (empty = counters
+    // only), log_all=1 logs every name. Parsed by the engine-free core (host-tested).
+    char modeBuf[32] = {0};
+    char prefixBuf[160] = {0};
+    GetPrivateProfileStringA("vfs", "mode", "", modeBuf, sizeof(modeBuf), ".\\asset_vfs.ini");
+    GetPrivateProfileStringA("vfs", "log_prefix", assetvfs::defaultLogPrefixes(), prefixBuf, sizeof(prefixBuf),
+                             ".\\asset_vfs.ini");
+    const int enabledIni = GetPrivateProfileIntA("vfs", "enabled", 1, ".\\asset_vfs.ini");
+    const int logAllIni = GetPrivateProfileIntA("vfs", "log_all", 0, ".\\asset_vfs.ini");
+    const assetvfs::VfsConfig cfg = assetvfs::VfsConfig::fromIni(modeBuf, enabledIni, prefixBuf, logAllIni);
+    g_state.applyConfig(cfg);
+    g_state.missEventFn = onMissEvent;
+    g_state.serveEventFn = onServeEvent;
 
     g_nw.init(api, "asset-vfs");
     g_nw.connect();
 
-    KP_LOG(chCore, "provided %s v%d and %s v%d (enabled=%d)",
+    KP_LOG(chCore, "provided %s v%d and %s v%d (mode=%s enabled=%d log_prefixes=%u log_all=%d)",
            K2_ASSETVFS_IFACE, K2_ASSETVFS_VERSION,
            K2_CHARLIB_IFACE, K2_CHARLIB_VERSION,
-           g_state.enabled ? 1 : 0);
+           assetvfs::modeName(cfg.mode), g_state.enabled ? 1 : 0,
+           static_cast<unsigned>(cfg.nPrefixes), cfg.logAll ? 1 : 0);
+    if (cfg.modeInvalid) {
+        KP_WARN("asset_vfs.ini [vfs] mode='%s' is not serve|observe|off; using observe", modeBuf);
+    }
+    if (cfg.mode == assetvfs::kModeObserve) {
+        KP_LOG(chCore, "OBSERVE mode: hooks log what they would do and leave engine state untouched (set mode=serve to serve)");
+    }
 }
 
 __declspec(dllexport) int __cdecl VFS_OnGetKeyEntryMiss(uintptr_t ebp) {
     if (!ebp) return 0;
+
+    // Counter summary every 30000 H1 calls (call-count based: KP_LOG_EVERY is time based).
+    const uint32_t h1n = g_state.counters.h1Calls.fetch_add(1, std::memory_order_relaxed) + 1;
+    if ((h1n % 30000u) == 0) {
+        KP_LOG(chCore, "COUNTERS h1=%u misses=%u served=%u observe=%u streams=%u splices=%u",
+               static_cast<unsigned>(h1n),
+               static_cast<unsigned>(g_state.counters.misses.load(std::memory_order_relaxed)),
+               static_cast<unsigned>(g_state.counters.served.load(std::memory_order_relaxed)),
+               static_cast<unsigned>(g_state.counters.observe.load(std::memory_order_relaxed)),
+               static_cast<unsigned>(g_state.counters.streams.load(std::memory_order_relaxed)),
+               static_cast<unsigned>(g_state.counters.splices.load(std::memory_order_relaxed)));
+    }
 
     // Zero-handler fast path (every ordinary resource lookup that misses the key table lands here): when
     // no miss handler is active and the static registry holds no ResMan record of this type, nothing can
@@ -363,7 +419,7 @@ __declspec(dllexport) int __cdecl VFS_OnGetKeyEntryMiss(uintptr_t ebp) {
 
 __declspec(dllexport) int __cdecl VFS_OnServiceFromImage(void* thisPtr, uintptr_t ebp) {
     (void)thisPtr;
-    if (!g_state.enabled || !ebp) return 0;
+    if (!g_state.enabled || g_state.observe || !ebp) return 0; // observe: never touch the CRes
     saferead::beginScope();
 
     void* pRes = nullptr;
@@ -422,6 +478,16 @@ __declspec(dllexport) void __cdecl VFS_On2DaServiced(void* pRes2Da) {
     }
     memcpy(resref, keyEntry, 16);
 
+    if (g_state.observe) {
+        // Observe: report what would be spliced, build nothing, leave the table untouched.
+        const uint32_t rows = g_state.countTwoDaRows(resref);
+        if (rows > 0) {
+            g_state.counters.observe.fetch_add(1, std::memory_order_relaxed);
+            KP_LOG(ch2Da, "OBSERVE %s rows=%u", resref, static_cast<unsigned>(rows));
+        }
+        return;
+    }
+
     uint32_t newSize = g_state.buildTwoDaSpliced(resref, oldData, oldSize, nullptr, 0);
     if (newSize == 0) {
         return;
@@ -461,12 +527,30 @@ __declspec(dllexport) void __cdecl VFS_On2DaServiced(void* pRes2Da) {
     memcpy(newData, tempBuf, written);
     HeapFree(GetProcessHeap(), 0, tempBuf);
 
-    KP_LOG(ch2Da, "SPLICE %s +%dB", resref, static_cast<int>(newSize) - static_cast<int>(oldSize));
+    g_state.counters.splices.fetch_add(1, std::memory_order_relaxed);
+    KP_LOG(ch2Da, "SPLICE %s +%d %u->%u", resref, static_cast<int>(newSize) - static_cast<int>(oldSize),
+           static_cast<unsigned>(oldSize), static_cast<unsigned>(newSize));
 }
 
 __declspec(dllexport) int __cdecl VFS_OnOpenStream(uintptr_t ebp) {
     if (!g_state.enabled || !ebp) return 0;
     saferead::beginScope();
+
+    // Once: the dword behind the InitializeSource stream gate (no writer; expected non-zero).
+    static bool gateProbed = false;
+    if (!gateProbed) {
+        gateProbed = true;
+        uint32_t gateVal = 0;
+        if (saferead::readAt(S_OpenStream, assetvfs::kStreamGateFlag, 0, &gateVal)) {
+            if (gateVal == 0) {
+                KP_WARN("A10768=%u (stream gate flag is 0: the VFS stream branch is dead)", static_cast<unsigned>(gateVal));
+            } else {
+                KP_LOG(chAudio, "A10768=%u", static_cast<unsigned>(gateVal));
+            }
+        } else {
+            KP_WARN("A10768 unreadable");
+        }
+    }
 
     uintptr_t thisPtr = 0;
     if (!saferead::readAt(S_OpenStream, ebp, -0x21C, &thisPtr) || !thisPtr) {
@@ -507,10 +591,29 @@ __declspec(dllexport) int __cdecl VFS_OnOpenStream(uintptr_t ebp) {
         return 0;
     }
 
+    g_state.counters.streams.fetch_add(1, std::memory_order_relaxed);
+    char stem[40];
+    assetvfs::streamStem(candidate, stem, sizeof(stem));
+    const bool logIt = g_state.takeLog(stem);
+
+    if (g_state.observe) {
+        // Observe: spec was resolved for the log only; no Miles callback install, this+0x28 untouched.
+        if (logIt) {
+            KP_LOG(chAudio, "STREAM %s kind=%u spec=observe", stem, static_cast<unsigned>(streamKind));
+        }
+        return 0;
+    }
+
     // Chain our Miles file callbacks in front of the current set; if that is impossible the stream
     // stays on the engine's normal path.
     if (!ensureMilesChain()) {
+        if (logIt) {
+            KP_WARN("STREAM %s kind=%u: Miles chain unavailable, left to the engine", stem, static_cast<unsigned>(streamKind));
+        }
         return 0;
+    }
+    if (logIt) {
+        KP_LOG(chAudio, "STREAM %s kind=%u spec=%s", stem, static_cast<unsigned>(streamKind), specBuf);
     }
 
     uint8_t tempExo[8] = {0};

@@ -5,7 +5,7 @@ version = "0.1.1-dev"
 kind = "provider"
 provides = ["k2.assetvfs@1", "k2.characterlib@1"]
 author = "local"
-description = "Provider for in-memory CExoResMan asset resolution (GetKeyEntry miss + ServiceFromImage hooks), load-time 2DA V2.b row splicing (CRes2DA::OnResourceServiced), and memory-backed Miles audio streams (InitializeSource hook + AIL file callbacks). Exposes k2.assetvfs@1 and k2.characterlib@1. Opt-out: asset_vfs.ini [vfs] enabled=0."
+description = "Provider for in-memory CExoResMan asset resolution (GetKeyEntry miss + ServiceFromImage hooks), load-time 2DA V2.b row splicing (CRes2DA::OnResourceServiced), and memory-backed Miles audio streams (InitializeSource hook + AIL file callbacks). Exposes k2.assetvfs@1 and k2.characterlib@1. Config asset_vfs.ini [vfs] mode=serve|observe|off (default observe when missing: hooks only log what they would do and change nothing; set mode=serve to serve), log_prefix=, log_all=; legacy enabled=0 = off."
 
 requires = []
 requires_interfaces = ["k2.npcworld@1"]

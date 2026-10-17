@@ -1190,6 +1190,250 @@ int main() {
         KT_CHECK(!unbound.ensure());
     }
 
+
+    // -------------------------------------------------------------
+    // observer mode, config parsing, log budget, counters
+    // -------------------------------------------------------------
+    {
+        using assetvfs::VfsConfig;
+        VfsConfig d = VfsConfig::fromIni("", 1, assetvfs::defaultLogPrefixes(), 0);
+        KT_CHECK_EQ(d.mode, assetvfs::kModeObserve);
+        KT_CHECK(!d.modeInvalid);
+        KT_CHECK_EQ(d.nPrefixes, 3u);
+        KT_CHECK(d.prefixMatch("k1p_juhani"));
+        KT_CHECK(d.prefixMatch("KVJDLG01"));
+        KT_CHECK(d.prefixMatch("p_juhani_h"));
+        KT_CHECK(!d.prefixMatch("p_carth"));
+        KT_CHECK(!d.prefixMatch(""));
+        KT_CHECK(!d.logAll);
+        KT_CHECK_EQ(VfsConfig::fromIni("serve", 1, "", 0).mode, assetvfs::kModeServe);
+        KT_CHECK_EQ(VfsConfig::fromIni("  Serve ", 1, "", 0).mode, assetvfs::kModeServe);
+        KT_CHECK_EQ(VfsConfig::fromIni("OFF", 1, "", 0).mode, assetvfs::kModeOff);
+        KT_CHECK_EQ(VfsConfig::fromIni("observe", 1, "", 0).mode, assetvfs::kModeObserve);
+        KT_CHECK_EQ(VfsConfig::fromIni(nullptr, 1, nullptr, 0).mode, assetvfs::kModeObserve);
+        KT_CHECK_EQ(VfsConfig::fromIni(nullptr, 0, nullptr, 0).mode, assetvfs::kModeOff);   // legacy enabled=0
+        KT_CHECK_EQ(VfsConfig::fromIni("serve", 0, nullptr, 0).mode, assetvfs::kModeOff);   // opt-out wins
+        VfsConfig bad = VfsConfig::fromIni("bogus", 1, "", 0);
+        KT_CHECK(bad.modeInvalid);
+        KT_CHECK_EQ(bad.mode, assetvfs::kModeObserve);
+        VfsConfig e = VfsConfig::fromIni("serve", 1, "", 0);
+        KT_CHECK_EQ(e.nPrefixes, 0u);
+        KT_CHECK(!e.wants("k1p_x"));
+        VfsConfig la = VfsConfig::fromIni("serve", 1, "", 1);
+        KT_CHECK(la.logAll);
+        KT_CHECK(la.wants("anything"));
+        VfsConfig sp = VfsConfig::fromIni("serve", 1, " K1P_ , ,Vo_*x ,", 0);
+        KT_CHECK_EQ(sp.nPrefixes, 2u);
+        KT_CHECK(sp.prefixMatch("k1p_a"));
+        KT_CHECK(sp.prefixMatch("VO_*xyz"));
+        KT_CHECK(!sp.prefixMatch("k1"));
+        VfsConfig many = VfsConfig::fromIni("serve", 1, "a,b,c,d,e,f,g,h,i,j", 0);
+        KT_CHECK_EQ(many.nPrefixes, static_cast<uint32_t>(VfsConfig::kMaxPrefixes));
+
+        char stem[40];
+        assetvfs::streamStem("Sound\\Cut\\K1P_Hello.WAV", stem, sizeof(stem));
+        KT_CHECK(std::strcmp(stem, "k1p_hello") == 0);
+        assetvfs::streamStem("noext", stem, sizeof(stem));
+        KT_CHECK(std::strcmp(stem, "noext") == 0);
+        assetvfs::streamStem(nullptr, stem, sizeof(stem));
+        KT_CHECK(stem[0] == '\0');
+    }
+
+    {
+        // Log budget: prefix test first, 20 per name then every 100th, total cap 400, silent afterwards.
+        assetvfs::EngineState b;
+        b.applyConfig(assetvfs::VfsConfig::fromIni("observe", 1, "k1p_", 0));
+        int taken = 0;
+        for (int i = 0; i < 25; ++i) if (b.takeLog("k1p_one")) ++taken;
+        KT_CHECK_EQ(taken, 20);
+        taken = 0;
+        for (int i = 0; i < 300; ++i) if (b.takeLog("k1p_one")) ++taken;
+        KT_CHECK_EQ(taken, 3); // per-name calls 120, 220, 320 (25 + 300 = 325 calls so far)
+        KT_CHECK(!b.takeLog("other_name"));            // prefix filtered: no budget consumed
+        KT_CHECK(!b.takeLog(nullptr));
+        assetvfs::EngineState c;
+        c.applyConfig(assetvfs::VfsConfig::fromIni("observe", 1, "k1p_", 0));
+        int total = 0;
+        for (int n = 0; n < 40; ++n) {
+            char nm[24];
+            std::snprintf(nm, sizeof(nm), "k1p_name%02d", n);
+            for (int i = 0; i < 20; ++i) if (c.takeLog(nm)) ++total;
+        }
+        KT_CHECK_EQ(total, 400);
+        KT_CHECK(!c.takeLog("k1p_fresh"));
+        // counters-only config logs nothing
+        assetvfs::EngineState z;
+        z.applyConfig(assetvfs::VfsConfig::fromIni("observe", 1, "", 0));
+        KT_CHECK(!z.takeLog("k1p_one"));
+        // log_all logs any name (within budget)
+        assetvfs::EngineState la;
+        la.applyConfig(assetvfs::VfsConfig::fromIni("observe", 1, "", 1));
+        KT_CHECK(la.takeLog("whatever"));
+        KT_CHECK(!la.missCannotHit(vfsreg::ResTypeUtc));
+    }
+
+    {
+        // 2DA row counting
+        assetvfs::EngineState t;
+        K2Vfs2DaCell tc[] = {
+            { "appearance", 818, 0, "label", "A" },
+            { "appearance.2da", 818, 0, "race", "x" },
+            { "appearance", 819, 0, "label", "B" },
+            { "heads", 5, 0, "label", "H" }
+        };
+        KT_CHECK_EQ(t.addTwoDaCells(tc, 4), 4);
+        KT_CHECK_EQ(t.countTwoDaRows("appearance"), 2u);
+        KT_CHECK_EQ(t.countTwoDaRows("HEADS"), 1u);
+        KT_CHECK_EQ(t.countTwoDaRows("none"), 0u);
+        KT_CHECK_EQ(t.countTwoDaRows(nullptr), 0u);
+    }
+
+    {
+        struct OCtx { int calls = 0; const uint8_t* data = nullptr; uint32_t size = 0; };
+        static OCtx octx;
+        octx = OCtx();
+        static const uint8_t odata[] = { 'o', 'b', 's' };
+        octx.data = odata;
+        octx.size = sizeof(odata);
+        auto obsHandler = [](const char*, uint16_t, K2VfsAssetEntry* out, void* user) -> int32_t {
+            OCtx* c = static_cast<OCtx*>(user);
+            c->calls++;
+            out->data = c->data;
+            out->size = c->size;
+            return 1;
+        };
+        static int evMiss[4];
+        static int evServe;
+        static char evName[32];
+        std::memset(evMiss, 0, sizeof(evMiss));
+        evServe = 0;
+        evName[0] = '\0';
+        auto missEv = [](const char* n, uint16_t, int outcome) {
+            evMiss[outcome]++;
+            std::snprintf(evName, sizeof(evName), "%s", n);
+        };
+        auto serveEv = [](const char*, uint16_t, uint32_t, int) { evServe++; };
+
+        // ---- observe: nothing changes ----
+        assetvfs::EngineState ob;
+        ob.applyConfig(assetvfs::VfsConfig::fromIni("observe", 1, "k1p_", 0));
+        ob.missEventFn = missEv;
+        ob.serveEventFn = serveEv;
+        KT_CHECK(ob.observe && ob.enabled);
+        int32_t tok = ob.registerMissHandler(obsHandler, &octx, "mod");
+        KT_CHECK(tok > 0);
+        void* ot = reinterpret_cast<void*>(0x1234);
+        void* oe = reinterpret_cast<void*>(0x5678);
+        KT_CHECK_EQ(ob.handleGetKeyEntryMiss("k1p_obs", vfsreg::ResTypeUtc, &ot, &oe), 0);
+        KT_CHECK_EQ(octx.calls, 1);                       // handler is called ...
+        KT_CHECK(ot == nullptr);                          // ... *ppTable is zeroed (missExit contract)
+        KT_CHECK(oe == reinterpret_cast<void*>(0x5678));  // ... *ppEntry untouched
+        KT_CHECK(!ob.hasAsset("k1p_obs", vfsreg::ResTypeUtc, vfsreg::FlagResMan)); // never registered
+        KT_CHECK(ob.reg.findResMan("k1p_obs", vfsreg::ResTypeUtc) == nullptr);
+        KT_CHECK_EQ(evMiss[assetvfs::kMissObserve], 1);
+        KT_CHECK_EQ(evMiss[assetvfs::kMissServe], 0);
+        KT_CHECK(std::strcmp(evName, "k1p_obs") == 0);
+        KT_CHECK_EQ(ob.counters.observe.load(), 1u);
+        KT_CHECK_EQ(ob.counters.served.load(), 0u);
+        // a second lookup asks the handler again (handled names are not negative-cached)
+        ot = reinterpret_cast<void*>(0x1234);
+        KT_CHECK_EQ(ob.handleGetKeyEntryMiss("k1p_obs", vfsreg::ResTypeUtc, &ot, &oe), 0);
+        KT_CHECK_EQ(octx.calls, 2);
+        // unfiltered name: counters move, no event line
+        int evBefore = evMiss[assetvfs::kMissObserve];
+        KT_CHECK_EQ(ob.handleGetKeyEntryMiss("zzz_other", vfsreg::ResTypeUtc, &ot, &oe), 0);
+        KT_CHECK_EQ(evMiss[assetvfs::kMissObserve], evBefore);
+        KT_CHECK_EQ(ob.counters.observe.load(), 3u);
+
+        // static registry hit in observe: reported, not served
+        const uint8_t sdata[] = { 's', 't' };
+        KT_CHECK(ob.registerAsset("k1p_static", vfsreg::ResTypeUtc, sdata, sizeof(sdata), vfsreg::FlagResMan, false, "t") >= 0);
+        ot = reinterpret_cast<void*>(0x1234);
+        oe = reinterpret_cast<void*>(0x5678);
+        KT_CHECK_EQ(ob.handleGetKeyEntryMiss("k1p_static", vfsreg::ResTypeUtc, &ot, &oe), 0);
+        KT_CHECK(ot == nullptr);
+        KT_CHECK(oe == reinterpret_cast<void*>(0x5678));
+
+        // H2 in observe: returns 0, the CRes is never written, no allocation
+        const uint32_t sPacked = vfsreg::makePackedId(static_cast<uint32_t>(ob.reg.findResMan("k1p_static", vfsreg::ResTypeUtc) - ob.reg.records));
+        uint8_t obsRes[0x40] = {0};
+        *reinterpret_cast<uint32_t*>(obsRes + assetvfs::kResOffPackedId) = sPacked;
+        uint8_t obsResCopy[0x40];
+        std::memcpy(obsResCopy, obsRes, sizeof(obsRes));
+        g_allocCalls = 0;
+        g_servicedCalls = 0;
+        KT_CHECK_EQ(ob.handleServiceFromImage(obsRes, countingAlloc, testServiced), 0);
+        KT_CHECK_EQ(std::memcmp(obsRes, obsResCopy, sizeof(obsRes)), 0);
+        KT_CHECK_EQ(g_allocCalls, 0);
+        KT_CHECK_EQ(g_servicedCalls, 0);
+        KT_CHECK_EQ(evServe, 0);
+
+        // H4 in observe: a stream-filter MEMORY claim is reported, never registered; Miles is never touched
+        static const uint8_t wav[] = { 'R', 'I', 'F', 'F', 0, 0, 0, 0, 'W', 'A', 'V', 'E' };
+        auto filt = [](const char*, uint16_t, const void** d, uint32_t* n, char*, uint32_t, void*) -> int32_t {
+            *d = wav;
+            *n = sizeof(wav);
+            return K2VFS_STREAM_MEMORY;
+        };
+        KT_CHECK(ob.registerStreamFilter(filt, nullptr, "flt") > 0);
+        char spec[260];
+        KT_CHECK(ob.resolveStreamSpec("sound\\k1p_line.wav", 4, spec, sizeof(spec) - 1, true));
+        KT_CHECK(std::strcmp(spec, "observe") == 0);
+        KT_CHECK(ob.reg.findStream("sound\\k1p_line.wav") == nullptr);
+        resetMilesFakes();
+        assetvfs::MilesChain och;
+        och.bind(&ob, oursSet(), fakeMilesGet, fakeMilesSet, fakeMilesNotice);
+        KT_CHECK(!och.ensure());
+        KT_CHECK_EQ(g_milesSetCalls, 0);
+        KT_CHECK(!och.installed);
+        KT_CHECK(g_milesCur.sameAs(defaultsSet()));
+
+        // ---- off: everything is inert ----
+        assetvfs::EngineState off;
+        off.applyConfig(assetvfs::VfsConfig::fromIni("off", 1, "k1p_", 0));
+        KT_CHECK(!off.enabled);
+        off.registerMissHandler(obsHandler, &octx, "mod");
+        int callsOff = octx.calls;
+        ot = reinterpret_cast<void*>(0x1234);
+        KT_CHECK_EQ(off.handleGetKeyEntryMiss("k1p_obs", vfsreg::ResTypeUtc, &ot, &oe), 0);
+        KT_CHECK_EQ(octx.calls, callsOff);
+        KT_CHECK(off.missCannotHit(vfsreg::ResTypeUtc));
+        resetMilesFakes();
+        assetvfs::MilesChain offch;
+        offch.bind(&off, oursSet(), fakeMilesGet, fakeMilesSet, fakeMilesNotice);
+        KT_CHECK(!offch.ensure());
+        KT_CHECK_EQ(g_milesSetCalls, 0);
+
+        // ---- serve: events, counters, SERVE line ----
+        assetvfs::EngineState sv;
+        sv.applyConfig(assetvfs::VfsConfig::fromIni("serve", 1, "k1p_", 0));
+        sv.missEventFn = missEv;
+        sv.serveEventFn = serveEv;
+        KT_CHECK(sv.enabled && !sv.observe);
+        sv.registerMissHandler(obsHandler, &octx, "mod");
+        std::memset(evMiss, 0, sizeof(evMiss));
+        void* st = nullptr;
+        void* se = nullptr;
+        KT_CHECK_EQ(sv.handleGetKeyEntryMiss("k1p_obs", vfsreg::ResTypeUtc, &st, &se), 1);
+        KT_CHECK_EQ(evMiss[assetvfs::kMissServe], 1);
+        KT_CHECK_EQ(sv.counters.served.load(), 1u);
+        uint8_t svRes[0x40] = {0};
+        *reinterpret_cast<uint32_t*>(svRes + assetvfs::kResOffPackedId) = static_cast<vfsreg::KeyTableEntry*>(se)->packedId;
+        g_servicedCalls = 0;
+        KT_CHECK_EQ(sv.handleServiceFromImage(svRes, testAlloc, testServiced), 1);
+        KT_CHECK_EQ(evServe, 1);
+        // pass event (handler declines for a different resource)
+        auto declineHandler = [](const char*, uint16_t, K2VfsAssetEntry*, void*) -> int32_t { return 0; };
+        assetvfs::EngineState sp2;
+        sp2.applyConfig(assetvfs::VfsConfig::fromIni("serve", 1, "k1p_", 0));
+        sp2.missEventFn = missEv;
+        sp2.registerMissHandler(declineHandler, nullptr, "d");
+        std::memset(evMiss, 0, sizeof(evMiss));
+        KT_CHECK_EQ(sp2.handleGetKeyEntryMiss("k1p_nope", vfsreg::ResTypeUtc, &st, &se), 0);
+        KT_CHECK_EQ(evMiss[assetvfs::kMissPass], 1);
+        sv.reset(); // frees the provider-owned copy
+    }
+
     // Cleanup allocated memory
     for (void* p : g_allocatedPointers) {
         std::free(p);
