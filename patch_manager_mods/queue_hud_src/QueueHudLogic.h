@@ -206,6 +206,8 @@ struct Config {
     bool spellReplayPos = true;     // spell_replay_pos: replay a buffered spell with a NULL position when the engine's original was NULL (0 = always pass the zero-filled copy)
     bool hideBannerSoft = true;     // hide_banner_soft: hide the top combat banner while combat is "soft" (only own-party targets, no hostile)
     bool hideRedbarSoft = true;     // hide_redbar_soft: hide the bottom red combat bar (Cancel Combat) while combat is soft
+    bool traceMode = true;   // trace_mode: one MODE line per per-member state change (needs log + trace_queue)
+    int modeCap = 2000;      // mode_cap: max MODE lines per session (then one "MODE cap reached")
 };
 
 struct Style { float bg[3], bgA, border[3], borderA, iconA, frameA; int borderPx; };
@@ -437,6 +439,14 @@ inline bool parseStripMax(const char* b, const char* e, int* out) {   // a singl
     *out = *b - '0';
     return true;
 }
+inline bool parseModeCap(const char* b, const char* e, int* out) {   // integer 1..100000 (at most 6 chars, digits only)
+    if (b == e || e - b > 6) return false;
+    int v = 0;
+    for (const char* p = b; p < e; ++p) { if (*p < '0' || *p > '9') return false; v = v * 10 + (*p - '0'); }
+    if (v < 1 || v > 100000) return false;
+    *out = v;
+    return true;
+}
 inline bool parseSide(const char* b, const char* e, int* side) {
     if (keyEq(b, e, "left")) { *side = kSideLeft; return true; }
     if (keyEq(b, e, "above")) { *side = kSideAbove; return true; }
@@ -450,6 +460,7 @@ inline bool parseSide(const char* b, const char* e, int* side) {
 //   bg_alpha, border_alpha, waiting_alpha (float, clamped to 0..1); border_px (a single digit 1..6; anything else is a bad value).
 //   0.2.0: companions (bool), strip_icon_px (0 = auto, else 8..96), strip_side (left | above | below), strip_max (a single digit 1..4).
 //   0.3.0: kit (bool), frame_alpha (float 0..1), cancel (bool).
+//   trace_mode (bool), mode_cap (integer 1..100000).
 // Unknown key, missing '=' or a bad value returns false and leaves the field unchanged.
 inline bool parseIniLine(Config& c, const char* line) {
     if (!line) return false;
@@ -496,6 +507,8 @@ inline bool parseIniLine(Config& c, const char* line) {
     if (detail::keyEq(kb, ke, "spell_replay_pos")) return detail::parseBool(vb, ve, &c.spellReplayPos);
     if (detail::keyEq(kb, ke, "hide_banner_soft")) return detail::parseBool(vb, ve, &c.hideBannerSoft);
     if (detail::keyEq(kb, ke, "hide_redbar_soft")) return detail::parseBool(vb, ve, &c.hideRedbarSoft);
+    if (detail::keyEq(kb, ke, "trace_mode")) return detail::parseBool(vb, ve, &c.traceMode);
+    if (detail::keyEq(kb, ke, "mode_cap")) return detail::parseModeCap(vb, ve, &c.modeCap);
     return false;
 }
 
@@ -1238,6 +1251,42 @@ inline int fmtSoftCand(char* out, int cap, int m, const SoftCand& c, uint32_t cr
     w.s(" none="); w.c(c.allNone ? '1' : '0');
     w.s(" cr0="); if (ok0) w.u(cr0); else w.c('?');
     w.s(" cr1="); if (ok1) w.x8(cr1); else w.c('?');
+    return w.done();
+}
+
+// Per-member mode snapshot for the MODE line. int8 fields: -1 = unknown. strip/cancel/banner are static reason strings.
+struct ModeState { int8_t combat = -1, soft = -1, menu = 0, paused = 0; int8_t hostile = -1, party = -1; const char* strip = ""; const char* cancel = ""; const char* banner = ""; };
+namespace detail {
+inline bool modeStrEq(const char* a, const char* b) { return strcmp(a ? a : "", b ? b : "") == 0; }
+}  // namespace detail
+// True when ANY field differs. Reason strings compare by content (nullptr reads as ""), never by pointer.
+inline bool modeChanged(const ModeState& a, const ModeState& b) {
+    return a.combat != b.combat || a.soft != b.soft || a.menu != b.menu || a.paused != b.paused || a.hostile != b.hostile || a.party != b.party
+        || !detail::modeStrEq(a.strip, b.strip) || !detail::modeStrEq(a.cancel, b.cancel) || !detail::modeStrEq(a.banner, b.banner);
+}
+// Why a MODE line was written: the first changed field in priority order (combat, menu, paused, soft, hostile/party). Otherwise "ui".
+inline const char* modeWhy(const ModeState& prev, const ModeState& now) {
+    if (prev.combat != now.combat) return now.combat == 1 ? "edge" : "ended";
+    if (prev.menu != now.menu) return "menu";
+    if (prev.paused != now.paused) return "pause";
+    if (prev.soft != now.soft) return "target";
+    if (prev.hostile != now.hostile || prev.party != now.party) return "hostile";
+    return "ui";
+}
+// MODE m=<k> combat=<0|1|?> soft=<0|1|-> menu=<0|1> paused=<0|1> hostile=<0|1|?> party=<0|1|?> strip=<r> cancel=<r> banner=<r> why=<w>
+inline int fmtMode(char* out, int cap, int m, const ModeState& s, const char* why) {
+    detail::LogWr w(out, cap);
+    w.s("MODE m="); w.mm(m);
+    w.s(" combat="); w.c(s.combat < 0 ? '?' : (s.combat ? '1' : '0'));
+    w.s(" soft="); w.c(s.soft < 0 ? '-' : (s.soft ? '1' : '0'));
+    w.s(" menu="); w.c(s.menu ? '1' : '0');
+    w.s(" paused="); w.c(s.paused ? '1' : '0');
+    w.s(" hostile="); w.c(s.hostile < 0 ? '?' : (s.hostile ? '1' : '0'));
+    w.s(" party="); w.c(s.party < 0 ? '?' : (s.party ? '1' : '0'));
+    w.s(" strip="); w.s(s.strip);
+    w.s(" cancel="); w.s(s.cancel);
+    w.s(" banner="); w.s(s.banner);
+    w.s(" why="); w.s(why);
     return w.done();
 }
 

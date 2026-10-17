@@ -395,7 +395,7 @@ bool configEqual(const Config& a, const Config& b) {
     auto s3 = [](const float* x, const float* y) { return x[0] == y[0] && x[1] == y[1] && x[2] == y[2]; };
     return a.enabled == b.enabled && a.bgAlpha == b.bgAlpha && a.borderAlpha == b.borderAlpha && a.borderPx == b.borderPx && a.waitingDim == b.waitingDim && a.waitingAlpha == b.waitingAlpha && a.log == b.log && a.traceQueue == b.traceQueue && a.companions == b.companions && a.stripIconPx == b.stripIconPx && a.stripSide == b.stripSide && a.stripMax == b.stripMax
         && a.kit == b.kit && a.frameAlpha == b.frameAlpha && a.cancel == b.cancel && a.pauseReinject == b.pauseReinject && a.dispatchWaitFlags == b.dispatchWaitFlags && a.traceClicks == b.traceClicks && a.pauseEatenWait == b.pauseEatenWait && a.handoffOnCombat == b.handoffOnCombat && a.showInCombat == b.showInCombat && a.handoffClearFirst == b.handoffClearFirst
-        && a.handoffKeepNew == b.handoffKeepNew && a.handoffKeepUnpaused == b.handoffKeepUnpaused && a.handoffDetachHeld == b.handoffDetachHeld && a.handoffResendHeld == b.handoffResendHeld && a.spellReplayPos == b.spellReplayPos && a.hideBannerSoft == b.hideBannerSoft && a.hideRedbarSoft == b.hideRedbarSoft && s3(a.bg, b.bg) && s3(a.border, b.border) && s3(a.waitingBg, b.waitingBg);
+        && a.handoffKeepNew == b.handoffKeepNew && a.handoffKeepUnpaused == b.handoffKeepUnpaused && a.handoffDetachHeld == b.handoffDetachHeld && a.handoffResendHeld == b.handoffResendHeld && a.spellReplayPos == b.spellReplayPos && a.hideBannerSoft == b.hideBannerSoft && a.hideRedbarSoft == b.hideRedbarSoft && a.traceMode == b.traceMode && a.modeCap == b.modeCap && s3(a.bg, b.bg) && s3(a.border, b.border) && s3(a.waitingBg, b.waitingBg);
 }
 
 // Positive control: configEqual must see a change in every member, else the checks that replaced memcmp prove nothing.
@@ -406,6 +406,7 @@ void testConfigEqualSeesEveryField() {
     CFG_FLIP(enabled); CFG_FLIP(bgAlpha); CFG_FLIP(borderAlpha); CFG_FLIP(borderPx); CFG_FLIP(waitingDim); CFG_FLIP(waitingAlpha); CFG_FLIP(log); CFG_FLIP(traceQueue); CFG_FLIP(companions); CFG_FLIP(stripIconPx);
     CFG_FLIP(stripSide); CFG_FLIP(stripMax); CFG_FLIP(kit); CFG_FLIP(frameAlpha); CFG_FLIP(cancel); CFG_FLIP(pauseReinject); CFG_FLIP(dispatchWaitFlags); CFG_FLIP(traceClicks); CFG_FLIP(pauseEatenWait); CFG_FLIP(handoffOnCombat);
     CFG_FLIP(showInCombat); CFG_FLIP(handoffClearFirst); CFG_FLIP(handoffKeepNew); CFG_FLIP(handoffKeepUnpaused); CFG_FLIP(handoffDetachHeld); CFG_FLIP(handoffResendHeld); CFG_FLIP(spellReplayPos); CFG_FLIP(hideBannerSoft); CFG_FLIP(hideRedbarSoft);
+    CFG_FLIP(traceMode); CFG_FLIP(modeCap);
 #undef CFG_FLIP
     for (int i = 0; i < 3; ++i) {
         Config m; m.bg[i] += 1.0f;        KT_CHECK(!configEqual(m, ref));
@@ -426,6 +427,7 @@ void testIniBad() {
         "border_px=0", "border_px=7", "border_px=-1", "border_px=", "border_px=2.5", "border_px=abc", "border_px=99999999999", "border_px=2px", "border_px=06", "border_px=10", "border_px=1,2", "border_px=/;", "border_px=:", "border_px=/",
         "waiting_dim=2", "log=x", "trace_queue=x", "pause_reinject=x", "handoff_on_combat=", "show_in_combat=2",
         "handoff_clear_first=2", "handoff_clear_first=",
+        "trace_mode=2", "trace_mode=", "mode_cap=0", "mode_cap=abc", "mode_cap=100001", "mode_cap=-1", "mode_cap=1000000", "mode_cap=",
         "unknown=1", "enabledx=1", "enable=1", "bg=1", "novalue", "=1", "enabled 1",
     };
     for (const char* l : bad) {
@@ -1774,6 +1776,109 @@ void testLogFormatGolden() {
     const QueueSig s0;
     fmtQj(out, sizeof out, 0, s0, false, false, nullptr, 0);
     KT_CHECK_EQ(out, "QJ m=0 ne=0 types=[] round=0 cur=- aa8=0 ab8=0 paused=0 combat=0 ours=external");
+
+    // MODE: (a) out of combat, soft/hostile/party unknown
+    ModeState ma;
+    ma.combat = 0; ma.menu = 0; ma.paused = 0; ma.strip = "shown"; ma.cancel = "shown"; ma.banner = "vanilla";
+    fmtMode(out, sizeof out, 0, ma, "ui");
+    KT_CHECK_EQ(out, "MODE m=0 combat=0 soft=- menu=0 paused=0 hostile=? party=? strip=shown cancel=shown banner=vanilla why=ui");
+    // (b) combat edge, soft and hostile known
+    ModeState mb;
+    mb.combat = 1; mb.soft = 1; mb.menu = 0; mb.paused = 0; mb.hostile = 0; mb.party = 1; mb.strip = "shown"; mb.cancel = "shown"; mb.banner = "hidden";
+    const char* goldB = "MODE m=2 combat=1 soft=1 menu=0 paused=0 hostile=0 party=1 strip=shown cancel=shown banner=hidden why=edge";
+    fmtMode(out, sizeof out, 2, mb, "edge");
+    KT_CHECK_EQ(out, goldB);
+    // (c) soft target, hidden strip/cancel, banner restored
+    ModeState mc;
+    mc.combat = 1; mc.soft = 0; mc.menu = 0; mc.paused = 0; mc.hostile = 1; mc.party = 0; mc.strip = "hidden:combat"; mc.cancel = "hidden:combat"; mc.banner = "restored";
+    fmtMode(out, sizeof out, 1, mc, "target");
+    KT_CHECK_EQ(out, "MODE m=1 combat=1 soft=0 menu=0 paused=0 hostile=1 party=0 strip=hidden:combat cancel=hidden:combat banner=restored why=target");
+    // (d) combat unknown (-1) prints '?'; unknown m prints '?'
+    ModeState md;
+    md.strip = "hidden:stale"; md.cancel = "hidden:off"; md.banner = "hidden";
+    fmtMode(out, sizeof out, -1, md, "ui");
+    KT_CHECK_EQ(out, "MODE m=? combat=? soft=- menu=0 paused=0 hostile=? party=? strip=hidden:stale cancel=hidden:off banner=hidden why=ui");
+    // (e) null reason strings print '?'
+    ModeState me;
+    me.combat = 1; me.strip = nullptr; me.cancel = nullptr; me.banner = nullptr;
+    fmtMode(out, sizeof out, 3, me, nullptr);
+    KT_CHECK_EQ(out, "MODE m=3 combat=1 soft=- menu=0 paused=0 hostile=? party=? strip=? cancel=? banner=? why=?");
+    // truncation: a small cap keeps a NUL-terminated prefix and returns the full length; null buffer writes nothing
+    char tinyM[16];
+    KT_CHECK_EQ(fmtMode(tinyM, sizeof tinyM, 2, mb, "edge"), (int)strlen(goldB));
+    KT_CHECK_EQ(strlen(tinyM), (size_t)15);
+    KT_CHECK(strncmp(tinyM, "MODE m=2 combat", 15) == 0);
+    KT_CHECK_EQ(fmtMode(nullptr, 0, 2, mb, "edge"), (int)strlen(goldB));
+}
+
+// modeChanged truth table, modeWhy priority order.
+void testModeChangedWhy() {
+    ModeState base;
+    base.combat = 0; base.soft = 0; base.menu = 0; base.paused = 0; base.hostile = 0; base.party = 0;
+    base.strip = "shown"; base.cancel = "shown"; base.banner = "vanilla";
+    KT_CHECK(!modeChanged(base, base));
+    const ModeState same = base;
+    KT_CHECK(!modeChanged(base, same));
+    // each of the 9 fields flipped alone reads as a change
+    ModeState f;
+    f = base; f.combat = 1;             KT_CHECK(modeChanged(base, f));
+    f = base; f.soft = 1;               KT_CHECK(modeChanged(base, f));
+    f = base; f.menu = 1;               KT_CHECK(modeChanged(base, f));
+    f = base; f.paused = 1;             KT_CHECK(modeChanged(base, f));
+    f = base; f.hostile = 1;            KT_CHECK(modeChanged(base, f));
+    f = base; f.party = 1;              KT_CHECK(modeChanged(base, f));
+    f = base; f.strip = "hidden:combat"; KT_CHECK(modeChanged(base, f));
+    f = base; f.cancel = "hidden:menu";  KT_CHECK(modeChanged(base, f));
+    f = base; f.banner = "restored";     KT_CHECK(modeChanged(base, f));
+    // reason strings compare by content: two distinct buffers with equal text are unchanged; nullptr reads as ""
+    char a1[] = "shown", b1[] = "shown";
+    ModeState pa = base, pb = base;
+    pa.strip = a1; pb.strip = b1; pa.cancel = a1; pb.cancel = b1; pa.banner = a1; pb.banner = b1;
+    KT_CHECK(!modeChanged(pa, pb));
+    ModeState nn = base; nn.strip = nullptr;
+    ModeState ee = base; ee.strip = "";
+    KT_CHECK(!modeChanged(nn, ee));
+    KT_CHECK(modeChanged(nn, base));
+
+    // modeWhy: first changed field in priority order
+    ModeState c1 = base; c1.combat = 1;
+    KT_CHECK_EQ(modeWhy(base, c1), "edge");
+    KT_CHECK_EQ(modeWhy(c1, base), "ended");
+    ModeState cm = base; cm.combat = 1; cm.menu = 1;
+    KT_CHECK_EQ(modeWhy(base, cm), "edge");
+    ModeState m1 = base; m1.menu = 1;
+    KT_CHECK_EQ(modeWhy(base, m1), "menu");
+    ModeState p1 = base; p1.paused = 1;
+    KT_CHECK_EQ(modeWhy(base, p1), "pause");
+    ModeState s1 = base; s1.soft = 1;
+    KT_CHECK_EQ(modeWhy(base, s1), "target");
+    ModeState h1 = base; h1.hostile = 1;
+    KT_CHECK_EQ(modeWhy(base, h1), "hostile");
+    ModeState y1 = base; y1.party = 1;
+    KT_CHECK_EQ(modeWhy(base, y1), "hostile");
+    ModeState t1 = base; t1.strip = "hidden:combat";
+    KT_CHECK_EQ(modeWhy(base, t1), "ui");
+    KT_CHECK_EQ(modeWhy(base, base), "ui");
+}
+
+// trace_mode / mode_cap: defaults, bool and integer parsing; a bad value keeps the previous value.
+void testTraceModeIni() {
+    Config d;
+    KT_CHECK(d.traceMode);
+    KT_CHECK_EQ(d.modeCap, 2000);
+    Config c;
+    KT_CHECK(parseIniLine(c, "trace_mode=0") && !c.traceMode);
+    KT_CHECK(parseIniLine(c, "trace_mode=1") && c.traceMode);
+    KT_CHECK(!parseIniLine(c, "trace_mode=2") && c.traceMode);
+    KT_CHECK(parseIniLine(c, "mode_cap=50") && c.modeCap == 50);
+    KT_CHECK(!parseIniLine(c, "mode_cap=0") && c.modeCap == 50);
+    KT_CHECK(!parseIniLine(c, "mode_cap=abc") && c.modeCap == 50);
+    KT_CHECK(parseIniLine(c, "mode_cap=1") && c.modeCap == 1);
+    KT_CHECK(parseIniLine(c, "mode_cap=100000") && c.modeCap == 100000);
+    KT_CHECK(!parseIniLine(c, "mode_cap=100001") && c.modeCap == 100000);
+    Config f;
+    parseIni(f, "trace_mode=0\r\nmode_cap=50\r\n");
+    KT_CHECK(!f.traceMode && f.modeCap == 50);
 }
 
 void testLogFormatBounds() {
@@ -2501,6 +2606,8 @@ int main() {
     testTraceQueueIni();
     testLogFormatGolden();
     testLogFormatBounds();
+    testModeChangedWhy();
+    testTraceModeIni();
     testActiveVerdictRules();
     testVerdictBookkeeping();
     testPauseEatenWait();

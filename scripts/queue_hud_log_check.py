@@ -3,9 +3,10 @@
 
 Usage: queue_hud_log_check.py [LOG | --log LOG] [--cmd N] [--member K] [--new [--no-advance] [--state PATH]]
   Default log: ~/.local/share/Steam/steamapps/common/Knights of the Old Republic II/queue-hud_log.txt
-  Default view (at most 60 lines): per-command lifecycle, decline histogram, DROPs, EDGE timeline, handoffs, ROUND timeline,
-  suspicious flags.
-  --cmd N: one command's lines only (max 30 lines). --member K: only lines with m=K (EDGE has no m, so it is dropped).
+  Default view (at most 74 lines): per-command lifecycle, decline histogram, DROPs, EDGE timeline, handoffs, ROUND timeline,
+  MODE timeline, suspicious flags.
+  --cmd N: one command's lines only (max 30 lines). --member K: only lines with m=K (EDGE has no m, so it is dropped;
+  BANNER and the startup line are kept without being shown, for flags L and M).
   --new: only lines after the bookmark shared with log_triage (same state file, keyed by absolute path), then advance it.
   Exit 0 = analyzed (flags are reported, not failures), 2 = log missing.
 
@@ -21,6 +22,12 @@ these keywords are ignored; a keyword line with a missing or malformed field is 
   QJ m=<k> ne=<n> types=[<hex,...,+N>] round=<n> cur=<hex|-> aa8=<n> ab8=<n> paused=<0|1> combat=<0|1> ours=<tag>@<age>ms|external
   REINJECT|DISPATCH|CANCEL cmd=<n> [m=<k>] [why=<reason>] [attempt=<n>]   (REINJECT/DISPATCH: a why other than ok is a
     decline, except REINJECT why=eaten_paused, which is the re-inject reason and shows as REINJECT#<attempt>)
+  CANCEL m=<k> act=<click|done|refused> n=<n> [route=<text>] [why=<free text to end of line>]   (no cmd=, no lifecycle)
+  MODE m=<k|?> combat=<0|1|?> soft=<0|1|-> menu=<0|1> paused=<0|1> hostile=<0|1|?> party=<0|1|?> strip=<r> cancel=<r> banner=<r> why=<w>
+    (one per member state change; strip/cancel: shown|hidden:combat|hidden:menu|hidden:empty|hidden:stale|hidden:off;
+    banner: vanilla|hidden|restored; why: edge|ended|menu|pause|target|hostile|ui; ? is also accepted for r and w)
+  MODE cap reached   (counted in the MODES title, not flagged)
+  pause_reinject=<n> ... show_in_combat=<0|1>   (the startup line, kept as context for flag M; not shown)
   REINJECT_NO cmd=<n> m=<k> why=<ok|inactive|pending|cancel|max_reinject|in_queue|no_leader|executed>   (a why other than ok is a decline)
   VANISH cmd=<n> m=<k> kind=<executed|unseen|eaten_paused|eaten_wait> paused=<0|1> exec=<0|1> ne=<n> round=<n>
     cur=<hex|-> aa8=<n> ab8=<n> age=<ms>
@@ -40,7 +47,7 @@ these keywords are ignored; a keyword line with a missing or malformed field is 
     (spell arguments: where=hook is the dispatch_now cast, where=replay is a buffered cast re-issued from the queue)
   SPELL_OUT m=<k> cmd=<n> exec=<0|1> firstExecMs=<n|-> endMs=<n>   (outcome of the spell command in SPELL_ARGS; same cmd=)
   SOFT_CAND m=<k> hostile=<0|1> party=<0|1> none=<0|1> cr0=<n|?> cr1=<hex|?>   (soft-combat candidate per member; no cmd, no lifecycle)
-  BANNER act=<hide|restore|forget|reset> soft=<0|1> ctl=<n> wr=<n>   (banner event; no m=: dropped by --member; no lifecycle)
+  BANNER act=<hide|restore|forget|reset> soft=<0|1> ctl=<n> wr=<n>   (banner event; no m=: dropped by --member except as L context; no lifecycle)
   STALE_CUR m=<k> sub=<n> since=<n> aa8=<n> ab8=<n> paused=<0|1>
   IDENT_SWAP from=<n> to=<n>   (no m=: dropped by --member)
 
@@ -63,6 +70,11 @@ Flags:
   K buffered-spell-no-exec (SPELL_ARGS where=replay): a (m, cmd) with a SPELL_ARGS where=replay line and no SPELL_OUT
     exec=1 for the same m and cmd (exec=0, or no SPELL_OUT at all). Anchored at the replay line. A log cut before the
     outcome line is written looks the same as a spell that never ran.
+  L soft-drop-hidden (MODE): soft 1->0 for a member while combat=1, the last BANNER was act=hide, and no BANNER act=restore
+    lands 0..500 ms after that MODE (T= stamps; a bare MODE is not judged).
+  M strip-shown-in-combat (MODE): strip=shown with combat=1 and soft=0, unless the startup line says show_in_combat=1.
+    No startup line in the window counts as the mod default show_in_combat=1 (no M).
+  N cancel-shown-in-combat (MODE): cancel=shown with combat=1 and soft=0.
 """
 from __future__ import annotations
 
@@ -79,11 +91,16 @@ import log_triage as LT  # noqa: E402  (--new bookmark: same state file and help
 
 DEFAULT_LOG = Path.home() / ".local/share/Steam/steamapps/common/Knights of the Old Republic II/queue-hud_log.txt"
 FOLLOWER_TYPE = 0x3D
-CAPS = {"cmd": 12, "drop": 5, "edge": 8, "handoff": 2, "round": 4, "stale": 2, "flag": 8}
-# default view worst case = 60 lines: header 1 + SKIPPED 1 + DECLINES 1 + COMMANDS 14 + DROPS 7 + EDGES 10
-#   + HANDOFFS 4 + ROUNDS 6 + VANISHES 2 + STALE_CUR 4 + FLAGS 10
+CAPS = {"cmd": 12, "drop": 5, "edge": 8, "handoff": 2, "round": 4, "stale": 2, "flag": 8, "mode": 12}
+# default view worst case = 74 lines: header 1 + SKIPPED 1 + DECLINES 1 + COMMANDS 14 + DROPS 7 + EDGES 10
+#   + HANDOFFS 4 + ROUNDS 6 + VANISHES 2 + STALE_CUR 4 + MODES 14 (title + 12 rows + "(+N more)") + FLAGS 10
 HANDOFF_WINDOW_MS = 1500          # flag H: how long after a HANDOFF_ONE the first ROUND is judged
 ITEM_SUBTYPES = (9, 10)           # flag H: a first subtype outside these means an attack node is ahead of the item
+MODE_RESTORE_MS = 500             # flag L: how long after a MODE a BANNER act=restore must land
+CONTEXT_KWS = ("BANNER", "CONFIG")   # kept by --member (no m=); read by flags L and M, shown in no section
+_CONFIG_RE = re.compile(r"\bshow_in_combat=([01])(?:\s|$)")   # the startup line (QueueHud.cpp) carries show_in_combat=<n>
+CANCEL_NEW = ("m", "act", "n")    # CANCEL m=<k> act=<...> n=<n>; the older cmd= form keeps REQUIRED["CANCEL"]
+MODE_STATE = r"shown|hidden:(?:combat|menu|empty|stale|off)|\?"   # strip= and cancel= values (? = null reason in fmtMode)
 CMD_VIEW_MAX = 30
 CMD_KWS = ("CMD", "WAIT", "RESOLVE", "DROP", "REINJECT", "REINJECT_NO", "DISPATCH", "CANCEL", "VANISH")
 SPELL_KWS = ("SPELL_ARGS", "SPELL_OUT")   # per-command view only; not lifecycle keywords (build_cmds ignores them)
@@ -113,11 +130,18 @@ FIELD_RE = {
     "dom": r"-?\d+", "posptr": HEXV, "pos": r"orig|null|zero",
     "hostile": r"[01]", "party": r"[01]", "none": r"[01]", "cr0": r"\?|-?\d+", "cr1": r"\?|[0-9a-fA-F]+",
     "banner_act": r"hide|restore|forget|reset", "soft": r"[01]", "ctl": r"\d+", "wr": r"\d+",
+    # MODE and CANCEL (names below are used only through OVERRIDE where the key clashes with another line kind)
+    "strip": MODE_STATE, "cancel": MODE_STATE, "banner": r"vanilla|hidden|restored|\?",
+    "mode_tri": r"[01]|\?", "mode_soft": r"[01]|-", "mode_why": r"edge|ended|menu|pause|target|hostile|ui|\?",
+    "cancel_act": r"click|done|refused", "cancel_why": r".*",
 }
 OVERRIDE = {("EDGE", "buf"): "buflist", ("VANISH", "kind"): "vanish_kind",
             ("ROUND", "types"): "hexlist", ("ROUND", "cur"): "roundcur",
             ("SPELL_ARGS", "tgt"): "spell_tgt",
-            ("BANNER", "act"): "banner_act", ("ROUND_DETACH", "act"): "detach_act"}
+            ("BANNER", "act"): "banner_act", ("ROUND_DETACH", "act"): "detach_act",
+            ("MODE", "combat"): "mode_tri", ("MODE", "hostile"): "mode_tri", ("MODE", "party"): "mode_tri",
+            ("MODE", "soft"): "mode_soft", ("MODE", "why"): "mode_why",
+            ("CANCEL", "act"): "cancel_act", ("CANCEL", "why"): "cancel_why"}
 REQUIRED = {
     "CMD": ("m", "cr", "kind", "id", "tgt", "dec", "fb", "engq", "buf", "paused", "combat"),
     "WAIT": ("cmd", "m", "why", "buf", "engNe", "age"),
@@ -125,7 +149,8 @@ REQUIRED = {
     "DROP": ("cmd", "m", "why", "n"),
     "EDGE": ("what", "old", "new", "src", "buf"),
     "QJ": ("m", "ne", "types", "round", "cur", "aa8", "ab8", "paused", "combat", "ours"),
-    "REINJECT": ("cmd",), "DISPATCH": ("cmd",), "CANCEL": ("cmd",),
+    "REINJECT": ("cmd",), "DISPATCH": ("cmd",), "CANCEL": ("cmd",),   # CANCEL: CANCEL_NEW when act= is present
+    "MODE": ("m", "combat", "soft", "menu", "paused", "hostile", "party", "strip", "cancel", "banner", "why"),
     "REINJECT_NO": ("cmd", "m", "why"),
     "VANISH": ("cmd", "m", "kind", "paused", "exec", "ne", "round", "cur", "aa8", "ab8", "age"),
     "HANDOFF": ("m", "active", "buffered", "cmds"),
@@ -181,18 +206,33 @@ def normalize_old(body):
     return body
 
 
+def _split_free_why(body):
+    """CANCEL m=.. act=refused why=<free text>: (body without the why text, the text). Other lines: (body, None)."""
+    i = body.find(" why=")
+    if body.startswith("CANCEL ") and i > 0 and " act=" in body[:i]:
+        return body[:i], body[i + len(" why="):]
+    return body, None
+
+
 def parse_body(body):
-    """(kw, cmd, fields) for a queue-hud line; None when the first word is no queue-hud keyword; Bad when malformed."""
-    toks = normalize_old(body).split()
+    """(kw, cmd, fields) for a queue-hud line; None when the first word is no queue-hud keyword; Bad when malformed.
+    'MODE cap reached' is kw MODE_CAP (no fields). The startup line is kw CONFIG with show_in_combat=<0|1>."""
+    if body.split() == ["MODE", "cap", "reached"]:
+        return "MODE_CAP", None, {}
+    head_part, free_why = _split_free_why(body)
+    toks = normalize_old(head_part).split()
     if not toks:
         return None
     head, cmd = toks[0], None
+    cfg = _CONFIG_RE.search(body)
     if head.startswith("CMD#"):
         if not re.fullmatch(r"CMD#\d+", head):
             raise Bad(head, "bad command number")
         kw, cmd = "CMD", int(head[4:])
     elif head in REQUIRED and head != "CMD":
         kw = head
+    elif cfg:
+        return "CONFIG", None, {"show_in_combat": cfg.group(1)}
     else:
         return None
     fields = {}
@@ -203,7 +243,11 @@ def parse_body(body):
         if k in fields:
             raise Bad(head, "duplicate %s" % k)
         fields[k] = v
-    for k in REQUIRED[kw]:
+    if free_why is not None:
+        if "why" in fields:
+            raise Bad(head, "duplicate why")
+        fields["why"] = free_why
+    for k in (CANCEL_NEW if kw == "CANCEL" and "act" in fields else REQUIRED[kw]):
         if k not in fields:
             raise Bad(head, "missing %s" % k)
     for k, v in fields.items():
@@ -472,11 +516,44 @@ def stale_flags(recs):
     return out
 
 
+def mode_flags(recs):
+    """[(line, text)] for flags L, M, N, all on MODE lines, read in log order. L: soft 1->0 for a member while combat=1,
+    the last BANNER was act=hide, and no BANNER act=restore lands 0..MODE_RESTORE_MS after the MODE (T= stamps; a bare
+    MODE is not judged). M: strip=shown while combat=1 and soft=0, unless the latest startup line said show_in_combat=1
+    (none seen counts as the mod default 1). N: cancel=shown while combat=1 and soft=0."""
+    restores = [r["t"] for r in recs if r["kw"] == "BANNER" and r["f"]["act"] == "restore" and r["t"] is not None]
+    out, last_soft, hide, show_cfg = [], {}, None, "1"
+    for r in recs:
+        if r["kw"] == "BANNER":
+            hide = r if r["f"]["act"] == "hide" else None
+            continue
+        if r["kw"] == "CONFIG":
+            show_cfg = r["f"]["show_in_combat"]
+            continue
+        if r["kw"] != "MODE":
+            continue
+        f, m = r["f"], _ms(r["m"])
+        prev = last_soft.get(r["m"])
+        last_soft[r["m"]] = f["soft"]
+        in_combat = f["combat"] == "1"
+        if (prev == "1" and f["soft"] == "0" and in_combat and hide is not None and r["t"] is not None
+                and not any(0 <= t - r["t"] <= MODE_RESTORE_MS for t in restores)):
+            out.append((r["line"], "L L%d m=%s soft 1->0 in combat, banner hidden by L%d, no restore within %d ms" % (
+                r["line"], m, hide["line"], MODE_RESTORE_MS)))
+        if in_combat and f["soft"] == "0":
+            if f["strip"] == "shown" and show_cfg != "1":
+                out.append((r["line"], "M L%d m=%s strip=shown with combat=1 soft=0 (show_in_combat=%s)" % (
+                    r["line"], m, show_cfg)))
+            if f["cancel"] == "shown":
+                out.append((r["line"], "N L%d m=%s cancel=shown with combat=1 soft=0" % (r["line"], m)))
+    return out
+
+
 def all_flags(recs):
-    """Every flag as sorted [(line, text)]: A, B, C (qj_flags) plus D, E, F, G, H, I, J, K."""
+    """Every flag as sorted [(line, text)]: A, B, C (qj_flags) plus D through K and L, M, N (mode_flags)."""
     return sorted(qj_flags(recs) + life_flags(build_cmds(recs)) + handoff_flags(recs) + stale_flags(recs)
                   + handoff_order_flags(recs) + handoff_trigger_flags(recs) + edge_silent_flags(recs)
-                  + spell_replay_flags(recs))
+                  + spell_replay_flags(recs) + mode_flags(recs))
 
 
 def life_line(i):
@@ -523,6 +600,26 @@ def _stale_items(recs):
     return ["m=%s x%d first L%d" % (_ms(m), len(ls), ls[0]) for m, ls in groups.items()]
 
 
+def _mode_row(r):
+    f = r["f"]
+    t = "-" if r["t"] is None else "%d" % r["t"]
+    return "L%d T=%s m=%s combat=%s soft=%s strip=%s cancel=%s banner=%s why=%s" % (
+        r["line"], t, _ms(r["m"]), f["combat"], f["soft"], f["strip"], f["cancel"], f["banner"], f["why"])
+
+
+def _modes_section(recs):
+    """MODES: one log-order timeline of MODE lines (each is already a state change), CAPS['mode'] rows, then (+N more)."""
+    modes = [r for r in recs if r["kw"] == "MODE"]
+    caps = sum(1 for r in recs if r["kw"] == "MODE_CAP")
+    out = ["MODES %d%s" % (len(modes), (" (cap reached x%d)" % caps) if caps else "")]
+    if not modes:
+        return out + ["  (none)"]
+    out += ["  " + _mode_row(r) for r in modes[:CAPS["mode"]]]
+    if len(modes) > CAPS["mode"]:
+        out.append("  (+%d more)" % (len(modes) - CAPS["mode"]))
+    return out
+
+
 def render_default(recs, skipped, nlines, meta):
     insts = build_cmds(recs)
     declines = Counter()
@@ -564,6 +661,7 @@ def render_default(recs, skipped, nlines, meta):
     out += _section("VANISHES", [" ".join("%s=%d" % (k, hist[k]) for k in VANISH_KINDS)] if vanishes else [], 1,
                     count=len(vanishes))
     out += _section("STALE_CUR", _stale_items(stale), CAPS["stale"], count=len(stale))
+    out += _modes_section(recs)
     out += _section("FLAGS", [text for _, text in flags], CAPS["flag"])
     return out
 
@@ -620,7 +718,7 @@ def main(argv=None):
     window, meta = read_window(path, a)
     recs, skipped = parse_lines(window)
     if a.member is not None:
-        recs = [r for r in recs if r["m"] == a.member]
+        recs = [r for r in recs if r["m"] == a.member or r["kw"] in CONTEXT_KWS]
         meta += " member=%d" % a.member
     lines = render_cmd(recs, a.cmd) if a.cmd is not None else render_default(recs, skipped, len(window), meta)
     print("\n".join(lines))

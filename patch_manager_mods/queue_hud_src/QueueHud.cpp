@@ -89,6 +89,16 @@ bool g_bannerHidden = false;       // we cleared the visible bit of >= 1 banner/
 unsigned g_bannerMask = 0;         // which kBannerCtl[] entries WE cleared (restore sets only these)
 uintptr_t g_bannerHud = 0;         // hud the mask belongs to
 DWORD g_capTick = 0;
+// MODE trace (trace_mode): per-member snapshot, last logged snapshot, and the reasons the draw / cancel / banner code paths decided this frame.
+qh::ModeState g_modeNow[3], g_modePrev[3];
+bool g_modePrimed[3];
+int g_modeLines = 0;
+qh::SoftCand g_modeCand[3];       // softBannerTick verdict per member (valid while g_modeCandOk[k])
+bool g_modeCandOk[3];
+const char* g_modeStrip[3];       // strip verdict this frame: "shown" | "hidden:<why>" (static literals; nullptr = nothing decided)
+const char* g_cwWhy[3];           // first Cancel hide reason this frame (cwShow / cwHideAll / cwApply), reset after each MODE pass
+bool g_bannerRestored = false;    // banner/red bar restored in this combat (until combat ends or the HUD is rebuilt)
+bool g_modeDrew = false;          // HUD_DRAW ran since the last FRAME_BEGIN (the menu-frame MODE pass runs only when it did not)
 
 template <typename T> bool rd(unsigned site, uintptr_t base, int off, T* out) { return saferead::readAt(site, base, off, out); }
 
@@ -373,13 +383,21 @@ bool g_cancelMissLogged = false;
 
 // VIS log (identical format in 4 mods): `VIS <what> shown=%d why=%s rect=[x,y,w,h]`, INFO on chMain, change-gated by the caller, cap 64 per process.
 void visLog(const char* what, bool shown, const char* why, const qh::Rect& r) {
-    static int n = 0;
-    if (!g_logOn || n > 64) return;
+    static int n = 0, nCancel = 0;
+    if (!g_logOn) return;
+    if (g_cfg.traceMode && strncmp(what, "cancel", 6) == 0) {   // trace_mode: cancel lines get their own mode_cap budget instead of the shared 64
+        if (nCancel > g_cfg.modeCap) return;
+        if (nCancel++ == g_cfg.modeCap) { KP_LOG(chMain, "VIS cancel cap reached"); return; }
+        KP_LOG(chMain, "VIS %s shown=%d why=%s rect=[%d,%d,%d,%d]", what, shown ? 1 : 0, why ? why : "?", r.x, r.y, r.w, r.h);
+        return;
+    }
+    if (n > 64) return;
     if (n == 64) { ++n; KP_LOG(chMain, "VIS cap reached"); return; }
     ++n;
     KP_LOG(chMain, "VIS %s shown=%d why=%s rect=[%d,%d,%d,%d]", what, shown ? 1 : 0, why ? why : "?", r.x, r.y, r.w, r.h);
 }
 void cwShow(CW& w, bool on, const char* why = "?") {   // clickable only while visible (a shown control swallows the click; hidden = click-through)
+    { const int wi = static_cast<int>(&w - g_cw); if (!on && wi >= 0 && wi < 3 && !g_cwWhy[wi]) g_cwWhy[wi] = why; }   // MODE: first hide reason this frame wins
     if (!w.c) return;
     const int v = on ? 1 : 0;
     if (w.vis == v) return;
@@ -507,8 +525,18 @@ EdgeState g_edge;
 DWORD g_hideAge = 0;
 bool g_hideMenu = false;
 
+// Maps a noteHidden reason to the fixed MODE strip vocabulary.
+const char* modeStripOf(const char* r) {
+    if (!r) return "hidden:empty";
+    if (!strcmp(r, "combat")) return "hidden:combat";
+    if (!strcmp(r, "menu")) return "hidden:menu";
+    if (!strcmp(r, "stale capture") || !strcmp(r, "hud unreadable")) return "hidden:stale";
+    return "hidden:empty";   // no creature / empty queue / nothing drawable
+}
+
 void noteHidden(const char* reason) {
-    if (g_edge.primed && !g_edge.shown && g_edge.reason == reason) return;
+    g_modeStrip[0] = modeStripOf(reason);
+    if (g_edge.primed && !g_edge.shown && g_edge.reason && reason && strcmp(g_edge.reason, reason) == 0) return;
     g_edge.primed = true; g_edge.shown = false; g_edge.reason = reason; g_edge.sig = 0;
     QLOG(chDraw, "hidden (%s) age=%u menu=%d", reason, (unsigned)g_hideAge, g_hideMenu ? 1 : 0);
 }
@@ -592,7 +620,7 @@ void drawLeader(uintptr_t hud, DWORD now, DWORD age, const K2PsContext* ctx) {
     const int n = qh::buildSlots(s.e, s.ne, s.rn, s.nrn, s.haveCur ? &s.cur : nullptr, slots);
     const bool hardCombat = g_combat != 0 && !g_softCombat;   // soft combat (ally-only targets) draws the strip like out of combat
     if (!qh::shouldShow(g_cfg.enabled, hardCombat, ctx->inMenu != 0, age, n)) {
-        if (n == 0 && held.nd > 0 && qh::panelHold(held.tick, now, ctx->inMenu != 0, hardCombat)) { paintLeader(hud, held.d, held.nd, age, ctx); return; }
+        if (n == 0 && held.nd > 0 && qh::panelHold(held.tick, now, ctx->inMenu != 0, hardCombat)) { g_modeStrip[0] = "shown"; paintLeader(hud, held.d, held.nd, age, ctx); return; }
         if (hardCombat && ctx->inMenu == 0 && age < 250u) drawDetachedSlots(hud, s, n, now);
         noteHidden(hardCombat ? "combat" : "empty queue");
         return;
@@ -621,6 +649,7 @@ void drawLeader(uintptr_t hud, DWORD now, DWORD age, const K2PsContext* ctx) {
         memcpy(dd.rr, rr, 17);
     }
     if (nd == 0) { noteHidden("nothing drawable"); return; }
+    g_modeStrip[0] = "shown";
     if (!g_edge.shown || g_edge.sig != sig) {
         char types[64]; int len = 0;
         for (int i = 0; i < n && len < 56; ++i) len += snprintf(types + len, sizeof types - len, "%s0x%02X/%d", i ? "," : "", s.e[slots[i].entry].type, slots[i].node);
@@ -645,9 +674,9 @@ void stripNote(int k, bool shown, int n, const char* types, const qh::Rect& r, u
     e.primed = true; e.shown = shown; e.sig = sig;
     QLOG(chDraw, "strip k=%d %s n=%d types=[%s] rect=(%d,%d,%d,%d)", k, shown ? "shown" : "hidden", n, types, r.x, r.y, r.w, r.h);
 }
-void stripsHidden() {
+void stripsHidden(const char* modeWhy = "hidden:stale") {
     const qh::Rect none{ 0, 0, 0, 0 };
-    for (int k = 1; k <= 2; ++k) stripNote(k, false, 0, "", none, 0);
+    for (int k = 1; k <= 2; ++k) { g_modeStrip[k] = modeWhy; stripNote(k, false, 0, "", none, 0); }
 }
 
 // Down companions (0.4.1): a party member at HP <= 0 shows no strip and its queue journal is not polled. Vitals come from party::vitals,
@@ -675,7 +704,8 @@ HeldStrip g_heldStrip[3];
 
 void drawStrips(uintptr_t hud, DWORD now, bool inMenu) {
     const K2AddrTable* T = k2addr::get();
-    if (!T || !T->Slot_VitRect || !T->Slot_CardRect) return;   // unknown exe: no geometry, nothing to anchor to
+    if (!T || !T->Slot_VitRect || !T->Slot_CardRect) { g_modeStrip[1] = g_modeStrip[2] = "hidden:stale"; return; }   // unknown exe: no geometry, nothing to anchor to
+    g_modeStrip[1] = g_modeStrip[2] = "hidden:empty";   // refined below: shown / stale geometry
     party::Fail why = party::F_None;
     const uintptr_t tbl = party::table(&why);
     uintptr_t cli[3] = {}, srv[3] = {};
@@ -702,7 +732,7 @@ void drawStrips(uintptr_t hud, DWORD now, bool inMenu) {
             ok = rd(SiteStrip + 2, static_cast<uintptr_t>(static_cast<uint32_t>(slot)), T->Slot_VitRect + 4 * j, &vr[j]) && ok;
             ok = rd(SiteStrip + 3, static_cast<uintptr_t>(static_cast<uint32_t>(slot)), T->Slot_CardRect + 4 * j, &cd[j]) && ok;
         }
-        if (!ok || vr[2] < 1 || vr[2] > 400 || vr[3] < 1 || vr[3] > 400 || cd[2] < 1 || cd[2] > 2000 || cd[3] < 1 || cd[3] > 2000) continue;
+        if (!ok || vr[2] < 1 || vr[2] > 400 || vr[3] < 1 || vr[3] > 400 || cd[2] < 1 || cd[2] > 2000 || cd[3] < 1 || cd[3] > 2000) { g_modeStrip[k] = "hidden:stale"; continue; }
         Snapshot s;
         if (!gatherFor(srv[k], s)) continue;
         qh::Slot slots[qh::kMaxSlots];
@@ -751,7 +781,7 @@ void drawStrips(uintptr_t hud, DWORD now, bool inMenu) {
     }
     bool any = false;
     for (int k = 1; k <= 2; ++k) {
-        if (d[k].have) { any = true; stripNote(k, true, d[k].n, types[k], d[k].r[0], sigs[k]); }
+        if (d[k].have) { any = true; g_modeStrip[k] = "shown"; stripNote(k, true, d[k].n, types[k], d[k].r[0], sigs[k]); }
         else stripNote(k, false, 0, "", qh::Rect{ 0, 0, 0, 0 }, 0);
     }
     if (!any) return;
@@ -770,22 +800,66 @@ void drawAll(const K2PsContext* ctx) {
     g_hideAge = age; g_hideMenu = ctx->inMenu != 0;
     const uintptr_t hud = g_hud;
     uint32_t probe = 0;
-    if (!hud || !rd(SiteHud, hud, HudSlotBase, &probe)) { if (hud) noteHidden("hud unreadable"); if (g_cfg.companions) stripsHidden(); return; }
+    if (!hud || !rd(SiteHud, hud, HudSlotBase, &probe)) { g_modeStrip[0] = "hidden:stale"; if (hud) noteHidden("hud unreadable"); if (g_cfg.companions) stripsHidden(); return; }
     if (!qh::shouldShow(g_cfg.enabled, g_combat != 0 && !g_softCombat, ctx->inMenu != 0, age, 1, g_cfg.showInCombat)) {
         noteHidden((g_combat != 0 && !g_softCombat) ? "combat" : ctx->inMenu ? "menu" : "stale capture");
-        if (g_cfg.companions) stripsHidden();
+        if (g_cfg.companions) stripsHidden(g_modeStrip[0]);   // same verdict as the leader
         return;
     }
     drawLeader(hud, now, age, ctx);
     if (g_cfg.companions) drawStrips(hud, now, ctx->inMenu != 0);
 }
 
+// MODE trace: one line per party member whenever its snapshot changes (combat/soft/menu/paused, hostile/party targets, strip / cancel / banner verdict).
+// Called after cwApply (HUD frame) and from FRAME_BEGIN in a menu frame (the HUD draw does not run there). Read-only; formats only on change.
+void modeEmit(bool inMenu) {
+    if (!g_logOn || !g_cfg.traceQueue || !g_cfg.traceMode) return;
+    party::Fail why = party::F_None;
+    const uintptr_t tbl = party::table(&why);
+    const bool inCombat = g_combat != 0 && !g_combatUnreadable;
+    const int8_t paused = playerPaused() ? 1 : 0;
+    const char* banner = g_bannerHidden ? "hidden" : g_bannerRestored ? "restored" : "vanilla";
+    for (int k = 0; k < 3; ++k) {
+        qh::ModeState& n = g_modeNow[k];
+        if (!tbl || !party::member(tbl, k)) { g_modePrimed[k] = false; continue; }   // no such member: no line
+        n.combat = g_combatUnreadable ? -1 : (g_combat != 0 ? 1 : 0);
+        n.soft = inCombat ? (g_softCombat ? 1 : 0) : -1;
+        n.menu = inMenu ? 1 : 0;
+        n.paused = paused;
+        n.hostile = inCombat && g_modeCandOk[k] ? (g_modeCand[k].anyHostile ? 1 : 0) : -1;
+        n.party = inCombat && g_modeCandOk[k] ? (g_modeCand[k].anyParty ? 1 : 0) : -1;
+        n.strip = g_modeStrip[k] ? g_modeStrip[k] : "hidden:empty";
+        const CW& w = g_cw[k];
+        if (w.c && w.vis == 1) n.cancel = "shown";
+        else if (!g_cwWhy[k]) n.cancel = "hidden:empty";
+        else if (!strcmp(g_cwWhy[k], "cancel-off")) n.cancel = "hidden:off";
+        else if (!strcmp(g_cwWhy[k], "combat")) n.cancel = "hidden:combat";
+        else if (!strcmp(g_cwWhy[k], "hud-inactive")) n.cancel = "hidden:menu";
+        else if (!strcmp(g_cwWhy[k], "strip-slot-missing")) n.cancel = "hidden:stale";
+        else n.cancel = "hidden:empty";   // no-queue
+        n.banner = banner;
+        if (g_modePrimed[k] && !qh::modeChanged(g_modePrev[k], n)) continue;
+        if (g_modeLines < g_cfg.modeCap) {
+            char line[200];
+            qh::fmtMode(line, sizeof line, k, n, g_modePrimed[k] ? qh::modeWhy(g_modePrev[k], n) : "ui");
+            QTRACE("%s", line);
+            ++g_modeLines;
+        } else if (g_modeLines == g_cfg.modeCap) { QTRACE("MODE cap reached"); ++g_modeLines; }
+        g_modePrev[k] = n; g_modePrimed[k] = true;
+    }
+    for (const char*& r : g_cwWhy) r = nullptr;
+}
+
 // HUD_DRAW prio 400: the wanted Cancel rects are collected by drawLeader / drawStrips, then applied (every other path hides them).
 void KPATCH_CALL onHudDraw(const K2PsContext* ctx, void*) {
     if (!g_cfg.enabled || !ctx) return;
     for (CWant& d : g_want) d = CWant();
+    g_modeStrip[0] = "hidden:empty";
+    g_modeStrip[1] = g_modeStrip[2] = g_cfg.companions ? "hidden:empty" : "hidden:off";
     drawAll(ctx);
     cwApply();
+    modeEmit(ctx->inMenu != 0);
+    g_modeDrew = true;
 }
 
 // ---- Cancel click (FRAME_BEGIN: the UI tick, outside the draw batch) ----
@@ -828,9 +902,9 @@ void doCancel(int k) {
     if (!srv) bad = "no server creature";
     else bad = resolveServerClear(srv, id, server);
     if (!bad && GetTickCount() - g_capTick >= 250u) bad = "stale HUD capture";
-    if (bad) { KP_LOGV(chCancel, KPLOG_WARN, "CANCEL refused member=%d (%s)", k, bad); return; }
+    if (bad) { KP_LOGV(chCancel, KPLOG_WARN, "CANCEL m=%d act=refused n=-1 why=%s", k, bad); return; }
     const int n = queueCountOf(k);
-    QLOG(chCancel, "CANCEL member=%d n=%d route=ServerClearAll", k, n);
+    QLOG(chCancel, "CANCEL m=%d act=click n=%d route=ServerClearAll", k, n);
     if (g_logOn && g_cfg.traceQueue) {
         uint32_t ids[qh::kMaxActionQueue + 1];
         const int ni = qh::bufferedCmdIds(g_itemQueue[k], ids, qh::kMaxActionQueue + 1);
@@ -1814,7 +1888,7 @@ void KPATCH_CALL onFrameBegin(const K2PsContext* ctx, void*) {
         QTRACE("%s", line);
     }
     for (int k = 0; k < 3; ++k)
-        if (g_cpend[k].on) { g_cpend[k].on = false; QLOG(chCancel, "CANCEL done member=%d n=%d", k, queueCountOf(k)); }
+        if (g_cpend[k].on) { g_cpend[k].on = false; QLOG(chCancel, "CANCEL m=%d act=done n=%d", k, queueCountOf(k)); }
     const bool hardCombat = g_combat != 0 && !g_softCombat;
     if (!g_cfg.cancel || inMenu || hardCombat) {
         cwHideAll(inMenu ? "hud-inactive" : hardCombat ? "combat" : "cancel-off");
@@ -1839,6 +1913,8 @@ void KPATCH_CALL onFrameBegin(const K2PsContext* ctx, void*) {
         }
     }
 
+    if (inMenu && !g_modeDrew) { g_modeStrip[0] = g_modeStrip[1] = g_modeStrip[2] = "hidden:menu"; modeEmit(true); }   // HUD_DRAW does not run in a menu frame; one MODE pass per frame either way
+    g_modeDrew = false;
     const DWORD now = GetTickCount();
     edgeTick(inMenu);
     journalTick(now);
@@ -1884,12 +1960,15 @@ void softBannerTick(uintptr_t hud) {
     if (g_bannerHidden && hud != g_bannerHud) {   // HUD rebuilt (load): the old controls are gone
         bannerTrace("forget", false, 0);
         g_bannerHidden = false; g_bannerMask = 0; g_bannerLastAct = -1; g_bannerResetLogged = false;
+        g_bannerRestored = false;
     }
+    for (bool& ok : g_modeCandOk) ok = false;     // MODE: per-member verdict is recomputed below while in combat
     if (g_combat == 0) {
         if (g_bannerHidden) {                     // combat ended: the engine hid the controls itself, do not restore
             bannerTrace("forget", false, 0);
             g_bannerHidden = false; g_bannerMask = 0; g_bannerResetLogged = false;
         }
+        g_bannerRestored = false;
         g_bannerLastAct = -1;
         return;
     }
@@ -1908,6 +1987,7 @@ void softBannerTick(uintptr_t hud) {
                 MemberTgt mt;
                 readTargets(srv, mt);
                 cands[k] = softCandOf(mt, partyIds);
+                g_modeCand[k] = cands[k]; g_modeCandOk[k] = true;   // recorded before the flags-off early return below
             }
             soft = qh::softCombat(true, cands, 3);
         }
@@ -1939,7 +2019,7 @@ void softBannerTick(uintptr_t hud) {
     }
     if (act == qh::BA_HIDE) {
         const bool first = !g_bannerHidden;
-        if (g_bannerMask) { g_bannerHidden = true; g_bannerHud = hud; }
+        if (g_bannerMask) { g_bannerHidden = true; g_bannerHud = hud; g_bannerRestored = false; }
         if (first && nWr > 0) {
             char line[200];
             int n = snprintf(line, sizeof line, "banner flags before=");
@@ -1952,6 +2032,7 @@ void softBannerTick(uintptr_t hud) {
         if (static_cast<int>(act) != g_bannerLastAct) bannerTrace("hide", true, nWr);
     } else {
         bannerTrace("restore", false, nWr);
+        g_bannerRestored = true;
         g_bannerHidden = false; g_bannerMask = 0; g_bannerResetLogged = false;
     }
     g_bannerLastAct = static_cast<int>(act);
@@ -1968,10 +2049,10 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     loadIni();
     g_logOn = g_cfg.log;
-    KP_LOG(chMain, "0.4.1-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax);
+    KP_LOG(chMain, "0.4.2-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax);
     QLOG(chMain, "pause_eaten_wait=%d dispatch_wait_flags=%d spell_replay_pos=%d", g_cfg.pauseEatenWait ? 1 : 0, g_cfg.dispatchWaitFlags ? 1 : 0, g_cfg.spellReplayPos ? 1 : 0);
-    QLOG(chMain, "pause_reinject=%d handoff_on_combat=%d handoff_clear_first=%d handoff_keep_new=%d handoff_resend_held=%d show_in_combat=%d",
-         g_cfg.pauseReinject ? 1 : 0, g_cfg.handoffOnCombat ? 1 : 0, g_cfg.handoffClearFirst ? 1 : 0, g_cfg.handoffKeepNew ? 1 : 0, g_cfg.handoffResendHeld ? 1 : 0, g_cfg.showInCombat ? 1 : 0);
+    QLOG(chMain, "pause_reinject=%d handoff_on_combat=%d handoff_clear_first=%d handoff_keep_new=%d handoff_resend_held=%d show_in_combat=%d handoff_keep_unpaused=%d trace_mode=%d mode_cap=%d",
+         g_cfg.pauseReinject ? 1 : 0, g_cfg.handoffOnCombat ? 1 : 0, g_cfg.handoffClearFirst ? 1 : 0, g_cfg.handoffKeepNew ? 1 : 0, g_cfg.handoffResendHeld ? 1 : 0, g_cfg.showInCombat ? 1 : 0, g_cfg.handoffKeepUnpaused ? 1 : 0, g_cfg.traceMode ? 1 : 0, g_cfg.modeCap);
     g_ps.init(api, "queue-hud");
     g_ps.onConnect = onConnect;
     g_ps.add(K2PS_HUD_DRAW, 400, onHudDraw);

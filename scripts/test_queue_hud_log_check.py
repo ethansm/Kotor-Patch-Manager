@@ -158,6 +158,36 @@ def wait_cur(n, m=0, age=3000):
     return "WAIT cmd=%d m=%d why=cur_busy buf=2 engNe=1 age=%d" % (n, m, age)
 
 
+def mode(m=0, combat=0, soft="-", strip="shown", cancel="shown", banner="vanilla", why="ui", hostile="?", party="?"):
+    """A MODE line with the grammar of fmtMode (menu and paused fixed at 0)."""
+    return ("MODE m=%s combat=%d soft=%s menu=0 paused=0 hostile=%s party=%s strip=%s cancel=%s banner=%s why=%s"
+            % (m, combat, soft, hostile, party, strip, cancel, banner, why))
+
+
+def banner_act(act):
+    return "BANNER act=%s soft=1 ctl=8 wr=8" % act
+
+
+def config(show):
+    """The startup line from QueueHud.cpp (chMain): show_in_combat=<n> followed by the 0.4.2 trace keys."""
+    return ("pause_reinject=1 handoff_on_combat=1 handoff_clear_first=1 handoff_keep_new=1 handoff_resend_held=1"
+            " show_in_combat=%d handoff_keep_unpaused=1 trace_mode=1 mode_cap=2000" % show)
+
+
+def cancel_new(m, act, n, tail=""):
+    return "CANCEL m=%d act=%s n=%d%s" % (m, act, n, tail)
+
+
+# Goldens copied from queue_hud_logic_test.cpp (fmtMode checks (a)-(e)); (e) is the null-reason case that prints '?'.
+MODE_GOLDEN = [
+    "MODE m=0 combat=0 soft=- menu=0 paused=0 hostile=? party=? strip=shown cancel=shown banner=vanilla why=ui",
+    "MODE m=2 combat=1 soft=1 menu=0 paused=0 hostile=0 party=1 strip=shown cancel=shown banner=hidden why=edge",
+    "MODE m=1 combat=1 soft=0 menu=0 paused=0 hostile=1 party=0 strip=hidden:combat cancel=hidden:combat banner=restored why=target",
+    "MODE m=? combat=? soft=- menu=0 paused=0 hostile=? party=? strip=hidden:stale cancel=hidden:off banner=hidden why=ui",
+    "MODE m=3 combat=1 soft=- menu=0 paused=0 hostile=? party=? strip=? cancel=? banner=? why=?",
+]
+
+
 def parse(bodies):
     return Q.parse_lines([(i + 1, s) for i, s in enumerate(bodies)])
 
@@ -184,6 +214,14 @@ def run_log(bodies, extra=()):
     with tempfile.TemporaryDirectory() as d:
         log = os.path.join(d, "queue-hud_log.txt")
         Path(log).write_text("\n".join(stamped(b, i) for i, b in enumerate(bodies)) + "\n")
+        return run([log, "--state", os.path.join(d, "bm.json"), *extra])
+
+
+def run_raw(lines, extra=()):
+    """Like run_log, but each line is written as given (keeps its own T= stamp, or none)."""
+    with tempfile.TemporaryDirectory() as d:
+        log = os.path.join(d, "queue-hud_log.txt")
+        Path(log).write_text("\n".join(lines) + "\n")
         return run([log, "--state", os.path.join(d, "bm.json"), *extra])
 
 
@@ -669,8 +707,9 @@ class NewSectionTests(unittest.TestCase):
         self.assertIn("  m=0 x2 first L1", out)
         self.assertIn("  m=1 x1 first L3", out)
 
-    def test_default_view_worst_case_is_exactly_60_lines(self):
-        # Every section over its cap, plus one SKIPPED line: 1+1+1+14+7+10+4+6+2+4+10 = 60 (COMMANDS cap 12, ROUNDS cap 4).
+    def test_default_view_worst_case_is_exactly_74_lines(self):
+        # Every section over its cap, plus one SKIPPED line: 1+1+1+14+7+10+4+6+2+4+14+10 = 74 (COMMANDS cap 12, ROUNDS cap 4,
+        # MODES cap 12 = title + 12 rows + "(+N more)").
         bodies = [cmd(100 + i) for i in range(20)]                                  # 20 lifecycles, COMMANDS shows 12
         bodies += [drop(200 + i, 0, "cancel", 1) for i in range(6)]                 # 6 DROP lifecycles, DROPS 6
         bodies += [edge() for _ in range(9)]                                        # EDGES 9
@@ -683,11 +722,14 @@ class NewSectionTests(unittest.TestCase):
         bodies += [wait(7)]                                                         # DECLINES 1, lifecycle cmd 7
         bodies += [wait_cur(9, 5, 3000), wait_cur(9, 5, 3000)]                      # 2 E flags (member 5 has no STALE)
         bodies += ["DROP cmd=1 m=1 why=combat_clear"]                               # SKIPPED 1 (missing n)
+        bodies += [mode(0, 0) for _ in range(13)]                                   # MODES 13: 12 rows + (+1 more), no flags
         for _ in range(5):
             bodies += [qj(0, "[3d]", 1), qj(0, "[c]", 1)]                           # 5 flags A
         rc, out = run_log(bodies)
         self.assertEqual(rc, 0)
-        self.assertEqual(len(out), 60)
+        self.assertEqual(len(out), 74)
+        self.assertIn("MODES 13", out)
+        self.assertEqual(out[out.index("MODES 13") + 13], "  (+1 more)")
         self.assertIn("SKIPPED 1: L", out[1])
         self.assertIn("COMMANDS 29", out)                                           # 20 + 6 DROP + cmd 5, 7, 9
         self.assertIn("  ... +17 more", out)                                        # 29 lifecycles, 12 shown
@@ -1011,7 +1053,8 @@ class SpellFlagTests(unittest.TestCase):
         self.assertIn("  K L1 cmd=4 m=0 " + K_MSG, out)
 
 
-# Synthetic BANNER goldens (spec line; not yet in queue_hud_logic_test.cpp).
+# Synthetic BANNER lines in the grammar of the fmtBanner goldens (queue_hud_logic_test.cpp, BANNER block near line 2448).
+# The values are not copied from that block.
 BANNER_GOLDEN = [
     "BANNER act=hide soft=1 ctl=8 wr=8",
     "BANNER act=restore soft=0 ctl=0 wr=0",
@@ -1030,6 +1073,192 @@ class BannerTraceTests(unittest.TestCase):
         self.assertEqual((recs[0]["cmd"], recs[0]["m"]), (None, None))
         recs, skipped = parse(["BANNER act=bogus soft=1 ctl=8 wr=8"])
         self.assertEqual((recs, len(skipped)), ([], 1))
+
+
+class ModeParseTests(unittest.TestCase):
+    def test_mode_goldens_parse_exactly(self):
+        recs, skipped = parse(MODE_GOLDEN)
+        self.assertEqual(skipped, [])
+        self.assertEqual([r["kw"] for r in recs], ["MODE"] * 5)
+        self.assertEqual([r["m"] for r in recs], [0, 2, 1, None, 3])
+        self.assertEqual((recs[0]["f"]["soft"], recs[0]["f"]["hostile"], recs[0]["f"]["why"]), ("-", "?", "ui"))
+        self.assertEqual((recs[2]["f"]["strip"], recs[2]["f"]["banner"]), ("hidden:combat", "restored"))
+        self.assertEqual((recs[3]["f"]["combat"], recs[3]["f"]["cancel"]), ("?", "hidden:off"))
+        self.assertEqual((recs[4]["f"]["strip"], recs[4]["f"]["why"]), ("?", "?"))
+
+    def test_mode_cap_line_is_counted_not_skipped(self):
+        recs, skipped = parse(["MODE cap reached"])
+        self.assertEqual((skipped, [r["kw"] for r in recs]), ([], ["MODE_CAP"]))
+
+    def test_mode_malformed_values_and_missing_field_are_skipped(self):
+        bad = [
+            mode(strip="bogus"), mode(soft="2"), mode(why="nope"), mode(banner="shown"), mode(cancel="hidden:bogus"),
+            "MODE m=0 combat=1 soft=0 menu=0 paused=0 hostile=0 party=0 strip=shown cancel=shown banner=hidden",  # no why
+            "MODE m=0 combat=2 soft=0 menu=0 paused=0 hostile=0 party=0 strip=shown cancel=shown banner=hidden why=ui",
+        ]
+        recs, skipped = parse(bad + [mode(0, 0)])
+        self.assertEqual(len(skipped), len(bad))
+        self.assertEqual([r["kw"] for r in recs], ["MODE"])
+
+    def test_startup_line_parses_as_config_and_bad_value_is_ignored(self):
+        recs, skipped = parse([config(1)])
+        self.assertEqual((skipped, [(r["kw"], r["f"]["show_in_combat"]) for r in recs]), ([], [("CONFIG", "1")]))
+        self.assertEqual(parse([config(2)]), ([], []))
+
+
+class CancelParseTests(unittest.TestCase):
+    def test_new_cancel_forms_parse_and_are_not_skipped(self):
+        recs, skipped = parse([cancel_new(0, "click", 2), cancel_new(0, "done", 0),
+                               cancel_new(1, "refused", 3, " why=no server creature"),
+                               cancel_new(0, "click", 2, " route=ServerClearAll")])
+        self.assertEqual(skipped, [])
+        self.assertEqual([r["kw"] for r in recs], ["CANCEL"] * 4)
+        self.assertEqual([r["m"] for r in recs], [0, 0, 1, 0])
+        self.assertEqual(recs[2]["f"]["why"], "no server creature")
+        self.assertEqual(recs[3]["f"]["route"], "ServerClearAll")
+        self.assertIsNone(recs[0]["cmd"])
+
+    def test_bad_cancel_forms_are_skipped(self):
+        bad = ["CANCEL m=0 act=maybe n=2", "CANCEL m=0 act=click", "CANCEL m=0 n=2"]
+        recs, skipped = parse(bad)
+        self.assertEqual(recs, [])
+        self.assertEqual([s[2] for s in skipped], ["malformed act=maybe", "missing n", "missing cmd"])
+
+    def test_legacy_cancel_cmd_form_still_parses(self):
+        recs, skipped = parse(["CANCEL cmd=5 m=0", "CANCEL cmd=6"])
+        self.assertEqual(skipped, [])
+        self.assertEqual([(r["cmd"], r["m"]) for r in recs], [(5, 0), (6, None)])
+
+    def test_new_cancel_lines_open_no_lifecycle_and_are_not_skipped_in_view(self):
+        rc, out = run_log([cancel_new(0, "click", 2)])
+        self.assertEqual(out[0], "QUEUE-HUD lines=1 parsed=1 skipped=0 cmds=0 qj=0")
+        self.assertIn("COMMANDS 0", out)
+
+
+class ModeSectionTests(unittest.TestCase):
+    def test_modes_rows_title_and_none(self):
+        rc, out = run_log([mode(0, 0), mode(1, 1, soft="0", strip="hidden:combat", cancel="hidden:combat",
+                                            banner="restored", why="target")])
+        self.assertEqual(rc, 0)
+        i = out.index("MODES 2")
+        self.assertEqual(out[i + 1], "  L1 T=1000 m=0 combat=0 soft=- strip=shown cancel=shown banner=vanilla why=ui")
+        self.assertEqual(out[i + 2], "  L2 T=1001 m=1 combat=1 soft=0 strip=hidden:combat cancel=hidden:combat "
+                                     "banner=restored why=target")
+        self.assertIn("FLAGS 0", out)
+        self.assertIn("MODES 0", run_log([cmd(1)])[1])
+
+    def test_modes_capped_at_12_rows_then_more(self):
+        rc, out = run_log([mode(m, 0) for m in range(13)])
+        i = out.index("MODES 13")
+        rows = out[i + 1:i + 13]
+        self.assertEqual(len(rows), 12)
+        self.assertTrue(all(row.startswith("  L") for row in rows))
+        self.assertEqual(rows[-1].split()[1:3], ["T=1011", "m=11"])
+        self.assertEqual(out[i + 13], "  (+1 more)")
+
+    def test_modes_cap_line_counted_in_title_and_not_skipped(self):
+        rc, out = run_log([mode(0, 0), "MODE cap reached"])
+        self.assertEqual(out[0], "QUEUE-HUD lines=2 parsed=2 skipped=0 cmds=0 qj=0")
+        self.assertIn("MODES 1 (cap reached x1)", out)
+
+    def test_modes_respects_member_filter(self):
+        rc, out = run_log([mode(0, 0), mode(1, 0), mode(1, 0, strip="hidden:combat")], ["--member", "1"])
+        i = out.index("MODES 2")
+        self.assertTrue(all(" m=1 " in row for row in out[i + 1:i + 3]))
+
+    def test_modes_unknown_member_and_bare_line_has_no_time(self):
+        rc, out = run_raw([mode("?", 0)])
+        self.assertIn("MODES 1", out)
+        self.assertEqual(out[out.index("MODES 1") + 1],
+                         "  L1 T=- m=? combat=0 soft=- strip=shown cancel=shown banner=vanilla why=ui")
+
+
+class ModeFlagTests(unittest.TestCase):
+    QUIET_SOFT_DROP = mode(0, 1, soft="0", strip="hidden:combat", cancel="hidden:combat", banner="hidden", why="ended")
+
+    # L: soft 1->0 in combat, last BANNER was hide, no BANNER restore within 500 ms after the MODE
+    def test_L_fires_when_soft_drops_in_combat_with_banner_hidden_and_no_restore(self):
+        self.assertEqual(all_flags_of([at(900, mode(0, 1, soft="1")), at(1000, banner_act("hide")),
+                                       at(1100, self.QUIET_SOFT_DROP)]),
+                         [(3, "L L3 m=0 soft 1->0 in combat, banner hidden by L2, no restore within 500 ms")])
+
+    def test_L_quiet_when_restore_lands_at_400_ms(self):
+        self.assertEqual(all_flags_of([at(900, mode(0, 1, soft="1")), at(1000, banner_act("hide")),
+                                       at(1100, self.QUIET_SOFT_DROP), at(1500, banner_act("restore"))]), [])
+
+    def test_L_quiet_when_restore_lands_at_exactly_500_ms(self):
+        self.assertEqual(all_flags_of([at(900, mode(0, 1, soft="1")), at(1000, banner_act("hide")),
+                                       at(1100, self.QUIET_SOFT_DROP), at(1600, banner_act("restore"))]), [])
+
+    def test_L_fires_when_restore_comes_after_500_ms(self):
+        f = all_flags_of([at(900, mode(0, 1, soft="1")), at(1000, banner_act("hide")),
+                          at(1100, self.QUIET_SOFT_DROP), at(1700, banner_act("restore"))])
+        self.assertEqual([line for line, _ in f], [3])
+
+    def test_L_quiet_without_its_preconditions(self):
+        cases = {
+            "soft never 1 before": [at(1000, banner_act("hide")), at(1100, self.QUIET_SOFT_DROP)],
+            "last banner not hide": [at(900, mode(0, 1, soft="1")), at(1000, banner_act("forget")),
+                                     at(1100, self.QUIET_SOFT_DROP)],
+            "restore between hide and mode": [at(900, mode(0, 1, soft="1")), at(1000, banner_act("hide")),
+                                              at(1050, banner_act("restore")), at(1100, self.QUIET_SOFT_DROP)],
+            "drop outside combat": [at(900, mode(0, 1, soft="1")), at(1000, banner_act("hide")),
+                                    at(1100, mode(0, 0, soft="0", strip="hidden:combat", cancel="hidden:combat"))],
+        }
+        for name, bodies in cases.items():
+            with self.subTest(case=name):
+                self.assertEqual([text for _, text in all_flags_of(bodies) if text.startswith("L ")], [])
+
+    def test_L_bare_lines_are_not_judged(self):
+        self.assertEqual(all_flags_of([mode(0, 1, soft="1"), banner_act("hide"), self.QUIET_SOFT_DROP]), [])
+
+    def test_L_fires_under_member_filter_because_banner_context_is_kept(self):
+        rc, out = run_raw([at(900, mode(0, 1, soft="1")), at(1000, banner_act("hide")), at(1100, self.QUIET_SOFT_DROP)],
+                          ["--member", "0"])
+        self.assertIn("FLAGS 1", out)
+        self.assertIn("  L L3 m=0 soft 1->0 in combat, banner hidden by L2, no restore within 500 ms", out)
+
+    # M: strip=shown in combat with soft=0, unless the startup line says show_in_combat=1
+    def test_M_quiet_without_startup_line_mod_default_is_1(self):
+        self.assertEqual(all_flags_of([mode(0, 1, soft="0", strip="shown", cancel="hidden:combat")]), [])
+
+    def test_M_fires_with_startup_show_in_combat_0(self):
+        self.assertEqual(all_flags_of([config(0), mode(0, 1, soft="0", strip="shown", cancel="hidden:combat")]),
+                         [(2, "M L2 m=0 strip=shown with combat=1 soft=0 (show_in_combat=0)")])
+
+    def test_M_suppressed_by_startup_show_in_combat_1(self):
+        self.assertEqual(all_flags_of([config(1), mode(0, 1, soft="0", strip="shown", cancel="hidden:combat")]), [])
+
+    def test_M_uses_the_latest_startup_line(self):
+        self.assertEqual(all_flags_of([config(1), config(0), mode(0, 1, soft="0", strip="shown", cancel="hidden:combat")]),
+                         [(3, "M L3 m=0 strip=shown with combat=1 soft=0 (show_in_combat=0)")])
+
+    def test_M_quiet_outside_combat_soft_0_or_strip_hidden(self):
+        for body in [mode(0, 0, soft="-"), mode(0, 1, soft="1"), mode(0, 1, soft="-"),
+                     mode(0, 1, soft="0", strip="hidden:combat", cancel="hidden:combat")]:
+            with self.subTest(body=body):
+                self.assertEqual(all_flags_of([body]), [])
+
+    def test_M_under_member_filter_still_sees_startup_line(self):
+        rc, out = run_log([config(1), mode(0, 1, soft="0", strip="shown", cancel="hidden:combat")], ["--member", "0"])
+        self.assertIn("FLAGS 0", out)
+
+    # N: cancel=shown in combat with soft=0 (the startup line does not suppress it)
+    def test_N_fires_on_cancel_shown_in_combat_soft_0(self):
+        self.assertEqual(all_flags_of([mode(0, 1, soft="0", strip="hidden:combat", cancel="shown")]),
+                         [(1, "N L1 m=0 cancel=shown with combat=1 soft=0")])
+
+    def test_N_not_suppressed_by_startup_line_and_quiet_otherwise(self):
+        self.assertEqual(len(all_flags_of([config(1), mode(0, 1, soft="0", strip="hidden:combat", cancel="shown")])), 1)
+        for body in [mode(0, 0, soft="-"), mode(0, 1, soft="1"), mode(0, 1, soft="0", strip="hidden:combat", cancel="hidden:off")]:
+            with self.subTest(body=body):
+                self.assertEqual(all_flags_of([body]), [])
+
+    def test_M_and_N_listed_in_flags_section(self):
+        rc, out = run_log([config(0), mode(0, 1, soft="0", strip="shown", cancel="shown")])
+        self.assertIn("FLAGS 2", out)
+        self.assertIn("  M L2 m=0 strip=shown with combat=1 soft=0 (show_in_combat=0)", out)
+        self.assertIn("  N L2 m=0 cancel=shown with combat=1 soft=0", out)
 
 
 if __name__ == "__main__":
