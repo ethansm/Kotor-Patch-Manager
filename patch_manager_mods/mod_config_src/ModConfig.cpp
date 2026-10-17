@@ -1160,6 +1160,10 @@ extern "C" void __cdecl McTick(int panelArg) {
                static_cast<unsigned>(e.lastFlags48), static_cast<unsigned long>(gap), curPageId());
     e.lastFlags48 = flags48;
     if (gap > kTickGapMs) resetPages("tick gap");
+    if (!(flags48 & 2)) {
+        if (e.ps.state != mui::MAIN) resetPages("panel hidden");
+        return;
+    }
     if (!e.appended) firstTick();
     applyTargets(e, false);
     if (e.ps.state == mui::ENTRY && e.ps.entry >= 0 && e.ps.entry < mui::kMaxEntries) {
