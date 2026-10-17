@@ -4,3 +4,4 @@ EXPORTS
     AreaHookProbeFreshLoad
     AreaHookProbeSavedLoad
     AreaHookProbeAddObject
+    KPatchInit

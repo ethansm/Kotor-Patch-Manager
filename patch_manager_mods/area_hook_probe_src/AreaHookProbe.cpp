@@ -1,4 +1,4 @@
-// Area Hook Probe 0.2.0 (Steam Aspyr build 6A522E71...). Diagnostics only: no gameplay change, spawns nothing.
+// Area Hook Probe 0.2.1 (Steam Aspyr build 6A522E71...). Diagnostics only: no gameplay change, spawns nothing.
 // Question: when a SAVED game loads into an already-visited area, which engine paths run, and can the area resref/id be read then?
 //
 // Hooks (detour, 5-byte prologue 55 8B EC 6A FF, handler reads ECX only):
@@ -14,7 +14,8 @@
 //      made for the previous area after its own log line, total_adds = all calls since attach.
 //   H2 and H3 forget the last logged area pointer and arm the POP watch, so a reload that reuses a freed address is still logged.
 //
-// Output: area_hook_probe_log.txt in the game's working directory (same convention as load_hang_probe). Stack arguments
+// Output: area_hook_probe_log.txt via KpLog.h since 0.2.1 (channel main; core prefix `T=<s.ms> f=- area-hook-probe/main`, lines start `t<ticks> `;
+//   old core: same file name as fallback at INFO, appended, the attached line marks each process start). Stack arguments
 // of the hooked functions are never read. Every memory read goes through SafeRead (no faults, no unvalidated derefs).
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -23,12 +24,15 @@
 #include <stdint.h>
 #include <string.h>
 #include "../_shared/SafeRead.h"
+#include "KpLog.h"
+
+KP_LOG_PATCH("area-hook-probe");
 
 namespace {
 
 using saferead::readAt;
 
-constexpr const char* kVersion = "0.2.0";
+constexpr const char* kVersion = "0.2.1";
 constexpr const char* kLogName = "area_hook_probe_log.txt";
 constexpr int kMaxLogLines = 2000;
 constexpr int kMaxDumps = 8;
@@ -66,19 +70,45 @@ long g_ticksSinceLoad = 0;              // H1 ticks since the arming hook
 long g_addsAtLastTick = 0;              // g_addsTotal as of the previous H1 tick
 int g_stableTicks = 0;                  // consecutive H1 ticks with no new AddObjectToArea call
 
-// ---- logging: one open/append/close per line, state changes only ----------------------------------------
+// ---- logging: state changes only ------------------------------------------------------------------------
+// 0.2.1: lines go through KpLog.h (channel main): new core -> area_hook_probe_log.txt, old core -> fallback file of the same name at INFO.
+// The core cuts a message at 232 bytes ("[...]"), so a long line is split at spaces into pieces of <= 220 bytes (continuations start with
+// `+ `). Nothing is logged before KpLog_Init (KPatchInit logs the attached line first; hooks fire later).
+KP_CHANNEL(chMain, "main");
+const bool g_fallbackSet = (KpLog_SetFallbackFile(kLogName), KpLog_SetFallbackLevel(KPLOG_INFO), true);
+
+constexpr int LogPiece = 220;
+
+void emit(const char* s) {
+    int n = static_cast<int>(strlen(s));
+    if (n <= LogPiece) { KP_LOG(chMain, "%s", s); return; }
+    char piece[LogPiece + 1];
+    int pos = 0; bool first = true;
+    while (pos < n) {
+        int len = n - pos < LogPiece - 2 ? n - pos : LogPiece - 2;   // room for the `+ ` marker
+        if (pos + len < n) {   // not the last piece: prefer to cut at a space
+            int cut = len;
+            while (cut > LogPiece / 2 && s[pos + cut] != ' ') --cut;
+            if (s[pos + cut] == ' ') len = cut;
+        }
+        if (first) { memcpy(piece, s + pos, len); piece[len] = 0; }
+        else { piece[0] = '+'; piece[1] = ' '; memcpy(piece + 2, s + pos, len); piece[len + 2] = 0; }
+        KP_LOG(chMain, "%s", piece);
+        first = false; pos += len;
+        if (pos < n && s[pos] == ' ') ++pos;
+    }
+}
+
 void logf(const char* fmt, ...) {
     if (g_logLines >= kMaxLogLines) return;
-    FILE* f = fopen(kLogName, "a");
-    if (!f) return;
     ++g_logLines;
-    fprintf(f, "[%lu t%ld] ", static_cast<unsigned long>(GetTickCount()), g_mainLoopTicks);
+    char buf[640];
+    int n = snprintf(buf, sizeof buf, "t%ld ", g_mainLoopTicks);
     va_list ap;
     va_start(ap, fmt);
-    vfprintf(f, fmt, ap);
+    vsnprintf(buf + n, sizeof buf - n, fmt, ap);
     va_end(ap);
-    fputc('\n', f);
-    fclose(f);
+    emit(buf);
 }
 
 // "none" (never read), "unreadable", or the decimal value.
@@ -111,22 +141,20 @@ void fmtResref(char* out, size_t n, bool ok, const unsigned char* rf) {
 void dumpThis(uintptr_t obj, int latch) {
     if (g_dumps >= kMaxDumps || g_logLines + 1 + kDumpDwords / 8 > kMaxLogLines) return;
     ++g_dumps;
-    FILE* f = fopen(kLogName, "a");
-    if (!f) return;
     g_logLines += 1 + kDumpDwords / 8;
-    fprintf(f, "[%lu t%ld] H1 DUMP #%d this=%08lx latch=%d (%d dwords, hex, offsets from this)\n",
-            static_cast<unsigned long>(GetTickCount()), g_mainLoopTicks, g_dumps,
-            static_cast<unsigned long>(obj), latch, kDumpDwords);
+    char line[160];
+    snprintf(line, sizeof line, "t%ld H1 DUMP #%d this=%08lx latch=%d (%d dwords, hex, offsets from this)",
+             g_mainLoopTicks, g_dumps, static_cast<unsigned long>(obj), latch, kDumpDwords);
+    emit(line);
     for (int row = 0; row < kDumpDwords; row += 8) {
-        fprintf(f, "  +0x%03x:", row * 4);
+        int n = snprintf(line, sizeof line, "  +0x%03x:", row * 4);
         for (int i = row; i < row + 8; ++i) {
             unsigned v = 0;
-            if (readAt(kSiteDump, obj, i * 4, &v)) fprintf(f, " %08x", v);
-            else fputs(" ????????", f);
+            if (readAt(kSiteDump, obj, i * 4, &v)) n += snprintf(line + n, sizeof line - n, " %08x", v);
+            else n += snprintf(line + n, sizeof line - n, " ????????");
         }
-        fputc('\n', f);
+        emit(line);
     }
-    fclose(f);
 }
 
 }  // namespace
@@ -230,11 +258,15 @@ void __cdecl AreaHookProbeAddObject(void* area) {
 
 }  // extern "C"
 
+// The attached line is logged here, not in DllMain: nothing before KpLog_Init reaches the core file, and KpLog_Init must not run under the
+// loader lock. No file I/O here.
+extern "C" __declspec(dllexport) void __cdecl KPatchInit(const KPatchApi* api) {
+    KpLog_Init(api);
+    logf("area-hook-probe %s attached: H1 0x00533830 CServerExoAppInternal::MainLoop | H2 0x0055A460 CSWSModule::LoadModuleInProgress | H3 0x005582F0 CSWSModule::LoadModuleStart | H4 0x00522BF0 CSWSArea::AddObjectToArea | log %s",
+         kVersion, kLogName);
+}
+
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
-    if (reason == DLL_PROCESS_ATTACH) {
-        g_attachTick = GetTickCount();
-        logf("area-hook-probe %s attached: H1 0x00533830 CServerExoAppInternal::MainLoop | H2 0x0055A460 CSWSModule::LoadModuleInProgress | H3 0x005582F0 CSWSModule::LoadModuleStart | H4 0x00522BF0 CSWSArea::AddObjectToArea | log %s",
-             kVersion, kLogName);
-    }
+    if (reason == DLL_PROCESS_ATTACH) g_attachTick = GetTickCount();
     return TRUE;
 }
