@@ -1,11 +1,19 @@
 # Session Handoff & Plan State: patch_manager_mods/33_ui_queue_hotbar_fixes.md
 
 ## 0. Next-Phase Direction
-QL15: install, then play check. QL12-14 BUILT `5978bdd` (queue-hud 0.4.2-dev, GATE PASS md5 1d944cb7). QL16 BUILT `baca6a9` (combat-hotbar 0.9.2-rc, action-hotbar 0.1.5-dev, companion-selfheal 0.8.4-dev; GATE PASS). CombatTrace.h/CombatTraceRead.h already synced into the KPM Patches/Common clone (`check_shared_headers.py --sync`, 0 drift).
-1. Needs user GO with the game closed. Install A first, then B. Each from a clean worktree at the commit: `git worktree add --detach <scratch>/ql12 baca6a9` -> `kpm_status.py` -> `kpm_hotswap.py --mod queue-hud --prepare` -> commit the KPM mirror -> `--apply` -> `kpm_status.py` LIVE. Then the same for `--mod combat-hotbar --mod action-hotbar --mod companion-selfheal` (kotor2-kpm-install skill).
-2. Add PLAY_TEST_QUEUE rows MODE1 (5 steps in the plan: medpack, stim with no enemies = soft, hostile = soft->hard + BANNER restore with no flag L, fight to the end, menu open/close) and CST1 (`kotor2_logs.py check combat`: CSTATE from 3 mods agrees with queue-hud MODE, no DISAGREE >250 ms).
-3. After play: freeze logs to `.claude/handoffs/ql12/logs/` before any relaunch; read them with `queue_hud_log_check.py <frozen> --no-advance` (MODES, flags L/M/N) and `combat_timeline.py <files>`.
-Skipped in QL16: companion-ai (no frame callback or HUD; its E1/E2 lines already feed the timeline), buff HUD / shield bar / enemy strip (no HUD pointer). The combat-hotbar CSTATE is sampled only on target-menu rebuilds, so it can lag.
+QL15: play check, then read the logs. Everything is LIVE as of 10-17 01:30:
+- queue-hud 0.4.2-dev (`5978bdd`); rollback `queue-hud_swap_20261017_013024`.
+- combat-hotbar 0.9.2-rc, action-hotbar 0.1.5-dev and companion-selfheal 0.8.4-dev (`baca6a9`); rollback `batch_swap_20261017_013047`.
+- KPM commits: 4f452db, 1bb19ea (CombatTrace headers), then the 3 mod mirrors.
+PLAY_TEST_QUEUE rows MODE1 and CST1 are pending.
+After play:
+1. Freeze the logs to `.claude/handoffs/ql12/logs/` before any relaunch.
+2. Run 3 read-only Haiku units:
+   - H1: `queue_hud_log_check.py <frozen> --no-advance` for MODES and flags L/M/N.
+   - H2: `combat_timeline.py <frozen files>` for cross-mod DISAGREE rows.
+   - H3: MODE lines per minute and cap hits; the target is under ~200 per combat.
+3. Compare against the MODE1/CST1 pass signals.
+Skipped in QL16: companion-ai (no frame callback; its E1/E2 lines already feed the timeline), and buff HUD / shield bar / enemy strip (no HUD pointer). The combat-hotbar CSTATE is sampled only on target-menu rebuilds.
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/33_ui_queue_hotbar_fixes.md`
@@ -13,32 +21,17 @@ Skipped in QL16: companion-ai (no frame callback or HUD; its E1/E2 lines already
 - **Waves:** .claude/waves/WI-33-b1/
 - **Waves:** .claude/waves/w1-33-QL7/
 - **Waves:** .claude/waves/w2-33-QL9/
-- **Branch:** `KOTOR-II` (baca6a9 feat(combat logging): shared CSTATE edge line + cross-mod combat timeline (QL16))
-- **Generated:** 2026-10-17 01:22:07 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (df2c7ec docs(33): QL12-QL14, QL16 BUILT + handoff (install needs GO))
+- **Generated:** 2026-10-17 01:31:04 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-baca6a9 feat(combat logging): shared CSTATE edge line + cross-mod combat timeline (QL16)
- .claude/skills/kotor2-log-analysis/SKILL.md        |   1 +
- CLAUDE.md                                          |   2 +-
- patch_manager_mods/_shared_src/CombatTrace.h       |  61 +++++
- patch_manager_mods/_shared_src/CombatTraceRead.h   |  17 ++
- .../_shared_src/combat_trace_test.cpp              | 119 ++++++++++
- .../action_hotbar_src/ActionHotbar.cpp             |  12 +-
- patch_manager_mods/action_hotbar_src/manifest.toml |   2 +-
- .../combat_hotbar_src/CombatHotbar.cpp             |  12 +-
- patch_manager_mods/combat_hotbar_src/manifest.toml |   2 +-
- .../companion_selfheal_src/CompanionSelfHeal.cpp   |  16 +-
- .../companion_selfheal_src/manifest.toml           |   2 +-
- scripts/agent_diff_check.py                        |   2 +-
- scripts/combat_timeline.py                         | 260 +++++++++++++++++++++
- scripts/kotor2_logs.py                             |   5 +
- scripts/test_combat_timeline.py                    | 235 +++++++++++++++++++
- scripts/test_kotor2_logs.py                        |  15 ++
- 16 files changed, 754 insertions(+), 9 deletions(-)
+df2c7ec docs(33): QL12-QL14, QL16 BUILT + handoff (install needs GO)
+ .../handoffs/33_ui_queue_hotbar_fixes.handoff.md   | 104 ++++++++++++++-------
+ patch_manager_mods/33_ui_queue_hotbar_fixes.md     |   8 +-
+ 2 files changed, 73 insertions(+), 39 deletions(-)
 ```
 - **Dirty Files (183):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
-  - ` M .claude/handoffs/33_ui_queue_hotbar_fixes.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
   - ` M .claude/handoffs/40_npc_behaviour_variety.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
@@ -47,6 +40,7 @@ baca6a9 feat(combat logging): shared CSTATE edge line + cross-mod combat timelin
   - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
   - ` M .claude/plans/swarm_library_architecture.md`
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
+  - ` M CLAUDE.md`
   - ... +173 more (run `git status --short`)
 
 ## 2. Immediate Objective (QL15)
