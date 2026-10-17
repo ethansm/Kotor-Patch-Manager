@@ -1,4 +1,4 @@
-// Voice Probe 0.1.0 (Steam Aspyr build 6A522E71...). Diagnostics only: no gameplay change, spawns nothing, default off.
+// Voice Probe 0.1.1 (Steam Aspyr build 6A522E71...). Diagnostics only: no gameplay change, spawns nothing, default off.
 // Question: how often does Global::ExecuteCommandPlaySound run, and in what order relative to the script-side PC messages?
 //
 // Hook (detour, 5-byte prologue 55 8B EC 6A FF = PUSH EBP / MOV EBP,ESP / PUSH -1, whole instructions):
@@ -10,13 +10,19 @@
 // Switch: voice_probe.ini [probe] probe=0 (default off). Read ONCE, lazily, on the first handler call, via
 // GetPrivateProfileIntA on an absolute path in the game working dir. When probe=0 the handler returns before doing any work.
 //
-// Output: voice_probe_log.txt in the game's working directory. One open/append/close per line, capped at kMaxLogLines.
+// Output: voice_probe_log.txt via KpLog.h since 0.1.1 (channel main; core prefix `T=<s.ms> f=- voice-probe/main`; old core: same file name,
+// fallback at INFO, appended), capped at kMaxLogLines. Needs a `[voice-probe]` section in kplog.ini on a new core. Lines are short (< 232 B core cut).
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <string.h>
+
+#include "kpatch_api.h"
+#include "KpLog.h"
+
+KP_LOG_PATCH("voice-probe");
 
 namespace {
 
@@ -28,18 +34,20 @@ int g_logLines = 0;
 long g_callCount = 0;        // P1 calls since the probe was switched on
 int g_probeState = -1;       // -1 = ini not read yet, 0 = off, 1 = on
 
-// ---- logging: one open/append/close per line -----------------------------------------------------------------
+// ---- logging: KpLog.h channel main --------------------------------------------------------------------------
+KP_CHANNEL(chMain, "main");
+// Only stores the path and the level (no I/O): safe from a static initialiser. Same file name as before (runbook and tooling read it).
+const bool g_fallbackSet = (KpLog_SetFallbackFile(kLogName), KpLog_SetFallbackLevel(KPLOG_INFO), true);
+
 void logf(const char* fmt, ...) {
     if (g_logLines >= kMaxLogLines) return;
-    FILE* f = fopen(kLogName, "a");
-    if (!f) return;
     ++g_logLines;
+    char buf[200];
     va_list ap;
     va_start(ap, fmt);
-    vfprintf(f, fmt, ap);
+    vsnprintf(buf, sizeof buf, fmt, ap);
     va_end(ap);
-    fputc('\n', f);
-    fclose(f);
+    KP_LOG(chMain, "%s", buf);
 }
 
 // Reads voice_probe.ini once (first call), then returns the cached switch.
@@ -72,3 +80,6 @@ void __cdecl VoiceProbePlaySound(void* self) {
 }
 
 }  // extern "C"
+
+// KpLog_Init only; no file I/O under the loader lock. The probe stays off unless voice_probe.ini [probe] probe=1.
+extern "C" __declspec(dllexport) void __cdecl KPatchInit(const KPatchApi* api) { KpLog_Init(api); }

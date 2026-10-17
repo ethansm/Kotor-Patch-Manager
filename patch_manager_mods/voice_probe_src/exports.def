@@ -1,3 +1,4 @@
 LIBRARY VoiceProbe
 EXPORTS
     VoiceProbePlaySound
+    KPatchInit

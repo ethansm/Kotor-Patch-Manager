@@ -1,9 +1,9 @@
 [patch]
 id = "voice-probe"
 name = "Voice Probe"
-version = "0.1.0"
+version = "0.1.1"
 author = "local"
-description = "Diagnostics only (no gameplay change, spawns nothing, default off). Logs one line per Global::ExecuteCommandPlaySound call (call number, tick, this) to voice_probe_log.txt. The sound resref is not read here; the script side logs it via SendMessageToPC. Switch: voice_probe.ini [probe] probe=0."
+description = "Diagnostics only (no gameplay change, spawns nothing, default off). Logs one line per Global::ExecuteCommandPlaySound call (call number, tick, this) to voice_probe_log.txt. The sound resref is not read here; the script side logs it via SendMessageToPC. Switch: voice_probe.ini [probe] probe=0. 0.1.1: logs through KpLog.h (channel main; needs a [voice-probe] kplog.ini section); new KPatchInit export."
 
 requires = []
 conflicts = []
