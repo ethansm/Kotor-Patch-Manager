@@ -1160,6 +1160,12 @@ extern "C" void __cdecl McTick(int panelArg) {
                static_cast<unsigned>(e.lastFlags48), static_cast<unsigned long>(gap), curPageId());
     e.lastFlags48 = flags48;
     if (gap > kTickGapMs) resetPages("tick gap");
+    // Live logs 10-17: a shown Options panel draws with flags48 0x4d, an Esc-hidden one with 0x0d (still drawn, ~22 ms gaps). Bit 0x2 is
+    // clear in BOTH states (it is only the CTOR-time "layout open" bit), so 0x40 is the shown bit. Hidden -> back to MAIN, nothing else.
+    if (e.appended && !(flags48 & 0x40)) {   // never before the first build: a wrong bit can then cost the Esc reset, never the button
+        if (e.ps.state != mui::MAIN) resetPages("panel hidden");
+        return;
+    }
     if (!e.appended) firstTick();
     applyTargets(e, false);
     if (e.ps.state == mui::ENTRY && e.ps.entry >= 0 && e.ps.entry < mui::kMaxEntries) {
