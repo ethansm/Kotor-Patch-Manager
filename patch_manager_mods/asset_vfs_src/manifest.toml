@@ -1,0 +1,18 @@
+[patch]
+id = "asset-vfs"
+name = "In-Memory Asset VFS & Character Library"
+version = "0.1.0-dev"
+kind = "provider"
+provides = ["k2.assetvfs@1", "k2.characterlib@1"]
+author = "local"
+description = "Provides 100% in-memory CExoResMan asset resolution (0x0071244E GetKeyEntry miss, 0x00713E83 ServiceFromImage), load-time 2DA V2.b row splicing (0x00729FD0 CRes2DA::OnResourceServiced), and Miles audio memory streaming (0x0070CB76 OpenStream + _AIL_set_file_callbacks@16). Exposes k2.assetvfs@1 and k2.characterlib@1 (CharacterProvider.h). Opt-out: asset_vfs.ini [vfs] enabled=0."
+
+requires = ["npc-world"]
+requires_interfaces = ["k2.npcworld@1"]
+conflicts = []
+
+[patch.supported_versions]
+kotor2_steam_aspyr = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"
+
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]

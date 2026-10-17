@@ -14,6 +14,9 @@
 # GENERATED FILE: `python3 scripts/check_raw_addresses.py --write-baseline` rewrites everything below this line.
 # --write-baseline is run only by a human or Opus after reviewing the new addresses, never by automation.
 
+[files."patch_manager_mods/_shared_src/CharacterProvider.h"]
+addresses = ["0x0070CB76", "0x0071244E", "0x00713E83"]
+
 [files."patch_manager_mods/_shared_src/GuiKit.h"]
 addresses = ["0x00418D20"]
 
@@ -34,6 +37,9 @@ addresses = ["0x0084D871", "0x0084DEF0", "0x0084FBB0"]
 
 [files."patch_manager_mods/area_hook_probe_src/AreaHookProbe.cpp"]
 addresses = ["0x00522BF0", "0x00533830", "0x005582F0", "0x0055A460"]
+
+[files."patch_manager_mods/asset_vfs_src/AssetVfsProvider.cpp"]
+addresses = []
 
 [files."patch_manager_mods/buff_duration_hud_src/BuffDurationHUD.cpp"]
 addresses = ["0x00745A84", "0x00745A97", "0x00745AEC"]
@@ -136,6 +142,9 @@ addresses = ["0x0040F972", "0x0040F978", "0x0040F9E4", "0x00428AE5", "0x00428AEA
 
 [files."patch_manager_mods/save_events_src/SaveEventsProvider.cpp"]
 addresses = ["0x0052FD1E", "0x00534527", "0x0053C5AA", "0x008529E0", "0x008FACA0", "0x00907340", "0x00A7EA88", "0x00A7EABC"]
+
+[files."patch_manager_mods/script_events_src/ScriptEventsProvider.cpp"]
+addresses = []
 
 [files."patch_manager_mods/shield_bar_src/ShieldBar.cpp"]
 addresses = ["0x00744EEC"]

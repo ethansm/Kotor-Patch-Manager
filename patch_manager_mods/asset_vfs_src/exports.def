@@ -1,0 +1,7 @@
+LIBRARY AssetVfs
+EXPORTS
+    KPatchInit
+    VFS_OnGetKeyEntryMiss
+    VFS_OnServiceFromImage
+    VFS_On2DaServiced
+    VFS_OnOpenStream

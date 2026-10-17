@@ -1,0 +1,54 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
+
+# H1: CVirtualMachineInternal::RunScript (0x007022A0) pre-dispatch at 0x007022E0.
+# 58 bytes after perf-lab's prologue hook (0x007022A0), immediately after non-empty script check.
+# 7 bytes (2 instructions): MOV ECX,[EBP-0x0C] / CMP DWORD PTR [ECX+0x28],-1.
+# Non-zero return jumps to 0x00702580 (MOV ESP,EBP / POP EBP / RET 0x0C) with EAX=1.
+[[hooks]]
+address = 0x007022E0
+type = "detour"
+function = "SE_OnRunScriptPre"
+original_bytes = [0x8B, 0x4D, 0xF4, 0x83, 0x79, 0x28, 0xFF]
+consumed_exit_address = 0x00702580
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"
+
+# H2: CVirtualMachineInternal::RunScript post-RunScriptFile at 0x007023E6.
+# 6 bytes (2 instructions): MOV [EBP-0x08],EAX / MOV EDX,[EBP-0x0C].
+[[hooks]]
+address = 0x007023E6
+type = "detour"
+function = "SE_OnRunScriptPost"
+original_bytes = [0x89, 0x45, 0xF8, 0x8B, 0x55, 0xF4]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"
+
+[[hooks.parameters]]
+source = "eax"
+type = "int"
+
+# H3: CSWVirtualMachineCommands::ExecuteCommand (0x00668FD0) pre-dispatch at 0x00668FF1.
+# 27 bytes after perf-lab (0x00668FD0), 15 bytes after robustness-fixes (0x00668FE0),
+# and 25 bytes before robustness-fixes (0x00669012).
+# 8 bytes (4 instructions): MOV EAX,[EBP+0x0C] / PUSH EAX / MOV ECX,[EBP+0x08] / PUSH ECX.
+# When handled, writes status to [EBP-0x04] and returns 1 to jump to 0x0066900D
+# (MOV EAX,[EBP-0x04] / JMP 0x00669017 -> MOV ESP,EBP / POP EBP / RET 0x08).
+[[hooks]]
+address = 0x00668FF1
+type = "detour"
+function = "SE_OnExecuteCommand"
+original_bytes = [0x8B, 0x45, 0x0C, 0x50, 0x8B, 0x4D, 0x08, 0x51]
+consumed_exit_address = 0x0066900D
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"
