@@ -45,24 +45,40 @@ namespace {
 constexpr uint32_t kOptionsVtable = static_cast<uint32_t>(gameaddr::OptionsInGameVtable);
 constexpr uint32_t kSceneViewVtable = static_cast<uint32_t>(gameaddr::SceneViewVtable);
 
-const char* const kAnimList[] = {
-    "pause1", "pause2", "pause3", "walk", "run", "walkrf", "runrf",
-    "pausesh", "salute", "bow", "greeting", "victory", "taunt", "shrug", "nodyes", "point"
+struct StanceDef {
+    const char* label;
+    const char* anim;
 };
-constexpr int kAnimCount = sizeof(kAnimList) / sizeof(kAnimList[0]);
 
-inline float animDuration(const char* anim) {
-    if (!_stricmp(anim, "pausesh")) return 2.0f;
-    if (!_stricmp(anim, "salute")) return 1.6f;
-    if (!_stricmp(anim, "bow")) return 2.0f;
-    if (!_stricmp(anim, "greeting")) return 1.5f;
-    if (!_stricmp(anim, "victory")) return 1.3f;
-    if (!_stricmp(anim, "taunt")) return 1.4f;
-    if (!_stricmp(anim, "shrug")) return 1.6f;
-    if (!_stricmp(anim, "nodyes")) return 1.5f;
-    if (!_stricmp(anim, "point")) return 2.0f;
-    return 0.0f; // looping
-}
+const StanceDef kStanceList[] = {
+    {"Idle", "pause1"},
+    {"Walk", "walk"},
+    {"Run", "run"},
+    {"Walk (Rifle)", "walkrf"},
+    {"Run (Rifle)", "runrf"},
+    {"Alert", "pause2"},
+    {"Combat", "pause3"},
+};
+constexpr int kStanceCount = sizeof(kStanceList) / sizeof(kStanceList[0]);
+
+struct EmoteDef {
+    const char* label;
+    const char* anim;
+    float duration;
+};
+
+const EmoteDef kEmoteList[] = {
+    {"Salute", "salute", 1.6f},
+    {"Bow", "bow", 2.0f},
+    {"Greeting", "greeting", 1.5f},
+    {"Victory", "victory", 1.3f},
+    {"Taunt", "taunt", 1.4f},
+    {"Shrug", "shrug", 1.6f},
+    {"Nod", "nodyes", 1.5f},
+    {"Point", "point", 2.0f},
+    {"Shift Idle", "pausesh", 2.0f},
+};
+constexpr int kEmoteCount = sizeof(kEmoteList) / sizeof(kEmoteList[0]);
 
 bool g_enabled = true;
 bool g_debug = false;
@@ -78,7 +94,7 @@ k2holster::Client g_hol;
 k2mc::ConfigClient g_cfgClient;
 k2mc::MenuClient g_menu;
 
-enum State { IDLE, NEEDBUILD, WAIT, LIVE };
+enum State { IDLE, NEEDBUILD, LIVE };
 
 struct Editor {
     void* panel = nullptr;
@@ -93,12 +109,16 @@ struct Editor {
 
     int32_t nameItem = -1;
     int32_t prevItem = -1, nextItem = -1;
-    int32_t animLabelItem = -1;
-    int32_t animPrevItem = -1, animNextItem = -1;
-    int32_t animPlayItem = -1, animIdleItem = -1;
+    int32_t stanceLabelItem = -1;
+    int32_t stancePrevItem = -1, stanceNextItem = -1;
+    int32_t emoteLabelItem = -1;
+    int32_t emotePrevItem = -1, emoteNextItem = -1;
+    int32_t playPauseItem = -1;
     int32_t resetItem = -1, flipItem = -1;
 
-    int animIdx = 0;
+    int stanceIdx = 0;
+    int emoteIdx = 0;
+    bool playingEmote = false;
     DWORD emoteEndMs = 0;
 
     p3d::Drag drag;
@@ -161,7 +181,7 @@ void readConfig() {
 }
 
 const char* statusText() {
-    return g_p3.ok() && g_hol.ok() ? "0.2.2 dev: preview + holster connected" : "0.2.2 dev: a provider is missing";
+    return g_p3.ok() && g_hol.ok() ? "0.2.3 dev: preview + holster connected" : "0.2.3 dev: a provider is missing";
 }
 
 void KPATCH_CALL cbBeforeFree(uint32_t token, void* user) {
@@ -250,26 +270,34 @@ void KPATCH_CALL cbBuild(void* panel, void*) {
 
     if (g_ed.token && g_p3.ok()) {
         g_p3.p->SetBeforeFree(cbBeforeFree, &g_ed);
+        g_p3.p->SetWeapons(g_ed.token, 1);
     }
 
     g_ed.nameItem = ui->AddLabel(g_ed.page, "");
     g_ed.prevItem = ui->AddButton(g_ed.page, "<", "Show the previous party member.");
     g_ed.nextItem = ui->AddButton(g_ed.page, ">", "Show the next party member.");
 
-    char animBuf[64];
-    snprintf(animBuf, sizeof(animBuf), "Anim: %s", kAnimList[g_ed.animIdx]);
-    g_ed.animLabelItem = ui->AddLabel(g_ed.page, animBuf);
-    g_ed.animPrevItem = ui->AddButton(g_ed.page, "<", "Select previous animation.");
-    g_ed.animNextItem = ui->AddButton(g_ed.page, ">", "Select next animation.");
-    g_ed.animPlayItem = ui->AddButton(g_ed.page, "Play", "Play the selected animation.");
-    g_ed.animIdleItem = ui->AddButton(g_ed.page, "Idle", "Return to standing idle.");
+    char stanceBuf[64];
+    snprintf(stanceBuf, sizeof(stanceBuf), "Stance: %s", kStanceList[g_ed.stanceIdx].label);
+    g_ed.stanceLabelItem = ui->AddLabel(g_ed.page, stanceBuf);
+    g_ed.stancePrevItem = ui->AddButton(g_ed.page, "<", "Previous stance (idle/walk/run).");
+    g_ed.stanceNextItem = ui->AddButton(g_ed.page, ">", "Next stance (idle/walk/run).");
+
+    char emoteBuf[64];
+    snprintf(emoteBuf, sizeof(emoteBuf), "Emote: %s", kEmoteList[g_ed.emoteIdx].label);
+    g_ed.emoteLabelItem = ui->AddLabel(g_ed.page, emoteBuf);
+    g_ed.emotePrevItem = ui->AddButton(g_ed.page, "<", "Previous emote.");
+    g_ed.emoteNextItem = ui->AddButton(g_ed.page, ">", "Next emote.");
+
+    g_ed.playPauseItem = ui->AddButton(g_ed.page, "Play", "Play selected emote, or pause movement.");
 
     g_ed.resetItem = ui->AddButton(g_ed.page, "Reset view", "Back to the saved framing.");
     g_ed.flipItem = ui->AddButton(g_ed.page, "Flip view", "Turn the character around.");
 
     if (g_ed.nameItem < 0 || g_ed.prevItem < 0 || g_ed.nextItem < 0 ||
-        g_ed.animLabelItem < 0 || g_ed.animPrevItem < 0 || g_ed.animNextItem < 0 ||
-        g_ed.animPlayItem < 0 || g_ed.animIdleItem < 0 ||
+        g_ed.stanceLabelItem < 0 || g_ed.stancePrevItem < 0 || g_ed.stanceNextItem < 0 ||
+        g_ed.emoteLabelItem < 0 || g_ed.emotePrevItem < 0 || g_ed.emoteNextItem < 0 ||
+        g_ed.playPauseItem < 0 ||
         g_ed.resetItem < 0 || g_ed.flipItem < 0) {
         KP_LOG(chMain, "BUILD item failed");
     }
@@ -310,14 +338,18 @@ void KPATCH_CALL cbEnter(uint32_t page, void*) {
     placeRect(g_ed.prevItem, hse::half(hse::stripSlot(strip, 1), 0, 6));
     placeRect(g_ed.nextItem, hse::half(hse::stripSlot(strip, 1), 1, 6));
 
-    placeRect(g_ed.animLabelItem, hse::stripSlot(strip, 2));
-    placeRect(g_ed.animPrevItem, hse::half(hse::stripSlot(strip, 3), 0, 6));
-    placeRect(g_ed.animNextItem, hse::half(hse::stripSlot(strip, 3), 1, 6));
-    placeRect(g_ed.animPlayItem, hse::half(hse::stripSlot(strip, 4), 0, 6));
-    placeRect(g_ed.animIdleItem, hse::half(hse::stripSlot(strip, 4), 1, 6));
+    placeRect(g_ed.stanceLabelItem, hse::stripSlot(strip, 2));
+    placeRect(g_ed.stancePrevItem, hse::half(hse::stripSlot(strip, 3), 0, 6));
+    placeRect(g_ed.stanceNextItem, hse::half(hse::stripSlot(strip, 3), 1, 6));
 
-    placeRect(g_ed.resetItem, hse::half(hse::stripSlot(strip, 5), 0, 6));
-    placeRect(g_ed.flipItem, hse::half(hse::stripSlot(strip, 5), 1, 6));
+    placeRect(g_ed.emoteLabelItem, hse::stripSlot(strip, 4));
+    placeRect(g_ed.emotePrevItem, hse::half(hse::stripSlot(strip, 5), 0, 6));
+    placeRect(g_ed.emoteNextItem, hse::half(hse::stripSlot(strip, 5), 1, 6));
+
+    placeRect(g_ed.playPauseItem, hse::stripSlot(strip, 6));
+
+    placeRect(g_ed.resetItem, hse::half(hse::stripSlot(strip, 7), 0, 6));
+    placeRect(g_ed.flipItem, hse::half(hse::stripSlot(strip, 7), 1, 6));
 
     guikit::wheelInstall();
     guikit::g_wheel.setRect(0, view.x, view.y, view.w, view.h);
@@ -332,6 +364,7 @@ void KPATCH_CALL cbLeave(uint32_t, void*) {
     g_ed.state = IDLE;
     p3d::dragEnd(&g_ed.drag);
     g_ed.pressed = false;
+    g_ed.playingEmote = false;
     g_ed.emoteEndMs = 0;
     if (g_ed.token && g_p3.ok()) {
         g_p3.p->Destroy(g_ed.token);
@@ -354,42 +387,89 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
     const K2MenuUiApi* ui = g_menu.p;
     const int n = hse::memberCount();
 
-    // 1. Button clicks in WAIT and LIVE states
-    if ((e.state == WAIT || e.state == LIVE) && n > 0) {
+    // 1. Button clicks in LIVE state
+    if (e.state == LIVE && n > 0) {
         if (e.prevItem >= 0 && ui->Clicked(page, e.prevItem)) {
             e.member = hse::wrapIndex(e.member, -1, n);
             KP_LOG(chView, "PICK member=%d/%d", e.member + 1, n);
             if (e.token && g_p3.ok()) g_p3.p->Destroy(e.token);
+            e.stanceIdx = 0;
+            e.playingEmote = false;
+            e.emoteEndMs = 0;
+            char sBuf[64];
+            snprintf(sBuf, sizeof(sBuf), "Stance: %s", kStanceList[0].label);
+            if (e.stanceLabelItem >= 0) ui->SetText(page, e.stanceLabelItem, sBuf);
+            if (e.playPauseItem >= 0) ui->SetText(page, e.playPauseItem, "Play");
             e.state = NEEDBUILD;
             return;
         } else if (e.nextItem >= 0 && ui->Clicked(page, e.nextItem)) {
             e.member = hse::wrapIndex(e.member, 1, n);
             KP_LOG(chView, "PICK member=%d/%d", e.member + 1, n);
             if (e.token && g_p3.ok()) g_p3.p->Destroy(e.token);
+            e.stanceIdx = 0;
+            e.playingEmote = false;
+            e.emoteEndMs = 0;
+            char sBuf[64];
+            snprintf(sBuf, sizeof(sBuf), "Stance: %s", kStanceList[0].label);
+            if (e.stanceLabelItem >= 0) ui->SetText(page, e.stanceLabelItem, sBuf);
+            if (e.playPauseItem >= 0) ui->SetText(page, e.playPauseItem, "Play");
             e.state = NEEDBUILD;
             return;
-        } else if (e.animPrevItem >= 0 && ui->Clicked(page, e.animPrevItem)) {
-            e.animIdx = hse::wrapIndex(e.animIdx, -1, kAnimCount);
-            char animBuf[64];
-            snprintf(animBuf, sizeof(animBuf), "Anim: %s", kAnimList[e.animIdx]);
-            if (e.animLabelItem >= 0) ui->SetText(page, e.animLabelItem, animBuf);
-            KP_LOG(chView, "ANIM sel=%s", kAnimList[e.animIdx]);
-        } else if (e.animNextItem >= 0 && ui->Clicked(page, e.animNextItem)) {
-            e.animIdx = hse::wrapIndex(e.animIdx, 1, kAnimCount);
-            char animBuf[64];
-            snprintf(animBuf, sizeof(animBuf), "Anim: %s", kAnimList[e.animIdx]);
-            if (e.animLabelItem >= 0) ui->SetText(page, e.animLabelItem, animBuf);
-            KP_LOG(chView, "ANIM sel=%s", kAnimList[e.animIdx]);
-        } else if (e.animPlayItem >= 0 && ui->Clicked(page, e.animPlayItem)) {
-            const char* a = kAnimList[e.animIdx];
-            if (e.token && g_p3.ok()) g_p3.p->PlayAnim(e.token, a);
-            float dur = animDuration(a);
-            e.emoteEndMs = dur > 0.0f ? GetTickCount() + static_cast<DWORD>(dur * 1000.0f) : 0;
-            KP_LOG(chView, "PLAY anim=%s dur=%.1f", a, dur);
-        } else if (e.animIdleItem >= 0 && ui->Clicked(page, e.animIdleItem)) {
-            if (e.token && g_p3.ok()) g_p3.p->PlayAnim(e.token, "pause1");
+        } else if (e.stancePrevItem >= 0 && ui->Clicked(page, e.stancePrevItem)) {
+            e.stanceIdx = hse::wrapIndex(e.stanceIdx, -1, kStanceCount);
+            e.playingEmote = false;
             e.emoteEndMs = 0;
-            KP_LOG(chView, "PLAY idle (pause1)");
+            char sBuf[64];
+            snprintf(sBuf, sizeof(sBuf), "Stance: %s", kStanceList[e.stanceIdx].label);
+            if (e.stanceLabelItem >= 0) ui->SetText(page, e.stanceLabelItem, sBuf);
+            if (e.token && g_p3.ok()) g_p3.p->PlayAnim(e.token, kStanceList[e.stanceIdx].anim);
+            const bool isMoving = (e.stanceIdx != 0);
+            if (e.playPauseItem >= 0) ui->SetText(page, e.playPauseItem, isMoving ? "Pause" : "Play");
+            KP_LOG(chView, "STANCE sel=%s anim=%s", kStanceList[e.stanceIdx].label, kStanceList[e.stanceIdx].anim);
+        } else if (e.stanceNextItem >= 0 && ui->Clicked(page, e.stanceNextItem)) {
+            e.stanceIdx = hse::wrapIndex(e.stanceIdx, 1, kStanceCount);
+            e.playingEmote = false;
+            e.emoteEndMs = 0;
+            char sBuf[64];
+            snprintf(sBuf, sizeof(sBuf), "Stance: %s", kStanceList[e.stanceIdx].label);
+            if (e.stanceLabelItem >= 0) ui->SetText(page, e.stanceLabelItem, sBuf);
+            if (e.token && g_p3.ok()) g_p3.p->PlayAnim(e.token, kStanceList[e.stanceIdx].anim);
+            const bool isMoving = (e.stanceIdx != 0);
+            if (e.playPauseItem >= 0) ui->SetText(page, e.playPauseItem, isMoving ? "Pause" : "Play");
+            KP_LOG(chView, "STANCE sel=%s anim=%s", kStanceList[e.stanceIdx].label, kStanceList[e.stanceIdx].anim);
+        } else if (e.emotePrevItem >= 0 && ui->Clicked(page, e.emotePrevItem)) {
+            e.emoteIdx = hse::wrapIndex(e.emoteIdx, -1, kEmoteCount);
+            char eBuf[64];
+            snprintf(eBuf, sizeof(eBuf), "Emote: %s", kEmoteList[e.emoteIdx].label);
+            if (e.emoteLabelItem >= 0) ui->SetText(page, e.emoteLabelItem, eBuf);
+            KP_LOG(chView, "EMOTE sel=%s anim=%s", kEmoteList[e.emoteIdx].label, kEmoteList[e.emoteIdx].anim);
+        } else if (e.emoteNextItem >= 0 && ui->Clicked(page, e.emoteNextItem)) {
+            e.emoteIdx = hse::wrapIndex(e.emoteIdx, 1, kEmoteCount);
+            char eBuf[64];
+            snprintf(eBuf, sizeof(eBuf), "Emote: %s", kEmoteList[e.emoteIdx].label);
+            if (e.emoteLabelItem >= 0) ui->SetText(page, e.emoteLabelItem, eBuf);
+            KP_LOG(chView, "EMOTE sel=%s anim=%s", kEmoteList[e.emoteIdx].label, kEmoteList[e.emoteIdx].anim);
+        } else if (e.playPauseItem >= 0 && ui->Clicked(page, e.playPauseItem)) {
+            if (e.playingEmote || e.stanceIdx != 0) {
+                // Pause / return to Idle
+                e.playingEmote = false;
+                e.emoteEndMs = 0;
+                e.stanceIdx = 0;
+                char sBuf[64];
+                snprintf(sBuf, sizeof(sBuf), "Stance: %s", kStanceList[0].label);
+                if (e.stanceLabelItem >= 0) ui->SetText(page, e.stanceLabelItem, sBuf);
+                if (e.token && g_p3.ok()) g_p3.p->PlayAnim(e.token, "pause1");
+                ui->SetText(page, e.playPauseItem, "Play");
+                KP_LOG(chView, "PLAY_PAUSE -> Pause (returned to idle)");
+            } else {
+                // Play selected emote
+                const EmoteDef& em = kEmoteList[e.emoteIdx];
+                if (e.token && g_p3.ok()) g_p3.p->PlayAnim(e.token, em.anim);
+                e.playingEmote = true;
+                e.emoteEndMs = em.duration > 0.0f ? GetTickCount() + static_cast<DWORD>(em.duration * 1000.0f) : 0;
+                ui->SetText(page, e.playPauseItem, "Pause");
+                KP_LOG(chView, "PLAY_PAUSE -> Play emote=%s dur=%.1f", em.anim, em.duration);
+            }
         } else if (e.resetItem >= 0 && ui->Clicked(page, e.resetItem)) {
             e.view = e.cfgView;
             KP_LOG(chView, "BTN Reset view=(%.2f,%.2f,%.2f)", e.view.yaw, e.view.zoom, e.view.panZ);
@@ -399,13 +479,15 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
         }
     }
 
-    // 2. Emote timer: auto-return to pause1 idle
-    if (e.emoteEndMs && GetTickCount() >= e.emoteEndMs) {
+    // 2. Emote timer: auto-return to active stance / idle
+    if (e.playingEmote && e.emoteEndMs && GetTickCount() >= e.emoteEndMs) {
+        e.playingEmote = false;
         e.emoteEndMs = 0;
-        if (e.token && g_p3.ok()) {
-            g_p3.p->PlayAnim(e.token, "pause1");
-            KP_LOG(chView, "ANIM return to pause1");
-        }
+        const char* resumeAnim = kStanceList[e.stanceIdx].anim;
+        if (e.token && g_p3.ok()) g_p3.p->PlayAnim(e.token, resumeAnim);
+        const bool isMoving = (e.stanceIdx != 0);
+        if (e.playPauseItem >= 0) ui->SetText(page, e.playPauseItem, isMoving ? "Pause" : "Play");
+        KP_LOG(chView, "EMOTE done -> resume anim=%s", resumeAnim);
     }
 
     // 3. Mouse input: equip-screen style drag, wheel, MMB reset, and RMB probe
@@ -478,21 +560,9 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
             if (e.statusItem >= 0) ui->SetText(page, e.statusItem, "preview rebuild failed");
             KP_LOG(chView, "REBUILD fail member=%d", e.member + 1);
             e.state = IDLE;
-        } else {
-            g_p3.p->SetWeapons(e.token, 1);
-            KP_LOG(chView, "REBUILD ok member=%d/%d creature=%p", e.member + 1, n, reinterpret_cast<void*>(C));
-            e.state = WAIT;
+            return;
         }
-        char rawName[64] = {0};
-        bool gotName = hse::memberName(C, rawName, sizeof(rawName));
-        char label[64] = {0};
-        hse::memberLabel(label, sizeof(label), e.member, rawName);
-        if (e.nameItem >= 0) ui->SetText(page, e.nameItem, label);
-        KP_LOG(chView, "NAME member=%d text=%s read=%d", e.member + 1, label, gotName ? 1 : 0);
-        return;
-    }
-
-    if (e.state == WAIT) {
+        g_p3.p->SetWeapons(e.token, 1);
         for (int hand = 0; hand < 2; ++hand) {
             void* g = g_p3.p->WeaponGob(e.token, hand);
             int rc = 0;
@@ -502,6 +572,15 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
             e.regGob[hand] = (rc != 0) ? g : nullptr;
             KP_LOG(chView, "REG hand=%d gob=%p rc=%d", hand, g, rc);
         }
+        KP_LOG(chView, "REBUILD ok member=%d/%d creature=%p", e.member + 1, n, reinterpret_cast<void*>(C));
+
+        char rawName[64] = {0};
+        bool gotName = hse::memberName(C, rawName, sizeof(rawName));
+        char label[64] = {0};
+        hse::memberLabel(label, sizeof(label), e.member, rawName);
+        if (e.nameItem >= 0) ui->SetText(page, e.nameItem, label);
+        KP_LOG(chView, "NAME member=%d text=%s read=%d", e.member + 1, label, gotName ? 1 : 0);
+
         char statusBuf[128];
         const char* wpnDesc = nullptr;
         if (e.regGob[0] && e.regGob[1]) wpnDesc = "weapons: right+left";
@@ -512,16 +591,16 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
         snprintf(statusBuf, sizeof(statusBuf), "member %d/%d | %s", e.member + 1, n, wpnDesc);
         if (e.statusItem >= 0) ui->SetText(page, e.statusItem, statusBuf);
 
-        // In WAIT also log once CAMHOOK using GetNodeWorld
         float pos[3] = {0,0,0}, q[4] = {0,0,0,1};
         void* rig = g_p3.p->RigGob(e.token, 0);
         int rcHook = (rig && g_hol.ok()) ? g_hol.h->GetNodeWorld(rig, "camerahook", pos, q) : 0;
         KP_LOG(chView, "CAMHOOK pos=(%.2f,%.2f,%.2f) ok=%d", pos[0], pos[1], pos[2], rcHook);
 
+        g_p3.p->SetView(e.token, e.view.yaw, e.view.zoom, e.view.panZ);
         e.state = LIVE;
     }
 
-    if (e.state == WAIT || e.state == LIVE) {
+    if (e.state == LIVE) {
         g_p3.p->SetView(e.token, e.view.yaw, e.view.zoom, e.view.panZ);
         static float s_lastYaw = -999.0f, s_lastZoom = -999.0f, s_lastPanZ = -999.0f;
         static int s_camLogs = 0;
@@ -584,7 +663,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_cfgClient.init(api);
     g_menu.init(api);
     embedgui::g_log = embedLog;
-    KP_LOG(chMain, "holster-editor 0.2.2-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
+    KP_LOG(chMain, "holster-editor 0.2.3-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
            static_cast<unsigned>(sizeof kHseViewGui));
     const bool cfgOk = g_cfgClient.connect(), menuOk = g_menu.connect();
     if (!cfgOk || !menuOk) {

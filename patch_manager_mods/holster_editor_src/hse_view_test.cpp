@@ -68,6 +68,7 @@ static void testRectHelpers() {
     KT_CHECK(sameRect(hse::stripSlot(strip, 0), hse::HseRect{161, 134, 163, 32}));
     KT_CHECK_EQ(hse::stripSlot(strip, 1).y, 170);
     KT_CHECK_EQ(hse::stripSlot(strip, 4).y, 278);
+    KT_CHECK_EQ(hse::stripSlot(strip, 7).y, 386);
 
     hse::HseRect slot0 = hse::stripSlot(strip, 0);
     KT_CHECK(sameRect(hse::half(slot0, 0, 6), hse::HseRect{161, 134, 78, 32}));
