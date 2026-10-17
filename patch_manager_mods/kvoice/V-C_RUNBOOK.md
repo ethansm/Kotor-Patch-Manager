@@ -1,5 +1,8 @@
 # V-C runbook: live voice probe E1 / E2 / E8 / E7 / E4 (doc 41 section 6)
 
+> **STATUS 2026-10-17: ON HOLD until the doc 44 in-memory VFS lands.** Run so far: E1 PASS, E2a PASS, E2b/E2c silent (results in doc 41 section 6). The loose-file steps below (copy to `Override`, `k_hen_heartbt01` heartbeat trigger, `runscript`) are RETIRED by the no-loose-files rule: the shipping path is the VFS (doc 41 section 9, `VFS_COLLISION_FEEDBACK.md`). Console `runscript` never ran a script. Live cleanup done 2026-10-17: all `kpv*` files and the `000011 - KPV E1 TEST` slot removed. Kept for reference and for reuse as VFS test data: the clip builder, the compiled probe scripts and the E1-E8 ladder.
+
+
 State: **host prep done, NOTHING installed or run.** Every step below needs the preconditions in section 0. Each step is one command, one expected result, one pass rule. Ladder source: `.claude/research/voice_audio/w3/b8.md`. Time: about 2.5 h live for E1-E8; this runbook covers E1, E2, E8, E7, E4 (about 115 min).
 
 Assets (all built by this phase):
