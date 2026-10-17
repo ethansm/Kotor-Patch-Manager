@@ -1,4 +1,4 @@
-// Holster.cpp -- holster 0.1.1-dev (Steam build): P0 LOG-ONLY probe for the holstered-weapons mod (patch_manager_mods/42_holstered_weapons.md).
+// Holster.cpp -- holster 0.1.2-dev (Steam build): P0 LOG-ONLY probe for the holstered-weapons mod (patch_manager_mods/42_holstered_weapons.md).
 // Plan: .claude/plans/holstered_weapons.md. Handlers are plain extern "C" void __cdecl functions; the detour wrappers in
 // kotor2-steam-aspyr.hooks.toml call them at function entry with the game arguments BEFORE the stolen bytes run.
 // Hard rules for P0 (exceptions, both default off: the bone_test code patch, and HolsterPlace's 28-byte pose write with probe=1 bone_test=1 place=1): no other writes to game memory or registers, no engine calls, reads only through saferead, and every handler returns at
@@ -624,15 +624,11 @@ static hs::Pose g_editMount;              // world pose of the edited Gob's moun
 static bool g_editMountOk = false;
 static volatile uintptr_t g_refFind = 0, g_refPose = 0;   // FindPart (Gob vtbl+0x10C) / node pose (vtbl+0xC) slots seen on a placed weapon
 
-// Review F1: in world both hands share the bone_name node, so HolsterPlace cannot tell the hand and always resolves right-hand values.
-// Until it can (record the hand per weapon Gob at attach time), the editor resolves and saves the left preview weapon with the
-// right-hand levels too, so what the editor shows is what the world shows and no place_*_l_* key is written that nothing reads.
-static const bool kWorldKnowsHand = false;
+// In-world hand mapping is active: OnHandAttach records gob -> hand (R/L) into g_handRing,
+// and HolsterPlace reads handLookup(g_handRing, g) to resolve left-hand placement and sagittal mirroring.
+static const bool kWorldKnowsHand = true;
 static bool effLeft(bool left) {
-    static volatile LONG s_logged = 0;
-    if (left && !kWorldKnowsHand && InterlockedCompareExchange(&s_logged, 1, 0) == 0 && KP_ENABLED(chEdit, KPLOG_INFO))
-        KP_LOG(chEdit, "LEFTHAND treated as right: the in-world path cannot tell the hand yet (review F1)");
-    return kWorldKnowsHand && left;
+    return left;
 }
 
 struct EdLock {
@@ -742,7 +738,14 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     Ent* ent = nullptr;
     for (Ent& e : s_cache)
         if (e.node == n && e.gob == g && e.handle == h) { isTarget = e.isTarget; cat = e.cat; ent = &e; break; }
-    if (!ent) {
+    if (ent) {
+        const int hand = hs::handLookup(g_handRing, g);
+        const bool curLeft = (hand == hs::HandL);
+        if (ent->left != curLeft) {
+            ent->left = curLeft;
+            ent->seq = -1;
+        }
+    } else {
         NodeInfo ni;
         isTarget = nodeIsTarget(n, ni);
         // Weapon identity (C5, live-verified 10-16: "w_Lngswrd_001", "w_SonicPstl_002"): [Gob+0x84] = model, model+0x08 = inline model name,
@@ -755,7 +758,8 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
         ent = &s_cache[s_next];
         s_next = (s_next + 1) % 128u;
         *ent = Ent{};
-        ent->node = n; ent->gob = g; ent->handle = h; ent->isTarget = isTarget; ent->left = false; ent->cat = cat;
+        const int hand = hs::handLookup(g_handRing, g);
+        ent->node = n; ent->gob = g; ent->handle = h; ent->isTarget = isTarget; ent->left = (hand == hs::HandL); ent->cat = cat;
         ent->seq = -1;   // never a real sequence (those are >= 0), so the first use resolves
         {
             const uintptr_t par = rdU32(kSitePlace, reinterpret_cast<uintptr_t>(beh), 0x14);
@@ -1155,7 +1159,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     addName(names, sizeof(names), g_onAnim, "anim");
     addName(names, sizeof(names), g_onGob, "gob");
     addName(names, sizeof(names), g_onPlace, "place");
-    KP_LOG(chMain, "holster 0.1.0-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
+    KP_LOG(chMain, "holster 0.1.2-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
            names[0] ? names : "none", static_cast<long>(g_maxLines), g_gobEvery, k2addr::get() ? "ok" : "none");
     {
         hs::TuneCfg t;
