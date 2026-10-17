@@ -124,3 +124,10 @@ extern "C" void __cdecl VoiceProbeKeyLookup(void* self, const char* resref, int 
 - Likely cause (unverified): `additional-console-commands` `runscript` returns silently when `CServerExoApp::GetInstance()` is null (`if (!server) return;`), or the Steam address set is wrong for that call. Untested.
 - Consequence: before any audio logging pays off, the trigger route must change. Order of work becomes: (1) a trigger that provably runs a script (below), (2) the hooks in section 3.
 - Trigger options, best first: (a) native hotkey in `voice_probe_src` that calls `RunScript` 0x6FD8D0 with the PC id (same reinstall as the logging hooks); (b) `commands/*.toml` native console command; (c) override a vanilla script that fires on its own in the forged save area (OnEnter/heartbeat), no native code, needs a verified script name and cleanup.
+
+## 10. Impact of doc 44 (VFS) on this plan (2026-10-17)
+- Another session builds the in-memory VFS. Do NOT build a separate `voice-probe` GetKeyEntry hook in parallel: it would be a second owner of 0x00712360 and fail install. Fold H1 into the VFS as its observe-only mode (passthrough + log) or wait for it; this plan's recon (R1: GetKeyEntry signature) is still needed as input for that build and can be reused by the doc 44 session.
+- Collision census (wave `w13-vfs-collide`, details `kvoice/VFS_COLLISION_FEEDBACK.md`): H1 GetKeyEntry, H1b Exists/Exists_2, H2 PlaySound 0x68EA70 are FREE; H3 RunScript 0x6FD8D0 stays TAKEN (companion-ai); Demand/Malloc TAKEN (perf-lab). The PlaySound hook (H2) is independent of the VFS and can still ship alone in `voice_probe_src`.
+- The trigger problem stands: the VFS can serve an NCS, but a trigger is still needed (heartbeat override on disk is not allowed under the no-files rule). Candidate: a native hotkey or ini-gated NCS served by the VFS.
+- Layer 3 (stream) hook points are NOT the plan's H-list: the OpenStream address is `InitializeSource`, with live mp3-fix hooks inside; see the feedback file.
+- Net: V-C2 shrinks to R1 recon + H2 + trigger design; H1 moves to the VFS session.
