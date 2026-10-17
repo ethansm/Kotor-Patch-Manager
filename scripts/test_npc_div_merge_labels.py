@@ -55,6 +55,12 @@ class DecideTests(unittest.TestCase):
         self.assertEqual(d["alt_body"]["mesh"], "N_OndComM1")
         self.assertIn(472, d["alt_body"]["rows"])
 
+    def test_user_vetoed_czerka_look_slot_removed(self):
+        # 10-17: vanilla N_CommM10 (dark tunic, orange diagonal stripe, chest badge) reads as a Czerka uniform on civilians.
+        d = M.decide(10, "M", "n_commm10", 0.48, [vote(outfit="dark brown shirt, orange stripe, olive trousers", conf=4)])
+        self.assertEqual(d["layout_ok"]["M"], "no")
+        self.assertTrue(d["keep"])   # vanilla file is never dropped; only the pick is vetoed
+
     def test_user_vetoed_rag_slots_removed(self):
         # 10-16: the two spot-check trial slots (ragged / patchwork rags) were vetoed after the in-game check.
         d = M.decide(16, "M", "n_commmd01", 0.27, [vote(outfit="ragged clothes", conf=3)])

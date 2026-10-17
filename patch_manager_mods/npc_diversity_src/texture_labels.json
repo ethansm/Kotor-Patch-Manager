@@ -35,7 +35,6 @@
     7,
     8,
     9,
-    10,
     11,
     12,
     13,
@@ -1084,7 +1083,9 @@
    "vanilla": true
   },
   "n_commm10": {
-   "adjudicated": {},
+   "adjudicated": {
+    "M": "no"
+   },
    "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
@@ -1095,7 +1096,7 @@
     "F": "no",
     "FatF": "no",
     "FatM": "no",
-    "M": "yes"
+    "M": "no"
    },
    "min_conf": 4,
    "outfit": "dark brown shirt, orange stripe, olive trousers",
