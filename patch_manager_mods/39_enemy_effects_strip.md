@@ -48,6 +48,19 @@
 - Offline: P1 tests with fake effect lists.
 - Live: console `runscript` (EnableCheats=1 is set in swkotor2.ini; unproven) with a script that applies `EffectSlow` / casts spells 141-143, 201, 269 at a hostile target, or use any combat. Awareness rank can be raised with a forged save (see `kotor2-forced-state-testing`).
 
+## Research wave 10-17 (6 Haiku recons, details in `.claude/research/enemy_strip/R1..R6`; all static, nothing proven live)
+- **Probe bug explained (R3, CONFIRMED statically):** `ctx.target`/`ctx.leader` are CLIENT creatures; the effect list (+0x148/+0x14C), icon cache (+0xFFC, count +0x1000, 0x24-byte entries, +0x00 short spell id, +0x14 buff flag) and stats (+0x1198) are on the SERVER creature (doc 02 "client-side" is wrong). Recipe: `cid = *(T+4)`; `sid = cid & 0x7FFFFFFF` (skip 0x7F000000); `S = *(*(0xA1B4A4)+8)`; `obj = thiscall(S) 0x0051C0A0(sid)` (RET 4); `creature = obj->vtbl[0x30]()`. Shortcut `0x0077D800(T)` (thiscall, ECX = client creature; used by Party.h) may return a cached +0xF8 pointer.
+- **Awareness (R4):** `stats+0x174` is a POINTER to a signed int8 base array (the probe treated it as inline). `GetSkillRank` 0x006B7BB0: last arg 0 = TOTAL (adds bonuses), 1 = base. Awareness row 3 and skill count 8 still unverified (skills.2da not extracted).
+- **Placement (R6):** the target menu draw clips and walks no child list, so labels must be children of the HUD panel at ABSOLUTE display px (3840x1600 on the dev box, int32). Row y = menuY + nameLocalY(2) - 2 - iconH; clamp min y is 106, so there is room. Create in `K2HUD_BUILD`, reposition in `TARGET_MENU_POST` (precedent QueueHudLogic.h:275, CombatHotbar.cpp:568). Panel rect observed: w 533, name h 32, bar y 35 h 16.
+- **Drain (R2):** the Buff HUD draws a dim (0.35) full icon plus a clipped bright bottom slice (`brightPx`), via a draw hook; not `drawVFill`, and Gui2D at POST is unproven. Plan: LABELS ONLY, icon label + black overlay label (alpha 0.65, height `s - brightPx`). Missing asset: no solid-fill texture in the repo (options: tint `buffhud_circle` black, or ship a 4x4 solid TGA in override/).
+- **Icons (R1):** reuse `k2fx::iconForSpell(spell, true)` first (harmful), else `(spell,false)`; 0x43 EffectIcon effects use `kEffectIconRows[ints[0]]`. Icons are `ip_*` (live override 128x128 TGAs), tint white, no frame; the char pane marks harmful by section order, the Buff HUD by right-edge column. Fear/Horror/Insanity = rows 16/30/31 = `ip_fear/ip_horror/ip_insanity`.
+- **Classes (R5):** Fear/Horror/Insanity apply `SetState` (type 0x08) state 8 "Horrified", not "Frightened"; Stasis st5, Stun st4, droid stun st3, sleep st6, Entangle 0x12, Knockdown 0x14, slow = 0x1d. The adhesive grenade is Entangle (not slow); sonic grenade is a DEX decrease (not a state). Never icon: 0x1e, 0x43 as a tile, shield pool (0x02 sub&8), bookkeeping 0x09/0x17/0x44/0x3c/0x67/0x13/0x1f/0x39/0x01. Gate OBVIOUS on type/state, not spell id alone. Spell id is -1 for item-property/innate/trap sources.
+- **Still unknown (P0b answers empirically):** live spellId of Fear/Stun/grenade effects, vtbl[0x30] identity, whether the server list is populated for enemies, whether `+0xF8` is cleared on death.
+
+## Phases (revised 10-17)
+- **P0b probe fix** (hot-swap OK, mod is live): resolve the server creature per R3; relog on effect-list signature change (count + spell ids), still never per frame; log the +0xFFC cache entries; read Awareness through `stats+0x174` as a pointer; keep Verbose.
+- **P1** logic + tests (`EnemyStripLogic.h`: tiers, obvious-state set, sort/cap, icon choice, row layout math). **P2** labels draw (BUILD pool, POST layout, drain overlay, optional pill backing `lbl_miscroll_f` like the combat hotbar). **P3** tune. **P4** install (hot-swap).
+
 ## Risks
 - Panel-origin units/clamping are UNPROVEN (P0 logs them); wide/ultrawide may need scaling.
 - New mod id => full reinstall, not hot-swap.
