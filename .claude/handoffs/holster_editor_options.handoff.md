@@ -1,20 +1,19 @@
 # Session Handoff & Plan State: .claude/plans/holster_editor_options.md
 
 ## 0. Next-Phase Direction
-W2b c17+c18+c19 committed 31e6e2d (c18r 1 BLOCKING fixed). KPM prepared: ModConfig 154cf25, holster-editor 734ba88; full gate GATE PASS; kpm_reinstall --mod mod-config holster-editor --dry-run OK (49 ids). NEXT: user GO (game closed) -> python3 scripts/kpm_reinstall.py --mod mod-config holster-editor; then verify id order (mod-config before holster-editor in live patch_config.toml), back up kplog.ini + add [mod-config] enabled=1 level=debug channels=*, kpm_status LIVE, add MC1 row to PLAY_TEST_QUEUE.md. Follow-up: holster_editor_src lacks common_contract_test.cpp (compat GAP).
+Install 2 LIVE 10-16 20:14: mod-config 70ce9753 + holster-editor 0c7b2a8d (rollback kpm_reinstall.py --rollback batch_reinstall_20261016_201439); patch_config order OK (mod-config 151 < holster-editor 2455); kplog.ini [mod-config] added (backup kplog.ini.bak_mc_20261016); MC1 row pending in PLAY_TEST_QUEUE.md. NEXT: user plays MC1 -> 2-3 Haiku log readers (mod-config log, holster-editor log, crash sweep); in parallel W3 c20 HseView.h + hse_view_test (Haiku). Follow-up: holster_editor_src common_contract_test.cpp (compat GAP).
 
 ## 1. Active State & Provenance
 - **Master Plan:** `.claude/plans/holster_editor_options.md`
-- **Branch:** `KOTOR-II` (9a71a5d k1_port_bark_build: combat variant (hostile faction, tone battle cries, K1 attack/pain/dead) since clicking an NPC starts dialog, not the select bark)
-- **Generated:** 2026-10-16 20:12:33 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (3646fe2 handoff: holster editor W2b committed + Install 2 prepared, awaiting GO)
+- **Generated:** 2026-10-16 20:15:04 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-9a71a5d k1_port_bark_build: combat variant (hostile faction, tone battle cries, K1 attack/pain/dead) since clicking an NPC starts dialog, not the select bark
- patch_manager_mods/k1_port/k1_port_bark_build.py   | 27 +++++++++++++++++++---
- .../k1_port/test_k1_port_bark_build.py             | 12 +++++++---
- 2 files changed, 33 insertions(+), 6 deletions(-)
+3646fe2 handoff: holster editor W2b committed + Install 2 prepared, awaiting GO
+ .claude/handoffs/holster_editor_options.handoff.md | 23 ++++++++++------------
+ 1 file changed, 10 insertions(+), 13 deletions(-)
 ```
-- **Dirty Files (165):**
+- **Dirty Files (166):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/33_ui_queue_hotbar_fixes.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
@@ -25,7 +24,7 @@ W2b c17+c18+c19 committed 31e6e2d (c18r 1 BLOCKING fixed). KPM prepared: ModConf
   - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
   - ` M .claude/plans/swarm_library_architecture.md`
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
-  - ... +155 more (run `git status --short`)
+  - ... +156 more (run `git status --short`)
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume .claude/plans/holster_editor_options.md`.
