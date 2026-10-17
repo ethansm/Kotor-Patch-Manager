@@ -2,22 +2,18 @@
 
 ## 0. Next-Phase Direction
 W4b (0.2.3-dev) hot-swapped LIVE 10-16 22:34 (holster-editor bfff7360, preview-3d daa73241; rollback `kpm_hotswap.py --rollback holster-editor_swap_20261016_223434`).
-- Play row D3B in `PLAY_TEST_QUEUE.md` is LIVE/pending user play test.
-- Verified live behavior:
-  1. Weapons holstered immediately on first page open (no 1-frame unholstered delay or character switch needed).
-  2. Dedicated Stance picker (Idle, Walk, Run, Walk Rifle, Run Rifle, Alert, Combat) with `<` / `>` buttons.
-  3. Dedicated Emote picker (Salute, Bow, Greeting, Victory, Taunt, Shrug, Nod, Point, Shift Idle) with `<` / `>` buttons.
-  4. Single Play/Pause toggle button: flips between Play and Pause on click, pauses active locomotion or interrupts emotes back to Idle, auto-resumes when emote finishes.
-- Next: User play-tests D3B, logs checked via `kotor2_logs.py check holster-editor_log.txt --new`. Follow-up: D3c / D3d weapon edit mode & save.
+- mod-config Esc re-open bug fixed in commit 6ad23e8; full pre-install gate PASSED (332 suites), prepared in KPM, verdict SWAP (awaits user GO to apply).
+- D3c/D3d Weapon Edit Mode architecture and implementation plan created: `d3c_d3d_weapon_edit_plan.md`.
+- Next: Apply `mod-config` hot-swap on user GO, then execute Phase D3c (Weapon Edit Mode & Nudging).
 
 ## 1. Active State & Provenance
 - **Master Plan:** `.claude/plans/holster_editor_options.md`
-- **Branch:** `KOTOR-II` (0c18740 playtest: update D3B row for holster-editor 0.2.3-dev W4b)
+- **Branch:** `KOTOR-II` (6ad23e8 mod-config: reset pages to MAIN when options panel is hidden by Esc)
 - **Last Landed Commit:**
 ```
-0c18740 playtest: update D3B row for holster-editor 0.2.3-dev W4b
- patch_manager_mods/PLAY_TEST_QUEUE.md | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+6ad23e8 mod-config: reset pages to MAIN when options panel is hidden by Esc
+ patch_manager_mods/mod_config_src/ModConfig.cpp | 4 ++++
+ 1 file changed, 4 insertions(+)
 ```
 - **Dirty Files (166):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
