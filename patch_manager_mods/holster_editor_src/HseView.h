@@ -32,9 +32,9 @@ inline float spin(float yaw, float dxPx) {
     return wrapYaw(yaw + dxPx * kSpinDegPerPx);
 }
 
-// [0.8, 4.0]; NaN or inf -> 2.2f.
+// [0.8, 4.0]; NaN -> 2.2f; +-inf clamp to the range ends.
 inline float clampZoom(float z) {
-    if (isnan(z) || isinf(z)) return 2.2f;
+    if (isnan(z)) return 2.2f;
     if (z < kZoomMin) return kZoomMin;
     if (z > kZoomMax) return kZoomMax;
     return z;
@@ -48,10 +48,10 @@ inline float zoomOut(float z) {
     return clampZoom(z / kZoomStep);
 }
 
-// wrapYaw, clampZoom, panZ clamped to [-1, 1] (NaN or inf -> 0.0f).
+// wrapYaw, clampZoom, panZ clamped to [-1, 1] (NaN -> 0.0f; +-inf clamp to +-1).
 inline View makeView(float yaw, float zoom, float panZ) {
     float p = panZ;
-    if (isnan(p) || isinf(p)) {
+    if (isnan(p)) {
         p = 0.0f;
     } else if (p < -1.0f) {
         p = -1.0f;
@@ -61,11 +61,11 @@ inline View makeView(float yaw, float zoom, float panZ) {
     return View{wrapYaw(yaw), clampZoom(zoom), p};
 }
 
-// panZ + dir * 0.1, clamped to [-1, 1]; dir is +1 (Up) or -1 (Down); NaN or inf -> 0.0f.
+// panZ + dir * 0.1, clamped to [-1, 1]; dir is +1 (Up) or -1 (Down); NaN -> 0.0f; +-inf clamp to +-1.
 inline float panStep(float panZ, int dir) {
     float delta = (dir > 0) ? 0.1f : ((dir < 0) ? -0.1f : 0.0f);
     float n = panZ + delta;
-    if (isnan(n) || isinf(n)) return 0.0f;
+    if (isnan(n)) return 0.0f;
     if (n < -1.0f) return -1.0f;
     if (n > 1.0f) return 1.0f;
     return n;
@@ -132,6 +132,25 @@ inline const char* scopeLabel(int scope) {
         case 2: return "Scope: Body";
         default: return "Scope: Weapon";
     }
+}
+
+// Accumulate delta, return the part that is a whole multiple of step (truncated toward zero), keep the rest in acc.
+// Invariant: sum(applied) + acc == sum(delta). step must be > 0.
+inline float snapAccum(float& acc, float delta, float step) {
+    acc += delta;
+    float applied = truncf(acc / step) * step;
+    acc -= applied;
+    return applied;
+}
+
+// A two-click confirm is armed and still inside its window (wrap-safe unsigned time difference).
+inline bool guardArmLive(bool armed, uint32_t armedAt, uint32_t now, uint32_t windowMs) {
+    return armed && (uint32_t)(now - armedAt) < windowMs;
+}
+
+// A transition may proceed when nothing is unsaved, or the same action was armed and is still live.
+inline bool guardProceed(bool dirty, bool armedSame, uint32_t armedAt, uint32_t now, uint32_t windowMs) {
+    return !dirty || guardArmLive(armedSame, armedAt, now, windowMs);
 }
 
 } // namespace hse

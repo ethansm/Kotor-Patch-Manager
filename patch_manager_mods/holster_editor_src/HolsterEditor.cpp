@@ -1,4 +1,4 @@
-// HolsterEditor.cpp -- holster-editor 0.2.2-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
+// HolsterEditor.cpp -- holster-editor 0.2.5-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
 // (doc 42 HW-EDIT, plan .claude/plans/holster_editor_options.md.)
 //
 // mod-config owns everything about the Options screen: the hooks, the root "Mod Configuration" button, the list page, control cloning,
@@ -7,10 +7,10 @@
 //   build    (Options ctor window, vanilla layout open) opens the embedded HSE_VIEW layout, lets preview-3d bind the 3D view to it, restores
 //            the panel's layout slot FIRST, then makes the page: 3D view (AddCustom, MUI_NOFREE), status label, member picker, animation controls, and Reset/Flip.
 //   enter    places the view and the status label on the provider's VIEW and STATUS panes, lays out the left strip buttons, installs mouse wheel, and resets view to config.
-//   tick     polls the preview-3d and holster clients, handles picker and anim buttons, equip-style mouse drag/wheel/reset, and drives preview-3d and holster placement.
+//   tick     polls the preview-3d and holster clients, handles picker, anim and edit buttons (unsaved edits need a second click to discard), equip-style mouse drag/wheel/reset, and drives preview-3d and holster placement.
 //   destroy  destroys the preview viewer (and, behind free_view, the view block once mod-config has unlinked it).
 // A failed connect to mod-config means no menu entry, never a crash. KPatchInit does no file I/O: holster_editor.ini is read in build().
-// Probe lines (log only): REGISTER, BUILD, EMBED, ENTER, DTOR, FREEVIEW, LAYOUT, REBUILD, NAME, REG, CAM, CAMHOOK, PICK, BTN, DRAG, WHEEL, PLAY, UNREG, LEAVE.
+// Probe lines (log only): REGISTER, CONFIG, BUILD, EMBED, ENTER, DTOR, FREEVIEW, LAYOUT, REBUILD, NAME, REG, CAM, CAMHOOK, PICK, BTN, EDIT, STANCE, EMOTE, MMB, DRAG, WHEEL, PLAY_PAUSE, UNREG, LEAVE, DISCARD.
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -81,21 +81,22 @@ const EmoteDef kEmoteList[] = {
 constexpr int kEmoteCount = sizeof(kEmoteList) / sizeof(kEmoteList[0]);
 
 bool g_enabled = true;
-bool g_debug = false;
 bool g_freeView = false;   // also free the 3D view block after preview-3d destroys the creature (probe)
 float g_cfgYaw = 180.0f;
 float g_cfgZoom = 2.2f;
 float g_cfgPanZ = 0.0f;
 hse::View g_cfgView = {180.0f, 2.2f, 0.0f};
 
-const KPatchApi* g_api = nullptr;
 k2p3::Client g_p3;
 k2holster::Client g_hol;
 k2mc::ConfigClient g_cfgClient;
 k2mc::MenuClient g_menu;
 
-enum State { IDLE, NEEDBUILD, LIVE };
+enum State { IDLE, NEEDBUILD, LIVE, FAILED };
 enum EditMode { MODE_NAV = 0, MODE_WEAPON = 1 };
+// Actions guarded by the unsaved-edits two-click confirm.
+enum GuardAction { ACT_NONE = 0, ACT_HAND_R, ACT_HAND_L, ACT_SCOPE, ACT_RESET_SCOPE, ACT_DONE, ACT_PREV, ACT_NEXT };
+constexpr uint32_t kDiscardWindowMs = 2000;
 
 struct QVec { float w, x, y, z; };
 inline QVec qaxis(const float* axis, float deg) {
@@ -103,14 +104,6 @@ inline QVec qaxis(const float* axis, float deg) {
     if (l < 1e-12f) return { 1, 0, 0, 0 };
     float h = deg * 3.14159265358979f / 360.0f, s = std::sin(h) / l;
     return { std::cos(h), axis[0] * s, axis[1] * s, axis[2] * s };
-}
-inline void qrotate(const float q[4], const float v[3], float out[3]) {
-    float tx = 2.0f * (q[2] * v[2] - q[3] * v[1]);
-    float ty = 2.0f * (q[3] * v[0] - q[1] * v[2]);
-    float tz = 2.0f * (q[1] * v[1] - q[2] * v[0]);
-    out[0] = v[0] + q[0] * tx + (q[2] * tz - q[3] * ty);
-    out[1] = v[1] + q[0] * ty + (q[3] * tx - q[1] * tz);
-    out[2] = v[2] + q[0] * tz + (q[1] * ty - q[2] * tx);
 }
 
 struct Editor {
@@ -150,8 +143,23 @@ struct Editor {
 
     p3d::Drag drag;
     p3d::DragCfg dragCfg;
-    bool pressed = false;
+    bool pressed = false;      // LMB was down on the previous tick
+    bool pressedMmb = false;   // MMB was down on the previous tick
+    bool pressedRmb = false;   // RMB was down on the previous tick
+    float snapAccY = 0.0f, snapAccZ = 0.0f;   // Ctrl-snap remainders for the LMB nudge
     void* regGob[2] = {nullptr, nullptr};
+
+    // Unsaved-edits two-click confirm
+    bool discardArmed = false;
+    int discardAction = ACT_NONE;
+    DWORD discardArmedAt = 0;
+
+    // CAM log state (per Editor; reset with the Editor in cbBuild)
+    float camSeenYaw = -999.0f, camSeenZoom = -999.0f, camSeenPanZ = -999.0f;
+    float camLogYaw = -999.0f, camLogZoom = -999.0f, camLogPanZ = -999.0f;
+    DWORD camSeenMs = 0;
+    int camLogs = 0;
+    bool camHookPending = false;
 
     hse::HseRect strip = {0, 0, 0, 0};
     int lastMouseX = 0, lastMouseY = 0;
@@ -185,8 +193,16 @@ int ctlId(uintptr_t ctl) {
 bool iniBool(const char* v) { return !_stricmp(v, "1") || !_stricmp(v, "on") || !_stricmp(v, "true") || !_stricmp(v, "yes"); }
 
 void readConfig() {
+    g_enabled = true;   // defaults first, so a later Options open never keeps stale values from an earlier read
+    g_freeView = false;
+    g_cfgYaw = 180.0f;
+    g_cfgZoom = 2.2f;
+    g_cfgPanZ = 0.0f;
     FILE* f = fopen("holster_editor.ini", "r");
-    if (!f) return;
+    if (!f) {
+        g_cfgView = hse::makeView(g_cfgYaw, g_cfgZoom, g_cfgPanZ);
+        return;
+    }
     char line[256];
     while (fgets(line, sizeof line, f)) {
         char* p = line;
@@ -203,7 +219,6 @@ void readConfig() {
         while (n && (k[n - 1] == ' ' || k[n - 1] == '\t')) k[--n] = 0;
         const bool on = iniBool(v);
         if (!_stricmp(k, "enabled")) g_enabled = on;
-        else if (!_stricmp(k, "debug")) g_debug = on;
         else if (!_stricmp(k, "free_view")) g_freeView = on;
         else if (!_stricmp(k, "view_yaw")) g_cfgYaw = static_cast<float>(atof(v));
         else if (!_stricmp(k, "view_zoom")) g_cfgZoom = static_cast<float>(atof(v));
@@ -214,14 +229,17 @@ void readConfig() {
 }
 
 const char* statusText() {
-    return g_p3.ok() && g_hol.ok() ? "0.2.4 dev: preview + holster connected" : "0.2.4 dev: a provider is missing";
+    return g_p3.ok() && g_hol.ok() ? "0.2.5 dev: preview + holster connected" : "0.2.5 dev: a provider is missing";
 }
+
+bool editDirty();   // defined with the status helpers below
 
 void KPATCH_CALL cbBeforeFree(uint32_t token, void* user) {
     saferead::beginScope();
     Editor* e = reinterpret_cast<Editor*>(user);
-    if (!e || !g_p3.ok()) return;
+    if (!e || !g_p3.ok() || token != e->token) return;
     if (e->mode == MODE_WEAPON) {
+        if (editDirty()) KP_LOG(chView, "DISCARD why=before_free");
         if (g_hol.ok()) g_hol.h->EndEdit();
         e->mode = MODE_NAV;
         e->editHand = -1;
@@ -241,8 +259,8 @@ void KPATCH_CALL cbBeforeFree(uint32_t token, void* user) {
 // Options ctor window: the vanilla layout is open. Opens the embedded layout, binds the 3D view, restores the layout slot, builds the page.
 void KPATCH_CALL cbBuild(void* panel, void*) {
     readConfig();
-    KP_LOG(chMain, "CONFIG enabled=%d debug=%d free_view=%d view=(%.2f,%.2f,%.2f)",
-           g_enabled ? 1 : 0, g_debug ? 1 : 0, g_freeView ? 1 : 0,
+    KP_LOG(chMain, "CONFIG enabled=%d free_view=%d view=(%.2f,%.2f,%.2f)",
+           g_enabled ? 1 : 0, g_freeView ? 1 : 0,
            g_cfgView.yaw, g_cfgView.zoom, g_cfgView.panZ);
     if (!g_enabled || !panel || !g_menu.ok()) {
         KP_LOG(chMain, "BUILD skipped enabled=%d panel=%p menuui=%d", g_enabled ? 1 : 0, panel, g_menu.ok() ? 1 : 0);
@@ -387,18 +405,66 @@ void readWeaponModel(void* gob, char* out, size_t cap) {
     }
 }
 
+// Fresh GetEdit into e.editInfo; true while an edit is open.
+bool refreshEdit(Editor& e) {
+    memset(&e.editInfo, 0, sizeof(e.editInfo));
+    e.editInfo.struct_size = sizeof(e.editInfo);
+    return g_hol.ok() && g_hol.h->GetEdit(&e.editInfo) != 0;
+}
+
+// True when the open edit has unsaved changes (reads the provider, not the cached e.editInfo).
+bool editDirty() {
+    if (!g_hol.ok()) return false;
+    K2HolsterEditInfo info;
+    memset(&info, 0, sizeof(info));
+    info.struct_size = sizeof(info);
+    return g_hol.h->GetEdit(&info) != 0 && info.dirty != 0;
+}
+
+void setBoneText(Editor& e) {
+    if (e.boneItem < 0 || !g_menu.ok()) return;
+    char bBuf[64];
+    snprintf(bBuf, sizeof(bBuf), "Bone: %s", e.editInfo.bone[0] ? e.editInfo.bone : "None");
+    g_menu.p->SetText(e.page, e.boneItem, bBuf);
+}
+
+// Right/Left button captions in nav mode.
+void setHandNames(Editor& e) {
+    if (!g_menu.ok()) return;
+    char rBuf[64], lBuf[64];
+    snprintf(rBuf, sizeof(rBuf), "Right: %s", e.wpnName[0][0] ? e.wpnName[0] : (e.regGob[0] ? "Equipped" : "None"));
+    snprintf(lBuf, sizeof(lBuf), "Left: %s", e.wpnName[1][0] ? e.wpnName[1] : (e.regGob[1] ? "Equipped" : "None"));
+    if (e.wpnRightItem >= 0) g_menu.p->SetText(e.page, e.wpnRightItem, rBuf);
+    if (e.wpnLeftItem >= 0) g_menu.p->SetText(e.page, e.wpnLeftItem, lBuf);
+}
+
+// Stance back to Idle: index, emote state, stance label and Play button caption.
+void resetStanceUi(Editor& e) {
+    e.stanceIdx = 0;
+    e.playingEmote = false;
+    e.emoteEndMs = 0;
+    if (!g_menu.ok() || !e.page) return;
+    char sBuf[64];
+    snprintf(sBuf, sizeof(sBuf), "Stance: %s", kStanceList[0].label);
+    if (e.stanceLabelItem >= 0) g_menu.p->SetText(e.page, e.stanceLabelItem, sBuf);
+    if (e.playPauseItem >= 0) g_menu.p->SetText(e.page, e.playPauseItem, "Play");
+}
+
 void updateStatusText(Editor& e) {
     if (!g_menu.ok() || !e.page || e.statusItem < 0) return;
-    char buf[128] = {0};
-    if (e.mode == MODE_WEAPON) {
-        if (g_hol.ok()) g_hol.h->GetEdit(&e.editInfo);
-        snprintf(buf, sizeof(buf), "EDIT [%s]: %s on %s | rot=(%.1f,%.1f,%.1f) off=(%.2f,%.2f,%.2f)%s",
+    char buf[160] = {0};
+    if (e.mode == MODE_WEAPON && e.discardArmed && hse::guardArmLive(true, e.discardArmedAt, GetTickCount(), kDiscardWindowMs)) {
+        snprintf(buf, sizeof(buf), "Unsaved: click again to discard");
+    } else if (e.mode == MODE_WEAPON) {
+        refreshEdit(e);
+        snprintf(buf, sizeof(buf), "%sEDIT [%s]: %s on %s | rot=(%.1f,%.1f,%.1f) off=(%.2f,%.2f,%.2f)",
+                 e.editInfo.dirty ? "* " : "",
                  e.editHand == 0 ? "R" : "L",
                  e.editInfo.model[0] ? e.editInfo.model : (e.editInfo.type[0] ? e.editInfo.type : "wpn"),
                  e.editInfo.bone[0] ? e.editInfo.bone : "-",
                  e.editInfo.rot[0], e.editInfo.rot[1], e.editInfo.rot[2],
-                 e.editInfo.off[0], e.editInfo.off[1], e.editInfo.off[2],
-                 e.editInfo.dirty ? " *" : "");
+                 e.editInfo.off[0], e.editInfo.off[1], e.editInfo.off[2]);
+        buf[95] = '\0';   // the status label holds about 95 characters
     } else {
         snprintf(buf, sizeof(buf), "Member %d/%d | Weapons: %s%s%s | Stance: %s",
                  e.member + 1, hse::memberCount(),
@@ -474,15 +540,22 @@ void applyLayout(Editor& e) {
 
 void enterEdit(Editor& e, int hand) {
     if (hand < 0 || hand > 1 || !e.regGob[hand] || !g_hol.ok()) return;
-    if (e.mode == MODE_WEAPON) {
+    const bool wasWeapon = e.mode == MODE_WEAPON;
+    if (wasWeapon) {
         g_hol.h->EndEdit();
+    }
+    if (!g_hol.h->BeginEdit(e.regGob[hand], e.editScope)) {
+        KP_LOG(chView, "EDIT refused hand=%d gob=%p scope=%d", hand, e.regGob[hand], e.editScope);
+        e.mode = MODE_NAV;   // the previous edit (if any) was just ended
+        e.editHand = -1;
+        if (wasWeapon) setHandNames(e);
+        applyLayout(e);
+        if (g_menu.ok() && e.statusItem >= 0) g_menu.p->SetText(e.page, e.statusItem, "Edit unavailable");
+        return;
     }
     e.mode = MODE_WEAPON;
     e.editHand = hand;
-    g_hol.h->BeginEdit(e.regGob[hand], e.editScope);
-    memset(&e.editInfo, 0, sizeof(e.editInfo));
-    e.editInfo.struct_size = sizeof(e.editInfo);
-    g_hol.h->GetEdit(&e.editInfo);
+    refreshEdit(e);
     KP_LOG(chView, "EDIT enter hand=%d gob=%p model=%s bone=%s", hand, e.regGob[hand], e.editInfo.model, e.editInfo.bone);
 
     const K2MenuUiApi* ui = g_menu.p;
@@ -508,13 +581,7 @@ void exitEdit(Editor& e) {
     e.editHand = -1;
     KP_LOG(chView, "EDIT exit");
 
-    const K2MenuUiApi* ui = g_menu.p;
-    char rBuf[64], lBuf[64];
-    snprintf(rBuf, sizeof(rBuf), "Right: %s", e.wpnName[0][0] ? e.wpnName[0] : (e.regGob[0] ? "Equipped" : "None"));
-    snprintf(lBuf, sizeof(lBuf), "Left: %s", e.wpnName[1][0] ? e.wpnName[1] : (e.regGob[1] ? "Equipped" : "None"));
-    if (e.wpnRightItem >= 0) ui->SetText(e.page, e.wpnRightItem, rBuf);
-    if (e.wpnLeftItem >= 0) ui->SetText(e.page, e.wpnLeftItem, lBuf);
-
+    setHandNames(e);
     applyLayout(e);
     updateStatusText(e);
 }
@@ -538,6 +605,7 @@ void KPATCH_CALL cbEnter(uint32_t page, void*) {
 
     guikit::wheelInstall();
     guikit::g_wheel.setRect(0, view.x, view.y, view.w, view.h);
+    (void)guikit::g_wheel.take();   // drop any notches counted before this page was shown
     guikit::g_wheel.touch(GetTickCount());
 
     g_ed.view = g_ed.cfgView;
@@ -546,10 +614,17 @@ void KPATCH_CALL cbEnter(uint32_t page, void*) {
 
 void KPATCH_CALL cbLeave(uint32_t, void*) {
     saferead::beginScope();
-    if (g_ed.mode == MODE_WEAPON) exitEdit(g_ed);
+    guikit::g_wheel.clearRect(0);   // stop the wheel hook counting this page's area
+    g_ed.discardArmed = false;
+    if (g_ed.mode == MODE_WEAPON) {
+        if (editDirty()) KP_LOG(chView, "DISCARD why=leave");
+        exitEdit(g_ed);
+    }
     g_ed.state = IDLE;
     p3d::dragEnd(&g_ed.drag);
     g_ed.pressed = false;
+    g_ed.pressedMmb = false;
+    g_ed.pressedRmb = false;
     g_ed.draggingLmb = false;
     g_ed.draggingRmb = false;
     g_ed.draggingMmb = false;
@@ -559,6 +634,25 @@ void KPATCH_CALL cbLeave(uint32_t, void*) {
         g_p3.p->Destroy(g_ed.token);
     }
     KP_LOG(chView, "LEAVE destroy");
+}
+
+// Two-click confirm for transitions that would drop unsaved edits. Returns true when the caller may proceed (nothing unsaved, or the
+// same action was armed within kDiscardWindowMs). The first click on a dirty edit arms the window and shows the warning instead.
+bool guardTransition(Editor& e, int action, const char* why) {
+    const bool dirty = editDirty();   // fresh read, not e.editInfo
+    const DWORD now = GetTickCount();
+    const bool armedSame = e.discardArmed && e.discardAction == action;
+    if (hse::guardProceed(dirty, armedSame, e.discardArmedAt, now, kDiscardWindowMs)) {
+        if (dirty) KP_LOG(chView, "DISCARD why=%s", why);
+        e.discardArmed = false;
+        return true;
+    }
+    e.discardArmed = true;
+    e.discardAction = action;
+    e.discardArmedAt = now;
+    KP_LOG(chView, "DISCARD armed why=%s", why);
+    updateStatusText(e);
+    return false;
 }
 
 void KPATCH_CALL cbTick(uint32_t, void*) {
@@ -577,34 +671,26 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
     const int n = hse::memberCount();
 
     // 1. Button clicks in LIVE state
-    if (e.state == LIVE && n > 0) {
+    if ((e.state == LIVE || e.state == FAILED) && n > 0) {
         // Navigation buttons (work in both modes; auto-exit weapon edit mode on member switch)
         if (e.prevItem >= 0 && ui->Clicked(page, e.prevItem)) {
-            if (e.mode == MODE_WEAPON) exitEdit(e);
+            if (e.mode == MODE_WEAPON) {
+                if (!guardTransition(e, ACT_PREV, "member")) return;
+                exitEdit(e);
+            }
             e.member = hse::wrapIndex(e.member, -1, n);
             KP_LOG(chView, "PICK member=%d/%d", e.member + 1, n);
             if (e.token && g_p3.ok()) g_p3.p->Destroy(e.token);
-            e.stanceIdx = 0;
-            e.playingEmote = false;
-            e.emoteEndMs = 0;
-            char sBuf[64];
-            snprintf(sBuf, sizeof(sBuf), "Stance: %s", kStanceList[0].label);
-            if (e.stanceLabelItem >= 0) ui->SetText(page, e.stanceLabelItem, sBuf);
-            if (e.playPauseItem >= 0) ui->SetText(page, e.playPauseItem, "Play");
-            e.state = NEEDBUILD;
+            e.state = NEEDBUILD;   // the stance UI is reset in NEEDBUILD, before the rebuild
             return;
         } else if (e.nextItem >= 0 && ui->Clicked(page, e.nextItem)) {
-            if (e.mode == MODE_WEAPON) exitEdit(e);
+            if (e.mode == MODE_WEAPON) {
+                if (!guardTransition(e, ACT_NEXT, "member")) return;
+                exitEdit(e);
+            }
             e.member = hse::wrapIndex(e.member, 1, n);
             KP_LOG(chView, "PICK member=%d/%d", e.member + 1, n);
             if (e.token && g_p3.ok()) g_p3.p->Destroy(e.token);
-            e.stanceIdx = 0;
-            e.playingEmote = false;
-            e.emoteEndMs = 0;
-            char sBuf[64];
-            snprintf(sBuf, sizeof(sBuf), "Stance: %s", kStanceList[0].label);
-            if (e.stanceLabelItem >= 0) ui->SetText(page, e.stanceLabelItem, sBuf);
-            if (e.playPauseItem >= 0) ui->SetText(page, e.playPauseItem, "Play");
             e.state = NEEDBUILD;
             return;
         } else if (e.resetItem >= 0 && ui->Clicked(page, e.resetItem)) {
@@ -615,7 +701,9 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
             KP_LOG(chView, "BTN Flip view=(%.2f,%.2f,%.2f)", e.view.yaw, e.view.zoom, e.view.panZ);
         }
 
-        if (e.mode == MODE_NAV) {
+        if (e.state != LIVE) {
+            // FAILED: only the picker and the view buttons above work until a rebuild succeeds
+        } else if (e.mode == MODE_NAV) {
             // Mode NAV buttons
             if (e.wpnRightItem >= 0 && ui->Clicked(page, e.wpnRightItem) && e.regGob[0]) {
                 enterEdit(e, 0);
@@ -657,14 +745,8 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
                 KP_LOG(chView, "EMOTE sel=%s anim=%s", kEmoteList[e.emoteIdx].label, kEmoteList[e.emoteIdx].anim);
             } else if (e.playPauseItem >= 0 && ui->Clicked(page, e.playPauseItem)) {
                 if (e.playingEmote || e.stanceIdx != 0) {
-                    e.playingEmote = false;
-                    e.emoteEndMs = 0;
-                    e.stanceIdx = 0;
-                    char sBuf[64];
-                    snprintf(sBuf, sizeof(sBuf), "Stance: %s", kStanceList[0].label);
-                    if (e.stanceLabelItem >= 0) ui->SetText(page, e.stanceLabelItem, sBuf);
+                    resetStanceUi(e);
                     if (e.token && g_p3.ok()) g_p3.p->PlayAnim(e.token, "pause1");
-                    ui->SetText(page, e.playPauseItem, "Play");
                     KP_LOG(chView, "PLAY_PAUSE -> Pause (returned to idle)");
                 } else {
                     const EmoteDef& em = kEmoteList[e.emoteIdx];
@@ -678,67 +760,74 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
         } else {
             // Mode WEAPON buttons
             if (e.wpnRightItem >= 0 && ui->Clicked(page, e.wpnRightItem)) {
-                if (e.editHand != 0 && e.regGob[0]) enterEdit(e, 0);
-                else if (e.editHand == 0) exitEdit(e);
+                if ((e.editHand != 0 && e.regGob[0]) || e.editHand == 0) {
+                    if (guardTransition(e, ACT_HAND_R, "hand")) {
+                        if (e.editHand != 0) enterEdit(e, 0);
+                        else exitEdit(e);
+                    }
+                }
             } else if (e.wpnLeftItem >= 0 && ui->Clicked(page, e.wpnLeftItem)) {
-                if (e.editHand != 1 && e.regGob[1]) enterEdit(e, 1);
-                else if (e.editHand == 1) exitEdit(e);
+                if ((e.editHand != 1 && e.regGob[1]) || e.editHand == 1) {
+                    if (guardTransition(e, ACT_HAND_L, "hand")) {
+                        if (e.editHand != 1) enterEdit(e, 1);
+                        else exitEdit(e);
+                    }
+                }
             } else if (e.boneItem >= 0 && ui->Clicked(page, e.boneItem) && g_hol.ok()) {
-                int newBone = g_hol.h->CycleBone(1);
-                memset(&e.editInfo, 0, sizeof(e.editInfo));
-                e.editInfo.struct_size = sizeof(e.editInfo);
-                g_hol.h->GetEdit(&e.editInfo);
-                char bBuf[64];
-                snprintf(bBuf, sizeof(bBuf), "Bone: %s", e.editInfo.bone[0] ? e.editInfo.bone : "None");
-                ui->SetText(page, e.boneItem, bBuf);
-                KP_LOG(chView, "BTN CycleBone -> %d (%s)", newBone, e.editInfo.bone);
-                updateStatusText(e);
+                int newBone = g_hol.h->CycleBone(1);   // returns a bone index, never a success flag
+                if (!refreshEdit(e)) {
+                    KP_LOG(chView, "EDIT lost after CycleBone idx=%d", newBone);
+                    exitEdit(e);
+                } else {
+                    setBoneText(e);
+                    KP_LOG(chView, "BTN CycleBone -> %d (%s)", newBone, e.editInfo.bone);
+                    updateStatusText(e);
+                }
             } else if (e.scopeItem >= 0 && ui->Clicked(page, e.scopeItem) && g_hol.ok()) {
-                e.editScope = (e.editScope + 1) % 3;
-                g_hol.h->SetScope(e.editScope, e.editHand == 1 ? 1 : 0);
-                memset(&e.editInfo, 0, sizeof(e.editInfo));
-                e.editInfo.struct_size = sizeof(e.editInfo);
-                g_hol.h->GetEdit(&e.editInfo);
-                ui->SetText(page, e.scopeItem, hse::scopeLabel(e.editScope));
-                char bBuf[64];
-                snprintf(bBuf, sizeof(bBuf), "Bone: %s", e.editInfo.bone[0] ? e.editInfo.bone : "None");
-                if (e.boneItem >= 0) ui->SetText(page, e.boneItem, bBuf);
-                KP_LOG(chView, "BTN SetScope -> %d (%s)", e.editScope, hse::scopeLabel(e.editScope));
-                updateStatusText(e);
+                if (guardTransition(e, ACT_SCOPE, "scope")) {
+                    e.editScope = (e.editScope + 1) % 3;
+                    const int sc = g_hol.h->SetScope(e.editScope, e.editHand == 1 ? 1 : 0);
+                    if (!sc || !refreshEdit(e)) {
+                        KP_LOG(chView, "EDIT lost after SetScope scope=%d rc=%d", e.editScope, sc);
+                        exitEdit(e);
+                    } else {
+                        ui->SetText(page, e.scopeItem, hse::scopeLabel(e.editScope));
+                        setBoneText(e);
+                        KP_LOG(chView, "BTN SetScope -> %d (%s)", e.editScope, hse::scopeLabel(e.editScope));
+                        updateStatusText(e);
+                    }
+                }
             } else if (e.saveItem >= 0 && ui->Clicked(page, e.saveItem) && g_hol.ok()) {
                 int rc = g_hol.h->Save();
                 KP_LOG(chView, "BTN Save rc=%d", rc);
-                memset(&e.editInfo, 0, sizeof(e.editInfo));
-                e.editInfo.struct_size = sizeof(e.editInfo);
-                g_hol.h->GetEdit(&e.editInfo);
+                refreshEdit(e);
                 updateStatusText(e);
+                if (!rc && e.statusItem >= 0) ui->SetText(page, e.statusItem, "Save failed, not written (see log)");
             } else if (e.revertItem >= 0 && ui->Clicked(page, e.revertItem) && g_hol.ok()) {
                 g_hol.h->Revert();
                 KP_LOG(chView, "BTN Revert");
-                memset(&e.editInfo, 0, sizeof(e.editInfo));
-                e.editInfo.struct_size = sizeof(e.editInfo);
-                g_hol.h->GetEdit(&e.editInfo);
-                char bBuf[64];
-                snprintf(bBuf, sizeof(bBuf), "Bone: %s", e.editInfo.bone[0] ? e.editInfo.bone : "None");
-                if (e.boneItem >= 0) ui->SetText(page, e.boneItem, bBuf);
+                refreshEdit(e);
+                setBoneText(e);
                 updateStatusText(e);
             } else if (e.resetScopeItem >= 0 && ui->Clicked(page, e.resetScopeItem) && g_hol.ok()) {
-                g_hol.h->ResetScope();
-                KP_LOG(chView, "BTN ResetScope scope=%d", e.editScope);
-                memset(&e.editInfo, 0, sizeof(e.editInfo));
-                e.editInfo.struct_size = sizeof(e.editInfo);
-                g_hol.h->GetEdit(&e.editInfo);
-                char bBuf[64];
-                snprintf(bBuf, sizeof(bBuf), "Bone: %s", e.editInfo.bone[0] ? e.editInfo.bone : "None");
-                if (e.boneItem >= 0) ui->SetText(page, e.boneItem, bBuf);
-                updateStatusText(e);
+                if (guardTransition(e, ACT_RESET_SCOPE, "reset_scope")) {
+                    g_hol.h->ResetScope();
+                    KP_LOG(chView, "BTN ResetScope scope=%d", e.editScope);
+                    refreshEdit(e);
+                    setBoneText(e);
+                    updateStatusText(e);
+                }
             } else if (e.doneItem >= 0 && ui->Clicked(page, e.doneItem)) {
-                exitEdit(e);
+                if (guardTransition(e, ACT_DONE, "done")) exitEdit(e);
             }
         }
     }
 
     // 2. Emote timer: auto-return to active stance / idle
+    if (e.discardArmed && !hse::guardArmLive(true, e.discardArmedAt, GetTickCount(), kDiscardWindowMs)) {
+        e.discardArmed = false;   // the confirm window ran out: back to the plain status line
+        updateStatusText(e);
+    }
     if (e.playingEmote && e.emoteEndMs && GetTickCount() >= e.emoteEndMs) {
         e.playingEmote = false;
         e.emoteEndMs = 0;
@@ -755,8 +844,8 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
     uintptr_t ctl = e.viewItem >= 0 ? reinterpret_cast<uintptr_t>(ui->Control(page, e.viewItem)) : 0;
     const bool insideView = ctl && guikit::hit(ctl, curX, curY);
     const bool fg = guikit::g_gk.gameForeground ? guikit::g_gk.gameForeground() : true;
-    const bool shift = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
-    const bool ctrl = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0;
+    const bool shift = fg && guikit::g_gk.shiftDown && guikit::g_gk.shiftDown();
+    const bool ctrl = fg && guikit::g_gk.ctrlDown && guikit::g_gk.ctrlDown();
 
     // Wheel: zoom in Mode NAV; depth adjustment with Shift in Mode WEAPON
     guikit::g_wheel.touch(GetTickCount());
@@ -779,10 +868,12 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
     const bool mmb = fg && guikit::g_gk.mbuttonDown && guikit::g_gk.mbuttonDown();
 
     if (e.mode == MODE_WEAPON) {
-        // MMB drag: spin character yaw
+        // MMB drag: spin character yaw (dx > 0 turns the yaw up, same sign as NAV and the equip screen)
+        const bool mmbBegan = mmb && !e.pressedMmb;
+        e.pressedMmb = mmb;
         if (mmb) {
             if (!e.draggingMmb) {
-                if (insideView) {
+                if (mmbBegan && insideView) {
                     e.draggingMmb = true;
                     e.lastMouseX = curX;
                     e.lastMouseY = curY;
@@ -790,7 +881,7 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
             } else {
                 int dx = curX - e.lastMouseX;
                 if (dx != 0) {
-                    e.view.yaw = hse::wrapYaw(e.view.yaw - static_cast<float>(dx) * 0.5f);
+                    e.view.yaw = hse::spin(e.view.yaw, static_cast<float>(dx));
                     e.lastMouseX = curX;
                     e.lastMouseY = curY;
                 }
@@ -799,13 +890,17 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
             e.draggingMmb = false;
         }
 
-        // LMB drag: screen translation dp
+        // LMB drag: screen translation dp (a press that began outside the view or before this mode never starts a drag)
+        const bool pressBegan = lmb && !e.pressed;
+        e.pressed = lmb;
         if (lmb && g_hol.ok()) {
             if (!e.draggingLmb) {
-                if (insideView) {
+                if (pressBegan && insideView) {
                     e.draggingLmb = true;
                     e.lastMouseX = curX;
                     e.lastMouseY = curY;
+                    e.snapAccY = 0.0f;
+                    e.snapAccZ = 0.0f;
                 }
             } else {
                 int dx = curX - e.lastMouseX;
@@ -814,24 +909,30 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
                     float scale = 0.0025f / (e.view.zoom > 0.1f ? e.view.zoom : 1.0f);
                     if (shift) scale *= 0.2f;
                     float dp[3] = { 0.0f, static_cast<float>(dx) * scale, -static_cast<float>(dy) * scale };
-                    if (ctrl) {
-                        dp[1] = std::round(dp[1] / 0.01f) * 0.01f;
-                        dp[2] = std::round(dp[2] / 0.01f) * 0.01f;
+                    if (ctrl) {   // snap to 1 cm steps; the remainder carries over so slow drags still move
+                        dp[1] = hse::snapAccum(e.snapAccY, dp[1], 0.01f);
+                        dp[2] = hse::snapAccum(e.snapAccZ, dp[2], 0.01f);
                     }
-                    g_hol.h->NudgeWorld(nullptr, dp);
+                    if (dp[1] != 0.0f || dp[2] != 0.0f) {
+                        g_hol.h->NudgeWorld(nullptr, dp);
+                        updateStatusText(e);
+                    }
                     e.lastMouseX = curX;
                     e.lastMouseY = curY;
-                    updateStatusText(e);
                 }
             }
         } else {
             e.draggingLmb = false;
+            e.snapAccY = 0.0f;
+            e.snapAccZ = 0.0f;
         }
 
-        // RMB drag: trackball rotation dq
+        // RMB drag: trackball rotation dq (a press that began outside the view or before this mode never starts a drag)
+        const bool rmbBegan = rmb && !e.pressedRmb;
+        e.pressedRmb = rmb;
         if (rmb && g_hol.ok()) {
             if (!e.draggingRmb) {
-                if (insideView) {
+                if (rmbBegan && insideView) {
                     e.draggingRmb = true;
                     e.lastMouseX = curX;
                     e.lastMouseY = curY;
@@ -861,12 +962,12 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
     } else {
         // Mode NAV
         // MMB click: reset view
-        static bool s_lastMmb = false;
-        if (mmb && !s_lastMmb && insideView) {
+        const bool mmbClick = mmb && !e.pressedMmb;
+        e.pressedMmb = mmb;
+        if (mmbClick && insideView) {
             e.view = e.cfgView;
             KP_LOG(chView, "MMB reset view=(%.2f,%.2f,%.2f)", e.view.yaw, e.view.zoom, e.view.panZ);
         }
-        s_lastMmb = mmb;
 
         // LMB: equip-screen style drag with axis lock
         if (lmb) {
@@ -900,15 +1001,16 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
         }
         e.member = hse::wrapIndex(e.member, 0, n);
         uintptr_t C = hse::memberAt(e.member);
+        resetStanceUi(e);
         g_p3.p->Bind(e.token, reinterpret_cast<void*>(C));
         int built = g_p3.p->Rebuild(e.token);
         if (!built) {
             if (e.statusItem >= 0) ui->SetText(page, e.statusItem, "preview rebuild failed");
             KP_LOG(chView, "REBUILD fail member=%d", e.member + 1);
-            e.state = IDLE;
+            e.state = FAILED;
             return;
         }
-        g_p3.p->SetWeapons(e.token, 1);
+        if (e.token && g_p3.ok()) g_p3.p->PlayAnim(e.token, kStanceList[e.stanceIdx].anim);
         for (int hand = 0; hand < 2; ++hand) {
             void* g = g_p3.p->WeaponGob(e.token, hand);
             int rc = 0;
@@ -941,25 +1043,35 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
         applyLayout(e);
         updateStatusText(e);
 
-        float pos[3] = {0,0,0}, q[4] = {0,0,0,1};
-        void* rig = g_p3.p->RigGob(e.token, 0);
-        int rcHook = (rig && g_hol.ok()) ? g_hol.h->GetNodeWorld(rig, "camerahook", pos, q) : 0;
-        KP_LOG(chView, "CAMHOOK pos=(%.2f,%.2f,%.2f) ok=%d", pos[0], pos[1], pos[2], rcHook);
-
         g_p3.p->SetView(e.token, e.view.yaw, e.view.zoom, e.view.panZ);
+        e.camHookPending = true;   // CAMHOOK is logged on the first LIVE tick, not while the rig is still building
         e.state = LIVE;
+        return;
     }
 
     if (e.state == LIVE) {
         g_p3.p->SetView(e.token, e.view.yaw, e.view.zoom, e.view.panZ);
-        static float s_lastYaw = -999.0f, s_lastZoom = -999.0f, s_lastPanZ = -999.0f;
-        static int s_camLogs = 0;
-        if (s_camLogs < 40 && (e.view.yaw != s_lastYaw || e.view.zoom != s_lastZoom || e.view.panZ != s_lastPanZ)) {
+        if (e.camHookPending) {
+            e.camHookPending = false;
+            float pos[3] = {0, 0, 0}, q[4] = {0, 0, 0, 1};
+            void* rig = g_p3.p->RigGob(e.token, 0);
+            int rcHook = (rig && g_hol.ok()) ? g_hol.h->GetNodeWorld(rig, "camerahook", pos, q) : 0;
+            KP_LOG(chView, "CAMHOOK pos=(%.2f,%.2f,%.2f) ok=%d", pos[0], pos[1], pos[2], rcHook);
+        }
+        // CAM: log only a view that has been steady for >= 500 ms and differs from the last logged one (per Editor, capped).
+        const DWORD nowMs = GetTickCount();
+        if (e.view.yaw != e.camSeenYaw || e.view.zoom != e.camSeenZoom || e.view.panZ != e.camSeenPanZ) {
+            e.camSeenYaw = e.view.yaw;
+            e.camSeenZoom = e.view.zoom;
+            e.camSeenPanZ = e.view.panZ;
+            e.camSeenMs = nowMs;
+        } else if (e.camLogs < 200 && nowMs - e.camSeenMs >= 500 &&
+                   (e.view.yaw != e.camLogYaw || e.view.zoom != e.camLogZoom || e.view.panZ != e.camLogPanZ)) {
             KP_LOG(chView, "CAM yaw=%.2f zoom=%.2f panZ=%.2f", e.view.yaw, e.view.zoom, e.view.panZ);
-            s_lastYaw = e.view.yaw;
-            s_lastZoom = e.view.zoom;
-            s_lastPanZ = e.view.panZ;
-            ++s_camLogs;
+            e.camLogYaw = e.view.yaw;
+            e.camLogZoom = e.view.zoom;
+            e.camLogPanZ = e.view.panZ;
+            ++e.camLogs;
         }
     }
 }
@@ -971,6 +1083,7 @@ void KPATCH_CALL cbDestroy(void* panel, void*) {
     Editor& e = g_ed;
     KP_LOG(chMain, "DTOR panel=%p page=%u token=%u free_view=%d", panel, e.page, e.token, g_freeView ? 1 : 0);
     if (e.mode == MODE_WEAPON) {
+        if (editDirty()) KP_LOG(chView, "DISCARD why=destroy");
         exitEdit(e);
     }
     const uintptr_t view = e.viewCtl;
@@ -1010,13 +1123,12 @@ K2ModConfigEntry g_entry;   // Register copies it; the strings are static
 // Written out literally (create-patch's export scan reads the source text) and listed in exports.def. No file I/O here.
 extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
-    g_api = api;
     g_p3.init(api);
     g_hol.init(api);
     g_cfgClient.init(api);
     g_menu.init(api);
     embedgui::g_log = embedLog;
-    KP_LOG(chMain, "holster-editor 0.2.4-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
+    KP_LOG(chMain, "holster-editor 0.2.5-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
            static_cast<unsigned>(sizeof kHseViewGui));
     const bool cfgOk = g_cfgClient.connect(), menuOk = g_menu.connect();
     if (!cfgOk || !menuOk) {

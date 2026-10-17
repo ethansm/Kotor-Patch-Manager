@@ -39,7 +39,11 @@ static void testZoomAndView() {
     KT_CHECK(closeF(hse::zoomIn(3.5f), 4.0f));
     KT_CHECK(closeF(hse::zoomOut(0.9f), 0.8f));
     KT_CHECK(closeF(hse::clampZoom(std::nanf("")), 2.2f));
-    KT_CHECK(closeF(hse::clampZoom(INFINITY), 2.2f));
+    KT_CHECK(closeF(hse::clampZoom(INFINITY), 4.0f));
+    KT_CHECK(closeF(hse::clampZoom(-INFINITY), 0.8f));
+    KT_CHECK(closeF(hse::makeView(0.0f, 2.2f, INFINITY).panZ, 1.0f));
+    KT_CHECK(closeF(hse::makeView(0.0f, 2.2f, -INFINITY).panZ, -1.0f));
+    KT_CHECK(closeF(hse::panStep(INFINITY, 1), 1.0f));
 
     KT_CHECK(sameView(hse::makeView(180.0f, 2.2f, 0.0f), hse::View{180.0f, 2.2f, 0.0f}));
     KT_CHECK(sameView(hse::makeView(-90.0f, 9.0f, 5.0f), hse::View{270.0f, 4.0f, 1.0f}));
@@ -103,6 +107,50 @@ static void testScopeLabel() {
     KT_CHECK_EQ(hse::scopeLabel(99), "Scope: Weapon");
 }
 
+static void testSnapAccum() {
+    const float e = 1e-5f;
+    float acc = 0.0f;
+    KT_CHECK(closeF(hse::snapAccum(acc, 0.004f, 0.01f), 0.0f, e));
+    KT_CHECK(closeF(hse::snapAccum(acc, 0.004f, 0.01f), 0.0f, e));
+    KT_CHECK(closeF(hse::snapAccum(acc, 0.004f, 0.01f), 0.01f, e));
+    KT_CHECK(closeF(acc, 0.002f, e));
+
+    acc = 0.0f;
+    KT_CHECK(closeF(hse::snapAccum(acc, 0.037f, 0.01f), 0.03f, e));
+    KT_CHECK(closeF(acc, 0.007f, e));
+    KT_CHECK(closeF(hse::snapAccum(acc, -0.123f, 0.01f), -0.11f, e));
+    KT_CHECK(closeF(acc, -0.006f, e));
+
+    acc = 0.005f;
+    KT_CHECK(closeF(hse::snapAccum(acc, -0.007f, 0.01f), 0.0f, e));
+    KT_CHECK(closeF(acc, -0.002f, e));
+    KT_CHECK(closeF(hse::snapAccum(acc, -0.009f, 0.01f), -0.01f, e));
+
+    acc = 0.0f;
+    KT_CHECK(closeF(hse::snapAccum(acc, -0.025f, 0.01f), -0.02f, e));
+    KT_CHECK(closeF(acc, -0.005f, e));
+
+    // invariant: sum(applied) + acc == sum(delta)
+    acc = 0.0f;
+    float sumApplied = 0.0f, sumDelta = 0.0f;
+    const float deltas[] = {0.013f, -0.007f, 0.021f, -0.044f, 0.003f};
+    for (float d : deltas) {
+        sumApplied += hse::snapAccum(acc, d, 0.01f);
+        sumDelta += d;
+    }
+    KT_CHECK(closeF(sumApplied + acc, sumDelta, e));
+}
+
+static void testGuard() {
+    KT_CHECK(hse::guardProceed(false, false, 0, 5000, 2000));
+    KT_CHECK(!hse::guardProceed(true, false, 0, 5000, 2000));
+    KT_CHECK(hse::guardProceed(true, true, 1000, 2500, 2000));
+    KT_CHECK(!hse::guardProceed(true, true, 1000, 3000, 2000));
+    KT_CHECK(hse::guardProceed(true, true, 0xFFFFFF00u, 0x40u, 2000));
+    KT_CHECK(!hse::guardArmLive(false, 1000, 1100, 2000));
+    KT_CHECK(hse::guardArmLive(true, 1000, 1100, 2000));
+}
+
 int main() {
     testYawAndSpin();
     testZoomAndView();
@@ -110,6 +158,8 @@ int main() {
     testRectHelpers();
     testMemberLabel();
     testScopeLabel();
+    testSnapAccum();
+    testGuard();
     return kt::Report("hse_view");
 }
 

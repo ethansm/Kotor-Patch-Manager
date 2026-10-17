@@ -21,6 +21,8 @@
 #include "GuiKit.h"
 #include "Party.h"
 #include "SafeRead.h"
+#include "K2Addr.h"
+#include "GameAddr.h"
 
 #include <sys/mman.h>
 #include <unistd.h>
@@ -170,6 +172,54 @@ int main() {
     g_stubVirtualQueryAll = true;
     k2addr::setForTest(&kSteam);
     saferead::beginScope();
+
+    // ============================================================
+    // 0. Constants, struct layouts and GuiKit hooks the editor reads directly
+    // ============================================================
+    {
+        HCHECK("setForTest(&kSteam) is in effect", k2addr::get() == &kSteam);
+        HEQ("k2addr::off(Creature_Stats) is 0x1198", k2addr::off(&K2AddrTable::Creature_Stats), 0x1198);
+        HCHECK("gameaddr::AppGlobal non-zero", gameaddr::AppGlobal != 0);
+        HCHECK("gameaddr::GetLocString non-zero", gameaddr::GetLocString != 0);
+        HCHECK("gameaddr::GetClientLanguage non-zero", gameaddr::GetClientLanguage != 0);
+        HCHECK("gameaddr::ExoDtor non-zero", gameaddr::ExoDtor != 0);
+
+        HEQ("MUI_PANE_COLUMN is 0", MUI_PANE_COLUMN, 0);
+        HEQ("K2PREVIEW3D_HAND_RIGHT is 0", K2PREVIEW3D_HAND_RIGHT, 0);
+        HEQ("K2PREVIEW3D_HAND_LEFT is 1", K2PREVIEW3D_HAND_LEFT, 1);
+        HEQ("K2PREVIEW3D_PART_BODY is 0", K2PREVIEW3D_PART_BODY, 0);
+        HEQ("K2PREVIEW3D_PART_HEAD is 1", K2PREVIEW3D_PART_HEAD, 1);
+        HEQ("K2Preview3dApi.PlayAnim is vtable slot 7", offsetof(K2Preview3dApi, PlayAnim), 7 * sizeof(void*));
+        HEQ("K2HOLSTER_SCOPE_WEAPON is 0", K2HOLSTER_SCOPE_WEAPON, 0);
+        HEQ("K2HOLSTER_SCOPE_TYPE is 1", K2HOLSTER_SCOPE_TYPE, 1);
+        HEQ("K2HOLSTER_SCOPE_BODY is 2", K2HOLSTER_SCOPE_BODY, 2);
+        HEQ("sizeof(K2HolsterEditInfo)", sizeof(K2HolsterEditInfo), static_cast<size_t>(108));
+        HEQ("K2HolsterEditInfo.scope offset", offsetof(K2HolsterEditInfo, scope), static_cast<size_t>(64));
+        HEQ("K2HolsterEditInfo.rot offset", offsetof(K2HolsterEditInfo, rot), static_cast<size_t>(80));
+        HEQ("K2HolsterEditInfo.off offset", offsetof(K2HolsterEditInfo, off), static_cast<size_t>(92));
+        HEQ("K2HolsterEditInfo.src offset", offsetof(K2HolsterEditInfo, src), static_cast<size_t>(104));
+
+        // GuiKit input hooks: null under GUIKIT_HOST (the mod must check before calling); the assignment form the mod uses is callable.
+        HCHECK("g_gk.lbuttonDown is null under GUIKIT_HOST", guikit::g_gk.lbuttonDown == nullptr);
+        HCHECK("g_gk.rbuttonDown is null under GUIKIT_HOST", guikit::g_gk.rbuttonDown == nullptr);
+        HCHECK("g_gk.shiftDown is null under GUIKIT_HOST", guikit::g_gk.shiftDown == nullptr);
+        HCHECK("g_gk.ctrlDown is null under GUIKIT_HOST", guikit::g_gk.ctrlDown == nullptr);
+        HCHECK("g_gk.mbuttonDown is null under GUIKIT_HOST", guikit::g_gk.mbuttonDown == nullptr);
+        guikit::g_gk.mbuttonDown = [] { return true; };
+        HCHECK("g_gk.mbuttonDown assignment is callable", guikit::g_gk.mbuttonDown && guikit::g_gk.mbuttonDown());
+        guikit::g_gk.mbuttonDown = nullptr;
+
+        // Wheel: take() drains to 0; setRect/anyRect/clearRect/fresh behave as cbEnter/cbLeave expect.
+        HEQ("g_wheel.take() is 0 when nothing was counted", guikit::g_wheel.take(), 0);
+        HCHECK("g_wheel.anyRect() false before setRect", !guikit::g_wheel.anyRect());
+        guikit::g_wheel.setRect(0, 10, 20, 30, 40);
+        HCHECK("g_wheel.anyRect() true after setRect", guikit::g_wheel.anyRect());
+        guikit::g_wheel.touch(1000);
+        HCHECK("g_wheel.fresh() true right after touch", guikit::g_wheel.fresh(1000));
+        HCHECK("g_wheel.fresh() false once freshMs has passed", !guikit::g_wheel.fresh(1000 + guikit::g_wheel.freshMs));
+        guikit::g_wheel.clearRect(0);
+        HCHECK("g_wheel.anyRect() false after clearRect", !guikit::g_wheel.anyRect());
+    }
 
     // ============================================================
     // 1. ModConfigApi (k2.modconfig + k2.menuui)
@@ -542,6 +592,22 @@ int main() {
         e = mkExo("Item\x01Name", 9, 9);
         HEQ("readExo rejects non-printable character with printableOnly=true", saferead::readExo(1u, e, out, sizeof(out)), 0);
         HEQ("readExo non-printable rejection clears buffer", out[0], 0);
+
+        // Wide limits (maxLen 255, cap 256, printableOnly=false): a 255-byte string including 0x01 is accepted, 256 is not.
+        {
+            char big[256];
+            char wide[257];
+            std::memset(wide, 'C', 256);
+            wide[0] = '\x01';
+            wide[256] = 0;
+            e = mkExo(wide, 255, 255);
+            HEQ("readExo(wide) accepts 255 bytes including 0x01", saferead::readExo(1u, e, big, 256, 255, false), 255);
+            HEQ("readExo(wide) keeps the 0x01 byte", static_cast<int>(big[0]), 1);
+            e = mkExo(wide, 256, 256);
+            HEQ("readExo(wide) rejects 256 bytes", saferead::readExo(1u, e, big, 256, 255, false), 0);
+            e = mkExo(wide, 255, 255);
+            HEQ("readExo rejects 0x01 when printableOnly=true", saferead::readExo(1u, e, big, 256, 255, true), 0);
+        }
 
         // Null buffer or invalid cap
         HEQ("readExo returns 0 on null buffer without crashing", saferead::readExo(1u, e, nullptr, 10), 0);

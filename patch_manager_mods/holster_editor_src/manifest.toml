@@ -1,9 +1,9 @@
 [patch]
 id = "holster-editor"
 name = "Holster Editor"
-version = "0.2.4-dev"
+version = "0.2.5-dev"
 author = "local"
-description = "Holster placement editor, 0.2.4-dev (doc 42 HW-EDIT). A hookless consumer of mod-config (k2.modconfig@1, k2.menuui@1): registers one Holstered Weapons entry under Options -> Mod Configuration and provides 3D preview, stance/emote controls, weapon selection chips, bone cycling, scopes, and live holster nudging. Needs mod-config, holster (k2.holster@1) and preview-3d (k2.preview3d@1); log holster-editor_log.txt."
+description = "Holster placement editor, 0.2.5-dev (doc 42 HW-EDIT). A hookless consumer of mod-config (k2.modconfig@1, k2.menuui@1): registers one Holstered Weapons entry under Options -> Mod Configuration and provides 3D preview, stance/emote controls, weapon selection chips, bone cycling, scopes, and live holster nudging. Needs mod-config, holster (k2.holster@1) and preview-3d (k2.preview3d@1); log holster-editor_log.txt."
 kind = "patch"
 
 requires = ["holster", "preview-3d", "mod-config"]
