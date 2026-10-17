@@ -1,7 +1,7 @@
 # Session Handoff & Plan State: patch_manager_mods/41_custom_voice_and_events.md
 
 ## 0. Next-Phase Direction
-Execute V-C2 (shrunken): R1 recon of GetKeyEntry/ServiceFromImage signatures for the doc 44 VFS session, voice-probe 0.1.1 PlaySound hook install prep (kplog.ini section), and a trigger design that writes no loose game files. ON HOLD until the doc 44 VFS lands; H1 GetKeyEntry observer belongs to the VFS session.
+Execute V-C: Live tests E1-E8 incl. E5, E6, plus T-SSF and T-TIMER, with a tiny probe (needs user GO and the D0 pause lifted)
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/41_custom_voice_and_events.md`
@@ -10,17 +10,18 @@ Execute V-C2 (shrunken): R1 recon of GetKeyEntry/ServiceFromImage signatures for
 - **Waves:** .claude/waves/WI-41-b1/
 - **Waves:** .claude/waves/WI-41-b2/
 - **Waves:** .claude/waves/w11-41-VB/
-- **Branch:** `KOTOR-II` (5e59d44 docs(33): QL12-QL14, QL16 INSTALLED (LIVE 10-17 01:30) + play rows MODE1, CST1)
-- **Generated:** 2026-10-17 01:36:23 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (95419ea docs(voice): V-C2 trigger design memo, voice-probe install checklist (nothing live changed))
+- **Generated:** 2026-10-17 02:11:36 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-5e59d44 docs(33): QL12-QL14, QL16 INSTALLED (LIVE 10-17 01:30) + play rows MODE1, CST1
- .../handoffs/33_ui_queue_hotbar_fixes.handoff.md   | 46 ++++++++++------------
- patch_manager_mods/33_ui_queue_hotbar_fixes.md     |  8 ++--
- patch_manager_mods/PLAY_TEST_QUEUE.md              |  2 +
- 3 files changed, 26 insertions(+), 30 deletions(-)
+95419ea docs(voice): V-C2 trigger design memo, voice-probe install checklist (nothing live changed)
+ patch_manager_mods/41_custom_voice_and_events.md   |  2 +-
+ .../kvoice/V-C2_HOOK_LOGGING_PLAN.md               | 14 ++++
+ patch_manager_mods/kvoice/V-C2_TRIGGER_DESIGN.md   | 81 ++++++++++++++++++++++
+ patch_manager_mods/kvoice/V-C_RUNBOOK.md           |  2 +
+ 4 files changed, 98 insertions(+), 1 deletion(-)
 ```
-- **Dirty Files (182):**
+- **Dirty Files (172):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
   - ` M .claude/handoffs/40_npc_behaviour_variety.handoff.md`
@@ -29,9 +30,9 @@ Execute V-C2 (shrunken): R1 recon of GetKeyEntry/ServiceFromImage signatures for
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
   - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
   - ` M .claude/plans/swarm_library_architecture.md`
+  - ` M .claude/reviews/asset_vfs_review_20261017.md`
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
-  - ` M CLAUDE.md`
-  - ... +172 more (run `git status --short`)
+  - ... +162 more (run `git status --short`)
 
 ## 2. Immediate Objective (V-C)
 **Live tests E1-E8 incl. E5, E6, plus T-SSF and T-TIMER, with a tiny probe (needs user GO and the D0 pause lifted)**
@@ -40,7 +41,7 @@ Status: PARTIAL
 Task: Live tests E1-E8 incl. E5, E6, plus T-SSF and T-TIMER, with a tiny probe (needs user GO and the D0 pause lifted)
 
 ## 2b. Upcoming Batches in Pipeline
-- **V-C2** : Native logging + a working trigger for the live voice probe: plan `patch_manager_mods/kvoice/V-C2_HOOK_LOGGING_PLAN.md` (sections 9-10). E1 PASS and E2a/b/c done 2026-10-15/16 via the retired heartbeat trigger. H1 (GetKeyEntry observer) moved to the doc 44 VFS session; remaining here: R1 recon, H2 PlaySound hook (voice-probe 0.1.1 on KpLog), trigger design. ON HOLD until the VFS lands
+- **V-C2** : Native logging + a working trigger for the live voice probe: plan `patch_manager_mods/kvoice/V-C2_HOOK_LOGGING_PLAN.md` (sections 9-10). E1 PASS and E2a/b/c done 2026-10-15/16 via the retired heartbeat trigger. H1 (GetKeyEntry observer) moved to the doc 44 VFS session; remaining here: R1 recon, H2 PlaySound hook (voice-probe 0.1.1 on KpLog), trigger design. ON HOLD until the VFS lands. 2026-10-17 (wave `w14-41-VC2`): voice-probe 0.1.1 already LIVE (probe off), `GATE PASS`; live read needs only the `[voice-probe]` kplog.ini section + `probe=1` (plan section 10.1). Trigger design `kvoice/V-C2_TRIGGER_DESIGN.md`: native hotkey on the npc-world tick CALLS RunScript (RET 12); no global vanilla script calls PlaySound, so the control is module-only (`a_attspch1`, 102per) and custom clips wait for VFS-served NCS. Open: R-T1..R-T4, user decision build-now vs wait
 - **V-D** : Silent-commoner SSF fix (needs T-SSF) and murmur bed prototype (ideas 1-2)
 - **V-E** : Voice spike: Qwen3 VoiceDesign speed/VRAM, 200-line consistency, FX chain, RVC timing on the 5070, Day-5 sound-alike screen (`w3/b5.md` 5-day plan)
 
@@ -54,6 +55,13 @@ Task: Live tests E1-E8 incl. E5, E6, plus T-SSF and T-TIMER, with a tiny probe (
 ## 5. Dead Ends & Verification (manual)
 ### Provenance fixes
 - The auto-generated "Waves: WI-41-*" lines in section 1 are unrelated dev-work-item waves (substring match on "41"). The real evidence lives in `.claude/waves/w10-voice/` (gitignored): `COMMON_BRIEF.md`, `W1_FACTS.md`, `W2_FACTS.md` (digested facts incl. wave-3 corrections), `BRAINSTORM_BRIEF.md`, `CHECK_BRIEF.md`, `tmp/b9/` (kvoice prototype `kvoice_proto.py`, `kvoice_proto_test.py`, `kvoice_ledger_proto.py`, `roundtrip.json`), `tmp/u11/lipcheck.py` (reference `.lip` parser/writer), `tmp/apply41.py`. All durable findings are committed in `.claude/research/voice_audio/{w1,w2,w3,w4,catalog}/` (commit 139639c). Start with doc 41 sections 2, 3, 6, 7; the kvoice spec is `.claude/research/voice_audio/w3/b9.md`.
+
+### V-C2 lessons (2026-10-17, wave w14-41-VC2, commit 95419ea)
+- voice-probe 0.1.1 is already LIVE (probe off, `c9ce8ba`); older notes saying "NOT installed" are stale. Live read = 2 GO-gated ini edits (plan section 10.1), no reinstall.
+- No `chitin.key` script calls `PlaySound` (routine 46); the 18 that do are module-only, so a vanilla control run must happen inside that module (`a_attspch1`, 102per).
+- `RunScript` 0x6FD8D0 is `RET 12` (3 args); arg 3 and string ownership are open (R-T1/R-T2 in `kvoice/V-C2_TRIGGER_DESIGN.md`), both answerable from static dumps at $0.
+- `.claude/waves/WI-44-*` are dev work item 44, not doc 44; resman facts live in `w14-juhani-bundle/a2_resource_hook.md` and `w13-vfs-collide/u02.md`.
+- A full module-archive NCS scan cost the Haiku unit 115k tokens (over the 100k cap): next time scope it to 2-3 named modules.
 
 ### Dead ends and anti-patterns
 - Do NOT trust Gemini's `~/kotor-custom-audio.pdf`: scorecard in doc 41 section 1 (470-byte VO header, `.lip` table, SSF format, NoZoomIn, watermarks all wrong).
