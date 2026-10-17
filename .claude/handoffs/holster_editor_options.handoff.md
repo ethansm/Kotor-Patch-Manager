@@ -1,23 +1,20 @@
 # Session Handoff & Plan State: .claude/plans/holster_editor_options.md
 
 ## 0. Next-Phase Direction
-No phases parsed from .claude/plans/holster_editor_options.md; check its header levels (## Phase N / table with Id + Status columns).
+W2b c17+c18+c19 committed 31e6e2d (c18r 1 BLOCKING fixed). KPM prepared: ModConfig 154cf25, holster-editor 734ba88; full gate GATE PASS; kpm_reinstall --mod mod-config holster-editor --dry-run OK (49 ids). NEXT: user GO (game closed) -> python3 scripts/kpm_reinstall.py --mod mod-config holster-editor; then verify id order (mod-config before holster-editor in live patch_config.toml), back up kplog.ini + add [mod-config] enabled=1 level=debug channels=*, kpm_status LIVE, add MC1 row to PLAY_TEST_QUEUE.md. Follow-up: holster_editor_src lacks common_contract_test.cpp (compat GAP).
 
 ## 1. Active State & Provenance
 - **Master Plan:** `.claude/plans/holster_editor_options.md`
-- **Branch:** `KOTOR-II` (487d7f7 mod-config W2 c15+c16: ModConfigApi.h (k2.modconfig@1, k2.menuui@1) + contract test, MenuUiLogic.h page/hover/click/registry logic + host tests)
-- **Generated:** 2026-10-16 19:37:17 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (9a71a5d k1_port_bark_build: combat variant (hostile faction, tone battle cries, K1 attack/pain/dead) since clicking an NPC starts dialog, not the select bark)
+- **Generated:** 2026-10-16 20:12:33 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-487d7f7 mod-config W2 c15+c16: ModConfigApi.h (k2.modconfig@1, k2.menuui@1) + contract test, MenuUiLogic.h page/hover/click/registry logic + host tests
- patch_manager_mods/_shared_src/ModConfigApi.h      | 259 ++++++++++++
- patch_manager_mods/mod_config_src/MenuUiLogic.h    | 353 ++++++++++++++++
- .../mod_config_src/common_contract_test.cpp        | 159 ++++++++
- .../mod_config_src/menu_ui_logic_test.cpp          | 452 +++++++++++++++++++++
- patch_manager_mods/mod_config_src/test.toml        |   4 +
- 5 files changed, 1227 insertions(+)
+9a71a5d k1_port_bark_build: combat variant (hostile faction, tone battle cries, K1 attack/pain/dead) since clicking an NPC starts dialog, not the select bark
+ patch_manager_mods/k1_port/k1_port_bark_build.py   | 27 +++++++++++++++++++---
+ .../k1_port/test_k1_port_bark_build.py             | 12 +++++++---
+ 2 files changed, 33 insertions(+), 6 deletions(-)
 ```
-- **Dirty Files (170):**
+- **Dirty Files (165):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/33_ui_queue_hotbar_fixes.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
@@ -25,10 +22,10 @@ No phases parsed from .claude/plans/holster_editor_options.md; check its header 
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
   - ` M .claude/handoffs/PHASE7_COMMON_MASTER.handoff.md`
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
-  - ` M .claude/handoffs/holster_editor_options.handoff.md`
   - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
   - ` M .claude/plans/swarm_library_architecture.md`
-  - ... +160 more (run `git status --short`)
+  - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
+  - ... +155 more (run `git status --short`)
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume .claude/plans/holster_editor_options.md`.
