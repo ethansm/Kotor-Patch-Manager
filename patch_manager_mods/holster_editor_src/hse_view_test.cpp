@@ -96,11 +96,20 @@ static void testMemberLabel() {
     hse::memberLabel(nullptr, 32, 0, "Bastila");
 }
 
+static void testScopeLabel() {
+    KT_CHECK_EQ(hse::scopeLabel(0), "Scope: Weapon");
+    KT_CHECK_EQ(hse::scopeLabel(1), "Scope: Category");
+    KT_CHECK_EQ(hse::scopeLabel(2), "Scope: Body");
+    KT_CHECK_EQ(hse::scopeLabel(99), "Scope: Weapon");
+}
+
 int main() {
     testYawAndSpin();
     testZoomAndView();
     testIndex();
     testRectHelpers();
     testMemberLabel();
+    testScopeLabel();
     return kt::Report("hse_view");
 }
+

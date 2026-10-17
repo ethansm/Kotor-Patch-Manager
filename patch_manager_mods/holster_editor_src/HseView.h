@@ -124,4 +124,14 @@ inline void memberLabel(char* out, int cap, int idx0, const char* name) {
     out[cap - 1] = '\0';
 }
 
+// Scope label: 0=Weapon, 1=Category, 2=Body
+inline const char* scopeLabel(int scope) {
+    switch (scope) {
+        case 0: return "Scope: Weapon";
+        case 1: return "Scope: Category";
+        case 2: return "Scope: Body";
+        default: return "Scope: Weapon";
+    }
+}
+
 } // namespace hse

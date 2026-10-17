@@ -95,6 +95,23 @@ k2mc::ConfigClient g_cfgClient;
 k2mc::MenuClient g_menu;
 
 enum State { IDLE, NEEDBUILD, LIVE };
+enum EditMode { MODE_NAV = 0, MODE_WEAPON = 1 };
+
+struct QVec { float w, x, y, z; };
+inline QVec qaxis(const float* axis, float deg) {
+    float l = std::sqrt(axis[0] * axis[0] + axis[1] * axis[1] + axis[2] * axis[2]);
+    if (l < 1e-12f) return { 1, 0, 0, 0 };
+    float h = deg * 3.14159265358979f / 360.0f, s = std::sin(h) / l;
+    return { std::cos(h), axis[0] * s, axis[1] * s, axis[2] * s };
+}
+inline void qrotate(const float q[4], const float v[3], float out[3]) {
+    float tx = 2.0f * (q[2] * v[2] - q[3] * v[1]);
+    float ty = 2.0f * (q[3] * v[0] - q[1] * v[2]);
+    float tz = 2.0f * (q[1] * v[1] - q[2] * v[0]);
+    out[0] = v[0] + q[0] * tx + (q[2] * tz - q[3] * ty);
+    out[1] = v[1] + q[0] * ty + (q[3] * tx - q[1] * tz);
+    out[2] = v[2] + q[0] * tz + (q[1] * ty - q[2] * tx);
+}
 
 struct Editor {
     void* panel = nullptr;
@@ -107,13 +124,23 @@ struct Editor {
     hse::View cfgView = {180.0f, 2.2f, 0.0f};
     State state = IDLE;
 
+    EditMode mode = MODE_NAV;
+    int editHand = -1;  // 0=right, 1=left
+    int editScope = K2HOLSTER_SCOPE_WEAPON;
+    K2HolsterEditInfo editInfo = {};
+    char wpnName[2][32] = {{0}, {0}};
+
     int32_t nameItem = -1;
     int32_t prevItem = -1, nextItem = -1;
+    int32_t wpnRightItem = -1, wpnLeftItem = -1;
     int32_t stanceLabelItem = -1;
     int32_t stancePrevItem = -1, stanceNextItem = -1;
     int32_t emoteLabelItem = -1;
     int32_t emotePrevItem = -1, emoteNextItem = -1;
     int32_t playPauseItem = -1;
+    int32_t boneItem = -1, scopeItem = -1;
+    int32_t saveItem = -1, revertItem = -1;
+    int32_t resetScopeItem = -1, doneItem = -1;
     int32_t resetItem = -1, flipItem = -1;
 
     int stanceIdx = 0;
@@ -125,6 +152,12 @@ struct Editor {
     p3d::DragCfg dragCfg;
     bool pressed = false;
     void* regGob[2] = {nullptr, nullptr};
+
+    hse::HseRect strip = {0, 0, 0, 0};
+    int lastMouseX = 0, lastMouseY = 0;
+    bool draggingLmb = false;
+    bool draggingRmb = false;
+    bool draggingMmb = false;
 };
 Editor g_ed;
 
@@ -181,13 +214,18 @@ void readConfig() {
 }
 
 const char* statusText() {
-    return g_p3.ok() && g_hol.ok() ? "0.2.3 dev: preview + holster connected" : "0.2.3 dev: a provider is missing";
+    return g_p3.ok() && g_hol.ok() ? "0.2.4 dev: preview + holster connected" : "0.2.4 dev: a provider is missing";
 }
 
 void KPATCH_CALL cbBeforeFree(uint32_t token, void* user) {
     saferead::beginScope();
     Editor* e = reinterpret_cast<Editor*>(user);
     if (!e || !g_p3.ok()) return;
+    if (e->mode == MODE_WEAPON) {
+        if (g_hol.ok()) g_hol.h->EndEdit();
+        e->mode = MODE_NAV;
+        e->editHand = -1;
+    }
     for (int hand = 0; hand < 2; ++hand) {
         void* g = g_p3.p->WeaponGob(token, hand);
         if (g && g_hol.ok()) {
@@ -277,6 +315,9 @@ void KPATCH_CALL cbBuild(void* panel, void*) {
     g_ed.prevItem = ui->AddButton(g_ed.page, "<", "Show the previous party member.");
     g_ed.nextItem = ui->AddButton(g_ed.page, ">", "Show the next party member.");
 
+    g_ed.wpnRightItem = ui->AddButton(g_ed.page, "Right: None", "Edit holster placement for right-hand weapon.");
+    g_ed.wpnLeftItem = ui->AddButton(g_ed.page, "Left: None", "Edit holster placement for left-hand weapon.");
+
     char stanceBuf[64];
     snprintf(stanceBuf, sizeof(stanceBuf), "Stance: %s", kStanceList[g_ed.stanceIdx].label);
     g_ed.stanceLabelItem = ui->AddLabel(g_ed.page, stanceBuf);
@@ -291,13 +332,24 @@ void KPATCH_CALL cbBuild(void* panel, void*) {
 
     g_ed.playPauseItem = ui->AddButton(g_ed.page, "Play", "Play selected emote, or pause movement.");
 
+    g_ed.boneItem = ui->AddButton(g_ed.page, "Bone: Back", "Cycle mounting bone (back/hip/thigh).");
+    g_ed.scopeItem = ui->AddButton(g_ed.page, "Scope: Weapon", "Cycle tune scope (Weapon / Category / Body).");
+    g_ed.saveItem = ui->AddButton(g_ed.page, "Save", "Save placement to holster.ini under [editor].");
+    g_ed.revertItem = ui->AddButton(g_ed.page, "Revert", "Revert unsaved edits back to saved values.");
+    g_ed.resetScopeItem = ui->AddButton(g_ed.page, "Reset Scope", "Delete custom overrides for this scope.");
+    g_ed.doneItem = ui->AddButton(g_ed.page, "Done", "Exit weapon edit mode.");
+
     g_ed.resetItem = ui->AddButton(g_ed.page, "Reset view", "Back to the saved framing.");
     g_ed.flipItem = ui->AddButton(g_ed.page, "Flip view", "Turn the character around.");
 
     if (g_ed.nameItem < 0 || g_ed.prevItem < 0 || g_ed.nextItem < 0 ||
+        g_ed.wpnRightItem < 0 || g_ed.wpnLeftItem < 0 ||
         g_ed.stanceLabelItem < 0 || g_ed.stancePrevItem < 0 || g_ed.stanceNextItem < 0 ||
         g_ed.emoteLabelItem < 0 || g_ed.emotePrevItem < 0 || g_ed.emoteNextItem < 0 ||
         g_ed.playPauseItem < 0 ||
+        g_ed.boneItem < 0 || g_ed.scopeItem < 0 ||
+        g_ed.saveItem < 0 || g_ed.revertItem < 0 ||
+        g_ed.resetScopeItem < 0 || g_ed.doneItem < 0 ||
         g_ed.resetItem < 0 || g_ed.flipItem < 0) {
         KP_LOG(chMain, "BUILD item failed");
     }
@@ -319,6 +371,154 @@ void placeRect(int32_t item, const hse::HseRect& hr) {
     g_menu.p->SetRect(g_ed.page, item, &r);
 }
 
+void readWeaponModel(void* gob, char* out, size_t cap) {
+    if (!out || cap == 0) return;
+    out[0] = '\0';
+    if (!gob) return;
+    uintptr_t model = 0;
+    if (rd<uintptr_t>(reinterpret_cast<uintptr_t>(gob), 0x84, &model) && model) {
+        size_t n = 0;
+        for (; n < cap - 1 && n < 16; ++n) {
+            char c = 0;
+            if (!saferead::readAt(0xE70100u, model + 0x08, static_cast<int>(n), &c) || c == 0) break;
+            out[n] = (c >= 0x20 && c <= 0x7E) ? c : '.';
+        }
+        out[n] = '\0';
+    }
+}
+
+void updateStatusText(Editor& e) {
+    if (!g_menu.ok() || !e.page || e.statusItem < 0) return;
+    char buf[128] = {0};
+    if (e.mode == MODE_WEAPON) {
+        if (g_hol.ok()) g_hol.h->GetEdit(&e.editInfo);
+        snprintf(buf, sizeof(buf), "EDIT [%s]: %s on %s | rot=(%.1f,%.1f,%.1f) off=(%.2f,%.2f,%.2f)%s",
+                 e.editHand == 0 ? "R" : "L",
+                 e.editInfo.model[0] ? e.editInfo.model : (e.editInfo.type[0] ? e.editInfo.type : "wpn"),
+                 e.editInfo.bone[0] ? e.editInfo.bone : "-",
+                 e.editInfo.rot[0], e.editInfo.rot[1], e.editInfo.rot[2],
+                 e.editInfo.off[0], e.editInfo.off[1], e.editInfo.off[2],
+                 e.editInfo.dirty ? " *" : "");
+    } else {
+        snprintf(buf, sizeof(buf), "Member %d/%d | Weapons: %s%s%s | Stance: %s",
+                 e.member + 1, hse::memberCount(),
+                 e.regGob[0] ? "Right" : "-",
+                 (e.regGob[0] && e.regGob[1]) ? "+" : "",
+                 e.regGob[1] ? "Left" : (e.regGob[0] ? "" : "None"),
+                 kStanceList[e.stanceIdx].label);
+    }
+    g_menu.p->SetText(e.page, e.statusItem, buf);
+}
+
+void applyLayout(Editor& e) {
+    if (!g_menu.ok() || !e.page || e.strip.w <= 0) return;
+    const hse::HseRect offscreen = {-9999, -9999, 0, 0};
+
+    if (e.mode == MODE_NAV) {
+        placeRect(e.nameItem, hse::stripSlot(e.strip, 0));
+        placeRect(e.prevItem, hse::half(hse::stripSlot(e.strip, 1), 0, 6));
+        placeRect(e.nextItem, hse::half(hse::stripSlot(e.strip, 1), 1, 6));
+
+        placeRect(e.wpnRightItem, hse::half(hse::stripSlot(e.strip, 2), 0, 6));
+        placeRect(e.wpnLeftItem, hse::half(hse::stripSlot(e.strip, 2), 1, 6));
+
+        placeRect(e.stanceLabelItem, hse::stripSlot(e.strip, 3));
+        placeRect(e.stancePrevItem, hse::half(hse::stripSlot(e.strip, 4), 0, 6));
+        placeRect(e.stanceNextItem, hse::half(hse::stripSlot(e.strip, 4), 1, 6));
+
+        placeRect(e.emoteLabelItem, hse::stripSlot(e.strip, 5));
+        placeRect(e.emotePrevItem, hse::half(hse::stripSlot(e.strip, 6), 0, 6));
+        placeRect(e.emoteNextItem, hse::half(hse::stripSlot(e.strip, 6), 1, 6));
+
+        placeRect(e.playPauseItem, hse::stripSlot(e.strip, 7));
+
+        placeRect(e.resetItem, hse::half(hse::stripSlot(e.strip, 8), 0, 6));
+        placeRect(e.flipItem, hse::half(hse::stripSlot(e.strip, 8), 1, 6));
+
+        // Park Mode B edit controls
+        placeRect(e.boneItem, offscreen);
+        placeRect(e.scopeItem, offscreen);
+        placeRect(e.saveItem, offscreen);
+        placeRect(e.revertItem, offscreen);
+        placeRect(e.resetScopeItem, offscreen);
+        placeRect(e.doneItem, offscreen);
+    } else {
+        placeRect(e.nameItem, hse::stripSlot(e.strip, 0));
+        placeRect(e.wpnRightItem, hse::half(hse::stripSlot(e.strip, 1), 0, 6));
+        placeRect(e.wpnLeftItem, hse::half(hse::stripSlot(e.strip, 1), 1, 6));
+
+        placeRect(e.boneItem, hse::stripSlot(e.strip, 2));
+        placeRect(e.scopeItem, hse::stripSlot(e.strip, 3));
+
+        placeRect(e.saveItem, hse::half(hse::stripSlot(e.strip, 4), 0, 6));
+        placeRect(e.revertItem, hse::half(hse::stripSlot(e.strip, 4), 1, 6));
+
+        placeRect(e.resetScopeItem, hse::half(hse::stripSlot(e.strip, 5), 0, 6));
+        placeRect(e.doneItem, hse::half(hse::stripSlot(e.strip, 5), 1, 6));
+
+        placeRect(e.resetItem, hse::half(hse::stripSlot(e.strip, 6), 0, 6));
+        placeRect(e.flipItem, hse::half(hse::stripSlot(e.strip, 6), 1, 6));
+
+        // Park Mode A nav controls
+        placeRect(e.prevItem, offscreen);
+        placeRect(e.nextItem, offscreen);
+        placeRect(e.stanceLabelItem, offscreen);
+        placeRect(e.stancePrevItem, offscreen);
+        placeRect(e.stanceNextItem, offscreen);
+        placeRect(e.emoteLabelItem, offscreen);
+        placeRect(e.emotePrevItem, offscreen);
+        placeRect(e.emoteNextItem, offscreen);
+        placeRect(e.playPauseItem, offscreen);
+    }
+}
+
+void enterEdit(Editor& e, int hand) {
+    if (hand < 0 || hand > 1 || !e.regGob[hand] || !g_hol.ok()) return;
+    if (e.mode == MODE_WEAPON) {
+        g_hol.h->EndEdit();
+    }
+    e.mode = MODE_WEAPON;
+    e.editHand = hand;
+    g_hol.h->BeginEdit(e.regGob[hand], e.editScope);
+    memset(&e.editInfo, 0, sizeof(e.editInfo));
+    e.editInfo.struct_size = sizeof(e.editInfo);
+    g_hol.h->GetEdit(&e.editInfo);
+    KP_LOG(chView, "EDIT enter hand=%d gob=%p model=%s bone=%s", hand, e.regGob[hand], e.editInfo.model, e.editInfo.bone);
+
+    const K2MenuUiApi* ui = g_menu.p;
+    char bBuf[64];
+    snprintf(bBuf, sizeof(bBuf), "Bone: %s", e.editInfo.bone[0] ? e.editInfo.bone : "None");
+    if (e.boneItem >= 0) ui->SetText(e.page, e.boneItem, bBuf);
+    if (e.scopeItem >= 0) ui->SetText(e.page, e.scopeItem, hse::scopeLabel(e.editScope));
+
+    char rBuf[64], lBuf[64];
+    snprintf(rBuf, sizeof(rBuf), "%sRight%s", hand == 0 ? "[Edit: " : "", hand == 0 ? "]" : (e.regGob[0] ? "" : ": None"));
+    snprintf(lBuf, sizeof(lBuf), "%sLeft%s", hand == 1 ? "[Edit: " : "", hand == 1 ? "]" : (e.regGob[1] ? "" : ": None"));
+    if (e.wpnRightItem >= 0) ui->SetText(e.page, e.wpnRightItem, rBuf);
+    if (e.wpnLeftItem >= 0) ui->SetText(e.page, e.wpnLeftItem, lBuf);
+
+    applyLayout(e);
+    updateStatusText(e);
+}
+
+void exitEdit(Editor& e) {
+    if (e.mode != MODE_WEAPON) return;
+    if (g_hol.ok()) g_hol.h->EndEdit();
+    e.mode = MODE_NAV;
+    e.editHand = -1;
+    KP_LOG(chView, "EDIT exit");
+
+    const K2MenuUiApi* ui = g_menu.p;
+    char rBuf[64], lBuf[64];
+    snprintf(rBuf, sizeof(rBuf), "Right: %s", e.wpnName[0][0] ? e.wpnName[0] : (e.regGob[0] ? "Equipped" : "None"));
+    snprintf(lBuf, sizeof(lBuf), "Left: %s", e.wpnName[1][0] ? e.wpnName[1] : (e.regGob[1] ? "Equipped" : "None"));
+    if (e.wpnRightItem >= 0) ui->SetText(e.page, e.wpnRightItem, rBuf);
+    if (e.wpnLeftItem >= 0) ui->SetText(e.page, e.wpnLeftItem, lBuf);
+
+    applyLayout(e);
+    updateStatusText(e);
+}
+
 void KPATCH_CALL cbEnter(uint32_t page, void*) {
     if (!g_ed.panel || page != g_ed.page || !g_menu.ok()) return;
     saferead::beginScope();
@@ -331,25 +531,10 @@ void KPATCH_CALL cbEnter(uint32_t page, void*) {
     g_menu.p->PaneRect(g_ed.panel, MUI_PANE_VIEW, &view);
     hse::HseRect hcol = {col.x, col.y, col.w, col.h};
     hse::HseRect hview = {view.x, view.y, view.w, view.h};
-    hse::HseRect strip = hse::leftStrip(hcol, hview, 6);
-    KP_LOG(chView, "LAYOUT strip=(%d,%d,%d,%d)", strip.x, strip.y, strip.w, strip.h);
+    g_ed.strip = hse::leftStrip(hcol, hview, 6);
+    KP_LOG(chView, "LAYOUT strip=(%d,%d,%d,%d)", g_ed.strip.x, g_ed.strip.y, g_ed.strip.w, g_ed.strip.h);
 
-    placeRect(g_ed.nameItem, hse::stripSlot(strip, 0));
-    placeRect(g_ed.prevItem, hse::half(hse::stripSlot(strip, 1), 0, 6));
-    placeRect(g_ed.nextItem, hse::half(hse::stripSlot(strip, 1), 1, 6));
-
-    placeRect(g_ed.stanceLabelItem, hse::stripSlot(strip, 2));
-    placeRect(g_ed.stancePrevItem, hse::half(hse::stripSlot(strip, 3), 0, 6));
-    placeRect(g_ed.stanceNextItem, hse::half(hse::stripSlot(strip, 3), 1, 6));
-
-    placeRect(g_ed.emoteLabelItem, hse::stripSlot(strip, 4));
-    placeRect(g_ed.emotePrevItem, hse::half(hse::stripSlot(strip, 5), 0, 6));
-    placeRect(g_ed.emoteNextItem, hse::half(hse::stripSlot(strip, 5), 1, 6));
-
-    placeRect(g_ed.playPauseItem, hse::stripSlot(strip, 6));
-
-    placeRect(g_ed.resetItem, hse::half(hse::stripSlot(strip, 7), 0, 6));
-    placeRect(g_ed.flipItem, hse::half(hse::stripSlot(strip, 7), 1, 6));
+    applyLayout(g_ed);
 
     guikit::wheelInstall();
     guikit::g_wheel.setRect(0, view.x, view.y, view.w, view.h);
@@ -361,9 +546,13 @@ void KPATCH_CALL cbEnter(uint32_t page, void*) {
 
 void KPATCH_CALL cbLeave(uint32_t, void*) {
     saferead::beginScope();
+    if (g_ed.mode == MODE_WEAPON) exitEdit(g_ed);
     g_ed.state = IDLE;
     p3d::dragEnd(&g_ed.drag);
     g_ed.pressed = false;
+    g_ed.draggingLmb = false;
+    g_ed.draggingRmb = false;
+    g_ed.draggingMmb = false;
     g_ed.playingEmote = false;
     g_ed.emoteEndMs = 0;
     if (g_ed.token && g_p3.ok()) {
@@ -389,7 +578,9 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
 
     // 1. Button clicks in LIVE state
     if (e.state == LIVE && n > 0) {
+        // Navigation buttons (work in both modes; auto-exit weapon edit mode on member switch)
         if (e.prevItem >= 0 && ui->Clicked(page, e.prevItem)) {
+            if (e.mode == MODE_WEAPON) exitEdit(e);
             e.member = hse::wrapIndex(e.member, -1, n);
             KP_LOG(chView, "PICK member=%d/%d", e.member + 1, n);
             if (e.token && g_p3.ok()) g_p3.p->Destroy(e.token);
@@ -403,6 +594,7 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
             e.state = NEEDBUILD;
             return;
         } else if (e.nextItem >= 0 && ui->Clicked(page, e.nextItem)) {
+            if (e.mode == MODE_WEAPON) exitEdit(e);
             e.member = hse::wrapIndex(e.member, 1, n);
             KP_LOG(chView, "PICK member=%d/%d", e.member + 1, n);
             if (e.token && g_p3.ok()) g_p3.p->Destroy(e.token);
@@ -415,67 +607,134 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
             if (e.playPauseItem >= 0) ui->SetText(page, e.playPauseItem, "Play");
             e.state = NEEDBUILD;
             return;
-        } else if (e.stancePrevItem >= 0 && ui->Clicked(page, e.stancePrevItem)) {
-            e.stanceIdx = hse::wrapIndex(e.stanceIdx, -1, kStanceCount);
-            e.playingEmote = false;
-            e.emoteEndMs = 0;
-            char sBuf[64];
-            snprintf(sBuf, sizeof(sBuf), "Stance: %s", kStanceList[e.stanceIdx].label);
-            if (e.stanceLabelItem >= 0) ui->SetText(page, e.stanceLabelItem, sBuf);
-            if (e.token && g_p3.ok()) g_p3.p->PlayAnim(e.token, kStanceList[e.stanceIdx].anim);
-            const bool isMoving = (e.stanceIdx != 0);
-            if (e.playPauseItem >= 0) ui->SetText(page, e.playPauseItem, isMoving ? "Pause" : "Play");
-            KP_LOG(chView, "STANCE sel=%s anim=%s", kStanceList[e.stanceIdx].label, kStanceList[e.stanceIdx].anim);
-        } else if (e.stanceNextItem >= 0 && ui->Clicked(page, e.stanceNextItem)) {
-            e.stanceIdx = hse::wrapIndex(e.stanceIdx, 1, kStanceCount);
-            e.playingEmote = false;
-            e.emoteEndMs = 0;
-            char sBuf[64];
-            snprintf(sBuf, sizeof(sBuf), "Stance: %s", kStanceList[e.stanceIdx].label);
-            if (e.stanceLabelItem >= 0) ui->SetText(page, e.stanceLabelItem, sBuf);
-            if (e.token && g_p3.ok()) g_p3.p->PlayAnim(e.token, kStanceList[e.stanceIdx].anim);
-            const bool isMoving = (e.stanceIdx != 0);
-            if (e.playPauseItem >= 0) ui->SetText(page, e.playPauseItem, isMoving ? "Pause" : "Play");
-            KP_LOG(chView, "STANCE sel=%s anim=%s", kStanceList[e.stanceIdx].label, kStanceList[e.stanceIdx].anim);
-        } else if (e.emotePrevItem >= 0 && ui->Clicked(page, e.emotePrevItem)) {
-            e.emoteIdx = hse::wrapIndex(e.emoteIdx, -1, kEmoteCount);
-            char eBuf[64];
-            snprintf(eBuf, sizeof(eBuf), "Emote: %s", kEmoteList[e.emoteIdx].label);
-            if (e.emoteLabelItem >= 0) ui->SetText(page, e.emoteLabelItem, eBuf);
-            KP_LOG(chView, "EMOTE sel=%s anim=%s", kEmoteList[e.emoteIdx].label, kEmoteList[e.emoteIdx].anim);
-        } else if (e.emoteNextItem >= 0 && ui->Clicked(page, e.emoteNextItem)) {
-            e.emoteIdx = hse::wrapIndex(e.emoteIdx, 1, kEmoteCount);
-            char eBuf[64];
-            snprintf(eBuf, sizeof(eBuf), "Emote: %s", kEmoteList[e.emoteIdx].label);
-            if (e.emoteLabelItem >= 0) ui->SetText(page, e.emoteLabelItem, eBuf);
-            KP_LOG(chView, "EMOTE sel=%s anim=%s", kEmoteList[e.emoteIdx].label, kEmoteList[e.emoteIdx].anim);
-        } else if (e.playPauseItem >= 0 && ui->Clicked(page, e.playPauseItem)) {
-            if (e.playingEmote || e.stanceIdx != 0) {
-                // Pause / return to Idle
-                e.playingEmote = false;
-                e.emoteEndMs = 0;
-                e.stanceIdx = 0;
-                char sBuf[64];
-                snprintf(sBuf, sizeof(sBuf), "Stance: %s", kStanceList[0].label);
-                if (e.stanceLabelItem >= 0) ui->SetText(page, e.stanceLabelItem, sBuf);
-                if (e.token && g_p3.ok()) g_p3.p->PlayAnim(e.token, "pause1");
-                ui->SetText(page, e.playPauseItem, "Play");
-                KP_LOG(chView, "PLAY_PAUSE -> Pause (returned to idle)");
-            } else {
-                // Play selected emote
-                const EmoteDef& em = kEmoteList[e.emoteIdx];
-                if (e.token && g_p3.ok()) g_p3.p->PlayAnim(e.token, em.anim);
-                e.playingEmote = true;
-                e.emoteEndMs = em.duration > 0.0f ? GetTickCount() + static_cast<DWORD>(em.duration * 1000.0f) : 0;
-                ui->SetText(page, e.playPauseItem, "Pause");
-                KP_LOG(chView, "PLAY_PAUSE -> Play emote=%s dur=%.1f", em.anim, em.duration);
-            }
         } else if (e.resetItem >= 0 && ui->Clicked(page, e.resetItem)) {
             e.view = e.cfgView;
             KP_LOG(chView, "BTN Reset view=(%.2f,%.2f,%.2f)", e.view.yaw, e.view.zoom, e.view.panZ);
         } else if (e.flipItem >= 0 && ui->Clicked(page, e.flipItem)) {
             e.view.yaw = hse::flipYaw(e.view.yaw);
             KP_LOG(chView, "BTN Flip view=(%.2f,%.2f,%.2f)", e.view.yaw, e.view.zoom, e.view.panZ);
+        }
+
+        if (e.mode == MODE_NAV) {
+            // Mode NAV buttons
+            if (e.wpnRightItem >= 0 && ui->Clicked(page, e.wpnRightItem) && e.regGob[0]) {
+                enterEdit(e, 0);
+            } else if (e.wpnLeftItem >= 0 && ui->Clicked(page, e.wpnLeftItem) && e.regGob[1]) {
+                enterEdit(e, 1);
+            } else if (e.stancePrevItem >= 0 && ui->Clicked(page, e.stancePrevItem)) {
+                e.stanceIdx = hse::wrapIndex(e.stanceIdx, -1, kStanceCount);
+                e.playingEmote = false;
+                e.emoteEndMs = 0;
+                char sBuf[64];
+                snprintf(sBuf, sizeof(sBuf), "Stance: %s", kStanceList[e.stanceIdx].label);
+                if (e.stanceLabelItem >= 0) ui->SetText(page, e.stanceLabelItem, sBuf);
+                if (e.token && g_p3.ok()) g_p3.p->PlayAnim(e.token, kStanceList[e.stanceIdx].anim);
+                const bool isMoving = (e.stanceIdx != 0);
+                if (e.playPauseItem >= 0) ui->SetText(page, e.playPauseItem, isMoving ? "Pause" : "Play");
+                KP_LOG(chView, "STANCE sel=%s anim=%s", kStanceList[e.stanceIdx].label, kStanceList[e.stanceIdx].anim);
+            } else if (e.stanceNextItem >= 0 && ui->Clicked(page, e.stanceNextItem)) {
+                e.stanceIdx = hse::wrapIndex(e.stanceIdx, 1, kStanceCount);
+                e.playingEmote = false;
+                e.emoteEndMs = 0;
+                char sBuf[64];
+                snprintf(sBuf, sizeof(sBuf), "Stance: %s", kStanceList[e.stanceIdx].label);
+                if (e.stanceLabelItem >= 0) ui->SetText(page, e.stanceLabelItem, sBuf);
+                if (e.token && g_p3.ok()) g_p3.p->PlayAnim(e.token, kStanceList[e.stanceIdx].anim);
+                const bool isMoving = (e.stanceIdx != 0);
+                if (e.playPauseItem >= 0) ui->SetText(page, e.playPauseItem, isMoving ? "Pause" : "Play");
+                KP_LOG(chView, "STANCE sel=%s anim=%s", kStanceList[e.stanceIdx].label, kStanceList[e.stanceIdx].anim);
+            } else if (e.emotePrevItem >= 0 && ui->Clicked(page, e.emotePrevItem)) {
+                e.emoteIdx = hse::wrapIndex(e.emoteIdx, -1, kEmoteCount);
+                char eBuf[64];
+                snprintf(eBuf, sizeof(eBuf), "Emote: %s", kEmoteList[e.emoteIdx].label);
+                if (e.emoteLabelItem >= 0) ui->SetText(page, e.emoteLabelItem, eBuf);
+                KP_LOG(chView, "EMOTE sel=%s anim=%s", kEmoteList[e.emoteIdx].label, kEmoteList[e.emoteIdx].anim);
+            } else if (e.emoteNextItem >= 0 && ui->Clicked(page, e.emoteNextItem)) {
+                e.emoteIdx = hse::wrapIndex(e.emoteIdx, 1, kEmoteCount);
+                char eBuf[64];
+                snprintf(eBuf, sizeof(eBuf), "Emote: %s", kEmoteList[e.emoteIdx].label);
+                if (e.emoteLabelItem >= 0) ui->SetText(page, e.emoteLabelItem, eBuf);
+                KP_LOG(chView, "EMOTE sel=%s anim=%s", kEmoteList[e.emoteIdx].label, kEmoteList[e.emoteIdx].anim);
+            } else if (e.playPauseItem >= 0 && ui->Clicked(page, e.playPauseItem)) {
+                if (e.playingEmote || e.stanceIdx != 0) {
+                    e.playingEmote = false;
+                    e.emoteEndMs = 0;
+                    e.stanceIdx = 0;
+                    char sBuf[64];
+                    snprintf(sBuf, sizeof(sBuf), "Stance: %s", kStanceList[0].label);
+                    if (e.stanceLabelItem >= 0) ui->SetText(page, e.stanceLabelItem, sBuf);
+                    if (e.token && g_p3.ok()) g_p3.p->PlayAnim(e.token, "pause1");
+                    ui->SetText(page, e.playPauseItem, "Play");
+                    KP_LOG(chView, "PLAY_PAUSE -> Pause (returned to idle)");
+                } else {
+                    const EmoteDef& em = kEmoteList[e.emoteIdx];
+                    if (e.token && g_p3.ok()) g_p3.p->PlayAnim(e.token, em.anim);
+                    e.playingEmote = true;
+                    e.emoteEndMs = em.duration > 0.0f ? GetTickCount() + static_cast<DWORD>(em.duration * 1000.0f) : 0;
+                    ui->SetText(page, e.playPauseItem, "Pause");
+                    KP_LOG(chView, "PLAY_PAUSE -> Play emote=%s dur=%.1f", em.anim, em.duration);
+                }
+            }
+        } else {
+            // Mode WEAPON buttons
+            if (e.wpnRightItem >= 0 && ui->Clicked(page, e.wpnRightItem)) {
+                if (e.editHand != 0 && e.regGob[0]) enterEdit(e, 0);
+                else if (e.editHand == 0) exitEdit(e);
+            } else if (e.wpnLeftItem >= 0 && ui->Clicked(page, e.wpnLeftItem)) {
+                if (e.editHand != 1 && e.regGob[1]) enterEdit(e, 1);
+                else if (e.editHand == 1) exitEdit(e);
+            } else if (e.boneItem >= 0 && ui->Clicked(page, e.boneItem) && g_hol.ok()) {
+                int newBone = g_hol.h->CycleBone(1);
+                memset(&e.editInfo, 0, sizeof(e.editInfo));
+                e.editInfo.struct_size = sizeof(e.editInfo);
+                g_hol.h->GetEdit(&e.editInfo);
+                char bBuf[64];
+                snprintf(bBuf, sizeof(bBuf), "Bone: %s", e.editInfo.bone[0] ? e.editInfo.bone : "None");
+                ui->SetText(page, e.boneItem, bBuf);
+                KP_LOG(chView, "BTN CycleBone -> %d (%s)", newBone, e.editInfo.bone);
+                updateStatusText(e);
+            } else if (e.scopeItem >= 0 && ui->Clicked(page, e.scopeItem) && g_hol.ok()) {
+                e.editScope = (e.editScope + 1) % 3;
+                g_hol.h->SetScope(e.editScope, e.editHand == 1 ? 1 : 0);
+                memset(&e.editInfo, 0, sizeof(e.editInfo));
+                e.editInfo.struct_size = sizeof(e.editInfo);
+                g_hol.h->GetEdit(&e.editInfo);
+                ui->SetText(page, e.scopeItem, hse::scopeLabel(e.editScope));
+                char bBuf[64];
+                snprintf(bBuf, sizeof(bBuf), "Bone: %s", e.editInfo.bone[0] ? e.editInfo.bone : "None");
+                if (e.boneItem >= 0) ui->SetText(page, e.boneItem, bBuf);
+                KP_LOG(chView, "BTN SetScope -> %d (%s)", e.editScope, hse::scopeLabel(e.editScope));
+                updateStatusText(e);
+            } else if (e.saveItem >= 0 && ui->Clicked(page, e.saveItem) && g_hol.ok()) {
+                int rc = g_hol.h->Save();
+                KP_LOG(chView, "BTN Save rc=%d", rc);
+                memset(&e.editInfo, 0, sizeof(e.editInfo));
+                e.editInfo.struct_size = sizeof(e.editInfo);
+                g_hol.h->GetEdit(&e.editInfo);
+                updateStatusText(e);
+            } else if (e.revertItem >= 0 && ui->Clicked(page, e.revertItem) && g_hol.ok()) {
+                g_hol.h->Revert();
+                KP_LOG(chView, "BTN Revert");
+                memset(&e.editInfo, 0, sizeof(e.editInfo));
+                e.editInfo.struct_size = sizeof(e.editInfo);
+                g_hol.h->GetEdit(&e.editInfo);
+                char bBuf[64];
+                snprintf(bBuf, sizeof(bBuf), "Bone: %s", e.editInfo.bone[0] ? e.editInfo.bone : "None");
+                if (e.boneItem >= 0) ui->SetText(page, e.boneItem, bBuf);
+                updateStatusText(e);
+            } else if (e.resetScopeItem >= 0 && ui->Clicked(page, e.resetScopeItem) && g_hol.ok()) {
+                g_hol.h->ResetScope();
+                KP_LOG(chView, "BTN ResetScope scope=%d", e.editScope);
+                memset(&e.editInfo, 0, sizeof(e.editInfo));
+                e.editInfo.struct_size = sizeof(e.editInfo);
+                g_hol.h->GetEdit(&e.editInfo);
+                char bBuf[64];
+                snprintf(bBuf, sizeof(bBuf), "Bone: %s", e.editInfo.bone[0] ? e.editInfo.bone : "None");
+                if (e.boneItem >= 0) ui->SetText(page, e.boneItem, bBuf);
+                updateStatusText(e);
+            } else if (e.doneItem >= 0 && ui->Clicked(page, e.doneItem)) {
+                exitEdit(e);
+            }
         }
     }
 
@@ -490,59 +749,146 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
         KP_LOG(chView, "EMOTE done -> resume anim=%s", resumeAnim);
     }
 
-    // 3. Mouse input: equip-screen style drag, wheel, MMB reset, and RMB probe
+    // 3. Mouse input: equip-screen style drag, wheel, MMB reset/spin, RMB rotate, LMB nudge
     int curX = 0, curY = 0;
     guikit::cursorEngine(&curX, &curY);
     uintptr_t ctl = e.viewItem >= 0 ? reinterpret_cast<uintptr_t>(ui->Control(page, e.viewItem)) : 0;
+    const bool insideView = ctl && guikit::hit(ctl, curX, curY);
+    const bool fg = guikit::g_gk.gameForeground ? guikit::g_gk.gameForeground() : true;
+    const bool shift = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
+    const bool ctrl = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0;
 
-    // Wheel zoom
+    // Wheel: zoom in Mode NAV; depth adjustment with Shift in Mode WEAPON
     guikit::g_wheel.touch(GetTickCount());
     LONG w = guikit::g_wheel.take();
-    if (w != 0 && e.token && g_p3.ok()) {
-        e.view.zoom = p3d::zoomStep(e.view.zoom, w, 0.9f, hse::kZoomMin, hse::kZoomMax);
-        KP_LOG(chView, "WHEEL delta=%ld zoom=%.2f", w, e.view.zoom);
+    if (w != 0) {
+        if (e.mode == MODE_WEAPON && shift && g_hol.ok()) {
+            float step = (static_cast<float>(w) / 120.0f) * (ctrl ? 0.05f : 0.02f);
+            float dp[3] = { -step, 0.0f, 0.0f };
+            g_hol.h->NudgeWorld(nullptr, dp);
+            updateStatusText(e);
+            KP_LOG(chView, "WHEEL depth delta=%ld step=%.3f", w, step);
+        } else if (e.token && g_p3.ok()) {
+            e.view.zoom = p3d::zoomStep(e.view.zoom, w, 0.9f, hse::kZoomMin, hse::kZoomMax);
+            KP_LOG(chView, "WHEEL delta=%ld zoom=%.2f", w, e.view.zoom);
+        }
     }
 
-    // MMB: reset view
-    const bool mmb = guikit::g_gk.mbuttonDown && guikit::g_gk.mbuttonDown();
-    static bool s_lastMmb = false;
-    if (mmb && !s_lastMmb && ctl && guikit::hit(ctl, curX, curY)) {
-        e.view = e.cfgView;
-        KP_LOG(chView, "MMB reset view=(%.2f,%.2f,%.2f)", e.view.yaw, e.view.zoom, e.view.panZ);
-    }
-    s_lastMmb = mmb;
+    const bool lmb = fg && guikit::g_gk.lbuttonDown && guikit::g_gk.lbuttonDown();
+    const bool rmb = fg && guikit::g_gk.rbuttonDown && guikit::g_gk.rbuttonDown();
+    const bool mmb = fg && guikit::g_gk.mbuttonDown && guikit::g_gk.mbuttonDown();
 
-    // RMB: live probe
-    const bool rmb = guikit::g_gk.rbuttonDown && guikit::g_gk.rbuttonDown();
-    static bool s_lastRmb = false;
-    if (rmb && !s_lastRmb && ctl && guikit::hit(ctl, curX, curY)) {
-        KP_LOG(chView, "RMB press cur=(%d,%d)", curX, curY);
-    }
-    s_lastRmb = rmb;
-
-    // LMB: equip-screen style drag with axis lock
-    const bool down = guikit::g_gk.gameForeground && guikit::g_gk.lbuttonDown &&
-                      guikit::g_gk.gameForeground() && guikit::g_gk.lbuttonDown();
-
-    if (down) {
-        if (!e.pressed) {
-            e.pressed = true;
-            if (!e.drag.active && ctl && guikit::hit(ctl, curX, curY)) {
-                p3d::dragBegin(&e.drag, static_cast<float>(curX), static_cast<float>(curY));
-                KP_LOG(chView, "DRAG begin pos=(%d,%d)", curX, curY);
+    if (e.mode == MODE_WEAPON) {
+        // MMB drag: spin character yaw
+        if (mmb) {
+            if (!e.draggingMmb) {
+                if (insideView) {
+                    e.draggingMmb = true;
+                    e.lastMouseX = curX;
+                    e.lastMouseY = curY;
+                }
+            } else {
+                int dx = curX - e.lastMouseX;
+                if (dx != 0) {
+                    e.view.yaw = hse::wrapYaw(e.view.yaw - static_cast<float>(dx) * 0.5f);
+                    e.lastMouseX = curX;
+                    e.lastMouseY = curY;
+                }
             }
-        } else if (e.drag.active) {
-            p3d::ViewState vs = {e.view.yaw, e.view.zoom, e.view.panZ};
-            if (p3d::dragMove(&e.drag, static_cast<float>(curX), static_cast<float>(curY), e.dragCfg, &vs)) {
-                e.view.yaw = hse::wrapYaw(vs.yaw);
-                e.view.panZ = hse::panStep(vs.panZ, 0); // clamp to [-1, 1]
+        } else {
+            e.draggingMmb = false;
+        }
+
+        // LMB drag: screen translation dp
+        if (lmb && g_hol.ok()) {
+            if (!e.draggingLmb) {
+                if (insideView) {
+                    e.draggingLmb = true;
+                    e.lastMouseX = curX;
+                    e.lastMouseY = curY;
+                }
+            } else {
+                int dx = curX - e.lastMouseX;
+                int dy = curY - e.lastMouseY;
+                if (dx != 0 || dy != 0) {
+                    float scale = 0.0025f / (e.view.zoom > 0.1f ? e.view.zoom : 1.0f);
+                    if (shift) scale *= 0.2f;
+                    float dp[3] = { 0.0f, static_cast<float>(dx) * scale, -static_cast<float>(dy) * scale };
+                    if (ctrl) {
+                        dp[1] = std::round(dp[1] / 0.01f) * 0.01f;
+                        dp[2] = std::round(dp[2] / 0.01f) * 0.01f;
+                    }
+                    g_hol.h->NudgeWorld(nullptr, dp);
+                    e.lastMouseX = curX;
+                    e.lastMouseY = curY;
+                    updateStatusText(e);
+                }
             }
+        } else {
+            e.draggingLmb = false;
+        }
+
+        // RMB drag: trackball rotation dq
+        if (rmb && g_hol.ok()) {
+            if (!e.draggingRmb) {
+                if (insideView) {
+                    e.draggingRmb = true;
+                    e.lastMouseX = curX;
+                    e.lastMouseY = curY;
+                }
+            } else {
+                int dx = curX - e.lastMouseX;
+                int dy = curY - e.lastMouseY;
+                if (dx != 0 || dy != 0) {
+                    float scale = 0.5f;
+                    if (shift) scale *= 0.2f;
+                    float axis[3] = { 0.0f, -static_cast<float>(dy), static_cast<float>(dx) };
+                    float deg = std::sqrt(static_cast<float>(dx * dx + dy * dy)) * scale;
+                    if (ctrl) deg = std::round(deg / 5.0f) * 5.0f;
+                    if (deg > 0.001f) {
+                        QVec q = qaxis(axis, deg);
+                        float dq[4] = { q.w, q.x, q.y, q.z };
+                        g_hol.h->NudgeWorld(dq, nullptr);
+                        e.lastMouseX = curX;
+                        e.lastMouseY = curY;
+                        updateStatusText(e);
+                    }
+                }
+            }
+        } else {
+            e.draggingRmb = false;
         }
     } else {
-        e.pressed = false;
-        if (e.drag.active) {
-            p3d::dragEnd(&e.drag);
-            KP_LOG(chView, "DRAG end yaw=%.2f panZ=%.2f", e.view.yaw, e.view.panZ);
+        // Mode NAV
+        // MMB click: reset view
+        static bool s_lastMmb = false;
+        if (mmb && !s_lastMmb && insideView) {
+            e.view = e.cfgView;
+            KP_LOG(chView, "MMB reset view=(%.2f,%.2f,%.2f)", e.view.yaw, e.view.zoom, e.view.panZ);
+        }
+        s_lastMmb = mmb;
+
+        // LMB: equip-screen style drag with axis lock
+        if (lmb) {
+            if (!e.pressed) {
+                e.pressed = true;
+                if (!e.drag.active && insideView) {
+                    p3d::dragBegin(&e.drag, static_cast<float>(curX), static_cast<float>(curY));
+                    KP_LOG(chView, "DRAG begin pos=(%d,%d)", curX, curY);
+                }
+            } else if (e.drag.active) {
+                p3d::ViewState vs = {e.view.yaw, e.view.zoom, e.view.panZ};
+                if (p3d::dragMove(&e.drag, static_cast<float>(curX), static_cast<float>(curY), e.dragCfg, &vs)) {
+                    e.view.yaw = hse::wrapYaw(vs.yaw);
+                    e.view.panZ = hse::panStep(vs.panZ, 0); // clamp to [-1, 1]
+                }
+            }
+        } else {
+            e.pressed = false;
+            if (e.drag.active) {
+                p3d::dragEnd(&e.drag);
+                KP_LOG(chView, "DRAG end yaw=%.2f panZ=%.2f", e.view.yaw, e.view.panZ);
+            }
         }
     }
 
@@ -581,15 +927,19 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
         if (e.nameItem >= 0) ui->SetText(page, e.nameItem, label);
         KP_LOG(chView, "NAME member=%d text=%s read=%d", e.member + 1, label, gotName ? 1 : 0);
 
-        char statusBuf[128];
-        const char* wpnDesc = nullptr;
-        if (e.regGob[0] && e.regGob[1]) wpnDesc = "weapons: right+left";
-        else if (e.regGob[0]) wpnDesc = "weapons: right";
-        else if (e.regGob[1]) wpnDesc = "weapons: left";
-        else wpnDesc = "no weapons equipped";
+        readWeaponModel(e.regGob[0], e.wpnName[0], sizeof(e.wpnName[0]));
+        readWeaponModel(e.regGob[1], e.wpnName[1], sizeof(e.wpnName[1]));
 
-        snprintf(statusBuf, sizeof(statusBuf), "member %d/%d | %s", e.member + 1, n, wpnDesc);
-        if (e.statusItem >= 0) ui->SetText(page, e.statusItem, statusBuf);
+        char rBuf[64], lBuf[64];
+        snprintf(rBuf, sizeof(rBuf), "Right: %s", e.wpnName[0][0] ? e.wpnName[0] : (e.regGob[0] ? "Equipped" : "None"));
+        snprintf(lBuf, sizeof(lBuf), "Left: %s", e.wpnName[1][0] ? e.wpnName[1] : (e.regGob[1] ? "Equipped" : "None"));
+        if (e.wpnRightItem >= 0) ui->SetText(page, e.wpnRightItem, rBuf);
+        if (e.wpnLeftItem >= 0) ui->SetText(page, e.wpnLeftItem, lBuf);
+
+        e.mode = MODE_NAV;
+        e.editHand = -1;
+        applyLayout(e);
+        updateStatusText(e);
 
         float pos[3] = {0,0,0}, q[4] = {0,0,0,1};
         void* rig = g_p3.p->RigGob(e.token, 0);
@@ -620,6 +970,9 @@ void KPATCH_CALL cbDestroy(void* panel, void*) {
     saferead::beginScope();
     Editor& e = g_ed;
     KP_LOG(chMain, "DTOR panel=%p page=%u token=%u free_view=%d", panel, e.page, e.token, g_freeView ? 1 : 0);
+    if (e.mode == MODE_WEAPON) {
+        exitEdit(e);
+    }
     const uintptr_t view = e.viewCtl;
     if (e.token && g_p3.ok()) {
         g_p3.p->Destroy(e.token);
@@ -663,7 +1016,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_cfgClient.init(api);
     g_menu.init(api);
     embedgui::g_log = embedLog;
-    KP_LOG(chMain, "holster-editor 0.2.3-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
+    KP_LOG(chMain, "holster-editor 0.2.4-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
            static_cast<unsigned>(sizeof kHseViewGui));
     const bool cfgOk = g_cfgClient.connect(), menuOk = g_menu.connect();
     if (!cfgOk || !menuOk) {
