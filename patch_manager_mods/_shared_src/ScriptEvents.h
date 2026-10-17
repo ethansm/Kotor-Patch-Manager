@@ -6,7 +6,8 @@
  * Provider: script-events (patch_manager_mods/script_events_src/)
  * Owns non-colliding NWScript VM interception points:
  *   - CVirtualMachineInternal::RunScript (0x7022E0 pre, 0x7023E6 post)
- *   - CSWVirtualMachineCommands::ExecuteCommand (0x668FF1 pre-dispatch)
+ *   - CSWVirtualMachineCommands::ExecuteCommand (0x668FE8 pre-dispatch, before the command table lookup)
+ * Registration (the Register and Unregister functions) is main-thread only; the dispatcher takes no locks.
  */
 #ifndef K2_SCRIPTEVENTS_H
 #define K2_SCRIPTEVENTS_H
@@ -73,8 +74,10 @@ typedef struct K2ScriptEvent {
 } K2ScriptEvent;
 
 /* For K2SC_SCRIPT_PRE: if callback returns K2SC_HANDLED (1), the engine skips .ncs execution,
- * stores *out_return_value into CVirtualMachineInternal (+0x1C = 3, +0x20 = *out_return_value)
- * if *out_has_return_value != 0 (for StartingConditional scripts), and returns 1 from RunScript.
+ * returns 1 from RunScript exactly like a normal run, and skips the init at 0x7022E9-0x702310
+ * and the K2SC_SCRIPT_POST event (POST sits after the skipped RunScriptFile).
+ * The return slots are written only when *out_has_return_value != 0 (for StartingConditional
+ * scripts): CVirtualMachineInternal +0x1C = 3, +0x20 = *out_return_value. Otherwise they are untouched.
  * For K2SC_SCRIPT_POST: return value is ignored (always return K2SC_CONTINUE). */
 typedef int32_t (KPATCH_CALL *K2ScriptCallback)(
     const K2ScriptEvent* ev,
@@ -84,16 +87,19 @@ typedef int32_t (KPATCH_CALL *K2ScriptCallback)(
 
 typedef struct K2VmCommandEvent {
     uint32_t struct_size;
-    int32_t  cmd_id;             /* NWScript routine ID (0..0x36C, or custom ID) */
+    int32_t  cmd_id;             /* NWScript routine ID (0..0x36C, or custom ID below 0x36D) */
     int32_t  param_count;        /* Number of parameters pushed on VM stack */
     void*    cmd_processor;      /* CSWVirtualMachineCommands* this pointer */
-    uint32_t caller_object_id;   /* Object ID at cmd_processor + 0x04 */
+    uint32_t caller_object_id;   /* OBJECT_SELF, read at cmd_processor + 0x08 (+0x04 is bObjectSelfValid) */
 } K2VmCommandEvent;
 
-/* Fired at CSWVirtualMachineCommands::ExecuteCommand (0x668FF1) before command table call.
+/* Fired at CSWVirtualMachineCommands::ExecuteCommand (0x668FE8), before the command table lookup.
+ * Command ids >= 0x36D never reach this hook (JGE at 0x668FE0, JAE after robustness-fixes; the
+ * unsigned compare also excludes negative ids). A null-slot id < 0x36D can be handled here.
  * Return K2SC_CONTINUE (0) to let vanilla ExecuteCommand run.
  * Return K2SC_HANDLED (1) to bypass the vanilla command table entry and return *out_cmd_status
- * (default 0 = VM_SUCCESS) from ExecuteCommand. */
+ * (default 0 = VM_SUCCESS) from ExecuteCommand. The provider stores *out_cmd_status in the frame
+ * slot [EBP-0x04]; the hook then exits through 0x66900D (MOV EAX,[EBP-0x04]). */
 typedef int32_t (KPATCH_CALL *K2VmCommandCallback)(
     const K2VmCommandEvent* ev,
     int32_t* out_cmd_status,

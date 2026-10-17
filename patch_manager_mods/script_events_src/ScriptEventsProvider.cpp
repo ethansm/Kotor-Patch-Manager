@@ -88,7 +88,7 @@ __declspec(dllexport) void __cdecl KPatchInit(const KPatchApi* api) {
 }
 
 __declspec(dllexport) int __cdecl SE_OnRunScriptPre(uintptr_t ebp) {
-    if (!g_dispatcher.enabled || !ebp) return 0;
+    if (!ebp || !g_dispatcher.wantsScriptPre()) return 0; // idle: no SafeRead
     saferead::beginScope();
 
     uint32_t vmInternalAddr = 0;
@@ -119,7 +119,7 @@ __declspec(dllexport) int __cdecl SE_OnRunScriptPre(uintptr_t ebp) {
 }
 
 __declspec(dllexport) void __cdecl SE_OnRunScriptPost(uintptr_t ebp, int32_t runStatus) {
-    if (!g_dispatcher.enabled || !ebp) return;
+    if (!ebp || !g_dispatcher.wantsScriptPost()) return; // idle: no SafeRead
     saferead::beginScope();
 
     uint32_t vmInternalAddr = 0;
@@ -149,8 +149,10 @@ __declspec(dllexport) void __cdecl SE_OnRunScriptPost(uintptr_t ebp, int32_t run
     g_dispatcher.dispatchScriptPost(scriptName, objSelf, objSelfValid, runStatus);
 }
 
+// H3 site (address in kotor2-steam-aspyr.hooks.toml; frame EBP): [ebp+8] = command id, [ebp+0xC] = param count, [ebp-8] = cmd processor.
+// A handled command writes its status to [ebp-4]; the wrapper then exits via the consumed exit (MOV EAX,[EBP-4]).
 __declspec(dllexport) int __cdecl SE_OnExecuteCommand(uintptr_t ebp) {
-    if (!g_dispatcher.enabled || !ebp) return 0;
+    if (!ebp || !g_dispatcher.wantsCommand()) return 0; // idle: no SafeRead
     saferead::beginScope();
 
     uint32_t cmdProc = 0;
@@ -163,7 +165,7 @@ __declspec(dllexport) int __cdecl SE_OnExecuteCommand(uintptr_t ebp) {
     saferead::readAt(S_Cmd, ebp, OffParamCount, &paramCount);
 
     if (cmdProc) {
-        saferead::readAt(S_Cmd, static_cast<uintptr_t>(cmdProc), scriptevents::kCmdProcOffCallerObj, &callerObjId);
+        saferead::readAt(S_Cmd, scriptevents::callerObjectIdAddr(static_cast<uintptr_t>(cmdProc)), 0, &callerObjId);
     }
 
     int32_t cmdStatus = 0;

@@ -11,7 +11,13 @@ namespace scriptevents {
 constexpr int32_t kVmOffRetType = 0x1C;
 constexpr int32_t kVmOffRetVal  = 0x20;
 constexpr int32_t kVmRetTypeInt = 3;
-constexpr int32_t kCmdProcOffCallerObj = 0x04;
+// OBJECT_SELF in the VM impl (stored by RunScript, see ScriptEvents.h). +0x04 is bObjectSelfValid, not the object id.
+constexpr int32_t kCmdProcOffCallerObj = 0x08;
+
+// Address of the caller object id read for K2VmCommandEvent.caller_object_id.
+inline uintptr_t callerObjectIdAddr(uintptr_t cmdProc) {
+    return cmdProc + static_cast<uintptr_t>(kCmdProcOffCallerObj);
+}
 
 constexpr int kMaxScriptListeners = 32;
 constexpr int kMaxCmdHandlers = 32;
@@ -59,12 +65,36 @@ struct Dispatcher {
     ScriptListenerEntry scriptListeners[kMaxScriptListeners] = {};
     CmdHandlerEntry cmdHandlers[kMaxCmdHandlers] = {};
     int32_t nextToken = 1;
+    // Active-handler counts, rebuilt by recount() on every register/unregister (main thread only).
+    // The SE_On* hooks test these before any SafeRead, so an idle dispatcher costs one compare.
+    int32_t preCount = 0;   // active script listeners with K2SC_SCRIPT_PRE
+    int32_t postCount = 0;  // active script listeners with K2SC_SCRIPT_POST
+    int32_t cmdCount = 0;   // active command handlers
+
+    void recount() {
+        preCount = 0;
+        postCount = 0;
+        cmdCount = 0;
+        for (int i = 0; i < kMaxScriptListeners; ++i) {
+            if (!scriptListeners[i].active) continue;
+            if (scriptListeners[i].kindMask & K2SC_SCRIPT_PRE) ++preCount;
+            if (scriptListeners[i].kindMask & K2SC_SCRIPT_POST) ++postCount;
+        }
+        for (int i = 0; i < kMaxCmdHandlers; ++i) {
+            if (cmdHandlers[i].active) ++cmdCount;
+        }
+    }
+
+    bool wantsScriptPre() const { return enabled && preCount > 0; }
+    bool wantsScriptPost() const { return enabled && postCount > 0; }
+    bool wantsCommand() const { return enabled && cmdCount > 0; }
 
     void clear() {
         for (int i = 0; i < kMaxScriptListeners; ++i) scriptListeners[i] = {};
         for (int i = 0; i < kMaxCmdHandlers; ++i) cmdHandlers[i] = {};
         nextToken = 1;
         enabled = true;
+        recount();
     }
 
     bool isScriptListenerActive(int32_t token) const {
@@ -112,6 +142,7 @@ struct Dispatcher {
                     e.owner[len] = 0;
                 }
                 e.active = true;
+                recount();
                 return e.token;
             }
         }
@@ -124,6 +155,7 @@ struct Dispatcher {
             if (scriptListeners[i].active && scriptListeners[i].token == token) {
                 scriptListeners[i].active = false;
                 scriptListeners[i].token = 0;
+                recount();
                 return;
             }
         }
@@ -149,6 +181,7 @@ struct Dispatcher {
                     e.owner[len] = 0;
                 }
                 e.active = true;
+                recount();
                 return e.token;
             }
         }
@@ -161,13 +194,14 @@ struct Dispatcher {
             if (cmdHandlers[i].active && cmdHandlers[i].token == token) {
                 cmdHandlers[i].active = false;
                 cmdHandlers[i].token = 0;
+                recount();
                 return;
             }
         }
     }
 
     int32_t dispatchScriptPre(uint8_t* vmInternal, const char* scriptName, uint32_t objSelf, int32_t objSelfValid) {
-        if (!enabled) return 0;
+        if (!wantsScriptPre()) return 0; // no snapshot copy when nobody listens
         const char* safeName = scriptName ? scriptName : "";
 
         K2ScriptEvent ev;
@@ -205,7 +239,7 @@ struct Dispatcher {
     }
 
     void dispatchScriptPost(const char* scriptName, uint32_t objSelf, int32_t objSelfValid, int32_t runStatus) {
-        if (!enabled) return;
+        if (!wantsScriptPost()) return; // no snapshot copy when nobody listens
         const char* safeName = scriptName ? scriptName : "";
 
         K2ScriptEvent ev;
@@ -235,7 +269,7 @@ struct Dispatcher {
     }
 
     int32_t dispatchExecuteCommand(void* cmdProc, uint32_t callerObjId, int32_t cmdId, int32_t paramCount, int32_t* outCmdStatus) {
-        if (!enabled) return 0;
+        if (!wantsCommand()) return 0; // no snapshot copy when nobody listens
 
         K2VmCommandEvent ev;
         ev.struct_size = sizeof(K2VmCommandEvent);

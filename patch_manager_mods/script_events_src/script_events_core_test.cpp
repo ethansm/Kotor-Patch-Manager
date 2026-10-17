@@ -92,13 +92,15 @@ int main() {
     KT_CHECK_EQ(*reinterpret_cast<int32_t*>(fakeVm + scriptevents::kVmOffRetType), scriptevents::kVmRetTypeInt);
     KT_CHECK_EQ(*reinterpret_cast<int32_t*>(fakeVm + scriptevents::kVmOffRetVal), 42);
 
-    // Short-circuit without return value
+    // Short-circuit without return value: the return slots are not written at all
     std::memset(fakeVm, 0, sizeof(fakeVm));
+    *reinterpret_cast<int32_t*>(fakeVm + scriptevents::kVmOffRetType) = 0x7777;
+    *reinterpret_cast<int32_t*>(fakeVm + scriptevents::kVmOffRetVal) = 0x7777;
     g_preRetValMode = 1;
     handled = disp.dispatchScriptPre(fakeVm, "k_ai_master", 1001, 1);
     KT_CHECK_EQ(handled, 1);
-    KT_CHECK_EQ(*reinterpret_cast<int32_t*>(fakeVm + scriptevents::kVmOffRetType), 0);
-    KT_CHECK_EQ(*reinterpret_cast<int32_t*>(fakeVm + scriptevents::kVmOffRetVal), 0);
+    KT_CHECK_EQ(*reinterpret_cast<int32_t*>(fakeVm + scriptevents::kVmOffRetType), 0x7777);
+    KT_CHECK_EQ(*reinterpret_cast<int32_t*>(fakeVm + scriptevents::kVmOffRetVal), 0x7777);
 
     // 3. Script Post Listener & Wildcard Filter
     int32_t t2 = disp.registerScriptListener(K2SC_SCRIPT_POST, nullptr, testScriptCb, nullptr, "post_listener");
@@ -169,6 +171,50 @@ int main() {
     KT_CHECK_EQ(disp.dispatchExecuteCommand(fakeProc, 1, 1, 0, &outStatus), 0);
     KT_CHECK_EQ(g_scriptLogs.size(), 0u);
     KT_CHECK_EQ(g_cmdLogs.size(), 0u);
+
+    // 8. Hot-path gating: per-kind active counts drive the wants* checks the SE_On* hooks use
+    {
+        scriptevents::Dispatcher idle;
+        KT_CHECK(!idle.wantsScriptPre());
+        KT_CHECK(!idle.wantsScriptPost());
+        KT_CHECK(!idle.wantsCommand());
+
+        int32_t tPost = idle.registerScriptListener(K2SC_SCRIPT_POST, nullptr, testScriptCb, nullptr, "post_only");
+        KT_CHECK(tPost > 0);
+        KT_CHECK(!idle.wantsScriptPre());
+        KT_CHECK(idle.wantsScriptPost());
+        KT_CHECK(!idle.wantsCommand());
+
+        int32_t tCmd = idle.registerCommandHandler(7, testCmdCb, nullptr, "cmd_only");
+        KT_CHECK(tCmd > 0);
+        KT_CHECK(idle.wantsCommand());
+
+        idle.unregisterScriptListener(tPost);
+        KT_CHECK(!idle.wantsScriptPost());
+        KT_CHECK(idle.wantsCommand());
+        idle.unregisterCommandHandler(tCmd);
+        KT_CHECK(!idle.wantsCommand());
+
+        // Idle dispatch fires nothing and reports unhandled
+        g_scriptLogs.clear();
+        g_cmdLogs.clear();
+        KT_CHECK_EQ(idle.dispatchScriptPre(fakeVm, "k_ai_master", 1, 1), 0);
+        idle.dispatchScriptPost("k_ai_master", 1, 1, 0);
+        KT_CHECK_EQ(idle.dispatchExecuteCommand(fakeProc, 1, 7, 0, &outStatus), 0);
+        KT_CHECK_EQ(g_scriptLogs.size(), 0u);
+        KT_CHECK_EQ(g_cmdLogs.size(), 0u);
+    }
+
+    // 9. caller_object_id reader: OBJECT_SELF at cmd_processor + 0x08 (+0x04 is bObjectSelfValid)
+    {
+        KT_CHECK_EQ(scriptevents::kCmdProcOffCallerObj, 0x08);
+        uint32_t fakeCmdProc[8] = {0};
+        fakeCmdProc[1] = 0x11111111u; // +0x04 bObjectSelfValid: must not be read as the object id
+        fakeCmdProc[2] = 0x22222222u; // +0x08 OBJECT_SELF
+        const uintptr_t base = reinterpret_cast<uintptr_t>(fakeCmdProc);
+        KT_CHECK_EQ(scriptevents::callerObjectIdAddr(base), base + 8);
+        KT_CHECK_EQ(*reinterpret_cast<const uint32_t*>(scriptevents::callerObjectIdAddr(base)), 0x22222222u);
+    }
 
     return kt::Report("script_events_core_test");
 }
