@@ -1,4 +1,5 @@
 // diversity_hook_decision_test.cpp -- unit tests for HookDecision.h
+#include "DiversityRows.h"
 #include "HookDecision.h"
 #include "NpcDivLayout.h"
 #include "check.h"
@@ -146,6 +147,14 @@ void testPlausibleResRef() {
     KT_CHECK(!NpcDiversity::IsPlausibleResRef(nullptr));
 }
 
+// Doc 44 VFS characters use appended appearance rows at or above APP_COUNT (Juhani = 818). The
+// hook must leave them alone without any characterlib lookup.
+void testVfsCharacterRowSkipped() {
+    static_assert(818 >= NpcDiversity::APP_COUNT, "Juhani row 818 must lie at or above APP_COUNT");
+    KT_CHECK(NpcDiversity::ShouldSkipDescriptor(0, 1, 818) == NpcDiversity::SkipReason::NotCommonerRow);
+    KT_CHECK(NpcDiversity::ShouldSkipDescriptor(1, 0, 818) == NpcDiversity::SkipReason::NotCommonerRow);
+}
+
 } // namespace
 
 int main() {
@@ -153,5 +162,6 @@ int main() {
     testShouldSkipDescriptorPointer();
     testResolveTextureSeed();
     testPlausibleResRef();
+    testVfsCharacterRowSkipped();
     return kt::Report("diversity_hook_decision_test");
 }
