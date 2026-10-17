@@ -1,47 +1,6 @@
+# holster-editor: DLL-only consumer (no engine hooks). The Options-menu hooks, root button, list page, cloning and control freeing are owned by
+# the mod-config provider (k2.modconfig@1, k2.menuui@1); this patch registers one entry there and keeps only its 3D view and status label.
 [metadata]
 target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
 
-# Holster editor D3a scaffold. Every entry: plain detour (no consumed exit), whole stolen instructions, skip_original_bytes = false
-# (the handler runs first, then the stolen bytes). The handlers only pass the call through.
-
-# H-O1 OptBindView: panel constructor 0x008A16FE. The panel is the stack slot [ebp-0xAC] (the stolen MOV ECX,[ebp-0xAC] loads it),
-# NOT ECX. The window stops at 0x008A1704, which is a rel32 CALL, so the stolen bytes contain no relative branch.
-[[hooks]]
-address = 0x008A16FE
-type = "detour"
-function = "OptBindView"
-original_bytes = [0x8B, 0x8D, 0x54, 0xFF, 0xFF, 0xFF]
-skip_original_bytes = false
-exclude_from_restore = []
-
-[[hooks.parameters]]
-source = "[ebp-0xac]"
-type = "int"
-
-# H-O2 OptTick: CSWGuiPanel::Draw 0x0040EC90 (thiscall: ECX = panel; ret 4). PUSH EBP / MOV EBP,ESP / SUB ESP,0x3C (6 bytes).
-# HOT: runs for every GUI panel every frame.
-[[hooks]]
-address = 0x0040EC90
-type = "detour"
-function = "OptTick"
-original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x3C]
-skip_original_bytes = false
-exclude_from_restore = []
-
-[[hooks.parameters]]
-source = "ecx"
-type = "int"
-
-# H-O4 OptDestroy: panel destructor 0x008A1930 (thiscall: ECX = this). PUSH EBP / MOV EBP,ESP / SUB ESP,0x20 (6 bytes).
-# (The d2b notes call this H-O5.)
-[[hooks]]
-address = 0x008A1930
-type = "detour"
-function = "OptDestroy"
-original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x20]
-skip_original_bytes = false
-exclude_from_restore = []
-
-[[hooks.parameters]]
-source = "ecx"
-type = "int"
+hooks = []

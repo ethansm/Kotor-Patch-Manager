@@ -1,13 +1,13 @@
 [patch]
 id = "holster-editor"
 name = "Holster Editor"
-version = "0.1.1-probe"
+version = "0.2.0-dev"
 author = "local"
-description = "Holster placement editor on the in-game Options screen, 0.1.1-probe (doc 42 HW-EDIT). Adds a Holstered weapons button (a CSWGuiButton clone) into the Options button column after Gameplay; clicking it (on release) enters an editor mode that hides the vanilla controls and shows a Back button, a title, a status strip and the 3D preview view bound from a layout embedded in the DLL (no override file). Hovering the entry writes a description. Placement editing is not in this build. Hooks the Options ctor (OptBindView), CSWGuiPanel::Draw filtered on the Options vtable (OptTick) and the Options dtor (OptDestroy, which frees the controls it added). Needs holster (k2.holster@1) and preview-3d (k2.preview3d@1); log holster-editor_log.txt."
+description = "Holster placement editor, 0.2.0-dev (doc 42 HW-EDIT). A hookless consumer of mod-config (k2.modconfig@1, k2.menuui@1): registers one Holstered Weapons entry under Options -> Mod Configuration and keeps only its 3D preview view (bound from a layout embedded in the DLL, no override file) and a status label; mod-config owns the Options hooks, the buttons, the list page and the control freeing. Placement editing is not in this build. Needs mod-config, holster (k2.holster@1) and preview-3d (k2.preview3d@1); log holster-editor_log.txt."
 kind = "patch"
 
-requires = ["holster", "preview-3d"]
-requires_interfaces = ["k2.holster@1", "k2.preview3d@1"]
+requires = ["holster", "preview-3d", "mod-config"]
+requires_interfaces = ["k2.holster@1", "k2.preview3d@1", "k2.modconfig@1", "k2.menuui@1"]
 conflicts = []
 
 [patch.supported_versions]
