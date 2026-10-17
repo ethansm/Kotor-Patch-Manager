@@ -1,7 +1,7 @@
 [patch]
 id = "preview-3d"
 name = "Preview 3D (shared 3D character preview provider)"
-version = "0.1.0-dev"
+version = "0.1.1-dev"
 kind = "provider"
 provides = ["k2.preview3d@1"]
 author = "local"

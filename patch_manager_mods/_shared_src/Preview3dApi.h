@@ -20,7 +20,7 @@
  * alignment. It clears only the built creature, so Bind survives and a later Rebuild builds from the same source creature.
  *
  * Rebuild order: the weapon and helmet Gobs are detached before any step that can fail. A Rebuild that returns 0 has therefore
- * already removed them. The consumer calls SetWeapons again after a later successful Rebuild.
+ * already removed them.
  *
  * Gob lifetime: a Gob from WeaponGob or RigGob is valid until the next Rebuild, SetWeapons(off), or Destroy on that token.
  * A consumer that registers a Gob elsewhere (holster RegisterPreview) must unregister it in its BeforeFree callback.
@@ -79,7 +79,7 @@ typedef struct K2Preview3dApi {
     /* Camera and facing: yaw in degrees, zoom (divides the fov through fovForZoom, clamped to 150 deg), panZ in metres (creature
      * Z offset). The creature position is re-sent only when panZ changed. */
     void     (KPATCH_CALL *SetView)(uint32_t token, float yaw, float zoom, float panZ);
-    /* Plays `anim` on the body and head parts (cross-fade in). Null or empty = no-op. */
+    /* Plays `anim` on the body and head parts (cross-fade in). Null or empty = no-op. "idle" = the rig's idle name; Rebuild does not play it. */
     void     (KPATCH_CALL *PlayAnim)(uint32_t token, const char* anim);
     /* K2PREVIEW3D_PART_*: the body or head rig Gob, or 0 when nothing is built. */
     void*    (KPATCH_CALL *RigGob)(uint32_t token, int32_t part);

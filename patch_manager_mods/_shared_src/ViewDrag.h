@@ -1,4 +1,4 @@
-// ViewDrag.h -- pure camera maths and drag tracking shared between equip3d, preview-3d and holster-editor.
+// ViewDrag.h -- pure camera maths and drag tracking shared by preview-3d and holster-editor. equip3d keeps its own eq3d copy (Equip3dLogic.h).
 #ifndef VIEW_DRAG_H
 #define VIEW_DRAG_H
 

@@ -1,8 +1,9 @@
-// Host test of Preview3dLogic.h: viewer token table, camera maths (lifted from Equip3dLogic.h), drag state.
+// Host test of Preview3dLogic.h: viewer token table, camera maths (ViewDrag.h), drag state, idle name.
 // Expected values are literals worked out by hand from the formulas; no engine data is involved.
 // Includes only Preview3dLogic.h (no kpatch_api.h): the API header needs the KPM Common dir, which only the contract test's flags add.
 #include "Preview3dLogic.h"
 #include "check.h"
+#include <limits.h>
 #include <math.h>
 
 using namespace p3d;
@@ -54,7 +55,7 @@ int main() {
 
     // ---- drag state: the axis locks on the first move past lockPx; then only that axis moves ----
     DragCfg cfg;
-    cfg.lockPx = 4.f; cfg.dragDegPx = 0.5f; cfg.panPerPx = 0.01f; cfg.panMin = -1.f; cfg.panMax = 1.f;
+    cfg.lockPx = 4.f; cfg.dragDegPx = 0.5f; cfg.panPerPx = 0.01f; cfg.panMin = -1.f; cfg.panMax = 1.f;   // explicit: ViewDrag.h defaults differ
     ViewState vs;
     Drag d;
     KT_CHECK(!dragMove(&d, 50.f, 50.f, cfg, &vs));       // never begun: no change
@@ -121,6 +122,28 @@ int main() {
     KT_CHECK(l1 == 1u && l2 == 2u);
     KT_CHECK_EQ(viewersIndex(&lv, 1u), 0);
     KT_CHECK_EQ(viewersIndex(&lv, 2u), 1);
+
+    // ---- idle name: droids pause1; else < 40 evil, < 60 neutral, else good ----
+    {
+        const int droids[] = {2, 3, 57, 231, 232, 453, 538, 539};
+        int count = 0;
+        for (int r = -5; r < 1000; ++r) if (isDroidRow(r)) ++count;
+        KT_CHECK_EQ(count, 8);
+        for (int r : droids) KT_CHECK(isDroidRow(r));
+        KT_CHECK(!isDroidRow(-1)); KT_CHECK(!isDroidRow(0)); KT_CHECK(!isDroidRow(INT_MIN)); KT_CHECK(!isDroidRow(INT_MAX));
+        KT_CHECK(!isDroidRow(56)); KT_CHECK(!isDroidRow(58)); KT_CHECK(!isDroidRow(233)); KT_CHECK(!isDroidRow(540));
+        KT_CHECK_EQ(idleFor(1, 0), "evil");
+        KT_CHECK_EQ(idleFor(1, 39), "evil");
+        KT_CHECK_EQ(idleFor(1, 40), "neutral");
+        KT_CHECK_EQ(idleFor(1, 59), "neutral");
+        KT_CHECK_EQ(idleFor(1, 60), "good");
+        KT_CHECK_EQ(idleFor(1, 100), "good");
+        KT_CHECK_EQ(idleFor(1, -1), "evil");
+        KT_CHECK_EQ(idleFor(1, SHRT_MIN), "evil");
+        KT_CHECK_EQ(idleFor(1, SHRT_MAX), "good");
+        KT_CHECK_EQ(idleFor(65535, 50), "neutral");
+        for (int r : droids) { KT_CHECK_EQ(idleFor(r, 0), "pause1"); KT_CHECK_EQ(idleFor(r, 50), "pause1"); KT_CHECK_EQ(idleFor(r, 100), "pause1"); KT_CHECK_EQ(idleFor(r, -1), "pause1"); }
+    }
 
     return kt::Report("preview3d_logic_test");
 }
