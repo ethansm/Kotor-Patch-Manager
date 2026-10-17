@@ -121,3 +121,12 @@ _(none recorded; append Dead Ends & Anti-Patterns and Verification Commands here
   - Updated `holster_editor_src/HolsterEditor.cpp` (0.2.2-dev): removed 6 obsolete camera buttons, installed `wheelInstall` for wheel zoom, added LMB drag with 4px axis-lock (yaw / panZ), MMB click to reset view, RMB live probe, animation picker (`<`, anim label, `>`) with `Play` and `Idle` buttons, and automatic return to `pause1` idle after timed emotes.
   - Verification: `compat_check.py` PASS 10/10; full `pre_install_gate.sh --mod holster_editor_src --mod preview_3d_src` GATE PASS (332 suites pass); `kpm_status.py` confirms SWAP on both mods.
   - Play row D3B updated in `patch_manager_mods/PLAY_TEST_QUEUE.md`. Next: await user GO (game closed) to run `--apply`.
+
+## 10-17 FW-H1 (fix wave on review 537af56)
+- 3 Sonnet workers (disjoint scopes), all PASS; combined gates: run_tests 46/46 (holster hse_view view_drag common_contract holster_editor preview3d_logic preview_3d mod_config), build_check x3 FAIL=0, check_raw_addresses FAIL=0, check_provider_manifests FAIL=0 (1 WARN npc-diversity, not ours), check_shared_headers 0 drifted, compat_check 20/20.
+- Repo commits: holster 0.1.3-dev 68284d1, preview-3d 0.1.1-dev a9504b5 (incl. ViewDrag.h/Preview3dApi.h, view_drag_test), holster-editor 0.2.5-dev d0110c8. KPM: Common d0b777a + 977bae9 (ViewDrag.h was never committed in KPM before), mirrors 03c5912/239f831/70a529a.
+- `kpm_hotswap.py --prepare` -> SWAP x3. Full pre_install_gate: see Saved State of the session reply. `--apply` awaits user GO (game closed); rollback `--rollback latest`.
+- Decisions applied: two-click discard confirm (2 s) on scope/hand/Done/prev/next/Reset scope; Back/Esc/close discard + `DISCARD why=`; bone_test_left code default stays 0 and effLeft = left && g_boneLeft; preview Rebuild plays nothing (idleFor restored), editor plays kStanceList[stanceIdx].anim after Rebuild; g_debug removed.
+- K2HolsterEditInfo pins (108/64/80/92/104) matched the compiler. RMB Ctrl snap left as round-to-5 deg (already accumulates).
+- Play rows FW-H1 + HW-LH1 pending (D3B/D3C superseded). HW-LH1 needs the user's manual game-dir holster.ini edit (bone_test_left=1, gob_every=1). After pass: flip the bone_test_left default with a new GO.
+- Holster banner still reads "(P0 probe, log-only)": scripts/test_holster_place_verdict.py + test_holster_log_check.py match that text; change both together later.
