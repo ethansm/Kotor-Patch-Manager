@@ -1,25 +1,23 @@
 # Session Handoff & Plan State: .claude/plans/holster_editor_options.md
 
 ## 0. Next-Phase Direction
-W4b (0.2.3-dev) prepared and full-gated GATE PASS (head 776b3b1, md5 2599b62d).
-- Changes:
-  1. Locomotion separated from emotes: dedicated Stance row (Idle, Walk, Run, Walk Rifle, Run Rifle, Alert, Combat) with `<` and `>` buttons.
-  2. Emotes row: dedicated Emote picker (Salute, Bow, Greeting, Victory, Taunt, Shrug, Nod, Point, Shift Idle) with `<` and `>` buttons.
-  3. Single Play/Pause toggle button: toggles between Play and Pause on click, pauses active locomotion or interrupts emotes back to Idle, auto-resumes when emote finishes.
-  4. First-enter holster fix: weapons enabled in cbBuild (`SetWeapons(token, 1)`) and registered immediately in `NEEDBUILD` without 1-frame `WAIT` delay, so hook H7 holsters weapons on the very first rendered frame.
-- Current status: `holster-editor` is `SWAP` (kpatch `bfff7360`, live `aae9c627`).
-- Awaiting user GO (game closed) to apply: `python3 scripts/kpm_hotswap.py --mod holster-editor --apply`.
-- Rollback backup point: `batch_swap_20261016_214146`.
+W4b (0.2.3-dev) hot-swapped LIVE 10-16 22:34 (holster-editor bfff7360, preview-3d daa73241; rollback `kpm_hotswap.py --rollback holster-editor_swap_20261016_223434`).
+- Play row D3B in `PLAY_TEST_QUEUE.md` is LIVE/pending user play test.
+- Verified live behavior:
+  1. Weapons holstered immediately on first page open (no 1-frame unholstered delay or character switch needed).
+  2. Dedicated Stance picker (Idle, Walk, Run, Walk Rifle, Run Rifle, Alert, Combat) with `<` / `>` buttons.
+  3. Dedicated Emote picker (Salute, Bow, Greeting, Victory, Taunt, Shrug, Nod, Point, Shift Idle) with `<` / `>` buttons.
+  4. Single Play/Pause toggle button: flips between Play and Pause on click, pauses active locomotion or interrupts emotes back to Idle, auto-resumes when emote finishes.
+- Next: User play-tests D3B, logs checked via `kotor2_logs.py check holster-editor_log.txt --new`. Follow-up: D3c / D3d weapon edit mode & save.
 
 ## 1. Active State & Provenance
 - **Master Plan:** `.claude/plans/holster_editor_options.md`
-- **Branch:** `KOTOR-II` (3646fe2 handoff: holster editor W2b committed + Install 2 prepared, awaiting GO)
-- **Generated:** 2026-10-16 20:15:04 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (0c18740 playtest: update D3B row for holster-editor 0.2.3-dev W4b)
 - **Last Landed Commit:**
 ```
-3646fe2 handoff: holster editor W2b committed + Install 2 prepared, awaiting GO
- .claude/handoffs/holster_editor_options.handoff.md | 23 ++++++++++------------
- 1 file changed, 10 insertions(+), 13 deletions(-)
+0c18740 playtest: update D3B row for holster-editor 0.2.3-dev W4b
+ patch_manager_mods/PLAY_TEST_QUEUE.md | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 ```
 - **Dirty Files (166):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
