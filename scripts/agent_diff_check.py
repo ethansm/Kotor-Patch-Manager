@@ -59,7 +59,7 @@ def get_git_status():
     return changes
 
 
-EXCLUDED_MODS = {"perf_lab_src"}
+EXCLUDED_MODS = {"perf_lab_src", "_shared_src"}   # _shared_src = headers only, built through its consumers
 
 
 def get_changed_mods(changed_paths):

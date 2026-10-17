@@ -5,6 +5,7 @@ Usage:
     kotor2_logs.py status [--game-dir G] [--since-hours H]     one line per LIVE log (see rule below); H default 24
     kotor2_logs.py check NAME [extra args...] [--game-dir G]   route NAME to its parser with compact defaults, pass stdout + exit code through
     kotor2_logs.py routes                                      print the ROUTES table
+    kotor2_logs.py check combat [combat_timeline args] [--game-dir G]   merged cross-mod combat timeline of the game dir
 
 status line:  <name>  <KB>KB  <age e.g. 3h12m>  <lines>L  <parser>     sorted by name; the age is the ONLY time-dependent field.
   Live log = name ends in `_log.txt` or `_metrics.txt`, or is `kpatch.log`, and carries no archive marker (`.1`, `.runN`, `.prevN`,
@@ -43,6 +44,8 @@ QUEUEHUD = "scripts/queue_hud_log_check.py"
 NPCDIV = "scripts/npc_div_log_check.py"
 CMDQ = "scripts/cmdq_probe_log_check.py"
 HOLSTER = "scripts/holster_log_check.py"
+COMBAT = "scripts/combat_timeline.py"
+COMBAT_NAMES = ("combat", "combat-timeline")
 
 # name -> (parser label, route kind). kinds: engfix, luo, runs, playlogs, selfheal, queuehud, npcdiv, cmdqprobe, holster. Anything else -> log_triage.
 ROUTES = {
@@ -240,6 +243,8 @@ ALIASES = {
 
 
 def check(name: str, extra: list[str], game_dir: str) -> int:
+    if name in COMBAT_NAMES:
+        return subprocess.run([sys.executable, _py(COMBAT), "--dir", game_dir] + list(extra)).returncode
     resolved = ALIASES.get(name, name)
     path = resolved if os.sep in resolved else os.path.join(game_dir, resolved)
     if not os.path.isfile(path):

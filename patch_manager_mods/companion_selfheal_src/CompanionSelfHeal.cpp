@@ -34,6 +34,7 @@
 #include "FileWatch.h"
 #include "SelfHealUi.h"
 #include "ActQueue.h"
+#include "CombatTraceRead.h"
 #include "EmbedTex.h"
 #include "HudKit.h"
 #include "TextFit.h"
@@ -43,7 +44,7 @@ KP_LOG_PATCH("companion-selfheal");
 namespace {
 
 constexpr unsigned SiteBase = 0x6E00;                    // saferead site id (+0..4)
-constexpr unsigned SiteQueue = 0x6E10, SiteRound = 0x6E20, SitePause = 0x6E40, SiteKick = 0x6E50;   // CS12: actq queue reads +0..5, round reads +0..12, pause chain +0..3, kick gate reads +0..3
+constexpr unsigned SiteQueue = 0x6E10, SiteRound = 0x6E20, SitePause = 0x6E40, SiteKick = 0x6E50, SiteCState = 0x6E60;   // CS12: actq queue reads +0..5, round reads +0..12, pause chain +0..3, kick gate reads +0..3; CSTATE hud combat read (CombatTraceRead)
 constexpr uintptr_t HudVtable = gameaddr::HudVtable;             // CSWGuiInGame (HUD) RTTI vtable
 constexpr uintptr_t ServerIdMask = gameaddr::ServerIdMask;       // global: client id & ~[mask] = server id (ClientToServerObjectId)
 constexpr uintptr_t UseItemRouteA = gameaddr::UseItemRouteA;     // logged; called only with [probe] call=1
@@ -1275,9 +1276,20 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
     g_nShown = ns;
 }
 
+// CSTATE: change-gated combat/pause/menu edge line (CombatTrace.h); sink follows [General] Log.
+ctrace::Tracker g_ctrace;
+void cstateSink(const char* line) { KP_LOG(chMain, "%s", line); }
+
 void KPATCH_CALL onFrameBegin(const K2PsContext* ctx, void*) {
     if (!g_hud) return;
     saferead::beginScope();
+    if (g_logOn) {   // no reads and no cap budget spent while logging is off
+        ctrace::CombatState cs;
+        cs.combat = ctrace::readHudCombat(SiteCState, g_hud);
+        cs.paused = actq::playerPaused(SitePause) ? 1 : 0;
+        cs.menu = menuInfo(ctx) ? (ctx->inMenu != 0 ? 1 : 0) : -1;
+        ctrace::tick(g_ctrace, cs, cstateSink);
+    }
     DWORD now = GetTickCount();
     if (g_logOn) {
         if (now - g_lastPollMs >= 2000) {
@@ -1423,7 +1435,7 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     loadIni();
     loadCfg();
     filewatch::accept(g_cfgPoll, IniPath);
-    KP_LOG(chMain, "0.8.3-dev ui=popsize+togglepill+leaderclick+vanillaarrows+pillnarrow+popocclude: probe call=%d CallKey=0x%02X kick=%d cfg rows=%d", g_probeCall, g_callKey, (int)g_kick, (int)g_cfg.rows.size());
+    KP_LOG(chMain, "0.8.4-dev ui=popsize+togglepill+leaderclick+vanillaarrows+pillnarrow+popocclude: probe call=%d CallKey=0x%02X kick=%d cfg rows=%d", g_probeCall, g_callKey, (int)g_kick, (int)g_cfg.rows.size());
     g_ps.init(api, "companion-selfheal");
     g_ps.onConnect = onConnect;
     g_ps.add(K2PS_FRAME_BEGIN, 300, onFrameBegin);

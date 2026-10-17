@@ -193,6 +193,21 @@ class Check(Tmp):
         self.assertEqual(r.returncode, 0)
         self.assertIn("VERDICT: ALERTS(1)", r.stdout)
 
+    def test_check_combat_route(self):
+        import subprocess
+        self.w("queue-hud_log.txt", "# kplog session 2026-10-17 12:00:00 | kpatch.log v1\n"
+               "T=1000.000 f=- queue-hud/main EDGE what=combat old=0 new=1 src=hud buf=\n"
+               "T=2000.000 f=- queue-hud/main EDGE what=combat old=1 new=0 src=hud buf=\n")
+        r = subprocess.run([sys.executable, str(HERE / "kotor2_logs.py"), "check", "combat", "--game-dir", self.g],
+                           capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0)
+        self.assertIn("COMBAT #1 T=1000.000..2000.000", r.stdout)
+        self.assertIn("SUMMARY combats=1", r.stdout)
+        r = subprocess.run([sys.executable, str(HERE / "kotor2_logs.py"), "check", "combat", "--game-dir", os.path.join(self.g, "nodir")],
+                           capture_output=True, text=True)
+        self.assertEqual(r.returncode, 2)
+        self.assertIn("combat", K.__doc__)
+
     def test_kplog_hint(self):
         import subprocess
         self.w("x_log.txt", "# kplog session 2026-10-04 00:00:00 | kpatch.log v1\nx loaded\n")

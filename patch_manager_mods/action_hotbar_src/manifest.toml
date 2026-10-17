@@ -1,7 +1,7 @@
 [patch]
 id = "action-hotbar"
 name = "Action Hotbar"
-version = "0.1.4-dev"
+version = "0.1.5-dev"
 author = "ethansm"
 description = "Ten on-screen action slots (Force powers, items, stances/forms) for keys 1-0 above the action bar: each invokes its action through the HUD's own quick-action path. An in-game editor (wrench button) assigns them per character, saved to action_hotbar.ini, with a separate hotbar per save (snapshotted into each save folder). Item slots can target the party member with the lowest HP or the controlled character (Lowest HP / Self; needs override/spells.2da for the target modes), and the vanilla action bar is resynced after AI stance or form changes. An old force_power_hotbar.ini is migrated (copied) on first run. The DLL creates its own controls, art and INI; it requires the save-events, hud-host and gui-input providers. Logging uses the shared KpLog logger (kplog.ini [action-hotbar]; without the kpatch.log core it falls back to action_hotbar_log.txt)."
 

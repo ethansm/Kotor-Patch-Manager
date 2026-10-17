@@ -53,6 +53,7 @@ To look at one signature's real lines, use the `first_line` number with a bounde
 | perflab / robustnessfixes / texmem / activationfix | `patch_manager_mods/perf_lab_src/analyze_runs.py --game-dir G` | `--summary`, `--latest N`, `--from-offsets F`, `--out F.md` (default without flags is ~37 KB; `check` uses `--summary --latest 1`) |
 | `ai_trace.txt`, `ranged_ai_log.txt`, `inventory_sort_filter_log.txt` | `scripts/archive_play_logs.py` then `patch_manager_mods/mods678_research/analyze_play_logs.py DIR` | `check` chains both into a temp dir |
 | KpLog files (`# kplog session` header) | `scripts/kplog_parse.py FILE... --stats` | `--patch`, `--level WARN`, `--since MS`, `--merge` |
+| Cross-mod combat timeline (queue-hud `MODE`/`EDGE`/`HANDOFF`/`ROUND`/`BANNER`, any mod's `CSTATE`, companion-ai `E1`/`E2`) | `scripts/combat_timeline.py [--dir G \| FILE...]` (or `kotor2_logs.py check combat`) | `--session N\|last`, `--combat N`, `--max-lines 40`, `--json`; lists `DISAGREE` rows (>250 ms combat=1 vs 0 across mods) |
 
 Archive logs before a reinstall or new test round: `python3 scripts/archive_play_logs.py` (copies to `~/Games/KOTOR2_Mod_Workspace/logs_archive/<ts>_<tag>/`).
 

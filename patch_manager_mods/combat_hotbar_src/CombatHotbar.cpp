@@ -38,6 +38,7 @@
 
 #include "KpLog.h"
 #include "SafeRead.h"
+#include "CombatTraceRead.h"
 #include "HudHost.h"
 #include "GameAddr.h"
 #include "GuiKit.h"
@@ -63,6 +64,7 @@ constexpr unsigned S_ProjWr = SiteBase + 0x91;
 constexpr unsigned S_ProjRs = SiteBase + 0x92;
 constexpr unsigned S_OrgWr  = SiteBase + 0xA0;   // CH4c menu origin (+0x1648/+0x164C) freeze write probe
 constexpr unsigned S_VanWr  = SiteBase + 0xA1;   // CH4c vanilla group control flag write probe (hide / restore)
+constexpr unsigned SiteCState = SiteBase + 0xB0; // CSTATE HUD combat flag read (CombatTraceRead.h)
 
 constexpr uintptr_t HudTargetInvoke = 0x00751710;   // thiscall (hud, group, 0), RET 8; reads the selected key (fallback entry[0])
 
@@ -71,6 +73,11 @@ constexpr int MaxEntriesToLog = 8;
 
 KP_CHANNEL(chMain, "main");
 KP_CHANNEL(chTarget, "target");
+
+// CSTATE: change-gated combat edge line (CombatTrace.h). Read-only; VIS lines carry the same state as a " [c=.. p=.. m=..]" suffix.
+ctrace::Tracker g_ctrace;
+ctrace::CombatState g_cstate;
+void cstateSink(const char* line) { KP_LOGV(chMain, KPLOG_INFO, "%s", line); }
 
 // Only stores the path and the level (no I/O): safe from a static initialiser.
 const bool g_fallbackSet = (KpLog_SetFallbackFile("combat-hotbar_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
@@ -310,7 +317,8 @@ void visLog(VisState& st, const char* what, int shown, const char* why, const ch
     st.set = true; st.shown = shown; st.r[0] = r.x; st.r[1] = r.y; st.r[2] = r.w; st.r[3] = r.h;
     strncpy(st.why, why, sizeof(st.why) - 1); st.why[sizeof(st.why) - 1] = 0;
     if (!visBudget(&st == &g_visButtons ? 1 : &st == &g_visPills ? 2 : 0)) return;
-    KP_LOGV(chMain, KPLOG_INFO, "VIS %s shown=%d why=%s rect=[%d,%d,%d,%d]", what, shown, why, r.x, r.y, r.w, r.h);
+    char ctx[32]; ctrace::fmtCtx(ctx, sizeof ctx, g_cstate);
+    KP_LOGV(chMain, KPLOG_INFO, "VIS %s shown=%d why=%s rect=[%d,%d,%d,%d]%s", what, shown, why, r.x, r.y, r.w, r.h, ctx);
 }
 void visGroup(int g, int shown, const char* why, const ch::Rect& r) { char nm[16]; snprintf(nm, sizeof(nm), "group%d", g); visLog(g_visGroup[g], nm, shown, why, r); }
 
@@ -808,6 +816,8 @@ void KPATCH_CALL onTargetMenu(const K2HudContext* ctx, void*) {
     if (!ctx || ctx->struct_size < offsetof(K2HudContext, targetType) + sizeof(ctx->targetType)) return;
     if (!ctx->menu) return;
     saferead::beginScope();   // cheap; hud-host also scopes each PopulateMenus call
+    g_cstate.combat = ctrace::readHudCombat(SiteCState, static_cast<uintptr_t>(static_cast<uint32_t>(ctx->hud)));
+    ctrace::tick(g_ctrace, g_cstate, cstateSink);   // paused/menu stay -1 (unknown to this mod)
     pollInvokeKeys(ctx);
     uintptr_t menu = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->menu));
     uintptr_t leader = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->leader));
