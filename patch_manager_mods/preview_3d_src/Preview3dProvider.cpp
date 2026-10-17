@@ -211,9 +211,11 @@ const char* idleFor(int appearanceRow, short align) {
 }
 void chooseIdle(Viewer* v) {
     void* body = partGob(v, PartBodyId);
-    const char* want = idleFor(appRow(v), v->align);
-    snprintf(v->idleName, sizeof v->idleName, "%s", want);
-    logf("anim: idle for align=%d row=%d -> '%s' body=%p", v->align, appRow(v), v->idleName, body);
+    void* head = partGob(v, PartHeadId);
+    snprintf(v->idleName, sizeof v->idleName, "%s", "pause1");
+    if (body) playPart(body, "pause1", 1.0f, 0);
+    if (head) playPart(head, "pause1", 1.0f, 0);
+    logf("anim: idle set to 'pause1' body=%p head=%p", body, head);
 }
 
 // Frees one attached Gob the way equip3d does: attach(0,0,0), vt[0x4c](0), delete. Vtable-guarded: a mismatch leaks, never crashes.
@@ -603,13 +605,14 @@ void KPATCH_CALL apiPlayAnim(uint32_t token, const char* anim) {
     ensureInit();
     Viewer* v = find(token);
     if (firstN(&g_nPlay, 8)) logf("API PlayAnim token=%u anim=%s view=%s built=%d", token, anim ? anim : "(null)", v ? "ok" : "unknown", v ? v->built : 0);
-    if (!v || !anim || !anim[0] || !v->built) return;
+    if (!v || !v->built) return;
+    const char* toPlay = (anim && anim[0] && _stricmp(anim, "idle") != 0) ? anim : (v->idleName[0] ? v->idleName : "pause1");
     saferead::beginScope();
     void* body = partGob(v, PartBodyId); void* head = partGob(v, PartHeadId);
-    if (body) playPart(body, anim, 1.0f, 0);   // flags 0 = cross-fade in
-    if (head) playPart(head, anim, 1.0f, 0);
+    if (body) playPart(body, toPlay, 1.0f, 0);   // flags 0 = cross-fade in
+    if (head) playPart(head, toPlay, 1.0f, 0);
     saferead::beginScope();
-    logf("PlayAnim: token=%u '%s' body=%p head=%p", token, anim, body, head);
+    logf("PlayAnim: token=%u '%s' body=%p head=%p", token, toPlay, body, head);
 }
 
 void* KPATCH_CALL apiRigGob(uint32_t token, int32_t part) {

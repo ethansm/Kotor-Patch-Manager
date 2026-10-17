@@ -91,6 +91,9 @@ struct Engine {
     bool (*gameForeground)() = nullptr;                                   // game window is the foreground window of this process
     bool (*lbuttonDown)() = nullptr;                                      // GetAsyncKeyState(VK_LBUTTON) & 0x8000
     bool (*rbuttonDown)() = nullptr;                                      // GetAsyncKeyState(VK_RBUTTON) & 0x8000
+    bool (*mbuttonDown)() = nullptr;                                      // GetAsyncKeyState(VK_MBUTTON) & 0x8000
+    bool (*shiftDown)() = nullptr;                                        // GetAsyncKeyState(VK_SHIFT) & 0x8000
+    bool (*ctrlDown)() = nullptr;                                         // GetAsyncKeyState(VK_CONTROL) & 0x8000
 
     Engine() { rebind(); }
     // Re-point the engine-call and global-address fields at the current K2Addr.h table (also resets test fakes in those fields).
@@ -690,7 +693,20 @@ inline bool winForeground() {
 }
 inline bool winLButton() { return (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0; }
 inline bool winRButton() { return (GetAsyncKeyState(VK_RBUTTON) & 0x8000) != 0; }
-struct InstallPlatform { InstallPlatform() { g_gk.cursorClient = winCursorClient; g_gk.gameForeground = winForeground; g_gk.lbuttonDown = winLButton; g_gk.rbuttonDown = winRButton; } };
+inline bool winMButton() { return (GetAsyncKeyState(VK_MBUTTON) & 0x8000) != 0; }
+inline bool winShift() { return (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0; }
+inline bool winCtrl() { return (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0; }
+struct InstallPlatform {
+    InstallPlatform() {
+        g_gk.cursorClient = winCursorClient;
+        g_gk.gameForeground = winForeground;
+        g_gk.lbuttonDown = winLButton;
+        g_gk.rbuttonDown = winRButton;
+        g_gk.mbuttonDown = winMButton;
+        g_gk.shiftDown = winShift;
+        g_gk.ctrlDown = winCtrl;
+    }
+};
 inline InstallPlatform g_installPlatform;
 // WheelHook's Win32 side: subclass proc + install (A/I/E wheelProc and the subclass step of their gameWindow()).
 // The subclass is a kp::WindowHook (Common WindowHook.h, finding F28 design A): one per DLL, DLL image pinned.
