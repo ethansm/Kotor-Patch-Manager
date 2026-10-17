@@ -1,52 +1,86 @@
 # Session Handoff & Plan State: patch_manager_mods/33_ui_queue_hotbar_fixes.md
 
 ## 0. Next-Phase Direction
-Execute QH4: [Queue HUD] Buffer non-combat Force powers & items in unified FIFO (`haveCur` idle gate, `fakeAction` icon resolution)
+QL15: install, then play check. QL12-14 BUILT `5978bdd` (queue-hud 0.4.2-dev, GATE PASS md5 1d944cb7). QL16 BUILT `baca6a9` (combat-hotbar 0.9.2-rc, action-hotbar 0.1.5-dev, companion-selfheal 0.8.4-dev; GATE PASS). CombatTrace.h/CombatTraceRead.h already synced into the KPM Patches/Common clone (`check_shared_headers.py --sync`, 0 drift).
+1. Needs user GO with the game closed. Install A first, then B. Each from a clean worktree at the commit: `git worktree add --detach <scratch>/ql12 baca6a9` -> `kpm_status.py` -> `kpm_hotswap.py --mod queue-hud --prepare` -> commit the KPM mirror -> `--apply` -> `kpm_status.py` LIVE. Then the same for `--mod combat-hotbar --mod action-hotbar --mod companion-selfheal` (kotor2-kpm-install skill).
+2. Add PLAY_TEST_QUEUE rows MODE1 (5 steps in the plan: medpack, stim with no enemies = soft, hostile = soft->hard + BANNER restore with no flag L, fight to the end, menu open/close) and CST1 (`kotor2_logs.py check combat`: CSTATE from 3 mods agrees with queue-hud MODE, no DISAGREE >250 ms).
+3. After play: freeze logs to `.claude/handoffs/ql12/logs/` before any relaunch; read them with `queue_hud_log_check.py <frozen> --no-advance` (MODES, flags L/M/N) and `combat_timeline.py <files>`.
+Skipped in QL16: companion-ai (no frame callback or HUD; its E1/E2 lines already feed the timeline), buff HUD / shield bar / enemy strip (no HUD pointer). The combat-hotbar CSTATE is sampled only on target-menu rebuilds, so it can lag.
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/33_ui_queue_hotbar_fixes.md`
-- **Branch:** `KOTOR-II` (22b56b4 fix(equip3d): destroy creature on character change, add anim fallback, sync screen)
+- **Waves:** .claude/waves/WI-33-a1/
+- **Waves:** .claude/waves/WI-33-b1/
+- **Waves:** .claude/waves/w1-33-QL7/
+- **Waves:** .claude/waves/w2-33-QL9/
+- **Branch:** `KOTOR-II` (baca6a9 feat(combat logging): shared CSTATE edge line + cross-mod combat timeline (QL16))
+- **Generated:** 2026-10-17 01:22:07 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-22b56b4 fix(equip3d): destroy creature on character change, add anim fallback, sync screen
- .../EquipCharPreview.cpp                           | 16 ++++++---
- .../equipment_3d_character_src/PULL_REQUEST.md     | 42 ++++++++++++++++++++++
- 2 files changed, 54 insertions(+), 4 deletions(-)
+baca6a9 feat(combat logging): shared CSTATE edge line + cross-mod combat timeline (QL16)
+ .claude/skills/kotor2-log-analysis/SKILL.md        |   1 +
+ CLAUDE.md                                          |   2 +-
+ patch_manager_mods/_shared_src/CombatTrace.h       |  61 +++++
+ patch_manager_mods/_shared_src/CombatTraceRead.h   |  17 ++
+ .../_shared_src/combat_trace_test.cpp              | 119 ++++++++++
+ .../action_hotbar_src/ActionHotbar.cpp             |  12 +-
+ patch_manager_mods/action_hotbar_src/manifest.toml |   2 +-
+ .../combat_hotbar_src/CombatHotbar.cpp             |  12 +-
+ patch_manager_mods/combat_hotbar_src/manifest.toml |   2 +-
+ .../companion_selfheal_src/CompanionSelfHeal.cpp   |  16 +-
+ .../companion_selfheal_src/manifest.toml           |   2 +-
+ scripts/agent_diff_check.py                        |   2 +-
+ scripts/combat_timeline.py                         | 260 +++++++++++++++++++++
+ scripts/kotor2_logs.py                             |   5 +
+ scripts/test_combat_timeline.py                    | 235 +++++++++++++++++++
+ scripts/test_kotor2_logs.py                        |  15 ++
+ 16 files changed, 754 insertions(+), 9 deletions(-)
 ```
-- **Dirty Files (190):**
-  - `M .claude/handoffs/18_mouse_camera_investigation.handoff.md`
-  - ` M .claude/handoffs/31_combat_action_hotbar.handoff.md`
+- **Dirty Files (183):**
+  - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
+  - ` M .claude/handoffs/33_ui_queue_hotbar_fixes.handoff.md`
+  - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
+  - ` M .claude/handoffs/40_npc_behaviour_variety.handoff.md`
+  - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
   - ` M .claude/handoffs/PHASE7_COMMON_MASTER.handoff.md`
-  - ` M .claude/session_handoff.md`
-  - ` M AGENTS.md`
-  - ` M CLAUDE.md`
-  - ` M patch_manager_mods/10_engine_optimization_research.md`
-  - ` M patch_manager_mods/13_ranged_ai_spacing.md`
-  - ` M patch_manager_mods/18_mouse_camera_investigation.md`
-  - ` M patch_manager_mods/19b_cross_patch_sharing_survey.md`
+  - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
+  - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
+  - ` M .claude/plans/swarm_library_architecture.md`
+  - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
+  - ... +173 more (run `git status --short`)
 
-## 2. Immediate Objective (QH4)
-**[Queue HUD] Buffer non-combat Force powers & items in unified FIFO (`haveCur` idle gate, `fakeAction` icon resolution)**
+## 2. Immediate Objective (QL15)
+**[Queue HUD] Play check MODE1 (PLAY_TEST_QUEUE): medpack out of combat, stim on a member with no enemies (soft), hostile appears (soft->hard + BANNER restore), fight to the end, menu open/close; read with `queue_hud_log_check.py` MODES + flags L/M/N**
 
 Status: PLANNED
-Task: [Queue HUD] Buffer non-combat Force powers & items in unified FIFO (`haveCur` idle gate, `fakeAction` icon resolution)
+Task: [Queue HUD] Play check MODE1 (PLAY_TEST_QUEUE): medpack out of combat, stim on a member with no enemies (soft), hostile appears (soft->hard + BANNER restore), fight to the end, menu open/close; read with `queue_hud_log_check.py` MODES + flags L/M/N
+
+## 2b. Upcoming Batches in Pipeline
+- **QH4** : [Queue HUD] Buffer non-combat Force powers & items in unified FIFO (`haveCur` idle gate, `fakeAction` icon resolution)
+- **QL1** : [Queue HUD] Non-combat queue fix: pause restore (active-command verdict), ghost `cur`, identity guard, combat hand-off (doc 30 "Queue-fix QL1")
+- **QL2** : [Queue HUD] Strip flicker (active-cmd slot + 400 ms hold), hand-off clears engine queue first (`handoff_clear_first`), ROUND/HANDOFF_CLEAR trace; medpack = recon only (doc 30 "Queue-fix QL2")
 
 ## 3. Strict Context Budget & Read Policy
-- **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume QH4` (or `resume 33_ui_queue_hotbar_fixes`).
+- **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume patch_manager_mods/33_ui_queue_hotbar_fixes.md`.
 
 ## 4. Subagent Delegation Direction
-- **Delegate to Subagent**: `python3 scripts/plan_manager.py delegate QH4`
-- **Supported Commands**: `oc-subagent <scout|code|ghidra|verify|gate|doc>` or `oc-flow auto "<task>"`
+- **Claude Code**: parallel `model: haiku` Agent subagents; brief = `Contract` + `Write Scope` + `python3 scripts/agent_contract.py print worker|recon`.
+- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate QL15` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
 
-## HK1 (2026-10-11): cmdq-probe 0.1.0 BUILT at db70c05, NOT installed
-- Source `patch_manager_mods/cmdq_probe_src` (11 detours, channels pause/cmd/fire/round/clr/med; ini `probe=0` default, `ch_<name>`, `party_only`, `max_lines`). Checker `scripts/cmdq_probe_log_check.py` (flags M1 medpack refused, M2 item never fired, C1 clear before round start). Evidence `.claude/handoffs/hk1/t1_windows.md`, `t2_attack_callers.md`.
-- Plan correction: CanUseItem window is **0x5D32AE** (7 B `5E 8B E5 5D C2 0C 00`), read `eax`; 0x5D32AB has an inbound `JMP` from the null-item return (0x5D2F99). Hook 11 steals a `RET 0xC` (check_hook_bytes accepts it; untested live: first thing to verify after install).
-- T2: AddAttackActions (0x568540) never re-adds 0x3F (all 12 callers a8!=0, it re-adds 0x0C). Cold re-add candidate = AIActionType47_ReequipResumeAttack 0x5DF920 (hooked as `REEQ`). Batch 2 (warm, not built): gate 0x6D9500/0x6DA49F, mode 0x563C90, AIActionCombat clear+attack 0x6D9931/0x6D996B. Open: is the 0x47 node queued at live combat start (AddDoorSaberAction 0x547BB0 vs script 0x69B980)?
-- `CLR` filter uses creature+0x11AC (meaning UNVERIFIED); `party_only=0` drops that test if no CLR lines appear.
-- Install = full KPatchLauncher reinstall of cmdq-probe: needs the user's GO + a KPM `Patches/CmdqProbe` mirror (mouse-probe precedent) + `pre_install_gate.sh --mod cmdq_probe_src`. Then S4 with `ch_med=1`: `python3 scripts/kotor2_logs.py check cmdq-probe --new`.
-
-## HK1 INSTALLED (2026-10-11 ~11:00)
-- Full reinstall of 40 ids (39 + cmdq-probe), stage `$K/cmdq_stage/`, KPM mirror commit e634f5a (Patches/CmdqProbe). Verified: all peer DLL md5s identical to backup, exe md5 unchanged, LAA 0x23, `kpm_status` cmdq-probe LIVE 6677783b.
-- Backup: `/home/ethansm/.steam/steam/steamapps/common/Knights of the Old Republic II/backups/cmdqprobe_full_20261011T105828` (30 DLLs, patch_config.toml, kpm_install_state.json, exe copy, live_md5.txt). Rollback = copy DLLs/config/state back (config changed by the reinstall: do NOT use kpm_hotswap --rollback blindly).
-- Game dir `cmdq_probe.ini`: probe=1, all ch_*=1, party_only=1, max_lines=2000. Set probe=0 to silence. Log: cmdq-probe_log.txt -> `python3 scripts/kotor2_logs.py check cmdq-probe --new`, then `python3 scripts/cmdq_probe_log_check.py`.
-- Play check S4: click a medpack then a portrait. First thing to verify: CanUseItem hook (0x5D32AE, steals RET 0xC) does not crash; expect `MED site=entry` then `MED site=canuse`.
+## 5. Dead Ends & Verification (manual)
+- 2026-10-11: QL3/QL4 hot-swapped (queue-hud ada41e82, repo 37325e9, KPM d9e807c, rollback `kpm_hotswap.py --rollback queue-hud_swap_20261011_135120`). Play session logs frozen under `.claude/handoffs/ql6/logs/` (queue-hud 517 lines, cmdq-probe 2011, action-hotbar 1874, hud-host 58, companion-selfheal 138; written 18:07-18:17).
+- QL3 diagnosis was from the 13:07 log: our ServerClearAllActions killed no trigger (0/3); engine-held head was skipped. The user says the first click is STILL eaten: do not assume QL3 is the cause, re-read the new log. Attack clicks are unhooked/untracked.
+- Do not raw-read `*_log.txt`; use `queue_hud_log_check.py <copy>` and `cmdq_probe_log_check.py <copy>` plus bounded `sed -n` windows (<=40 lines) on the frozen COPIES.
+- Dead end (QL5): forcing the engine combat panel out of combat (bit 1 of `[CSWGuiMainInterface+0xA904]` / 0x74C11B) drags in the minimap slide + red Cancel Combat. The new "hide the combat banner, keep combat camera" ask must NOT reuse that seam blindly.
+- Verify: `python3 scripts/run_tests.py queue_hud`, `python3 scripts/build_check.py --mod queue_hud_src`.
+- 2026-10-12: QL6a-d INSTALLED (queue-hud 83c8a25b, repo 1b49189, KPM d387cf5, rollback `kpm_hotswap.py --rollback queue-hud_swap_20261011_195114`). Peer commits da75b91 (BG09), b64a59c (BG08), 209de3a (BG23) touch queue_hud_src AFTER the live DLL: the next build includes them; run `kpm_status.py` first.
+- Play result 10-12 (user): medpacks work in the non-combat queue; buffered force powers still do not fire; per-item cancel still absent. Frozen logs: `.claude/handoffs/ql7/logs/` (queue-hud 1721 lines, cmdq-probe 836 incl. FIRE/CLR, action-hotbar, hud-host). Wave facts: `.claude/waves/w1-33-QL7/u01..u15.md` (untracked, Haiku sieve, PARTIAL verdicts).
+- QL9 finding: spells sent straight through (`dec=dispatch_now`: cmds 9,10,11,14,15,16) FIRE; spells BUFFERED then replayed by `dispatchAction` (cmds 4,13) never reach the server cast routine (cmdq-probe hooks 0x565310 and logs no CMD/FIRE for them; items replayed the same way DO show CMD real=0/1). The hotbar lost nothing: 10/10 invokes have a queue-hud CMD. Suspects, unproven: (a) replay always passes a NON-NULL `pos` (zeroed local copy) where the engine's original `posPtr` may be NULL (QueueHud.cpp:1741 posVal/posPtr, 882-895 dispatchAction); (b) captured target `0x00dbee74` is identical on every spell (probe shows tgt=1). Do NOT assume either; add a SPELL_ARGS trace first.
+- cmdq-probe CLR callers: 0x66f392 = 46/70 clears, 26 within 1 ms of ROUND ev=start (engine combat-start clear); 0x7519ec / 0x51cb38 clear q=3f within ~12 ms of a spell click/buffer. Unresolved: whether they eat spells or coincide.
+- Soft-combat data (CMBT_FIELDS, 8 edges): t550/t564/t568 hold object ids (low 24 bits 1af,1b3,1b5,1b7 look like party members; 7f000000 = none). Edges after ally items show cr520 dword0=1 and dword1 = a nonzero counter (0x1f1e,0x11fc,0x1390,0x1122); the zero-pattern edges are unlabeled. NO eaten-first-click was found in this session (clicks before edges left an entry). Ground truth needs a labeled play step.
+- Flag gate (QL6b): `WAIT why=flags` holds of 1.2-2.6 s occurred; one `hold=flag_cap` (cmd 54, ab8=1 for 2.0 s with an empty engine queue). Spells held by flags (cmd 13) still did not fire after release, so the gate is not the spell cause.
+- Per-item cancel (QL7) recon: icon rects exist (`Draw` x/y/w/h, `StripDraw.r[j]`, QueueHud.cpp:525-528, 586-596) but nothing maps an icon to a queue entry; only the 3 Cancel controls are clickable (g_cw[3], click poll 1559-1568). A VISIBLE GuiKit control swallows the click (GuiKit.h:233); open: does a transparent-art visible control still swallow it.
+- 2026-10-12 P2 play (QL9 INSTALLED, queue-hud 157562a8, repo 6d2ca9e, KPM c56b57f, rollback `kpm_hotswap.py --rollback queue-hud_swap_20261012_012108`): force powers work (user). Analysis + frozen logs: `.claude/handoffs/ql8/findings.md`, `.claude/handoffs/ql8/logs/`, wave `.claude/waves/w2-33-QL9/` (Haiku, PARTIAL). Whole session was mostly PAUSED, so probe `real=0` is the paused signature, not a failure. No buffered spell appears in that log.
+- QL8 G4 data: SOFT_CAND hostile triple per combat edge. S3 (ally medpack, no enemies) = 0,0,0 with party=1 on m0; all 7 other edges have hostile=1 on >=1 member. Rule chosen: soft = combat AND some member targets a party id AND no member targets a non-party id. All-none counts as HARD (conservative). n=1 soft sample: the live check is the real test.
+- Banner flags: engine builder 0x747210 writes `param_1[0x1be7] &= ~2` for LBL_CMBTMODEMSG (control at hud+0x6F54, flags dword hud+0x6F9C) and LBL_CMBTMSGBG (control hud+0x709C, flags hud+0x70E4). Unknown: whether the engine re-sets the visible bit every frame in combat; the plan clears it every K2HUD_FRAME and logs BANNER lines to find out.
+- QL10 (user choice: old queue first, then the new click) needs recon: `handoff_clear_first` wipes the engine's new 3f attack at combat start (L316 cmd 8, L380 cmd 9 of the ql8 log). Do NOT touch it in QL8.
