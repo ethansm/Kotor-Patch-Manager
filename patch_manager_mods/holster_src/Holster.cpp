@@ -1,8 +1,8 @@
-// Holster.cpp -- holster 0.1.2-dev (Steam build): P0 LOG-ONLY probe for the holstered-weapons mod (patch_manager_mods/42_holstered_weapons.md).
+// Holster.cpp -- holster 0.1.3-dev (Steam build): P0 probe for the holstered-weapons mod (patch_manager_mods/42_holstered_weapons.md).
 // Plan: .claude/plans/holstered_weapons.md. Handlers are plain extern "C" void __cdecl functions; the detour wrappers in
 // kotor2-steam-aspyr.hooks.toml call them at function entry with the game arguments BEFORE the stolen bytes run.
 // Hard rules for P0 (exceptions, both default off: the bone_test code patch, and HolsterPlace's 28-byte pose write with probe=1 bone_test=1 place=1): no other writes to game memory or registers, no engine calls, reads only through saferead, and every handler returns at
-// once while its channel is off (holster.ini: probe=1 AND ch_<name>=1). All channels share one line budget (max_lines).
+// once while its channel is off (holster.ini: probe=1 AND ch_<name>=1; the one deliberate state-only exception is the hand record, which runs with probe=1 alone). All channels share one line budget (max_lines).
 //
 // Gates this probe answers (doc 42):
 //   G2  ATTACH lines: obj/tag/creature plus creature+0x68 (body object) and the hand handles +0x278/+0x27C before and after
@@ -436,8 +436,8 @@ static void gobModelName(uintptr_t gob, char* out, int cap) {
 
 // ---- hand record (0.1.1-dev, r6 recon): FUN_007637E0 attaches the weapon Gob to the creature's rhand (0x763B49) or lhand (0x763E7B) node. ----
 // Both hand detours run BEFORE the stolen `MOV EAX,[EDX+0x7C] / CALL EAX` (vtbl+0x7C is a no-op on the verified classes), so they only record:
-// gob -> hand into a 16-entry ring (HolsterHand.h) and log HANDATTACH. HolsterPlace then reports HANDMAP once per placed gob found in the ring.
-// Behaviour is unchanged (kWorldKnowsHand stays false). Both run on the main thread; the ring is not locked. Own caps: 64 lines each.
+// gob -> hand into a 128-entry ring (HolsterHand.h) and log HANDATTACH. HolsterPlace then reports HANDMAP once per placed gob found in the ring.
+// The record feeds HolsterPlace's left-hand resolve (kWorldKnowsHand is true). Both run on the main thread; the ring is not locked. Own caps: 64 lines each.
 static hs::HandRing g_handRing;
 static hs::SeenSet g_handSeen;
 static volatile LONG g_handAttachLines = 0;
@@ -445,10 +445,11 @@ static const LONG kHandLines = 64;
 
 // ecx = body anim object, gob = [EBP-0x2C], item = [EBP-0x40] (R) / [EBP-0x30] (L); item+0x14 = W.
 static void handAttach(int hand, void* gob, void* item, void* body) {
+    if (!g_probe) return;
+    const uintptr_t g = reinterpret_cast<uintptr_t>(gob);
+    (void)hs::handRecord(g_handRing, g, hand);   // state-only: runs with probe=1 even when ch_attach=0 (placement needs the record)
     if (!g_onAttach) return;
     saferead::beginScope();
-    const uintptr_t g = reinterpret_cast<uintptr_t>(gob);
-    (void)hs::handRecord(g_handRing, g, hand);
     if (!KP_ENABLED(chAttach, KPLOG_INFO)) return;
     if (InterlockedIncrement(&g_handAttachLines) > kHandLines || !takeLine()) return;
     char name[17];
@@ -628,7 +629,7 @@ static volatile uintptr_t g_refFind = 0, g_refPose = 0;   // FindPart (Gob vtbl+
 // and HolsterPlace reads handLookup(g_handRing, g) to resolve left-hand placement and sagittal mirroring.
 static const bool kWorldKnowsHand = true;
 static bool effLeft(bool left) {
-    return left;
+    return left && g_boneLeft;
 }
 
 struct EdLock {
@@ -725,7 +726,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     void* const node = beh ? reinterpret_cast<void*>(static_cast<uintptr_t>(rdU32(kSitePlace, reinterpret_cast<uintptr_t>(beh), 0x18))) : nullptr;
     // Verdict cache keyed on node + gob + the node's name handle [N+4], so a freed and reused address pair is re-resolved. The full
     // resolve (weapon > type > global, plus the body delta) is cached with the tune sequence it was computed for and redone when it moves.
-    // In world both hands share the bone_name node, so the hand is not known here: left stays false (right-hand values).
+    // In world both hands share the bone_name node; the hand comes from g_handRing (sticky via hs::resolveLeft when the ring entry is evicted).
     struct Ent { uintptr_t node, gob, handle; bool isTarget, left; hs::Category cat; char mname[17], body[17]; LONG seq; hs::Resolved r; };
     static Ent s_cache[128];
     static unsigned s_next = 0;
@@ -739,10 +740,9 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     for (Ent& e : s_cache)
         if (e.node == n && e.gob == g && e.handle == h) { isTarget = e.isTarget; cat = e.cat; ent = &e; break; }
     if (ent) {
-        const int hand = hs::handLookup(g_handRing, g);
-        const bool curLeft = (hand == hs::HandL);
-        if (ent->left != curLeft) {
-            ent->left = curLeft;
+        const bool nl = hs::resolveLeft(ent->left, hs::handLookup(g_handRing, g));
+        if (nl != ent->left) {
+            ent->left = nl;
             ent->seq = -1;
         }
     } else {
@@ -758,8 +758,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
         ent = &s_cache[s_next];
         s_next = (s_next + 1) % 128u;
         *ent = Ent{};
-        const int hand = hs::handLookup(g_handRing, g);
-        ent->node = n; ent->gob = g; ent->handle = h; ent->isTarget = isTarget; ent->left = (hand == hs::HandL); ent->cat = cat;
+        ent->node = n; ent->gob = g; ent->handle = h; ent->isTarget = isTarget; ent->left = hs::resolveLeft(false, hs::handLookup(g_handRing, g)); ent->cat = cat;
         ent->seq = -1;   // never a real sequence (those are >= 0), so the first use resolves
         {
             const uintptr_t par = rdU32(kSitePlace, reinterpret_cast<uintptr_t>(beh), 0x14);
@@ -779,10 +778,10 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
             const uintptr_t bmodel = parent ? rdU32(kSitePlace, parent, 0x84) : 0;
             body[0] = 0;
             if (bmodel) readTag(kSitePlace, reinterpret_cast<const char*>(bmodel + 0x08), body, sizeof body);
-            KP_LOG(chPlace, "PLACENODE node=%x gob=%x t=%u step=%d name=%s target=%d bvt=%x gname=%s mname=%s cat=%s parent=%x owner=%x body=%s",
+            KP_LOG(chPlace, "PLACENODE node=%x gob=%x t=%u step=%d name=%s target=%d bvt=%x gname=%s mname=%s cat=%s parent=%x owner=%x body=%s left=%d",
                    static_cast<unsigned>(n), static_cast<unsigned>(g), ni.t, ni.step, ni.name[0] ? ni.name : "-", isTarget ? 1 : 0,
                    static_cast<unsigned>(rdU32(kSitePlace, reinterpret_cast<uintptr_t>(beh), 0)), gname[0] ? gname : "-", mname[0] ? mname : "-",
-                   hs::categoryName(cat), static_cast<unsigned>(parent), static_cast<unsigned>(owner), body[0] ? body : "-");
+                   hs::categoryName(cat), static_cast<unsigned>(parent), static_cast<unsigned>(owner), body[0] ? body : "-", ent->left ? 1 : 0);
         }
     }
     if (!isTarget) { refuse(PrNotTarget, g, n, 0); return; }
@@ -813,9 +812,9 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     const LONG c = InterlockedIncrement(&g_placeCalls);
     if (c > 24 && (c % g_gobEvery) != 0) return;
     if (!KP_ENABLED(chPlace, KPLOG_INFO) || !takeLine()) return;
-    KP_LOG(chPlace, "PLACE n=%ld gob=%x node=%x beh=%x gobvt=%x pos0=(%.3f,%.3f,%.3f) quat0=(%.3f,%.3f,%.3f,%.3f) pos1=(%.3f,%.3f,%.3f) quat1=(%.3f,%.3f,%.3f,%.3f) cat=%s",
+    KP_LOG(chPlace, "PLACE n=%ld gob=%x node=%x beh=%x gobvt=%x pos0=(%.3f,%.3f,%.3f) quat0=(%.3f,%.3f,%.3f,%.3f) pos1=(%.3f,%.3f,%.3f) quat1=(%.3f,%.3f,%.3f,%.3f) cat=%s left=%d",
            static_cast<long>(c), U(gob), U(node), U(beh), static_cast<unsigned>(vt), in.pos[0], in.pos[1], in.pos[2], in.q.w, in.q.x, in.q.y, in.q.z,
-           out.pos[0], out.pos[1], out.pos[2], out.q.w, out.q.x, out.q.y, out.q.z, hs::categoryName(cat));
+           out.pos[0], out.pos[1], out.pos[2], out.q.w, out.q.x, out.q.y, out.q.z, hs::categoryName(cat), ent->left ? 1 : 0);
 }
 
 // ---- k2.holster v1 (HolsterApi.h): the holster-editor patch drives these from its panel tick (main thread) ----
@@ -1159,7 +1158,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     addName(names, sizeof(names), g_onAnim, "anim");
     addName(names, sizeof(names), g_onGob, "gob");
     addName(names, sizeof(names), g_onPlace, "place");
-    KP_LOG(chMain, "holster 0.1.2-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
+    KP_LOG(chMain, "holster 0.1.3-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
            names[0] ? names : "none", static_cast<long>(g_maxLines), g_gobEvery, k2addr::get() ? "ok" : "none");
     {
         hs::TuneCfg t;

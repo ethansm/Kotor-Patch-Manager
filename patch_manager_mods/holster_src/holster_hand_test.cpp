@@ -39,7 +39,7 @@ static void testOverwriteOldest() {
     for (int i = 0; i < HandRing::kCap; ++i) KT_CHECK(handRecord(r, 0x1000u + 0x10u * i, (i & 1) ? HandL : HandR));
     KT_CHECK(r.n == HandRing::kCap);
     KT_CHECK(handLookup(r, 0x1000) == HandR);
-    KT_CHECK(handRecord(r, 0x9000, HandL));   // 17th entry evicts the oldest (0x1000)
+    KT_CHECK(handRecord(r, 0x9000, HandL));   // entry kCap+1 evicts the oldest (0x1000)
     KT_CHECK(r.n == HandRing::kCap);
     KT_CHECK(handLookup(r, 0x1000) == HandNone);
     KT_CHECK(handLookup(r, 0x1010) == HandL);
@@ -47,11 +47,33 @@ static void testOverwriteOldest() {
     KT_CHECK(handRecord(r, 0x9010, HandR));   // next eviction is the second oldest (0x1010)
     KT_CHECK(handLookup(r, 0x1010) == HandNone);
     KT_CHECK(handLookup(r, 0x1020) == HandR);
-    for (int i = 0; i < 100; ++i) KT_CHECK(handRecord(r, 0x20000u + i, HandR));   // wraps many times, never overflows
+    for (int i = 0; i < 200; ++i) KT_CHECK(handRecord(r, 0x20000u + i, HandR));   // wraps many times, never overflows
     KT_CHECK(r.n == HandRing::kCap);
-    KT_CHECK(handLookup(r, 0x20000u + 99) == HandR);
-    KT_CHECK(handLookup(r, 0x20000u + 83) == HandNone);   // only the last 16 inserts (84..99) remain
-    KT_CHECK(handLookup(r, 0x20000u + 84) == HandR);
+    KT_CHECK(handLookup(r, 0x20000u + 199) == HandR);
+    KT_CHECK(handLookup(r, 0x20000u + 200 - HandRing::kCap - 1) == HandNone);   // only the last kCap inserts remain
+    KT_CHECK(handLookup(r, 0x20000u + 200 - HandRing::kCap) == HandR);
+}
+
+static void testResolveLeft() {
+    KT_CHECK(resolveLeft(false, HandL));
+    KT_CHECK(resolveLeft(true, HandL));
+    KT_CHECK(!resolveLeft(true, HandR));
+    KT_CHECK(!resolveLeft(false, HandR));
+    KT_CHECK(resolveLeft(true, HandNone));    // sticky: unknown keeps the previous flag
+    KT_CHECK(!resolveLeft(false, HandNone));
+    KT_CHECK(resolveLeft(true, 7));
+}
+
+static void testEvictionSticky() {
+    HandRing r;
+    KT_CHECK(handRecord(r, 0x1000, HandL));
+    for (int i = 1; i < HandRing::kCap; ++i) KT_CHECK(handRecord(r, 0x1000u + 0x10u * i, HandR));
+    KT_CHECK(handLookup(r, 0x1000) == HandL);
+    KT_CHECK(handRecord(r, 0x8000, HandR));   // one more evicts 0x1000
+    KT_CHECK(handLookup(r, 0x1000) == HandNone);
+    KT_CHECK(resolveLeft(true, handLookup(r, 0x1000)));   // a cached left weapon stays left after eviction
+    KT_CHECK(handRecord(r, 0x1000, HandR));   // re-recorded as R at cap
+    KT_CHECK(!resolveLeft(true, handLookup(r, 0x1000)));
 }
 
 static void testSeenDedupeAndCap() {
@@ -75,6 +97,8 @@ int main() {
     testRejectsBadInput();
     testUpdateInPlace();
     testOverwriteOldest();
+    testResolveLeft();
+    testEvictionSticky();
     testSeenDedupeAndCap();
     testHandChar();
     return kt::Report("holster_hand");

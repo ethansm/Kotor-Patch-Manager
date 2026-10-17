@@ -1,6 +1,7 @@
 // HolsterHand.h -- hand record of the holstered-weapons mod (doc 42, review F1 / r6 recon): which hand a weapon Gob was attached to.
 // Pure logic, header-only, no engine calls, no STL. Host-tested by holster_hand_test.cpp.
-//   HandRing    16 entries, gob -> hand, the oldest entry is overwritten when full; re-recording a known gob updates it in place
+//   HandRing    128 entries (8 B each, 1 KB; matches the 128-entry placement cache), gob -> hand, the oldest entry is overwritten when full; re-recording a known gob updates it in place
+//   resolveLeft sticky left flag: HandL -> true, HandR -> false, unknown (evicted) keeps the previous value
 //   SeenSet     up to 64 gobs already reported (HANDMAP dedupe); a full set reports false for new gobs (the log cap)
 // Not locked: both users run on the engine's main thread (attach site and the per-frame attach refresh).
 #pragma once
@@ -13,7 +14,7 @@ enum Hand : int { HandNone = 0, HandR = 1, HandL = 2 };
 inline char handChar(int h) { return h == HandR ? 'R' : h == HandL ? 'L' : '?'; }
 
 struct HandRing {
-    static const int kCap = 16;
+    static const int kCap = 128;
     uintptr_t gob[kCap];
     int hand[kCap];
     int next;   // slot the next new gob goes to
@@ -46,6 +47,11 @@ inline bool handRecord(HandRing& r, uintptr_t g, int hand) {
 inline int handLookup(const HandRing& r, uintptr_t g) {
     const int i = handFind(r, g);
     return i < 0 ? static_cast<int>(HandNone) : r.hand[i];
+}
+
+// Left flag for a cached placement: a known hand wins, an unknown one (ring entry evicted) keeps the previous flag.
+inline bool resolveLeft(bool prevLeft, int lookup) {
+    return lookup == HandL ? true : lookup == HandR ? false : prevLeft;
 }
 
 struct SeenSet {
