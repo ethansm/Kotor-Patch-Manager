@@ -128,9 +128,10 @@ def build(k1, k2, out: Path, *, adopt=True) -> dict:
     for p, b in files.items():
         p.write_bytes(b)
     if adopt:
-        for f in k1_made:
+        # The tone is synthesised here (no third-party content); everything else read from the K1 install is vanilla_k1.
+        for f, source_id in [(f, "vanilla_k1") for f in k1_made] + [(bark / "p_juhani_slct1.wav", "workspace_generated")]:
             r = subprocess.run([sys.executable, str(HERE / "k1_port_prune.py"), "adopt", "--file", str(f), "--kind",
-                                "other", "--source-id", "vanilla_k1"], capture_output=True, text=True,
+                                "other", "--source-id", source_id], capture_output=True, text=True,
                                env=dict(os.environ, K1PORT_LEDGER=str(STAGE / "ledger.json")))
             if r.returncode != 0:
                 raise BuildError(f"ledger adopt failed for {f}: {r.stderr.strip() or r.stdout.strip()}")
