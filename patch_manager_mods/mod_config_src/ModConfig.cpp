@@ -57,6 +57,7 @@ constexpr uint32_t kLabelVtable = static_cast<uint32_t>(gameaddr::LabelVtable);
 constexpr uint32_t kButtonVtable = static_cast<uint32_t>(gameaddr::ButtonVtable);
 // Vanilla optionsingame_p list indices (ID == index, d2c section 1).
 constexpr int kIdxQuit = 2, kIdxTitle = 3, kIdxExit = 13, kIdxDesc = 15;
+constexpr int kIdxBarFirst = 8, kIdxBarLast = 12;   // LBL_BAR1..5: the horizontal frame bars; they stay visible on LIST / ENTRY
 constexpr int kBarFirst = 8, kBarLast = 12;                                     // the five slider bars (view/status floor only)
 constexpr int kColumnN = 8, kInsertAfter = 2;                                   // column positions top -> bottom, insert after GAMEPLAY
 constexpr int kColumnIdx[kColumnN] = {0, 14, 1, 4, 5, 6, 7, 2};                 // SAVEGAME LOADGAME GAMEPLAY FEEDBACK AUTOPAUSE GRAPHICS SOUND QUIT
@@ -612,7 +613,7 @@ void hideVanilla() {
     for (int i = 0; i < n; ++i) {
         const uintptr_t c = listCtl(e.panel, i);
         int fl = 0;
-        if (i == kIdxDesc) { e.savedFlags[i] = -1; continue; }   // LB_DESC stays visible on LIST / ENTRY (the hover descriptions are written into it); -1 = restore skips it
+        if (i == kIdxDesc || (i >= kIdxBarFirst && i <= kIdxBarLast)) { e.savedFlags[i] = -1; continue; }   // LB_DESC (hover descriptions) and the LBL_BAR frame bars stay visible on LIST / ENTRY; -1 = restore skips it
         e.savedFlags[i] = (c && rd<int>(c, oFlags, &fl)) ? fl : -1;
         if (g_debug) KP_LOG(chMain, "ENTER save idx=%d ctl=%x flags=%x", i, static_cast<unsigned>(c), static_cast<unsigned>(e.savedFlags[i]));
         if (c && e.savedFlags[i] != -1) guikit::setVisible(c, false);   // everything vanilla, BTN_EXIT and LBL_TITLE included
