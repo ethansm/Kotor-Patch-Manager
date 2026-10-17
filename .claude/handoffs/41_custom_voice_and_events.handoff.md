@@ -1,7 +1,7 @@
 # Session Handoff & Plan State: patch_manager_mods/41_custom_voice_and_events.md
 
 ## 0. Next-Phase Direction
-Execute V-C: Live tests E1-E8 incl. E5, E6, plus T-SSF and T-TIMER, with a tiny probe (needs user GO and the D0 pause lifted)
+Execute V-C2 (shrunken): R1 recon of GetKeyEntry/ServiceFromImage signatures for the doc 44 VFS session, voice-probe 0.1.1 PlaySound hook install prep (kplog.ini section), and a trigger design that writes no loose game files. ON HOLD until the doc 44 VFS lands; H1 GetKeyEntry observer belongs to the VFS session.
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/41_custom_voice_and_events.md`
@@ -10,54 +10,28 @@ Execute V-C: Live tests E1-E8 incl. E5, E6, plus T-SSF and T-TIMER, with a tiny 
 - **Waves:** .claude/waves/WI-41-b1/
 - **Waves:** .claude/waves/WI-41-b2/
 - **Waves:** .claude/waves/w11-41-VB/
-- **Branch:** `KOTOR-II` (145565f feat(41:V-C): host prep for live voice probe (E-matrix builder, PlaySound logger, probe scripts, runbook))
-- **Generated:** 2026-10-13 01:37:14 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (5e59d44 docs(33): QL12-QL14, QL16 INSTALLED (LIVE 10-17 01:30) + play rows MODE1, CST1)
+- **Generated:** 2026-10-17 01:36:23 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-145565f feat(41:V-C): host prep for live voice probe (E-matrix builder, PlaySound logger, probe scripts, runbook)
- .../handoffs/41_custom_voice_and_events.handoff.md |  42 ++--
- patch_manager_mods/41_custom_voice_and_events.md   |   4 +-
- patch_manager_mods/kvoice/V-C_RUNBOOK.md           |  81 ++++++++
- patch_manager_mods/kvoice/kvoice_ematrix.py        | 213 +++++++++++++++++++++
- patch_manager_mods/kvoice/test_kvoice_ematrix.py   | 209 ++++++++++++++++++++
- patch_manager_mods/voice_probe_src/VoiceProbe.cpp  |  74 +++++++
- patch_manager_mods/voice_probe_src/exports.def     |   3 +
- .../voice_probe_src/kotor2-steam-aspyr.hooks.toml  |  18 ++
- patch_manager_mods/voice_probe_src/manifest.toml   |  13 ++
- patch_manager_mods/voice_probe_src/nss/README.md   |  18 ++
- .../voice_probe_src/nss/build/kpv_e1.ncs           | Bin 0 -> 76 bytes
- .../voice_probe_src/nss/build/kpv_e2a.ncs          | Bin 0 -> 77 bytes
- .../voice_probe_src/nss/build/kpv_e2b.ncs          | Bin 0 -> 77 bytes
- .../voice_probe_src/nss/build/kpv_e2c.ncs          | Bin 0 -> 77 bytes
- .../voice_probe_src/nss/build/kpv_e2d.ncs          | Bin 0 -> 77 bytes
- .../voice_probe_src/nss/build/kpv_e4.ncs           | Bin 0 -> 337 bytes
- .../voice_probe_src/nss/build/kpv_e7a.ncs          | Bin 0 -> 110 bytes
- .../voice_probe_src/nss/build/kpv_e7b.ncs          | Bin 0 -> 185 bytes
- .../voice_probe_src/nss/build/kpv_e8.ncs           | Bin 0 -> 217 bytes
- patch_manager_mods/voice_probe_src/nss/kpv_e1.nss  |   8 +
- patch_manager_mods/voice_probe_src/nss/kpv_e2a.nss |   7 +
- patch_manager_mods/voice_probe_src/nss/kpv_e2b.nss |   7 +
- patch_manager_mods/voice_probe_src/nss/kpv_e2c.nss |   7 +
- patch_manager_mods/voice_probe_src/nss/kpv_e2d.nss |   7 +
- patch_manager_mods/voice_probe_src/nss/kpv_e4.nss  |  23 +++
- patch_manager_mods/voice_probe_src/nss/kpv_e7a.nss |   9 +
- patch_manager_mods/voice_probe_src/nss/kpv_e7b.nss |  14 ++
- patch_manager_mods/voice_probe_src/nss/kpv_e8.nss  |  17 ++
- patch_manager_mods/voice_probe_src/voice_probe.ini |   4 +
- 29 files changed, 749 insertions(+), 29 deletions(-)
+5e59d44 docs(33): QL12-QL14, QL16 INSTALLED (LIVE 10-17 01:30) + play rows MODE1, CST1
+ .../handoffs/33_ui_queue_hotbar_fixes.handoff.md   | 46 ++++++++++------------
+ patch_manager_mods/33_ui_queue_hotbar_fixes.md     |  8 ++--
+ patch_manager_mods/PLAY_TEST_QUEUE.md              |  2 +
+ 3 files changed, 26 insertions(+), 30 deletions(-)
 ```
-- **Dirty Files (153):**
+- **Dirty Files (182):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
-  - ` M .claude/handoffs/24_master_plan_status.handoff.md`
-  - ` M .claude/handoffs/27_companion_selfheal.handoff.md`
-  - ` M .claude/handoffs/33_ui_queue_hotbar_fixes.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
-  - ` M .claude/handoffs/38_k1_to_k2_asset_import.handoff.md`
+  - ` M .claude/handoffs/40_npc_behaviour_variety.handoff.md`
+  - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
   - ` M .claude/handoffs/PHASE7_COMMON_MASTER.handoff.md`
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
+  - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
   - ` M .claude/plans/swarm_library_architecture.md`
-  - ` M patch_manager_mods/24_master_plan_status.md`
-  - ... +143 more (run `git status --short`)
+  - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
+  - ` M CLAUDE.md`
+  - ... +172 more (run `git status --short`)
 
 ## 2. Immediate Objective (V-C)
 **Live tests E1-E8 incl. E5, E6, plus T-SSF and T-TIMER, with a tiny probe (needs user GO and the D0 pause lifted)**
@@ -66,9 +40,9 @@ Status: PARTIAL
 Task: Live tests E1-E8 incl. E5, E6, plus T-SSF and T-TIMER, with a tiny probe (needs user GO and the D0 pause lifted)
 
 ## 2b. Upcoming Batches in Pipeline
+- **V-C2** : Native logging + a working trigger for the live voice probe: plan `patch_manager_mods/kvoice/V-C2_HOOK_LOGGING_PLAN.md` (sections 9-10). E1 PASS and E2a/b/c done 2026-10-15/16 via the retired heartbeat trigger. H1 (GetKeyEntry observer) moved to the doc 44 VFS session; remaining here: R1 recon, H2 PlaySound hook (voice-probe 0.1.1 on KpLog), trigger design. ON HOLD until the VFS lands
 - **V-D** : Silent-commoner SSF fix (needs T-SSF) and murmur bed prototype (ideas 1-2)
 - **V-E** : Voice spike: Qwen3 VoiceDesign speed/VRAM, 200-line consistency, FX chain, RVC timing on the 5070, Day-5 sound-alike screen (`w3/b5.md` 5-day plan)
-- **V-F** : Event system (cast from the diversity pool, cooldowns, templates T4, T3, then movement templates T1; b2 ranking) merged into doc 40 V5/V3
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume patch_manager_mods/41_custom_voice_and_events.md`.
@@ -99,6 +73,9 @@ Task: Live tests E1-E8 incl. E5, E6, plus T-SSF and T-TIMER, with a tiny probe (
 - V-C trigger route: scripts via `runscript` (console `~`, patch live, never targeted-tested). Compile test NSS with nwnnsscomp only (never pykotor `compile_nss`) and check `check_ncs_arg_order.py`.
 
 - V-C host prep lessons (2026-10-13): plan bug, `kpve8_seventeenchrs` is 19 chars; the 17-char E8 name is `kpve8_seventeench`. `check_ncs_arg_order.py` takes a game dir (`<dir>/override`, use `--override-only`) and needs the pykotor venv `~/Games/KOTOR2_Mod_Workspace/venvs/k1port/bin/python`, not file args. Compile with `~/Games/KOTOR2_Mod_Workspace/script_recompile_20260924/tools/compile.sh <out.ncs> <src.nss>`. Haiku bug caught in review: a bare ini name in `GetPrivateProfileIntA` is searched in the Windows dir (fixed with an absolute path). E4 uses strref 36878 (`p_bastila_rprty`); its wav is not at the top level of StreamVoice or StreamSounds, confirm before the live run. Runbook: `patch_manager_mods/kvoice/V-C_RUNBOOK.md`; trigger route CORRECTED: `additional-console-commands` and `k2-visible-console` ARE installed live (kpm_status.py does not list them; check `patch_config.toml`), `runscript` untested; user chose it as the trigger route 2026-10-13 (fallbacks: native hotkey RunScript 0x6FD8D0, then commands/*.toml). E4 wav confirmed at `StreamSounds/P_BASTILA_RPRTY.wav` (uppercase, 470-byte prefix + RIFF PCM). `k2-mp3-playback-fix` is live (loose .mp3 plays, beats same-named .wav).
+
+- V-C live lessons (2026-10-15/16, E1/E2 run): console `runscript` NEVER ran a script (no `.ncs` open, no credits, no error). The only working trigger was an Override replacement of `k_hen_heartbt01` (every ~6 s per companion, hot-swappable because the engine reloads the NCS each run), but it hits EVERY save and is retired by the no-loose-files rule. Results: E1 PASS (loose RIFF PCM16 22050 Hz mono WAV plays via PlaySound); E2b (58-byte container named .wav) opened and read but SILENT; E2c (bare .mp3) NEVER looked up. Host observer used: `inotify` via ctypes on the live Override dir (no native probe needed). A new file added while the game runs may not be indexed; restart after staging. A global script override with a counter guard (SetLocalNumber 28) did not hold: no guards on global overrides.
+- V-C2 / doc 44 collisions (2026-10-17): do not add a second owner for GetKeyEntry 0x712360 (the VFS session owns it); Demand 0x711C20 and Malloc 0x712F30 are perf-lab's; 0x70CAA0 is InitializeSource (mp3-fix hooks inside); RunScript 0x6FD8D0 is companion-ai's. Details: `patch_manager_mods/kvoice/VFS_COLLISION_FEEDBACK.md`. `pkill`/`kill` and some `rm -r` forms are permission-gated: ask the user to run `! pkill -f <name>`. Wave `w13-vfs-collide` (6 Haiku, all PARTIAL; u06 used 105k tokens, over the 100k ceiling: keep KPM-source recon to one narrow question).
 
 ### Verification commands
 - Host tests (after V-B): `python3 scripts/run_tests.py -k kvoice` (always scoped) and `python3 scripts/compat_check.py patch_manager_mods/k1_port/k1_port_sources.py` after touching the ledger.
