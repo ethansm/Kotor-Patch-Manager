@@ -131,3 +131,4 @@ _(none recorded; append Dead Ends & Anti-Patterns and Verification Commands here
 - Play rows FW-H1 + HW-LH1 pending (D3B/D3C superseded). HW-LH1 needs the user's manual game-dir holster.ini edit (bone_test_left=1, gob_every=1). After pass: flip the bone_test_left default with a new GO.
 - Holster banner still reads "(P0 probe, log-only)": scripts/test_holster_place_verdict.py + test_holster_log_check.py match that text; change both together later.
 - 10-17 01:15 FW-H1 LIVE x3 (holster b963e8b4, holster-editor 77929cc2, preview-3d 2143d671); rollback kpm_hotswap.py --rollback batch_swap_20261017_011518.
+- 10-17 10:20 mod-config reverted 6ad23e8 (437a3c0, KPM 4fcb471) LIVE 43ffeaa0: root button never appended (McTick returned on flags48 bit 2 clear); rollback kpm_hotswap.py --rollback mod-config_swap_20261017_102046; replay MC1 + check asset-vfs/juhani-char logs.
