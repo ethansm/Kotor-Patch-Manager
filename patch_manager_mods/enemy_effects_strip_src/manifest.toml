@@ -1,7 +1,7 @@
 [patch]
 id = "enemy-effects-strip"
 name = "Enemy Effects Strip"
-version = "0.1.0-probe"
+version = "0.2.0-probe"
 author = "local"
 description = "Probe only: logs, on each target change, the target-menu panel geometry, the target's effect list with spell icon matches, and the leader's Awareness rank, via hud-host's TARGET_MENU_POST hook. Draws and writes nothing (needs hud-host)."
 

@@ -1,6 +1,6 @@
-// common_contract_test.cpp -- Patches/Common CONTRACT test for Enemy Effects Strip (probe 0.1.0-probe).
+// common_contract_test.cpp -- Patches/Common CONTRACT test for Enemy Effects Strip (probe 0.2.0-probe).
 // Rule: every Patches/Common API a mod uses gets a mod-owned contract test colocated with the mod.
-// Pins the semantics EnemyStrip.cpp relies on in SafeRead.h, KpLog.h, HudHost.h, K2Addr.h, Effects.h and EffectIcons.h.
+// Pins the semantics EnemyStrip.cpp relies on in SafeRead.h, KpLog.h, HudHost.h, K2Addr.h, Party.h, Effects.h and EffectIcons.h.
 #include <windows.h>
 #include <sys/mman.h>
 #include <stddef.h>
@@ -11,6 +11,7 @@
 #include "KpLog.h"
 #include "HudHost.h"
 #include "K2Addr.h"
+#include "Party.h"
 #include "Effects.h"
 #include "EffectIcons.h"
 #include "check.h"
@@ -20,6 +21,15 @@
 #define EEQ(why, a, b) ::kt::CheckEq("enemy-effects-strip relies on: " why " (line " KT_STR(__LINE__) ")", (a), (b))
 
 KP_LOG_PATCH("enemy-effects-strip");
+
+// Party.h engine hook (MemberServerCreature, thiscall): records the call and answers member + 0x5000.
+static int g_srvCalls = 0;
+static uintptr_t g_srvArg = 0;
+static uintptr_t __thiscall fakeServerCreature(void* m) {
+    ++g_srvCalls;
+    g_srvArg = reinterpret_cast<uintptr_t>(m);
+    return reinterpret_cast<uintptr_t>(m) + 0x5000;
+}
 
 int main() {
     int flags = MAP_PRIVATE | MAP_ANONYMOUS;
@@ -88,6 +98,30 @@ int main() {
     ECHECK("iconForSpell: some buff row has an icon, and rows -1 and table-size give nullptr (buff and debuff)",
            anyBuff && k2fx::iconForSpell(-1, false, &item) == nullptr && k2fx::iconForSpell(kEffectIconTableSize, false, &item) == nullptr &&
            k2fx::iconForSpell(-1, true, &item) == nullptr && k2fx::iconForSpell(kEffectIconTableSize, true, &item) == nullptr);
+
+    // 9. K2Addr.h Steam table: the icon cache (data +0xFFC, count +0x1000), the effect subtype and ints fields the 0.2.0 dumps read,
+    //    and the MemberServerCreature engine address that Party.h's serverCreature calls.
+    k2addr::setForTest(&kSteam);
+    ECHECK("Steam table: icon cache data 0xFFC and count 0x1000, effect subtype 0x0A, ints count 0x30 and ints ptr 0x34, MemberServerCreature 0x0077D800",
+           k2addr::off(&K2AddrTable::Creature_IconCacheData) == 0xFFC && k2addr::off(&K2AddrTable::Creature_IconCacheCount) == 0x1000 &&
+           k2addr::off(&K2AddrTable::Effect_Subtype) == 0x0A && k2addr::off(&K2AddrTable::Effect_IntCount) == 0x30 &&
+           k2addr::off(&K2AddrTable::Effect_Ints) == 0x34 && kSteam.MemberServerCreature == 0x0077D800u);
+    k2addr::clearForTest();
+
+    // 10. Party.h serverCreature (the probe resolves target and leader through it): 0 for a 0 member with no engine call; a non-zero
+    //     client member goes to the engine accessor once and its answer comes back; a table without the accessor gives 0.
+    party::g_serverCreature = fakeServerCreature;
+    g_srvCalls = 0;
+    const uintptr_t cli = base + 0x100;
+    ECHECK("party::serverCreature(0) is 0 with no engine call", party::serverCreature(0) == 0 && g_srvCalls == 0);
+    ECHECK("party::serverCreature(client) returns the engine answer for that client member (one call, same pointer)",
+           party::serverCreature(cli) == cli + 0x5000 && g_srvCalls == 1 && g_srvArg == cli);
+    party::g_serverCreature = party::useTableFn<party::ServerCreatureFn>();
+    K2AddrTable noMem = kSteam;
+    noMem.MemberServerCreature = 0;
+    k2addr::setForTest(&noMem);
+    ECHECK("party::serverCreature with the table's MemberServerCreature unknown returns 0", party::serverCreature(cli) == 0);
+    k2addr::clearForTest();
 
     munmap(arena, 0x10000);
     return ::kt::Report("common_contract_test (enemy-effects-strip)");
