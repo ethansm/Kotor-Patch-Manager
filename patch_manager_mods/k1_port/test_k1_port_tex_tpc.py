@@ -6,6 +6,8 @@ expected changed-block set by brute force from mip-0 pixels, independent of the 
 reads k1p_commm04.tpc from the staged override dir and SKIPs when it is absent. Under system python3 the file
 re-executes itself with the repo venv, which has numpy.
 """
+import contextlib
+import io
 import os
 import shutil
 import struct
@@ -373,6 +375,185 @@ def test_real_file_commm04(root: Path):
     check(info["sizes"][0] == 131072 and info["sizes"][-3:] == [8, 8, 8], f"sizes {info['sizes']}")
     out = tpc.apply_rgb_edit(data, np.zeros((512, 512, 3), dtype=np.uint8), np.zeros((512, 512), dtype=bool))
     check(out == data, "empty-mask edit of k1p_commm04 is not byte-identical")
+
+
+def make_tga(rgba: np.ndarray, bpp: int = 32, top_left: bool = False, img_type: int = 2, id_field: bytes = b"",
+             cmap_type: int = 0, depth: int = 0) -> bytes:
+    """Uncompressed TGA for tests: rgba (h, w, 4) top-down, stored bottom-first unless top_left."""
+    h, w = rgba.shape[:2]
+    rows = rgba if top_left else rgba[::-1]
+    order = [2, 1, 0, 3] if bpp == 32 else [2, 1, 0]
+    desc = (0x20 if top_left else 0) | (8 if bpp == 32 else 0)
+    head = struct.pack("<BBBHHBHHHHBB", len(id_field), cmap_type, img_type, 0, 0, 0, 0, 0, w, h,
+                       depth or bpp, desc)
+    return head + id_field + np.ascontiguousarray(rows[..., order]).tobytes()
+
+
+def flat_rgba(h: int, w: int, rgb: tuple, alpha: int = 255) -> np.ndarray:
+    out = np.zeros((h, w, 4), dtype=np.uint8)
+    out[..., :3] = rgb
+    out[..., 3] = alpha
+    return out
+
+
+def expect_value_error(fn, text: str) -> None:
+    try:
+        fn()
+    except ValueError as exc:
+        check(text in str(exc), f"ValueError {exc!s} does not mention {text!r}")
+        return
+    raise AssertionError(f"expected ValueError mentioning {text!r}")
+
+
+@test
+def test_tga_to_tpc_header_and_mips(root: Path):
+    out = tpc.tga_to_tpc(make_tga(flat_rgba(32, 64, (120, 60, 200)), top_left=True), txi=b"clamp 1\n")  # 64 wide, 32 tall
+    head = struct.unpack_from("<IfHHBB", out, 0)
+    check(head == (1024, 1.0, 64, 32, 2, 7), f"header {head} != (1024, 1.0, 64, 32, 2, 7)")
+    check(out[14:128] == b"\0" * 114, "header padding is not zero")
+    info = tpc.parse(out)
+    check(info["sizes"] == [1024, 256, 64, 16, 8, 8, 8], f"sizes {info['sizes']}")
+    check(info["trailer"] == b"clamp 1\n", f"TXI trailer {info['trailer']!r}")
+    check(len(out) == 128 + sum(info["sizes"]) + len(b"clamp 1\n"), "TPC length is not header + mips + trailer")
+
+
+@test
+def test_tga_to_tpc_non_pow2_chain(root: Path):
+    out = tpc.tga_to_tpc(make_tga(flat_rgba(28, 60, (255, 255, 255)), bpp=24, top_left=True))
+    info = tpc.parse(out)
+    dims = [tpc.mip_dims(60, 28, k) for k in range(info["mips"])]
+    check(info["mips"] == 6 and dims[-1] == (1, 1), f"60x28 chain {dims}")
+    want = [((mw + 3) // 4) * ((mh + 3) // 4) * 8 for mw, mh in dims]
+    check(info["sizes"] == want, f"60x28 sizes {info['sizes']} != {want}")
+    check(len(out) == 128 + sum(want), "60x28 TPC length wrong")
+
+
+@test
+def test_tga_origin_bottom_left_and_top_left_agree(root: Path):
+    rgba = flat_rgba(64, 64, (0, 0, 0))
+    rgba[:32, :, :3] = (255, 0, 0)  # top half red
+    rgba[32:, :, :3] = (0, 0, 255)  # bottom half blue
+    bl, tl = make_tga(rgba, top_left=False), make_tga(rgba, top_left=True)
+    check(bl[18:22] == b"\xff\x00\x00\xff", "bottom-left file should store the blue bottom row first")
+    check(tl[18:22] == b"\x00\x00\xff\xff", "top-left file should store the red top row first")
+    check(np.array_equal(tpc.read_tga(bl), rgba), "bottom-left TGA not flipped back to top-down")
+    check(np.array_equal(tpc.read_tga(tl), rgba), "top-left TGA read wrong")
+    out_bl, out_tl = tpc.tga_to_tpc(bl), tpc.tga_to_tpc(tl)
+    check(out_bl == out_tl, "the two origins produce different TPCs")
+    mip0 = tpc.decode_mip(out_bl, tpc.parse(out_bl), 0)
+    # TPC stored row 0 is the image's bottom row (engine draws it at the bottom), so decode order is flipped.
+    check(mip0[0, 0, 2] > 200 and mip0[0, 0, 0] < 60, f"stored row 0 not the blue bottom row: {mip0[0, 0]}")
+    check(mip0[63, 63, 0] > 200 and mip0[63, 63, 2] < 60, f"last stored row not the red top row: {mip0[63, 63]}")
+
+
+@test
+def test_tga_right_to_left_mirrors_columns(root: Path):
+    rgba = flat_rgba(2, 3, (0, 0, 0))
+    rgba[:, 0, 0] = 255  # left column red
+    rgba[:, 2, 1] = 255  # right column green
+    stored = rgba[:, ::-1]  # right-to-left storage: first stored pixel is the right column
+    head = struct.pack("<BBBHHBHHHHBB", 0, 0, 2, 0, 0, 0, 0, 0, 3, 2, 32, 0x20 | 0x10 | 0x08)
+    check(np.array_equal(tpc.read_tga(head + np.ascontiguousarray(stored[..., [2, 1, 0, 3]]).tobytes()), rgba),
+          "right-to-left TGA not mirrored")
+
+
+@test
+def test_tga_rejects_unsupported(root: Path):
+    rgba = flat_rgba(8, 8, (255, 255, 255))
+    good = make_tga(rgba)
+    cases = {
+        "RLE (type 10)": make_tga(rgba, img_type=10),
+        "colour-mapped (type 1)": make_tga(rgba, img_type=1),
+        "colour map present": make_tga(rgba, cmap_type=1),
+        "16 bpp": make_tga(rgba, depth=16),
+        "truncated": good[:-7],
+        "short header": good[:10],
+    }
+    for name, data in cases.items():
+        try:
+            tpc.tga_to_tpc(data)
+        except ValueError:
+            continue
+        raise AssertionError(f"tga_to_tpc accepted {name}")
+
+
+@test
+def test_opaque_rules_and_encoding(root: Path):
+    rgba = flat_rgba(16, 16, (10, 200, 90))
+    out = tpc.tga_to_tpc(make_tga(rgba))
+    check(out[12] == 2, f"pixel_type {out[12]} != 2 (DXT1)")
+    check(bool((tpc.decode_mip(out, tpc.parse(out), 0)[..., 3] == 255).all()), "opaque DXT1 has non-opaque pixels")
+    semi = rgba.copy()
+    semi[0, 0, 3] = 254
+    expect_value_error(lambda: tpc.tga_to_tpc(make_tga(semi)), "non-opaque TGA needs DXT5")
+    forced = tpc.tga_to_tpc(make_tga(semi), force_opaque=True)
+    check(forced[12] == 2, "force_opaque output is not DXT1")
+    check(bool((tpc.decode_mip(forced, tpc.parse(forced), 0)[..., 3] == 255).all()), "force_opaque left alpha != 255")
+    alpha0 = tpc.tga_to_tpc(make_tga(flat_rgba(16, 16, (10, 200, 90), alpha=0)), force_opaque=True)
+    check(alpha0 == tpc.tga_to_tpc(make_tga(rgba), force_opaque=False), "force_opaque on alpha 0 differs from opaque")
+    check(tpc.tga_to_tpc(make_tga(flat_rgba(16, 16, (10, 200, 90)), bpp=24)) == out,
+          "24-bit TGA (implicit alpha 255) should encode like an opaque 32-bit one")
+
+
+@test
+def test_flat_colour_round_trip(root: Path):
+    rgba = flat_rgba(64, 64, (200, 30, 60))
+    out = tpc.tga_to_tpc(make_tga(rgba))
+    info = tpc.parse(out)
+    for k in (0, info["mips"] - 1):
+        px = tpc.decode_mip(out, info, k)[..., :3].astype(int)
+        err = np.abs(px - [200, 30, 60]).max()
+        check(err <= 8, f"mip {k} flat colour off by {err}")
+
+
+@test
+def test_txi_trailer(root: Path):
+    tga = make_tga(flat_rgba(16, 16, (1, 2, 3)))
+    plain = tpc.tga_to_tpc(tga)
+    check(tpc.parse(plain)["trailer"] == b"", "unexpected trailer without txi")
+    with_txi = tpc.tga_to_tpc(tga, txi=b"clamp 1\n")
+    check(tpc.parse(with_txi)["trailer"] == b"clamp 1\n", "TXI trailer missing or altered")
+    check(with_txi[:len(plain)] == plain, "TXI changed the mip data")
+    check(tpc.parse(tpc.tga_to_tpc(tga, txi="clamp 1\n"))["trailer"] == b"clamp 1\n", "str txi not encoded")
+
+
+@test
+def test_pykotor_reads_tga_tpc(root: Path):
+    try:
+        from pykotor.resource.formats.tpc import TPCTextureFormat, read_tpc
+    except ImportError as exc:
+        raise Skip(f"pykotor not importable: {exc}")
+    rgba = flat_rgba(64, 32, (0, 0, 0))
+    rgba[:32, :, :3] = (255, 0, 0)
+    rgba[32:, :, :3] = (0, 0, 255)
+    out = tpc.tga_to_tpc(make_tga(rgba), txi=b"clamp 1\n")
+    info = tpc.parse(out)
+    t = read_tpc(out)
+    mips = t.layers[0].mipmaps
+    check([(m.width, m.height) for m in mips] == [tpc.mip_dims(32, 64, k) for k in range(info["mips"])],
+          f"pykotor mip dims {[(m.width, m.height) for m in mips]}")
+    t.convert(TPCTextureFormat.RGBA)
+    ref = np.frombuffer(bytes(t.get(0, 0).data), dtype=np.uint8).reshape(64, 32, 4)
+    ours = tpc.decode_mip(out, info, 0)
+    err = np.abs(ref[..., :3].astype(int) - ours[..., :3].astype(int)).max()
+    check(err <= 8, f"pykotor mip0 differs from decode_mip by {err}")
+    check(bool(ref[0, 0, 2] > 200 and ref[63, 0, 0] > 200), "pykotor stored row 0 is not the bottom (blue) row")
+
+
+@test
+def test_cli_writes_tpc(root: Path):
+    tga_path, txi_path, out_path = root / "in.tga", root / "in.txi", root / "out.tpc"
+    tga_path.write_bytes(make_tga(flat_rgba(32, 32, (9, 9, 9), alpha=0)))
+    txi_path.write_bytes(b"clamp 1\n")
+    quiet = io.StringIO()
+    with contextlib.redirect_stderr(quiet), contextlib.redirect_stdout(quiet):
+        check(tpc.main(["tga-to-tpc", str(tga_path), str(out_path)]) == 1, "non-opaque CLI run without flag must fail")
+        check(not out_path.exists(), "failed CLI run wrote a file")
+        check(tpc.main(["tga-to-tpc", str(tga_path), str(out_path), "--force-opaque", "--txi", str(txi_path)]) == 0,
+              "CLI run with --force-opaque failed")
+    check(tpc.parse(out_path.read_bytes())["trailer"] == b"clamp 1\n", "CLI output TXI trailer wrong")
+    check(out_path.read_bytes() == tpc.tga_to_tpc(tga_path.read_bytes(), force_opaque=True, txi=b"clamp 1\n"),
+          "CLI output differs from tga_to_tpc")
 
 
 def main() -> int:
