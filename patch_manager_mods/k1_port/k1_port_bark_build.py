@@ -17,6 +17,9 @@ Writes under <out>/:
   utc/dialog/k1p_juhani.utc     installed UTC with Conversation = kvjdlg01 (Soundset unchanged)
   utc/bark/k1p_juhani.utc       Soundset = the new row (Conversation unchanged)
   utc/both/k1p_juhani.utc       both
+  override_combat/p_juhani_bat1..6.wav   tone controls for the six battle-cry slots (SSF slots 0..5)
+  override_combat/p_juhani_{atk1,atk2,hit1,hit2,dead}.wav   K1 originals (SFX layout) for attack/pain/death slots
+  utc/combat/k1p_juhani.utc     Soundset = the new row, FactionID = Hostile_1 (clicking gives no bark, so she fights)
 The base UTC is the staged char_juhani/override/k1p_juhani.utc (so the appearance row stays 818). Install ONE UTC
 as override/k1p_juhani.utc per test. Watch with scripts/override_watch.py --match 'p_juhani|kvj'.
 """
@@ -77,7 +80,12 @@ def append_soundset_row(raw: bytes, label=NEW_LABEL, resref=NEW_RESREF, gender="
     return bytes_2da(t), row
 
 
-def patch_utc(raw: bytes, *, conversation=None, soundset=None) -> bytes:
+HOSTILE_FACTION = 1  # factions.2da row Hostile_1 (K1 and K2)
+COMBAT_TONES = tuple(f"p_juhani_bat{n}" for n in range(1, 7))
+COMBAT_K1 = ("atk1", "atk2", "hit1", "hit2", "dead")
+
+
+def patch_utc(raw: bytes, *, conversation=None, soundset=None, faction=None) -> bytes:
     from pykotor.common.misc import ResRef
     from pykotor.resource.generics.utc import bytes_utc, read_utc
     u = read_utc(raw)
@@ -85,6 +93,8 @@ def patch_utc(raw: bytes, *, conversation=None, soundset=None) -> bytes:
         u.conversation = ResRef(conversation)
     if soundset is not None:
         u.soundset_id = soundset
+    if faction is not None:
+        u.faction_id = faction
     return bytes_utc(u)
 
 
@@ -120,16 +130,27 @@ def build(k1, k2, out: Path, *, adopt=True) -> dict:
         files[bark / f"p_juhani_slct{n}.wav"] = find_ci(k1, f"streamsounds/P_JUHANI_SLCT{n}.wav").read_bytes()
         k1_made.append(bark / f"p_juhani_slct{n}.wav")
     k1_made.append(bark / f"{SSF_NAME}.ssf")
+    combat = out / "override_combat"
+    combat.mkdir(parents=True, exist_ok=True)
+    tones_made = [bark / "p_juhani_slct1.wav"]
+    tone = tone_wav()
+    for name in COMBAT_TONES:
+        files[combat / f"{name}.wav"] = tone
+        tones_made.append(combat / f"{name}.wav")
+    for n in COMBAT_K1:
+        files[combat / f"p_juhani_{n}.wav"] = find_ci(k1, f"streamsounds/P_JUHANI_{n.upper()}.wav").read_bytes()
+        k1_made.append(combat / f"p_juhani_{n}.wav")
     base = BASE_UTC.read_bytes()
     for name, kw in (("dialog", dict(conversation=DLG)), ("bark", dict(soundset=row)),
-                     ("both", dict(conversation=DLG, soundset=row))):
+                     ("both", dict(conversation=DLG, soundset=row)),
+                     ("combat", dict(soundset=row, faction=HOSTILE_FACTION))):
         (utcd / name).mkdir(exist_ok=True)  # the probe installs by file name, so each variant is k1p_juhani.utc
         files[utcd / name / "k1p_juhani.utc"] = patch_utc(base, **kw)
     for p, b in files.items():
         p.write_bytes(b)
     if adopt:
         # The tone is synthesised here (no third-party content); everything else read from the K1 install is vanilla_k1.
-        for f, source_id in [(f, "vanilla_k1") for f in k1_made] + [(bark / "p_juhani_slct1.wav", "workspace_generated")]:
+        for f, source_id in [(f, "vanilla_k1") for f in k1_made] + [(f, "workspace_generated") for f in tones_made]:
             r = subprocess.run([sys.executable, str(HERE / "k1_port_prune.py"), "adopt", "--file", str(f), "--kind",
                                 "other", "--source-id", source_id], capture_output=True, text=True,
                                env=dict(os.environ, K1PORT_LEDGER=str(STAGE / "ledger.json")))

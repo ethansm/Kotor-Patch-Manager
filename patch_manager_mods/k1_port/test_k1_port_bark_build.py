@@ -44,13 +44,19 @@ def main():
     assert (str(a.conversation), a.soundset_id) == ("kvjdlg01", 57)
     assert (str(b.conversation), b.soundset_id) == ("204ithr", 70)
     assert (str(c.conversation), c.soundset_id, c.appearance_id, c.tag) == ("kvjdlg01", 70, 818, "k1p_juhani")
-    print("PASS utc variants change only the named fields"); ok += 1
+    u.faction_id = 2
+    d = read_utc(bb.patch_utc(bytes_utc(u), soundset=70, faction=bb.HOSTILE_FACTION))
+    assert (d.faction_id, d.soundset_id, str(d.conversation), d.appearance_id) == (1, 70, "204ithr", 818)
+    assert read_utc(bb.patch_utc(bytes_utc(u), soundset=70)).faction_id == 2  # faction untouched unless asked
+    print("PASS utc variants change only the named fields (incl. combat faction)"); ok += 1
+    assert len(bb.COMBAT_TONES) == 6 and bb.COMBAT_TONES[0] == "p_juhani_bat1"
+    print("PASS combat tone set names the six battle-cry resrefs"); ok += 1
     try:
         bb.find_ci(Path("/nonexistent"), "a")
     except bb.BuildError:
         print("PASS missing source refused"); ok += 1
-    print(f"{ok}/4 PASS")
-    return 0 if ok == 4 else 1
+    print(f"{ok}/5 PASS")
+    return 0 if ok == 5 else 1
 
 
 if __name__ == "__main__":
