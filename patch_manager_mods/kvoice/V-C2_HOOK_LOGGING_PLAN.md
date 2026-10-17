@@ -131,3 +131,17 @@ extern "C" void __cdecl VoiceProbeKeyLookup(void* self, const char* resref, int 
 - The trigger problem stands: the VFS can serve an NCS, but a trigger is still needed (heartbeat override on disk is not allowed under the no-files rule). Candidate: a native hotkey or ini-gated NCS served by the VFS.
 - Layer 3 (stream) hook points are NOT the plan's H-list: the OpenStream address is `InitializeSource`, with live mp3-fix hooks inside; see the feedback file.
 - Net: V-C2 shrinks to R1 recon + H2 + trigger design; H1 moves to the VFS session.
+
+### 10.1 voice-probe install checklist (checked 2026-10-17, nothing changed live)
+- State: `kpm_status.py` shows `voice-probe 0.1.1 LIVE` (md5 c2227c25 src = live; `patches/voice-probe.dll` 10-17 00:38, handoff commit `c9ce8ba`, probe off). No reinstall is needed for H2 (PlaySound 0x68EA70, RET 8).
+- Gate: `scripts/pre_install_gate.sh --mod voice_probe_src` = `GATE PASS mods=voice-probe` (head 6cee3f0; 343 suites pass; no Wine smoke for this mod).
+- Missing for a live read (both are config files in the game dir, the allowed exception; each needs the user's GO):
+  1. `kplog.ini` has no `[voice-probe]` section, so on the new core the probe writes only WARN/ERR. Append:
+     ```ini
+     [voice-probe]
+     enabled=1
+     level=info
+     ```
+     (`[global] enabled=1` is already set; the core re-reads the ini about once a second.)
+  2. `<game>/voice_probe.ini` is absent (probe off by default). For a run: `[probe]` `probe=1`; back to `probe=0` after.
+- A trigger change (section 9, design in `V-C2_TRIGGER_DESIGN.md`) adds code to `voice_probe_src` and then needs a hot-swap or reinstall: bundle it with the VFS install (one `kpm_reinstall.py` run, per `kotor2-kpm-install`), fresh `GATE PASS` first.
