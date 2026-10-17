@@ -1,7 +1,11 @@
-// common_contract_test.cpp -- Patches/Common CONTRACT test for Enemy Effects Strip (probe 0.2.0-probe).
+// common_contract_test.cpp -- Patches/Common CONTRACT test for Enemy Effects Strip (0.3.0-dev).
 // Rule: every Patches/Common API a mod uses gets a mod-owned contract test colocated with the mod.
-// Pins the semantics EnemyStrip.cpp relies on in SafeRead.h, KpLog.h, HudHost.h, K2Addr.h, Party.h, Effects.h and EffectIcons.h.
+// Pins the semantics EnemyStrip.cpp relies on in SafeRead.h, KpLog.h, HudHost.h, K2Addr.h, Party.h, Effects.h, EffectIcons.h and GuiKit.h.
+#ifndef GUIKIT_HOST
+#define GUIKIT_HOST 1
+#endif
 #include <windows.h>
+#include <type_traits>
 #include <sys/mman.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -14,6 +18,7 @@
 #include "Party.h"
 #include "Effects.h"
 #include "EffectIcons.h"
+#include "GuiKit.h"
 #include "check.h"
 #include "FakeKPatchApi.h"
 
@@ -30,6 +35,37 @@ static uintptr_t __thiscall fakeServerCreature(void* m) {
     g_srvArg = reinterpret_cast<uintptr_t>(m);
     return reinterpret_cast<uintptr_t>(m) + 0x5000;
 }
+
+// GuiKit.h imageFor loader fake: counts engine loads; "failnull_img" fails.
+static int g_loads = 0;
+static void* fakeLoadImage(const char* n) {
+    ++g_loads;
+    if (!strcmp(n, "failnull_img")) return nullptr;
+    return reinterpret_cast<void*>(static_cast<uintptr_t>(0x7000u + 8u * static_cast<unsigned>(g_loads)));
+}
+
+// Signatures EnemyStrip.cpp calls (a changed shared signature fails the build of this test, not the live game).
+#define SIG(fn, ...) static_assert(std::is_same<decltype(&fn), __VA_ARGS__>::value, #fn " signature changed")
+SIG(guikit::createLabelFromTemplate, uintptr_t (*)(uintptr_t, const char*, int*, uint32_t*));
+SIG(guikit::appendToPanel, bool (*)(uintptr_t, uintptr_t));
+SIG(guikit::setRect, bool (*)(uintptr_t, int, int, int, int));
+SIG(guikit::setFill, bool (*)(uintptr_t, void*, const float*));
+SIG(guikit::setAlpha, bool (*)(uintptr_t, float));
+SIG(guikit::setBorderTint, bool (*)(uintptr_t, const float*));
+SIG(guikit::setVisible, bool (*)(uintptr_t, bool));
+SIG(guikit::setClickable, bool (*)(uintptr_t, bool));
+SIG(guikit::imageFor, void* (*)(const char*, bool*, int*));
+SIG(k2fx::iconForSpell, const char* (*)(int, bool, bool*));
+SIG(k2fx::iconForEffectIconEffect, const char* (*)(int, bool*));
+SIG(k2fx::effectRatio, float (*)(uintptr_t, int, int, bool, float));
+SIG(k2fx::currentTime, bool (*)(int*, int*));
+SIG(party::serverCreature, uintptr_t (*)(uintptr_t));
+SIG(party::table, uintptr_t (*)(party::Fail*));
+SIG(party::member, uintptr_t (*)(uintptr_t, int));
+SIG(party::partyCount, int (*)(uintptr_t));
+SIG(k2fx::remainingRatio, float (*)(int, int, float, int, int, float));
+SIG(k2hud::Client::add, bool (k2hud::Client::*)(int32_t, int32_t, K2HudCallback, void*));
+#undef SIG
 
 int main() {
     int flags = MAP_PRIVATE | MAP_ANONYMOUS;
@@ -122,6 +158,36 @@ int main() {
     k2addr::setForTest(&noMem);
     ECHECK("party::serverCreature with the table's MemberServerCreature unknown returns 0", party::serverCreature(cli) == 0);
     k2addr::clearForTest();
+
+    // 11. HudHost.h BUILD phase: K2HUD_BUILD is phase 3 and K2HudContext.panel (offset 36, last field) is what onHudBuild reads and
+    //     onTargetMenuPost compares ctx->hud against; hud (offset 12) is the identity-guard field.
+    ECHECK("K2HUD_BUILD is phase 3; K2HudContext hud at 12 and panel at 36",
+           K2HUD_BUILD == 3 && offsetof(K2HudContext, hud) == 12 && offsetof(K2HudContext, panel) == 36);
+
+    // 12. GuiKit.h imageFor: one engine load per resref (called per icon per refresh), case-insensitive, a failed load is pooled
+    //     (the 'image not found' warn path must not ask the engine again).
+    guikit::g_gk.loadImage = fakeLoadImage;
+    g_loads = 0;
+    void* im = guikit::imageFor("ip_stun");
+    ECHECK("imageFor loads once and returns the same wrapper for a repeat and an upper-case resref",
+           im != nullptr && g_loads == 1 && guikit::imageFor("ip_stun") == im && guikit::imageFor("IP_STUN") == im && g_loads == 1);
+    ECHECK("imageFor: a failed load gives nullptr and is pooled (no second engine call)",
+           guikit::imageFor("failnull_img") == nullptr && g_loads == 2 && guikit::imageFor("failnull_img") == nullptr && g_loads == 2);
+    ECHECK("imageFor: null and empty resrefs give nullptr without a load", guikit::imageFor(nullptr) == nullptr && guikit::imageFor("") == nullptr && g_loads == 2);
+
+    // 13. Guards EnemyStrip.cpp relies on to fail soft: label creation with no panel returns 0 (no engine call), the label setters
+    //     refuse control 0, and effectRatio without a world timer is 1.0 without reading the effect.
+    int why = -1;
+    ECHECK("createLabelFromTemplate(panel 0) returns 0 and reports an alloc/guard failure",
+           guikit::createLabelFromTemplate(0, "LBL_QUEUE1", &why) == 0 && why != guikit::CF_None);
+    const float white[3] = { 1.f, 1.f, 1.f };
+    ECHECK("setRect/setFill/setAlpha/setBorderTint/setVisible/setClickable refuse control 0 (no crash)",
+           !guikit::setRect(0, 1, 2, 3, 4) && !guikit::setFill(0, nullptr, nullptr) && !guikit::setAlpha(0, 1.f) &&
+           !guikit::setBorderTint(0, white) && !guikit::setVisible(0, true) && !guikit::setClickable(0, false));
+    ECHECK("effectRatio with haveTime=false is 1.0 (permanent/unknown) and never reads the effect",
+           k2fx::effectRatio(0, 0, 0, false) == 1.0f);
+    ECHECK("EffectIcons.h: type-0x43 EffectIcon effects are k2fx::EffType_Icon == 0x43; iconForEffectIconEffect on an unreadable effect is nullptr",
+           k2fx::EffType_Icon == 0x43 && [] { bool it = true; const char* r = k2fx::iconForEffectIconEffect(0, &it); return r == nullptr && !it; }());
 
     munmap(arena, 0x10000);
     return ::kt::Report("common_contract_test (enemy-effects-strip)");
