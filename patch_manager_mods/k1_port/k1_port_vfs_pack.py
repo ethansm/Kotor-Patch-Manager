@@ -1,10 +1,17 @@
 #!/usr/bin/env python3
-"""Deterministic C/C++ header pack generator for modular in-memory character VFS bundles.
+"""Deterministic bundle packer for modular in-memory character VFS bundles.
 
-Packs staged assets (.mdl, .mdx, .tpc, .txi, .utc, .dlg, .ssf, .lip, stream .wav/.mp3)
-and virtual 2DA cell definitions (appearance, heads, soundset, portraits) into a
-deterministic C/C++ header (e.g. juhani_vfs_bundle.h) for compiling directly into a
-single DLL / kpatch without loose file footprints.
+Packs staged assets (.mdl, .mdx, .tpc, .txi, .utc, .dlg, .ssf, .lip, stream .wav/.mp3, and
+.tga only with --allow-tga) and virtual 2DA cells (rows copied from staged .2da files, or given
+as JSON) into:
+
+  - one raw <symbol>_<resref>.bin per asset in the output dir (a private stage dir), and
+  - a generated header (default juhani_vfs_bundle.h) that links those .bin files in with
+    top-level .incbin, so blob bytes are never emitted as C text.
+
+The header defines extern "C" kvfs_<n> / kvfs_<n>_end blob symbols, the K2VfsAssetEntry and
+K2Vfs2DaCell tables, K2CharacterDefinition, and registerAll(). Compile it against the real
+patch_manager_mods/_shared_src/CharacterProvider.h.
 """
 from __future__ import annotations
 
@@ -29,7 +36,7 @@ sys.path.insert(0, str(HERE.parent / "kvoice"))
 K2VFS_FLAG_RESMAN = 0
 K2VFS_FLAG_STREAM = 1
 
-# Resource type mapping
+# Resource type mapping. .tga is refused unless allow_tga; then it ships as restype 3.
 EXTENSION_TO_RESTYPE = {
     ".mdl": 2002,
     ".mdx": 3008,
@@ -42,10 +49,15 @@ EXTENSION_TO_RESTYPE = {
     ".lip": 3004,
     ".wav": 4,
     ".mp3": 4,
+    ".tga": 3,
 }
 
 RESREF_RE = re.compile(r"^[a-z0-9_]{1,16}$")
 STREAM_DIRS = ("streamvoice", "streamsounds")
+DEFAULT_HEADER_NAME = "juhani_vfs_bundle.h"
+HEADER_NAME_RE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_.-]*\.h$")
+BLOB_WARN_BYTES = 64 * 1024 * 1024
+K1PORT_PY_HINT = "~/Games/KOTOR2_Mod_Workspace/venvs/k1port/bin/python"
 
 
 class PackError(Exception):
@@ -89,20 +101,6 @@ def c_escape_string(s: str) -> str:
         else:
             res.append(f"\\x{ord(ch):02x}")
     return "".join(res)
-
-
-def format_c_bytes(data: bytes, indent: str = "    ", per_line: int = 12) -> str:
-    """Format raw bytes as C hex array lines."""
-    if not data:
-        return indent + "0x00\n"
-    lines = []
-    for i in range(0, len(data), per_line):
-        chunk = data[i : i + per_line]
-        hex_bytes = ", ".join(f"0x{b:02x}" for b in chunk)
-        if i + per_line < len(data):
-            hex_bytes += ","
-        lines.append(indent + hex_bytes)
-    return "\n".join(lines)
 
 
 def validate_lip_data(data: bytes, path_display: str = "") -> None:
@@ -202,9 +200,30 @@ def check_license_gate(paths: Iterable[Path], ledger_path: str | Path, stage_roo
         raise PackError(f"License gate check failed for input assets against ledger {led_p}")
 
 
+def read_asset_list(list_path: str | Path) -> list[str]:
+    """Read one asset path per line. '#' comment lines and blank lines are ignored.
+
+    Relative paths resolve against the list file's own directory; absolute paths are kept.
+    """
+    lp = Path(list_path)
+    if not lp.is_file():
+        raise PackError(f"asset list not found: {lp}")
+    base = lp.resolve().parent
+    out: list[str] = []
+    for raw in lp.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        p = Path(line)
+        out.append(str(p if p.is_absolute() else base / p))
+    return out
+
+
 def collect_assets(
     asset_paths: Iterable[str | Path],
     stream_files: Iterable[str | Path] | None = None,
+    *,
+    allow_tga: bool = False,
 ) -> list[dict[str, Any]]:
     """Gather, validate, and categorize all asset files (refusing symlinks per kvoice R9)."""
     stream_set: set[Path] = set()
@@ -252,7 +271,7 @@ def collect_assets(
 
     for f in unique_files:
         ext = f.suffix.lower()
-        if ext == ".tga":
+        if ext == ".tga" and not allow_tga:
             raise PackError("loose .tga textures bypass CExoResMan::Demand via ReadRaw; convert to .tpc first")
         if ext == ".2da":
             raise PackError(
@@ -291,6 +310,10 @@ def collect_assets(
         seen_keys.add(key)
 
         data = f.read_bytes()
+        if not data:
+            raise PackError(
+                f"zero-byte asset refused ({f}): K2VfsAssetEntry.size must be > 0 to register"
+            )
         if ext == ".lip":
             validate_lip_data(data, str(f))
         elif ext == ".wav" and flags == K2VFS_FLAG_RESMAN:
@@ -313,9 +336,68 @@ def collect_assets(
     assets.sort(key=lambda a: (a["flags"], a["res_type"], a["resref"]))
     for idx, a in enumerate(assets):
         a["idx"] = idx
-        a["symbol"] = f"kAsset_{idx}_{a['stem']}"
+        # Global asm label; the C++ side declares it extern "C" (see generate_c_header).
+        a["symbol"] = f"kvfs_{idx}"
 
     return assets
+
+
+def write_blobs(assets: list[dict[str, Any]], blob_dir: Path) -> int:
+    """Write one raw .bin per asset into blob_dir, record a["blob_path"], return total bytes."""
+    blob_dir = Path(blob_dir)
+    blob_dir.mkdir(parents=True, exist_ok=True)
+    total = 0
+    for a in assets:
+        bp = (blob_dir / f"{a['symbol']}_{a['resref']}.bin").resolve()
+        bp.write_bytes(a["data"])
+        written = bp.stat().st_size
+        if written != a["size"]:
+            raise PackError(f"short blob write {bp}: {written} of {a['size']} bytes")
+        a["blob_path"] = bp
+        total += a["size"]
+    return total
+
+
+def read_twoda_rows(path: str | Path, row_indices: list[int]) -> dict[int, dict[str, str]]:
+    """Return {row: {column: value}} for the requested rows of a staged .2da. Needs pykotor."""
+    try:
+        from pykotor.resource.formats.twoda import read_2da
+    except ImportError as exc:
+        raise PackError(
+            f"--2da-rows needs pykotor to read {path}; run the packer with the k1port venv "
+            f"({K1PORT_PY_HINT}): {exc}"
+        ) from exc
+    p = Path(path)
+    if not p.is_file():
+        raise PackError(f"2DA file not found: {p}")
+    try:
+        table = read_2da(p.read_bytes())
+    except Exception as exc:  # noqa: BLE001  pykotor raises several error types on bad data
+        raise PackError(f"cannot parse 2DA {p}: {exc}") from exc
+    headers = list(table.get_headers())
+    height = table.get_height()
+    out: dict[int, dict[str, str]] = {}
+    for r in row_indices:
+        if not 0 <= r < height:
+            raise PackError(f"{p}: row {r} out of range (table has {height} rows)")
+        out[r] = {h: str(table.get_cell(r, h)) for h in headers}
+    return out
+
+
+def parse_2da_row_spec(spec: str) -> dict[str, dict[int, dict[str, str]]]:
+    """Parse TABLE=FILE.2da:ROW[,ROW] into {table: {row: {column: value}}}."""
+    table, eq, rest = spec.partition("=")
+    path_s, colon, rows_s = rest.rpartition(":")
+    table = table.strip()
+    if not eq or not table or not colon or not path_s or not rows_s.strip():
+        raise PackError(f"bad --2da-rows {spec!r}: expected TABLE=FILE.2da:ROW[,ROW]")
+    try:
+        rows = [int(x) for x in rows_s.split(",") if x.strip()]
+    except ValueError as exc:
+        raise PackError(f"bad row list in --2da-rows {spec!r}: {exc}") from exc
+    if not rows:
+        raise PackError(f"bad --2da-rows {spec!r}: no row numbers given")
+    return {table: read_twoda_rows(Path(path_s), rows)}
 
 
 def parse_2da_cells(
@@ -384,7 +466,18 @@ def generate_c_header(
     head_id: int | None = None,
     soundset_id: int | None = None,
 ) -> str:
-    """Emit the complete C/C++ header for the character VFS bundle."""
+    """Emit the complete C/C++ header for the character VFS bundle.
+
+    Blob bytes are not C text. Each asset's .bin (a["blob_path"], written by write_blobs) is linked
+    in by a top-level __asm__ .incbin block that defines the global label kvfs_<idx> and kvfs_<idx>_end.
+    The label prefix is __USER_LABEL_PREFIX__ ("_" on i686 mingw, "" on x86_64 and Linux).
+    """
+    for a in assets:
+        if "blob_path" not in a:
+            raise PackError(
+                f"internal: blob for {a['resref']}{a['extension']} was not written before header generation"
+            )
+
     clean_char_id = re.sub(r"[^a-zA-Z0-9_]", "_", character_id.lower())
     disp_name = display_name or character_id.capitalize()
     tag = default_tag or f"k1p_{clean_char_id}"
@@ -422,30 +515,74 @@ def generate_c_header(
         "#include <stdint.h>",
         "#include <stddef.h>",
         "",
-        f"namespace k2vfs_{clean_char_id} {{",
+        "// Blob bytes come from the staged .bin files via top-level __asm__ .incbin.",
+        "// __asm__ (not asm) because the build uses -std=c++17, where asm is not a keyword.",
+        "// Section handling: ELF uses .pushsection/.popsection. COFF gas (mingw) has neither, so on _WIN32",
+        "// each blob block ends with .section .text. Include this header before other data is emitted in the TU.",
+        "#if defined(__USER_LABEL_PREFIX__)",
+        "#define K2VFS_BUNDLE_STR_(x) #x",
+        "#define K2VFS_BUNDLE_XSTR_(x) K2VFS_BUNDLE_STR_(x)",
+        "#define K2VFS_BUNDLE_PFX K2VFS_BUNDLE_XSTR_(__USER_LABEL_PREFIX__)",
+        "#elif defined(__i386__) && defined(_WIN32)",
+        '#define K2VFS_BUNDLE_PFX "_"',
+        "#else",
+        '#define K2VFS_BUNDLE_PFX ""',
+        "#endif",
+        "#if defined(_WIN32)",
+        '#define K2VFS_BUNDLE_SECTION_OPEN ".section .rdata,\\"dr\\"\\n"',
+        '#define K2VFS_BUNDLE_SECTION_CLOSE ".section .text\\n"',
+        "#else",
+        '#define K2VFS_BUNDLE_SECTION_OPEN ".pushsection .rodata\\n"',
+        '#define K2VFS_BUNDLE_SECTION_CLOSE ".popsection\\n"',
+        "#endif",
         "",
     ]
 
-    # Emit binary asset byte arrays
     for a in assets:
+        sym = a["symbol"]
+        blob_lit = c_escape_string(Path(a["blob_path"]).as_posix())
         lines.append(f"// {a['resref']}{a['extension']} ({a['size']} bytes, sha256={a['sha256'][:16]}...)")
-        lines.append(f"alignas(8) static const uint8_t {a['symbol']}[] = {{")
-        lines.append(format_c_bytes(a["data"], indent="    ", per_line=12))
-        lines.append("};")
-        lines.append("")
+        lines.extend([
+            "__asm__(",
+            "    K2VFS_BUNDLE_SECTION_OPEN",
+            '    ".balign 8\\n"',
+            f'    ".globl " K2VFS_BUNDLE_PFX "{sym}\\n"',
+            f'    K2VFS_BUNDLE_PFX "{sym}:\\n"',
+            f'    ".incbin \\"{blob_lit}\\"\\n"',
+            f'    ".globl " K2VFS_BUNDLE_PFX "{sym}_end\\n"',
+            f'    K2VFS_BUNDLE_PFX "{sym}_end:\\n"',
+            "    K2VFS_BUNDLE_SECTION_CLOSE);",
+            "",
+        ])
 
-    # Emit kAssets table
+    lines.append('extern "C" {')
+    for a in assets:
+        lines.append(f"extern const uint8_t {a['symbol']}[];")
+        lines.append(f"extern const uint8_t {a['symbol']}_end[];")
+    lines.extend([
+        "}",
+        "#undef K2VFS_BUNDLE_STR_",
+        "#undef K2VFS_BUNDLE_XSTR_",
+        "#undef K2VFS_BUNDLE_PFX",
+        "#undef K2VFS_BUNDLE_SECTION_OPEN",
+        "#undef K2VFS_BUNDLE_SECTION_CLOSE",
+        "",
+        f"namespace k2vfs_{clean_char_id} {{",
+        "",
+    ])
+
+    # Emit kAssets table (sizes are constants; data points at the linked blob symbol)
     if assets:
         lines.append("static const K2VfsAssetEntry kAssets[] = {")
         for a in assets:
             lines.append(
-                f'    {{ "{a["resref"]}", {a["res_type"]}, {a["flags"]}, {a["symbol"]}, sizeof({a["symbol"]}) }},'
+                f'    {{ "{a["resref"]}", {a["res_type"]}, {a["flags"]}, {a["symbol"]}, {a["size"]}u }},'
             )
         lines.append("};")
         lines.append("static const uint32_t kAssetCount = static_cast<uint32_t>(sizeof(kAssets) / sizeof(kAssets[0]));")
     else:
         lines.append("static const K2VfsAssetEntry kAssets[1] = {")
-        lines.append('    { "", 0, 0, nullptr, 0 }')
+        lines.append('    { "", 0, 0, nullptr, 0u }')
         lines.append("};")
         lines.append("static const uint32_t kAssetCount = 0;")
     lines.append("")
@@ -466,7 +603,7 @@ def generate_c_header(
         lines.append("static const uint32_t k2DaCellCount = 0;")
     lines.append("")
 
-    # Emit kCharacterDef
+    # Emit kCharacterDef, RegisterCounts, and registerAll
     lines.extend([
         "static const K2CharacterDefinition kCharacterDef = {",
         "    sizeof(K2CharacterDefinition),",
@@ -480,33 +617,40 @@ def generate_c_header(
         f"    {s_id}",
         "};",
         "",
-        "inline bool registerAll(const K2AssetVfsApi* vfs, const K2CharacterLibApi* charlib, const char* owner) {",
-        "    if (!vfs) {",
+        "// Out-param for registerAll: the raw provider returns (assets = entries RegisterAssets accepted).",
+        "struct RegisterCounts {",
+        "    int32_t assets;",
+        "    int32_t cells;",
+        "    int32_t character;",
+        "};",
+        "",
+        "// False if vfs lacks RegisterAssets/Register2DaCells, RegisterAssets accepts fewer than kAssetCount,",
+        "// Register2DaCells returns < 0, or RegisterCharacter returns <= 0. counts (optional) gets the returns.",
+        "inline bool registerAll(const K2AssetVfsApi* vfs, const K2CharacterLibApi* charlib, const char* owner, RegisterCounts* counts) {",
+        "    RegisterCounts local = {0, 0, 0};",
+        "    RegisterCounts* out = counts ? counts : &local;",
+        "    out->assets = 0;",
+        "    out->cells = 0;",
+        "    out->character = 0;",
+        "    if (!vfs || !vfs->RegisterAssets || !vfs->Register2DaCells) {",
         "        return false;",
         "    }",
         f'    const char* pkgOwner = (owner && *owner) ? owner : "{c_escape_string(clean_char_id)}";',
         "    if (kAssetCount > 0) {",
-        "        if (vfs->RegisterAssets) {",
-        "            if (vfs->RegisterAssets(kAssets, kAssetCount, pkgOwner) < 0) {",
-        "                return false;",
-        "            }",
-        "        } else if (vfs->RegisterAsset) {",
-        "            for (uint32_t i = 0; i < kAssetCount; ++i) {",
-        "                if (vfs->RegisterAsset(&kAssets[i], pkgOwner) < 0) {",
-        "                    return false;",
-        "                }",
-        "            }",
-        "        } else {",
+        "        out->assets = vfs->RegisterAssets(kAssets, kAssetCount, pkgOwner);",
+        "        if (out->assets < 0 || static_cast<uint32_t>(out->assets) < kAssetCount) {",
         "            return false;",
         "        }",
         "    }",
         "    if (k2DaCellCount > 0) {",
-        "        if (!vfs->Register2DaCells || vfs->Register2DaCells(k2DaCells, k2DaCellCount, pkgOwner) < 0) {",
+        "        out->cells = vfs->Register2DaCells(k2DaCells, k2DaCellCount, pkgOwner);",
+        "        if (out->cells < 0) {",
         "            return false;",
         "        }",
         "    }",
         "    if (charlib && charlib->RegisterCharacter) {",
-        "        if (charlib->RegisterCharacter(&kCharacterDef, pkgOwner) <= 0) {",
+        "        out->character = charlib->RegisterCharacter(&kCharacterDef, pkgOwner);",
+        "        if (out->character <= 0) {",
         "            return false;",
         "        }",
         "    }",
@@ -520,11 +664,32 @@ def generate_c_header(
     return "\n".join(lines)
 
 
+def resolve_output_paths(
+    output_header: str | Path | None,
+    output_dir: str | Path | None,
+    header_name: str,
+) -> tuple[Path, Path]:
+    """Return (header_path, blob_dir). --out-dir is the stage dir; --out-header is the legacy form."""
+    if not HEADER_NAME_RE.fullmatch(header_name):
+        raise PackError(f"invalid header name {header_name!r}: must be a plain file name ending in .h")
+    if output_header is not None:
+        header_path = Path(output_header).resolve()
+        blob_dir = Path(output_dir).resolve() if output_dir is not None else header_path.parent
+    elif output_dir is not None:
+        blob_dir = Path(output_dir).resolve()
+        header_path = blob_dir / header_name
+    else:
+        raise PackError("no output given: pass output_dir (--out-dir) or output_header (--out-header)")
+    return header_path, blob_dir
+
+
 def pack_character_bundle(
     character_id: str,
     asset_paths: Iterable[str | Path],
-    output_header: str | Path,
+    output_header: str | Path | None = None,
     *,
+    output_dir: str | Path | None = None,
+    header_name: str = DEFAULT_HEADER_NAME,
     display_name: str | None = None,
     default_tag: str | None = None,
     default_utc: str | None = None,
@@ -537,13 +702,16 @@ def pack_character_bundle(
     stream_files: Iterable[str | Path] | None = None,
     ledger_path: str | Path | None = None,
     stage_root: str | Path | None = None,
+    allow_tga: bool = False,
 ) -> dict[str, Any]:
-    """Pack assets and virtual 2DA cells into a deterministic C/C++ header bundle."""
+    """Write one .bin per asset plus the generated header; return the manifest."""
     if not character_id or not re.fullmatch(r"^[a-zA-Z0-9_]{1,32}$", character_id):
         raise PackError(f"invalid character_id {character_id!r}: must match ^[a-zA-Z0-9_]{{1,32}}$")
 
+    header_path, blob_dir = resolve_output_paths(output_header, output_dir, header_name)
+
     # Collect and validate assets
-    assets = collect_assets(asset_paths, stream_files=stream_files)
+    assets = collect_assets(asset_paths, stream_files=stream_files, allow_tga=allow_tga)
 
     # Optional license gate
     if ledger_path is not None:
@@ -551,6 +719,8 @@ def pack_character_bundle(
 
     # Parse 2DA cells
     cells = parse_2da_cells(cells=two_da_cells, rows=two_da_rows)
+
+    total_blob_bytes = write_blobs(assets, blob_dir)
 
     header_content = generate_c_header(
         character_id=character_id,
@@ -565,9 +735,8 @@ def pack_character_bundle(
         soundset_id=soundset_id,
     )
 
-    out_p = Path(output_header).resolve()
-    out_p.parent.mkdir(parents=True, exist_ok=True)
-    out_p.write_text(header_content, encoding="utf-8")
+    header_path.parent.mkdir(parents=True, exist_ok=True)
+    header_path.write_text(header_content, encoding="utf-8")
 
     header_sha = hashlib.sha256(header_content.encode("utf-8")).hexdigest()
 
@@ -599,11 +768,12 @@ def pack_character_bundle(
 
     manifest = {
         "character_id": character_id,
-        "header_path": str(out_p),
+        "header_path": str(header_path),
         "header_sha256": header_sha,
+        "blob_dir": str(blob_dir),
         "asset_count": len(assets),
         "cell_count": len(cells),
-        "total_bytes": sum(a["size"] for a in assets),
+        "total_bytes": total_blob_bytes,
         "assets": [
             {
                 "stem": a["stem"],
@@ -614,6 +784,7 @@ def pack_character_bundle(
                 "size": a["size"],
                 "sha256": a["sha256"],
                 "symbol": a["symbol"],
+                "blob_path": str(a["blob_path"]),
                 "source_path": str(a["source_path"]),
             }
             for a in assets
@@ -645,8 +816,22 @@ def pack_character_bundle(
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Pack character assets and virtual 2DA cells into a C header bundle.")
     parser.add_argument("--character-id", required=True, help="Character identifier (e.g. juhani)")
-    parser.add_argument("--assets", nargs="+", required=True, help="Asset files or directories to include")
-    parser.add_argument("--out-header", required=True, help="Output C/C++ header path")
+    parser.add_argument("--assets", nargs="*", default=[], help="Asset files or directories to include")
+    parser.add_argument(
+        "--asset-list",
+        help="Text file with one asset path per line ('#' comments and blank lines ignored; "
+             "relative paths resolve against the list file's directory)",
+    )
+    parser.add_argument("--out-dir", help="Private stage dir for the .bin blobs and the generated header")
+    parser.add_argument(
+        "--header-name",
+        default=DEFAULT_HEADER_NAME,
+        help=f"Header file name inside --out-dir (default {DEFAULT_HEADER_NAME}; ignored when --out-header is given)",
+    )
+    parser.add_argument(
+        "--out-header",
+        help="Legacy: output header path. Blobs go to --out-dir, or beside the header when --out-dir is absent",
+    )
     parser.add_argument("--display-name", help="Display name (default: capitalized character-id)")
     parser.add_argument("--tag", help="Default creature tag (default: k1p_<character-id>)")
     parser.add_argument("--utc", help="Default creature template resref (default: tag)")
@@ -657,24 +842,53 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--stream-files", nargs="*", default=[], help="Audio files to mark as streaming audio")
     parser.add_argument("--ledger", help="Optional path to k1_port_prune ledger to gate assets")
     parser.add_argument("--2da-json", help="Optional path to JSON file with virtual 2DA cells")
+    parser.add_argument(
+        "--2da-rows",
+        dest="twoda_rows",
+        action="append",
+        default=[],
+        metavar="TABLE=FILE.2da:ROW[,ROW]",
+        help="Copy rows of a staged .2da into the virtual table at the same row index (repeatable; needs pykotor)",
+    )
+    parser.add_argument(
+        "--allow-tga",
+        action="store_true",
+        help="Accept .tga inputs and ship them as restype 3 (refused by default)",
+    )
     parser.add_argument("--json", action="store_true", help="Print manifest JSON to stdout")
 
     args = parser.parse_args(argv)
 
-    cells = []
-    if args.__dict__.get("2da_json"):
-        p = Path(args.__dict__["2da_json"]).resolve()
-        data = json.loads(p.read_text(encoding="utf-8"))
-        if isinstance(data, list):
-            cells = parse_2da_cells(cells=data)
-        elif isinstance(data, dict):
-            cells = parse_2da_cells(rows=data)
+    if args.out_dir is None and args.out_header is None:
+        parser.error("give --out-dir (preferred) or --out-header")
+    if not args.assets and not args.asset_list:
+        parser.error("give --assets and/or --asset-list")
 
     try:
+        asset_paths = list(args.assets)
+        if args.asset_list:
+            asset_paths.extend(read_asset_list(args.asset_list))
+
+        two_da_rows: dict[str, dict[int, dict[str, str]]] = {}
+        for spec in args.twoda_rows:
+            for table, rows in parse_2da_row_spec(spec).items():
+                two_da_rows.setdefault(table, {}).update(rows)
+
+        cells = []
+        if args.__dict__.get("2da_json"):
+            p = Path(args.__dict__["2da_json"]).resolve()
+            data = json.loads(p.read_text(encoding="utf-8"))
+            if isinstance(data, list):
+                cells = parse_2da_cells(cells=data)
+            elif isinstance(data, dict):
+                cells = parse_2da_cells(rows=data)
+
         manifest = pack_character_bundle(
             character_id=args.character_id,
-            asset_paths=args.assets,
+            asset_paths=asset_paths,
             output_header=args.out_header,
+            output_dir=args.out_dir,
+            header_name=args.header_name,
             display_name=args.display_name,
             default_tag=args.tag,
             default_utc=args.utc,
@@ -683,20 +897,28 @@ def main(argv: list[str] | None = None) -> int:
             head_id=args.head_id,
             soundset_id=args.soundset_id,
             two_da_cells=cells,
+            two_da_rows=two_da_rows or None,
             stream_files=args.stream_files,
             ledger_path=args.ledger,
+            allow_tga=args.allow_tga,
         )
     except PackError as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
 
+    total = manifest["total_bytes"]
     if args.json:
         print(json.dumps(manifest, indent=2))
     else:
         print(
             f"packed {manifest['asset_count']} asset(s) and {manifest['cell_count']} 2DA cell(s) "
-            f"({manifest['total_bytes']} bytes) -> {manifest['header_path']} "
-            f"[sha256={manifest['header_sha256'][:16]}...]"
+            f"-> {manifest['header_path']} [total blob bytes {total} in {manifest['blob_dir']}, "
+            f"sha256={manifest['header_sha256'][:16]}...]"
+        )
+    if total > BLOB_WARN_BYTES:
+        print(
+            f"warning: total blob bytes {total} exceed the {BLOB_WARN_BYTES} (64 MB) warning threshold",
+            file=sys.stderr,
         )
     return 0
 
