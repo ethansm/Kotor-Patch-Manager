@@ -1,0 +1,23 @@
+addr	kind	name	confidence	evidence	topic	date
+0x0091cf23	function	_strncmp (Ghidra name): byte compare; s1=[ebp+8] s2=[ebp+0xc] n=[ebp+0x10]; NULL s2 faults at 0x91cf5b	confirmed	read_function_instructions: 0x91cf5b: CMP DL, byte ptr [ECX + -0x4]	w14-r1	2026-10-16
+0x00944d80	function	FUN_00944d80: LIP V1.0 header parser (magic check, length and count reads, sets +0x20=1 on success, returns 0 on bad magic)	confirmed	read_function_instructions: 0x944e15: CALL 0x0091cf23	w14-r1	2026-10-16
+0x00944d80	field	CLIP+0x2c LIP read cursor: stores FUN_006f3d90 result with no NULL test	confirmed	read_function_instructions: 0x944e04: MOV dword ptr [ECX + 0x2c], EAX	w14-r1	2026-10-16
+0x00944d80	field	CLIP+0x20 valid flag, set to 1 after header parse	confirmed	read_function_instructions: 0x944e9f: MOV dword ptr [ECX + 0x20], 0x1	w14-r1	2026-10-16
+0x00944d80	field	CLIP+0x24 keyframe count (4-byte copy, no bound vs buffer size)	confirmed	read_function_instructions: 0x944e81: ADD EAX, 0x24	w14-r1	2026-10-16
+0x00944d80	field	CLIP+0x28 length float (4-byte copy)	confirmed	read_function_instructions: 0x944e5a: ADD EAX, 0x28	w14-r1	2026-10-16
+0x00944e15	callsite	CALL _strncmp("LIP V1.0", buf, 8) in FUN_00944d80; faults when buf is NULL	confirmed	read_function_instructions: 0x944e15: CALL 0x0091cf23	w14-r1	2026-10-16
+0x00944dc4	callsite	CALL FUN_009450d0 (resref-keyed LIP fetch, runs before parse)	confirmed	read_function_instructions: 0x944dc4: CALL 0x009450d0	w14-r1	2026-10-16
+0x00944dcf	callsite	CALL FUN_007111e0 (wraps FUN_00711c20): gate, parse skipped on zero	confirmed	read_function_instructions: 0x944dcf: CALL 0x007111e0	w14-r1	2026-10-16
+0x00944dfc	callsite	CALL FUN_006f3d90: returns LIP data pointer; result stored unchecked	confirmed	read_function_instructions: 0x944dfc: CALL 0x006f3d90	w14-r1	2026-10-16
+0x006f3d90	function	FUN_006f3d90: getter, return *(this+0x30)	confirmed	procedure_pseudo_code 0x6f3d90 (return *(in_ECX+0x30)); caller 0x944dfc: CALL 0x006f3d90	w14-r1	2026-10-16
+0x0077b32e	callsite	CALL FUN_00944d80 (LIP header parse) from FUN_0077b190; return address 0x0077b333	confirmed	read_bytes 0x77b32e: e84d9a1c00	w14-r1	2026-10-16
+0x0077b190	function	FUN_0077b190: LIP-to-keyframe applier; calls FUN_00944d80 at 0x77b32e; no resolved callers	confirmed	0x77b333: FUN_0077b190 body 0x77b190-0x77b5f0 nc (resolve_containing_procedure)	w14-r1	2026-10-16
+0x00944fd0	function	FUN_00944fd0: CResHelper<CResLIP,3004> ctor; vftable 0x9b96e8; default string 0x986925	confirmed	read_function_instructions: 0x944fdc: MOV dword ptr [EAX], 0x9b96e8	w14-r1	2026-10-16
+0x009b96e8	vtable	CResHelper<CResLIP,3004>::vftable (stored by FUN_00944fd0)	confirmed	0x944fdc: MOV dword ptr [EAX], 0x9b96e8	w14-r1	2026-10-16
+0x0094500b	callsite	REFUTED as a frame: 0x94500B is the instruction after CALL 0x00710eb0 in FUN_00944fd0; FUN_00944d80 has no call there	refuted	read_function_instructions 0x944fd0: 0x94500b: MOV EAX, dword ptr [EBP + -0x14]	w14-r1	2026-10-16
+0x0091cf18	function	REFUTED: brief's claim that 0x91CF5B lies in a helper at 0x91CF18; FUN_0091cf18 is 11 bytes (0x91cf18-0x91cf22)	refuted	0x91cf18: FUN_0091cf18 length 11, body 0x91cf18-0x91cf22 (procedure_info)	w14-r1	2026-10-16
+0x0091cff0	function	FUN_0091cff0: 7-byte body; brief's strcpy-like label not verified	confirmed	0x91cff0: FUN_0091cff0 body 0x91cff0-0x91cff6 (resolve_containing_procedure)	w14-r1	2026-10-16
+0x0091d000	function	FUN_0091d000: 232-byte body; brief's strcat-like label not verified	confirmed	0x91d000: FUN_0091d000 body 0x91d000-0x91d0e7 (resolve_containing_procedure)	w14-r1	2026-10-16
+0x009b96d8	data	"LIP V1.0" magic literal, arg1 of _strncmp at 0x944e15	confirmed	read_bytes 0x9b96d8: 4c49502056312e300000000000109c00	w14-r1	2026-10-16
+0x00986925	data	first byte 0x00: empty string, default arg to FUN_00710eb0 in FUN_00944fd0	probable	read_bytes 0x986925: 00000058999b00803e4000b02c4000b0	w14-r1	2026-10-16
+0x009450d0	callsite	REFUTED: LIP resource type 0x3FE; LIP path uses type 0xBBC (3004)	refuted	procedure_pseudo_code 0x9450d0: FUN_00712970(param_1,0xbbc); FUN_00712b60(param_1,0xbbc,...)	w14-r1	2026-10-16

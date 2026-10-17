@@ -864,3 +864,9 @@ than intermittently, that would be the trigger to escalate.
 - Likely cause (not proven): the engine's LIP parser does not validate a corrupt file; a null string/pointer then reaches a CRT string call. First pass survived, second pass crashed (cached or re-parsed object).
 - Open: decode `0x77B333` / `0x944E1A` (rea-recon; brief must include the exe path) and replay line 3 alone with a good lip to prove the corrupt lip is the trigger.
 - Fix: none to the engine. Rule for the bundle/lip writer: never ship a lip that does not validate; the corrupt-lip variant is removed from the rig.
+
+### Update (same day): REA decode of the callers (`.claude/waves/w14-juhani-bundle/r1_lip_crash.md`, ledger `patch_manager_mods/ghidra_knowledge/rea_findings/20261016_lip-crash.tsv`)
+- The NULL is the second argument of `_strncmp` (the LIP magic compare). `FUN_00944D80` stores the result of `FUN_006F3D90` (object field `obj+0x30`) at `0x944E04` without a NULL check. Narrowest hook site: `0x944E01`.
+- A bad magic alone returns 0 safely (per recon). So the `BAD ` magic in our corrupt lip is NOT by itself the NULL source: the crash needs `obj+0x30` to be NULL, which the loader (not yet verified) produces some other way, for example a failed first load leaving a half-built cached object that the second pass reuses.
+- Not explained: why the first pass survived. Recon notes the exe sha (7751f7d8) differs from the README's (6a522e71).
+- Consequence: "corrupt lip causes the crash" is a hypothesis, not a finding. The offline lip check stays (cheap, defensive); the real test is the T3/T1 replay: line 3 now carries a valid lip, played twice. A clean double pass supports the corrupt-lip hypothesis; a crash again means the second-pass cache path crashes regardless.
