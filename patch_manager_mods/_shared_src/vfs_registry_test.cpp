@@ -1,6 +1,8 @@
 #include "VfsRegistry.h"
 #include "check.h"
 
+#include <stdio.h>
+
 int main() {
     // -------------------------------------------------------------
     // 1. Odyssey Resource Types & Flags
@@ -253,9 +255,18 @@ int main() {
     // Valid open
     uint32_t h1 = cursors.open(testPayload, 30);
     KT_CHECK(h1 != 0u);
-    KT_CHECK(vfsreg::MilesCursorTable::isVfsHandle(h1));
-    KT_CHECK(!vfsreg::MilesCursorTable::isVfsHandle(0u));
-    KT_CHECK(!vfsreg::MilesCursorTable::isVfsHandle(0x7FFFFFFFu));
+    KT_CHECK(cursors.isVfsHandle(h1));
+    KT_CHECK_EQ(h1, 0xFFFF0001u); // slot 0 -> 0xFFFF0000 | (0 << 1) | 1
+    KT_CHECK(!cursors.isVfsHandle(0u));
+    KT_CHECK(!cursors.isVfsHandle(0x7FFFFFFFu));
+    // Large-address-aware heap pointers / bit-31 values must never look like ours
+    KT_CHECK(!cursors.isVfsHandle(0x8ABCDEF0u));
+    KT_CHECK(!cursors.isVfsHandle(0x80000003u));
+    KT_CHECK(!cursors.isVfsHandle(0x80000000u));
+    KT_CHECK(!cursors.isVfsHandle(0xFFFFFFFFu));  // INVALID_HANDLE_VALUE: tag set, slot 0x7FFF out of range
+    KT_CHECK(!cursors.isVfsHandle(0xFFFF0000u));  // even low bit
+    KT_CHECK(!cursors.isVfsHandle(0xFFFF0003u));  // tag pattern but slot 1 not open
+    KT_CHECK(!cursors.isVfsHandle(0x00000001u));
 
     // Seek begin (origin 0)
     KT_CHECK_EQ(cursors.seek(h1, 5, 0), 5);
@@ -291,6 +302,7 @@ int main() {
 
     // Close
     KT_CHECK(cursors.close(h1));
+    KT_CHECK(!cursors.isVfsHandle(h1)); // a closed handle is no longer ours
     KT_CHECK(!cursors.close(h1)); // double close
     KT_CHECK_EQ(cursors.read(h1, outBuf, 5), 0u);
     KT_CHECK_EQ(cursors.seek(h1, 0, 0), -1);
@@ -309,6 +321,82 @@ int main() {
     uint32_t reusedH = cursors.open(testPayload, 30);
     KT_CHECK(reusedH != 0u);
     KT_CHECK_EQ(reusedH, handles[7]);
+
+    // -------------------------------------------------------------
+    // 8. Registry ownership (-2 after served) and static/dynamic pools
+    // -------------------------------------------------------------
+    {
+        vfsreg::Registry reg;
+        const uint8_t a[] = "aaaaaaaa";
+        const uint8_t b[] = "bbbbbbbb";
+        int s0 = reg.registerAsset("own_a", vfsreg::ResTypeUtc, a, sizeof(a));
+        KT_CHECK(s0 >= 0);
+        KT_CHECK(!reg.records[s0].served);
+        // not yet served: update in place
+        KT_CHECK_EQ(reg.registerAsset("OWN_A", vfsreg::ResTypeUtc, b, sizeof(b)), s0);
+        KT_CHECK(reg.records[s0].data == b);
+        reg.markServed(static_cast<size_t>(s0));
+        KT_CHECK(reg.records[s0].served);
+        // served: rejected with -2, data untouched
+        KT_CHECK_EQ(reg.registerAsset("own_a", vfsreg::ResTypeUtc, a, sizeof(a)), vfsreg::kRegServed);
+        KT_CHECK_EQ(vfsreg::kRegServed, -2);
+        KT_CHECK(reg.records[s0].data == b);
+        // a different type or resref is a different key
+        KT_CHECK(reg.registerAsset("own_a", vfsreg::ResTypeDlg, a, sizeof(a)) >= 0);
+        // markServed on an inactive / out-of-range slot is a no-op
+        reg.markServed(200);
+        reg.markServed(100000);
+        KT_CHECK(!reg.records[200].served);
+    }
+    {
+        vfsreg::Registry reg;
+        const uint8_t d[] = "data";
+        char name[32];
+        // static pool: slots 0..191
+        for (size_t i = 0; i < vfsreg::Registry::kStaticSlots; ++i) {
+            snprintf(name, sizeof(name), "st_%03u", static_cast<unsigned>(i));
+            int slot = reg.registerAsset(name, vfsreg::ResTypeUtc, d, sizeof(d));
+            KT_CHECK_EQ(slot, static_cast<int>(i));
+        }
+        KT_CHECK_EQ(vfsreg::Registry::kStaticSlots, 192u);
+        // static pool full even though the dynamic reserve is empty
+        KT_CHECK_EQ(reg.registerAsset("st_overflow", vfsreg::ResTypeUtc, d, sizeof(d)), vfsreg::kRegPoolFull);
+        KT_CHECK_EQ(vfsreg::kRegPoolFull, -3);
+        // dynamic pool: slots 192..255
+        for (size_t i = 0; i < vfsreg::Registry::kDynamicReserve; ++i) {
+            snprintf(name, sizeof(name), "dy_%03u", static_cast<unsigned>(i));
+            int slot = reg.registerAsset(name, vfsreg::ResTypeUtc, d, sizeof(d), vfsreg::FlagResMan, true);
+            KT_CHECK_EQ(slot, static_cast<int>(vfsreg::Registry::kStaticSlots + i));
+        }
+        KT_CHECK_EQ(reg.registerAsset("dy_overflow", vfsreg::ResTypeUtc, d, sizeof(d), vfsreg::FlagResMan, true), vfsreg::kRegPoolFull);
+        // an existing key still updates in place when both pools are full
+        KT_CHECK_EQ(reg.registerAsset("st_000", vfsreg::ResTypeUtc, d, sizeof(d)), 0);
+        KT_CHECK_EQ(reg.registerAsset("dy_000", vfsreg::ResTypeUtc, d, sizeof(d), vfsreg::FlagResMan, true), 192);
+    }
+    {
+        // dynamic traffic cannot starve static registrations
+        vfsreg::Registry reg;
+        const uint8_t d[] = "data";
+        char name[32];
+        for (size_t i = 0; i < vfsreg::Registry::kDynamicReserve + 10; ++i) {
+            snprintf(name, sizeof(name), "dy_%03u", static_cast<unsigned>(i));
+            reg.registerAsset(name, vfsreg::ResTypeUtc, d, sizeof(d), vfsreg::FlagResMan, true);
+        }
+        KT_CHECK_EQ(reg.registerAsset("st_first", vfsreg::ResTypeUtc, d, sizeof(d)), 0);
+    }
+
+    // -------------------------------------------------------------
+    // 9. Lock shim (host: no-op) compiles and nests via the RAII guard
+    // -------------------------------------------------------------
+    {
+        vfsreg::Lock lk;
+        lk.init();
+        {
+            vfsreg::LockGuard g1(lk);
+            vfsreg::LockGuard g2(lk);
+        }
+        lk.init();
+    }
 
     return kt::Report("vfs_registry_test");
 }

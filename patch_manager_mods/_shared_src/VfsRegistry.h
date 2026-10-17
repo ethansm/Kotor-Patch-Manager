@@ -4,7 +4,48 @@
 #include <stddef.h>
 #include <string.h>
 
+#if defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#endif
+
 namespace vfsreg {
+
+// Tiny lock. Win32: CRITICAL_SECTION (recursive), initialised explicitly via init() from
+// DllMain(DLL_PROCESS_ATTACH), never lazily. Until init() runs enter/leave are no-ops.
+// Host builds: no-op shim (single-threaded tests). Never hold it while calling external callbacks.
+struct Lock {
+#if defined(_WIN32)
+    CRITICAL_SECTION cs;
+    bool ready;
+    Lock() : ready(false) {}
+    void init() {
+        if (!ready) {
+            InitializeCriticalSection(&cs);
+            ready = true;
+        }
+    }
+    void enter() { if (ready) EnterCriticalSection(&cs); }
+    void leave() { if (ready) LeaveCriticalSection(&cs); }
+#else
+    Lock() {}
+    void init() {}
+    void enter() {}
+    void leave() {}
+#endif
+    Lock(const Lock&) = delete;
+    Lock& operator=(const Lock&) = delete;
+};
+
+struct LockGuard {
+    Lock& l;
+    explicit LockGuard(Lock& lock) : l(lock) { l.enter(); }
+    ~LockGuard() { l.leave(); }
+    LockGuard(const LockGuard&) = delete;
+    LockGuard& operator=(const LockGuard&) = delete;
+};
 
 // Odyssey resource type constants
 static constexpr uint16_t ResTypeWav = 4;
@@ -111,10 +152,20 @@ struct AssetRecord {
     uint32_t size;
     uint16_t flags; // 0 = ResMan, 1 = MilesStream
     bool active;
+    bool served;    // set once the engine copied/opened the data; re-registering the key is then rejected
 };
+
+// registerAsset return codes (>= 0 is the slot index)
+static constexpr int kRegInvalid    = -1; // bad args / rejected container / bad resref
+static constexpr int kRegServed     = -2; // key already registered AND already served to the engine
+static constexpr int kRegPoolFull   = -3; // no free slot in the requested pool
 
 struct Registry {
     static constexpr size_t kMaxAssets = 256;
+    // Top 64 slots are reserved for dynamic registrations (miss handler / stream filter);
+    // static RegisterAsset(s) calls use 0..kStaticSlots-1 so dynamic traffic cannot starve them.
+    static constexpr size_t kDynamicReserve = 64;
+    static constexpr size_t kStaticSlots = kMaxAssets - kDynamicReserve;
 
     AssetRecord records[kMaxAssets];
     FakeKeyTable fakeTable;
@@ -133,12 +184,13 @@ struct Registry {
         fakeTable.tableType = 4;
     }
 
-    int registerAsset(const char* resref, uint16_t resType, const void* data, uint32_t size, uint16_t flags = 0) {
+    // Returns slot index, kRegInvalid, kRegServed or kRegPoolFull.
+    int registerAsset(const char* resref, uint16_t resType, const void* data, uint32_t size, uint16_t flags = 0, bool dynamic = false) {
         if (!data || size == 0) {
-            return -1;
+            return kRegInvalid;
         }
         if (flags == FlagResMan && resType == ResTypeTga) {
-            return -1; // TGA uses ReadRaw; VFS requires TPC 3007
+            return kRegInvalid; // TGA uses ReadRaw; VFS requires TPC 3007
         }
         if (flags == FlagResMan && resType == ResTypeWav) {
             const uint8_t* buf = static_cast<const uint8_t*>(data);
@@ -148,24 +200,28 @@ struct Registry {
                 uint32_t riffSz = 0;
                 memcpy(&riffSz, buf + 4, sizeof(riffSz));
                 if (riffSz == 50) {
-                    return -1;
+                    return kRegInvalid;
                 }
             }
             if (size > 0x1D6 && memcmp(buf + 0x1D6, "RIFF", 4) == 0) {
-                return -1;
+                return kRegInvalid;
             }
         }
         char norm[16];
         if (!normalizeResRef(resref, norm)) {
-            return -1;
+            return kRegInvalid;
         }
 
-        // If already exists, update in place and return slot index
+        // If already exists (either pool), update in place and return slot index,
+        // unless the record was already served (the engine holds a copy / open cursor).
         for (size_t i = 0; i < kMaxAssets; ++i) {
             if (records[i].active &&
                 records[i].flags == flags &&
                 records[i].keyEntry.resType == resType &&
                 memcmp(records[i].keyEntry.resref, norm, 16) == 0) {
+                if (records[i].served) {
+                    return kRegServed;
+                }
                 records[i].data = static_cast<const uint8_t*>(data);
                 records[i].size = size;
                 records[i].keyEntry.refCount = 1;
@@ -173,8 +229,10 @@ struct Registry {
             }
         }
 
-        // Allocate next free slot
-        for (size_t i = 0; i < kMaxAssets; ++i) {
+        // Allocate next free slot in the requested pool
+        const size_t lo = dynamic ? kStaticSlots : 0;
+        const size_t hi = dynamic ? kMaxAssets : kStaticSlots;
+        for (size_t i = lo; i < hi; ++i) {
             if (!records[i].active) {
                 records[i].active = true;
                 records[i].data = static_cast<const uint8_t*>(data);
@@ -190,7 +248,13 @@ struct Registry {
             }
         }
 
-        return -1; // Full
+        return kRegPoolFull;
+    }
+
+    void markServed(size_t idx) {
+        if (idx < kMaxAssets && records[idx].active) {
+            records[idx].served = true;
+        }
     }
 
     AssetRecord* findResMan(const char* rawResRef16, uint16_t resType) {
@@ -280,7 +344,11 @@ inline AudioSlice inspectAudioContainer(const uint8_t* buf, uint32_t size, uint1
 
 struct MilesCursorTable {
     static constexpr size_t kMaxCursors = 16;
-    static constexpr uint32_t kCursorHandleBit = 0x80000000u;
+    // Handle = 0xFFFF0000 | (slot << 1) | 1. The exe is large-address-aware so heap pointers may have
+    // bit 31 set; this tag (top 16 bits set, bit 0 set, tiny slot, slot active) cannot collide with a
+    // kernel file HANDLE (small ints) and isVfsHandle additionally checks the slot is live.
+    static constexpr uint32_t kCursorHandleTag  = 0xFFFF0000u;
+    static constexpr uint32_t kCursorHandleMask = 0xFFFF0001u; // tag bits + the odd bit
 
     struct Cursor {
         const uint8_t* payload;
@@ -313,21 +381,34 @@ struct MilesCursorTable {
                 cursors[i].length = length;
                 cursors[i].pos = 0;
                 cursors[i].active = true;
-                return kCursorHandleBit | static_cast<uint32_t>(i);
+                return kCursorHandleTag | (static_cast<uint32_t>(i) << 1) | 1u;
             }
         }
         return 0; // Full
     }
 
-    static bool isVfsHandle(uint32_t h) {
-        return (h & kCursorHandleBit) != 0;
+    static bool hasVfsTag(uint32_t h) {
+        return (h & kCursorHandleMask) == (kCursorHandleTag | 1u);
+    }
+
+    static uint32_t slotOf(uint32_t h) {
+        return (h & 0xFFFFu) >> 1;
+    }
+
+    // True only for a handle this table issued and has not closed yet.
+    bool isVfsHandle(uint32_t h) const {
+        if (!hasVfsTag(h)) {
+            return false;
+        }
+        uint32_t slot = slotOf(h);
+        return slot < kMaxCursors && cursors[slot].active;
     }
 
     int32_t seek(uint32_t h, int32_t offset, uint32_t origin) {
         if (!isVfsHandle(h)) {
             return -1;
         }
-        uint32_t slot = h & ~kCursorHandleBit;
+        uint32_t slot = slotOf(h);
         if (slot >= kMaxCursors || !cursors[slot].active) {
             return -1;
         }
@@ -358,7 +439,7 @@ struct MilesCursorTable {
         if (!isVfsHandle(h) || !dst || bytes == 0) {
             return 0;
         }
-        uint32_t slot = h & ~kCursorHandleBit;
+        uint32_t slot = slotOf(h);
         if (slot >= kMaxCursors || !cursors[slot].active) {
             return 0;
         }
@@ -378,7 +459,7 @@ struct MilesCursorTable {
         if (!isVfsHandle(h)) {
             return false;
         }
-        uint32_t slot = h & ~kCursorHandleBit;
+        uint32_t slot = slotOf(h);
         if (slot >= kMaxCursors || !cursors[slot].active) {
             return false;
         }

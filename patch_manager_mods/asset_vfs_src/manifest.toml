@@ -1,13 +1,13 @@
 [patch]
 id = "asset-vfs"
 name = "In-Memory Asset VFS & Character Library"
-version = "0.1.0-dev"
+version = "0.1.1-dev"
 kind = "provider"
 provides = ["k2.assetvfs@1", "k2.characterlib@1"]
 author = "local"
-description = "Provides 100% in-memory CExoResMan asset resolution (0x0071244E GetKeyEntry miss, 0x00713E83 ServiceFromImage), load-time 2DA V2.b row splicing (0x00729FD0 CRes2DA::OnResourceServiced), and Miles audio memory streaming (0x0070CB76 OpenStream + _AIL_set_file_callbacks@16). Exposes k2.assetvfs@1 and k2.characterlib@1 (CharacterProvider.h). Opt-out: asset_vfs.ini [vfs] enabled=0."
+description = "Provider for in-memory CExoResMan asset resolution (GetKeyEntry miss + ServiceFromImage hooks), load-time 2DA V2.b row splicing (CRes2DA::OnResourceServiced), and memory-backed Miles audio streams (InitializeSource hook + AIL file callbacks). Exposes k2.assetvfs@1 and k2.characterlib@1. Opt-out: asset_vfs.ini [vfs] enabled=0."
 
-requires = ["npc-world"]
+requires = []
 requires_interfaces = ["k2.npcworld@1"]
 conflicts = []
 

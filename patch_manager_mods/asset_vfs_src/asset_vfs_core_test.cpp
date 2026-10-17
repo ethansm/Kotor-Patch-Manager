@@ -272,7 +272,7 @@ int main() {
 
     uint32_t h = 0;
     KT_CHECK(state.parseVfsStreamSpec(spec, &h));
-    KT_CHECK(vfsreg::MilesCursorTable::isVfsHandle(h));
+    KT_CHECK(state.cursors.isVfsHandle(h));
 
     uint8_t readBuf[32] = {0};
     uint32_t r1 = state.cursors.read(h, readBuf, 10);
@@ -298,7 +298,7 @@ int main() {
     // Fallback direct name parsing
     uint32_t hDirect = 0;
     KT_CHECK(state.parseVfsStreamSpec("kvjv0001", &hDirect));
-    KT_CHECK(vfsreg::MilesCursorTable::isVfsHandle(hDirect));
+    KT_CHECK(state.cursors.isVfsHandle(hDirect));
     state.cursors.close(hDirect);
 
     // -------------------------------------------------------------
@@ -467,7 +467,7 @@ int main() {
     // Verify Miles playback cursor opens and reads the memory buffer
     uint32_t dynH = 0;
     KT_CHECK(state.parseVfsStreamSpec(streamSpec, &dynH));
-    KT_CHECK(vfsreg::MilesCursorTable::isVfsHandle(dynH));
+    KT_CHECK(state.cursors.isVfsHandle(dynH));
 
     uint8_t streamReadBuf[32] = {0};
     uint32_t sr1 = state.cursors.read(dynH, streamReadBuf, 10);
@@ -502,6 +502,168 @@ int main() {
     KT_CHECK_EQ(state.registerStreamFilter(testFilterFn, nullptr, "overflow"), 0);
     for (size_t i = 0; i < assetvfs::EngineState::kMaxStreamFilters; ++i) {
         state.unregisterStreamFilter(sTokens[i]);
+    }
+
+    // -------------------------------------------------------------
+    // 7. H1: *ppTable is zeroed by the handler on a miss, filled (not zeroed) on a hit
+    // -------------------------------------------------------------
+    state.reset();
+    {
+        const uint8_t d[] = { 'H', '1' };
+        int hslot = state.reg.registerAsset("h1_asset", vfsreg::ResTypeUtc, d, sizeof(d));
+        KT_CHECK(hslot >= 0);
+        void* fake = reinterpret_cast<void*>(0x1234);
+        void* tbl = fake;
+        void* ent = fake;
+        // hit
+        KT_CHECK_EQ(state.handleGetKeyEntryMiss("h1_asset", vfsreg::ResTypeUtc, &tbl, &ent), 1);
+        KT_CHECK(tbl == &state.reg.fakeTable);
+        KT_CHECK(tbl != nullptr);
+        KT_CHECK(ent == &state.reg.records[hslot].keyEntry);
+        // plain miss, wrong type, null resref / ppEntry, disabled: all zero *ppTable
+        tbl = fake; ent = fake;
+        KT_CHECK_EQ(state.handleGetKeyEntryMiss("nope", vfsreg::ResTypeUtc, &tbl, &ent), 0);
+        KT_CHECK(tbl == nullptr);
+        tbl = fake;
+        KT_CHECK_EQ(state.handleGetKeyEntryMiss("h1_asset", vfsreg::ResTypeDlg, &tbl, &ent), 0);
+        KT_CHECK(tbl == nullptr);
+        tbl = fake;
+        KT_CHECK_EQ(state.handleGetKeyEntryMiss(nullptr, vfsreg::ResTypeUtc, &tbl, &ent), 0);
+        KT_CHECK(tbl == nullptr);
+        tbl = fake;
+        KT_CHECK_EQ(state.handleGetKeyEntryMiss("h1_asset", vfsreg::ResTypeUtc, &tbl, nullptr), 0);
+        KT_CHECK(tbl == nullptr);
+        tbl = fake;
+        state.enabled = false;
+        KT_CHECK_EQ(state.handleGetKeyEntryMiss("h1_asset", vfsreg::ResTypeUtc, &tbl, &ent), 0);
+        KT_CHECK(tbl == nullptr);
+        state.enabled = true;
+        // invalid resref with an active handler (zero-handler fast path is covered above)
+        auto passFn = [](const char*, uint16_t, K2VfsAssetEntry*, void*) -> int32_t { return 0; };
+        int32_t passTok = state.registerMissHandler(passFn, nullptr, "pass");
+        KT_CHECK(passTok > 0);
+        tbl = fake;
+        KT_CHECK_EQ(state.handleGetKeyEntryMiss("bad!name", vfsreg::ResTypeUtc, &tbl, &ent), 0);
+        KT_CHECK(tbl == nullptr);
+        tbl = fake;
+        KT_CHECK_EQ(state.handleGetKeyEntryMiss("unknown_x", vfsreg::ResTypeUtc, &tbl, &ent), 0);
+        KT_CHECK(tbl == nullptr);
+        state.unregisterMissHandler(passTok);
+        // null ppTable must not crash
+        KT_CHECK_EQ(state.handleGetKeyEntryMiss("nope", vfsreg::ResTypeUtc, nullptr, &ent), 0);
+    }
+
+    // -------------------------------------------------------------
+    // 8. H2: already-serviced CRes is untouched (0); callee result is passed through
+    // -------------------------------------------------------------
+    state.reset();
+    {
+        const uint8_t d[] = { 'S', 'V', 'C', '!' };
+        int sslot = state.reg.registerAsset("svc_asset", vfsreg::ResTypeUtc, d, sizeof(d));
+        KT_CHECK(sslot >= 0);
+        uint8_t res[0x40] = {0};
+        *reinterpret_cast<uint32_t*>(res + assetvfs::kResOffPackedId) = vfsreg::makePackedId(static_cast<uint32_t>(sslot));
+
+        // Already serviced (flag 4): return 0, nothing touched, callee not called
+        *reinterpret_cast<uint32_t*>(res + assetvfs::kResOffStatus) = 0x4;
+        g_servicedCalls = 0;
+        KT_CHECK_EQ(state.handleServiceFromImage(res, testAlloc, testServiced), 0);
+        KT_CHECK_EQ(g_servicedCalls, 0);
+        KT_CHECK(*reinterpret_cast<void**>(res + assetvfs::kResOffData) == nullptr);
+        KT_CHECK_EQ(*reinterpret_cast<uint32_t*>(res + assetvfs::kResOffSize), 0u);
+        KT_CHECK(!state.reg.records[sslot].served);
+
+        // Callee returns 0 -> handler returns 0 (data already filled, flag 4 stays set)
+        *reinterpret_cast<uint32_t*>(res + assetvfs::kResOffStatus) = 0;
+        auto failServiced = [](void*) -> int { return 0; };
+        KT_CHECK_EQ(state.handleServiceFromImage(res, testAlloc, failServiced), 0);
+        KT_CHECK((*reinterpret_cast<uint32_t*>(res + assetvfs::kResOffStatus) & 0x4) != 0);
+        KT_CHECK(state.reg.records[sslot].served);
+
+        // Callee returns a value -> passed through
+        auto sevenServiced = [](void*) -> int { return 7; };
+        uint8_t res2[0x40] = {0};
+        *reinterpret_cast<uint32_t*>(res2 + assetvfs::kResOffPackedId) = vfsreg::makePackedId(static_cast<uint32_t>(sslot));
+        KT_CHECK_EQ(state.handleServiceFromImage(res2, testAlloc, sevenServiced), 7);
+
+        // No callee -> 1
+        uint8_t res3[0x40] = {0};
+        *reinterpret_cast<uint32_t*>(res3 + assetvfs::kResOffPackedId) = vfsreg::makePackedId(static_cast<uint32_t>(sslot));
+        KT_CHECK_EQ(state.handleServiceFromImage(res3, testAlloc, nullptr), 1);
+    }
+
+    // -------------------------------------------------------------
+    // 9. Cursor handle tag, served rejection, pool limits and notices
+    // -------------------------------------------------------------
+    state.reset();
+    {
+        uint8_t audio[80] = {0};
+        for (size_t i = 0; i < sizeof(audio); ++i) audio[i] = static_cast<uint8_t>(i);
+        KT_CHECK(state.reg.registerAsset("snd_one", vfsreg::ResTypeWav, audio, sizeof(audio), vfsreg::FlagMilesStream) >= 0);
+        uint32_t hh = 0;
+        KT_CHECK(state.parseVfsStreamSpec("snd_one", &hh));
+        KT_CHECK_EQ(hh, 0xFFFF0001u);
+        KT_CHECK(state.isVfsHandle(hh));
+        KT_CHECK(!state.isVfsHandle(0x8ABCDEF0u));
+        KT_CHECK(!state.isVfsHandle(0x80000003u));
+        // stream open marks the record served -> re-register rejected
+        KT_CHECK_EQ(state.registerAsset("snd_one", vfsreg::ResTypeWav, audio, sizeof(audio), vfsreg::FlagMilesStream, false, "t"),
+                    vfsreg::kRegServed);
+        uint8_t rb[4] = {0};
+        KT_CHECK_EQ(state.cursorRead(hh, rb, 4), 4u);
+        KT_CHECK_EQ(state.cursorSeek(hh, 0, 0), 0);
+        KT_CHECK(state.cursorClose(hh));
+        KT_CHECK(!state.isVfsHandle(hh));
+        KT_CHECK(!state.cursorClose(hh));
+    }
+
+    state.reset();
+    {
+        static int servedNotices, fullNotices;
+        static char lastWhat[32], lastOwner[32];
+        servedNotices = fullNotices = 0;
+        state.noticeFn = [](int code, const char* what, const char* owner) {
+            if (code == assetvfs::kNoticeServedReject) servedNotices++;
+            if (code == assetvfs::kNoticePoolFull) {
+                fullNotices++;
+                std::snprintf(lastWhat, sizeof(lastWhat), "%s", what);
+                std::snprintf(lastOwner, sizeof(lastOwner), "%s", owner);
+            }
+        };
+        const uint8_t d[] = "payload";
+        char name[32];
+        for (size_t i = 0; i < vfsreg::Registry::kStaticSlots; ++i) {
+            std::snprintf(name, sizeof(name), "s_%03u", static_cast<unsigned>(i));
+            KT_CHECK(state.registerAsset(name, vfsreg::ResTypeUtc, d, sizeof(d), 0, false, "mod_s") >= 0);
+        }
+        KT_CHECK_EQ(state.registerAsset("s_over1", vfsreg::ResTypeUtc, d, sizeof(d), 0, false, "mod_s"), vfsreg::kRegPoolFull);
+        KT_CHECK_EQ(state.registerAsset("s_over2", vfsreg::ResTypeUtc, d, sizeof(d), 0, false, "mod_s"), vfsreg::kRegPoolFull);
+        KT_CHECK_EQ(fullNotices, 1); // once per pool
+        KT_CHECK(std::strcmp(lastWhat, "static") == 0);
+        KT_CHECK(std::strcmp(lastOwner, "mod_s") == 0);
+
+        // a miss handler still gets dynamic slots while the static pool is full
+        struct DynCtx { const void* data; uint32_t size; } dctx = { d, sizeof(d) };
+        auto dynFn = [](const char* resref, uint16_t t, K2VfsAssetEntry* out, void* user) -> int32_t {
+            auto* c = static_cast<DynCtx*>(user);
+            out->resref = resref; out->res_type = t; out->flags = K2VFS_FLAG_RESMAN;
+            out->data = c->data; out->size = c->size;
+            return 1;
+        };
+        KT_CHECK(state.registerMissHandler(dynFn, &dctx, "dyn_owner") > 0);
+        void* t2 = nullptr; void* e2 = nullptr;
+        KT_CHECK_EQ(state.handleGetKeyEntryMiss("dyn_res1", vfsreg::ResTypeUtc, &t2, &e2), 1);
+        auto* ke = static_cast<vfsreg::KeyTableEntry*>(e2);
+        KT_CHECK(vfsreg::indexFromPackedId(ke->packedId) >= vfsreg::Registry::kStaticSlots);
+
+        // served static record: re-registering is rejected and notified
+        const uint8_t d2[] = "other";
+        state.reg.markServed(0);
+        KT_CHECK_EQ(state.registerAsset("s_000", vfsreg::ResTypeUtc, d2, sizeof(d2), 0, false, "mod_s"), vfsreg::kRegServed);
+        KT_CHECK_EQ(servedNotices, 1);
+        KT_CHECK(state.reg.records[0].data == d);
+
+        state.noticeFn = nullptr;
     }
 
     // Cleanup allocated memory

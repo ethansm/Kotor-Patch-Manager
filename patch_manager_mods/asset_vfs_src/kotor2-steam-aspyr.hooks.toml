@@ -4,12 +4,17 @@ target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBB
 # H1: CExoResMan::GetKeyEntry (0x00712360) miss fallback at 0x0071244E.
 # 9 bytes (2 instructions): MOV ECX,[EBP+0x10] / MOV DWORD PTR [ECX],0.
 # Non-zero return jumps to 0x00712462 (MOV ESP,EBP / POP EBP / RET 0x10) with EAX=1.
+# skip_original_bytes = true: the KPM wrapper runs the stolen bytes AFTER the handler, so on a served hit
+# they would re-zero *ppTable (GetKeyEntry then returns 1 with a NULL table -> crash). VFS_OnGetKeyEntryMiss
+# therefore writes `*(uint32_t*)[ebp+0x10] = 0` itself on every path that returns 0; the native tail at
+# 0x00712457 (reached on 0) still zeroes *ppEntry and EAX.
 [[hooks]]
 address = 0x0071244E
 type = "detour"
 function = "VFS_OnGetKeyEntryMiss"
 original_bytes = [0x8B, 0x4D, 0x10, 0xC7, 0x01, 0x00, 0x00, 0x00, 0x00]
 consumed_exit_address = 0x00712462
+skip_original_bytes = true
 exclude_from_restore = ["eax"]
 
 [[hooks.parameters]]
@@ -18,7 +23,9 @@ type = "int"
 
 # H2: CExoResMan::ServiceFromImage (0x00713E80) at 0x00713E83.
 # 6 bytes (2 instructions): SUB ESP,0x14 / MOV [EBP-0x14],ECX.
-# Non-zero return jumps to 0x00713FA3 (MOV ESP,EBP / POP EBP / RET 0x08) with EAX=1.
+# Stolen bytes touch only ESP and a local ([EBP-0x14]): register/local only, safe to re-run after the handler.
+# Non-zero return jumps to 0x00713FA3 (MOV ESP,EBP / POP EBP / RET 0x08) with EAX = callee result
+# (CRes vtbl[+0x10] OnResourceServiced); the handler returns 0 when flag 4 is already set.
 [[hooks]]
 address = 0x00713E83
 type = "detour"
@@ -36,6 +43,7 @@ source = "ebp"
 type = "int"
 
 # H3: CRes2DA::OnResourceServiced (0x00729FD0) entry.
+# Stolen bytes re-run after the handler (skip_original_bytes = false): prologue + a local store only.
 # 7 bytes (4 instructions): PUSH EBP / MOV EBP,ESP / PUSH ECX / MOV [EBP-0x04],ECX.
 [[hooks]]
 address = 0x00729FD0
@@ -49,8 +57,9 @@ exclude_from_restore = []
 source = "ecx"
 type = "pointer"
 
-# H4: StreamingSource::OpenStream (0x0070CAA0) at 0x0070CB76 (after _fclose of +0x13C).
+# H4: CExoStreamingSoundSourceInternal::InitializeSource (0x0070CAA0) at 0x0070CB76 (after _fclose of +0x13C).
 # 13 bytes (2 instructions): MOV ECX,[EBP-0x21C] / MOVZX EDX,WORD PTR [ECX+0x148].
+# Stolen bytes only load ECX/EDX (register-only): OK to re-run after the handler.
 # Non-zero return jumps to 0x0070D939 (native AIL driver query + _AIL_open_stream(hDig, (this+0x28)->CStr(), 0)).
 [[hooks]]
 address = 0x0070CB76

@@ -116,7 +116,7 @@ int main() {
         vfsreg::MilesCursorTable cursors;
         uint32_t h = cursors.open(dummyData, sizeof(dummyData));
         HCHECK("MilesCursorTable opens handle", h != 0);
-        HCHECK("isVfsHandle confirms VFS handle", vfsreg::MilesCursorTable::isVfsHandle(h));
+        HCHECK("isVfsHandle confirms VFS handle", cursors.isVfsHandle(h));
         HCHECK("close handle succeeds", cursors.close(h));
     }
 
