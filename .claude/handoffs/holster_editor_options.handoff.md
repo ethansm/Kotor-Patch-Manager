@@ -1,7 +1,7 @@
 # Session Handoff & Plan State: .claude/plans/holster_editor_options.md
 
 ## 0. Next-Phase Direction
-W3 (D3b) code landed in 96f96d6, KPM mirrored & rebuilt in c2a22c7, full pre-install gate PASS, kpm_status SWAP. Play row D3B pending in PLAY_TEST_QUEUE.md. NEXT: user GO with game closed -> `python3 scripts/kpm_hotswap.py --mod holster-editor --apply`. Then user plays D3B, logs checked with `kotor2_logs.py check holster-editor_log.txt --new`. Follow-up: D3c placement editing (sliders, nudges, Save).
+W4a code landed in 03fc2ae (holster-editor 0.2.2-dev + preview-3d 0.1.0-dev), KPM mirrored & rebuilt in 0390823 & 22d10cb, full pre-install gate PASS (332 suites), kpm_status SWAP on both mods. Play row D3B updated in PLAY_TEST_QUEUE.md. NEXT: user GO with game closed -> `python3 scripts/kpm_hotswap.py --mod holster-editor preview-3d --apply`. Then user plays D3B, logs checked. Follow-up: W4b weapon-edit mode (chips, calibration, gesture remap, value readout, Save/Revert).
 
 ## 1. Active State & Provenance
 - **Master Plan:** `.claude/plans/holster_editor_options.md`
@@ -110,4 +110,11 @@ _(none recorded; append Dead Ends & Anti-Patterns and Verification Commands here
   - Wave 2+3 landed: c21b + c21c in `HolsterEditor.cpp` (re-reads ini at every build, creates 8 buttons + name label, layouts strip, drives Bind/Rebuild/SetWeapons/RegisterPreview/SetView/BeforeFree lifecycle, button clicks, mouse spin drag).
   - Tests: `run_tests.py hse_view hse_layout holster_editor` 3 passed; `check_raw_addresses.py` FAIL=0; `check_provider_manifests.py` FAIL=0; `check_shared_headers.py` 43 headers 0 drifted; `compat_check.py` 6 passed.
   - Gate: full `pre_install_gate.sh --mod holster_editor_src` GATE PASS (331 suites pass); `kpm_hotswap.py --mod holster-editor --prepare` rebuilt KPM side (committed c2a22c7); verdict SWAP.
-  - Play row D3B added to `patch_manager_mods/PLAY_TEST_QUEUE.md`. Next: await user GO (game closed) to run `--apply`.
+- **W4a (D3b2) DONE 10-16**:
+  - Research subagents explored equip-screen controls, animations, mouse input, and weapon mode design (.claude/brain/.../w4_mouse_anim_plan.md).
+  - Created `_shared_src/ViewDrag.h` (pure camera maths & drag state machine) + `view_drag_test.cpp` (PASS).
+  - Updated `_shared_src/GuiKit.h` with `mbuttonDown`, `shiftDown`, `ctrlDown` wrappers; synced all 44 shared headers with KPM.
+  - Updated `preview_3d_src/Preview3dProvider.cpp`: `chooseIdle` explicitly plays in-game `pause1` on body and head, eliminating posed hands; `PlayAnim` with empty or `"idle"` returns to `pause1`.
+  - Updated `holster_editor_src/HolsterEditor.cpp` (0.2.2-dev): removed 6 obsolete camera buttons, installed `wheelInstall` for wheel zoom, added LMB drag with 4px axis-lock (yaw / panZ), MMB click to reset view, RMB live probe, animation picker (`<`, anim label, `>`) with `Play` and `Idle` buttons, and automatic return to `pause1` idle after timed emotes.
+  - Verification: `compat_check.py` PASS 10/10; full `pre_install_gate.sh --mod holster_editor_src --mod preview_3d_src` GATE PASS (332 suites pass); `kpm_status.py` confirms SWAP on both mods.
+  - Play row D3B updated in `patch_manager_mods/PLAY_TEST_QUEUE.md`. Next: await user GO (game closed) to run `--apply`.
