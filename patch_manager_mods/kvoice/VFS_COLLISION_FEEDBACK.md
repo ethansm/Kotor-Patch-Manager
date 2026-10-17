@@ -32,3 +32,9 @@ Moving contended addresses behind a provider is the right long-term pattern (lik
 - Is `perf-lab` pair 0x711C20 + 0x711D04 live in the game config (the Haiku could not read it)? `patch_config.toml` lists the id, not addresses; the id is live.
 - Function bounds of 0x70CAA0 vs 0x70E130.
 - Whether KPM `--apply` checks PE export/import changes (BUILD_AND_INSTALL.md:62; not in KPM src).
+
+## F. Resolved (2026-10-17, review-fix session; doc 44 VFS-C5)
+- A1/A3/A5: asset-vfs hooks neither Demand nor the 0x70CAA0 entry: 4 mid-function hooks (GetKeyEntry miss 0x71244E, ServiceFromImage 0x713E83, CRes2DA::OnResourceServiced 0x729FD0, InitializeSource 0x70CB76). The InitializeSource hook sits after `_fclose` of this+0x13C and before the k2-mp3-playback-fix sites; disk streams return 0 and reach them unchanged.
+- A5 (Miles): `_AIL_set_file_callbacks` is used, but chained: the current callbacks are read first and every non-VFS name/handle is forwarded (doc 44 Layer 3 "Miles chaining rule").
+- B2/B3 + C1/C3: the registry rejects `.mp3` and 58/470-byte containers on Layer 1; the packer flags dialog/bark audio FlagMilesStream by directory or `--stream-files`, everything else FlagResMan.
+- A2: perf-lab's Malloc/FreeData detours will count (and log a DLL caller for) the 2DA splice: expected.

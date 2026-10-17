@@ -23,3 +23,15 @@ Scope: `patch_manager_mods/asset_vfs_src/*` (Gemini/Antigravity build), `_shared
 7. **Packer refuses .tga.** CR textures are TGA. TPC conversion must force alpha 255 on head textures and emit `clamp 1` TXI (doc 38 §24); pykotor DXT encode is lossy (memory kotor2-pykotor-dxt-bugs).
 8. **Hard `requires = ["npc-world"]`** only for Spawn. Soft dependency would decouple. Minor.
 9. Minor: 2DA hook runs FreeData+Malloc on every unparsed 2DA even when the splicer has no cells for it? (buildSpliced returns 0 -> early return, OK). Mid-function hook sites are not in the address DB; verified via asm dumps only.
+
+## Resolution (2026-10-17, review-fix session)
+Baseline bd8d4c6; fixes 46ed7d3 (part A), 82d898e (part B), part C (observe + logging, see doc 44 VFS-C5). Not yet run in game (VFS-T0a/T0/T1 in PLAY_TEST_QUEUE).
+1. Observer mode: `asset_vfs.ini [vfs] mode=serve|observe|off`, default observe; `res`/`2da`/`audio`/`char` channels with per-name budgets (part C).
+2. Consumer: `juhani_char_src` (c40366f) registers the private bundle (31 assets, 107 cells) built by `k1_port_stage/vfs_bundle/pack.sh`.
+3. Branch coverage: `0xA10768` has no writer and is 1 in `.data`, so the hooked branch is the live one; the provider logs `A10768=<v>` once and WARNs if 0.
+4. Audio: Miles callbacks are now chained (read with `_AIL_file_callbacks`, defaults restored when NULL, every non-VFS name/handle forwarded); CreateFileA fallback removed; LAA-safe handle tag; one CRITICAL_SECTION. k2-mp3-playback-fix bypass stands for VFS streams only (container slicing replaces it); disk streams are untouched.
+5. ServiceFromImage returns the OnResourceServiced result; already-serviced CRes returns 0 untouched.
+6. Doc 44 updated (hook facts, Miles rule, roadmap rows, live runbook §6).
+7. Packer: `.tga` cannot be served at all (engine ReadRaw), so all 3 CR textures ship as DXT1 TPCs via `tga_to_tpc --force-opaque` (1004f4d); head has the `clamp 1` TXI trailer; bodies lose their soft alpha mask until a DXT5 encoder exists.
+8. `requires = ["npc-world"]` dropped (Spawn polls lazily).
+Also found and fixed: H1 stolen bytes re-zeroed `*ppTable` after a served hit (GetKeyEntry would return 1 with a NULL table: crash on first VFS resource); script-events H3 site wrote EAX in its stolen bytes and caller_object_id read the wrong offset (4821960); `asset_vfs_core_test` returned 0 regardless of failures.

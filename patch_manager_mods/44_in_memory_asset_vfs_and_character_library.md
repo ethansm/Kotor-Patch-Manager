@@ -44,7 +44,7 @@ Serves 16B-prefixed buffer       Zero Override/*.2da files   Zero StreamVoice/ f
 - **One Detour Per Address:** KPM refuses duplicate hook addresses at install time (`HookValidator.cs`) and aborts at runtime on overlapping byte windows (`patcher.cpp`). Whenever two mods need the same engine site, move the hook behind a shared KPM provider interface (like `k2.npcworld@1`, `k2.assetvfs@1`, `k2.characterlib@1`).
 - **Avoided Collisions:**
   - `CExoResMan::Demand` (`0x00711C20`) and `CExoResMan::Malloc` (`0x00712F30`) are owned by `perf-lab`. `asset-vfs` does **not** hook `0x00711C20` (`CExoResMan::Demand`), `0x007111E0` (`CRes::Demand`), or `0x00711ED0` (`CExoResMan::Exists`).
-  - `CExoStreamingSoundSourceInternal::InitializeSource` (`0x0070CAA0`, GOG `0x0063BA40`) has live hooks from `k2-mp3-playback-fix` at `0x0070CDCB` (10 bytes) and `0x0070CF34` (6 bytes). `asset-vfs` hooks earlier at `0x0070CB76` (13 bytes, after `_fclose` of `this+0x13C`): non-VFS streams return `0` and flow untouched into `0x0070CDCB`/`0x0070CF34`, while in-memory VFS streams return `1` and jump to `0x0070D939` (`_AIL_open_stream@12`), bypassing disk `fopen` and `k2-mp3-playback-fix` completely.
+  - `CExoStreamingSoundSourceInternal::InitializeSource` (`0x0070CAA0`, GOG `0x0063BA40`) has live hooks from `k2-mp3-playback-fix` at `0x0070CDCB` (10 bytes) and `0x0070CF34` (6 bytes). `asset-vfs` hooks earlier at `0x0070CB76` (13 bytes, after `_fclose` of `this+0x13C`): non-VFS streams return `0` and flow untouched into `0x0070CDCB`/`0x0070CF34`, while in-memory VFS streams return `1` and jump to `0x0070D939` (`_AIL_open_stream@12`), bypassing disk `fopen` and `k2-mp3-playback-fix` completely. The branch the hook sits on is gated by `0xA10768`, which has no writer and is 1 in `.data`, so the zero branch is dead (the provider logs `A10768=<v>` once, WARN if 0).
 
 ### Layer 1: BioWare Odyssey Resource Manager (`CExoResMan`)
 - **Hook Sites (Steam Aspyr & GOG Aspyr):**
@@ -52,8 +52,9 @@ Serves 16B-prefixed buffer       Zero Override/*.2da files   Zero StreamVoice/ f
   - `CExoResMan::ServiceFromImage` (`0x00713E80`, GOG `0x0061D7E0`) — hooked at `0x00713E83` (`consumed_exit_address = 0x00713FA3`).
 - **Mechanism:**
   - Because `0x0071244E` is only reached when a resource is absent from Override, MOD/SAV, RIM, and BIF tables, 100% of vanilla resource lookups incur zero VFS overhead.
+  - The hook runs with `skip_original_bytes = true`: the stolen `MOV ECX,[EBP+0x10]; MOV [ECX],0` would run after the handler and re-zero `*ppTable` on a hit (GetKeyEntry would return 1 with a NULL table). `VFS_OnGetKeyEntryMiss` zeroes `*ppTable` itself on every path that returns 0; the native tail at `0x00712457` still zeroes `*ppEntry` and EAX.
   - On a VFS match, `VFS_OnGetKeyEntryMiss` sets `*ppTable = &fakeTable` (`tableType = 4`) and `*ppEntry = &rec->keyEntry` (`packedId = 0x40FC0000 | idx`, Source Type 1 = `Image`) and returns `1`.
-  - When `CExoResMan::Demand` or async `Update` services the resource, Source Type 1 dispatches to `CExoResMan::ServiceFromImage` (`0x00713E83`). `VFS_OnServiceFromImage` copies the payload into a 16-byte-prefixed mutable buffer (satisfying `CResMDL`'s `m_pResource - 6` header write at `0x0093D110` and `CRes2DA`'s `m_pResource - 8` without calling `CExoResMan::Malloc`), sets `pRes->m_nSize` (`+0x18`), `pRes->m_pResource` (`+0x10`), and `pRes->m_status |= 4` (`+0x0C`), and invokes `pRes->OnResourceServiced()` (`vtbl[4]`).
+  - When `CExoResMan::Demand` or async `Update` services the resource, Source Type 1 dispatches to `CExoResMan::ServiceFromImage` (`0x00713E83`). `VFS_OnServiceFromImage` copies the payload into a 16-byte-prefixed mutable buffer (satisfying `CResMDL`'s `m_pResource - 6` header write at `0x0093D110` and `CRes2DA`'s `m_pResource - 8` without calling `CExoResMan::Malloc`), sets `pRes->m_nSize` (`+0x18`), `pRes->m_pResource` (`+0x10`), and `pRes->m_status |= 4` (`+0x0C`), and returns `pRes->OnResourceServiced()` (`vtbl[4]`), as the native function does. A CRes that already has flag 4 set returns 0 untouched (native behaviour); a callee result of 0 is passed through and nothing is rolled back.
   - When `CExoResMan::FreeResourceData` (`0x007120C0`) later runs, Source Type 1 (`(m_nPackedId >> 30) == 1`) causes the engine to skip `_free(m_pResource)` and simply clear `m_pResource` / `m_nSize`.
 - **Layer 1 Audio Contract (Live Tests E1/E2b/E2c):**
   - Script `PlaySound("...")` resolves `ResTypeWav = 4` through Layer 1 (`FlagResMan = 0`) and **requires bare RIFF WAVE PCM**. Bare `.mp3` is never queried by `PlaySound` (E2c), and 58-byte VO MP3 containers play silently on Layer 1 (E2b). Both `VfsRegistry` and `k1_port_vfs_pack.py` reject `.mp3` and 58-byte/470-byte wrapped containers when `flags == FlagResMan`.
@@ -71,6 +72,8 @@ Serves 16B-prefixed buffer       Zero Override/*.2da files   Zero StreamVoice/ f
 - **Layer 3 Audio Contract (Live Test E4):**
   - Dialog VO (`StreamVoice/`) and TLK/SSF barks (`StreamSounds/`, e.g. `p_juhani_slct1`) use `FlagMilesStream = 1` and route through `InitializeSource` (`0x0070CAA0`).
   - `inspectAudioContainer` strips the 58-byte StreamVoice header (`riffSz == 50` -> `.mp3` slice) or 470-byte (`0x1D6`) StreamSounds prefix (`-> .wav` RIFF slice), rewrites `this + 0x28` to `#*VFS_<idx>.mp3`/`.wav`, and jumps to `0x0070D939` where `_AIL_open_stream@12` streams directly from `MilesCursorTable` in memory.
+- **Miles chaining rule (review 10-17):** the engine opens every disk stream with the spec `*<path>*<len>*<off>` through Miles' default file callbacks. On the first VFS match the provider reads the current callbacks (`_AIL_file_callbacks@16`; if any is NULL it calls `_AIL_set_file_callbacks(0,0,0,0)` to restore the defaults and reads again), keeps them as the chain, and installs its own once. Its callbacks serve only `#*VFS_n` names and VFS handles (`0xFFFF0000 | slot<<1 | 1`, never a user-mode pointer under LAA) and forward every other name and handle to the saved callbacks unchanged. Disk specs are never claimed by stem. If a later read-back shows foreign callbacks, the provider WARNs, adopts them as the chain and re-installs. No lock is held across a chained call.
+- **Stream filters (`RegisterStreamFilter`):** MEMORY claims only (copied, owner-tagged, keyed by the full normalised path); REWRITE is disabled in v1 (treated as PASS + one WARN per owner) because it bypasses the engine's spec/offset/mp3 logic. Filters see only streamKind 4 and 8 and only the `this+0x28` candidate.
 
 ---
 
@@ -99,7 +102,7 @@ typedef struct K2CharacterDefinition {
     const char* default_utc;        /* "k1p_juhani" */
     const char* default_dlg;        /* "kvjdlg01" */
     uint32_t appearance_id;         /* Virtual 2DA appearance row (e.g. 818) */
-    uint32_t head_id;               /* Virtual 2DA heads row (e.g. 250) */
+    uint32_t head_id;               /* Virtual 2DA heads row (e.g. 249; 250 is Carth's) */
     uint32_t soundset_id;           /* Virtual soundset row (e.g. 70) */
 } K2CharacterDefinition;
 
@@ -126,12 +129,20 @@ typedef struct K2CharacterLibApi {
 | Id | Batch | Deps | Owner gate | Status | Commit | Next |
 |---|---|---|---|---|---|---|
 | **VFS-R1** | Reverse-engineer `CExoResMan::Demand` & `Exists` calling conventions on Steam Aspyr | - | - | DONE | `2026-10-16` | Document signatures & register in Ghidra DB |
-| **VFS-R2** | Reverse-engineer `StreamingSource::OpenStream` (`0x0070caa0`) Miles memory playback | - | - | DONE | `2026-10-16` | Prototype memory stream handle detour |
+| **VFS-R2** | Reverse-engineer `StreamingSource::OpenStream` (`0x0070caa0`) Miles memory playback | - | - | DONE | `2026-10-16` | done: H4 hook + chained Miles callbacks (VFS-C5) |
 | **VFS-C1** | Pure logic VFS registry + host unit tests (`run_tests.py vfs_registry`) | VFS-R1 | - | DONE | `2026-10-17` | VfsRegistry.h + vfs_registry_test.cpp (151/151 PASS) |
 | **VFS-C2** | In-memory 2DA row injector hook (`appearance.2da`, `heads.2da`, `soundset.2da`) | VFS-C1 | - | DONE | | TwoDaSplicer.h + twoda_splicer_test.cpp (202/202 PASS) |
 | **VFS-C3** | Character Provider API header (`CharacterProvider.h`) & `k2.characterlib@1` | VFS-C1 | - | DONE | | CharacterProvider.h + character_provider_test.cpp (127/127 PASS) |
 | **VFS-P1** | Juhani asset packing tool: embed models, textures, lips, dialog, audio into DLL | VFS-C2 | - | DONE | | k1_port_vfs_pack.py + test_k1_port_vfs_pack.py (8/8 PASS) |
-| **VFS-T1** | In-game verification of Juhani spawned in Telos `204tel` with 0 disk files | VFS-P1, VFS-R2 | user GO | TODO | | Verify clean exit (0 disk files in game dir) |
+| **VFS-C4** | Agy baseline: asset-vfs provider (4 hooks), hook-sharing API, script-events, shared headers, packer | VFS-C3 | - | DONE | `bd8d4c6` | reviewed 10-17 (`.claude/reviews/asset_vfs_review_20261017.md`) |
+| **VFS-C5** | Review fixes: H1 stolen-bytes crash, LAA-safe Miles handles, lock, ServiceFromImage return, served/pool rules, 2DA guards; Miles chaining, miss-handler copies + negative cache, stream-filter rules; observe mode + logging | VFS-C4 | - | DONE | `46ed7d3`, `82d898e`, `125e86e` | asset-vfs 0.1.1-dev; live: VFS-T0a |
+| **VFS-C6** | Hook-sharing API v1 (`RegisterResManMissHandler`, `RegisterStreamFilter`) with REWRITE disabled | VFS-C5 | - | DONE | `82d898e` | first consumer pending |
+| **SE-1** | script-events provider review fixes (H3 moved to `0x00668FE8`, OBJECT_SELF at +0x08, idle fast path) | VFS-C4 | - | DONE (not installed) | `4821960` | install only with a consumer |
+| **VFS-P2** | Packer `.incbin` blobs + `--asset-list` / `--2da-rows`; `tga_to_tpc` DXT1 | VFS-P1 | - | DONE | `6acb028`, `1004f4d` | DXT5 alpha encoder when a texture needs real alpha |
+| **VFS-B1** | `juhani_char_src` (`juhani-char` 0.1.0-dev): registers the private bundle (31 assets, 107 cells; DLL 9.96 MB) | VFS-C5, VFS-P2 | - | BUILT | `c40366f` | bundle: `~/Games/KOTOR2_Mod_Workspace/k1_port_stage/vfs_bundle/pack.sh` |
+| **VFS-T0a** | Live: asset-vfs alone, `mode=observe`, Override rig in place | VFS-C5 | user GO | TODO | | PLAY_TEST_QUEUE VFS-T0a |
+| **VFS-T0** | Live: Override rig removed, asset-vfs observe + juhani-char | VFS-T0a, VFS-B1 | user GO | TODO | | PLAY_TEST_QUEUE VFS-T0 |
+| **VFS-T1** | In-game verification of Juhani spawned in Telos `204tel` with 0 disk files (`mode=serve`) | VFS-T0 | user GO | TODO | | PLAY_TEST_QUEUE VFS-T1 |
 
 ---
 
@@ -140,3 +151,19 @@ typedef struct K2CharacterLibApi {
 1. **Zero-Disk-Write Invariant:** Running `git status` or `ls` on the game's `Override/`, `StreamVoice/`, and `StreamSounds/` directories before launch and after exit MUST show identical directory state with 0 modified or new files.
 2. **Passthrough Invariant:** Any resource or 2DA row not owned by an active character provider MUST pass cleanly to the engine's original handlers without latency or alteration.
 3. **Crash Durability:** If a character asset is requested but corrupt or missing from memory, the VFS detour must fail gracefully (returning `NULL` / `FALSE`) rather than dereferencing invalid memory.
+
+---
+
+## 6. Live test runbook (VFS-T0a, T0, T1)
+
+Each step needs the user's GO at the time, with the game closed. Installs use the `kotor2-kpm-install` skill and a fresh `scripts/pre_install_gate.sh --mod <x>_src` GATE PASS. `$K2` = `~/.local/share/Steam/steamapps/common/Knights of the Old Republic II`.
+
+1. **VFS-T0a:** install asset-vfs alone with `asset_vfs.ini` `[vfs] mode=observe` (the default). The Override rig stays.
+2. **Remove the Override rig** (needed for "0 disk files"). Restore path first: `k1_port_probe.py` plan/install for manifest `k1p_probe_20261016_2011`, plus the out-of-band files in `k1_port_stage/char_juhani_test/CR_MANUAL_COPY.txt` and `k1_port_stage/char_juhani_audio/STREAMSOUNDS_COPIES.txt`. Then `k1_port_probe.py rollback --game-dir "$K2" --yes`, and remove by explicit path: `override/k1p_juhaniba01.tga`, `override/k1p_juhanibb01.tga`, `override/k1p_juhanih01.tga`, `override/k1p_juhanih01.txi`, `StreamVoice/kvjv0001.wav`..`kvjv0003.wav`, `StreamSounds/p_juhani_{bat1..6,atk1,atk2,hit1,hit2,dead}.wav`. Check the base shas: appearance `44427a3575a2d05374ca301757c372b7b10f0e7ede8b582241d438835f488b91`, heads `e0f8381cd43fe07e36c5c1e9339cca56ceb5039666ea24142646fab9c493fb9d`, soundset `fb8181248d7ee75cd7229064174ad40319bdb9cb1116dac1abf6b50e279ad00f`. Pass: `ls "$K2/override" | grep -iE 'juhani|^kvj'` prints nothing and `override/k1p_native_npc.utc` still exists. `override/` holds about 20.6k other files: never remove anything outside this list.
+3. **VFS-T0:** install juhani-char (bundle built by `k1_port_stage/vfs_bundle/pack.sh`), asset-vfs still observe. Row 818 only appends cleanly onto the 818-row appearance.2da that npc-diversity installs, so confirm npc-diversity is installed and the sha above matches.
+4. **VFS-T1:** `mode=serve`; pass signals in PLAY_TEST_QUEUE.
+5. **Rollback:** KPM uninstall juhani-char and asset-vfs; restore the Override rig from step 2 if wanted. Results go to this doc, doc 41 §9 and PLAY_TEST_QUEUE.
+
+**Logging (asset_vfs.ini `[vfs]`):** `mode=serve|observe|off` (default observe), `log_prefix=k1p_,kvj,p_juhani`, `log_all=0`. With no miss handler and no registered asset of the requested type, H1 takes the fast path and logs nothing, so in VFS-T0a (nothing registered) MISS lines appear only with `log_all=1`.
+
+**Texture note (10-17):** the VFS cannot serve `.tga` (the engine reads TGAs with ReadRaw, outside CExoResMan), so the bundle ships all three CR textures as DXT1 TPCs made by `k1_port_tex_tpc.py tga-to-tpc --force-opaque`. TPC rows are stored bottom-up like vanilla TPCs. The body alpha (a soft mask, likely shine) is dropped until a DXT5 alpha encoder exists. The head gets the TXI `clamp 1` as a raw trailer.
