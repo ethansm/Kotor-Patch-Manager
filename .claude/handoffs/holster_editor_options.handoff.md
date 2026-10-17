@@ -1,7 +1,7 @@
 # Session Handoff & Plan State: .claude/plans/holster_editor_options.md
 
 ## 0. Next-Phase Direction
-W4a code landed in 03fc2ae (holster-editor 0.2.2-dev + preview-3d 0.1.0-dev), KPM mirrored & rebuilt in 0390823 & 22d10cb, full pre-install gate PASS (332 suites), kpm_status SWAP on both mods. Play row D3B updated in PLAY_TEST_QUEUE.md. NEXT: user GO with game closed -> `python3 scripts/kpm_hotswap.py --mod holster-editor preview-3d --apply`. Then user plays D3B, logs checked. Follow-up: W4b weapon-edit mode (chips, calibration, gesture remap, value readout, Save/Revert).
+W4a hot-swapped LIVE 10-16 21:41 (holster-editor aae9c627, preview-3d daa73241; rollback `kpm_hotswap.py --rollback batch_swap_20261016_214146`). Play row D3B is LIVE/pending user play test in PLAY_TEST_QUEUE.md. NEXT: user plays D3B, logs checked with `kotor2_logs.py check holster-editor_log.txt --new`. Follow-up: W4b weapon-edit mode (weapon chips, camera calibration, gesture remap, value readout, Save/Revert).
 
 ## 1. Active State & Provenance
 - **Master Plan:** `.claude/plans/holster_editor_options.md`
