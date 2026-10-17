@@ -16,3 +16,7 @@ Purpose: NSS triggers for the voice test ladder (`.claude/research/voice_audio/w
 ## Open
 - Does PlaySound animate lips? E3 (lip) and E6 get NO script yet; decide after the E1 result (may need a dialog route).
 - `kpv_e4.nss` uses TLK strref 36878 ("Let's move together again.", SoundResRef p_bastila_rprty). The wav is not at the StreamVoice or StreamSounds top level: confirm where the resref lives (BIF or subdir) before the live run, else pick another row.
+
+## Added 2026-10-16 (live E1/E2 session)
+- `kpv_c1.nss`: runscript control (credits + overhead text). `runscript` itself never ran any script, so it is only useful on a working trigger.
+- `hb/k_hen_heartbt01.nss`: TEST override of the vanilla henchman heartbeat, the only trigger that worked (fires every ~6 s per companion, hot-swappable). It applies to EVERY save while staged, is not removed by `rm kpv*`, and puts a file in `Override`: retired by the no-loose-files rule (doc 44). Do not stage it again; kept as the record of how E1/E2 were run.
