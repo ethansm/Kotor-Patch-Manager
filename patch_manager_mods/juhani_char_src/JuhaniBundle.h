@@ -1,5 +1,5 @@
-// JuhaniBundle.h -- registers the private Juhani VFS bundle (doc 44 VFS-B1) with asset-vfs.
-// JuhaniBundle.cpp is the only TU that includes the generated bundle header (its top-level .incbin asm blocks
+// JuhaniBundle.h -- registers the private Juhani and Carth VFS bundles (doc 44 VFS-B1/B2) with asset-vfs.
+// JuhaniBundle.cpp / CarthBundle.cpp are the only TUs that include a generated bundle header (its top-level .incbin asm blocks
 // switch sections, so it is included first in a TU of its own).
 #pragma once
 
@@ -21,5 +21,8 @@ struct BundleResult {
 
 // Registers everything; null tables give ok=false. Without a bundle: present=false, ok=false, no API call.
 BundleResult registerBundle(const K2AssetVfsApi* vfs, const K2CharacterLibApi* charlib, const char* owner);
+
+// Same contract for the Carth bundle (CarthBundle.cpp).
+BundleResult registerCarthBundle(const K2AssetVfsApi* vfs, const K2CharacterLibApi* charlib, const char* owner);
 
 } // namespace juhanichar

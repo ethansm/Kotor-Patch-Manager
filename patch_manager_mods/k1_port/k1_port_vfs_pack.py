@@ -224,6 +224,7 @@ def collect_assets(
     stream_files: Iterable[str | Path] | None = None,
     *,
     allow_tga: bool = False,
+    symbol_prefix: str = "kvfs",
 ) -> list[dict[str, Any]]:
     """Gather, validate, and categorize all asset files (refusing symlinks per kvoice R9)."""
     stream_set: set[Path] = set()
@@ -337,7 +338,7 @@ def collect_assets(
     for idx, a in enumerate(assets):
         a["idx"] = idx
         # Global asm label; the C++ side declares it extern "C" (see generate_c_header).
-        a["symbol"] = f"kvfs_{idx}"
+        a["symbol"] = f"{symbol_prefix}_{idx}"
 
     return assets
 
@@ -703,6 +704,7 @@ def pack_character_bundle(
     ledger_path: str | Path | None = None,
     stage_root: str | Path | None = None,
     allow_tga: bool = False,
+    symbol_prefix: str = "kvfs",
 ) -> dict[str, Any]:
     """Write one .bin per asset plus the generated header; return the manifest."""
     if not character_id or not re.fullmatch(r"^[a-zA-Z0-9_]{1,32}$", character_id):
@@ -711,7 +713,9 @@ def pack_character_bundle(
     header_path, blob_dir = resolve_output_paths(output_header, output_dir, header_name)
 
     # Collect and validate assets
-    assets = collect_assets(asset_paths, stream_files=stream_files, allow_tga=allow_tga)
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,31}", symbol_prefix):
+        raise PackError(f"invalid symbol prefix {symbol_prefix!r}: must be a C identifier of at most 32 characters")
+    assets = collect_assets(asset_paths, stream_files=stream_files, allow_tga=allow_tga, symbol_prefix=symbol_prefix)
 
     # Optional license gate
     if ledger_path is not None:
@@ -832,6 +836,12 @@ def main(argv: list[str] | None = None) -> int:
         "--out-header",
         help="Legacy: output header path. Blobs go to --out-dir, or beside the header when --out-dir is absent",
     )
+    parser.add_argument(
+        "--symbol-prefix",
+        default="kvfs",
+        help="Prefix of the blob labels and .bin names (default kvfs). Each bundle linked into one DLL needs its own, "
+             "e.g. kvfs_carth, because the asm labels are global",
+    )
     parser.add_argument("--display-name", help="Display name (default: capitalized character-id)")
     parser.add_argument("--tag", help="Default creature tag (default: k1p_<character-id>)")
     parser.add_argument("--utc", help="Default creature template resref (default: tag)")
@@ -901,6 +911,7 @@ def main(argv: list[str] | None = None) -> int:
             stream_files=args.stream_files,
             ledger_path=args.ledger,
             allow_tga=args.allow_tga,
+            symbol_prefix=args.symbol_prefix,
         )
     except PackError as e:
         print(f"error: {e}", file=sys.stderr)

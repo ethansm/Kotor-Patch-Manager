@@ -702,6 +702,22 @@ class TestK1PortVfsPack(unittest.TestCase):
         self.assertTrue((legacy_dir / "custom_bundle.h").is_file())
         self.assertEqual((legacy_dir / "kvfs_0_k1p_juhani.bin").read_bytes(), b"UTC_LEGACY")
 
+    def test_symbol_prefix_keeps_two_bundles_apart(self):
+        """--symbol-prefix renames the asm labels and .bin names so two bundles can share one DLL."""
+        stage = self.test_dir / "stage"
+        stage.mkdir()
+        (stage / "k1p_carth.utc").write_bytes(b"UTC_CARTH")
+        out_dir = self.test_dir / "carth_out"
+        manifest = pack_character_bundle("carth", [stage], output_dir=out_dir, symbol_prefix="kvfs_carth")
+        self.assertEqual([a["symbol"] for a in manifest["assets"]], ["kvfs_carth_0"])
+        self.assertEqual((out_dir / "kvfs_carth_0_k1p_carth.bin").read_bytes(), b"UTC_CARTH")
+        header = (out_dir / "juhani_vfs_bundle.h").read_text(encoding="utf-8")
+        self.assertIn("namespace k2vfs_carth {", header)
+        self.assertIn("extern const uint8_t kvfs_carth_0[];", header)
+        self.assertNotIn("kvfs_0", header)
+        with self.assertRaises(PackError):
+            pack_character_bundle("carth", [stage], output_dir=out_dir, symbol_prefix="9bad prefix")
+
     def test_cli_asset_list_2da_rows_and_stage_dir(self):
         """--asset-list (relative paths, comments, blanks) plus --2da-rows (pykotor mocked) write the stage dir."""
         stage = self.test_dir / "stage"

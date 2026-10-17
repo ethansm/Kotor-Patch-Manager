@@ -21,6 +21,7 @@ inline const RosterRow kRoster[] = {
     {"c_drdmouse01", "MouseDroid", "204tel", -39.0f, -63.1f, 0.0f, 0.0f},        // pet: vanilla mouse droid at WP_com_ith_01
     {"k1p_native_npc", "k1p_native_npc", "204tel", -21.1f, -31.1f, 0.0f, 0.0f},  // K1 NPC in the plant room
     {"k1p_juhani", "k1p_juhani", "204tel", -37.5f, -63.1f, 0.0f, 0.0f},          // K1 Juhani (appearance 818) 1.5 m from the pet's known-good point
+    {"k1p_carth", "k1p_carth", "204tel", -36.0f, -63.1f, 0.0f, 0.0f},            // K1 Carth (appearance 819), 1.5 m beside Juhani; resources come from the juhani-char VFS bundle
 };
 constexpr int kRosterCount = static_cast<int>(sizeof(kRoster) / sizeof(kRoster[0]));
 constexpr int kMaxRowsPerArea = 8;
@@ -64,8 +65,8 @@ inline int RowsForArea(const char* area, int* out, int cap) {
     return n;
 }
 
-// Tags whose creature is dumped once per process (the NPC dump event): the Stage 1 probe NPC, the Stage 2 native NPC, the pet and the K1 Juhani test row.
-inline constexpr const char* kHarvestTags[] = {"k1p_probe_npc", "k1p_native_npc", "MouseDroid", "k1p_juhani"};
+// Tags whose creature is dumped once per process (the NPC dump event): the Stage 1 probe NPC, the Stage 2 native NPC, the pet and the K1 Juhani and Carth test rows.
+inline constexpr const char* kHarvestTags[] = {"k1p_probe_npc", "k1p_native_npc", "MouseDroid", "k1p_juhani", "k1p_carth"};
 constexpr int kHarvestTagCount = static_cast<int>(sizeof(kHarvestTags) / sizeof(kHarvestTags[0]));
 
 inline bool IsHarvestTag(const char* tag) {
