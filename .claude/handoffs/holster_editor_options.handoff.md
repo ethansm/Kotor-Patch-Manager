@@ -1,16 +1,18 @@
 # Session Handoff & Plan State: .claude/plans/holster_editor_options.md
 
 ## 0. Next-Phase Direction
-D3c (0.2.4-dev) prepared and full verification gate PASSED (332 suites, GATE PASS head 7c94d354fc4d). Verdict SWAP.
-- Weapon Edit Mode implemented: Bone cycling, Scope cycling (Weapon/Type/Body), Save (holster.ini [editor]), Revert, Reset Scope, Done.
-- Gestures: LMB screen translation, RMB trackball rotation, Shift+Wheel depth adjustment, MMB character yaw spin, Shift fine tuning (0.2x), Ctrl snapping (1cm / 5deg).
-- Next: Ask user for GO to apply hot-swap `python3 scripts/kpm_hotswap.py --mod holster-editor --apply` (game closed), then playtest row D3C.
+D3c (holster-editor 0.2.4-dev + holster 0.1.2-dev) both hot-swapped LIVE!
+- `holster-editor 0.2.4-dev` LIVE md5 `36fbb1dd` (rollback `kpm_hotswap.py --rollback holster-editor_swap_20261016_235216`).
+- `holster 0.1.2-dev` LIVE md5 `73a525b0` (rollback `kpm_hotswap.py --rollback holster_swap_20261017_001501`).
+- Left-hand weapons are now fully wired: `kWorldKnowsHand = true` and in-world `handLookup` active, with automatic sagittal mirroring and independent `place_*_l_*` support.
+- Next: Launch game and playtest row `D3C` (both right and left weapons).
 
 ## 1. Active State & Provenance
 - **Master Plan:** `.claude/plans/holster_editor_options.md`
-- **Branch:** `KOTOR-II` (75a9f23 docs: add D3C play-test queue row for holster-editor 0.2.4-dev)
+- **Branch:** `KOTOR-II` (04f32af holster 0.1.2-dev: enable kWorldKnowsHand and in-world left-hand weapon mapping)
 - **Last Landed Commits:**
 ```
+04f32af holster 0.1.2-dev: enable kWorldKnowsHand and in-world left-hand weapon mapping
 75a9f23 docs: add D3C play-test queue row for holster-editor 0.2.4-dev
 7c94d35 holster-editor 0.2.4-dev: weapon edit mode, bone cycling, scopes, and mouse nudging (D3c)
 ```
