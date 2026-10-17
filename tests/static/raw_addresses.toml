@@ -154,6 +154,9 @@ addresses = ["0x00744EEC"]
 
 [files."patch_manager_mods/texture_memory_release_src/TextureMemoryRelease.cpp"]
 addresses = ["0x004261CF", "0x004261D6", "0x004261E6"]
+
+[files."patch_manager_mods/voice_probe_src/VoiceProbe.cpp"]
+addresses = ["0x006FD8D0", "0x00A1B4A8"]
 [files."patch_manager_mods/perf_lab_src/harness/smoke_saveevents.cpp"]
 addresses = ["0x00A7EA88", "0x00A7EABC", "0x00A20000", "0x00A20100", "0x00A20200", "0x00A20400", "0x00A20600"]
 

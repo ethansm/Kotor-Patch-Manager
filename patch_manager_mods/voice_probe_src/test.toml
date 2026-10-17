@@ -1,0 +1,6 @@
+# trigger_core_test: pure TriggerCore.h logic, no shared headers.
+cxxflags = ["-Werror"]
+
+# Common contract test: the shared headers + host Win32 stub (mirrors npc_world_probe_src/test.toml).
+[common_contract_test]
+cxxflags = ["-I../_shared_src", "-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common", "-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HOST", "-Werror"]
