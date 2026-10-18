@@ -152,6 +152,65 @@ inline Layout layoutRow(int menuX, int menuY, int nameX, int nameY, int nameW, i
     return l;
 }
 
+// ---------------------------------------------------------------- settings-page preview (0.4.1)
+// The mod-config page shows an example of the strip in the PREVIEW pane: a mock target name bar (the real one is the target menu's name
+// label) with the icon row above it, laid out by layoutRow from the CURRENT settings at 1:1 engine px, centred in the pane.
+constexpr int kPreviewMaxIcons = 5;      // page item budget: bar + pill + 5 x (icon, overlay) = 12 controls
+constexpr int kPreviewNameW = 200;       // mock name bar edge sizes (about the vanilla target name label); iconSize 0 = auto = kPreviewNameH
+constexpr int kPreviewNameH = 24;
+constexpr int kPreviewControls = 2 + 2 * kPreviewMaxIcons;
+
+struct PreviewSample { const char* resref; float ratio; };
+// The sample effects, in row order (the strip's real icons) with a spread of remaining-time ratios so the drain overlay is visible.
+inline const PreviewSample& previewSample(int k) {
+    static const PreviewSample t[kPreviewMaxIcons] = {
+        { kIconFear, 0.25f }, { kIconStun, 0.5f }, { kIconSlow, 0.75f }, { kIconHold, 0.1f }, { kIconSleep, 0.9f },
+    };
+    return t[k < 0 ? 0 : (k >= kPreviewMaxIcons ? kPreviewMaxIcons - 1 : k)];
+}
+
+struct PreviewLayout {
+    bool ok;          // the name bar fits the pane
+    int n;            // icons shown (0 = row hidden: Enabled off, no room, or an icon edge below 4 px)
+    bool pill;        // draw the pill (backing on and a row shown)
+    RowRect name;     // the mock name bar
+    Layout row;       // icon rects + pill rect (valid for row.n icons)
+};
+
+// pane: the preview rect (engine px). The name bar is kPreviewNameW x kPreviewNameH (narrower/shorter when the pane is); the row sits above it
+// exactly as the HUD places it (layoutRow with the name bar as the name label); the block (row + pill + name bar) is centred in the pane and
+// never leaves it: icons are dropped from the right until the row (plus pill padding) fits the width, and the row is hidden when it does not
+// fit the height. An empty pane gives ok = false.
+inline PreviewLayout previewLayout(const RowRect& pane, int enabled, int maxIcons, int iconPx, int gapPx, int spacePx, int pillPad, bool backing) {
+    PreviewLayout p;
+    memset(&p, 0, sizeof p);
+    if (pane.w <= 0 || pane.h <= 0) return p;
+    if (gapPx < 0) gapPx = 0;
+    if (spacePx < 0) spacePx = 0;
+    if (pillPad < 0) pillPad = 0;
+    const int nameW = pane.w < kPreviewNameW ? pane.w : kPreviewNameW;
+    const int nameH = pane.h < kPreviewNameH ? pane.h : kPreviewNameH;
+    const int s = iconPx > 0 ? iconPx : kPreviewNameH;
+    const int pad = backing ? pillPad : 0;
+    int n = enabled ? maxIcons : 0;
+    if (n > kPreviewMaxIcons) n = kPreviewMaxIcons;
+    if (n < 0) n = 0;
+    if (s < 4 || pad + s + gapPx + nameH > pane.h) n = 0;
+    while (n > 0 && n * s + (n - 1) * spacePx + 2 * pad > pane.w) --n;
+    const int rowW = n > 0 ? n * s + (n - 1) * spacePx : 0;
+    const int bw = n > 0 && rowW + 2 * pad > nameW ? rowW + 2 * pad : nameW;
+    const int bh = n > 0 ? nameH + gapPx + s + pad : nameH;
+    const int bx = pane.x + (pane.w - bw) / 2;
+    const int by = pane.y + (pane.h - bh) / 2;
+    p.name = { bx + (bw - nameW) / 2, by + bh - nameH, nameW, nameH };
+    p.n = n;
+    p.pill = n > 0 && backing;
+    // layoutRow centres the row on the name bar with integer halves; with rowW + 2 * pad <= bw the row and its pill padding stay inside the block.
+    if (n > 0) p.row = layoutRow(0, 0, p.name.x, p.name.y, p.name.w, p.name.h, n, s, gapPx, spacePx, pillPad);
+    p.ok = true;
+    return p;
+}
+
 // ---------------------------------------------------------------- cooldown overlay
 // Same semantics as bh::brightPx (BuffHudLogic.h) for known ratios, clamped to [0,s]; unknown ratio (<0) = fully bright.
 inline int brightPx(int s, float ratio) {
@@ -165,6 +224,9 @@ inline int brightPx(int s, float ratio) {
 }
 
 inline int overlayH(int s, float ratio) { return s - brightPx(s, ratio); }
+
+// The drain overlay is drawn only for a visibly non-zero alpha (> 0.001); 0 (the default), NaN and negatives mean no overlay widget is shown.
+inline bool overlayVisible(float drainAlpha) { return drainAlpha > 0.001f; }
 
 // The overlay texture has a baked alpha of 0.78; this is the draw alpha needed for an effective alpha of `want`.
 inline float overlayAlpha(float wantEffective) {
@@ -202,7 +264,7 @@ struct CfgRaw {
     int enabled = 1, verbose = 0, maxIcons = 5, iconSize = 0, gap = 4, spacing = 4;
     int tierObvious = 5, tierOwn = 12, tierFull = 20;
     int backing = 0, backingPad = 4, forceTier = -1;
-    float drainAlpha = 0.65f, backingAlpha = 0.55f;
+    float drainAlpha = 0.0f, backingAlpha = 0.55f;   // drain shading is OFF by default (0.0); set e.g. 0.65 for the dark drain overlay
 };
 
 // Clamps every field to its documented range, then enforces the tier ordering obvious <= own <= full by raising the LATER value.

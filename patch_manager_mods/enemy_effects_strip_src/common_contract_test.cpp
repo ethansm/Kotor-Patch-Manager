@@ -1,4 +1,4 @@
-// common_contract_test.cpp -- Patches/Common CONTRACT test for Enemy Effects Strip (0.4.0-dev).
+// common_contract_test.cpp -- Patches/Common CONTRACT test for Enemy Effects Strip (0.4.1-dev).
 // Rule: every Patches/Common API a mod uses gets a mod-owned contract test colocated with the mod.
 // Pins the semantics EnemyStrip.cpp relies on in SafeRead.h, KpLog.h, HudHost.h, K2Addr.h, Party.h, Effects.h, EffectIcons.h, GuiKit.h and ModConfigApi.h (the optional mod-config settings page: k2.modconfig@1 + k2.menuui@1).
 #ifndef GUIKIT_HOST
@@ -56,6 +56,11 @@ SIG(guikit::setBorderTint, bool (*)(uintptr_t, const float*));
 SIG(guikit::setVisible, bool (*)(uintptr_t, bool));
 SIG(guikit::setClickable, bool (*)(uintptr_t, bool));
 SIG(guikit::imageFor, void* (*)(const char*, bool*, int*));
+SIG(guikit::setFillStyle, bool (*)(uintptr_t, int));
+SIG(guikit::setText, bool (*)(uintptr_t, const char*));
+SIG(guikit::setAlign, bool (*)(uintptr_t, unsigned));
+SIG(guikit::isVisible, bool (*)(uintptr_t));
+SIG(guikit::releaseUnlinkedLabel, void (*)(uintptr_t, uint32_t));
 SIG(k2fx::iconForSpell, const char* (*)(int, bool, bool*));
 SIG(k2fx::iconForEffectIconEffect, const char* (*)(int, bool*));
 SIG(k2fx::effectRatio, float (*)(uintptr_t, int, int, bool, float));
@@ -88,9 +93,16 @@ static void KPATCH_CALL stubSetRect(uint32_t, int32_t, const K2MuiRect*) {}
 static void KPATCH_CALL stubSetDesc(uint32_t, const char*) {}
 static int32_t KPATCH_CALL stubPaneRect(void*, int32_t, K2MuiRect*) { return 0; }
 static void* KPATCH_CALL stubControl(uint32_t, int32_t) { return nullptr; }
+static int g_splitCalls = 0;
+static int32_t KPATCH_CALL stubSetDescSplit(uint32_t, int32_t) { ++g_splitCalls; return 1; }
+// Label destructor seam (releaseUnlinkedLabel): records the slot value, control and flags.
+static int g_dtorCalls = 0; static uint32_t g_dtorFn = 0; static uintptr_t g_dtorCtl = 0; static unsigned g_dtorFlags = 0;
+static void fakeLabelDtor(uint32_t fn, uintptr_t ctl, unsigned flags) { ++g_dtorCalls; g_dtorFn = fn; g_dtorCtl = ctl; g_dtorFlags = flags; }
 static const K2ModConfigApi kCfgTable = { sizeof(K2ModConfigApi), stubRegister, stubUnregister };
 static const K2MenuUiApi kMuiTable = { sizeof(K2MenuUiApi), stubNewPage, stubAddButton, stubAddLabel, stubAddCustom, stubClicked,
-                                       stubSetText, stubSetRect, stubSetDesc, stubPaneRect, stubControl };
+                                       stubSetText, stubSetRect, stubSetDesc, stubPaneRect, stubControl, nullptr };   // an 11-slot-era provider: SetDescSplit null
+static const K2MenuUiApi kMuiTableSplit = { sizeof(K2MenuUiApi), stubNewPage, stubAddButton, stubAddLabel, stubAddCustom, stubClicked,
+                                            stubSetText, stubSetRect, stubSetDesc, stubPaneRect, stubControl, stubSetDescSplit };
 
 int main() {
     int flags = MAP_PRIVATE | MAP_ANONYMOUS;
@@ -215,10 +227,10 @@ int main() {
            k2fx::EffType_Icon == 0x43 && [] { bool it = true; const char* r = k2fx::iconForEffectIconEffect(0, &it); return r == nullptr && !it; }());
 
     // 10. ModConfigApi.h (the optional settings page): interface names, versions, struct sizes, pane and flag constants EnemyStrip.cpp uses.
-    ECHECK("k2.modconfig / k2.menuui are v1; K2ModConfigEntry 10 pointer slots, K2ModConfigApi 3, K2MenuUiApi 11; MUI_PANE_COLUMN == 0",
+    ECHECK("k2.modconfig / k2.menuui are v1; K2ModConfigEntry 10 pointer slots, K2ModConfigApi 3, K2MenuUiApi 12; MUI_PANE_COLUMN == 0",
            strcmp(K2MODCONFIG_IFACE, "k2.modconfig") == 0 && K2MODCONFIG_VERSION == 1 && strcmp(K2MENUUI_IFACE, "k2.menuui") == 0 &&
            K2MENUUI_VERSION == 1 && sizeof(K2ModConfigEntry) == 10 * sizeof(void*) && sizeof(K2ModConfigApi) == 3 * sizeof(void*) &&
-           sizeof(K2MenuUiApi) == 11 * sizeof(void*) && MUI_PANE_COLUMN == 0);
+           sizeof(K2MenuUiApi) == 12 * sizeof(void*) && MUI_PANE_COLUMN == 0);
     ECHECK("K2ModConfigEntry field order: build 5, enter 6, leave 7, tick 8, destroy 9 (the page sets build/enter/tick/destroy, leave stays null)",
            offsetof(K2ModConfigEntry, build) == 5 * sizeof(void*) && offsetof(K2ModConfigEntry, enter) == 6 * sizeof(void*) &&
            offsetof(K2ModConfigEntry, leave) == 7 * sizeof(void*) && offsetof(K2ModConfigEntry, tick) == 8 * sizeof(void*) &&
@@ -257,6 +269,57 @@ int main() {
     ECHECK("Register(entry) reaches the provider with the entry's id and struct_size, and returns its token",
            tok == 7 && g_regCalls == 1 && g_regEntry == &e && g_regCopy.id == kId && g_regCopy.struct_size == sizeof(K2ModConfigEntry) &&
            g_regCopy.leave == nullptr && g_regCopy.tick == nullptr);
+
+    // 12. ModConfigApi.h description split (0.4.1 preview): MUI_PANE_PREVIEW is pane 6, SetDescSplit is the last (12th) slot; hasDescSplit() is
+    //     the gate before calling it: false for a null table, a null slot, or a table too short to hold it; usable() still accepts the older
+    //     11-slot table, so the page works against an older mod-config.
+    ECHECK("MUI_PANE_PREVIEW == 6; K2MenuUiApi.SetDescSplit is slot 11 (the last), struct_size 12 slots",
+           MUI_PANE_PREVIEW == 6 && offsetof(K2MenuUiApi, SetDescSplit) == 11 * sizeof(void*) && sizeof(K2MenuUiApi) == 12 * sizeof(void*));
+    K2MenuUiApi older = kMuiTableSplit; older.struct_size = static_cast<uint32_t>(offsetof(K2MenuUiApi, SetDescSplit));   // 11 slots, slot still non-null in memory
+    ECHECK("MenuClient::hasDescSplit(table): false for null, a null slot and a short table; true for a full table with the slot",
+           !k2mc::MenuClient::hasDescSplit(nullptr) && !k2mc::MenuClient::hasDescSplit(&kMuiTable) && !k2mc::MenuClient::hasDescSplit(&older) &&
+           k2mc::MenuClient::hasDescSplit(&kMuiTableSplit));
+    ECHECK("MenuClient::usable() accepts the 11-slot table and the 12-slot table (an older provider stays usable)",
+           k2mc::MenuClient::usable(&older) && k2mc::MenuClient::usable(&kMuiTableSplit) && k2mc::MenuClient::usable(&kMuiTable));
+    fakekp::reset();
+    fakekp::provide(K2MENUUI_IFACE, K2MENUUI_VERSION, &kMuiTableSplit);
+    k2mc::MenuClient mcS; mcS.init(fakekp::api());
+    ECHECK("MenuClient::hasDescSplit() is false before the connect and true after it on a provider with the slot",
+           !mcS.hasDescSplit() && (mcS.poll(), mcS.ok()) && mcS.hasDescSplit() && mcS.p->SetDescSplit(2, 750) == 1 && g_splitCalls == 1);
+    fakekp::reset();
+    fakekp::provide(K2MENUUI_IFACE, K2MENUUI_VERSION, &older);
+    k2mc::MenuClient mcO; mcO.init(fakekp::api()); mcO.poll();
+    ECHECK("on an 11-slot provider the client is ok() but hasDescSplit() is false (no preview, the page still works)", mcO.ok() && !mcO.hasDescSplit());
+
+    // 13. GuiKit.h calls the preview labels use: setFillStyle sets bits 0-1 of border+0x34 and keeps the rest (2 = stretch), refuses style 4 and
+    //     control 0; isVisible reads flag bit 1; setText/setAlign refuse control 0 and a label without a text object; releaseUnlinkedLabel
+    //     calls the object's own slot 0 with flags 1 only when its vtable equals the one given.
+    k2addr::setForTest(&kSteam);
+    const uintptr_t lab = base + 0x4000;
+    const int oBorder = k2addr::off(&K2AddrTable::Label_Border), oStyle = k2addr::off(&K2AddrTable::Border_FillStyle), oFl = k2addr::off(&K2AddrTable::Ctl_Flags);
+    const uint32_t fakeVt = static_cast<uint32_t>(base + 0x5000);
+    *reinterpret_cast<uint32_t*>(lab + static_cast<uintptr_t>(oBorder)) = static_cast<uint32_t>(guikit::BorderVtable);
+    *reinterpret_cast<uint32_t*>(lab + static_cast<uintptr_t>(oBorder + oStyle)) = 0xF5u;
+    *reinterpret_cast<int*>(lab + static_cast<uintptr_t>(oFl)) = guikit::FlagVisible;
+    ECHECK("setFillStyle(label, 2) turns 0xF5 into 0xF6 (bits 0-1 only); style 4 and control 0 are refused",
+           guikit::setFillStyle(lab, 2) && *reinterpret_cast<uint32_t*>(lab + static_cast<uintptr_t>(oBorder + oStyle)) == 0xF6u &&
+           !guikit::setFillStyle(lab, 4) && *reinterpret_cast<uint32_t*>(lab + static_cast<uintptr_t>(oBorder + oStyle)) == 0xF6u && !guikit::setFillStyle(0, 2));
+    ECHECK("isVisible follows flag bit 1 and is false for control 0",
+           guikit::isVisible(lab) && (*reinterpret_cast<int*>(lab + static_cast<uintptr_t>(oFl)) = 0, !guikit::isVisible(lab)) && !guikit::isVisible(0));
+    ECHECK("setText / setAlign refuse control 0 and a label with no text object (return false, no crash)",
+           !guikit::setText(0, "x") && !guikit::setAlign(0, 18) && !guikit::setText(lab, "x") && !guikit::setAlign(lab, 18));
+    *reinterpret_cast<uint32_t*>(lab) = fakeVt;
+    *reinterpret_cast<uint32_t*>(static_cast<uintptr_t>(fakeVt)) = 0x1234u;
+    guikit::g_gkCallLabelDtor = fakeLabelDtor;
+    g_dtorCalls = 0;
+    guikit::releaseUnlinkedLabel(lab, fakeVt + 4);   // wrong vtable: never called
+    guikit::releaseUnlinkedLabel(0, fakeVt);          // null control: never called
+    const int callsBefore = g_dtorCalls;
+    guikit::releaseUnlinkedLabel(lab, fakeVt);
+    ECHECK("releaseUnlinkedLabel calls slot 0 with flags 1 only for a matching vtable (none for a wrong vtable or control 0)",
+           callsBefore == 0 && g_dtorCalls == 1 && g_dtorFn == 0x1234u && g_dtorCtl == lab && g_dtorFlags == 1u);
+    guikit::g_gkCallLabelDtor = nullptr;
+    k2addr::clearForTest();
 
     munmap(arena, 0x10000);
     return ::kt::Report("common_contract_test (enemy-effects-strip)");

@@ -1,4 +1,4 @@
-// EnemyStrip.cpp -- Enemy Effects Strip 0.4.0-dev (Steam Aspyr build 6A522E71...). Draws the target's status-effect icons as a bare row of
+// EnemyStrip.cpp -- Enemy Effects Strip 0.4.1-dev (Steam Aspyr build 6A522E71...). Draws the target's status-effect icons as a bare row of
 // GUI labels centred just above the target menu's name label. No engine hooks, no engine writes beyond the label setters in GuiKit.h.
 // Hook-free consumer of hud-host (k2.hud@1): BUILD (prio 300) creates the label pool while the HUD layout is open, TARGET_MENU_POST (prio 100)
 // reads the target's effects (every 250 ms or on a target change), picks the visible icons by the leader's Awareness tier (EnemyStripLogic.h)
@@ -12,6 +12,8 @@
 // and a missing provider is silent after one log line. The page edits enemy_strip.ini [Strip] one key at a time (this mod writes the INI itself,
 // mod-config never does): Enabled, IconSize, Gap, Spacing, Backing, BackingAlpha, DrainAlpha apply at once through esl::sanitize; MaxIcons is
 // written only (the label pool is built per HUD, so it needs a restart). ForceTier, Verbose and the Tier* thresholds are INI-only.
+// 0.4.1: with a provider that has SetDescSplit the page also shows a live example of the strip (mock name bar, pill, five sample icons with drain
+// overlays; esl::previewLayout) in the top 75 % of the right half, redrawn from the current settings every tick; the description keeps the rest.
 #include <windows.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -90,7 +92,7 @@ struct Config {
     int gap = 4;               // px between the row and the name label
     int spacing = 4;           // px between icons
     int tierObvious = 5, tierOwn = 12, tierFull = 20;   // Awareness thresholds
-    float drainAlpha = 0.65f;  // effective alpha of the drain overlay
+    float drainAlpha = 0.0f;   // effective alpha of the drain overlay; 0 = no drain shading (default)
     bool backing = false;      // pill behind the row
     float backingAlpha = 0.55f;
     int backingPad = 4;
@@ -868,6 +870,7 @@ void drawPost(const K2HudContext* ctx) {
     void* overImg = imageCached(TexOverlay);
     void* discImg = imageCached(TexDisc);
     const float overA = esl::overlayAlpha(g_cfg.drainAlpha);
+    const bool drainOn = esl::overlayVisible(g_cfg.drainAlpha);
     for (int k = 0; k < g_nSw; ++k) {
         SlotW& w = g_sw[k];
         void* img = k < lay.n ? imageCached(g_slots[k].resref) : nullptr;
@@ -880,7 +883,7 @@ void drawPost(const K2HudContext* ctx) {
             widHide(w.disc);
         }
         widFill(w.icon, img); widTint(w.icon, TintWhite); widAlpha(w.icon, 1.0f); widRect(w.icon, r); widShow(w.icon);
-        const int oh = (esl::drainAt(g_tier) && sl.ratio >= 0.0f) ? esl::overlayH(r.h, sl.ratio) : 0;
+        const int oh = (drainOn && esl::drainAt(g_tier) && sl.ratio >= 0.0f) ? esl::overlayH(r.h, sl.ratio) : 0;
         if (oh > 0 && overImg) {
             const esl::RowRect orc = { r.x, r.y, r.w, oh };
             widFill(w.over, overImg); widTint(w.over, TintBlack); widAlpha(w.over, overA); widRect(w.over, orc); widShow(w.over);
@@ -896,20 +899,29 @@ void drawPost(const K2HudContext* ctx) {
     }
 }
 
-// Creates one hidden, click-through label from LBL_QUEUE1 and appends it to the panel (draw order = creation order).
-bool makeWid(uintptr_t panel, Wid& w, const char* what, int k) {
+KP_CHANNEL(chCfg, "config");
+
+// Creates one hidden, click-through label from `tmpl` (draw order = creation order). HUD labels (onHud, template LBL_QUEUE1) are appended to
+// the panel here; settings-page preview labels (template LBL_TITLE in the Options ctor) are NOT: mod-config lists them through AddCustom, and
+// since the HUD template carries fill style 2 (stretch) and LBL_TITLE does not, it is set here.
+bool makeWid(uintptr_t panel, Wid& w, const char* what, int k, const char* tmpl = "LBL_QUEUE1", bool onHud = true) {
     int why = guikit::CF_None;
     uint32_t bv = 0;
-    const uintptr_t c = guikit::createLabelFromTemplate(panel, "LBL_QUEUE1", &why, &bv);
+    const uintptr_t c = guikit::createLabelFromTemplate(panel, tmpl, &why, &bv);
     if (!c) {
-        if (!g_buildFailLogged) { g_buildFailLogged = true; KP_LOGV(chMain, KPLOG_WARN, "BUILD: %s %d create failed (why=%d vtable=%08x): drawing disabled for this HUD", what, k, why, (unsigned)bv); }
+        if (onHud && !g_buildFailLogged) { g_buildFailLogged = true; KP_LOGV(chMain, KPLOG_WARN, "BUILD: %s %d create failed (why=%d vtable=%08x): drawing disabled for this HUD", what, k, why, (unsigned)bv); }
+        if (!onHud) { KP_LOGV(chCfg, KPLOG_WARN, "preview: %s %d create failed (why=%d vtable=%08x): no preview", what, k, why, (unsigned)bv); }
         return false;
     }
     guikit::setVisible(c, false);
     guikit::setClickable(c, false);
-    if (!guikit::appendToPanel(panel, c)) {
-        if (!g_buildFailLogged) { g_buildFailLogged = true; KP_LOGV(chMain, KPLOG_WARN, "BUILD: %s %d append failed (control %08x left hidden): drawing disabled for this HUD", what, k, (unsigned)c); }
-        return false;
+    if (onHud) {
+        if (!guikit::appendToPanel(panel, c)) {
+            if (!g_buildFailLogged) { g_buildFailLogged = true; KP_LOGV(chMain, KPLOG_WARN, "BUILD: %s %d append failed (control %08x left hidden): drawing disabled for this HUD", what, k, (unsigned)c); }
+            return false;
+        }
+    } else {
+        guikit::setFillStyle(c, 2);
     }
     w = Wid();
     w.c = c;
@@ -948,7 +960,8 @@ void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
 // Hookless and optional. Rows (top to bottom = esl::Setting order, 8 rows = the 8 vanilla column rows): a toggle row is one button; a number
 // row is a label (name: value) plus '<' '>' buttons. Items are placed in cbEnter on the COLUMN pane (stripSlot ratios: slot h = col.h*32/284,
 // pitch = col.h*36/284, as holster-editor). All callbacks run on the main thread.
-KP_CHANNEL(chCfg, "config");
+// 0.4.1: when the provider has SetDescSplit the right half is split: the top 75 % is a live example of the strip (preview, below), the
+// bottom 25 % the description text.
 
 k2mc::ConfigClient g_mcCfg;
 k2mc::MenuClient g_mcMenu;
@@ -969,6 +982,137 @@ struct SettingsPage {
     }
 } g_pg;
 
+// ---- preview (0.4.1): an example of the strip in the PREVIEW pane, drawn from the CURRENT g_cfg every tick (change-only setters) ----
+// 12 labels cloned from LBL_TITLE, listed on the page with AddCustom(MUI_NOFREE), so this mod OWNS them and frees them in cbDestroy once
+// mod-config reports them unlinked (Control() == nullptr). Creation order = draw order: bar, pill, then icon k / drain overlay k.
+constexpr int PvN = esl::kPreviewControls;
+constexpr int PvBar = 0, PvPill = 1;
+constexpr int pvIcon(int k) { return 2 + 2 * k; }
+constexpr int pvOver(int k) { return 3 + 2 * k; }
+constexpr int kPreviewPermille = 750;            // preview share of the description rect; the description keeps the bottom 25 %
+const char* const kPreviewBarText = "Sith Assassin";
+struct Preview {
+    Wid w[PvN];
+    int32_t item[PvN];
+    int n = 0;                  // controls listed on the page (the first n of w[])
+    bool on = false;            // every control listed and the description split is active: the preview draws
+    bool paneWarned = false;
+    void reset() {
+        for (Wid& x : w) x = Wid();
+        for (int32_t& i : item) i = -1;
+        n = 0; on = false; paneWarned = false;
+    }
+} g_pv;
+
+void pvHideAll() { for (int i = 0; i < g_pv.n; ++i) widHide(g_pv.w[i]); }
+
+// mod-config shows every page item on entry (setVisible(true) also clears click-through): forget a visibility cache that no longer matches.
+void pvResync() {
+    for (int i = 0; i < g_pv.n; ++i) {
+        Wid& x = g_pv.w[i];
+        if (x.c && x.vis >= 0 && guikit::isVisible(x.c) != (x.vis == 1)) x.vis = -1;
+    }
+}
+
+void refreshPreview() {
+    if (!g_pv.n || !g_pg.page || !g_pg.panel || !g_mcMenu.ok()) return;
+    pvResync();
+    K2MuiRect r = { 0, 0, 0, 0 };
+    if (!g_pv.on) {
+        pvHideAll();
+    } else if (!g_mcMenu.p->PaneRect(g_pg.panel, MUI_PANE_PREVIEW, &r) || r.w <= 0 || r.h <= 0) {
+        if (!g_pv.paneWarned) { g_pv.paneWarned = true; KP_LOGV(chCfg, KPLOG_WARN, "preview: no PREVIEW pane rect (%d,%d,%d,%d): preview hidden", r.x, r.y, r.w, r.h); }
+        pvHideAll();
+    } else {
+        const esl::RowRect pane = { r.x, r.y, r.w, r.h };
+        const esl::PreviewLayout pl = esl::previewLayout(pane, g_cfg.enabled ? 1 : 0, g_cfg.maxIcons, g_cfg.iconSize, g_cfg.gap, g_cfg.spacing,
+                                                          g_cfg.backingPad, g_cfg.backing);
+        if (!pl.ok) {
+            pvHideAll();
+        } else {
+            void* overImg = imageCached(TexOverlay);
+            Wid& bar = g_pv.w[PvBar];
+            widFill(bar, overImg); widTint(bar, TintBlack); widAlpha(bar, 1.0f); widRect(bar, pl.name); widShow(bar);
+            void* pillImg = pl.pill ? imageCached(TexPill) : nullptr;
+            Wid& pill = g_pv.w[PvPill];
+            if (pillImg) { widFill(pill, pillImg); widTint(pill, TintGrey); widAlpha(pill, g_cfg.backingAlpha); widRect(pill, pl.row.pill); widShow(pill); }
+            else widHide(pill);
+            const float overA = esl::overlayAlpha(g_cfg.drainAlpha);
+            for (int k = 0; k < esl::kPreviewMaxIcons; ++k) {
+                Wid& ic = g_pv.w[pvIcon(k)];
+                Wid& ov = g_pv.w[pvOver(k)];
+                const esl::PreviewSample& sm = esl::previewSample(k);
+                void* img = k < pl.n ? imageCached(sm.resref) : nullptr;
+                if (!img) { widHide(ic); widHide(ov); continue; }   // beyond the shown count, or this icon is missing
+                const esl::RowRect& rc = pl.row.icon[k];
+                widFill(ic, img); widTint(ic, TintWhite); widAlpha(ic, 1.0f); widRect(ic, rc); widShow(ic);
+                const int oh = esl::overlayVisible(g_cfg.drainAlpha) ? esl::overlayH(rc.h, sm.ratio) : 0;
+                if (oh > 0 && overImg) {
+                    const esl::RowRect orc = { rc.x, rc.y, rc.w, oh };
+                    widFill(ov, overImg); widTint(ov, TintBlack); widAlpha(ov, overA); widRect(ov, orc); widShow(ov);
+                } else {
+                    widHide(ov);
+                }
+            }
+        }
+    }
+    for (int i = 0; i < g_pv.n; ++i) guikit::setClickable(g_pv.w[i].c, false);   // the preview must never swallow clicks
+}
+
+// Options ctor window, after the rows: creates and lists the preview labels, then asks for the description split. Without SetDescSplit
+// (older mod-config) nothing is created and the page works as before.
+void buildPreview(void* panel, uint32_t page) {
+    g_pv.reset();
+    const K2MenuUiApi* ui = g_mcMenu.p;
+    if (!g_mcMenu.hasDescSplit()) { KP_LOGV(chCfg, KPLOG_INFO, "preview skipped: provider has no SetDescSplit (older mod-config); page works without it"); return; }
+    const uintptr_t pn = reinterpret_cast<uintptr_t>(panel);
+    Wid tmp[PvN];
+    int made = 0;
+    for (; made < PvN; ++made) {
+        const char* what = made == PvBar ? "bar" : (made == PvPill ? "pill" : ((made - 2) % 2 == 0 ? "icon" : "overlay"));
+        if (!makeWid(pn, tmp[made], what, made, "LBL_TITLE", false)) break;
+    }
+    int listed = 0;
+    if (made == PvN) {
+        for (; listed < PvN; ++listed) {
+            const int id = ui->AddCustom(page, reinterpret_cast<void*>(tmp[listed].c), MUI_NOFREE);
+            if (id < 0) break;
+            g_pv.w[listed] = tmp[listed];
+            g_pv.item[listed] = id;
+        }
+        g_pv.n = listed;
+    }
+    for (int j = g_pv.n; j < made; ++j) guikit::releaseUnlinkedLabel(tmp[j].c, guikit::LabelVtable);   // created but never listed
+    if (made != PvN) { KP_LOGV(chCfg, KPLOG_WARN, "preview skipped: %d/%d labels created", made, PvN); return; }
+    if (g_pv.n != PvN) { KP_LOGV(chCfg, KPLOG_WARN, "preview skipped: AddCustom listed %d/%d labels (listed ones stay hidden)", g_pv.n, PvN); return; }
+    guikit::setAlign(g_pv.w[PvBar].c, 18);
+    guikit::setText(g_pv.w[PvBar].c, kPreviewBarText);
+    if (!ui->SetDescSplit(page, kPreviewPermille)) { KP_LOGV(chCfg, KPLOG_WARN, "preview skipped: SetDescSplit(%u, %d) refused (listed labels stay hidden)", page, kPreviewPermille); return; }
+    g_pv.on = true;
+    KP_LOGV(chCfg, KPLOG_INFO, "preview BUILD ok: %d labels, split %d permille", PvN, kPreviewPermille);
+}
+
+// Options dtor, after mod-config unlinked its controls: free the preview labels it listed MUI_NOFREE. A label whose Control() still answers
+// is still in the panel list (the unlink was refused): it is leaked, never freed.
+void destroyPreview() {
+    int freed = 0, kept = 0;
+    if (g_pv.n && g_mcMenu.ok() && g_pg.page) {
+        for (int i = 0; i < g_pv.n; ++i) {
+            if (!g_pv.w[i].c) continue;
+            if (g_mcMenu.p->Control(g_pg.page, g_pv.item[i])) { ++kept; continue; }
+            guikit::releaseUnlinkedLabel(g_pv.w[i].c, guikit::LabelVtable);
+            ++freed;
+        }
+        KP_LOGV(chCfg, KPLOG_INFO, "preview DESTROY: freed=%d kept=%d", freed, kept);
+    }
+    g_pv.reset();
+}
+
+const char* const kPageDescPreview =
+    "Example of the icon row above an enemy's name, drawn with your current settings. Every row applies at once except MaxIcons (restart). Hover a row for details.";
+const char* const kPageDescPlain =
+    "Icon row above the target name. Every row applies at once except MaxIcons (restart). Hover a row for details.";
+
 const char* const kRowDesc[esl::S_Count] = {
     "Show or hide the icon row at once. Turning it back on after the HUD was built disabled needs a game restart.",
     "Most icons shown at once (1-8). Saved to enemy_strip.ini; takes effect at the next game start.",
@@ -977,7 +1121,7 @@ const char* const kRowDesc[esl::S_Count] = {
     "Pixels between neighbouring icons.",
     "Draw a pill behind the icon row.",
     "Opacity of the pill behind the icon row.",
-    "Opacity of the remaining-time drain overlay on the icons.",
+    "Opacity of the dark remaining-time drain shading on the icons. 0 = off (default).",
 };
 
 bool rowNeedsRestart(int s, const esl::CfgRaw& c) {
@@ -1018,6 +1162,7 @@ void applySetting(int s, int dir) {
     KP_LOGV(chCfg, wrote ? KPLOG_INFO : KPLOG_WARN, "cfg: %s=%s%s%s", esl::settingKey(s), val, isMax ? " (restart)" : "",
             wrote ? "" : (isMax ? " (INI write FAILED: not changed)" : " (INI write FAILED: live value only)"));
     refreshRow(s);
+    refreshPreview();   // the example redraws from the new g_cfg at once (and again every tick)
 }
 
 // Options ctor window: creates the page items (valid only here).
@@ -1045,6 +1190,7 @@ void KPATCH_CALL cbBuild(void* panel, void*) {
     g_pg.panel = panel;
     g_pg.page = page;
     KP_LOGV(chCfg, KPLOG_INFO, "page BUILD ok page=%u rows=%d", page, static_cast<int>(esl::S_Count));
+    buildPreview(panel, page);
 }
 
 void KPATCH_CALL cbEnter(uint32_t page, void*) {
@@ -1077,6 +1223,8 @@ void KPATCH_CALL cbEnter(uint32_t page, void*) {
         KP_LOGV(chCfg, KPLOG_WARN, "page ENTER: no COLUMN pane rect (%d,%d,%d,%d): items stay unplaced", col.x, col.y, col.w, col.h);
     }
     for (int s = 0; s < esl::S_Count; ++s) refreshRow(s);
+    ui->SetDesc(g_pg.page, g_pv.on ? kPageDescPreview : kPageDescPlain);
+    refreshPreview();   // mod-config just showed every page item: hide what must stay hidden, keep the rest click-through
 }
 
 // Every Options draw while the page is shown: Clicked() is 1 once per click, so each item is asked every tick.
@@ -1095,10 +1243,13 @@ void KPATCH_CALL cbTick(uint32_t page, void*) {
         }
         if (dir) applySetting(s, dir);
     }
+    refreshPreview();   // also follows a pane rect change (resolution, split asserted after enter)
 }
 
 void KPATCH_CALL cbDestroy(void* panel, void*) {
-    if (panel && panel == g_pg.panel) g_pg.reset();   // mod-config frees the controls; this mod owns none
+    if (!panel || panel != g_pg.panel) return;
+    destroyPreview();   // mod-config frees its own controls; this mod owns the MUI_NOFREE preview labels (mod-config unlinked them already)
+    g_pg.reset();
 }
 
 K2ModConfigEntry g_mcEntry;   // Register copies it; the strings are static
@@ -1148,7 +1299,7 @@ __declspec(dllexport) void __cdecl KPatchInit(const KPatchApi* api) {
     g_pg.reset();
     g_mcCfg.init(api);
     g_mcMenu.init(api);
-    KP_LOGV(chMain, KPLOG_INFO, "enemy-effects-strip 0.4.0-dev loaded (Enabled=%d Verbose=%d MaxIcons=%d)", g_cfg.enabled ? 1 : 0, g_cfg.verbose ? 1 : 0, g_cfg.maxIcons);
+    KP_LOGV(chMain, KPLOG_INFO, "enemy-effects-strip 0.4.1-dev loaded (Enabled=%d Verbose=%d MaxIcons=%d)", g_cfg.enabled ? 1 : 0, g_cfg.verbose ? 1 : 0, g_cfg.maxIcons);
     g_hud.add(K2HUD_BUILD, 300, onHudBuild);
     g_hud.add(K2HUD_TARGET_MENU_POST, 100, onTargetMenuPost);
     g_hud.connect();

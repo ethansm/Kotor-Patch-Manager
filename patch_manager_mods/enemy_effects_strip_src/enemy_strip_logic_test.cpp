@@ -1,4 +1,4 @@
-// Tests for EnemyStripLogic.h (doc 39): effect classification, awareness tiers, slot selection, row layout, cooldown overlay maths.
+// Tests for EnemyStripLogic.h (doc 39): effect classification, awareness tiers, slot selection, row layout, settings-page preview layout, cooldown overlay maths.
 // Build/run: python3 scripts/run_tests.py enemy_strip_logic
 // Expected values are hand-computed (see each case), not read back from the functions.
 #include "EnemyStripLogic.h"
@@ -266,11 +266,11 @@ static void testConfig() {
     KT_CHECK_EQ(d.gap, 4); KT_CHECK_EQ(d.spacing, 4);
     KT_CHECK_EQ(d.tierObvious, 5); KT_CHECK_EQ(d.tierOwn, 12); KT_CHECK_EQ(d.tierFull, 20);
     KT_CHECK_EQ(d.backing, 0); KT_CHECK_EQ(d.backingPad, 4); KT_CHECK_EQ(d.forceTier, -1);
-    KT_CHECK(d.drainAlpha == 0.65f);
+    KT_CHECK(d.drainAlpha == 0.0f);   // drain shading OFF by default
     KT_CHECK(d.backingAlpha == 0.55f);
     CfgRaw s = sanitize(d);
     KT_CHECK_EQ(s.maxIcons, 5); KT_CHECK_EQ(s.tierOwn, 12); KT_CHECK_EQ(s.tierFull, 20); KT_CHECK_EQ(s.forceTier, -1);
-    KT_CHECK(s.drainAlpha == 0.65f);
+    KT_CHECK(s.drainAlpha == 0.0f);
 
     // Booleans 0..1: -3 -> 0, 7 -> 1.
     { CfgRaw r; r.enabled = -3; r.verbose = 7; r.backing = 2; CfgRaw o = sanitize(r);
@@ -329,7 +329,7 @@ static void testConfig() {
       r.drainAlpha = INFINITY; r.backingAlpha = -INFINITY; o = sanitize(r);
       KT_CHECK(o.drainAlpha == 1.0f); KT_CHECK(o.backingAlpha == 0.0f);
       r.drainAlpha = NAN; r.backingAlpha = NAN; o = sanitize(r);
-      KT_CHECK(o.drainAlpha == 0.65f); KT_CHECK(o.backingAlpha == 0.55f); }
+      KT_CHECK(o.drainAlpha == 0.0f); KT_CHECK(o.backingAlpha == 0.55f); }
     // Explicit bound vectors (each fails an identity sanitize).
     { CfgRaw r; r.enabled = 5; KT_CHECK_EQ(sanitize(r).enabled, 1); }
     { CfgRaw r; r.verbose = -3; KT_CHECK_EQ(sanitize(r).verbose, 0); }
@@ -401,8 +401,19 @@ static void testSettings() {
       c.enabled = 0; KT_CHECK_EQ(stepSetting(c, S_Enabled, 1).enabled, 1);
       CfgRaw d; KT_CHECK_EQ(stepSetting(d, S_Backing, 1).backing, 1); d.backing = 1; KT_CHECK_EQ(stepSetting(d, S_Backing, -1).backing, 0);
       KT_CHECK(sameSetting(d, stepSetting(d, S_Backing, 0), S_Backing)); }
+    // DrainAlpha from the OFF default: 0 -> 0.05 -> 0 exactly (no float drift), down from 0 stays 0, 13 steps up reach 0.65 exactly.
+    { CfgRaw c; KT_CHECK(c.drainAlpha == 0.0f);
+      CfgRaw u = stepSetting(c, S_DrainAlpha, 1); KT_CHECK(u.drainAlpha == 0.05f && !overlayVisible(c.drainAlpha) && overlayVisible(u.drainAlpha));
+      KT_CHECK(stepSetting(u, S_DrainAlpha, -1).drainAlpha == 0.0f); KT_CHECK(stepSetting(c, S_DrainAlpha, -1).drainAlpha == 0.0f);
+      for (int i = 0; i < 12; ++i) u = stepSetting(u, S_DrainAlpha, 1);
+      KT_CHECK(u.drainAlpha == 0.65f);
+      for (int i = 0; i < 13; ++i) u = stepSetting(u, S_DrainAlpha, -1);
+      KT_CHECK(u.drainAlpha == 0.0f); }
+    // overlayVisible: only a visibly non-zero alpha (> 0.001).
+    KT_CHECK(!overlayVisible(0.0f) && !overlayVisible(-0.5f) && !overlayVisible(0.001f) && !overlayVisible(NAN) && overlayVisible(0.002f) &&
+             overlayVisible(0.05f) && overlayVisible(0.65f) && overlayVisible(1.0f));
     // Alpha: 0.05 steps in whole hundredths (0.65 -> 0.70 -> 0.75, no float drift after many steps), snapped to the grid, clamped 0..1.
-    { CfgRaw c; KT_CHECK(stepSetting(c, S_DrainAlpha, 1).drainAlpha == 0.70f); KT_CHECK(stepSetting(c, S_DrainAlpha, -1).drainAlpha == 0.60f);
+    { CfgRaw c; c.drainAlpha = 0.65f; KT_CHECK(stepSetting(c, S_DrainAlpha, 1).drainAlpha == 0.70f); KT_CHECK(stepSetting(c, S_DrainAlpha, -1).drainAlpha == 0.60f);
       KT_CHECK(stepSetting(c, S_BackingAlpha, 1).backingAlpha == 0.60f); KT_CHECK(stepSetting(c, S_BackingAlpha, -1).backingAlpha == 0.50f); }
     { CfgRaw c; c.drainAlpha = 0.0f; for (int i = 0; i < 40; ++i) c = stepSetting(c, S_DrainAlpha, 1);
       KT_CHECK(c.drainAlpha == 1.0f);
@@ -416,10 +427,10 @@ static void testSettings() {
       formatIniValue(S_Gap, c, b, sizeof b); KT_CHECK(strcmp(b, "4") == 0);
       formatIniValue(S_Enabled, c, b, sizeof b); KT_CHECK(strcmp(b, "1") == 0);
       formatIniValue(S_IconSize, c, b, sizeof b); KT_CHECK(strcmp(b, "0") == 0);
-      formatIniValue(S_DrainAlpha, c, b, sizeof b); KT_CHECK(strcmp(b, "0.65") == 0);
+      formatIniValue(S_DrainAlpha, c, b, sizeof b); KT_CHECK(strcmp(b, "0.00") == 0);
       formatIniValue(S_BackingAlpha, c, b, sizeof b); KT_CHECK(strcmp(b, "0.55") == 0);
       CfgRaw u = stepSetting(c, S_DrainAlpha, 1); formatIniValue(S_DrainAlpha, u, b, sizeof b);
-      KT_CHECK(strcmp(b, "0.70") == 0); KT_CHECK(parseFloatStrict(b, 0.0f) == 0.70f);
+      KT_CHECK(strcmp(b, "0.05") == 0); KT_CHECK(parseFloatStrict(b, 0.0f) == 0.05f);
       formatIniValue(S_Count, c, b, sizeof b); KT_CHECK(b[0] == '\0');
       formatIniValue(S_Gap, c, b, 3); KT_CHECK(strcmp(b, "4") == 0);
       char tiny[2]; formatIniValue(S_DrainAlpha, c, tiny, sizeof tiny); KT_CHECK(tiny[0] == '0' && tiny[1] == '\0');   // truncated, NUL kept
@@ -435,11 +446,95 @@ static void testSettings() {
       formatRowText(S_Gap, c, false, b, sizeof b); KT_CHECK(strcmp(b, "Gap: 4") == 0);
       formatRowText(S_Spacing, c, false, b, sizeof b); KT_CHECK(strcmp(b, "Spacing: 4") == 0);
       c.backing = 1; formatRowText(S_Backing, c, false, b, sizeof b); KT_CHECK(strcmp(b, "Backing: On") == 0);
-      formatRowText(S_DrainAlpha, c, false, b, sizeof b); KT_CHECK(strcmp(b, "DrainAlpha: 0.65") == 0);
+      formatRowText(S_DrainAlpha, c, false, b, sizeof b); KT_CHECK(strcmp(b, "DrainAlpha: 0.00") == 0);
       formatRowText(S_BackingAlpha, c, false, b, sizeof b); KT_CHECK(strcmp(b, "BackingAlpha: 0.55") == 0);
       formatRowText(S_Count, c, false, b, sizeof b); KT_CHECK(b[0] == '\0');
       char small[8]; formatRowText(S_DrainAlpha, c, false, small, sizeof small); KT_CHECK(strlen(small) == 7);   // truncated, NUL kept
       formatRowText(S_Gap, c, false, nullptr, 8); }
+}
+
+static bool rr(const RowRect& r, int x, int y, int w, int h) { return r.x == x && r.y == y && r.w == w && r.h == h; }
+static bool insideRect(const RowRect& r, const RowRect& p) { return r.x >= p.x && r.y >= p.y && r.x + r.w <= p.x + p.w && r.y + r.h <= p.y + p.h; }
+
+// previewLayout: hand-computed vectors (auto icon edge 24, name bar 200x24, gap 4, spacing 4, pillPad 4 unless stated).
+static void testPreview() {
+    const RowRect pane = { 100, 50, 300, 200 };
+    // Sample table: the strip's real icons, ratios spread over the bar, clamped index.
+    KT_CHECK(strcmp(previewSample(0).resref, kIconFear) == 0 && previewSample(0).ratio == 0.25f);
+    KT_CHECK(strcmp(previewSample(1).resref, kIconStun) == 0 && previewSample(1).ratio == 0.5f);
+    KT_CHECK(strcmp(previewSample(2).resref, kIconSlow) == 0 && previewSample(2).ratio == 0.75f);
+    KT_CHECK(strcmp(previewSample(3).resref, kIconHold) == 0 && previewSample(3).ratio == 0.1f);
+    KT_CHECK(strcmp(previewSample(4).resref, kIconSleep) == 0 && previewSample(4).ratio == 0.9f);
+    KT_CHECK(strcmp(previewSample(-1).resref, kIconFear) == 0 && strcmp(previewSample(99).resref, kIconSleep) == 0);
+    KT_CHECK_EQ(kPreviewControls, 12);
+    // 1. Centred, 5 icons, auto edge, no backing: bw 200, bh 24+4+24 = 52, block (150,124); name y 124+52-24 = 152; row x0 = 150+100-68 = 182, y = 152-4-24 = 124.
+    { PreviewLayout p = previewLayout(pane, 1, 5, 0, 4, 4, 4, false);
+      KT_CHECK(p.ok && p.n == 5 && !p.pill);
+      KT_CHECK(rr(p.name, 150, 152, 200, 24));
+      KT_CHECK_EQ(p.row.n, 5);
+      KT_CHECK(rr(p.row.icon[0], 182, 124, 24, 24) && rr(p.row.icon[1], 210, 124, 24, 24) && rr(p.row.icon[4], 294, 124, 24, 24));
+      KT_CHECK_EQ(p.row.icon[0].x + (p.row.icon[4].x + 24 - p.row.icon[0].x) / 2, 250);   // row centred on the pane centre x = 100+150
+      KT_CHECK_EQ(p.name.x + p.name.w / 2, 250);
+      KT_CHECK_EQ((124 + 152 + 24) / 2 - (pane.y + pane.h / 2), 0); }   // block vertical centre: rows span 124..176, centre 150 = pane centre y 50+100
+    // 2. Backing on: the pill padding joins the block (bh 56, by 122); the pill sits 4 px around the row.
+    { PreviewLayout p = previewLayout(pane, 1, 5, 0, 4, 4, 4, true);
+      KT_CHECK(p.ok && p.n == 5 && p.pill);
+      KT_CHECK(rr(p.name, 150, 154, 200, 24));
+      KT_CHECK(rr(p.row.icon[0], 182, 126, 24, 24));
+      KT_CHECK(rr(p.row.pill, 178, 122, 144, 32)); }
+    // 3. Row wider than the pane: 100 wide pane, 30 px icons, spacing 5: 5 -> 170, 4 -> 135, 3 -> 100 fits. Name bar narrows to the pane.
+    { const RowRect narrow = { 0, 0, 100, 200 };
+      PreviewLayout p = previewLayout(narrow, 1, 5, 30, 4, 5, 4, false);
+      KT_CHECK(p.ok && p.n == 3);
+      KT_CHECK(rr(p.name, 0, 105, 100, 24));
+      KT_CHECK(rr(p.row.icon[0], 0, 71, 30, 30) && rr(p.row.icon[1], 35, 71, 30, 30) && rr(p.row.icon[2], 70, 71, 30, 30)); }
+    // 3b. The pill padding counts toward the width: same pane with backing -> 2*4 more, so 2 icons (65+8 = 73; 3 icons = 108 > 100).
+    { const RowRect narrow = { 0, 0, 100, 200 };
+      PreviewLayout p = previewLayout(narrow, 1, 5, 30, 4, 5, 4, true);
+      KT_CHECK(p.ok && p.n == 2 && p.pill && insideRect(p.row.pill, narrow)); }
+    // 4. Zero / negative area: not ok, nothing to draw.
+    KT_CHECK(!previewLayout({ 10, 10, 0, 100 }, 1, 5, 0, 4, 4, 4, false).ok);
+    KT_CHECK(!previewLayout({ 10, 10, 100, 0 }, 1, 5, 0, 4, 4, 4, false).ok);
+    KT_CHECK(!previewLayout({ 10, 10, -5, -5 }, 1, 5, 0, 4, 4, 4, true).ok);
+    // 5. maxIcons 1 / 5 / 8 / 0 / negative: min(maxIcons, 5); one icon sits centred (x0 = 150+100-12 = 238).
+    { PreviewLayout p1 = previewLayout(pane, 1, 1, 0, 4, 4, 4, false);
+      KT_CHECK(p1.ok && p1.n == 1 && rr(p1.row.icon[0], 238, 124, 24, 24));
+      KT_CHECK_EQ(previewLayout(pane, 1, 5, 0, 4, 4, 4, false).n, 5);
+      KT_CHECK_EQ(previewLayout(pane, 1, 8, 0, 4, 4, 4, false).n, 5);
+      KT_CHECK_EQ(previewLayout(pane, 1, 0, 0, 4, 4, 4, false).n, 0);
+      KT_CHECK_EQ(previewLayout(pane, 1, -3, 0, 4, 4, 4, false).n, 0); }
+    // 6. Enabled off: no row, no pill; the name bar alone is centred (by = 50 + (200-24)/2 = 138).
+    { PreviewLayout p = previewLayout(pane, 0, 5, 0, 4, 4, 4, true);
+      KT_CHECK(p.ok && p.n == 0 && !p.pill && rr(p.name, 150, 138, 200, 24)); }
+    // 7. Pane too short for the row: row hidden, name bar kept (centred: (40-24)/2 = 8); a pane shorter than the bar shrinks the bar.
+    { PreviewLayout p = previewLayout({ 0, 0, 300, 40 }, 1, 5, 0, 4, 4, 4, false);
+      KT_CHECK(p.ok && p.n == 0 && rr(p.name, 50, 8, 200, 24));
+      PreviewLayout q = previewLayout({ 0, 0, 300, 10 }, 1, 5, 0, 4, 4, 4, false);
+      KT_CHECK(q.ok && q.n == 0 && rr(q.name, 50, 0, 200, 10)); }
+    // 8. Icon edge below 4 px: no row. Negative gap / spacing / pad behave like 0.
+    KT_CHECK_EQ(previewLayout(pane, 1, 5, 2, 4, 4, 4, false).n, 0);
+    { PreviewLayout a = previewLayout(pane, 1, 5, 0, -9, -9, -9, true), b = previewLayout(pane, 1, 5, 0, 0, 0, 0, true);
+      KT_CHECK(a.n == 5 && b.n == 5 && rr(a.name, b.name.x, b.name.y, b.name.w, b.name.h) && rr(a.row.icon[4], b.row.icon[4].x, b.row.icon[4].y, 24, 24)); }
+    // 9. Wide backed row (40 px icons, 400 wide pane): 5*40+16 = 216, +8 = 224 > 200, so the block is the pill width; name x = 88+12 = 100.
+    { const RowRect wide = { 0, 0, 400, 200 };
+      PreviewLayout p = previewLayout(wide, 1, 5, 40, 4, 4, 4, true);
+      KT_CHECK(p.ok && p.n == 5);
+      KT_CHECK(rr(p.name, 100, 112, 200, 24));
+      KT_CHECK(rr(p.row.icon[0], 92, 68, 40, 40));
+      KT_CHECK(rr(p.row.pill, 88, 64, 224, 48)); }
+    // 10. Sweep: whatever the pane and settings, every rect drawn stays inside the pane (icons, pill when drawn, name bar).
+    { int bad = 0, shown = 0;
+      const int ws[] = { 1, 7, 50, 99, 100, 151, 200, 201, 333, 640 }, hs[] = { 1, 9, 24, 30, 51, 52, 56, 100, 223, 500 };
+      const int is[] = { 0, 4, 16, 17, 31, 64 }, gs[] = { 0, 4, 13 }, ss[] = { 0, 3, 4 }, ms[] = { 0, 1, 3, 5, 8 };
+      for (int w : ws) for (int h : hs) for (int i : is) for (int g : gs) for (int sp : ss) for (int m : ms) for (int bk = 0; bk < 2; ++bk) {
+          const RowRect pn = { 37, 11, w, h };
+          PreviewLayout p = previewLayout(pn, 1, m, i, g, sp, 4, bk != 0);
+          if (!p.ok || !insideRect(p.name, pn)) { ++bad; continue; }
+          for (int k = 0; k < p.n; ++k) { ++shown; if (!insideRect(p.row.icon[k], pn) || (p.pill && !insideRect(p.row.pill, pn))) ++bad; }
+          if (p.n > 0 && p.row.icon[0].y + p.row.icon[0].h + g != p.name.y) ++bad;   // the gap between row and bar is the setting
+      }
+      KT_CHECK_EQ(bad, 0);
+      KT_CHECK(shown > 1000); }
 }
 
 int main() {
@@ -452,5 +547,6 @@ int main() {
     testLayout();
     testOverlay();
     testSettings();
+    testPreview();
     return kt::Report("enemy_strip_logic");
 }

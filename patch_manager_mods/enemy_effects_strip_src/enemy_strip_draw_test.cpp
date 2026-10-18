@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "SafeRead.h"
@@ -35,7 +36,7 @@
 namespace real_gk = guikit;   // the real header, kept reachable after the rename below
 
 namespace trec {
-enum Op { O_Create, O_Append, O_Vis, O_Click, O_Rect, O_Fill, O_Alpha, O_Tint };
+enum Op { O_Create, O_Append, O_Vis, O_Click, O_Rect, O_Fill, O_Alpha, O_Tint, O_Text };
 struct Rec {
     Op op = O_Create;
     uintptr_t c = 0;        // the control (Create: the new label, 0 on failure)
@@ -46,6 +47,7 @@ struct Rec {
     void* img = nullptr;    // Fill
     float f = 0.f;          // Alpha
     float rgb[3] = { 0.f, 0.f, 0.f };   // Tint
+    char text[32] = { 0 };  // Text
     bool ok = true;         // the real GuiKit call's result
 };
 inline std::vector<Rec>& log() { static std::vector<Rec> l; return l; }
@@ -87,6 +89,13 @@ inline bool setBorderTint(uintptr_t ctl, const float* rgb) {
     r.ok = ok;
     return ok;
 }
+inline bool setText(uintptr_t ctl, const char* text) {
+    const bool ok = real_gk::setText(ctl, text);
+    trec::Rec& r = trec::add(trec::O_Text, ctl);
+    strncpy(r.text, text ? text : "", sizeof r.text - 1);
+    r.ok = ok;
+    return ok;
+}
 }  // namespace guikit_rec
 
 #define guikit guikit_rec
@@ -121,7 +130,13 @@ static void* fxLoadImage(const char* n) {
     if (!strcmp(n, kMissingImg)) return nullptr;
     return tImgPtr(n);
 }
-static void* fxAlloc(unsigned n) { return reinterpret_cast<void*>(tAlloc(n)); }
+static int tAllocN = 0, tAllocFailAt = -1;   // label allocations counted since the last reset; the one at index tAllocFailAt returns null
+static void* fxAlloc(unsigned n) {
+    if (tAllocN++ == tAllocFailAt) return nullptr;
+    return reinterpret_cast<void*>(tAlloc(n));
+}
+static std::vector<std::pair<uintptr_t, unsigned>> tDtors;   // label destructor calls (control, flags) made through guikit::releaseUnlinkedLabel
+static void fxLabelDtor(uint32_t, uintptr_t ctl, unsigned flags) { tDtors.emplace_back(ctl, flags); }
 static void fxLabelCtor(void* t) {
     const uintptr_t c = reinterpret_cast<uintptr_t>(t);
     tAt<uint32_t>(c, 0) = real_gk::LabelVtable;
@@ -870,6 +885,403 @@ static void scenario11_enabled_and_live_setter() {
     KT_CHECK_EQ(L().size(), static_cast<size_t>(0));
 }
 
+// ---------------------------------------------------------------- settings-page preview (0.4.1): fake k2.modconfig@1 / k2.menuui@1
+// The provider is faked at the K2MenuUiApi table level (the mod's own callbacks are the real ones: cbBuild / cbEnter / cbTick / cbDestroy).
+struct FakeMui {
+    int newPage = 0, addButton = 0, addLabel = 0, addCustom = 0, setDesc = 0, splitCalls = 0, lastSplit = -1, previewPaneCalls = 0;
+    int items = 0;                         // item ids handed out on the page (the real provider caps a page at 40)
+    std::vector<void*> customCtl;
+    std::vector<int> customFlags, customItem;
+    int failAddCustomAt = -1;              // 0-based AddCustom call that answers -1
+    int splitRet = 1;
+    K2MuiRect preview = { 500, 100, 300, 220 }, column = { 20, 60, 260, 300 };
+    bool previewOk = true;
+    bool unlinked = true;                  // Control() answers nullptr for listed custom items (mod-config unlinked them)
+    std::string desc;
+    std::vector<int> clicks;               // item ids Clicked() answers 1 for, once each
+    void reset() { *this = FakeMui(); }
+} tm;
+static K2ModConfigEntry tRegEntry;
+static int tRegCount = 0;
+static int32_t KPATCH_CALL mRegister(const K2ModConfigEntry* e) { ++tRegCount; if (e) tRegEntry = *e; return 9; }
+static void KPATCH_CALL mUnregister(int32_t) {}
+static uint32_t KPATCH_CALL mNewPage(void*, const char*) { ++tm.newPage; return 2; }
+static int32_t KPATCH_CALL mAddButton(uint32_t, const char*, const char*) { ++tm.addButton; return tm.items >= 40 ? -1 : tm.items++; }
+static int32_t KPATCH_CALL mAddLabel(uint32_t, const char*) { ++tm.addLabel; return tm.items >= 40 ? -1 : tm.items++; }
+static int32_t KPATCH_CALL mAddCustom(uint32_t, void* c, int32_t f) {
+    const int idx = tm.addCustom++;
+    if (idx == tm.failAddCustomAt || tm.items >= 40) return -1;
+    tm.customCtl.push_back(c); tm.customFlags.push_back(f); tm.customItem.push_back(tm.items);
+    return tm.items++;
+}
+static int32_t KPATCH_CALL mClicked(uint32_t, int32_t item) {
+    for (size_t i = 0; i < tm.clicks.size(); ++i) if (tm.clicks[i] == item) { tm.clicks.erase(tm.clicks.begin() + static_cast<long>(i)); return 1; }
+    return 0;
+}
+static void KPATCH_CALL mSetText(uint32_t, int32_t, const char*) {}
+static void KPATCH_CALL mSetRect(uint32_t, int32_t, const K2MuiRect*) {}
+static void KPATCH_CALL mSetDesc(uint32_t, const char* t) { ++tm.setDesc; tm.desc = t ? t : ""; }
+static int32_t KPATCH_CALL mPaneRect(void*, int32_t which, K2MuiRect* out) {
+    if (which == MUI_PANE_COLUMN) { *out = tm.column; return 1; }
+    if (which == MUI_PANE_PREVIEW) { ++tm.previewPaneCalls; if (!tm.previewOk) return 0; *out = tm.preview; return 1; }
+    return 0;
+}
+static void* KPATCH_CALL mControl(uint32_t, int32_t item) {
+    for (size_t i = 0; i < tm.customItem.size(); ++i) if (tm.customItem[i] == item) return tm.unlinked ? nullptr : tm.customCtl[i];
+    return nullptr;
+}
+static int32_t KPATCH_CALL mSetDescSplit(uint32_t, int32_t permille) { ++tm.splitCalls; tm.lastSplit = permille; return tm.splitRet; }
+static K2ModConfigApi tCfgTable = { sizeof(K2ModConfigApi), mRegister, mUnregister };
+static K2MenuUiApi tMui = { sizeof(K2MenuUiApi), mNewPage, mAddButton, mAddLabel, mAddCustom, mClicked, mSetText, mSetRect, mSetDesc, mPaneRect, mControl, mSetDescSplit };
+
+static int logCount(const char* needle) {
+    int n = 0;
+    for (const std::string& s : fakekp::state().logLines) if (s.find(needle) != std::string::npos) ++n;
+    return n;
+}
+// What mod-config does on entry: show every listed page item (setVisible(true) also clears click-through).
+static void modconfigShowAll() { for (void* c : tm.customCtl) real_gk::setVisible(reinterpret_cast<uintptr_t>(c), true); }
+static bool clickThrough(uintptr_t c) { return (tAt<int>(c, real_gk::Ctl_Flags) & real_gk::FlagClickThrough) != 0; }
+static bool vis(uintptr_t c) { return real_gk::isVisible(c); }
+static uintptr_t pv(int i) { return g_pv.w[i].c; }
+
+// A clean Options panel build with the fake provider connected: returns the page's panel. withSplit = false makes it an 11-slot (older) table.
+static uintptr_t pageBuild(bool withSplit = true) {
+    fresh();
+    tm.reset();
+    tDtors.clear();
+    tAllocN = 0; tAllocFailAt = -1;
+    tMui.struct_size = static_cast<uint32_t>(withSplit ? sizeof(K2MenuUiApi) : offsetof(K2MenuUiApi, SetDescSplit));
+    tMui.SetDescSplit = withSplit ? mSetDescSplit : nullptr;
+    g_mcMenu.p = &tMui;
+    g_mcMenu.connected = true;
+    g_pg.reset(); g_pv.reset();
+    const uintptr_t panel = tAlloc(0x100);
+    cbBuild(reinterpret_cast<void*>(panel), nullptr);
+    return panel;
+}
+static int createsOf(const char* tag) { int n = 0; for (const Rec& r : L()) if (r.op == trec::O_Create && !strcmp(r.tag, tag)) ++n; return n; }
+
+static void scenario12_page_preview() {
+    // --- registration through the real tryRegisterPage over the fake registry (k2.modconfig + k2.menuui provided, first poll connects)
+    fakekp::provide(K2MODCONFIG_IFACE, K2MODCONFIG_VERSION, &tCfgTable);
+    fakekp::provide(K2MENUUI_IFACE, K2MENUUI_VERSION, &tMui);
+    g_mcCfg.init(fakekp::api()); g_mcMenu.init(fakekp::api());
+    g_mcRegistered = false;
+    KT_CHECK(tryRegisterPage());
+    KT_CHECK_EQ(tRegCount, 1);
+    KT_CHECK(tRegEntry.build == cbBuild && tRegEntry.enter == cbEnter && tRegEntry.tick == cbTick && tRegEntry.destroy == cbDestroy && tRegEntry.leave == nullptr);
+
+    // --- BUILD: rows first (20 items), then 12 preview labels from LBL_TITLE, listed MUI_NOFREE and NOT appended by the mod; then the split.
+    const uintptr_t panel = pageBuild();
+    KT_CHECK(g_pg.panel == reinterpret_cast<void*>(panel) && g_pg.page == 2);
+    KT_CHECK_EQ(tm.addButton + tm.addLabel, 20);
+    KT_CHECK_EQ(createsOf("LBL_TITLE"), 12);
+    KT_CHECK_EQ(cnt(trec::O_Append), 0);
+    KT_CHECK_EQ(tAt<int>(panel, real_gk::Panel_CtlCount), 0);
+    KT_CHECK_EQ(tm.addCustom, 12);
+    KT_CHECK_EQ(tm.items, 32);   // 20 rows + 12 preview <= the 40-item page cap
+    bool flagsOk = tm.customFlags.size() == 12;
+    for (int f : tm.customFlags) flagsOk = flagsOk && f == MUI_NOFREE;
+    KT_CHECK(flagsOk);
+    KT_CHECK_EQ(tm.splitCalls, 1);
+    KT_CHECK_EQ(tm.lastSplit, 750);
+    KT_CHECK(g_pv.on && g_pv.n == 12);
+    KT_CHECK_EQ(logCount("preview BUILD ok"), 1);
+    bool made = true, hid = true, style = true, listedSame = true;
+    const int oStyle = k2addr::off(&K2AddrTable::Border_FillStyle);
+    for (int i = 0; i < 12; ++i) {
+        const uintptr_t c = pv(i);
+        made = made && c != 0;
+        hid = hid && !vis(c) && clickThrough(c);
+        style = style && (tAt<uint32_t>(c + real_gk::Label_Border, oStyle) & 3u) == 2u;
+        listedSame = listedSame && reinterpret_cast<uintptr_t>(tm.customCtl[static_cast<size_t>(i)]) == c;
+    }
+    KT_CHECK(made && hid && style && listedSame);
+    KT_CHECK(lastOn(trec::O_Text, pv(0)) && !strcmp(lastOn(trec::O_Text, pv(0))->text, "Sith Assassin"));
+
+    // --- ENTER: mod-config shows every item; the preview then draws the layout previewLayout gives (literals: pane 500,100,300,220, 3 icons).
+    modconfigShowAll();
+    L().clear();
+    cbEnter(2, nullptr);
+    KT_CHECK_EQ(tm.setDesc, 1);
+    KT_CHECK(tm.desc.find("Example") != std::string::npos);
+    KT_CHECK(vis(pv(0)) && rectEq(lastOn(trec::O_Rect, pv(0)), { 550, 212, 200, 24 }));
+    KT_CHECK(sameRgb(lastOn(trec::O_Tint, pv(0)), kRgbBlack));
+    KT_CHECK(lastOn(trec::O_Fill, pv(0)) && lastOn(trec::O_Fill, pv(0))->img == tImgPtr("uibit_fill_2bt"));
+    KT_CHECK(!vis(pv(1)));   // backing is off: no pill
+    const char* const rs[3] = { "ip_fear", "ip_stun", "ip_slow" };
+    const int oh[3] = { 18, 12, 6 };   // overlay heights for ratios 0.25 / 0.5 / 0.75 on a 24 px icon
+    for (int k = 0; k < 3; ++k) {
+        const uintptr_t ic = pv(2 + 2 * k), ov = pv(3 + 2 * k);
+        KT_CHECK(vis(ic) && rectEq(lastOn(trec::O_Rect, ic), { 610 + 28 * k, 184, 24, 24 }));
+        KT_CHECK(lastOn(trec::O_Fill, ic) && lastOn(trec::O_Fill, ic)->img == tImgPtr(rs[k]));
+        KT_CHECK(sameRgb(lastOn(trec::O_Tint, ic), kRgbWhite));
+        KT_CHECK(vis(ov) && rectEq(lastOn(trec::O_Rect, ov), { 610 + 28 * k, 184, 24, oh[k] }));
+        KT_CHECK(sameRgb(lastOn(trec::O_Tint, ov), kRgbBlack));
+        KT_CHECK(lastOn(trec::O_Alpha, ov) && lastOn(trec::O_Alpha, ov)->f == esl::overlayAlpha(0.65f));
+    }
+    KT_CHECK(!vis(pv(8)) && !vis(pv(9)) && !vis(pv(10)) && !vis(pv(11)));   // icons 4 and 5 are beyond MaxIcons 3
+    bool ct = true;
+    for (int i = 0; i < 12; ++i) ct = ct && clickThrough(pv(i));
+    KT_CHECK(ct);
+    KT_CHECK(allOk());
+
+    // --- an idle tick writes nothing but the (change-only) click-through keep-alive
+    L().clear();
+    cbTick(2, nullptr);
+    bool onlyClick = true;
+    for (const Rec& r : L()) onlyClick = onlyClick && r.op == trec::O_Click && !r.flag;
+    KT_CHECK(onlyClick);
+    KT_CHECK(tm.previewPaneCalls >= 2);
+
+    // --- live setter through the page: Gap 4 -> 5 (click on its '>'): the same tick redraws; bh 53 -> block y 183.
+    tm.clicks.push_back(g_pg.next[esl::S_Gap]);
+    L().clear();
+    cbTick(2, nullptr);
+    KT_CHECK_EQ(g_cfg.gap, 5);
+    KT_CHECK_EQ(cntOn(trec::O_Rect, pv(0)), 0);   // the name bar does not move (still y 212): cached
+    KT_CHECK(rectEq(lastOn(trec::O_Rect, pv(2)), { 610, 183, 24, 24 }) && rectEq(lastOn(trec::O_Rect, pv(6)), { 666, 183, 24, 24 }));
+    KT_CHECK(rectEq(lastOn(trec::O_Rect, pv(3)), { 610, 183, 24, 18 }));
+    // DrainAlpha 0.65 -> 0.70: the overlays take the new alpha.
+    tm.clicks.push_back(g_pg.next[esl::S_DrainAlpha]);
+    L().clear();
+    cbTick(2, nullptr);
+    KT_CHECK(g_cfg.drainAlpha == 0.70f);
+    KT_CHECK(lastOn(trec::O_Alpha, pv(3)) && lastOn(trec::O_Alpha, pv(3))->f == esl::overlayAlpha(0.70f));
+    KT_CHECK(lastOn(trec::O_Alpha, pv(7)) && lastOn(trec::O_Alpha, pv(7))->f == esl::overlayAlpha(0.70f));
+    // Backing on: pill (lbl_miscroll_f, grey, BackingAlpha) behind the row; pad 4 -> bh 57, block y 181, name y 214, row y 185, pill {606,181,88,32}.
+    tm.clicks.push_back(g_pg.text[esl::S_Backing]);
+    L().clear();
+    cbTick(2, nullptr);
+    KT_CHECK(g_cfg.backing);
+    KT_CHECK(vis(pv(1)) && rectEq(lastOn(trec::O_Rect, pv(1)), { 606, 181, 88, 32 }));
+    KT_CHECK(lastOn(trec::O_Fill, pv(1)) && lastOn(trec::O_Fill, pv(1))->img == tImgPtr("lbl_miscroll_f"));
+    KT_CHECK(sameRgb(lastOn(trec::O_Tint, pv(1)), kRgbGrey));
+    KT_CHECK(lastOn(trec::O_Alpha, pv(1)) && lastOn(trec::O_Alpha, pv(1))->f == g_cfg.backingAlpha);
+    KT_CHECK(rectEq(lastOn(trec::O_Rect, pv(0)), { 550, 214, 200, 24 }) && rectEq(lastOn(trec::O_Rect, pv(2)), { 610, 185, 24, 24 }));
+    // Enabled off: row, pill and overlays hide; the name bar stays, re-centred (by = 100 + (220-24)/2 = 198). On again: they come back.
+    tm.clicks.push_back(g_pg.text[esl::S_Enabled]);
+    L().clear();
+    cbTick(2, nullptr);
+    KT_CHECK(!g_cfg.enabled);
+    bool rowHidden = true;
+    for (int i = 1; i < 12; ++i) rowHidden = rowHidden && !vis(pv(i));
+    KT_CHECK(rowHidden);
+    KT_CHECK(vis(pv(0)) && rectEq(lastOn(trec::O_Rect, pv(0)), { 550, 198, 200, 24 }));
+    tm.clicks.push_back(g_pg.text[esl::S_Enabled]);
+    cbTick(2, nullptr);
+    KT_CHECK(g_cfg.enabled && vis(pv(2)) && vis(pv(3)) && vis(pv(1)) && vis(pv(6)));
+    // MaxIcons is restart-only: stepping it leaves the preview (it shows the built pool size) unchanged.
+    tm.clicks.push_back(g_pg.next[esl::S_MaxIcons]);
+    L().clear();
+    cbTick(2, nullptr);
+    KT_CHECK(g_pendMax == 4 && g_cfg.maxIcons == 3 && !vis(pv(8)));
+
+    // --- mod-config re-showing hidden preview items (page re-entry, or a late show): the next refresh hides them again, all click-through.
+    modconfigShowAll();
+    cbEnter(2, nullptr);
+    KT_CHECK(!vis(pv(8)) && !vis(pv(11)) && vis(pv(6)));
+    ct = true;
+    for (int i = 0; i < 12; ++i) ct = ct && clickThrough(pv(i));
+    KT_CHECK(ct);
+    real_gk::setVisible(pv(9), true);   // a late show, no enter
+    cbTick(2, nullptr);
+    KT_CHECK(!vis(pv(9)) && clickThrough(pv(9)));
+
+    // --- the pane moves (resolution change): the next tick re-lays out; a failing PaneRect hides the preview with ONE warning, then it recovers.
+    tm.preview = { 0, 0, 100, 200 };   // 100 wide: 3 icons of 24 + 2*4 = 80 fit; name bar narrows to 100
+    cbTick(2, nullptr);
+    KT_CHECK(rectEq(lastOn(trec::O_Rect, pv(0)), { 0, 104, 100, 24 }));   // bh = 24+5+24+4 = 57 (backing on), by = 71, name y = 71+57-24
+    tm.previewOk = false;
+    cbTick(2, nullptr);
+    cbTick(2, nullptr);
+    bool allHid = true;
+    for (int i = 0; i < 12; ++i) allHid = allHid && !vis(pv(i));
+    KT_CHECK(allHid);
+    KT_CHECK_EQ(warnCount("no PREVIEW pane rect"), 1);
+    tm.previewOk = true;
+    cbTick(2, nullptr);
+    KT_CHECK(vis(pv(0)) && vis(pv(2)));
+
+    // --- DESTROY: mod-config unlinked the items (Control answers nullptr): the 12 labels are freed (slot-0 dtor, flags 1), then NO more writes.
+    cbDestroy(reinterpret_cast<void*>(panel + 8), nullptr);   // another panel: ignored
+    KT_CHECK(g_pv.n == 12 && tDtors.empty());
+    cbDestroy(reinterpret_cast<void*>(panel), nullptr);
+    KT_CHECK_EQ(tDtors.size(), static_cast<size_t>(12));
+    bool dtorOk = tDtors.size() == 12;
+    for (size_t i = 0; dtorOk && i < 12; ++i) dtorOk = tDtors[i].second == 1u && tDtors[i].first == reinterpret_cast<uintptr_t>(tm.customCtl[i]);
+    KT_CHECK(dtorOk);
+    KT_CHECK(g_pv.n == 0 && !g_pv.on && g_pg.panel == nullptr && g_pg.page == 0);
+    KT_CHECK_EQ(logCount("preview DESTROY: freed=12 kept=0"), 1);
+    L().clear();
+    cbTick(2, nullptr);
+    cbEnter(2, nullptr);
+    applySetting(esl::S_Spacing, +1);
+    KT_CHECK_EQ(L().size(), static_cast<size_t>(0));
+
+    // --- DESTROY with the unlink refused (Control still answers): the labels are leaked, never freed.
+    const uintptr_t panel2 = pageBuild();
+    tm.unlinked = false;
+    cbDestroy(reinterpret_cast<void*>(panel2), nullptr);
+    KT_CHECK(tDtors.empty());
+    KT_CHECK_EQ(logCount("freed=0 kept=12"), 1);
+    KT_CHECK_EQ(g_pv.n, 0);
+}
+
+static void scenario12b_older_provider() {
+    // A provider without SetDescSplit (11-slot table): no label is created, no split call, one log line; rows and clicks still work.
+    const uintptr_t panel = pageBuild(false);
+    KT_CHECK(g_pg.panel == reinterpret_cast<void*>(panel));
+    KT_CHECK_EQ(createsOf("LBL_TITLE"), 0);
+    KT_CHECK_EQ(tm.addCustom, 0);
+    KT_CHECK_EQ(tm.splitCalls, 0);
+    KT_CHECK_EQ(g_pv.n, 0);
+    KT_CHECK_EQ(logCount("preview skipped: provider has no SetDescSplit"), 1);
+    KT_CHECK_EQ(tm.addButton + tm.addLabel, 20);
+    L().clear();
+    cbEnter(2, nullptr);
+    KT_CHECK(tm.desc.find("Example") == std::string::npos && !tm.desc.empty());
+    KT_CHECK_EQ(tm.previewPaneCalls, 0);
+    tm.clicks.push_back(g_pg.next[esl::S_Gap]);
+    cbTick(2, nullptr);
+    KT_CHECK_EQ(g_cfg.gap, 5);
+    KT_CHECK_EQ(L().size(), static_cast<size_t>(0));
+    cbDestroy(reinterpret_cast<void*>(panel), nullptr);
+    KT_CHECK(tDtors.empty() && g_pg.panel == nullptr);
+    // A newer-size table whose SetDescSplit is null behaves the same.
+    tMui.struct_size = sizeof(K2MenuUiApi);
+    fresh(); tm.reset(); tMui.SetDescSplit = nullptr; g_mcMenu.p = &tMui; g_mcMenu.connected = true; g_pg.reset(); g_pv.reset();
+    cbBuild(reinterpret_cast<void*>(tAlloc(0x100)), nullptr);
+    KT_CHECK(g_pv.n == 0 && createsOf("LBL_TITLE") == 0 && tm.splitCalls == 0);
+    tMui.SetDescSplit = mSetDescSplit;
+}
+
+static void scenario12c_split_refused_and_failures() {
+    // SetDescSplit refuses: the labels are already listed, so they stay hidden every tick, no PREVIEW pane query, one warning.
+    pageBuild();   // clean baseline first
+    fresh(); tm.reset(); tDtors.clear(); tm.splitRet = 0;
+    g_pg.reset(); g_pv.reset();
+    const uintptr_t panel = tAlloc(0x100);
+    cbBuild(reinterpret_cast<void*>(panel), nullptr);
+    KT_CHECK(g_pv.n == 12 && !g_pv.on);
+    KT_CHECK_EQ(warnCount("preview skipped: SetDescSplit"), 1);
+    modconfigShowAll();
+    cbEnter(2, nullptr);
+    cbTick(2, nullptr);
+    bool hid = true;
+    for (int i = 0; i < 12; ++i) hid = hid && !vis(pv(i)) && clickThrough(pv(i));
+    KT_CHECK(hid);
+    KT_CHECK_EQ(tm.previewPaneCalls, 0);
+    KT_CHECK(tm.desc.find("Example") == std::string::npos);
+    cbDestroy(reinterpret_cast<void*>(panel), nullptr);
+    KT_CHECK_EQ(tDtors.size(), static_cast<size_t>(12));
+
+    // AddCustom fails on the 5th label: the 4 listed stay hidden; the 8 never listed are released at once; the split is never requested.
+    fresh(); tm.reset(); tDtors.clear(); tm.failAddCustomAt = 4;
+    g_pg.reset(); g_pv.reset();
+    const uintptr_t panel2 = tAlloc(0x100);
+    L().clear();
+    cbBuild(reinterpret_cast<void*>(panel2), nullptr);
+    KT_CHECK(g_pv.n == 4 && !g_pv.on && tm.splitCalls == 0);
+    KT_CHECK_EQ(tDtors.size(), static_cast<size_t>(8));
+    KT_CHECK_EQ(warnCount("preview skipped: AddCustom listed 4/12"), 1);
+    modconfigShowAll();
+    cbEnter(2, nullptr);
+    hid = true;
+    for (int i = 0; i < 4; ++i) hid = hid && !vis(pv(i));
+    KT_CHECK(hid);
+    cbDestroy(reinterpret_cast<void*>(panel2), nullptr);
+    KT_CHECK_EQ(tDtors.size(), static_cast<size_t>(12));   // 8 + the 4 that were listed
+
+    // A label allocation fails on the 7th label: the 6 created are released, nothing is listed, no split, the rows are intact.
+    fresh(); tm.reset(); tDtors.clear();
+    g_pg.reset(); g_pv.reset();
+    tAllocN = 0; tAllocFailAt = 6;
+    const uintptr_t panel3 = tAlloc(0x100);
+    cbBuild(reinterpret_cast<void*>(panel3), nullptr);
+    tAllocFailAt = -1;
+    KT_CHECK(g_pv.n == 0 && tm.addCustom == 0 && tm.splitCalls == 0);
+    KT_CHECK_EQ(tDtors.size(), static_cast<size_t>(6));
+    KT_CHECK_EQ(warnCount("preview: "), 1);
+    KT_CHECK_EQ(tm.addButton + tm.addLabel, 20);
+    KT_CHECK(g_pg.panel == reinterpret_cast<void*>(panel3));
+    L().clear();
+    cbEnter(2, nullptr);
+    cbTick(2, nullptr);
+    KT_CHECK_EQ(L().size(), static_cast<size_t>(0));
+}
+
+static void scenario13_drain_off_default() {
+    // HUD: drainAlpha 0 (the default) at forced tier 3, ratio 0.3: the icon shows, the overlay is never touched (no setter call at all).
+    fresh();
+    g_cfg.drainAlpha = 0.0f;
+    tNowDay = 0; tNowMs = 1000;
+    const TxCre t = makeCre();
+    setEffects(t, { { 0x08, 0, 16, 8, 10.0f, 1000 + 3000 } });   // 3 s left of 10 s: ratio 0.3
+    postT(&t);
+    KT_CHECK(real_gk::isVisible(iconC(0)));
+    KT_CHECK_EQ(callsOn(overC(0)), 0);
+    postT(&t, 300);
+    postT(&t, 300);
+    KT_CHECK_EQ(callsOn(overC(0)), 0);
+    KT_CHECK(!real_gk::isVisible(overC(0)));
+    // 0.65: the overlay appears as before (height 24 - int(24*0.3+0.5) = 17), tinted black, alpha 0.65/0.78.
+    g_cfg.drainAlpha = 0.65f;
+    L().clear();
+    postT(&t, 1);
+    KT_CHECK(real_gk::isVisible(overC(0)));
+    const Rec* r = lastOn(trec::O_Rect, overC(0));
+    KT_CHECK(r && r->r[3] == 17);
+    KT_CHECK(lastOn(trec::O_Alpha, overC(0)) && lastOn(trec::O_Alpha, overC(0))->f == esl::overlayAlpha(0.65f));
+    // Back to 0: the overlay hides again (visibility flip only), and further frames are silent.
+    g_cfg.drainAlpha = 0.0f;
+    L().clear();
+    postT(&t, 1);
+    KT_CHECK(!real_gk::isVisible(overC(0)));
+    KT_CHECK_EQ(callsOn(overC(0)), 2);   // Vis(false) + Click(false)
+    L().clear();
+    postT(&t, 1);
+    KT_CHECK_EQ(L().size(), static_cast<size_t>(0));
+    // Through the live setter: 0 -> 0.05 shows the overlay with alpha 0.05/0.78; stepping back down to 0 hides it.
+    applySetting(esl::S_DrainAlpha, +1);
+    KT_CHECK(g_cfg.drainAlpha == 0.05f);
+    postT(&t, 1);
+    KT_CHECK(real_gk::isVisible(overC(0)));
+    KT_CHECK(lastOn(trec::O_Alpha, overC(0)) && lastOn(trec::O_Alpha, overC(0))->f == esl::overlayAlpha(0.05f));
+    applySetting(esl::S_DrainAlpha, -1);
+    KT_CHECK(g_cfg.drainAlpha == 0.0f);
+    postT(&t, 1);
+    KT_CHECK(!real_gk::isVisible(overC(0)));
+}
+
+static void scenario13b_preview_drain_off() {
+    // Settings-page preview with DrainAlpha 0: icons show, no overlay control is shown or written; the row's '>' brings the shading back.
+    pageBuild();
+    g_cfg.drainAlpha = 0.0f;
+    modconfigShowAll();
+    L().clear();
+    cbEnter(2, nullptr);
+    bool overOff = true, overQuiet = true;
+    for (int k = 0; k < 3; ++k) {
+        KT_CHECK(vis(pv(2 + 2 * k)));
+        overOff = overOff && !vis(pv(3 + 2 * k));
+    }
+    for (const Rec& r : L()) for (int k = 0; k < 5; ++k) if (r.c == pv(3 + 2 * k) && r.op != trec::O_Click && r.op != trec::O_Vis) overQuiet = false;
+    KT_CHECK(overOff);
+    KT_CHECK(overQuiet);   // hidden overlays only get the hide/click-through calls, never a rect, fill, tint or alpha
+    for (int k = 0; k < 5; ++k) KT_CHECK(!lastOn(trec::O_Alpha, pv(3 + 2 * k)) && !lastOn(trec::O_Rect, pv(3 + 2 * k)));
+    tm.clicks.push_back(g_pg.next[esl::S_DrainAlpha]);
+    cbTick(2, nullptr);
+    KT_CHECK(g_cfg.drainAlpha == 0.05f);
+    KT_CHECK(vis(pv(3)) && vis(pv(5)) && vis(pv(7)));
+    KT_CHECK(lastOn(trec::O_Alpha, pv(3)) && lastOn(trec::O_Alpha, pv(3))->f == esl::overlayAlpha(0.05f));
+    tm.clicks.push_back(g_pg.prev[esl::S_DrainAlpha]);
+    cbTick(2, nullptr);
+    KT_CHECK(g_cfg.drainAlpha == 0.0f && !vis(pv(3)) && !vis(pv(5)) && !vis(pv(7)));
+    cbDestroy(reinterpret_cast<void*>(g_pg.panel), nullptr);
+}
+
 int main() {
     int flags = MAP_PRIVATE | MAP_ANONYMOUS;
 #if defined(MAP_32BIT)
@@ -889,6 +1301,8 @@ int main() {
 
     // Engine seams.
     real_gk::Engine& e = real_gk::g_gk;
+    real_gk::g_gkCallLabelDtor = fxLabelDtor;
+    tAt<uint32_t>(real_gk::LabelVtable, 0) = 0x00402100u;   // vtable slot 0 (scalar deleting dtor) must read back non-zero
     e.alloc = fxAlloc; e.labelCtor = fxLabelCtor; e.initControl = fxInit; e.exoCtor = fxExoCtor; e.exoDtor = fxExoDtor;
     e.listAdd = fxListAdd; e.loadImage = fxLoadImage; e.callSetRect = fxSetRect;
     party::g_serverCreature = fxServerCreature;
@@ -914,7 +1328,9 @@ int main() {
     KT_CHECK(tCbBuild && tCbPost);
     if (!tCbBuild || !tCbPost) return kt::Report("enemy_strip_draw_test");
     KT_CHECK(g_cfg.enabled && g_cfg.maxIcons == 3 && g_cfg.forceTier == 3 && g_cfg.gap == 4 && g_cfg.spacing == 4 && !g_cfg.backing);
+    KT_CHECK(g_cfg.drainAlpha == 0.0f);   // the shipped default: no drain shading
     tBaseCfg = g_cfg;
+    tBaseCfg.drainAlpha = 0.65f;          // the drain scenarios below run with the shading ON; scenario13 covers the default
 
     scenario1_build();
     scenario2_hides_every_label();
@@ -929,5 +1345,10 @@ int main() {
     scenario9_target_change();
     scenario10_short_ctx();
     scenario11_enabled_and_live_setter();
+    scenario12_page_preview();
+    scenario12b_older_provider();
+    scenario12c_split_refused_and_failures();
+    scenario13_drain_off_default();
+    scenario13b_preview_drain_off();
     return kt::Report("enemy_strip_draw_test");
 }
