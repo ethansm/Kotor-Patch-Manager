@@ -98,10 +98,11 @@ int main() {
         }
         KT_CHECK(diff > 80);
     }
-    // 8. eligibility: base rows only, appended custom rows and party-ish rows are out; military = the two TSF bodies
+    // 8. eligibility: only the two armed TSF rows; civilians, appended custom rows and party-ish rows are out
     {
         bool mil = true;
-        KT_CHECK(EligibleRow(185, &mil) && !mil);
+        KT_CHECK(!EligibleRow(185, &mil) && !mil);   // unarmed civilians do not flourish (user 10-18)
+        KT_CHECK(!EligibleRow(190) && !EligibleRow(12) && !EligibleRow(569) && !EligibleRow(601));
         KT_CHECK(EligibleRow(479, &mil) && mil);
         KT_CHECK(EligibleRow(485, &mil) && mil);
         KT_CHECK(!EligibleRow(802) && !EligibleRow(813) && !EligibleRow(817) && !EligibleRow(0) && !EligibleRow(6));

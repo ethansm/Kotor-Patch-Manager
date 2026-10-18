@@ -52,7 +52,7 @@ namespace {
 using namespace NpcDiversity;
 namespace nl = NpcDiversity::log;
 
-constexpr const char* kVersion = "0.2.4-probe";
+constexpr const char* kVersion = "0.2.5-probe";
 constexpr size_t kResRefLen = 16;
 
 // SafeRead site ids (counted in Counts::fail, printed by STAT read).
@@ -650,7 +650,7 @@ __declspec(dllexport) void __cdecl RemapNpcAppearance(void* pCreature, layout::A
 
     if (animOn() && okOid && oid) {
         bool mil = false;
-        if (Anim::EligibleRow(newApp, &mil) && static_cast<int>(d.subType) <= layout::kDescSubTypeMaxCommoner)
+        if (Anim::EligibleRow(newApp, &mil))   // armed (TSF) rows only; armor bodies have subType >= 3, so no subtype filter here
             g_roster.add(oid, newApp, visitSalt, mil, GetTickCount());
     }
 

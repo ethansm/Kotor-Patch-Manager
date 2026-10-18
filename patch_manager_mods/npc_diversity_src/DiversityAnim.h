@@ -89,13 +89,15 @@ inline const Flourish* Due(Slot& s, uint32_t nowMs, bool idle) {
 }
 
 // ---- eligibility and idle test (pure; the engine glue only reads the facts) --------------------------------------------------------------
-// Rows whose models have all 7 ambient flourishes (anim_pool.tsv). The appended custom rows 802-817 (fat, Twi'lek variants, dirty) are NOT
-// listed: their model chains are not checked, and a missing animation name is not provable at runtime (the vt[0x1c] probe cannot see
-// supermodel anims). 479 = N_RepSold and 485 = N_RepOff are the TSF bodies that may salute.
-constexpr uint16_t kEligibleRows[] = {12, 18, 24, 39, 47, 185, 190, 479, 485, 569, 601};
+// Only ARMED creatures flourish (user 10-18: unarmed civilians do not need it; Telos security with guns do). Armed is decided by appearance row:
+// 479 = N_RepSold and 485 = N_RepOff (the TSF bodies, all 7 ambient flourishes + salute checked in anim_pool.tsv). Armor-body rows build
+// PMB/PFB meshes, so the descriptor subtype is NOT filtered for them. Other armed rows (Czerka guards, mercenaries) are out until their
+// animation sets are checked; a runtime "weapon equipped" test needs the inventory slot offset (not recovered, doc 40 section 15.7).
+// The old 11-row civilian list ({12,18,24,39,47,185,190,569,601} + these two) is gone; the civilian rows are kept in doc 40 section 15.4.
+constexpr uint16_t kArmedRows[] = {479, 485};
 inline bool EligibleRow(uint16_t appearance, bool* military = nullptr) {
-    if (military) *military = (appearance == 479 || appearance == 485);
-    for (uint16_t r : kEligibleRows) if (r == appearance) return true;
+    if (military) *military = false;
+    for (uint16_t r : kArmedRows) if (r == appearance) { if (military) *military = true; return true; }
     return false;
 }
 
