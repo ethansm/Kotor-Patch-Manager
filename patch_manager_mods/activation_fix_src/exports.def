@@ -1,5 +1,3 @@
-LIBRARY ActivationFix
+LIBRARY K2ActivationFix
 EXPORTS
-    KPatchInit
-    ActFixTestSetForeground
-    ActFixTestState
+    dropSyntheticDeactivate
