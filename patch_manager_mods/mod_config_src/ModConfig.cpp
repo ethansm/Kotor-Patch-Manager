@@ -1,4 +1,4 @@
-// ModConfig.cpp -- mod-config 0.1.1-dev (Steam build): the "Mod Configuration" provider on the in-game Options screen (doc 42,
+// ModConfig.cpp -- mod-config 0.1.2-dev (Steam build): the "Mod Configuration" provider on the in-game Options screen (doc 42,
 // plan .claude/plans/holster_editor_options.md, card c18). Provides two interfaces declared in ModConfigApi.h:
 //   k2.modconfig@1  K2ModConfigApi  Register / Unregister: a mod adds one entry (name, description, build/enter/leave/tick/destroy).
 //   k2.menuui@1     K2MenuUiApi     NewPage / AddButton / AddLabel / AddCustom / Clicked / SetText / SetRect / SetDesc / PaneRect / Control.
@@ -16,7 +16,7 @@
 //   McTick     CSWGuiPanel::Draw 40EC90, every panel every frame: returns at once unless [ECX] is the Options vtable.
 //   McDestroy  8A1930, the Options scalar deleting dtor, on entry: leave callback, clear engine references, truncate the list, entry
 //              destroy() callbacks, free our controls (never a MUI_NOFREE one).
-// Esc is never intercepted (it closes the whole in-game GUI). Reopening the Options screen starts at MAIN.
+// Esc is never intercepted (it closes the whole in-game GUI); its key edge resets a non-MAIN page to MAIN. Reopening the Options screen starts at MAIN.
 //
 // Failure values (documented here because the header leaves them open): NewPage returns 0 (page 0 is MAIN, never an entry page);
 // AddButton / AddLabel / AddCustom return -1. One entry owns one page: a second NewPage in the same build() returns the same page id
@@ -142,6 +142,7 @@ struct McState {
     int nTg = 0;
     int relayouts = 0;
     bool prevDown = false;
+    bool prevEsc = false;      // Esc key state last tick (edge = reset to MAIN)
     DWORD leaveAt = 0;         // Back released on LIST: go to MAIN at this tick count (0 = none)
     Rect col[kColumnN] = {};   // vanilla column rects, measured BEFORE the reflow (PaneRect COLUMN)
     bool colOk = false;
@@ -1159,6 +1160,11 @@ extern "C" void __cdecl McTick(int panelArg) {
         KP_LOG(chMain, "HIDDENDRAW panel=%x flags48=%x (was %x) gap=%lums page=%d", static_cast<unsigned>(P), static_cast<unsigned>(flags48),
                static_cast<unsigned>(e.lastFlags48), static_cast<unsigned long>(gap), curPageId());
     e.lastFlags48 = flags48;
+    // Esc closes the whole in-game GUI, but the hidden panel is not drawn, so a quick Esc, Esc (< kTickGapMs) reopened on the old mod page
+    // (live 10-18). Act on the Esc key edge itself: any non-MAIN page goes back to MAIN the moment Esc goes down. Esc is still not swallowed.
+    const bool escDown = guikit::g_gk.gameForeground && guikit::g_gk.gameForeground() && (GetAsyncKeyState(VK_ESCAPE) & 0x8000) != 0;
+    if (escDown && !e.prevEsc && e.appended && e.ps.state != mui::MAIN) resetPages("esc key");
+    e.prevEsc = escDown;
     if (gap > kTickGapMs) resetPages("tick gap");
     // Live logs 10-17: a shown Options panel draws with flags48 0x4d, an Esc-hidden one with 0x0d (still drawn, ~22 ms gaps). Bit 0x2 is
     // clear in BOTH states (it is only the CTOR-time "layout open" bit), so 0x40 is the shown bit. Hidden -> back to MAIN, nothing else.
@@ -1256,7 +1262,7 @@ extern "C" void __cdecl McDestroy(int panelArg) {
 // the config is read at the first McBind.
 extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
-    KP_LOG(chMain, "mod-config 0.1.1-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
+    KP_LOG(chMain, "mod-config 0.1.2-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
     int rcC = -1, rcM = -1;
     if (api && api->struct_size >= offsetof(KPatchApi, require) + sizeof(api->require) && api->provide) {
         rcC = api->provide(K2MODCONFIG_IFACE, K2MODCONFIG_VERSION, &g_mcApi);
