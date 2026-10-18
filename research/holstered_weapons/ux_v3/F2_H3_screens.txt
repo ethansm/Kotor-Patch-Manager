@@ -1,0 +1,65 @@
+F2 / H3 screenshot measurement (recon)
+Inputs: OLD /home/ethansm/Documents/Screenshot_2026-10-18_15-14-02.png (button rows 22 units)
+        NEW /home/ethansm/Documents/Screenshot_2026-10-18_15-52-06.png (button rows 34 units)
+Method: ffmpeg rgb24 dump, stdlib row-profile (scratchpad h3/measure.py). Coordinates are original px.
+        Box = outer extent of outline rows (first to last outline row, inclusive).
+        Offset = glyph centre - box centre (negative = caption above centre).
+        Teal predicate for outlines/button captions; cream predicate for labels.
+
+BUTTONS (2 left column, 2 top bar, 2 bottom row per screenshot)
+
+OLD
+| # | Button | Box y (h) | Box ctr | Caption glyph y (h) | Glyph ctr | Offset | Caption state |
+|---|--------|-----------|---------|---------------------|-----------|--------|---------------|
+| B1 | left "VIBROSWORD<" | 295-316 (22) | 305.5 | 296-309 (14, V cap 13) | 302.5 | -3.0 | in box, flush to top line (0 px gap), 6 px bottom gap |
+| B2 | left "CK LVIS" | 359-380 (22) | 369.5 | 360-373 (14) | 366.5 | -3.0 | in box, flush to top line |
+| B3 | top "OVE<" | 227-250 (24 outer, 22 centre-line) | 238.5 | 252-266 (15) | 259.0 | +20.5 | fully visible, BELOW box (1 px under bottom line) |
+| B4 | top "TH" | 227-250 (24) | 238.5 | 252-266 (15) | 259.0 | +20.5 | fully visible, BELOW box |
+| B5 | bottom plain | 1081-1104 (24) | 1092.5 | none | - | - | absent inside box |
+| B6 | bottom selected | 1081-1104 (24) | 1092.5 | none | - | - | absent inside box |
+
+NEW
+| # | Button | Box y (h) | Box ctr | Caption glyph y (h) | Glyph ctr | Offset | Caption state |
+|---|--------|-----------|---------|---------------------|-----------|--------|---------------|
+| B1 | left empty | 291-324 (34) | 307.5 | none | - | - | absent |
+| B2 | left "R...<" (row 3) | 387-420 (34) | 403.5 | 417-430 (14) | 423.5 | +20.0 | straddles 3 px seam between row 3 and row 4 (outlines at 419-420 and 423-424 cross glyph) |
+| B2b | left "-<" | 483-516 (34) | 499.5 | 508-522 (15) | 515 | +15.5 | straddles bottom outline (515-516) |
+| B2c | left "M..." | 483-516 (34) | 499.5 | ~513-527 (15) | ~520 | +20.5 | straddles seam 516-523 |
+| B3 | top box 1 | 227-260 (34) | 243.5 | none (no glyph rows 261-266) | - | - | absent |
+| B4 | top box 4 | 227-260 (34) | 243.5 | 265-270 (6, dots "...") | 267.5 | +24.0 | BELOW box, 4 px gap, not clipped |
+| B5 | bottom box 1 | 1065-1098 (34) | 1081.5 | none | - | - | absent inside box |
+| B6 | bottom box 2 | 1065-1098 (34) | 1081.5 | none | - | - | absent inside box |
+
+Note: "R..." (cap 18, y 1122-1139) sits under the bottom row, centred on the view, not on one button.
+Note: OLD bottom hint "RMB+wheel depth . Shift fine ." (y 1122-1142) is also outside the boxes.
+
+LABELS (3 per screenshot; no outline box, so "row" = slider track where one exists)
+
+OLD
+| Label | Glyph y (h) | Cap measured | Row centre | Offset |
+|-------|-------------|--------------|------------|--------|
+| "Surik" (name) | 252-269 (18) | S 18 | none | n/a |
+| "CHANGES" | 475-489 (15) | C 15 | none | n/a |
+| "Shift fine, Ctrl snap." | 460-480 (21, incl. descender) | not isolated | none | n/a |
+
+NEW
+| Label | Glyph y (h) | Cap measured | Row (track) y | Row ctr | Glyph ctr | Offset |
+|-------|-------------|--------------|---------------|---------|-----------|--------|
+| "Meetra Surik" | 242-259 (18) | M 18 | none | - | - | n/a |
+| "No unsaved changes" | 570-587 (18) | N 18 | none | - | - | n/a |
+| "Slide" | 278-295 (18) | S 16 | track 267-300 (34) | 283.5 | 286.5 | +3.0 |
+| "Depth" | 314-331 (18) | not isolated | track 303-336 (34) | 319.5 | 322.5 | +3.0 |
+
+SQUASH (button cap / label cap)
+- OLD: button caps 13-15 rows (median 14) vs label "CHANGES" cap 15 -> 0.87-1.0 (about 0.93).
+- NEW: button caption "R...<" cap 14 vs label "S" cap 16 -> 0.88; vs label "N" cap 18 -> 0.78.
+
+CONCLUSION
+1. Caption glyph height does not grow with box height: about 14 rows in both 22-unit (OLD) and 34-unit (NEW) boxes. Squash ratio stays roughly 0.8-1.0 in both, so squash does not scale with box height.
+2. In-box offset in OLD is -3 units (glyph above centre, flush to top outline). NEW captions do not sit inside a 34-unit box: top-bar captions fall below the box (+24), bottom-row captions are absent, and left-column captions straddle box seams (+15.5 to +20.5).
+3. So the offset does not scale with box height either. A taller box did not centre the caption; the caption moved outside or onto the edge.
+4. Labels: NEW slider labels sit +3 units below their track centre. OLD has no row-boxed labels to compare.
+5. Caveats: NEW box outline is 4-5 px thick (OLD 1-3 px), so outer height is 34 vs 22-24. Caption ownership for the NEW left-column captions is ambiguous (seam straddle).
+
+OPEN
+- Which NEW left-column button owns "R...<", "-<" and "M..." (they straddle seams)? Check the caption placement code in the holster editor layout.

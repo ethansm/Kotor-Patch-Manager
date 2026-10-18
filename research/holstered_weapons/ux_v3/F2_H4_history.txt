@@ -1,0 +1,33 @@
+F2/H4 history recon (read-only, 11 tool calls)
+Question: did any build resize GUI BUTTON controls taller than the vanilla template, and what happened to caption text?
+
+1. Vanilla template heights (engine px, from template dump)
+- BTN_EXIT ext (159,516,89,28), dialogfont16x16, align 18 | research/companion_levelup/phase4_evidence/S1_template_gui.txt:22
+- BTN_LEVELUP ext (362,325,94,40) | S1_template_gui.txt:16
+- BTN_DEFAULT ext [256,516,88,28] | S1_template_gui.txt:24
+- BTN_GAMEPLAY (template ModConfig clones for the Holstered Weapons row): extent NOT recorded anywhere in repo. Font, align, frame known | research/holstered_weapons/ux_v2/u4/G_glyphs_colors.md:10
+
+2. Holster row heights by commit (layout units; mapped to engine px by unitRect, patch_manager_mods/_shared_src/GuiKit.h:461-468; the holster page scale was NOT checked)
+- 0be7747b (first layout v3): kV3RowMax 22, kV3BarMax 24 | patch_manager_mods/holster_editor_src/HseLayoutV3.h:40-41 at 0be7747b
+- 823d1e21 (0.4.2-dev): kV3RowMax 22 -> 34, kV3BarMax 24 -> 34, kV3HintMax 18 -> 26, kV3ResetMax 20 -> 30, kV3ColWantW 260 -> 440, kV3InspWantW 460 -> 720 | HseLayoutV3.h:42-49 at HEAD; hse_layout_v3_test.cpp modeBtn h 24 -> 34
+- 7881dc3e (0.3.0, weapon strip): slotH = strip.h*32/284, pitch = strip.h*36/284 ("vanilla ratio") | patch_manager_mods/holster_editor_src/HseView.h:102-108 at 7881dc3e
+- 57374b95 (v2 modal): six slider rows 20 high, 2 px gap; bone prev/next 18 | HseLayout.h:54-55 at 57374b95
+
+3. Caption / text
+- 823d1e21: text fit moved from sy 1 (pre-0.4.2 TextCtx {1,1,1}) to g_textK 2.5, ini text_k. Commit message: engine draws page labels about 2.5x wider than sy 1 predicts (measured 3840x1600). So pre-0.4.2 fits underestimated label width.
+- No play-test row, handoff or note records a caption squash or clip on a resized button. Grep hits for squash/caption are unrelated: patch_manager_mods/08_shield_bar.md:120 (animation frames), patch_manager_mods/11_inventory_sort_filter.md:37 (Filter caption).
+- Engine SetRect moves border and text copies together (ShieldBar.cpp:455 comment), so a caption follows its rect. Button border/text stride is unproven in play: research/holstered_weapons/ux_v3/OPUS_review.txt:56-60.
+- The accepted Holstered Weapons button (PRB1, pass 10-16) was reported with vanilla look (outline, colours): patch_manager_mods/PLAY_TEST_QUEUE.md:22. Mod-config reflow moves rows (ModConfig.cpp:631).
+- Live play text rows still open: HUX-U2 help line "cut with ..." (PLAY_TEST_QUEUE.md:46), HUX-U3 strip buttons "readable at the compact height" (PLAY_TEST_QUEUE.md:47). Both pending.
+
+4. Other mods (setRect users; none found with a button-height constant or caption note)
+- queue_hud: leader Cancel is a BTN_CLEARALL clone, rect via setRect | QueueHud.cpp:472, 511
+- combat_hotbar CombatHotbar.cpp:346; action_hotbar ActionHotbar.cpp:960-962; enemy_effects_strip EnemyStrip.cpp:594, 1211-1218 (page text/prev/next)
+- Holster re-applies SetRect every tick because mod-config gives up after 8 tries | HolsterEditor.cpp:1453-1454; ModConfig.cpp:68
+
+5. Verdict reasoning
+- Row height: 0.4.2 raised holster row and mode-bar heights to 34 units. Vanilla BTN_EXIT is 28 px. "Taller than vanilla" holds only if units map 1:1 to px, and BTN_GAMEPLAY extent is unknown. PARTIAL.
+- Caption: no recorded symptom. Only inferred overrun risk before 0.4.2 (text_k commit).
+- Repo does not record which old layout the user approved as "looked right".
+
+OPEN: BTN_GAMEPLAY engine-px extent, and the unit-to-px scale for the holster page (decides whether 34 units is taller than vanilla).

@@ -1,0 +1,31 @@
+F2 / H2 recon: mod-config button vs label rect path (read-only, 11 tool calls)
+
+Q1. Button vs label creation
+- AddButton = muiAddButton ModConfig.cpp:1045; clones template "BTN_GAMEPLAY" via cloneEntry at :1054; text copied :1055-1056; addItemCommon at :1058.
+- cloneEntry ModConfig.cpp:200-222: if g_cfg.buttonClone, guibutton::createButtonFromTemplate (:207); canary check :215; on any failure falls back to a label clone (:219). ini button_clone=0 forces label (:221).
+- kButtonVtable ModConfig.cpp:58 = gameaddr::ButtonVtable 0x00987A1C (GameAddr.h:39).
+- createButtonFromTemplate GuiButton.h:59-100: vtable must equal ButtonVtable (:79); initControl(panel, mem, tag, addToList=0, scale=1) (:~70); hidden + click-through until shown (:~84). No rect is written here.
+- AddLabel = muiAddLabel ModConfig.cpp:1068; cloneLabel at :1077; cloneLabel ModConfig.cpp:192-198 uses kLabelTemplate "LBL_TITLE" (ModConfig.cpp:71) via guikit::createLabelFromTemplate (:195).
+- addItemCommon ModConfig.cpp:1036-1042: registers the item with a zeroed rect (r0) in the page table. It never calls applyOne. hasRect stays false (default at ModConfig.cpp:114).
+- Default rect: mod-config writes NONE when SetRect is not called. The button keeps the extent BTN_GAMEPLAY gets from its layout template at initControl. That height is not stated anywhere in the repo (rg for BTN_GAMEPLAY in docs found only font/colour/frame notes, research/holstered_weapons/ux_v2/u4/G_glyphs_colors.md:7-10). Height value: unknown.
+- Button caption write: setCtlText ModConfig.cpp:226-232 -> guibutton::setButtonText (GuiButton.h:102-113) writes the CSWGuiText child at btn+0x160 (Button_Text, GuiButton.h:24) via TextSet. Does not touch the rect.
+
+Q2. SetRect callers (patch_manager_mods/*.cpp, excluding test files)
+- HolsterEditor.cpp:603 placeItem (status label, rect from PaneRect); HolsterEditor.cpp:609 placeBox (every holster item).
+- applyLayout HolsterEditor.cpp:1456-1469 calls placeBox for all hse::kPageItemsV3 items plus wedge items.
+- Holster item kind: itemIsButton HolsterEditor.cpp:387-391 (Save/Revert/Reset, weapon, bone, member, view flip/reset are buttons); AddButton vs AddLabel chosen at HolsterEditor.cpp:581.
+- Holster row height cap: kV3RowMax = 34, kV3RowMin = 14 (HseLayoutV3.h:42); the layout picks the largest row height that fits (HseLayoutV3.h:210). These are the "34" rows.
+- EnemyStrip.cpp:1211 (toggle row: AddButton at :1180, full column width, slotH = col.h*32/284 at about :1203).
+- EnemyStrip.cpp:1216-1218 (non-toggle row: text is AddLabel at :1182; prev/next are AddButton at :1183-1184; button width bw = col.w*20/100).
+- No other SetRect callers in patch_manager_mods/*.cpp outside tests.
+- Text after SetRect: no re-apply, no font/align handling. muiSetRect ModConfig.cpp:1117-1126 resets the target, sets hasRect, applies the extent. Text is applied separately: muiSetText :1114 (only if already appended); firstTick applyItemText ModConfig.cpp:664-675; setCtlText :226-232. rg for align|font in ModConfig.cpp: no hits.
+- Re-apply loop: applyOne non-initial path ModConfig.cpp:278-296, kMaxReapply = 8 (ModConfig.cpp:68). Each SetRect resets applied/gaveUp (muiSetRect :1119). Drift re-apply on entry enter ModConfig.cpp:781 and the per-tick loop :1276.
+- Not checked: whether EnemyStrip's button captions render correctly (no repo note found in research/holstered_weapons/ux_v3 for "squash|caption" outside holster).
+
+Q3. What applyOne / muiSetRect touch
+- applyOne ModConfig.cpp:278-296: guikit::getExtent (GuiKit.h:227-238, reads Ctl_X/Y/W/H) then guikit::setRect (ModConfig.cpp:296).
+- guikit::setRect GuiKit.h:241-250: calls vtable slot 1 (Ctl_VtSetRect, K2Addr.h:287 and :484 = offset 4) with {x,y,w,h}.
+- Mod-config writes nothing else in this path: no text rect, border, hilight or fill. Flags are set separately (setVisible / setClickable, GuiKit.h ~255-272, on Ctl_Flags).
+- Labels (CSWGuiLabel, LBL_TITLE) and buttons (CSWGuiButton, BTN_GAMEPLAY) go through the identical applyOne / setRect code. So a button-only squash must come from CSWGuiButton's own slot-1 implementation or its child layout (caption at +0x160, border/frame per research/holstered_weapons/ux_v3/OPUS_review.txt:60 and ux_v2/u4/G_glyphs_colors.md:10). The slot-1 body is not analysed in this repo.
+
+Next check (not run here): inspect the function at CSWGuiButton vtable 0x00987A1C + 4 (query_ghidra.py address / dump lookup) to see whether it reflows the caption child and border when the extent changes.

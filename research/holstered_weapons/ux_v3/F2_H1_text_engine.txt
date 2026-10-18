@@ -1,0 +1,49 @@
+F2 / H1: how the engine places and scales a GUI button caption after SetRect (Steam swkotor2.exe)
+Scope: read-only recon, no live runs, no Ghidra headless. Sources are repo docs, shared headers and dumps already in the repo.
+
+== 1. Object layout (repo code, Steam column)
+- patch_manager_mods/_shared_src/GuiKit.h:8-12  ctl+0x00 vtable; slot 1 = SetRect(int[4]); extent ctl+4/+8/+0xC/+0x10 (x,y,w,h, engine px); flags +0x48; text object at ctl+0xD8 (vtable 0x9876B4; +0x14 renderer; +0x18 string sub-object). DLL-set text draws left-aligned unless setAlign is called.
+- patch_manager_mods/_shared_src/GuiKit.h:147-148  textSub(ctl) = ctl+0xD8+0x18 = ctl+0xF0 (gate textObjOk checks vtable and renderer).
+- patch_manager_mods/_shared_src/K2Addr.h:287 and :484  Ctl_VtSetRect = 4 (byte offset of slot 1 in the control vtable).
+- patch_manager_mods/_shared_src/GuiKit.h:241-249  setRect() only calls vtable slot 1 through the seam. It does not write the extent itself, so the engine body does all the work.
+- patch_manager_mods/_shared_src/GuiButton.h:8-10,24  CSWGuiButton: vftable 0x987A1C, size 0x1D0, normal border +0x70, highlight border +0xE8, text sub-object +0x160 (TextVtable), string sub-object at +0x160+0x18.
+
+== 2. SetRect propagation (engine side)
+- patch_manager_mods/gog_map_21b/dumps/steam_r2.txt:3555  PTRS 9876B8 (text vtable slot 1) = 0x417780 FUN_00417780. Text SetRect.
+- patch_manager_mods/gog_map_21b/dumps/steam_r2.txt:3568  PTRS 9878C0 (label vtable slot 1) = 0x4199A0. Label SetRect (verified by dump).
+- patch_manager_mods/engine_research_findings/V3.md:33  0x417800 CSWGuiText::Relayout (decomp in V3): if renderer (+0x14), width (+0xC) and height (+0x10) are all nonzero, calls renderer vtable +0x4C with -1 (WrapStrings(-1)). Callers include 0x416E30, 0x416FA0, 0x417780.
+- patch_manager_mods/engine_research_findings/V3.md:34  0x417780 stores x,y,w,h at this+4..+0x10, calls renderer vtable +0x74 with (w,h), then calls Relayout 0x417800. So a text SetRect pushes the new box size into the renderer and relayouts. Confidence "med" in V3.
+- patch_manager_mods/08_shield_bar.md:499-500  (doc claim, NOT re-verified here: no dump body for 0x419ED0 in the repo) Button SetRect 0x419ED0 writes +4..+0x10, then forwards the rect to the border (0x414B70) and to the text 0x417780, which "also repositions the font renderer and relayouts". Plain CSWGuiControl slot 1 (0x414B70) only copies the four ints.
+- patch_manager_mods/mods678_research/dump_excerpts/00416e30.c  FUN_00416e30 (name_map: CSWGuiTextParams::SetText) sets +8 = -1 and re-lays out. Its renderer access uses param+0x50 -> +0x14, which does not match the GuiKit +0x14 placement. Object identity of ECX is therefore not pinned by this dump. Treat as a discrepancy, not a conclusion.
+
+Conclusion for section 2: SetRect on a button should reach the caption (rect copy plus renderer box size plus relayout). Nothing in the repo shows it failing for the stock sizes. The doc claim for the button body is the one link not checked against a dump.
+
+== 3. Draw (where squash and vanishing come from)
+- patch_manager_mods/engine_research_findings/V3.md:38  CAurGUIStringInternal fields used by Draw 0x47B500: +4/+8 x/y offset, +0xC box width px, +0x10 box height px, +0x14 text, +0x18 font, +0x54 scale float, +0x5A alignment byte (&7 horizontal: 2 centre, 4 right; &0x38 vertical: 0x10 centre, 0x20 bottom, else top).
+- patch_manager_mods/engine_research_findings/V3.md:91  line pixel height h = font height (+4) * scale(+0x54) * 100.0 (scaling constant as written in V3; units not fully pinned).
+- patch_manager_mods/engine_research_findings/V3.md:101-109 (F3)  Centre branch (0x47B6CB loop) drops lines from the top while accumulated height is below the box height. Bottom branch (0x47B7CB loop) drops n - floor(B/h) lines, so all lines go if B < h. No check of local_8 < line count.
+  - Result: a single centre-aligned line with box height B < line height h is dropped and draws nothing. Top-aligned text is never dropped.
+- patch_manager_mods/K1_ENGINE_BUGS_IN_K2.md:24  K5: same vanishing. Marked "Yes, latent". Not fixed in repo.
+- patch_manager_mods/engine_research_findings/V3.md:114,126  Vanilla labels are safe at 3840x1600. Trigger seen for 18-unit labels at 5120x1440 (speculative font-scale assumptions).
+
+Link to the symptom: a 34-unit button box with a ~42-unit font cell and centre alignment matches the V3/K5 vanishing condition (B < h). That explains "many captions invisible". The repo does NOT explain the vertical squash or the ~19-unit downward offset.
+
+== 4. Does any mod re-sync text after SetRect?
+- Creation order in the repo is setRect, then setFont/setText/setAlign: patch_manager_mods/27_companion_selfheal_evidence/R4_config_gui/FINDINGS.md:13 (ActionHotbar.cpp:1356-1359). This is creation-time, not a re-sync after SetRect.
+- rg for setRect followed by setText/setAlign/setFont across patch_manager_mods (cpp/h/md) found no mod that re-issues text setters after a SetRect on a button. Holster editor (HolsterEditor.cpp:1477) calls setRect only on the wheel helper, not on a caption.
+- GuiButton.h setButtonText (lines 101-110) does not re-run setAlign or setRect.
+- Because 0x417780 already relayouts, a plain text re-set is not a proven fix for the squash. Not tested live.
+
+== 5. Unknowns (not resolved by repo evidence)
+- Which formula places a centred single-line caption about 19 units below centre inside a 34-unit box (Draw 0x47B500 centre branch, and whether the box and line heights share a unit space).
+- Whether the renderer's +0x74 (w,h) arguments are in the same px space as the font line height h used by Draw.
+- Whether 0x419ED0 (button SetRect) really forwards to 0x417780 (doc claim, no dump body in repo).
+- Whether the button vtable slot 1 is 0x419ED0 (button vftable 0x987A1C is absent from steam_r2.txt PTRS).
+- The +0x14 vs +0x50 renderer placement (section 2 discrepancy).
+
+== 6. Recommended next checks (not run)
+- Dump 0x419ED0 and 0x417780 bodies (Steam, Ghidra static dump or rea-recon) to confirm the forward and the renderer call.
+- Dump 0x47B500 centre branch in full to get the vertical offset formula, then compare with the 19-unit observation.
+- Live: probe a button at 34 vs 42 units with a single-line caption, and log the renderer box size after SetRect (no code change needed to test the vanishing hypothesis).
+
+Verdict: PARTIAL. Vanishing is explained by the V3/K5 drop loop. Squash and offset are not explained.
