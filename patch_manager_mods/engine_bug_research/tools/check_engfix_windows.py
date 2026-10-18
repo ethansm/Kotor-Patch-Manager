@@ -9,7 +9,7 @@ hook (check_windows.py only flags strict overlap).
 L4 is a `simple` byte write (no JMP is placed), checked as a whole instruction for clarity; the < 5 bytes rule does
 not apply to it, but the window is 6 bytes anyway.
 2026-10-03: added the five log-only probe windows W1-W5 of k2-dialogue-letterbox-fix 1.0.1-probe (V8b (c)). The owner of the
-"L1" prefix is now the probe mirror dialogue_letterbox_fix_probe_src (it carries the three 1.0.0 L1 hooks unchanged + the five
+"L1" prefix is now the probe variant dialogue_letterbox_fix_src/probe (2026-10-18: the old mirror dialogue_letterbox_fix_probe_src was retired; it carries the three 1.0.0 L1 hooks unchanged + the five
 probe hooks, all with the same patch id; the live 1.0.0 hooks of that id are therefore never counted as "near"). A final block
 checks that the 1.0.0 mirror dialogue_letterbox_fix_src is a hook-for-hook subset of the probe mirror.
 Usage: check_engfix_windows.py
@@ -20,7 +20,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "..", "mods678_research"))
 import check_windows as cw  # noqa: E402
 
-cw.OWNERS = {"L1": ("k2-dialogue-letterbox-fix", "dialogue_letterbox_fix_probe_src"),
+cw.OWNERS = {"L1": ("k2-dialogue-letterbox-fix", "dialogue_letterbox_fix_src/probe"),
              "L4": ("k2-wrap-measure-fix", "wrap_measure_fix_src")}
 # drop owners whose mirror does not exist yet (before S2/S3 wrote them)
 cw.OWNERS = {k: v for k, v in cw.OWNERS.items()
@@ -68,6 +68,6 @@ if __name__ == "__main__":
         t = tomllib.load(open(os.path.join(cw.SRC, d, "kotor2-steam-aspyr.hooks.toml"), "rb"))
         return {int(h["address"]): (h.get("function"), tuple(h["original_bytes"]), tuple((q["source"], q["type"]) for q in h.get("parameters", [])),
                                     tuple(h.get("exclude_from_restore", []))) for h in t["hooks"]}
-    base, probe = hooks("dialogue_letterbox_fix_src"), hooks("dialogue_letterbox_fix_probe_src")
+    base, probe = hooks("dialogue_letterbox_fix_src"), hooks("dialogue_letterbox_fix_src/probe")
     bad = [f"{a:#x}" for a, v in base.items() if probe.get(a) != v]
     print(f"\n1.0.0 mirror ({len(base)} hooks) subset of probe mirror ({len(probe)} hooks): " + ("OK" if not bad else "MISMATCH " + ", ".join(bad)))

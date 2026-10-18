@@ -286,8 +286,8 @@ def load_mods(repo=REPO, kpm_dir=KPM_DIR, variants=False) -> list:
     names, code_patches sidecar and the KPM `Patches/<Name>/` dir with the same manifest id (the one with the same
     version when several share the id; None if kpm_dir is missing or has no match).
 
-    Two dirs may share an id (dialogue_letterbox_fix_probe_src is a staged 1.0.1-probe build of
-    k2-dialogue-letterbox-fix). By default only the primary is returned: the one with a plain version (no `-suffix`),
+    Two dirs may share an id (a staged -probe build of the same mod, e.g. the retired dialogue_letterbox_fix_probe_src
+    1.0.1-probe of k2-dialogue-letterbox-fix). By default only the primary is returned: the one with a plain version (no `-suffix`),
     else the first by path. variants=True returns every dir (for matching a .kpatch by id + version).
     """
     root = Path(repo) / "patch_manager_mods"

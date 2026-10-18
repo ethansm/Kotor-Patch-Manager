@@ -130,7 +130,7 @@ Status: **NOT VALIDATED, 0 / 17 done.** Setup: 3840x1600, live core `36f10b7f`, 
 - [ ] B8 Clairvoyance/Fury video effect, if reachable (V11: effect band [242,1358]): nothing looks clipped wrongly.
 
 **C. Only if B1 fails (no bands): probe path**
-- [ ] C1 Install 1.0.2-probe (`KPM/letterbox_probe_stage/1.0.2-probe/`, hooks change, so use `stage_and_verify_install.py` + KPatchLauncher). Set `probe=1` and `channels=main,set,probe,probe_w4`. Play one conversation, run the analyzer, and give its DIAGNOSIS to the engine-bug session (15e A3). Stage B (1.0.1-probe) is the fallback.
+- [ ] C1 Install 1.0.2-probe (`KPM/letterbox_probe_stage/1.0.2-probe/`, hooks change, so use `stage_and_verify_install.py` + KPatchLauncher). Set `probe=1` and `channels=main,set,probe,probe_w4`. Play one conversation, run the analyzer, and give its DIAGNOSIS to the engine-bug session (15e A3). Stage B (1.0.1-probe) was the fallback; its source dir `dialogue_letterbox_fix_probe_src` was retired 2026-10-18 (recover with `git show 9c1bf8c:patch_manager_mods/dialogue_letterbox_fix_probe_src/<file>`; the staged kpatch outside the repo is untouched).
 
 **Validated** = every A and B row checked (C is not needed when B1 passes). Then update the doc 17 top line, 19e adoption row ("validated"), register 16 T1 card, and memory.
 
