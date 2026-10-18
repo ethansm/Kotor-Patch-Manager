@@ -47,3 +47,7 @@ _(none recorded; append Dead Ends & Anti-Patterns and Verification Commands here
 ## INSTALLED 10-18 14:34 (supersedes "INSTALL BLOCKED" above)
 - Blocker fixed by 04448fca (check_hook_sources allowlist for activation-fix 0x0040D69E esp+0, with tests). Gate PASS at head 04448fca; apply done; kpm_status LIVE x3: holster 0.2.0-dev, holster-editor 0.4.1-dev, mod-config 0.1.3-dev. Rollback: `python3 scripts/kpm_hotswap.py --rollback batch_swap_20261018_143419`.
 - Play rows pending: UX3, UX3b, UX3c, UX3d, ICON1, HW7a, HW7c, LOG1, CAM2. KPM-side commits not made (commands printed by kpm_hotswap).
+
+## 10-18 15:24 layout-scale round (user screenshot at 3840x1600)
+- Cause: real panes column=(772,357,1132,757) view=(1345,357,576,896) preview=(1953,357,1113,746); layout capped rows 22 / column 260 / inspector 460 and measured text with sy=1 while the engine draws it ~2.5x wider. Fix 823d1e21: holster-editor 0.4.2-dev, ini `text_k` (default 2.5; tune from play), caps raised (rows 34, col 440, insp 720, name 120, value 140), testReal3840x1600. LIVE 15:24; rollback `python3 scripts/kpm_hotswap.py --rollback holster-editor_swap_20261018_152410`.
+- Open: confirm by play (screenshot); if text still clips/has slack adjust `text_k` in holster_editor.ini (game-dir copy) before touching code. Other Mod Configuration pages are correct (user): do not touch mod-config.
