@@ -1,0 +1,23 @@
+# synthetic fixture for scripts/test_enemy_strip_log_check.py (not a game log)
+# kplog session 2026-10-18 09:00:00 | kpatch.log v1 | patcher ABI 1
+T=120.000 f=- enemy-effects-strip/main enemy-effects-strip 0.3.0-dev loaded (Enabled=1 Verbose=1 MaxIcons=8)
+T=260.001 f=- enemy-effects-strip/main BUILD: slots=8/8 pill=1
+T=3000.000 f=- enemy-effects-strip/target target=00a1b2c3 srv=00b2c3d4 cli+F8=00000000 f8match=1 leader=00c3d4e5 srvLeader=00d4e5f6 menu=00e5f6a7 targetType=5
+T=3000.100 f=- enemy-effects-strip/target world time day=12 ms=3000
+T=3000.200 f=- enemy-effects-strip/target leader skills base=00f0e1d2 raw=[1,2,3,14,5,6,7,8] awareness(idx3)=14 (UNPROVEN index)
+T=3000.300 f=- enemy-effects-strip/target effects CHANGED sig=1a2b3c4d count=4
+T=3000.400 f=- enemy-effects-strip/target effects: count=4 logging=4
+T=3000.500 f=- enemy-effects-strip/target eff[0] type=8 sub=0 spell=9001 dur=12/3.00 creator=00003039 creatorIsLeader=0 ratio=0.500 buff=ip_fear debuff=- state=8
+T=3000.600 f=- enemy-effects-strip/target eff[1] type=8 sub=0 spell=9003 dur=6/1.50 creator=00d4e5f6 creatorIsLeader=1 ratio=- buff=ip_sleep debuff=- state=5
+T=3000.700 f=- enemy-effects-strip/target eff[2] slot unreadable (ptr=00000000)
+T=3000.800 f=- enemy-effects-strip/target eff[3] type=3 sub=1 spell=9002 dur=? creator=00000000 creatorIsLeader=0 ratio=- buff=- debuff=ip_stun state=-
+T=3000.900 f=- enemy-effects-strip/target iconcache count=2
+T=3001.000 f=- enemy-effects-strip/target ic[0] spell=9001 buff=1 prio=3 valid=1 strref=0
+T=3001.100 f=- enemy-effects-strip/target strip: target=00b2c3d4 tier=2 slots=2 [ip_fear,ip_stun]
+T=3200.000 f=- enemy-effects-strip/main WARN image 'ip_gone' not found: its icon is not drawn
+T=4000.000 f=- enemy-effects-strip/target effects CHANGED sig=2b3c4d5e count=1
+T=4000.100 f=- enemy-effects-strip/target eff[0] type=8 sub=0 spell=9001 dur=8/2.00 creator=80003039 creatorIsLeader=0 ratio=0.250 buff=ip_fear debuff=- state=8
+T=4010.000 f=- enemy-effects-strip/target strip: target=00b2c3d4 tier=3 slots=1 [ip_fear]
+T=4020.000 f=- enemy-effects-strip/target leader skills: awareness=? (srvLeader=00d4e5f6 stats=00000000 base=00000000)
+T=4100.000 f=- enemy-effects-strip/target WARN server creature unresolved (target=00b2c3d4): effects and icon cache skipped
+T=4200.000 f=- enemy-effects-strip/target target cleared

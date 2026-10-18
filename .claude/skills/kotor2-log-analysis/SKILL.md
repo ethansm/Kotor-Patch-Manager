@@ -49,6 +49,7 @@ To look at one signature's real lines, use the `first_line` number with a bounde
 | Log | Tool | Useful flags |
 |---|---|---|
 | `levelup_override_log.txt` | `scripts/luo_log_check.py` | `--new`, `--no-advance`, `--scenario ID`, `--from/--to LINE`, `--expect-version`, `--json` |
+| `enemy-effects-strip_log.txt` (alias `enemystrip`) | `scripts/enemy_strip_log_check.py` | `--new`; prints BUILD, strip transitions, WARN kinds and the ES-P0b facts (Fear type 8 state 8, creator buckets, Awareness rank) |
 | `k2-dialogue-letterbox-fix_log.txt` | `patch_manager_mods/engine_bug_research/tools/analyze_engfix_logs.py FILE` | `--json` |
 | perflab / robustnessfixes / texmem / activationfix | `patch_manager_mods/perf_lab_src/analyze_runs.py --game-dir G` | `--summary`, `--latest N`, `--from-offsets F`, `--out F.md` (default without flags is ~37 KB; `check` uses `--summary --latest 1`) |
 | `ai_trace.txt`, `ranged_ai_log.txt`, `inventory_sort_filter_log.txt` | `scripts/archive_play_logs.py` then `patch_manager_mods/mods678_research/analyze_play_logs.py DIR` | `check` chains both into a temp dir |

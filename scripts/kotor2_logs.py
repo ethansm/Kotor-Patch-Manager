@@ -44,16 +44,20 @@ QUEUEHUD = "scripts/queue_hud_log_check.py"
 NPCDIV = "scripts/npc_div_log_check.py"
 CMDQ = "scripts/cmdq_probe_log_check.py"
 HOLSTER = "scripts/holster_log_check.py"
+ENEMYSTRIP = "scripts/enemy_strip_log_check.py"
 COMBAT = "scripts/combat_timeline.py"
 COMBAT_NAMES = ("combat", "combat-timeline")
 
-# name -> (parser label, route kind). kinds: engfix, luo, runs, playlogs, selfheal, queuehud, npcdiv, cmdqprobe, holster. Anything else -> log_triage.
+# name -> (parser label, route kind). kinds: engfix, luo, runs, playlogs, selfheal, queuehud, npcdiv, cmdqprobe, holster, enemystrip.
+# Anything else -> log_triage.
 ROUTES = {
     "companion-selfheal_log.txt": ("selfheal_log_check", "selfheal"),
     "queue-hud_log.txt": ("queue_hud_log_check", "queuehud"),
     "npc-diversity_log.txt": ("npc_div_log_check", "npcdiv"),
     "cmdq-probe_log.txt": ("cmdq_probe_log_check", "cmdqprobe"),
     "holster_log.txt": ("holster_log_check", "holster"),
+    "enemy-effects-strip_log.txt": ("enemy_strip_log_check", "enemystrip"),
+    "enemystrip_log.txt": ("enemy_strip_log_check", "enemystrip"),  # fallback sink name
     "k2-dialogue-letterbox-fix_log.txt": ("analyze_engfix_logs", "engfix"),
     "levelup_override_log.txt": ("luo_log_check", "luo"),
     "perflab_log.txt": ("analyze_runs", "runs"),
@@ -144,6 +148,8 @@ def route(name: str, game_dir: str) -> list[str]:
         return [py, _py(NPCDIV), path]
     if kind == "cmdqprobe":
         return [py, _py(CMDQ), path]
+    if kind == "enemystrip":
+        return [py, _py(ENEMYSTRIP), path]
     if kind == "playlogs":
         return [py, str(HERE / "kotor2_logs.py"), "_playlogs", os.path.dirname(os.path.abspath(path)) if os.sep in name else game_dir]
     return [py, _py(TRIAGE), path]
@@ -239,7 +245,12 @@ ALIASES = {
     "npc-diversity": "npc-diversity_log.txt",
     "npcdiv": "npc-diversity_log.txt",
     "cmdq-probe": "cmdq-probe_log.txt",
+    "enemy-effects-strip": "enemy-effects-strip_log.txt",
+    "enemystrip": "enemy-effects-strip_log.txt",
 }
+
+
+FALLBACKS = {"enemy-effects-strip_log.txt": "enemystrip_log.txt"}  # primary sink -> fallback sink file name
 
 
 def check(name: str, extra: list[str], game_dir: str) -> int:
@@ -247,6 +258,10 @@ def check(name: str, extra: list[str], game_dir: str) -> int:
         return subprocess.run([sys.executable, _py(COMBAT), "--dir", game_dir] + list(extra)).returncode
     resolved = ALIASES.get(name, name)
     path = resolved if os.sep in resolved else os.path.join(game_dir, resolved)
+    if not os.path.isfile(path) and resolved in FALLBACKS:  # alias target absent: try the fallback sink name
+        alt = os.path.join(game_dir, FALLBACKS[resolved])
+        if os.sep not in resolved and os.path.isfile(alt):
+            resolved, path = FALLBACKS[resolved], alt
     if not os.path.isfile(path):
         print("missing: %s" % name)
         return 2

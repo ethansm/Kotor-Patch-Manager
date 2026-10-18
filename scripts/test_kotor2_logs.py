@@ -140,6 +140,63 @@ class Routing(Tmp):
         self.assertEqual(t.splitlines(), sorted(t.splitlines()[:-2]) + t.splitlines()[-2:])
 
 
+class EnemyStrip(Tmp):
+    FIXTURE = HERE / "testdata" / "enemy_strip" / "enemy-effects-strip_log.txt"
+
+    def argv(self, name, text="x\n"):
+        self.w(name, text)
+        return K.route(name, self.g)
+
+    def test_route_primary_and_fallback_names(self):
+        for n in ("enemy-effects-strip_log.txt", "enemystrip_log.txt"):
+            a = self.argv(n)
+            self.assertTrue(a[1].endswith("scripts/enemy_strip_log_check.py"), n)
+            self.assertEqual(a[2], os.path.join(self.g, n))
+            self.assertEqual(K.kind_of(a[2]), "enemystrip", n)
+            self.assertEqual(K.parser_label(a[2]), "enemy_strip_log_check", n)
+            self.assertTrue(K.is_live_log(n), n)
+
+    def test_aliases_point_at_primary_log(self):
+        self.assertEqual(K.ALIASES["enemy-effects-strip"], "enemy-effects-strip_log.txt")
+        self.assertEqual(K.ALIASES["enemystrip"], "enemy-effects-strip_log.txt")
+
+    def test_rotated_copy_is_not_live(self):
+        # name ends in .1, so the live-log suffix test fails first; the archive-mark path is covered by the next line
+        self.assertFalse(K.is_live_log("enemy-effects-strip_log.txt.1"))
+        self.assertFalse(K.is_live_log("enemy-effects-strip_log.prev1.txt"))
+        self.assertFalse(K.is_live_log("enemystrip_log.old.txt"))
+
+    def test_alias_resolves_to_fallback_file_when_only_it_exists(self):
+        import subprocess
+        shutil.copyfile(self.FIXTURE, os.path.join(self.g, "enemystrip_log.txt"))
+        for n in ("enemystrip", "enemy-effects-strip"):
+            r = subprocess.run([sys.executable, str(HERE / "kotor2_logs.py"), "check", n, "--game-dir", self.g],
+                               capture_output=True, text=True)
+            self.assertEqual(r.returncode, 0, (n, r.stdout, r.stderr))
+            self.assertTrue(r.stdout.startswith("ENEMY-STRIP lines=23 "), r.stdout)
+
+    def test_alias_check_prints_block_without_traceback(self):
+        import subprocess
+        shutil.copyfile(self.FIXTURE, os.path.join(self.g, "enemy-effects-strip_log.txt"))
+        r = subprocess.run([sys.executable, str(HERE / "kotor2_logs.py"), "check", "enemystrip", "--game-dir", self.g],
+                           capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertNotIn("Traceback", r.stderr)
+        self.assertTrue(r.stdout.startswith("ENEMY-STRIP lines=23 "), r.stdout)
+        self.assertIn("ES-P0b facts", r.stdout)
+
+    def test_check_new_passthrough_and_bookmark(self):
+        import subprocess
+        shutil.copyfile(self.FIXTURE, os.path.join(self.g, "enemy-effects-strip_log.txt"))
+        cmd = [sys.executable, str(HERE / "kotor2_logs.py"), "check", "enemy-effects-strip", "--game-dir", self.g,
+               "--new", "--state", os.path.join(self.g, "bm.json")]
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("new=L1-L23", r.stdout)
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        self.assertEqual(r.stdout.strip(), "ENEMY-STRIP new=none (no lines since last check)")
+
+
 class Status(Tmp):
     def run_status(self, hours=24):
         buf = io.StringIO()
