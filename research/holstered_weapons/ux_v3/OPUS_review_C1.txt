@@ -1,0 +1,60 @@
+OPUS review C1: commit d3e97cd6 (holster 0.2.0-dev, place_mode=drawgate). Reviewer: independent Opus, read-only. Date 10-18.
+Scope: Holster.cpp diff, HolsterDrawGate.h, holster_drawgate_test.cpp, ini/code_patches diff; HolsterHand.h, mountPose, previewPlace/previewProbe read.
+Test: holster_drawgate_test.cpp built in scratch with g++ -> "76 checks, 0 failed".
+Live log aggregate (first-40 PLACENODE, repoint run): node names pelvis_g (w_ only), headhook, GoggleHook, camerahook. No rhand/lhand rows (expected under repoint).
+H = patch_manager_mods/holster_src/Holster.cpp (HEAD line numbers).
+
+======================================================================
+BLOCKING
+======================================================================
+B1. Drawgate accepts EVERY Gob attached to a node named rhand/lhand, not only weapons. H:489 nodeIsTarget -> hs::nodeAccepted (HolsterDrawGate.h:43-47);
+    the only other filter is place_gobvt (H:880), blank by default (holster.ini:70). Under repoint the target set was implicitly "attached by
+    FUN_007637E0" (the patched literal lives only there). Now anything the engine hangs on a hand hook is moved to mountPose(bone)+place offsets
+    while [owner+0x138]==0:
+    - Menu 3D previews NOT registered by holster-editor (equip3d/char/party-select bodies; editor=0; holster-editor not installed). PREVIEWNODE
+      shows their weapons sit on rhand/lhand; their [parent+0x1D8] is unverified (test fixtures use owner=0). Nonzero owner with +0x138==0 =>
+      preview weapons jump to the hip (behaviour change vs today, where they stay in hand). Owner 0 => DRAWGATE WARN per cache entry (H:885-893).
+    - Any non-weapon hand attachment out of combat (held props, hand-hooked VFX) gets the CatUnknown/global placement. Exposure unverified,
+      but nothing in the code rules it out and drawgate is the default mode.
+    Fix: in drawgate also require a weapon Gob: ent->mname starts "w_" (already cached, H:842-846) and/or handLookup(g_handRing,g) != HandNone
+    (recorded only by the 0x7637E0 hand hooks H:511). Ring-only is fail-safe (weapon stays in hand) but drops weapons after ring eviction, so
+    prefer "w_" + the ring as a log-only cross-check. Log the first refusal per gob as PLACEREFUSE reason=notweapon.
+
+B2. Left hand is still resolved from g_handRing only, although in drawgate the node name is authoritative. H:833 and H:852:
+    ent->left = resolveLeft(prev, handLookup(g_handRing, g)); a new entry with HandNone gets left=false. Failure scenarios:
+    (a) gobs never recorded in the ring (all menu-preview weapons, see B1) on lhand => RIGHT-hand resolve (no mirror, no left_extra_rot,
+        right bone) applied to the left weapon: both weapons overlap at the right hip;
+    (b) in world, ring (128 FIFO by first attach, HolsterHand.h:16-46) evicted AND the placement entry evicted (cache is shared with headhook/
+        GoggleHook/... entries, H:822-850) => a dual-wielder's left weapon re-resolves as right.
+    Repoint had no other source (both hands on pelvis_g); drawgate has one for free. Fix: in drawgate set left = ieq(ni.name,"lhand") at entry
+    creation (store it; ni is in scope at H:840) and skip the ring override at H:833 (keep the ring for HANDMAP/cross-check logging).
+    Add a pure helper + test (handFromNode(drawgate, name, ringLookup, prev)).
+
+======================================================================
+NON-BLOCKING (verified unless marked)
+======================================================================
+1. Owner/drawn decision (claim 1): CONFIRMED. par=[beh+0x14], owner=[par+0x1D8], combat=[owner+0x138] via rdU32/rdU32Ok (saferead); combatOff 0
+   (GOG table K2Addr.h:587, or no table: K2Addr.h:639 returns 0) => readable=false => return before any write => hand. Any non-zero = drawn.
+2. Cache invalidation (claim 2): CONFIRMED safe. Only hs::Resolved is cached; the hip pose is recomputed every frame by mountPose (H:911), so no
+   stale hip pose can be served. ent->seq=-1 on flip is harmless (resolveFull does not depend on gate state); it only costs one re-resolve.
+3. Nothing before the gate mutates gob+0xA4 (claim 6): CONFIRMED. handMapLog/previewProbe/camNodeOnce only log (camFind calls FindPart, no write);
+   previewPlace writes only registered previews and then returns. The early return at H:895 leaves the engine's hand pose intact.
+4. Base frame (claim 4): code path equivalent. Old repoint default: base = engine copy of the pelvis_g attach node = node vtbl+0xC on that node;
+   new: mountPose(pelvis_g) = FindPart("pelvis_g") + the same vtbl+0xC slot (slot-checked, H:651-683), same frame. Per-category place_bone_*
+   handling unchanged (old branch already used mountPose when mountBone != bone_name). Left mirror/left_extra_rot are composed on base, not the
+   hand node, so unchanged IF ent->left is right (B2). UNVERIFIED live: hs::poseBaseEqual exists and is tested but has no runtime caller; add a
+   one-shot BASECHK log in repoint mode (compare `in` vs mountPose(g_boneName)) to prove the old tuning keeps its look before dropping repoint.
+5. Custom bone_name (not in kBones): drawgate refuses PrNoMount every frame (weapon stays in hand); repoint placed it on the node. Documented in
+   the code comment, not in holster.ini:32. Mention it there.
+6. previewPlace / editor (claim 5): unaffected (runs before the gate, always mountPose, effLeft from the registry). applyBoneTest returns early
+   in drawgate (H:1258) so no bytes are patched; g_boneLeft still gates lhand as a target (=0 keeps the left weapon in hand, same meaning).
+7. Crash risk (claim 7): none new found. All reads saferead; mountPose's engine calls are slot-checked as before. Per-frame mountPose cost now
+   applies to every placed weapon (cached FindPart, one pose call): fine.
+8. g_flourishOpen is a single global bool (H:61). C2 must make it per creature, or one flourish draws every creature's weapons.
+9. WARN path (gateLog H:785-788) bypasses rate limiting/max_lines; it fires once per cache entry creation, and the 128-entry cache churns with
+   non-target nodes, so on GOG/owner-0 bodies it can repeat. Rate-limit by owner/gob (SeenSet) or count + summary.
+10. holster.ini:30 "~8 s after combat ends they snap back" matches G2 (8000 ms timer); no stow animation (known, plan-level).
+11. KP log line H:1294 "PLACEMODE ... active=%d" prints g_boneTest only; fine. Version strings bumped consistently (manifest/ini/log).
+
+DECISION: FIX-FIRST (B1 weapon-only target filter, B2 hand from node name; both small and host-testable; then queue a play row for equip-screen
+previews + dual-wield + combat enter/exit).

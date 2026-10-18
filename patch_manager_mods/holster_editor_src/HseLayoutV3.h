@@ -14,7 +14,8 @@
 //   preview = MUI_PANE_PREVIEW (the area above the shrunken description). The inspector is at most kInspWantW wide,
 //             left aligned at preview.x + 4.
 //   hint    = optional description rect (w <= 0 or h <= 0 means none): the two hint lines (kV3HintMax = 18 px high where space allows) go inside it. Without it they
-//             are stacked under the mirrored note inside `preview`.
+//             are stacked under the mirrored note inside `preview`. The holster editor passes NO hint rect: the shrunken description pane
+//             under the split belongs to mod-config (its hover text), so a label over it would cover that text.
 // Documented minimum panes (everything has positive size and nothing overlaps): column 140 x 180, view 160 x 150,
 // preview 170 x 200 (with or without the hint rect). Below the minimum the layout degrades
 // by shrinking row heights to their floors, then by clipping each box to its own pane: widths and heights never go
@@ -268,5 +269,39 @@ inline int pageBoxesV3(const PageLayoutV3& L, editkit::Box* out) {
     for (int i = 0; i < kV3Hints; ++i) out[n++] = L.hint[i];
     return n;
 }
+
+// ---- adapters and item table (HW-UX3 Wave B) ----
+// The editor holds its rects as hse::HseRect, K2MuiRect (mod-config) and editkit::Box; all three are {x, y, w, h} ints. These convert in and out so the
+// caller never copies field by field (any struct with int x, y, w, h members works).
+template <class R> inline editkit::Box boxOf(const R& r) { return editkit::Box{r.x, r.y, r.w, r.h}; }
+template <class R> inline R rectOf(const editkit::Box& b) { R r; r.x = b.x; r.y = b.y; r.w = b.w; r.h = b.h; return r; }
+
+// Index of each widget in pageBoxesV3 order. The editor's item table is indexed the same way (hse_layout_v3_test pins every index against pageBoxesV3).
+enum PageIdxV3 {
+    PI_MEMBER_PREV = 0, PI_MEMBER_NAME = 1, PI_MEMBER_NEXT = 2,
+    PI_CAP_WEAPON = 3, PI_CAP_BONE = 4, PI_CAP_SCOPE = 5,
+    PI_WEAPON = 6,        // + hand (2)
+    PI_BONE = 8,          // + bone (5)
+    PI_SCOPE = 13,        // + scope (3)
+    PI_SAVE = 16, PI_REVERT = 17, PI_STATUS = 18,
+    PI_MODE = 19,         // + mode (4)
+    PI_VIEW_RESET = 23, PI_VIEW_FLIP = 24, PI_VIEW = 25,
+    PI_STANCE = 26,       // + stance (5)
+    PI_LEGEND = 31,
+    PI_GROUP = 32,        // + group * 2 = label, + 1 = reset
+    PI_ROW = 36,          // + row * 5 = name, +1 track, +2 thumb, +3 value, +4 reset
+    PI_NOTE = 66,
+    PI_HINT = 67          // + hint (2)
+};
+constexpr int kRowStride = 5;   // boxes per inspector row (name, track, thumb, value, reset)
+static_assert(PI_HINT + kV3Hints == kPageItemsV3, "the PageIdxV3 table must cover exactly kPageItemsV3 boxes");
+static_assert(PI_ROW + kV3Rows * kRowStride == PI_NOTE, "inspector rows end at the note");
+
+// The slider wedge (the teal fill behind each track) is a sixth item per row beside the 69 boxes: its rect is the track rect cut to the thumb fraction
+// (SliderArt.h sliderWedgeWidth). The page therefore holds kPageItemsV3 + kV3Rows items; the consumer cap (HseView.h kPageItemCap) must hold them.
+constexpr int kPageItemsV3Total = kPageItemsV3 + kV3Rows;
+
+// SetDescSplit(page, kDescSplitPermille): the inspector gets the top 85% of the description pane (mod-config clamps the value to 600..850).
+constexpr int kDescSplitPermille = 850;
 
 }  // namespace hse

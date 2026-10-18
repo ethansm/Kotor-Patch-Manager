@@ -1,6 +1,7 @@
 // T1 host tests for HseLayoutV3.h (holster editor page layout v3, pure; HW-UX3 L0c, doc 20).
 // Build/run: python3 scripts/run_tests.py hse_layout_v3
 #include "HseLayoutV3.h"
+#include "HseView.h"   // kPageItemCap, HseRect
 #include "check.h"
 #include <cmath>
 #include <algorithm>
@@ -278,8 +279,56 @@ static void testHelpers() {
     KT_CHECK(same(c, Box{15, 15, 5, 5}));
 }
 
+struct RectA { int x, y, w, h; };
+struct RectI32 { int32_t x, y, w, h; };   // K2MuiRect shape
+
+// Wave B: the rect adapters (HseRect / K2MuiRect / Box are all {x, y, w, h}) and the item index table of the editor.
+static void testAdaptersAndIndex() {
+    RectA a = {1, 2, 3, 4};
+    KT_CHECK(same(boxOf(a), Box{1, 2, 3, 4}));
+    RectA r = rectOf<RectA>(Box{5, 6, 7, 8});
+    KT_CHECK(r.x == 5 && r.y == 6 && r.w == 7 && r.h == 8);
+    RectI32 m = rectOf<RectI32>(Box{-9, 10, 0, 12});
+    KT_CHECK(m.x == -9 && m.y == 10 && m.w == 0 && m.h == 12);
+    KT_CHECK(same(boxOf(m), Box{-9, 10, 0, 12}));
+    HseRect hr = rectOf<HseRect>(Box{11, 12, 13, 14});
+    KT_CHECK(hr.x == 11 && hr.y == 12 && hr.w == 13 && hr.h == 14 && same(boxOf(hr), Box{11, 12, 13, 14}));
+
+    // every index of the table names the matching box of pageBoxesV3 (the editor's item table relies on this order)
+    Geom g = geomFor(3440, 1440);
+    PageLayoutV3 L = pageLayoutV3(g.column, g.view, g.preview, Box{0, 0, 0, 0}, nullptr);
+    Box all[kPageItemsV3];
+    KT_CHECK_EQ(pageBoxesV3(L, all), kPageItemsV3);
+    KT_CHECK(same(all[PI_MEMBER_PREV], L.memberPrev) && same(all[PI_MEMBER_NAME], L.memberName) && same(all[PI_MEMBER_NEXT], L.memberNext));
+    KT_CHECK(same(all[PI_CAP_WEAPON], L.capWeapon) && same(all[PI_CAP_BONE], L.capBone) && same(all[PI_CAP_SCOPE], L.capScope));
+    for (int i = 0; i < kV3Weapons; ++i) KT_CHECK(same(all[PI_WEAPON + i], L.weapon[i]));
+    for (int i = 0; i < kV3Bones; ++i) KT_CHECK(same(all[PI_BONE + i], L.bone[i]));
+    for (int i = 0; i < kV3Scopes; ++i) KT_CHECK(same(all[PI_SCOPE + i], L.scope[i]));
+    KT_CHECK(same(all[PI_SAVE], L.save) && same(all[PI_REVERT], L.revert) && same(all[PI_STATUS], L.status));
+    for (int i = 0; i < kV3Modes; ++i) KT_CHECK(same(all[PI_MODE + i], L.modeBtn[i]));
+    KT_CHECK(same(all[PI_VIEW_RESET], L.viewReset) && same(all[PI_VIEW_FLIP], L.viewFlip) && same(all[PI_VIEW], L.view));
+    for (int i = 0; i < kV3Stances; ++i) KT_CHECK(same(all[PI_STANCE + i], L.stance[i]));
+    KT_CHECK(same(all[PI_LEGEND], L.legend));
+    for (int gI = 0; gI < kV3Groups; ++gI) {
+        KT_CHECK(same(all[PI_GROUP + gI * 2], L.groupLabel[gI]));
+        KT_CHECK(same(all[PI_GROUP + gI * 2 + 1], L.groupReset[gI]));
+    }
+    for (int rI = 0; rI < kV3Rows; ++rI) {
+        const int b = PI_ROW + rI * kRowStride;
+        KT_CHECK(same(all[b], L.rows[rI].name) && same(all[b + 1], L.rows[rI].track) && same(all[b + 2], L.rows[rI].thumb));
+        KT_CHECK(same(all[b + 3], L.rows[rI].value) && same(all[b + 4], L.rows[rI].reset));
+    }
+    KT_CHECK(same(all[PI_NOTE], L.note));
+    for (int i = 0; i < kV3Hints; ++i) KT_CHECK(same(all[PI_HINT + i], L.hint[i]));
+
+    // the page holds the 69 boxes plus one wedge per slider row, inside the consumer cap
+    KT_CHECK_EQ(kPageItemsV3Total, 75);
+    KT_CHECK(kPageItemsV3Total <= kPageItemCap);
+}
+
 int main() {
     testHelpers();
+    testAdaptersAndIndex();
     testGeometries();
     testPinned3440();
     testViewVsPreview();

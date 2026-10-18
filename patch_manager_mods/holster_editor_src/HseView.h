@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 namespace hse {
 
@@ -14,8 +15,9 @@ struct View {
     float panZ;
 };
 
-constexpr float kZoomMin = 0.8f;
+constexpr float kZoomMin = 0.4f;   // HW-UX3: low enough to show the whole body (0.8 before)
 constexpr float kZoomMax = 4.0f;
+constexpr float kZoomFit = 0.6f;   // default "fit" zoom (a starting guess, tuned in play through ini view_zoom); Reset view returns to the configured value
 constexpr float kSpinDegPerPx = 0.5f;
 constexpr float kZoomStep = 1.25f;
 
@@ -33,9 +35,9 @@ inline float spin(float yaw, float dxPx) {
     return wrapYaw(yaw + dxPx * kSpinDegPerPx);
 }
 
-// [0.8, 4.0]; NaN -> 2.2f; +-inf clamp to the range ends.
+// [0.4, 4.0]; NaN -> kZoomFit; +-inf clamp to the range ends.
 inline float clampZoom(float z) {
-    if (isnan(z)) return 2.2f;
+    if (isnan(z)) return kZoomFit;
     if (z < kZoomMin) return kZoomMin;
     if (z > kZoomMax) return kZoomMax;
     return z;
@@ -790,7 +792,7 @@ enum InspRow { IR_SLIDE = 0, IR_DEPTH, IR_HEIGHT, IR_TILT, IR_ROLL, IR_TURN, IR_
 constexpr int kInspItems = 2 * IR_COUNT;     // page items: one scrub button + one reset button per row
 constexpr int kPageItemsBase = 26;           // items cbBuild creates before the inspector: view, status, 2 name/picker rows, hands, stance, emote, play,
                                              // bone, scope, save, revert, reset scope, done, reset/flip view, 4 mode buttons
-constexpr int kPageItemCap = 40;             // mod-config mui::kMaxItems (0.1.1+): AddButton/AddLabel/AddCustom return -1 beyond it
+constexpr int kPageItemCap = 80;             // mod-config mui::kMaxItems (0.1.3+; 40 before): AddButton/AddLabel/AddCustom return -1 beyond it
 static_assert(kPageItemsBase + kInspItems <= kPageItemCap, "the editor page (base items + 12 inspector items) must fit mod-config's per-page item cap");
 constexpr int kStripRowsBase = 9;            // weapon mode strip rows without the inspector: name, hands, bone, scope, save/revert, reset scope/done, view, 2 mode rows
 constexpr int kStripRowsInsp = kStripRowsBase + IR_COUNT;
@@ -1035,6 +1037,97 @@ inline void idleStatusText(char* out, int cap, bool dirty, bool mirroredLeft) {
     if (!out || cap <= 0) return;
     snprintf(out, cap, "%s%s%s", dirty ? "* " : "", mirroredLeft ? "Left: mirrored from right . " : "", helpLine());
     out[cap - 1] = '\0';
+}
+
+// ---- HW-UX3 page helpers (direct selector buttons, slider rows with a thumb and a value outside) ----
+
+// The editor's five mounting bones in CycleBone order (HolsterTune.h kBones, 1-based there): provider id and button label.
+constexpr int kEditBones = 5;
+inline const char* boneId(int i) {
+    static const char* const kIds[kEditBones] = {"torsoUpr_g", "torso_g", "pelvis_g", "rthigh_g", "lthigh_g"};
+    return (i >= 0 && i < kEditBones) ? kIds[i] : "";
+}
+inline const char* boneLabel(int i) {
+    static const char* const kLabels[kEditBones] = {"Upper back", "Back", "Pelvis", "R hip", "L hip"};
+    return (i >= 0 && i < kEditBones) ? kLabels[i] : "";
+}
+// 0..4 for a provider bone name (ASCII case-insensitive), -1 for null, empty or any other name ("custom").
+inline int boneIndexOf(const char* name) {
+    if (!name || !name[0]) return -1;
+    for (int i = 0; i < kEditBones; ++i) {
+        const char* a = name;
+        const char* b = boneId(i);
+        while (*a && *b && tolower(static_cast<unsigned char>(*a)) == tolower(static_cast<unsigned char>(*b))) { ++a; ++b; }
+        if (!*a && !*b) return i;
+    }
+    return -1;
+}
+
+// Scope button text: 0 "This weapon", 1 "All <type plural>" (or "All of type" when the type is unknown), 2 "This body"; any other scope reads as 0.
+inline void scopeSegText(char* out, int cap, int scope, const char* type) {
+    if (!out || cap <= 0) return;
+    if (scope == 1) {
+        const char* p = categoryPlural(type);
+        if (!strcmp(p, "of this type")) snprintf(out, cap, "All of type");
+        else snprintf(out, cap, "All %s", p);
+    } else if (scope == 2) {
+        snprintf(out, cap, "This body");
+    } else {
+        snprintf(out, cap, "This weapon");
+    }
+    out[cap - 1] = '\0';
+}
+
+// The slider window of a row: +-30 cm for the offsets, +-180 deg for the rotations (the same window a scrub allows around the open value).
+inline float inspWindow(int row) { return inspIsRot(row) ? kScrubWindowRot : kScrubWindowOff; }
+
+// Value text shown OUTSIDE the track: "-11.7 cm" / "94.0 deg"; "n/a" for a disabled row or a value that is not finite. Never "-0.0".
+inline void inspValueText(char* out, int cap, int row, float value, bool enabled) {
+    if (!out || cap <= 0) return;
+    if (!enabled || row < 0 || row >= IR_COUNT || !finiteF(value)) {
+        snprintf(out, cap, "n/a");
+    } else {
+        float shown = inspIsRot(row) ? value : value * 100.0f;
+        shown = roundf(shown * 10.0f) / 10.0f;
+        if (shown == 0.0f) shown = 0.0f;   // folds -0.0 into +0.0
+        snprintf(out, cap, "%.1f %s", static_cast<double>(shown), inspUnit(row));
+    }
+    out[cap - 1] = '\0';
+}
+
+// Thumb position of a value on its track, 0..1: the window is [-W, +W] around zero, a value outside it pins at an end. 0.5 for a bad row or a
+// value that is not finite.
+inline float inspThumbFrac(int row, float value) {
+    if (row < 0 || row >= IR_COUNT || !finiteF(value)) return 0.5f;
+    const float W = inspWindow(row);
+    float f = (value + W) / (2.0f * W);
+    if (f < 0.0f) f = 0.0f;
+    if (f > 1.0f) f = 1.0f;
+    return f;
+}
+
+// A press at pixel x on a track [trackX, trackX + trackW] -> the row value there (the click-to-jump target). The ends return -W / +W exactly;
+// NaN for a bad row or an empty track.
+inline float inspTrackValue(int row, int px, int trackX, int trackW) {
+    if (row < 0 || row >= IR_COUNT || trackW <= 0) return NAN;
+    const float W = inspWindow(row);
+    const int d = px - trackX;
+    if (d <= 0) return -W;
+    if (d >= trackW) return W;
+    return -W + (static_cast<float>(d) / static_cast<float>(trackW)) * (2.0f * W);
+}
+
+// One short hint line (ASCII, under 64 characters) for the hovered slider row.
+inline const char* inspHint(int r) {
+    static const char* const kHints[IR_COUNT] = {
+        "Slide: side-to-side offset on the bone. 1 px = 1 mm.",
+        "Depth: forward (+) / back (-) along the bone. 1 px = 1 mm.",
+        "Height: up (+) / down (-) on the bone. 1 px = 1 mm.",
+        "Tilt: rotation about the side axis. 1 px = 0.5 deg.",
+        "Roll: rotation about the forward axis. 1 px = 0.5 deg.",
+        "Turn: rotation about the up axis. 1 px = 0.5 deg.",
+    };
+    return (r >= 0 && r < IR_COUNT) ? kHints[r] : "";
 }
 
 } // namespace hse

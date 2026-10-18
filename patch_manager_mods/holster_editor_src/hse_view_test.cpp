@@ -35,13 +35,17 @@ static void testYawAndSpin() {
 }
 
 static void testZoomAndView() {
-    KT_CHECK(closeF(hse::clampZoom(0.5f), 0.8f));
+    KT_CHECK(closeF(hse::kZoomMin, 0.4f));   // HW-UX3: the whole body fits at the minimum
+    KT_CHECK(closeF(hse::kZoomFit, 0.6f));
+    KT_CHECK(closeF(hse::clampZoom(0.5f), 0.5f));
+    KT_CHECK(closeF(hse::clampZoom(0.3f), 0.4f));
     KT_CHECK(closeF(hse::clampZoom(9.0f), 4.0f));
     KT_CHECK(closeF(hse::zoomIn(3.5f), 4.0f));
-    KT_CHECK(closeF(hse::zoomOut(0.9f), 0.8f));
-    KT_CHECK(closeF(hse::clampZoom(std::nanf("")), 2.2f));
+    KT_CHECK(closeF(hse::zoomOut(0.45f), 0.4f));
+    KT_CHECK(closeF(hse::zoomOut(0.9f), 0.9f / hse::kZoomStep));
+    KT_CHECK(closeF(hse::clampZoom(std::nanf("")), hse::kZoomFit));
     KT_CHECK(closeF(hse::clampZoom(INFINITY), 4.0f));
-    KT_CHECK(closeF(hse::clampZoom(-INFINITY), 0.8f));
+    KT_CHECK(closeF(hse::clampZoom(-INFINITY), 0.4f));
     KT_CHECK(closeF(hse::makeView(0.0f, 2.2f, INFINITY).panZ, 1.0f));
     KT_CHECK(closeF(hse::makeView(0.0f, 2.2f, -INFINITY).panZ, -1.0f));
     KT_CHECK(closeF(hse::panStep(INFINITY, 1), 1.0f));
@@ -973,11 +977,11 @@ static void testInspRowBasics() {
 }
 
 static void testInspItemBudget() {
-    // 26 items before the inspector + 12 = 38 of mod-config's 40 (kMaxItems 40 in mod-config 0.1.1+)
+    // legacy page: 26 items before the inspector + 12 = 38; the cap is mod-config's kMaxItems (80 in 0.1.3+)
     KT_CHECK_EQ(hse::kInspItems, 12);
     KT_CHECK_EQ(hse::kPageItemsBase + hse::kInspItems, 38);
     KT_CHECK(hse::kPageItemsBase + hse::kInspItems <= hse::kPageItemCap);
-    KT_CHECK_EQ(hse::kPageItemCap, 40);
+    KT_CHECK_EQ(hse::kPageItemCap, 80);   // mod-config kMaxItems 0.1.3+ (the v3 page needs 75: HseLayoutV3.h kPageItemsV3Total)
     KT_CHECK_EQ(hse::kStripRowsInsp, 15);
 }
 
@@ -1455,6 +1459,102 @@ static void testLeftMirroredStatus() {
     hse::idleStatusText(nullptr, 10, true, true);
 }
 
+// ---- HW-UX3 page helpers ----
+static void testUx3Bones() {
+    KT_CHECK_EQ(hse::kEditBones, 5);
+    KT_CHECK(!strcmp(hse::boneId(0), "torsoUpr_g") && !strcmp(hse::boneId(1), "torso_g") && !strcmp(hse::boneId(2), "pelvis_g"));
+    KT_CHECK(!strcmp(hse::boneId(3), "rthigh_g") && !strcmp(hse::boneId(4), "lthigh_g"));
+    KT_CHECK(!strcmp(hse::boneLabel(0), "Upper back") && !strcmp(hse::boneLabel(1), "Back") && !strcmp(hse::boneLabel(2), "Pelvis"));
+    KT_CHECK(!strcmp(hse::boneLabel(3), "R hip") && !strcmp(hse::boneLabel(4), "L hip"));
+    KT_CHECK(!strcmp(hse::boneId(-1), "") && !strcmp(hse::boneId(5), "") && !strcmp(hse::boneLabel(5), ""));
+    for (int i = 0; i < hse::kEditBones; ++i) KT_CHECK_EQ(hse::boneIndexOf(hse::boneId(i)), i);
+    KT_CHECK_EQ(hse::boneIndexOf("TORSOUPR_G"), 0);   // case-insensitive
+    KT_CHECK_EQ(hse::boneIndexOf("Pelvis_G"), 2);
+    KT_CHECK_EQ(hse::boneIndexOf("custom"), -1);
+    KT_CHECK_EQ(hse::boneIndexOf(""), -1);
+    KT_CHECK_EQ(hse::boneIndexOf(nullptr), -1);
+    KT_CHECK_EQ(hse::boneIndexOf("torso_gx"), -1);    // prefix is not a match
+    KT_CHECK_EQ(hse::boneIndexOf("torso"), -1);
+    // the click loop: CycleBone steps the 5-bone ring one way, so any target is reached in at most 4 steps and 5 always suffice
+    for (int from = 0; from < hse::kEditBones; ++from)
+        for (int want = 0; want < hse::kEditBones; ++want) KT_CHECK(((want - from + hse::kEditBones) % hse::kEditBones) < hse::kEditBones);
+}
+
+static void testUx3ScopeSeg() {
+    char t[48];
+    hse::scopeSegText(t, sizeof t, 0, "rifle"); KT_CHECK(!strcmp(t, "This weapon"));
+    hse::scopeSegText(t, sizeof t, 1, "rifle"); KT_CHECK(!strcmp(t, "All rifles"));
+    hse::scopeSegText(t, sizeof t, 1, "lightsaber"); KT_CHECK(!strcmp(t, "All lightsabers"));
+    hse::scopeSegText(t, sizeof t, 1, ""); KT_CHECK(!strcmp(t, "All of type"));
+    hse::scopeSegText(t, sizeof t, 1, "mystery"); KT_CHECK(!strcmp(t, "All of type"));
+    hse::scopeSegText(t, sizeof t, 2, "rifle"); KT_CHECK(!strcmp(t, "This body"));
+    hse::scopeSegText(t, sizeof t, 7, "rifle"); KT_CHECK(!strcmp(t, "This weapon"));
+    char tiny[6];
+    hse::scopeSegText(tiny, sizeof tiny, 0, "rifle"); KT_CHECK(strlen(tiny) == 5 && tiny[5] == '\0');
+    hse::scopeSegText(nullptr, 4, 0, "x"); hse::scopeSegText(t, 0, 0, "x");   // no-ops
+}
+
+static void testUx3ValueText() {
+    char t[32];
+    hse::inspValueText(t, sizeof t, hse::IR_DEPTH, -0.117f, true); KT_CHECK(!strcmp(t, "-11.7 cm"));
+    hse::inspValueText(t, sizeof t, hse::IR_HEIGHT, 0.22f, true); KT_CHECK(!strcmp(t, "22.0 cm"));
+    hse::inspValueText(t, sizeof t, hse::IR_SLIDE, 0.011f, true); KT_CHECK(!strcmp(t, "1.1 cm"));
+    hse::inspValueText(t, sizeof t, hse::IR_TILT, -145.5f, true); KT_CHECK(!strcmp(t, "-145.5 deg"));
+    hse::inspValueText(t, sizeof t, hse::IR_TURN, 94.0f, true); KT_CHECK(!strcmp(t, "94.0 deg"));
+    hse::inspValueText(t, sizeof t, hse::IR_ROLL, -0.0f, true); KT_CHECK(!strcmp(t, "0.0 deg"));          // never "-0.0"
+    hse::inspValueText(t, sizeof t, hse::IR_SLIDE, -0.0004f, true); KT_CHECK(!strcmp(t, "0.0 cm"));
+    hse::inspValueText(t, sizeof t, hse::IR_TILT, 30.0f, false); KT_CHECK(!strcmp(t, "n/a"));              // disabled (body scope)
+    hse::inspValueText(t, sizeof t, hse::IR_TILT, std::nanf(""), true); KT_CHECK(!strcmp(t, "n/a"));
+    hse::inspValueText(t, sizeof t, hse::IR_TILT, INFINITY, true); KT_CHECK(!strcmp(t, "n/a"));
+    hse::inspValueText(t, sizeof t, 9, 1.0f, true); KT_CHECK(!strcmp(t, "n/a"));                           // bad row
+    char tiny[5];
+    hse::inspValueText(tiny, sizeof tiny, hse::IR_DEPTH, -0.117f, true); KT_CHECK(strlen(tiny) == 4 && tiny[4] == '\0');
+    hse::inspValueText(nullptr, 8, 0, 0.0f, true); hse::inspValueText(t, 0, 0, 0.0f, true);   // no-ops
+}
+
+static void testUx3ThumbFrac() {
+    KT_CHECK(closeF(hse::inspWindow(hse::IR_SLIDE), 0.30f) && closeF(hse::inspWindow(hse::IR_TURN), 180.0f));
+    KT_CHECK(closeF(hse::inspThumbFrac(hse::IR_DEPTH, 0.0f), 0.5f));
+    KT_CHECK(closeF(hse::inspThumbFrac(hse::IR_DEPTH, -0.30f), 0.0f));
+    KT_CHECK(closeF(hse::inspThumbFrac(hse::IR_DEPTH, 0.30f), 1.0f));
+    KT_CHECK(closeF(hse::inspThumbFrac(hse::IR_DEPTH, 0.15f), 0.75f));
+    KT_CHECK(closeF(hse::inspThumbFrac(hse::IR_HEIGHT, 2.0f), 1.0f));       // beyond the window pins at the end
+    KT_CHECK(closeF(hse::inspThumbFrac(hse::IR_HEIGHT, -2.0f), 0.0f));
+    KT_CHECK(closeF(hse::inspThumbFrac(hse::IR_TILT, -145.5f), (180.0f - 145.5f) / 360.0f));
+    KT_CHECK(closeF(hse::inspThumbFrac(hse::IR_TILT, 720.0f), 1.0f));
+    KT_CHECK(closeF(hse::inspThumbFrac(hse::IR_ROLL, std::nanf("")), 0.5f));
+    KT_CHECK(closeF(hse::inspThumbFrac(hse::IR_ROLL, INFINITY), 0.5f));
+    KT_CHECK(closeF(hse::inspThumbFrac(-1, 0.0f), 0.5f) && closeF(hse::inspThumbFrac(6, 0.0f), 0.5f));
+}
+
+static void testUx3TrackValue() {
+    // track x = 100, w = 300: the ends are exactly -W / +W, the middle is 0, a click outside clamps
+    KT_CHECK(closeF(hse::inspTrackValue(hse::IR_SLIDE, 100, 100, 300), -0.30f));
+    KT_CHECK(closeF(hse::inspTrackValue(hse::IR_SLIDE, 400, 100, 300), 0.30f));
+    KT_CHECK(closeF(hse::inspTrackValue(hse::IR_SLIDE, 250, 100, 300), 0.0f));
+    KT_CHECK(closeF(hse::inspTrackValue(hse::IR_SLIDE, 50, 100, 300), -0.30f));
+    KT_CHECK(closeF(hse::inspTrackValue(hse::IR_SLIDE, 999, 100, 300), 0.30f));
+    KT_CHECK(closeF(hse::inspTrackValue(hse::IR_TURN, 175, 100, 300), -90.0f));
+    KT_CHECK(closeF(hse::inspTrackValue(hse::IR_TURN, 325, 100, 300), 90.0f));
+    KT_CHECK(std::isnan(hse::inspTrackValue(hse::IR_TURN, 175, 100, 0)));     // empty track
+    KT_CHECK(std::isnan(hse::inspTrackValue(7, 175, 100, 300)));              // bad row
+    // round trip: the jump value puts the thumb back where the press was (within a pixel of a 300 px track)
+    for (int px = 100; px <= 400; px += 25) {
+        const float v = hse::inspTrackValue(hse::IR_DEPTH, px, 100, 300);
+        KT_CHECK(fabsf(hse::inspThumbFrac(hse::IR_DEPTH, v) * 300.0f - static_cast<float>(px - 100)) < 0.5f);
+    }
+}
+
+static void testUx3Hints() {
+    for (int r = 0; r < hse::IR_COUNT; ++r) {
+        const char* h = hse::inspHint(r);
+        KT_CHECK(strlen(h) > 10 && strlen(h) < 64);
+        KT_CHECK(!strncmp(h, hse::inspRowName(r), strlen(hse::inspRowName(r))));   // starts with the row name
+        for (const char* c = h; *c; ++c) KT_CHECK(static_cast<unsigned char>(*c) >= 0x20 && static_cast<unsigned char>(*c) < 0x7F);
+    }
+    KT_CHECK(!strcmp(hse::inspHint(-1), "") && !strcmp(hse::inspHint(6), ""));
+}
+
 int main() {
     testYawAndSpin();
     testZoomAndView();
@@ -1504,6 +1604,12 @@ int main() {
     testInspRects();
     testLeftMirroredStatus();
     testCamEngMath();
+    testUx3Bones();
+    testUx3ScopeSeg();
+    testUx3ValueText();
+    testUx3ThumbFrac();
+    testUx3TrackValue();
+    testUx3Hints();
     return kt::Report("hse_view");
 }
 

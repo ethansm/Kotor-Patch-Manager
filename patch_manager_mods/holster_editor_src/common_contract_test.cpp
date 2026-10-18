@@ -26,6 +26,7 @@
 #include "SceneView.h"
 #include "GameAddr.h"
 #include "HseView.h"
+#include "HseLayoutV3.h"
 
 #include <sys/mman.h>
 #include <unistd.h>
@@ -69,6 +70,7 @@ void KPATCH_CALL stubMuiSetRect(uint32_t, int32_t, const K2MuiRect*) {}
 void KPATCH_CALL stubMuiSetDesc(uint32_t, const char*) {}
 int32_t KPATCH_CALL stubMuiPaneRect(void*, int32_t, K2MuiRect*) { return 0; }
 void* KPATCH_CALL stubMuiControl(uint32_t, int32_t) { return nullptr; }
+int32_t KPATCH_CALL stubMuiSetDescSplit(uint32_t, int32_t) { return 1; }
 
 const K2ModConfigApi kCfgTable = { sizeof(K2ModConfigApi), stubCfgRegister, stubCfgUnregister };
 const K2MenuUiApi kMuiTable = { sizeof(K2MenuUiApi), stubMuiNewPage, stubMuiAddButton, stubMuiAddLabel, stubMuiAddCustom,
@@ -223,8 +225,10 @@ int main() {
         HEQ("K2HOLSTER_SRC_WEAPON is 2", K2HOLSTER_SRC_WEAPON, 2);
         HEQ("K2HOLSTER_SRC_BODY is 4", K2HOLSTER_SRC_BODY, 4);
         HCHECK("hse::kSrcMirrorBit does not overlap the src levels or the body bit", (hse::kSrcMirrorBit & (K2HOLSTER_SRC_BODY | 3)) == 0);
-        // U3: the page needs base + 12 inspector items inside mod-config's per-page cap (kMaxItems 40 in 0.1.1+); the editor degrades, never crashes, on a full page.
-        HCHECK("editor page items fit mod-config's 40-item cap", hse::kPageItemsBase + hse::kInspItems <= hse::kPageItemCap);
+        // U3 / HW-UX3: the page needs its items inside mod-config's per-page cap (kMaxItems 80 in 0.1.3+, 40 before); the editor refuses cleanly, never crashes, on a full page.
+        HCHECK("editor page items fit mod-config's 80-item cap", hse::kPageItemsBase + hse::kInspItems <= hse::kPageItemCap);
+        HEQ("consumer item cap is mod-config's kMaxItems 80", hse::kPageItemCap, 80);
+        HCHECK("the v3 page (69 boxes + 6 wedges) fits the cap", hse::kPageItemsV3Total <= hse::kPageItemCap);
 
         // GuiKit input hooks: null under GUIKIT_HOST (the mod must check before calling); the assignment form the mod uses is callable.
         HCHECK("g_gk.lbuttonDown is null under GUIKIT_HOST", guikit::g_gk.lbuttonDown == nullptr);
@@ -306,6 +310,22 @@ int main() {
         menuClient.init(fakekp::api());
         menuClient.poll();
         HCHECK("MenuClient ok() after poll() with k2.menuui v1 provided", menuClient.ok());
+
+        // HW-UX3: the page is built on the description split (SetDescSplit + MUI_PANE_PREVIEW) and refuses cleanly when the provider has none
+        // (an older mod-config also has the 40-item cap). hasDescSplit() is the editor's one capability check.
+        HEQ("MUI_PANE_COLUMN == 0", MUI_PANE_COLUMN, 0);
+        HEQ("MUI_PANE_PREVIEW == 6", MUI_PANE_PREVIEW, 6);
+        HCHECK("MenuClient::hasDescSplit false when SetDescSplit is null (older provider)", !menuClient.hasDescSplit());
+        K2MenuUiApi splitMui = kMuiTable; splitMui.SetDescSplit = stubMuiSetDescSplit;
+        fakekp::reset();
+        fakekp::provide(K2MENUUI_IFACE, K2MENUUI_VERSION, &splitMui);
+        k2mc::MenuClient splitClient;
+        splitClient.init(fakekp::api());
+        splitClient.poll();
+        HCHECK("MenuClient ok() and hasDescSplit() true for a table with SetDescSplit", splitClient.ok() && splitClient.hasDescSplit());
+        HCHECK("SetDescSplit is callable through the client table", splitClient.p->SetDescSplit(1, 850) == 1);
+        HCHECK("the editor's description split is inside mod-config's clamp 600..850", hse::kDescSplitPermille >= 600 && hse::kDescSplitPermille <= 850);
+        HCHECK("the editor asks for the largest split mod-config allows (850)", splitClient.p->SetDescSplit(1, hse::kDescSplitPermille) == 1 && hse::kDescSplitPermille == 850);
     }
 
     // ============================================================
