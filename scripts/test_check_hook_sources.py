@@ -109,6 +109,27 @@ class FileTests(unittest.TestCase):
         self.assertEqual(rep.exit_code(), 1)
 
 
+class AllowlistTests(unittest.TestCase):
+    def check(self, subdir, address, source, n=1):
+        with tempfile.TemporaryDirectory() as d:
+            sub = Path(d) / subdir
+            sub.mkdir(parents=True)
+            p = sub / "kotor2-steam-aspyr.hooks.toml"
+            p.write_text(hooks_toml(*([source] * n), address=address), encoding="utf-8")
+            rep = sc.Reporter(out=None)
+            chs.check_file(p, rep)
+            return [f.sev for f in rep.findings]
+
+    def test_activation_fix_pointer_source_is_allowed(self):
+        self.assertEqual(self.check("activation_fix_src", "0x0040D69E", "esp+0"), [])
+
+    def test_allowlist_is_exact(self):
+        self.assertEqual(self.check("activation_fix_src", "0x0040D69E", "esp+4"), ["FAIL"])      # other source
+        self.assertEqual(self.check("activation_fix_src", "0x0040D69F", "esp+0"), ["FAIL"])      # other address
+        self.assertEqual(self.check("other_src", "0x0040D69E", "esp+0"), ["FAIL"])               # other file
+        self.assertEqual(self.check("activation_fix_src", "0x0040D69E", "esp+0", n=2), ["FAIL"])  # second parameter
+
+
 class RealRepoTests(unittest.TestCase):
     def test_repo_hooks_files_do_not_crash_the_checker(self):
         files = chs.find_hooks_files()

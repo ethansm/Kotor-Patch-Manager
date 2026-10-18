@@ -23,6 +23,11 @@ import _static_common as sc  # noqa: E402
 
 BAD_SOURCE = re.compile(r"^(esp|ebp)\s*[+-]\s*(0x[0-9a-fA-F]+|\d+)$", re.IGNORECASE)
 CHECK = "source"
+# Deliberate address-passing sources (hook comment says the detour receives a POINTER to the pushed args). Keyed by
+# (hooks file path suffix, hook address, 1-based parameter index) -> the exact source string allowed there.
+ALLOWED_ADDRESS_SOURCES = {
+    ("activation_fix_src/kotor2-steam-aspyr.hooks.toml", 0x0040D69E, 1): "esp+0",   # dropSyntheticDeactivate(ptr to hwnd,msg,wParam,lParam)
+}
 
 
 def bad_source(source) -> bool:
@@ -59,6 +64,17 @@ def _addr(hook) -> str:
         return "?"
 
 
+def _allowed(path, hook, idx, src) -> bool:
+    """True when this exact (file, address, parameter, source) is on the deliberate-address allowlist."""
+    try:
+        addr = sc._to_int(hook["address"])
+    except (KeyError, ValueError, TypeError):
+        return False
+    norm = str(path).replace("\\", "/")
+    return any(norm.endswith(f) and addr == a and idx == n and src.strip() == want
+               for (f, a, n), want in ALLOWED_ADDRESS_SOURCES.items())
+
+
 def check_file(path, rep: sc.Reporter) -> None:
     """Add one FAIL per unbracketed stack-relative parameter source in one hooks file to rep."""
     try:
@@ -72,7 +88,7 @@ def check_file(path, rep: sc.Reporter) -> None:
         params = hook.get("parameters", [])
         for i, p in enumerate(params if isinstance(params, list) else [], 1):
             src = p.get("source") if isinstance(p, dict) else None
-            if bad_source(src):
+            if bad_source(src) and not _allowed(path, hook, i, src):
                 rep.fail(CHECK, f'{_rel(path)} hook {_addr(hook)} parameter #{i}: source "{src.strip()}" passes the '
                                 f'ADDRESS, not the value; fix: source = "{fix_for(src)}"')
 
