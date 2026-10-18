@@ -50,3 +50,4 @@ _(none recorded; append Dead Ends & Anti-Patterns and Verification Commands here
 - Prepared swap x3; awaiting GO. Rows HUX-U2, HUX-U3, HW-LH2, ESC2, HUX-C0 (zoom out first).
 - HUX-C0 camera fit still pending (fit_camera.py) -> then U4 markers. Known: U3 inspector squeezes strip rows to ~19 px (check readability); body-scope tilt warns 'no change'.
 - 10-18 02:48 U2+U3+left mirror+Esc fix LIVE x3: holster f2f57f91, holster-editor 63398f9a, mod-config f12da44c; rollback batch_swap_20261018_024840.
+- 10-18 U0c LIVE: holster-editor 0.3.2-dev (649975bb, KPM 220b98d), CAMENG probe; play row CAM1 (no clicks). Rollback: see kpm_hotswap --rollback holster-editor_swap_<latest>. Next: read CAMENG, fix worldToScreen (use engine camera pose, or call MapToScreen), then U4.
