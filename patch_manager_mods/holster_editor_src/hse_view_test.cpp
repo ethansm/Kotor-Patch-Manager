@@ -1273,16 +1273,29 @@ static void testScrubTrackMode() {
     KT_CHECK(st.changed && closeF(st.value, -0.30f, 1e-4f));
     st = runPx(b, -500);                             // past the low end: pinned at -W (soft)
     KT_CHECK(closeF(b.value, -0.30f, 1e-4f) && st.clampSide == -1 && !st.hardLimit);
-    st = runPx(b, 250);                              // and straight back
+    st = runPx(b, 250);                              // the cursor is still 250 px left of the track: the thumb stays pinned (it never detaches)
+    KT_CHECK(!st.changed && closeF(b.value, -0.30f, 1e-4f) && st.clampSide == -1);
+    st = runPx(b, 250);                              // back at the track's low end: still -W
+    KT_CHECK(closeF(b.value, -0.30f, 1e-4f));
+    st = runPx(b, 125);                              // half the track: the thumb is under the cursor again
+    KT_CHECK(st.changed && closeF(st.value, 0.0f, 1e-4f));
+    st = runPx(b, 125);
     KT_CHECK(st.changed && closeF(st.value, 0.30f, 1e-4f));
+    // overshoot the high end, then Shift on the way back: the fine delta still starts from the cursor, not from the pinned end
+    hse::Scrub bs;
+    KT_CHECK(bs.begin(hse::IR_TILT, 0, 0.0f, 360));  // 1 deg/px
+    st = runPx(bs, 300);
+    KT_CHECK(closeF(bs.value, 180.0f, 1e-3f) && st.clampSide == 1);
+    st = runPx(bs, -100, true);                      // 120 px over the end, back 20 deg (Shift) -> 100 deg over: pinned
+    KT_CHECK(!st.changed && closeF(bs.value, 180.0f, 1e-3f));
     // off-track open value: no pin at 0.30, and it returns across the track
     hse::Scrub o;
     KT_CHECK(o.begin(hse::IR_DEPTH, 0, 0.5f, 250));
     KT_CHECK(closeF(o.lo, -0.30f) && closeF(o.hi, 0.5f));
     st = runPx(o, 10);                               // the high end is the open value itself: no pin at 0.30, none beyond 0.5
     KT_CHECK(!st.changed && closeF(o.value, 0.5f, 1e-6f));
-    st = runPx(o, -50);
-    KT_CHECK(st.changed && closeF(st.value, 0.5f - 0.12f, 1e-5f));
+    st = runPx(o, -50);                              // the 10 px overshoot comes back first
+    KT_CHECK(st.changed && closeF(st.value, 0.5f + 0.024f - 0.12f, 1e-5f));
     st = runPx(o, -400);
     KT_CHECK(closeF(o.value, -0.30f, 1e-4f) && st.clampSide == -1);
     hse::Scrub ol;                                   // off-track on the low side

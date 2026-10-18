@@ -1396,7 +1396,7 @@ void updateStatusText(Editor& e) {
     if (!g_menu.ok() || !e.page || e.statusItem < 0) return;
     char raw[100] = {0}, buf[100] = {0};
     if (e.mode == MODE_WEAPON && e.discardArmed && e.discardAction == ACT_RESET_SCOPE && hse::guardArmLive(true, e.discardArmedAt, GetTickCount(), kDiscardWindowMs)) {
-        snprintf(raw, sizeof raw, "Click Reset again to delete this scope's saved overrides.");
+        snprintf(raw, sizeof raw, "Reset? Click again");
     } else if (e.mode == MODE_WEAPON && e.discardArmed && hse::guardArmLive(true, e.discardArmedAt, GetTickCount(), kDiscardWindowMs)) {
         snprintf(raw, sizeof raw, "Unsaved: click again to discard");
     } else if (e.mode == MODE_WEAPON) {

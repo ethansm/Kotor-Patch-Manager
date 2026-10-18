@@ -1,0 +1,74 @@
+OPUS review: holster-editor 0.4.1-dev fix round (commit 373643b8, patch_manager_mods/holster_editor_src)
+Reviewer: Opus, fresh independent review, 2026-10-18. Scope: track-scaled scrub, Reset (scope) button + two-click confirm, layout, indices, versions, logging.
+
+======================================================================
+BLOCKING (found)
+======================================================================
+B1 (FIXED, see below) Track-mode scrub detached from the cursor after any overshoot past a track end.
+   Scrub::step added the per-tick delta to the CLAMPED value. Drag past the end by N px, then back: the thumb moved at once, N px away from the
+   cursor, and stayed off for the rest of the drag. The commit's own test asserted this ("past the low end ... and straight back": cursor 450 px
+   left of the track, value back at +W). At 1280x720 the track is only 36 px wide, so overshooting is almost certain. That breaks claim (1),
+   "the thumb follows the cursor".
+
+No other blocking defects.
+
+======================================================================
+FIXED (in holster_editor_src, uncommitted, not staged)
+======================================================================
+F1 HseView.h Scrub: new member `virt`, the UNCLAMPED cursor value in track mode (perPx > 0). begin() seeds it with the open value. step() adds the
+   delta to virt (bounded to 64 track spans so it stays finite), and value = virt cut to [lo, hi]. Old mode (trackW <= 0) is unchanged.
+   Shift/Ctrl still work on deltas, so a mid-drag toggle never jumps. Header comment updated.
+   hse_view_test.cpp testScrubTrackMode: replaced the overshoot test. The thumb now stays pinned while the cursor is off the track, follows again from
+   the track end (half the track = 0, full = +W), the Shift-after-overshoot case is covered, and the off-track open value expectation
+   (0.5 + 0.024 - 0.12) is corrected.
+   Re-ran: run_tests.py hse_view view_drag hse_layout_v3 common_contract -> 38 passed, 0 failed (hse_view_test, hse_layout_v3_test,
+   view_drag_test, holster_editor common_contract PASS); build_check.py --mod holster_editor_src -> PASS=1 FAIL=0.
+
+======================================================================
+VERIFIED OK
+======================================================================
+- Units and consistency: perPx = 2W/tw. The view thumb centre (HseLayoutV3 buildInspector: tx0 + f*tw - thumbW/2, with f = inspThumbFrac = (v+W)/2W)
+  and inspTrackValue (-W + d/tw*2W) use the same mapping and the same W (inspWindow == kScrubWindow*). The track x/w in e.lay are the same boxes
+  sliderRowAt hit-tests, so they are in cursor space. The thumb stays under the cursor (after F1, also across overshoot). This holds on all 6 rows,
+  rotation rows included (180 deg window). A click-to-jump followed by a drag also starts under the cursor.
+- Clamp: lo = min(-W, open), hi = max(W, open), cut to +-3 m / +-720 deg, and hard-limit flags are correct. trackW is an int (no NaN/inf): <= 0
+  gives old mode, 1..3 counts as 4. dx > trackW clamps. An open value beyond the hard limit snaps to the limit on the first move (old mode did
+  the same, so this is existing behaviour).
+- Reset confirm: guardConfirm does not look at dirty, so the first click on a CLEAN edit arms it. A second click within 2000 ms (wrap-safe) runs
+  it. If another action armed in between, Reset only re-arms (armedSame needs discardAction == ACT_RESET_SCOPE), and arming Reset never confirms
+  a scope/hand/prev/next guard. Scope, hand and member changes all go through guardTransition, which disarms or overwrites. The bone is not
+  disarmed, which is fine: edWrite(reset) keys depend on scope/model/cat/body, not on the bone. Expiry: tick step 2 clears and calls
+  updateStatusText, so the warning shows only while the window is live. Reset is handled only when MODE_WEAPON and g_hol.ok(), and ok() checks
+  the ResetScope pointer (HolsterApi.h:110); apiResetScope -> edWrite returns false with no edit open. Exactly one `BTN ResetScope` line per
+  executed reset (KP_LOG); arming logs `DISCARD armed why=reset_scope`, the same as the other guards; log_verbose=0 adds nothing more.
+- Indices: PI_RESET_SCOPE=69 is appended last in pageBoxesV3. The static_assert covers PI_HINT+2==69 and 69+1==kPageItemsV3==70, and the total is
+  76 <= 80. Every loop over kPageItemsV3 (creation, itemIsButton, text, tip, placement, colState/selText arrays, overAnyButton, refused-page
+  park, art/reset-icon loops, clk[]) covers item 69. It is a button, not a reset icon. The wedges are still created before PI_GROUP (32), so
+  draw order is unchanged. A 40-cap provider is refused by !hasDescSplit before any AddX (other AddX refusals go through failedAt).
+- Versions: rg "0\.4\.0" in holster_editor_src returns no hits. The manifest, ini, file header, statusText and load line all say 0.4.1-dev.
+- No regression in the hand/scope/prev/next guards (guardTransition unchanged) or in the bone path.
+
+======================================================================
+NON-BLOCKING
+======================================================================
+N1 Status warning is cut at every resolution. "Click Reset again to delete this scope's saved overrides." is 413 px against status budgets of
+   132/207/244 px (1280/1920/3440, status_fit=1), so it shows as "Click Reset agai..." / "...to delet..." / "...delete this...". The user still
+   sees "click Reset again", but never what it deletes. Suggested fix: pick the longest text that fits, e.g. "Click Reset again to confirm"
+   (205.5 px), else "Reset? Click again" (131.25 px). The tooltip "(click twice)" helps. The older "Unsaved: click again to discard" (229.5 px)
+   is also cut below 3440.
+N2 "Revert" at 1280x720: the label is 45.75 px in a 45 px box (Save 41, Reset 50). The overflow is about 0.4 px per side, with no padding
+   left, so it looks cramped but is acceptable. A cheap rebalance: Save w3-4, Reset w3+1 (Reset needs 45.5 incl. padding), Revert the rest
+   (49 px at 1280). The testSaveRow invariant reset.w >= revert.w + 4 would then need to change.
+N3 Coarse sliders on small screens: the 36 px track at 1280 gives 16.7 mm/px (10 deg/px), and Ctrl's 1 cm snap is below one pixel step. Shift
+   (3.3 mm/px) is the only fine control there. This is a layout limit, not a scrub bug; consider widening the inspector track at 1280.
+N4 ResetScope also re-seeds the overlay (Holster.cpp edReseed), so it drops unsaved edits as well. The warning text does not say so.
+   ResetScope returns void, so a failed write cannot be shown to the user (only Save has rc).
+N5 The arm log line says "DISCARD armed" for a non-discard action. This is a naming quirk only.
+N6 With the thumb pressed off-centre, the grab offset (up to thumbW/2 = 5 px) is kept for the whole drag, which is standard behaviour. Near the
+   ends, the thumb box is clamped inside the track, so its centre is off by up to 5 px from the value position (cosmetic, already present).
+
+Play rows suggested: drag each slider past both ends and back (the thumb must not move until the cursor is over the track again); Reset on a
+clean edit (first click arms, warning visible, second click within 2 s deletes, holster.ini scope keys gone); Reset then wait 3 s then Reset
+(must re-arm, not delete).
+
+DECISION: APPROVE-FOR-INSTALL

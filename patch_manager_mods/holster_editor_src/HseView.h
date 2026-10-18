@@ -919,7 +919,8 @@ struct ScrubStep {
 
 // One scrub of one row: begin() on the LMB press over the row button, step() once per tick with the cursor x while LMB is down, cancel() on
 // release or any loss of the capture. Track mode (begin with trackW > 0): the thumb follows the cursor, 1 px = 2 * window / trackW (window =
-// +-0.30 m / +-180 deg), clamped to the track range (widened to the open value). Old mode (trackW <= 0): 1 px = 1 mm or 0.5 deg, Shift x0.2, Ctrl snaps to 1 cm / 5 deg (carried in acc). The value moves by the
+// +-0.30 m / +-180 deg), clamped to the track range (widened to the open value); the delta goes to an unclamped `virt`, so a cursor that overshoots a
+// track end must come back over the track before the thumb moves again (it stays under the cursor). Old mode (trackW <= 0): 1 px = 1 mm or 0.5 deg, Shift x0.2, Ctrl snaps to 1 cm / 5 deg (carried in acc). The value moves by the
 // per-tick delta (a Shift or Ctrl toggle mid drag never jumps) and stays inside [open - window, open + window] cut to the hard limits.
 struct Scrub {
     bool active;
@@ -930,8 +931,10 @@ struct Scrub {
     float acc;
     bool clampWarned;
     float perPx;   // value units per pixel; 0 = the old fixed 1 mm / 0.5 deg
+    float virt;    // track mode: the UNCLAMPED value under the cursor (value = virt cut to [lo, hi]), so after the cursor overshoots a track end the
+                   // thumb stays pinned until the cursor comes back over the track instead of detaching by the overshoot
 
-    Scrub() : active(false), row(-1), open(0.0f), value(0.0f), lo(0.0f), hi(0.0f), loHard(false), hiHard(false), pressX(0), lastX(0), frames(0), acc(0.0f), clampWarned(false), perPx(0.0f) {}
+    Scrub() : active(false), row(-1), open(0.0f), value(0.0f), lo(0.0f), hi(0.0f), loHard(false), hiHard(false), pressX(0), lastX(0), frames(0), acc(0.0f), clampWarned(false), perPx(0.0f), virt(0.0f) {}
 
     // False (and nothing starts) for a bad row, a non-finite open value, or a scrub already running.
     // trackW > 0 = the slider track width in px (track mode, see above; 0 < trackW < 4 counts as 4).
@@ -964,6 +967,7 @@ struct Scrub {
         acc = 0.0f;
         clampWarned = false;
         perPx = pp;
+        virt = openValue;
         return true;
     }
 
@@ -984,8 +988,15 @@ struct Scrub {
             acc = 0.0f;
         }
         if (d == 0.0f || !finiteF(d)) return s;
-        float nv = value + d;
+        float nv = (perPx > 0.0f ? virt : value) + d;
         if (!finiteF(nv)) return s;
+        if (perPx > 0.0f) {
+            virt = nv;
+            // keep the overshoot bounded (finite) without changing anything visible: the cursor is held on screen, so 64 track spans is never reached
+            const float span = 64.0f * (hi - lo);
+            if (virt < lo - span) virt = lo - span;
+            if (virt > hi + span) virt = hi + span;
+        }
         if (nv < lo) {
             nv = lo;
             s.clampSide = -1;
