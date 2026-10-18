@@ -2,3 +2,6 @@ cxxflags = ["-Werror"]
 
 [common_contract_test]
 cxxflags = ["-I../_shared_src", "-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common", "-I../../research/companion_levelup/tools/parity/stub", "-Werror"]
+
+[enemy_strip_draw_test]
+cxxflags = ["-Istubs", "-I../_shared_src", "-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common", "-I../../research/companion_levelup/tools/parity/stub", "-Werror"]
