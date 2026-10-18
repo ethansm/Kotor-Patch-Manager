@@ -52,7 +52,7 @@ namespace {
 using namespace NpcDiversity;
 namespace nl = NpcDiversity::log;
 
-constexpr const char* kVersion = "0.2.5-probe";
+constexpr const char* kVersion = "0.2.6-probe";
 constexpr size_t kResRefLen = 16;
 
 // SafeRead site ids (counted in Counts::fail, printed by STAT read).
@@ -129,7 +129,7 @@ uint32_t currentVisitSalt() { return VisitSaltFrom(g_visitVariety, g_nw); }
 // ---- NB2 ambient flourishes (doc 40 section 15). Both switches default 0. anim_probe=1 only logs the engine chain once per
 // eligible creature (no play); anim_variety=1 plays a flourish on idle eligible creatures. Roster fed by the remap hook (client oid +
 // final row), cleared on every AREA_LOAD, driven by npc-world's TICK (without the library nothing runs).
-bool g_animVariety = false, g_animProbe = false;
+bool g_animVariety = false, g_animProbe = false, g_animProbeAll = false;   // probe_all: also log creatures of unchecked rows (never played)
 unsigned g_animFlags = 1;          // PlayAnimation flags: 1 = engine "once" (fades out); 0 loops; 2 = no cross-fade
 int g_animProbeMax = 24;           // chain lines per process
 uint32_t g_animLastRun = 0, g_animPlays = 0, g_animReady = 0, g_animBusy = 0, g_animNoChain = 0;
@@ -139,9 +139,9 @@ bool g_rosterInit = false;
 inline bool animOn() { return g_animVariety || g_animProbe; }
 
 void logChain(uint32_t oid, uint16_t app, const AnimEngine::Chain& c) {
-    KP_LOG(chAnim, "CHAIN oid=%08X app=%u stage=%s srv=%08X soid=%08X type=%u party=%d pc=%d act=%04X q=%08X qd=%08X,%08X,%08X cmb=%u dlg=%08X cli=%08X vt=%08X cache=%08X hold=%08X body=%08X idle=%d",
+    KP_LOG(chAnim, "CHAIN oid=%08X app=%u stage=%s srv=%08X soid=%08X type=%u party=%d pc=%d act=%04X q=%08X qd=%08X,%08X,%08X inv=%08X rh=%08X armed=%d cmb=%u dlg=%08X cli=%08X vt=%08X cache=%08X hold=%08X body=%08X idle=%d",
            oid, app, AnimEngine::StageName(c.stage), (unsigned)c.server, c.serverOid, c.facts.type, c.facts.party, c.facts.isPc,
-           c.facts.action, c.facts.queueHead, c.qd[0], c.qd[1], c.qd[2], c.facts.combat, c.facts.dialog, (unsigned)c.client, c.clientVt, c.cache,
+           c.facts.action, c.facts.queueHead, c.qd[0], c.qd[1], c.qd[2], c.inv, c.facts.rightHand, Anim::HasWeapon(c.facts) ? 1 : 0, c.facts.combat, c.facts.dialog, (unsigned)c.client, c.clientVt, c.cache,
            (unsigned)c.holder, (unsigned)c.body, Anim::IsIdle(c.facts) ? 1 : 0);
 }
 
@@ -160,7 +160,7 @@ void animTick(uint32_t now) {
         if (c.stage < AnimEngine::StBody) { ++g_animNoChain; s.nextMs = now + 10000u; continue; }
         const bool idle = Anim::IsIdle(c.facts);
         if (!idle) ++g_animBusy;
-        if (const Anim::Flourish* f = Anim::Due(s, now, idle)) {
+        if (const Anim::Flourish* f = Anim::Due(s, now, idle, Anim::HasWeapon(c.facts))) {
             const bool ok = AnimEngine::Play(c, f->name, 1.0f, g_animFlags);
             ++g_animPlays;
             if (g_animPlays <= 200) KP_LOG(chAnim, "PLAY oid=%08X %s flags=%u ok=%d n=%u", s.oid, f->name, g_animFlags, ok ? 1 : 0, s.plays);
@@ -221,11 +221,12 @@ void readConfig() {
            g_visitVariety ? " (per-visit salt from npc-world when it is loaded, else looks stay fixed)" : "");
     g_animVariety = GetPrivateProfileIntA("NpcDiversity", "anim_variety", 0, path) != 0;
     g_animProbe = GetPrivateProfileIntA("NpcDiversity", "anim_probe", 0, path) != 0;
+    g_animProbeAll = GetPrivateProfileIntA("NpcDiversity", "anim_probe_all", 0, path) != 0;
     g_animFlags = static_cast<unsigned>(GetPrivateProfileIntA("NpcDiversity", "anim_flags", 1, path));
     g_animProbeMax = static_cast<int>(GetPrivateProfileIntA("NpcDiversity", "anim_probe_max", 24, path));
     if (!g_rosterInit) { g_roster.clear(); g_rosterInit = true; }
-    KP_LOG(chInit, "config anim_variety=%d anim_probe=%d anim_flags=%u anim_probe_max=%d%s", g_animVariety ? 1 : 0, g_animProbe ? 1 : 0,
-           g_animFlags, g_animProbeMax, animOn() ? " (needs npc-world: TICK drives it)" : "");
+    KP_LOG(chInit, "config anim_variety=%d anim_probe=%d anim_probe_all=%d anim_flags=%u anim_probe_max=%d%s", g_animVariety ? 1 : 0, g_animProbe ? 1 : 0,
+           g_animProbeAll ? 1 : 0, g_animFlags, g_animProbeMax, animOn() ? " (needs npc-world: TICK drives it)" : "");
 }
 
 void ensureInit() {
@@ -650,8 +651,9 @@ __declspec(dllexport) void __cdecl RemapNpcAppearance(void* pCreature, layout::A
 
     if (animOn() && okOid && oid) {
         bool mil = false;
-        if (Anim::EligibleRow(newApp, &mil))   // armed (TSF) rows only; armor bodies have subType >= 3, so no subtype filter here
-            g_roster.add(oid, newApp, visitSalt, mil, GetTickCount());
+        const bool okRow = Anim::EligibleRow(newApp, &mil);   // rows with a checked animation set (TSF); armor bodies have subType >= 3, so no subtype filter
+        if (okRow || g_animProbeAll)                          // weapon test happens per tick (Due); probe_all adds unchecked rows for logging only
+            g_roster.add(oid, newApp, visitSalt, mil, GetTickCount(), okRow);
     }
 
     if (KP_ENABLED(chRemap) && g_bRmp.take(300, 500)) {

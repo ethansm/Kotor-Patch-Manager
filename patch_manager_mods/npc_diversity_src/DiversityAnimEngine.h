@@ -21,6 +21,7 @@ constexpr uintptr_t kFnClientObject = 0x0054A840;
 constexpr uint32_t kVtCreatureClient = 0x0099EE14;
 
 constexpr int kOffType = 0x08, kOffAction = 0x84, kOffQueue = 0x100, kOffCombat = 0x520, kOffDialog = 0x54;
+constexpr int kOffInventory = 0x1150, kInvRightHand = 0x14;   // nb2_weapon_recon.md: CSWInventory* at server+0x1150, slot mask 0x10 -> inv+0x14
 constexpr int kOffParty = 0x11AC, kOffIsPc = 0x10E8, kOffClientHolder = 0x68, kOffClientCache = 0x264;
 constexpr int kHolderGetSlot = 2, kBodyPlaySlot = 6;
 constexpr int kPartBody = 0xFF;
@@ -37,6 +38,7 @@ struct Chain {
     uint32_t serverOid = 0;      // the oid read back from the server object (+0x04)
     uint32_t clientVt = 0;
     uint32_t cache = 0;          // server+0x264 after the GetClientObject call
+    uint32_t inv = 0;            // server+0x1150 (CSWInventory*)
     uint32_t qd[3] = {0, 0, 0};  // first dwords at the action list head (logged to find an emptiness test)
 };
 
@@ -82,6 +84,9 @@ inline void Resolve(uint32_t oid, Chain* c) {
     if (c->facts.queueHead) for (int i = 0; i < 3; ++i) rd(c->facts.queueHead, i * 4, &c->qd[i]);
     rd(c->server, kOffCombat, &c->facts.combat);
     rd(c->server, kOffDialog, &c->facts.dialog);
+    // Right-hand weapon: read the slot's object id straight from the inventory (no GetItemInSlot call, nothing written).
+    c->facts.rightHand = 0;
+    if (rd(c->server, kOffInventory, &c->inv) && c->inv) rd(c->inv, kInvRightHand, &c->facts.rightHand);
 
     using FnClient = uintptr_t(__fastcall*)(uintptr_t);
     c->client = reinterpret_cast<FnClient>(kFnClientObject)(c->server);

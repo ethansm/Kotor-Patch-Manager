@@ -109,7 +109,7 @@ int main() {
     }
     // 9. idle test: every single blocker flips it
     {
-        ServerFacts f = {5, 0, 0, 0xFFFF, 0, 0, kObjInvalid};
+        ServerFacts f = {5, 0, 0, 0xFFFF, 0, 0, kObjInvalid, 0};
         KT_CHECK(IsIdle(f));
         { ServerFacts g = f; g.dialog = 0; KT_CHECK(IsIdle(g)); }
         { ServerFacts g = f; g.type = 9; KT_CHECK(!IsIdle(g)); }
@@ -119,6 +119,24 @@ int main() {
         { ServerFacts g = f; g.queueHead = 0x1000; KT_CHECK(IsIdle(g)); }   // queue head is not part of the idle test (Run A2)
         { ServerFacts g = f; g.combat = 1; KT_CHECK(!IsIdle(g)); }
         { ServerFacts g = f; g.dialog = 0x7F000123u; KT_CHECK(!IsIdle(g)); }
+    }
+    // 10. weapon gate: HasWeapon on the right-hand oid; Due holds back unarmed and unverified-row slots and retries every 30 s
+    {
+        ServerFacts f = {5, 0, 0, 0xFFFF, 0, 0, kObjInvalid, 0};
+        KT_CHECK(!HasWeapon(f));
+        { ServerFacts g = f; g.rightHand = kObjInvalid; KT_CHECK(!HasWeapon(g)); }
+        { ServerFacts g = f; g.rightHand = 0x7F000123u; KT_CHECK(HasWeapon(g)); }
+        { ServerFacts g = f; g.rightHand = 0x00001234u; KT_CHECK(HasWeapon(g) && IsIdle(g)); }   // weapon does not change the idle verdict
+        Roster r;
+        Slot* s = r.add(21, 479, 3, true, 0);
+        const uint32_t t = s->nextMs;
+        KT_CHECK(Due(*s, t, true, false) == nullptr);                     // unarmed: nothing, no play counted
+        KT_CHECK(s->plays == 0 && s->nextMs == t + kUnarmedRetryMs);
+        KT_CHECK(Due(*s, t + kUnarmedRetryMs - 1, true, true) == nullptr);   // not Ready until the retry time
+        KT_CHECK(Due(*s, t + kUnarmedRetryMs, true, true) != nullptr);       // picked up a weapon: plays
+        Slot* p = r.add(22, 185, 3, false, 0, false);                       // probe-only slot (row animation set not checked)
+        KT_CHECK(Due(*p, p->nextMs, true, true) == nullptr && p->plays == 0);
+        KT_CHECK(r.add(23, 479, 3, true, 0)->playable);                     // default is playable
     }
     return kt::Report("diversity_anim_test");
 }

@@ -1,7 +1,7 @@
 [patch]
 id = "npc-diversity"
 name = "Master NPC Diversity Dispatcher"
-version = "0.2.5-probe"
+version = "0.2.6-probe"
 author = "ethansm"
 description = "Deterministic runtime NPC appearance & clothing diversity dispatcher"
 kind = "patch"
