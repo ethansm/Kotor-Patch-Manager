@@ -58,6 +58,8 @@ static bool g_boneTest = false, g_boneLeft = false, g_boneLeftCfg = true;
 static hs::PlaceMode g_placeMode = hs::PlaceDrawgate;
 static inline bool drawgateMode() { return g_placeMode == hs::PlaceDrawgate; }
 // Flourish window (Wave C2 drives this from the flourish detours; always false in C1): true keeps the weapon in the hand like combat does.
+// TODO(C2, Opus review C1 #8): this is ONE global bool, so one creature's flourish would draw every creature's weapons. C2 must make the window
+// per creature (keyed by the owner, like gate.owner) before any detour sets it.
 static bool g_flourishOpen = false;
 // Config warnings found before KpLog_Init (readConfig runs first): flushed once by KPatchInit.
 static char g_cfgWarn[4][120];
@@ -69,7 +71,7 @@ static bool g_editor = true;            // editor=0: RegisterPreview refuses and
 static char g_boneName[32] = "pelvis_g";              // attach node name; its ADDRESS becomes the push immediate, so it must stay static
 static LONG g_maxLines = 3000;
 static bool g_logVerbose = false;       // log_verbose=1: the old per-sample COMB/ATTACH/ANIMRES/PLACE/PLACEREFUSE volume; 0 = rate-limited (HolsterLogRate.h)
-static hs::KeyCounts<256> g_combKeys, g_attachKeys, g_gateKeys;   // quiet mode: per-creature hit counts (COMB, ATTACH)
+static hs::KeyCounts<256> g_combKeys, g_attachKeys, g_gateKeys, g_gateWarnKeys;   // quiet mode: per-creature hit counts (COMB, ATTACH)
 static hs::PlaceTable g_placeTab;
 static hs::RefuseTable g_refuseTab;
 static int g_gobEvery = 600;            // GOB lines: first 24 updates, then every Nth (the handler runs per Gob per frame)
@@ -614,8 +616,8 @@ static void previewProbe(uintptr_t g, uintptr_t beh) {
 
 // Refusal reasons of HolsterPlace (live test 10-15: PLACE n=0 with no hint which gate refused). log_verbose=1: each reason logs its first 5 hits, then
 // every 500th. Default: once per distinct (reason, gob) plus a summary every 10000th hit.
-enum PlaceRefuse : int { PrNull = 0, PrNoHandle, PrNotTarget, PrGobvt, PrReadIn, PrInsaneIn, PrInsaneOut, PrNoWrite, PrNoMount, PrCount };
-static const char* const kRefuseName[PrCount] = {"null", "nohandle", "nottarget", "gobvt", "readin", "insanein", "insaneout", "nowrite", "nomount"};
+enum PlaceRefuse : int { PrNull = 0, PrNoHandle, PrNotTarget, PrGobvt, PrReadIn, PrInsaneIn, PrInsaneOut, PrNoWrite, PrNoMount, PrNotWeapon, PrCount };
+static const char* const kRefuseName[PrCount] = {"null", "nohandle", "nottarget", "gobvt", "readin", "insanein", "insaneout", "nowrite", "nomount", "notweapon"};
 static volatile LONG g_refuse[PrCount] = {};
 static void refuse(PlaceRefuse r, uintptr_t g, uintptr_t n, uint32_t vt) {
     LONG c = InterlockedIncrement(&g_refuse[r]);
@@ -782,9 +784,11 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
 }
 
 // DRAWGATE transition line (drawgate mode): a placement entry's owner or hip/drawn state changed. Quiet mode: first 8 per creature, then every 10th
-// (log_verbose=1: all). An unreadable owner / combat flag is a WARN and is never rate-limited (it fires once per change, not per frame).
+// (log_verbose=1: all). An unreadable owner / combat flag stays a WARN (C1 review #9: rate-limited per gob, the first 3 hits then every 50th, so it is never
+// swallowed entirely; log_verbose=1 logs all).
 static void gateLog(uintptr_t gob, uintptr_t owner, bool readable, uint32_t combat, bool hip, bool left) {
     if (!readable) {
+        if (!g_logVerbose && !hs::keyedWant(hs::keyBump(g_gateWarnKeys, hs::creatureKey(gob)), 3, 50)) return;
         KP_LOGV(chMain, KPLOG_WARN, "DRAWGATE owner/combat unreadable gob=%x owner=%x: weapon stays in the hand", static_cast<unsigned>(gob), static_cast<unsigned>(owner));
         return;
     }
@@ -816,7 +820,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     void* const node = beh ? reinterpret_cast<void*>(static_cast<uintptr_t>(rdU32(kSitePlace, reinterpret_cast<uintptr_t>(beh), 0x18))) : nullptr;
     // Verdict cache keyed on node + gob + the node's name handle [N+4], so a freed and reused address pair is re-resolved. The full
     // resolve (weapon > type > global, plus the body delta) is cached with the tune sequence it was computed for and redone when it moves.
-    // In world both hands share the bone_name node; the hand comes from g_handRing (sticky via hs::resolveLeft when the ring entry is evicted).
+    // Repoint: both hands share the bone_name node; the hand comes from g_handRing (sticky via hs::resolveLeft when evicted). Drawgate: the node name (lhand) decides.
     struct Ent { uintptr_t node, gob, handle; bool isTarget, left; hs::Category cat; char mname[17], body[17]; LONG seq; hs::Resolved r; hs::GateState gate; };
     static Ent s_cache[128];
     static unsigned s_next = 0;
@@ -830,10 +834,13 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     for (Ent& e : s_cache)
         if (e.node == n && e.gob == g && e.handle == h) { isTarget = e.isTarget; cat = e.cat; ent = &e; break; }
     if (ent) {
-        const bool nl = hs::resolveLeft(ent->left, hs::handLookup(g_handRing, g));
-        if (nl != ent->left) {
-            ent->left = nl;
-            ent->seq = -1;
+        // Repoint: sticky ring resolve (unchanged). Drawgate: the hand was fixed from the node name at creation and never changes (same node, same entry).
+        if (!drawgateMode()) {
+            const bool nl = hs::handFromNode(false, nullptr, hs::handLookup(g_handRing, g), ent->left);
+            if (nl != ent->left) {
+                ent->left = nl;
+                ent->seq = -1;
+            }
         }
     } else {
         NodeInfo ni;
@@ -849,7 +856,16 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
         s_next = (s_next + 1) % 128u;
         *ent = Ent{};
         ent->gate = hs::gateInit();   // drawgate: owner + hip/drawn state, "not evaluated" until the first placement
-        ent->node = n; ent->gob = g; ent->handle = h; ent->isTarget = isTarget; ent->left = hs::resolveLeft(false, hs::handLookup(g_handRing, g)); ent->cat = cat;
+        ent->node = n; ent->gob = g; ent->handle = h; ent->isTarget = isTarget; ent->cat = cat;
+        {
+            // Drawgate: node name decides (C1 review B2); the ring only cross-checks. Repoint: ring resolve exactly as before.
+            const int ring = hs::handLookup(g_handRing, g);
+            ent->left = hs::handFromNode(drawgateMode(), ni.name, ring, false);
+            static volatile LONG s_handDisagree = 0;
+            if (drawgateMode() && isTarget && ring != hs::HandNone && (ring == hs::HandL) != ent->left && g_onPlace && InterlockedIncrement(&s_handDisagree) <= 5 &&
+                KP_ENABLED(chPlace, KPLOG_INFO) && takeLine())
+                KP_LOG(chPlace, "HANDCHK node=%s ring=%c gob=%x: node name wins (left=%d)", ni.name[0] ? ni.name : "-", hs::handChar(ring), static_cast<unsigned>(g), ent->left ? 1 : 0);
+        }
         ent->seq = -1;   // never a real sequence (those are >= 0), so the first use resolves
         {
             const uintptr_t par = rdU32(kSitePlace, reinterpret_cast<uintptr_t>(beh), 0x14);
@@ -878,6 +894,9 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     if (!isTarget) { refuse(PrNotTarget, g, n, 0); return; }
     const uint32_t vt = rdU32(kSitePlace, g, 0);
     if (g_placeGobvt != 0 && vt != g_placeGobvt) { refuse(PrGobvt, g, n, vt); return; }
+    // Drawgate target filter (C1 review B1): only weapon Gobs (model "w_...") are placed; menu previews / held props / hand VFX on rhand/lhand stay put.
+    // Repoint mode is unaffected (its targets are the patched attach site's weapons only).
+    if (drawgateMode() && !hs::isWeaponModel(ent->mname)) { refuse(PrNotWeapon, g, n, vt); return; }
     if (drawgateMode()) {
         // Draw gate (C1): owner creature = [parent+0x1D8]; drawn = client combat flag [owner+0x138] != 0 or a flourish window. Drawn (or anything
         // unreadable) returns with the hand pose the engine just wrote: the failure mode is a weapon in the hand (vanilla), never stuck on the hip.

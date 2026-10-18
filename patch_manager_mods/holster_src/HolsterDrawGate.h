@@ -4,12 +4,15 @@
 //   shouldWriteHip   true = write the hip pose, false = leave the hand pose the engine wrote (weapon drawn / vanilla)
 //   nodeAccepted     which attach node name HolsterPlace treats as its target (repoint: bone_name; drawgate: rhand, and lhand when enabled)
 //   GateState        per placement-cache entry: owner + hip/drawn state; gateUpdate reports a change so the entry's resolved placement is dropped
+//   isWeaponModel    drawgate target filter: the Gob's model name starts with "w_" (weapon models); anything else on a hand node is left alone
+//   handFromNode     which hand a placement entry is: drawgate = the attach node name (lhand => left); repoint = the old sticky ring resolve
 //   poseBaseEqual    tolerance compare of two world poses (mountPose(pelvis_g) base vs the old pelvis attach-node base)
 // Failure mode rule: anything unreadable (owner null, combat flag unreadable) is treated as DRAWN, so the weapon is never stuck on the hip.
 #pragma once
 #include <stdint.h>
 #include <math.h>
 #include "HolsterQuat.h"
+#include "HolsterHand.h"
 
 namespace hs {
 
@@ -46,6 +49,21 @@ inline bool nodeAccepted(bool drawgate, const char* nodeName, const char* boneNa
     if (!nodeName || !nodeName[0]) return false;
     if (!drawgate) return ieq(nodeName, boneName);
     return ieq(nodeName, "rhand") || (leftOn && ieq(nodeName, "lhand"));
+}
+
+// Drawgate target filter (HW-UX3 C1 review B1): only weapon Gobs are placed. Weapon models are named "w_..." (live: w_Lngswrd_001, w_SonicPstl_002);
+// case-insensitive prefix. Null / empty / unreadable name is NOT a weapon (fail-safe: the object stays where the engine put it).
+inline bool isWeaponModel(const char* modelName) {
+    if (!modelName) return false;
+    if (modelName[0] != 'w' && modelName[0] != 'W') return false;
+    return modelName[1] == '_';   // short-circuit: never reads past the terminator
+}
+
+// Left flag of a placement entry (C1 review B2). Drawgate: the attach node name is authoritative (lhand => left, anything else => right); the
+// hand ring and the previous flag are ignored. Repoint (both hands share one node): the old sticky resolveLeft(prev, ringLookup), unchanged.
+inline bool handFromNode(bool drawgate, const char* nodeName, int ringLookup, bool prevLeft) {
+    if (drawgate) return ieq(nodeName, "lhand");
+    return resolveLeft(prevLeft, ringLookup);
 }
 
 // Per placement-cache entry. hip: -1 = not evaluated yet, 0 = drawn (weapon in hand), 1 = hip pose written.

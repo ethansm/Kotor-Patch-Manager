@@ -121,6 +121,47 @@ static void testPoseBaseEqual() {
     KT_CHECK(!poseBaseEqual(a, b, 1.0f, 180.0f));
 }
 
+static void testIsWeaponModel() {
+    KT_CHECK(isWeaponModel("w_Lngswrd_001"));
+    KT_CHECK(isWeaponModel("W_SonicPstl_002"));
+    KT_CHECK(isWeaponModel("w_"));
+    KT_CHECK(!isWeaponModel(nullptr));
+    KT_CHECK(!isWeaponModel(""));
+    KT_CHECK(!isWeaponModel("w"));
+    KT_CHECK(!isWeaponModel("wx_blade"));
+    KT_CHECK(!isWeaponModel("p_bastilabb"));
+    KT_CHECK(!isWeaponModel("i_menu_preview"));
+    KT_CHECK(!isWeaponModel(" w_blade"));
+}
+
+static void testHandFromNode() {
+    // Drawgate: the node name wins over the ring and the previous flag (all 3 ring values x prev).
+    for (int ring = HandNone; ring <= HandL; ++ring)
+        for (int prev = 0; prev < 2; ++prev) {
+            KT_CHECK(handFromNode(true, "lhand", ring, prev != 0));
+            KT_CHECK(handFromNode(true, "LHand", ring, prev != 0));
+            KT_CHECK(!handFromNode(true, "rhand", ring, prev != 0));
+            KT_CHECK(!handFromNode(true, "RHAND", ring, prev != 0));
+            KT_CHECK(!handFromNode(true, "headhook", ring, prev != 0));
+            KT_CHECK(!handFromNode(true, "", ring, prev != 0));
+            KT_CHECK(!handFromNode(true, nullptr, ring, prev != 0));
+        }
+    // Ring evicted + never recorded (HandNone) in drawgate: still the node decides (B2 scenarios a and b).
+    KT_CHECK(handFromNode(true, "lhand", HandNone, false));
+    KT_CHECK(!handFromNode(true, "rhand", HandNone, true));
+    // Repoint: exactly resolveLeft (known hand wins, unknown keeps prev); the node name is ignored.
+    for (int ring = HandNone; ring <= HandL; ++ring)
+        for (int prev = 0; prev < 2; ++prev) {
+            KT_CHECK(handFromNode(false, "pelvis_g", ring, prev != 0) == resolveLeft(prev != 0, ring));
+            KT_CHECK(handFromNode(false, "lhand", ring, prev != 0) == resolveLeft(prev != 0, ring));
+            KT_CHECK(handFromNode(false, nullptr, ring, prev != 0) == resolveLeft(prev != 0, ring));
+        }
+    KT_CHECK(handFromNode(false, "pelvis_g", HandL, false));
+    KT_CHECK(!handFromNode(false, "pelvis_g", HandR, true));
+    KT_CHECK(handFromNode(false, "pelvis_g", HandNone, true));    // sticky
+    KT_CHECK(!handFromNode(false, "pelvis_g", HandNone, false));
+}
+
 int main() {
     testTruthTable();
     testPlaceMode();
@@ -128,5 +169,7 @@ int main() {
     testGateKeyInvalidation();
     testGateDrivenByDecision();
     testPoseBaseEqual();
+    testIsWeaponModel();
+    testHandFromNode();
     return kt::Report("holster_drawgate");
 }
