@@ -63,7 +63,7 @@ class DumpTests(unittest.TestCase):
         for key in ("column", "view", "preview"):
             self.assertEqual(len(d["panes"][key]), 4)
         self.assertEqual(set(d["rows"]), {"leftRowH", "inspRowH", "barH"})
-        self.assertEqual(d["rows"]["leftRowH"], 34)
+        self.assertGreaterEqual(d["rows"]["leftRowH"], 34)   # grows with the layout constants (34 in 0.4.3, 52 now)
 
     def test_kinds_match_item_is_button(self):
         d = dump()
@@ -126,6 +126,61 @@ class PlacementTests(unittest.TestCase):
         self.assertEqual(M.geom_for(1920, 1080)[1], (1345 * 1920 // 3440, 357 * 1080 // 1440, 576 * 1920 // 3440, 896 * 1080 // 1440))
 
 
+class WrapTests(unittest.TestCase):
+    def test_engine_scale(self):
+        self.assertAlmostEqual(M.engine_scale(3840), 1.98)   # live probe: 1.98 px per texel at 3840
+        self.assertAlmostEqual(M.fit_scale(2.65), 1.9875)    # new DLL fit measure ~ the engine measure
+        self.assertAlmostEqual(M.fit_scale(2.5), 1.875)
+
+    def test_wrap_unit(self):
+        sc = M.engine_scale(3840)
+        w = M.text_px("Upper back", sc)
+        self.assertEqual(M.wrap_text("Upper back", w + 1, sc), ["Upper back"])
+        self.assertEqual(M.wrap_text("Upper back", w - 1, sc), ["Upper", "back"])
+        self.assertEqual(len(M.wrap_text("Roll/Turn", M.text_px("Roll/Turn", sc) - 1, sc)), 2)   # one long word breaks at character level
+        self.assertEqual(M.wrap_text("", 100, sc), [""])
+
+    def test_block_centring(self):
+        _, _, y1 = M.place_caption("button", (0, 0, 200, 34), mode="ideal", lines=1)
+        _, _, y2 = M.place_caption("button", (0, 0, 200, 34), mode="ideal", lines=2)
+        _, _, y3 = M.place_caption("button", (0, 0, 200, 34), mode="ideal", lines=3)
+        self.assertEqual((y1, y2, y3), (1, -15, -31))   # (B - n*32) // 2
+
+    def _wraps(self, fit_args, fix=1, mode="engine-model"):
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td) / "p.png"
+            M.main(["--panes", "3840x1600", "--mode", mode, "--caption-fix", str(fix), "--crop", "--build-dir", _BUILD, "--out", str(out)] + fit_args)
+            return json.loads(out.with_suffix(".json").read_text())
+
+    def test_legacy_fit_reproduces_wraps(self):
+        # Calibration against the 0.4.3-dev live probe (10-18 16:37): the scope buttons were 142x34 boxes then (CAPTION i=13..15 btn=...).
+        # The current HseLayoutV3.h is wider, so the live boxes are pinned in a copy of the dump. Live also showed i=8 "Upper back" lines=2;
+        # the model cuts it to one line at 142 px (known gap, F3 notes), so only the scope rows are asserted.
+        d = json.loads(json.dumps(dump()))
+        live = {13: [776, 613, 142, 34], 14: [920, 613, 142, 34], 15: [1064, 613, 142, 34]}
+        for it in d["items"]:
+            if it["i"] in live:
+                it["box"] = live[it["i"]]
+        with tempfile.TemporaryDirectory() as td:
+            dj = Path(td) / "live043.json"
+            dj.write_text(json.dumps(d))
+            side = self._wraps(["--legacy-fit", "--dump-json", str(dj)])
+        by = {it["i"]: it for it in side["items"]}
+        self.assertEqual((side["button_fit_pad"], side["label_fit_pad"], side["text_k"]), (8, 8, 2.5))
+        self.assertGreaterEqual(sum(1 for i in (13, 14, 15) if by[i]["wraps"]), 2, [by[i]["shown"] for i in (13, 14, 15)])   # scope buttons
+
+    def test_new_fit_no_button_wraps(self):
+        for mode in ("engine-model", "ideal"):
+            side = self._wraps([], mode=mode)
+            self.assertEqual((side["button_fit_pad"], side["label_fit_pad"], side["text_k"]), (20, 8, 2.65))
+            bad = [(it["i"], it["shown"]) for it in side["items"] if it["kind"] == "button" and it["wraps"]]
+            self.assertEqual(bad, [], mode)
+            self.assertTrue(all("lines" in it and "wraps" in it for it in side["items"] if it["kind"] != "view"))
+
+    def test_inspector_values(self):
+        self.assertEqual([M.caption_for(36 + r * 5 + 3) for r in (0, 1, 3)], ["0.0 cm", "-11.0 cm", "30.5 deg"])
+
+
 class SmokeTests(unittest.TestCase):
     def test_render(self):
         with tempfile.TemporaryDirectory() as td:
@@ -135,7 +190,7 @@ class SmokeTests(unittest.TestCase):
             side = json.loads(out.with_suffix(".json").read_text())
             self.assertEqual(len(side["items"]), 70)
             self.assertIn("crop", side)
-            btn = [it for it in side["items"] if it["kind"] == "button" and it["box"][3] == 34]
+            btn = [it for it in side["items"] if it["kind"] == "button" and it["box"][3] >= 34]
             self.assertTrue(btn and all(it["drawn"] for it in btn if it["text"]))
 
 

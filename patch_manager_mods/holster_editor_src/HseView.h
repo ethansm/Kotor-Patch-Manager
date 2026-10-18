@@ -115,6 +115,17 @@ inline HseRect captionRect(const HseRect& btn, const HseRect& engineText) {
     return r;
 }
 
+// Caption text budgets (pure). The engine lays a button caption out in a text box inset by 7 px on each side, and it WORD-WRAPS anything wider; wrapped
+// lines are drawn over the row seams. Live probe at 3840x1600: "CAPTION i=8 before btn=(776,517,142,34) text=(783,525,128,18)" = x +7, w - 14.
+constexpr int kButtonTextInset = 7;   // engine caption inset per side
+constexpr int kTextSlack = 3;         // extra px kept free per side (the measured text factor is an estimate)
+constexpr int kLabelPad = 4;          // labels (no border) keep 4 px per side
+
+// Width a BUTTON caption may take: box.w - 2 * (inset + slack) (0 when the box is too small to hold any text).
+inline int buttonTextPx(int boxW) { int w = boxW - 2 * (kButtonTextInset + kTextSlack); return w > 0 ? w : 0; }
+// Width a LABEL (status, note, hints, legend, inspector names / values) may take: box.w - 8 (0 when too small).
+inline int labelTextPx(int boxW) { int w = boxW - 2 * kLabelPad; return w > 0 ? w : 0; }
+
 // vanilla ratio: slotH = strip.h * 32 / 284, pitch = strip.h * 36 / 284, y = strip.y + row * pitch, x/w = strip's
 inline HseRect stripSlot(const HseRect& strip, int row) {
     int slotH = strip.h * 32 / 284;

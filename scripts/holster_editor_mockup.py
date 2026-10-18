@@ -13,7 +13,13 @@ Modes:
                 that rect is DROPPED (--no-drop keeps it). Labels get their full box, centred.
   ideal         every caption centred in its full box.
 --caption-fix 1 (engine-model): caption rect = (engine x, button y, engine w, button h); engine w <= 0 -> (X+4, Y, W-8, H).
-Writes <out>.json beside the PNG: per item {i, kind, text, box, caption_rect, drawn, text_y0}.
+Word wrap (both modes): the engine WORD-WRAPS a caption wider than its text rect (buttons: w-14 at x+7; labels: the box) and centres the n
+lines vertically, offset (B - n*h)/2 (h = line height); lines past the box edges are drawn, not clipped. The wrap measure is the engine's
+glyph advance, 1.98 px per texel at 3840 (ENGINE_PX_PER_TEXEL_3840).
+Fit (mirrors the DLL textfit::fitText): the caption is cut with "..." to (box w - pad) at texels * text_k * 0.75 px (TextFit.h TextK;
+HolsterEditor.cpp textCtx sy = ini text_k, no resolution scaling). --button-fit-pad 20, --label-fit-pad 8, --text-k 2.65 are the new DLL
+defaults; --legacy-fit = pad 8 for all + text_k 2.5 (the 0.4.3 build).
+Writes <out>.json beside the PNG: per item {i, kind, text, box, caption_rect, drawn, text_y0, lines, wraps}.
 Use the repo venv (PIL + pykotor); the game install is needed for fonts and border textures.
 """
 import argparse
@@ -111,6 +117,22 @@ def install_font_fix():
     cpm.texel_widths = texel_widths
 
 
+ENGINE_PX_PER_TEXEL_3840 = 1.98   # live probe: glyph advance of the engine text at 3840 (text_scale 2.0)
+TEXTFIT_TEXTK = 0.75              # TextFit.h TextK: fit px = texels * ini text_k * TextK
+DEFAULT_BUTTON_FIT_PAD, DEFAULT_LABEL_FIT_PAD, DEFAULT_TEXT_K = 20, 8, 2.65
+LEGACY_BUTTON_FIT_PAD, LEGACY_LABEL_FIT_PAD, LEGACY_TEXT_K = 8, 8, 2.5
+
+
+def engine_scale(W):
+    """px per font texel the engine really draws (and wraps) with: 1.98 at 3840, scaled with text_scale."""
+    return ENGINE_PX_PER_TEXEL_3840 * text_scale(W) / 2.0
+
+
+def fit_scale(text_k):
+    """px per texel of the DLL fit measure (textfit::textPx with sy = text_k, textScale 1)."""
+    return text_k * TEXTFIT_TEXTK
+
+
 def text_px(s, scale):
     tw = texel_widths()[FONT]
     return sum(tw[ord(c) if ord(c) < 256 else 63] for c in s) * scale
@@ -127,6 +149,28 @@ def fit_text(s, max_px, scale):
     while n > 0 and s[n - 1] == " ":
         n -= 1
     return s[:n] + "..."
+
+
+def wrap_text(s, max_px, scale):
+    """Engine-model word wrap. Greedy on spaces; a single word wider than max_px is broken at character level (the live probe reports
+    lines=2 for the one-word "Roll/Turn", so the engine does not keep a long word whole). -> list of lines (>= 1)."""
+    lines, cur = [], ""
+    for word in s.split():
+        cand = (cur + " " + word) if cur else word
+        if text_px(cand, scale) <= max_px:
+            cur = cand
+            continue
+        if cur:
+            lines.append(cur)
+        cur = ""
+        for ch in word:
+            if cur and text_px(cur + ch, scale) > max_px:
+                lines.append(cur)
+                cur = ch
+            else:
+                cur += ch
+    lines.append(cur)
+    return lines
 
 
 # ---- captions --------------------------------------------------------------------------------------------------------
@@ -181,8 +225,9 @@ def intersect(a, b):
     return (x0, y0, max(0, x1 - x0), max(0, y1 - y0))
 
 
-def place_caption(kind, box, mode="engine-model", fix=0, g=16, m=9, line_h=32, no_drop=False):
-    """-> (caption_rect, drawn, text_y0). `drawn` is the geometry verdict only (the caller also skips empty text)."""
+def place_caption(kind, box, mode="engine-model", fix=0, g=16, m=9, line_h=32, no_drop=False, lines=1):
+    """-> (caption_rect, drawn, text_y0 of the first line). `drawn` is the geometry verdict only (the caller also skips empty text).
+    n lines are centred as a block: y0 = rect y + (rect h - n * line_h) // 2 (may start above the box)."""
     if mode == "ideal" or kind != "button":
         rect = tuple(box)
     else:
@@ -190,7 +235,7 @@ def place_caption(kind, box, mode="engine-model", fix=0, g=16, m=9, line_h=32, n
         if fix:
             X, Y, W, H = box
             rect = (X + 4, Y, W - 8, H) if rect[2] <= 0 else (rect[0], Y, rect[2], H)
-    y0 = rect[1] + (rect[3] - line_h) // 2
+    y0 = rect[1] + (rect[3] - lines * line_h) // 2
     drawn = True
     if mode != "ideal" and kind == "button" and rect[3] < line_h and not no_drop:
         drawn = False
@@ -209,6 +254,13 @@ def blit(canvas, img, x, y):
     if x1 <= x0 or y1 <= y0:
         return
     canvas.alpha_composite(img.crop((x0 - x, y0 - y, x1 - x, y1 - y)), (x0, y0))
+
+
+def wrap_width(kind, box, rect, mode):
+    """Engine text width: the caption rect's width (buttons: w-14 at x+7 = the inner rect; labels: the box). Ideal buttons use w-14 too."""
+    if kind == "button" and mode == "ideal":
+        return box[2] - 14
+    return rect[2]
 
 
 def draw_line(canvas, s, rect, y0, scale, col):
@@ -259,13 +311,15 @@ def draw_border_px(canvas, box, g=16, b=BTN_BORDER):
         ps(canvas, c.transpose(Image.ROTATE_180), (x1 - dx, y1 - dy, x1, y1))
 
 
-def render(W, H, panes, dump, mode="engine-model", fix=0, g=16, m=9, line_h=None, no_drop=False, crop=False):
+def render(W, H, panes, dump, mode="engine-model", fix=0, g=16, m=9, line_h=None, no_drop=False, crop=False,
+           button_fit_pad=DEFAULT_BUTTON_FIT_PAD, label_fit_pad=DEFAULT_LABEL_FIT_PAD, text_k=DEFAULT_TEXT_K):
     """-> (RGBA image, sidecar dict)."""
     from PIL import Image, ImageDraw
     install_font_fix()
-    scale = text_scale(W)
+    scale = engine_scale(W)
+    fscale = fit_scale(text_k)
     if line_h is None:
-        line_h = round(32 * scale / 2)
+        line_h = round(32 * text_scale(W) / 2)
     canvas = Image.new("RGBA", (W, H), (10, 20, 22, 255))
     d = ImageDraw.Draw(canvas)
     for p in panes:
@@ -286,13 +340,19 @@ def render(W, H, panes, dump, mode="engine-model", fix=0, g=16, m=9, line_h=None
         elif 36 <= i <= 65 and (i - 36) % 5 in (1, 2):   # slider track / thumb: plain shapes
             fill = (30, 60, 56, 255) if (i - 36) % 5 == 1 else (204, 204, 178, 255)
             d.rectangle((X, Y, X + bw - 1, Y + bh - 1), fill=fill)
-        rect, drawn, y0 = place_caption(kind, box, mode, fix, g, m, line_h, no_drop)
-        shown = fit_text(text, bw - 8 if bw > 8 else 0, scale) if text else ""
-        rec.update(caption_rect=list(rect), drawn=bool(drawn and shown), text_y0=y0, shown=shown)
+        pad = button_fit_pad if kind == "button" else label_fit_pad
+        shown = fit_text(text, bw - pad if bw > pad else 0, fscale) if text else ""
+        rect0, _, _ = place_caption(kind, box, mode, fix, g, m, line_h, no_drop)
+        lines = wrap_text(shown, wrap_width(kind, box, rect0, mode), scale) if shown else []
+        n = max(1, len(lines))
+        rect, drawn, y0 = place_caption(kind, box, mode, fix, g, m, line_h, no_drop, lines=n)
+        rec.update(caption_rect=list(rect), drawn=bool(drawn and shown), text_y0=y0, shown=shown, lines=len(lines), wraps=len(lines) > 1)
         if rec["drawn"]:
-            draw_line(canvas, shown, rect, y0, scale, TEAL_TEXT if kind == "button" else CREAM)
+            for k, ln in enumerate(lines):
+                draw_line(canvas, ln, rect, y0 + k * line_h, scale, TEAL_TEXT if kind == "button" else CREAM)
         items.append(rec)
-    side = {"width": W, "height": H, "mode": mode, "caption_fix": fix, "dim": g, "margin": m, "line_h": line_h, "text_scale": scale,
+    side = {"width": W, "height": H, "mode": mode, "caption_fix": fix, "dim": g, "margin": m, "line_h": line_h, "text_scale": text_scale(W), "engine_px_per_texel": scale,
+            "button_fit_pad": button_fit_pad, "label_fit_pad": label_fit_pad, "text_k": text_k, "fit_px_per_texel": fscale,
             "panes": {"column": list(panes[0]), "view": list(panes[1]), "preview": list(panes[2])}, "rows": dump["rows"], "items": items}
     if crop:
         x0 = max(0, min(p[0] for p in panes) - 40)
@@ -323,6 +383,10 @@ def main(argv=None):
     ap.add_argument("--margin", type=int, default=9, help="INNEROFFSET M")
     ap.add_argument("--line-h", type=int, default=None, help="text line height px (default 32 at text scale 2.0, scaled otherwise)")
     ap.add_argument("--no-drop", action="store_true", help="draw a caption even when its rect is shorter than the line")
+    ap.add_argument("--button-fit-pad", type=int, default=None, help=f"button fit width = w - pad (default {DEFAULT_BUTTON_FIT_PAD})")
+    ap.add_argument("--label-fit-pad", type=int, default=None, help=f"label fit width = w - pad (default {DEFAULT_LABEL_FIT_PAD})")
+    ap.add_argument("--text-k", type=float, default=None, help=f"ini text_k: fit px per texel = text_k * 0.75 (default {DEFAULT_TEXT_K})")
+    ap.add_argument("--legacy-fit", action="store_true", help=f"the 0.4.3 build: pad {LEGACY_BUTTON_FIT_PAD} for all, text_k {LEGACY_TEXT_K}")
     ap.add_argument("--crop", action="store_true", help="output the pane bounding box + 40 px margin")
     ap.add_argument("--dump-json", help="use this layout dump JSON instead of compiling/running the C++ tool")
     ap.add_argument("--build-dir", help="where the dump tool is compiled (default: system temp)")
@@ -335,14 +399,21 @@ def main(argv=None):
         dump = json.loads(Path(a.dump_json).read_text())
     else:
         dump = run_dump(*panes, build_dir=a.build_dir)
-    img, side = render(W, H, panes, dump, a.mode, a.caption_fix, a.dim, a.margin, a.line_h, a.no_drop, a.crop)
+    if a.legacy_fit:
+        defaults = (LEGACY_BUTTON_FIT_PAD, LEGACY_LABEL_FIT_PAD, LEGACY_TEXT_K)
+    else:
+        defaults = (DEFAULT_BUTTON_FIT_PAD, DEFAULT_LABEL_FIT_PAD, DEFAULT_TEXT_K)
+    bpad, lpad, tk = (d if v is None else v for v, d in zip((a.button_fit_pad, a.label_fit_pad, a.text_k), defaults))
+    img, side = render(W, H, panes, dump, a.mode, a.caption_fix, a.dim, a.margin, a.line_h, a.no_drop, a.crop, bpad, lpad, tk)
     out = Path(a.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     img.convert("RGB").save(out)
     out.with_suffix(".json").write_text(json.dumps(side, indent=1))
     n = sum(1 for it in side["items"] if it["kind"] == "button")
     dropped = sum(1 for it in side["items"] if it["kind"] == "button" and it["text"] and not it["drawn"])
-    print(f"{out} ({img.width}x{img.height}) buttons={n} dropped={dropped}")
+    wrapped = [it["i"] for it in side["items"] if it.get("wraps")]
+    wb = sum(1 for it in side["items"] if it.get("wraps") and it["kind"] == "button")
+    print(f"{out} ({img.width}x{img.height}) buttons={n} dropped={dropped} wrapped={len(wrapped)} (buttons {wb}) items={wrapped}")
     return 0
 
 

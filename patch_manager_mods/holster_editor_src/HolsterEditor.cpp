@@ -1,4 +1,4 @@
-// HolsterEditor.cpp -- holster-editor 0.4.3-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
+// HolsterEditor.cpp -- holster-editor 0.4.4-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
 // (doc 42 HW-EDIT, plan .claude/plans/holster_editor_options.md; page rebuild: .claude/plans/holster_editor_layout_v3.md, holster_hw_ux3_build.md Wave B.)
 //
 // mod-config owns everything about the Options screen: the hooks, the root "Mod Configuration" button, the list page, control cloning,
@@ -104,7 +104,7 @@ int g_probeCam = 1;        // ini probe_cam: 1 = the CAMENG engine camera probe 
 int g_probeCaption = 1;    // ini probe_caption: 1 = log the CAPTION lines (button caption rect before / after the fix), 0 = quiet
 int g_captionFix = 1;      // ini caption_fix: 1 = set each button's caption text rect to {engine x/w, button y/h} (hse::captionRect), 0 = leave the engine's inset rect
 int g_probeNames = 1;      // ini probe_names: 0 = off (weapon buttons show the model resref), 1 = item GetName with identified=0 (the button name; ITEMNAME log), 2 = also identified=1 (log only)
-float g_textK = 2.5f;       // ini text_k: vertical scale (sy) used when measuring label text; the engine draws the page labels about 2.5x wider than sy 1 predicts (measured at 3840x1600)
+float g_textK = 2.65f;      // ini text_k: vertical scale (sy) used when measuring label text; the engine draws the page labels about 2.64x wider than sy 1 predicts (measured at 3840x1600)
 float g_statusFit = 1.0f;  // ini status_fit: multiplier on the status pane width when fitting the status text (the label font is not measured)
 float g_cfgYaw = 180.0f;
 float g_cfgZoom = hse::kZoomFit;
@@ -199,6 +199,7 @@ struct Editor {
     hse::Scrub scrub;                  // the running row scrub (pure state)
     hse::TextCache inspText;           // what each value label was last given: SetText only on a change
     bool inspForce = true;             // the next refresh rewrites every value text
+    int inspValW = -1;                 // width of the value boxes the cached texts were fitted to
     float inspSeenRot[3] = {0, 0, 0}, inspSeenOff[3] = {0, 0, 0};
     int inspSeenScope = -1;
     DWORD inspWinStart = 0;            // INSP refresh log window (log_verbose only)
@@ -355,7 +356,7 @@ void readConfig() {
         else if (!_stricmp(k, "caption_fix")) g_captionFix = (v[0] >= '0' && v[0] <= '9') ? (atoi(v) != 0 ? 1 : 0) : (on ? 1 : 0);
         else if (!_stricmp(k, "text_k")) {
             const float f = static_cast<float>(atof(v));
-            g_textK = (f >= 0.5f && f <= 6.0f) ? f : 2.5f;
+            g_textK = (f >= 0.5f && f <= 6.0f) ? f : 2.65f;
         }
         else if (!_stricmp(k, "status_fit")) {
             const float f = static_cast<float>(atof(v));
@@ -370,7 +371,7 @@ void readConfig() {
 }
 
 const char* statusText() {
-    return g_p3.ok() && g_hol.ok() ? "0.4.3 dev: preview + holster connected" : "0.4.3 dev: a provider is missing";
+    return g_p3.ok() && g_hol.ok() ? "0.4.4 dev: preview + holster connected" : "0.4.4 dev: a provider is missing";
 }
 
 bool editDirty();   // defined with the status helpers below
@@ -1125,7 +1126,7 @@ void probeItemNames(Editor& e, uintptr_t clientMember) {
 
 void updateStatusText(Editor& e);   // defined with the status helpers below
 
-// Text measuring context for every label fit: sy = ini text_k (default 2.5), UI units, texel width * 0.75 (TextK), no scale.
+// Text measuring context for every label fit: sy = ini text_k (default 2.65), UI units, texel width * 0.75 (TextK), no scale.
 textfit::TextCtx textCtx() { return textfit::TextCtx{g_textK, 1.0f, 1.0f}; }
 
 // raw cut with "..." to maxPx (the label font is not measured; ini status_fit scales the width).
@@ -1347,13 +1348,22 @@ void fitButton(float maxPx, const char* raw, char* out, int cap) {
     else textfit::fitText(tc, raw, maxPx, out, cap);
 }
 
-// Text room of a box: its width less the button padding (0 = not laid out yet).
-float boxPx(const Editor& e, const editkit::Box& b) { return e.layOk && b.w > 8 ? static_cast<float>(b.w - 8) : 0.0f; }
+// Text room of a BUTTON caption: the box width less the engine's 7 px inset and 3 px slack per side (HseView.h buttonTextPx; 0 = not laid out yet).
+float buttonPx(const Editor& e, const editkit::Box& b) { return e.layOk ? static_cast<float>(hse::buttonTextPx(b.w)) : 0.0f; }
+// Text room of a selector caption: buttonPx, less the width of the ">" "<" marks that a lit selector gets when the colour call was refused (setSel),
+// so the marked text still fits the button (never below 1 px: 0 would mean "not laid out yet").
+float selPx(const Editor& e, const editkit::Box& b, bool lit) {
+    float px = buttonPx(e, b);
+    if (px <= 0.0f || !lit || !e.colorBad) return px;
+    px -= textfit::textPx(textCtx(), "><", 2);
+    return px < 1.0f ? 1.0f : px;
+}
+// Text room of a LABEL (status, note, hints, legend, inspector values): the box width less 4 px per side (0 = not laid out yet).
+float labelPx(const Editor& e, const editkit::Box& b) { return e.layOk ? static_cast<float>(hse::labelTextPx(b.w)) : 0.0f; }
 
 // Weapon button caption: the item display name (cached at build), else the model resref. "Right: Vibrosword" when that fits the button, else
 // "R: Vibrosword", cut with "..." when even that is too wide.
-void handCaption(const Editor& e, int hand, char* out, int cap) {
-    const float maxPx = boxPx(e, e.lay.weapon[hand]);
+void handCaption(const Editor& e, int hand, float maxPx, char* out, int cap) {
     const textfit::TextCtx tc = textCtx();
     char longT[96], shortT[96];
     hse::handButtonText(longT, sizeof longT, hand, false, e.itemName[hand], e.wpnName[hand], e.regGob[hand] != nullptr);
@@ -1379,25 +1389,30 @@ void refreshSelectors(Editor& e, bool force) {
     e.selKeyValid = true;
     char raw[64], fit[64];
     for (int h = 0; h < hse::kV3Weapons; ++h) {
-        handCaption(e, h, raw, sizeof raw);
-        setSel(e, hse::PI_WEAPON + h, editing && e.editHand == h, raw);
+        const bool lit = editing && e.editHand == h;
+        handCaption(e, h, selPx(e, e.lay.weapon[h], lit), raw, sizeof raw);
+        setSel(e, hse::PI_WEAPON + h, lit, raw);
     }
     for (int i = 0; i < hse::kV3Bones; ++i) {
-        fitButton(boxPx(e, e.lay.bone[i]), hse::boneLabel(i), fit, sizeof fit);
-        setSel(e, hse::PI_BONE + i, editing && boneIdx == i, fit);
+        const bool lit = editing && boneIdx == i;
+        fitButton(selPx(e, e.lay.bone[i], lit), hse::boneLabel(i), fit, sizeof fit);
+        setSel(e, hse::PI_BONE + i, lit, fit);
     }
     for (int i = 0; i < hse::kV3Scopes; ++i) {
         hse::scopeSegText(raw, sizeof raw, i, e.editInfo.type);
-        fitButton(boxPx(e, e.lay.scope[i]), raw, fit, sizeof fit);
-        setSel(e, hse::PI_SCOPE + i, editing && e.editScope == i, fit);
+        const bool lit = editing && e.editScope == i;
+        fitButton(selPx(e, e.lay.scope[i], lit), raw, fit, sizeof fit);
+        setSel(e, hse::PI_SCOPE + i, lit, fit);
     }
     for (int i = 0; i < hse::kV3Stances; ++i) {
-        fitButton(boxPx(e, e.lay.stance[i]), kStanceList[i].label, fit, sizeof fit);
-        setSel(e, hse::PI_STANCE + i, e.stanceIdx == i, fit);
+        const bool lit = e.stanceIdx == i;
+        fitButton(selPx(e, e.lay.stance[i], lit), kStanceList[i].label, fit, sizeof fit);
+        setSel(e, hse::PI_STANCE + i, lit, fit);
     }
     for (int i = 0; i < kModeCount; ++i) {
-        fitButton(boxPx(e, e.lay.modeBtn[i]), hse::weaponModeName(i), fit, sizeof fit);
-        setSel(e, hse::PI_MODE + i, e.weaponMode == i, fit);
+        const bool lit = e.weaponMode == i;
+        fitButton(selPx(e, e.lay.modeBtn[i], lit), hse::weaponModeName(i), fit, sizeof fit);
+        setSel(e, hse::PI_MODE + i, lit, fit);
     }
 }
 
@@ -1430,7 +1445,7 @@ void updateStatusText(Editor& e) {
         snprintf(raw, sizeof raw, "Member %d/%d | Weapons: %s%s%s", e.member + 1, hse::memberCount(), e.regGob[0] ? "Right" : "-", (e.regGob[0] && e.regGob[1]) ? "+" : "",
                  e.regGob[1] ? "Left" : (e.regGob[0] ? "" : "None"));
     }
-    fitStatus(boxPx(e, e.lay.status), raw, buf, static_cast<int>(sizeof buf));
+    fitStatus(labelPx(e, e.lay.status), raw, buf, static_cast<int>(sizeof buf));
     setItemText(e, hse::PI_STATUS, buf);
 }
 
@@ -1438,7 +1453,7 @@ void updateStatusText(Editor& e) {
 void refreshNote(Editor& e) {
     const bool mirrored = e.mode == MODE_WEAPON && e.editHand == 1 && hse::leftMirrored(e.editInfo.left != 0, e.editInfo.src);
     char fit[64];
-    fitButton(boxPx(e, e.lay.note), mirrored ? "Left: mirrored from right" : "", fit, sizeof fit);
+    fitButton(labelPx(e, e.lay.note), mirrored ? "Left: mirrored from right" : "", fit, sizeof fit);
     setItemText(e, hse::PI_NOTE, fit);
 }
 
@@ -1636,6 +1651,10 @@ void refreshInspector(Editor& e, bool force) {
     }
     if (!ok) return;   // the edit was lost: the callers that noticed it leave edit mode
     if (e.shownDirty != e.editInfo.dirty) updateStatusText(e);   // an unsaved edit starts / ends: the status label follows
+    if (e.inspValW != e.lay.rows[0].value.w) {   // the value boxes were resized: refit every value text
+        e.inspValW = e.lay.rows[0].value.w;
+        e.inspForce = true;
+    }
     const bool changed = force || e.inspForce || e.inspSeenScope != e.editInfo.scope || memcmp(e.inspSeenRot, e.editInfo.rot, sizeof e.inspSeenRot) != 0 ||
                          memcmp(e.inspSeenOff, e.editInfo.off, sizeof e.inspSeenOff) != 0;
     if (!changed) return;
@@ -1650,11 +1669,12 @@ void refreshInspector(Editor& e, bool force) {
         const float v = hse::inspGet(r, e.editInfo.rot, e.editInfo.off);
         const float open = hse::inspGet(r, e.openRot, e.openOff);
         e.rowFrac[r] = enabled ? hse::inspThumbFrac(r, v) : 0.5f;
-        char raw[32];
+        char raw[32], fit[32];
         hse::inspValueText(raw, sizeof raw, r, v, enabled);
+        fitButton(labelPx(e, e.lay.rows[r].value), raw, fit, sizeof fit);   // an over-wide value would word-wrap and lose the number
         const int idx = hse::PI_ROW + r * hse::kRowStride + 3;
-        if (e.inspText.update(r, raw) && e.item[idx] >= 0) {
-            setItemText(e, idx, raw);
+        if (e.inspText.update(r, fit) && e.item[idx] >= 0) {
+            setItemText(e, idx, fit);
             ++e.inspWinSets;
         }
         setItemColor(e, idx, enabled && e.openValid && hse::inspDiffers(r, v, open), kColAmber);
@@ -1722,7 +1742,7 @@ void refreshHints(Editor& e, int x, int y) {
     if (row == e.hintRow) return;
     e.hintRow = row;
     char fit[64];
-    fitButton(boxPx(e, e.lay.hint[1]), row >= 0 ? hse::inspHint(row) : "", fit, sizeof fit);
+    fitButton(labelPx(e, e.lay.hint[1]), row >= 0 ? hse::inspHint(row) : "", fit, sizeof fit);
     setItemText(e, hse::PI_HINT + 1, fit);
 }
 
@@ -1972,11 +1992,11 @@ void KPATCH_CALL cbEnter(uint32_t page, void*) {
     guikit::g_wheel.touch(GetTickCount());
     setItemText(g_ed, hse::PI_STATUS, statusText());
     char fit[64];
-    fitButton(boxPx(g_ed, g_ed.lay.hint[0]), "Drag or click a slider. Shift fine, Ctrl snap.", fit, sizeof fit);
+    fitButton(labelPx(g_ed, g_ed.lay.hint[0]), "Drag or click a slider. Shift fine, Ctrl snap.", fit, sizeof fit);
     setItemText(g_ed, hse::PI_HINT, fit);
     {   // the legend line under the view: cut to the view width
         char leg[64];
-        fitButton(boxPx(g_ed, g_ed.lay.legend), hse::helpLine(), leg, sizeof leg);
+        fitButton(labelPx(g_ed, g_ed.lay.legend), hse::helpLine(), leg, sizeof leg);
         setItemText(g_ed, hse::PI_LEGEND, leg);
     }
 
@@ -2454,7 +2474,9 @@ void tickBody(Editor& e) {
         bool gotName = hse::memberName(C, rawName, sizeof(rawName));
         char label[64] = {0};
         hse::memberLabel(label, sizeof(label), e.member, rawName);
-        setItemText(e, hse::PI_MEMBER_NAME, label);
+        char labelFit[64];
+        fitButton(labelPx(e, e.lay.memberName), label, labelFit, sizeof labelFit);
+        setItemText(e, hse::PI_MEMBER_NAME, labelFit);
         KP_LOG(chView, "NAME member=%d text=%s read=%d", e.member + 1, label, gotName ? 1 : 0);
 
         readWeaponModel(e.regGob[0], e.wpnName[0], sizeof(e.wpnName[0]));
@@ -2462,8 +2484,8 @@ void tickBody(Editor& e) {
         probeItemNames(e, C);   // fills e.itemName (cached for this build; GetName is never called per frame)
 
         char rBuf[96], lBuf[96];
-        handCaption(e, 0, rBuf, sizeof rBuf);
-        handCaption(e, 1, lBuf, sizeof lBuf);
+        handCaption(e, 0, buttonPx(e, e.lay.weapon[0]), rBuf, sizeof rBuf);
+        handCaption(e, 1, buttonPx(e, e.lay.weapon[1]), lBuf, sizeof lBuf);
         KP_LOG(chView, "HANDS R=\"%s\" (name=\"%s\" resref=%s) L=\"%s\" (name=\"%s\" resref=%s)", rBuf, e.itemName[0], e.wpnName[0][0] ? e.wpnName[0] : "-", lBuf,
                e.itemName[1], e.wpnName[1][0] ? e.wpnName[1] : "-");
 
@@ -2606,7 +2628,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_menu.init(api);
     embedgui::g_log = embedLog;
     embtex::g_log = embedLog;
-    KP_LOG(chMain, "holster-editor 0.4.3-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
+    KP_LOG(chMain, "holster-editor 0.4.4-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
            static_cast<unsigned>(sizeof kHseViewGui));
     const bool cfgOk = g_cfgClient.connect(), menuOk = g_menu.connect();
     if (!cfgOk || !menuOk) {

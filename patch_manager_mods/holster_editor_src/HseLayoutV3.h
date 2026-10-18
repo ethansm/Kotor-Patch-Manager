@@ -1,6 +1,7 @@
 // Holster editor page layout v3 (HW-UX3 L0c; pure: no Win32 types, no STL). Host-tested by hse_layout_v3_test.cpp.
 // One call returns every Box of the rebuilt page: the left column (member, weapon, bone, scope, save/revert, status),
-// the view area (mode bar, enlarged view, stance row, legend) and the inspector in the right pane (two groups, six slider
+// the view area (mode bar in 2 x 2, enlarged view, stances 3 + 2, legend; one row each on tiny screens; the left column likewise has a roomy form (2 bone columns, one
+// scope per row) and a compact one below kV3RoomyRowMin rows) and the inspector in the right pane (two groups, six slider
 // rows with thumbs, value labels outside the track, reset squares, note, hint lines).
 // Integer math only (float rounding differed between x87 and SSE builds, F18); the only floats are the thumb fractions,
 // clamped before they touch a pixel (NaN -> 0), exactly like HseLayout.h modalLayout. 4 px pad, 2 px gaps.
@@ -13,7 +14,7 @@
 //             ordered column < view < preview (left to right).
 //   preview = MUI_PANE_PREVIEW (the area above the shrunken description). The inspector is at most kInspWantW wide,
 //             left aligned at preview.x + 4.
-//   hint    = optional description rect (w <= 0 or h <= 0 means none): the two hint lines (kV3HintMax = 26 px high where space allows) go inside it. Without it they
+//   hint    = optional description rect (w <= 0 or h <= 0 means none): the two hint lines (kV3HintMax = 40 px high where space allows) go inside it. Without it they
 //             are stacked under the mirrored note inside `preview`. The holster editor passes NO hint rect: the shrunken description pane
 //             under the split belongs to mod-config (its hover text), so a label over it would cover that text.
 // Documented minimum panes (everything has positive size and nothing overlaps): column 140 x 180, view 160 x 150,
@@ -37,16 +38,18 @@ constexpr int kV3Groups = 2;      // Position, Rotation
 constexpr int kV3Hints = 2;       // hint lines under the inspector
 constexpr int kV3ThumbW = 10;     // slider thumb width
 
-constexpr int kV3ColWantW = 440;  // widest the left column content grows
-constexpr int kV3InspWantW = 720; // widest the inspector grows
-constexpr int kV3RowMax = 34, kV3RowMin = 14;   // left column and inspector row heights (pick the largest that fits)
-constexpr int kV3BarMax = 34, kV3BarMin = 12;   // mode bar / stance row heights
+constexpr int kV3ColWantW = 480;  // widest the left column content grows
+constexpr int kV3InspWantW = 1000; // widest the inspector grows
+constexpr int kV3LeftRowMax = 52, kV3InspRowMax = 52, kV3RowMin = 14;   // left column and inspector row heights (pick the largest that fits)
+constexpr int kV3RoomyRowMin = 30;  // the roomy left column (2 bone columns, one scope per row) is used while its rows stay at least this high; below, the compact one
+constexpr int kV3BarMax = 44, kV3BarMin = 12;   // mode bar / stance row heights
 constexpr int kV3MinViewW = 8;    // the view area is at least this wide when the preview pane leaves any room
-constexpr int kV3HintMax = 26;    // hint line height (dialogfont16x16 lines need about 18 px); shrinks only when the rect is small
+constexpr int kV3HintMax = 40;    // hint line height (dialogfont16x16 lines need about 18 px); shrinks only when the rect is small
 constexpr int kV3MinViewH = 60;   // the bars shrink before the view gets lower than this
-constexpr int kV3NameW = 120, kV3ValueW = 140;    // inspector name and value label widths (shrink together when narrow)
+constexpr int kV3NameW = 170, kV3ValueW = 200;    // inspector name and value label widths (shrink together when narrow)
+constexpr int kV3TrackWant = 150;  // a narrow inspector keeps the track this wide before the labels take their full width
 constexpr int kV3TrackMin = 60;   // the inspector slider track keeps at least this width (the labels shrink first)
-constexpr int kV3ResetMax = 30;   // reset icon squares are up to 30 x 30 (smaller only when the row is)
+constexpr int kV3ResetMax = 40;   // reset icon squares are up to 40 x 40 (smaller only when the row is)
 
 // Page items that become mod-config items: left 19 (member 3, captions 3, weapons 2, bones 5, scopes 3, save/revert 2,
 // status 1) + view area 13 (mode 4, view reset + flip 2, view 1, stances 5, legend 1) + inspector 37 (group labels 2,
@@ -99,7 +102,8 @@ inline int cellW(int w, int n) { return imax(0, (w - (n - 1) * 2) / n); }
 constexpr int kPad = 4, kGap = 2, kSpacer = 4;
 
 // Left column at row height r. Returns the y just below the content plus the bottom pad.
-inline int buildLeft(editkit::Box Z, int r, PageLayoutV3& L) {
+// roomy: bones in 2 columns (3 rows) and one scope per row (3 rows) so every caption gets a wide button; else the compact grid (3 + 2 bones, 3 scopes in one row).
+inline int buildLeft(editkit::Box Z, int r, bool roomy, PageLayoutV3& L) {
     using editkit::Box;
     const int cap = r * 2 / 3;
     const int x0 = Z.x + kPad, W = imax(0, Z.w - 2 * kPad);
@@ -117,14 +121,25 @@ inline int buildLeft(editkit::Box Z, int r, PageLayoutV3& L) {
 
     L.capBone = mk(x0, y, W, cap); y += cap + kGap;
     int c3 = cellW(W, 3), c2 = cellW(W, 2);
-    for (int i = 0; i < 3; ++i) L.bone[i] = mk(x0 + i * (c3 + kGap), y, c3, r);
-    y += r + kGap;
-    for (int i = 0; i < 2; ++i) L.bone[3 + i] = mk(x0 + i * (c2 + kGap), y, c2, r);
-    y += r + kGap;
+    if (roomy) {
+        // Upper back | Back / Pelvis | R hip / L hip (the odd one out takes the left half)
+        for (int i = 0; i < kV3Bones; ++i) L.bone[i] = mk(x0 + (i % 2) * (c2 + kGap), y + (i / 2) * (r + kGap), c2, r);
+        y += 3 * (r + kGap);
+    } else {
+        for (int i = 0; i < 3; ++i) L.bone[i] = mk(x0 + i * (c3 + kGap), y, c3, r);
+        y += r + kGap;
+        for (int i = 0; i < 2; ++i) L.bone[3 + i] = mk(x0 + i * (c2 + kGap), y, c2, r);
+        y += r + kGap;
+    }
 
     L.capScope = mk(x0, y, W, cap); y += cap + kGap;
-    for (int i = 0; i < kV3Scopes; ++i) L.scope[i] = mk(x0 + i * (c3 + kGap), y, c3, r);
-    y += r + kGap + kSpacer;
+    if (roomy) {
+        for (int i = 0; i < kV3Scopes; ++i) { L.scope[i] = mk(x0, y, W, r); y += r + kGap; }
+        y += kSpacer;
+    } else {
+        for (int i = 0; i < kV3Scopes; ++i) L.scope[i] = mk(x0 + i * (c3 + kGap), y, c3, r);
+        y += r + kGap + kSpacer;
+    }
 
     // Save | Revert | Reset: thirds, but Save gives 4 px to Reset (the label "Reset" misses the narrowest text budget by half a pixel at a plain third).
     const int w3 = c3;
@@ -152,7 +167,9 @@ inline int buildInspector(editkit::Box Z, editkit::Box hintZone, int rr, const f
     // widths: name | track | value | reset, 2 px gaps; the labels take up to kV3NameW + kV3ValueW but leave the track at least kV3TrackMin
     // (the labels shrink together, name : value kept); the track takes what is left
     int avail = imax(0, W - sq - 3 * kGap);
-    const int lw = imin(imax(0, avail - kV3TrackMin), kV3NameW + kV3ValueW);
+    // The track keeps max(kV3TrackMin, min(kV3TrackWant, avail / 2)): a narrow inspector shares its width, a wide one gives the labels their full width.
+    const int trackKeep = imax(kV3TrackMin, imin(kV3TrackWant, avail / 2));
+    const int lw = imin(imax(0, avail - trackKeep), kV3NameW + kV3ValueW);
     const int nm = lw * kV3NameW / (kV3NameW + kV3ValueW), vw = lw - nm, tw = avail - lw;
 
     for (int g = 0; g < kV3Groups; ++g) {
@@ -207,9 +224,17 @@ inline PageLayoutV3 pageLayoutV3(editkit::Box column, editkit::Box view, editkit
     // ---- left column: content width capped, never reaching into the view pane
     int colW = v3::iclamp(v3::imin(column.w, kV3ColWantW), 0, v3::imax(0, view.x - 4 - column.x));
     Box colZ{column.x, column.y, colW, column.h};
-    for (int r = kV3RowMax; r >= kV3RowMin; --r) {
-        L.leftRowH = r;
-        if (v3::buildLeft(colZ, r, L) <= colZ.y + v3::imax(0, colZ.h)) break;
+    {
+        bool fitted = false;
+        for (int r = kV3LeftRowMax; r >= kV3RoomyRowMin && !fitted; --r) {
+            L.leftRowH = r;
+            fitted = v3::buildLeft(colZ, r, true, L) <= colZ.y + v3::imax(0, colZ.h);
+        }
+        for (int r = kV3RoomyRowMin - 1; r >= kV3RowMin && !fitted; --r) {
+            L.leftRowH = r;
+            fitted = v3::buildLeft(colZ, r, false, L) <= colZ.y + v3::imax(0, colZ.h);
+        }
+        if (!fitted) { L.leftRowH = kV3RowMin; v3::buildLeft(colZ, kV3RowMin, false, L); }
     }
 
     // ---- view area: from 4 px right of the used column to the preview pane (or the old right edge)
@@ -223,31 +248,54 @@ inline PageLayoutV3 pageLayoutV3(editkit::Box column, editkit::Box view, editkit
     }
     const int vw = v3::imax(0, vr - vl);
     const Box vz{vl, view.y, vw, view.h};
+    // Two-row bars while the view keeps kV3MinViewH + one bar of height at some bar height b >= kV3BarMin: modes 2 x 2 (the reset / flip icons at the
+    // right end of the first row), stances 3 + 2; otherwise the single rows (tiny screens). Cell widths are shared per row so the columns line up.
     int b = kV3BarMax;
-    for (; b > kV3BarMin; --b) {
-        if (view.h - (2 * b + b * 2 / 3 + 3 * 2) >= kV3MinViewH) break;
+    bool two = false;
+    for (int bb = kV3BarMax; bb >= kV3BarMin; --bb) {
+        if (view.h - (4 * bb + bb * 2 / 3 + 5 * 2) >= kV3MinViewH + bb) { b = bb; two = true; break; }
+    }
+    if (!two) {
+        for (b = kV3BarMax; b > kV3BarMin; --b) {
+            if (view.h - (2 * b + b * 2 / 3 + 3 * 2) >= kV3MinViewH) break;
+        }
     }
     L.barH = b;
     const int lg = b * 2 / 3;
-    const int viewH = v3::imax(0, view.h - (2 * b + lg + 3 * 2));
+    const int nb = two ? 4 : 2;   // bar rows above and below the view
+    const int viewH = v3::imax(0, view.h - (nb * b + lg + (nb + 1) * 2));
     auto mkv = [&](int x, int y, int w, int h) { return v3::clipTo(Box{x, y, w, h}, vz); };
-    int y0 = view.y, y1 = y0 + b + 2, y2 = y1 + viewH + 2, y3 = y2 + b + 2;
+    int y0 = view.y;
     L.viewFlip = mkv(vr - b, y0, b, b);
     L.viewReset = mkv(vr - b - 2 - b, y0, b, b);
-    {
-        int limit = L.viewReset.x - 6;          // 6 px between the mode buttons and the icons
+    const int limit = L.viewReset.x - 6;          // 6 px between the mode buttons and the icons
+    int yv, ys, yl;
+    if (two) {
+        int mw = v3::iclamp((limit - vl - 2) / 2, 0, 190 * 2);
+        for (int i = 0; i < kV3Modes; ++i) L.modeBtn[i] = mkv(vl + (i % 2) * (mw + 2), y0 + (i / 2) * (b + 2), mw, b);
+        yv = y0 + 2 * (b + 2);
+        L.view = mkv(vl, yv, vw, viewH);
+        ys = yv + viewH + 2;
+        const int s3 = v3::cellW(vw, 3), s2 = v3::cellW(vw, 2);
+        for (int i = 0; i < kV3Stances; ++i) {
+            const int row = i / 3, col = i % 3;
+            L.stance[i] = row == 0 ? mkv(vl + col * (s3 + 2), ys, s3, b) : mkv(vl + col * (s2 + 2), ys + b + 2, s2, b);
+        }
+        yl = ys + 2 * (b + 2);
+    } else {
         int mw = v3::iclamp((limit - vl - 3 * 2) / 4, 0, 190);
         for (int i = 0; i < kV3Modes; ++i) L.modeBtn[i] = mkv(vl + i * (mw + 2), y0, mw, b);
+        yv = y0 + b + 2;
+        L.view = mkv(vl, yv, vw, viewH);
+        ys = yv + viewH + 2;
+        const int sw = v3::cellW(vw, kV3Stances);
+        for (int i = 0; i < kV3Stances; ++i) L.stance[i] = mkv(vl + i * (sw + 2), ys, sw, b);
+        yl = ys + b + 2;
     }
-    L.view = mkv(vl, y1, vw, viewH);
-    {
-        int sw = v3::cellW(vw, kV3Stances);
-        for (int i = 0; i < kV3Stances; ++i) L.stance[i] = mkv(vl + i * (sw + 2), y2, sw, b);
-    }
-    L.legend = mkv(vl, y3, vw, lg);
+    L.legend = mkv(vl, yl, vw, lg);
 
     // ---- inspector
-    for (int rr = kV3RowMax; rr >= kV3RowMin; --rr) {
+    for (int rr = kV3InspRowMax; rr >= kV3RowMin; --rr) {
         L.inspRowH = rr;
         if (v3::buildInspector(preview, hint, rr, thumbFrac, L) <= preview.y + v3::imax(0, preview.h)) break;
     }

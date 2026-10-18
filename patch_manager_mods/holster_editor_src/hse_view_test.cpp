@@ -18,6 +18,28 @@ static bool sameView(hse::View a, hse::View b, float eps = 1e-4f) {
     return closeF(a.yaw, b.yaw, eps) && closeF(a.zoom, b.zoom, eps) && closeF(a.panZ, b.panZ, eps);
 }
 
+// Caption text budgets: the live probe "CAPTION i=8 before btn=(776,517,142,34) text=(783,525,128,18)" = engine text x + 7, w - 14; the budget keeps 3 px
+// more per side (buttonTextPx = w - 20), labels keep 4 px per side (labelTextPx = w - 8). Both clamp at 0.
+static void testTextBudgets() {
+    KT_CHECK_EQ(hse::kButtonTextInset, 7);
+    KT_CHECK_EQ(hse::kTextSlack, 3);
+    KT_CHECK_EQ(hse::buttonTextPx(142), 122);   // probe item 8: engine text w 128, budget 122
+    KT_CHECK(hse::buttonTextPx(142) < 128);
+    KT_CHECK_EQ(hse::buttonTextPx(20), 0);
+    KT_CHECK_EQ(hse::buttonTextPx(0), 0);
+    KT_CHECK_EQ(hse::buttonTextPx(-5), 0);
+    KT_CHECK_EQ(hse::buttonTextPx(21), 1);
+    KT_CHECK_EQ(hse::labelTextPx(200), 192);
+    KT_CHECK_EQ(hse::labelTextPx(8), 0);
+    KT_CHECK_EQ(hse::labelTextPx(-1), 0);
+    for (int w = 0; w < 400; ++w) KT_CHECK(hse::buttonTextPx(w) <= hse::labelTextPx(w) && hse::buttonTextPx(w) >= 0);
+    // a caption cut to the button budget at the measured factor (2.65) is narrower than the engine's own text width (w - 14): it never wraps
+    const textfit::TextCtx tc = {2.65f, 1.0f, 1.0f};
+    char fit[64];
+    textfit::fitText(tc, "Upper back", static_cast<float>(hse::buttonTextPx(142)), fit, sizeof fit);
+    KT_CHECK(textfit::textPx(tc, fit, static_cast<int>(strlen(fit))) <= 128.0f);
+}
+
 static void testCaptionRect() {
     const hse::HseRect btn = {100, 200, 120, 34};
     // normal: engine x/w kept, y/h from the button (engine inset the height to 0 or 2*margin)
@@ -1757,6 +1779,7 @@ int main() {
     testUx3TrackValue();
     testUx3Hints();
     testCaptionRect();
+    testTextBudgets();
     return kt::Report("hse_view");
 }
 
