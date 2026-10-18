@@ -62,7 +62,9 @@ inline void Resolve(uint32_t oid, Chain* c) {
     uint32_t app = 0, server = 0;
     if (!oid || !rd(kGlobalApp, 0, &app) || !app || !rd(app, 8, &server) || !server) return;
     using FnObj = uintptr_t(__thiscall*)(uintptr_t, uint32_t);
-    c->server = reinterpret_cast<FnObj>(kFnServerObject)(server, oid);
+    // Run A (10-18): the client oid (bit 31 set, e.g. 0x8000000B) found no server object. GetClientObject keys on serverOid|0x80000000,
+    // so the server oid is the client oid with bit 31 cleared.
+    c->server = reinterpret_cast<FnObj>(kFnServerObject)(server, oid & 0x7FFFFFFFu);
     if (!c->server) return;
     c->stage = StServer;
     uint8_t type = 0;
