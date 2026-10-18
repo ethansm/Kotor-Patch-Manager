@@ -244,14 +244,25 @@ inline void overlayGetEdit(EditOverlay& o, EditView& v) {
     v.scope = o.scope;
 }
 
+// True when the shown rot still equals the seed within the printed precision (0.06 deg per component).
+inline bool overlayRotUnchanged(const EditOverlay& o) {
+    for (int i = 0; i < 3; ++i)
+        if (std::fabs(wrap180(o.cur.rot[i] - o.seed.rot[i])) > 0.06f) return false;
+    return true;
+}
+
 // Stores one level's values (rot, level off, bone). The level is in the hand's own frame, so nothing is mirrored here.
+// left_extra_rot contract: when the seed's left rot was inherited from the mirror and carried an extra tilt (seed.extraDeg != 0) and the
+// user did not change the rot, rot is NOT written (hasRot and rot stay as they were), so the level stays "inherited" and the extra keeps
+// applying live. A changed rot is written as shown (WYSIWYG: an explicit l_ rot is never given the extra again).
 inline void overlayStoreLevel(CatTune& t, const EditOverlay& o) {
-    t.hasRot = true;
     t.hasOff = true;
-    for (int i = 0; i < 3; ++i) {
-        t.rot[i] = o.cur.rot[i];
-        t.off[i] = o.baseOff[i];
+    const bool keepInherited = o.left && o.seed.extraDeg != 0.f && overlayRotUnchanged(o);
+    if (!keepInherited) {
+        t.hasRot = true;
+        for (int i = 0; i < 3; ++i) t.rot[i] = o.cur.rot[i];
     }
+    for (int i = 0; i < 3; ++i) t.off[i] = o.baseOff[i];
     t.boneIdx = o.cur.boneIdx;
 }
 

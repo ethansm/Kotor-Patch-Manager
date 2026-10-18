@@ -1,4 +1,4 @@
-// Holster.cpp -- holster 0.1.4-dev (Steam build): P0 probe for the holstered-weapons mod (patch_manager_mods/42_holstered_weapons.md).
+// Holster.cpp -- holster 0.1.5-dev (Steam build): P0 probe for the holstered-weapons mod (patch_manager_mods/42_holstered_weapons.md).
 // Plan: .claude/plans/holstered_weapons.md. Handlers are plain extern "C" void __cdecl functions; the detour wrappers in
 // kotor2-steam-aspyr.hooks.toml call them at function entry with the game arguments BEFORE the stolen bytes run.
 // Hard rules for P0 (exceptions, both default off: the bone_test code patch, and HolsterPlace's 28-byte pose write with probe=1 bone_test=1 place=1): no other writes to game memory or registers, no engine calls, reads only through saferead, and every handler returns at
@@ -48,7 +48,15 @@ const bool g_fallbackSet = (KpLog_SetFallbackFile("holster_log.txt"), KpLog_SetF
 // Config. Written once in KPatchInit (before the handlers do anything); defaults are silent.
 static bool g_probe = false;
 static bool g_onComb = false, g_onAttach = false, g_onSwap = false, g_onAnim = false, g_onGob = false, g_onPlace = false;   // probe=1 AND ch_<name>=1 (g_onPlace gates PLACE logging only)
-static bool g_boneTest = false, g_boneLeft = false;   // bone_test=1 (needs probe=1), bone_test_left=1
+// bone_test=1 (needs probe=1); bone_test_left defaults to 1 (the lhand attach node is repointed like the rhand, so a left weapon is holstered
+// and mirrored); bone_test_left=0 is the escape hatch that leaves the lhand unpatched. g_boneLeftCfg is the ini value alone (CONFIG log).
+static bool g_boneTest = false, g_boneLeft = false, g_boneLeftCfg = true;
+// Config warnings found before KpLog_Init (readConfig runs first): flushed once by KPatchInit.
+static char g_cfgWarn[4][120];
+static int g_cfgWarnN = 0;
+static void cfgWarn(const char* key, const char* val, const char* why) {
+    if (g_cfgWarnN < 4) snprintf(g_cfgWarn[g_cfgWarnN++], sizeof g_cfgWarn[0], "ini %.40s=%.40s ignored: %s", key, val, why);
+}
 static bool g_editor = true;            // editor=0: RegisterPreview refuses and the preview fast path never runs (no probe needed)
 static char g_boneName[32] = "pelvis_g";              // attach node name; its ADDRESS becomes the push immediate, so it must stay static
 static LONG g_maxLines = 3000;
@@ -161,8 +169,21 @@ static void parseTuneText(const char* text, hs::TuneCfg& t) {
         *eq = 0;
         char* key = trimIni(p);
         char* val = trimIni(eq + 1);
-        if (hs::isTuneKey(key)) (void)hs::applyTuneKey(t, key, val);
+        if (hs::isTuneKey(key) && !hs::applyTuneKey(t, key, val) && hs::isLeftExtraKey(key))
+            KP_LOGV(chMain, KPLOG_WARN, "ini %.40s=%.40s ignored: need one number within +-%.0f (known suffixes: lightsaber melee qstaff pistol rifle heavy)", key, val,
+                    static_cast<double>(hs::kLeftExtraParseMax));
     }
+}
+
+// WARN for every left_extra_rot value that the clamp changes (the raw value stays in the ini; resolveFull uses +-kLeftExtraMax).
+static void warnLeftExtraClamp(const hs::TuneCfg& t, const char* where) {
+    if (hs::leftExtraClamped(t.leftExtra))
+        KP_LOGV(chMain, KPLOG_WARN, "%s left_extra_rot=%.1f outside +-%.0f: clamped to %.1f", where, static_cast<double>(t.leftExtra),
+                static_cast<double>(hs::kLeftExtraMax), static_cast<double>(hs::leftExtraFor(t, hs::CatUnknown)));
+    for (int i = hs::CatUnknown + 1; i < hs::CatCount; ++i)
+        if (t.hasLeftExtraCat[i] && hs::leftExtraClamped(t.leftExtraCat[i]))
+            KP_LOGV(chMain, KPLOG_WARN, "%s left_extra_rot_%s=%.1f outside +-%.0f: clamped to %.1f", where, hs::categoryName(static_cast<hs::Category>(i)),
+                    static_cast<double>(t.leftExtraCat[i]), static_cast<double>(hs::kLeftExtraMax), static_cast<double>(hs::leftExtraFor(t, static_cast<hs::Category>(i))));
 }
 
 // Whole file into out. False when it cannot be opened (out cleared).
@@ -179,7 +200,7 @@ static bool readFileText(const char* path, std::string& out) {
 
 static void readConfig() {
     hs::TuneCfg tune;
-    bool probe = false, boneTest = false, boneLeft = false, comb = false, attach = false, swap = false, anim = false, gob = false, place = false;
+    bool probe = false, boneTest = false, boneLeft = true, comb = false, attach = false, swap = false, anim = false, gob = false, place = false;
     FILE* f = fopen("holster.ini", "r");
     if (f) {
         char line[256];
@@ -193,7 +214,11 @@ static void readConfig() {
             char* val = trimIni(eq + 1);
             if (!_stricmp(key, "probe")) probe = flagValue(val);
             else if (!_stricmp(key, "bone_test")) boneTest = flagValue(val);
-            else if (!_stricmp(key, "bone_test_left")) boneLeft = flagValue(val);
+            else if (!_stricmp(key, "bone_test_left")) {
+                bool b = true;
+                if (hs::tuneParseBool(val, b)) boneLeft = b;
+                else cfgWarn(key, val, "not a boolean word, keeping the default 1");
+            }
             else if (!_stricmp(key, "bone_name")) {
                 // node names are plain identifiers; anything else (or empty) keeps the default
                 size_t n = strlen(val);
@@ -213,7 +238,9 @@ static void readConfig() {
                 const unsigned long v = strtoul(val, &end, 16);   // accepts a 0x prefix; blank or junk = no check
                 g_placeGobvt = (end == val) ? 0u : static_cast<uint32_t>(v);
             }
-            else if (hs::isTuneKey(key)) (void)hs::applyTuneKey(tune, key, val);
+            else if (hs::isTuneKey(key)) {
+                if (!hs::applyTuneKey(tune, key, val) && hs::isLeftExtraKey(key)) cfgWarn(key, val, "need one number within +-720 and a known category suffix");
+            }
             else if (!_stricmp(key, "max_lines") || !_stricmp(key, "gob_every")) {
                 char* end = nullptr;
                 unsigned long v = strtoul(val, &end, 10);
@@ -226,6 +253,7 @@ static void readConfig() {
     }
     g_probe = probe;
     g_boneTest = probe && boneTest;
+    g_boneLeftCfg = boneLeft;
     g_boneLeft = g_boneTest && boneLeft;
     g_onComb = probe && comb;
     g_onAttach = probe && attach;
@@ -366,7 +394,9 @@ static void maybeReload() {
         hs::TuneCfg t = g_tuneW;
         parseTuneText(text.c_str(), t);
         publishTune(t);
-        KP_LOG(chMain, "RELOAD place=%d rot=(%.1f,%.1f,%.1f) off=(%.3f,%.3f,%.3f)", t.place ? 1 : 0, t.rot[0], t.rot[1], t.rot[2], t.off[0], t.off[1], t.off[2]);
+        KP_LOG(chMain, "RELOAD place=%d rot=(%.1f,%.1f,%.1f) off=(%.3f,%.3f,%.3f) left_extra_rot=%.1f", t.place ? 1 : 0, t.rot[0], t.rot[1], t.rot[2], t.off[0], t.off[1], t.off[2],
+               static_cast<double>(t.leftExtra));
+        warnLeftExtraClamp(t, "RELOAD");
         for (int i = hs::CatUnknown + 1; i < hs::CatCount; ++i) {
             const hs::CatTune& ct = t.cat[i];
             if (ct.hasRot || ct.hasOff)
@@ -628,8 +658,12 @@ static volatile uintptr_t g_refFind = 0, g_refPose = 0;   // FindPart (Gob vtbl+
 // In-world hand mapping is active: OnHandAttach records gob -> hand (R/L) into g_handRing,
 // and HolsterPlace reads handLookup(g_handRing, g) to resolve left-hand placement and sagittal mirroring.
 static const bool kWorldKnowsHand = true;
+// The editor preview resolves the hand as it is (S2/H4, 10-18): a left preview weapon is always the left resolve (mirror + left_extra_rot, or the
+// explicit l_ keys), whatever bone_test_left says. bone_test_left=0 only keeps the in-world lhand attach node unpatched (that weapon stays in the
+// hand and HolsterPlace refuses it as not-target); it no longer changes what the editor shows. The old gate (left && g_boneLeft) resolved a left
+// preview as the right hand, so the two weapons overlapped at the same spot and angle.
 static bool effLeft(bool left) {
-    return left && g_boneLeft;
+    return left;
 }
 
 struct EdLock {
@@ -701,9 +735,9 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
     if (!hs::poseSane(out) || !saferead::probeWrite(kSitePlace, reinterpret_cast<void*>(g + 0xA4), sizeof(hs::Pose))) return true;
     memcpy(reinterpret_cast<void*>(g + 0xA4), &out, sizeof(hs::Pose));
     if (logIt)
-        KP_LOG(chEdit, "PREVIEW place gob=%x model=%s cat=%s body=%s left=%d bone=%s edit=%d rot=(%.1f,%.1f,%.1f) off=(%.3f,%.3f,%.3f) src=%u/%u/%u",
+        KP_LOG(chEdit, "PREVIEW place gob=%x model=%s cat=%s body=%s left=%d bone=%s edit=%d rot=(%.1f,%.1f,%.1f) off=(%.3f,%.3f,%.3f) src=%u/%u/%u lsrc=%s extra=%.1f",
                static_cast<unsigned>(g), model, hs::categoryName(cat), body[0] ? body : "-", left ? 1 : 0, bone, editing ? 1 : 0, r.rot[0], r.rot[1], r.rot[2],
-               r.off[0], r.off[1], r.off[2], r.src[0], r.src[1], r.src[2]);
+               r.off[0], r.off[1], r.off[2], r.src[0], r.src[1], r.src[2], hs::leftSrcName(r, left), static_cast<double>(r.extraDeg));
     return true;
 }
 
@@ -812,9 +846,10 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     const LONG c = InterlockedIncrement(&g_placeCalls);
     if (c > 24 && (c % g_gobEvery) != 0) return;
     if (!KP_ENABLED(chPlace, KPLOG_INFO) || !takeLine()) return;
-    KP_LOG(chPlace, "PLACE n=%ld gob=%x node=%x beh=%x gobvt=%x pos0=(%.3f,%.3f,%.3f) quat0=(%.3f,%.3f,%.3f,%.3f) pos1=(%.3f,%.3f,%.3f) quat1=(%.3f,%.3f,%.3f,%.3f) cat=%s left=%d",
+    KP_LOG(chPlace, "PLACE n=%ld gob=%x node=%x beh=%x gobvt=%x pos0=(%.3f,%.3f,%.3f) quat0=(%.3f,%.3f,%.3f,%.3f) pos1=(%.3f,%.3f,%.3f) quat1=(%.3f,%.3f,%.3f,%.3f) cat=%s left=%d src=%s extra=%.1f",
            static_cast<long>(c), U(gob), U(node), U(beh), static_cast<unsigned>(vt), in.pos[0], in.pos[1], in.pos[2], in.q.w, in.q.x, in.q.y, in.q.z,
-           out.pos[0], out.pos[1], out.pos[2], out.q.w, out.q.x, out.q.y, out.q.z, hs::categoryName(cat), ent->left ? 1 : 0);
+           out.pos[0], out.pos[1], out.pos[2], out.q.w, out.q.x, out.q.y, out.q.z, hs::categoryName(cat), ent->left ? 1 : 0, hs::leftSrcName(ent->r, ent->left),
+           static_cast<double>(ent->r.extraDeg));
 }
 
 // ---- k2.holster v1 (HolsterApi.h): the holster-editor patch drives these from its panel tick (main thread) ----
@@ -1084,6 +1119,7 @@ static bool edWrite(bool reset) {
         hs::TuneCfg t = g_tuneW;
         parseTuneText(b.c_str(), t);
         publishTune(t);
+        warnLeftExtraClamp(t, "SAVE");
     }
     InterlockedExchange(&g_reloadBusy, 0);
     if (takeEditLine())
@@ -1158,12 +1194,19 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     addName(names, sizeof(names), g_onAnim, "anim");
     addName(names, sizeof(names), g_onGob, "gob");
     addName(names, sizeof(names), g_onPlace, "place");
-    KP_LOG(chMain, "holster 0.1.4-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
+    KP_LOG(chMain, "holster 0.1.5-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
            names[0] ? names : "none", static_cast<long>(g_maxLines), g_gobEvery, k2addr::get() ? "ok" : "none");
     {
         hs::TuneCfg t;
         LONG seq = 0;
         (void)loadTuneIfChanged(t, seq);
+        KP_LOG(chMain, "CONFIG left_extra_rot=%.1f bone_test_left=%d (ini=%d, active=%d: needs probe=1 and bone_test=1)", static_cast<double>(t.leftExtra),
+               g_boneLeftCfg ? 1 : 0, g_boneLeftCfg ? 1 : 0, g_boneLeft ? 1 : 0);
+        for (int i = hs::CatUnknown + 1; i < hs::CatCount; ++i)
+            if (t.hasLeftExtraCat[i])
+                KP_LOG(chMain, "CONFIG left_extra_rot_%s=%.1f", hs::categoryName(static_cast<hs::Category>(i)), static_cast<double>(t.leftExtraCat[i]));
+        for (int i = 0; i < g_cfgWarnN; ++i) KP_LOGV(chMain, KPLOG_WARN, "%s", g_cfgWarn[i]);
+        warnLeftExtraClamp(t, "CONFIG");
         KP_LOG(chMain, "TUNE boot place=%d rot=(%.1f,%.1f,%.1f) off=(%.3f,%.3f,%.3f) gobvt=%x bone=%s bootbone=%u models=%d bodies=%d editor=%d", t.place ? 1 : 0,
                t.rot[0], t.rot[1], t.rot[2], t.off[0], t.off[1], t.off[2], static_cast<unsigned>(g_placeGobvt), g_boneName, t.bootBoneIdx, t.nMdl, t.nBody,
                g_editor ? 1 : 0);

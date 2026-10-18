@@ -20,6 +20,7 @@ static float absDot(const Q& a, const Q& b) {
 // Config with a global placement and one body delta ("BodyA", right-hand frame).
 static TuneCfg baseCfg() {
     TuneCfg c;
+    c.leftExtra = 0.f;   // plain mirror; the left_extra_rot save contract has its own tests (extraCfg)
     c.place = true;
     c.bootBoneIdx = 1;
     c.rot[0] = 10.f; c.rot[1] = 20.f; c.rot[2] = 30.f;
@@ -395,6 +396,99 @@ static void testInactiveAndReBegin() {
     KT_CHECK(closeV3(o.cur.rot, 10, 20, 30));
 }
 
+// ---- left_extra_rot save contract: the extra is never baked into an l_ key ----
+
+static TuneCfg extraCfg() {
+    TuneCfg c = baseCfg();
+    c.leftExtra = -8.f;
+    KT_CHECK(applyTuneKey(c, "place_rot_rifle", "-60,4,93"));
+    KT_CHECK(applyTuneKey(c, "place_off_rifle", "0.12,-0.11,0.20"));
+    KT_CHECK(applyTuneKey(c, "place_bone_rifle", "torsoUpr_g"));
+    return c;
+}
+
+static void testExtraSeedShowsTiltedRot() {
+    const TuneCfg c = extraCfg();
+    EditOverlay o;
+    overlayBegin(o, c, kModel, CatRifle, nullptr, true);
+    KT_CHECK(o.seed.extraDeg == -8.f && closeAng(o.cur.rot[1], -11.99f, 0.05f));   // the editor shows the tilted left rot
+    EditView v;
+    overlayGetEdit(o, v);
+    KT_CHECK(v.r.extraDeg == -8.f && closeAng(v.r.rot[1], -11.99f, 0.05f));
+    EditOverlay r;
+    overlayBegin(r, c, kModel, CatRifle, nullptr, false);
+    KT_CHECK(r.seed.extraDeg == 0.f && closeV3(r.cur.rot, -60, 4, 93));
+}
+
+static void testExtraUneditedRotNotWritten() {
+    const TuneCfg c = extraCfg();
+    for (int scope = ScopeWeapon; scope <= ScopeType; ++scope) {
+        EditOverlay o;
+        overlayBegin(o, c, kModel, CatRifle, nullptr, true);
+        KT_CHECK(overlaySetScope(o, scope));
+        // only the offset changes (a value-pane write repeats the shown rot, within display rounding)
+        const float rot[3] = {o.cur.rot[0] + 0.03f, o.cur.rot[1] - 0.03f, o.cur.rot[2]};
+        const float off[3] = {-0.15f, -0.11f, 0.22f};
+        KT_CHECK(overlaySetValues(o, rot, off));
+        TuneCfg w = c;
+        KT_CHECK(overlayWrite(o, w));
+        const CatTune* t = scope == ScopeWeapon ? (findModel(w, kModel, true) ? &findModel(w, kModel, true)->t : nullptr) : &w.catL[CatRifle];
+        KT_CHECK(t != nullptr);
+        if (!t) continue;
+        KT_CHECK(!t->hasRot && t->hasOff && closeV3(t->off, -0.15f, -0.11f, 0.22f));
+        // the level stays inherited: the extra still applies after the save
+        Resolved r;
+        resolveFull(w, kModel, CatRifle, nullptr, true, false, r);
+        KT_CHECK(r.extraDeg == -8.f && closeAng(r.rot[1], -11.99f, 0.05f) && closeV3(r.off, -0.15f, -0.11f, 0.22f));
+        // and the keys the editor would write carry no rot key
+        KV set[3];
+        const char* unset[3];
+        char buf[kScopeTextMax];
+        ScopeOut so{set, 3, 0, unset, 3, 0, buf, sizeof buf, 0};
+        KT_CHECK(scope == ScopeWeapon ? scopeKeys(*findModel(w, kModel, true), so) : scopeKeys(CatRifle, true, w.catL[CatRifle], so));
+        for (int i = 0; i < so.nSet; ++i) KT_CHECK(strncmp(set[i].key, "place_rot_", 10) != 0);
+        bool rotUnset = false;
+        for (int i = 0; i < so.nUnset; ++i) rotUnset = rotUnset || strncmp(unset[i], "place_rot_", 10) == 0;
+        KT_CHECK(rotUnset);
+    }
+}
+
+static void testExtraEditedRotWrittenAsShown() {
+    const TuneCfg c = extraCfg();
+    EditOverlay o;
+    overlayBegin(o, c, kModel, CatRifle, nullptr, true);
+    KT_CHECK(overlayNudgeLocal(o, 0, 5.f));   // user tilts the weapon
+    const float shown[3] = {o.cur.rot[0], o.cur.rot[1], o.cur.rot[2]};
+    TuneCfg w = c;
+    KT_CHECK(overlayWrite(o, w));
+    const ModelTune* m = findModel(w, kModel, true);
+    KT_CHECK(m && m->t.hasRot && closeV3(m->t.rot, shown[0], shown[1], shown[2]));
+    // explicit now: the extra is not applied on top, so the saved weapon renders exactly as it was shown
+    Resolved r;
+    resolveFull(w, kModel, CatRifle, nullptr, true, false, r);
+    KT_CHECK(r.extraDeg == 0.f && closeV3(r.rot, shown[0], shown[1], shown[2]));
+}
+
+static void testExtraRightHandAndBodyScopeUnchanged() {
+    const TuneCfg c = extraCfg();
+    // the right hand stores its rot as before
+    EditOverlay o;
+    overlayBegin(o, c, kModel, CatRifle, nullptr, false);
+    TuneCfg w = c;
+    KT_CHECK(overlayWrite(o, w));
+    const ModelTune* m = findModel(w, kModel, false);
+    KT_CHECK(m && m->t.hasRot && closeV3(m->t.rot, -60, 4, 93));
+    // an unedited left weapon with ex = 0 stores the rot like before (no extra, nothing to keep)
+    TuneCfg c0 = extraCfg();
+    c0.leftExtra = 0.f;
+    EditOverlay z;
+    overlayBegin(z, c0, kModel, CatRifle, nullptr, true);
+    TuneCfg w0 = c0;
+    KT_CHECK(overlayWrite(z, w0));
+    const ModelTune* m0 = findModel(w0, kModel, true);
+    KT_CHECK(m0 && m0->t.hasRot && closeV3(m0->t.rot, -60, -4, -93));
+}
+
 int main() {
     testRegistryRegisterUnregister();
     testRegistrySweep();
@@ -413,5 +507,9 @@ int main() {
     testCycleBone();
     testGetEditEulerAndSrc();
     testInactiveAndReBegin();
+    testExtraSeedShowsTiltedRot();
+    testExtraUneditedRotNotWritten();
+    testExtraEditedRotWrittenAsShown();
+    testExtraRightHandAndBodyScopeUnchanged();
     return kt::Report("holster_preview");
 }

@@ -12,6 +12,11 @@
 //                   place_off_body_<name>  body delta added to the offset of every weapon on that body (name = 1..16 chars [A-Za-z0-9_])
 //                   place_{rot,off,bone}_w_<x>  per-weapon-model override; the model name is "w_<x>" (resref, 2..16 chars [A-Za-z0-9_])
 //                   place_{rot,off,bone}_l_<cat|w_x>  the same keys for the left hand. A left value that is not set mirrors the right one.
+//                 left_extra_rot / left_extra_rot_<cat>  one float, degrees about the bone X axis (|v| <= 720 or the key is rejected;
+//                              the value USED is clamped to +-45, see kLeftExtraMax). Default -8. Applied by resolveFull ONLY when the left
+//                              hand's rot is inherited from the right (mirrored) as a whole triple, after the mirror, as a quaternion
+//                              (qaxis(X, ex) * qbase(mirrored rot)); never to an explicit place_rot_l_* / place_rot_l_w_* level. The
+//                              per-category key (cat = categoryName) wins over the global one. 0 = plain mirror.
 //                 Key shape after place_<kind>_: [body_<name>] [l_] [w_<x> | <cat>]. body_ is only valid for place_off.
 //                 Any parse failure, wrong count, range violation, unknown key or full table returns false and leaves the cfg
 //                 unchanged. A rejected vector is never half-applied. Tables: 48 model entries (left and right together), 24 bodies.
@@ -33,6 +38,7 @@
 #include "IniKit.h"
 #include "HolsterIniWrite.h"
 #include "HolsterLogic.h"
+#include "HolsterEdit.h"
 
 namespace hs {
 
@@ -82,6 +88,11 @@ struct BodyTune {
     float off[3] = {0.f, 0.f, 0.f};
 };
 
+// left_extra_rot: default tilt (degrees about bone X) added after the mirror, and the clamp applied when it is used.
+inline constexpr float kLeftExtraDefault = -8.f;
+inline constexpr float kLeftExtraMax = 45.f;
+inline constexpr float kLeftExtraParseMax = 720.f;
+
 struct TuneCfg {
     bool place = false;
     uint8_t bootBoneIdx = 0;   // table index of bone_name (set by Holster.cpp); 0 = custom bone_name
@@ -93,6 +104,9 @@ struct TuneCfg {
     int nMdl = 0;
     BodyTune body[kMaxBody];
     int nBody = 0;
+    float leftExtra = kLeftExtraDefault;   // left_extra_rot (raw; leftExtraFor clamps)
+    float leftExtraCat[CatCount] = {};     // left_extra_rot_<cat> (raw), valid where hasLeftExtraCat
+    bool hasLeftExtraCat[CatCount] = {};
 };
 static_assert(sizeof(TuneCfg) <= 4096, "TuneCfg is memcpy'd every frame: keep it under 4 KiB");
 
@@ -176,16 +190,27 @@ inline bool tuneParseKey(const char* key, TuneKeyRef& r) {
     return false;
 }
 
+// Syntactic: "left_extra_rot" or "left_extra_rot_<anything>". applyTuneKey rejects a bad suffix or value, so a caller can warn.
+inline bool isLeftExtraKey(const char* key) {
+    const char* rest = nullptr;
+    if (!key) return false;
+    return tuneEqCi(key, "left_extra_rot") || tunePrefixCi(key, "left_extra_rot_", rest);
+}
+
 // Keys this header owns (the ini reader routes them to applyTuneKey; place_gobvt is NOT one of them).
 inline bool isTuneKey(const char* key) {
     if (!key) return false;
     if (tuneEqCi(key, "place") || tuneEqCi(key, "place_rot") || tuneEqCi(key, "place_off")) return true;
+    if (isLeftExtraKey(key)) return true;
     TuneKeyRef r;
     return tuneParseKey(key, r);
 }
 
 // Drop every override (a reload re-reads them, so a deleted key falls back to the global value). Keeps place, place_rot, place_off and bootBoneIdx.
+// left_extra_rot returns to kLeftExtraDefault and the per-category extras are dropped, so a deleted left_extra_rot key also falls back.
 inline void clearCatTune(TuneCfg& c) {
+    c.leftExtra = kLeftExtraDefault;
+    for (int i = 0; i < CatCount; ++i) { c.leftExtraCat[i] = 0.f; c.hasLeftExtraCat[i] = false; }
     for (int i = 0; i < CatCount; ++i) { c.cat[i] = CatTune(); c.catL[i] = CatTune(); }
     for (int i = 0; i < kMaxMdl; ++i) c.mdl[i] = ModelTune();
     for (int i = 0; i < kMaxBody; ++i) c.body[i] = BodyTune();
@@ -262,14 +287,37 @@ inline void mirrorLeft(float rot[3], float off[3], uint8_t& boneIdx) {
     mirrorBone(boneIdx);
 }
 
+// The left extra tilt in degrees for a category: its own key when set, else the global one, clamped to +-kLeftExtraMax (NaN -> 0).
+inline float leftExtraFor(const TuneCfg& c, Category cat) {
+    const bool has = cat > CatUnknown && cat < CatCount && c.hasLeftExtraCat[cat];
+    const float v = has ? c.leftExtraCat[cat] : c.leftExtra;
+    if (std::isnan(v)) return 0.f;
+    return v > kLeftExtraMax ? kLeftExtraMax : (v < -kLeftExtraMax ? -kLeftExtraMax : v);
+}
+
+// True when a raw left_extra_rot value is outside the clamp (the logger warns).
+inline bool leftExtraClamped(float raw) { return std::isnan(raw) || std::fabs(raw) > kLeftExtraMax; }
+
 // Resolved placement for one weapon on one hand. src[0] is the rot source, src[1] the off source, src[2] the bone source:
 // 0 global, 1 category (type), 2 weapon model. src[1] has |4 when a body delta was added.
+// extraDeg is the left_extra_rot tilt that is folded into rot (0 = none: right hand, explicit left rot, or extra 0). leftMirror
+// (left hand only) has bit 0 set when rot came from the mirror and bit 1 when off did: the editor save path uses extraDeg to keep
+// the extra out of explicit l_ keys, and the logs print leftSrcName.
 struct Resolved {
     float rot[3] = {0.f, 0.f, 0.f};
     float off[3] = {0.f, 0.f, 0.f};
     uint8_t boneIdx = 0;
     uint8_t src[3] = {0, 0, 0};
+    float extraDeg = 0.f;
+    uint8_t leftMirror = 0;
 };
+
+// Log name of where a left placement came from: "-" for the right hand, "mirror" (rot and off both inherited), "explicit" (neither) or "mixed".
+inline const char* leftSrcName(const Resolved& r, bool left) {
+    if (!left) return "-";
+    const unsigned m = r.leftMirror & 3u;
+    return m == 3u ? "mirror" : (m == 0u ? "explicit" : "mixed");
+}
 
 struct TuneLevel { const CatTune* t; bool mirror; uint8_t src; };
 
@@ -317,8 +365,23 @@ inline void resolveFull(const TuneCfg& c, const char* model, Category cat, const
     }
     // The global level is always pushed last and has rot and off, so rotL and offL are never null.
     for (int i = 0; i < 3; ++i) { out.rot[i] = rotL->t->rot[i]; out.off[i] = offL->t->off[i]; }
+    out.extraDeg = 0.f;
+    out.leftMirror = 0;
     if (rotL->mirror) mirrorRot(out.rot);
     if (offL->mirror) mirrorOff(out.off);
+    if (left) out.leftMirror = static_cast<uint8_t>((rotL->mirror ? 1 : 0) | (offL->mirror ? 2 : 0));
+    // left_extra_rot: only on a whole inherited rot triple, composed as a quaternion about the bone X axis (never added to rx).
+    if (left && rotL->mirror) {
+        const float ex = leftExtraFor(c, cat);
+        if (ex != 0.f) {
+            const float xAxis[3] = {1.f, 0.f, 0.f};
+            const Q q = qmul(qaxis(xAxis, ex), qbase(out.rot[0], out.rot[1], out.rot[2]));
+            float e[3];
+            eulerNear(q, out.rot, e);
+            for (int i = 0; i < 3; ++i) out.rot[i] = e[i];
+            out.extraDeg = ex;
+        }
+    }
     out.src[0] = rotL->src;
     out.src[1] = offL->src;
     out.boneIdx = 0;
@@ -367,6 +430,18 @@ inline bool tuneApplyParsed(TuneCfg& c, const TuneKeyRef& r, const char* val) {
     return true;
 }
 
+// left_extra_rot[_<cat>] = one finite float with |v| <= kLeftExtraParseMax. Anything else (bad suffix, junk, range) leaves c unchanged.
+inline bool tuneApplyLeftExtra(TuneCfg& c, const char* key, const char* val) {
+    float v = 0.f;
+    if (!inikit::parseFloats(val, &v, 1) || std::fabs(v) > kLeftExtraParseMax) return false;
+    if (tuneEqCi(key, "left_extra_rot")) { c.leftExtra = v; return true; }
+    const char* rest = nullptr;
+    if (!tunePrefixCi(key, "left_extra_rot_", rest)) return false;
+    for (int i = CatUnknown + 1; i < CatCount; ++i)
+        if (tuneEqCi(rest, categoryName(static_cast<Category>(i)))) { c.leftExtraCat[i] = v; c.hasLeftExtraCat[i] = true; return true; }
+    return false;
+}
+
 inline bool applyTuneKey(TuneCfg& c, const char* key, const char* val) {
     if (!key || !val) return false;
     if (tuneEqCi(key, "place")) {
@@ -377,6 +452,7 @@ inline bool applyTuneKey(TuneCfg& c, const char* key, const char* val) {
     }
     if (tuneEqCi(key, "place_rot")) return tuneSetVec3(val, c.rot, 720.f);
     if (tuneEqCi(key, "place_off")) return tuneSetVec3(val, c.off, 3.f);
+    if (isLeftExtraKey(key)) return tuneApplyLeftExtra(c, key, val);
     TuneKeyRef r;
     if (!tuneParseKey(key, r)) return false;
     return tuneApplyParsed(c, r, val);

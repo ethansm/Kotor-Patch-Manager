@@ -6,6 +6,7 @@
 #include <cmath>
 #include <stdio.h>
 #include <string.h>
+#include <string>
 
 using namespace hs;
 
@@ -27,8 +28,10 @@ static bool closeV3(const float* v, float a, float b, float c) { return closeF(v
 // Global rot (10,20,30), global off (0.1,0.2,0.3); pistol type rot (1,2,3) off (0.4,0.5,0.6) bone pelvis_g;
 // left pistol rot (11,12,13); model w_Blaster rot (7,8,9) bone rthigh_g; left model w_Blaster off (0.9,0.8,0.7);
 // body Juhani off (0.05,0.06,0.07).
+// left_extra_rot is 0 here: these fixtures pin the plain mirror (the extra has its own tests below).
 static TuneCfg fixture() {
     TuneCfg c;
+    c.leftExtra = 0.f;
     KT_CHECK(applyTuneKey(c, "place_rot", "10,20,30"));
     KT_CHECK(applyTuneKey(c, "place_off", "0.1,0.2,0.3"));
     KT_CHECK(applyTuneKey(c, "place_rot_pistol", "1,2,3"));
@@ -463,6 +466,8 @@ static void testClearDropsNewTables() {
     KT_CHECK(c.nMdl > 0 && c.nBody > 0 && c.catL[CatPistol].hasRot);
     clearCatTune(c);
     KT_CHECK(c.nMdl == 0 && c.nBody == 0);
+    KT_CHECK(c.leftExtra == kLeftExtraDefault && !c.hasLeftExtraCat[CatRifle]);   // the extra is an ini key: a reload re-reads it
+    c.leftExtra = 0.f;
     KT_CHECK(!c.catL[CatPistol].hasRot && !c.cat[CatPistol].hasRot && !c.mdl[0].t.hasRot && !c.body[0].off[0]);
     KT_CHECK(closeV3(c.rot, 10, 20, 30) && closeV3(c.off, 0.1f, 0.2f, 0.3f));   // globals are not cleared
     Resolved r;
@@ -470,6 +475,174 @@ static void testClearDropsNewTables() {
     KT_CHECK(closeV3(r.rot, 10, -20, -30) && r.src[0] == 0);
     KT_CHECK(closeV3(r.off, -0.1f, 0.2f, 0.3f) && r.src[1] == 0);
     KT_CHECK(r.boneIdx == 0 && r.src[2] == 0);
+}
+
+
+// ---- left_extra_rot ----
+
+static float dist3(const float* a, const float* b) {
+    return std::sqrt((a[0] - b[0]) * (a[0] - b[0]) + (a[1] - b[1]) * (a[1] - b[1]) + (a[2] - b[2]) * (a[2] - b[2]));
+}
+
+// Minimum distance between the right and the left rifle barrel line (the rifle barrel axis of H4 for rot -60,4,93), sampled over +-0.6 m.
+static float rifleBarrelGap(const Resolved& r, const Resolved& l) {
+    const float dR[3] = {-0.496f, -0.086f, -0.864f};
+    float d0[3], dL[3];
+    qrotate(qconj(qbase(r.rot[0], r.rot[1], r.rot[2])), dR, d0);
+    qrotate(qbase(l.rot[0], l.rot[1], l.rot[2]), d0, dL);
+    float best = 1e9f;
+    for (float s = -0.6f; s <= 0.6f; s += 0.004f)
+        for (float t = -0.6f; t <= 0.6f; t += 0.004f) {
+            float a[3], b[3];
+            for (int i = 0; i < 3; ++i) { a[i] = r.off[i] + s * dR[i]; b[i] = l.off[i] + t * dL[i]; }
+            const float d = dist3(a, b);
+            if (d < best) best = d;
+        }
+    return best;
+}
+
+static TuneCfg rifleCfg(float ex) {
+    TuneCfg c;
+    c.leftExtra = ex;
+    KT_CHECK(applyTuneKey(c, "place_bone_rifle", "torsoUpr_g"));
+    KT_CHECK(applyTuneKey(c, "place_rot_rifle", "-60,4,93"));
+    KT_CHECK(applyTuneKey(c, "place_off_rifle", "0.12,-0.11,0.20"));
+    return c;
+}
+
+static void testLeftExtraKeys() {
+    TuneCfg c;
+    KT_CHECK(c.leftExtra == -8.f && kLeftExtraDefault == -8.f);   // the shipped default
+    KT_CHECK(isTuneKey("left_extra_rot") && isTuneKey("LEFT_EXTRA_ROT_Rifle") && isLeftExtraKey("left_extra_rot_zzz"));
+    KT_CHECK(!isLeftExtraKey("left_extra") && !isLeftExtraKey(nullptr) && !isLeftExtraKey("place_rot"));
+    KT_CHECK(applyTuneKey(c, "left_extra_rot", "-12.5") && c.leftExtra == -12.5f);
+    KT_CHECK(applyTuneKey(c, "left_extra_rot", " 0 ") && c.leftExtra == 0.f);
+    KT_CHECK(applyTuneKey(c, "left_extra_rot", "720") && c.leftExtra == 720.f);   // parser limit; the USED value is clamped
+    KT_CHECK(!applyTuneKey(c, "left_extra_rot", "720.5") && c.leftExtra == 720.f);   // rejected, unchanged
+    KT_CHECK(!applyTuneKey(c, "left_extra_rot", "") && !applyTuneKey(c, "left_extra_rot", "abc") && !applyTuneKey(c, "left_extra_rot", "1,2")
+             && !applyTuneKey(c, "left_extra_rot", "nan") && !applyTuneKey(c, "left_extra_rot", "inf") && c.leftExtra == 720.f);
+    KT_CHECK(applyTuneKey(c, "left_extra_rot_rifle", "-12") && c.hasLeftExtraCat[CatRifle] && c.leftExtraCat[CatRifle] == -12.f);
+    KT_CHECK(!c.hasLeftExtraCat[CatHeavy]);
+    KT_CHECK(!applyTuneKey(c, "left_extra_rot_banana", "-3") && !applyTuneKey(c, "left_extra_rot_rifle", "x") && c.leftExtraCat[CatRifle] == -12.f);
+    // use-time clamp: global 720 -> +45, per-category wins over global, NaN -> 0
+    KT_CHECK(leftExtraFor(c, CatHeavy) == 45.f && leftExtraFor(c, CatUnknown) == 45.f && leftExtraFor(c, CatRifle) == -12.f);
+    KT_CHECK(applyTuneKey(c, "left_extra_rot", "-100") && leftExtraFor(c, CatMelee) == -45.f);
+    KT_CHECK(leftExtraClamped(-100.f) && leftExtraClamped(45.5f) && !leftExtraClamped(-45.f) && !leftExtraClamped(-8.f));
+    c.leftExtra = NAN;
+    KT_CHECK(leftExtraFor(c, CatMelee) == 0.f);
+    clearCatTune(c);
+    KT_CHECK(c.leftExtra == -8.f && !c.hasLeftExtraCat[CatRifle]);
+}
+
+static void testLeftExtraRifleVectors() {
+    Resolved r, l;
+    // ex = 0 reproduces the plain mirror exactly
+    TuneCfg c0 = rifleCfg(0.f);
+    resolveFull(c0, nullptr, CatRifle, nullptr, true, false, l);
+    KT_CHECK(closeV3(l.rot, -60, -4, -93) && closeV3(l.off, -0.12f, -0.11f, 0.20f) && l.extraDeg == 0.f && l.leftMirror == 3);
+    resolveFull(c0, nullptr, CatRifle, nullptr, false, false, r);
+    KT_CHECK(rifleBarrelGap(r, l) < 0.005f);   // barrels touch at x = 0 (H4)
+    // ex = -8: H4 vector, 2.9 cm
+    TuneCfg c8 = rifleCfg(-8.f);
+    resolveFull(c8, nullptr, CatRifle, nullptr, true, false, l);
+    KT_CHECK(std::fabs(l.rot[0] + 59.57f) < 0.05f && std::fabs(l.rot[1] + 11.99f) < 0.05f && std::fabs(l.rot[2] + 93.06f) < 0.05f);
+    KT_CHECK(closeV3(l.off, -0.12f, -0.11f, 0.20f) && l.extraDeg == -8.f && l.src[0] == 1 && l.leftMirror == 3);
+    KT_CHECK(std::fabs(rifleBarrelGap(r, l) - 0.0293f) < 0.002f);
+    // the extra is a quaternion composition: qbase(result) == qaxis(X, ex) * qbase(mirrored)
+    const float xa[3] = {1.f, 0.f, 0.f};
+    const Q want = qmul(qaxis(xa, -8.f), qbase(-60.f, -4.f, -93.f));
+    const Q got = qbase(l.rot[0], l.rot[1], l.rot[2]);
+    const float dot = want.w * got.w + want.x * got.x + want.y * got.y + want.z * got.z;
+    KT_CHECK(std::fabs(std::fabs(dot) - 1.f) < 1e-5f);
+    // the right hand never gets the extra
+    resolveFull(c8, nullptr, CatRifle, nullptr, false, false, r);
+    KT_CHECK(closeV3(r.rot, -60, 4, 93) && r.extraDeg == 0.f && r.leftMirror == 0);
+    // ex = -12: 4.3 cm
+    TuneCfg c12 = rifleCfg(-12.f);
+    resolveFull(c12, nullptr, CatRifle, nullptr, true, false, l);
+    KT_CHECK(std::fabs(l.rot[0] + 59.35f) < 0.05f && std::fabs(l.rot[1] + 15.98f) < 0.05f && std::fabs(l.rot[2] + 93.11f) < 0.05f);
+    KT_CHECK(std::fabs(rifleBarrelGap(r, l) - 0.0434f) < 0.002f);
+}
+
+static void testLeftExtraHeavyMeleeAndCategory() {
+    Resolved l;
+    // heavy mirrors onto itself (rot -90,-3,-90 -> -90,3,90, exact overlap); the extra separates the barrels
+    TuneCfg c;
+    c.leftExtra = 0.f;
+    KT_CHECK(applyTuneKey(c, "place_rot_heavy", "-90,-3,-90"));
+    KT_CHECK(applyTuneKey(c, "place_off_heavy", "0,-0.08,0.25"));
+    resolveFull(c, nullptr, CatHeavy, nullptr, true, false, l);
+    KT_CHECK(closeV3(l.rot, -90, 3, 90) && l.extraDeg == 0.f);
+    c.leftExtra = -8.f;
+    resolveFull(c, nullptr, CatHeavy, nullptr, true, false, l);
+    const float xa[3] = {1.f, 0.f, 0.f};
+    const Q want = qmul(qaxis(xa, -8.f), qbase(-90.f, 3.f, 90.f));
+    const Q got = qbase(l.rot[0], l.rot[1], l.rot[2]);
+    KT_CHECK(std::fabs(std::fabs(want.w * got.w + want.x * got.x + want.y * got.y + want.z * got.z) - 1.f) < 1e-5f);
+    KT_CHECK(l.extraDeg == -8.f && !closeV3(l.rot, -90, 3, 90));
+    // per-category override beats the global value; other categories keep the global one
+    KT_CHECK(applyTuneKey(c, "left_extra_rot_heavy", "-12"));
+    resolveFull(c, nullptr, CatHeavy, nullptr, true, false, l);
+    KT_CHECK(l.extraDeg == -12.f);
+    resolveFull(c, nullptr, CatMelee, nullptr, true, false, l);
+    KT_CHECK(l.extraDeg == -8.f);   // melee has no rot of its own: global mirrored, extra applies
+    // a per-category 0 switches the extra off for that category only
+    KT_CHECK(applyTuneKey(c, "left_extra_rot_heavy", "0"));
+    resolveFull(c, nullptr, CatHeavy, nullptr, true, false, l);
+    KT_CHECK(closeV3(l.rot, -90, 3, 90) && l.extraDeg == 0.f);
+    // out-of-range raw values are clamped to +-45 when used
+    TuneCfg d = rifleCfg(-100.f);
+    TuneCfg e = rifleCfg(-45.f);
+    Resolved a, b;
+    resolveFull(d, nullptr, CatRifle, nullptr, true, false, a);
+    resolveFull(e, nullptr, CatRifle, nullptr, true, false, b);
+    KT_CHECK(a.extraDeg == -45.f && closeV3(a.rot, b.rot[0], b.rot[1], b.rot[2]));
+}
+
+static void testLeftExtraNeverOnExplicit() {
+    Resolved l;
+    // explicit left category rot: used as written, the extra is ignored
+    TuneCfg c = rifleCfg(-8.f);
+    KT_CHECK(applyTuneKey(c, "place_rot_l_rifle", "-61,-5,-94"));
+    resolveFull(c, nullptr, CatRifle, nullptr, true, false, l);
+    KT_CHECK(closeV3(l.rot, -61, -5, -94) && l.extraDeg == 0.f && (l.leftMirror & 1) == 0 && (l.leftMirror & 2) == 2);
+    KT_CHECK(std::string(leftSrcName(l, true)) == "mixed");
+    // explicit left model rot, too
+    KT_CHECK(applyTuneKey(c, "place_rot_l_w_Blaster", "10,20,30"));
+    resolveFull(c, "w_Blaster", CatRifle, nullptr, true, false, l);
+    KT_CHECK(closeV3(l.rot, 10, 20, 30) && l.extraDeg == 0.f);
+    // explicit left OFF only: the rot triple is still inherited as a whole, so the extra applies; off is as written
+    TuneCfg d = rifleCfg(-8.f);
+    KT_CHECK(applyTuneKey(d, "place_off_l_rifle", "-0.10,-0.12,0.21"));
+    resolveFull(d, nullptr, CatRifle, nullptr, true, false, l);
+    KT_CHECK(std::fabs(l.rot[1] + 11.99f) < 0.05f && l.extraDeg == -8.f && closeV3(l.off, -0.10f, -0.12f, 0.21f) && l.leftMirror == 1);
+    KT_CHECK(std::string(leftSrcName(l, true)) == "mixed");
+    // explicit left rot AND off: fully explicit
+    KT_CHECK(applyTuneKey(d, "place_rot_l_rifle", "-60,-4,-93"));
+    resolveFull(d, nullptr, CatRifle, nullptr, true, false, l);
+    KT_CHECK(l.leftMirror == 0 && std::string(leftSrcName(l, true)) == "explicit" && l.extraDeg == 0.f);
+    // fully mirrored, and the right hand
+    TuneCfg m = rifleCfg(-8.f);
+    resolveFull(m, nullptr, CatRifle, nullptr, true, false, l);
+    KT_CHECK(std::string(leftSrcName(l, true)) == "mirror");
+    resolveFull(m, nullptr, CatRifle, nullptr, false, false, l);
+    KT_CHECK(std::string(leftSrcName(l, false)) == "-");
+    // a right-model rot mirrored on the left is still an inherited level: the extra applies
+    TuneCfg w = rifleCfg(-8.f);
+    KT_CHECK(applyTuneKey(w, "place_rot_w_Blaster", "-60,4,93"));
+    resolveFull(w, "w_Blaster", CatRifle, nullptr, true, false, l);
+    KT_CHECK(l.src[0] == 2 && l.extraDeg == -8.f && std::fabs(l.rot[1] + 11.99f) < 0.05f);
+}
+
+static void testLeftExtraBodyDeltaUnaffected() {
+    // the extra tilts the rotation only; the offset (and the negated body delta) is the plain mirror
+    TuneCfg a = rifleCfg(0.f), b = rifleCfg(-8.f);
+    KT_CHECK(applyTuneKey(a, "place_off_body_Juhani", "0.05,0.06,0.07"));
+    KT_CHECK(applyTuneKey(b, "place_off_body_Juhani", "0.05,0.06,0.07"));
+    Resolved ra, rb;
+    resolveFull(a, nullptr, CatRifle, "Juhani", true, false, ra);
+    resolveFull(b, nullptr, CatRifle, "Juhani", true, false, rb);
+    KT_CHECK(closeV3(rb.off, ra.off[0], ra.off[1], ra.off[2]) && closeV3(ra.off, -0.17f, -0.05f, 0.27f));
 }
 
 static void testSizeBudget() {
@@ -791,6 +964,11 @@ int main() {
     testMirrorInvolutionAndBones();
     testMirrorIsQuaternionReflection();
     testClearDropsNewTables();
+    testLeftExtraKeys();
+    testLeftExtraRifleVectors();
+    testLeftExtraHeavyMeleeAndCategory();
+    testLeftExtraNeverOnExplicit();
+    testLeftExtraBodyDeltaUnaffected();
     testSizeBudget();
     testBoneNameForwards();
     testScopeModelKeysAndRoundTrip();
