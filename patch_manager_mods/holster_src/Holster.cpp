@@ -993,6 +993,9 @@ static int32_t KPATCH_CALL apiGetEdit(K2HolsterEditInfo* out) {
     out->dirty = v.dirty ? 1 : 0;
     out->hidden = g_edit.hidden ? 1 : 0;
     for (int i = 0; i < 3; ++i) { out->rot[i] = v.r.rot[i]; out->off[i] = v.r.off[i]; out->src[i] = v.r.src[i]; }
+    // Reserved bit 8 (hse::kSrcMirrorBit in the editor): the shown left rot / off is the right hand's value mirrored (ABI unchanged, the editor ignores unknown bits).
+    if (v.r.leftMirror & 1u) out->src[0] = static_cast<uint8_t>(out->src[0] | 8u);
+    if (v.r.leftMirror & 2u) out->src[1] = static_cast<uint8_t>(out->src[1] | 8u);
     return 1;
 }
 
