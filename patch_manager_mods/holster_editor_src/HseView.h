@@ -206,4 +206,65 @@ inline bool guardProceed(bool dirty, bool armedSame, uint32_t armedAt, uint32_t 
     return !dirty || guardArmLive(armedSame, armedAt, now, windowMs);
 }
 
+// ---- U0b calibration click probe (pure; the editor owns the clicks and the logging) ----
+// A fixed ordered list of body targets the user clicks one at a time; the clicks are fitted offline against the node world positions.
+// "right"/"left" are the CHARACTER's own sides. step is 0-based, round is 1-based; advance() wraps after the last target and bumps round.
+struct CalibScript {
+    static constexpr int kCount = 6;
+    int step;     // 0 .. kCount-1
+    int round;    // 1-based
+    int clicks;   // advance() calls so far (clicks recorded)
+
+    CalibScript() : step(0), round(1), clicks(0) {}
+
+    static const char* targetName(int i) {
+        static const char* const kNames[kCount] = {"head centre", "belt", "right hand", "left hand", "right foot", "left foot"};
+        return (i >= 0 && i < kCount) ? kNames[i] : "";
+    }
+    const char* current() const { return targetName(step); }
+    // Moves to the next target. True when it wrapped past the last one (a round just finished and round was bumped).
+    bool advance() {
+        ++clicks;
+        if (step < 0 || step >= kCount - 1) {
+            step = 0;
+            ++round;
+            return true;
+        }
+        ++step;
+        return false;
+    }
+};
+
+// "Calib 3/6 (round 1): click the right hand"; always NUL terminated; null/cap<=0 is a no-op.
+inline void calibPrompt(char* out, int cap, const CalibScript* s) {
+    if (!out || cap <= 0) return;
+    out[0] = '\0';
+    if (!s) return;
+    snprintf(out, cap, "Calib %d/%d (round %d): click the %s", s->step + 1, CalibScript::kCount, s->round, s->current());
+    out[cap - 1] = '\0';
+}
+
+// Item names carry a leading "{NN}" tag (e.g. "{06}Vibrosword"). Copies in to out without ONE leading "{digits}" group. A name with no
+// tag, an unterminated or empty tag ("{", "{06", "{}", "{ab}"), or an empty string is copied untouched. out is NUL terminated and capped
+// at cap-1 chars. Returns true when a tag was removed. null/cap<=0 is a no-op (returns false).
+inline bool stripNameTag(const char* in, char* out, int cap) {
+    if (!out || cap <= 0) return false;
+    out[0] = '\0';
+    if (!in) return false;
+    const char* src = in;
+    bool stripped = false;
+    if (in[0] == '{') {
+        int i = 1;
+        while (in[i] >= '0' && in[i] <= '9') ++i;
+        if (i > 1 && in[i] == '}') {
+            src = in + i + 1;
+            stripped = true;
+        }
+    }
+    int k = 0;
+    for (; src[k] && k < cap - 1; ++k) out[k] = src[k];
+    out[k] = '\0';
+    return stripped;
+}
+
 } // namespace hse

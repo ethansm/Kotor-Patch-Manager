@@ -261,6 +261,70 @@ static void testSnapAccumRotation() {
     KT_CHECK(closeF(acc, 0.1f, e));
 }
 
+static void testCalibScript() {
+    hse::CalibScript s;
+    KT_CHECK(s.step == 0 && s.round == 1 && s.clicks == 0);
+    KT_CHECK(!strcmp(s.current(), "head centre"));
+    KT_CHECK(!strcmp(hse::CalibScript::targetName(1), "belt"));
+    KT_CHECK(!strcmp(hse::CalibScript::targetName(2), "right hand"));
+    KT_CHECK(!strcmp(hse::CalibScript::targetName(3), "left hand"));
+    KT_CHECK(!strcmp(hse::CalibScript::targetName(4), "right foot"));
+    KT_CHECK(!strcmp(hse::CalibScript::targetName(5), "left foot"));
+    KT_CHECK(!strcmp(hse::CalibScript::targetName(-1), ""));
+    KT_CHECK(!strcmp(hse::CalibScript::targetName(6), ""));
+    for (int i = 0; i < 5; ++i) KT_CHECK(!s.advance());   // 5 steps: no wrap yet
+    KT_CHECK(s.step == 5 && s.round == 1 && !strcmp(s.current(), "left foot"));
+    KT_CHECK(s.advance());                                 // the 6th wraps and bumps the round
+    KT_CHECK(s.step == 0 && s.round == 2 && s.clicks == 6);
+    for (int i = 0; i < 12; ++i) s.advance();
+    KT_CHECK(s.step == 0 && s.round == 4 && s.clicks == 18);
+
+    hse::CalibScript bad;   // out-of-range step recovers on advance
+    bad.step = 99;
+    KT_CHECK(!strcmp(bad.current(), ""));
+    KT_CHECK(bad.advance() && bad.step == 0 && bad.round == 2);
+
+    char buf[64];
+    hse::CalibScript t;
+    t.step = 2;
+    hse::calibPrompt(buf, sizeof buf, &t);
+    KT_CHECK(!strcmp(buf, "Calib 3/6 (round 1): click the right hand"));
+    char tiny[8];
+    hse::calibPrompt(tiny, sizeof tiny, &t);
+    KT_CHECK(strlen(tiny) == 7 && !strncmp(tiny, "Calib 3", 7));
+    hse::calibPrompt(buf, sizeof buf, nullptr);
+    KT_CHECK(buf[0] == '\0');
+    hse::calibPrompt(nullptr, 10, &t);       // must not crash
+    hse::calibPrompt(buf, 0, &t);            // cap 0: untouched
+}
+
+static void testStripNameTag() {
+    char o[64];
+    KT_CHECK(hse::stripNameTag("{06}Vibrosword", o, sizeof o) && !strcmp(o, "Vibrosword"));
+    KT_CHECK(hse::stripNameTag("{1234}Blaster {2}", o, sizeof o) && !strcmp(o, "Blaster {2}"));   // only the leading tag, once
+    KT_CHECK(hse::stripNameTag("{06}{07}Twice", o, sizeof o) && !strcmp(o, "{07}Twice"));
+    KT_CHECK(!hse::stripNameTag("Vibrosword", o, sizeof o) && !strcmp(o, "Vibrosword"));
+    KT_CHECK(!hse::stripNameTag("{06", o, sizeof o) && !strcmp(o, "{06"));      // unterminated
+    KT_CHECK(!hse::stripNameTag("{", o, sizeof o) && !strcmp(o, "{"));
+    KT_CHECK(!hse::stripNameTag("{}Empty", o, sizeof o) && !strcmp(o, "{}Empty"));
+    KT_CHECK(!hse::stripNameTag("{ab}Name", o, sizeof o) && !strcmp(o, "{ab}Name"));
+    KT_CHECK(!hse::stripNameTag("", o, sizeof o) && o[0] == '\0');
+    KT_CHECK(hse::stripNameTag("{06}", o, sizeof o) && o[0] == '\0');         // tag only
+    KT_CHECK(!hse::stripNameTag(nullptr, o, sizeof o) && o[0] == '\0');
+    KT_CHECK(!hse::stripNameTag("x", nullptr, 10));
+    KT_CHECK(!hse::stripNameTag("x", o, 0));
+    // cap safety: a 63-char name fits a 64 buffer; a longer one is cut and terminated
+    char longName[120];
+    memset(longName, 'a', sizeof longName);
+    memcpy(longName, "{06}", 4);
+    longName[119] = '\0';
+    char c64[64];
+    KT_CHECK(hse::stripNameTag(longName, c64, sizeof c64) && strlen(c64) == 63 && c64[63] == '\0');
+    char c1[1] = {'z'};
+    hse::stripNameTag("abc", c1, 1);
+    KT_CHECK(c1[0] == '\0');
+}
+
 int main() {
     testYawAndSpin();
     testZoomAndView();
@@ -272,6 +336,8 @@ int main() {
     testGuard();
     testWorldToScreen();
     testSnapAccumRotation();
+    testCalibScript();
+    testStripNameTag();
     return kt::Report("hse_view");
 }
 
