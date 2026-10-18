@@ -1,0 +1,51 @@
+G1 repoint recon (holstered weapons, ux_v3). Read-only. Repo root = KOTOR-II.
+Tags: VERIFIED(path:line) = read in source this run. GUESS = inference, not checked.
+
+(1) What is patched, and when
+- Two imm32 rewrites inside FUN_007637E0 (in-world weapon attach):
+  0x763AF9: 68 D8 ED 99 00 = push 0x99EDD8 ("rhand")
+  0x763E2B: 68 D0 ED 99 00 = push 0x99EDD0 ("lhand")
+  Each is rewritten to push the address of g_boneName (DLL static buffer, default "pelvis_g").
+  VERIFIED(patch_manager_mods/holster_src/code_patches.toml:6-21; HolsterBonePatch.h:12-15; Holster.cpp:62, 1204).
+- Applied once at load: KPatchInit -> readConfig -> applyBoneTest (Holster.cpp:1217-1249, 1200-1214).
+  Gate: probe=1 AND bone_test=1; bone_test_left defaults to 1 (holster.ini:24-31; Holster.cpp:262-263).
+  bone_test=0 (default) touches no game bytes (holster.ini:24-25).
+- writeChecked verifies the original 5 bytes; any mismatch is refused, nothing written (HolsterBonePatch.h:17-21; Holster.cpp:1210-1212).
+- Result: the one imm32 is shared by every call of FUN_007637E0, so the repoint is global by construction. VERIFIED(code_patches.toml:7).
+
+(2) Runtime toggle
+- Per frame: possible (VirtualProtect + 5-byte write), but it only matters when FUN_007637E0 runs. GUESS: it runs on attach events, not per frame (H2 logs are rate-limited per creature, Holster.cpp:340).
+- Per creature: not with the literal. The tag argument is the same constant at every call site. Only a detour that rewrites the caller's stack argument could vary it per call. GUESS: fragile, not needed for design (4).
+- Changing g_boneName's contents would only affect future attaches; attached Gobs keep their node. GUESS.
+
+(3) Per-creature mechanisms already in the DLL (all read-only today)
+- H1 HolsterCombat, 0x7682B0: gets creature ptr + new state; logs COMB only, stores nothing. VERIFIED(Holster.cpp:316-332).
+- Drawn FSM (PhHolstered/Drawing/Drawn/Stowing, onCombat) exists in HolsterLogic.h:168-212 but is NOT wired: no Fsm/onCombat use in Holster.cpp. VERIFIED(rg absence).
+- H2 HolsterAttach, 0x7637E0: gets obj, tag, creature; logs ATTACH with creature, body, handleR/L. No creature-to-gob link. VERIFIED(Holster.cpp:336-351).
+- H8/H9 OnHandAttachR/L (0x763B49 / 0x763E7B): record gob -> hand (R/L) in a 128-entry ring keyed by gob only. Creature is not recorded; ECX is the body anim object. VERIFIED(Holster.cpp:491-511; HolsterHand.h:35-41; hooks.toml:113-135).
+- H6 HolsterGobUpdate, 0x5047B0: LOG ONLY. ECX = behavior object; child Gob = [beh+0x10]. VERIFIED(Holster.cpp:424-446; hooks.toml:79-86).
+- PREMISE CORRECTION: the write is H7 HolsterPlace at 0x504EF5 (mid-function, after the engine re-copies node N's pose), not the 0x5047B0 entry. The old 0x5047F4 site never saw weapons. VERIFIED(hooks.toml:92-111; Holster.cpp:767-770).
+- H7 writes gob+0xA4 (28 bytes) every refresh, but only when the node name == g_boneName (isTarget). VERIFIED(Holster.cpp:807, 844, 866-867).
+- Owner link: parent = [beh+0x14]; owner creature = [parent+0x1D8]. Source comment says unverified. GUESS until matched to COMB creature=. VERIFIED(Holster.cpp:831-834).
+- Combat flag offset Creature_ClientCombat = 0x138. VERIFIED(common_contract_test.cpp:38; hooks.toml:9-12).
+- mountPose (Holster.cpp:632-666) composes onto another bone's world pose via the node vtbl+0x0C; cached per (parent, cat, owner, bone). Used only for place_bone entries today. VERIFIED.
+- H-ATTACH design text: 42_holstered_weapons_master_plan.md:49 and .claude/plans/holstered_weapons.md:34 (0x5047B0 detour "for registry Gobs"). No registry found in holster_src files read. GUESS: stale.
+
+(4) Smallest design (no byte patches)
+a. Keep bone_test=0 and the native rhand/lhand literals. Hand attach is vanilla behaviour, so no attach change.
+b. In HolsterPlace, accept node name rhand or lhand as a target (instead of == g_boneName, Holster.cpp:807, 844), but only while the owner is holstered:
+   owner = [[beh+0x14]+0x1D8]; combat = [owner+0x138] (read with saferead). No FSM needed.
+c. Base pose: mountPose(g, n, beh, cat, "pelvis_g" or defaultBone, base).
+   TRAP: Holster.cpp:860 calls mountPose only when mountBone != g_boneName. With bone_test=0, g_boneName is still "pelvis_g" (Holster.cpp:62), so the hip branch is skipped and the placement stays on the hand pose. Compare against the node's own name instead. VERIFIED(trap); fix GUESS.
+d. combat != 0: return before the write at Holster.cpp:866-867, so the native hand pose holds during combat.
+e. The override runs after the engine's per-frame copy (hooks.toml:92-94), so it holds each frame.
+- Left hand: hs::handLookup/resolveLeft chooses mirror (Holster.cpp:800, 818). Unchanged.
+- Flourish: suspected wield-transition anim ids 0x2712/0x2713 (Holster.cpp:10). GUESS: native hand path already plays them, so no extra work.
+
+Risks
+- Owner offset 0x1D8 unverified (Holster.cpp:831-832).
+- mountPose never exercised on a rhand-attached Gob. GUESS: works (same parent skeleton).
+- Live check needed (queue as a PLAY_TEST_QUEUE row, not a block): PLACENODE owner= matches COMB creature= for the same character.
+
+OPEN: Does [parent+0x1D8] equal the creature pointer whose [+0x138] flag changes (COMB creature=)?
+VERDICT: PARTIAL (owner link and mountPose path unverified; 0x5047B0 premise corrected to H7).

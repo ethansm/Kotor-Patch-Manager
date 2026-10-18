@@ -13,6 +13,8 @@ static SIZE_T fakeVQ(LPCVOID a, MEMORY_BASIC_INFORMATION* m, SIZE_T n) {
     if (r && g_fake.hi && p >= g_fake.lo && p < g_fake.hi) {
         m->BaseAddress = reinterpret_cast<void*>(g_fake.lo); m->RegionSize = g_fake.hi - g_fake.lo;
         m->Protect = g_fake.protect; m->State = g_fake.state;
+    } else if (r && g_fake.hi && p < g_fake.lo && reinterpret_cast<uintptr_t>(m->BaseAddress) + m->RegionSize > g_fake.lo) {
+        m->RegionSize = g_fake.lo - reinterpret_cast<uintptr_t>(m->BaseAddress);   // like a real region: it ends where the fake one begins
     }
     return r;
 }
@@ -183,6 +185,49 @@ int main() {
         at<uint32_t>(k, Label_Border) = 0; KT_CHECK(!setFill(k, img, hi)); at<uint32_t>(k, Label_Border) = 0x9875BC;
         KT_CHECK_EQ((unsigned long long)at<uint32_t>(k, Label_Border + Border_Fill), 0ull); KT_CHECK(at<float>(k, Label_Border + Border_Tint) == 0.1f);
         KT_CHECK(setBorderTint(k, hi));                                                               // restore the tint other blocks expect
+
+        // button borders (CSWGuiButton: vtable 0x987A1C, normal border +0x70, hover border +0xE8; each border fill +0x74, tint +0x28, style +0x34).
+        // Independent literals; gated on the button vtable and BOTH border vtables before any write.
+        {
+            uintptr_t bt = arenaAlloc(0x200);
+            void* const imN = reinterpret_cast<void*>(0x6000); void* const imH = reinterpret_cast<void*>(0x7000);
+            const float tn[3] = { 0.1f, 0.2f, 0.3f };
+            KT_CHECK(!buttonFillOk(bt)); KT_CHECK(!setButtonFill(bt, imN, imH)); KT_CHECK(!setButtonFillStyle(bt, 2));   // nothing set up
+            at<uint32_t>(bt, 0) = 0x987A1C; at<uint32_t>(bt, 0x70) = 0x9875BC;
+            KT_CHECK(!buttonFillOk(bt)); KT_CHECK(!setButtonFill(bt, imN, imH));                             // hover border vtable missing
+            KT_CHECK_EQ((unsigned long long)at<uint32_t>(bt, 0x70 + 0x74), 0ull);                            // gate failed: normal border untouched too
+            at<uint32_t>(bt, 0xE8) = 0x9875BC; at<uint32_t>(bt, 0x70) = 0;
+            KT_CHECK(!setButtonFill(bt, imN, imH)); KT_CHECK_EQ((unsigned long long)at<uint32_t>(bt, 0xE8 + 0x74), 0ull);   // normal border vtable missing
+            at<uint32_t>(bt, 0x70) = 0x9875BC; at<uint32_t>(bt, 0) = 0x9878BC;                               // a label vtable is not a button
+            KT_CHECK(!buttonFillOk(bt)); KT_CHECK(!setButtonFill(bt, imN, imH));
+            at<uint32_t>(bt, 0) = 0x987A1C;
+            KT_CHECK(buttonFillOk(bt));
+            KT_CHECK(setButtonFill(bt, imN, imH));                                                           // fills only, tint untouched
+            KT_CHECK_EQ((unsigned long long)at<uint32_t>(bt, 0x70 + 0x74), 0x6000ull); KT_CHECK_EQ((unsigned long long)at<uint32_t>(bt, 0xE8 + 0x74), 0x7000ull);
+            KT_CHECK(at<float>(bt, 0x70 + 0x28) == 0.f && at<float>(bt, 0xE8 + 0x28) == 0.f);
+            KT_CHECK(at<uint32_t>(bt, 0x60 + 0x74) == 0);                                                    // label border slot never written
+            KT_CHECK(setButtonFill(bt, imN, imN, tn));                                                      // same image + tint on both states
+            KT_CHECK_EQ((unsigned long long)at<uint32_t>(bt, 0x70 + 0x74), 0x6000ull); KT_CHECK_EQ((unsigned long long)at<uint32_t>(bt, 0xE8 + 0x74), 0x6000ull);
+            KT_CHECK(at<float>(bt, 0x70 + 0x28) == 0.1f && at<float>(bt, 0xE8 + 0x28 + 4) == 0.2f && at<float>(bt, 0xE8 + 0x28 + 8) == 0.3f);
+            KT_CHECK(setButtonFill(bt, nullptr, nullptr));                                                   // nullptr clears both
+            KT_CHECK_EQ((unsigned long long)at<uint32_t>(bt, 0x70 + 0x74), 0ull); KT_CHECK_EQ((unsigned long long)at<uint32_t>(bt, 0xE8 + 0x74), 0ull);
+            at<uint32_t>(bt, 0x70 + 0x34) = 0xF1u; at<uint32_t>(bt, 0xE8 + 0x34) = 0xA0u;                    // style: low 2 bits only, per border
+            KT_CHECK(setButtonFillStyle(bt, 2));
+            KT_CHECK_EQ((unsigned long long)at<uint32_t>(bt, 0x70 + 0x34), 0xF2ull); KT_CHECK_EQ((unsigned long long)at<uint32_t>(bt, 0xE8 + 0x34), 0xA2ull);
+            KT_CHECK(!setButtonFillStyle(bt, 4)); KT_CHECK(!setButtonFillStyle(bt, -1));
+            KT_CHECK_EQ((unsigned long long)at<uint32_t>(bt, 0x70 + 0x34), 0xF2ull);
+            // null and unreadable controls: no crash, false
+            KT_CHECK(!buttonFillOk(0) && !setButtonFill(0, imN, imH) && !setButtonFillStyle(0, 2));
+            KT_CHECK(!buttonFillOk(0x10) && !setButtonFill(0x10, imN, imH) && !setButtonFillStyle(0x10, 2));
+            // Steam only: a table without the Steam identity refuses even a well-formed button
+            { K2AddrTable other = kSteam; k2addr::setForTest(&other);
+              KT_CHECK(!buttonFillOk(bt)); KT_CHECK(!setButtonFill(bt, imN, imH)); k2addr::clearForTest(); }
+            KT_CHECK(buttonFillOk(bt));
+            // border not writable: false (probeWrite), never a fault
+            g_fake = { bt + 0xE8, bt + 0x180, PAGE_READONLY, MEM_COMMIT }; saferead::beginScope();
+            KT_CHECK(!setButtonFill(bt, imN, imH)); g_fake.hi = 0; saferead::beginScope();
+            KT_CHECK_EQ((unsigned long long)at<uint32_t>(bt, 0x70 + 0x74), 0ull);                            // refused up front: the writable normal border was not filled either
+        }
 
         // scaleFromRef: ref ctl px rect (100,50,800,600) vs layout units (10,20,400,300) -> s = 2, origin (100,50)
         at<int>(k, Ctl_X) = 100; at<int>(k, Ctl_Y) = 50; at<int>(k, Ctl_W) = 800; at<int>(k, Ctl_H) = 600;

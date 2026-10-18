@@ -1,0 +1,45 @@
+G2 combat signal (recon, read-only). Steam swkotor2.exe 6a522e71.
+DUMP = ~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71/decomp/<bb>/<addr>.{c,asm}
+LOG = holster_log.txt via kplog_parse --bare: 1528 COMB lines, 27 edges (17 enter, 10 exit). Tick unit assumed ms (GUESS).
+
+1. COMB edges (Q1)
+- PC: VERIFIED. Creature b924540 has body PFBCM (LOG PLACENODE owner=b924540). Enter tick 4212130306, exit 4212142714 (12408).
+- NPC: VERIFIED. b2f0940 has body N_CommF (LOG PLACENODE owner=b2f0940). 10 creatures show edges, so 0x7682B0 fires for NPCs.
+- Party: UNKNOWN. The log has no party tag. Other edge creatures show body pointers only.
+- Exit pairs (10 matched):
+  - 5 short: 8018, 8050, 8073, 8073, 8487 ticks.
+  - PC: 12408.
+  - 4 long: 312412 to 321862 ticks (combat refreshed; GUESS).
+- 7 enters still open at log end (second wave, ticks from 4214205157).
+
+2. Exit timing (Q1)
+- VERIFIED DUMP 56/00569320.c:148-149 (AIUpdate 0x569320): if +0x524 < 1, call SetCombatState(0, +0x11E8, 0). asm 0x569923 CALL 0x57A560.
+- VERIFIED +0x524 = 8000 on state != 0 (DUMP 57/0057a560.c, asm 0x57A64F). AIUpdate decrements it at 0x569957.
+- So the exit edge is the 8 s no-refresh timer expiry, in the same AI tick (GUESS on sample lag). Short pairs match 8000 ms plus about 0.5 s.
+
+3. Flourish (Q2)
+- VERIFIED: flourish writes server only: +0x520=1, +0x524=8000, +0x528=0, +0x11E8=2 (via SetCombatState, param3=2).
+- VERIFIED: client +0x138 is not written (gate asm 0x57A926 needs param3==1). No client enter edge for flourish.
+- VERIFIED census: no writer of +0xC5, +0xC6 or +0x138 on the flourish path (0x79F430, 0x66B8A0).
+- Expiry of a flourish calls SetCombatState(0, 2, 0), so no client exit either.
+
+4. Candidate predicates (Q2)
+- client creature +0x138 (0x7682B0): VERIFIED combat enter/exit for PC and NPC. Blind to flourish. Keep for combat.
+- server creature +0x520: VERIFIED writers are only the constructor and SetCombatState (census --offset 0x520). Set for combat AND flourish. Needs the server object.
+- anim base +0xC5 (wield class, from baseitems col 0x08): VERIFIED writers only UpdateWeaponClass 0x76D7D2 (callers EquipToInventorySlot 0x76E130, 0x804F10, 0x85A1F0, CreateSimple) and the ctor. Equip-state, not a drawn flag.
+- anim base +0xC6 (gate): VERIFIED idle picker 0x863650 reads +0xC5 and +0xC6 (gate==1 uses weapon-class table). Writer FUN_0076d160 (DUMP 76/0076d160.c:6-7) sets creature+0x220 and anim base +0xC6.
+  - Callers: 0x85B940:146 (value 1) and :154 (value 2); 0x85A1F0:97 and :105.
+  - Choice: model type FUN_0085C150 in {2,3} plus FUN_00734190(0x4C,0)==-1 gives 1, else 2 (VERIFIED branch; meaning of FUN_00734190 GUESS).
+  - Set at model build only. Combat and flourish never write it.
+
+5. Answers
+- Who writes for flourish: only SetCombatState (server +0x520/+0x524/+0x528/+0x11E8). No writer of +0xC5, +0xC6 or +0x138. VERIFIED.
+- Better single predicate: none on the client. Server +0x520 covers combat and flourish but needs the server object. GUESS.
+- Hand-held vs unarmed idle is decided at model build, not toggled by combat (GUESS: the engine has no drawn toggle).
+
+6. For P0 probe (GUESS)
+- Keep 0x7682B0 edges for combat enter/exit.
+- For flourish, detour SetCombatState entry (0x57A560, return 0x79F621 or 0x66BAC2) or read server +0x520. Do not use +0xC5 or +0xC6.
+- No extra exit delay to add: the exit is the 8 s timer expiry.
+
+OPEN: how the client reaches server creature +0x520 (no client mirror found), or detour 0x57A560 instead.

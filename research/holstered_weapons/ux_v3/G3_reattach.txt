@@ -1,0 +1,45 @@
+G3 reattach recon (read-only). Q: can the mod switch a weapon hip<->hand per creature at combat edges?
+Dumps: ~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71/decomp/{76,50}/*.c (header lines = callers/callees)
+
+ATTACH PRIMITIVE
+- VERIFIED(decomp 76/007637e0.c body): FUN_007637E0 is cdecl(param_1, char* event, creature). Per hand it calls FUN_007ED830()->vtbl[+0x7C](objHandle, nodeName, flag, scale). Node name = 8-byte string object built by FUN_00733570("rhand"/"lhand"), freed by FUN_00733780.
+- VERIFIED(same): rhand flag=1, lhand flag=0; objHandle = item+0x14 (item = FUN_0073F530(slot handle)). Detach = same call with handle 0x7F000000.
+- VERIFIED(7637E0 body): re-attach runs only if creature+0x278 != R handle, or +0x27C != L handle, or event == "AppearanceForceUpdate" (forces both). creature+0x138 (combat flag, set by 0x7682B0) selects local_18 = 0 on a forced not-in-combat refresh.
+- VERIFIED(asm 76/007637e0.asm 0x763B49, 0x763E7B): the hook sites are the vtbl+0x7C calls; stolen bytes are MOV EAX,[EDX+0x7C].
+- VERIFIED(Holster.cpp:1200-1210, bone_test): the "rhand"/"lhand" literal inside 0x7637E0 is repointed to g_boneName (default pelvis_g, Holster.cpp:62). With bone_test=1 every engine attach from 0x7637E0 lands on the hip node.
+
+VANILLA COMBAT START
+- VERIFIED(header callees): 0x7682B0 callees = 0076e610, 007fe6c0, 00773ba0, 007680a0, 0077d800, 0073f4d0. No 0x7637E0.
+- VERIFIED(header callees): 0x7FE6C0 callees do not include 0x7637E0, 0x76D890 or 0x76E130.
+- VERIFIED(7682B0 body): 0x7682B0 writes creature+0x138 = new state, then calls 0x7FE6C0(newState,0,1,0) and item vtbl+0x34. No attach.
+- => Vanilla combat start does NOT re-attach. A hand attach is not free; it happens only on the equip path (0x76D890 -> 0x7637E0).
+
+OPTION (a): REFRESH CHAIN 0x76E130 -> 0x76D590 -> 0x76D890
+- VERIFIED(76e130 header): __thiscall, slot in {0x10,0x20,0x40000,0x80000}; callees include 0x76D590 and 0x76D890. It is the equip-change routine (slot swap, sounds, items). Heavy and unsafe to call from a combat edge.
+- VERIFIED(76d590 body): writes creature anim fields only (FUN_007ED830()+0xC5 weapon category from base-item record FUN_006D5200(item+0xC) +8, +0xC7 from its +9, +0xD0 flag). No attach call.
+- VERIFIED(76d890 body): __thiscall(creature, slot, a3, param_4, param_5). With param_4 != 0 the message block is skipped; it always ends with FUN_007637E0(0,0,creature). So 0x76D890(..., param_4=1) == a bare 0x7637E0 call.
+- => Option (a) cannot produce a hand attach while bone_test=1 (literal patched). With bone_test=0 a forced re-attach ("AppearanceForceUpdate") would attach to rhand, but that changes the hip placement model. Calling 0x76E130 is not safe here.
+- GUESS: calling 0x7637E0 from inside the 0x7682B0 post-call would not recurse (0x7637E0 never reaches 0x7682B0), but it is untested.
+
+OPTION (b): RE-ATTACH VIA vtbl+0x7C
+- VERIFIED(primitive above): a DLL re-attach to hand = detach (0x7F000000 on hip) then attach(item+0x14, "rhand" string obj, 1, scale).
+- GUESS: the string-object ABI of FUN_00733570 and the calling convention of vtbl+0x7C are not read. Holster source comments say vtbl+0x7C is a no-op on verified classes; not confirmed here.
+- Verdict for (b): feasible in theory, but a detach+attach pair per edge risks a visible pop mid-combat. Not preferred.
+
+OPTION (c): PER-FRAME POSE FROM PLACE (no re-attach)
+- VERIFIED(Holster.cpp:424-431, 0x5047B0): child Gob=[beh+0x10], node N=[beh+0x18], parent=[beh+0x14]. The engine copies N's world pose into gob+0xA4 (vec3) and +0xB0 (quat) each update.
+- VERIFIED(Holster.cpp HolsterPlace, ~L770-870): base = gob+0xA4 (the engine's copy), optional mountPose(parent, boneName) for place_bone_<cat>, applyPlacement(base, placement), then memcpy 28 bytes back to gob+0xA4 (static_assert line ~110). The hook runs after the engine copy (comment ~L768 and ~L620).
+- VERIFIED(Holster.cpp mountPose ~L619-666): FindPart = parent vtbl+0x10C(name); node pose = node vtbl+0xC(vec3*, quat*). Works for any named bone the parent has.
+- VERIFIED(HolsterTune.h:56): kBones = {torsoUpr_g, torso_g, pelvis_g, rthigh_g, lthigh_g}. rhand/lhand are NOT in the table, so place_bone_<cat> cannot select a hand today. Needs extending (kBoneCount 5 -> 7) or a separate hand key.
+- VERIFIED(Holster.cpp ~L787-818): the resolve cache key is (node, gob, handle), with ent->seq for re-resolve. A per-creature combat input must bump seq or enter the key. The COMB hook (0x7682B0, Holster.cpp ~L315-331) only logs; no per-creature state is stored today.
+- VERIFIED(grep): slidePose(fsm, now, mount, hand) (HolsterSlide.h:37) has no call in Holster.cpp or HolsterLogic.h. The hand base pose is not wired yet.
+- GUESS: identity placement on rhand puts the weapon in the hand; the next engine copy overwrites +0xA4, so the PLACE write must run every frame (it does, per the hook).
+- Answer for (c): yes, a per-creature switch needs only a different base (hip vs rhand mount pose) and placement, not a new attach node. Attach stays pelvis_g; no re-attach.
+
+ANSWER SUMMARY
+- Hip<->hand switch: option (c). Needs rhand/lhand in the mount table and a combat input into the resolve key.
+- Option (a): not usable while bone_test=1; vanilla combat start does not re-attach.
+- Option (b): possible, riskier; keep as fallback.
+
+OPEN: Does the renderer read gob+0xA4 after the PLACE write (or re-compose from N)? Needs a live GOB+PLACE log pair, not static.
+VERDICT: PARTIAL

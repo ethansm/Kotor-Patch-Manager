@@ -386,6 +386,61 @@ inline bool setFillStyle(uintptr_t ctl, int style) {
     return rd<uint32_t>(b, oStyle, &v) && wr<uint32_t>(b, oStyle, (v & ~3u) | static_cast<uint32_t>(style));
 }
 
+// ---- BUTTON borders (CSWGuiButton, vftable 0x987A1C) ----
+// setFill / setBorderTint / setAlpha / setFillStyle above gate on the LABEL border at +0x60 and silently return false on a button, whose
+// normal border is at +0x70 and highlight (hover) border at +0xE8 (GuiButton.h; 08_shield_bar.md:500). These helpers write the same CSWGuiBorder
+// fields (fill +0x74, tint +0x28, style +0x34 from the K2Addr table) on those two borders. Steam exe only (the button offsets are decoded for it).
+// Gate, every call, before any write: control vtable == ButtonVtable AND both border vtables == BorderVtable (a failed gate writes nothing, so a
+// caller can keep its text fallback). NOTE: that the button borders share the label border's field layout is inferred from the shared
+// CSWGuiBorder class and vtable gate (rect/Draw 0x415300), not separately decoded; confirm live (PLAY_TEST_QUEUE) before relying on it.
+namespace detail {
+constexpr int BtnBorderNormal = 0x70, BtnBorderHilite = 0xE8;
+// Gated base of the button's normal (highlight=false) or hover (highlight=true) border, 0 when the control is not a Steam CSWGuiButton or
+// either border fails the vtable check.
+inline uintptr_t buttonBorder(uintptr_t ctl, bool highlight) {
+    uint32_t vt = 0, bvt = 0; const uint32_t wantBtn = static_cast<uint32_t>(gameaddr::ButtonVtable), wantBdr = vtab(&K2AddrTable::BorderVtable);
+    if (!ctl || k2addr::get() != &kSteam || !wantBdr) return 0;
+    if (!rd32(ctl, 0, &vt) || vt != wantBtn) return 0;
+    if (!rd32(ctl + BtnBorderNormal, 0, &bvt) || bvt != wantBdr) return 0;
+    if (!rd32(ctl + BtnBorderHilite, 0, &bvt) || bvt != wantBdr) return 0;
+    return ctl + (highlight ? BtnBorderHilite : BtnBorderNormal);
+}
+inline bool writeBorderFill(uintptr_t b, void* image, const float* tint) {
+    const int oFill = off(&K2AddrTable::Border_Fill), oTint = off(&K2AddrTable::Border_Tint);
+    if (!b || !oFill || !oTint) return false;
+    if (!wr<uint32_t>(b, oFill, static_cast<uint32_t>(reinterpret_cast<uintptr_t>(image)))) return false;
+    if (tint) for (int k = 0; k < 3; ++k) if (!wr<float>(b, oTint + 4 * k, tint[k])) return false;
+    return true;
+}
+}
+// True when `btn` is a readable Steam CSWGuiButton whose two borders pass the vtable gate (what the setters below require).
+inline bool buttonFillOk(uintptr_t btn) { return detail::buttonBorder(btn, false) && detail::buttonBorder(btn, true); }
+// fill image of the normal border (+0x70) = normalImg and of the hover border (+0xE8) = hiImg (nullptr clears); optional rgb tint -> both
+// borders' +0x28. All gating happens before the first write.
+inline bool setButtonFill(uintptr_t btn, void* normalImg, void* hiImg, const float* tint = nullptr) {
+    using namespace detail;
+    uintptr_t n = buttonBorder(btn, false), h = buttonBorder(btn, true);
+    // Both borders must be writable up front, so a refusal never leaves one state filled and the other not.
+    const int oFill = off(&K2AddrTable::Border_Fill), oTint = off(&K2AddrTable::Border_Tint);
+    if (!n || !h || !oFill || !oTint) return false;
+    const uintptr_t bs[2] = { n, h };
+    for (int i = 0; i < 2; ++i)
+        if (!saferead::probeWrite(SiteBase, reinterpret_cast<void*>(bs[i] + oFill), 4) ||
+            (tint && !saferead::probeWrite(SiteBase, reinterpret_cast<void*>(bs[i] + oTint), 12))) return false;
+    return writeBorderFill(n, normalImg, tint) && writeBorderFill(h, hiImg, tint);
+}
+// FILLSTYLE bits 0-1 (0 tile, 1 centre, 2 stretch) on both borders, other bits kept (as setFillStyle).
+inline bool setButtonFillStyle(uintptr_t btn, int style) {
+    using namespace detail;
+    const int oStyle = off(&K2AddrTable::Border_FillStyle);
+    if (!oStyle || style < 0 || style > 3) return false;
+    uintptr_t b[2] = { buttonBorder(btn, false), buttonBorder(btn, true) };
+    uint32_t v[2] = { 0, 0 };
+    if (!b[0] || !b[1] || !rd<uint32_t>(b[0], oStyle, &v[0]) || !rd<uint32_t>(b[1], oStyle, &v[1])) return false;
+    for (int i = 0; i < 2; ++i) if (!wr<uint32_t>(b[i], oStyle, (v[i] & ~3u) | static_cast<uint32_t>(style))) return false;
+    return true;
+}
+
 // ---- layout units -> engine pixels (Mod 14 ux/uy 368-375, scale from LBL_EFX_BACK 1130) ----
 // Pixel = ox + (unit - refUnit) * s, where (ox, oy, sx, sy) come from a reference label's pixel rect.
 struct Scale { float sx, sy, ox, oy; int refX, refY; bool ok; };

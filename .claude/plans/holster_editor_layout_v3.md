@@ -1,6 +1,6 @@
 # HW-UX3: holster editor layout v3 (consolidated page)
 
-Status: PROPOSED 10-18. Follows HW-UX2 (`holster_editor_ux_v2.md`): U0 to U3 are LIVE, and U4 markers are blocked on the camera model (§5).
+Status: APPROVED 10-18 ("approve HW-UX3"). Follows HW-UX2 (`holster_editor_ux_v2.md`): U0 to U3 are LIVE, and U4 markers are blocked on the camera model (§5).
 Input: the user's 10-18 play feedback, screenshots 36 and 37 (the current page) and Gemini mockups moc1 to moc4 plus the Option C sheet.
 
 ## 1. User feedback (10-18), verbatim intent

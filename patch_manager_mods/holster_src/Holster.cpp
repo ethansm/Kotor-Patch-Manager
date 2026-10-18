@@ -25,6 +25,7 @@
 #include "HolsterQuat.h"
 #include "HolsterHand.h"
 #include "HolsterTune.h"
+#include "HolsterLogRate.h"
 #include "HolsterPreview.h"
 #include "HolsterApi.h"
 #include "FileWatch.h"
@@ -60,6 +61,10 @@ static void cfgWarn(const char* key, const char* val, const char* why) {
 static bool g_editor = true;            // editor=0: RegisterPreview refuses and the preview fast path never runs (no probe needed)
 static char g_boneName[32] = "pelvis_g";              // attach node name; its ADDRESS becomes the push immediate, so it must stay static
 static LONG g_maxLines = 3000;
+static bool g_logVerbose = false;       // log_verbose=1: the old per-sample COMB/ATTACH/ANIMRES/PLACE/PLACEREFUSE volume; 0 = rate-limited (HolsterLogRate.h)
+static hs::KeyCounts<256> g_combKeys, g_attachKeys;   // quiet mode: per-creature hit counts (COMB, ATTACH)
+static hs::PlaceTable g_placeTab;
+static hs::RefuseTable g_refuseTab;
 static int g_gobEvery = 600;            // GOB lines: first 24 updates, then every Nth (the handler runs per Gob per frame)
 static uint32_t g_placeGobvt = 0;       // place_gobvt: required Gob vtable (0 = no check); boot-time only
 static volatile LONG g_lines = 0;
@@ -233,6 +238,7 @@ static void readConfig() {
             else if (!_stricmp(key, "ch_gob")) gob = flagValue(val);
             else if (!_stricmp(key, "ch_place")) place = flagValue(val);
             else if (!_stricmp(key, "editor")) g_editor = flagValue(val);
+            else if (!_stricmp(key, "log_verbose")) g_logVerbose = flagValue(val);
             else if (!_stricmp(key, "place_gobvt")) {
                 char* end = nullptr;
                 const unsigned long v = strtoul(val, &end, 16);   // accepts a 0x prefix; blank or junk = no check
@@ -310,7 +316,10 @@ static void readTag(unsigned site, const char* p, char* out, int cap) {
 extern "C" void __cdecl HolsterCombat(void* creature, int newState) {
     if (!g_onComb) return;
     saferead::beginScope();
-    if (!KP_ENABLED(chComb, KPLOG_INFO) || !takeLine()) return;
+    if (!KP_ENABLED(chComb, KPLOG_INFO)) return;
+    // Quiet mode: first 3 edges per creature, then every 10th (86 creatures in one session, mostly non-party).
+    if (!g_logVerbose && !hs::keyedWant(hs::keyBump(g_combKeys, reinterpret_cast<uintptr_t>(creature)), 3, 10)) return;
+    if (!takeLine()) return;
     const uintptr_t c = reinterpret_cast<uintptr_t>(creature);
     const int off = k2addr::off(&K2AddrTable::Creature_ClientCombat);
     uint32_t raw = 0;
@@ -327,7 +336,10 @@ extern "C" void __cdecl HolsterCombat(void* creature, int newState) {
 extern "C" void __cdecl HolsterAttach(uint32_t obj, const char* tag, int* creature) {
     if (!g_onAttach) return;
     saferead::beginScope();
-    if (!KP_ENABLED(chAttach, KPLOG_INFO) || !takeLine()) return;
+    if (!KP_ENABLED(chAttach, KPLOG_INFO)) return;
+    // Quiet mode: first 4 attaches per creature, then every 20th.
+    if (!g_logVerbose && !hs::keyedWant(hs::keyBump(g_attachKeys, reinterpret_cast<uintptr_t>(creature)), 4, 20)) return;
+    if (!takeLine()) return;
     char t[48];
     readTag(kSiteAttach, tag, t, sizeof(t));
     const uintptr_t c = reinterpret_cast<uintptr_t>(creature);
@@ -359,7 +371,8 @@ static void maybeReload();
 extern "C" void __cdecl HolsterAnimResolve(void* self, uint32_t animId) {
     if (g_probe) maybeReload();   // the resolver runs every frame; the 0x5047B0 handler only on attach events (live test 10-15: GOB lines=12)
     if (!g_onAnim || !animInteresting(animId)) return;
-    if (InterlockedIncrement(&g_animPerId[(animId & 0xFFFFu) - 0x2700u]) > 20) {
+    // Quiet mode: 4 lines per id and 32 first-sightings of (creature, id, style); log_verbose=1: 20 and 64.
+    if (InterlockedIncrement(&g_animPerId[(animId & 0xFFFFu) - 0x2700u]) > (g_logVerbose ? 20 : 4)) {
         // C6: past the per-id cap, still log the first sighting of each (creature, id, style) so every party member's wield style shows.
         struct Seen { uintptr_t self; uint32_t id; uint8_t style; };
         static Seen s_seen[64];
@@ -367,11 +380,12 @@ extern "C" void __cdecl HolsterAnimResolve(void* self, uint32_t animId) {
         uint8_t st = 0;
         saferead::beginScope();
         (void)saferead::readAt(kSiteAnim, reinterpret_cast<uintptr_t>(self), 0xC5, &st);
-        const LONG n = s_nSeen < 64 ? s_nSeen : 64;
+        const LONG seenCap = g_logVerbose ? 64 : 32;
+        const LONG n = s_nSeen < seenCap ? s_nSeen : seenCap;
         for (LONG i = 0; i < n; ++i)
             if (s_seen[i].self == reinterpret_cast<uintptr_t>(self) && s_seen[i].id == (animId & 0xFFFFu) && s_seen[i].style == st) return;
         const LONG slot = InterlockedIncrement(&s_nSeen) - 1;
-        if (slot >= 64) return;
+        if (slot >= seenCap) return;
         s_seen[slot] = {reinterpret_cast<uintptr_t>(self), animId & 0xFFFFu, st};
     }
     saferead::beginScope();
@@ -581,13 +595,22 @@ static void previewProbe(uintptr_t g, uintptr_t beh) {
     camNodeOnce(g, parent);
 }
 
-// Refusal reasons of HolsterPlace (live test 10-15: PLACE n=0 with no hint which gate refused). Each reason logs its first 5 hits, then every 500th.
+// Refusal reasons of HolsterPlace (live test 10-15: PLACE n=0 with no hint which gate refused). log_verbose=1: each reason logs its first 5 hits, then
+// every 500th. Default: once per distinct (reason, gob) plus a summary every 10000th hit.
 enum PlaceRefuse : int { PrNull = 0, PrNoHandle, PrNotTarget, PrGobvt, PrReadIn, PrInsaneIn, PrInsaneOut, PrNoWrite, PrNoMount, PrCount };
 static const char* const kRefuseName[PrCount] = {"null", "nohandle", "nottarget", "gobvt", "readin", "insanein", "insaneout", "nowrite", "nomount"};
 static volatile LONG g_refuse[PrCount] = {};
 static void refuse(PlaceRefuse r, uintptr_t g, uintptr_t n, uint32_t vt) {
-    const LONG c = InterlockedIncrement(&g_refuse[r]);
-    if (!g_onPlace || (c > 5 && (c % 500) != 0)) return;
+    LONG c = InterlockedIncrement(&g_refuse[r]);
+    if (!g_onPlace) return;
+    if (g_logVerbose) {
+        if (c > 5 && (c % 500) != 0) return;
+    } else {
+        // Quiet mode: once per distinct (reason, gob) and a summary every 10000th hit of the reason; n= stays the running count per reason.
+        uint32_t cq = 0;
+        if (!hs::refuseWant(g_refuseTab, static_cast<int>(r), g, &cq)) return;
+        c = static_cast<LONG>(cq);
+    }
     if (!KP_ENABLED(chPlace, KPLOG_INFO) || !takeLine()) return;
     KP_LOG(chPlace, "PLACEREFUSE reason=%s n=%ld gob=%x node=%x gobvt=%x", kRefuseName[r], static_cast<long>(c), static_cast<unsigned>(g),
            static_cast<unsigned>(n), static_cast<unsigned>(vt));
@@ -844,7 +867,16 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     memcpy(reinterpret_cast<void*>(g + 0xA4), &out, sizeof(hs::Pose));
     if (!g_onPlace) return;
     const LONG c = InterlockedIncrement(&g_placeCalls);
-    if (c > 24 && (c % g_gobEvery) != 0) return;
+    if (g_logVerbose) {
+        if (c > 24 && (c % g_gobEvery) != 0) return;
+    } else {
+        // Quiet mode: per-gob sampler. The signature covers (cat, left, src); disp/ang are the placement delta (invariant under creature motion).
+        const float pin[3] = {in.pos[0], in.pos[1], in.pos[2]}, pout[3] = {out.pos[0], out.pos[1], out.pos[2]};
+        const float qin[4] = {in.q.w, in.q.x, in.q.y, in.q.z}, qout[4] = {out.q.w, out.q.x, out.q.y, out.q.z};
+        uint32_t sig = hs::fnv1a(hs::leftSrcName(ent->r, ent->left), static_cast<uint32_t>(cat) * 2u + (ent->left ? 1u : 0u));
+        sig = hs::fnv1a(hs::categoryName(cat), sig);
+        if (!hs::placeWant(g_placeTab, g, sig, hs::vecDist(pin, pout), hs::quatAngleDeg(qin, qout))) return;
+    }
     if (!KP_ENABLED(chPlace, KPLOG_INFO) || !takeLine()) return;
     KP_LOG(chPlace, "PLACE n=%ld gob=%x node=%x beh=%x gobvt=%x pos0=(%.3f,%.3f,%.3f) quat0=(%.3f,%.3f,%.3f,%.3f) pos1=(%.3f,%.3f,%.3f) quat1=(%.3f,%.3f,%.3f,%.3f) cat=%s left=%d src=%s extra=%.1f",
            static_cast<long>(c), U(gob), U(node), U(beh), static_cast<unsigned>(vt), in.pos[0], in.pos[1], in.pos[2], in.q.w, in.q.x, in.q.y, in.q.z,
@@ -1197,14 +1229,14 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     addName(names, sizeof(names), g_onAnim, "anim");
     addName(names, sizeof(names), g_onGob, "gob");
     addName(names, sizeof(names), g_onPlace, "place");
-    KP_LOG(chMain, "holster 0.1.5-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
+    KP_LOG(chMain, "holster 0.1.6-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
            names[0] ? names : "none", static_cast<long>(g_maxLines), g_gobEvery, k2addr::get() ? "ok" : "none");
     {
         hs::TuneCfg t;
         LONG seq = 0;
         (void)loadTuneIfChanged(t, seq);
-        KP_LOG(chMain, "CONFIG left_extra_rot=%.1f bone_test_left=%d (ini=%d, active=%d: needs probe=1 and bone_test=1)", static_cast<double>(t.leftExtra),
-               g_boneLeftCfg ? 1 : 0, g_boneLeftCfg ? 1 : 0, g_boneLeft ? 1 : 0);
+        KP_LOG(chMain, "CONFIG left_extra_rot=%.1f bone_test_left=%d (ini=%d, active=%d: needs probe=1 and bone_test=1) log_verbose=%d", static_cast<double>(t.leftExtra),
+               g_boneLeftCfg ? 1 : 0, g_boneLeftCfg ? 1 : 0, g_boneLeft ? 1 : 0, g_logVerbose ? 1 : 0);
         for (int i = hs::CatUnknown + 1; i < hs::CatCount; ++i)
             if (t.hasLeftExtraCat[i])
                 KP_LOG(chMain, "CONFIG left_extra_rot_%s=%.1f", hs::categoryName(static_cast<hs::Category>(i)), static_cast<double>(t.leftExtraCat[i]));
