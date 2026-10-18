@@ -81,7 +81,7 @@ addresses = ["0x008A69AD", "0x008A7350", "0x008A8172", "0x008CD2C0"]
 addresses = ["0x005BD6A0", "0x006076D0", "0x0073F750", "0x0077B670", "0x008A75F0", "0x008A7E22", "0x008A7E76", "0x008A8478", "0x008A8B30", "0x008A8CF0", "0x008B1D00", "0x0099A8B8", "0x0099A8BC"]
 
 [files."patch_manager_mods/npc_diversity_src/DiversityAnimEngine.h"]
-addresses = ["0x0051C0A0", "0x0054A840", "0x0073F4D0"]
+addresses = ["0x0051C0A0", "0x0054A840", "0x0073F4D0", "0x007ED9A0"]   # 0x007ED9A0 CSWCCreature::PlayAnimationById (query_ghidra confirmed, nb2-anim-driver 10-18)
 
 [files."patch_manager_mods/npc_world_src/NpcWorldProvider.cpp"]
 addresses = ["0x00533830", "0x00543F10", "0x0055A460", "0x00561F30", "0x00568BD0", "0x00572A70", "0x00710840"]
