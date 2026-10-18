@@ -162,7 +162,7 @@ void testShouldDiversifyTexture() {
     KT_CHECK(NpcDiversity::ShouldDiversifyTexture("N_CommM01", 190, hash, outTex, sizeof(outTex)));
     KT_CHECK(std::strcmp(outTex, "N_CommM05") == 0);   // 10-17: M10 vetoed, M list is 14 slots
     KT_CHECK(NpcDiversity::ShouldDiversifyTexture("n_commf01", 185, hash, outTex, sizeof(outTex)));
-    KT_CHECK(std::strcmp(outTex, "N_CommF13") == 0);
+    KT_CHECK(std::strcmp(outTex, "N_CommF05") == 0);   // 10-18: F10/F16 vetoed, F list is 14 slots
 
     // Fat rows have one slot each: 34 for male, 35 for female.
     KT_CHECK(NpcDiversity::ShouldDiversifyTexture("N_CommM01", 802, hash, outTex, sizeof(outTex)));
@@ -597,14 +597,14 @@ void testPickTextureVarGateAndGolden() {
     KT_CHECK_EQ(NpcDiversity::PickTextureVar(1u, 190), 7);           // M, 14 slots (M10 vetoed 10-17)
     KT_CHECK_EQ(NpcDiversity::PickTextureVar(1000u, 805), 14);       // M (Twi'lek variant row)
     KT_CHECK_EQ(NpcDiversity::PickTextureVar(0x12345678u, 617), 3);  // M
-    KT_CHECK_EQ(NpcDiversity::PickTextureVar(42u, 185), 10);         // F
-    KT_CHECK_EQ(NpcDiversity::PickTextureVar(0xDEADBEEFu, 811), 4);  // F (underwear row)
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(42u, 185), 4);          // F
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(0xDEADBEEFu, 811), 6);  // F (underwear row)
     KT_CHECK_EQ(NpcDiversity::PickTextureVar(0x12345678u, 802), 34); // FatM
     KT_CHECK_EQ(NpcDiversity::PickTextureVar(0xDEADBEEFu, 803), 35); // FatF
 
     // Current-variant skip: a draw equal to currentTv moves to the next allowlist entry.
     KT_CHECK_EQ(NpcDiversity::PickTextureVar(1u, 190, 7), 8);
-    KT_CHECK_EQ(NpcDiversity::PickTextureVar(42u, 185, 10), 11);
+    KT_CHECK_EQ(NpcDiversity::PickTextureVar(42u, 185, 4), 5);
 
     // Dispatcher idempotence: the 2-arg pick is a pure function of (oid, final row), so re-applying a row
     // returns the value already written (no write). Passing that value back as currentTv would move to the

@@ -11,13 +11,11 @@
     7,
     8,
     9,
-    10,
     11,
     12,
     13,
     14,
-    15,
-    16
+    15
    ],
    "FatF": [
     35
@@ -285,7 +283,9 @@
    "vanilla": true
   },
   "n_commf10": {
-   "adjudicated": {},
+   "adjudicated": {
+    "F": "no"
+   },
    "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
@@ -293,7 +293,7 @@
    "gender": "F",
    "keep": true,
    "layout_ok": {
-    "F": "yes",
+    "F": "no",
     "FatF": "no",
     "FatM": "no",
     "M": "no"
@@ -417,15 +417,17 @@
    "vanilla": false
   },
   "n_commf16": {
-   "adjudicated": {},
+   "adjudicated": {
+    "F": "no"
+   },
    "alt_body": null,
    "category": "commoner_clothing",
    "fat_native": false,
    "flags": [],
    "gender": "F",
-   "keep": true,
+   "keep": false,
    "layout_ok": {
-    "F": "yes",
+    "F": "no",
     "FatF": "no",
     "FatM": "no",
     "M": "no"

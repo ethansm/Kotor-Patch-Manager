@@ -11,9 +11,9 @@ namespace NpcDiversity {
 constexpr uint8_t kMaleSlots[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15};
 constexpr size_t kMaleSlotsCount = 14;
 
-// F: 16 slot(s)
-constexpr uint8_t kFemaleSlots[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
-constexpr size_t kFemaleSlotsCount = 16;
+// F: 14 slot(s)
+constexpr uint8_t kFemaleSlots[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15};
+constexpr size_t kFemaleSlotsCount = 14;
 
 // FatM: 1 slot(s)
 constexpr uint8_t kFatMaleSlots[] = {34};

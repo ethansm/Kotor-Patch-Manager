@@ -55,6 +55,13 @@ class DecideTests(unittest.TestCase):
         self.assertEqual(d["alt_body"]["mesh"], "N_OndComM1")
         self.assertIn(472, d["alt_body"]["rows"])
 
+    def test_user_vetoed_female_czerka_look_slots_removed(self):
+        # 10-18: female N_CommF10 / F16 (dark tunic, orange straps) read as a Czerka uniform on a civilian Telosian.
+        for n, name in ((10, "n_commf10"), (16, "n_commf16")):
+            d = M.decide(n, "F", name, 0.48, [vote(outfit="dark brown tunic, orange straps, olive trousers", conf=4)])
+            self.assertEqual(d["layout_ok"]["F"], "no")
+            self.assertEqual(d["keep"], n == 10)   # vanilla F10 file is never dropped; imported F16 (n_commfc01) has no use left
+
     def test_user_vetoed_czerka_look_slot_removed(self):
         # 10-17: vanilla N_CommM10 (dark tunic, orange diagonal stripe, chest badge) reads as a Czerka uniform on civilians.
         d = M.decide(10, "M", "n_commm10", 0.48, [vote(outfit="dark brown shirt, orange stripe, olive trousers", conf=4)])
