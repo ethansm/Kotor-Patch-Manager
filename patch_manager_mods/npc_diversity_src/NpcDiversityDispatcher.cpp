@@ -52,7 +52,7 @@ namespace {
 using namespace NpcDiversity;
 namespace nl = NpcDiversity::log;
 
-constexpr const char* kVersion = "0.2.6-probe";
+constexpr const char* kVersion = "0.2.7-probe";
 constexpr size_t kResRefLen = 16;
 
 // SafeRead site ids (counted in Counts::fail, printed by STAT read).
@@ -130,7 +130,8 @@ uint32_t currentVisitSalt() { return VisitSaltFrom(g_visitVariety, g_nw); }
 // eligible creature (no play); anim_variety=1 plays a flourish on idle eligible creatures. Roster fed by the remap hook (client oid +
 // final row), cleared on every AREA_LOAD, driven by npc-world's TICK (without the library nothing runs).
 bool g_animVariety = false, g_animProbe = false, g_animProbeAll = false;   // probe_all: also log creatures of unchecked rows (never played)
-unsigned g_animFlags = 1;          // PlayAnimation flags: 1 = engine "once" (fades out); 0 loops; 2 = no cross-fade
+unsigned g_animFlags = 9;          // PlayAnimation flags: 0x1 once, 0x2 no cross-fade, 0x8 overlay (nothing cancelled, idle stays current); 0/1/2/4 replace the idle
+bool g_animRestore = false;        // anim_restore=1: after a play (+kPostLogDelayMs) re-issue the default idle via client SetAnimation(10000,0,0)
 int g_animProbeMax = 24;           // chain lines per process
 uint32_t g_animLastRun = 0, g_animPlays = 0, g_animReady = 0, g_animBusy = 0, g_animNoChain = 0;
 int g_animProbeLines = 0;
@@ -139,10 +140,10 @@ bool g_rosterInit = false;
 inline bool animOn() { return g_animVariety || g_animProbe; }
 
 void logChain(uint32_t oid, uint16_t app, const AnimEngine::Chain& c) {
-    KP_LOG(chAnim, "CHAIN oid=%08X app=%u stage=%s srv=%08X soid=%08X type=%u party=%d pc=%d act=%04X q=%08X qd=%08X,%08X,%08X inv=%08X rh=%08X armed=%d cmb=%u dlg=%08X cli=%08X vt=%08X cache=%08X hold=%08X body=%08X idle=%d",
+    KP_LOG(chAnim, "CHAIN oid=%08X app=%u stage=%s srv=%08X soid=%08X type=%u party=%d pc=%d act=%04X q=%08X qd=%08X,%08X,%08X inv=%08X rh=%08X armed=%d cmb=%u dlg=%08X cli=%08X vt=%08X cache=%08X hold=%08X body=%08X gob=%u anim=%u idle=%d",
            oid, app, AnimEngine::StageName(c.stage), (unsigned)c.server, c.serverOid, c.facts.type, c.facts.party, c.facts.isPc,
            c.facts.action, c.facts.queueHead, c.qd[0], c.qd[1], c.qd[2], c.inv, c.facts.rightHand, Anim::HasWeapon(c.facts) ? 1 : 0, c.facts.combat, c.facts.dialog, (unsigned)c.client, c.clientVt, c.cache,
-           (unsigned)c.holder, (unsigned)c.body, Anim::IsIdle(c.facts) ? 1 : 0);
+           (unsigned)c.holder, (unsigned)c.body, c.gob, c.anim, Anim::IsIdle(c.facts) ? 1 : 0);
 }
 
 void animTick(uint32_t now) {
@@ -163,8 +164,20 @@ void animTick(uint32_t now) {
         if (const Anim::Flourish* f = Anim::Due(s, now, idle, Anim::HasWeapon(c.facts))) {
             const bool ok = AnimEngine::Play(c, f->name, 1.0f, g_animFlags);
             ++g_animPlays;
-            if (g_animPlays <= 200) KP_LOG(chAnim, "PLAY oid=%08X %s flags=%u ok=%d n=%u", s.oid, f->name, g_animFlags, ok ? 1 : 0, s.plays);
+            if (g_animPlays <= 200) KP_LOG(chAnim, "PLAY oid=%08X %s flags=%u ok=%d n=%u gob_before=%u", s.oid, f->name, g_animFlags, ok ? 1 : 0, s.plays, c.gob);
             else if ((g_animPlays & 63u) == 0) KP_LOG(chAnim, "PLAY total=%u ready=%u busy=%u nochain=%u", g_animPlays, g_animReady, g_animBusy, g_animNoChain);
+        }
+    }
+    // Second pass: one POST line per play (AfterDue fires once, kPostLogDelayMs after the play ends), then the optional idle restore.
+    for (int i = 0; i < g_roster.count; ++i) {
+        Anim::Slot& s = g_roster.slots[i];
+        if (!Anim::AfterDue(s, now)) continue;
+        AnimEngine::Chain c;
+        AnimEngine::Resolve(s.oid, &c);
+        KP_LOG(chAnim, "POST oid=%08X cur=%u gob=%u restore=%d", s.oid, (unsigned)AnimEngine::CurAnim(c), (unsigned)AnimEngine::GobCount(c), g_animRestore ? 1 : 0);
+        if (g_animRestore) {
+            const bool ok = AnimEngine::SetIdle(c);
+            KP_LOG(chAnim, "RESTORE oid=%08X ok=%d", s.oid, ok ? 1 : 0);
         }
     }
 }
@@ -222,11 +235,12 @@ void readConfig() {
     g_animVariety = GetPrivateProfileIntA("NpcDiversity", "anim_variety", 0, path) != 0;
     g_animProbe = GetPrivateProfileIntA("NpcDiversity", "anim_probe", 0, path) != 0;
     g_animProbeAll = GetPrivateProfileIntA("NpcDiversity", "anim_probe_all", 0, path) != 0;
-    g_animFlags = static_cast<unsigned>(GetPrivateProfileIntA("NpcDiversity", "anim_flags", 1, path));
+    g_animFlags = static_cast<unsigned>(GetPrivateProfileIntA("NpcDiversity", "anim_flags", 9, path));
+    g_animRestore = GetPrivateProfileIntA("NpcDiversity", "anim_restore", 0, path) != 0;
     g_animProbeMax = static_cast<int>(GetPrivateProfileIntA("NpcDiversity", "anim_probe_max", 24, path));
     if (!g_rosterInit) { g_roster.clear(); g_rosterInit = true; }
-    KP_LOG(chInit, "config anim_variety=%d anim_probe=%d anim_probe_all=%d anim_flags=%u anim_probe_max=%d%s", g_animVariety ? 1 : 0, g_animProbe ? 1 : 0,
-           g_animProbeAll ? 1 : 0, g_animFlags, g_animProbeMax, animOn() ? " (needs npc-world: TICK drives it)" : "");
+    KP_LOG(chInit, "config anim_variety=%d anim_probe=%d anim_probe_all=%d anim_flags=%u anim_restore=%d anim_probe_max=%d%s", g_animVariety ? 1 : 0, g_animProbe ? 1 : 0,
+           g_animProbeAll ? 1 : 0, g_animFlags, g_animRestore ? 1 : 0, g_animProbeMax, animOn() ? " (needs npc-world: TICK drives it)" : "");
 }
 
 void ensureInit() {

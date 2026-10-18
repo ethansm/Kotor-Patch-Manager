@@ -12,6 +12,9 @@ Usage: npc_div_log_check.py [LOG | --log LOG] [--new [--no-advance] [--state PAT
 Grammar: GOLDEN block at the top of patch_manager_mods/npc_diversity_src/diversity_log_test.cpp (authoritative), formatters in
 NpcDivLog.h, background in .claude/review/npc_div/E_logging.md 4.2. The KpLog prefix and fallback sink shapes are parsed by
 scripts/kplog_parse.py parse_line; a bare body is accepted as-is.
+Anim section (INFO 18, only when the last launch has chAnim lines; never changes RESULT): CHAIN by stage, per-app n/armed/idle,
+distinct PLAY names, POST cur histogram, verdict flags (chain ok = a CHAIN reached the full "body" stage, armed rows seen,
+idle resumed = POST cur==10000 over all POSTs). CHAIN gob=/anim=, PLAY gob_before= are optional (old logs lack them).
 0.1.3-probe additions (all optional, old logs still parse): TEX `stype=<int> oid=<hex>`, RMP `stype=<int>`, STAT remap
 `tvarmor=`, PTR `this= off= p= hex=` one-shot pointer dumps.
 0.1.2-probe additions: RMP `tv=<b>><a>` (after app=; absent on older lines), CRE0 `off=<hex>` (absent = 000), STAT remap
@@ -57,6 +60,11 @@ DIVERSITY_SLOTS_H = HERE.parent / "patch_manager_mods/npc_diversity_src/Diversit
 SLOT_ARRAY_RE = re.compile(r"constexpr\s+uint8_t\s+(kMaleSlots|kFemaleSlots|kFatMaleSlots|kFatFemaleSlots)\s*\[\]\s*=\s*\{([^}]*)\}")
 SLOT_ARRAY_FAMILY = {"kMaleSlots": "M", "kFemaleSlots": "F", "kFatMaleSlots": "FatM", "kFatFemaleSlots": "FatF"}
 PASS, WARN, FAIL, INFO = "PASS", "WARN", "FAIL", "INFO"
+# NB2 anim channel (patch/anim, KP_CHANNEL chAnim). Stage order mirrors DiversityAnimEngine.h StageName; the last one is the full chain.
+ANIM_CHANNELS = ("anim", "chAnim")
+ANIM_HEADS = ("CHAIN", "PLAY", "POST", "RESTORE")
+STAGE_ORDER = ("none", "server", "type", "client", "vtable", "holder", "body")
+IDLE_CUR = 10000                  # POST cur == 10000: the idle animation is back
 EXCLUDED_TAG = re.compile(
     r"^(\d{3}_)?(n_|npc_|c_)?(kreia|atton|bao_dur|baodur|mira|hanharr|mandalore|visas|disciple|handmaiden|t3m4|hk47|hk_47"
     r"|g0t0|player|chodo|luxa|grenn|opo_chano|opochano|chano|lorso|b4d4|ralon|moza|vrook|zreztik|geeda|falt|batono)(_|\d|$)",
@@ -201,6 +209,92 @@ def parse_lines(window):
             kind, f, v, pairs = got
             recs.append({"line": n, "kind": kind, "f": f, "v": v, "pairs": pairs})
     return recs, bad
+
+
+def parse_anim(window):
+    """window: [(line_no, raw)] -> [{line, head, f (key=value strings), name}] for chAnim CHAIN/PLAY/POST/RESTORE lines that
+    carry oid=. A line with a KpLog prefix must be on the anim channel; a bare body is accepted. name = the bare word of a PLAY line.
+    Kept apart from parse_lines so the existing parsed= count and checks are unchanged."""
+    out = []
+    for n, raw in window:
+        p = KP.parse_line(raw)
+        if p is not None and (p["kind"] == "header" or (p["kind"] in ("line", "fallback") and p["channel"] not in ANIM_CHANNELS)):
+            continue
+        toks = (raw.strip() if p is None else p["msg"].strip()).split()
+        if not toks or toks[0] not in ANIM_HEADS:
+            continue
+        f, name = {}, None
+        for t in toks[1:]:
+            k, eq, v = t.partition("=")
+            if eq and k:
+                f.setdefault(k, v)
+            elif name is None:
+                name = t
+        if "oid" in f:
+            out.append({"line": n, "head": toks[0], "f": f, "name": name})
+    return out
+
+
+def _int(f, k, base=10):
+    try:
+        return int(f[k], base)
+    except (KeyError, ValueError):
+        return None
+
+
+def _stage_rank(st):
+    if st in STAGE_ORDER:
+        return STAGE_ORDER.index(st)
+    return int(st) if re.fullmatch(r"\d+", st or "") else -1
+
+
+def check_anim(anim, after_line):
+    """18 anim (INFO only, never changes RESULT): chAnim lines after the last BANNER v= line. None when there are none."""
+    rows = [a for a in anim if a["line"] > after_line]
+    if not rows:
+        return None
+    chains = [a for a in rows if a["head"] == "CHAIN"]
+    plays = [a for a in rows if a["head"] == "PLAY"]
+    posts = [a for a in rows if a["head"] == "POST"]
+    restores = [a for a in rows if a["head"] == "RESTORE"]
+    details = []
+    stages = Counter(a["f"].get("stage", "?") for a in chains)
+    top = max([len(STAGE_ORDER) - 1] + [_stage_rank(s) for s in stages])
+    chain_ok = any(_stage_rank(s) == top for s in stages)
+    if chains:
+        details.append("CHAIN %d by stage: %s" % (len(chains), " ".join(
+            "%s=%d" % kv for kv in sorted(stages.items(), key=lambda kv: (_stage_rank(kv[0]), kv[0])))))
+    apps = {}
+    for a in chains:
+        app = _int(a["f"], "app")
+        d = apps.setdefault(app, [0, 0, 0])
+        d[0] += 1
+        d[1] += _int(a["f"], "armed") == 1
+        d[2] += _int(a["f"], "idle") == 1
+    shown = sorted(apps.items(), key=lambda kv: (-kv[1][0], -1 if kv[0] is None else kv[0]))
+    for app, (n, arm, idle) in shown[:LIST_MAX]:
+        details.append("app=%s n=%d armed=%d idle=%d" % ("?" if app is None else app, n, arm, idle))
+    if len(shown) > LIST_MAX:
+        details.append("... +%d more app(s)" % (len(shown) - LIST_MAX))
+    if plays:
+        names = Counter(a["name"] or "?" for a in plays)
+        top_names = names.most_common(LIST_MAX + 1)
+        details.append("PLAY %d, %d name(s): %s%s" % (len(plays), len(names), " ".join("%s=%d" % kv for kv in top_names[:LIST_MAX]),
+                                                      " ..." if len(names) > LIST_MAX else ""))
+        details.append("PLAY ok=1: %d of %d" % (sum(_int(a["f"], "ok") == 1 for a in plays), len(plays)))
+    if posts:
+        cur = Counter(_int(a["f"], "cur") for a in posts)
+        ordered = sorted(cur.items(), key=lambda kv: (-kv[1], -1 if kv[0] is None else kv[0]))
+        details.append("POST %d cur: %s%s" % (len(posts), " ".join("%s=%d" % ("?" if k is None else k, n) for k, n in ordered[:LIST_MAX]),
+                                              " ..." if len(ordered) > LIST_MAX else ""))
+    if restores:
+        details.append("RESTORE %d ok=1: %d" % (len(restores), sum(_int(a["f"], "ok") == 1 for a in restores)))
+    idle_back = sum(_int(a["f"], "cur") == IDLE_CUR for a in posts)
+    armed_seen = any(_int(a["f"], "armed") == 1 for a in chains)
+    head = "chain ok=%s, armed rows seen=%s, idle resumed %d/%d (CHAIN=%d PLAY=%d POST=%d RESTORE=%d)" % (
+        "yes" if chain_ok else "no", "yes" if armed_seen else "no", idle_back, len(posts),
+        len(chains), len(plays), len(posts), len(restores))
+    return INFO, ["INFO 18 anim: " + head] + ["  " + d for d in details]
 
 
 def _of(recs, kind):
@@ -621,7 +715,7 @@ def _ver_name(v):
     return "none" if v is None else v
 
 
-def render(recs, bad, nlines, note, new_mode):
+def render(recs, bad, nlines, note, new_mode, anim=()):
     """(output lines, FAIL count) for one window. The analysed unit is the last launch (from the last BANNER v= line)."""
     starts = [i for i, r in enumerate(recs) if r["kind"] == "BANNER:v"]
     sess = recs[starts[-1]:] if starts else recs
@@ -639,6 +733,9 @@ def render(recs, bad, nlines, note, new_mode):
                check_gate(sess), check_tv_spread(sess), check_tv_determinism(sess), check_tv_allowlist(sess),
                check_changed_share(sess), check_keep_unchanged(sess), check_stype_no_tv_write(sess),
                check_row_remaps(sess), check_cross_launch_map(recs)]
+    got = check_anim(anim, vs[-1]["line"] if vs else 0)
+    if got:
+        results.append(got)
     levels = [lv for lv, _ in results]
     nf, nw = levels.count(FAIL), levels.count(WARN)
     word = FAIL if nf else WARN if nw else PASS
@@ -695,7 +792,7 @@ def main(argv=None):
         print("NPC-DIV-LOG new=none (no lines since last check)")
         return 0
     recs, bad = parse_lines(window)
-    lines, nf = render(recs, bad, len(window), note, a.new)
+    lines, nf = render(recs, bad, len(window), note, a.new, parse_anim(window))
     print("\n".join(lines))
     return 1 if nf else 0
 

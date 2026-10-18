@@ -42,7 +42,7 @@ inline uint32_t FirstDelayMs(uint32_t hash) { return kFirstMinMs + Mix(hash, kSa
 inline uint32_t GapMs(uint32_t hash, uint32_t n) { return kGapMinMs + Mix(hash + n * 0x85EBCA6Bu, kSaltGap) % kGapSpanMs; }
 
 // One slot per creature that has been seen. Keyed on oid (valid for one visit); the DLL clears the roster on every AREA_LOAD.
-struct Slot { uint32_t oid; uint32_t hash; uint32_t nextMs; uint32_t busyUntilMs; uint32_t plays; uint16_t app; bool military; bool used; bool probed; bool playable; };
+struct Slot { uint32_t oid; uint32_t hash; uint32_t nextMs; uint32_t busyUntilMs; uint32_t afterMs; uint32_t plays; uint16_t app; bool military; bool used; bool probed; bool playable; };
 
 constexpr int kMaxSlots = 96;
 
@@ -61,7 +61,7 @@ struct Roster {
         if (count >= kMaxSlots) { ++dropped; return nullptr; }
         Slot& s = slots[count++];
         s.oid = oid; s.hash = HashCreatureId(oid, appearance, visitSalt); s.military = military; s.plays = 0; s.app = appearance; s.used = true; s.probed = false; s.playable = playable;
-        s.nextMs = nowMs + FirstDelayMs(s.hash); s.busyUntilMs = nowMs;   // not 0: a 32-bit clock past 2^31 would read 0 as "in the future"
+        s.nextMs = nowMs + FirstDelayMs(s.hash); s.busyUntilMs = nowMs; s.afterMs = 0;   // not 0: a 32-bit clock past 2^31 would read 0 as "in the future"
         return &s;
     }
     void remove(uint32_t oid) {
@@ -73,6 +73,8 @@ struct Roster {
 // next try out so a creature that is busy is retried soon but not every tick. Returns the flourish to play or null. On a play the slot is
 // re-armed with its own gap and marked busy for the flourish length (the glue re-issues the idle then).
 constexpr uint32_t kBusyRetryMs = 2000;
+// After a play the glue logs POST and does the optional idle-restore kPostLogDelayMs past the end of the flourish (AfterDue, one field only).
+constexpr uint32_t kPostLogDelayMs = 500;
 
 // True when the slot may be looked at now (not inside our own flourish, past its next time). The glue resolves the engine chain only then.
 inline bool Ready(const Slot& s, uint32_t nowMs) {
@@ -89,9 +91,17 @@ inline const Flourish* Due(Slot& s, uint32_t nowMs, bool idle, bool armed = true
     if (!idle) { s.nextMs = nowMs + kBusyRetryMs; return nullptr; }
     const Flourish& f = Pick(Mix(s.hash, s.plays + 1u), s.military);
     s.busyUntilMs = nowMs + f.lenMs;
+    s.afterMs = s.busyUntilMs + kPostLogDelayMs; if (s.afterMs == 0) s.afterMs = 1;   // 0 means none
     s.nextMs = nowMs + f.lenMs + GapMs(s.hash, s.plays);
     ++s.plays;
     return &f;
+}
+
+// True once when the post-play time has come (then cleared), so the glue logs POST / restores idle exactly once per play.
+inline bool AfterDue(Slot& s, uint32_t nowMs) {
+    if (s.afterMs == 0 || static_cast<int32_t>(nowMs - s.afterMs) < 0) return false;
+    s.afterMs = 0;
+    return true;
 }
 
 // ---- eligibility and idle test (pure; the engine glue only reads the facts) --------------------------------------------------------------

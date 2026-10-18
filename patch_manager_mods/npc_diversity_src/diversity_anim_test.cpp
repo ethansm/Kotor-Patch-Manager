@@ -138,5 +138,42 @@ int main() {
         KT_CHECK(Due(*p, p->nextMs, true, true) == nullptr && p->plays == 0);
         KT_CHECK(r.add(23, 479, 3, true, 0)->playable);                     // default is playable
     }
+    // 11. afterMs: Due arms busyUntilMs + 500, AfterDue fires once at/after that time, wraps with the clock, add clears it
+    {
+        Roster r; r.clear();
+        Slot* s = r.add(31, 479, 3, true, 0);
+        KT_CHECK_EQ(s->afterMs, 0u);
+        KT_CHECK(!AfterDue(*s, 0xFFFFFFFFu));                                // nothing armed: never due
+        const Flourish* f = Due(*s, s->nextMs, true);
+        KT_CHECK(f != nullptr);
+        KT_CHECK_EQ(kPostLogDelayMs, 500u);
+        KT_CHECK_EQ(s->afterMs, s->busyUntilMs + 500u);
+        const uint32_t a = s->afterMs;
+        KT_CHECK(!AfterDue(*s, a - 1));
+        KT_CHECK(AfterDue(*s, a));
+        KT_CHECK_EQ(s->afterMs, 0u);
+        KT_CHECK(!AfterDue(*s, a)); KT_CHECK(!AfterDue(*s, a + 10000u));     // once only
+        // clock wrap: start near 2^32, afterMs lands past the wrap
+        Slot* w = r.add(32, 479, 3, true, 0xFFFFF000u);
+        const uint32_t t = w->nextMs;
+        KT_CHECK(Due(*w, t, true) != nullptr);
+        const uint32_t wa = w->afterMs;
+        KT_CHECK_EQ(wa, w->busyUntilMs + 500u);
+        KT_CHECK(!AfterDue(*w, wa - 1));
+        KT_CHECK(AfterDue(*w, wa + 1));
+        KT_CHECK(!AfterDue(*w, wa + 2));
+        // a wrap-straddling play: busyUntilMs just before 2^32, afterMs after it
+        Slot* x = r.add(33, 479, 3, true, 0);
+        x->nextMs = 0xFFFFFFF0u - 1000u; x->busyUntilMs = x->nextMs;
+        const Flourish* xf = Due(*x, x->nextMs, true);
+        KT_CHECK(xf != nullptr);
+        KT_CHECK_EQ(x->afterMs, x->busyUntilMs + 500u);
+        const uint32_t xa = x->afterMs;
+        KT_CHECK(!AfterDue(*x, xa - 1)); KT_CHECK(AfterDue(*x, xa)); KT_CHECK(!AfterDue(*x, xa));
+        // add clears a stale field on a reused slot
+        r.remove(31);
+        Slot* n = r.add(34, 479, 3, true, 5);
+        KT_CHECK_EQ(n->afterMs, 0u);
+    }
     return kt::Report("diversity_anim_test");
 }

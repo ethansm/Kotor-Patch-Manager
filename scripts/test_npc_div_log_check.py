@@ -683,5 +683,90 @@ class Rules012Tests(unittest.TestCase):
         self.assertTrue(any(s.startswith("FAIL 16 cross-launch map") for s in out), out)
 
 
+def anim_stamped(body, n=0):
+    return "T=%d.000 f=- npc-diversity/anim %s" % (5000 + n, body)
+
+
+def chain_line(oid=0x3E9, app=805, stage="body", armed=0, idle=1, extra=" gob=12 anim=10000"):
+    return ("CHAIN oid=%08X app=%d stage=%s srv=00000001 rh=%08X armed=%d cmb=0 body=00000002 idle=%d%s"
+            % (oid, app, stage, 0x77 if armed else 0, armed, idle, extra))
+
+
+def anim_run(bodies, banner_first=True, extra=()):
+    rows = ([stamped(b, i) for i, b in enumerate(healthy())] if banner_first else [])
+    rows += [anim_stamped(b, i) for i, b in enumerate(bodies)]
+    return run_lines(rows, extra)
+
+
+class AnimTests(unittest.TestCase):
+    """INFO 18 anim section: chAnim CHAIN / PLAY / POST / RESTORE lines of the last launch."""
+
+    BODIES = [
+        chain_line(0x10, 805, "body", armed=1, idle=1),
+        chain_line(0x11, 805, "body", armed=0, idle=0),
+        chain_line(0x12, 806, "client", armed=0, idle=1),
+        "PLAY oid=00000010 flourish_a flags=1 ok=1 n=1 gob_before=12",
+        "PLAY oid=00000011 flourish_a flags=1 ok=0 n=1 gob_before=12",
+        "PLAY oid=00000012 flourish_b flags=1 ok=1 n=2",
+        "PLAY total=64 ready=3 busy=1 nochain=0",
+        "POST oid=00000010 cur=10000 gob=12 restore=0",
+        "POST oid=00000011 cur=10000 gob=12 restore=0",
+        "POST oid=00000012 cur=345 gob=13 restore=1",
+        "RESTORE oid=00000012 ok=1",
+    ]
+
+    def test_section_counts_and_verdict(self):
+        rc, out = anim_run(self.BODIES)
+        self.assertEqual(rc, 0, out)
+        self.assertIn("INFO 18 anim: chain ok=yes, armed rows seen=yes, idle resumed 2/3 (CHAIN=3 PLAY=3 POST=3 RESTORE=1)", out)
+        self.assertIn("  CHAIN 3 by stage: client=1 body=2", out)
+        self.assertIn("  app=805 n=2 armed=1 idle=1", out)
+        self.assertIn("  app=806 n=1 armed=0 idle=1", out)
+        self.assertIn("  PLAY 3, 2 name(s): flourish_a=2 flourish_b=1", out)
+        self.assertIn("  PLAY ok=1: 2 of 3", out)
+        self.assertIn("  POST 3 cur: 10000=2 345=1", out)
+        self.assertIn("  RESTORE 1 ok=1: 1", out)
+        self.assertTrue(out[-1].startswith("RESULT PASS"), out)
+
+    def test_section_omitted_without_anim_lines(self):
+        rc, out = run_bodies(healthy())
+        self.assertFalse(any(" 18 anim" in s for s in out), out)
+
+    def test_other_channel_lines_are_not_anim(self):
+        rc, out = run_lines([stamped(b, i) for i, b in enumerate(healthy())] + [stamped(chain_line(), 99)])
+        self.assertFalse(any(" 18 anim" in s for s in out), out)
+
+    def test_only_last_banner_segment_counts(self):
+        old = [anim_stamped(b, i) for i, b in enumerate([chain_line(0x1, 805, "body", armed=1)] * 3
+                                                         + ["POST oid=00000001 cur=10000 gob=1 restore=0"])]
+        new = [anim_stamped(chain_line(0x2, 806, "client", armed=0, idle=0), 10)]
+        rows = ([stamped(b, i) for i, b in enumerate(healthy())] + old
+                + [stamped(b, 50 + i) for i, b in enumerate(healthy())] + new)
+        rc, out = run_lines(rows)
+        self.assertIn("INFO 18 anim: chain ok=no, armed rows seen=no, idle resumed 0/0 (CHAIN=1 PLAY=0 POST=0 RESTORE=0)", out)
+        self.assertIn("  CHAIN 1 by stage: client=1", out)
+        self.assertFalse(any("app=805" in s for s in out), out)
+
+    def test_old_logs_without_gob_anim_and_gob_before(self):
+        bodies = [chain_line(0x20, 805, "body", armed=1, idle=1, extra=""),
+                  "PLAY oid=00000020 flourish_a flags=1 ok=1 n=1",
+                  "POST oid=00000020 cur=10000 gob=12 restore=0"]
+        rc, out = anim_run(bodies)
+        self.assertEqual(rc, 0, out)
+        self.assertIn("INFO 18 anim: chain ok=yes, armed rows seen=yes, idle resumed 1/1 (CHAIN=1 PLAY=1 POST=1 RESTORE=0)", out)
+
+    def test_int_stage_and_bare_bodies_and_no_banner_window(self):
+        rows = [chain_line(0x30, 805, "3"), chain_line(0x31, 805, "6")]
+        rc, out = run_lines(rows, ["--new", "--no-advance"])
+        self.assertIn("  CHAIN 2 by stage: 3=1 6=1", out)
+        self.assertTrue(any(s.startswith("INFO 18 anim: chain ok=yes") for s in out), out)
+
+    def test_parse_anim_skips_plays_without_oid(self):
+        got = N.parse_anim([(1, anim_stamped("PLAY total=64 ready=3 busy=1 nochain=0")),
+                            (2, anim_stamped("area load: roster cleared (plays=1)")),
+                            (3, anim_stamped("PLAY oid=00000010 x_name flags=1 ok=1 n=1"))])
+        self.assertEqual([(a["line"], a["head"], a["name"]) for a in got], [(3, "PLAY", "x_name")])
+
+
 if __name__ == "__main__":
     unittest.main()

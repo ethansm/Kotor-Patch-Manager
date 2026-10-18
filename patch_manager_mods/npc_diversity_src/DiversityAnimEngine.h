@@ -25,6 +25,9 @@ constexpr int kOffInventory = 0x1150, kInvRightHand = 0x14;   // nb2_weapon_reco
 constexpr int kOffParty = 0x11AC, kOffIsPc = 0x10E8, kOffClientHolder = 0x68, kOffClientCache = 0x264;
 constexpr int kHolderGetSlot = 2, kBodyPlaySlot = 6;
 constexpr int kPartBody = 0xFF;
+// Post-play probe (0.2.7): Gob anim entry count at body+0xE0, client current animation id (u16, 10000 = idle) at client+0x48,
+// SetAnimation = client vtable byte offset 0x9C (0x007ed9a0, thiscall(creature, short id, dword 0, int flag), RET 12).
+constexpr int kOffGobCount = 0xE0, kOffClientAnim = 0x48, kClientSetAnimSlot = 0x9C / 4;
 
 // How far one resolve got. The probe logs this per creature once.
 enum Stage : int {
@@ -38,6 +41,8 @@ struct Chain {
     uint32_t serverOid = 0;      // the oid read back from the server object (+0x04)
     uint32_t clientVt = 0;
     uint32_t cache = 0;          // server+0x264 after the GetClientObject call
+    uint32_t gob = 0;            // body Gob anim entry count ([body+0xE0]); 0 when the body was not reached
+    uint32_t anim = 0;           // client current animation id ([client+0x48] u16); 0 when the client vtable check was not passed
     uint32_t inv = 0;            // server+0x1150 (CSWInventory*)
     uint32_t qd[3] = {0, 0, 0};  // first dwords at the action list head (logged to find an emptiness test)
 };
@@ -95,6 +100,7 @@ inline void Resolve(uint32_t oid, Chain* c) {
     c->stage = StClient;
     if (!rd(c->client, 0, &c->clientVt) || c->clientVt != kVtCreatureClient) return;
     c->stage = StVtable;
+    { uint16_t a = 0; if (rd(c->client, kOffClientAnim, &a)) c->anim = a; }
     uint32_t holder = 0;
     if (!rd(c->client, kOffClientHolder, &holder) || !holder) return;
     c->holder = holder;
@@ -105,6 +111,31 @@ inline void Resolve(uint32_t oid, Chain* c) {
     c->body = reinterpret_cast<FnPart>(getFn)(holder, kPartBody);
     if (!c->body) return;
     c->stage = StBody;
+    rd(c->body, kOffGobCount, &c->gob);
+}
+
+// Gob anim entry count of the body ([body+0xE0]); ~0u when unreadable.
+inline uint32_t GobCount(const Chain& c) {
+    uint32_t n = 0;
+    if (!c.body || !rd(c.body, kOffGobCount, &n)) return ~0u;
+    return n;
+}
+
+// Client creature's current animation id ([client+0x48] u16, 10000 = default idle); 0xFFFF when unreadable.
+inline uint16_t CurAnim(const Chain& c) {
+    uint16_t a = 0;
+    if (!c.client || !rd(c.client, kOffClientAnim, &a)) return 0xFFFF;
+    return a;
+}
+
+// Re-issues the default idle through the client SetAnimation (vtable +0x9C): (10000, 0, 0). May be a no-op in the engine.
+inline bool SetIdle(const Chain& c) {
+    if (c.stage < StVtable || !c.client) return false;
+    uint32_t vt = 0, fn = 0;
+    if (!rd(c.client, 0, &vt) || !rd(vt, kClientSetAnimSlot * 4, &fn) || !fn) return false;
+    using FnSetAnim = void(__thiscall*)(uintptr_t, short, unsigned, int);
+    reinterpret_cast<FnSetAnim>(fn)(c.client, static_cast<short>(10000), 0u, 0);
+    return true;
 }
 
 // Plays name on the body Gob. flags: 0 loops until replaced, 1 = engine "once" (fades out), 2 = no cross-fade (Mod 10 notes).
