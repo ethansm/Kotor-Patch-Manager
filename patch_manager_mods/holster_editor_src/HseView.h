@@ -197,6 +197,65 @@ inline WorldScreen worldToScreen(const float camPos[3], const float camQ[4], flo
     return r;
 }
 
+// ---- CAMENG probe maths (U4 Q-L; pure, mirrors Camera::MapToScreen 0x4809D0 so the engine answer can be checked) ----
+// Eye-space point of the world point P for a camera at camPos with orientation camQ (w,x,y,z; normalised here): eye = conj(q) * (P - pos).
+// The camera looks down eye -Z, so a point in front has eye[2] < 0. False (eye zeroed) on a non-finite input or a quaternion shorter than 1e-6.
+inline bool eyeOf(const float camPos[3], const float camQ[4], const float P[3], float eye[3]) {
+    if (eye) eye[0] = eye[1] = eye[2] = 0.0f;
+    if (!camPos || !camQ || !P || !eye) return false;
+    for (int i = 0; i < 3; ++i) if (!finiteF(camPos[i]) || !finiteF(P[i])) return false;
+    for (int i = 0; i < 4; ++i) if (!finiteF(camQ[i])) return false;
+    const float qn = sqrtf(camQ[0] * camQ[0] + camQ[1] * camQ[1] + camQ[2] * camQ[2] + camQ[3] * camQ[3]);
+    if (!(qn > 1e-6f)) return false;
+    const float w = camQ[0] / qn;
+    const float ux = -camQ[1] / qn, uy = -camQ[2] / qn, uz = -camQ[3] / qn;   // conjugate: negated vector part
+    const float v[3] = {P[0] - camPos[0], P[1] - camPos[1], P[2] - camPos[2]};
+    const float tx = 2.0f * (uy * v[2] - uz * v[1]);   // t = 2 * (u x v)
+    const float ty = 2.0f * (uz * v[0] - ux * v[2]);
+    const float tz = 2.0f * (ux * v[1] - uy * v[0]);
+    eye[0] = v[0] + w * tx + (uy * tz - uz * ty);      // v' = v + w*t + u x t
+    eye[1] = v[1] + w * ty + (uz * tx - ux * tz);
+    eye[2] = v[2] + w * tz + (ux * ty - uy * tx);
+    return finiteF(eye[0]) && finiteF(eye[1]) && finiteF(eye[2]);
+}
+
+// A point is in front of the camera when its eye-space z is negative (the engine does no behind-camera clip: z >= 0 mirrors silently).
+inline bool eyeInFront(const float eye[3]) { return eye && finiteF(eye[2]) && eye[2] < 0.0f; }
+
+// The engine's raw MapToScreen answer (normalized = 0) predicted from the eye-space point: GL pixels, origin bottom-left, y up, no aspect term.
+//   t = tan(fovy * pi / 360); X = vx + W/2 + (H/2)/t * (-ex/ez); Yg = vy + H/2 + (H/2)/t * (-ey/ez).  vp = {x, y, w, h}.
+// False (out zeroed) when the viewport is empty, fovy is outside (0, 179), or eye is non-finite or has ez == 0. A point behind the camera still
+// returns true (mirrored, like the engine); the caller tests eyeInFront.
+inline bool rawPredict(const float eye[3], const int vp[4], float fovyDeg, float out[2]) {
+    if (out) out[0] = out[1] = 0.0f;
+    if (!eye || !vp || !out) return false;
+    if (vp[2] <= 0 || vp[3] <= 0) return false;
+    if (!finiteF(fovyDeg) || !(fovyDeg > 0.0f) || !(fovyDeg < 179.0f)) return false;
+    for (int i = 0; i < 3; ++i) if (!finiteF(eye[i])) return false;
+    if (eye[2] == 0.0f) return false;
+    const float t = tanf(fovyDeg * 3.14159265358979f / 360.0f);
+    const float hh = static_cast<float>(vp[3]) * 0.5f;
+    out[0] = static_cast<float>(vp[0]) + static_cast<float>(vp[2]) * 0.5f + hh / t * (-eye[0] / eye[2]);
+    out[1] = static_cast<float>(vp[1]) + hh + hh / t * (-eye[1] / eye[2]);
+    return finiteF(out[0]) && finiteF(out[1]);
+}
+
+// The engine's normalized answer (normalized = 1) from a raw answer: nx = X / W, ny = 1 - Yg / H (top-left, unclipped; vx / vy are not subtracted).
+inline bool rawToNorm(const float raw[2], const int vp[4], float out[2]) {
+    if (out) out[0] = out[1] = 0.0f;
+    if (!raw || !vp || !out || vp[2] <= 0 || vp[3] <= 0) return false;
+    out[0] = raw[0] / static_cast<float>(vp[2]);
+    out[1] = 1.0f - raw[1] / static_cast<float>(vp[3]);
+    return finiteF(out[0]) && finiteF(out[1]);
+}
+
+// Viewport fractions (0..1, origin top-left) of an engine raw answer, for comparing with a hse::worldToScreen result whose ext is the same viewport:
+// fx = (X - vx) / W, fy = 1 - (Yg - vy) / H.
+inline void rawFrac(const float raw[2], const int vp[4], float frac[2]) {
+    frac[0] = (raw[0] - static_cast<float>(vp[0])) / static_cast<float>(vp[2]);
+    frac[1] = 1.0f - (raw[1] - static_cast<float>(vp[1])) / static_cast<float>(vp[3]);
+}
+
 // A two-click confirm is armed and still inside its window (wrap-safe unsigned time difference).
 inline bool guardArmLive(bool armed, uint32_t armedAt, uint32_t now, uint32_t windowMs) {
     return armed && (uint32_t)(now - armedAt) < windowMs;

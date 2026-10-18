@@ -165,6 +165,14 @@ struct K2AddrTable {
     int SceneVt_Init = 0;                // Scene* vtable byte offset: thiscall(scene, const char* room, float pos[3], float quat[4])
     int SceneCamVt_Attach = 0;           // camera vtable byte offset: thiscall(cam, model, const char* node, int)
     int SceneCamVt_Fov = 0;              // camera vtable byte offset: thiscall(cam, float fov)
+    int SceneCamVt_MapToScreen = 0;      // camera vtable byte offset: thiscall(cam, float* out3, x, y, z, char normalized) RET 20 -> out (pure math; log-only CAMENG probe)
+    int Cam_Pos = 0;                     // camera +float[3] world position
+    int Cam_Quat = 0;                    // camera +float[4] orientation (w,x,y,z)
+    int Cam_Fovy = 0;                    // camera +float vertical fov (degrees)
+    int Cam_Near = 0, Cam_Far = 0;       // camera +float near / far plane
+    int Cam_Vp = 0;                      // camera +int[4] GL viewport (x, y, w, h)
+    int Cam_Ortho = 0;                   // camera +float orthographic extent (0 = perspective)
+    int Cam_Behaviour = 0;               // camera +attach behaviour object* (offset floats at beh+0x3C..+0x44, flag +0x48)
     int GobVt_SetPosition = 0, GobVt_SetOrientation = 0, GobVt_GetPosition = 0, GobVt_GetOrientation = 0, GobVt_GetParent = 0;   // Gob vtable byte offsets
     int GobVtReadable = 0;               // bytes of the Gob vtable a guard must be able to read (covers every slot above)
     int GobReadable = 0;                 // bytes of the Gob a guard must be able to read
@@ -349,6 +357,15 @@ constexpr K2AddrTable makeSteam() {
     t.SceneVt_Init = 0x70;
     t.SceneCamVt_Attach = 0x74;
     t.SceneCamVt_Fov = 0x44;
+    t.SceneCamVt_MapToScreen = 0x28;
+    t.Cam_Pos = 0xA8;
+    t.Cam_Quat = 0xB4;
+    t.Cam_Fovy = 0x204;
+    t.Cam_Near = 0x210;
+    t.Cam_Far = 0x214;
+    t.Cam_Vp = 0x218;
+    t.Cam_Ortho = 0x20C;
+    t.Cam_Behaviour = 0x1B8;
     t.GobVt_SetPosition = 0x5C;
     t.GobVt_SetOrientation = 0x60;
     t.GobVt_GetPosition = 0x64;
@@ -531,6 +548,15 @@ constexpr K2AddrTable makeGog() {
     // SceneVt_Init: out of scope (not used by portrait-slots / buff-duration-hud / shield-bar; added to K2Addr.h after this work started)
     // SceneCamVt_Attach: out of scope (not used by portrait-slots / buff-duration-hud / shield-bar; added to K2Addr.h after this work started)
     // SceneCamVt_Fov: out of scope (not used by portrait-slots / buff-duration-hud / shield-bar; added to K2Addr.h after this work started)
+    // SceneCamVt_MapToScreen: out of scope (not used by portrait-slots / buff-duration-hud / shield-bar; added to K2Addr.h after this work started)
+    // Cam_Pos: out of scope (not used by portrait-slots / buff-duration-hud / shield-bar; added to K2Addr.h after this work started)
+    // Cam_Quat: out of scope (not used by portrait-slots / buff-duration-hud / shield-bar; added to K2Addr.h after this work started)
+    // Cam_Fovy: out of scope (not used by portrait-slots / buff-duration-hud / shield-bar; added to K2Addr.h after this work started)
+    // Cam_Near: out of scope (not used by portrait-slots / buff-duration-hud / shield-bar; added to K2Addr.h after this work started)
+    // Cam_Far: out of scope (not used by portrait-slots / buff-duration-hud / shield-bar; added to K2Addr.h after this work started)
+    // Cam_Vp: out of scope (not used by portrait-slots / buff-duration-hud / shield-bar; added to K2Addr.h after this work started)
+    // Cam_Ortho: out of scope (not used by portrait-slots / buff-duration-hud / shield-bar; added to K2Addr.h after this work started)
+    // Cam_Behaviour: out of scope (not used by portrait-slots / buff-duration-hud / shield-bar; added to K2Addr.h after this work started)
     // GobVt_SetPosition: out of scope (not used by portrait-slots / buff-duration-hud / shield-bar; added to K2Addr.h after this work started)
     // GobVtReadable: out of scope (not used by portrait-slots / buff-duration-hud / shield-bar; added to K2Addr.h after this work started)
     // GobReadable: out of scope (not used by portrait-slots / buff-duration-hud / shield-bar; added to K2Addr.h after this work started)

@@ -7,6 +7,7 @@
 //   - guikit::hit / cursorEngine (GuiKit.h)
 //   - party::table / partyCount / member / serverCreature (Party.h)
 //   - saferead::readExo (SafeRead.h)
+//   - sceneview::camera + the K2Addr Cam_* / SceneCamVt_MapToScreen fields (SceneView.h, K2Addr.h: the CAMENG probe)
 // against the fake registry and host test environment.
 
 #ifndef GUIKIT_HOST
@@ -22,6 +23,7 @@
 #include "Party.h"
 #include "SafeRead.h"
 #include "K2Addr.h"
+#include "SceneView.h"
 #include "GameAddr.h"
 #include "HseView.h"
 
@@ -637,6 +639,51 @@ int main() {
         // Null buffer or invalid cap
         HEQ("readExo returns 0 on null buffer without crashing", saferead::readExo(1u, e, nullptr, 10), 0);
         HEQ("readExo returns 0 on cap <= 0 without crashing", saferead::readExo(1u, e, out, 0), 0);
+    }
+
+
+    // ============================================================
+    // 9. U4 CAMENG probe: engine camera object fields (K2Addr.h Steam column), SceneView.h camera()
+    // ============================================================
+    {
+        HEQ("K2Addr SceneCamVt_MapToScreen is 0x28", k2addr::off(&K2AddrTable::SceneCamVt_MapToScreen), 0x28);
+        HEQ("K2Addr Cam_Pos is 0xA8", k2addr::off(&K2AddrTable::Cam_Pos), 0xA8);
+        HEQ("K2Addr Cam_Quat is 0xB4", k2addr::off(&K2AddrTable::Cam_Quat), 0xB4);
+        HEQ("K2Addr Cam_Fovy is 0x204", k2addr::off(&K2AddrTable::Cam_Fovy), 0x204);
+        HEQ("K2Addr Cam_Near is 0x210", k2addr::off(&K2AddrTable::Cam_Near), 0x210);
+        HEQ("K2Addr Cam_Far is 0x214", k2addr::off(&K2AddrTable::Cam_Far), 0x214);
+        HEQ("K2Addr Cam_Vp is 0x218", k2addr::off(&K2AddrTable::Cam_Vp), 0x218);
+        HEQ("K2Addr Cam_Ortho is 0x20C", k2addr::off(&K2AddrTable::Cam_Ortho), 0x20C);
+        HEQ("K2Addr Cam_Behaviour is 0x1B8", k2addr::off(&K2AddrTable::Cam_Behaviour), 0x1B8);
+        HEQ("K2Addr View_Camera is 0x78", k2addr::off(&K2AddrTable::View_Camera), 0x78);
+        HEQ("K2Addr View_Scene is 0x60", k2addr::off(&K2AddrTable::View_Scene), 0x60);
+        HEQ("K2Addr SceneCamVt_Fov is 0x44", k2addr::off(&K2AddrTable::SceneCamVt_Fov), 0x44);
+        HEQ("K2Addr SceneCamVt_Attach is 0x74", k2addr::off(&K2AddrTable::SceneCamVt_Attach), 0x74);
+        HEQ("K2Addr SceneCameraVtable is 0x98C45C", k2addr::addr(&K2AddrTable::SceneCameraVtable), static_cast<uintptr_t>(0x98C45C));
+        HCHECK("gameaddr::SceneCamRotFlag non-zero", gameaddr::SceneCamRotFlag != 0);
+        HCHECK("the GOG table leaves the camera fields unknown (probe inert)", kGog.Cam_Pos == 0 && kGog.SceneCamVt_MapToScreen == 0);
+
+        // a fake view: camera pointer at view+View_Camera, its vtable word equal to SceneCameraVtable -> camera() accepts it
+        const uintptr_t view = arenaAlloc(0x400), cam = arenaAlloc(0x400), vt = arenaAlloc(0x100);
+        at<uint32_t>(view, 0x78) = static_cast<uint32_t>(cam);
+        at<uint32_t>(cam, 0) = static_cast<uint32_t>(gameaddr::SceneCameraVtable);
+        at<uint32_t>(vt, 0x28) = 0x1234u;
+        uint32_t c = 0, v = 0;
+        HCHECK("sceneview::camera accepts a view whose camera has the camera vtable", sceneview::camera(reinterpret_cast<void*>(view), &c, &v));
+        HEQ("sceneview::camera returns the camera pointer", c, static_cast<uint32_t>(cam));
+        HEQ("sceneview::camera returns the vtable word", v, static_cast<uint32_t>(gameaddr::SceneCameraVtable));
+        at<uint32_t>(cam, 0) = 0x1111u;
+        HCHECK("sceneview::camera refuses a foreign vtable", !sceneview::camera(reinterpret_cast<void*>(view), &c, &v));
+        HCHECK("sceneview::camera refuses a null view", !sceneview::camera(nullptr, &c, &v));
+        // the probe reads the pose with the offsets above
+        at<float>(cam, 0xA8) = 1.5f;
+        at<float>(cam, 0x204) = 22.5f;
+        at<int>(cam, 0x220) = 640;
+        float px = 0, fv = 0;
+        int w = 0;
+        HCHECK("rd Cam_Pos x", saferead::readAt<float>(1u, cam, k2addr::off(&K2AddrTable::Cam_Pos), &px) && px == 1.5f);
+        HCHECK("rd Cam_Fovy", saferead::readAt<float>(1u, cam, k2addr::off(&K2AddrTable::Cam_Fovy), &fv) && fv == 22.5f);
+        HCHECK("rd Cam_Vp w (+8)", saferead::readAt<int>(1u, cam, k2addr::off(&K2AddrTable::Cam_Vp) + 8, &w) && w == 640);
     }
 
     return ::kt::Report("common_contract_test (holster-editor)");

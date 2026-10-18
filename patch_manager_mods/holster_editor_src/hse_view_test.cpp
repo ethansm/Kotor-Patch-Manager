@@ -1315,6 +1315,123 @@ static void testInspRects() {
     hse::inspRects(hse::HseRect{0, 0, 100, 20}, nullptr, &rs);   // null guards
 }
 
+// CAMENG probe maths (eyeOf / rawPredict / rawToNorm / rawFrac): the engine's MapToScreen reproduced from pose + fovy + viewport.
+static void testCamEngMath() {
+    const float pos0[3] = {0.0f, 0.0f, 0.0f};
+    const float qI[4] = {1.0f, 0.0f, 0.0f, 0.0f};
+    const int vp[4] = {10, 20, 400, 200};            // x, y, W, H (GL px)
+    const float fov = 60.0f;
+    const float t = tanf(fov * 3.14159265358979f / 360.0f);
+    float eye[3], raw[2], nrm[2];
+
+    // identity, straight ahead -> viewport centre
+    const float ahead[3] = {0.0f, 0.0f, -5.0f};
+    KT_CHECK(hse::eyeOf(pos0, qI, ahead, eye));
+    KT_CHECK(closeF(eye[0], 0.0f) && closeF(eye[1], 0.0f) && closeF(eye[2], -5.0f));
+    KT_CHECK(hse::eyeInFront(eye));
+    KT_CHECK(hse::rawPredict(eye, vp, fov, raw));
+    KT_CHECK(closeF(raw[0], 10.0f + 200.0f, 1e-3f));
+    KT_CHECK(closeF(raw[1], 20.0f + 100.0f, 1e-3f));
+    KT_CHECK(hse::rawToNorm(raw, vp, nrm));
+    KT_CHECK(closeF(nrm[0], 210.0f / 400.0f, 1e-5f));
+    KT_CHECK(closeF(nrm[1], 1.0f - 120.0f / 200.0f, 1e-5f));
+
+    // camera translated: eye is relative to pos
+    const float posT[3] = {1.0f, 2.0f, 3.0f};
+    const float aheadT[3] = {1.0f, 2.0f, -2.0f};
+    KT_CHECK(hse::eyeOf(posT, qI, aheadT, eye));
+    KT_CHECK(closeF(eye[0], 0.0f) && closeF(eye[1], 0.0f) && closeF(eye[2], -5.0f));
+
+    // top frustum edge (ey = -ez * t) -> GL y = vy + H; right edge -> x = vx + W/2 + H/2/t * t * ... = vx + W/2 + H/2
+    const float topE[3] = {0.0f, 5.0f * t, -5.0f};
+    KT_CHECK(hse::rawPredict(topE, vp, fov, raw));
+    KT_CHECK(closeF(raw[1], 20.0f + 200.0f, 1e-2f));
+    KT_CHECK(closeF(raw[0], 210.0f, 1e-2f));
+    const float rightE[3] = {5.0f * t, 0.0f, -5.0f};
+    KT_CHECK(hse::rawPredict(rightE, vp, fov, raw));
+    KT_CHECK(closeF(raw[0], 10.0f + 200.0f + 100.0f, 1e-2f));   // no aspect term: the half-height scales both axes
+    KT_CHECK(closeF(raw[1], 120.0f, 1e-2f));
+    hse::rawFrac(raw, vp, nrm);
+    KT_CHECK(closeF(nrm[0], 0.75f, 1e-4f) && closeF(nrm[1], 0.5f, 1e-4f));
+
+    // behind the camera: eyeInFront false, prediction still mirrors like the engine; ez == 0 refused
+    const float behind[3] = {0.0f, 0.0f, 5.0f};
+    KT_CHECK(hse::eyeOf(pos0, qI, behind, eye));
+    KT_CHECK(!hse::eyeInFront(eye));
+    KT_CHECK(hse::rawPredict(eye, vp, fov, raw));
+    const float plane[3] = {1.0f, 1.0f, 0.0f};
+    KT_CHECK(hse::eyeOf(pos0, qI, plane, eye));
+    KT_CHECK(!hse::eyeInFront(eye));
+    KT_CHECK(!hse::rawPredict(eye, vp, fov, raw));
+    KT_CHECK(raw[0] == 0.0f && raw[1] == 0.0f);
+
+    // 90 degree yaw about +Y (w,x,y,z = c,0,s,0): R(-Z) = -X, so the camera looks along world -X
+    const float c45 = 0.70710678f;
+    const float qY90[4] = {c45, 0.0f, c45, 0.0f};
+    const float alongNegX[3] = {-5.0f, 0.0f, 0.0f};
+    KT_CHECK(hse::eyeOf(pos0, qY90, alongNegX, eye));
+    KT_CHECK(closeF(eye[0], 0.0f, 1e-4f) && closeF(eye[1], 0.0f, 1e-4f) && closeF(eye[2], -5.0f, 1e-4f));
+    const float alongPosX[3] = {5.0f, 0.0f, 0.0f};
+    KT_CHECK(hse::eyeOf(pos0, qY90, alongPosX, eye));
+    KT_CHECK(closeF(eye[2], 5.0f, 1e-4f));
+    KT_CHECK(!hse::eyeInFront(eye));
+    // world -Z with that yaw: R(-X-axis) = -Z, so eye = conj(q)(0,0,-5) = (+5,0,0): on the camera's right edge plane (ez = 0)
+    const float negZ[3] = {0.0f, 0.0f, -5.0f};
+    KT_CHECK(hse::eyeOf(pos0, qY90, negZ, eye));
+    KT_CHECK(closeF(eye[0], 5.0f, 1e-4f) && closeF(eye[2], 0.0f, 1e-4f));
+
+    // w-first order: (0,0,1,0) is a 180 degree turn about Y, so the camera looks along world +Z; read as x-first it would be a turn about Z
+    const float q180[4] = {0.0f, 0.0f, 1.0f, 0.0f};
+    const float alongPosZ[3] = {0.0f, 0.0f, 5.0f};
+    KT_CHECK(hse::eyeOf(pos0, q180, alongPosZ, eye));
+    KT_CHECK(closeF(eye[2], -5.0f, 1e-4f) && closeF(eye[0], 0.0f, 1e-4f));
+    KT_CHECK(hse::eyeInFront(eye));
+    // a non-unit quaternion is normalised (same answer as the unit one)
+    const float q180x3[4] = {0.0f, 0.0f, 3.0f, 0.0f};
+    KT_CHECK(hse::eyeOf(pos0, q180x3, alongPosZ, eye));
+    KT_CHECK(closeF(eye[2], -5.0f, 1e-4f));
+
+    // agreement with hse::worldToScreen when ext is the viewport rect (fractions, top-left origin)
+    const float qYaw[4] = {0.9238795f, 0.0f, 0.3826834f, 0.0f};   // 45 degrees about +Y
+    const float P[3] = {-3.0f, 0.4f, -2.5f};
+    const float posC[3] = {0.5f, 0.2f, 0.1f};
+    const hse::HseRect ext = {vp[0], vp[1], vp[2], vp[3]};
+    const hse::WorldScreen ws = hse::worldToScreen(posC, qYaw, fov, ext, P);
+    KT_CHECK(hse::eyeOf(posC, qYaw, P, eye));
+    KT_CHECK(hse::eyeInFront(eye) == ws.ok);
+    KT_CHECK(hse::rawPredict(eye, vp, fov, raw));
+    float fr[2];
+    hse::rawFrac(raw, vp, fr);
+    KT_CHECK(closeF(fr[0], (ws.sx - static_cast<float>(vp[0])) / static_cast<float>(vp[2]), 1e-4f));
+    KT_CHECK(closeF(fr[1], (ws.sy - static_cast<float>(vp[1])) / static_cast<float>(vp[3]), 1e-4f));
+
+    // guards: zero / NaN / inf pose, point and quaternion; empty viewport; fovy out of range
+    const float zeroQ[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+    KT_CHECK(!hse::eyeOf(pos0, zeroQ, ahead, eye));
+    KT_CHECK(eye[0] == 0.0f && eye[1] == 0.0f && eye[2] == 0.0f);
+    const float nanQ[4] = {std::nanf(""), 0.0f, 0.0f, 0.0f};
+    KT_CHECK(!hse::eyeOf(pos0, nanQ, ahead, eye));
+    const float infPos[3] = {INFINITY, 0.0f, 0.0f};
+    KT_CHECK(!hse::eyeOf(infPos, qI, ahead, eye));
+    const float nanP[3] = {0.0f, std::nanf(""), 0.0f};
+    KT_CHECK(!hse::eyeOf(pos0, qI, nanP, eye));
+    KT_CHECK(!hse::eyeOf(nullptr, qI, ahead, eye) && !hse::eyeOf(pos0, nullptr, ahead, eye) && !hse::eyeOf(pos0, qI, nullptr, eye));
+    KT_CHECK(hse::eyeOf(pos0, qI, ahead, eye));
+    const int vp0[4] = {0, 0, 0, 100}, vp1[4] = {0, 0, 100, 0}, vpN[4] = {0, 0, -5, 100};
+    KT_CHECK(!hse::rawPredict(eye, vp0, fov, raw) && !hse::rawPredict(eye, vp1, fov, raw) && !hse::rawPredict(eye, vpN, fov, raw));
+    KT_CHECK(!hse::rawPredict(eye, vp, 0.0f, raw));
+    KT_CHECK(!hse::rawPredict(eye, vp, -10.0f, raw));
+    KT_CHECK(!hse::rawPredict(eye, vp, 179.0f, raw));
+    KT_CHECK(!hse::rawPredict(eye, vp, std::nanf(""), raw));
+    KT_CHECK(hse::rawPredict(eye, vp, 178.0f, raw));
+    float badEye[3] = {INFINITY, 0.0f, -1.0f};
+    KT_CHECK(!hse::rawPredict(badEye, vp, fov, raw));
+    const float nanZ[3] = {0.0f, 0.0f, std::nanf("")};
+    KT_CHECK(!hse::eyeInFront(nanZ));
+    KT_CHECK(!hse::eyeInFront(nullptr));
+    KT_CHECK(!hse::rawToNorm(raw, vp0, nrm));
+}
+
 static void testLeftMirroredStatus() {
     const uint8_t none[3] = {2, 6, 0}, rotBit[3] = {static_cast<uint8_t>(1 | hse::kSrcMirrorBit), 1, 0}, offBit[3] = {0, static_cast<uint8_t>(4 | hse::kSrcMirrorBit), 0};
     KT_CHECK(!hse::leftMirrored(true, none));
@@ -1386,6 +1503,7 @@ int main() {
     testCompactSlot();
     testInspRects();
     testLeftMirroredStatus();
+    testCamEngMath();
     return kt::Report("hse_view");
 }
 

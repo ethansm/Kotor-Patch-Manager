@@ -129,5 +129,6 @@ constexpr uintptr_t ClientCreatureSetup3DScene = 0x0077EC20;    // CSWCCreature:
 constexpr uintptr_t OptionsSetDescription = 0x008A2320;  // Options panel description fn: thiscall ECX=panel, ONE stack arg = TLK strref (int, -1 = none), RET 4 (dump decomp/8a/008a2320.asm:36-39,134)
 constexpr uintptr_t ExoStringAssign = 0x007337C0;        // CExoString::operator= thiscall(dst, CExoString* src) RET 4; CExoString = {char* ptr, uint cap}, dump decomp/73/007337c0.c
 constexpr uintptr_t GuiTextObjRefresh = 0x00417800;      // fastcall(ECX = text holder): when holder+0x14/+0x10/+0xC are all set, calls [holder+0x14]->vt[0x4C](-1); tail of 416EA0 (dump decomp/41/00416ea0.asm 416f68, 41/00417800.c)
+constexpr uintptr_t SceneCamRotFlag = 0x00A0F190;         // int (file value 1, no direct store): MapToScreen / render skip the camera rotation when set and quat.w is 0 or 1 exactly. READ-ONLY, log-only CAMENG probe (dump decomp/48/004809d0.c, 047f320.c:288)
 
 } // namespace gameaddr

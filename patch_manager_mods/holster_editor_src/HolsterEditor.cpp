@@ -1,4 +1,4 @@
-// HolsterEditor.cpp -- holster-editor 0.3.1-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
+// HolsterEditor.cpp -- holster-editor 0.3.2-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
 // (doc 42 HW-EDIT, plan .claude/plans/holster_editor_options.md.)
 //
 // mod-config owns everything about the Options screen: the hooks, the root "Mod Configuration" button, the list page, control cloning,
@@ -19,7 +19,7 @@
 //   scope change and after Save / Revert / Reset Scope. The page holds 38 of mod-config's 40 items; the 15 strip rows share the strip height.
 //   destroy  destroys the preview viewer (and, behind free_view, the view block once mod-config has unlinked it).
 // A failed connect to mod-config means no menu entry, never a crash. KPatchInit does no file I/O: holster_editor.ini is read in build().
-// Probe lines (log only): REGISTER, CONFIG, BUILD, EMBED, ENTER, DTOR, FREEVIEW, LAYOUT, REBUILD, NAME, REG, CAM, CAMHOOK, PROJ, ITEMNAME, PICK, BTN, EDIT, STANCE, EMOTE, MMB, DRAG, WHEEL, PLAY_PAUSE, UNREG, LEAVE, DISCARD, CALIB,
+// Probe lines (log only): REGISTER, CONFIG, BUILD, EMBED, ENTER, DTOR, FREEVIEW, LAYOUT, REBUILD, NAME, REG, CAM, CAMHOOK, PROJ, CAMPTR, CAMRAW, CAMENG, CAMATT, CAMPROJ, CAMCHK, ITEMNAME, PICK, BTN, EDIT, STANCE, EMOTE, MMB, DRAG, WHEEL, PLAY_PAUSE, UNREG, LEAVE, DISCARD, CALIB,
 // CHORD (state transitions with the reason, dropped presses, resets), MODE (mode bar), GESTURE (weapon gesture begin/end summary), SNAP (carry
 // resets), NUDGE (WARN: a provider nudge that failed or had no effect), SCOPE (scope button text), HANDS (weapon button captions),
 // INSP (U3 inspector: BUILD items=N/40, open values and the left-mirror source, RESET row from to, row-text refresh counts per second, WARN lines),
@@ -27,6 +27,10 @@
 // CALIB (U0b, ini probe_calib): a calibration click probe. While the page is LIVE in nav mode the status label asks for one body target at a time
 // ("Calib 3/6 (round 1): click the right hand"); each LMB press inside the view logs the click (engine px, same space as ext) with the camera
 // pose and the world positions of the body nodes, to fit the real camera offline. Lines: CALIB cfg/prompt/round=..click/skip/done/leave and CALIB WARN.
+// CAMENG (U4, ini probe_cam): reads the engine camera object of the preview view (view+0x78: pose, fovy, viewport, attach behaviour) and calls its
+// MapToScreen (camera vtable slot 0x28, pure math, only when the viewport is non-empty) for both hand nodes and the weapon mount, then compares the
+// engine answer with the maths we assume (hse::eyeOf / rawPredict) and with hse::worldToScreen. Lines: CAMPTR, CAMRAW (once), CAMENG, CAMATT,
+// CAMPROJ (R, L, M), CAMCHK per capture (at most kMaxCamEngCaptures, only when the view / edit state changed); CAMENG WARN for every failure path.
 // Every probe failure path logs a "<PROBE> WARN <reason>" line (WARN level, at most kMaxWarnLogs per kind per Editor).
 #include <windows.h>
 #include <stdio.h>
@@ -38,6 +42,7 @@
 #include "SafeRead.h"
 #include "KpLog.h"
 #include "K2Addr.h"
+#include "SceneView.h"   // sceneview::camera(view): the preview view's engine camera object (CAMENG probe)
 #include "GameAddr.h"
 #include "GuiKit.h"
 #include "EmbedGui.h"
@@ -101,6 +106,7 @@ constexpr int kEmoteCount = sizeof(kEmoteList) / sizeof(kEmoteList[0]);
 bool g_enabled = true;
 bool g_freeView = false;   // also free the 3D view block after preview-3d destroys the creature (probe)
 int g_probeCalib = 1;      // ini probe_calib: 1 = the CALIB click probe (U0b, log only; borrows the status label in nav mode), 0 = off
+int g_probeCam = 1;        // ini probe_cam: 1 = the CAMENG engine camera probe (U4, log only), 0 = off
 int g_probeNames = 1;      // ini probe_names: 0 = off (weapon buttons show the model resref), 1 = item GetName with identified=0 (the button name; ITEMNAME log), 2 = also identified=1 (log only)
 float g_statusFit = 1.0f;  // ini status_fit: multiplier on the status pane width when fitting the status text (the label font is not measured)
 float g_cfgYaw = 180.0f;
@@ -122,6 +128,7 @@ constexpr float kPreviewFov = 22.726f;       // preview-3d kDefaultFov: the scen
 constexpr float kProjUpMetres = 0.3f;        // PROJ probe: second point is the mount + this far along world +Z
 constexpr int kMaxWarnLogs = 20;             // cap on WARN lines per probe kind per Editor
 constexpr int kMaxCalibSkips = 20;           // cap on CALIB skip lines per Editor
+constexpr int kMaxCamEngCaptures = 10;       // cap on CAMENG captures per Editor
 constexpr int kMaxProjLogs = 24;             // cap on CAMHOOK/PROJ re-logs per Editor
 constexpr int kProjRetryTicks = 180;         // ticks to wait for GetMountWorld after an edit opens before giving up
 constexpr int kMaxChordLogs = 300;           // cap on CHORD transition lines per Editor
@@ -138,7 +145,7 @@ constexpr uint32_t kNoItemId = 0x7F000000u;
 constexpr int kItemModelResOff = 0x128;      // client item: model ResRef char[16]
 constexpr int kItemBaseIdxOff = 0xC;         // client item: base item index (GetName's lookup branch dereferences its row)
 
-enum WarnKind { W_ITEMNAME = 0, W_PROJ, W_CAMHOOK, W_CALIB, W_NUDGE, W_SCRUB, W_INSP, W_KINDS };
+enum WarnKind { W_ITEMNAME = 0, W_PROJ, W_CAMHOOK, W_CALIB, W_NUDGE, W_SCRUB, W_INSP, W_CAMENG, W_KINDS };
 constexpr int kCalibNodes = 6;
 // Candidate engine node names per calibration target (tried in order; the first that GetNodeWorld resolves is kept). Short names rhand/lhand are the
 // ones the PROJ probe resolves; K2 skeletons also carry the *_g forms.
@@ -230,6 +237,16 @@ struct Editor {
     bool projEditPending = false;   // an edit just opened: log the mount PROJ as soon as GetMountWorld answers
     int projEditTries = 0;
 
+    // U4 CAMENG probe state (reset with the Editor): a capture runs only when this key changed
+    int camEngCaps = 0;
+    bool camEngKeyValid = false;
+    float camEngKeyYaw = 0.0f, camEngKeyZoom = 0.0f, camEngKeyPanZ = 0.0f;
+    uint32_t camEngKeyCam = 0;
+    int camEngKeyEdit = 0;            // 0 = nav, 1 = right-hand edit, 2 = left-hand edit
+    bool camEngCfgLogged = false;     // CAMPTR was logged once
+    bool camEngDumped = false;        // CAMRAW was logged once
+    bool camEngCapNoted = false;
+
     // U0b CALIB probe state and per-kind WARN counters (reset with the Editor)
     int warnCount[W_KINDS] = {};
     hse::CalibScript calib;
@@ -292,6 +309,7 @@ void readConfig() {
     g_freeView = false;
     g_probeNames = 1;
     g_probeCalib = 1;
+    g_probeCam = 1;
     g_statusFit = 1.0f;
     g_cfgYaw = 180.0f;
     g_cfgZoom = 2.2f;
@@ -320,6 +338,7 @@ void readConfig() {
         else if (!_stricmp(k, "free_view")) g_freeView = on;
         else if (!_stricmp(k, "probe_names")) g_probeNames = (v[0] >= '0' && v[0] <= '9') ? atoi(v) : (on ? 1 : 0);
         else if (!_stricmp(k, "probe_calib")) g_probeCalib = on ? 1 : 0;
+        else if (!_stricmp(k, "probe_cam")) g_probeCam = (v[0] >= '0' && v[0] <= '9') ? (atoi(v) != 0 ? 1 : 0) : (on ? 1 : 0);
         else if (!_stricmp(k, "status_fit")) {
             const float f = static_cast<float>(atof(v));
             g_statusFit = (f >= 0.5f && f <= 8.0f) ? f : 1.0f;
@@ -333,7 +352,7 @@ void readConfig() {
 }
 
 const char* statusText() {
-    return g_p3.ok() && g_hol.ok() ? "0.3.1 dev: preview + holster connected" : "0.3.1 dev: a provider is missing";
+    return g_p3.ok() && g_hol.ok() ? "0.3.2 dev: preview + holster connected" : "0.3.2 dev: a provider is missing";
 }
 
 bool editDirty();   // defined with the status helpers below
@@ -364,8 +383,8 @@ void KPATCH_CALL cbBeforeFree(uint32_t token, void* user) {
 // Options ctor window: the vanilla layout is open. Opens the embedded layout, binds the 3D view, restores the layout slot, builds the page.
 void KPATCH_CALL cbBuild(void* panel, void*) {
     readConfig();
-    KP_LOG(chMain, "CONFIG enabled=%d free_view=%d probe_names=%d probe_calib=%d status_fit=%.2f view=(%.2f,%.2f,%.2f)",
-           g_enabled ? 1 : 0, g_freeView ? 1 : 0, g_probeNames, g_probeCalib, g_statusFit,
+    KP_LOG(chMain, "CONFIG enabled=%d free_view=%d probe_names=%d probe_calib=%d probe_cam=%d status_fit=%.2f view=(%.2f,%.2f,%.2f)",
+           g_enabled ? 1 : 0, g_freeView ? 1 : 0, g_probeNames, g_probeCalib, g_probeCam, g_statusFit,
            g_cfgView.yaw, g_cfgView.zoom, g_cfgView.panZ);
     if (!g_enabled || !panel || !g_menu.ok()) {
         KP_LOG(chMain, "BUILD skipped enabled=%d panel=%p menuui=%d", g_enabled ? 1 : 0, panel, g_menu.ok() ? 1 : 0);
@@ -701,6 +720,267 @@ bool logEditProj(Editor& e) {
     }
     logProj(c, e.editHand == 1 ? "L" : "R", "mount", mp);
     return true;
+}
+
+// ---- U4 CAMENG probe (log only; research/holstered_weapons/ux_v2/u4/L_camera_probe_design.md) ----
+// Reads the REAL engine camera object of the preview view (view+0x78: pose, fovy, viewport, attach behaviour), then calls its MapToScreen (camera vtable
+// slot 0x28, pure math: no GL as long as the viewport is non-empty) for the hand nodes and the weapon mount, and compares the engine's answer with
+// hse::eyeOf / hse::rawPredict (the maths we think the engine uses) and with hse::worldToScreen ("ours"). Nothing is written to the engine.
+// Gated by ini probe_cam. Every failure path logs a rate-limited "CAMENG WARN <reason>" (W_CAMENG).
+using MapToScreenFn = float*(__thiscall*)(void* cam, float* out, float x, float y, float z, char normalized);
+constexpr int kBehOffOff = 0x3C;     // attach behaviour object: float[3] camera offset at +0x3C..+0x44 (D_camera_attach.md)
+constexpr int kBehFlagOff = 0x48;    // attach behaviour object: flag (int)
+
+template <typename T>
+bool rdc(uintptr_t base, int off, T* out) { return saferead::readAt<T>(0xE70400u, base, off, out); }
+
+bool vec3Finite(const float v[3]) { return hse::finiteF(v[0]) && hse::finiteF(v[1]) && hse::finiteF(v[2]); }
+
+void camEngWarn(Editor& e, const char* fmt, ...) {
+    if (!warnOk(e, W_CAMENG)) return;
+    char buf[200];
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(buf, sizeof buf, fmt, ap);
+    va_end(ap);
+    KP_LOGV(chView, KPLOG_WARN, "CAMENG WARN %s", buf);
+}
+
+// One tracked point of a capture: the hand nodes (R, L) and the weapon mount (M).
+struct CamPt {
+    char hand;
+    float p[3];
+};
+
+// CAMPROJ for one world point: engine raw (normalized=0) and normalized (=1) answers against the predicted and ours. Returns the per-point deltas
+// through dPx (max |eng - pred| in px) and dFrac (max |eng - ours| in viewport fractions); both stay -1 when the point is not comparable.
+void camEngProject(Editor& e, const char* why, uintptr_t cam, uint32_t fn, const CamPt& pt, const float pos[3], const float q[4], float fovy, const int vp[4],
+                   float* dPx, float* dFrac) {
+    *dPx = -1.0f;
+    *dFrac = -1.0f;
+    float eye[3] = {0, 0, 0};
+    const bool eyeOk = hse::eyeOf(pos, q, pt.p, eye);
+    const bool front = eyeOk && hse::eyeInFront(eye);
+    float pred[2] = {0, 0};
+    const bool predOk = eyeOk && hse::rawPredict(eye, vp, fovy, pred);
+    float outRaw[3] = {0, 0, 0}, outN[3] = {0, 0, 0};
+    bool called = false;
+    if (predOk) {   // ez != 0 and the viewport / fovy are valid: the engine call is pure math (behind-camera points mirror, like the render does not)
+        MapToScreenFn f = reinterpret_cast<MapToScreenFn>(static_cast<uintptr_t>(fn));
+        f(reinterpret_cast<void*>(cam), outRaw, pt.p[0], pt.p[1], pt.p[2], 0);
+        f(reinterpret_cast<void*>(cam), outN, pt.p[0], pt.p[1], pt.p[2], 1);
+        called = true;
+    } else {
+        camEngWarn(e, "hand=%c projection skipped: %s", pt.hand, eyeOk ? "prediction refused (ez == 0 or viewport / fovy invalid)" : "eye-space point not finite");
+    }
+    const hse::HseRect ext = {vp[0], vp[1], vp[2], vp[3]};
+    const hse::WorldScreen ours = hse::worldToScreen(pos, q, fovy, ext, pt.p);
+    const bool inside = called && front && outRaw[0] >= static_cast<float>(vp[0]) && outRaw[0] <= static_cast<float>(vp[0] + vp[2]) &&
+                        outRaw[1] >= static_cast<float>(vp[1]) && outRaw[1] <= static_cast<float>(vp[1] + vp[3]);
+    KP_LOG(chView, "CAMPROJ why=%s hand=%c p=(%.3f,%.3f,%.3f) eye=(%.4f,%.4f,%.4f) valid=%d eng_raw=(%.2f,%.2f) eng_n=(%.5f,%.5f) pred_raw=(%.2f,%.2f) ours=(%.1f,%.1f) inside=%d",
+           why, pt.hand, pt.p[0], pt.p[1], pt.p[2], eye[0], eye[1], eye[2], front ? 1 : 0, outRaw[0], outRaw[1], outN[0], outN[1], pred[0], pred[1],
+           ours.ok ? ours.sx : 0.0f, ours.ok ? ours.sy : 0.0f, inside ? 1 : 0);
+    if (!called || !front) return;   // valid=0 is a state, not a failure; it stays out of CAMCHK
+    if (outRaw[0] == 0.0f && outRaw[1] == 0.0f) camEngWarn(e, "hand=%c MapToScreen returned zero", pt.hand);
+    *dPx = fmaxf(fabsf(outRaw[0] - pred[0]), fabsf(outRaw[1] - pred[1]));
+    if (ours.ok) {
+        float fe[2];
+        hse::rawFrac(outRaw, vp, fe);
+        const float fx = (ours.sx - static_cast<float>(vp[0])) / static_cast<float>(vp[2]);
+        const float fy = (ours.sy - static_cast<float>(vp[1])) / static_cast<float>(vp[3]);
+        *dFrac = fmaxf(fabsf(fe[0] - fx), fabsf(fe[1] - fy));
+    }
+}
+
+// One CAMENG capture (CAMPTR / CAMRAW once, then CAMENG + CAMATT + CAMPROJ x(2..3) + CAMCHK). Runs only when the key (view, camera pointer, edit state)
+// changed since the last capture, at most kMaxCamEngCaptures per Editor. Main thread only.
+void logCamEng(Editor& e, const char* why) {
+    if (!g_probeCam) return;
+    saferead::beginScope();
+    const uintptr_t view = e.viewCtl;
+    uint32_t cam = 0, vt = 0;
+    const bool vtOk = view && sceneview::camera(reinterpret_cast<void*>(view), &cam, &vt);
+    const int editState = e.mode == MODE_WEAPON ? 1 + (e.editHand == 1 ? 1 : 0) : 0;
+    if (e.camEngKeyValid && e.camEngKeyYaw == e.view.yaw && e.camEngKeyZoom == e.view.zoom && e.camEngKeyPanZ == e.view.panZ && e.camEngKeyCam == cam &&
+        e.camEngKeyEdit == editState)
+        return;
+    if (e.camEngCaps >= kMaxCamEngCaptures) {
+        if (!e.camEngCapNoted) {
+            e.camEngCapNoted = true;
+            KP_LOG(chView, "CAMENG cap reached (%d captures)", kMaxCamEngCaptures);
+        }
+        return;
+    }
+    e.camEngKeyValid = true;
+    e.camEngKeyYaw = e.view.yaw;
+    e.camEngKeyZoom = e.view.zoom;
+    e.camEngKeyPanZ = e.view.panZ;
+    e.camEngKeyCam = cam;
+    e.camEngKeyEdit = editState;
+    ++e.camEngCaps;
+
+    if (!view) { camEngWarn(e, "view control null"); return; }
+    using T = K2AddrTable;
+    if (!k2addr::get() || !k2addr::addr(&T::SceneCameraVtable) || !k2addr::off(&T::View_Camera) || !k2addr::off(&T::SceneCamVt_MapToScreen) ||
+        !k2addr::off(&T::Cam_Pos) || !k2addr::off(&T::Cam_Quat) || !k2addr::off(&T::Cam_Fovy) || !k2addr::off(&T::Cam_Near) || !k2addr::off(&T::Cam_Far) ||
+        !k2addr::off(&T::Cam_Vp) || !k2addr::off(&T::Cam_Ortho) || !k2addr::off(&T::Cam_Behaviour)) {
+        camEngWarn(e, "offsets unknown on this build; skipped");
+        return;
+    }
+    const uint32_t wantVt = static_cast<uint32_t>(k2addr::addr(&T::SceneCameraVtable));
+
+    // CAMPTR: the pointer chain (once, and on every vtable mismatch)
+    if (!e.camEngCfgLogged || !vtOk) {
+        e.camEngCfgLogged = true;
+        uint32_t s08 = 0, s28 = 0, s44 = 0, s74 = 0, sceneCam = 0;
+        if (vt) {
+            (void)rdc<uint32_t>(vt, 0x08, &s08);
+            (void)rdc<uint32_t>(vt, k2addr::off(&T::SceneCamVt_MapToScreen), &s28);
+            (void)rdc<uint32_t>(vt, k2addr::off(&T::SceneCamVt_Fov), &s44);
+            (void)rdc<uint32_t>(vt, k2addr::off(&T::SceneCamVt_Attach), &s74);
+        }
+        if (k2addr::off(&T::View_Scene)) (void)rdc<uint32_t>(view + static_cast<uintptr_t>(k2addr::off(&T::View_Scene)), 0x18, &sceneCam);
+        KP_LOG(chView, "CAMPTR why=%s view=%08x cam=%08x vt=%08x vt_ok=%d s08=%08x s28=%08x s44=%08x s74=%08x scene_cam=%08x", why, static_cast<unsigned>(view),
+               static_cast<unsigned>(cam), static_cast<unsigned>(vt), vtOk ? 1 : 0, static_cast<unsigned>(s08), static_cast<unsigned>(s28),
+               static_cast<unsigned>(s44), static_cast<unsigned>(s74), static_cast<unsigned>(sceneCam));
+    }
+    if (!vtOk) {
+        camEngWarn(e, "camera vtable %08x != %08x (cam=%08x)", static_cast<unsigned>(vt), static_cast<unsigned>(wantVt), static_cast<unsigned>(cam));
+        for (int off = 0x74; off <= 0x7C; off += 4) {   // candidate walk: the three pointers around View_Camera
+            uint32_t cand = 0, cvt = 0;
+            const bool got = rdc<uint32_t>(view, off, &cand);
+            if (got && cand) (void)rdc<uint32_t>(cand, 0, &cvt);
+            camEngWarn(e, "candidate view+%03x=%08x vt=%08x%s", off, static_cast<unsigned>(cand), static_cast<unsigned>(cvt), cvt == wantVt ? " (matches)" : "");
+        }
+        return;
+    }
+
+    // CAMRAW (once): raw dwords around the fields the probe reads, for offline checking of the offsets
+    if (!e.camEngDumped) {
+        e.camEngDumped = true;
+        static const int kBases[5] = {0x000, 0x0A0, 0x1B0, 0x200, 0x220};
+        for (int b = 0; b < 5; ++b) {
+            char line[120];
+            int n = 0;
+            for (int i = 0; i < 8 && n < static_cast<int>(sizeof line) - 12; ++i) {
+                uint32_t d = 0;
+                const bool got = rdc<uint32_t>(cam, kBases[b] + i * 4, &d);
+                n += snprintf(line + n, sizeof line - n, got ? " %08x" : " --------", static_cast<unsigned>(d));
+            }
+            KP_LOG(chView, "CAMRAW base=%03x d=%s", kBases[b], line);
+        }
+    }
+
+    // CAMENG: the pose and projection parameters the engine renders with
+    float pos[3] = {0, 0, 0}, q[4] = {1, 0, 0, 0}, fovy = 0, nearP = 0, farP = 0, ortho = 0;
+    int vp[4] = {0, 0, 0, 0};
+    uint32_t slot = 0, beh = 0;
+    bool readOk = true;
+    auto need = [&](bool got, int off) {
+        if (!got) { readOk = false; camEngWarn(e, "read failed off=%03x", off); }
+    };
+    for (int i = 0; i < 3; ++i) { const int o = k2addr::off(&T::Cam_Pos) + i * 4; need(rdc<float>(cam, o, &pos[i]), o); }
+    for (int i = 0; i < 4; ++i) { const int o = k2addr::off(&T::Cam_Quat) + i * 4; need(rdc<float>(cam, o, &q[i]), o); }
+    need(rdc<float>(cam, k2addr::off(&T::Cam_Fovy), &fovy), k2addr::off(&T::Cam_Fovy));
+    need(rdc<float>(cam, k2addr::off(&T::Cam_Near), &nearP), k2addr::off(&T::Cam_Near));
+    need(rdc<float>(cam, k2addr::off(&T::Cam_Far), &farP), k2addr::off(&T::Cam_Far));
+    need(rdc<float>(cam, k2addr::off(&T::Cam_Ortho), &ortho), k2addr::off(&T::Cam_Ortho));
+    for (int i = 0; i < 4; ++i) { const int o = k2addr::off(&T::Cam_Vp) + i * 4; need(rdc<int>(cam, o, &vp[i]), o); }
+    need(rdc<uint32_t>(cam, k2addr::off(&T::Cam_Behaviour), &beh), k2addr::off(&T::Cam_Behaviour));
+    need(rdc<uint32_t>(vt, k2addr::off(&T::SceneCamVt_MapToScreen), &slot), k2addr::off(&T::SceneCamVt_MapToScreen));
+    const float qlen = sqrtf(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]);
+    int flag = -1;
+    if (gameaddr::SceneCamRotFlag && !rdc<int>(gameaddr::SceneCamRotFlag, 0, &flag)) flag = -1;
+    const int rotFast = (flag > 0 && (q[0] == 0.0f || q[0] == 1.0f)) ? 1 : 0;
+
+    CamInfo hook;   // the camerahook node (what preview-3d aims the camera at) for the hook_dpos / hook_dot comparison
+    const bool hookOk = readCam(e, hook);
+    float dpos[3] = {0, 0, 0}, dot = -1.0f;
+    if (hookOk) {
+        for (int i = 0; i < 3; ++i) dpos[i] = hook.pos[i] - pos[i];
+        const float hl = sqrtf(hook.q[0] * hook.q[0] + hook.q[1] * hook.q[1] + hook.q[2] * hook.q[2] + hook.q[3] * hook.q[3]);
+        if (qlen > 1e-6f && hl > 1e-6f)
+            dot = fabsf(q[0] * hook.q[0] + q[1] * hook.q[1] + q[2] * hook.q[2] + q[3] * hook.q[3]) / (qlen * hl);
+    }
+    KP_LOG(chView, "CAMENG why=%s pos=(%.4f,%.4f,%.4f) q=(%.5f,%.5f,%.5f,%.5f) qlen=%.5f fovy=%.3f near=%.3f far=%.3f vp=(%d,%d,%d,%d) ortho=%.4f hook_dpos=(%.4f,%.4f,%.4f) hook_dot=%.6f ctl=(%d,%d,%d,%d) flag=%d rot_fast=%d yaw=%.2f zoom=%.3f panZ=%.3f",
+           why, pos[0], pos[1], pos[2], q[0], q[1], q[2], q[3], qlen, fovy, nearP, farP, vp[0], vp[1], vp[2], vp[3], ortho, dpos[0], dpos[1], dpos[2], dot,
+           hook.ctlExt.x, hook.ctlExt.y, hook.ctlExt.w, hook.ctlExt.h, flag, rotFast, e.view.yaw, e.view.zoom, e.view.panZ);
+    if (!hookOk) camEngWarn(e, "hook pose unavailable: %s", hook.why);
+    if (rotFast && q[0] != 1.0f) camEngWarn(e, "fast path active w=%.9g flag=%d", q[0], flag);
+
+    // CAMATT: the attach behaviour (camera offset from the attached node)
+    {
+        float off3[3] = {0, 0, 0};
+        int flag48 = -1;
+        if (!beh) {
+            camEngWarn(e, "attach behaviour null (offset unknown)");
+        } else {
+            bool got = true;
+            for (int i = 0; i < 3; ++i) got = rdc<float>(beh, kBehOffOff + i * 4, &off3[i]) && got;
+            if (!rdc<int>(beh, kBehFlagOff, &flag48)) { flag48 = -1; got = false; }
+            if (!got) camEngWarn(e, "read failed off=%03x (attach behaviour %08x)", kBehOffOff, static_cast<unsigned>(beh));
+        }
+        KP_LOG(chView, "CAMATT why=%s beh=%08x off=(%.4f,%.4f,%.4f) flag48=%d", why, static_cast<unsigned>(beh), off3[0], off3[1], off3[2], flag48);
+    }
+    if (!readOk) return;
+
+    // The engine call is guarded exactly like the K contract: vtable ok, slot readable and non-zero, viewport non-empty (an empty one would make the
+    // engine call glGetIntegerv), fovy in (0, 179), pose finite, quaternion not degenerate.
+    uint8_t probeByte = 0;
+    const char* refuse = nullptr;
+    if (!slot) refuse = "MapToScreen slot is zero; not called";
+    else if (!rdc<uint8_t>(slot, 0, &probeByte)) refuse = "MapToScreen slot target unreadable; not called";
+    else if (vp[2] <= 0 || vp[3] <= 0) refuse = "viewport unset; engine would call glGetIntegerv; not called";
+    else if (!hse::finiteF(fovy) || !(fovy > 0.0f) || !(fovy < 179.0f)) refuse = "fovy out of range (0,179); not called";
+    else if (!vec3Finite(pos) || !hse::finiteF(q[0]) || !hse::finiteF(q[1]) || !hse::finiteF(q[2]) || !hse::finiteF(q[3])) refuse = "pose not finite; not called";
+    else if (!(qlen > 1e-6f)) refuse = "quaternion length <= 1e-6; not called";
+    if (refuse) {
+        camEngWarn(e, "%s (slot=%08x vp=%d,%d,%d,%d fovy=%.3f qlen=%.5f)", refuse, static_cast<unsigned>(slot), vp[0], vp[1], vp[2], vp[3], fovy, qlen);
+        return;
+    }
+
+    // the points: both hand nodes on the body rig, plus the mount bone while a weapon edit is open
+    CamPt pts[3];
+    int np = 0;
+    if (!g_p3.ok() || !g_hol.ok() || !e.token) {
+        camEngWarn(e, "no projection points: %s", !g_p3.ok() ? "preview3d provider missing" : (!g_hol.ok() ? "holster provider missing" : "no viewer token"));
+    } else {
+        void* rig = g_p3.p->RigGob(e.token, 0);
+        static const char* const kNode[2] = {"rhand", "lhand"};
+        static const char kHandCh[2] = {'R', 'L'};
+        for (int h = 0; h < 2; ++h) {
+            float p[3] = {0, 0, 0}, pq[4] = {1, 0, 0, 0};
+            if (rig && g_hol.h->GetNodeWorld(rig, kNode[h], p, pq)) {
+                pts[np].hand = kHandCh[h];
+                memcpy(pts[np].p, p, sizeof p);
+                ++np;
+            } else {
+                camEngWarn(e, "hand=%c unavailable (node %s, rig=%p)", kHandCh[h], kNode[h], rig);
+            }
+        }
+        if (e.mode == MODE_WEAPON) {
+            float mp[3] = {0, 0, 0}, mq[4] = {1, 0, 0, 0};
+            if (g_hol.h->GetMountWorld(mp, mq)) {
+                pts[np].hand = 'M';
+                memcpy(pts[np].p, mp, sizeof mp);
+                ++np;
+            } else {
+                camEngWarn(e, "hand=M unavailable (GetMountWorld false)");
+            }
+        }
+    }
+    int nChk = 0;
+    float maxPx = 0.0f, maxFrac = 0.0f;
+    for (int i = 0; i < np; ++i) {
+        float dPx = -1.0f, dFrac = -1.0f;
+        camEngProject(e, why, cam, slot, pts[i], pos, q, fovy, vp, &dPx, &dFrac);
+        if (dPx >= 0.0f) {
+            ++nChk;
+            if (dPx > maxPx) maxPx = dPx;
+            if (dFrac > maxFrac) maxFrac = dFrac;
+        }
+    }
+    KP_LOG(chView, "CAMCHK why=%s n=%d max_eng_pred_px=%.2f max_eng_ours_frac=%.5f", why, nChk, maxPx, maxFrac);
 }
 
 // CSWCItem::GetName(out, identified) into name (at most 63 printable chars). identified=0 only copies the item's own name (may be empty);
@@ -2050,6 +2330,7 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
             e.camHookPending = false;
             logCamHook(e, "live");
             ++e.projLogs;
+            logCamEng(e, "live");
             calibStart(e);
         }
         if (e.projEditPending) {
@@ -2058,6 +2339,7 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
             } else if (e.projLogs < kMaxProjLogs && logEditProj(e)) {
                 e.projEditPending = false;
                 ++e.projLogs;
+                logCamEng(e, "edit");   // the mount point is only available now (a view change is not needed for this capture)
             } else if (++e.projEditTries >= kProjRetryTicks) {
                 e.projEditPending = false;
                 KP_LOG(chView, "PROJ hand=%s mount=none (GetMountWorld gave nothing in %d ticks)", e.editHand == 1 ? "L" : "R", e.projEditTries);
@@ -2081,6 +2363,7 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
                 logCamHook(e, "settled");
                 if (e.mode == MODE_WEAPON) logEditProj(e);
                 ++e.projLogs;
+                logCamEng(e, "settled");
             }
         }
     }
@@ -2138,7 +2421,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_cfgClient.init(api);
     g_menu.init(api);
     embedgui::g_log = embedLog;
-    KP_LOG(chMain, "holster-editor 0.3.1-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
+    KP_LOG(chMain, "holster-editor 0.3.2-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
            static_cast<unsigned>(sizeof kHseViewGui));
     const bool cfgOk = g_cfgClient.connect(), menuOk = g_menu.connect();
     if (!cfgOk || !menuOk) {
