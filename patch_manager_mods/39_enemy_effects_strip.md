@@ -3,6 +3,7 @@
 ## Status
 - **Mod id (proposed):** `enemy-effects-strip` · source `enemy_effects_strip_src/` · Steam Aspyr `6A522E71…` (live exe = vanilla+4GB)
 - **State: P0 in progress (2026-10-12).** U1 resolved statically. Phase 0 is a probe that logs and draws nothing.
+- **P3 prep 10-18 (offline, NOT installed):** source now 0.4.0-dev. (A) `esl::sanitize`/`CfgRaw`/strict float parse in `EnemyStripLogic.h` (02dbbc2; tier order Obvious<=Own<=Full enforced). (B) `kotor2_logs.py check enemy-effects-strip_log.txt [--new]` strip analyzer + ES-P0b facts section (038420b6; creator buckets none/invalid/client-oid/server-oid-or-ptr). (C) optional mod-config page (live: Enabled off, IconSize, Gap, Spacing, DrainAlpha, Backing, BackingAlpha; restart: MaxIcons), lazy runtime connect, stale-HUD-safe disabled gate (ece3812a); play row ES-CFG1. (D) host fake-engine draw/BUILD test `enemy_strip_draw` 240 checks (887e1aa1). Install needs the user GO (likely full reinstall); gate PASS 10-18.
 - Origin: user request after Buff HUD 0.2.2 (doc 02). The Buff HUD only shows party effects; this shows a *target's* effects.
 
 ## Design (user decisions, 2026-10-12)
