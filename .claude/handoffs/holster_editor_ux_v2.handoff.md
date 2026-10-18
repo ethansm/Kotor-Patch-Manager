@@ -37,3 +37,4 @@ _(none recorded; append Dead Ends & Anti-Patterns and Verification Commands here
 - Prepared: `kpm_hotswap.py --mod holster --mod holster-editor --mod mod-config --prepare` -> SWAP x3; GATE PASS head 566201349ea5.
 - NEXT: user GO (game closed) -> `python3 scripts/kpm_hotswap.py --mod holster --mod holster-editor --mod mod-config --apply`; user plays HUX-P0 + HUX-U1 (+ HW-LH1 ini edit); Haiku log readers via kotor2_logs.py; then U2 (needs P0 camera q confirmation + ITEMNAME result).
 - ITEMNAME: identified=0 default; identified=1 (probe_names=2) goes through the strref->achievement switch 0x4010E0 and an unchecked base-row deref.
+- 10-18 01:17 HW-UX2 U0+U1 LIVE x3; rollback batch_swap_20261018_011740.
