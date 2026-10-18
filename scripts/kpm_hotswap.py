@@ -207,7 +207,7 @@ def live_dll_path(game, live, pid):
 
 # ---------------------------------------------------------------- prepare: mirror + build
 
-MIRROR_SKIP_DIRS = {"__pycache__", "test", "tests", "testdata"}
+MIRROR_SKIP_DIRS = {"__pycache__", "test", "tests", "testdata", "stubs"}   # stubs = host-test shims (e.g. enemy_effects_strip_src/stubs/windows.h), never part of the DLL
 
 
 def mirror(src, kd):
