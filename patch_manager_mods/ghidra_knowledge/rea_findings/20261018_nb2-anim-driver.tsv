@@ -1,0 +1,32 @@
+addr	kind	name	confidence	evidence	topic	date
+0x007ed9a0	function	CSWCCreature::PlayAnimationById (vote name)	confirmed	decomp/7e/007ed9a0.c line 5: __thiscall(int *param_1,short param_2,undefined4 param_3,int param_4); header ret=12	nb2-anim-driver	2026-10-18
+0x007ed9a0	field	writes creature+0x48 current anim id	confirmed	decomp/7e/007ed9a0.c line 517: *(short *)(param_1 + 0x12) = param_2;	nb2-anim-driver	2026-10-18
+0x007ed9a0	callsite	calls holder vt+0x54(id, +0x4C, mode 0|2, speed)	confirmed	decomp/7e/007ed9a0.c lines 520,523: (**(code **)(*(int *)param_1[0x1a] + 0x54))(param_2,param_1[0x13],...)	nb2-anim-driver	2026-10-18
+0x007ed9a0	field	returns 0 unless holder vt+0x50(id) is nonzero	confirmed	decomp/7e/007ed9a0.c lines 106-112: param_1[0x1a]==0 returns 0; vt+0x50(param_2)==0 returns 0	nb2-anim-driver	2026-10-18
+0x007ed9a0	field	sets creature+0xBA to 0x2712 (id 0x2714) else 10000	confirmed	decomp/7e/007ed9a0.c lines 494-499: *(undefined2 *)((int)param_1 + 0xba) = 10000;	nb2-anim-driver	2026-10-18
+0x007ed9a0	field	play block runs only if app+0xD8==0 or creature+0x54==0; else returns 0	confirmed	decomp/7e/007ed9a0.c lines 104-106 gate and lines 529-531 else branch uVar4 = 0	nb2-anim-driver	2026-10-18
+0x007ed9a0	constant	default idle id 10000 (0x2710) fallback	confirmed	decomp/7e/007ed9a0.c line 216 local_188 = 10000; line 498 +0xBA = 10000	nb2-anim-driver	2026-10-18
+0x0099ee14	vtable	CSWCCreature vt+0x9C = 0x007ed9a0 (PlayAnimationById)	confirmed	REA read_bytes 0x0099ee14 len 288: dword index 39 bytes a0d97e00 = 0x007ed9a0	nb2-anim-driver	2026-10-18
+0x0099ee14	vtable	CSWCCreature vt+0x74 = 0x007664b0 (per-frame update candidate)	probable	REA read_bytes 0x0099ee14 len 288: dword index 29 bytes b0647600 = 0x007664b0; decomp/76/007664b0.c header callers empty	nb2-anim-driver	2026-10-18
+0x00777e30	function	creature anim tick: timer decrement and queue pop	confirmed	decomp/77/00777e30.c lines 31-59: +0x64 -= +0x44 gated by FUN_007ef5d0; FUN_007efac0 queue pop; +0x48 store	nb2-anim-driver	2026-10-18
+0x00777e30	field	writes creature+0x48 from queued entry	confirmed	decomp/77/00777e30.c line 59: *(short *)(param_1 + 0x12) = local_c[0];	nb2-anim-driver	2026-10-18
+0x00777e30	callsite	timer expiry calls vt+0x9C(FUN_007ed980(0,0)) re-issuing default	confirmed	decomp/77/00777e30.c lines 32-39: param_1[0x19] -= param_1[0x11]; if < 0 then vt+0x9c(uVar1)	nb2-anim-driver	2026-10-18
+0x00777e30	callsite	queued play calls holder vt+0x54(id, dur, mode 1|3, 0)	confirmed	decomp/77/00777e30.c lines 101,104: (**(code **)(*(int *)param_1[0x1a] + 0x54))(local_c[0],local_14,...)	nb2-anim-driver	2026-10-18
+0x007664b0	callsite	calls 0x00777e30 and 0x007675b0 directly	confirmed	decomp/76/007664b0.c line 1 callees include 00777e30 and 007675b0; callgraph.tsv direct CALL rows	nb2-anim-driver	2026-10-18
+0x0077d390	function	engine idle chooser: pause1/pause2 plus flourish pick on timer	confirmed	decomp/77/0077d390.c lines 22-85: gate holder+0xC6==1; rand picks; line 85 (rand%0xC9)*100+10000	nb2-anim-driver	2026-10-18
+0x0077d390	field	flourish name stored to stack CExoString with no consumer in function	confirmed	asm 0x0077d43a CALL 0x007338d0 with LEA ECX,[EBP + -0x20]; decomp/77/0077d390.c lines 39-63 no later use	nb2-anim-driver	2026-10-18
+0x0077d390	field	timer dwords creature+0x3A8 elapsed and +0x3AC threshold	confirmed	decomp/77/0077d390.c lines 31-32 (+0x3a8 vs +0x3ac compare) and lines 85-86	nb2-anim-driver	2026-10-18
+0x0077d390	xref	callers 0x008fb130, 0x008f92b0, 0x00907360	confirmed	decomp/77/0077d390.c line 1 header callers=008fb130,008f92b0,00907360	nb2-anim-driver	2026-10-18
+0x00769780	function	per-tick blend; replays current id via holder vt+0x54	probable	decomp/76/00769780.c lines 89-134 call holder vt+0x54; header callers empty; not in CSWCCreature vtable	nb2-anim-driver	2026-10-18
+0x004e3270	function	Gob::PlayAnimation(name,speed,flags,start) thiscall ret16	confirmed	decomp/4e/004e3270.c line 5 signature; header ret=16; gog_functions.tsv 008fd3a0 Gob PlayAnimation 16 bytes	nb2-anim-driver	2026-10-18
+0x004e3270	field	name NULL or empty clears list; list Gob+0xDC, count Gob+0xE0	confirmed	decomp/4e/004e3270.c lines 32-50: param_1[0x38] count, param_1[0x37] list	nb2-anim-driver	2026-10-18
+0x004e3270	field	flag 0x80 stops: done%s via vt+0x1b4, entry freed	confirmed	decomp/4e/004e3270.c lines 161-172	nb2-anim-driver	2026-10-18
+0x004e3270	field	flag 0x400 sets entry flags |= 0x401, no new entry	confirmed	decomp/4e/004e3270.c lines 61-65	nb2-anim-driver	2026-10-18
+0x004e3270	field	new entry fires start%s via vt+0x1b4 on Gob	confirmed	decomp/4e/004e3270.c lines 153-154; strings.tsv line 928 0x0099138c start%s	nb2-anim-driver	2026-10-18
+0x0045a190	callsite	only direct CALL to Gob::PlayAnimation (Gob Dying teardown)	confirmed	callgraph.tsv 0045a190 0045a1f9 004e3270 CALL; decomp/45/0045a190.c line 21 FUN_004e3270(0,0x3f800000,0,0)	nb2-anim-driver	2026-10-18
+0x00841c00	callsite	calls 0x007ed9a0 (creature play-by-id)	confirmed	decomp/84/00841c00.c line 1 header callees include 007ed9a0; callers empty	nb2-anim-driver	2026-10-18
+0x00863650	xref	no direct CALL; reached only through 7 data slots	confirmed	callgraph.tsv has no 00863650 rows; ledger 20261016_holster-c6-unarmed-anim.tsv row 4 (7 data slots)	nb2-anim-driver	2026-10-18
+0x007338d0	function	CExoString assign from const char*	confirmed	decomp/73/007338d0.c line 3: int * __thiscall FUN_007338d0(int *param_1,char *param_2)	nb2-anim-driver	2026-10-18
+0x0099f324	string	pausesh	confirmed	strings.tsv line 3361: 0099f324 pausesh refs 0077d390	nb2-anim-driver	2026-10-18
+0x0099f35c	string	pause1	confirmed	strings.tsv line 3367: 0099f35c pause1 refs incl 0077d390	nb2-anim-driver	2026-10-18
+0x0099f354	string	pause2	confirmed	strings.tsv line 3366: 0099f354 pause2 refs incl 0077d390	nb2-anim-driver	2026-10-18
