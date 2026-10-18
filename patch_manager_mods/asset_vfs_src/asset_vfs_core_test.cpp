@@ -1289,6 +1289,31 @@ int main() {
     }
 
     {
+        // 2DA cell capacity: three ~102-cell character bundles must all fit (VFS-CT2: cap 256 dropped the third);
+        // overflow is counted and reported through the notice, never silent.
+        static int noticeCode = 0;
+        static char noticeWhat[16];
+        noticeCode = 0;
+        noticeWhat[0] = '\0';
+        assetvfs::EngineState t;
+        t.noticeFn = [](int code, const char* what, const char*) {
+            noticeCode = code;
+            std::snprintf(noticeWhat, sizeof(noticeWhat), "%s", what);
+        };
+        static K2Vfs2DaCell big[1100];
+        static char cols[1100][16];
+        for (uint32_t i = 0; i < 1100; ++i) {
+            std::snprintf(cols[i], sizeof(cols[i]), "c%u", i);
+            big[i] = { "appearance", 900 + i / 100, 0, cols[i], "v" };
+        }
+        KT_CHECK_EQ(t.addTwoDaCells(big, 306, "own"), 306);
+        KT_CHECK_EQ(noticeCode, 0);
+        KT_CHECK_EQ(t.addTwoDaCells(big + 306, 1100 - 306, "own"), 1024 - 306);
+        KT_CHECK_EQ(noticeCode, assetvfs::kNoticeTwoDaFull);
+        KT_CHECK_EQ(std::strcmp(noticeWhat, "76"), 0);
+    }
+
+    {
         struct OCtx { int calls = 0; const uint8_t* data = nullptr; uint32_t size = 0; };
         static OCtx octx;
         octx = OCtx();

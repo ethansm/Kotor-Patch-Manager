@@ -178,6 +178,8 @@ void onVfsNotice(int code, const char* what, const char* owner) {
         if (n < 20) { // first 20 only; the reason is "cursor-full" or "bad-spec"
             KP_WARN("OPEN failed: '%s' (%s)", what, owner);
         }
+    } else if (code == assetvfs::kNoticeTwoDaFull) {
+        KP_WARN("REGISTER 2DA cells: table full, %s cell(s) dropped (owner=%s); those rows will be incomplete", what, owner);
     } else if (code == assetvfs::kNoticeServedKept) {
         KP_WARN("unregistered owner=%s: %s served VFS record(s) keep their data copy (engine still references them)", owner, what);
     }
@@ -229,8 +231,7 @@ int32_t KPATCH_CALL apiRegisterAssets(const K2VfsAssetEntry* entries, uint32_t c
 }
 
 int32_t KPATCH_CALL apiRegister2DaCells(const K2Vfs2DaCell* cells, uint32_t count, const char* owner) {
-    (void)owner;
-    return g_state.addTwoDaCells(cells, count);
+    return g_state.addTwoDaCells(cells, count, owner);
 }
 
 int32_t KPATCH_CALL apiHasAsset(const char* resref, uint16_t res_type, uint16_t flags) {

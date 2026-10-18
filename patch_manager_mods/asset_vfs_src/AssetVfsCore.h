@@ -36,7 +36,9 @@ constexpr size_t kRes2DaOffLoaded  = 0x28;
 constexpr size_t kWorkPrefixBytes  = 16;
 
 struct TwoDaPatchTable {
-    static constexpr size_t kMax2DaCells = 256;
+    // Total across all registrants: each character bundle costs ~100 cells (appearance + heads rows); 256 held only two
+    // (VFS-CT2 10-18: the third bundle got 47/102 and lost its heads row). Stack arrays below scale with this (~30 KB).
+    static constexpr size_t kMax2DaCells = 1024;
 
     struct StoredCell {
         char table_name[16];
@@ -55,7 +57,9 @@ struct TwoDaPatchTable {
         std::memset(cells, 0, sizeof(cells));
     }
 
-    int32_t addCells(const K2Vfs2DaCell* newCells, uint32_t numCells) {
+    // `dropped` (optional) receives the number of cells refused because the table was full.
+    int32_t addCells(const K2Vfs2DaCell* newCells, uint32_t numCells, uint32_t* dropped = nullptr) {
+        if (dropped) *dropped = 0;
         if (!newCells || numCells == 0) return 0;
         uint32_t added = 0;
         for (uint32_t i = 0; i < numCells; ++i) {
@@ -90,7 +94,10 @@ struct TwoDaPatchTable {
             }
             if (updated) continue;
 
-            if (count >= kMax2DaCells) break;
+            if (count >= kMax2DaCells) {
+                if (dropped) ++*dropped;
+                continue;
+            }
 
             StoredCell& dst = cells[count++];
             dst.active = true;
@@ -338,6 +345,7 @@ constexpr int kNoticeRewriteIgnored = 3; // what = "", owner = stream filter own
 constexpr int kNoticeStemConflict   = 4; // what = candidate path, owner = stream filter owner
 constexpr int kNoticeServedKept     = 5; // what = decimal count of served records kept, owner = unregistered owner
 constexpr int kNoticeOpenFail       = 6; // what = spec, owner = reason ("cursor-full" | "bad-spec")
+constexpr int kNoticeTwoDaFull      = 7; // what = decimal count of 2DA cells dropped (table full), owner = registrant
 typedef void (*NoticeFn)(int code, const char* what, const char* owner);
 
 // Provider-owned copies of handler/filter data (HeapAlloc on Win32, malloc on host; tests inject fakes).
@@ -647,9 +655,19 @@ struct EngineState {
         return reg.findResMan(resref, resType) != nullptr || reg.findStream(resref) != nullptr;
     }
 
-    int32_t addTwoDaCells(const K2Vfs2DaCell* newCells, uint32_t numCells) {
-        vfsreg::LockGuard g(lock);
-        return twodaPatches.addCells(newCells, numCells);
+    int32_t addTwoDaCells(const K2Vfs2DaCell* newCells, uint32_t numCells, const char* owner = nullptr) {
+        uint32_t dropped = 0;
+        int32_t added;
+        {
+            vfsreg::LockGuard g(lock);
+            added = twodaPatches.addCells(newCells, numCells, &dropped);
+        }
+        if (dropped > 0 && noticeFn) { // lock released
+            char buf[16];
+            std::snprintf(buf, sizeof(buf), "%u", static_cast<unsigned>(dropped));
+            noticeFn(kNoticeTwoDaFull, buf, owner ? owner : "");
+        }
+        return added;
     }
 
     uint32_t countTwoDaRows(const char* tableResRef16) {
