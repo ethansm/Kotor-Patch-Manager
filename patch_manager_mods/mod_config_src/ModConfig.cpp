@@ -1,4 +1,4 @@
-// ModConfig.cpp -- mod-config 0.1.0-dev (Steam build): the "Mod Configuration" provider on the in-game Options screen (doc 42,
+// ModConfig.cpp -- mod-config 0.1.1-dev (Steam build): the "Mod Configuration" provider on the in-game Options screen (doc 42,
 // plan .claude/plans/holster_editor_options.md, card c18). Provides two interfaces declared in ModConfigApi.h:
 //   k2.modconfig@1  K2ModConfigApi  Register / Unregister: a mod adds one entry (name, description, build/enter/leave/tick/destroy).
 //   k2.menuui@1     K2MenuUiApi     NewPage / AddButton / AddLabel / AddCustom / Clicked / SetText / SetRect / SetDesc / PaneRect / Control.
@@ -1256,7 +1256,7 @@ extern "C" void __cdecl McDestroy(int panelArg) {
 // the config is read at the first McBind.
 extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
-    KP_LOG(chMain, "mod-config 0.1.0-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
+    KP_LOG(chMain, "mod-config 0.1.1-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
     int rcC = -1, rcM = -1;
     if (api && api->struct_size >= offsetof(KPatchApi, require) + sizeof(api->require) && api->provide) {
         rcC = api->provide(K2MODCONFIG_IFACE, K2MODCONFIG_VERSION, &g_mcApi);

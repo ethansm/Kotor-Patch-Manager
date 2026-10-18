@@ -33,7 +33,7 @@
 
 namespace mui {
 
-enum { kMaxEntries = 8, kMaxItems = 24, kMaxPages = 2 + kMaxEntries, kMaxEvents = 4 };
+enum { kMaxEntries = 8, kMaxItems = 40, kMaxPages = 2 + kMaxEntries, kMaxEvents = 4 };
 
 // ---------------------------------------------------------------------------------------------------- registry
 // A slot is live while registered. seq is the registration order of the id's first registration: removing an entry
