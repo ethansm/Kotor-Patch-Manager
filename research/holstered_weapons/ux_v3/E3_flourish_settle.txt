@@ -1,0 +1,27 @@
+E3 settle: flourish x holster (static, $0). DUMP = ghidra_dumps/steam_6a522e71/decomp/. Tags: VERIFIED (cite) / GUESS.
+
+Q1. Does flourish change combat/ready state?
+- Flourish 0x79F430 calls FUN_0057a560(1,2,0) at DUMP 79/0079f430.c:74 = SetCombatState(state=1, param3=2, p4=0). VERIFIED. Only when player passes gates :29-49 (not wield byte +0xC5 == 1 or 8). VERIFIED.
+- Server fields in 0x57A560 (DUMP 57/0057a560.c): +0x520=1 (:39), +0x528=0 (:40), +0x524=8000 (:98), +0x11E8=param3=2 only if it was not already 1 (:99-100). VERIFIED.
+- Client flag +0x138: written only by 0x7682B0 (DUMP 76/007682b0.c:14-15). 0x57A560 calls it only if client creature non-null AND param3==1 (:103-106; asm 0x57A926 MOVZX/CMP 1/JNZ). Flourish passes 2, so +0x138 NOT changed. E1 is RIGHT on this. VERIFIED.
+- E2 said "combat entry the user sees": half right. Server combat state (+0x520) IS set; the client flag the holster hook watches is NOT. VERIFIED.
+- Extra: the flourish itself runs the weapon visual block inline: item vtbl+0x34(1,0,1,0) + PowerItem 0x7FE6C0 for slots 0x10 and 0x20 (:50-73). Same block that 0x7682B0 runs (:32-62 of its dump). So the flourish does its own "draw" visual (power/glow) without touching +0x138. VERIFIED. What vtbl+0x34 does visually: GUESS.
+- Stance after: server +0x520=1, +0x524=8000 stay; flourish never clears. VERIFIED no clear in 0x79F430. That +0x524 (8000) counts down and +0x520 returns to 0 via the normal combat-timeout path: GUESS (not traced). Client stance idle follows wield byte +0xC5, not +0x138 (.claude/research/holster_c7/c_readers_combat.md:28-31, holster_c6_unarmed_anim.md:13): VERIFIED by doc, not re-read.
+- Server vs client: flourish sets server only; the client ready state is untouched. VERIFIED.
+
+Q2. Does the holster mod have an in-hand state? Is the weapon at the hip for any hand animation?
+- Fsm (HolsterLogic.h:174, onCombat :194) is used only by host tests: rg "hs::Fsm|g_fsm|onCombat" in holster_src finds only holster_logic_test.cpp / holster_slide_test.cpp. VERIFIED.
+- HolsterCombat (Holster.cpp:310-322) only logs a COMB line. VERIFIED.
+- bone_test (Holster.cpp:1169-1180) rewrites the 5-byte push imm of the "rhand" literal at 0x763AF9 (and "lhand" 0x763E2B) inside FUN_007637E0 to g_boneName (pelvis_g), once at boot, for every creature (HolsterBonePatch.h:5-12; holster.ini bone_test comment). VERIFIED.
+- Consequence: every weapon Gob attach goes to node pelvis_g (not the hand node). H7 HolsterPlace (Holster.cpp:752-775) then composes the hip pose on every refresh of that attach behavior, no combat read. VERIFIED.
+- So the weapon is on the hip during flourish, combat, and any hand animation, whatever the combat state. The user's symptom (hands spin, weapons stay holstered) follows from the repoint alone, even if flourish did set +0x138. VERIFIED by code path. In-game confirmation: not done.
+- E2 is RIGHT on this; E2's "holster logic would not fire" also holds. E1's recommendation (make the draw edge fire) would change nothing visible because nothing consumes the edge. VERIFIED (no consumer).
+
+Q3. Smallest fix design
+- Core problem: the hip/hand choice is baked at ATTACH time. 0x7637E0 reads the literal when it attaches (callers 0085cc00, 0085b940, 00804f10, 0076d890, 0080efb0, 0080fe80; DUMP 76/007637e0.c header). Restoring the literal at runtime only affects FUTURE attaches; an already-attached Gob keeps its behavior on pelvis_g (node = [beh+0x18], Holster.cpp:757). Existing placement cache is keyed on node+gob (Holster.cpp:~775). VERIFIED reading; runtime re-attach behavior: GUESS.
+- Option 1 (smaller, no re-attach): in H7 HolsterPlace, when a "hand-pose window" is active for the owning creature, return early (skip the hip write) AND point the node at the real hand. Needs the Gob to follow rhand; on pelvis_g it cannot. So this alone does NOT work. VERIFIED logic.
+- Option 2 (viable): per-attach choice instead of global literal. Hook/branch at 0x763AF9 so the imm is chosen per call (hip when holstered, "rhand" when in hand), then force a re-attach at the window start/end. Re-attach primitive (detach+call 0x7637E0 or callers' path) is unmapped: ux_v2/H3.md:7 says no visibility/re-attach primitive found. GUESS it can be driven safely.
+- Window edges available now: START = detour 0x7408A0 (single caller of 0x79F430, 22 bytes, input path) and 0x66B8A0 (script) or 0x57A560 with return 0x79F621 / 0x66BAC2; END = flourish anim length 1500 ms (:82, 0x27AE) or the next 0x7682B0 edge. Combat start (0x7682B0 0->1) is a free START for real combat. VERIFIED anchors; timing: GUESS.
+- Do NOT rewrite param3 2->1 (E1 option A): it changes +0x11E8 and can fire the 30% combat bark (0x579D00 when +0x11AC==0, :34-38) and double-runs the weapon visual; and it buys nothing until hand-state exists. VERIFIED (:34-38).
+- Risks: (a) re-attach mid-animation can pop/dupe the Gob or leave a stale handRing entry (HolsterHand.h ring, 128); (b) left weapon mirrored placement (bone_test_left) must be undone; (c) NPC scope via 0x66B8A0; (d) timer vs combat start overlap; (e) PowerItem called inline by flourish.
+- Recommendation: first do a no-engine-risk probe: log COMB + a flourish START detour with bone_test=0 in a play test to see if vanilla shows the weapon in hand out of combat (Q7 still open, 42_holstered_weapons.md:43). Then implement Option 2 with draw edge = combat 0->1 plus flourish START, stow edge = existing kStowDelayMs (HolsterLogic.h:182) after combat 0, and 1500 ms after a flourish with no combat.

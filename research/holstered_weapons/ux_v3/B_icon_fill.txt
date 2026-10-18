@@ -1,0 +1,58 @@
+B_icon_fill: reset-arrow icon on holster editor mod-config buttons
+Repo: KOTOR-II worktree. Read-only recon, anchors are path:line.
+
+1. HOW GEAR AND WRENCH WERE MADE
+- Gear (luo_gear, e3d_gear): scripts/gen_luo_textures.py:19-30 (N=64, S=4 supersample, PIL, LANCZOS down).
+  Procedural 8-tooth mask gear_mask() :33-57; shading render() :60-85 = glow, dark outline, vertical gradient,
+  lower-right shade, upper-left rim light.
+  Palette PAL_NORMAL :22: top 175,252,228; bot 28,150,122; outline 6,60,50; glow 60,210,175; shade 10,90,74; light 235,255,246.
+  PAL_HI :23 is the gold/beige variant (top 255,246,205; bot 196,156,70).
+- Gear copy: scripts/gen_shared_icons.py:61-70 copies the luo arrays into _shared_src/GearIconTex.inc
+  (kGearTex and kGearHiTex, 16428 B each; kEditTex table :82-86). Format: uncompressed 32-bit TGA, bottom-left, 18 B head + 26 B footer (:24, :40-48). No PIL needed there.
+- Wrench (fph_edit): scripts/gen_hotbar_textures.py:63-140, 72x128 thin frame, same palette values (:96-109).
+  Output action_hotbar_src/HotbarTextures.inc (Tex_fph_edit, 36908 B; table entries :13304-13305).
+- Closest arrow recipe: scripts/gen_hotbar_textures.py:217-251 make_arrow_textures (56x70 chevron, dark outline, mint->teal gradient).
+  HUD-kit X glyph (64x64, mint->teal): scripts/gen_hud_kit_textures.py x_glyph :49.
+- Rebuild: edit script, run it, rebuild the DLL. The DLL does not run generators.
+
+2. REGISTRATION AND APPLY
+- EmbedTex.h:43 struct Tex {resref,data,size}. ensure(t,n) :120-137 makes a CAurTextureBasic named resref and fills RGBA via fill() :99-115.
+  Steam only: supported() :87. heal() :141-160 must run every UI tick.
+- guikit::imageFor / imageForRetry GuiKit.h:334-342 (imageForRetry = poll until texture exists, HudKit.h:45).
+- guikit::setFill(ctl,img,tint) GuiKit.h:345-353 writes ctl+0x60 border +0x74. setBorderTint :363-369 (border +0x28).
+  setFillStyle(ctl,2) stretch :381-387. setAlpha :370-374. All gated by borderOk GuiKit.h:136-139.
+- Real call sites: level_up_override_src/LevelUpUi.h:225 ensure, :264 setFill on gear label, :268 setFillStyle 2,
+  :269 setClickable false + setText "", :353 hover swap, :775 heal.
+  action_hotbar_src: own registration ActionHotbar.cpp:1764-1775 (EmbeddedTextures), wrench toggle :1387 wFill, applyFill :847.
+- equipment_3d_character_src/EquipCharPreview.cpp:303-313 borderOk gate then setFill. Its e3d_btn art is an installed
+  override TGA (scripts/add_equip_3dview_control.py:62, :239-243), not embedded.
+
+3. MOD-CONFIG CONTROL ACCESS
+- K2MenuUiApi.Control(page,item) ModConfigApi.h:116 returns the raw ctl (ModConfig.cpp:1158-1162). Holster editor uses it for hit tests (HolsterEditor.cpp:1557).
+- Holster reset buttons: AddButton(page,"R",tip) at HolsterEditor.cpp:522. ModConfig clones BTN_GAMEPLAY as CSWGuiButton when
+  button_clone=1 (mod_config.ini:8, default; ModConfig.cpp:201-215), else a label clone (fallback :221).
+- PITFALL A: CSWGuiButton keeps its border at +0x70 (normal) and +0xE8 (highlight), not +0x60 (GuiButton.h:24-26; doc 08_shield_bar.md:500).
+  guikit::setFill / setAlpha / setBorderTint gate on +0x60 and return false, with no log, on a button.
+  The equipment mod logs exactly this case (EquipCharPreview.cpp:309-311).
+- PITFALL B: K2MenuUiApi does not say whether an item is a button or a label clone. Check the ctl vtable (ButtonVtable vs LabelVtable) yourself.
+- Re-apply: ModConfig.cpp re-applies only the RECT (applyOne :277-297, kMaxReapply 8 at :68) and calls the entry tick (:1322).
+  No fill, tint or style writes in ModConfig.cpp. A fill set by the holster editor persists.
+  Hover uses the +0xE8 highlight border, so both states need the fill.
+- PITFALL C: item cap. HseView.h:790-793 kPageItemsBase 26 + kInspItems 12 = 38 of 40 (static_assert).
+  An overlay label (gear pattern: click-through AddCustom over the button) adds 6 items = 44 > 40, refused.
+- Text: "R" must be cleared with guibutton::setButtonText(btn,"") (GuiButton.h:102-112) once the arrow is the fill.
+- Target size: reset slot width max(18, slot.h), at most a third of the row (HseView.h:1017-1025). A 32x32 source is enough.
+
+4. MINIMAL STEPS (no code written here)
+Step 1 (art): add e3d_reset (32x32 TGA) as a procedural pixel function in scripts/gen_shared_icons.py (no PIL).
+  Add to build() and render_inc() via kEditTex. Update scripts/test_gen_shared_icons.py:83 (count 5 to 6).
+  Run python3 scripts/gen_shared_icons.py, then --check.
+Step 2 (helper): add guibutton::setFill(btn,img,tint,state) to GuiButton.h. Gate on ButtonVtable, then the border vtable at +0x70 and +0xE8.
+  Write fill at border+0x74, tint at +0x28, style at +0x34. Host test in gui_button_test.cpp.
+Step 3 (register): holster_editor_src includes GearIconTex.inc, sets embtex::g_log, calls embtex::ensure(kEditTex, kEditTexCount) in build,
+  and embtex::heal() each tick.
+Step 4 (apply): for each inspResetItem (HolsterEditor.cpp:522) set fill normal + hi, style 2, then clear text.
+  Clear text only after both fills succeed, so a failed gate keeps "R".
+Step 5 (test): colocated host test in holster_editor_src; scoped run_tests.py holster; live check goes to PLAY_TEST_QUEUE.md (non-blocking).
+
+Verdict basis: existing helpers cannot fill a mod-config button (gate fails). A button-border helper is needed (Step 2).

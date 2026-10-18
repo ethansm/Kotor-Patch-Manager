@@ -1,0 +1,45 @@
+E2 recon: Flourish x holster (static, $0). Read-only. Anchors are repo paths unless marked DUMP (ghidra_dumps/steam_6a522e71/decomp/).
+
+Q1. Engine signal the holster mod uses to decide holstered vs in hand
+- No per-creature holstered/in-hand state is wired. Holster.cpp never calls the FSM: hs::Fsm (patch_manager_mods/holster_src/HolsterLogic.h:174, onCombat :194, tick :206) is referenced only by the host tests.
+- H1 combat hook: hooks.toml:11-12 (0x007682B0, stores creature+0x138). Handler HolsterCombat (holster_src/Holster.cpp:310-322) only logs COMB lines (guard :311). Read-only.
+- H2 attach hook: hooks.toml:28-29 (0x007637E0). HolsterAttach (Holster.cpp:327) logs ATTACH. handAttach (:477-492) records gob->hand only.
+- H7 placement: HolsterPlace (Holster.cpp:747) writes place_rot/place_off onto the bone every refresh. Gates: probe, bone_test, place (:754). No combat read anywhere in holster_src.
+- bone_test: applyBoneTest (Holster.cpp:1169-1170) repoints the rhand/lhand attach-node literal to pelvis_g for EVERY creature (holster.ini:21 says so). It is boot-time and global, not per creature.
+- Live config (handoff: .claude/handoffs/42_holstered_weapons_master_plan.handoff.md:101): probe=1, bone_test=1, place=1. Under that config the weapon sits on the hip in and out of combat. This matches the user report.
+- Shipped defaults: holster.ini:4 probe=0, :22 bone_test=0.
+
+Q2. Vanilla behaviour out of combat (docs only; not confirmed in game)
+- Open: does vanilla hide or show hilts out of combat? patch_manager_mods/42_holstered_weapons.md:43 (Q7), research/holstered_weapons/ux_v2/H9.md:9.
+- No visibility toggle primitive found: research/holstered_weapons/ux_v2/H3.md:7; wave2_3.md:125 (gap c, not mapped).
+- Draw: g*w1 "Wield_Idle_To_Melee" exists (research/holstered_weapons/wave2_3.md:459). draw_weapon event has no known consumer (patch_manager_mods/42_holstered_weapons.md:52).
+- "Vanilla draw is unconfirmed": research/holstered_weapons/wave2_3.md:641. Combat action handler has no draw wait.
+- Combat entry does not rewrite the wield byte +0xC5: .claude/research/holster_c7/c_readers_combat.md:28-31. So there is no auto-restyle on combat entry.
+- Ready idle row is chosen by the wield byte: .claude/research/holster_c6_unarmed_anim.md:13; .claude/research/holster_c7/d_resolver_caller.md:34. A weapon-wielding character idles in a combat-class stance.
+
+Q3. Flourish path (vanilla, decompiled)
+- Entry chain: input handler 0x007B12C0 and DUMP 89/008993f0.c (44 bytes) -> wrapper 0x007408A0 (DUMP 74/007408a0.c, 22 bytes, one call) -> PlayerFlourishWeapons 0x0079F430 (DUMP 79/0079f430.c). The chain is direct, not an action-queue entry (no queue add in its callees).
+- Cooldown gate creature+0x464: DUMP 79/0079f430.c:20-21; set to 1000 at :95.
+- Early-out creature+0x2E4: :39-40 (meaning unknown).
+- Wield gate: +0xC5 == 1 or 8 returns at once, with no anim and no cooldown: :44-48.
+- Weapon branch (wield not 1 or 8): weapon items from slots 0x10 and 0x20 (:52-64), then server SetCombatState(1,2,0) at DUMP :74 (0x0057A560). This is the combat entry the user sees.
+- Body anim: generic 0x27AE (:83-84) or 0x27AD resolved through vtbl+0xE0 (:92). The resolver is 0x00863650, the H4 site (hooks.toml:64).
+- Script path VM 847: DUMP 66/0066b8a0.c:44 has the same gate, and SetCombatState at :67.
+- Existing mod hooks on 0x79F430, 0x7408A0, 0x7B12C0, 0x8993F0, 0x57A560: none (rg over patch_manager_mods/*_src). ActQueue.h is not involved.
+- Flourish gate with 8 is silent (no anim, no cooldown): .claude/research/holster_c7/c_readers_combat.md:20-25.
+
+Q4. Interception options and what draw means (no code written)
+- Option A: detour entry of 0x79F430. Single caller 0x7408A0. Prologue PUSH EBP / MOV EBP,ESP / SUB ESP,0x40 is 6 bytes, the same shape as H1. Also detour VM 0x66B8A0 for scripted flourish.
+- Option B: detour 0x7408A0 (covers both input callers, 22 bytes).
+- The combat entry is inside the flourish (DUMP :74). A pre-hook cannot stop it without suppressing that call or 0x57A560. That is server-side and riskier.
+- "Stop drawing the holstered copy": holster_src has no separate copy. The weapon Gob is one object. In the HW7 design (handoff :105) "draw" = stop the H7 pose override (hooks.toml:98, 0x504EF5) for that Gob so the rhand/lhand pose applies. That needs bone_test off, because the global repoint is what pins weapons to the hip. Re-attach on combat edge is unproven (ux_v2/H3.md:7).
+- Re-holster timing: the FSM stows kStowDelayMs = 1500 ms after the combat flag clears (HolsterLogic.h:182-212). So re-holster follows the vanilla combat timeout, not the flourish end.
+- Stance after the flourish is the wield-row ready idle. HW7 unarmed hook 0x0086367C (handoff :115) would fix the stance while holstered. It does not touch the +0xC5 gate, which reads the real byte (DUMP :44).
+
+Caveats (doc conflicts)
+- .claude/research/holster_c7/c_readers_combat.md:20 says the flourish passes 0 to 0x7680A0. DUMP :26 calls FUN_007680a0(0,1). Arg meaning not rechecked.
+- .claude/research/holster_c7/e_server_side.md:30 (R4) says the gate "opens while holstered". DUMP :44-47 blocks wield 1 and 8. Decompile is taken as correct.
+- Plan backlog item (.claude/plans/holster_editor_layout_v3.md:100-102) asks "whether the engine draws first in combat only". Answer: the engine has no explicit draw step in PlayerFlourishWeapons. Its only combat effect is SetCombatState(1,2,0).
+
+OPEN: Does vanilla show equipped weapons in hand out of combat (patch_manager_mods/42_holstered_weapons.md:43, Q7)? An in-game check settles it.
+VERDICT: PARTIAL (mod-side mechanism confirmed; vanilla out-of-combat baseline unresolved)

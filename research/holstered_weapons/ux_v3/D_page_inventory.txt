@@ -1,0 +1,90 @@
+HW-UX3 page inventory (recon, 10-18). Read-only. Anchors are line numbers.
+Legend: HE=patch_manager_mods/holster_editor_src/HolsterEditor.cpp  HV=.../holster_editor_src/HseView.h
+        HA=patch_manager_mods/_shared_src/HolsterApi.h  HT=patch_manager_mods/holster_src/HolsterTune.h
+        HP=patch_manager_mods/holster_src/HolsterPreview.h  MA=patch_manager_mods/_shared_src/ModConfigApi.h
+        MC=patch_manager_mods/mod_config_src/MenuUiLogic.h
+1. Add* calls: 38 items = 1 AddCustom + 4 AddLabel + 33 AddButton (cbBuild HE:440-538)
+   Base 26 (HV:791) + inspector 12 (HV:790).
+   line | field | purpose | shown in
+   448 Custom viewItem | 3D view | both (cbEnter HE:1762)
+   449 Label statusItem | status line | both (HE:1763)
+   456 Label nameItem | member name | both, row 0
+   457-458 prev/nextItem "<" ">" | member picker | NAV only
+   460-461 wpnRight/LeftItem | hand pick "Right: X" / "Left: X" | both
+   465 Label stanceLabelItem; 466-467 stancePrev/NextItem | stance cycle | NAV only
+   471 Label emoteLabelItem; 472-473 emotePrev/NextItem | emote cycle | NAV only
+   475 playPauseItem "Play" | emote play or pause | NAV only
+   477 boneItem "Bone: Back" | bone cycle | WEAPON only
+   478 scopeItem "For: this weapon" | scope cycle | WEAPON only
+   479 saveItem | Save | WEAPON only
+   480 revertItem | Revert | WEAPON only
+   481 resetScopeItem | Reset Scope | WEAPON only
+   482 doneItem | Done | WEAPON only
+   484 resetItem "Reset view" | framing | both
+   485 flipItem "Flip view" | yaw flip | both
+   496 modeItem[0..3] | Move, Depth, Tilt, Roll/Turn | WEAPON only (rows 7-8)
+   521 inspItem[0..5] | scrub rows Slide..Turn | WEAPON only (rows 9-14)
+   522 inspResetItem[0..5] "R" | per-row reset | WEAPON only (row right edge)
+   Counts: NAV shows 14 + 2 always = 16, parks 22. WEAPON shows 11 + 4 + 12 + 2 = 29, parks 9.
+   "2 always" = view and status, placed in cbEnter, not applyLayout.
+
+2. Layout and mode switch
+   - applyLayout HE:1381-1470. NAV branch 1385-1417, WEAPON branch 1418-1469. Key: e.mode (HE:123, 173).
+   - No hide API. Unused items park at {-9999,-9999,0,0} (HE:1383; placeRect HE:563-567). MA has no SetVisible/SetHidden.
+   - Callers: enterEdit HE:1712, 1740; exitEdit HE:1755; cbEnter HE:1777; rebuild HE:2316-2318 (sets NAV first).
+   - WEAPON rows: compactSlot, 15 rows with inspector else 9 (HE:1419-1423; HV:795-796).
+     0 name, 1 hands, 2 bone, 3 scope, 4 save/revert, 5 resetScope/done, 6 reset/flip, 7-8 mode bar, 9-14 inspector.
+   - NAV rows: stripSlot 0-8, fixed pitch (HE:1385-1417).
+   - View and status: PaneRect COLUMN/VIEW/STATUS (HE:1762-1773). COLUMN is the LEFT pane (strip HE:1774).
+   - Naming hazard: e.mode (NAV/EDIT) vs e.weaponMode (Move..Roll/Turn; HE:193, setWeaponMode HE:1314-1319).
+   - SetDescSplit is not called by the editor (rg empty). The right pane is the vanilla description pane.
+
+3. Code paths
+   - enterEdit HE:1699-1743: BeginEdit 1705; WEAPON 1716; resetInput 1718; captions 1729-1738; applyLayout 1740.
+   - exitEdit HE:1745-1757: EndEdit 1747; NAV 1748; setHandNames 1754; applyLayout 1755.
+   - Hand switch HE:2105-2118: other hand = guard + enterEdit; active hand = guard + exitEdit (2109, 2116). NAV pick 2051-2054.
+   - Bone cycle HE:2119-2128: CycleBone(1) at 2120. Not guarded. Label setBoneText HE:1252-1258 (raw node name).
+   - Scope cycle HE:2129-2144: editScope=(+1)%3 at 2131; SetScope(scope, hand) 2132; guard ACT_SCOPE 2130; text HE:1292-1299.
+   - Stance cycle (NAV only) HE:2055-2076: kStanceList HE:76-84 = 7 entries. resetStanceUi HE:1322-1331.
+   - Emote cycle (NAV only) HE:2077-2088: kEmoteList HE:93-103 = 9 entries. Play HE:2089-2102. Timer HE:2198-2206.
+   - Done HE:2168-2169: guardTransition(ACT_DONE), then exitEdit.
+   - Discard guard: guardTransition HE:1815-1830, enum HE:125. 7 call sites: 2015, 2028, 2107, 2114, 2130, 2160, 2169.
+     Unguarded: bone 2119, Save 2145, Revert 2152, Reset view 2039, Flip 2042, mode bar 2170, row R 2181.
+     Leave discards silently: cbLeave HE:1792-1795.
+   - Scrub rows (INSP): refresh HE:1518-1552; hit test inspRowAt HE:1561, overInspector HE:1568; scrubBegin HE:1620;
+     scrubTick HE:1653-1671 (called HE:2226); applyRowValue HE:1589-1618; row text HV:865; geometry HV:1017-1025.
+   - Reset: Reset view HE:2039-2041 (MMB too, HE:2234-2236). Reset Scope HE:2159-2167 (guarded; HE:2161).
+     Row R HE:2181-2186 to inspReset HE:1673-1697 (unguarded). Revert HE:2152-2158 (Revert() 2153).
+   - Mouse: WEAPON HE:2223-2227 (weaponMouse, scrubTick, refreshInspector). NAV HE:2228-2236 (wheel 2230-2232, MMB 2234).
+     weaponMouse wheel: depth with RMB (HE:1982), zoom otherwise (HE:1987).
+
+4. Impact of the three changes
+   (a) Edit always on, no NAV, no Done
+   - Drop NAV branch HE:1385-1417. Only WEAPON branch remains.
+   - Removes 10 items: Done + 9 NAV-only (prev, next, stance x3, emote x3, play). 38 -> 28.
+   - Member switch exits, then NAV (HE:2013-2038, 2316-2318). It must enterEdit the new member instead.
+   - Refusal and error paths call exitEdit (HE:1596, 1606, 1682, 1707-1715). They need a "no weapon" state.
+   - Click on the active hand closes edit today (HE:2109, 2116). It must become a no-op.
+   - Stance, emote and NAV mouse (HE:2055-2102, 2228-2236) move into the always-on path. NAV status HE:1371-1376 goes.
+   (b) Direct segmented buttons
+   - Hands (2): already direct. Add a lit state only.
+   - Scope (3): SetScope takes an absolute index (HE:2132). No provider change. Guard keys on action only (HE:1818),
+     so 3 targets need 3 guard ids or a target check.
+   - Bone (5): no absolute setter. HA:57 has CycleBone(dir) only. Needs SetBone in the provider (step logic HP:210).
+     Bone may be "custom" (HA:42), so no segment lit. Names are raw (HT:56). Tooltip HE:2119 is stale.
+   - Stance (5 requested): code has 7 (HE:76-84). Walk (Rifle) and Run (Rifle) must go, or the row needs 7 buttons.
+   (c) Six rows to right pane, thumb each
+   - Rows sit in left strip slots 9-14 (HE:1446-1457). Moving them frees the left column.
+   - Right pane needs SetDescSplit (MA:120, last field; compat MA:21-22) and PaneRect(MUI_PANE_PREVIEW) (MA:58).
+   - Hit test uses inspItem rects (HE:1555-1573). A track control needs its own hit rect.
+   - Value text is the button text (HE:1545-1549). Separate value labels = +6 items.
+   - Thumb: no control exists. Drawn inside the track = 0 items. Separate control = +6.
+   - Cap 40: HV:793, static_assert HV:794, hse_view_test.cpp:980, common_contract_test.cpp:227, MC:37.
+   - Counts: today 38. After (a) 28. After (a)+(b) with 5 bones, 3 scopes, 5 stances = 39 (41 with 7 stances).
+     After (c) +6 value labels = 45. Over 40 needs the cap raised (plan §4 says 80).
+
+5. Plan premise check (.claude/plans/holster_editor_layout_v3.md §3-4)
+   - Confirmed: six scrub rows and mode bar in the left column (HE:1441-1457). Three scopes (HE:2131). Five bones (HT:56).
+   - Mismatch: 7 stances, not 5 (HE:76-84). No absolute bone setter (HA:57).
+   - Not verified: MMB handling inside weaponMouse (HE:1871 takes mmb; body not read).
+OPEN: Keep both rifle stances (7 stances, 41 items) or cut to the planned 5?

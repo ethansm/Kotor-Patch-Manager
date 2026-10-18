@@ -1,0 +1,40 @@
+A1 recon: does SetRect on the holster-editor 3D view resize the render?
+Scope: read-only static trace. Steam exe dump = ~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71/decomp (abbrev DUMP/).
+VERDICT: CONFIRMED. The render extent, GL viewport and aspect are re-derived from the rect on every draw.
+
+1. Our call chain
+- HolsterEditor.cpp:555-566 placeItem/placeRect -> g_menu.p->SetRect (called from cbEnter at :1762).
+- ModConfig.cpp:1117-1126 muiSetRect stores the rect in the item target; applyOne (ModConfig.cpp:278-296) pushes it via guikit::setRect.
+- GuiKit.h:241-249 setRect calls the control vtable slot at byte offset Ctl_VtSetRect = 4 (K2Addr.h:287), i.e. slot 1, with int[4] {x,y,w,h}.
+- The control pointer is the view block itself: Preview3dProvider.cpp:648-652 apiViewControl returns v->block; HolsterEditor.cpp:448 AddCustom.
+
+2. Engine chain (view vtable 0x9A3D34 = CSWGui3DSceneView; slot1 = 0x420F50, verified from exe .rdata)
+- 0x420F50 (DUMP/42/00420f50.c): calls S->vt[+4] with the rect (S = view+0x60), then writes view+4..+0x10 = rect.
+- S vt[+4] = 0x414B70 (DUMP/41/00414b70.c): copies the rect into S+4..S+0x10. Ghidra label "CMFCCaptionButtonEx::SetRect" is a library-match name; the body is a plain 16-byte copy.
+- Draw: view vt+0x38 = 0x84DE40 (DUMP/84/0084de40.c) -> S vt+0x0C = 0x4184F0 (DUMP/41/004184f0.c): Scene render, then FUN_00479460(S+4, S+8, S+0xC, S+0x10, ...), then if nonzero camera vt+0x08 (RenderScene 0x47F320), then pop 0x4799C0.
+- FUN_00479460 (DUMP/47/00479460.c): glViewport(abs x, flipped y, w, h) from S+4..S+0x10 on every draw. Returns 0 (camera draw skipped) when w<1, h<1, x+w<0, y+h<0, x>=DAT_009f42a4 or y>=DAT_009f42a8.
+- RenderScene 0x47F320 (DUMP/47/0047f320.c:114-130): glGetIntegerv(GL_VIEWPORT). If camera C+0x220 and C+0x224 are both 0, aspect = that GL viewport w/h. Otherwise viewport = C+0x218..0x224 and aspect = C+0x220/C+0x224.
+- Projection: gluPerspective(C+0x204 = fovy, aspect, near, far). fovy is VERTICAL, so widening adds horizontal FOV and leaves the vertical scale unchanged.
+- Result: a new SetRect is picked up on the next draw with no cache in between.
+
+3. Camera viewport fields (camera C = view+0x78; viewport at C+0x218..0x224)
+- Our code never writes them. The only engine writer is camera vt+0x34 SetViewPort (0x47F2B0). No repo caller (rg SetViewPort / SceneCamVt_SetViewPort: none).
+- Our camera writes are fov (vt+0x44: SceneView.h:206-213; Preview3dProvider.cpp:381, :506) and attach (vt+0x74: SceneView.h:197-204).
+- Our code only reads them: HolsterEditor.cpp:888 (CAMENG rdc); :933 refuses MapToScreen when vp is unset.
+- Ctor 0x47ECD0 (DUMP/47/0047ecd0.c) has no writes to +0x218..0x224 (it sets fovy, near, far). Zero-initialisation at allocation (0x481AC0) is not verified.
+
+4. Cached rects in our code (stale after a widen)
+- HolsterEditor.cpp:1768-1771 cbEnter: g_ed.viewRect = PaneRect(MUI_PANE_VIEW), captured once at page enter, not the new rect.
+  - Stale users: :1192 CALIB outside test; :1422 and :1510 availH.
+  - :651 c.pane is overridden by the live control extent at :660-662 when w,h > 0, so projection is fine.
+- HolsterEditor.cpp:1780 wheel hit rect = the vanilla pane `view`, set in cbEnter and never refreshed. Wheel zoom stays on the old pane.
+- Live reads (fine): :2211 insideView uses ui->Control(page, viewItem); :660-662 reads the control extent live.
+- Preview3dProvider.cpp:488 logs the extent once at CreateView. Viewer (:132-158) has no rect or aspect cache.
+- SceneView.h:120 createView binds to the layout tag; no rect cache.
+
+5. Caveats
+- ModConfig.cpp:278-291: re-applies a drifted rect up to kMaxReapply = 8 (ModConfig.cpp:68), then gives up with log "RELAYOUT gave up". If the vanilla layout keeps rewriting the view rect, the wider rect is lost.
+- The render is skipped entirely (no error) if the rect origin is off-screen (x >= DAT_009f42a4 or y >= DAT_009f42a8). Right/bottom overflow is not checked.
+
+OPEN
+- Is camera +0x220/+0x224 zero at runtime? Confirm from a live CAMENG `vp=` line in the holster log (use kotor2_logs.py, not raw grep).

@@ -1,0 +1,35 @@
+F_cam_viewport: which GL viewport the holster preview camera renders into (static dumps only)
+Scope: steam_6a522e71 dumps (decomp/, asm, exe .rdata/.data). No Ghidra, no REA, no live logs.
+Tag key: VERIFIED-in-dump = read in decomp or asm; GUESS = inferred, not read.
+
+Q1. Viewport and aspect in the 3D draw path
+- Draw chain (VERIFIED-in-dump): view vt+0x38 0x84DE40 -> scene vt+0x0C 0x4184F0 -> push 0x479460(S+4, S+8, S+0xC, S+0x10, S+0x28, 1, 1.0) -> camera vt+0x08 0x47F320 (RenderScene) -> pop 0x4799C0.
+- S rect source (VERIFIED-in-dump): view vt+0x04 0x420F50 stores the rect into V+4..V+0x10 and calls scene vt+0x04 0x414B70, which copies 4 ints into S+4..S+0x10 (= V+0x64..V+0x70). 0x414B70 is labelled CMFCCaptionButtonEx::SetRect by library match; the body is a plain copy.
+- 0x479460 (VERIFIED-in-dump): glViewport(x_abs, H - y_abs - h, w, h), with x/y offset by the parent stack entry. The rect is the control rect, not the window. Call site asm 0x479590, IAT [0x0098636C].
+- 0x479460 has no glScissor. Its only GL state change besides viewport is glEnable(DAT_009F4954); DAT_009F4954 = 0x0B71 = GL_DEPTH_TEST (VERIFIED-in-dump, .data).
+- glScissor sites (VERIFIED-in-dump): only 0x4113A0 at 0x4114B7/D9/F6. They sit inside a glEnable(0xC11) / glDisable(0xC11) bracket for letterbox clears. The 3D path does not enable scissor.
+- 0x4799C0 pop (VERIFIED-in-dump): glViewport(parent entry), then depth test per stored flag.
+- Root entry (VERIFIED-in-dump): 0x4792C0 (GUI frame reset) calls glGetIntegerv(GL_VIEWPORT 0xBA2) and stores 16-bit x,y,w,h at 0x00A309C8..0x00A309CE. It also sets glOrtho(0,1,0,1,-1,1). Flip height H is the root h (store sites verified; exact buffer-element map is GUESS).
+- Camera branch A (cam+0x220 == 0 and cam+0x224 == 0, our state): VERIFIED-in-dump. 0x47F3C1 CMP / 0x47F3D0 CMP, JZ 0x47F504. No glViewport call. Aspect = GL_VIEWPORT w/h: FILD [EBP-0x10] (w) / FIDIV [EBP-0xC] (h) at 0x47F504-0x47F507. Buffer is LEA [EBP-0x18] at 0x47F3AC.
+- Camera branch B (either nonzero): VERIFIED-in-dump. glViewport(cam+0x218, cam+0x21C, cam+0x220, cam+0x224) at call 0x47F4C3; aspect = cam w/h; restore at 0x480420.
+- Projection (VERIFIED-in-dump): gluPerspective(fovy=cam+0x204, aspect, near=cam+0x210, far=cam+0x214) at 0x47F6D7. Ortho path when fovy <= 0 (DAT_00986B38 = 0.0). Vertical fov does not depend on aspect.
+- Answer: with cam+0x218..0x224 == 0, render viewport = pushed control rect and aspect = control w/h (576/896 = 0.643), if S rect equals the logged control rect (see OPEN).
+
+Q2. Writes to cam+0x218..0x224 during render
+- Only writer found: 0x47F2B0 (camera vt+0x34 SetViewPort). VERIFIED-in-dump. It clamps w and h to >= 1, so 0,0,0,0 means it never ran.
+- No direct callers in callgraph (VERIFIED-in-dump). Indirect scan: cg.py indirect --slot 0x34 gave 90 sites. None of the sites whose function also mentions +0x78 is a 4-arg camera call. GUESS: not exhaustive, since the camera pointer may be held in a local.
+- Ctor 0x47ECD0 writes no 0x218..0x224 (VERIFIED-in-dump). RenderScene 0x47F320 only reads them (VERIFIED-in-dump).
+- Verdict on Q2: no evidence in dumps of a write during render. The fields stay zero.
+
+Q3. Hypothesis: "full-window (or other) glViewport; control rect only clips"
+- Refuted by the dumps as stated. The control rect is the glViewport, the aspect is its w/h, and no scissor clips it (VERIFIED-in-dump).
+- A full-window viewport with control-rect clip would make visible height = 896/1440 of the frustum. That would fit ~1.0 m of 1.8 m, but the code does not produce that setup. GUESS on the arithmetic.
+- The ~1.0 m discrepancy is therefore unexplained by viewport. GUESS candidates: (a) S rect != logged control rect; (b) DAT_00A32A54 != 0 swaps the modelview source to DAT_00A32A58/70 (VERIFIED-in-dump branch at 0x47F320; value at tick unknown); (c) pose/fovy seen at tick differs from render (both read cam+0xA8/0xB4/0x204, so unlikely).
+- Side finding (VERIFIED-in-dump): CAMENG MapToScreen calls at tick take the GL_VIEWPORT fallback (0x4809D0, when w or h is 0). Outside the draw, GL viewport is the root entry restored by 0x4799C0. GUESS: root is full window, so tick answers do not match the render projection.
+
+Probe from the editor tick (read-only, no hook)
+1. Read V+0x64..V+0x70 (S rect). Compare to logged control rect 1345,357,576,896. Mismatch explains the 1.0 m.
+2. Read shorts DAT_00A309C8, CA, CC, CE. Expect root = full window 3440x1440. Confirms flip height.
+3. Read DAT_00A32A54 (expect 0) and DAT_00A0F190 (expect 1).
+4. Read cam+0x210 and cam+0x214 (near, far).
+Decisive in-draw check (log-only hook): hook entry of 0x4799C0. At that point GL viewport = pushed rect in branch A. Log glGetIntegerv(0xBA2) and count. Equal to S rect confirms the code path. Full window would confirm the hypothesis.

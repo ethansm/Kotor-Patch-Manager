@@ -1,0 +1,37 @@
+A2 view rect: second opinion (static dumps only; no live game, no Ghidra run)
+D = ~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71/decomp (vtable bytes read from swkotor2_vanilla_6a522e71.exe .rdata)
+Disclosure: a grep hit showed A1_view_rect.txt headline lines before I finished. The chain below was re-derived from D and matches A1 on every point I checked.
+
+VERDICT: CONFIRMED (default config: camera stored viewport is zero)
+
+Chain, every draw, no mod code involved
+1. Resize: guikit::setRect -> view vtable 0x9A3D34 slot +4 = 0x420F50 (_shared_src/GuiKit.h:244-247). It forwards the rect to CSWGuiScene (view+0x60) slot +4 = 0x414B70 (plain 4-int copy), then stores view+4..+0x10. Anchors: D/42/00420f50.c:6-10; D/41/00414b70.c:6-9.
+2. Draw: view slot +0x38 = 0x84DE40 -> CSWGuiScene vtable 0x98771C slot +0x0C = 0x4184F0. Anchors: D/84/0084de40.c:6; D/41/004184f0.c:8.
+3. 0x4184F0 passes the live rect (scene+4..+0x10 = x,y,w,h) to 0x479460, which calls glViewport(x, rootH - y - h, w, h). rootH = DAT_00a309ce (root record height, presumably screen height). 0x479460 returns 0 when w<1, h<1 or off-screen, and then no camera draw runs. Anchors: D/41/004184f0.c:9-12; D/47/00479460.c:56.
+4. 0x4184F0 then calls camera (view+0x78) slot +8 = 0x47F320. Anchor: D/41/004184f0.c:13.
+5. 0x47F320 with camera +0x220 and +0x224 both zero queries GL_VIEWPORT (0xBA2), sets aspect = that w/h, then gluPerspective(fovy, aspect, near, far). Anchors: D/47/0047f320.c:115-118, 188.
+6. So in the default state the projection follows the control rect every draw. Nothing is cached in the camera.
+
+Camera stored viewport (camera vtable 0x98C45C; K2Addr.h:173 Cam_Vp, value K2Addr.h:366 = 0x218)
+7. Camera ctor 0x47ECD0 zeroes +0x218..+0x224 (param_1[0x86..0x89]). Anchors: D/47/0047ecd0.c:40,43.
+8. Only writer found: camera slot +0x34 = 0x47F2B0 (x,y,w,h; clamps w,h to >=1). Anchor: D/47/0047f2b0.c:10-25.
+9. No direct CALL to 0x47F2B0 in callgraph.tsv. Slot-0x34 indirect sites (cg.py indirect --slot 0x34) show no camera receiver in the 4-arg candidates I checked.
+10. Stored rect wins only if +0x220 or +0x224 is nonzero (D/47/0047f320.c:116-130). Then the control resize is ignored, aspect comes from the stored ints, and the cull test at lines 121-124 can skip the draw.
+11. Repo: no caller of a SetViewPort slot (no K2Addr entry for it). Cam_Vp is read only at holster_editor_src/HolsterEditor.cpp:888.
+
+Mod code and prior art
+12. preview_3d_src/Preview3dProvider.cpp:486-489 reads extent and aspect once in apiCreateView and logs them. No per-frame recompute; none is needed for the render.
+13. equipment_3d_character_src/EquipCharPreview.cpp:799-801 re-reads block+4..+0x10 every tick for hit-testing only. It writes no camera state.
+14. inventory_3d_viewport_src/Inventory3DViewport.cpp:287-289 computes a framing fit (computeFit) from the extent once, at setup. A later resize leaves that fit stale. That is framing, not the engine projection.
+15. No mod code calls the camera SetViewPort or writes camera +0x218..+0x224.
+
+Caveats
+16. Static evidence only. The RE guide says static dumps matched live REA on 955 of 958 checks, so this is strong but not live.
+17. Not traced: the caller of view slot +0x38 (0x84DE40). The mod already renders the view live, so the path is live in practice.
+18. Not traced: unnamed 4-arg slot +0x34 callers 0x7682B0 and 0x79F430. 0x66B8A0 is named Global::ExecuteCommandCreatureFlourishWeapon, not camera.
+
+Practical
+19. A SetRect on the view is safe for the render. Recompute any framing or fit (computeFit) after a resize.
+
+OPEN
+20. Is camera +0x220 and +0x224 zero at runtime? Confirm from a live CAMENG vp= line via scripts/kotor2_logs.py check, not raw grep.

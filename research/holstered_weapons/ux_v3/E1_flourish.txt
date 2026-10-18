@@ -1,0 +1,41 @@
+E1 flourish recon. Steam exe 6a522e71, static dumps only (no live REA, no Ghidra run).
+Dump root: ~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71/decomp/<bb>/<addr>.{c,asm}
+Labels: VERIFIED-in-dump = read in decompile or asm file; GUESS = inferred.
+
+1. TRIGGER PATH
+- 0x0079F430 CClientExoAppInternal::PlayerFlourishWeapons (642 b). Name from name_map (steam-db-B11a, high). VERIFIED-in-dump.
+- 0x007408A0 CClientExoApp::PlayerFlourishWeapons wrapper, calls 0x79F430. VERIFIED-in-dump.
+- 0x008993F0 calls the wrapper; callers list empty, so reached via a table or indirect call. GUESS: Flourish key/action-table entry. OPEN.
+- 0x0066B8A0 Global::ExecuteCommandCreatureFlourishWeapon (686 b): same body for NPCs (script path). VERIFIED-in-dump.
+- Top gate: player creature (0x78CEE0 = GetPlayerCreature) +0x464 > 0 returns; set to 1000 at end. VERIFIED-in-dump; field meaning GUESS (cooldown).
+- Anim: fire-and-forget 0x27AE (10158), 1500 ms, speed 1.0 via 0x7EFC40 (InsertFireForgetAnimation). Movement-input branch uses 0x27AD (10157) via vtbl+0xE0. VERIFIED-in-dump (args). Anim names GUESS.
+- No "flourish" or "flrsh" string in strings.tsv. VERIFIED (empty grep).
+
+2. DRAW / READY STATE
+- Gate in flourish: creature vtbl+0x94()==0, and (creature+0x11AC==0 or vtbl+0x9c(0)>=1). Same gate in 0x7682B0. VERIFIED-in-dump.
+- Weapon block: item in slots 0x10 and 0x20 (0x76E610 GetEquippedItemID), item vtbl+0x34(1,0,1,0), then 0x7FE6C0 (CSWCItem::PowerItem, medium). Slot meaning (right/left) GUESS.
+- 0x0057A560 = CSWSCreature::SetCombatState (steam_val verified B12a). Flourish calls it as state=1, param3=2, p4=0.
+  VERIFIED-in-asm: 0x79F618 PUSH 0; PUSH 2; PUSH 1; CALL 0x79F621 -> 0x57A560 (same at 0x66BAB9-0x66BAC2).
+- Inside 0x57A560: +0x520 = state; +0x528 = p4; state!=0 sets +0x524 = 8000. VERIFIED-in-dump.
+- Client bridge: 0x57A560 calls 0x58AE90 (GetClientCreature). If non-null AND param3==1, it calls 0x7682B0(client, state).
+  VERIFIED-in-asm: 0x57A91D CALL 0x58AE90; 0x57A926 MOVZX EDX,[EBP+0xC]; CMP EDX,1; JNZ skip; 0x57A93D CALL 0x7682B0.
+- So flourish (param3=2) never reaches 0x7682B0, and client +0x138 stays 0. Normal combat entry (0x57AC30, 0x5B8000 use param3=1) does. VERIFIED-in-asm chain; runtime effect GUESS.
+- Stance left behind: server +0x520=1 and +0x524=8000 persist; flourish never sets them back to 0. GUESS: +0x524 is a timer that does not auto-clear.
+- +0x11E8 is copied from param3 (2 for flourish). Meaning GUESS.
+
+3. HOLSTER SIGNAL
+- holster_src/Holster.cpp:310 HolsterCombat is the detour on 0x7682B0 (kotor2-steam-aspyr.hooks.toml:9-14). VERIFIED-in-dump of mod source.
+- Reads client creature +0x138 (Creature_ClientCombat, common_contract_test.cpp:38) and feeds onCombat edge (HolsterLogic.h:194).
+  Entry edge -> PhDrawing 350 ms -> PhDrawn. Exit -> stow after kStowDelayMs 1500.
+- No use of +0x11AC, +0x520, or flourish anim ids for the drawn state. Anim ids 0x2712/0x2713 are only logged (Holster.cpp:10).
+- Result: the holster FSM sees no 0->1 edge during flourish, so the hand attach never happens. Matches the report. VERIFIED by code path, not at runtime.
+
+4. CANDIDATES
+A (preferred): detour on 0x57A560 entry. Only when the return address is 0x79F621 or 0x66BAC2, param3==2, client +0x138==0, and the creature is party:
+  rewrite param3 to 1 so 0x7682B0 fires and the holster takes its normal draw edge.
+  Then schedule SetCombatState(creature, 0, 1, 0) about 1500 ms later (flourish anim length). That clears +0x520/+0x524 and sends the stow edge.
+  Risks: GUESS that param3=1 changes +0x11E8 and can trigger the 30% combat bark (0x579D00) when +0x11AC==0. The weapon-visual loop runs twice (0x7682B0 and the flourish block). NPC scope. Timer must be cancelled if combat starts.
+B: pre-detour on 0x79F430 and 0x66BAC2: when client +0x138==0, call 0x7682B0(client,1) before the body; schedule 0x7682B0(client,0) and SetCombatState(0) after 1500 ms.
+  Risks: same double-visual call; no engine behaviour change otherwise. Lighter touch on engine state than A.
+
+OPEN: Which input or action-table entry calls 0x8993F0, and does 0x7682B0 need to fire for the holster to attach, or can the holster attach on the 0x7FE6C0 path too?

@@ -1,0 +1,26 @@
+C_descsplit_cap recon (read-only). Paths repo-relative under patch_manager_mods/.
+
+Q1 SetDescSplit and pane clicks
+- API: _shared_src/ModConfigApi.h:14-24 (split doc), :117-120 (SetDescSplit: 0 = off, <0 = fail, 1..5000 clamped to 600..850).
+- Entry: mod_config_src/ModConfig.cpp:1133-1142. Returns 0 for no panel, permille<0, page not 2..9, entry not live or not built. Else stores clampSplit (MenuUiLogic.h:358-361) and returns 1. Applies at once only if that entry is shown (:1140).
+- Re-applied: syncDescSplit at ModConfig.cpp:435 (every describe), :792 (entry enter, before enter()), :1272 (every tick, only while panel shown; hidden panel returns at :1268).
+- Restored: restoreDescRect :346-355 when shownSplit()==0 (leaving entry, LIST, MAIN). Split value kept per page in :152; cleared only by resetState (:161).
+- MUI_PANE_PREVIEW: ModConfig.cpp:504-513 = top part of original desc rect (MenuUiLogic.h:363-378); no split = whole rect.
+- Clicks are rect-only: hitItem ModConfig.cpp:818-834 -> overCtl :564 -> guikit::hit (_shared_src/GuiKit.h:426-429: visible + rect). No column or LB_DESC restriction, so items inside preview are clickable and hoverable.
+- LB_DESC is not in the item table, so it cannot absorb a press. Preview and desc are disjoint (gap >= 6 px, MenuUiLogic.h:347, :369-375).
+- Draw order = append order (GuiKit.h:210-211). Items are appended after vanilla, so an item over LB_DESC draws on top of it (only possible with no split, where PREVIEW = whole desc rect).
+
+Q2 kMaxItems 40 -> 80 (MenuUiLogic.h:37)
+- Scales by constexpr: Page::items MenuUiLogic.h:281; PageTable pages[kMaxPages] :286 (kMaxPages stays 10); ItemX items[8][kMaxItems] ModConfig.cpp:132; kMaxOwn :75 (used only for static listed[] at :951); range guards MenuUiLogic.h:229, :247; addItem cap :310; AddButton/AddLabel pre-checks ModConfig.cpp:1050, :1073; test menu_ui_logic_test.cpp:344-346 loop.
+- Does NOT scale: kMaxTargets=32 (ModConfig.cpp:67; entry items use their own tg, :782, :1276); kMaxVanilla=64 (:66); kMaxEntries=8, kMaxPages=10.
+- Hard-coded 40 (consumer, not provider): holster_editor_src/HseView.h:793 kPageItemCap=40; hse_view_test.cpp:980 asserts == 40; common_contract_test.cpp:226-227 comment and check. No "24" item cap found. menu_ui_logic_test.cpp:345 comment "twenty-fifth item" is already stale.
+- Index types: all int (ModConfigApi.h:99-106 int32 ids). Control id = list index, int at ctl+0x54 (RuntimeGuiControls.md:48-53). No uint8, bitmask or 16-bit field on the item path.
+- Memory (-m32 scratch build of the structs): Item 32 B; Page 1284 -> 2564 B; PageTable 12844 -> 25644 B; ItemX 328 B; ItemX[8][40] 104960 B -> 209920 B. Total g_mc growth ~ +118 KB; listed[] +1.3 KB. resetState (:161) zeroes all of it at bind/destroy (:1192, :1355).
+- Per tick: hitItem and the applyOne loop (:1276) visit up to 80 items. Not measured.
+- ABI: kMaxItems is not exported; K2MenuUiApi unchanged (ModConfigApi.h:170). Full page returns -1 (ModConfigApi.h:99-102). No cap query exists, so a consumer cannot tell a 40-provider from an 80-provider.
+- Engine list: appendToPanel verifies count and slot (GuiKit.h:212-224). A failed append is logged "APPEND ... ok=0" and the item is dropped (ModConfig.cpp:595-598), not a crash. CExoArrayList<uint32>::Add (0x0083EA60, name map high confidence) growth past initial capacity is not verified in repo.
+
+Q3 caps on AddCustom and labels
+- No separate cap. Labels, customs and buttons share one Page::items pool (MenuUiLogic.h:281; addItemCommon ModConfig.cpp:1035-1043).
+- AddButton and AddLabel pre-check and log "MUI refused: page full" (:1050, :1073). AddCustom (:1089-1099) has no pre-check and returns -1 via pt.addItem (MenuUiLogic.h:310) with no log line.
+- Entry pages capped at 8 (MenuUiLogic.h:37).

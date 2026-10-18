@@ -67,7 +67,32 @@ Unsaved changes *
   - At zoom 1.17 the page shows about 1.0 m of body, so a full 2.0 m needs zoom ≈ 0.6.
   - Lower `kZoomMin` from 0.8 to 0.4 (HseView.h:17) and set the default zoom to 0.6. The ini keeps `view_zoom` to tune it.
 
-## 5. CAM1 result (10-18 play) and the U4 blocker
+## 4b. Research wave R1 (10-18; 8 Haiku + 1 Sonnet; files in `research/holstered_weapons/ux_v3/`)
+- **Wider view: CONFIRMED (A1 and A2 agree).**
+  - View SetRect copies the rect into the scene sub-object (0x420F50).
+  - On every draw, 0x4184F0 → 0x479460 sets glViewport from that rect.
+  - Camera 0x47F320 takes its aspect from the rect while the camera's own viewport fields stay 0 (the CAMENG `vp=0,0,0,0` log line confirms this).
+- **Reset icon: PARTIAL (B).**
+  - `guikit::setFill` gates on the LABEL border at +0x60, so it silently fails on mod-config BUTTONS (border at +0x70).
+  - L0 adds a button-border fill helper, after checking that the CSWGuiButton +0x70 border shares the CSWGuiBorder layout (fill +0x74, tint +0x28, style +0x34).
+  - Fallback: a separate label item carrying the icon, placed over the button.
+- **Desc split and cap: PARTIAL (C).**
+  - The mod-config hit test is rect-only, so items placed in MUI_PANE_PREVIEW are clickable.
+  - kMaxItems 80 breaks no provider code and costs about 118 KB static.
+  - Open: whether the engine control list (CExoArrayList Add 0x83EA60) grows. 24 → 40 already worked live; L2 play-checks 80.
+- **Page inventory (D):**
+  - 38 items today. HolsterApi has no absolute bone setter, so a direct bone button loops CycleBone until the index matches (no holster change).
+  - The code has 7 stances. v3 shows 5 (Idle, Walk, Run, Alert, Combat) and drops the rifle walk and run.
+- **Camera (F):**
+  - The full-window viewport hypothesis is REFUTED: the render viewport is the control rect, the aspect is w/h, and no scissor is set.
+  - The 1.0 m vs 1.8 m gap is still unexplained. Lead: the live render pose differs from the fields read in the tick; the camera is attached (CAMATT flag48=1, off z 1.593).
+  - CAM2 must also log V+0x64..+0x70 (the pushed rect) and re-read the camera pose inside a draw-time read, or click-fit it.
+- **Flourish (E1, E2; Sonnet E3 settled them):**
+  - Cause: the holster mod repoints the hand nodes to the hip globally (Holster.cpp:1169-1180), so any hand animation plays with the weapons still at the hip.
+  - Flourish sets only the server combat state (SetCombatState mode 2, 0x79F621), so the client flag +0x138 never changes.
+  - Fix design for the backlog: un-repoint around the flourish. It needs a start/end edge.
+
+## 5. CAM1 result (10-18 play) and the U4 blocker (window-viewport lead REFUTED by R1 F, see §4b)
 - **CAMENG** read the engine camera at view+0x78:
   - pos = (4.8725, 0, 0.4358), q = (0.4786, 0.5210, 0.5210, 0.4775): looking along −X, up +Z;
   - fovy follows the zoom; the creature yaw does not move the camera (hook_dot changes, pos does not).
