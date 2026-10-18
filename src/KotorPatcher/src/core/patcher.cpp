@@ -1,9 +1,11 @@
 #include "patcher.h"
 #include "config_reader.h"
 #include "platform.h"
+#include "registry.h"
 #include "trampoline.h"
 #include "wrapper_base.h"
 
+#include <atomic>
 #include <chrono>
 #include <cinttypes>
 #include <cstdint>
@@ -29,6 +31,12 @@ namespace KotorPatcher {
 
     static bool g_initialized = false;
     static Wrappers::WrapperGeneratorBase* g_wrapperGenerator = nullptr;
+
+    // How many modules had their KPatchInit run. ApplyPatches reports it when it
+    // aborts: those modules may already hold the registry and have provided
+    // interfaces, which stay valid until cleanup even though the apply failed.
+    // Atomic because the deferred apply counts on a worker thread.
+    static std::atomic<int> g_initCount{0};
 
     // KOTOR1 on Steam ships behind SteamStub DRM: its .text is encrypted on disk and
     // only decrypted in memory by the stub, which runs after our proxy has already
@@ -101,6 +109,11 @@ namespace KotorPatcher {
         }
         const std::string& moduleDir = g_moduleDir;
 
+        // Start the registry before any patch module is loaded, so every module
+        // ApplyPatches loads finds it ready when its KPatchInit runs. It does not
+        // touch the filesystem, so it is fine at loader time.
+        Registry::Init();
+
         // moduleDir is a '\' path on Windows, but Win32 file I/O canonicalizes '/'
         // to '\', so appending a '/' separator opens the config on both platforms.
         std::string configPath = moduleDir + "/patch_config.toml";
@@ -154,6 +167,15 @@ namespace KotorPatcher {
     }
 
     void CleanupPatcher() {
+        // Order matters:
+        //  1. Registry::Close() first: Require() returns null from here on, so no patch
+        //     can fetch an interface whose provider is about to be unloaded.
+        //  2. Free the wrappers/code buffers and unload the modules.
+        //  3. Registry::Reset(): forget the provided interfaces and the module handles
+        //     seen. Last, because the OS may reuse a handle value for a different
+        //     module later, which must then get its own KPatchInit.
+        Registry::Close();
+
         // Free wrapper stubs
         if (g_wrapperGenerator) {
             g_wrapperGenerator->FreeAllWrappers();
@@ -171,6 +193,9 @@ namespace KotorPatcher {
         }
         g_loadedPatches.clear();
         g_patches.clear();
+
+        Registry::Reset();
+        g_initCount = 0;
         g_initialized = false;
     }
 
@@ -181,6 +206,15 @@ namespace KotorPatcher {
     bool ApplyPatches() {
         for (const auto& patch : g_patches) {
             if (!ApplyPatch(patch)) {
+                // One summary line so the failure is easy to find among the per-patch
+                // lines: modules loaded before this one already ran KPatchInit and may
+                // have provided interfaces. Those stay valid until CleanupPatcher (no
+                // Close here), since the patches that hold them are still loaded.
+                char abortMsg[96];
+                snprintf(abortMsg, sizeof(abortMsg),
+                    "Apply aborted: %d module(s) initialised", g_initCount.load());
+                std::string logLine = std::string("[KotorPatcher] ") + abortMsg + "\n";
+                Platform::Log(logLine.c_str());
                 return false;
             }
         }
@@ -220,16 +254,57 @@ namespace KotorPatcher {
         return full;
     }
 
+    // The id a module is attributed to in the registry: the config's `id`, or the
+    // dll's file name without directory or extension when the config has none
+    // ("patches/foo.dll" -> "foo").
+    static std::string ModuleId(const PatchInfo& patch) {
+        if (!patch.patchId.empty()) {
+            return patch.patchId;
+        }
+        std::string id = patch.dllPath;
+        // The config writes '/', but a hand-written path may use either separator.
+        std::size_t slash = id.find_last_of("/\\");
+        if (slash != std::string::npos) {
+            id.erase(0, slash + 1);
+        }
+        std::size_t dot = id.find_last_of('.');
+        if (dot != std::string::npos && dot > 0) {
+            id.erase(dot);
+        }
+        return id;
+    }
+
+    // Load a patch module and give it its KPatchInit. Shared by the DLL_ONLY and
+    // DETOUR paths so both register the handle for cleanup and both run the init:
+    // KPatchInit runs right after the load and before the caller looks up the hook
+    // function, so a module can set itself up first. Returns the handle, or nullptr
+    // if the load failed (the caller logs it, in its own words). A module with no
+    // KPatchInit is normal and silent; a config that lists the same dll for several
+    // hooks loads it several times but initialises it once (the registry keys on the
+    // handle).
+    static void* LoadPatchModule(const PatchInfo& patch) {
+        void* hPatch = Platform::LoadModule(ModulePath(patch.dllPath).c_str());
+        if (!hPatch) {
+            return nullptr;
+        }
+        g_loadedPatches.push_back(hPatch);
+
+        const std::string id = ModuleId(patch);
+        if (Registry::OnModuleLoaded(hPatch, id.c_str())) {
+            ++g_initCount;
+        }
+        return hPatch;
+    }
+
     bool ApplyPatch(const PatchInfo& patch) {
         // Handle DLL_ONLY patches (load DLL, no hooks)
         if (patch.type == HookType::DLL_ONLY) {
-            void* hPatch = Platform::LoadModule(ModulePath(patch.dllPath).c_str());
+            void* hPatch = LoadPatchModule(patch);
             if (!hPatch) {
                 Platform::Log(("[KotorPatcher] Failed to load DLL-only patch: " + patch.dllPath +
                     " (" + Platform::LastLoadError() + ")\n").c_str());
                 return false;
             }
-            g_loadedPatches.push_back(hPatch);
 
             char successMsg[256];
             snprintf(successMsg, sizeof(successMsg), "[KotorPatcher] Loaded DLL-only patch: %s\n", patch.dllPath.c_str());
@@ -249,13 +324,12 @@ namespace KotorPatcher {
 
         // DETOUR hook - load DLL and create wrapper
         // Load patch DLL
-        void* hPatch = Platform::LoadModule(ModulePath(patch.dllPath).c_str());
+        void* hPatch = LoadPatchModule(patch);
         if (!hPatch) {
             Platform::Log(("[KotorPatcher] Failed to load: " + patch.dllPath +
                 " (" + Platform::LastLoadError() + ")\n").c_str());
             return false;
         }
-        g_loadedPatches.push_back(hPatch);
         // Get function address
         void* funcAddr = Platform::GetSymbol(hPatch, patch.functionName.c_str());
         if (!funcAddr) {
