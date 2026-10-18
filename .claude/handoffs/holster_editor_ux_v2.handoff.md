@@ -49,3 +49,4 @@ _(none recorded; append Dead Ends & Anti-Patterns and Verification Commands here
 - Commits: mod-config 0.1.2-dev 094f019b (Esc key edge); holster 0.1.5-dev 7fc7ca65+30ad0bba (left default 1, effLeft=left, left_extra_rot -8, src bit 8); holster-editor 0.3.0-dev 7881dc3e (U2) + 0.3.1-dev 670add3c (U3). KPM: b10c245, 904be67, d460820. GATE PASS head 670add3c.
 - Prepared swap x3; awaiting GO. Rows HUX-U2, HUX-U3, HW-LH2, ESC2, HUX-C0 (zoom out first).
 - HUX-C0 camera fit still pending (fit_camera.py) -> then U4 markers. Known: U3 inspector squeezes strip rows to ~19 px (check readability); body-scope tilt warns 'no change'.
+- 10-18 02:48 U2+U3+left mirror+Esc fix LIVE x3: holster f2f57f91, holster-editor 63398f9a, mod-config f12da44c; rollback batch_swap_20261018_024840.
