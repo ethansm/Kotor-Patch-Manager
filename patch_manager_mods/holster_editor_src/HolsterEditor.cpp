@@ -1,4 +1,4 @@
-// HolsterEditor.cpp -- holster-editor 0.2.7-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
+// HolsterEditor.cpp -- holster-editor 0.3.0-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
 // (doc 42 HW-EDIT, plan .claude/plans/holster_editor_options.md.)
 //
 // mod-config owns everything about the Options screen: the hooks, the root "Mod Configuration" button, the list page, control cloning,
@@ -7,10 +7,15 @@
 //   build    (Options ctor window, vanilla layout open) opens the embedded HSE_VIEW layout, lets preview-3d bind the 3D view to it, restores
 //            the panel's layout slot FIRST, then makes the page: 3D view (AddCustom, MUI_NOFREE), status label, member picker, animation controls, and Reset/Flip.
 //   enter    places the view and the status label on the provider's VIEW and STATUS panes, lays out the left strip buttons, installs mouse wheel, and resets view to config.
-//   tick     polls the preview-3d and holster clients, handles picker, anim and edit buttons (unsaved edits need a second click to discard), equip-style mouse drag/wheel/reset, and drives preview-3d and holster placement.
+//   tick     polls the preview-3d and holster clients, handles picker, anim and edit buttons (unsaved edits need a second click to discard), the mouse, and drives preview-3d and holster placement.
+// Mouse (U2): nav mode is the equip-screen drag (LMB orbit/pan, MMB click resets, wheel zooms). Weapon edit mode runs hse::Chord (HseView.h):
+//   LMB alone = orbit the character, RMB held + LMB drag = act on the weapon per the mode bar (Move / Depth / Tilt / Roll+Turn, latched at the
+//   press), RMB + wheel = depth, MMB drag = spin, Shift = fine (x0.2), Ctrl = snap (1 cm / 5 deg, carried). RMB alone does nothing.
 //   destroy  destroys the preview viewer (and, behind free_view, the view block once mod-config has unlinked it).
 // A failed connect to mod-config means no menu entry, never a crash. KPatchInit does no file I/O: holster_editor.ini is read in build().
-// Probe lines (log only): REGISTER, CONFIG, BUILD, EMBED, ENTER, DTOR, FREEVIEW, LAYOUT, REBUILD, NAME, REG, CAM, CAMHOOK, PROJ, ITEMNAME, PICK, BTN, EDIT, STANCE, EMOTE, MMB, DRAG, WHEEL, PLAY_PAUSE, UNREG, LEAVE, DISCARD, CALIB.
+// Probe lines (log only): REGISTER, CONFIG, BUILD, EMBED, ENTER, DTOR, FREEVIEW, LAYOUT, REBUILD, NAME, REG, CAM, CAMHOOK, PROJ, ITEMNAME, PICK, BTN, EDIT, STANCE, EMOTE, MMB, DRAG, WHEEL, PLAY_PAUSE, UNREG, LEAVE, DISCARD, CALIB,
+// CHORD (state transitions with the reason, dropped presses, resets), MODE (mode bar), GESTURE (weapon gesture begin/end summary), SNAP (carry
+// resets), NUDGE (WARN: a provider nudge that failed or had no effect), SCOPE (scope button text), HANDS (weapon button captions).
 // CALIB (U0b, ini probe_calib): a calibration click probe. While the page is LIVE in nav mode the status label asks for one body target at a time
 // ("Calib 3/6 (round 1): click the right hand"); each LMB press inside the view logs the click (engine px, same space as ext) with the camera
 // pose and the world positions of the body nodes, to fit the real camera offline. Lines: CALIB cfg/prompt/round=..click/skip/done/leave and CALIB WARN.
@@ -88,7 +93,8 @@ constexpr int kEmoteCount = sizeof(kEmoteList) / sizeof(kEmoteList[0]);
 bool g_enabled = true;
 bool g_freeView = false;   // also free the 3D view block after preview-3d destroys the creature (probe)
 int g_probeCalib = 1;      // ini probe_calib: 1 = the CALIB click probe (U0b, log only; borrows the status label in nav mode), 0 = off
-int g_probeNames = 1;      // ini probe_names: 0 = off, 1 = ITEMNAME probe calls item GetName with identified=0, 2 = also identified=1 (log only)
+int g_probeNames = 1;      // ini probe_names: 0 = off (weapon buttons show the model resref), 1 = item GetName with identified=0 (the button name; ITEMNAME log), 2 = also identified=1 (log only)
+float g_statusFit = 1.0f;  // ini status_fit: multiplier on the status pane width when fitting the status text (the label font is not measured)
 float g_cfgYaw = 180.0f;
 float g_cfgZoom = 2.2f;
 float g_cfgPanZ = 0.0f;
@@ -110,13 +116,18 @@ constexpr int kMaxWarnLogs = 20;             // cap on WARN lines per probe kind
 constexpr int kMaxCalibSkips = 20;           // cap on CALIB skip lines per Editor
 constexpr int kMaxProjLogs = 24;             // cap on CAMHOOK/PROJ re-logs per Editor
 constexpr int kProjRetryTicks = 180;         // ticks to wait for GetMountWorld after an edit opens before giving up
-constexpr float kRotSnapDeg = 5.0f;          // RMB Ctrl rotation snap step
+constexpr int kMaxChordLogs = 300;           // cap on CHORD transition lines per Editor
+constexpr int kMaxDropLogs = 30;             // cap on CHORD drop lines per Editor
+constexpr int kMaxSnapLogs = 30;             // cap on SNAP carry-reset lines per Editor
+constexpr int kMaxGestureLogs = 300;         // cap on GESTURE lines per Editor
+constexpr DWORD kStatusHoldMs = 2500;        // weapon mode: the EDIT numbers stay on the status line this long after a change, then the help line returns
+constexpr int kModeCount = hse::WPM_COUNT;
 constexpr int kCrRightItemOff = 0x238, kCrLeftItemOff = 0x23C;   // client creature: equipped item ids (preview-3d CrRightItemOff/CrLeftItemOff)
 constexpr uint32_t kNoItemId = 0x7F000000u;
 constexpr int kItemModelResOff = 0x128;      // client item: model ResRef char[16]
 constexpr int kItemBaseIdxOff = 0xC;         // client item: base item index (GetName's lookup branch dereferences its row)
 
-enum WarnKind { W_ITEMNAME = 0, W_PROJ, W_CAMHOOK, W_CALIB, W_KINDS };
+enum WarnKind { W_ITEMNAME = 0, W_PROJ, W_CAMHOOK, W_CALIB, W_NUDGE, W_KINDS };
 constexpr int kCalibNodes = 6;
 // Candidate engine node names per calibration target (tried in order; the first that GetNodeWorld resolves is kept). Short names rhand/lhand are the
 // ones the PROJ probe resolves; K2 skeletons also carry the *_g forms.
@@ -129,14 +140,6 @@ const char* const kCalibCand[kCalibNodes][4] = {
     {"rfoot_g", "rfoot", nullptr, nullptr},
     {"lfoot_g", "lfoot", nullptr, nullptr},
 };
-
-struct QVec { float w, x, y, z; };
-inline QVec qaxis(const float* axis, float deg) {
-    float l = std::sqrt(axis[0] * axis[0] + axis[1] * axis[1] + axis[2] * axis[2]);
-    if (l < 1e-12f) return { 1, 0, 0, 0 };
-    float h = deg * 3.14159265358979f / 360.0f, s = std::sin(h) / l;
-    return { std::cos(h), axis[0] * s, axis[1] * s, axis[2] * s };
-}
 
 struct Editor {
     void* panel = nullptr;
@@ -167,6 +170,9 @@ struct Editor {
     int32_t saveItem = -1, revertItem = -1;
     int32_t resetScopeItem = -1, doneItem = -1;
     int32_t resetItem = -1, flipItem = -1;
+    int32_t modeItem[kModeCount] = {-1, -1, -1, -1};   // mode bar buttons (weapon mode only; parked off screen in nav)
+    bool modeBarOk = false;                            // all four mode buttons exist; false = no bar and the mode stays Move
+    int weaponMode = hse::WPM_MOVE;                     // selected mode; a running gesture keeps the mode it began with
 
     int stanceIdx = 0;
     int emoteIdx = 0;
@@ -178,8 +184,8 @@ struct Editor {
     bool pressed = false;      // LMB was down on the previous tick
     bool pressedMmb = false;   // MMB was down on the previous tick
     bool pressedRmb = false;   // RMB was down on the previous tick
-    float snapAccY = 0.0f, snapAccZ = 0.0f;   // Ctrl-snap remainders for the LMB nudge
-    float snapAccRot = 0.0f;                  // Ctrl-snap remainder (degrees) for the RMB rotation; zeroed on drag begin and release
+    hse::Chord chord;          // weapon-mode mouse state machine (HseView.h)
+    hse::SnapAcc snap;         // Ctrl-snap remainders of the current weapon gesture (and the wheel); zeroed on begin, end and reset
     void* regGob[2] = {nullptr, nullptr};
 
     // Unsaved-edits two-click confirm
@@ -198,7 +204,7 @@ struct Editor {
     int projEditTries = 0;
 
     // U0b CALIB probe state and per-kind WARN counters (reset with the Editor)
-    int warnCount[W_KINDS] = {0, 0, 0, 0};
+    int warnCount[W_KINDS] = {};
     hse::CalibScript calib;
     int calibNodeIdx[kCalibNodes] = {-1, -1, -1, -1, -1, -1};   // index into kCalibCand[i] that resolved, -1 = none yet
     unsigned calibMissWarned = 0;                               // bit i: the one-time "node not found" WARN for target i was logged
@@ -209,13 +215,22 @@ struct Editor {
 
     hse::HseRect strip = {0, 0, 0, 0};
     hse::HseRect viewRect = {0, 0, 0, 0};   // MUI_PANE_VIEW in UI units (the camera extent for the PROJ probe)
-    // Per-button last cursor positions: a chord (two buttons held) must not let one button's drag starve another's deltas.
-    int lmbLastX = 0, lmbLastY = 0;
-    int rmbLastX = 0, rmbLastY = 0;
-    int mmbLastX = 0, mmbLastY = 0;
-    bool draggingLmb = false;
-    bool draggingRmb = false;
-    bool draggingMmb = false;
+
+    // Weapon gesture summary (logged at the end) and chord logging caps
+    bool gActive = false;
+    int gMode = 0, gHand = 0, gFrames = 0;
+    long gDx = 0, gDy = 0;
+    float gA = 0.0f, gB = 0.0f;
+    int chordLogs = 0, dropLogs = 0, snapLogs = 0, gestureLogs = 0;
+
+    // Item display names (cache: CSWCItem::GetName is called once per member build, never per frame). Empty = fall back to the model resref.
+    char itemName[2][64] = {{0}, {0}};
+
+    // Status line: the EDIT numbers show while something changes, then the help line (weapon mode)
+    DWORD statusHoldUntil = 0;
+    bool statusHolding = false;   // the EDIT numbers are on the status line until statusHoldUntil
+    int shownDirty = -1;
+    float shownRot[3] = {0, 0, 0}, shownOff[3] = {0, 0, 0};
 };
 Editor g_ed;
 
@@ -247,6 +262,7 @@ void readConfig() {
     g_freeView = false;
     g_probeNames = 1;
     g_probeCalib = 1;
+    g_statusFit = 1.0f;
     g_cfgYaw = 180.0f;
     g_cfgZoom = 2.2f;
     g_cfgPanZ = 0.0f;
@@ -274,6 +290,10 @@ void readConfig() {
         else if (!_stricmp(k, "free_view")) g_freeView = on;
         else if (!_stricmp(k, "probe_names")) g_probeNames = (v[0] >= '0' && v[0] <= '9') ? atoi(v) : (on ? 1 : 0);
         else if (!_stricmp(k, "probe_calib")) g_probeCalib = on ? 1 : 0;
+        else if (!_stricmp(k, "status_fit")) {
+            const float f = static_cast<float>(atof(v));
+            g_statusFit = (f >= 0.5f && f <= 8.0f) ? f : 1.0f;
+        }
         else if (!_stricmp(k, "view_yaw")) g_cfgYaw = static_cast<float>(atof(v));
         else if (!_stricmp(k, "view_zoom")) g_cfgZoom = static_cast<float>(atof(v));
         else if (!_stricmp(k, "view_panz")) g_cfgPanZ = static_cast<float>(atof(v));
@@ -283,7 +303,7 @@ void readConfig() {
 }
 
 const char* statusText() {
-    return g_p3.ok() && g_hol.ok() ? "0.2.7 dev: preview + holster connected" : "0.2.7 dev: a provider is missing";
+    return g_p3.ok() && g_hol.ok() ? "0.3.0 dev: preview + holster connected" : "0.3.0 dev: a provider is missing";
 }
 
 bool editDirty();   // defined with the status helpers below
@@ -313,8 +333,8 @@ void KPATCH_CALL cbBeforeFree(uint32_t token, void* user) {
 // Options ctor window: the vanilla layout is open. Opens the embedded layout, binds the 3D view, restores the layout slot, builds the page.
 void KPATCH_CALL cbBuild(void* panel, void*) {
     readConfig();
-    KP_LOG(chMain, "CONFIG enabled=%d free_view=%d probe_names=%d probe_calib=%d view=(%.2f,%.2f,%.2f)",
-           g_enabled ? 1 : 0, g_freeView ? 1 : 0, g_probeNames, g_probeCalib,
+    KP_LOG(chMain, "CONFIG enabled=%d free_view=%d probe_names=%d probe_calib=%d status_fit=%.2f view=(%.2f,%.2f,%.2f)",
+           g_enabled ? 1 : 0, g_freeView ? 1 : 0, g_probeNames, g_probeCalib, g_statusFit,
            g_cfgView.yaw, g_cfgView.zoom, g_cfgView.panZ);
     if (!g_enabled || !panel || !g_menu.ok()) {
         KP_LOG(chMain, "BUILD skipped enabled=%d panel=%p menuui=%d", g_enabled ? 1 : 0, panel, g_menu.ok() ? 1 : 0);
@@ -405,7 +425,7 @@ void KPATCH_CALL cbBuild(void* panel, void*) {
     g_ed.playPauseItem = ui->AddButton(g_ed.page, "Play", "Play selected emote, or pause movement.");
 
     g_ed.boneItem = ui->AddButton(g_ed.page, "Bone: Back", "Cycle mounting bone (back/hip/thigh).");
-    g_ed.scopeItem = ui->AddButton(g_ed.page, "Scope: Weapon", "Cycle tune scope (Weapon / Category / Body).");
+    g_ed.scopeItem = ui->AddButton(g_ed.page, "For: this weapon", hse::scopeTip());
     g_ed.saveItem = ui->AddButton(g_ed.page, "Save", "Save placement to holster.ini under [editor].");
     g_ed.revertItem = ui->AddButton(g_ed.page, "Revert", "Revert unsaved edits back to saved values.");
     g_ed.resetScopeItem = ui->AddButton(g_ed.page, "Reset Scope", "Delete custom overrides for this scope.");
@@ -413,6 +433,21 @@ void KPATCH_CALL cbBuild(void* panel, void*) {
 
     g_ed.resetItem = ui->AddButton(g_ed.page, "Reset view", "Back to the saved framing.");
     g_ed.flipItem = ui->AddButton(g_ed.page, "Flip view", "Turn the character around.");
+
+    // Mode bar (weapon mode): what RMB + LMB drag does to the weapon. Four more items; when the page is full the bar is off and the mode stays Move.
+    static const char* const kModeDesc[kModeCount] = {
+        "RMB + LMB drag moves the weapon across the screen. Shift is fine, Ctrl snaps to 1 cm.",
+        "RMB + LMB drag pushes the weapon along its forward axis (drag up = forward). RMB + wheel does this in any mode.",
+        "RMB + LMB drag tilts the weapon about its side axis. Shift is fine, Ctrl snaps to 5 degrees.",
+        "RMB + LMB drag: across turns the weapon about its up axis, up or down rolls it about its forward axis.",
+    };
+    g_ed.modeBarOk = true;
+    for (int i = 0; i < kModeCount; ++i) {
+        g_ed.modeItem[i] = ui->AddButton(g_ed.page, hse::weaponModeName(i), kModeDesc[i]);
+        if (g_ed.modeItem[i] < 0) g_ed.modeBarOk = false;
+    }
+    if (!g_ed.modeBarOk) KP_LOGV(chMain, KPLOG_WARN, "MODE WARN mode bar unavailable: AddButton failed (items %d,%d,%d,%d); the weapon drag stays Move",
+                                 g_ed.modeItem[0], g_ed.modeItem[1], g_ed.modeItem[2], g_ed.modeItem[3]);
 
     if (g_ed.nameItem < 0 || g_ed.prevItem < 0 || g_ed.nextItem < 0 ||
         g_ed.wpnRightItem < 0 || g_ed.wpnLeftItem < 0 ||
@@ -459,17 +494,41 @@ void readWeaponModel(void* gob, char* out, size_t cap) {
     }
 }
 
+const char* handName(int hand) { return hand == 1 ? "L" : "R"; }
+
+// Zeroes the Ctrl-snap remainders; a non-zero carry that is thrown away is logged (capped).
+void resetSnap(Editor& e, const char* why) {
+    if (!e.snap.nonzero()) return;
+    if (e.snapLogs < kMaxSnapLogs) {
+        ++e.snapLogs;
+        KP_LOG(chView, "SNAP carry reset why=%s acc=(%.5f,%.5f,%.5f)", why, e.snap.a[0], e.snap.a[1], e.snap.a[2]);
+    }
+    e.snap.reset();
+}
+
+// GESTURE end line for the running weapon gesture (no-op when none runs).
+void logGestureEnd(Editor& e, const char* why) {
+    if (!e.gActive) return;
+    e.gActive = false;
+    if (e.gestureLogs < kMaxGestureLogs) {
+        ++e.gestureLogs;
+        KP_LOG(chView, "GESTURE end mode=%s hand=%s frames=%d total d=(%ld,%ld) applied=(%.4f,%.4f) why=%s", hse::weaponModeName(e.gMode), handName(e.gHand),
+               e.gFrames, e.gDx, e.gDy, e.gA, e.gB, why);
+    }
+}
+
 // Drops every drag in flight and re-reads the CURRENT button state into the "was down" flags, so a button that is still held (the click that
 // entered or left edit mode) cannot start a drag until it is released and pressed again. cbLeave clears the flags outright instead.
-void resetInput(Editor& e) {
+void resetInput(Editor& e, const char* why = "reset") {
     const bool fg = guikit::g_gk.gameForeground ? guikit::g_gk.gameForeground() : true;
+    if (e.chord.busy() && e.chordLogs < kMaxChordLogs) {
+        ++e.chordLogs;
+        KP_LOG(chView, "CHORD reset from=%s why=%s", hse::chordStateName(e.chord.state), why);
+    }
+    logGestureEnd(e, why);
     p3d::dragEnd(&e.drag);
-    e.draggingLmb = false;
-    e.draggingRmb = false;
-    e.draggingMmb = false;
-    e.snapAccY = 0.0f;
-    e.snapAccZ = 0.0f;
-    e.snapAccRot = 0.0f;
+    e.chord.reset();
+    resetSnap(e, why);
     e.pressed = fg && guikit::g_gk.lbuttonDown && guikit::g_gk.lbuttonDown();
     e.pressedRmb = fg && guikit::g_gk.rbuttonDown && guikit::g_gk.rbuttonDown();
     e.pressedMmb = fg && guikit::g_gk.mbuttonDown && guikit::g_gk.mbuttonDown();
@@ -608,6 +667,7 @@ bool callItemName(uintptr_t item, int identified, char* name, int cap, const cha
 // the engine's CSWCItem::GetName. Gated by ini probe_names (0 off, 1 identified=0, 2 adds identified=1). The item's base item index
 // (item+0xC) must be readable before any call. Every read is guarded.
 void probeItemNames(Editor& e, uintptr_t clientMember) {
+    e.itemName[0][0] = e.itemName[1][0] = '\0';   // the cache is rebuilt on every member build; an empty name means "show the resref"
     if (g_probeNames <= 0) return;   // probe switched off: not a failure
     if (!clientMember) {
         if (warnOk(e, W_ITEMNAME)) KP_LOGV(chView, KPLOG_WARN, "ITEMNAME WARN no client creature (null member)");
@@ -661,6 +721,7 @@ void probeItemNames(Editor& e, uintptr_t clientMember) {
             }
         }
         hse::stripNameTag(name0, clean, sizeof clean);   // name0 keeps the engine's "{NN}" tag; clean is the same name without it
+        snprintf(e.itemName[h], sizeof e.itemName[h], "%s", clean);   // cached for the weapon buttons (fitted in setHandNames)
         if (note1[0]) KP_LOG(chView, "ITEMNAME hand=%s id=0x%08x item=0x%x resref=%s name0=\"%s\" clean=\"%s\" name1=(skipped)", kHand[h], static_cast<unsigned>(id),
                              static_cast<unsigned>(item), resref, name0, clean);
         else KP_LOG(chView, "ITEMNAME hand=%s id=0x%08x item=0x%x resref=%s name0=\"%s\" clean=\"%s\" name1=\"%s\"", kHand[h], static_cast<unsigned>(id),
@@ -675,13 +736,27 @@ void updateStatusText(Editor& e);   // defined with the status helpers below
 // The prompt is shown (and clicks are recorded) only while the page is LIVE in nav mode, never while an edit is open.
 bool calibActive(const Editor& e) { return g_probeCalib && e.state == LIVE && e.mode == MODE_NAV; }
 
-// "Calib 3/6 (round 1): click the right hand" fitted to the status label (about 95 characters at most).
+// Width the status text is fitted to: the status pane width (the label font is not measured; ini status_fit scales it).
+float statusFitPx(const Editor& e) {
+    return (e.statusRect.w > 0 ? static_cast<float>(e.statusRect.w) : 400.0f) * g_statusFit;
+}
+
+// raw cut with "..." to the status width.
+void fitStatus(const Editor& e, const char* raw, char* out, int cap) {
+    const textfit::TextCtx tc = {1.0f, 1.0f, 1.0f};   // UI units: texel width * 0.75 (TextK), no scale
+    textfit::fitText(tc, raw, statusFitPx(e), out, cap);
+}
+
+// "Calib 3/6 (round 1): click the right hand (wheel = zoom out)" fitted to the status label (about 95 characters at most). The wheel hint is
+// appended only while the whole line fits; otherwise the prompt alone is shown (cut with "..." when even that does not fit).
 void calibStatusText(const Editor& e, char* out, int cap) {
     char raw[96];
     hse::calibPrompt(raw, sizeof raw, &e.calib);
-    const textfit::TextCtx tc = {1.0f, 1.0f, 1.0f};   // UI units: texel width * 0.75 (TextK), no scale
-    const float maxPx = e.statusRect.w > 0 ? static_cast<float>(e.statusRect.w) : 400.0f;
-    textfit::fitText(tc, raw, maxPx, out, cap);
+    char withHint[160];
+    snprintf(withHint, sizeof withHint, "%s%s", raw, hse::kCalibHint);
+    const textfit::TextCtx tc = {1.0f, 1.0f, 1.0f};
+    if (textfit::textPx(tc, withHint, static_cast<int>(strlen(withHint))) <= statusFitPx(e)) snprintf(out, cap, "%s", withHint);
+    else fitStatus(e, raw, out, cap);
     if (cap > 95) out[95] = '\0';
 }
 
@@ -831,14 +906,66 @@ void setBoneText(Editor& e) {
     g_menu.p->SetText(e.page, e.boneItem, bBuf);
 }
 
+// Button text cut with "..." to maxPx (maxPx <= 0: the strip is not measured yet, no cut).
+void fitButton(float maxPx, const char* raw, char* out, int cap) {
+    const textfit::TextCtx tc = {1.0f, 1.0f, 1.0f};   // UI units: texel width * 0.75 (TextK), no scale
+    if (maxPx <= 0.0f) snprintf(out, cap, "%s", raw);
+    else textfit::fitText(tc, raw, maxPx, out, cap);
+}
+
+// Weapon button caption in nav mode: the item display name (cached at build), else the model resref. "Right: Vibrosword" when that fits the
+// half strip, else "R: Vibrosword", cut with "..." when even that is too wide.
+void handCaption(const Editor& e, int hand, char* out, int cap) {
+    const float maxPx = e.strip.w > 0 ? static_cast<float>(hse::half(hse::stripSlot(e.strip, 2), 0, 6).w) : 0.0f;
+    const textfit::TextCtx tc = {1.0f, 1.0f, 1.0f};
+    char longT[96], shortT[96];
+    hse::handButtonText(longT, sizeof longT, hand, false, e.itemName[hand], e.wpnName[hand], e.regGob[hand] != nullptr);
+    if (maxPx <= 0.0f || textfit::textPx(tc, longT, static_cast<int>(strlen(longT))) <= maxPx) {
+        snprintf(out, cap, "%s", longT);
+        return;
+    }
+    hse::handButtonText(shortT, sizeof shortT, hand, true, e.itemName[hand], e.wpnName[hand], e.regGob[hand] != nullptr);
+    fitButton(maxPx, shortT, out, cap);
+}
+
 // Right/Left button captions in nav mode.
 void setHandNames(Editor& e) {
     if (!g_menu.ok()) return;
-    char rBuf[64], lBuf[64];
-    snprintf(rBuf, sizeof(rBuf), "Right: %s", e.wpnName[0][0] ? e.wpnName[0] : (e.regGob[0] ? "Equipped" : "None"));
-    snprintf(lBuf, sizeof(lBuf), "Left: %s", e.wpnName[1][0] ? e.wpnName[1] : (e.regGob[1] ? "Equipped" : "None"));
+    char rBuf[96], lBuf[96];
+    handCaption(e, 0, rBuf, sizeof rBuf);
+    handCaption(e, 1, lBuf, sizeof lBuf);
     if (e.wpnRightItem >= 0) g_menu.p->SetText(e.page, e.wpnRightItem, rBuf);
     if (e.wpnLeftItem >= 0) g_menu.p->SetText(e.page, e.wpnLeftItem, lBuf);
+}
+
+// Scope button text from the open edit's type ("For: this weapon" / "For: all rifles" / "For: this body"), fitted to the full strip slot.
+void setScopeText(Editor& e) {
+    if (e.scopeItem < 0 || !g_menu.ok()) return;
+    char raw[64], fit[64];
+    hse::scopeButtonText(raw, sizeof raw, e.editScope, e.editInfo.type);
+    fitButton(e.strip.w > 0 ? static_cast<float>(hse::stripSlot(e.strip, 3).w) : 0.0f, raw, fit, sizeof fit);
+    g_menu.p->SetText(e.page, e.scopeItem, fit);
+    KP_LOG(chView, "SCOPE text=\"%s\" scope=%d type=%s", fit, e.editScope, e.editInfo.type[0] ? e.editInfo.type : "-");
+}
+
+// Mode bar captions: the active mode is marked ">Move<". Fitted to the half strip.
+void setModeBarText(Editor& e) {
+    if (!e.modeBarOk || !g_menu.ok()) return;
+    const float maxPx = e.strip.w > 0 ? static_cast<float>(hse::half(hse::stripSlot(e.strip, 7), 0, 6).w) : 0.0f;
+    for (int i = 0; i < kModeCount; ++i) {
+        char raw[32], fit[32];
+        hse::modeLabel(raw, sizeof raw, i, i == e.weaponMode);
+        fitButton(maxPx, raw, fit, sizeof fit);
+        g_menu.p->SetText(e.page, e.modeItem[i], fit);
+    }
+}
+
+// Selects the weapon mode. A running gesture keeps the mode it began with; the new one applies from the next press.
+void setWeaponMode(Editor& e, int mode, const char* why) {
+    if (mode < 0 || mode >= kModeCount || mode == e.weaponMode) return;
+    KP_LOG(chView, "MODE %s -> %s why=%s%s", hse::weaponModeName(e.weaponMode), hse::weaponModeName(mode), why, e.gActive ? " (applies from the next press)" : "");
+    e.weaponMode = mode;
+    setModeBarText(e);
 }
 
 // Stance back to Idle: index, emote state, stance label and Play button caption.
@@ -860,14 +987,34 @@ void updateStatusText(Editor& e) {
         snprintf(buf, sizeof(buf), "Unsaved: click again to discard");
     } else if (e.mode == MODE_WEAPON) {
         refreshEdit(e);
-        snprintf(buf, sizeof(buf), "%sEDIT [%s]: %s on %s | rot=(%.1f,%.1f,%.1f) off=(%.2f,%.2f,%.2f)",
-                 e.editInfo.dirty ? "* " : "",
-                 e.editHand == 0 ? "R" : "L",
-                 e.editInfo.model[0] ? e.editInfo.model : (e.editInfo.type[0] ? e.editInfo.type : "wpn"),
-                 e.editInfo.bone[0] ? e.editInfo.bone : "-",
-                 e.editInfo.rot[0], e.editInfo.rot[1], e.editInfo.rot[2],
-                 e.editInfo.off[0], e.editInfo.off[1], e.editInfo.off[2]);
-        buf[95] = '\0';   // the status label holds about 95 characters
+        // The numbers show while a gesture runs or for kStatusHoldMs after any value (or the unsaved flag) changed; at rest the help line shows.
+        const DWORD now = GetTickCount();
+        const bool changed = e.shownDirty != e.editInfo.dirty || memcmp(e.shownRot, e.editInfo.rot, sizeof e.shownRot) != 0 ||
+                             memcmp(e.shownOff, e.editInfo.off, sizeof e.shownOff) != 0;
+        if (changed) {
+            e.shownDirty = e.editInfo.dirty;
+            memcpy(e.shownRot, e.editInfo.rot, sizeof e.shownRot);
+            memcpy(e.shownOff, e.editInfo.off, sizeof e.shownOff);
+            e.statusHoldUntil = now + kStatusHoldMs;
+            e.statusHolding = true;
+        }
+        if (e.statusHolding && static_cast<int32_t>(e.statusHoldUntil - now) <= 0) e.statusHolding = false;
+        if (e.gActive || e.statusHolding) {
+            const char* shown = e.editHand >= 0 && e.itemName[e.editHand][0] ? e.itemName[e.editHand] : (e.editInfo.model[0] ? e.editInfo.model : (e.editInfo.type[0] ? e.editInfo.type : "wpn"));
+            snprintf(buf, sizeof(buf), "%sEDIT [%s]: %s on %s | rot=(%.1f,%.1f,%.1f) off=(%.2f,%.2f,%.2f)",
+                     e.editInfo.dirty ? "* " : "",
+                     e.editHand == 0 ? "R" : "L",
+                     shown,
+                     e.editInfo.bone[0] ? e.editInfo.bone : "-",
+                     e.editInfo.rot[0], e.editInfo.rot[1], e.editInfo.rot[2],
+                     e.editInfo.off[0], e.editInfo.off[1], e.editInfo.off[2]);
+            buf[95] = '\0';   // the status label holds about 95 characters
+        } else {
+            char raw[128];
+            snprintf(raw, sizeof raw, "%s%s", e.editInfo.dirty ? "* " : "", hse::helpLine());
+            fitStatus(e, raw, buf, static_cast<int>(sizeof buf));
+            buf[95] = '\0';
+        }
     } else if (calibActive(e)) {
         calibStatusText(e, buf, static_cast<int>(sizeof buf));
     } else {
@@ -907,6 +1054,7 @@ void applyLayout(Editor& e) {
         placeRect(e.flipItem, hse::half(hse::stripSlot(e.strip, 8), 1, 6));
 
         // Park Mode B edit controls
+        for (int i = 0; i < kModeCount; ++i) placeRect(e.modeItem[i], offscreen);
         placeRect(e.boneItem, offscreen);
         placeRect(e.scopeItem, offscreen);
         placeRect(e.saveItem, offscreen);
@@ -929,6 +1077,12 @@ void applyLayout(Editor& e) {
 
         placeRect(e.resetItem, hse::half(hse::stripSlot(e.strip, 6), 0, 6));
         placeRect(e.flipItem, hse::half(hse::stripSlot(e.strip, 6), 1, 6));
+
+        // Mode bar: two rows of two under the view buttons (parked when the page had no room for it)
+        for (int i = 0; i < kModeCount; ++i) {
+            if (e.modeBarOk) placeRect(e.modeItem[i], hse::half(hse::stripSlot(e.strip, 7 + i / 2), i % 2, 6));
+            else placeRect(e.modeItem[i], offscreen);
+        }
 
         // Park Mode A nav controls
         placeRect(e.prevItem, offscreen);
@@ -954,7 +1108,7 @@ void enterEdit(Editor& e, int hand) {
         e.mode = MODE_NAV;   // the previous edit (if any) was just ended
         e.editHand = -1;
         e.projEditPending = false;
-        resetInput(e);
+        resetInput(e, "edit_refused");
         if (wasWeapon) setHandNames(e);
         applyLayout(e);
         if (g_menu.ok() && e.statusItem >= 0) g_menu.p->SetText(e.page, e.statusItem, "Edit unavailable");
@@ -962,9 +1116,10 @@ void enterEdit(Editor& e, int hand) {
     }
     e.mode = MODE_WEAPON;
     e.editHand = hand;
-    resetInput(e);   // drags from the previous mode are dropped; a button still held (the click that entered) must be released first
+    resetInput(e, "enter_edit");   // drags from the previous mode are dropped; a button still held (the click that entered) must be released first
     e.projEditPending = true;
     e.projEditTries = 0;
+    e.shownDirty = -1;   // the status line shows the EDIT numbers first, then the help line
     refreshEdit(e);
     KP_LOG(chView, "EDIT enter hand=%d gob=%p model=%s bone=%s", hand, e.regGob[hand], e.editInfo.model, e.editInfo.bone);
 
@@ -972,7 +1127,8 @@ void enterEdit(Editor& e, int hand) {
     char bBuf[64];
     snprintf(bBuf, sizeof(bBuf), "Bone: %s", e.editInfo.bone[0] ? e.editInfo.bone : "None");
     if (e.boneItem >= 0) ui->SetText(e.page, e.boneItem, bBuf);
-    if (e.scopeItem >= 0) ui->SetText(e.page, e.scopeItem, hse::scopeLabel(e.editScope));
+    setScopeText(e);
+    setModeBarText(e);
 
     char rBuf[64], lBuf[64];
     snprintf(rBuf, sizeof(rBuf), "%sRight%s", hand == 0 ? "[Edit: " : "", hand == 0 ? "]" : (e.regGob[0] ? "" : ": None"));
@@ -990,7 +1146,7 @@ void exitEdit(Editor& e) {
     e.mode = MODE_NAV;
     e.editHand = -1;
     e.projEditPending = false;
-    resetInput(e);
+    resetInput(e, "exit_edit");
     KP_LOG(chView, "EDIT exit");
 
     setHandNames(e);
@@ -1040,13 +1196,10 @@ void KPATCH_CALL cbLeave(uint32_t, void*) {
         KP_LOG(chView, "CALIB leave rounds=%d clicks=%d", g_ed.calib.round - 1, g_ed.calib.clicks);
         if (g_menu.ok() && g_ed.page && g_ed.statusItem >= 0) g_menu.p->SetText(g_ed.page, g_ed.statusItem, statusText());   // restore the normal text
     }
-    p3d::dragEnd(&g_ed.drag);
-    g_ed.pressed = false;
+    resetInput(g_ed, "leave");
+    g_ed.pressed = false;   // the page is gone: a button still held must not look like "was down" next time
     g_ed.pressedMmb = false;
     g_ed.pressedRmb = false;
-    g_ed.draggingLmb = false;
-    g_ed.draggingRmb = false;
-    g_ed.draggingMmb = false;
     g_ed.playingEmote = false;
     g_ed.emoteEndMs = 0;
     if (g_ed.token && g_p3.ok()) {
@@ -1074,12 +1227,174 @@ bool guardTransition(Editor& e, int action, const char* why) {
     return false;
 }
 
+// True when the cursor is over one of the mode bar buttons (a press there is a button click, never a view gesture).
+bool overModeBar(const Editor& e, int x, int y) {
+    if (!e.modeBarOk || !g_menu.ok()) return false;
+    for (int i = 0; i < kModeCount; ++i) {
+        const uintptr_t c = e.modeItem[i] >= 0 ? reinterpret_cast<uintptr_t>(g_menu.p->Control(e.page, e.modeItem[i])) : 0;
+        if (c && guikit::hit(c, x, y)) return true;
+    }
+    return false;
+}
+
+// Sends the provider calls of one tick and checks they took. NudgeWorld/NudgeLocal return void, so a failure shows as: the provider is gone, the
+// edit is no longer open, or the open values did not change at all. Each case is a NUDGE WARN line (capped). False when the edit was lost.
+bool applyCalls(Editor& e, const hse::WeaponCall* calls, int n, const char* what) {
+    if (n <= 0) return true;
+    if (!g_hol.ok()) {
+        if (warnOk(e, W_NUDGE)) KP_LOGV(chView, KPLOG_WARN, "NUDGE WARN %s: holster provider missing (%d call%s dropped)", what, n, n == 1 ? "" : "s");
+        return false;
+    }
+    float rot[3], off[3];
+    memcpy(rot, e.editInfo.rot, sizeof rot);
+    memcpy(off, e.editInfo.off, sizeof off);
+    for (int i = 0; i < n; ++i) {
+        if (calls[i].kind == hse::WK_WORLD) g_hol.h->NudgeWorld(nullptr, calls[i].dp);
+        else if (calls[i].kind == hse::WK_LOCAL) g_hol.h->NudgeLocal(calls[i].axis, calls[i].deg, calls[i].metres);
+    }
+    if (!refreshEdit(e)) {
+        if (warnOk(e, W_NUDGE)) KP_LOGV(chView, KPLOG_WARN, "NUDGE WARN %s: the edit is no longer open after %d call%s", what, n, n == 1 ? "" : "s");
+        exitEdit(e);
+        return false;
+    }
+    if (!memcmp(rot, e.editInfo.rot, sizeof rot) && !memcmp(off, e.editInfo.off, sizeof off) && warnOk(e, W_NUDGE)) {
+        const hse::WeaponCall& c = calls[0];
+        KP_LOGV(chView, KPLOG_WARN, "NUDGE WARN %s: no change (call0 kind=%d axis=%d deg=%.4f m=%.4f dp=(%.4f,%.4f,%.4f) scope=%d%s)", what, c.kind, c.axis, c.deg, c.metres,
+                c.dp[0], c.dp[1], c.dp[2], e.editScope, e.editScope == K2HOLSTER_SCOPE_BODY ? " body: rotation is ignored" : "");
+    }
+    return true;
+}
+
+// Weapon-mode mouse for one tick: feeds hse::Chord and acts on what it answers. All logging of the chord lives here.
+void weaponMouse(Editor& e, int curX, int curY, bool insideView, bool fg, bool shift, bool ctrl, bool lmb, bool rmb, bool mmb, LONG wheel) {
+    hse::ChordIn ci = {};
+    ci.l = lmb;
+    ci.r = rmb;
+    ci.m = mmb;
+    ci.lEdge = lmb && !e.pressed;
+    ci.rEdge = rmb && !e.pressedRmb;
+    ci.mEdge = mmb && !e.pressedMmb;
+    e.pressed = lmb;
+    e.pressedRmb = rmb;
+    e.pressedMmb = mmb;
+    ci.inView = insideView && !overModeBar(e, curX, curY);
+    ci.fg = fg;
+    ci.shift = shift;
+    ci.ctrl = ctrl;
+    ci.x = curX;
+    ci.y = curY;
+    ci.wheel = static_cast<int>(wheel);
+    if (!rmb && e.snap.nonzero() && !e.gActive) resetSnap(e, "rmb_up");   // a wheel remainder does not outlive the held RMB
+
+    const hse::ChordOut o = e.chord.step(ci);
+
+    // CHORD log: every state change or gesture begin/end with its reason. A press that is dropped (outside the view, over a button, ...) is a
+    // drop line, capped separately; when the drop is also the transition reason (-> DEAD) the transition line is the drop line.
+    const bool transition = o.state != o.prevState || o.why != hse::CW_NONE;
+    const bool dropIsTransition = transition && o.drop != hse::CW_NONE && o.drop == o.why;
+    if (transition) {
+        int& counter = dropIsTransition ? e.dropLogs : e.chordLogs;
+        const int cap = dropIsTransition ? kMaxDropLogs : kMaxChordLogs;
+        if (counter < cap) {
+            ++counter;
+            KP_LOG(chView, "CHORD %s->%s why=%s began=%s ended=%s at=(%d,%d) btn=%d%d%d view=%d fg=%d", hse::chordStateName(o.prevState), hse::chordStateName(o.state),
+                   hse::chordWhyName(o.why), hse::chordActName(o.began), hse::chordActName(o.ended), curX, curY, lmb ? 1 : 0, rmb ? 1 : 0, mmb ? 1 : 0,
+                   ci.inView ? 1 : 0, fg ? 1 : 0);
+        } else if (counter == cap) {
+            ++counter;
+            KP_LOG(chView, "CHORD %s log capped at %d lines", dropIsTransition ? "drop" : "transition", cap);
+        }
+    }
+    if (o.drop != hse::CW_NONE && !dropIsTransition) {
+        if (e.dropLogs < kMaxDropLogs) {
+            ++e.dropLogs;
+            KP_LOG(chView, "CHORD drop reason=%s state=%s at=(%d,%d) btn=%d%d%d view=%d", hse::chordWhyName(o.drop), hse::chordStateName(o.state), curX, curY, lmb ? 1 : 0,
+                   rmb ? 1 : 0, mmb ? 1 : 0, ci.inView ? 1 : 0);
+        } else if (e.dropLogs == kMaxDropLogs) {
+            ++e.dropLogs;
+            KP_LOG(chView, "CHORD drop log capped at %d lines", kMaxDropLogs);
+        }
+    }
+
+    // Gestures that ended
+    if (o.ended == hse::CA_ORBIT) {
+        p3d::dragEnd(&e.drag);
+        KP_LOG(chView, "DRAG end yaw=%.2f panZ=%.2f", e.view.yaw, e.view.panZ);
+    } else if (o.ended == hse::CA_WEAPON) {
+        logGestureEnd(e, hse::chordWhyName(o.why));
+        resetSnap(e, "gesture_end");
+        updateStatusText(e);
+    } else if (o.ended == hse::CA_SPIN) {
+        KP_LOG(chView, "MMB spin end yaw=%.2f why=%s", e.view.yaw, hse::chordWhyName(o.why));
+    }
+
+    // Gestures that began
+    if (o.began == hse::CA_ORBIT) {
+        if (!e.drag.active) {
+            p3d::dragBegin(&e.drag, static_cast<float>(curX), static_cast<float>(curY));
+            KP_LOG(chView, "DRAG begin pos=(%d,%d)", curX, curY);
+        }
+    } else if (o.began == hse::CA_WEAPON) {
+        refreshEdit(e);
+        e.gActive = true;
+        e.gMode = e.weaponMode;   // the mode bar can change meanwhile; this gesture keeps the mode it began with
+        e.gHand = e.editHand == 1 ? 1 : 0;
+        e.gFrames = 0;
+        e.gDx = e.gDy = 0;
+        e.gA = e.gB = 0.0f;
+        resetSnap(e, "gesture_begin");
+        if (e.gestureLogs < kMaxGestureLogs) {
+            ++e.gestureLogs;
+            KP_LOG(chView, "GESTURE begin mode=%s hand=%s scope=%d zoom=%.2f shift=%d ctrl=%d how=%s", hse::weaponModeName(e.gMode), handName(e.gHand), e.editScope,
+                   e.view.zoom, shift ? 1 : 0, ctrl ? 1 : 0, hse::chordWhyName(o.why));
+        }
+        updateStatusText(e);
+    } else if (o.began == hse::CA_SPIN) {
+        KP_LOG(chView, "MMB spin begin yaw=%.2f", e.view.yaw);
+    }
+
+    // The running gesture
+    if (o.act == hse::CA_ORBIT && o.began != hse::CA_ORBIT && e.drag.active) {
+        p3d::ViewState vs = {e.view.yaw, e.view.zoom, e.view.panZ};
+        if (p3d::dragMove(&e.drag, static_cast<float>(curX), static_cast<float>(curY), e.dragCfg, &vs)) {
+            e.view.yaw = hse::wrapYaw(vs.yaw);
+            e.view.panZ = hse::panStep(vs.panZ, 0);   // clamp to [-1, 1]
+        }
+    } else if (o.act == hse::CA_SPIN && (o.dx != 0)) {
+        e.view.yaw = hse::spin(e.view.yaw, static_cast<float>(o.dx));   // dx > 0 turns the yaw up, same sign as NAV and the equip screen
+    } else if (o.act == hse::CA_WEAPON && e.gActive && (o.dx != 0 || o.dy != 0)) {
+        const hse::WeaponStep st = hse::weaponGesture(e.gMode, o.dx, o.dy, e.view.zoom, o.fine, o.snap, e.snap);
+        ++e.gFrames;
+        e.gDx += o.dx;
+        e.gDy += o.dy;
+        if (st.n > 0) {
+            if (applyCalls(e, st.c, st.n, hse::weaponModeName(e.gMode))) {
+                e.gA += st.a;
+                e.gB += st.b;
+                updateStatusText(e);
+            }
+        }
+    }
+
+    // Wheel: RMB + wheel is depth, otherwise zoom
+    if (o.wheelAct == hse::CA_DEPTH && e.mode == MODE_WEAPON) {
+        const hse::WeaponCall c = hse::wheelDepth(o.wheel, o.fine, o.snap, e.snap);
+        KP_LOG(chView, "WHEEL depth delta=%d metres=%.4f fine=%d snap=%d carry=%.4f", o.wheel, c.kind == hse::WK_LOCAL ? c.metres : 0.0f, o.fine ? 1 : 0, o.snap ? 1 : 0,
+               e.snap.a[2]);
+        if (c.kind != hse::WK_NONE && applyCalls(e, &c, 1, "WheelDepth")) updateStatusText(e);
+    } else if (o.wheelAct == hse::CA_ZOOM && e.token && g_p3.ok()) {
+        e.view.zoom = p3d::zoomStep(e.view.zoom, o.wheel, 0.9f, hse::kZoomMin, hse::kZoomMax);
+        KP_LOG(chView, "WHEEL delta=%d zoom=%.2f", o.wheel, e.view.zoom);
+    }
+}
+
 void KPATCH_CALL cbTick(uint32_t, void*) {
     g_p3.poll();
     g_hol.poll();
     if (!g_ed.panel || !g_menu.ok() || !g_ed.page) return;
 
     if (!g_p3.ok() || !g_hol.ok() || !g_ed.token) {
+        if (g_ed.chord.busy() || g_ed.gActive) resetInput(g_ed, "provider_lost");
         if (g_ed.statusItem >= 0) g_menu.p->SetText(g_ed.page, g_ed.statusItem, statusText());
         return;
     }
@@ -1094,7 +1409,10 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
         // Navigation buttons (work in both modes; auto-exit weapon edit mode on member switch)
         if (e.prevItem >= 0 && ui->Clicked(page, e.prevItem)) {
             if (e.mode == MODE_WEAPON) {
-                if (!guardTransition(e, ACT_PREV, "member")) return;
+                if (!guardTransition(e, ACT_PREV, "member")) {
+                    resetInput(e, "discard_guard");
+                    return;
+                }
                 exitEdit(e);
             }
             e.member = hse::wrapIndex(e.member, -1, n);
@@ -1104,7 +1422,10 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
             return;
         } else if (e.nextItem >= 0 && ui->Clicked(page, e.nextItem)) {
             if (e.mode == MODE_WEAPON) {
-                if (!guardTransition(e, ACT_NEXT, "member")) return;
+                if (!guardTransition(e, ACT_NEXT, "member")) {
+                    resetInput(e, "discard_guard");
+                    return;
+                }
                 exitEdit(e);
             }
             e.member = hse::wrapIndex(e.member, 1, n);
@@ -1210,7 +1531,8 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
                         KP_LOG(chView, "EDIT lost after SetScope scope=%d rc=%d", e.editScope, sc);
                         exitEdit(e);
                     } else {
-                        ui->SetText(page, e.scopeItem, hse::scopeLabel(e.editScope));
+                        resetInput(e, "scope");
+                        setScopeText(e);
                         setBoneText(e);
                         KP_LOG(chView, "BTN SetScope -> %d (%s)", e.editScope, hse::scopeLabel(e.editScope));
                         updateStatusText(e);
@@ -1238,6 +1560,13 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
                 }
             } else if (e.doneItem >= 0 && ui->Clicked(page, e.doneItem)) {
                 if (guardTransition(e, ACT_DONE, "done")) exitEdit(e);
+            } else if (e.modeBarOk) {
+                for (int i = 0; i < kModeCount; ++i) {
+                    if (e.modeItem[i] >= 0 && ui->Clicked(page, e.modeItem[i])) {
+                        setWeaponMode(e, i, "click");
+                        break;
+                    }
+                }
             }
         }
     }
@@ -1247,6 +1576,8 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
         e.discardArmed = false;   // the confirm window ran out: back to the plain status line
         updateStatusText(e);
     }
+    if (e.mode == MODE_WEAPON && e.statusHolding && !e.gActive && !e.discardArmed && static_cast<int32_t>(e.statusHoldUntil - GetTickCount()) <= 0)
+        updateStatusText(e);   // the numbers have been up long enough: back to the help line
     if (e.playingEmote && e.emoteEndMs && GetTickCount() >= e.emoteEndMs) {
         e.playingEmote = false;
         e.emoteEndMs = 0;
@@ -1257,7 +1588,7 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
         KP_LOG(chView, "EMOTE done -> resume anim=%s", resumeAnim);
     }
 
-    // 3. Mouse input: equip-screen style drag, wheel, MMB reset/spin, RMB rotate, LMB nudge
+    // 3. Mouse input. Nav mode: equip-screen style drag (LMB orbit/pan), MMB click reset, wheel zoom. Weapon mode: hse::Chord (weaponMouse).
     int curX = 0, curY = 0;
     guikit::cursorEngine(&curX, &curY);
     uintptr_t ctl = e.viewItem >= 0 ? reinterpret_cast<uintptr_t>(ui->Control(page, e.viewItem)) : 0;
@@ -1266,126 +1597,24 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
     const bool shift = fg && guikit::g_gk.shiftDown && guikit::g_gk.shiftDown();
     const bool ctrl = fg && guikit::g_gk.ctrlDown && guikit::g_gk.ctrlDown();
 
-    // Wheel: zoom in Mode NAV; depth adjustment with Shift in Mode WEAPON
     guikit::g_wheel.touch(GetTickCount());
-    LONG w = guikit::g_wheel.take();
-    if (w != 0) {
-        if (e.mode == MODE_WEAPON && shift && g_hol.ok()) {
-            float step = (static_cast<float>(w) / 120.0f) * (ctrl ? 0.05f : 0.02f);
-            float dp[3] = { -step, 0.0f, 0.0f };
-            g_hol.h->NudgeWorld(nullptr, dp);
-            updateStatusText(e);
-            KP_LOG(chView, "WHEEL depth delta=%ld step=%.3f", w, step);
-        } else if (e.token && g_p3.ok()) {
-            e.view.zoom = p3d::zoomStep(e.view.zoom, w, 0.9f, hse::kZoomMin, hse::kZoomMax);
-            KP_LOG(chView, "WHEEL delta=%ld zoom=%.2f", w, e.view.zoom);
-        }
-    }
-
+    const LONG w = guikit::g_wheel.take();
     const bool lmb = fg && guikit::g_gk.lbuttonDown && guikit::g_gk.lbuttonDown();
     const bool rmb = fg && guikit::g_gk.rbuttonDown && guikit::g_gk.rbuttonDown();
     const bool mmb = fg && guikit::g_gk.mbuttonDown && guikit::g_gk.mbuttonDown();
 
     if (e.mode == MODE_WEAPON) {
-        // MMB drag: spin character yaw (dx > 0 turns the yaw up, same sign as NAV and the equip screen)
-        const bool mmbBegan = mmb && !e.pressedMmb;
-        e.pressedMmb = mmb;
-        if (mmb) {
-            if (!e.draggingMmb) {
-                if (mmbBegan && insideView) {
-                    e.draggingMmb = true;
-                    e.mmbLastX = curX;
-                    e.mmbLastY = curY;
-                }
-            } else {
-                int dx = curX - e.mmbLastX;
-                if (dx != 0) {
-                    e.view.yaw = hse::spin(e.view.yaw, static_cast<float>(dx));
-                    e.mmbLastX = curX;
-                    e.mmbLastY = curY;
-                }
-            }
-        } else {
-            e.draggingMmb = false;
-        }
-
-        // LMB drag: screen translation dp (a press that began outside the view or before this mode never starts a drag)
-        const bool pressBegan = lmb && !e.pressed;
-        e.pressed = lmb;
-        if (lmb && g_hol.ok()) {
-            if (!e.draggingLmb) {
-                if (pressBegan && insideView) {
-                    e.draggingLmb = true;
-                    e.lmbLastX = curX;
-                    e.lmbLastY = curY;
-                    e.snapAccY = 0.0f;
-                    e.snapAccZ = 0.0f;
-                }
-            } else {
-                int dx = curX - e.lmbLastX;
-                int dy = curY - e.lmbLastY;
-                if (dx != 0 || dy != 0) {
-                    float scale = 0.0025f / (e.view.zoom > 0.1f ? e.view.zoom : 1.0f);
-                    if (shift) scale *= 0.2f;
-                    float dp[3] = { 0.0f, static_cast<float>(dx) * scale, -static_cast<float>(dy) * scale };
-                    if (ctrl) {   // snap to 1 cm steps; the remainder carries over so slow drags still move
-                        dp[1] = hse::snapAccum(e.snapAccY, dp[1], 0.01f);
-                        dp[2] = hse::snapAccum(e.snapAccZ, dp[2], 0.01f);
-                    }
-                    if (dp[1] != 0.0f || dp[2] != 0.0f) {
-                        g_hol.h->NudgeWorld(nullptr, dp);
-                        updateStatusText(e);
-                    }
-                    e.lmbLastX = curX;
-                    e.lmbLastY = curY;
-                }
-            }
-        } else {
-            e.draggingLmb = false;
-            e.snapAccY = 0.0f;
-            e.snapAccZ = 0.0f;
-        }
-
-        // RMB drag: trackball rotation dq (a press that began outside the view or before this mode never starts a drag)
-        const bool rmbBegan = rmb && !e.pressedRmb;
-        e.pressedRmb = rmb;
-        if (rmb && g_hol.ok()) {
-            if (!e.draggingRmb) {
-                if (rmbBegan && insideView) {
-                    e.draggingRmb = true;
-                    e.rmbLastX = curX;
-                    e.rmbLastY = curY;
-                    e.snapAccRot = 0.0f;
-                }
-            } else {
-                int dx = curX - e.rmbLastX;
-                int dy = curY - e.rmbLastY;
-                if (dx != 0 || dy != 0) {
-                    float scale = 0.5f;
-                    if (shift) scale *= 0.2f;
-                    float axis[3] = { 0.0f, -static_cast<float>(dy), static_cast<float>(dx) };
-                    float deg = std::sqrt(static_cast<float>(dx * dx + dy * dy)) * scale;
-                    if (ctrl) deg = hse::snapAccum(e.snapAccRot, deg, kRotSnapDeg);   // 5 degree steps; the remainder carries so slow drags still turn
-                    else e.snapAccRot = 0.0f;
-                    e.rmbLastX = curX;
-                    e.rmbLastY = curY;
-                    if (deg > 0.001f) {
-                        QVec q = qaxis(axis, deg);
-                        float dq[4] = { q.w, q.x, q.y, q.z };
-                        g_hol.h->NudgeWorld(dq, nullptr);
-                        updateStatusText(e);
-                    }
-                }
-            }
-        } else {
-            e.draggingRmb = false;
-            e.snapAccRot = 0.0f;
-        }
+        weaponMouse(e, curX, curY, insideView, fg, shift, ctrl, lmb, rmb, mmb, w);
     } else {
         // Mode NAV
+        if (w != 0 && e.token && g_p3.ok()) {
+            e.view.zoom = p3d::zoomStep(e.view.zoom, w, 0.9f, hse::kZoomMin, hse::kZoomMax);
+            KP_LOG(chView, "WHEEL delta=%ld zoom=%.2f", w, e.view.zoom);
+        }
         // MMB click: reset view
         const bool mmbClick = mmb && !e.pressedMmb;
         e.pressedMmb = mmb;
+        e.pressedRmb = rmb;
         if (mmbClick && insideView) {
             e.view = e.cfgView;
             KP_LOG(chView, "MMB reset view=(%.2f,%.2f,%.2f)", e.view.yaw, e.view.zoom, e.view.panZ);
@@ -1454,13 +1683,15 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
 
         readWeaponModel(e.regGob[0], e.wpnName[0], sizeof(e.wpnName[0]));
         readWeaponModel(e.regGob[1], e.wpnName[1], sizeof(e.wpnName[1]));
-        probeItemNames(e, C);
+        probeItemNames(e, C);   // fills e.itemName (cached for this build; GetName is never called per frame)
 
-        char rBuf[64], lBuf[64];
-        snprintf(rBuf, sizeof(rBuf), "Right: %s", e.wpnName[0][0] ? e.wpnName[0] : (e.regGob[0] ? "Equipped" : "None"));
-        snprintf(lBuf, sizeof(lBuf), "Left: %s", e.wpnName[1][0] ? e.wpnName[1] : (e.regGob[1] ? "Equipped" : "None"));
+        char rBuf[96], lBuf[96];
+        handCaption(e, 0, rBuf, sizeof rBuf);
+        handCaption(e, 1, lBuf, sizeof lBuf);
         if (e.wpnRightItem >= 0) ui->SetText(page, e.wpnRightItem, rBuf);
         if (e.wpnLeftItem >= 0) ui->SetText(page, e.wpnLeftItem, lBuf);
+        KP_LOG(chView, "HANDS R=\"%s\" (name=\"%s\" resref=%s) L=\"%s\" (name=\"%s\" resref=%s)", rBuf, e.itemName[0], e.wpnName[0][0] ? e.wpnName[0] : "-", lBuf,
+               e.itemName[1], e.wpnName[1][0] ? e.wpnName[1] : "-");
 
         e.mode = MODE_NAV;
         e.editHand = -1;
@@ -1567,7 +1798,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_cfgClient.init(api);
     g_menu.init(api);
     embedgui::g_log = embedLog;
-    KP_LOG(chMain, "holster-editor 0.2.7-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
+    KP_LOG(chMain, "holster-editor 0.3.0-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
            static_cast<unsigned>(sizeof kHseViewGui));
     const bool cfgOk = g_cfgClient.connect(), menuOk = g_menu.connect();
     if (!cfgOk || !menuOk) {

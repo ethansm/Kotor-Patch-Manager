@@ -200,6 +200,12 @@ int main() {
         HEQ("K2HolsterEditInfo.rot offset", offsetof(K2HolsterEditInfo, rot), static_cast<size_t>(80));
         HEQ("K2HolsterEditInfo.off offset", offsetof(K2HolsterEditInfo, off), static_cast<size_t>(92));
         HEQ("K2HolsterEditInfo.src offset", offsetof(K2HolsterEditInfo, src), static_cast<size_t>(104));
+        // U2: the type string feeds the scope button text ("For: all rifles"); the longest category name ("lightsaber") must fit.
+        HEQ("K2HolsterEditInfo.type offset", offsetof(K2HolsterEditInfo, type), static_cast<size_t>(21));
+        HEQ("K2HolsterEditInfo.type is char[12]", sizeof(static_cast<K2HolsterEditInfo*>(nullptr)->type), static_cast<size_t>(12));
+        // U2: the weapon gestures call NudgeWorld (Move) and NudgeLocal (Depth, Tilt, Roll/Turn, RMB+wheel); both return void.
+        HEQ("K2HolsterApi.NudgeWorld is vtable slot 4", offsetof(K2HolsterApi, NudgeWorld), 4 * sizeof(void*));
+        HEQ("K2HolsterApi.NudgeLocal is vtable slot 5", offsetof(K2HolsterApi, NudgeLocal), 5 * sizeof(void*));
 
         // GuiKit input hooks: null under GUIKIT_HOST (the mod must check before calling); the assignment form the mod uses is callable.
         HCHECK("g_gk.lbuttonDown is null under GUIKIT_HOST", guikit::g_gk.lbuttonDown == nullptr);
