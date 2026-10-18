@@ -1,21 +1,22 @@
 # Session Handoff & Plan State: patch_manager_mods/39_enemy_effects_strip.md
 
 ## 0. Next-Phase Direction
-All phases complete
+P3 prep A-D committed (02dbbc2, 038420b6, ece3812a, 887e1aa1); next: play rows ES-P0b/UX1-3 then install 0.4.0-dev on user GO (reinstall), run ES-CFG1
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/39_enemy_effects_strip.md`
-- **Branch:** `KOTOR-II` (8dd1573 docs(voice): VC2-T1 voice-probe 0.2.0 INSTALLED 10-17 02:48 (play check pending))
-- **Generated:** 2026-10-17 03:07:14 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (17beca72 doc 39: P3 prep status (tasks A-D, 10-18))
+- **Generated:** 2026-10-18 03:01:32 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-8dd1573 docs(voice): VC2-T1 voice-probe 0.2.0 INSTALLED 10-17 02:48 (play check pending)
- patch_manager_mods/PLAY_TEST_QUEUE.md | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+17beca72 doc 39: P3 prep status (tasks A-D, 10-18)
+ patch_manager_mods/39_enemy_effects_strip.md | 1 +
+ 1 file changed, 1 insertion(+)
 ```
-- **Dirty Files (168):**
+- **Dirty Files (171):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
+  - ` M .claude/handoffs/39_enemy_effects_strip.handoff.md`
   - ` M .claude/handoffs/40_npc_behaviour_variety.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
   - ` M .claude/handoffs/PHASE7_COMMON_MASTER.handoff.md`
@@ -23,8 +24,7 @@ All phases complete
   - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
   - ` M .claude/plans/swarm_library_architecture.md`
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
-  - ` M CLAUDE.md`
-  - ... +158 more (run `git status --short`)
+  - ... +161 more (run `git status --short`)
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume patch_manager_mods/39_enemy_effects_strip.md`.
@@ -47,3 +47,9 @@ _(none recorded; append Dead Ends & Anti-Patterns and Verification Commands here
 - Fear = spells.2da row 16 (6 s cower), Horror row 30 (12 s AoE), Insanity row 31. Test source with no powers: grenades via `giveitem g_w_stungren01 5` (also g_w_adhsvgren001, g_w_cryobgren001, g_w_sonicgren01, g_w_poisngren01, g_w_iongren01, g_w_firegren001; resrefs from TSL RCM k_inc_treas_k2.nss, unverified in game). `runscript` console cmd likely a no-op on Steam (FALLBACK.md).
 - NO UX exists yet: only the logging probe. User design wish (10-17): REUSE the exact icons/tiles of the character-screen effects pane and the portrait Buff HUD for consistency; row above the enemy name/vitality bar, minimalist (icons only, optional grey alpha backing; no bar if empty). Research wave R1-R6 DONE 10-17: see doc 39 "Research wave 10-17" + `.claude/research/enemy_strip/`.
 - NEXT: P0b probe fix (client->server map via ClientToServerObjectId, relog on effect-list signature change, log +0xFFC cache), then P1 logic/tests, P2 draw.
+- 10-18 session lessons: hot-swap refused (verdict REINSTALL: live hooks were 0.1.0-probe); fixed with `python3 scripts/kpm_reinstall.py --mod enemy-effects-strip` (needs user GO, game closed). Rollback `kpm_reinstall.py --rollback enemy-effects-strip_reinstall_20261017_030657`.
+- Live state: enemy-effects-strip 0.3.0-dev LIVE; game-dir `enemy_strip.ini` has `ForceTier=3` + `Verbose=1` (Verbose = 0.2.0 probe dumps: menu geometry, effect list, icon cache, Awareness; capped per session). Play rows ES-P0b, ES-UX1..3 pending in PLAY_TEST_QUEUE.md.
+- Commits: P1 0b6c46c, P2 0259800, KPM 8a7405e, docs c5536f5. `agent_contract.py check` OUT_OF_SCOPE on patch_manager_mods/38_*.md was another session's edit.
+- Unproven until play: effect creator form (pointer vs object id; code matches server/client ptr + ids at creature +4), Fear/stun spell ids, fallback icon resrefs (Entangle = iw_adhsvgren_001, verified present).
+- Verify: `python3 scripts/run_tests.py enemy_strip_logic`, `run_tests.py enemy_effects_strip`, `python3 scripts/build_check.py --mod enemy_effects_strip_src`, `scripts/pre_install_gate.sh --mod enemy_effects_strip_src`.
+- Never `cat` raw logs: `python3 scripts/kotor2_logs.py check enemy-effects-strip_log.txt --new`.
