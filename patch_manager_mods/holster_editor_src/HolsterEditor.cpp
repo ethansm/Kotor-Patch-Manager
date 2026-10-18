@@ -1,4 +1,4 @@
-// HolsterEditor.cpp -- holster-editor 0.2.5-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
+// HolsterEditor.cpp -- holster-editor 0.2.6-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
 // (doc 42 HW-EDIT, plan .claude/plans/holster_editor_options.md.)
 //
 // mod-config owns everything about the Options screen: the hooks, the root "Mod Configuration" button, the list page, control cloning,
@@ -10,7 +10,7 @@
 //   tick     polls the preview-3d and holster clients, handles picker, anim and edit buttons (unsaved edits need a second click to discard), equip-style mouse drag/wheel/reset, and drives preview-3d and holster placement.
 //   destroy  destroys the preview viewer (and, behind free_view, the view block once mod-config has unlinked it).
 // A failed connect to mod-config means no menu entry, never a crash. KPatchInit does no file I/O: holster_editor.ini is read in build().
-// Probe lines (log only): REGISTER, CONFIG, BUILD, EMBED, ENTER, DTOR, FREEVIEW, LAYOUT, REBUILD, NAME, REG, CAM, CAMHOOK, PICK, BTN, EDIT, STANCE, EMOTE, MMB, DRAG, WHEEL, PLAY_PAUSE, UNREG, LEAVE, DISCARD.
+// Probe lines (log only): REGISTER, CONFIG, BUILD, EMBED, ENTER, DTOR, FREEVIEW, LAYOUT, REBUILD, NAME, REG, CAM, CAMHOOK, PROJ, ITEMNAME, PICK, BTN, EDIT, STANCE, EMOTE, MMB, DRAG, WHEEL, PLAY_PAUSE, UNREG, LEAVE, DISCARD.
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -82,6 +82,7 @@ constexpr int kEmoteCount = sizeof(kEmoteList) / sizeof(kEmoteList[0]);
 
 bool g_enabled = true;
 bool g_freeView = false;   // also free the 3D view block after preview-3d destroys the creature (probe)
+int g_probeNames = 1;      // ini probe_names: 0 = off, 1 = ITEMNAME probe calls item GetName with identified=0, 2 = also identified=1 (log only)
 float g_cfgYaw = 180.0f;
 float g_cfgZoom = 2.2f;
 float g_cfgPanZ = 0.0f;
@@ -97,6 +98,15 @@ enum EditMode { MODE_NAV = 0, MODE_WEAPON = 1 };
 // Actions guarded by the unsaved-edits two-click confirm.
 enum GuardAction { ACT_NONE = 0, ACT_HAND_R, ACT_HAND_L, ACT_SCOPE, ACT_RESET_SCOPE, ACT_DONE, ACT_PREV, ACT_NEXT };
 constexpr uint32_t kDiscardWindowMs = 2000;
+constexpr float kPreviewFov = 22.726f;       // preview-3d kDefaultFov: the scene fov is p3d::fovForZoom(kPreviewFov, zoom) (applyView)
+constexpr float kProjUpMetres = 0.3f;        // PROJ probe: second point is the mount + this far along world +Z
+constexpr int kMaxProjLogs = 24;             // cap on CAMHOOK/PROJ re-logs per Editor
+constexpr int kProjRetryTicks = 180;         // ticks to wait for GetMountWorld after an edit opens before giving up
+constexpr float kRotSnapDeg = 5.0f;          // RMB Ctrl rotation snap step
+constexpr int kCrRightItemOff = 0x238, kCrLeftItemOff = 0x23C;   // client creature: equipped item ids (preview-3d CrRightItemOff/CrLeftItemOff)
+constexpr uint32_t kNoItemId = 0x7F000000u;
+constexpr int kItemModelResOff = 0x128;      // client item: model ResRef char[16]
+constexpr int kItemBaseIdxOff = 0xC;         // client item: base item index (GetName's lookup branch dereferences its row)
 
 struct QVec { float w, x, y, z; };
 inline QVec qaxis(const float* axis, float deg) {
@@ -147,6 +157,7 @@ struct Editor {
     bool pressedMmb = false;   // MMB was down on the previous tick
     bool pressedRmb = false;   // RMB was down on the previous tick
     float snapAccY = 0.0f, snapAccZ = 0.0f;   // Ctrl-snap remainders for the LMB nudge
+    float snapAccRot = 0.0f;                  // Ctrl-snap remainder (degrees) for the RMB rotation; zeroed on drag begin and release
     void* regGob[2] = {nullptr, nullptr};
 
     // Unsaved-edits two-click confirm
@@ -160,9 +171,16 @@ struct Editor {
     DWORD camSeenMs = 0;
     int camLogs = 0;
     bool camHookPending = false;
+    int projLogs = 0;           // CAMHOOK/PROJ lines logged (capped at kMaxProjLogs)
+    bool projEditPending = false;   // an edit just opened: log the mount PROJ as soon as GetMountWorld answers
+    int projEditTries = 0;
 
     hse::HseRect strip = {0, 0, 0, 0};
-    int lastMouseX = 0, lastMouseY = 0;
+    hse::HseRect viewRect = {0, 0, 0, 0};   // MUI_PANE_VIEW in UI units (the camera extent for the PROJ probe)
+    // Per-button last cursor positions: a chord (two buttons held) must not let one button's drag starve another's deltas.
+    int lmbLastX = 0, lmbLastY = 0;
+    int rmbLastX = 0, rmbLastY = 0;
+    int mmbLastX = 0, mmbLastY = 0;
     bool draggingLmb = false;
     bool draggingRmb = false;
     bool draggingMmb = false;
@@ -195,6 +213,7 @@ bool iniBool(const char* v) { return !_stricmp(v, "1") || !_stricmp(v, "on") || 
 void readConfig() {
     g_enabled = true;   // defaults first, so a later Options open never keeps stale values from an earlier read
     g_freeView = false;
+    g_probeNames = 1;
     g_cfgYaw = 180.0f;
     g_cfgZoom = 2.2f;
     g_cfgPanZ = 0.0f;
@@ -220,6 +239,7 @@ void readConfig() {
         const bool on = iniBool(v);
         if (!_stricmp(k, "enabled")) g_enabled = on;
         else if (!_stricmp(k, "free_view")) g_freeView = on;
+        else if (!_stricmp(k, "probe_names")) g_probeNames = (v[0] >= '0' && v[0] <= '9') ? atoi(v) : (on ? 1 : 0);
         else if (!_stricmp(k, "view_yaw")) g_cfgYaw = static_cast<float>(atof(v));
         else if (!_stricmp(k, "view_zoom")) g_cfgZoom = static_cast<float>(atof(v));
         else if (!_stricmp(k, "view_panz")) g_cfgPanZ = static_cast<float>(atof(v));
@@ -229,7 +249,7 @@ void readConfig() {
 }
 
 const char* statusText() {
-    return g_p3.ok() && g_hol.ok() ? "0.2.5 dev: preview + holster connected" : "0.2.5 dev: a provider is missing";
+    return g_p3.ok() && g_hol.ok() ? "0.2.6 dev: preview + holster connected" : "0.2.6 dev: a provider is missing";
 }
 
 bool editDirty();   // defined with the status helpers below
@@ -259,8 +279,8 @@ void KPATCH_CALL cbBeforeFree(uint32_t token, void* user) {
 // Options ctor window: the vanilla layout is open. Opens the embedded layout, binds the 3D view, restores the layout slot, builds the page.
 void KPATCH_CALL cbBuild(void* panel, void*) {
     readConfig();
-    KP_LOG(chMain, "CONFIG enabled=%d free_view=%d view=(%.2f,%.2f,%.2f)",
-           g_enabled ? 1 : 0, g_freeView ? 1 : 0,
+    KP_LOG(chMain, "CONFIG enabled=%d free_view=%d probe_names=%d view=(%.2f,%.2f,%.2f)",
+           g_enabled ? 1 : 0, g_freeView ? 1 : 0, g_probeNames,
            g_cfgView.yaw, g_cfgView.zoom, g_cfgView.panZ);
     if (!g_enabled || !panel || !g_menu.ok()) {
         KP_LOG(chMain, "BUILD skipped enabled=%d panel=%p menuui=%d", g_enabled ? 1 : 0, panel, g_menu.ok() ? 1 : 0);
@@ -402,6 +422,161 @@ void readWeaponModel(void* gob, char* out, size_t cap) {
             out[n] = (c >= 0x20 && c <= 0x7E) ? c : '.';
         }
         out[n] = '\0';
+    }
+}
+
+// Drops every drag in flight and re-reads the CURRENT button state into the "was down" flags, so a button that is still held (the click that
+// entered or left edit mode) cannot start a drag until it is released and pressed again. cbLeave clears the flags outright instead.
+void resetInput(Editor& e) {
+    const bool fg = guikit::g_gk.gameForeground ? guikit::g_gk.gameForeground() : true;
+    p3d::dragEnd(&e.drag);
+    e.draggingLmb = false;
+    e.draggingRmb = false;
+    e.draggingMmb = false;
+    e.snapAccY = 0.0f;
+    e.snapAccZ = 0.0f;
+    e.snapAccRot = 0.0f;
+    e.pressed = fg && guikit::g_gk.lbuttonDown && guikit::g_gk.lbuttonDown();
+    e.pressedRmb = fg && guikit::g_gk.rbuttonDown && guikit::g_gk.rbuttonDown();
+    e.pressedMmb = fg && guikit::g_gk.mbuttonDown && guikit::g_gk.mbuttonDown();
+}
+
+// ---- U0 probes (log only): camera projection and equipped item names ----
+
+struct CamInfo {
+    float pos[3];
+    float q[4];            // w,x,y,z (GetNodeWorld order)
+    float fovy;            // vertical, degrees
+    hse::HseRect ext;      // extent used for the projection
+    hse::HseRect pane;     // MUI_PANE_VIEW
+    hse::HseRect ctlExt;   // the view control's own extent (block +4..+0x10), or all zero when unreadable
+    bool ok;
+};
+
+bool readCam(Editor& e, CamInfo& c) {
+    c.pos[0] = c.pos[1] = c.pos[2] = 0.0f;
+    c.q[0] = 1.0f; c.q[1] = c.q[2] = c.q[3] = 0.0f;   // w-first identity
+    c.fovy = p3d::fovForZoom(kPreviewFov, e.view.zoom > 0.0f ? e.view.zoom : 1.0f);   // same as preview-3d applyView
+    c.pane = e.viewRect;
+    c.ctlExt = {0, 0, 0, 0};
+    c.ext = c.pane;
+    c.ok = false;
+    if (e.viewCtl) {
+        int v[4] = {0, 0, 0, 0};
+        bool all = true;
+        for (int i = 0; i < 4; ++i) all = rd<int>(e.viewCtl, 4 + i * 4, &v[i]) && all;
+        if (all) {
+            c.ctlExt = {v[0], v[1], v[2], v[3]};
+            if (v[2] > 0 && v[3] > 0) c.ext = c.ctlExt;
+        }
+    }
+    if (!g_p3.ok() || !g_hol.ok() || !e.token) return false;
+    void* rig = g_p3.p->RigGob(e.token, 0);
+    if (!rig) return false;
+    c.ok = g_hol.h->GetNodeWorld(rig, "camerahook", c.pos, c.q) != 0;
+    return c.ok;
+}
+
+void logProj(const CamInfo& c, const char* hand, const char* src, const float m[3]) {
+    const float up[3] = {m[0], m[1], m[2] + kProjUpMetres};
+    const hse::WorldScreen a = hse::worldToScreen(c.pos, c.q, c.fovy, c.ext, m);
+    const hse::WorldScreen b = hse::worldToScreen(c.pos, c.q, c.fovy, c.ext, up);
+    KP_LOG(chView, "PROJ hand=%s mount=(%.3f,%.3f,%.3f) s=(%.1f,%.1f) ok=%d up=(%.1f,%.1f) ok=%d depth=%.3f src=%s",
+           hand, m[0], m[1], m[2], a.sx, a.sy, a.ok ? 1 : 0, b.sx, b.sy, b.ok ? 1 : 0, a.depth, src);
+}
+
+// CAMHOOK (camera pose, fov, extents) plus a PROJ line per hand node (rhand/lhand on the body rig: needs no open edit).
+void logCamHook(Editor& e, const char* why) {
+    CamInfo c;
+    const bool ok = readCam(e, c);
+    KP_LOG(chView, "CAMHOOK why=%s pos=(%.3f,%.3f,%.3f) q(w,x,y,z)=(%.4f,%.4f,%.4f,%.4f) fovy=%.3f zoom=%.3f yaw=%.2f ext=(%d,%d,%d,%d) pane=(%d,%d,%d,%d) ctl=(%d,%d,%d,%d) ok=%d",
+           why, c.pos[0], c.pos[1], c.pos[2], c.q[0], c.q[1], c.q[2], c.q[3], c.fovy, e.view.zoom, e.view.yaw,
+           c.ext.x, c.ext.y, c.ext.w, c.ext.h, c.pane.x, c.pane.y, c.pane.w, c.pane.h, c.ctlExt.x, c.ctlExt.y, c.ctlExt.w, c.ctlExt.h, ok ? 1 : 0);
+    if (!ok) return;
+    void* rig = g_p3.p->RigGob(e.token, 0);
+    static const char* const kNode[2] = {"rhand", "lhand"};
+    static const char* const kHand[2] = {"R", "L"};
+    for (int h = 0; h < 2; ++h) {
+        float p[3] = {0, 0, 0}, q[4] = {1, 0, 0, 0};
+        if (rig && g_hol.h->GetNodeWorld(rig, kNode[h], p, q)) logProj(c, kHand[h], kNode[h], p);
+        else KP_LOG(chView, "PROJ hand=%s node=%s unavailable", kHand[h], kNode[h]);
+    }
+}
+
+// PROJ for the mount bone of the hand being edited (GetMountWorld answers only while an edit is open). True when logged.
+bool logEditProj(Editor& e) {
+    if (!g_hol.ok() || e.mode != MODE_WEAPON) return false;
+    float mp[3] = {0, 0, 0}, mq[4] = {1, 0, 0, 0};
+    if (!g_hol.h->GetMountWorld(mp, mq)) return false;
+    CamInfo c;
+    if (!readCam(e, c)) return false;
+    logProj(c, e.editHand == 1 ? "L" : "R", "mount", mp);
+    return true;
+}
+
+// CSWCItem::GetName(out, identified) into name (at most 63 printable chars). identified=0 only copies the item's own name (may be empty);
+// identified=1 can take the engine's strref lookup branch (unchecked base-item row), so it runs only at probe_names >= 2. Frees the CExoString.
+bool callItemName(uintptr_t item, int identified, char* name, int cap) {
+    name[0] = 0;
+    if (!gameaddr::ClientItemGetName || !gameaddr::ExoDtor) return false;
+    int exo[2] = {0, 0};   // CExoString {char* text, int len}
+    reinterpret_cast<uintptr_t(__thiscall*)(void*, void*, int)>(gameaddr::ClientItemGetName)(reinterpret_cast<void*>(item), exo, identified);
+    bool got = false;
+    if (exo[0]) {
+        char tmp[256];
+        if (saferead::readExo(0xE70117u, reinterpret_cast<uintptr_t>(exo), tmp, sizeof(tmp), 255, false)) {
+            int k = 0;
+            for (; tmp[k] && k < cap - 1 && k < 63; ++k) {
+                unsigned char ch = static_cast<unsigned char>(tmp[k]);
+                name[k] = (ch == '"') ? '\'' : ((ch >= 0x20 && ch <= 0x7E) ? static_cast<char>(ch) : '.');
+            }
+            name[k] = 0;
+            got = name[0] != 0;
+        }
+        reinterpret_cast<void(__thiscall*)(void*)>(gameaddr::ExoDtor)(exo);
+    }
+    return got;
+}
+
+// ITEMNAME probe (U0, log only; not shown in the UI): the equipped item ids of the client creature -> client item -> model resref and
+// the engine's CSWCItem::GetName. Gated by ini probe_names (0 off, 1 identified=0, 2 adds identified=1). The item's base item index
+// (item+0xC) must be readable before any call. Every read is guarded.
+void probeItemNames(uintptr_t clientMember) {
+    if (g_probeNames <= 0 || !clientMember) return;
+    saferead::beginScope();
+    static const char* const kHand[2] = {"R", "L"};
+    uintptr_t gApp = 0, tbl = 0;
+    const bool haveTbl = gameaddr::AppGlobal && rd<uintptr_t>(gameaddr::AppGlobal, 0, &gApp) && gApp && rd<uintptr_t>(gApp, 4, &tbl) && tbl;
+    for (int h = 0; h < 2; ++h) {
+        uint32_t id = kNoItemId;
+        const bool idOk = rd<uint32_t>(clientMember, h ? kCrLeftItemOff : kCrRightItemOff, &id);
+        uintptr_t item = 0;
+        char resref[17] = {0};
+        char name0[64] = {0}, name1[64] = {0};
+        const char* note1 = "skipped";
+        if (idOk && id != kNoItemId && id != 0 && haveTbl && gameaddr::ClientGetItemById) {
+            item = reinterpret_cast<uintptr_t(__thiscall*)(void*, uint32_t)>(gameaddr::ClientGetItemById)(reinterpret_cast<void*>(tbl), id);
+            uint32_t vt = 0, baseIdx = 0;
+            if (item && !(rd<uint32_t>(item, 0, &vt) && vt && rd<uint32_t>(item, kItemBaseIdxOff, &baseIdx))) item = 0;   // not a readable item
+        }
+        if (item) {
+            int n = 0;
+            for (; n < 16; ++n) {
+                char ch = 0;
+                if (!rd<char>(item, kItemModelResOff + n, &ch) || ch == 0) break;
+                resref[n] = (ch >= 0x20 && ch <= 0x7E) ? ch : '.';
+            }
+            resref[n] = 0;
+            callItemName(item, 0, name0, sizeof(name0));
+            if (g_probeNames >= 2) {
+                callItemName(item, 1, name1, sizeof(name1));
+                note1 = "";
+            }
+        }
+        if (note1[0]) KP_LOG(chView, "ITEMNAME hand=%s id=0x%08x item=0x%x resref=%s name0=\"%s\" name1=(skipped)", kHand[h], static_cast<unsigned>(id),
+                             static_cast<unsigned>(item), resref, name0);
+        else KP_LOG(chView, "ITEMNAME hand=%s id=0x%08x item=0x%x resref=%s name0=\"%s\" name1=\"%s\"", kHand[h], static_cast<unsigned>(id),
+                    static_cast<unsigned>(item), resref, name0, name1);
     }
 }
 
@@ -548,6 +723,8 @@ void enterEdit(Editor& e, int hand) {
         KP_LOG(chView, "EDIT refused hand=%d gob=%p scope=%d", hand, e.regGob[hand], e.editScope);
         e.mode = MODE_NAV;   // the previous edit (if any) was just ended
         e.editHand = -1;
+        e.projEditPending = false;
+        resetInput(e);
         if (wasWeapon) setHandNames(e);
         applyLayout(e);
         if (g_menu.ok() && e.statusItem >= 0) g_menu.p->SetText(e.page, e.statusItem, "Edit unavailable");
@@ -555,6 +732,9 @@ void enterEdit(Editor& e, int hand) {
     }
     e.mode = MODE_WEAPON;
     e.editHand = hand;
+    resetInput(e);   // drags from the previous mode are dropped; a button still held (the click that entered) must be released first
+    e.projEditPending = true;
+    e.projEditTries = 0;
     refreshEdit(e);
     KP_LOG(chView, "EDIT enter hand=%d gob=%p model=%s bone=%s", hand, e.regGob[hand], e.editInfo.model, e.editInfo.bone);
 
@@ -579,6 +759,8 @@ void exitEdit(Editor& e) {
     if (g_hol.ok()) g_hol.h->EndEdit();
     e.mode = MODE_NAV;
     e.editHand = -1;
+    e.projEditPending = false;
+    resetInput(e);
     KP_LOG(chView, "EDIT exit");
 
     setHandNames(e);
@@ -598,6 +780,7 @@ void KPATCH_CALL cbEnter(uint32_t page, void*) {
     g_menu.p->PaneRect(g_ed.panel, MUI_PANE_VIEW, &view);
     hse::HseRect hcol = {col.x, col.y, col.w, col.h};
     hse::HseRect hview = {view.x, view.y, view.w, view.h};
+    g_ed.viewRect = hview;
     g_ed.strip = hse::leftStrip(hcol, hview, 6);
     KP_LOG(chView, "LAYOUT strip=(%d,%d,%d,%d)", g_ed.strip.x, g_ed.strip.y, g_ed.strip.w, g_ed.strip.h);
 
@@ -875,15 +1058,15 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
             if (!e.draggingMmb) {
                 if (mmbBegan && insideView) {
                     e.draggingMmb = true;
-                    e.lastMouseX = curX;
-                    e.lastMouseY = curY;
+                    e.mmbLastX = curX;
+                    e.mmbLastY = curY;
                 }
             } else {
-                int dx = curX - e.lastMouseX;
+                int dx = curX - e.mmbLastX;
                 if (dx != 0) {
                     e.view.yaw = hse::spin(e.view.yaw, static_cast<float>(dx));
-                    e.lastMouseX = curX;
-                    e.lastMouseY = curY;
+                    e.mmbLastX = curX;
+                    e.mmbLastY = curY;
                 }
             }
         } else {
@@ -897,14 +1080,14 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
             if (!e.draggingLmb) {
                 if (pressBegan && insideView) {
                     e.draggingLmb = true;
-                    e.lastMouseX = curX;
-                    e.lastMouseY = curY;
+                    e.lmbLastX = curX;
+                    e.lmbLastY = curY;
                     e.snapAccY = 0.0f;
                     e.snapAccZ = 0.0f;
                 }
             } else {
-                int dx = curX - e.lastMouseX;
-                int dy = curY - e.lastMouseY;
+                int dx = curX - e.lmbLastX;
+                int dy = curY - e.lmbLastY;
                 if (dx != 0 || dy != 0) {
                     float scale = 0.0025f / (e.view.zoom > 0.1f ? e.view.zoom : 1.0f);
                     if (shift) scale *= 0.2f;
@@ -917,8 +1100,8 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
                         g_hol.h->NudgeWorld(nullptr, dp);
                         updateStatusText(e);
                     }
-                    e.lastMouseX = curX;
-                    e.lastMouseY = curY;
+                    e.lmbLastX = curX;
+                    e.lmbLastY = curY;
                 }
             }
         } else {
@@ -934,30 +1117,33 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
             if (!e.draggingRmb) {
                 if (rmbBegan && insideView) {
                     e.draggingRmb = true;
-                    e.lastMouseX = curX;
-                    e.lastMouseY = curY;
+                    e.rmbLastX = curX;
+                    e.rmbLastY = curY;
+                    e.snapAccRot = 0.0f;
                 }
             } else {
-                int dx = curX - e.lastMouseX;
-                int dy = curY - e.lastMouseY;
+                int dx = curX - e.rmbLastX;
+                int dy = curY - e.rmbLastY;
                 if (dx != 0 || dy != 0) {
                     float scale = 0.5f;
                     if (shift) scale *= 0.2f;
                     float axis[3] = { 0.0f, -static_cast<float>(dy), static_cast<float>(dx) };
                     float deg = std::sqrt(static_cast<float>(dx * dx + dy * dy)) * scale;
-                    if (ctrl) deg = std::round(deg / 5.0f) * 5.0f;
+                    if (ctrl) deg = hse::snapAccum(e.snapAccRot, deg, kRotSnapDeg);   // 5 degree steps; the remainder carries so slow drags still turn
+                    else e.snapAccRot = 0.0f;
+                    e.rmbLastX = curX;
+                    e.rmbLastY = curY;
                     if (deg > 0.001f) {
                         QVec q = qaxis(axis, deg);
                         float dq[4] = { q.w, q.x, q.y, q.z };
                         g_hol.h->NudgeWorld(dq, nullptr);
-                        e.lastMouseX = curX;
-                        e.lastMouseY = curY;
                         updateStatusText(e);
                     }
                 }
             }
         } else {
             e.draggingRmb = false;
+            e.snapAccRot = 0.0f;
         }
     } else {
         // Mode NAV
@@ -1031,6 +1217,7 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
 
         readWeaponModel(e.regGob[0], e.wpnName[0], sizeof(e.wpnName[0]));
         readWeaponModel(e.regGob[1], e.wpnName[1], sizeof(e.wpnName[1]));
+        probeItemNames(C);
 
         char rBuf[64], lBuf[64];
         snprintf(rBuf, sizeof(rBuf), "Right: %s", e.wpnName[0][0] ? e.wpnName[0] : (e.regGob[0] ? "Equipped" : "None"));
@@ -1053,10 +1240,19 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
         g_p3.p->SetView(e.token, e.view.yaw, e.view.zoom, e.view.panZ);
         if (e.camHookPending) {
             e.camHookPending = false;
-            float pos[3] = {0, 0, 0}, q[4] = {0, 0, 0, 1};
-            void* rig = g_p3.p->RigGob(e.token, 0);
-            int rcHook = (rig && g_hol.ok()) ? g_hol.h->GetNodeWorld(rig, "camerahook", pos, q) : 0;
-            KP_LOG(chView, "CAMHOOK pos=(%.2f,%.2f,%.2f) ok=%d", pos[0], pos[1], pos[2], rcHook);
+            logCamHook(e, "live");
+            ++e.projLogs;
+        }
+        if (e.projEditPending) {
+            if (e.mode != MODE_WEAPON) {
+                e.projEditPending = false;
+            } else if (e.projLogs < kMaxProjLogs && logEditProj(e)) {
+                e.projEditPending = false;
+                ++e.projLogs;
+            } else if (++e.projEditTries >= kProjRetryTicks) {
+                e.projEditPending = false;
+                KP_LOG(chView, "PROJ hand=%s mount=none (GetMountWorld gave nothing in %d ticks)", e.editHand == 1 ? "L" : "R", e.projEditTries);
+            }
         }
         // CAM: log only a view that has been steady for >= 500 ms and differs from the last logged one (per Editor, capped).
         const DWORD nowMs = GetTickCount();
@@ -1072,6 +1268,11 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
             e.camLogZoom = e.view.zoom;
             e.camLogPanZ = e.view.panZ;
             ++e.camLogs;
+            if (e.projLogs < kMaxProjLogs) {   // the creature turned or the fov changed: re-project (the camera itself is not yawed)
+                logCamHook(e, "settled");
+                if (e.mode == MODE_WEAPON) logEditProj(e);
+                ++e.projLogs;
+            }
         }
     }
 }
@@ -1128,7 +1329,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_cfgClient.init(api);
     g_menu.init(api);
     embedgui::g_log = embedLog;
-    KP_LOG(chMain, "holster-editor 0.2.5-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
+    KP_LOG(chMain, "holster-editor 0.2.6-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
            static_cast<unsigned>(sizeof kHseViewGui));
     const bool cfgOk = g_cfgClient.connect(), menuOk = g_menu.connect();
     if (!cfgOk || !menuOk) {

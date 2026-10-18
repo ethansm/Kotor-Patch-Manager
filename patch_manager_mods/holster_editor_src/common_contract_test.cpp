@@ -183,6 +183,8 @@ int main() {
         HCHECK("gameaddr::GetLocString non-zero", gameaddr::GetLocString != 0);
         HCHECK("gameaddr::GetClientLanguage non-zero", gameaddr::GetClientLanguage != 0);
         HCHECK("gameaddr::ExoDtor non-zero", gameaddr::ExoDtor != 0);
+        HCHECK("gameaddr::ClientItemGetName non-zero", gameaddr::ClientItemGetName != 0);
+        HCHECK("gameaddr::ClientGetItemById non-zero", gameaddr::ClientGetItemById != 0);
 
         HEQ("MUI_PANE_COLUMN is 0", MUI_PANE_COLUMN, 0);
         HEQ("K2PREVIEW3D_HAND_RIGHT is 0", K2PREVIEW3D_HAND_RIGHT, 0);

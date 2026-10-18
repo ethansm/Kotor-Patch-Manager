@@ -151,6 +151,116 @@ static void testGuard() {
     KT_CHECK(hse::guardArmLive(true, 1000, 1100, 2000));
 }
 
+static void testWorldToScreen() {
+    const float cam[3] = {0.0f, 0.0f, 0.0f};
+    const float qI[4] = {1.0f, 0.0f, 0.0f, 0.0f};   // w,x,y,z identity: looks down -Z, up +Y, right +X
+    const hse::HseRect ext = {100, 50, 200, 100};   // aspect 2
+    const float fov = 60.0f;
+    const float t = tanf(fov * 3.14159265358979f / 360.0f);
+
+    // straight ahead -> centre
+    const float ahead[3] = {0.0f, 0.0f, -3.0f};
+    hse::WorldScreen s = hse::worldToScreen(cam, qI, fov, ext, ahead);
+    KT_CHECK(s.ok);
+    KT_CHECK(closeF(s.sx, 200.0f, 1e-2f));
+    KT_CHECK(closeF(s.sy, 100.0f, 1e-2f));
+    KT_CHECK(closeF(s.depth, 3.0f, 1e-4f));
+
+    // top frustum edge -> sy == ext.y; bottom edge -> ext.y + h
+    const float top[3] = {0.0f, 2.0f * t, -2.0f};
+    s = hse::worldToScreen(cam, qI, fov, ext, top);
+    KT_CHECK(s.ok);
+    KT_CHECK(closeF(s.sy, 50.0f, 1e-2f));
+    KT_CHECK(closeF(s.sx, 200.0f, 1e-2f));
+    const float bottom[3] = {0.0f, -2.0f * t, -2.0f};
+    s = hse::worldToScreen(cam, qI, fov, ext, bottom);
+    KT_CHECK(closeF(s.sy, 150.0f, 1e-2f));
+
+    // right edge -> sx == ext.x + w (the horizontal half extent is depth * t * aspect); left edge -> ext.x
+    const float right[3] = {2.0f * t * 2.0f, 0.0f, -2.0f};
+    s = hse::worldToScreen(cam, qI, fov, ext, right);
+    KT_CHECK(s.ok);
+    KT_CHECK(closeF(s.sx, 300.0f, 1e-2f));
+    KT_CHECK(closeF(s.sy, 100.0f, 1e-2f));
+    const float left[3] = {-2.0f * t * 2.0f, 0.0f, -2.0f};
+    s = hse::worldToScreen(cam, qI, fov, ext, left);
+    KT_CHECK(closeF(s.sx, 100.0f, 1e-2f));
+
+    // +Y is up on screen (smaller sy), +X right (larger sx)
+    const float up[3] = {0.0f, 0.5f, -3.0f};
+    s = hse::worldToScreen(cam, qI, fov, ext, up);
+    KT_CHECK(s.ok && s.sy < 100.0f);
+    const float rt[3] = {0.5f, 0.0f, -3.0f};
+    s = hse::worldToScreen(cam, qI, fov, ext, rt);
+    KT_CHECK(s.ok && s.sx > 200.0f);
+
+    // behind the camera and depth 0.05 boundary
+    const float behind[3] = {0.0f, 0.0f, 3.0f};
+    KT_CHECK(!hse::worldToScreen(cam, qI, fov, ext, behind).ok);
+    const float atZero[3] = {0.0f, 0.0f, 0.0f};
+    KT_CHECK(!hse::worldToScreen(cam, qI, fov, ext, atZero).ok);
+    const float atBoundary[3] = {0.0f, 0.0f, -0.05f};
+    KT_CHECK(!hse::worldToScreen(cam, qI, fov, ext, atBoundary).ok);
+    const float justPast[3] = {0.0f, 0.0f, -0.0502f};
+    KT_CHECK(hse::worldToScreen(cam, qI, fov, ext, justPast).ok);
+
+    // 90-degree yawed camera (about +Y): looks down -X; a point on -X is the centre, a point on -Z is off to the side
+    const float h = 0.70710678f;
+    const float qY[4] = {h, 0.0f, h, 0.0f};
+    const float alongX[3] = {-4.0f, 0.0f, 0.0f};
+    s = hse::worldToScreen(cam, qY, fov, ext, alongX);
+    KT_CHECK(s.ok);
+    KT_CHECK(closeF(s.sx, 200.0f, 1e-2f));
+    KT_CHECK(closeF(s.sy, 100.0f, 1e-2f));
+    KT_CHECK(closeF(s.depth, 4.0f, 1e-3f));
+    KT_CHECK(!hse::worldToScreen(cam, qY, fov, ext, ahead).ok);   // -Z is now 90 degrees to the side: depth 0
+    KT_CHECK(!hse::worldToScreen(cam, qY, fov, ext, behind).ok);
+
+    // camera offset: translating both camera and point changes nothing
+    const float cam2[3] = {5.0f, -2.0f, 1.0f};
+    const float ahead2[3] = {5.0f, -2.0f, -2.0f};
+    s = hse::worldToScreen(cam2, qI, fov, ext, ahead2);
+    KT_CHECK(s.ok && closeF(s.sx, 200.0f, 1e-2f) && closeF(s.sy, 100.0f, 1e-2f) && closeF(s.depth, 3.0f, 1e-4f));
+
+    // non-finite input and degenerate extent / fov / quaternion
+    const float nanP[3] = {std::nanf(""), 0.0f, -3.0f};
+    KT_CHECK(!hse::worldToScreen(cam, qI, fov, ext, nanP).ok);
+    const float infP[3] = {0.0f, INFINITY, -3.0f};
+    KT_CHECK(!hse::worldToScreen(cam, qI, fov, ext, infP).ok);
+    const float nanCam[3] = {0.0f, std::nanf(""), 0.0f};
+    KT_CHECK(!hse::worldToScreen(nanCam, qI, fov, ext, ahead).ok);
+    const float nanQ[4] = {1.0f, std::nanf(""), 0.0f, 0.0f};
+    KT_CHECK(!hse::worldToScreen(cam, nanQ, fov, ext, ahead).ok);
+    const float zeroQ[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+    KT_CHECK(!hse::worldToScreen(cam, zeroQ, fov, ext, ahead).ok);
+    KT_CHECK(!hse::worldToScreen(cam, qI, std::nanf(""), ext, ahead).ok);
+    KT_CHECK(!hse::worldToScreen(cam, qI, 0.0f, ext, ahead).ok);
+    KT_CHECK(!hse::worldToScreen(cam, qI, fov, hse::HseRect{100, 50, 0, 100}, ahead).ok);
+    KT_CHECK(!hse::worldToScreen(cam, qI, fov, hse::HseRect{100, 50, 200, 0}, ahead).ok);
+    KT_CHECK(!hse::worldToScreen(cam, qI, fov, hse::HseRect{100, 50, -5, -5}, ahead).ok);
+    KT_CHECK(!hse::worldToScreen(nullptr, qI, fov, ext, ahead).ok);
+
+    // a non-unit quaternion is normalised
+    const float qBig[4] = {3.0f, 0.0f, 0.0f, 0.0f};
+    s = hse::worldToScreen(cam, qBig, fov, ext, ahead);
+    KT_CHECK(s.ok && closeF(s.sx, 200.0f, 1e-2f));
+}
+
+static void testSnapAccumRotation() {
+    // RMB Ctrl snap: 5-degree steps with carry (the per-tick round() it replaces dropped slow rotation)
+    const float e = 1e-4f;
+    float acc = 0.0f;
+    float sum = 0.0f;
+    for (int i = 0; i < 20; ++i) sum += hse::snapAccum(acc, 0.5f, 5.0f);   // 10 deg of slow drag
+    KT_CHECK(closeF(sum, 10.0f, e));
+    KT_CHECK(closeF(acc, 0.0f, e));
+    acc = 0.0f;
+    KT_CHECK(closeF(hse::snapAccum(acc, 2.4f, 5.0f), 0.0f, e));   // under one step: nothing yet
+    KT_CHECK(closeF(acc, 2.4f, e));
+    KT_CHECK(closeF(hse::snapAccum(acc, 2.7f, 5.0f), 5.0f, e));   // carry completes the step
+    KT_CHECK(closeF(acc, 0.1f, e));
+}
+
 int main() {
     testYawAndSpin();
     testZoomAndView();
@@ -160,6 +270,8 @@ int main() {
     testScopeLabel();
     testSnapAccum();
     testGuard();
+    testWorldToScreen();
+    testSnapAccumRotation();
     return kt::Report("hse_view");
 }
 

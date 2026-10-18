@@ -143,6 +143,59 @@ inline float snapAccum(float& acc, float delta, float step) {
     return applied;
 }
 
+// World point -> view screen position for the preview camera (U0 probe; S1 arbitration). Pure, no engine calls.
+// The camera node pose is (camPos, camQ w-first = w,x,y,z). It looks down node-local -Z, up +Y, right +X. fovyDeg is the VERTICAL fov
+// (gluPerspective); aspect is ext.w / ext.h. Screen = top-left UI units: sx = ext.x + (ndcX + 1) / 2 * w, sy = ext.y + (1 - ndcY) / 2 * h.
+struct WorldScreen {
+    bool ok;
+    float sx;
+    float sy;
+    float depth;   // distance along the camera forward axis (0 when not computed)
+};
+
+constexpr float kMinProjDepth = 0.05f;
+
+inline bool finiteF(float v) { return !(isnan(v) || isinf(v)); }
+
+inline WorldScreen worldToScreen(const float camPos[3], const float camQ[4], float fovyDeg, const HseRect& ext, const float P[3]) {
+    WorldScreen bad = {false, 0.0f, 0.0f, 0.0f};
+    if (!camPos || !camQ || !P) return bad;
+    for (int i = 0; i < 3; ++i) if (!finiteF(camPos[i]) || !finiteF(P[i])) return bad;
+    for (int i = 0; i < 4; ++i) if (!finiteF(camQ[i])) return bad;
+    if (!finiteF(fovyDeg) || fovyDeg <= 0.0f || fovyDeg >= 179.0f) return bad;
+    if (ext.w <= 0 || ext.h <= 0) return bad;
+    float qn = sqrtf(camQ[0] * camQ[0] + camQ[1] * camQ[1] + camQ[2] * camQ[2] + camQ[3] * camQ[3]);
+    if (!(qn > 1e-6f)) return bad;
+    const float qw = camQ[0] / qn, qx = camQ[1] / qn, qy = camQ[2] / qn, qz = camQ[3] / qn;
+    // camera axes in world space: R(q) * (1,0,0), (0,1,0), (0,0,-1); v' = v + w*t + q.xyz x t, t = 2 * (q.xyz x v)
+    const float basis[3][3] = {{1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}};
+    float ax[3][3];
+    for (int k = 0; k < 3; ++k) {
+        const float* v = basis[k];
+        float tx = 2.0f * (qy * v[2] - qz * v[1]);
+        float ty = 2.0f * (qz * v[0] - qx * v[2]);
+        float tz = 2.0f * (qx * v[1] - qy * v[0]);
+        ax[k][0] = v[0] + qw * tx + (qy * tz - qz * ty);
+        ax[k][1] = v[1] + qw * ty + (qz * tx - qx * tz);
+        ax[k][2] = v[2] + qw * tz + (qx * ty - qy * tx);
+    }
+    const float d[3] = {P[0] - camPos[0], P[1] - camPos[1], P[2] - camPos[2]};
+    const float xc = d[0] * ax[0][0] + d[1] * ax[0][1] + d[2] * ax[0][2];
+    const float yc = d[0] * ax[1][0] + d[1] * ax[1][1] + d[2] * ax[1][2];
+    const float depth = d[0] * ax[2][0] + d[1] * ax[2][1] + d[2] * ax[2][2];
+    if (!finiteF(depth) || depth <= kMinProjDepth) return bad;
+    const float t = tanf(fovyDeg * 3.14159265358979f / 360.0f);
+    const float aspect = static_cast<float>(ext.w) / static_cast<float>(ext.h);
+    const float ndcX = xc / (depth * t * aspect);
+    const float ndcY = yc / (depth * t);
+    WorldScreen r;
+    r.sx = static_cast<float>(ext.x) + (ndcX + 1.0f) * 0.5f * static_cast<float>(ext.w);
+    r.sy = static_cast<float>(ext.y) + (1.0f - ndcY) * 0.5f * static_cast<float>(ext.h);
+    r.depth = depth;
+    r.ok = finiteF(r.sx) && finiteF(r.sy);
+    return r;
+}
+
 // A two-click confirm is armed and still inside its window (wrap-safe unsigned time difference).
 inline bool guardArmLive(bool armed, uint32_t armedAt, uint32_t now, uint32_t windowMs) {
     return armed && (uint32_t)(now - armedAt) < windowMs;

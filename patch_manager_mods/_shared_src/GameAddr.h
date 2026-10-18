@@ -117,6 +117,7 @@ constexpr uintptr_t OptionsInGameVtable = 0x009A701C;    // in-game Options pane
 
 // ---- 3D character preview (equip3d EquipCharPreview.cpp, live since 10-05; preview-3d provider copies the recipe) ----
 constexpr uintptr_t ClientGetItemById = 0x0073F530;      // CClientExoApp::GetItemByGameObjectID (verified B11a) thiscall(mgr = [[AppGlobal]+4], id) -> client item*
+constexpr uintptr_t ClientItemGetName = 0x007FDFA0;      // CSWCItem::GetName (static facts: 618 B, RET 8, caller CClientExoAppInternal::GetObjectName 0x78EBA0; doc 11 R14) thiscall(clientItem; CExoString* out, int identified); probe only (holster-editor U0). identified=0 copies item+0x18C (side-effect free, may be empty); identified=1 can take a lookup branch via 0x71DF90 (strref->achievement switch, unchecked 0x6D5200(item+0xC) deref: NULL on a bad base-item row), so call it with 0 unless probing
 constexpr uintptr_t CreateModelGob = 0x00462320;         // model-based Gob creator (REA holster C5) cdecl(name, inst, 0, 0) -> Gob*
 constexpr uintptr_t PreviewModelInstName = 0x009A4AB0;   // instance-name string passed to CreateModelGob (equip3d, live)
 constexpr uintptr_t ClientCreatureCtor = 0x007645F0;     // CSWCCreature ctor (REA holster C6) fastcall ECX = block (0x470 bytes)
