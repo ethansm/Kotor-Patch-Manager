@@ -105,9 +105,9 @@ void testScopedEventNestedSpawn() {
     KT_CHECK_EQ(scope.depth(), 0);
     KT_CHECK_EQ(env.opens, 1);
     KT_CHECK_EQ(env.closes, 1);
-    KT_CHECK_EQ(env.spawnCalls, 4);
+    KT_CHECK_EQ(env.spawnCalls, 5);
     const std::vector<std::string> want = {
-        "SPAWN stable area=204tel visit=1 salt=0000abcd rows=4 spawn=on",
+        "SPAWN stable area=204tel visit=1 salt=0000abcd rows=5 spawn=on",
         "SPAWN begin resref=c_drdmouse01 tag=MouseDroid area=204tel at -39.0,-63.1,0.0",
         "ADDTOAREA n=1 c=00000000 id=00000000 origin=LIB",
         "SPAWN ok resref=c_drdmouse01 id=7f000100",
@@ -117,6 +117,8 @@ void testScopedEventNestedSpawn() {
         "SPAWN ok resref=k1p_juhani id=7f000100",
         "SPAWN begin resref=k1p_carth tag=k1p_carth area=204tel at -36.0,-63.1,0.0",
         "SPAWN ok resref=k1p_carth id=7f000100",
+        "SPAWN begin resref=k1p_juhanv tag=k1p_juhanv area=204tel at -34.5,-63.1,0.0",
+        "SPAWN ok resref=k1p_juhanv id=7f000100",
     };
     KT_CHECK(env.lines == want);
 }
@@ -227,7 +229,7 @@ void testRunStableDisabled() {
     FakeEnv env;
     LogBudget budget;
     RunStable(env, "204tel", 3, 0x1u, false, budget);
-    const std::vector<std::string> want = {"SPAWN stable area=204tel visit=3 salt=00000001 rows=4 spawn=off"};
+    const std::vector<std::string> want = {"SPAWN stable area=204tel visit=3 salt=00000001 rows=5 spawn=off"};
     KT_CHECK(env.lines == want);
     KT_CHECK_EQ(env.spawnCalls, 0);
     KT_CHECK_EQ(env.flushes, 0);
@@ -239,7 +241,7 @@ void testRunStableFormatAndOrder() {
     LogBudget budget;
     RunStable(env, "204tel", 1, 0xABCDu, true, budget);
     const std::vector<std::string> want = {
-        "SPAWN stable area=204tel visit=1 salt=0000abcd rows=4 spawn=on",
+        "SPAWN stable area=204tel visit=1 salt=0000abcd rows=5 spawn=on",
         "SPAWN begin resref=c_drdmouse01 tag=MouseDroid area=204tel at -39.0,-63.1,0.0",
         "<flush>",
         "<spawn c_drdmouse01>",
@@ -256,10 +258,14 @@ void testRunStableFormatAndOrder() {
         "<flush>",
         "<spawn k1p_carth>",
         "SPAWN ok resref=k1p_carth id=7f000100",
+        "SPAWN begin resref=k1p_juhanv tag=k1p_juhanv area=204tel at -34.5,-63.1,0.0",
+        "<flush>",
+        "<spawn k1p_juhanv>",
+        "SPAWN ok resref=k1p_juhanv id=7f000100",
     };
     KT_CHECK(env.trace.size() == want.size());
     KT_CHECK(env.trace == want);
-    KT_CHECK_EQ(budget.used(), 9);
+    KT_CHECK_EQ(budget.used(), 11);
 }
 
 void testRunStableTagPresentSkips() {
@@ -268,7 +274,7 @@ void testRunStableTagPresentSkips() {
     LogBudget budget;
     RunStable(env, "204tel", 2, 0x2u, true, budget);
     const std::vector<std::string> want = {
-        "SPAWN stable area=204tel visit=2 salt=00000002 rows=4 spawn=on",
+        "SPAWN stable area=204tel visit=2 salt=00000002 rows=5 spawn=on",
         "SPAWN skip resref=c_drdmouse01 tag=MouseDroid already present (library seen-tag list)",
         "SPAWN begin resref=k1p_native_npc tag=k1p_native_npc area=204tel at -21.1,-31.1,0.0",
         "SPAWN ok resref=k1p_native_npc id=7f000100",
@@ -276,9 +282,11 @@ void testRunStableTagPresentSkips() {
         "SPAWN ok resref=k1p_juhani id=7f000100",
         "SPAWN begin resref=k1p_carth tag=k1p_carth area=204tel at -36.0,-63.1,0.0",
         "SPAWN ok resref=k1p_carth id=7f000100",
+        "SPAWN begin resref=k1p_juhanv tag=k1p_juhanv area=204tel at -34.5,-63.1,0.0",
+        "SPAWN ok resref=k1p_juhanv id=7f000100",
     };
     KT_CHECK(env.lines == want);
-    KT_CHECK_EQ(env.spawnCalls, 3);
+    KT_CHECK_EQ(env.spawnCalls, 4);
     KT_CHECK(!hasEntry(env.trace, "<spawn c_drdmouse01>"));  // the present tag is never spawned
     KT_CHECK(hasEntry(env.trace, "<spawn k1p_native_npc>"));
 }
@@ -289,7 +297,7 @@ void testRunStableSpawnRefused() {
     LogBudget budget;
     RunStable(env, "204tel", 1, 0u, true, budget);
     const std::vector<std::string> want = {
-        "SPAWN stable area=204tel visit=1 salt=00000000 rows=4 spawn=on",
+        "SPAWN stable area=204tel visit=1 salt=00000000 rows=5 spawn=on",
         "SPAWN begin resref=c_drdmouse01 tag=MouseDroid area=204tel at -39.0,-63.1,0.0",
         "SPAWN fail resref=c_drdmouse01 refused by npc-world (reason in npc-world_log.txt)",
         "SPAWN begin resref=k1p_native_npc tag=k1p_native_npc area=204tel at -21.1,-31.1,0.0",
@@ -298,9 +306,11 @@ void testRunStableSpawnRefused() {
         "SPAWN fail resref=k1p_juhani refused by npc-world (reason in npc-world_log.txt)",
         "SPAWN begin resref=k1p_carth tag=k1p_carth area=204tel at -36.0,-63.1,0.0",
         "SPAWN fail resref=k1p_carth refused by npc-world (reason in npc-world_log.txt)",
+        "SPAWN begin resref=k1p_juhanv tag=k1p_juhanv area=204tel at -34.5,-63.1,0.0",
+        "SPAWN fail resref=k1p_juhanv refused by npc-world (reason in npc-world_log.txt)",
     };
     KT_CHECK(env.lines == want);
-    KT_CHECK_EQ(env.spawnCalls, 4);
+    KT_CHECK_EQ(env.spawnCalls, 5);
 }
 
 void testRunStableUnknownAndNullArea() {
@@ -325,9 +335,9 @@ void testRunStableBudgetExhausted() {
     KT_CHECK(budget.reserve(LogBudget::kTotal, LogKind::Other));
     RunStable(env, "204tel", 1, 0u, true, budget);
     KT_CHECK(env.lines.empty());
-    KT_CHECK_EQ(env.spawnCalls, 4);     // the spawns still happen
-    KT_CHECK_EQ(env.flushes, 4);
-    KT_CHECK_EQ(budget.dropped(), 9L);  // stable line plus begin and ok for each of four rows
+    KT_CHECK_EQ(env.spawnCalls, 5);     // the spawns still happen
+    KT_CHECK_EQ(env.flushes, 5);
+    KT_CHECK_EQ(budget.dropped(), 11L);  // stable line plus begin and ok for each of five rows
     KT_CHECK_EQ(budget.used(), 3000);
 }
 

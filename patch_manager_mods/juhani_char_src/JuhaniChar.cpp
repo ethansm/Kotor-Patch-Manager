@@ -1,5 +1,5 @@
 // Juhani Char 0.1.0-dev (Steam Aspyr build 6A522E71...): a DLL-only client of asset-vfs (doc 44 VFS-B1).
-// KPatchInit registers the private Juhani and Carth bundles (JuhaniBundle.cpp, CarthBundle.cpp) with k2.assetvfs@1 and k2.characterlib@1.
+// KPatchInit registers the private Juhani, Carth and Juhani-twin bundles (JuhaniBundle.cpp, CarthBundle.cpp, JuhanvBundle.cpp) with k2.assetvfs@1 and k2.characterlib@1.
 // Providers load before non-providers and the manifest requires asset-vfs, so a NULL interface here means asset-vfs
 // is missing or disabled (KP_ERR). It owns no hook; the k1-spawn-probe roster spawns k1p_juhani from the VFS UTC.
 // Log: juhani-char_log.txt via KpLog.h (channel main).
@@ -54,6 +54,7 @@ __declspec(dllexport) void __cdecl KPatchInit(const KPatchApi* api) {
     }
     logBundle("juhani", juhanichar::registerBundle(g_char.vfs, g_char.lib, "juhani-char"));
     logBundle("carth", juhanichar::registerCarthBundle(g_char.vfs, g_char.lib, "juhani-char:carth"));
+    logBundle("juhanv", juhanichar::registerJuhanvBundle(g_char.vfs, g_char.lib, "juhani-char:juhanv"));
 }
 
 } // extern "C"
