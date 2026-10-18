@@ -5,7 +5,8 @@ Writes patch_manager_mods/_shared_src/ResetIconTex.inc (uncompressed 32-bit TGAs
   kResetIconTex / kResetIconHiTex  32x32 counter-clockwise circular arrow, thin line, transparent background
   kArrowLTex / kArrowLHiTex        32x32 bold left chevron '<'
   kArrowRTex / kArrowRHiTex        32x32 bold right chevron '>'
-  kResetTex[] / kResetTexCount     embtex::Tex table: hse_reset, hse_reset_hi, hse_arrow_l, hse_arrow_l_hi, hse_arrow_r, hse_arrow_r_hi
+  kFlipTex / kFlipHiTex            32x32 left-right double arrow (the view Flip button)
+  kResetTex[] / kResetTexCount     embtex::Tex table: hse_reset, hse_reset_hi, hse_arrow_l, hse_arrow_l_hi, hse_arrow_r, hse_arrow_r_hi, hse_flip, hse_flip_hi
                                    (normal = teal, the gear/wrench palette; _hi = the vanilla-style white hover variant)
 
 Art: signed-distance shapes (the glyph SDF is a parameter of sample()/render()), 4x4 supersampled, shaded like the gear/wrench glyphs
@@ -106,11 +107,25 @@ def _chevron(sign):
 
 sdist_arrow_l = _chevron(-1)
 sdist_arrow_r = _chevron(+1)
+
+
+FLIP_TIP, FLIP_HEAD, FLIP_HW, FLIP_SHAFT_HW = 12.0, 5.5, 2.0, 1.7   # double arrow: tip distance from the centre, head size, head / shaft half widths
+
+
+def sdist_flip(px, py):
+    """SDF of a left-right double arrow: a horizontal shaft with a chevron head at each end (round caps and joins)."""
+    d = _seg_dist(px, py, (CX - FLIP_TIP + 1.0, CY), (CX + FLIP_TIP - 1.0, CY)) - FLIP_SHAFT_HW
+    for sign in (-1, 1):
+        tip = (CX + sign * FLIP_TIP, CY)
+        a, b = (tip[0] - sign * FLIP_HEAD, CY - FLIP_HEAD), (tip[0] - sign * FLIP_HEAD, CY + FLIP_HEAD)
+        d = min(d, _seg_dist(px, py, a, tip) - FLIP_HW, _seg_dist(px, py, tip, b) - FLIP_HW)
+    return d
 sdist = sdist_reset   # historical name
 
 VARIANTS = (("hse_reset", "kResetIconTex", PAL_NORMAL, sdist_reset), ("hse_reset_hi", "kResetIconHiTex", PAL_HI, sdist_reset),
             ("hse_arrow_l", "kArrowLTex", PAL_NORMAL, sdist_arrow_l), ("hse_arrow_l_hi", "kArrowLHiTex", PAL_HI, sdist_arrow_l),
-            ("hse_arrow_r", "kArrowRTex", PAL_NORMAL, sdist_arrow_r), ("hse_arrow_r_hi", "kArrowRHiTex", PAL_HI, sdist_arrow_r))
+            ("hse_arrow_r", "kArrowRTex", PAL_NORMAL, sdist_arrow_r), ("hse_arrow_r_hi", "kArrowRHiTex", PAL_HI, sdist_arrow_r),
+            ("hse_flip", "kFlipTex", PAL_NORMAL, sdist_flip), ("hse_flip_hi", "kFlipHiTex", PAL_HI, sdist_flip))
 
 
 def _mix(a, b, t):
@@ -171,7 +186,7 @@ def render(pal, sdist=sdist_reset):
 
 
 def build():
-    """(resref, identifier, bytes) for the six icon textures, in table order."""
+    """(resref, identifier, bytes) for the eight icon textures, in table order."""
     return [(name, ident, tga32(N, N, render(pal, sd))) for name, ident, pal, sd in VARIANTS]
 
 

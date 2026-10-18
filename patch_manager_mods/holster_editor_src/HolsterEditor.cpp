@@ -1,4 +1,4 @@
-// HolsterEditor.cpp -- holster-editor 0.4.5-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
+// HolsterEditor.cpp -- holster-editor 0.4.6-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
 // (doc 42 HW-EDIT, plan .claude/plans/holster_editor_options.md; page rebuild: .claude/plans/holster_editor_layout_v3.md, holster_hw_ux3_build.md Wave B.)
 //
 // mod-config owns everything about the Options screen: the hooks, the root "Mod Configuration" button, the list page, control cloning,
@@ -434,6 +434,7 @@ bool itemIsResetIcon(int i) {
 
 // The party member prev / next buttons: arrow art on the button (the "<" ">" captions render as nothing).
 bool itemIsMemberArrow(int i) { return i == hse::PI_MEMBER_PREV || i == hse::PI_MEMBER_NEXT; }
+bool itemIsHintBox(int i) { return i >= hse::PI_HINT && i < hse::PI_HINT + hse::kV3Hints; }
 
 // First text of item i (buf is the scratch for composed ones).
 const char* itemInitText(int i, char* buf, int cap) {
@@ -1408,6 +1409,11 @@ float selPx(const Editor& e, const editkit::Box& b, bool lit) {
 }
 // Text room of a LABEL (status, note, hints, legend, inspector values): the box width less 4 px per side (0 = not laid out yet).
 float labelPx(const Editor& e, const editkit::Box& b) { return e.layOk ? static_cast<float>(hse::labelTextPx(b.w)) : 0.0f; }
+// The hint lines sit inside a frame (the slider frame art): 8 more px of room per side than a plain label.
+float hintPx(const Editor& e, const editkit::Box& b) {
+    const float px = labelPx(e, b);
+    return px > 0.0f ? (px > 17.0f ? px - 16.0f : 1.0f) : 0.0f;
+}
 
 // Weapon button caption: the item display name (cached at build), else the model resref. "Right: Vibrosword" when that fits the button, else
 // "R: Vibrosword", cut with "..." when even that is too wide.
@@ -1793,7 +1799,7 @@ void refreshHints(Editor& e, int x, int y) {
     if (row == e.hintRow) return;
     e.hintRow = row;
     char fit[64];
-    fitButton(labelPx(e, e.lay.hint[1]), row >= 0 ? hse::inspHint(row) : "", fit, sizeof fit);
+    fitButton(hintPx(e, e.lay.hint[1]), row >= 0 ? hse::inspHint(row) : "", fit, sizeof fit);
     setItemText(e, hse::PI_HINT + 1, fit);
 }
 
@@ -2043,7 +2049,7 @@ void KPATCH_CALL cbEnter(uint32_t page, void*) {
     guikit::g_wheel.touch(GetTickCount());
     setItemText(g_ed, hse::PI_STATUS, statusText());
     char fit[64];
-    fitButton(labelPx(g_ed, g_ed.lay.hint[0]), "Drag or click a slider. Shift fine, Ctrl snap.", fit, sizeof fit);
+    fitButton(hintPx(g_ed, g_ed.lay.hint[0]), "Drag or click a slider. Shift fine, Ctrl snap.", fit, sizeof fit);
     setItemText(g_ed, hse::PI_HINT, fit);
     {   // the legend line under the view: cut to the view width
         char leg[64];
@@ -2287,7 +2293,7 @@ void applyArt(Editor& e) {
     if (e.artDone || e.refused || !g_menu.ok() || !e.page) return;
     // The slider art and the reset arrows are separate texture sets: a set that is still missing at the deadline is skipped, the other one is applied.
     const bool timedOut = ++e.artTicks > kArtMaxTicks;
-    bool haveIcon = hse::resetIconImage(false) && hse::resetIconImage(true);
+    bool haveIcon = hse::resetIconImage(false) && hse::resetIconImage(true) && hse::flipIconImage(false) && hse::flipIconImage(true);
     for (int a = 0; a < 4; ++a)
         if (!hse::arrowIconImage((a & 2) != 0, (a & 1) != 0)) haveIcon = false;
     bool haveSlider = true;
@@ -2297,19 +2303,26 @@ void applyArt(Editor& e) {
         const int b = hse::PI_ROW + r * hse::kRowStride;
         if (!ctlOf(e, e.item[b + 1]) || !ctlOf(e, e.wedge[r]) || !ctlOf(e, e.item[b + 2])) haveSlider = false;
     }
+    for (int i = 0; i < hse::kPageItemsV3 && haveSlider; ++i)
+        if (itemIsHintBox(i) && !ctlOf(e, e.item[i])) haveSlider = false;
     for (int i = 0; i < hse::kPageItemsV3 && haveIcon; ++i)
-        if ((itemIsResetIcon(i) || itemIsMemberArrow(i)) && !ctlOf(e, e.item[i])) haveIcon = false;
+        if ((itemIsResetIcon(i) || itemIsMemberArrow(i) || i == hse::PI_VIEW_FLIP) && !ctlOf(e, e.item[i])) haveIcon = false;
     if (!timedOut && (!haveIcon || !haveSlider)) return;
     if (timedOut)
         KP_LOGV(chView, KPLOG_WARN, "ART WARN not ready after %d ticks (slider=%d reset_icon=%d): the missing part keeps its plain controls", kArtMaxTicks,
                 haveSlider ? 1 : 0, haveIcon ? 1 : 0);
-    int frame = 0, wedge = 0, mark = 0, icon = 0, icons = 0, arrow = 0, arrows = 0;
+    int frame = 0, wedge = 0, mark = 0, icon = 0, icons = 0, arrow = 0, arrows = 0, flip = 0, hintBox = 0;
     for (int r = 0; r < hse::kV3Rows && haveSlider; ++r) {
         const int b = hse::PI_ROW + r * hse::kRowStride;
         const uintptr_t tc = ctlOf(e, e.item[b + 1]), wc = ctlOf(e, e.wedge[r]), mc = ctlOf(e, e.item[b + 2]);
         if (hse::sliderArtFill(tc, hse::SA_Frame)) { ++frame; (void)guikit::setFillStyle(tc, 2); }
         if (hse::sliderArtFill(wc, hse::SA_Wedge)) { ++wedge; (void)guikit::setFillStyle(wc, 2); }
         if (hse::sliderArtFill(mc, hse::SA_Mark)) { ++mark; (void)guikit::setFillStyle(mc, 2); }
+    }
+    for (int i = 0; i < hse::kPageItemsV3 && haveSlider; ++i) {   // the two hint lines get the slider frame as a description box
+        if (!itemIsHintBox(i)) continue;
+        const uintptr_t hc = ctlOf(e, e.item[i]);
+        if (hse::sliderArtFill(hc, hse::SA_Frame)) { ++hintBox; (void)guikit::setFillStyle(hc, 2); }
     }
     for (int i = 0; i < hse::kPageItemsV3 && haveIcon; ++i) {
         if (!itemIsResetIcon(i)) continue;
@@ -2332,9 +2345,17 @@ void applyArt(Editor& e) {
             ++arrow;
         }
     }
+    if (haveIcon) {
+        const uintptr_t fc = ctlOf(e, e.item[hse::PI_VIEW_FLIP]);
+        if (fc && guikit::setButtonFill(fc, hse::flipIconImage(false), hse::flipIconImage(true))) {
+            (void)guikit::setButtonFillStyle(fc, 2);
+            clearItemText(e, hse::PI_VIEW_FLIP);
+            flip = 1;
+        }
+    }
     e.artDone = true;
-    KP_LOG(chView, "ART applied frame=%d/%d wedge=%d/%d mark=%d/%d reset_icon=%d/%d member_arrow=%d/%d after %d ticks", frame, hse::kV3Rows, wedge, hse::kV3Rows, mark, hse::kV3Rows,
-           icon, icons, arrow, arrows, e.artTicks);
+    KP_LOG(chView, "ART applied frame=%d/%d wedge=%d/%d mark=%d/%d reset_icon=%d/%d member_arrow=%d/%d flip=%d/1 hint_box=%d/%d after %d ticks", frame, hse::kV3Rows, wedge, hse::kV3Rows, mark,
+           hse::kV3Rows, icon, icons, arrow, arrows, flip, hintBox, hse::kV3Hints, e.artTicks);
 }
 
 // Mounting bone `want` (0..4): HolsterApi has no absolute bone setter, so this cycles CycleBone until GetEdit reports the bone, at most
@@ -2692,7 +2713,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_menu.init(api);
     embedgui::g_log = embedLog;
     embtex::g_log = embedLog;
-    KP_LOG(chMain, "holster-editor 0.4.5-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
+    KP_LOG(chMain, "holster-editor 0.4.6-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
            static_cast<unsigned>(sizeof kHseViewGui));
     const bool cfgOk = g_cfgClient.connect(), menuOk = g_menu.connect();
     if (!cfgOk || !menuOk) {

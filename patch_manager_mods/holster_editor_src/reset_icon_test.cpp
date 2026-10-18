@@ -12,12 +12,12 @@
 #include <stdlib.h>
 
 using namespace hse;
-static int nNew = 0, nCtor = 0, nAdd = 0; static char g_ctorName[6][32]; static int g_nLoad = 0; static void* g_loadResult = nullptr;
+static int nNew = 0, nCtor = 0, nAdd = 0; static char g_ctorName[8][32]; static int g_nLoad = 0; static void* g_loadResult = nullptr;
 static void* g_alloc[32]; static int g_nAlloc = 0;   // every fake-engine allocation, freed at the end (LeakSanitizer; the real engine owns these)
 static void* track(void* p) { if (g_nAlloc < 32) g_alloc[g_nAlloc++] = p; return p; }
 static void* fNew(unsigned n) { ++nNew; return track(calloc(1, n)); }
 static void* fNewArr(unsigned n) { return track(malloc(n)); }
-static void* fCtor(void* t, const char* a, const char*) { if (nCtor < 6) strncpy(g_ctorName[nCtor], a, 31); ++nCtor; return t; }
+static void* fCtor(void* t, const char* a, const char*) { if (nCtor < 8) strncpy(g_ctorName[nCtor], a, 31); ++nCtor; return t; }
 static void fAdd(void*, void*) { ++nAdd; }
 static void fReset(void*) {}
 static void* fLoad(const char*) { ++g_nLoad; return g_loadResult; }
@@ -28,15 +28,15 @@ static bool fLbl() { ++g_lblCalls; return g_lblRet; }
 
 int main() {
     // ---- table: six textures (reset + two chevrons, normal/hover each), fixed names and order ----
-    KT_CHECK_EQ(resetIconTextureCount(), 6);
+    KT_CHECK_EQ(resetIconTextureCount(), 8);
     const embtex::Tex* t = resetIconTextures();
-    static const char* const kNames[6] = { "hse_reset", "hse_reset_hi", "hse_arrow_l", "hse_arrow_l_hi", "hse_arrow_r", "hse_arrow_r_hi" };
-    for (int i = 0; i < 6; ++i) { KT_CHECK(!strcmp(t[i].resref, kNames[i])); KT_CHECK(strlen(t[i].resref) <= 16); }
+    static const char* const kNames[8] = { "hse_reset", "hse_reset_hi", "hse_arrow_l", "hse_arrow_l_hi", "hse_arrow_r", "hse_arrow_r_hi", "hse_flip", "hse_flip_hi" };
+    for (int i = 0; i < 8; ++i) { KT_CHECK(!strcmp(t[i].resref, kNames[i])); KT_CHECK(strlen(t[i].resref) <= 16); }
     KT_CHECK(!strcmp(arrowIconResref(false, false), "hse_arrow_l")); KT_CHECK(!strcmp(arrowIconResref(false, true), "hse_arrow_l_hi"));
     KT_CHECK(!strcmp(arrowIconResref(true, false), "hse_arrow_r")); KT_CHECK(!strcmp(arrowIconResref(true, true), "hse_arrow_r_hi"));
     KT_CHECK(!strcmp(resetIconResref(false), "hse_reset")); KT_CHECK(!strcmp(resetIconResref(true), "hse_reset_hi"));
     KT_CHECK_EQ(kResetIconSize, 32);
-    for (int i = 0; i < 6; ++i) {
+    for (int i = 0; i < 8; ++i) {
         KT_CHECK_EQ(t[i].size, 4140u);
         embtex::TgaInfo ti;
         KT_CHECK_EQ((int)embtex::tgaInspect(t[i].data, t[i].size, &ti), (int)embtex::TGA_OK);
@@ -50,7 +50,7 @@ int main() {
         KT_CHECK_EQ((int)px[3], 0);              // bottom-left corner is transparent
         KT_CHECK_EQ((int)px[(32 * 32 - 1) * 4 + 3], 0);   // top-right corner is transparent
     }
-    for (int i = 0; i < 6; i += 2) KT_CHECK(memcmp(t[i].data, t[i + 1].data, t[i].size) != 0);   // hover variant is a different image
+    for (int i = 0; i < 8; i += 2) KT_CHECK(memcmp(t[i].data, t[i + 1].data, t[i].size) != 0);   // hover variant is a different image
     KT_CHECK(memcmp(t[2].data, t[4].data, t[2].size) != 0);   // left and right chevrons differ
 
     // ---- registration with a fake engine (Steam table is the default) ----
@@ -58,9 +58,9 @@ int main() {
     embtex::g_et.newFn = fNew; embtex::g_et.newArrFn = fNewArr; embtex::g_et.ctorFn = fCtor; embtex::g_et.listAddFn = fAdd; embtex::g_et.resetFn = fReset;
     embtex::g_et.pendingList = reinterpret_cast<uintptr_t>(pending);
     KT_CHECK(resetIconEnsure());
-    KT_CHECK_EQ(nNew, 6); KT_CHECK_EQ(nCtor, 6); KT_CHECK_EQ(nAdd, 6); KT_CHECK_EQ(embtex::slotCount(), 6);
-    for (int i = 0; i < 6; ++i) KT_CHECK(!strcmp(g_ctorName[i], kNames[i]));
-    KT_CHECK(resetIconEnsure()); KT_CHECK_EQ(nNew, 6);   // idempotent
+    KT_CHECK_EQ(nNew, 8); KT_CHECK_EQ(nCtor, 8); KT_CHECK_EQ(nAdd, 8); KT_CHECK_EQ(embtex::slotCount(), 8);
+    for (int i = 0; i < 8; ++i) KT_CHECK(!strcmp(g_ctorName[i], kNames[i]));
+    KT_CHECK(resetIconEnsure()); KT_CHECK_EQ(nNew, 8);   // idempotent
 
     // ---- image getter: nullptr until the engine can resolve the name (not cached), then pooled per variant ----
     guikit::g_gk.loadImage = fLoad; g_loadResult = nullptr;
@@ -76,6 +76,12 @@ int main() {
     for (int n = 0; n < 2; ++n) for (int h = 0; h < 2; ++h) KT_CHECK(arrowIconImage(n != 0, h != 0) == g_loadResult);
     g_loadResult = reinterpret_cast<void*>(0x7000); before = g_nLoad;
     KT_CHECK(arrowIconImage(true, true) == reinterpret_cast<void*>(0x6000)); KT_CHECK_EQ(g_nLoad, before);   // cached
+    // flip getter: same rule, table slots 6 / 7
+    KT_CHECK(!strcmp(flipIconResref(false), "hse_flip")); KT_CHECK(!strcmp(flipIconResref(true), "hse_flip_hi"));
+    g_loadResult = nullptr; before = g_nLoad;
+    KT_CHECK(flipIconImage(false) == nullptr); KT_CHECK_EQ(g_nLoad, before + 1);
+    g_loadResult = reinterpret_cast<void*>(0x8000);
+    KT_CHECK(flipIconImage(false) == g_loadResult); KT_CHECK(flipIconImage(true) == g_loadResult);
     g_loadResult = reinterpret_cast<void*>(0x4000);
     int after = g_nLoad; g_loadResult = reinterpret_cast<void*>(0x5000);
     KT_CHECK(resetIconImage(false) == reinterpret_cast<void*>(0x4000)); KT_CHECK_EQ(g_nLoad, after);   // cached
