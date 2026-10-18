@@ -1,4 +1,4 @@
-// HolsterEditor.cpp -- holster-editor 0.4.1-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
+// HolsterEditor.cpp -- holster-editor 0.4.2-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
 // (doc 42 HW-EDIT, plan .claude/plans/holster_editor_options.md; page rebuild: .claude/plans/holster_editor_layout_v3.md, holster_hw_ux3_build.md Wave B.)
 //
 // mod-config owns everything about the Options screen: the hooks, the root "Mod Configuration" button, the list page, control cloning,
@@ -101,6 +101,7 @@ bool g_freeView = false;   // also free the 3D view block after preview-3d destr
 int g_logVerbose = 0;      // ini log_verbose: 1 = also log CHORD transitions, INSP refresh counts and repeated PROJ/CAMHOOK re-projections (default 0 = quiet)
 int g_probeCam = 1;        // ini probe_cam: 1 = the CAMENG engine camera probe (U4, log only), 0 = off
 int g_probeNames = 1;      // ini probe_names: 0 = off (weapon buttons show the model resref), 1 = item GetName with identified=0 (the button name; ITEMNAME log), 2 = also identified=1 (log only)
+float g_textK = 2.5f;       // ini text_k: vertical scale (sy) used when measuring label text; the engine draws the page labels about 2.5x wider than sy 1 predicts (measured at 3840x1600)
 float g_statusFit = 1.0f;  // ini status_fit: multiplier on the status pane width when fitting the status text (the label font is not measured)
 float g_cfgYaw = 180.0f;
 float g_cfgZoom = hse::kZoomFit;
@@ -337,6 +338,10 @@ void readConfig() {
         else if (!_stricmp(k, "probe_names")) g_probeNames = (v[0] >= '0' && v[0] <= '9') ? atoi(v) : (on ? 1 : 0);
         else if (!_stricmp(k, "log_verbose")) g_logVerbose = (v[0] >= '0' && v[0] <= '9') ? (atoi(v) != 0 ? 1 : 0) : (on ? 1 : 0);
         else if (!_stricmp(k, "probe_cam")) g_probeCam = (v[0] >= '0' && v[0] <= '9') ? (atoi(v) != 0 ? 1 : 0) : (on ? 1 : 0);
+        else if (!_stricmp(k, "text_k")) {
+            const float f = static_cast<float>(atof(v));
+            g_textK = (f >= 0.5f && f <= 6.0f) ? f : 2.5f;
+        }
         else if (!_stricmp(k, "status_fit")) {
             const float f = static_cast<float>(atof(v));
             g_statusFit = (f >= 0.5f && f <= 8.0f) ? f : 1.0f;
@@ -350,7 +355,7 @@ void readConfig() {
 }
 
 const char* statusText() {
-    return g_p3.ok() && g_hol.ok() ? "0.4.1 dev: preview + holster connected" : "0.4.1 dev: a provider is missing";
+    return g_p3.ok() && g_hol.ok() ? "0.4.2 dev: preview + holster connected" : "0.4.2 dev: a provider is missing";
 }
 
 bool editDirty();   // defined with the status helpers below
@@ -474,8 +479,8 @@ const char* itemTip(int i) {
 // Options ctor window: the vanilla layout is open. Opens the embedded layout, binds the 3D view, restores the layout slot, builds the page.
 void KPATCH_CALL cbBuild(void* panel, void*) {
     readConfig();
-    KP_LOG(chMain, "CONFIG enabled=%d free_view=%d probe_names=%d probe_cam=%d log_verbose=%d status_fit=%.2f view=(%.2f,%.2f,%.2f)",
-           g_enabled ? 1 : 0, g_freeView ? 1 : 0, g_probeNames, g_probeCam, g_logVerbose, g_statusFit,
+    KP_LOG(chMain, "CONFIG enabled=%d free_view=%d probe_names=%d probe_cam=%d log_verbose=%d text_k=%.2f status_fit=%.2f view=(%.2f,%.2f,%.2f)",
+           g_enabled ? 1 : 0, g_freeView ? 1 : 0, g_probeNames, g_probeCam, g_logVerbose, g_textK, g_statusFit,
            g_cfgView.yaw, g_cfgView.zoom, g_cfgView.panZ);
     if (!g_enabled || !panel || !g_menu.ok()) {
         KP_LOG(chMain, "BUILD skipped enabled=%d panel=%p menuui=%d", g_enabled ? 1 : 0, panel, g_menu.ok() ? 1 : 0);
@@ -1105,9 +1110,12 @@ void probeItemNames(Editor& e, uintptr_t clientMember) {
 
 void updateStatusText(Editor& e);   // defined with the status helpers below
 
+// Text measuring context for every label fit: sy = ini text_k (default 2.5), UI units, texel width * 0.75 (TextK), no scale.
+textfit::TextCtx textCtx() { return textfit::TextCtx{g_textK, 1.0f, 1.0f}; }
+
 // raw cut with "..." to maxPx (the label font is not measured; ini status_fit scales the width).
 void fitStatus(float maxPx, const char* raw, char* out, int cap) {
-    const textfit::TextCtx tc = {1.0f, 1.0f, 1.0f};   // UI units: texel width * 0.75 (TextK), no scale
+    const textfit::TextCtx tc = textCtx();
     textfit::fitText(tc, raw, maxPx * g_statusFit, out, cap);
 }
 
@@ -1319,7 +1327,7 @@ void setSel(Editor& e, int idx, bool on, const char* raw) {
 
 // Button text cut with "..." to maxPx (maxPx <= 0: the page is not laid out yet, no cut).
 void fitButton(float maxPx, const char* raw, char* out, int cap) {
-    const textfit::TextCtx tc = {1.0f, 1.0f, 1.0f};   // UI units: texel width * 0.75 (TextK), no scale
+    const textfit::TextCtx tc = textCtx();
     if (maxPx <= 0.0f) snprintf(out, cap, "%s", raw);
     else textfit::fitText(tc, raw, maxPx, out, cap);
 }
@@ -1331,7 +1339,7 @@ float boxPx(const Editor& e, const editkit::Box& b) { return e.layOk && b.w > 8 
 // "R: Vibrosword", cut with "..." when even that is too wide.
 void handCaption(const Editor& e, int hand, char* out, int cap) {
     const float maxPx = boxPx(e, e.lay.weapon[hand]);
-    const textfit::TextCtx tc = {1.0f, 1.0f, 1.0f};
+    const textfit::TextCtx tc = textCtx();
     char longT[96], shortT[96];
     hse::handButtonText(longT, sizeof longT, hand, false, e.itemName[hand], e.wpnName[hand], e.regGob[hand] != nullptr);
     if (maxPx <= 0.0f || textfit::textPx(tc, longT, static_cast<int>(strlen(longT))) <= maxPx) {
@@ -2491,7 +2499,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_menu.init(api);
     embedgui::g_log = embedLog;
     embtex::g_log = embedLog;
-    KP_LOG(chMain, "holster-editor 0.4.1-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
+    KP_LOG(chMain, "holster-editor 0.4.2-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
            static_cast<unsigned>(sizeof kHseViewGui));
     const bool cfgOk = g_cfgClient.connect(), menuOk = g_menu.connect();
     if (!cfgOk || !menuOk) {

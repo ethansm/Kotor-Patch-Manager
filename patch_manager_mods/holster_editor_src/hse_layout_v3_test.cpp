@@ -103,14 +103,14 @@ static void testGeometries() {
         KT_CHECK(L.modeBtn[0].y < L.view.y && L.stance[0].y > L.view.y + L.view.h && L.legend.y > L.stance[0].y);
         // at these sizes nothing needs the row floors
         KT_CHECK(L.leftRowH == kV3RowMax && L.inspRowH == kV3RowMax && L.barH == kV3BarMax);
-        // reset squares are 20 x 20, the value label sits right of the track, the reset right of the value
+        // reset squares are kV3ResetMax squared (the rows are at their max), the value label sits right of the track, the reset right of the value
         for (int r = 0; r < kV3Rows; ++r) {
             const InspRowV3& R = L.rows[r];
-            KT_CHECK(R.reset.w == 20 && R.reset.h == 20);
+            KT_CHECK(R.reset.w == kV3ResetMax && R.reset.h == kV3ResetMax);
             KT_CHECK(R.value.x >= R.track.x + R.track.w && R.reset.x >= R.value.x + R.value.w);
             KT_CHECK(R.thumb.w == kV3ThumbW && R.thumb.h == R.track.h && R.thumb.y == R.track.y);
         }
-        KT_CHECK(L.groupReset[0].w == 20 && L.groupReset[0].x == L.rows[0].reset.x);
+        KT_CHECK(L.groupReset[0].w == kV3ResetMax && L.groupReset[0].x == L.rows[0].reset.x);
         // item budget
         Box all[kPageItemsV3 + 8];
         KT_CHECK_EQ(pageBoxesV3(L, all), kPageItemsV3);
@@ -156,19 +156,19 @@ static void testPinned3440() {
     KT_CHECK(same(g.column, Box{150, 357, 400, 896}));
     KT_CHECK(same(g.view, Box{1345, 357, 576, 896}));
     PageLayoutV3 L = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr);
-    // left column: content 260 wide (pad 4 each side), rows 22 high
-    KT_CHECK(same(L.memberPrev, Box{154, 361, 22, 22}));
-    KT_CHECK(same(L.memberNext, Box{154 + 252 - 22, 361, 22, 22}));
-    KT_CHECK(L.capWeapon.y == 385 && L.capWeapon.h == 14);
-    KT_CHECK(same(L.weapon[0], Box{154, 401, 252, 22}));
-    KT_CHECK(same(L.bone[0], Box{154, 465, 82, 22}));
-    KT_CHECK(L.bone[3].y == L.bone[0].y + 24 && L.bone[3].w == 125);
-    // view area: starts 4 px right of the 260 wide column content, ends at the preview pane
-    KT_CHECK(L.view.x == 150 + 260 + 4 && L.view.x + L.view.w == 1921);   // 4 px short of the preview pane at 1925
-    KT_CHECK(L.modeBtn[0].y == 357 && L.modeBtn[0].h == 24);
-    KT_CHECK(L.view.y == 357 + 24 + 2);
+    // left column: the column pane is 400 wide (under kV3ColWantW 440), content 392 wide (pad 4 each side), rows 34 high
+    KT_CHECK(same(L.memberPrev, Box{154, 361, 34, 34}));
+    KT_CHECK(same(L.memberNext, Box{154 + 392 - 34, 361, 34, 34}));
+    KT_CHECK(L.capWeapon.y == 397 && L.capWeapon.h == 22);
+    KT_CHECK(same(L.weapon[0], Box{154, 421, 392, 34}));
+    KT_CHECK(same(L.bone[0], Box{154, 517, 129, 34}));
+    KT_CHECK(L.bone[3].y == L.bone[0].y + 36 && L.bone[3].w == 195);
+    // view area: starts 4 px right of the 400 wide column, ends at the preview pane
+    KT_CHECK(L.view.x == 150 + 400 + 4 && L.view.x + L.view.w == 1921);   // 4 px short of the preview pane at 1925
+    KT_CHECK(L.modeBtn[0].y == 357 && L.modeBtn[0].h == 34);
+    KT_CHECK(L.view.y == 357 + 34 + 2);
     // inspector
-    KT_CHECK(L.rows[0].name.x == 1929 && L.rows[0].name.w == 52);
+    KT_CHECK(L.rows[0].name.x == 1929 && L.rows[0].name.w == kV3NameW);
 }
 
 static void testThumbs() {
@@ -289,17 +289,66 @@ static void testViewVsPreview() {
 }
 
 static void testHintHeight() {
-    Geom g = geomFor(3440, 1440);   // hint rect 196 high: both lines get the full 18 px
+    Geom g = geomFor(3440, 1440);   // hint rect 196 high: both lines get the full kV3HintMax px
     PageLayoutV3 L = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr);
-    KT_CHECK_EQ(kV3HintMax, 18);
-    KT_CHECK(L.hint[0].h == 18 && L.hint[1].h == 18);
-    KT_CHECK(L.hint[1].y == L.hint[0].y + 18 + 2);
-    // exactly big enough: 2*4 pad + 2 gap + 2*18 = 46
-    PageLayoutV3 E = pageLayoutV3(g.column, g.view, g.preview, Box{g.preview.x, 1100, 400, 46}, nullptr);
-    KT_CHECK(E.hint[0].h == 18 && E.hint[1].h == 18);
+    KT_CHECK_EQ(kV3HintMax, 26);
+    KT_CHECK(L.hint[0].h == 26 && L.hint[1].h == 26);
+    KT_CHECK(L.hint[1].y == L.hint[0].y + 26 + 2);
+    // exactly big enough: 2*4 pad + 2 gap + 2*26 = 62
+    PageLayoutV3 E = pageLayoutV3(g.column, g.view, g.preview, Box{g.preview.x, 1100, 400, 62}, nullptr);
+    KT_CHECK(E.hint[0].h == 26 && E.hint[1].h == 26);
     // a small rect shrinks the lines (30 -> (30 - 8 - 2) / 2 = 10)
     PageLayoutV3 S = pageLayoutV3(g.column, g.view, g.preview, Box{g.preview.x, 1100, 400, 30}, nullptr);
     KT_CHECK(S.hint[0].h == 10 && S.hint[1].h == 10);
+}
+
+// The REAL pane rects of the 3840x1600 log (UI units): the layout must use the space and every label must fit its box.
+static Geom realGeom() {
+    Geom r;
+    r.column = Box{772, 357, 1132, 757};
+    r.view = Box{1345, 357, 576, 896};
+    r.preview = Box{1953, 357, 1113, 746};
+    r.hint = Box{0, 0, 0, 0};
+    return r;
+}
+
+static void testReal3840x1600() {
+    const Geom g = realGeom();
+    PageLayoutV3 L = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr);
+    KT_CHECK_EQ(violations(g, L, false, true, true), 0);
+    KT_CHECK(L.leftRowH >= 30 && L.inspRowH >= 30 && L.barH >= 30);
+    // the left column content uses the wide cap: >= 400 wide
+    KT_CHECK(L.status.w >= 400 && L.weapon[0].w >= 400);
+    // the inspector spans >= 600 (name to reset) and the track is >= 150
+    const InspRowV3& R0 = L.rows[0];
+    KT_CHECK(R0.reset.x + R0.reset.w - R0.name.x >= 600);
+    for (int r = 0; r < kV3Rows; ++r) KT_CHECK(L.rows[r].track.w >= 150);
+    // the view stays left of the preview pane, never overlapping the inspector
+    KT_CHECK(L.view.x + L.view.w < g.preview.x);
+    KT_CHECK(L.view.x > L.status.x + L.status.w);
+    // item budget: 70 boxes + 6 wedges
+    KT_CHECK_EQ(kPageItemsV3Total, 76);
+    KT_CHECK(kPageItemsV3Total <= 80);
+    Box all[kPageItemsV3];
+    KT_CHECK_EQ(pageBoxesV3(L, all), kPageItemsV3);
+
+    // text fit: measured with the engine-calibrated text_k 2.5; every label fits its box less the 8 px padding
+    const textfit::TextCtx tc = {2.5f, 1.0f, 1.0f};
+    auto px = [&](const char* t) { return textfit::textPx(tc, t, static_cast<int>(strlen(t))); };
+    static const char* const kStances[kV3Stances] = {"Idle", "Walk", "Run", "Alert", "Combat"};   // HolsterEditor.cpp kStanceList
+    static const char* const kSliders[kV3Rows] = {"Slide", "Depth", "Height", "Tilt", "Roll", "Turn"};   // HseView.h inspector names
+    const int sizes[2][2] = {{3840, 1600}, {3440, 1440}};
+    for (int s = 0; s < 2; ++s) {
+        Geom q = s == 0 ? g : geomFor(sizes[s][0], sizes[s][1]);
+        PageLayoutV3 P = pageLayoutV3(q.column, q.view, q.preview, q.hint, nullptr);
+        KT_CHECK(px("Save") <= static_cast<float>(P.save.w - 8));
+        KT_CHECK(px("Revert") <= static_cast<float>(P.revert.w - 8));
+        KT_CHECK(px("Reset") <= static_cast<float>(P.reset.w - 8));
+        KT_CHECK(px("Move") <= static_cast<float>(P.modeBtn[0].w - 8));
+        for (int i = 0; i < kV3Stances; ++i) KT_CHECK(px(kStances[i]) <= static_cast<float>(P.stance[i].w - 8));
+        for (int i = 0; i < kV3Rows; ++i) KT_CHECK(px(kSliders[i]) <= static_cast<float>(P.rows[i].name.w - 8));
+        if (s == 1) KT_CHECK(P.rows[0].track.w >= 150);
+    }
 }
 
 static void testHelpers() {
@@ -368,6 +417,7 @@ int main() {
     testAdaptersAndIndex();
     testGeometries();
     testSaveRow();
+    testReal3840x1600();
     testPinned3440();
     testViewVsPreview();
     testHintHeight();

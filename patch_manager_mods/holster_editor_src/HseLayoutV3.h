@@ -13,7 +13,7 @@
 //             ordered column < view < preview (left to right).
 //   preview = MUI_PANE_PREVIEW (the area above the shrunken description). The inspector is at most kInspWantW wide,
 //             left aligned at preview.x + 4.
-//   hint    = optional description rect (w <= 0 or h <= 0 means none): the two hint lines (kV3HintMax = 18 px high where space allows) go inside it. Without it they
+//   hint    = optional description rect (w <= 0 or h <= 0 means none): the two hint lines (kV3HintMax = 26 px high where space allows) go inside it. Without it they
 //             are stacked under the mirrored note inside `preview`. The holster editor passes NO hint rect: the shrunken description pane
 //             under the split belongs to mod-config (its hover text), so a label over it would cover that text.
 // Documented minimum panes (everything has positive size and nothing overlaps): column 140 x 180, view 160 x 150,
@@ -37,15 +37,16 @@ constexpr int kV3Groups = 2;      // Position, Rotation
 constexpr int kV3Hints = 2;       // hint lines under the inspector
 constexpr int kV3ThumbW = 10;     // slider thumb width
 
-constexpr int kV3ColWantW = 260;  // widest the left column content grows
-constexpr int kV3InspWantW = 460; // widest the inspector grows
-constexpr int kV3RowMax = 22, kV3RowMin = 14;   // left column and inspector row heights (pick the largest that fits)
-constexpr int kV3BarMax = 24, kV3BarMin = 12;   // mode bar / stance row heights
+constexpr int kV3ColWantW = 440;  // widest the left column content grows
+constexpr int kV3InspWantW = 720; // widest the inspector grows
+constexpr int kV3RowMax = 34, kV3RowMin = 14;   // left column and inspector row heights (pick the largest that fits)
+constexpr int kV3BarMax = 34, kV3BarMin = 12;   // mode bar / stance row heights
 constexpr int kV3MinViewW = 8;    // the view area is at least this wide when the preview pane leaves any room
-constexpr int kV3HintMax = 18;    // hint line height (dialogfont16x16 lines need about 18 px); shrinks only when the rect is small
+constexpr int kV3HintMax = 26;    // hint line height (dialogfont16x16 lines need about 18 px); shrinks only when the rect is small
 constexpr int kV3MinViewH = 60;   // the bars shrink before the view gets lower than this
-constexpr int kV3NameW = 52, kV3ValueW = 64;    // inspector name and value label widths (shrink together when narrow)
-constexpr int kV3ResetMax = 20;   // reset icon squares are 20 x 20 (smaller only when the row is)
+constexpr int kV3NameW = 120, kV3ValueW = 140;    // inspector name and value label widths (shrink together when narrow)
+constexpr int kV3TrackMin = 60;   // the inspector slider track keeps at least this width (the labels shrink first)
+constexpr int kV3ResetMax = 30;   // reset icon squares are up to 30 x 30 (smaller only when the row is)
 
 // Page items that become mod-config items: left 19 (member 3, captions 3, weapons 2, bones 5, scopes 3, save/revert 2,
 // status 1) + view area 13 (mode 4, view reset + flip 2, view 1, stances 5, legend 1) + inspector 37 (group labels 2,
@@ -148,11 +149,11 @@ inline int buildInspector(editkit::Box Z, editkit::Box hintZone, int rr, const f
     int y = Z.y + kPad;
     auto mk = [&](int x, int yy, int w, int h) { return clipTo(Box{x, yy, w, h}, Z); };
 
-    // widths: name | track | value | reset, 2 px gaps; the track takes what is left and the labels shrink only when it is 0
+    // widths: name | track | value | reset, 2 px gaps; the labels take up to kV3NameW + kV3ValueW but leave the track at least kV3TrackMin
+    // (the labels shrink together, name : value kept); the track takes what is left
     int avail = imax(0, W - sq - 3 * kGap);
-    int nm, vw, tw;
-    if (avail < kV3NameW + kV3ValueW) { nm = avail * kV3NameW / (kV3NameW + kV3ValueW); vw = avail - nm; tw = 0; }
-    else { nm = kV3NameW; vw = kV3ValueW; tw = avail - nm - vw; }
+    const int lw = imin(imax(0, avail - kV3TrackMin), kV3NameW + kV3ValueW);
+    const int nm = lw * kV3NameW / (kV3NameW + kV3ValueW), vw = lw - nm, tw = avail - lw;
 
     for (int g = 0; g < kV3Groups; ++g) {
         if (g > 0) y += kSpacer;
@@ -235,7 +236,7 @@ inline PageLayoutV3 pageLayoutV3(editkit::Box column, editkit::Box view, editkit
     L.viewReset = mkv(vr - b - 2 - b, y0, b, b);
     {
         int limit = L.viewReset.x - 6;          // 6 px between the mode buttons and the icons
-        int mw = v3::iclamp((limit - vl - 3 * 2) / 4, 0, 100);
+        int mw = v3::iclamp((limit - vl - 3 * 2) / 4, 0, 190);
         for (int i = 0; i < kV3Modes; ++i) L.modeBtn[i] = mkv(vl + i * (mw + 2), y0, mw, b);
     }
     L.view = mkv(vl, y1, vw, viewH);
