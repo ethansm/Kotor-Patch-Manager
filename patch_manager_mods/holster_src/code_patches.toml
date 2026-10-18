@@ -8,7 +8,7 @@ address = 0x00763AF9
 original_bytes = [0x68, 0xD8, 0xED, 0x99, 0x00]
 kind = "code"
 verifies_original = true
-enabled_by = "holster.ini probe=1 AND bone_test=1 (default off)"
+enabled_by = "holster.ini probe=1 AND bone_test=1 AND place_mode=repoint (default off)"
 source = "Holster.cpp applyBoneTest, HolsterBonePatch.h patchNodeLiteral (writeChecked)"
 
 [[code_patches]]
@@ -18,5 +18,5 @@ address = 0x00763E2B
 original_bytes = [0x68, 0xD0, 0xED, 0x99, 0x00]
 kind = "code"
 verifies_original = true
-enabled_by = "holster.ini probe=1 AND bone_test=1 AND bone_test_left=1 (default off)"
+enabled_by = "holster.ini probe=1 AND bone_test=1 AND bone_test_left=1 AND place_mode=repoint (default off)"
 source = "Holster.cpp applyBoneTest, HolsterBonePatch.h patchNodeLiteral (writeChecked)"

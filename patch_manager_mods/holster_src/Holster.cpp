@@ -26,6 +26,7 @@
 #include "HolsterHand.h"
 #include "HolsterTune.h"
 #include "HolsterLogRate.h"
+#include "HolsterDrawGate.h"
 #include "HolsterPreview.h"
 #include "HolsterApi.h"
 #include "FileWatch.h"
@@ -52,6 +53,12 @@ static bool g_onComb = false, g_onAttach = false, g_onSwap = false, g_onAnim = f
 // bone_test=1 (needs probe=1); bone_test_left defaults to 1 (the lhand attach node is repointed like the rhand, so a left weapon is holstered
 // and mirrored); bone_test_left=0 is the escape hatch that leaves the lhand unpatched. g_boneLeftCfg is the ini value alone (CONFIG log).
 static bool g_boneTest = false, g_boneLeft = false, g_boneLeftCfg = true;
+// place_mode (0.2.0-dev, HW-UX3 C1): drawgate (default) = no rhand/lhand repoint, HolsterPlace writes the hip pose only while the owner is not drawn
+// (HolsterDrawGate.h); repoint = the old global attach-node repoint (escape hatch, old behaviour unchanged). Needs probe=1 and bone_test=1 either way.
+static hs::PlaceMode g_placeMode = hs::PlaceDrawgate;
+static inline bool drawgateMode() { return g_placeMode == hs::PlaceDrawgate; }
+// Flourish window (Wave C2 drives this from the flourish detours; always false in C1): true keeps the weapon in the hand like combat does.
+static bool g_flourishOpen = false;
 // Config warnings found before KpLog_Init (readConfig runs first): flushed once by KPatchInit.
 static char g_cfgWarn[4][120];
 static int g_cfgWarnN = 0;
@@ -62,7 +69,7 @@ static bool g_editor = true;            // editor=0: RegisterPreview refuses and
 static char g_boneName[32] = "pelvis_g";              // attach node name; its ADDRESS becomes the push immediate, so it must stay static
 static LONG g_maxLines = 3000;
 static bool g_logVerbose = false;       // log_verbose=1: the old per-sample COMB/ATTACH/ANIMRES/PLACE/PLACEREFUSE volume; 0 = rate-limited (HolsterLogRate.h)
-static hs::KeyCounts<256> g_combKeys, g_attachKeys;   // quiet mode: per-creature hit counts (COMB, ATTACH)
+static hs::KeyCounts<256> g_combKeys, g_attachKeys, g_gateKeys;   // quiet mode: per-creature hit counts (COMB, ATTACH)
 static hs::PlaceTable g_placeTab;
 static hs::RefuseTable g_refuseTab;
 static int g_gobEvery = 600;            // GOB lines: first 24 updates, then every Nth (the handler runs per Gob per frame)
@@ -219,6 +226,11 @@ static void readConfig() {
             char* val = trimIni(eq + 1);
             if (!_stricmp(key, "probe")) probe = flagValue(val);
             else if (!_stricmp(key, "bone_test")) boneTest = flagValue(val);
+            else if (!_stricmp(key, "place_mode")) {
+                hs::PlaceMode pm = g_placeMode;
+                if (hs::placeModeParse(val, pm)) g_placeMode = pm;
+                else cfgWarn(key, val, "not drawgate or repoint, keeping the default drawgate");
+            }
             else if (!_stricmp(key, "bone_test_left")) {
                 bool b = true;
                 if (hs::tuneParseBool(val, b)) boneLeft = b;
@@ -473,7 +485,8 @@ static bool nodeName(uintptr_t node, NodeInfo& ni) {
     readTag(kSitePlace, reinterpret_cast<const char*>(namePtr), ni.name, sizeof ni.name);
     return true;
 }
-static bool nodeIsTarget(uintptr_t node, NodeInfo& ni) { return nodeName(node, ni) && _stricmp(ni.name, g_boneName) == 0; }
+// repoint: the node named bone_name; drawgate: the engine's native rhand / lhand attach nodes (lhand only with bone_test_left=1).
+static bool nodeIsTarget(uintptr_t node, NodeInfo& ni) { return nodeName(node, ni) && hs::nodeAccepted(drawgateMode(), ni.name, g_boneName, g_boneLeft); }
 
 // Inline model name of a Gob: [gob+0x84] = model, model+0x08 = name ("" when unreadable).
 static void gobModelName(uintptr_t gob, char* out, int cap) {
@@ -768,9 +781,25 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
     return true;
 }
 
+// DRAWGATE transition line (drawgate mode): a placement entry's owner or hip/drawn state changed. Quiet mode: first 8 per creature, then every 10th
+// (log_verbose=1: all). An unreadable owner / combat flag is a WARN and is never rate-limited (it fires once per change, not per frame).
+static void gateLog(uintptr_t gob, uintptr_t owner, bool readable, uint32_t combat, bool hip, bool left) {
+    if (!readable) {
+        KP_LOGV(chMain, KPLOG_WARN, "DRAWGATE owner/combat unreadable gob=%x owner=%x: weapon stays in the hand", static_cast<unsigned>(gob), static_cast<unsigned>(owner));
+        return;
+    }
+    if (!g_onPlace) return;
+    if (!g_logVerbose && !hs::keyedWant(hs::keyBump(g_gateKeys, hs::creatureKey(owner)), 8, 10)) return;
+    if (!KP_ENABLED(chPlace, KPLOG_INFO) || !takeLine()) return;
+    KP_LOG(chPlace, "DRAWGATE creature=%x gob=%x state=%s combat=%u flourish=%d left=%d", static_cast<unsigned>(owner), static_cast<unsigned>(gob),
+           hip ? "hip" : "drawn", static_cast<unsigned>(combat), g_flourishOpen ? 1 : 0, left ? 1 : 0);
+}
+
 // H7 (hooks.toml H7, C4 recon): runs on EVERY per-frame refresh of an attach behavior (vtbl+0x08), right after the engine re-copied node N's WORLD
 // pose into gob+0xA4 (vec3) / gob+0xB0 (quat w-first). N = [beh+0x18]. For the target node (g_boneName) it composes the live-tuned placement onto
 // that pose and writes it back. Needs probe=1 AND bone_test=1 AND place=1; ch_place only gates the PLACE/PLACENODE/PLACEREFUSE log lines.
+// place_mode=drawgate (default): the target nodes are the native rhand/lhand attach nodes (no code patch); the hip pose (mountPose of the configured
+// bone, always computed here) is written only while the owner is not in combat and no flourish window is open, else the hand pose stays (HolsterDrawGate.h).
 extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     handMapLog(reinterpret_cast<uintptr_t>(gob));
     if (previewPlace(reinterpret_cast<uintptr_t>(gob), reinterpret_cast<uintptr_t>(beh))) return;
@@ -788,7 +817,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     // Verdict cache keyed on node + gob + the node's name handle [N+4], so a freed and reused address pair is re-resolved. The full
     // resolve (weapon > type > global, plus the body delta) is cached with the tune sequence it was computed for and redone when it moves.
     // In world both hands share the bone_name node; the hand comes from g_handRing (sticky via hs::resolveLeft when the ring entry is evicted).
-    struct Ent { uintptr_t node, gob, handle; bool isTarget, left; hs::Category cat; char mname[17], body[17]; LONG seq; hs::Resolved r; };
+    struct Ent { uintptr_t node, gob, handle; bool isTarget, left; hs::Category cat; char mname[17], body[17]; LONG seq; hs::Resolved r; hs::GateState gate; };
     static Ent s_cache[128];
     static unsigned s_next = 0;
     const uintptr_t g = reinterpret_cast<uintptr_t>(gob), n = reinterpret_cast<uintptr_t>(node);
@@ -819,6 +848,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
         ent = &s_cache[s_next];
         s_next = (s_next + 1) % 128u;
         *ent = Ent{};
+        ent->gate = hs::gateInit();   // drawgate: owner + hip/drawn state, "not evaluated" until the first placement
         ent->node = n; ent->gob = g; ent->handle = h; ent->isTarget = isTarget; ent->left = hs::resolveLeft(false, hs::handLookup(g_handRing, g)); ent->cat = cat;
         ent->seq = -1;   // never a real sequence (those are >= 0), so the first use resolves
         {
@@ -848,6 +878,21 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     if (!isTarget) { refuse(PrNotTarget, g, n, 0); return; }
     const uint32_t vt = rdU32(kSitePlace, g, 0);
     if (g_placeGobvt != 0 && vt != g_placeGobvt) { refuse(PrGobvt, g, n, vt); return; }
+    if (drawgateMode()) {
+        // Draw gate (C1): owner creature = [parent+0x1D8]; drawn = client combat flag [owner+0x138] != 0 or a flourish window. Drawn (or anything
+        // unreadable) returns with the hand pose the engine just wrote: the failure mode is a weapon in the hand (vanilla), never stuck on the hip.
+        const uintptr_t par = rdU32(kSitePlace, reinterpret_cast<uintptr_t>(beh), 0x14);
+        const uintptr_t owner = par ? rdU32(kSitePlace, par, 0x1D8) : 0;
+        const int combatOff = k2addr::off(&K2AddrTable::Creature_ClientCombat);
+        uint32_t combat = 0;
+        const bool readable = owner != 0 && combatOff != 0 && rdU32Ok(kSitePlace, owner, combatOff, &combat);
+        const bool hip = hs::shouldWriteHip(true, readable, combat, g_flourishOpen);
+        if (hs::gateUpdate(ent->gate, owner, hip)) {
+            ent->seq = -1;   // state flip or new owner: the resolved placement is redone
+            gateLog(g, owner, readable, combat, hip, ent->left);
+        }
+        if (!hip) return;
+    }
     hs::Pose in;
     if (!saferead::readAt(kSitePlace, g, 0xA4, &in)) { refuse(PrReadIn, g, n, vt); return; }
     if (!hs::poseSane(in)) { refuse(PrInsaneIn, g, n, vt); return; }
@@ -861,7 +906,13 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     // No bone at any level -> defaultBone (bone_name's own index, so the weapon stays on the attach node); 0 = custom bone_name, same.
     const uint8_t boneIdx = ent->r.boneIdx ? ent->r.boneIdx : hs::defaultBone(s_tune);
     const char* const mountBone = hs::boneNameOf(boneIdx);
-    if (mountBone && _stricmp(mountBone, g_boneName) != 0 && !mountPose(g, n, reinterpret_cast<uintptr_t>(beh), cat, mountBone, base)) {
+    if (drawgateMode()) {
+        // The node is the hand, so the hip pose always comes from mountPose of the configured bone (a custom bone_name has no mount: refused, weapon stays in the hand).
+        if (!mountBone || !mountPose(g, n, reinterpret_cast<uintptr_t>(beh), cat, mountBone, base)) {
+            refuse(PrNoMount, g, n, vt);
+            return;
+        }
+    } else if (mountBone && _stricmp(mountBone, g_boneName) != 0 && !mountPose(g, n, reinterpret_cast<uintptr_t>(beh), cat, mountBone, base)) {
         refuse(PrNoMount, g, n, vt);
         return;
     }
@@ -1204,6 +1255,7 @@ static const K2HolsterApi g_holsterApi = {
 // bone_test: repoint the rhand (and with bone_test_left the lhand) attach-node literal at g_boneName. Default OFF.
 static void applyBoneTest() {
     if (!g_boneTest) return;
+    if (drawgateMode()) return;   // drawgate: the engine keeps its native rhand/lhand attach; HolsterPlace gates the hip write instead
     if (!k2addr::get()) { KP_LOG(chMain, "BONETEST refused: unknown exe (no address table)"); return; }
     const uint32_t ptr = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(g_boneName));
     struct Site { const char* tag; uintptr_t at; const uint8_t* orig; bool on; };
@@ -1233,12 +1285,13 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     addName(names, sizeof(names), g_onAnim, "anim");
     addName(names, sizeof(names), g_onGob, "gob");
     addName(names, sizeof(names), g_onPlace, "place");
-    KP_LOG(chMain, "holster 0.1.7-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
+    KP_LOG(chMain, "holster 0.2.0-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
            names[0] ? names : "none", static_cast<long>(g_maxLines), g_gobEvery, k2addr::get() ? "ok" : "none");
     {
         hs::TuneCfg t;
         LONG seq = 0;
         (void)loadTuneIfChanged(t, seq);
+        KP_LOG(chMain, "PLACEMODE %s (active=%d: needs probe=1 and bone_test=1)", hs::placeModeName(g_placeMode), g_boneTest ? 1 : 0);
         KP_LOG(chMain, "CONFIG left_extra_rot=%.1f bone_test_left=%d (ini=%d, active=%d: needs probe=1 and bone_test=1) log_verbose=%d", static_cast<double>(t.leftExtra),
                g_boneLeftCfg ? 1 : 0, g_boneLeftCfg ? 1 : 0, g_boneLeft ? 1 : 0, g_logVerbose ? 1 : 0);
         for (int i = hs::CatUnknown + 1; i < hs::CatCount; ++i)

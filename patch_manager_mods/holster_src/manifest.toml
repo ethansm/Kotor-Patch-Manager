@@ -1,9 +1,9 @@
 [patch]
 id = "holster"
 name = "Holstered Weapons"
-version = "0.1.7-dev"
+version = "0.2.0-dev"
 author = "local"
-description = "P0 probe for holstered weapons (doc 42): logs the client combat-flag setter, the in-world rhand/lhand weapon attach, the weapon-set swap executor, wield-transition animation ids and the Gob attach-transform update, so the hip/back holster design can be settled from evidence. Changes no game behaviour unless holster.ini sets bone_test=1 (flag-file experiment: attaches the right-hand weapon to bone_name, default pelvis_g). Needs holster.ini (probe=1 plus ch_* switches; log holster_log.txt; needs a [holster] section with level=info in the game-dir kplog.ini or every line is dropped)."
+description = "P0 probe for holstered weapons (doc 42): logs the client combat-flag setter, the in-world rhand/lhand weapon attach, the weapon-set swap executor, wield-transition animation ids and the Gob attach-transform update, so the hip/back holster design can be settled from evidence. Changes no game behaviour unless holster.ini sets bone_test=1 (flag-file experiment): with place_mode=drawgate (default) weapons keep the native hand attach and are placed on the hip (bone_name, default pelvis_g, or place_bone_*) only while their owner is out of combat, so they are drawn in combat; place_mode=repoint is the old global repoint of the rhand/lhand attach node to bone_name. Needs holster.ini (probe=1 plus ch_* switches; log holster_log.txt; needs a [holster] section with level=info in the game-dir kplog.ini or every line is dropped)."
 
 provides = ["k2.holster@1"]
 requires = []
