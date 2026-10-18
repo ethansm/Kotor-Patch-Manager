@@ -1,44 +1,41 @@
 # Session Handoff & Plan State: patch_manager_mods/38_k1_to_k2_asset_import.md
 
 ## 0. Next-Phase Direction
-10-16 UPDATE (supersedes the T34/T35 line below, those are done): Juhani PLAYED OK in 204tel via npc-world spawn with MDLOps K2 models; see section 6 "10-16 Juhani session" at the end. Next phase = plan after the w13-juhani Haiku recon (dangly, arm pose, animations, audio) lands: restore hair/cloth sway, fix left arm, find the pykotor body-shard cause, Juhani audio test ladder; rollback of the test rig still pending.
-(older) T34 harvest 0.2.0 (needs user 'played') then T35 surgical install (user GO, game closed): backup, build 3 kpatches, edit config copy, nwmove_check_config.py, copy DLLs, rollback proven
+T27 TextureVar/BodyVariation RE next (needs a dump of two creatures with known different TextureVar, or Ghidra); npc-world 0.1.2-dev pop= live; peer decides spawn_cap default (4 vs 12); open: which waypoint set (.mod WP_22 vs .rim WP_commoner) is live, P7, optional Run 3 repeat on a quiet machine
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/38_k1_to_k2_asset_import.md`
+- **Waves:** .claude/waves/WI-38-a1/
+- **Waves:** .claude/waves/WI-38-a2/
+- **Waves:** .claude/waves/WI-38-a3/
 - **Waves:** .claude/waves/w1-38-T12/
 - **Waves:** .claude/waves/w1-38-T17/
-- **Waves:** .claude/waves/w1-38-trackA/
-- **Waves:** .claude/waves/w10-38-audio/
-- **Waves:** .claude/waves/w11-38-alienvo/
-- **Branch:** `KOTOR-II` (6153858 fix(k1_port): recompute face plane distances, zero bones[16] padding, golden n_commm test)
-- **Generated:** 2026-10-14 00:46:24 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (be25c264 docs(40): NB2 Run A/A2 results, P1 and capacity findings from the npc-world test session)
+- **Generated:** 2026-10-18 13:52:54 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-6153858 fix(k1_port): recompute face plane distances, zero bones[16] padding, golden n_commm test
- patch_manager_mods/k1_port/k1_port_model.py      |  56 +++++++++++
- patch_manager_mods/k1_port/k1_port_validate.py   |   2 +-
- patch_manager_mods/k1_port/test_k1_port_model.py | 123 +++++++++++++++++++++++
- 3 files changed, 180 insertions(+), 1 deletion(-)
+be25c264 docs(40): NB2 Run A/A2 results, P1 and capacity findings from the npc-world test session
+ patch_manager_mods/40_npc_behaviour_variety.md | 7 +++++++
+ 1 file changed, 7 insertions(+)
 ```
-- **Dirty Files (155):**
+- **Dirty Files (171):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
-  - ` M .claude/handoffs/24_master_plan_status.handoff.md`
-  - ` M .claude/handoffs/27_companion_selfheal.handoff.md`
-  - ` M .claude/handoffs/33_ui_queue_hotbar_fixes.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
-  - ` M .claude/handoffs/38_k1_to_k2_asset_import.handoff.md`
+  - ` M .claude/handoffs/40_npc_behaviour_variety.handoff.md`
+  - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
   - ` M .claude/handoffs/PHASE7_COMMON_MASTER.handoff.md`
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
+  - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
   - ` M .claude/plans/swarm_library_architecture.md`
-  - ` M patch_manager_mods/24_master_plan_status.md`
-  - ... +145 more (run `git status --short`)
+  - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
+  - ` M .claude/settings.json`
+  - ... +161 more (run `git status --short`)
 
-## 2. Immediate Objective (T34)
-**Harvest the live 0.2.0 play test (tag path, TextureVar/BodyVariation offsets, `+0x11AC/+0x11FC`, duplicate-on-reload)**
+## 2. Immediate Objective (T27)
+**Stage 3 roster, persistence policy, TextureVar set; mechanism lives in doc 40 / `npc_world_src` (doc 35 was merged into doc 40)**
 
 Status: TODO
-Task: Harvest the live 0.2.0 play test (tag path, TextureVar/BodyVariation offsets, `+0x11AC/+0x11FC`, duplicate-on-reload)
+Task: Stage 3 roster, persistence policy, TextureVar set; mechanism lives in doc 40 / `npc_world_src` (doc 35 was merged into doc 40)
 
 ## 2b. Upcoming Batches in Pipeline
 - **T8** [Testing & Contracts] : 2DA integration into diversity patch (needs user decision)
@@ -50,7 +47,7 @@ Task: Harvest the live 0.2.0 play test (tag path, TextureVar/BodyVariation offse
 
 ## 4. Subagent Delegation Direction
 - **Claude Code**: parallel `model: haiku` Agent subagents; brief = `Contract` + `Write Scope` + `python3 scripts/agent_contract.py print worker|recon`.
-- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate T34` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
+- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate T27` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
 
 ## 5. Dead Ends & Verification (manual)
 ### Dead ends & lessons (10-11)
