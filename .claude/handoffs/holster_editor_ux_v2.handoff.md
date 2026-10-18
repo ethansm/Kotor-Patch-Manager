@@ -44,3 +44,8 @@ _(none recorded; append Dead Ends & Anti-Patterns and Verification Commands here
 - PROJ refuted S1's camera axes: hook pos (0.024,0.001,1.593), q(w,x,y,z)=(0.7071,0,0,0.7071), fovy 10.33@zoom2.2 / 21.6@1.05, ext (1345,357,576,896). Mounts at world y ~ +-0.44 project to sx 4579 / -1443 (view x range 1345..1921). Camera z follows panZ; q turns ~1 deg per yaw degree.
 - NEXT U0b: show candidate-projection labels A..F in the view (six forward/up axis conventions) and ask which sits on the weapon; then fix worldToScreen. U2 mouse/mode bar and U3 rows do not depend on it; U4 markers do.
 - 10-18 01:41 U0b LIVE: holster-editor 0.2.7-dev (091a1661), rollback holster-editor_swap_20261018_014104. Play row HUX-C0 (6 calibration clicks x 2-3 rounds); then run fit_camera.py on the CALIB lines and fix worldToScreen.
+
+## 10-18 U2+U3+left mirror prepared
+- Commits: mod-config 0.1.2-dev 094f019b (Esc key edge); holster 0.1.5-dev 7fc7ca65+30ad0bba (left default 1, effLeft=left, left_extra_rot -8, src bit 8); holster-editor 0.3.0-dev 7881dc3e (U2) + 0.3.1-dev 670add3c (U3). KPM: b10c245, 904be67, d460820. GATE PASS head 670add3c.
+- Prepared swap x3; awaiting GO. Rows HUX-U2, HUX-U3, HW-LH2, ESC2, HUX-C0 (zoom out first).
+- HUX-C0 camera fit still pending (fit_camera.py) -> then U4 markers. Known: U3 inspector squeezes strip rows to ~19 px (check readability); body-scope tilt warns 'no change'.
