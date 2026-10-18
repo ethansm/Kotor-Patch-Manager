@@ -6,16 +6,16 @@ commit 67b17c3 on `origin/master` 55725f7). NOT pushed. The upstream patch is a 
 `activation_fix_src` (id `k2-activation-fix` 0.1.x) keeps its DllMain self-patch, KpLog and ini switch.
 
 ### PR Title
-`K2ActivationFix: Fix load-screen hang after the intro movie`
+`K2ActivationFix: Fix intermittent load-screen hang when loading the game`
 
 ### PR Description Body
 ```markdown
 ### Summary
-Adds `K2ActivationFix` for KOTOR II Steam (Aspyr). Fixes the hang on the first load after the intro movie,
-where the load screen stays up forever.
+Adds `K2ActivationFix` for KOTOR II Steam (Aspyr). Fixes an intermittent hang when loading into the game,
+where the load screen stays up forever. It happens intermittently on any load into the game.
 
 ### Cause
-At the end of the intro movie the movie thread posts a synthetic `WM_ACTIVATEAPP(0, 0)` to the main window
+At the end of a movie (observed after the intro movie) the movie thread posts a synthetic `WM_ACTIVATEAPP(0, 0)` to the main window
 (`0x0040D69E`, `CALL [PostMessageA]`, args pushed at `0x0040D692..0x0040D69D`). Under Wine the movie window only
 saw activation move to the game's own main window, so this "the game was deactivated" is false. The window
 procedure then marks the engine inactive and minimizes it. When the window stays in front, no
