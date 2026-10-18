@@ -6,7 +6,7 @@ display_name = "Carth"
 tag = "k1p_carth"          # spawn-probe roster tag (k1_client_core_test.cpp)
 utc = "k1p_carth"
 dlg = ""
-soundset = 11              # K2 soundset.2da row 11 = n_commm (generic male)
+soundset = 14              # K2 soundset.2da row 14 = n_repoff (Republic_Officer); row 11 n_commm sounded like an Ithorian (play 10-18). Own K1 SSF is a later audio pass
 template_row = 17          # appearance.2da row copied for the new row
 gender = 0
 
