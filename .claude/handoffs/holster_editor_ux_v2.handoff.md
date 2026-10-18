@@ -43,3 +43,4 @@ _(none recorded; append Dead Ends & Anti-Patterns and Verification Commands here
 - ITEMNAME works with identified=0 (name0 `{06}Vibrosword`, `{05}Vibroblade`, `{02}Long Sword`); strip the `{NN}` prefix; identified=1 not needed.
 - PROJ refuted S1's camera axes: hook pos (0.024,0.001,1.593), q(w,x,y,z)=(0.7071,0,0,0.7071), fovy 10.33@zoom2.2 / 21.6@1.05, ext (1345,357,576,896). Mounts at world y ~ +-0.44 project to sx 4579 / -1443 (view x range 1345..1921). Camera z follows panZ; q turns ~1 deg per yaw degree.
 - NEXT U0b: show candidate-projection labels A..F in the view (six forward/up axis conventions) and ask which sits on the weapon; then fix worldToScreen. U2 mouse/mode bar and U3 rows do not depend on it; U4 markers do.
+- 10-18 01:41 U0b LIVE: holster-editor 0.2.7-dev (091a1661), rollback holster-editor_swap_20261018_014104. Play row HUX-C0 (6 calibration clicks x 2-3 rounds); then run fit_camera.py on the CALIB lines and fix worldToScreen.
