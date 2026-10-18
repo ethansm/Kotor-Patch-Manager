@@ -38,3 +38,8 @@ _(none recorded; append Dead Ends & Anti-Patterns and Verification Commands here
 - NEXT: user GO (game closed) -> `python3 scripts/kpm_hotswap.py --mod holster --mod holster-editor --mod mod-config --apply`; user plays HUX-P0 + HUX-U1 (+ HW-LH1 ini edit); Haiku log readers via kotor2_logs.py; then U2 (needs P0 camera q confirmation + ITEMNAME result).
 - ITEMNAME: identified=0 default; identified=1 (probe_names=2) goes through the strref->achievement switch 0x4010E0 and an unchecked base-row deref.
 - 10-18 01:17 HW-UX2 U0+U1 LIVE x3; rollback batch_swap_20261018_011740.
+
+## 10-18 HUX-P0 log read
+- ITEMNAME works with identified=0 (name0 `{06}Vibrosword`, `{05}Vibroblade`, `{02}Long Sword`); strip the `{NN}` prefix; identified=1 not needed.
+- PROJ refuted S1's camera axes: hook pos (0.024,0.001,1.593), q(w,x,y,z)=(0.7071,0,0,0.7071), fovy 10.33@zoom2.2 / 21.6@1.05, ext (1345,357,576,896). Mounts at world y ~ +-0.44 project to sx 4579 / -1443 (view x range 1345..1921). Camera z follows panZ; q turns ~1 deg per yaw degree.
+- NEXT U0b: show candidate-projection labels A..F in the view (six forward/up axis conventions) and ask which sits on the weapon; then fix worldToScreen. U2 mouse/mode bar and U3 rows do not depend on it; U4 markers do.
