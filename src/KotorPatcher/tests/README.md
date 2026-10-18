@@ -56,13 +56,17 @@ failed. `check.h` is the whole framework.
 - `KPatchInit` against real modules: init once per handle, lazy require,
   fallback when a provider is absent, attribution, and the module state after a
   partial apply.
+- The `kpatch.log` service: line format, config, hot reload, sinks, rotation,
+  rate limiting, ring overflow, drop accounting, the session header, shutdown,
+  and the real flush thread.
 
-## Registry and module tests
+## Registry, module and log tests
 
-These two are `any_*` tests like the engine ones, but they do not generate or
-run machine code. They exercise the registry (`src/core/registry.cpp`), which is
-linked into every test binary through `TEST_ENGINE` in the Makefile. Because the
-registry uses threads, the test compile lines pass `-pthread`.
+These three are `any_*` tests like the engine ones, but they do not generate or
+run machine code. They exercise the registry (`src/core/registry.cpp`) and the
+log service (`src/core/log_service.cpp`), which are linked into every test
+binary through `TEST_ENGINE` in the Makefile. Because the service and the
+registry use threads, the test compile lines pass `-pthread`.
 
 ### any_registry
 
@@ -109,7 +113,9 @@ module loaded after `Close()` is not initialised.
 `fixtures/provider.c` provides `test.counter` v1. `fixtures/consumer.c` requires
 it lazily at first use and takes a fallback if it is missing, the pattern the
 header documents. `fixtures/noinit.c` has no `KPatchInit`, like every patch
-that exists today.
+that exists today. `fixtures/logger.c` logs through `kpatch.log` from its
+`KPatchInit`; no unit test loads it, it is for a host smoke run that points a
+built `KotorPatcher.so` at a temporary `patch_config.toml` and `kplog.ini`.
 
 The Makefile builds each fixture twice, with
 `gcc [-m32] -std=c11 -Wall -shared -fPIC -I../../Patches/Common`, once per
@@ -126,3 +132,65 @@ Makefile does not compile the header with MinGW or MSVC. A MinGW check by hand, 
 printf '#include "kpatch_api.h"\nint main(void){return 0;}' |
     i686-w64-mingw32-gcc-posix -std=c11 -fsyntax-only -I../../Patches/Common -x c -
 ```
+
+### any_log_service
+
+Drives `src/core/log_service.cpp` through its own API. Every row starts a fresh
+session in a scratch directory next to the test binary
+(`build/tests/logsvc_tmp_<width>`, wiped per row). Most rows run with the flush
+thread off, so the test calls the flush and config poll itself, and with a fake
+clock, so timestamps and the rate-limit window are exact. These seams exist for
+that:
+
+- `LogService::Options{startThread=false}` passed to `Init()` leaves the thread
+  out.
+- `LogService::FlushNow()` and `PollConfigNow()` do what the thread does on its
+  cycle.
+- `LogService::SetClockForTest()` replaces the clock.
+- `LogService::LockRingForTest()` and `UnlockRingForTest()` hold the ring lock
+  from a helper thread, to show that `Shutdown()` stays bounded.
+
+Deterministic rows: line format (including `f=-` before any tick, and the WARN
+and ERR markers); the `NowUs`, `Frame` and api table; frame ownership; default
+levels with no ini; the `enabled` switches; level by number and by name;
+channels lists (`*`, `-x`, exclusions only); hot reload by content within the
+same second, and removing the file; malformed lines ignored; a channel
+registered after a reload; Register and Channel limits (63 and 64 character ids,
+the 65th patch, the 257th channel); the truncation marker; null, empty and bad
+input; the perpatch, merged and both sinks; byte-cap rotation, including
+replacing an existing `.1` and writing a new header; launch rotation; the rate
+limit and `DROPPED` lines; ring overflow with the WARN and ERR reserve (a
+100,000-line burst must finish in under two seconds, and measures a few
+milliseconds); `Mark` reaching every open file; the session header and the
+later `# session info` block; an unwritable directory; shutdown and submit after
+shutdown.
+
+One deterministic row is multithreaded: eight threads submit 10,000 lines each
+while another thread flushes in a loop. It checks that flushed plus dropped
+lines add up to 80,000 and that each thread's lines stay in order.
+
+#### Threaded rows and their timing
+
+The rows named "real flush thread" use the real clock and the real thread, and
+poll the disk. They are the only part of the suite that depends on timing, so
+the limits are generous compared with what they measure on the machine they were
+written on (an x86_64 Linux host, about five seconds for the whole binary):
+
+- A WARN reaches the disk within 1500 ms, and under 1000 ms with `flush_ms`
+  raised to 5000, which shows the wake-up and not the periodic flush did it
+  (observed about 10 ms).
+- An INFO line reaches the disk through the periodic flush within 1500 ms
+  (observed about 500 ms). An ERR and a `Mark` arrive within 1500 ms (about
+  10 ms).
+- The thread picks up a newly written `kplog.ini` within 2500 ms (observed about
+  1000 ms).
+- `Shutdown()` with the ring lock held by another thread for 900 ms returns in
+  at least 150 ms and under 600 ms (observed about 200 ms), logs `final flush
+  skipped (lock busy)`, and a new session afterwards works.
+- A superseded session's thread leaves a new session alone. This row sleeps 600
+  to 700 ms to show that something does not happen, and runs 100 rapid
+  Init, Shutdown, Init cycles.
+- After `Shutdown()` further submits write nothing (checked after a 700 ms wait).
+
+On a heavily loaded machine these are the rows to suspect first if a run fails
+once and passes on the next.
