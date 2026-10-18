@@ -30,6 +30,12 @@ Headers live under `include/`, the shared engine under `src/core/`, and the entr
 
 **trampoline.h / src/core/trampoline.cpp**: Low-level memory patching utilities for writing JMP/CALL instructions, verifying bytes, managing memory protection, and writing NOP instructions.
 
+**kpatch_api.h**: The plain-C ABI between the patcher and the patch modules: `KPatchApi` and the optional `KPatchInit` export. The canonical copy is `Patches/Common/kpatch_api.h`, which the patches include; `include/kpatch_api.h` is a one-line forwarder to it. See [Patch registry and KPatchInit](#patch-registry-and-kpatchinit-rfc-180).
+
+**registry.h / src/core/registry.cpp**: The patch registry. Holds the named, versioned interfaces that the core and the patch modules provide to each other, and runs each module's `KPatchInit` once.
+
+**tests/**: Host tests for the engine and the registry, with plain-C stand-in patch modules under `tests/fixtures/`. See `tests/README.md`.
+
 ### Wrapper System
 
 The wrapper system generates runtime x86 assembly code to intercept game functions, preserve CPU state, extract parameters, and call patch functions.
@@ -190,9 +196,9 @@ Defines supported parameter types (INT, UINT, POINTER, FLOAT, BYTE, SHORT).
 
 ### Initialization
 
-**InitializePatcher()**: Called on DLL_PROCESS_ATTACH. Initializes wrapper generator, loads patch_config.toml, sets KOTOR_VERSION_SHA environment variable, and applies all patches.
+**InitializePatcher()**: Called on DLL_PROCESS_ATTACH. Initializes wrapper generator, starts the registry, loads patch_config.toml, sets KOTOR_VERSION_SHA environment variable, and applies all patches. Each patch module's `KPatchInit` runs as the module is loaded.
 
-**CleanupPatcher()**: Called on DLL_PROCESS_DETACH. Frees wrapper stubs, deallocates REPLACE hook memory, and unloads patch DLLs.
+**CleanupPatcher()**: Called on DLL_PROCESS_DETACH. Closes the registry, frees wrapper stubs, deallocates REPLACE hook memory, unloads patch DLLs, then resets the registry. The order is spelled out under [Lifetime and cleanup order](#lifetime-and-cleanup-order).
 
 ### Patch Application
 
@@ -209,12 +215,13 @@ Defines supported parameter types (INT, UINT, POINTER, FLOAT, BYTE, SHORT).
 For DETOUR hooks, `ApplyPatch()`:
 
 1. Loads patch DLL via LoadLibraryA
-2. Gets function address via GetProcAddress
-3. Detects and skips hot-patch stub (0xCC byte) if present
-4. Verifies original bytes
-5. Generates wrapper via wrapper generator
-6. Writes JMP to wrapper at hook address
-7. NOPs remaining bytes
+2. Runs the module's `KPatchInit` export, if it has one (once per module)
+3. Gets function address via GetProcAddress
+4. Detects and skips hot-patch stub (0xCC byte) if present
+5. Verifies original bytes
+6. Generates wrapper via wrapper generator
+7. Writes JMP to wrapper at hook address
+8. NOPs remaining bytes
 
 ### Config Parsing
 
@@ -261,6 +268,79 @@ For DETOUR hooks, `ApplyPatch()`:
 
 **CalculateRelativeOffset()**: Calculates 32-bit relative offset for JMP/CALL instructions.
 
+## Patch registry and KPatchInit (RFC #180)
+
+Patch modules are separate binaries, possibly built by different compilers, and they share one process with the patcher. They cannot share a C++ ABI, and on Linux and macOS they cannot see each other's symbols (see [No symbol lookup between patches](#no-symbol-lookup-between-patches)). The registry is the supported way for one patch to use another patch's code. It implements the proposal in LaneDibello/Kotor-Patch-Manager#180.
+
+The mechanism:
+
+- A patch may export a function named `KPatchInit`. The patcher calls it once, right after loading the module, and passes a `KPatchApi` with two calls: `provide(name, version, iface)` publishes a table of function pointers under a name, and `require(name, version)` returns the table another provider published, or `NULL`.
+
+A patch with no `KPatchInit` export is unaffected. No existing patch needs to change. For how a patch author uses this, see `docs/PatchRegistry.md`.
+
+### The header
+
+`Patches/Common/kpatch_api.h` is the contract. It is pure C: it compiles as C11 and as C++17, needs only `<stddef.h>` and `<stdint.h>`, and does not include `windows.h`. The patcher includes it through `include/kpatch_api.h` instead of adding `Patches/Common` to its include path, because that directory also holds a `Platform.h` that collides case-insensitively with this directory's `platform.h`.
+
+### When KPatchInit runs
+
+`ApplyPatch()` loads patch modules through `LoadPatchModule()`, which calls `Platform::LoadModule`, records the handle for cleanup, and then calls `Registry::OnModuleLoaded(handle, id)`. That function looks the export up with `Platform::GetSymbol(handle, "KPatchInit")` and calls it.
+
+- **Right after the load, before the hook symbol lookup.** For a DETOUR patch `KPatchInit` has run by the time `functionName` is resolved, so a module can set itself up before its first hook is applied.
+- **Once per distinct module handle.** A config that lists one DLL for twenty hooks loads it twenty times and initialises it once. The handle is remembered whether or not the module has the export, so a module without one is looked up once.
+- **Even if a later step fails.** If the hook function is missing, the original bytes do not match, or the wrapper cannot be generated, `KPatchInit` has already run and anything it provided stays registered until cleanup. When `ApplyPatches()` aborts it logs one `[KotorPatcher] Apply aborted: N module(s) initialised` line.
+- **Only for modules that are loaded.** DETOUR and DLL_ONLY patches load a module. SIMPLE and REPLACE patches load nothing, so there is nothing to initialise.
+- **A missing export is normal.** It is not logged and is not an error.
+- **Attribution.** The registry records which patch provided each interface, using the `id` from `patch_config.toml`, or the DLL's file name without directory or extension if the entry has no `id`. The id appears in registry log lines.
+- **Order.** Modules are initialised in config order. That order is not a contract.
+
+### What KPatchInit may do
+
+`KPatchInit` is DllMain-class code. Where it runs depends on the platform and on how the game starts:
+
+- Windows, normal start: inside the patcher's `DllMain` (`DLL_PROCESS_ATTACH`), so under the loader lock.
+- Windows, SteamStub: when the hook sites are still encrypted, the apply is deferred to a worker thread that waits for the stub to decrypt `.text`. `KPatchInit` then runs on that worker, which does not hold the loader lock but runs concurrently with the game's own startup.
+- Linux and macOS: inside the library constructor, before the game's `main()`.
+
+A patch must therefore treat it as if the loader lock is held:
+
+- It may store the `KPatchApi` pointer, call `provide` and `require`, and make cheap registration calls on an interface it gets.
+- It must not load libraries (`LoadLibrary`, `dlopen`), wait on other threads or events, start a thread and wait for it, or do file or network I/O.
+- It must not assume another patch has been initialised. A patch that needs another patch's interface should call `require` lazily at first use, not in `KPatchInit`, and must handle `NULL` because the provider may not be installed.
+
+The registry's mutex is not held while `KPatchInit` runs, so the function may call `provide` and `require` freely (they re-enter the registry).
+
+### Threading
+
+Every registry call is safe from any thread. `provide` and `require` take one mutex for a map lookup or insert, and `require` is cheap enough to call on a first-use path, but callers are expected to cache the result.
+
+### Lifetime and cleanup order
+
+The `KPatchApi` pointer and every interface pointer `require` returns stay valid until `CleanupPatcher()` begins. `CleanupPatcher()` then runs in this order:
+
+1. `Registry::Close()`. From here `require` returns `NULL` and `provide` is rejected, so no patch can fetch an interface whose provider is about to be unloaded.
+2. Free the wrapper stubs and REPLACE code buffers, and unload the patch modules.
+3. `Registry::Reset()`: forget every provided interface and every module handle seen. This comes last because the OS may hand the same handle value to a different module later, and that module has to get its own `KPatchInit`.
+
+A patch must never call **another** patch's interface from its DLL detach path (or a static destructor): the provider may already be unloaded.
+
+The registry is heap-allocated and intentionally never deleted. A function-local static would be destroyed at process exit, while a patch thread may still be calling in: on Linux `exit()` runs static destructors with other threads alive, and on Windows `ExitProcess` kills threads that may hold the mutex. After `Close()` the calls become harmless no-ops (`require` returns `NULL`).
+
+### ABI rules
+
+- **Pure C, fixed-width types.** Interface structs hold only `uint32_t`, `int32_t`, `uint64_t`, `const char*` and function pointers. No `bool`, enums, `double`, `std::string`, exceptions or C++ objects cross the boundary.
+- **`struct_size` first.** The first field of every interface struct is `uint32_t struct_size`, set by the provider to `sizeof` its struct.
+- **Append-only within a major version.** Fields are added at the end and never removed, reordered or resized. A consumer that wants a field newer than its oldest supported provider checks `struct_size` before reading it.
+- **The version is the major version.** `require("x", 1)` matches only an interface provided as `("x", 1)`. A breaking change is a new major, and a provider may provide `("x", 1)` and `("x", 2)` side by side.
+- **First provider wins.** A second `provide` of the same name and major is rejected (a non-zero return, plus a log line naming both providers). The first pointer keeps being served. `provide` also rejects a null or empty name and a null interface.
+- **`pack(8)`.** The structs sit inside `#pragma pack(push, 8)`, because `Common.h` opens `pack(push, 4)` and every compiler has to agree on the layout. The header carries `static_assert` checks of the sizes and offsets.
+- **`KPATCH_CALL`.** Every function pointer in the ABI uses `KPATCH_CALL`: `__cdecl` for MSVC and MinGW, `__attribute__((cdecl))` for GCC on i386, and empty elsewhere (x86_64 has one convention). On x86-32 Windows compilers disagree about the default convention, so it is pinned.
+- **Lifetime of an interface.** A provider's interface table must stay valid until the patcher cleans up (static storage is the usual choice).
+
+### No symbol lookup between patches
+
+Patch modules are opened with `dlopen(path, RTLD_NOW | RTLD_LOCAL)` on Linux and macOS. `RTLD_LOCAL` keeps a module's exported symbols out of the global scope, so one patch cannot find another patch's functions with `dlsym(RTLD_DEFAULT, ...)`, and an undefined symbol in one patch is not satisfied by another that happens to be loaded. Linking one patch against another's `.so` through `DT_NEEDED` would make the dynamic loader own the dependency, with its own load and unload order, and is not supported. The registry is the supported way to share code between patches. The patcher itself offers no symbol API to patches: everything a patch needs from the core comes through `KPatchApi` and the interfaces it provides.
+
 ## Wrapper Code Generation Details
 
 The generated DETOUR wrapper follows this structure:
@@ -283,7 +363,7 @@ Register exclusion allows patches to modify specific registers (e.g., changing E
 
 ## Debug Logging
 
-KotorPatcher logs initialization, patch application, and errors through the platform seam's log operation: `OutputDebugStringA()` on Windows, stderr on Linux. Neither writes to disk by default. All log messages are prefixed with component names:
+KotorPatcher logs initialization, patch application, and errors through the platform seam's log operation (`Platform::Log`): `OutputDebugStringA()` on Windows, stderr on Linux. Neither writes to disk by default. All log messages are prefixed with component names:
 
 - `[KotorPatcher]`: Main patcher operations
 - `[Config]`: Configuration parsing
