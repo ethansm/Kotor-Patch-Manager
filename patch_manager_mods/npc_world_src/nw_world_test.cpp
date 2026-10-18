@@ -193,5 +193,18 @@ int main() {
         w.onLoad(1); add(w, "a", g_areaA, "204tel"); ticks(w, 31);
         KT_CHECK(order == (std::vector<int>{1, 2}));
     }
+    // 12. pop = engine-origin adds since the load, library spawns excluded; reset by a load and by an area re-arm
+    {
+        fresh(w); w.disp.add(K2NW_AREA_STABLE, rec, nullptr, "t");
+        w.onLoad(1); KT_CHECK_EQ(w.popEngine(), 0);
+        add(w, "a", g_areaA, "204tel"); add(w, "b", g_areaA, "204tel", 2); add(w, "c", g_areaA, "204tel", 3);
+        KT_CHECK_EQ(w.popEngine(), 3); KT_CHECK_EQ(w.popLib(), 0);
+        ticks(w, 31);
+        uint32_t oid; KT_CHECK(w.spawn("r", "t1", 0, 0, 0, 0, &oid) == nw::SpawnResult::Ok);
+        KT_CHECK_EQ(w.popEngine(), 3); KT_CHECK_EQ(w.popLib(), 1);              // the library's own add is not engine population
+        add(w, "late", g_areaA, "204tel", 4); KT_CHECK_EQ(w.popEngine(), 4);    // adds after STABLE keep counting
+        add(w, "z", g_areaB, "261tel", 5); KT_CHECK_EQ(w.popEngine(), 1); KT_CHECK_EQ(w.popLib(), 0);   // area re-arm: the arming add counts
+        w.onLoad(2); KT_CHECK_EQ(w.popEngine(), 0); KT_CHECK_EQ(w.popLib(), 0);
+    }
     return kt::Report("nw_world_test");
 }

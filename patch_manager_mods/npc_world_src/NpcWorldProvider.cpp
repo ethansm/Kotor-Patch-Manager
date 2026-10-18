@@ -39,7 +39,7 @@ KP_CHANNEL(chSpawn, "spawn");
 // Only stores the path and the level (no I/O): safe from a static initialiser.
 const bool g_fallbackSet = (KpLog_SetFallbackFile("npc-world_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
 
-constexpr const char* kVersion = "0.1.1-dev";
+constexpr const char* kVersion = "0.1.2-dev";
 constexpr const char* kIniName = ".\\npc_world.ini";
 
 // saferead site ids: 0x7300-0x73FF belong to this mod
@@ -143,7 +143,7 @@ void ensureInit() {
 }
 
 void logStable(const nw::World& w) {
-    KP_LOG(chStable, "STABLE area=%s load=%d visit=%d tags=%d%s", w.area(), (int)w.loadSeq(), (int)w.visitSeq(), w.seenTags(),
+    KP_LOG(chStable, "STABLE area=%s load=%d visit=%d tags=%d pop=%d%s", w.area(), (int)w.loadSeq(), (int)w.visitSeq(), w.seenTags(), (int)w.popEngine(),
            w.seenOverflow() ? " (tag table overflowed)" : "");
 }
 

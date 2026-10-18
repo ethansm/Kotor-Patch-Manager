@@ -190,6 +190,7 @@ public:
         seenCount_ = 0;
         seenOverflow_ = false;
         spawnedThisVisit_ = 0;
+        popEngine_ = 0; popLib_ = 0;
         spawning_ = false;
         visitSalt_ = makeVisitSalt(loadSeq_, entropy);
         K2NwEvent ev = baseEvent(K2NW_AREA_LOAD);
@@ -206,9 +207,10 @@ public:
                 setArea(ci.areaRes);
                 gateReset();
                 spawnedThisVisit_ = 0;
+                popEngine_ = 0; popLib_ = 0;
             }
         }
-        if (!lib) ++addsSinceTick_;   // after the re-arm, so the add that armed the area still keeps the next tick from counting as quiet
+        if (lib) ++popLib_; else { ++popEngine_; ++addsSinceTick_; }   // after the re-arm, so the add that armed the area still keeps the next tick from counting as quiet
         if (ci.tag && ci.tag[0]) rememberTag(ci.tag);
         K2NwEvent ev = baseEvent(K2NW_CREATURE_ADDED);
         ev.creature = ci.creature;
@@ -273,6 +275,10 @@ public:
     int32_t loadSeq() const { return loadSeq_; }
     uint32_t tick() const { return tick_; }
     int32_t spawnedCount() const { return spawnedThisVisit_; }
+    // Creatures already in the area: engine-origin AddToArea events since the load (or the area re-arm), excluding the library's own spawns.
+    // Adds after the read are counted too; removals are not seen. popLib() = library-origin adds this visit (0 at the STABLE log line: spawns come after it).
+    int32_t popEngine() const { return popEngine_; }
+    int32_t popLib() const { return popLib_; }
     int32_t effectiveCap() const { return spawnCap < 0 ? 0 : (spawnCap > HardSpawnCap ? HardSpawnCap : spawnCap); }
     int32_t currentArea(char* buf, uint32_t cap) const { return copyText(area_, buf, cap); }
     const char* area() const { return area_; }
@@ -294,6 +300,7 @@ private:
     int seenCount_ = 0;
     bool seenOverflow_ = false;
     int32_t spawnedThisVisit_ = 0;
+    int32_t popEngine_ = 0, popLib_ = 0;
     bool spawning_ = false;
 
     void gateReset() { stableRun_ = 0; stableFired_ = false; addsSinceTick_ = 0; }
