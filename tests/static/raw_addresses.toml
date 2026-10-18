@@ -65,6 +65,9 @@ addresses = ["0x00414840", "0x008ABA8C", "0x008AD930", "0x008ADA08", "0x008ADA81
 [files."patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp"]
 addresses = ["0x00462320", "0x0073F530", "0x007645F0", "0x0076D200", "0x0077EC20", "0x0085D430", "0x008AA16A", "0x008AA6F0", "0x008ABA50", "0x009A4AB0"]
 
+[files."patch_manager_mods/holster_editor_src/HolsterEditor.cpp"]
+addresses = ["0x00A309C0", "0x00A309C8", "0x00A309CE", "0x00A32A30", "0x00A32A54"]
+
 [files."patch_manager_mods/hud_host_src/HhDispatch.h"]
 addresses = ["0x00743847", "0x00743850"]
 
