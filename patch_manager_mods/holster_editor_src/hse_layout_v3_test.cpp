@@ -3,6 +3,7 @@
 #include "HseLayoutV3.h"
 #include "HseView.h"   // kPageItemCap, HseRect
 #include "check.h"
+#include "TextFit.h"
 #include <cmath>
 #include <algorithm>
 
@@ -28,9 +29,10 @@ static int collect(const PageLayoutV3& L, bool hasHint, Item* o) {
     Box raw[kPageItemsV3];
     int n = pageBoxesV3(L, raw);
     for (int i = 0; i < n; ++i) o[i] = Item{raw[i], 0, 0, -1};
-    // order: left 19 (0..18), view area 13 (19..31), inspector 37 (32..68)
+    // order: left 19 (0..18), view area 13 (19..31), inspector 37 (32..68), then the Reset button (69, left column)
     for (int i = 19; i < 32; ++i) o[i].zone = 1;
-    for (int i = 32; i < n; ++i) o[i].zone = 2;
+    for (int i = 32; i < PI_RESET_SCOPE; ++i) o[i].zone = 2;
+    o[PI_RESET_SCOPE].zone = 0;
     // inspector: groupLabel0, groupReset0, groupLabel1, groupReset1 (32..35), then rows 5 boxes each (36..65), note 66, hints 67..68
     for (int r = 0; r < kV3Rows; ++r) {
         o[36 + r * 5 + 1].kind = 2; o[36 + r * 5 + 1].row = r;
@@ -112,9 +114,40 @@ static void testGeometries() {
         // item budget
         Box all[kPageItemsV3 + 8];
         KT_CHECK_EQ(pageBoxesV3(L, all), kPageItemsV3);
-        KT_CHECK(kPageItemsV3 <= 70);
+        KT_CHECK(kPageItemsV3 <= 70);   // at the ideal bound
         KT_CHECK(kPageItemsV3 <= 80);
-        KT_CHECK(kPageItemsV3 == 19 + 13 + 37);
+        KT_CHECK(kPageItemsV3 == 19 + 13 + 37 + 1);
+    }
+}
+
+// Save | Revert | Reset share one row: positive widths, inside the column, in order without overlap, Reset keeps the 4 px Save gives up, and the
+// labels fit the box text budget (width - 8, as HolsterEditor boxPx) at the three common sizes. "Revert" at 1280 is the known exception: it is
+// a plain third (45 px) and its 45.75 px label exceeds even the raw box; the editor shows it uncut, so only Save and Reset are asserted there.
+static void testSaveRow() {
+    const int sizes[3][2] = {{1280, 720}, {1920, 1080}, {3440, 1440}};
+    const textfit::TextCtx tc = {1.0f, 1.0f, 1.0f};
+    for (int s = 0; s < 3; ++s) {
+        Geom g = geomFor(sizes[s][0], sizes[s][1]);
+        PageLayoutV3 L = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr);
+        KT_CHECK(L.save.w > 0 && L.revert.w > 0 && L.reset.w > 0);
+        KT_CHECK(L.save.y == L.revert.y && L.revert.y == L.reset.y && L.save.h == L.reset.h);
+        KT_CHECK(L.save.x + L.save.w < L.revert.x && L.revert.x + L.revert.w < L.reset.x);
+        KT_CHECK(inside(L.save, g.column) && inside(L.revert, g.column) && inside(L.reset, g.column));
+        KT_CHECK(!overlaps(L.save, L.revert) && !overlaps(L.revert, L.reset) && !overlaps(L.save, L.status) && !overlaps(L.reset, L.status));
+        KT_CHECK(L.reset.w >= L.revert.w + 4);
+        KT_CHECK(L.reset.x + L.reset.w == L.status.x + L.status.w);   // the row fills the content width
+        auto px = [&](const char* t) { return textfit::textPx(tc, t, static_cast<int>(strlen(t))); };
+        KT_CHECK(px("Save") <= static_cast<float>(L.save.w - 8));
+        KT_CHECK(px("Reset") <= static_cast<float>(L.reset.w - 8));
+        if (sizes[s][0] > 1280) KT_CHECK(px("Revert") <= static_cast<float>(L.revert.w - 8));
+    }
+    // a tiny column still gives non-negative widths in order
+    for (int w = 0; w < 40; ++w) {
+        Geom g = geomFor(3440, 1440);
+        g.column.w = w;
+        PageLayoutV3 L = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr);
+        KT_CHECK(L.save.w >= 0 && L.revert.w >= 0 && L.reset.w >= 0);
+        KT_CHECK(!overlaps(L.save, L.revert) && !overlaps(L.revert, L.reset));
     }
 }
 
@@ -243,7 +276,8 @@ static void testViewVsPreview() {
     KT_CHECK(O.view.w > 0);
     Box all[kPageItemsV3 + 8]; pageBoxesV3(O, all);
     for (int i = 19; i < 32; ++i) KT_CHECK(all[i].x + all[i].w <= po.x - 4);   // view area items (see collect())
-    for (int i = 32; i < kPageItemsV3; ++i) KT_CHECK(!overlaps(all[i], O.view));
+    for (int i = 32; i < PI_RESET_SCOPE; ++i) KT_CHECK(!overlaps(all[i], O.view));   // the Reset button sits in the left column
+    KT_CHECK(!overlaps(all[PI_RESET_SCOPE], O.view));
     KT_CHECK(!overlaps(O.viewFlip, O.rows[0].name) && !overlaps(O.legend, O.groupLabel[0]));
     // a preview left of the column content leaves no room: the width stays non-negative and inside [vl, preview.x]
     Box pn = g.preview; pn.x = g.column.x + 100;
@@ -321,8 +355,11 @@ static void testAdaptersAndIndex() {
     KT_CHECK(same(all[PI_NOTE], L.note));
     for (int i = 0; i < kV3Hints; ++i) KT_CHECK(same(all[PI_HINT + i], L.hint[i]));
 
-    // the page holds the 69 boxes plus one wedge per slider row, inside the consumer cap
-    KT_CHECK_EQ(kPageItemsV3Total, 75);
+    KT_CHECK(same(all[PI_RESET_SCOPE], L.reset));
+    KT_CHECK(PI_RESET_SCOPE == 69 && PI_HINT + kV3Hints == PI_RESET_SCOPE);
+
+    // the page holds the 70 boxes plus one wedge per slider row, inside the consumer cap
+    KT_CHECK_EQ(kPageItemsV3Total, 76);
     KT_CHECK(kPageItemsV3Total <= kPageItemCap);
 }
 
@@ -330,6 +367,7 @@ int main() {
     testHelpers();
     testAdaptersAndIndex();
     testGeometries();
+    testSaveRow();
     testPinned3440();
     testViewVsPreview();
     testHintHeight();

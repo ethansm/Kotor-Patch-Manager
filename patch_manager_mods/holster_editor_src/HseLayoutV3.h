@@ -49,8 +49,9 @@ constexpr int kV3ResetMax = 20;   // reset icon squares are 20 x 20 (smaller onl
 
 // Page items that become mod-config items: left 19 (member 3, captions 3, weapons 2, bones 5, scopes 3, save/revert 2,
 // status 1) + view area 13 (mode 4, view reset + flip 2, view 1, stances 5, legend 1) + inspector 37 (group labels 2,
-// group resets 2, rows 6 x 5, note 1, hints 2). Must stay <= 80 (kMaxItems), ideally <= 70.
-constexpr int kPageItemsV3 = 69;
+// group resets 2, rows 6 x 5, note 1, hints 2) + the Reset Scope button 1 (left column, appended last so no index shifts).
+// Must stay <= 80 (kMaxItems), ideally <= 70.
+constexpr int kPageItemsV3 = 70;
 
 struct InspRowV3 { editkit::Box name, track, thumb, value, reset; };
 
@@ -62,6 +63,7 @@ struct PageLayoutV3 {
     editkit::Box bone[kV3Bones];
     editkit::Box scope[kV3Scopes];
     editkit::Box save, revert, status;
+    editkit::Box reset;                                   // third Save-row button ("Reset": deletes this scope's saved overrides); appended last in pageBoxesV3
     // view area
     editkit::Box modeBtn[kV3Modes];
     editkit::Box viewReset, viewFlip;                     // small icon squares at the right end of the mode strip
@@ -123,8 +125,13 @@ inline int buildLeft(editkit::Box Z, int r, PageLayoutV3& L) {
     for (int i = 0; i < kV3Scopes; ++i) L.scope[i] = mk(x0 + i * (c3 + kGap), y, c3, r);
     y += r + kGap + kSpacer;
 
-    L.save = mk(x0, y, c2, r);
-    L.revert = mk(x0 + c2 + kGap, y, c2, r);
+    // Save | Revert | Reset: thirds, but Save gives 4 px to Reset (the label "Reset" misses the narrowest text budget by half a pixel at a plain third).
+    const int w3 = c3;
+    const int saveW = imax(w3 - 4, w3 / 2), revertW = w3;
+    const int resetW = imax(0, W - saveW - revertW - 2 * kGap);
+    L.save = mk(x0, y, saveW, r);
+    L.revert = mk(x0 + saveW + kGap, y, revertW, r);
+    L.reset = mk(x0 + saveW + revertW + 2 * kGap, y, resetW, r);
     y += r + kGap;
     L.status = mk(x0, y, W, r);
     y += r;
@@ -267,6 +274,7 @@ inline int pageBoxesV3(const PageLayoutV3& L, editkit::Box* out) {
     }
     out[n++] = L.note;
     for (int i = 0; i < kV3Hints; ++i) out[n++] = L.hint[i];
+    out[n++] = L.reset;
     return n;
 }
 
@@ -291,13 +299,14 @@ enum PageIdxV3 {
     PI_GROUP = 32,        // + group * 2 = label, + 1 = reset
     PI_ROW = 36,          // + row * 5 = name, +1 track, +2 thumb, +3 value, +4 reset
     PI_NOTE = 66,
-    PI_HINT = 67          // + hint (2)
+    PI_HINT = 67,         // + hint (2)
+    PI_RESET_SCOPE = 69   // the Reset button next to Save / Revert (appended last)
 };
 constexpr int kRowStride = 5;   // boxes per inspector row (name, track, thumb, value, reset)
-static_assert(PI_HINT + kV3Hints == kPageItemsV3, "the PageIdxV3 table must cover exactly kPageItemsV3 boxes");
+static_assert(PI_HINT + kV3Hints == PI_RESET_SCOPE && PI_RESET_SCOPE + 1 == kPageItemsV3, "the PageIdxV3 table must cover exactly kPageItemsV3 boxes");
 static_assert(PI_ROW + kV3Rows * kRowStride == PI_NOTE, "inspector rows end at the note");
 
-// The slider wedge (the teal fill behind each track) is a sixth item per row beside the 69 boxes: its rect is the track rect cut to the thumb fraction
+// The slider wedge (the teal fill behind each track) is a sixth item per row beside the 70 boxes: its rect is the track rect cut to the thumb fraction
 // (SliderArt.h sliderWedgeWidth). The page therefore holds kPageItemsV3 + kV3Rows items; the consumer cap (HseView.h kPageItemCap) must hold them.
 constexpr int kPageItemsV3Total = kPageItemsV3 + kV3Rows;
 

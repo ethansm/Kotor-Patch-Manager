@@ -1,11 +1,11 @@
-// HolsterEditor.cpp -- holster-editor 0.4.0-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
+// HolsterEditor.cpp -- holster-editor 0.4.1-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
 // (doc 42 HW-EDIT, plan .claude/plans/holster_editor_options.md; page rebuild: .claude/plans/holster_editor_layout_v3.md, holster_hw_ux3_build.md Wave B.)
 //
 // mod-config owns everything about the Options screen: the hooks, the root "Mod Configuration" button, the list page, control cloning,
 // hover text, page navigation and freeing its controls. This patch registers ONE entry ("Holstered Weapons") and keeps only what is
 // holster-specific:
 //   build    (Options ctor window, vanilla layout open) opens the embedded HSE_VIEW layout, lets preview-3d bind the 3D view to it, restores
-//            the panel's layout slot FIRST, then makes the page: the 69 widgets of hse::pageLayoutV3 (HseLayoutV3.h, created in its pageBoxesV3 order
+//            the panel's layout slot FIRST, then makes the page: the 70 widgets of hse::pageLayoutV3 (HseLayoutV3.h, created in its pageBoxesV3 order
 //            into Editor::item[]) plus one wedge label per slider row, and asks for the description split (SetDescSplit 850). A provider without
 //            SetDescSplit (mod-config older than 0.1.3, which also caps a page at 40 items) or a refused AddX gives a page that only says
 //            "needs a newer mod-config": a log line and a message, never a crash.
@@ -93,7 +93,7 @@ const StanceDef kStanceList[] = {
 };
 constexpr int kStanceCount = sizeof(kStanceList) / sizeof(kStanceList[0]);
 static_assert(kStanceCount == hse::kV3Stances, "one stance button per stance");
-// Wave B item budget: the 69 boxes of hse::pageLayoutV3 plus one wedge label per slider row must fit mod-config's per-page cap.
+// Wave B item budget: the 70 boxes of hse::pageLayoutV3 plus one wedge label per slider row must fit mod-config's per-page cap.
 static_assert(hse::kPageItemsV3Total <= hse::kPageItemCap, "the v3 page must fit the consumer item cap");
 
 bool g_enabled = true;
@@ -117,7 +117,7 @@ enum State { IDLE, NEEDBUILD, LIVE, FAILED };
 enum EditMode { MODE_NAV = 0, MODE_WEAPON = 1 };
 // Actions guarded by the unsaved-edits two-click confirm (each direct scope button is its own action, so arming one never confirms another). The bone
 // buttons are not guarded: a bone change keeps the unsaved values.
-enum GuardAction { ACT_NONE = 0, ACT_HAND_R, ACT_HAND_L, ACT_PREV, ACT_NEXT, ACT_SCOPE0 = 10 };
+enum GuardAction { ACT_NONE = 0, ACT_HAND_R, ACT_HAND_L, ACT_PREV, ACT_NEXT, ACT_SCOPE0 = 10, ACT_RESET_SCOPE = 20 };
 constexpr uint32_t kDiscardWindowMs = 2000;
 constexpr float kPreviewFov = 22.726f;       // preview-3d kDefaultFov: the scene fov is p3d::fovForZoom(kPreviewFov, zoom) (applyView)
 constexpr float kProjUpMetres = 0.3f;        // PROJ probe: second point is the mount + this far along world +Z
@@ -350,7 +350,7 @@ void readConfig() {
 }
 
 const char* statusText() {
-    return g_p3.ok() && g_hol.ok() ? "0.4.0 dev: preview + holster connected" : "0.4.0 dev: a provider is missing";
+    return g_p3.ok() && g_hol.ok() ? "0.4.1 dev: preview + holster connected" : "0.4.1 dev: a provider is missing";
 }
 
 bool editDirty();   // defined with the status helpers below
@@ -381,7 +381,7 @@ void KPATCH_CALL cbBeforeFree(uint32_t token, void* user) {
 // Buttons of the page; every other item is a label (PI_VIEW is the 3D view control).
 bool itemIsButton(int i) {
     using namespace hse;
-    if (i == PI_MEMBER_PREV || i == PI_MEMBER_NEXT || i == PI_SAVE || i == PI_REVERT || i == PI_VIEW_RESET || i == PI_VIEW_FLIP) return true;
+    if (i == PI_MEMBER_PREV || i == PI_MEMBER_NEXT || i == PI_SAVE || i == PI_REVERT || i == PI_RESET_SCOPE || i == PI_VIEW_RESET || i == PI_VIEW_FLIP) return true;
     if (i >= PI_WEAPON && i < PI_WEAPON + kV3Weapons) return true;
     if (i >= PI_BONE && i < PI_BONE + kV3Bones) return true;
     if (i >= PI_SCOPE && i < PI_SCOPE + kV3Scopes) return true;
@@ -421,6 +421,7 @@ const char* itemInitText(int i, char* buf, int cap) {
     if (i >= PI_SCOPE && i < PI_SCOPE + kV3Scopes) { scopeSegText(buf, cap, i - PI_SCOPE, ""); return buf; }
     if (i == PI_SAVE) return "Save";
     if (i == PI_REVERT) return "Revert";
+    if (i == PI_RESET_SCOPE) return "Reset";
     if (i >= PI_MODE && i < PI_MODE + kV3Modes) return weaponModeName(i - PI_MODE);
     if (i == PI_VIEW_RESET) return "R";
     if (i == PI_VIEW_FLIP) return "<>";
@@ -456,6 +457,7 @@ const char* itemTip(int i) {
     if (i >= PI_SCOPE && i < PI_SCOPE + kV3Scopes) return scopeTip();
     if (i == PI_SAVE) return "Save placement to holster.ini under [editor].";
     if (i == PI_REVERT) return "Revert unsaved edits back to saved values.";
+    if (i == PI_RESET_SCOPE) return "Delete this scope's saved overrides (click twice).";
     if (i >= PI_MODE && i < PI_MODE + kV3Modes) return kModeDesc[i - PI_MODE];
     if (i == PI_VIEW_RESET) return "Reset view: back to the fit framing.";
     if (i == PI_VIEW_FLIP) return "Flip view: turn the character around.";
@@ -1393,7 +1395,9 @@ void resetStanceUi(Editor& e) {
 void updateStatusText(Editor& e) {
     if (!g_menu.ok() || !e.page || e.statusItem < 0) return;
     char raw[100] = {0}, buf[100] = {0};
-    if (e.mode == MODE_WEAPON && e.discardArmed && hse::guardArmLive(true, e.discardArmedAt, GetTickCount(), kDiscardWindowMs)) {
+    if (e.mode == MODE_WEAPON && e.discardArmed && e.discardAction == ACT_RESET_SCOPE && hse::guardArmLive(true, e.discardArmedAt, GetTickCount(), kDiscardWindowMs)) {
+        snprintf(raw, sizeof raw, "Click Reset again to delete this scope's saved overrides.");
+    } else if (e.mode == MODE_WEAPON && e.discardArmed && hse::guardArmLive(true, e.discardArmedAt, GetTickCount(), kDiscardWindowMs)) {
         snprintf(raw, sizeof raw, "Unsaved: click again to discard");
     } else if (e.mode == MODE_WEAPON) {
         refreshEdit(e);
@@ -1663,7 +1667,7 @@ void scrubBegin(Editor& e, int row, int x, int y, bool shift, bool ctrl) {
         return;
     }
     const float v = hse::inspGet(row, e.editInfo.rot, e.editInfo.off);
-    if (!e.scrub.begin(row, x, v)) {
+    if (!e.scrub.begin(row, x, v, e.lay.rows[row].track.w)) {
         if (warnOk(e, W_SCRUB)) KP_LOGV(chView, KPLOG_WARN, "SCRUB WARN begin refused row=%s open=%.5f (not a finite value, or a scrub is running)", hse::inspRowName(row), v);
         return;
     }
@@ -1685,7 +1689,7 @@ void scrubStepTick(Editor& e, int x, bool shift, bool ctrl) {
 // One tick of the row scrub, after the chord has seen the mouse. `co` is the chord's answer for this tick, `lEdge` the LMB press edge.
 // A scrub begins only when the chord turned an IDLE press into a DEAD "press_outside" (so a press on a button or outside the view, never a
 // foreground-return or stale press) with the cursor on a slider's track or thumb and no other button down. A press on the track outside the thumb first
-// jumps the value to the pressed position (the track spans +-30 cm / +-180 deg around zero). It runs while LMB is held, ends on release, and is cancelled
+// jumps the value to the pressed position (the track spans +-30 cm / +-180 deg around zero). The drag is scaled to the track width, so the thumb follows the cursor (Shift/Ctrl detach it on purpose). It runs while LMB is held, ends on release, and is cancelled
 // by foreground loss.
 void scrubTick(Editor& e, const hse::ChordOut& co, bool lEdge, int x, int y, bool fg, bool lmb, bool rmb, bool mmb, bool shift, bool ctrl) {
     if (e.scrub.active) {
@@ -1893,6 +1897,23 @@ bool guardTransition(Editor& e, int action, const char* why) {
     const bool armedSame = e.discardArmed && e.discardAction == action;
     if (hse::guardProceed(dirty, armedSame, e.discardArmedAt, now, kDiscardWindowMs)) {
         if (dirty) KP_LOG(chView, "DISCARD why=%s", why);
+        e.discardArmed = false;
+        return true;
+    }
+    e.discardArmed = true;
+    e.discardAction = action;
+    e.discardArmedAt = now;
+    KP_LOG(chView, "DISCARD armed why=%s", why);
+    updateStatusText(e);
+    return false;
+}
+
+// Two-click confirm that is NOT about unsaved edits (Reset Scope deletes saved keys): always needs the second click on the same action within
+// kDiscardWindowMs. True when the caller may run the action; otherwise arms the window and shows the warning in the status line.
+bool guardConfirm(Editor& e, int action, const char* why) {
+    const DWORD now = GetTickCount();
+    const bool armedSame = e.discardArmed && e.discardAction == action;
+    if (hse::guardArmLive(armedSame, e.discardArmedAt, now, kDiscardWindowMs)) {
         e.discardArmed = false;
         return true;
     }
@@ -2234,6 +2255,15 @@ void tickBody(Editor& e) {
                     refreshEdit(e);
                     refreshSelectors(e, true);
                     updateStatusText(e);
+                } else if (clk[hse::PI_RESET_SCOPE]) {
+                    if (guardConfirm(e, ACT_RESET_SCOPE, "reset_scope")) {
+                        g_hol.h->ResetScope();   // deletes this scope's saved keys and saves; the open edit stays open
+                        KP_LOG(chView, "BTN ResetScope");
+                        captureOpen(e, "reset_scope");
+                        refreshEdit(e);
+                        refreshSelectors(e, true);
+                        updateStatusText(e);
+                    }
                 }
                 bool didReset = false;
                 for (int g = 0; g < hse::kV3Groups && !didReset; ++g)
@@ -2461,7 +2491,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_menu.init(api);
     embedgui::g_log = embedLog;
     embtex::g_log = embedLog;
-    KP_LOG(chMain, "holster-editor 0.4.0-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
+    KP_LOG(chMain, "holster-editor 0.4.1-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
            static_cast<unsigned>(sizeof kHseViewGui));
     const bool cfgOk = g_cfgClient.connect(), menuOk = g_menu.connect();
     if (!cfgOk || !menuOk) {

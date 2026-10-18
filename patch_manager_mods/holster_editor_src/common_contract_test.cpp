@@ -228,7 +228,7 @@ int main() {
         // U3 / HW-UX3: the page needs its items inside mod-config's per-page cap (kMaxItems 80 in 0.1.3+, 40 before); the editor refuses cleanly, never crashes, on a full page.
         HCHECK("editor page items fit mod-config's 80-item cap", hse::kPageItemsBase + hse::kInspItems <= hse::kPageItemCap);
         HEQ("consumer item cap is mod-config's kMaxItems 80", hse::kPageItemCap, 80);
-        HCHECK("the v3 page (69 boxes + 6 wedges) fits the cap", hse::kPageItemsV3Total <= hse::kPageItemCap);
+        HCHECK("the v3 page (70 boxes + 6 wedges) fits the cap", hse::kPageItemsV3Total <= hse::kPageItemCap);
 
         // GuiKit input hooks: null under GUIKIT_HOST (the mod must check before calling); the assignment form the mod uses is callable.
         HCHECK("g_gk.lbuttonDown is null under GUIKIT_HOST", guikit::g_gk.lbuttonDown == nullptr);

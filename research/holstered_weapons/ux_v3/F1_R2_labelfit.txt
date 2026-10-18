@@ -1,0 +1,31 @@
+F1_R2 label fit: "Reset Scope" in a c3-wide Save-row button (recon, read-only)
+
+Column width (HseLayoutV3.h:200, pageLayoutV3):
+  colW = min(column.w, kV3ColWantW=260, view.x - 4 - column.x)
+  column.w = sx(400), view.x = sx(1345), column.x = sx(150), sx(v) = v*W/3440 (integer)
+  W = colW - 2*kPad (kPad=4)            (buildLeft, HseLayoutV3.h:101)
+  c3 = cellW(W,3) = (W-4)/3              (HseLayoutV3.h:97, :116)
+  c2 = cellW(W,2) = (W-2)/2              (Save/Revert use c2, HseLayoutV3.h:126-127)
+
+Size      colW  W    c3   fit budget (boxPx = c3-8, HolsterEditor.cpp:1326)
+1280x720   148  140   45   37
+1920x1080  223  215   70   62
+3440x1440  260  252   82   74   (colW capped by kV3ColWantW)
+
+Label widths (TextFit.h textPx, F16, TextCtx{1,1,1} as fitButton uses, TextK=0.75, FontWidths.inc kFontTexW):
+  "Reset Scope" 113 texels = 84.75 px
+  "Reset"        50 texels = 37.5 px
+  "Save" 33.0 px, "Revert" 45.75 px, "Scope" 38.25 px
+
+Fit result:
+  1280x720:  Reset Scope NO (84.75 > 37, and > raw c3 45). Reset NO (37.5 > 37 by 0.5 px); Reset fits raw c3 45.
+  1920x1080: Reset Scope NO (84.75 > 62). Reset YES (37.5 <= 62).
+  3440x1440: Reset Scope NO (84.75 > 74, and > raw c3 82). Reset YES (37.5 <= 74).
+
+Notes:
+- Save/Revert labels come from itemLabel (HolsterEditor.cpp:422-423) as raw strings. They are not in the fitButton
+  callers (HolsterEditor.cpp:1361-1374, 1414, 1606, 1856, 1860). A new button needs an explicit
+  fitButton(boxPx(e, e.lay.<box>), label, ...) call, or it will not be cut.
+- Reset Scope would need about 93 px (84.75 + 8 pad) to fit as a single label.
+- hse_layout_v3_test.cpp does not pin c3, c2 or column width. geomFor sizes are at :72-79; size loops at :85 and :161.
+- Caveat: TextK 0.75 is the calibration in TextFit.h:15 (measured at one screenshot). Not re-measured here.

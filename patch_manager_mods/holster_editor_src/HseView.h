@@ -918,7 +918,8 @@ struct ScrubStep {
 };
 
 // One scrub of one row: begin() on the LMB press over the row button, step() once per tick with the cursor x while LMB is down, cancel() on
-// release or any loss of the capture. 1 px = 1 mm or 0.5 deg, Shift x0.2, Ctrl snaps to 1 cm / 5 deg (carried in acc). The value moves by the
+// release or any loss of the capture. Track mode (begin with trackW > 0): the thumb follows the cursor, 1 px = 2 * window / trackW (window =
+// +-0.30 m / +-180 deg), clamped to the track range (widened to the open value). Old mode (trackW <= 0): 1 px = 1 mm or 0.5 deg, Shift x0.2, Ctrl snaps to 1 cm / 5 deg (carried in acc). The value moves by the
 // per-tick delta (a Shift or Ctrl toggle mid drag never jumps) and stays inside [open - window, open + window] cut to the hard limits.
 struct Scrub {
     bool active;
@@ -928,16 +929,25 @@ struct Scrub {
     int pressX, lastX, frames;
     float acc;
     bool clampWarned;
+    float perPx;   // value units per pixel; 0 = the old fixed 1 mm / 0.5 deg
 
-    Scrub() : active(false), row(-1), open(0.0f), value(0.0f), lo(0.0f), hi(0.0f), loHard(false), hiHard(false), pressX(0), lastX(0), frames(0), acc(0.0f), clampWarned(false) {}
+    Scrub() : active(false), row(-1), open(0.0f), value(0.0f), lo(0.0f), hi(0.0f), loHard(false), hiHard(false), pressX(0), lastX(0), frames(0), acc(0.0f), clampWarned(false), perPx(0.0f) {}
 
     // False (and nothing starts) for a bad row, a non-finite open value, or a scrub already running.
-    bool begin(int r, int x, float openValue) {
+    // trackW > 0 = the slider track width in px (track mode, see above; 0 < trackW < 4 counts as 4).
+    bool begin(int r, int x, float openValue, int trackW = 0) {
         if (active || r < 0 || r >= IR_COUNT || !finiteF(openValue)) return false;
         const bool rot = inspIsRot(r);
         const float W = rot ? kScrubWindowRot : kScrubWindowOff;
         const float L = rot ? kScrubLimitRot : kScrubLimitOff;
         float l = openValue - W, h = openValue + W;
+        float pp = 0.0f;
+        if (trackW > 0) {
+            const int tw = trackW < 4 ? 4 : trackW;
+            pp = 2.0f * W / static_cast<float>(tw);
+            l = openValue < -W ? openValue : -W;
+            h = openValue > W ? openValue : W;
+        }
         loHard = l <= -L;
         hiHard = h >= L;
         if (l < -L) l = -L;
@@ -953,6 +963,7 @@ struct Scrub {
         frames = 0;
         acc = 0.0f;
         clampWarned = false;
+        perPx = pp;
         return true;
     }
 
@@ -963,7 +974,7 @@ struct Scrub {
         lastX = x;
         ++frames;
         const bool rot = inspIsRot(row);
-        float d = static_cast<float>(dx) * (rot ? kScrubRotPerPx : kScrubOffPerPx) * (shift ? kFineScale : 1.0f);
+        float d = static_cast<float>(dx) * (perPx > 0.0f ? perPx : (rot ? kScrubRotPerPx : kScrubOffPerPx)) * (shift ? kFineScale : 1.0f);
         if (ctrl) {
             // float sums of 0.001 land a hair under a whole step; the tiny bias keeps "10 px = 1 cm" exact (negligible against the step)
             const float step = rot ? kScrubSnapRot : kScrubSnapOff;
@@ -1120,12 +1131,12 @@ inline float inspTrackValue(int row, int px, int trackX, int trackW) {
 // One short hint line (ASCII, under 64 characters) for the hovered slider row.
 inline const char* inspHint(int r) {
     static const char* const kHints[IR_COUNT] = {
-        "Slide: side-to-side offset on the bone. 1 px = 1 mm.",
-        "Depth: forward (+) / back (-) along the bone. 1 px = 1 mm.",
-        "Height: up (+) / down (-) on the bone. 1 px = 1 mm.",
-        "Tilt: rotation about the side axis. 1 px = 0.5 deg.",
-        "Roll: rotation about the forward axis. 1 px = 0.5 deg.",
-        "Turn: rotation about the up axis. 1 px = 0.5 deg.",
+        "Slide: side offset. Drag the marker (Shift fine, Ctrl snap).",
+        "Depth: forward/back. Drag the marker (Shift fine, Ctrl snap).",
+        "Height: up/down. Drag the marker (Shift fine, Ctrl snap).",
+        "Tilt: side-axis turn. Drag the marker (Shift fine, Ctrl snap).",
+        "Roll: fwd-axis turn. Drag the marker (Shift fine, Ctrl snap).",
+        "Turn: up-axis turn. Drag the marker (Shift fine, Ctrl snap).",
     };
     return (r >= 0 && r < IR_COUNT) ? kHints[r] : "";
 }

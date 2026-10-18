@@ -1,0 +1,43 @@
+F1_R3 recon: PI_RESET_SCOPE=69 appended after PI_HINT (67, +2 hints)
+kPageItemsV3 69 -> 70, kPageItemsV3Total 75 -> 76, kPageItemCap 80 unchanged.
+Paths relative to KOTOR-II/. Class: PIN = fails build/test unless changed; LOGIC = needs new index/box/behaviour; TEXT = comment or label only; AUTO = follows the constant, no edit.
+
+| # | file:line | what | needed change | class |
+|---|-----------|------|---------------|-------|
+| 1 | patch_manager_mods/holster_editor_src/HseLayoutV3.h:53 | kPageItemsV3 = 69 | 70 | PIN |
+| 2 | patch_manager_mods/holster_editor_src/HseLayoutV3.h:297 | static_assert PI_HINT + kV3Hints == kPageItemsV3 | fails at 70; assert PI_RESET_SCOPE + 1 == kPageItemsV3 | PIN |
+| 3 | patch_manager_mods/holster_editor_src/hse_layout_v3_test.cpp:117 | KT_CHECK kPageItemsV3 == 19 + 13 + 37 | == 70 (add 1 for the new item) | PIN |
+| 4 | patch_manager_mods/holster_editor_src/hse_layout_v3_test.cpp:325 | KT_CHECK_EQ kPageItemsV3Total, 75 | 76 | PIN |
+| 5 | patch_manager_mods/holster_editor_src/HseLayoutV3.h:57-76 | struct PageLayoutV3 (hint[kV3Hints] at :75) | add editkit::Box resetScope | LOGIC |
+| 6 | patch_manager_mods/holster_editor_src/HseLayoutV3.h:136-186 and :194-245 | buildInspector / pageLayoutV3 build every box | compute resetScope rect; zone chosen by OPEN question | LOGIC |
+| 7 | patch_manager_mods/holster_editor_src/HseLayoutV3.h:251-270 | pageBoxesV3 emits 69 boxes (hints loop at :269) | add out[n++] = L.resetScope after hints | LOGIC |
+| 8 | patch_manager_mods/holster_editor_src/HseLayoutV3.h:280-294 | enum PageIdxV3, last entry PI_HINT = 67 | add PI_RESET_SCOPE = 69 | LOGIC |
+| 9 | patch_manager_mods/holster_editor_src/hse_layout_v3_test.cpp:33 | zone model: loop `for i=32..n` sets zone 2 (inspector) for every index >= 32 | 69 gets inspector zone by default; set explicit zone for 69 (or bound loop to 68) | LOGIC |
+| 10 | patch_manager_mods/holster_editor_src/hse_layout_v3_test.cpp:39 | zone model: `o[67].zone = 3; o[68].zone = 3` (hint rect) | add zone for 69 if it sits in a hint or new zone | LOGIC |
+| 11 | patch_manager_mods/holster_editor_src/hse_layout_v3_test.cpp:246 | loop `for i=32; i<kPageItemsV3` asserts no overlap with O.view (inspector assumption) | now covers 69; passes only if the new box stays outside O.view; re-check | LOGIC |
+| 12 | patch_manager_mods/holster_editor_src/hse_layout_v3_test.cpp:322 (after) | pin loop for PI_HINT is the last table pin | add KT_CHECK(same(all[PI_RESET_SCOPE], L.resetScope)) | LOGIC |
+| 13 | patch_manager_mods/holster_editor_src/HolsterEditor.cpp:382-397 | itemIsButton(i): explicit list, default label | add PI_RESET_SCOPE if it is a button | LOGIC |
+| 14 | patch_manager_mods/holster_editor_src/HolsterEditor.cpp:398-408 | itemIsResetIcon(i): drives art pass at :2091-2110 | add PI_RESET_SCOPE if it is a reset-icon control | LOGIC |
+| 15 | patch_manager_mods/holster_editor_src/HolsterEditor.cpp:409-442 | itemInitText(i): default "" (:423 is PI_REVERT, brief said 422) | add case for PI_RESET_SCOPE | LOGIC |
+| 16 | patch_manager_mods/holster_editor_src/HolsterEditor.cpp:443-470 | itemTip(i): default "" (:458 is PI_REVERT, brief said 457) | add tooltip case for PI_RESET_SCOPE | LOGIC |
+| 17 | patch_manager_mods/holster_editor_src/HolsterEditor.cpp:2149-2250 | click dispatch: clk[] sized kPageItemsV3 (auto); REVERT branch at :2230 | add handler branch for PI_RESET_SCOPE | LOGIC |
+| 18 | patch_manager_mods/holster_editor_src/HseLayoutV3.h:51-52 | comment "left 19 ... inspector 37 ... ideally <= 70" | update breakdown (+1 item) | TEXT |
+| 19 | patch_manager_mods/holster_editor_src/HseLayoutV3.h:300-301 | comment "the 69 boxes plus one wedge" | 70 | TEXT |
+| 20 | patch_manager_mods/holster_editor_src/hse_layout_v3_test.cpp:31 | comment "inspector 37 (32..68)" | update range and count | TEXT |
+| 21 | patch_manager_mods/holster_editor_src/hse_layout_v3_test.cpp:324 | comment "the 69 boxes plus one wedge" | 70 | TEXT |
+| 22 | patch_manager_mods/holster_editor_src/common_contract_test.cpp:231 | HCHECK label "(69 boxes + 6 wedges)" (value is kPageItemsV3Total, auto) | label to 70 boxes | TEXT |
+| 23 | patch_manager_mods/holster_editor_src/hse_view_test.cpp:984 | comment "the v3 page needs 75" (assert 80 unchanged) | 76 | TEXT |
+| 24 | patch_manager_mods/holster_editor_src/HolsterEditor.cpp:8 | comment "the 69 widgets of hse::pageLayoutV3" | 70 | TEXT |
+| 25 | patch_manager_mods/holster_editor_src/HolsterEditor.cpp:96 | comment "the 69 boxes of hse::pageLayoutV3" | 70 | TEXT |
+| 26 | patch_manager_mods/holster_editor_src/HolsterEditor.cpp:97 | static_assert kPageItemsV3Total <= kPageItemCap | none (76 <= 80) | AUTO |
+| 27 | patch_manager_mods/holster_editor_src/HolsterEditor.cpp:164, 206-209, 273, 1275, 1286, 1310, 1451-1453, 1567, 1830-1834, 2091, 2105, 2149-2150 | arrays and loops sized or bounded by kPageItemsV3 | none; relies on pageBoxesV3 emitting 70 (row 7) | AUTO |
+| 28 | patch_manager_mods/holster_editor_src/hse_layout_v3_test.cpp:28, 45, 114, 244, 300-301 | arrays and counts sized by kPageItemsV3 | none | AUTO |
+| 29 | patch_manager_mods/holster_editor_src/hse_layout_v3_test.cpp:115 | KT_CHECK kPageItemsV3 <= 70 | none; passes at 70 (at the "ideal" bound) | AUTO |
+| 30 | patch_manager_mods/holster_editor_src/HseView.h:795-796; hse_view_test.cpp:984 (assert); mod_config_src/MenuUiLogic.h:37; menu_ui_logic_test.cpp:345; ModConfig.cpp:75, 132, 1050, 1073 | cap kPageItemCap / kMaxItems = 80 | none (cap unchanged) | AUTO |
+| 31 | patch_manager_mods/holster_editor_src/HolsterEditor.cpp:1607, 1857, 1861 | setItemText on PI_HINT+1, PI_HINT, PI_LEGEND | none (indices below 69 unchanged) | AUTO |
+
+Summary: 4 PIN, 13 LOGIC (rows 5-17), 8 TEXT (rows 18-25), 0 mod_config_src edits. Zone assumption ("everything from index 32 is inspector") appears only at hse_layout_v3_test.cpp:33 and :246.
+Brief line drift: HolsterEditor.cpp:422 and :457 are actually :423 and :458.
+Docs only, not pinned by code: research/holstered_weapons/ux_v3/A0a_layout_contract.txt, OPUS_review.txt, OPUS_review_round.txt mention 69 (historical, not checked line by line).
+
+OPEN: Which zone does the PI_RESET_SCOPE box sit in (inspector, hint, or new), and is it a button or a reset icon?

@@ -1,0 +1,5 @@
+OUTPUT: /home/ethansm/orca/workspaces/local-setup/KOTOR-II/research/holstered_weapons/ux_v3/F1_R1_resetscope.txt
+EVIDENCE: patch_manager_mods/holster_src/Holster.cpp:1159-1241 ; patch_manager_mods/holster_src/Holster.cpp:1255-1257 ; patch_manager_mods/_shared_src/HolsterApi.h:107-110
+FINDING: ResetScope=edWrite(true): unsets rot/off/bone (body: off only), saves holster.ini, reseeds open overlay; GetEdit stays 1. Validity requires non-null ResetScope. No EndEdit/re-Begin needed; old editor agrees.
+OPEN: Should a refused reset (edWrite returns false, log-only, overlay untouched) show UI feedback instead of a silent refresh?
+VERDICT: REFUTED

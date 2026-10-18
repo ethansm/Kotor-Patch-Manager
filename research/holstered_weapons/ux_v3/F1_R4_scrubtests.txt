@@ -1,0 +1,77 @@
+F1_R4 scrub test inventory (recon, read-only). Repo: patch_manager_mods/holster_editor_src/
+
+A. hse_view_test.cpp: tests touching Scrub / kScrub* / inspHint / "1 px"
+Registered in main(): scrub 1598-1602; ux3 1610-1612.
+
+1. testScrubPxToValue, 1091-1109
+   - DEPTH begin(x=100, open=-0.11): active, row, pressX, open set (1094).
+   - +10 px -> -0.10 (1096, comment "1 px = 1 mm"); -30 px -> -0.13 (1098); frames==2 (1099); cancel() clears active (1100-1101).
+   - TILT begin open=30 deg: +10 px -> 35.0 (1106); -21 px -> 24.5 (1108). Comment "1 px = 0.5 deg" at 1103.
+2. testScrubShift, 1111-1129
+   - SLIDE shift +10 px -> +0.002 (1115). ROLL shift +10 px -> 1.0 deg (1119).
+   - HEIGHT mid-drag shift toggle: +10 -> 0.010 (1124); shift with dx=0 -> no change (1126); shift +10 -> 0.012 (1128).
+3. testScrubCtrlSnap, 1131-1172
+   - DEPTH Ctrl +10 px -> -0.10 exactly in one tick (1135).
+   - Carry: Ctrl 4+4+4 px -> nothing, nothing, then 0.01 with acc 0.002 (1139-1144).
+   - Ten Ctrl 1 px ticks -> exactly one change, value 0.01 (1148-1151). Comment "1 px ticks" at 1145.
+   - Negative: Ctrl -25 px -> -0.02, acc -0.005 (1155-1156).
+   - Releasing Ctrl drops carry: +3 px -> acc 0, value -0.017 (1158-1159).
+   - TURN Ctrl 9 px -> no change, acc 4.5 (1163-1164); +1 px -> 5.0 deg (1165-1166).
+   - TILT Ctrl+Shift 50 px -> 5.0 deg (1170-1171).
+4. testScrubWindowAndLimits, 1174-1216
+   - DEPTH window lo -0.30 / hi 0.30, no hard flags (1177). +250 px inside (1178-1179).
+   - +100 px pinned at +0.30, clampSide 1, clampedNow, not hardLimit (1180-1181). +50 more: no change, no second WARN (1182-1183).
+   - -100 px moves at once to 0.20, no dead zone (1184-1185). -700 px pins -0.30 (1186-1187).
+   - TILT open -150: window [-330, 30] (1190-1191). +1000 px pins 30.0 (1192-1193).
+   - HEIGHT open 2.9: hi 3.0 hiHard, lo 2.6 (1196-1197). +500 px pins 3.0, hardLimit (1198-1199).
+   - ROLL open -700: lo -720 loHard, hi -520 (1201-1202). -1000 px pins -720, hardLimit (1203-1204).
+   - TURN open 1000 collapses to [720, 720]; +1 px -> 720, hardLimit (1207-1210).
+   - SLIDE open 2.97, Ctrl +50 px pins 3.0 and zeroes acc (1213-1215).
+5. testScrubGuards, 1218-1226
+   - step() with no scrub running is ignored, frames 0 (1220-1221).
+   - begin() rejects row -1, IR_COUNT, NaN open, INF open (1222-1225).
+6. testUx3ThumbFrac, 1515-1528
+   - inspWindow(SLIDE)=0.30, inspWindow(TURN)=180 (1516).
+   - inspThumbFrac: -0.30 -> 0, 0 -> 0.5, +0.30 -> 1, 0.15 -> 0.75; out of window pins; TILT 720 -> 1; NaN/INF/bad row -> 0.5 (1517-1527).
+7. testUx3TrackValue, 1530-1546 (track x=100, w=300)
+   - SLIDE ends -0.30 / +0.30 exact, mid 0, outside clamps (1532-1536). TURN 175 -> -90, 325 -> +90 (1537-1538).
+   - Empty track NaN, bad row NaN (1539-1540). Round trip px 100..400 step 25 within 0.5 px (1542-1545).
+8. testUx3Hints, 1548-1556
+   - Each row: strlen in (10,64), starts with inspRowName(r), printable ASCII (1550-1553).
+   - inspHint(-1) and inspHint(6) are "" (1555).
+   - Does NOT assert the "1 px = 1 mm" text.
+
+Literal "1 px" in hse_view_test.cpp: comments only, lines 1096, 1103, 1145.
+Hint strings with "1 px = 1 mm." are at HseView.h:1121+ and are not asserted.
+No test names kScrubOffPerPx or kScrubRotPerPx.
+
+B. view_drag_test.cpp: zero scrub tests, zero "1 px" text.
+   Only px hits are camera-drag constants (lockPx 4.0, dragDegPx 0.5, panPerPx 0.003), at lines 33-35, 70, 73, 87, 103. Not Scrub.
+
+C. Definitions (HseView.h)
+   - kFineScale = 0.2f: 586 (shared with camera drag).
+   - kScrubOffPerPx 0.001f: 801. kScrubRotPerPx 0.5f: 802. kScrubSnapOff 0.01f: 803. kScrubSnapRot 5.0f: 804.
+   - kScrubWindowOff 0.30f: 805. kScrubWindowRot 180.0f: 806. kScrubLimitOff 3.0f: 807. kScrubLimitRot 720.0f: 808.
+   - struct ScrubStep: 912. struct Scrub: 923.
+   - Scrub::begin(int r, int x, float openValue) -> bool: 935.
+   - Scrub::step(int x, bool shift, bool ctrl) -> ScrubStep: 959.
+   - Scrub::cancel(): 1002 (resets the whole struct with *this = Scrub()).
+   - inspWindow(int row) -> float: 1082. Returns kScrubWindowRot if row >= IR_TILT, else kScrubWindowOff. No bad-row guard.
+   - inspTrackValue(int row, int px, int trackX, int trackW) -> float: 1111. NaN for bad row or trackW <= 0. px <= trackX -> -W; px >= trackX+trackW -> +W; else -W + d/trackW * 2W.
+   - inspThumbFrac(int row, float value) -> float: 1100 (used by the ux3 test).
+
+D. Slider track width (HseLayoutV3.h buildInspector 136-165; geometry from hse_layout_v3_test.cpp geomFor 65-82)
+   - Inputs: preview = (sx(1925), sy(357), sx(500), sy(700)); the hint rect is not used for track width.
+   - sx(v)=v*W/3440, sy(v)=v*H/1440 (integer division).
+   - rr = 22 (first row height that fits; loop at HseLayoutV3.h:242), so sq = min(20, rr) = 20.
+   - inspW = min(preview.w - 8, 460). tw = inspW - 20 - 6 - 52 - 64 = inspW - 142.
+
+   | res       | preview w x h (y)  | inspW | track.w | off: 0.6/tw m/px | rot: 360/tw deg/px |
+   | 1280x720  | 186 x 350 (178)    | 178   | 36      | 0.016667 (16.67 mm) | 10.000 |
+   | 1920x1080 | 279 x 525 (267)    | 271   | 129     | 0.004651 (4.65 mm)  | 2.791  |
+   | 3440x1440 | 500 x 700 (357)    | 460   | 318     | 0.001887 (1.89 mm)  | 1.132  |
+
+   - The sizes are linear scalings of the 3440x1440 rects, not live MUI pane rects. The test comment says so at hse_layout_v3_test.cpp:72.
+   - No test pins a numeric track.w at the three sizes. Thumb checks are relative (hse_layout_v3_test.cpp 146-159).
+   - Example check: W=0.30, trackW=250 -> 0.6/250 = 0.0024 m/px.
+   - The real editor passes no hint rect (HseLayoutV3.h 16-17). The hint rect does not change track.w.

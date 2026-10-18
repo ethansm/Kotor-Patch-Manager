@@ -1215,6 +1215,121 @@ static void testScrubWindowAndLimits() {
     KT_CHECK(closeF(st.value, 3.0f, 1e-6f) && st.clampSide == 1 && st.hardLimit && k.acc == 0.0f);
 }
 
+// Track mode: begin(..., trackW) makes the thumb follow the cursor (1 px = 2 * window / trackW).
+static void testScrubTrackMode() {
+    hse::ScrubStep st;
+    hse::Scrub s;                                    // W = 0.30 m, 250 px -> 0.0024 m/px
+    KT_CHECK(s.begin(hse::IR_DEPTH, 0, 0.0f, 250));
+    st = runPx(s, 100);
+    KT_CHECK(st.changed && closeF(st.value, 0.24f, 1e-5f) && st.clampSide == 0);
+    st = runPx(s, -200);
+    KT_CHECK(st.changed && closeF(st.value, -0.24f, 1e-5f));
+    // exactly trackW px moves the value by 2 * W (from the far end to the other)
+    hse::Scrub a;
+    KT_CHECK(a.begin(hse::IR_SLIDE, 0, -0.30f, 250));
+    st = runPx(a, 250);
+    KT_CHECK(closeF(a.value, 0.30f, 1e-4f));
+    hse::Scrub r;                                    // rotation: W = 180 deg, 318 px
+    KT_CHECK(r.begin(hse::IR_TILT, 0, -180.0f, 318));
+    st = runPx(r, 159);
+    KT_CHECK(st.changed && closeF(st.value, 0.0f, 1e-3f));
+    st = runPx(r, 159);
+    KT_CHECK(closeF(r.value, 180.0f, 1e-3f));
+    // the three real track widths
+    const int widths[3] = {36, 129, 318};
+    for (int i = 0; i < 3; ++i) {
+        hse::Scrub w;
+        KT_CHECK(w.begin(hse::IR_HEIGHT, 5, -0.30f, widths[i]));
+        runPx(w, widths[i]);
+        KT_CHECK(closeF(w.value, 0.30f, 1e-4f));
+    }
+    // Shift x kFineScale
+    hse::Scrub f;
+    KT_CHECK(f.begin(hse::IR_DEPTH, 0, 0.0f, 250));
+    st = runPx(f, 100, true);
+    KT_CHECK(st.changed && closeF(st.value, 0.24f * hse::kFineScale, 1e-5f));
+    // Shift toggled mid drag does not jump
+    st = runPx(f, 0, false);
+    KT_CHECK(!st.changed && closeF(f.value, 0.048f, 1e-5f));
+    st = runPx(f, 10, false);
+    KT_CHECK(closeF(st.value, 0.048f + 0.024f, 1e-5f));
+    // Ctrl snap: 5 px = 1.2 cm -> 1 cm (2 mm carried), 1 px nothing, 3 px more -> next cm
+    hse::Scrub c;
+    KT_CHECK(c.begin(hse::IR_DEPTH, 0, 0.0f, 250));
+    st = runPx(c, 5, false, true);
+    KT_CHECK(st.changed && closeF(st.value, 0.01f, 1e-5f));
+    st = runPx(c, 1, false, true);
+    KT_CHECK(!st.changed);
+    st = runPx(c, 3, false, true);
+    KT_CHECK(st.changed && closeF(st.value, 0.02f, 1e-5f));
+    hse::Scrub cr;                                   // rotation: 1.1 deg/px at 318 px -> 5 deg steps
+    KT_CHECK(cr.begin(hse::IR_ROLL, 0, 0.0f, 318));
+    st = runPx(cr, 9, false, true);                  // 9 * 1.1321 = 10.19 deg -> 10 deg
+    KT_CHECK(st.changed && closeF(st.value, 10.0f, 1e-4f));
+    // drag back across the track from the far end
+    hse::Scrub b;
+    KT_CHECK(b.begin(hse::IR_DEPTH, 300, 0.30f, 250));
+    st = runPx(b, -250);
+    KT_CHECK(st.changed && closeF(st.value, -0.30f, 1e-4f));
+    st = runPx(b, -500);                             // past the low end: pinned at -W (soft)
+    KT_CHECK(closeF(b.value, -0.30f, 1e-4f) && st.clampSide == -1 && !st.hardLimit);
+    st = runPx(b, 250);                              // and straight back
+    KT_CHECK(st.changed && closeF(st.value, 0.30f, 1e-4f));
+    // off-track open value: no pin at 0.30, and it returns across the track
+    hse::Scrub o;
+    KT_CHECK(o.begin(hse::IR_DEPTH, 0, 0.5f, 250));
+    KT_CHECK(closeF(o.lo, -0.30f) && closeF(o.hi, 0.5f));
+    st = runPx(o, 10);                               // the high end is the open value itself: no pin at 0.30, none beyond 0.5
+    KT_CHECK(!st.changed && closeF(o.value, 0.5f, 1e-6f));
+    st = runPx(o, -50);
+    KT_CHECK(st.changed && closeF(st.value, 0.5f - 0.12f, 1e-5f));
+    st = runPx(o, -400);
+    KT_CHECK(closeF(o.value, -0.30f, 1e-4f) && st.clampSide == -1);
+    hse::Scrub ol;                                   // off-track on the low side
+    KT_CHECK(ol.begin(hse::IR_SLIDE, 0, -0.5f, 250));
+    KT_CHECK(closeF(ol.lo, -0.5f) && closeF(ol.hi, 0.30f));
+    // hard limits hold
+    hse::Scrub h;
+    KT_CHECK(h.begin(hse::IR_DEPTH, 0, 3.5f, 250));  // open beyond the 3 m parser limit
+    KT_CHECK(closeF(h.hi, 3.0f) && closeF(h.lo, -0.30f));
+    st = runPx(h, 100);
+    KT_CHECK(closeF(st.value, 3.0f) && st.clampSide == 1 && st.hardLimit);
+    hse::Scrub hr;
+    KT_CHECK(hr.begin(hse::IR_TURN, 0, -800.0f, 318));
+    KT_CHECK(closeF(hr.lo, -720.0f));
+    st = runPx(hr, -100);
+    KT_CHECK(closeF(st.value, -720.0f) && st.clampSide == -1 && st.hardLimit);
+    // trackW <= 0 is the old 1 px = 1 mm / 0.5 deg behaviour, window open +- W
+    hse::Scrub z;
+    KT_CHECK(z.begin(hse::IR_DEPTH, 0, 0.0f, 0));
+    st = runPx(z, 10);
+    KT_CHECK(closeF(st.value, 0.010f, 1e-6f));
+    st = runPx(z, 1000);
+    KT_CHECK(closeF(st.value, 0.30f, 1e-5f) && st.clampSide == 1);
+    hse::Scrub zn;
+    KT_CHECK(zn.begin(hse::IR_TILT, 0, 0.0f, -7));
+    st = runPx(zn, 10);
+    KT_CHECK(closeF(st.value, 5.0f, 1e-4f));
+    hse::Scrub zo;                                   // old mode keeps open +- window (no track range)
+    KT_CHECK(zo.begin(hse::IR_DEPTH, 0, 0.5f));
+    KT_CHECK(closeF(zo.lo, 0.2f) && closeF(zo.hi, 0.8f));
+    // tiny tracks count as 4 px: 0.15 m/px, finite, no huge steps
+    for (int tw = 1; tw <= 3; ++tw) {
+        hse::Scrub t;
+        KT_CHECK(t.begin(hse::IR_DEPTH, 0, 0.0f, tw));
+        st = runPx(t, 1);
+        KT_CHECK(st.changed && closeF(st.value, 0.15f, 1e-5f));
+        st = runPx(t, 1);
+        KT_CHECK(closeF(st.value, 0.30f, 1e-5f));
+        st = runPx(t, 1000000);
+        KT_CHECK(hse::finiteF(st.value) && closeF(st.value, 0.30f, 1e-5f));
+    }
+    hse::Scrub t4;
+    KT_CHECK(t4.begin(hse::IR_DEPTH, 0, 0.0f, 4));
+    st = runPx(t4, 1);
+    KT_CHECK(closeF(st.value, 0.15f, 1e-5f));
+}
+
 static void testScrubGuards() {
     hse::Scrub s;
     hse::ScrubStep st = s.step(500, false, false);   // no scrub running (a press outside every row never began one): ignored
@@ -1551,6 +1666,7 @@ static void testUx3Hints() {
         KT_CHECK(strlen(h) > 10 && strlen(h) < 64);
         KT_CHECK(!strncmp(h, hse::inspRowName(r), strlen(hse::inspRowName(r))));   // starts with the row name
         for (const char* c = h; *c; ++c) KT_CHECK(static_cast<unsigned char>(*c) >= 0x20 && static_cast<unsigned char>(*c) < 0x7F);
+        KT_CHECK(!strstr(h, "1 px") && strstr(h, "Drag the marker"));
     }
     KT_CHECK(!strcmp(hse::inspHint(-1), "") && !strcmp(hse::inspHint(6), ""));
 }
@@ -1600,6 +1716,7 @@ int main() {
     testScrubCtrlSnap();
     testScrubWindowAndLimits();
     testScrubGuards();
+    testScrubTrackMode();
     testCompactSlot();
     testInspRects();
     testLeftMirroredStatus();
