@@ -1,0 +1,32 @@
+F4_R1 recon: Holstered Weapons page, green hover-help box ("Show the next party member.")
+Scope: read-only recon. Repo root: /home/ethansm/orca/workspaces/local-setup/KOTOR-II
+Paths below are relative to patch_manager_mods/ unless shown otherwise.
+
+Q1. Owner and who positions it
+- The green box is the vanilla Options-panel description list control LB_DESC, panel control index kIdxDesc = 15 (mod_config_src/ModConfig.cpp:60). It is fetched with listCtl(panel, kIdxDesc) (ModConfig.cpp:177-182), not created by the holster editor.
+- The holster editor does not pass a hint rect: holster_editor_src/HolsterEditor.cpp:1489 `none = {0,0,0,0}`, passed to hse::pageLayoutV3 at HolsterEditor.cpp:1490. HseLayoutV3.h:17-18 documents the same.
+- The editor never calls SetRect on LB_DESC. It requests a split instead: SetDescSplit(page, kDescSplitPermille) at HolsterEditor.cpp:573 (build) and HolsterEditor.cpp:1980 (enter). kDescSplitPermille = 850 (HseLayoutV3.h:363).
+- mod-config applies the split: muiSetDescSplit stores e.split[k] (ModConfig.cpp:1133-1142). syncDescSplit (ModConfig.cpp:359-380) computes mui::splitDesc(original LB_DESC rect, permille) and calls guikit::setRect on the control. It runs again after every describe (ModConfig.cpp:435), because the vanilla describe routine rewrites LB_DESC's rect.
+- mui::splitDesc (mod_config_src/MenuUiLogic.h:363-378): desc.h = (1000 - permille) * orig.h / 1000, desc bottom = orig bottom, preview above it with a gap. At 850, desc = 15 % of orig.h. The vanilla size is 232 x 336 (ModConfig.cpp:441 comment), so the box is about 50 units tall, bottom-anchored. Matches the unit test at mod_config_src/menu_ui_logic_test.cpp:453.
+- The preview pane (MUI_PANE_PREVIEW, ModConfig.cpp:504-512) is the upper part and holds the holster inspector.
+
+Q2. How its text is set
+- Per-button tip: itemTip(i) (HolsterEditor.cpp:464 onward). PI_MEMBER_NEXT returns "Show the next party member." (HolsterEditor.cpp:474). It is passed as the third argument of ui->AddButton (HolsterEditor.cpp:597).
+- muiAddButton (ModConfig.cpp:1045-1066) copies the tip into ItemX.desc (ModConfig.cpp:1057-1058) through addItemCommon (ModConfig.cpp:1035-1044).
+- On hover enter: hoverStep (ModConfig.cpp:858-876) calls descFor(item) (ModConfig.cpp:846; ENTRY branch at 853-855 returns shownItem(item)->desc), then writeDesc (ModConfig.cpp:423) and describe (ModConfig.cpp:396-421).
+- describe checks the panel vtable (kOptionsVtable) and the label vtable at P+kDescLabel (0x1030). It writes the ExoString at P+kDescStr (0x1120), calls the holder's SetText slot, then calls vanilla OptionsSetDescription (8A2320, ModConfig.cpp:405 log, 435 comment). Offsets: ModConfig.cpp:77 and 80.
+- The editor's setItemText (HolsterEditor.cpp:1300-1307) calls SetText only on editor items. It does not write LB_DESC.
+- There is one description pane per Options panel. No per-item description box exists.
+
+Q3. Helpers that could create extra boxes of the same kind
+- guikit::createLabelFromTemplate(panel, templateTag, why, badVtable): _shared_src/GuiKit.h:178. Comment at GuiKit.h:172-175: creates a blank CSWGuiLabel from a layout template. Valid ONLY inside the panel ctor while the layout GFF is open, before StopLoadFromLayout (0x0040F5A0). Not appended to the panel; call appendToPanel.
+- guibutton::createButtonFromTemplate(panel, tag, ...): _shared_src/GuiButton.h:59, same constraint (GuiButton.h:52-55).
+- mod-config wrappers: cloneLabel (ModConfig.cpp:192-198, template kLabelTemplate "LBL_TITLE", ModConfig.cpp:71 and 195) and cloneEntry (ModConfig.cpp:201-224, templates BTN_GAMEPLAY / BTN_EXIT). Called from the panel ctor (ModConfig.cpp:1202-1215), muiAddButton (ModConfig.cpp:1054), and muiAddLabel (ModConfig.cpp:1077).
+- No AddListBox, AddProtoItem, clone-of-existing-control, or description-box creator exists in GuiKit.h, GuiButton.h, HolsterEditor.cpp, or ModConfig.cpp (rg, no hits). Only label and button template creators exist.
+- Limits for a second description-style box: describe() writes only to P+kDescLabel / P+kDescStr (ModConfig.cpp:396-421), so a new label would not receive hover text through this path. syncDescSplit manages only kIdxDesc (ModConfig.cpp:359-380), so a new box would not be split. Template creation is ctor-only (GuiKit.h:173-174).
+
+OPEN
+- The green colour is not set in any file read. Its source (vanilla layout art) is unverified.
+- Whether a template clone can be made after the panel ctor. GuiKit.h:173-174 says no; not tested.
+- kSplitRefGap / kSplitRefH (MenuUiLogic.h) were not read. They affect only the preview/desc gap, not the 15 % height.
+- No screenshot was read to confirm the box's on-screen position.

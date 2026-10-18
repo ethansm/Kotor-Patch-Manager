@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
-"""Generate the holster-editor reset-arrow textures (hse_reset, hse_reset_hi) and embed them in the DLL source (stdlib only, deterministic).
+"""Generate the holster-editor 32x32 icon set (reset arrow + left/right chevron arrows) and embed it in the DLL source (stdlib only, deterministic).
 
 Writes patch_manager_mods/_shared_src/ResetIconTex.inc (uncompressed 32-bit TGAs, same layout/format as GearIconTex.inc):
   kResetIconTex / kResetIconHiTex  32x32 counter-clockwise circular arrow, thin line, transparent background
-  kResetTex[] / kResetTexCount     embtex::Tex table: hse_reset (teal, the gear/wrench palette) and hse_reset_hi (the gold hover variant)
+  kArrowLTex / kArrowLHiTex        32x32 bold left chevron '<'
+  kArrowRTex / kArrowRHiTex        32x32 bold right chevron '>'
+  kResetTex[] / kResetTexCount     embtex::Tex table: hse_reset, hse_reset_hi, hse_arrow_l, hse_arrow_l_hi, hse_arrow_r, hse_arrow_r_hi
+                                   (normal = teal, the gear/wrench palette; _hi = the vanilla-style white hover variant)
 
-Art: signed-distance shape (open ring arc + arrowhead triangle), 4x4 supersampled, shaded like the gear/wrench glyphs
-(glow, dark outline, mint->teal vertical gradient, lower-right shade, upper-left rim light). Palettes are gen_luo_textures.py
-PAL_NORMAL / PAL_HI (HudKit kAccent {10,96,80} is the same teal family).
+Art: signed-distance shapes (the glyph SDF is a parameter of sample()/render()), 4x4 supersampled, shaded like the gear/wrench glyphs
+(glow, dark outline, vertical gradient, lower-right shade, upper-left rim light). The normal palette is gen_luo_textures.py
+PAL_NORMAL (HudKit kAccent {10,96,80} is the same teal family); the hover palette is white like the vanilla KotOR hover frame.
 
   (no args)  write the .inc
   --check    regenerate in memory and compare with the existing .inc (exit 0 identical, 1 otherwise)
@@ -25,8 +28,7 @@ INC = REPO / "patch_manager_mods/_shared_src/ResetIconTex.inc"
 N = 32
 SS = 4                       # supersample per axis
 PAL_NORMAL = dict(top=(175, 252, 228), bot=(28, 150, 122), outline=(6, 60, 50), glow=(60, 210, 175), shade=(10, 90, 74), light=(235, 255, 246))
-PAL_HI = dict(top=(255, 246, 205), bot=(196, 156, 70), outline=(74, 56, 14), glow=(235, 200, 110), shade=(130, 98, 30), light=(255, 252, 235))
-VARIANTS = (("hse_reset", "kResetIconTex", PAL_NORMAL), ("hse_reset_hi", "kResetIconHiTex", PAL_HI))
+PAL_HI = dict(top=(255, 255, 255), bot=(206, 238, 230), outline=(40, 96, 86), glow=(210, 245, 238), shade=(120, 170, 160), light=(255, 255, 255))   # vanilla-style white hover
 
 # Geometry in pixels (y down). The arc runs counter-clockwise on screen from START through the top, left and bottom, ending at
 # START + SWEEP (lower right) with the arrowhead pointing back up into the gap on the right.
@@ -76,8 +78,8 @@ def _tri_sd(px, py):
     return -d if inside else d
 
 
-def sdist(px, py):
-    """Signed distance (px; negative inside) to the glyph: stroke arc with round caps, union the arrowhead."""
+def sdist_reset(px, py):
+    """Signed distance (px; negative inside) to the reset glyph: stroke arc with round caps, union the arrowhead."""
     dx, dy = px - CX, -(py - CY)
     r = math.hypot(dx, dy)
     ang = (math.atan2(dy, dx) - START) % (2 * math.pi)
@@ -86,6 +88,29 @@ def sdist(px, py):
     else:
         da = min(math.hypot(px - P_START[0], py - P_START[1]), math.hypot(px - P_END[0], py - P_END[1]))
     return min(da - HW, _tri_sd(px, py))
+
+
+ARROW_HW = 2.2               # chevron stroke half width (round joins and caps)
+ARROW_DX, ARROW_DY = 3.3, 6.8   # chevron centreline half extent: ~11 px wide x ~18 px tall including the stroke
+
+
+def _chevron(sign):
+    """SDF of a chevron: sign=-1 -> '<' (tip left), sign=+1 -> '>' (tip right). Two capsules sharing the tip (round join)."""
+    tip = (CX + sign * ARROW_DX, CY)
+    a, b = (CX - sign * ARROW_DX, CY - ARROW_DY), (CX - sign * ARROW_DX, CY + ARROW_DY)
+
+    def sd(px, py):
+        return min(_seg_dist(px, py, a, tip), _seg_dist(px, py, tip, b)) - ARROW_HW
+    return sd
+
+
+sdist_arrow_l = _chevron(-1)
+sdist_arrow_r = _chevron(+1)
+sdist = sdist_reset   # historical name
+
+VARIANTS = (("hse_reset", "kResetIconTex", PAL_NORMAL, sdist_reset), ("hse_reset_hi", "kResetIconHiTex", PAL_HI, sdist_reset),
+            ("hse_arrow_l", "kArrowLTex", PAL_NORMAL, sdist_arrow_l), ("hse_arrow_l_hi", "kArrowLHiTex", PAL_HI, sdist_arrow_l),
+            ("hse_arrow_r", "kArrowRTex", PAL_NORMAL, sdist_arrow_r), ("hse_arrow_r_hi", "kArrowRHiTex", PAL_HI, sdist_arrow_r))
 
 
 def _mix(a, b, t):
@@ -101,7 +126,7 @@ def _over(dst, src_rgb, src_a):
     return (tuple((src_rgb[i] * src_a + rgb[i] * a * (1 - src_a)) / oa for i in range(3)), oa)
 
 
-def sample(px, py, pal):
+def sample(px, py, pal, sdist=sdist_reset):
     """One shaded sub-sample -> (rgb, a) in 0..255 / 0..1."""
     d = sdist(px, py)
     out = (pal["glow"], 0.0)
@@ -125,7 +150,7 @@ def sample(px, py, pal):
     return out
 
 
-def render(pal):
+def render(pal, sdist=sdist_reset):
     """-> pixel(x, y) callable for tga32 (y=0 top)."""
     px_cache = {}
     n = SS * SS
@@ -135,7 +160,7 @@ def render(pal):
             asum = 0.0
             for sy in range(SS):
                 for sx in range(SS):
-                    rgb, a = sample(x + (sx + 0.5) / SS, y + (sy + 0.5) / SS, pal)
+                    rgb, a = sample(x + (sx + 0.5) / SS, y + (sy + 0.5) / SS, pal, sdist)
                     asum += a
                     for k in range(3):
                         acc[k] += rgb[k] * a
@@ -146,8 +171,8 @@ def render(pal):
 
 
 def build():
-    """(resref, identifier, bytes) for the two reset textures, in table order."""
-    return [(name, ident, tga32(N, N, render(pal))) for name, ident, pal in VARIANTS]
+    """(resref, identifier, bytes) for the six icon textures, in table order."""
+    return [(name, ident, tga32(N, N, render(pal, sd))) for name, ident, pal, sd in VARIANTS]
 
 
 def render_inc(blobs) -> str:

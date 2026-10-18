@@ -17,7 +17,7 @@ struct View {
 
 constexpr float kZoomMin = 0.4f;   // HW-UX3: low enough to show the whole body (0.8 before)
 constexpr float kZoomMax = 4.0f;
-constexpr float kZoomFit = 0.6f;   // default "fit" zoom (a starting guess, tuned in play through ini view_zoom); Reset view returns to the configured value
+constexpr float kZoomFit = 0.95f;   // default "fit" zoom (a starting guess, tuned in play through ini view_zoom); Reset view returns to the configured value
 constexpr float kSpinDegPerPx = 0.5f;
 constexpr float kZoomStep = 1.25f;
 

@@ -74,7 +74,7 @@ static void testYawAndSpin() {
 
 static void testZoomAndView() {
     KT_CHECK(closeF(hse::kZoomMin, 0.4f));   // HW-UX3: the whole body fits at the minimum
-    KT_CHECK(closeF(hse::kZoomFit, 0.6f));
+    KT_CHECK(closeF(hse::kZoomFit, 0.95f));
     KT_CHECK(closeF(hse::clampZoom(0.5f), 0.5f));
     KT_CHECK(closeF(hse::clampZoom(0.3f), 0.4f));
     KT_CHECK(closeF(hse::clampZoom(9.0f), 4.0f));

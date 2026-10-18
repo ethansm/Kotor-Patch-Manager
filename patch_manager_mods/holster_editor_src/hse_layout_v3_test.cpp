@@ -94,16 +94,32 @@ static void testGeometries() {
         KT_CHECK_EQ(violations(g, N, false, true, true), 0);
         // the view is enlarged: it contains the original rect's width range and keeps a sane height
         KT_CHECK(L.view.x < g.view.x);
-        KT_CHECK(L.view.x + L.view.w == g.preview.x - 4);   // 4 px short of the preview (the scaled view rects can end closer than that)
+        KT_CHECK(L.view.x + L.view.w == g.preview.x - v3::kPad);   // kPad short of the preview (the scaled view rects can end closer than that)
         KT_CHECK(L.view.y > g.view.y && L.view.y + L.view.h < g.view.y + g.view.h);
         KT_CHECK(L.view.w > g.view.w);
         // strips line up with the enlarged view
         KT_CHECK(L.modeBtn[0].x == L.view.x && L.stance[0].x == L.view.x && L.legend.x == L.view.x);
         KT_CHECK(L.viewFlip.x + L.viewFlip.w == L.view.x + L.view.w);
         KT_CHECK(L.modeBtn[0].y < L.view.y && L.stance[0].y > L.view.y + L.view.h && L.legend.y > L.stance[0].y);
-        // at these sizes nothing needs the row floors; the rows are at their max where the pane is tall enough (3440 wide), else between floor and max
-        KT_CHECK(L.leftRowH >= kV3RoomyRowMin && L.leftRowH <= kV3LeftRowMax && L.inspRowH >= 30 && L.inspRowH <= kV3InspRowMax && L.barH == kV3BarMax);
+        // at these sizes nothing needs the row floors; the rows are at their max where the pane is tall enough (3440 wide), else between floor and max.
+        // 1280x720 (448 px column pane) is the exception since kPad 6 / kGap 4: the roomy column at the smallest roomy row (30) needs
+        // 460 px > 448 (r=30: 6 + 34 + 24 + 68 + 24 + 102 + 24 + 108 + 34 + 30 + 6), so it uses the compact grid
+        // (rows below kV3RoomyRowMin, still above kV3RowMin).
+        if (sizes[s][0] == 1280) KT_CHECK(L.leftRowH >= kV3RowMin && L.leftRowH < kV3RoomyRowMin);
+        else KT_CHECK(L.leftRowH >= kV3RoomyRowMin);
+        KT_CHECK(L.leftRowH <= kV3LeftRowMax && L.inspRowH >= 30 && L.inspRowH <= kV3InspRowMax && L.barH == kV3BarMax);
         if (sizes[s][0] == 3440) KT_CHECK(L.leftRowH == kV3LeftRowMax && L.inspRowH == kV3InspRowMax);
+        // the rows are the largest that fit: the column content ends inside its pane, and one row more (roomy from kV3RoomyRowMin up) would not fit
+        {
+            const Box colZ{g.column.x, g.column.y, std::min(g.column.w, kV3ColWantW), g.column.h};
+            PageLayoutV3 T;
+            KT_CHECK(v3::buildLeft(colZ, L.leftRowH, L.leftRowH >= kV3RoomyRowMin, T) <= colZ.y + colZ.h);
+            if (L.leftRowH < kV3LeftRowMax)
+                KT_CHECK(v3::buildLeft(colZ, L.leftRowH + 1, L.leftRowH + 1 >= kV3RoomyRowMin, T) > colZ.y + colZ.h);
+            KT_CHECK(v3::buildInspector(g.preview, g.hint, L.inspRowH, nullptr, T) <= g.preview.y + g.preview.h);
+            if (L.inspRowH < kV3InspRowMax)
+                KT_CHECK(v3::buildInspector(g.preview, g.hint, L.inspRowH + 1, nullptr, T) > g.preview.y + g.preview.h);
+        }
         // reset squares are min(kV3ResetMax, row height) squared, the value label sits right of the track, the reset right of the value
         const int sq = L.inspRowH < kV3ResetMax ? L.inspRowH : kV3ResetMax;
         for (int r = 0; r < kV3Rows; ++r) {
@@ -139,7 +155,10 @@ static void testSaveRow() {
         KT_CHECK(L.reset.w >= L.revert.w + 4);
         KT_CHECK(L.reset.x + L.reset.w == L.status.x + L.status.w);   // the row fills the content width
         auto px = [&](const char* t) { return textfit::textPx(tc, t, static_cast<int>(strlen(t))); };
-        KT_CHECK(px("Save") <= static_cast<float>(L.save.w - 8));
+        // 1280 is a second exception since kPad 6 / kGap 4: the column content is 136 px, a third is (136 - 2 * kGap) / 3 = 42, Save 38, so its 33 px
+        // label misses the 30 px text budget by 3 px but still fits the raw box
+        if (sizes[s][0] > 1280) KT_CHECK(px("Save") <= static_cast<float>(L.save.w - 8));
+        else KT_CHECK(px("Save") <= static_cast<float>(L.save.w));
         KT_CHECK(px("Reset") <= static_cast<float>(L.reset.w - 8));
         if (sizes[s][0] > 1280) KT_CHECK(px("Revert") <= static_cast<float>(L.revert.w - 8));
     }
@@ -158,19 +177,33 @@ static void testPinned3440() {
     KT_CHECK(same(g.column, Box{150, 357, 400, 896}));
     KT_CHECK(same(g.view, Box{1345, 357, 576, 896}));
     PageLayoutV3 L = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr);
-    // left column: the column pane is 400 wide (under kV3ColWantW 560), content 392 wide (pad 4 each side), rows 52 high (kV3LeftRowMax)
-    KT_CHECK(same(L.memberPrev, Box{154, 361, 52, 52}));
-    KT_CHECK(same(L.memberNext, Box{154 + 392 - 52, 361, 52, 52}));
-    KT_CHECK(L.capWeapon.y == 415 && L.capWeapon.h == 34);
-    KT_CHECK(same(L.weapon[0], Box{154, 451, 392, 52}));
-    KT_CHECK(same(L.bone[0], Box{154, 595, 195, 52}));   // roomy column: 2 bone columns
-    KT_CHECK(L.bone[3].y == L.bone[0].y + 54 && L.bone[3].w == 195);
-    // view area: starts 4 px right of the 400 wide column, ends at the preview pane
-    KT_CHECK(L.view.x == 150 + 400 + 4 && L.view.x + L.view.w == 1921);   // 4 px short of the preview pane at 1925
+    // left column: the column pane is 400 wide (under kV3ColWantW 600), content W = 400 - 2 * kPad = 388 wide from x0 = 150 + kPad, rows r = 52 high (kV3LeftRowMax)
+    const int P = v3::kPad, G = v3::kGap, r = kV3LeftRowMax;
+    const int x0 = 150 + P, y0 = 357 + P, W = 400 - 2 * P;
+    KT_CHECK_EQ(r, 52);
+    KT_CHECK(same(L.memberPrev, Box{x0, y0, r, r}));   // side = min(r, (W - 2 * kGap) / 3) = r
+    KT_CHECK(same(L.memberNext, Box{x0 + W - r, y0, r, r}));
+    const int cap = r * 2 / 3;                                      // 34
+    const int yCapW = y0 + r + G;                                   // below the member row
+    KT_CHECK(L.capWeapon.y == yCapW && L.capWeapon.h == cap);
+    const int yW0 = yCapW + cap + G;
+    KT_CHECK(same(L.weapon[0], Box{x0, yW0, W, r}));
+    KT_CHECK(L.weapon[1].y == yW0 + r + G);
+    const int yB0 = yW0 + 2 * (r + G) + cap + G;                    // two weapons, then the bone caption
+    const int c2 = (W - G) / 2;                                     // cellW(W, 2, kGap)
+    KT_CHECK(same(L.bone[0], Box{x0, yB0, c2, r}));                 // roomy column: 2 bone columns
+    KT_CHECK(same(L.bone[1], Box{x0 + c2 + G, yB0, c2, r}));
+    KT_CHECK(L.bone[3].y == L.bone[0].y + r + G && L.bone[3].w == c2);
+    // view area: starts 4 px right of the 400 wide column (the literal gap in pageLayoutV3), ends kPad short of the preview pane
+    KT_CHECK(L.view.x == 150 + 400 + 4 && L.view.x + L.view.w == 1925 - P);
     KT_CHECK(L.modeBtn[0].y == 357 && L.modeBtn[0].h == kV3BarMax);
     KT_CHECK(L.view.y == 357 + 2 * (kV3BarMax + 2));   // two mode rows
-    // inspector: the 500 wide pane keeps the track at kV3TrackWant (150) and shares the rest between name and value (170 : 200)
-    KT_CHECK(L.rows[0].name.x == 1929 && L.rows[0].name.w == 136);
+    // inspector: the 500 wide pane: W = 500 - 2 * kPad, avail = W - sq - 3 * kGap (sq = kV3ResetMax), the track keeps kV3TrackWant (150),
+    // the rest lw shared between name and value (170 : 200)
+    const int avail = 500 - 2 * P - kV3ResetMax - 3 * G;
+    const int lw = avail - kV3TrackWant;
+    KT_CHECK(L.rows[0].name.x == 1925 + P && L.rows[0].name.w == lw * kV3NameW / (kV3NameW + kV3ValueW));
+    KT_CHECK(L.rows[0].value.w == lw - L.rows[0].name.w);
     KT_CHECK(L.rows[0].track.w == 150);
 }
 
@@ -263,22 +296,22 @@ static void testDegradation() {
 }
 
 static void testViewVsPreview() {
-    // gap: view rect ends 1921, preview starts 1925 -> the enlarged view ends 4 px short of the preview
+    // gap: view rect ends 1921, preview starts 1925 -> the enlarged view ends kPad short of the preview
     Geom g = geomFor(3440, 1440);
     PageLayoutV3 L = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr);
-    KT_CHECK_EQ(L.view.x + L.view.w, g.preview.x - 4);
-    KT_CHECK_EQ(L.viewFlip.x + L.viewFlip.w, g.preview.x - 4);
-    // a wide gap still ends 4 px short (the view grows into it)
+    KT_CHECK_EQ(L.view.x + L.view.w, g.preview.x - v3::kPad);
+    KT_CHECK_EQ(L.viewFlip.x + L.viewFlip.w, g.preview.x - v3::kPad);
+    // a wide gap still ends kPad short (the view grows into it)
     Box pw = g.preview; pw.x = 2000;
     PageLayoutV3 W = pageLayoutV3(g.column, g.view, pw, g.hint, nullptr);
-    KT_CHECK_EQ(W.view.x + W.view.w, 1996);
+    KT_CHECK_EQ(W.view.x + W.view.w, pw.x - v3::kPad);   // 1994
     // overlap: the given view rect reaches 40 px into the preview -> the view strip, mode strip and stances stop short of it
     Box po = g.preview; po.x = 1881;
     PageLayoutV3 O = pageLayoutV3(g.column, g.view, po, g.hint, nullptr);
-    KT_CHECK_EQ(O.view.x + O.view.w, 1877);
+    KT_CHECK_EQ(O.view.x + O.view.w, po.x - v3::kPad);   // 1875
     KT_CHECK(O.view.w > 0);
     Box all[kPageItemsV3 + 8]; pageBoxesV3(O, all);
-    for (int i = 19; i < 32; ++i) KT_CHECK(all[i].x + all[i].w <= po.x - 4);   // view area items (see collect())
+    for (int i = 19; i < 32; ++i) KT_CHECK(all[i].x + all[i].w <= po.x - v3::kPad);   // view area items (see collect())
     for (int i = 32; i < PI_RESET_SCOPE; ++i) KT_CHECK(!overlaps(all[i], O.view));   // the Reset button sits in the left column
     KT_CHECK(!overlaps(all[PI_RESET_SCOPE], O.view));
     KT_CHECK(!overlaps(O.viewFlip, O.rows[0].name) && !overlaps(O.legend, O.groupLabel[0]));
@@ -296,13 +329,14 @@ static void testHintHeight() {
     PageLayoutV3 L = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr);
     KT_CHECK_EQ(kV3HintMax, 40);
     KT_CHECK(L.hint[0].h == 40 && L.hint[1].h == 40);
-    KT_CHECK(L.hint[1].y == L.hint[0].y + 40 + 2);
-    // exactly big enough: 2*4 pad + 2 gap + 2*40 = 90
-    PageLayoutV3 E = pageLayoutV3(g.column, g.view, g.preview, Box{g.preview.x, 1100, 400, 90}, nullptr);
+    KT_CHECK(L.hint[1].y == L.hint[0].y + 40 + v3::kGap);
+    // exactly big enough: 2 * kPad + kGap + 2 * 40 = 96
+    PageLayoutV3 E = pageLayoutV3(g.column, g.view, g.preview, Box{g.preview.x, 1100, 400, 2 * v3::kPad + v3::kGap + 2 * kV3HintMax}, nullptr);
     KT_CHECK(E.hint[0].h == 40 && E.hint[1].h == 40);
-    // a small rect shrinks the lines (30 -> (30 - 8 - 2) / 2 = 10)
+    // a small rect shrinks the lines (30 -> (30 - 2 * kPad - kGap) / 2 = 7)
     PageLayoutV3 S = pageLayoutV3(g.column, g.view, g.preview, Box{g.preview.x, 1100, 400, 30}, nullptr);
-    KT_CHECK(S.hint[0].h == 10 && S.hint[1].h == 10);
+    KT_CHECK(S.hint[0].h == (30 - 2 * v3::kPad - v3::kGap) / 2 && S.hint[1].h == S.hint[0].h);
+    KT_CHECK_EQ(S.hint[0].h, 7);
 }
 
 // The REAL pane rects of the 3840x1600 log (UI units): the layout must use the space and every label must fit its box.
@@ -371,7 +405,8 @@ static void testFill3840x1600() {
 }
 
 // Zero-cut captions at the real 3840x1600 panes: the bones sit in 2 columns, the scopes one per row, the modes 2 x 2 (icons at the right end of the first
-// row) and the stances 3 + 2, so every selector button is wide (>= 220: the narrowest, a stance of the first row, is 229 px; the text need is 148 px).
+// row) and the stances 3 + 2, so every selector button is wide (bones, scopes, modes >= 220; the narrowest, a stance of the first row, is 199 px:
+// the wider column (kV3ColWantW 600, capped at the view pane's x) leaves the view vw = preview.x - kPad - view.x = 602, so (vw - 2 * 2) / 3; the text need is 148 px).
 static void testRoomyButtons3840() {
     const Geom g = realGeom();
     PageLayoutV3 L = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr);
@@ -379,7 +414,10 @@ static void testRoomyButtons3840() {
     KT_CHECK_EQ(violations(g, L, false, true, true), 0);
     for (int i = 0; i < kV3Bones; ++i) KT_CHECK(L.bone[i].w >= 220);
     for (int i = 0; i < kV3Scopes; ++i) KT_CHECK(L.scope[i].w >= 220);
-    for (int i = 0; i < kV3Stances; ++i) KT_CHECK(L.stance[i].w >= 220);
+    KT_CHECK_EQ(L.view.x, g.view.x);   // the column (pane 1132 wide) is capped at view.x - 4 - column.x, so the view starts where the view pane does
+    const int s3 = (g.preview.x - v3::kPad - g.view.x - 2 * 2) / 3;
+    KT_CHECK_EQ(s3, 199);
+    for (int i = 0; i < kV3Stances; ++i) KT_CHECK(L.stance[i].w >= s3);
     for (int i = 0; i < kV3Modes; ++i) KT_CHECK(L.modeBtn[i].w >= 220);
     // grid shape: Upper back | Back / Pelvis | R hip / L hip; one scope per row; modes Move Depth / Tilt Roll/Turn; stances Idle Walk Run / Alert Combat
     KT_CHECK(L.bone[0].y == L.bone[1].y && L.bone[1].x > L.bone[0].x && L.bone[2].y > L.bone[0].y && L.bone[2].y == L.bone[3].y && L.bone[4].y > L.bone[2].y);

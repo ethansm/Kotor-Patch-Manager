@@ -1,0 +1,63 @@
+F4_R3 recon: holster selector button selected state (read-only, Steam exe 0x-addresses from ghidra_dumps/steam_6a522e71)
+
+Q1. Text colour and border helpers for BUTTONS
+- GuiKit.h:136-140 borderOk: gates on the LABEL border at ctl+0x60 (Label_Border, GuiKit.h:47) vtable == BorderVtable (0x9875BC).
+- GuiKit.h:140-147 textObjOk: reads tx = ctl + Label_Text (0xD8, GuiKit.h:47), requires tx vtable == TextVtable and tx+0x14 (Text_Renderer) non-null.
+- GuiKit.h:148 textSub(ctl) = ctl+0xD8+0x18 = ctl+0xF0.
+- GuiKit.h:295-300 getTextColor: reads textSub+0x2C (= ctl+0x11C) after textObjOk. Returns false on a button.
+- GuiKit.h:302-308 setTextColor: calls g_gk.textColor(textSub(ctl), rgb) after textObjOk. Steam 0x417140 = CSWGuiTextParams::SetDefaultColor (steam-db B16, verified).
+- HolsterEditor.cpp:1311-1332 setItemColor: line 1315 reads the default colour first; line 1318/1320 call setTextColor only as `ok && ...`. So on a button the refusal is the READ gate; setTextColor is never attempted.
+- HolsterEditor.cpp:1335-1342 setSel: falls back to >text< when colorBad.
+- GuiButton.h:24 Button_Text = 0x160 (CSWGuiText, vtable TextVtable). setButtonText (GuiButton.h ~102-112) already gates on +0x160 vtable.
+- Derived offsets for a button-aware text gate (NOT tested): vtable ctl+0x160, renderer ctl+0x174, string sub ctl+0x178, colour ctl+0x1A4 (0x178+0x2C).
+- GuiKit.h:400-406 buttonBorder: Steam only; button vtable == ButtonVtable; both borders' vtable == BorderVtable. Normal border base ctl+0x70, hover base ctl+0xE8 (GuiKit.h:397).
+- GuiKit.h:408-414 writeBorderFill: writes fill (+0x74) and tint (+0x28) only.
+- GuiKit.h:420-431 setButtonFill(btn, normalImg, hiImg, tint): normal fill ctl+0xE4, hover fill ctl+0x15C; tint floats to ctl+0x98..0xA0 and ctl+0x110..0x118.
+- GuiKit.h:433-445 setButtonFillStyle: style bits on both borders.
+- No helper writes the corner (border+0x6c) or edge (border+0x70) images of either button border. Offsets per 08_shield_bar.md:499-500 (border object spans 0x78 bytes).
+- GuiKit.h:361-365 setBorderTint (label-only). Its comment says "vanilla HILIGHT is the same images with another COLOR" (no source cited here).
+
+Q2. Engine button Draw and highlight
+- Steam CSWGuiButton vtable 0x987A1C read from swkotor2_vanilla_6a522e71.exe (PE section map): slot1 0x419ED0 (SetExtent), slot3 0x418750 (not Draw), slot14 0x41A0A0 (Draw), slot16 0x41A290 (SetActive), slot17 0x418D20 (hit test, matches 08_shield_bar.md), slot18 0x419F80 (Load). Names from doc15 name_map.
+- decomp/41/0041a0a0.c (CSWGuiButton::Draw, __thiscall, 110 bytes):
+    if ((ctl[+0x48] & 1) == 0) border(+0x70).vt[3](arg)   else border(+0xE8).vt[3](arg)
+    text(+0x160).vt[3](arg)
+  So bit0 set = the hover border (+0xE8) is drawn INSTEAD of the normal border. Text is always drawn. The hover border has its own fill/tint fields, not a separate colour mode.
+- decomp/41/0041a290.c (CSWGuiButton::SetActive, vt slot 16):
+    ctl[+0x48] = (ctl[+0x48] & ~1) | (arg & 1)
+    arg==0: ctl[+0x1B0] &= ~0x40; FUN_00417180(ctl)
+    arg!=0: ctl[+0x1B0] |= 0x40;  FUN_00417010(ctl, &DAT_00A7FDAC)
+  So bit0 is the ACTIVE flag written by SetActive. Not proven to be pure mouse hover. GuiButton.h:27 comment says "not re-verified against a dump"; it is now partly verified.
+- FUN_00417010 (decomp/41/00417010.c) writes 3 floats to ctl+0x1C/0x20/0x24, then notifies a child via ctl+0x50 -> +0x14 vtable slot 3. Whether +0x1C is ever read for drawing is unknown.
+- FUN_00417180 (decomp/41/00417180.c) = FUN_00417010(ctl+0x2C); the decompile shows no rgb argument, so the colour source is unresolved.
+- Other decompiled writers of the same mask (`+0x48 = ... & 0xfffffffe`): decomp/41/004185d0.c, 0041ff00.c, 00419be0.c (same shape as SetActive; classes not named here), and decomp/88/00881970.c lines 44 and 49 (conditional clear/set; caller not identified).
+- CSWGuiButton::Load (Steam 0x419F80, decomp/41/00419f80.c): loads the GFF struct "BORDER" into +0x70, "HILIGHT" into +0xE8 (both via border vt slot 4), and a third struct (DAT_009876D0) into +0x160. So hover art and tint come from the layout's HILIGHT struct.
+- CSWGuiBorder::Draw Steam 0x415300 (GOG 0x9136D0, steam-db B0 verified). Decomp reads +0x28 (tint) 11 times, +0x6C/+0x70/+0x74 (corner/edge/fill) 7/8/2 times, +0x34 flag bits 2-4 (select override colour from global DAT_009F4548), +0x24 (alpha) 2 times.
+
+Q3. Other mods that style buttons
+- queue_hud_src/QueueHud.cpp:423-428 (cwLookLeader, button branch): setButtonText("CANCEL QUEUE"); setButtonFill(w.c, f, f, hover ? bs.hoverTint : bs.tint) (SAME fill image on both borders, tint keyed to w.hover); setButtonFillStyle(w.c, 2). No setTextColor on the button branch.
+- queue_hud_src/QueueHud.cpp:430-437 (label branch): setTextColor(cream) and setBorderTint(tint) run only for labels.
+- holster_editor_src/HolsterEditor.cpp:2222: setButtonFill(g_artCtl, resetIconImage(false), resetIconImage(true)) for the reset icon (different normal/hover images).
+- mod_config_src/ModConfig.cpp:866: reads guibutton::buttonHighlighted (bit0) for button items. Read only.
+- No mod writes a button's selected or toggled look through bit0 or copies the normal tint from the hover tint.
+- guikit_test.cpp:157-235 covers setBorderTint and setButtonFill gates (host tests only).
+
+Q4. holster-editor log (via scripts/kotor2_logs.py check holster-editor_log.txt, STYLE/colour matches only; raw .txt not read)
+- `1  97  holster-editor/view WARN STYLE WARN text colour refused on button item 6 (default read=0): lit se...`
+  The checker truncates the line. "default read=0" = getTextColor returned false, so setTextColor was never called.
+- Only one STYLE WARN line matched.
+
+Implications (derived, not tested)
+- Copying the hover tint into the normal border (+0x98..0xA0 <- +0x110..0x118) reproduces the colour only. Corner/edge art (+0xDC/+0xE0 vs +0x154/+0x158) stays normal-state art unless written by a new helper.
+- If bit0 stays clear (SetActive(0)), the normal border is drawn, so a permanent hover look needs the normal border's images changed too, not just its tint.
+- A button text colour needs a button-aware gate on +0x160 (see Q1 derived offsets) plus confirmation that 0x417140 works on ctl+0x178.
+
+OPEN
+1. Does SetDefaultColor (0x417140) on ctl+0x178 and the button text Draw read colour from ctl+0x1A4? Not decompiled or tested.
+2. Is ctl+0x174 (renderer) non-null on Steam buttons? Needed for a textObjOk-style gate. Not verified.
+3. Who calls SetActive(1) at runtime (mouse-over handler?). Candidate 0x881970 (lines 44/49) not identified.
+4. Are the hover corner/edge images different art from the normal ones? GuiKit.h:361 comment says "same images with another COLOR"; no source cited, not verified.
+5. What reads ctl+0x1C/0x20/0x24 (written by SetActive(1) from DAT_00A7FDAC)? Unknown.
+6. Value of DAT_00A7FDAC (lit colour?) not read from the exe.
+
+VERDICT: PARTIAL (the bit0 -> +0xE8 mechanism is confirmed; a tint-only copy covers colour but not corner/edge art; the text-colour refusal is the +0xD8 label read gate, not setTextColor)

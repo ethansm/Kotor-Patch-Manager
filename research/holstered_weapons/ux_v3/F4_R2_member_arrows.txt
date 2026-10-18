@@ -1,0 +1,42 @@
+F4_R2 member arrows: why PI_MEMBER_PREV (0) and PI_MEMBER_NEXT (2) show as empty boxes at 3840x1600
+Scope: read-only recon, no code edited. Tags: [code] source read, [mockup] scripts/holster_editor_mockup.py run, [log] log_triage output, [inference] not directly measured.
+
+1. Caption path [code]
+- Text is set once, at build. HolsterEditor.cpp:433-434 itemInitText returns "<" / ">". HolsterEditor.cpp:596-597 passes it to ui->AddButton(page, text, itemTip(i)).
+- No later write to items 0/2. Of the setItemText callers, none targets PI_MEMBER_PREV/NEXT (HolsterEditor.cpp:1341, 1449, 1457, 1677, 1689, 1746, 1932, 1993-2000, 2267, 2447, 2456, 2479, 2568). Only PI_MEMBER_NAME is refitted (2478-2479). Line 2267 (the "R" blanking loop) was not read in full.
+- So fitButton (HolsterEditor.cpp:1345-1349), buttonPx (1352) and selPx (1355) never run on items 0/2.
+- Colour: setItemColor (HolsterEditor.cpp:1311-1332) runs only for selectors, through setSel (1335-1342). Members keep the engine default text colour. Click handling is at HolsterEditor.cpp:2310-2311 and does not change the caption.
+
+2. Geometry at 3840x1600 [mockup: engine-model, caption_fix 0, text_k 2.65]
+- Panes: column [772,357,1132,757], view [1345,357,576,896], preview [1953,357,1113,746].
+- buildLeft (HseLayoutV3.h:113): side = min(r, max(0, (W - 2*kGap)/3)). W = 1132 - 8 = 1124, r = 52, so side = 52 (HseLayoutV3.h:113-116).
+- Item 0 box [776,361,52,52]. Item 2 box [1196,361,52,52].
+- Budget if a fit ran: buttonTextPx(52) = 52 - 2*(7+3) = 32 (HseView.h:120-121, 125).
+- Modelled engine caption rect (x+7, w-14, the insets measured by the live probe in HseView.h:119): [783,368,38,38]. text_y0 371, lines 1, wraps False, drawn True, shown "<" (item 2: ">").
+
+3. Fit and glyph widths [TextFit.h, mockup]
+- Texel width: '<' = 12, '>' = 12 (kFontTexW, dialogfont16x16; mockup texel_widths()).
+- textPx = 12 x sy 2.65 x TextK 0.75 x textScale 1.0 = 23.85 px (HolsterEditor.cpp:1130 textCtx; TextFit.h:20-23).
+- fitText (TextFit.h:26-30): 23.85 <= 32, so the raw "<" is kept (line 28). The glyph would be dropped only if the budget were below 23.85 px. The doc comment (TextFit.h:25) says the cut is "..." [inference: lines 31-32 not read].
+- Atlas glyph boxes: '<' (192,48,204,64), '>' (224,48,236,64). Both are 12x16 and non-empty in the table.
+
+4. Log [log_triage, numbers masked]
+- `python3 scripts/kotor2_logs.py check holster-editor_log.txt --json --all-launches` shows CAPTION only as masked templates:
+  "CAPTION i=# before btn=(#,#,#,#) text=(#,#,#,#) rend=# rb=(#,#) scale=# align=# " x28 (first at line 40)
+  "CAPTION i=# after text=(#,#,#,#)" x28 (first at line 41)
+- The i=0 and i=2 values (text=, lines=, fix=) cannot be read through the permitted route. Raw .txt reads are barred by CLAUDE.md. The CONFIG line (caption_fix value) is masked too.
+- Unmasked alert, same session, line 97: "STYLE WARN text colour refused on button item 6 (default read=0)". Item 6 is a selector, not a member.
+- Session banner: kplog session 2026-10-18 18:01:37.
+
+5. Verdict
+- Hypothesis "fitText blanks the arrows": REFUTED. Items 0/2 are never fitted, and '<' / '>' (23.85 px) fit the 32 px budget anyway.
+- The model says a glyph should show. The only geometric way to lose it is an engine text rect narrower than 24 px. That would be w = 52 - 2*16 = 20 if the engine insets by the border dimension (HseView.h:104-105 wording). The measured insets (HseView.h:119, taken on a 34 px box) give w = 38 instead. UNCONFIRMED.
+- Other candidate: engine default text colour (members are never coloured, HolsterEditor.cpp:1311-1332). UNCONFIRMED.
+- The mockup cannot reproduce an empty box with the current insets. It is a model, not a measurement.
+
+6. Minimal change (not applied)
+- If the engine text rect w < 24 is confirmed: HseView.h:109, add `|| engineText.w < 24` to the fallback test. captionRect then returns (btn.x+4, btn.y, btn.w-8 = 44, btn.h) (HseView.h:110). This changes only buttons whose engine text rect is narrower than 24 px.
+- If the colour is the cause: a default-colour read for members is needed (HolsterEditor.cpp:1311-1332). Not minimal.
+
+7. Open
+- Which of the two candidates is right depends on the text= width in the i=0 and i=2 CAPTION lines. Those values are the one missing input.

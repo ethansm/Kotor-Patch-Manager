@@ -1,0 +1,100 @@
+F4 R4 RECON: holster reset icon fill geometry (Steam swkotor2, dump steam_6a522e71)
+Contract: recon. Read-only except this file.
+Dumps: ~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71/decomp/41/
+Anchors: dc:N = 00415300.c line N; asm:N = the .asm file beside it (same dir).
+
+=====================================================================
+1. FILL PLACEMENT: CSWGuiBorder::Draw 0x415300 (fastcall, ECX = border O)
+=====================================================================
+- Full rect: x = O+4, y = O+8, W = O+0xc, H = O+0x10            dc:47-48
+- Inset block runs only when a CORNER image is set: if (O+0x6c != 0)   dc:53
+  - With no CORNER: inset values stay 0 (dc:49-52), fill = whole rect.
+- With CORNER: G = GetBorderDim(O+0x14)                          dc:54
+  - G = DIMENSION (O+0x14) when nonzero, else the corner image width.
+  - G != 0 path sets corner/edge size a = b = G                  dc:66-69
+- Both tile counts are 1 at W = H = 40, G = 16 (dc:71-91, dc:93-113), so the
+  uniform "else" path runs: local_10 = local_8 = G and local_28 = local_1c = G
+  (local_44 = (y+H) - local_8 and local_28 = (H+y) - local_44 give G).
+- FILL recompute, dc:203-206:
+    x0 = O.x + G, y0 = O.y + G, w = W - 2G, h = H - 2G
+- Style 2 (stretch) call, dc:215-217:
+    vt[6] (slot +0x18)(x0, y0, w, h, 0, rot O+0x20, colour O+0x28, alpha local_14)
+- Styles 0/1 (FillTile 0x415a60, FillCenter 0x415d20) use the same inset rect (dc:208-213).
+- Conclusion: the fill sits INSIDE the corner inset, not over the whole rect.
+
+=====================================================================
+2. DIMENSION OWNERSHIP: embedded per border, not shared
+=====================================================================
+- Border ctor CSWGuiBorder 0x414a50:
+  - ADD ECX,0x14 ; CALL 0x4143d0 (asm:56-57): CSWGuiBorderParams built EMBEDDED at O+0x14.
+  - ADD ECX,0x14 ; CALL 0x414920 (asm:67-68): SetBorder stores the owner at params+0x54
+    (dc 0x414920: *(param_1+0x54) = param_2). Owner = the border itself (inferred from the ctor's [EBP-0x50] = this).
+- So X+0x54 (= O+0x68) is a BACK-POINTER to the owning border, not a template struct.
+  F3_R1's "texture set" label for Y is wrong: Y is the owner.
+- GetBorderDim 0x414980 (asm:10-27): reads X+0 (DIMENSION at O+0x14), Y = *(X+0x54),
+  Y+0x6c = O+0x6c (CORNER). Consistent with Draw reading O+0x6c.
+- Button ctor 0x41a510: ADD ECX,0x70 (asm:21) and ADD ECX,0xe8 (asm:25), then 0x414a50 for B and H.
+  Each button has its own DIMENSION: B at btn+0x84, H at btn+0xfc. Writing one does not touch another.
+- Template load: CSWGuiBorder::Load 0x415080 reads DIMENSION into border+0x14 (db_functions.tsv:35).
+- Clone: createButtonFromTemplate (patch_manager_mods/_shared_src/GuiButton.h:59-99) memsets a fresh
+  block, runs g_btnCtor, then g_gk.initControl(panel, mem, tag, 0, 1) (GuiButton.h:82-83).
+  Per-clone DIMENSION is therefore set by the layout load. The initControl -> Load chain is NOT traced here (OPEN).
+
+=====================================================================
+3. SIZES AND ARITHMETIC
+=====================================================================
+- G = 16 (F3_R2: DIMENSION 16 on BORDER and HILIGHT in both templates).
+  The CORNER texture is 32x32 but G overrides its drawn size (dc:66-69).
+- Fill side = sq - 2G = sq - 32, origin at +G.
+- sq = min(kV3ResetMax, rr)   (HseLayoutV3.h:162); kV3ResetMax = 40 (HseLayoutV3.h:52).
+- Fill at sq 40, G 16 = 8 px. Confirms F3.
+- Fill >= 24 px with G 16 needs sq >= 56 (so row pitch >= 56 + gap).
+  At the mockup row pitch of 54 px the best fill is 22 px (54 - 32).
+- Options (arithmetic only, not run):
+  a. Write G = 8 into DIMENSION of B (btn+0x84) and H (btn+0xfc) after clone: fill = 24 px at sq 40.
+     Corner and edge frame also shrink to 8 px, because Draw draws them at G.
+  b. G = 4: fill = 32 px at sq 40, thinner frame.
+  c. DIMENSION = 0 does NOT help: GetBorderDim falls back to corner width 32, fill = 40 - 64 < 0.
+  d. Remove CORNER (O+0x6c = 0): no inset, fill = full 40 px, but no corner or edge frame is drawn.
+  e. Bigger square: kV3ResetMax >= 56 and a row pitch >= 56 + gap. hse_layout_v3_test.cpp:108
+     uses the constant symbolically, so it still passes.
+- Mockup, 3840x1600 ideal (scratchpad x.json; top keys dim = 16, button_fit_pad = 20):
+  - Row and group reset squares: 40 x 40 at x = 2917 (items 33, 35, 40, 45, 50, 55, 60, 65).
+  - Row squares sit on a 54 px pitch (y 421, 475, 529; 641, 695, 749).
+  - Item 23 PI_VIEW_RESET ('R') is 44 x 44 at (1859, 357). Not 40, so another code path sizes it (OPEN).
+
+=====================================================================
+4. HOVER COLOUR
+=====================================================================
+- Vanilla hover = HILIGHT border (O+0xe8) replaces the NORMAL border when the focus bit is set
+  (btn+0x48 bit 0, set by SetActive 0x41A290). Source: lessons_recent.tsv:229 (gui-button row);
+  CSWGuiButton::Draw 0x41A0A0 not re-read here.
+- Colours: HILIGHT (0.800, 0.800, 0.698) vs NORMAL (0.051, 0.349, 0.271); same 16wc/16we textures (F3_R2:23, 34).
+- Draw passes border COLOR (O+0x28) as the colour argument of the fill call (dc:215-217).
+  So the arrow pixels in each state are coloured by that border's COLOR. Whether vt[6] multiplies
+  (tints) or ignores it was not decoded (OPEN).
+- setButtonFill sets images only, tint untouched (patch_manager_mods/_shared_src/guikit_test.cpp:205).
+- gen_reset_icon.py PAL_HI (gold) not read in this recon.
+
+=====================================================================
+5. TESTS PINNING 40 / kV3ResetMax
+=====================================================================
+- rg 'kV3ResetMax|ResetMax|resetSq|reset.*40|40.*reset' over holster_editor_src/*_test.cpp and
+  scripts/test_holster_editor_mockup.py: no literal 40 pin.
+- hse_layout_v3_test.cpp:107-108: sq = min(inspRowH, kV3ResetMax), symbolic. Changing the constant keeps it passing.
+- reset_icon_test.cpp:35 pins kResetIconSize == 32 (the texture, not the button).
+- scripts/test_holster_editor_mockup.py:41-44 pins item kinds only, not sizes.
+- No test for gen_reset_icon.py. scripts/ holds only gen_reset_icon.py and gen_slider_art.py.
+  Its check is `gen_reset_icon.py --check` (OPUS_review.txt:5).
+
+=====================================================================
+OPEN (unresolved)
+=====================================================================
+- Does vt[6] (stretch; CAurGUIImageInternal slot +0x18 = 0x47D210, lessons_recent.tsv:267) tint the
+  image by the colour argument (border COLOR +0x28)? Decides whether a white hover needs a white border COLOR or a white image.
+- Secondary, not traced: (i) whether initControl re-runs CSWGuiBorder::Load per clone so DIMENSION is set per button;
+  (ii) the code path that sizes PI_VIEW_RESET at 44 px; (iii) the Draw call-site ECX for 0x414980 (taken from F3_R1 asm 414d8c, not re-read).
+
+=====================================================================
+VERDICT: CONFIRMED (fill is inset by G on each side when CORNER is set; sq 40 gives 8 px; DIMENSION is per border)
+=====================================================================

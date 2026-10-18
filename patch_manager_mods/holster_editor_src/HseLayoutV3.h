@@ -38,9 +38,9 @@ constexpr int kV3Groups = 2;      // Position, Rotation
 constexpr int kV3Hints = 2;       // hint lines under the inspector
 constexpr int kV3ThumbW = 10;     // slider thumb width
 
-constexpr int kV3ColWantW = 480;  // widest the left column content grows
-constexpr int kV3InspWantW = 1000; // widest the inspector grows
-constexpr int kV3LeftRowMax = 52, kV3InspRowMax = 52, kV3RowMin = 14;   // left column and inspector row heights (pick the largest that fits)
+constexpr int kV3ColWantW = 600;  // widest the left column content grows (the editor widens the column pane into the left margin by ini margin_px)
+constexpr int kV3InspWantW = 1100; // widest the inspector grows (the editor widens the preview pane into the right margin by ini margin_px)
+constexpr int kV3LeftRowMax = 52, kV3InspRowMax = 60, kV3RowMin = 14;   // left column and inspector row heights (pick the largest that fits)
 constexpr int kV3RoomyRowMin = 30;  // the roomy left column (2 bone columns, one scope per row) is used while its rows stay at least this high; below, the compact one
 constexpr int kV3BarMax = 44, kV3BarMin = 12;   // mode bar / stance row heights
 constexpr int kV3MinViewW = 8;    // the view area is at least this wide when the preview pane leaves any room
@@ -49,7 +49,7 @@ constexpr int kV3MinViewH = 60;   // the bars shrink before the view gets lower 
 constexpr int kV3NameW = 170, kV3ValueW = 200;    // inspector name and value label widths (shrink together when narrow)
 constexpr int kV3TrackWant = 150;  // a narrow inspector keeps the track this wide before the labels take their full width
 constexpr int kV3TrackMin = 60;   // the inspector slider track keeps at least this width (the labels shrink first)
-constexpr int kV3ResetMax = 40;   // reset icon squares are up to 40 x 40 (smaller only when the row is)
+constexpr int kV3ResetMax = 60;   // reset icon squares are up to 60 x 60 (smaller only when the row is): the button border insets the arrow by 16 px a side
 
 // Page items that become mod-config items: left 19 (member 3, captions 3, weapons 2, bones 5, scopes 3, save/revert 2,
 // status 1) + view area 13 (mode 4, view reset + flip 2, view 1, stances 5, legend 1) + inspector 37 (group labels 2,
@@ -96,10 +96,10 @@ inline editkit::Box clipTo(editkit::Box b, editkit::Box z) {
     int y0 = imin(imax(b.y, z.y), zb), y1 = imax(y0, imin(b.y + b.h, zb));
     return editkit::Box{x0, y0, x1 - x0, y1 - y0};
 }
-// n equal cells across w with 2 px gaps; cell i starts at x + i * (cellW + gap)
-inline int cellW(int w, int n) { return imax(0, (w - (n - 1) * 2) / n); }
+constexpr int kPad = 6, kGap = 4, kSpacer = 6;
 
-constexpr int kPad = 4, kGap = 2, kSpacer = 4;
+// n equal cells across w with `gap` px gaps; cell i starts at x + i * (cellW + gap)
+inline int cellW(int w, int n, int gap = 2) { return imax(0, (w - (n - 1) * gap) / n); }
 
 // Left column at row height r. Returns the y just below the content plus the bottom pad.
 // roomy: bones in 2 columns (3 rows) and one scope per row (3 rows) so every caption gets a wide button; else the compact grid (3 + 2 bones, 3 scopes in one row).
@@ -120,7 +120,7 @@ inline int buildLeft(editkit::Box Z, int r, bool roomy, PageLayoutV3& L) {
     for (int i = 0; i < kV3Weapons; ++i) { L.weapon[i] = mk(x0, y, W, r); y += r + kGap; }
 
     L.capBone = mk(x0, y, W, cap); y += cap + kGap;
-    int c3 = cellW(W, 3), c2 = cellW(W, 2);
+    int c3 = cellW(W, 3, kGap), c2 = cellW(W, 2, kGap);
     if (roomy) {
         // Upper back | Back / Pelvis | R hip / L hip (the odd one out takes the left half)
         for (int i = 0; i < kV3Bones; ++i) L.bone[i] = mk(x0 + (i % 2) * (c2 + kGap), y + (i / 2) * (r + kGap), c2, r);

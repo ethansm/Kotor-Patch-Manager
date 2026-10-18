@@ -1,4 +1,4 @@
-// HolsterEditor.cpp -- holster-editor 0.4.4-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
+// HolsterEditor.cpp -- holster-editor 0.4.5-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
 // (doc 42 HW-EDIT, plan .claude/plans/holster_editor_options.md; page rebuild: .claude/plans/holster_editor_layout_v3.md, holster_hw_ux3_build.md Wave B.)
 //
 // mod-config owns everything about the Options screen: the hooks, the root "Mod Configuration" button, the list page, control cloning,
@@ -108,6 +108,7 @@ float g_textK = 2.65f;      // ini text_k: vertical scale (sy) used when measuri
 float g_statusFit = 1.0f;  // ini status_fit: multiplier on the status pane width when fitting the status text (the label font is not measured)
 float g_cfgYaw = 180.0f;
 float g_cfgZoom = hse::kZoomFit;
+int g_marginPx = 120;   // ini margin_px: the left column pane grows this far left and the preview (inspector) pane this far right
 float g_cfgPanZ = 0.0f;
 hse::View g_cfgView = {180.0f, hse::kZoomFit, 0.0f};
 
@@ -211,8 +212,10 @@ struct Editor {
     int8_t colState[hse::kPageItemsV3];
     bool defColOk[hse::kPageItemsV3];
     float defCol[hse::kPageItemsV3][3];
+    float brdNormal[hse::kPageItemsV3][3], brdHover[hse::kPageItemsV3][3];   // a selector button's own normal / hover frame tint (read once)
+    bool brdOk[hse::kPageItemsV3];
     char selText[hse::kPageItemsV3][64];   // the text each item last got (setItemText compares against it)
-    bool colorBad = false;             // the text colour call was refused on a button: lit selectors show >marks< instead
+    bool colorBad = false;             // the selected-frame tint could not be applied on a button: lit selectors show >marks< instead
     bool valueColorBad = false;        // ... on a value label: changed values are not amber
     bool selKeyValid = false;
     int selKey[16] = {};
@@ -283,7 +286,8 @@ struct Editor {
     int shownDirty = -1;       // the dirty flag the status label was last written for
 
     Editor() {
-        for (int i = 0; i < hse::kPageItemsV3; ++i) { item[i] = -1; colState[i] = -1; defColOk[i] = false; selText[i][0] = '\0'; defCol[i][0] = defCol[i][1] = defCol[i][2] = 0.0f; }
+        for (int i = 0; i < hse::kPageItemsV3; ++i) { item[i] = -1; colState[i] = -1; defColOk[i] = false; selText[i][0] = '\0'; defCol[i][0] = defCol[i][1] = defCol[i][2] = 0.0f;
+            brdOk[i] = false; for (int k = 0; k < 3; ++k) brdNormal[i][k] = brdHover[i][k] = 0.0f; }
         for (int r = 0; r < hse::kV3Rows; ++r) wedge[r] = -1;
     }
 };
@@ -327,6 +331,7 @@ void readConfig() {
     g_cfgYaw = 180.0f;
     g_cfgZoom = hse::kZoomFit;
     g_cfgPanZ = 0.0f;
+    g_marginPx = 120;
     FILE* f = fopen("holster_editor.ini", "r");
     if (!f) {
         g_cfgView = hse::makeView(g_cfgYaw, g_cfgZoom, g_cfgPanZ);
@@ -365,13 +370,14 @@ void readConfig() {
         else if (!_stricmp(k, "view_yaw")) g_cfgYaw = static_cast<float>(atof(v));
         else if (!_stricmp(k, "view_zoom")) g_cfgZoom = static_cast<float>(atof(v));
         else if (!_stricmp(k, "view_panz")) g_cfgPanZ = static_cast<float>(atof(v));
+        else if (!_stricmp(k, "margin_px")) { const int m = atoi(v); g_marginPx = m < 0 ? 0 : (m > 400 ? 400 : m); }
     }
     fclose(f);
     g_cfgView = hse::makeView(g_cfgYaw, g_cfgZoom, g_cfgPanZ);
 }
 
 const char* statusText() {
-    return g_p3.ok() && g_hol.ok() ? "0.4.4 dev: preview + holster connected" : "0.4.4 dev: a provider is missing";
+    return g_p3.ok() && g_hol.ok() ? "0.4.5 dev: preview + holster connected" : "0.4.5 dev: a provider is missing";
 }
 
 bool editDirty();   // defined with the status helpers below
@@ -425,6 +431,9 @@ bool itemIsResetIcon(int i) {
         if (i == PI_ROW + r * kRowStride + 4) return true;
     return false;
 }
+
+// The party member prev / next buttons: arrow art on the button (the "<" ">" captions render as nothing).
+bool itemIsMemberArrow(int i) { return i == hse::PI_MEMBER_PREV || i == hse::PI_MEMBER_NEXT; }
 
 // First text of item i (buf is the scratch for composed ones).
 const char* itemInitText(int i, char* buf, int cap) {
@@ -495,8 +504,8 @@ const char* itemTip(int i) {
 // Options ctor window: the vanilla layout is open. Opens the embedded layout, binds the 3D view, restores the layout slot, builds the page.
 void KPATCH_CALL cbBuild(void* panel, void*) {
     readConfig();
-    KP_LOG(chMain, "CONFIG enabled=%d free_view=%d probe_names=%d probe_cam=%d probe_caption=%d caption_fix=%d log_verbose=%d text_k=%.2f status_fit=%.2f view=(%.2f,%.2f,%.2f)",
-           g_enabled ? 1 : 0, g_freeView ? 1 : 0, g_probeNames, g_probeCam, g_probeCaption, g_captionFix, g_logVerbose, g_textK, g_statusFit,
+    KP_LOG(chMain, "CONFIG enabled=%d free_view=%d probe_names=%d probe_cam=%d probe_caption=%d caption_fix=%d log_verbose=%d text_k=%.2f status_fit=%.2f margin_px=%d view=(%.2f,%.2f,%.2f)",
+           g_enabled ? 1 : 0, g_freeView ? 1 : 0, g_probeNames, g_probeCam, g_probeCaption, g_captionFix, g_logVerbose, g_textK, g_statusFit, g_marginPx,
            g_cfgView.yaw, g_cfgView.zoom, g_cfgView.panZ);
     if (!g_enabled || !panel || !g_menu.ok()) {
         KP_LOG(chMain, "BUILD skipped enabled=%d panel=%p menuui=%d", g_enabled ? 1 : 0, panel, g_menu.ok() ? 1 : 0);
@@ -1306,12 +1315,55 @@ void setItemText(Editor& e, int idx, const char* text) {
     g_menu.p->SetText(e.page, e.item[idx], cut);
 }
 
+// Empties the caption the item was built with (the cache starts at "", so a plain setItemText(e, idx, "") would be skipped as unchanged).
+void clearItemText(Editor& e, int idx) {
+    if (idx < 0 || idx >= hse::kPageItemsV3) return;
+    e.selText[idx][0] = '\x01';
+    e.selText[idx][1] = '\0';
+    setItemText(e, idx, "");
+}
+
+// Selected look of a selector BUTTON: the vanilla hover frame. The hover border (button +0xE8) is drawn only while the mouse is over the button, so a lit
+// selector gets the hover border's tint (border +0x28) on its normal border (+0x70); unlit puts the button's own tint back. Both tints are read once and logged.
+// False (nothing written) when the control is not a linked Steam button, a tint read/write is refused, or the two tints are the same (nothing would show).
+bool setSelFrame(Editor& e, int idx, bool on) {
+    const uintptr_t c = ctlOf(e, e.item[idx]);
+    const int oTint = guikit::detail::off(&K2AddrTable::Border_Tint);
+    if (!c || !oTint) return false;
+    const uintptr_t n = guikit::detail::buttonBorder(c, false), h = guikit::detail::buttonBorder(c, true);
+    if (!n || !h) return false;
+    if (!e.brdOk[idx]) {
+        bool ok = true;
+        for (int k = 0; k < 3 && ok; ++k)
+            ok = guikit::detail::rd<float>(n, oTint + 4 * k, &e.brdNormal[idx][k]) && guikit::detail::rd<float>(h, oTint + 4 * k, &e.brdHover[idx][k]);
+        e.brdOk[idx] = ok;
+        KP_LOGV(chView, KPLOG_INFO, "STYLE frame tint item %d read=%d normal=(%.2f,%.2f,%.2f) hover=(%.2f,%.2f,%.2f)", idx, ok ? 1 : 0, e.brdNormal[idx][0], e.brdNormal[idx][1],
+                e.brdNormal[idx][2], e.brdHover[idx][0], e.brdHover[idx][1], e.brdHover[idx][2]);
+        if (!ok) return false;
+    }
+    float diff = 0.0f;
+    for (int k = 0; k < 3; ++k) diff += fabsf(e.brdHover[idx][k] - e.brdNormal[idx][k]);
+    if (diff < 0.05f) return false;
+    const float* t = on ? e.brdHover[idx] : e.brdNormal[idx];
+    for (int k = 0; k < 3; ++k)
+        if (!guikit::detail::wr<float>(n, oTint + 4 * k, t[k])) return false;
+    return true;
+}
+
 // Text colour of item idx: litCol (on) or the control's own default (off, and only after it was lit). The default is read on the first call. A refused
 // read or write sets colorBad once: lit selectors then show >marks< instead (setSel). A control that is not linked yet is retried on the next call.
+// Selector BUTTONS take the hover frame instead (setSelFrame; their text object is not the label one the text colour helpers write).
 void setItemColor(Editor& e, int idx, bool on, const float* litCol) {
     if (idx < 0 || idx >= hse::kPageItemsV3 || e.item[idx] < 0 || e.colState[idx] == (on ? 1 : 0)) return;
     const uintptr_t c = ctlOf(e, e.item[idx]);
     if (!c) return;
+    if (itemIsButton(idx)) {
+        e.colState[idx] = on ? 1 : 0;
+        if (setSelFrame(e, idx, on) || e.colorBad) return;
+        e.colorBad = true;
+        KP_LOGV(chView, KPLOG_WARN, "STYLE WARN hover-frame tint refused on button item %d (read=%d): lit selectors show >marks< instead", idx, e.brdOk[idx] ? 1 : 0);
+        return;
+    }
     if (!e.defColOk[idx]) e.defColOk[idx] = guikit::getTextColor(c, e.defCol[idx]);
     bool ok = e.defColOk[idx];
     if (on) {
@@ -1321,11 +1373,7 @@ void setItemColor(Editor& e, int idx, bool on, const float* litCol) {
     }
     e.colState[idx] = on ? 1 : 0;
     if (ok) return;
-    if (itemIsButton(idx)) {   // only a refusal on a selector button switches the selectors to >marks<
-        if (e.colorBad) return;
-        e.colorBad = true;
-        KP_LOGV(chView, KPLOG_WARN, "STYLE WARN text colour refused on button item %d (default read=%d): lit selectors show >marks< instead", idx, e.defColOk[idx] ? 1 : 0);
-    } else if (!e.valueColorBad) {
+    if (!e.valueColorBad) {
         e.valueColorBad = true;
         KP_LOGV(chView, KPLOG_WARN, "STYLE WARN text colour refused on label item %d (default read=%d): changed values are not amber", idx, e.defColOk[idx] ? 1 : 0);
     }
@@ -1487,7 +1535,10 @@ void applyCaptions(Editor& e);   // defined after logRoom below
 void applyLayout(Editor& e) {
     if (!g_menu.ok() || !e.page || e.refused || !e.panesOk) return;
     const editkit::Box none = {0, 0, 0, 0};   // no hint rect: the description pane under the split is mod-config's hover text (HseLayoutV3.h)
-    const hse::PageLayoutV3 L = hse::pageLayoutV3(hse::boxOf(e.paneCol), hse::boxOf(e.paneView), hse::boxOf(e.panePreview), none, e.rowFrac);
+    editkit::Box col = hse::boxOf(e.paneCol), prev = hse::boxOf(e.panePreview);
+    col.x -= g_marginPx; col.w += g_marginPx;   // into the empty screen margins (ini margin_px 0 = stay inside the panes)
+    prev.w += g_marginPx;
+    const hse::PageLayoutV3 L = hse::pageLayoutV3(col, hse::boxOf(e.paneView), prev, none, e.rowFrac);
     const bool first = !e.layOk;
     e.lay = L;
     e.layOk = true;
@@ -2237,6 +2288,8 @@ void applyArt(Editor& e) {
     // The slider art and the reset arrows are separate texture sets: a set that is still missing at the deadline is skipped, the other one is applied.
     const bool timedOut = ++e.artTicks > kArtMaxTicks;
     bool haveIcon = hse::resetIconImage(false) && hse::resetIconImage(true);
+    for (int a = 0; a < 4; ++a)
+        if (!hse::arrowIconImage((a & 2) != 0, (a & 1) != 0)) haveIcon = false;
     bool haveSlider = true;
     for (int w = 0; w < hse::SA_Count; ++w)
         if (!hse::sliderArtImage(w)) haveSlider = false;
@@ -2245,12 +2298,12 @@ void applyArt(Editor& e) {
         if (!ctlOf(e, e.item[b + 1]) || !ctlOf(e, e.wedge[r]) || !ctlOf(e, e.item[b + 2])) haveSlider = false;
     }
     for (int i = 0; i < hse::kPageItemsV3 && haveIcon; ++i)
-        if (itemIsResetIcon(i) && !ctlOf(e, e.item[i])) haveIcon = false;
+        if ((itemIsResetIcon(i) || itemIsMemberArrow(i)) && !ctlOf(e, e.item[i])) haveIcon = false;
     if (!timedOut && (!haveIcon || !haveSlider)) return;
     if (timedOut)
         KP_LOGV(chView, KPLOG_WARN, "ART WARN not ready after %d ticks (slider=%d reset_icon=%d): the missing part keeps its plain controls", kArtMaxTicks,
                 haveSlider ? 1 : 0, haveIcon ? 1 : 0);
-    int frame = 0, wedge = 0, mark = 0, icon = 0, icons = 0;
+    int frame = 0, wedge = 0, mark = 0, icon = 0, icons = 0, arrow = 0, arrows = 0;
     for (int r = 0; r < hse::kV3Rows && haveSlider; ++r) {
         const int b = hse::PI_ROW + r * hse::kRowStride;
         const uintptr_t tc = ctlOf(e, e.item[b + 1]), wc = ctlOf(e, e.wedge[r]), mc = ctlOf(e, e.item[b + 2]);
@@ -2264,13 +2317,24 @@ void applyArt(Editor& e) {
         g_artCtl = ctlOf(e, e.item[i]);
         if (hse::resetIconApply(artBtnFill, artLabelFill)) {
             ++icon;
-            setItemText(e, i, "");   // the arrow replaces the "R"
+            clearItemText(e, i);   // the arrow replaces the "R"
         }
     }
     g_artCtl = 0;
+    for (int i = 0; i < hse::kPageItemsV3 && haveIcon; ++i) {
+        if (!itemIsMemberArrow(i)) continue;
+        ++arrows;
+        const bool next = i == hse::PI_MEMBER_NEXT;
+        const uintptr_t ac = ctlOf(e, e.item[i]);
+        if (ac && guikit::setButtonFill(ac, hse::arrowIconImage(next, false), hse::arrowIconImage(next, true))) {
+            (void)guikit::setButtonFillStyle(ac, 2);
+            clearItemText(e, i);
+            ++arrow;
+        }
+    }
     e.artDone = true;
-    KP_LOG(chView, "ART applied frame=%d/%d wedge=%d/%d mark=%d/%d reset_icon=%d/%d after %d ticks", frame, hse::kV3Rows, wedge, hse::kV3Rows, mark, hse::kV3Rows, icon, icons,
-           e.artTicks);
+    KP_LOG(chView, "ART applied frame=%d/%d wedge=%d/%d mark=%d/%d reset_icon=%d/%d member_arrow=%d/%d after %d ticks", frame, hse::kV3Rows, wedge, hse::kV3Rows, mark, hse::kV3Rows,
+           icon, icons, arrow, arrows, e.artTicks);
 }
 
 // Mounting bone `want` (0..4): HolsterApi has no absolute bone setter, so this cycles CycleBone until GetEdit reports the bone, at most
@@ -2628,7 +2692,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_menu.init(api);
     embedgui::g_log = embedLog;
     embtex::g_log = embedLog;
-    KP_LOG(chMain, "holster-editor 0.4.4-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
+    KP_LOG(chMain, "holster-editor 0.4.5-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
            static_cast<unsigned>(sizeof kHseViewGui));
     const bool cfgOk = g_cfgClient.connect(), menuOk = g_menu.connect();
     if (!cfgOk || !menuOk) {
