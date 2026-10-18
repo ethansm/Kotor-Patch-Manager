@@ -1,0 +1,48 @@
+F3 R2 recon: BUTTON template border used by the holster editor
+
+Question: border corner/edge textures, pixel sizes, DIMENSION of the BUTTON template used by the holster editor.
+
+## Template chain
+- patch_manager_mods/holster_editor_src/HolsterEditor.cpp:581 calls ui->AddButton(page, text, tip) on K2MenuUiApi (k2.menuui@1).
+- That API is served by mod-config muiAddButton (patch_manager_mods/mod_config_src/ModConfig.cpp:1045), which calls cloneEntry(e.panel, "BTN_GAMEPLAY", ...) at ModConfig.cpp:1054.
+- Template = control tag BTN_GAMEPLAY, a CSWGuiButton clone (label clone only if button_clone=0 or clone fails).
+- _shared_src/GuiButton.h does not exist in this repo. Not needed for the answer.
+- BTN_GAMEPLAY is in two live override GUIs:
+  - Override/optionsmain_p.gui, CONTROLS[9], EXTENT LEFT 161 TOP 134 WIDTH 236 HEIGHT 32
+  - Override/optionsingame_p.gui, CONTROLS[1], EXTENT LEFT 161 TOP 206 WIDTH 236 HEIGHT 32
+  - BORDER and HILIGHT are identical in both files except INNEROFFSETY (see below).
+
+## BORDER (both files)
+- CORNER: uibit_brdr_16wc, 32x32 px (TPC, layers=1, chitin/texpack, no override copy)
+- EDGE: uibit_brdr_16we, 32x32 px (TPC, layers=1, chitin/texpack, no override copy)
+- FILL: none (empty resref)
+- FILLSTYLE: 2
+- DIMENSION: 16
+- INNEROFFSET: 9
+- INNEROFFSETY: 0 in optionsmain_p, 9 in optionsingame_p
+- COLOR: (0.051, 0.349, 0.271)
+- PULSING: 0
+
+## HILIGHT (both files)
+- CORNER: uibit_brdr_16wc, 32x32 px
+- EDGE: uibit_brdr_16we, 32x32 px
+- FILL: none
+- FILLSTYLE: 2
+- DIMENSION: 16
+- INNEROFFSET: 9
+- INNEROFFSETY: 0 in optionsmain_p, 9 in optionsingame_p
+- COLOR: (0.800, 0.800, 0.698)
+- PULSING: 0
+
+## Reference (optionsmain_p.gui BTN_GAMEPLAY TEXT block)
+- FONT: dialogfont16x16, ALIGNMENT: 18, COLOR: (0.102, 0.698, 0.549), STRREF 42166
+
+## Command run
+cd /home/ethansm/orca/workspaces/local-setup/KOTOR-II && ./.venv/bin/python3 -I /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/a775d339-e9a9-40e4-b0e9-1d4f5f209b60/scratchpad/R2/btn_template.py > /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/a775d339-e9a9-40e4-b0e9-1d4f5f209b60/scratchpad/R2/btn_template.out
+
+Script method: pykotor Installation(GAME) plus read_gff on each Override/*.gui; walks GFF CONTROLS recursively for TAG == BTN_GAMEPLAY; texture size from TPC.mipmap_size(0, 0); override check by file name.
+Full dump: scratchpad R2/btn_template.out
+
+## Caveats
+- Texture sizes are pykotor top-mip dimensions, not checked in-engine.
+- DIMENSION 16 against 32x32 textures: how the engine scales the corner is not verified here.

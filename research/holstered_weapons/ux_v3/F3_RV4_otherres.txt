@@ -1,0 +1,28 @@
+F3 RV4 - other-resolution check of the Holstered Weapons editor mockup (ideal captions)
+Question: does the mockup lay out cleanly at 1920x1080 and 3440x1440?
+Render: scripts/holster_editor_mockup.py --panes <WxH> --mode ideal --crop
+  1920: line_h 16, text_scale 1.0 | 3440: line_h 32, text_scale 2.0 | caption_fix 0
+Scratch: /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/a775d339-e9a9-40e4-b0e9-1d4f5f209b60/scratchpad/render/RV4/
+Sidecars: ideal_1920.json, ideal_3440.json (items: box, caption_rect, drawn, shown)
+
+Checked, clean (FACT, from JSON):
+- caption_rect inside its box: 0 violations at both sizes.
+- Text items with drawn=false: 0 at both sizes. Undrawn items are slider tracks, handles and the 3D view (empty text).
+- Box overlaps: 6 pairs at each size, all slider track (60 px) / handle (10 px). Intentional, not a defect.
+
+Issues:
+res | region | issue | evidence crop path | severity (blocker/cosmetic) | FACT/MODEL
+1920x1080 | APPLIES TO row, items 13 and 15 (70 px buttons) | "This weapon" and "This body" both shown as "This...", so the two buttons cannot be told apart | ideal_1920.json items 13,15 (not zoomed; full render ideal_1920.png) | blocker | FACT
+3440x1440 | APPLIES TO row, items 13 and 15 (129 px buttons) | Same identical "This..." truncation | ideal_3440.json items 13,15 (not zoomed; full render ideal_3440.png) | blocker | FACT
+3440x1440 | Right panel, 8 reset buttons (items 33,35,40,45,50,55,60,65; 30x30 boxes) | Caption "R" replaced by "..." on every reset button | /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/a775d339-e9a9-40e4-b0e9-1d4f5f209b60/scratchpad/render/RV4/zoom_3440_rightpanel.png | blocker | FACT
+3440x1440 | Top bar, "<>" button (item 24, 34x34) | Caption "<>" replaced by "..." | ideal_3440.json item 24 (not zoomed) | blocker | FACT
+1920x1080 | Top bar (Tilt) and bottom bar (Run, hint line) | Vertical line at x=750, equal to panes.view.x, drawn through the last "T" of "Tilt", the Run button edge and the "+" in "RMB+wheel" | .../RV4/zoom_1920_topbar.png and .../RV4/zoom_1920_botbar.png | cosmetic | FACT (position); MODEL (cause: panes.view left edge)
+3440x1440 | Top bar, gap right of Roll/Turn; bottom bar, Run | Same stray line at x=1345 (panes.view.x). Top one sits in an empty gap. Bottom one not zoomed; seen in full render | .../RV4/zoom_3440_topbar.png (top only) | cosmetic | FACT (top); MODEL (bottom)
+1920x1080 + 3440x1440 | Left column, member bar, hint lines | Ellipsis truncations: 1920 has 8 (items 8,13,14,15,18,31,67,68); 3440 has 22 (adds 17 "Reve...", 24, 33-65 readouts/R buttons, labels) | ideal_1920.json and ideal_3440.json "shown" field | cosmetic | FACT
+3440x1440 | Value readouts, items 44,54,59,64 (140x34 boxes) | "-11.0 cm" -> "-11.0...", "30.5 deg" -> "30.5...", "0.0 deg" -> "0.0 d...", "-5.0 deg" -> "-5.0..." (units clipped) | .../RV4/zoom_3440_rightpanel.png | cosmetic | FACT
+3440x1440 | Header labels items 3,4,5 (WEAPON, BONE, APPLIES TO; 22 px boxes), hint lines 31,67,68 (22 px), reset R buttons (30 px) | Box height below line_h 32; text_y0 sits 1-5 px outside the box; 30 flags total. Ink looked inside its area in full render | ideal_3440.json (no zoom) | cosmetic | FACT (numbers); MODEL (visual)
+1920x1080 + 3440x1440 | sidecar panes.view = [750,267,321,672] and [1345,357,576,896] | Left edge disagrees with the view box (x=310 and x=554). Causes 8 (1920) and 9 (3440) "outside pane" flags for top bar, view and bottom bar | ideal_1920.json, ideal_3440.json | cosmetic (tooling; source of the stray line) | FACT (values); MODEL (cause)
+
+Not an issue (expected): left column lower half and right panel lower third are empty; 3D view is black (no model).
+
+VERDICT basis: geometry clean at both sizes. Captions are not: two identical "This..." labels at both sizes, and 3440 reset "R" and "<>" captions show "...".

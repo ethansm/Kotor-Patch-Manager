@@ -101,6 +101,20 @@ inline HseRect leftStrip(const HseRect& col, const HseRect& view, int gap) {
     return HseRect{col.x, col.y, w, col.h};
 }
 
+// Button caption rect (pure). CSWGuiButton::SetExtent insets the caption text object's rect by the border dimension on every side, which collapses at
+// 34 px rows (F3_R1_inset.txt): the centred 32 px line is dropped or drawn on the box seam. Keep the engine's x/w, take the button's own y/h.
+// An engine rect with no width, or whose x is outside [btn.x, btn.x + btn.w), is not trusted: use a 4 px side margin instead. w is never negative.
+inline HseRect captionRect(const HseRect& btn, const HseRect& engineText) {
+    HseRect r;
+    if (engineText.w <= 0 || engineText.x < btn.x || engineText.x >= btn.x + btn.w) {
+        r = HseRect{btn.x + 4, btn.y, btn.w - 8, btn.h};
+    } else {
+        r = HseRect{engineText.x, btn.y, engineText.w, btn.h};
+    }
+    if (r.w < 0) r.w = 0;
+    return r;
+}
+
 // vanilla ratio: slotH = strip.h * 32 / 284, pitch = strip.h * 36 / 284, y = strip.y + row * pitch, x/w = strip's
 inline HseRect stripSlot(const HseRect& strip, int row) {
     int slotH = strip.h * 32 / 284;

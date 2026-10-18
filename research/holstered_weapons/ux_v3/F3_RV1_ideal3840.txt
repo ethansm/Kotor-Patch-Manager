@@ -1,0 +1,32 @@
+F3_RV1 - ideal-caption mockup review, 3840x1600
+Render: .venv/bin/python scripts/holster_editor_mockup.py --panes 3840x1600 --mode ideal --crop --build-dir /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/a775d339-e9a9-40e4-b0e9-1d4f5f209b60/scratchpad/render/RV1 --out /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/a775d339-e9a9-40e4-b0e9-1d4f5f209b60/scratchpad/render/RV1/ideal.png
+Scratch: /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/a775d339-e9a9-40e4-b0e9-1d4f5f209b60/scratchpad/render/RV1/
+PNG 2374x976 = crop origin (732,317), 1:1 with pane px. ideal.json: 70 items, 34 buttons, dropped=0.
+
+Geometry (FACT, ideal.json): no box-box overlap except 6 intentional slider track/thumb pairs (items 37/38, 42/43, 47/48, 52/53, 57/58, 62/63). No caption_rect falls outside its box.
+
+Severity rule: blocker = two controls become indistinguishable, or a control loses its meaning. cosmetic = text still readable, or polish.
+Verdict basis: PARTIAL, because 2 blocker-class label defects exist.
+
+region | issue | evidence crop path | severity | FACT/MODEL
+APPLIES TO row, items 13 and 15 | Both shown "This..." ("This weapon" and "This body"). Identical labels on different actions. | /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/a775d339-e9a9-40e4-b0e9-1d4f5f209b60/scratchpad/render/RV1/crop_left_applies.png | blocker | FACT (ideal.json shown); pixels MODEL
+Inspector reset buttons, items 33,35,40,45,50,55,60,65 (30px boxes); top-right toggle item 24 | Text "R" and "<>" shown as "...". Reset reads as a menu. | /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/a775d339-e9a9-40e4-b0e9-1d4f5f209b60/scratchpad/render/RV1/crop_inspector_values.png; /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/a775d339-e9a9-40e4-b0e9-1d4f5f209b60/scratchpad/render/RV1/crop_toolbar.png | blocker | FACT (shown field); pixels MODEL
+Left column, item 8 | "Upper back" shown "Upper..." | /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/a775d339-e9a9-40e4-b0e9-1d4f5f209b60/scratchpad/render/RV1/crop_left_applies.png | cosmetic | FACT
+Left column, item 14 | "All vibroswords" shown "All v..." | /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/a775d339-e9a9-40e4-b0e9-1d4f5f209b60/scratchpad/render/RV1/crop_left_applies.png | cosmetic | FACT
+Left column, item 18 | "Member 1/9 | Weapons: Right+Left" shown "Member 1/9 | Weapon..." | /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/a775d339-e9a9-40e4-b0e9-1d4f5f209b60/scratchpad/render/RV1/crop_left_applies.png | cosmetic | FACT
+Top toolbar, item 22 | "Roll/Turn" shown "Roll/T..." | /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/a775d339-e9a9-40e4-b0e9-1d4f5f209b60/scratchpad/render/RV1/crop_toolbar.png | cosmetic | FACT
+Top toolbar gap | Roll/Turn ends x=1870, R starts x=1879 (9px). Every other toolbar gap is 2px. | /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/a775d339-e9a9-40e4-b0e9-1d4f5f209b60/scratchpad/render/RV1/crop_toolbar.png | cosmetic | FACT
+Top toolbar, item 19 ">Move<" | Arrow glyphs touch the box edges | /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/a775d339-e9a9-40e4-b0e9-1d4f5f209b60/scratchpad/render/RV1/crop_toolbar.png | cosmetic | MODEL
+Inspector values, items 44,54,59,64 | "-11.0 cm" -> "-11.0...", "30.5 deg" -> "30.5...", "0.0 deg" -> "0.0 d...", "-5.0 deg" -> "-5.0...". Units lost in the 140px value box. | /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/a775d339-e9a9-40e4-b0e9-1d4f5f209b60/scratchpad/render/RV1/crop_inspector_values.png | cosmetic | FACT
+Inspector hints, items 67,68 | Lines cut to "...": "Shift fine,..." and "...marker..." | /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/a775d339-e9a9-40e4-b0e9-1d4f5f209b60/scratchpad/render/RV1/crop_inspector_hints.png | cosmetic | FACT
+Bottom hint, item 31 | Ends "...." so "Shift fine . Ctrl snap" is lost | /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/a775d339-e9a9-40e4-b0e9-1d4f5f209b60/scratchpad/render/RV1/crop_mode_row.png | cosmetic | FACT
+Mode row, item 30 "Combat" | T touches the right box border | /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/a775d339-e9a9-40e4-b0e9-1d4f5f209b60/scratchpad/render/RV1/crop_mode_row.png | cosmetic | MODEL
+Stray guide lines | Vertical line at pane x~1345 crosses the Idle box and ">Move<". Vertical line at x~1904-1921 crosses R and Combat. Horizontal line at y~1251 runs under the hint text. Edges match JSON panes.view [1345,357,576,896], which differs from the drawn view box (item 25, x=1216). | /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/a775d339-e9a9-40e4-b0e9-1d4f5f209b60/scratchpad/render/RV1/crop_toolbar.png; /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/a775d339-e9a9-40e4-b0e9-1d4f5f209b60/scratchpad/render/RV1/crop_mode_row.png | cosmetic (mock artifact; can mislead alignment checks) | FACT (lines seen in crops); MODEL (cause)
+Save/Revert/Reset row, items 16,17,69 | Widths 138/142/148px. Other button rows use 142px. | /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/a775d339-e9a9-40e4-b0e9-1d4f5f209b60/scratchpad/render/RV1/crop_left_applies.png | cosmetic | FACT
+Inspector and left column dead space | Inspector content ends x=2677 in a frame reaching ~3066 (~390px empty on the right). Content ends y=723 above frames reaching ~1103-1114. | /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/a775d339-e9a9-40e4-b0e9-1d4f5f209b60/scratchpad/render/RV1/crop_inspector_hints.png (right edge); overview render | cosmetic | FACT (coords); MODEL (visual weight)
+Pane bottoms | Column frame ~1114, preview ~1103, view ~1194 (uneven) | overview render | cosmetic | FACT (panes h values); MODEL (visual)
+Slider thumbs, all rows | Thumb fixed at track centre for every value (Depth -11.0 and Tilt 30.5 both centred). Code draws placeholder shapes (scripts/holster_editor_mockup.py:286). | /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/a775d339-e9a9-40e4-b0e9-1d4f5f209b60/scratchpad/render/RV1/crop_inspector_values.png | cosmetic (mock only; reads as value 0) | FACT
+
+Not a defect: the 3D view area (item 25) is blank because dr=False. This is the expected placeholder.
+
+OPEN: Should ideal mode allow zero truncation (e.g., "This weapon" fitting 142px), or is "..." acceptable there?

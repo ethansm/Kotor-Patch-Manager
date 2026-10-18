@@ -18,6 +18,22 @@ static bool sameView(hse::View a, hse::View b, float eps = 1e-4f) {
     return closeF(a.yaw, b.yaw, eps) && closeF(a.zoom, b.zoom, eps) && closeF(a.panZ, b.panZ, eps);
 }
 
+static void testCaptionRect() {
+    const hse::HseRect btn = {100, 200, 120, 34};
+    // normal: engine x/w kept, y/h from the button (engine inset the height to 0 or 2*margin)
+    KT_CHECK(sameRect(hse::captionRect(btn, hse::HseRect{116, 217, 88, 0}), hse::HseRect{116, 200, 88, 34}));
+    KT_CHECK(sameRect(hse::captionRect(btn, hse::HseRect{116, 210, 88, 14}), hse::HseRect{116, 200, 88, 34}));
+    // zero engine rect: 4 px side margins
+    KT_CHECK(sameRect(hse::captionRect(btn, hse::HseRect{0, 0, 0, 0}), hse::HseRect{104, 200, 112, 34}));
+    // negative width / x outside the button
+    KT_CHECK(sameRect(hse::captionRect(btn, hse::HseRect{116, 217, -5, 0}), hse::HseRect{104, 200, 112, 34}));
+    KT_CHECK(sameRect(hse::captionRect(btn, hse::HseRect{99, 217, 50, 0}), hse::HseRect{104, 200, 112, 34}));
+    KT_CHECK(sameRect(hse::captionRect(btn, hse::HseRect{220, 217, 50, 0}), hse::HseRect{104, 200, 112, 34}));
+    // tiny button: width clamped at 0
+    KT_CHECK(sameRect(hse::captionRect(hse::HseRect{10, 20, 6, 34}, hse::HseRect{0, 0, 0, 0}), hse::HseRect{14, 20, 0, 34}));
+    KT_CHECK(sameRect(hse::captionRect(hse::HseRect{10, 20, 0, 0}, hse::HseRect{10, 20, 4, 4}), hse::HseRect{14, 20, 0, 0}));
+}
+
 static void testYawAndSpin() {
     KT_CHECK(closeF(hse::wrapYaw(-10.0f), 350.0f));
     KT_CHECK(closeF(hse::wrapYaw(370.0f), 10.0f));
@@ -1740,6 +1756,7 @@ int main() {
     testUx3ThumbFrac();
     testUx3TrackValue();
     testUx3Hints();
+    testCaptionRect();
     return kt::Report("hse_view");
 }
 

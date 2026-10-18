@@ -1,4 +1,4 @@
-// HolsterEditor.cpp -- holster-editor 0.4.2-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
+// HolsterEditor.cpp -- holster-editor 0.4.3-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
 // (doc 42 HW-EDIT, plan .claude/plans/holster_editor_options.md; page rebuild: .claude/plans/holster_editor_layout_v3.md, holster_hw_ux3_build.md Wave B.)
 //
 // mod-config owns everything about the Options screen: the hooks, the root "Mod Configuration" button, the list page, control cloning,
@@ -52,6 +52,7 @@
 #include "SceneView.h"   // sceneview::camera(view): the preview view's engine camera object (CAMENG probe)
 #include "GameAddr.h"
 #include "GuiKit.h"
+#include "GuiButton.h"   // guibutton::ButtonVtable / Button_Text: the button caption fix gates on them
 #include "EmbedGui.h"
 #include "HolsterApi.h"
 #include "Preview3dApi.h"
@@ -100,6 +101,8 @@ bool g_enabled = true;
 bool g_freeView = false;   // also free the 3D view block after preview-3d destroys the creature (probe)
 int g_logVerbose = 0;      // ini log_verbose: 1 = also log CHORD transitions, INSP refresh counts and repeated PROJ/CAMHOOK re-projections (default 0 = quiet)
 int g_probeCam = 1;        // ini probe_cam: 1 = the CAMENG engine camera probe (U4, log only), 0 = off
+int g_probeCaption = 1;    // ini probe_caption: 1 = log the CAPTION lines (button caption rect before / after the fix), 0 = quiet
+int g_captionFix = 1;      // ini caption_fix: 1 = set each button's caption text rect to {engine x/w, button y/h} (hse::captionRect), 0 = leave the engine's inset rect
 int g_probeNames = 1;      // ini probe_names: 0 = off (weapon buttons show the model resref), 1 = item GetName with identified=0 (the button name; ITEMNAME log), 2 = also identified=1 (log only)
 float g_textK = 2.5f;       // ini text_k: vertical scale (sy) used when measuring label text; the engine draws the page labels about 2.5x wider than sy 1 predicts (measured at 3840x1600)
 float g_statusFit = 1.0f;  // ini status_fit: multiplier on the status pane width when fitting the status text (the label font is not measured)
@@ -254,6 +257,14 @@ struct Editor {
     bool camEngCapNoted = false;
     int cam2Logs = 0;                 // CAM2 line sets logged (capped at kMaxCam2Logs)
 
+    // Button caption fix state (reset with the Editor, i.e. per Options open): per item the button rect the caption was last set for
+    hse::HseRect capBtn[hse::kPageItemsV3] = {};
+    bool capSeen[hse::kPageItemsV3] = {};      // capBtn[i] is valid
+    unsigned char capReapply[hse::kPageItemsV3] = {};   // re-applies since the button rect last changed (capped at kCaptionReapplyMax)
+    bool capCapped[hse::kPageItemsV3] = {};    // the "reapply capped" line was logged for the item
+    int capLogs = 0;                  // CAPTION probe lines logged (capped at kMaxCaptionLogs)
+    int capWarns = 0;                 // CAPTION WARN vtable lines logged (one per Options open)
+
     // Per-kind WARN counters (reset with the Editor) and the CAM2 node name cache
     int warnCount[W_KINDS] = {};
     int calibNodeIdx[kCalibNodes] = {-1, -1, -1, -1, -1, -1};   // index into kCalibCand[i] that resolved, -1 = none yet
@@ -309,6 +320,8 @@ void readConfig() {
     g_probeNames = 1;
     g_logVerbose = 0;
     g_probeCam = 1;
+    g_probeCaption = 1;
+    g_captionFix = 1;
     g_statusFit = 1.0f;
     g_cfgYaw = 180.0f;
     g_cfgZoom = hse::kZoomFit;
@@ -338,6 +351,8 @@ void readConfig() {
         else if (!_stricmp(k, "probe_names")) g_probeNames = (v[0] >= '0' && v[0] <= '9') ? atoi(v) : (on ? 1 : 0);
         else if (!_stricmp(k, "log_verbose")) g_logVerbose = (v[0] >= '0' && v[0] <= '9') ? (atoi(v) != 0 ? 1 : 0) : (on ? 1 : 0);
         else if (!_stricmp(k, "probe_cam")) g_probeCam = (v[0] >= '0' && v[0] <= '9') ? (atoi(v) != 0 ? 1 : 0) : (on ? 1 : 0);
+        else if (!_stricmp(k, "probe_caption")) g_probeCaption = (v[0] >= '0' && v[0] <= '9') ? (atoi(v) != 0 ? 1 : 0) : (on ? 1 : 0);
+        else if (!_stricmp(k, "caption_fix")) g_captionFix = (v[0] >= '0' && v[0] <= '9') ? (atoi(v) != 0 ? 1 : 0) : (on ? 1 : 0);
         else if (!_stricmp(k, "text_k")) {
             const float f = static_cast<float>(atof(v));
             g_textK = (f >= 0.5f && f <= 6.0f) ? f : 2.5f;
@@ -355,7 +370,7 @@ void readConfig() {
 }
 
 const char* statusText() {
-    return g_p3.ok() && g_hol.ok() ? "0.4.2 dev: preview + holster connected" : "0.4.2 dev: a provider is missing";
+    return g_p3.ok() && g_hol.ok() ? "0.4.3 dev: preview + holster connected" : "0.4.3 dev: a provider is missing";
 }
 
 bool editDirty();   // defined with the status helpers below
@@ -479,8 +494,8 @@ const char* itemTip(int i) {
 // Options ctor window: the vanilla layout is open. Opens the embedded layout, binds the 3D view, restores the layout slot, builds the page.
 void KPATCH_CALL cbBuild(void* panel, void*) {
     readConfig();
-    KP_LOG(chMain, "CONFIG enabled=%d free_view=%d probe_names=%d probe_cam=%d log_verbose=%d text_k=%.2f status_fit=%.2f view=(%.2f,%.2f,%.2f)",
-           g_enabled ? 1 : 0, g_freeView ? 1 : 0, g_probeNames, g_probeCam, g_logVerbose, g_textK, g_statusFit,
+    KP_LOG(chMain, "CONFIG enabled=%d free_view=%d probe_names=%d probe_cam=%d probe_caption=%d caption_fix=%d log_verbose=%d text_k=%.2f status_fit=%.2f view=(%.2f,%.2f,%.2f)",
+           g_enabled ? 1 : 0, g_freeView ? 1 : 0, g_probeNames, g_probeCam, g_probeCaption, g_captionFix, g_logVerbose, g_textK, g_statusFit,
            g_cfgView.yaw, g_cfgView.zoom, g_cfgView.panZ);
     if (!g_enabled || !panel || !g_menu.ok()) {
         KP_LOG(chMain, "BUILD skipped enabled=%d panel=%p menuui=%d", g_enabled ? 1 : 0, panel, g_menu.ok() ? 1 : 0);
@@ -1453,6 +1468,7 @@ bool refreshPanes(Editor& e) {
 // Lays the page out (hse::pageLayoutV3 from the panes and the thumb fractions) and sets EVERY item rect. SetRect runs every tick, not only on a move:
 // mod-config gives up re-applying a rect the engine keeps rewriting after 8 tries, and each SetRect zeroes that count (mod-config only writes the
 // engine when the extent really differs, so an unchanged rect costs a compare). The enlarged view, the wheel hit rect and the cached viewRect follow.
+void applyCaptions(Editor& e);   // defined after logRoom below
 void applyLayout(Editor& e) {
     if (!g_menu.ok() || !e.page || e.refused || !e.panesOk) return;
     const editkit::Box none = {0, 0, 0, 0};   // no hint rect: the description pane under the split is mod-config's hover text (HseLayoutV3.h)
@@ -1468,6 +1484,7 @@ void applyLayout(Editor& e) {
         const int w = static_cast<int>(hse::sliderWedgeWidth(static_cast<float>(t.w), e.rowFrac[r]) + 0.5f);
         placeBox(e.wedge[r], w > 0 && t.h > 0 ? editkit::Box{t.x, t.y, w, t.h} : editkit::Box{-9999, -9999, 0, 0});
     }
+    applyCaptions(e);   // after every button rect is set: the engine's SetExtent just re-insetted each caption text rect
     const hse::HseRect vr = hse::rectOf<hse::HseRect>(L.view);
     if (first || memcmp(&vr, &e.viewRect, sizeof vr) != 0) {
         KP_LOG(chView, "LAYOUT v3 view=(%d,%d,%d,%d) rows left=%d insp=%d bar=%d", vr.x, vr.y, vr.w, vr.h, L.leftRowH, L.inspRowH, L.barH);
@@ -1492,6 +1509,96 @@ bool logRoom(int& counter, int cap, const char* what) {
         KP_LOG(chView, "%s log capped at %d lines", what, cap);
     }
     return false;
+}
+
+// ---- button caption fix (HW-UX3 captions; research/holstered_weapons/ux_v3/F3_R1_inset.txt) ----
+// CSWGuiButton::SetExtent (0x419ED0) gives the caption text sub-object (btn+0x160, vtable TextVtable) an inset rect (border dimension per side). At
+// 34 px rows the inner height collapses, so the centred 32 px line is dropped or drawn on the box seam. After the button rect is set we set the text
+// rect ourselves (hse::captionRect: engine x/w, button y/h) through the text object's own vtable slot 1 (guikit::setRect), no new engine address.
+constexpr int kTextRectOff = 4;        // CSWGuiText +0x04..+0x10 = rect x,y,w,h (F3_R1_inset.txt "T+0x04..+0x10 rect"; decomp 41/00417780.c)
+constexpr int kTextRendererOff = 0x14; // CSWGuiText +0x14 = renderer R (F3_R1_inset.txt "T+0x14 R pointer"; guikit::Text_Renderer)
+constexpr int kRendWOff = 0x0C;        // renderer +0x0C = width (decomp 41/00417780.c, setSize w; probe only, read with the safe reader)
+constexpr int kRendHOff = 0x10;        // renderer +0x10 = height (decomp 41/00417780.c, setSize h; probe only)
+constexpr int kRendLinesOff = 0x4C;    // renderer +0x4C = line count (decomp 41/00417780.c; probe only)
+constexpr int kRendScaleOff = 0x54;    // renderer +0x54 = float text scale (decomp 41/00417780.c; probe only)
+constexpr int kRendAlignOff = 0x5A;    // renderer +0x5A = uint8 alignment flags (decomp 41/00417780.c; probe only)
+constexpr int kParkedX = -9000;        // a button at x <= this is parked off screen (placeBox -9999) or hidden
+constexpr int kCaptionReapplyMax = 8;  // re-applies per item when the engine resets the caption rect without a button rect change
+constexpr int kMaxCaptionLogs = 40;    // cap on CAPTION probe lines per Editor
+
+bool rdRect(uintptr_t obj, int base, hse::HseRect* r) {
+    return rd<int>(obj, base, &r->x) && rd<int>(obj, base + 4, &r->y) && rd<int>(obj, base + 8, &r->w) && rd<int>(obj, base + 12, &r->h);
+}
+
+void logCaption(Editor& e, int i, const char* what, const hse::HseRect& b, const hse::HseRect& t, uintptr_t tx) {
+    uint32_t rend = 0;
+    int rbw = -1, rbh = -1, lines = -1;
+    float scale = -1.0f;
+    unsigned align = 0xFFFFFFFFu;   // printed as 0xff when unreadable
+    if (rd<uint32_t>(tx, kTextRendererOff, &rend) && rend) {
+        int v = 0;
+        float f = 0.0f;
+        uint8_t a = 0;
+        if (rd<int>(rend, kRendWOff, &v)) rbw = v;
+        if (rd<int>(rend, kRendHOff, &v)) rbh = v;
+        if (rd<float>(rend, kRendScaleOff, &f)) scale = f;
+        if (rd<uint8_t>(rend, kRendAlignOff, &a)) align = a;
+        if (rd<int>(rend, kRendLinesOff, &v)) lines = v;
+    }
+    KP_LOG(chView, "CAPTION i=%d %s btn=(%d,%d,%d,%d) text=(%d,%d,%d,%d) rend=%p rb=(%d,%d) scale=%.2f align=0x%02x lines=%d fix=%d", i, what, b.x, b.y, b.w, b.h,
+           t.x, t.y, t.w, t.h, reinterpret_cast<void*>(rend), rbw, rbh, scale, align & 0xFFu, lines, g_captionFix);
+}
+
+// Runs every layout tick, after every button rect is set. Per button: gate on the vtables, skip parked / hidden buttons, then set the caption rect when
+// the button moved (new rect) or the engine reset it behind our back (capped re-applies).
+void applyCaptions(Editor& e) {
+    if (!g_captionFix && !g_probeCaption) return;
+    for (int i = 0; i < hse::kPageItemsV3; ++i) {
+        if (!itemIsButton(i) || e.item[i] < 0) continue;
+        if (i >= hse::PI_ROW && (i - hse::PI_ROW) % hse::kRowStride == 4 && (i - hse::PI_ROW) / hse::kRowStride < hse::kV3Rows) continue;   // row reset icons show art, no caption
+        const uintptr_t btn = ctlOf(e, e.item[i]);
+        if (!btn) continue;
+        const uintptr_t tx = btn + guibutton::Button_Text;
+        uint32_t vb = 0, vt = 0;
+        if (!rd<uint32_t>(btn, 0, &vb) || vb != guibutton::ButtonVtable || !rd<uint32_t>(tx, 0, &vt) || vt != static_cast<uint32_t>(guikit::TextVtable)) {
+            if (e.capWarns < 1) {
+                ++e.capWarns;
+                KP_LOG(chView, "CAPTION WARN vtable i=%d btn=%p vb=0x%08x vt=0x%08x", i, reinterpret_cast<void*>(btn), vb, vt);
+            }
+            continue;
+        }
+        hse::HseRect b = {}, t = {};
+        if (!rdRect(btn, kTextRectOff, &b) || !rdRect(tx, kTextRectOff, &t)) continue;
+        if (b.x <= kParkedX || b.w <= 0 || b.h <= 0) continue;   // parked / hidden: leave it, the cache stays so the next real placement counts as moved
+        const bool moved = !e.capSeen[i] || memcmp(&b, &e.capBtn[i], sizeof b) != 0;
+        const hse::HseRect want = hse::captionRect(b, t);
+        const bool differs = memcmp(&t, &want, sizeof t) != 0;
+        if (g_probeCaption && moved && logRoom(e.capLogs, kMaxCaptionLogs, "CAPTION")) logCaption(e, i, "before", b, t, tx);
+        if (g_captionFix && differs) {
+            bool apply = false;
+            if (moved) {
+                e.capReapply[i] = 0;
+                e.capCapped[i] = false;
+                apply = true;
+            } else if (e.capReapply[i] < kCaptionReapplyMax) {
+                ++e.capReapply[i];
+                apply = true;
+            } else if (!e.capCapped[i]) {
+                e.capCapped[i] = true;
+                KP_LOG(chView, "CAPTION reapply capped i=%d after %d tries", i, kCaptionReapplyMax);
+            }
+            if (apply) {
+                (void)guikit::setRect(tx, want.x, want.y, want.w, want.h);
+                if (g_probeCaption && moved && e.capLogs <= kMaxCaptionLogs) {
+                    hse::HseRect a = {};
+                    if (rdRect(tx, kTextRectOff, &a)) KP_LOG(chView, "CAPTION i=%d after text=(%d,%d,%d,%d)", i, a.x, a.y, a.w, a.h);
+                    else KP_LOG(chView, "CAPTION i=%d after text=(-1,-1,-1,-1)", i);
+                }
+            }
+        }
+        e.capBtn[i] = b;
+        e.capSeen[i] = true;
+    }
 }
 
 const char* rowUnit(int row) { return hse::inspIsRot(row) ? "deg" : "m"; }
@@ -2499,7 +2606,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_menu.init(api);
     embedgui::g_log = embedLog;
     embtex::g_log = embedLog;
-    KP_LOG(chMain, "holster-editor 0.4.2-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
+    KP_LOG(chMain, "holster-editor 0.4.3-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
            static_cast<unsigned>(sizeof kHseViewGui));
     const bool cfgOk = g_cfgClient.connect(), menuOk = g_menu.connect();
     if (!cfgOk || !menuOk) {

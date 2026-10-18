@@ -1,0 +1,173 @@
+F3_R1 RECON: caption text rect for a CSWGuiButton (Steam swkotor2, vanilla 6a522e71)
+Contract: recon. Read-only. Static dumps + objdump of swkotor2_vanilla_6a522e71.exe.
+
+D = /home/ethansm/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71/decomp
+ASM = objdump -d of the same exe (VA addresses below).
+Anchor key: "dc:N" = $D/<file>.c line N. "asm:ADDR" = objdump VA.
+
+======================================================================
+0. CORRECTION TO THE BRIEF: the thiscall ECX is hidden by the decompiler
+======================================================================
+Asm shows the three sub-objects are EMBEDDED (vtable pointer at their +0), not pointers:
+  - button+0x70  = border  B    (vt[1] call: asm:419f05-419f0b, ECX=this+0x70 asm:419efc)
+  - button+0xe8  = hilight H    (vt[1] call: asm:419f1d-419f26, ECX=this+0xe8 asm:419f14)
+  - button+0x160 = caption T    (vt[1] call: asm:419f61-419f6a, ECX=this+0x160 asm:419f5b)
+So dc:16 "*(param_1+0x70)+4" is vt[1] of an embedded object.
+FUN_00414d80 is called with ECX = B or H (asm:419f35, asm:419f45).
+FUN_00414980 is called with ECX = (its caller) + 0x14 (asm:414d8c-414d8f, asm:414d9b-414d9e).
+So inside GetInnerExtent, +0x6c/+0x70/+0x18/+0x1c/+0x54 are offsets relative to B or H.
+
+======================================================================
+1. PSEUDO-CODE
+======================================================================
+(a) CSWGuiButton::SetExtent(btn, r)   [dc: 41/00419ed0.c:3-23, thiscall ret 4]
+    btn.rect = *r                                  // btn+4..+0x10   dc:12-15, asm:419ed0-419ef2
+    B.vt[1](r)                                     // border sets its rect   dc:16, asm:419f05-419f0b
+    H.vt[1](r)                                     // hilight sets its rect  dc:17, asm:419f1d-419f26
+    inH = GetInnerExtent(H)                        // ECX=btn+0xe8  dc:18, asm:419f35
+    inB = GetInnerExtent(B)                        // ECX=btn+0x70  dc:19, asm:419f45
+    cap = Intersect(out=cap, inB, inH)             // dc:20, asm:419f4f
+    T.vt[1](&cap)                                  // T = btn+0x160 dc:21, asm:419f6a
+
+(b) Intersect(out, a, b)   [dc: 40/0040e360.c:3-40, cdecl ret 0]
+    out.x = max(a.x, b.x)                          // dc:11-16
+    out.y = max(a.y, b.y)                          // dc:17-22
+    out.w = min(a.x+a.w, b.x+b.w) - out.x          // dc:23-28, 37
+    out.h = min(a.y+a.h, b.y+b.h) - out.y          // dc:29-34, 38
+    No clamp: disjoint rects give negative w/h.
+
+(c) GetInnerExtent(O, out)  [dc: 41/00414d80.c:3-105, thiscall ret 4; O = B or H]
+    G = GetBorderDim(O+0x14)                       // dc:22, asm:414d8c
+    if G == 0:                                     // dc:23
+        if O+0x6c==0 || O+0x70==0 || O+0x10==0 || O+0xc==0:   // dc:24-25 (NOTE: 0x10,0xc checked here too)
+            a = b = s = 0                          // dc:26-28
+        else:
+            b = (O+0x6c).vt[+0xc]()                // dc:31, 32 -> "b"
+            a = (O+0x6c).vt[+0x10]()               // dc:32      -> "a"
+            (O+0x70).vt[+0xc]()                    // dc:33, result discarded
+            s = (O+0x70).vt[+0x10]()               // dc:34      -> "s" (divisor)
+    else:
+        a = b = s = G                              // dc:38-40 (uniform path)
+    M = O+0x18
+    T = (O+0x1c != 0) ? O+0x1c : M                 // dc:84-90
+    mG = min(M, G)                                 // dc:91-99 (two G calls; same value)
+
+    // x axis (X=O+4, W=O+0xc)
+    iw = W - 2a                                    // dc:42
+    qx = (s != 0) ? iw / s : 0                     // dc:43-48
+    if iw < 1 || (qx == 0 && iw < s/2):            // dc:49
+        xi = X + W/2 ; wi = 0                      // dc:50-51
+    else:
+        xi = X + a   ; wi = iw                     // dc:54, 61 (iw>=1 so no clamp needed)
+
+    // y axis (Y=O+8, H=O+0x10)
+    ih = H - 2b                                    // dc:63
+    qy = (s != 0) ? ih / s : 0                     // dc:64-69
+    if ih < 1 || (qy == 0 && ih < s/2):            // dc:70
+        yi = Y + H/2 ; hi = 0                      // dc:71-72
+    else:
+        yi = Y + b   ; hi = ih                     // dc:75, 82
+
+    out.x = xi - mG                                // dc:100
+    out.y = yi - T                                 // dc:101
+    out.w = wi + 2*mG                              // dc:102
+    out.h = hi + 2*T                               // dc:103
+
+(d) GetBorderDim(X)   [dc: 41/00414980.c:3-19, fastcall ECX = X]  (name: findings/B0_map_all.tsv:86 says CSWGuiBorderParams::GetBorderDim)
+    if *(X+0) != 0: return *(X+0)                  // dc:9-16, asm:414990-41499d
+    Y = *(X+0x54)                                  // = O+0x68 (asm:4149a5-4149ae)
+    if Y && *(Y+0x6c) && *(Y+0x70):                // asm:4149b1-4149c1
+        return (*(Y+0x6c)).vt[+0xc]()              // dc:12; asm:4149c3-4149e1 -> corner width
+    return 0
+
+(e) CSWGuiText vt[1] = SetRect   [dc: 41/00417780.c:3-16, thiscall ret 4; ECX = T]
+    T.rect = *r                                    // T+4..+0x10   dc:6-9, asm:417787-41779d
+    if T.+0x14 != 0:                               // R = T+0x14   dc:10, asm:4177a9
+        R.vt[+0x64](r->x, r->y)                    // dc:11, asm:4177af-4177cc  (slot 25)
+        R.vt[+0x74](r->w, r->h)                    // dc:12, asm:4177d1-4177e8  (slot 29)
+        Relayout(T)                                // dc:13 -> FUN_00417800
+
+    FUN_00417800(obj)   [dc: 41/00417800.c:3-11, fastcall]
+        if obj+0x14 && obj+0x10 && obj+0xc:        // dc:6-7
+            (obj+0x14).vt[+0x4c](-1)               // dc:8 (slot 19)
+
+(f) String path (CSWGuiText::SetText, db_functions.tsv:42: ECX = T+0x18)   [dc: 41/00416e30.c:3-16]
+    SetText(S, str):                               // S = T+0x18 (per db note, not re-derived)
+        FUN_007337c0(str)                          // assign string (not decoded)   dc:8
+        S.+8 = -1                                  // dc:9
+        Z = S.+0x50                                // dc:10
+        if Z && Z.+0x14 (=R2):                     // dc:10
+            R2.vt[+0x18](chars)                    // dc:12 -> renderer draws chars
+            Relayout(S)                            // dc:13
+
+======================================================================
+2. FIELD OFFSET TABLE
+======================================================================
+Button (btn):
+  +0x04 rect.x  +0x08 rect.y  +0x0c rect.w  +0x10 rect.h     dc:12-15 (SetExtent)
+  +0x70 B (border, embedded)                                 asm:419efc
+  +0xe8 H (hilight, embedded)                                asm:419f14
+  +0x160 T (caption text, embedded)                          asm:419f5b
+
+Border/hilight O (embedded; O = btn+0x70 or btn+0xe8):
+  O+0x00 vtable ptr                                          asm:419f05 (vt load)
+  O+0x04..+0x10 rect (written by O.vt[1]; read by GetInnerExtent dc:42-82)
+  O+0x14 X = CSWGuiBorderParams-named receiver (findings/B0_map_all.tsv:86, unverified name)
+  X+0x00 fixed dimension override (nonzero => uniform G)     dc:9-16 (GetBorderDim)
+  X+0x54 = O+0x68 Y pointer (texture set)                    asm:4149a5
+  Y+0x6c pointer P (corner image); P.vt[+0xc]() = corner width G  asm:4149c9-4149e1
+  O+0x18 M margin (x side, capped at G via min)              dc:84, 91-102
+  O+0x1c T margin (y/h side; falls back to M if 0)           dc:85-90, 101-103
+  O+0x6c pointer A (fallback image: vt[+0xc]=b, vt[+0x10]=a) dc:31-32
+  O+0x70 pointer Q (fallback image: vt[+0x10]=s divisor)     dc:33-34
+
+Caption text T (btn+0x160):
+  T+0x04..+0x10 rect                                         dc:6-9
+  T+0x14 R pointer (renderer; vt+0x64=setPos x,y; vt+0x74=setSize w,h; vt+0x4c(-1)=relayout)  dc:10-13
+  T+0x18 S (string holder; SetText this)                     db_functions.tsv:42 (+ dc:41/00416e30.c:8-9 uses this+8)
+  S+0x50 Z pointer ; Z+0x14 R2 renderer (vt+0x18 = push chars)  dc:41/00416e30.c:10-12
+
+======================================================================
+3. WORKED EXAMPLE
+======================================================================
+Setup: button rect r = (0, 0, 200, 34). Normal case: X+0 == 0, corner width G = c > 0,
+so both B and H take the uniform path (a = b = s = c). Assume M = T = 0 (margin fields NOT verified).
+  x: iw = 200 - 2c ; xi = c ; wi = 200 - 2c            (qx != 0 for c <= 200-2c)
+  y: ih = 34 - 2c  ; if ih < c/2 -> yi = 17, hi = 0    (zero-height branch)
+                    else          -> yi = c,  hi = 34-2c
+  Intersect(inB, inH): both identical here, so caption = (c, c, 200-2c, 34-2c)
+                                                       unless the zero-height branch fires.
+
+  c = 4  -> caption (4, 4, 192, 26)
+  c = 8  -> caption (8, 8, 184, 18)
+  c = 16 -> caption (16, 17, 168, 0)     ih = 2 < 8 -> zero height at y=17
+  c = 20 -> caption (20, 17, 160, 0)     ih = -6 -> zero height
+
+With M > 0 (unverified): out.x = c - min(M,c), out.w = (200-2c) + 2*min(M,c); y/h use T fully.
+Corner width c is the only input that matters in the normal path. Edge size e is NOT used
+unless c = 0 (fallback path, divisor = Q.vt[+0x10]).
+Fallback c = 0: caption = (a, b, 200-2a, 34-2b) with a = A.vt[+0x10](), b = A.vt[+0xc](),
+  thresholds on divisor s = Q.vt[+0x10](), and no x-margin (mG = 0).
+Null pointers with G = 0: a = b = s = 0, inner = (O.x, O.y - T, O.w, O.h + 2T): full rect, not zero.
+
+======================================================================
+4. NOTES AND QUIRKS
+======================================================================
+- x uses min(M,G) (margin capped at corner width); y uses T uncapped. Asymmetric. dc:91-103.
+- The fallback path (G = 0) gives mG = 0, so O+0x18 has no effect there.
+- Discarded call at dc:33 (Q.vt[+0xc]) may have side effects.
+- Intersect is not clamped; a disjoint H/B produces negative w/h passed to T.vt[1].
+- FUN_00417800 is called with ECX not shown by the decompiler; ECX=obj assumed (not checked in asm).
+- name_map.tsv:79 "GetDimension returns [border+0x14] if non-zero else corner image width" matches the asm.
+- name_map.tsv:84 GetInnerExtent, name_map.tsv:117 SetExtent: names consistent with the code.
+
+======================================================================
+5. CONFIDENCE
+======================================================================
+Asm-verified: embedded-object model, ECX per call site, rect offsets, GetBorderDim receiver
+  (X = O+0x14, Y = X+0x54), SetRect (T+4..+0x10 and R calls), SetExtent call order.
+Decompile-only (arithmetic not checked in asm): GetInnerExtent body after dc:22, Intersect.
+Not verified: values of O+0x18 / O+0x1c, whether R (T+0x14) == R2 (S+0x50 -> +0x14),
+  names of vt slots 0x4c/0x64/0x74/0x18, identity of S's string storage.
+
+OPEN: What values do border/hilight O+0x18 (M) and O+0x1c (T) hold at runtime (who writes them), and is T+0x14 the same renderer as S+0x50->+0x14?

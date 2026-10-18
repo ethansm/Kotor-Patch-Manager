@@ -1,0 +1,44 @@
+F3 V1 calibration (recon): does the engine caption model (caption-fix 0, no fix) reproduce the 0.4.2-dev button-caption symptoms?
+
+Inputs
+- Screenshot: /home/ethansm/Documents/Screenshot_2026-10-18_15-52-06.png. File size is 2700x1213 px, not 3840x1600 (see caveat 1).
+- Symptoms: research/holstered_weapons/ux_v3/F2_H3_screens.txt, NEW rows B1-B6 (box h 34). Offset = glyph centre - box centre.
+- Renders (scratch): fix0.png/.json and fix0_nodrop.png/.json at 3840x1600; s2700_fix0.png/.json and s2700_fix0_nodrop.png/.json at 2700x1213.
+- Glyph ink: teal predicate (TEAL_TEXT 26,178,140), counted inside each box interior, box-relative.
+- Crop: shot_left_crop.png (screenshot) and model2700_nodrop_crop.png, both in the scratch dir.
+
+Model numbers (2700x1213: text_scale 1.5, line_h 24; identical for every 34-unit button)
+- Inner rect: 34 - 2*16 = 2 px, so the engine fallback gives a centred rect of h = 2*m = 18 at box.y+8.
+- 18 < line_h 24, so the caption is dropped. text_y0 = box.y+5.
+- Nodrop ink rows: box.y+13 .. box.y+25 (13 rows). Glyph centre +19 vs box centre +16.5, offset +2.5.
+- 3840x1600 model: line_h 32, ink +11..+28 (18 rows), offset +3.0. The screenshot ink is 13-14 rows, so the 2700 render is the matching scale.
+
+Button-by-button table (fix0 = caption-fix 0)
+| Button group | Screenshot symptom (NEW) | Model fix0 | Model nodrop (ink rel box, glyph offset) | Match (fix0) |
+|---|---|---|---|---|
+| B1 left, empty (291-324) | absent (box visibly empty in crop) | dropped, text_y0 +5 | ink +13..+25, off +2.5 (would show text) | Y (by drop rule) |
+| B2 left "R...<" (387-420) | ink 417-430, off +20.0, on seam | dropped | off +2.5 (17.5 short) | N |
+| B2b left "-<" (483-516) | ink 508-522, off +15.5, on bottom edge | dropped | off +2.5 (13 short) | N |
+| B2c left "M..." (483-516) | ink ~513-527, off +20.5, on seam | dropped | off +2.5 (18 short) | N |
+| B3 top box 1 (227-260) | absent | dropped | off +2.5 (would show text) | Y (by drop rule) |
+| B4 top box 4 (227-260) | "..." 265-270, off +24.0, below box | dropped | off +2.5 (21.5 short) | N |
+| B5 bottom plain (1065-1098) | absent (box visibly empty in crop) | dropped | off +2.5 (would show text) | Y (by drop rule) |
+| B6 bottom selected (1065-1098) | absent | dropped | off +2.5 (would show text) | Y (by drop rule) |
+
+Tally: fix0 matches 4/8 (the absent groups only). It misses all 4 drawn-but-displaced groups. Nodrop places text inside the box and matches 0/8 on position.
+
+Summary
+1. The model explains absence only through its drop rule. Dropping the caption is the wrong cause for the 4 drawn captions, which the model removes entirely.
+2. Nodrop places the caption at +2.5. The screenshot places it at +15.5..+24 (seam or below box). The error is about 17 px.
+3. Implied text cell top for the screenshot captions: ink top minus 8 gives +22, +17, +22; ink bottom minus 20 gives +23, +19, +24, +23 (B4 via baseline). Median about +22.
+4. Change that matches: remove the drop for button captions and set text_y0 = box.y + box.h - line_h/2 (= box.y+22 at 1.5 scale). Predicted ink +30..+42, offset +19.5 (measured +15.5..+24, mean +20.0).
+5. Rejected: top-aligning at the caption rect (y0 = box.y+8) predicts offset +5.5, about 10-19 px too high.
+6. Crop check: captions "-<", "M...", "B..." and "R...<" sit on row seams, consistent with the +15..+24 rows. Empty boxes stay empty.
+
+Caveats
+1. The screenshot is 2700x1213, not 3840x1600. Its caption ink (13-14 rows) and box height (34) match the 2700 render.
+2. The mockup layout and sample strings differ from the screenshot (model top bar at y=300 vs 227; different left-column content). Mapping is by box class and geometry, not by button identity.
+3. The screenshot boxes B1, B3, B5, B6 look empty, so their "absent" state may be empty text rather than a drop. The model gives all 34 buttons sample strings.
+
+OPEN
+- Are the B1/B3/B5/B6 captions empty strings in the 0.4.2-dev build? If yes, the drop rule is not what hides them and should be removed for the other four.

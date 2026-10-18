@@ -1,0 +1,57 @@
+F3 R3 recon: reuse of scripts/character_page_mockup.py and scripts/equip3d_layout_mockup.py for PNG text and borders
+Run from repo root. Read-only recon; no source files edited.
+
+## 1. Function table
+
+name | file:line | signature | purpose | notes
+SX, SY (W, H) | character_page_mockup.py:42-43 | W, H = 3840, 1600; SX, SY = W/800, H/600 (4.8, 2.6667) | GUI-unit to px scale and canvas size | module globals read at call time; a caller can override L.SX / L.SY
+TEXT_K | character_page_mockup.py:80 | {"dialogfont16x16": 0.75, "dialogfont10x10": 1.03} | px per texel = TEXT_K * SY, gives 2.0 and 2.75 | screenshot-calibrated
+inst / _inst | character_page_mockup.py:97-103 | inst() -> pykotor Installation(GAME), lru_cache on _inst | Steam install handle | GAME = ~/.local/share/Steam/steamapps/common/Knights of the Old Republic II (line 37); lazy, so import never reads game files
+texture | character_page_mockup.py:107-120 | texture(name: str) -> PIL RGBA or None (lru_cache) | game texture loader: override .tpc, then override .tga, then texture packs; top row first | TPC flipped at line 120; TGA opened with PIL at line 114; used for font atlas and border textures
+tint | character_page_mockup.py:123-126 | tint(img: RGBA, col: (r,g,b) floats 0..1) -> RGBA | multiplies RGB by colour, keeps alpha | pure PIL; used for text and borders
+font | character_page_mockup.py:130-138 | font(name: str) -> (RGBA atlas, boxes list of 256 (x0,y0,x1,y1)) (lru_cache) | dialogfont glyph atlas and glyph boxes from TXI upperleft/lowerright | TXI from inst().texture(name).txi (line 132). Smoke test PASS: atlas 256x256 RGBA, 256 boxes, 'A' box (16,64,30,80)
+texel_widths | character_page_mockup.py:142-150 | texel_widths() -> {font name: 256 ints} (lru_cache) | glyph advances kFontTexW / kFont10TexW | BROKEN NOW: reads EffectNameTable.inc (line 144) and the regex at line 147 finds no match, so AttributeError. The arrays moved to patch_manager_mods/_shared_src/FontWidths.inc lines 3 and 22 (256 entries each, same regex matches both)
+tscale | character_page_mockup.py:153-155 | tscale(name: str) -> float = TEXT_K[name] * SY | px per font texel | none
+text_size | character_page_mockup.py:158-163 | text_size(name: str, s: str) -> (w_px, h_px) | width (DLL textPx semantics) and glyph height | calls texel_widths, so raises until texel_widths is fixed
+fit | character_page_mockup.py:166-171 | fit(name: str, s: str, max_px: float) -> str | cut text and add "..." to fit a width | calls text_size, so raises until fixed
+draw_text | character_page_mockup.py:174-190 | draw_text(canvas RGBA, name: str, s: str, rect_px: (x0,y0,x1,y1) in SCREEN px, align: int, col: (r,g,b) 0..1) -> None | draws glyphs by alpha_composite | align: low 2 bits 1 left, 2 centre, 3 right; 8 top; 32 bottom; neither means middle. Chars 256 and above use glyph 63. Canvas must be RGBA. Calls text_size, so raises until fixed
+px | character_page_mockup.py:193-195 | px(rect_gui: (l,t,w,h)) -> (x0,y0,x1,y1) px | converts a GUI-unit rect to screen px | uses SX, SY
+paste_stretched | character_page_mockup.py:198-202 | paste_stretched(canvas RGBA, img RGBA, box_px) -> None | LANCZOS resize then alpha_composite | skips boxes under 1 px
+draw_border | character_page_mockup.py:205-230 | draw_border(canvas RGBA, b: dict, rect_gui: (l,t,w,h)) -> None | fill, then 4 edges, then 4 corners, all tinted by b["COLOR"] | b keys: FILL, EDGE, CORNER (texture names), DIMENSION (GUI units), COLOR. Missing textures are skipped. NOT smoke-tested
+_border | character_page_mockup.py:234-239 | _border(gff struct or None) -> dict | converts a BORDER GFF struct into the dict draw_border takes | needs a pykotor GFF struct, so only useful with load_gui
+load_gui | character_page_mockup.py:242-264 | load_gui() -> (root_border dict, [control dicts]) | reads override/character_p.gui and dialog.tlk strings | needs the game install; a reference for real GUI data, not for a generic helper
+render | character_page_mockup.py:456-569 | render(root, ctls, panel_items, names_font, tooltip=False, title="") -> RGBA 3840x1600 | full character-page renderer | the only RGBA canvas creation in this file is Image.new("RGBA", (W, H)) at line 457; overlay at line 465; buffhud_circle.tga at line 504. Too coupled to reuse directly
+main (character) | character_page_mockup.py:601-635 | main(): argv OUTDIR [--names-font=...] | PNG save through PIL: im.save at line 630, crop save at line 632 | guarded by __main__ at line 636
+load (equip) | equip3d_layout_mockup.py:44-50 | load() -> {tag: (l,t,w,h)} | reads override/equip_p.gui rects | no text or border helpers
+layout (equip) | equip3d_layout_mockup.py:53-64 | layout(base, name) -> dict | applies candidate rect shifts (A, R, G) | none
+draw_rects (equip) | equip3d_layout_mockup.py:67-81 | draw_rects(im, rects, changed, mapper) -> RGBA | outlined rectangles plus tag labels | labels use PIL default bitmap font (line 80), NOT the game dialogfont; overlay is Image.new RGBA at line 68
+main (equip) | equip3d_layout_mockup.py:84-106 | main(): argv OUTDIR [screenshot.png] [--calib=...] | PNG save: im.convert("RGB").save at lines 100 and 106 | canvas Image.new("RGB", (3840,1600), (10,20,22)) at line 97; guarded at line 109
+
+Answer to Q1-Q3: text is font + draw_text (needs texel_widths fix); borders are texture + tint + draw_border; canvas and PNG are PIL (Image.new / Image.save). No hand-written PNG writer in either file.
+
+## 2. Interpreter and environment (Q4)
+
+- Shebang on both files, line 1: #!/usr/bin/env python3. Both import PIL and pykotor at top level (character_page_mockup.py:29, 31-35; equip3d_layout_mockup.py:19-20).
+- System python3 (/usr/bin/python3): import PIL FAIL, import pykotor FAIL, numpy FAIL. Running the script directly as ./scripts/... uses this and fails.
+- Repo venv .venv/bin/python: import PIL OK (PIL 12.3.0), import pykotor OK. Run as: .venv/bin/python scripts/character_page_mockup.py OUTDIR
+- k1port venv (~/Games/KOTOR2_Mod_Workspace/venvs/k1port, pykotor==2.3.12 per patch_manager_mods/k1_port/README.md:11): import PIL FAIL. Not usable for these two scripts.
+- No venv name and no sys.path insert in either mockup file. The README note is patch_manager_mods/k1_port/README.md:75: numpy tools run with the repo .venv.
+- Sibling import works from scripts/: scripts/mirror_character_page.py:46 does import character_page_mockup as L. From another directory, add sys.path.insert(0, str(Path(__file__).resolve().parent)) as scripts/04_merge_modules.py:27 does. Do not run the new script with python -I (scripts/bug_investigate.py:93 notes that -I drops the script dir from sys.path).
+
+## 3. Import side effects (Q5)
+
+- character_page_mockup.py:30 and equip3d_layout_mockup.py:21: logging.disable(logging.CRITICAL) runs on import, which silences logging in the importing process.
+- No argparse at module level. No top-level calls other than constants and def/class. main() runs only under the __main__ guard (character :636, equip3d :109).
+- Importing reads no game files: inst, texture, font and texel_widths are all lazy. Confirmed by the smoke test below.
+- The smoke test set PYTHONDONTWRITEBYTECODE=1 and python -B, so no __pycache__ was written.
+
+## 4. Smoke test (repo .venv, sys.path set to scripts/)
+
+- import character_page_mockup: PASS (SX 4.8, SY 2.6667, TEXT_K as in row 2)
+- font('dialogfont16x16'): PASS (256x256 RGBA, 256 boxes)
+- text_size / draw_text: FAIL, AttributeError at character_page_mockup.py:147 (texel_widths regex). Not a font problem: the arrays were moved (commit cb19d4e in Odyssey tools repo, FontWidths.inc generated by scripts/gen_effect_name_table.py, TextFit.h line 12 includes it)
+- draw_border: not tested
+
+## 5. Fix pointer (not applied; out of write scope)
+
+- Repoint texel_widths() at character_page_mockup.py:144 from EffectNameTable.inc to patch_manager_mods/_shared_src/FontWidths.inc. The existing regex then matches both arrays (256 entries each, verified).

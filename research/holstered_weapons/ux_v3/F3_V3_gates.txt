@@ -1,0 +1,7 @@
+F3 V3 holster-editor gates on current tree (repo KOTOR-II). One line per gate: command -> result.
+1. python3 -u scripts/run_tests.py hse_view view_drag hse_layout_v3 reset_icon slider_art guikit common_contract menu_ui_logic -> PASS (43 passed, 0 failed, 0 error; exit 0)
+2. python3 -u scripts/run_tests.py -k holster_ -> FAIL (14 passed, 1 failed, 0 error; exit 1). Failing: py:scripts/test_holster_editor_mockup.py, "ModuleNotFoundError: No module named 'PIL'" (system python3 has no PIL; run_tests.py:325 runs py: items with sys.executable)
+3. python3 scripts/check_raw_addresses.py -> PASS (FAIL=0 WARN=21 INFO=18 PASS=1; exit 0)
+4. python3 scripts/build_check.py --mod holster_editor_src -> PASS (FAIL=0 WARN=0 PASS=1; exit 0)
+5. .venv/bin/python scripts/test_holster_editor_mockup.py -> PASS (Ran 9 tests, OK; exit 0)
+Summary: 4 of 5 gates pass. Gate 2 has 1 failing item, caused by the interpreter (PIL missing from system python3); the same file passes 9/9 under .venv/bin/python.

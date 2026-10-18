@@ -1,0 +1,57 @@
+F3_V2 caption-fix check
+Question: with caption fix (caption rect = engine x/w, button y/h), is every text button caption visible and centred in its box?
+Renders: scripts/holster_editor_mockup.py --panes <R> --mode engine-model --caption-fix 1 --crop
+Scratch: render/V2/fix1_<R>.png, fix1_<R>.json, fix1_table.md (all 34 buttons per res), zoom_3840_buttons.png
+
+== Counts (buttons = kind "button", 34 per res) ==
+
+| res       | buttons | drawn | undrawn | off-centre (>3px) | caption x-off (>3px) | "..." shown | flagged rows |
+|-----------|---------|-------|---------|-------------------|----------------------|-------------|--------------|
+| 3840x1600 | 34      | 26    | 8       | 0                 | 0                    | 14 (6 text + 8 reset) | 14 |
+| 3440x1440 | 34      | 26    | 8       | 0                 | 0                    | 14 (6 text + 8 reset) | 14 |
+| 1920x1080 | 34      | 34    | 0       | 0                 | 0                    | 4 (text)    | 4            |
+
+Centring method: dy = (text_y0 + line_h/2) - (box_y + box_h/2); line_h from JSON (32 at 3840 and 3440, 16 at 1920).
+Result: dy = 0.0 px for every drawn button. dx = caption-rect centre - box centre = 0.0 px for every button.
+Limit: this checks the renderer's own geometry, not engine font metrics. JSON has no text width, so horizontal glyph centring inside the caption rect is eyeballed only.
+
+== Offending items ==
+
+| res  | i                      | text            | shown    | box x,y,w,h     | caption x,y,w,h | issue |
+|------|------------------------|-----------------|----------|-----------------|-----------------|-------|
+| 3840 | 8                      | Upper back      | Upper... | 776,517,142,34  | 783,517,128,34  | cut (bone) |
+| 3840 | 13                     | This weapon     | This...  | 776,613,142,34  | 783,613,128,34  | cut |
+| 3840 | 14                     | All vibroswords | All v... | 920,613,142,34  | 927,613,128,34  | cut |
+| 3840 | 15                     | This body       | This...  | 1064,613,142,34 | 1071,613,128,34 | cut |
+| 3840 | 22                     | Roll/Turn       | Roll/T...| 1708,357,162,34 | 1715,357,148,34 | cut |
+| 3840 | 24                     | <>              | ...      | 1915,357,34,34  | 1923,357,18,34  | text hidden, only "..." |
+| 3840 | 33,35,40,45,50,55,60,65| R (reset)       | ...      | 30x30 each      | 18x30 each      | not drawn (drop rule) |
+| 3440 | 8                      | Upper back      | Uppe...  | 154,517,129,34  | 161,517,115,34  | cut (bone) |
+| 3440 | 13                     | This weapon     | This...  | 154,613,129,34  | 161,613,115,34  | cut |
+| 3440 | 14                     | All vibroswords | All...   | 285,613,129,34  | 292,613,115,34  | cut |
+| 3440 | 15                     | This body       | This...  | 416,613,129,34  | 423,613,115,34  | cut |
+| 3440 | 17                     | Revert          | Reve...  | 281,653,129,34  | 288,653,115,34  | cut (keyword) |
+| 3440 | 24                     | <>              | ...      | 1887,357,34,34  | 1895,357,18,34  | text hidden, only "..." |
+| 3440 | 33,35,40,45,50,55,60,65| R (reset)       | ...      | 30x30 each      | 18x30 each      | not drawn (drop rule) |
+| 1920 | 8                      | Upper back      | Uppe...  | 87,427,70,34    | 94,427,56,34    | cut (bone) |
+| 1920 | 13                     | This weapon     | This...  | 87,523,70,34    | 94,523,56,34    | cut |
+| 1920 | 14                     | All vibroswords | All...   | 159,523,70,34   | 166,523,56,34   | cut |
+| 1920 | 15                     | This body       | This...  | 231,523,70,34   | 238,523,56,34   | cut |
+
+Keyword check (Save, Revert, Reset, Move, Depth, Tilt, stances, bones):
+- Save, Reset, Move (>Move<), Depth, Tilt, Idle/Walk/Run/Alert/Combat: fit at all three res.
+- Revert: fits at 3840 and 1920, cut to "Reve..." at 3440.
+- Bones: "Upper back" is cut at all three res. Back, Pelvis, R hip, L hip fit.
+
+== Undrawn reset squares ==
+- 8 items, box 30x30, text "R". At 3840 and 3440 they are not drawn.
+- Cause: place_caption drops a button when rect[3] < line_h (30 < 32). scripts/holster_editor_mockup.py:195-196. The render log prints dropped=8 for both.
+- At 1920 (line_h 16) they are drawn with "R".
+- Whether the engine shows these as art or text is not tested here.
+
+== Renderer observations ==
+- Text fit limit is box w - 8 (scripts/holster_editor_mockup.py:290), not the caption rect width. Item 13 at 3840: limit 134 px, caption rect 128 px. Text can run up to 6 px past its caption rect.
+- Eyeball, 3840 full PNG and 2x zoom of button column: captions look vertically centred. Save, Revert, Reset, Right/Left: Vibrosword and hip buttons read cleanly. Upper..., This..., All v... are visibly cut.
+
+== Verdict ==
+PARTIAL. Centring passes at all three res (0 off-centre, 0 caption x-offset). Visibility fails: 4 (1920) to 6 (3840, 3440) text captions cut with "...", plus "<>" shows only "..." at 3840 and 3440.

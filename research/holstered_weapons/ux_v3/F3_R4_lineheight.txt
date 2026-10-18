@@ -1,0 +1,61 @@
+F3 / R4: line height h of dialogfont16x16 caption at 3840x1600 (Steam swkotor2.exe)
+Scope: read-only static recon. No live runs, no Ghidra headless. Decomp dir: /home/ethansm/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71/decomp/47/
+Scratch probe: /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/a775d339-e9a9-40e4-b0e9-1d4f5f209b60/scratchpad/R4/r4_probe.py (pykotor TXI read + PE constant read)
+
+== 1. Draw line-height expression (0047b500.c)
+- :113  FUN_00479b10() runs first and rebases this+0x54 (see section 3).
+- :120-123, :127  x and y normalisers come from the display tables DAT_00a309cc (width) and DAT_00a309ce (height).
+- :135-136 and :152-156  per-line step = font(+4) * this+0x54 * K / H, with K = _DAT_0098ba38 and H = the height table entry.
+- :130-133  centre branch start offset = (B - h*lines) / (H * _DAT_00987490). The divisor is probably 2.0 (not verified).
+- :134  while (local_50 < _DAT_00986b38) drops lines from the top. For one line this fires only when B < h.
+- Units: px (inferred). The y terms are divided by H, and the box height B at this+0x10 is in px (F2_H1 sec. 3).
+- Result: h = font(+4) * this+0x54 * K.
+
+== 2. Constants (read from swkotor2.exe, image base 0x400000, section .rdata)
+- K = _DAT_0098ba38 = double 100.0 at VA 0x98BA38 (file bytes 00 00 00 00 00 00 59 40). The Ghidra dword view reads 0.0 here, so do not use a float32 read. Vanilla backup exe is identical.
+- VA 0x98C014 = float32 0.5 (confirmed; used by 00479ab0.c:16).
+- _DAT_00987490, _DAT_00986b38, _DAT_00986b50 also read 0.0 as float32. They are likely doubles too (unverified).
+
+== 3. Text scale
+- 00479ab0.c:16  global scale = 1.0 + 0.5 * ((W - 1022) >> 10), W = DAT_009f42a4.
+  At W = 3840: (2818 >> 10) = 2, so scale = 2.0. Steps: 1.0 for W < 2046, 1.5 for 2046-3069, 2.0 for 3070-4093.
+- 00479b10.c:10-13  if global != this+0x5c: this+0x5c = global, and this+0x54 = (new / old this+0x5c) * this+0x54.
+  So this+0x54 is a rebase factor against a cached scale.
+- 0047f320.c:183  writes this+0x54 = 0x3f800000 (1.0) at build time.
+- 0047f320.c:277  writes this+0x5c = 0 on another object path. The init value for the caption object is NOT pinned.
+  If the cache starts at 1.0, this+0x54 becomes 2.0 at 3840. If the cache starts at the live global, this+0x54 stays 1.0.
+
+== 4. TXI dialogfont16x16 (pykotor Installation, Steam install)
+- fontheight 0.16, baselineheight 0.16, texturewidth 2.56, numchars 256, spacingR 0.0, spacingB 0.0, caretindent -0.01, mipmap 0, filter 0.
+- font(+4) = fontheight is NOT verified in code. baselineheight has the same value (0.16), so the result does not depend on which field it is.
+
+== 5. Computation
+- Assumes font(+4) = 0.16, this+0x54 = 2.0, output in px.
+- h = 0.16 * 2.0 * 100.0 = 32.0 px at 3840x1600.
+- Cell cross-check: 0.16 * 100 = 16 texels (one 16x16 glyph cell). scripts/character_page_mockup.py:80 uses TEXT_K 0.75; times SY = 1600/600 = 2.667 gives 2.0 px/texel (:13). 16 texels * 2.0 px = 32 px. Consistent.
+- Measured cap heights (F2_H3_screens.txt): button captions 14-15 px, label caps 18 px. A 9-texel cap at 2.0 px/texel = 18 px. This supports 32 px over 16 px (a 16 px line would give a cap near 9 px).
+- Alternative A: this+0x54 stays 1.0, so h = 16.0 px.
+- Alternative B: if the scale were SY = 8/3, h = 42.7 px. This looks like the source of the "~42-unit font cell" in F2_H1 sec. 3. 00479ab0.c gives 2.0, not 2.667, so 42.7 is not the expected value.
+
+== 6. Consequences for the F2 chain
+- F2_H3_screens.txt measured the 34-unit boxes as 34 px outer. Centre-branch drop (:134) needs B < h. 34 px vs 32 px is not below, so no single-line drop.
+- If the box were really 34 GUI units (about 91 px), there is still no drop.
+- So the K5 drop in F2_H1 sec. 3 does NOT explain invisible captions in 34-px boxes at 3840x1600 with h = 32. The cause of the invisible captions is still open.
+- The "34 units" wording in F2_H3 conflicts with its px measurements. Check the screenshot pixel size before using either.
+
+== 7. Anchors
+- decomp/47/0047b500.c:113, :120-123, :127, :130-136, :152-156, :188-199
+- decomp/47/00479ab0.c:16
+- decomp/47/00479b10.c:10-13
+- decomp/47/0047f320.c:183, :277
+- swkotor2.exe VA 0x98BA38 (f64 100.0), VA 0x98C014 (f32 0.5)
+- scripts/character_page_mockup.py:13, :80
+- research/holstered_weapons/ux_v3/F2_H3_screens.txt (caption and label cap heights)
+- research/holstered_weapons/ux_v3/F2_H1_text_engine.txt:23-29 (42-unit cell claim and V3 K5 drop)
+
+== 8. Open
+- Does the caption object's this+0x54 reach 2.0 at 3840? It depends on the this+0x5c cache init (0047f320.c path for captions not dumped). If it does not, h = 16 px.
+- Unverified: font(+4) = fontheight, and _DAT_00987490 = 2.0.
+- Next check (not run): dump the caption-object constructor path that writes this+0x5c, and the font load routine that fills font+4.
+
+Verdict: PARTIAL. Formula (0047b500.c:135-136), scale 2.0 (00479ab0.c:16) and K = 100.0 are confirmed. h = 32.0 px is conditional on this+0x54 = 2.0 and font(+4) = 0.16, which are not pinned.
