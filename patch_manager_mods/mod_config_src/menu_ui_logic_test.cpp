@@ -342,7 +342,8 @@ static void test_item_table_full_and_bad_pages() {
     int p = pt.addPage();
     Rect r = {10, 10, 20, 10};
     for (int i = 0; i < kMaxItems; ++i) KT_CHECK_EQ(pt.addItem(p, BUTTON, nullptr, i, r), i);
-    KT_CHECK_EQ(pt.addItem(p, LABEL, nullptr, 0, r), -1);   // twenty-fifth item
+    KT_CHECK_EQ(kMaxItems, 80);                              // HW-UX3 L0a: cap raised from 40 to 80
+    KT_CHECK_EQ(pt.addItem(p, LABEL, nullptr, 0, r), -1);   // 81st item refused
     KT_CHECK_EQ(pt.itemCount(p), kMaxItems);
     KT_CHECK_EQ(pt.addItem(9, BUTTON, nullptr, 0, r), -1);  // page not added
     KT_CHECK_EQ(pt.addItem(-1, BUTTON, nullptr, 0, r), -1);
@@ -424,6 +425,83 @@ static void test_can_truncate() {
     KT_CHECK(!canTruncate(allOurs, 4, 1, nullptr, &calls));    // null predicate
 }
 
+// ---------------------------------------------------------------- description split
+static bool rectIs(const Rect& r, int x, int y, int w, int h) { return r.x == x && r.y == y && r.w == w && r.h == h; }
+
+static void test_split_clamp() {
+    KT_CHECK_EQ(clampSplit(0), 0);
+    KT_CHECK_EQ(clampSplit(-3), 0);
+    KT_CHECK_EQ(clampSplit(1), kSplitMin);
+    KT_CHECK_EQ(clampSplit(599), kSplitMin);
+    KT_CHECK_EQ(clampSplit(600), 600);
+    KT_CHECK_EQ(clampSplit(725), 725);
+    KT_CHECK_EQ(clampSplit(850), 850);
+    KT_CHECK_EQ(clampSplit(851), kSplitMax);
+    KT_CHECK_EQ(clampSplit(5000), kSplitMax);
+}
+
+static void test_split_vanilla_rect() {
+    const Rect vanilla = {294, 134, 232, 336};
+    DescSplit off = splitDesc(vanilla, 0);                        // 0 -> unchanged: both parts are the whole rect
+    KT_CHECK(rectIs(off.preview, 294, 134, 232, 336) && rectIs(off.desc, 294, 134, 232, 336));
+    DescSplit a = splitDesc(vanilla, 700);                        // gap 6, desc 101 (30 %), preview 229
+    KT_CHECK(rectIs(a.preview, 294, 134, 232, 229));
+    KT_CHECK(rectIs(a.desc, 294, 369, 232, 101));
+    DescSplit lo = splitDesc(vanilla, 600);                       // desc 134 (40 %), preview 196
+    KT_CHECK(rectIs(lo.preview, 294, 134, 232, 196));
+    KT_CHECK(rectIs(lo.desc, 294, 336, 232, 134));
+    DescSplit hi = splitDesc(vanilla, 850);                       // desc 50 (15 %), preview 280
+    KT_CHECK(rectIs(hi.preview, 294, 134, 232, 280));
+    KT_CHECK(rectIs(hi.desc, 294, 420, 232, 50));
+}
+
+static void test_split_out_of_range_clamps() {
+    const Rect vanilla = {294, 134, 232, 336};
+    DescSplit one = splitDesc(vanilla, 1), lo = splitDesc(vanilla, 600);
+    KT_CHECK(rectIs(one.preview, lo.preview.x, lo.preview.y, lo.preview.w, lo.preview.h) && rectIs(one.desc, lo.desc.x, lo.desc.y, lo.desc.w, lo.desc.h));
+    DescSplit big = splitDesc(vanilla, 5000), hi = splitDesc(vanilla, 850);
+    KT_CHECK(rectIs(big.preview, hi.preview.x, hi.preview.y, hi.preview.w, hi.preview.h) && rectIs(big.desc, hi.desc.x, hi.desc.y, hi.desc.w, hi.desc.h));
+    DescSplit neg = splitDesc(vanilla, -3);                       // negative = off
+    KT_CHECK(rectIs(neg.preview, 294, 134, 232, 336) && rectIs(neg.desc, 294, 134, 232, 336));
+}
+
+static void test_split_zero_area() {
+    const Rect zw = {10, 20, 0, 100}, zh = {10, 20, 100, 0}, neg = {5, 6, -5, -5}, none = {0, 0, 0, 0};
+    DescSplit a = splitDesc(zw, 700), b = splitDesc(zh, 700), c = splitDesc(neg, 700), d = splitDesc(none, 850);
+    KT_CHECK(rectIs(a.preview, 10, 20, 0, 100) && rectIs(a.desc, 10, 20, 0, 100));
+    KT_CHECK(rectIs(b.preview, 10, 20, 100, 0) && rectIs(b.desc, 10, 20, 100, 0));
+    KT_CHECK(rectIs(c.preview, 5, 6, -5, -5) && rectIs(c.desc, 5, 6, -5, -5));
+    KT_CHECK(rectIs(d.preview, 0, 0, 0, 0) && rectIs(d.desc, 0, 0, 0, 0));
+}
+
+static void test_split_odd_heights() {
+    DescSplit odd = splitDesc(Rect{0, 0, 232, 335}, 700);         // gap 6, desc 101, preview 228
+    KT_CHECK(rectIs(odd.preview, 0, 0, 232, 228) && rectIs(odd.desc, 0, 234, 232, 101));
+    DescSplit dbl = splitDesc(Rect{7, 3, 400, 672}, 700);         // 2x vanilla: gap 12, desc 202, preview 458
+    KT_CHECK(rectIs(dbl.preview, 7, 3, 400, 458) && rectIs(dbl.desc, 7, 473, 400, 202));
+    DescSplit tiny = splitDesc(Rect{0, 0, 10, 1}, 850);           // 1 px: gap 0, desc 0, preview 1
+    KT_CHECK(rectIs(tiny.preview, 0, 0, 10, 1) && rectIs(tiny.desc, 0, 1, 10, 0));
+    // Invariant over every height and a spread of permilles: preview + gap + desc == orig.h, nothing negative, the bottom edge stays,
+    // x / w are kept, and the description keeps its share (+- rounding) once the rect is tall enough.
+    const int pms[] = {1, 600, 601, 700, 725, 849, 850, 5000};
+    for (int h = 1; h <= 700; ++h) {
+        for (int pi = 0; pi < 8; ++pi) {
+            const Rect o = {-12, 40, 181, h};
+            const DescSplit s = splitDesc(o, pms[pi]);
+            const int gap = s.desc.y - (s.preview.y + s.preview.h);
+            KT_CHECK(s.preview.h >= 0 && s.desc.h >= 0 && gap >= 0);
+            KT_CHECK_EQ(s.preview.h + gap + s.desc.h, h);
+            KT_CHECK_EQ(s.desc.y + s.desc.h, o.y + o.h);
+            KT_CHECK(s.preview.y == o.y && s.preview.x == o.x && s.desc.x == o.x && s.preview.w == o.w && s.desc.w == o.w);
+        }
+    }
+    for (int h = 100; h <= 700; h += 37) {                        // 700: desc share is 30 % +- 1 px, gap is 6/336 +- 1 px
+        const DescSplit s = splitDesc(Rect{0, 0, 50, h}, 700);
+        const int want = (300 * h) / 1000;
+        KT_CHECK(s.desc.h >= want && s.desc.h <= want + 1);
+    }
+}
+
 int main() {
     test_registry_basic();
     test_registry_null_and_empty_ids();
@@ -448,5 +526,10 @@ int main() {
     test_item_fields_and_visibility();
     test_hit_test();
     test_can_truncate();
+    test_split_clamp();
+    test_split_vanilla_rect();
+    test_split_out_of_range_clamps();
+    test_split_zero_area();
+    test_split_odd_heights();
     return kt::Report("menu_ui_logic_test");
 }

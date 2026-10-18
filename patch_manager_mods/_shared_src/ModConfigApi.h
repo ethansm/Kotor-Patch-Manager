@@ -11,6 +11,18 @@
  *
  * Sliders and toggles are not in v1; they are appended later (struct_size growth).
  *
+ * Description split (K2MenuUiApi.SetDescSplit, MUI_PANE_PREVIEW): by default the right half of an entry page is the vanilla description
+ * pane (LB_DESC, text through SetDesc). An entry page can opt in to a split: SetDescSplit(page, previewPermille) shrinks the description
+ * pane to the bottom (1000 - previewPermille)/1000 of its ORIGINAL rect (previewPermille is clamped to 600..850, so the description keeps
+ * about 15..40%) and PaneRect(MUI_PANE_PREVIEW) answers the area above it (same x and width, a small gap kept between the two) for the
+ * entry's own preview widgets. 0 turns the split off. The split is per entry page and only active while that page is shown; the provider
+ * re-asserts it after every description write and on every tick, and puts the original rect back when the page is left, so no other
+ * page (the list, other entries) sees it. Without a split MUI_PANE_PREVIEW is the whole original description rect.
+ * Compatibility: SetDescSplit is the LAST field of K2MenuUiApi (struct_size growth). A consumer built with this header against an older
+ * provider must check MenuClient::hasDescSplit(), i.e. struct_size >= offsetof(K2MenuUiApi, SetDescSplit) + sizeof(void*) and a non-null
+ * pointer, before calling it. MenuClient::usable() requires only the v1 members that existed before, so older consumers and older
+ * providers keep working in both directions. MUI_PANE_PREVIEW on an older provider answers 0 (fail).
+ *
  * Threading: calls run on the game's main thread (the Options ctor, draw and dtor), as in K2Preview3dApi.
  *
  * Size guard (one rule, both sides): before reading any field of KPatchApi, check
@@ -43,6 +55,7 @@
 #define MUI_PANE_STATUS 3
 #define MUI_PANE_BACK   4
 #define MUI_PANE_VIEW   5
+#define MUI_PANE_PREVIEW 6   /* top part of the description rect above an active SetDescSplit; the whole original rect without one */
 
 #ifdef __cplusplus
 extern "C" {
@@ -101,6 +114,10 @@ typedef struct K2MenuUiApi {
     int32_t  (KPATCH_CALL *PaneRect)(void* panel, int32_t which, K2MuiRect* out);
     /* The engine control pointer of the item, for hit tests. */
     void*    (KPATCH_CALL *Control)(uint32_t page, int32_t item);
+    /* Newer than the 11-slot table (check MenuClient::hasDescSplit). Entry pages only (not the list page). Shrinks that page's
+       description pane to the bottom (1000 - previewPermille)/1000 of its original rect; previewPermille 1..5000 is clamped to
+       600..850, 0 = off (restore). 1 ok, 0 = unknown page, no panel, or previewPermille < 0. Takes effect while the page is shown. */
+    int32_t  (KPATCH_CALL *SetDescSplit)(uint32_t page, int32_t previewPermille);
 } K2MenuUiApi;
 
 #pragma pack(pop)
@@ -150,7 +167,8 @@ K2MC_STATIC_ASSERT(offsetof(K2MenuUiApi, SetRect) == 7 * sizeof(void*), "K2MenuU
 K2MC_STATIC_ASSERT(offsetof(K2MenuUiApi, SetDesc) == 8 * sizeof(void*), "K2MenuUiApi.SetDesc offset");
 K2MC_STATIC_ASSERT(offsetof(K2MenuUiApi, PaneRect) == 9 * sizeof(void*), "K2MenuUiApi.PaneRect offset");
 K2MC_STATIC_ASSERT(offsetof(K2MenuUiApi, Control) == 10 * sizeof(void*), "K2MenuUiApi.Control offset");
-K2MC_STATIC_ASSERT(sizeof(K2MenuUiApi) == 11 * sizeof(void*), "K2MenuUiApi size");
+K2MC_STATIC_ASSERT(offsetof(K2MenuUiApi, SetDescSplit) == 11 * sizeof(void*), "K2MenuUiApi.SetDescSplit offset");
+K2MC_STATIC_ASSERT(sizeof(K2MenuUiApi) == 12 * sizeof(void*), "K2MenuUiApi size");
 #undef K2MC_STATIC_ASSERT
 #endif
 
@@ -222,11 +240,18 @@ struct MenuClient {
         reportedMissing = false;
     }
 
-    // Every field the consumer calls is present and non-null, and the table is at least the v1 size.
+    // Every pre-SetDescSplit field the consumer calls is present and non-null, and the table is at least the 11-slot size (so an older
+    // provider without SetDescSplit stays usable). Check hasDescSplit() before calling SetDescSplit.
     static bool usable(const K2MenuUiApi* t) {
-        return t && t->struct_size >= sizeof(K2MenuUiApi) && t->NewPage && t->AddButton && t->AddLabel && t->AddCustom && t->Clicked &&
+        return t && t->struct_size >= offsetof(K2MenuUiApi, Control) + sizeof(t->Control) && t->NewPage && t->AddButton && t->AddLabel && t->AddCustom && t->Clicked &&
                t->SetText && t->SetRect && t->SetDesc && t->PaneRect && t->Control;
     }
+
+    // The table is long enough to hold SetDescSplit and it is non-null (an older provider answers false).
+    static bool hasDescSplit(const K2MenuUiApi* t) {
+        return t && t->struct_size >= offsetof(K2MenuUiApi, SetDescSplit) + sizeof(t->SetDescSplit) && t->SetDescSplit;
+    }
+    bool hasDescSplit() const { return connected && p && hasDescSplit(p); }
 
     bool connect() {
         if (connected && p) return true;

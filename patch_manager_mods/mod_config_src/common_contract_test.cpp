@@ -29,10 +29,11 @@ void KPATCH_CALL stubSetRect(uint32_t, int32_t, const K2MuiRect*) {}
 void KPATCH_CALL stubSetDesc(uint32_t, const char*) {}
 int32_t KPATCH_CALL stubPaneRect(void*, int32_t, K2MuiRect*) { return 0; }
 void* KPATCH_CALL stubControl(uint32_t, int32_t) { return nullptr; }
+int32_t KPATCH_CALL stubSetDescSplit(uint32_t, int32_t) { return 0; }
 
 const K2ModConfigApi kCfgTable = { sizeof(K2ModConfigApi), stubRegister, stubUnregister };
 const K2MenuUiApi kMuiTable = { sizeof(K2MenuUiApi), stubNewPage, stubAddButton, stubAddLabel, stubAddCustom, stubClicked,
-                                stubSetText, stubSetRect, stubSetDesc, stubPaneRect, stubControl };
+                                stubSetText, stubSetRect, stubSetDesc, stubPaneRect, stubControl, stubSetDescSplit };
 
 // onConnect capture for the not-provided message.
 bool g_connOk = true;
@@ -54,6 +55,7 @@ int main() {
     MEQ("MUI_PANE_STATUS == 3", MUI_PANE_STATUS, 3);
     MEQ("MUI_PANE_BACK == 4", MUI_PANE_BACK, 4);
     MEQ("MUI_PANE_VIEW == 5", MUI_PANE_VIEW, 5);
+    MEQ("MUI_PANE_PREVIEW == 6", MUI_PANE_PREVIEW, 6);
 
     // 2. Struct layout sanity (the header static_asserts these too; the run-time copy fails the test on a host build).
     MEQ("K2ModConfigEntry is 10 pointer slots (struct_size fills one slot)", sizeof(K2ModConfigEntry), 10 * sizeof(void*));
@@ -62,7 +64,8 @@ int main() {
     MEQ("K2ModConfigApi.Unregister at slot 2", offsetof(K2ModConfigApi, Unregister), 2 * sizeof(void*));
     MEQ("K2MuiRect is 16 bytes", sizeof(K2MuiRect), 16);
     MEQ("K2MuiRect.h at byte 12", offsetof(K2MuiRect, h), 12);
-    MEQ("K2MenuUiApi is 11 pointer slots", sizeof(K2MenuUiApi), 11 * sizeof(void*));
+    MEQ("K2MenuUiApi is 12 pointer slots", sizeof(K2MenuUiApi), 12 * sizeof(void*));
+    MEQ("K2MenuUiApi.SetDescSplit at slot 11 (the last field)", offsetof(K2MenuUiApi, SetDescSplit), 11 * sizeof(void*));
     MEQ("K2MenuUiApi.PaneRect at slot 9", offsetof(K2MenuUiApi, PaneRect), 9 * sizeof(void*));
     MEQ("K2MenuUiApi.Control at slot 10", offsetof(K2MenuUiApi, Control), 10 * sizeof(void*));
 
@@ -154,6 +157,36 @@ int main() {
     MCHECK("MenuClient::usable false with Clicked null", !k2mc::MenuClient::usable(&nullClick));
     MCHECK("ConfigClient::usable false for a null table", !k2mc::ConfigClient::usable(nullptr));
     MCHECK("MenuClient::usable false for a null table", !k2mc::MenuClient::usable(nullptr));
+
+    // 9. SetDescSplit compatibility: an OLD provider (11-slot table, no SetDescSplit) stays usable and reports no split support; a NEW
+    // table has it; a null SetDescSplit or a table that stops short of it has not. A consumer built with this header checks hasDescSplit().
+    K2MenuUiApi oldMui = kMuiTable;
+    oldMui.struct_size = static_cast<uint32_t>(offsetof(K2MenuUiApi, SetDescSplit));   // the pre-split 11-slot size
+    oldMui.SetDescSplit = nullptr;
+    MCHECK("MenuClient::usable true for an old 11-slot provider table", k2mc::MenuClient::usable(&oldMui));
+    MCHECK("MenuClient::hasDescSplit false for an old 11-slot provider table", !k2mc::MenuClient::hasDescSplit(&oldMui));
+    MCHECK("MenuClient::hasDescSplit true for the current table", k2mc::MenuClient::hasDescSplit(&kMuiTable));
+    K2MenuUiApi nullSplit = kMuiTable;
+    nullSplit.SetDescSplit = nullptr;
+    MCHECK("MenuClient::hasDescSplit false when SetDescSplit is null", !k2mc::MenuClient::hasDescSplit(&nullSplit));
+    MCHECK("MenuClient::usable still true when only SetDescSplit is null", k2mc::MenuClient::usable(&nullSplit));
+    K2MenuUiApi shortSplit = kMuiTable;
+    shortSplit.struct_size = static_cast<uint32_t>(offsetof(K2MenuUiApi, SetDescSplit) + 1);   // ends inside SetDescSplit
+    MCHECK("MenuClient::hasDescSplit false when struct_size ends inside SetDescSplit", !k2mc::MenuClient::hasDescSplit(&shortSplit));
+    MCHECK("MenuClient::hasDescSplit false for a null table", !k2mc::MenuClient::hasDescSplit(static_cast<const K2MenuUiApi*>(nullptr)));
+    fakekp::reset();
+    fakekp::provide(K2MENUUI_IFACE, K2MENUUI_VERSION, &oldMui);
+    k2mc::MenuClient oldClient;
+    oldClient.init(fakekp::api());
+    oldClient.poll();
+    MCHECK("MenuClient connects to an old 11-slot provider", oldClient.ok());
+    MCHECK("MenuClient::hasDescSplit() member false against an old provider", !oldClient.hasDescSplit());
+    fakekp::reset();
+    fakekp::provide(K2MENUUI_IFACE, K2MENUUI_VERSION, &kMuiTable);
+    k2mc::MenuClient newClient;
+    newClient.init(fakekp::api());
+    newClient.poll();
+    MCHECK("MenuClient::hasDescSplit() member true against the current provider", newClient.ok() && newClient.hasDescSplit());
 
     return ::kt::Report("common_contract_test (mod-config)");
 }

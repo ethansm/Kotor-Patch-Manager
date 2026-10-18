@@ -13,6 +13,7 @@
 //   mui::HoverTracker hov;  mui::HoverEvents he = hov.update(hitItem);   // hitItem -1 = none
 //   mui::ClickTracker clk;  int clicked = clk.tick(lmbDown, hitItem);    // item id on release, else -1
 //   bool go = mui::canTruncate(listed, count, vanilla, isOurs, ctx);
+//   mui::DescSplit ds = mui::splitDesc(origDescRect, 700);   // ds.preview (top) + ds.desc (bottom 30 %), see "description split" below
 //
 // Event order, PageStack: every real page change emits LEAVE(from) then ENTER(to). entry is -1 unless the state is ENTRY.
 //   push(LIST) from MAIN:      LEAVE(MAIN), ENTER(LIST)
@@ -33,7 +34,7 @@
 
 namespace mui {
 
-enum { kMaxEntries = 8, kMaxItems = 40, kMaxPages = 2 + kMaxEntries, kMaxEvents = 4 };
+enum { kMaxEntries = 8, kMaxItems = 80, kMaxPages = 2 + kMaxEntries, kMaxEvents = 4 };
 
 // ---------------------------------------------------------------------------------------------------- registry
 // A slot is live while registered. seq is the registration order of the id's first registration: removing an entry
@@ -336,6 +337,44 @@ inline int PageTable::hitTest(int page, int px, int py) const {
         if (px >= it.rect.x && px < it.rect.x + it.rect.w && py >= it.rect.y && py < it.rect.y + it.rect.h) return i;
     }
     return -1;
+}
+
+// ---------------------------------------------------------------------------------------------------- description split
+// SetDescSplit math (K2MenuUiApi.SetDescSplit / MUI_PANE_PREVIEW). The right-hand description pane keeps the bottom part of its ORIGINAL
+// rect, the preview area is the top part, with a small gap between them. All integer math, rounded to nearest.
+//   previewPermille <= 0 (off): preview = desc = orig (the preview pane is the whole original rect, nothing shrinks).
+//   1..5000: clamped to kSplitMin..kSplitMax (description keeps 15..40 %).
+//   gap = round(6 * orig.h / 336) (6 px on the vanilla 336 px rect, scaled), descH = round((1000 - permille) * orig.h / 1000),
+//   preview.h = orig.h - gap - descH, so preview.h + gap + desc.h == orig.h exactly. Both rects keep orig.x and orig.w.
+//   A rect with no area (w <= 0 or h <= 0) comes back unchanged in both parts.
+enum { kSplitMin = 600, kSplitMax = 850, kSplitRefH = 336, kSplitRefGap = 6 };
+
+struct DescSplit {
+    Rect preview;
+    Rect desc;
+};
+
+// 0 for off (<= 0), else the permille clamped to kSplitMin..kSplitMax.
+inline int clampSplit(int previewPermille) {
+    if (previewPermille <= 0) return 0;
+    return previewPermille < kSplitMin ? kSplitMin : (previewPermille > kSplitMax ? kSplitMax : previewPermille);
+}
+
+inline DescSplit splitDesc(const Rect& orig, int previewPermille) {
+    DescSplit r;
+    r.preview = orig;
+    r.desc = orig;
+    const int pm = clampSplit(previewPermille);
+    if (pm == 0 || orig.w <= 0 || orig.h <= 0) return r;
+    int gap = (kSplitRefGap * orig.h + kSplitRefH / 2) / kSplitRefH;
+    if (gap > orig.h) gap = orig.h;
+    int descH = ((1000 - pm) * orig.h + 500) / 1000;
+    if (descH > orig.h - gap) descH = orig.h - gap;
+    const int previewH = orig.h - gap - descH;
+    r.preview.h = previewH;
+    r.desc.y = orig.y + previewH + gap;
+    r.desc.h = descH;
+    return r;
 }
 
 // ---------------------------------------------------------------------------------------------------- truncate guard

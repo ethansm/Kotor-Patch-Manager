@@ -72,7 +72,7 @@ void* KPATCH_CALL stubMuiControl(uint32_t, int32_t) { return nullptr; }
 
 const K2ModConfigApi kCfgTable = { sizeof(K2ModConfigApi), stubCfgRegister, stubCfgUnregister };
 const K2MenuUiApi kMuiTable = { sizeof(K2MenuUiApi), stubMuiNewPage, stubMuiAddButton, stubMuiAddLabel, stubMuiAddCustom,
-                                stubMuiClicked, stubMuiSetText, stubMuiSetRect, stubMuiSetDesc, stubMuiPaneRect, stubMuiControl };
+                                stubMuiClicked, stubMuiSetText, stubMuiSetRect, stubMuiSetDesc, stubMuiPaneRect, stubMuiControl, nullptr };   // SetDescSplit unused here
 
 // ---- Preview3dApi stubs ----
 uint32_t KPATCH_CALL stubP3CreateView(void*, const char*) { return 1; }
@@ -262,7 +262,7 @@ int main() {
 
         HEQ("K2ModConfigEntry is 10 pointer slots", sizeof(K2ModConfigEntry), 10 * sizeof(void*));
         HEQ("K2ModConfigApi is 3 pointer slots", sizeof(K2ModConfigApi), 3 * sizeof(void*));
-        HEQ("K2MenuUiApi is 11 pointer slots", sizeof(K2MenuUiApi), 11 * sizeof(void*));
+        HEQ("K2MenuUiApi is 12 pointer slots (SetDescSplit appended after Control)", sizeof(K2MenuUiApi), 12 * sizeof(void*));
 
         // ConfigClient::usable
         HCHECK("ConfigClient::usable true for valid table", k2mc::ConfigClient::usable(&kCfgTable));
@@ -283,7 +283,7 @@ int main() {
         HCHECK("MenuClient::usable true for valid table", k2mc::MenuClient::usable(&kMuiTable));
         HCHECK("MenuClient::usable false for null table", !k2mc::MenuClient::usable(nullptr));
         K2MenuUiApi shortMui = kMuiTable;
-        shortMui.struct_size = static_cast<uint32_t>(sizeof(K2MenuUiApi) - sizeof(void*));
+        shortMui.struct_size = static_cast<uint32_t>(offsetof(K2MenuUiApi, Control));   // predates Control (the 11-slot table is still usable)
         HCHECK("MenuClient::usable false for short table", !k2mc::MenuClient::usable(&shortMui));
         K2MenuUiApi grownMui = kMuiTable;
         grownMui.struct_size = static_cast<uint32_t>(sizeof(K2MenuUiApi) + sizeof(void*));

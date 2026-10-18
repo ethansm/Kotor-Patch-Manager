@@ -1,7 +1,8 @@
-// ModConfig.cpp -- mod-config 0.1.2-dev (Steam build): the "Mod Configuration" provider on the in-game Options screen (doc 42,
+// ModConfig.cpp -- mod-config 0.1.3-dev (Steam build): the "Mod Configuration" provider on the in-game Options screen (doc 42,
 // plan .claude/plans/holster_editor_options.md, card c18). Provides two interfaces declared in ModConfigApi.h:
 //   k2.modconfig@1  K2ModConfigApi  Register / Unregister: a mod adds one entry (name, description, build/enter/leave/tick/destroy).
-//   k2.menuui@1     K2MenuUiApi     NewPage / AddButton / AddLabel / AddCustom / Clicked / SetText / SetRect / SetDesc / PaneRect / Control.
+//   k2.menuui@1     K2MenuUiApi     NewPage / AddButton / AddLabel / AddCustom / Clicked / SetText / SetRect / SetDesc / PaneRect / Control /
+//                                   SetDescSplit (an entry page shrinks LB_DESC to its bottom 15..40 % and gets MUI_PANE_PREVIEW above it).
 //
 // The engine code is lifted from the PRB1-proven holster-editor (HolsterEditor.cpp, button clones, column reflow, release-edge clicks,
 // the description path, the r7 free recipe) and generalised from "one entry + Back" to a page model driven by MenuUiLogic.h (namespace mui):
@@ -22,7 +23,7 @@
 // AddButton / AddLabel / AddCustom return -1. One entry owns one page: a second NewPage in the same build() returns the same page id
 // (the title is updated). Items can only be added to the page of the entry whose build() is running.
 // Probe lines (log only): CONFIG, CTOR, BTNCLONE, LABEL, APPEND, TEMPLATE, REFLOW, RELAYOUT, HOVER, DESC, INPUTCLASS, PAGE, BUILD,
-// REGISTER, MUI, FREE, DTOR, HIDDENDRAW, PROVIDE.
+// REGISTER, MUI, FREE, DTOR, HIDDENDRAW, PROVIDE, DESCSPLIT.
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -146,6 +147,12 @@ struct McState {
     DWORD leaveAt = 0;         // Back released on LIST: go to MAIN at this tick count (0 = none)
     Rect col[kColumnN] = {};   // vanilla column rects, measured BEFORE the reflow (PaneRect COLUMN)
     bool colOk = false;
+    Rect descOrig = {0, 0, 0, 0};   // LB_DESC rect as the layout made it (measured at McBind, before any describe or split touched it)
+    bool descOrigOk = false;
+    int split[mui::kMaxEntries] = {};   // SetDescSplit permille per entry page (clamped; 0 = none)
+    bool descSplitOn = false;           // the shrunk rect is currently asserted on LB_DESC (so the original must be put back)
+    int descSplitPage = -1;
+    int descReasserts = 0;              // times a describe or tick had to write the shrunk rect again (log cap)
 };
 McState g_mc;
 bool g_inBuild = false;
@@ -311,6 +318,69 @@ void applyTargets(McState& e, bool initial) {
     for (int i = 0; i < e.nTg; ++i) applyOne(e, e.tg[i], initial);
 }
 
+// ---------------------------------------------------------------------------------------------------- description split
+// Entry pages can opt in (SetDescSplit) to a shrunk LB_DESC: the bottom part of the ORIGINAL rect, with MUI_PANE_PREVIEW above it. The
+// vanilla describe routine rewrites LB_DESC's rect on every call, so the shrunk rect is written again after every describe and once per
+// tick while the page is shown, and the original rect is put back when the page is left. Math: mui::splitDesc (MenuUiLogic.h).
+mui::Rect toMui(const Rect& r) { return mui::Rect{r.x, r.y, r.w, r.h}; }
+
+// LB_DESC rect as the layout made it: the McBind cache; else a live measure now (cached, so it is only as good as the first one).
+bool descOriginal(Rect* out) {
+    McState& e = g_mc;
+    if (!e.descOrigOk && e.panel) {
+        Rect r = {0, 0, 0, 0};
+        if (ctlRect(listCtl(e.panel, kIdxDesc), &r)) { e.descOrig = r; e.descOrigOk = true; }
+    }
+    if (!e.descOrigOk) return false;
+    *out = e.descOrig;
+    return true;
+}
+
+// The split of the shown entry page (0 = none, or no entry page shown). Needs the first tick to have run (items appended).
+int shownSplit() {
+    const McState& e = g_mc;
+    if (!e.appended || e.ps.state != mui::ENTRY || e.ps.entry < 0 || e.ps.entry >= mui::kMaxEntries) return 0;
+    return e.split[e.ps.entry];
+}
+
+void restoreDescRect(const char* why) {
+    McState& e = g_mc;
+    if (!e.descSplitOn) return;
+    e.descSplitOn = false;
+    Rect o = {0, 0, 0, 0};
+    const uintptr_t c = e.panel ? listCtl(e.panel, kIdxDesc) : 0;
+    if (c && descOriginal(&o)) guikit::setRect(c, o.x, o.y, o.w, o.h);
+    KP_LOG(chMain, "DESCSPLIT restore page=%d (%s) orig=(%d,%d,%d,%d)", e.descSplitPage, why, o.x, o.y, o.w, o.h);
+    e.descSplitPage = -1;
+}
+
+// Makes LB_DESC match the shown page: the shrunk rect on a page with a split (written only when it differs), the original rect once the
+// page that had one is left. Cheap enough for every tick; logs only on a state change (one line per page shown / restored).
+void syncDescSplit(const char* why) {
+    McState& e = g_mc;
+    if (!e.panel) return;
+    const int want = shownSplit();
+    if (want == 0) { restoreDescRect(why); return; }
+    Rect o = {0, 0, 0, 0};
+    const uintptr_t c = listCtl(e.panel, kIdxDesc);
+    if (!c || !descOriginal(&o)) return;
+    const mui::DescSplit ds = mui::splitDesc(toMui(o), want);
+    int x = 0, y = 0, w = 0, h = 0;
+    const bool have = guikit::getExtent(c, &x, &y, &w, &h);
+    const bool differs = !have || x != ds.desc.x || y != ds.desc.y || w != ds.desc.w || h != ds.desc.h;
+    if (differs) guikit::setRect(c, ds.desc.x, ds.desc.y, ds.desc.w, ds.desc.h);
+    const int page = 2 + e.ps.entry;
+    if (!e.descSplitOn || e.descSplitPage != page) {
+        e.descSplitOn = true;
+        e.descSplitPage = page;
+        KP_LOG(chMain, "DESCSPLIT apply page=%d permille=%d (%s) orig=(%d,%d,%d,%d) desc=(%d,%d,%d,%d) preview=(%d,%d,%d,%d) was=(%d,%d,%d,%d)", page, want, why,
+               o.x, o.y, o.w, o.h, ds.desc.x, ds.desc.y, ds.desc.w, ds.desc.h, ds.preview.x, ds.preview.y, ds.preview.w, ds.preview.h, x, y, w, h);
+    } else if (differs && e.descReasserts < 8) {
+        ++e.descReasserts;
+        KP_LOG(chMain, "DESCSPLIT reassert n=%d (%s) page=%d was=(%d,%d,%d,%d)", e.descReasserts, why, page, x, y, w, h);
+    }
+}
+
 // SetActiveControl(0, 0) (40EC00 via vtable slot 2): drops the keyboard focus so Enter cannot open a hidden sub-panel.
 bool clearFocus(uintptr_t P) {
     uint32_t vt = 0, fn = 0;
@@ -362,6 +432,7 @@ bool writeDesc(const char* text) {
         KP_LOG(chMain, "DESC no-refresh why=%s", why);
         return false;
     }
+    syncDescSplit("describe");   // 8A2320 rewrote LB_DESC's rect: put the shrunk rect of a split page back
     return true;
 }
 
@@ -430,12 +501,23 @@ bool paneRect(uintptr_t P, int which, Rect* out) {
             return true;
         }
         case MUI_PANE_DESC: return ctlRect(listCtl(P, kIdxDesc), out);
+        case MUI_PANE_PREVIEW: {
+            // The split of the entry being built, else of the shown entry page; no split = the whole original description rect.
+            Rect orig = {0, 0, 0, 0};
+            if (!descOriginal(&orig)) return false;
+            const int k = (g_inBuild && g_buildSlot >= 0) ? g_buildSlot : (g_mc.ps.state == mui::ENTRY ? g_mc.ps.entry : -1);
+            const int pm = (k >= 0 && k < mui::kMaxEntries) ? g_mc.split[k] : 0;
+            const mui::DescSplit ds = mui::splitDesc(toMui(orig), pm);
+            *out = Rect{ds.preview.x, ds.preview.y, ds.preview.w, ds.preview.h};
+            return out->w > 0 && out->h > 0;
+        }
         case MUI_PANE_TITLE: return ctlRect(listCtl(P, kIdxTitle), out);
         case MUI_PANE_BACK: return ctlRect(listCtl(P, kIdxExit), out);
         case MUI_PANE_VIEW:
         case MUI_PANE_STATUS: {
             Rect desc = {0, 0, 0, 0};
-            if (!ctlRect(listCtl(P, kIdxDesc), &desc)) return false;
+            // While a split shrinks LB_DESC, the view / status panes still follow the ORIGINAL rect.
+            if (!(g_mc.descSplitOn && descOriginal(&desc)) && !ctlRect(listCtl(P, kIdxDesc), &desc)) return false;
             const Rect v = paneViewRect(desc);
             if (v.w <= 0 || v.h <= 0) return false;
             if (which == MUI_PANE_VIEW) { *out = v; return true; }
@@ -687,6 +769,7 @@ void applyEvent(const mui::PageEvent& ev, const char* why) {
             if (k < 0 || k >= mui::kMaxEntries) break;
             if (!enter) {
                 callEntryLeave(k);
+                syncDescSplit("leave");   // ps already moved off the entry page: the original LB_DESC rect goes back
                 for (int i = 0; i < e.pt.itemCount(2 + k); ++i) setShown(e.items[k][i], false);
                 setShown(e.back, false);
                 setShown(e.title, false);
@@ -706,6 +789,7 @@ void applyEvent(const mui::PageEvent& ev, const char* why) {
                 setShown(e.back, true);
                 setShown(e.title, true);
                 KP_LOG(chMain, "ENTRY enter id=%s page=%d items=%d focusCleared=%d", entLive(k) ? g_ent[k].id : "?", 2 + k, e.pt.itemCount(2 + k), cleared ? 1 : 0);
+                syncDescSplit("enter");   // before the entry's enter(), so its first SetDesc already lands in the shrunk pane
                 if (entLive(k) && g_ent[k].enter) g_ent[k].enter(static_cast<uint32_t>(2 + k), g_ent[k].user);
             }
             break;
@@ -1046,6 +1130,17 @@ void KPATCH_CALL muiSetDesc(uint32_t /*page*/, const char* text) {
     writeDesc(text);
 }
 
+int32_t KPATCH_CALL muiSetDescSplit(uint32_t page, int32_t previewPermille) {
+    McState& e = g_mc;
+    if (!e.panel || previewPermille < 0 || page < 2 || page >= 2 + static_cast<uint32_t>(mui::kMaxEntries)) return 0;
+    const int k = static_cast<int>(page) - 2;
+    if (!entLive(k) || !e.pageMade[k]) return 0;
+    saferead::beginScope();
+    e.split[k] = mui::clampSplit(previewPermille);
+    if (e.appended && e.ps.state == mui::ENTRY && e.ps.entry == k) syncDescSplit("set");   // the page is shown now: act at once
+    return 1;
+}
+
 int32_t KPATCH_CALL muiPaneRect(void* panel, int32_t which, K2MuiRect* out) {
     if (!out || !g_mc.panel || reinterpret_cast<uintptr_t>(panel) != g_mc.panel) return 0;
     saferead::beginScope();
@@ -1067,7 +1162,7 @@ void* KPATCH_CALL muiControl(uint32_t page, int32_t item) {
 }
 
 const K2MenuUiApi g_muiApi = {sizeof(K2MenuUiApi), &muiNewPage, &muiAddButton, &muiAddLabel, &muiAddCustom, &muiClicked,
-                              &muiSetText,         &muiSetRect, &muiSetDesc,   &muiPaneRect,  &muiControl};
+                              &muiSetText,         &muiSetRect, &muiSetDesc,   &muiPaneRect,  &muiControl, &muiSetDescSplit};
 
 }  // namespace
 
@@ -1101,7 +1196,7 @@ extern "C" void __cdecl McBind(int panelArg) {
     e.vanillaCount = count;
     for (int i = 0; i < mui::kMaxPages; ++i) (void)e.pt.addPage();   // page ids 0 MAIN, 1 LIST, 2 + k ENTRY(k)
     e.colOk = measureColumn(P, e.col);
-
+    { Rect d0 = {0, 0, 0, 0}; (void)descOriginal(&d0); }   // cache the layout's LB_DESC rect now, before any describe rewrites it
     // Buttons and labels from the vanilla layout (open until StopLoadFromLayout right after this hook), in this order:
     // root button, list buttons, Back, title.
     e.root.ctl = cloneEntry(P, "BTN_GAMEPLAY", "root", &e.root.isButton);
@@ -1174,6 +1269,7 @@ extern "C" void __cdecl McTick(int panelArg) {
     }
     if (!e.appended) firstTick();
     applyTargets(e, false);
+    syncDescSplit("tick");   // no-op unless a split page is shown (or was just left)
     if (e.ps.state == mui::ENTRY && e.ps.entry >= 0 && e.ps.entry < mui::kMaxEntries) {
         const int k = e.ps.entry;
         for (int i = 0; i < e.pt.itemCount(2 + k); ++i)
@@ -1237,6 +1333,7 @@ extern "C" void __cdecl McDestroy(int panelArg) {
     KP_LOG(chMain, "DTOR panel=%x page=%d appended=%d free_labels=%d", static_cast<unsigned>(P), curPageId(), e.appended ? 1 : 0, g_cfg.freeLabels ? 1 : 0);
     // (1) leave the shown page: only the entry's leave callback (the panel is going away, nothing to show or hide).
     if (e.ps.state == mui::ENTRY && e.ps.entry >= 0) callEntryLeave(e.ps.entry);
+    restoreDescRect("destroy");
     // (2) clear references to every control of ours and truncate them off the list (MUI_NOFREE ones too).
     const bool clean = unlinkOwn(P);
     // (3) each built entry's destroy(): its MUI_NOFREE controls answer nullptr from Control() once unlinked.
@@ -1262,7 +1359,7 @@ extern "C" void __cdecl McDestroy(int panelArg) {
 // the config is read at the first McBind.
 extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
-    KP_LOG(chMain, "mod-config 0.1.2-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
+    KP_LOG(chMain, "mod-config 0.1.3-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
     int rcC = -1, rcM = -1;
     if (api && api->struct_size >= offsetof(KPatchApi, require) + sizeof(api->require) && api->provide) {
         rcC = api->provide(K2MODCONFIG_IFACE, K2MODCONFIG_VERSION, &g_mcApi);
