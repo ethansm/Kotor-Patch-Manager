@@ -5,3 +5,4 @@ EXPORTS
     VFS_OnServiceFromImage
     VFS_On2DaServiced
     VFS_OnOpenStream
+    VFS_OnResRelease

@@ -1434,6 +1434,16 @@ int main() {
         sv.reset(); // frees the provider-owned copy
     }
 
+    // H5 (Release): only VFS packed ids skip the engine's archive-source release; real archive ids never do.
+    {
+        KT_CHECK(assetvfs::skipEngineSourceRelease(vfsreg::makePackedId(0)));
+        KT_CHECK(assetvfs::skipEngineSourceRelease(vfsreg::makePackedId(5)));
+        KT_CHECK(!assetvfs::skipEngineSourceRelease(0x00000000u));
+        KT_CHECK(!assetvfs::skipEngineSourceRelease(0x40010000u)); // a BIF-style id (>>30 == 1) that is not ours
+        KT_CHECK(!assetvfs::skipEngineSourceRelease(0x80FC0000u));
+        KT_CHECK(!assetvfs::skipEngineSourceRelease(0xFFFFFFFFu));
+    }
+
     // Cleanup allocated memory
     for (void* p : g_allocatedPointers) {
         std::free(p);

@@ -72,3 +72,20 @@ exclude_from_restore = ["eax"]
 [[hooks.parameters]]
 source = "ebp"
 type = "int"
+
+# H5: CExoResMan::Release (0x007130B0) at 0x007130D3, the `SHR ECX,0x1e / CMP ECX,1` test of the packedId type bits.
+# 6 bytes (2 instructions): SHR ECX,0x1E / CMP ECX,0x01 (register + flags only; ECX is dead at the exit).
+# Without this hook a served resource (packedId 0x40FC....) takes the `>>30 == 1` branch, FUN_00712d70 finds no
+# archive source for it and returns NULL, and `MOV EAX,[EAX+0x30]` at 0x007130E7 faults (first live serve, 10-18).
+# Non-zero return jumps to 0x007130FC (the refcount handling after the source-release block); no EAX write.
+[[hooks]]
+address = 0x007130D3
+type = "detour"
+function = "VFS_OnResRelease"
+original_bytes = [0xC1, 0xE9, 0x1E, 0x83, 0xF9, 0x01]
+consumed_exit_address = 0x007130FC
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"

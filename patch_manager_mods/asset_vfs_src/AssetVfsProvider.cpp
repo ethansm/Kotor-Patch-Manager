@@ -33,6 +33,7 @@ enum Site : unsigned {
     S_OpenStream = 0x7404,
     S_GetKeyEntry = 0x7410,
     S_Service = 0x7420,
+    S_Release = 0x7425,
     S_2Da = 0x7430
 };
 
@@ -436,6 +437,20 @@ __declspec(dllexport) int __cdecl VFS_OnServiceFromImage(void* thisPtr, uintptr_
     }
 
     return g_state.handleServiceFromImage(reinterpret_cast<uint8_t*>(pRes), engineAlloc, engineCallOnServiced);
+}
+
+// H5: CExoResMan::Release at the archive-source release block (hooks toml H5). Returns 1 for a VFS resource so the
+// engine skips the FUN_00712d70 lookup that would return NULL for it (NULL read on the first served UTC).
+__declspec(dllexport) int __cdecl VFS_OnResRelease(uintptr_t ebp) {
+    if (!ebp) return 0;
+    saferead::beginScope();
+    void* pRes = nullptr;
+    if (!saferead::readAt(S_Release, ebp, 0x08, &pRes) || !pRes) return 0;
+    uint32_t packedId = 0;
+    if (!saferead::readAt(S_Release, reinterpret_cast<uintptr_t>(pRes), static_cast<int>(assetvfs::kResOffPackedId), &packedId)) {
+        return 0;
+    }
+    return assetvfs::skipEngineSourceRelease(packedId) ? 1 : 0;
 }
 
 __declspec(dllexport) void __cdecl VFS_On2DaServiced(void* pRes2Da) {

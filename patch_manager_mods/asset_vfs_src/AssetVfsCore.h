@@ -13,6 +13,14 @@
 
 namespace assetvfs {
 
+// H5 decision (CExoResMan::Release, see the hooks toml H5): the engine's own Release looks up the resource's archive
+// source (FUN_00712d70) when packedId >> 30 == 1 and dereferences the result. A VFS resource
+// (packedId 0x40FC....) has no archive source, so that lookup returns NULL and the engine faults (NULL + 0x30 read).
+// True = skip that source-release block (the VFS owns the data; FreeResourceData already skips >>30 == 1).
+inline bool skipEngineSourceRelease(uint32_t packedId) {
+    return vfsreg::isVfsPackedId(packedId);
+}
+
 // CRes field offsets (Odyssey Engine 32-bit MSVC)
 constexpr size_t kResOffVtbl       = 0x00;
 constexpr size_t kResOffDemands    = 0x04;
