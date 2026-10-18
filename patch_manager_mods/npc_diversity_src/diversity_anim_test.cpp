@@ -115,7 +115,7 @@ int main() {
         { ServerFacts g = f; g.party = 1; KT_CHECK(!IsIdle(g)); }
         { ServerFacts g = f; g.isPc = 1; KT_CHECK(!IsIdle(g)); }
         { ServerFacts g = f; g.action = 3; KT_CHECK(!IsIdle(g)); }
-        { ServerFacts g = f; g.queueHead = 0x1000; KT_CHECK(!IsIdle(g)); }
+        { ServerFacts g = f; g.queueHead = 0x1000; KT_CHECK(IsIdle(g)); }   // queue head is not part of the idle test (Run A2)
         { ServerFacts g = f; g.combat = 1; KT_CHECK(!IsIdle(g)); }
         { ServerFacts g = f; g.dialog = 0x7F000123u; KT_CHECK(!IsIdle(g)); }
     }

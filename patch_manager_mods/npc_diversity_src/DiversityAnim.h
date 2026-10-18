@@ -100,11 +100,11 @@ inline bool EligibleRow(uint16_t appearance, bool* military = nullptr) {
 }
 
 // Server creature facts (recon nb2_recon.md): +0x08 object type (5 creature), +0x11AC party flag, +0x10E8 is-PC, +0x84 current action word
-// (0xFFFF none), +0x100 action list head (0 = empty), +0x520 combat state, +0x54 dialog partner oid (0x7F000000 or 0 = none, unverified).
+// (0xFFFF none), +0x100 action list head (LOGGED ONLY: Run A2 10-18 showed it non-null on idle creatures, so it is not an idle test), +0x520 combat state, +0x54 dialog partner oid (0x7F000000 or 0 = none, unverified).
 struct ServerFacts { uint8_t type; int32_t party; int32_t isPc; uint16_t action; uint32_t queueHead; uint32_t combat; uint32_t dialog; };
 constexpr uint32_t kObjInvalid = 0x7F000000u;
 inline bool IsIdle(const ServerFacts& f) {
-    return f.type == 5 && f.party == 0 && f.isPc == 0 && f.action == 0xFFFFu && f.queueHead == 0 && f.combat == 0 &&
+    return f.type == 5 && f.party == 0 && f.isPc == 0 && f.action == 0xFFFFu && f.combat == 0 &&
            (f.dialog == 0 || f.dialog == kObjInvalid);
 }
 

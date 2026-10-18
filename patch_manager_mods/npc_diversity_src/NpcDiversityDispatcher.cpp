@@ -52,7 +52,7 @@ namespace {
 using namespace NpcDiversity;
 namespace nl = NpcDiversity::log;
 
-constexpr const char* kVersion = "0.2.2-probe";
+constexpr const char* kVersion = "0.2.3-probe";
 constexpr size_t kResRefLen = 16;
 
 // SafeRead site ids (counted in Counts::fail, printed by STAT read).
@@ -139,9 +139,9 @@ bool g_rosterInit = false;
 inline bool animOn() { return g_animVariety || g_animProbe; }
 
 void logChain(uint32_t oid, uint16_t app, const AnimEngine::Chain& c) {
-    KP_LOG(chAnim, "CHAIN oid=%08X app=%u stage=%s srv=%08X soid=%08X type=%u party=%d pc=%d act=%04X q=%08X cmb=%u dlg=%08X cli=%08X vt=%08X cache=%08X hold=%08X body=%08X idle=%d",
+    KP_LOG(chAnim, "CHAIN oid=%08X app=%u stage=%s srv=%08X soid=%08X type=%u party=%d pc=%d act=%04X q=%08X qd=%08X,%08X,%08X cmb=%u dlg=%08X cli=%08X vt=%08X cache=%08X hold=%08X body=%08X idle=%d",
            oid, app, AnimEngine::StageName(c.stage), (unsigned)c.server, c.serverOid, c.facts.type, c.facts.party, c.facts.isPc,
-           c.facts.action, c.facts.queueHead, c.facts.combat, c.facts.dialog, (unsigned)c.client, c.clientVt, c.cache,
+           c.facts.action, c.facts.queueHead, c.qd[0], c.qd[1], c.qd[2], c.facts.combat, c.facts.dialog, (unsigned)c.client, c.clientVt, c.cache,
            (unsigned)c.holder, (unsigned)c.body, Anim::IsIdle(c.facts) ? 1 : 0);
 }
 

@@ -37,6 +37,7 @@ struct Chain {
     uint32_t serverOid = 0;      // the oid read back from the server object (+0x04)
     uint32_t clientVt = 0;
     uint32_t cache = 0;          // server+0x264 after the GetClientObject call
+    uint32_t qd[3] = {0, 0, 0};  // first dwords at the action list head (logged to find an emptiness test)
 };
 
 inline const char* StageName(int s) {
@@ -78,6 +79,7 @@ inline void Resolve(uint32_t oid, Chain* c) {
     rd(c->server, kOffIsPc, &c->facts.isPc);
     rd(c->server, kOffAction, &c->facts.action);
     rd(c->server, kOffQueue, &c->facts.queueHead);
+    if (c->facts.queueHead) for (int i = 0; i < 3; ++i) rd(c->facts.queueHead, i * 4, &c->qd[i]);
     rd(c->server, kOffCombat, &c->facts.combat);
     rd(c->server, kOffDialog, &c->facts.dialog);
 
