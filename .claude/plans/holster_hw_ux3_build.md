@@ -68,7 +68,7 @@ Fix `worldToScreen` (HseView.h), marker pool per `research/holstered_weapons/ux_
 ## 6. Status tracker
 - Wave A (CAM2 probe, slider art, A0 validation): DONE (A0 a-c, A1 CAM2 probe logCam2, A2 slider art; reapply-cap finding: SetRect every tick for engine-drifted items)
 - Wave B (page rebuild 0.4.0-dev + Opus review): TODO
-- Wave C1 (combat draw, DLL-only) + C2 (flourish hooks, reinstall): TODO (research swarm first)
+- Wave C1 (combat draw, DLL-only): DONE+Opus-reviewed (d3e97cd6 + fix commit; B1 weapon-only, B2 hand from node); C2 (flourish hooks, reinstall): TODO, needs per-creature window (see OPUS_review_C1 #8)
 - Wave D (sync, prepare, gate, GO, apply, play rows): TODO
 - Wave E (U4 markers): BLOCKED on CAM2
 
