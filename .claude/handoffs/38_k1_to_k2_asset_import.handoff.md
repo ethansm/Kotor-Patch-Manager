@@ -1,7 +1,7 @@
 # Session Handoff & Plan State: patch_manager_mods/38_k1_to_k2_asset_import.md
 
 ## 0. Next-Phase Direction
-T27 TextureVar/BodyVariation RE next (needs a dump of two creatures with known different TextureVar, or Ghidra); npc-world 0.1.2-dev pop= live; peer decides spawn_cap default (4 vs 12); open: which waypoint set (.mod WP_22 vs .rim WP_commoner) is live, P7, optional Run 3 repeat on a quiet machine
+T27 TextureVar RE done; force-tv request queued with npc-diversity
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/38_k1_to_k2_asset_import.md`
@@ -10,17 +10,18 @@ T27 TextureVar/BodyVariation RE next (needs a dump of two creatures with known d
 - **Waves:** .claude/waves/WI-38-a3/
 - **Waves:** .claude/waves/w1-38-T12/
 - **Waves:** .claude/waves/w1-38-T17/
-- **Branch:** `KOTOR-II` (be25c264 docs(40): NB2 Run A/A2 results, P1 and capacity findings from the npc-world test session)
-- **Generated:** 2026-10-18 13:52:54 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (1fbcd9f0 docs(holster): HW-UX3 build round handoff)
+- **Generated:** 2026-10-18 13:59:52 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-be25c264 docs(40): NB2 Run A/A2 results, P1 and capacity findings from the npc-world test session
- patch_manager_mods/40_npc_behaviour_variety.md | 7 +++++++
- 1 file changed, 7 insertions(+)
+1fbcd9f0 docs(holster): HW-UX3 build round handoff
+ .claude/handoffs/holster_editor_ux_v2.handoff.md | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 ```
-- **Dirty Files (171):**
+- **Dirty Files (173):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
+  - ` M .claude/handoffs/38_k1_to_k2_asset_import.handoff.md`
   - ` M .claude/handoffs/40_npc_behaviour_variety.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
   - ` M .claude/handoffs/PHASE7_COMMON_MASTER.handoff.md`
@@ -28,13 +29,12 @@ be25c264 docs(40): NB2 Run A/A2 results, P1 and capacity findings from the npc-w
   - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
   - ` M .claude/plans/swarm_library_architecture.md`
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
-  - ` M .claude/settings.json`
-  - ... +161 more (run `git status --short`)
+  - ... +163 more (run `git status --short`)
 
 ## 2. Immediate Objective (T27)
 **Stage 3 roster, persistence policy, TextureVar set; mechanism lives in doc 40 / `npc_world_src` (doc 35 was merged into doc 40)**
 
-Status: TODO
+Status: PARTIAL 10-18: RE DONE (SEC 25), MECHANISM = CLIENT DESCRIPTOR BYTE VIA `REMAPNPCAPPEARANCE 0X76D200` (NPC-DIVERSITY OWNS THE DETOUR); ROSTER + PERSISTENCE DECIDED; TEXTUREVAR SET PENDING OWNER DECISION (FORCE-TV BRANCH REQUEST TO NPC-DIVERSITY, OR ARMOR-ITEM ROUTE)
 Task: Stage 3 roster, persistence policy, TextureVar set; mechanism lives in doc 40 / `npc_world_src` (doc 35 was merged into doc 40)
 
 ## 2b. Upcoming Batches in Pipeline
