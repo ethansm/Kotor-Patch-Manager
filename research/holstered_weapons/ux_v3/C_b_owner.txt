@@ -1,0 +1,37 @@
+C_b owner check: PLACENODE owner vs COMB creature (holster_src, Steam swkotor2.exe)
+Sources: Holster.cpp (code); scripts/holster_log_check.py on current holster_log.txt (9116 lines); G2_combat_signal.txt (older log, 1528 COMB lines, quoted as such).
+
+1. Code anchors
+- Holster.cpp:321-334  COMB hook 0x7682B0: old = [creature+0x138] (Creature_ClientCombat); logs "COMB creature=%x old new edge".
+- Holster.cpp:835-844  PLACENODE: parent = [beh+0x14]; owner = [parent+0x1D8]; body = [parent+0x84]+0x08; logs "parent=%x owner=%x body=%s".
+- Holster.cpp:836 comment: "Unverified that the parent is the body Gob." (open)
+- Holster.cpp:833: static counter, first 40 PLACENODE lines per process.
+- Both pointers print with %x, so string equality is valid.
+
+2. Current log (checker output, aggregates only)
+- "OWNER (weapon parent+0x1D8 / body): 0xab11a68 P_AttonBB comb=yes x2, 0xb924540 PFBCM comb=yes x2, 0xad5f938 P_Kreia1hBB comb=yes x1, 0xb4e0990 N_CommM comb=yes x1"
+- "COMB edges=1653 creatures=115"
+- Checker's comb=yes means owner is in the set of COMB creature= values (holster_log_check.py:365-368).
+
+3. Older log (G2_combat_signal.txt, lines 6-7)
+- "LOG PLACENODE owner=b924540" -> PFBCM, labelled PC (VERIFIED in G2).
+- "LOG PLACENODE owner=b2f0940" -> N_CommF, labelled NPC. Not in the current owner list (current NPC owner: 0xb4e0990 N_CommM). Not reproduced.
+- Party: unknown in G2. Current owners P_AttonBB and P_Kreia1hBB look like party bodies (P_ prefix, Atton/Kreia); no tag in the log confirms it.
+
+4. Answer to Q1
+- Inclusion: YES. 4 of 4 owners appear in the COMB creature set (PC PFBCM, party P_AttonBB and P_Kreia1hBB, NPC N_CommM).
+- Distinct per creature: YES. 4 owner pointers map to 4 bodies.
+- Same set: NOT SHOWN. COMB has 115 creatures; only 4 are owners. Reverse inclusion is not expected.
+- Sample is small: 6 owner-bearing lines, capped at 40 PLACENODE lines.
+- Raw COMB lines for the 4 owners were not quoted: the checker prints aggregates only, and raw logs were not grepped.
+
+5. Answer to Q2: [owner+0x138] as in-combat flag
+- COMB reads [creature+0x138] as old state (Holster.cpp:321-325). Steam offset 0x138 (K2Addr.h:400). If owner == creature, COMB reads [owner+0x138].
+- Setter 0x7682B0 = thiscall(creature, newState), stores this+0x138, returns old (GameAddr.h:75; K2Addr.h:199, 206).
+- Holster code calls it the "client combat flag"; nonzero vs 0 is the edge (HolsterLogic.h:6, 193). G2 VERIFIED enter/exit for PC and NPC. The 1=in-combat reading is inferred from that, not stated in code.
+- HolsterPlace never reads [owner+0x138]; it reads only [parent+0x1D8]. GOG offset is 0 (inert, K2Addr.h:587).
+
+6. Open
+- Confirm parent Gob == body Gob (Holster.cpp:836).
+- Same-set proof needs PLACENODE for all combat creatures, not the first 40.
+- Sample COMB lines per owner need a checker option; none exists.

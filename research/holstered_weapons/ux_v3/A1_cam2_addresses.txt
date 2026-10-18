@@ -1,0 +1,14 @@
+A1_cam2_addresses: addresses read by the log-only CAM2 probe (holster-editor, HolsterEditor.cpp logCam2)
+Checked with: python3 scripts/query_ghidra.py address <hex> (2026-10-18). No address added to raw_addresses.toml.
+
+0x479460  -> name_map: "GUI fill rect (glViewport + coloured unit quad; returns 0 if rejected)" conf high (not called by CAM2; documents the stack layout)
+0xa309c0  -> no name_map row. Clip stack depth. Read as dword raw + int16 low half (Gui2D.h: low 16 bits, 0 in HUD frame, 0xFFFF = -1 in menu frames).
+0xa309c8  -> no name_map row. Stack entry[i].x (int16) at 0xa309c8 + i*10. Entry = x,y,w,h (int16) + flag (uint16) = 10 bytes (decomp/47/00479460.c).
+0xa309ca  -> no name_map row. entry[i].y (int16).
+0xa309ce  -> no name_map row. entry[i].h (int16); entry[0].h = root height used as the glViewport y flip (H - y - h).
+0xa32a54  -> no name_map row. Raw dword; RenderScene (0x47F320) picks the modelview source from it (0 = cam+0xA8/+0xB4).
+Extra (also unnamed in the DB, read-only dword): 0xa32a30 = early reject flag of 0x479460 (nonzero -> push refused, viewport untouched);
+0xa309cc/0xa309d0 = entry[i].w / entry[i].flag (same 10-byte stride).
+Reads are via saferead::readAt (VirtualQuery based); nothing is written. glGetIntegerv(0xBA2) is resolved from opengl32.dll with
+GetProcAddress and only called when wglGetCurrentContext() is non-null on the calling thread (the editor tick runs on the game thread).
+Note: the tick sees the idle stack (restored root entry), not the draw-time push; the line is labelled phase=tick. A draw-time check still needs a hook on 0x4799C0.

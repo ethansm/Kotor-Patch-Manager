@@ -1,0 +1,16 @@
+A0a layout contract check (recon, read-only). Anchors: patch_manager_mods/<path>:<line>
+Q: does pageLayoutV3(column, view, preview, hint, thumbFrac) match how HolsterEditor.cpp gets pane rects?
+
+1 Wiring: NO production caller. HolsterEditor.cpp has no HseLayoutV3.h include (includes :35-56). pageLayoutV3, pageBoxesV3, kPageItemsV3 are used only by holster_editor_src/hse_layout_v3_test.cpp. Production still lays out via applyLayout (HolsterEditor.cpp:1381) and placeItem (:555-561).
+2 Param types: pageLayoutV3 takes editkit::Box by value x4 (HseLayoutV3.h:193-194; struct EditKit.h:12, namespace :10). PaneRect fills K2MuiRect (ModConfigApi.h:93, int32 x,y,w,h). cbEnter copies into hse::HseRect (HseView.h:88; HolsterEditor.cpp:1769-1770), not Box. No Box conversion exists; the call site must copy fields.
+3 Units: UI px on both sides (HseLayoutV3.h:8 "measured UI px"; PaneRect in UI px). Consistent.
+4 Hint owner: caller-owned; zero Box = none (HseLayoutV3.h:16, :192). Production queries neither MUI_PANE_DESC (ModConfigApi.h:53) nor MUI_PANE_PREVIEW (:58). SetDescSplit is never called in holster_editor_src (only a comment, common_contract_test.cpp:75). Without a split PREVIEW = whole description rect; older providers answer 0 (ModConfigApi.h:24). Preview and hint have no production source.
+5 Pane queries in cbEnter (HolsterEditor.cpp:1759-1786): COLUMN :1767 and VIEW :1768 ignore PaneRect's return; on failure zero rects flow into viewRect :1771 and strip :1774. Only STATUS :1773 is checked. The v3 header assumes positive panes (HseLayoutV3.h:18-21).
+6 Cache: viewRect (:261, set :1771), statusRect (:258, set :1773), strip (:260, set :1774), wheel rect (:1780, cleared in cbLeave :1790). Written only in cbEnter; placeItem is called only from cbEnter (:1762-1763). Readers: viewRect :651, :1192, :1422, :1510; statusRect :1091; strip :1422, :1510. A resize while on the page is not re-read.
+7 Item order/count: kPageItemsV3 = 69 = 19 left + 13 view + 37 inspector (HseLayoutV3.h:49-52; test :116). Production creation order (HolsterEditor.cpp:448-522): view, status, name, prev, next, wpnR, wpnL, stance label/prev/next, emote label/prev/next, play, bone, scope, save, revert, resetScope, done, reset, flip, mode x4 = 26 (HseView.h:791), then inspector 6 rows x 2 buttons = 12 (HseView.h:790). Total 38. No 1:1 mapping: v3 inspector row is 5 boxes (InspRowV3, HseLayoutV3.h:54); v3 adds members, captions, 5 bones, 3 scopes, 5 stances, group labels/resets, note, hints. v3 order is zone-fixed (HseLayoutV3.h:248-249), not Add order.
+8 Cap conflict: HseView.h:793 and its pins (common_contract_test.cpp:226-227; hse_view_test.cpp:976) say 40. mod_config_src/MenuUiLogic.h:37 has kMaxItems = 80 (menu_ui_logic_test.cpp:345 "cap raised from 40 to 80"). The v3 header assumes 80 (HseLayoutV3.h:51). At 69 items, the cbBuild check (HolsterEditor.cpp:514) would refuse the inspector on a 40-cap provider.
+OPEN
+- Which provider build is live (cap 40 or 80)? Not checked here.
+- Which pane feeds hint (DESC) and preview (PREVIEW)? Needs a SetDescSplit decision.
+- Should cbEnter re-query panes on resize, or keep the per-entry cache?
+VERDICT: MISMATCH (v3 unwired). Types need an explicit Box conversion; hint/preview source undefined; 69 items exceed the 40-item cap enforced at HseView.h:793.

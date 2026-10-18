@@ -1,0 +1,43 @@
+C_c recon: g_boneTest / g_boneName uses + left mirror frame (read-only, HEAD)
+Anchors: H=patch_manager_mods/holster_src/Holster.cpp  T=HolsterTune.h  Q=HolsterQuat.h  B=HolsterBonePatch.h  Hd=HolsterHand.h
+
+(1) g_boneTest uses (all hits)
+- H:54   decl (comment H:52-53: bone_test needs probe=1)
+- H:261  set: g_boneTest = probe && bone_test (readConfig)
+- H:781  HolsterPlace (H7) gate "if (!g_boneTest) return;" (after previewPlace H:776)
+- H:1206 applyBoneTest gate (rhand/lhand literal repoint); called at H:1253
+(g_boneLeft, same family: H:263 set, H:1210 lhand site)
+
+(1) g_boneName uses (all hits)
+- H:62   decl, default "pelvis_g"; its ADDRESS is the push imm (H:1208)
+- H:230-232 bone_name ini parse (identifier chars only)
+- H:270  bootBoneIdx = boneIndexOf(g_boneName) -> defaultBone() (used H:743, H:862, H:1025)
+- H:476  nodeIsTarget: node name == g_boneName; feeds H:811, refuse PrNotTarget H:848
+- H:744  previewPlace bone fallback when boneIdx==0 (editor; not behind g_boneTest)
+- H:864  mountPose skip: if mountBone == g_boneName, base stays node pose (H:860)
+- H:1208 push imm address; H:1215 BONETEST log; H:1250 CONFIG log
+
+Hip mode (rhand/lhand untouched, hip write only when not drawn):
+- KEEP: H:230-232, H:270 (hip bone name -> boneIdx); H:744 (preview); H:1250 (log, optional)
+- SKIP: H:1204-1218 applyBoneTest and H:1253 call; H:261/H:263. Keep bone_test=0 or init repoints the rhand literal.
+- CHANGE: H:781 gate needs its own mode flag, else the hip write never runs.
+- CHANGE: H:476 + H:848. nodeIsTarget(name==pelvis_g) is false for rhand/lhand, so every in-world call refuses. Key on rhand/lhand (cf. H:578) or bypass.
+- CHANGE: H:864. With node=rhand and mountBone=pelvis_g the skip fires, so base = hand pose, not hip. Hip mode must always mountPose.
+- CHANGE: contract text H:4, H:771-773, hooks.toml:6 says H7 writes only with bone_test=1.
+- NO drawn flag exists (rg "drawn": HolsterLogic.h:203 comment only). Candidate: OnHandAttachR/L H:513-515 -> handAttach ring (H:485+).
+
+(2) Left mirror and left_extra_rot
+- effLeft H:692-694 = return left (identity, no gate). Callers H:727, H:965, H:1083.
+- resolveFull T:335-395. Left levels T:349-357 (model-L, model-R mirrored, type-L, type-R mirrored, global mirrored). First level with rot/off/bone wins (T:361-365).
+- mirrorRot T:276 negates ry,rz. mirrorOff T:277 negates x. mirrorBone T:278-282 swaps rthigh_g<->lthigh_g only.
+- Applied T:370-371 (rot, off) and T:391 (bone), each only on a mirror level.
+- left_extra_rot T:374-384: only when rot is inherited (rotL->mirror). q = qaxis(X,ex)*qbase(rot), then eulerNear. extraDeg = ex.
+- Frame: applyPlacement Q:47-54 rotates pos by node.q (Q:50) and sets o.q = node.q*qbase(rotDeg) (Q:52). Mirror x, mirror rot and X-axis tilt are all in the frame of the base argument, not the hand node.
+- Base chosen H:860-867 (node pose, or mountPose(mountBone) when mountBone != g_boneName). previewPlace already does mountPose base for left (H:743-757).
+- mountPose H:636-671 uses node n only for owner (n+0x40, H:638) and vtable (n+0, H:639), not its name. An lhand node with a bone base is structurally valid.
+
+Answer (2): math stays valid with base=mountPose(bone), node=lhand. Caveats:
+- H:864 must be bypassed (see above).
+- No tuned value was ever composed on an rhand/lhand base. Tuned seeds use pelvis_g/rthigh_g/lthigh_g bases (holster.ini:49-66), so the -8 extra on a hand base is unverified.
+- The x-negation and X-axis tilt assume base x is lateral. Assumed for hip bones, not verified. pelvis_g is not swapped (T:278-282), so its mirror relies on its own frame being sagittal-symmetric.
+- HolsterHand.h has no bone, mirror or extra logic. Only resolveLeft Hd:53-54.

@@ -1,0 +1,43 @@
+A0c kMaxReapply (patch_manager_mods/mod_config_src/ModConfig.cpp)
+
+ANSWER: counter is per Target (per control), counts engine drift corrections
+since the last SetRect on that item. Not per frame, not per page lifetime.
+
+COUNT
+- kMaxReapply=8 ModConfig.cpp:68. Target{ctl,r,applied,gaveUp} :99-104.
+- Items embed Target tg (ModConfig.cpp:116); fixed targets are McState.tg[32] (:142).
+- applyOne :277-296: rect equal -> return at :282 (counter untouched).
+  Drift + initial=false -> applied++ (:290), e.relayouts++ (:291), log only while relayouts<=32 (:292).
+  gaveUp is sticky: :279 returns early until a reset.
+- Drift checks run every Options draw: applyTargets(e,false) ModConfig.cpp:1271
+  (all fixed targets) and entry items :1273-1276 (only when ps.state==ENTRY).
+  Draw hook = CSWGuiPanel::Draw, every frame (:1233).
+
+RESETS (the only ones)
+- muiSetRect :1117-1125: it->tg = Target() (:1121) -> applied=0, gaveUp=false.
+- ENTRY enter :783-784 resets every item on that page.
+- addTarget :300-305 replaces Target() on re-add (layout rebuild).
+- resetState() :161 (ctor :1192, dtor :1355).
+- NOT reset by: rect matching, tick, page leave.
+
+69 PER-FRAME SetRect: CANNOT EXHAUST IT
+- Each muiSetRect call zeroes applied before the tick, so per frame applied is at most 1.
+  Never reaches 8, gaveUp never set. The guard is defeated, not exhausted.
+- Limits: 69 < kMaxItems=80 (MenuUiLogic.h:37). kMaxTargets=32 does not apply to items.
+- Cost per call, rect unchanged: itemAt bounds :553-559, getExtent 4 reads (GuiKit.h:227-238),
+  compare, no setRect. Changed: guikit::setRect vtable slot 1 (GuiKit.h:241-249).
+  No mutex on this path (InterlockedIncrement only in HIDDENDRAW logs, :1242/:1255).
+  beginScope clears per-scope read cache (SafeRead.h:37-40). Single UI thread assumed, not verified.
+- Desc split writes (syncDescSplit, :338-372) are NOT capped at all.
+
+HAZARD OF "ONLY WHEN CHANGED"
+- SetRect once, engine drifts it 8 times -> gaveUp=true, no more corrections.
+  Consumer sees no change, never re-sends -> wrong rect until next ENTRY enter (:783).
+- Look for "RELAYOUT gave up" in the log (:285-287).
+
+SAFE CONSUMER POLICY
+1. SetRect on page/entry enter and whenever the desired rect differs from the last value sent.
+2. Do NOT call SetRect per frame without a compare: each call resets the guard.
+3. If a control must hold against an engine fight, compare desired vs getExtent per frame
+   and SetRect on mismatch: no cap, up to 2 writes/frame/item, possible flicker.
+4. Alarm on "RELAYOUT gave up" (:285).

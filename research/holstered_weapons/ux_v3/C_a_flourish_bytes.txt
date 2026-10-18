@@ -1,0 +1,48 @@
+# C_a flourish bytes: Steam swkotor2.exe (dump steam_6a522e71). Static, $0, no live REA.
+# Asm source: ~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71/decomp/<bb>/<addr>.asm
+
+## Correction (read first)
+- 0x0079F621 and 0x0066BAC2 are CALL instruction addresses (E8 rel32, 5 bytes):
+  79/0079f430.asm:155 "e83aafddff CALL 0x0057a560"; 66/0066b8a0.asm:170 "e899eaf0ff CALL 0x0057a560".
+- Return addresses pushed by those calls: 0x0079F626 and 0x0066BAC7.
+- Prior notes (E1, E3, G2, OPUS_review) say "return 0x79F621 / 0x66BAC2". Read them as call sites.
+- Detour filter at entry: [ESP] == 0x0079F626 or 0x0066BAC7, and byte [ESP+8] == 2 (param3).
+
+## 1. 0x007408A0 CClientExoApp::PlayerFlourishWeapons (size 22, RET 0)
+- Convention: __fastcall. ECX = param_1, no stack args. Body: MOV ECX,[EAX+4]; CALL 0x0079F430 at 0x007408AD.
+- Callers (callgraph.tsv): 0x007B12C0 at call site 0x007B23E6 (size 7087); 0x008993F0 at call site 0x00899411 (size 44).
+- Prologue, 12 bytes: 558bec51894dfc8b45fc8b48
+- Instruction boundaries: +1 +3 +4 +7 +10 +13.
+- original_bytes (first boundary >=5): "558bec51894dfc" (7 bytes, ends 0x7408A7).
+- Full 22 bytes: 558bec51894dfc8b45fc8b4804e87eeb05008be55dc3
+
+## 2. 0x0066B8A0 Global::ExecuteCommandCreatureFlourishWeapon (VM 847, size 686, RET 8)
+- Convention: ECX on entry saved to [EBP-0x3c]. Callee pops 8 (RET 0x8 at 0x0066BB4D).
+  No [EBP+8] or [EBP+0xC] reads. Decompile shows void. Exact prototype: OPEN.
+- Direct callers: none. callgraph.tsv has no CALL row to 0x0066B8A0.
+- Only code reference: MOV dword ptr [ECX+0xD3C],0x66b8a0 at 0x00667F4F in FUN_00665F50
+  (66/00665f50.asm:1557; size 12410, no direct callers). Dispatch is through that slot.
+- Calls 0x0057A560 at 0x0066BAC2 (param3=2, return 0x0066BAC7).
+- Prologue, 12 bytes: 558bec83ec48894dc48d45fc
+- Instruction boundaries: +1 +3 +6 +9 +12 +13.
+- original_bytes: "558bec83ec48" (6 bytes, ends 0x66B8A6).
+
+## 3. 0x0057A560 CSWSCreature::SetCombatState (size 1011, RET 0xC)
+- Convention: __thiscall. ECX = this (CSWSCreature*), 3 stack args.
+  At entry, before prologue: [ESP]=ret, [ESP+4]=state, [ESP+8]=param3 (byte), [ESP+0xC]=p4.
+- Flourish push order PUSH 0; PUSH 2; PUSH 1; CALL 0x0079F621 gives state=1, param3=2, p4=0.
+- Callers: 13 in header (57/0057a560.c line 1). Call sites seen: 0x569923 (AIUpdate 0x569320),
+  0x56D80E (0x56D6F0), 0x57AD02/0x57AD15/0x57AF42/0x57AF5E (0x57AC30), 0x5865F1 (0x5864D0),
+  0x586707 (0x586640), 0x79F621 (0x79F430), 0x66BAC2 (0x66B8A0).
+- Prologue, 12 bytes: 558bec6aff68d010950064a1 (SEH frame setup).
+- Instruction boundaries: +1 +3 +5 +10 +16 +17 +20.
+- original_bytes: "558bec6aff" (5 bytes; next insn 0x57A565 PUSH 0x9510d0 is an exact boundary).
+
+## Hook notes
+- Displaced bytes in all three have no rel32 branches and relocate unchanged.
+- Caller-side filter for flourish: return 0x0079F626 or 0x0066BAC7 with byte [ESP+8]==2.
+- 0x0079F430 has one caller (0x007408A0), so a detour at 0x7408A0 covers the player path.
+
+## Open
+- Invoker of the 0x66B8A0 slot (+0xD3C) is not found by static grep. Confirm live before relying on the script path.
+- Exact 0x66B8A0 prototype: stack args are never read.

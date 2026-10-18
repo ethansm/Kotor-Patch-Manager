@@ -246,6 +246,7 @@ struct Editor {
     bool camEngCfgLogged = false;     // CAMPTR was logged once
     bool camEngDumped = false;        // CAMRAW was logged once
     bool camEngCapNoted = false;
+    int cam2Logs = 0;                 // CAM2 line sets logged (capped at kMaxCam2Logs)
 
     // U0b CALIB probe state and per-kind WARN counters (reset with the Editor)
     int warnCount[W_KINDS] = {};
@@ -1231,6 +1232,114 @@ void calibClick(Editor& e, int cx, int cy, bool inside) {
     }
     calibLogPrompt(e, "click");
     updateStatusText(e);
+}
+
+// ---- CAM2 probe (log only, ux_v3 A1): why the viewport shows ~1.0 m where the camera maths predicts ~1.7 m ----
+// One line set per call (CAM2 gl / rect / stack / flag / node x6), at most kMaxCam2Logs per Editor, from the tick (idle GUI stack, not the draw-time push).
+// Engine globals are read with safe reads only; the one GL call (glGetIntegerv) runs only when this thread has a current GL context.
+constexpr int kMaxCam2Logs = 3;
+constexpr uintptr_t kCam2StackDepth = 0x00A309C0;   // clip stack depth (low 16 bits signed: 0 HUD, 0xFFFF = -1 menu frames); names: A1_cam2_addresses.txt
+constexpr uintptr_t kCam2StackEntry0 = 0x00A309C8;  // entry[i] = int16 x,y,w,h + uint16 flag at +i*10; entry[0].h (0xA309CE) = root height
+constexpr uintptr_t kCam2RenderFlag = 0x00A32A54;   // dword, 0 = RenderScene takes the modelview from cam+0xA8/+0xB4
+constexpr uintptr_t kCam2PushReject = 0x00A32A30;   // dword, nonzero = 0x479460 refuses the push
+
+void logCam2(Editor& e, const char* why) {
+    if (!g_probeCam || e.cam2Logs >= kMaxCam2Logs) return;
+    ++e.cam2Logs;
+    saferead::beginScope();
+    const int n = e.cam2Logs;
+
+    // 1. GL viewport of this thread (only with a current GL context)
+    {
+        typedef void*(APIENTRY * CurCtxFn)();
+        typedef void(APIENTRY * GetIntFn)(unsigned, int*);
+        static CurCtxFn curCtx = nullptr;
+        static GetIntFn getInt = nullptr;
+        static bool resolved = false;
+        if (!resolved) {
+            resolved = true;
+            HMODULE m = GetModuleHandleA("opengl32.dll");
+            if (m) {
+                curCtx = reinterpret_cast<CurCtxFn>(reinterpret_cast<void*>(GetProcAddress(m, "wglGetCurrentContext")));
+                getInt = reinterpret_cast<GetIntFn>(reinterpret_cast<void*>(GetProcAddress(m, "glGetIntegerv")));
+            }
+        }
+        void* ctx = curCtx ? curCtx() : nullptr;
+        if (!getInt || !ctx) {
+            KP_LOG(chView, "CAM2 viewport skipped (no GL thread) n=%d why=%s fn=%d ctx=%p", n, why, getInt ? 1 : 0, ctx);
+        } else {
+            int gv[4] = {0, 0, 0, 0};
+            getInt(0x0BA2, gv);   // GL_VIEWPORT
+            KP_LOG(chView, "CAM2 viewport n=%d why=%s phase=tick gl=(%d,%d,%d,%d) ctx=%p", n, why, gv[0], gv[1], gv[2], gv[3], ctx);
+        }
+    }
+
+    // 2. scene sub-object rect (S+4..S+0x10), the view control's own rect (V+4..V+0x10) and the control rect used for the view
+    {
+        using T = K2AddrTable;
+        const uintptr_t view = e.viewCtl;
+        int s[4] = {0, 0, 0, 0}, v[4] = {0, 0, 0, 0};
+        bool sOk = false, vOk = false;
+        if (view && k2addr::get() && k2addr::off(&T::View_Scene)) {
+            const uintptr_t sc = view + static_cast<uintptr_t>(k2addr::off(&T::View_Scene));
+            sOk = true;
+            for (int i = 0; i < 4; ++i) sOk = rdc<int>(sc, 4 + i * 4, &s[i]) && sOk;
+        }
+        if (view) {
+            vOk = true;
+            for (int i = 0; i < 4; ++i) vOk = rdc<int>(view, 4 + i * 4, &v[i]) && vOk;
+        }
+        CamInfo c;
+        const bool camOk = readCam(e, c);
+        KP_LOG(chView, "CAM2 rect n=%d why=%s S=(%d,%d,%d,%d) s_ok=%d V=(%d,%d,%d,%d) v_ok=%d ctl=(%d,%d,%d,%d) ext=(%d,%d,%d,%d) pane=(%d,%d,%d,%d) viewRect=(%d,%d,%d,%d) cam=%d",
+               n, why, s[0], s[1], s[2], s[3], sOk ? 1 : 0, v[0], v[1], v[2], v[3], vOk ? 1 : 0, c.ctlExt.x, c.ctlExt.y, c.ctlExt.w, c.ctlExt.h, c.ext.x, c.ext.y,
+               c.ext.w, c.ext.h, c.pane.x, c.pane.y, c.pane.w, c.pane.h, e.viewRect.x, e.viewRect.y, e.viewRect.w, e.viewRect.h, camOk ? 1 : 0);
+    }
+
+    // 3. parent stack used by 0x479460: raw depth, then entry[-1], entry[0] (root) and every entry up to the depth (all raw int16, flag as uint16)
+    {
+        uint32_t depthRaw = 0;
+        const bool dOk = rdc<uint32_t>(kCam2StackDepth, 0, &depthRaw);
+        const int idx = static_cast<int16_t>(depthRaw & 0xFFFFu);
+        int16_t rootH = 0;
+        const bool hOk = rdc<int16_t>(0x00A309CE, 0, &rootH);
+        KP_LOG(chView, "CAM2 stack n=%d why=%s depth_raw=%08x depth_ok=%d idx16=%d rootH(a309ce)=%d h_ok=%d", n, why, static_cast<unsigned>(depthRaw), dOk ? 1 : 0, idx,
+               static_cast<int>(rootH), hOk ? 1 : 0);
+        const int last = (idx >= 0 && idx <= 7) ? idx : 0;
+        for (int i = -1; i <= last; ++i) {
+            int16_t en[5] = {0, 0, 0, 0, 0};
+            bool got = true;
+            for (int k = 0; k < 5; ++k) got = rdc<int16_t>(kCam2StackEntry0, i * 10 + k * 2, &en[k]) && got;
+            KP_LOG(chView, "CAM2 stack n=%d entry[%d]=(%d,%d,%d,%d) flag=%u ok=%d%s", n, i, en[0], en[1], en[2], en[3], static_cast<unsigned>(static_cast<uint16_t>(en[4])), got ? 1 : 0,
+                   i == idx ? " <- current parent" : "");
+        }
+        if (idx < -1 || idx > 7) {
+            int16_t en[5] = {0, 0, 0, 0, 0};
+            bool got = true;
+            for (int k = 0; k < 5; ++k) got = rdc<int16_t>(kCam2StackEntry0, idx * 10 + k * 2, &en[k]) && got;
+            KP_LOG(chView, "CAM2 stack n=%d entry[%d](current, out of the dumped range)=(%d,%d,%d,%d) flag=%u ok=%d", n, idx, en[0], en[1], en[2], en[3],
+                   static_cast<unsigned>(static_cast<uint16_t>(en[4])), got ? 1 : 0);
+        }
+    }
+
+    // 4. render flag and push-reject flag, raw
+    {
+        uint32_t f54 = 0, f30 = 0;
+        const bool a = rdc<uint32_t>(kCam2RenderFlag, 0, &f54);
+        const bool b = rdc<uint32_t>(kCam2PushReject, 0, &f30);
+        KP_LOG(chView, "CAM2 flags n=%d why=%s a32a54=%08x ok=%d a32a30=%08x ok=%d", n, why, static_cast<unsigned>(f54), a ? 1 : 0, static_cast<unsigned>(f30), b ? 1 : 0);
+    }
+
+    // 5. CALIB node world positions, one line per node (never cut: the CALIB click line caps its node list at 300 characters)
+    {
+        void* rig = (g_p3.ok() && e.token) ? g_p3.p->RigGob(e.token, 0) : nullptr;
+        if (!rig) KP_LOG(chView, "CAM2 nodes n=%d why=%s rig unavailable (p3=%d token=%u)", n, why, g_p3.ok() ? 1 : 0, e.token);
+        for (int i = 0; rig && i < kCalibNodes; ++i) {
+            CalibNode cn;
+            if (calibNode(e, rig, i, cn)) KP_LOG(chView, "CAM2 node n=%d %s=%s(%.4f,%.4f,%.4f)", n, kCalibLabel[i], cn.name, cn.p[0], cn.p[1], cn.p[2]);
+            else KP_LOG(chView, "CAM2 node n=%d %s=MISS", n, kCalibLabel[i]);
+        }
+    }
 }
 
 // Fresh GetEdit into e.editInfo; true while an edit is open.
@@ -2331,6 +2440,7 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
             logCamHook(e, "live");
             ++e.projLogs;
             logCamEng(e, "live");
+            logCam2(e, "live");
             calibStart(e);
         }
         if (e.projEditPending) {
@@ -2364,6 +2474,7 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
                 if (e.mode == MODE_WEAPON) logEditProj(e);
                 ++e.projLogs;
                 logCamEng(e, "settled");
+                logCam2(e, "settled");
             }
         }
     }

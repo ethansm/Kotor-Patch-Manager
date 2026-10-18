@@ -6,3 +6,6 @@ cxxflags = ["-I../_shared_src", "-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-
 
 [reset_icon_test]
 cxxflags = ["-I../_shared_src", "-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HOST", "-DEMBTEX_HOST", "-Werror"]
+
+[slider_art_test]
+cxxflags = ["-I../_shared_src", "-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HOST", "-DEMBTEX_HOST", "-Werror"]

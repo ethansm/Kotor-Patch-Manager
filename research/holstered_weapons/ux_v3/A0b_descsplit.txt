@@ -1,0 +1,36 @@
+A0b SetDescSplit recon (read-only). Paths relative to KOTOR-II/ root.
+
+SIGNATURE
+- Consumer call: int32_t SetDescSplit(uint32_t page, int32_t previewPermille), K2MenuUiApi last slot.
+  patch_manager_mods/_shared_src/ModConfigApi.h:120 (field), :170 (offset == 11*sizeof(void*)).
+- Gate: MenuClient<K2MenuUiApi>::hasDescSplit() member :254; static overload :251-253.
+- Only real caller: patch_manager_mods/enemy_effects_strip_src/EnemyStrip.cpp:1067 (gate), :1090 (call, return checked).
+
+HASDESCSPLIT VS OLDER PROVIDER: PASS
+- Static: t && struct_size >= offsetof(SetDescSplit)+sizeof(ptr) && t->SetDescSplit (ModConfigApi.h:251-253). Old 11-slot table fails the size test, slot never read.
+- Member: connected && p && hasDescSplit(p) (:254). p set only after usable(t) (:264-270); usable checks v1 members only (:245-249). Old provider still connects: ok() true, hasDescSplit() false.
+- Tests: patch_manager_mods/mod_config_src/common_contract_test.cpp:161-192 (old, null slot, short struct, null table, before/after connect); enemy_effects_strip_src/common_contract_test.cpp:273-292.
+
+PERMILLE CLAMP: PASS
+- kSplitMin=600, kSplitMax=850 (mod_config_src/MenuUiLogic.h:350). clampSplit :358-361: <=0 -> 0 (off), else clamped.
+- 1..599 -> 600; >850 -> 850. Header says "1..5000" (ModConfigApi.h:117-119); code accepts any positive int. Doc-only gap.
+- Negative: muiSetDescSplit returns 0 early (mod_config_src/ModConfig.cpp:1135); an existing split is NOT switched off.
+- Unit: mod_config_src/menu_ui_logic_test.cpp:445-470 (pure math: 0, 1, 600, 850, 5000, -3).
+
+INVALID PAGE / REFUSAL (ModConfig.cpp:1133-1142) returns 0 when:
+- no panel, previewPermille < 0, or page < 2 or page >= 10 (2+kMaxEntries, MenuUiLogic.h:37): :1135
+- entry not live or NewPage not yet called (pageMade[k]): :1137
+- Provider logs nothing on refusal; consumer logs it (EnemyStrip.cpp:1090).
+- Valid entry page not currently shown: stored, returns 1, applied on enter.
+
+PER-PAGE LEAVE/ENTER: PASS
+- Leave: ModConfig.cpp:772 -> syncDescSplit -> shownSplit()==0 (:340-344) -> restoreDescRect (:346-355) puts original LB_DESC rect back.
+- Enter: :792, before entry enter() callback -> splitDesc applied (syncDescSplit :359-384). Reapply per tick :1272 and after describe :435.
+- split[k] (:152) is NOT cleared on leave/enter. Cleared only by resetState() at CTOR :1192 and DTOR :1355, i.e. per Options panel lifetime. Consumer sets once per Options open.
+- Original rect cached at build :1199, before describe rewrites it.
+
+TEST GAP
+- No test calls the real muiSetDescSplit (ModConfig.cpp:1133). All SetDescSplit tests use stubs (enemy_effects_strip_src/enemy_strip_draw_test.cpp:933; mod_config_src/common_contract_test.cpp:32).
+
+LOW-RISK EDGE (not blocking)
+- restoreDescRect (:348-354) clears descSplitOn even if descOriginal() fails, leaving the rect shrunk. Unreachable in practice: cache filled at :1199.

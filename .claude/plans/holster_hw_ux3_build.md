@@ -66,7 +66,7 @@ Fix `worldToScreen` (HseView.h), marker pool per `research/holstered_weapons/ux_
 `python3 scripts/run_tests.py -k holster_` ; `-k hse_view` ; `-k hse_layout` ; `-k reset_icon` ; `-k slider_art` ; `-k guikit` ; `-k menu_ui_logic` | `python3 scripts/build_check.py --mod holster_src --mod holster_editor_src --mod mod_config_src` | `python3 scripts/check_raw_addresses.py` | `python3 scripts/compat_check.py patch_manager_mods/_shared_src/GuiKit.h` | `python3 scripts/agent_diff_check.py --scope <globs>` | logs only via `python3 scripts/kotor2_logs.py check <log> --new`.
 
 ## 6. Status tracker
-- Wave A (CAM2 probe, slider art, A0 validation): TODO
+- Wave A (CAM2 probe, slider art, A0 validation): DONE (A0 a-c, A1 CAM2 probe logCam2, A2 slider art; reapply-cap finding: SetRect every tick for engine-drifted items)
 - Wave B (page rebuild 0.4.0-dev + Opus review): TODO
 - Wave C1 (combat draw, DLL-only) + C2 (flourish hooks, reinstall): TODO (research swarm first)
 - Wave D (sync, prepare, gate, GO, apply, play rows): TODO
