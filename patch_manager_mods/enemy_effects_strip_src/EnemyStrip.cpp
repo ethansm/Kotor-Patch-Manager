@@ -93,38 +93,49 @@ struct Config {
 
 const char* const IniPath = ".\\enemy_strip.ini";   // ".\\" prefix: GetPrivateProfile*A with a bare name looks in the Windows dir
 
-int clampi(int v, int lo, int hi) { return v < lo ? lo : (v > hi ? hi : v); }
-float clampf(float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); }
-
-int iniInt(const char* key, int def, int lo, int hi) {
-    return clampi(static_cast<int>(GetPrivateProfileIntA("Strip", key, def, IniPath)), lo, hi);
+// Raw reads only; every range rule (and the tier ordering) lives in esl::sanitize so the host test covers it.
+int iniInt(const char* key, int def) {
+    return static_cast<int>(GetPrivateProfileIntA("Strip", key, def, IniPath));
 }
-float iniFloat(const char* key, float def, float lo, float hi) {
+float iniFloat(const char* key, float def) {
     char dflt[32], buf[32];
     snprintf(dflt, sizeof(dflt), "%g", static_cast<double>(def));
     GetPrivateProfileStringA("Strip", key, dflt, buf, sizeof(buf), IniPath);
-    char* end = nullptr;
-    const double v = strtod(buf, &end);
-    if (end == buf || v != v) return def;
-    return clampf(static_cast<float>(v), lo, hi);
+    return esl::parseFloatStrict(buf, def);   // trailing junk ("0.65abc") -> default
 }
 
 void loadIni() {
-    g_cfg.enabled = iniInt("Enabled", 1, 0, 1) != 0;
-    g_cfg.verbose = iniInt("Verbose", 0, 0, 1) != 0;
-    g_cfg.maxIcons = iniInt("MaxIcons", 5, 1, esl::kMaxIcons);
-    g_cfg.iconSize = iniInt("IconSize", 0, 0, 256);
-    g_cfg.gap = iniInt("Gap", 4, 0, 200);
-    g_cfg.spacing = iniInt("Spacing", 4, 0, 100);
-    g_cfg.tierObvious = iniInt("TierObvious", 5, 0, 127);
-    g_cfg.tierOwn = iniInt("TierOwn", 12, 0, 127);
-    g_cfg.tierFull = iniInt("TierFull", 20, 0, 127);
-    g_cfg.drainAlpha = iniFloat("DrainAlpha", 0.65f, 0.0f, 1.0f);
-    g_cfg.backing = iniInt("Backing", 0, 0, 1) != 0;
-    g_cfg.backingAlpha = iniFloat("BackingAlpha", 0.55f, 0.0f, 1.0f);
-    g_cfg.backingPad = iniInt("BackingPad", 4, 0, 32);
-    const int ft = iniInt("ForceTier", -1, -1, 3);
-    g_cfg.forceTier = ft;
+    const esl::CfgRaw d;
+    esl::CfgRaw r;
+    r.enabled = iniInt("Enabled", d.enabled);
+    r.verbose = iniInt("Verbose", d.verbose);
+    r.maxIcons = iniInt("MaxIcons", d.maxIcons);
+    r.iconSize = iniInt("IconSize", d.iconSize);
+    r.gap = iniInt("Gap", d.gap);
+    r.spacing = iniInt("Spacing", d.spacing);
+    r.tierObvious = iniInt("TierObvious", d.tierObvious);
+    r.tierOwn = iniInt("TierOwn", d.tierOwn);
+    r.tierFull = iniInt("TierFull", d.tierFull);
+    r.drainAlpha = iniFloat("DrainAlpha", d.drainAlpha);
+    r.backing = iniInt("Backing", d.backing);
+    r.backingAlpha = iniFloat("BackingAlpha", d.backingAlpha);
+    r.backingPad = iniInt("BackingPad", d.backingPad);
+    r.forceTier = iniInt("ForceTier", d.forceTier);
+    const esl::CfgRaw c = esl::sanitize(r);
+    g_cfg.enabled = c.enabled != 0;
+    g_cfg.verbose = c.verbose != 0;
+    g_cfg.maxIcons = c.maxIcons;
+    g_cfg.iconSize = c.iconSize;
+    g_cfg.gap = c.gap;
+    g_cfg.spacing = c.spacing;
+    g_cfg.tierObvious = c.tierObvious;
+    g_cfg.tierOwn = c.tierOwn;
+    g_cfg.tierFull = c.tierFull;
+    g_cfg.drainAlpha = c.drainAlpha;
+    g_cfg.backing = c.backing != 0;
+    g_cfg.backingAlpha = c.backingAlpha;
+    g_cfg.backingPad = c.backingPad;
+    g_cfg.forceTier = c.forceTier;
 }
 
 k2hud::Client g_hud;

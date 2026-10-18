@@ -3,6 +3,7 @@
 // and layout arithmetic. Tested by enemy_strip_logic_test.cpp. Run: python3 scripts/run_tests.py enemy_strip_logic
 #pragma once
 #include <string.h>
+#include <stdlib.h>
 
 namespace esl {
 
@@ -170,6 +171,59 @@ inline float overlayAlpha(float wantEffective) {
     if (a < 0.0f) a = 0.0f;
     if (a > 1.0f) a = 1.0f;
     return a;
+}
+
+// ---------------------------------------------------------------- INI value parsing and range clamps
+// The engine side (EnemyStrip.cpp loadIni) reads the raw INI values and hands them here, so every range rule is host-testable.
+inline int clampInt(int v, int lo, int hi) { return v < lo ? lo : (v > hi ? hi : v); }
+
+// A NaN value falls back to `def`; infinities clamp like any out-of-range number.
+inline float clampFloat(float v, float lo, float hi, float def) {
+    if (v != v) return def;
+    return v < lo ? lo : (v > hi ? hi : v);
+}
+
+// Whole-string float parse: surrounding whitespace is fine, trailing junk ("0.65abc"), an empty string and NaN give `def`.
+inline float parseFloatStrict(const char* s, float def) {
+    if (!s) return def;
+    char* end = nullptr;
+    double v = strtod(s, &end);
+    if (end == s || v != v) return def;
+    while (*end == ' ' || *end == '\t' || *end == '\r' || *end == '\n') ++end;
+    if (*end != '\0') return def;
+    if (v > 1e30) v = 1e30;      // keep the double -> float cast defined
+    if (v < -1e30) v = -1e30;
+    return static_cast<float>(v);
+}
+
+// Raw (unclamped) [Strip] values; the defaults equal the shipped enemy_strip.ini.
+struct CfgRaw {
+    int enabled = 1, verbose = 0, maxIcons = 5, iconSize = 0, gap = 4, spacing = 4;
+    int tierObvious = 5, tierOwn = 12, tierFull = 20;
+    int backing = 0, backingPad = 4, forceTier = -1;
+    float drainAlpha = 0.65f, backingAlpha = 0.55f;
+};
+
+// Clamps every field to its documented range, then enforces the tier ordering obvious <= own <= full by raising the LATER value.
+inline CfgRaw sanitize(CfgRaw c) {
+    const CfgRaw d;
+    c.enabled = clampInt(c.enabled, 0, 1);
+    c.verbose = clampInt(c.verbose, 0, 1);
+    c.maxIcons = clampInt(c.maxIcons, 1, kMaxIcons);
+    c.iconSize = clampInt(c.iconSize, 0, 256);
+    c.gap = clampInt(c.gap, 0, 200);
+    c.spacing = clampInt(c.spacing, 0, 100);
+    c.tierObvious = clampInt(c.tierObvious, 0, 127);
+    c.tierOwn = clampInt(c.tierOwn, 0, 127);
+    c.tierFull = clampInt(c.tierFull, 0, 127);
+    c.drainAlpha = clampFloat(c.drainAlpha, 0.0f, 1.0f, d.drainAlpha);
+    c.backing = clampInt(c.backing, 0, 1);
+    c.backingAlpha = clampFloat(c.backingAlpha, 0.0f, 1.0f, d.backingAlpha);
+    c.backingPad = clampInt(c.backingPad, 0, 32);
+    c.forceTier = clampInt(c.forceTier, -1, 3);
+    if (c.tierOwn < c.tierObvious) c.tierOwn = c.tierObvious;
+    if (c.tierFull < c.tierOwn) c.tierFull = c.tierOwn;
+    return c;
 }
 
 }  // namespace esl

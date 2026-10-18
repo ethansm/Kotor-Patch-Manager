@@ -259,7 +259,113 @@ static void testOverlay() {
     KT_CHECK(fabsf(overlayAlpha(0.39f) - 0.5f) < 1e-6f);
 }
 
+static void testConfig() {
+    // Defaults equal the shipped enemy_strip.ini and survive sanitize unchanged.
+    CfgRaw d;
+    KT_CHECK_EQ(d.enabled, 1); KT_CHECK_EQ(d.verbose, 0); KT_CHECK_EQ(d.maxIcons, 5); KT_CHECK_EQ(d.iconSize, 0);
+    KT_CHECK_EQ(d.gap, 4); KT_CHECK_EQ(d.spacing, 4);
+    KT_CHECK_EQ(d.tierObvious, 5); KT_CHECK_EQ(d.tierOwn, 12); KT_CHECK_EQ(d.tierFull, 20);
+    KT_CHECK_EQ(d.backing, 0); KT_CHECK_EQ(d.backingPad, 4); KT_CHECK_EQ(d.forceTier, -1);
+    KT_CHECK(d.drainAlpha == 0.65f);
+    KT_CHECK(d.backingAlpha == 0.55f);
+    CfgRaw s = sanitize(d);
+    KT_CHECK_EQ(s.maxIcons, 5); KT_CHECK_EQ(s.tierOwn, 12); KT_CHECK_EQ(s.tierFull, 20); KT_CHECK_EQ(s.forceTier, -1);
+    KT_CHECK(s.drainAlpha == 0.65f);
+
+    // Booleans 0..1: -3 -> 0, 7 -> 1.
+    { CfgRaw r; r.enabled = -3; r.verbose = 7; r.backing = 2; CfgRaw o = sanitize(r);
+      KT_CHECK_EQ(o.enabled, 0); KT_CHECK_EQ(o.verbose, 1); KT_CHECK_EQ(o.backing, 1); }
+    // MaxIcons 1..kMaxIcons (8): 0 -> 1, 1, 8, 9 -> 8.
+    { CfgRaw r; r.maxIcons = 0; KT_CHECK_EQ(sanitize(r).maxIcons, 1);
+      r.maxIcons = 1; KT_CHECK_EQ(sanitize(r).maxIcons, 1);
+      r.maxIcons = 8; KT_CHECK_EQ(sanitize(r).maxIcons, 8);
+      r.maxIcons = 9; KT_CHECK_EQ(sanitize(r).maxIcons, 8);
+      r.maxIcons = -50; KT_CHECK_EQ(sanitize(r).maxIcons, 1); }
+    // IconSize 0..256.
+    { CfgRaw r; r.iconSize = -1; KT_CHECK_EQ(sanitize(r).iconSize, 0);
+      r.iconSize = 0; KT_CHECK_EQ(sanitize(r).iconSize, 0);
+      r.iconSize = 256; KT_CHECK_EQ(sanitize(r).iconSize, 256);
+      r.iconSize = 257; KT_CHECK_EQ(sanitize(r).iconSize, 256); }
+    // Gap 0..200.
+    { CfgRaw r; r.gap = -1; KT_CHECK_EQ(sanitize(r).gap, 0);
+      r.gap = 200; KT_CHECK_EQ(sanitize(r).gap, 200);
+      r.gap = 201; KT_CHECK_EQ(sanitize(r).gap, 200); }
+    // Spacing 0..100.
+    { CfgRaw r; r.spacing = -9; KT_CHECK_EQ(sanitize(r).spacing, 0);
+      r.spacing = 100; KT_CHECK_EQ(sanitize(r).spacing, 100);
+      r.spacing = 101; KT_CHECK_EQ(sanitize(r).spacing, 100); }
+    // BackingPad 0..32.
+    { CfgRaw r; r.backingPad = -1; KT_CHECK_EQ(sanitize(r).backingPad, 0);
+      r.backingPad = 32; KT_CHECK_EQ(sanitize(r).backingPad, 32);
+      r.backingPad = 33; KT_CHECK_EQ(sanitize(r).backingPad, 32); }
+    // Tier values 0..127 (ordered inputs so only the range acts): obvious -4 -> 0; full 500 -> 127; own 500 -> 127 then full raised to 127.
+    { CfgRaw r; r.tierObvious = -4; CfgRaw o = sanitize(r); KT_CHECK_EQ(o.tierObvious, 0); KT_CHECK_EQ(o.tierOwn, 12);
+      CfgRaw r2; r2.tierFull = 500; KT_CHECK_EQ(sanitize(r2).tierFull, 127);
+      CfgRaw r3; r3.tierOwn = 500; CfgRaw o3 = sanitize(r3); KT_CHECK_EQ(o3.tierOwn, 127); KT_CHECK_EQ(o3.tierFull, 127);
+      CfgRaw r4; r4.tierObvious = r4.tierOwn = r4.tierFull = 127; CfgRaw o4 = sanitize(r4);
+      KT_CHECK_EQ(o4.tierObvious, 127); KT_CHECK_EQ(o4.tierOwn, 127); KT_CHECK_EQ(o4.tierFull, 127); }
+    // Tier ordering: the LATER value is raised. Own 3 < Obvious 5 -> 5; Full 8 < Own 12 -> 12.
+    { CfgRaw r; r.tierOwn = 3; CfgRaw o = sanitize(r);
+      KT_CHECK_EQ(o.tierObvious, 5); KT_CHECK_EQ(o.tierOwn, 5); KT_CHECK_EQ(o.tierFull, 20);
+      CfgRaw r2; r2.tierFull = 8; CfgRaw o2 = sanitize(r2);
+      KT_CHECK_EQ(o2.tierObvious, 5); KT_CHECK_EQ(o2.tierOwn, 12); KT_CHECK_EQ(o2.tierFull, 12);
+      // Cascade: Obvious 30 raises Own to 30 and Full to 30.
+      CfgRaw r3; r3.tierObvious = 30; CfgRaw o3 = sanitize(r3);
+      KT_CHECK_EQ(o3.tierObvious, 30); KT_CHECK_EQ(o3.tierOwn, 30); KT_CHECK_EQ(o3.tierFull, 30);
+      // Equal values are legal and untouched.
+      CfgRaw r4; r4.tierObvious = 10; r4.tierOwn = 10; r4.tierFull = 10; CfgRaw o4 = sanitize(r4);
+      KT_CHECK_EQ(o4.tierObvious, 10); KT_CHECK_EQ(o4.tierOwn, 10); KT_CHECK_EQ(o4.tierFull, 10); }
+    // ForceTier -1..3: 7 -> 3, -5 -> -1, 0 and -1 and 3 kept.
+    { CfgRaw r; r.forceTier = 7; KT_CHECK_EQ(sanitize(r).forceTier, 3);
+      r.forceTier = -5; KT_CHECK_EQ(sanitize(r).forceTier, -1);
+      r.forceTier = 0; KT_CHECK_EQ(sanitize(r).forceTier, 0);
+      r.forceTier = -1; KT_CHECK_EQ(sanitize(r).forceTier, -1);
+      r.forceTier = 3; KT_CHECK_EQ(sanitize(r).forceTier, 3); }
+    // Alphas 0..1: edges kept, out of range clamped, infinities clamp, NaN -> that field's default.
+    { CfgRaw r; r.drainAlpha = -0.5f; r.backingAlpha = 1.5f; CfgRaw o = sanitize(r);
+      KT_CHECK(o.drainAlpha == 0.0f); KT_CHECK(o.backingAlpha == 1.0f);
+      r.drainAlpha = 0.0f; r.backingAlpha = 1.0f; o = sanitize(r);
+      KT_CHECK(o.drainAlpha == 0.0f); KT_CHECK(o.backingAlpha == 1.0f);
+      r.drainAlpha = INFINITY; r.backingAlpha = -INFINITY; o = sanitize(r);
+      KT_CHECK(o.drainAlpha == 1.0f); KT_CHECK(o.backingAlpha == 0.0f);
+      r.drainAlpha = NAN; r.backingAlpha = NAN; o = sanitize(r);
+      KT_CHECK(o.drainAlpha == 0.65f); KT_CHECK(o.backingAlpha == 0.55f); }
+    // Explicit bound vectors (each fails an identity sanitize).
+    { CfgRaw r; r.enabled = 5; KT_CHECK_EQ(sanitize(r).enabled, 1); }
+    { CfgRaw r; r.verbose = -3; KT_CHECK_EQ(sanitize(r).verbose, 0); }
+    { CfgRaw r; r.backing = -1; KT_CHECK_EQ(sanitize(r).backing, 0); }
+    { CfgRaw r; r.tierObvious = 500; CfgRaw o = sanitize(r);   // clamp to 127, then Own and Full are raised to 127
+      KT_CHECK_EQ(o.tierObvious, 127); KT_CHECK_EQ(o.tierOwn, 127); KT_CHECK_EQ(o.tierFull, 127); }
+    { CfgRaw r; r.tierObvious = 0; r.tierOwn = -4; CfgRaw o = sanitize(r);
+      KT_CHECK_EQ(o.tierObvious, 0); KT_CHECK_EQ(o.tierOwn, 0); KT_CHECK_EQ(o.tierFull, 20); }
+    { CfgRaw r; r.tierObvious = 0; r.tierOwn = 0; r.tierFull = -4; CfgRaw o = sanitize(r);
+      KT_CHECK_EQ(o.tierObvious, 0); KT_CHECK_EQ(o.tierOwn, 0); KT_CHECK_EQ(o.tierFull, 0); }
+    // Untouched fields stay put when another is out of range.
+    { CfgRaw r; r.gap = 999; CfgRaw o = sanitize(r); KT_CHECK_EQ(o.spacing, 4); KT_CHECK_EQ(o.maxIcons, 5); KT_CHECK_EQ(o.backingPad, 4); }
+}
+
+static void testParseFloat() {
+    KT_CHECK(fabsf(parseFloatStrict("0.65", 0.1f) - 0.65f) < 1e-6f);
+    KT_CHECK(parseFloatStrict("0.65abc", 0.1f) == 0.1f);        // trailing junk -> default
+    KT_CHECK(fabsf(parseFloatStrict(" 0.5 ", 0.1f) - 0.5f) < 1e-6f);   // surrounding whitespace is fine
+    KT_CHECK(fabsf(parseFloatStrict("0.5\r\n", 0.1f) - 0.5f) < 1e-6f);
+    KT_CHECK(parseFloatStrict("", 0.1f) == 0.1f);
+    KT_CHECK(parseFloatStrict("   ", 0.1f) == 0.1f);
+    KT_CHECK(parseFloatStrict("abc", 0.1f) == 0.1f);
+    KT_CHECK(parseFloatStrict("0.5 0.6", 0.1f) == 0.1f);
+    KT_CHECK(parseFloatStrict("nan", 0.1f) == 0.1f);
+    KT_CHECK(parseFloatStrict(nullptr, 0.1f) == 0.1f);
+    KT_CHECK(fabsf(parseFloatStrict("-2", 0.1f) + 2.0f) < 1e-6f);   // no clamping here; sanitize does that
+    KT_CHECK(parseFloatStrict("1e999", 0.1f) == 1e30f);             // huge -> finite, cast stays defined
+    // End to end: junk -> default -> sanitize keeps it; out-of-range number -> clamped.
+    CfgRaw r; r.drainAlpha = parseFloatStrict("0.9x", 0.65f); r.backingAlpha = parseFloatStrict("7", 0.55f);
+    CfgRaw o = sanitize(r);
+    KT_CHECK(o.drainAlpha == 0.65f); KT_CHECK(o.backingAlpha == 1.0f);
+}
+
 int main() {
+    testConfig();
+    testParseFloat();
     testTiers();
     testClassify();
     testVisibility();
