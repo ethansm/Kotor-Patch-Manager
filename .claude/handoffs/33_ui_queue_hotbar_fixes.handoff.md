@@ -1,19 +1,7 @@
 # Session Handoff & Plan State: patch_manager_mods/33_ui_queue_hotbar_fixes.md
 
 ## 0. Next-Phase Direction
-QL15: play check, then read the logs. Everything is LIVE as of 10-17 01:30:
-- queue-hud 0.4.2-dev (`5978bdd`); rollback `queue-hud_swap_20261017_013024`.
-- combat-hotbar 0.9.2-rc, action-hotbar 0.1.5-dev and companion-selfheal 0.8.4-dev (`baca6a9`); rollback `batch_swap_20261017_013047`.
-- KPM commits: 4f452db, 1bb19ea (CombatTrace headers), then the 3 mod mirrors.
-PLAY_TEST_QUEUE rows MODE1 and CST1 are pending.
-After play:
-1. Freeze the logs to `.claude/handoffs/ql12/logs/` before any relaunch.
-2. Run 3 read-only Haiku units:
-   - H1: `queue_hud_log_check.py <frozen> --no-advance` for MODES and flags L/M/N.
-   - H2: `combat_timeline.py <frozen files>` for cross-mod DISAGREE rows.
-   - H3: MODE lines per minute and cap hits; the target is under ~200 per combat.
-3. Compare against the MODE1/CST1 pass signals.
-Skipped in QL16: companion-ai (no frame callback; its E1/E2 lines already feed the timeline), and buff HUD / shield bar / enemy strip (no HUD pointer). The combat-hotbar CSTATE is sampled only on target-menu rebuilds.
+Execute QH4: [Queue HUD] Buffer non-combat Force powers & items in unified FIFO (`haveCur` idle gate, `fakeAction` icon resolution)
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/33_ui_queue_hotbar_fixes.md`
@@ -21,45 +9,45 @@ Skipped in QL16: companion-ai (no frame callback; its E1/E2 lines already feed t
 - **Waves:** .claude/waves/WI-33-b1/
 - **Waves:** .claude/waves/w1-33-QL7/
 - **Waves:** .claude/waves/w2-33-QL9/
-- **Branch:** `KOTOR-II` (df2c7ec docs(33): QL12-QL14, QL16 BUILT + handoff (install needs GO))
-- **Generated:** 2026-10-17 01:31:04 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Waves:** .claude/waves/w3-33-QL17/
+- **Branch:** `KOTOR-II` (a572389d docs(holster): HW-UX3 handoff state)
+- **Generated:** 2026-10-18 12:28:16 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-df2c7ec docs(33): QL12-QL14, QL16 BUILT + handoff (install needs GO)
- .../handoffs/33_ui_queue_hotbar_fixes.handoff.md   | 104 ++++++++++++++-------
- patch_manager_mods/33_ui_queue_hotbar_fixes.md     |   8 +-
- 2 files changed, 73 insertions(+), 39 deletions(-)
+a572389d docs(holster): HW-UX3 handoff state
+ .claude/handoffs/holster_editor_ux_v2.handoff.md | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 ```
-- **Dirty Files (183):**
+- **Dirty Files (186):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
+  - ` M .claude/handoffs/33_ui_queue_hotbar_fixes.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
   - ` M .claude/handoffs/40_npc_behaviour_variety.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
   - ` M .claude/handoffs/PHASE7_COMMON_MASTER.handoff.md`
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
   - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
+  - ` M .claude/plans/holster_editor_layout_v3.md`
   - ` M .claude/plans/swarm_library_architecture.md`
-  - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
-  - ` M CLAUDE.md`
-  - ... +173 more (run `git status --short`)
+  - ... +176 more (run `git status --short`)
 
-## 2. Immediate Objective (QL15)
-**[Queue HUD] Play check MODE1 (PLAY_TEST_QUEUE): medpack out of combat, stim on a member with no enemies (soft), hostile appears (soft->hard + BANNER restore), fight to the end, menu open/close; read with `queue_hud_log_check.py` MODES + flags L/M/N**
+## 2. Immediate Objective (QH4)
+**[Queue HUD] Buffer non-combat Force powers & items in unified FIFO (`haveCur` idle gate, `fakeAction` icon resolution)**
 
 Status: PLANNED
-Task: [Queue HUD] Play check MODE1 (PLAY_TEST_QUEUE): medpack out of combat, stim on a member with no enemies (soft), hostile appears (soft->hard + BANNER restore), fight to the end, menu open/close; read with `queue_hud_log_check.py` MODES + flags L/M/N
+Task: [Queue HUD] Buffer non-combat Force powers & items in unified FIFO (`haveCur` idle gate, `fakeAction` icon resolution)
 
 ## 2b. Upcoming Batches in Pipeline
-- **QH4** : [Queue HUD] Buffer non-combat Force powers & items in unified FIFO (`haveCur` idle gate, `fakeAction` icon resolution)
 - **QL1** : [Queue HUD] Non-combat queue fix: pause restore (active-command verdict), ghost `cur`, identity guard, combat hand-off (doc 30 "Queue-fix QL1")
 - **QL2** : [Queue HUD] Strip flicker (active-cmd slot + 400 ms hold), hand-off clears engine queue first (`handoff_clear_first`), ROUND/HANDOFF_CLEAR trace; medpack = recon only (doc 30 "Queue-fix QL2")
+- **QL5** : [Queue HUD] Click-to-cancel icons in the non-combat queue via the engine queue panel: RECON DONE, no implementation (doc 30 "QL5 investigation")
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume patch_manager_mods/33_ui_queue_hotbar_fixes.md`.
 
 ## 4. Subagent Delegation Direction
 - **Claude Code**: parallel `model: haiku` Agent subagents; brief = `Contract` + `Write Scope` + `python3 scripts/agent_contract.py print worker|recon`.
-- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate QL15` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
+- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate QH4` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
 
 ## 5. Dead Ends & Verification (manual)
 - 2026-10-11: QL3/QL4 hot-swapped (queue-hud ada41e82, repo 37325e9, KPM d9e807c, rollback `kpm_hotswap.py --rollback queue-hud_swap_20261011_135120`). Play session logs frozen under `.claude/handoffs/ql6/logs/` (queue-hud 517 lines, cmdq-probe 2011, action-hotbar 1874, hud-host 58, companion-selfheal 138; written 18:07-18:17).
