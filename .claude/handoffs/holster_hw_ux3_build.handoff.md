@@ -66,3 +66,9 @@ _(none recorded; append Dead Ends & Anti-Patterns and Verification Commands here
 - Follow-ups (pre-existing text fit, F3_RV1/RV4/V2): two scope buttons both fit to "This..."; 6 captions "..." at 3840 (Upper back, This body, inspector values); reset squares 30 px < 32 line (art only, OK).
 - LIVE 10-18 16:30 holster-editor 5f5897c0 (KPM c465912), rollback `kpm_hotswap.py --rollback holster-editor_swap_20261018_163010`. Play row CAP1.
 - Warning: the working-tree PLAY_TEST_QUEUE.md is a stale foreign copy missing the UX3/UX3b/UX3c/UX3d/CAM2/LOG1/ICON1/HW7a/HW7c rows (HEAD has them + CAP1); whoever commits that file must merge, not overwrite.
+
+## 10-18 17:45 0.4.4-dev LIVE (fill panes + captions fitted to engine text box)
+- User feedback on 0.4.3: squished, not filling the space, captions truncated. Live CAPTION log: engine word-wraps text wider than btn w-14, so wrapped lines landed on row edges.
+- 0.4.4: rows up to 52 px (bar 44), roomy form (bones 2 cols, scopes 1/row, mode bar 2x2, stances 3+2), inspector widens; button fit = w-20, label fit = w-8, text_k 2.65, selection marks `><` counted. Offline mockup at 3840x1600: 0 button wraps/cuts; only long help lines cut.
+- Install: gate PASS after a race fixed by another session (test_compat_check temporarily rewrites K2Addr.h; two concurrent gates left it dirty). A later install by another session rewrote the live DLL (older mtime logic -> LIVE-OTHER), so the kpatch was rebuilt with create-patch and applied. Live 96176a50, rollback `python3 scripts/kpm_hotswap.py --rollback holster-editor_swap_20261018_174509`. KPM commit done.
+- Play row LAY1 (CAP1 superseded). Follow-ups: text_k should scale with UI scale (over-cut at 1920x1080); 3440 cuts "Upper b...", "Reve...", "30.5 d..."; mockup does not reproduce Upper back wrap or the +15..+24 drawn offset; working-tree PLAY_TEST_QUEUE.md is a stale foreign copy.

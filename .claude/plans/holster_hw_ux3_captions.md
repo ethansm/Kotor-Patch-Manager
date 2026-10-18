@@ -1,6 +1,6 @@
 # Implementation Plan: HW-UX3 captions — button text visible at any row height (probe + fix + offline mockup), then install for play test
 
-Status: INSTALLED 10-18 16:30 (3b9c239e; holster-editor 0.4.3-dev LIVE 5f5897c0; play row CAP1). Parent plan `.claude/plans/holster_hw_ux3_build.md`. Handoff `.claude/handoffs/holster_hw_ux3_build.handoff.md` (section "10-18 16:10 button-caption debug" holds the evidence). Resume: `python3 scripts/plan_manager.py resume .claude/plans/holster_hw_ux3_captions.md`.
+Status: INSTALLED 10-18 17:45 (0.4.4-dev LIVE 96176a50, bfac6df7; play row LAY1; 0.4.3 was CAP1). Parent plan `.claude/plans/holster_hw_ux3_build.md`. Handoff `.claude/handoffs/holster_hw_ux3_build.handoff.md`. Resume: `python3 scripts/plan_manager.py resume .claude/plans/holster_hw_ux3_captions.md`.
 
 ## 0. Preserved Context & Anti-Patterns
 - User direction: Haiku agents in parallel for investigation, research, testing and validation; escalate findings to Sonnet; Sonnet for simple implementations, reviewed by Opus. Render the menu offline into an image for analysis BEFORE installing. Install at the end is pre-authorised (game must be closed).
