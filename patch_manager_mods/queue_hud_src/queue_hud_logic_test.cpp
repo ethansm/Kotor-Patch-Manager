@@ -395,7 +395,7 @@ bool configEqual(const Config& a, const Config& b) {
     auto s3 = [](const float* x, const float* y) { return x[0] == y[0] && x[1] == y[1] && x[2] == y[2]; };
     return a.enabled == b.enabled && a.bgAlpha == b.bgAlpha && a.borderAlpha == b.borderAlpha && a.borderPx == b.borderPx && a.waitingDim == b.waitingDim && a.waitingAlpha == b.waitingAlpha && a.log == b.log && a.traceQueue == b.traceQueue && a.companions == b.companions && a.stripIconPx == b.stripIconPx && a.stripSide == b.stripSide && a.stripMax == b.stripMax
         && a.kit == b.kit && a.frameAlpha == b.frameAlpha && a.cancel == b.cancel && a.pauseReinject == b.pauseReinject && a.dispatchWaitFlags == b.dispatchWaitFlags && a.traceClicks == b.traceClicks && a.pauseEatenWait == b.pauseEatenWait && a.handoffOnCombat == b.handoffOnCombat && a.showInCombat == b.showInCombat && a.handoffClearFirst == b.handoffClearFirst
-        && a.handoffKeepNew == b.handoffKeepNew && a.handoffKeepUnpaused == b.handoffKeepUnpaused && a.handoffDetachHeld == b.handoffDetachHeld && a.handoffResendHeld == b.handoffResendHeld && a.spellReplayPos == b.spellReplayPos && a.hideBannerSoft == b.hideBannerSoft && a.hideRedbarSoft == b.hideRedbarSoft && a.traceMode == b.traceMode && a.modeCap == b.modeCap && s3(a.bg, b.bg) && s3(a.border, b.border) && s3(a.waitingBg, b.waitingBg);
+        && a.handoffKeepNew == b.handoffKeepNew && a.handoffKeepUnpaused == b.handoffKeepUnpaused && a.handoffDetachHeld == b.handoffDetachHeld && a.handoffResendHeld == b.handoffResendHeld && a.spellReplayPos == b.spellReplayPos && a.hideBannerSoft == b.hideBannerSoft && a.hideRedbarSoft == b.hideRedbarSoft && a.traceMode == b.traceMode && a.modeCap == b.modeCap && a.waitingIconDim == b.waitingIconDim && a.stripHeadPct == b.stripHeadPct && s3(a.bg, b.bg) && s3(a.border, b.border) && s3(a.waitingBg, b.waitingBg);
 }
 
 // Positive control: configEqual must see a change in every member, else the checks that replaced memcmp prove nothing.
@@ -406,7 +406,7 @@ void testConfigEqualSeesEveryField() {
     CFG_FLIP(enabled); CFG_FLIP(bgAlpha); CFG_FLIP(borderAlpha); CFG_FLIP(borderPx); CFG_FLIP(waitingDim); CFG_FLIP(waitingAlpha); CFG_FLIP(log); CFG_FLIP(traceQueue); CFG_FLIP(companions); CFG_FLIP(stripIconPx);
     CFG_FLIP(stripSide); CFG_FLIP(stripMax); CFG_FLIP(kit); CFG_FLIP(frameAlpha); CFG_FLIP(cancel); CFG_FLIP(pauseReinject); CFG_FLIP(dispatchWaitFlags); CFG_FLIP(traceClicks); CFG_FLIP(pauseEatenWait); CFG_FLIP(handoffOnCombat);
     CFG_FLIP(showInCombat); CFG_FLIP(handoffClearFirst); CFG_FLIP(handoffKeepNew); CFG_FLIP(handoffKeepUnpaused); CFG_FLIP(handoffDetachHeld); CFG_FLIP(handoffResendHeld); CFG_FLIP(spellReplayPos); CFG_FLIP(hideBannerSoft); CFG_FLIP(hideRedbarSoft);
-    CFG_FLIP(traceMode); CFG_FLIP(modeCap);
+    CFG_FLIP(traceMode); CFG_FLIP(modeCap); CFG_FLIP(waitingIconDim); CFG_FLIP(stripHeadPct);
 #undef CFG_FLIP
     for (int i = 0; i < 3; ++i) {
         Config m; m.bg[i] += 1.0f;        KT_CHECK(!configEqual(m, ref));
@@ -1249,6 +1249,78 @@ void testMixedForcePowersAndItems() {
     // Combat override verification:
     // If in combat, engine queue length does not cause buffering; it dispatches immediately
     KT_CHECK_EQ((int)decideItemAction(buf, /*inCombat=*/true, /*engineQueueLen=*/3), (int)DECIDE_DISPATCH_NOW);
+}
+
+void testStripHead() {
+    // B3 (QL17): the head (slot 0) is opaque when waiting_icon_dim=0 and bigger on companion strips (strip_head_pct).
+    { Config c; Style s = slotStyle(c, 0, true);   // default waitingIconDim=true: unchanged
+      KT_CHECK(c.waitingIconDim && c.stripHeadPct == 100 && s.iconA == 0.6f);
+      c.waitingIconDim = false;
+      s = slotStyle(c, 0, true);
+      KT_CHECK(s.iconA == 1.0f && s.bgA == 0.45f * 0.6f && s.borderA == 0.9f * 0.6f && s.frameA == 0.9f * 0.6f);   // bg / border / frame still dim
+      KT_CHECK(s.bg[0] == 0.03f && s.bg[1] == 0.15f && s.bg[2] == 0.18f);
+      s = slotStyle(c, 0, false); KT_CHECK(s.iconA == 1.0f && s.bgA == 0.45f && s.frameA == 0.9f);
+      s = slotStyle(c, 1, true); KT_CHECK(s.iconA == 1.0f && s.bgA == 0.45f); }
+    const Rect card{ 3711, 1285, 85, 96 }, vit{ 3671, 1285, 47, 96 };
+    { Config c; c.stripSide = kSideLeft;   // stripHeadSize
+      KT_CHECK_EQ(stripHeadSize(vit, c), 58);   // pct 100
+      c.stripHeadPct = 150; KT_CHECK_EQ(stripHeadSize(vit, c), 87);
+      c.stripHeadPct = 200; KT_CHECK_EQ(stripHeadSize(vit, c), 96);   // 116 capped at vit.h
+      c.stripHeadPct = 999; KT_CHECK_EQ(stripHeadSize(vit, c), 96);   // pct itself clamped to 200
+      c.stripHeadPct = 50; KT_CHECK_EQ(stripHeadSize(vit, c), 58);    // never below the strip icon size
+      c.stripHeadPct = 150; c.stripIconPx = 60; KT_CHECK_EQ(stripHeadSize(vit, c), 90);   // strip_icon_px override honoured
+      c.stripIconPx = 70; KT_CHECK_EQ(stripHeadSize(vit, c), 96);
+      c.stripIconPx = 58; KT_CHECK_EQ(stripHeadSize(Rect{ 0, 0, 47, 20 }, c), 58); }   // a short vit never shrinks the icons
+    { Config c; c.stripSide = kSideLeft; c.stripHeadPct = 150; Rect out[4];   // n=3 left layout
+      const int reserve = 66;
+      KT_CHECK_EQ(stripRects(card, vit, 3, c, out, 3840, reserve), 3);
+      KT_CHECK(rectEq(out[0], 3398, 1289, 87, 87));
+      KT_CHECK(rectEq(out[1], 3487, 1304, 58, 58));
+      KT_CHECK(rectEq(out[2], 3547, 1304, 58, 58));
+      KT_CHECK_EQ(out[1].x, out[0].x + out[0].w + kStripGap);                // contiguous, 2 px gap
+      KT_CHECK_EQ(out[2].x, out[1].x + out[1].w + kStripGap);
+      KT_CHECK_EQ(out[2].x + out[2].w, vit.x - reserve);                      // row right edge unchanged
+      KT_CHECK_EQ(stripRowWidth(vit, 3, c), 87 + 2 * (58 + kStripGap));
+      KT_CHECK_EQ(stripRowWidth(vit, 3, c), out[2].x + out[2].w - out[0].x);  // == sum of the placed rects
+      KT_CHECK_EQ(stripRowWidth(vit, 1, c), 87); KT_CHECK_EQ(stripRowWidth(vit, 0, c), 0);
+      KT_CHECK_EQ(stripRowWidth(vit, 9, c), 87 + 3 * (58 + kStripGap));       // n clamped to 4
+      // Cancel: keeps the 58 px square, centred on the (bigger) head, same gap rule
+      KT_CHECK(rectEq(stripCancelRect(out, 3, kSideLeft, 3840, 58), 3398 - 14 - 58, 1289 + (87 - 58) / 2, 58, 58));
+      KT_CHECK(rectEq(stripCancelRect(out, 3, kSideLeft, 3840, 0), 3398 - 21 - 87, 1289, 87, 87));   // sq=0: follows the head
+      c.stripSide = kSideAbove;   // above: bottom edges aligned 2 px over the card
+      KT_CHECK_EQ(stripRects(card, vit, 2, c, out, 0, 0), 2);
+      KT_CHECK(rectEq(out[0], 3711, 1196, 87, 87)); KT_CHECK(rectEq(out[1], 3800, 1225, 58, 58));
+      KT_CHECK_EQ(out[0].y + out[0].h, out[1].y + out[1].h);
+      c.stripSide = kSideBelow;   // below: top edges aligned 2 px under the card
+      KT_CHECK_EQ(stripRects(card, vit, 2, c, out, 0, 0), 2);
+      KT_CHECK(rectEq(out[0], 3711, 1383, 87, 87)); KT_CHECK(rectEq(out[1], 3800, 1383, 58, 58)); }
+    { // pct=100 regression pin: byte-identical to the pre-B3 rects on every side
+      const int sides[] = { kSideLeft, kSideAbove, kSideBelow };
+      for (int sd : sides) for (int n = 1; n <= 4; ++n) {
+          Config c; c.stripSide = sd; Rect out[4];
+          KT_CHECK_EQ(stripRects(card, vit, n, c, out, 3840, 66), n);
+          const int s = 58, rowW = n * s + (n - 1) * kStripGap;
+          int x0 = sd == kSideLeft ? vit.x - 66 - rowW : card.x;
+          int y = sd == kSideLeft ? vit.y + (vit.h - s) / 2 : (sd == kSideBelow ? card.y + card.h + kStripGap : card.y - kStripGap - s);
+          const int over = x0 + rowW - 3840; if (over > 0) x0 -= over;
+          for (int i = 0; i < n; ++i) KT_CHECK(rectEq(out[i], x0 + i * (s + kStripGap), y, s, s));
+          KT_CHECK_EQ(stripRowWidth(vit, n, c), rowW);
+      } }
+    { Config c; Rect icons[1] = { Rect{ 3700, 1285, 58, 58 } };   // default sq: identical to the old behaviour
+      KT_CHECK(rectEq(stripCancelRect(icons, 1, kSideLeft, 3840), 3700 - 14 - 58, 1285, 58, 58)); (void)c; }
+    { Config c; // ini: defaults, valid, clamped, bad
+      KT_CHECK(c.waitingIconDim && c.stripHeadPct == 100);
+      KT_CHECK(parseIniLine(c, "waiting_icon_dim=0")); KT_CHECK(!c.waitingIconDim);
+      KT_CHECK(parseIniLine(c, "waiting_icon_dim = on")); KT_CHECK(c.waitingIconDim);
+      KT_CHECK(!parseIniLine(c, "waiting_icon_dim=2")); KT_CHECK(c.waitingIconDim);
+      KT_CHECK(parseIniLine(c, "strip_head_pct=150")); KT_CHECK_EQ(c.stripHeadPct, 150);
+      KT_CHECK(parseIniLine(c, "strip_head_pct = 200")); KT_CHECK_EQ(c.stripHeadPct, 200);
+      KT_CHECK(parseIniLine(c, "strip_head_pct=100")); KT_CHECK_EQ(c.stripHeadPct, 100);
+      KT_CHECK(parseIniLine(c, "strip_head_pct=300")); KT_CHECK_EQ(c.stripHeadPct, 200);   // clamped
+      KT_CHECK(parseIniLine(c, "strip_head_pct=50")); KT_CHECK_EQ(c.stripHeadPct, 100);    // clamped
+      c.stripHeadPct = 150;
+      KT_CHECK(!parseIniLine(c, "strip_head_pct=")); KT_CHECK(!parseIniLine(c, "strip_head_pct=abc")); KT_CHECK(!parseIniLine(c, "strip_head_pct=-5")); KT_CHECK(!parseIniLine(c, "strip_head_pct=12345"));
+      KT_CHECK_EQ(c.stripHeadPct, 150); }
 }
 
 void testStripCancel() {
@@ -2560,6 +2632,30 @@ void testCombatEdgeSequences() {
     prev = false;       KT_CHECK(!qh::combatEdgeStep(prev, false, true));   KT_CHECK(!prev);
 }
 
+// B1 (QL17): a buffer whose owner is not party slot 0 is held, never dispatched on the controlled creature.
+void testOwnerHoldB1() {
+    KT_CHECK(ownerMayDispatch(0));
+    KT_CHECK(!ownerMayDispatch(1));
+    KT_CHECK(!ownerMayDispatch(2));
+    KT_CHECK(!ownerMayDispatch(-1));   // no slot at all
+    KT_CHECK_EQ(whyName(DS_NOT_CTRL), "not_ctrl");
+    KT_CHECK_EQ(whyName(RI_NOT_CTRL), "not_ctrl");
+    // old values keep their numbering; the new ones are appended
+    KT_CHECK_EQ((int)DS_FLAG_BUSY, 6);
+    KT_CHECK_EQ((int)DS_NOT_CTRL, 7);
+    KT_CHECK_EQ((int)RI_EXECUTED, 7);
+    KT_CHECK_EQ((int)RI_NOT_CTRL, 8);
+    char out[200];
+    fmtHandoffHold(out, sizeof out, 7, 1, 2);
+    KT_CHECK_EQ(out, "HANDOFF_HOLD cmd=7 m=1 owner_slot=2 why=not_ctrl");
+    fmtHandoffHold(out, sizeof out, 12, 0, -1);
+    KT_CHECK_EQ(out, "HANDOFF_HOLD cmd=12 m=0 owner_slot=-1 why=not_ctrl");
+    char tiny[16];
+    KT_CHECK_EQ(fmtHandoffHold(tiny, sizeof tiny, 7, 1, 2), 48);
+    KT_CHECK_EQ(strlen(tiny), (size_t)15);
+    KT_CHECK(strncmp(tiny, "HANDOFF_HOLD cm", 15) == 0);
+}
+
 int main() {
     testConstants();
     testKeys();
@@ -2590,6 +2686,7 @@ int main() {
     testFollowerWipeProtection();
     testMixedForcePowersAndItems();
     testStripCancel();
+    testStripHead();
     testCancelVisible();
     testStripHiddenForDown();
     testUnifiedActionMake();
@@ -2625,5 +2722,6 @@ int main() {
     testCombatEdgeSequences();
     testCurActionPresent();
     testConfigEqualSeesEveryField();
+    testOwnerHoldB1();
     return kt::Report("queue_hud_logic_test");
 }

@@ -120,6 +120,9 @@ inline int buildSlots(const QEntry* e, int ne, const RNode* rn, int nrn, const R
 // The head action is "waiting" (vanilla panel shows it dimmed while the creature is paused / has a delayed action).
 inline bool isWaiting(bool paused, int ab8, int aa8) { return paused || ab8 >= 1 || aa8 != 0; }
 
+// B1 (QL17): the client Perform* wrappers act on the CONTROLLED creature (party slot 0), so a buffer whose owner is not slot 0 is held, never dispatched. -1 (no slot) is also false.
+inline bool ownerMayDispatch(int ownerSlot) { return ownerSlot == 0; }
+
 // Draw only outside combat, outside menu frames, for a fresh snapshot (< 250 ms old) with something to show.
 // showInCombat (show_in_combat=1) drops the combat term only; enabled, menu, age and slot gates still apply.
 inline bool shouldShow(bool enabled, bool combat, bool inMenu, uint32_t ageMs, int nSlots, bool showInCombat = false) {
@@ -181,6 +184,8 @@ struct Config {
     int borderPx = 2;
     bool waitingDim = true;
     float waitingAlpha = 0.6f;
+    bool waitingIconDim = true;   // waiting_icon_dim: the dimmed head slot also dims its icon (0 = only bg / border / frame dim; the icon stays opaque)
+    int stripHeadPct = 100;       // strip_head_pct: companion strip head (slot 0) icon size, % of the strip icon size (100..200; capped at the vit height)
     float waitingBg[3] = { kTealDim[0], kTealDim[1], kTealDim[2] };
     bool log = true;
     bool traceQueue = true;       // trace_queue: per-command CMD#/WAIT/RESOLVE/DROP/EDGE/QJ log lines
@@ -220,7 +225,8 @@ inline Style slotStyle(const Config& c, int slotIndex, bool waiting) {
     s.bgA = c.bgAlpha; s.borderA = c.borderAlpha; s.iconA = 1.0f; s.frameA = c.frameAlpha; s.borderPx = c.borderPx;
     if (slotIndex == 0 && waiting && c.waitingDim) {
         s.bg[0] = c.waitingBg[0]; s.bg[1] = c.waitingBg[1]; s.bg[2] = c.waitingBg[2];
-        s.iconA *= c.waitingAlpha; s.bgA *= c.waitingAlpha; s.borderA *= c.waitingAlpha; s.frameA *= c.waitingAlpha;
+        if (c.waitingIconDim) s.iconA *= c.waitingAlpha;
+        s.bgA *= c.waitingAlpha; s.borderA *= c.waitingAlpha; s.frameA *= c.waitingAlpha;
     }
     return s;
 }
@@ -255,12 +261,24 @@ inline int stripIconSize(Rect vit, const Config& c) {
     return s < kStripMinIcon ? kStripMinIcon : s;
 }
 
+// Head (slot index 0) icon edge of a companion strip: strip icon size * strip_head_pct / 100, never below the strip icon size and
+// never taller than the vit bar (so the row stays inside the card height). Keyed on slot index 0 only, never on the current command.
+inline int stripHeadSize(Rect vit, const Config& c) {
+    const int s = stripIconSize(vit, c);
+    int pct = c.stripHeadPct < 100 ? 100 : (c.stripHeadPct > 200 ? 200 : c.stripHeadPct);
+    int h = s * pct / 100;
+    if (h < s) h = s;
+    if (vit.h > 0 && h > vit.h) h = vit.h;
+    return h < s ? s : h;   // a vit bar shorter than the strip icon never shrinks the icons
+}
+
 // Row width of n icons (n clamped to strip_max and kMaxSlots), 2px apart: the width queue-hud registers at hud-host strip order 1.
+// Icon 0 is the head size, the rest the strip icon size.
 inline int stripRowWidth(Rect vit, int n, const Config& c) {
     if (n <= 0) return 0;
     const int cap = c.stripMax < 1 ? 1 : (c.stripMax > kMaxSlots ? kMaxSlots : c.stripMax);
     if (n > cap) n = cap;
-    return n * stripIconSize(vit, c) + (n - 1) * kStripGap;
+    return stripHeadSize(vit, c) + (n - 1) * (stripIconSize(vit, c) + kStripGap);
 }
 
 // A horizontal row of n square icons (n clamped to strip_max and 4), 2px apart, in queue order. left: the row ends `reserve`
@@ -272,13 +290,14 @@ inline int stripRects(Rect card, Rect vit, int n, const Config& c, Rect out[kMax
     int cap = c.stripMax < 1 ? 1 : (c.stripMax > kMaxSlots ? kMaxSlots : c.stripMax);
     if (n > cap) n = cap;
     const int s = stripIconSize(vit, c);
-    const int rowW = n * s + (n - 1) * kStripGap;
+    const int hs = stripHeadSize(vit, c);
+    const int rowW = hs + (n - 1) * (s + kStripGap);
     int y = 0, x0 = 0;
-    if (c.stripSide == kSideAbove || c.stripSide == kSideBelow) {
-        y = c.stripSide == kSideBelow ? card.y + card.h + kStripGap : card.y - kStripGap - s;
+    const bool edge = c.stripSide == kSideAbove || c.stripSide == kSideBelow;
+    if (edge) {
+        y = c.stripSide == kSideBelow ? card.y + card.h + kStripGap : card.y - kStripGap - hs;
         x0 = card.x;
     } else {
-        y = vit.y + (vit.h - s) / 2;
         x0 = vit.x - reserve - rowW;
         if (x0 < 0) x0 = 0;
     }
@@ -287,7 +306,14 @@ inline int stripRects(Rect card, Rect vit, int n, const Config& c, Rect out[kMax
         if (over > 0) x0 -= over;
         if (x0 < 0) x0 = 0;
     }
-    for (int i = 0; i < n; ++i) { out[i].x = x0 + i * (s + kStripGap); out[i].y = y; out[i].w = s; out[i].h = s; }
+    int x = x0;
+    for (int i = 0; i < n; ++i) {
+        const int sz = i == 0 ? hs : s;
+        out[i].x = x; out[i].w = sz; out[i].h = sz;
+        // left: centred on the vit bar. above: bottom edges aligned (head size offset). below: top edges aligned.
+        out[i].y = !edge ? vit.y + (vit.h - sz) / 2 : (c.stripSide == kSideBelow ? y : y + hs - sz);
+        x += sz + kStripGap;
+    }
     return n;
 }
 
@@ -340,12 +366,13 @@ inline Rect cancelRect(Rect q0, Rect q1) {
 // selfheal button + ring; when it would leave the screen (x < 0) there is no cancel (never move it into the reserve). above / below:
 // the row starts at the card's left edge, nothing of selfheal is there; at x < 0 it goes just RIGHT of the last icon instead. A square
 // that would pass screenW (> 0) is refused. {0,0,0,0} = none.
-inline Rect stripCancelRect(const Rect* icons, int n, int side, int screenW = 0) {
+// sq > 0 fixes the square edge (the head icon may be bigger than the strip icon size); the square is centred on icons[0] vertically.
+inline Rect stripCancelRect(const Rect* icons, int n, int side, int screenW = 0, int sq = 0) {
     if (!icons || n <= 0 || icons[0].w <= 0 || icons[0].h <= 0) return Rect{ 0, 0, 0, 0 };
-    const int s = icons[0].w;
+    const int s = sq > 0 ? sq : icons[0].w;
     int gap = s / 4;
     if (gap < kStripGap) gap = kStripGap;
-    Rect r{ icons[0].x - gap - s, icons[0].y, s, s };
+    Rect r{ icons[0].x - gap - s, icons[0].y + (icons[0].h - s) / 2, s, s };
     if (r.x < 0) {
         if (side == kSideLeft) return Rect{ 0, 0, 0, 0 };
         const Rect& last = icons[n - 1];
@@ -434,6 +461,14 @@ inline bool parseStripPx(const char* b, const char* e, int* out) {   // 0 (auto)
     *out = v;
     return true;
 }
+inline bool parseHeadPct(const char* b, const char* e, int* out) {   // integer percent, clamped to 100..200 (digits only, at most 4 chars)
+    trim(b, e);
+    if (b == e || e - b > 4) return false;
+    int v = 0;
+    for (const char* p = b; p < e; ++p) { if (*p < '0' || *p > '9') return false; v = v * 10 + (*p - '0'); }
+    *out = v < 100 ? 100 : (v > 200 ? 200 : v);
+    return true;
+}
 inline bool parseStripMax(const char* b, const char* e, int* out) {   // a single digit 1..4
     if (e - b != 1 || *b < '1' || *b > '4') return false;
     *out = *b - '0';
@@ -483,6 +518,8 @@ inline bool parseIniLine(Config& c, const char* line) {
     if (detail::keyEq(kb, ke, "border_px")) return detail::parsePx(vb, ve, &c.borderPx);
     if (detail::keyEq(kb, ke, "waiting_dim")) return detail::parseBool(vb, ve, &c.waitingDim);
     if (detail::keyEq(kb, ke, "waiting_dim_rgb")) return detail::parseRgb(vb, ve, c.waitingBg);
+    if (detail::keyEq(kb, ke, "waiting_icon_dim")) return detail::parseBool(vb, ve, &c.waitingIconDim);
+    if (detail::keyEq(kb, ke, "strip_head_pct")) return detail::parseHeadPct(vb, ve, &c.stripHeadPct);
     if (detail::keyEq(kb, ke, "waiting_alpha")) return detail::parseUnit(vb, ve, &c.waitingAlpha);
     if (detail::keyEq(kb, ke, "log")) return detail::parseBool(vb, ve, &c.log);
     if (detail::keyEq(kb, ke, "trace_queue")) return detail::parseBool(vb, ve, &c.traceQueue);
@@ -809,8 +846,8 @@ struct FlagGate {
 
 // ---- Why-codes (LOG GRAMMAR). Reason order = check order of the bool predicate above.
 // reInjectWhy(...) == RI_OK  <=>  shouldReInject(...);   dispatchWhy(...) == DS_OK  <=>  shouldDispatchNext(...).
-enum ReInjectWhy : uint8_t { RI_OK, RI_INACTIVE, RI_PENDING, RI_CANCEL, RI_MAX, RI_IN_QUEUE, RI_NO_LEADER, RI_EXECUTED };
-enum DispatchWhy : uint8_t { DS_OK, DS_ACTIVE, DS_EMPTY, DS_ENGINE_BUSY, DS_CUR_BUSY, DS_NRN_BUSY, DS_FLAG_BUSY };
+enum ReInjectWhy : uint8_t { RI_OK, RI_INACTIVE, RI_PENDING, RI_CANCEL, RI_MAX, RI_IN_QUEUE, RI_NO_LEADER, RI_EXECUTED, RI_NOT_CTRL };
+enum DispatchWhy : uint8_t { DS_OK, DS_ACTIVE, DS_EMPTY, DS_ENGINE_BUSY, DS_CUR_BUSY, DS_NRN_BUSY, DS_FLAG_BUSY, DS_NOT_CTRL };
 enum DropWhy : uint8_t { DR_COMBAT_CLEAR, DR_NULL_CREATURE, DR_CANCEL, DR_BUFFER_FULL, DR_UNREADABLE_CREATURE, DR_REINJECT_EXHAUSTED, DR_EATEN_TIMEOUT, DR_IDENTITY_LOST };
 
 inline ReInjectWhy reInjectWhy(const ActionBuffer& buf, bool actionInQueue, bool hasFollowLeader, bool paused = false, uint32_t now = 0, bool userCancelled = false) {
@@ -844,6 +881,7 @@ inline const char* whyName(ReInjectWhy w) {
         case RI_IN_QUEUE: return "in_queue";
         case RI_NO_LEADER: return "no_leader";
         case RI_EXECUTED: return "executed";
+        case RI_NOT_CTRL: return "not_ctrl";
     }
     return "?";
 }
@@ -857,6 +895,7 @@ inline const char* whyName(DispatchWhy w) {
         case DS_CUR_BUSY: return "cur_busy";
         case DS_NRN_BUSY: return "nrn_busy";
         case DS_FLAG_BUSY: return "flags";
+        case DS_NOT_CTRL: return "not_ctrl";
     }
     return "?";
 }
@@ -1080,6 +1119,16 @@ inline int fmtHandoffOne(char* out, int cap, uint32_t cmdId, int m, int seq, int
     w.s("HANDOFF_ONE cmd="); w.u(cmdId);
     w.s(" m="); w.mm(m);
     w.s(" seq="); w.i(seq); w.c('/'); w.i(total);
+    return w.done();
+}
+
+// HANDOFF_HOLD cmd=<n> m=<k> owner_slot=<s> why=not_ctrl   (B1: the buffer's owner is not the controlled creature, so it stays buffered)
+inline int fmtHandoffHold(char* out, int cap, uint32_t cmdId, int m, int ownerSlot) {
+    detail::LogWr w(out, cap);
+    w.s("HANDOFF_HOLD cmd="); w.u(cmdId);
+    w.s(" m="); w.mm(m);
+    w.s(" owner_slot="); w.i(ownerSlot);
+    w.s(" why="); w.s(whyName(DS_NOT_CTRL));
     return w.done();
 }
 

@@ -33,6 +33,7 @@
 #include "PortraitSlots.h"
 #include "Gui2D.h"
 #include "GuiKit.h"
+#include "GuiButton.h"   // B2: leader Cancel = a BTN_CLEARALL clone (thin border like Cancel Combat)
 #include "GuiTip.h"
 #include "HudHost.h"
 #include "SelfHealUi.h"   // shui::stripReserve: the fallback selfheal footprint when hud-host strip slots are unavailable
@@ -372,6 +373,7 @@ struct CW {
     int vis = -1;            // last visible / clickable state sent (-1 = unknown)
     int fill = -1;           // 0 = kit_cancel, 1 = kit_cancel_hi, 2 = text fallback
     bool hover = false, tipSet = false;
+    bool btn = false;        // B2: control is a real CSWGuiButton clone (leader only); false = label path
 };
 CW g_cw[3];
 struct CWant { bool show = false; qh::Rect r{ 0, 0, 0, 0 }; };
@@ -416,6 +418,17 @@ void cwLookLeader(CW& w) {
     const qh::CancelStyle style = qh::cancelStyle(true);
     const float* tint = w.hover ? style.hoverTint : style.tint;   // border and fill share one tint field: same rgb for both
     const int want = w.hover ? 1 : 0;
+    if (w.btn) {   // B2: vanilla Cancel Combat look (thin border art, bright colour, black fill) in the bright companion teal
+        if (w.fill != want) {
+            guibutton::setButtonText(w.c, "CANCEL QUEUE");
+            void* f = guikit::imageFor("uibit_fill_2bt");
+            const qh::CancelStyle bs = qh::cancelStyle(false);
+            guikit::setButtonFill(w.c, f, f, w.hover ? bs.hoverTint : bs.tint);
+            guikit::setButtonFillStyle(w.c, 2);
+            w.fill = want;
+        }
+        return;
+    }
     if (w.fill != want) {
         guikit::setFont(w.c, "dialogfont16x16");
         guikit::setAlign(w.c, 18);
@@ -491,6 +504,23 @@ uintptr_t makeCancelLabel(uintptr_t panel, const char* tmplName, int* whyOut) {
     return c;
 }
 
+// Leader Cancel: a BTN_CLEARALL button clone (canary-checked); any failure falls back to the LBL_MOULDING3 label. *isBtn = which one.
+uintptr_t makeCancelLeader(uintptr_t panel, int* whyOut, bool* isBtn) {
+    *isBtn = false;
+    int why = guikit::CF_None; uint32_t badVt = 0; bool canary = false;
+    const uintptr_t b = guibutton::createButtonFromTemplate(panel, "BTN_CLEARALL", &why, &badVt, &canary);
+    if (b && canary) {
+        guikit::setVisible(b, false);
+        guikit::setClickable(b, false);
+        if (guikit::appendToPanel(panel, b)) { *isBtn = true; *whyOut = guikit::CF_None; return b; }
+        KP_LOGV(chCancel, KPLOG_WARN, "BUILD append failed for BTN_CLEARALL, button %08x left hidden + click-through", (unsigned)b);
+        return makeCancelLabel(panel, "LBL_MOULDING3", whyOut);   // the unlinked button stays hidden; fall back to the label
+    }
+    KP_LOGV(chCancel, KPLOG_WARN, "BUILD BTN_CLEARALL clone failed ctl=%08x why=%d badvt=%08x canary=%d: label fallback", (unsigned)b, why, (unsigned)badVt, canary ? 1 : 0);
+    if (b) guibutton::releaseUnlinkedButton(b);
+    return makeCancelLabel(panel, "LBL_MOULDING3", whyOut);
+}
+
 void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
     if (!ctx || ctx->struct_size < offsetof(K2HudContext, panel) + sizeof(ctx->panel)) return;
     const uintptr_t panel = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->panel));
@@ -508,11 +538,11 @@ void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
     ProjGuard pg;
     int n = 0, why[3] = {};
     for (int k = 0; k < 3; ++k) {
-        const char* tmpl = (k == 0) ? "LBL_MOULDING3" : "LBL_QUEUE1";
-        g_cw[k].c = makeCancelLabel(panel, tmpl, &why[k]);
+        if (k == 0) g_cw[0].c = makeCancelLeader(panel, &why[0], &g_cw[0].btn);
+        else g_cw[k].c = makeCancelLabel(panel, "LBL_QUEUE1", &why[k]);
         if (g_cw[k].c) ++n;
     }
-    KP_LOGV(chCancel, n == 3 ? KPLOG_INFO : KPLOG_WARN, "BUILD panel=%08x cancel labels n=%d/3 why=%d,%d,%d", (unsigned)panel, n, why[0], why[1], why[2]);
+    KP_LOGV(chCancel, n == 3 ? KPLOG_INFO : KPLOG_WARN, "BUILD panel=%08x cancel labels n=%d/3 why=%d,%d,%d btn=%d", (unsigned)panel, n, why[0], why[1], why[2], g_cw[0].btn ? 1 : 0);
     visLog("build", n == 3, n == 3 ? "ok" : "labels-missing", qh::Rect{ 0, 0, 0, 0 });
 }
 
@@ -697,7 +727,7 @@ bool memberDown(int k, uintptr_t server, DWORD now) {
     return c.down;
 }
 
-struct StripDraw { qh::Rect r[qh::kMaxSlots]; qh::Style st[qh::kMaxSlots]; char rr[qh::kMaxSlots][17]; int n = 0; bool have = false; };
+struct StripDraw { qh::Rect r[qh::kMaxSlots]; qh::Style st[qh::kMaxSlots]; char rr[qh::kMaxSlots][17]; int n = 0; bool have = false; int cancelSq = 0; };
 // Last good strip per party index k (1-2): repainted for kPanelHoldMs on an empty queue, with its edge signature and type text so the log edge does not flip.
 struct HeldStrip { StripDraw d; DWORD tick = 0; uintptr_t creature = 0; uint32_t sig = 0; char types[48] = {}; };
 HeldStrip g_heldStrip[3];
@@ -769,13 +799,14 @@ void drawStrips(uintptr_t hud, DWORD now, bool inMenu) {
         // hud-host / selfheal / StripSlot it is the same value computed locally, so the layout is identical either way.
         int reserve = shui::stripReserve(shui::Rect{ vit.x, vit.y, vit.w, vit.h });
         if (g_cfg.stripSide == qh::kSideLeft) {
-            const int rowW = qh::stripRowWidth(vit, sd.n, g_cfg), rowH = qh::stripIconSize(vit, g_cfg);
+            const int rowW = qh::stripRowWidth(vit, sd.n, g_cfg), rowH = qh::stripHeadSize(vit, g_cfg);
             K2HudRect sr{};
             if (g_hudc.stripSlot("queue-hud", 1, K2HudRect{ vit.x, vit.y, vit.w, vit.h }, rowW, rowH, &sr)) reserve = vit.x - sr.x - rowW;
         }
         sd.n = qh::stripRects(card, vit, sd.n, g_cfg, sd.r, screenW, reserve);
         if (sd.n == 0) continue;
         sd.have = true;
+        sd.cancelSq = qh::stripIconSize(vit, g_cfg);   // the Cancel X keeps the plain strip icon size even when the head is bigger
         sigs[k] = sig * 131u + static_cast<uint32_t>(sd.r[0].x) * 7u + static_cast<uint32_t>(sd.r[0].y) * 13u + static_cast<uint32_t>(sd.r[0].w);
         hs.d = sd; hs.tick = now; hs.sig = sigs[k]; memcpy(hs.types, types[k], sizeof hs.types);   // live draw: refresh the hold
     }
@@ -787,7 +818,7 @@ void drawStrips(uintptr_t hud, DWORD now, bool inMenu) {
     if (!any) return;
     if (g_cfg.cancel && (g_combat == 0 || g_softCombat))   // Cancel stays hidden in real combat; soft combat (ally-only targets) shows it like out of combat
         for (int k = 1; k <= 2; ++k)
-            if (d[k].have) { g_want[k].r = qh::stripCancelRect(d[k].r, d[k].n, g_cfg.stripSide, screenW); g_want[k].show = g_want[k].r.w > 0; }
+            if (d[k].have) { g_want[k].r = qh::stripCancelRect(d[k].r, d[k].n, g_cfg.stripSide, screenW, d[k].cancelSq); g_want[k].show = g_want[k].r.w > 0; }
     gui2d::CapGuard capGuard;
     for (int k = 1; k <= 2; ++k)
         for (int j = 0; d[k].have && j < d[k].n; ++j) drawSlot(d[k].r[j].x, d[k].r[j].y, d[k].r[j].w, d[k].r[j].h, d[k].st[j], guikit::imageFor(d[k].rr[j]));
@@ -1058,6 +1089,7 @@ DWORD g_identLastTick[3] = {0, 0, 0};
 struct Handoff { bool detachTried = false; bool pending = false; bool headValid = false; bool headHeld = false; bool sawExec = false; DWORD edgeAt = 0; DWORD lastTick = 0;
                  int heldUnpausedMs = 0; qh::QueuedAction head; int total = 0; int sent = 0; };
 Handoff g_handoff[3];
+bool g_handoffHold[3];   // B1: HANDOFF_HOLD already traced for this episode (reset when no hand-off is pending)
 // QL10 (handoff_keep_new): round nodes already pending at the first send (the player's new click); roundOrderTick keeps them behind our re-sent commands.
 struct RoundOrder { uint32_t foreign[qh::kMaxRound] = {}; int n = 0; DWORD armedAt = 0; };
 RoundOrder g_roundOrder[3];
@@ -1142,6 +1174,17 @@ void endHandoff(int k, qh::DropWhy why) {
     h = Handoff{};
 }
 
+// B1: once per episode, trace that member k's buffer is held because its owner is not the controlled creature.
+static void handoffHoldTrace(int k, uint32_t cmdId, int ownerSlot) {
+    if (g_handoffHold[k]) return;
+    g_handoffHold[k] = true;
+    if (g_logOn && g_cfg.traceQueue) {
+        char line[120];
+        qh::fmtHandoffHold(line, sizeof line, cmdId, k, ownerSlot);
+        QTRACE("%s", line);
+    }
+}
+
 void detachRound(int k, uintptr_t srv, const Snapshot& s, DWORD now, const char* why);   // QL10 detach, defined after the hand-off code
 void discardDetached(int k, const char* why);
 // Every frame in combat (readable HUD). The edge frame moves a member's buffer into g_handoff; then each pending member sends one command per frame.
@@ -1156,6 +1199,13 @@ void handoffTick(DWORD now, const bool* edge) {
     for (int k = 0; k < 3; ++k) {
         qh::ActionBuffer& buf = g_itemQueue[k];
         if (edge[k] && bufBusy(buf)) {
+            {   // B1: the client wrappers would run the buffered commands on the controlled creature; hold the buffer untouched (no ServerClearAllActions, no hand-off)
+                const int ownerSlot = slotOfCreature(tbl, bufOwner(buf));
+                if (!qh::ownerMayDispatch(ownerSlot) || ownerSlot != k) {   // != k: no identity pre-pass in combat, the clear below targets member k
+                    handoffHoldTrace(k, buf.active ? buf.activeAction.cmdId : buf.queue[0].cmdId, ownerSlot);
+                    continue;
+                }
+            }
             endHandoff(k, qh::DR_COMBAT_CLEAR);   // a hand-off left unfinished by an earlier combat
             if (!g_cfg.handoffOnCombat) { traceDropAll(k, qh::DR_COMBAT_CLEAR); buf.clear(); continue; }
             const uintptr_t cli = party::member(tbl, k);
@@ -1192,13 +1242,22 @@ void handoffTick(DWORD now, const bool* edge) {
     }
     for (int k = 0; k < 3; ++k) {
         Handoff& h = g_handoff[k];
-        if (!h.pending) continue;
+        if (!h.pending) { g_handoffHold[k] = false; continue; }
         qh::ActionBuffer& buf = g_itemQueue[k];
         const uintptr_t cli = party::member(tbl, k);
         const uintptr_t srv = cli ? party::serverCreature(cli) : 0;
         if (!srv) { endHandoff(k, qh::DR_NULL_CREATURE); traceDropAll(k, qh::DR_NULL_CREATURE); buf.clear(); continue; }
         Snapshot s;
         if (!gatherFor(srv, s)) continue;
+        if (h.headValid || buf.count > 0) {   // B1: a leader switch during a started hand-off: hold (nothing is sent or cleared) until this member leads again; nothing left = fall through to the pop/clear path
+            const uintptr_t owner = h.headValid ? h.head.creature : bufOwner(buf);
+            const int ownerSlot = slotOfCreature(tbl, owner);
+            if (!qh::ownerMayDispatch(ownerSlot) || ownerSlot != k) {
+                handoffHoldTrace(k, h.headValid ? h.head.cmdId : buf.queue[0].cmdId, ownerSlot);
+                continue;
+            }
+            g_handoffHold[k] = false;
+        }
         if (h.headValid && h.headHeld) {   // exec evidence and the stuck clock run even on frames that cannot send yet
             if (execEvidence(s)) h.sawExec = true;
             const bool held = engineHoldsAction(s);
@@ -1588,6 +1647,8 @@ void tickItemQueues(DWORD now, bool inMenu) {
             continue;
         }
         if (skip[k]) continue;
+        // B1 (QL17): the client Perform* wrappers act on the controlled creature (slot 0); a buffer owned by anyone else is held (never dispatched or re-injected).
+        const bool ownerCtrl = !bufBusy(buf) || qh::ownerMayDispatch(slotOfCreature(tbl, bufOwner(buf)));
 
         Snapshot s;
         const bool gOk = gatherFor(srv, s);
@@ -1639,7 +1700,8 @@ void tickItemQueues(DWORD now, bool inMenu) {
         if (buf.active && actionInQueue) buf.seenInQueue = true;   // bookkeeping only (RESOLVE seen=)
 
         // 2. Follower wipe protection & active completion tracking
-        const qh::ReInjectWhy riWhy = qh::reInjectWhy(buf, actionInQueue, hasFollowLeader, s.paused, now);
+        qh::ReInjectWhy riWhy = qh::reInjectWhy(buf, actionInQueue, hasFollowLeader, s.paused, now);
+        if (riWhy == qh::RI_OK && !ownerCtrl) riWhy = qh::RI_NOT_CTRL;
         if (bufBusy(buf)) {
             if (static_cast<int>(riWhy) != g_prevRiWhy[k]) {
                 g_prevRiWhy[k] = static_cast<int>(riWhy);
@@ -1678,6 +1740,7 @@ void tickItemQueues(DWORD now, bool inMenu) {
                 buf.accrueEaten(s.paused, now);
                 qh::ActiveVerdict av = qh::activeVerdict(buf, ev, now, g_cfg.pauseEatenWait);
                 if (!g_cfg.pauseReinject && (av == qh::AV_EATEN_WAIT || av == qh::AV_EATEN_REINJECT || av == qh::AV_GIVE_UP)) av = qh::AV_UNSEEN;
+                if (!ownerCtrl && av == qh::AV_EATEN_REINJECT) av = qh::AV_EATEN_WAIT;   // B1: hold, do not re-inject on the controlled creature
                 switch (av) {
                     case qh::AV_PRESENT:
                         buf.notePresent(ev.executing, actionInQueue, now);
@@ -1739,6 +1802,7 @@ void tickItemQueues(DWORD now, bool inMenu) {
         // 3. Sequential dispatch of next buffered action (idle gate: gateNe == 0 && !haveCur && nrn == 0; gateNe skips a resting 0x3D)
         qh::DispatchWhy dsWhy = qh::dispatchWhy(buf, s.gateNe, creal, s.nrn);
         bool flagCapped = false;
+        if (dsWhy == qh::DS_OK && !ownerCtrl) dsWhy = qh::DS_NOT_CTRL;   // B1: held until its owner leads again
         if (dsWhy == qh::DS_OK && g_cfg.dispatchWaitFlags) {
             const bool flagsBusy = !s.paused && (s.aa8 != 0 || s.ab8 != 0);
             if (!g_flagGate[k].step(flagsBusy, now, &flagCapped)) dsWhy = qh::DS_FLAG_BUSY;
@@ -2049,7 +2113,7 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     loadIni();
     g_logOn = g_cfg.log;
-    KP_LOG(chMain, "0.4.2-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax);
+    KP_LOG(chMain, "0.4.3-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d waiting_icon_dim=%d strip_head_pct=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax, g_cfg.waitingIconDim ? 1 : 0, g_cfg.stripHeadPct);
     QLOG(chMain, "pause_eaten_wait=%d dispatch_wait_flags=%d spell_replay_pos=%d", g_cfg.pauseEatenWait ? 1 : 0, g_cfg.dispatchWaitFlags ? 1 : 0, g_cfg.spellReplayPos ? 1 : 0);
     QLOG(chMain, "pause_reinject=%d handoff_on_combat=%d handoff_clear_first=%d handoff_keep_new=%d handoff_resend_held=%d show_in_combat=%d handoff_keep_unpaused=%d trace_mode=%d mode_cap=%d",
          g_cfg.pauseReinject ? 1 : 0, g_cfg.handoffOnCombat ? 1 : 0, g_cfg.handoffClearFirst ? 1 : 0, g_cfg.handoffKeepNew ? 1 : 0, g_cfg.handoffResendHeld ? 1 : 0, g_cfg.showInCombat ? 1 : 0, g_cfg.handoffKeepUnpaused ? 1 : 0, g_cfg.traceMode ? 1 : 0, g_cfg.modeCap);
