@@ -1,4 +1,4 @@
-// HolsterEditor.cpp -- holster-editor 0.3.0-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
+// HolsterEditor.cpp -- holster-editor 0.3.1-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
 // (doc 42 HW-EDIT, plan .claude/plans/holster_editor_options.md.)
 //
 // mod-config owns everything about the Options screen: the hooks, the root "Mod Configuration" button, the list page, control cloning,
@@ -11,11 +11,19 @@
 // Mouse (U2): nav mode is the equip-screen drag (LMB orbit/pan, MMB click resets, wheel zooms). Weapon edit mode runs hse::Chord (HseView.h):
 //   LMB alone = orbit the character, RMB held + LMB drag = act on the weapon per the mode bar (Move / Depth / Tilt / Roll+Turn, latched at the
 //   press), RMB + wheel = depth, MMB drag = spin, Shift = fine (x0.2), Ctrl = snap (1 cm / 5 deg, carried). RMB alone does nothing.
+// Inspector (U3, weapon mode): six rows Slide/Depth/Height (offset x/y/z, cm) and Tilt/Roll/Turn (rotation x/y/z, deg). Each row is a scrub button whose
+//   text is the live value ("Depth  -11.0 cm", "* " = differs from the value when the edit opened) plus an "R" button that puts that one value back.
+//   LMB press on a row button + horizontal drag: 1 px = 1 mm or 0.5 deg, Shift x0.2, Ctrl snaps 1 cm / 5 deg (carried), SetValues with absolute values,
+//   window +-0.30 m / +-180 deg around the value at the press, hard limits 3 m / 720 deg. The press is a DEAD press for hse::Chord (no orbit, no weapon
+//   chord). A scrub is cancelled by foreground loss, Back/Esc/leave, a scope change or the edit closing. The open values are captured at edit open, on a
+//   scope change and after Save / Revert / Reset Scope. The page holds 38 of mod-config's 40 items; the 15 strip rows share the strip height.
 //   destroy  destroys the preview viewer (and, behind free_view, the view block once mod-config has unlinked it).
 // A failed connect to mod-config means no menu entry, never a crash. KPatchInit does no file I/O: holster_editor.ini is read in build().
 // Probe lines (log only): REGISTER, CONFIG, BUILD, EMBED, ENTER, DTOR, FREEVIEW, LAYOUT, REBUILD, NAME, REG, CAM, CAMHOOK, PROJ, ITEMNAME, PICK, BTN, EDIT, STANCE, EMOTE, MMB, DRAG, WHEEL, PLAY_PAUSE, UNREG, LEAVE, DISCARD, CALIB,
 // CHORD (state transitions with the reason, dropped presses, resets), MODE (mode bar), GESTURE (weapon gesture begin/end summary), SNAP (carry
-// resets), NUDGE (WARN: a provider nudge that failed or had no effect), SCOPE (scope button text), HANDS (weapon button captions).
+// resets), NUDGE (WARN: a provider nudge that failed or had no effect), SCOPE (scope button text), HANDS (weapon button captions),
+// INSP (U3 inspector: BUILD items=N/40, open values and the left-mirror source, RESET row from to, row-text refresh counts per second, WARN lines),
+// SCRUB (U3: begin row/open value, end row/final value/frames, cancel with the reason, CLAMP window or hard limit, WARN SetValues failures).
 // CALIB (U0b, ini probe_calib): a calibration click probe. While the page is LIVE in nav mode the status label asks for one body target at a time
 // ("Calib 3/6 (round 1): click the right hand"); each LMB press inside the view logs the click (engine px, same space as ext) with the camera
 // pose and the world positions of the body nodes, to fit the real camera offline. Lines: CALIB cfg/prompt/round=..click/skip/done/leave and CALIB WARN.
@@ -120,6 +128,9 @@ constexpr int kMaxChordLogs = 300;           // cap on CHORD transition lines pe
 constexpr int kMaxDropLogs = 30;             // cap on CHORD drop lines per Editor
 constexpr int kMaxSnapLogs = 30;             // cap on SNAP carry-reset lines per Editor
 constexpr int kMaxGestureLogs = 300;         // cap on GESTURE lines per Editor
+constexpr int kMaxScrubLogs = 300;           // cap on SCRUB begin/end/cancel/clamp lines per Editor
+constexpr int kMaxInspLogs = 120;            // cap on INSP refresh/reset/open lines per Editor
+constexpr DWORD kInspLogWindowMs = 1000;     // INSP refresh counts are logged at most once per this window
 constexpr DWORD kStatusHoldMs = 2500;        // weapon mode: the EDIT numbers stay on the status line this long after a change, then the help line returns
 constexpr int kModeCount = hse::WPM_COUNT;
 constexpr int kCrRightItemOff = 0x238, kCrLeftItemOff = 0x23C;   // client creature: equipped item ids (preview-3d CrRightItemOff/CrLeftItemOff)
@@ -127,7 +138,7 @@ constexpr uint32_t kNoItemId = 0x7F000000u;
 constexpr int kItemModelResOff = 0x128;      // client item: model ResRef char[16]
 constexpr int kItemBaseIdxOff = 0xC;         // client item: base item index (GetName's lookup branch dereferences its row)
 
-enum WarnKind { W_ITEMNAME = 0, W_PROJ, W_CAMHOOK, W_CALIB, W_NUDGE, W_KINDS };
+enum WarnKind { W_ITEMNAME = 0, W_PROJ, W_CAMHOOK, W_CALIB, W_NUDGE, W_SCRUB, W_INSP, W_KINDS };
 constexpr int kCalibNodes = 6;
 // Candidate engine node names per calibration target (tried in order; the first that GetNodeWorld resolves is kept). Short names rhand/lhand are the
 // ones the PROJ probe resolves; K2 skeletons also carry the *_g forms.
@@ -173,6 +184,22 @@ struct Editor {
     int32_t modeItem[kModeCount] = {-1, -1, -1, -1};   // mode bar buttons (weapon mode only; parked off screen in nav)
     bool modeBarOk = false;                            // all four mode buttons exist; false = no bar and the mode stays Move
     int weaponMode = hse::WPM_MOVE;                     // selected mode; a running gesture keeps the mode it began with
+
+    // U3 inspector: a scrub button (live value) and a reset button per row; weapon mode only, parked off screen in nav mode.
+    int32_t inspItem[hse::IR_COUNT] = {-1, -1, -1, -1, -1, -1};
+    int32_t inspResetItem[hse::IR_COUNT] = {-1, -1, -1, -1, -1, -1};
+    bool inspOk = false;               // all 12 items exist; false = no inspector and the strip keeps the nine-row layout
+    int itemsBuilt = 0;                // items the page holds after build (highest item id + 1)
+    float openRot[3] = {0, 0, 0}, openOff[3] = {0, 0, 0};   // the values when the edit opened (or after the last Save / scope change): the reset target
+    bool openValid = false;
+    hse::Scrub scrub;                  // the running row scrub (pure state)
+    hse::TextCache inspText;           // what each row button was last given: SetText only on a change
+    bool inspForce = true;             // the next refresh rewrites every row text
+    float inspSeenRot[3] = {0, 0, 0}, inspSeenOff[3] = {0, 0, 0};
+    int inspSeenScope = -1;
+    DWORD inspWinStart = 0;            // INSP refresh log window
+    int inspWinSets = 0, inspWinTicks = 0;
+    int scrubLogs = 0, inspLogs = 0;
 
     int stanceIdx = 0;
     int emoteIdx = 0;
@@ -233,6 +260,9 @@ struct Editor {
     float shownRot[3] = {0, 0, 0}, shownOff[3] = {0, 0, 0};
 };
 Editor g_ed;
+
+void scrubCancel(Editor& e, const char* why);   // defined with the inspector helpers below
+void exitEdit(Editor& e);                       // defined after enterEdit
 
 void embedLog(const char* fmt, ...) {
     char buf[512];
@@ -303,7 +333,7 @@ void readConfig() {
 }
 
 const char* statusText() {
-    return g_p3.ok() && g_hol.ok() ? "0.3.0 dev: preview + holster connected" : "0.3.0 dev: a provider is missing";
+    return g_p3.ok() && g_hol.ok() ? "0.3.1 dev: preview + holster connected" : "0.3.1 dev: a provider is missing";
 }
 
 bool editDirty();   // defined with the status helpers below
@@ -314,6 +344,7 @@ void KPATCH_CALL cbBeforeFree(uint32_t token, void* user) {
     if (!e || !g_p3.ok() || token != e->token) return;
     if (e->mode == MODE_WEAPON) {
         if (editDirty()) KP_LOG(chView, "DISCARD why=before_free");
+        scrubCancel(*e, "before_free");
         if (g_hol.ok()) g_hol.h->EndEdit();
         e->mode = MODE_NAV;
         e->editHand = -1;
@@ -449,6 +480,44 @@ void KPATCH_CALL cbBuild(void* panel, void*) {
     if (!g_ed.modeBarOk) KP_LOGV(chMain, KPLOG_WARN, "MODE WARN mode bar unavailable: AddButton failed (items %d,%d,%d,%d); the weapon drag stays Move",
                                  g_ed.modeItem[0], g_ed.modeItem[1], g_ed.modeItem[2], g_ed.modeItem[3]);
 
+    // Inspector rows (U3): 12 more items. Item ids run 0.. in creation order, so the highest id + 1 is the count so far. The rows need the page to have
+    // room for all 12; otherwise (or when any AddButton fails) the inspector is off and the strip keeps its nine rows.
+    {
+        int32_t maxId = -1;
+        const int32_t base[] = {g_ed.viewItem, g_ed.statusItem, g_ed.nameItem, g_ed.prevItem, g_ed.nextItem, g_ed.wpnRightItem, g_ed.wpnLeftItem,
+                                g_ed.stanceLabelItem, g_ed.stancePrevItem, g_ed.stanceNextItem, g_ed.emoteLabelItem, g_ed.emotePrevItem, g_ed.emoteNextItem,
+                                g_ed.playPauseItem, g_ed.boneItem, g_ed.scopeItem, g_ed.saveItem, g_ed.revertItem, g_ed.resetScopeItem, g_ed.doneItem,
+                                g_ed.resetItem, g_ed.flipItem, g_ed.modeItem[0], g_ed.modeItem[1], g_ed.modeItem[2], g_ed.modeItem[3]};
+        for (int32_t it : base) if (it > maxId) maxId = it;
+        const int before = static_cast<int>(maxId) + 1;
+        if (before != hse::kPageItemsBase)
+            KP_LOGV(chMain, KPLOG_WARN, "INSP WARN BUILD base item count %d, expected %d (an AddX failed above, or the base list changed)", before, hse::kPageItemsBase);
+        if (before + hse::kInspItems > hse::kPageItemCap) {
+            KP_LOGV(chMain, KPLOG_WARN, "INSP WARN BUILD no room for the inspector: %d items + %d > %d", before, hse::kInspItems, hse::kPageItemCap);
+        } else {
+            bool all = true;
+            for (int r = 0; r < hse::IR_COUNT; ++r) {
+                char first[48];
+                hse::inspRowText(first, sizeof first, r, 0.0f, false, true);
+                g_ed.inspItem[r] = ui->AddButton(g_ed.page, first, hse::inspTip(r));
+                g_ed.inspResetItem[r] = ui->AddButton(g_ed.page, "R", hse::inspResetTip());
+                if (g_ed.inspItem[r] < 0 || g_ed.inspResetItem[r] < 0) {
+                    all = false;
+                    KP_LOGV(chMain, KPLOG_WARN, "INSP WARN BUILD AddButton failed for row %s (scrub item %d, reset item %d)", hse::inspRowName(r), g_ed.inspItem[r],
+                            g_ed.inspResetItem[r]);
+                }
+            }
+            g_ed.inspOk = all;
+        }
+        int32_t last = maxId;
+        for (int r = 0; r < hse::IR_COUNT; ++r) {
+            if (g_ed.inspItem[r] > last) last = g_ed.inspItem[r];
+            if (g_ed.inspResetItem[r] > last) last = g_ed.inspResetItem[r];
+        }
+        g_ed.itemsBuilt = static_cast<int>(last) + 1;
+        KP_LOG(chMain, "BUILD items=%d/%d inspector=%s", g_ed.itemsBuilt, hse::kPageItemCap, g_ed.inspOk ? "on" : "OFF");
+    }
+
     if (g_ed.nameItem < 0 || g_ed.prevItem < 0 || g_ed.nextItem < 0 ||
         g_ed.wpnRightItem < 0 || g_ed.wpnLeftItem < 0 ||
         g_ed.stanceLabelItem < 0 || g_ed.stancePrevItem < 0 || g_ed.stanceNextItem < 0 ||
@@ -526,6 +595,7 @@ void resetInput(Editor& e, const char* why = "reset") {
         KP_LOG(chView, "CHORD reset from=%s why=%s", hse::chordStateName(e.chord.state), why);
     }
     logGestureEnd(e, why);
+    scrubCancel(e, why);   // a row scrub is dropped with every other drag (enter/exit edit, scope change, leave, provider lost, discard guard)
     p3d::dragEnd(&e.drag);
     e.chord.reset();
     resetSnap(e, why);
@@ -1010,8 +1080,8 @@ void updateStatusText(Editor& e) {
                      e.editInfo.off[0], e.editInfo.off[1], e.editInfo.off[2]);
             buf[95] = '\0';   // the status label holds about 95 characters
         } else {
-            char raw[128];
-            snprintf(raw, sizeof raw, "%s%s", e.editInfo.dirty ? "* " : "", hse::helpLine());
+            char raw[160];
+            hse::idleStatusText(raw, sizeof raw, e.editInfo.dirty != 0, e.editHand == 1 && hse::leftMirrored(e.editInfo.left != 0, e.editInfo.src));
             fitStatus(e, raw, buf, static_cast<int>(sizeof buf));
             buf[95] = '\0';
         }
@@ -1054,6 +1124,10 @@ void applyLayout(Editor& e) {
         placeRect(e.flipItem, hse::half(hse::stripSlot(e.strip, 8), 1, 6));
 
         // Park Mode B edit controls
+        for (int i = 0; i < hse::IR_COUNT; ++i) {
+            placeRect(e.inspItem[i], offscreen);
+            placeRect(e.inspResetItem[i], offscreen);
+        }
         for (int i = 0; i < kModeCount; ++i) placeRect(e.modeItem[i], offscreen);
         placeRect(e.boneItem, offscreen);
         placeRect(e.scopeItem, offscreen);
@@ -1062,26 +1136,44 @@ void applyLayout(Editor& e) {
         placeRect(e.resetScopeItem, offscreen);
         placeRect(e.doneItem, offscreen);
     } else {
-        placeRect(e.nameItem, hse::stripSlot(e.strip, 0));
-        placeRect(e.wpnRightItem, hse::half(hse::stripSlot(e.strip, 1), 0, 6));
-        placeRect(e.wpnLeftItem, hse::half(hse::stripSlot(e.strip, 1), 1, 6));
+        // Weapon mode: nine strip rows, plus six inspector rows when the inspector exists. The rows share the strip's vertical room (the view pane
+        // height): with the inspector they are squeezed to a smaller pitch, without it the layout is the vanilla stripSlot one.
+        const int rows = e.inspOk ? hse::kStripRowsInsp : hse::kStripRowsBase;
+        const int availH = e.viewRect.h > e.strip.h ? e.viewRect.h : e.strip.h;
+        auto slot = [&](int row) { return hse::compactSlot(e.strip, availH, row, rows); };
+        placeRect(e.nameItem, slot(0));
+        placeRect(e.wpnRightItem, hse::half(slot(1), 0, 6));
+        placeRect(e.wpnLeftItem, hse::half(slot(1), 1, 6));
 
-        placeRect(e.boneItem, hse::stripSlot(e.strip, 2));
-        placeRect(e.scopeItem, hse::stripSlot(e.strip, 3));
+        placeRect(e.boneItem, slot(2));
+        placeRect(e.scopeItem, slot(3));
 
-        placeRect(e.saveItem, hse::half(hse::stripSlot(e.strip, 4), 0, 6));
-        placeRect(e.revertItem, hse::half(hse::stripSlot(e.strip, 4), 1, 6));
+        placeRect(e.saveItem, hse::half(slot(4), 0, 6));
+        placeRect(e.revertItem, hse::half(slot(4), 1, 6));
 
-        placeRect(e.resetScopeItem, hse::half(hse::stripSlot(e.strip, 5), 0, 6));
-        placeRect(e.doneItem, hse::half(hse::stripSlot(e.strip, 5), 1, 6));
+        placeRect(e.resetScopeItem, hse::half(slot(5), 0, 6));
+        placeRect(e.doneItem, hse::half(slot(5), 1, 6));
 
-        placeRect(e.resetItem, hse::half(hse::stripSlot(e.strip, 6), 0, 6));
-        placeRect(e.flipItem, hse::half(hse::stripSlot(e.strip, 6), 1, 6));
+        placeRect(e.resetItem, hse::half(slot(6), 0, 6));
+        placeRect(e.flipItem, hse::half(slot(6), 1, 6));
 
         // Mode bar: two rows of two under the view buttons (parked when the page had no room for it)
         for (int i = 0; i < kModeCount; ++i) {
-            if (e.modeBarOk) placeRect(e.modeItem[i], hse::half(hse::stripSlot(e.strip, 7 + i / 2), i % 2, 6));
+            if (e.modeBarOk) placeRect(e.modeItem[i], hse::half(slot(7 + i / 2), i % 2, 6));
             else placeRect(e.modeItem[i], offscreen);
+        }
+
+        // Inspector rows below the mode bar: the scrub button and the small reset button of each row
+        for (int i = 0; i < hse::IR_COUNT; ++i) {
+            if (e.inspOk) {
+                hse::HseRect sc, rs;
+                hse::inspRects(slot(hse::kStripRowsBase + i), &sc, &rs);
+                placeRect(e.inspItem[i], sc);
+                placeRect(e.inspResetItem[i], rs);
+            } else {
+                placeRect(e.inspItem[i], offscreen);
+                placeRect(e.inspResetItem[i], offscreen);
+            }
         }
 
         // Park Mode A nav controls
@@ -1095,6 +1187,233 @@ void applyLayout(Editor& e) {
         placeRect(e.emoteNextItem, offscreen);
         placeRect(e.playPauseItem, offscreen);
     }
+}
+
+// ---- U3 inspector rows: open values, live texts, scrub, reset ----
+
+// True while `counter` is under `cap` (and counts the line); logs one "capped" line when the cap is reached.
+bool logRoom(int& counter, int cap, const char* what) {
+    if (counter < cap) {
+        ++counter;
+        return true;
+    }
+    if (counter == cap) {
+        ++counter;
+        KP_LOG(chView, "%s log capped at %d lines", what, cap);
+    }
+    return false;
+}
+
+const char* rowUnit(int row) { return hse::inspIsRot(row) ? "deg" : "m"; }
+
+// Remembers the open edit's values as the reset target (edit open, scope change, after Save / Revert / Reset Scope) and forces the row texts to rewrite.
+void captureOpen(Editor& e, const char* why) {
+    if (!refreshEdit(e)) {
+        e.openValid = false;
+        return;
+    }
+    memcpy(e.openRot, e.editInfo.rot, sizeof e.openRot);
+    memcpy(e.openOff, e.editInfo.off, sizeof e.openOff);
+    e.openValid = true;
+    e.inspForce = true;
+    if (logRoom(e.inspLogs, kMaxInspLogs, "INSP"))
+        KP_LOG(chView, "INSP open why=%s hand=%s scope=%d rot=(%.3f,%.3f,%.3f) off=(%.4f,%.4f,%.4f) src=(%u,%u,%u) left=%d mirrored=%d", why, handName(e.editHand),
+               e.editInfo.scope, e.editInfo.rot[0], e.editInfo.rot[1], e.editInfo.rot[2], e.editInfo.off[0], e.editInfo.off[1], e.editInfo.off[2],
+               static_cast<unsigned>(e.editInfo.src[0]), static_cast<unsigned>(e.editInfo.src[1]), static_cast<unsigned>(e.editInfo.src[2]), e.editInfo.left,
+               hse::leftMirrored(e.editInfo.left != 0, e.editInfo.src) ? 1 : 0);
+}
+
+// Width of a scrub button's text in UI units (0 = the strip is not measured yet: no cut).
+float inspTextPx(const Editor& e) {
+    if (e.strip.w <= 0) return 0.0f;
+    const int rows = e.inspOk ? hse::kStripRowsInsp : hse::kStripRowsBase;
+    const int availH = e.viewRect.h > e.strip.h ? e.viewRect.h : e.strip.h;
+    hse::HseRect sc, rs;
+    hse::inspRects(hse::compactSlot(e.strip, availH, hse::kStripRowsBase, rows), &sc, &rs);
+    return static_cast<float>(sc.w);
+}
+
+// Rewrites the six row texts from a FRESH GetEdit, but only when a value, the scope or an open value changed since the last time, and only the rows whose
+// string changed (SetText is the expensive call). Logs the SetText count at most once per kInspLogWindowMs (capped).
+void refreshInspector(Editor& e, bool force) {
+    if (!e.inspOk || e.mode != MODE_WEAPON || !g_menu.ok() || !e.page) return;
+    const bool ok = refreshEdit(e);
+    const DWORD now = GetTickCount();
+    if (now - e.inspWinStart >= kInspLogWindowMs) {
+        if (e.inspWinSets > 0 && logRoom(e.inspLogs, kMaxInspLogs, "INSP"))
+            KP_LOG(chView, "INSP refresh settext=%d ticks=%d window=%ums", e.inspWinSets, e.inspWinTicks, static_cast<unsigned>(now - e.inspWinStart));
+        e.inspWinStart = now;
+        e.inspWinSets = 0;
+        e.inspWinTicks = 0;
+    }
+    if (!ok) return;   // the edit was lost: the callers that noticed it leave edit mode
+    const bool changed = force || e.inspForce || e.inspSeenScope != e.editInfo.scope || memcmp(e.inspSeenRot, e.editInfo.rot, sizeof e.inspSeenRot) != 0 ||
+                         memcmp(e.inspSeenOff, e.editInfo.off, sizeof e.inspSeenOff) != 0;
+    if (!changed) return;
+    memcpy(e.inspSeenRot, e.editInfo.rot, sizeof e.inspSeenRot);
+    memcpy(e.inspSeenOff, e.editInfo.off, sizeof e.inspSeenOff);
+    e.inspSeenScope = e.editInfo.scope;
+    if (force || e.inspForce) e.inspText.clear();
+    e.inspForce = false;
+    ++e.inspWinTicks;
+    const float maxPx = inspTextPx(e);
+    for (int r = 0; r < hse::IR_COUNT; ++r) {
+        const bool enabled = hse::inspRowEnabled(r, e.editInfo.scope);
+        const float v = hse::inspGet(r, e.editInfo.rot, e.editInfo.off);
+        const float open = hse::inspGet(r, e.openRot, e.openOff);
+        char raw[48], fit[48];
+        hse::inspRowText(raw, sizeof raw, r, v, e.openValid && hse::inspDiffers(r, v, open), enabled);
+        fitButton(maxPx, raw, fit, sizeof fit);
+        if (e.inspText.update(r, fit) && e.inspItem[r] >= 0) {
+            g_menu.p->SetText(e.page, e.inspItem[r], fit);
+            ++e.inspWinSets;
+        }
+    }
+}
+
+// The scrub button (row) under the cursor, else -1; any inspector button under the cursor (scrub or reset) for the chord's "press on a button" rule.
+bool overItem(const Editor& e, int32_t item, int x, int y) {
+    if (item < 0 || !g_menu.ok() || !e.page) return false;
+    const uintptr_t c = reinterpret_cast<uintptr_t>(g_menu.p->Control(e.page, item));
+    return c && guikit::hit(c, x, y);
+}
+
+int inspRowAt(const Editor& e, int x, int y) {
+    if (!e.inspOk || e.mode != MODE_WEAPON) return -1;
+    for (int r = 0; r < hse::IR_COUNT; ++r)
+        if (overItem(e, e.inspItem[r], x, y)) return r;
+    return -1;
+}
+
+bool overInspector(const Editor& e, int x, int y) {
+    if (!e.inspOk || e.mode != MODE_WEAPON) return false;
+    for (int r = 0; r < hse::IR_COUNT; ++r)
+        if (overItem(e, e.inspItem[r], x, y) || overItem(e, e.inspResetItem[r], x, y)) return true;
+    return false;
+}
+
+// Ends the running scrub (release) or drops it (cancelled: foreground loss, leave, scope change, edit closing, ...). Applied values stay as they are.
+void scrubFinish(Editor& e, const char* why, bool cancelled) {
+    if (!e.scrub.active) return;
+    const hse::Scrub s = e.scrub;
+    e.scrub.cancel();
+    if (logRoom(e.scrubLogs, kMaxScrubLogs, "SCRUB"))
+        KP_LOG(chView, "SCRUB %s row=%s open=%.4f%s final=%.4f%s frames=%d why=%s%s", cancelled ? "cancel" : "end", hse::inspRowName(s.row), s.open, rowUnit(s.row),
+               s.value, rowUnit(s.row), s.frames, why, s.value == s.open ? " (no change)" : "");
+}
+
+void scrubCancel(Editor& e, const char* why) { scrubFinish(e, why, true); }
+
+// SetValues with ABSOLUTE values: the fresh edit values with ONE row set to `value`. SetValues returns void, so a failure shows as a missing provider, an edit that
+// is no longer open, or a read-back that is not the value sent; each is a WARN (capped per kind). False when the value did not take.
+bool applyRowValue(Editor& e, int row, float value, WarnKind kind, const char* what) {
+    if (!g_hol.ok()) {
+        if (warnOk(e, kind)) KP_LOGV(chView, KPLOG_WARN, "%s WARN %s row=%s: holster provider missing, SetValues dropped", kind == W_SCRUB ? "SCRUB" : "INSP", what, hse::inspRowName(row));
+        return false;
+    }
+    if (!refreshEdit(e)) {
+        if (warnOk(e, kind)) KP_LOGV(chView, KPLOG_WARN, "%s WARN %s row=%s: the edit is not open", kind == W_SCRUB ? "SCRUB" : "INSP", what, hse::inspRowName(row));
+        exitEdit(e);
+        return false;
+    }
+    float rot[3], off[3];
+    memcpy(rot, e.editInfo.rot, sizeof rot);
+    memcpy(off, e.editInfo.off, sizeof off);
+    hse::inspSet(row, rot, off, value);
+    g_hol.h->SetValues(rot, off);
+    if (!refreshEdit(e)) {
+        if (warnOk(e, kind)) KP_LOGV(chView, KPLOG_WARN, "%s WARN %s row=%s: the edit closed after SetValues", kind == W_SCRUB ? "SCRUB" : "INSP", what, hse::inspRowName(row));
+        exitEdit(e);
+        return false;
+    }
+    const float got = hse::inspGet(row, e.editInfo.rot, e.editInfo.off);
+    if (!hse::inspMatches(row, got, value)) {
+        if (warnOk(e, kind))
+            KP_LOGV(chView, KPLOG_WARN, "%s WARN %s row=%s: SetValues did not take, sent %.5f read back %.5f (scope=%d%s)", kind == W_SCRUB ? "SCRUB" : "INSP", what,
+                    hse::inspRowName(row), value, got, e.editInfo.scope, e.editInfo.scope == K2HOLSTER_SCOPE_BODY && hse::inspIsRot(row) ? " body: rotation is ignored" : "");
+        return false;
+    }
+    return true;
+}
+
+// LMB press on a row button: start the scrub at the row's current value.
+void scrubBegin(Editor& e, int row, int x, int y, bool shift, bool ctrl) {
+    if (!refreshEdit(e)) {
+        if (warnOk(e, W_SCRUB)) KP_LOGV(chView, KPLOG_WARN, "SCRUB WARN begin row=%s: the edit is not open", hse::inspRowName(row));
+        return;
+    }
+    if (!hse::inspRowEnabled(row, e.editInfo.scope)) {
+        if (logRoom(e.scrubLogs, kMaxScrubLogs, "SCRUB"))
+            KP_LOG(chView, "SCRUB ignore row=%s: no rotation in the body scope at=(%d,%d)", hse::inspRowName(row), x, y);
+        return;
+    }
+    const float v = hse::inspGet(row, e.editInfo.rot, e.editInfo.off);
+    if (!e.scrub.begin(row, x, v)) {
+        if (warnOk(e, W_SCRUB)) KP_LOGV(chView, KPLOG_WARN, "SCRUB WARN begin refused row=%s open=%.5f (not a finite value, or a scrub is running)", hse::inspRowName(row), v);
+        return;
+    }
+    if (logRoom(e.scrubLogs, kMaxScrubLogs, "SCRUB"))
+        KP_LOG(chView, "SCRUB begin row=%s open=%.4f%s at=(%d,%d) window=[%.4f,%.4f] scope=%d hand=%s shift=%d ctrl=%d", hse::inspRowName(row), v, rowUnit(row), x, y,
+               e.scrub.lo, e.scrub.hi, e.editInfo.scope, handName(e.editHand), shift ? 1 : 0, ctrl ? 1 : 0);
+}
+
+void scrubStepTick(Editor& e, int x, bool shift, bool ctrl) {
+    const int row = e.scrub.row;
+    const hse::ScrubStep st = e.scrub.step(x, shift, ctrl);
+    if (st.clampedNow && logRoom(e.scrubLogs, kMaxScrubLogs, "SCRUB"))
+        KP_LOGV(chView, KPLOG_WARN, "SCRUB CLAMP row=%s %s end at %.4f%s (%s) open=%.4f window=[%.4f,%.4f]", hse::inspRowName(row), st.clampSide < 0 ? "low" : "high",
+                e.scrub.value, rowUnit(row), st.hardLimit ? "holster.ini limit" : "scrub window", e.scrub.open, e.scrub.lo, e.scrub.hi);
+    if (!st.changed) return;
+    if (applyRowValue(e, row, st.value, W_SCRUB, "scrub")) updateStatusText(e);
+}
+
+// One tick of the row scrub, after the chord has seen the mouse. `co` is the chord's answer for this tick, `lEdge` the LMB press edge.
+// A scrub begins only when the chord turned an IDLE press into a DEAD "press_outside" (so a press on a button, never a foreground-return or stale
+// press) with the cursor on a row button and no other button down. It runs while LMB is held, ends on release, and is cancelled by foreground loss.
+void scrubTick(Editor& e, const hse::ChordOut& co, bool lEdge, int x, int y, bool fg, bool lmb, bool rmb, bool mmb, bool shift, bool ctrl) {
+    if (e.scrub.active) {
+        if (!fg) {
+            scrubFinish(e, "fg_lost", true);
+        } else if (!lmb) {
+            scrubFinish(e, "release", false);
+            updateStatusText(e);
+        } else {
+            scrubStepTick(e, x, shift, ctrl);
+        }
+        return;
+    }
+    if (!e.inspOk || !fg || !lEdge || rmb || mmb) return;
+    if (co.drop != hse::CW_PRESS_OUTSIDE || co.why != hse::CW_PRESS_OUTSIDE) return;
+    const int row = inspRowAt(e, x, y);
+    if (row < 0) return;
+    scrubBegin(e, row, x, y, shift, ctrl);
+}
+
+// The R button: that one value goes back to what it was when the edit opened. The other five are sent unchanged.
+void inspReset(Editor& e, int row) {
+    if (row < 0 || row >= hse::IR_COUNT) return;
+    if (!e.openValid) {
+        if (warnOk(e, W_INSP)) KP_LOGV(chView, KPLOG_WARN, "INSP WARN RESET row=%s: no open values stored", hse::inspRowName(row));
+        return;
+    }
+    scrubCancel(e, "reset");
+    if (!refreshEdit(e)) {
+        if (warnOk(e, W_INSP)) KP_LOGV(chView, KPLOG_WARN, "INSP WARN RESET row=%s: the edit is not open", hse::inspRowName(row));
+        exitEdit(e);
+        return;
+    }
+    if (!hse::inspRowEnabled(row, e.editInfo.scope)) {
+        if (logRoom(e.inspLogs, kMaxInspLogs, "INSP")) KP_LOG(chView, "INSP RESET row=%s ignored: no rotation in the body scope", hse::inspRowName(row));
+        return;
+    }
+    float rot[3], off[3];
+    const float from = hse::inspGet(row, e.editInfo.rot, e.editInfo.off);
+    const float to = hse::inspGet(row, e.openRot, e.openOff);
+    const bool changes = hse::inspRevert(row, e.editInfo.rot, e.editInfo.off, e.openRot, e.openOff, rot, off);
+    if (logRoom(e.inspLogs, kMaxInspLogs, "INSP"))
+        KP_LOG(chView, "INSP RESET row=%s from=%.4f%s to=%.4f%s %s", hse::inspRowName(row), from, rowUnit(row), to, rowUnit(row), changes ? "applied" : "(already at the open value)");
+    if (!changes) return;
+    if (applyRowValue(e, row, to, W_INSP, "reset")) updateStatusText(e);
 }
 
 void enterEdit(Editor& e, int hand) {
@@ -1122,6 +1441,8 @@ void enterEdit(Editor& e, int hand) {
     e.shownDirty = -1;   // the status line shows the EDIT numbers first, then the help line
     refreshEdit(e);
     KP_LOG(chView, "EDIT enter hand=%d gob=%p model=%s bone=%s", hand, e.regGob[hand], e.editInfo.model, e.editInfo.bone);
+    e.inspText.clear();   // the first refresh rewrites every row text
+    captureOpen(e, "enter_edit");
 
     const K2MenuUiApi* ui = g_menu.p;
     char bBuf[64];
@@ -1138,6 +1459,7 @@ void enterEdit(Editor& e, int hand) {
 
     applyLayout(e);
     updateStatusText(e);
+    refreshInspector(e, true);
 }
 
 void exitEdit(Editor& e) {
@@ -1266,7 +1588,7 @@ bool applyCalls(Editor& e, const hse::WeaponCall* calls, int n, const char* what
 }
 
 // Weapon-mode mouse for one tick: feeds hse::Chord and acts on what it answers. All logging of the chord lives here.
-void weaponMouse(Editor& e, int curX, int curY, bool insideView, bool fg, bool shift, bool ctrl, bool lmb, bool rmb, bool mmb, LONG wheel) {
+hse::ChordOut weaponMouse(Editor& e, int curX, int curY, bool insideView, bool fg, bool shift, bool ctrl, bool lmb, bool rmb, bool mmb, LONG wheel) {
     hse::ChordIn ci = {};
     ci.l = lmb;
     ci.r = rmb;
@@ -1277,7 +1599,7 @@ void weaponMouse(Editor& e, int curX, int curY, bool insideView, bool fg, bool s
     e.pressed = lmb;
     e.pressedRmb = rmb;
     e.pressedMmb = mmb;
-    ci.inView = insideView && !overModeBar(e, curX, curY);
+    ci.inView = insideView && !overModeBar(e, curX, curY) && !overInspector(e, curX, curY);   // a press on any button is a dead press (U3: the row scrub starts from it)
     ci.fg = fg;
     ci.shift = shift;
     ci.ctrl = ctrl;
@@ -1386,6 +1708,7 @@ void weaponMouse(Editor& e, int curX, int curY, bool insideView, bool fg, bool s
         e.view.zoom = p3d::zoomStep(e.view.zoom, o.wheel, 0.9f, hse::kZoomMin, hse::kZoomMax);
         KP_LOG(chView, "WHEEL delta=%d zoom=%.2f", o.wheel, e.view.zoom);
     }
+    return o;
 }
 
 void KPATCH_CALL cbTick(uint32_t, void*) {
@@ -1394,7 +1717,7 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
     if (!g_ed.panel || !g_menu.ok() || !g_ed.page) return;
 
     if (!g_p3.ok() || !g_hol.ok() || !g_ed.token) {
-        if (g_ed.chord.busy() || g_ed.gActive) resetInput(g_ed, "provider_lost");
+        if (g_ed.chord.busy() || g_ed.gActive || g_ed.scrub.active) resetInput(g_ed, "provider_lost");
         if (g_ed.statusItem >= 0) g_menu.p->SetText(g_ed.page, g_ed.statusItem, statusText());
         return;
     }
@@ -1532,6 +1855,7 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
                         exitEdit(e);
                     } else {
                         resetInput(e, "scope");
+                        captureOpen(e, "scope");   // the per-row reset after a scope switch goes back to the NEW scope's open value
                         setScopeText(e);
                         setBoneText(e);
                         KP_LOG(chView, "BTN SetScope -> %d (%s)", e.editScope, hse::scopeLabel(e.editScope));
@@ -1541,12 +1865,14 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
             } else if (e.saveItem >= 0 && ui->Clicked(page, e.saveItem) && g_hol.ok()) {
                 int rc = g_hol.h->Save();
                 KP_LOG(chView, "BTN Save rc=%d", rc);
+                if (rc) captureOpen(e, "save");   // what was written is the new reset target
                 refreshEdit(e);
                 updateStatusText(e);
                 if (!rc && e.statusItem >= 0) ui->SetText(page, e.statusItem, "Save failed, not written (see log)");
             } else if (e.revertItem >= 0 && ui->Clicked(page, e.revertItem) && g_hol.ok()) {
                 g_hol.h->Revert();
                 KP_LOG(chView, "BTN Revert");
+                captureOpen(e, "revert");
                 refreshEdit(e);
                 setBoneText(e);
                 updateStatusText(e);
@@ -1554,6 +1880,7 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
                 if (guardTransition(e, ACT_RESET_SCOPE, "reset_scope")) {
                     g_hol.h->ResetScope();
                     KP_LOG(chView, "BTN ResetScope scope=%d", e.editScope);
+                    captureOpen(e, "reset_scope");
                     refreshEdit(e);
                     setBoneText(e);
                     updateStatusText(e);
@@ -1564,6 +1891,16 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
                 for (int i = 0; i < kModeCount; ++i) {
                     if (e.modeItem[i] >= 0 && ui->Clicked(page, e.modeItem[i])) {
                         setWeaponMode(e, i, "click");
+                        break;
+                    }
+                }
+            }
+            if (e.mode == MODE_WEAPON && e.inspOk) {
+                // The scrub buttons act on the press, not on the click: drain their release-edge latch. The R buttons put one value back.
+                for (int i = 0; i < hse::IR_COUNT; ++i) (void)ui->Clicked(page, e.inspItem[i]);
+                for (int i = 0; i < hse::IR_COUNT; ++i) {
+                    if (e.inspResetItem[i] >= 0 && ui->Clicked(page, e.inspResetItem[i])) {
+                        inspReset(e, i);
                         break;
                     }
                 }
@@ -1604,7 +1941,10 @@ void KPATCH_CALL cbTick(uint32_t, void*) {
     const bool mmb = fg && guikit::g_gk.mbuttonDown && guikit::g_gk.mbuttonDown();
 
     if (e.mode == MODE_WEAPON) {
-        weaponMouse(e, curX, curY, insideView, fg, shift, ctrl, lmb, rmb, mmb, w);
+        const bool lEdge = lmb && !e.pressed;   // weaponMouse updates the "was down" flags
+        const hse::ChordOut co = weaponMouse(e, curX, curY, insideView, fg, shift, ctrl, lmb, rmb, mmb, w);
+        if (e.mode == MODE_WEAPON) scrubTick(e, co, lEdge, curX, curY, fg, lmb, rmb, mmb, shift, ctrl);
+        if (e.mode == MODE_WEAPON) refreshInspector(e, false);
     } else {
         // Mode NAV
         if (w != 0 && e.token && g_p3.ok()) {
@@ -1798,7 +2138,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_cfgClient.init(api);
     g_menu.init(api);
     embedgui::g_log = embedLog;
-    KP_LOG(chMain, "holster-editor 0.3.0-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
+    KP_LOG(chMain, "holster-editor 0.3.1-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
            static_cast<unsigned>(sizeof kHseViewGui));
     const bool cfgOk = g_cfgClient.connect(), menuOk = g_menu.connect();
     if (!cfgOk || !menuOk) {

@@ -721,4 +721,261 @@ inline void handButtonText(char* out, int cap, int hand, bool shortForm, const c
     out[cap - 1] = '\0';
 }
 
+// ---- U3 inspector rows (plan HW-UX2 U3; research H6): six scrub rows (a scrub button with the live value + a small reset button) ----
+// Slide / Depth / Height are the offset x / y / z in the BONE frame (metres in the provider, shown in cm); Tilt / Roll / Turn are the
+// rotation x / y / z (degrees). The provider's SetValues takes ABSOLUTE rot[3] and off[3], so every scrub tick sends all six values with
+// only the scrubbed one changed. Typed input is deferred (needs a CSWGuiEditbox RE).
+
+enum InspRow { IR_SLIDE = 0, IR_DEPTH, IR_HEIGHT, IR_TILT, IR_ROLL, IR_TURN, IR_COUNT };
+
+constexpr int kInspItems = 2 * IR_COUNT;     // page items: one scrub button + one reset button per row
+constexpr int kPageItemsBase = 26;           // items cbBuild creates before the inspector: view, status, 2 name/picker rows, hands, stance, emote, play,
+                                             // bone, scope, save, revert, reset scope, done, reset/flip view, 4 mode buttons
+constexpr int kPageItemCap = 40;             // mod-config mui::kMaxItems (0.1.1+): AddButton/AddLabel/AddCustom return -1 beyond it
+static_assert(kPageItemsBase + kInspItems <= kPageItemCap, "the editor page (base items + 12 inspector items) must fit mod-config's per-page item cap");
+constexpr int kStripRowsBase = 9;            // weapon mode strip rows without the inspector: name, hands, bone, scope, save/revert, reset scope/done, view, 2 mode rows
+constexpr int kStripRowsInsp = kStripRowsBase + IR_COUNT;
+constexpr int kScopeBodyId = 2;              // edit scope BODY (K2HOLSTER_SCOPE_BODY): the offset only, rotation is ignored
+
+constexpr float kScrubOffPerPx = 0.001f;     // 1 px = 1 mm
+constexpr float kScrubRotPerPx = 0.5f;       // 1 px = 0.5 deg
+constexpr float kScrubSnapOff = 0.01f;       // Ctrl: 1 cm
+constexpr float kScrubSnapRot = 5.0f;        // Ctrl: 5 deg
+constexpr float kScrubWindowOff = 0.30f;     // a scrub moves a value at most this far from where the scrub began
+constexpr float kScrubWindowRot = 180.0f;
+constexpr float kScrubLimitOff = 3.0f;       // holster.ini parser limits (HolsterTune.h): |offset| <= 3 m, |rotation| <= 720 deg
+constexpr float kScrubLimitRot = 720.0f;
+constexpr float kInspDiffOff = 0.0005f;      // a row differs from its open value from half a display step on (0.05 cm / 0.05 deg)
+constexpr float kInspDiffRot = 0.05f;
+constexpr uint8_t kSrcMirrorBit = 8;         // K2HolsterEditInfo.src[0] / src[1] bit: the shown left value is the right one mirrored (reserved; holster has not set it yet)
+
+inline const char* inspRowName(int r) {
+    static const char* const kNames[IR_COUNT] = {"Slide", "Depth", "Height", "Tilt", "Roll", "Turn"};
+    return (r >= 0 && r < IR_COUNT) ? kNames[r] : "?";
+}
+inline bool inspIsRot(int r) { return r >= IR_TILT; }
+inline int inspAxis(int r) { return r % 3; }
+inline const char* inspUnit(int r) { return inspIsRot(r) ? "deg" : "cm"; }
+
+// Hover text of the scrub button (ASCII, under 190 characters).
+inline const char* inspTip(int r) {
+    static const char* const kTips[IR_COUNT] = {
+        "Slide: the weapon's side-to-side offset on the bone. Hold the left button and drag sideways: 1 px = 1 mm. Shift is fine, Ctrl snaps to 1 cm.",
+        "Depth: the weapon's forward (+) and back (-) offset on the bone. Hold the left button and drag sideways: 1 px = 1 mm. Shift is fine, Ctrl snaps to 1 cm.",
+        "Height: the weapon's up (+) and down (-) offset on the bone. Hold the left button and drag sideways: 1 px = 1 mm. Shift is fine, Ctrl snaps to 1 cm.",
+        "Tilt: rotation about the bone's side axis. Hold the left button and drag sideways: 1 px = 0.5 degrees. Shift is fine, Ctrl snaps to 5 degrees.",
+        "Roll: rotation about the bone's forward axis. Hold the left button and drag sideways: 1 px = 0.5 degrees. Shift is fine, Ctrl snaps to 5 degrees.",
+        "Turn: rotation about the bone's up axis. Hold the left button and drag sideways: 1 px = 0.5 degrees. Shift is fine, Ctrl snaps to 5 degrees.",
+    };
+    return (r >= 0 && r < IR_COUNT) ? kTips[r] : "";
+}
+inline const char* inspResetTip() { return "Put this value back to what it was when the edit opened (or after the last Save)."; }
+
+// Body scope edits the offset only: its rotation rows have nothing to scrub.
+inline bool inspRowEnabled(int row, int scope) { return !(scope == kScopeBodyId && inspIsRot(row)); }
+
+// The value of a row in provider units (metres or degrees); NaN for a bad row.
+inline float inspGet(int row, const float rot[3], const float off[3]) {
+    if (row < 0 || row >= IR_COUNT || !rot || !off) return NAN;
+    return inspIsRot(row) ? rot[inspAxis(row)] : off[inspAxis(row)];
+}
+inline void inspSet(int row, float rot[3], float off[3], float v) {
+    if (row < 0 || row >= IR_COUNT || !rot || !off) return;
+    if (inspIsRot(row)) rot[inspAxis(row)] = v;
+    else off[inspAxis(row)] = v;
+}
+
+// A row differs from its open value (half a display step or more). Non-finite values never count as a difference.
+inline bool inspDiffers(int row, float v, float open) {
+    if (!finiteF(v) || !finiteF(open)) return false;
+    return fabsf(v - open) >= (inspIsRot(row) ? kInspDiffRot : kInspDiffOff);
+}
+
+// A value read back from the provider is the value that was sent (rotations compare modulo 360: SetValues(450) reads back as 90).
+inline bool inspMatches(int row, float got, float want) {
+    if (!finiteF(got) || !finiteF(want)) return false;
+    if (!inspIsRot(row)) return fabsf(got - want) < 1e-4f;
+    float d = fmodf(got - want, 360.0f);
+    if (d > 180.0f) d -= 360.0f;
+    if (d < -180.0f) d += 360.0f;
+    return fabsf(d) < 0.05f;
+}
+
+// "Depth  -11.0 cm" / "Tilt  30.5 deg"; a leading "* " marks a row that differs from its open value. A disabled row reads "Tilt  (body: n/a)".
+// Never "-0.0". Always NUL terminated; null/cap<=0 is a no-op.
+inline void inspRowText(char* out, int cap, int row, float value, bool changed, bool enabled) {
+    if (!out || cap <= 0) return;
+    const char* name = inspRowName(row);
+    if (!enabled) {
+        snprintf(out, cap, "%s  (body: n/a)", name);
+    } else if (!finiteF(value)) {
+        snprintf(out, cap, "%s  n/a", name);
+    } else {
+        float shown = inspIsRot(row) ? value : value * 100.0f;
+        shown = roundf(shown * 10.0f) / 10.0f;
+        if (shown == 0.0f) shown = 0.0f;   // folds -0.0 into +0.0
+        snprintf(out, cap, "%s%s  %.1f %s", changed ? "* " : "", name, static_cast<double>(shown), inspUnit(row));
+    }
+    out[cap - 1] = '\0';
+}
+
+// Copies cur to out, then puts ONE row back to its open value (the other five stay as they are). True when that row actually changes.
+inline bool inspRevert(int row, const float curRot[3], const float curOff[3], const float openRot[3], const float openOff[3], float outRot[3], float outOff[3]) {
+    if (!curRot || !curOff || !openRot || !openOff || !outRot || !outOff) return false;
+    for (int i = 0; i < 3; ++i) {
+        outRot[i] = curRot[i];
+        outOff[i] = curOff[i];
+    }
+    if (row < 0 || row >= IR_COUNT) return false;
+    const float was = inspGet(row, outRot, outOff);
+    const float to = inspGet(row, openRot, openOff);
+    inspSet(row, outRot, outOff, to);
+    return was != to;
+}
+
+// What SetText was last given per row: update() is true only when the text changed (the editor skips SetText otherwise).
+struct TextCache {
+    char t[IR_COUNT][48];
+    TextCache() { clear(); }
+    void clear() { memset(t, 0, sizeof t); }
+    bool update(int i, const char* s) {
+        if (i < 0 || i >= IR_COUNT || !s) return false;
+        char cut[sizeof t[0]];
+        snprintf(cut, sizeof cut, "%s", s);   // compared as stored, so an over-long text cannot look "changed" every tick
+        if (!strcmp(t[i], cut)) return false;
+        memcpy(t[i], cut, sizeof cut);
+        return true;
+    }
+};
+
+struct ScrubStep {
+    bool changed;      // the value moved this tick
+    float value;       // the scrubbed value now
+    bool clampedNow;   // the FIRST clamp of this scrub (the editor WARNs once)
+    int clampSide;     // -1 pinned at the low end, +1 at the high end, 0 not pinned this tick
+    bool hardLimit;    // the end hit is the holster.ini limit (3 m / 720 deg), not the +-window
+};
+
+// One scrub of one row: begin() on the LMB press over the row button, step() once per tick with the cursor x while LMB is down, cancel() on
+// release or any loss of the capture. 1 px = 1 mm or 0.5 deg, Shift x0.2, Ctrl snaps to 1 cm / 5 deg (carried in acc). The value moves by the
+// per-tick delta (a Shift or Ctrl toggle mid drag never jumps) and stays inside [open - window, open + window] cut to the hard limits.
+struct Scrub {
+    bool active;
+    int row;
+    float open, value, lo, hi;
+    bool loHard, hiHard;
+    int pressX, lastX, frames;
+    float acc;
+    bool clampWarned;
+
+    Scrub() : active(false), row(-1), open(0.0f), value(0.0f), lo(0.0f), hi(0.0f), loHard(false), hiHard(false), pressX(0), lastX(0), frames(0), acc(0.0f), clampWarned(false) {}
+
+    // False (and nothing starts) for a bad row, a non-finite open value, or a scrub already running.
+    bool begin(int r, int x, float openValue) {
+        if (active || r < 0 || r >= IR_COUNT || !finiteF(openValue)) return false;
+        const bool rot = inspIsRot(r);
+        const float W = rot ? kScrubWindowRot : kScrubWindowOff;
+        const float L = rot ? kScrubLimitRot : kScrubLimitOff;
+        float l = openValue - W, h = openValue + W;
+        loHard = l <= -L;
+        hiHard = h >= L;
+        if (l < -L) l = -L;
+        if (l > L) { l = L; loHard = true; }
+        if (h > L) h = L;
+        if (h < -L) { h = -L; hiHard = true; }
+        active = true;
+        row = r;
+        open = value = openValue;
+        lo = l;
+        hi = h;
+        pressX = lastX = x;
+        frames = 0;
+        acc = 0.0f;
+        clampWarned = false;
+        return true;
+    }
+
+    ScrubStep step(int x, bool shift, bool ctrl) {
+        ScrubStep s = {false, value, false, 0, false};
+        if (!active) return s;
+        const int dx = x - lastX;
+        lastX = x;
+        ++frames;
+        const bool rot = inspIsRot(row);
+        float d = static_cast<float>(dx) * (rot ? kScrubRotPerPx : kScrubOffPerPx) * (shift ? kFineScale : 1.0f);
+        if (ctrl) {
+            // float sums of 0.001 land a hair under a whole step; the tiny bias keeps "10 px = 1 cm" exact (negligible against the step)
+            const float step = rot ? kScrubSnapRot : kScrubSnapOff;
+            if (d != 0.0f) d += (d > 0.0f ? 1.0f : -1.0f) * step * 1e-5f;
+            d = snapAccum(acc, d, step);
+        } else {
+            acc = 0.0f;
+        }
+        if (d == 0.0f || !finiteF(d)) return s;
+        float nv = value + d;
+        if (!finiteF(nv)) return s;
+        if (nv < lo) {
+            nv = lo;
+            s.clampSide = -1;
+            s.hardLimit = loHard;
+        } else if (nv > hi) {
+            nv = hi;
+            s.clampSide = 1;
+            s.hardLimit = hiHard;
+        }
+        if (s.clampSide != 0) {
+            acc = 0.0f;
+            if (!clampWarned) {
+                clampWarned = true;
+                s.clampedNow = true;
+            }
+        }
+        if (nv != value) {
+            value = nv;
+            s.changed = true;
+            s.value = nv;
+        }
+        return s;
+    }
+
+    void cancel() { *this = Scrub(); }
+};
+
+// Strip row `row` of `rows` equal rows that all fit in availH px below strip.y. The vanilla pitch (strip.h * 36 / 284) is kept while the rows fit,
+// otherwise the pitch shrinks to availH / rows (slot height scales with it). With rows <= availH / pitch this is exactly stripSlot().
+inline HseRect compactSlot(const HseRect& strip, int availH, int row, int rows) {
+    const int basePitch = strip.h * 36 / 284;
+    const int baseH = strip.h * 32 / 284;
+    int pitch = basePitch;
+    if (rows > 0 && availH > 0 && availH / rows < pitch) pitch = availH / rows;
+    int h = basePitch > 0 ? baseH * pitch / basePitch : baseH;
+    if (h < 1) h = 1;
+    if (h > pitch && pitch > 0) h = pitch;
+    return HseRect{strip.x, strip.y + row * pitch, strip.w, h};
+}
+
+// Splits an inspector slot into the scrub button (left, wide) and the reset button (right, at least 18 px or the slot height, never over a third of it).
+inline void inspRects(const HseRect& slot, HseRect* scrub, HseRect* reset) {
+    if (!scrub || !reset) return;
+    int rw = slot.h < 18 ? 18 : slot.h;
+    if (rw > slot.w / 3) rw = slot.w / 3;
+    const int gap = 2;
+    int sw = slot.w - rw - gap;
+    if (sw < 0) sw = 0;
+    *scrub = HseRect{slot.x, slot.y, sw, slot.h};
+    *reset = HseRect{slot.x + slot.w - rw, slot.y, rw, slot.h};
+}
+
+// The left hand's shown values come from the right hand's mirror (K2HolsterEditInfo.src bit kSrcMirrorBit on rot or off).
+inline bool leftMirrored(bool left, const uint8_t src[3]) {
+    return left && src && ((src[0] | src[1]) & kSrcMirrorBit) != 0;
+}
+
+// Weapon mode status line at rest: an optional "* " (unsaved), the mirrored-left note, then the help line.
+inline void idleStatusText(char* out, int cap, bool dirty, bool mirroredLeft) {
+    if (!out || cap <= 0) return;
+    snprintf(out, cap, "%s%s%s", dirty ? "* " : "", mirroredLeft ? "Left: mirrored from right . " : "", helpLine());
+    out[cap - 1] = '\0';
+}
+
 } // namespace hse

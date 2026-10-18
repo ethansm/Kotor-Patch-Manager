@@ -23,6 +23,7 @@
 #include "SafeRead.h"
 #include "K2Addr.h"
 #include "GameAddr.h"
+#include "HseView.h"
 
 #include <sys/mman.h>
 #include <unistd.h>
@@ -206,6 +207,22 @@ int main() {
         // U2: the weapon gestures call NudgeWorld (Move) and NudgeLocal (Depth, Tilt, Roll/Turn, RMB+wheel); both return void.
         HEQ("K2HolsterApi.NudgeWorld is vtable slot 4", offsetof(K2HolsterApi, NudgeWorld), 4 * sizeof(void*));
         HEQ("K2HolsterApi.NudgeLocal is vtable slot 5", offsetof(K2HolsterApi, NudgeLocal), 5 * sizeof(void*));
+        // U3: the inspector rows send ABSOLUTE rot[3] + off[3] through SetValues (void) and read the six values back with GetEdit.
+        HEQ("K2HolsterApi.SetValues is vtable slot 6", offsetof(K2HolsterApi, SetValues), 6 * sizeof(void*));
+        HEQ("K2HolsterApi.GetEdit is vtable slot 8", offsetof(K2HolsterApi, GetEdit), 8 * sizeof(void*));
+        HEQ("K2HolsterEditInfo.left offset", offsetof(K2HolsterEditInfo, left), static_cast<size_t>(68));
+        HEQ("K2HolsterEditInfo.dirty offset", offsetof(K2HolsterEditInfo, dirty), static_cast<size_t>(72));
+        HEQ("K2HolsterEditInfo.rot is float[3]", sizeof(static_cast<K2HolsterEditInfo*>(nullptr)->rot), 3 * sizeof(float));
+        HEQ("K2HolsterEditInfo.off is float[3]", sizeof(static_cast<K2HolsterEditInfo*>(nullptr)->off), 3 * sizeof(float));
+        HEQ("K2HolsterEditInfo.src is uint8_t[3]", sizeof(static_cast<K2HolsterEditInfo*>(nullptr)->src), static_cast<size_t>(3));
+        // U3: the left-mirror note reads bit 8 of src[0] / src[1]; the levels (0..2) and the body bit (4) must stay clear of it.
+        HEQ("K2HOLSTER_SRC_GLOBAL is 0", K2HOLSTER_SRC_GLOBAL, 0);
+        HEQ("K2HOLSTER_SRC_TYPE is 1", K2HOLSTER_SRC_TYPE, 1);
+        HEQ("K2HOLSTER_SRC_WEAPON is 2", K2HOLSTER_SRC_WEAPON, 2);
+        HEQ("K2HOLSTER_SRC_BODY is 4", K2HOLSTER_SRC_BODY, 4);
+        HCHECK("hse::kSrcMirrorBit does not overlap the src levels or the body bit", (hse::kSrcMirrorBit & (K2HOLSTER_SRC_BODY | 3)) == 0);
+        // U3: the page needs base + 12 inspector items inside mod-config's per-page cap (kMaxItems 40 in 0.1.1+); the editor degrades, never crashes, on a full page.
+        HCHECK("editor page items fit mod-config's 40-item cap", hse::kPageItemsBase + hse::kInspItems <= hse::kPageItemCap);
 
         // GuiKit input hooks: null under GUIKIT_HOST (the mod must check before calling); the assignment form the mod uses is callable.
         HCHECK("g_gk.lbuttonDown is null under GUIKIT_HOST", guikit::g_gk.lbuttonDown == nullptr);
