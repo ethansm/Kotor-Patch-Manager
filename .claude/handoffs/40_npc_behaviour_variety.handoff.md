@@ -1,47 +1,32 @@
 # Session Handoff & Plan State: patch_manager_mods/40_npc_behaviour_variety.md
 
 ## 0. Next-Phase Direction
-NB2-B: Run B design from 15.6-15.8 (flags 9 vs SetAnimation), swap 0.2.6-probe, armed-area play
+NB2-B built (0.2.7-probe, f70c07df, b188574f), SWAP prepared not applied; user runs NB2-A3 then NB2-B; next: read results with npc_div_log_check, decision tree doc 40 15.9
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/40_npc_behaviour_variety.md`
 - **Waves:** .claude/waves/w10-40-V1/
-- **Branch:** `KOTOR-II` (3b9c239e holster-editor 0.4.3-dev: button caption rect fix + CAPTION probe; offline editor mockup)
-- **Generated:** 2026-10-18 16:28:26 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (b188574f docs(40): 15.9 NB2-B built (0.2.7-probe), play-test rows NB2-A3/NB2-B)
+- **Generated:** 2026-10-18 16:33:40 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-3b9c239e holster-editor 0.4.3-dev: button caption rect fix + CAPTION probe; offline editor mockup
- .../holster_editor_src/HolsterEditor.cpp           | 117 ++++++-
- patch_manager_mods/holster_editor_src/HseView.h    |  14 +
- .../holster_editor_src/holster_editor.ini          |   6 +-
- .../holster_editor_src/hse_view_test.cpp           |  17 +
- .../holster_editor_src/manifest.toml               |   4 +-
- .../holster_editor_src/tools/hse_layout_dump.cpp   |  51 +++
- research/holstered_weapons/ux_v3/F3_R1_inset.txt   | 173 ++++++++++
- research/holstered_weapons/ux_v3/F3_R2_border.txt  |  48 +++
- .../holstered_weapons/ux_v3/F3_R3_mockup_reuse.txt |  57 ++++
- .../holstered_weapons/ux_v3/F3_R4_lineheight.txt   |  61 ++++
- .../holstered_weapons/ux_v3/F3_RV1_ideal3840.txt   |  32 ++
- .../holstered_weapons/ux_v3/F3_RV4_otherres.txt    |  28 ++
- .../holstered_weapons/ux_v3/F3_V1_calibration.txt  |  44 +++
- .../holstered_weapons/ux_v3/F3_V2_fixcheck.txt     |  57 ++++
- research/holstered_weapons/ux_v3/F3_V3_gates.txt   |   7 +
- scripts/holster_editor_mockup.py                   | 350 +++++++++++++++++++++
- scripts/test_holster_editor_mockup.py              | 143 +++++++++
- 17 files changed, 1201 insertions(+), 8 deletions(-)
+b188574f docs(40): 15.9 NB2-B built (0.2.7-probe), play-test rows NB2-A3/NB2-B
+ patch_manager_mods/40_npc_behaviour_variety.md | 7 +++++++
+ patch_manager_mods/PLAY_TEST_QUEUE.md          | 2 ++
+ 2 files changed, 9 insertions(+)
 ```
-- **Dirty Files (187):**
+- **Dirty Files (181):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
-  - ` M .claude/handoffs/40_npc_behaviour_variety.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
   - ` M .claude/handoffs/PHASE7_COMMON_MASTER.handoff.md`
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
   - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
   - ` M .claude/plans/swarm_library_architecture.md`
-  - ` A .claude/research/npc_variety/nb2_anim_driver_recon.md`
-  - ` A .claude/research/npc_variety/nb2_play_semantics_recon.md`
-  - ... +177 more (run `git status --short`)
+  - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
+  - ` M .claude/settings.json`
+  - ` M CLAUDE.md`
+  - ... +171 more (run `git status --short`)
 
 ## 2. Immediate Objective (NB2)
 **Animation injector (`anim_variety`)**
