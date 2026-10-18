@@ -47,7 +47,7 @@ namespace KotorPatcher {
     struct PatchInfo {
         // Basic patch information
         std::string patchId;           // The config's `id`, used to attribute registry providers
-                                       // (KPatchInit); empty -> the dll basename is used
+                                       // (KPatchInit, log files); empty -> the dll basename is used
         std::string dllPath;           // Path to patch DLL (not used for SIMPLE)
         std::string functionName;      // Exported function name in DLL (not used for SIMPLE)
         uintptr_t hookAddress;         // Address in game code to hook

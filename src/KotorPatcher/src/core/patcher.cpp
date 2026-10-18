@@ -1,5 +1,6 @@
 #include "patcher.h"
 #include "config_reader.h"
+#include "log_service.h"
 #include "platform.h"
 #include "registry.h"
 #include "trampoline.h"
@@ -32,11 +33,33 @@ namespace KotorPatcher {
     static bool g_initialized = false;
     static Wrappers::WrapperGeneratorBase* g_wrapperGenerator = nullptr;
 
+    // The config's target_version_sha, kept past InitializePatcher so the log
+    // service's session header can name the build the logs came from. The deferred
+    // apply runs on a worker after InitializePatcher returned, so it needs it too.
+    static std::string g_versionSha;
+
     // How many modules had their KPatchInit run. ApplyPatches reports it when it
     // aborts: those modules may already hold the registry and have provided
     // interfaces, which stay valid until cleanup even though the apply failed.
     // Atomic because the deferred apply counts on a worker thread.
     static std::atomic<int> g_initCount{0};
+
+    // Forward declaration: DeferredApply (below) calls it, the definition is with
+    // the other apply code further down.
+    static void PublishSessionInfo();
+
+    // Submit the abort summary to the log service as a WARN from patch "patcher".
+    // WARN is always recorded, even with no kplog.ini, so a failed apply leaves
+    // patcher_log.txt behind to look at, and a clean run creates no file at all.
+    // Register/Channel are idempotent, so doing them lazily here costs nothing on
+    // the success path, where this is never called.
+    static void SubmitCoreWarn(const char* line) {
+        int32_t patch = LogService::Register("patcher");
+        if (patch < 0) return;
+        int32_t channel = LogService::Channel(patch, "core");
+        if (channel < 0) return;
+        LogService::Submit(channel, KPLOG_WARN, line, static_cast<uint32_t>(std::strlen(line)));
+    }
 
     // KOTOR1 on Steam ships behind SteamStub DRM: its .text is encrypted on disk and
     // only decrypted in memory by the stub, which runs after our proxy has already
@@ -78,12 +101,16 @@ namespace KotorPatcher {
                 std::chrono::steady_clock::now() - start).count();
             if (elapsedMs >= kDecryptTimeoutMs) {
                 Platform::Log("[KotorPatcher] Timed out waiting for code decryption; game left unpatched\n");
+                // No module was loaded, but the header should still list "patcher"'s
+                // kpatch.log and the version SHA.
+                PublishSessionInfo();
                 return;
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(kDecryptPollIntervalMs));
         }
         Platform::Log("[KotorPatcher] Code decrypted; applying deferred patches\n");
         ApplyPatches();
+        PublishSessionInfo();
     }
 
     bool InitializePatcher() {
@@ -109,10 +136,21 @@ namespace KotorPatcher {
         }
         const std::string& moduleDir = g_moduleDir;
 
-        // Start the registry before any patch module is loaded, so every module
-        // ApplyPatches loads finds it ready when its KPatchInit runs. It does not
-        // touch the filesystem, so it is fine at loader time.
+        // Start the log service and the registry before anything can use them. The
+        // directory is the one kplog.ini and the log files live in. This is early on
+        // purpose: every later failure path (config parse, apply) can then still leave a
+        // WARN in patcher_log.txt, and patches loaded by ApplyPatches find kpatch.log
+        // already provided when their KPatchInit runs. Neither call touches the
+        // filesystem beyond starting the flush thread, so it is fine at loader time.
+        LogService::Init(g_moduleDir);
         Registry::Init();
+        // The core is just another provider. This runs outside any KPatchInit, so the
+        // registry attributes it to "patcher". InitializePatcher can run again after a
+        // failed attempt without CleanupPatcher in between, so skip a second Provide
+        // rather than log a spurious duplicate.
+        if (!Registry::Require(KPATCH_LOG_IFACE, KPATCH_LOG_VERSION)) {
+            Registry::Provide(KPATCH_LOG_IFACE, KPATCH_LOG_VERSION, LogService::Api());
+        }
 
         // moduleDir is a '\' path on Windows, but Win32 file I/O canonicalizes '/'
         // to '\', so appending a '/' separator opens the config on both platforms.
@@ -124,11 +162,17 @@ namespace KotorPatcher {
         std::string versionSha;
         if (!Config::ParseConfig(configPath, g_patches, versionSha)) {
             Platform::Log("[KotorPatcher] ERROR: Failed to parse config\n");
+            // Also on disk: with no patches applied, patcher_log.txt is the one place a
+            // player can find why nothing happened.
+            SubmitCoreWarn("Failed to parse config (patch_config.toml); no patches applied");
+            PublishSessionInfo();
             return false;
         }
 
         snprintf(configMsg, sizeof(configMsg), "[KotorPatcher] Loaded %zu patches from config\n", g_patches.size());
         Platform::Log(configMsg);
+
+        g_versionSha = versionSha;
 
         // Set environment variable for patch DLLs to read
         if (!versionSha.empty()) {
@@ -147,6 +191,7 @@ namespace KotorPatcher {
         if (!AllHookSitesReadable()) {
             Platform::Log("[KotorPatcher] Hook site still encrypted (SteamStub?); deferring apply\n");
             try {
+                // The session header is written by DeferredApply once it has applied.
                 std::thread(DeferredApply).detach();
                 g_initialized = true;
                 return true;
@@ -157,8 +202,12 @@ namespace KotorPatcher {
             }
         }
 
-        // Apply patches
-        if (!ApplyPatches()) {
+        // Apply patches. The session info is published whether or not it succeeded:
+        // a failed apply is exactly when the header (which patches initialised, which
+        // interfaces exist) is most useful.
+        bool applied = ApplyPatches();
+        PublishSessionInfo();
+        if (!applied) {
             return false;
         }
 
@@ -166,12 +215,25 @@ namespace KotorPatcher {
         return true;
     }
 
+    // Hand the log service what its session header needs: the build's version SHA and
+    // the registry's provider list ("  kpatch.log v1 by patcher\n" ...). Called once
+    // the modules have had their KPatchInit, so the list is complete. Files already
+    // open get it as a "# session info" block, later ones in their header.
+    static void PublishSessionInfo() {
+        std::string dump;
+        Registry::DumpProvided(dump);
+        LogService::SetSessionInfo(g_versionSha, dump);
+    }
+
     void CleanupPatcher() {
         // Order matters:
         //  1. Registry::Close() first: Require() returns null from here on, so no patch
         //     can fetch an interface whose provider is about to be unloaded.
-        //  2. Free the wrappers/code buffers and unload the modules.
-        //  3. Registry::Reset(): forget the provided interfaces and the module handles
+        //  2. Free the wrappers/code buffers and unload the modules. A patch's DETACH
+        //     code may still Submit log lines, so the log service stays up for this.
+        //  3. LogService::Shutdown(): the bounded final flush and file close. It must
+        //     come after the unloads so those late lines make it to disk.
+        //  4. Registry::Reset(): forget the provided interfaces and the module handles
         //     seen. Last, because the OS may reuse a handle value for a different
         //     module later, which must then get its own KPatchInit.
         Registry::Close();
@@ -194,8 +256,10 @@ namespace KotorPatcher {
         g_loadedPatches.clear();
         g_patches.clear();
 
+        LogService::Shutdown();
         Registry::Reset();
         g_initCount = 0;
+        g_versionSha.clear();
         g_initialized = false;
     }
 
@@ -215,6 +279,7 @@ namespace KotorPatcher {
                     "Apply aborted: %d module(s) initialised", g_initCount.load());
                 std::string logLine = std::string("[KotorPatcher] ") + abortMsg + "\n";
                 Platform::Log(logLine.c_str());
+                SubmitCoreWarn(abortMsg);
                 return false;
             }
         }
@@ -254,9 +319,9 @@ namespace KotorPatcher {
         return full;
     }
 
-    // The id a module is attributed to in the registry: the config's `id`, or the
-    // dll's file name without directory or extension when the config has none
-    // ("patches/foo.dll" -> "foo").
+    // The id a module is attributed to in the registry and the logs: the config's
+    // `id`, or the dll's file name without directory or extension when the config has
+    // none ("patches/foo.dll" -> "foo").
     static std::string ModuleId(const PatchInfo& patch) {
         if (!patch.patchId.empty()) {
             return patch.patchId;
