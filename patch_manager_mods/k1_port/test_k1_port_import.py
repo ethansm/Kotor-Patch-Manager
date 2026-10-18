@@ -835,6 +835,13 @@ class InstallTests(Base):
         (self.k2 / "patches" / "juhani-char.dll").write_bytes(b"MZ")
         rc, _, err = self.run_cli("install", "--only", "tst")
         self.assertEqual(rc, 0)
+        self.assertNotIn("juhani-char", err)  # assigned rows are clear of 818-820 / 249-251
+        assign = self.out / "assignments.json"
+        a = json.loads(assign.read_text())
+        a["tst"]["appearance"] = 819
+        assign.write_text(json.dumps(a))
+        rc, _, err = self.run_cli("install", "--only", "tst")
+        self.assertEqual(rc, 0)
         self.assertIn("juhani-char", err)
 
     def test_remove_deletes_only_that_file(self):

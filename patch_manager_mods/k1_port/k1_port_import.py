@@ -288,6 +288,14 @@ def installed_juhani_char(k2: Path) -> list[str]:
 JUHANI_WARN = ("{ids} is installed in the K2 dir: it registers virtual appearance rows 818-820 and heads rows "
                "249-251, which collide with the rows this importer assigns. Remove it (KPM uninstall) or set "
                "[build] first_appearance_row = 821 and first_head_row = 252 (above its rows).")
+JUHANI_ROWS = {"appearance": range(818, 821), "head": range(249, 252)}
+
+
+def juhani_rows_clash(assigned: dict | None) -> bool:
+    """True when any assigned row falls on juhani-char's virtual rows (or nothing is assigned yet: warn to be safe)."""
+    if not assigned:
+        return True
+    return any(int(r.get(k, -1)) in JUHANI_ROWS[k] for r in assigned.values() for k in JUHANI_ROWS)
 
 
 # ------------------------------------------------------------------------------------------- config
@@ -957,11 +965,11 @@ def cmd_build(args) -> int:
     for r in chosen:
         for w in r.warnings:
             warn(w)
-    ids = installed_juhani_char(loaded.cfg.k2_dir)
-    if ids:
-        warn(JUHANI_WARN.format(ids=", ".join(ids)))
     plan_runner = Runner(None)
     rows, live, stored = plan_assignments(loaded, plan_runner, args.reassign)
+    ids = installed_juhani_char(loaded.cfg.k2_dir)
+    if ids and juhani_rows_clash(rows):
+        warn(JUHANI_WARN.format(ids=", ".join(ids)))
     order = list(loaded.cfg.characters)
     say(f"live K2 tables: appearance.2da {live['appearance']} rows, heads.2da {live['head']} rows")
     if args.dry_run:
@@ -1025,7 +1033,7 @@ def cmd_install(args) -> int:
     require_private_out(loaded.out, [loaded.cfg.k1_dir, loaded.cfg.k2_dir])
     require_k2(loaded.cfg.k2_dir)
     ids = installed_juhani_char(loaded.cfg.k2_dir)
-    if ids:
+    if ids and juhani_rows_clash(read_json(loaded.out / "assignments.json", "assignments")):
         warn(JUHANI_WARN.format(ids=", ".join(ids)))
     dest_dir = loaded.k2_imports
     if dest_dir.is_symlink() or (dest_dir.exists() and not dest_dir.is_dir()):
