@@ -337,28 +337,44 @@ Anchors are in `~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71/`.
 
 **baseitems +0x18 recon (10-18, 1 Haiku, recon contract, Opus spot-checked 2 rows + loader asm; $0):** CONFIRMED. The byte at baseitem +0x18 is the `baseitems.2da` column `ModelType` (loader `0x6d5240`: cell `ModelType` (string `0x99a864`) stored by `MOV [EAX+0x18],CL` at `0x6d553e`; row stride 0xC8 via `0x6d5200`). Save `0x602dd0`, server writer `0x633ec0` and client reader `0x80fde0` all gate on `== 1`. 16 rows have ModelType 1, all body-slot (equipableslots 0x2): 35-43 (Jedi robes, Armor_Class_4..9), 85 Basic_Clothing, 89 Revan_Armor, 98 flight suit, and others. Live `Override/baseitems.2da` (109 rows) keeps the same 16 indices; Override `appearance.2da` and 55 Override armor UTIs shadow chitin (e.g. `a_light_42..49` base 38 TV 42..49, `a_light_x02` base 85 TV 102), so TextureVar values above 15 are already in use. Vanilla UTIs: `a_light_02` (base 38, BV 3, TV 1), `a_medium_01` (40, BV 5), `a_heavy_01` (42, BV 7), `a_light_x02` (85, BV 2). K2 humanoid appearance rows (Commoner_*, Twilek_*) have modeltype `B`, body meshes in `modela..modeln`. Data-only test: give the NPC UTC an `Equip_ItemList` body armor UTI (base 38 or 85) with TextureVar = N. Unverified: BodyVariation N -> appearance column `model<letter N>` (inferred from 2DA data, not RE), and that creature creation goes through `0x804f10`.
 
-## 26. Roadmap: automated K1 -> K2 import for contributors (10-18, plan only, nothing built)
+## 26. Automated K1 -> K2 import: recipes + install-time builder + character-packs loader (10-18, built, not installed)
 
-**Goal.** A contributor with their own K1 install runs one script and gets a character (models, textures, 2DA rows, UTC, optional audio) served by `asset-vfs`, reusing their K1 `override/` files when present. **Rule:** the repo carries the tool and recipes only; every converted asset stays on the contributor's machine (K1 content, and Characters Revisited textures are `pending_author_approval`).
+**Status.** Built, not installed. The builder (`k1_port/k1_port_import.py`) and the `character-packs` loader (0.1.0-dev) exist. No pack is in the live game. The live check waits for VFS-CT2. Tracking rows: doc 44 section 4, VFS-B3 and VFS-B4.
 
-**Layout (all under `patch_manager_mods/k1_port/`).**
-| File | Role |
-|---|---|
-| `k1_port_import.py` | Driver: locate K1 dir, load a recipe, resolve each resref (K1 `override/` first, then BIF/key), convert, build rows + UTC, pack. Chains the existing `k1_port_*` scripts; adds no converter code. |
-| `recipes/<character>.toml` | One per character (`juhani`, `carth`): resrefs, texture list, row ids (appearance/heads/soundset), template rows, optional audio list. No assets. |
-| `test_k1_port_import.py` | Fake-K1 fixtures: override-first resolution, recipe validation, ledger gate, output stays outside the repo. |
-| `38_k1_to_k2_asset_import.md` §26 + `CLAUDE.md` Fast Tools line | Docs; every new script is advertised in the same phase. |
+**Goal.** A contributor with a K1 install runs one tool and gets a character that `asset-vfs` serves from their own machine.
 
-Output default: `~/Games/KOTOR2_Mod_Workspace/k1_port_stage/<character>/` (`--out` overrides). The importer refuses an `--out` inside a git work tree.
+**Rule.** The repo carries the tool and the recipes. Packs, manifests, logs and converted files stay in the private out dir. Characters Revisited textures are `pending_author_approval`.
 
-**Two emit modes.**
-1. `--emit dll-source`: writes a mod source dir (`k1port-<character>`: manifest `requires = ["asset-vfs"]`, `exports.def`, wrapper `.cpp`, `.incbin` header, own `--symbol-prefix`) for the KPM toolchain. Needs mingw; produces a private DLL. This is today's `juhani_char_src` path and the pure in-memory test (VFS-T1).
-2. `--emit pack`: writes `<character>.k2pack` files. A public `character-packs` mod (no assets, `requires = ["asset-vfs"]`) reads `packs/*.k2pack` from the game dir in `KPatchInit` and registers them. Contributors compile nothing.
+**Design (chosen 10-18).**
 
-Other patches reach a character through `k2.characterlib@1` (`HasCharacter`, `GetCharacter`, `IsCharacterAppearance`, `Spawn`); a pack DLL is not a provider itself (KPM skips a consumer-less provider). A `k2.characterpack@1` enumeration interface is deferred until a consumer needs it.
+| Part | Where | Notes |
+|---|---|---|
+| Recipes | `k1_port/recipes/<id>.toml` | Committed. One per character: resrefs, texture list, template row, converter. No assets, no row numbers. |
+| Private config | `~/.config/k1_port/k1_imports.toml` | Copy of `k1_imports.example.toml`. Holds local paths and the out dir. Never committed. |
+| Builder | `k1_port/k1_port_import.py` | `doctor`, `build`, `install`, `remove`, `list`. Chains the existing `k1_port_*` steps as subprocesses. Adds no converter code. |
+| Pack | `<out>/<id>.k2pack` | Format: `k1_port/K2PACK_FORMAT.md` (version 1). |
+| Loader | `character_packs_src/` | `character-packs` 0.1.0-dev. DLL only, no assets, no hooks. Reads `<K2>/k1_imports/*.k2pack`. |
 
-**Steps.** (S1) recipe schema + `juhani`/`carth` recipes from the staged `char_build.json` data. (S2) resolver: K1 dir discovery (`KOTOR1_ROOT`, Steam path), override-first lookup, BIF extract via pykotor, licence class per file (override files = flagged unless the ledger says otherwise). (S3) driver chaining MDL convert, `tga_to_tpc --force-opaque`, `k1_port_char_build`, `k1_port_vfs_pack`; replaces `pack.sh`/`pack_carth.sh`. (S4) `--emit dll-source` generator. (S5) `.k2pack` format + `character-packs` loader mod (format: header, asset table, cell table, character def, blobs; same registry calls as the generated header). (S6) docs, tests, `check-shared-headers`/compat gates.
+Usage and the user steps: README section "Import a character from your K1 install" in `k1_port/README.md`.
 
-**Open decisions.** K1 BIF extraction without pykotor in the default venv; whether the licence gate may warn instead of block for a private `--out`; pack file signing/versioning; where `character-packs` reads packs when the game dir is Steam-managed.
+**Builder steps (per character, `build`).**
+1. Resolve. Find every model (`mdl`, `mdx`) and texture (`tpc` or `tga`) in the K1 install. Writes `licence_report.json`.
+2. Licence gate. The out dir must be private: not in a git work tree, not in a game install or compatdata, no symlink on the path, not inside a game dir. If it is not private, the build refuses (exit 2). In a private out, flagged sources (K1 Override files, an HD overlay, Characters Revisited) are allowed. The build warns and records them in the manifest.
+3. Models. `converter = "pykotor"` runs `k1_port_ingest` per model, with exactly the recipe textures that model's K1 mesh references (found by `k1_port_resolve.py --scan`; Carth body B also uses the head texture `P_CarthH01`, and ingest refuses both an unused and an unmapped texture). `converter = "mdlops"` runs `k1_port_mdlops` extract, pass1, rename and pass2, then validates and copies the output.
+4. Textures. Each texture becomes a DXT1 TPC (`k1_port_tex_tpc tga-to-tpc`, with `--force-opaque` when the recipe sets it and the recipe TXI applied). A staged DXT1 TPC is used as is, with its TXI replaced when the recipe sets one.
+5. Rows and UTC. `k1_port_char_build` writes the appearance and heads rows and the UTC. Row ids come from the live K2 `appearance.2da` and `heads.2da`, in config order, and are kept in `assignments.json`.
+6. Pack. Writes `<id>.k2pack`, reads it back and checks it, then writes `<id>.import_manifest.json` (sources, flagged items, texture hashes, pack sha256, tool versions).
 
-**Gate to start.** VFS-CT2 serve results (asset-vfs 0.1.2-dev H5 fix) must pass first; the format and loader depend on the registry calls being proven live.
+**Loader.** `character-packs` runs in `KPatchInit`, synchronously, so its 2DA cells are in place before the engine loads `appearance.2da` and `heads.2da`. Reason (user decision 10-18): `asset-vfs` drops 2DA cells registered after a table was serviced, and its character catalog has no lock, so a worker thread would race both. The loader uses kernel32 file calls only. It checks each pack against the format rules and skips a bad pack alone, with one log line in `character-packs_log.txt`. It checks the shared pools (192 assets, 1024 cells since asset-vfs 0.1.3-dev, 64 characters) before it registers anything.
+
+**Not in scope now.**
+- Audio. The format can hold WAV, LIP and SSF. The importer does not produce them yet.
+- Spawner. A patch spawns the character through `k2.characterlib@1` `Spawn`. No spawn is set from the config.
+- DLL source emit (the `--emit dll-source` mode from the first plan, decision D5). Not built.
+
+**Open risks.**
+1. Converter choice. Each recipe sets `converter`; there is no default. Juhani uses `mdlops` because the pykotor writer breaks `p_juhaniba` (section 22). Whether pykotor becomes the default after VFS-CT2 is open.
+2. Cell pool. 1024 cells since asset-vfs 0.1.3-dev (256 before), shared by every asset-vfs client. A character uses about 102. `juhani-char` takes cells from the same pool.
+3. Row-id fragility. Ids follow config order and live table counts. A change to either makes `build` refuse until `--reassign`, which rebuilds every character.
+
+**Next.** Install and live check after VFS-CT2 passes (user GO). Then doc 44 VFS-B3 and VFS-B4 move from "built, not installed" to done.

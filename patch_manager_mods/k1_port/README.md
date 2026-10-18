@@ -86,6 +86,128 @@ never with a constant: parents vary (1024 DXT5, 512 DXT1, 256 DXT5 atlases).
 Verified 10-12 on the pilots n_commm05, n_sithcom01, n_mandalorian01: masks align with the atlas islands with
 `--flip 0` (masks and gate both use stored row order); the in-game V direction is still the user's T5 test.
 
+## Import a character from your K1 install
+
+The importer turns characters from your own KOTOR 1 install into a `.k2pack` file, then copies that file into your KOTOR 2 install. The repo holds the tool and the recipes. It holds no converted asset. Your packs stay on your machine.
+
+### Prerequisites
+
+| Need | Used for | Set up |
+|---|---|---|
+| k1port venv (pykotor 2.3.12) | resolve, model converter, 2DA rows | Run `patch_manager_mods/k1_port/setup_venv.sh`. Default python: `~/Games/KOTOR2_Mod_Workspace/venvs/k1port/bin/python`. Override with `K1PORT_PY`. |
+| Repo `.venv` with numpy | texture step (TGA to DXT1 TPC) | Create `.venv` in the repo root, then `pip install numpy`. Override with `REPO_VENV_PY`. |
+| Python 3.11 or newer | the driver (`tomllib`) | Host Python. |
+| Proton and MDLOps | only recipes with `converter = "mdlops"` (juhani) | Steam "Proton - Experimental" and the MDLOps tools. `doctor` reports what is missing. |
+
+### Steps
+
+Run every command from the repo root.
+
+1. Copy the example config to a private place. Never commit the copy.
+
+   ```bash
+   mkdir -p ~/.config/k1_port
+   cp patch_manager_mods/k1_port/k1_imports.example.toml ~/.config/k1_port/k1_imports.toml
+   ```
+
+   Set `[k1] dir`, `[k2] dir` and `[build] out` in the copy. Keep `out` outside any git work tree and outside both game dirs. `build` refuses an `out` that fails this check.
+
+2. Check the setup. Fix every `FAIL` line before you build.
+
+   ```bash
+   python3 patch_manager_mods/k1_port/k1_port_import.py doctor
+   ```
+
+3. Build the packs. Writes only to `out`. Add `--only <id>` for one character. Add `--dry-run` to print the plan and write nothing.
+
+   ```bash
+   python3 patch_manager_mods/k1_port/k1_port_import.py build
+   ```
+
+4. Install the packs. Close the game first. This is the only step that writes to the game dir.
+
+   ```bash
+   python3 patch_manager_mods/k1_port/k1_port_import.py install
+   ```
+
+5. Start the game with the `character-packs` patch installed. Check its log.
+
+   ```bash
+   python3 scripts/kotor2_logs.py check character-packs_log.txt --new
+   ```
+
+6. Remove one character. Close the game first. Deletes only a pack that this tool installed, and drops its row ids.
+
+   ```bash
+   python3 patch_manager_mods/k1_port/k1_port_import.py remove <id>
+   ```
+
+`list` shows, for each character, whether it is built, whether it is installed, and its row ids. Exit codes: 0 ok, 1 failure (the message names the location, the cause and the fix), 2 safety refusal.
+
+### What each command writes
+
+| Command | Writes | Where |
+|---|---|---|
+| `doctor` | nothing | |
+| `build` | packs, manifests, logs, row ids | `[build] out` |
+| `install` | one copy of each pack, `installed.json` | `<K2>/k1_imports/` |
+| `remove <id>` | deletes that pack, drops its row ids | `<K2>/k1_imports/`, `<out>/assignments.json` |
+| `list` | nothing | |
+
+The out dir looks like this:
+
+```text
+<out>/
+  <id>.k2pack                 the pack; read back and checked before it is kept
+  <id>.import_manifest.json   sources, flagged items, texture hashes, pack sha256, tool versions
+  assignments.json            character id -> appearance and heads row ids
+  installed.json              packs this tool installed (path, sha256)
+  <id>/licence_report.json    what resolve found in the K1 install
+  <id>/logs/                  one log per subprocess step
+  <id>/                       work dir for one character; wiped on each build
+```
+
+### Row ids
+
+- Appearance and heads row ids come from the live K2 tables `override/appearance.2da` and `override/heads.2da`.
+- Character n in the `characters` list gets row `start + n`. `start` is the live row count, or `first_appearance_row` and `first_head_row` when set.
+- `build` keeps the ids in `assignments.json` and reuses them.
+- Append a new id at the end of `characters`. An id inserted earlier moves the rows of the ids after it, and `build` refuses.
+- If the live tables change, or the config order changes, `build` refuses. Restore the old state, or run `build --reassign`. `--reassign` rebuilds every character.
+- `remove` leaves its row ids unused until that character is built again.
+- While `juhani-char` is installed, set `first_appearance_row = 821` and `first_head_row = 252`. `juhani-char` owns appearance rows 818-820 and heads rows 249-251. `doctor` and `build` warn when it is found.
+
+### 2DA cell budget
+
+The asset-vfs 2DA pool holds 1024 cells since asset-vfs 0.1.3-dev (256 before), and every mod shares it. A character uses about 102 cells, so about 10 fit into an empty pool. `juhani-char` also takes cells from this pool (107 for Juhani, 102 for Carth, 102 for its twin), so fewer fit while it is installed. `build` prints the total. It warns when the total goes over 1024. Packs past the limit get a partial row, and `character-packs_log.txt` shows `REGISTER failed`.
+
+### What a pack does not do
+
+- **Spawning.** A pack holds models, textures, a UTC, a DLG, 2DA cells and the character definition. Nothing spawns it. A patch spawns the character through `k2.characterlib@1` (`Spawn`). No spawn is set from the config yet.
+- **Audio.** The recipe `[audio]` table is reserved and not read. The pack format can hold WAV, LIP and SSF files. The importer does not write them yet.
+
+### Add a recipe
+
+1. Copy `patch_manager_mods/k1_port/recipes/carth.toml` (pykotor) or `recipes/juhani.toml` (mdlops) to `recipes/<id>.toml`. `<id>` matches `[a-z0-9_]{1,31}`.
+2. Set the K1 model and texture names, and the K2 names the importer writes.
+3. Leave out row numbers. The builder assigns them.
+4. Append `<id>` to `characters` in your private config.
+5. Dry-run the character, then build it:
+
+   ```bash
+   python3 patch_manager_mods/k1_port/k1_port_import.py build --dry-run --only <id>
+   python3 patch_manager_mods/k1_port/k1_port_import.py build --only <id>
+   ```
+
+Recipe keys:
+
+| Table | Keys | Rules |
+|---|---|---|
+| `[character]` | `id`, `display_name`, `utc`, `soundset`, `template_row`, `gender` (required); `tag`, `dlg` (optional) | `display_name` is 1 to 63 printable ASCII characters. `utc` and `dlg` are resrefs `[a-z0-9_]{1,16}`. `soundset` and `template_row` are integers (`soundset` cannot be `"auto"`). `gender` is 0 or 1. |
+| `[models]` | `converter` (`pykotor` or `mdlops`), `body_a` (required), `body_b`, `head` | Each model is `{ k1 = "...", k2 = "..." }`. The builder needs `head`. |
+| `[[textures]]` | `k1`, `k2`, `force_opaque`, `txi` | `force_opaque` is true or false. `txi` is text, up to 1024 characters. List every texture the K1 meshes use: each model is ingested with the recipe textures its mesh references (`k1_port_resolve.py --scan`), and a mesh texture missing from the recipe fails validation. |
+| `[audio]` | reserved | Not read. |
+
 ## Caveat
 
 K1 HD overlay (`scripts/k1_hd_overlay.py`): a local-only install dir holding flagged Characters Revisited files in

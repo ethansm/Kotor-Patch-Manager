@@ -1,0 +1,27 @@
+# Example config for the install-time K1 -> K2 character importer (doc 38 s26).
+# Copy to a PRIVATE location (for example ~/.config/k1_port/k1_imports.toml) and edit the paths.
+# NEVER commit your own copy: it holds your local paths, and the output dir holds converted K1 content
+# (and possibly Characters Revisited textures, which are pending_author_approval).
+
+[k1]
+dir = "~/.local/share/Steam/steamapps/common/swkotor"
+
+[k2]
+dir = "~/.local/share/Steam/steamapps/common/Knights of the Old Republic II"
+
+[build]
+# Private output dir: keep it OUTSIDE any git work tree (the importer refuses a repo-local out dir).
+out = "~/.cache/k1_port/packs"
+# Recipe ids (recipes/<id>.toml). Order = build order = appearance/heads row order. Ids must be unique.
+characters = ["carth", "juhani"]
+# Optional. Empty = the recipes/ dir next to k1_port_recipe.py.
+recipes_dir = ""
+# Optional. Texture source: "vanilla" (default, your K1 install) or "cr" (Characters Revisited, from env K1PORT_CR_DEST
+# or ~/Games/KOTOR2_Mod_Workspace/k1_port_extract/characters_revisited). CR textures are pending_author_approval:
+# allowed only because `out` is private, recorded in each <id>.import_manifest.json, never share the packs.
+# texture_source = "vanilla"
+# Optional. First appearance.2da / heads.2da row to assign (default: the live K2 table row count, then +1 per
+# character in the order above). Raise them to coexist with another owner of virtual rows (the hand-built
+# juhani-char DLL owns appearance 818-820 and heads 249-251: use 821 and 252 while it is installed).
+# first_appearance_row = 821
+# first_head_row = 252
