@@ -11,7 +11,7 @@ template_row = 17          # appearance.2da row copied for the new row
 gender = 0
 
 [models]
-converter = "pykotor"
+converter = "mdlops"       # pykotor numbers nodes against K1: left arm out / shards on K2 bodies (doc 38 s22, memory kotor2-mdlops-node-numbers); MDLOps two-pass path with the K2 supermodel chain
 # K1 Carth = p_carthba (K1-only) + p_carthbb + head p_carthh (doc 38 s12 R2)
 body_a = { k1 = "p_carthba", k2 = "k1p_carthba" }
 body_b = { k1 = "p_carthbb", k2 = "k1p_carthbb" }

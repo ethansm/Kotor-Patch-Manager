@@ -77,7 +77,7 @@ class ShippedTests(unittest.TestCase):
         rs = R.load_recipes(HERE / "recipes", ["carth", "juhani"])
         self.assertEqual([r.id for r in rs], ["carth", "juhani"])
         carth, juhani = rs
-        self.assertEqual((carth.converter, carth.soundset, carth.gender), ("pykotor", 11, 0))
+        self.assertEqual((carth.converter, carth.soundset, carth.gender), ("mdlops", 11, 0))
         self.assertEqual((juhani.converter, juhani.dlg, juhani.gender), ("mdlops", "", 1))
         for r in rs:
             self.assertEqual(r.template_row, 17)
