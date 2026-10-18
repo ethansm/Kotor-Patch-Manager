@@ -566,10 +566,16 @@ class Rules012Tests(unittest.TestCase):
         self.assertEqual(rc, 1, out)
         self.assertIn("FAIL 12 tv allowlist: 1 RMP line(s) with a tv after-value outside their family's slot list", out)
 
-    def test_tv_16_is_allowed_for_female_final_app(self):
-        rc, out = run_bodies(healthy() + [rmp_line(oid=0x4000, before=805, after=811, tv=(1, 16))])
+    def test_tv_15_is_allowed_for_female_final_app(self):
+        rc, out = run_bodies(healthy() + [rmp_line(oid=0x4000, before=805, after=811, tv=(1, 15))])
         self.assertEqual(rc, 0, out)
         self.assertIn("PASS 12 tv allowlist: 7 RMP tv after-value(s) inside their family's slot list", out)
+
+    def test_tv_16_is_rejected_for_female_final_app(self):
+        # 0.2.4-probe veto (b101a8c9): female N_CommF10/F16 read as Czerka uniforms, DiversitySlots.h F list is 1-9, 11-15.
+        rc, out = run_bodies(healthy() + [rmp_line(oid=0x4000, before=805, after=811, tv=(1, 16))])
+        self.assertEqual(rc, 1, out)
+        self.assertIn("FAIL 12 tv allowlist: 1 RMP line(s) with a tv after-value outside their family's slot list", out)
 
     def test_vetoed_rag_slots_are_rejected(self):
         # 10-16 user veto: F17 (tattered patchwork rags) and M16 (ragged blood-stained) are no longer in the allowlist.
