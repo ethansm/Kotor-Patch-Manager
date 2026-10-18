@@ -1,7 +1,7 @@
 [patch]
 id = "holster"
 name = "Holstered Weapons"
-version = "0.1.3-dev"
+version = "0.1.4-dev"
 author = "local"
 description = "P0 probe for holstered weapons (doc 42): logs the client combat-flag setter, the in-world rhand/lhand weapon attach, the weapon-set swap executor, wield-transition animation ids and the Gob attach-transform update, so the hip/back holster design can be settled from evidence. Changes no game behaviour unless holster.ini sets bone_test=1 (flag-file experiment: attaches the right-hand weapon to bone_name, default pelvis_g). Needs holster.ini (probe=1 plus ch_* switches; log holster_log.txt; needs a [holster] section with level=info in the game-dir kplog.ini or every line is dropped)."
 

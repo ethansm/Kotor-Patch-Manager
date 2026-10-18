@@ -127,7 +127,8 @@ static void testEulerNearContinuity() {
 }
 
 static void testEulerNearSingularity() {
-    // |ry| >= 80: rx must come back as prev[0]. The fit is exact when prev[0] is the pose's own rx (checked here, prev[0] = a).
+    // 80 <= |ry| < 90: the exact decomposition is used (no frozen rx since 0.1.4), so with prev[0] = a the primary triple wins and
+    // rx comes back as a. Exactness for arbitrary prev is covered by testEulerNearNudgeSweep.
     const float bs[] = {80.f, 84.f, 89.9f, -80.f, -86.f, -89.9f};
     const float as[] = {-170.f, -20.f, 0.f, 45.f, 150.f};
     for (float b : bs)
@@ -136,7 +137,7 @@ static void testEulerNearSingularity() {
             const float prev[3] = {a, 0.f, 0.f};
             float out[3];
             eulerNear(q, prev, out);
-            KT_CHECK(closeAng(out[0], a));
+            KT_CHECK(closeAng(out[0], a, 0.01f));  // float eulerFromQ resolves rx to about 0.003 deg at ry = 89.9
             KT_CHECK(closeTo(out[1], b, 1e-3f));
             KT_CHECK(quatErr(qbase(out[0], out[1], out[2]), q) < 1e-4f);
         }
@@ -152,6 +153,66 @@ static void testEulerNearSingularity() {
             KT_CHECK(closeAng(out[0], pr));
             KT_CHECK(closeTo(out[1], b, 1e-3f));
             KT_CHECK(quatErr(qbase(out[0], out[1], out[2]), q) < 1e-4f);
+        }
+}
+
+// Angle between two rotations in degrees, from the vector part of a * conj(b) (acos of a dot near 1 only resolves ~0.04 deg in float).
+static float angBetweenDeg(const Q& a, const Q& b) {
+    const Q d = qmul(qnormalize(a), qconj(qnormalize(b)));
+    return 2.f * std::atan2(std::sqrt(d.x * d.x + d.y * d.y + d.z * d.z), std::fabs(d.w)) * 57.29578f;
+}
+
+static void testEulerNearNudgeSweep() {
+    // Port of research/holstered_weapons/ux_v2/s3_sim.cpp: 90 one-degree nudges about each bone axis, chaining the shown triple as
+    // prev (as the overlay does). The old frozen-rx branch gave up to 18 deg render error and 47-67 deg display jumps for
+    // 80 <= |ry| < 90. Per step: the shown triple must reproduce the true rotation within 0.05 deg, and the triple may move by at
+    // most the Euler-map amplification of a 1 deg rotation, 1/cos(ry) (bound 1.1/cos + 0.1 using the larger |ry| of the two
+    // steps). Steps whose |ry| exceeds 87 deg are exempt from the jump bound: there rx and rz legitimately swing by tens of
+    // degrees and flip by 180 when the pose crosses the pole.
+    const float starts[2][3] = {{30.f, 84.f, 10.f}, {30.f, 79.f, 10.f}};
+    for (const auto& st : starts)
+        for (int dir = 1; dir >= -1; dir -= 2)
+            for (int axis = 0; axis < 3; ++axis) {
+                Q q = qbase(st[0], st[1], st[2]);
+                float prev[3] = {st[0], st[1], st[2]};
+                for (int i = 0; i < 90; ++i) {
+                    q = localAxisNudge(q, axis, static_cast<float>(dir));
+                    float cur[3];
+                    eulerNear(q, prev, cur);
+                    KT_CHECK(angBetweenDeg(qbase(cur[0], cur[1], cur[2]), q) < 0.05f);
+                    const float ry = std::fmax(std::fabs(prev[1]), std::fabs(cur[1]));
+                    if (ry <= 87.f) {
+                        const float bound = 1.1f / std::cos(ry * 0.01745329251994330f) + 0.1f;
+                        for (int k = 0; k < 3; ++k) KT_CHECK(std::fabs(wrap180(cur[k] - prev[k])) <= bound);
+                    }
+                    for (int k = 0; k < 3; ++k) prev[k] = cur[k];
+                }
+            }
+}
+
+static void testEulerNearExactGimbal() {
+    // Exactly ry = +-90: the rotation is reproduced exactly and rx stays at prev[0], whatever prev is.
+    const float bs[] = {90.f, -90.f};
+    const float prevRx[] = {-170.f, -20.f, 0.f, 37.5f, 150.f};
+    for (float b : bs)
+        for (float pr : prevRx) {
+            const Q q = qbase(-62.f, b, 118.f);
+            const float prev[3] = {pr, 12.f, -30.f};
+            float out[3];
+            eulerNear(q, prev, out);
+            KT_CHECK(closeAng(out[0], pr));
+            KT_CHECK(closeTo(out[1], b, 1e-3f));
+            KT_CHECK(angBetweenDeg(qbase(out[0], out[1], out[2]), q) < 0.01f);
+        }
+    // Just off the pole (89.99, 89.5, -89.9) the decomposition is exact for any prev, including one far from the true rx.
+    const float near[] = {89.99f, 89.5f, -89.9f, 89.0f};
+    for (float b : near)
+        for (float pr : prevRx) {
+            const Q q = qbase(71.f, b, -42.f);
+            const float prev[3] = {pr, 0.f, 0.f};
+            float out[3];
+            eulerNear(q, prev, out);
+            KT_CHECK(angBetweenDeg(qbase(out[0], out[1], out[2]), q) < 0.05f);
         }
 }
 
@@ -221,6 +282,8 @@ int main() {
     testEulerNearBranchChoice();
     testEulerNearContinuity();
     testEulerNearSingularity();
+    testEulerNearNudgeSweep();
+    testEulerNearExactGimbal();
     testQconj();
     testWorldDeltaToLocalMatchesNudge();
     testWorldMoveToLocal();

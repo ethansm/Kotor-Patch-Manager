@@ -79,13 +79,15 @@ inline void eulerFromQ(const Q& q0, float out[3]) {
     }
 }
 
-// Continuity-preserving inverse: of the two equivalent triples {rx, ry, rz} and {rx+180, 180-ry, rz+180} (each component wrapped),
-// out is the one closest to prev. Near the singularity (|ry| >= 80) rx is kept at prev[0], ry comes from q, and rz is solved so
-// that Rz(rz) * Ry(ry) * Rx(rx) fits q. That fit is exact only when prev[0] equals the true rx, or when |ry| = 90 exactly.
+// Continuity-preserving inverse: of the two exact equivalent triples {rx, ry, rz} and {rx+180, 180-ry, rz+180} (each component
+// wrapped), out is the one closest to prev. Both come from the exact decomposition, so qbase(out) = +-q for every pose with
+// |ry| < 90 (including the band 80 <= |ry| < 90, where an earlier version froze rx at prev[0] and drifted up to 18 deg off q).
+// Only at the true gimbal singularity (eulerFromQ reports |ry| = 90; within about 0.006 deg of it rx and rz are not separable)
+// is rx held at prev[0] and rz solved exactly: Rz(rz) * Ry(+-90) * Rx(rx) fits q for any rx there.
 inline void eulerNear(const Q& q, const float prev[3], float out[3]) {
     float p[3];
     eulerFromQ(q, p);
-    if (std::fabs(p[1]) >= 80.f) {
+    if (std::fabs(p[1]) >= 89.999f) {
         const float a = wrap180(prev[0]);
         const float b = p[1] * detail::kDeg2Rad;
         const float ca = std::cos(a * detail::kDeg2Rad), sa = std::sin(a * detail::kDeg2Rad);
