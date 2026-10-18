@@ -437,6 +437,9 @@ inline bool setButtonFillStyle(uintptr_t btn, int style) {
     uintptr_t b[2] = { buttonBorder(btn, false), buttonBorder(btn, true) };
     uint32_t v[2] = { 0, 0 };
     if (!b[0] || !b[1] || !rd<uint32_t>(b[0], oStyle, &v[0]) || !rd<uint32_t>(b[1], oStyle, &v[1])) return false;
+    // Both borders must be writable up front (as setButtonFill), so a refusal never leaves one state restyled and the other not.
+    for (int i = 0; i < 2; ++i)
+        if (!saferead::probeWrite(SiteBase, reinterpret_cast<void*>(b[i] + oStyle), 4)) return false;
     for (int i = 0; i < 2; ++i) if (!wr<uint32_t>(b[i], oStyle, (v[i] & ~3u) | static_cast<uint32_t>(style))) return false;
     return true;
 }

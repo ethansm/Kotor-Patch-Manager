@@ -317,13 +317,17 @@ extern "C" void __cdecl HolsterCombat(void* creature, int newState) {
     if (!g_onComb) return;
     saferead::beginScope();
     if (!KP_ENABLED(chComb, KPLOG_INFO)) return;
-    // Quiet mode: first 3 edges per creature, then every 10th (86 creatures in one session, mostly non-party).
-    if (!g_logVerbose && !hs::keyedWant(hs::keyBump(g_combKeys, reinterpret_cast<uintptr_t>(creature)), 3, 10)) return;
-    if (!takeLine()) return;
     const uintptr_t c = reinterpret_cast<uintptr_t>(creature);
     const int off = k2addr::off(&K2AddrTable::Creature_ClientCombat);
     uint32_t raw = 0;
     const bool readOk = off != 0 && rdU32Ok(kSiteComb, c, off, &raw);
+    // Quiet mode: every real edge (old != new, or old unreadable) is logged; only the repeats (edge=0) are rate-limited per creature.
+    const bool edge = !readOk || static_cast<int>(raw) != newState;
+    if (!g_logVerbose) {
+        const uint32_t cnt = edge ? 0u : hs::keyBump(g_combKeys, hs::creatureKey(c));
+        if (!hs::combLogWanted(edge, cnt, false)) return;
+    }
+    if (!takeLine()) return;
     const hs::CombFields f = hs::combFields(readOk, raw, newState);
     char oldS[12] = "?", edgeS[4] = "?";
     if (f.oldKnown) { snprintf(oldS, sizeof oldS, "%d", f.old); snprintf(edgeS, sizeof edgeS, "%d", f.edge); }
@@ -338,7 +342,7 @@ extern "C" void __cdecl HolsterAttach(uint32_t obj, const char* tag, int* creatu
     saferead::beginScope();
     if (!KP_ENABLED(chAttach, KPLOG_INFO)) return;
     // Quiet mode: first 4 attaches per creature, then every 20th.
-    if (!g_logVerbose && !hs::keyedWant(hs::keyBump(g_attachKeys, reinterpret_cast<uintptr_t>(creature)), 4, 20)) return;
+    if (!g_logVerbose && !hs::keyedWant(hs::keyBump(g_attachKeys, hs::creatureKey(reinterpret_cast<uintptr_t>(creature))), 4, 20)) return;
     if (!takeLine()) return;
     char t[48];
     readTag(kSiteAttach, tag, t, sizeof(t));
@@ -1229,7 +1233,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     addName(names, sizeof(names), g_onAnim, "anim");
     addName(names, sizeof(names), g_onGob, "gob");
     addName(names, sizeof(names), g_onPlace, "place");
-    KP_LOG(chMain, "holster 0.1.6-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
+    KP_LOG(chMain, "holster 0.1.7-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
            names[0] ? names : "none", static_cast<long>(g_maxLines), g_gobEvery, k2addr::get() ? "ok" : "none");
     {
         hs::TuneCfg t;

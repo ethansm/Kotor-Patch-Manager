@@ -1,0 +1,233 @@
+OPUS review: HW-UX3 research wave R1/G + L0 code (0be7747b + working tree) + plan holster_editor_layout_v3.md
+Reviewer: independent (Opus). Read-only except this file. Date 10-18.
+DUMP = ~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71/decomp. LOG = kplog_parse --bare of the live holster(-editor)_log.txt.
+Scoped tests: python3 scripts/run_tests.py holster hse_layout_v3 reset_icon guikit -> 17 passed, 0 failed (4.0 s).
+gen_reset_icon.py --check -> rc 0 (the .inc is reproducible).
+
+======================================================================
+1. RESEARCH NOTES
+======================================================================
+
+A1_view_rect
+- "SetRect on the view resizes the render; glViewport re-derived from the rect every draw": CONFIRMED.
+  DUMP/42/00420f50.c:7-11 (scene vt+4 then view+4..+0x10); DUMP/84/0084de40.c:6 (view draw -> scene vt+0xC);
+  DUMP/41/004184f0.c:9-13 (0x479460(S+4..S+0x10) then camera vt+8 then pop); DUMP/47/00479460.c glViewport(parentX+x, rootH-(parentY+y)-h, w, h).
+- "fovy is VERTICAL": CONFIRMED. 0x47F6D7 CALL 0x93B436 is the GLU32 gluPerspective import thunk (imports.tsv row
+  "gluPerspective GLU32.DLL 0047f320 ... CALL 0x0093b436"); arg = (double)cam+0x204.
+- "Ctor 0x47ECD0 has no writes to +0x218..0x224": WRONG. DUMP/47/0047ecd0.c:39-42 param_1[0x86..0x89] = 0;
+  asm 0x47EE0A/17/24/31 MOV [reg+0x224/0x220/0x21C/0x218],0. Harmless (fields are 0 either way) but the note's anchor is false.
+- Stale caches (viewRect at cbEnter, wheel hit rect :1780): plausible, not re-read line by line. UNVERIFIED but load-bearing for L1 (see plan §3).
+
+A2_view_rect
+- Chain identical to A1: CONFIRMED (same anchors).
+- "Camera ctor zeroes +0x218..+0x224": CONFIRMED (above). A2 is right, A1 and F are wrong on this point.
+- "No caller of SetViewPort 0x47F2B0": CONFIRMED as far as callgraph goes (no direct CALL); indirect sites not exhaustive (A2 says so).
+
+F_cam_viewport  (special attention a)
+- "Render viewport = pushed control rect, aspect = control w/h, no scissor": CONFIRMED for the static path.
+  Aspect asm: buffer LEA [EBP-0x18] at 0x47F3AC; FILD [EBP-0x10] (w) / FIDIV [EBP-0xC] (h) at 0x47F504-07 -> w/h, not h/w.
+- "Ctor 0x47ECD0 writes no 0x218..0x224 (VERIFIED-in-dump)": WRONG (see A1). The tag VERIFIED-in-dump was not earned.
+- Q3 verdict "full-window viewport hypothesis REFUTED": SOUND as a statement about the code path, with two caveats F only half states:
+  (i) 0x479460 offsets x,y by the CURRENT parent stack entry (DAT_00a309c8/ca[depth]) and flips with the ROOT height (DAT_00a309ce).
+      If the view draw runs inside a pushed panel entry, the GL viewport is shifted from the control border. F lists "S rect != control rect"
+      but not "parent entry != root"; the caller of 0x84DE40 is untraced (A2 #17). Add the stack depth DAT_00a309c0 + parent entry to CAM2.
+  (ii) The pose RenderScene uses is cam+0xA8/+0xB4 when DAT_00a32a54 == 0 (DUMP/47/0047f320.c ~line 283 FUN_00435f00(+0xA8,+0xB4)),
+      the same fields CAMENG reads. So "render pose != logged pose" (the plan's new "lead") is what F itself rated unlikely (c).
+- Simpler explanation (fovy horizontal / aspect)? NO.
+  * fovy goes straight into GLU gluPerspective = vertical. If it were horizontal, the vertical span would GROW by 1/aspect
+    (1.67 m / 0.643 = 2.6 m), the opposite of the observation.
+  * Aspect only changes the horizontal span; it cannot shrink the vertical one.
+  * My recompute from LOG: CAMENG pos=(4.8725,0,0.4358) q(w-first)=(0.47862,0.52102,0.52102,0.47750) -> forward (-0.996,0.001,+0.086)
+    (pitched ~4.9 deg UP), distance to hook plane ~4.85 m. At fovy 19.438 the vertical span is 2*4.85*tan(9.72 deg) = 1.67 m, centred at
+    z ~0.85 -> visible z ~0.02..1.69 m. So the predicted span is ~1.7 m (plan's "0 to 1.8 m" is slightly OVERSTATED) and still >> 1.0 m.
+  * The 1.0/1.67 = 0.60 ratio is numerically close to both 896/1440 (0.62) and 576/896 (0.64); neither maps onto a mechanism in the dump.
+  * CALIB evidence is weak: LOG CALIB round=1 clicks head y=719, belt y=684 (belt ABOVE head), rhand y=733 at zoom 1.17; predicted head
+    y ~483. The clicks are not self-consistent, so they neither support nor refute any hypothesis. Several "outside" clicks have y=1477 > 1440,
+    i.e. mouse/GUI units are not window pixels; GUI-unit vs GL-pixel scale is an un-enumerated candidate for both the rect and the click maths.
+  * The "~1.0 m seen" is an eyeball estimate from a screenshot (plan §4), not a logged measurement. UNVERIFIED.
+  Verdict on F: REFUTED is sound; "gap unexplained" is honest; probe list should add parent stack entry + GUI-to-pixel scale + a
+  log-only draw-time glGetIntegerv(GL_VIEWPORT) (F's own "decisive" check, the right one).
+
+B_icon_fill  (special attention c)
+- "guikit::setFill/setAlpha/setBorderTint gate on +0x60 and silently fail on a button": CONFIRMED. GuiKit.h borderOk reads ctl+Label_Border
+  (0x60, K2Addr.h:288); CSWGuiButton borders are +0x70/+0xE8 (GuiButton.h:21-22). EquipCharPreview.cpp:309-311 logs exactly that case.
+- Worker inference "button border shares the label border layout (fill +0x74, tint +0x28, style +0x34)": CONFIRMED-structurally, live
+  draw UNVERIFIED. Evidence beyond the comment: (1) the helper gates on the border vtable == BorderVtable at both +0x70 and +0xE8, and the
+  same vtable means the same class, hence the same field layout; (2) stride check: label border 0x60 -> text 0xD8 (0x78 bytes,
+  K2Addr.h:288-289); button borders 0x70 -> 0xE8 -> text 0x160 (0x78 each, GuiButton.h). Fill +0x74 < 0x78 fits. What is NOT proven: that
+  CSWGuiButton's draw honours the border fill/style, or that a highlight/state change does not re-copy the border from the template.
+  That stays a PLAY_TEST_QUEUE item, as the GuiKit.h comment says.
+- "ModConfig clones BTN_GAMEPLAY as CSWGuiButton, else label clone": CONFIRMED (ModConfig.cpp cloneEntry ~:200-222). Consequence missed by
+  ResetIcon.h's usage note: on the label-clone fallback (button_clone=0 or failed clone) setButtonFill returns false; L1 must try
+  guikit::setFill as the second path, or the icon never appears on that config.
+- "Item cap 38 of 40, overlay labels refused": CONFIRMED for today (HseView.h:793-794). Moot once the cap is 80.
+
+C_descsplit_cap
+- "hitItem is rect-only, items in MUI_PANE_PREVIEW clickable": plausible, not re-traced. UNVERIFIED (low risk).
+- "kMaxItems 40 -> 80 scales by constexpr": kMaxItems is already 80 in the working tree (MenuUiLogic.h:37). CONFIRMED that it landed.
+- "Hard-coded 40 on the consumer side (HseView.h:793, hse_view_test.cpp:980, common_contract_test.cpp:226-227)": CONFIRMED for HseView.h.
+  The plan does not list these consumer edits (see §3).
+- "AddCustom has no pre-check and no log at the cap": noted, not re-read. With no cap query in the ABI, a 69-item editor against an
+  old 40-cap mod-config fails silently. UNVERIFIED but important for install order.
+
+D_page_inventory
+- 38 items today: CONFIRMED by static_assert (kPageItemsBase 26 + kInspItems 12 <= 40, HseView.h:794).
+- 7 stances vs plan 5, no absolute bone setter: accepted (plan §4b adopts both). Not re-read.
+
+E1_flourish
+- "Flourish calls SetCombatState(1,2,0); 0x7682B0 only when param3==1, so client +0x138 not set": CONFIRMED.
+  DUMP/79/0079f430.c:73 FUN_0057a560(1,2,0); DUMP/57/0057a560.c:103-106 and asm 0x57A926 MOVZX EDX,[EBP+0xC]; CMP EDX,1; JNZ.
+- "the holster FSM sees no 0->1 edge, so the hand attach never happens": WRONG premise. hs::Fsm is not wired in Holster.cpp (rg finds only
+  host tests), HolsterCombat only logs, and 0x7682B0 never calls 0x7637E0 (callee list in DUMP/76/007682b0.c header). An edge would change
+  nothing visible.
+- Candidate A (rewrite param3 2->1): rejected correctly by E3 (changes +0x11E8, bark path, double visual block, no consumer). OVERSTATED as "preferred".
+
+E2_flourish_holster
+- "Live config probe=1, bone_test=1, place=1, so weapons sit on the hip in and out of combat": CONFIRMED (live holster.ini lines 1, 9, 12).
+- "Holster.cpp HolsterCombat only logs; Fsm unwired": CONFIRMED (Holster.cpp:316-332 now; rg).
+- "+0xC5 == 1 or 8 returns with no anim and no cooldown": CONFIRMED (DUMP/79/0079f430.c:44-49).
+- "draw = stop the H7 pose override; needs bone_test off": CONFIRMED as far as it goes (see G1/G3).
+
+E3_flourish_settle
+- "Cause = the global rhand/lhand literal repoint; flourish sets server state only": CONFIRMED (Holster.cpp:1200-1214 now, HolsterBonePatch.h;
+  code_patches.toml; DUMP/57/0057a560.c:103-106).
+- "Option 1 (skip the hip write) does NOT work on pelvis_g": CONFIRMED under bone_test=1 (the engine copy is the pelvis pose).
+- "Option 2: per-attach literal + forced re-attach": viable but heaviest; G3 option (c) and G1 make it unnecessary. Superseded.
+- Stale anchors: Holster.cpp:1169-1180 -> now 1200-1214 after 0be7747b.
+
+G1_repoint  (special attention b)
+- "Repoint is one shared imm32, global by construction": CONFIRMED (code_patches.toml; Holster.cpp:1200-1214).
+- "Trap: Holster.cpp:860 skips mountPose when mountBone == g_boneName, so with bone_test=0 the base stays the hand pose": CONFIRMED (Holster.cpp:859-860).
+- "Owner link [parent+0x1D8] unverified": now SUPPORTED by LOG. PLACENODE owner= values ab11a68, ad5f938, 8da45e0, 8f47720 all appear as
+  COMB creature= values in the same session. G2 already used this; G1's OPEN is answered (pointer identity, not semantics).
+- Design (bone_test=0, rhand/lhand accepted as targets, write hip pose while [owner+0x138]==0, return early when != 0): SOUND for real
+  combat (0x7682B0 fires for PC and NPCs, LOG 27 edges / 10 creatures; DUMP/76/007637e0.c reads +0x138 as local_2c[0x4e]).
+- "Flourish: native hand path already plays them, so no extra work": WRONG. Under this design the hip write is gated on +0x138, and the
+  flourish never sets +0x138 (E1/E3/G2 + dump above). Weapons would stay on the hip during the flourish exactly as today.
+  The design needs a second per-creature input: a timed "drawn" window opened by a detour of 0x7408A0 (player, single caller of 0x79F430)
+  and 0x66B8A0 (script), or 0x57A560 entry filtered on return address 0x79F621 / 0x66BAC2 and param3==2.
+- Other risks not in G1: (1) combat exit is the 8 s timer (G2), so drawn->hip is an instant snap with no stow animation; (2) the left-hand
+  mirror/left_extra_rot path was tuned for attach on pelvis_g; with the base now mounted from the hand node, every existing place_* tuning
+  value must be re-validated (they are composed on a different base pose only if mountPose differs from the old node pose).
+
+G2_combat_signal
+- "1528 COMB lines, 27 edges": order of magnitude CONFIRMED (current LOG: 1653 COMB lines in 9100). "Most COMB calls are edge=0": CONFIRMED.
+- "Exit = 8000 ms timer in AIUpdate": consistent with DUMP/57/0057a560.c:98 (+0x524=8000); AIUpdate site not re-read. Short pairs 8018-8487 ms fit.
+- "+0xC5/+0xC6 set at equip/model build, not by combat or flourish": not re-read. UNVERIFIED (consistent with E2/E3).
+
+G3_reattach
+- "0x7637E0 re-attaches only if +0x278/+0x27C changed or event == AppearanceForceUpdate; +0x138 selects local_18": CONFIRMED
+  (DUMP/76/007637e0.c:54-56, local_2c[0x4e] = +0x138, local_2c[0x9e] = +0x278).
+- "Vanilla combat start does not re-attach": CONFIRMED (0x7682B0 callees: 0076e610, 007fe6c0, 00773ba0, 007680a0, 0077d800, 0073f4d0).
+- Option (c) (keep pelvis_g attach, switch the PLACE base to a hand mountPose): plausible; needs rhand/lhand in kBones (HolsterTune.h:56) and
+  the attach scale (WEAPONSCALE passed to vtbl+0x7C) is not part of the 28-byte pose, so scale is unaffected. G1's variant (native rhand
+  attach, override to hip when holstered) has a better failure mode: if PLACE refuses or the owner read fails, the weapon is in the hand
+  (vanilla), not stuck on the hip. Recommend G1's variant + the flourish window above.
+
+H_vanilla_slider
+- "Only SLD_ALIGN in repo, Sound Options slider resrefs not found": accepted (not re-searched). Verdict PARTIAL is honest.
+- "GuiKit setFill works on labels, returns false on buttons": CONFIRMED (same as B).
+
+Contradictions between notes
+- A1 + F say the camera ctor does not touch +0x218..0x224; A2 says it zeroes them. A2 is right (dump + asm).
+- E1 says make the draw edge fire; E3 shows nothing consumes it. E3 is right.
+- G1 says flourish needs no extra work; E1/E3/G2 show flourish never sets +0x138. G1 is wrong.
+- Plan §4b promotes "render pose != tick pose" to the lead, which F rated unlikely (both read +0xA8/+0xB4).
+
+======================================================================
+2. CODE (0be7747b + working tree)
+======================================================================
+
+HolsterLogRate.h + Holster.cpp quiet mode (log_verbose=0 is the DEFAULT)
+- BUG (high, logging correctness): HolsterCombat quiet gate counts EVERY call per creature (keyBump before the old/new read) and keeps
+  calls 1-3 then every 10th. The comment says "first 3 edges per creature", but the counter is per call, and most 0x7682B0 calls are
+  edge=0 (LOG: 1653 COMB lines, only ~27 edges). So after a creature's third call, a real combat enter/exit edge is logged only when its call
+  number is a multiple of 10: ~90% of edges are dropped. holster_log_check.py's "COMB edges per creature" report (lines 192-202) and the
+  combat-edge work the G-design depends on (P0 probe, owner/COMB matching) silently under-count.
+  Fix: read +0x138 first, always log when old != new (edge), rate-limit only edge=0 lines.
+- BUG (medium): KeyCounts<256> never evicts. Past 256 distinct creatures in one game run (several area loads), keyBump returns 0 and that
+  creature's COMB/ATTACH lines are NEVER logged, edges included. Same for ATTACH with creature == nullptr (key 0 -> never logged).
+- Medium: PlaceTable kCap 64 gobs, no eviction. After area changes, new gobs fall into the overflow path (every 200th placement overall,
+  no sig/delta change lines), and a reused gob address inherits the old count (no first-3 lines). RefuseTable pairs cap 64 likewise.
+- OK: no WARN/ERR goes through the new gates (HolsterCombat/Attach/AnimResolve/refuse/PLACE are INFO). n= in PLACE and PLACEREFUSE stays the
+  running count, so holster_log_check.py and holster_place_verdict.py still parse (17/17 tests pass).
+- Stale doc: holster_log_check.py:356 docstring "the DLL logs the first 5 then every 500th" is now only true with log_verbose=1.
+- holster_place_verdict.py mean_move per segment is now computed over a change-biased sample (first 3 + changes + every 200th): the mean
+  is no longer an unbiased per-frame mean. Tolerable for a verdict, but document it.
+- Test gap: holster_lograte_test.cpp covers the pure helpers only; nothing pins "edges always logged" (the gate lives in Holster.cpp).
+  Move the COMB decision into a pure function (old, new, count) -> bool and test it.
+
+GuiKit.h buttonFillOk / setButtonFill / setButtonFillStyle
+- Memory safety: all reads via saferead rd/rd32, all writes via probeWrite-guarded wr; Steam-only gate; both border vtables checked before
+  any write. setButtonFill probes both borders before the first write (good). setButtonFillStyle does not probe before writing border 0, so
+  a (theoretical) failure on border 1 leaves the two states different. Low.
+- Layout inference: see B (structurally sound; live draw unverified).
+- guikit_test.cpp adds coverage (passes). No issue blocking.
+
+HseLayoutV3.h
+- Containment/overlap: the test (3 sizes, degenerate panes, NaN thumbs) passes and the arithmetic checks out (inspector row widths sum to W;
+  the view band y0..y3+lg sums exactly to view.h).
+- Hole (medium): vr = max(view.x + view.w, preview.x). The contract assumes column < view < preview, but nothing enforces it. If
+  preview.x < view.x + view.w (any skin/resolution where the desc pane starts inside the old view rect), the enlarged view and its mode
+  strip overlap the inspector. Use vr = min(max(view right, preview.x - kPad), preview.x - kPad) when preview.w > 0, and add a test with an
+  overlapping preview.
+- Hole (medium, plan-level): the view grows LEFT across the old column pane from column.x+264 to view.x (about 930 px at 3440x1440). Whatever
+  vanilla/mod-config controls live in that band are still there (mod-config hit test is rect-only over its own items; vanilla controls under
+  the view can still take clicks). Not checkable in the pure layout; needs an L2 play row item.
+- No gap pad between view right edge and preview.x when preview.x > view right (view touches the description pane border). Cosmetic.
+- Hint lines are capped at 16 px height; dialogfont16x16 lines need ~16-18 px. Check the font height before L1.
+- kPageItemsV3 = 69 > HseView.h kPageItemCap 40 (static_assert at :794). L1 must raise it together with hse_view_test.cpp:980 and
+  common_contract_test.cpp:226-227, and must refuse cleanly against an old 40-cap mod-config (no cap query in the ABI).
+
+ResetIcon.h / ResetIconTex.inc / gen_reset_icon.py
+- TGA header valid (type 2, 32x32, 32 bpp, descriptor 0x08). --check reproducible. reset_icon_test passes.
+- Gap: usage note only names guikit::setButtonFill; the label-clone fallback needs guikit::setFill (see B).
+- static const arrays in an .inc included into a header: duplicated per TU (~8 KB each). Low.
+- cache[2] never reset: if the GUI image pool is rebuilt (module/menu reload) the handle may dangle; same pattern as HudKit/LevelUpUi, accepted
+  there. Low.
+
+======================================================================
+3. PLAN .claude/plans/holster_editor_layout_v3.md: statements the evidence does not support
+======================================================================
+P1 §4b Flourish "Fix design for the backlog: un-repoint around the flourish": WRONG. The literal is read only at attach time (0x7637E0),
+   combat start and flourish never re-attach (G3), so un-repointing moves nothing that is already attached. The supported design is a
+   per-frame PLACE gate (G1/G3c) plus a flourish window from 0x7408A0/0x66B8A0 (or 0x57A560 by return address); +0x138 alone misses flourish.
+P2 §4b Camera "Lead: the live render pose differs from the fields read in the tick": OVERSTATED. RenderScene builds the modelview from the
+   same +0xA8/+0xB4 fields (when DAT_00a32a54==0); F rated this unlikely. Better leads to probe: parent stack entry offset in 0x479460,
+   GUI-unit vs pixel scale (mouse y up to 1477 on a 1440 screen), S rect != control rect, DAT_00a32a54 at draw time.
+P3 §4b Reset icon "L0 adds a button-border fill helper, after checking that the +0x70 border shares the CSWGuiBorder layout": OVERSTATED.
+   Only the vtable gate is checked (at runtime); the field layout is inferred (the code comment says so). Structurally strong (0x78 stride),
+   live draw unproven.
+P4 §4b "24 -> 40 already worked live": UNVERIFIED (C found no 24 cap; no log anchor given).
+P5 §4b "the CAMENG vp=0,0,0,0 log line confirms" the camera viewport stays 0: CONFIRMED at tick (LOG CAMENG vp=(0,0,0,0)), but that is the
+   tick, not draw time; A2's ctor evidence + no writer is what carries it.
+P6 §5 "It predicts z 0 to 1.8 m all inside the 896 px view": OVERSTATED. With the logged pitch (+4.9 deg) the span is ~0.02..1.69 m.
+P7 §4 Fit zoom "full 2.0 m needs zoom ~0.6": UNSUPPORTED as a derivation. It scales an eyeballed 1.0 m whose cause is unknown, and the view
+   axis is not at mid-body, so a symmetric fov increase does not guarantee feet and head both fit. Keep view_zoom tunable (plan does) and
+   make "fit" an L2 play check, not a constant.
+P8 §4 "Per-frame SetRect is latch-safe (U4 recon)": UNVERIFIED here (no anchor in R1); A1 caveat: ModConfig re-applies a drifted rect
+   at most kMaxReapply=8 times then gives up, so per-frame thumb SetRect on a page that drifts could exhaust it.
+P9 §6 L0(a) lists only the mod-config cap; the consumer caps (HseView.h:793-794 static_assert, hse_view_test.cpp:980,
+   common_contract_test.cpp:226-227) and the silent AddCustom refusal against an old provider are not in the plan.
+P10 §6 L1 does not carry A1's stale-cache list: g_ed.viewRect captured at cbEnter (HolsterEditor.cpp:1768-1771, users :1192, :1422, :1510)
+   and the wheel hit rect (:1780) must be refreshed after the view is resized, or wheel zoom and CALIB stay on the old 576 px pane.
+P11 §4b Flourish anchor Holster.cpp:1169-1180 is stale (now 1200-1214).
+P12 §4b "A1 and A2 agree": they disagree on the ctor (A1 wrong), immaterial to the verdict.
+
+======================================================================
+4. RANKED BLOCKING ISSUES
+======================================================================
+1. HolsterCombat quiet mode (log_verbose=0 default) drops ~90% of COMB combat edges (counter is per call, not per edge). Fix before the next
+   holster install, or set log_verbose=1 in the live ini; the G-design and holster_log_check edge counts depend on these lines.
+2. Plan §4b flourish fix design ("un-repoint around the flourish") is mechanically wrong; and G1's "+0x138 gate needs no flourish work" is
+   wrong. Rewrite the backlog design: per-frame PLACE gate on owner +0x138 OR a per-creature flourish window (detour 0x7408A0/0x66B8A0).
+3. L1 scope gaps: consumer item cap 40 (HseView.h static_assert + 2 tests) and stale viewRect/wheel-rect caches after the resize; plus the
+   reset icon needs the label-clone setFill fallback.
+Non-blocking but do soon: KeyCounts/PlaceTable no-eviction (logging goes dark after 256 creatures / 64 gobs); HseLayoutV3 vr guard when
+preview overlaps the view; A1/F ctor claim corrected; CAM2 probe adds parent stack entry, GUI->pixel scale and draw-time GL_VIEWPORT.
+
+======================================================================
+5. FOLLOW-UP (orchestrator, 10-18)
+======================================================================
+Applied: plan §4b rewritten for flourish/HW7 design, camera leads, reset-icon fallback, consumer caps. Sonnet workers dispatched for: COMB edge logging + eviction (holster 0.1.7-dev), HseLayoutV3 vr guard + hint height, GuiKit setButtonFillStyle probe, ResetIcon fallback helper.
+Known note errors (do not trust): A1 and F claim the camera ctor writes nothing to +0x218..0x224 (it zeroes them); G1 says flourish needs no extra work under the +0x138 gate (wrong); E1 says make the draw edge fire (nothing consumes it).

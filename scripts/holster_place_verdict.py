@@ -8,6 +8,8 @@ Usage: holster_place_verdict.py [--log PATH] [--stage baseline|place] [--game-di
   the tail of <log>.1 from its last loaded line is prepended (RUN source=live+.1). No loaded line anywhere: loaded=no.
   Output: at most 40 lines, each at most 120 chars. Exit 0 = PASS or WARN, 1 = FAIL, 2 = usage error or missing log.
   Import API: parse_run(live_lines, prev_lines) -> (run, source); analyze(run, source, stage) -> (lines, exit_code).
+Note: with holster.ini log_verbose=0 (default, quiet mode) PLACE lines are rate-limited and change-biased (first 3, every 200th, any signature or
+placement-delta change), so mean_move is computed over a change-biased sample, not every placement; use log_verbose=1 for an unbiased mean.
 Keywords are found with re.search, so any log prefix (T=, f=, holster/main) is fine.
 """
 import argparse

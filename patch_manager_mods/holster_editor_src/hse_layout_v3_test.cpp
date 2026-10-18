@@ -3,6 +3,7 @@
 #include "HseLayoutV3.h"
 #include "check.h"
 #include <cmath>
+#include <algorithm>
 
 using editkit::Box;
 using namespace hse;
@@ -90,7 +91,7 @@ static void testGeometries() {
         KT_CHECK_EQ(violations(g, N, false, true, true), 0);
         // the view is enlarged: it contains the original rect's width range and keeps a sane height
         KT_CHECK(L.view.x < g.view.x);
-        KT_CHECK(L.view.x + L.view.w >= g.view.x + g.view.w);
+        KT_CHECK(L.view.x + L.view.w == g.preview.x - 4);   // 4 px short of the preview (the scaled view rects can end closer than that)
         KT_CHECK(L.view.y > g.view.y && L.view.y + L.view.h < g.view.y + g.view.h);
         KT_CHECK(L.view.w > g.view.w);
         // strips line up with the enlarged view
@@ -129,7 +130,7 @@ static void testPinned3440() {
     KT_CHECK(same(L.bone[0], Box{154, 465, 82, 22}));
     KT_CHECK(L.bone[3].y == L.bone[0].y + 24 && L.bone[3].w == 125);
     // view area: starts 4 px right of the 260 wide column content, ends at the preview pane
-    KT_CHECK(L.view.x == 150 + 260 + 4 && L.view.x + L.view.w == 1925);
+    KT_CHECK(L.view.x == 150 + 260 + 4 && L.view.x + L.view.w == 1921);   // 4 px short of the preview pane at 1925
     KT_CHECK(L.modeBtn[0].y == 357 && L.modeBtn[0].h == 24);
     KT_CHECK(L.view.y == 357 + 24 + 2);
     // inspector
@@ -224,6 +225,48 @@ static void testDegradation() {
     KT_CHECK_EQ(bad, 0);
 }
 
+static void testViewVsPreview() {
+    // gap: view rect ends 1921, preview starts 1925 -> the enlarged view ends 4 px short of the preview
+    Geom g = geomFor(3440, 1440);
+    PageLayoutV3 L = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr);
+    KT_CHECK_EQ(L.view.x + L.view.w, g.preview.x - 4);
+    KT_CHECK_EQ(L.viewFlip.x + L.viewFlip.w, g.preview.x - 4);
+    // a wide gap still ends 4 px short (the view grows into it)
+    Box pw = g.preview; pw.x = 2000;
+    PageLayoutV3 W = pageLayoutV3(g.column, g.view, pw, g.hint, nullptr);
+    KT_CHECK_EQ(W.view.x + W.view.w, 1996);
+    // overlap: the given view rect reaches 40 px into the preview -> the view strip, mode strip and stances stop short of it
+    Box po = g.preview; po.x = 1881;
+    PageLayoutV3 O = pageLayoutV3(g.column, g.view, po, g.hint, nullptr);
+    KT_CHECK_EQ(O.view.x + O.view.w, 1877);
+    KT_CHECK(O.view.w > 0);
+    Box all[kPageItemsV3 + 8]; pageBoxesV3(O, all);
+    for (int i = 19; i < 32; ++i) KT_CHECK(all[i].x + all[i].w <= po.x - 4);   // view area items (see collect())
+    for (int i = 32; i < kPageItemsV3; ++i) KT_CHECK(!overlaps(all[i], O.view));
+    KT_CHECK(!overlaps(O.viewFlip, O.rows[0].name) && !overlaps(O.legend, O.groupLabel[0]));
+    // a preview left of the column content leaves no room: the width stays non-negative and inside [vl, preview.x]
+    Box pn = g.preview; pn.x = g.column.x + 100;
+    PageLayoutV3 N = pageLayoutV3(g.column, g.view, pn, g.hint, nullptr);
+    KT_CHECK(N.view.w >= 0 && N.view.x + N.view.w <= std::max(pn.x, N.view.x));
+    // no preview rect (w == 0): the old right edge is used
+    PageLayoutV3 Z = pageLayoutV3(g.column, g.view, Box{g.preview.x, g.preview.y, 0, 0}, Box{0, 0, 0, 0}, nullptr);
+    KT_CHECK_EQ(Z.view.x + Z.view.w, g.view.x + g.view.w);
+}
+
+static void testHintHeight() {
+    Geom g = geomFor(3440, 1440);   // hint rect 196 high: both lines get the full 18 px
+    PageLayoutV3 L = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr);
+    KT_CHECK_EQ(kV3HintMax, 18);
+    KT_CHECK(L.hint[0].h == 18 && L.hint[1].h == 18);
+    KT_CHECK(L.hint[1].y == L.hint[0].y + 18 + 2);
+    // exactly big enough: 2*4 pad + 2 gap + 2*18 = 46
+    PageLayoutV3 E = pageLayoutV3(g.column, g.view, g.preview, Box{g.preview.x, 1100, 400, 46}, nullptr);
+    KT_CHECK(E.hint[0].h == 18 && E.hint[1].h == 18);
+    // a small rect shrinks the lines (30 -> (30 - 8 - 2) / 2 = 10)
+    PageLayoutV3 S = pageLayoutV3(g.column, g.view, g.preview, Box{g.preview.x, 1100, 400, 30}, nullptr);
+    KT_CHECK(S.hint[0].h == 10 && S.hint[1].h == 10);
+}
+
 static void testHelpers() {
     KT_CHECK(overlaps(Box{0, 0, 10, 10}, Box{5, 5, 10, 10}));
     KT_CHECK(!overlaps(Box{0, 0, 10, 10}, Box{10, 0, 10, 10}));
@@ -239,6 +282,8 @@ int main() {
     testHelpers();
     testGeometries();
     testPinned3440();
+    testViewVsPreview();
+    testHintHeight();
     testThumbs();
     testDegradation();
     return kt::Report("hse_layout_v3");

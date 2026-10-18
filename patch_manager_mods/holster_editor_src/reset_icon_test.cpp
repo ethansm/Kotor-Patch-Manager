@@ -22,6 +22,10 @@ static void fAdd(void*, void*) { ++nAdd; }
 static void fReset(void*) {}
 static void* fLoad(const char*) { ++g_nLoad; return g_loadResult; }
 
+static bool g_btnRet = false, g_lblRet = false; static int g_btnCalls = 0, g_lblCalls = 0;
+static bool fBtn() { ++g_btnCalls; return g_btnRet; }
+static bool fLbl() { ++g_lblCalls; return g_lblRet; }
+
 int main() {
     // ---- table: two textures, fixed names and order ----
     KT_CHECK_EQ(resetIconTextureCount(), 2);
@@ -63,6 +67,18 @@ int main() {
     KT_CHECK(resetIconImage(false) == g_loadResult); KT_CHECK(resetIconImage(true) == g_loadResult);
     int after = g_nLoad; g_loadResult = reinterpret_cast<void*>(0x5000);
     KT_CHECK(resetIconImage(false) == reinterpret_cast<void*>(0x4000)); KT_CHECK_EQ(g_nLoad, after);   // cached
+    // ---- resetIconApply: button path first, label path second, false when both fail ----
+    g_btnRet = true; g_lblRet = true; g_btnCalls = g_lblCalls = 0;
+    KT_CHECK(resetIconApply(fBtn, fLbl)); KT_CHECK_EQ(g_btnCalls, 1); KT_CHECK_EQ(g_lblCalls, 0);   // button took it: label untouched
+    g_btnRet = false; g_btnCalls = g_lblCalls = 0;
+    KT_CHECK(resetIconApply(fBtn, fLbl)); KT_CHECK_EQ(g_btnCalls, 1); KT_CHECK_EQ(g_lblCalls, 1);   // label clone fallback
+    g_lblRet = false; g_btnCalls = g_lblCalls = 0;
+    KT_CHECK(!resetIconApply(fBtn, fLbl)); KT_CHECK_EQ(g_btnCalls, 1); KT_CHECK_EQ(g_lblCalls, 1);  // both failed
+    KT_CHECK(!resetIconApply(nullptr, nullptr));
+    g_lblRet = true; g_lblCalls = 0;
+    KT_CHECK(resetIconApply(nullptr, fLbl)); KT_CHECK_EQ(g_lblCalls, 1);
+    g_btnRet = true; KT_CHECK(resetIconApply(fBtn, nullptr));
+    g_btnRet = false; KT_CHECK(!resetIconApply(fBtn, nullptr));
     for (int i = 0; i < g_nAlloc; ++i) free(g_alloc[i]);
     return kt::Report("reset_icon");
 }

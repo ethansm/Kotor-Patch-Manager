@@ -8,11 +8,12 @@
 // Geometry contract (measured UI px):
 //   column  = MUI_PANE_COLUMN (left). The content uses at most kColWantW of its width; the rest is handed to the view.
 //   view    = MUI_PANE_VIEW. The returned `view` is enlarged: it starts 4 px right of the used column and ends where
-//             the preview pane begins (view.x + view.w, or preview.x when that is further right). Panes are assumed
-//             disjoint and ordered column < view < preview (left to right).
+//             4 px short of the preview pane (preview.w > 0; clamped there even when the given view rect reaches into it,
+//             never narrower than kV3MinViewW unless the pane leaves no room), else at view.x + view.w. Panes are assumed
+//             ordered column < view < preview (left to right).
 //   preview = MUI_PANE_PREVIEW (the area above the shrunken description). The inspector is at most kInspWantW wide,
 //             left aligned at preview.x + 4.
-//   hint    = optional description rect (w <= 0 or h <= 0 means none): the two hint lines go inside it. Without it they
+//   hint    = optional description rect (w <= 0 or h <= 0 means none): the two hint lines (kV3HintMax = 18 px high where space allows) go inside it. Without it they
 //             are stacked under the mirrored note inside `preview`.
 // Documented minimum panes (everything has positive size and nothing overlaps): column 140 x 180, view 160 x 150,
 // preview 170 x 200 (with or without the hint rect). Below the minimum the layout degrades
@@ -39,6 +40,8 @@ constexpr int kV3ColWantW = 260;  // widest the left column content grows
 constexpr int kV3InspWantW = 460; // widest the inspector grows
 constexpr int kV3RowMax = 22, kV3RowMin = 14;   // left column and inspector row heights (pick the largest that fits)
 constexpr int kV3BarMax = 24, kV3BarMin = 12;   // mode bar / stance row heights
+constexpr int kV3MinViewW = 8;    // the view area is at least this wide when the preview pane leaves any room
+constexpr int kV3HintMax = 18;    // hint line height (dialogfont16x16 lines need about 18 px); shrinks only when the rect is small
 constexpr int kV3MinViewH = 60;   // the bars shrink before the view gets lower than this
 constexpr int kV3NameW = 52, kV3ValueW = 64;    // inspector name and value label widths (shrink together when narrow)
 constexpr int kV3ResetMax = 20;   // reset icon squares are 20 x 20 (smaller only when the row is)
@@ -174,7 +177,7 @@ inline int buildInspector(editkit::Box Z, editkit::Box hintZone, int rr, const f
     y += cap + kGap;
 
     if (hintZone.w > 0 && hintZone.h > 0) {
-        int lh = iclamp((hintZone.h - 2 * kPad - kGap) / 2, 0, 16);
+        int lh = iclamp((hintZone.h - 2 * kPad - kGap) / 2, 0, kV3HintMax);
         for (int i = 0; i < kV3Hints; ++i)
             L.hint[i] = clipTo(Box{hintZone.x + kPad, hintZone.y + kPad + i * (lh + kGap), hintZone.w - 2 * kPad, lh}, hintZone);
     } else {
@@ -202,7 +205,13 @@ inline PageLayoutV3 pageLayoutV3(editkit::Box column, editkit::Box view, editkit
 
     // ---- view area: from 4 px right of the used column to the preview pane (or the old right edge)
     const int vl = column.x + colW + 4;
-    const int vr = v3::imax(view.x + view.w, preview.x);
+    // With a preview pane the view ends v3::kPad short of it (never beyond, so it cannot overlap the inspector even when the
+    // given view rect reaches into the preview); only when that leaves less than kV3MinViewW the gap is given up (never past preview.x).
+    int vr = view.x + view.w;
+    if (preview.w > 0) {
+        vr = preview.x - v3::kPad;
+        if (vr - vl < kV3MinViewW) vr = v3::imin(vl + kV3MinViewW, preview.x);
+    }
     const int vw = v3::imax(0, vr - vl);
     const Box vz{vl, view.y, vw, view.h};
     int b = kV3BarMax;

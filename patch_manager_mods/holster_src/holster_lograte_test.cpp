@@ -13,8 +13,11 @@ static void testKeyBumpAndWant() {
     KT_CHECK(keyBump(t, 0x10) == 1);
     KT_CHECK(keyBump(t, 0x10) == 2);
     KT_CHECK(keyBump(t, 0x20) == 1);
-    KT_CHECK(keyBump(t, 0x30) == 0);   // full: new key is untracked
+    KT_CHECK(keyBump(t, 0x30) == 1);   // full: the oldest slot (0x10) is evicted, the new key starts at 1
     KT_CHECK(keyBump(t, 0x20) == 2);
+    KT_CHECK(keyBump(t, 0x30) == 2);
+    KT_CHECK(keyBump(t, 0x10) == 1);   // evicted key restarts (evicts 0x20, the next oldest)
+    KT_CHECK(creatureKey(0) != 0 && creatureKey(0x40) == 0x40);
     KT_CHECK(!keyedWant(0, 3, 10));
     KT_CHECK(keyedWant(1, 3, 10) && keyedWant(3, 3, 10));
     KT_CHECK(!keyedWant(4, 3, 10) && !keyedWant(9, 3, 10));
@@ -27,6 +30,21 @@ static void testCombVolume() {
     int logged = 0;
     for (int i = 0; i < 100; ++i) logged += keyedWant(keyBump(t, 0x1000), 3, 10) ? 1 : 0;
     KT_CHECK(logged == 3 + 10);   // hits 1..3, then 10,20,...,100
+}
+
+static void testKeyRingNeverDark() {
+    KeyCounts<256> t;
+    for (int i = 0; i < 1000; ++i) KT_CHECK(keyBump(t, 0x1000u + static_cast<uintptr_t>(i)) == 1);   // creature 1000 still gets its first lines
+    KT_CHECK(keyBump(t, creatureKey(0)) == 1 && keyBump(t, creatureKey(0)) == 2);   // null creature is counted
+}
+
+static void testCombLogWanted() {
+    KT_CHECK(combLogWanted(true, 0, false) && combLogWanted(true, 500, false));   // edges are never rate-limited
+    int logged = 0;
+    for (uint32_t c = 1; c <= 100; ++c) logged += combLogWanted(false, c, false) ? 1 : 0;
+    KT_CHECK(logged == 3 + 10);   // edge=0: first 3, then every 10th
+    KT_CHECK(!combLogWanted(false, 4, false) && combLogWanted(false, 10, false));
+    KT_CHECK(combLogWanted(false, 4, true) && combLogWanted(false, 0, true));   // verbose logs everything
 }
 
 static void testFnvAndMath() {
@@ -73,7 +91,8 @@ static void testPlaceOverflow() {
     for (int i = 0; i < PlaceTable::kCap; ++i) KT_CHECK(placeWant(t, 0x1000u + static_cast<uintptr_t>(i), 1u, 0.f, 0.f));
     int logged = 0;
     for (int i = 0; i < 1000; ++i) logged += placeWant(t, 0xFFFF00u, 1u, 0.f, 0.f) ? 1 : 0;
-    KT_CHECK(logged == 5);   // untracked gobs: every 200th
+    KT_CHECK(logged == 3 + 5);   // a new gob past the table evicts the oldest and gets the full sampling (first 3, every 200th)
+    for (int i = 0; i < 500; ++i) KT_CHECK(placeWant(t, 0x900000u + static_cast<uintptr_t>(i), 1u, 0.f, 0.f));   // every new gob logs its first line
 }
 
 static void testRefuse() {
@@ -94,13 +113,17 @@ static void testRefuseCaps() {
     int logged = 0;
     uint32_t c = 0;
     for (int i = 0; i < 500; ++i) logged += refuseWant(t, 2, 0x1000u + static_cast<uintptr_t>(i), &c) ? 1 : 0;
-    KT_CHECK(logged == RefuseTable::kCap);   // pair table is full after 64 distinct gobs
+    KT_CHECK(logged == 500);                 // every new (reason, gob) pair logs; the oldest pair is evicted past 64
+    KT_CHECK(refuseWant(t, 2, 0x1000u, &c)); // evicted pair is new again
+    KT_CHECK(!refuseWant(t, 2, 0x1000u + 499u, &c));   // recent pair still remembered
     KT_CHECK(refuseWant(t, -1, 1, &c));      // out-of-range reason folds to 0, still counted
 }
 
 int main() {
     testKeyBumpAndWant();
     testCombVolume();
+    testKeyRingNeverDark();
+    testCombLogWanted();
     testFnvAndMath();
     testPlaceSampling();
     testPlaceChange();

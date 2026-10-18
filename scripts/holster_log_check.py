@@ -353,7 +353,7 @@ def _preview_diag(f):
 
 
 def _place_diag(f):
-    """TUNE boot, PLACEREFUSE (highest n seen per reason; the DLL logs the first 5 then every 500th) and PLACENODE verdicts. Empty for old logs."""
+    """TUNE boot, PLACEREFUSE (highest n seen per reason; with log_verbose=1 the DLL logs the first 5 then every 500th, in quiet mode (default) the first hit of each reason, each new (reason, gob) pair and every 10000th hit) and PLACENODE verdicts. Empty for old logs."""
     out = []
     if f.get("tune"):
         out.append("TUNE boot %s" % f["tune"][-1][:90])

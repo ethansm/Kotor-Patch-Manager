@@ -26,7 +26,7 @@ Input: the user's 10-18 play feedback, screenshots 36 and 37 (the current page) 
 | Bone hierarchy tree / 6 bone nodes | A `Bone:` cycle button | Five direct bone buttons with English names (no tree, since only 5 bones exist). Nodes in the viewport stay DEFERRED (toggle mode) |
 | Gizmo axes at the weapon | None | U4, once the camera model is solved (§5) |
 | Timeline, contextual HUD dial, file menus | n/a | Skip: no use for a holster offset |
-| Whole character in view | Hip close-up (zoom 2.2 default, min 0.8) | Default "fit" zoom about 0.6 and minimum zoom 0.4; Reset view returns to fit (fb 1) |
+| Whole character in view | Hip close-up (zoom 2.2 default, min 0.8) | Default "fit" zoom about 0.6 (a starting guess, tuned in a play check, not a derived constant) and minimum zoom 0.4; Reset view returns to fit (fb 1) |
 
 ## 3. Proposed page (screen ~3440x1440; current view rect is ext=(1345,357,576,896))
 
@@ -74,23 +74,25 @@ Unsaved changes *
   - Camera 0x47F320 takes its aspect from the rect while the camera's own viewport fields stay 0 (the CAMENG `vp=0,0,0,0` log line confirms this).
 - **Reset icon: PARTIAL (B).**
   - `guikit::setFill` gates on the LABEL border at +0x60, so it silently fails on mod-config BUTTONS (border at +0x70).
-  - L0 adds a button-border fill helper, after checking that the CSWGuiButton +0x70 border shares the CSWGuiBorder layout (fill +0x74, tint +0x28, style +0x34).
+  - L0 added `guikit::setButtonFill` (0be7747b). It gates on the border vtable only; the field layout (fill +0x74, tint +0x28, style +0x34) is INFERRED from the 0x78 stride (structurally strong, live draw unproven; play-queue check).
+  - On the label-clone fallback (`button_clone=0` or a failed clone) setButtonFill returns false, so the editor tries `guikit::setFill` second.
   - Fallback: a separate label item carrying the icon, placed over the button.
 - **Desc split and cap: PARTIAL (C).**
   - The mod-config hit test is rect-only, so items placed in MUI_PANE_PREVIEW are clickable.
   - kMaxItems 80 breaks no provider code and costs about 118 KB static.
-  - Open: whether the engine control list (CExoArrayList Add 0x83EA60) grows. 24 → 40 already worked live; L2 play-checks 80.
+  - Open: whether the engine control list (CExoArrayList Add 0x83EA60) grows. The 24 → 40 step is UNVERIFIED (no log anchor); L2 play-checks 80. The editor consumer caps must move too: HseView.h:793-794 `kPageItemCap` static_assert, hse_view_test.cpp:980, common_contract_test.cpp:226-227. mod-config has no cap query in the ABI, so a 69-item editor against an old 40-cap provider fails silently: install mod-config first, and have the editor check the cap.
 - **Page inventory (D):**
   - 38 items today. HolsterApi has no absolute bone setter, so a direct bone button loops CycleBone until the index matches (no holster change).
   - The code has 7 stances. v3 shows 5 (Idle, Walk, Run, Alert, Combat) and drops the rifle walk and run.
 - **Camera (F):**
   - The full-window viewport hypothesis is REFUTED: the render viewport is the control rect, the aspect is w/h, and no scissor is set.
-  - The 1.0 m vs 1.8 m gap is still unexplained. Lead: the live render pose differs from the fields read in the tick; the camera is attached (CAMATT flag48=1, off z 1.593).
-  - CAM2 must also log V+0x64..+0x70 (the pushed rect) and re-read the camera pose inside a draw-time read, or click-fit it.
+  - The 1.0 m vs 1.8 m gap is still unexplained. The earlier lead 'render pose differs from the tick pose' is OVERSTATED: RenderScene builds the modelview from the same +0xA8/+0xB4 fields (when DAT_00a32a54 == 0). Better leads, all unprobed: the parent stack entry offset in 0x479460 (DAT_00a309c8/ca, root height DAT_00a309ce), GUI-unit vs pixel scale (mouse y reached 1477 on a 1440 screen), scene rect S vs control rect, DAT_00a32a54 at draw time. The 1.0 m is an eyeball estimate, and the predicted span is about 1.7 m (z 0.02 to 1.69), not 1.8.
+  - CAM2 must log: draw-time glGetIntegerv(GL_VIEWPORT), the pushed scene rect S+4..S+0x10 vs the control rect, the parent stack depth and entry (DAT_00a309c0/c8/ca/ce), DAT_00a32a54, and untruncated CALIB node lists. Correction: camera ctor 0x47ECD0 DOES zero +0x218..0x224 (A1 and F had this wrong; harmless).
 - **Flourish (E1, E2; Sonnet E3 settled them):**
   - Cause: the holster mod repoints the hand nodes to the hip globally (Holster.cpp:1169-1180), so any hand animation plays with the weapons still at the hip.
   - Flourish sets only the server combat state (SetCombatState mode 2, 0x79F621), so the client flag +0x138 never changes.
-  - Fix design for the backlog: un-repoint around the flourish. It needs a start/end edge.
+  - CORRECTED by the Opus review (OPUS_review.txt): un-repointing around the flourish moves nothing, because the node literal is read only at attach time (0x7637E0) and neither combat start nor flourish re-attaches. A +0x138 gate alone also misses flourish.
+  - Supported design (HW7): keep the native rhand/lhand attach (`bone_test=0`, rhand/lhand accepted as PLACE targets) and, per frame in the PLACE write (H7 0x504EF5), write the hip pose only while the owner is not drawn. Owner = [parent+0x1D8], confirmed by log (PLACENODE owner= values match COMB creature= values). Drawn = owner [+0x138] != 0 OR a timed flourish window opened by a detour of 0x7408A0 (player flourish) and 0x66B8A0 (script), or 0x57A560 filtered on param3==2. Failure mode: the weapon is in the hand (vanilla), not stuck on the hip. Combat exit is an 8 s timer, so drawn to hip is an instant snap. Every place_* tuning value needs re-validation against the hand-node base pose.
 
 ## 5. CAM1 result (10-18 play) and the U4 blocker (window-viewport lead REFUTED by R1 F, see §4b)
 - **CAMENG** read the engine camera at view+0x78:

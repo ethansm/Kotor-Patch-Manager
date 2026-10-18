@@ -227,6 +227,13 @@ int main() {
             g_fake = { bt + 0xE8, bt + 0x180, PAGE_READONLY, MEM_COMMIT }; saferead::beginScope();
             KT_CHECK(!setButtonFill(bt, imN, imH)); g_fake.hi = 0; saferead::beginScope();
             KT_CHECK_EQ((unsigned long long)at<uint32_t>(bt, 0x70 + 0x74), 0ull);                            // refused up front: the writable normal border was not filled either
+            // setButtonFillStyle: the second (hover) border unwritable -> false and nothing written, not even to the writable normal border
+            at<uint32_t>(bt, 0x70 + 0x34) = 0xF1u; at<uint32_t>(bt, 0xE8 + 0x34) = 0xA0u;
+            g_fake = { bt + 0xE8, bt + 0x180, PAGE_READONLY, MEM_COMMIT }; saferead::beginScope();
+            KT_CHECK(!setButtonFillStyle(bt, 2)); g_fake.hi = 0; saferead::beginScope();
+            KT_CHECK_EQ((unsigned long long)at<uint32_t>(bt, 0x70 + 0x34), 0xF1ull); KT_CHECK_EQ((unsigned long long)at<uint32_t>(bt, 0xE8 + 0x34), 0xA0ull);
+            KT_CHECK(setButtonFillStyle(bt, 2));                                                             // writable again: both restyled
+            KT_CHECK_EQ((unsigned long long)at<uint32_t>(bt, 0x70 + 0x34), 0xF2ull); KT_CHECK_EQ((unsigned long long)at<uint32_t>(bt, 0xE8 + 0x34), 0xA2ull);
         }
 
         // scaleFromRef: ref ctl px rect (100,50,800,600) vs layout units (10,20,400,300) -> s = 2, origin (100,50)
