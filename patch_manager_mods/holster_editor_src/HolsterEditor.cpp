@@ -115,8 +115,9 @@ k2mc::MenuClient g_menu;
 enum State { IDLE, NEEDBUILD, LIVE, FAILED };
 // MODE_WEAPON = a weapon edit is open (the normal state of the page); MODE_NAV = none is (the member has no weapon, or the edit was refused or lost).
 enum EditMode { MODE_NAV = 0, MODE_WEAPON = 1 };
-// Actions guarded by the unsaved-edits two-click confirm (each direct bone / scope button is its own action, so arming one never confirms another).
-enum GuardAction { ACT_NONE = 0, ACT_HAND_R, ACT_HAND_L, ACT_PREV, ACT_NEXT, ACT_SCOPE0 = 10, ACT_BONE0 = 20 };
+// Actions guarded by the unsaved-edits two-click confirm (each direct scope button is its own action, so arming one never confirms another). The bone
+// buttons are not guarded: a bone change keeps the unsaved values.
+enum GuardAction { ACT_NONE = 0, ACT_HAND_R, ACT_HAND_L, ACT_PREV, ACT_NEXT, ACT_SCOPE0 = 10 };
 constexpr uint32_t kDiscardWindowMs = 2000;
 constexpr float kPreviewFov = 22.726f;       // preview-3d kDefaultFov: the scene fov is p3d::fovForZoom(kPreviewFov, zoom) (applyView)
 constexpr float kProjUpMetres = 0.3f;        // PROJ probe: second point is the mount + this far along world +Z
@@ -549,8 +550,8 @@ void KPATCH_CALL cbBuild(void* panel, void*) {
     const int split = ui->SetDescSplit(g_ed.page, hse::kDescSplitPermille);
     KP_LOG(chMain, "BUILD desc split %d permille rc=%d", hse::kDescSplitPermille, split);
     embtex::g_log = embedLog;
-    const bool artOk = hse::sliderArtEnsure() && hse::resetIconEnsure();   // Steam only; the plain controls stay when a texture cannot be made
-    KP_LOG(chMain, "BUILD art textures ensure=%d", artOk ? 1 : 0);
+    const bool sliderOk = hse::sliderArtEnsure(), resetOk = hse::resetIconEnsure();   // both always tried (Steam only); plain controls stay when one cannot be made
+    KP_LOG(chMain, "BUILD art textures ensure slider=%d reset=%d", sliderOk ? 1 : 0, resetOk ? 1 : 0);
 
     g_ed.item[hse::PI_STATUS] = g_ed.statusItem = ui->AddLabel(g_ed.page, statusText());
     if (g_ed.viewCtl) g_ed.item[hse::PI_VIEW] = g_ed.viewItem = ui->AddCustom(g_ed.page, reinterpret_cast<void*>(g_ed.viewCtl), MUI_NOFREE);
@@ -1450,10 +1451,10 @@ void applyLayout(Editor& e) {
     editkit::Box all[hse::kPageItemsV3];
     hse::pageBoxesV3(L, all);
     for (int i = 0; i < hse::kPageItemsV3; ++i) placeBox(e.item[i], all[i]);
-    for (int r = 0; r < hse::kV3Rows; ++r) {   // the wedge is the track cut to the thumb fraction (nothing at 0)
+    for (int r = 0; r < hse::kV3Rows; ++r) {   // the wedge is the track cut to the thumb fraction (nothing at 0: parked off screen like the hidden items)
         const editkit::Box t = L.rows[r].track;
         const int w = static_cast<int>(hse::sliderWedgeWidth(static_cast<float>(t.w), e.rowFrac[r]) + 0.5f);
-        placeBox(e.wedge[r], w > 0 ? editkit::Box{t.x, t.y, w, t.h} : editkit::Box{t.x, t.y, 0, 0});
+        placeBox(e.wedge[r], w > 0 && t.h > 0 ? editkit::Box{t.x, t.y, w, t.h} : editkit::Box{-9999, -9999, 0, 0});
     }
     const hse::HseRect vr = hse::rectOf<hse::HseRect>(L.view);
     if (first || memcmp(&vr, &e.viewRect, sizeof vr) != 0) {
@@ -2077,29 +2078,31 @@ bool artLabelFill() {
 void applyArt(Editor& e) {
     constexpr int kArtMaxTicks = 900;
     if (e.artDone || e.refused || !g_menu.ok() || !e.page) return;
-    if (++e.artTicks > kArtMaxTicks) {
-        e.artDone = true;
-        KP_LOGV(chView, KPLOG_WARN, "ART WARN textures or controls not ready after %d ticks: the plain controls stay", kArtMaxTicks);
-        return;
-    }
-    if (!hse::resetIconImage(false) || !hse::resetIconImage(true)) return;
+    // The slider art and the reset arrows are separate texture sets: a set that is still missing at the deadline is skipped, the other one is applied.
+    const bool timedOut = ++e.artTicks > kArtMaxTicks;
+    bool haveIcon = hse::resetIconImage(false) && hse::resetIconImage(true);
+    bool haveSlider = true;
     for (int w = 0; w < hse::SA_Count; ++w)
-        if (!hse::sliderArtImage(w)) return;
-    for (int r = 0; r < hse::kV3Rows; ++r) {
+        if (!hse::sliderArtImage(w)) haveSlider = false;
+    for (int r = 0; r < hse::kV3Rows && haveSlider; ++r) {
         const int b = hse::PI_ROW + r * hse::kRowStride;
-        if (!ctlOf(e, e.item[b + 1]) || !ctlOf(e, e.wedge[r]) || !ctlOf(e, e.item[b + 2])) return;
+        if (!ctlOf(e, e.item[b + 1]) || !ctlOf(e, e.wedge[r]) || !ctlOf(e, e.item[b + 2])) haveSlider = false;
     }
-    for (int i = 0; i < hse::kPageItemsV3; ++i)
-        if (itemIsResetIcon(i) && !ctlOf(e, e.item[i])) return;
+    for (int i = 0; i < hse::kPageItemsV3 && haveIcon; ++i)
+        if (itemIsResetIcon(i) && !ctlOf(e, e.item[i])) haveIcon = false;
+    if (!timedOut && (!haveIcon || !haveSlider)) return;
+    if (timedOut)
+        KP_LOGV(chView, KPLOG_WARN, "ART WARN not ready after %d ticks (slider=%d reset_icon=%d): the missing part keeps its plain controls", kArtMaxTicks,
+                haveSlider ? 1 : 0, haveIcon ? 1 : 0);
     int frame = 0, wedge = 0, mark = 0, icon = 0, icons = 0;
-    for (int r = 0; r < hse::kV3Rows; ++r) {
+    for (int r = 0; r < hse::kV3Rows && haveSlider; ++r) {
         const int b = hse::PI_ROW + r * hse::kRowStride;
         const uintptr_t tc = ctlOf(e, e.item[b + 1]), wc = ctlOf(e, e.wedge[r]), mc = ctlOf(e, e.item[b + 2]);
         if (hse::sliderArtFill(tc, hse::SA_Frame)) { ++frame; (void)guikit::setFillStyle(tc, 2); }
         if (hse::sliderArtFill(wc, hse::SA_Wedge)) { ++wedge; (void)guikit::setFillStyle(wc, 2); }
         if (hse::sliderArtFill(mc, hse::SA_Mark)) { ++mark; (void)guikit::setFillStyle(mc, 2); }
     }
-    for (int i = 0; i < hse::kPageItemsV3; ++i) {
+    for (int i = 0; i < hse::kPageItemsV3 && haveIcon; ++i) {
         if (!itemIsResetIcon(i)) continue;
         ++icons;
         g_artCtl = ctlOf(e, e.item[i]);
@@ -2187,10 +2190,12 @@ void tickBody(Editor& e) {
                 if (guardTransition(e, ACT_HAND_R + h, "hand")) enterEdit(e, h);
             }
             if (e.mode == MODE_WEAPON && g_hol.ok()) {
-                for (int i = 0; i < hse::kV3Bones; ++i) {
+                for (int i = 0; i < hse::kV3Bones && e.mode == MODE_WEAPON; ++i) {
                     if (!clk[hse::PI_BONE + i]) continue;
                     if (refreshEdit(e) && hse::boneIndexOf(e.editInfo.bone) == i) continue;   // already the mounting bone
-                    if (!guardTransition(e, ACT_BONE0 + i, "bone")) continue;
+                    // No unsaved-edits guard: CycleBone only changes the bone of the open edit (HolsterPreview.h overlayCycleBone), the unsaved offsets and
+                    // rotation stay, so nothing is discarded (0.3.2 never guarded the bone either). A guard here showed "click again to discard" and
+                    // logged DISCARD for a change that discards nothing.
                     if (selectBone(e, i)) {
                         refreshSelectors(e, true);
                         updateStatusText(e);

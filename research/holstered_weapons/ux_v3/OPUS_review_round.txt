@@ -1,0 +1,96 @@
+OPUS review, HW-UX3 round (git diff 041aab12..HEAD -- patch_manager_mods scripts tests; commits b589b598 wave A, d3e97cd6 + 545307ac holster C1,
+bb7747d7 holster-editor 0.4.0-dev wave B). Fresh context; claims checked in code (HolsterEditor.cpp, HseLayoutV3.h, HseView.h, SliderArt.h,
+ResetIcon.h, mod_config_src/ModConfig.cpp + MenuUiLogic.h, holster_src/HolsterPreview.h + Holster.cpp, EmbedTex.h, GuiKit.h). 2026-10-18.
+
+======================================================================
+BLOCKING
+======================================================================
+None found. Nothing in the round can crash, corrupt state or get stuck. The four items below were fixed in this pass, but none of them blocks install.
+
+======================================================================
+FIXED IN THIS PASS (non-blocking, small)
+======================================================================
+F1. Bone buttons ran the unsaved-edits guard (HolsterEditor.cpp tickBody, bone loop; was guardTransition(ACT_BONE0+i,"bone")).
+    Scenario: nudge the weapon (dirty), click "Back" bone -> status "Unsaved: click again to discard" and DISCARD armed; second click
+    logs "DISCARD why=bone", yet nothing is discarded: hs::overlayCycleBone (HolsterPreview.h:210) only changes cur.boneIdx, and the offsets stay.
+    The plan said "keep" the guard for bone, but 0.3.2 never guarded CycleBone (old HolsterEditor.cpp:2119), so that premise was wrong.
+    Fix: no guard for bones (comment at the loop); ACT_BONE0 removed from GuardAction. Hand, scope and member keep the guard (EndEdit/BeginEdit and
+    SetScope do drop edits). One-line revert if the owner wants the extra click anyway.
+F2. Short-circuited art ensure (cbBuild): `sliderArtEnsure() && resetIconEnsure()`. When the slider textures failed, the reset arrows were never
+    created, and applyArt waited for BOTH sets (900 ticks), then gave up on both. Fix: both ensures are always called and logged
+    ("BUILD art textures ensure slider=%d reset=%d"); applyArt now applies each set independently and only skips the set still missing at the deadline
+    (ART WARN names which one).
+F3. Zero-width wedge (applyLayout): a value at -30 cm / -180 deg placed the wedge label on screen with a 0x0 rect. Now parked at {-9999,-9999,0,0},
+    the same convention as every other hidden item (0.3.2 offscreen rect, the cbEnter refusal path).
+F4. Bone loop missing `e.mode == MODE_WEAPON` (the scope loop had it): after selectBone lost the edit (exitEdit), later iterations could still call
+    GetEdit/selectBone. Harmless today (needs two bone clicks in one tick), added for symmetry.
+
+======================================================================
+SOFT SPOTS (a)-(n), verdicts
+======================================================================
+(a) Refusal: OK. SetDescSplit and kMaxItems 80 landed in the SAME mod-config commit (6d854c0c, 0.1.3-dev), so hasDescSplit() implies the 80 cap
+    for every build from this repo. A 40-cap provider is refused before anything is created except the page + one message label. A provider with
+    SetDescSplit but a smaller cap ends at the first AddX == -1 (muiAddButton/AddLabel refuse at itemCount >= kMaxItems and release the clone), so
+    the page is marked refused. The items already made are parked off screen at enter (0x0, so mod-config's rect-only hitItem never hits them),
+    cbTick returns at once (no Bind/Rebuild), and cbLeave/cbDestroy Destroy the token. Nothing silently mis-sizes. Note: a refused page keeps up
+    to 74 inert clones until the Options close (the ABI has no RemoveItem; acceptable).
+(b) Per-tick SetRect: OK. muiSetRect resets Target (applied=0, gaveUp=false) and applyOne(initial) writes only when the extent differs, with no
+    log. Per tick that is 75 SetRect + 3 PaneRect + about 40 Clicked + about 40 Control/hit (overAnyButton) + hoverRowAt (only inside the preview pane).
+    No allocation (stack Box[69]); the RELAYOUT lines stay mod-config's (capped 32). The give-up can never fire for our items (by design, A0c).
+(c) Bone loop: terminates. At most kEditBones (5) CycleBone calls and 6 GetEdit calls; from boneIdx 0 (default bone reported) the worst case
+    (want L hip) matches on the 5th cycle. GetEdit failing -> "EDIT lost during SelectBone" + exitEdit + false. In body scope CycleBone refuses:
+    5 no-op calls, then "BTN SelectBone ... (never reported)": no UI feedback (note N3). Guard: see F1.
+(d) Dropped features: emote cycler/Play and the rifle stances match plan item 2. NAV mode, Done, the CALIB probe (probe_calib now ignored, ini says
+    so) and the nav MMB-click view reset go with plan item 1 (Reset view button covers it). BEYOND the plan: the "Reset Scope" button
+    (HolsterApi ResetScope, "delete custom overrides for this scope") is gone and has no other path in the UI. The row/group resets only return to the
+    open values. User-visible; see N1.
+(e) Stale caches: OK. viewRect and the wheel hit rect are refreshed in applyLayout whenever the enlarged view changes (every tick), and are reset by
+    cbLeave/cbEnter (layOk=false -> first). The old strip/statusRect caches no longer exist. readCam/logCam2 read e.viewRect.
+(f) Press exclusion: OK. ci.inView = insideView && !overAnyButton, so a press on any page button is a DEAD press_outside. The slider parts are labels
+    outside the view, so a press there is press_outside -> scrubTick (thumb: scrub; track: jump, then scrub). mod-config's hitItem skips labels, so a
+    track press is never a button click.
+(g) Layout tests: hse_layout_v3_test covers 1280x720 / 1920x1080 / 3440x1440, NaN/-1/2 thumbs, tiny panes (testDegradation), view vs preview
+    overlap (testViewVsPreview), the index table and kPageItemsV3Total <= kPageItemCap. OK.
+(h) Logs: CAMRAW is gone. CHORD transitions, INSP refresh and the repeated CAMHOOK/PROJ lines are gated by log_verbose=0. CHORD drop lines stay on, capped
+    at 30 per Editor (each button click logs one until the cap). WARN, REG, ENTER, LEAVE, BUILD, DISCARD and CAM2 are kept. WHEEL lines per notch are unchanged from 0.3.2.
+(i) Versions: 0.4.0-dev in manifest, banner and ini header; status text "0.4.0 dev" (same style as 0.3.2). OK. holster 0.2.0-dev is consistent.
+(j) kPageItemCap 80: static_assert in HolsterEditor.cpp, hse_view_test.cpp:984, common_contract_test.cpp. kZoomMin 0.4, kZoomFit 0.6, and
+    clampZoom NaN -> fit and -inf -> 0.4 are tested. preview-3d does not clamp the zoom (only > 0); 22.726/0.4 = 57 deg. OK.
+(k) logCam2: safe reads only (rdc saferead, negative entry offsets wrap correctly on x86), nothing written, glGetIntegerv only when
+    wglGetCurrentContext is non-null (the tick runs on the render thread), capped at 3 sets. OK. The absolute addresses are allowlisted (check_raw_addresses PASS).
+(l) Textures: the embtex slot table is a function-local static in a header, so each DLL has its own 16 slots. holster-editor registers 5 (3 slider +
+    2 reset), and the other mods' HudKit/LevelUpUi/self-heal textures live in their own DLLs. The resrefs are unique (hse_*) and <= 16 chars, and the sizes are
+    powers of two. No overflow.
+(m) Crash scan: indexes are bounded (stance 0..4, rows 0..5, item idx < 69, selKey 16/16, selText 64 with the cut). Editor() initialises every array.
+    Every engine read is a safe read. Null provider/ctl paths return early. No new risk found.
+(n) gen_slider_art.py --check exits 0 twice (deterministic; SliderArtTex.inc matches). check_shared_headers.py globs _shared_src/*.inc, so Wave D
+    --sync copies SliderArtTex.inc. Nothing else needed. Verified by building against a scratch KPM Common with the synced headers.
+
+======================================================================
+NON-BLOCKING NOTES (left as is)
+======================================================================
+N1. Reset Scope dropped beyond the plan (d). Either confirm with the owner or re-add one button (76/80 items; HseLayoutV3 left column + tests).
+N2. Scrub rate vs track: the thumb drag scrubs 1 px = 1 mm / 0.5 deg, while the track maps its width to 60 cm / 360 deg, so the thumb does not stay under the
+    cursor while it is dragged. A click-to-jump is exact. Tune in UX3, or map scrub px to the track scale.
+N3. Bone buttons in body scope do nothing visible (CycleBone refuses). Consider dimming them or a status line.
+N4. The wedge texture is stretched to the cut width (fill style 2), not clipped: at 50% the whole taper is drawn in half the track. Cosmetic; ICON1/UX3 play check.
+N5. Lit selectors use the text colour; vanilla button hover may repaint it while colState still says lit (the cache never re-applies). Check in UX3.
+N6. Back with unsaved edits still discards with no guard (DISCARD why=leave, as in 0.3.2).
+N7. W_CALIB, testCalibScript and the CALIB helpers are dead code after the nav-mode removal; harmless.
+N8. Holster C1 sanity: the B1 (weapon-only) and B2 (hand from node name) fixes are in place. The g_flourishOpen global stays as the C2 TODO (OPUS_review_C1 #8).
+
+======================================================================
+TESTS RUN (after the fixes)
+======================================================================
+run_tests.py hse_view hse_layout_v3 reset_icon slider_art guikit common_contract menu_ui_logic : 42 passed, 0 failed
+run_tests.py -k holster_                                                                        : 14 passed, 0 failed
+check_raw_addresses.py                                                                          : FAIL=0 (WARN=20 are other mods' stale allowlist rows)
+build_check.py --mod holster_editor_src --mod holster_src --kpm-dir <scratch copy of KPM lib + Patches/Common overlaid with _shared_src/*.h,*.inc>
+                                                                                                : PASS=2 FAIL=0 (both before and after the fixes)
+gen_slider_art.py --check                                                                       : exit 0 (x2)
+
+FILES MODIFIED
+patch_manager_mods/holster_editor_src/HolsterEditor.cpp   (F1-F4)
+research/holstered_weapons/ux_v3/OPUS_review_round.txt    (this file)
+
+DECISION: APPROVE-FOR-INSTALL (with mod-config 0.1.3-dev in the same batch, Wave D order; play rows UX3/UX3b/ICON1 + note N1 for an owner decision)
