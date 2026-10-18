@@ -1,4 +1,4 @@
-// EnemyStrip.cpp -- Enemy Effects Strip 0.3.0-dev (Steam Aspyr build 6A522E71...). Draws the target's status-effect icons as a bare row of
+// EnemyStrip.cpp -- Enemy Effects Strip 0.4.0-dev (Steam Aspyr build 6A522E71...). Draws the target's status-effect icons as a bare row of
 // GUI labels centred just above the target menu's name label. No engine hooks, no engine writes beyond the label setters in GuiKit.h.
 // Hook-free consumer of hud-host (k2.hud@1): BUILD (prio 300) creates the label pool while the HUD layout is open, TARGET_MENU_POST (prio 100)
 // reads the target's effects (every 250 ms or on a target change), picks the visible icons by the leader's Awareness tier (EnemyStripLogic.h)
@@ -7,6 +7,11 @@
 // [Strip] Verbose (enemy_strip.ini, default 0): 1 additionally runs the 0.2.0 probe: on a target change one block with the target menu fields,
 // the server effect list (spells.2da icon matches, remaining-duration ratio, SetState id), the icon cache and the leader's skill ranks;
 // 'effects CHANGED' headers + dumps while a target is set. Log: enemystrip_log.txt (fallback) and the game's mod log.
+// Optional settings page (0.4.0, doc 39 item 4): when mod-config (k2.modconfig@1 + k2.menuui@1) is present the mod registers one entry under
+// Options -> Mod Configuration. mod-config is NOT in `requires`: the connect is lazy (KPatchInit, then retried from the HUD frame until it works)
+// and a missing provider is silent after one log line. The page edits enemy_strip.ini [Strip] one key at a time (this mod writes the INI itself,
+// mod-config never does): Enabled, IconSize, Gap, Spacing, Backing, BackingAlpha, DrainAlpha apply at once through esl::sanitize; MaxIcons is
+// written only (the label pool is built per HUD, so it needs a restart). ForceTier, Verbose and the Tier* thresholds are INI-only.
 #include <windows.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -22,6 +27,7 @@
 #include "Effects.h"
 #include "EffectIcons.h"
 #include "GuiKit.h"
+#include "ModConfigApi.h"
 #include "EnemyStripLogic.h"
 
 KP_LOG_PATCH("enemy-effects-strip");
@@ -104,6 +110,44 @@ float iniFloat(const char* key, float def) {
     return esl::parseFloatStrict(buf, def);   // trailing junk ("0.65abc") -> default
 }
 
+// The sanitized values -> g_cfg (one place, shared by the INI load and the settings page).
+void storeCfg(const esl::CfgRaw& c) {
+    g_cfg.enabled = c.enabled != 0;
+    g_cfg.verbose = c.verbose != 0;
+    g_cfg.maxIcons = c.maxIcons;
+    g_cfg.iconSize = c.iconSize;
+    g_cfg.gap = c.gap;
+    g_cfg.spacing = c.spacing;
+    g_cfg.tierObvious = c.tierObvious;
+    g_cfg.tierOwn = c.tierOwn;
+    g_cfg.tierFull = c.tierFull;
+    g_cfg.drainAlpha = c.drainAlpha;
+    g_cfg.backing = c.backing ? true : false;
+    g_cfg.backingAlpha = c.backingAlpha;
+    g_cfg.backingPad = c.backingPad;
+    g_cfg.forceTier = c.forceTier;
+}
+
+// g_cfg as a CfgRaw, with `maxIcons` supplied by the caller (the settings page edits a pending MaxIcons, not the built pool size).
+esl::CfgRaw currentRaw(int maxIcons) {
+    esl::CfgRaw r;
+    r.enabled = g_cfg.enabled ? 1 : 0;
+    r.verbose = g_cfg.verbose ? 1 : 0;
+    r.maxIcons = maxIcons;
+    r.iconSize = g_cfg.iconSize;
+    r.gap = g_cfg.gap;
+    r.spacing = g_cfg.spacing;
+    r.tierObvious = g_cfg.tierObvious;
+    r.tierOwn = g_cfg.tierOwn;
+    r.tierFull = g_cfg.tierFull;
+    r.drainAlpha = g_cfg.drainAlpha;
+    r.backing = g_cfg.backing ? 1 : 0;
+    r.backingAlpha = g_cfg.backingAlpha;
+    r.backingPad = g_cfg.backingPad;
+    r.forceTier = g_cfg.forceTier;
+    return r;
+}
+
 void loadIni() {
     const esl::CfgRaw d;
     esl::CfgRaw r;
@@ -121,21 +165,7 @@ void loadIni() {
     r.backingAlpha = iniFloat("BackingAlpha", d.backingAlpha);
     r.backingPad = iniInt("BackingPad", d.backingPad);
     r.forceTier = iniInt("ForceTier", d.forceTier);
-    const esl::CfgRaw c = esl::sanitize(r);
-    g_cfg.enabled = c.enabled != 0;
-    g_cfg.verbose = c.verbose != 0;
-    g_cfg.maxIcons = c.maxIcons;
-    g_cfg.iconSize = c.iconSize;
-    g_cfg.gap = c.gap;
-    g_cfg.spacing = c.spacing;
-    g_cfg.tierObvious = c.tierObvious;
-    g_cfg.tierOwn = c.tierOwn;
-    g_cfg.tierFull = c.tierFull;
-    g_cfg.drainAlpha = c.drainAlpha;
-    g_cfg.backing = c.backing != 0;
-    g_cfg.backingAlpha = c.backingAlpha;
-    g_cfg.backingPad = c.backingPad;
-    g_cfg.forceTier = c.forceTier;
+    storeCfg(esl::sanitize(r));
 }
 
 k2hud::Client g_hud;
@@ -581,6 +611,7 @@ Wid g_pill;
 SlotW g_sw[PoolSlots];
 int g_nSw = 0;              // complete slots built in the last BUILD
 bool g_built = false;       // pool complete for g_panel
+bool g_skippedDisabled = false;      // the last HUD BUILD was skipped because Enabled=0 (turning it on again needs a restart)
 int32_t g_panel = 0;        // HUD panel the pool belongs to (identity guard against a stale HUD)
 bool g_buildFailLogged = false;
 
@@ -800,7 +831,9 @@ void refresh(uintptr_t target, uintptr_t leader, DWORD now) {
 
 // TARGET_MENU_POST: runs before every drawn HUD frame (also with no target), so everything here is change-only.
 void drawPost(const K2HudContext* ctx) {
-    if (!g_cfg.enabled || !g_built) { hideAll(); return; }
+    // Order matters: no widget write (hideAll included) before the stale-HUD check. Enabled can now be 0 while g_built is true (live toggle),
+    // and a rebuilt HUD may have freed the old labels. An unbuilt (or half-built) pool was never shown, so there is nothing to hide.
+    if (!g_built) return;
     if (static_cast<int32_t>(ctx->hud) != g_panel) {
         // Stale HUD: the old labels may be freed, so drop every pointer without writing to them (a new BUILD makes a new pool).
         g_built = false; g_panel = 0; g_nSw = 0; g_pill = Wid();
@@ -808,6 +841,7 @@ void drawPost(const K2HudContext* ctx) {
         g_nSlots = 0; g_lastTarget = 0;
         return;
     }
+    if (!g_cfg.enabled) { hideAll(); return; }
     const uintptr_t target = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->target));
     const uintptr_t leader = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->leader));
     const uintptr_t menu = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->menu));
@@ -885,6 +919,7 @@ bool makeWid(uintptr_t panel, Wid& w, const char* what, int k) {
 
 // K2HUD_BUILD (prio 300): the HUD layout is open, so labels can be created from the LBL_QUEUE1 template. A new HUD = a new pool.
 void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
+    g_skippedDisabled = !g_cfg.enabled;
     g_built = false; g_panel = 0; g_nSw = 0; g_buildFailLogged = false;
     g_pill = Wid();
     for (SlotW& s : g_sw) s = SlotW();
@@ -909,7 +944,192 @@ void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
     KP_LOGV(chMain, g_built ? KPLOG_INFO : KPLOG_WARN, "BUILD: slots=%d/%d pill=%d", n, g_cfg.maxIcons, pillOk ? 1 : 0);
 }
 
+// ---------------------------------------------------------------- mod-config settings page (0.4.0, doc 39 item 4)
+// Hookless and optional. Rows (top to bottom = esl::Setting order, 8 rows = the 8 vanilla column rows): a toggle row is one button; a number
+// row is a label (name: value) plus '<' '>' buttons. Items are placed in cbEnter on the COLUMN pane (stripSlot ratios: slot h = col.h*32/284,
+// pitch = col.h*36/284, as holster-editor). All callbacks run on the main thread.
+KP_CHANNEL(chCfg, "config");
+
+k2mc::ConfigClient g_mcCfg;
+k2mc::MenuClient g_mcMenu;
+bool g_mcRegistered = false;         // Register has been answered (accepted or refused): stop polling
+int32_t g_mcToken = 0;
+int g_pendMax = 5;                   // MaxIcons as stored in the INI; the built pool keeps g_cfg.maxIcons until the next game start
+bool g_layoutWarned = false;
+
+struct SettingsPage {
+    void* panel = nullptr;
+    uint32_t page = 0;
+    int32_t text[esl::S_Count];      // toggle: the button; number: the label
+    int32_t prev[esl::S_Count];
+    int32_t next[esl::S_Count];
+    void reset() {
+        panel = nullptr; page = 0;
+        for (int i = 0; i < esl::S_Count; ++i) text[i] = prev[i] = next[i] = -1;
+    }
+} g_pg;
+
+const char* const kRowDesc[esl::S_Count] = {
+    "Show or hide the icon row at once. Turning it back on after the HUD was built disabled needs a game restart.",
+    "Most icons shown at once (1-8). Saved to enemy_strip.ini; takes effect at the next game start.",
+    "Icon edge in pixels. Auto uses the height of the target name label.",
+    "Pixels between the icon row and the name label.",
+    "Pixels between neighbouring icons.",
+    "Draw a pill behind the icon row.",
+    "Opacity of the pill behind the icon row.",
+    "Opacity of the remaining-time drain overlay on the icons.",
+};
+
+bool rowNeedsRestart(int s, const esl::CfgRaw& c) {
+    return s == esl::S_MaxIcons || (s == esl::S_Enabled && c.enabled && g_skippedDisabled);
+}
+
+void rowText(int s, char* out, int cap) {
+    const esl::CfgRaw c = currentRaw(g_pendMax);
+    esl::formatRowText(s, c, rowNeedsRestart(s, c), out, cap);
+}
+
+void refreshRow(int s) {
+    if (!g_mcMenu.ok() || !g_pg.page || g_pg.text[s] < 0) return;
+    char b[64];
+    rowText(s, b, static_cast<int>(sizeof b));
+    g_mcMenu.p->SetText(g_pg.page, g_pg.text[s], b);
+}
+
+// One step on setting s. The INI key is written first; the live values follow through esl::sanitize (inside stepSetting). Change-only caches
+// (Wid rect/alpha/vis) re-send whatever differs next frame; g_lastRefresh = 0 also re-runs the effect read at once. MaxIcons only updates
+// the pending value (and the INI): the label pool is built per HUD from g_cfg.maxIcons.
+void applySetting(int s, int dir) {
+    const esl::CfgRaw cur = currentRaw(g_pendMax);
+    const esl::CfgRaw nxt = esl::stepSetting(cur, s, dir);
+    if (esl::sameSetting(cur, nxt, s)) return;   // at a limit
+    char val[32];
+    esl::formatIniValue(s, nxt, val, static_cast<int>(sizeof val));
+    const BOOL wrote = WritePrivateProfileStringA("Strip", esl::settingKey(s), val, IniPath);
+    if (s == esl::S_MaxIcons) {
+        if (wrote) g_pendMax = nxt.maxIcons;
+    } else {
+        const int builtMax = g_cfg.maxIcons;
+        storeCfg(nxt);
+        g_cfg.maxIcons = builtMax;
+        g_lastRefresh = 0;
+    }
+    const bool isMax = s == esl::S_MaxIcons;
+    KP_LOGV(chCfg, wrote ? KPLOG_INFO : KPLOG_WARN, "cfg: %s=%s%s%s", esl::settingKey(s), val, isMax ? " (restart)" : "",
+            wrote ? "" : (isMax ? " (INI write FAILED: not changed)" : " (INI write FAILED: live value only)"));
+    refreshRow(s);
+}
+
+// Options ctor window: creates the page items (valid only here).
+void KPATCH_CALL cbBuild(void* panel, void*) {
+    g_pg.reset();
+    if (!panel || !g_mcMenu.ok()) { KP_LOGV(chCfg, KPLOG_WARN, "page BUILD skipped panel=%p menuui=%d", panel, g_mcMenu.ok() ? 1 : 0); return; }
+    const K2MenuUiApi* ui = g_mcMenu.p;
+    const uint32_t page = ui->NewPage(panel, "Enemy Effects Strip");
+    if (!page) { KP_LOGV(chCfg, KPLOG_WARN, "page BUILD: NewPage failed"); return; }
+    bool ok = true;
+    for (int s = 0; s < esl::S_Count; ++s) {
+        char b[64];
+        rowText(s, b, static_cast<int>(sizeof b));
+        if (esl::settingIsToggle(s)) {
+            g_pg.text[s] = ui->AddButton(page, b, kRowDesc[s]);
+        } else {
+            g_pg.text[s] = ui->AddLabel(page, b);
+            g_pg.prev[s] = ui->AddButton(page, "<", kRowDesc[s]);
+            g_pg.next[s] = ui->AddButton(page, ">", kRowDesc[s]);
+            if (g_pg.prev[s] < 0 || g_pg.next[s] < 0) ok = false;
+        }
+        if (g_pg.text[s] < 0) ok = false;
+    }
+    if (!ok) { KP_LOGV(chCfg, KPLOG_WARN, "page BUILD: an item failed (page %u left inert)", page); g_pg.reset(); return; }
+    g_pg.panel = panel;
+    g_pg.page = page;
+    KP_LOGV(chCfg, KPLOG_INFO, "page BUILD ok page=%u rows=%d", page, static_cast<int>(esl::S_Count));
+}
+
+void KPATCH_CALL cbEnter(uint32_t page, void*) {
+    if (!g_pg.panel || page != g_pg.page || !g_mcMenu.ok()) return;
+    saferead::beginScope();
+    const K2MenuUiApi* ui = g_mcMenu.p;
+    K2MuiRect col = { 0, 0, 0, 0 };
+    if (ui->PaneRect(g_pg.panel, MUI_PANE_COLUMN, &col) && col.w > 0 && col.h > 0) {
+        const int slotH = col.h * 32 / 284, pitch = col.h * 36 / 284;
+        const int gap = 6;
+        int bw = col.w * 20 / 100;
+        int lw = col.w - 2 * bw - 2 * gap;
+        if (lw < 0) { lw = 0; bw = (col.w - 2 * gap) / 2; if (bw < 0) bw = 0; }
+        for (int s = 0; s < esl::S_Count; ++s) {
+            const int y = col.y + s * pitch;
+            if (esl::settingIsToggle(s)) {
+                const K2MuiRect r = { col.x, y, col.w, slotH };
+                ui->SetRect(g_pg.page, g_pg.text[s], &r);
+            } else {
+                const K2MuiRect rl = { col.x, y, lw, slotH };
+                const K2MuiRect rp = { col.x + lw + gap, y, bw, slotH };
+                const K2MuiRect rn = { col.x + lw + gap + bw + gap, y, bw, slotH };
+                ui->SetRect(g_pg.page, g_pg.text[s], &rl);
+                ui->SetRect(g_pg.page, g_pg.prev[s], &rp);
+                ui->SetRect(g_pg.page, g_pg.next[s], &rn);
+            }
+        }
+    } else if (!g_layoutWarned) {
+        g_layoutWarned = true;
+        KP_LOGV(chCfg, KPLOG_WARN, "page ENTER: no COLUMN pane rect (%d,%d,%d,%d): items stay unplaced", col.x, col.y, col.w, col.h);
+    }
+    for (int s = 0; s < esl::S_Count; ++s) refreshRow(s);
+}
+
+// Every Options draw while the page is shown: Clicked() is 1 once per click, so each item is asked every tick.
+void KPATCH_CALL cbTick(uint32_t page, void*) {
+    if (!g_pg.panel || page != g_pg.page || !g_mcMenu.ok()) return;
+    saferead::beginScope();
+    const K2MenuUiApi* ui = g_mcMenu.p;
+    for (int s = 0; s < esl::S_Count; ++s) {
+        int dir = 0;
+        if (esl::settingIsToggle(s)) {
+            if (ui->Clicked(g_pg.page, g_pg.text[s])) dir = 1;
+        } else {
+            const bool dn = ui->Clicked(g_pg.page, g_pg.prev[s]) != 0;
+            const bool up = ui->Clicked(g_pg.page, g_pg.next[s]) != 0;
+            dir = up ? 1 : (dn ? -1 : 0);
+        }
+        if (dir) applySetting(s, dir);
+    }
+}
+
+void KPATCH_CALL cbDestroy(void* panel, void*) {
+    if (panel && panel == g_pg.panel) g_pg.reset();   // mod-config frees the controls; this mod owns none
+}
+
+K2ModConfigEntry g_mcEntry;   // Register copies it; the strings are static
+
+// Lazy connect: KPatchInit tries once, the HUD frame retries (poll() = the first call, then every 256th) until both interfaces answer.
+// Returns true once Register has been answered. Absent mod-config = no page, no error.
+bool tryRegisterPage() {
+    if (g_mcRegistered) return true;
+    g_mcCfg.poll();
+    g_mcMenu.poll();
+    if (!g_mcCfg.ok() || !g_mcMenu.ok()) return false;
+    g_mcEntry = K2ModConfigEntry();
+    g_mcEntry.struct_size = sizeof(K2ModConfigEntry);
+    g_mcEntry.id = "enemy-effects-strip";
+    g_mcEntry.name = "Enemy Effects Strip";
+    g_mcEntry.desc = "Icon row above the target name: size, spacing, backing and drain overlay. Changes are saved to enemy_strip.ini and apply at once, except rows marked (restart).";
+    g_mcEntry.user = nullptr;
+    g_mcEntry.build = cbBuild;
+    g_mcEntry.enter = cbEnter;
+    g_mcEntry.leave = nullptr;
+    g_mcEntry.tick = cbTick;
+    g_mcEntry.destroy = cbDestroy;
+    g_mcToken = g_mcCfg.p->Register(&g_mcEntry);
+    g_mcRegistered = true;
+    if (g_mcToken > 0) KP_LOGV(chCfg, KPLOG_INFO, "page REGISTER ok token=%d", static_cast<int>(g_mcToken));
+    else KP_LOGV(chCfg, KPLOG_WARN, "page REGISTER refused (mod-config table full or bad entry)");
+    return true;
+}
+
 void KPATCH_CALL onTargetMenuPost(const K2HudContext* ctx, void*) {
+    if (!g_mcRegistered) tryRegisterPage();
     if (!ctx || ctx->struct_size < offsetof(K2HudContext, targetType) + sizeof(ctx->targetType)) { if (g_built) hideAll(); return; }
     saferead::beginScope();
     if (g_cfg.verbose) probeTargetMenuPost(ctx);
@@ -924,10 +1144,15 @@ __declspec(dllexport) void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     g_hud.init(api, "enemy-effects-strip");
     loadIni();
-    KP_LOGV(chMain, KPLOG_INFO, "enemy-effects-strip 0.3.0-dev loaded (Enabled=%d Verbose=%d MaxIcons=%d)", g_cfg.enabled ? 1 : 0, g_cfg.verbose ? 1 : 0, g_cfg.maxIcons);
+    g_pendMax = g_cfg.maxIcons;
+    g_pg.reset();
+    g_mcCfg.init(api);
+    g_mcMenu.init(api);
+    KP_LOGV(chMain, KPLOG_INFO, "enemy-effects-strip 0.4.0-dev loaded (Enabled=%d Verbose=%d MaxIcons=%d)", g_cfg.enabled ? 1 : 0, g_cfg.verbose ? 1 : 0, g_cfg.maxIcons);
     g_hud.add(K2HUD_BUILD, 300, onHudBuild);
     g_hud.add(K2HUD_TARGET_MENU_POST, 100, onTargetMenuPost);
     g_hud.connect();
+    if (!tryRegisterPage()) KP_LOGV(chCfg, KPLOG_INFO, "page skipped for now: k2.modconfig@1 / k2.menuui@1 not provided (mod-config absent or later); retrying from the HUD frame");
 }
 
 } // extern "C"

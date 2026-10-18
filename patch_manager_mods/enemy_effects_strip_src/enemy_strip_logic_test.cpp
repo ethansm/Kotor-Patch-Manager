@@ -363,6 +363,85 @@ static void testParseFloat() {
     KT_CHECK(o.drainAlpha == 0.65f); KT_CHECK(o.backingAlpha == 1.0f);
 }
 
+static void testSettings() {
+    // Keys and kinds.
+    KT_CHECK(strcmp(settingKey(S_Enabled), "Enabled") == 0);
+    KT_CHECK(strcmp(settingKey(S_MaxIcons), "MaxIcons") == 0);
+    KT_CHECK(strcmp(settingKey(S_IconSize), "IconSize") == 0);
+    KT_CHECK(strcmp(settingKey(S_Gap), "Gap") == 0);
+    KT_CHECK(strcmp(settingKey(S_Spacing), "Spacing") == 0);
+    KT_CHECK(strcmp(settingKey(S_Backing), "Backing") == 0);
+    KT_CHECK(strcmp(settingKey(S_BackingAlpha), "BackingAlpha") == 0);
+    KT_CHECK(strcmp(settingKey(S_DrainAlpha), "DrainAlpha") == 0);
+    KT_CHECK(settingKey(S_Count) == nullptr);
+    KT_CHECK(settingKey(-1) == nullptr);
+    KT_CHECK(settingIsToggle(S_Enabled) && settingIsToggle(S_Backing) && !settingIsToggle(S_Gap));
+    KT_CHECK(settingIsFloat(S_DrainAlpha) && settingIsFloat(S_BackingAlpha) && !settingIsFloat(S_IconSize));
+
+    // Integer steps: +1 / -1 from the defaults (gap 4, spacing 4, maxIcons 5), clamped at the ends.
+    { CfgRaw c; KT_CHECK_EQ(stepSetting(c, S_Gap, 1).gap, 5); KT_CHECK_EQ(stepSetting(c, S_Gap, -1).gap, 3);
+      KT_CHECK_EQ(stepSetting(c, S_Spacing, 1).spacing, 5); KT_CHECK_EQ(stepSetting(c, S_Spacing, -1).spacing, 3);
+      KT_CHECK_EQ(stepSetting(c, S_MaxIcons, 1).maxIcons, 6); KT_CHECK_EQ(stepSetting(c, S_MaxIcons, -1).maxIcons, 4); }
+    { CfgRaw c; c.gap = 0; KT_CHECK_EQ(stepSetting(c, S_Gap, -1).gap, 0); c.gap = 200; KT_CHECK_EQ(stepSetting(c, S_Gap, 1).gap, 200);
+      c.spacing = 0; KT_CHECK_EQ(stepSetting(c, S_Spacing, -1).spacing, 0); c.spacing = 100; KT_CHECK_EQ(stepSetting(c, S_Spacing, 1).spacing, 100);
+      c.maxIcons = 1; KT_CHECK_EQ(stepSetting(c, S_MaxIcons, -1).maxIcons, 1); c.maxIcons = 8; KT_CHECK_EQ(stepSetting(c, S_MaxIcons, 1).maxIcons, 8); }
+    // A step changes only its own field (the other fields, including the tiers and ForceTier, stay put).
+    { CfgRaw c; c.forceTier = 2; c.tierOwn = 9; c.verbose = 1; CfgRaw o = stepSetting(c, S_Gap, 1);
+      KT_CHECK_EQ(o.forceTier, 2); KT_CHECK_EQ(o.tierOwn, 9); KT_CHECK_EQ(o.verbose, 1); KT_CHECK_EQ(o.spacing, 4); KT_CHECK_EQ(o.maxIcons, 5); }
+    // Icon size: auto (0) -> 16 -> 18 ...; at 8 or below a down step returns to auto; 256 is the top; 0 down stays 0.
+    { CfgRaw c; KT_CHECK_EQ(stepSetting(c, S_IconSize, 1).iconSize, 16); KT_CHECK_EQ(stepSetting(c, S_IconSize, -1).iconSize, 0);
+      c.iconSize = 16; KT_CHECK_EQ(stepSetting(c, S_IconSize, 1).iconSize, 18); KT_CHECK_EQ(stepSetting(c, S_IconSize, -1).iconSize, 14);
+      c.iconSize = 9; KT_CHECK_EQ(stepSetting(c, S_IconSize, -1).iconSize, 7);
+      c.iconSize = 8; KT_CHECK_EQ(stepSetting(c, S_IconSize, -1).iconSize, 0);
+      c.iconSize = 3; KT_CHECK_EQ(stepSetting(c, S_IconSize, -1).iconSize, 0);
+      c.iconSize = 255; KT_CHECK_EQ(stepSetting(c, S_IconSize, 1).iconSize, 256);
+      c.iconSize = 256; KT_CHECK_EQ(stepSetting(c, S_IconSize, 1).iconSize, 256); }
+    // Toggles flip on either direction; dir 0 changes nothing.
+    { CfgRaw c; KT_CHECK_EQ(stepSetting(c, S_Enabled, 1).enabled, 0); KT_CHECK_EQ(stepSetting(c, S_Enabled, -1).enabled, 0);
+      c.enabled = 0; KT_CHECK_EQ(stepSetting(c, S_Enabled, 1).enabled, 1);
+      CfgRaw d; KT_CHECK_EQ(stepSetting(d, S_Backing, 1).backing, 1); d.backing = 1; KT_CHECK_EQ(stepSetting(d, S_Backing, -1).backing, 0);
+      KT_CHECK(sameSetting(d, stepSetting(d, S_Backing, 0), S_Backing)); }
+    // Alpha: 0.05 steps in whole hundredths (0.65 -> 0.70 -> 0.75, no float drift after many steps), snapped to the grid, clamped 0..1.
+    { CfgRaw c; KT_CHECK(stepSetting(c, S_DrainAlpha, 1).drainAlpha == 0.70f); KT_CHECK(stepSetting(c, S_DrainAlpha, -1).drainAlpha == 0.60f);
+      KT_CHECK(stepSetting(c, S_BackingAlpha, 1).backingAlpha == 0.60f); KT_CHECK(stepSetting(c, S_BackingAlpha, -1).backingAlpha == 0.50f); }
+    { CfgRaw c; c.drainAlpha = 0.0f; for (int i = 0; i < 40; ++i) c = stepSetting(c, S_DrainAlpha, 1);
+      KT_CHECK(c.drainAlpha == 1.0f);
+      for (int i = 0; i < 20; ++i) c = stepSetting(c, S_DrainAlpha, -1);
+      KT_CHECK(c.drainAlpha == 0.0f);
+      c = stepSetting(c, S_DrainAlpha, -1); KT_CHECK(c.drainAlpha == 0.0f); }
+    { CfgRaw c; c.drainAlpha = 0.67f; KT_CHECK(stepSetting(c, S_DrainAlpha, 1).drainAlpha == 0.70f);   // 0.67 snaps to 0.65 first, then +0.05
+      c.drainAlpha = 0.62f; KT_CHECK(stepSetting(c, S_DrainAlpha, -1).drainAlpha == 0.55f); }   // 0.62 snaps to 0.60, then -0.05
+    // INI text: ints plain, alphas two decimals; the step result round-trips through parseFloatStrict.
+    { CfgRaw c; char b[32];
+      formatIniValue(S_Gap, c, b, sizeof b); KT_CHECK(strcmp(b, "4") == 0);
+      formatIniValue(S_Enabled, c, b, sizeof b); KT_CHECK(strcmp(b, "1") == 0);
+      formatIniValue(S_IconSize, c, b, sizeof b); KT_CHECK(strcmp(b, "0") == 0);
+      formatIniValue(S_DrainAlpha, c, b, sizeof b); KT_CHECK(strcmp(b, "0.65") == 0);
+      formatIniValue(S_BackingAlpha, c, b, sizeof b); KT_CHECK(strcmp(b, "0.55") == 0);
+      CfgRaw u = stepSetting(c, S_DrainAlpha, 1); formatIniValue(S_DrainAlpha, u, b, sizeof b);
+      KT_CHECK(strcmp(b, "0.70") == 0); KT_CHECK(parseFloatStrict(b, 0.0f) == 0.70f);
+      formatIniValue(S_Count, c, b, sizeof b); KT_CHECK(b[0] == '\0');
+      formatIniValue(S_Gap, c, b, 3); KT_CHECK(strcmp(b, "4") == 0);
+      char tiny[2]; formatIniValue(S_DrainAlpha, c, tiny, sizeof tiny); KT_CHECK(tiny[0] == '0' && tiny[1] == '\0');   // truncated, NUL kept
+      formatIniValue(S_Gap, c, nullptr, 8); formatIniValue(S_Gap, c, b, 0); }
+    // Row text.
+    { CfgRaw c; char b[64];
+      formatRowText(S_Enabled, c, false, b, sizeof b); KT_CHECK(strcmp(b, "Enabled: On") == 0);
+      c.enabled = 0; formatRowText(S_Enabled, c, false, b, sizeof b); KT_CHECK(strcmp(b, "Enabled: Off") == 0);
+      c.enabled = 1; formatRowText(S_Enabled, c, true, b, sizeof b); KT_CHECK(strcmp(b, "Enabled: On (restart)") == 0);
+      formatRowText(S_MaxIcons, c, true, b, sizeof b); KT_CHECK(strcmp(b, "MaxIcons: 5 (restart)") == 0);
+      formatRowText(S_IconSize, c, false, b, sizeof b); KT_CHECK(strcmp(b, "IconSize: Auto") == 0);
+      c.iconSize = 24; formatRowText(S_IconSize, c, false, b, sizeof b); KT_CHECK(strcmp(b, "IconSize: 24") == 0);
+      formatRowText(S_Gap, c, false, b, sizeof b); KT_CHECK(strcmp(b, "Gap: 4") == 0);
+      formatRowText(S_Spacing, c, false, b, sizeof b); KT_CHECK(strcmp(b, "Spacing: 4") == 0);
+      c.backing = 1; formatRowText(S_Backing, c, false, b, sizeof b); KT_CHECK(strcmp(b, "Backing: On") == 0);
+      formatRowText(S_DrainAlpha, c, false, b, sizeof b); KT_CHECK(strcmp(b, "DrainAlpha: 0.65") == 0);
+      formatRowText(S_BackingAlpha, c, false, b, sizeof b); KT_CHECK(strcmp(b, "BackingAlpha: 0.55") == 0);
+      formatRowText(S_Count, c, false, b, sizeof b); KT_CHECK(b[0] == '\0');
+      char small[8]; formatRowText(S_DrainAlpha, c, false, small, sizeof small); KT_CHECK(strlen(small) == 7);   // truncated, NUL kept
+      formatRowText(S_Gap, c, false, nullptr, 8); }
+}
+
 int main() {
     testConfig();
     testParseFloat();
@@ -372,5 +451,6 @@ int main() {
     testSlots();
     testLayout();
     testOverlay();
+    testSettings();
     return kt::Report("enemy_strip_logic");
 }

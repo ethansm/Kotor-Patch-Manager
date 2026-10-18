@@ -1,6 +1,6 @@
-// common_contract_test.cpp -- Patches/Common CONTRACT test for Enemy Effects Strip (0.3.0-dev).
+// common_contract_test.cpp -- Patches/Common CONTRACT test for Enemy Effects Strip (0.4.0-dev).
 // Rule: every Patches/Common API a mod uses gets a mod-owned contract test colocated with the mod.
-// Pins the semantics EnemyStrip.cpp relies on in SafeRead.h, KpLog.h, HudHost.h, K2Addr.h, Party.h, Effects.h, EffectIcons.h and GuiKit.h.
+// Pins the semantics EnemyStrip.cpp relies on in SafeRead.h, KpLog.h, HudHost.h, K2Addr.h, Party.h, Effects.h, EffectIcons.h, GuiKit.h and ModConfigApi.h (the optional mod-config settings page: k2.modconfig@1 + k2.menuui@1).
 #ifndef GUIKIT_HOST
 #define GUIKIT_HOST 1
 #endif
@@ -19,6 +19,7 @@
 #include "Effects.h"
 #include "EffectIcons.h"
 #include "GuiKit.h"
+#include "ModConfigApi.h"
 #include "check.h"
 #include "FakeKPatchApi.h"
 
@@ -65,7 +66,31 @@ SIG(party::member, uintptr_t (*)(uintptr_t, int));
 SIG(party::partyCount, int (*)(uintptr_t));
 SIG(k2fx::remainingRatio, float (*)(int, int, float, int, int, float));
 SIG(k2hud::Client::add, bool (k2hud::Client::*)(int32_t, int32_t, K2HudCallback, void*));
+SIG(k2mc::ConfigClient::init, void (k2mc::ConfigClient::*)(const KPatchApi*));
+SIG(k2mc::ConfigClient::poll, void (k2mc::ConfigClient::*)());
+SIG(k2mc::MenuClient::init, void (k2mc::MenuClient::*)(const KPatchApi*));
+SIG(k2mc::MenuClient::poll, void (k2mc::MenuClient::*)());
 #undef SIG
+
+// ModConfigApi.h stubs: record the Register call and the page calls the settings page makes.
+static const K2ModConfigEntry* g_regEntry = nullptr;
+static K2ModConfigEntry g_regCopy;
+static int g_regCalls = 0;
+static int32_t KPATCH_CALL stubRegister(const K2ModConfigEntry* e) { ++g_regCalls; g_regEntry = e; if (e) g_regCopy = *e; return 7; }
+static void KPATCH_CALL stubUnregister(int32_t) {}
+static uint32_t KPATCH_CALL stubNewPage(void*, const char*) { return 2; }
+static int32_t KPATCH_CALL stubAddButton(uint32_t, const char*, const char*) { return 0; }
+static int32_t KPATCH_CALL stubAddLabel(uint32_t, const char*) { return 0; }
+static int32_t KPATCH_CALL stubAddCustom(uint32_t, void*, int32_t) { return 0; }
+static int32_t KPATCH_CALL stubClicked(uint32_t, int32_t) { return 0; }
+static void KPATCH_CALL stubSetText(uint32_t, int32_t, const char*) {}
+static void KPATCH_CALL stubSetRect(uint32_t, int32_t, const K2MuiRect*) {}
+static void KPATCH_CALL stubSetDesc(uint32_t, const char*) {}
+static int32_t KPATCH_CALL stubPaneRect(void*, int32_t, K2MuiRect*) { return 0; }
+static void* KPATCH_CALL stubControl(uint32_t, int32_t) { return nullptr; }
+static const K2ModConfigApi kCfgTable = { sizeof(K2ModConfigApi), stubRegister, stubUnregister };
+static const K2MenuUiApi kMuiTable = { sizeof(K2MenuUiApi), stubNewPage, stubAddButton, stubAddLabel, stubAddCustom, stubClicked,
+                                       stubSetText, stubSetRect, stubSetDesc, stubPaneRect, stubControl };
 
 int main() {
     int flags = MAP_PRIVATE | MAP_ANONYMOUS;
@@ -188,6 +213,50 @@ int main() {
            k2fx::effectRatio(0, 0, 0, false) == 1.0f);
     ECHECK("EffectIcons.h: type-0x43 EffectIcon effects are k2fx::EffType_Icon == 0x43; iconForEffectIconEffect on an unreadable effect is nullptr",
            k2fx::EffType_Icon == 0x43 && [] { bool it = true; const char* r = k2fx::iconForEffectIconEffect(0, &it); return r == nullptr && !it; }());
+
+    // 10. ModConfigApi.h (the optional settings page): interface names, versions, struct sizes, pane and flag constants EnemyStrip.cpp uses.
+    ECHECK("k2.modconfig / k2.menuui are v1; K2ModConfigEntry 10 pointer slots, K2ModConfigApi 3, K2MenuUiApi 11; MUI_PANE_COLUMN == 0",
+           strcmp(K2MODCONFIG_IFACE, "k2.modconfig") == 0 && K2MODCONFIG_VERSION == 1 && strcmp(K2MENUUI_IFACE, "k2.menuui") == 0 &&
+           K2MENUUI_VERSION == 1 && sizeof(K2ModConfigEntry) == 10 * sizeof(void*) && sizeof(K2ModConfigApi) == 3 * sizeof(void*) &&
+           sizeof(K2MenuUiApi) == 11 * sizeof(void*) && MUI_PANE_COLUMN == 0);
+    ECHECK("K2ModConfigEntry field order: build 5, enter 6, leave 7, tick 8, destroy 9 (the page sets build/enter/tick/destroy, leave stays null)",
+           offsetof(K2ModConfigEntry, build) == 5 * sizeof(void*) && offsetof(K2ModConfigEntry, enter) == 6 * sizeof(void*) &&
+           offsetof(K2ModConfigEntry, leave) == 7 * sizeof(void*) && offsetof(K2ModConfigEntry, tick) == 8 * sizeof(void*) &&
+           offsetof(K2ModConfigEntry, destroy) == 9 * sizeof(void*));
+    ECHECK("K2MenuUiApi slots the page calls: NewPage 1, AddButton 2, AddLabel 3, Clicked 5, SetText 6, SetRect 7, PaneRect 9",
+           offsetof(K2MenuUiApi, NewPage) == 1 * sizeof(void*) && offsetof(K2MenuUiApi, AddButton) == 2 * sizeof(void*) &&
+           offsetof(K2MenuUiApi, AddLabel) == 3 * sizeof(void*) && offsetof(K2MenuUiApi, Clicked) == 5 * sizeof(void*) &&
+           offsetof(K2MenuUiApi, SetText) == 6 * sizeof(void*) && offsetof(K2MenuUiApi, SetRect) == 7 * sizeof(void*) &&
+           offsetof(K2MenuUiApi, PaneRect) == 9 * sizeof(void*) && sizeof(K2MuiRect) == 16);
+
+    // 11. Lazy connect: with neither interface provided both clients stay not-ok (no crash, no entry); with a short table they refuse;
+    //     with both provided the first poll() connects and Register receives the entry unchanged.
+    fakekp::reset();
+    k2mc::ConfigClient cc; k2mc::MenuClient mc;
+    cc.init(fakekp::api()); mc.init(fakekp::api());
+    cc.poll(); mc.poll();
+    ECHECK("poll() with k2.modconfig / k2.menuui absent leaves both clients not ok", !cc.ok() && !mc.ok());
+    K2ModConfigApi shortCfg = kCfgTable; shortCfg.struct_size = static_cast<uint32_t>(sizeof(K2ModConfigApi) - sizeof(void*));
+    K2MenuUiApi nullCtl = kMuiTable; nullCtl.Control = nullptr;
+    ECHECK("usable() refuses a null table, a short ModConfig table and a MenuUi table with a null function",
+           !k2mc::ConfigClient::usable(nullptr) && !k2mc::ConfigClient::usable(&shortCfg) && k2mc::ConfigClient::usable(&kCfgTable) &&
+           !k2mc::MenuClient::usable(nullptr) && !k2mc::MenuClient::usable(&nullCtl) && k2mc::MenuClient::usable(&kMuiTable));
+    fakekp::reset();
+    fakekp::provide(K2MODCONFIG_IFACE, K2MODCONFIG_VERSION, &kCfgTable);
+    fakekp::provide(K2MENUUI_IFACE, K2MENUUI_VERSION, &kMuiTable);
+    k2mc::ConfigClient cc2; k2mc::MenuClient mc2;
+    cc2.init(fakekp::api()); mc2.init(fakekp::api());
+    cc2.poll(); mc2.poll();
+    ECHECK("poll() with both interfaces provided connects both clients", cc2.ok() && mc2.ok());
+    static const char* const kId = "enemy-effects-strip";
+    K2ModConfigEntry e = K2ModConfigEntry();
+    e.struct_size = sizeof(K2ModConfigEntry);
+    e.id = kId;
+    e.name = "Enemy Effects Strip";
+    int32_t tok = cc2.ok() ? cc2.p->Register(&e) : 0;
+    ECHECK("Register(entry) reaches the provider with the entry's id and struct_size, and returns its token",
+           tok == 7 && g_regCalls == 1 && g_regEntry == &e && g_regCopy.id == kId && g_regCopy.struct_size == sizeof(K2ModConfigEntry) &&
+           g_regCopy.leave == nullptr && g_regCopy.tick == nullptr);
 
     munmap(arena, 0x10000);
     return ::kt::Report("common_contract_test (enemy-effects-strip)");

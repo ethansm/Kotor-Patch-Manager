@@ -1,12 +1,12 @@
 [patch]
 id = "enemy-effects-strip"
 name = "Enemy Effects Strip"
-version = "0.3.0-dev"
+version = "0.4.0-dev"
 author = "local"
-description = "Draws the status-effect icons of the current target as a bare row above the target menu name label, gated by the party leader's Awareness (obvious states, then party debuffs, then everything with a drain overlay). Configured by enemy_strip.ini [Strip]: Enabled, Verbose, MaxIcons, IconSize, Gap, Spacing, TierObvious/TierOwn/TierFull, DrainAlpha, Backing, BackingAlpha, BackingPad, ForceTier (needs hud-host)."
+description = "Draws the status-effect icons of the current target as a bare row above the target menu name label, gated by the party leader's Awareness (obvious states, then party debuffs, then everything with a drain overlay). Configured by enemy_strip.ini [Strip]: Enabled, Verbose, MaxIcons, IconSize, Gap, Spacing, TierObvious/TierOwn/TierFull, DrainAlpha, Backing, BackingAlpha, BackingPad, ForceTier (needs hud-host). Optional settings page under Options -> Mod Configuration when mod-config is installed (k2.modconfig@1, k2.menuui@1; connected at runtime, never required): Enabled, MaxIcons (restart), IconSize, Gap, Spacing, Backing, BackingAlpha, DrainAlpha; changes apply at once and are written to enemy_strip.ini."
 
 requires = ["hud-host"]
-requires_interfaces = ["k2.hud@1"]
+requires_interfaces = ["k2.hud@1"]   # k2.modconfig@1 + k2.menuui@1 are optional: connected lazily at runtime (check_provider_manifests rejects listing them without mod-config in requires)
 conflicts = []
 
 [patch.supported_versions]
