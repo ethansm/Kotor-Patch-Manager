@@ -30,10 +30,18 @@ void KPATCH_CALL stubSetDesc(uint32_t, const char*) {}
 int32_t KPATCH_CALL stubPaneRect(void*, int32_t, K2MuiRect*) { return 0; }
 void* KPATCH_CALL stubControl(uint32_t, int32_t) { return nullptr; }
 int32_t KPATCH_CALL stubSetDescSplit(uint32_t, int32_t) { return 0; }
+int32_t KPATCH_CALL stubAddRow(uint32_t, const K2MuiRowSpec*) { return 0; }
+void KPATCH_CALL stubSetChangeHandler(uint32_t, K2MuiChangeFn, void*) {}
+int32_t KPATCH_CALL stubGetValue(uint32_t, int32_t) { return 0; }
+void KPATCH_CALL stubSetValue(uint32_t, int32_t, int32_t) {}
+void KPATCH_CALL stubSetRowText(uint32_t, int32_t, const char*) {}
+void KPATCH_CALL stubSetRowState(uint32_t, int32_t, int32_t) {}
+void KPATCH_CALL stubSetRowRange(uint32_t, int32_t, int32_t, int32_t) {}
 
 const K2ModConfigApi kCfgTable = { sizeof(K2ModConfigApi), stubRegister, stubUnregister };
 const K2MenuUiApi kMuiTable = { sizeof(K2MenuUiApi), stubNewPage, stubAddButton, stubAddLabel, stubAddCustom, stubClicked,
-                                stubSetText, stubSetRect, stubSetDesc, stubPaneRect, stubControl, stubSetDescSplit };
+                                stubSetText, stubSetRect, stubSetDesc, stubPaneRect, stubControl, stubSetDescSplit,
+                                stubAddRow, stubSetChangeHandler, stubGetValue, stubSetValue, stubSetRowText, stubSetRowState, stubSetRowRange };
 
 // onConnect capture for the not-provided message.
 bool g_connOk = true;
@@ -64,8 +72,23 @@ int main() {
     MEQ("K2ModConfigApi.Unregister at slot 2", offsetof(K2ModConfigApi, Unregister), 2 * sizeof(void*));
     MEQ("K2MuiRect is 16 bytes", sizeof(K2MuiRect), 16);
     MEQ("K2MuiRect.h at byte 12", offsetof(K2MuiRect, h), 12);
-    MEQ("K2MenuUiApi is 12 pointer slots", sizeof(K2MenuUiApi), 12 * sizeof(void*));
-    MEQ("K2MenuUiApi.SetDescSplit at slot 11 (the last field)", offsetof(K2MenuUiApi, SetDescSplit), 11 * sizeof(void*));
+    MEQ("K2MenuUiApi is 19 pointer slots", sizeof(K2MenuUiApi), 19 * sizeof(void*));
+    MEQ("K2MenuUiApi.SetDescSplit at slot 11", offsetof(K2MenuUiApi, SetDescSplit), 11 * sizeof(void*));
+    MEQ("K2MenuUiApi.AddRow at slot 12", offsetof(K2MenuUiApi, AddRow), 12 * sizeof(void*));
+    MEQ("K2MenuUiApi.SetChangeHandler at slot 13", offsetof(K2MenuUiApi, SetChangeHandler), 13 * sizeof(void*));
+    MEQ("K2MenuUiApi.GetValue at slot 14", offsetof(K2MenuUiApi, GetValue), 14 * sizeof(void*));
+    MEQ("K2MenuUiApi.SetValue at slot 15", offsetof(K2MenuUiApi, SetValue), 15 * sizeof(void*));
+    MEQ("K2MenuUiApi.SetRowText at slot 16", offsetof(K2MenuUiApi, SetRowText), 16 * sizeof(void*));
+    MEQ("K2MenuUiApi.SetRowState at slot 17", offsetof(K2MenuUiApi, SetRowState), 17 * sizeof(void*));
+    MEQ("K2MenuUiApi.SetRowRange at slot 18 (the last field)", offsetof(K2MenuUiApi, SetRowRange), 18 * sizeof(void*));
+    MEQ("MUI_ROW_TOGGLE == 0 / MUI_ROW_STEPPER == 1", MUI_ROW_TOGGLE * 10 + MUI_ROW_STEPPER, 1);
+    MEQ("MUI_RF_WRAP/RESTART/DISABLED/HIDDEN == 1/2/4/8", MUI_RF_WRAP | MUI_RF_RESTART | MUI_RF_DISABLED | MUI_RF_HIDDEN, 15);
+    MEQ("MUI_RF_WRAP == 1", MUI_RF_WRAP, 1);
+    MEQ("MUI_RF_RESTART == 2", MUI_RF_RESTART, 2);
+    MEQ("MUI_RF_DISABLED == 4", MUI_RF_DISABLED, 4);
+    MEQ("MUI_RF_HIDDEN == 8", MUI_RF_HIDDEN, 8);
+    MEQ("K2MuiRowSpec.kind at byte 4", offsetof(K2MuiRowSpec, kind), 4);
+    MEQ("K2MuiRowSpec.label after kind", offsetof(K2MuiRowSpec, label), 8);
     MEQ("K2MenuUiApi.PaneRect at slot 9", offsetof(K2MenuUiApi, PaneRect), 9 * sizeof(void*));
     MEQ("K2MenuUiApi.Control at slot 10", offsetof(K2MenuUiApi, Control), 10 * sizeof(void*));
 
@@ -187,6 +210,37 @@ int main() {
     newClient.init(fakekp::api());
     newClient.poll();
     MCHECK("MenuClient::hasDescSplit() member true against the current provider", newClient.ok() && newClient.hasDescSplit());
+
+    // 10. Option rows (slots 12..18): a short table (the 12-slot SetDescSplit one) is still usable() but has no rows; the full table has them;
+    // any null row slot or a table that ends inside SetRowRange has not.
+    K2MenuUiApi shortRows = kMuiTable;
+    shortRows.struct_size = static_cast<uint32_t>(offsetof(K2MenuUiApi, AddRow));   // the 12-slot table
+    shortRows.AddRow = nullptr; shortRows.SetChangeHandler = nullptr; shortRows.GetValue = nullptr; shortRows.SetValue = nullptr;
+    shortRows.SetRowText = nullptr; shortRows.SetRowState = nullptr; shortRows.SetRowRange = nullptr;
+    MCHECK("MenuClient::usable true for a 12-slot table", k2mc::MenuClient::usable(&shortRows));
+    MCHECK("MenuClient::hasDescSplit true for a 12-slot table", k2mc::MenuClient::hasDescSplit(&shortRows));
+    MCHECK("MenuClient::hasRows false for a 12-slot table", !k2mc::MenuClient::hasRows(&shortRows));
+    MCHECK("MenuClient::hasRows true for the current table", k2mc::MenuClient::hasRows(&kMuiTable));
+    MCHECK("MenuClient::hasRows false for a null table", !k2mc::MenuClient::hasRows(static_cast<const K2MenuUiApi*>(nullptr)));
+    K2MenuUiApi endsInside = kMuiTable;
+    endsInside.struct_size = static_cast<uint32_t>(offsetof(K2MenuUiApi, SetRowRange) + 1);
+    MCHECK("MenuClient::hasRows false when struct_size ends inside SetRowRange", !k2mc::MenuClient::hasRows(&endsInside));
+    K2MenuUiApi nullRow = kMuiTable;
+    nullRow.SetRowState = nullptr;
+    MCHECK("MenuClient::hasRows false with SetRowState null", !k2mc::MenuClient::hasRows(&nullRow));
+    MCHECK("MenuClient::usable still true with a row slot null", k2mc::MenuClient::usable(&nullRow));
+    fakekp::reset();
+    fakekp::provide(K2MENUUI_IFACE, K2MENUUI_VERSION, &shortRows);
+    k2mc::MenuClient oldRowsClient;
+    oldRowsClient.init(fakekp::api());
+    oldRowsClient.poll();
+    MCHECK("MenuClient connects to a 12-slot provider and reports no rows", oldRowsClient.ok() && !oldRowsClient.hasRows());
+    fakekp::reset();
+    fakekp::provide(K2MENUUI_IFACE, K2MENUUI_VERSION, &kMuiTable);
+    k2mc::MenuClient rowsClient;
+    rowsClient.init(fakekp::api());
+    rowsClient.poll();
+    MCHECK("MenuClient::hasRows() member true against the current provider", rowsClient.ok() && rowsClient.hasRows());
 
     return ::kt::Report("common_contract_test (mod-config)");
 }

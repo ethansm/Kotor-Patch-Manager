@@ -932,7 +932,7 @@ static void* KPATCH_CALL mControl(uint32_t, int32_t item) {
 }
 static int32_t KPATCH_CALL mSetDescSplit(uint32_t, int32_t permille) { ++tm.splitCalls; tm.lastSplit = permille; return tm.splitRet; }
 static K2ModConfigApi tCfgTable = { sizeof(K2ModConfigApi), mRegister, mUnregister };
-static K2MenuUiApi tMui = { sizeof(K2MenuUiApi), mNewPage, mAddButton, mAddLabel, mAddCustom, mClicked, mSetText, mSetRect, mSetDesc, mPaneRect, mControl, mSetDescSplit };
+static K2MenuUiApi tMui = { sizeof(K2MenuUiApi), mNewPage, mAddButton, mAddLabel, mAddCustom, mClicked, mSetText, mSetRect, mSetDesc, mPaneRect, mControl, mSetDescSplit, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
 
 static int logCount(const char* needle) {
     int n = 0;

@@ -92,6 +92,32 @@ typedef struct K2ModConfigApi {
 
 typedef struct K2MuiRect { int32_t x, y, w, h; } K2MuiRect;
 
+/* Option rows (doc 46). */
+#define MUI_ROW_TOGGLE 0
+#define MUI_ROW_STEPPER 1
+#define MUI_RF_WRAP 1      /* stepper values wrap at the ends */
+#define MUI_RF_RESTART 2   /* shown text gets " (restart)" */
+#define MUI_RF_DISABLED 4  /* greyed out: clicks are ignored */
+#define MUI_RF_HIDDEN 8    /* not shown, takes no slot */
+
+typedef struct K2MuiRowSpec {
+    uint32_t struct_size;      /* sizeof(K2MuiRowSpec) */
+    int32_t  kind;             /* MUI_ROW_* */
+    const char* label;         /* caption prefix ("Label: value") */
+    const char* desc;          /* shown in the description pane while the row is hovered */
+    int32_t  min, max, step;   /* stepper range and step (toggle: ignored) */
+    int32_t  value;            /* initial value */
+    int32_t  flags;            /* MUI_RF_* */
+    const char* fmt;           /* "%d" / "%%" template, null = "label: value"; a fmt caption stands alone ("Heal below %d%%") */
+    const char* const* choices;/* stepper/toggle value names, stored value = index; null = numbers (toggle: Off/On) */
+    int32_t  nChoices;
+    const char* zeroText;      /* shown instead of the number at value 0, e.g. "Auto" */
+} K2MuiRowSpec;
+
+/* Returns the FINAL value to store. dir = -1 / +1 for the arrows, 0 for a toggle flip. Return `requested` to accept, the old value to
+   reject, anything else to snap. */
+typedef int32_t (KPATCH_CALL *K2MuiChangeFn)(uint32_t page, int32_t row, int32_t requested, int32_t dir, void* user);
+
 typedef struct K2MenuUiApi {
     uint32_t struct_size;
     /* Adds a page under the Options panel with this title. build() only. Returns the page id that the other calls take. */
@@ -118,6 +144,27 @@ typedef struct K2MenuUiApi {
        description pane to the bottom (1000 - previewPermille)/1000 of its original rect; previewPermille 1..5000 is clamped to
        600..850, 0 = off (restore). 1 ok, 0 = unknown page, no panel, or previewPermille < 0. Takes effect while the page is shown. */
     int32_t  (KPATCH_CALL *SetDescSplit)(uint32_t page, int32_t previewPermille);
+
+    /* ---- Option rows (slots 12..18; check MenuClient::hasRows). The provider lays rows out itself in the column pane and draws
+       the value caption, the "<" ">" arrows (or the toggle button) and the description on hover, so consumers write no geometry.
+       Entry pages only; a page may mix AddRow with AddButton/AddLabel/AddCustom, but its rows then share the column pane. */
+
+    /* Adds a row. build() only. Row id >= 0 (0, 1, 2 ... in call order, separate from item ids); < 0 = fail (no panel, too many rows
+       or controls, bad spec). The spec and its strings are copied except `choices` (the array and its strings must stay valid). */
+    int32_t  (KPATCH_CALL *AddRow)(uint32_t page, const K2MuiRowSpec* spec);
+    /* Registers the page's change handler (one per page; null clears). It runs on the main thread inside the provider's tick, never
+       from Clicked, once per accepted arrow press / toggle flip. */
+    void     (KPATCH_CALL *SetChangeHandler)(uint32_t page, K2MuiChangeFn fn, void* user);
+    /* The row's stored value (toggle 0/1, stepper value or choice index); 0 for an unknown row. */
+    int32_t  (KPATCH_CALL *GetValue)(uint32_t page, int32_t row);
+    /* Silent: clamps, stores and redraws the caption, no handler call. */
+    void     (KPATCH_CALL *SetValue)(uint32_t page, int32_t row, int32_t v);
+    /* Overrides the shown caption (null / empty = back to the formatted one). For dynamic text such as roster names. */
+    void     (KPATCH_CALL *SetRowText)(uint32_t page, int32_t row, const char* text);
+    /* Replaces the row's flags (MUI_RF_*; only DISABLED and HIDDEN change at run time, WRAP and RESTART are kept from the spec). */
+    void     (KPATCH_CALL *SetRowState)(uint32_t page, int32_t row, int32_t flags);
+    /* Changes a stepper's range; the stored value is re-clamped (no handler call). */
+    void     (KPATCH_CALL *SetRowRange)(uint32_t page, int32_t row, int32_t minV, int32_t maxV);
 } K2MenuUiApi;
 
 #pragma pack(pop)
@@ -168,7 +215,16 @@ K2MC_STATIC_ASSERT(offsetof(K2MenuUiApi, SetDesc) == 8 * sizeof(void*), "K2MenuU
 K2MC_STATIC_ASSERT(offsetof(K2MenuUiApi, PaneRect) == 9 * sizeof(void*), "K2MenuUiApi.PaneRect offset");
 K2MC_STATIC_ASSERT(offsetof(K2MenuUiApi, Control) == 10 * sizeof(void*), "K2MenuUiApi.Control offset");
 K2MC_STATIC_ASSERT(offsetof(K2MenuUiApi, SetDescSplit) == 11 * sizeof(void*), "K2MenuUiApi.SetDescSplit offset");
-K2MC_STATIC_ASSERT(sizeof(K2MenuUiApi) == 12 * sizeof(void*), "K2MenuUiApi size");
+K2MC_STATIC_ASSERT(offsetof(K2MenuUiApi, AddRow) == 12 * sizeof(void*), "K2MenuUiApi.AddRow offset");
+K2MC_STATIC_ASSERT(offsetof(K2MenuUiApi, SetChangeHandler) == 13 * sizeof(void*), "K2MenuUiApi.SetChangeHandler offset");
+K2MC_STATIC_ASSERT(offsetof(K2MenuUiApi, GetValue) == 14 * sizeof(void*), "K2MenuUiApi.GetValue offset");
+K2MC_STATIC_ASSERT(offsetof(K2MenuUiApi, SetValue) == 15 * sizeof(void*), "K2MenuUiApi.SetValue offset");
+K2MC_STATIC_ASSERT(offsetof(K2MenuUiApi, SetRowText) == 16 * sizeof(void*), "K2MenuUiApi.SetRowText offset");
+K2MC_STATIC_ASSERT(offsetof(K2MenuUiApi, SetRowState) == 17 * sizeof(void*), "K2MenuUiApi.SetRowState offset");
+K2MC_STATIC_ASSERT(offsetof(K2MenuUiApi, SetRowRange) == 18 * sizeof(void*), "K2MenuUiApi.SetRowRange offset");
+K2MC_STATIC_ASSERT(sizeof(K2MenuUiApi) == 19 * sizeof(void*), "K2MenuUiApi size");
+K2MC_STATIC_ASSERT(offsetof(K2MuiRowSpec, struct_size) == 0, "K2MuiRowSpec.struct_size offset");
+K2MC_STATIC_ASSERT(offsetof(K2MuiRowSpec, kind) == 4, "K2MuiRowSpec.kind offset");
 #undef K2MC_STATIC_ASSERT
 #endif
 
@@ -252,6 +308,13 @@ struct MenuClient {
         return t && t->struct_size >= offsetof(K2MenuUiApi, SetDescSplit) + sizeof(t->SetDescSplit) && t->SetDescSplit;
     }
     bool hasDescSplit() const { return connected && p && hasDescSplit(p); }
+
+    // The table holds the seven option-row slots (12..18) and all of them are non-null (an older provider answers false).
+    static bool hasRows(const K2MenuUiApi* t) {
+        return t && t->struct_size >= offsetof(K2MenuUiApi, SetRowRange) + sizeof(t->SetRowRange) && t->AddRow && t->SetChangeHandler && t->GetValue &&
+               t->SetValue && t->SetRowText && t->SetRowState && t->SetRowRange;
+    }
+    bool hasRows() const { return connected && p && hasRows(p); }
 
     bool connect() {
         if (connected && p) return true;

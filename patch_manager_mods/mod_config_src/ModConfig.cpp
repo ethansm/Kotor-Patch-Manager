@@ -1,4 +1,4 @@
-// ModConfig.cpp -- mod-config 0.1.3-dev (Steam build): the "Mod Configuration" provider on the in-game Options screen (doc 42,
+// ModConfig.cpp -- mod-config 0.2.0-dev (Steam build): the "Mod Configuration" provider on the in-game Options screen (doc 42,
 // plan .claude/plans/holster_editor_options.md, card c18). Provides two interfaces declared in ModConfigApi.h:
 //   k2.modconfig@1  K2ModConfigApi  Register / Unregister: a mod adds one entry (name, description, build/enter/leave/tick/destroy).
 //   k2.menuui@1     K2MenuUiApi     NewPage / AddButton / AddLabel / AddCustom / Clicked / SetText / SetRect / SetDesc / PaneRect / Control /
@@ -41,6 +41,7 @@
 #include "MenuLayout.h"
 #include "ModConfigApi.h"
 #include "MenuUiLogic.h"
+#include "EditKit.h"
 
 KP_LOG_PATCH("mod-config");
 
@@ -84,6 +85,8 @@ struct Config {
     bool reflow = true;        // insert the root button after GAMEPLAY and move the later rows (else place it below QUIT)
     bool desc = true;          // write the hover description through the vanilla path
     bool freeLabels = true;    // free our labels and buttons in McDestroy (r7 recipe)
+    bool arrowIcons = false;   // row arrows: false = "<" ">" glyph text on the button clone (proven live), true = the embedded chevron textures
+    int selftest = 0;          // 1 = register the built-in "Mod-config self test" entry (6 rows); never on in a shipped config
 };
 Config g_cfg;
 bool g_enabled = true;
@@ -101,6 +104,27 @@ struct Target {
     Rect r = {0, 0, 0, 0};
     int applied = 0;
     bool gaveUp = false;
+};
+
+// ---------------------------------------------------------------------------------------------------- option rows (doc 46)
+// A row is one toggle button, or a stepper = caption label + "<" + ">" buttons. Rows are added by AddRow; the provider lays them out in the
+// COLUMN pane (mui::rowSlotRect), draws the caption (mui::rowFormat), steps the value on a click / arrow press and calls the page's change handler.
+constexpr int kMaxRows = 32;
+struct RowX {
+    bool used = false;
+    mui::RowCfg cfg = {0, 0, 1, 1, 0, 0};
+    int item[3] = {-1, -1, -1};   // item ids on the page: toggle = [0]; stepper = caption label [0], "<" [1], ">" [2]
+    int slot = -1;                // visible slot (0..kRowsVisible-1), -1 = not shown
+    bool hasFmt = false, hasZero = false;
+    char label[64] = {}, desc[192] = {}, fmt[48] = {}, zero[24] = {}, cap[96] = {};
+    const char* const* choices = nullptr;
+    int nChoices = 0;
+};
+struct RowPage {
+    int n = 0;
+    RowX rows[kMaxRows];
+    K2MuiChangeFn fn = nullptr;
+    void* user = nullptr;
 };
 
 // One control we own or track: the root / list / Back / title clones and every entry page item.
@@ -153,6 +177,13 @@ struct McState {
     bool descSplitOn = false;           // the shrunk rect is currently asserted on LB_DESC (so the original must be put back)
     int descSplitPage = -1;
     int descReasserts = 0;              // times a describe or tick had to write the shrunk rect again (log cap)
+    RowPage rp[mui::kMaxEntries];
+    unsigned char itemRow[mui::kMaxEntries][mui::kMaxItems] = {};    // row index + 1 of an item that belongs to a row, 0 = none
+    unsigned char itemPart[mui::kMaxEntries][mui::kMaxItems] = {};   // 0 toggle / caption, 1 "<", 2 ">"
+    editkit::Repeat rep = {0, 0, 0};   // hold-repeat of the arrow under the press
+    int repItem = -1;                  // item id (on the shown entry page) the press went down on, -1 = none
+    int rowLogs = 0;                   // ROW lines logged (cap 200)
+    int gapLogs = 0;                   // TICKGAP lines logged (cap 32)
 };
 McState g_mc;
 bool g_inBuild = false;
@@ -256,6 +287,8 @@ void readConfig() {
         else if (!_stricmp(k, "reflow")) g_cfg.reflow = on;
         else if (!_stricmp(k, "desc")) g_cfg.desc = on;
         else if (!_stricmp(k, "free_labels")) g_cfg.freeLabels = on;
+        else if (!_stricmp(k, "arrow_icons")) g_cfg.arrowIcons = on;
+        else if (!_stricmp(k, "selftest")) g_cfg.selftest = atoi(v);
     }
     fclose(f);
 }
@@ -687,6 +720,129 @@ void firstTick() {
     if (e.nList > 0) logRect("list0", e.list[0].ctl);
 }
 
+// ---------------------------------------------------------------------------------------------------- option rows
+RowX* rowAt(uint32_t page, int32_t row) {
+    if (page < 2 || page >= 2 + static_cast<uint32_t>(mui::kMaxEntries) || row < 0) return nullptr;
+    RowPage& rp = g_mc.rp[page - 2];
+    return row < rp.n ? &rp.rows[row] : nullptr;
+}
+
+bool entryShown(int k) { return g_mc.appended && g_mc.ps.state == mui::ENTRY && g_mc.ps.entry == k; }
+
+// Rewrites the caption control of a row (override text, else mui::rowFormat). A disabled toggle gets " (locked)" (it has no arrows to hide).
+void rowCaption(int k, RowX& r) {
+    if (r.item[0] < 0) return;
+    char buf[sizeof(ItemX::text)];
+    if (r.cap[0]) copyStr(buf, sizeof buf, r.cap);
+    else (void)mui::rowFormat(buf, sizeof buf, r.label, r.cfg, r.hasFmt ? r.fmt : nullptr, r.choices, r.nChoices, r.hasZero ? r.zero : nullptr);
+    if (r.cfg.kind == mui::RK_TOGGLE && (r.cfg.flags & mui::RF_DISABLED)) {
+        const size_t n = strlen(buf);
+        if (n + 10 < sizeof buf) strcat(buf, " (locked)");
+    }
+    ItemX& it = g_mc.items[k][r.item[0]];
+    copyStr(it.text, sizeof it.text, buf);
+    it.hasText = true;
+    if (g_mc.appended) applyItemText(it);
+}
+
+void setPartRect(int k, int itemId, const mui::Rect& r) {
+    if (itemId < 0) return;
+    McState& e = g_mc;
+    ItemX& it = e.items[k][itemId];
+    it.tg = Target();
+    it.tg.ctl = it.ctl;
+    it.tg.r = Rect{r.x, r.y, r.w, r.h};
+    it.hasRect = true;
+    if (e.appended && it.ctl && !it.unlinked) applyOne(e, it.tg, true);
+}
+
+// Puts every visible row of page k on its slot of the COLUMN pane (hidden rows take no slot; rows past kRowsVisible are not shown).
+void layoutRows(int k) {
+    McState& e = g_mc;
+    RowPage& rp = e.rp[k];
+    if (rp.n == 0 || !e.panel) return;
+    Rect col = {0, 0, 0, 0};
+    if (!paneRect(e.panel, MUI_PANE_COLUMN, &col)) {
+        static volatile LONG s_nc = 0;
+        if (InterlockedIncrement(&s_nc) <= 4) KP_LOG(chMain, "ROWS layout: column pane unavailable (page %d)", 2 + k);
+        return;
+    }
+    const mui::Rect c = toMui(col);
+    int vi = 0;
+    for (int i = 0; i < rp.n; ++i) {
+        RowX& r = rp.rows[i];
+        const bool vis = !(r.cfg.flags & mui::RF_HIDDEN) && vi < mui::kRowsVisible;
+        r.slot = vis ? vi++ : -1;
+        if (!vis) continue;
+        const mui::RowGeom g = mui::rowGeom(mui::rowSlotRect(c, r.slot), r.cfg.kind);
+        if (r.cfg.kind == mui::RK_TOGGLE) {
+            setPartRect(k, r.item[0], g.whole);
+        } else {
+            setPartRect(k, r.item[0], g.label);
+            setPartRect(k, r.item[1], g.left);
+            setPartRect(k, r.item[2], g.right);
+        }
+    }
+}
+
+// Shows / hides the controls of page k's rows: hidden or unslotted rows are hidden, a disabled stepper keeps its caption but loses its arrows.
+void showRows(int k) {
+    McState& e = g_mc;
+    RowPage& rp = e.rp[k];
+    for (int i = 0; i < rp.n; ++i) {
+        RowX& r = rp.rows[i];
+        const bool vis = r.slot >= 0;
+        for (int p = 0; p < 3; ++p) {
+            if (r.item[p] < 0) continue;
+            const bool arrow = p > 0;
+            setShown(e.items[k][r.item[p]], vis && !(arrow && (r.cfg.flags & mui::RF_DISABLED)));
+        }
+    }
+}
+
+void rowsRelayout(int k) {
+    layoutRows(k);
+    if (entryShown(k)) showRows(k);
+}
+
+// One accepted click / arrow step on a row: stepper moves by dir, a toggle flips (dir 0). The handler's return is the FINAL value.
+void rowChange(int k, int row, int dir) {
+    McState& e = g_mc;
+    RowPage& rp = e.rp[k];
+    if (row < 0 || row >= rp.n) return;
+    RowX& r = rp.rows[row];
+    if (r.cfg.flags & (mui::RF_DISABLED | mui::RF_HIDDEN)) return;
+    const int old = r.cfg.value;
+    const int req = mui::rowStep(r.cfg, old, r.cfg.kind == mui::RK_TOGGLE ? 0 : dir);
+    if (req == old && r.cfg.kind == mui::RK_STEPPER) return;   // already at an end: nothing to ask the handler
+    const K2MuiChangeFn fn = rp.fn;
+    int32_t fin = 0;
+    if (fn) fin = fn(static_cast<uint32_t>(2 + k), row, req, r.cfg.kind == mui::RK_TOGGLE ? 0 : dir, rp.user);
+    RowX& r2 = rp.rows[row];   // the handler may have changed this row (SetValue / SetRowState): decide on its current state
+    const int nv = mui::rowApplyHandlerResult(r2.cfg, req, fin, fn != nullptr);
+    r2.cfg.value = nv;
+    rowCaption(k, r2);
+    if (++e.rowLogs <= 200) KP_LOG(chMain, "ROW page=%d row=%d old=%d req=%d final=%d handler=%d", 2 + k, row, old, req, nv, fn ? 1 : 0);
+}
+
+// Arrow press with hold-repeat (first step on the press, repeats after editkit::kRepeatDelayMs while the cursor stays on that arrow).
+void rowArrowInput(int k, bool down, int hit, DWORD now) {
+    McState& e = g_mc;
+    const bool press = down && !e.prevDown;
+    int row = -1, part = 0;
+    if (hit >= 0 && hit < mui::kMaxItems && e.itemRow[k][hit]) {
+        row = e.itemRow[k][hit] - 1;
+        part = e.itemPart[k][hit];
+    }
+    if (press) e.repItem = (row >= 0 && part >= 1) ? hit : -1;
+    if (!down || (e.repItem >= 0 && hit != e.repItem)) e.repItem = -1;   // released, or the cursor left the arrow: stop for this press
+    const bool held = e.repItem >= 0;
+    int n = editkit::repeatTick(e.rep, held, now);
+    if (!held) return;
+    const int rr = e.itemRow[k][e.repItem] - 1, pp = e.itemPart[k][e.repItem];
+    for (; n > 0; --n) rowChange(k, rr, pp == 1 ? -1 : 1);
+}
+
 // ---------------------------------------------------------------------------------------------------- page changes
 void hideVanilla() {
     McState& e = g_mc;
@@ -776,6 +932,7 @@ void applyEvent(const mui::PageEvent& ev, const char* why) {
             } else {
                 const bool cleared = clearFocus(e.panel);
                 if (e.title.ctl) guikit::setText(e.title.ctl, e.pageTitle[k]);
+                layoutRows(k);   // option rows take their column slots (the party / values may have changed since the last visit)
                 for (int i = 0; i < e.pt.itemCount(2 + k); ++i) {
                     ItemX& it = e.items[k][i];
                     if (it.ctl && it.hasRect && !it.unlinked) {
@@ -786,6 +943,7 @@ void applyEvent(const mui::PageEvent& ev, const char* why) {
                     }
                     setShown(it, true);
                 }
+                showRows(k);   // after the show-all loop: hidden / unslotted rows and the arrows of disabled rows go back to hidden
                 setShown(e.back, true);
                 setShown(e.title, true);
                 KP_LOG(chMain, "ENTRY enter id=%s page=%d items=%d focusCleared=%d", entLive(k) ? g_ent[k].id : "?", 2 + k, e.pt.itemCount(2 + k), cleared ? 1 : 0);
@@ -801,6 +959,7 @@ void pageChange(int from, const mui::PageEvents& ev, const char* why) {
     McState& e = g_mc;
     for (int i = 0; i < ev.n; ++i) applyEvent(ev.ev[i], why);
     e.leaveAt = 0;
+    e.repItem = -1;
     e.hov = mui::HoverTracker();
     e.clk = mui::ClickTracker();
     e.clkBack = mui::ClickTracker();
@@ -1161,8 +1320,183 @@ void* KPATCH_CALL muiControl(uint32_t page, int32_t item) {
     return reinterpret_cast<void*>(it->ctl);
 }
 
+// ---- option rows (K2MenuUiApi slots 12..18)
+bool rowPageGate(uint32_t page, const char* what) {
+    if (!buildGate(page, what)) return false;
+    if (!g_mc.pageMade[static_cast<int>(page) - 2]) { KP_LOG(chMain, "MUI refused: %s before NewPage", what); return false; }
+    return true;
+}
+
+void releaseRowCtl(ItemX& it) {
+    if (!it.ctl) return;
+    if (it.isButton) guibutton::releaseUnlinkedButton(it.ctl);
+    else guikit::releaseUnlinkedLabel(it.ctl, kLabelVtable);
+    it.ctl = 0;
+}
+
+int32_t KPATCH_CALL muiAddRow(uint32_t page, const K2MuiRowSpec* sp) {
+    if (!sp || sp->struct_size < sizeof(K2MuiRowSpec) || (sp->kind != MUI_ROW_TOGGLE && sp->kind != MUI_ROW_STEPPER)) return -1;
+    if (!rowPageGate(page, "AddRow")) return -1;
+    McState& e = g_mc;
+    const int k = static_cast<int>(page) - 2;
+    RowPage& rp = e.rp[k];
+    const bool toggle = sp->kind == MUI_ROW_TOGGLE;
+    const int parts = toggle ? 1 : 3;
+    if (rp.n >= kMaxRows || e.pt.itemCount(static_cast<int>(page)) + parts > mui::kMaxItems) {
+        KP_LOG(chMain, "MUI refused: AddRow page %u is full (rows=%d items=%d)", static_cast<unsigned>(page), rp.n, e.pt.itemCount(static_cast<int>(page)));
+        return -1;
+    }
+    int visible = 0;
+    for (int i = 0; i < rp.n; ++i)
+        if (!(rp.rows[i].cfg.flags & mui::RF_HIDDEN)) ++visible;
+    if (!(sp->flags & MUI_RF_HIDDEN) && visible >= mui::kRowsVisible) {   // scrolling lands in MCF2b
+        KP_LOG(chMain, "MUI refused: AddRow page %u already has %d visible rows", static_cast<unsigned>(page), visible);
+        return -1;
+    }
+    RowX r;
+    r.used = true;
+    r.cfg.kind = toggle ? mui::RK_TOGGLE : mui::RK_STEPPER;
+    r.cfg.minV = toggle ? 0 : sp->min;
+    r.cfg.maxV = toggle ? 1 : sp->max;
+    r.cfg.step = sp->step < 1 ? 1 : sp->step;
+    r.cfg.flags = sp->flags & (MUI_RF_WRAP | MUI_RF_RESTART | MUI_RF_DISABLED | MUI_RF_HIDDEN);
+    r.choices = sp->choices;
+    r.nChoices = sp->choices && sp->nChoices > 0 ? sp->nChoices : 0;
+    if (!toggle && r.nChoices > 0) { r.cfg.minV = 0; r.cfg.maxV = r.nChoices - 1; }
+    r.cfg.value = mui::rowClamp(r.cfg, sp->value);
+    copyStr(r.label, sizeof r.label, sp->label);
+    copyStr(r.desc, sizeof r.desc, sp->desc);
+    if (sp->fmt && sp->fmt[0]) { copyStr(r.fmt, sizeof r.fmt, sp->fmt); r.hasFmt = true; }
+    if (sp->zeroText && sp->zeroText[0]) { copyStr(r.zero, sizeof r.zero, sp->zeroText); r.hasZero = true; }
+    // Create every control first so a failed clone leaves no half row on the page.
+    ItemX ctl[3];
+    char what[40];
+    for (int p = 0; p < parts; ++p) {
+        snprintf(what, sizeof what, "row_%u_%d_%d", static_cast<unsigned>(page), rp.n, p);
+        if (!toggle && p == 0) { ctl[p].ctl = cloneLabel(e.panel, what); ctl[p].isButton = false; }
+        else ctl[p].ctl = cloneEntry(e.panel, "BTN_GAMEPLAY", what, &ctl[p].isButton);
+        if (!ctl[p].ctl) {
+            for (int q = 0; q < p; ++q) releaseRowCtl(ctl[q]);
+            KP_LOG(chMain, "MUI refused: AddRow control %d could not be cloned", p);
+            return -1;
+        }
+        ctl[p].hasText = true;
+        copyStr(ctl[p].desc, sizeof ctl[p].desc, sp->desc);
+    }
+    copyStr(ctl[0].text, sizeof ctl[0].text, "");
+    if (!toggle) { copyStr(ctl[1].text, sizeof ctl[1].text, "<"); copyStr(ctl[2].text, sizeof ctl[2].text, ">"); }
+    for (int p = 0; p < parts; ++p) {
+        const int id = addItemCommon(page, mui::BUTTON, ctl[p], 0);   // the caption label is hit-testable too (hover shows the row description)
+        if (id < 0) {   // cannot happen after the capacity check; keep the page consistent anyway
+            for (int q = p; q < parts; ++q) releaseRowCtl(ctl[q]);
+            return -1;
+        }
+        r.item[p] = id;
+        e.itemRow[k][id] = static_cast<unsigned char>(rp.n + 1);
+        e.itemPart[k][id] = static_cast<unsigned char>(p);
+    }
+    if (rp.n == 0) KP_LOG(chMain, "ARROWPATH text fallback=0 page=%u", static_cast<unsigned>(page));
+    const int row = rp.n;
+    rp.rows[rp.n++] = r;
+    rowCaption(k, rp.rows[row]);
+    return row;
+}
+
+void KPATCH_CALL muiSetChangeHandler(uint32_t page, K2MuiChangeFn fn, void* user) {
+    if (page < 2 || page >= 2 + static_cast<uint32_t>(mui::kMaxEntries)) return;
+    RowPage& rp = g_mc.rp[page - 2];
+    rp.fn = fn;
+    rp.user = user;
+}
+
+int32_t KPATCH_CALL muiGetValue(uint32_t page, int32_t row) {
+    const RowX* r = rowAt(page, row);
+    return r ? r->cfg.value : 0;
+}
+
+void KPATCH_CALL muiSetValue(uint32_t page, int32_t row, int32_t v) {
+    RowX* r = rowAt(page, row);
+    if (!r) return;
+    saferead::beginScope();
+    r->cfg.value = mui::rowClamp(r->cfg, v);
+    rowCaption(static_cast<int>(page) - 2, *r);
+}
+
+void KPATCH_CALL muiSetRowText(uint32_t page, int32_t row, const char* text) {
+    RowX* r = rowAt(page, row);
+    if (!r) return;
+    saferead::beginScope();
+    copyStr(r->cap, sizeof r->cap, text);
+    rowCaption(static_cast<int>(page) - 2, *r);
+}
+
+void KPATCH_CALL muiSetRowState(uint32_t page, int32_t row, int32_t flags) {
+    RowX* r = rowAt(page, row);
+    if (!r) return;
+    saferead::beginScope();
+    const int k = static_cast<int>(page) - 2;
+    const int keep = r->cfg.flags & (mui::RF_WRAP | mui::RF_RESTART);
+    r->cfg.flags = keep | (flags & (MUI_RF_DISABLED | MUI_RF_HIDDEN));
+    rowCaption(k, *r);
+    rowsRelayout(k);
+}
+
+void KPATCH_CALL muiSetRowRange(uint32_t page, int32_t row, int32_t minV, int32_t maxV) {
+    RowX* r = rowAt(page, row);
+    if (!r || r->cfg.kind != mui::RK_STEPPER) return;
+    saferead::beginScope();
+    r->cfg.minV = minV;
+    r->cfg.maxV = maxV;
+    r->cfg.value = mui::rowClamp(r->cfg, r->cfg.value);
+    rowCaption(static_cast<int>(page) - 2, *r);
+}
+
+
+// ---------------------------------------------------------------------------------------------------- built-in self test (mod_config.ini selftest=1)
+// Six rows that cover every row feature plus a change handler that snaps and rejects; the MCR1 vehicle.
+const char* const kStChoices[] = {"Off", "Slow", "Fast"};
+
+int32_t KPATCH_CALL stChange(uint32_t page, int32_t row, int32_t requested, int32_t dir, void*) {
+    int32_t fin = requested;
+    if (row == 2) {   // 5..95 step 5: snap to the nearest multiple of 5, and reject 60 (stay where it was)
+        fin = ((requested + 2) / 5) * 5;
+        if (fin == 60) fin = requested - 5 * dir;
+    }
+    KP_LOG(chMain, "SELFTEST change page=%u row=%d requested=%d dir=%d final=%d", static_cast<unsigned>(page), row, requested, dir, fin);
+    return fin;
+}
+
+void KPATCH_CALL stBuild(void* panel, void*) {
+    const uint32_t pg = muiNewPage(panel, "Mod-config self test");
+    if (!pg) return;
+    K2MuiRowSpec sp = {};
+    sp.struct_size = sizeof sp;
+    sp.kind = MUI_ROW_TOGGLE; sp.label = "Toggle"; sp.desc = "A plain on/off row. Click it to flip."; sp.value = 1;
+    muiAddRow(pg, &sp);
+    sp = K2MuiRowSpec(); sp.struct_size = sizeof sp;
+    sp.kind = MUI_ROW_STEPPER; sp.label = "Speed"; sp.desc = "A wrapping list stepper: Off / Slow / Fast, then back to Off."; sp.min = 0; sp.max = 2; sp.step = 1; sp.value = 1;
+    sp.flags = MUI_RF_WRAP; sp.choices = kStChoices; sp.nChoices = 3;
+    muiAddRow(pg, &sp);
+    sp = K2MuiRowSpec(); sp.struct_size = sizeof sp;
+    sp.kind = MUI_ROW_STEPPER; sp.label = "Heal"; sp.desc = "5 to 95 in steps of 5. The handler snaps to a multiple of 5 (start 37 -> 40) and rejects 60."; sp.min = 5; sp.max = 95; sp.step = 5; sp.value = 37;
+    sp.fmt = "Heal below %d%%";
+    muiAddRow(pg, &sp);
+    sp = K2MuiRowSpec(); sp.struct_size = sizeof sp;
+    sp.kind = MUI_ROW_STEPPER; sp.label = "Keep"; sp.desc = "0 to 10, clamped at both ends. Zero reads Auto."; sp.min = 0; sp.max = 10; sp.step = 1; sp.value = 0;
+    sp.zeroText = "Auto";
+    muiAddRow(pg, &sp);
+    sp = K2MuiRowSpec(); sp.struct_size = sizeof sp;
+    sp.kind = MUI_ROW_TOGGLE; sp.label = "Disabled"; sp.desc = "A disabled row ignores clicks."; sp.value = 0; sp.flags = MUI_RF_DISABLED;
+    muiAddRow(pg, &sp);
+    sp = K2MuiRowSpec(); sp.struct_size = sizeof sp;
+    sp.kind = MUI_ROW_TOGGLE; sp.label = "Needs restart"; sp.desc = "The caption gets (restart)."; sp.value = 0; sp.flags = MUI_RF_RESTART;
+    muiAddRow(pg, &sp);
+    muiSetChangeHandler(pg, &stChange, nullptr);
+}
+
 const K2MenuUiApi g_muiApi = {sizeof(K2MenuUiApi), &muiNewPage, &muiAddButton, &muiAddLabel, &muiAddCustom, &muiClicked,
-                              &muiSetText,         &muiSetRect, &muiSetDesc,   &muiPaneRect,  &muiControl, &muiSetDescSplit};
+                              &muiSetText,         &muiSetRect, &muiSetDesc,   &muiPaneRect,  &muiControl, &muiSetDescSplit,
+                              &muiAddRow,          &muiSetChangeHandler, &muiGetValue, &muiSetValue, &muiSetRowText, &muiSetRowState, &muiSetRowRange};
 
 }  // namespace
 
@@ -1172,8 +1506,14 @@ extern "C" void __cdecl McBind(int panelArg) {
     if (!s_cfgRead) {   // lazily, on the first Options panel (KPatchInit must not do file I/O)
         s_cfgRead = true;
         readConfig();
-        KP_LOG(chMain, "CONFIG enabled=%d debug=%d button_clone=%d reflow=%d desc=%d free_labels=%d table=%s", g_enabled ? 1 : 0, g_debug ? 1 : 0,
-               g_cfg.buttonClone ? 1 : 0, g_cfg.reflow ? 1 : 0, g_cfg.desc ? 1 : 0, g_cfg.freeLabels ? 1 : 0, k2addr::get() ? "ok" : "none");
+        KP_LOG(chMain, "CONFIG enabled=%d debug=%d button_clone=%d reflow=%d desc=%d free_labels=%d arrow_icons=%d selftest=%d table=%s", g_enabled ? 1 : 0,
+               g_debug ? 1 : 0, g_cfg.buttonClone ? 1 : 0, g_cfg.reflow ? 1 : 0, g_cfg.desc ? 1 : 0, g_cfg.freeLabels ? 1 : 0, g_cfg.arrowIcons ? 1 : 0,
+               g_cfg.selftest, k2addr::get() ? "ok" : "none");
+        if (g_enabled && g_cfg.selftest > 0) {   // the built-in test entry (rows of every kind); registered like any other mod's entry
+            static const K2ModConfigEntry st = {sizeof(K2ModConfigEntry), "mc-selftest", "Mod-config self test", "Option-row self test: toggle, steppers, snap / reject, disabled, restart. For play checks only.",
+                                                nullptr, &stBuild, nullptr, nullptr, nullptr, nullptr};
+            mcRegister(&st);
+        }
     }
     if (!g_enabled || !panelArg) return;
     saferead::beginScope();
@@ -1250,6 +1590,7 @@ extern "C" void __cdecl McTick(int panelArg) {
     e.lastTick = now;
     int flags48 = 0;
     (void)rd<int>(P, ctlFlagsOff(), &flags48);
+    const bool down = lmbDown();
     static volatile LONG s_hd = 0;
     if ((flags48 != e.lastFlags48 || gap > kTickGapMs) && InterlockedIncrement(&s_hd) <= 32)
         KP_LOG(chMain, "HIDDENDRAW panel=%x flags48=%x (was %x) gap=%lums page=%d", static_cast<unsigned>(P), static_cast<unsigned>(flags48),
@@ -1260,7 +1601,13 @@ extern "C" void __cdecl McTick(int panelArg) {
     const bool escDown = guikit::g_gk.gameForeground && guikit::g_gk.gameForeground() && (GetAsyncKeyState(VK_ESCAPE) & 0x8000) != 0;
     if (escDown && !e.prevEsc && e.appended && e.ps.state != mui::MAIN) resetPages("esc key");
     e.prevEsc = escDown;
-    if (gap > kTickGapMs) resetPages("tick gap");
+    {   // A long gap used to always mean "the panel was closed". While the panel is still marked shown (flags48 bit 0x40) a game hitch under a held
+        // button looks the same, so only a very long gap with no button held counts then (mui::tickResetDue). Every decision past 500 ms is logged.
+        const bool due = mui::tickResetDue(static_cast<unsigned>(gap), flags48, down, false);
+        if (gap > kTickGapMs && ++e.gapLogs <= 32)
+            KP_LOG(chMain, "TICKGAP gap=%lu flags48=%x lmb=%d reset=%d", static_cast<unsigned long>(gap), static_cast<unsigned>(flags48), down ? 1 : 0, due ? 1 : 0);
+        if (due) resetPages("tick gap");
+    }
     // Live logs 10-17: a shown Options panel draws with flags48 0x4d, an Esc-hidden one with 0x0d (still drawn, ~22 ms gaps). Bit 0x2 is
     // clear in BOTH states (it is only the CTOR-time "layout open" bit), so 0x40 is the shown bit. Hidden -> back to MAIN, nothing else.
     if (e.appended && !(flags48 & 0x40)) {   // never before the first build: a wrong bit can then cost the Esc reset, never the button
@@ -1279,11 +1626,11 @@ extern "C" void __cdecl McTick(int panelArg) {
     int x = 0, y = 0;
     const bool cur = guikit::cursorEngine(&x, &y);
     // Clicks act on the RELEASE: LMB up over the control the press went down on. Not-foreground counts as up (GuiKit clickEdge rule).
-    const bool down = lmbDown();
     if (e.restorePending && !down) restoreVanilla("lmb up");
     const int hit = cur ? hitItem(x, y) : -1;
     const bool overBack = cur && e.ps.state != mui::MAIN && overCtl(e.back, x, y);
     hoverStep(overBack ? -1 : hit);
+    if (e.ps.state == mui::ENTRY && e.ps.entry >= 0 && e.ps.entry < mui::kMaxEntries && e.rp[e.ps.entry].n > 0) rowArrowInput(e.ps.entry, down, overBack ? -1 : hit, now);
     if (down && !e.prevDown) {
         static volatile LONG s_in = 0;
         if (InterlockedIncrement(&s_in) <= 40)
@@ -1304,8 +1651,15 @@ extern "C" void __cdecl McTick(int panelArg) {
         } else if (e.ps.state == mui::LIST) {
             entryClicked(clicked);
         } else {
-            ItemX* it = shownItem(clicked);
-            if (it) it->latched = true;
+            const int k = e.ps.entry;
+            if (k >= 0 && k < mui::kMaxEntries && clicked < mui::kMaxItems && e.itemRow[k][clicked]) {
+                // A row part: a toggle flips on its release; the arrows already stepped on their press (rowArrowInput); neither latches Clicked.
+                const int row = e.itemRow[k][clicked] - 1;
+                if (e.itemPart[k][clicked] == 0 && e.rp[k].rows[row].cfg.kind == mui::RK_TOGGLE) rowChange(k, row, 0);
+            } else {
+                ItemX* it = shownItem(clicked);
+                if (it) it->latched = true;
+            }
         }
     } else if (backClicked >= 0) {
         const int from = curPageId();
@@ -1359,7 +1713,7 @@ extern "C" void __cdecl McDestroy(int panelArg) {
 // the config is read at the first McBind.
 extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
-    KP_LOG(chMain, "mod-config 0.1.3-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
+    KP_LOG(chMain, "mod-config 0.2.0-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
     int rcC = -1, rcM = -1;
     if (api && api->struct_size >= offsetof(KPatchApi, require) + sizeof(api->require) && api->provide) {
         rcC = api->provide(K2MODCONFIG_IFACE, K2MODCONFIG_VERSION, &g_mcApi);

@@ -100,9 +100,9 @@ static int g_dtorCalls = 0; static uint32_t g_dtorFn = 0; static uintptr_t g_dto
 static void fakeLabelDtor(uint32_t fn, uintptr_t ctl, unsigned flags) { ++g_dtorCalls; g_dtorFn = fn; g_dtorCtl = ctl; g_dtorFlags = flags; }
 static const K2ModConfigApi kCfgTable = { sizeof(K2ModConfigApi), stubRegister, stubUnregister };
 static const K2MenuUiApi kMuiTable = { sizeof(K2MenuUiApi), stubNewPage, stubAddButton, stubAddLabel, stubAddCustom, stubClicked,
-                                       stubSetText, stubSetRect, stubSetDesc, stubPaneRect, stubControl, nullptr };   // an 11-slot-era provider: SetDescSplit null
+                                       stubSetText, stubSetRect, stubSetDesc, stubPaneRect, stubControl, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };   // an 11-slot-era provider: SetDescSplit null
 static const K2MenuUiApi kMuiTableSplit = { sizeof(K2MenuUiApi), stubNewPage, stubAddButton, stubAddLabel, stubAddCustom, stubClicked,
-                                            stubSetText, stubSetRect, stubSetDesc, stubPaneRect, stubControl, stubSetDescSplit };
+                                            stubSetText, stubSetRect, stubSetDesc, stubPaneRect, stubControl, stubSetDescSplit, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
 
 int main() {
     int flags = MAP_PRIVATE | MAP_ANONYMOUS;
@@ -227,10 +227,10 @@ int main() {
            k2fx::EffType_Icon == 0x43 && [] { bool it = true; const char* r = k2fx::iconForEffectIconEffect(0, &it); return r == nullptr && !it; }());
 
     // 10. ModConfigApi.h (the optional settings page): interface names, versions, struct sizes, pane and flag constants EnemyStrip.cpp uses.
-    ECHECK("k2.modconfig / k2.menuui are v1; K2ModConfigEntry 10 pointer slots, K2ModConfigApi 3, K2MenuUiApi 12; MUI_PANE_COLUMN == 0",
+    ECHECK("k2.modconfig / k2.menuui are v1; K2ModConfigEntry 10 pointer slots, K2ModConfigApi 3, K2MenuUiApi >= 12 slots (SetDescSplit at slot 11; rows are appended after it); MUI_PANE_COLUMN == 0",
            strcmp(K2MODCONFIG_IFACE, "k2.modconfig") == 0 && K2MODCONFIG_VERSION == 1 && strcmp(K2MENUUI_IFACE, "k2.menuui") == 0 &&
            K2MENUUI_VERSION == 1 && sizeof(K2ModConfigEntry) == 10 * sizeof(void*) && sizeof(K2ModConfigApi) == 3 * sizeof(void*) &&
-           sizeof(K2MenuUiApi) == 12 * sizeof(void*) && MUI_PANE_COLUMN == 0);
+           sizeof(K2MenuUiApi) >= 12 * sizeof(void*) && offsetof(K2MenuUiApi, SetDescSplit) == 11 * sizeof(void*) && MUI_PANE_COLUMN == 0);
     ECHECK("K2ModConfigEntry field order: build 5, enter 6, leave 7, tick 8, destroy 9 (the page sets build/enter/tick/destroy, leave stays null)",
            offsetof(K2ModConfigEntry, build) == 5 * sizeof(void*) && offsetof(K2ModConfigEntry, enter) == 6 * sizeof(void*) &&
            offsetof(K2ModConfigEntry, leave) == 7 * sizeof(void*) && offsetof(K2ModConfigEntry, tick) == 8 * sizeof(void*) &&
@@ -273,8 +273,8 @@ int main() {
     // 12. ModConfigApi.h description split (0.4.1 preview): MUI_PANE_PREVIEW is pane 6, SetDescSplit is the last (12th) slot; hasDescSplit() is
     //     the gate before calling it: false for a null table, a null slot, or a table too short to hold it; usable() still accepts the older
     //     11-slot table, so the page works against an older mod-config.
-    ECHECK("MUI_PANE_PREVIEW == 6; K2MenuUiApi.SetDescSplit is slot 11 (the last), struct_size 12 slots",
-           MUI_PANE_PREVIEW == 6 && offsetof(K2MenuUiApi, SetDescSplit) == 11 * sizeof(void*) && sizeof(K2MenuUiApi) == 12 * sizeof(void*));
+    ECHECK("MUI_PANE_PREVIEW == 6; K2MenuUiApi.SetDescSplit is slot 11 (rows are appended after it), struct_size at least 12 slots",
+           MUI_PANE_PREVIEW == 6 && offsetof(K2MenuUiApi, SetDescSplit) == 11 * sizeof(void*) && sizeof(K2MenuUiApi) >= 12 * sizeof(void*));
     K2MenuUiApi older = kMuiTableSplit; older.struct_size = static_cast<uint32_t>(offsetof(K2MenuUiApi, SetDescSplit));   // 11 slots, slot still non-null in memory
     ECHECK("MenuClient::hasDescSplit(table): false for null, a null slot and a short table; true for a full table with the slot",
            !k2mc::MenuClient::hasDescSplit(nullptr) && !k2mc::MenuClient::hasDescSplit(&kMuiTable) && !k2mc::MenuClient::hasDescSplit(&older) &&
