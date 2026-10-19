@@ -101,7 +101,7 @@ Decisions: (1) change handler returns the FINAL value (approved). (2) Companion 
 | Id | Batch | Status | Validation | Time Est |
 |---|---|---|---|---|
 | MCF0 | [Mod-config] RE + layout recon: slider/list box/scroll bar K2 map, provider layout, wheel input (wave 2 S1-S4) | DONE | `ls .claude/waves/mc-ctl/facts` | 20 min |
-| MCF1 | [Mod-config] Pure logic in MenuUiLogic.h: row kinds (toggle/stepper), ScrollWindow (offset clamp, wheel step, ensure-visible, thumb px), `mui::tickResetDue(gap, flags48, lmbDown)` + tests | PLANNED | `python3 scripts/run_tests.py mod_config` | 45 min |
+| MCF1 | [Mod-config] Pure logic in MenuUiLogic.h: row kinds (toggle/stepper), ScrollWindow (offset clamp, wheel step, ensure-visible, thumb px), `mui::tickResetDue(gap, flags48, lmbDown)` + tests | BUILT | `python3 scripts/run_tests.py mod_config` | 45 min |
 | MCF2 | [Mod-config] Provider: AddRow/SetChangeHandler/Get-SetValue slots (final-value handler), `tickResetDue`, stepper arrow art with click-to-cycle fallback, MCR1 logging (arrow path taken, tickResetDue gap/flags48/lmb), contract pins; NO scrolling (MCF2b) in mod_config + enemy_effects_strip (common_contract_test.cpp:233) + holster_editor (positional K2MenuUiApi initializer; Holster session owns that dir) | PLANNED | `python3 scripts/run_tests.py mod_config` | 90 min |
 | MCF2b | [Mod-config] Scrolling: ScrollWindow on AddRow entry pages + the mod LIST page (rebind 8 column buttons, kMaxEntries raised), arrows + WheelHook + thumb drag, `scroll_test` dummy entry, MCR1/MCR2 play rows | PLANNED | `python3 scripts/run_tests.py mod_config` | 90 min |
 | MCF3 | [Mod-config] Declarative layer: `_shared_src/TomlMini.h` + `ModConfigDecl.h` + tests | PLANNED | `python3 scripts/run_tests.py mod_config` | 60 min |

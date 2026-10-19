@@ -8,16 +8,16 @@ Execute MCF1: [Mod-config] Pure logic in MenuUiLogic.h: row kinds (toggle/steppe
 - **Waves:** .claude/waves/WI-46-a1/
 - **Waves:** .claude/waves/WI-46-a2/
 - **Waves:** .claude/waves/WI-46-a3/
-- **Branch:** `KOTOR-II` (0ea8a458 PLAY_TEST_QUEUE QH17: queue-hud 0.4.4-dev LIVE (QL18 ini reader, QL19 Cancel colour); doc 33 rows INSTALLED)
-- **Generated:** 2026-10-18 22:58:13 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (a1c80c88 mod-config MCF1: pure row model (toggle/stepper), row geometry + hit zones, ScrollWindow, tickResetDue + host tests)
+- **Generated:** 2026-10-18 23:04:18 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-0ea8a458 PLAY_TEST_QUEUE QH17: queue-hud 0.4.4-dev LIVE (QL18 ini reader, QL19 Cancel colour); doc 33 rows INSTALLED
- patch_manager_mods/33_ui_queue_hotbar_fixes.md |  4 ++--
- patch_manager_mods/PLAY_TEST_QUEUE.md          | 28 ++++----------------------
- 2 files changed, 6 insertions(+), 26 deletions(-)
+a1c80c88 mod-config MCF1: pure row model (toggle/stepper), row geometry + hit zones, ScrollWindow, tickResetDue + host tests
+ patch_manager_mods/mod_config_src/MenuUiLogic.h    | 217 ++++++++++++++
+ .../mod_config_src/menu_ui_logic_test.cpp          | 329 +++++++++++++++++++++
+ 2 files changed, 546 insertions(+)
 ```
-- **Dirty Files (176):**
+- **Dirty Files (173):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
@@ -28,12 +28,12 @@ Execute MCF1: [Mod-config] Pure logic in MenuUiLogic.h: row kinds (toggle/steppe
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
   - ` M .claude/settings.json`
   - ` M CLAUDE.md`
-  - ... +166 more (run `git status --short`)
+  - ... +163 more (run `git status --short`)
 
 ## 2. Immediate Objective (MCF1)
 **[Mod-config] Pure logic in MenuUiLogic.h: row kinds (toggle/stepper), ScrollWindow (offset clamp, wheel step, ensure-visible, thumb px), `mui::tickResetDue(gap, flags48, lmbDown)` + tests**
 
-Status: PLANNED
+Status: BUILT
 Task: [Mod-config] Pure logic in MenuUiLogic.h: row kinds (toggle/stepper), ScrollWindow (offset clamp, wheel step, ensure-visible, thumb px), `mui::tickResetDue(gap, flags48, lmbDown)` + tests
 
 ## 2b. Upcoming Batches in Pipeline
