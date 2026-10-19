@@ -23,6 +23,9 @@ inline const RosterRow kRoster[] = {
     {"k1p_juhani", "k1p_juhani", "204tel", -37.5f, -63.1f, 0.0f, 0.0f},          // K1 Juhani (appearance 818) 1.5 m from the pet's known-good point
     {"k1p_carth", "k1p_carth", "204tel", -36.0f, -63.1f, 0.0f, 0.0f},            // K1 Carth (appearance 819), 1.5 m beside Juhani; resources come from the juhani-char VFS bundle
     {"k1p_juhanv", "k1p_juhanv", "204tel", -34.5f, -63.1f, 0.0f, 0.0f},          // "Juhani DLL" (appearance 820): same Juhani rebuilt as renamed k1p_juhanv* resources served only by the juhani-char VFS bundle, 1.5 m beside Carth, to compare with the Override rig Juhani
+    {"k1p_mission", "k1p_mission", "204tel", -33.0f, -63.1f, 0.0f, 0.0f},        // K1 Mission (appearance 823, importer pack): extends the known-good row 1.5 m beside Juhanv, position unverified walkable
+    {"k1p_zaalbaru", "k1p_zaalbar", "204tel", -31.5f, -63.1f, 0.0f, 0.0f},       // K1 Zaalbar (appearance 824, importer pack; UTC k1p_zaalbaru, tag k1p_zaalbar): extends the known-good row, position unverified walkable
+    {"k1p_bastilla", "k1p_bastilla", "204tel", -30.0f, -63.1f, 0.0f, 0.0f},      // K1 Bastilla (appearance 825, importer pack): extends the known-good row, position unverified walkable
 };
 constexpr int kRosterCount = static_cast<int>(sizeof(kRoster) / sizeof(kRoster[0]));
 constexpr int kMaxRowsPerArea = 8;
@@ -66,8 +69,8 @@ inline int RowsForArea(const char* area, int* out, int cap) {
     return n;
 }
 
-// Tags whose creature is dumped once per process (the NPC dump event): the Stage 1 probe NPC, the Stage 2 native NPC, the pet and the K1 Juhani and Carth test rows.
-inline constexpr const char* kHarvestTags[] = {"k1p_probe_npc", "k1p_native_npc", "MouseDroid", "k1p_juhani", "k1p_carth", "k1p_juhanv"};
+// Tags whose creature is dumped once per process (the NPC dump event): the Stage 1 probe NPC, the Stage 2 native NPC, the pet and the K1 Juhani, Carth, Juhanv, Mission, Zaalbar and Bastilla test rows.
+inline constexpr const char* kHarvestTags[] = {"k1p_probe_npc", "k1p_native_npc", "MouseDroid", "k1p_juhani", "k1p_carth", "k1p_juhanv", "k1p_mission", "k1p_zaalbar", "k1p_bastilla"};
 constexpr int kHarvestTagCount = static_cast<int>(sizeof(kHarvestTags) / sizeof(kHarvestTags[0]));
 
 inline bool IsHarvestTag(const char* tag) {
